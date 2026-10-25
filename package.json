@@ -1,0 +1,23 @@
+{
+  "name": "mobile-games",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Jeu web de survie zombies en vue de dessus (GitHub Pages).",
+  "type": "module",
+  "scripts": {
+    "lint": "eslint . --max-warnings=0",
+    "test": "vitest run",
+    "test:e2e": "playwright test",
+    "build": "node scripts/build.mjs",
+    "lighthouse": "node scripts/lighthouse.mjs"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "4.14.0",
+    "@eslint/js": "10.0.1",
+    "@playwright/test": "1.63.0",
+    "eslint": "10.13.0",
+    "globals": "17.13.0",
+    "lighthouse": "13.5.0",
+    "vitest": "5.0.5"
+  }
+}
