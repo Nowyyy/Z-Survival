@@ -19,6 +19,10 @@ Docs/ref/ (environnement, conventions) · Docs/lots/ (bilans) · .github/workflo
 - `npm run lighthouse` : Lighthouse mobile (seuils : performance 90, accessibilité 95, bonnes pratiques 95, CLS ≤ 0,1 ; le script échoue sous les seuils)
 - Playwright utilise le Chromium préinstallé : ne jamais lancer `playwright install` (voir `Docs/ref/environnement.md`).
 
+## Publication
+- `.github/workflows/pages.yml` : sur Pull Request, lint + Vitest + Playwright ; sur `main`, mêmes vérifications puis déploiement GitHub Pages de `_site/` seulement.
+- Droits minimaux, actions épinglées par SHA complet, ni `pull_request_target` ni secrets. Le réglage Pages (source « GitHub Actions ») est fait par le propriétaire.
+
 ## Git
 - Une branche par lot : `lot-N`. Un commit par partie : « Lot N-X — titre ».
 - Push de `lot-N` seulement, puis comparer `git rev-parse HEAD` et `git ls-remote origin lot-N`.
