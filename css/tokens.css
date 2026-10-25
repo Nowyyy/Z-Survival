@@ -1,0 +1,63 @@
+/* Jetons de design : seule source des couleurs du projet. Thème sombre « survie ». */
+:root {
+  color-scheme: dark;
+
+  /* Couleurs par rôle */
+  --color-bg: #0e110f;              /* fond de page */
+  --color-surface: #181d19;         /* cartes, panneaux */
+  --color-surface-raised: #222924;  /* éléments surélevés */
+  --color-border: #4a5a4d;          /* contours, séparateurs */
+  --color-text: #e9eee7;            /* texte principal */
+  --color-text-muted: #a7b2a5;      /* texte secondaire */
+  --color-action: #e0892f;          /* boutons, liens d'action (ambre) */
+  --color-on-action: #140d05;       /* texte posé sur l'action */
+  --color-danger: #ff7a6b;          /* danger, sang */
+  --color-success: #7ed48b;         /* réussite */
+  --color-warning: #f2c94c;         /* avertissement */
+  --color-focus: #9fd3ff;           /* anneau de focus */
+
+  /* Teintes dérivées */
+  --color-action-hover: #f09a42;
+  --color-action-active: #c7761f;
+  --color-action-surface: #3a2610;
+  --color-danger-surface: #3a1c19;
+  --color-success-surface: #17301c;
+  --color-warning-surface: #36300f;
+  --color-overlay: rgb(0 0 0 / 60%);
+
+  /* Polices */
+  --font-sans: "Barlow", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-weight-normal: 400;
+  --font-weight-bold: 700;
+
+  /* Échelle de tailles */
+  --text-sm: 0.875rem;
+  --text-md: 1rem;
+  --text-lg: 1.25rem;
+  --text-xl: 1.75rem;
+  --text-2xl: clamp(2rem, 6vw, 3.25rem);
+  --line-height: 1.5;
+
+  /* Espacements */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-7: 3rem;
+  --space-8: 4rem;
+
+  /* Rayons */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 16px;
+
+  /* Durées */
+  --duration-fast: 120ms;
+  --duration-normal: 240ms;
+  --duration-slow: 1600ms;
+
+  /* Cible tactile minimale */
+  --touch-target: 44px;
+}

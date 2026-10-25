@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { execSync } from 'node:child_process';
-import { readFileSync, statSync } from 'node:fs';
+import { existsSync, readFileSync, statSync } from 'node:fs';
 
-const tracked = execSync('git ls-files', { encoding: 'utf8' }).split('\n').filter(Boolean);
+const tracked = execSync('git ls-files', { encoding: 'utf8' }).split('\n').filter((f) => f && existsSync(f));
 const SECRET = /(AKIA[0-9A-Z]{16}|ghp_[A-Za-z0-9]{30,}|github_pat_[A-Za-z0-9_]{30,}|-----BEGIN [A-Z ]*PRIVATE KEY-----|sk-[A-Za-z0-9]{32,})/;
 
 describe('hygiène du dépôt', () => {

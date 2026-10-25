@@ -10,7 +10,7 @@ Avant de modifier une page, relis ce fichier.
 - Aucune couleur en dur hors `css/tokens.css`.
 - Textes dans `data/i18n/fr.json` et `data/i18n/en.json`, jamais en dur. Contenus provisoires marqués comme tels.
 - Outils de développement seulement : ESLint (configuration plate), Vitest, Playwright, `@axe-core/playwright`, Lighthouse. Versions exactes, `package-lock.json` versionné.
-- `Docs/seed.md` appartient au propriétaire : il reste vide, on ne le modifie jamais.
+- `Docs/seed.md` appartient au propriétaire : on ne le modifie jamais.
 
 ## Architecture
 - **La logique du jeu vit dans `js/core/`, sans Phaser, DOM, réseau, stockage ni horloge.** Tout ce dont elle a besoin (temps, hasard, données) lui est passé en paramètre.
