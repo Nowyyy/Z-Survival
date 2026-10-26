@@ -175,12 +175,12 @@ test.describe('portée du tir, laser qui s\'estompe, ombres lointaines', () => {
   });
 
   test('le bout du laser s\'estompe : plein près de l\'arme, presque invisible à la portée', async ({ page }) => {
-    await open(page, '', { width: 1440, height: 900 });
+    await open(page, '&zoom=1', { width: 1440, height: 900 });
     await page.evaluate(() => window.__zs.setInput({ aim: { angle: 0 } }));
     await page.waitForFunction(() => window.__zs.getState().time > 0.3);
     const { camera } = await state(page);
     const redness = async (groundX) => {
-      const p = projectGround(groundX - 800, 0, camera.distance, camera.tilt, 40, 1440 / 900);
+      const p = projectGround(groundX - camera.target.x, 450 - camera.target.y, camera.distance, camera.tilt, 40, 1440 / 900);
       const cx = Math.round(((p.x + 1) / 2) * 1440);
       const cy = Math.round(((1 - p.y) / 2) * 900);
       const shot = (await page.screenshot()).toString('base64');
@@ -214,8 +214,8 @@ test.describe('portée du tir, laser qui s\'estompe, ombres lointaines', () => {
       await expect.poll(async () => (await state(page)).render.calls).toBeGreaterThan(base);
       return (await state(page)).render.calls - base;
     };
-    const withShadows = await added('');
-    const without = await added('&shadows=0');
+    const withShadows = await added('&zoom=1');
+    const without = await added('&zoom=1&shadows=0');
     // Chaque pièce du zombie est dessinée deux fois (image et ombre) : le zombie à l'autre bout de la salle compte autant que s'il était près.
     expect(withShadows).toBeGreaterThanOrEqual(without * 1.8);
   });

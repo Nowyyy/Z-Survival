@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
-import { DEFAULT_FOV, DEFAULT_TILT, TILTS, cameraPosition, fitDistance, groundView, parseTilt, parseZoom, ZOOMS, projectGround } from '../../js/core/viewport.js';
+import { DEFAULT_FOV, DEFAULT_TILT, TILTS, cameraPosition, fitDistance, groundView, parseTilt, clampCamera, parseZoom, ZOOMS, projectGround } from '../../js/core/viewport.js';
 
 const room = JSON.parse(readFileSync('data/game/room.json', 'utf8'));
 const WINDOWS = [[375, 667], [667, 375], [768, 1024], [1440, 900], [1920, 1080], [2560, 1080], [800, 1200], [100, 100]];
@@ -189,9 +189,54 @@ describe('viewport.js : entrées hostiles', () => {
 });
 
 describe('viewport.js : ?zoom=', () => {
-  it('autorise 1, 1,25 et 1,5 ; toute autre valeur donne 1', () => {
-    expect(ZOOMS).toEqual([1, 1.25, 1.5]);
-    expect([parseZoom('1'), parseZoom('1.25'), parseZoom('1.5')]).toEqual([1, 1.25, 1.5]);
-    for (const bad of [null, undefined, '', '2', '0', '1.3', 'x', '-1', 1.5, NaN]) expect(parseZoom(bad)).toBe(1);
+  it('autorise 1, 1,25, 1,5, 2, 2,5 et 3 ; toute autre valeur donne la valeur par défaut', () => {
+    expect(ZOOMS).toEqual([1, 1.25, 1.5, 2, 2.5, 3]);
+    for (const z of ZOOMS) expect(parseZoom(String(z))).toBe(z);
+    for (const bad of [null, undefined, '', '0', '1.3', '3.5', '4', 'x', '-1', 1.5, NaN]) {
+      expect(parseZoom(bad)).toBe(1);
+      expect(parseZoom(bad, 2)).toBe(2);
+    }
+  });
+});
+
+describe('viewport.js : caméra qui suit le joueur (clampCamera)', () => {
+  const view = groundView(1.78, fitDistance(1.78, { width: 1552, height: 852 }, 75, DEFAULT_FOV) / 2, 75, DEFAULT_FOV);
+
+  it('au milieu de la salle, le point demandé est gardé', () => {
+    expect(clampCamera({ x: 800, y: 450 }, room, view, 60)).toEqual({ x: 800, y: 450 });
+  });
+
+  it('près d\'un mur, la vue ne dépasse pas la salle de plus de slack', () => {
+    const c = clampCamera({ x: 0, y: 0 }, room, view, 60);
+    expect(c.x).toBeCloseTo(view.width / 2 - 60, 9);
+    expect(c.y).toBeCloseTo(view.north - 60, 9);
+    const d = clampCamera({ x: 5000, y: 5000 }, room, view, 60);
+    expect(d.x).toBeCloseTo(room.width - view.width / 2 + 60, 9);
+    expect(d.y).toBeCloseTo(room.height - view.south + 60, 9);
+  });
+
+  it('une vue plus grande que la salle reste centrée', () => {
+    const wide = groundView(1.78, fitDistance(1.78, room, 75, DEFAULT_FOV) * 1.5, 75, DEFAULT_FOV);
+    expect(clampCamera({ x: 10, y: 10 }, room, wide, 0)).toEqual({ x: room.width / 2, y: room.height / 2 });
+  });
+
+  it('le résultat reste fini et dans la salle pour des entrées hostiles, sans modifier ses arguments', () => {
+    for (const bad of [null, undefined, NaN, 'x', {}, { x: Infinity, y: -Infinity }]) {
+      const c = clampCamera(bad, bad, bad, bad);
+      expect(Number.isFinite(c.x) && Number.isFinite(c.y)).toBe(true);
+    }
+    const frozen = Object.freeze({ x: 100, y: 100 });
+    expect(() => clampCamera(frozen, Object.freeze({ ...room }), Object.freeze({ ...view }), 0)).not.toThrow();
+    expect(frozen).toEqual({ x: 100, y: 100 });
+  });
+
+  it('propriété : le point renvoyé est toujours dans la salle élargie de slack', () => {
+    for (let x = -500; x <= 2200; x += 150) {
+      for (let y = -500; y <= 1400; y += 130) {
+        const c = clampCamera({ x, y }, room, view, 60);
+        expect(c.x).toBeGreaterThanOrEqual(view.width / 2 - 60 - 1e-9);
+        expect(c.x).toBeLessThanOrEqual(room.width - view.width / 2 + 60 + 1e-9);
+      }
+    }
   });
 });

@@ -17,11 +17,28 @@ const clean = (aspect, tilt, fov) => ({
   fov: Math.min(Math.max(isNum(fov) ? fov : DEFAULT_FOV, 5), 120),
 });
 
-// Rapprochement demandé par ?zoom= (essais du propriétaire) : 1, 1,25 ou 1,5 ; toute autre valeur donne 1 (toute la zone visible).
-export const ZOOMS = [1, 1.25, 1.5];
-export function parseZoom(value) {
+// Rapprochement par rapport à la vue qui fait tenir toute la zone de jeu (1) : ?zoom= accepte 1, 1,25, 1,5, 2, 2,5 ou 3 ;
+// toute autre valeur donne la valeur par défaut (fallback).
+export const ZOOMS = [1, 1.25, 1.5, 2, 2.5, 3];
+export function parseZoom(value, fallback = 1) {
   const n = typeof value === 'string' && /^\d(\.\d{1,2})?$/.test(value) ? Number(value) : null;
-  return ZOOMS.includes(n) ? n : 1;
+  return ZOOMS.includes(n) ? n : fallback;
+}
+
+// Point visé par la caméra qui suit un joueur : le point demandé, ramené pour que la vue (view : sortie de groundView) ne dépasse pas
+// la salle de plus de slack unités ; si la vue est plus grande que la salle, elle reste centrée. Renvoie { x, y }.
+export function clampCamera(point, room, view, slack = 0) {
+  const w = pos(room?.width, 1);
+  const h = pos(room?.height, 1);
+  const s = isNum(slack) && slack >= 0 ? slack : 0;
+  const fit = (value, lo, hi, middle) => (lo > hi ? middle : Math.min(Math.max(value, lo), hi));
+  const half = pos(view?.width, 0) / 2;
+  const north = isNum(view?.north) && view.north >= 0 ? view.north : 0;
+  const south = isNum(view?.south) && view.south >= 0 ? view.south : 0;
+  return {
+    x: fit(isNum(point?.x) ? point.x : w / 2, half - s, w - half + s, w / 2),
+    y: fit(isNum(point?.y) ? point.y : h / 2, north - s, h - south + s, h / 2),
+  };
 }
 
 // Inclinaison demandée par ?tilt= : 60, 75 ou 90 ; toute autre valeur donne l'inclinaison par défaut.

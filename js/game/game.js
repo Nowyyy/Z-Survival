@@ -87,6 +87,7 @@ export function createGame(ctx) {
       lifeBucket: 10,
     };
     anim = { phase: 0, facing: 0, x: sim.player.x, y: sim.player.y };
+    rig.snap(sim.player.x, sim.player.y);
     lastFire = -10;
     sparks = [];
     laser = null;
@@ -256,6 +257,9 @@ export function createGame(ctx) {
       zombies.delete(id);
     }
 
+    rig.follow(dt, p.x, p.y);
+    // Carte d'ombres : demi-diagonale de la vue au sol, avec de la marge pour la perspective.
+    world.followSun(rig.view.target.x, rig.view.target.y, Math.hypot(rig.view.ground.width / 2, (rig.view.ground.north + rig.view.ground.south) / 2) * 1.3);
     effects.update({
       laser: laser && !sim.dead ? laser : null,
       bullets: sim.bullets,
@@ -319,7 +323,7 @@ export function createGame(ctx) {
         enemies: sim.enemies.map((e) => ({ id: e.id, x: e.x, y: e.y, health: e.health })),
         bullets: sim.bullets.map((b) => ({ id: b.id, x: b.x, y: b.y, angle: b.angle })),
         kills: sim.kills,
-        camera: { x: cam.x, y: cam.y, z: cam.z, distance: rig.view.distance, tilt: rig.view.tilt, zoom: rig.view.zoom },
+        camera: { x: cam.x, y: cam.y, z: cam.z, distance: rig.view.distance, tilt: rig.view.tilt, zoom: rig.view.zoom, target: { ...rig.view.target } },
         render: { ...lastInfo },
         pose: { ...playerChar.readPose(), expected: { ...lastPose } },
         paused: ctx.ui.isPaused(),

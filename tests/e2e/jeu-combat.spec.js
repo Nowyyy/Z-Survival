@@ -157,7 +157,7 @@ test.describe('visée', () => {
       const { player, camera } = await state(page);
       // Points du sol choisis autour du joueur, projetés à l'écran avec la géométrie pure de viewport.js.
       for (const [gx, gy] of [[200, -100], [-150, 80], [0, 150], [-250, -10]]) {
-        const p = projectGround(player.x + gx - 800, player.y + gy - 450, camera.distance, camera.tilt, 40, w / h);
+        const p = projectGround(player.x + gx - camera.target.x, player.y + gy - camera.target.y, camera.distance, camera.tilt, 40, w / h);
         await page.mouse.move(((p.x + 1) / 2) * w, ((1 - p.y) / 2) * h);
         await expect.poll(async () => {
           const aim = (await state(page)).aim;

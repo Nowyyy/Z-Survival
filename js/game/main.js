@@ -51,7 +51,7 @@ const ctx = {
   params: {
     nospawn: query.get('nospawn') === '1',
     tilt: parseTilt(query.get('tilt'), render.camera.tilt),
-    zoom: parseZoom(query.get('zoom')),
+    zoom: parseZoom(query.get('zoom'), render.camera.zoom),
     maxRatio: ratioCap(query.get('dpr')),
     shadows: query.get('shadows') !== '0',
   },

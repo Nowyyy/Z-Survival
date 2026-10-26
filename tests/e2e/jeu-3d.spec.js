@@ -38,7 +38,7 @@ test.describe('canvas plein écran', () => {
       expect(b).toEqual({ w, h });
       // La souris sur le joueur, projeté avec la nouvelle caméra : la visée reste juste (point du sol recalculé à chaque image).
       const s = await state(page);
-      const p = projectGround(200, 0, s.camera.distance, s.camera.tilt, 40, w / h);
+      const p = projectGround(s.player.x + 200 - s.camera.target.x, s.player.y - s.camera.target.y, s.camera.distance, s.camera.tilt, 40, w / h);
       await page.mouse.move(((p.x + 1) / 2) * w, ((1 - p.y) / 2) * h);
       await expect.poll(async () => Math.abs((await state(page)).aim)).toBeLessThan(0.03);
     }
@@ -50,16 +50,16 @@ test.describe('canvas plein écran', () => {
   });
 });
 
-test('toute la zone de jeu est visible, sans défilement, dans les fenêtres listées', async ({ page, isMobile }) => {
+test('à ?zoom=1, toute la zone de jeu est visible, sans défilement, dans les fenêtres listées', async ({ page, isMobile }) => {
   test.skip(isMobile, 'mesures de bureau');
-  await open(page, { width: 667, height: 375 });
+  await open(page, { width: 667, height: 375 }, '&zoom=1');
   for (const [w, h] of [[667, 375], [768, 1024], [1440, 900], [1920, 1080], [2560, 1080], [800, 1200], [100, 100]]) {
     await page.setViewportSize({ width: w, height: h });
-    await expect.poll(async () => (await state(page)).camera.distance).toBeCloseTo(expectedDistance(w / h, 75), 3);
+    await expect.poll(async () => (await state(page)).camera.distance).toBeCloseTo(expectedDistance(w / h, 75, 1), 3);
     const { camera } = await state(page);
     // Zone de jeu : face intérieure des murs (24 de chaque côté), toujours entièrement à l'écran.
     for (const [x, y] of [[24, 24], [1576, 24], [24, 876], [1576, 876]]) {
-      const p = projectGround(x - 800, y - 450, camera.distance, camera.tilt, 40, w / h);
+      const p = projectGround(x - camera.target.x, y - camera.target.y, camera.distance, camera.tilt, 40, w / h);
       expect(Math.abs(p.x), `${w}×${h} coin ${x},${y}`).toBeLessThanOrEqual(1);
       expect(Math.abs(p.y), `${w}×${h} coin ${x},${y}`).toBeLessThanOrEqual(1);
     }
@@ -128,7 +128,7 @@ test.describe('personnages et poses', () => {
   test('un zombie du jeu est dessiné : le nombre d\'appels de dessin augmente avec lui', async ({ page }) => {
     await open(page, { width: 667, height: 375 });
     const before = (await state(page)).render;
-    await page.evaluate(() => window.__zs.spawnEnemy(300, 300));
+    await page.evaluate(() => window.__zs.spawnEnemy(900, 520));
     await expect.poll(async () => (await state(page)).render.calls).toBeGreaterThan(before.calls);
     expect((await state(page)).render.triangles).toBeGreaterThan(before.triangles);
   });
@@ -151,9 +151,9 @@ test.describe('inclinaison de la caméra', () => {
       expect(camera.tilt).toBe(tilt);
       expect(camera.distance).toBeCloseTo(expectedDistance(667 / 375, tilt), 3);
       // La caméra est au sud de la cible (z plus grand), plus haute quand l'inclinaison augmente.
-      expect(camera.x).toBeCloseTo(800, 3);
+      expect(camera.x).toBeCloseTo(camera.target.x, 3);
       expect(camera.y).toBeCloseTo(camera.distance * Math.sin((tilt * Math.PI) / 180), 3);
-      expect(camera.z).toBeCloseTo(450 + camera.distance * Math.cos((tilt * Math.PI) / 180), 3);
+      expect(camera.z).toBeCloseTo(camera.target.y + camera.distance * Math.cos((tilt * Math.PI) / 180), 3);
     });
   }
 
@@ -164,11 +164,36 @@ test.describe('inclinaison de la caméra', () => {
   });
 });
 
-test.describe('rapprochement ?zoom=', () => {
+test.describe('caméra qui suit le joueur et ?zoom=', () => {
   test.skip(({ isMobile }) => isMobile, 'mesures de bureau');
 
-  for (const zoom of [1.25, 1.5]) {
-    test(`?zoom=${zoom} rapproche la caméra d'autant`, async ({ page }) => {
+  test('par défaut, la caméra est deux fois plus proche que la vue de toute la zone et suit le joueur', async ({ page }) => {
+    await open(page, { width: 667, height: 375 });
+    const first = (await state(page)).camera;
+    expect(first.zoom).toBe(2);
+    expect(first.distance).toBeCloseTo(expectedDistance(667 / 375, 75, 1) / 2, 3);
+    expect(first.target.x).toBeCloseTo(800, 1);
+    await page.evaluate(() => window.__zs.setInput({ move: { x: 1, y: 0 } }));
+    await expect.poll(async () => (await state(page)).camera.target.x, { timeout: 30_000 }).toBeGreaterThan(900);
+    const { camera, player } = await state(page);
+    // La caméra reste derrière le joueur (lissage) mais le suit de près.
+    expect(Math.abs(camera.target.x - player.x)).toBeLessThan(120);
+    expect(camera.x).toBeCloseTo(camera.target.x, 3);
+  });
+
+  test('la caméra ne montre pas plus que la salle et ses abords : elle s\'arrête près du mur', async ({ page }) => {
+    test.setTimeout(90_000);
+    await open(page, { width: 667, height: 375 });
+    await page.evaluate(() => window.__zs.setInput({ move: { x: 1, y: 1 } }));
+    await expect.poll(async () => (await state(page)).player.x, { timeout: 80_000 }).toBeGreaterThan(1550);
+    await page.waitForTimeout(1500);
+    const { camera } = await state(page);
+    expect(camera.target.x).toBeLessThan(1600 - 150);
+    expect(camera.target.x).toBeGreaterThan(900);
+  });
+
+  for (const zoom of [1, 1.25, 1.5, 2, 2.5, 3]) {
+    test(`?zoom=${zoom} règle la distance : ajustement ÷ ${zoom}`, async ({ page }) => {
       await open(page, { width: 667, height: 375 }, `&zoom=${zoom}`);
       const { camera } = await state(page);
       expect(camera.zoom).toBe(zoom);
@@ -176,8 +201,8 @@ test.describe('rapprochement ?zoom=', () => {
     });
   }
 
-  test('une valeur inconnue de ?zoom est ignorée (1)', async ({ page }) => {
-    await open(page, { width: 667, height: 375 }, '&zoom=3');
-    expect((await state(page)).camera.zoom).toBe(1);
+  test('une valeur inconnue de ?zoom est ignorée (2, valeur par défaut)', async ({ page }) => {
+    await open(page, { width: 667, height: 375 }, '&zoom=3.5');
+    expect((await state(page)).camera.zoom).toBe(2);
   });
 });

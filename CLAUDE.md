@@ -47,7 +47,7 @@ Docs/ref/ (environnement, conventions) · Docs/lots/ (bilans) · .github/workflo
 - Le workflow `.github/workflows/pages.yml` n'est modifiable que si le prompt du lot l'autorise.
 - Rendu : Three.js 0.186.1 en devDependency copié par npm run vendor:three vers vendor/three/ (ne jamais éditer) ; importmap locale dans jeu.html ; lire le paquet installé avant d'utiliser l'API.
 - Coordonnées : logique 2D (x, y) ; Three.js (x, 0, y) ; haut de l'écran = nord ; js/core/ ne connaît pas Three.js.
-- Caméra : perspective inclinée 75° (?tilt=60|75|90), toute la zone de jeu visible, 2 % de marge (le défilement vient au lot 1b ; ?zoom=1.25|1.5 pour essayer plus près) ; js/core/viewport.js. Plein écran : le canvas couvre toute la fenêtre, jamais de bandes ni de ratio fixe.
+- Caméra : perspective inclinée 75° (?tilt=60|75|90), qui suit le joueur en douceur, 2× plus proche que la vue de toute la zone (?zoom=1|1.25|1.5|2|2.5|3 ; 1 = zone entière) ; js/core/viewport.js. Plein écran : le canvas couvre toute la fenêtre, jamais de bandes ni de ratio fixe.
 - Poses : js/core/pose.js (pur) donne les angles ; le rendu les applique ; géométries et matériaux partagés ; ne jamais recréer des objets à chaque image.
 - HUD : HTML, marges de 16 px plus env(safe-area-inset-*) via js/game/safe-area.js.
 - Entrées : event.code (jamais event.key) ; tir automatique quand le laser touche ; pas de bouton de tir.

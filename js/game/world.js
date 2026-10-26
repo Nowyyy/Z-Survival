@@ -1,7 +1,7 @@
 // Salle du lot 1 en 3D : sol, murs avec ouvertures, sol extérieur, lumières et ombres, caméra fixe qui montre toute la salle.
 // Une unité du jeu = une unité de la scène : x du jeu -> X, y du jeu -> Z, la hauteur est Y (le sol est le plan y = 0).
 import * as THREE from 'three';
-import { cameraPosition, fitDistance } from '../core/viewport.js';
+import { cameraPosition, clampCamera, fitDistance, groundView } from '../core/viewport.js';
 import { drawFloor } from './floor.js';
 
 const TEXTURE_SCALE = 0.64; // pixels de texture par unité
@@ -103,31 +103,65 @@ export function buildWorld({ palette, room, render, maxAnisotropy = 4 }) {
     setShadows(on) {
       sun.castShadow = Boolean(on);
     },
+    // La lumière suit la cible de la caméra et sa carte d'ombres (1024) couvre la zone visible : plus la vue est proche, plus l'ombre est fine.
+    followSun(x, z, half) {
+      const o = render.light.sunOffset;
+      sun.position.set(x + o.x, o.y, z + o.z);
+      sun.target.position.set(x, 0, z);
+      const h = Math.min(Math.max(half, 250), render.light.shadowHalfSize);
+      if (sun.shadow.camera.right !== h) {
+        Object.assign(sun.shadow.camera, { left: -h, right: h, top: h, bottom: -h });
+        sun.shadow.camera.updateProjectionMatrix();
+      }
+    },
   };
 }
 
-// Caméra fixe centrée sur la salle, au sud de la cible, orientée au nord ; la distance fait tenir toute la zone de jeu.
-export function createCamera(cfg, room, tilt, zoom = 1) {
+// Caméra au sud de la cible, orientée au nord, qui suit le joueur en douceur. À zoom 1 la distance fait tenir toute la zone de jeu
+// (face intérieure des murs, plus une petite marge) ; la distance est divisée par le zoom. La vue ne s'écarte pas de la salle de plus
+// de cfg.slack unités (elle reste centrée si elle est plus grande que la salle).
+export function createCamera(cfg, room, tilt, zoom) {
   const camera = new THREE.PerspectiveCamera(cfg.fov, 1, cfg.near, cfg.far);
   camera.up.set(0, 0, -1);
-  const target = { x: room.width / 2, y: room.height / 2 };
-  // La distance fait tenir la zone de jeu (face intérieure des murs) plus une petite marge ; ?zoom= rapproche pour les essais.
   const play = { width: room.width - 2 * room.wall, height: room.height - 2 * room.wall };
-  const view = { tilt, zoom, distance: 0 };
+  const view = { tilt, zoom, distance: 0, aspect: 1, ground: { width: 1, north: 0, south: 0 }, target: { x: room.width / 2, y: room.height / 2 } };
+  let want = { ...view.target };
+
+  const place = () => {
+    const p = cameraPosition(view.target, view.distance, tilt);
+    camera.position.set(p.x, p.y, p.z);
+    camera.lookAt(view.target.x, 0, view.target.y);
+    camera.updateMatrixWorld(true);
+  };
+  const aim = (x, y) => clampCamera({ x, y }, room, view.ground, cfg.slack);
+
   return {
     camera,
     view,
     // À appeler à chaque redimensionnement.
     resize(width, height) {
-      const aspect = Math.max(1, width) / Math.max(1, height);
-      camera.aspect = aspect;
+      view.aspect = Math.max(1, width) / Math.max(1, height);
+      camera.aspect = view.aspect;
       camera.fov = cfg.fov;
-      view.distance = fitDistance(aspect, play, tilt, cfg.fov, cfg.margin) / zoom;
-      const p = cameraPosition(target, view.distance, tilt);
-      camera.position.set(p.x, p.y, p.z);
-      camera.lookAt(target.x, 0, target.y);
+      view.distance = fitDistance(view.aspect, play, tilt, cfg.fov, cfg.margin) / zoom;
+      view.ground = groundView(view.aspect, view.distance, tilt, cfg.fov);
       camera.updateProjectionMatrix();
-      camera.updateMatrixWorld(true);
+      view.target = aim(want.x, want.y);
+      place();
+    },
+    // Place la caméra d'un coup sur (x, y), sans lissage (début de partie).
+    snap(x, y) {
+      want = { x, y };
+      view.target = aim(x, y);
+      place();
+    },
+    // Suit (x, y) avec un lissage exponentiel de constante cfg.smoothing (secondes).
+    follow(dt, x, y) {
+      want = { x, y };
+      const goal = aim(x, y);
+      const k = 1 - Math.exp(-Math.max(0, dt) / cfg.smoothing);
+      view.target = { x: view.target.x + (goal.x - view.target.x) * k, y: view.target.y + (goal.y - view.target.y) * k };
+      place();
     },
   };
 }
