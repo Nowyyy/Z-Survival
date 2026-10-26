@@ -339,3 +339,48 @@ for (const width of [360, 768, 1440]) {
     await context.close();
   });
 }
+
+test.describe('marge de visée et tir par les fenêtres', () => {
+  test.skip(({ isMobile }) => isMobile, 'bureau');
+
+  test('une visée légèrement à côté déclenche le tir, mais la balle peut rater ; trop à côté : pas de tir', async ({ page }) => {
+    await open(page);
+    const run = async (offset) => {
+      await place(page, 1800, 1400);
+      await page.evaluate(([off]) => { window.__zs.setInput({ aim: { angle: Math.atan2(off, 400) } }); window.__zs.spawnEnemy(2200, 1400); }, [offset]);
+      return page.evaluate(() => {
+        let shots = 0;
+        let last = 0;
+        for (let i = 0; i < 20; i += 1) {
+          window.__zs.step(0.05);
+          const n = window.__zs.getState().bullets.length;
+          if (n > last) shots += n - last;
+          last = n;
+        }
+        const e = window.__zs.getState().enemies;
+        return { shots, health: e[e.length - 1].health };
+      });
+    };
+    const near = await run(30); // 30 à côté du centre : dans la marge (20 + 24), hors du zombie (20 + 4)
+    expect(near.shots).toBeGreaterThan(0);
+    expect(near.health).toBe(50);
+    await page.goto(PAGE('&nospawn=1'));
+    await waitReady(page);
+    const far = await run(80);
+    expect(far.shots).toBe(0);
+  });
+
+  test('on tire à travers une fenêtre : un zombie dehors, dans l\'axe, est touché ; hors de l\'axe de l\'ouverture, le mur arrête', async ({ page }) => {
+    await open(page);
+    await place(page, 900, 1400);
+    await page.evaluate(() => { window.__zs.setInput({ aim: { angle: Math.PI } }); window.__zs.spawnEnemy(500, 1400); });
+    await step(page, 0.4);
+    const s = await state(page);
+    expect(s.laser.stoppedBy).toBeNull();
+    await expect.poll(async () => { await step(page, 0.2); const st = await state(page); return st.enemies.length === 0 ? 'mort' : st.enemies[0].health; }, { timeout: 20_000 }).not.toBe(50);
+    await place(page, 900, 1000);
+    await page.evaluate(() => { window.__zs.setInput({ aim: { angle: Math.PI } }); window.__zs.spawnEnemy(500, 1000); });
+    await step(page, 0.1);
+    expect((await state(page)).laser.stoppedBy).toMatch(/^mur-ouest/);
+  });
+});

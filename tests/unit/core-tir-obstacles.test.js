@@ -129,3 +129,13 @@ describe('projectile.js : une balle qui touche un meuble disparaît sans dégât
     }
   });
 });
+
+describe('tir à travers les fenêtres', () => {
+  const walls = [{ id: 'mur-1', x: 800, y: 0, w: 40, h: 960 }, { id: 'mur-2', x: 800, y: 1040, w: 40, h: 960 }]; // ouverture de 80 à y 960-1040
+  it('le laser et la balle passent par l\'ouverture, pas à côté', () => {
+    expect(castRay({ x: 400, y: 1000 }, 0, 1600, [at(1200, 1000)], bounds, walls).hit.id).toBe(1);
+    expect(castRay({ x: 400, y: 500 }, 0, 1600, [at(1200, 500)], bounds, walls).hit).toBeNull();
+    const r = stepBullets([createBullet({ x: 400, y: 1000 }, 0, pistol, 1)], [at(1200, 1000)], 0.05, bounds, walls);
+    expect(r.gone).toEqual([]);
+  });
+});

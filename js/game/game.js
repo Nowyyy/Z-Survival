@@ -12,7 +12,7 @@ import { createBullet, stepBullets } from '../core/projectile.js';
 import { castRay } from '../core/ray.js';
 import { createRng } from '../core/rng.js';
 import { createSpawner, isHidden, stepSpawner } from '../core/spawner.js';
-import { clampDt } from '../core/vec.js';
+import { clampDt, num } from '../core/vec.js';
 import { createCharacter, createKit } from './character.js';
 import { createEffects, MAX_SPARKS, SPARK_TIME } from './effects.js';
 import { createHud } from './hud.js';
@@ -33,7 +33,10 @@ export function createGame(ctx) {
   const { cfg, palette, params } = ctx;
   const { layout, render } = cfg;
   const bounds = layout.bounds;
-  const blockers = layout.furniture; // les meubles arrêtent le laser, la ligne de tir et les balles
+  // Les meubles, les murs (percés de leurs fenêtres : on tire à travers) et les obstacles du décor arrêtent le laser, la ligne de tir et
+  // les balles ; elles volent jusqu'au bord du monde. Salle du lot 1m (?empty=1) : les limites de la salle, comme avant.
+  const blockers = layout.empty ? [] : [...layout.furniture, ...layout.walls, ...layout.decor.solids];
+  const shotBounds = layout.empty ? bounds : layout.worldBounds;
   // Les zombies contournent les meubles par un champ de flux ; la salle du lot 1m (?empty=1) garde la poursuite en ligne droite.
   const grid = layout.empty ? null : createGrid(layout.size, layout.zombieObstacles, { cell: cfg.nav.cell, radius: cfg.zombie.radius, inflate: cfg.nav.inflate });
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -155,11 +158,13 @@ export function createGame(ctx) {
 
     // Laser : sert à viser et à déclencher le tir, jamais aux dégâts.
     const muzzle = muzzlePoint(sim.player, sim.aim.angle, weapon.muzzleOffset, bounds);
-    const ray = castRay(muzzle, sim.aim.angle, weapon.laserRange, sim.enemies, bounds, blockers);
+    const ray = castRay(muzzle, sim.aim.angle, weapon.laserRange, sim.enemies, shotBounds, blockers);
     laser = { from: muzzle, ray };
     // Le tir part aussi quand la visée passe sur un ennemi au-delà de la portée du laser (le trait s'estompe, la balle continue) ;
     // un ennemi caché derrière un meuble ne déclenche jamais de tir.
-    const aimed = ray.hit !== null || castRay(muzzle, sim.aim.angle, weapon.fireRange, sim.enemies, bounds, blockers).hit !== null;
+    // Marge de visée : le tir part si la ligne passe à moins de aimTolerance du bord d'un ennemi ; la balle suit la vraie visée et peut le rater.
+    const wide = sim.enemies.map((e) => ({ ...e, r: e.r + num(weapon.aimTolerance) }));
+    const aimed = ray.hit !== null || castRay(muzzle, sim.aim.angle, weapon.fireRange, wide, shotBounds, blockers).hit !== null;
 
     const trigger = stepWeapon(sim.weapon, dt, aimed, weapon, sim.bullets.length);
     sim.weapon = trigger.state;
@@ -173,7 +178,7 @@ export function createGame(ctx) {
     }
 
     // Balles : les dégâts n'existent qu'à l'impact.
-    const flight = stepBullets(sim.bullets, sim.enemies, dt, bounds, blockers);
+    const flight = stepBullets(sim.bullets, sim.enemies, dt, shotBounds, blockers);
     sim.bullets = flight.bullets;
     const result = applyImpacts(sim.enemies, flight.impacts);
     sim.enemies = result.enemies;
