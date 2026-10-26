@@ -6,9 +6,9 @@ Avant de modifier une page, lis `Docs/ref/conventions.md`.
 
 ## Arborescence
 ```
-index.html (page d'attente) · jeu.html (le jeu) · apercu.txt · dev/ (menu /dev : main, dernier lot, anciens lots) · css/ (tokens.css, base.css)
+index.html (page d'attente) · jeu.html (le jeu) · sons.html (écoute) · apercu.txt · dev/ (menu /dev : main, dernier lot, anciens lots) · css/ (tokens.css, base.css)
 js/ (main.js, page.js, i18n.js, splat.js, lots.js)
-js/core/ logique pure (dont texgen, color, variants) · js/game/ rendu Three.js (dont textures, loading) · js/save/ sauvegarde
+js/core/ logique pure (dont texgen, color, variants, synth, sound-director) · js/game/ rendu Three.js et lecture audio · js/sons/ page d'écoute · js/save/ sauvegarde
 data/i18n/{fr,en}.json · data/game/ (équilibrage, monde, décor, textures, variantes de zombies) · fonts/ · vendor/ · scripts/ (build, assemble, serve, lighthouse)
 tests/unit (Vitest) · tests/e2e (Playwright) · Docs/seed.md (propriétaire)
 Docs/ref/ (environnement, conventions) · Docs/lots/ (bilans) · .github/workflows/ (lot 0-C)
@@ -65,3 +65,8 @@ Docs/ref/ (environnement, conventions) · Docs/lots/ (bilans) · .github/workflo
 - Personnages : 12 pièces et 700 triangles au plus ; 4 variantes de zombies par js/core/variants.js ; budget 300 appels de dessin (objectif 240) avec 8 zombies.
 - Lisibilité : contraste ≥ 3:1 personnages / sol (js/core/color.js) ; laser et balle ≥ 4,5:1 ; ne jamais dégrader ces seuils.
 - Tests : ?test=1 expose textures et sampleScreen ; ?fps=1 affiche durée des textures et du champ de flux.
+- Sons : js/core/synth.js calcule des tampons (couches, formants, résonance de pièce) d'après data/game/sounds.json ; aucun fichier audio importé ; js/game/audio.js les lit (Web Audio) ; ne jamais écrire de son en direct dans js/core/.
+- Direction sonore : js/core/sound-director.js transforme les événements en demandes ; son de tir au départ de la balle, blessure de zombie à l'impact ; voix de zombies par js/core/zombie-voice.js (8 à 20 par minute, 1,8 s d'écart au moins).
+- Chargement : sons essentiels calculés par blocs avec les textures (écran de préparation), sons fond en arrière-plan ; aucun son avant le premier geste ; pause = contexte suspendu.
+- Tests : ?test=1 expose getState().audio (journal des lectures) ; privilégier le journal, jamais l'écoute.
+- sons.html : page d'écoute technique, à retirer au lot 13.

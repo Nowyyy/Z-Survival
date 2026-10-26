@@ -70,6 +70,11 @@ export function createGame(ctx) {
   const obstacleKinds = new Map([...layout.furniture, ...(layout.decor?.solids ?? [])].map((o) => [o.id, o.kind]));
   const zombieNames = ctx.variants.zombie.variants.map((v) => v.id);
   const audioWalls = layout.empty ? [] : layout.walls;
+  const variantNames = new Map(); // identifiant de zombie -> nom de sa variante (calculé une fois : variantFor tire une permutation)
+  const variantName = (id) => {
+    if (!variantNames.has(id)) variantNames.set(id, zombieNames[variantFor(id, ctx.seed, zombieNames.length)]);
+    return variantNames.get(id);
+  };
 
   let sim;
   let anim;
@@ -90,6 +95,7 @@ export function createGame(ctx) {
       spare[z.char.variant].push(z.char);
     }
     zombies.clear();
+    variantNames.clear();
     spawnLog.length = 0;
     sim = {
       player: { x: layout.start.x, y: layout.start.y, r: cfg.player.radius, health: cfg.player.health, maxHealth: cfg.player.health },
@@ -209,7 +215,7 @@ export function createGame(ctx) {
     }
     // Sons à l'impact seulement : un zombie touché (blessure ou mort) ou un obstacle touché (selon sa matière).
     const killedIds = new Set(result.killed.map((k) => k.id));
-    for (const impact of flight.impacts) events.push({ type: 'zombieHit', x: impact.x, y: impact.y, killed: killedIds.has(impact.enemyId), zombie: zombieNames[variantFor(impact.enemyId, ctx.seed, zombieNames.length)] });
+    for (const impact of flight.impacts) events.push({ type: 'zombieHit', x: impact.x, y: impact.y, killed: killedIds.has(impact.enemyId), zombie: variantName(impact.enemyId) });
     for (const gone of flight.gone) {
       if (gone.reason === 'obstacle') events.push({ type: 'obstacleHit', x: gone.x, y: gone.y, obstacleId: gone.obstacleId, material: materialFor(obstacleKinds.get(gone.obstacleId), gone.obstacleId, ctx.audioMaterials) });
     }
@@ -246,10 +252,12 @@ export function createGame(ctx) {
     const contact = stepContact(sim.player, sim.enemies, dt, cfg.zombie);
     sim.player = contact.player;
     sim.enemies = contact.enemies;
+    // Cri d'attaque : les zombies dont le délai de frappe vient d'être relancé ont frappé pendant cette image.
+    for (const e of contact.enemies) if (cfg.zombie.contactDelay > 0 && e.hitCooldown === cfg.zombie.contactDelay) events.push({ type: 'zombieAttack', x: e.x, y: e.y, zombie: variantName(e.id) });
     const dying = sim.player.health <= 0;
     if (contact.damage > 0) events.push({ type: dying ? 'playerDeath' : 'playerHurt' });
 
-    audio?.handle({ time: sim.time, listener: sim.player, walls: audioWalls, paused: ctx.ui.isPaused(), events });
+    audio?.handle({ time: sim.time, listener: sim.player, walls: audioWalls, paused: ctx.ui.isPaused(), events, zombies: sim.enemies.map((e) => ({ id: e.id, x: e.x, y: e.y, variant: variantName(e.id) })) });
 
     const bucket = Math.ceil((displayHealth(sim.player.health) / sim.player.maxHealth) * 10);
     if (bucket !== sim.lifeBucket && sim.player.health > 0) {
@@ -437,6 +445,10 @@ export function createGame(ctx) {
       sim.player = { ...sim.player, x: Number(x), y: Number(y) };
       rig.snap(sim.player.x, sim.player.y);
       stale = true;
+    },
+    // Test : événements sonores injectés dans la direction sonore (journal compris), à la position du joueur courant.
+    emitAudio(events) {
+      ctx.audio?.handle({ time: sim.time, listener: sim.player, walls: audioWalls, paused: ctx.ui.isPaused(), events: Array.isArray(events) ? events : [] });
     },
     // Test : une balle de plus, tirée de la bouche de l'arme dans la direction `angle`.
     fireBullet(angle) {

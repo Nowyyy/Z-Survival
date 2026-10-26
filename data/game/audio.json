@@ -36,7 +36,7 @@
     "impact-voiture": 0.06,
     "joueur-blesse": 0.3,
     "pas": 0.15,
-    "pas-zombie": 0.2,
+    "pas-zombie": 0.08,
     "zombie-attaque": 0.3,
     "ui-pause": 0.1,
     "ui-reprise": 0.1
@@ -78,6 +78,11 @@
   },
   "zombieSteps": {
     "count": 3,
-    "range": 450
+    "range": 450,
+    "stride": 0.09,
+    "volume": 0.6,
+    "minSpeed": 20,
+    "minInterval": 0.15,
+    "maxSpeed": 70
   }
 }

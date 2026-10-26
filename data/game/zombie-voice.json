@@ -1,0 +1,16 @@
+{
+  "_provisoire": "Voix de zombies du lot 1d : valeurs provisoires, jamais écoutées par l'agent (à juger avec sons.html, bouton « Horde »). Au plus une voix toutes les minGlobalInterval s, un même zombie au plus une fois toutes les minZombieInterval s, au plus maxSimultaneous voix de zombie en même temps ; hearingRange : portée d'audition. Chaque zombie éligible a une chance par seconde de ratePerZombie (× nearFactor à moins de nearRange, × farFactor au-delà), ce qui donne 8 à 20 voix par minute avec 8 zombies.",
+  "minGlobalInterval": 1.8,
+  "minZombieInterval": 9,
+  "hearingRange": 1100,
+  "maxSimultaneous": 2,
+  "ratePerZombie": 0.05,
+  "nearRange": 300,
+  "nearFactor": 1.4,
+  "farFactor": 0.7,
+  "maxDt": 0.25,
+  "types": { "gemissement": 0.4, "grognement": 0.3, "plainte": 0.15, "souffle": 0.15 },
+  "closeRange": 150,
+  "closeBoost": { "grognement": 2 },
+  "targetPerMinute": [8, 20]
+}

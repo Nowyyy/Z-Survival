@@ -2,15 +2,15 @@
 // qu'après le premier geste du joueur. Chaîne : source -> gain -> balance -> [passe-bas si étouffé] -> compresseur -> gain général -> sortie.
 // Les événements du jeu passent par js/core/sound-director.js (demandes de lecture) ; ce fichier les joue, limite les voix et tient le
 // journal des lectures (seulement avec ?test=1).
-import { admitVoice, createVoiceState } from '../core/audio-mix.js';
 import { createDirector, direct, soundTable } from '../core/sound-director.js';
 
 const LOG_MAX = 200;
 
-// config : { audio, materials, sounds } (data/game/audio.json, sound-materials.json, liste de sounds.json) ; test : tient le journal.
-export function createAudio({ config, test = false, seed = 1 } = {}) {
+// config : { audio, materials, voice, sounds } (data/game/audio.json, sound-materials.json, zombie-voice.json, liste de sounds.json) ; test : tient le journal.
+// autoAmbience : l'ambiance démarre toute seule (le jeu) ou seulement à la demande (page d'écoute).
+export function createAudio({ config, test = false, seed = 1, autoAmbience = true } = {}) {
   const Context = typeof window === 'undefined' ? undefined : (window.AudioContext ?? window.webkitAudioContext);
-  const cfg = { audio: config.audio, materials: config.materials, sounds: soundTable(config.sounds) };
+  const cfg = { audio: config.audio, materials: config.materials, voice: config.voice, sounds: soundTable(config.sounds) };
   const pcm = new Map(); // nom -> { sampleRate, samples, loop }
   const buffers = new Map(); // nom -> AudioBuffer
   const log = [];
@@ -20,11 +20,11 @@ export function createAudio({ config, test = false, seed = 1 } = {}) {
   let master = null;
   let ambience = null;
   let director = createDirector(seed);
-  let voices = createVoiceState();
   let muted = false;
   let volume = config.audio.volume?.default ?? 100;
   let suspended = false;
   let suspendTimer = 0;
+  let nextVoice = 0;
   let lastFrame = { time: 0, listener: { x: 0, y: 0 }, walls: [] };
   const stats = { essentialMs: 0, backgroundMs: 0, ready: false, zombieVoices: 0 };
 
@@ -36,7 +36,7 @@ export function createAudio({ config, test = false, seed = 1 } = {}) {
     buffer.copyToChannel(item.samples, 0);
     buffers.set(name, buffer);
   };
-  const entry = (r, gameTime, extra = {}) => ({ sound: r.sound, variant: r.variant, gameTime, gain: r.gain, pan: r.pan, lowpass: r.lowpass, rate: r.rate, ...extra });
+  const entry = (r, gameTime, extra = {}) => ({ sound: r.sound, variant: r.variant, gameTime, gain: r.gain, pan: r.pan, lowpass: r.lowpass, rate: r.rate, ...(r.zombie === undefined ? {} : { zombie: r.zombie }), ...extra });
   const note = (e) => {
     if (!test) return;
     log.push(e);
@@ -44,7 +44,7 @@ export function createAudio({ config, test = false, seed = 1 } = {}) {
   };
 
   function startAmbience() {
-    if (!ctx || ambience || suspended) return;
+    if (!ctx || ambience || suspended || muted) return;
     const buffer = buffers.get('ambiance-1');
     if (!buffer) return;
     const source = ctx.createBufferSource();
@@ -71,16 +71,24 @@ export function createAudio({ config, test = false, seed = 1 } = {}) {
   function play(r, gameTime) {
     if (muted) {
       note(entry(r, gameTime, { muted: true }));
-      return;
+      return false;
     }
     const buffer = buffers.get(`${r.sound}-${r.variant + 1}`);
-    if (!ctx || !buffer || suspended) return;
-    // Limite réelle de voix (temps audio) : la moins prioritaire et la plus ancienne cède la place.
-    const admit = admitVoice(voices, { sound: r.sound, priority: config.audio.priority?.[r.category] ?? 0, duration: r.duration }, ctx.currentTime + r.delay, { maxVoices: config.audio.maxVoices, minDelay: {} });
-    voices = admit.state;
-    if (!admit.play) return;
-    if (admit.stolen !== null) active.get(admit.stolen)?.source.stop();
-    const id = voices.nextId - 1;
+    if (!ctx || !buffer || suspended) return false;
+    // Limite réelle de voix : au plus maxVoices sources en train de jouer ; la moins prioritaire (la plus ancienne à priorité égale) cède la
+    // place, sauf si elle est plus prioritaire que la nouvelle voix.
+    const priority = config.audio.priority?.[r.category] ?? 0;
+    if (active.size >= (config.audio.maxVoices ?? 16)) {
+      let victim = null;
+      for (const [vid, v] of active) if (victim === null || v.priority < victim.priority || (v.priority === victim.priority && v.start < victim.start)) victim = { ...v, id: vid };
+      if (victim.priority > priority) return false;
+      try {
+        victim.source.stop();
+      } catch { /* déjà arrêtée */ }
+      active.delete(victim.id);
+    }
+    nextVoice += 1;
+    const id = nextVoice;
     const source = ctx.createBufferSource();
     source.buffer = buffer;
     source.playbackRate.value = r.rate;
@@ -109,10 +117,11 @@ export function createAudio({ config, test = false, seed = 1 } = {}) {
       for (const n of nodes) n.disconnect();
       active.delete(id);
     };
-    active.set(id, { source });
+    active.set(id, { source, priority, start: nextVoice });
     source.start(ctx.currentTime + r.delay);
     if (r.category === 'voix') stats.zombieVoices += 1;
     note(entry(r, gameTime));
+    return true;
   }
 
   const api = {
@@ -152,7 +161,7 @@ export function createAudio({ config, test = false, seed = 1 } = {}) {
         return;
       }
       if (!suspended && ctx.state === 'suspended') ctx.resume?.().catch(() => {});
-      startAmbience();
+      if (autoAmbience) startAmbience();
     },
 
     // Tampons calculés par sound-loader.js : [{ name, sampleRate, samples, loop }] ; convertis tout de suite si le contexte existe.
@@ -161,12 +170,14 @@ export function createAudio({ config, test = false, seed = 1 } = {}) {
         pcm.set(it.name, { sampleRate: it.sampleRate, samples: it.samples, loop: it.loop });
         toBuffer(it.name);
       }
-      if (pcm.has('ambiance-1')) startAmbience();
+      if (autoAmbience && pcm.has('ambiance-1')) startAmbience();
     },
 
     toggleMute() {
       muted = !muted;
       if (master) master.gain.value = masterGain();
+      if (muted) stopAmbience();
+      else if (autoAmbience) startAmbience();
       return muted;
     },
 
@@ -192,17 +203,33 @@ export function createAudio({ config, test = false, seed = 1 } = {}) {
         }, (config.audio.suspendDelay ?? 0.4) * 1000);
       } else {
         ctx.resume?.().catch(() => {});
-        startAmbience();
+        if (autoAmbience) startAmbience();
       }
     },
 
     // Événements du jeu d'une image : frame = { time, listener: { x, y }, walls, paused, events }.
     handle(frame) {
-      if (!ctx) return; // aucun son demandé avant le premier geste
+      if (!ctx) return { requests: [], played: [] }; // aucun son demandé avant le premier geste
       lastFrame = { time: frame.time, listener: frame.listener, walls: frame.walls ?? [] };
       const out = direct(director, frame, cfg);
       director = out.state;
-      for (const r of out.requests) play(r, frame.time);
+      const played = out.requests.filter((r) => play(r, frame.time));
+      return { requests: out.requests, played };
+    },
+
+    // Page d'écoute : joue un tampon précis (nom du son, variante dès 0) à plein gain, au centre. Renvoie sa durée en s, ou 0.
+    preview(sound, variant = 0) {
+      const info = cfg.sounds[sound];
+      if (!ctx || !info) return 0;
+      const r = { sound, category: info.category, variant, gain: 1, pan: 0, delay: 0, lowpass: false, rate: 1, duration: info.duration };
+      return play(r, 0) ? info.duration : 0;
+    },
+
+    // Page d'écoute : lance ou arrête la boucle d'ambiance.
+    ambience(on) {
+      if (on) startAmbience();
+      else stopAmbience();
+      return ambience !== null;
     },
 
     // Son d'interface (pause, reprise) : type 'pause' ou 'resume'.
@@ -221,7 +248,7 @@ export function createAudio({ config, test = false, seed = 1 } = {}) {
       let bytes = 0;
       for (const it of pcm.values()) bytes += it.samples.length * 4;
       return {
-        supported: Boolean(Context), unlocked: ctx !== null, started: ctx !== null, muted, volume, suspended, buffers: pcm.size, bytes,
+        supported: Boolean(Context), unlocked: ctx !== null, started: ctx !== null, muted, volume, suspended, buffers: pcm.size, loaded: [...pcm.keys()], bytes,
         essentialMs: Math.round(stats.essentialMs), backgroundMs: Math.round(stats.backgroundMs), ready: stats.ready, activeVoices: active.size, ambience: ambience !== null, log: log.map((e) => ({ ...e })),
       };
     },

@@ -5,7 +5,7 @@ const load = (lang) => JSON.parse(readFileSync(`data/i18n/${lang}.json`, 'utf8')
 const fr = load('fr');
 const en = load('en');
 // Sources qui consomment des clés : les pages HTML et les scripts du site.
-const pages = ['index.html', 'dev/index.html'].map((f) => readFileSync(f, 'utf8'));
+const pages = ['index.html', 'dev/index.html', 'sons.html'].map((f) => readFileSync(f, 'utf8'));
 const gamePage = readFileSync('jeu.html', 'utf8');
 const html = pages[0];
 // Lot 1d : la page d'écoute (js/sons/) et le script planche-sons.mjs lisent les étiquettes de sons par `dev.sons.etiquette.${id}`.

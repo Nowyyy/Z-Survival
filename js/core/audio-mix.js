@@ -41,7 +41,7 @@ export function pickVariant(count, last, rng) {
 
 export const createVoiceState = () => ({ voices: [], last: {}, nextId: 1 });
 
-// Demande d'une voix : req = { sound, priority (nombre), duration (s) }. cfg = { maxVoices, minDelay: { son: s } }.
+// Demande d'une voix : req = { sound, priority (nombre), duration (s), category }. cfg = { maxVoices, minDelay: { son: s } }.
 // Retourne { state, play, reason, stolen } : reason vaut 'delai' (trop tôt après la précédente lecture du même son), 'limite' (plus de place
 // et priorité insuffisante) ou null ; stolen : voix coupée pour faire de la place (la moins prioritaire, la plus ancienne).
 export function admitVoice(state, req, now, cfg) {
@@ -53,7 +53,7 @@ export function admitVoice(state, req, now, cfg) {
   const last = { ...(state?.last ?? {}) };
   const nextId = num(state?.nextId, 1);
   const minDelay = num(cfg?.minDelay?.[sound]);
-  if (Object.hasOwn(last, sound) && t - last[sound] < minDelay) return { state: { voices, last, nextId }, play: false, reason: 'delai', stolen: null };
+  if (minDelay > 0 && Object.hasOwn(last, sound) && t - last[sound] < minDelay) return { state: { voices, last, nextId }, play: false, reason: 'delai', stolen: null };
   let stolen = null;
   let kept = voices;
   if (voices.length >= max) {
@@ -63,7 +63,7 @@ export function admitVoice(state, req, now, cfg) {
     stolen = low.id;
     kept = voices.filter((v) => v !== low);
   }
-  const voice = { id: nextId, sound, priority, start: t, end: t + Math.max(0.01, num(req?.duration, 0.5)) };
+  const voice = { id: nextId, sound, priority, category: typeof req?.category === 'string' ? req.category : '', start: t, end: t + Math.max(0.01, num(req?.duration, 0.5)) };
   last[sound] = t;
   return { state: { voices: [...kept, voice], last, nextId: nextId + 1 }, play: true, reason: null, stolen };
 }
