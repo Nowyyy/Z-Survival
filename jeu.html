@@ -7,11 +7,12 @@
   <meta name="color-scheme" content="dark">
   <title>Z-Survival · Jeu</title>
   <link rel="icon" href="data:,">
+  <!-- La table d'import doit précéder tout préchargement de module : Firefox l'ignore sinon (« three » non remappé). -->
+  <script type="importmap">{"imports":{"three":"./vendor/three/three.module.js"}}</script>
   <link rel="preload" href="fonts/barlow-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="fonts/barlow-latin-700-normal.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="data/i18n/fr.json" as="fetch" crossorigin>
   <link rel="modulepreload" href="js/game/texts.js">
-  <script type="importmap">{"imports":{"three":"./vendor/three/three.module.js"}}</script>
   <link rel="modulepreload" href="vendor/three/three.module.js">
   <link rel="modulepreload" href="vendor/three/three.core.js">
   <link rel="stylesheet" href="css/tokens.css">
