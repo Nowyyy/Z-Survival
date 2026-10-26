@@ -49,9 +49,11 @@ export function createCharacter(kit, kind) {
   const m = kit.mat[kind];
   const g = kit.geo;
   const meshes = [];
+  // Seules les pièces principales (bassin, tronc, tête, cuisses) projettent une ombre : le reste ne coûte pas d'appel d'ombre.
+  const casters = new Set([g.pelvis, g.chest, g.head, g.thigh]);
   const part = (geometry, material, parent, pos) => {
     const mesh = new THREE.Mesh(geometry, material);
-    mesh.castShadow = true;
+    mesh.castShadow = casters.has(geometry);
     if (pos) mesh.position.set(...pos);
     mesh.userData.base = material;
     parent.add(mesh);

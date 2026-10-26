@@ -216,7 +216,8 @@ test.describe('portée du tir, laser qui s\'estompe, ombres lointaines', () => {
     };
     const withShadows = await added('&zoom=1');
     const without = await added('&zoom=1&shadows=0');
-    // Chaque pièce du zombie est dessinée deux fois (image et ombre) : le zombie à l'autre bout de la salle compte autant que s'il était près.
-    expect(withShadows).toBeGreaterThanOrEqual(without * 1.8);
+    // Lot 1c : seules les pièces principales (bassin, tronc, tête, deux cuisses : 5) projettent une ombre ; elles sont dessinées une seconde
+    // fois dans la passe d'ombres, même pour un zombie à l'autre bout de la salle (avant le lot 1c : chaque pièce, donc au moins 1,8 fois plus).
+    expect(withShadows).toBeGreaterThanOrEqual(without + 5);
   });
 });

@@ -41,14 +41,14 @@ describe('mêmes règles qu\'au lot 1', () => {
 
   // Lot 1b : les modules du monde sont nouveaux ou étendus (paramètres facultatifs, valeurs par défaut = lot 1m, prouvé par les simulations
   // « identiques au lot 1 » ci-dessus) ; tout autre fichier de js/core/ reste inchangé.
-  it('js/core/ est inchangé depuis main, sauf pose.js, viewport.js et les modules du monde du lot 1b', () => {
+  it('js/core/ est inchangé depuis main, sauf pose.js, viewport.js, les modules du monde du lot 1b et les modules du lot 1c (color, texgen, variants)', () => {
     let changed;
     try {
       changed = execSync('git diff --name-only main -- js/core', { encoding: 'utf8' }).split('\n').filter(Boolean);
     } catch {
       return; // pas de dépôt git ou de branche main (copie de travail) : rien à comparer
     }
-    const allowed = ['pose', 'viewport', 'camera', 'collision', 'nav', 'decor', 'layout', 'movement', 'ray', 'projectile', 'enemy-ai', 'spawner'].map((n) => `js/core/${n}.js`);
+    const allowed = ['pose', 'viewport', 'camera', 'collision', 'nav', 'decor', 'layout', 'movement', 'ray', 'projectile', 'enemy-ai', 'spawner', 'color', 'texgen', 'variants'].map((n) => `js/core/${n}.js`);
     expect(changed.filter((f) => !allowed.includes(f))).toEqual([]);
   });
 });
@@ -65,7 +65,7 @@ describe('retrait de Phaser', () => {
     const pkg = JSON.parse(readFileSync('package.json', 'utf8'));
     expect(Object.keys(pkg.devDependencies)).not.toContain('phaser');
     expect(pkg.scripts.vendor).toBeUndefined();
-    for (const f of ['vendor/phaser.min.js', 'vendor/LICENSE-phaser.txt', 'scripts/vendor.mjs', 'js/game/scene.js', 'js/game/textures.js']) expect(existsSync(f), f).toBe(false);
+    for (const f of ['vendor/phaser.min.js', 'vendor/LICENSE-phaser.txt', 'scripts/vendor.mjs', 'js/game/scene.js']) expect(existsSync(f), f).toBe(false);
     expect(readFileSync('package-lock.json', 'utf8')).not.toMatch(/node_modules\/phaser/);
   });
 

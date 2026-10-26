@@ -16,6 +16,8 @@ export function installTestHook(ctx, game) {
     fire: (angle) => game.fireBullet(angle),
     // Règle la caméra pour montrer tout le monde (captures) ; overview(false) rend la caméra au joueur.
     overview: (on = true) => game.overview(on),
+    // Pixels de la zone (x, y, w, h) en pixels CSS : { distinctColors (16 niveaux par canal), meanLuminance (0 à 1) }.
+    sampleScreen: (x, y, w, h) => game.sample(x, y, w, h),
     setInput: ({ move, aim } = {}) => {
       ctx.override.move = move ?? undefined;
       ctx.override.aim = aim ?? undefined;

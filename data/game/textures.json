@@ -72,7 +72,7 @@
    "id": "herbe",
    "kind": "grass",
    "size": 256,
-   "repeat": 200,
+   "repeat": 300,
    "seed": 15,
    "colors": {
     "a": "--game-grass-a",
@@ -84,7 +84,7 @@
    "id": "sol-exterieur",
    "kind": "soil",
    "size": 256,
-   "repeat": 200,
+   "repeat": 300,
    "seed": 16,
    "colors": {
     "soil": "--game-soil",
