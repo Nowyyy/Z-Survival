@@ -3,7 +3,7 @@ import { waitReady } from './helpers.js';
 import AxeBuilder from '@axe-core/playwright';
 
 const SIZE = { width: 667, height: 375 };
-const PAGE = (extra = '') => `/jeu.html?test=1&nospawn=1&seed=1${extra}`;
+const PAGE = (extra = '') => `/jeu.html?test=1&empty=1&nospawn=1&seed=1${extra}`;
 const state = (page) => page.evaluate(() => window.__zs.getState());
 async function open(page, size = SIZE, extra = '') {
   await page.setViewportSize(size);
@@ -151,9 +151,9 @@ test.describe('confidentialité', () => {
     await open(page);
     const historyBefore = await page.evaluate(() => history.length);
     await play(page);
-    expect(await page.evaluate(() => [location.search, location.hash, history.length])).toEqual([`?test=1&nospawn=1&seed=1`, '', historyBefore]);
+    expect(await page.evaluate(() => [location.search, location.hash, history.length])).toEqual([`?test=1&empty=1&nospawn=1&seed=1`, '', historyBefore]);
     // Seule la page elle-même porte les paramètres de test ; aucune autre requête n'en reçoit.
-    for (const url of requests.filter((u) => u.startsWith(baseURL) && !u.endsWith('/jeu.html?test=1&nospawn=1&seed=1'))) expect(new URL(url).search, url).toBe('');
+    for (const url of requests.filter((u) => u.startsWith(baseURL) && !u.endsWith('/jeu.html?test=1&empty=1&nospawn=1&seed=1'))) expect(new URL(url).search, url).toBe('');
   });
 });
 

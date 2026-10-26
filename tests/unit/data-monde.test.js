@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { circleOverlapsRect, distanceToRect, rectGap } from '../../js/core/collision.js';
 import { approachCorridors, decorProblems, generateDecor } from '../../js/core/decor.js';
-import { buildLayout, wallRects } from '../../js/core/layout.js';
+import { buildLayout, entryWindow, wallRects } from '../../js/core/layout.js';
 import { moveCircle } from '../../js/core/movement.js';
 import { buildFlow, createGrid, flowPath, pathLength } from '../../js/core/nav.js';
 import { decorCfg, deepFreeze, gridOf, layout, load, navCfg, world, WEIRD } from './helpers/monde.js';
@@ -138,6 +138,7 @@ describe('world.json : cohérence', () => {
     const e = buildLayout(world, decorCfg, { empty: true });
     expect([e.room.width, e.room.height, e.room.wall]).toEqual([1600, 900, 24]);
     expect(e.windows.map((w) => [w.x, w.y])).toEqual([[12, 450], [800, 12], [1588, 450]]);
+    expect(e.windowSize).toBe(120);
     expect([e.furniture, e.walls, e.zombieObstacles, e.playerObstacles]).toEqual([[], [], [], []]);
     expect(e.decor).toBeNull();
     expect(e.start).toEqual({ x: 800, y: 450 });
@@ -224,5 +225,18 @@ describe('decor.json : cohérence', () => {
     expect(navCfg).toMatchObject({ cell: 20, inflate: 4, recompute: 0.25, stuckDistance: 5, stuckTime: 2 });
     expect(JSON.parse(readFileSync('data/game/camera.json', 'utf8'))).toMatchObject({ smoothing: 0.12, deadZone: 0, zoom: 2 });
     expect(load('enemies').zombie).toMatchObject({ viewMargin: 150, viewRatio: 0.25 });
+  });
+});
+
+describe('layout.js : fenêtre d\'entrée', () => {
+  it('donne la fenêtre la plus proche de la position où le zombie franchit la limite de la salle', () => {
+    expect(entryWindow({ x: 1800, y: 840 }, layout.windows)).toBe('fenetre-nord');
+    expect(entryWindow({ x: 830, y: 1380 }, layout.windows)).toBe('fenetre-ouest');
+    expect(entryWindow({ x: 2770, y: 1420 }, layout.windows)).toBe('fenetre-est');
+  });
+
+  it('renvoie null sans fenêtre et ne lève pas d\'exception sur des types inattendus', () => {
+    expect(entryWindow({ x: 1, y: 1 }, [])).toBeNull();
+    for (const v of WEIRD) expect(() => entryWindow(v, v)).not.toThrow();
   });
 });

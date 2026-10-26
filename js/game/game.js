@@ -4,12 +4,14 @@ import * as THREE from 'three';
 import { aimFromPoint, aimFromStick, createAim } from '../core/aim.js';
 import { applyImpacts, createWeaponState, displayHealth, muzzlePoint, stepContact, stepWeapon } from '../core/combat.js';
 import { stepEnemies } from '../core/enemy-ai.js';
-import { innerBounds, moveCircle } from '../core/movement.js';
+import { entryWindow } from '../core/layout.js';
+import { moveCircle } from '../core/movement.js';
+import { createFlowState, createGrid, stepFlow } from '../core/nav.js';
 import { computePose } from '../core/pose.js';
 import { createBullet, stepBullets } from '../core/projectile.js';
 import { castRay } from '../core/ray.js';
 import { createRng } from '../core/rng.js';
-import { createSpawner, stepSpawner } from '../core/spawner.js';
+import { createSpawner, isHidden, stepSpawner } from '../core/spawner.js';
 import { clampDt } from '../core/vec.js';
 import { createCharacter, createKit } from './character.js';
 import { createEffects, MAX_SPARKS, SPARK_TIME } from './effects.js';
@@ -22,14 +24,18 @@ import { buildWorld, createCamera } from './world.js';
 const RECOIL_TIME = 0.12;
 const HIT_FLASH_TIME = 0.1;
 const FIRE_POSE_TIME = 0.3;
+const STEP = 0.05; // pas de la simulation avancée à la demande (hook de test step)
 const wrap = (a) => Math.atan2(Math.sin(a), Math.cos(a));
 
-// ctx : { cfg: { room, player, weapon, zombie, render }, palette, dict, input, ui, audio, params, override, seed, seedRun }
+// ctx : { cfg: { layout, player, weapon, zombie, render, camera, nav }, palette, dict, input, ui, audio, params, override, seed, seedRun }
 // Renvoie null si WebGL n'est pas disponible.
 export function createGame(ctx) {
   const { cfg, palette, params } = ctx;
-  const { room, render } = cfg;
-  const bounds = innerBounds(room);
+  const { layout, render } = cfg;
+  const bounds = layout.bounds;
+  const blockers = layout.furniture; // les meubles arrêtent le laser, la ligne de tir et les balles
+  // Les zombies contournent les meubles par un champ de flux ; la salle du lot 1m (?empty=1) garde la poursuite en ligne droite.
+  const grid = layout.empty ? null : createGrid(layout.size, layout.zombieObstacles, { cell: cfg.nav.cell, radius: cfg.zombie.radius, inflate: cfg.nav.inflate });
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   let renderer;
@@ -42,8 +48,8 @@ export function createGame(ctx) {
   renderer.shadowMap.type = THREE.PCFShadowMap;
   document.getElementById('game-canvas').appendChild(renderer.domElement);
 
-  const world = buildWorld({ palette, room, render, maxAnisotropy: Math.min(4, renderer.capabilities.getMaxAnisotropy()) });
-  const rig = createCamera(render.camera, room, params.tilt, params.zoom);
+  const world = buildWorld({ palette, layout, render });
+  const rig = createCamera(render.camera, cfg.camera, layout, params.tilt, params.zoom);
   const kit = createKit(palette);
   const effects = createEffects(world.scene, palette, { gunHeight: render.gunHeight, bulletRadius: cfg.weapon.bulletRadius });
   const hud = createHud(ctx.dict);
@@ -59,6 +65,7 @@ export function createGame(ctx) {
   let laser;
   let lastPose = computePose({});
   let lastInfo = { calls: 0, triangles: 0 };
+  const spawnLog = []; // journal des apparitions : { id, time, hidden }
   let size = { width: 1, height: 1, unitsPerPixel: 1 };
   let stale = true; // vrai tant que l'image affichée n'est pas à jour
 
@@ -70,13 +77,15 @@ export function createGame(ctx) {
       spare.push(z.char);
     }
     zombies.clear();
+    spawnLog.length = 0;
     sim = {
-      player: { x: room.width / 2, y: room.height / 2, r: cfg.player.radius, health: cfg.player.health, maxHealth: cfg.player.health },
+      player: { x: layout.start.x, y: layout.start.y, r: cfg.player.radius, health: cfg.player.health, maxHealth: cfg.player.health },
       aim: createAim(0),
       enemies: [],
       bullets: [],
       weapon: createWeaponState(),
       spawner: createSpawner(),
+      flow: createFlowState(),
       rng: createRng(seed),
       kills: 0,
       time: 0,
@@ -106,9 +115,16 @@ export function createGame(ctx) {
     ctx.input.refresh();
   }
 
-  function addEnemy(x, y) {
+  // Rectangle visible au sol (approximation rectangulaire de la vue de la caméra).
+  function visibleRect() {
+    const t = rig.view.target;
+    const g = rig.view.ground;
+    return { minX: t.x - g.width / 2, minY: t.y - g.north, maxX: t.x + g.width / 2, maxY: t.y + g.south };
+  }
+
+  function addEnemy(x, y, extra = {}) {
     const { zombie } = cfg;
-    const enemy = { id: sim.nextId, x, y, r: zombie.radius, health: zombie.health, maxHealth: zombie.health, hitCooldown: 0, flash: 0 };
+    const enemy = { id: sim.nextId, x, y, r: zombie.radius, health: zombie.health, maxHealth: zombie.health, hitCooldown: 0, flash: 0, ...extra };
     sim.nextId += 1;
     sim.enemies = [...sim.enemies, enemy];
     return enemy;
@@ -133,16 +149,17 @@ export function createGame(ctx) {
     sim.time += dt;
 
     const dir = override.move ?? input.move();
-    const pos = moveCircle(sim.player, dir, cfg.player.speed, dt, room);
+    const pos = moveCircle(sim.player, dir, cfg.player.speed, dt, layout.room, layout.playerObstacles);
     sim.player = { ...sim.player, ...pos };
     sim.aim = aimAngle(sim.aim);
 
     // Laser : sert à viser et à déclencher le tir, jamais aux dégâts.
     const muzzle = muzzlePoint(sim.player, sim.aim.angle, weapon.muzzleOffset, bounds);
-    const ray = castRay(muzzle, sim.aim.angle, weapon.laserRange, sim.enemies, bounds);
+    const ray = castRay(muzzle, sim.aim.angle, weapon.laserRange, sim.enemies, bounds, blockers);
     laser = { from: muzzle, ray };
-    // Le tir part aussi quand la visée passe sur un ennemi au-delà de la portée du laser (le trait s'estompe, la balle continue).
-    const aimed = ray.hit !== null || castRay(muzzle, sim.aim.angle, weapon.fireRange, sim.enemies, bounds).hit !== null;
+    // Le tir part aussi quand la visée passe sur un ennemi au-delà de la portée du laser (le trait s'estompe, la balle continue) ;
+    // un ennemi caché derrière un meuble ne déclenche jamais de tir.
+    const aimed = ray.hit !== null || castRay(muzzle, sim.aim.angle, weapon.fireRange, sim.enemies, bounds, blockers).hit !== null;
 
     const trigger = stepWeapon(sim.weapon, dt, aimed, weapon, sim.bullets.length);
     sim.weapon = trigger.state;
@@ -156,24 +173,40 @@ export function createGame(ctx) {
     }
 
     // Balles : les dégâts n'existent qu'à l'impact.
-    const flight = stepBullets(sim.bullets, sim.enemies, dt, bounds);
+    const flight = stepBullets(sim.bullets, sim.enemies, dt, bounds, blockers);
     sim.bullets = flight.bullets;
     const result = applyImpacts(sim.enemies, flight.impacts);
     sim.enemies = result.enemies;
-    if (!reduced) for (const impact of flight.impacts) sparks.push({ x: impact.x, y: impact.y, age: 0 });
+    if (!reduced) {
+      for (const impact of flight.impacts) sparks.push({ x: impact.x, y: impact.y, age: 0 });
+      // Une balle qui touche un meuble disparaît sans dégâts, avec une petite étincelle.
+      for (const gone of flight.gone) if (gone.reason === 'obstacle') sparks.push({ x: gone.x, y: gone.y, age: 0 });
+    }
     for (const hit of result.hits) if (hit.health > 0) audio?.play('hit');
     for (let i = 0; i < result.killed.length; i += 1) {
       sim.kills += 1;
       audio?.play('kill');
     }
 
-    sim.enemies = stepEnemies(sim.enemies, sim.player, dt, cfg.zombie);
+    if (grid) {
+      sim.flow = stepFlow(sim.flow, dt, grid, sim.player, cfg.nav.recompute);
+      sim.enemies = stepEnemies(sim.enemies, sim.player, dt, cfg.zombie, { obstacles: layout.zombieObstacles, bounds: layout.worldBounds, grid, flow: sim.flow.flow, nav: cfg.nav });
+      // Par quelle fenêtre chaque zombie est entré : la plus proche de l'endroit où il franchit la limite de la salle.
+      sim.enemies = sim.enemies.map((e) => (e.entered || e.x < bounds.minX || e.x > bounds.maxX || e.y < bounds.minY || e.y > bounds.maxY ? e : { ...e, entered: entryWindow(e, layout.windows) }));
+    } else {
+      sim.enemies = stepEnemies(sim.enemies, sim.player, dt, cfg.zombie);
+    }
 
     if (!params.nospawn) {
-      const spawn = stepSpawner(sim.spawner, dt, sim.enemies.length, cfg.zombie, room.windows, sim.rng);
+      // Jamais à l'écran : seuls les points hors de la vue (agrandie) sont possibles ; la salle du lot 1m n'a pas de vue limitée.
+      const view = layout.empty ? null : visibleRect();
+      const spawn = stepSpawner(sim.spawner, dt, sim.enemies.length, cfg.zombie, layout.spawnPoints ?? layout.windows, sim.rng, view);
       sim.spawner = spawn.state;
       sim.rng = spawn.rng;
-      if (spawn.spawn) addEnemy(spawn.spawn.x, spawn.spawn.y);
+      if (spawn.spawn) {
+        addEnemy(spawn.spawn.x, spawn.spawn.y, spawn.spawn.id ? { from: spawn.spawn.id } : {});
+        spawnLog.push({ id: spawn.spawn.id ?? null, time: sim.time, hidden: view ? isHidden(spawn.spawn, view, 0, 0) : true });
+      }
     }
 
     const contact = stepContact(sim.player, sim.enemies, dt, cfg.zombie);
@@ -257,9 +290,6 @@ export function createGame(ctx) {
       zombies.delete(id);
     }
 
-    rig.follow(dt, p.x, p.y);
-    // Carte d'ombres : demi-diagonale de la vue au sol, avec de la marge pour la perspective.
-    world.followSun(rig.view.target.x, rig.view.target.y, Math.hypot(rig.view.ground.width / 2, (rig.view.ground.north + rig.view.ground.south) / 2) * 1.3);
     effects.update({
       laser: laser && !sim.dead ? laser : null,
       bullets: sim.bullets,
@@ -269,6 +299,20 @@ export function createGame(ctx) {
       unitsPerPixel: size.unitsPerPixel,
     });
     hud.update(sim.player, sim.kills);
+  }
+
+  // La caméra suit le joueur (js/core/camera.js), la lumière et sa carte d'ombres suivent la caméra.
+  function followCamera(dt) {
+    rig.follow(dt, sim.player.x, sim.player.y);
+    // Carte d'ombres : demi-diagonale de la vue au sol, avec de la marge pour la perspective.
+    world.followSun(rig.view.target.x, rig.view.target.y, Math.hypot(rig.view.ground.width / 2, (rig.view.ground.north + rig.view.ground.south) / 2) * 1.3);
+  }
+
+  // Position du joueur à l'écran, de 0 à 1 (0,5 = au centre).
+  const probe = new THREE.Vector3();
+  function projectPlayer() {
+    probe.set(sim.player.x, 0, sim.player.y).project(rig.camera);
+    return { x: (probe.x + 1) / 2, y: (1 - probe.y) / 2 };
   }
 
   let last = null;
@@ -283,6 +327,7 @@ export function createGame(ctx) {
     stale = !paused;
     if (!paused && !sim.dead) step(dt);
     draw(paused ? 0 : dt);
+    followCamera(paused ? 0 : dt);
     renderer.render(world.scene, rig.camera);
     lastInfo = { calls: renderer.info.render.calls, triangles: renderer.info.render.triangles };
   }
@@ -303,6 +348,7 @@ export function createGame(ctx) {
   reset(ctx.seed);
   applySize();
   draw(0);
+  followCamera(0);
   if (!document.hidden) start();
 
   return {
@@ -310,6 +356,35 @@ export function createGame(ctx) {
       return sim;
     },
     addEnemy,
+    // Test : avance la simulation de `seconds` par pas de 0,05 s, sans attendre le rendu (puis une image à jour).
+    advance(seconds) {
+      const n = Math.min(4000, Math.max(0, Math.round(Number(seconds) / STEP) || 0));
+      for (let i = 0; i < n && !sim.dead; i += 1) {
+        step(STEP);
+        followCamera(STEP);
+      }
+      draw(STEP);
+      stale = true;
+    },
+    // Test : place le joueur d'un coup (caméra comprise).
+    placePlayer(x, y) {
+      sim.player = { ...sim.player, x: Number(x), y: Number(y) };
+      rig.snap(sim.player.x, sim.player.y);
+      stale = true;
+    },
+    // Test : une balle de plus, tirée de la bouche de l'arme dans la direction `angle`.
+    fireBullet(angle) {
+      const muzzle = muzzlePoint(sim.player, Number(angle), cfg.weapon.muzzleOffset, bounds);
+      sim.bullets = [...sim.bullets, createBullet(muzzle, Number(angle), cfg.weapon, sim.nextId)];
+      sim.nextId += 1;
+    },
+    // Test : montre tout le monde (vrai) ou revient au suivi du joueur (faux) ; l'image est mise à jour au prochain rendu.
+    overview(on = true) {
+      rig.setOverview(on);
+      followCamera(0);
+      size = { ...size, unitsPerPixel: (2 * rig.view.distance * Math.tan((render.camera.fov * Math.PI) / 360)) / size.height };
+      stale = true;
+    },
     // Remet une partie propre (Rejouer, Recommencer).
     restart() {
       ctx.seedRun += 1;
@@ -320,11 +395,20 @@ export function createGame(ctx) {
       return {
         player: { x: sim.player.x, y: sim.player.y, health: sim.player.health },
         aim: sim.aim.angle,
-        enemies: sim.enemies.map((e) => ({ id: e.id, x: e.x, y: e.y, health: e.health })),
+        enemies: sim.enemies.map((e) => ({ id: e.id, x: e.x, y: e.y, health: e.health, entered: e.entered ?? null, from: e.from ?? null })),
         bullets: sim.bullets.map((b) => ({ id: b.id, x: b.x, y: b.y, angle: b.angle })),
         kills: sim.kills,
         camera: { x: cam.x, y: cam.y, z: cam.z, distance: rig.view.distance, tilt: rig.view.tilt, zoom: rig.view.zoom, target: { ...rig.view.target } },
         render: { ...lastInfo },
+        view: visibleRect(),
+        playerScreen: projectPlayer(),
+        laserEnd: laser ? { x: laser.ray.end.x, y: laser.ray.end.y } : null,
+        laser: laser ? { length: laser.ray.length, hit: laser.ray.hit?.id ?? null, stoppedBy: laser.ray.stoppedBy?.id ?? null } : null,
+        world: { width: layout.size.width, height: layout.size.height, empty: layout.empty },
+        obstacles: layout.furniture.map((o) => ({ id: o.id, kind: o.kind, x: o.x, y: o.y, w: o.w, h: o.h, hauteur: o.hauteur })),
+        windows: layout.windows.map((w) => ({ id: w.id ?? null, x: w.x, y: w.y })),
+        spawnPoints: (layout.spawnPoints ?? []).map((p) => ({ id: p.id, fenetre: p.fenetre, x: p.x, y: p.y })),
+        spawnLog: spawnLog.map((l) => ({ ...l })),
         pose: { ...playerChar.readPose(), expected: { ...lastPose } },
         paused: ctx.ui.isPaused(),
         dead: sim.dead,

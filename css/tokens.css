@@ -88,4 +88,9 @@
   --game-zombie-trousers: #4a483c;  /* pantalon, chaussures et cheveux des zombies */
   --game-sun: #fff1d6;              /* lumière directionnelle */
   --game-ambient: #8c93a6;          /* lumière ambiante */
+  --game-road: #2c2c31;             /* route (le trottoir et le sentier en sont des variantes) */
+  --game-grass: #1f2a1c;            /* herbe sombre du décor extérieur */
+  --game-car: #6b2b2b;              /* voitures abandonnées (rouge sale, provisoire) */
+  --game-tree: #2e4a2c;             /* feuillage des arbres et des buissons */
+  --game-furniture: #7a6448;        /* meubles (leurs variantes par type sont calculées dans le rendu) */
 }

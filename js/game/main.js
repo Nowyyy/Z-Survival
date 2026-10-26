@@ -1,4 +1,5 @@
 // Point d'entrée de jeu.html : charge les textes et les données, prépare le DOM, lance la partie en 3D (Three.js).
+import { buildLayout } from '../core/layout.js';
 import { parseTilt, parseZoom } from '../core/viewport.js';
 import { createAudio } from './audio.js';
 import { createGame } from './game.js';
@@ -27,9 +28,12 @@ const query = new URLSearchParams(location.search);
 const testMode = query.get('test') === '1';
 const seedParam = Number.parseInt(query.get('seed') ?? '', 10);
 
-const [dict, room, player, weapons, enemies, render] = await Promise.all([
+const [dict, world, decor, camera, nav, player, weapons, enemies, render] = await Promise.all([
   loadDict(),
-  loadJson('data/game/room.json'),
+  loadJson('data/game/world.json'),
+  loadJson('data/game/decor.json'),
+  loadJson('data/game/camera.json'),
+  loadJson('data/game/nav.json'),
   loadJson('data/game/player.json'),
   loadJson('data/game/weapons.json'),
   loadJson('data/game/enemies.json'),
@@ -44,14 +48,17 @@ const root = document.getElementById('game-root');
 root.hidden = false;
 document.getElementById('boot')?.remove();
 
+// ?empty=1 (seulement avec ?test=1) : la salle du lot 1m sans meuble ni décor, mêmes coordonnées qu'au lot 1m.
+const layout = buildLayout(world, decor, { empty: testMode && query.get('empty') === '1', slack: camera.slack });
+
 const ctx = {
-  cfg: { room, player, weapon: weapons.pistol, zombie: enemies.zombie, render },
+  cfg: { layout, player, weapon: weapons.pistol, zombie: enemies.zombie, render, camera, nav },
   palette,
   dict,
   params: {
     nospawn: query.get('nospawn') === '1',
     tilt: parseTilt(query.get('tilt'), render.camera.tilt),
-    zoom: parseZoom(query.get('zoom'), render.camera.zoom),
+    zoom: parseZoom(query.get('zoom'), camera.zoom),
     maxRatio: ratioCap(query.get('dpr')),
     shadows: query.get('shadows') !== '0',
   },

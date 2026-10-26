@@ -9,7 +9,7 @@ Avant de modifier une page, lis `Docs/ref/conventions.md`.
 index.html (page d'attente) · jeu.html (le jeu) · apercu.txt · dev/ (menu /dev : main, dernier lot, anciens lots) · css/ (tokens.css, base.css)
 js/ (main.js, page.js, i18n.js, splat.js, lots.js)
 js/core/ logique pure · js/game/ rendu Three.js · js/save/ sauvegarde
-data/i18n/{fr,en}.json · data/game/ (équilibrage) · fonts/ · vendor/ · scripts/ (build, assemble, serve, lighthouse)
+data/i18n/{fr,en}.json · data/game/ (équilibrage, monde, décor) · fonts/ · vendor/ · scripts/ (build, assemble, serve, lighthouse)
 tests/unit (Vitest) · tests/e2e (Playwright) · Docs/seed.md (propriétaire)
 Docs/ref/ (environnement, conventions) · Docs/lots/ (bilans) · .github/workflows/ (lot 0-C)
 ```
@@ -47,11 +47,16 @@ Docs/ref/ (environnement, conventions) · Docs/lots/ (bilans) · .github/workflo
 - Le workflow `.github/workflows/pages.yml` n'est modifiable que si le prompt du lot l'autorise.
 - Rendu : Three.js 0.186.1 en devDependency copié par npm run vendor:three vers vendor/three/ (ne jamais éditer) ; importmap locale dans jeu.html ; lire le paquet installé avant d'utiliser l'API.
 - Coordonnées : logique 2D (x, y) ; Three.js (x, 0, y) ; haut de l'écran = nord ; js/core/ ne connaît pas Three.js.
-- Caméra : perspective inclinée 75° (?tilt=60|75|90), qui suit le joueur en douceur, 2× plus proche que la vue de toute la zone (?zoom=1|1.25|1.5|2|2.5|3 ; 1 = zone entière) ; js/core/viewport.js. Plein écran : le canvas couvre toute la fenêtre, jamais de bandes ni de ratio fixe.
+- Caméra : perspective inclinée 75° (?tilt=60|75|90), qui suit le joueur en douceur, 2× plus proche que la vue de toute la zone (?zoom=1|1.25|1.5|2|2.5|3 ; 1 = zone entière) ; js/core/viewport.js et camera.js. Plein écran : le canvas couvre toute la fenêtre, jamais de bandes ni de ratio fixe.
 - Poses : js/core/pose.js (pur) donne les angles ; le rendu les applique ; géométries et matériaux partagés ; ne jamais recréer des objets à chaque image.
 - HUD : HTML, marges de 16 px plus env(safe-area-inset-*) via js/game/safe-area.js.
 - Entrées : event.code (jamais event.key) ; tir automatique quand le laser touche ; pas de bouton de tir.
 - Tir : une balle par tir, dégâts à l'impact seulement (projectile.js) ; le laser (ray.js) sert à viser, jamais aux dégâts ; le tir part dès qu'un ennemi est sur la ligne de visée jusqu'à `fireRange` (au-delà du laser, qui s'estompe à sa portée).
 - Couleurs du jeu : variables --game-* lues par js/game/palette.js ; aucune valeur en dur dans js/.
-- Tests : ?test=1 expose window.__zs (render, camera, pose) ; ?seed, ?nospawn, ?fps=1, ?dpr=1, ?shadows=0 ; privilégier 667×375 ; Math.random interdit dans le jeu.
+- Tests : ?test=1 expose window.__zs (getState, setSeed, spawnEnemy, setInput) ; ?seed, ?nospawn, ?fps=1, ?dpr=1, ?shadows=0 ; Math.random interdit dans le jeu.
+- Monde : data/game/world.json (salle, meubles, fenêtres) et decor.json (extérieur, points d'apparition) ; camera.js suit le joueur et reste dans le monde ; ne jamais recréer le décor à chaque image.
+- Obstacles et zombies : collision.js, nav.js (champ de flux, cellules de 20) ; les meubles bloquent joueur, zombies, balles, laser et ligne de tir ; les fenêtres sont passables pour les zombies seulement jusqu'au lot 3.
+- Apparitions : hors de la vue, aux points de decor.json ; ne jamais faire apparaître un zombie à l'écran.
+- Hauteurs : murs 60, meubles 70 au plus, voitures 55 (ne pas masquer les zombies à 75°).
+- Tests : ?test=1 ajoute step(seconds), overview() ; ?empty=1 charge un monde sans meubles ; privilégier 667×375.
 - Lighthouse de jeu.html : performance 45, accessibilité 95, bonnes pratiques 95 ; CLS ≤ 0,1.

@@ -89,8 +89,8 @@ export function createEffects(scene, palette, { gunHeight, bulletRadius }) {
       if (frame.laser) {
         const { from, ray } = frame.laser;
         const thick = Math.max(1.2, 2 * upp);
-        // Arrêté par un ennemi ou un mur : trait plein et point ; arrêté par la portée : le trait s'estompe, sans point.
-        const faded = !ray.hit && !ray.stoppedByWall;
+        // Arrêté par un ennemi, un meuble ou un mur : trait plein et point ; arrêté par la portée : le trait s'estompe, sans point.
+        const faded = !ray.hit && !ray.stoppedByWall && !ray.stoppedBy;
         const [line, halo, offLine, offHalo] = faded ? [laserFade, glowFade, laser, glow] : [laser, glow, laserFade, glowFade];
         strip(line, from.x, from.y, ray.end.x, ray.end.y, laserHeight, thick);
         strip(halo, from.x, from.y, ray.end.x, ray.end.y, laserHeight, thick * 2.6);

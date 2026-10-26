@@ -1,7 +1,7 @@
 // Simulation pure d'une partie : appelle les modules de js/core/ dans le même ordre que le jeu (js/game/game.js, step()).
 // root : dossier qui contient js/core/ (le dépôt de travail, ou une copie de main pour établir les valeurs de référence).
 import { pathToFileURL } from 'node:url';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 
 // legacy : portées du lot 1 (700 pour le laser, le tir et la balle).
 export async function simulate(root, { seconds = 30, seed = 42, fps = 60, legacy = false } = {}) {
@@ -9,12 +9,14 @@ export async function simulate(root, { seconds = 30, seed = 42, fps = 60, legacy
   const [aimM, combat, ai, movement, projectile, ray, rngM, spawnerM, vec] = await Promise.all(
     ['aim', 'combat', 'enemy-ai', 'movement', 'projectile', 'ray', 'rng', 'spawner', 'vec'].map(load));
   const data = (name) => JSON.parse(readFileSync(`${root}/data/game/${name}.json`, 'utf8'));
-  const room = data('room');
+  // Lot 1b : la salle du lot 1m est la section « legacy » de world.json (une copie de main garde son room.json).
+  const room = existsSync(`${root}/data/game/room.json`) ? data('room') : data('world').legacy;
   const playerCfg = data('player');
   const base = data('weapons').pistol;
   // Lot 1 : laser, tir et balle portaient tous à 700.
   const weapon = legacy ? { ...base, laserRange: 700, fireRange: 700, bulletMaxDistance: 700 } : base;
-  const zombie = data('enemies').zombie;
+  // Règles du lot 1 : 5 zombies au plus, un toutes les 3 s (le jeu du lot 1b en autorise 8, toutes les 2,5 s).
+  const zombie = { ...data('enemies').zombie, maxPresent: 5, spawnInterval: 3 };
   const bounds = movement.innerBounds(room);
 
   let sim = {

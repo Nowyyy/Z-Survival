@@ -97,3 +97,18 @@ export function buildLayout(world, decorCfg, opts = {}) {
     start: { x: room.x + room.width / 2, y: room.y + room.height / 2 },
   };
 }
+
+// Identifiant de la fenêtre la plus proche d'une position (par où un zombie vient d'entrer) ; null s'il n'y en a pas.
+export function entryWindow(p, windows) {
+  let best = null;
+  let bestD = Infinity;
+  for (const w of Array.isArray(windows) ? windows : []) {
+    if (!w || !isNum(w.x) || !isNum(w.y)) continue;
+    const d = Math.hypot(num(p?.x) - w.x, num(p?.y) - w.y);
+    if (d < bestD) {
+      bestD = d;
+      best = w.id ?? null;
+    }
+  }
+  return best;
+}

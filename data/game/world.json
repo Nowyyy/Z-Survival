@@ -202,17 +202,14 @@
     "windowSize": 120,
     "windows": [
       {
-        "id": "fenetre-ouest",
         "x": 12,
         "y": 450
       },
       {
-        "id": "fenetre-nord",
         "x": 800,
         "y": 12
       },
       {
-        "id": "fenetre-est",
         "x": 1588,
         "y": 450
       }
