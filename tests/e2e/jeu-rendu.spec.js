@@ -29,7 +29,7 @@ async function countPixels(page, [r, g, b], tolerance = 40) {
     return n;
   }, [shot, [r, g, b], tolerance]);
 }
-const LASER = [0xff, 0x4a, 0x3d];
+const LASER = [0xff, 0x6a, 0x5a]; // --game-laser (lot 1c : éclairci de #ff4a3d pour atteindre 4,5:1 sur le sol)
 const BULLET = [0xff, 0xe8, 0xa3];
 
 test.describe('rendu visible', () => {

@@ -31,7 +31,7 @@ const testMode = query.get('test') === '1';
 const fpsMode = query.get('fps') === '1';
 const seedParam = Number.parseInt(query.get('seed') ?? '', 10);
 
-const [dict, world, decor, camera, nav, player, weapons, enemies, render, texturesCfg] = await Promise.all([
+const [dict, world, decor, camera, nav, player, weapons, enemies, render, texturesCfg, variants] = await Promise.all([
   loadDict(),
   loadJson('data/game/world.json'),
   loadJson('data/game/decor.json'),
@@ -42,6 +42,7 @@ const [dict, world, decor, camera, nav, player, weapons, enemies, render, textur
   loadJson('data/game/enemies.json'),
   loadJson('data/game/render.json'),
   loadJson('data/game/textures.json'),
+  loadJson('data/game/zombie-variants.json'),
 ]);
 
 applyTexts(dict);
@@ -65,6 +66,7 @@ const ctx = {
   palette,
   dict,
   textureData,
+  variants,
   perf: fpsMode ? { flowSum: 0, flowCount: 0, flowMax: 0 } : null,
   params: {
     test: testMode,

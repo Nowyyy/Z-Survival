@@ -76,7 +76,7 @@
   --game-ground: #121213;           /* décor extérieur, fond de caméra */
   --game-player: #f4f1ec;           /* joueur : os */
   --game-zombie: #6f9a5e;           /* zombie : vert terne (réussite assombrie) */
-  --game-laser: #ff4a3d;            /* laser de visée */
+  --game-laser: #ff6a5a;            /* laser de visée */
   --game-hit: #fff3c4;              /* flash d'un zombie touché, étincelle */
   --game-bullet: #ffe8a3;           /* balle et traînée */
   --game-muzzle: #ffb347;           /* flash de bouche */
@@ -95,21 +95,21 @@
   --game-furniture: #7a6448;        /* meubles (leurs variantes par type sont calculées dans le rendu) */
 
   /* Jeu, lot 1c : couleurs des textures générées en code (passées aux générateurs par js/game/palette.js). Provisoires, à valider. */
-  --game-tile-a: #54545b;           /* carrelage de la salle, teinte claire */
-  --game-tile-b: #46464d;           /* carrelage de la salle, teinte sombre */
-  --game-grout: #1b1b1e;            /* joints du carrelage et du trottoir */
+  --game-tile-a: #38383e;           /* carrelage de la salle, teinte claire */
+  --game-tile-b: #2e2e34;           /* carrelage de la salle, teinte sombre */
+  --game-grout: #121214;            /* joints du carrelage et du trottoir */
   --game-wall-base: #7c5650;        /* enduit des murs */
   --game-wall-dirt: #3d2321;        /* salissures et coulures des murs */
   --game-wood: #8f7352;             /* bois clair : tables, comptoirs, caisses */
   --game-wood-dark: #58432d;        /* bois sombre : veines, armoires, étagères */
   --game-metal: #7a808b;            /* tôle, barreaux, lampadaires */
-  --game-asphalt: #3a3a41;          /* route */
+  --game-asphalt: #262629;          /* route */
   --game-line: #d8c35a;             /* lignes de la route */
-  --game-sidewalk: #55555b;         /* dalles du trottoir */
-  --game-grass-a: #2e4129;          /* herbe, teinte sombre */
-  --game-grass-b: #44593a;          /* herbe, teinte claire */
-  --game-soil: #473b2d;             /* terre du sol extérieur et des sentiers */
-  --game-gravel: #766b5d;           /* gravier */
+  --game-sidewalk: #343439;         /* dalles du trottoir */
+  --game-grass-a: #1e2a1b;          /* herbe, teinte sombre */
+  --game-grass-b: #2c3a26;          /* herbe, teinte claire */
+  --game-soil: #2f271e;             /* terre du sol extérieur et des sentiers */
+  --game-gravel: #4c443b;           /* gravier */
   --game-bark: #54402f;             /* écorce */
   --game-leaf: #46683c;             /* feuillage (arbres, buissons) */
   --game-glass: #5d8097;            /* vitres des voitures */

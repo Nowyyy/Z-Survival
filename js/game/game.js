@@ -12,6 +12,7 @@ import { createBullet, stepBullets } from '../core/projectile.js';
 import { castRay } from '../core/ray.js';
 import { createRng } from '../core/rng.js';
 import { createSpawner, isHidden, stepSpawner } from '../core/spawner.js';
+import { variantFor } from '../core/variants.js';
 import { clampDt, num } from '../core/vec.js';
 import { createCharacter, createKit } from './character.js';
 import { createEffects, MAX_SPARKS, SPARK_TIME } from './effects.js';
@@ -56,13 +57,13 @@ export function createGame(ctx) {
   const textures = createThreeTextures(ctx.textureData, renderer);
   const world = buildWorld({ palette, layout, render, textures });
   const rig = createCamera(render.camera, cfg.camera, layout, params.tilt, params.zoom);
-  const kit = createKit(palette);
+  const kit = createKit({ textures, variants: ctx.variants, hit: palette.hit });
   const effects = createEffects(world.scene, palette, { gunHeight: render.gunHeight, bulletRadius: cfg.weapon.bulletRadius });
   const hud = createHud(ctx.dict);
   const playerChar = createCharacter(kit, 'player');
   world.scene.add(playerChar.root);
   const zombies = new Map(); // id -> { char, phase, x, y, flashing }
-  const spare = [];
+  const spare = kit.variants.map(() => []); // personnages retirés, un stock par variante (leurs géométries diffèrent)
 
   let sim;
   let anim;
@@ -80,7 +81,7 @@ export function createGame(ctx) {
     for (const z of zombies.values()) {
       world.scene.remove(z.char.root);
       z.char.setFlash(false);
-      spare.push(z.char);
+      spare[z.char.variant].push(z.char);
     }
     zombies.clear();
     spawnLog.length = 0;
@@ -278,7 +279,8 @@ export function createGame(ctx) {
       alive.add(e.id);
       let z = zombies.get(e.id);
       if (!z) {
-        z = { char: spare.pop() ?? createCharacter(kit, 'zombie'), phase: 0, x: e.x, y: e.y, flashing: false };
+        const variant = variantFor(e.id, ctx.seed, kit.variants.length);
+        z = { char: spare[variant].pop() ?? createCharacter(kit, 'zombie', variant), phase: 0, x: e.x, y: e.y, flashing: false };
         world.scene.add(z.char.root);
         zombies.set(e.id, z);
       }
@@ -301,7 +303,7 @@ export function createGame(ctx) {
       if (alive.has(id)) continue;
       world.scene.remove(z.char.root);
       z.char.setFlash(false);
-      spare.push(z.char);
+      spare[z.char.variant].push(z.char);
       zombies.delete(id);
     }
 
@@ -325,10 +327,11 @@ export function createGame(ctx) {
 
   // Position du joueur à l'écran, de 0 à 1 (0,5 = au centre).
   const probe = new THREE.Vector3();
-  function projectPlayer() {
-    probe.set(sim.player.x, 0, sim.player.y).project(rig.camera);
+  function screenOf(x, y) {
+    probe.set(x, 0, y).project(rig.camera);
     return { x: (probe.x + 1) / 2, y: (1 - probe.y) / 2 };
   }
+  const projectPlayer = () => screenOf(sim.player.x, sim.player.y);
 
   let last = null;
   let frameId = 0;
@@ -437,7 +440,7 @@ export function createGame(ctx) {
       return {
         player: { x: sim.player.x, y: sim.player.y, health: sim.player.health },
         aim: sim.aim.angle,
-        enemies: sim.enemies.map((e) => ({ id: e.id, x: e.x, y: e.y, health: e.health, entered: e.entered ?? null, from: e.from ?? null })),
+        enemies: sim.enemies.map((e) => ({ id: e.id, x: e.x, y: e.y, health: e.health, entered: e.entered ?? null, from: e.from ?? null, variant: variantFor(e.id, ctx.seed, kit.variants.length), screen: screenOf(e.x, e.y), pose: zombies.get(e.id)?.char.readPose() ?? null })),
         bullets: sim.bullets.map((b) => ({ id: b.id, x: b.x, y: b.y, angle: b.angle })),
         kills: sim.kills,
         camera: { x: cam.x, y: cam.y, z: cam.z, distance: rig.view.distance, tilt: rig.view.tilt, zoom: rig.view.zoom, target: { ...rig.view.target } },

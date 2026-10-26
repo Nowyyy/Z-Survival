@@ -204,14 +204,14 @@ function addDecor(b, region, decor, outdoorSoil) {
   });
 
   // Arbres : tronc (écorce) et couronne (feuillage) ; buissons.
-  b.props.geometry(unitCylinder, decor.trees.map((t) => ({ x: t.x + t.w / 2, y: t.hauteur / 2, z: t.y + t.h / 2, sx: t.w / 4, sy: t.hauteur, sz: t.w / 4, rect: region('ecorce') })));
-  b.props.geometry(crown, decor.trees.map((t) => ({ x: t.x + t.w / 2, y: t.hauteur + t.couronne * 0.55, z: t.y + t.h / 2, sx: t.couronne, sy: t.couronne * 0.8, sz: t.couronne, rot: t.x, rect: region('feuillage') })));
-  b.props.geometry(crown, decor.bushes.map((bush) => ({ x: bush.x, y: bush.hauteur / 2, z: bush.y, sx: bush.r, sy: bush.hauteur / 2, sz: bush.r, rot: bush.y, rect: region('buisson') })));
+  b.scenery.geometry(unitCylinder, decor.trees.map((t) => ({ x: t.x + t.w / 2, y: t.hauteur / 2, z: t.y + t.h / 2, sx: t.w / 4, sy: t.hauteur, sz: t.w / 4, rect: region('ecorce') })));
+  b.scenery.geometry(crown, decor.trees.map((t) => ({ x: t.x + t.w / 2, y: t.hauteur + t.couronne * 0.55, z: t.y + t.h / 2, sx: t.couronne, sy: t.couronne * 0.8, sz: t.couronne, rot: t.x, rect: region('feuillage') })));
+  b.scenery.geometry(crown, decor.bushes.map((bush) => ({ x: bush.x, y: bush.hauteur / 2, z: bush.y, sx: bush.r, sy: bush.hauteur / 2, sz: bush.r, rot: bush.y, rect: region('buisson') })));
 
   // Lampadaires (décoratifs) et barrières (décoratives, basses).
-  b.props.geometry(unitCylinder, decor.lamps.map((l) => ({ x: l.x, y: l.hauteur / 2, z: l.y, sx: 2.5, sy: l.hauteur, sz: 2.5, rect: region('tole') })));
-  b.props.geometry(crown, decor.lamps.map((l) => ({ x: l.x, y: l.hauteur + 4, z: l.y, sx: 8, sy: 6, sz: 8, rect: region('lampe') })));
-  decor.fences.forEach((f, i) => b.props.box(rectBox(f, 0, f.hauteur), { rect: region('barriere'), scale: region('barriere').scale, seed: i + 300 }));
+  b.scenery.geometry(unitCylinder, decor.lamps.map((l) => ({ x: l.x, y: l.hauteur / 2, z: l.y, sx: 2.5, sy: l.hauteur, sz: 2.5, rect: region('tole') })));
+  b.scenery.geometry(crown, decor.lamps.map((l) => ({ x: l.x, y: l.hauteur + 4, z: l.y, sx: 8, sy: 6, sz: 8, rect: region('lampe') })));
+  decor.fences.forEach((f, i) => b.scenery.box(rectBox(f, 0, f.hauteur), { rect: region('barriere'), scale: region('barriere').scale, seed: i + 300 }));
 }
 
 // layout : sortie de js/core/layout.js ; textures : sortie de createThreeTextures (js/game/textures.js).
@@ -234,15 +234,15 @@ export function buildWorld({ palette, layout, render, textures }) {
   sun.target.position.set(room.x + room.width / 2, 0, room.y + room.height / 2);
   scene.add(sun, sun.target);
 
-  // Une matière (donc un appel de dessin) par texture : sol de salle, murs (dessus compris), route, trottoir, herbe, terre = 6 maillages
-  // qui ne projettent pas d'ombre ; meubles, voitures, arbres, buissons, lampadaires et barrières (atlas de props) forment le septième,
-  // qui projette une ombre (+1 appel pour la passe d'ombres).
+  // Une matière (donc un appel de dessin) par texture : sol de salle, murs (dessus compris), route, trottoir, herbe, terre et décor de l'atlas
+  // de props (arbres, buissons, lampadaires, barrières, barreaux) = 7 maillages qui ne projettent pas d'ombre ; meubles et voitures
+  // (atlas de props) forment le huitième, qui projette une ombre (+1 appel pour la passe d'ombres).
   const mat = (id) => new THREE.MeshLambertMaterial({ map: textures.texture(id) });
   const atlasMaterial = mat(ATLAS);
   const region = (id) => textures.region(ATLAS, id);
   const b = {
     floor: new Builder(), wall: new Builder(), road: new Builder(), sidewalk: new Builder(), grass: new Builder(), soil: new Builder(),
-    props: new Builder(),
+    scenery: new Builder(), props: new Builder(),
     repeat: { road: textures.repeat('route'), sidewalk: textures.repeat('trottoir') },
   };
   const outdoorSoil = textures.repeat('sol-exterieur');
@@ -266,7 +266,7 @@ export function buildWorld({ palette, layout, render, textures }) {
     b.wall.box(extents(w), { repeat: wallRepeat }, 'cotes');
     b.wall.box(extents(w), { fixed: [0.31, 0.62] }, 'dessus'); // dessus : un seul texel du mur, donc sans texture
   }
-  bars.forEach((bar, i) => b.props.box(extents(bar), { rect: region('tole'), scale: region('tole').scale, seed: 500 + i }));
+  bars.forEach((bar, i) => b.scenery.box(extents(bar), { rect: region('tole'), scale: region('tole').scale, seed: 500 + i }));
 
   // Meubles : boîtes aux hauteurs de world.json, une région d'atlas par type.
   layout.furniture.forEach((f, i) => {
@@ -278,6 +278,7 @@ export function buildWorld({ palette, layout, render, textures }) {
 
   const sceneryMaterials = [['floor', mat('sol-salle')], ['wall', mat('mur')], ['road', mat('route')], ['sidewalk', mat('trottoir')], ['grass', mat('herbe')], ['soil', mat('sol-exterieur')]];
   for (const [name, material] of sceneryMaterials) b[name].mesh(scene, material, { receive: true });
+  b.scenery.mesh(scene, atlasMaterial, { receive: true });
   b.props.mesh(scene, atlasMaterial, { cast: true, receive: true });
 
   return {
