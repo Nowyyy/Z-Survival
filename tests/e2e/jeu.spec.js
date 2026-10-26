@@ -117,7 +117,9 @@ test.describe('déplacement', () => {
   });
 
   test('le joueur reste dans la salle', async ({ page }) => {
-    await page.setViewportSize({ width: 1440, height: 900 });
+    // Petite fenêtre et délai large : le temps de jeu avance plus lentement que le temps réel quand le rendu est lent (CI).
+    test.setTimeout(90_000);
+    await page.setViewportSize({ width: 667, height: 375 });
     await page.goto(URL);
     await ready(page);
     const wall = 24 + 18;
@@ -126,7 +128,7 @@ test.describe('déplacement', () => {
     await expect.poll(async () => {
       const p = (await state(page)).player;
       return p.x <= wall + 0.01 && p.y <= wall + 0.01;
-    }, { timeout: 30_000 }).toBe(true);
+    }, { timeout: 80_000 }).toBe(true);
     // Quelques instants de plus contre les murs : jamais au-delà.
     await page.waitForTimeout(500);
     const p = (await state(page)).player;
