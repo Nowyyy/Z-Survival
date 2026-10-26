@@ -1,0 +1,46 @@
+{
+  "_note": "Journal des versions affiché par la page /dev (liste des lots). Une entrée par lot, dans l'ordre chronologique (la plus récente en dernier) ; la page les affiche du plus récent au plus ancien. À compléter à chaque lot.",
+  "lots": [
+    { "name": "lot-0", "titre": "Socle, jetons et publication", "points": [
+      "Outillage (ESLint, Vitest, Playwright, Lighthouse) et publication automatique sur GitHub Pages.",
+      "Jetons de design et style « sang noir » : noir, rouge sang, os, jaune pour l'argent.",
+      "Page d'attente de Z-Survival."
+    ] },
+    { "name": "lot-0b", "titre": "Aperçus par branche et page /dev", "points": [
+      "Chaque branche de lot a son aperçu sur /lots/lot-N/.",
+      "Page /dev : accès à main, au dernier lot et aux anciens lots."
+    ] },
+    { "name": "lot-0c", "titre": "CI sans installation de navigateur", "points": [
+      "Les tests de bout en bout utilisent le Chrome déjà présent sur le serveur d'intégration.",
+      "Menu /dev en français seulement."
+    ] },
+    { "name": "lot-0d", "titre": "Accueil en français seulement", "points": [
+      "Le bouton de bascule de langue est retiré pour l'instant (structure prête pour l'anglais)."
+    ] },
+    { "name": "lot-0t", "titre": "Test jetable : Three.js contre l'ancien moteur", "points": [
+      "Comparaison de Three.js et de l'ancien moteur de rendu. Branche jetable, jamais fusionnée dans main."
+    ] },
+    { "name": "lot-1", "titre": "Cœur du jeu", "points": [
+      "Déplacement au clavier ou aux sticks tactiles, visée à la souris ou au stick.",
+      "Laser de visée et tir automatique à balle visible : les dégâts arrivent à l'impact.",
+      "Zombies qui poursuivent le joueur, barre de vie, son synthétisé, pause et écran de fin provisoire."
+    ] },
+    { "name": "lot-1m", "titre": "Nouveau moteur de rendu : Three.js", "points": [
+      "Rendu en 3D, vue de dessus inclinée à 75°, caméra qui suit le joueur en douceur (?zoom=, ?tilt=).",
+      "Personnages articulés avec poses, pistolet en main, flash de bouche, étincelle d'impact.",
+      "Le canvas couvre toute la fenêtre ; message de rotation sur téléphone en portrait."
+    ] },
+    { "name": "lot-1b", "titre": "Monde plus grand, meubles, chemin des zombies", "points": [
+      "Salle de 2000 × 1200 avec 14 meubles qui bloquent joueur, zombies, laser et balles.",
+      "Les zombies contournent les meubles (champ de flux) et entrent par les fenêtres ; ils apparaissent hors de la vue.",
+      "Décor extérieur : route, trottoir, voitures, arbres, buissons, lampadaires, barrières.",
+      "Marge de visée et tir à travers les fenêtres."
+    ] },
+    { "name": "lot-1c", "titre": "Textures générées en code et personnages finaux", "points": [
+      "Sol carrelé et usé, murs, meubles en bois et métal, route, trottoir, herbe, voitures et arbres texturés : tout est calculé par du code, aucune image.",
+      "Écran de préparation pendant le calcul des textures.",
+      "Nouveaux personnages (membres arrondis, mains, bottes, arme en main) et quatre variantes de zombies.",
+      "Caméra rapprochée : zoom par défaut 2,5 (même échelle qu'au lot 1m)."
+    ] }
+  ]
+}

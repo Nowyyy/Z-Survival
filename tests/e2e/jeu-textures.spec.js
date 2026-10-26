@@ -114,7 +114,8 @@ test.describe('textures du lot 1c-B', () => {
     const s = await state(page);
     expect(s.textures.ready).toBe(true);
     expect(s.world.empty).toBe(true);
-    expect((await sample(page, 20, 210, 160, 90)).distinctColors).toBeGreaterThanOrEqual(12);
+    // Zone plus large que pour la salle meublée : sans meuble, ce coin du sol sombre est lisse sur 160×90 px (11 couleurs à 16 niveaux).
+    expect((await sample(page, 20, 200, 300, 150)).distinctColors).toBeGreaterThanOrEqual(12);
   });
 
   test('garanties de confidentialité inchangées : ni stockage ni cookie', async ({ page, context }) => {

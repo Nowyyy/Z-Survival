@@ -223,7 +223,7 @@ describe('decor.json : cohérence', () => {
 
   it('nav.json et enemies.json portent les valeurs prévues', () => {
     expect(navCfg).toMatchObject({ cell: 20, inflate: 4, recompute: 0.25, stuckDistance: 5, stuckTime: 2 });
-    expect(JSON.parse(readFileSync('data/game/camera.json', 'utf8'))).toMatchObject({ smoothing: 0.12, deadZone: 0, zoom: 2 });
+    expect(JSON.parse(readFileSync('data/game/camera.json', 'utf8'))).toMatchObject({ smoothing: 0.12, deadZone: 0, zoom: 2.5 });
     expect(load('enemies').zombie).toMatchObject({ viewMargin: 150, viewRatio: 0.25 });
   });
 });

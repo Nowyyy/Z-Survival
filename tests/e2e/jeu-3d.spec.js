@@ -167,11 +167,11 @@ test.describe('inclinaison de la caméra', () => {
 test.describe('caméra qui suit le joueur et ?zoom=', () => {
   test.skip(({ isMobile }) => isMobile, 'mesures de bureau');
 
-  test('par défaut, la caméra est deux fois plus proche que la vue de toute la zone et suit le joueur', async ({ page }) => {
+  test('par défaut, la caméra est 2,5 fois plus proche que la vue de toute la zone et suit le joueur', async ({ page }) => {
     await open(page, { width: 667, height: 375 });
     const first = (await state(page)).camera;
-    expect(first.zoom).toBe(2);
-    expect(first.distance).toBeCloseTo(expectedDistance(667 / 375, 75, 1) / 2, 3);
+    expect(first.zoom).toBe(2.5);
+    expect(first.distance).toBeCloseTo(expectedDistance(667 / 375, 75, 1) / 2.5, 3);
     expect(first.target.x).toBeCloseTo(800, 1);
     await page.evaluate(() => window.__zs.setInput({ move: { x: 1, y: 0 } }));
     await expect.poll(async () => (await state(page)).camera.target.x, { timeout: 30_000 }).toBeGreaterThan(900);
@@ -201,8 +201,8 @@ test.describe('caméra qui suit le joueur et ?zoom=', () => {
     });
   }
 
-  test('une valeur inconnue de ?zoom est ignorée (2, valeur par défaut)', async ({ page }) => {
+  test('une valeur inconnue de ?zoom est ignorée (2,5, valeur par défaut)', async ({ page }) => {
     await open(page, { width: 667, height: 375 }, '&zoom=3.5');
-    expect((await state(page)).camera.zoom).toBe(2);
+    expect((await state(page)).camera.zoom).toBe(2.5);
   });
 });

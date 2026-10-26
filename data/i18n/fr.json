@@ -40,5 +40,7 @@
   "game.live.dead": "Tu es mort. Zombies tués : {n}.",
   "game.loading": "Préparation du décor… {n} %",
   "game.loading.done": "Décor prêt.",
-  "game.fps.textures": "Textures : {ms} ms ; flux : {flow} ms (max {max})"
+  "game.fps.textures": "Textures : {ms} ms ; flux : {flow} ms (max {max})",
+  "dev.changelog": "Journal des versions",
+  "dev.changelog.open": "Ouvrir ce lot"
 }
