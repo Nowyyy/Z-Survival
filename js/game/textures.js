@@ -7,7 +7,19 @@ export const SLICE_MS = 8; // durée maximale de calcul par image
 const ROWS_PER_STEP = 8;
 const MAX_ANISOTROPY = 4;
 
-const nextFrame = () => new Promise((resolve) => requestAnimationFrame(() => resolve()));
+// Reprend à l'image suivante ; si le navigateur n'en donne pas (onglet en arrière-plan, économie d'énergie), un minuteur prend le relais
+// pour que le calcul avance quand même.
+const FALLBACK_MS = 100;
+const nextFrame = () => new Promise((resolve) => {
+  let done = false;
+  const go = () => {
+    if (done) return;
+    done = true;
+    resolve();
+  };
+  requestAnimationFrame(go);
+  setTimeout(go, FALLBACK_MS);
+});
 
 // entries : data/game/textures.json (textures) ; lookup : jeton -> [r, g, b]. onProgress(0..1) est appelé après chaque tranche.
 // Renvoie { items: [{ entry, width, height, data }], count, bytes (mémoire GPU estimée, mipmaps compris), ms }.

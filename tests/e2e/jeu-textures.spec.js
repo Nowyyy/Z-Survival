@@ -157,3 +157,39 @@ test.describe('textures du lot 1c-B', () => {
     expect(s.render.triangles).toBeLessThanOrEqual(15_000);
   });
 });
+
+test.describe('chargement qui échoue', () => {
+  test.skip(({ isMobile }) => isMobile, 'bureau');
+
+  test('un fichier de données introuvable est dit à l\'écran, pas un 0 % sans fin', async ({ page }) => {
+    await page.route('**/data/game/textures.json', (route) => route.fulfill({ status: 404, body: 'non' }));
+    await page.setViewportSize(SIZE);
+    await page.goto(PAGE());
+    await expect(page.locator('#loading-error')).toBeVisible();
+    await expect(page.locator('#loading-error')).toContainText('Recharge la page');
+    await expect(page.locator('#loading-detail')).toContainText('textures.json');
+    await expect(page.locator('#loading')).toBeVisible();
+  });
+
+  test('un script qui ne se charge pas est signalé avec son adresse', async ({ page }) => {
+    await page.route('**/js/game/main.js', (route) => route.fulfill({ status: 404, body: 'non' }));
+    await page.setViewportSize(SIZE);
+    await page.goto(PAGE());
+    await expect(page.locator('#loading-detail')).toContainText('main.js');
+  });
+
+  test('aucun message d\'erreur quand tout va bien', async ({ page }) => {
+    await open(page);
+    await expect(page.locator('#loading-error')).toBeHidden();
+    await expect(page.locator('#loading-detail')).toBeHidden();
+  });
+
+  test('la préparation avance même sans images d\'animation (onglet en arrière-plan)', async ({ page }) => {
+    await page.addInitScript(() => { window.requestAnimationFrame = () => 0; });
+    await page.setViewportSize(SIZE);
+    await page.goto(PAGE());
+    // polling: 100 : le sondage par défaut (requestAnimationFrame) est neutralisé par ce test.
+    await page.waitForFunction(() => document.getElementById('loading')?.hidden === true, null, { timeout: 60_000, polling: 100 });
+    await expect(page.locator('#loading-error')).toBeHidden();
+  });
+});

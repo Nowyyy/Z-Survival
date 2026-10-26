@@ -17,6 +17,27 @@
   <link rel="stylesheet" href="css/tokens.css">
   <link rel="stylesheet" href="css/base.css">
   <link rel="stylesheet" href="css/game.css">
+  <script>
+    // Si le chargement échoue (script introuvable, erreur au démarrage), le dire à l'écran au lieu de rester à 0 %.
+    (function () {
+      function fail(detail) {
+        var box = document.getElementById('loading');
+        if (!box || box.hidden) return;
+        document.getElementById('loading-error').hidden = false;
+        var d = document.getElementById('loading-detail');
+        d.hidden = false;
+        d.textContent = String(detail).slice(0, 300);
+      }
+      window.addEventListener('error', function (e) {
+        var t = e.target;
+        if (t && t.tagName === 'SCRIPT') fail('Script introuvable : ' + t.src);
+        else if (e.message) fail(e.message);
+      }, true);
+      window.addEventListener('unhandledrejection', function (e) {
+        fail(e.reason && e.reason.message ? e.reason.message : e.reason);
+      });
+    })();
+  </script>
   <script type="module" src="js/game/boot.js"></script>
   <script type="module" src="js/game/main.js"></script>
 </head>
@@ -30,6 +51,8 @@
   </svg>
   <div id="loading" class="loading" role="status" aria-live="polite">
     <p id="loading-text" class="loading-text"></p>
+    <p id="loading-error" class="loading-error" role="alert" data-i18n="game.loading.error" hidden></p>
+    <p id="loading-detail" class="loading-detail" hidden></p>
     <div class="loading-bar" aria-hidden="true"><div id="loading-fill" class="loading-fill"></div></div>
   </div>
   <div id="game-root" class="game-root" data-block="E2-1" role="application" data-i18n-label="game.aria" hidden>
