@@ -30,13 +30,14 @@ async function loadDict(base, lang) {
 }
 
 // base : chemin relatif vers la racine du site ('' ou '../'). render({ t, lang }) est rappelée à chaque changement de langue.
-export async function startPage({ base = '', render = () => {} } = {}) {
+// lang : impose une langue (page sans bouton de langue) ; sinon choix mémorisé, puis langue du navigateur.
+export async function startPage({ base = '', lang: fixedLang = null, render = () => {} } = {}) {
   const fallbackDict = await loadDict(base, DEFAULT_LANG);
   const toggle = document.querySelector('[data-lang-toggle]');
-  const toggleLabel = toggle.querySelector('[data-lang-label]');
+  const toggleLabel = toggle?.querySelector('[data-lang-label]');
   const canvas = document.getElementById('splat');
   const redraw = () => drawSplat(canvas);
-  let current = pickLanguage({ stored: readStored(), browserLanguages: navigator.languages ?? [navigator.language] });
+  let current = fixedLang ?? pickLanguage({ stored: readStored(), browserLanguages: navigator.languages ?? [navigator.language] });
 
   async function apply(lang) {
     const dict = lang === DEFAULT_LANG ? fallbackDict : await loadDict(base, lang);
@@ -44,15 +45,17 @@ export async function startPage({ base = '', render = () => {} } = {}) {
     document.documentElement.lang = lang;
     for (const el of document.querySelectorAll('[data-i18n]')) el.textContent = t(el.dataset.i18n);
     document.title = t(document.documentElement.dataset.titleKey ?? 'meta.title');
-    toggleLabel.textContent = t('lang.toggle');
-    toggle.setAttribute('aria-label', t('lang.toggleLabel'));
-    toggle.lang = otherLanguage(lang);
+    if (toggle) {
+      toggleLabel.textContent = t('lang.toggle');
+      toggle.setAttribute('aria-label', t('lang.toggleLabel'));
+      toggle.lang = otherLanguage(lang);
+    }
     current = lang;
     render({ t, lang });
     redraw();
   }
 
-  toggle.addEventListener('click', async () => {
+  toggle?.addEventListener('click', async () => {
     const next = otherLanguage(current);
     writeStored(next);
     await apply(next);

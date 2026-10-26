@@ -57,13 +57,18 @@ test('liste indisponible : message clair et lien main toujours là', async ({ pa
   await expect(page.locator('#picker')).toBeHidden();
 });
 
-test('la bascule de langue traduit le menu', async ({ page }) => {
+test('le menu est en français, sans bouton de langue, même avec un navigateur en anglais', async ({ browser, baseURL }) => {
+  const context = await browser.newContext({ locale: 'en-US' });
+  const page = await context.newPage();
   await withLots(page);
-  await page.goto('/dev/');
-  await page.getByRole('button', { name: 'Switch to English' }).click();
-  await expect(page.getByRole('link', { name: /Main branch/ })).toBeVisible();
-  await expect(page.getByRole('link', { name: /Latest lot: Lot 1/ })).toBeVisible();
-  await expect(page.locator('html')).toHaveAttribute('lang', 'en');
+  await page.goto(`${baseURL}/dev/`);
+  await expect(page.locator('html')).toHaveAttribute('lang', 'fr');
+  await expect(page.getByRole('link', { name: /Branche main/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: /English|Switch/ })).toHaveCount(0);
+  await expect(page.locator('[data-lang-toggle]')).toHaveCount(0);
+  const raw = await page.getByRole('main').innerText();
+  expect(raw).not.toMatch(/\bdev\.[a-z]+/);
+  await context.close();
 });
 
 test('aucune requête externe et console propre', async ({ page, baseURL }) => {

@@ -57,4 +57,5 @@ picker.addEventListener('submit', (event) => {
   if (select.value) location.assign(select.value);
 });
 
-await startPage({ base: '../', render });
+// Menu de développement : français seulement (la langue se réglera dans le jeu).
+await startPage({ base: '../', lang: 'fr', render });

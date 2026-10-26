@@ -11,8 +11,15 @@ const scripts = ['js/main.js', 'js/page.js', 'dev/dev.js'].map((f) => readFileSy
 const usedKeys = new Set(pages.flatMap((p) => [...p.matchAll(/data-(?:i18n|title-key)="([^"]+)"/g)].map((m) => m[1])));
 
 describe('dictionnaires fr / en', () => {
-  it('ont exactement les mêmes clés', () => {
-    expect(Object.keys(en).sort()).toEqual(Object.keys(fr).sort());
+  // Le menu /dev est en français seulement : ses clés « dev.* » n'existent que dans fr.json.
+  const shared = (dict) => Object.keys(dict).filter((k) => !k.startsWith('dev.')).sort();
+
+  it('ont exactement les mêmes clés (hors menu /dev, français seulement)', () => {
+    expect(shared(en)).toEqual(shared(fr));
+  });
+
+  it('n\'ont aucune clé « dev.* » en anglais', () => {
+    expect(Object.keys(en).filter((k) => k.startsWith('dev.'))).toEqual([]);
   });
 
   it('n\'ont aucune valeur vide', () => {
