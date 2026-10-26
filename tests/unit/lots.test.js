@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { compareLots, lotLabel, parseLot, sortLots, splitLots } from '../../js/lots.js';
+import { compareLots, lotLabel, lotUrl, parseEntry, parseLot, sortLots, splitLots } from '../../js/lots.js';
 
 const lot = (name) => ({ name });
 
@@ -69,5 +69,23 @@ describe('lotLabel', () => {
     expect(lotLabel('lot-0b')).toBe('Lot 0b');
     expect(lotLabel('lot-7')).toBe('Lot 7');
     expect(lotLabel('main')).toBe('main');
+  });
+});
+
+describe('parseEntry / lotUrl', () => {
+  it('lit la première ligne de apercu.txt', () => {
+    expect(parseEntry('jeu.html\ntype: hifi\ntitre: Cœur du jeu\n')).toBe('jeu.html');
+    expect(parseEntry('jeu.html\r\nx')).toBe('jeu.html');
+    expect(parseEntry('pages/menu.html')).toBe('pages/menu.html');
+  });
+
+  it('refuse tout ce qui est invalide', () => {
+    for (const bad of ['../x.html', '/jeu.html', 'a b.html', 'jeu.html?x=1', 'é.html', '', null, undefined, 3, {}]) expect(parseEntry(bad), String(bad)).toBe('');
+  });
+
+  it('construit l\'adresse du lot, avec ou sans page d\'aperçu', () => {
+    expect(lotUrl({ name: 'lot-1', entry: 'jeu.html' })).toBe('../lots/lot-1/jeu.html');
+    expect(lotUrl({ name: 'lot-0' })).toBe('../lots/lot-0/');
+    expect(lotUrl({ name: 'lot-0', entry: '../evil' })).toBe('../lots/lot-0/');
   });
 });

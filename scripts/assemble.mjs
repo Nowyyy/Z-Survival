@@ -4,9 +4,9 @@
 //  - _site/lots.json = la liste des lots (nom, commit, date) lue par /dev.
 // Les branches sont lues dans origin/* : le dépôt doit être cloné avec tout l'historique.
 import { execFileSync } from 'node:child_process';
-import { cpSync, existsSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { parseLot, sortLots } from '../js/lots.js';
+import { parseEntry, parseLot, sortLots } from '../js/lots.js';
 
 const OUT = '_site';
 const WORK = '.lots';
@@ -35,7 +35,9 @@ for (const name of names) {
     }
     cpSync(join(dir, OUT), join(OUT, 'lots', name), { recursive: true });
     const [sha, date] = git('log', '-1', '--format=%h|%cI', `origin/${name}`).split('|');
-    lots.push({ name, sha, date });
+    // apercu.txt (première ligne) désigne la page à ouvrir pour ce lot, par exemple jeu.html.
+    const entry = existsSync(join(dir, 'apercu.txt')) ? parseEntry(readFileSync(join(dir, 'apercu.txt'), 'utf8')) : '';
+    lots.push({ name, sha, date, entry });
   } catch (error) {
     console.warn(`Lot ignoré (${name}) : ${error.message.split('\n')[0]}`);
   }

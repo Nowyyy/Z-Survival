@@ -5,7 +5,7 @@ const LOTS = {
   lots: [
     { name: 'lot-0', sha: 'aaaaaaa', date: '2026-10-26T00:11:53+00:00' },
     { name: 'lot-0b', sha: 'bbbbbbb', date: '2026-10-27T10:00:00+00:00' },
-    { name: 'lot-1', sha: 'ccccccc', date: '2026-11-02T10:00:00+00:00' },
+    { name: 'lot-1', sha: 'ccccccc', date: '2026-11-02T10:00:00+00:00', entry: 'jeu.html' },
   ],
 };
 
@@ -18,7 +18,7 @@ test('affiche main, le dernier lot et les anciens lots dans un menu déroulant',
   await expect(page).toHaveURL(/\/dev\/$/);
   await expect(page.getByRole('link', { name: /Branche main/ })).toHaveAttribute('href', '../');
   const latest = page.getByRole('link', { name: /Dernier lot : Lot 1/ });
-  await expect(latest).toHaveAttribute('href', '../lots/lot-1/');
+  await expect(latest).toHaveAttribute('href', '../lots/lot-1/jeu.html');
   const options = await page.locator('#previous option').allTextContents();
   expect(options[0]).toBe('Choisir un lot…');
   expect(options.slice(1).map((o) => o.split(' · ')[0])).toEqual(['Lot 0b', 'Lot 0']);
@@ -31,6 +31,12 @@ test('ouvre l\'ancien lot choisi', async ({ page }) => {
   await page.locator('#previous').selectOption({ value: '../lots/lot-0b/' });
   await page.getByRole('button', { name: 'Ouvrir' }).click();
   await expect(page).toHaveURL(/\/lots\/lot-0b\/$/);
+});
+
+test('un ancien lot avec une page d\'aperçu s\'ouvre sur cette page', async ({ page }) => {
+  await withLots(page, { lots: [{ name: 'lot-1', entry: 'jeu.html' }, { name: 'lot-2' }] });
+  await page.goto('/dev/');
+  await expect(page.locator('#previous option[value="../lots/lot-1/jeu.html"]')).toHaveCount(1);
 });
 
 test('le lien main ramène à la page d\'attente', async ({ page }) => {

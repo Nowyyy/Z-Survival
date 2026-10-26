@@ -1,5 +1,5 @@
 import { startPage } from '../js/page.js';
-import { lotLabel, splitLots } from '../js/lots.js';
+import { lotLabel, lotUrl, splitLots } from '../js/lots.js';
 
 async function loadLots() {
   try {
@@ -31,7 +31,7 @@ function render({ t, lang }) {
 
   latestLink.hidden = !latest;
   if (latest) {
-    latestLink.href = `../lots/${latest.name}/`;
+    latestLink.href = lotUrl(latest);
     latestLabel.textContent = t('dev.latest').replace('{lot}', lotLabel(latest.name));
     latestMeta.textContent = formatDate(latest.date, lang);
   }
@@ -40,7 +40,7 @@ function render({ t, lang }) {
   select.replaceChildren(new Option(t('dev.choose'), ''));
   for (const lot of previous) {
     const date = formatDate(lot.date, lang);
-    select.add(new Option(date ? `${lotLabel(lot.name)} · ${date}` : lotLabel(lot.name), `../lots/${lot.name}/`));
+    select.add(new Option(date ? `${lotLabel(lot.name)} · ${date}` : lotLabel(lot.name), lotUrl(lot)));
   }
   select.value = [...select.options].some((o) => o.value === chosen) ? chosen : '';
   picker.hidden = !lots;
