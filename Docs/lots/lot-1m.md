@@ -32,5 +32,5 @@ Branche `lot-1m` (depuis `main`, lot 1 fusionné : `lot-1` est ancêtre de `main
 Inclinaison 75° par défaut ; hauteur des murs 60 ; épaisseur 40 vers l'extérieur ; couleurs `--game-*` (peau, pantalon, bottes, arme, haillons, soleil, ambiance) ; seuil Lighthouse de `jeu.html` à 45 (mesuré 55, remesuré 55 après les retours) ; zoom par défaut 2 ; `fireRange` 1 600 (tir au-delà du laser).
 ## À tester par moi
 Sur un téléphone en paysage et sur ordinateur, `/lot-1m/jeu.html?fps=1` : fluidité, personnages (E2-1), ombres, laser, balles, sticks (E2-3, E2-4), HUD (E2-2), pause (E2-5, E2-6), fin (E2-7), plein écran (F), `?tilt=60` et `?tilt=90`.
-## Fusion (à faire par moi)
-Pull Request `lot-1m` → `main`, « Create a merge commit », ne pas supprimer la branche ; vérifier `/`, `/dev/`, `/lots/lot-1m/jeu.html`.
+## Fusion
+Fusionné dans `main` à la demande du propriétaire (fusion avec commit de fusion, sans force-push, branche `lot-1m` conservée). Pages à vérifier : `/`, `/dev/`, `/lots/lot-1m/jeu.html`. Le déploiement de `main` publie le jeu en 3D à la racine.
