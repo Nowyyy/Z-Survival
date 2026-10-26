@@ -10,7 +10,8 @@
     "test:e2e": "playwright test",
     "build": "node scripts/build.mjs",
     "lighthouse": "node scripts/lighthouse.mjs",
-    "assemble": "node scripts/assemble.mjs"
+    "assemble": "node scripts/assemble.mjs",
+    "vendor": "node scripts/vendor.mjs"
   },
   "devDependencies": {
     "@axe-core/playwright": "4.14.0",
@@ -19,6 +20,7 @@
     "eslint": "10.13.0",
     "globals": "17.13.0",
     "lighthouse": "13.5.0",
+    "phaser": "4.2.1",
     "vitest": "5.0.5"
   }
 }

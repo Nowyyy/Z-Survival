@@ -31,3 +31,14 @@ export function lotLabel(name) {
   const p = parseLot(name);
   return p ? `Lot ${p.num}${p.suffix}` : String(name);
 }
+
+// Page d'aperçu d'un lot : première ligne de apercu.txt (caractères A-Za-z0-9._/-, sans « .. » ni « / » initial). Sinon '' (racine du lot).
+export function parseEntry(text) {
+  const first = typeof text === 'string' ? text.split(/\r?\n/, 1)[0].trim() : '';
+  return /^[A-Za-z0-9._/-]+$/.test(first) && !first.includes('..') && !first.startsWith('/') ? first : '';
+}
+
+// Adresse relative d'un lot depuis /dev/ : le dossier du lot, suivi de sa page d'aperçu si elle existe.
+export function lotUrl(lot, root = '../') {
+  return `${root}lots/${lot?.name}/${parseEntry(lot?.entry)}`;
+}
