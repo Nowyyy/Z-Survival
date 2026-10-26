@@ -1,0 +1,16 @@
+{
+  "_jetable": "Test 3D jetable (lot 0t) : les 6 configurations du banc d'essai. maxPixelRatio plafonne le ratio de pixels (min(devicePixelRatio, plafond)).",
+  "seed": 20260101,
+  "duration": 6,
+  "warmup": 1,
+  "quickDuration": 1,
+  "quickWarmup": 0.25,
+  "configs": [
+    { "zombies": 5, "shadows": false, "maxPixelRatio": 1 },
+    { "zombies": 5, "shadows": false, "maxPixelRatio": 2 },
+    { "zombies": 8, "shadows": true, "maxPixelRatio": 1 },
+    { "zombies": 8, "shadows": true, "maxPixelRatio": 2 },
+    { "zombies": 20, "shadows": false, "maxPixelRatio": 1 },
+    { "zombies": 20, "shadows": true, "maxPixelRatio": 2 }
+  ]
+}
