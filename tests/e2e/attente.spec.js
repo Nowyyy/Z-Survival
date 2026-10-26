@@ -21,34 +21,16 @@ test('aucune couleur en dur hors tokens.css', async () => {
   expect(readFileSync('index.html', 'utf8')).not.toMatch(/style="[^"]*#|style="[^"]*rgb/);
 });
 
-test('la bascule de langue fonctionne avec de vrais clics', async ({ page }) => {
-  await page.goto('/');
-  const title = page.getByRole('heading', { level: 1 });
-  await expect(title).toHaveText('Z-Survival');
+test('la page est en français, sans bouton de langue, même avec un navigateur en anglais', async ({ browser, baseURL }) => {
+  const context = await browser.newContext({ locale: 'en-US' });
+  const page = await context.newPage();
+  await page.goto(baseURL);
   await expect(page.locator('html')).toHaveAttribute('lang', 'fr');
-
-  await page.getByRole('button', { name: 'Switch to English' }).click();
-  await expect(title).toHaveText('Z-Survival');
-  await expect(page.locator('html')).toHaveAttribute('lang', 'en');
-  await expect(page).toHaveTitle('Z-Survival');
-
-  await page.getByRole('button', { name: 'Passer en français' }).click();
-  await expect(title).toHaveText('Z-Survival');
-  await expect(page.locator('html')).toHaveAttribute('lang', 'fr');
-});
-
-test('le choix de langue est mémorisé après rechargement', async ({ page }) => {
-  await page.goto('/');
-  await page.getByRole('button', { name: 'Switch to English' }).click();
-  await page.reload();
-  await expect(page.locator('html')).toHaveAttribute('lang', 'en');
-});
-
-test('le bouton de langue respecte la cible tactile de 44 px', async ({ page }) => {
-  await page.goto('/');
-  const box = await page.locator('[data-lang-toggle]').boundingBox();
-  expect(box.width).toBeGreaterThanOrEqual(44);
-  expect(box.height).toBeGreaterThanOrEqual(44);
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Z-Survival');
+  await expect(page.getByText('En construction. Reviens bientôt !')).toBeVisible();
+  await expect(page.locator('[data-lang-toggle]')).toHaveCount(0);
+  await expect(page.getByRole('button')).toHaveCount(0);
+  await context.close();
 });
 
 test('aucune requête externe et console propre', async ({ page, baseURL }) => {
@@ -62,7 +44,6 @@ test('aucune requête externe et console propre', async ({ page, baseURL }) => {
   page.on('requestfailed', (r) => problems.push(`échec ${r.url()}`));
   page.on('response', (r) => r.status() >= 400 && problems.push(`${r.status()} ${r.url()}`));
   await page.goto('/');
-  await page.getByRole('button', { name: 'Switch to English' }).click();
   await page.waitForLoadState('networkidle');
   expect(external).toEqual([]);
   expect(problems).toEqual([]);
@@ -78,15 +59,12 @@ for (const width of WIDTHS) {
   });
 }
 
-for (const lang of ['fr', 'en']) {
-  test(`axe : aucune violation (${lang})`, async ({ page }) => {
-    await page.goto('/');
-    if (lang === 'en') await page.getByRole('button', { name: 'Switch to English' }).click();
-    await expect(page.locator('html')).toHaveAttribute('lang', lang);
-    const results = await new AxeBuilder({ page }).analyze();
-    expect(results.violations).toEqual([]);
-  });
-}
+test('axe : aucune violation', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.locator('#app')).toBeVisible();
+  const results = await new AxeBuilder({ page }).analyze();
+  expect(results.violations).toEqual([]);
+});
 
 test('sans JavaScript, seul le message noscript est visible', async ({ baseURL }) => {
   // Le réglage de Blink désactive vraiment les scripts : <noscript> est alors rendu comme dans un vrai navigateur.

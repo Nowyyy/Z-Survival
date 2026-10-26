@@ -1,3 +1,4 @@
 import { startPage } from './page.js';
 
-await startPage();
+// Français seulement pour l'instant : la langue se réglera dans le jeu.
+await startPage({ lang: 'fr' });
