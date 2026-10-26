@@ -1,40 +1,83 @@
-// Personnage articulé : bassin, tronc, tête, bras (épaule, coude), jambes (hanche, genou), arme tenue en main droite.
-// Géométries et matériaux partagés par tous les personnages (jamais recréés à chaque image). Le personnage regarde vers +Z local.
+// Personnage articulé : bassin, tronc, tête, bras (haut ; avant-bras avec main), jambes (cuisse ; jambe avec botte), arme tenue en
+// main droite (joueur). Une seule pièce par segment de membre (12 pièces au plus), formes arrondies (capsules, sphères simplifiées),
+// géométries et matériaux partagés par tous les personnages et jamais recréés à chaque image. Le personnage regarde vers +Z local.
+// Les textures viennent de l'atlas de personnages (régions de data/game/textures.json) : une géométrie par tenue et par variante.
 import * as THREE from 'three';
+import { LIMITS } from '../core/pose.js';
 import { FOOT, FORE, HAND, HIP_X, SHIN, SHOULDER_X, THIGH, UPPER } from './skeleton.js';
 
+const ATLAS = 'atlas-persos';
 const LEG = THIGH + SHIN + FOOT;
+const RADIAL = 8; // segments radiaux au plus (tronc, bassin, tête)
+const LIMB = 6; // segments radiaux des membres
 
-// Boîte dont l'origine est en haut (pivot) ou au bas, décalée par (ox, oy, oz).
-function box(w, h, d, ox = 0, oy = 0, oz = 0) {
-  const g = new THREE.BoxGeometry(w, h, d);
-  g.translate(ox, oy, oz);
-  return g;
+// Pièces qui projettent une ombre : seulement les principales (bassin, tronc, tête, cuisses).
+const CASTERS = new Set(['pelvis', 'torso', 'head', 'thigh']);
+
+const clampTo = (value, [lo, hi]) => Math.min(Math.max(value, lo), hi);
+
+// Fusionne des morceaux { geometry (déjà placée), rect (région d'atlas) } en une seule géométrie non indexée.
+function merge(parts) {
+  const positions = [];
+  const normals = [];
+  const uvs = [];
+  for (const { geometry, rect } of parts) {
+    const g = geometry.index ? geometry.toNonIndexed() : geometry;
+    positions.push(...g.attributes.position.array);
+    normals.push(...g.attributes.normal.array);
+    const uv = g.attributes.uv.array;
+    for (let i = 0; i < uv.length; i += 2) uvs.push(rect.u0 + uv[i] * (rect.u1 - rect.u0), rect.v0 + uv[i + 1] * (rect.v1 - rect.v0));
+    if (g !== geometry) g.dispose();
+    geometry.dispose();
+  }
+  const out = new THREE.BufferGeometry();
+  out.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  out.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
+  out.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+  out.computeBoundingSphere();
+  return out;
 }
 
-export function createKit(palette) {
-  const mat = (color) => new THREE.MeshLambertMaterial({ color });
+// Capsule d'axe vertical, de hauteur totale `height` (pivot en haut : le centre est à -height / 2), rayon r, étirée en (sx, sz).
+const capsule = (r, height, { y = -height / 2, sx = 1, sz = 1, caps = 1, radial = RADIAL } = {}) => new THREE.CapsuleGeometry(r, Math.max(0.01, height - 2 * r), caps, radial).scale(sx, 1, sz).translate(0, y, 0);
+const sphere = (rx, ry, rz, x, y, z, w = 7, h = 5) => new THREE.SphereGeometry(1, w, h).scale(rx, ry, rz).translate(x, y, z);
+const box = (w, h, d, x, y, z) => new THREE.BoxGeometry(w, h, d).translate(x, y, z);
+
+// Jeu de géométries d'un personnage. style : { outfit, trousers, boot, hair?, skin, gun?, sleeves } (identifiants de régions).
+function buildGeometries(style, rect) {
+  const r = (id) => rect(id);
+  const part = (geometry, id) => ({ geometry, rect: r(id) });
+  const geo = {
+    pelvis: merge([part(capsule(3.6, 15, { y: 1.5, sx: 1, sz: 0.62, caps: 1, radial: RADIAL }).rotateZ(Math.PI / 2), style.trousers)]),
+    torso: merge([part(capsule(5, 19, { y: 9.5, sx: 1.85, sz: 1, caps: 2 }), style.outfit)]),
+    head: merge([
+      part(sphere(4.7, 5.2, 4.9, 0, 5.4, 0, 8, 5), style.skin),
+      ...(style.hair ? [part(sphere(5, 3, 5.2, 0, 8.2, -0.3, 8, 3), style.hair)] : []),
+    ]),
+    upper: merge([part(capsule(2.5, UPPER, { caps: 1, radial: LIMB }), style.outfit)]),
+    fore: merge([part(capsule(2.1, FORE + 1, { y: -(FORE + 1) / 2, caps: 1, radial: LIMB }), style.sleeves), part(sphere(2.3, HAND / 2 + 0.3, 2.3, 0, -FORE - HAND / 2 + 0.6, 0.3, 6, 4), style.skin)]),
+    thigh: merge([part(capsule(3.2, THIGH + 1, { y: -(THIGH + 1) / 2 + 0.5, caps: 1, radial: LIMB }), style.trousers)]),
+    shin: merge([part(capsule(2.6, SHIN + 1, { y: -(SHIN + 1) / 2 + 0.5, caps: 1, radial: LIMB }), style.trousers), part(sphere(3.3, FOOT / 2 + 0.4, 5.6, 0, -SHIN - FOOT / 2 + 0.3, 2.2, 6, 4), style.boot)]),
+  };
+  if (style.gun) geo.gun = merge([part(box(2.8, 8.5, 3.4, 0, -5.4, 1.4), style.gun), part(box(2.8, 3, 4.2, 0, -2.4, -1.6), style.gun)]);
+  return geo;
+}
+
+// textures : sortie de createThreeTextures ; variants : data/game/zombie-variants.json.
+export function createKit({ textures, variants, hit }) {
+  const rect = (id) => textures.region(ATLAS, id);
+  const bodyMaterial = new THREE.MeshLambertMaterial({ map: textures.texture(ATLAS) });
+  const { player, zombie } = variants;
   return {
     geo: {
-      pelvis: box(15, 7, 9, 0, 1),
-      chest: box(19, 19, 10, 0, 9.5),
-      head: box(9.5, 10.5, 10, 0, 5.5),
-      hair: box(10.2, 3.2, 10.4, 0, 10.4),
-      nose: box(2.2, 2.2, 2.2, 0, 4.5, 5.6),
-      thigh: box(6.4, THIGH, 7, 0, -THIGH / 2),
-      shin: box(5.6, SHIN, 6, 0, -SHIN / 2),
-      foot: box(6, FOOT, 11, 0, -FOOT / 2, 2.6),
-      upper: box(5, UPPER, 5, 0, -UPPER / 2),
-      fore: box(4.4, FORE, 4.4, 0, -FORE / 2),
-      hand: box(4.6, HAND, 4.6, 0, -HAND / 2),
-      slide: box(2.8, 8.5, 3.4, 0, -5.4, 1.4),
-      grip: box(2.8, 3, 4.2, 0, -2.4, -1.6),
+      player: buildGeometries({ outfit: player.outfit, trousers: player.trousers, boot: player.boot, hair: player.hair, skin: player.skin, gun: player.gun, sleeves: player.outfit }, rect),
+      zombies: zombie.variants.map((v) => buildGeometries({ outfit: v.outfit, trousers: v.trousers, boot: zombie.boot, skin: v.skin, sleeves: v.skin }, rect)),
     },
+    variants: zombie.variants,
     mat: {
-      player: { skin: mat(palette.skin), outfit: mat(palette.player), trousers: mat(palette.trousers), boot: mat(palette.boot), gun: mat(palette.gun), hair: mat(palette.trousers) },
-      zombie: { skin: mat(palette.zombie), outfit: mat(palette.zombieClothes), trousers: mat(palette.zombieTrousers), boot: mat(palette.zombieTrousers), gun: mat(palette.gun), hair: mat(palette.zombieTrousers) },
-      // Flash d'un ennemi touché : tout le corps passe à cette couleur (emissive, insensible à la lumière).
-      hit: new THREE.MeshBasicMaterial({ color: palette.hit }),
+      body: bodyMaterial,
+      // Flash d'un ennemi touché : tout le corps passe à cette couleur (insensible à la lumière).
+      hit: new THREE.MeshBasicMaterial({ color: hit }),
     },
   };
 }
@@ -44,16 +87,15 @@ const gunBase = new THREE.Quaternion().setFromEuler(new THREE.Euler(-Math.PI / 2
 const qHand = new THREE.Quaternion();
 const qTorso = new THREE.Quaternion();
 
-// kind : 'player' (arme tenue en main) ou 'zombie' (bras tendus, tête penchée, pas d'arme).
-export function createCharacter(kit, kind) {
-  const m = kit.mat[kind];
-  const g = kit.geo;
+// kind : 'player' (arme tenue en main) ou 'zombie' (bras tendus, tête penchée, pas d'arme) ; variant : indice dans zombie-variants.json.
+export function createCharacter(kit, kind, variant = 0) {
+  const traits = kind === 'zombie' ? kit.variants[variant % kit.variants.length] : { scale: 1, headTilt: 0, armLift: 0 };
+  const g = kind === 'zombie' ? kit.geo.zombies[variant % kit.geo.zombies.length] : kit.geo.player;
+  const base = kit.mat.body;
   const meshes = [];
-  const part = (geometry, material, parent, pos) => {
-    const mesh = new THREE.Mesh(geometry, material);
-    mesh.castShadow = true;
-    if (pos) mesh.position.set(...pos);
-    mesh.userData.base = material;
+  const part = (name, parent) => {
+    const mesh = new THREE.Mesh(g[name], base);
+    mesh.castShadow = CASTERS.has(name);
     parent.add(mesh);
     meshes.push(mesh);
     return mesh;
@@ -67,49 +109,45 @@ export function createCharacter(kit, kind) {
   };
 
   const root = new THREE.Group();
+  root.scale.setScalar(traits.scale);
   const pelvis = group(root, 0, LEG, 0);
-  part(g.pelvis, m.trousers, pelvis);
+  part('pelvis', pelvis);
   const torso = group(pelvis, 0, 4, 0);
   if (kind === 'zombie') torso.rotation.x = 0.14;
-  part(g.chest, m.outfit, torso);
+  part('torso', torso);
   const head = group(torso, 0, 19, 0);
-  part(g.head, m.skin, head);
-  if (kind === 'player') part(g.hair, m.hair, head);
-  part(g.nose, m.skin, head);
+  part('head', head);
 
   const legs = {};
   const arms = {};
   for (const [name, side] of [['L', 1], ['R', -1]]) {
     const hip = group(pelvis, side * HIP_X, 0, 0);
-    part(g.thigh, m.trousers, hip);
+    part('thigh', hip);
     const knee = group(hip, 0, -THIGH, 0);
-    part(g.shin, m.trousers, knee);
-    const ankle = group(knee, 0, -SHIN, 0);
-    part(g.foot, m.boot, ankle);
-    legs[name] = { hip, knee };
+    const ankle = group(knee, 0, 0, 0);
+    part('shin', knee);
+    legs[name] = { hip, knee, ankle };
 
     const shoulder = group(torso, side * SHOULDER_X, 17, 0);
-    part(g.upper, m.outfit, shoulder);
+    part('upper', shoulder);
     const elbow = group(shoulder, 0, -UPPER, 0);
-    part(g.fore, m.skin, elbow);
+    part('fore', elbow);
     const wrist = group(elbow, 0, -FORE, 0);
-    part(g.hand, m.skin, wrist);
     arms[name] = { shoulder, elbow, wrist, side };
   }
 
   // Pistolet : tenu par la main droite, porté dans l'axe du tronc (soutenu par la main gauche qui le rejoint).
   let gun = null;
   if (kind === 'player') {
-    gun = new THREE.Group();
-    part(g.slide, m.gun, gun);
-    part(g.grip, m.gun, gun);
-    arms.R.wrist.add(gun);
+    gun = part('gun', arms.R.wrist);
+    gun.castShadow = false;
     gun.position.set(0, -1, 0);
   }
 
   return {
     root,
     kind,
+    variant,
     gun,
     // Angles réellement posés sur les articulations (même convention que computePose) : sert aux tests.
     readPose() {
@@ -125,9 +163,9 @@ export function createCharacter(kit, kind) {
     },
     // Flash de l'ennemi touché : les matériaux partagés sont échangés, rien n'est créé.
     setFlash(on) {
-      for (const mesh of meshes) mesh.material = on ? kit.mat.hit : mesh.userData.base;
+      for (const mesh of meshes) mesh.material = on ? kit.mat.hit : base;
     },
-    // pose : sortie de computePose(). Pose les angles, puis pose le bassin sur le pied le plus bas.
+    // pose : sortie de computePose(). Pose les angles (plus l'écart de posture de la variante), puis pose le bassin sur le pied le plus bas.
     setPose(pose) {
       let lowest = 0;
       for (const name of ['L', 'R']) {
@@ -139,11 +177,11 @@ export function createCharacter(kit, kind) {
       }
       pelvis.position.y = lowest + pose.bob * 0.8;
       torso.rotation.y = -pose.torsoTwist;
-      head.rotation.x = pose.headTilt;
+      head.rotation.x = clampTo(pose.headTilt + traits.headTilt, LIMITS.headTilt);
       for (const name of ['L', 'R']) {
         const arm = arms[name];
         arm.shoulder.rotation.y = -arm.side * pose[`inward${name}`];
-        arm.shoulder.rotation.x = -pose[`shoulder${name}`];
+        arm.shoulder.rotation.x = -clampTo(pose[`shoulder${name}`] + traits.armLift, LIMITS[`shoulder${name}`]);
         arm.elbow.rotation.x = -pose[`elbow${name}`];
       }
       if (gun) {

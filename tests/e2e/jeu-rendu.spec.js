@@ -29,7 +29,7 @@ async function countPixels(page, [r, g, b], tolerance = 40) {
     return n;
   }, [shot, [r, g, b], tolerance]);
 }
-const LASER = [0xff, 0x4a, 0x3d];
+const LASER = [0xff, 0x6a, 0x5a]; // --game-laser (lot 1c : éclairci de #ff4a3d pour atteindre 4,5:1 sur le sol)
 const BULLET = [0xff, 0xe8, 0xa3];
 
 test.describe('rendu visible', () => {
@@ -216,7 +216,8 @@ test.describe('portée du tir, laser qui s\'estompe, ombres lointaines', () => {
     };
     const withShadows = await added('&zoom=1');
     const without = await added('&zoom=1&shadows=0');
-    // Chaque pièce du zombie est dessinée deux fois (image et ombre) : le zombie à l'autre bout de la salle compte autant que s'il était près.
-    expect(withShadows).toBeGreaterThanOrEqual(without * 1.8);
+    // Lot 1c : seules les pièces principales (bassin, tronc, tête, deux cuisses : 5) projettent une ombre ; elles sont dessinées une seconde
+    // fois dans la passe d'ombres, même pour un zombie à l'autre bout de la salle (avant le lot 1c : chaque pièce, donc au moins 1,8 fois plus).
+    expect(withShadows).toBeGreaterThanOrEqual(without + 5);
   });
 });

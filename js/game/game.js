@@ -12,6 +12,7 @@ import { createBullet, stepBullets } from '../core/projectile.js';
 import { castRay } from '../core/ray.js';
 import { createRng } from '../core/rng.js';
 import { createSpawner, isHidden, stepSpawner } from '../core/spawner.js';
+import { variantFor } from '../core/variants.js';
 import { clampDt, num } from '../core/vec.js';
 import { createCharacter, createKit } from './character.js';
 import { createEffects, MAX_SPARKS, SPARK_TIME } from './effects.js';
@@ -19,6 +20,7 @@ import { createHud } from './hud.js';
 import { pickGround } from './picking.js';
 import { STRIDE } from './skeleton.js';
 import { fmt } from './texts.js';
+import { createThreeTextures } from './textures.js';
 import { buildWorld, createCamera } from './world.js';
 
 const RECOIL_TIME = 0.12;
@@ -43,7 +45,8 @@ export function createGame(ctx) {
 
   let renderer;
   try {
-    renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+    // ?test=1 : le tampon de dessin est conservé pour que sampleScreen puisse relire l'image.
+    renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance', preserveDrawingBuffer: params.test });
   } catch {
     return null;
   }
@@ -51,15 +54,16 @@ export function createGame(ctx) {
   renderer.shadowMap.type = THREE.PCFShadowMap;
   document.getElementById('game-canvas').appendChild(renderer.domElement);
 
-  const world = buildWorld({ palette, layout, render });
+  const textures = createThreeTextures(ctx.textureData, renderer);
+  const world = buildWorld({ palette, layout, render, textures });
   const rig = createCamera(render.camera, cfg.camera, layout, params.tilt, params.zoom);
-  const kit = createKit(palette);
+  const kit = createKit({ textures, variants: ctx.variants, hit: palette.hit });
   const effects = createEffects(world.scene, palette, { gunHeight: render.gunHeight, bulletRadius: cfg.weapon.bulletRadius });
   const hud = createHud(ctx.dict);
   const playerChar = createCharacter(kit, 'player');
   world.scene.add(playerChar.root);
   const zombies = new Map(); // id -> { char, phase, x, y, flashing }
-  const spare = [];
+  const spare = kit.variants.map(() => []); // personnages retirés, un stock par variante (leurs géométries diffèrent)
 
   let sim;
   let anim;
@@ -77,7 +81,7 @@ export function createGame(ctx) {
     for (const z of zombies.values()) {
       world.scene.remove(z.char.root);
       z.char.setFlash(false);
-      spare.push(z.char);
+      spare[z.char.variant].push(z.char);
     }
     zombies.clear();
     spawnLog.length = 0;
@@ -194,7 +198,14 @@ export function createGame(ctx) {
     }
 
     if (grid) {
+      const t0 = ctx.perf ? performance.now() : 0;
       sim.flow = stepFlow(sim.flow, dt, grid, sim.player, cfg.nav.recompute);
+      if (ctx.perf && sim.flow.recomputed) {
+        const ms = performance.now() - t0;
+        ctx.perf.flowSum += ms;
+        ctx.perf.flowCount += 1;
+        ctx.perf.flowMax = Math.max(ctx.perf.flowMax, ms);
+      }
       sim.enemies = stepEnemies(sim.enemies, sim.player, dt, cfg.zombie, { obstacles: layout.zombieObstacles, bounds: layout.worldBounds, grid, flow: sim.flow.flow, nav: cfg.nav });
       // Par quelle fenêtre chaque zombie est entré : la plus proche de l'endroit où il franchit la limite de la salle.
       sim.enemies = sim.enemies.map((e) => (e.entered || e.x < bounds.minX || e.x > bounds.maxX || e.y < bounds.minY || e.y > bounds.maxY ? e : { ...e, entered: entryWindow(e, layout.windows) }));
@@ -268,7 +279,8 @@ export function createGame(ctx) {
       alive.add(e.id);
       let z = zombies.get(e.id);
       if (!z) {
-        z = { char: spare.pop() ?? createCharacter(kit, 'zombie'), phase: 0, x: e.x, y: e.y, flashing: false };
+        const variant = variantFor(e.id, ctx.seed, kit.variants.length);
+        z = { char: spare[variant].pop() ?? createCharacter(kit, 'zombie', variant), phase: 0, x: e.x, y: e.y, flashing: false };
         world.scene.add(z.char.root);
         zombies.set(e.id, z);
       }
@@ -291,7 +303,7 @@ export function createGame(ctx) {
       if (alive.has(id)) continue;
       world.scene.remove(z.char.root);
       z.char.setFlash(false);
-      spare.push(z.char);
+      spare[z.char.variant].push(z.char);
       zombies.delete(id);
     }
 
@@ -315,10 +327,11 @@ export function createGame(ctx) {
 
   // Position du joueur à l'écran, de 0 à 1 (0,5 = au centre).
   const probe = new THREE.Vector3();
-  function projectPlayer() {
-    probe.set(sim.player.x, 0, sim.player.y).project(rig.camera);
+  function screenOf(x, y) {
+    probe.set(x, 0, y).project(rig.camera);
     return { x: (probe.x + 1) / 2, y: (1 - probe.y) / 2 };
   }
+  const projectPlayer = () => screenOf(sim.player.x, sim.player.y);
 
   let last = null;
   let frameId = 0;
@@ -335,6 +348,32 @@ export function createGame(ctx) {
     followCamera(paused ? 0 : dt);
     renderer.render(world.scene, rig.camera);
     lastInfo = { calls: renderer.info.render.calls, triangles: renderer.info.render.triangles };
+  }
+
+  // Test : image à jour tout de suite (positions, caméra), recopiée dans un canvas 2D pour en lire les pixels.
+  let probeCanvas = null;
+  function sample(x, y, w, h) {
+    draw(0);
+    followCamera(0);
+    renderer.render(world.scene, rig.camera);
+    lastInfo = { calls: renderer.info.render.calls, triangles: renderer.info.render.triangles };
+    const src = renderer.domElement;
+    const k = src.width / Math.max(1, window.innerWidth);
+    const sw = Math.max(1, Math.round(w * k));
+    const sh = Math.max(1, Math.round(h * k));
+    probeCanvas ??= document.createElement('canvas');
+    probeCanvas.width = sw;
+    probeCanvas.height = sh;
+    const c2d = probeCanvas.getContext('2d', { willReadFrequently: true });
+    c2d.drawImage(src, Math.round(x * k), Math.round(y * k), sw, sh, 0, 0, sw, sh);
+    const pixels = c2d.getImageData(0, 0, sw, sh).data;
+    const seen = new Set();
+    let lum = 0;
+    for (let i = 0; i < pixels.length; i += 4) {
+      seen.add(((pixels[i] >> 4) << 8) | ((pixels[i + 1] >> 4) << 4) | (pixels[i + 2] >> 4));
+      lum += 0.2126 * pixels[i] + 0.7152 * pixels[i + 1] + 0.0722 * pixels[i + 2];
+    }
+    return { distinctColors: seen.size, meanLuminance: lum / (pixels.length / 4) / 255 };
   }
 
   // Aucune boucle de rendu quand l'onglet est caché.
@@ -361,6 +400,7 @@ export function createGame(ctx) {
       return sim;
     },
     addEnemy,
+    sample,
     // Test : avance la simulation de `seconds` par pas de 0,05 s, sans attendre le rendu (puis une image à jour).
     advance(seconds) {
       const n = Math.min(4000, Math.max(0, Math.round(Number(seconds) / STEP) || 0));
@@ -400,11 +440,12 @@ export function createGame(ctx) {
       return {
         player: { x: sim.player.x, y: sim.player.y, health: sim.player.health },
         aim: sim.aim.angle,
-        enemies: sim.enemies.map((e) => ({ id: e.id, x: e.x, y: e.y, health: e.health, entered: e.entered ?? null, from: e.from ?? null })),
+        enemies: sim.enemies.map((e) => ({ id: e.id, x: e.x, y: e.y, health: e.health, entered: e.entered ?? null, from: e.from ?? null, variant: variantFor(e.id, ctx.seed, kit.variants.length), screen: screenOf(e.x, e.y), pose: zombies.get(e.id)?.char.readPose() ?? null })),
         bullets: sim.bullets.map((b) => ({ id: b.id, x: b.x, y: b.y, angle: b.angle })),
         kills: sim.kills,
         camera: { x: cam.x, y: cam.y, z: cam.z, distance: rig.view.distance, tilt: rig.view.tilt, zoom: rig.view.zoom, target: { ...rig.view.target } },
         render: { ...lastInfo },
+        textures: { count: ctx.textureData.count, bytes: ctx.textureData.bytes, readyMs: Math.round(ctx.textureData.ms), ready: true },
         view: visibleRect(),
         playerScreen: projectPlayer(),
         laserEnd: laser ? { x: laser.ray.end.x, y: laser.ray.end.y } : null,

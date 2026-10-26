@@ -184,6 +184,8 @@ test.describe('téléphone', () => {
     await expect(page.locator('#rotate')).toBeVisible();
     await expect(page.locator('#rotate')).toContainText('Tourne ton téléphone');
     await expect(page.locator('#game-root')).toBeHidden();
+    // Lot 1c : la partie démarre après la préparation des textures ; on attend qu'elle existe avant de lire son état.
+    await page.waitForFunction(() => window.__zs !== undefined, null, { timeout: 60_000 });
     await expect.poll(() => page.evaluate(() => window.__zs.getState()?.paused)).toBe(true);
     await context.close();
   });

@@ -1,21 +1,11 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync, readdirSync } from 'node:fs';
+import { contrast, parseColor } from '../../js/core/color.js';
 
 const tokens = readFileSync('css/tokens.css', 'utf8');
 const vars = Object.fromEntries([...tokens.matchAll(/--([a-z0-9-]+):\s*([^;]+);/g)].map((m) => [m[1], m[2].trim()]));
 
-function luminance(hex) {
-  const n = parseInt(hex.slice(1), 16);
-  const [r, g, b] = [n >> 16, (n >> 8) & 255, n & 255].map((v) => {
-    const c = v / 255;
-    return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
-  });
-  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
-}
-function contrast(a, b) {
-  const [hi, lo] = [luminance(vars[a]), luminance(vars[b])].sort((x, y) => y - x);
-  return (hi + 0.05) / (lo + 0.05);
-}
+const contrastOf = (a, b) => contrast(parseColor(vars[a]), parseColor(vars[b]));
 
 describe('contrastes des jetons (minimum 4,5:1)', () => {
   const PAIRS = [
@@ -30,18 +20,18 @@ describe('contrastes des jetons (minimum 4,5:1)', () => {
     ['color-money', 'color-bg'], ['color-money', 'color-surface'], ['color-focus', 'color-bg'],
   ];
   it.each(PAIRS)('%s sur %s', (fg, bg) => {
-    expect(contrast(fg, bg)).toBeGreaterThanOrEqual(4.5);
+    expect(contrastOf(fg, bg)).toBeGreaterThanOrEqual(4.5);
   });
 });
 
 describe('grands textes sur fond sombre (minimum 3:1)', () => {
   it('le rouge sang du titre', () => {
-    expect(contrast('color-action', 'color-bg')).toBeGreaterThanOrEqual(3);
+    expect(contrastOf('color-action', 'color-bg')).toBeGreaterThanOrEqual(3);
   });
 
   it('le rouge de bordure et d\'éclaboussure se détache du fond', () => {
-    expect(contrast('color-action', 'color-bg')).toBeGreaterThanOrEqual(3);
-    expect(contrast('color-border', 'color-bg')).toBeGreaterThanOrEqual(3);
+    expect(contrastOf('color-action', 'color-bg')).toBeGreaterThanOrEqual(3);
+    expect(contrastOf('color-border', 'color-bg')).toBeGreaterThanOrEqual(3);
   });
 });
 

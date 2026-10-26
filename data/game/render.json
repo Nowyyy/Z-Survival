@@ -5,10 +5,10 @@
   "sillHeight": 16,
   "lintelBottom": 44,
   "gunHeight": 43,
-  "camera": { "fov": 40, "tilt": 75, "margin": 0.02, "zoom": 2, "slack": 60, "smoothing": 0.12, "near": 20, "far": 9000 },
+  "camera": { "fov": 40, "tilt": 75, "margin": 0.02, "zoom": 2.5, "slack": 60, "smoothing": 0.12, "near": 20, "far": 9000 },
   "light": {
-    "ambient": 1.5,
-    "sun": 2.4,
+    "ambient": 2.3,
+    "sun": 3.5,
     "sunOffset": { "x": -880, "y": 1200, "z": 560 },
     "shadowMap": 1024,
     "shadowHalfSize": 950,

@@ -8,8 +8,8 @@ Avant de modifier une page, lis `Docs/ref/conventions.md`.
 ```
 index.html (page d'attente) · jeu.html (le jeu) · apercu.txt · dev/ (menu /dev : main, dernier lot, anciens lots) · css/ (tokens.css, base.css)
 js/ (main.js, page.js, i18n.js, splat.js, lots.js)
-js/core/ logique pure · js/game/ rendu Three.js · js/save/ sauvegarde
-data/i18n/{fr,en}.json · data/game/ (équilibrage, monde, décor) · fonts/ · vendor/ · scripts/ (build, assemble, serve, lighthouse)
+js/core/ logique pure (dont texgen, color, variants) · js/game/ rendu Three.js (dont textures, loading) · js/save/ sauvegarde
+data/i18n/{fr,en}.json · data/game/ (équilibrage, monde, décor, textures, variantes de zombies) · fonts/ · vendor/ · scripts/ (build, assemble, serve, lighthouse)
 tests/unit (Vitest) · tests/e2e (Playwright) · Docs/seed.md (propriétaire)
 Docs/ref/ (environnement, conventions) · Docs/lots/ (bilans) · .github/workflows/ (lot 0-C)
 ```
@@ -47,7 +47,7 @@ Docs/ref/ (environnement, conventions) · Docs/lots/ (bilans) · .github/workflo
 - Le workflow `.github/workflows/pages.yml` n'est modifiable que si le prompt du lot l'autorise.
 - Rendu : Three.js 0.186.1 en devDependency copié par npm run vendor:three vers vendor/three/ (ne jamais éditer) ; importmap locale dans jeu.html ; lire le paquet installé avant d'utiliser l'API.
 - Coordonnées : logique 2D (x, y) ; Three.js (x, 0, y) ; haut de l'écran = nord ; js/core/ ne connaît pas Three.js.
-- Caméra : perspective inclinée 75° (?tilt=60|75|90), qui suit le joueur en douceur, 2× plus proche que la vue de toute la zone (?zoom=1|1.25|1.5|2|2.5|3 ; 1 = zone entière) ; js/core/viewport.js et camera.js. Plein écran : le canvas couvre toute la fenêtre, jamais de bandes ni de ratio fixe.
+- Caméra : perspective inclinée 75° (?tilt=60|75|90), qui suit le joueur en douceur, 2,5× plus proche que la vue de toute la zone (comme au lot 1m) (?zoom=1|1.25|1.5|2|2.5|3 ; 1 = zone entière) ; js/core/viewport.js et camera.js. Plein écran : le canvas couvre toute la fenêtre, jamais de bandes ni de ratio fixe.
 - Poses : js/core/pose.js (pur) donne les angles ; le rendu les applique ; géométries et matériaux partagés ; ne jamais recréer des objets à chaque image.
 - HUD : HTML, marges de 16 px plus env(safe-area-inset-*) via js/game/safe-area.js.
 - Entrées : event.code (jamais event.key) ; tir automatique quand le laser touche ; pas de bouton de tir.
@@ -60,3 +60,8 @@ Docs/ref/ (environnement, conventions) · Docs/lots/ (bilans) · .github/workflo
 - Hauteurs : murs 60, meubles 70 au plus, voitures 55 (ne pas masquer les zombies à 75°).
 - Tests : ?test=1 ajoute step(seconds), overview() ; ?empty=1 charge un monde sans meubles ; privilégier 667×375.
 - Lighthouse de jeu.html : performance 45, accessibilité 95, bonnes pratiques 95 ; CLS ≤ 0,1.
+- Textures : générées par js/core/texgen.js (pur, déterministe, tuilable) d'après data/game/textures.json ; aucune image importée ; couleurs passées en argument depuis les variables --game-*.
+- Chargement : js/game/textures.js génère par tranches de 8 ms, écran de préparation plein écran ; la partie démarre ensuite.
+- Personnages : 12 pièces et 700 triangles au plus ; 4 variantes de zombies par js/core/variants.js ; budget 300 appels de dessin (objectif 240) avec 8 zombies.
+- Lisibilité : contraste ≥ 3:1 personnages / sol (js/core/color.js) ; laser et balle ≥ 4,5:1 ; ne jamais dégrader ces seuils.
+- Tests : ?test=1 expose textures et sampleScreen ; ?fps=1 affiche durée des textures et du champ de flux.

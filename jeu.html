@@ -7,16 +7,38 @@
   <meta name="color-scheme" content="dark">
   <title>Z-Survival · Jeu</title>
   <link rel="icon" href="data:,">
+  <!-- La table d'import doit précéder tout préchargement de module : Firefox l'ignore sinon (« three » non remappé). -->
+  <script type="importmap">{"imports":{"three":"./vendor/three/three.module.js"}}</script>
   <link rel="preload" href="fonts/barlow-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="fonts/barlow-latin-700-normal.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="data/i18n/fr.json" as="fetch" crossorigin>
   <link rel="modulepreload" href="js/game/texts.js">
-  <script type="importmap">{"imports":{"three":"./vendor/three/three.module.js"}}</script>
   <link rel="modulepreload" href="vendor/three/three.module.js">
   <link rel="modulepreload" href="vendor/three/three.core.js">
   <link rel="stylesheet" href="css/tokens.css">
   <link rel="stylesheet" href="css/base.css">
   <link rel="stylesheet" href="css/game.css">
+  <script>
+    // Si le chargement échoue (script introuvable, erreur au démarrage), le dire à l'écran au lieu de rester à 0 %.
+    (function () {
+      function fail(detail) {
+        var box = document.getElementById('loading');
+        if (!box || box.hidden) return;
+        document.getElementById('loading-error').hidden = false;
+        var d = document.getElementById('loading-detail');
+        d.hidden = false;
+        d.textContent = String(detail).slice(0, 300);
+      }
+      window.addEventListener('error', function (e) {
+        var t = e.target;
+        if (t && t.tagName === 'SCRIPT') fail('Script introuvable : ' + t.src);
+        else if (e.message) fail(e.message);
+      }, true);
+      window.addEventListener('unhandledrejection', function (e) {
+        fail(e.reason && e.reason.message ? e.reason.message : e.reason);
+      });
+    })();
+  </script>
   <script type="module" src="js/game/boot.js"></script>
   <script type="module" src="js/game/main.js"></script>
 </head>
@@ -28,6 +50,12 @@
     <circle cx="32" cy="32" r="22" class="boot-ring"/>
     <circle cx="32" cy="32" r="8" class="boot-core"/>
   </svg>
+  <div id="loading" class="loading" role="status" aria-live="polite">
+    <p id="loading-text" class="loading-text"></p>
+    <p id="loading-error" class="loading-error" role="alert" data-i18n="game.loading.error" hidden></p>
+    <p id="loading-detail" class="loading-detail" hidden></p>
+    <div class="loading-bar" aria-hidden="true"><div id="loading-fill" class="loading-fill"></div></div>
+  </div>
   <div id="game-root" class="game-root" data-block="E2-1" role="application" data-i18n-label="game.aria" hidden>
     <div id="game-canvas" class="game-canvas"></div>
     <div id="hud" class="hud" data-block="E2-2">

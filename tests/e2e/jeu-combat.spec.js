@@ -96,16 +96,16 @@ test.describe('tir automatique', () => {
     await open(page);
     await aimRight(page);
     for (const y of [430, 440, 450, 460, 470]) await spawn(page, 1500, y);
-    const max = await page.evaluate(() => new Promise((resolve) => {
+    // Lot 1c : 3 s de jeu avancées par step() (pas de 0,05 s, même simulation) au lieu d'images réelles : en rendu logiciel (CI) une image
+    // dure plusieurs secondes et le test dépassait son délai. Avant : sondage par requestAnimationFrame jusqu'à s.time > 3.
+    const max = await page.evaluate(() => {
       let top = 0;
-      const tick = () => {
-        const s = window.__zs.getState();
-        top = Math.max(top, s.bullets.length);
-        if (s.time > 3) resolve(top);
-        else requestAnimationFrame(tick);
-      };
-      tick();
-    }));
+      for (let i = 0; i < 60; i += 1) {
+        window.__zs.step(0.05);
+        top = Math.max(top, window.__zs.getState().bullets.length);
+      }
+      return top;
+    });
     expect(max).toBeGreaterThan(0);
     expect(max).toBeLessThanOrEqual(30);
   });

@@ -306,10 +306,11 @@ test('test tactile (CDP) : le stick gauche déplace le joueur, la caméra le sui
   const cdp = await context.newCDPSession(page);
   await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: 100, y: 280, id: 1 }] });
   for (let i = 1; i <= 6; i += 1) await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: 100 + i * 14, y: 280, id: 1 }] });
-  await page.waitForTimeout(1200);
+  // Lot 1c : attente par sondage et non plus 1,2 s fixes (avant : waitForTimeout(1200) puis lecture) : en rendu logiciel (CI) le jeu n'affiche
+  // que quelques images par seconde et le déplacement n'avait pas encore atteint 100 unités. Mêmes seuils.
+  await expect.poll(async () => (await state(page)).player.x, { timeout: 30_000 }).toBeGreaterThan(before.player.x + 100);
+  await expect.poll(async () => (await state(page)).camera.target.x, { timeout: 30_000 }).toBeGreaterThan(before.camera.target.x + 60);
   const during = await state(page);
-  expect(during.player.x).toBeGreaterThan(before.player.x + 100);
-  expect(during.camera.target.x).toBeGreaterThan(before.camera.target.x + 60);
   expect(during.playerScreen.x).toBeGreaterThan(0.05);
   expect(during.playerScreen.x).toBeLessThan(0.95);
   await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });

@@ -44,7 +44,7 @@ describe('data/game/*.json', () => {
     expect(render.wallThickness).toBe(40);
     expect(render.sillHeight).toBeLessThan(render.lintelBottom);
     expect(render.lintelBottom).toBeLessThan(render.wallHeight);
-    expect(render.camera).toMatchObject({ fov: 40, tilt: 75, margin: 0.02, zoom: 2 });
+    expect(render.camera).toMatchObject({ fov: 40, tilt: 75, margin: 0.02, zoom: 2.5 });
     expect(render.light.shadowMap).toBe(1024);
   });
 

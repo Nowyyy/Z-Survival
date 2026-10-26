@@ -317,3 +317,68 @@ body.game {
     animation: none;
   }
 }
+
+/* Écran de préparation des textures : plein écran fixe, donc aucun décalage de mise en page. */
+.loading {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-4);
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+.loading[hidden] {
+  display: none;
+}
+
+.loading-text {
+  margin: 0;
+  font-size: var(--text-lg);
+  font-weight: var(--font-weight-bold);
+  text-align: center;
+}
+
+.loading-bar {
+  width: min(16rem, 70vw);
+  height: var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.loading-fill {
+  width: 100%;
+  height: 100%;
+  background: var(--color-action);
+  transform: scaleX(0);
+  transform-origin: left;
+}
+
+.loading-error {
+  margin: 0;
+  max-width: 28rem;
+  padding: 0 var(--space-4);
+  text-align: center;
+  color: var(--color-danger);
+  font-weight: var(--font-weight-bold);
+}
+
+.loading-detail {
+  margin: 0;
+  max-width: 28rem;
+  padding: 0 var(--space-4);
+  text-align: center;
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  overflow-wrap: anywhere;
+}
+
+.loading-error[hidden],
+.loading-detail[hidden] {
+  display: none;
+}

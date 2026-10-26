@@ -1,7 +1,7 @@
 {
-  "_provisoire": "Valeurs provisoires de la caméra (lot 1b). smoothing : constante de lissage exponentiel en secondes ; deadZone : fraction de la demi-vue au sol (0 = aucune zone morte) ; zoom : rapprochement par défaut (1 = toute la zone de jeu).",
+  "_provisoire": "Valeurs provisoires de la caméra (lot 1b). smoothing : constante de lissage exponentiel en secondes ; deadZone : fraction de la demi-vue au sol (0 = aucune zone morte) ; zoom : rapprochement par défaut (1 = toute la zone de jeu ; 2,5 depuis le lot 1c : même échelle qu'au lot 1m).",
   "smoothing": 0.12,
   "deadZone": 0,
-  "zoom": 2,
+  "zoom": 2.5,
   "slack": 60
 }

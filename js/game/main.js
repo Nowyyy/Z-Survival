@@ -3,12 +3,14 @@ import { buildLayout } from '../core/layout.js';
 import { parseTilt, parseZoom } from '../core/viewport.js';
 import { createAudio } from './audio.js';
 import { createGame } from './game.js';
+import { createLoading } from './loading.js';
 import { createInput } from './input.js';
-import { readPalette } from './palette.js';
+import { createTokenLookup, readPalette } from './palette.js';
 import { installSafeArea } from './safe-area.js';
+import { generateTextureData } from './textures.js';
 import { installTestHook } from './testhook.js';
 import { createUi } from './ui.js';
-import { applyTexts, loadDict } from './texts.js';
+import { applyTexts, fmt, loadDict, TEXTURE_TEXTS } from './texts.js';
 
 const DEFAULT_RATIO_CAP = 2;
 
@@ -26,9 +28,10 @@ function ratioCap(value) {
 
 const query = new URLSearchParams(location.search);
 const testMode = query.get('test') === '1';
+const fpsMode = query.get('fps') === '1';
 const seedParam = Number.parseInt(query.get('seed') ?? '', 10);
 
-const [dict, world, decor, camera, nav, player, weapons, enemies, render] = await Promise.all([
+const [dict, world, decor, camera, nav, player, weapons, enemies, render, texturesCfg, variants] = await Promise.all([
   loadDict(),
   loadJson('data/game/world.json'),
   loadJson('data/game/decor.json'),
@@ -38,6 +41,8 @@ const [dict, world, decor, camera, nav, player, weapons, enemies, render] = awai
   loadJson('data/game/weapons.json'),
   loadJson('data/game/enemies.json'),
   loadJson('data/game/render.json'),
+  loadJson('data/game/textures.json'),
+  loadJson('data/game/zombie-variants.json'),
 ]);
 
 applyTexts(dict);
@@ -45,8 +50,13 @@ installSafeArea();
 
 const palette = readPalette();
 const root = document.getElementById('game-root');
-root.hidden = false;
 document.getElementById('boot')?.remove();
+
+// Textures : calculées par tranches de 8 ms derrière l'écran de préparation ; la partie ne démarre qu'ensuite.
+const loading = createLoading(dict);
+const textureData = await generateTextureData(texturesCfg.textures, { lookup: createTokenLookup(), onProgress: loading.update });
+loading.done();
+root.hidden = false;
 
 // ?empty=1 (seulement avec ?test=1) : la salle du lot 1m sans meuble ni décor, mêmes coordonnées qu'au lot 1m.
 const layout = buildLayout(world, decor, { empty: testMode && query.get('empty') === '1', slack: camera.slack });
@@ -55,7 +65,11 @@ const ctx = {
   cfg: { layout, player, weapon: weapons.pistol, zombie: enemies.zombie, render, camera, nav },
   palette,
   dict,
+  textureData,
+  variants,
+  perf: fpsMode ? { flowSum: 0, flowCount: 0, flowMax: 0 } : null,
   params: {
+    test: testMode,
     nospawn: query.get('nospawn') === '1',
     tilt: parseTilt(query.get('tilt'), render.camera.tilt),
     zoom: parseZoom(query.get('zoom'), camera.zoom),
@@ -100,6 +114,11 @@ if (game === null) {
   error.textContent = dict['game.error.webgl'];
   error.hidden = false;
 } else {
-  if (query.get('fps') === '1') import('../fps.js');
+  if (fpsMode) {
+    import('../fps.js').then((fps) => fps.attachPerf(() => {
+      const p = ctx.perf;
+      return fmt(dict[TEXTURE_TEXTS.fps], { ms: Math.round(textureData.ms), flow: p.flowCount ? (p.flowSum / p.flowCount).toFixed(2) : '0', max: p.flowMax.toFixed(2) });
+    }));
+  }
   if (testMode) installTestHook(ctx, game);
 }

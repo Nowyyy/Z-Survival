@@ -76,7 +76,7 @@
   --game-ground: #121213;           /* décor extérieur, fond de caméra */
   --game-player: #f4f1ec;           /* joueur : os */
   --game-zombie: #6f9a5e;           /* zombie : vert terne (réussite assombrie) */
-  --game-laser: #ff4a3d;            /* laser de visée */
+  --game-laser: #ff6a5a;            /* laser de visée */
   --game-hit: #fff3c4;              /* flash d'un zombie touché, étincelle */
   --game-bullet: #ffe8a3;           /* balle et traînée */
   --game-muzzle: #ffb347;           /* flash de bouche */
@@ -93,4 +93,42 @@
   --game-car: #6b2b2b;              /* voitures abandonnées (rouge sale, provisoire) */
   --game-tree: #2e4a2c;             /* feuillage des arbres et des buissons */
   --game-furniture: #7a6448;        /* meubles (leurs variantes par type sont calculées dans le rendu) */
+
+  /* Jeu, lot 1c : couleurs des textures générées en code (passées aux générateurs par js/game/palette.js). Provisoires, à valider. */
+  --game-tile-a: #38383e;           /* carrelage de la salle, teinte claire */
+  --game-tile-b: #2e2e34;           /* carrelage de la salle, teinte sombre */
+  --game-grout: #121214;            /* joints du carrelage et du trottoir */
+  --game-wall-base: #7c5650;        /* enduit des murs */
+  --game-wall-dirt: #3d2321;        /* salissures et coulures des murs */
+  --game-wood: #8f7352;             /* bois clair : tables, comptoirs, caisses */
+  --game-wood-dark: #58432d;        /* bois sombre : veines, armoires, étagères */
+  --game-metal: #7a808b;            /* tôle, barreaux, lampadaires */
+  --game-asphalt: #262629;          /* route */
+  --game-line: #d8c35a;             /* lignes de la route */
+  --game-sidewalk: #343439;         /* dalles du trottoir */
+  --game-grass-a: #1e2a1b;          /* herbe, teinte sombre */
+  --game-grass-b: #2c3a26;          /* herbe, teinte claire */
+  --game-soil: #2f271e;             /* terre du sol extérieur et des sentiers */
+  --game-gravel: #4c443b;           /* gravier */
+  --game-bark: #54402f;             /* écorce */
+  --game-leaf: #46683c;             /* feuillage (arbres, buissons) */
+  --game-glass: #5d8097;            /* vitres des voitures */
+  --game-paint-1: #a23a36;          /* peinture de voiture, rouge */
+  --game-paint-2: #3f6389;          /* peinture de voiture, bleu */
+  --game-paint-3: #a8943f;          /* peinture de voiture, jaune sale */
+  --game-rust: #82492a;             /* rouille */
+  --game-vein: #5d7f78;             /* veines de la peau (jamais de rouge : pas de sang avant le lot 8) */
+  --game-zombie-skin: #98b387;      /* peau des zombies, pâle et verdâtre */
+  --game-zombie-skin-2: #b3b8a2;    /* peau des zombies, grise et pâle */
+  --game-zombie-skin-3: #7f9a6e;    /* peau des zombies, verte plus foncée */
+  --game-zombie-skin-4: #b5ae80;    /* peau des zombies, jaunâtre */
+  --game-cloth-1: #b9b49a;          /* tenue de zombie 1 (toile claire) */
+  --game-cloth-2: #a7b4bf;          /* tenue de zombie 2 (bleu-gris) */
+  --game-cloth-3: #c2a98a;          /* tenue de zombie 3 (beige) */
+  --game-cloth-4: #aab59a;          /* tenue de zombie 4 (vert pâle) */
+  --game-denim: #3a5584;            /* jean du joueur */
+  --game-denim-worn: #657b99;       /* jean délavé des zombies */
+  --game-pants-dark: #6c6a5e;       /* pantalon de toile des zombies */
+  --game-jacket: #cdb98f;           /* veste du joueur */
+  --game-hair: #3b2a20;             /* cheveux du joueur */
 }

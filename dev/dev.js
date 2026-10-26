@@ -1,5 +1,5 @@
 import { startPage } from '../js/page.js';
-import { lotLabel, lotUrl, parseEntry, splitLots } from '../js/lots.js';
+import { lotLabel, lotUrl, parseEntry, parseLot, splitLots } from '../js/lots.js';
 
 // Racine du site : '../' depuis /dev/, '../../../' depuis la copie du menu dans un aperçu (/lots/lot-N/dev/).
 const ROOT = /\/lots\/[^/]+\/dev\/?$/.test(location.pathname) ? '../../../' : '../';
@@ -28,7 +28,22 @@ async function loadLots() {
   }
 }
 
+// Journal des versions : data/changelog.json de la copie du menu elle-même (le menu d'un aperçu montre le journal de son lot).
+async function loadChangelog() {
+  try {
+    const response = await fetch('../data/changelog.json');
+    if (!response.ok) return [];
+    const data = await response.json();
+    return Array.isArray(data.lots) ? data.lots.filter((e) => parseLot(e?.name) && typeof e.titre === 'string') : [];
+  } catch {
+    return [];
+  }
+}
+
 const lots = await loadLots();
+const changelog = await loadChangelog();
+const changelogSection = document.getElementById('changelog');
+const changelogList = document.getElementById('changelog-list');
 const latestLink = document.getElementById('latest');
 const latestLabel = latestLink.querySelector('[data-label]');
 const latestMeta = latestLink.querySelector('[data-meta]');
@@ -63,6 +78,43 @@ function render({ t, lang }) {
   picker.hidden = !lots;
   select.disabled = previous.length === 0;
   picker.querySelector('button').disabled = previous.length === 0;
+
+  // Journal : l'ordre du fichier est chronologique, on l'affiche du plus récent au plus ancien ; la date et le lien viennent de lots.json quand le lot y figure.
+  const published = new Map((lots ? [lots.latest, ...lots.previous] : []).filter(Boolean).map((lot) => [lot.name, lot]));
+  const entries = [...changelog].reverse();
+  changelogSection.hidden = entries.length === 0;
+  changelogList.replaceChildren(...entries.map((entry) => {
+    const lot = published.get(entry.name);
+    const item = document.createElement('li');
+    const details = document.createElement('details');
+    details.className = 'changelog-entry';
+    const summary = document.createElement('summary');
+    summary.append(`${lotLabel(entry.name)} · ${entry.titre}`);
+    const date = lot ? formatDate(lot.date, lang) : '';
+    if (date) {
+      const small = document.createElement('span');
+      small.className = 'changelog-date';
+      small.textContent = date;
+      summary.append(small);
+    }
+    const points = document.createElement('ul');
+    points.className = 'changelog-points';
+    for (const text of Array.isArray(entry.points) ? entry.points : []) {
+      const li = document.createElement('li');
+      li.textContent = String(text);
+      points.append(li);
+    }
+    details.append(summary, points);
+    if (lot) {
+      const link = document.createElement('a');
+      link.className = 'changelog-open';
+      link.href = lotUrl(lot, ROOT);
+      link.textContent = t('dev.changelog.open');
+      details.append(link);
+    }
+    item.append(details);
+    return item;
+  }));
 
   note.textContent = lots === null ? t('dev.unavailable') : latest ? '' : t('dev.noLots');
   note.hidden = note.textContent === '';
