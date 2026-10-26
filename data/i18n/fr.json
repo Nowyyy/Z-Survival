@@ -1,7 +1,7 @@
 {
-  "meta.title": "Jeu de survie zombies (titre provisoire)",
-  "app.title": "Zombie",
-  "app.provisional": "Titre provisoire : le nom du jeu n'est pas encore choisi.",
+  "meta.title": "Z-Survival",
+  "app.title": "Z-Survival",
+  "app.provisional": "Jeu en développement : contenu provisoire.",
   "app.status": "En construction. Reviens bientôt !",
   "app.badge": "En construction",
   "lang.toggle": "English",

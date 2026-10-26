@@ -24,16 +24,16 @@ test('aucune couleur en dur hors tokens.css', async () => {
 test('la bascule de langue fonctionne avec de vrais clics', async ({ page }) => {
   await page.goto('/');
   const title = page.getByRole('heading', { level: 1 });
-  await expect(title).toHaveText('Zombie');
+  await expect(title).toHaveText('Z-Survival');
   await expect(page.locator('html')).toHaveAttribute('lang', 'fr');
 
   await page.getByRole('button', { name: 'Switch to English' }).click();
-  await expect(title).toHaveText('Zombie');
+  await expect(title).toHaveText('Z-Survival');
   await expect(page.locator('html')).toHaveAttribute('lang', 'en');
-  await expect(page).toHaveTitle(/working title/);
+  await expect(page).toHaveTitle('Z-Survival');
 
   await page.getByRole('button', { name: 'Passer en français' }).click();
-  await expect(title).toHaveText('Zombie');
+  await expect(title).toHaveText('Z-Survival');
   await expect(page.locator('html')).toHaveAttribute('lang', 'fr');
 });
 

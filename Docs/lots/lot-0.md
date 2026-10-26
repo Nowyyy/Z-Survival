@@ -26,7 +26,7 @@ Chaque paire texte/fond est testée à 4,5:1 minimum (`tests/unit/tokens.test.js
 - `npm run lint` : sans avertissement. `npm test` : 8 fichiers, 108 tests verts.
 - `npm run test:e2e` : 26 tests verts (13 par projet : jetons, aucune couleur en dur, bascule de langue au clic, mémorisation, cible 44 px, aucune requête externe et console propre, pas de débordement à 375/768/1440 px, axe fr et en, sans JavaScript, réduction de mouvement).
 - Lighthouse mobile (page locale, après l'habillage) : performance 92 à 99 selon les passes, accessibilité 100, bonnes pratiques 100, CLS 0 (la police Rubik Dirt, 190 Ko, est chargée après l'affichage : sans cela la performance tombait à 88). Seuils : 90 / 95 / 95, CLS ≤ 0,1.
-- Captures à 375, 768 et 1440 px regardées (deux passes) : zone rouge « En construction » en haut à gauche avec coulures, titre « Zombie » rouge qui dégouline, barre de progression, bouton de langue sur un coup de pinceau blanc, zone rouge de mention provisoire en bas ; rien ne déborde.
+- Captures à 375, 768 et 1440 px regardées (deux passes) : zone rouge « En construction » en haut à gauche avec coulures, titre « Z-Survival » rouge qui dégouline, barre de progression, bouton de langue sur un coup de pinceau blanc, zone rouge de mention « jeu en développement » en bas ; rien ne déborde.
 - `npm run build` : `_site/` contient `index.html`, `css`, `js`, `data`, `fonts`, `vendor` ; ni `Docs/`, ni `tests/`, ni `node_modules`.
 
 ## Points à savoir
