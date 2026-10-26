@@ -42,13 +42,14 @@ test.describe('rendu visible', () => {
 
   test('une balle en vol est visible (partie figée en plein vol, panneau de pause masqué)', async ({ page }) => {
     await open(page);
-    expect(await countPixels(page, BULLET, 12)).toBe(0);
+    // Quelques pixels proches de cette couleur existent déjà (lissage, personnage) : on compare avant et pendant le vol.
+    const before = await countPixels(page, BULLET, 12);
     await page.evaluate(() => { window.__zs.setInput({ aim: { angle: 0 } }); window.__zs.spawnEnemy(1500, 450); });
     await page.waitForFunction(() => window.__zs.getState().bullets.length > 0);
     await page.keyboard.press('KeyP');
     await page.addStyleTag({ content: '#pause-panel { display: none !important; }' });
     expect((await state(page)).bullets.length).toBeGreaterThan(0);
-    await expect.poll(() => countPixels(page, BULLET, 12), { timeout: 30_000 }).toBeGreaterThan(4);
+    await expect.poll(() => countPixels(page, BULLET, 12), { timeout: 30_000 }).toBeGreaterThan(before + 8);
   });
 
   test('un zombie tué disparaît de la scène : le nombre d\'appels de dessin redevient celui d\'avant', async ({ page }) => {
