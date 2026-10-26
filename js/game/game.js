@@ -43,7 +43,7 @@ export function createGame(ctx) {
   document.getElementById('game-canvas').appendChild(renderer.domElement);
 
   const world = buildWorld({ palette, room, render, maxAnisotropy: Math.min(4, renderer.capabilities.getMaxAnisotropy()) });
-  const rig = createCamera(render.camera, room, params.tilt);
+  const rig = createCamera(render.camera, room, params.tilt, params.zoom);
   const kit = createKit(palette);
   const effects = createEffects(world.scene, palette, { gunHeight: render.gunHeight, bulletRadius: cfg.weapon.bulletRadius });
   const hud = createHud(ctx.dict);
@@ -318,7 +318,7 @@ export function createGame(ctx) {
         enemies: sim.enemies.map((e) => ({ id: e.id, x: e.x, y: e.y, health: e.health })),
         bullets: sim.bullets.map((b) => ({ id: b.id, x: b.x, y: b.y, angle: b.angle })),
         kills: sim.kills,
-        camera: { x: cam.x, y: cam.y, z: cam.z, distance: rig.view.distance, tilt: rig.view.tilt },
+        camera: { x: cam.x, y: cam.y, z: cam.z, distance: rig.view.distance, tilt: rig.view.tilt, zoom: rig.view.zoom },
         render: { ...lastInfo },
         pose: { ...playerChar.readPose(), expected: { ...lastPose } },
         paused: ctx.ui.isPaused(),

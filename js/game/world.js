@@ -18,8 +18,7 @@ function addWalls(scene, palette, room, render) {
   const mesh = (geometry, material, x, y, z) => {
     const m = new THREE.Mesh(geometry, material);
     m.position.set(x, y, z);
-    m.castShadow = true;
-    m.receiveShadow = true;
+    m.receiveShadow = true; // les murs ne projettent pas d'ombre : seules celles des personnages comptent
     scene.add(m);
     return m;
   };
@@ -109,12 +108,14 @@ export function buildWorld({ palette, room, render, maxAnisotropy = 4 }) {
   };
 }
 
-// Caméra fixe centrée sur la salle, au sud de la cible, orientée au nord ; la distance fait tenir toute la salle.
-export function createCamera(cfg, room, tilt) {
+// Caméra fixe centrée sur la salle, au sud de la cible, orientée au nord ; la distance fait tenir toute la zone de jeu.
+export function createCamera(cfg, room, tilt, zoom = 1) {
   const camera = new THREE.PerspectiveCamera(cfg.fov, 1, cfg.near, cfg.far);
   camera.up.set(0, 0, -1);
   const target = { x: room.width / 2, y: room.height / 2 };
-  const view = { tilt, distance: 0 };
+  // La distance fait tenir la zone de jeu (face intérieure des murs) plus une petite marge ; ?zoom= rapproche pour les essais.
+  const play = { width: room.width - 2 * room.wall, height: room.height - 2 * room.wall };
+  const view = { tilt, zoom, distance: 0 };
   return {
     camera,
     view,
@@ -123,7 +124,7 @@ export function createCamera(cfg, room, tilt) {
       const aspect = Math.max(1, width) / Math.max(1, height);
       camera.aspect = aspect;
       camera.fov = cfg.fov;
-      view.distance = fitDistance(aspect, room, tilt, cfg.fov, cfg.margin);
+      view.distance = fitDistance(aspect, play, tilt, cfg.fov, cfg.margin) / zoom;
       const p = cameraPosition(target, view.distance, tilt);
       camera.position.set(p.x, p.y, p.z);
       camera.lookAt(target.x, 0, target.y);

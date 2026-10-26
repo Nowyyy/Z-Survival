@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
-import { DEFAULT_FOV, DEFAULT_TILT, TILTS, cameraPosition, fitDistance, groundView, parseTilt, projectGround } from '../../js/core/viewport.js';
+import { DEFAULT_FOV, DEFAULT_TILT, TILTS, cameraPosition, fitDistance, groundView, parseTilt, parseZoom, ZOOMS, projectGround } from '../../js/core/viewport.js';
 
 const room = JSON.parse(readFileSync('data/game/room.json', 'utf8'));
 const WINDOWS = [[375, 667], [667, 375], [768, 1024], [1440, 900], [1920, 1080], [2560, 1080], [800, 1200], [100, 100]];
@@ -185,5 +185,13 @@ describe('viewport.js : entrées hostiles', () => {
     const frozen = Object.freeze({ width: 1600, height: 900 });
     expect(() => fitDistance(1.6, frozen, 75, 40)).not.toThrow();
     expect(frozen).toEqual({ width: 1600, height: 900 });
+  });
+});
+
+describe('viewport.js : ?zoom=', () => {
+  it('autorise 1, 1,25 et 1,5 ; toute autre valeur donne 1', () => {
+    expect(ZOOMS).toEqual([1, 1.25, 1.5]);
+    expect([parseZoom('1'), parseZoom('1.25'), parseZoom('1.5')]).toEqual([1, 1.25, 1.5]);
+    for (const bad of [null, undefined, '', '2', '0', '1.3', 'x', '-1', 1.5, NaN]) expect(parseZoom(bad)).toBe(1);
   });
 });

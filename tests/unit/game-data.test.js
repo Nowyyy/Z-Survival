@@ -35,13 +35,13 @@ describe('data/game/*.json', () => {
     }
   });
 
-  it('render.json : valeurs de rendu cohérentes (murs de 90 au plus, caméra de 40°, inclinaison de 75° par défaut)', () => {
+  it('render.json : valeurs de rendu cohérentes (murs de 90 au plus, caméra de 40°, inclinaison de 75° par défaut, 2 % de marge)', () => {
     const render = load('render');
     expect(render.wallHeight).toBeLessThanOrEqual(90);
     expect(render.wallThickness).toBe(40);
     expect(render.sillHeight).toBeLessThan(render.lintelBottom);
     expect(render.lintelBottom).toBeLessThan(render.wallHeight);
-    expect(render.camera).toMatchObject({ fov: 40, tilt: 75, margin: 0.05 });
+    expect(render.camera).toMatchObject({ fov: 40, tilt: 75, margin: 0.02 });
     expect(render.light.shadowMap).toBe(1024);
   });
 

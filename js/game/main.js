@@ -1,5 +1,5 @@
 // Point d'entrée de jeu.html : charge les textes et les données, prépare le DOM, lance la partie en 3D (Three.js).
-import { parseTilt } from '../core/viewport.js';
+import { parseTilt, parseZoom } from '../core/viewport.js';
 import { createAudio } from './audio.js';
 import { createGame } from './game.js';
 import { createInput } from './input.js';
@@ -51,6 +51,7 @@ const ctx = {
   params: {
     nospawn: query.get('nospawn') === '1',
     tilt: parseTilt(query.get('tilt'), render.camera.tilt),
+    zoom: parseZoom(query.get('zoom')),
     maxRatio: ratioCap(query.get('dpr')),
     shadows: query.get('shadows') !== '0',
   },

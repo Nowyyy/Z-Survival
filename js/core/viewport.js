@@ -17,6 +17,13 @@ const clean = (aspect, tilt, fov) => ({
   fov: Math.min(Math.max(isNum(fov) ? fov : DEFAULT_FOV, 5), 120),
 });
 
+// Rapprochement demandé par ?zoom= (essais du propriétaire) : 1, 1,25 ou 1,5 ; toute autre valeur donne 1 (toute la zone visible).
+export const ZOOMS = [1, 1.25, 1.5];
+export function parseZoom(value) {
+  const n = typeof value === 'string' && /^\d(\.\d{1,2})?$/.test(value) ? Number(value) : null;
+  return ZOOMS.includes(n) ? n : 1;
+}
+
 // Inclinaison demandée par ?tilt= : 60, 75 ou 90 ; toute autre valeur donne l'inclinaison par défaut.
 export function parseTilt(value, fallback = DEFAULT_TILT) {
   const n = typeof value === 'string' && /^\d{2}$/.test(value) ? Number(value) : null;

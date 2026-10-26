@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
-import { fitDistance, projectGround } from '../../js/core/viewport.js';
-import { waitReady } from './helpers.js';
+import { projectGround } from '../../js/core/viewport.js';
+import { expectedDistance, waitReady } from './helpers.js';
 
 // Rendu 3D du lot 1m : couverture du canvas, HUD en HTML, poses, inclinaisons, salle entière. Petite fenêtre de préférence :
 // le rendu logiciel du navigateur de test y est plus rapide. Les tests se désactivent seuls si WebGL manque.
@@ -11,7 +11,6 @@ async function open(page, size, extra = '') {
   await page.goto(URL(extra));
   await waitReady(page);
 }
-const room = { width: 1600, height: 900 };
 
 test.describe('canvas plein écran', () => {
   test.skip(({ isMobile }) => isMobile, 'mesures de bureau');
@@ -31,7 +30,7 @@ test.describe('canvas plein écran', () => {
     await open(page, { width: 667, height: 375 });
     for (const [w, h] of [[900, 600], [1440, 900], [800, 1200]]) {
       await page.setViewportSize({ width: w, height: h });
-      await expect.poll(async () => (await state(page)).camera.distance).toBeCloseTo(fitDistance(w / h, room, 75, 40), 3);
+      await expect.poll(async () => (await state(page)).camera.distance).toBeCloseTo(expectedDistance(w / h, 75), 3);
       const b = await page.evaluate(() => {
         const r = document.querySelector('#game-canvas canvas').getBoundingClientRect();
         return { w: Math.round(r.width), h: Math.round(r.height) };
@@ -51,14 +50,15 @@ test.describe('canvas plein écran', () => {
   });
 });
 
-test('toute la salle est visible, sans défilement, dans les fenêtres listées', async ({ page, isMobile }) => {
+test('toute la zone de jeu est visible, sans défilement, dans les fenêtres listées', async ({ page, isMobile }) => {
   test.skip(isMobile, 'mesures de bureau');
   await open(page, { width: 667, height: 375 });
   for (const [w, h] of [[667, 375], [768, 1024], [1440, 900], [1920, 1080], [2560, 1080], [800, 1200], [100, 100]]) {
     await page.setViewportSize({ width: w, height: h });
-    await expect.poll(async () => (await state(page)).camera.distance).toBeCloseTo(fitDistance(w / h, room, 75, 40), 3);
+    await expect.poll(async () => (await state(page)).camera.distance).toBeCloseTo(expectedDistance(w / h, 75), 3);
     const { camera } = await state(page);
-    for (const [x, y] of [[0, 0], [1600, 0], [0, 900], [1600, 900]]) {
+    // Zone de jeu : face intérieure des murs (24 de chaque côté), toujours entièrement à l'écran.
+    for (const [x, y] of [[24, 24], [1576, 24], [24, 876], [1576, 876]]) {
       const p = projectGround(x - 800, y - 450, camera.distance, camera.tilt, 40, w / h);
       expect(Math.abs(p.x), `${w}×${h} coin ${x},${y}`).toBeLessThanOrEqual(1);
       expect(Math.abs(p.y), `${w}×${h} coin ${x},${y}`).toBeLessThanOrEqual(1);
@@ -149,7 +149,7 @@ test.describe('inclinaison de la caméra', () => {
       await open(page, { width: 667, height: 375 }, `&tilt=${tilt}`);
       const { camera } = await state(page);
       expect(camera.tilt).toBe(tilt);
-      expect(camera.distance).toBeCloseTo(fitDistance(667 / 375, room, tilt, 40), 3);
+      expect(camera.distance).toBeCloseTo(expectedDistance(667 / 375, tilt), 3);
       // La caméra est au sud de la cible (z plus grand), plus haute quand l'inclinaison augmente.
       expect(camera.x).toBeCloseTo(800, 3);
       expect(camera.y).toBeCloseTo(camera.distance * Math.sin((tilt * Math.PI) / 180), 3);
@@ -161,5 +161,23 @@ test.describe('inclinaison de la caméra', () => {
     test.skip(isMobile, 'mesures de bureau');
     await open(page, { width: 667, height: 375 }, '&tilt=45');
     expect((await state(page)).camera.tilt).toBe(75);
+  });
+});
+
+test.describe('rapprochement ?zoom=', () => {
+  test.skip(({ isMobile }) => isMobile, 'mesures de bureau');
+
+  for (const zoom of [1.25, 1.5]) {
+    test(`?zoom=${zoom} rapproche la caméra d'autant`, async ({ page }) => {
+      await open(page, { width: 667, height: 375 }, `&zoom=${zoom}`);
+      const { camera } = await state(page);
+      expect(camera.zoom).toBe(zoom);
+      expect(camera.distance).toBeCloseTo(expectedDistance(667 / 375, 75, zoom), 3);
+    });
+  }
+
+  test('une valeur inconnue de ?zoom est ignorée (1)', async ({ page }) => {
+    await open(page, { width: 667, height: 375 }, '&zoom=3');
+    expect((await state(page)).camera.zoom).toBe(1);
   });
 });

@@ -5,11 +5,11 @@
   "sillHeight": 16,
   "lintelBottom": 44,
   "gunHeight": 43,
-  "camera": { "fov": 40, "tilt": 75, "margin": 0.05, "near": 20, "far": 9000 },
+  "camera": { "fov": 40, "tilt": 75, "margin": 0.02, "near": 20, "far": 9000 },
   "light": {
     "ambient": 1.5,
     "sun": 2.4,
-    "sunOffset": { "x": -260, "y": 520, "z": 200 },
+    "sunOffset": { "x": -220, "y": 300, "z": 140 },
     "shadowMap": 1024,
     "shadowHalfSize": 560
   }

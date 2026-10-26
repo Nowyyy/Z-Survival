@@ -1,7 +1,6 @@
 import { test, expect, chromium } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
-import { fitDistance } from '../../js/core/viewport.js';
-import { waitReady } from './helpers.js';
+import { expectedDistance, waitReady } from './helpers.js';
 
 const URL = '/jeu.html?test=1&seed=1';
 // Message du pilote graphique à la création du premier contexte WebGL du navigateur : du bruit du navigateur, pas du jeu.
@@ -60,10 +59,9 @@ test.describe('plein écran', () => {
     await page.setViewportSize({ width: 1920, height: 1080 });
     await page.goto(URL);
     await ready(page);
-    const room = { width: 1600, height: 900 };
-    expect((await state(page)).camera.distance).toBeCloseTo(fitDistance(1920 / 1080, room, 75, 40), 3);
+    expect((await state(page)).camera.distance).toBeCloseTo(expectedDistance(1920 / 1080, 75), 3);
     await page.setViewportSize({ width: 1440, height: 900 });
-    await expect.poll(async () => (await state(page)).camera.distance).toBeCloseTo(fitDistance(1440 / 900, room, 75, 40), 3);
+    await expect.poll(async () => (await state(page)).camera.distance).toBeCloseTo(expectedDistance(1440 / 900, 75), 3);
   });
 
   test('la résolution interne est plafonnée à 2 sur un écran haute densité', async ({ browser, baseURL }) => {
