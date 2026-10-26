@@ -11,7 +11,7 @@ Branche `lot-1m` (depuis `main`, lot 1 fusionné : `lot-1` est ancêtre de `main
 - `fitDistance` est exact (quatre coins projetés, marge 5 %), caméra centrée sur la salle ; `groundView` est l'approximation rectangulaire demandée (largeur au point visé, profondeurs exactes).
 - Ombres : la lumière suit le joueur (±560 unités) ; visée sur le plan `y = 0` (laser à 43 de haut : léger décalage) ; balles transparentes, ordonnées après le halo du laser.
 ## Critères (chiffres)
-- Départ `main` : Vitest 266, Playwright 117 exécutés (25 ignorés). Fin : **Vitest 358** (+92), **Playwright 149 exécutés** (+32), 57 ignorés (projet mobile / bureau). Lint sans avertissement.
+- Départ `main` : Vitest 266, Playwright 117 exécutés (25 ignorés). Fin : **Vitest 360** (+94), **Playwright 152 exécutés** (+35), 60 ignorés (projet mobile / bureau). Lint sans avertissement.
 - Canvas = fenêtre à ≤ 1 px à 667×375, 1440×900, 1920×1080, 2560×1080 et après redimensionnement, 0 px de défilement. Salle entière visible (fenêtres listées dont 100×100) : calcul indépendant (Vitest) et caméra réelle (Playwright). Délai tir → impact (15 %) et 30 balles au plus : verts.
 - Avec 5 zombies, ombres actives : **238 appels de dessin, 2 836 triangles** (ombres coupées : 88 / 1 036).
 - Lighthouse mobile `jeu.html` : **performance 55** (seuil 45), accessibilité 100, bonnes pratiques 100, CLS 0,001 ; `index.html` 92 / 100 / 100. CLS avec données retardées de 400 ms (360, 768, 1440) : tests verts (≤ 0,1).
@@ -23,6 +23,7 @@ Branche `lot-1m` (depuis `main`, lot 1 fusionné : `lot-1` est ancêtre de `main
 - `core-viewport.test.js` (11 tests de zoom) : `viewport.js` réécrit, remplacé par 60 tests. `vendor.test.js` (4 tests Phaser) : Phaser retiré, remplacé par `vendor-three.test.js`.
 ## Retour du propriétaire (après livraison)
 - Caméra trop reculée : fit sur la zone de jeu avec 2 % de marge (au lieu de la salle + 5 %), `?zoom=1.25|1.5` pour essayer. Ombres : les murs ne projettent plus (bandes noires le long des murs), soleil plus bas : l'ombre des personnages est plus longue.
+- Ombres des zombies lointains : la carte d'ombres suivait le joueur (±560) ; lumière fixe maintenant, ±950 sur toute la salle. Tir au-delà du laser : `fireRange` 1 600 (règle changée, simulation de référence conservée en mode `legacy`) ; laser qui s'estompe sur son dernier tiers.
 ## Points ouverts
 - Test tactile : un seul glisser à deux doigts (CDP) + sticks couverts en pur ; pas de test sur vrai téléphone. Son non écouté (inchangé du lot 1). Déploiement non vérifié depuis la session. `axe` à 1440×900 a expiré une fois sous charge (passe en relance ; rendu logiciel lent).
 - Tag `lot-1m` : poussé une seule fois (voir message final).

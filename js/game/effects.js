@@ -5,6 +5,7 @@ import * as THREE from 'three';
 export const MAX_BULLET_MESHES = 30;
 export const MAX_SPARKS = 12;
 export const SPARK_TIME = 0.18;
+const FADE_START = 0.65; // le laser s'estompe sur le dernier tiers quand il s'arrête à la portée
 const ANGLE_TO_YAW = Math.PI / 2;
 
 const basic = (color, extra = {}) => new THREE.MeshBasicMaterial({ color, fog: false, ...extra });
@@ -12,8 +13,26 @@ const basic = (color, extra = {}) => new THREE.MeshBasicMaterial({ color, fog: f
 export function createEffects(scene, palette, { gunHeight, bulletRadius }) {
   const box = new THREE.BoxGeometry(1, 1, 1);
   const ball = new THREE.SphereGeometry(1, 10, 8);
+  // Laser : ruban posé à plat (largeur en pixels écran constante). Version pleine (arrêté par un ennemi ou un mur) et version qui
+  // s'estompe vers le bout (arrêtée par la portée) : une texture de dégradé sert de masque de transparence.
+  const ribbon = new THREE.PlaneGeometry(1, 1);
+  ribbon.rotateX(-Math.PI / 2);
+  ribbon.translate(0.5, 0, 0);
+  const fadeData = new Uint8Array(256 * 4);
+  for (let i = 0; i < 256; i += 1) {
+    const t = i / 255;
+    const k = t < FADE_START ? 1 : (1 - (t - FADE_START) / (1 - FADE_START)) ** 1.5;
+    fadeData.fill(Math.round(k * 255), i * 4, i * 4 + 4);
+  }
+  const fadeMap = new THREE.DataTexture(fadeData, 256, 1);
+  fadeMap.wrapS = THREE.ClampToEdgeWrapping;
+  fadeMap.magFilter = THREE.LinearFilter;
+  fadeMap.minFilter = THREE.LinearFilter;
+  fadeMap.needsUpdate = true;
   const laserMat = basic(palette.laser);
   const glowMat = basic(palette.laser, { transparent: true, opacity: 0.22, depthWrite: false });
+  const laserFadeMat = basic(palette.laser, { transparent: true, alphaMap: fadeMap, depthWrite: false });
+  const glowFadeMat = basic(palette.laser, { transparent: true, opacity: 0.22, alphaMap: fadeMap, depthWrite: false });
   // Transparentes et rangées après le halo du laser : une balle en vol se détache toujours du trait.
   const bulletMat = basic(palette.bullet, { transparent: true });
   const trailMat = basic(palette.bullet, { transparent: true, opacity: 0.45, depthWrite: false });
@@ -28,9 +47,13 @@ export function createEffects(scene, palette, { gunHeight, bulletRadius }) {
     scene.add(mesh);
     return mesh;
   };
-  const laser = make(box, laserMat);
-  const glow = make(box, glowMat);
+  const laser = make(ribbon, laserMat);
+  const glow = make(ribbon, glowMat);
+  const laserFade = make(ribbon, laserFadeMat);
+  const glowFade = make(ribbon, glowFadeMat);
   glow.renderOrder = ORDER.glow;
+  glowFade.renderOrder = ORDER.glow;
+  laserFade.renderOrder = ORDER.glow;
   const dot = make(ball, laserMat);
   const flashOuter = make(ball, muzzleMat);
   const flashCore = make(ball, hitMat);
@@ -41,6 +64,14 @@ export function createEffects(scene, palette, { gunHeight, bulletRadius }) {
     return slot;
   });
   const sparks = Array.from({ length: MAX_SPARKS }, () => make(ball, hitMat));
+
+  // Pose un ruban à plat de (ax, ay) à (bx, by), à hauteur y, de largeur width.
+  function strip(mesh, ax, ay, bx, by, y, width) {
+    mesh.position.set(ax, y, ay);
+    mesh.rotation.y = -Math.atan2(by - ay, bx - ax);
+    mesh.scale.set(Math.max(0.01, Math.hypot(bx - ax, by - ay)), 1, width);
+    mesh.visible = true;
+  }
 
   // Pose un trait entre deux points du plan de jeu, à hauteur y, d'épaisseur thick.
   function segment(mesh, ax, ay, bx, by, y, thick) {
@@ -58,11 +89,16 @@ export function createEffects(scene, palette, { gunHeight, bulletRadius }) {
       if (frame.laser) {
         const { from, ray } = frame.laser;
         const thick = Math.max(1.2, 2 * upp);
-        segment(laser, from.x, from.y, ray.end.x, ray.end.y, laserHeight, thick);
-        segment(glow, from.x, from.y, ray.end.x, ray.end.y, laserHeight, thick * 2.6);
+        // Arrêté par un ennemi ou un mur : trait plein et point ; arrêté par la portée : le trait s'estompe, sans point.
+        const faded = !ray.hit && !ray.stoppedByWall;
+        const [line, halo, offLine, offHalo] = faded ? [laserFade, glowFade, laser, glow] : [laser, glow, laserFade, glowFade];
+        strip(line, from.x, from.y, ray.end.x, ray.end.y, laserHeight, thick);
+        strip(halo, from.x, from.y, ray.end.x, ray.end.y, laserHeight, thick * 2.6);
+        offLine.visible = false;
+        offHalo.visible = false;
         dot.position.set(ray.end.x, laserHeight, ray.end.y);
         dot.scale.setScalar(Math.max(ray.hit ? 3.2 : 2, (ray.hit ? 3.5 : 2.5) * upp));
-        dot.visible = true;
+        dot.visible = !faded;
         const flashing = frame.flash > 0;
         flashOuter.visible = flashing;
         flashCore.visible = flashing;
@@ -73,9 +109,7 @@ export function createEffects(scene, palette, { gunHeight, bulletRadius }) {
           flashCore.scale.setScalar(frame.flashSize * 0.45);
         }
       } else {
-        laser.visible = false;
-        glow.visible = false;
-        dot.visible = false;
+        for (const mesh of [laser, glow, laserFade, glowFade, dot]) mesh.visible = false;
         flashOuter.visible = false;
         flashCore.visible = false;
       }

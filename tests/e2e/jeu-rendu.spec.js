@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { projectGround } from '../../js/core/viewport.js';
 import { waitReady } from './helpers.js';
 
 // Rendu et enveloppe du jeu en 3D (lot 1m, partie B). Petite fenêtre : le rendu logiciel y est plus rapide.
@@ -151,4 +152,71 @@ test('sticks tactiles : cachés à la souris, visibles au repos après un premie
   await expect(page.locator('#stick-right .stick-base')).toBeVisible();
   await expect(page.locator('#game-root')).toHaveAttribute('data-input', 'touch');
   await context.close();
+});
+
+test.describe('portée du tir, laser qui s\'estompe, ombres lointaines', () => {
+  test.skip(({ isMobile }) => isMobile, 'bureau');
+
+  test('le tir part aussi quand le zombie visé est au-delà de la portée du laser', async ({ page }) => {
+    await open(page);
+    await page.evaluate(() => { window.__zs.setInput({ aim: { angle: 0 } }); window.__zs.spawnEnemy(1570, 450); });
+    // Au premier tir, le zombie est encore plus loin que 700 du bout de l'arme (826) : le laser ne le touche pas.
+    const first = await page.evaluate(() => new Promise((resolve) => {
+      const tick = () => {
+        const s = window.__zs.getState();
+        if (s.bullets.length) resolve({ gap: s.enemies[0].x - 20 - 826, health: s.enemies[0].health });
+        else requestAnimationFrame(tick);
+      };
+      tick();
+    }));
+    expect(first.gap).toBeGreaterThan(700);
+    expect(first.health).toBe(50);
+    await expect.poll(async () => (await state(page)).enemies[0]?.health ?? 0, { timeout: 60_000 }).toBeLessThan(50);
+  });
+
+  test('le bout du laser s\'estompe : plein près de l\'arme, presque invisible à la portée', async ({ page }) => {
+    await open(page, '', { width: 1440, height: 900 });
+    await page.evaluate(() => window.__zs.setInput({ aim: { angle: 0 } }));
+    await page.waitForFunction(() => window.__zs.getState().time > 0.3);
+    const { camera } = await state(page);
+    const redness = async (groundX) => {
+      const p = projectGround(groundX - 800, 0, camera.distance, camera.tilt, 40, 1440 / 900);
+      const cx = Math.round(((p.x + 1) / 2) * 1440);
+      const cy = Math.round(((1 - p.y) / 2) * 900);
+      const shot = (await page.screenshot()).toString('base64');
+      return page.evaluate(async ([data, x, y]) => {
+        const img = new Image();
+        img.src = `data:image/png;base64,${data}`;
+        await img.decode();
+        const c = document.createElement('canvas');
+        c.width = img.width;
+        c.height = img.height;
+        const ctx = c.getContext('2d');
+        ctx.drawImage(img, 0, 0);
+        const px = ctx.getImageData(x - 2, y - 30, 5, 40).data;
+        let best = 0;
+        for (let i = 0; i < px.length; i += 4) best = Math.max(best, px[i] - (px[i + 1] + px[i + 2]) / 2);
+        return best;
+      }, [shot, cx, cy]);
+    };
+    // Le laser part de 826 et porte 700 : il finit à 1526.
+    expect(await redness(1000)).toBeGreaterThan(120);
+    expect(await redness(1200)).toBeGreaterThan(120);
+    expect(await redness(1515)).toBeLessThan(40);
+  });
+
+  test('les zombies lointains gardent leur ombre : la passe d\'ombres les dessine où que soit le joueur', async ({ page }) => {
+    const added = async (extra) => {
+      await open(page, extra);
+      await page.evaluate(() => window.__zs.setInput({ aim: { angle: -Math.PI / 2 } }));
+      const base = (await state(page)).render.calls;
+      await page.evaluate(() => window.__zs.spawnEnemy(1560, 100));
+      await expect.poll(async () => (await state(page)).render.calls).toBeGreaterThan(base);
+      return (await state(page)).render.calls - base;
+    };
+    const withShadows = await added('');
+    const without = await added('&shadows=0');
+    // Chaque pièce du zombie est dessinée deux fois (image et ombre) : le zombie à l'autre bout de la salle compte autant que s'il était près.
+    expect(withShadows).toBeGreaterThanOrEqual(without * 1.8);
+  });
 });

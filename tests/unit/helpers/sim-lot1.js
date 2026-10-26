@@ -3,14 +3,16 @@
 import { pathToFileURL } from 'node:url';
 import { readFileSync } from 'node:fs';
 
-export async function simulate(root, { seconds = 30, seed = 42, fps = 60 } = {}) {
+// legacy : portée de tir et de balle égales à celle du laser, comme au lot 1.
+export async function simulate(root, { seconds = 30, seed = 42, fps = 60, legacy = false } = {}) {
   const load = (name) => import(pathToFileURL(`${root}/js/core/${name}.js`).href);
   const [aimM, combat, ai, movement, projectile, ray, rngM, spawnerM, vec] = await Promise.all(
     ['aim', 'combat', 'enemy-ai', 'movement', 'projectile', 'ray', 'rng', 'spawner', 'vec'].map(load));
   const data = (name) => JSON.parse(readFileSync(`${root}/data/game/${name}.json`, 'utf8'));
   const room = data('room');
   const playerCfg = data('player');
-  const weapon = data('weapons').pistol;
+  const base = data('weapons').pistol;
+  const weapon = legacy ? { ...base, fireRange: base.laserRange, bulletMaxDistance: base.laserRange } : base;
   const zombie = data('enemies').zombie;
   const bounds = movement.innerBounds(room);
 
@@ -33,7 +35,9 @@ export async function simulate(root, { seconds = 30, seed = 42, fps = 60 } = {})
 
     const muzzle = combat.muzzlePoint(sim.player, sim.aim.angle, weapon.muzzleOffset, bounds);
     const hit = ray.castRay(muzzle, sim.aim.angle, weapon.laserRange, sim.enemies, bounds);
-    const trigger = combat.stepWeapon(sim.weapon, dt, hit.hit !== null, weapon, sim.bullets.length);
+    // Depuis le lot 1m : le tir part aussi quand l'ennemi visé est au-delà de la portée du laser (jusqu'à fireRange).
+    const aimed = hit.hit !== null || ray.castRay(muzzle, sim.aim.angle, weapon.fireRange ?? weapon.laserRange, sim.enemies, bounds).hit !== null;
+    const trigger = combat.stepWeapon(sim.weapon, dt, aimed, weapon, sim.bullets.length);
     sim.weapon = trigger.state;
     if (trigger.fire) {
       sim.bullets = [...sim.bullets, projectile.createBullet(muzzle, sim.aim.angle, weapon, sim.nextId)];

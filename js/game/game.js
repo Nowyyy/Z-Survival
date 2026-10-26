@@ -140,8 +140,10 @@ export function createGame(ctx) {
     const muzzle = muzzlePoint(sim.player, sim.aim.angle, weapon.muzzleOffset, bounds);
     const ray = castRay(muzzle, sim.aim.angle, weapon.laserRange, sim.enemies, bounds);
     laser = { from: muzzle, ray };
+    // Le tir part aussi quand la visée passe sur un ennemi au-delà de la portée du laser (le trait s'estompe, la balle continue).
+    const aimed = ray.hit !== null || castRay(muzzle, sim.aim.angle, weapon.fireRange, sim.enemies, bounds).hit !== null;
 
-    const trigger = stepWeapon(sim.weapon, dt, ray.hit !== null, weapon, sim.bullets.length);
+    const trigger = stepWeapon(sim.weapon, dt, aimed, weapon, sim.bullets.length);
     sim.weapon = trigger.state;
     if (trigger.fire) {
       sim.bullets = [...sim.bullets, createBullet(muzzle, sim.aim.angle, weapon, sim.nextId)];
@@ -263,7 +265,6 @@ export function createGame(ctx) {
       unitsPerPixel: size.unitsPerPixel,
     });
     hud.update(sim.player, sim.kills);
-    world.followSun(p.x, p.y);
   }
 
   let last = null;

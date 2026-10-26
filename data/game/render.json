@@ -9,8 +9,9 @@
   "light": {
     "ambient": 1.5,
     "sun": 2.4,
-    "sunOffset": { "x": -220, "y": 300, "z": 140 },
+    "sunOffset": { "x": -880, "y": 1200, "z": 560 },
     "shadowMap": 1024,
-    "shadowHalfSize": 560
+    "shadowHalfSize": 950,
+    "shadowFar": 4000
   }
 }

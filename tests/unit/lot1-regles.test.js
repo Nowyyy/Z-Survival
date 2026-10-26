@@ -8,10 +8,22 @@ const REFERENCE = {
   42: { shots: 21, impacts: 18, kills: 9, health: 100, dead: false, enemies: 0, time: 30 },
   7: { shots: 26, impacts: 18, kills: 9, health: 100, dead: false, enemies: 0, time: 30 },
 };
+// Règle du lot 1m (retour du propriétaire) : le tir part aussi au-delà de la portée du laser ; mêmes tués, plus de tirs.
+const EXTENDED = {
+  42: { shots: 25, impacts: 18, kills: 9, health: 100, dead: false, enemies: 0, time: 30 },
+  7: { shots: 29, impacts: 18, kills: 9, health: 100, dead: false, enemies: 0, time: 30 },
+};
 
 describe('mêmes règles qu\'au lot 1', () => {
   it.each(Object.keys(REFERENCE))('simulation pure de 30 s, graine %s : tirs, impacts, tués et vie identiques au lot 1', async (seed) => {
-    expect(await simulate(process.cwd(), { seed: Number(seed) })).toEqual(REFERENCE[seed]);
+    expect(await simulate(process.cwd(), { seed: Number(seed), legacy: true })).toEqual(REFERENCE[seed]);
+  });
+
+  it.each(Object.keys(EXTENDED))('portée de tir étendue (fireRange), graine %s : plus de tirs, mêmes tués', async (seed) => {
+    const r = await simulate(process.cwd(), { seed: Number(seed) });
+    expect(r).toEqual(EXTENDED[seed]);
+    expect(r.shots).toBeGreaterThan(REFERENCE[seed].shots);
+    expect(r.kills).toBe(REFERENCE[seed].kills);
   });
 
   it('la simulation est reproductible (même graine, même résultat) et dépend de la graine', async () => {

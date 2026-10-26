@@ -66,9 +66,13 @@ export function buildWorld({ palette, room, render, maxAnisotropy = 4 }) {
   const half = render.light.shadowHalfSize;
   sun.castShadow = true;
   sun.shadow.mapSize.set(render.light.shadowMap, render.light.shadowMap);
-  Object.assign(sun.shadow.camera, { left: -half, right: half, top: half, bottom: -half, near: 50, far: 1800 });
+  Object.assign(sun.shadow.camera, { left: -half, right: half, top: half, bottom: -half, near: 50, far: render.light.shadowFar });
   sun.shadow.bias = -0.0006;
   sun.shadow.normalBias = 0.6;
+  // Lumière fixe, loin au sud-ouest de la salle : la carte d'ombres couvre toute la salle, quel que soit l'endroit où se trouve le joueur.
+  const o = render.light.sunOffset;
+  sun.position.set(room.width / 2 + o.x, o.y, room.height / 2 + o.z);
+  sun.target.position.set(room.width / 2, 0, room.height / 2);
   scene.add(sun, sun.target);
 
   // Sol : une texture générée au canvas pour toute la salle (aucune image).
@@ -98,12 +102,6 @@ export function buildWorld({ palette, room, render, maxAnisotropy = 4 }) {
     scene,
     setShadows(on) {
       sun.castShadow = Boolean(on);
-    },
-    // La lumière suit la cible : la carte d'ombres de 1024 ne couvre que la zone utile autour du joueur.
-    followSun(x, z) {
-      const o = render.light.sunOffset;
-      sun.position.set(x + o.x, o.y, z + o.z);
-      sun.target.position.set(x, 0, z);
     },
   };
 }

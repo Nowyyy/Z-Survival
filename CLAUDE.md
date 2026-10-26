@@ -51,7 +51,7 @@ Docs/ref/ (environnement, conventions) · Docs/lots/ (bilans) · .github/workflo
 - Poses : js/core/pose.js (pur) donne les angles ; le rendu les applique ; géométries et matériaux partagés ; ne jamais recréer des objets à chaque image.
 - HUD : HTML, marges de 16 px plus env(safe-area-inset-*) via js/game/safe-area.js.
 - Entrées : event.code (jamais event.key) ; tir automatique quand le laser touche ; pas de bouton de tir.
-- Tir : une balle par tir, dégâts à l'impact seulement (projectile.js) ; le laser (ray.js) sert à viser et à déclencher le tir, jamais aux dégâts.
+- Tir : une balle par tir, dégâts à l'impact seulement (projectile.js) ; le laser (ray.js) sert à viser, jamais aux dégâts ; le tir part dès qu'un ennemi est sur la ligne de visée jusqu'à `fireRange` (au-delà du laser, qui s'estompe à sa portée).
 - Couleurs du jeu : variables --game-* lues par js/game/palette.js ; aucune valeur en dur dans js/.
 - Tests : ?test=1 expose window.__zs (render, camera, pose) ; ?seed, ?nospawn, ?fps=1, ?dpr=1, ?shadows=0 ; privilégier 667×375 ; Math.random interdit dans le jeu.
 - Lighthouse de jeu.html : performance 45, accessibilité 95, bonnes pratiques 95 ; CLS ≤ 0,1.
