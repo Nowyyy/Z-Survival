@@ -3,7 +3,7 @@
   "pistol": {
     "damage": 25,
     "fireDelay": 0.4,
-    "laserRange": 700,
+    "laserRange": 300,
     "bulletSpeed": 1100,
     "bulletRadius": 4,
     "fireRange": 1600,

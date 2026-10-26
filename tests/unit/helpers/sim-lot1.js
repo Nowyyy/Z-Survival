@@ -3,7 +3,7 @@
 import { pathToFileURL } from 'node:url';
 import { readFileSync } from 'node:fs';
 
-// legacy : portée de tir et de balle égales à celle du laser, comme au lot 1.
+// legacy : portées du lot 1 (700 pour le laser, le tir et la balle).
 export async function simulate(root, { seconds = 30, seed = 42, fps = 60, legacy = false } = {}) {
   const load = (name) => import(pathToFileURL(`${root}/js/core/${name}.js`).href);
   const [aimM, combat, ai, movement, projectile, ray, rngM, spawnerM, vec] = await Promise.all(
@@ -12,7 +12,8 @@ export async function simulate(root, { seconds = 30, seed = 42, fps = 60, legacy
   const room = data('room');
   const playerCfg = data('player');
   const base = data('weapons').pistol;
-  const weapon = legacy ? { ...base, fireRange: base.laserRange, bulletMaxDistance: base.laserRange } : base;
+  // Lot 1 : laser, tir et balle portaient tous à 700.
+  const weapon = legacy ? { ...base, laserRange: 700, fireRange: 700, bulletMaxDistance: 700 } : base;
   const zombie = data('enemies').zombie;
   const bounds = movement.innerBounds(room);
 

@@ -15,14 +15,14 @@ describe('data/game/*.json', () => {
   it('contient les valeurs de départ de la spécification', () => {
     expect([room.width, room.height, room.margin]).toEqual([1600, 900, 600]);
     expect(player).toMatchObject({ radius: 18, speed: 220, health: 100 });
-    expect(weapon).toMatchObject({ damage: 25, fireDelay: 0.4, laserRange: 700, bulletSpeed: 1100, bulletRadius: 4, fireRange: 1600, bulletMaxDistance: 1600, muzzleFlash: 0.08, maxBullets: 30 });
+    expect(weapon).toMatchObject({ damage: 25, fireDelay: 0.4, laserRange: 300, bulletSpeed: 1100, bulletRadius: 4, fireRange: 1600, bulletMaxDistance: 1600, muzzleFlash: 0.08, maxBullets: 30 });
     expect(zombie).toMatchObject({ radius: 20, speed: 70, health: 50, contactDamage: 10, contactDelay: 1, maxPresent: 5, spawnInterval: 3 });
   });
 
   it('la balle porte aussi loin que le tir se déclenche, et le tir porte plus loin que le laser', () => {
     expect(weapon.bulletMaxDistance).toBe(weapon.fireRange);
     expect(weapon.fireRange).toBeGreaterThan(weapon.laserRange);
-    expect(weapon.laserRange).toBe(700);
+    expect(weapon.laserRange).toBe(300); // réduit au lot 1m : la vue proche ne montre pas plus loin
   });
 
   it('a trois ouvertures de fenêtre sur les murs', () => {

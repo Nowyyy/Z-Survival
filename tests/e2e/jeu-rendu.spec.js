@@ -160,7 +160,7 @@ test.describe('portée du tir, laser qui s\'estompe, ombres lointaines', () => {
   test('le tir part aussi quand le zombie visé est au-delà de la portée du laser', async ({ page }) => {
     await open(page);
     await page.evaluate(() => { window.__zs.setInput({ aim: { angle: 0 } }); window.__zs.spawnEnemy(1570, 450); });
-    // Au premier tir, le zombie est encore plus loin que 700 du bout de l'arme (826) : le laser ne le touche pas.
+    // Au premier tir, le zombie est encore plus loin que 300 du bout de l'arme (826) : le laser ne le touche pas.
     const first = await page.evaluate(() => new Promise((resolve) => {
       const tick = () => {
         const s = window.__zs.getState();
@@ -169,7 +169,7 @@ test.describe('portée du tir, laser qui s\'estompe, ombres lointaines', () => {
       };
       tick();
     }));
-    expect(first.gap).toBeGreaterThan(700);
+    expect(first.gap).toBeGreaterThan(300);
     expect(first.health).toBe(50);
     await expect.poll(async () => (await state(page)).enemies[0]?.health ?? 0, { timeout: 60_000 }).toBeLessThan(50);
   });
@@ -199,10 +199,10 @@ test.describe('portée du tir, laser qui s\'estompe, ombres lointaines', () => {
         return best;
       }, [shot, cx, cy]);
     };
-    // Le laser part de 826 et porte 700 : il finit à 1526.
+    // Le laser part de 826 et porte 300 : il finit à 1126 et s'estompe sur son dernier tiers.
+    expect(await redness(900)).toBeGreaterThan(120);
     expect(await redness(1000)).toBeGreaterThan(120);
-    expect(await redness(1200)).toBeGreaterThan(120);
-    expect(await redness(1515)).toBeLessThan(40);
+    expect(await redness(1120)).toBeLessThan(40);
   });
 
   test('les zombies lointains gardent leur ombre : la passe d\'ombres les dessine où que soit le joueur', async ({ page }) => {
