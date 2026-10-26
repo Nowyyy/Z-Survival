@@ -1,4 +1,5 @@
 // Laser : rayon contre des cercles. Sert à tracer le laser et à décider qu'un tir part ; ne produit JAMAIS de dégâts.
+import { firstOnSegment } from './collision.js';
 import { fromAngle, isNum, num } from './vec.js';
 
 // Plus petit t >= 0 où le rayon (origine o, direction unitaire d) touche le cercle ; null sinon. Tangent = touché.
@@ -27,19 +28,28 @@ export function rayToBounds(o, d, bounds) {
   return ts.length ? Math.max(0, Math.min(...ts)) : Infinity;
 }
 
-// enemies : [{ id, x, y, r }]. Renvoie { end, length, hit } ; hit = { id, distance } de l'ennemi le plus proche, ou null.
-export function castRay(origin, angle, maxLength, enemies, bounds) {
+// enemies : [{ id, x, y, r }] ; obstacles : rectangles pleins { id, x, y, w, h } qui arrêtent le rayon (aucun par défaut).
+// Renvoie { end, length, hit, stoppedByWall, stoppedBy } ; hit = { id, distance } de l'ennemi le plus proche visible, ou null ;
+// stoppedBy = { id, distance } de l'obstacle qui arrête le rayon, ou null. Un ennemi caché derrière un obstacle n'est jamais touché.
+export function castRay(origin, angle, maxLength, enemies, bounds, obstacles = []) {
   const o = { x: num(origin?.x), y: num(origin?.y) };
   const d = fromAngle(angle);
   const range = isNum(maxLength) && maxLength > 0 ? maxLength : 0;
   const wall = bounds ? rayToBounds(o, d, bounds) : Infinity;
-  const limit = Math.min(range, wall);
+  let limit = Math.min(range, wall);
+  let blocker = null;
+  const first = firstOnSegment(o.x, o.y, o.x + d.x * limit, o.y + d.y * limit, obstacles);
+  if (first) {
+    blocker = { id: first.obstacle.id, distance: first.t * limit };
+    limit = blocker.distance;
+  }
   let hit = null;
   for (const enemy of Array.isArray(enemies) ? enemies : []) {
     if (!enemy || !isNum(enemy.x) || !isNum(enemy.y)) continue;
     const t = rayCircle(o, d, enemy);
-    if (t !== null && t <= limit && (hit === null || t < hit.distance)) hit = { id: enemy?.id, distance: t };
+    // Un ennemi pile au bord d'un obstacle est derrière lui : l'obstacle passe d'abord.
+    if (t !== null && (blocker ? t < limit : t <= limit) && (hit === null || t < hit.distance)) hit = { id: enemy?.id, distance: t };
   }
   const len = hit ? hit.distance : limit;
-  return { end: { x: o.x + d.x * len, y: o.y + d.y * len }, length: len, hit, stoppedByWall: !hit && wall < range };
+  return { end: { x: o.x + d.x * len, y: o.y + d.y * len }, length: len, hit, stoppedByWall: !hit && !blocker && wall < range, stoppedBy: hit ? null : blocker };
 }

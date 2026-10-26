@@ -39,14 +39,17 @@ describe('mêmes règles qu\'au lot 1', () => {
     expect(r.kills).toBeLessThanOrEqual(Math.floor(r.impacts / 2));
   });
 
-  it('js/core/ est inchangé depuis main, sauf pose.js (promu) et viewport.js (réécrit)', () => {
+  // Lot 1b : les modules du monde sont nouveaux ou étendus (paramètres facultatifs, valeurs par défaut = lot 1m, prouvé par les simulations
+  // « identiques au lot 1 » ci-dessus) ; tout autre fichier de js/core/ reste inchangé.
+  it('js/core/ est inchangé depuis main, sauf pose.js, viewport.js et les modules du monde du lot 1b', () => {
     let changed;
     try {
       changed = execSync('git diff --name-only main -- js/core', { encoding: 'utf8' }).split('\n').filter(Boolean);
     } catch {
       return; // pas de dépôt git ou de branche main (copie de travail) : rien à comparer
     }
-    expect(changed.filter((f) => !['js/core/pose.js', 'js/core/viewport.js'].includes(f))).toEqual([]);
+    const allowed = ['pose', 'viewport', 'camera', 'collision', 'nav', 'decor', 'layout', 'movement', 'ray', 'projectile', 'enemy-ai', 'spawner'].map((n) => `js/core/${n}.js`);
+    expect(changed.filter((f) => !allowed.includes(f))).toEqual([]);
   });
 });
 

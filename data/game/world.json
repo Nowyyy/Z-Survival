@@ -1,0 +1,221 @@
+{
+  "_provisoire": "Monde du lot 1b : valeurs et disposition provisoires, à régler en test. Coordonnées du monde : (0, 0) = coin nord-ouest, x vers l'est, y vers le sud. Les murs ont 40 d'épaisseur et 60 de haut (render.json) ; leur face intérieure est la limite de déplacement du joueur (room.wall).",
+  "size": {
+    "width": 3600,
+    "height": 2800
+  },
+  "margin": 800,
+  "room": {
+    "x": 800,
+    "y": 800,
+    "width": 2000,
+    "height": 1200,
+    "wall": 24
+  },
+  "windowSize": 140,
+  "wallThickness": 40,
+  "wallHeight": 60,
+  "windows": [
+    {
+      "id": "fenetre-nord",
+      "side": "nord",
+      "x": 1800,
+      "y": 812
+    },
+    {
+      "id": "fenetre-ouest",
+      "side": "ouest",
+      "x": 812,
+      "y": 1400
+    },
+    {
+      "id": "fenetre-est",
+      "side": "est",
+      "x": 2788,
+      "y": 1400
+    }
+  ],
+  "playerBarriers": [
+    {
+      "id": "barriere-nord",
+      "fenetre": "fenetre-nord",
+      "x": 1730,
+      "y": 808,
+      "w": 140,
+      "h": 16
+    },
+    {
+      "id": "barriere-ouest",
+      "fenetre": "fenetre-ouest",
+      "x": 808,
+      "y": 1330,
+      "w": 16,
+      "h": 140
+    },
+    {
+      "id": "barriere-est",
+      "fenetre": "fenetre-est",
+      "x": 2776,
+      "y": 1330,
+      "w": 16,
+      "h": 140
+    }
+  ],
+  "startZone": 150,
+  "windowDepth": 150,
+  "minCorridor": 90,
+  "maxHeight": 70,
+  "obstacles": [
+    {
+      "id": "table-1",
+      "x": 1040,
+      "y": 1060,
+      "w": 200,
+      "h": 100,
+      "hauteur": 40,
+      "kind": "table"
+    },
+    {
+      "id": "table-2",
+      "x": 2360,
+      "y": 1060,
+      "w": 200,
+      "h": 100,
+      "hauteur": 40,
+      "kind": "table"
+    },
+    {
+      "id": "table-3",
+      "x": 2400,
+      "y": 1300,
+      "w": 100,
+      "h": 200,
+      "hauteur": 40,
+      "kind": "table"
+    },
+    {
+      "id": "comptoir-1",
+      "x": 1620,
+      "y": 1750,
+      "w": 360,
+      "h": 70,
+      "hauteur": 55,
+      "kind": "comptoir"
+    },
+    {
+      "id": "armoire-1",
+      "x": 920,
+      "y": 1650,
+      "w": 70,
+      "h": 150,
+      "hauteur": 70,
+      "kind": "armoire"
+    },
+    {
+      "id": "armoire-2",
+      "x": 2610,
+      "y": 1650,
+      "w": 70,
+      "h": 150,
+      "hauteur": 70,
+      "kind": "armoire"
+    },
+    {
+      "id": "armoire-3",
+      "x": 1130,
+      "y": 1270,
+      "w": 70,
+      "h": 150,
+      "hauteur": 70,
+      "kind": "armoire"
+    },
+    {
+      "id": "colonne-1",
+      "x": 1360,
+      "y": 1500,
+      "w": 70,
+      "h": 70,
+      "hauteur": 70,
+      "kind": "colonne"
+    },
+    {
+      "id": "colonne-2",
+      "x": 2130,
+      "y": 1440,
+      "w": 70,
+      "h": 70,
+      "hauteur": 70,
+      "kind": "colonne"
+    },
+    {
+      "id": "caisse-1",
+      "x": 1200,
+      "y": 1700,
+      "w": 80,
+      "h": 80,
+      "hauteur": 45,
+      "kind": "caisse"
+    },
+    {
+      "id": "caisse-2",
+      "x": 2320,
+      "y": 1700,
+      "w": 80,
+      "h": 80,
+      "hauteur": 45,
+      "kind": "caisse"
+    },
+    {
+      "id": "caisse-3",
+      "x": 1760,
+      "y": 1100,
+      "w": 80,
+      "h": 80,
+      "hauteur": 45,
+      "kind": "caisse"
+    },
+    {
+      "id": "etagere-1",
+      "x": 1360,
+      "y": 930,
+      "w": 260,
+      "h": 60,
+      "hauteur": 70,
+      "kind": "etagere"
+    },
+    {
+      "id": "etagere-2",
+      "x": 1980,
+      "y": 930,
+      "w": 260,
+      "h": 60,
+      "hauteur": 70,
+      "kind": "etagere"
+    }
+  ],
+  "legacy": {
+    "_provisoire": "Salle du lot 1m (ancien room.json), chargée par ?test=1&empty=1 : mêmes coordonnées qu'au lot 1m, sans meuble ni décor.",
+    "width": 1600,
+    "height": 900,
+    "margin": 600,
+    "wall": 24,
+    "windowSize": 120,
+    "windows": [
+      {
+        "id": "fenetre-ouest",
+        "x": 12,
+        "y": 450
+      },
+      {
+        "id": "fenetre-nord",
+        "x": 800,
+        "y": 12
+      },
+      {
+        "id": "fenetre-est",
+        "x": 1588,
+        "y": 450
+      }
+    ]
+  }
+}

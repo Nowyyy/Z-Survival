@@ -1,0 +1,10 @@
+{
+  "_provisoire": "Valeurs provisoires du chemin des zombies (lot 1b). cell : côté d'une cellule ; inflate : marge ajoutée au rayon du zombie ; lookahead : cellules regardées en avant ; recompute : intervalle minimal entre deux recalculs du champ de flux (temps de jeu) ; stuckDistance et stuckTime : un zombie en poursuite qui avance de moins de stuckDistance en stuckTime secondes est poussé vers la direction du champ de flux pendant pushTime secondes.",
+  "cell": 20,
+  "inflate": 4,
+  "lookahead": 5,
+  "recompute": 0.25,
+  "stuckDistance": 5,
+  "stuckTime": 2,
+  "pushTime": 1
+}

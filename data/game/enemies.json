@@ -7,6 +7,8 @@
     "contactDamage": 10,
     "contactDelay": 1,
     "maxPresent": 5,
-    "spawnInterval": 3
+    "spawnInterval": 3,
+    "viewMargin": 150,
+    "viewRatio": 0.25
   }
 }
