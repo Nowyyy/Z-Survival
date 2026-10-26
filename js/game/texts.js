@@ -3,6 +3,8 @@ import { translate } from '../i18n.js';
 
 let pending = null;
 
+export const fmt = (text, params) => String(text).replace(/\{(\w+)\}/g, (_, k) => String(params?.[k] ?? ''));
+
 export function loadDict() {
   pending ??= fetch('data/i18n/fr.json').then((response) => {
     if (!response.ok) throw new Error(`data/i18n/fr.json : ${response.status}`);

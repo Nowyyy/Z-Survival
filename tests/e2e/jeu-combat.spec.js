@@ -1,4 +1,6 @@
 import { test, expect } from '@playwright/test';
+import { projectGround } from '../../js/core/viewport.js';
+import { waitReady } from './helpers.js';
 
 // Petite fenêtre : le rendu logiciel du navigateur de test est alors plus rapide. Le temps de jeu, lui, est mesuré par le jeu.
 const SIZE = { width: 667, height: 375 };
@@ -7,7 +9,7 @@ const URL = (extra = '') => `/jeu.html?test=1&nospawn=1&seed=1${extra}`;
 async function open(page, extra = '') {
   await page.setViewportSize(SIZE);
   await page.goto(URL(extra));
-  await page.waitForFunction(() => (window.__zs?.getState()?.time ?? 0) > 0.05);
+  await waitReady(page);
 }
 const state = (page) => page.evaluate(() => window.__zs.getState());
 const aimRight = (page) => page.evaluate(() => window.__zs.setInput({ aim: { angle: 0 } }));
@@ -113,7 +115,7 @@ test.describe('mort, pause', () => {
   test('le joueur meurt au contact, le panneau de fin apparaît, Rejouer relance une partie propre', async ({ page }) => {
     await open(page);
     await page.evaluate(() => window.__zs.setInput({ aim: { angle: -Math.PI / 2 } }));
-    for (const [x, y] of [[850, 450], [750, 450], [800, 500], [835, 420], [770, 420]]) await spawn(page, x, y);
+    for (const [x, y] of [[850, 450], [750, 450], [800, 500], [835, 480], [770, 480]]) await spawn(page, x, y);
     await expect(page.locator('#end-panel')).toBeVisible({ timeout: 60_000 });
     await expect(page.locator('#end-panel')).toContainText('Tu es mort');
     await expect(page.locator('#end-kills')).toHaveText('Zombies tués : 0');
@@ -151,16 +153,15 @@ test.describe('visée', () => {
       test.skip(isMobile, 'souris');
       await page.setViewportSize({ width: w, height: h });
       await page.goto(URL());
-      await page.waitForFunction(() => (window.__zs?.getState()?.time ?? 0) > 0.05);
-      const zoom = (await state(page)).zoom;
-      const player = (await state(page)).player;
-      const px = w / 2 + (player.x - 800) * zoom;
-      const py = h / 2 + (player.y - 450) * zoom;
-      for (const [dx, dy] of [[150, -80], [-120, 60], [0, 100], [-200, -10]]) {
-        await page.mouse.move(px + dx, py + dy);
+      await waitReady(page);
+      const { player, camera } = await state(page);
+      // Points du sol choisis autour du joueur, projetés à l'écran avec la géométrie pure de viewport.js.
+      for (const [gx, gy] of [[200, -100], [-150, 80], [0, 150], [-250, -10]]) {
+        const p = projectGround(player.x + gx - 800, player.y + gy - 450, camera.distance, camera.tilt, 40, w / h);
+        await page.mouse.move(((p.x + 1) / 2) * w, ((1 - p.y) / 2) * h);
         await expect.poll(async () => {
           const aim = (await state(page)).aim;
-          const want = Math.atan2(dy, dx);
+          const want = Math.atan2(gy, gx);
           return Math.abs(Math.atan2(Math.sin(aim - want), Math.cos(aim - want)));
         }).toBeLessThan(0.03);
       }
@@ -185,7 +186,7 @@ test('deux doigts : un stick pour bouger, un stick pour viser (événements tact
   const context = await browser.newContext({ viewport: SIZE, hasTouch: true, isMobile: true, locale: 'fr-FR' });
   const page = await context.newPage();
   await page.goto(baseURL + URL());
-  await page.waitForFunction(() => (window.__zs?.getState()?.time ?? 0) > 0.05);
+  await waitReady(page);
   const cdp = await context.newCDPSession(page);
   const touch = (type, points) => cdp.send('Input.dispatchTouchEvent', { type, touchPoints: points.map(([x, y, id]) => ({ x, y, id })) });
   const start = await state(page);

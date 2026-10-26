@@ -1,5 +1,5 @@
 // Panneaux HTML : pause (E2-6), fin provisoire (E2-7), message de rotation, région vocale, plein écran.
-import { fmt } from './scene.js';
+import { fmt } from './texts.js';
 
 const PORTRAIT_PHONE = '(orientation: portrait) and (pointer: coarse) and (max-width: 600px)';
 

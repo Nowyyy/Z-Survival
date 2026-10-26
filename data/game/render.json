@@ -1,0 +1,16 @@
+{
+  "_provisoire": "Valeurs de rendu 3D provisoires à régler en test (lot 1m). Une unité du jeu = une unité de la scène.",
+  "wallHeight": 60,
+  "wallThickness": 40,
+  "sillHeight": 16,
+  "lintelBottom": 44,
+  "gunHeight": 43,
+  "camera": { "fov": 40, "tilt": 75, "margin": 0.05, "near": 20, "far": 9000 },
+  "light": {
+    "ambient": 1.5,
+    "sun": 2.4,
+    "sunOffset": { "x": -260, "y": 520, "z": 200 },
+    "shadowMap": 1024,
+    "shadowHalfSize": 560
+  }
+}

@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { waitReady } from './helpers.js';
 import AxeBuilder from '@axe-core/playwright';
 
 const SIZE = { width: 667, height: 375 };
@@ -7,7 +8,7 @@ const state = (page) => page.evaluate(() => window.__zs.getState());
 async function open(page, size = SIZE, extra = '') {
   await page.setViewportSize(size);
   await page.goto(PAGE(extra));
-  await page.waitForFunction(() => (window.__zs?.getState()?.time ?? 0) > 0.05);
+  await waitReady(page);
 }
 const BROWSER_NOISE = /GL Driver Message/;
 // Contexte neuf, bureau : une seule fois, sur le projet « bureau » (souris, pas de message de rotation à 360 px).
@@ -198,7 +199,7 @@ test.describe('mesures et parcours', () => {
     // Mourir : des zombies au contact pendant que le laser vise le vide.
     await page.evaluate(() => {
       window.__zs.setInput({ aim: { angle: -Math.PI / 2 } });
-      for (const [x, y] of [[850, 450], [750, 450], [800, 500], [835, 420], [770, 420]]) window.__zs.spawnEnemy(x, y);
+      for (const [x, y] of [[850, 450], [750, 450], [800, 500], [835, 480], [770, 480]]) window.__zs.spawnEnemy(x, y);
     });
     await expect(page.locator('#end-panel')).toBeVisible({ timeout: 60_000 });
     await expect(page.locator('#end-kills')).toHaveText('Zombies tués : 1');
@@ -218,7 +219,7 @@ test.describe('mesures et parcours', () => {
     await expect(page.locator('#hud-live')).toHaveText('');
     await page.evaluate(() => {
       window.__zs.setInput({ aim: { angle: -Math.PI / 2 } });
-      for (const [x, y] of [[850, 450], [750, 450], [800, 500], [835, 420], [770, 420]]) window.__zs.spawnEnemy(x, y);
+      for (const [x, y] of [[850, 450], [750, 450], [800, 500], [835, 480], [770, 480]]) window.__zs.spawnEnemy(x, y);
     });
     await expect(page.locator('#hud-live')).toContainText('Vie :', { timeout: 60_000 });
     await expect(page.locator('#hud-live')).toContainText('Tu es mort', { timeout: 60_000 });

@@ -1,0 +1,165 @@
+import { test, expect } from '@playwright/test';
+import { fitDistance, projectGround } from '../../js/core/viewport.js';
+import { waitReady } from './helpers.js';
+
+// Rendu 3D du lot 1m : couverture du canvas, HUD en HTML, poses, inclinaisons, salle entière. Petite fenêtre de préférence :
+// le rendu logiciel du navigateur de test y est plus rapide. Les tests se désactivent seuls si WebGL manque.
+const URL = (extra = '') => `/jeu.html?test=1&nospawn=1&seed=1${extra}`;
+const state = (page) => page.evaluate(() => window.__zs.getState());
+async function open(page, size, extra = '') {
+  await page.setViewportSize(size);
+  await page.goto(URL(extra));
+  await waitReady(page);
+}
+const room = { width: 1600, height: 900 };
+
+test.describe('canvas plein écran', () => {
+  test.skip(({ isMobile }) => isMobile, 'mesures de bureau');
+
+  for (const [w, h] of [[667, 375], [1440, 900], [1920, 1080], [2560, 1080]]) {
+    test(`le canvas couvre la fenêtre à 1 pixel près à ${w}×${h}, sans défilement`, async ({ page }) => {
+      await open(page, { width: w, height: h });
+      await expect.poll(() => page.evaluate(() => {
+        const r = document.querySelector('#game-canvas canvas').getBoundingClientRect();
+        return [Math.abs(r.width - innerWidth) <= 1, Math.abs(r.height - innerHeight) <= 1, r.x, r.y,
+          document.documentElement.scrollWidth - document.documentElement.clientWidth, document.documentElement.scrollHeight - document.documentElement.clientHeight];
+      })).toEqual([true, true, 0, 0, 0, 0]);
+    });
+  }
+
+  test('le canvas, la caméra et la visée suivent un redimensionnement', async ({ page }) => {
+    await open(page, { width: 667, height: 375 });
+    for (const [w, h] of [[900, 600], [1440, 900], [800, 1200]]) {
+      await page.setViewportSize({ width: w, height: h });
+      await expect.poll(async () => (await state(page)).camera.distance).toBeCloseTo(fitDistance(w / h, room, 75, 40), 3);
+      const b = await page.evaluate(() => {
+        const r = document.querySelector('#game-canvas canvas').getBoundingClientRect();
+        return { w: Math.round(r.width), h: Math.round(r.height) };
+      });
+      expect(b).toEqual({ w, h });
+      // La souris sur le joueur, projeté avec la nouvelle caméra : la visée reste juste (point du sol recalculé à chaque image).
+      const s = await state(page);
+      const p = projectGround(200, 0, s.camera.distance, s.camera.tilt, 40, w / h);
+      await page.mouse.move(((p.x + 1) / 2) * w, ((1 - p.y) / 2) * h);
+      await expect.poll(async () => Math.abs((await state(page)).aim)).toBeLessThan(0.03);
+    }
+  });
+
+  test('?dpr=1 plafonne la résolution à 1 pixel par pixel CSS', async ({ page }) => {
+    await open(page, { width: 667, height: 375 }, '&dpr=1');
+    expect(await page.evaluate(() => { const c = document.querySelector('#game-canvas canvas'); return [c.width, c.height]; })).toEqual([667, 375]);
+  });
+});
+
+test('toute la salle est visible, sans défilement, dans les fenêtres listées', async ({ page, isMobile }) => {
+  test.skip(isMobile, 'mesures de bureau');
+  await open(page, { width: 667, height: 375 });
+  for (const [w, h] of [[667, 375], [768, 1024], [1440, 900], [1920, 1080], [2560, 1080], [800, 1200], [100, 100]]) {
+    await page.setViewportSize({ width: w, height: h });
+    await expect.poll(async () => (await state(page)).camera.distance).toBeCloseTo(fitDistance(w / h, room, 75, 40), 3);
+    const { camera } = await state(page);
+    for (const [x, y] of [[0, 0], [1600, 0], [0, 900], [1600, 900]]) {
+      const p = projectGround(x - 800, y - 450, camera.distance, camera.tilt, 40, w / h);
+      expect(Math.abs(p.x), `${w}×${h} coin ${x},${y}`).toBeLessThanOrEqual(1);
+      expect(Math.abs(p.y), `${w}×${h} coin ${x},${y}`).toBeLessThanOrEqual(1);
+    }
+  }
+});
+
+test.describe('HUD HTML (E2-2) et marges', () => {
+  test.skip(({ isMobile }) => isMobile, 'mesures de bureau');
+
+  for (const [w, h] of [[667, 375], [1440, 900]]) {
+    test(`le HUD, le bouton Pause et le texte restent à 16 px au moins des bords (${w}×${h})`, async ({ page }) => {
+      await open(page, { width: w, height: h });
+      const boxes = await page.evaluate(() => ['#hud', '#btn-pause'].map((sel) => {
+        const r = document.querySelector(sel).getBoundingClientRect();
+        return { sel, left: r.left, top: r.top, right: innerWidth - r.right, bottom: innerHeight - r.bottom, width: r.width, height: r.height };
+      }));
+      for (const b of boxes) {
+        expect(b.width, b.sel).toBeGreaterThan(0);
+        for (const side of ['left', 'top', 'right', 'bottom']) expect(b[side], `${b.sel} ${side}`).toBeGreaterThanOrEqual(16);
+      }
+      await expect(page.locator('#hud-life')).toHaveText('Vie 100/100');
+      await expect(page.locator('#hud-kills')).toHaveText('Zombies tués : 0');
+      await expect(page.locator('#hud')).toHaveAttribute('data-block', 'E2-2');
+    });
+  }
+
+  test('le HUD suit la vie et les zombies tués, et l\'ordre du HTML est l\'ordre à l\'écran', async ({ page }) => {
+    await open(page, { width: 667, height: 375 });
+    await page.evaluate(() => { window.__zs.setInput({ aim: { angle: 0 } }); window.__zs.spawnEnemy(1100, 450); });
+    await expect(page.locator('#hud-kills')).toHaveText('Zombies tués : 1', { timeout: 60_000 });
+    const order = await page.evaluate(() => [...document.querySelectorAll('#game-root [data-block]')].map((el) => el.dataset.block));
+    expect(order).toEqual(['E2-2', 'E2-5', 'E2-3', 'E2-4']);
+    const [hud, pause] = await page.evaluate(() => ['#hud', '#btn-pause'].map((s) => document.querySelector(s).getBoundingClientRect().left));
+    expect(hud).toBeLessThan(pause);
+  });
+
+  test('les zones de sécurité sont publiées en variables CSS (pixels, zéro sans encoche)', async ({ page }) => {
+    await open(page, { width: 667, height: 375 });
+    const vars = await page.evaluate(() => ['top', 'right', 'bottom', 'left'].map((s) => document.documentElement.style.getPropertyValue(`--safe-${s}`)));
+    expect(vars).toEqual(['0px', '0px', '0px', '0px']);
+  });
+});
+
+test.describe('personnages et poses', () => {
+  test.skip(({ isMobile }) => isMobile, 'clavier');
+
+  test('les angles du joueur changent quand il marche et reviennent à zéro à l\'arrêt', async ({ page }) => {
+    await open(page, { width: 667, height: 375 });
+    const rest = (await state(page)).pose;
+    expect(Math.abs(rest.hipL)).toBeLessThan(1e-6);
+    expect(Math.abs(rest.hipR)).toBeLessThan(1e-6);
+    await page.keyboard.down('KeyD');
+    await expect.poll(async () => {
+      const pose = (await state(page)).pose;
+      return Math.max(Math.abs(pose.hipL), Math.abs(pose.hipR));
+    }, { timeout: 30_000 }).toBeGreaterThan(0.2);
+    const walking = (await state(page)).pose;
+    // Les angles réellement posés sur les articulations sont ceux de computePose.
+    for (const joint of ['hipL', 'hipR', 'kneeL', 'kneeR', 'shoulderL', 'shoulderR', 'elbowL', 'elbowR']) {
+      expect(walking[joint], joint).toBeCloseTo(walking.expected[joint], 6);
+    }
+    await page.keyboard.up('KeyD');
+    await expect.poll(async () => Math.max(Math.abs((await state(page)).pose.hipL), Math.abs((await state(page)).pose.hipR)), { timeout: 30_000 }).toBeLessThan(1e-6);
+  });
+
+  test('un zombie du jeu est dessiné : le nombre d\'appels de dessin augmente avec lui', async ({ page }) => {
+    await open(page, { width: 667, height: 375 });
+    const before = (await state(page)).render;
+    await page.evaluate(() => window.__zs.spawnEnemy(300, 300));
+    await expect.poll(async () => (await state(page)).render.calls).toBeGreaterThan(before.calls);
+    expect((await state(page)).render.triangles).toBeGreaterThan(before.triangles);
+  });
+
+  test('?shadows=0 retire la passe d\'ombres (moins d\'appels de dessin)', async ({ page }) => {
+    await open(page, { width: 667, height: 375 });
+    const withShadows = (await state(page)).render.calls;
+    await page.goto(URL('&shadows=0'));
+    await waitReady(page);
+    await expect.poll(async () => (await state(page)).render.calls).toBeLessThan(withShadows);
+  });
+});
+
+test.describe('inclinaison de la caméra', () => {
+  for (const tilt of [60, 75, 90]) {
+    test(`?tilt=${tilt} règle l'inclinaison exposée par getState()`, async ({ page, isMobile }) => {
+      test.skip(isMobile, 'mesures de bureau');
+      await open(page, { width: 667, height: 375 }, `&tilt=${tilt}`);
+      const { camera } = await state(page);
+      expect(camera.tilt).toBe(tilt);
+      expect(camera.distance).toBeCloseTo(fitDistance(667 / 375, room, tilt, 40), 3);
+      // La caméra est au sud de la cible (z plus grand), plus haute quand l'inclinaison augmente.
+      expect(camera.x).toBeCloseTo(800, 3);
+      expect(camera.y).toBeCloseTo(camera.distance * Math.sin((tilt * Math.PI) / 180), 3);
+      expect(camera.z).toBeCloseTo(450 + camera.distance * Math.cos((tilt * Math.PI) / 180), 3);
+    });
+  }
+
+  test('une valeur inconnue de ?tilt est ignorée (75°)', async ({ page, isMobile }) => {
+    test.skip(isMobile, 'mesures de bureau');
+    await open(page, { width: 667, height: 375 }, '&tilt=45');
+    expect((await state(page)).camera.tilt).toBe(75);
+  });
+});

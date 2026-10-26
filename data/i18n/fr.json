@@ -36,5 +36,6 @@
   "game.hud.life": "Vie {hp}/{max}",
   "game.hud.kills": "Zombies tués : {n}",
   "game.live.life": "Vie : {hp} sur {max}.",
+  "game.error.webgl": "Ce jeu a besoin de WebGL, que ton navigateur n'a pas activé.",
   "game.live.dead": "Tu es mort. Zombies tués : {n}."
 }

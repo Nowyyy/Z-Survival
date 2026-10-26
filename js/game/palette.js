@@ -1,30 +1,20 @@
-// Couleurs de la scène : lues dans css/tokens.css au démarrage, converties en nombres pour Phaser.
-const NAMES = ['floor', 'wall', 'ground', 'player', 'zombie', 'laser', 'hit', 'bullet', 'muzzle'];
-const HEX = /^#([0-9a-f]{6})$/i;
+// Couleurs de la scène : lues dans css/tokens.css (variables --game-*) au démarrage, sous forme de chaînes « #rrggbb ».
+const NAMES = ['floor', 'wall', 'ground', 'player', 'zombie', 'laser', 'hit', 'bullet', 'muzzle', 'skin', 'trousers', 'boot', 'gun',
+  'zombie-clothes', 'zombie-trousers', 'sun', 'ambient'];
+const HEX = /^#[0-9a-f]{6}$/i;
+const camel = (name) => name.replace(/-(\w)/g, (_, c) => c.toUpperCase());
 
 export function parseColor(text) {
-  const m = HEX.exec(String(text ?? '').trim());
-  return m ? parseInt(m[1], 16) : null;
+  const value = String(text ?? '').trim();
+  return HEX.test(value) ? value.toLowerCase() : null;
 }
 
-export function toCss(n) {
-  return `#${n.toString(16).padStart(6, '0')}`;
-}
-
-// Renvoie { floor, wall, ... } en nombres, plus text et textShadow (texte du HUD) en chaînes CSS.
+// Renvoie { floor, wall, ground, player, zombieClothes, ... } en chaînes CSS ; lève une erreur si un jeton manque.
 export function readPalette(root = document.documentElement) {
   const style = getComputedStyle(root);
-  const read = (name) => {
-    const value = parseColor(style.getPropertyValue(name));
-    if (value === null) throw new Error(`Jeton de couleur illisible : ${name}`);
-    return value;
-  };
-  const palette = Object.fromEntries(NAMES.map((n) => [n, read(`--game-${n}`)]));
-  palette.dark = read('--color-bg');
-  palette.text = toCss(read('--color-text'));
-  palette.textShadow = toCss(palette.dark);
-  palette.action = read('--color-action');
-  palette.surface = read('--color-surface');
-  palette.border = read('--color-border');
-  return palette;
+  return Object.fromEntries(NAMES.map((name) => {
+    const value = parseColor(style.getPropertyValue(`--game-${name}`));
+    if (value === null) throw new Error(`Jeton de couleur illisible : --game-${name}`);
+    return [camel(name), value];
+  }));
 }

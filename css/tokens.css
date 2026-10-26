@@ -70,7 +70,7 @@
   /* Cible tactile minimale */
   --touch-target: 44px;
 
-  /* Jeu : couleurs de la scène Phaser (lues par js/game/palette.js). Provisoires, à valider. */
+  /* Jeu : couleurs de la scène 3D (lues par js/game/palette.js). Provisoires, à valider. */
   --game-floor: #2a2a2e;            /* sol de la salle */
   --game-wall: #5b2a28;             /* murs : rouge brun sombre */
   --game-ground: #121213;           /* décor extérieur, fond de caméra */
@@ -80,4 +80,12 @@
   --game-hit: #fff3c4;              /* flash d'un zombie touché, étincelle */
   --game-bullet: #ffe8a3;           /* balle et traînée */
   --game-muzzle: #ffb347;           /* flash de bouche */
+  --game-skin: #e8c9a8;             /* peau du joueur (le haut du joueur est --game-player) */
+  --game-trousers: #262b34;         /* pantalon et cheveux du joueur */
+  --game-boot: #101012;             /* chaussures du joueur */
+  --game-gun: #8a8f99;              /* pistolet, barreaux des fenêtres */
+  --game-zombie-clothes: #6a6650;   /* haillons des zombies (la peau est --game-zombie) */
+  --game-zombie-trousers: #4a483c;  /* pantalon, chaussures et cheveux des zombies */
+  --game-sun: #fff1d6;              /* lumière directionnelle */
+  --game-ambient: #8c93a6;          /* lumière ambiante */
 }
