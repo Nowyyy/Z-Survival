@@ -17,7 +17,9 @@ const once = (testInfo) => testInfo.project.name === 'bureau';
 test.describe('panneau de pause', () => {
   for (const size of [SIZE, { width: 1440, height: 900 }]) {
     test(`s'ouvre, tient dans la fenêtre et respecte les cibles de 44 px (${size.width}×${size.height})`, async ({ page }) => {
-      await open(page, size);
+      // Lot 1c : ?dpr=1 en grand écran (le panneau est en HTML, indépendant de la résolution du canvas) : en rendu logiciel, 2880×1800 px
+      // par image rendait ce test trop lent (avant : sans ?dpr=1).
+      await open(page, size, size.width > 1000 ? '&dpr=1' : '');
       await page.getByRole('button', { name: 'Pause' }).click();
       const panel = page.locator('#pause-panel');
       await expect(panel).toBeVisible();
