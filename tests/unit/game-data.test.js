@@ -15,12 +15,14 @@ describe('data/game/*.json', () => {
   it('contient les valeurs de départ de la spécification', () => {
     expect([room.width, room.height, room.margin]).toEqual([1600, 900, 600]);
     expect(player).toMatchObject({ radius: 18, speed: 220, health: 100 });
-    expect(weapon).toMatchObject({ damage: 25, fireDelay: 0.4, laserRange: 700, bulletSpeed: 1100, bulletRadius: 4, bulletMaxDistance: 700, muzzleFlash: 0.08, maxBullets: 30 });
+    expect(weapon).toMatchObject({ damage: 25, fireDelay: 0.4, laserRange: 300, bulletSpeed: 1100, bulletRadius: 4, fireRange: 1600, bulletMaxDistance: 1600, muzzleFlash: 0.08, maxBullets: 30 });
     expect(zombie).toMatchObject({ radius: 20, speed: 70, health: 50, contactDamage: 10, contactDelay: 1, maxPresent: 5, spawnInterval: 3 });
   });
 
-  it('la portée de la balle égale celle du laser', () => {
-    expect(weapon.bulletMaxDistance).toBe(weapon.laserRange);
+  it('la balle porte aussi loin que le tir se déclenche, et le tir porte plus loin que le laser', () => {
+    expect(weapon.bulletMaxDistance).toBe(weapon.fireRange);
+    expect(weapon.fireRange).toBeGreaterThan(weapon.laserRange);
+    expect(weapon.laserRange).toBe(300); // réduit au lot 1m : la vue proche ne montre pas plus loin
   });
 
   it('a trois ouvertures de fenêtre sur les murs', () => {
@@ -33,6 +35,16 @@ describe('data/game/*.json', () => {
       const onWall = w.x <= room.wall || w.x >= room.width - room.wall || w.y <= room.wall || w.y >= room.height - room.wall;
       expect(onWall).toBe(true);
     }
+  });
+
+  it('render.json : valeurs de rendu cohérentes (murs de 90 au plus, caméra de 40°, inclinaison de 75° par défaut, 2 % de marge)', () => {
+    const render = load('render');
+    expect(render.wallHeight).toBeLessThanOrEqual(90);
+    expect(render.wallThickness).toBe(40);
+    expect(render.sillHeight).toBeLessThan(render.lintelBottom);
+    expect(render.lintelBottom).toBeLessThan(render.wallHeight);
+    expect(render.camera).toMatchObject({ fov: 40, tilt: 75, margin: 0.02, zoom: 2 });
+    expect(render.light.shadowMap).toBe(1024);
   });
 
   it('ne contient que des nombres positifs (hors textes de marquage)', () => {

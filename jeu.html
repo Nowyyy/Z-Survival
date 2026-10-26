@@ -11,12 +11,13 @@
   <link rel="preload" href="fonts/barlow-latin-700-normal.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="data/i18n/fr.json" as="fetch" crossorigin>
   <link rel="modulepreload" href="js/game/texts.js">
-  <link rel="preload" href="vendor/phaser.min.js" as="script">
+  <script type="importmap">{"imports":{"three":"./vendor/three/three.module.js"}}</script>
+  <link rel="modulepreload" href="vendor/three/three.module.js">
+  <link rel="modulepreload" href="vendor/three/three.core.js">
   <link rel="stylesheet" href="css/tokens.css">
   <link rel="stylesheet" href="css/base.css">
   <link rel="stylesheet" href="css/game.css">
   <script type="module" src="js/game/boot.js"></script>
-  <script src="vendor/phaser.min.js" defer></script>
   <script type="module" src="js/game/main.js"></script>
 </head>
 <body class="game">
@@ -29,6 +30,12 @@
   </svg>
   <div id="game-root" class="game-root" data-block="E2-1" role="application" data-i18n-label="game.aria" hidden>
     <div id="game-canvas" class="game-canvas"></div>
+    <div id="hud" class="hud" data-block="E2-2">
+      <p id="hud-life" class="hud-text"></p>
+      <div class="hud-bar" aria-hidden="true"><div id="hud-fill" class="hud-fill"></div></div>
+      <p id="hud-kills" class="hud-text"></p>
+    </div>
+    <button id="btn-pause" class="button pause-button" data-block="E2-5" type="button" data-i18n="game.pause.open"></button>
     <div id="stick-left" class="stick" data-block="E2-3" aria-hidden="true" hidden>
       <div class="stick-base"></div>
       <div class="stick-knob"></div>
@@ -37,9 +44,9 @@
       <div class="stick-base"></div>
       <div class="stick-knob"></div>
     </div>
-    <button id="btn-pause" class="button pause-button" data-block="E2-5" type="button" data-i18n="game.pause.open"></button>
     <p id="hud-live" class="sr-only" aria-live="polite"></p>
   </div>
+  <p id="game-error" class="game-error" role="alert" hidden></p>
   <div id="pause-panel" class="panel-wrap" data-block="E2-6" role="dialog" aria-modal="true" aria-labelledby="pause-title" hidden>
     <div class="panel">
       <h2 id="pause-title" class="panel-title" data-i18n="game.pause.title"></h2>

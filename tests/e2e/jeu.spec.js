@@ -1,15 +1,13 @@
 import { test, expect, chromium } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
+import { expectedDistance, waitReady } from './helpers.js';
 
 const URL = '/jeu.html?test=1&seed=1';
 // Message du pilote graphique à la création du premier contexte WebGL du navigateur : du bruit du navigateur, pas du jeu.
 const BROWSER_NOISE = /GL Driver Message/;
 
 const state = (page) => page.evaluate(() => window.__zs.getState());
-// Attend que le jeu tourne (le temps de jeu avance) : la mise en page est alors terminée.
-async function ready(page) {
-  await page.waitForFunction(() => (window.__zs?.getState()?.time ?? 0) > 0.05);
-}
+const ready = waitReady;
 const canvasBox = (page) => page.evaluate(() => {
   const r = document.querySelector('#game-canvas canvas').getBoundingClientRect();
   return { x: r.x, y: r.y, width: r.width, height: r.height, innerWidth, innerHeight };
@@ -57,13 +55,13 @@ test.describe('plein écran', () => {
     }
   });
 
-  test('le zoom de la caméra suit la règle de viewport.js', async ({ page }) => {
+  test('la distance de la caméra suit fitDistance de viewport.js', async ({ page }) => {
     await page.setViewportSize({ width: 1920, height: 1080 });
     await page.goto(URL);
     await ready(page);
-    expect((await state(page)).zoom).toBeCloseTo(1.2);
+    expect((await state(page)).camera.distance).toBeCloseTo(expectedDistance(1920 / 1080, 75), 3);
     await page.setViewportSize({ width: 1440, height: 900 });
-    await expect.poll(async () => (await state(page)).zoom).toBeCloseTo(0.9);
+    await expect.poll(async () => (await state(page)).camera.distance).toBeCloseTo(expectedDistance(1440 / 900, 75), 3);
   });
 
   test('la résolution interne est plafonnée à 2 sur un écran haute densité', async ({ browser, baseURL }) => {
