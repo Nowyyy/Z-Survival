@@ -1,3 +1,4 @@
+import { drawSplat } from './splat.js';
 import { DEFAULT_LANG, otherLanguage, pickLanguage, translate } from './i18n.js';
 
 const STORAGE_KEY = 'mobile-games.lang';
@@ -29,7 +30,11 @@ async function loadDict(lang) {
 
 const fallbackDict = await loadDict(DEFAULT_LANG);
 const toggle = document.querySelector('[data-lang-toggle]');
+const toggleLabel = toggle.querySelector('[data-lang-label]');
 let current = pickLanguage({ stored: readStored(), browserLanguages: navigator.languages ?? [navigator.language] });
+
+const canvas = document.getElementById('splat');
+const redraw = () => drawSplat(canvas);
 
 async function apply(lang) {
   const dict = lang === DEFAULT_LANG ? fallbackDict : await loadDict(lang);
@@ -38,10 +43,11 @@ async function apply(lang) {
     el.textContent = translate(dict, el.dataset.i18n, fallbackDict);
   }
   document.title = translate(dict, 'meta.title', fallbackDict);
-  toggle.textContent = translate(dict, 'lang.toggle', fallbackDict);
+  toggleLabel.textContent = translate(dict, 'lang.toggle', fallbackDict);
   toggle.setAttribute('aria-label', translate(dict, 'lang.toggleLabel', fallbackDict));
   toggle.lang = otherLanguage(lang);
   current = lang;
+  redraw();
 }
 
 toggle.addEventListener('click', async () => {
@@ -52,3 +58,17 @@ toggle.addEventListener('click', async () => {
 
 await apply(current);
 document.getElementById('app').hidden = false;
+
+redraw();
+addEventListener('resize', redraw);
+document.fonts?.ready.then(redraw);
+
+// Rubik Dirt est lourde : on ne la charge qu'une fois la page affichée.
+function loadExtraFonts() {
+  document.fonts?.load('1em "Rubik Dirt"', 'ABC').then(() => {
+    document.documentElement.classList.add('fonts-extra');
+    redraw();
+  });
+}
+if (document.readyState === 'complete') loadExtraFonts();
+else addEventListener('load', loadExtraFonts);

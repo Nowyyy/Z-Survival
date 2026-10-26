@@ -21,20 +21,33 @@ describe('contrastes des jetons (minimum 4,5:1)', () => {
   const PAIRS = [
     ['color-text', 'color-bg'], ['color-text', 'color-surface'], ['color-text', 'color-surface-raised'],
     ['color-text-muted', 'color-bg'], ['color-text-muted', 'color-surface'],
-    ['color-on-action', 'color-action'], ['color-on-action', 'color-action-hover'], ['color-on-action', 'color-action-active'],
+    ['color-on-action', 'color-action'], ['color-on-action', 'color-action-active'],
+    ['color-action', 'color-text'],               // rouge sang lu sur le coup de pinceau
+    ['color-action-text', 'color-bg'], ['color-action-text', 'color-surface'],
     ['color-danger', 'color-bg'], ['color-danger', 'color-danger-surface'],
     ['color-success', 'color-bg'], ['color-success', 'color-success-surface'],
     ['color-warning', 'color-bg'], ['color-warning', 'color-warning-surface'],
-    ['color-action', 'color-bg'], ['color-focus', 'color-bg'],
+    ['color-money', 'color-bg'], ['color-money', 'color-surface'], ['color-focus', 'color-bg'],
   ];
   it.each(PAIRS)('%s sur %s', (fg, bg) => {
     expect(contrast(fg, bg)).toBeGreaterThanOrEqual(4.5);
   });
 });
 
+describe('grands textes sur fond sombre (minimum 3:1)', () => {
+  it('le rouge sang du titre', () => {
+    expect(contrast('color-action', 'color-bg')).toBeGreaterThanOrEqual(3);
+  });
+
+  it('le rouge de bordure et d\'éclaboussure se détache du fond', () => {
+    expect(contrast('color-action', 'color-bg')).toBeGreaterThanOrEqual(3);
+    expect(contrast('color-border', 'color-bg')).toBeGreaterThanOrEqual(3);
+  });
+});
+
 describe('jetons requis', () => {
   it.each(['color-bg', 'color-surface', 'color-text', 'color-text-muted', 'color-action', 'color-danger',
-    'color-success', 'color-warning', 'font-sans', 'text-md', 'space-4', 'radius-md', 'duration-fast', 'touch-target'])(
+    'color-success', 'color-warning', 'color-money', 'color-action-deep', 'font-sans', 'font-display', 'font-label', 'text-md', 'space-4', 'radius-md', 'duration-fast', 'touch-target'])(
     '--%s est défini', (name) => {
       expect(vars[name]).toBeTruthy();
     });

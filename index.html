@@ -8,7 +8,10 @@
   <title>Jeu de survie zombies (titre provisoire)</title>
   <link rel="icon" href="data:,">
   <link rel="preload" href="fonts/barlow-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="preload" href="fonts/barlow-latin-700-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="fonts/rubik-wet-paint-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="modulepreload" href="js/i18n.js">
+  <link rel="modulepreload" href="js/splat.js">
+  <link rel="preload" href="data/i18n/fr.json" as="fetch" crossorigin>
   <link rel="stylesheet" href="css/tokens.css">
   <link rel="stylesheet" href="css/base.css">
   <script type="module" src="js/main.js"></script>
@@ -17,13 +20,34 @@
   <noscript>
     <p class="noscript">Ce jeu a besoin de JavaScript. / This game needs JavaScript.</p>
   </noscript>
-  <main id="app" class="page" hidden>
-    <span class="badge" data-i18n="app.badge"></span>
-    <h1 class="title" data-i18n="app.title"></h1>
-    <p class="status" data-i18n="app.status"></p>
-    <div class="bar" aria-hidden="true"></div>
-    <p class="provisional" data-i18n="app.provisional"></p>
-    <button type="button" class="button" data-lang-toggle></button>
+  <svg class="defs" aria-hidden="true" focusable="false">
+    <filter id="brush" x="-5%" y="-30%" width="110%" height="160%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.035 0.4" numOctaves="3" seed="4" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="16" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+    <filter id="torn" x="-20%" y="-40%" width="140%" height="180%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.05" numOctaves="3" seed="9" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="26" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+  </svg>
+  <main id="app" class="screen" hidden>
+    <canvas id="splat" class="splat" aria-hidden="true"></canvas>
+    <div class="top">
+      <p class="crumb zone corner" data-i18n="app.badge"></p>
+    </div>
+    <div class="center">
+      <h1 class="title" data-i18n="app.title"></h1>
+      <p class="status" data-i18n="app.status"></p>
+      <div class="bar" aria-hidden="true"></div>
+      <button type="button" class="item is-on" data-lang-toggle>
+        <span class="brush" aria-hidden="true"></span>
+        <svg class="claw" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 3l4 18M10 3l4 18M16 3l4 18" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" fill="none"/></svg>
+        <span data-lang-label></span>
+      </button>
+    </div>
+    <div class="foot">
+      <p class="zone" data-i18n="app.provisional"></p>
+    </div>
   </main>
 </body>
 </html>

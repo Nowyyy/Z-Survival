@@ -14,6 +14,22 @@
   src: url("../fonts/barlow-latin-700-normal.woff2") format("woff2");
 }
 
+@font-face {
+  font-family: "Rubik Wet Paint";
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+  src: url("../fonts/rubik-wet-paint-latin-400-normal.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Rubik Dirt";
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+  src: url("../fonts/rubik-dirt-latin-400-normal.woff2") format("woff2");
+}
+
 *,
 *::before,
 *::after {
@@ -29,11 +45,13 @@ body {
   margin: 0;
   min-height: 100vh;
   min-height: 100dvh;
-  background: var(--color-bg);
+  background: radial-gradient(120% 90% at 70% 10%, var(--color-ground-light), var(--color-ground) 70%);
+  background-color: var(--color-ground);
   color: var(--color-text);
   font-family: var(--font-sans);
   font-size: var(--text-md);
   line-height: var(--line-height);
+  padding: var(--space-3);
 }
 
 h1,
@@ -50,43 +68,104 @@ p {
   outline-offset: 3px;
 }
 
-.page {
+.defs {
+  position: absolute;
+  width: 0;
+  height: 0;
+}
+
+/* Écran : cadre rouge lumineux, fond noir et brume. */
+.screen {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto 1fr auto;
+  max-width: 72rem;
+  min-height: calc(100vh - 2 * var(--space-3));
+  min-height: calc(100dvh - 2 * var(--space-3));
+  margin: 0 auto;
+  padding: var(--space-5) var(--space-4);
+  border: 4px solid var(--color-action);
+  border-radius: var(--radius-screen);
+  box-shadow: 0 0 28px 2px var(--color-action-glow);
+  background:
+    radial-gradient(60% 70% at 72% 45%, var(--color-surface-raised), transparent 70%),
+    radial-gradient(40% 50% at 30% 70%, var(--color-surface), transparent 70%),
+    var(--color-bg);
+}
+
+.splat {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -1;
+  pointer-events: none;
+}
+
+/* Zones rouges pleines : le texte est posé sur du rouge uni, les taches sont autour. */
+.zone {
+  position: relative;
+  z-index: 0;
+  color: var(--color-on-action);
+  padding: var(--space-1) var(--space-4);
+}
+
+.zone::before {
+  content: "";
+  position: absolute;
+  inset: -8px -10px;
+  background: var(--color-action);
+  filter: url("#torn");
+  z-index: -1;
+}
+
+.zone.corner {
+  margin: -8px 0 0 -8px;
+  padding: 6px 20px 10px 8px;
+}
+
+.zone.corner::before {
+  inset: -60px -34px -8px -60px;
+}
+
+.top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--space-4);
+}
+
+.crumb {
+  font-family: var(--font-sans);
+  font-weight: var(--font-weight-bold);
+  font-size: clamp(1.1rem, 3vw, 1.6rem);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.center {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
   justify-content: center;
-  gap: var(--space-5);
-  min-height: 100vh;
-  min-height: 100dvh;
-  padding: var(--space-5) var(--space-4);
-  max-width: 40rem;
-  margin: 0 auto;
+  gap: var(--space-4);
+  max-width: 24rem;
+  padding-block: var(--space-4);
 }
 
 .title {
+  font-family: var(--font-display);
+  font-weight: var(--font-weight-normal);
   font-size: var(--text-2xl);
-  font-weight: var(--font-weight-bold);
-  line-height: 1.1;
+  line-height: 0.95;
+  color: var(--color-action);
+  text-shadow: 0 0 18px var(--color-action-glow);
 }
 
 .status {
   font-size: var(--text-lg);
-}
-
-.provisional {
-  font-size: var(--text-sm);
-  color: var(--color-text-muted);
-}
-
-.badge {
-  display: inline-block;
-  padding: var(--space-1) var(--space-3);
-  border: 1px solid var(--color-warning);
-  border-radius: var(--radius-sm);
-  background: var(--color-warning-surface);
-  color: var(--color-warning);
-  font-size: var(--text-sm);
-  font-weight: var(--font-weight-bold);
 }
 
 .bar {
@@ -112,26 +191,80 @@ p {
   }
 }
 
-.button {
-  min-width: var(--touch-target);
-  min-height: var(--touch-target);
-  padding: var(--space-2) var(--space-5);
+/* Police grunge chargée après le premier affichage (main.js pose .fonts-extra). */
+.fonts-extra .crumb,
+.fonts-extra .item {
+  font-family: var(--font-label);
+  font-weight: var(--font-weight-normal);
+}
+
+/* Entrée de menu : coup de pinceau sur l'entrée choisie. */
+.item {
+  position: relative;
+  z-index: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  min-height: 56px;
+  padding: var(--space-2) var(--space-5) var(--space-2) 28px;
   border: 0;
-  border-radius: var(--radius-md);
-  background: var(--color-action);
-  color: var(--color-on-action);
-  font: inherit;
+  background: none;
+  color: var(--color-text);
+  font-family: var(--font-sans);
   font-weight: var(--font-weight-bold);
+  font-size: var(--text-label);
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  text-align: left;
   cursor: pointer;
-  transition: background-color var(--duration-fast);
 }
 
-.button:hover {
-  background: var(--color-action-hover);
+.item .brush {
+  position: absolute;
+  inset: 2px -6px;
+  background: var(--color-text);
+  filter: url("#brush");
+  opacity: 0;
+  z-index: -1;
+  transform: rotate(-1.2deg);
 }
 
-.button:active {
-  background: var(--color-action-active);
+.item .claw {
+  display: none;
+  width: 1.2em;
+  height: 1.2em;
+  flex: none;
+}
+
+.item.is-on,
+.item:hover,
+.item:focus-visible {
+  color: var(--color-action);
+}
+
+.item.is-on .brush,
+.item:hover .brush,
+.item:focus-visible .brush {
+  opacity: 1;
+}
+
+.item.is-on .claw,
+.item:hover .claw,
+.item:focus-visible .claw {
+  display: block;
+}
+
+.foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.foot .zone {
+  font-size: var(--text-sm);
 }
 
 .noscript {
@@ -141,15 +274,20 @@ p {
 }
 
 @media (min-width: 768px) {
-  .page {
-    padding: var(--space-7) var(--space-6);
-    gap: var(--space-6);
+  body {
+    padding: var(--space-5);
+  }
+
+  .screen {
+    min-height: calc(100vh - 2 * var(--space-5));
+    min-height: calc(100dvh - 2 * var(--space-5));
+    padding: var(--space-6) var(--space-7);
   }
 }
 
 @media (min-width: 1200px) {
-  .page {
-    max-width: 48rem;
+  .center {
+    max-width: 30rem;
   }
 }
 

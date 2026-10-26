@@ -15,3 +15,9 @@ Avant de modifier une page, relis ce fichier.
 ## Architecture
 - **La logique du jeu vit dans `js/core/`, sans Phaser, DOM, réseau, stockage ni horloge.** Tout ce dont elle a besoin (temps, hasard, données) lui est passé en paramètre.
 - `js/game/` : scènes Phaser. `js/save/` : `SaveRepository` et adaptateurs de stockage.
+
+## Style « sang noir »
+- Rouge sang (`--color-action`) pour les zones, le cadre et les grands titres ; pour du petit texte rouge sur fond sombre, `--color-action-text`. Jaune (`--color-money`) réservé à l'argent.
+- Un texte posé sur du rouge l'est sur une zone rouge pleine (`.zone`, texte `--color-on-action`) ; les taches de sang sont dessinées autour, jamais sous le texte.
+- Tout état est aussi porté par une forme ou un texte, jamais par la couleur seule.
+- Polices lourdes (Rubik Dirt) : chargées après le premier affichage, pour garder Lighthouse performance à 90 ou plus.

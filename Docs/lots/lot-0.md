@@ -5,24 +5,28 @@ Branche `lot-0` · comparaison : https://github.com/Nowyyy/mobile-games/compare/
 ## Ce qui est fait
 - **0-A Socle et outillage** : arborescence, `package.json` (devDependencies exactes, aucune dépendance d'exécution), ESLint plat, Vitest, Playwright (mobile 375 px, bureau 1440 px), scripts `build`, `serve`, `lighthouse`, `CLAUDE.md`, `Docs/ref/conventions.md`, `Docs/ref/environnement.md`.
 - **0-B Jetons et page d'attente** : `css/tokens.css`, `css/base.css`, police Barlow (OFL) hébergée, `index.html` bilingue fr/en (bascule, `lang` mis à jour, choix mémorisé, `noscript`, `noindex`), `js/i18n.js` pur.
+- **Habillage « sang noir »** (commit supplémentaire, hors des parties A à C, à la demande du propriétaire) : nouvelle palette, zones rouges et taches générées au canvas, polices Rubik, page d'attente refaite.
 - **0-C Publication et bilan** : `.github/workflows/pages.yml`, tests du workflow et du build, ce bilan.
 
-## Palette proposée (à valider par le propriétaire)
-Thème sombre vert-noir « survie », ambre comme couleur d'action.
+## Palette (style « sang noir », demandée par le propriétaire après la partie C)
+Noir profond, rouge sang, os, jaune pour l'argent ; maquette validée par le propriétaire.
 | Rôle | Valeur |
 |---|---|
-| Fond / surface / surélevé | `#0e110f` / `#181d19` / `#222924` |
-| Texte / texte secondaire | `#e9eee7` / `#a7b2a5` |
-| Action (texte dessus) | `#e0892f` (`#140d05`) |
-| Danger / succès / avertissement | `#ff7a6b` / `#7ed48b` / `#f2c94c` |
+| Fond / surface / surélevé | `#050505` / `#131313` / `#222224` |
+| Texte / texte secondaire | `#f4f1ec` / `#b8b4ae` |
+| Rouge sang (zones, cadre, grands titres) | `#d81414` (texte dessus `#f4f1ec`) |
+| Rouge lisible en petit texte | `#ff4a3d` |
+| Rouge profond (gouttes sombres) | `#7a0a0a` |
+| Argent | `#ffd60a` |
+| Succès / avertissement | `#7ed48b` / `#f2c94c` |
 | Focus | `#9fd3ff` |
-Chaque paire texte/fond est testée à 4,5:1 minimum (`tests/unit/tokens.test.js`).
+Chaque paire texte/fond est testée à 4,5:1 minimum (`tests/unit/tokens.test.js`) ; le rouge sang n'est utilisé que pour de grands textes sur noir (3:1). Polices : Barlow, Rubik Wet Paint (titre), Rubik Dirt (libellés).
 
 ## Preuves
-- `npm run lint` : sans avertissement. `npm test` : 8 fichiers, 99 tests verts.
+- `npm run lint` : sans avertissement. `npm test` : 8 fichiers, 108 tests verts.
 - `npm run test:e2e` : 26 tests verts (13 par projet : jetons, aucune couleur en dur, bascule de langue au clic, mémorisation, cible 44 px, aucune requête externe et console propre, pas de débordement à 375/768/1440 px, axe fr et en, sans JavaScript, réduction de mouvement).
-- Lighthouse mobile (page locale) : performance 100, accessibilité 100, bonnes pratiques 100, CLS 0. Seuils : 90 / 95 / 95, CLS ≤ 0,1.
-- Captures à 375, 768 et 1440 px regardées : contenu aligné à gauche dans une colonne centrée, badge ambre, titre, message, barre animée, mention de titre provisoire, bouton « English » de 44 px de haut ; rien ne déborde.
+- Lighthouse mobile (page locale, après l'habillage) : performance 92 à 99 selon les passes, accessibilité 100, bonnes pratiques 100, CLS 0 (la police Rubik Dirt, 190 Ko, est chargée après l'affichage : sans cela la performance tombait à 88). Seuils : 90 / 95 / 95, CLS ≤ 0,1.
+- Captures à 375, 768 et 1440 px regardées (deux passes) : zone rouge « En construction » en haut à gauche avec coulures, titre « Zombie » rouge qui dégouline, barre de progression, bouton de langue sur un coup de pinceau blanc, zone rouge de mention provisoire en bas ; rien ne déborde.
 - `npm run build` : `_site/` contient `index.html`, `css`, `js`, `data`, `fonts`, `vendor` ; ni `Docs/`, ni `tests/`, ni `node_modules`.
 
 ## Points à savoir

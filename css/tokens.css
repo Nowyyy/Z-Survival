@@ -1,32 +1,39 @@
-/* Jetons de design : seule source des couleurs du projet. Thème sombre « survie ». */
+/* Jetons de design : seule source des couleurs du projet. Thème « sang noir ». */
 :root {
   color-scheme: dark;
 
   /* Couleurs par rôle */
-  --color-bg: #0e110f;              /* fond de page */
-  --color-surface: #181d19;         /* cartes, panneaux */
-  --color-surface-raised: #222924;  /* éléments surélevés */
-  --color-border: #4a5a4d;          /* contours, séparateurs */
-  --color-text: #e9eee7;            /* texte principal */
-  --color-text-muted: #a7b2a5;      /* texte secondaire */
-  --color-action: #e0892f;          /* boutons, liens d'action (ambre) */
-  --color-on-action: #140d05;       /* texte posé sur l'action */
-  --color-danger: #ff7a6b;          /* danger, sang */
+  --color-bg: #050505;              /* fond de page, noir profond */
+  --color-surface: #131313;         /* cartes, panneaux */
+  --color-surface-raised: #222224;  /* éléments surélevés, brume */
+  --color-border: #6a6a6e;          /* contours, séparateurs */
+  --color-text: #f4f1ec;            /* texte principal (os) */
+  --color-text-muted: #b8b4ae;      /* texte secondaire */
+  --color-action: #d81414;          /* rouge sang : zones, cadre, grands titres */
+  --color-on-action: #f4f1ec;       /* texte posé sur le rouge sang */
+  --color-action-text: #ff4a3d;     /* rouge lisible en petit texte sur fond sombre */
+  --color-danger: #ff4a3d;          /* danger */
   --color-success: #7ed48b;         /* réussite */
   --color-warning: #f2c94c;         /* avertissement */
+  --color-money: #ffd60a;           /* argent, jaune */
   --color-focus: #9fd3ff;           /* anneau de focus */
 
   /* Teintes dérivées */
-  --color-action-hover: #f09a42;
-  --color-action-active: #c7761f;
-  --color-action-surface: #3a2610;
+  --color-action-deep: #7a0a0a;     /* rouge profond : gouttes sombres, bordures de pièce */
+  --color-action-hover: #ef2a2a;
+  --color-action-active: #a80f0f;
+  --color-action-glow: rgb(216 20 20 / 55%);
   --color-danger-surface: #3a1c19;
   --color-success-surface: #17301c;
   --color-warning-surface: #36300f;
+  --color-ground: #1c1c1e;          /* fond autour de l'écran */
+  --color-ground-light: #3d3d40;
   --color-overlay: rgb(0 0 0 / 60%);
 
   /* Polices */
   --font-sans: "Barlow", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-display: "Rubik Wet Paint", Impact, "Arial Black", sans-serif;
+  --font-label: "Rubik Dirt", Impact, "Arial Black", sans-serif;
   --font-weight-normal: 400;
   --font-weight-bold: 700;
 
@@ -35,7 +42,8 @@
   --text-md: 1rem;
   --text-lg: 1.25rem;
   --text-xl: 1.75rem;
-  --text-2xl: clamp(2rem, 6vw, 3.25rem);
+  --text-2xl: clamp(3rem, 11vw, 6.5rem);
+  --text-label: clamp(1.4rem, 4vw, 2rem);
   --line-height: 1.5;
 
   /* Espacements */
@@ -52,6 +60,7 @@
   --radius-sm: 4px;
   --radius-md: 8px;
   --radius-lg: 16px;
+  --radius-screen: 28px;
 
   /* Durées */
   --duration-fast: 120ms;

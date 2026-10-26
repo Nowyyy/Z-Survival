@@ -6,7 +6,7 @@ Avant de modifier une page, lis `Docs/ref/conventions.md`.
 
 ## Arborescence
 ```
-index.html (page d'attente) · css/ (tokens.css, base.css) · js/ (main.js, i18n.js)
+index.html (page d'attente) · css/ (tokens.css, base.css) · js/ (main.js, i18n.js, splat.js)
 js/core/ logique pure · js/game/ scènes Phaser · js/save/ sauvegarde
 data/i18n/{fr,en}.json · fonts/ · vendor/ · scripts/ (build, serve, lighthouse)
 tests/unit (Vitest) · tests/e2e (Playwright) · Docs/seed.md (propriétaire)
@@ -35,7 +35,8 @@ Docs/ref/ (environnement, conventions) · Docs/lots/ (bilans) · .github/workflo
 - Données : textes dans `data/i18n/*.json`, jamais en dur ; mêmes clés dans les deux langues.
 - Accessibilité : cibles 44 px, contraste 4,5:1, focus visible, `prefers-reduced-motion`, axe sans violation.
 - Exception texte : le message `<noscript>` de `index.html` est bilingue en dur (le i18n a besoin de JS).
-- Polices : Barlow (OFL) dans `fonts/`, licence copiée à côté.
+- Style « sang noir » : noir, rouge sang, os, jaune pour l'argent. Le texte sur du rouge est posé sur une zone rouge pleine (`.zone`), jamais sur les taches ; les taches (canvas, `js/splat.js`) sont autour.
+- Polices (OFL) dans `fonts/`, licence copiée à côté : Barlow, Rubik Wet Paint (titre), Rubik Dirt (libellés, majuscules seulement, chargée après l'affichage pour tenir le seuil Lighthouse).
 - Honnêteté : tout contenu fictif ou provisoire est marqué comme tel.
 - `Docs/seed.md` : appartient au propriétaire, jamais modifié par Claude (rempli depuis le lot 0-A).
 - La logique du jeu vit dans `js/core/`, sans Phaser, DOM, réseau, stockage ni horloge.
