@@ -205,3 +205,38 @@ body.game {
     font-size: var(--text-lg);
   }
 }
+
+/* Indicateur de chargement : affiché avant l'évaluation de Phaser, retiré par main.js. */
+.boot {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  width: 64px;
+  height: 64px;
+  margin: -32px 0 0 -32px;
+}
+
+.boot-ring {
+  fill: none;
+  stroke: var(--color-action);
+  stroke-width: 4;
+  stroke-dasharray: 40 100;
+  transform-origin: 32px 32px;
+  animation: boot-spin var(--duration-slow) linear infinite;
+}
+
+.boot-core {
+  fill: var(--color-action-deep);
+}
+
+@keyframes boot-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .boot-ring {
+    animation: none;
+  }
+}

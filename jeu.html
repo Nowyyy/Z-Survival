@@ -10,17 +10,23 @@
   <link rel="preload" href="fonts/barlow-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="fonts/barlow-latin-700-normal.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="data/i18n/fr.json" as="fetch" crossorigin>
+  <link rel="modulepreload" href="js/game/texts.js">
   <link rel="preload" href="vendor/phaser.min.js" as="script">
   <link rel="stylesheet" href="css/tokens.css">
   <link rel="stylesheet" href="css/base.css">
   <link rel="stylesheet" href="css/game.css">
-  <script src="vendor/phaser.min.js"></script>
+  <script type="module" src="js/game/boot.js"></script>
+  <script src="vendor/phaser.min.js" defer></script>
   <script type="module" src="js/game/main.js"></script>
 </head>
 <body class="game">
   <noscript>
     <p class="noscript">Ce jeu a besoin de JavaScript. / This game needs JavaScript.</p>
   </noscript>
+  <svg id="boot" class="boot" viewBox="0 0 64 64" aria-hidden="true" focusable="false">
+    <circle cx="32" cy="32" r="22" class="boot-ring"/>
+    <circle cx="32" cy="32" r="8" class="boot-core"/>
+  </svg>
   <div id="game-root" class="game-root" data-block="E2-1" role="application" data-i18n-label="game.aria" hidden>
     <div id="game-canvas" class="game-canvas"></div>
     <div id="stick-left" class="stick" data-block="E2-3" aria-hidden="true" hidden>

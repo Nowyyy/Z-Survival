@@ -323,6 +323,7 @@ export class GameScene extends Phaser.Scene {
       paused: this.ctx.ui.isPaused(),
       dead: sim.dead,
       time: sim.time,
+      audio: { started: this.ctx.audio.started, muted: this.ctx.audio.muted },
     };
   }
 }
