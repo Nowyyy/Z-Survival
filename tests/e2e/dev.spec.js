@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
+import { readFileSync } from 'node:fs';
 
 const LOTS = {
   lots: [
@@ -37,6 +38,40 @@ test('un ancien lot avec une page d\'aperçu s\'ouvre sur cette page', async ({ 
   await withLots(page, { lots: [{ name: 'lot-1', entry: 'jeu.html' }, { name: 'lot-2' }] });
   await page.goto('/dev/');
   await expect(page.locator('#previous option[value="../lots/lot-1/jeu.html"]')).toHaveCount(1);
+});
+
+test('lots.json sans champ entry (ancien script) : la page d\'aperçu vient de apercu.txt', async ({ page }) => {
+  await withLots(page, { lots: [{ name: 'lot-0' }, { name: 'lot-1' }] });
+  await page.route('**/lots/lot-1/apercu.txt', (route) => route.fulfill({ contentType: 'text/plain', body: 'jeu.html\ntype: hifi\n' }));
+  await page.goto('/dev/');
+  await expect(page.getByRole('link', { name: /Dernier lot : Lot 1/ })).toHaveAttribute('href', '../lots/lot-1/jeu.html');
+  await expect(page.locator('#previous option[value="../lots/lot-0/"]')).toHaveCount(1);
+});
+
+test('un ancien lot sans champ entry est sondé à l\'ouverture et s\'ouvre sur sa page d\'aperçu', async ({ page }) => {
+  await withLots(page, { lots: [{ name: 'lot-0' }, { name: 'lot-1' }, { name: 'lot-2' }] });
+  await page.route('**/lots/lot-2/apercu.txt', (route) => route.fulfill({ contentType: 'text/plain', body: '' }));
+  await page.route('**/lots/lot-1/apercu.txt', (route) => route.fulfill({ contentType: 'text/plain', body: 'jeu.html' }));
+  await page.route('**/lots/lot-1/jeu.html', (route) => route.fulfill({ contentType: 'text/html', body: '<title>jeu</title>' }));
+  await page.goto('/dev/');
+  await page.locator('#previous').selectOption({ index: 1 });
+  await page.getByRole('button', { name: 'Ouvrir' }).click();
+  await expect(page).toHaveURL(/\/lots\/lot-1\/jeu\.html$/);
+});
+
+test('depuis la copie du menu dans un aperçu, les liens remontent à la racine du site', async ({ page }) => {
+  // Simule l'aperçu publié : /lots/lot-1/... sert les fichiers du dépôt (comme le build du lot).
+  await page.route('**/lots/lot-1/**', (route) => {
+    const path = new URL(route.request().url()).pathname.replace('/lots/lot-1/', '');
+    const file = path === '' || path.endsWith('/') ? `${path}index.html` : path;
+    const type = file.endsWith('.js') ? 'text/javascript' : file.endsWith('.json') ? 'application/json' : file.endsWith('.css') ? 'text/css' : file.endsWith('.html') ? 'text/html' : 'application/octet-stream';
+    return route.fulfill({ contentType: type, body: readFileSync(file) });
+  });
+  await page.route('**/lots.json', (route) => route.fulfill({ json: { lots: [{ name: 'lot-0' }, { name: 'lot-1' }] } }));
+  await page.route('**/lots/lot-1/apercu.txt', (route) => route.fulfill({ contentType: 'text/plain', body: 'jeu.html' }));
+  await page.goto('/lots/lot-1/dev/');
+  await expect(page.getByRole('link', { name: /Dernier lot : Lot 1/ })).toHaveAttribute('href', '../../../lots/lot-1/jeu.html');
+  await expect(page.getByRole('link', { name: /Branche main/ })).toHaveAttribute('href', '../../../');
 });
 
 test('le lien main ramène à la page d\'attente', async ({ page }) => {

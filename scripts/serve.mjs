@@ -17,8 +17,9 @@ createServer(async (req, res) => {
       res.writeHead(301, { Location: `${path}/` }).end();
       return;
     }
+    const body = await readFile(file);
     res.writeHead(200, { 'Content-Type': TYPES[extname(file)] ?? 'application/octet-stream' });
-    res.end(await readFile(file));
+    res.end(body);
   } catch {
     res.writeHead(404).end('Not found');
   }

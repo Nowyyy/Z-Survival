@@ -39,6 +39,6 @@ export function parseEntry(text) {
 }
 
 // Adresse relative d'un lot depuis /dev/ : le dossier du lot, suivi de sa page d'aperçu si elle existe.
-export function lotUrl(lot) {
-  return `../lots/${lot?.name}/${parseEntry(lot?.entry)}`;
+export function lotUrl(lot, root = '../') {
+  return `${root}lots/${lot?.name}/${parseEntry(lot?.entry)}`;
 }
