@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="robots" content="noindex">
+  <meta name="color-scheme" content="dark">
+  <title>Z-Survival · Jeu</title>
+  <link rel="icon" href="data:,">
+  <link rel="preload" href="fonts/barlow-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="fonts/rubik-wet-paint-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="data/i18n/fr.json" as="fetch" crossorigin>
+  <link rel="preload" href="vendor/phaser.min.js" as="script">
+  <link rel="stylesheet" href="css/tokens.css">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/game.css">
+  <script src="vendor/phaser.min.js"></script>
+  <script type="module" src="js/game/main.js"></script>
+</head>
+<body class="game">
+  <noscript>
+    <p class="noscript">Ce jeu a besoin de JavaScript. / This game needs JavaScript.</p>
+  </noscript>
+  <div id="game-root" class="game-root" data-block="E2-1" role="application" data-i18n-label="game.aria" hidden>
+    <div id="game-canvas" class="game-canvas"></div>
+  </div>
+  <div id="rotate" class="rotate" role="status" hidden>
+    <p class="rotate-title" data-i18n="game.rotate.title"></p>
+    <p data-i18n="game.rotate.hint"></p>
+  </div>
+</body>
+</html>

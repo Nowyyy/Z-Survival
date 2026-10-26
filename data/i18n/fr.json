@@ -17,5 +17,9 @@
   "dev.open": "Ouvrir",
   "dev.noLots": "Aucun lot publié pour l'instant.",
   "dev.unavailable": "La liste des lots est indisponible.",
-  "dev.footer": "Pages de développement, non indexées."
+  "dev.footer": "Pages de développement, non indexées.",
+  "game.title": "Z-Survival · Jeu",
+  "game.aria": "Zone de jeu : déplace-toi avec W, A, S, D ou les flèches, vise avec la souris. Le tir part tout seul quand le laser touche un zombie.",
+  "game.rotate.title": "Tourne ton téléphone",
+  "game.rotate.hint": "Le jeu se joue en mode paysage."
 }

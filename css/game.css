@@ -1,0 +1,207 @@
+/* Page de jeu : le canvas occupe toute la fenêtre. Couleurs : jetons de tokens.css seulement. */
+html,
+body.game {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+  background: var(--game-ground);
+}
+
+body.game {
+  min-height: 0;
+}
+
+.game-root {
+  position: fixed;
+  inset: 0;
+  height: 100dvh;
+  overflow: hidden;
+  background: var(--game-ground);
+  touch-action: none;
+  overscroll-behavior: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+  cursor: crosshair;
+}
+
+.game-root[data-input="touch"] {
+  cursor: default;
+}
+
+.game-canvas {
+  position: absolute;
+  inset: 0;
+}
+
+.game-canvas canvas {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+  margin: 0 !important;
+}
+
+.pause-button {
+  position: absolute;
+  top: calc(var(--space-3) + env(safe-area-inset-top, 0px));
+  right: calc(var(--space-3) + env(safe-area-inset-right, 0px));
+  cursor: pointer;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Sticks flottants : visibles seulement après un toucher. */
+.stick {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.stick-base,
+.stick-knob {
+  position: absolute;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.stick-base {
+  width: 112px;
+  height: 112px;
+  border: 3px solid var(--color-border);
+  background: var(--color-overlay);
+}
+
+.stick-knob {
+  width: 52px;
+  height: 52px;
+  background: var(--color-action);
+  border: 3px solid var(--color-on-action);
+  box-shadow: 0 0 14px var(--color-action-glow);
+}
+
+.stick.is-idle {
+  opacity: 0.45;
+}
+
+#stick-right .stick-knob {
+  background: var(--color-surface-raised);
+}
+
+/* Panneaux : pause (E2-6) et fin provisoire (E2-7). */
+.panel-wrap {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-3);
+  background: var(--color-overlay);
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  width: min(100%, 22rem);
+  max-height: 100%;
+  overflow-y: auto;
+  padding: var(--space-5);
+  border: 3px solid var(--color-action);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  box-shadow: 0 0 28px 2px var(--color-action-glow);
+}
+
+.panel-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: var(--font-weight-normal);
+  font-size: var(--text-xl);
+  line-height: 1.1;
+  color: var(--color-action-text);
+}
+
+.panel-text {
+  font-size: var(--text-lg);
+}
+
+.panel-note {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.button-quiet {
+  background: var(--color-surface-raised);
+  border: 2px solid var(--color-border);
+}
+
+.button-quiet:hover:not(:disabled) {
+  background: var(--color-ground-light);
+}
+
+.button-quiet:active:not(:disabled) {
+  background: var(--color-surface);
+}
+
+/* Message « tourne ton téléphone » : téléphone tenu en portrait. */
+.rotate {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  padding: var(--space-5);
+  text-align: center;
+  background: var(--color-bg);
+  font-size: var(--text-lg);
+}
+
+.rotate-title {
+  font-family: var(--font-display);
+  font-size: var(--text-xl);
+  color: var(--color-action-text);
+}
+
+@media (orientation: portrait) and (pointer: coarse) and (max-width: 600px) {
+  .rotate {
+    display: flex;
+  }
+
+  .game-root,
+  .panel-wrap {
+    visibility: hidden;
+  }
+}
+
+/* Écrans bas (téléphone en paysage) : panneaux compacts. */
+@media (max-height: 460px) {
+  .panel {
+    padding: var(--space-3) var(--space-4);
+    gap: var(--space-2);
+  }
+
+  .panel-title {
+    font-size: var(--text-lg);
+  }
+}

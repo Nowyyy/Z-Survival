@@ -1,0 +1,12 @@
+{
+  "_provisoire": "Valeurs provisoires à régler en test (lot 1). Zombie de démonstration.",
+  "zombie": {
+    "radius": 20,
+    "speed": 70,
+    "health": 50,
+    "contactDamage": 10,
+    "contactDelay": 1,
+    "maxPresent": 5,
+    "spawnInterval": 3
+  }
+}

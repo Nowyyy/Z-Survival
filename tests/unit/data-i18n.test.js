@@ -6,20 +6,22 @@ const fr = load('fr');
 const en = load('en');
 // Sources qui consomment des clés : les pages HTML et les scripts du site.
 const pages = ['index.html', 'dev/index.html'].map((f) => readFileSync(f, 'utf8'));
+const gamePage = readFileSync('jeu.html', 'utf8');
 const html = pages[0];
-const scripts = ['js/main.js', 'js/page.js', 'dev/dev.js'].map((f) => readFileSync(f, 'utf8'));
-const usedKeys = new Set(pages.flatMap((p) => [...p.matchAll(/data-(?:i18n|title-key)="([^"]+)"/g)].map((m) => m[1])));
+const scripts = ['js/main.js', 'js/page.js', 'dev/dev.js', ...readdirSync('js/game').map((f) => `js/game/${f}`)].map((f) => readFileSync(f, 'utf8'));
+const usedKeys = new Set([...pages, gamePage].flatMap((p) => [...p.matchAll(/data-(?:i18n|title-key|i18n-label)="([^"]+)"/g)].map((m) => m[1])));
 
 describe('dictionnaires fr / en', () => {
-  // Le menu /dev est en français seulement : ses clés « dev.* » n'existent que dans fr.json.
-  const shared = (dict) => Object.keys(dict).filter((k) => !k.startsWith('dev.')).sort();
+  // Le menu /dev et le jeu sont en français seulement : leurs clés « dev.* » et « game.* » n'existent que dans fr.json.
+  const FR_ONLY = /^(dev|game)\./;
+  const shared = (dict) => Object.keys(dict).filter((k) => !FR_ONLY.test(k)).sort();
 
-  it('ont exactement les mêmes clés (hors menu /dev, français seulement)', () => {
+  it('ont exactement les mêmes clés (hors menu /dev et jeu, français seulement)', () => {
     expect(shared(en)).toEqual(shared(fr));
   });
 
-  it('n\'ont aucune clé « dev.* » en anglais', () => {
-    expect(Object.keys(en).filter((k) => k.startsWith('dev.'))).toEqual([]);
+  it('n\'ont aucune clé « dev.* » ni « game.* » en anglais', () => {
+    expect(Object.keys(en).filter((k) => FR_ONLY.test(k))).toEqual([]);
   });
 
   it('n\'ont aucune valeur vide', () => {

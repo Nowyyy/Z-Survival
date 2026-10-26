@@ -5,7 +5,7 @@ import { extname, join, normalize } from 'node:path';
 
 const TYPES = {
   '.html': 'text/html; charset=utf-8', '.css': 'text/css', '.js': 'text/javascript',
-  '.json': 'application/json', '.woff2': 'font/woff2', '.txt': 'text/plain',
+  '.json': 'application/json', '.woff2': 'font/woff2', '.txt': 'text/plain; charset=utf-8',
 };
 const PORT = Number(process.env.PORT) || 4173;
 
