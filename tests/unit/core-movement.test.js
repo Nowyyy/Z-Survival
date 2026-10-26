@@ -2,7 +2,8 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { innerBounds, moveCircle } from '../../js/core/movement.js';
 
-const room = JSON.parse(readFileSync('data/game/room.json', 'utf8'));
+// Lot 1b : l'ancien room.json est la section « legacy » de world.json (salle du lot 1m).
+const room = JSON.parse(readFileSync('data/game/world.json', 'utf8')).legacy;
 const start = { x: room.width / 2, y: room.height / 2, r: 18 };
 const run = (dir, steps = 200, dt = 0.05) => {
   let c = start;

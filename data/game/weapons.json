@@ -10,6 +10,7 @@
     "bulletMaxDistance": 1600,
     "muzzleFlash": 0.08,
     "maxBullets": 30,
-    "muzzleOffset": 26
+    "muzzleOffset": 26,
+    "aimTolerance": 24
   }
 }

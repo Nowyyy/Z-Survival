@@ -4,7 +4,7 @@ import { waitReady } from './helpers.js';
 
 // Rendu et enveloppe du jeu en 3D (lot 1m, partie B). Petite fenêtre : le rendu logiciel y est plus rapide.
 const SIZE = { width: 667, height: 375 };
-const URL = (extra = '') => `/jeu.html?test=1&nospawn=1&seed=1${extra}`;
+const URL = (extra = '') => `/jeu.html?test=1&empty=1&nospawn=1&seed=1${extra}`;
 const state = (page) => page.evaluate(() => window.__zs.getState());
 async function open(page, extra = '', size = SIZE) {
   await page.setViewportSize(size);

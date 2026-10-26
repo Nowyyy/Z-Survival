@@ -1,12 +1,14 @@
 {
-  "_provisoire": "Valeurs provisoires à régler en test (lot 1). Zombie de démonstration.",
+  "_provisoire": "Valeurs provisoires à régler en test (lot 1, mises à jour au lot 1b : 8 présents au plus, un toutes les 2,5 s, apparition hors de la vue agrandie de viewMargin puis de viewRatio). Zombie de démonstration.",
   "zombie": {
     "radius": 20,
     "speed": 70,
     "health": 50,
     "contactDamage": 10,
     "contactDelay": 1,
-    "maxPresent": 5,
-    "spawnInterval": 3
+    "maxPresent": 8,
+    "spawnInterval": 2.5,
+    "viewMargin": 150,
+    "viewRatio": 0.25
   }
 }

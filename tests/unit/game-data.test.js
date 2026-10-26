@@ -2,7 +2,8 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync, readdirSync } from 'node:fs';
 
 const load = (name) => JSON.parse(readFileSync(`data/game/${name}.json`, 'utf8'));
-const room = load('room');
+// Lot 1b : l'ancien room.json est la section « legacy » de world.json (salle du lot 1m, chargée par ?empty=1).
+const room = load('world').legacy;
 const player = load('player');
 const weapon = load('weapons').pistol;
 const zombie = load('enemies').zombie;
@@ -16,7 +17,7 @@ describe('data/game/*.json', () => {
     expect([room.width, room.height, room.margin]).toEqual([1600, 900, 600]);
     expect(player).toMatchObject({ radius: 18, speed: 220, health: 100 });
     expect(weapon).toMatchObject({ damage: 25, fireDelay: 0.4, laserRange: 300, bulletSpeed: 1100, bulletRadius: 4, fireRange: 1600, bulletMaxDistance: 1600, muzzleFlash: 0.08, maxBullets: 30 });
-    expect(zombie).toMatchObject({ radius: 20, speed: 70, health: 50, contactDamage: 10, contactDelay: 1, maxPresent: 5, spawnInterval: 3 });
+    expect(zombie).toMatchObject({ radius: 20, speed: 70, health: 50, contactDamage: 10, contactDelay: 1, maxPresent: 8, spawnInterval: 2.5 });
   });
 
   it('la balle porte aussi loin que le tir se déclenche, et le tir porte plus loin que le laser', () => {

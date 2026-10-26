@@ -1,24 +1,9 @@
-// Sol de la salle dessiné au canvas : aplat de la couleur du sol et quadrillage léger (un trait tous les `step` unités).
-// canvas : élément déjà dimensionné ; room : { width, height } en unités ; pixelsPerUnit : résolution de la texture.
-export function drawFloor(canvas, palette, room, { step = 100, pixelsPerUnit = 1 } = {}) {
-  const ctx = canvas.getContext('2d');
-  const w = canvas.width;
-  const h = canvas.height;
-  ctx.fillStyle = palette.floor;
-  ctx.fillRect(0, 0, w, h);
-  ctx.strokeStyle = palette.ground;
-  ctx.globalAlpha = 0.55;
-  ctx.lineWidth = Math.max(1, pixelsPerUnit * 1.5);
-  ctx.beginPath();
-  for (let x = step; x < room.width; x += step) {
-    ctx.moveTo(x * pixelsPerUnit, 0);
-    ctx.lineTo(x * pixelsPerUnit, h);
-  }
-  for (let y = step; y < room.height; y += step) {
-    ctx.moveTo(0, y * pixelsPerUnit);
-    ctx.lineTo(w, y * pixelsPerUnit);
-  }
-  ctx.stroke();
-  ctx.globalAlpha = 1;
-  return canvas;
+// Sol de la salle en géométrie : une dalle de la couleur du sol et un quadrillage léger (un trait tous les `step` unités), sous forme
+// d'éléments { x, y, z, sx, sy, sz, color } pour la fusion de world.js (aucune texture : un appel de dessin de moins).
+// room : { x, y, width, height } ; color : couleur du sol, lineColor : couleur des traits (THREE.Color). Le dessus de la dalle est à y = 0.
+export function floorItems(room, color, lineColor, { step = 100, line = 1.5 } = {}) {
+  const items = [{ x: room.x + room.width / 2, y: -0.5, z: room.y + room.height / 2, sx: room.width, sy: 1, sz: room.height, color }];
+  for (let x = step; x < room.width; x += step) items.push({ x: room.x + x, y: 0.05, z: room.y + room.height / 2, sx: line, sy: 0.1, sz: room.height, color: lineColor });
+  for (let y = step; y < room.height; y += step) items.push({ x: room.x + room.width / 2, y: 0.05, z: room.y + y, sx: room.width, sy: 0.1, sz: line, color: lineColor });
+  return items;
 }

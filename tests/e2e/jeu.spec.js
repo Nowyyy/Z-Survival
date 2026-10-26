@@ -2,7 +2,7 @@ import { test, expect, chromium } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { expectedDistance, waitReady } from './helpers.js';
 
-const URL = '/jeu.html?test=1&seed=1';
+const URL = '/jeu.html?test=1&empty=1&seed=1';
 // Message du pilote graphique à la création du premier contexte WebGL du navigateur : du bruit du navigateur, pas du jeu.
 const BROWSER_NOISE = /GL Driver Message/;
 

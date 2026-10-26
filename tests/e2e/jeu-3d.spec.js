@@ -4,7 +4,7 @@ import { expectedDistance, waitReady } from './helpers.js';
 
 // Rendu 3D du lot 1m : couverture du canvas, HUD en HTML, poses, inclinaisons, salle entière. Petite fenêtre de préférence :
 // le rendu logiciel du navigateur de test y est plus rapide. Les tests se désactivent seuls si WebGL manque.
-const URL = (extra = '') => `/jeu.html?test=1&nospawn=1&seed=1${extra}`;
+const URL = (extra = '') => `/jeu.html?test=1&empty=1&nospawn=1&seed=1${extra}`;
 const state = (page) => page.evaluate(() => window.__zs.getState());
 async function open(page, size, extra = '') {
   await page.setViewportSize(size);

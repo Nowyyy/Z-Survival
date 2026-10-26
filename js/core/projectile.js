@@ -1,4 +1,5 @@
 // Balles : avancée par pas de temps, impact calculé sur le segment parcouru (jamais de traversée), un impact au plus par balle.
+import { firstOnSegment } from './collision.js';
 import { clampDt, fromAngle, isNum, num } from './vec.js';
 
 const TRAIL_LENGTH = 3;
@@ -49,9 +50,10 @@ function segmentExit(x0, y0, sx, sy, b) {
   return t <= 1 ? Math.max(0, t) : null;
 }
 
-// Fait avancer toutes les balles de dt. enemies : [{ id, x, y, r }] ; bounds : zone libre { minX, minY, maxX, maxY }.
+// Fait avancer toutes les balles de dt. enemies : [{ id, x, y, r }] ; bounds : zone libre { minX, minY, maxX, maxY } ;
+// obstacles : rectangles pleins (aucun par défaut) : une balle qui en touche un disparaît sans dégâts (reason 'obstacle', obstacleId).
 // Renvoie { bullets (celles qui volent encore), impacts [{ bulletId, enemyId, x, y, damage }], gone [{ bulletId, x, y, reason }] }.
-export function stepBullets(bullets, enemies, dt, bounds) {
+export function stepBullets(bullets, enemies, dt, bounds, obstacles = []) {
   const list = Array.isArray(bullets) ? bullets : [];
   const targets = (Array.isArray(enemies) ? enemies : []).filter((e) => e && isNum(e.x) && isNum(e.y));
   const step = clampDt(dt);
@@ -81,6 +83,12 @@ export function stepBullets(bullets, enemies, dt, bounds) {
       if (t !== null && (best === null || t < best.t)) best = { t, enemy };
     }
     const wallT = segmentExit(bullet.x, bullet.y, sx, sy, b);
+    // Un obstacle plein arrête la balle avant tout ennemi situé derrière lui, et ne cause aucun dégât.
+    const block = firstOnSegment(bullet.x, bullet.y, bullet.x + sx, bullet.y + sy, obstacles);
+    if (block && (best === null || block.t <= best.t) && (wallT === null || block.t <= wallT)) {
+      out.gone.push({ bulletId: bullet.id, x: bullet.x + sx * block.t, y: bullet.y + sy * block.t, reason: 'obstacle', obstacleId: block.obstacle.id });
+      continue;
+    }
     if (best && (wallT === null || best.t <= wallT)) {
       const x = bullet.x + sx * best.t;
       const y = bullet.y + sy * best.t;

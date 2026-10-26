@@ -1,0 +1,36 @@
+{
+  "_provisoire": "Décor extérieur du lot 1b : formes, positions et nombres provisoires (textures au lot 1c). La graine est fixe : le décor est identique à chaque partie. Les couloirs d'approche (approachWidth de large, de la fenêtre au bord du monde) ne reçoivent que du sol : route, sentier, herbe.",
+  "seed": 20241,
+  "approachWidth": 160,
+  "ground": [
+    { "id": "route-nord", "kind": "route", "x": 0, "y": 240, "w": 3600, "h": 160 },
+    { "id": "trottoir-nord", "kind": "trottoir", "x": 0, "y": 400, "w": 3600, "h": 90 },
+    { "id": "sentier-nord", "kind": "sentier", "x": 1750, "y": 490, "w": 100, "h": 294 },
+    { "id": "sentier-ouest", "kind": "sentier", "x": 0, "y": 1340, "w": 784, "h": 120 },
+    { "id": "sentier-est", "kind": "sentier", "x": 2816, "y": 1340, "w": 784, "h": 120 }
+  ],
+  "spawnPoints": [
+    { "id": "pa-nord-1", "fenetre": "fenetre-nord", "x": 1770, "y": 430 },
+    { "id": "pa-nord-2", "fenetre": "fenetre-nord", "x": 1835, "y": 330 },
+    { "id": "pa-nord-3", "fenetre": "fenetre-nord", "x": 1790, "y": 200 },
+    { "id": "pa-nord-4", "fenetre": "fenetre-nord", "x": 1815, "y": 60 },
+    { "id": "pa-ouest-1", "fenetre": "fenetre-ouest", "x": 430, "y": 1385 },
+    { "id": "pa-ouest-2", "fenetre": "fenetre-ouest", "x": 330, "y": 1420 },
+    { "id": "pa-ouest-3", "fenetre": "fenetre-ouest", "x": 200, "y": 1395 },
+    { "id": "pa-ouest-4", "fenetre": "fenetre-ouest", "x": 60, "y": 1410 },
+    { "id": "pa-est-1", "fenetre": "fenetre-est", "x": 3170, "y": 1385 },
+    { "id": "pa-est-2", "fenetre": "fenetre-est", "x": 3270, "y": 1420 },
+    { "id": "pa-est-3", "fenetre": "fenetre-est", "x": 3400, "y": 1395 },
+    { "id": "pa-est-4", "fenetre": "fenetre-est", "x": 3540, "y": 1410 }
+  ],
+  "scatter": {
+    "voitures": { "count": 6, "long": 92, "court": 46, "hauteur": 55 },
+    "arbres": { "count": 30, "tronc": 32, "hauteur": 50, "couronne": 46 },
+    "buissons": { "count": 28, "rayonMin": 12, "rayonMax": 22, "hauteur": 18 },
+    "lampadaires": { "count": 8, "hauteur": 90 },
+    "barrieres": { "count": 8, "long": 120, "epaisseur": 8, "hauteur": 26 },
+    "espaceSolides": 80,
+    "distanceSalle": 120,
+    "distanceApparition": 70
+  }
+}

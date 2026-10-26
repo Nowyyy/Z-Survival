@@ -32,7 +32,7 @@ describe('hygiène de js/', () => {
 
   it('les couleurs du jeu sont des jetons --game-* hexadécimaux dans tokens.css', () => {
     const tokens = readFileSync('css/tokens.css', 'utf8');
-    for (const n of ['floor', 'wall', 'ground', 'player', 'zombie', 'laser', 'hit', 'bullet', 'muzzle', 'skin', 'trousers', 'boot', 'gun', 'zombie-clothes', 'zombie-trousers', 'sun', 'ambient']) {
+    for (const n of ['floor', 'wall', 'ground', 'player', 'zombie', 'laser', 'hit', 'bullet', 'muzzle', 'skin', 'trousers', 'boot', 'gun', 'zombie-clothes', 'zombie-trousers', 'sun', 'ambient', 'road', 'grass', 'car', 'tree', 'furniture']) {
       expect(tokens, n).toMatch(new RegExp(`--game-${n}:\\s*#[0-9a-fA-F]{6};`));
     }
   });

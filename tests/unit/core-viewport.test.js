@@ -2,7 +2,8 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { DEFAULT_FOV, DEFAULT_TILT, TILTS, cameraPosition, fitDistance, groundView, parseTilt, clampCamera, parseZoom, ZOOMS, projectGround } from '../../js/core/viewport.js';
 
-const room = JSON.parse(readFileSync('data/game/room.json', 'utf8'));
+// Lot 1b : l'ancien room.json est la section « legacy » de world.json (salle du lot 1m).
+const room = JSON.parse(readFileSync('data/game/world.json', 'utf8')).legacy;
 const WINDOWS = [[375, 667], [667, 375], [768, 1024], [1440, 900], [1920, 1080], [2560, 1080], [800, 1200], [100, 100]];
 const rad = (d) => (d * Math.PI) / 180;
 

@@ -4,7 +4,7 @@ import { waitReady } from './helpers.js';
 
 // Petite fenêtre : le rendu logiciel du navigateur de test est alors plus rapide. Le temps de jeu, lui, est mesuré par le jeu.
 const SIZE = { width: 667, height: 375 };
-const URL = (extra = '') => `/jeu.html?test=1&nospawn=1&seed=1${extra}`;
+const URL = (extra = '') => `/jeu.html?test=1&empty=1&nospawn=1&seed=1${extra}`;
 
 async function open(page, extra = '') {
   await page.setViewportSize(SIZE);
