@@ -1,12 +1,13 @@
 # Bilan du lot 0 — Socle, jetons et publication
 
-Branche `lot-0` · comparaison : https://github.com/Nowyyy/mobile-games/compare/main...lot-0
+Branche `lot-0`, fusionnée dans `main` (avance rapide, commit `4db8dbf`) à la demande du propriétaire. Site : https://nowyyy.github.io/Z-Survival/ (dépôt renommé `Z-Survival`). Suites : `Docs/lots/lot-0b.md` (menu `/dev`), `lot-0c.md` (CI sans installation de navigateur, menu en français), `lot-0d.md` (accueil en français).
 
 ## Ce qui est fait
 - **0-A Socle et outillage** : arborescence, `package.json` (devDependencies exactes, aucune dépendance d'exécution), ESLint plat, Vitest, Playwright (mobile 375 px, bureau 1440 px), scripts `build`, `serve`, `lighthouse`, `CLAUDE.md`, `Docs/ref/conventions.md`, `Docs/ref/environnement.md`.
-- **0-B Jetons et page d'attente** : `css/tokens.css`, `css/base.css`, police Barlow (OFL) hébergée, `index.html` bilingue fr/en (bascule, `lang` mis à jour, choix mémorisé, `noscript`, `noindex`), `js/i18n.js` pur.
+- **0-B Jetons et page d'attente** : `css/tokens.css`, `css/base.css`, police Barlow (OFL) hébergée, `index.html` (à l'origine bilingue fr/en avec bouton de bascule, depuis retiré au lot 0d : la page est en français seulement), `lang` mis à jour, `noscript`, `noindex`, `js/i18n.js` pur et testé.
 - **Habillage « sang noir »** (commit supplémentaire, hors des parties A à C, à la demande du propriétaire) : nouvelle palette, zones rouges et taches générées au canvas, polices Rubik, page d'attente refaite.
 - **0-C Publication et bilan** : `.github/workflows/pages.yml`, tests du workflow et du build, ce bilan.
+- **Titre** : « Z-Survival » (choisi par le propriétaire).
 
 ## Palette (style « sang noir », demandée par le propriétaire après la partie C)
 Noir profond, rouge sang, os, jaune pour l'argent ; maquette validée par le propriétaire.
@@ -22,21 +23,23 @@ Noir profond, rouge sang, os, jaune pour l'argent ; maquette validée par le pro
 | Focus | `#9fd3ff` |
 Chaque paire texte/fond est testée à 4,5:1 minimum (`tests/unit/tokens.test.js`) ; le rouge sang n'est utilisé que pour de grands textes sur noir (3:1). Polices : Barlow, Rubik Wet Paint (titre), Rubik Dirt (libellés).
 
-## Preuves
+## Preuves (état à la fin du lot 0, avant les lots 0b à 0d)
 - `npm run lint` : sans avertissement. `npm test` : 8 fichiers, 108 tests verts.
-- `npm run test:e2e` : 26 tests verts (13 par projet : jetons, aucune couleur en dur, bascule de langue au clic, mémorisation, cible 44 px, aucune requête externe et console propre, pas de débordement à 375/768/1440 px, axe fr et en, sans JavaScript, réduction de mouvement).
+- `npm run test:e2e` : 26 tests verts (13 par projet : jetons, aucune couleur en dur, bascule de langue au clic, mémorisation, cible 44 px — ces trois tests ont disparu avec le bouton de langue au lot 0d — aucune requête externe et console propre, pas de débordement à 375/768/1440 px, axe fr et en, sans JavaScript, réduction de mouvement).
 - Lighthouse mobile (page locale, après l'habillage) : performance 92 à 99 selon les passes, accessibilité 100, bonnes pratiques 100, CLS 0 (la police Rubik Dirt, 190 Ko, est chargée après l'affichage : sans cela la performance tombait à 88). Seuils : 90 / 95 / 95, CLS ≤ 0,1.
-- Captures à 375, 768 et 1440 px regardées (deux passes) : zone rouge « En construction » en haut à gauche avec coulures, titre « Z-Survival » rouge qui dégouline, barre de progression, bouton de langue sur un coup de pinceau blanc, zone rouge de mention « jeu en développement » en bas ; rien ne déborde.
+- Captures à 375, 768 et 1440 px regardées (deux passes) : zone rouge « En construction » en haut à gauche avec coulures, titre « Z-Survival » rouge qui dégouline, barre de progression, bouton de langue sur un coup de pinceau blanc (retiré depuis), zone rouge de mention « jeu en développement » en bas ; rien ne déborde.
 - `npm run build` : `_site/` contient `index.html`, `css`, `js`, `data`, `fonts`, `vendor` ; ni `Docs/`, ni `tests/`, ni `node_modules`.
 
 ## Points à savoir
 - Le propriétaire a rempli `Docs/seed.md` après la partie A ; le test « seed vide » est devenu « seed existe ». Je n'ai jamais écrit dans ce fichier.
+- Pour mémoire, les chiffres de tests ci-dessus datent de la fin du lot 0 ; à ce jour : 130 tests unitaires et 44 tests Playwright (voir les bilans suivants).
 - Le prompt annonçait un « modèle de bilan » absent du texte reçu ; la structure ci-dessus est la mienne.
 - Le `<noscript>` est bilingue en dur (l'i18n a besoin de JavaScript) : seule exception à « pas de texte en dur ».
 - Le test « sans JavaScript » lance Chromium avec `--blink-settings=scriptEnabled=false` : l'option Playwright `javaScriptEnabled: false` laisse `<noscript>` masqué.
-- Actions du workflow épinglées par SHA complet, lus sur les dépôts officiels `actions/*` (tags v4.2.2, v4.4.0, v5.0.0, v3.0.1, v4.0.5). Le workflow n'a pas pu être exécuté ici : sa première exécution aura lieu sur GitHub.
-- La source de GitHub Pages doit être réglée sur « GitHub Actions » par le propriétaire (je ne touche à aucun réglage).
+- Actions du workflow épinglées par SHA complet, lus sur les dépôts officiels `actions/*` (tags v4.2.2, v4.4.0, v5.0.0, v3.0.1, v4.0.5). Le workflow a tourné sur GitHub après la fusion dans `main` : `verify` et `deploy` réussis, site en ligne.
+- La source de GitHub Pages a été réglée sur « GitHub Actions » par le propriétaire (je ne touche à aucun réglage). Le déploiement ne part que de `main`.
+- GitHub Pages sert les fichiers avec `cache-control: max-age=600` : après un déploiement, un navigateur peut afficher l'ancienne version jusqu'à 10 minutes.
 - Branche de session `claude/nifty-faraday-x2nlvz` : non utilisée, comme demandé par le prompt (`lot-0`).
 
 ## Reste à faire
-Rien dans le périmètre du lot 0. Prochain : lot 0b (aperçus par branche).
+Rien dans le périmètre du lot 0. Fait depuis : lot 0b (aperçus par branche et `/dev`), 0c, 0d. Prochain selon le seed : lot 1 (wireframes E1 à E6).
