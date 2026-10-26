@@ -81,6 +81,11 @@
       <button id="btn-resume" class="button" type="button" data-i18n="game.pause.resume"></button>
       <button id="btn-fullscreen" class="button button-quiet" type="button" data-i18n="game.pause.fullscreen" hidden></button>
       <button id="btn-sound" class="button button-quiet" type="button" hidden></button>
+      <div id="volume-row" class="volume" hidden>
+        <label id="volume-label" for="volume" data-i18n="game.volume"></label>
+        <input id="volume" class="volume-range" type="range" min="0" max="100" step="10" value="100">
+        <output id="volume-value" class="volume-value" for="volume"></output>
+      </div>
       <button id="btn-restart" class="button button-quiet" type="button" data-i18n="game.pause.restart"></button>
     </div>
   </div>

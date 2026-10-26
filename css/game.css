@@ -225,6 +225,33 @@ body.game {
   color: var(--color-text-muted);
 }
 
+/* Curseur de volume du panneau de pause : une ligne de 44 px (cible tactile) avec l'étiquette et la valeur. */
+.volume {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: 44px;
+}
+
+.volume[hidden] {
+  display: none;
+}
+
+.volume-range {
+  flex: 1;
+  min-width: 0;
+  height: 44px;
+  margin: 0;
+  accent-color: var(--color-action);
+  cursor: pointer;
+}
+
+.volume-value {
+  min-width: 3.5ch;
+  text-align: right;
+  color: var(--color-text-muted);
+}
+
 .button-quiet {
   background: var(--color-surface-raised);
   border: 2px solid var(--color-border);

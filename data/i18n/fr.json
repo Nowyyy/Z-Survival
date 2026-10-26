@@ -38,7 +38,7 @@
   "game.live.life": "Vie : {hp} sur {max}.",
   "game.error.webgl": "Ce jeu a besoin de WebGL, que ton navigateur n'a pas activé.",
   "game.live.dead": "Tu es mort. Zombies tués : {n}.",
-  "game.loading": "Préparation du décor… {n} %",
+  "game.loading": "Préparation du décor et des sons… {n} %",
   "game.loading.done": "Décor prêt.",
   "game.fps.textures": "Textures : {ms} ms ; flux : {flow} ms (max {max})",
   "dev.changelog": "Journal des versions",
@@ -64,5 +64,8 @@
   "dev.sons.etiquette.joueur-mort": "Mort du joueur",
   "dev.sons.etiquette.ui-pause": "Interface : pause",
   "dev.sons.etiquette.ui-reprise": "Interface : reprise",
-  "dev.sons.etiquette.ambiance": "Ambiance (boucle)"
+  "dev.sons.etiquette.ambiance": "Ambiance (boucle)",
+  "game.volume": "Volume",
+  "game.volume.value": "{n} %",
+  "game.fps.sons": "Sons : {essential} ms (essentiels), {background} ms (fond) ; voix : {voices}"
 }

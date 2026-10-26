@@ -9,6 +9,7 @@ export function createUi(dict, handlers) {
     pausePanel: $('pause-panel'), endPanel: $('end-panel'), live: $('hud-live'), rotate: $('rotate'),
     pauseBtn: $('btn-pause'), resume: $('btn-resume'), fullscreen: $('btn-fullscreen'), sound: $('btn-sound'),
     restart: $('btn-restart'), replay: $('btn-replay'), endKills: $('end-kills'),
+    volumeRow: $('volume-row'), volume: $('volume'), volumeValue: $('volume-value'),
   };
   const rotateQuery = matchMedia(PORTRAIT_PHONE);
   const canFullscreen = Boolean(document.fullscreenEnabled && document.documentElement.requestFullscreen);
@@ -26,12 +27,16 @@ export function createUi(dict, handlers) {
       if (ui.isEnded()) return;
       els.pausePanel.hidden = false;
       els.resume.focus();
+      handlers.onPausePanel?.(true);
+      handlers.onPauseChange?.(ui.isPaused());
     },
 
     closePause() {
       els.pausePanel.hidden = true;
       els.pauseBtn.blur();
       document.activeElement?.blur?.();
+      handlers.onPausePanel?.(false);
+      handlers.onPauseChange?.(ui.isPaused());
     },
 
     togglePause() {
@@ -57,11 +62,17 @@ export function createUi(dict, handlers) {
       else document.documentElement.requestFullscreen({ navigationUI: 'hide' }).catch(() => {});
     },
 
-    // Libellé du bouton Son selon l'état courant ; masqué tant qu'il n'y a pas de moteur audio.
+    // Libellé du bouton Son et valeur du curseur de volume selon l'état courant ; masqués sans moteur audio utilisable.
     syncSound(audio) {
-      hasAudio = Boolean(audio);
+      hasAudio = Boolean(audio?.supported);
       els.sound.hidden = !hasAudio;
-      if (hasAudio) els.sound.textContent = dict[audio.muted ? 'game.sound.off' : 'game.sound.on'];
+      els.volumeRow.hidden = !hasAudio;
+      if (!hasAudio) return;
+      els.sound.textContent = dict[audio.muted ? 'game.sound.off' : 'game.sound.on'];
+      els.volume.value = String(audio.volume);
+      const text = fmt(dict['game.volume.value'], { n: audio.volume });
+      els.volumeValue.textContent = text;
+      els.volume.setAttribute('aria-valuetext', text);
     },
   };
 
@@ -71,6 +82,9 @@ export function createUi(dict, handlers) {
   els.fullscreen.addEventListener('click', () => ui.toggleFullscreen());
   els.sound.addEventListener('click', () => {
     if (hasAudio) handlers.onToggleSound();
+  });
+  els.volume.addEventListener('input', () => {
+    if (hasAudio) handlers.onVolume?.(Number(els.volume.value));
   });
   els.restart.addEventListener('click', () => {
     ui.closePause();
@@ -83,8 +97,12 @@ export function createUi(dict, handlers) {
   // Onglet caché : la partie est figée et le panneau de pause s'ouvre pour le retour.
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) ui.openPause();
+    handlers.onPauseChange?.(ui.isPaused());
   });
-  rotateQuery.addEventListener('change', () => handlers.onRotateChange?.());
+  rotateQuery.addEventListener('change', () => {
+    handlers.onRotateChange?.();
+    handlers.onPauseChange?.(ui.isPaused());
+  });
 
   return ui;
 }

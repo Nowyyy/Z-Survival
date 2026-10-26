@@ -11,7 +11,9 @@ import { computePose } from '../core/pose.js';
 import { createBullet, stepBullets } from '../core/projectile.js';
 import { castRay } from '../core/ray.js';
 import { createRng } from '../core/rng.js';
+import { createFootsteps, stepFootsteps } from '../core/footsteps.js';
 import { createSpawner, isHidden, stepSpawner } from '../core/spawner.js';
+import { materialFor } from '../core/sound-director.js';
 import { variantFor } from '../core/variants.js';
 import { clampDt, num } from '../core/vec.js';
 import { createCharacter, createKit } from './character.js';
@@ -64,6 +66,10 @@ export function createGame(ctx) {
   world.scene.add(playerChar.root);
   const zombies = new Map(); // id -> { char, phase, x, y, flashing }
   const spare = kit.variants.map(() => []); // personnages retirés, un stock par variante (leurs géométries diffèrent)
+  // Type de chaque obstacle (meubles et décor solide) pour le son d'impact ; les murs se reconnaissent à leur identifiant.
+  const obstacleKinds = new Map([...layout.furniture, ...(layout.decor?.solids ?? [])].map((o) => [o.id, o.kind]));
+  const zombieNames = ctx.variants.zombie.variants.map((v) => v.id);
+  const audioWalls = layout.empty ? [] : layout.walls;
 
   let sim;
   let anim;
@@ -94,6 +100,7 @@ export function createGame(ctx) {
       spawner: createSpawner(),
       flow: createFlowState(),
       rng: createRng(seed),
+      walk: { phase: 0, steps: createFootsteps() },
       kills: 0,
       time: 0,
       nextId: 1,
@@ -108,6 +115,7 @@ export function createGame(ctx) {
     sparks = [];
     laser = null;
     ctx.ui.setLive('');
+    ctx.audio?.reset(seed);
   }
 
   // Taille du canvas = fenêtre × ratio d'écran (plafonné) ; la caméra fait tenir toute la salle.
@@ -155,9 +163,17 @@ export function createGame(ctx) {
     const weapon = cfg.weapon;
     sim.time += dt;
 
+    const events = []; // événements sonores de cette image (traités par js/core/sound-director.js)
     const dir = override.move ?? input.move();
+    const before = sim.player;
     const pos = moveCircle(sim.player, dir, cfg.player.speed, dt, layout.room, layout.playerObstacles);
     sim.player = { ...sim.player, ...pos };
+    // Pas : la phase de marche avance avec la distance réellement parcourue (même rythme que les poses : STRIDE par unité).
+    const moved = Math.hypot(sim.player.x - before.x, sim.player.y - before.y);
+    const phase = sim.walk.phase + moved * STRIDE;
+    const foot = stepFootsteps(sim.walk.steps, sim.walk.phase, phase, moved / Math.max(dt, 1e-6), sim.time, cfg.player.speed, ctx.audioCfg?.footsteps);
+    sim.walk = { phase, steps: foot.state };
+    if (foot.step) events.push({ type: 'playerStep', ...foot.step });
     sim.aim = aimAngle(sim.aim);
 
     // Laser : sert à viser et à déclencher le tir, jamais aux dégâts.
@@ -178,7 +194,7 @@ export function createGame(ctx) {
       sim.flash = reduced ? weapon.muzzleFlash / 2 : weapon.muzzleFlash;
       sim.recoil = RECOIL_TIME;
       lastFire = sim.time;
-      audio?.play('shoot');
+      events.push({ type: 'shot', x: muzzle.x, y: muzzle.y });
     }
 
     // Balles : les dégâts n'existent qu'à l'impact.
@@ -191,11 +207,13 @@ export function createGame(ctx) {
       // Une balle qui touche un meuble disparaît sans dégâts, avec une petite étincelle.
       for (const gone of flight.gone) if (gone.reason === 'obstacle') sparks.push({ x: gone.x, y: gone.y, age: 0 });
     }
-    for (const hit of result.hits) if (hit.health > 0) audio?.play('hit');
-    for (let i = 0; i < result.killed.length; i += 1) {
-      sim.kills += 1;
-      audio?.play('kill');
+    // Sons à l'impact seulement : un zombie touché (blessure ou mort) ou un obstacle touché (selon sa matière).
+    const killedIds = new Set(result.killed.map((k) => k.id));
+    for (const impact of flight.impacts) events.push({ type: 'zombieHit', x: impact.x, y: impact.y, killed: killedIds.has(impact.enemyId), zombie: zombieNames[variantFor(impact.enemyId, ctx.seed, zombieNames.length)] });
+    for (const gone of flight.gone) {
+      if (gone.reason === 'obstacle') events.push({ type: 'obstacleHit', x: gone.x, y: gone.y, obstacleId: gone.obstacleId, material: materialFor(obstacleKinds.get(gone.obstacleId), gone.obstacleId, ctx.audioMaterials) });
     }
+    sim.kills += result.killed.length;
 
     if (grid) {
       const t0 = ctx.perf ? performance.now() : 0;
@@ -228,7 +246,10 @@ export function createGame(ctx) {
     const contact = stepContact(sim.player, sim.enemies, dt, cfg.zombie);
     sim.player = contact.player;
     sim.enemies = contact.enemies;
-    if (contact.damage > 0) audio?.play('hurt');
+    const dying = sim.player.health <= 0;
+    if (contact.damage > 0) events.push({ type: dying ? 'playerDeath' : 'playerHurt' });
+
+    audio?.handle({ time: sim.time, listener: sim.player, walls: audioWalls, paused: ctx.ui.isPaused(), events });
 
     const bucket = Math.ceil((displayHealth(sim.player.health) / sim.player.maxHealth) * 10);
     if (bucket !== sim.lifeBucket && sim.player.health > 0) {
@@ -419,9 +440,11 @@ export function createGame(ctx) {
     },
     // Test : une balle de plus, tirée de la bouche de l'arme dans la direction `angle`.
     fireBullet(angle) {
-      const muzzle = muzzlePoint(sim.player, Number(angle), cfg.weapon.muzzleOffset, bounds);
+      // La bouche n'est pas retenue dans la salle : le test place parfois le joueur dehors (balle sur une voiture, par exemple).
+      const muzzle = muzzlePoint(sim.player, Number(angle), cfg.weapon.muzzleOffset, shotBounds);
       sim.bullets = [...sim.bullets, createBullet(muzzle, Number(angle), cfg.weapon, sim.nextId)];
       sim.nextId += 1;
+      ctx.audio?.handle({ time: sim.time, listener: sim.player, walls: audioWalls, paused: ctx.ui.isPaused(), events: [{ type: 'shot', x: muzzle.x, y: muzzle.y }] });
     },
     // Test : montre tout le monde (vrai) ou revient au suivi du joueur (faux) ; l'image est mise à jour au prochain rendu.
     overview(on = true) {
@@ -459,7 +482,7 @@ export function createGame(ctx) {
         paused: ctx.ui.isPaused(),
         dead: sim.dead,
         time: sim.time,
-        audio: { started: ctx.audio.started, muted: ctx.audio.muted },
+        audio: ctx.audio.state(),
       };
     },
   };
