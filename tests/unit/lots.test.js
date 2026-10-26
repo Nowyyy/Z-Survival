@@ -89,3 +89,12 @@ describe('parseEntry / lotUrl', () => {
     expect(lotUrl({ name: 'lot-0', entry: '../evil' })).toBe('../lots/lot-0/');
   });
 });
+
+describe('sortLots : même numéro, départagé par la date', () => {
+  it('lot-1b (plus récent) passe après lot-1m ; sans dates, l\'ordre des suffixes reste', () => {
+    const dated = [{ name: 'lot-1b', date: '2026-10-26T12:00:00+00:00' }, { name: 'lot-1m', date: '2026-10-26T10:00:00+00:00' }, { name: 'lot-1', date: '2026-10-20T10:00:00+00:00' }];
+    expect(sortLots(dated).map((l) => l.name)).toEqual(['lot-1', 'lot-1m', 'lot-1b']);
+    expect(splitLots(dated).latest.name).toBe('lot-1b');
+    expect(sortLots([{ name: 'lot-1m' }, { name: 'lot-1b' }]).map((l) => l.name)).toEqual(['lot-1b', 'lot-1m']);
+  });
+});

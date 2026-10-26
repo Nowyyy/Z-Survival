@@ -6,7 +6,7 @@ export function parseLot(name) {
   return m ? { num: Number(m[1]), suffix: m[2] } : null;
 }
 
-// Ordre naturel : lot-0 < lot-0b < lot-1 < lot-2 < lot-10.
+// Ordre naturel : lot-0 < lot-0b < lot-1 < lot-2 < lot-10 (sortLots départage les suffixes d'un même numéro par la date).
 export function compareLots(a, b) {
   const pa = parseLot(a);
   const pb = parseLot(b);
@@ -15,10 +15,19 @@ export function compareLots(a, b) {
   return pa.suffix < pb.suffix ? -1 : pa.suffix > pb.suffix ? 1 : 0;
 }
 
+// Même numéro (lot-1m puis lot-1b) : l'ordre des suffixes ne dit pas lequel est le plus récent, la date du dernier commit le dit.
+// Sans dates valides, on retombe sur l'ordre alphabétique des suffixes.
 export function sortLots(lots) {
+  const time = (lot) => (typeof lot?.date === 'string' ? Date.parse(lot.date) : NaN);
   return (Array.isArray(lots) ? lots : [])
     .filter((lot) => parseLot(lot?.name))
-    .sort((a, b) => compareLots(a.name, b.name));
+    .sort((a, b) => {
+      const same = parseLot(a.name).num === parseLot(b.name).num;
+      const ta = time(a);
+      const tb = time(b);
+      if (same && Number.isFinite(ta) && Number.isFinite(tb) && ta !== tb) return ta - tb;
+      return compareLots(a.name, b.name);
+    });
 }
 
 // Dernier lot, et anciens lots du plus récent au plus ancien.
