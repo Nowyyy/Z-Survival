@@ -7,7 +7,7 @@ describe('npm run build', () => {
   afterAll(() => rmSync('_site', { recursive: true, force: true }));
 
   it('produit _site avec les dossiers du site', () => {
-    for (const p of ['index.html', 'dev/index.html', 'dev/dev.js', 'css/tokens.css', 'js/main.js', 'data/i18n/fr.json', 'fonts', 'jeu.html', 'apercu.txt', 'vendor/phaser.min.js', 'vendor/three/three.module.js', 'js/test3d/pose.js', 'data/test3d/bench.json', 'js/game/main.js', 'js/core/vec.js', 'data/game/room.json']) {
+    for (const p of ['index.html', 'dev/index.html', 'dev/dev.js', 'css/tokens.css', 'js/main.js', 'data/i18n/fr.json', 'fonts', 'jeu.html', 'apercu.txt', 'vendor/phaser.min.js', 'vendor/three/three.module.js', 'test3d/index.html', 'js/test3d/pose.js', 'data/test3d/bench.json', 'js/game/main.js', 'js/core/vec.js', 'data/game/room.json']) {
       expect(existsSync(`_site/${p}`), p).toBe(true);
     }
   });

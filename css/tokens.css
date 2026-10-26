@@ -83,9 +83,9 @@
 
   /* Test 3D (jetable) : couleurs de test3d/ et js/test3d/, lues par js/test3d/palette.js. Provisoires. */
   --t3d-bg: #0c0c0d;                /* fond autour de la salle */
-  --t3d-floor-a: #2a2a2e;           /* carrelage, teinte claire */
-  --t3d-floor-b: #232327;           /* carrelage, teinte sombre */
-  --t3d-grout: #121214;             /* joints du carrelage */
+  --t3d-floor-a: #46464c;           /* carrelage, teinte claire */
+  --t3d-floor-b: #3a3a40;           /* carrelage, teinte sombre */
+  --t3d-grout: #17171a;             /* joints du carrelage */
   --t3d-stain: #7a0a0a;             /* traces au sol */
   --t3d-wall: #5b2a28;              /* murs */
   --t3d-wall-top: #7a3a36;          /* dessus des murs */
@@ -93,13 +93,13 @@
   --t3d-furniture-b: #3a4650;
   --t3d-furniture-c: #504048;
   --t3d-skin: #e8c9a8;              /* peau du joueur */
-  --t3d-outfit: #2b3038;            /* haut du joueur */
-  --t3d-trousers: #1b1e24;          /* pantalon du joueur */
+  --t3d-outfit: #3a4658;            /* haut du joueur */
+  --t3d-trousers: #262b34;          /* pantalon du joueur */
   --t3d-boot: #101012;              /* chaussures */
-  --t3d-gun: #3c3f45;               /* pistolet */
+  --t3d-gun: #8a8f99;               /* pistolet */
   --t3d-zombie-skin: #7fa56c;       /* peau des zombies */
-  --t3d-zombie-clothes: #4d4a3c;    /* haillons des zombies */
-  --t3d-zombie-trousers: #35342c;
+  --t3d-zombie-clothes: #6a6650;    /* haillons des zombies */
+  --t3d-zombie-trousers: #4a483c;
   --t3d-laser: #ff4a3d;
   --t3d-bullet: #ffe8a3;
   --t3d-sun: #fff1d6;               /* lumière directionnelle */

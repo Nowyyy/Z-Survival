@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="robots" content="noindex">
+  <meta name="color-scheme" content="dark">
+  <title>Z-Survival · Test 3D jetable</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="../css/tokens.css">
+  <link rel="stylesheet" href="../css/base.css">
+  <link rel="stylesheet" href="../css/test3d.css">
+  <script type="module" src="../js/test3d/main.js"></script>
+</head>
+<body class="t3d">
+  <noscript>
+    <p class="noscript">Cette page a besoin de JavaScript. / This page needs JavaScript.</p>
+  </noscript>
+  <div id="t3d-root" class="t3d-root" role="application" data-t-label="titre" hidden>
+    <div id="t3d-view" class="t3d-view"></div>
+    <div id="stick-left" class="stick" aria-hidden="true" hidden>
+      <div class="stick-base"></div>
+      <div class="stick-knob"></div>
+    </div>
+    <div id="stick-right" class="stick" aria-hidden="true" hidden>
+      <div class="stick-base"></div>
+      <div class="stick-knob"></div>
+    </div>
+  </div>
+  <p id="t3d-metrics" class="t3d-metrics" role="status" aria-live="off" hidden></p>
+  <button id="t3d-toggle" class="t3d-btn t3d-toggle" type="button" aria-expanded="false" aria-controls="t3d-panel" data-t="reglages" hidden></button>
+  <section id="t3d-panel" class="t3d-panel" data-t-label="reglages" hidden>
+    <p class="t3d-note" data-t="provisoire"></p>
+    <fieldset class="t3d-group">
+      <legend data-t="camera"></legend>
+      <button class="t3d-btn" type="button" data-cam="dessus" aria-pressed="false" data-t="camera.dessus"></button>
+      <button class="t3d-btn" type="button" data-cam="75" aria-pressed="true" data-t="camera.75"></button>
+      <button class="t3d-btn" type="button" data-cam="60" aria-pressed="false" data-t="camera.60"></button>
+    </fieldset>
+    <fieldset class="t3d-group">
+      <legend data-t="rendu"></legend>
+      <button id="t3d-shadows" class="t3d-btn" type="button" aria-pressed="true"></button>
+      <button id="t3d-autoplay" class="t3d-btn" type="button" aria-pressed="false"></button>
+    </fieldset>
+    <fieldset class="t3d-group">
+      <legend data-t="resolution"></legend>
+      <button class="t3d-btn" type="button" data-res="1" aria-pressed="false" data-t="resolution.1"></button>
+      <button class="t3d-btn" type="button" data-res="1.5" aria-pressed="false" data-t="resolution.1.5"></button>
+      <button class="t3d-btn" type="button" data-res="2" aria-pressed="true" data-t="resolution.2"></button>
+    </fieldset>
+    <fieldset class="t3d-group">
+      <legend data-t="zombies"></legend>
+      <button class="t3d-btn" type="button" data-zombies="5" aria-pressed="true">5</button>
+      <button class="t3d-btn" type="button" data-zombies="8" aria-pressed="false">8</button>
+      <button class="t3d-btn" type="button" data-zombies="20" aria-pressed="false">20</button>
+    </fieldset>
+    <fieldset class="t3d-group">
+      <legend data-t="bench"></legend>
+      <button id="t3d-bench" class="t3d-btn" type="button"></button>
+      <button id="t3d-copy" class="t3d-btn" type="button" data-t="copier"></button>
+    </fieldset>
+    <p id="t3d-status" class="t3d-note" role="status" aria-live="polite"></p>
+    <label class="t3d-label" for="t3d-report" data-t="rapport"></label>
+    <textarea id="t3d-report" class="t3d-report" rows="8" readonly spellcheck="false"></textarea>
+    <nav class="t3d-links" data-t-label="liensTitre">
+      <a class="t3d-link" href="pseudo.html" data-t="comparer"></a>
+    </nav>
+  </section>
+  <p id="t3d-error" class="t3d-error" role="alert" hidden></p>
+</body>
+</html>

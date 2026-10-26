@@ -1,0 +1,244 @@
+/* Test 3D jetable : plein écran, panneau de réglages. Couleurs : jetons de tokens.css seulement. */
+html,
+body.t3d {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+  background: var(--t3d-bg);
+}
+
+body.t3d {
+  min-height: 0;
+}
+
+.t3d-root {
+  position: fixed;
+  inset: 0;
+  height: 100dvh;
+  overflow: hidden;
+  background: var(--t3d-bg);
+  touch-action: none;
+  overscroll-behavior: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+  cursor: crosshair;
+}
+
+.t3d-root[data-input="touch"] {
+  cursor: default;
+}
+
+.t3d-view {
+  position: absolute;
+  inset: 0;
+}
+
+.t3d-view canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.t3d-metrics {
+  position: fixed;
+  z-index: 5;
+  top: calc(var(--space-2) + env(safe-area-inset-top, 0px));
+  right: calc(var(--space-2) + env(safe-area-inset-right, 0px));
+  max-width: calc(100% - 9rem);
+  margin: 0;
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: var(--text-sm);
+  line-height: 1.3;
+  pointer-events: none;
+}
+
+.t3d-btn {
+  min-width: var(--touch-target);
+  min-height: var(--touch-target);
+  padding: var(--space-1) var(--space-3);
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-raised);
+  color: var(--color-text);
+  font: inherit;
+  font-weight: var(--font-weight-bold);
+  cursor: pointer;
+}
+
+.t3d-btn:hover:not(:disabled) {
+  background: var(--color-ground-light);
+}
+
+.t3d-btn[aria-pressed="true"] {
+  border-color: var(--color-on-action);
+  background: var(--color-action);
+  color: var(--color-on-action);
+}
+
+.t3d-toggle {
+  position: fixed;
+  z-index: 11;
+  top: calc(var(--space-2) + env(safe-area-inset-top, 0px));
+  left: calc(var(--space-2) + env(safe-area-inset-left, 0px));
+}
+
+.t3d-panel {
+  position: fixed;
+  z-index: 10;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: min(100%, 25rem);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: calc(var(--space-2) + var(--touch-target) + var(--space-2)) var(--space-3) var(--space-3);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+  border-right: 3px solid var(--color-action);
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+.t3d-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: 0;
+  padding: var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.t3d-group legend {
+  padding: 0 var(--space-1);
+  font-weight: var(--font-weight-bold);
+}
+
+.t3d-note {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.t3d-label {
+  font-weight: var(--font-weight-bold);
+}
+
+.t3d-report {
+  width: 100%;
+  min-height: 7rem;
+  padding: var(--space-2);
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  font-size: var(--text-sm);
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+.t3d-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.t3d-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--touch-target);
+  padding: 0 var(--space-3);
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-raised);
+  color: var(--color-text);
+  font-weight: var(--font-weight-bold);
+}
+
+.t3d-error {
+  position: fixed;
+  z-index: 20;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  padding: var(--space-5);
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-size: var(--text-lg);
+  text-align: center;
+}
+
+/* Sticks flottants : visibles seulement après un toucher. */
+.stick {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.stick-base,
+.stick-knob {
+  position: absolute;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.stick-base {
+  width: 112px;
+  height: 112px;
+  border: 3px solid var(--color-border);
+  background: var(--color-overlay);
+}
+
+.stick-knob {
+  width: 52px;
+  height: 52px;
+  background: var(--color-action);
+  border: 3px solid var(--color-on-action);
+}
+
+.stick.is-idle {
+  opacity: 0.45;
+}
+
+#stick-right .stick-knob {
+  background: var(--color-surface-raised);
+}
+
+/* Page pseudo-3D : canvas 2D plein écran. */
+.t3d-canvas2d {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+@media (max-height: 460px) {
+  .t3d-panel {
+    width: min(100%, 22rem);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .t3d-btn,
+  .t3d-link {
+    transition: none;
+  }
+}
