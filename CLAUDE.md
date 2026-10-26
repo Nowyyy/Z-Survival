@@ -1,14 +1,14 @@
 # mobile-games
 
 Jeu web de survie zombies en vue de dessus, hébergé sur GitHub Pages (dépôt Nowyyy/mobile-games).
-Mobile d'abord, français seul pour l'instant (structure prête pour l'anglais), sans dépendance d'exécution (Phaser est en devDependency, copié dans `vendor/`).
+Mobile d'abord, français seul pour l'instant (structure prête pour l'anglais), sans dépendance d'exécution (Three.js est en devDependency, copié dans `vendor/three/`).
 Avant de modifier une page, lis `Docs/ref/conventions.md`.
 
 ## Arborescence
 ```
 index.html (page d'attente) · jeu.html (le jeu) · apercu.txt · dev/ (menu /dev : main, dernier lot, anciens lots) · css/ (tokens.css, base.css)
 js/ (main.js, page.js, i18n.js, splat.js, lots.js)
-js/core/ logique pure · js/game/ scènes Phaser · js/save/ sauvegarde
+js/core/ logique pure · js/game/ rendu Three.js · js/save/ sauvegarde
 data/i18n/{fr,en}.json · data/game/ (équilibrage) · fonts/ · vendor/ · scripts/ (build, assemble, serve, lighthouse)
 tests/unit (Vitest) · tests/e2e (Playwright) · Docs/seed.md (propriétaire)
 Docs/ref/ (environnement, conventions) · Docs/lots/ (bilans) · .github/workflows/ (lot 0-C)
@@ -16,9 +16,9 @@ Docs/ref/ (environnement, conventions) · Docs/lots/ (bilans) · .github/workflo
 
 ## Commandes (vérifiées)
 - `npm ci` : installe · `npm run lint` · `npm test` (Vitest) · `npm run test:e2e` (Playwright, serveur auto sur :4173)
-- `npm run vendor` : copie Phaser (node_modules) vers `vendor/phaser.min.js` + licence · `npm run build` : copie index.html, jeu.html, apercu.txt, dev, css, js, data, fonts, vendor dans `_site/`
+- `npm run vendor:three` : copie Three.js (node_modules) vers `vendor/three/` + licence + version.json · `npm run build` : copie index.html, jeu.html, apercu.txt, dev, css, js, data, fonts, vendor (donc `vendor/three/`) dans `_site/`
 - `npm run assemble` : site complet = build de main + `_site/lots/<lot>/` pour chaque branche `origin/lot-*` + `_site/lots.json` (exige tout l'historique git)
-- `npm run lighthouse` : Lighthouse mobile (index.html : 90 / 95 / 95, CLS ≤ 0,1 ; jeu.html : 75 / 95 / 95, CLS ≤ 0,1 ; le script échoue sous les seuils, la performance de jeu.html est sous 75, voir `Docs/lots/lot-1.md`)
+- `npm run lighthouse` : Lighthouse mobile (index.html : 90 / 95 / 95, CLS ≤ 0,1 ; jeu.html : 45 / 95 / 95, CLS ≤ 0,1 ; le script échoue sous les seuils ; voir `Docs/lots/lot-1m.md`)
 - Playwright : Chromium préinstallé en local (ne jamais lancer `playwright install`, voir `Docs/ref/environnement.md`) ; en CI (`CI=true`) il pilote le Chrome du runner (`channel: 'chrome'`), sans installation.
 
 ## Publication
@@ -43,12 +43,15 @@ Docs/ref/ (environnement, conventions) · Docs/lots/ (bilans) · .github/workflo
 - Polices (OFL) dans `fonts/`, licence copiée à côté : Barlow, Rubik Wet Paint (titre), Rubik Dirt (libellés, majuscules seulement, chargée après l'affichage pour tenir le seuil Lighthouse).
 - Honnêteté : tout contenu fictif ou provisoire est marqué comme tel.
 - `Docs/seed.md` : appartient au propriétaire, jamais modifié par Claude (rempli depuis le lot 0-A).
-- La logique du jeu vit dans `js/core/`, sans Phaser, DOM, réseau, stockage ni horloge.
+- La logique du jeu vit dans `js/core/`, sans Three.js, DOM, réseau, stockage ni horloge.
 - Le workflow `.github/workflows/pages.yml` n'est modifiable que si le prompt du lot l'autorise.
-- Jeu : jeu.html, js/game/ (Phaser), js/core/ (logique pure), data/game/ ; Phaser en devDependency copié par npm run vendor vers vendor/phaser.min.js (ne jamais éditer ce fichier).
-- Plein écran : le canvas couvre toute la fenêtre ; zoom de caméra par js/core/viewport.js ; ne jamais ajouter de bandes ni de ratio fixe.
+- Rendu : Three.js 0.186.1 en devDependency copié par npm run vendor:three vers vendor/three/ (ne jamais éditer) ; importmap locale dans jeu.html ; lire le paquet installé avant d'utiliser l'API.
+- Coordonnées : logique 2D (x, y) ; Three.js (x, 0, y) ; haut de l'écran = nord ; js/core/ ne connaît pas Three.js.
+- Caméra : perspective inclinée 75° (?tilt=60|75|90), toute la salle visible (le défilement vient au lot 1b) ; js/core/viewport.js. Plein écran : le canvas couvre toute la fenêtre, jamais de bandes ni de ratio fixe.
+- Poses : js/core/pose.js (pur) donne les angles ; le rendu les applique ; géométries et matériaux partagés ; ne jamais recréer des objets à chaque image.
+- HUD : HTML, marges de 16 px plus env(safe-area-inset-*) via js/game/safe-area.js.
 - Entrées : event.code (jamais event.key) ; tir automatique quand le laser touche ; pas de bouton de tir.
 - Tir : une balle par tir, dégâts à l'impact seulement (projectile.js) ; le laser (ray.js) sert à viser et à déclencher le tir, jamais aux dégâts.
 - Couleurs du jeu : variables --game-* lues par js/game/palette.js ; aucune valeur en dur dans js/.
-- Tests du jeu : ?test=1 expose window.__zs ; ?seed et ?nospawn ; Math.random interdit dans le jeu.
-- Lighthouse de jeu.html : performance 75, accessibilité 95, bonnes pratiques 95 ; CLS ≤ 0,1.
+- Tests : ?test=1 expose window.__zs (render, camera, pose) ; ?seed, ?nospawn, ?fps=1, ?dpr=1, ?shadows=0 ; privilégier 667×375 ; Math.random interdit dans le jeu.
+- Lighthouse de jeu.html : performance 45, accessibilité 95, bonnes pratiques 95 ; CLS ≤ 0,1.

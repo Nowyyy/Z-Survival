@@ -25,9 +25,9 @@ describe('Three.js vendoré', () => {
     expect(pkg.scripts['vendor:three']).toBeTruthy();
   });
 
-  it('vendor/three/ existe et aucun fichier ne dépasse 5 Mo', () => {
+  it('vendor/ ne contient que Three.js (aucun fichier de plus de 5 Mo)', () => {
     const entries = readdirSync('vendor').filter((e) => e !== '.gitkeep');
-    expect(entries).toContain('three');
+    expect(entries).toEqual(['three']);
     for (const f of readdirSync('vendor/three')) expect(statSync(`vendor/three/${f}`).size, f).toBeLessThan(5 * 1024 * 1024);
   });
 

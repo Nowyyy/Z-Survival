@@ -60,6 +60,7 @@ export function createGame(ctx) {
   let lastPose = computePose({});
   let lastInfo = { calls: 0, triangles: 0 };
   let size = { width: 1, height: 1, unitsPerPixel: 1 };
+  let stale = true; // vrai tant que l'image affichée n'est pas à jour
 
   // Partie neuve : état pur remis à zéro, zombies retirés (leurs personnages vont dans le stock).
   function reset(seed) {
@@ -100,6 +101,7 @@ export function createGame(ctx) {
     renderer.setSize(width, height);
     rig.resize(width, height);
     size = { width, height, unitsPerPixel: (2 * rig.view.distance * Math.tan((render.camera.fov * Math.PI) / 360)) / height };
+    stale = true;
     ctx.input.refresh();
   }
 
@@ -271,6 +273,9 @@ export function createGame(ctx) {
     const dt = last === null ? 0 : clampDt((now - last) / 1000);
     last = now;
     const paused = ctx.ui.isPaused();
+    // En pause rien ne bouge : une dernière image suffit (ou après un redimensionnement), puis on n'affiche plus rien.
+    if (paused && !stale) return;
+    stale = !paused;
     if (!paused && !sim.dead) step(dt);
     draw(paused ? 0 : dt);
     renderer.render(world.scene, rig.camera);

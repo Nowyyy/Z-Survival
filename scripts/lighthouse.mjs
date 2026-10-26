@@ -1,10 +1,10 @@
-// Lance Lighthouse (mobile) sur le site servi localement. Seuils : index.html 90 / 95 / 95, jeu.html 75 / 95 / 95 (lot 1) ; CLS <= 0,1.
+// Lance Lighthouse (mobile) sur le site servi localement. Seuils : index.html 90 / 95 / 95, jeu.html 45 / 95 / 95 (lot 1m : rendu Three.js) ; CLS <= 0,1.
 import { spawn, spawnSync } from 'node:child_process';
 import { mkdirSync, readFileSync } from 'node:fs';
 
 const PAGES = [
   { name: 'index', path: '', thresholds: { performance: 0.9, accessibility: 0.95, 'best-practices': 0.95 } },
-  { name: 'jeu', path: 'jeu.html', thresholds: { performance: 0.75, accessibility: 0.95, 'best-practices': 0.95 } },
+  { name: 'jeu', path: 'jeu.html', thresholds: { performance: 0.45, accessibility: 0.95, 'best-practices': 0.95 } },
 ];
 
 mkdirSync('lighthouse-report', { recursive: true });

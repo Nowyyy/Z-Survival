@@ -14,11 +14,14 @@ export function createEffects(scene, palette, { gunHeight, bulletRadius }) {
   const ball = new THREE.SphereGeometry(1, 10, 8);
   const laserMat = basic(palette.laser);
   const glowMat = basic(palette.laser, { transparent: true, opacity: 0.22, depthWrite: false });
-  const bulletMat = basic(palette.bullet);
+  // Transparentes et rangées après le halo du laser : une balle en vol se détache toujours du trait.
+  const bulletMat = basic(palette.bullet, { transparent: true });
   const trailMat = basic(palette.bullet, { transparent: true, opacity: 0.45, depthWrite: false });
+  const ORDER = { glow: 1, trail: 2, head: 3 };
   const muzzleMat = basic(palette.muzzle);
   const hitMat = basic(palette.hit);
 
+  const laserHeight = gunHeight - 1.5;
   const make = (geometry, material, visible = false) => {
     const mesh = new THREE.Mesh(geometry, material);
     mesh.visible = visible;
@@ -27,10 +30,16 @@ export function createEffects(scene, palette, { gunHeight, bulletRadius }) {
   };
   const laser = make(box, laserMat);
   const glow = make(box, glowMat);
+  glow.renderOrder = ORDER.glow;
   const dot = make(ball, laserMat);
   const flashOuter = make(ball, muzzleMat);
   const flashCore = make(ball, hitMat);
-  const bullets = Array.from({ length: MAX_BULLET_MESHES }, () => ({ head: make(box, bulletMat), trail: make(box, trailMat) }));
+  const bullets = Array.from({ length: MAX_BULLET_MESHES }, () => {
+    const slot = { head: make(box, bulletMat), trail: make(box, trailMat) };
+    slot.head.renderOrder = ORDER.head;
+    slot.trail.renderOrder = ORDER.trail;
+    return slot;
+  });
   const sparks = Array.from({ length: MAX_SPARKS }, () => make(ball, hitMat));
 
   // Pose un trait entre deux points du plan de jeu, à hauteur y, d'épaisseur thick.
@@ -49,9 +58,9 @@ export function createEffects(scene, palette, { gunHeight, bulletRadius }) {
       if (frame.laser) {
         const { from, ray } = frame.laser;
         const thick = Math.max(1.2, 2 * upp);
-        segment(laser, from.x, from.y, ray.end.x, ray.end.y, gunHeight, thick);
-        segment(glow, from.x, from.y, ray.end.x, ray.end.y, gunHeight, thick * 2.6);
-        dot.position.set(ray.end.x, gunHeight, ray.end.y);
+        segment(laser, from.x, from.y, ray.end.x, ray.end.y, laserHeight, thick);
+        segment(glow, from.x, from.y, ray.end.x, ray.end.y, laserHeight, thick * 2.6);
+        dot.position.set(ray.end.x, laserHeight, ray.end.y);
         dot.scale.setScalar(Math.max(ray.hit ? 3.2 : 2, (ray.hit ? 3.5 : 2.5) * upp));
         dot.visible = true;
         const flashing = frame.flash > 0;
@@ -71,7 +80,7 @@ export function createEffects(scene, palette, { gunHeight, bulletRadius }) {
         flashCore.visible = false;
       }
 
-      const thick = Math.max(bulletRadius * 0.8, 2.4 * upp);
+      const thick = Math.max(bulletRadius * 1.2, 3.5 * upp);
       for (let i = 0; i < bullets.length; i += 1) {
         const b = frame.bullets[i];
         const slot = bullets[i];
@@ -80,7 +89,7 @@ export function createEffects(scene, palette, { gunHeight, bulletRadius }) {
           slot.trail.visible = false;
           continue;
         }
-        const len = bulletRadius * 4;
+        const len = bulletRadius * 5;
         segment(slot.head, b.x - b.dirX * len, b.y - b.dirY * len, b.x, b.y, gunHeight, thick);
         const tail = b.trail.length > 0 ? b.trail[b.trail.length - 1] : null;
         if (tail) segment(slot.trail, tail.x, tail.y, b.x - b.dirX * len, b.y - b.dirY * len, gunHeight, thick * 0.6);
