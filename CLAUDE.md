@@ -6,22 +6,26 @@ Avant de modifier une page, lis `Docs/ref/conventions.md`.
 
 ## Arborescence
 ```
-index.html (page d'attente) · css/ (tokens.css, base.css) · js/ (main.js, i18n.js, splat.js)
+index.html (page d'attente) · dev/ (menu /dev : main, dernier lot, anciens lots) · css/ (tokens.css, base.css)
+js/ (main.js, page.js, i18n.js, splat.js, lots.js)
 js/core/ logique pure · js/game/ scènes Phaser · js/save/ sauvegarde
-data/i18n/{fr,en}.json · fonts/ · vendor/ · scripts/ (build, serve, lighthouse)
+data/i18n/{fr,en}.json · fonts/ · vendor/ · scripts/ (build, assemble, serve, lighthouse)
 tests/unit (Vitest) · tests/e2e (Playwright) · Docs/seed.md (propriétaire)
 Docs/ref/ (environnement, conventions) · Docs/lots/ (bilans) · .github/workflows/ (lot 0-C)
 ```
 
 ## Commandes (vérifiées)
 - `npm ci` : installe · `npm run lint` · `npm test` (Vitest) · `npm run test:e2e` (Playwright, serveur auto sur :4173)
-- `npm run build` : copie index.html, css, js, data, fonts, vendor dans `_site/`
+- `npm run build` : copie index.html, dev, css, js, data, fonts, vendor dans `_site/`
+- `npm run assemble` : site complet = build de main + `_site/lots/<lot>/` pour chaque branche `origin/lot-*` + `_site/lots.json` (exige tout l'historique git)
 - `npm run lighthouse` : Lighthouse mobile (seuils : performance 90, accessibilité 95, bonnes pratiques 95, CLS ≤ 0,1 ; le script échoue sous les seuils)
 - Playwright utilise le Chromium préinstallé : ne jamais lancer `playwright install` (voir `Docs/ref/environnement.md`).
 
 ## Publication
-- `.github/workflows/pages.yml` : sur Pull Request, lint + Vitest + Playwright ; sur `main`, mêmes vérifications puis déploiement GitHub Pages de `_site/` seulement.
-- Droits minimaux, actions épinglées par SHA complet, ni `pull_request_target` ni secrets. Le réglage Pages (source « GitHub Actions ») est fait par le propriétaire.
+- URL du jeu : `https://nowyyy.github.io/<nom du dépôt>/` (cible : dépôt nommé `Z-Survival`). La racine = main. `/dev/` = menu (main, dernier lot, menu déroulant des anciens lots). `/lots/lot-N/` = aperçu de chaque branche de lot.
+- `.github/workflows/pages.yml` : sur Pull Request et sur push de `main` ou `lot-*`, lint + Vitest + Playwright. Sur `main` (push ou `workflow_dispatch`), `npm run assemble` puis déploiement de `_site/` seulement. Un push sur `lot-*` relance le workflow sur `main` (job `refresh`, seul à avoir `actions: write`).
+- Droits minimaux, actions épinglées par SHA complet, ni `pull_request_target` ni secrets. Source Pages : « GitHub Actions » (réglage du propriétaire).
+- Tous les chemins sont relatifs : le site marche quel que soit le nom du dépôt et sous `/lots/…`.
 
 ## Git
 - Une branche par lot : `lot-N`. Un commit par partie : « Lot N-X — titre ».

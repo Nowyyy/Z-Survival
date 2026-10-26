@@ -4,8 +4,11 @@ import { readFileSync, readdirSync } from 'node:fs';
 const load = (lang) => JSON.parse(readFileSync(`data/i18n/${lang}.json`, 'utf8'));
 const fr = load('fr');
 const en = load('en');
-const html = readFileSync('index.html', 'utf8');
-const mainJs = readFileSync('js/main.js', 'utf8');
+// Sources qui consomment des clés : les pages HTML et les scripts du site.
+const pages = ['index.html', 'dev/index.html'].map((f) => readFileSync(f, 'utf8'));
+const html = pages[0];
+const scripts = ['js/main.js', 'js/page.js', 'dev/dev.js'].map((f) => readFileSync(f, 'utf8'));
+const usedKeys = new Set(pages.flatMap((p) => [...p.matchAll(/data-(?:i18n|title-key)="([^"]+)"/g)].map((m) => m[1])));
 
 describe('dictionnaires fr / en', () => {
   it('ont exactement les mêmes clés', () => {
@@ -19,14 +22,13 @@ describe('dictionnaires fr / en', () => {
   });
 
   it('n\'ont aucune clé orpheline (toutes sont utilisées par la page ou main.js)', () => {
-    const used = new Set([...html.matchAll(/data-i18n="([^"]+)"/g)].map((m) => m[1]));
     for (const k of Object.keys(fr)) {
-      expect(used.has(k) || mainJs.includes(`'${k}'`), k).toBe(true);
+      expect(usedKeys.has(k) || scripts.some((js) => js.includes(`'${k}'`)), k).toBe(true);
     }
   });
 
   it('couvrent toutes les clés demandées par la page', () => {
-    for (const m of html.matchAll(/data-i18n="([^"]+)"/g)) expect(fr[m[1]], m[1]).toBeDefined();
+    for (const k of usedKeys) expect(fr[k], k).toBeDefined();
   });
 
   it('traduisent réellement (le texte anglais diffère du français)', () => {
@@ -36,21 +38,24 @@ describe('dictionnaires fr / en', () => {
 
 describe('page d\'attente', () => {
   it('est en noindex et sans ressource externe', () => {
-    expect(html).toContain('name="robots" content="noindex"');
-    expect(html).not.toMatch(/(src|href)="https?:\/\//);
+    for (const page of pages) expect(page).toContain('name="robots" content="noindex"');
+    for (const page of pages) expect(page).not.toMatch(/(src|href)="https?:\/\//);
   });
 
   it('charge le script en module avec des chemins relatifs', () => {
     expect(html).toContain('<script type="module" src="js/main.js">');
+    expect(pages[1]).toContain('<script type="module" src="dev.js">');
   });
 
   it('n\'a aucun id dupliqué', () => {
-    const ids = [...html.matchAll(/\sid="([^"]+)"/g)].map((m) => m[1]);
-    expect(new Set(ids).size).toBe(ids.length);
+    for (const page of pages) {
+      const ids = [...page.matchAll(/\sid="([^"]+)"/g)].map((m) => m[1]);
+      expect(new Set(ids).size).toBe(ids.length);
+    }
   });
 
   it('ne contient aucun style en ligne', () => {
-    expect(html).not.toMatch(/\sstyle="/);
+    for (const page of pages) expect(page).not.toMatch(/\sstyle="/);
   });
 
   it('aucun fichier de polices n\'est sans licence', () => {

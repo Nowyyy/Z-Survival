@@ -21,3 +21,8 @@ Avant de modifier une page, relis ce fichier.
 - Un texte posé sur du rouge l'est sur une zone rouge pleine (`.zone`, texte `--color-on-action`) ; les taches de sang sont dessinées autour, jamais sous le texte.
 - Tout état est aussi porté par une forme ou un texte, jamais par la couleur seule.
 - Polices lourdes (Rubik Dirt) : chargées après le premier affichage, pour garder Lighthouse performance à 90 ou plus.
+
+## Publication et aperçus
+- Chemins toujours relatifs (`../` depuis `dev/`), jamais de `/` initial : le site est servi sous `/<dépôt>/`, sous `/<dépôt>/dev/` et sous `/<dépôt>/lots/lot-N/`.
+- Les noms de branche de lot suivent `lot-<numéro><lettre facultative>` (ex. `lot-0b`) ; l'ordre est numérique puis alphabétique (`js/lots.js`).
+- Toute page ajoutée au site est `noindex` tant que le jeu n'est pas en ligne (lot 13).

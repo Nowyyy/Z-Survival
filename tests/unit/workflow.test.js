@@ -27,4 +27,21 @@ describe('workflow GitHub Pages', () => {
   it('lance lint, tests unitaires et e2e', () => {
     for (const c of ['npm run lint', 'npm test', 'npm run test:e2e']) expect(wf).toContain(c);
   });
+
+  it('publie le site complet (racine, /dev, /lots) avec l\'historique des branches', () => {
+    expect(wf).toContain('npm run assemble');
+    expect(wf).toMatch(/fetch-depth: 0/);
+  });
+
+  it('relance le déploiement depuis main quand une branche de lot est poussée', () => {
+    expect(wf).toContain("branches: [main, 'lot-*']");
+    expect(wf).toContain('workflow_dispatch:');
+    expect(wf).toContain('gh workflow run pages.yml');
+  });
+
+  it('ne donne le droit actions: write qu\'au seul job de relance', () => {
+    expect(wf.match(/actions: write/g)).toHaveLength(1);
+    const refresh = wf.slice(wf.indexOf('  refresh:'), wf.indexOf('  deploy:'));
+    expect(refresh).toContain('actions: write');
+  });
 });

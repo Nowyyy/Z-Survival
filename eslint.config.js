@@ -5,7 +5,7 @@ export default [
   { ignores: ['node_modules/', '_site/', 'dist/', 'coverage/', 'vendor/', 'playwright-report/', 'test-results/'] },
   js.configs.recommended,
   {
-    files: ['js/**/*.js'],
+    files: ['js/**/*.js', 'dev/**/*.js'],
     languageOptions: { ecmaVersion: 2023, sourceType: 'module', globals: globals.browser },
   },
   {

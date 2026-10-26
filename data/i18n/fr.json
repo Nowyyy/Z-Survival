@@ -5,5 +5,17 @@
   "app.status": "En construction. Reviens bientôt !",
   "app.badge": "En construction",
   "lang.toggle": "English",
-  "lang.toggleLabel": "Switch to English"
+  "lang.toggleLabel": "Switch to English",
+  "dev.title": "Z-Survival · dev",
+  "dev.badge": "Développement",
+  "dev.intro": "Choisis la version à ouvrir.",
+  "dev.main": "Branche main",
+  "dev.latest": "Dernier lot : {lot}",
+  "dev.previous": "Anciens lots",
+  "dev.choose": "Choisir un lot…",
+  "dev.noPrevious": "Aucun ancien lot",
+  "dev.open": "Ouvrir",
+  "dev.noLots": "Aucun lot publié pour l'instant.",
+  "dev.unavailable": "La liste des lots est indisponible.",
+  "dev.footer": "Pages de développement, non indexées."
 }

@@ -5,5 +5,17 @@
   "app.status": "Under construction. Come back soon!",
   "app.badge": "Under construction",
   "lang.toggle": "Français",
-  "lang.toggleLabel": "Passer en français"
+  "lang.toggleLabel": "Passer en français",
+  "dev.title": "Z-Survival · dev",
+  "dev.badge": "Development",
+  "dev.intro": "Choose the version to open.",
+  "dev.main": "Main branch",
+  "dev.latest": "Latest lot: {lot}",
+  "dev.previous": "Previous lots",
+  "dev.choose": "Choose a lot…",
+  "dev.noPrevious": "No previous lot",
+  "dev.open": "Open",
+  "dev.noLots": "No lot published yet.",
+  "dev.unavailable": "The list of lots is unavailable.",
+  "dev.footer": "Development pages, not indexed."
 }

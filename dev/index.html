@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="fr" data-title-key="dev.title">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <meta name="color-scheme" content="dark">
+  <title>Z-Survival · dev</title>
+  <link rel="icon" href="data:,">
+  <link rel="preload" href="../fonts/barlow-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="../fonts/rubik-wet-paint-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="../css/tokens.css">
+  <link rel="stylesheet" href="../css/base.css">
+  <script type="module" src="dev.js"></script>
+</head>
+<body>
+  <noscript>
+    <p class="noscript">Ce menu a besoin de JavaScript. / This menu needs JavaScript.</p>
+  </noscript>
+  <svg class="defs" aria-hidden="true" focusable="false">
+    <filter id="brush" x="-5%" y="-30%" width="110%" height="160%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.035 0.4" numOctaves="3" seed="4" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="16" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+    <filter id="torn" x="-20%" y="-40%" width="140%" height="180%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.05" numOctaves="3" seed="9" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="26" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+  </svg>
+  <main id="app" class="screen" hidden>
+    <canvas id="splat" class="splat" aria-hidden="true"></canvas>
+    <div class="top">
+      <p class="crumb zone corner" data-i18n="dev.badge"></p>
+    </div>
+    <div class="center">
+      <h1 class="title" data-i18n="app.title"></h1>
+      <p class="status" data-i18n="dev.intro"></p>
+      <nav aria-label="Aperçus">
+        <ul class="menu">
+          <li>
+            <a class="item is-on" href="../">
+              <span class="brush" aria-hidden="true"></span>
+              <svg class="claw" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 3l4 18M10 3l4 18M16 3l4 18" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" fill="none"/></svg>
+              <span data-i18n="dev.main"></span>
+            </a>
+          </li>
+          <li>
+            <a class="item" id="latest" href="../" hidden>
+              <span class="brush" aria-hidden="true"></span>
+              <svg class="claw" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 3l4 18M10 3l4 18M16 3l4 18" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" fill="none"/></svg>
+              <span data-label></span>
+              <span class="meta" data-meta></span>
+            </a>
+          </li>
+          <li>
+            <form class="picker" id="picker" hidden>
+              <label for="previous" data-i18n="dev.previous"></label>
+              <div class="picker-row">
+                <select id="previous" class="select"></select>
+                <button type="submit" class="button" data-i18n="dev.open"></button>
+              </div>
+            </form>
+          </li>
+        </ul>
+      </nav>
+      <p class="status" id="note" hidden></p>
+      <button type="button" class="item" data-lang-toggle>
+        <span class="brush" aria-hidden="true"></span>
+        <svg class="claw" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 3l4 18M10 3l4 18M16 3l4 18" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" fill="none"/></svg>
+        <span data-lang-label></span>
+      </button>
+    </div>
+    <div class="foot">
+      <p class="zone" data-i18n="dev.footer"></p>
+    </div>
+  </main>
+</body>
+</html>

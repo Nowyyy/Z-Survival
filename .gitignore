@@ -11,3 +11,4 @@ vitest-report/
 lighthouse-report/
 .lighthouseci/
 *.log
+.lots/

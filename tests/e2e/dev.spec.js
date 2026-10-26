@@ -1,0 +1,110 @@
+import { test, expect } from '@playwright/test';
+import AxeBuilder from '@axe-core/playwright';
+
+const LOTS = {
+  lots: [
+    { name: 'lot-0', sha: 'aaaaaaa', date: '2026-10-26T00:11:53+00:00' },
+    { name: 'lot-0b', sha: 'bbbbbbb', date: '2026-10-27T10:00:00+00:00' },
+    { name: 'lot-1', sha: 'ccccccc', date: '2026-11-02T10:00:00+00:00' },
+  ],
+};
+
+const withLots = (page, body = LOTS) =>
+  page.route('**/lots.json', (route) => route.fulfill({ json: body }));
+
+test('affiche main, le dernier lot et les anciens lots dans un menu déroulant', async ({ page }) => {
+  await withLots(page);
+  await page.goto('/dev');
+  await expect(page).toHaveURL(/\/dev\/$/);
+  await expect(page.getByRole('link', { name: /Branche main/ })).toHaveAttribute('href', '../');
+  const latest = page.getByRole('link', { name: /Dernier lot : Lot 1/ });
+  await expect(latest).toHaveAttribute('href', '../lots/lot-1/');
+  const options = await page.locator('#previous option').allTextContents();
+  expect(options[0]).toBe('Choisir un lot…');
+  expect(options.slice(1).map((o) => o.split(' · ')[0])).toEqual(['Lot 0b', 'Lot 0']);
+});
+
+test('ouvre l\'ancien lot choisi', async ({ page }) => {
+  await withLots(page);
+  await page.route('**/lots/lot-0b/', (route) => route.fulfill({ contentType: 'text/html', body: '<title>lot-0b</title>' }));
+  await page.goto('/dev/');
+  await page.locator('#previous').selectOption({ value: '../lots/lot-0b/' });
+  await page.getByRole('button', { name: 'Ouvrir' }).click();
+  await expect(page).toHaveURL(/\/lots\/lot-0b\/$/);
+});
+
+test('le lien main ramène à la page d\'attente', async ({ page }) => {
+  await withLots(page);
+  await page.goto('/dev/');
+  await page.getByRole('link', { name: /Branche main/ }).click();
+  await expect(page).toHaveURL(/localhost:4173\/$/);
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Z-Survival');
+});
+
+test('un seul lot : pas d\'ancien lot, le menu est désactivé', async ({ page }) => {
+  await withLots(page, { lots: [LOTS.lots[0]] });
+  await page.goto('/dev/');
+  await expect(page.getByRole('link', { name: /Dernier lot : Lot 0/ })).toBeVisible();
+  await expect(page.locator('#previous')).toBeDisabled();
+  await expect(page.getByRole('button', { name: 'Ouvrir' })).toBeDisabled();
+});
+
+test('liste indisponible : message clair et lien main toujours là', async ({ page }) => {
+  await page.route('**/lots.json', (route) => route.fulfill({ status: 404, body: 'no' }));
+  await page.goto('/dev/');
+  await expect(page.getByText('La liste des lots est indisponible.')).toBeVisible();
+  await expect(page.getByRole('link', { name: /Branche main/ })).toBeVisible();
+  await expect(page.locator('#picker')).toBeHidden();
+});
+
+test('la bascule de langue traduit le menu', async ({ page }) => {
+  await withLots(page);
+  await page.goto('/dev/');
+  await page.getByRole('button', { name: 'Switch to English' }).click();
+  await expect(page.getByRole('link', { name: /Main branch/ })).toBeVisible();
+  await expect(page.getByRole('link', { name: /Latest lot: Lot 1/ })).toBeVisible();
+  await expect(page.locator('html')).toHaveAttribute('lang', 'en');
+});
+
+test('aucune requête externe et console propre', async ({ page, baseURL }) => {
+  const external = [];
+  const problems = [];
+  await withLots(page);
+  page.on('request', (r) => {
+    if (!r.url().startsWith(baseURL) && !r.url().startsWith('data:')) external.push(r.url());
+  });
+  page.on('console', (m) => ['error', 'warning'].includes(m.type()) && problems.push(m.text()));
+  page.on('pageerror', (e) => problems.push(e.message));
+  await page.goto('/dev/');
+  await page.waitForLoadState('networkidle');
+  expect(external).toEqual([]);
+  expect(problems).toEqual([]);
+});
+
+for (const width of [375, 768, 1440]) {
+  test(`pas de débordement horizontal à ${width} px`, async ({ page }) => {
+    await withLots(page);
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto('/dev/');
+    await expect(page.locator('#app')).toBeVisible();
+    const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+    expect(overflow).toBeLessThanOrEqual(0);
+  });
+}
+
+test('axe : aucune violation', async ({ page }) => {
+  await withLots(page);
+  await page.goto('/dev/');
+  await expect(page.locator('#app')).toBeVisible();
+  const results = await new AxeBuilder({ page }).analyze();
+  expect(results.violations).toEqual([]);
+});
+
+test('cibles tactiles d\'au moins 44 px', async ({ page }) => {
+  await withLots(page);
+  await page.goto('/dev/');
+  for (const locator of [page.getByRole('link', { name: /Branche main/ }), page.locator('#previous'), page.getByRole('button', { name: 'Ouvrir' })]) {
+    const box = await locator.boundingBox();
+    expect(box.height).toBeGreaterThanOrEqual(44);
+  }
+});

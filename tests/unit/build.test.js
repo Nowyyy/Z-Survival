@@ -7,7 +7,7 @@ describe('npm run build', () => {
   afterAll(() => rmSync('_site', { recursive: true, force: true }));
 
   it('produit _site avec les dossiers du site', () => {
-    for (const p of ['index.html', 'css/tokens.css', 'js/main.js', 'data/i18n/fr.json', 'fonts']) {
+    for (const p of ['index.html', 'dev/index.html', 'dev/dev.js', 'css/tokens.css', 'js/main.js', 'data/i18n/fr.json', 'fonts']) {
       expect(existsSync(`_site/${p}`), p).toBe(true);
     }
   });
