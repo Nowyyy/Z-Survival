@@ -44,4 +44,9 @@ describe('workflow GitHub Pages', () => {
     const refresh = wf.slice(wf.indexOf('  refresh:'), wf.indexOf('  deploy:'));
     expect(refresh).toContain('actions: write');
   });
+
+  it('n\'installe aucun navigateur : Playwright pilote le Chrome du runner', () => {
+    expect(wf).not.toContain('playwright install');
+    expect(readFileSync('playwright.config.js', 'utf8')).toContain("process.env.CI ? 'chrome'");
+  });
 });

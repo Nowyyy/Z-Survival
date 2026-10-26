@@ -90,7 +90,7 @@ for (const lang of ['fr', 'en']) {
 
 test('sans JavaScript, seul le message noscript est visible', async ({ baseURL }) => {
   // Le réglage de Blink désactive vraiment les scripts : <noscript> est alors rendu comme dans un vrai navigateur.
-  const browser = await chromium.launch({ args: ['--blink-settings=scriptEnabled=false'] });
+  const browser = await chromium.launch({ channel: process.env.CI ? 'chrome' : undefined, args: ['--blink-settings=scriptEnabled=false'] });
   const page = await browser.newPage({ locale: 'fr-FR' });
   await page.goto(baseURL);
   await expect(page.locator('#app')).toBeHidden();

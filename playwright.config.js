@@ -1,5 +1,8 @@
 import { defineConfig, devices } from '@playwright/test';
 
+// En CI, on pilote le Chrome déjà installé sur le runner : aucune installation de navigateur.
+const channel = process.env.CI ? 'chrome' : undefined;
+
 export default defineConfig({
   testDir: 'tests/e2e',
   fullyParallel: true,
@@ -11,7 +14,7 @@ export default defineConfig({
     reuseExistingServer: !process.env.CI,
   },
   projects: [
-    { name: 'mobile', use: { ...devices['Pixel 5'], viewport: { width: 375, height: 812 } } },
-    { name: 'bureau', use: { viewport: { width: 1440, height: 900 } } },
+    { name: 'mobile', use: { ...devices['Pixel 5'], channel, viewport: { width: 375, height: 812 } } },
+    { name: 'bureau', use: { channel, viewport: { width: 1440, height: 900 } } },
   ],
 });

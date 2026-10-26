@@ -19,7 +19,7 @@ Docs/ref/ (environnement, conventions) · Docs/lots/ (bilans) · .github/workflo
 - `npm run build` : copie index.html, dev, css, js, data, fonts, vendor dans `_site/`
 - `npm run assemble` : site complet = build de main + `_site/lots/<lot>/` pour chaque branche `origin/lot-*` + `_site/lots.json` (exige tout l'historique git)
 - `npm run lighthouse` : Lighthouse mobile (seuils : performance 90, accessibilité 95, bonnes pratiques 95, CLS ≤ 0,1 ; le script échoue sous les seuils)
-- Playwright utilise le Chromium préinstallé : ne jamais lancer `playwright install` (voir `Docs/ref/environnement.md`).
+- Playwright : Chromium préinstallé en local (ne jamais lancer `playwright install`, voir `Docs/ref/environnement.md`) ; en CI (`CI=true`) il pilote le Chrome du runner (`channel: 'chrome'`), sans installation.
 
 ## Publication
 - URL du jeu : `https://nowyyy.github.io/<nom du dépôt>/` (cible : dépôt nommé `Z-Survival`). La racine = main. `/dev/` = menu (main, dernier lot, menu déroulant des anciens lots). `/lots/lot-N/` = aperçu de chaque branche de lot.
