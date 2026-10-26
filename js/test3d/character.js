@@ -1,15 +1,8 @@
 // Personnage articulé : bassin, tronc, tête, bras (épaule, coude), jambes (hanche, genou), arme tenue en main droite.
 // Géométries et matériaux partagés par tous les personnages. Le personnage regarde vers +Z local.
 import * as THREE from '../../vendor/three/three.module.js';
+import { FOOT, FORE, HAND, HIP_X, SHIN, SHOULDER_X, THIGH, UPPER } from './skeleton.js';
 
-const THIGH = 12;
-const SHIN = 11.5;
-const FOOT = 3.5;
-const UPPER = 10;
-const FORE = 9;
-const HAND = 4;
-const HIP_X = 5.5;
-const SHOULDER_X = 11.5;
 const LEG = THIGH + SHIN + FOOT;
 
 // Boîte dont l'origine est en haut (pivot) ou au bas, décalée par (ox, oy, oz).

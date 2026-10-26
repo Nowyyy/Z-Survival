@@ -16,6 +16,7 @@ import { readPalette } from './palette.js';
 import { computePose } from './pose.js';
 import { buildReport, collectEnvironment, readRendererName, testDate } from './report.js';
 import { buildWorld, createCameraRig } from './scene.js';
+import { STRIDE } from './skeleton.js';
 import { median, mean } from './stats.js';
 import { T, applyTextes, fmt } from './textes.js';
 
@@ -27,7 +28,6 @@ const SEED = Number.isFinite(Number(params.get('seed'))) && params.get('seed') !
 const NO_SPAWN = params.get('nospawn') === '1';
 const json = (path) => fetch(new URL(path, import.meta.url)).then((r) => r.json());
 
-const STRIDE = 0.09; // radians de phase de marche par unité parcourue
 const RECOIL_TIME = 0.12;
 const GUN_Y = 43; // hauteur du canon, laser et balles
 const LIVE_WINDOW = 2000;

@@ -7,8 +7,8 @@ Avant de modifier une page, lis `Docs/ref/conventions.md`.
 ## Arborescence
 ```
 index.html (page d'attente) · jeu.html (le jeu) · apercu.txt · dev/ (menu /dev : main, dernier lot, anciens lots) · css/ (tokens.css, base.css)
-js/ (main.js, page.js, i18n.js, splat.js, lots.js)
-js/core/ logique pure · js/game/ scènes Phaser · js/save/ sauvegarde
+js/ (main.js, page.js, i18n.js, splat.js, lots.js, fps.js)
+js/core/ logique pure · js/game/ scènes Phaser · js/save/ sauvegarde · js/test3d/ (branche lot-0t seulement)
 data/i18n/{fr,en}.json · data/game/ (équilibrage) · fonts/ · vendor/ · scripts/ (build, assemble, serve, lighthouse)
 tests/unit (Vitest) · tests/e2e (Playwright) · Docs/seed.md (propriétaire)
 Docs/ref/ (environnement, conventions) · Docs/lots/ (bilans) · .github/workflows/ (lot 0-C)
@@ -16,7 +16,7 @@ Docs/ref/ (environnement, conventions) · Docs/lots/ (bilans) · .github/workflo
 
 ## Commandes (vérifiées)
 - `npm ci` : installe · `npm run lint` · `npm test` (Vitest) · `npm run test:e2e` (Playwright, serveur auto sur :4173)
-- `npm run vendor` : copie Phaser (node_modules) vers `vendor/phaser.min.js` + licence · `npm run build` : copie index.html, jeu.html, apercu.txt, dev, css, js, data, fonts, vendor dans `_site/`
+- `npm run vendor:three` : copie Three.js (devDependency, lot-0t) vers `vendor/three/` · `npm run vendor` : copie Phaser (node_modules) vers `vendor/phaser.min.js` + licence · `npm run build` : copie index.html, jeu.html, apercu.txt, dev, css, js, data, fonts, vendor dans `_site/` (et test3d)
 - `npm run assemble` : site complet = build de main + `_site/lots/<lot>/` pour chaque branche `origin/lot-*` + `_site/lots.json` (exige tout l'historique git)
 - `npm run lighthouse` : Lighthouse mobile (index.html : 90 / 95 / 95, CLS ≤ 0,1 ; jeu.html : 75 / 95 / 95, CLS ≤ 0,1 ; le script échoue sous les seuils, la performance de jeu.html est sous 75, voir `Docs/lots/lot-1.md`)
 - Playwright : Chromium préinstallé en local (ne jamais lancer `playwright install`, voir `Docs/ref/environnement.md`) ; en CI (`CI=true`) il pilote le Chrome du runner (`channel: 'chrome'`), sans installation.
@@ -52,3 +52,5 @@ Docs/ref/ (environnement, conventions) · Docs/lots/ (bilans) · .github/workflo
 - Couleurs du jeu : variables --game-* lues par js/game/palette.js ; aucune valeur en dur dans js/.
 - Tests du jeu : ?test=1 expose window.__zs ; ?seed et ?nospawn ; Math.random interdit dans le jeu.
 - Lighthouse de jeu.html : performance 75, accessibilité 95, bonnes pratiques 95 ; CLS ≤ 0,1.
+- Branche lot-0t : test jetable Three.js contre Phaser, ne jamais fusionner dans main ; ne pas reprendre ses fichiers sans décision du propriétaire.
+- test3d/ : pages de comparaison (index.html Three.js, pseudo.html 2D) ; ?bench=quick pour les tests ; rapport à copier par le propriétaire.

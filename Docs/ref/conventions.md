@@ -39,3 +39,11 @@ Avant de modifier une page, relis ce fichier.
 - **Audio.** Web Audio synthétisé (`js/core/sound-params.js`, `js/game/audio.js`), aucun fichier ; le contexte audio n'est créé qu'après le premier geste du joueur ; l'état coupé/activé reste en mémoire.
 - **Confidentialité.** Aucune requête externe, aucune écriture dans `localStorage`, `sessionStorage` ni cookies, aucune donnée dans les URL (un test chacun).
 - **Console des tests.** Le message `GL Driver Message … ReadPixels` du navigateur à la création du premier contexte WebGL est du bruit du navigateur : les tests de console le filtrent.
+
+## Test 3D (jetable, branche lot-0t, ne jamais fusionner dans main)
+- **Textes.** Exception documentée : les textes de l'interface de `test3d/` sont en français dans un seul fichier, `js/test3d/textes.js` (pas dans `fr.json`). Les messages `<noscript>` restent bilingues en dur.
+- **Couleurs.** Jetons `--t3d-*` dans la section « Test 3D (jetable) » de `css/tokens.css`, lus par `js/test3d/palette.js` ; aucune couleur en dur dans `js/test3d/`, `test3d/` ni `css/test3d.css`.
+- **`js/core/` non modifié.** La logique de jeu des deux pages est celle de `js/core/`, telle quelle ; ce qui manque (poses, statistiques) vit dans `js/test3d/` (`pose.js`, `stats.js`, `skeleton.js`, purs). Contrôle : `git diff main -- js/core` est vide.
+- **Three.js.** devDependency à version exacte, copiée par `npm run vendor:three` dans `vendor/three/` (`three.module.js` et `three.core.js`, licence, `version.json`) ; importée par chemin relatif, aucun CDN. `?test=1` expose `window.__t3d` (page Three.js) et `window.__t3dPseudo` (page 2D) ; `?bench=quick` ramène chaque configuration à 1 s.
+- **Mesures.** Les chiffres pris en WebGL logiciel (CI, session) ne sont pas ceux d'un téléphone : seul le rapport copié sur l'appareil du propriétaire compte.
+

@@ -41,9 +41,9 @@ export const T = {
   webglAbsent: 'WebGL n’est pas disponible sur cet appareil ou ce navigateur : la page Three.js ne peut pas s’afficher.',
   nonRepresentatif: 'Mesure faite dans un environnement non représentatif d’un téléphone.',
   pseudoTitre: 'Pseudo-3D (Phaser)',
-  pseudoMesure: 'Mesurer {s} s',
-  pseudoEnCours: 'Mesure en cours…',
-  lien3d: 'Comparer avec Three.js',
+  mesure: 'Mesurer {s} s',
+  mesureEnCours: 'Mesure en cours…',
+  mesureFinie: 'Mesure terminée, ajoutée au rapport.',
   liensTitre: 'Pages de comparaison',
   sansJs: 'Cette page a besoin de JavaScript. / This page needs JavaScript.',
 };

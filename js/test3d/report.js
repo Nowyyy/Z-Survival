@@ -30,21 +30,27 @@ export function readRendererName(gl) {
 export function formatResult(result, index, total) {
   const c = result.config;
   const size = result.width ? `, canvas ${result.width}×${result.height}` : '';
+  const ratio = `ratio effectif ${fix(result.pixelRatio, 2)}${size}`;
+  // Une mesure sans WebGL (pseudo-3D) porte un libellé et n'a pas d'appels de dessin.
+  const head = c.label
+    ? `Mesure ${index + 1}/${total} : ${c.label} (${ratio})`
+    : `Configuration ${index + 1}/${total} : ${c.zombies} zombies, ombres ${c.shadows ? 'oui' : 'non'}, résolution max × ${c.maxPixelRatio} (${ratio})`;
+  const draw = c.label ? '  Appels de dessin : sans objet (canvas 2D)' : `  Appels de dessin (moyenne) : ${result.calls} ; triangles (moyenne) : ${result.triangles}`;
   return [
-    `Configuration ${index + 1}/${total} : ${c.zombies} zombies, ombres ${c.shadows ? 'oui' : 'non'}, résolution max × ${c.maxPixelRatio} (ratio effectif ${fix(result.pixelRatio, 2)}${size})`,
+    head,
     `  Images par seconde (moyenne) : ${fix(result.fps)}`,
     `  Temps d'image : médian ${fix(result.median)} ms, 95e centile ${fix(result.p95)} ms`,
     `  1 % bas : ${fix(result.low1)} images par seconde`,
     `  Images de plus de 50 ms : ${result.long} (sur ${result.frames} images mesurées)`,
-    `  Appels de dessin (moyenne) : ${result.calls} ; triangles (moyenne) : ${result.triangles}`,
+    draw,
   ].join('\n');
 }
 
-// info : { threeVersion, date, env, results, total, quick, interrupted } ; interrupted : 'hidden', 'stop' ou null.
+// info : { title, threeVersion, date, env, results, total, quick, interrupted } ; interrupted : 'hidden', 'stop' ou null.
 export function buildReport(info) {
   const { env = {}, results = [], total = 6 } = info ?? {};
   const lines = [
-    'Z-Survival — Test 3D jetable — rapport du banc d\'essai',
+    info?.title ?? 'Z-Survival — Test 3D jetable — rapport du banc d\'essai',
     `Three.js : ${info?.threeVersion ?? 'inconnue'}`,
     `Date du test : ${info?.date ?? 'inconnue'}`,
     `Navigateur : ${env.userAgent ?? 'inconnu'}`,
