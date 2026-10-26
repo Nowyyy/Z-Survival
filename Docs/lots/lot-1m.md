@@ -8,12 +8,12 @@ Branche `lot-1m` (depuis `main`, lot 1 fusionné : `lot-1` est ancêtre de `main
 - HUD E2-2 en HTML (barre, « Vie x/y », « Zombies tués », `#hud-live` inchangé) ; HUD, Pause et panneaux à 16 px + `env(safe-area-inset-*)` ; `viewport-fit=cover` conservé (marges respectées). Message d'erreur si WebGL manque.
 ## Choix
 - Murs : épaisseur 40, face intérieure sur la limite de déplacement (`room.wall` = 24, inchangé) ; les 16 de plus débordent vers l'extérieur. Hauteur 60. Fenêtres = vraies ouvertures (allège, linteau, 2 barreaux).
-- `fitDistance` est exact (quatre coins projetés, marge 5 %), caméra centrée sur la salle ; `groundView` est l'approximation rectangulaire demandée (largeur au point visé, profondeurs exactes).
-- Ombres : la lumière suit le joueur (±560 unités) ; visée sur le plan `y = 0` (laser à 43 de haut : léger décalage) ; balles transparentes, ordonnées après le halo du laser.
+- `fitDistance` est exact (quatre coins projetés) ; la caméra suit le joueur (voir « Retour du propriétaire ») ; `groundView` est l'approximation rectangulaire demandée (largeur au point visé, profondeurs exactes).
+- Ombres : la lumière suit la caméra, carte de 1024 sur la zone visible ; visée sur le plan `y = 0` (laser à 43 de haut : léger décalage) ; balles transparentes, ordonnées après le halo du laser.
 ## Critères (chiffres)
 - Départ `main` : Vitest 266, Playwright 117 exécutés (25 ignorés). Fin : **Vitest 365** (+99), **Playwright 158 exécutés** (+41), 66 ignorés (projet mobile / bureau). Lint sans avertissement.
 - Canvas = fenêtre à ≤ 1 px à 667×375, 1440×900, 1920×1080, 2560×1080 et après redimensionnement, 0 px de défilement. Salle entière visible (fenêtres listées dont 100×100) : calcul indépendant (Vitest) et caméra réelle (Playwright). Délai tir → impact (15 %) et 30 balles au plus : verts.
-- Avec 5 zombies, ombres actives : **238 appels de dessin, 2 836 triangles** (ombres coupées : 88 / 1 036).
+- Remesuré après les retours (vue proche qui suit le joueur, 3 à 5 zombies, ombres actives) : **139 appels de dessin, 1 648 triangles** (ombres coupées : 72 / 844). Mesure initiale, salle entière à l'écran, 5 zombies : 238 / 2 836. Images/s en WebGL logiciel : 30 avec ombres, 58 sans (non représentatif).
 - Lighthouse mobile `jeu.html` : **performance 55** (seuil 45), accessibilité 100, bonnes pratiques 100, CLS 0,001 ; `index.html` 92 / 100 / 100. CLS avec données retardées de 400 ms (360, 768, 1440) : tests verts (≤ 0,1).
 - Images/s sur 10 s avec 5 zombies : 29 avec ombres, 56 sans, **en WebGL logiciel : non représentatif, rien conclu**.
 - Captures regardées (667×375, 1440×900, 2560×1080, 375×667, 768, pause, fin) : salle entière, murs, ouvertures, ombres, laser, balle, HUD à 16 px, personnages articulés (bras tendus des zombies, arme tenue). Limite : à 667×375 un personnage fait ~14 px de large, jambes peu lisibles.
@@ -26,10 +26,10 @@ Branche `lot-1m` (depuis `main`, lot 1 fusionné : `lot-1` est ancêtre de `main
 - Ombres des zombies lointains : la carte d'ombres suivait le joueur (±560) ; lumière qui suit la caméra, carte d'ombres sur toute la zone visible. Tir au-delà du laser : `fireRange` 1 600 (règle changée, simulation de référence conservée en mode `legacy`) ; laser qui s'estompe sur son dernier tiers.
 - Caméra « beaucoup plus proche » (demande du propriétaire, avance le suivi prévu au lot 1b) : elle suit le joueur, 2× plus proche (`?zoom=1` = toute la zone) ; les ombres suivent la vue.
 ## Points ouverts
-- Test tactile : un seul glisser à deux doigts (CDP) + sticks couverts en pur ; pas de test sur vrai téléphone. Son non écouté (inchangé du lot 1). Déploiement non vérifié depuis la session. `axe` à 1440×900 a expiré une fois sous charge (passe en relance ; rendu logiciel lent).
-- Tag `lot-1m` : poussé une seule fois (voir message final).
+- Test tactile : un seul glisser à deux doigts (CDP) + sticks couverts en pur ; pas de test sur vrai téléphone. Son non écouté (inchangé du lot 1). Le déploiement a été vérifié par les runs CI et par la lecture de `lots.json` publié, pas par un affichage de la page. `axe` à 1440×900 a expiré une fois sous charge (passe en relance ; rendu logiciel lent).
+- Tag `lot-1m` : poussé une seule fois, refusé (connexion coupée) ; il existe en local seulement.
 ## Choix à valider
-Inclinaison 75° par défaut ; hauteur des murs 60 ; épaisseur 40 vers l'extérieur ; couleurs `--game-*` (peau, pantalon, bottes, arme, haillons, soleil, ambiance) ; seuil Lighthouse de `jeu.html` à 45 (mesuré 55) ; ombres limitées autour du joueur.
+Inclinaison 75° par défaut ; hauteur des murs 60 ; épaisseur 40 vers l'extérieur ; couleurs `--game-*` (peau, pantalon, bottes, arme, haillons, soleil, ambiance) ; seuil Lighthouse de `jeu.html` à 45 (mesuré 55, remesuré 55 après les retours) ; zoom par défaut 2 ; `fireRange` 1 600 (tir au-delà du laser).
 ## À tester par moi
 Sur un téléphone en paysage et sur ordinateur, `/lot-1m/jeu.html?fps=1` : fluidité, personnages (E2-1), ombres, laser, balles, sticks (E2-3, E2-4), HUD (E2-2), pause (E2-5, E2-6), fin (E2-7), plein écran (F), `?tilt=60` et `?tilt=90`.
 ## Fusion (à faire par moi)
