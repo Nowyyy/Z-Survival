@@ -35,7 +35,7 @@ $('app').hidden = false;
 const audio = createAudio({ config: { audio: audioCfg, materials: materialsCfg, voice: voiceCfg, sounds: soundsCfg.sounds }, test: testMode, seed: 7, autoAmbience: false });
 if (testMode) window.__zs = { getState: () => ({ audio: audio.state() }) };
 // Le son ne démarre qu'après un geste : tout clic ou toute touche déverrouille l'audio.
-for (const type of ['pointerdown', 'keydown']) window.addEventListener(type, () => audio.unlock(), { capture: true });
+for (const type of ['pointerdown', 'pointerup', 'click', 'touchend', 'keydown']) window.addEventListener(type, () => audio.unlock(), { capture: true });
 
 const status = $('status');
 const live = $('live');

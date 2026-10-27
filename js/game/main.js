@@ -122,8 +122,9 @@ ctx.input = createInput(root, {
   },
 });
 ctx.ui.syncSound(ctx.audio);
-// Le son ne démarre qu'après le premier geste du joueur.
-for (const type of ['pointerdown', 'keydown']) window.addEventListener(type, () => ctx.audio.unlock(), { capture: true });
+// Le son ne démarre qu'après un geste du joueur. Chrome ne compte pas pointerdown comme geste pour la souris : pointerup, click et touchend
+// aussi, et chaque geste retente la reprise tant que le contexte n'est pas en marche.
+for (const type of ['pointerdown', 'pointerup', 'click', 'touchend', 'keydown']) window.addEventListener(type, () => ctx.audio.unlock(), { capture: true });
 
 game = createGame(ctx);
 if (game === null) {

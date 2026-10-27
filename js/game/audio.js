@@ -141,7 +141,12 @@ export function createAudio({ config, test = false, seed = 1, autoAmbience = tru
 
     // À appeler depuis un geste du joueur. Sans effet si l'audio n'existe pas ou refuse : le jeu continue sans son.
     unlock() {
-      if (ctx || !Context) return;
+      if (ctx) {
+        // Contexte créé par un geste que le navigateur n'a pas accepté (pointerdown à la souris) : chaque nouveau geste retente la reprise.
+        if (!suspended && ctx.state !== 'running') ctx.resume?.().catch(() => {});
+        return;
+      }
+      if (!Context) return;
       try {
         ctx = new Context();
         compressor = ctx.createDynamicsCompressor();
