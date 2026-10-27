@@ -50,23 +50,20 @@ Docs/ref/ (environnement, conventions) · Docs/lots/ (bilans) · .github/workflo
 - Poses : js/core/pose.js (pur) donne les angles ; le rendu les applique ; géométries et matériaux partagés, jamais recréés à chaque image.
 - HUD : HTML, marges de 16 px plus env(safe-area-inset-*) via js/game/safe-area.js.
 - Entrées : event.code (jamais event.key) ; tir automatique quand le laser touche ; pas de bouton de tir.
-- Tir : une balle par tir, dégâts à l'impact seulement (projectile.js) ; le laser (ray.js) vise, jamais de dégâts ; tir dès qu'un ennemi est sur la ligne de visée jusqu'à `fireRange`, marge `aimTolerance` ; on tire à travers les fenêtres.
+- Tir : la balle part dans un cône (js/core/spread.js, tirage triangulaire par rng.js) ; dégâts figés à la création de la balle et appliqués à l'impact seulement (projectile.js) ; le laser (ray.js) vise et déclenche, jamais de dégâts ; marge `aimTolerance` ; on tire à travers les fenêtres ; portée de tir de base 700 (weapons.json), laser 300.
 - Couleurs du jeu : variables --game-* lues par js/game/palette.js ; aucune valeur en dur dans js/.
-- Tests : ?test=1 expose window.__zs (getState, setSeed, spawnEnemy, setInput, step, overview, textures, sampleScreen) ; ?seed, ?nospawn, ?empty=1, ?fps=1, ?dpr=1, ?shadows=0 ; privilégier 667×375 ; Math.random interdit dans le jeu.
+- Tests : ?test=1 expose window.__zs (getState, setSeed, spawnEnemy, setInput, step, setLevels, startWave, killAll, setWaveParams…) et getState().audio (journal) ; ?seed ?nospawn=1 ?empty=1 ?fps=1 ?dpr=1 ?shadows=0 ?wave=N ?lvl=degats:3,precision:5 ou all:5 ; privilégier 667×375, step() et le journal, jamais l'écoute ni une vague en temps réel ; Math.random interdit.
 - Monde : data/game/world.json (salle, meubles, fenêtres), decor.json (extérieur, points d'apparition) ; le décor n'est jamais recréé à chaque image.
-- Obstacles : collision.js, nav.js (champ de flux) ; les meubles bloquent joueur, zombies, balles et laser ; fenêtres passables pour les zombies seulement jusqu'au lot 3.
-- Apparitions : hors de la vue, aux points de decor.json, jamais à l'écran.
-- Hauteurs : murs 60, meubles 70 au plus, voitures 55 (ne pas masquer les zombies à 75°).
-- Textures : js/core/texgen.js (pur) d'après data/game/textures.json ; aucune image importée ; couleurs passées depuis les variables --game-*.
+- Obstacles : collision.js, nav.js ; les meubles bloquent joueur, zombies, balles et laser ; fenêtres passables pour les zombies seulement jusqu'au lot 3. Apparitions hors de la vue, aux points de decor.json. Hauteurs : murs 60, meubles 70 au plus, voitures 55.
+- Textures : texgen.js (pur) d'après textures.json ; aucune image importée ; couleurs des variables --game-*. Lisibilité : contraste ≥ 3:1 personnages / sol (color.js), laser et balle ≥ 4,5:1 ; ne jamais dégrader.
 - Personnages : 12 pièces, 700 triangles au plus ; 4 variantes (variants.js) ; budget 300 appels de dessin (objectif 240) et 15 000 triangles, 10 zombies au plus.
-- Lisibilité : contraste ≥ 3:1 personnages / sol (js/core/color.js) ; laser et balle ≥ 4,5:1 ; ne jamais dégrader ces seuils.
-- Sons : js/core/synth.js calcule des tampons d'après data/game/sounds.json ; aucun fichier audio importé ; js/game/audio.js les lit (Web Audio) ; jamais de son en direct dans js/core/.
-- Direction sonore : sound-director.js (événements → demandes) ; tir au départ de la balle, blessure à l'impact ; voix par zombie-voice.js (16 à 36 par minute avec 8 zombies, 1,2 s d'écart).
-- Chargement : textures (tranches de 8 ms) et sons essentiels derrière l'écran de préparation, sons fond en arrière-plan ; aucun son avant le premier geste ; pause = contexte suspendu.
-- Tests : ?test=1 expose getState().audio (journal des lectures) ; privilégier le journal, jamais l'écoute.
+- Sons : synth.js calcule des tampons d'après sounds.json ; aucun fichier audio ; audio.js les lit ; sound-director.js (événements → demandes ; tir au départ de la balle, blessure à l'impact), zombie-voice.js (16 à 36 voix/min avec 8 zombies) ; jamais de son dans js/core/.
+- Chargement : textures (tranches de 8 ms) et sons essentiels derrière l'écran de préparation, sons de fond ensuite ; aucun son avant le premier geste ; pause = contexte suspendu.
 - sons.html : page d'écoute technique, à retirer au lot 13.
-- Vagues : js/core/waves.js (courbe pure, vie de forme BO3 plafonnée ×30) + wave-director.js (états attente, apparition, combat, terminée) d'après data/game/waves.json ; numérotation continue ; jamais plus de 10 zombies simultanés (budget de triangles) ; ne pas remettre de lanceur continu.
-- Zombies : 4 types (marcheur, petit, voute, grand : enemies.json variants) × 4 allures (lent, marche, rampe, course : gaits.json) ; createEnemy applique type, allure et vague ; vitesse plafonnée à 190 (joueur 220) ; la rampe est visuelle (pose.js), sans effet sur la hitbox.
-- Interface : E2-2 (Vague N, Restants), E2-8 (annonce) ; #hud-live annonce la vague, jamais le compte à rebours ; vie du joueur remise à 100 % en fin de vague.
-- Tests : ?wave=N démarre à la vague N ; ?nospawn=1 coupe les vagues ; hooks startWave, killAll, setWaveParams ; n'attendre jamais une vague en temps réel.
+- Vagues : waves.js + wave-director.js d'après waves.json (vie BO3 plafonnée ×30) ; numérotation continue ; jamais plus de 10 zombies simultanés ; pas de lanceur continu.
+- Zombies : 4 types × 4 allures (enemies.json, gaits.json), createEnemy ; vitesse plafonnée à 190 ; la rampe est visuelle, sans effet sur la hitbox.
+- Interface : E2-2 (Vague N, Restants), E2-8 (annonce) ; #hud-live annonce la vague, jamais le compte à rebours.
+- Statistiques : js/core/player-stats.js (7 stats, niveaux 0 à 10, data/game/player-stats.json) ; effectiveWeapon et effectivePlayer donnent les valeurs effectives ; les niveaux viennent de ?lvl= via js/game/levels-source.js, seul point à remplacer par la sauvegarde (lot 4) ; jamais stockés.
+- Vie : la vie maximale effective sert à la barre, au HUD et à la remise de vie de fin de vague (100 %) ; régénération par kill via combat.js healOnKill.
+- Budget de triangles : marge de 138 seulement (14 862 avec 10 zombies et le cône) ; ne rien ajouter sans mesurer.
 - Journal des versions : chaque lot ajoute une entrée à data/changelog.json et adapte data-changelog et dev.spec.

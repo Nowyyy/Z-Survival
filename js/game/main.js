@@ -1,10 +1,10 @@
 // Point d'entrée de jeu.html : charge les textes et les données, prépare le DOM, lance la partie en 3D (Three.js).
 import { buildLayout } from '../core/layout.js';
-import { effectiveWeapon } from '../core/player-stats.js';
 import { parseTilt, parseZoom } from '../core/viewport.js';
 import { createAudio } from './audio.js';
 import { createGame } from './game.js';
 import { createLoading } from './loading.js';
+import { readLevels } from './levels-source.js';
 import { createInput } from './input.js';
 import { createTokenLookup, readPalette } from './palette.js';
 import { installSafeArea } from './safe-area.js';
@@ -83,7 +83,7 @@ root.hidden = false;
 const layout = buildLayout(world, decor, { empty: testMode && query.get('empty') === '1', slack: camera.slack });
 
 const ctx = {
-  cfg: { layout, player, weapon: effectiveWeapon(weapons.pistol, {}, statsCfg), zombie: enemies.zombie, enemies, gaits: gaitsCfg, waves: wavesCfg, render, camera, nav },
+  cfg: { layout, player, weapon: weapons.pistol, stats: statsCfg, zombie: enemies.zombie, enemies, gaits: gaitsCfg, waves: wavesCfg, render, camera, nav },
   palette,
   dict,
   textureData,
@@ -100,6 +100,7 @@ const ctx = {
   },
   seed: Number.isFinite(seedParam) ? seedParam : Date.now() % 2147483647,
   seedRun: 0,
+  levels: readLevels(location.search, statsCfg),
   override: {},
   audio,
   audioCfg,
@@ -162,7 +163,8 @@ if (game === null) {
       const p = ctx.perf;
       const a = ctx.audio.stats;
       const textures = fmt(dict[TEXTURE_TEXTS.fps], { ms: Math.round(textureData.ms), flow: p.flowCount ? (p.flowSum / p.flowCount).toFixed(2) : '0', max: p.flowMax.toFixed(2) });
-      return `${textures}\n${fmt(dict[TEXTURE_TEXTS.fpsSons], { essential: Math.round(a.essentialMs), background: Math.round(a.backgroundMs), voices: a.zombieVoices })}`;
+      const stats = game.statsLine();
+      return `${textures}\n${fmt(dict[TEXTURE_TEXTS.fpsSons], { essential: Math.round(a.essentialMs), background: Math.round(a.backgroundMs), voices: a.zombieVoices })}\n${fmt(dict[TEXTURE_TEXTS.fpsStats], { levels: stats.levels, angle: stats.angle })}`;
     }));
   }
   if (testMode) installTestHook(ctx, game);

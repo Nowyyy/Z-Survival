@@ -2,16 +2,18 @@
 // s'enchaînent dans le même ordre qu'au lot 1. Coordonnées : logique (x, y) -> scène (x, 0, y).
 import * as THREE from 'three';
 import { aimFromPoint, aimFromStick, createAim } from '../core/aim.js';
-import { applyImpacts, createWeaponState, displayHealth, muzzlePoint, stepContact, stepWeapon } from '../core/combat.js';
+import { applyImpacts, createWeaponState, displayHealth, healOnKill, muzzlePoint, stepContact, stepWeapon } from '../core/combat.js';
 import { stepEnemies } from '../core/enemy-ai.js';
 import { createEnemy, isGait, isType } from '../core/enemy-factory.js';
 import { entryWindow } from '../core/layout.js';
 import { moveCircle } from '../core/movement.js';
+import { effectivePlayer, effectiveWeapon, normalizeLevels, STAT_IDS, statValues } from '../core/player-stats.js';
 import { createFlowState, createGrid, stepFlow } from '../core/nav.js';
 import { computePose } from '../core/pose.js';
 import { createBullet, stepBullets } from '../core/projectile.js';
 import { castRay } from '../core/ray.js';
 import { createRng } from '../core/rng.js';
+import { shotAngle, speedRatio, spreadHalfAngle, stepSpreadRatio, toRadians } from '../core/spread.js';
 import { createFootsteps, stepFootsteps } from '../core/footsteps.js';
 import { isHidden } from '../core/spawner.js';
 import { materialFor } from '../core/sound-director.js';
@@ -83,6 +85,17 @@ export function createGame(ctx) {
   const voices = new Map(); // identifiant de zombie -> nom de sa variante visuelle (hauteur de voix)
   const variantName = (id) => voices.get(id) ?? zombieNames[0];
 
+  // Statistiques du joueur (lot 2b) : niveaux (levels-source.js) -> arme et joueur effectifs. Recalculés quand les niveaux changent.
+  const eff = {};
+  const applyLevels = (levels, earlier = []) => {
+    const normal = normalizeLevels(levels, cfg.stats);
+    eff.levels = { levels: normal.levels, warnings: [...earlier, ...normal.warnings] };
+    eff.values = statValues(eff.levels.levels, cfg.stats);
+    eff.weapon = effectiveWeapon(cfg.weapon, eff.levels.levels, cfg.stats);
+    eff.player = effectivePlayer(cfg.player, eff.levels.levels, cfg.stats);
+    if (sim) sim.player = { ...sim.player, maxHealth: eff.player.maxHealth, health: Math.min(sim.player.health, eff.player.maxHealth) };
+  };
+
   let sim;
   let anim;
   let lastFire;
@@ -90,6 +103,7 @@ export function createGame(ctx) {
   let laser;
   let lastPose = computePose({});
   let lastInfo = { calls: 0, triangles: 0 };
+  const shotLog = []; // journal des tirs : { id, time, angle, aimAngle } (tests)
   const spawnLog = []; // journal des apparitions : { id, time, hidden }
   let size = { width: 1, height: 1, unitsPerPixel: 1 };
   let stale = true; // vrai tant que l'image affichée n'est pas à jour
@@ -104,8 +118,9 @@ export function createGame(ctx) {
     zombies.clear();
     voices.clear();
     spawnLog.length = 0;
+    shotLog.length = 0;
     sim = {
-      player: { x: layout.start.x, y: layout.start.y, r: cfg.player.radius, health: cfg.player.health, maxHealth: cfg.player.health },
+      player: { x: layout.start.x, y: layout.start.y, r: cfg.player.radius, health: eff.player.maxHealth, maxHealth: eff.player.maxHealth },
       aim: createAim(0),
       enemies: [],
       bullets: [],
@@ -123,6 +138,7 @@ export function createGame(ctx) {
       flash: 0,
       recoil: 0,
       lifeBucket: 10,
+      spread: 0, // rapport de vitesse lissé, de 0 (arrêt) à 1 (pleine vitesse)
     };
     anim = { phase: 0, facing: 0, x: sim.player.x, y: sim.player.y };
     rig.snap(sim.player.x, sim.player.y);
@@ -181,28 +197,33 @@ export function createGame(ctx) {
     return ground ? aimFromPoint(prev, from, ground) : prev;
   }
 
+  // Demi-angle courant du cône, en degrés.
+  const halfAngle = () => spreadHalfAngle(sim.spread, eff.values);
+
   function step(dt) {
     const { input, override, audio } = ctx;
-    const weapon = cfg.weapon;
+    const weapon = eff.weapon;
     sim.time += dt;
 
     const events = []; // événements sonores de cette image (traités par js/core/sound-director.js)
     const dir = override.move ?? input.move();
     const before = sim.player;
-    const pos = moveCircle(sim.player, dir, cfg.player.speed, dt, layout.room, layout.playerObstacles);
+    const pos = moveCircle(sim.player, dir, eff.player.speed, dt, layout.room, layout.playerObstacles);
     sim.player = { ...sim.player, ...pos };
     // Pas : la phase de marche avance avec la distance réellement parcourue (même rythme que les poses : STRIDE par unité).
     const moved = Math.hypot(sim.player.x - before.x, sim.player.y - before.y);
     const phase = sim.walk.phase + moved * STRIDE;
-    const foot = stepFootsteps(sim.walk.steps, sim.walk.phase, phase, moved / Math.max(dt, 1e-6), sim.time, cfg.player.speed, ctx.audioCfg?.footsteps);
+    const foot = stepFootsteps(sim.walk.steps, sim.walk.phase, phase, moved / Math.max(dt, 1e-6), sim.time, eff.player.speed, ctx.audioCfg?.footsteps);
     sim.walk = { phase, steps: foot.state };
+    // Cône : le rapport de vitesse (vitesse réelle / vitesse maximale effective) est lissé, indépendamment du nombre d'images par seconde.
+    sim.spread = stepSpreadRatio(sim.spread, speedRatio(dt > 0 ? moved / dt : 0, eff.player.speed), dt, cfg.stats.spread?.widenTime, cfg.stats.spread?.narrowTime);
     if (foot.step) events.push({ type: 'playerStep', ...foot.step });
     sim.aim = aimAngle(sim.aim);
 
     // Laser : sert à viser et à déclencher le tir, jamais aux dégâts.
     const muzzle = muzzlePoint(sim.player, sim.aim.angle, weapon.muzzleOffset, bounds);
     const ray = castRay(muzzle, sim.aim.angle, weapon.laserRange, sim.enemies, shotBounds, blockers);
-    laser = { from: muzzle, ray };
+    laser = { from: muzzle, ray, cone: { angle: sim.aim.angle, half: toRadians(halfAngle()), length: weapon.laserRange } };
     // Le tir part aussi quand la visée passe sur un ennemi au-delà de la portée du laser (le trait s'estompe, la balle continue) ;
     // un ennemi caché derrière un meuble ne déclenche jamais de tir.
     // Marge de visée : le tir part si la ligne passe à moins de aimTolerance du bord d'un ennemi ; la balle suit la vraie visée et peut le rater.
@@ -212,7 +233,11 @@ export function createGame(ctx) {
     const trigger = stepWeapon(sim.weapon, dt, aimed, weapon, sim.bullets.length);
     sim.weapon = trigger.state;
     if (trigger.fire) {
-      sim.bullets = [...sim.bullets, createBullet(muzzle, sim.aim.angle, weapon, sim.nextId)];
+      // La balle part dans le cône autour de l'axe de visée (tirage triangulaire, graine du jeu) ; ses dégâts sont figés ici.
+      const shot = shotAngle(sim.aim.angle, toRadians(halfAngle()), sim.rng);
+      sim.rng = shot.rng;
+      sim.bullets = [...sim.bullets, createBullet(muzzle, shot.angle, weapon, sim.nextId, sim.aim.angle)];
+      shotLog.push({ id: sim.nextId, time: sim.time, angle: shot.angle, aimAngle: sim.aim.angle, half: halfAngle() });
       sim.nextId += 1;
       sim.flash = reduced ? weapon.muzzleFlash / 2 : weapon.muzzleFlash;
       sim.recoil = RECOIL_TIME;
@@ -237,6 +262,8 @@ export function createGame(ctx) {
       if (gone.reason === 'obstacle') events.push({ type: 'obstacleHit', x: gone.x, y: gone.y, obstacleId: gone.obstacleId, material: materialFor(obstacleKinds.get(gone.obstacleId), gone.obstacleId, ctx.audioMaterials) });
     }
     sim.kills += result.killed.length;
+    // Régénération : chaque zombie tué rend des points de vie, jamais au-delà du maximum, jamais après la mort.
+    for (let i = 0; i < result.killed.length; i += 1) sim.player = { ...sim.player, health: healOnKill(sim.player.health, sim.player.maxHealth, eff.player.regen, !sim.dead && sim.player.health > 0) };
 
     if (grid) {
       const t0 = ctx.perf ? performance.now() : 0;
@@ -330,7 +357,7 @@ export function createGame(ctx) {
     anim.x = p.x;
     anim.y = p.y;
     const state = sim.time - lastFire < FIRE_POSE_TIME ? 'tir' : moving ? 'marche' : 'arret';
-    lastPose = computePose({ phase: anim.phase, aim, facing: anim.facing, state, time: sim.time, seed: 0, amount: Math.min(1, speed / cfg.player.speed), recoil: sim.recoil / RECOIL_TIME });
+    lastPose = computePose({ phase: anim.phase, aim, facing: anim.facing, state, time: sim.time, seed: 0, amount: Math.min(1, speed / eff.player.speed), recoil: sim.recoil / RECOIL_TIME });
     playerChar.setPose(lastPose);
     playerChar.root.position.set(p.x, 0, p.y);
     playerChar.root.rotation.y = Math.PI / 2 - anim.facing;
@@ -463,6 +490,7 @@ export function createGame(ctx) {
   document.addEventListener('visibilitychange', () => (document.hidden ? stop() : start()));
   window.addEventListener('resize', applySize);
 
+  applyLevels(ctx.levels?.levels, ctx.levels?.warnings);
   reset(ctx.seed);
   applySize();
   draw(0);
@@ -502,8 +530,8 @@ export function createGame(ctx) {
     // Test : une balle de plus, tirée de la bouche de l'arme dans la direction `angle`.
     fireBullet(angle) {
       // La bouche n'est pas retenue dans la salle : le test place parfois le joueur dehors (balle sur une voiture, par exemple).
-      const muzzle = muzzlePoint(sim.player, Number(angle), cfg.weapon.muzzleOffset, shotBounds);
-      sim.bullets = [...sim.bullets, createBullet(muzzle, Number(angle), cfg.weapon, sim.nextId)];
+      const muzzle = muzzlePoint(sim.player, Number(angle), eff.weapon.muzzleOffset, shotBounds);
+      sim.bullets = [...sim.bullets, createBullet(muzzle, Number(angle), eff.weapon, sim.nextId)];
       sim.nextId += 1;
       ctx.audio?.handle({ time: sim.time, listener: sim.player, walls: audioWalls, paused: ctx.ui.isPaused(), events: [{ type: 'shot', x: muzzle.x, y: muzzle.y }] });
     },
@@ -513,6 +541,15 @@ export function createGame(ctx) {
       followCamera(0);
       size = { ...size, unitsPerPixel: (2 * rig.view.distance * Math.tan((render.camera.fov * Math.PI) / 360)) / size.height };
       stale = true;
+    },
+    // Test : change les niveaux en cours de partie (tous remplacés, absent = 0) ; les balles déjà parties gardent leurs dégâts.
+    setLevels(levels) {
+      applyLevels(levels);
+      stale = true;
+    },
+    // ?fps=1 : niveaux et demi-angle courant du cône, en texte.
+    statsLine() {
+      return { levels: STAT_IDS.map((id) => `${id} ${eff.levels.levels[id]}`).join(', '), angle: halfAngle().toFixed(1).replace('.', ',') };
     },
     // Test : saute à la vague n (zombies retirés, compte à rebours de départ) ; sans effet avec ?nospawn=1.
     startWave(n) {
@@ -540,13 +577,22 @@ export function createGame(ctx) {
     snapshot() {
       const cam = rig.camera.position;
       return {
-        player: { x: sim.player.x, y: sim.player.y, health: sim.player.health },
+        player: { x: sim.player.x, y: sim.player.y, health: sim.player.health, maxHp: sim.player.maxHealth, spread: halfAngle(), speedRatio: sim.spread },
+        stats: {
+          levels: { ...eff.levels.levels },
+          warnings: [...eff.levels.warnings],
+          values: {
+            damage: eff.weapon.damage, fireRange: eff.weapon.fireRange, laserRange: eff.weapon.laserRange, bulletMaxDistance: eff.weapon.bulletMaxDistance, fireDelay: eff.weapon.fireDelay,
+            speed: eff.player.speed, maxHealth: eff.player.maxHealth, regen: eff.player.regen, coneStill: eff.weapon.coneStill, coneMove: eff.weapon.coneMove,
+          },
+        },
+        shots: shotLog.map((l) => ({ ...l })),
         aim: sim.aim.angle,
         enemies: sim.enemies.map((e) => ({
           id: e.id, x: e.x, y: e.y, health: e.health, entered: e.entered ?? null, from: e.from ?? null, variant: e.visual, screen: screenOf(e.x, e.y), pose: zombies.get(e.id)?.char.readPose() ?? null,
           type: e.type, gait: e.gait, hp: e.health, maxHp: e.maxHealth, speed: e.speed, damage: e.damage, stride: e.stride, radius: e.r, phase: zombies.get(e.id)?.phase ?? 0,
         })),
-        bullets: sim.bullets.map((b) => ({ id: b.id, x: b.x, y: b.y, angle: b.angle })),
+        bullets: sim.bullets.map((b) => ({ id: b.id, x: b.x, y: b.y, angle: b.angle, aimAngle: b.aimAngle, damage: b.damage, maxDistance: b.maxDistance })),
         kills: sim.kills,
         waves: wavesState(),
         camera: { x: cam.x, y: cam.y, z: cam.z, distance: rig.view.distance, tilt: rig.view.tilt, zoom: rig.view.zoom, target: { ...rig.view.target } },
@@ -555,7 +601,7 @@ export function createGame(ctx) {
         view: visibleRect(),
         playerScreen: projectPlayer(),
         laserEnd: laser ? { x: laser.ray.end.x, y: laser.ray.end.y } : null,
-        laser: laser ? { length: laser.ray.length, hit: laser.ray.hit?.id ?? null, stoppedBy: laser.ray.stoppedBy?.id ?? null } : null,
+        laser: laser ? { length: laser.ray.length, hit: laser.ray.hit?.id ?? null, stoppedBy: laser.ray.stoppedBy?.id ?? null, range: laser.cone.length, cone: { leftAngle: sim.aim.angle - laser.cone.half, rightAngle: sim.aim.angle + laser.cone.half } } : null,
         world: { width: layout.size.width, height: layout.size.height, empty: layout.empty },
         obstacles: layout.furniture.map((o) => ({ id: o.id, kind: o.kind, x: o.x, y: o.y, w: o.w, h: o.h, hauteur: o.hauteur })),
         windows: layout.windows.map((w) => ({ id: w.id ?? null, x: w.x, y: w.y })),
