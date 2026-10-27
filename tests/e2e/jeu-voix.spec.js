@@ -61,7 +61,7 @@ function horde(page, seconds) {
 }
 
 test.describe('voix de zombies', () => {
-  test('120 s simulées avec 8 zombies : un nombre de voix cohérent avec les règles (8 à 20 par minute, tolérance ×2)', async ({ page }) => {
+  test('120 s simulées avec 8 zombies : un nombre de voix cohérent avec les règles (16 à 36 par minute, tolérance ×2)', async ({ page }) => {
     await open(page);
     await unlock(page);
     await expect.poll(async () => (await audio(page)).ready, { timeout: 30_000 }).toBe(true);
@@ -69,13 +69,13 @@ test.describe('voix de zombies', () => {
     expect(run.enemies).toBe(8);
     const voices = run.seen.filter((e) => AMBIENT.includes(e.sound));
     console.info(`voix de zombies sur 120 s simulées : ${voices.length} (${(voices.length / 2).toFixed(1)} par minute)`);
-    expect(voices.length / 2).toBeGreaterThanOrEqual(4);
-    expect(voices.length / 2).toBeLessThanOrEqual(40);
-    for (let i = 1; i < voices.length; i += 1) expect(voices[i].gameTime - voices[i - 1].gameTime).toBeGreaterThanOrEqual(1.8 - 1e-6);
+    expect(voices.length / 2).toBeGreaterThanOrEqual(8);
+    expect(voices.length / 2).toBeLessThanOrEqual(72);
+    for (let i = 1; i < voices.length; i += 1) expect(voices[i].gameTime - voices[i - 1].gameTime).toBeGreaterThanOrEqual(1.2 - 1e-6);
     for (const v of voices) expect(Number.isInteger(v.zombie)).toBe(true);
     const byZombie = new Map();
     for (const v of voices) {
-      if (byZombie.has(v.zombie)) expect(v.gameTime - byZombie.get(v.zombie)).toBeGreaterThanOrEqual(9 - 1e-6);
+      if (byZombie.has(v.zombie)) expect(v.gameTime - byZombie.get(v.zombie)).toBeGreaterThanOrEqual(6 - 1e-6);
       byZombie.set(v.zombie, v.gameTime);
     }
     expect(new Set(voices.map((v) => v.rate)).size).toBeGreaterThan(1); // hauteur propre à chaque variante

@@ -361,7 +361,7 @@ export function startRender(recipe, variantIndex = 0) {
   const post = isObject(r.post) ? r.post : {};
   const acc = {
     id, variant, rate, length, total, loop, overlap: Math.round(overlap * rate), pos: 0, warnings, post, result: null,
-    buf: new Float32Array(length > 0 ? total : 0), layers: [], rv: null, saturation: Math.max(0, num(post.saturation)), dcX: 0, dcY: 0, dcR: 1 - (TAU * 15) / rate,
+    buf: new Float32Array(length > 0 ? total : 0), layers: [], rv: null, saturation: Math.max(0, num(post.saturation)), satOut: Math.max(0, num(post.saturationOut)), dcX: 0, dcY: 0, dcR: 1 - (TAU * 15) / rate,
   };
   if (length <= 0) {
     acc.total = 0;
@@ -421,6 +421,7 @@ export function renderStep(acc, maxSamples = 4096) {
     let x = buf[i];
     if (drive > 0) x = Math.tanh(drive * x) * norm;
     if (acc.rv) x = reverbTick(acc.rv, x);
+    if (acc.satOut > 0) x = Math.tanh(acc.satOut * x) / Math.tanh(acc.satOut); // limiteur doux après la résonance de pièce (saturationOut)
     // Filtre anti-décalage continu (coupure ~15 Hz) : les bruits bruns et les basses ne dérivent pas.
     const y = x - acc.dcX + acc.dcR * acc.dcY;
     acc.dcX = x;

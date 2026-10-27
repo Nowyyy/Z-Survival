@@ -28,7 +28,8 @@ const each = (filter = () => true) => rendered.filter(filter).map((r) => [r.name
 // ---------- fenêtres de mesure (justifiées) ----------
 // Niveau efficace en dBFS après normalisation du pic à 0,4 à 0,85 (-8 à -1,4 dBFS) : un son impulsif a un facteur de crête de 10 à 25 dB,
 // un son tenu (voix, ambiance) de 8 à 14 dB. Les bornes laissent de la marge aux deux extrêmes sans accepter un son quasi muet.
-const RMS_WINDOW = { tir: [-28, -10], impact: [-30, -12], voix: [-26, -10], pas: [-32, -14], joueur: [-22, -8], interface: [-26, -12], ambiance: [-26, -14] };
+// Tir : fenêtre haute à -8 dB, le tir est dense depuis le retour du propriétaire (« pas assez percutant »).
+const RMS_WINDOW = { tir: [-28, -8], impact: [-30, -12], voix: [-26, -10], pas: [-32, -14], joueur: [-22, -8], interface: [-26, -12], ambiance: [-26, -14] };
 // Centre de gravité spectral (Hz). Tir et impact : mesuré sur les 512 premiers échantillons (11,6 ms à 44,1 kHz), un claquement a un
 // transitoire large bande : plutôt aigu, au moins 500 Hz (un simple « boum » grave serait sous 250 Hz). Voix et joueur : sur tout le son,
 // dominé par le premier formant (300 à 800 Hz) et la pente de la source : entre 150 et 1 500 Hz. Pas : de la bosse grave du zombie au

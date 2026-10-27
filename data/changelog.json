@@ -46,7 +46,8 @@
       "Nouveaux sons calculés par du code (aucun fichier audio) : tirs en couches avec résonance de pièce, douilles, impacts selon la matière touchée, pas, cris du joueur blessé.",
       "Le son d'un tir part avec la balle, la blessure d'un zombie à l'impact ; les zombies derrière un mur sont étouffés.",
       "Curseur « Volume » dans le panneau de pause ; la pause suspend le son.",
-      "Les sons sont préparés pendant l'écran de chargement, les voix de zombies et l'ambiance ensuite."
+      "Les sons sont préparés pendant l'écran de chargement, les voix de zombies et l'ambiance ensuite.",
+      "Tirs plus percutants, cri du joueur blessé court, zombies qui grognent plus souvent en marchant."
     ] }
   ]
 }

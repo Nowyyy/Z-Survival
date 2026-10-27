@@ -6,9 +6,9 @@
       "category": "tir",
       "set": "essentiel",
       "sampleRate": 44100,
-      "duration": 0.62,
+      "duration": 0.75,
       "variants": 3,
-      "seed": 11,
+      "seed": 15,
       "loop": false,
       "layers": [
         {
@@ -17,11 +17,11 @@
           "start": 0,
           "dur": 0.03,
           "attack": 0.0002,
-          "decay": 0.004,
-          "gain": 2.2,
+          "decay": 0.003,
+          "gain": 7,
           "filter": {
             "type": "highpass",
-            "freq": 2500,
+            "freq": 2000,
             "q": 0.7
           }
         },
@@ -29,52 +29,56 @@
           "type": "osc",
           "wave": "sine",
           "freq": [
-            130,
-            48
+            190,
+            38
           ],
-          "sweepTime": 0.09,
+          "sweepTime": 0.14,
           "start": 0,
-          "dur": 0.2,
+          "dur": 0.3,
           "attack": 0.002,
-          "decay": 0.05,
-          "gain": 0.9
-        },
-        {
-          "type": "noise",
-          "color": "pink",
-          "start": 0,
-          "dur": 0.14,
-          "attack": 0.0006,
-          "decay": 0.03,
-          "gain": 0.7,
-          "filter": {
-            "type": "bandpass",
-            "freq": [
-              2400,
-              900
-            ],
-            "sweep": 0.1,
-            "q": 0.9
-          }
+          "decay": 0.09,
+          "gain": 1.1
         },
         {
           "type": "noise",
           "color": "brown",
           "start": 0,
-          "dur": 0.12,
+          "dur": 0.25,
           "attack": 0.001,
-          "decay": 0.03,
-          "gain": 0.8,
+          "decay": 0.08,
+          "gain": 1.1,
           "filter": {
             "type": "lowpass",
-            "freq": 420,
+            "freq": [
+              900,
+              250
+            ],
+            "sweep": 0.2,
             "q": 0.7
           }
         },
         {
           "type": "noise",
+          "color": "pink",
+          "start": 0,
+          "dur": 0.22,
+          "attack": 0.0006,
+          "decay": 0.06,
+          "gain": 1.1,
+          "filter": {
+            "type": "bandpass",
+            "freq": [
+              2600,
+              700
+            ],
+            "sweep": 0.2,
+            "q": 0.8
+          }
+        },
+        {
+          "type": "noise",
           "color": "white",
-          "start": 0.055,
+          "start": 0.06,
           "startJitter": 0.012,
           "dur": 0.02,
           "attack": 0.0004,
@@ -87,33 +91,30 @@
           }
         },
         {
-          "type": "ring",
-          "start": 0.058,
-          "startJitter": 0.012,
-          "dur": 0.05,
-          "partials": [
-            {
-              "freq": 1850,
-              "gain": 0.12,
-              "decay": 0.008
-            },
-            {
-              "freq": 2900,
-              "gain": 0.08,
-              "decay": 0.006
-            }
-          ]
+          "type": "noise",
+          "color": "white",
+          "start": 0,
+          "dur": 0.012,
+          "attack": 0.0001,
+          "decay": 0.0015,
+          "gain": 6,
+          "filter": {
+            "type": "highpass",
+            "freq": 1200,
+            "q": 0.7
+          }
         }
       ],
       "post": {
         "reverb": {
-          "decay": 0.36,
-          "mix": 0.4,
-          "damping": 0.5
+          "decay": 0.45,
+          "mix": 0.3,
+          "damping": 0.45
         },
-        "saturation": 1.4,
-        "targetPeak": 0.85,
-        "fadeOut": 0.005
+        "saturation": 1.8,
+        "targetPeak": 0.9,
+        "fadeOut": 0.01,
+        "saturationOut": 1.6
       }
     },
     {
@@ -1229,55 +1230,65 @@
       "category": "joueur",
       "set": "essentiel",
       "sampleRate": 22050,
-      "duration": 0.5,
+      "duration": 0.22,
       "variants": 3,
       "seed": 171,
       "loop": false,
       "layers": [
         {
           "type": "voice",
-          "f0": 150,
+          "f0": 170,
           "contour": [
             [
               0,
-              1.2
+              1.25
             ],
             [
-              0.3,
-              1.0
+              0.35,
+              0.95
             ],
             [
               1,
-              0.8
+              0.7
             ]
           ],
           "vowels": [
-            "a",
-            "e"
+            "o",
+            "eu"
           ],
           "transition": [
-            0.1,
-            0.7
+            0,
+            0.8
           ],
-          "tremor": {
-            "rate": 6,
-            "depth": 0.03
-          },
           "jitter": 0.02,
-          "breath": 0.12,
-          "attack": 0.015,
-          "release": 0.2,
+          "breath": 0.1,
+          "attack": 0.004,
+          "release": 0.09,
           "gain": 1.0
+        },
+        {
+          "type": "noise",
+          "color": "white",
+          "start": 0,
+          "dur": 0.015,
+          "attack": 0.0002,
+          "decay": 0.004,
+          "gain": 0.5,
+          "filter": {
+            "type": "bandpass",
+            "freq": 1200,
+            "q": 1.5
+          }
         }
       ],
       "post": {
         "reverb": {
-          "decay": 0.25,
-          "mix": 0.12,
+          "decay": 0.15,
+          "mix": 0.08,
           "damping": 0.6
         },
-        "saturation": 1.2,
-        "targetPeak": 0.8,
+        "saturation": 1.8,
+        "targetPeak": 0.85,
         "fadeOut": 0.02
       }
     },

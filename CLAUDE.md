@@ -66,7 +66,7 @@ Docs/ref/ (environnement, conventions) · Docs/lots/ (bilans) · .github/workflo
 - Lisibilité : contraste ≥ 3:1 personnages / sol (js/core/color.js) ; laser et balle ≥ 4,5:1 ; ne jamais dégrader ces seuils.
 - Tests : ?test=1 expose textures et sampleScreen ; ?fps=1 affiche durée des textures et du champ de flux.
 - Sons : js/core/synth.js calcule des tampons (couches, formants, résonance de pièce) d'après data/game/sounds.json ; aucun fichier audio importé ; js/game/audio.js les lit (Web Audio) ; ne jamais écrire de son en direct dans js/core/.
-- Direction sonore : js/core/sound-director.js transforme les événements en demandes ; son de tir au départ de la balle, blessure de zombie à l'impact ; voix de zombies par js/core/zombie-voice.js (8 à 20 par minute, 1,8 s d'écart au moins).
+- Direction sonore : js/core/sound-director.js transforme les événements en demandes ; son de tir au départ de la balle, blessure de zombie à l'impact ; voix de zombies par js/core/zombie-voice.js (16 à 36 par minute avec 8 zombies, 1,2 s d'écart au moins).
 - Chargement : sons essentiels calculés par blocs avec les textures (écran de préparation), sons fond en arrière-plan ; aucun son avant le premier geste ; pause = contexte suspendu.
 - Tests : ?test=1 expose getState().audio (journal des lectures) ; privilégier le journal, jamais l'écoute.
 - sons.html : page d'écoute technique, à retirer au lot 13.

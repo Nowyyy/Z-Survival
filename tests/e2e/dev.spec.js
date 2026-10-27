@@ -10,8 +10,11 @@ const LOTS = {
   ],
 };
 
-const withLots = (page, body = LOTS) =>
-  page.route('**/lots.json', (route) => route.fulfill({ json: body }));
+// Le journal du dernier lot est lu aussi (le menu de main ne connaît pas encore le lot en cours) : ici il est vide par défaut.
+const withLots = async (page, body = LOTS, latestLog = { lots: [] }) => {
+  await page.route('**/lots/*/data/changelog.json', (route) => route.fulfill({ json: latestLog }));
+  await page.route('**/lots.json', (route) => route.fulfill({ json: body }));
+};
 
 test('affiche main, le dernier lot et les anciens lots dans un menu déroulant', async ({ page }) => {
   await withLots(page);
@@ -210,4 +213,12 @@ test.describe('journal des versions', () => {
     await page.goto('/dev/');
     for (const box of await page.locator('.changelog-entry summary').evaluateAll((els) => els.map((e) => e.getBoundingClientRect().height))) expect(box).toBeGreaterThanOrEqual(44);
   });
+});
+
+test('le journal affiche le lot en cours lu dans le dernier lot publié, même absent du journal de main', async ({ page }) => {
+  const own = JSON.parse(readFileSync('data/changelog.json', 'utf8')).lots;
+  const log = { lots: [...own, { name: 'lot-9', titre: 'Lot en cours', points: ['Nouveauté du lot en cours.'] }] };
+  await withLots(page, LOTS, log);
+  await page.goto('/dev/');
+  await expect(page.locator('.changelog-entry summary').first()).toContainText('Lot 9 · Lot en cours');
 });

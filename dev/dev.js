@@ -29,9 +29,9 @@ async function loadLots() {
 }
 
 // Journal des versions : data/changelog.json de la copie du menu elle-même (le menu d'un aperçu montre le journal de son lot).
-async function loadChangelog() {
+async function readChangelog(url) {
   try {
-    const response = await fetch('../data/changelog.json');
+    const response = await fetch(url);
     if (!response.ok) return [];
     const data = await response.json();
     return Array.isArray(data.lots) ? data.lots.filter((e) => parseLot(e?.name) && typeof e.titre === 'string') : [];
@@ -40,8 +40,16 @@ async function loadChangelog() {
   }
 }
 
+// Le menu de main ne connaît pas encore le lot en cours : on lit aussi le journal du dernier lot publié et on garde le plus complet.
+async function loadChangelog(latest) {
+  const own = await readChangelog('../data/changelog.json');
+  if (!latest) return own;
+  const fromLatest = await readChangelog(`${ROOT}lots/${latest.name}/data/changelog.json`);
+  return fromLatest.length > own.length ? fromLatest : own;
+}
+
 const lots = await loadLots();
-const changelog = await loadChangelog();
+const changelog = await loadChangelog(lots?.latest ?? null);
 const changelogSection = document.getElementById('changelog');
 const changelogList = document.getElementById('changelog-list');
 const latestLink = document.getElementById('latest');

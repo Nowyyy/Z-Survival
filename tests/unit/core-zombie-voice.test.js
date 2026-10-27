@@ -29,28 +29,28 @@ describe('zombie-voice.js : cadence avec 8 zombies (simulations de 600 s)', () =
   for (const seed of [1, 2, 3, 42, 777]) {
     it(`graine ${seed} : entre 8 et 20 voix par minute`, () => {
       const rate = perMinute(simulate(seed, ring(8)), 600);
-      expect(rate).toBeGreaterThanOrEqual(8);
-      expect(rate).toBeLessThanOrEqual(20);
+      expect(rate).toBeGreaterThanOrEqual(16);
+      expect(rate).toBeLessThanOrEqual(36);
     });
   }
-  it('même tous proches ou tous lointains, la cadence reste raisonnable (8 à 20 par minute avec 8 zombies)', () => {
+  it('même tous proches ou tous lointains, la cadence reste raisonnable (16 à 36 par minute avec 8 zombies)', () => {
     for (const dist of [200, 1000]) {
       const rate = perMinute(simulate(6, ring(8, () => dist)), 600);
-      expect(rate).toBeGreaterThanOrEqual(8);
-      expect(rate).toBeLessThanOrEqual(20);
+      expect(rate).toBeGreaterThanOrEqual(16);
+      expect(rate).toBeLessThanOrEqual(36);
     }
   });
-  it('jamais deux voix à moins de 1,8 s', () => {
+  it('jamais deux voix à moins de 1,2 s', () => {
     for (const seed of [1, 2, 3]) {
       const v = simulate(seed, ring(8));
-      for (let i = 1; i < v.length; i += 1) expect(v[i].time - v[i - 1].time).toBeGreaterThanOrEqual(1.8 - 1e-9);
+      for (let i = 1; i < v.length; i += 1) expect(v[i].time - v[i - 1].time).toBeGreaterThanOrEqual(1.2 - 1e-9);
     }
   });
-  it('un même zombie parle au plus une fois toutes les 9 s', () => {
+  it('un même zombie parle au plus une fois toutes les 6 s', () => {
     for (const seed of [1, 2, 3]) {
       const last = {};
       for (const v of simulate(seed, ring(8))) {
-        if (last[v.id] !== undefined) expect(v.time - last[v.id]).toBeGreaterThanOrEqual(9 - 1e-9);
+        if (last[v.id] !== undefined) expect(v.time - last[v.id]).toBeGreaterThanOrEqual(6 - 1e-9);
         last[v.id] = v.time;
       }
     }
@@ -58,7 +58,7 @@ describe('zombie-voice.js : cadence avec 8 zombies (simulations de 600 s)', () =
   it('jamais plus de 2 voix de zombie simultanées', () => {
     for (const seed of [1, 2, 3]) {
       const v = simulate(seed, ring(8));
-      for (const a of v) expect(v.filter((b) => b.time <= a.time && b.time + b.duration > a.time).length).toBeLessThanOrEqual(2);
+      for (const a of v) expect(v.filter((b) => b.time <= a.time && b.time + b.duration > a.time).length).toBeLessThanOrEqual(3);
     }
   });
   it('plusieurs zombies différents parlent, avec plusieurs types de voix', () => {
@@ -79,8 +79,8 @@ describe('zombie-voice.js : cadence avec 8 zombies (simulations de 600 s)', () =
   });
   it('fonctionne aussi avec des images de 1/60 s', () => {
     const rate = perMinute(simulate(4, ring(8), 600, 1 / 60), 600);
-    expect(rate).toBeGreaterThanOrEqual(8);
-    expect(rate).toBeLessThanOrEqual(20);
+    expect(rate).toBeGreaterThanOrEqual(16);
+    expect(rate).toBeLessThanOrEqual(36);
   });
 });
 
@@ -104,8 +104,8 @@ describe('zombie-voice.js : cas limites', () => {
     expect(simulate(11, ring(8), 120)).toEqual(simulate(11, ring(8), 120));
     expect(simulate(11, ring(8), 120)).not.toEqual(simulate(12, ring(8), 120));
   });
-  it('une voix déjà en cours ailleurs (busy) compte dans la limite de 2', () => {
-    expect(simulate(1, ring(8), 120, 0.05, { busy: 2 })).toEqual([]);
+  it('une voix déjà en cours ailleurs (busy) compte dans la limite de 3', () => {
+    expect(simulate(1, ring(8), 120, 0.05, { busy: 3 })).toEqual([]);
   });
   it('un zombie qui s\'éloigne au-delà de la portée ne parle plus', () => {
     const v = simulate(2, (time) => [{ id: 1, x: PLAYER.x + 300 + time * 20, y: PLAYER.y, variant: 'marcheur' }], 600);

@@ -221,9 +221,9 @@ describe('sound-director.js : voix, pas et cris des zombies (lot 1d-C)', () => {
   it('une partie de 120 s avec 8 zombies : des voix occasionnelles, dans la cadence des règles', () => {
     const voices = play(120, horde(8, (i) => 150 + i * 110)).filter((q) => q.category === 'voix');
     const perMin = voices.length / 2;
-    expect(perMin).toBeGreaterThanOrEqual(6);
-    expect(perMin).toBeLessThanOrEqual(24);
-    for (let i = 1; i < voices.length; i += 1) expect(voices[i].time - voices[i - 1].time).toBeGreaterThanOrEqual(1.8 - 1e-9);
+    expect(perMin).toBeGreaterThanOrEqual(12);
+    expect(perMin).toBeLessThanOrEqual(44);
+    for (let i = 1; i < voices.length; i += 1) expect(voices[i].time - voices[i - 1].time).toBeGreaterThanOrEqual(1.2 - 1e-9);
   });
   it('les voix lointaines sont plus faibles et chaque voix a sa hauteur de variante', () => {
     const voices = play(120, horde(8, (i) => 150 + i * 110)).filter((q) => q.category === 'voix');
@@ -267,7 +267,7 @@ describe('sound-director.js : voix, pas et cris des zombies (lot 1d-C)', () => {
   it('aucun pas de zombie à l\'arrêt', () => {
     expect(play(30, horde(3, () => 200)).filter((q) => q.sound === 'pas-zombie')).toEqual([]);
   });
-  it('cri d\'attaque au contact avec la hauteur de la variante ; limité à 2 voix de zombie simultanées', () => {
+  it('cri d\'attaque au contact avec la hauteur de la variante ; limité à 3 voix de zombie simultanées', () => {
     const attack = (zombie) => run([{ type: 'zombieAttack', x: LISTENER.x + 30, y: LISTENER.y, zombie }]).requests;
     const petit = attack('petit');
     expect(names({ requests: petit })).toEqual(['zombie-attaque']);
@@ -275,7 +275,8 @@ describe('sound-director.js : voix, pas et cris des zombies (lot 1d-C)', () => {
     let s = createDirector(1);
     s = direct(s, frame([{ type: 'zombieHit', x: 900, y: 600, killed: true, zombie: 'marcheur' }], { time: 5 }), cfg).state;
     s = direct(s, frame([{ type: 'zombieHit', x: 950, y: 600, killed: true, zombie: 'grand' }], { time: 5.2 }), cfg).state;
-    const third = direct(s, frame([{ type: 'zombieAttack', x: 830, y: 600, zombie: 'petit' }], { time: 5.4 }), cfg);
-    expect(names(third)).toEqual([]);
+    s = direct(s, frame([{ type: 'zombieHit', x: 900, y: 650, killed: true, zombie: 'petit' }], { time: 5.4 }), cfg).state;
+    const fourth = direct(s, frame([{ type: 'zombieAttack', x: 830, y: 600, zombie: 'petit' }], { time: 5.6 }), cfg);
+    expect(names(fourth)).toEqual([]);
   });
 });
