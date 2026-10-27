@@ -62,6 +62,12 @@
       "Chaque zombie tué rend de la vie (1 point au niveau 0) ; la vie maximale effective sert à la barre, au HUD et au soin de fin de vague.",
       "Portée de tir de base ramenée à 700 ; les dégâts d'une balle sont figés au départ du tir.",
       "?lvl=degats:3,precision:5 ou ?lvl=all:5 règle les niveaux pour les essais (l'achat viendra avec l'argent et la boutique) ; rien n'est stocké."
+    ] },
+    { "name": "lot-2c", "titre": "Ambiance : animation de vague, mélodie angoissante et effet VHS", "points": [
+      "Chaque vague s'annonce par une grande animation au centre de l'écran, qui démarre 3 secondes avant l'arrivée des zombies ; la fin de vague a la sienne, plus discrète.",
+      "Une mélodie angoissante, calculée par du code (aucun fichier audio), accompagne l'annonce ; la vague renforcée a sa variante, la fin de vague un son plus doux.",
+      "Un effet VHS (grain, lignes de balayage, bords rouge et cyan, bande de suivi) recouvre le jeu : il se coupe dans le menu pause, ou avec ?vhs=0 ; ?vhs=1 le force.",
+      "L'animation s'affiche sans mouvement et l'effet VHS est coupé si ton appareil demande de réduire les animations."
     ] }
   ]
 }

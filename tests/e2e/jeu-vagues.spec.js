@@ -101,6 +101,7 @@ test.describe('vagues du lot 2', () => {
     await page.evaluate(() => window.__zs.setWaveParams({ total: { base: 1, linear: 0, quadratic: 0 } }));
     await step(page, 3.1);
     expect((await state(page)).waves.toSpawn).toBe(0);
+    await step(page, 0.7); // lot 2c : l'animation de début (3,8 s) doit être finie, sinon elle l'emporte sur celle de fin
     // Un zombie de test au contact fait perdre de la vie ; la vague a toujours son zombie du directeur.
     const p = (await state(page)).player;
     await page.evaluate(([x, y]) => window.__zs.spawnEnemy(x, y), [p.x + 30, p.y]);
@@ -113,7 +114,7 @@ test.describe('vagues du lot 2', () => {
     expect(s.player.health).toBe(100);
     expect(s.kills).toBe(0);
     expect(s.waves).toMatchObject({ phase: 'attente', wave: 2, alive: 0 });
-    expect(s.waves.announce).toMatchObject({ kind: 'end', wave: 1 });
+    expect(s.splash).toMatchObject({ visible: true, kind: 'fin', wave: 1 }); // lot 2c : l'annonce est l'animation centrale (avant : waves.announce)
     await expect(page.locator('#wave-announce')).toHaveClass(/is-visible/);
     await expect(page.locator('#wave-announce-title')).toHaveText('Vague 1 terminée');
     await expect(page.locator('#hud-live')).toHaveText('Vague 1 terminée.');
@@ -386,7 +387,8 @@ test.describe('vagues du lot 2', () => {
     await step(page, 30);
     const s = await state(page);
     expect(s.enemies).toEqual([]);
-    expect(s.waves).toMatchObject({ active: false, phase: 'inactif', wave: 0, remaining: 0, announce: null });
+    expect(s.waves).toMatchObject({ active: false, phase: 'inactif', wave: 0, remaining: 0 });
+    expect(s.splash).toMatchObject({ visible: false, kind: null });
     expect(s.spawnLog).toEqual([]);
     for (const id of ['hud-wave', 'hud-remaining', 'hud-next']) await expect(page.locator(`#${id}`)).toBeHidden();
     await page.evaluate(() => window.__zs.startWave(5));
@@ -434,14 +436,14 @@ test.describe('vagues du lot 2', () => {
     expect(seen.some((t) => /Vague 1/.test(t))).toBe(true);
   });
 
-  test('annonce E2-8 : « Vague N », « Vague renforcée » aux multiples de 5, visible 2,5 s', async ({ page }) => {
+  test('annonce E2-8 : « Vague N », « Vague renforcée » aux multiples de 5, visible 3,8 s (animation centrale du lot 2c)', async ({ page }) => {
     await open(page);
     await step(page, 3.1);
     await expect(page.locator('#wave-announce')).toHaveClass(/is-visible/);
     await expect(page.locator('#wave-announce-title')).toHaveText('Vague 1');
     await expect(page.locator('#wave-announce-sub')).toBeHidden();
-    await step(page, 2.6);
-    expect((await state(page)).waves.announce).toBeNull();
+    await step(page, 0.8); // avant : 2,6 s, annonce de 2,5 s ; maintenant 3,8 s au total (début 3,0 s avant les apparitions)
+    expect((await state(page)).splash.visible).toBe(false);
     await expect(page.locator('#wave-announce')).not.toHaveClass(/is-visible/);
     await page.evaluate(() => window.__zs.startWave(5));
     await step(page, 3.1);

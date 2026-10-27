@@ -1,5 +1,5 @@
 // Panneaux HTML : pause (E2-6), fin provisoire (E2-7), message de rotation, région vocale, plein écran.
-import { fmt } from './texts.js';
+import { fmt, VHS_TEXTS } from './texts.js';
 
 const PORTRAIT_PHONE = '(orientation: portrait) and (pointer: coarse) and (max-width: 600px)';
 
@@ -8,7 +8,7 @@ export function createUi(dict, handlers) {
   const els = {
     pausePanel: $('pause-panel'), endPanel: $('end-panel'), live: $('hud-live'), rotate: $('rotate'),
     pauseBtn: $('btn-pause'), resume: $('btn-resume'), fullscreen: $('btn-fullscreen'), sound: $('btn-sound'),
-    restart: $('btn-restart'), replay: $('btn-replay'), endKills: $('end-kills'), endWave: $('end-wave'),
+    vhs: $('btn-vhs'), restart: $('btn-restart'), replay: $('btn-replay'), endKills: $('end-kills'), endWave: $('end-wave'),
     volumeRow: $('volume-row'), volume: $('volume'), volumeValue: $('volume-value'),
   };
   const rotateQuery = matchMedia(PORTRAIT_PHONE);
@@ -79,6 +79,14 @@ export function createUi(dict, handlers) {
     },
   };
 
+  ui.syncVhs = (vhs) => {
+    const reduced = Boolean(vhs?.reducedMotion);
+    const enabled = Boolean(vhs?.enabled) && !reduced;
+    els.vhs.disabled = reduced;
+    els.vhs.setAttribute('aria-pressed', String(enabled));
+    els.vhs.textContent = dict[reduced ? VHS_TEXTS.reduced : enabled ? VHS_TEXTS.on : VHS_TEXTS.off];
+  };
+  els.vhs.addEventListener('click', () => handlers.onToggleVhs?.());
   els.fullscreen.hidden = !canFullscreen;
   els.pauseBtn.addEventListener('click', () => ui.openPause());
   els.resume.addEventListener('click', () => ui.closePause());

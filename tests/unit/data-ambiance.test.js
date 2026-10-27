@@ -189,6 +189,16 @@ describe('hygiène du lot 2c', () => {
     for (const f of walk('js').filter((n) => n.endsWith('.js'))) expect(readFileSync(f, 'utf8'), f).not.toMatch(COLOR);
   });
 
+  it('css/game.css et jeu.html : l\'effet VHS n\'utilise ni mix-blend-mode, ni filter, ni backdrop-filter (hors commentaires), et ses trois couches suivent le canvas', () => {
+    const css = readFileSync('css/game.css', 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+    expect(css).not.toMatch(/mix-blend-mode|backdrop-filter|(?<![-\w])filter\s*:/);
+    const html = readFileSync('jeu.html', 'utf8');
+    expect(html).toMatch(/<div id="game-canvas"[^>]*><\/div>\s*<div id="vhs" class="vhs" aria-hidden="true">\s*<div class="vhs-static"><\/div>\s*<div class="vhs-grain"><\/div>\s*<div class="vhs-track"><\/div>\s*<\/div>/);
+    expect(html.indexOf('id="vhs"')).toBeLessThan(html.indexOf('id="hud"'));
+    expect(html.indexOf('id="hud"')).toBeLessThan(html.indexOf('id="wave-announce"'));
+    expect(html).not.toMatch(/id="vhs"[^>]*data-block/);
+  });
+
   it('aucun fichier audio, image ou police ajouté depuis main', () => {
     let added;
     try {

@@ -25,6 +25,8 @@ export function installTestHook(ctx, game) {
     step: (seconds) => game.advance(seconds),
     // Injecte des événements sonores (ex. { type: 'zombieHit', x, y, killed: false, zombie: 'marcheur' }) : seul le journal des sons les voit.
     audioEvent: (events) => game.emitAudio(Array.isArray(events) ? events : [events]),
+    // Fige l'horloge d'effet VHS à t secondes (null : horloge réelle) ; applique une image tout de suite.
+    setVhsClock: (t) => ctx.vhs?.setClock(t),
     // Place le joueur (et la caméra) d'un coup.
     setPlayer: (x, y) => game.placePlayer(x, y),
     // Tire une balle dans la direction `angle` depuis la bouche de l'arme, sans passer par la visée (balle d'essai).

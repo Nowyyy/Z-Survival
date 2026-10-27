@@ -115,12 +115,13 @@ export function stepSplash(state, info, dt, options) {
   const shown = { ...s.shown };
   let sound = null;
   const wave = Number.isInteger(info.wave) && info.wave >= 1 ? info.wave : 0;
-  const start = (kind, t0) => {
+  // soundOnly : la fin d'une vague qui se termine sous un début encore visible n'est jamais affichée (le début l'emporte), mais son son part.
+  const start = (kind, t0, soundOnly = false) => {
     const spec = params.sounds?.[kind];
     const count = Math.max(1, Math.floor(isNum(spec?.variants) ? spec.variants : 1));
     const picked = nextInt(createRng(hash(isNum(params.seed) ? params.seed : 0, wave, KINDS.indexOf(kind), 999)), count);
     if (typeof spec?.name === 'string') sound = { name: spec.name, variant: picked.value };
-    anims = [...anims, { kind, wave, t: t0, cut: null }];
+    if (!soundOnly) anims = [...anims, { kind, wave, t: t0, cut: null }];
   };
   if (wave > 0 && info.phase === 'attente' && isNum(info.waitLeft) && info.waitLeft <= params.leadTime && shown.debut !== wave) {
     shown.debut = wave;
@@ -133,7 +134,7 @@ export function stepSplash(state, info, dt, options) {
     start(info.reinforced === true ? 'renforcee' : 'debut', clamp(params.leadTime - info.waitLeft, 0, step));
   } else if (wave > 0 && info.phase === 'terminee' && shown.fin !== wave) {
     shown.fin = wave;
-    if (!anims.some((a) => a.kind !== 'fin')) start('fin', 0);
+    start('fin', 0, anims.some((a) => a.kind !== 'fin'));
   }
 
   // Une seule animation s'affiche : une fin qui sort d'abord, sinon le début, sinon la fin.

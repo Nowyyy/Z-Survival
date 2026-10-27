@@ -7,6 +7,7 @@ import { createLoading } from './loading.js';
 import { readLevels } from './levels-source.js';
 import { createInput } from './input.js';
 import { createTokenLookup, readPalette } from './palette.js';
+import { createVhs, parseVhsParam } from './vhs-layer.js';
 import { installSafeArea } from './safe-area.js';
 import { planSounds, renderSounds, nextVisibleFrame, BACKGROUND_SLICE_MS } from './sound-loader.js';
 import { generateTextureData } from './textures.js';
@@ -39,7 +40,7 @@ const testMode = query.get('test') === '1';
 const fpsMode = query.get('fps') === '1';
 const seedParam = Number.parseInt(query.get('seed') ?? '', 10);
 
-const [dict, world, decor, camera, nav, player, weapons, enemies, render, texturesCfg, variants, soundsCfg, audioCfg, materialsCfg, voiceCfg, wavesCfg, gaitsCfg, statsCfg] = await Promise.all([
+const [dict, world, decor, camera, nav, player, weapons, enemies, render, texturesCfg, variants, soundsCfg, audioCfg, materialsCfg, voiceCfg, wavesCfg, gaitsCfg, statsCfg, splashCfg, vhsCfg] = await Promise.all([
   loadDict(),
   loadJson('data/game/world.json'),
   loadJson('data/game/decor.json'),
@@ -58,6 +59,8 @@ const [dict, world, decor, camera, nav, player, weapons, enemies, render, textur
   loadJson('data/game/waves.json'),
   loadJson('data/game/gaits.json'),
   loadJson('data/game/player-stats.json'),
+  loadJson('data/game/splash.json'),
+  loadJson('data/game/vhs.json'),
 ]);
 
 applyTexts(dict);
@@ -71,11 +74,16 @@ document.getElementById('boot')?.remove();
 // la partie ne démarre qu'ensuite.
 const TEXTURE_SHARE = 0.8;
 const loading = createLoading(dict);
+// Police du titre de l'animation de vague : chargée à la demande derrière l'écran de préparation (aucune nouvelle police, aucune requête externe).
+const titleFont = document.fonts?.load ? Promise.race([document.fonts.load('1em "Rubik Wet Paint"'), new Promise((resolve) => setTimeout(resolve, 2000))]).catch(() => {}) : Promise.resolve();
 const textureData = await generateTextureData(texturesCfg.textures, { lookup: createTokenLookup(), onProgress: (p) => loading.update(p * TEXTURE_SHARE) });
 const audio = createAudio({ config: { audio: audioCfg, materials: materialsCfg, voice: voiceCfg, sounds: soundsCfg.sounds }, test: testMode, seed: Number.isFinite(seedParam) ? seedParam : 1 });
 const essential = await renderSounds(planSounds(soundsCfg.sounds, 'essentiel'), { onProgress: (p) => loading.update(TEXTURE_SHARE + (1 - TEXTURE_SHARE) * p) });
 audio.addSounds(essential.items);
 audio.stats.essentialMs = essential.ms;
+// Effet VHS : le grain est généré (texgen.js) et converti en adresse data: une seule fois, derrière l'écran de préparation.
+const vhs = createVhs({ params: vhsCfg, lookup: createTokenLookup(), forced: parseVhsParam(query.get('vhs')), reducedMotion: matchMedia('(prefers-reduced-motion: reduce)').matches });
+await titleFont;
 loading.done();
 root.hidden = false;
 
@@ -102,6 +110,8 @@ const ctx = {
   seedRun: 0,
   levels: readLevels(location.search, statsCfg),
   override: {},
+  splashCfg,
+  vhs,
   audio,
   audioCfg,
   audioMaterials: materialsCfg,
@@ -117,6 +127,10 @@ ctx.ui = createUi(dict, {
   onVolume: (n) => {
     ctx.audio.setVolume(n);
     ctx.ui.syncSound(ctx.audio);
+  },
+  onToggleVhs: () => {
+    ctx.vhs.toggle();
+    ctx.ui.syncVhs(ctx.vhs);
   },
   onPausePanel: (open) => ctx.audio.ui(open ? 'pause' : 'resume'),
   onPauseChange: (paused) => {
@@ -137,6 +151,7 @@ ctx.input = createInput(root, {
   },
 });
 ctx.ui.syncSound(ctx.audio);
+ctx.ui.syncVhs(ctx.vhs);
 // Téléphone : tant que le contexte audio n'est pas en marche (aucun doigt relâché depuis le début, un stick tenu), une invitation à toucher
 // s'affiche après 1,5 s ; un toucher (relâché) suffit à activer le son.
 const soundHint = document.getElementById('sound-hint');

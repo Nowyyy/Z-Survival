@@ -338,11 +338,14 @@ describe('wave-splash : chevauchement', () => {
     }
   });
 
-  it('la fin ne démarre pas quand une animation de début est déjà en cours', () => {
+  it('la fin d\'une vague qui se termine sous un début encore visible n\'est jamais affichée (le début l\'emporte), mais son son part une fois', () => {
     let sp = stepSplash(createSplash(), base, 0, OPTS).state;
     const r = stepSplash(sp, { ...base, phase: 'terminee', waitLeft: 0 }, 0.05, OPTS);
     expect(r.view.kind).toBe('debut');
-    expect(r.view.sound).toBeNull();
+    expect(r.view.sound).toMatchObject({ name: 'vague-fin' });
+    expect(r.state.anims.map((a) => a.kind)).toEqual(['debut']);
+    const again = stepSplash(r.state, { ...base, phase: 'terminee', waitLeft: 0 }, 0.05, OPTS);
+    expect(again.view.sound).toBeNull();
   });
 });
 
