@@ -9,7 +9,7 @@
 
 **Tests adaptés (avant / après).** `game-data` : `fireRange` 1600 → 700, `bulletMaxDistance` retirée. `core-tir-obstacles` : arme = `effectiveWeapon` niveau 0 ; zombie « à 1000 » → 650 ; zombie caché à 1200 → 900 (même logique). `lot1-regles` : « portée étendue » (25 et 29 tirs) → même test avec `fireRange` 1600 imposé (`weaponPatch`) + nouveau test « portée 700 = résultats du lot 1 (21 et 26) » ; liste des fichiers modifiés élargie (player-stats, spread). `sim-lot1.js` : `weaponPatch`, distance de balle par l'arme effective. `data-changelog` et `dev.spec` : lot courant lot-2b. `jeu-monde` « visée à côté » : `health` = 50 → ≤ 50 (la balle peut toucher dans le cône) + le laser ne touche pas. **Supprimés :** aucun.
 
-**Points ouverts.** Sensation de tir et équilibrage non jugés par l'agent. Fluidité sur téléphone non mesurée. `CLAUDE.md` 8 355 (cible 8 000 non atteinte, limite 9 000 respectée). Aucun soin avant l'argent (lot 4) : les niveaux ne se règlent que par `?lvl=`.
+**Points ouverts.** Tag `lot-2b` créé en local ; son push a été refusé (une seule tentative), à poser à la fusion si voulu. Sensation de tir et équilibrage non jugés par l'agent. Fluidité sur téléphone non mesurée. `CLAUDE.md` 8 355 (cible 8 000 non atteinte, limite 9 000 respectée). Aucun soin avant l'argent (lot 4) : les niveaux ne se règlent que par `?lvl=`.
 
 **Choix à valider.** Portée de base 700 · cône 4° / 12° · lissage 0,08 s / 0,25 s · pas par statistique (+15 % dégâts, +12 % portée, ×0,9 délai, +4 % vitesse, +12 vie, +1 PV par kill) · régénération de base 1 PV · plafonds (délai 0,15 s, vitesse +40 %, demi-angle 0,5°) · seuil Lighthouse 45 inchangé.
 
