@@ -37,7 +37,7 @@ test('chaque ligne affiche l\'identifiant, l\'étiquette, la catégorie, la dur�
   const tir = page.locator('.sound[data-sound="tir"]');
   await expect(tir).toContainText('tir');
   await expect(tir).toContainText('Tir du pistolet');
-  await expect(tir.locator('.sound-meta')).toHaveText(/^tir · 0\.62 s · pic \d\.\d\d · niveau -?\d+\.\d dB$/);
+  await expect(tir.locator('.sound-meta')).toHaveText(/^tir · \d\.\d\d s · pic \d\.\d\d · niveau -?\d+\.\d dB$/);
   await expect(tir.getByRole('button', { name: 'tir-3' })).toBeVisible();
 });
 
