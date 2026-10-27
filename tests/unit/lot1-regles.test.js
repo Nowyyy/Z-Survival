@@ -19,8 +19,13 @@ describe('mêmes règles qu\'au lot 1', () => {
     expect(await simulate(process.cwd(), { seed: Number(seed), legacy: true })).toEqual(REFERENCE[seed]);
   });
 
-  it.each(Object.keys(EXTENDED))('portée de tir étendue (fireRange), graine %s : plus de tirs, mêmes tués', async (seed) => {
-    const r = await simulate(process.cwd(), { seed: Number(seed) });
+  // Lot 2b : la portée de tir de base repasse à 700 (comme au lot 1) ; remettre 1600 dans weapons.json redonne les résultats du lot 1m.
+  it.each(Object.keys(REFERENCE))('portée de tir de base 700 (lot 2b), graine %s : mêmes tirs que le lot 1', async (seed) => {
+    expect(await simulate(process.cwd(), { seed: Number(seed) })).toEqual(REFERENCE[seed]);
+  });
+
+  it.each(Object.keys(EXTENDED))('portée de tir étendue à 1600 (valeur du lot 1m), graine %s : plus de tirs, mêmes tués', async (seed) => {
+    const r = await simulate(process.cwd(), { seed: Number(seed), weaponPatch: { fireRange: 1600 } });
     expect(r).toEqual(EXTENDED[seed]);
     expect(r.shots).toBeGreaterThan(REFERENCE[seed].shots);
     expect(r.kills).toBe(REFERENCE[seed].kills);
@@ -41,14 +46,14 @@ describe('mêmes règles qu\'au lot 1', () => {
 
   // Lot 1b : les modules du monde sont nouveaux ou étendus (paramètres facultatifs, valeurs par défaut = lot 1m, prouvé par les simulations
   // « identiques au lot 1 » ci-dessus) ; tout autre fichier de js/core/ reste inchangé.
-  it('js/core/ est inchangé depuis main, sauf pose.js, viewport.js, les modules du monde du lot 1b et les modules du lot 1c (color, texgen, variants) et du lot 1d (sons : synth, audio-mix, footsteps, sound-director, zombie-voice ; sound-params retiré) et du lot 2 (waves, wave-director, enemy-factory)', () => {
+  it('js/core/ est inchangé depuis main, sauf pose.js, viewport.js, les modules du monde du lot 1b et les modules du lot 1c (color, texgen, variants) et du lot 1d (sons : synth, audio-mix, footsteps, sound-director, zombie-voice ; sound-params retiré) et du lot 2 (waves, wave-director, enemy-factory) et du lot 2b (player-stats, spread, combat, projectile)', () => {
     let changed;
     try {
       changed = execSync('git diff --name-only main -- js/core', { encoding: 'utf8' }).split('\n').filter(Boolean);
     } catch {
       return; // pas de dépôt git ou de branche main (copie de travail) : rien à comparer
     }
-    const allowed = ['pose', 'viewport', 'camera', 'collision', 'nav', 'decor', 'layout', 'movement', 'ray', 'projectile', 'enemy-ai', 'spawner', 'color', 'texgen', 'variants', 'synth', 'audio-mix', 'footsteps', 'sound-director', 'zombie-voice', 'sound-params', 'waves', 'wave-director', 'enemy-factory', 'combat'].map((n) => `js/core/${n}.js`);
+    const allowed = ['pose', 'viewport', 'camera', 'collision', 'nav', 'decor', 'layout', 'movement', 'ray', 'projectile', 'enemy-ai', 'spawner', 'color', 'texgen', 'variants', 'synth', 'audio-mix', 'footsteps', 'sound-director', 'zombie-voice', 'sound-params', 'waves', 'wave-director', 'enemy-factory', 'combat', 'player-stats', 'spread'].map((n) => `js/core/${n}.js`);
     expect(changed.filter((f) => !allowed.includes(f))).toEqual([]);
   });
 });

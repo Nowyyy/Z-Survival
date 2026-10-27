@@ -1,5 +1,6 @@
 // Point d'entrée de jeu.html : charge les textes et les données, prépare le DOM, lance la partie en 3D (Three.js).
 import { buildLayout } from '../core/layout.js';
+import { effectiveWeapon } from '../core/player-stats.js';
 import { parseTilt, parseZoom } from '../core/viewport.js';
 import { createAudio } from './audio.js';
 import { createGame } from './game.js';
@@ -38,7 +39,7 @@ const testMode = query.get('test') === '1';
 const fpsMode = query.get('fps') === '1';
 const seedParam = Number.parseInt(query.get('seed') ?? '', 10);
 
-const [dict, world, decor, camera, nav, player, weapons, enemies, render, texturesCfg, variants, soundsCfg, audioCfg, materialsCfg, voiceCfg, wavesCfg, gaitsCfg] = await Promise.all([
+const [dict, world, decor, camera, nav, player, weapons, enemies, render, texturesCfg, variants, soundsCfg, audioCfg, materialsCfg, voiceCfg, wavesCfg, gaitsCfg, statsCfg] = await Promise.all([
   loadDict(),
   loadJson('data/game/world.json'),
   loadJson('data/game/decor.json'),
@@ -56,6 +57,7 @@ const [dict, world, decor, camera, nav, player, weapons, enemies, render, textur
   loadJson('data/game/zombie-voice.json'),
   loadJson('data/game/waves.json'),
   loadJson('data/game/gaits.json'),
+  loadJson('data/game/player-stats.json'),
 ]);
 
 applyTexts(dict);
@@ -81,7 +83,7 @@ root.hidden = false;
 const layout = buildLayout(world, decor, { empty: testMode && query.get('empty') === '1', slack: camera.slack });
 
 const ctx = {
-  cfg: { layout, player, weapon: weapons.pistol, zombie: enemies.zombie, enemies, gaits: gaitsCfg, waves: wavesCfg, render, camera, nav },
+  cfg: { layout, player, weapon: effectiveWeapon(weapons.pistol, {}, statsCfg), zombie: enemies.zombie, enemies, gaits: gaitsCfg, waves: wavesCfg, render, camera, nav },
   palette,
   dict,
   textureData,

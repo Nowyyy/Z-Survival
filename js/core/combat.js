@@ -52,6 +52,14 @@ export function applyImpacts(enemies, impacts) {
 // Vie affichée : entière, jamais négative.
 export const displayHealth = (health) => Math.max(0, Math.ceil(num(health)));
 
+// Vie après un zombie tué : + regen points, jamais au-delà du maximum, jamais de soin si le joueur n'est pas vivant (alive faux ou vie ≤ 0).
+export function healOnKill(hp, maxHp, regen, alive) {
+  const current = num(hp);
+  const max = Math.max(0, num(maxHp));
+  if (alive !== true || !(current > 0)) return Math.max(0, current);
+  return Math.min(max, current + Math.max(0, num(regen)));
+}
+
 // Dégâts au contact, avec délai par ennemi (enemy.hitCooldown). Renvoie { player, enemies, damage }.
 export function stepContact(player, enemies, dt, def) {
   const step = clampDt(dt);
