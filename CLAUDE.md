@@ -21,7 +21,7 @@ Docs/seed.md (propriétaire) · Docs/ref/ · Docs/lots/ (bilans) · .github/work
 
 ## Publication
 - URL : `https://nowyyy.github.io/<dépôt>/` (cible : `Z-Survival`) ; racine = main, `/dev/` = menu, `/lots/lot-N/` = aperçu d'une branche de lot.
-- `.github/workflows/pages.yml` : sur Pull Request et push de `main` ou `lot-*`, lint + Vitest + Playwright ; sur `main`, assemble puis déploiement ; un push sur `lot-*` relance `main` (job `refresh`, seul avec `actions: write`).
+- `.github/workflows/pages.yml` : lint + Vitest (job `quick`) sur Pull Request et push de `main` ou `lot-*`, Playwright en 4 tranches (job `e2e`) sur Pull Request seulement ; sur `main`, assemble puis déploiement ; un push sur `lot-*` relance `main` (job `refresh`, seul avec `actions: write`).
 - Droits minimaux, actions épinglées par SHA, ni `pull_request_target` ni secrets. Source Pages : « GitHub Actions ». Chemins tous relatifs (site valable sous `/lots/…`).
 
 ## Git
