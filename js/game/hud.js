@@ -14,7 +14,7 @@ export function createHud(dict, root = document) {
   const title = root.getElementById('wave-announce-title');
   const sub = root.getElementById('wave-announce-sub');
   let last = { hp: null, max: null, kills: null, phase: null, announce: null };
-  const shown = { wave: null, remaining: null, wait: null }; // dernières valeurs écrites
+  const shown = { wave: null, remaining: null, total: null, wait: null }; // dernières valeurs écrites
   const setText = (el, text) => {
     if (el.textContent !== text) el.textContent = text;
   };
@@ -32,18 +32,18 @@ export function createHud(dict, root = document) {
       const waiting = active && waves.phase === 'attente';
       const fighting = active && !waiting;
       const wait = waiting ? Math.ceil(waves.waitLeft) : 0;
-      if (fighting !== (last.phase === 'combat')) {
-        wave.hidden = !fighting;
-        remaining.hidden = !fighting;
-      }
+      // Le numéro de vague reste affiché en permanence (vague à venir pendant l'attente) ; les restants seulement pendant la vague.
+      if (wave.hidden === active) wave.hidden = !active;
+      if (fighting !== (last.phase === 'combat')) remaining.hidden = !fighting;
       if (waiting !== (last.phase === 'attente')) next.hidden = !waiting;
-      if (fighting && waves.wave !== shown.wave) {
+      if (active && waves.wave !== shown.wave) {
         shown.wave = waves.wave;
         setText(wave, fmt(dict['game.wave.hud'], { n: waves.wave }));
       }
-      if (fighting && waves.remaining !== shown.remaining) {
+      if (fighting && (waves.remaining !== shown.remaining || waves.total !== shown.total)) {
         shown.remaining = waves.remaining;
-        setText(remaining, fmt(dict['game.wave.remaining'], { n: waves.remaining }));
+        shown.total = waves.total;
+        setText(remaining, fmt(dict['game.wave.remaining'], { n: waves.remaining, total: waves.total }));
       }
       if (waiting && wait !== shown.wait) {
         shown.wait = wait;

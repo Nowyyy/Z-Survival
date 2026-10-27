@@ -38,7 +38,7 @@
   "game.live.life": "Vie : {hp} sur {max}.",
   "game.error.webgl": "Ce jeu a besoin de WebGL, que ton navigateur n'a pas activé.",
   "game.wave.hud": "Vague {n}",
-  "game.wave.remaining": "Restants : {n}",
+  "game.wave.remaining": "Restants : {n} / {total}",
   "game.wave.next": "Prochaine vague dans {n} s",
   "game.wave.announce": "Vague {n}",
   "game.wave.reinforced": "Vague renforcée",

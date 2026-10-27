@@ -405,17 +405,19 @@ test.describe('vagues du lot 2', () => {
   test('HUD : « Prochaine vague dans N s », puis « Vague N » et « Restants », avec 16 px de marge', async ({ page }) => {
     await open(page);
     await expect(page.locator('#hud-next')).toHaveText('Prochaine vague dans 3 s');
-    await expect(page.locator('#hud-wave')).toBeHidden();
+    await expect(page.locator('#hud-wave')).toHaveText('Vague 1'); // permanent, même pendant l'attente
+    await expect(page.locator('#hud-remaining')).toBeHidden();
+    await expect(page.locator('#hud-wave')).toHaveCSS('font-family', /Rubik Wet Paint/);
     await step(page, 3.2);
     await expect(page.locator('#hud-wave')).toHaveText('Vague 1');
-    await expect(page.locator('#hud-remaining')).toHaveText('Restants : 5');
+    await expect(page.locator('#hud-remaining')).toHaveText('Restants : 5 / 5');
     await expect(page.locator('#hud-next')).toBeHidden();
     const box = await page.locator('#hud').boundingBox();
     expect(box.x).toBeGreaterThanOrEqual(15.5);
     expect(box.y).toBeGreaterThanOrEqual(15.5);
     await page.evaluate(() => window.__zs.killAll());
     await step(page, 0.05);
-    await expect(page.locator('#hud-remaining')).toHaveText('Restants : 4');
+    await expect(page.locator('#hud-remaining')).toHaveText('Restants : 4 / 5');
   });
 
   test('#hud-live annonce la vague, jamais le compte à rebours ni les restants', async ({ page }) => {

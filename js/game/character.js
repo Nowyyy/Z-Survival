@@ -86,6 +86,7 @@ const rotXYZ = new THREE.Quaternion();
 const gunBase = new THREE.Quaternion().setFromEuler(new THREE.Euler(-Math.PI / 2, 0, 0));
 const qHand = new THREE.Quaternion();
 const qTorso = new THREE.Quaternion();
+const gunWorld = new THREE.Vector3();
 
 // kind : 'player' (arme tenue en main) ou 'zombie' (bras tendus, tête penchée, pas d'arme) ; variant : indice dans zombie-variants.json.
 export function createCharacter(kit, kind, variant = 0) {
@@ -200,6 +201,15 @@ export function createCharacter(kit, kind, variant = 0) {
         torso.getWorldQuaternion(qTorso);
         rotXYZ.copy(qHand).invert().multiply(qTorso).multiply(gunBase);
         gun.quaternion.copy(rotXYZ);
+        // Le laser et la balle partent de l'axe de visée (le milieu du tronc) : le pistolet, tenu à deux mains, est ramené sur cet axe.
+        gun.position.set(0, -1, 0);
+        root.updateMatrixWorld(true);
+        gun.getWorldPosition(gunWorld);
+        torso.worldToLocal(gunWorld);
+        gunWorld.x = 0;
+        torso.localToWorld(gunWorld);
+        arms.R.wrist.worldToLocal(gunWorld);
+        gun.position.copy(gunWorld);
       }
     },
   };
