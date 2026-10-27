@@ -1,5 +1,5 @@
 # Seed — Z-Survival (jeu de survie zombies, vue de dessus en 3D)
-Version 0.12 — 27/10/2026 — modifié par le propriétaire seulement.
+Version 0.13 — 27/10/2026 — modifié par le propriétaire seulement.
 Dépôt : Nowyyy/Z-Survival. Site : https://nowyyy.github.io/Z-Survival/
 
 ## Le jeu en une phrase
@@ -22,8 +22,8 @@ Jeu web gratuit et solo, en 3D vue de dessus : un personnage défend un bâtimen
 | Ordinateur | Touches physiques W, A, S, D et flèches (lues par `event.code` : Z, Q, S, D en AZERTY) | Souris | Un tir part automatiquement quand la ligne de visée touche ou frôle un ennemi |
 | Mobile (paysage) | Stick gauche flottant (moitié gauche de l'écran) | Stick droit flottant (moitié droite) | Idem |
 - Aucun bouton de tir.
-- Le laser rouge (300 unités de long, qui s'estompe sur son dernier tiers) est une aide à la visée : il ne blesse jamais. Un tir part quand la ligne de visée passe à moins de 24 unités du bord d'un zombie, jusqu'à 1600 unités, sans mur ni meuble entre les deux.
-- Chaque tir crée une balle visible (flash de bouche, balle avec courte traînée, étincelle à l'impact). Les dégâts sont appliqués seulement à l'impact de la balle. Aujourd'hui la balle part droit ; au lot 2b, elle part dans un cône autour de l'axe de visée, plus large en déplacement qu'à l'arrêt, resserré par la statistique de précision.
+- Le laser rouge (300 unités de base, qui s'estompe sur son dernier tiers) est une aide à la visée : il ne blesse jamais. Un tir part quand la ligne de visée passe à moins de 24 unités du bord d'un zombie, jusqu'à la portée de tir (700 de base, étendue par la statistique de portée), sans mur ni meuble entre les deux.
+- Chaque tir crée une balle visible (flash de bouche, balle avec courte traînée, étincelle à l'impact). Les dégâts sont appliqués seulement à l'impact de la balle, figés à la création de la balle. Au lot 2b, la balle part dans un cône autour de l'axe de visée : demi-angle de 4° à l'arrêt, jusqu'à 12° en déplacement (au niveau 0), resserré par la statistique de précision ; deux lignes ténues montrent le cône. Le premier tir après un arrêt est donc plus précis : il faut s'arrêter pour tirer juste.
 - Murs, meubles et décor solide arrêtent le laser et les balles (une balle arrêtée ne fait aucun dégât) ; les fenêtres les laissent passer.
 - Le canvas occupe toute la fenêtre du navigateur. Vue du dessus inclinée à 75° (`?tilt=60|75|90`). Vue proche : la caméra suit le joueur avec lissage, ne sort jamais du monde ; zoom 2,5 par défaut (même échelle qu'au lot 1m), `?zoom=1` montre toute la zone. Touche F pour le plein écran réel.
 - Sur téléphone, le jeu se joue en paysage ; en portrait, un message demande de tourner l'appareil.
@@ -34,7 +34,7 @@ Chaque écran est livré en version finale au lot indiqué du plan.
 | Écran | Fichier | Blocs dans l'ordre | Lot |
 |---|---|---|---|
 | E1 Menu | `index.html` (page d'attente actuelle, remplacée) | E1-1 titre ; E1-2 Jouer ; E1-3 solde d'argent ; E1-4 accès boutique ; E1-5 accès réglages ; E1-6 pied de page (légal) ; le choix du monde est ajouté au lot 7 (code fixé alors, sans renuméroter les existants) | 7 |
-| E2 Partie | `jeu.html` | E2-1 zone de jeu ; E2-2 HUD (vie, tués, vague, restants, puis chutes, argent) ; E2-3 stick gauche ; E2-4 stick droit ; E2-5 pause ; E2-6 panneau de pause ; E2-7 fin provisoire ; E2-8 annonce de vague | 1 à 1d (fait), E2-8 au lot 2 |
+| E2 Partie | `jeu.html` | E2-1 zone de jeu ; E2-2 HUD (vie, tués, vague, restants, puis chutes, argent) ; E2-3 stick gauche ; E2-4 stick droit ; E2-5 pause ; E2-6 panneau de pause ; E2-7 fin provisoire (avec la vague atteinte) ; E2-8 annonce de vague | 1 à 2 (fait) |
 | E3 Boutique | `boutique.html` | E3-1 solde ; E3-2 liste des améliorations ; E3-3 armes ; E3-4 retour | 5 |
 | E4 Fin de partie | scène ou page | E4-1 résultat ; E4-2 argent gagné ; E4-3 rejouer ; E4-4 boutique | 7 |
 | E5 Réglages | `reglages.html` | E5-1 langue ; E5-2 son ; E5-3 réduire le sang ; E5-4 sauvegarde (export, import, effacer) | 7 |
@@ -44,7 +44,7 @@ Les noms de fichiers des écrans autres que `jeu.html` sont provisoires et fixé
 ## Structure d'une partie (inspirée d'Archero, de mémoire, non vérifiée)
 - Un **monde** = un thème (poste de police, rue, restaurant, etc.) et un nombre fixe de **niveaux** (provisoire : 6, à définir).
 - Un **niveau** = une disposition de la salle. Au sein d'un monde, les dispositions se resserrent : plus de meubles, couloirs plus étroits, moins de place pour esquiver. Garde-fous : couloirs libres d'au moins 90 unités, au moins deux itinéraires depuis chaque fenêtre, espace libre connexe, zone de départ libre.
-- Le niveau change toutes les Y vagues (provisoire : 5). Les dispositions sont construites au lot 3b ; jusque-là, il n'existe qu'une disposition.
+- Le niveau change toutes les Y vagues (provisoire : 5, paramètre `wavesPerLevel`). Les dispositions sont construites au lot 3b ; jusque-là, il n'existe qu'une disposition (la carte actuelle est provisoire et trop grande).
 - Les vagues sont **numérotées en continu sur toute la partie** (comme les manches de Black Ops 3) : la difficulté suit le numéro de vague, pas le niveau.
 - Entre deux niveaux : vie remise à 100 %, courte transition, nouvelle disposition.
 - Une partie commence toujours au niveau 1 du monde choisi ; mourir termine la partie ; l'argent gagné est conservé ; finir le dernier niveau termine le monde (écran de fin au lot 7).
@@ -55,37 +55,46 @@ Les noms de fichiers des écrans autres que `jeu.html` sont provisoires et fixé
 - Murs de 40 d'épaisseur et 60 de haut. Trois fenêtres de 140 de large : nord au centre, ouest et est à mi-hauteur.
 - La salle contient 14 meubles (hauteur 70 au plus) qui bloquent le joueur, les zombies, les balles et le laser.
 - Les zombies naissent à l'extérieur, hors de la vue, traversent le décor par des couloirs d'approche de 160 de large sans décor solide, et entrent par les fenêtres. Ils poursuivent le joueur en ligne droite quand la voie est libre, sinon contournent les meubles (champ de flux, grille de 20 unités).
-- **Vagues** (inspirées du mode Zombies de Black Ops 3, formule de vie vérifiée, le reste de conception propre) : courbe pure `js/core/waves.js` paramétrée par `data/game/waves.json`.
-  - Vie des zombies : `1 + 0,5 × (n−1)` jusqu'à la vague 9 (×5), puis ×1,1 par vague, plafond ×30 (atteint à la vague 28). BO3 : 150 de vie plus 100 par manche jusqu'à 950 à la manche 9, puis ×1,1 par manche, plafond introduit à Black Ops 4.
-  - Nombre total : 5 à la vague 1, croissance douce (quadratique), plafond 150 ; vague renforcée (+30 %) toutes les 5 vagues.
+- **Vagues** (inspirées du mode Zombies de Black Ops 3 : formule de vie vérifiée, le reste de conception propre) : courbe pure `js/core/waves.js` et directeur `wave-director.js`, paramétrés par `data/game/waves.json`.
+  - Vie des zombies : `1 + 0,5 × (n−1)` jusqu'à la vague 9 (×5), puis ×1,1 par vague, plafond ×30 (atteint à la vague 28). BO3 : 150 de vie plus 100 par manche jusqu'à 950 à la manche 9, puis ×1,1 par manche, plafond introduit à Black Ops 4. La courbe reste donc sous celle de BO3.
+  - Nombre total : `5 + 1,6 × (n−1) + 0,05 × (n−1)²`, plafond 150 ; vague renforcée (+30 %) toutes les 5 vagues.
   - Simultanés : 6 à la vague 1, jusqu'à 10 au plus (budget de triangles ; BO3 en admet 24).
-  - Vitesse : quatre allures (marche lente, marche, rampe vite, course), introduites progressivement (les lentes dominent au début, les rapides à partir de la vague 8) ; aucun zombie ne dépasse 190 (le joueur : 220).
-  - Quatre types : `marcheur` (de base), `petit` (rapide, fragile, dès la vague 3), `voute` (résistant, dès la 5), `grand` (lent, très résistant et dur, dès la 7).
-  - Dégâts au contact croissants, plafonnés ; intervalle d'apparition décroissant de 2,5 s à 0,9 s.
-  - Pause de 3 s avant la vague 1, 8 s entre les vagues. À la fin d'une vague, le joueur retrouve 100 % de sa vie.
+  - Vitesse : quatre allures (marche lente 45, marche 70, rampe vite 105, course 140, plafonnées par allure), introduites progressivement (les lentes dominent au début, la rampe dès la vague 4, la course dès la vague 8) ; aucun zombie ne dépasse 190 (le joueur : 220). La rampe est visuelle (corps abaissé, sans effet sur la collision).
+  - Quatre types : `marcheur` (de base), `petit` (rapide, fragile, dès la vague 3), `voute` (résistant, dès la 5), `grand` (lent, très résistant et dur, dès la 7). Un type introduit compte au moins un zombie.
+  - Dégâts au contact croissants (×1,05 par vague, plafond ×3) ; intervalle d'apparition décroissant de 2,5 s à 0,9 s.
+  - Pause de 3 s avant la vague 1, 8 s entre les vagues. À la fin d'une vague, le joueur retrouve 100 % de sa vie maximale.
 - Fenêtres et barricades : les zombies cassent les planches des fenêtres (lot 3) ; jusque-là, les fenêtres sont passables pour les zombies seulement, fermées au joueur par des barrières invisibles.
 - Réparation d'une fenêtre : le joueur reste à proximité ; la durée dépend de l'amélioration correspondante.
 - « Tomber à terre » : à 0 de vie, le joueur tombe, se relève automatiquement après un délai en consommant une chute ; plus de chute = fin de partie.
 - Argent : gagné par ennemi tué et par vague, conservé à la mort (lot 4).
-- **Statistiques du joueur** (lot 2b, niveaux de 0 à 10, valeurs provisoires dans `data/game/player-stats.json`) : dégâts, portée, précision (cône de tir), cadence de tir, vitesse de déplacement, vie maximale, régénération par kill (points de vie rendus à chaque zombie tué, qui augmentent avec le niveau). En déplacement, le cône de tir est plus large qu'à l'arrêt ; la précision resserre les deux. S'y ajoutent le nombre de chutes et la vitesse de réparation des fenêtres (lots 3 et 5). Elles s'achètent dans la boutique (lots 4 et 5).
+- **Statistiques du joueur** (lot 2b, niveaux de 0 à 10, valeurs provisoires dans `data/game/player-stats.json`) :
+  - `degats` : +15 % par niveau ;
+  - `portee` : +12 % par niveau sur le laser et sur la portée de tir ;
+  - `precision` : demi-angle du cône de 4° × 0,9 puissance niveau à l'arrêt, plus 8° × 0,85 puissance niveau en déplacement (plancher 0,5°) ;
+  - `cadence` : délai entre tirs de 0,4 s × 0,9 puissance niveau (plancher 0,15 s) ;
+  - `vitesse` : +4 % par niveau (plafond +40 %) ;
+  - `vie` : +12 de vie maximale par niveau ;
+  - `regen` : points de vie rendus à chaque zombie tué, 1 de base puis +1 par niveau.
+  S'y ajoutent le nombre de chutes et la vitesse de réparation des fenêtres (lots 3 et 5). Elles s'achètent dans la boutique (lots 4 et 5) ; avant, les niveaux se règlent par `?lvl=degats:3,precision:5` ou `?lvl=all:5`, sans aucun stockage.
 - Armes (`data/weapons.json`) : une arme de départ (pistolet), d'autres achetables ; chaque arme définit dégâts, cadence, portée, vitesse de balle, tolérance de visée.
 - Tourelles (lot 9), skins de personnage et d'armes (lot 11), mondes supplémentaires (lot 10).
 - Sang et particules (lot 8), avec une option « réduire le sang ».
-- Les valeurs d'équilibrage sont provisoires jusqu'au lot 12.
+- Ambiance (lot 2c) : animation de changement de vague au milieu de l'écran avec une mélodie angoissante ; effet VHS en surcouche (grain, lignes de balayage, léger décalage de couleur), coupé sous `prefers-reduced-motion`.
+- Les valeurs d'équilibrage sont provisoires ; elles seront jugées sur les cartes définitives (après le lot 3b) et réglées au lot 12.
 
 ## Personnages et rendu
 - Personnages articulés en 3D, vus du dessus : bassin, tronc, tête, deux bras (épaule et coude), deux jambes (hanche et genou), arme tenue en main. 12 pièces et 700 triangles au plus chacun, géométries et matériaux partagés. Le joueur tourne le tronc vers la visée, les jambes suivent le déplacement, léger recul au tir.
-- Zombies : quatre variantes visuelles (`marcheur`, `petit`, `grand`, `voute` : taille, tenue, teint, posture), sans sang avant le lot 8. Quatre allures, dessinées par des poses distinctes : marche lente (traînante, petite amplitude), marche, rampe (corps abaissé, torse à l'horizontale, bras qui tirent), course (grande amplitude, torse penché). Les angles des articulations viennent d'une fonction pure (`pose.js`, testée) ; le rendu ne fait que les appliquer.
-- Ombres portées (carte de 1024, la lumière suit la caméra) ; seuls cinq pièces principales des personnages, les meubles et les voitures en projettent.
-- Budget de dessin (mesuré au lot 1c : 157 appels et 13 222 triangles avec 8 zombies ; limites 300 et 15 000) : environ 8 230 triangles pour le décor et le joueur plus 624 par zombie, donc **10 zombies simultanés au plus**. Les lots 8 (sang) et 9 (tourelles) devront libérer du budget ; le lot 12 pourra réduire le coût des personnages pour relever le plafond.
+- Zombies : quatre variantes visuelles (`marcheur`, `petit`, `grand`, `voute` : taille, tenue, teint, posture), sans sang avant le lot 8. Quatre allures, dessinées par des poses distinctes : marche lente (traînante, petite amplitude), marche, rampe (corps abaissé, torse presque horizontal, bras qui tirent), course (grande amplitude, torse penché). Les rampants plaisent : on les garde. Les angles des articulations viennent d'une fonction pure (`pose.js`, testée) ; le rendu ne fait que les appliquer.
+- Ombres portées (carte de 1024, la lumière suit la caméra) ; seules cinq pièces principales des personnages, les meubles et les voitures en projettent.
+- Budget de dessin : 300 appels et 15 000 triangles au plus. Mesuré au lot 2 avec 10 zombies (types et allures variés), ombres actives : 188 appels et 14 858 triangles, soit une marge de 142 triangles seulement ; **10 zombies simultanés au plus**. Les lots 8 (sang) et 9 (tourelles) ne passeront pas sans réduire le coût des personnages ; le lot 12 pourra aussi relever le plafond.
 - Le décor est créé une seule fois (maillages fusionnés ou instances), jamais par image.
-- Paramètres de diagnostic dans l'URL : `?fps=1`, `?dpr=1`, `?shadows=0`, `?tilt=`, `?zoom=`, `?wave=N` (démarre à la vague N).
+- Paramètres de diagnostic dans l'URL : `?fps=1`, `?dpr=1`, `?shadows=0`, `?tilt=`, `?zoom=`, `?wave=N` (démarre à la vague N), `?lvl=` (niveaux des statistiques, sans aucun stockage).
 
 ## Contenus
 | Contenu | Fournisseur | Statut |
 |---|---|---|
 | Textures, matériaux, modèles | Générés en code (fonctions pures déterministes, atlas de 512 et 256, 4,9 Mo) | Faits au lot 1c, à enrichir par monde |
-| Sons | 48 tampons synthétisés en code (lot 1d) : tirs en couches, impacts par matière, pas, voix de zombies par formants (16 à 36 par minute avec 8 zombies), ambiance ; page d'écoute `sons.html` | Faits, réglables par identifiant de son |
+| Sons | 48 tampons synthétisés en code (lot 1d) : tirs en couches, impacts par matière, pas, voix de zombies par formants (16 à 36 par minute avec 8 zombies), ambiance ; page d'écoute `sons.html` ; une mélodie de changement de vague, synthétisée de la même façon, est ajoutée au lot 2c | Faits, réglables par identifiant de son |
 | Textes en français | Claude, validés par le propriétaire | Réels |
 | Textes en anglais | Reportés | Voir décisions en attente |
 | Équilibrage | `data/game/*.json` | À régler en test |
@@ -104,7 +113,7 @@ Les noms de fichiers des écrans autres que `jeu.html` sont provisoires et fixé
 | Succès / avertissement | `#7ed48b` / `#f2c94c` |
 | Focus | `#9fd3ff` |
 - Polices hébergées dans le dépôt : Barlow, Rubik Wet Paint (titre), Rubik Dirt (libellés).
-- Les couleurs du jeu sont des variables `--game-*` dans `tokens.css`, lues par `js/game/palette.js` ; aucune couleur en dur dans le JavaScript. Les sols ont été assombris au lot 1c pour la lisibilité ; `tokens.css` fait foi pour les valeurs.
+- Les couleurs du jeu sont des variables `--game-*` dans `tokens.css`, lues par `js/game/palette.js` ; aucune couleur en dur dans le JavaScript. Les sols ont été assombris au lot 1c pour la lisibilité ; `tokens.css` fait foi pour les valeurs (le laser est devenu `#ff6a5a`).
 - Tout état (vie, fenêtre cassée, solde) est porté aussi par une forme ou un texte, jamais par la couleur seule.
 - Lisibilité : contraste d'au moins 3:1 entre les personnages et le sol, 4,5:1 pour le laser et la balle.
 - Cibles tactiles de 44 px, contraste de 4,5:1 pour le texte (le rouge sang n'est utilisé que pour de grands textes, 3:1), `prefers-reduced-motion` respecté.
@@ -118,17 +127,19 @@ Les noms de fichiers des écrans autres que `jeu.html` sont provisoires et fixé
 - GitHub Pages, chemins relatifs, aucune ressource externe. Déploiement depuis `main` seulement ; aperçus par branche (`apercu.txt`) à `/lots/lot-N/` ; page `/lots/` et menu `/dev/` générés automatiquement, avec un journal des versions (`data/changelog.json`) : chaque lot ajoute son entrée et adapte les tests `data-changelog` et `dev.spec`. Une branche de lot n'est jamais supprimée. La branche `lot-0t` (test Three.js contre Phaser) n'est pas fusionnée et reste en ligne.
 - Workflow : `verify` avec délai de 30 min, Playwright rejoué une fois en cas d'échec (modifié au lot 1d à la demande du propriétaire) ; un lot ne le modifie que si son prompt l'autorise.
 - `sons.html` : page d'écoute technique, à retirer au lot 13.
-- Sauvegarde : interface `SaveRepository` ; adaptateur `localStorage` avec schéma versionné et migrations ; export et import par code. Une base en ligne sera un nouvel adaptateur, sur décision écrite.
+- Sauvegarde : interface `SaveRepository` ; adaptateur `localStorage` avec schéma versionné et migrations ; export et import par code. Une base en ligne sera un nouvel adaptateur, sur décision écrite. Les niveaux des statistiques viennent de `js/game/levels-source.js` (lecture de `?lvl=`), seul point à remplacer par la sauvegarde au lot 4.
 - Jamais conservé : position, identité, adresse IP, paramètres d'URL de test. Aucun cookie.
 - Langue : français seul pour l'instant ; la structure `data/i18n/` permet d'ajouter l'anglais. `noindex` pendant le développement.
-- Tests : `?test=1` expose `window.__zs` (état du jeu, graine, apparition d'un zombie, avance de la simulation, vue d'ensemble, rendu, audio, vagues) ; `?empty=1` charge un monde sans meubles ni décor solide ; `?seed=` et `?nospawn=1` fixent la graine et coupent les vagues.
+- Tests : `?test=1` expose `window.__zs` (état du jeu, graine, apparition d'un zombie, avance de la simulation, vue d'ensemble, rendu, audio, vagues, statistiques) ; `?empty=1` charge un monde sans meubles ni décor solide ; `?seed=` et `?nospawn=1` fixent la graine et coupent les vagues.
 - Seuils Lighthouse mobile : `index.html` 90 / 95 / 95 et CLS ≤ 0,1 ; `jeu.html` performance 45 (mesuré 55), accessibilité 95, bonnes pratiques 95, CLS ≤ 0,1.
-- `CLAUDE.md` reste sous 9 000 caractères (8 425 au lot 1d) : chaque lot consolide avant d'ajouter.
+- `CLAUDE.md` reste sous 9 000 caractères (8 175 au lot 2) : chaque lot consolide avant d'ajouter.
 
 ## Hors périmètre (pour l'instant)
-Multijoueur, comptes, classements en ligne, publicité, achats, base de données, balles perforantes ou ricochets, munitions et rechargement, images, sons ou modèles 3D importés (tout est généré en code), anglais, caméra libre ou rotative, cartes de relief et post-traitement, zombies spéciaux (explosifs, tireurs, chiens), boss, choix d'amélioration en cours de partie.
+Multijoueur, comptes, classements en ligne, publicité, achats, base de données, balles perforantes ou ricochets, munitions et rechargement, images, sons ou modèles 3D importés (tout est généré en code), anglais, caméra libre ou rotative, cartes de relief et post-traitement 3D (l'effet VHS du lot 2c est une surcouche HTML/CSS), zombies spéciaux (explosifs, tireurs, chiens), boss, choix d'amélioration en cours de partie. Aucun nouveau son avant le lot 2c.
 
 ## Décisions en attente
+- Portée de tir de base 700 (au lieu de 1600) : à valider après test.
+- Effet VHS : thème horreur seulement ou toujours.
 - Nombre de niveaux par monde (6 proposé) et de vagues par niveau (5 proposé) : durée d'une partie.
 - Thème du premier monde (poste de police proposé).
 - Choix d'amélioration en cours de partie à la manière d'Archero : oui ou non (non pour l'instant).
@@ -140,7 +151,7 @@ Multijoueur, comptes, classements en ligne, publicité, achats, base de données
 - Seuil de performance Lighthouse de `jeu.html` (45 proposé, mesuré 55).
 
 ## Risques connus
-Équilibrage de la difficulté (vie, vitesse et nombre, pièce trop dure ou trop facile avec 100 % de vie rendue) ; durée d'une partie non prévisible ; plafond de 10 zombies simultanés (budget de triangles) ; fluidité de la 3D sur téléphone modeste ; temps de génération des textures et des sons sur téléphone (non mesuré) ; coût du champ de flux sur téléphone (non mesuré, environ 15 ms en Node) ; poids de Three.js au chargement ; netteté sur écrans haute densité ; sticks multi-touch ; précision des impacts de balles rapides ; tir en cône et tir automatique (frustration au niveau 0) ; dispositions de niveaux qui deviennent injouables en se resserrant ; sang et public mineur ; commutateur silencieux des iPhone (le son peut être coupé) ; l'API de Three.js évolue (toujours lire le paquet installé).
+Équilibrage de la difficulté (vie, vitesse et nombre, pièce trop dure ou trop facile avec 100 % de vie rendue) ; durée d'une partie non prévisible ; cône de tir et tir automatique (frustration possible au niveau 0 en déplacement) ; plafond de 10 zombies simultanés et marge de 142 triangles : le coût des personnages doit baisser avant les lots 8 et 9 ; fluidité de la 3D sur téléphone modeste (non mesurée) ; temps de génération des textures et des sons sur téléphone (non mesuré) ; coût du champ de flux sur téléphone (non mesuré, environ 15 ms en Node) ; effet VHS et animation de vague (coût de rendu, Lighthouse n'a que 10 points de marge) ; lisibilité de la rampe vue de dessus ; poids de Three.js au chargement ; netteté sur écrans haute densité ; sticks multi-touch ; précision des impacts de balles rapides ; dispositions de niveaux qui deviennent injouables en se resserrant ; sang et public mineur ; commutateur silencieux des iPhone (le son peut être coupé) ; l'API de Three.js évolue (toujours lire le paquet installé).
 
 ## Plan en lots (état)
 | Lot | Sujet | État |
@@ -152,10 +163,11 @@ Multijoueur, comptes, classements en ligne, publicité, achats, base de données
 | 1b | Monde plus grand, meubles, chemin des zombies, décor extérieur, apparitions hors vue | fait |
 | 1c | Textures générées en code, personnages finaux, quatre variantes de zombies | fait |
 | 1d | Sons synthétisés en code, voix de zombies, page d'écoute | fait |
-| 2 | Vagues numérotées en continu (courbe inspirée de BO3), quatre allures, quatre types, vie à 100 % entre les vagues | à lancer |
-| 2b | Cône de tir, imprécision en déplacement, statistiques du joueur (niveaux 0 à 10), régénération par kill | à écrire |
+| 2 | Vagues numérotées en continu (courbe inspirée de BO3), quatre allures, quatre types, vie à 100 % entre les vagues | fait |
+| 2b | Cône de tir, imprécision en déplacement, statistiques du joueur (niveaux 0 à 10, `?lvl=`), régénération par kill | à lancer |
+| 2c | Ambiance : animation de changement de vague avec mélodie angoissante (nouveau son), effet VHS en surcouche | à écrire |
 | 3 | Fenêtres, planches cassées par les zombies, réparation, chutes | à écrire |
-| 3b | Mondes et niveaux : dispositions de plus en plus serrées, transitions, premier monde | à écrire |
+| 3b | Mondes et niveaux : dispositions de plus en plus serrées, transitions, premier monde ; équilibrage jugé ensuite | à écrire |
 | 4 | Argent, sauvegarde locale (`SaveRepository`) | à écrire |
 | 5 | Boutique et améliorations (E3) | à écrire |
 | 6 | Armes | à écrire |
@@ -168,4 +180,4 @@ Multijoueur, comptes, classements en ligne, publicité, achats, base de données
 | 13 | Mise en ligne : SEO, mentions légales finales, indexation, retrait de `sons.html` | à écrire |
 
 ## Idées en attente
-Base de données en ligne et sauvegarde dans le cloud, classement, achievements, boss de fin de monde, choix d'améliorations en cours de partie, mode infini après le dernier niveau, zombies spéciaux, manches spéciales (comme les chiens de BO3), anglais, plusieurs armes en même temps, variantes de zombies spéciales.
+Base de données en ligne et sauvegarde dans le cloud, classement, achievements, boss de fin de monde, choix d'améliorations en cours de partie, mode infini après le dernier niveau, zombies spéciaux, manches spéciales (comme les chiens de BO3), anglais, plusieurs armes en même temps.
