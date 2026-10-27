@@ -1,5 +1,5 @@
 {
-  "_provisoire": "Valeurs provisoires à régler en test (lot 1, mises à jour au lot 1b : 8 présents au plus, un toutes les 2,5 s, apparition hors de la vue agrandie de viewMargin puis de viewRatio). Zombie de démonstration.",
+  "_provisoire": "Valeurs provisoires à régler en test (lot 1, mises à jour au lot 1b : 8 présents au plus, un toutes les 2,5 s, apparition hors de la vue agrandie de viewMargin puis de viewRatio). Lot 2 : le zombie de démonstration devient le type « marcheur » (base commune à tous les types) ; variants : multiplicateurs par type (vie, vitesse, dégâts, rayon = échelle visuelle de zombie-variants.json) ; bounty est réservé à l'argent du lot 4 (0 partout). Le lanceur continu (maxPresent, spawnInterval) est remplacé par js/core/wave-director.js au lot 2-B.",
   "zombie": {
     "radius": 20,
     "speed": 70,
@@ -10,5 +10,35 @@
     "spawnInterval": 2.5,
     "viewMargin": 150,
     "viewRatio": 0.25
+  },
+  "variants": {
+    "marcheur": {
+      "hpMul": 1,
+      "speedMul": 1,
+      "damageMul": 1,
+      "radiusMul": 1,
+      "bounty": 0
+    },
+    "petit": {
+      "hpMul": 0.6,
+      "speedMul": 1.15,
+      "damageMul": 0.7,
+      "radiusMul": 0.93,
+      "bounty": 0
+    },
+    "voute": {
+      "hpMul": 1.6,
+      "speedMul": 0.9,
+      "damageMul": 1.2,
+      "radiusMul": 0.98,
+      "bounty": 0
+    },
+    "grand": {
+      "hpMul": 2.8,
+      "speedMul": 0.85,
+      "damageMul": 1.6,
+      "radiusMul": 1.07,
+      "bounty": 0
+    }
   }
 }

@@ -3,7 +3,9 @@
 import { createRng, nextFloat } from './rng.js';
 import { isNum } from './vec.js';
 
-export const STATES = ['marche', 'arret', 'tir', 'zombie'];
+export const STATES = ['marche', 'arret', 'tir', 'zombie', 'lent', 'rampe', 'course'];
+// Allures de zombie : « zombie » reste l'équivalent de « marche » ; les trois autres sont purement visuelles (lot 2).
+export const ZOMBIE_STATES = ['zombie', 'lent', 'rampe', 'course'];
 const TAU = Math.PI * 2;
 
 // Bornes plausibles de chaque angle (min, max).
@@ -17,6 +19,10 @@ export const LIMITS = {
   headTilt: [-0.6, 0.8],
   bob: [0, 1],
   recoil: [0, 1],
+  // Lot 2 : hauteur du bassin (en longueurs de jambe, 0 = debout, négatif = abaissé) et inclinaison du tronc vers l'avant (radians, en plus
+  // de celle du personnage). Nulles pour les états du lot 1.
+  pelvisHeight: [-1, 0.2],
+  torsoPitch: [-0.3, 1.5],
 };
 
 const num = (n, fallback = 0) => (isNum(n) ? n : fallback);
@@ -42,7 +48,7 @@ export function computePose(input) {
   const phase = wrap(num(src.phase));
   const time = num(src.time);
   const recoil = clamp(num(src.recoil), LIMITS.recoil);
-  const defaultAmount = state === 'marche' || state === 'tir' ? 1 : state === 'zombie' ? 0.7 : 0;
+  const defaultAmount = state === 'marche' || state === 'tir' ? 1 : ZOMBIE_STATES.includes(state) ? 0.7 : 0;
   const amount = Math.min(Math.max(num(src.amount, defaultAmount), 0), 1);
   const swing = Math.sin(phase);
   const lift = Math.cos(phase);
@@ -63,6 +69,8 @@ export function computePose(input) {
     headTilt: 0.04 * breath,
     bob: 0.5 * amount * Math.abs(lift) + 0.03 * breath * (1 - amount),
     recoil,
+    pelvisHeight: 0,
+    torsoPitch: 0,
   };
 
   if (state === 'zombie') {
@@ -81,6 +89,58 @@ export function computePose(input) {
     pose.torsoTwist = 0.22 * Math.sin(time * t.freq + t.offset);
     pose.headTilt = 0.45 + 0.12 * sway;
     pose.bob = 0.35 * amount * Math.abs(lift) + 0.04 * Math.abs(sway);
+  } else if (state === 'lent') {
+    // Marche lente : petite amplitude, pas traînés, tête penchée, bras mollement tendus.
+    const t = zombieTraits(src.seed);
+    const sway = Math.sin(time * t.freq * 1.4 + t.offset);
+    pose.hipL = 0.28 * amount * swing;
+    pose.hipR = -0.28 * amount * swing;
+    pose.kneeL = 0.1 + 0.35 * amount * Math.max(0, lift);
+    pose.kneeR = 0.1 + 0.35 * amount * Math.max(0, -lift);
+    const dragged = t.drag > 0 ? 'R' : 'L';
+    pose[`knee${dragged}`] = 0.08;
+    pose[`hip${dragged}`] *= 0.4;
+    pose.shoulderL = 0.95 + 0.08 * sway;
+    pose.shoulderR = 0.9 - 0.08 * sway;
+    pose.elbowL = 0.35 + 0.08 * Math.sin(time * t.freq * 2 + t.offset);
+    pose.elbowR = 0.4 - 0.08 * Math.sin(time * t.freq * 2 + t.offset);
+    pose.torsoTwist = 0.12 * Math.sin(time * t.freq * 0.8 + t.offset);
+    pose.headTilt = 0.55 + 0.08 * sway;
+    pose.bob = 0.2 * amount * Math.abs(lift) + 0.04 * Math.abs(sway);
+    pose.torsoPitch = 0.12;
+  } else if (state === 'course') {
+    // Course : grande amplitude, tronc penché en avant, bras tendus qui balancent.
+    const t = zombieTraits(src.seed);
+    const sway = Math.sin(time * t.freq * 2 + t.offset);
+    pose.hipL = 0.8 * amount * swing;
+    pose.hipR = -0.8 * amount * swing;
+    pose.kneeL = 0.15 + 1.1 * amount * Math.max(0, lift);
+    pose.kneeR = 0.15 + 1.1 * amount * Math.max(0, -lift);
+    pose.shoulderL = 1.15 + 0.5 * amount * swing;
+    pose.shoulderR = 1.15 - 0.5 * amount * swing;
+    pose.elbowL = 0.2 + 0.15 * sway;
+    pose.elbowR = 0.2 - 0.15 * sway;
+    pose.torsoTwist = 0.1 * swing * amount;
+    pose.headTilt = 0.25 + 0.08 * sway;
+    pose.bob = 0.6 * amount * Math.abs(lift) + 0.03 * Math.abs(sway);
+    pose.torsoPitch = 0.4;
+  } else if (state === 'rampe') {
+    // Rampe : corps abaissé, tronc presque horizontal, bras qui tirent à tour de rôle, jambes qui traînent derrière.
+    const t = zombieTraits(src.seed);
+    const sway = Math.sin(time * t.freq * 2 + t.offset);
+    pose.hipL = -0.55 - 0.25 * amount * swing;
+    pose.hipR = -0.55 + 0.25 * amount * swing;
+    pose.kneeL = 1.0 + 0.4 * amount * Math.max(0, lift);
+    pose.kneeR = 1.0 + 0.4 * amount * Math.max(0, -lift);
+    pose.shoulderL = 1.15 + 0.5 * amount * Math.max(0, swing) - 0.15;
+    pose.shoulderR = 1.15 + 0.5 * amount * Math.max(0, -swing) - 0.15;
+    pose.elbowL = 0.3 + 0.5 * amount * Math.max(0, -swing);
+    pose.elbowR = 0.3 + 0.5 * amount * Math.max(0, swing);
+    pose.torsoTwist = 0.15 * amount * swing;
+    pose.headTilt = -0.35 + 0.08 * sway;
+    pose.bob = 0.05 + 0.04 * amount * Math.abs(lift);
+    pose.pelvisHeight = -0.25;
+    pose.torsoPitch = 1.3;
   } else {
     // Joueur : arme tenue à deux mains, bras de devant qui balancent à peine pendant la marche.
     const aimed = state === 'tir';

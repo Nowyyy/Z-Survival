@@ -103,12 +103,14 @@ export function direct(state, frame, cfg) {
     const zs = audio.zombieSteps;
     if (!zs) return;
     const ranked = list.map((z) => ({ z, d: Math.hypot(z.x - listener.x, z.y - listener.y) })).sort((a, b) => a.d - b.d);
-    const loud = new Set(ranked.filter((r) => r.d < num(zs.range, 450)).slice(0, num(zs.count, 3)).map((r) => r.z.id));
+    const silent = new Set(Array.isArray(zs.silentGaits) ? zs.silentGaits : []); // allures sans bruit de pas (la rampe : corps au sol)
+    const loud = new Set(ranked.filter((r) => r.d < num(zs.range, 450) && !silent.has(r.z.gait)).slice(0, num(zs.count, 3)).map((r) => r.z.id));
     const next = {};
     for (const { z } of ranked) {
       const before = s.zsteps?.[z.id];
       const moved = before ? Math.hypot(z.x - before.x, z.y - before.y) : 0;
-      const phase = (before?.phase ?? 0) + moved * num(zs.stride, 0.09);
+      const perUnit = isNum(z.stride) && z.stride > 0 ? (Math.PI * 2) / z.stride : num(zs.stride, 0.09); // foulée de l'allure, sinon valeur commune
+      const phase = (before?.phase ?? 0) + moved * perUnit;
       const dtz = before ? Math.max(1e-6, time - before.time) : 1;
       const r = stepFootsteps(before?.steps ?? createFootsteps(), before?.phase ?? 0, phase, moved / dtz, time, zs.maxSpeed, { minSpeed: zs.minSpeed, minInterval: zs.minInterval, minVolume: 0.5 });
       next[z.id] = { x: z.x, y: z.y, phase, time, steps: r.state };

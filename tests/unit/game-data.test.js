@@ -56,7 +56,9 @@ describe('data/game/*.json', () => {
         else if (typeof v === 'object') check(v);
         else {
           expect(typeof v, k).toBe('number');
-          expect(v, k).toBeGreaterThan(0);
+          // Lot 2 : bounty (argent du lot 4) vaut 0 partout tant que l'argent n'existe pas.
+          if (k === 'bounty') expect(v).toBe(0);
+          else expect(v, k).toBeGreaterThan(0);
         }
       }
     };
