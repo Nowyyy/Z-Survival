@@ -60,9 +60,10 @@ export function stepContact(player, enemies, dt, def) {
   let damage = 0;
   const next = (Array.isArray(enemies) ? enemies : []).map((enemy) => {
     let cooldown = Math.max(0, num(enemy?.hitCooldown) - step);
+    const hit = isNum(enemy?.damage) ? Math.max(0, enemy.damage) : power; // lot 2 : dégâts du type et de la vague
     const touching = Math.hypot(num(enemy?.x) - num(player?.x), num(enemy?.y) - num(player?.y)) <= num(player?.r) + num(enemy?.r) + 1;
     if (touching && cooldown <= 0 && num(player?.health) > damage) {
-      damage += power;
+      damage += hit;
       cooldown = delay;
     }
     return { ...enemy, hitCooldown: cooldown };

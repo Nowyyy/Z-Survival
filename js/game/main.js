@@ -27,12 +27,18 @@ function ratioCap(value) {
   return value !== null && Number.isFinite(n) && n >= 0.5 && n <= DEFAULT_RATIO_CAP ? n : DEFAULT_RATIO_CAP;
 }
 
+// ?wave=N : démarre à la vague N (entier de 1 à 200) ; toute autre valeur est ignorée.
+function waveParam(value) {
+  const n = Number(value);
+  return value !== null && /^\d+$/.test(value) && n >= 1 && n <= 200 ? n : null;
+}
+
 const query = new URLSearchParams(location.search);
 const testMode = query.get('test') === '1';
 const fpsMode = query.get('fps') === '1';
 const seedParam = Number.parseInt(query.get('seed') ?? '', 10);
 
-const [dict, world, decor, camera, nav, player, weapons, enemies, render, texturesCfg, variants, soundsCfg, audioCfg, materialsCfg, voiceCfg] = await Promise.all([
+const [dict, world, decor, camera, nav, player, weapons, enemies, render, texturesCfg, variants, soundsCfg, audioCfg, materialsCfg, voiceCfg, wavesCfg, gaitsCfg] = await Promise.all([
   loadDict(),
   loadJson('data/game/world.json'),
   loadJson('data/game/decor.json'),
@@ -48,6 +54,8 @@ const [dict, world, decor, camera, nav, player, weapons, enemies, render, textur
   loadJson('data/game/audio.json'),
   loadJson('data/game/sound-materials.json'),
   loadJson('data/game/zombie-voice.json'),
+  loadJson('data/game/waves.json'),
+  loadJson('data/game/gaits.json'),
 ]);
 
 applyTexts(dict);
@@ -73,7 +81,7 @@ root.hidden = false;
 const layout = buildLayout(world, decor, { empty: testMode && query.get('empty') === '1', slack: camera.slack });
 
 const ctx = {
-  cfg: { layout, player, weapon: weapons.pistol, zombie: enemies.zombie, render, camera, nav },
+  cfg: { layout, player, weapon: weapons.pistol, zombie: enemies.zombie, enemies, gaits: gaitsCfg, waves: wavesCfg, render, camera, nav },
   palette,
   dict,
   textureData,
@@ -82,6 +90,7 @@ const ctx = {
   params: {
     test: testMode,
     nospawn: query.get('nospawn') === '1',
+    wave: waveParam(query.get('wave')),
     tilt: parseTilt(query.get('tilt'), render.camera.tilt),
     zoom: parseZoom(query.get('zoom'), camera.zoom),
     maxRatio: ratioCap(query.get('dpr')),

@@ -62,6 +62,13 @@
       <p id="hud-life" class="hud-text"></p>
       <div class="hud-bar" aria-hidden="true"><div id="hud-fill" class="hud-fill"></div></div>
       <p id="hud-kills" class="hud-text"></p>
+      <p id="hud-wave" class="hud-text" hidden></p>
+      <p id="hud-remaining" class="hud-text" hidden></p>
+      <p id="hud-next" class="hud-text" hidden></p>
+    </div>
+    <div id="wave-announce" class="wave-announce" data-block="E2-8" aria-hidden="true">
+      <p id="wave-announce-title" class="wave-announce-title"></p>
+      <p id="wave-announce-sub" class="wave-announce-sub" hidden></p>
     </div>
     <button id="btn-pause" class="button pause-button" data-block="E2-5" type="button" data-i18n="game.pause.open"></button>
     <div id="stick-left" class="stick" data-block="E2-3" aria-hidden="true" hidden>
@@ -94,6 +101,7 @@
     <div class="panel">
       <h2 id="end-title" class="panel-title" data-i18n="game.end.title"></h2>
       <p id="end-kills" class="panel-text"></p>
+      <p id="end-wave" class="panel-text" hidden></p>
       <p class="panel-note" data-i18n="game.end.provisional"></p>
       <button id="btn-replay" class="button" type="button" data-i18n="game.end.replay"></button>
     </div>

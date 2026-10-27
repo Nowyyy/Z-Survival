@@ -133,6 +133,9 @@ test.describe('monde du lot 1b', () => {
 
   test('les zombies apparaissent hors de la vue : journal des apparitions et vérification image par image', async ({ page }) => {
     await open(page, '');
+    // Lot 2 : le lanceur continu (8 zombies, un toutes les 2,5 s) est remplacé par les vagues ; la vague 5 (16 zombies, 8 à la fois,
+    // un toutes les 2,04 s) donne assez d'apparitions pour la vérification (avant : démarrage direct sans startWave).
+    await page.evaluate(() => window.__zs.startWave(5));
     const seen = await page.evaluate(() => {
       const known = new Set();
       const bad = [];
@@ -156,8 +159,8 @@ test.describe('monde du lot 1b', () => {
       expect(l.hidden).toBe(true);
       expect(spawnPoints.map((p) => p.id)).toContain(l.id);
     }
-    // 2,5 s entre deux apparitions au moins (graine fixe).
-    for (let i = 1; i < spawnLog.length; i += 1) expect(spawnLog[i].time - spawnLog[i - 1].time).toBeGreaterThanOrEqual(2.4);
+    // L'intervalle de la vague 5 (2,04 s) entre deux apparitions au moins (graine fixe) ; avant : 2,5 s (lanceur continu).
+    for (let i = 1; i < spawnLog.length; i += 1) expect(spawnLog[i].time - spawnLog[i - 1].time).toBeGreaterThanOrEqual(2.0);
   });
 
   test('en vue d\'ensemble, tous les points sont en vue : rien n\'apparaît', async ({ page }) => {

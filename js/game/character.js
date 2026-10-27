@@ -113,7 +113,9 @@ export function createCharacter(kit, kind, variant = 0) {
   const pelvis = group(root, 0, LEG, 0);
   part('pelvis', pelvis);
   const torso = group(pelvis, 0, 4, 0);
-  if (kind === 'zombie') torso.rotation.x = 0.14;
+  const lean = kind === 'zombie' ? 0.14 : 0; // inclinaison de base des zombies ; pose.torsoPitch s'y ajoute
+  torso.rotation.x = lean;
+  let applied = { pelvisHeight: 0, torsoPitch: 0 };
   part('torso', torso);
   const head = group(torso, 0, 19, 0);
   part('head', head);
@@ -159,6 +161,10 @@ export function createCharacter(kit, kind, variant = 0) {
         out[`elbow${name}`] = -arms[name].elbow.rotation.x;
       }
       out.torsoTwist = -torso.rotation.y;
+      // Lot 2 : bassin (hauteur réelle et abaissement demandé) et inclinaison du tronc en plus de celle de base.
+      out.pelvisY = pelvis.position.y;
+      out.pelvisHeight = applied.pelvisHeight;
+      out.torsoPitch = torso.rotation.x - lean;
       return out;
     },
     // Flash de l'ennemi touché : les matériaux partagés sont échangés, rien n'est créé.
@@ -175,7 +181,10 @@ export function createCharacter(kit, kind, variant = 0) {
         legs[name].knee.rotation.x = kneeAngle;
         lowest = Math.max(lowest, THIGH * Math.cos(hipAngle) + SHIN * Math.cos(hipAngle - kneeAngle) + FOOT);
       }
-      pelvis.position.y = lowest + pose.bob * 0.8;
+      // pelvisHeight : abaissement du bassin en longueurs de jambe (rampe) ; torsoPitch : tronc penché vers l'avant (radians).
+      applied = { pelvisHeight: pose.pelvisHeight, torsoPitch: pose.torsoPitch };
+      pelvis.position.y = Math.max(0, lowest + pose.bob * 0.8 + pose.pelvisHeight * LEG);
+      torso.rotation.x = lean + pose.torsoPitch;
       torso.rotation.y = -pose.torsoTwist;
       head.rotation.x = clampTo(pose.headTilt + traits.headTilt, LIMITS.headTilt);
       for (const name of ['L', 'R']) {

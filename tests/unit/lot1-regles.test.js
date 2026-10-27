@@ -48,7 +48,7 @@ describe('mêmes règles qu\'au lot 1', () => {
     } catch {
       return; // pas de dépôt git ou de branche main (copie de travail) : rien à comparer
     }
-    const allowed = ['pose', 'viewport', 'camera', 'collision', 'nav', 'decor', 'layout', 'movement', 'ray', 'projectile', 'enemy-ai', 'spawner', 'color', 'texgen', 'variants', 'synth', 'audio-mix', 'footsteps', 'sound-director', 'zombie-voice', 'sound-params', 'waves', 'wave-director', 'enemy-factory'].map((n) => `js/core/${n}.js`);
+    const allowed = ['pose', 'viewport', 'camera', 'collision', 'nav', 'decor', 'layout', 'movement', 'ray', 'projectile', 'enemy-ai', 'spawner', 'color', 'texgen', 'variants', 'synth', 'audio-mix', 'footsteps', 'sound-director', 'zombie-voice', 'sound-params', 'waves', 'wave-director', 'enemy-factory', 'combat'].map((n) => `js/core/${n}.js`);
     expect(changed.filter((f) => !allowed.includes(f))).toEqual([]);
   });
 });
