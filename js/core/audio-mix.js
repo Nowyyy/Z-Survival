@@ -67,3 +67,14 @@ export function admitVoice(state, req, now, cfg) {
   last[sound] = t;
   return { state: { voices: [...kept, voice], last, nextId: nextId + 1 }, play: true, reason: null, stolen };
 }
+
+// Nombre de voix d'une catégorie encore en cours à l'instant `now`.
+export function activeCount(state, category, now) {
+  const t = num(now);
+  return (Array.isArray(state?.voices) ? state.voices : []).filter((v) => v.category === category && num(v.end) > t).length;
+}
+
+// État sans les voix d'une catégorie (arrêt de la mélodie d'annonce à la mort ou à « Rejouer ») ; les délais minimaux sont conservés.
+export function dropCategory(state, category) {
+  return { voices: (Array.isArray(state?.voices) ? state.voices : []).filter((v) => v.category !== category), last: { ...(state?.last ?? {}) }, nextId: num(state?.nextId, 1) };
+}

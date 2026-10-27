@@ -20,7 +20,8 @@ export function soundTable(sounds) {
 export const createDirector = (seed = 1) => ({ rng: createRng(seed), lastShot: -Infinity, last: {}, voices: createVoiceState(), planner: createVoicePlanner(seed + 101), zsteps: {} });
 
 // frame : { time, paused, listener: { x, y }, walls, events: [...], zombies: [{ id, x, y, variant }] }. cfg : { audio, materials, voice, sounds: soundTable(...) }.
-// Événements : { type: 'shot' | 'zombieHit' | 'zombieAttack' | 'obstacleHit' | 'playerHurt' | 'playerDeath' | 'playerStep' | 'pause' | 'resume', x, y, ... }.
+// Événements : { type: 'shot' | 'zombieHit' | 'zombieAttack' | 'obstacleHit' | 'playerHurt' | 'playerDeath' | 'playerStep' | 'pause' | 'resume'
+// | 'waveSplash' (sound, variant) | 'waveEnd' (variant), x, y, ... }.
 // Retourne { state, requests } sans modifier ses arguments.
 export function direct(state, frame, cfg) {
   const table = cfg?.sounds;
@@ -36,7 +37,7 @@ export function direct(state, frame, cfg) {
   const requests = [];
 
   // Ajoute une demande si le son existe, est audible et si la limite de voix et le délai minimal le permettent.
-  const add = (sound, { x = null, y = null, volume = 1, rate = 1, delay = 0, pan = null, spatial = true, zombie = null } = {}) => {
+  const add = (sound, { x = null, y = null, volume = 1, rate = 1, delay = 0, pan = null, spatial = true, zombie = null, variant: wanted = null } = {}) => {
     const info = table[sound];
     if (!info) return;
     let gain = num(volume, 1);
@@ -51,7 +52,9 @@ export function direct(state, frame, cfg) {
       }
     }
     if (gain < 0.01) return;
-    const pick = pickVariant(info.variants, s.last[sound], s.rng);
+    // Variante demandée (animation de vague : champ sound.variant) ; jamais la même deux fois d'affilée : sinon la suivante.
+    const hinted = Number.isInteger(wanted) && wanted >= 0 && wanted < info.variants;
+    const pick = hinted ? { variant: wanted === s.last[sound] && info.variants > 1 ? (wanted + 1) % info.variants : wanted, rng: s.rng } : pickVariant(info.variants, s.last[sound], s.rng);
     const speed = Math.max(0.25, num(rate, 1));
     const admit = admitVoice(s.voices, { sound, category: info.category, priority: num(audio.priority?.[info.category]), duration: info.duration / speed }, time + delay, { maxVoices: audio.maxVoices, minDelay: audio.minDelay });
     s = { ...s, voices: admit.state };
@@ -85,7 +88,11 @@ export function direct(state, frame, cfg) {
       const material = e.material ?? materialFor(e.kind, e.obstacleId, cfg?.materials);
       const sound = cfg?.materials?.sounds?.[material];
       if (sound) add(sound, { x: e.x, y: e.y });
-    } else if (type === 'playerHurt') add('joueur-blesse', { spatial: false });
+    } else if (type === 'waveSplash') {
+      // Mélodie d'annonce : une demande par animation (le choix est fait par js/core/wave-splash.js) ; seuls deux sons sont permis.
+      if (e.sound === 'vague-annonce' || e.sound === 'vague-renforcee') add(e.sound, { spatial: false, variant: e.variant });
+    } else if (type === 'waveEnd') add('vague-fin', { spatial: false, variant: e.variant });
+    else if (type === 'playerHurt') add('joueur-blesse', { spatial: false });
     else if (type === 'playerDeath') add('joueur-mort', { spatial: false });
     else if (type === 'playerStep') add('pas', { volume: num(e.volume, 1), pan: e.foot === 'droit' ? 0.15 : e.foot === 'gauche' ? -0.15 : 0, spatial: false });
   }

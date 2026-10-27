@@ -29,7 +29,8 @@ const each = (filter = () => true) => rendered.filter(filter).map((r) => [r.name
 // Niveau efficace en dBFS après normalisation du pic à 0,4 à 0,85 (-8 à -1,4 dBFS) : un son impulsif a un facteur de crête de 10 à 25 dB,
 // un son tenu (voix, ambiance) de 8 à 14 dB. Les bornes laissent de la marge aux deux extrêmes sans accepter un son quasi muet.
 // Tir : fenêtre haute à -8 dB, le tir est dense depuis le retour du propriétaire (« pas assez percutant »).
-const RMS_WINDOW = { tir: [-28, -8], impact: [-30, -12], voix: [-26, -10], pas: [-32, -14], joueur: [-22, -8], interface: [-26, -12], ambiance: [-26, -14] };
+// Annonce (lot 2c) : sons longs et graves à montée progressive, facteur de crête de 12 à 18 dB sous un impact : -30 à -12 dBFS.
+const RMS_WINDOW = { tir: [-28, -8], impact: [-30, -12], voix: [-26, -10], pas: [-32, -14], joueur: [-22, -8], interface: [-26, -12], ambiance: [-26, -14], annonce: [-30, -12] };
 // Centre de gravité spectral (Hz). Tir et impact : mesuré sur les 512 premiers échantillons (11,6 ms à 44,1 kHz), un claquement a un
 // transitoire large bande : plutôt aigu, au moins 500 Hz (un simple « boum » grave serait sous 250 Hz). Voix et joueur : sur tout le son,
 // dominé par le premier formant (300 à 800 Hz) et la pente de la source : entre 150 et 1 500 Hz. Pas : de la bosse grave du zombie au
@@ -38,7 +39,7 @@ const RMS_WINDOW = { tir: [-28, -8], impact: [-30, -12], voix: [-26, -10], pas: 
 const ATTACK_CENTROID = [500, 9000];
 const FULL_CENTROID = { voix: [150, 1500], joueur: [150, 1500], pas: [100, 6000], interface: [200, 2000], ambiance: [60, 1500] };
 // Durées attendues par identifiant (s), d'après le cahier des charges ; les autres sons : 0,1 à 1 s (hors ambiance).
-const DURATION = { 'zombie-gemissement': [1.2, 2], 'zombie-grognement': [0.4, 0.8], 'zombie-plainte': [1.8, 3], 'zombie-mort': [1, 2], 'joueur-mort': [1, 1.5], ambiance: [4, 4], tir: [0.3, 1] };
+const DURATION = { 'zombie-gemissement': [1.2, 2], 'zombie-grognement': [0.4, 0.8], 'zombie-plainte': [1.8, 3], 'zombie-mort': [1, 2], 'joueur-mort': [1, 1.5], ambiance: [4, 4], tir: [0.3, 1], 'vague-annonce': [3.8, 3.8], 'vague-renforcee': [4.2, 4.2], 'vague-fin': [1.4, 1.4] };
 const NO_PITCH = new Set(['zombie-souffle']); // souffle rauque : dominé par le bruit, pas de hauteur mesurable
 
 describe('mesures de chaque son (tous les sons, toutes les variantes)', () => {
@@ -130,8 +131,8 @@ describe('mesures de chaque son (tous les sons, toutes les variantes)', () => {
 });
 
 describe('cohérence des données sonores', () => {
-  const EVENT_SOUNDS = ['tir', 'douille', 'impact-zombie', 'impact-bois', 'impact-metal', 'impact-pierre', 'impact-voiture', 'pas', 'pas-zombie', 'zombie-gemissement', 'zombie-grognement', 'zombie-plainte', 'zombie-souffle', 'zombie-blessure', 'zombie-mort', 'zombie-attaque', 'joueur-blesse', 'joueur-mort', 'ui-pause', 'ui-reprise', 'ambiance'];
-  const CATEGORIES = ['tir', 'impact', 'voix', 'pas', 'joueur', 'interface', 'ambiance'];
+  const EVENT_SOUNDS = ['tir', 'douille', 'impact-zombie', 'impact-bois', 'impact-metal', 'impact-pierre', 'impact-voiture', 'pas', 'pas-zombie', 'zombie-gemissement', 'zombie-grognement', 'zombie-plainte', 'zombie-souffle', 'zombie-blessure', 'zombie-mort', 'zombie-attaque', 'joueur-blesse', 'joueur-mort', 'ui-pause', 'ui-reprise', 'ambiance', 'vague-annonce', 'vague-renforcee', 'vague-fin'];
+  const CATEGORIES = ['tir', 'impact', 'voix', 'pas', 'joueur', 'interface', 'ambiance', 'annonce'];
 
   it('au moins 40 tampons, dont des sons essentiels et des sons de fond', () => {
     expect(rendered.length).toBeGreaterThanOrEqual(40);
@@ -172,9 +173,9 @@ describe('cohérence des données sonores', () => {
     }
   });
 
-  it('les sons de fond sont les voix de zombies (sauf blessure et mort, jouées à l\'impact) et l\'ambiance', () => {
+  it('les sons de fond sont les voix de zombies (sauf blessure et mort, jouées à l\'impact), l\'ambiance et deux sons d\'annonce (lot 2c)', () => {
     const fond = sounds.filter((s) => s.set === 'fond').map((s) => s.id).sort();
-    expect(fond).toEqual(['ambiance', 'zombie-attaque', 'zombie-gemissement', 'zombie-grognement', 'zombie-plainte', 'zombie-souffle']);
+    expect(fond).toEqual(['ambiance', 'vague-fin', 'vague-renforcee', 'zombie-attaque', 'zombie-gemissement', 'zombie-grognement', 'zombie-plainte', 'zombie-souffle']);
   });
 
   it('les voix de zombies ont une fondamentale de base proche de 110 Hz', () => {
