@@ -1,5 +1,5 @@
-// HUD en HTML (blocs E2-2 et E2-8) : barre de vie, « Vie x/y », « Zombies tués », « Vague N », « Restants : x », « Prochaine vague dans N s »
-// et l'annonce de vague. N'écrit dans le DOM que si une valeur change.
+// HUD en HTML (bloc E2-2) : barre de vie, « Vie x/y », « Zombies tués », « Vague N », « Restants : x », « Prochaine vague dans N s ».
+// L'annonce de vague (E2-8) est une animation centrale : js/game/splash-view.js. N'écrit dans le DOM que si une valeur change.
 import { displayHealth } from '../core/combat.js';
 import { fmt } from './texts.js';
 
@@ -10,17 +10,14 @@ export function createHud(dict, root = document) {
   const wave = root.getElementById('hud-wave');
   const remaining = root.getElementById('hud-remaining');
   const next = root.getElementById('hud-next');
-  const announce = root.getElementById('wave-announce');
-  const title = root.getElementById('wave-announce-title');
-  const sub = root.getElementById('wave-announce-sub');
-  let last = { hp: null, max: null, kills: null, phase: null, announce: null };
+  let last = { hp: null, max: null, kills: null, phase: null };
   const shown = { wave: null, remaining: null, total: null, wait: null }; // dernières valeurs écrites
   const setText = (el, text) => {
     if (el.textContent !== text) el.textContent = text;
   };
   return {
-    // player : { health, maxHealth } ; waves : sortie de wave-director.info() ; note : { kind: 'start' | 'end', wave, reinforced } ou null.
-    update(player, killCount, waves, note = null) {
+    // player : { health, maxHealth } ; waves : sortie de wave-director.info().
+    update(player, killCount, waves) {
       const hp = displayHealth(player.health);
       if (hp !== last.hp || player.maxHealth !== last.max) {
         life.textContent = fmt(dict['game.hud.life'], { hp, max: player.maxHealth });
@@ -49,16 +46,7 @@ export function createHud(dict, root = document) {
         shown.wait = wait;
         setText(next, fmt(dict['game.wave.next'], { n: wait }));
       }
-      const key = note ? `${note.kind}${note.wave}` : null;
-      if (key !== last.announce) {
-        if (note) {
-          setText(title, fmt(dict[note.kind === 'end' ? 'game.wave.done' : 'game.wave.announce'], { n: note.wave }));
-          setText(sub, note.kind === 'start' && note.reinforced ? dict['game.wave.reinforced'] : '');
-          sub.hidden = sub.textContent === '';
-        }
-        announce.classList.toggle('is-visible', Boolean(note));
-      }
-      last = { hp, max: player.maxHealth, kills: killCount, phase: fighting ? 'combat' : waiting ? 'attente' : 'inactif', announce: key };
+      last = { hp, max: player.maxHealth, kills: killCount, phase: fighting ? 'combat' : waiting ? 'attente' : 'inactif' };
     },
   };
 }

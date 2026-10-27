@@ -2,10 +2,13 @@
 import { spawn, spawnSync } from 'node:child_process';
 import { mkdirSync, readFileSync } from 'node:fs';
 
+// LH_ONLY=jeu (liste séparée par des virgules) ne mesure que ces pages ; LH_QUERY='?vhs=0' ajoute une chaîne de requête à jeu.html (lot 2c :
+// mesure avec et sans l'effet VHS) ; LH_NAME=<nom> écrit le rapport sous le nom jeu-<nom>.
+const only = process.env.LH_ONLY ? process.env.LH_ONLY.split(',') : null;
 const PAGES = [
   { name: 'index', path: '', thresholds: { performance: 0.9, accessibility: 0.95, 'best-practices': 0.95 } },
-  { name: 'jeu', path: 'jeu.html', thresholds: { performance: 0.45, accessibility: 0.95, 'best-practices': 0.95 } },
-];
+  { name: process.env.LH_NAME ? `jeu-${process.env.LH_NAME}` : 'jeu', path: `jeu.html${process.env.LH_QUERY ?? ''}`, thresholds: { performance: 0.45, accessibility: 0.95, 'best-practices': 0.95 } },
+].filter((p) => !only || only.includes(p.name.split('-')[0]));
 
 mkdirSync('lighthouse-report', { recursive: true });
 const server = spawn('node', ['scripts/serve.mjs'], { stdio: 'ignore' });

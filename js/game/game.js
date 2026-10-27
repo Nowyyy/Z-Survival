@@ -20,10 +20,12 @@ import { materialFor } from '../core/sound-director.js';
 import { variantFor } from '../core/variants.js';
 import { clampDt, num } from '../core/vec.js';
 import { createDirector, info as waveInfo, setParams, startWave as jumpToWave, stepDirector } from '../core/wave-director.js';
+import { createSplash, stepSplash } from '../core/wave-splash.js';
 import { waveSpec } from '../core/waves.js';
 import { createCharacter, createKit } from './character.js';
 import { createEffects, MAX_SPARKS, SPARK_TIME } from './effects.js';
 import { createHud } from './hud.js';
+import { createSplashView } from './splash-view.js';
 import { pickGround } from './picking.js';
 import { STRIDE } from './skeleton.js';
 import { fmt } from './texts.js';
@@ -34,7 +36,6 @@ const RECOIL_TIME = 0.12;
 const HIT_FLASH_TIME = 0.1;
 const FIRE_POSE_TIME = 0.3;
 const STEP = 0.05; // pas de la simulation avancée à la demande (hook de test step)
-const ANNOUNCE_TIME = 2.5; // durée de l'annonce de vague (E2-8), en secondes de jeu
 const TAU = Math.PI * 2;
 // Pose de chaque allure (pose.js : « zombie » reste l'équivalent de « marche »).
 const GAIT_POSE = { lent: 'lent', marche: 'zombie', rampe: 'rampe', course: 'course' };
@@ -73,6 +74,8 @@ export function createGame(ctx) {
   const kit = createKit({ textures, variants: ctx.variants, hit: palette.hit });
   const effects = createEffects(world.scene, palette, { gunHeight: render.gunHeight, bulletRadius: cfg.weapon.bulletRadius });
   const hud = createHud(ctx.dict);
+  const splashView = createSplashView(ctx.dict);
+  const splashOptions = { reducedMotion: reduced, params: ctx.splashCfg };
   const playerChar = createCharacter(kit, 'player');
   world.scene.add(playerChar.root);
   const zombies = new Map(); // id -> { char, phase, x, y, flashing }
@@ -127,7 +130,8 @@ export function createGame(ctx) {
       weapon: createWeaponState(),
       waves: createDirector(cfg.waves, { seed, wave: params.wave ?? 1, inactive: params.nospawn }),
       waveParams: cfg.waves,
-      announce: null,
+      splash: createSplash(),
+      splashView: stepSplash(createSplash(), null, 0, splashOptions).view,
       flow: createFlowState(),
       rng: createRng(seed),
       walk: { phase: 0, steps: createFootsteps() },
@@ -140,6 +144,7 @@ export function createGame(ctx) {
       lifeBucket: 10,
       spread: 0, // rapport de vitesse lissé, de 0 (arrêt) à 1 (pleine vitesse)
     };
+    splashView.apply(sim.splashView);
     anim = { phase: 0, facing: 0, x: sim.player.x, y: sim.player.y };
     rig.snap(sim.player.x, sim.player.y);
     lastFire = -10;
@@ -294,17 +299,22 @@ export function createGame(ctx) {
       }
       for (const ev of out.events) {
         if (ev.type === 'waveStart') {
-          sim.announce = { kind: 'start', wave: ev.wave, reinforced: ev.reinforced, until: sim.time + ANNOUNCE_TIME };
           waveLive = fmt(ctx.dict['game.wave.live'], { n: ev.wave });
         } else if (ev.type === 'waveEnd') {
           // Fin de vague : la vie du joueur est remise à son maximum (healFraction), sans dépasser.
           const max = sim.player.maxHealth;
           sim.player = { ...sim.player, health: Math.min(max, sim.player.health + max * ev.healFraction) };
-          sim.announce = { kind: 'end', wave: ev.wave, reinforced: false, until: sim.time + ANNOUNCE_TIME };
           waveLive = fmt(ctx.dict['game.wave.liveDone'], { n: ev.wave });
         }
       }
     }
+
+    // Animation de vague (E2-8) : état pur (wave-splash.js) avancé avec le temps de jeu, donc figé par la pause ; sa mélodie part avec l'image
+    // de démarrage (une demande par animation). Une animation de début démarre 3,0 s avant les apparitions, celle de fin à l'état terminee.
+    const spl = stepSplash(sim.splash, { ...waveInfo(sim.waves), playerAlive: sim.player.health > 0 }, dt, splashOptions);
+    sim.splash = spl.state;
+    sim.splashView = spl.view;
+    if (spl.view.sound) events.push(spl.view.sound.name === 'vague-fin' ? { type: 'waveEnd', variant: spl.view.sound.variant } : { type: 'waveSplash', sound: spl.view.sound.name, variant: spl.view.sound.variant });
 
     const contact = stepContact(sim.player, sim.enemies, dt, cfg.zombie);
     sim.player = contact.player;
@@ -325,6 +335,11 @@ export function createGame(ctx) {
     if (waveLive !== null) ctx.ui.setLive(waveLive);
     if (sim.player.health <= 0) {
       sim.dead = true;
+      // Mort : l'animation est masquée aussitôt et la mélodie s'arrête en fondu (0,3 s).
+      const off = stepSplash(sim.splash, { ...waveInfo(sim.waves), playerAlive: false }, 0, splashOptions);
+      sim.splash = off.state;
+      sim.splashView = off.view;
+      audio?.stopAnnounce();
       input.releaseAll();
       ctx.ui.setLive(fmt(ctx.dict['game.live.dead'], { n: sim.kills }));
       ctx.ui.showEnd(sim.kills, waveInfo(sim.waves).wave);
@@ -404,8 +419,8 @@ export function createGame(ctx) {
       flashSize: reduced ? 4 : 7,
       unitsPerPixel: size.unitsPerPixel,
     });
-    if (sim.announce && sim.time >= sim.announce.until) sim.announce = null;
-    hud.update(sim.player, sim.kills, waveInfo(sim.waves), sim.announce);
+    hud.update(sim.player, sim.kills, waveInfo(sim.waves));
+    splashView.apply(sim.splashView);
   }
 
   // La caméra suit le joueur (js/core/camera.js), la lumière et sa carte d'ombres suivent la caméra.
@@ -429,6 +444,7 @@ export function createGame(ctx) {
     frameId = requestAnimationFrame(frame);
     const dt = last === null ? 0 : clampDt((now - last) / 1000);
     last = now;
+    ctx.vhs?.update(now / 1000); // horloge d'effet : secondes réelles, elle continue pendant la pause
     const paused = ctx.ui.isPaused();
     // En pause rien ne bouge : une dernière image suffit (ou après un redimensionnement), puis on n'affiche plus rien.
     if (paused && !stale) return;
@@ -473,7 +489,6 @@ export function createGame(ctx) {
     return {
       active: i.active, phase: i.phase, wave: i.wave, level: i.level, total: i.total, alive: i.alive, toSpawn: i.toSpawn, remaining: i.remaining,
       maxConcurrent: i.maxConcurrent, waitLeft: i.waitLeft, hpMul: spec.hpMul, speedMul: spec.speedMul, damageMul: spec.damageMul, reinforced: i.reinforced,
-      announce: sim.announce ? { kind: sim.announce.kind, wave: sim.announce.wave, reinforced: sim.announce.reinforced } : null,
     };
   }
 
@@ -555,7 +570,9 @@ export function createGame(ctx) {
     startWave(n) {
       sim.enemies = [];
       sim.waves = jumpToWave(sim.waves, n);
-      sim.announce = null;
+      sim.splash = createSplash();
+      sim.splashView = stepSplash(sim.splash, null, 0, splashOptions).view;
+      splashView.apply(sim.splashView);
       stale = true;
     },
     // Test : tue tous les zombies vivants sans compter de tués ; renvoie leur nombre.
@@ -612,6 +629,8 @@ export function createGame(ctx) {
         dead: sim.dead,
         time: sim.time,
         audio: ctx.audio.state(),
+        splash: splashView.readout(),
+        vhs: ctx.vhs.readout(),
       };
     },
   };

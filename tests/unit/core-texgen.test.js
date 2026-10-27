@@ -4,6 +4,7 @@ import { deepFreeze, WEIRD } from './helpers/monde.js';
 import { specs } from './helpers/textures.js';
 
 const PLAIN = KINDS.filter((k) => k !== 'atlas');
+const OPAQUE = PLAIN.filter((k) => k !== 'grain'); // le grain (lot 2c) est transparent, deux teintes : testé dans core-texgen-grain.test.js
 const SAMPLE = (kind) => Object.fromEntries(COLOR_NAMES[kind].map((name, i) => [name, i === 0 ? [110, 100, 90] : [90, 100, 110]]));
 const spec = (kind, extra = {}) => ({ id: kind, kind, width: 64, height: 64, seed: 5, colors: SAMPLE(kind), params: {}, ...extra });
 const lum = (d, i) => 0.3 * d[i] + 0.59 * d[i + 1] + 0.11 * d[i + 2];
@@ -13,7 +14,7 @@ describe('texgen : forme du résultat', () => {
     for (const k of ['tiles', 'planks', 'plaster', 'metal', 'asphalt', 'markings', 'sidewalk', 'grass', 'soil', 'cloth', 'denim', 'leather', 'skin', 'paint', 'glass', 'leaves', 'bark', 'crate', 'atlas']) expect(KINDS).toContain(k);
   });
 
-  it.each(PLAIN)('%s : taille correcte, octets dans [0, 255], alpha 255', (kind) => {
+  it.each(OPAQUE)('%s : taille correcte, octets dans [0, 255], alpha 255', (kind) => {
     const t = createTextureData(spec(kind));
     expect([t.width, t.height, t.data.length]).toEqual([64, 64, 64 * 64 * 4]);
     expect(t.data).toBeInstanceOf(Uint8ClampedArray);
@@ -21,7 +22,7 @@ describe('texgen : forme du résultat', () => {
     expect(t.warnings).toEqual([]);
   });
 
-  it.each(PLAIN)('%s : pas d\'image unie', (kind) => {
+  it.each(OPAQUE)('%s : pas d\'image unie', (kind) => {
     const { data } = createTextureData(spec(kind));
     const n = data.length / 4;
     let sum = 0;
@@ -49,7 +50,7 @@ describe('texgen : déterminisme et couleurs', () => {
     expect(Buffer.from(a.data).equals(Buffer.from(c.data))).toBe(false);
   });
 
-  it.each(PLAIN)('%s : la moyenne reste proche de la couleur principale', (kind) => {
+  it.each(OPAQUE)('%s : la moyenne reste proche de la couleur principale', (kind) => {
     const mean = meanColor(createTextureData(spec(kind)));
     const main = SAMPLE(kind)[MAIN_COLOR[kind]];
     for (let i = 0; i < 3; i += 1) expect(Math.abs(mean[i] - main[i])).toBeLessThan(60);

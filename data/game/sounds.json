@@ -1547,6 +1547,848 @@
         },
         "targetPeak": 0.35
       }
+    },
+    {
+      "id": "vague-annonce",
+      "category": "annonce",
+      "set": "essentiel",
+      "sampleRate": 22050,
+      "duration": 3.8,
+      "variants": 3,
+      "seed": 311,
+      "loop": false,
+      "markers": {
+        "sting": 3
+      },
+      "layers": [
+        {
+          "type": "osc",
+          "wave": "saw",
+          "freq": 55,
+          "start": 0,
+          "dur": 3.8,
+          "attack": 2,
+          "release": 0.8,
+          "gain": 0.3,
+          "freqVar": 0,
+          "filter": {
+            "type": "lowpass",
+            "freq": [
+              180,
+              420
+            ],
+            "sweep": 3,
+            "q": 0.9
+          },
+          "byVariant": [
+            {
+              "freqMul": 1
+            },
+            {
+              "freqMul": 1.025
+            },
+            {
+              "freqMul": 0.975
+            }
+          ]
+        },
+        {
+          "type": "osc",
+          "wave": "saw",
+          "freq": 55.8,
+          "start": 0,
+          "dur": 3.8,
+          "attack": 2,
+          "release": 0.8,
+          "gain": 0.3,
+          "freqVar": 0,
+          "filter": {
+            "type": "lowpass",
+            "freq": [
+              180,
+              420
+            ],
+            "sweep": 3,
+            "q": 0.9
+          },
+          "byVariant": [
+            {
+              "freqMul": 1
+            },
+            {
+              "freqMul": 1.025
+            },
+            {
+              "freqMul": 0.975
+            }
+          ]
+        },
+        {
+          "type": "ring",
+          "start": 0.5,
+          "dur": 1.5,
+          "attack": 0.002,
+          "detune": 0.0087,
+          "freqVar": 0,
+          "gain": 0.4,
+          "partials": [
+            {
+              "freq": 220,
+              "gain": 1,
+              "decay": 0.5
+            },
+            {
+              "freq": 607.2,
+              "gain": 0.5,
+              "decay": 0.34
+            },
+            {
+              "freq": 1188,
+              "gain": 0.28,
+              "decay": 0.2
+            },
+            {
+              "freq": 1958,
+              "gain": 0.14,
+              "decay": 0.12
+            }
+          ],
+          "byVariant": [
+            {
+              "freqMul": 1,
+              "startAdd": 0.04
+            },
+            {
+              "freqMul": 0.9439,
+              "startAdd": 0.065
+            },
+            {
+              "freqMul": 1.5874,
+              "startAdd": 0.09
+            }
+          ]
+        },
+        {
+          "type": "ring",
+          "start": 1.1,
+          "dur": 1.5,
+          "attack": 0.002,
+          "detune": 0.0087,
+          "freqVar": 0,
+          "gain": 0.4,
+          "partials": [
+            {
+              "freq": 220,
+              "gain": 1,
+              "decay": 0.5
+            },
+            {
+              "freq": 607.2,
+              "gain": 0.5,
+              "decay": 0.34
+            },
+            {
+              "freq": 1188,
+              "gain": 0.28,
+              "decay": 0.2
+            },
+            {
+              "freq": 1958,
+              "gain": 0.14,
+              "decay": 0.12
+            }
+          ],
+          "byVariant": [
+            {
+              "freqMul": 1.0595,
+              "startAdd": 0.04
+            },
+            {
+              "freqMul": 0.8909,
+              "startAdd": 0.065
+            },
+            {
+              "freqMul": 1.4983,
+              "startAdd": 0.09
+            }
+          ]
+        },
+        {
+          "type": "ring",
+          "start": 1.7,
+          "dur": 1.5,
+          "attack": 0.002,
+          "detune": 0.0087,
+          "freqVar": 0,
+          "gain": 0.4,
+          "partials": [
+            {
+              "freq": 220,
+              "gain": 1,
+              "decay": 0.5
+            },
+            {
+              "freq": 607.2,
+              "gain": 0.5,
+              "decay": 0.34
+            },
+            {
+              "freq": 1188,
+              "gain": 0.28,
+              "decay": 0.2
+            },
+            {
+              "freq": 1958,
+              "gain": 0.14,
+              "decay": 0.12
+            }
+          ],
+          "byVariant": [
+            {
+              "freqMul": 1.4983,
+              "startAdd": 0.04
+            },
+            {
+              "freqMul": 1.2599,
+              "startAdd": 0.065
+            },
+            {
+              "freqMul": 1.0595,
+              "startAdd": 0.09
+            }
+          ]
+        },
+        {
+          "type": "ring",
+          "start": 2.3,
+          "dur": 1.5,
+          "attack": 0.002,
+          "detune": 0.0087,
+          "freqVar": 0,
+          "gain": 0.4,
+          "partials": [
+            {
+              "freq": 220,
+              "gain": 1,
+              "decay": 0.5
+            },
+            {
+              "freq": 607.2,
+              "gain": 0.5,
+              "decay": 0.34
+            },
+            {
+              "freq": 1188,
+              "gain": 0.28,
+              "decay": 0.2
+            },
+            {
+              "freq": 1958,
+              "gain": 0.14,
+              "decay": 0.12
+            }
+          ],
+          "byVariant": [
+            {
+              "freqMul": 1.4142,
+              "startAdd": 0.04
+            },
+            {
+              "freqMul": 1.3348,
+              "startAdd": 0.065
+            },
+            {
+              "freqMul": 1.1225,
+              "startAdd": 0.09
+            }
+          ]
+        },
+        {
+          "type": "noise",
+          "color": "pink",
+          "start": 0,
+          "dur": 3,
+          "attack": 3,
+          "release": 0.05,
+          "gain": 0.8,
+          "filter": {
+            "type": "bandpass",
+            "freq": [
+              200,
+              2500
+            ],
+            "sweep": 3,
+            "q": 1.2
+          }
+        },
+        {
+          "type": "osc",
+          "wave": "sine",
+          "freq": [
+            55,
+            45
+          ],
+          "sweepTime": 0.6,
+          "start": 3,
+          "dur": 0.9,
+          "attack": 0.003,
+          "decay": 0.28,
+          "release": 0.1,
+          "gain": 4.5,
+          "freqVar": 0
+        },
+        {
+          "type": "noise",
+          "color": "white",
+          "start": 3,
+          "dur": 0.15,
+          "attack": 0.001,
+          "decay": 0.035,
+          "gain": 0.8,
+          "filter": {
+            "type": "highpass",
+            "freq": 3000,
+            "q": 0.7
+          }
+        }
+      ],
+      "post": {
+        "reverb": {
+          "decay": 1.3,
+          "mix": 0.25,
+          "damping": 0.45
+        },
+        "saturation": 0.5,
+        "targetPeak": 0.8,
+        "fadeOut": 0.5
+      }
+    },
+    {
+      "id": "vague-renforcee",
+      "category": "annonce",
+      "set": "fond",
+      "sampleRate": 22050,
+      "duration": 4.2,
+      "variants": 2,
+      "seed": 331,
+      "loop": false,
+      "markers": {
+        "sting": 3
+      },
+      "layers": [
+        {
+          "type": "osc",
+          "wave": "saw",
+          "freq": 41,
+          "start": 0,
+          "dur": 4.2,
+          "attack": 2.2,
+          "release": 1,
+          "gain": 0.18,
+          "freqVar": 0,
+          "filter": {
+            "type": "lowpass",
+            "freq": [
+              150,
+              360
+            ],
+            "sweep": 3,
+            "q": 1
+          },
+          "byVariant": [
+            {
+              "freqMul": 1
+            },
+            {
+              "freqMul": 1.03
+            }
+          ]
+        },
+        {
+          "type": "osc",
+          "wave": "saw",
+          "freq": 41.6,
+          "start": 0,
+          "dur": 4.2,
+          "attack": 2.2,
+          "release": 1,
+          "gain": 0.18,
+          "freqVar": 0,
+          "filter": {
+            "type": "lowpass",
+            "freq": [
+              150,
+              360
+            ],
+            "sweep": 3,
+            "q": 1
+          },
+          "byVariant": [
+            {
+              "freqMul": 1
+            },
+            {
+              "freqMul": 1.03
+            }
+          ]
+        },
+        {
+          "type": "osc",
+          "wave": "sine",
+          "freq": [
+            62,
+            38
+          ],
+          "sweepTime": 0.12,
+          "start": 0.3,
+          "dur": 0.35,
+          "attack": 0.012,
+          "decay": 0.07,
+          "release": 0.05,
+          "gain": 0.63,
+          "freqVar": 0
+        },
+        {
+          "type": "osc",
+          "wave": "sine",
+          "freq": [
+            62,
+            38
+          ],
+          "sweepTime": 0.12,
+          "start": 0.58,
+          "dur": 0.35,
+          "attack": 0.012,
+          "decay": 0.07,
+          "release": 0.05,
+          "gain": 0.45,
+          "freqVar": 0
+        },
+        {
+          "type": "osc",
+          "wave": "sine",
+          "freq": [
+            62,
+            38
+          ],
+          "sweepTime": 0.12,
+          "start": 1.2,
+          "dur": 0.35,
+          "attack": 0.012,
+          "decay": 0.07,
+          "release": 0.05,
+          "gain": 0.9,
+          "freqVar": 0
+        },
+        {
+          "type": "osc",
+          "wave": "sine",
+          "freq": [
+            62,
+            38
+          ],
+          "sweepTime": 0.12,
+          "start": 1.48,
+          "dur": 0.35,
+          "attack": 0.012,
+          "decay": 0.07,
+          "release": 0.05,
+          "gain": 0.63,
+          "freqVar": 0
+        },
+        {
+          "type": "osc",
+          "wave": "sine",
+          "freq": [
+            62,
+            38
+          ],
+          "sweepTime": 0.12,
+          "start": 2.1,
+          "dur": 0.35,
+          "attack": 0.012,
+          "decay": 0.07,
+          "release": 0.05,
+          "gain": 1.26,
+          "freqVar": 0
+        },
+        {
+          "type": "osc",
+          "wave": "sine",
+          "freq": [
+            62,
+            38
+          ],
+          "sweepTime": 0.12,
+          "start": 2.38,
+          "dur": 0.35,
+          "attack": 0.012,
+          "decay": 0.07,
+          "release": 0.05,
+          "gain": 0.9,
+          "freqVar": 0
+        },
+        {
+          "type": "ring",
+          "start": 0.6,
+          "dur": 1.5,
+          "attack": 0.002,
+          "detune": 0.0087,
+          "freqVar": 0,
+          "gain": 0.8,
+          "partials": [
+            {
+              "freq": 110,
+              "gain": 1,
+              "decay": 0.6
+            },
+            {
+              "freq": 303.6,
+              "gain": 0.5,
+              "decay": 0.408
+            },
+            {
+              "freq": 594,
+              "gain": 0.28,
+              "decay": 0.24
+            },
+            {
+              "freq": 979,
+              "gain": 0.14,
+              "decay": 0.144
+            }
+          ],
+          "byVariant": [
+            {
+              "freqMul": 1,
+              "startAdd": 0.05
+            },
+            {
+              "freqMul": 1.0595,
+              "startAdd": 0.08
+            }
+          ]
+        },
+        {
+          "type": "ring",
+          "start": 1.4,
+          "dur": 1.5,
+          "attack": 0.002,
+          "detune": 0.0087,
+          "freqVar": 0,
+          "gain": 0.8,
+          "partials": [
+            {
+              "freq": 110,
+              "gain": 1,
+              "decay": 0.6
+            },
+            {
+              "freq": 303.6,
+              "gain": 0.5,
+              "decay": 0.408
+            },
+            {
+              "freq": 594,
+              "gain": 0.28,
+              "decay": 0.24
+            },
+            {
+              "freq": 979,
+              "gain": 0.14,
+              "decay": 0.144
+            }
+          ],
+          "byVariant": [
+            {
+              "freqMul": 1.4142,
+              "startAdd": 0.05
+            },
+            {
+              "freqMul": 1.1225,
+              "startAdd": 0.08
+            }
+          ]
+        },
+        {
+          "type": "ring",
+          "start": 2.2,
+          "dur": 1.5,
+          "attack": 0.002,
+          "detune": 0.0087,
+          "freqVar": 0,
+          "gain": 0.8,
+          "partials": [
+            {
+              "freq": 110,
+              "gain": 1,
+              "decay": 0.6
+            },
+            {
+              "freq": 303.6,
+              "gain": 0.5,
+              "decay": 0.408
+            },
+            {
+              "freq": 594,
+              "gain": 0.28,
+              "decay": 0.24
+            },
+            {
+              "freq": 979,
+              "gain": 0.14,
+              "decay": 0.144
+            }
+          ],
+          "byVariant": [
+            {
+              "freqMul": 1.0595,
+              "startAdd": 0.05
+            },
+            {
+              "freqMul": 1.4983,
+              "startAdd": 0.08
+            }
+          ]
+        },
+        {
+          "type": "noise",
+          "color": "pink",
+          "start": 0,
+          "dur": 3,
+          "attack": 3,
+          "release": 0.05,
+          "gain": 1.2800000000000002,
+          "filter": {
+            "type": "bandpass",
+            "freq": [
+              150,
+              1800
+            ],
+            "sweep": 3,
+            "q": 1.2
+          }
+        },
+        {
+          "type": "osc",
+          "wave": "sine",
+          "freq": [
+            55,
+            45
+          ],
+          "sweepTime": 0.6,
+          "start": 3,
+          "dur": 1,
+          "attack": 0.003,
+          "decay": 0.3,
+          "release": 0.1,
+          "gain": 8.91,
+          "freqVar": 0
+        },
+        {
+          "type": "osc",
+          "wave": "sine",
+          "freq": [
+            52,
+            44
+          ],
+          "sweepTime": 0.6,
+          "start": 3.25,
+          "dur": 0.95,
+          "attack": 0.003,
+          "decay": 0.3,
+          "release": 0.1,
+          "gain": 7.29,
+          "freqVar": 0
+        },
+        {
+          "type": "noise",
+          "color": "white",
+          "start": 3,
+          "dur": 0.15,
+          "attack": 0.001,
+          "decay": 0.035,
+          "gain": 0.8,
+          "filter": {
+            "type": "highpass",
+            "freq": 2500,
+            "q": 0.7
+          }
+        },
+        {
+          "type": "noise",
+          "color": "white",
+          "start": 3.25,
+          "dur": 0.12,
+          "attack": 0.001,
+          "decay": 0.03,
+          "gain": 0.48,
+          "filter": {
+            "type": "highpass",
+            "freq": 2500,
+            "q": 0.7
+          }
+        }
+      ],
+      "post": {
+        "reverb": {
+          "decay": 1.4,
+          "mix": 0.28,
+          "damping": 0.5
+        },
+        "saturation": 1,
+        "targetPeak": 0.8,
+        "targetRms": 0.2,
+        "fadeOut": 0.6
+      }
+    },
+    {
+      "id": "vague-fin",
+      "category": "annonce",
+      "set": "fond",
+      "sampleRate": 22050,
+      "duration": 1.4,
+      "variants": 2,
+      "seed": 351,
+      "loop": false,
+      "layers": [
+        {
+          "type": "ring",
+          "start": 0,
+          "dur": 1.3,
+          "attack": 0.03,
+          "detune": 0.004,
+          "freqVar": 0,
+          "gain": 1,
+          "partials": [
+            {
+              "freq": 261.63,
+              "gain": 1,
+              "decay": 0.45
+            },
+            {
+              "freq": 523.26,
+              "gain": 0.35,
+              "decay": 0.3
+            },
+            {
+              "freq": 784.89,
+              "gain": 0.15,
+              "decay": 0.2
+            }
+          ],
+          "byVariant": [
+            {
+              "freqMul": 1
+            },
+            {
+              "freqMul": 1.1225
+            }
+          ]
+        },
+        {
+          "type": "ring",
+          "start": 0.045,
+          "dur": 1.3,
+          "attack": 0.03,
+          "detune": 0.004,
+          "freqVar": 0,
+          "gain": 0.8,
+          "partials": [
+            {
+              "freq": 392,
+              "gain": 1,
+              "decay": 0.45
+            },
+            {
+              "freq": 784,
+              "gain": 0.35,
+              "decay": 0.3
+            },
+            {
+              "freq": 1176,
+              "gain": 0.15,
+              "decay": 0.2
+            }
+          ],
+          "byVariant": [
+            {
+              "freqMul": 1
+            },
+            {
+              "freqMul": 1.1225
+            }
+          ]
+        },
+        {
+          "type": "ring",
+          "start": 0.09,
+          "dur": 1.3,
+          "attack": 0.03,
+          "detune": 0.004,
+          "freqVar": 0,
+          "gain": 0.6,
+          "partials": [
+            {
+              "freq": 523.25,
+              "gain": 1,
+              "decay": 0.45
+            },
+            {
+              "freq": 1046.5,
+              "gain": 0.35,
+              "decay": 0.3
+            },
+            {
+              "freq": 1569.75,
+              "gain": 0.15,
+              "decay": 0.2
+            }
+          ],
+          "byVariant": [
+            {
+              "freqMul": 1
+            },
+            {
+              "freqMul": 1.1225
+            }
+          ]
+        },
+        {
+          "type": "ring",
+          "start": 0.09,
+          "dur": 1,
+          "attack": 0.03,
+          "detune": 0.004,
+          "freqVar": 0,
+          "gain": 0.12,
+          "partials": [
+            {
+              "freq": 1440,
+              "gain": 1,
+              "decay": 0.12
+            }
+          ],
+          "byVariant": [
+            {
+              "freqMul": 1
+            },
+            {
+              "freqMul": 1.1225
+            }
+          ]
+        }
+      ],
+      "post": {
+        "reverb": {
+          "decay": 0.5,
+          "mix": 0.15,
+          "damping": 0.6
+        },
+        "saturation": 0,
+        "targetPeak": 0.55,
+        "fadeOut": 0.2
+      }
     }
   ]
 }

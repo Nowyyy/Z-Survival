@@ -96,47 +96,114 @@ body.game {
   color: var(--color-text);
 }
 
-/* Annonce de vague (E2-8) : centrée en haut, sans focus ni clic ; fondu court, sans animation si le mouvement est réduit. */
+/* Annonce de vague (E2-8, lot 2c) : animation centrale, sans focus ni clic. Aucune animation CSS autonome : js/game/splash-view.js met à jour
+   les variables --splash-* à chaque image avec l'horloge du jeu, donc la pause la fige ; sous prefers-reduced-motion la vue pure ne produit
+   aucun mouvement (opacité 0 ou 1, échelle 1, décalages nuls). Au-dessus du canvas, de l'effet VHS et du HUD, sous les panneaux. */
 .wave-announce {
-  position: absolute;
-  top: calc(var(--game-margin) + var(--safe-top));
-  left: 50%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--space-1);
-  max-width: calc(100% - 2 * var(--game-margin) - 2 * 13rem);
-  padding: var(--space-2) var(--space-4);
-  border-radius: var(--radius-md);
-  background: var(--color-overlay);
-  text-align: center;
-  opacity: 0;
+  --splash-opacity: 0;
+  --splash-scale: 1;
+  --splash-shift: 0;
+  --splash-split: 0;
+  --splash-flicker: 0;
+  --splash-tear1-y: 0;
+  --splash-tear1-h: 0;
+  --splash-tear2-y: 0;
+  --splash-tear2-h: 0;
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: calc(var(--game-margin) + var(--safe-top)) calc(var(--game-margin) + var(--safe-right)) calc(var(--game-margin) + var(--safe-bottom)) calc(var(--game-margin) + var(--safe-left));
   visibility: hidden;
-  transform: translateX(-50%);
-  transition: opacity 0.25s ease, visibility 0.25s;
   pointer-events: none;
 }
 
 .wave-announce.is-visible {
-  opacity: 1;
   visibility: visible;
 }
 
+/* Voile sombre radial derrière le titre : la lisibilité ne dépend pas du fond (contrastes calculés par data-ambiance.test.js). */
+.wave-announce-veil {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse 65% 60% at center, color-mix(in srgb, var(--game-splash-veil) calc(var(--game-splash-veil-alpha) * 100%), transparent) 0%, color-mix(in srgb, var(--game-splash-veil) calc(var(--game-splash-veil-alpha) * 55%), transparent) 55%, transparent 100%);
+  opacity: var(--splash-opacity);
+}
+
+/* Le texte reste dans les marges même à l'échelle maximale (1,18) : largeur de la zone libre divisée par 1,25. */
+.wave-announce-body {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  max-width: calc((100vw - 2 * var(--game-margin) - var(--safe-left) - var(--safe-right)) / 1.25);
+  text-align: center;
+  opacity: calc(var(--splash-opacity) * (1 + var(--splash-flicker)));
+  transform: translateX(calc(var(--splash-shift) * 1px)) scale(var(--splash-scale));
+}
+
+.wave-announce-head {
+  position: relative;
+}
+
 .wave-announce-title,
+.wave-announce-tear {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: var(--font-weight-normal);
+  font-size: var(--text-2xl);
+  line-height: 1.05;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  overflow-wrap: anywhere;
+  color: var(--game-splash-title);
+}
+
+/* Décalage de couleur : deux ombres de texte, rouge à gauche et cyan à droite (4 px au plus). */
+.wave-announce-title {
+  text-shadow: calc(var(--splash-split) * -1px) 0 var(--game-splash-split-red), calc(var(--splash-split) * 1px) 0 var(--game-splash-split-cyan);
+}
+
+/* Déchirures : copies du titre découpées en bande horizontale et décalées. Hauteur nulle = invisible. */
+.wave-announce-tear {
+  position: absolute;
+  inset: 0;
+  color: var(--game-splash-tear);
+  pointer-events: none;
+}
+
+.wave-announce-tear[data-tear="1"] {
+  clip-path: inset(calc(var(--splash-tear1-y) * 100%) 0 calc((1 - var(--splash-tear1-y) - var(--splash-tear1-h)) * 100%) 0);
+  transform: translateX(calc(var(--splash-tear1-h) * 60px));
+}
+
+.wave-announce-tear[data-tear="2"] {
+  clip-path: inset(calc(var(--splash-tear2-y) * 100%) 0 calc((1 - var(--splash-tear2-y) - var(--splash-tear2-h)) * 100%) 0);
+  transform: translateX(calc(var(--splash-tear2-h) * -60px));
+}
+
 .wave-announce-sub {
   margin: 0;
-  font-weight: 700;
-  line-height: 1.1;
-  color: var(--color-text);
+  font-size: var(--text-lg);
+  font-weight: var(--font-weight-bold);
+  line-height: 1.2;
+  letter-spacing: 0.04em;
+  color: var(--game-splash-sub);
 }
 
-.wave-announce-title {
-  font-size: var(--text-xl);
+.wave-announce-sub[hidden] {
+  display: none;
 }
 
-.wave-announce-sub {
-  font-size: var(--text-md);
-  color: var(--color-action-text);
+/* Fin de vague : texte os, plus petit, sans secousse forte (la vue pure en donne le quart). */
+.wave-announce.is-fin .wave-announce-title {
+  font-size: clamp(1.6rem, 6vw, 3rem);
+  color: var(--game-splash-end);
+}
+
+.wave-announce.is-fin .wave-announce-sub {
+  color: var(--game-splash-end-sub);
 }
 
 /* Numéro de vague : lettres de sang (police titre), en permanence sous la barre de vie. */
@@ -362,6 +429,20 @@ body.game {
   .panel-title {
     font-size: var(--text-lg);
   }
+
+  /* Pause (lot 2c) : cinq lignes de 44 px au plus à 667 × 375, donc deux colonnes (titre et volume sur toute la largeur). */
+  #pause-panel .panel {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    align-items: center;
+    column-gap: var(--space-3);
+    width: min(100%, 34rem);
+  }
+
+  #pause-panel .panel-title,
+  #pause-panel .volume {
+    grid-column: 1 / -1;
+  }
 }
 
 /* Indicateur de chargement : affiché avant l'évaluation de Three.js, retiré par main.js. */
@@ -396,10 +477,6 @@ body.game {
 @media (prefers-reduced-motion: reduce) {
   .boot-ring {
     animation: none;
-  }
-
-  .wave-announce {
-    transition: none;
   }
 }
 
@@ -476,4 +553,59 @@ body.game {
   z-index: 5;
   transform: translateX(-50%);
   max-width: 40vw;
+}
+
+/* Effet VHS (lot 2c) : surcouche décorative #vhs, trois couches, entre le canvas et le HUD. js/game/vhs-layer.js met à jour les variables
+   --vhs-* ; aucun mix-blend-mode, aucun filter, aucun backdrop-filter (coût de composition sur téléphone). Retiré du DOM quand il est coupé. */
+.vhs {
+  --vhs-scan: 0;
+  --vhs-edge: 0;
+  --vhs-vignette: 0;
+  --vhs-grain-opacity: 0;
+  --vhs-gx: 0;
+  --vhs-gy: 0;
+  --vhs-flicker: 0;
+  --vhs-track-y: 0;
+  --vhs-track-h: 0;
+  --vhs-track-opacity: 0;
+  --vhs-track-shift: 0;
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+/* Couche 1 : lignes de balayage fixes (période de 3 px), vignette, bords rouge à gauche et cyan à droite (faux décalage de couleur). */
+.vhs-static {
+  position: absolute;
+  inset: 0;
+  opacity: calc(0.97 + var(--vhs-flicker));
+  background:
+    repeating-linear-gradient(to bottom, color-mix(in srgb, var(--game-vhs-scan) calc(var(--vhs-scan) * 100%), transparent) 0 1px, transparent 1px 3px),
+    radial-gradient(ellipse at center, transparent 55%, color-mix(in srgb, var(--game-vhs-vignette) calc(var(--vhs-vignette) * 100%), transparent) 100%),
+    linear-gradient(to right, color-mix(in srgb, var(--game-vhs-edge-red) calc(var(--vhs-edge) * 100%), transparent) 0, transparent 7%, transparent 93%, color-mix(in srgb, var(--game-vhs-edge-cyan) calc(var(--vhs-edge) * 100%), transparent) 100%);
+}
+
+/* Couche 2 : grain de 128 × 128 px (généré par du code) sur une couche plus grande que l'écran ; sa position saute au pas de 10 par seconde. */
+.vhs-grain {
+  position: absolute;
+  inset: -128px;
+  background-image: var(--vhs-grain-url, none);
+  background-size: 128px 128px;
+  background-repeat: repeat;
+  image-rendering: pixelated;
+  opacity: var(--vhs-grain-opacity);
+  transform: translate3d(calc(var(--vhs-gx) * -1px), calc(var(--vhs-gy) * -1px), 0);
+  will-change: transform;
+}
+
+/* Couche 3 : bande de suivi, légèrement plus claire et décalée de quelques pixels, qui traverse l'écran de haut en bas. */
+.vhs-track {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(var(--vhs-track-y) * 100%);
+  height: calc(var(--vhs-track-h) * 100%);
+  background: color-mix(in srgb, var(--game-vhs-track) calc(var(--vhs-track-opacity) * 100%), transparent);
+  transform: translateX(calc(var(--vhs-track-shift) * 1px));
 }

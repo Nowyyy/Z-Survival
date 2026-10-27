@@ -556,6 +556,22 @@ GENRES.bark = {
   },
 };
 
+// Grain de pellicule (lot 2c, effet VHS) : bruit numérique tuilable, chaque pixel est clair ou sombre (deux teintes grises passées en
+// argument) avec une transparence quantifiée en `levels` niveaux (PNG très compressible). Seul genre qui écrit un alpha inférieur à 255.
+GENRES.grain = {
+  colors: ['light', 'dark'], main: 'light', tile: 'xy',
+  make({ c, p, seed }) {
+    const levels = Math.round(param(p, 'levels', 4, 2, 8));
+    return (x, y, out) => {
+      const tint = hash(x, y, seed + 1) < 0.5 ? c.dark : c.light;
+      out[0] = tint[0];
+      out[1] = tint[1];
+      out[2] = tint[2];
+      out[3] = (255 * (1 + Math.floor(hash(x, y, seed + 2) * levels))) / levels;
+    };
+  },
+};
+
 // Atlas : régions { id, x, y, w, h, kind, colors, params, seed } ; chaque région est entourée d'une marge qui répète son bord.
 // Les régions ne se chevauchent pas (marges comprises) : chaque pixel ne dépend que de ses coordonnées.
 GENRES.atlas = { colors: [], main: null, tile: '', make: null };
@@ -634,13 +650,14 @@ function fillInfo(info, data, y0, y1) {
   const { width: w, height: h } = info;
   const from = Math.max(0, Math.trunc(y0));
   const to = Math.min(h, Math.trunc(y1));
-  const out = [0, 0, 0];
+  const out = [0, 0, 0, 255];
   const put = (x, y) => {
     const i = (y * w + x) * 4;
     data[i] = out[0];
     data[i + 1] = out[1];
     data[i + 2] = out[2];
-    data[i + 3] = 255;
+    data[i + 3] = out[3];
+    out[3] = 255; // seul le genre « grain » écrit un autre alpha
   };
   if (info.kind === null) {
     out[0] = NEUTRAL[0];

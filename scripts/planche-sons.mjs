@@ -1,6 +1,6 @@
 // Outil de contrôle (non publié) : rend tous les sons de data/game/sounds.json en Node, mesure le temps de calcul et le niveau de
 // chaque variante, et écrit une planche PNG (forme d'onde en haut, spectrogramme en bas, un cadre par son et par variante).
-// Sans dépendance : PNG écrit avec node:zlib, étiquettes en police point 5×7 intégrée. Usage : node scripts/planche-sons.mjs <sortie.png>
+// Sans dépendance : PNG écrit avec node:zlib, étiquettes en police point 5×7 intégrée. Usage : node scripts/planche-sons.mjs <sortie.png>  (ONLY=<expression> pour un sous-ensemble)
 import { readFileSync, writeFileSync } from 'node:fs';
 import { deflateSync } from 'node:zlib';
 import { renderSound, soundBytes, variantCount } from '../js/core/synth.js';
@@ -34,6 +34,11 @@ for (const { recipe, v, r, ms, cg, cgAll } of rows) {
 console.log(`total ${total.toFixed(0)} ms (essentiel ${totalEssential.toFixed(0)} ms) ; ${rows.length} tampons ; ${(bytes / 1048576).toFixed(2)} Mo`);
 
 // --- planche ---
+// ONLY=<expression> : ne dessine que les sons dont l'identifiant correspond (ex. ONLY=vague pour les annonces du lot 2c).
+if (process.env.ONLY) {
+  const keep = new RegExp(process.env.ONLY);
+  for (let i = rows.length - 1; i >= 0; i -= 1) if (!keep.test(rows[i].recipe.id)) rows.splice(i, 1);
+}
 const CW = 360;
 const CH = 150;
 const cols = 4;

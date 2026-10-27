@@ -40,9 +40,6 @@
   "game.wave.hud": "Vague {n}",
   "game.wave.remaining": "Restants : {n} / {total}",
   "game.wave.next": "Prochaine vague dans {n} s",
-  "game.wave.announce": "Vague {n}",
-  "game.wave.reinforced": "Vague renforcée",
-  "game.wave.done": "Vague {n} terminée",
   "game.wave.live": "Vague {n}.",
   "game.wave.liveDone": "Vague {n} terminée.",
   "game.wave.reached": "Vague atteinte : {n}",
@@ -98,5 +95,16 @@
   "dev.sons.burst.count": "Rafale : {n} tirs.",
   "dev.sons.meta": "{category} · {duration} s · pic {peak} · niveau {rms} dB",
   "dev.sons.wave": "Forme d'onde de {id}",
-  "game.sound.hint": "Touche ici pour activer le son"
+  "game.sound.hint": "Touche ici pour activer le son",
+  "game.splash.debut": "Vague {n}",
+  "game.splash.renforcee": "Vague renforcée",
+  "game.splash.fin": "Vague {n} terminée",
+  "game.splash.vieRestauree": "Vie restaurée",
+  "game.vhs.label": "Effet VHS",
+  "game.vhs.on": "Effet VHS : activé",
+  "game.vhs.off": "Effet VHS : coupé",
+  "game.vhs.reduced": "Effet VHS : désactivé (mouvement réduit)",
+  "dev.sons.etiquette.vague-annonce": "Annonce de vague (mélodie angoissante, impact à 3,0 s)",
+  "dev.sons.etiquette.vague-renforcee": "Annonce de vague renforcée (battement de cœur, double impact)",
+  "dev.sons.etiquette.vague-fin": "Fin de vague (accord de cloches douces)"
 }

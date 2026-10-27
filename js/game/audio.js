@@ -2,6 +2,7 @@
 // qu'après le premier geste du joueur. Chaîne : source -> gain -> balance -> [passe-bas si étouffé] -> compresseur -> gain général -> sortie.
 // Les événements du jeu passent par js/core/sound-director.js (demandes de lecture) ; ce fichier les joue, limite les voix et tient le
 // journal des lectures (seulement avec ?test=1).
+import { dropCategory } from '../core/audio-mix.js';
 import { createDirector, direct, soundTable } from '../core/sound-director.js';
 
 const LOG_MAX = 200;
@@ -118,11 +119,29 @@ export function createAudio({ config, test = false, seed = 1, autoAmbience = tru
       for (const n of nodes) n.disconnect();
       active.delete(id);
     };
-    active.set(id, { source, priority, start: nextVoice });
+    active.set(id, { source, gain, category: r.category, priority, start: nextVoice, fading: false });
     source.start(ctx.currentTime + r.delay);
     if (r.category === 'voix') stats.zombieVoices += 1;
     note(entry(r, gameTime));
     return true;
+  }
+
+  // Arrêt en fondu des voix d'une catégorie (mélodie d'annonce à la mort et à « Rejouer ») : le gain tombe à 0 en `fade` s, puis la source
+  // s'arrête et la voix disparaît du compte. La direction sonore oublie aussi ces voix (la limite de 16 voix se libère).
+  function fadeCategory(category, fade = 0.3) {
+    director = { ...director, voices: dropCategory(director.voices, category) };
+    if (!ctx) return;
+    const t = ctx.currentTime;
+    for (const v of active.values()) {
+      if (v.category !== category || v.fading) continue;
+      v.fading = true;
+      try {
+        v.gain.gain.cancelScheduledValues(t);
+        v.gain.gain.setValueAtTime(v.gain.gain.value, t);
+        v.gain.gain.linearRampToValueAtTime(0, t + fade);
+        v.source.stop(t + fade + 0.02);
+      } catch { /* déjà arrêtée */ }
+    }
   }
 
   const api = {
@@ -255,8 +274,14 @@ export function createAudio({ config, test = false, seed = 1, autoAmbience = tru
       api.handle({ ...lastFrame, paused: false, events: [{ type }] });
     },
 
-    // Remise à zéro d'une partie.
+    // Mort du joueur : la mélodie d'annonce s'arrête en fondu (0,3 s).
+    stopAnnounce(fade = 0.3) {
+      fadeCategory('annonce', fade);
+    },
+
+    // Remise à zéro d'une partie (la mélodie d'annonce en cours s'arrête en fondu).
     reset(seed2) {
+      fadeCategory('annonce');
       director = createDirector(seed2);
       lastFrame = { time: 0, listener: lastFrame.listener, walls: lastFrame.walls };
     },
@@ -267,7 +292,7 @@ export function createAudio({ config, test = false, seed = 1, autoAmbience = tru
       for (const it of pcm.values()) bytes += it.samples.length * 4;
       return {
         supported: Boolean(Context), unlocked: ctx !== null, contextState: ctx ? ctx.state : 'aucun', started: ctx !== null, muted, volume, suspended, buffers: pcm.size, loaded: [...pcm.keys()], bytes,
-        essentialMs: Math.round(stats.essentialMs), backgroundMs: Math.round(stats.backgroundMs), ready: stats.ready, activeVoices: active.size, ambience: ambience !== null, log: log.map((e) => ({ ...e })),
+        essentialMs: Math.round(stats.essentialMs), backgroundMs: Math.round(stats.backgroundMs), ready: stats.ready, activeVoices: active.size, annonceActive: [...active.values()].filter((v) => v.category === 'annonce').length, ambience: ambience !== null, log: log.map((e) => ({ ...e })),
       };
     },
   };

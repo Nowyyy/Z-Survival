@@ -131,4 +131,24 @@
   --game-pants-dark: #6c6a5e;       /* pantalon de toile des zombies */
   --game-jacket: #cdb98f;           /* veste du joueur */
   --game-hair: #3b2a20;             /* cheveux du joueur */
+
+  /* Jeu, lot 2c : animation de changement de vague. Provisoires, à valider (contrastes contrôlés par tests/unit/data-ambiance.test.js). */
+  --game-splash-title: #d81414;     /* titre de début de vague : rouge sang, grand texte seulement (3:1 sur le voile) */
+  --game-splash-sub: #ff4a3d;       /* sous-titre « Vague renforcée » : rouge lisible en texte courant (4,5:1) */
+  --game-splash-end: #f4f1ec;       /* texte de fin de vague : os */
+  --game-splash-end-sub: #b8b4ae;   /* sous-titre « Vie restaurée » : os atténué (4,5:1) */
+  --game-splash-veil: #050505;      /* voile sombre radial derrière le titre (lisibilité sur tout fond) */
+  --game-splash-veil-alpha: 0.85;   /* opacité du voile au centre (nombre, pas une couleur) */
+  --game-splash-split-red: #ff2a2a; /* ombre de texte rouge du décalage de couleur */
+  --game-splash-split-cyan: #2ae0ff;/* ombre de texte cyan du décalage de couleur */
+  --game-splash-tear: #f4f1ec;      /* bande de déchirure qui traverse le titre */
+
+  /* Jeu, lot 2c : effet VHS (surcouche HTML/CSS #vhs). Provisoires, à valider. */
+  --game-vhs-scan: #050505;         /* lignes de balayage (noir du thème) */
+  --game-vhs-vignette: #050505;     /* vignette sombre des bords */
+  --game-vhs-edge-red: #ff2a2a;     /* bord gauche : faux décalage de couleur rouge */
+  --game-vhs-edge-cyan: #2ae0ff;    /* bord droit : faux décalage de couleur cyan */
+  --game-vhs-track: #f4f1ec;        /* bande de suivi, légèrement plus claire (os) */
+  --game-vhs-grain-light: #f4f1ec;  /* grain, pixels clairs (os) */
+  --game-vhs-grain-dark: #050505;   /* grain, pixels sombres */
 }

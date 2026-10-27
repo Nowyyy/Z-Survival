@@ -7,7 +7,8 @@
 //
 // Briques : oscillateurs (sinus, triangle, scie et carré bandelimités par polyBLEP), bruits blanc / rose / brun, filtres biquad à
 // fréquence balayée, enveloppes, vibrato, modulation d'amplitude, partiels résonants, voix à formants, saturation douce, réverbération
-// de Schroeder (peignes + passe-tout), normalisation au pic cible, fondu de fin, bouclage par fondu enchaîné.
+// de Schroeder (peignes + passe-tout), normalisation au pic cible, fondu de fin, bouclage par fondu enchaîné. Une couche peut changer de
+// hauteur et de départ selon la variante (byVariant, lot 2c).
 import { createRng, nextFloat } from './rng.js';
 import { isNum } from './vec.js';
 
@@ -384,10 +385,13 @@ export function startRender(recipe, variantIndex = 0) {
       return d.value * 2 - 1;
     };
     const fv = num(spec.freqVar, freqVar);
-    const fscale = 1 + draw() * fv;
+    // byVariant : [{ freqMul, startAdd }] (lot 2c), un réglage par variante (cyclique) : hauteur multipliée et départ décalé (s) ;
+    // sans ce champ, rien ne change (les tirages ci-dessous restent dans le même ordre).
+    const pv = Array.isArray(spec.byVariant) && spec.byVariant.length > 0 ? spec.byVariant[variant % spec.byVariant.length] : null;
+    const fscale = (1 + draw() * fv) * (isNum(pv?.freqMul) && pv.freqMul > 0 ? pv.freqMul : 1);
     const gain = num(spec.gain, 1) * db(draw() * gainVar);
     const jitter = draw() * Math.max(0, num(spec.startJitter));
-    const start = Math.max(0, Math.round((num(spec.start) + jitter) * rate));
+    const start = Math.max(0, Math.round((num(spec.start) + num(pv?.startAdd) + jitter) * rate));
     const dur = Math.max(0, num(spec.dur, (duration + overlap) - num(spec.start)));
     const end = Math.min(acc.total, start + Math.round(dur * rate));
     if (end <= start) {

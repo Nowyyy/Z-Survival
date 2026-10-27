@@ -1,0 +1,34 @@
+{
+  "_provisoire": "Animation de changement de vague (lot 2c) : toutes les durées, amplitudes et teintes sont provisoires, jamais jugées à l'œil ni à l'oreille par l'agent (à valider). Temps en secondes de jeu (l'animation est figée par la pause). Les nombres décoratifs (secousse, décalage de couleur, déchirures, scintillement) sont tirés au pas de 1/rate s avec une graine par vague.",
+  "leadTime": 3.0,
+  "overlapExit": 0.15,
+  "seed": 4207,
+  "debut": {
+    "enter": 0.4,
+    "holdAfter": 0.3,
+    "exit": 0.5,
+    "scaleFrom": 1.18,
+    "zoomHold": 1.04,
+    "exitScale": 1.1,
+    "intensity": 1
+  },
+  "fin": {
+    "enter": 0.25,
+    "hold": 2.0,
+    "exit": 0.4,
+    "scaleFrom": 1.06,
+    "zoomHold": 1.01,
+    "exitScale": 1.03,
+    "intensity": 0.25
+  },
+  "shake": { "rate": 12, "maxPx": 3 },
+  "rgbSplit": { "maxPx": 4 },
+  "tears": { "max": 2, "maxHeight": 0.14, "calm": 0.25, "strong": 0.75 },
+  "flicker": { "max": 0.06 },
+  "calmLevel": 0.3,
+  "sounds": {
+    "debut": { "name": "vague-annonce", "variants": 3 },
+    "renforcee": { "name": "vague-renforcee", "variants": 2 },
+    "fin": { "name": "vague-fin", "variants": 2 }
+  }
+}

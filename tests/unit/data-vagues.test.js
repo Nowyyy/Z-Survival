@@ -103,8 +103,9 @@ describe('textes et pureté', () => {
   it('les textes game.wave.* existent en français avec leurs paramètres, et jeu.html a les éléments du HUD et de l\'annonce E2-8', () => {
     const fr = JSON.parse(readFileSync('data/i18n/fr.json', 'utf8'));
     const keys = Object.keys(fr).filter((k) => k.startsWith('game.wave.'));
-    expect(keys.sort()).toEqual(['game.wave.announce', 'game.wave.done', 'game.wave.hud', 'game.wave.live', 'game.wave.liveDone', 'game.wave.next', 'game.wave.reached', 'game.wave.reinforced', 'game.wave.remaining']);
-    for (const k of keys.filter((x) => !x.endsWith('reinforced'))) expect(fr[k], k).toContain('{n}');
+    // Lot 2c : les textes de l'annonce (announce, reinforced, done) sont devenus game.splash.* (l'annonce est une animation centrale).
+    expect(keys.sort()).toEqual(['game.wave.hud', 'game.wave.live', 'game.wave.liveDone', 'game.wave.next', 'game.wave.reached', 'game.wave.remaining']);
+    for (const k of keys) expect(fr[k], k).toContain('{n}');
     const html = readFileSync('jeu.html', 'utf8');
     for (const id of ['hud-wave', 'hud-remaining', 'hud-next', 'wave-announce', 'wave-announce-title', 'wave-announce-sub', 'end-wave']) expect(html, id).toContain(`id="${id}"`);
     expect(html).toContain('data-block="E2-8"');

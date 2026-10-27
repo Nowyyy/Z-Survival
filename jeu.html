@@ -58,6 +58,11 @@
   </div>
   <div id="game-root" class="game-root" data-block="E2-1" role="application" data-i18n-label="game.aria" hidden>
     <div id="game-canvas" class="game-canvas"></div>
+    <div id="vhs" class="vhs" aria-hidden="true">
+      <div class="vhs-static"></div>
+      <div class="vhs-grain"></div>
+      <div class="vhs-track"></div>
+    </div>
     <div id="hud" class="hud" data-block="E2-2">
       <p id="hud-life" class="hud-text"></p>
       <div class="hud-bar" aria-hidden="true"><div id="hud-fill" class="hud-fill"></div></div>
@@ -67,8 +72,15 @@
       <p id="hud-kills" class="hud-text"></p>
     </div>
     <div id="wave-announce" class="wave-announce" data-block="E2-8" aria-hidden="true">
-      <p id="wave-announce-title" class="wave-announce-title"></p>
-      <p id="wave-announce-sub" class="wave-announce-sub" hidden></p>
+      <div class="wave-announce-veil"></div>
+      <div class="wave-announce-body">
+        <div class="wave-announce-head">
+          <p id="wave-announce-title" class="wave-announce-title"></p>
+          <span class="wave-announce-tear" data-tear="1"></span>
+          <span class="wave-announce-tear" data-tear="2"></span>
+        </div>
+        <p id="wave-announce-sub" class="wave-announce-sub" hidden></p>
+      </div>
     </div>
     <button id="btn-pause" class="button pause-button" data-block="E2-5" type="button" data-i18n="game.pause.open"></button>
     <div id="stick-left" class="stick" data-block="E2-3" aria-hidden="true" hidden>
@@ -89,6 +101,7 @@
       <button id="btn-resume" class="button" type="button" data-i18n="game.pause.resume"></button>
       <button id="btn-fullscreen" class="button button-quiet" type="button" data-i18n="game.pause.fullscreen" hidden></button>
       <button id="btn-sound" class="button button-quiet" type="button" hidden></button>
+      <button id="btn-vhs" class="button button-quiet" type="button" aria-pressed="true"></button>
       <div id="volume-row" class="volume" hidden>
         <label id="volume-label" for="volume" data-i18n="game.volume"></label>
         <input id="volume" class="volume-range" type="range" min="0" max="100" step="10" value="100">
