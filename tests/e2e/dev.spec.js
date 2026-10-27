@@ -10,8 +10,11 @@ const LOTS = {
   ],
 };
 
-const withLots = (page, body = LOTS) =>
-  page.route('**/lots.json', (route) => route.fulfill({ json: body }));
+// Le journal du dernier lot est lu aussi (le menu de main ne connaît pas encore le lot en cours) : ici il est vide par défaut.
+const withLots = async (page, body = LOTS, latestLog = { lots: [] }) => {
+  await page.route('**/lots/*/data/changelog.json', (route) => route.fulfill({ json: latestLog }));
+  await page.route('**/lots.json', (route) => route.fulfill({ json: body }));
+};
 
 test('affiche main, le dernier lot et les anciens lots dans un menu déroulant', async ({ page }) => {
   await withLots(page);
@@ -162,13 +165,13 @@ test.describe('journal des versions', () => {
     await expect(page.getByRole('heading', { name: 'Journal des versions' })).toBeVisible();
     const summaries = page.locator('.changelog-entry summary');
     expect(await summaries.count()).toBeGreaterThanOrEqual(9);
-    await expect(summaries.first()).toContainText('Lot 1c');
+    await expect(summaries.first()).toContainText('Lot 1d');
     await expect(summaries.last()).toContainText('Lot 0');
     const first = page.locator('.changelog-entry').first();
     await expect(first.locator('.changelog-points')).toBeHidden();
     await summaries.first().click();
     await expect(first.locator('.changelog-points li').first()).toBeVisible();
-    await expect(first).toContainText('Caméra rapprochée');
+    await expect(first).toContainText('Volume');
   });
 
   test('les lots publiés ont leur date et un lien pour les ouvrir ; les autres n\'en ont pas', async ({ page }) => {
@@ -178,7 +181,7 @@ test.describe('journal des versions', () => {
     await expect(lot1.locator('.changelog-date')).not.toHaveText('');
     await lot1.locator('summary').click();
     await expect(lot1.getByRole('link', { name: 'Ouvrir ce lot' })).toHaveAttribute('href', '../lots/lot-1/jeu.html');
-    const unpublished = page.locator('.changelog-entry', { hasText: 'Lot 1c ·' });
+    const unpublished = page.locator('.changelog-entry', { hasText: 'Lot 1d ·' });
     await unpublished.locator('summary').click();
     await expect(unpublished.getByRole('link', { name: 'Ouvrir ce lot' })).toHaveCount(0);
   });
@@ -210,4 +213,12 @@ test.describe('journal des versions', () => {
     await page.goto('/dev/');
     for (const box of await page.locator('.changelog-entry summary').evaluateAll((els) => els.map((e) => e.getBoundingClientRect().height))) expect(box).toBeGreaterThanOrEqual(44);
   });
+});
+
+test('le journal affiche le lot en cours lu dans le dernier lot publié, même absent du journal de main', async ({ page }) => {
+  const own = JSON.parse(readFileSync('data/changelog.json', 'utf8')).lots;
+  const log = { lots: [...own, { name: 'lot-9', titre: 'Lot en cours', points: ['Nouveauté du lot en cours.'] }] };
+  await withLots(page, LOTS, log);
+  await page.goto('/dev/');
+  await expect(page.locator('.changelog-entry summary').first()).toContainText('Lot 9 · Lot en cours');
 });

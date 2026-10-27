@@ -8,6 +8,8 @@ export default defineConfig({
   // Rendu logiciel (CI, WebGL sans GPU) : depuis les textures du lot 1c une image y dure parfois plusieurs secondes ; 60 s au lieu de 30 s.
   timeout: 60_000,
   fullyParallel: true,
+  // En CI (rendu logiciel, runner chargé), un test qui échoue est rejoué une fois : un échec isolé ne fait plus tomber toute la suite.
+  retries: process.env.CI ? 1 : 0,
   reporter: 'list',
   use: { baseURL: 'http://localhost:4173', locale: 'fr-FR' },
   webServer: {

@@ -11,7 +11,7 @@ describe('pureté de js/core/', () => {
   });
 
   it.each([['Math.random', /Math\.random/], ['Date.now', /Date\.now/], ['performance.now', /performance\.now/], ['document', /\bdocument\b/], ['window', /\bwindow\b/],
-    ['Phaser', /phaser/i], ['Three.js', /\bTHREE\b|from 'three'|vendor\/three/], ['stockage', /localStorage|sessionStorage|indexedDB/], ['réseau', /\bfetch\s*\(|XMLHttpRequest|WebSocket/], ['minuteurs', /setTimeout|setInterval|requestAnimationFrame/]])('aucun usage de %s', (_name, re) => {
+    ['Phaser', /phaser/i], ['Three.js', /\bTHREE\b|from 'three'|vendor\/three/], ['stockage', /localStorage|sessionStorage|indexedDB/], ['réseau', /\bfetch\s*\(|XMLHttpRequest|WebSocket/], ['minuteurs', /setTimeout|setInterval|requestAnimationFrame/], ['Web Audio', /AudioContext|AudioBuffer|OfflineAudio/]])('aucun usage de %s', (_name, re) => {
     for (const f of coreFiles) expect(readFileSync(f, 'utf8'), f).not.toMatch(re);
   });
 });

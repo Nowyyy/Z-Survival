@@ -7,6 +7,7 @@ import { createLoading } from './loading.js';
 import { createInput } from './input.js';
 import { createTokenLookup, readPalette } from './palette.js';
 import { installSafeArea } from './safe-area.js';
+import { planSounds, renderSounds, nextVisibleFrame, BACKGROUND_SLICE_MS } from './sound-loader.js';
 import { generateTextureData } from './textures.js';
 import { installTestHook } from './testhook.js';
 import { createUi } from './ui.js';
@@ -31,7 +32,7 @@ const testMode = query.get('test') === '1';
 const fpsMode = query.get('fps') === '1';
 const seedParam = Number.parseInt(query.get('seed') ?? '', 10);
 
-const [dict, world, decor, camera, nav, player, weapons, enemies, render, texturesCfg, variants] = await Promise.all([
+const [dict, world, decor, camera, nav, player, weapons, enemies, render, texturesCfg, variants, soundsCfg, audioCfg, materialsCfg, voiceCfg] = await Promise.all([
   loadDict(),
   loadJson('data/game/world.json'),
   loadJson('data/game/decor.json'),
@@ -43,6 +44,10 @@ const [dict, world, decor, camera, nav, player, weapons, enemies, render, textur
   loadJson('data/game/render.json'),
   loadJson('data/game/textures.json'),
   loadJson('data/game/zombie-variants.json'),
+  loadJson('data/game/sounds.json'),
+  loadJson('data/game/audio.json'),
+  loadJson('data/game/sound-materials.json'),
+  loadJson('data/game/zombie-voice.json'),
 ]);
 
 applyTexts(dict);
@@ -52,9 +57,15 @@ const palette = readPalette();
 const root = document.getElementById('game-root');
 document.getElementById('boot')?.remove();
 
-// Textures : calculées par tranches de 8 ms derrière l'écran de préparation ; la partie ne démarre qu'ensuite.
+// Textures puis sons « essentiel » : calculés par tranches de 8 ms derrière l'écran de préparation (80 % / 20 % du pourcentage) ;
+// la partie ne démarre qu'ensuite.
+const TEXTURE_SHARE = 0.8;
 const loading = createLoading(dict);
-const textureData = await generateTextureData(texturesCfg.textures, { lookup: createTokenLookup(), onProgress: loading.update });
+const textureData = await generateTextureData(texturesCfg.textures, { lookup: createTokenLookup(), onProgress: (p) => loading.update(p * TEXTURE_SHARE) });
+const audio = createAudio({ config: { audio: audioCfg, materials: materialsCfg, voice: voiceCfg, sounds: soundsCfg.sounds }, test: testMode, seed: Number.isFinite(seedParam) ? seedParam : 1 });
+const essential = await renderSounds(planSounds(soundsCfg.sounds, 'essentiel'), { onProgress: (p) => loading.update(TEXTURE_SHARE + (1 - TEXTURE_SHARE) * p) });
+audio.addSounds(essential.items);
+audio.stats.essentialMs = essential.ms;
 loading.done();
 root.hidden = false;
 
@@ -79,7 +90,9 @@ const ctx = {
   seed: Number.isFinite(seedParam) ? seedParam : Date.now() % 2147483647,
   seedRun: 0,
   override: {},
-  audio: createAudio(),
+  audio,
+  audioCfg,
+  audioMaterials: materialsCfg,
 };
 
 let game = null;
@@ -88,6 +101,15 @@ ctx.ui = createUi(dict, {
   onToggleSound: () => {
     ctx.audio.toggleMute();
     ctx.ui.syncSound(ctx.audio);
+  },
+  onVolume: (n) => {
+    ctx.audio.setVolume(n);
+    ctx.ui.syncSound(ctx.audio);
+  },
+  onPausePanel: (open) => ctx.audio.ui(open ? 'pause' : 'resume'),
+  onPauseChange: (paused) => {
+    ctx.audio.setSuspended(paused);
+    syncHint();
   },
   onRotateChange: () => ctx.input.releaseAll(),
 });
@@ -103,8 +125,18 @@ ctx.input = createInput(root, {
   },
 });
 ctx.ui.syncSound(ctx.audio);
-// Le son ne démarre qu'après le premier geste du joueur.
-for (const type of ['pointerdown', 'keydown']) window.addEventListener(type, () => ctx.audio.unlock(), { capture: true });
+// Téléphone : tant que le contexte audio n'est pas en marche (aucun doigt relâché depuis le début, un stick tenu), une invitation à toucher
+// s'affiche après 1,5 s ; un toucher (relâché) suffit à activer le son.
+const soundHint = document.getElementById('sound-hint');
+const coarse = matchMedia('(pointer: coarse)').matches;
+const syncHint = () => { soundHint.hidden = !coarse || !ctx.audio.supported || ctx.audio.running || ctx.audio.suspended || ctx.audio.muted; };
+ctx.audio.onChange = syncHint;
+setTimeout(syncHint, 1500);
+setInterval(syncHint, 2000);
+soundHint.addEventListener('click', () => ctx.audio.unlock());
+// Le son ne démarre qu'après un geste du joueur. Chrome ne compte pas pointerdown comme geste pour la souris : pointerup, click et touchend
+// aussi, et chaque geste retente la reprise tant que le contexte n'est pas en marche.
+for (const type of ['pointerdown', 'pointerup', 'click', 'touchend', 'keydown']) window.addEventListener(type, () => ctx.audio.unlock(), { capture: true });
 
 game = createGame(ctx);
 if (game === null) {
@@ -117,8 +149,15 @@ if (game === null) {
   if (fpsMode) {
     import('../fps.js').then((fps) => fps.attachPerf(() => {
       const p = ctx.perf;
-      return fmt(dict[TEXTURE_TEXTS.fps], { ms: Math.round(textureData.ms), flow: p.flowCount ? (p.flowSum / p.flowCount).toFixed(2) : '0', max: p.flowMax.toFixed(2) });
+      const a = ctx.audio.stats;
+      const textures = fmt(dict[TEXTURE_TEXTS.fps], { ms: Math.round(textureData.ms), flow: p.flowCount ? (p.flowSum / p.flowCount).toFixed(2) : '0', max: p.flowMax.toFixed(2) });
+      return `${textures}\n${fmt(dict[TEXTURE_TEXTS.fpsSons], { essential: Math.round(a.essentialMs), background: Math.round(a.backgroundMs), voices: a.zombieVoices })}`;
     }));
   }
   if (testMode) installTestHook(ctx, game);
 }
+// Les sons « fond » (voix de zombies, ambiance) sont calculés pendant la partie, 4 ms par image au plus ; ils ne sont joués qu'une fois prêts.
+renderSounds(planSounds(soundsCfg.sounds, 'fond'), { sliceMs: BACKGROUND_SLICE_MS, wait: nextVisibleFrame, onItem: (item) => ctx.audio.addSounds([item]) }).then((done) => {
+  ctx.audio.stats.backgroundMs = done.ms;
+  ctx.audio.stats.ready = true;
+}).catch(() => {});

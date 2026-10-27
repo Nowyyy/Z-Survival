@@ -1,0 +1,7 @@
+{
+  "_provisoire": "Matière sonore de chaque type d'obstacle de world.json et decor.json (lot 1d, provisoire). Les murs de la salle (identifiants « mur-… ») sont de la pierre.",
+  "kinds": { "table": "bois", "comptoir": "bois", "caisse": "bois", "armoire": "bois", "etagere": "metal", "colonne": "pierre", "voiture": "voiture", "arbre": "bois" },
+  "wallMaterial": "pierre",
+  "default": "pierre",
+  "sounds": { "bois": "impact-bois", "metal": "impact-metal", "pierre": "impact-pierre", "voiture": "impact-voiture" }
+}

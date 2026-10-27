@@ -1,0 +1,146 @@
+/* Page d'écoute des sons (lot 1d) : page technique, mêmes jetons que le reste du site, aucun habillage de jeu. */
+.sons {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  max-width: 60rem;
+  margin: 0 auto;
+}
+
+.sons-title {
+  font-family: var(--font-sans);
+  font-size: var(--text-xl);
+  font-weight: var(--font-weight-bold);
+  line-height: 1.2;
+  color: var(--color-action-text);
+}
+
+.sons-heading {
+  margin: 0;
+  font-size: var(--text-lg);
+  font-weight: var(--font-weight-bold);
+}
+
+.sons-intro,
+.sons-status {
+  color: var(--color-text-muted);
+}
+
+.sons-status:empty {
+  display: none;
+}
+
+.sons-controls {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+}
+
+.volume {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: var(--touch-target);
+}
+
+.volume-range {
+  flex: 1;
+  min-width: 0;
+  height: var(--touch-target);
+  margin: 0;
+  accent-color: var(--color-action);
+  cursor: pointer;
+}
+
+.volume-value {
+  min-width: 3.5ch;
+  text-align: right;
+  color: var(--color-text-muted);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.sound-list {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sound {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+}
+
+.sound-title {
+  margin: 0;
+  font-size: var(--text-md);
+  font-weight: var(--font-weight-bold);
+}
+
+.sound-id {
+  font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  color: var(--color-action-text);
+}
+
+.sound-meta {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.sound-wave {
+  display: block;
+  width: 100%;
+  height: 56px;
+  border-radius: var(--radius-sm);
+  background: var(--color-bg);
+}
+
+.variants {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.variant {
+  min-width: var(--touch-target);
+  min-height: var(--touch-target);
+  padding: var(--space-2) var(--space-3);
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-raised);
+  color: var(--color-text);
+  font: inherit;
+  font-weight: var(--font-weight-bold);
+  cursor: pointer;
+}
+
+.variant:hover:not(:disabled) {
+  background: var(--color-ground-light);
+}
+
+.variant.is-playing {
+  border-color: var(--color-action-text);
+}
+
+@media (min-width: 768px) {
+  .sound-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

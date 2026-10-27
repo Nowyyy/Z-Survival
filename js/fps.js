@@ -9,6 +9,7 @@ const line = document.createElement('span');
 line.textContent = 'Images/s : 0';
 const perf = document.createElement('span');
 perf.style.display = 'block';
+perf.style.whiteSpace = 'pre-line';
 el.append(line, perf);
 document.body.append(el);
 
