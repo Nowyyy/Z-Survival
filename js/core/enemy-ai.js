@@ -3,7 +3,7 @@ import { moveWithCollision } from './collision.js';
 import { flowDirection, lineOfSight } from './nav.js';
 import { clampDt, isNum, normalize, num } from './vec.js';
 
-// enemies : [{ id, x, y, r, ... }]. Renvoie une nouvelle liste ; un zombie sur le joueur reste en place.
+// enemies : [{ id, x, y, r, speed?, ... }]. Renvoie une nouvelle liste ; un zombie sur le joueur reste en place.
 // world (facultatif ; sans lui, comportement du lot 1m) : { obstacles (rectangles pleins), bounds (limites du monde), grid et flow
 // (nav.js), nav : { lookahead, stuckDistance, stuckTime, pushTime } }. Poursuite directe si la ligne de vue est libre, sinon direction
 // du champ de flux ; un zombie qui avance de moins de stuckDistance en stuckTime secondes est poussé vers le champ de flux pendant
@@ -11,11 +11,13 @@ import { clampDt, isNum, normalize, num } from './vec.js';
 export function stepEnemies(enemies, player, dt, def, world = null) {
   const list = Array.isArray(enemies) ? enemies : [];
   const step = clampDt(dt);
-  const speed = Math.max(0, num(def?.speed));
+  const defaultSpeed = Math.max(0, num(def?.speed));
   const px = num(player?.x);
   const py = num(player?.y);
   const pr = isNum(player?.r) ? player.r : 0;
   return list.map((enemy, i) => {
+    // Lot 2 : chaque zombie porte sa vitesse (type, allure, vague) ; sans elle, la vitesse commune du lot 1.
+    const speed = isNum(enemy?.speed) ? Math.max(0, enemy.speed) : defaultSpeed;
     const x = num(enemy?.x);
     const y = num(enemy?.y);
     const r = Math.max(0, num(enemy?.r));

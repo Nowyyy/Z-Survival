@@ -48,6 +48,13 @@
       "Curseur « Volume » dans le panneau de pause ; la pause suspend le son.",
       "Les sons sont préparés pendant l'écran de chargement, les voix de zombies et l'ambiance ensuite.",
       "Tirs plus percutants, cri du joueur blessé court, zombies qui grognent plus souvent en marchant."
+    ] },
+    { "name": "lot-2", "titre": "Vagues, allures et difficulté croissante", "points": [
+      "Des vagues numérotées à difficulté croissante : plus de zombies, plus résistants, plus rapides et plus durs au contact (courbe inspirée de Black Ops 3, vie plafonnée).",
+      "Quatre allures (marche lente, marche, rampe, course) et quatre types de zombies (marcheur, petit, voûté, grand) mélangés selon la vague ; 10 zombies au plus à la fois.",
+      "« Vague N » et « Restants » dans le HUD, annonce en début et fin de vague, compte à rebours de 3 s puis de 8 s entre les vagues.",
+      "La vie du joueur est remise à 100 % à la fin de chaque vague ; l'écran de mort indique la vague atteinte.",
+      "?wave=N démarre à la vague N pour les essais (de 1 à 200) ; ?nospawn=1 coupe les vagues."
     ] }
   ]
 }

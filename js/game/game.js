@@ -4,6 +4,7 @@ import * as THREE from 'three';
 import { aimFromPoint, aimFromStick, createAim } from '../core/aim.js';
 import { applyImpacts, createWeaponState, displayHealth, muzzlePoint, stepContact, stepWeapon } from '../core/combat.js';
 import { stepEnemies } from '../core/enemy-ai.js';
+import { createEnemy, isGait, isType } from '../core/enemy-factory.js';
 import { entryWindow } from '../core/layout.js';
 import { moveCircle } from '../core/movement.js';
 import { createFlowState, createGrid, stepFlow } from '../core/nav.js';
@@ -12,10 +13,12 @@ import { createBullet, stepBullets } from '../core/projectile.js';
 import { castRay } from '../core/ray.js';
 import { createRng } from '../core/rng.js';
 import { createFootsteps, stepFootsteps } from '../core/footsteps.js';
-import { createSpawner, isHidden, stepSpawner } from '../core/spawner.js';
+import { isHidden } from '../core/spawner.js';
 import { materialFor } from '../core/sound-director.js';
 import { variantFor } from '../core/variants.js';
 import { clampDt, num } from '../core/vec.js';
+import { createDirector, info as waveInfo, setParams, startWave as jumpToWave, stepDirector } from '../core/wave-director.js';
+import { waveSpec } from '../core/waves.js';
 import { createCharacter, createKit } from './character.js';
 import { createEffects, MAX_SPARKS, SPARK_TIME } from './effects.js';
 import { createHud } from './hud.js';
@@ -29,9 +32,15 @@ const RECOIL_TIME = 0.12;
 const HIT_FLASH_TIME = 0.1;
 const FIRE_POSE_TIME = 0.3;
 const STEP = 0.05; // pas de la simulation avancée à la demande (hook de test step)
+const ANNOUNCE_TIME = 2.5; // durée de l'annonce de vague (E2-8), en secondes de jeu
+const TAU = Math.PI * 2;
+// Pose de chaque allure (pose.js : « zombie » reste l'équivalent de « marche »).
+const GAIT_POSE = { lent: 'lent', marche: 'zombie', rampe: 'rampe', course: 'course' };
+// Surcharge temporaire de waves.json (hook de test) : les sections objet sont fusionnées, le reste est remplacé.
+const mergeParams = (base, patch) => Object.fromEntries(Object.entries({ ...base, ...patch }).map(([k, v]) => [k, v && typeof v === 'object' && !Array.isArray(v) && patch?.[k] && typeof patch[k] === 'object' && !Array.isArray(patch[k]) ? { ...base[k], ...patch[k] } : v]));
 const wrap = (a) => Math.atan2(Math.sin(a), Math.cos(a));
 
-// ctx : { cfg: { layout, player, weapon, zombie, render, camera, nav }, palette, dict, input, ui, audio, params, override, seed, seedRun }
+// ctx : { cfg: { layout, player, weapon, zombie, enemies, gaits, waves, render, camera, nav }, palette, dict, input, ui, audio, params, override, seed, seedRun }
 // Renvoie null si WebGL n'est pas disponible.
 export function createGame(ctx) {
   const { cfg, palette, params } = ctx;
@@ -69,12 +78,10 @@ export function createGame(ctx) {
   // Type de chaque obstacle (meubles et décor solide) pour le son d'impact ; les murs se reconnaissent à leur identifiant.
   const obstacleKinds = new Map([...layout.furniture, ...(layout.decor?.solids ?? [])].map((o) => [o.id, o.kind]));
   const zombieNames = ctx.variants.zombie.variants.map((v) => v.id);
+  const typeIndex = new Map(zombieNames.map((name, i) => [name, i])); // type de zombie -> variante visuelle (mêmes noms)
   const audioWalls = layout.empty ? [] : layout.walls;
-  const variantNames = new Map(); // identifiant de zombie -> nom de sa variante (calculé une fois : variantFor tire une permutation)
-  const variantName = (id) => {
-    if (!variantNames.has(id)) variantNames.set(id, zombieNames[variantFor(id, ctx.seed, zombieNames.length)]);
-    return variantNames.get(id);
-  };
+  const voices = new Map(); // identifiant de zombie -> nom de sa variante visuelle (hauteur de voix)
+  const variantName = (id) => voices.get(id) ?? zombieNames[0];
 
   let sim;
   let anim;
@@ -95,7 +102,7 @@ export function createGame(ctx) {
       spare[z.char.variant].push(z.char);
     }
     zombies.clear();
-    variantNames.clear();
+    voices.clear();
     spawnLog.length = 0;
     sim = {
       player: { x: layout.start.x, y: layout.start.y, r: cfg.player.radius, health: cfg.player.health, maxHealth: cfg.player.health },
@@ -103,7 +110,9 @@ export function createGame(ctx) {
       enemies: [],
       bullets: [],
       weapon: createWeaponState(),
-      spawner: createSpawner(),
+      waves: createDirector(cfg.waves, { seed, wave: params.wave ?? 1, inactive: params.nospawn }),
+      waveParams: cfg.waves,
+      announce: null,
       flow: createFlowState(),
       rng: createRng(seed),
       walk: { phase: 0, steps: createFootsteps() },
@@ -143,9 +152,17 @@ export function createGame(ctx) {
     return { minX: t.x - g.width / 2, minY: t.y - g.north, maxX: t.x + g.width / 2, maxY: t.y + g.south };
   }
 
-  function addEnemy(x, y, extra = {}) {
-    const { zombie } = cfg;
-    const enemy = { id: sim.nextId, x, y, r: zombie.radius, health: zombie.health, maxHealth: zombie.health, hitCooldown: 0, flash: 0, ...extra };
+  // Crée un zombie (createEnemy : type, allure, vague). Sans type (zombie de test), c'est un marcheur de la vague 1 en allure « marche »,
+  // dont la variante visuelle vient de variantFor comme avant le lot 2.
+  function addEnemy(x, y, { type, gait, spec, from } = {}) {
+    const typed = isType(type);
+    const created = createEnemy(typed ? type : 'marcheur', isGait(gait) ? gait : 'marche', spec ?? waveSpec(1, sim.waveParams), cfg.enemies, cfg.gaits);
+    const visual = typed ? typeIndex.get(type) : variantFor(sim.nextId, ctx.seed, kit.variants.length);
+    const enemy = {
+      id: sim.nextId, x, y, r: created.radius, health: created.hp, maxHealth: created.maxHp, hitCooldown: 0, flash: 0,
+      type: created.type, gait: created.gait, speed: created.speed, damage: created.damage, stride: created.stride, visual, ...(from === undefined || from === null ? {} : { from }),
+    };
+    voices.set(enemy.id, zombieNames[visual]);
     sim.nextId += 1;
     sim.enemies = [...sim.enemies, enemy];
     return enemy;
@@ -237,15 +254,28 @@ export function createGame(ctx) {
       sim.enemies = stepEnemies(sim.enemies, sim.player, dt, cfg.zombie);
     }
 
-    if (!params.nospawn) {
-      // Jamais à l'écran : seuls les points hors de la vue (agrandie) sont possibles ; la salle du lot 1m n'a pas de vue limitée.
+    // Vagues (js/core/wave-director.js) : jamais à l'écran, seuls les points hors de la vue (agrandie) sont possibles ; la salle du lot 1m
+    // (?empty=1) n'a pas de vue limitée. ?nospawn=1 : directeur inactif, aucune vague.
+    let waveLive = null;
+    if (sim.waves.phase !== 'inactif') {
       const view = layout.empty ? null : visibleRect();
-      const spawn = stepSpawner(sim.spawner, dt, sim.enemies.length, cfg.zombie, layout.spawnPoints ?? layout.windows, sim.rng, view);
-      sim.spawner = spawn.state;
-      sim.rng = spawn.rng;
-      if (spawn.spawn) {
-        addEnemy(spawn.spawn.x, spawn.spawn.y, spawn.spawn.id ? { from: spawn.spawn.id } : {});
-        spawnLog.push({ id: spawn.spawn.id ?? null, time: sim.time, hidden: view ? isHidden(spawn.spawn, view, 0, 0) : true });
+      const out = stepDirector(sim.waves, { dt, alive: sim.enemies.length, view, points: layout.spawnPoints ?? layout.windows });
+      sim.waves = out.state;
+      for (const r of out.requests) {
+        addEnemy(r.x, r.y, { type: r.type, gait: r.gait, spec: out.state.spec, from: r.pointId });
+        spawnLog.push({ id: r.pointId, time: sim.time, hidden: view ? isHidden(r, view, 0, 0) : true, type: r.type, gait: r.gait });
+      }
+      for (const ev of out.events) {
+        if (ev.type === 'waveStart') {
+          sim.announce = { kind: 'start', wave: ev.wave, reinforced: ev.reinforced, until: sim.time + ANNOUNCE_TIME };
+          waveLive = fmt(ctx.dict['game.wave.live'], { n: ev.wave });
+        } else if (ev.type === 'waveEnd') {
+          // Fin de vague : la vie du joueur est remise à son maximum (healFraction), sans dépasser.
+          const max = sim.player.maxHealth;
+          sim.player = { ...sim.player, health: Math.min(max, sim.player.health + max * ev.healFraction) };
+          sim.announce = { kind: 'end', wave: ev.wave, reinforced: false, until: sim.time + ANNOUNCE_TIME };
+          waveLive = fmt(ctx.dict['game.wave.liveDone'], { n: ev.wave });
+        }
       }
     }
 
@@ -257,18 +287,20 @@ export function createGame(ctx) {
     const dying = sim.player.health <= 0;
     if (contact.damage > 0) events.push({ type: dying ? 'playerDeath' : 'playerHurt' });
 
-    audio?.handle({ time: sim.time, listener: sim.player, walls: audioWalls, paused: ctx.ui.isPaused(), events, zombies: sim.enemies.map((e) => ({ id: e.id, x: e.x, y: e.y, variant: variantName(e.id) })) });
+    audio?.handle({ time: sim.time, listener: sim.player, walls: audioWalls, paused: ctx.ui.isPaused(), events, zombies: sim.enemies.map((e) => ({ id: e.id, x: e.x, y: e.y, variant: variantName(e.id), gait: e.gait, stride: e.stride })) });
 
     const bucket = Math.ceil((displayHealth(sim.player.health) / sim.player.maxHealth) * 10);
     if (bucket !== sim.lifeBucket && sim.player.health > 0) {
       sim.lifeBucket = bucket;
       ctx.ui.setLive(fmt(ctx.dict['game.live.life'], { hp: displayHealth(sim.player.health), max: sim.player.maxHealth }));
     }
+    // Le message de vague passe avant le message de vie (le soin de fin de vague change aussi la vie).
+    if (waveLive !== null) ctx.ui.setLive(waveLive);
     if (sim.player.health <= 0) {
       sim.dead = true;
       input.releaseAll();
       ctx.ui.setLive(fmt(ctx.dict['game.live.dead'], { n: sim.kills }));
-      ctx.ui.showEnd(sim.kills);
+      ctx.ui.showEnd(sim.kills, waveInfo(sim.waves).wave);
     }
   }
 
@@ -308,16 +340,17 @@ export function createGame(ctx) {
       alive.add(e.id);
       let z = zombies.get(e.id);
       if (!z) {
-        const variant = variantFor(e.id, ctx.seed, kit.variants.length);
+        const variant = e.visual;
         z = { char: spare[variant].pop() ?? createCharacter(kit, 'zombie', variant), phase: 0, x: e.x, y: e.y, flashing: false };
         world.scene.add(z.char.root);
         zombies.set(e.id, z);
       }
-      const zs = Math.hypot(e.x - z.x, e.y - z.y) / safe;
-      z.phase += zs * dt * STRIDE;
+      const moved = Math.hypot(e.x - z.x, e.y - z.y);
+      const zs = moved / safe;
+      z.phase += (moved * TAU) / e.stride; // la phase de marche avance de distance / foulée de l'allure
       z.x = e.x;
       z.y = e.y;
-      z.char.setPose(computePose({ phase: z.phase, aim: 0, facing: 0, state: 'zombie', time: sim.time, seed: e.id, amount: zs > 5 ? 0.7 : 0.15 }));
+      z.char.setPose(computePose({ phase: z.phase, aim: 0, facing: 0, state: GAIT_POSE[e.gait] ?? 'zombie', time: sim.time, seed: e.id, amount: zs > 5 ? 0.7 : 0.15 }));
       z.char.root.position.set(e.x, 0, e.y);
       z.char.root.rotation.y = Math.PI / 2 - Math.atan2(p.y - e.y, p.x - e.x);
       const flashing = e.flash > 0;
@@ -344,7 +377,8 @@ export function createGame(ctx) {
       flashSize: reduced ? 4 : 7,
       unitsPerPixel: size.unitsPerPixel,
     });
-    hud.update(sim.player, sim.kills);
+    if (sim.announce && sim.time >= sim.announce.until) sim.announce = null;
+    hud.update(sim.player, sim.kills, waveInfo(sim.waves), sim.announce);
   }
 
   // La caméra suit le joueur (js/core/camera.js), la lumière et sa carte d'ombres suivent la caméra.
@@ -405,6 +439,17 @@ export function createGame(ctx) {
     return { distinctColors: seen.size, meanLuminance: lum / (pixels.length / 4) / 255 };
   }
 
+  // État des vagues pour les tests (getState().waves).
+  function wavesState() {
+    const i = waveInfo(sim.waves);
+    const { spec } = sim.waves;
+    return {
+      active: i.active, phase: i.phase, wave: i.wave, level: i.level, total: i.total, alive: i.alive, toSpawn: i.toSpawn, remaining: i.remaining,
+      maxConcurrent: i.maxConcurrent, waitLeft: i.waitLeft, hpMul: spec.hpMul, speedMul: spec.speedMul, damageMul: spec.damageMul, reinforced: i.reinforced,
+      announce: sim.announce ? { kind: sim.announce.kind, wave: sim.announce.wave, reinforced: sim.announce.reinforced } : null,
+    };
+  }
+
   // Aucune boucle de rendu quand l'onglet est caché.
   function start() {
     if (frameId) return;
@@ -429,6 +474,10 @@ export function createGame(ctx) {
       return sim;
     },
     addEnemy,
+    // Spécification d'une vague (par défaut celle du directeur) pour fabriquer un zombie de test.
+    specOf(wave) {
+      return Number.isInteger(wave) ? waveSpec(wave, sim.waveParams) : sim.waves.spec;
+    },
     sample,
     // Test : avance la simulation de `seconds` par pas de 0,05 s, sans attendre le rendu (puis une image à jour).
     advance(seconds) {
@@ -465,6 +514,24 @@ export function createGame(ctx) {
       size = { ...size, unitsPerPixel: (2 * rig.view.distance * Math.tan((render.camera.fov * Math.PI) / 360)) / size.height };
       stale = true;
     },
+    // Test : saute à la vague n (zombies retirés, compte à rebours de départ) ; sans effet avec ?nospawn=1.
+    startWave(n) {
+      sim.enemies = [];
+      sim.waves = jumpToWave(sim.waves, n);
+      sim.announce = null;
+      stale = true;
+    },
+    // Test : tue tous les zombies vivants sans compter de tués ; renvoie leur nombre.
+    killAll() {
+      const n = sim.enemies.length;
+      sim.enemies = [];
+      return n;
+    },
+    // Test : surcharge temporaire de waves.json (sections fusionnées), valable jusqu'à Rejouer.
+    setWaveParams(partial) {
+      sim.waveParams = mergeParams(sim.waveParams, partial && typeof partial === 'object' ? partial : {});
+      sim.waves = setParams(sim.waves, sim.waveParams);
+    },
     // Remet une partie propre (Rejouer, Recommencer).
     restart() {
       ctx.seedRun += 1;
@@ -475,9 +542,13 @@ export function createGame(ctx) {
       return {
         player: { x: sim.player.x, y: sim.player.y, health: sim.player.health },
         aim: sim.aim.angle,
-        enemies: sim.enemies.map((e) => ({ id: e.id, x: e.x, y: e.y, health: e.health, entered: e.entered ?? null, from: e.from ?? null, variant: variantFor(e.id, ctx.seed, kit.variants.length), screen: screenOf(e.x, e.y), pose: zombies.get(e.id)?.char.readPose() ?? null })),
+        enemies: sim.enemies.map((e) => ({
+          id: e.id, x: e.x, y: e.y, health: e.health, entered: e.entered ?? null, from: e.from ?? null, variant: e.visual, screen: screenOf(e.x, e.y), pose: zombies.get(e.id)?.char.readPose() ?? null,
+          type: e.type, gait: e.gait, hp: e.health, maxHp: e.maxHealth, speed: e.speed, damage: e.damage, stride: e.stride, radius: e.r, phase: zombies.get(e.id)?.phase ?? 0,
+        })),
         bullets: sim.bullets.map((b) => ({ id: b.id, x: b.x, y: b.y, angle: b.angle })),
         kills: sim.kills,
+        waves: wavesState(),
         camera: { x: cam.x, y: cam.y, z: cam.z, distance: rig.view.distance, tilt: rig.view.tilt, zoom: rig.view.zoom, target: { ...rig.view.target } },
         render: { ...lastInfo },
         textures: { count: ctx.textureData.count, bytes: ctx.textureData.bytes, readyMs: Math.round(ctx.textureData.ms), ready: true },

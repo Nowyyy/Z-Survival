@@ -8,7 +8,7 @@ export function createUi(dict, handlers) {
   const els = {
     pausePanel: $('pause-panel'), endPanel: $('end-panel'), live: $('hud-live'), rotate: $('rotate'),
     pauseBtn: $('btn-pause'), resume: $('btn-resume'), fullscreen: $('btn-fullscreen'), sound: $('btn-sound'),
-    restart: $('btn-restart'), replay: $('btn-replay'), endKills: $('end-kills'),
+    restart: $('btn-restart'), replay: $('btn-replay'), endKills: $('end-kills'), endWave: $('end-wave'),
     volumeRow: $('volume-row'), volume: $('volume'), volumeValue: $('volume-value'),
   };
   const rotateQuery = matchMedia(PORTRAIT_PHONE);
@@ -44,9 +44,12 @@ export function createUi(dict, handlers) {
       else ui.closePause();
     },
 
-    showEnd(kills) {
+    // wave : vague en cours à la mort (0 ou absente quand les vagues sont coupées par ?nospawn=1 : la ligne est masquée).
+    showEnd(kills, wave = 0) {
       els.pausePanel.hidden = true;
       els.endKills.textContent = fmt(dict['game.end.kills'], { n: kills });
+      els.endWave.textContent = wave > 0 ? fmt(dict['game.wave.reached'], { n: wave }) : '';
+      els.endWave.hidden = !(wave > 0);
       els.endPanel.hidden = false;
       els.replay.focus();
     },

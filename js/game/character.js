@@ -86,6 +86,7 @@ const rotXYZ = new THREE.Quaternion();
 const gunBase = new THREE.Quaternion().setFromEuler(new THREE.Euler(-Math.PI / 2, 0, 0));
 const qHand = new THREE.Quaternion();
 const qTorso = new THREE.Quaternion();
+const gunWorld = new THREE.Vector3();
 
 // kind : 'player' (arme tenue en main) ou 'zombie' (bras tendus, tête penchée, pas d'arme) ; variant : indice dans zombie-variants.json.
 export function createCharacter(kit, kind, variant = 0) {
@@ -113,7 +114,9 @@ export function createCharacter(kit, kind, variant = 0) {
   const pelvis = group(root, 0, LEG, 0);
   part('pelvis', pelvis);
   const torso = group(pelvis, 0, 4, 0);
-  if (kind === 'zombie') torso.rotation.x = 0.14;
+  const lean = kind === 'zombie' ? 0.14 : 0; // inclinaison de base des zombies ; pose.torsoPitch s'y ajoute
+  torso.rotation.x = lean;
+  let applied = { pelvisHeight: 0, torsoPitch: 0 };
   part('torso', torso);
   const head = group(torso, 0, 19, 0);
   part('head', head);
@@ -159,6 +162,10 @@ export function createCharacter(kit, kind, variant = 0) {
         out[`elbow${name}`] = -arms[name].elbow.rotation.x;
       }
       out.torsoTwist = -torso.rotation.y;
+      // Lot 2 : bassin (hauteur réelle et abaissement demandé) et inclinaison du tronc en plus de celle de base.
+      out.pelvisY = pelvis.position.y;
+      out.pelvisHeight = applied.pelvisHeight;
+      out.torsoPitch = torso.rotation.x - lean;
       return out;
     },
     // Flash de l'ennemi touché : les matériaux partagés sont échangés, rien n'est créé.
@@ -175,7 +182,10 @@ export function createCharacter(kit, kind, variant = 0) {
         legs[name].knee.rotation.x = kneeAngle;
         lowest = Math.max(lowest, THIGH * Math.cos(hipAngle) + SHIN * Math.cos(hipAngle - kneeAngle) + FOOT);
       }
-      pelvis.position.y = lowest + pose.bob * 0.8;
+      // pelvisHeight : abaissement du bassin en longueurs de jambe (rampe) ; torsoPitch : tronc penché vers l'avant (radians).
+      applied = { pelvisHeight: pose.pelvisHeight, torsoPitch: pose.torsoPitch };
+      pelvis.position.y = Math.max(0, lowest + pose.bob * 0.8 + pose.pelvisHeight * LEG);
+      torso.rotation.x = lean + pose.torsoPitch;
       torso.rotation.y = -pose.torsoTwist;
       head.rotation.x = clampTo(pose.headTilt + traits.headTilt, LIMITS.headTilt);
       for (const name of ['L', 'R']) {
@@ -191,6 +201,15 @@ export function createCharacter(kit, kind, variant = 0) {
         torso.getWorldQuaternion(qTorso);
         rotXYZ.copy(qHand).invert().multiply(qTorso).multiply(gunBase);
         gun.quaternion.copy(rotXYZ);
+        // Le laser et la balle partent de l'axe de visée (le milieu du tronc) : le pistolet, tenu à deux mains, est ramené sur cet axe.
+        gun.position.set(0, -1, 0);
+        root.updateMatrixWorld(true);
+        gun.getWorldPosition(gunWorld);
+        torso.worldToLocal(gunWorld);
+        gunWorld.x = 0;
+        torso.localToWorld(gunWorld);
+        arms.R.wrist.worldToLocal(gunWorld);
+        gun.position.copy(gunWorld);
       }
     },
   };

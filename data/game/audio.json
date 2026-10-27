@@ -83,6 +83,7 @@
     "volume": 0.6,
     "minSpeed": 20,
     "minInterval": 0.15,
-    "maxSpeed": 70
+    "maxSpeed": 70,
+    "silentGaits": ["rampe"]
   }
 }

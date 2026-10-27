@@ -1,0 +1,10 @@
+{
+  "_provisoire": "Allures des zombies du lot 2 (valeurs provisoires). speed : vitesse de base (unités par seconde) ; cap : plafond de l'allure avec les vagues ; stride : longueur de foulée, distance parcourue par cycle de marche (la phase de marche avance de distance / stride). maxSpeed : plafond absolu, toujours sous la vitesse du joueur (220).",
+  "maxSpeed": 190,
+  "gaits": {
+    "lent": { "speed": 45, "cap": 70, "stride": 38 },
+    "marche": { "speed": 70, "cap": 110, "stride": 52 },
+    "rampe": { "speed": 105, "cap": 150, "stride": 40 },
+    "course": { "speed": 140, "cap": 185, "stride": 78 }
+  }
+}

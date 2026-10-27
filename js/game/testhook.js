@@ -7,7 +7,18 @@ export function installTestHook(ctx, game) {
     setSeed: (n) => {
       game.sim.rng = createRng(n);
     },
-    spawnEnemy: (x, y) => game.addEnemy(x, y).id,
+    // Sans options : marcheur de la vague 1 en allure « marche » (comme avant le lot 2). Options : { type, gait, wave } (vague du directeur par défaut).
+    spawnEnemy: (x, y, opts = {}) => {
+      const typed = opts?.type !== undefined || opts?.gait !== undefined || opts?.wave !== undefined;
+      const spec = typed ? game.specOf(opts.wave) : undefined;
+      return game.addEnemy(x, y, { type: opts?.type, gait: opts?.gait, spec }).id;
+    },
+    // Saute à la vague n (zombies retirés, compte à rebours de 3 s) ; sans effet avec ?nospawn=1.
+    startWave: (n) => game.startWave(n),
+    // Tue tous les zombies vivants sans compter de tués (pour tester la fin de vague) ; renvoie leur nombre.
+    killAll: () => game.killAll(),
+    // Surcharge temporaire de data/game/waves.json (sections fusionnées), jusqu'à Rejouer.
+    setWaveParams: (partial) => game.setWaveParams(partial),
     // Avance la simulation de `seconds` secondes de jeu (pas de 0,05 s), sans attendre le rendu.
     step: (seconds) => game.advance(seconds),
     // Injecte des événements sonores (ex. { type: 'zombieHit', x, y, killed: false, zombie: 'marcheur' }) : seul le journal des sons les voit.
