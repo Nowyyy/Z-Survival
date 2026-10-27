@@ -291,4 +291,9 @@ test('téléphone : une invitation à activer le son s\'affiche tant que l\'audi
   await hint.click();
   await expect.poll(async () => (await audio(page)).unlocked).toBe(true);
   await expect(hint).toBeHidden();
+  // En pause le contexte est suspendu exprès : l'invitation ne revient pas.
+  await page.getByRole('button', { name: 'Pause' }).click();
+  await expect.poll(async () => (await audio(page)).contextState, { timeout: 5000 }).toBe('suspended');
+  await page.waitForTimeout(2500);
+  await expect(hint).toBeHidden();
 });

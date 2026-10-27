@@ -139,6 +139,10 @@ export function createAudio({ config, test = false, seed = 1, autoAmbience = tru
     get running() {
       return ctx !== null && ctx.state === 'running';
     },
+    // Vrai en pause ou onglet caché : le contexte est suspendu exprès, ce n'est pas un blocage du navigateur.
+    get suspended() {
+      return suspended;
+    },
     set onChange(fn) {
       onState = typeof fn === 'function' ? fn : () => {};
     },

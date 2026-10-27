@@ -107,7 +107,10 @@ ctx.ui = createUi(dict, {
     ctx.ui.syncSound(ctx.audio);
   },
   onPausePanel: (open) => ctx.audio.ui(open ? 'pause' : 'resume'),
-  onPauseChange: (paused) => ctx.audio.setSuspended(paused),
+  onPauseChange: (paused) => {
+    ctx.audio.setSuspended(paused);
+    syncHint();
+  },
   onRotateChange: () => ctx.input.releaseAll(),
 });
 ctx.input = createInput(root, {
@@ -126,7 +129,7 @@ ctx.ui.syncSound(ctx.audio);
 // s'affiche après 1,5 s ; un toucher (relâché) suffit à activer le son.
 const soundHint = document.getElementById('sound-hint');
 const coarse = matchMedia('(pointer: coarse)').matches;
-const syncHint = () => { soundHint.hidden = !coarse || !ctx.audio.supported || ctx.audio.running || ctx.audio.muted; };
+const syncHint = () => { soundHint.hidden = !coarse || !ctx.audio.supported || ctx.audio.running || ctx.audio.suspended || ctx.audio.muted; };
 ctx.audio.onChange = syncHint;
 setTimeout(syncHint, 1500);
 setInterval(syncHint, 2000);
