@@ -26,6 +26,7 @@ export function createAudio({ config, test = false, seed = 1, autoAmbience = tru
   let suspendTimer = 0;
   let nextVoice = 0;
   let lastFrame = { time: 0, listener: { x: 0, y: 0 }, walls: [] };
+  let onState = () => {};
   const stats = { essentialMs: 0, backgroundMs: 0, ready: false, zombieVoices: 0 };
 
   const masterGain = () => (muted ? 0 : config.audio.masterGain * (volume / 100));
@@ -134,6 +135,13 @@ export function createAudio({ config, test = false, seed = 1, autoAmbience = tru
     get supported() {
       return Boolean(Context);
     },
+    // Vrai quand le son peut sortir (contexte en marche) ; onChange(rappel) est appelé quand cela change.
+    get running() {
+      return ctx !== null && ctx.state === 'running';
+    },
+    set onChange(fn) {
+      onState = typeof fn === 'function' ? fn : () => {};
+    },
     get volume() {
       return volume;
     },
@@ -161,6 +169,7 @@ export function createAudio({ config, test = false, seed = 1, autoAmbience = tru
         compressor.connect(master);
         master.connect(ctx.destination);
         for (const name of pcm.keys()) toBuffer(name);
+        ctx.addEventListener?.('statechange', () => onState());
       } catch {
         ctx = null;
         return;
@@ -253,7 +262,7 @@ export function createAudio({ config, test = false, seed = 1, autoAmbience = tru
       let bytes = 0;
       for (const it of pcm.values()) bytes += it.samples.length * 4;
       return {
-        supported: Boolean(Context), unlocked: ctx !== null, started: ctx !== null, muted, volume, suspended, buffers: pcm.size, loaded: [...pcm.keys()], bytes,
+        supported: Boolean(Context), unlocked: ctx !== null, contextState: ctx ? ctx.state : 'aucun', started: ctx !== null, muted, volume, suspended, buffers: pcm.size, loaded: [...pcm.keys()], bytes,
         essentialMs: Math.round(stats.essentialMs), backgroundMs: Math.round(stats.backgroundMs), ready: stats.ready, activeVoices: active.size, ambience: ambience !== null, log: log.map((e) => ({ ...e })),
       };
     },

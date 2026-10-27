@@ -280,3 +280,15 @@ test.describe('sons : chargement, confidentialité, robustesse', () => {
     });
   }
 });
+
+test('téléphone : une invitation à activer le son s\'affiche tant que l\'audio n\'est pas lancé, puis disparaît au toucher', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'mobile', 'écran tactile');
+  await open(page);
+  const hint = page.getByRole('button', { name: 'Touche ici pour activer le son' });
+  await expect(hint).toBeVisible({ timeout: 10_000 });
+  const box = await hint.boundingBox();
+  expect(box.height).toBeGreaterThanOrEqual(43.5);
+  await hint.click();
+  await expect.poll(async () => (await audio(page)).unlocked).toBe(true);
+  await expect(hint).toBeHidden();
+});

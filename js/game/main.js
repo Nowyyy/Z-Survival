@@ -122,6 +122,15 @@ ctx.input = createInput(root, {
   },
 });
 ctx.ui.syncSound(ctx.audio);
+// Téléphone : tant que le contexte audio n'est pas en marche (aucun doigt relâché depuis le début, un stick tenu), une invitation à toucher
+// s'affiche après 1,5 s ; un toucher (relâché) suffit à activer le son.
+const soundHint = document.getElementById('sound-hint');
+const coarse = matchMedia('(pointer: coarse)').matches;
+const syncHint = () => { soundHint.hidden = !coarse || !ctx.audio.supported || ctx.audio.running || ctx.audio.muted; };
+ctx.audio.onChange = syncHint;
+setTimeout(syncHint, 1500);
+setInterval(syncHint, 2000);
+soundHint.addEventListener('click', () => ctx.audio.unlock());
 // Le son ne démarre qu'après un geste du joueur. Chrome ne compte pas pointerdown comme geste pour la souris : pointerup, click et touchend
 // aussi, et chaque geste retente la reprise tant que le contexte n'est pas en marche.
 for (const type of ['pointerdown', 'pointerup', 'click', 'touchend', 'keydown']) window.addEventListener(type, () => ctx.audio.unlock(), { capture: true });

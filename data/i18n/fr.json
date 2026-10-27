@@ -87,5 +87,6 @@
   "dev.sons.horde.count": "Horde : {n} voix de zombies en {s} s sur 60 s.",
   "dev.sons.burst.count": "Rafale : {n} tirs.",
   "dev.sons.meta": "{category} · {duration} s · pic {peak} · niveau {rms} dB",
-  "dev.sons.wave": "Forme d'onde de {id}"
+  "dev.sons.wave": "Forme d'onde de {id}",
+  "game.sound.hint": "Touche ici pour activer le son"
 }
