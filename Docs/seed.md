@@ -1,9 +1,9 @@
 # Seed — Z-Survival (jeu de survie zombies, vue de dessus en 3D)
-Version 0.10 — 26/10/2026 — modifié par le propriétaire seulement.
+Version 0.12 — 27/10/2026 — modifié par le propriétaire seulement.
 Dépôt : Nowyyy/Z-Survival. Site : https://nowyyy.github.io/Z-Survival/
 
 ## Le jeu en une phrase
-Jeu web gratuit et solo, en 3D vue de dessus : un personnage défend un bâtiment contre des vagues de zombies, gagne de l'argent à chaque partie, le garde en cas de mort et l'investit dans des améliorations permanentes. Inspiré du principe de SAS Zombie Assault TD ; aucun visuel, nom ni son repris.
+Jeu web gratuit et solo, en 3D vue de dessus : un personnage défend un bâtiment contre des vagues de zombies de plus en plus nombreuses, résistantes et rapides ; chaque partie rapporte de l'argent, conservé même en cas de mort, qui achète des améliorations permanentes. Inspiré du principe de SAS Zombie Assault TD pour la défense, de Black Ops 3 (mode Zombies) pour la montée en difficulté et d'Archero pour la structure en mondes et niveaux ; aucun visuel, nom ni son repris.
 
 ## Piliers
 1. Jouable en 10 secondes sur téléphone comme sur ordinateur, sans compte.
@@ -14,6 +14,7 @@ Jeu web gratuit et solo, en 3D vue de dessus : un personnage défend un bâtimen
 6. Chaque écran est réalisé directement en version finale (pas de maquettes).
 7. Une pièce encombrée où l'on se fait difficilement toucher : le jeu récompense le déplacement et la visée, pas le nombre de tirs.
 8. Tout est généré en code : textures, modèles, sons. Aucun fichier image, modèle 3D ou son importé.
+9. La difficulté monte vague après vague sans plafond de fin : seul le budget de dessin limite le nombre de zombies simultanés.
 
 ## Contrôles
 | Plateforme | Déplacement | Visée | Tir |
@@ -21,54 +22,70 @@ Jeu web gratuit et solo, en 3D vue de dessus : un personnage défend un bâtimen
 | Ordinateur | Touches physiques W, A, S, D et flèches (lues par `event.code` : Z, Q, S, D en AZERTY) | Souris | Un tir part automatiquement quand la ligne de visée touche ou frôle un ennemi |
 | Mobile (paysage) | Stick gauche flottant (moitié gauche de l'écran) | Stick droit flottant (moitié droite) | Idem |
 - Aucun bouton de tir.
-- Le laser rouge (300 unités de long, qui s'estompe sur son dernier tiers) est une aide à la visée : il ne blesse jamais. Un tir part quand la ligne de visée passe à moins de 24 unités du bord d'un zombie, jusqu'à 1600 unités, sans mur ni meuble entre les deux. La balle suit la vraie visée et peut donc rater.
-- Chaque tir crée une balle visible (flash de bouche, balle avec courte traînée, étincelle à l'impact). Les dégâts sont appliqués seulement à l'impact de la balle.
+- Le laser rouge (300 unités de long, qui s'estompe sur son dernier tiers) est une aide à la visée : il ne blesse jamais. Un tir part quand la ligne de visée passe à moins de 24 unités du bord d'un zombie, jusqu'à 1600 unités, sans mur ni meuble entre les deux.
+- Chaque tir crée une balle visible (flash de bouche, balle avec courte traînée, étincelle à l'impact). Les dégâts sont appliqués seulement à l'impact de la balle. Aujourd'hui la balle part droit ; au lot 2b, elle part dans un cône autour de l'axe de visée, plus large en déplacement qu'à l'arrêt, resserré par la statistique de précision.
 - Murs, meubles et décor solide arrêtent le laser et les balles (une balle arrêtée ne fait aucun dégât) ; les fenêtres les laissent passer.
-- Le canvas occupe toute la fenêtre du navigateur. Vue du dessus inclinée à 75° (`?tilt=60|75|90` pour essayer). Vue proche : la caméra suit le joueur avec lissage, ne sort jamais du monde ; zoom 2 par défaut, `?zoom=1` montre toute la zone. Touche F pour le plein écran réel.
+- Le canvas occupe toute la fenêtre du navigateur. Vue du dessus inclinée à 75° (`?tilt=60|75|90`). Vue proche : la caméra suit le joueur avec lissage, ne sort jamais du monde ; zoom 2,5 par défaut (même échelle qu'au lot 1m), `?zoom=1` montre toute la zone. Touche F pour le plein écran réel.
 - Sur téléphone, le jeu se joue en paysage ; en portrait, un message demande de tourner l'appareil.
-- Touches Échap ou P : pause ; M : son.
+- Touches Échap ou P : pause ; M : son. Sur téléphone, un bouton « Touche ici pour activer le son » apparaît tant que le son n'est pas débloqué.
 
 ## Écrans (codes de blocs `E<écran>-<n>`)
 Chaque écran est livré en version finale au lot indiqué du plan.
 | Écran | Fichier | Blocs dans l'ordre | Lot |
 |---|---|---|---|
-| E1 Menu | `index.html` (page d'attente actuelle, remplacée) | E1-1 titre ; E1-2 Jouer ; E1-3 solde d'argent ; E1-4 accès boutique ; E1-5 accès réglages ; E1-6 pied de page (légal) | 7 |
-| E2 Partie | `jeu.html` | E2-1 zone de jeu ; E2-2 HUD (vie, tués, puis vague, chutes, argent) ; E2-3 stick gauche ; E2-4 stick droit ; E2-5 pause ; E2-6 panneau de pause ; E2-7 fin provisoire | 1 à 1m (fait) |
+| E1 Menu | `index.html` (page d'attente actuelle, remplacée) | E1-1 titre ; E1-2 Jouer ; E1-3 solde d'argent ; E1-4 accès boutique ; E1-5 accès réglages ; E1-6 pied de page (légal) ; le choix du monde est ajouté au lot 7 (code fixé alors, sans renuméroter les existants) | 7 |
+| E2 Partie | `jeu.html` | E2-1 zone de jeu ; E2-2 HUD (vie, tués, vague, restants, puis chutes, argent) ; E2-3 stick gauche ; E2-4 stick droit ; E2-5 pause ; E2-6 panneau de pause ; E2-7 fin provisoire ; E2-8 annonce de vague | 1 à 1d (fait), E2-8 au lot 2 |
 | E3 Boutique | `boutique.html` | E3-1 solde ; E3-2 liste des améliorations ; E3-3 armes ; E3-4 retour | 5 |
 | E4 Fin de partie | scène ou page | E4-1 résultat ; E4-2 argent gagné ; E4-3 rejouer ; E4-4 boutique | 7 |
 | E5 Réglages | `reglages.html` | E5-1 langue ; E5-2 son ; E5-3 réduire le sang ; E5-4 sauvegarde (export, import, effacer) | 7 |
 | E6 Légal | `legal.html` | E6-1 mentions ; E6-2 vie privée | 7 |
 Les noms de fichiers des écrans autres que `jeu.html` sont provisoires et fixés dans le prompt de leur lot. Le HUD (en HTML au-dessus du canvas) et les panneaux restent à au moins 16 px des bords, plus les zones de sécurité du téléphone.
 
+## Structure d'une partie (inspirée d'Archero, de mémoire, non vérifiée)
+- Un **monde** = un thème (poste de police, rue, restaurant, etc.) et un nombre fixe de **niveaux** (provisoire : 6, à définir).
+- Un **niveau** = une disposition de la salle. Au sein d'un monde, les dispositions se resserrent : plus de meubles, couloirs plus étroits, moins de place pour esquiver. Garde-fous : couloirs libres d'au moins 90 unités, au moins deux itinéraires depuis chaque fenêtre, espace libre connexe, zone de départ libre.
+- Le niveau change toutes les Y vagues (provisoire : 5). Les dispositions sont construites au lot 3b ; jusque-là, il n'existe qu'une disposition.
+- Les vagues sont **numérotées en continu sur toute la partie** (comme les manches de Black Ops 3) : la difficulté suit le numéro de vague, pas le niveau.
+- Entre deux niveaux : vie remise à 100 %, courte transition, nouvelle disposition.
+- Une partie commence toujours au niveau 1 du monde choisi ; mourir termine la partie ; l'argent gagné est conservé ; finir le dernier niveau termine le monde (écran de fin au lot 7).
+- Les améliorations s'achètent entre les parties, dans la boutique ; il n'y a pas de choix d'amélioration en cours de partie (décision en attente).
+
 ## Mécanique
-- Un niveau = une salle de 2000 × 1200 unités dans un monde de 3600 × 2800, entouré d'un décor extérieur (route, trottoir, voitures abandonnées, arbres, buissons, lampadaires, barrières). Valeurs provisoires dans `data/game/world.json` et `decor.json`.
-- Murs de 40 d'épaisseur et 60 de haut. Trois fenêtres (ouvertures dans les murs, 140 de large) : nord au centre, ouest et est à mi-hauteur.
-- La salle contient 14 meubles (tables, comptoirs, caisses, armoires, colonnes, étagères, hauteur 70 au plus). Ils bloquent le joueur, les zombies, les balles et le laser. Couloirs libres d'au moins 90 unités ; zone de départ du joueur libre ; au moins deux itinéraires depuis chaque fenêtre ; l'espace libre est connexe.
-- Les zombies naissent à l'extérieur, hors de la vue (12 points d'apparition, jamais plus de 8 présents, un toutes les 2,5 s, valeurs provisoires), traversent le décor par des couloirs d'approche de 160 de large sans décor solide, et entrent par les fenêtres.
-- Les zombies poursuivent le joueur en ligne droite quand la voie est libre, sinon contournent les meubles (champ de flux sur une grille de 20 unités).
+- Un niveau = une salle de 2000 × 1200 unités dans un monde de 3600 × 2800 (valeurs provisoires, `data/game/world.json`), entourée d'un décor extérieur (route, trottoir, voitures abandonnées, arbres, buissons, lampadaires, barrières, `decor.json`).
+- Murs de 40 d'épaisseur et 60 de haut. Trois fenêtres de 140 de large : nord au centre, ouest et est à mi-hauteur.
+- La salle contient 14 meubles (hauteur 70 au plus) qui bloquent le joueur, les zombies, les balles et le laser.
+- Les zombies naissent à l'extérieur, hors de la vue, traversent le décor par des couloirs d'approche de 160 de large sans décor solide, et entrent par les fenêtres. Ils poursuivent le joueur en ligne droite quand la voie est libre, sinon contournent les meubles (champ de flux, grille de 20 unités).
+- **Vagues** (inspirées du mode Zombies de Black Ops 3, formule de vie vérifiée, le reste de conception propre) : courbe pure `js/core/waves.js` paramétrée par `data/game/waves.json`.
+  - Vie des zombies : `1 + 0,5 × (n−1)` jusqu'à la vague 9 (×5), puis ×1,1 par vague, plafond ×30 (atteint à la vague 28). BO3 : 150 de vie plus 100 par manche jusqu'à 950 à la manche 9, puis ×1,1 par manche, plafond introduit à Black Ops 4.
+  - Nombre total : 5 à la vague 1, croissance douce (quadratique), plafond 150 ; vague renforcée (+30 %) toutes les 5 vagues.
+  - Simultanés : 6 à la vague 1, jusqu'à 10 au plus (budget de triangles ; BO3 en admet 24).
+  - Vitesse : quatre allures (marche lente, marche, rampe vite, course), introduites progressivement (les lentes dominent au début, les rapides à partir de la vague 8) ; aucun zombie ne dépasse 190 (le joueur : 220).
+  - Quatre types : `marcheur` (de base), `petit` (rapide, fragile, dès la vague 3), `voute` (résistant, dès la 5), `grand` (lent, très résistant et dur, dès la 7).
+  - Dégâts au contact croissants, plafonnés ; intervalle d'apparition décroissant de 2,5 s à 0,9 s.
+  - Pause de 3 s avant la vague 1, 8 s entre les vagues. À la fin d'une vague, le joueur retrouve 100 % de sa vie.
 - Fenêtres et barricades : les zombies cassent les planches des fenêtres (lot 3) ; jusque-là, les fenêtres sont passables pour les zombies seulement, fermées au joueur par des barrières invisibles.
 - Réparation d'une fenêtre : le joueur reste à proximité ; la durée dépend de l'amélioration correspondante.
 - « Tomber à terre » : à 0 de vie, le joueur tombe, se relève automatiquement après un délai en consommant une chute ; plus de chute = fin de partie.
-- Vagues : générées par formule pure ; `data/waves.json` fournit les paramètres ; difficulté croissante à chaque niveau.
-- Argent : gagné par ennemi tué et par vague, conservé à la mort.
-- Améliorations permanentes (`data/upgrades.json`, niveaux et coûts) : vie, dégâts, cadence de tir, vitesse de déplacement, nombre de chutes, vitesse de réparation des fenêtres ; d'autres à définir.
+- Argent : gagné par ennemi tué et par vague, conservé à la mort (lot 4).
+- **Statistiques du joueur** (lot 2b, niveaux de 0 à 10, valeurs provisoires dans `data/game/player-stats.json`) : dégâts, portée, précision (cône de tir), cadence de tir, vitesse de déplacement, vie maximale, régénération par kill (points de vie rendus à chaque zombie tué, qui augmentent avec le niveau). En déplacement, le cône de tir est plus large qu'à l'arrêt ; la précision resserre les deux. S'y ajoutent le nombre de chutes et la vitesse de réparation des fenêtres (lots 3 et 5). Elles s'achètent dans la boutique (lots 4 et 5).
 - Armes (`data/weapons.json`) : une arme de départ (pistolet), d'autres achetables ; chaque arme définit dégâts, cadence, portée, vitesse de balle, tolérance de visée.
-- Tourelles (lot 9), skins de personnage et d'armes (lot 11), thèmes de niveau : poste de police, rue, restaurant (lot 10).
+- Tourelles (lot 9), skins de personnage et d'armes (lot 11), mondes supplémentaires (lot 10).
 - Sang et particules (lot 8), avec une option « réduire le sang ».
 - Les valeurs d'équilibrage sont provisoires jusqu'au lot 12.
 
 ## Personnages et rendu
-- Personnages articulés en 3D, vus du dessus : bassin, tronc, tête, deux bras (épaule et coude), deux jambes (hanche et genou), arme tenue en main. Le joueur tourne le tronc vers la visée, les jambes suivent le déplacement, léger recul au tir. Les zombies ont les bras tendus, une démarche traînante et un déphasage propre à chacun ; au lot 1c, quatre variantes de zombies (taille, tenue, teint, posture).
-- Les angles des articulations viennent d'une fonction pure (`pose.js`, testée) ; le rendu ne fait que les appliquer.
-- Géométries et matériaux partagés entre tous les personnages ; ombres portées (carte d'ombres 1024, la lumière suit la caméra) ; seuls les meubles, les voitures et les personnages projettent une ombre ; les murs et le décor léger non.
-- Budget de dessin : au plus 300 appels de dessin avec 8 zombies et ombres actives (objectif 240 à partir du lot 1c), au plus 15 000 triangles. Le décor est créé une seule fois (maillages fusionnés ou instances), jamais par image.
-- Paramètres de diagnostic dans l'URL : `?fps=1` (images par seconde), `?dpr=1`, `?shadows=0`, `?tilt=`, `?zoom=`.
+- Personnages articulés en 3D, vus du dessus : bassin, tronc, tête, deux bras (épaule et coude), deux jambes (hanche et genou), arme tenue en main. 12 pièces et 700 triangles au plus chacun, géométries et matériaux partagés. Le joueur tourne le tronc vers la visée, les jambes suivent le déplacement, léger recul au tir.
+- Zombies : quatre variantes visuelles (`marcheur`, `petit`, `grand`, `voute` : taille, tenue, teint, posture), sans sang avant le lot 8. Quatre allures, dessinées par des poses distinctes : marche lente (traînante, petite amplitude), marche, rampe (corps abaissé, torse à l'horizontale, bras qui tirent), course (grande amplitude, torse penché). Les angles des articulations viennent d'une fonction pure (`pose.js`, testée) ; le rendu ne fait que les appliquer.
+- Ombres portées (carte de 1024, la lumière suit la caméra) ; seuls cinq pièces principales des personnages, les meubles et les voitures en projettent.
+- Budget de dessin (mesuré au lot 1c : 157 appels et 13 222 triangles avec 8 zombies ; limites 300 et 15 000) : environ 8 230 triangles pour le décor et le joueur plus 624 par zombie, donc **10 zombies simultanés au plus**. Les lots 8 (sang) et 9 (tourelles) devront libérer du budget ; le lot 12 pourra réduire le coût des personnages pour relever le plafond.
+- Le décor est créé une seule fois (maillages fusionnés ou instances), jamais par image.
+- Paramètres de diagnostic dans l'URL : `?fps=1`, `?dpr=1`, `?shadows=0`, `?tilt=`, `?zoom=`, `?wave=N` (démarre à la vague N).
 
 ## Contenus
 | Contenu | Fournisseur | Statut |
 |---|---|---|
-| Textures, matériaux, modèles | Générés en code (fonctions pures déterministes, géométries Three.js) | Couleurs unies jusqu'au lot 1c, textures ensuite |
-| Sons | Synthèse Web Audio, sans fichier ; retravaillés au lot 1d (sons en couches, filtres, réverbération, grognements et bruits de zombies occasionnels) | Provisoires jusqu'au lot 1d |
+| Textures, matériaux, modèles | Générés en code (fonctions pures déterministes, atlas de 512 et 256, 4,9 Mo) | Faits au lot 1c, à enrichir par monde |
+| Sons | 48 tampons synthétisés en code (lot 1d) : tirs en couches, impacts par matière, pas, voix de zombies par formants (16 à 36 par minute avec 8 zombies), ambiance ; page d'écoute `sons.html` | Faits, réglables par identifiant de son |
 | Textes en français | Claude, validés par le propriétaire | Réels |
 | Textes en anglais | Reportés | Voir décisions en attente |
 | Équilibrage | `data/game/*.json` | À régler en test |
@@ -87,30 +104,35 @@ Les noms de fichiers des écrans autres que `jeu.html` sont provisoires et fixé
 | Succès / avertissement | `#7ed48b` / `#f2c94c` |
 | Focus | `#9fd3ff` |
 - Polices hébergées dans le dépôt : Barlow, Rubik Wet Paint (titre), Rubik Dirt (libellés).
-- Les couleurs du jeu sont des variables `--game-*` dans `tokens.css`, lues par le code du jeu (`js/game/palette.js`) ; aucune couleur en dur dans le JavaScript.
+- Les couleurs du jeu sont des variables `--game-*` dans `tokens.css`, lues par `js/game/palette.js` ; aucune couleur en dur dans le JavaScript. Les sols ont été assombris au lot 1c pour la lisibilité ; `tokens.css` fait foi pour les valeurs.
 - Tout état (vie, fenêtre cassée, solde) est porté aussi par une forme ou un texte, jamais par la couleur seule.
-- Lisibilité : contraste d'au moins 3:1 entre les personnages et le sol, 4,5:1 pour le laser et la balle (testé à partir du lot 1c).
-- Cibles tactiles de 44 px, contraste de 4,5:1 pour le texte (le rouge sang n'est utilisé que pour de grands textes, 3:1), `prefers-reduced-motion` respecté (secousses, flashs et particules réduits).
+- Lisibilité : contraste d'au moins 3:1 entre les personnages et le sol, 4,5:1 pour le laser et la balle.
+- Cibles tactiles de 44 px, contraste de 4,5:1 pour le texte (le rouge sang n'est utilisé que pour de grands textes, 3:1), `prefers-reduced-motion` respecté.
 - Tailles de test : 375, 768 et 1440 px, plus 667×375 (téléphone en paysage) et 2560×1080 pour le jeu.
 
 ## Stack et hébergement
-- HTML, CSS à variables, JavaScript en modules. **Three.js 0.186.1** (MIT) est la bibliothèque de rendu : paquet npm en `devDependency` à version exacte, fichiers copiés par `npm run vendor:three` vers `vendor/three/` (versionnés, jamais édités à la main), chargés par `importmap` locale, sans CDN. `dependencies` reste vide. Phaser a été retiré au lot 1m.
+- HTML, CSS à variables, JavaScript en modules. **Three.js 0.186.1** (MIT) est la bibliothèque de rendu : paquet npm en `devDependency` à version exacte, fichiers copiés par `npm run vendor:three` vers `vendor/three/` (jamais édités à la main), chargés par `importmap` locale placée **avant** tout `modulepreload` (sinon Firefox l'ignore). `dependencies` reste vide.
 - Outils de développement : ESLint (configuration plate), Vitest, Playwright avec axe, Lighthouse.
-- Arborescence de code : `js/core/` (logique pure du jeu : aucun Three.js, DOM, réseau, stockage ni horloge ; temps passé en argument ; pas de `Math.random`, générateur à graine), `js/game/` (rendu et entrées), `js/save/` (futur `SaveRepository` et adaptateurs), `data/` (textes et chiffres).
+- Arborescence de code : `js/core/` (logique pure du jeu : aucun Three.js, Web Audio, DOM, réseau, stockage ni horloge ; temps passé en argument ; pas de `Math.random`, générateur à graine), `js/game/` (rendu, sons, entrées), `js/save/` (futur `SaveRepository` et adaptateurs), `data/` (textes et chiffres).
 - Le monde est dans le plan (x, y) pour la logique ; dans Three.js, (x, 0, y) ; le haut de l'écran est le nord.
-- GitHub Pages, chemins relatifs, aucune ressource externe. Déploiement depuis `main` seulement ; aperçus par branche (fichier `apercu.txt`) à `/lots/lot-N/` (page `/lots/` et menu `/dev` générés automatiquement ; le menu ouvre la page de la première ligne de `apercu.txt`) ; une branche de lot n'est jamais supprimée. La branche `lot-0t` (test Three.js contre Phaser) n'est pas fusionnée et reste en ligne.
+- GitHub Pages, chemins relatifs, aucune ressource externe. Déploiement depuis `main` seulement ; aperçus par branche (`apercu.txt`) à `/lots/lot-N/` ; page `/lots/` et menu `/dev/` générés automatiquement, avec un journal des versions (`data/changelog.json`) : chaque lot ajoute son entrée et adapte les tests `data-changelog` et `dev.spec`. Une branche de lot n'est jamais supprimée. La branche `lot-0t` (test Three.js contre Phaser) n'est pas fusionnée et reste en ligne.
+- Workflow : `verify` avec délai de 30 min, Playwright rejoué une fois en cas d'échec (modifié au lot 1d à la demande du propriétaire) ; un lot ne le modifie que si son prompt l'autorise.
+- `sons.html` : page d'écoute technique, à retirer au lot 13.
 - Sauvegarde : interface `SaveRepository` ; adaptateur `localStorage` avec schéma versionné et migrations ; export et import par code. Une base en ligne sera un nouvel adaptateur, sur décision écrite.
 - Jamais conservé : position, identité, adresse IP, paramètres d'URL de test. Aucun cookie.
 - Langue : français seul pour l'instant ; la structure `data/i18n/` permet d'ajouter l'anglais. `noindex` pendant le développement.
-- Tests : le paramètre `?test=1` expose `window.__zs` (état du jeu, graine, apparition d'un zombie, avance de la simulation, vue d'ensemble, rendu) ; `?empty=1` charge un monde sans meubles ni décor solide (pour les tests à coordonnées fixes) ; `?seed=` et `?nospawn=1` fixent la graine et coupent les apparitions.
-- Seuils Lighthouse mobile : `index.html` 90 / 95 / 95 et CLS ≤ 0,1 ; `jeu.html` performance 45 (mesuré 55), accessibilité 95, bonnes pratiques 95, CLS ≤ 0,1. Le poids de Three.js (environ 2,1 Mo) pèse sur le score ; les mesures de fluidité sur téléphone comptent plus que le score simulé.
+- Tests : `?test=1` expose `window.__zs` (état du jeu, graine, apparition d'un zombie, avance de la simulation, vue d'ensemble, rendu, audio, vagues) ; `?empty=1` charge un monde sans meubles ni décor solide ; `?seed=` et `?nospawn=1` fixent la graine et coupent les vagues.
+- Seuils Lighthouse mobile : `index.html` 90 / 95 / 95 et CLS ≤ 0,1 ; `jeu.html` performance 45 (mesuré 55), accessibilité 95, bonnes pratiques 95, CLS ≤ 0,1.
+- `CLAUDE.md` reste sous 9 000 caractères (8 425 au lot 1d) : chaque lot consolide avant d'ajouter.
 
 ## Hors périmètre (pour l'instant)
-Multijoueur, comptes, classements en ligne, publicité, achats, base de données, balles perforantes ou ricochets, munitions et rechargement, images, sons ou modèles 3D importés (tout est généré en code), anglais, caméra libre ou rotative, cartes de relief et post-traitement.
+Multijoueur, comptes, classements en ligne, publicité, achats, base de données, balles perforantes ou ricochets, munitions et rechargement, images, sons ou modèles 3D importés (tout est généré en code), anglais, caméra libre ou rotative, cartes de relief et post-traitement, zombies spéciaux (explosifs, tireurs, chiens), boss, choix d'amélioration en cours de partie.
 
 ## Décisions en attente
+- Nombre de niveaux par monde (6 proposé) et de vagues par niveau (5 proposé) : durée d'une partie.
+- Thème du premier monde (poste de police proposé).
+- Choix d'amélioration en cours de partie à la manière d'Archero : oui ou non (non pour l'instant).
 - Zone morte de la caméra (0 aujourd'hui : la caméra suit toujours le joueur).
-- Sons : synthèse améliorée (par défaut) ou enregistrements libres de droits (il faudrait lever « sons importés » et vérifier les licences).
 - Anglais : abandonné ou reporté après la mise en ligne en français.
 - Monétisation (le jeu reste gratuit et public).
 - Date de mise en ligne officielle et passage en indexation.
@@ -118,7 +140,7 @@ Multijoueur, comptes, classements en ligne, publicité, achats, base de données
 - Seuil de performance Lighthouse de `jeu.html` (45 proposé, mesuré 55).
 
 ## Risques connus
-Fluidité de la 3D sur téléphone modeste (ombres, résolution, nombre de zombies) ; temps de génération des textures sur téléphone (lot 1c) ; coût du champ de flux sur téléphone (non mesuré, environ 15 ms en Node) ; budget d'appels de dessin presque atteint (300 sur 300 avec 8 zombies avant le lot 1c) ; poids de Three.js au chargement ; netteté sur écrans haute densité ; sticks multi-touch ; précision des impacts de balles rapides ; équilibrage (pièce trop dure ou trop facile) ; sang et public mineur ; tir automatique à rendre lisible ; audio non vérifiable par l'agent ; l'API de Three.js évolue (toujours lire le paquet installé).
+Équilibrage de la difficulté (vie, vitesse et nombre, pièce trop dure ou trop facile avec 100 % de vie rendue) ; durée d'une partie non prévisible ; plafond de 10 zombies simultanés (budget de triangles) ; fluidité de la 3D sur téléphone modeste ; temps de génération des textures et des sons sur téléphone (non mesuré) ; coût du champ de flux sur téléphone (non mesuré, environ 15 ms en Node) ; poids de Three.js au chargement ; netteté sur écrans haute densité ; sticks multi-touch ; précision des impacts de balles rapides ; tir en cône et tir automatique (frustration au niveau 0) ; dispositions de niveaux qui deviennent injouables en se resserrant ; sang et public mineur ; commutateur silencieux des iPhone (le son peut être coupé) ; l'API de Three.js évolue (toujours lire le paquet installé).
 
 ## Plan en lots (état)
 | Lot | Sujet | État |
@@ -126,22 +148,24 @@ Fluidité de la 3D sur téléphone modeste (ombres, résolution, nombre de zombi
 | 0, 0b, 0c, 0d | Socle, aperçus par branche, CI, accueil en français | fait |
 | 0t | Test jetable Three.js contre Phaser (branche non fusionnée, à conserver) | fait |
 | 1 | Cœur du jeu en Phaser | fait, remplacé par 1m |
-| 1m | Migration du rendu : Three.js remplace Phaser, personnages articulés, ombres, HUD HTML, caméra qui suit | fait |
-| 1b | Monde plus grand, meubles, chemin des zombies, décor extérieur provisoire, apparitions hors vue, collisions du laser et des balles | fait |
-| 1c | Textures générées en code et personnages finaux (4 variantes de zombies), budget de dessin | à lancer |
-| 1d | Sons retravaillés et bruits de zombies occasionnels | à écrire |
-| 2 | Vagues et difficulté croissante (logique pure) | à écrire |
+| 1m | Migration du rendu : Three.js, personnages articulés, ombres, HUD HTML | fait |
+| 1b | Monde plus grand, meubles, chemin des zombies, décor extérieur, apparitions hors vue | fait |
+| 1c | Textures générées en code, personnages finaux, quatre variantes de zombies | fait |
+| 1d | Sons synthétisés en code, voix de zombies, page d'écoute | fait |
+| 2 | Vagues numérotées en continu (courbe inspirée de BO3), quatre allures, quatre types, vie à 100 % entre les vagues | à lancer |
+| 2b | Cône de tir, imprécision en déplacement, statistiques du joueur (niveaux 0 à 10), régénération par kill | à écrire |
 | 3 | Fenêtres, planches cassées par les zombies, réparation, chutes | à écrire |
+| 3b | Mondes et niveaux : dispositions de plus en plus serrées, transitions, premier monde | à écrire |
 | 4 | Argent, sauvegarde locale (`SaveRepository`) | à écrire |
 | 5 | Boutique et améliorations (E3) | à écrire |
 | 6 | Armes | à écrire |
-| 7 | Menu (E1), fin de partie (E4), réglages (E5), légal (E6) | à écrire |
+| 7 | Menu avec choix du monde (E1), fin de partie (E4), réglages (E5), légal (E6) | à écrire |
 | 8 | Sang, particules, option « réduire le sang » | à écrire |
 | 9 | Tourelles | à écrire |
-| 10 | Thèmes de niveau | à écrire |
+| 10 | Mondes supplémentaires (thèmes : rue, restaurant, etc.) | à écrire |
 | 11 | Skins de personnage et d'armes | à écrire |
-| 12 | Qualité technique : performance, équilibrage, accessibilité, nettoyage | à écrire |
-| 13 | Mise en ligne : SEO, mentions légales finales, indexation | à écrire |
+| 12 | Qualité technique : performance (budget de personnages), équilibrage, accessibilité, nettoyage | à écrire |
+| 13 | Mise en ligne : SEO, mentions légales finales, indexation, retrait de `sons.html` | à écrire |
 
 ## Idées en attente
-Base de données en ligne et sauvegarde dans le cloud, classement, achievements, mode difficile, anglais, plusieurs armes en même temps, caméra qui s'incline selon la vitesse, variantes de zombies spéciales.
+Base de données en ligne et sauvegarde dans le cloud, classement, achievements, boss de fin de monde, choix d'améliorations en cours de partie, mode infini après le dernier niveau, zombies spéciaux, manches spéciales (comme les chiens de BO3), anglais, plusieurs armes en même temps, variantes de zombies spéciales.
