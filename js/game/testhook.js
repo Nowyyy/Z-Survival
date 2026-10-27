@@ -19,6 +19,8 @@ export function installTestHook(ctx, game) {
     killAll: () => game.killAll(),
     // Surcharge temporaire de data/game/waves.json (sections fusionnées), jusqu'à Rejouer.
     setWaveParams: (partial) => game.setWaveParams(partial),
+    // Remplace les niveaux des statistiques (ex. { degats: 5 } ; absent = 0), sans rien stocker ; les balles en vol gardent leurs dégâts.
+    setLevels: (levels) => game.setLevels(levels),
     // Avance la simulation de `seconds` secondes de jeu (pas de 0,05 s), sans attendre le rendu.
     step: (seconds) => game.advance(seconds),
     // Injecte des événements sonores (ex. { type: 'zombieHit', x, y, killed: false, zombie: 'marcheur' }) : seul le journal des sons les voit.

@@ -1,0 +1,14 @@
+{
+  "_provisoire": "Lot 2b : toutes les valeurs sont provisoires, à régler en jouant (équilibrage non jugé par l'agent). Sept statistiques à niveaux de 0 à maxLevel ; le prix des niveaux viendra avec la boutique (lot 5). Lu par js/core/player-stats.js.",
+  "maxLevel": 10,
+  "stats": {
+    "degats": { "perLevel": 0.15 },
+    "portee": { "perLevel": 0.12, "bulletMargin": 100 },
+    "precision": { "baseAngle": 4, "baseDecay": 0.9, "moveAngle": 8, "moveDecay": 0.85, "minAngle": 0.5 },
+    "cadence": { "decay": 0.9, "minDelay": 0.15 },
+    "vitesse": { "perLevel": 0.04, "maxBonus": 0.4 },
+    "vie": { "perLevel": 12 },
+    "regen": { "base": 1, "perLevel": 1 }
+  },
+  "spread": { "widenTime": 0.08, "narrowTime": 0.25 }
+}

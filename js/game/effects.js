@@ -54,6 +54,9 @@ export function createEffects(scene, palette, { gunHeight, bulletRadius }) {
   glow.renderOrder = ORDER.glow;
   glowFade.renderOrder = ORDER.glow;
   laserFade.renderOrder = ORDER.glow;
+  // Cône de tir : deux lignes ténues (même ruban et même matériau que le halo du laser, opacité 0,22) à ± le demi-angle lissé.
+  const coneLines = [make(ribbon, glowMat), make(ribbon, glowMat)];
+  for (const line of coneLines) line.renderOrder = ORDER.glow;
   const dot = make(ball, laserMat);
   const flashOuter = make(ball, muzzleMat);
   const flashCore = make(ball, hitMat);
@@ -96,6 +99,16 @@ export function createEffects(scene, palette, { gunHeight, bulletRadius }) {
         strip(halo, from.x, from.y, ray.end.x, ray.end.y, laserHeight, thick * 2.6);
         offLine.visible = false;
         offHalo.visible = false;
+        // Cône : de l'arme, ± le demi-angle de l'axe, sur la longueur du laser effectif (pas arrêtées par les obstacles : repère de dispersion).
+        const cone = frame.laser.cone;
+        for (let i = 0; i < 2; i += 1) {
+          if (!cone) {
+            coneLines[i].visible = false;
+            continue;
+          }
+          const a = cone.angle + (i === 0 ? -cone.half : cone.half);
+          strip(coneLines[i], from.x, from.y, from.x + Math.cos(a) * cone.length, from.y + Math.sin(a) * cone.length, laserHeight, thick);
+        }
         dot.position.set(ray.end.x, laserHeight, ray.end.y);
         dot.scale.setScalar(Math.max(ray.hit ? 3.2 : 2, (ray.hit ? 3.5 : 2.5) * upp));
         dot.visible = !faded;
@@ -109,7 +122,7 @@ export function createEffects(scene, palette, { gunHeight, bulletRadius }) {
           flashCore.scale.setScalar(frame.flashSize * 0.45);
         }
       } else {
-        for (const mesh of [laser, glow, laserFade, glowFade, dot]) mesh.visible = false;
+        for (const mesh of [laser, glow, laserFade, glowFade, dot, ...coneLines]) mesh.visible = false;
         flashOuter.visible = false;
         flashCore.visible = false;
       }

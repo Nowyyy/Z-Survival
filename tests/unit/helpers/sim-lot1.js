@@ -3,8 +3,8 @@
 import { pathToFileURL } from 'node:url';
 import { existsSync, readFileSync } from 'node:fs';
 
-// legacy : portées du lot 1 (700 pour le laser, le tir et la balle).
-export async function simulate(root, { seconds = 30, seed = 42, fps = 60, legacy = false } = {}) {
+// legacy : portées du lot 1 (700 pour le laser, le tir et la balle). weaponPatch : valeurs de weapons.json remplacées (ex. fireRange: 1600).
+export async function simulate(root, { seconds = 30, seed = 42, fps = 60, legacy = false, weaponPatch = {} } = {}) {
   const load = (name) => import(pathToFileURL(`${root}/js/core/${name}.js`).href);
   const [aimM, combat, ai, movement, projectile, ray, rngM, spawnerM, vec] = await Promise.all(
     ['aim', 'combat', 'enemy-ai', 'movement', 'projectile', 'ray', 'rng', 'spawner', 'vec'].map(load));
@@ -12,7 +12,9 @@ export async function simulate(root, { seconds = 30, seed = 42, fps = 60, legacy
   // Lot 1b : la salle du lot 1m est la section « legacy » de world.json (une copie de main garde son room.json).
   const room = existsSync(`${root}/data/game/room.json`) ? data('room') : data('world').legacy;
   const playerCfg = data('player');
-  const base = data('weapons').pistol;
+  const stored = { ...data('weapons').pistol, ...weaponPatch };
+  // Lot 2b : la distance maximale de la balle vient de l'arme effective (niveau 0 : portée de tir + marge) ; une copie de main a encore la clé.
+  const base = stored.bulletMaxDistance !== undefined ? stored : (await import(pathToFileURL(`${root}/js/core/player-stats.js`).href)).effectiveWeapon(stored, {}, data('player-stats'));
   // Lot 1 : laser, tir et balle portaient tous à 700.
   const weapon = legacy ? { ...base, laserRange: 700, fireRange: 700, bulletMaxDistance: 700 } : base;
   // Règles du lot 1 : 5 zombies au plus, un toutes les 3 s (le jeu du lot 1b en autorise 8, toutes les 2,5 s).

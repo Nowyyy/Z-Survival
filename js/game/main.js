@@ -4,6 +4,7 @@ import { parseTilt, parseZoom } from '../core/viewport.js';
 import { createAudio } from './audio.js';
 import { createGame } from './game.js';
 import { createLoading } from './loading.js';
+import { readLevels } from './levels-source.js';
 import { createInput } from './input.js';
 import { createTokenLookup, readPalette } from './palette.js';
 import { installSafeArea } from './safe-area.js';
@@ -38,7 +39,7 @@ const testMode = query.get('test') === '1';
 const fpsMode = query.get('fps') === '1';
 const seedParam = Number.parseInt(query.get('seed') ?? '', 10);
 
-const [dict, world, decor, camera, nav, player, weapons, enemies, render, texturesCfg, variants, soundsCfg, audioCfg, materialsCfg, voiceCfg, wavesCfg, gaitsCfg] = await Promise.all([
+const [dict, world, decor, camera, nav, player, weapons, enemies, render, texturesCfg, variants, soundsCfg, audioCfg, materialsCfg, voiceCfg, wavesCfg, gaitsCfg, statsCfg] = await Promise.all([
   loadDict(),
   loadJson('data/game/world.json'),
   loadJson('data/game/decor.json'),
@@ -56,6 +57,7 @@ const [dict, world, decor, camera, nav, player, weapons, enemies, render, textur
   loadJson('data/game/zombie-voice.json'),
   loadJson('data/game/waves.json'),
   loadJson('data/game/gaits.json'),
+  loadJson('data/game/player-stats.json'),
 ]);
 
 applyTexts(dict);
@@ -81,7 +83,7 @@ root.hidden = false;
 const layout = buildLayout(world, decor, { empty: testMode && query.get('empty') === '1', slack: camera.slack });
 
 const ctx = {
-  cfg: { layout, player, weapon: weapons.pistol, zombie: enemies.zombie, enemies, gaits: gaitsCfg, waves: wavesCfg, render, camera, nav },
+  cfg: { layout, player, weapon: weapons.pistol, stats: statsCfg, zombie: enemies.zombie, enemies, gaits: gaitsCfg, waves: wavesCfg, render, camera, nav },
   palette,
   dict,
   textureData,
@@ -98,6 +100,7 @@ const ctx = {
   },
   seed: Number.isFinite(seedParam) ? seedParam : Date.now() % 2147483647,
   seedRun: 0,
+  levels: readLevels(location.search, statsCfg),
   override: {},
   audio,
   audioCfg,
@@ -160,7 +163,8 @@ if (game === null) {
       const p = ctx.perf;
       const a = ctx.audio.stats;
       const textures = fmt(dict[TEXTURE_TEXTS.fps], { ms: Math.round(textureData.ms), flow: p.flowCount ? (p.flowSum / p.flowCount).toFixed(2) : '0', max: p.flowMax.toFixed(2) });
-      return `${textures}\n${fmt(dict[TEXTURE_TEXTS.fpsSons], { essential: Math.round(a.essentialMs), background: Math.round(a.backgroundMs), voices: a.zombieVoices })}`;
+      const stats = game.statsLine();
+      return `${textures}\n${fmt(dict[TEXTURE_TEXTS.fpsSons], { essential: Math.round(a.essentialMs), background: Math.round(a.backgroundMs), voices: a.zombieVoices })}\n${fmt(dict[TEXTURE_TEXTS.fpsStats], { levels: stats.levels, angle: stats.angle })}`;
     }));
   }
   if (testMode) installTestHook(ctx, game);

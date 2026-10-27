@@ -2,9 +2,11 @@ import { describe, it, expect } from 'vitest';
 import { applyImpacts, createWeaponState, stepWeapon } from '../../js/core/combat.js';
 import { createBullet, stepBullets } from '../../js/core/projectile.js';
 import { castRay } from '../../js/core/ray.js';
+import { effectiveWeapon } from '../../js/core/player-stats.js';
 import { deepFreeze, load, WEIRD } from './helpers/monde.js';
 
-const pistol = load('weapons').pistol;
+// Lot 2b : l'arme du jeu au niveau 0 (portée de tir 700, balle jusqu'à 800) ; la distance maximale de la balle n'est plus dans weapons.json.
+const pistol = effectiveWeapon(load('weapons').pistol, {}, load('player-stats'));
 const bounds = { minX: 0, minY: 0, maxX: 3000, maxY: 2000 };
 const table = { id: 'table-1', x: 800, y: 950, w: 100, h: 100, hauteur: 40, kind: 'table' };
 const at = (x, y, r = 20, id = 1) => ({ id, x, y, r });
@@ -47,8 +49,8 @@ describe('ray.js : le laser et la ligne de tir s\'arrêtent aux meubles', () => 
     expect(castRay({ x: 850, y: 1000 }, 0, 300, [at(1000, 1000)], bounds, [table]).length).toBe(0);
   });
 
-  it('le laser de 300 n\'est pas arrêté par un meuble à 600, mais la ligne de tir de 1600 l\'est : aucun tir sur un zombie caché', () => {
-    const zombie = at(1200, 1000);
+  it('le laser de 300 n\'est pas arrêté par un meuble à 550, mais la ligne de tir de 700 l\'est : aucun tir sur un zombie caché', () => {
+    const zombie = at(900, 1000);
     const laser = castRay(origin, 0, pistol.laserRange, [zombie], bounds, [table]);
     const fireLine = castRay(origin, 0, pistol.fireRange, [zombie], bounds, [table]);
     expect(laser.stoppedBy).toBeNull();
@@ -59,8 +61,8 @@ describe('ray.js : le laser et la ligne de tir s\'arrêtent aux meubles', () => 
     expect(stepWeapon(createWeaponState(), 0.05, aimed, pistol, 0).fire).toBe(false);
   });
 
-  it('le tir part sur un zombie visible à 1000 unités (au-delà du laser, dans la portée de 1600)', () => {
-    const zombie = at(1200, 1000);
+  it('le tir part sur un zombie visible à 650 unités (au-delà du laser, dans la portée de 700)', () => {
+    const zombie = at(850, 1000);
     const fireLine = castRay(origin, 0, pistol.fireRange, [zombie], bounds, [{ ...table, y: 1500 }]);
     expect(fireLine.hit.id).toBe(1);
     expect(stepWeapon(createWeaponState(), 0.05, true, pistol, 0).fire).toBe(true);

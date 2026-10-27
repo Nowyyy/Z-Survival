@@ -55,6 +55,13 @@
       "« Vague N » et « Restants » dans le HUD, annonce en début et fin de vague, compte à rebours de 3 s puis de 8 s entre les vagues.",
       "La vie du joueur est remise à 100 % à la fin de chaque vague ; l'écran de mort indique la vague atteinte.",
       "?wave=N démarre à la vague N pour les essais (de 1 à 200) ; ?nospawn=1 coupe les vagues."
+    ] },
+    { "name": "lot-2b", "titre": "Cône de tir, précision et statistiques du joueur", "points": [
+      "Chaque balle part dans un cône autour de la visée : 4° à l'arrêt, jusqu'à 12° en courant ; deux lignes ténues montrent l'ouverture du cône.",
+      "Sept statistiques à niveaux de 0 à 10 : dégâts, portée, précision, cadence, vitesse, vie maximale et régénération par zombie tué.",
+      "Chaque zombie tué rend de la vie (1 point au niveau 0) ; la vie maximale effective sert à la barre, au HUD et au soin de fin de vague.",
+      "Portée de tir de base ramenée à 700 ; les dégâts d'une balle sont figés au départ du tir.",
+      "?lvl=degats:3,precision:5 ou ?lvl=all:5 règle les niveaux pour les essais (l'achat viendra avec l'argent et la boutique) ; rien n'est stocké."
     ] }
   ]
 }

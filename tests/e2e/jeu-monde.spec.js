@@ -362,12 +362,15 @@ test.describe('marge de visée et tir par les fenêtres', () => {
           last = n;
         }
         const e = window.__zs.getState().enemies;
-        return { shots, health: e[e.length - 1].health };
+        return { shots, health: e[e.length - 1].health, laserHit: window.__zs.getState().laser?.hit ?? null };
       });
     };
     const near = await run(30); // 30 à côté du centre : dans la marge (20 + 24), hors du zombie (20 + 4)
     expect(near.shots).toBeGreaterThan(0);
-    expect(near.health).toBe(50);
+    // Lot 2b : la balle part dans un cône autour de la visée et peut donc toucher ce zombie frôlé (avant : toujours ratée, vie = 50). Le laser,
+    // lui, ne le touche pas : le tir vient bien de la marge de visée.
+    expect(near.laserHit).toBeNull();
+    expect(near.health).toBeLessThanOrEqual(50);
     await page.goto(PAGE('&nospawn=1'));
     await waitReady(page);
     const far = await run(80);

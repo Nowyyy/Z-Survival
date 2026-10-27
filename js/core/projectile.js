@@ -4,14 +4,16 @@ import { clampDt, fromAngle, isNum, num } from './vec.js';
 
 const TRAIL_LENGTH = 3;
 
-// weapon : { damage, bulletSpeed, bulletRadius, bulletMaxDistance }. Renvoie une nouvelle balle.
-export function createBullet(origin, angle, weapon, id = 0) {
+// weapon : { damage, bulletSpeed, bulletRadius, bulletMaxDistance } (arme effective : les dégâts sont figés ici). angle : direction réelle de la
+// balle (dans le cône) ; aimAngle : axe de visée au départ (par défaut l'angle). Renvoie une nouvelle balle.
+export function createBullet(origin, angle, weapon, id = 0, aimAngle = angle) {
   const dir = fromAngle(angle);
   return {
     id,
     x: num(origin?.x),
     y: num(origin?.y),
     angle: num(angle),
+    aimAngle: num(aimAngle),
     dirX: dir.x,
     dirY: dir.y,
     speed: Math.max(0, num(weapon?.bulletSpeed)),
