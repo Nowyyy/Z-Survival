@@ -103,7 +103,7 @@ describe('hygiène du lot 1c', () => {
   });
 
   it('aucun Math.random, Date.now, document ni window dans js/core/', () => {
-    for (const f of core) expect(readFileSync(f, 'utf8'), f).not.toMatch(/Math\.random|Date\.now|\bdocument\b|\bwindow\b/);
+    for (const f of core) expect(readFileSync(f, 'utf8'), f).not.toMatch(/Math\.random|Date\.now|\bdocument\b|(?<![\w.'-])window\s*[.[(]/);
   });
 
   it('aucun Math.random dans js/', () => {

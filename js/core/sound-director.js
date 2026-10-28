@@ -2,7 +2,7 @@
 // duration }. Pur : le temps de jeu, la position de l'écouteur (le joueur) et les données arrivent en argument ; le hasard vient de
 // rng.js. Règles : le son d'un tir part avec la balle, la blessure d'un zombie à l'impact seulement (c'est là que les dégâts arrivent) ;
 // la douille tombe 0,25 à 0,4 s après un tir si la cadence est inférieure à 3 tirs par seconde ; rien ne sonne pendant la pause.
-import { admitVoice, createVoiceState, distanceGain, isMuffled, panFor, pickVariant } from './audio-mix.js';
+import { admitGap, admitVoice, createVoiceState, distanceGain, isMuffled, panFor, pickVariant } from './audio-mix.js';
 import { createFootsteps, stepFootsteps } from './footsteps.js';
 import { createRng, nextFloat } from './rng.js';
 import { createVoicePlanner, planVoice } from './zombie-voice.js';
@@ -17,18 +17,18 @@ export function soundTable(sounds) {
   return table;
 }
 
-export const createDirector = (seed = 1) => ({ rng: createRng(seed), lastShot: -Infinity, last: {}, voices: createVoiceState(), planner: createVoicePlanner(seed + 101), zsteps: {} });
+export const createDirector = (seed = 1) => ({ rng: createRng(seed), lastShot: -Infinity, last: {}, voices: createVoiceState(), planner: createVoicePlanner(seed + 101), zsteps: {}, windowLast: {} });
 
 // frame : { time, paused, listener: { x, y }, walls, events: [...], zombies: [{ id, x, y, variant }] }. cfg : { audio, materials, voice, sounds: soundTable(...) }.
 // Événements : { type: 'shot' | 'zombieHit' | 'zombieAttack' | 'obstacleHit' | 'playerHurt' | 'playerDeath' | 'playerStep' | 'pause' | 'resume'
-// | 'waveSplash' (sound, variant) | 'waveEnd' (variant), x, y, ... }.
+// | 'waveSplash' (sound, variant) | 'waveEnd' (variant) | 'plankTorn' | 'plankRepaired' (x, y, windowId) | 'playerDown' | 'playerUp', x, y, ... }.
 // Retourne { state, requests } sans modifier ses arguments.
 export function direct(state, frame, cfg) {
   const table = cfg?.sounds;
   const audio = cfg?.audio;
   const events = Array.isArray(frame?.events) ? frame.events : [];
   const zombies = Array.isArray(frame?.zombies) ? frame.zombies.filter((z) => z && isNum(z.x) && isNum(z.y)) : [];
-  let s = { ...(state ?? createDirector()), last: { ...(state?.last ?? {}) } };
+  let s = { ...(state ?? createDirector()), last: { ...(state?.last ?? {}) }, windowLast: { ...(state?.windowLast ?? {}) } };
   if (!table || !audio || (events.length === 0 && zombies.length === 0)) return { state: s, requests: [] };
   const time = num(frame?.time);
   const listener = { x: num(frame?.listener?.x), y: num(frame?.listener?.y) };
@@ -37,7 +37,7 @@ export function direct(state, frame, cfg) {
   const requests = [];
 
   // Ajoute une demande si le son existe, est audible et si la limite de voix et le délai minimal le permettent.
-  const add = (sound, { x = null, y = null, volume = 1, rate = 1, delay = 0, pan = null, spatial = true, zombie = null, variant: wanted = null } = {}) => {
+  const add = (sound, { x = null, y = null, volume = 1, rate = 1, delay = 0, pan = null, spatial = true, zombie = null, variant: wanted = null, through = false } = {}) => {
     const info = table[sound];
     if (!info) return;
     let gain = num(volume, 1);
@@ -46,7 +46,8 @@ export function direct(state, frame, cfg) {
     if (spatial && isNum(x) && isNum(y)) {
       gain *= distanceGain(Math.hypot(x - listener.x, y - listener.y), audio.referenceDistance, audio.maxDistance);
       balance = panFor(x - listener.x, audio.pan?.range, audio.pan?.max);
-      if (isMuffled({ x, y }, listener, walls)) {
+      // through : son venant d'une fenêtre (lot 3), qui laisse passer le son : jamais étouffé.
+      if (!through && isMuffled({ x, y }, listener, walls)) {
         lowpass = true;
         gain *= num(audio.muffle?.gain, 0.6);
       }
@@ -92,6 +93,17 @@ export function direct(state, frame, cfg) {
       // Mélodie d'annonce : une demande par animation (le choix est fait par js/core/wave-splash.js) ; seuls deux sons sont permis.
       if (e.sound === 'vague-annonce' || e.sound === 'vague-renforcee') add(e.sound, { spatial: false, variant: e.variant });
     } else if (type === 'waveEnd') add('vague-fin', { spatial: false, variant: e.variant });
+    else if (type === 'plankTorn' || type === 'plankRepaired') {
+      // Planches (lot 3) : au plus un son toutes les 120 ms par fenêtre ; le son vient de la fenêtre et traverse l'ouverture sans s'étouffer.
+      const gate = admitGap(s.windowLast, `${e.windowId ?? 'fenetre'}`, time, num(audio.windowGap, 0.12));
+      if (gate.ok) {
+        const before = requests.length;
+        add(type === 'plankTorn' ? 'planche-arrachee' : 'planche-posee', { x: e.x, y: e.y, through: true });
+        // Seul un son réellement demandé occupe le créneau de la fenêtre.
+        if (requests.length > before) s = { ...s, windowLast: gate.last };
+      }
+    } else if (type === 'playerDown') add('joueur-chute', { spatial: false });
+    else if (type === 'playerUp') add('joueur-releve', { spatial: false });
     else if (type === 'playerHurt') add('joueur-blesse', { spatial: false });
     else if (type === 'playerDeath') add('joueur-mort', { spatial: false });
     else if (type === 'playerStep') add('pas', { volume: num(e.volume, 1), pan: e.foot === 'droit' ? 0.15 : e.foot === 'gauche' ? -0.15 : 0, spatial: false });

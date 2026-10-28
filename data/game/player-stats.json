@@ -1,5 +1,5 @@
 {
-  "_provisoire": "Lot 2b : toutes les valeurs sont provisoires, à régler en jouant (équilibrage non jugé par l'agent). Sept statistiques à niveaux de 0 à maxLevel ; le prix des niveaux viendra avec la boutique (lot 5). Lu par js/core/player-stats.js.",
+  "_provisoire": "Lot 2b : toutes les valeurs sont provisoires, à régler en jouant (équilibrage non jugé par l'agent). Sept statistiques à niveaux de 0 à maxLevel ; le prix des niveaux viendra avec la boutique (lot 5). Lu par js/core/player-stats.js. Lot 3 : la section extra décrit les statistiques « chutes » et « reparation » (maxLevel propre à chacune), lues avec les niveaux de ?lvl=.",
   "maxLevel": 10,
   "stats": {
     "degats": { "perLevel": 0.15 },
@@ -9,6 +9,10 @@
     "vitesse": { "perLevel": 0.04, "maxBonus": 0.4 },
     "vie": { "perLevel": 12 },
     "regen": { "base": 1, "perLevel": 1 }
+  },
+  "extra": {
+    "chutes": { "base": 1, "perLevel": 1, "maxLevel": 5 },
+    "reparation": { "base": 1.8, "decay": 0.88, "min": 0.4, "maxLevel": 10 }
   },
   "spread": { "widenTime": 0.08, "narrowTime": 0.25 }
 }

@@ -151,4 +151,15 @@
   --game-vhs-track: #f4f1ec;        /* bande de suivi, légèrement plus claire (os) */
   --game-vhs-grain-light: #f4f1ec;  /* grain, pixels clairs (os) */
   --game-vhs-grain-dark: #050505;   /* grain, pixels sombres */
+
+  /* Jeu, lot 3 : état à terre (E2-10) et indicateur de réparation (E2-9). Provisoires, à valider (contrastes contrôlés par tests). */
+  --game-down-veil: #5a0b0b;        /* voile de bord à terre : rouge sang sombre (dégradé radial, sans filtre) */
+  --game-down-veil-alpha: 0.75;     /* opacité du voile sur les bords (nombre, pas une couleur) */
+  --game-down-panel: #050505;       /* fond du texte « À terre » (zone pleine : le texte n'est jamais posé sur le jeu) */
+  --game-down-text: #f4f1ec;        /* « À terre » : os */
+  --game-down-sub: #d9d5ce;         /* « Tu te relèves dans N s » et « Protégé N s » : os atténué (4,5:1) */
+  --game-repair-panel: #050505;     /* fond du libellé de réparation */
+  --game-repair-ring: #f4f1ec;      /* anneau de progression de la planche en cours */
+  --game-repair-track: #8a857d;     /* piste de l'anneau (3:1 sur le fond du jeu) */
+  --game-repair-text: #f4f1ec;      /* « Réparation » et « Fenêtre occupée » */
 }

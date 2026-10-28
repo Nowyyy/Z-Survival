@@ -27,3 +27,16 @@ export const VHS_TEXTS = { label: 'game.vhs.label', on: 'game.vhs.on', off: 'gam
 
 // Clés des textes de l'animation de vague (E2-8) : les mêmes que js/core/wave-splash.js (KEYS), pour que fr.json n'ait pas de clé orpheline.
 export const SPLASH_TEXTS = { debut: 'game.splash.debut', renforcee: 'game.splash.renforcee', fin: 'game.splash.fin', vieRestauree: 'game.splash.vieRestauree' };
+
+// Lot 3 : textes des fenêtres à planches (HUD « Fenêtres », indicateur de réparation E2-9, annonces vocales) et de l'état à terre (E2-10).
+// Le nom d'une fenêtre vient de son identifiant dans world.json ; une fenêtre inconnue garde son identifiant.
+export const WINDOW_TEXTS = {
+  title: 'game.windows.title', entry: 'game.windows.entry', open: 'game.windows.entry.open', attacked: 'game.windows.entry.attacked',
+  repair: 'game.windows.repair', busy: 'game.windows.busy', liveOpen: 'game.windows.live.open', liveRepaired: 'game.windows.live.repaired',
+};
+export const WINDOW_NAMES = {
+  'fenetre-nord': 'game.windows.name.nord', 'fenetre-ouest': 'game.windows.name.ouest', 'fenetre-est': 'game.windows.name.est', 'fenetre-sud': 'game.windows.name.sud',
+};
+export const DOWN_TEXTS = {
+  chutes: 'game.down.chutes', title: 'game.down.title', countdown: 'game.down.countdown', grace: 'game.down.grace', liveDown: 'game.down.live.down', liveUp: 'game.down.live.up',
+};
