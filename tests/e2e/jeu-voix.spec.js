@@ -10,6 +10,8 @@ const world = JSON.parse(readFileSync('data/game/world.json', 'utf8'));
 const decor = JSON.parse(readFileSync('data/game/decor.json', 'utf8'));
 const layout = buildLayout(world, decor, {});
 const AMBIENT = ['zombie-gemissement', 'zombie-grognement', 'zombie-plainte', 'zombie-souffle'];
+// Les sons « fond » se calculent image par image (4 ms) : sur un runner chargé (rendu logiciel) ils sont prêts plus tard que 30 s.
+test.setTimeout(120_000);
 const state = (page) => page.evaluate(() => window.__zs.getState());
 const audio = async (page) => (await state(page)).audio;
 async function open(page, url = URL()) {
@@ -64,7 +66,7 @@ test.describe('voix de zombies', () => {
   test('120 s simulées avec 8 zombies : un nombre de voix cohérent avec les règles (16 à 36 par minute, tolérance ×2)', async ({ page }) => {
     await open(page);
     await unlock(page);
-    await expect.poll(async () => (await audio(page)).ready, { timeout: 30_000 }).toBe(true);
+    await expect.poll(async () => (await audio(page)).ready, { timeout: 100_000 }).toBe(true);
     const run = await horde(page, 120);
     expect(run.enemies).toBe(8);
     const voices = run.seen.filter((e) => AMBIENT.includes(e.sound));
@@ -127,7 +129,7 @@ test.describe('voix de zombies', () => {
   test('un cri d\'attaque part au contact, avec la hauteur de la variante', async ({ page }) => {
     await open(page);
     await unlock(page);
-    await expect.poll(async () => (await audio(page)).ready, { timeout: 30_000 }).toBe(true);
+    await expect.poll(async () => (await audio(page)).ready, { timeout: 100_000 }).toBe(true);
     const p = (await state(page)).player;
     await page.evaluate(([x, y]) => window.__zs.spawnEnemy(x, y), [p.x + 50, p.y]);
     await page.evaluate(() => window.__zs.step(2.5));
@@ -143,7 +145,7 @@ test.describe('voix de zombies', () => {
 test.describe('ambiance', () => {
   test('démarre après le premier geste et s\'arrête en pause', async ({ page }) => {
     await open(page);
-    await expect.poll(async () => (await audio(page)).ready, { timeout: 30_000 }).toBe(true);
+    await expect.poll(async () => (await audio(page)).ready, { timeout: 100_000 }).toBe(true);
     expect((await audio(page)).ambience).toBe(false); // rien avant le premier geste
     await unlock(page);
     await expect.poll(async () => (await audio(page)).ambience).toBe(true);
@@ -156,7 +158,7 @@ test.describe('ambiance', () => {
   test('le bouton « Son » et la touche M la coupent aussi', async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== 'bureau', 'clavier');
     await open(page);
-    await expect.poll(async () => (await audio(page)).ready, { timeout: 30_000 }).toBe(true);
+    await expect.poll(async () => (await audio(page)).ready, { timeout: 100_000 }).toBe(true);
     await unlock(page);
     await expect.poll(async () => (await audio(page)).ambience).toBe(true);
     await page.keyboard.press('KeyM');

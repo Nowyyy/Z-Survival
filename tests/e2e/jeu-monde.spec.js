@@ -206,6 +206,7 @@ test.describe('monde du lot 1b', () => {
 
   test('aucun zombie n\'est bloqué plus de 2 s contre un meuble (huit zombies, 60 s)', async ({ page }) => {
     await open(page, '&planks=0'); // lot 3 : fenêtres ouvertes (sans elles, les zombies attendent à leur fenêtre, ce qui n'est pas un blocage contre un meuble)
+    await page.evaluate(() => window.__zs.setChutes(0)); // lot 3 : sans chute, le joueur meurt comme avant et la boucle s'arrête (à terre, la file d'attente derrière lui dure et n'est pas un blocage)
     const stuck = await page.evaluate(() => {
       const problems = [];
       const anchors = new Map();
@@ -233,8 +234,9 @@ test.describe('monde du lot 1b', () => {
     await page.mouse.move(500, 120);
     await page.mouse.move(520, 130);
     await page.waitForFunction(() => window.__zs.getState().time > 0.4);
+    const t0 = (await state(page)).time;
     await page.keyboard.down('KeyD');
-    await page.waitForTimeout(900);
+    await page.waitForFunction((t) => window.__zs.getState().time > t + 0.9, t0); // 0,9 s de temps de jeu, pas de temps réel (machine chargée)
     const moving = await state(page);
     await page.keyboard.up('KeyD');
     const early = moving.camera.target.x;
