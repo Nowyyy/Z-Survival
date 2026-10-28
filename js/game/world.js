@@ -284,7 +284,7 @@ export function buildWorld({ palette, layout, render, textures, windowGeoms = []
   // Planches des fenêtres (lot 3) : un seul maillage dynamique, 2 triangles par planche (quadrilatère vertical dans l'ouverture, légèrement
   // incliné d'un angle propre à chaque planche, graine du jeu), texture de bois de l'atlas de props (région existante), double face, sans ombre.
   // Une planche arrachée est écrasée en un point (triangles dégénérés), une planche posée reprend sa place : aucun objet recréé.
-  const planks = windowGeoms.length > 0 && windowsCfg ? createPlanks({ scene, material: atlasMaterial, rect: region('bois'), geoms: windowGeoms, count: windowsCfg.planks, render, seed, style: styleOf(plankStyle, region) }) : null;
+  const planks = windowGeoms.length > 0 && windowsCfg ? createPlanks({ scene, material: atlasMaterial, rect: region('bois'), geoms: windowGeoms, count: windowsCfg.planks, render, seed, style: styleOf(plankStyle) }) : null;
 
   return {
     scene,
@@ -305,60 +305,70 @@ export function buildWorld({ palette, layout, render, textures, windowGeoms = []
   };
 }
 
-// TEMPORAIRE (comparaison de rendu) : ?pk=a|b|c|d|e|f choisit un style de planches.
-function styleOf(pk, region) {
-  const dark = region('pneu');
-  const light = region('lampe');
-  return { a: {}, b: { over: 13, gap: 0.2 }, c: { outline: dark }, d: { outline: light }, e: { over: 13, gap: 0.2, outline: dark }, f: { over: 13, gap: 0.2, outline: light, grow: 3.5 } }[pk] ?? {};
+// TEMPORAIRE (comparaison de rendu) : ?pk=a|g|h choisit le style des planches : a = planches plates collées au mur (actuel), g et h = poutres en relief,
+// posées contre le mur, de travers (épaisseur et inclinaison croissantes).
+function styleOf(pk) {
+  return { a: {}, g: { box: 5, tilt: 8, jitter: 1 }, h: { box: 8, tilt: 12, jitter: 1.6 }, i: { box: 14, tilt: 13, jitter: 2.5, over: 16 }, j: { box: 20, tilt: 15, jitter: 3, over: 20 } }[pk] ?? {};
 }
 
-const PLANK_TILT = (4 * Math.PI) / 180; // inclinaison maximale d'une planche
-const PLANK_INSET = 13.5; // planches clouées contre la face intérieure du mur (à 12 du centre de la fenêtre), 1,5 en avant pour ne pas se confondre avec elle
+const PLANK_TILT = (4 * Math.PI) / 180; // inclinaison maximale d'une planche plate
+const PLANK_INSET = 13.5; // planches plates contre la face intérieure du mur (à 12 du centre de la fenêtre), 1,5 en avant pour ne pas se confondre avec elle
 const PLANK_OVER = 8; // dépassement de la pile au-dessus et au-dessous de l'ouverture, et de chaque côté
 const DEBRIS_LENGTH = 62; // planche arrachée tombée au sol : longueur et largeur
 const DEBRIS_WIDTH = 8;
 
-// Planches des fenêtres : un seul maillage dynamique de 2 triangles par quadrilatère. Les planches clouées (4 par fenêtre) sont collées à la face
-// intérieure du mur, un peu plus larges et hautes que l'ouverture ; chaque planche arrachée apparaît en débris à plat sur le sol de la salle, éparpillé
-// devant la fenêtre (position et angle tirés de la graine). Une planche ou un débris absent est écrasé en un point (triangles dégénérés).
+// Planches des fenêtres : un seul maillage dynamique. Planche plate : 1 quadrilatère. Poutre en relief (style.box = épaisseur) : 4 quadrilatères (face
+// avant, dessus et deux bouts) posés contre la face intérieure du mur, inclinés dans le plan du mur (style.tilt degrés) et décalés au hasard
+// (style.jitter). Chaque planche arrachée apparaît en débris à plat sur le sol devant la fenêtre (graine du jeu). Un élément absent est écrasé en
+// un point (triangles dégénérés) : rien n'est recréé.
 function createPlanks({ scene, material, rect, geoms, count, render, seed, style = {} }) {
   const total = geoms.length * count;
-  const groups = style.outline ? 3 : 2; // planches, débris, (contours)
-  const base = new Float32Array(total * groups * 18);
-  const uvs = new Float32Array(total * groups * 12);
+  const Q = style.box ? 4 : 1; // quadrilatères par planche clouée
+  const base = new Float32Array(total * (Q + 1) * 18);
+  const uvs = new Float32Array(total * (Q + 1) * 12);
   const over = style.over ?? PLANK_OVER;
   const sill = render.sillHeight - over;
   const open = render.lintelBottom - render.sillHeight + 2 * over;
   const h = open / count;
   const index = new Map(); // fenêtre -> premier numéro de planche
-  const put = (n, corners, v0, v1, texel = null) => {
-    const quadUv = texel ? [texel, texel, texel, texel] : [[rect.u0, v0], [rect.u1, v0], [rect.u1, v1], [rect.u0, v1]];
+  const put = (slot, corners, v0, v1) => {
+    const quadUv = [[rect.u0, v0], [rect.u1, v0], [rect.u1, v1], [rect.u0, v1]];
     [0, 1, 2, 0, 2, 3].forEach((c, k) => {
-      base.set(corners[c], n * 18 + k * 3);
-      uvs.set(quadUv[c], n * 12 + k * 2);
+      base.set(corners[c], slot * 18 + k * 3);
+      uvs.set(quadUv[c], slot * 12 + k * 2);
     });
   };
+  const tiltMax = style.box ? (style.tilt * Math.PI) / 180 : PLANK_TILT;
   geoms.forEach((g, w) => {
     index.set(g.id, w * count);
-    const cx = g.center.x - g.normal.x * PLANK_INSET;
-    const cz = g.center.y - g.normal.y * PLANK_INSET;
+    const inset = style.box ? 12.2 : PLANK_INSET;
+    const cx = g.center.x - g.normal.x * inset;
+    const cz = g.center.y - g.normal.y * inset;
     for (let i = 0; i < count; i += 1) {
       const n = w * count + i;
       const v0 = rect.v0 + ((rect.v1 - rect.v0) * i) / count;
       const v1 = rect.v0 + ((rect.v1 - rect.v0) * (i + 1)) / count;
-      // Planche clouée : coins (le long du mur, hauteur) tournés dans le plan du mur autour du centre de la planche.
-      const tilt = (unit(seed + 7, n) * 2 - 1) * PLANK_TILT;
-      const half = g.width / 2 + over;
-      const hh = h / 2 - (style.gap ?? 0.5);
-      const cy = sill + h * (i + 0.5);
-      const quad = (grow, push) => [[-half - grow, hh + grow], [half + grow, hh + grow], [half + grow, -hh - grow], [-half - grow, -hh - grow]].map(([a, b]) => {
-        const ra = a * Math.cos(tilt) - b * Math.sin(tilt);
+      const tilt = (unit(seed + 7, n) * 2 - 1) * tiltMax;
+      const jit = style.jitter ?? 0;
+      const half = g.width / 2 + over + (style.box ? (unit(seed + 11, n) * 2 - 1) * 8 : 0);
+      const shift = style.box ? (unit(seed + 13, n) * 2 - 1) * 7 : 0; // décalage le long du mur
+      const hh = h / 2 - (style.box ? 1.5 : 0.5);
+      const cy = sill + h * (i + 0.5) + (unit(seed + 17, n) * 2 - 1) * jit;
+      // Coins [haut gauche, haut droit, bas droit, bas gauche] du plan du mur, tournés autour du centre de la planche ; push : avancée dans la salle.
+      const quad = (push) => [[-half, hh], [half, hh], [half, -hh], [-half, -hh]].map(([a, b]) => {
+        const ra = a * Math.cos(tilt) - b * Math.sin(tilt) + shift;
         const rb = a * Math.sin(tilt) + b * Math.cos(tilt);
-        return [cx + g.tangent.x * ra + g.normal.x * (i * 0.2 + push), cy + rb, cz + g.tangent.y * ra + g.normal.y * (i * 0.2 + push)];
+        return [cx + g.tangent.x * ra - g.normal.x * push, cy + rb, cz + g.tangent.y * ra - g.normal.y * push];
       });
-      put(n, quad(0, 0), v0, v1);
-      // Contour : même quadrilatère agrandi, juste derrière la planche, dans un texel uni de l'atlas.
-      if (style.outline) put(2 * total + n, quad(style.grow ?? 2.5, 0.6), 0, 0, [(style.outline.u0 + style.outline.u1) / 2, (style.outline.v0 + style.outline.v1) / 2]);
+      if (!style.box) put(n, quad(i * -0.2), v0, v1);
+      else {
+        const back = quad(0);
+        const front = quad(style.box);
+        put(n * Q, front, v0, v1); // face avant (côté salle)
+        put(n * Q + 1, [front[0], front[1], back[1], back[0]], v0, v1); // dessus
+        put(n * Q + 2, [front[0], back[0], back[3], front[3]], v0, v1); // bout gauche
+        put(n * Q + 3, [front[1], back[1], back[2], front[2]], v0, v1); // bout droit
+      }
       // Débris : à plat sur le sol, entre 35 et 120 devant le mur et jusqu'à ±(largeur/2 + 30) le long du mur, orienté au hasard.
       const along = (unit(seed + 21, n) * 2 - 1) * (g.width / 2 + 30);
       const depth = 35 + unit(seed + 35, n) * 85;
@@ -370,7 +380,7 @@ function createPlanks({ scene, material, rect, geoms, count, render, seed, style
       const mx = g.center.x - g.normal.x * depth + g.tangent.x * along;
       const mz = g.center.y - g.normal.y * depth + g.tangent.y * along;
       const y = 0.6 + i * 0.15;
-      put(total + n, [[mx - dx - wx, y, mz - dz - wz], [mx + dx - wx, y, mz + dz - wz], [mx + dx + wx, y, mz + dz + wz], [mx - dx + wx, y, mz - dz + wz]], v0, v1);
+      put(total * Q + n, [[mx - dx - wx, y, mz - dz - wz], [mx + dx - wx, y, mz + dz - wz], [mx + dx + wx, y, mz + dz + wz], [mx - dx + wx, y, mz - dz + wz]], v0, v1);
     }
   });
   const positions = new Float32Array(base);
@@ -386,28 +396,32 @@ function createPlanks({ scene, material, rect, geoms, count, render, seed, style
   mesh.receiveShadow = false;
   mesh.frustumCulled = false;
   scene.add(mesh);
-  const shown = new Int8Array(total * groups).fill(-1); // dernier état écrit (1 visible, 0 écrasé)
-  const write = (n, on) => {
-    if (shown[n] === on) return false;
-    shown[n] = on;
-    if (on) positions.set(base.subarray(n * 18, n * 18 + 18), n * 18);
-    else positions.fill(0, n * 18, n * 18 + 18);
+  const nailed = new Int8Array(total).fill(-1); // dernier état écrit par planche (1 visible, 0 écrasée)
+  const debris = new Int8Array(total).fill(-1);
+  const write = (flags, n, quadStart, quads, on) => {
+    if (flags[n] === on) return false;
+    flags[n] = on;
+    const from = quadStart * 18;
+    const to = (quadStart + quads) * 18;
+    if (on) positions.set(base.subarray(from, to), from);
+    else positions.fill(0, from, to);
     return true;
   };
+  const sum = (a) => a.reduce((n, v) => n + (v === 1 ? 1 : 0), 0);
   return {
     mesh,
-    triangles: total * (style.outline ? 6 : 4),
+    triangles: total * (Q + 1) * 2,
     // Nombre de planches clouées et de débris actuellement visibles (tests).
-    counts: () => ({ nailed: shown.subarray(0, total).reduce((n, v) => n + (v === 1 ? 1 : 0), 0), debris: shown.subarray(total, 2 * total).reduce((n, v) => n + (v === 1 ? 1 : 0), 0) }),
+    counts: () => ({ nailed: sum(nailed), debris: sum(debris) }),
     // state : sortie de createWindowsState / stepWindows ; ne réécrit que ce qui a changé (planche posée ou arrachée).
     sync(state) {
       let changed = false;
       for (const [id, first] of index) {
         const have = state?.windows?.[id]?.planks ?? 0;
         for (let i = 0; i < count; i += 1) {
-          if (write(first + i, i < have ? 1 : 0)) changed = true;
-          if (write(total + first + i, i < have ? 0 : 1)) changed = true;
-          if (style.outline && write(2 * total + first + i, i < have ? 1 : 0)) changed = true;
+          const n = first + i;
+          if (write(nailed, n, n * Q, Q, i < have ? 1 : 0)) changed = true;
+          if (write(debris, n, total * Q + n, 1, i < have ? 0 : 1)) changed = true;
         }
       }
       if (changed) geometry.attributes.position.needsUpdate = true;
