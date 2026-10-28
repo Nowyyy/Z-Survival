@@ -253,7 +253,7 @@ test.describe('interface E2-10 et annonces', () => {
 
   test('E2-10 est sous l\'animation de vague dans l\'ordre du HTML et affiche « Protégé N s » après le relevage', async ({ page }) => {
     await open(page);
-    expect(await page.evaluate(() => [...document.querySelectorAll('#game-root [data-block]')].map((e) => e.dataset.block))).toEqual(['E2-2', 'E2-8', 'E2-9', 'E2-10', 'E2-11', 'E2-5', 'E2-3', 'E2-4']);
+    expect(await page.evaluate(() => [...document.querySelectorAll('#game-root [data-block]')].map((e) => e.dataset.block))).toEqual(['E2-2', 'E2-8', 'E2-10', 'E2-11', 'E2-5', 'E2-3', 'E2-4']);
     await fall(page);
     await step(page, 5.1);
     await expect(page.locator('#down')).toBeVisible();
@@ -293,7 +293,7 @@ test.describe('interface E2-10 et annonces', () => {
     expect(seen.every((t) => !/\d+ s/.test(t))).toBe(true);
   });
 
-  test('HUD compact : la rangée des chutes ne chevauche ni Pause ni E2-9 à 667×375 ; axe sans violation avec E2-9 et E2-10', async ({ page }) => {
+  test('HUD compact : la rangée des chutes ne chevauche pas Pause à 667×375 ; axe sans violation avec E2-10', async ({ page }) => {
     await open(page);
     const r = await page.evaluate(() => {
       const b = (sel) => { const e = document.querySelector(sel).getBoundingClientRect(); return { l: e.left, t: e.top, r: e.right, b: e.bottom }; };
@@ -303,7 +303,6 @@ test.describe('interface E2-10 et annonces', () => {
     expect(r.hud.r).toBeLessThanOrEqual(r.pause.l);
     expect(r.hud.b).toBeLessThan(r.h - 16);
     await page.evaluate(() => { window.__zs.setPlanks('fenetre-nord', 2); window.__zs.setPlayer(1800, 882); window.__zs.step(0.3); });
-    await expect(page.locator('#repair')).toBeVisible();
     await fall(page);
     await expect(page.locator('#down')).toBeVisible();
     expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);

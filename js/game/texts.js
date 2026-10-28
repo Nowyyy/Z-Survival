@@ -33,7 +33,7 @@ export const SPLASH_TEXTS = { debut: 'game.splash.debut', renforcee: 'game.splas
 export const WINDOW_TEXTS = {
   title: 'game.windows.title', chipOpen: 'game.windows.chip.open', chipAttacked: 'game.windows.chip.attacked', chipMore: 'game.windows.chip.more',
   chipLabel: 'game.windows.chip.label', chipLabelAttacked: 'game.windows.chip.label.attacked', chipLabelOpen: 'game.windows.chip.label.open', chipMoreLabel: 'game.windows.chip.more.label',
-  repair: 'game.windows.repair', busy: 'game.windows.busy', liveBusy: 'game.windows.live.busy', liveOpen: 'game.windows.live.open', liveRepaired: 'game.windows.live.repaired',
+  liveBusy: 'game.windows.live.busy', liveOpen: 'game.windows.live.open', liveRepaired: 'game.windows.live.repaired',
 };
 export const WINDOW_NAMES = {
   'fenetre-nord': 'game.windows.name.nord', 'fenetre-ouest': 'game.windows.name.ouest', 'fenetre-est': 'game.windows.name.est', 'fenetre-sud': 'game.windows.name.sud',

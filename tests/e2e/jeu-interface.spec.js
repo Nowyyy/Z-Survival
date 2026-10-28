@@ -3,7 +3,7 @@ import AxeBuilder from '@axe-core/playwright';
 import { readFileSync } from 'node:fs';
 import { waitReady } from './helpers.js';
 
-// Lot 3a-B : interface compacte (HUD E2-2 en puces, E2-9 sur une ligne, E2-11 flèches au bord). Tout passe par step() et les hooks de ?test=1 ;
+// Lot 3a-B : interface compacte (HUD E2-2 en puces, E2-11 flèches au bord). Tout passe par step() et les hooks de ?test=1 ;
 // 667×375 de préférence, 1440×900 pour les marges. Les tests se désactivent seuls si WebGL manque.
 const SIZE = { width: 667, height: 375 };
 const BIG = { width: 1440, height: 900 };
@@ -104,13 +104,13 @@ test.describe('HUD compact E2-2', () => {
     await expect(page.locator('#hud-chutes')).toHaveText('Chutes 2');
   });
 
-  test('le texte fait 14 px au moins partout (HUD, E2-9, E2-11) et reste lisible', async ({ page }) => {
+  test('le texte fait 14 px au moins partout (HUD, E2-11) et reste lisible', async ({ page }) => {
     await open(page);
     await attack(page, 'fenetre-nord');
     await page.evaluate(() => { window.__zs.setPlanks('fenetre-ouest', 0); window.__zs.step(0.05); });
     const sizes = await page.evaluate(() => {
       const out = [];
-      for (const root of ['#hud', '#repair', '#edges']) {
+      for (const root of ['#hud', '#edges']) {
         for (const el of document.querySelectorAll(`${root}, ${root} *`)) {
           if (el.closest('svg') && el.tagName !== 'svg') continue;
           const own = [...el.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim() !== '');
@@ -123,12 +123,12 @@ test.describe('HUD compact E2-2', () => {
     for (const s of sizes) expect(s.size, `${s.root} ${s.text}`).toBeGreaterThanOrEqual(14);
   });
 
-  test('aucun filter, mix-blend-mode ni backdrop-filter sur le HUD, E2-9 et E2-11', async ({ page }) => {
+  test('aucun filter, mix-blend-mode ni backdrop-filter sur le HUD et E2-11', async ({ page }) => {
     await open(page);
     await page.evaluate(() => { window.__zs.setPlanks('fenetre-nord', 0); window.__zs.step(0.05); });
     const bad = await page.evaluate(() => {
       const out = [];
-      for (const root of ['#hud', '#repair', '#edges']) for (const el of document.querySelectorAll(`${root}, ${root} *`)) {
+      for (const root of ['#hud', '#edges']) for (const el of document.querySelectorAll(`${root}, ${root} *`)) {
         const c = getComputedStyle(el);
         if (c.filter !== 'none' || c.mixBlendMode !== 'normal' || (c.backdropFilter && c.backdropFilter !== 'none')) out.push(`${root} ${el.className}`);
       }
@@ -223,37 +223,7 @@ test.describe('rangée des fenêtres', () => {
   });
 });
 
-test.describe('E2-9 sur une ligne', () => {
-  const near = async (page, planks = 2) => {
-    await page.evaluate(([n]) => { const zs = window.__zs; zs.setPlanks('fenetre-nord', n); zs.setPlayer(1800, 900); zs.step(0.5); }, [planks]);
-  };
-
-  test('« Fenêtre nord · 2/4 » pendant la réparation : une ligne, 300 px et 44 px au plus, aria-hidden', async ({ page }) => {
-    await open(page);
-    await near(page);
-    const repair = page.locator('#repair');
-    await expect(repair).toBeVisible();
-    await expect(repair).toHaveAttribute('aria-hidden', 'true');
-    await expect(repair).toHaveAttribute('data-block', 'E2-9');
-    await expect(page.locator('#repair-label')).toHaveText(/^Fenêtre nord · [234]\/4$/);
-    const s = await STATE(page);
-    expect(s.hud.e29.lines).toBe(1);
-    expect(s.hud.e29.width).toBeLessThanOrEqual(300);
-    expect(s.hud.e29.height).toBeLessThanOrEqual(44);
-    expect(await page.locator('#repair-sub').count()).toBe(0);
-  });
-
-  test('« Fenêtre nord · occupée » avec une croix quand un zombie occupe un emplacement', async ({ page }) => {
-    await open(page);
-    await attack(page, 'fenetre-nord');
-    await page.evaluate(() => { window.__zs.setPlanks('fenetre-nord', 3); window.__zs.setPlayer(1800, 900); window.__zs.step(0.1); });
-    await expect(page.locator('#repair-label')).toHaveText('Fenêtre nord · occupée');
-    const s = await STATE(page);
-    expect(s.hud.e29).toMatchObject({ text: 'Fenêtre nord · occupée', lines: 1, blocked: true });
-    await expect(page.locator('#repair .repair-cross')).toBeVisible();
-    await expect(page.locator('#repair .repair-ring')).toBeHidden();
-  });
-
+test.describe('réparation bloquée et HUD en vague', () => {
   test('#hud-live annonce la réparation bloquée au plus une fois par fenêtre et par 10 s', async ({ page }) => {
     await open(page);
     await attack(page, 'fenetre-nord');
@@ -276,37 +246,15 @@ test.describe('E2-9 sur une ligne', () => {
     expect(seen.length).toBeLessThanOrEqual(3);
   });
 
-  test('mouvement réduit : aucune animation d\'apparition sur E2-9', async ({ page }) => {
-    await page.emulateMedia({ reducedMotion: 'reduce' });
-    await open(page);
-    await near(page);
-    const [name, duration] = await page.evaluate(() => [getComputedStyle(document.getElementById('repair')).animationName, getComputedStyle(document.getElementById('repair')).transitionDuration]);
-    expect(name).toBe('none');
-    expect(Number.parseFloat(duration)).toBeLessThanOrEqual(0.001);
-  });
-
-  test('pendant une vague (HUD à sa largeur maximale, 6 chutes), E2-9 ne chevauche ni le HUD ni Pause et le contenu du HUD tient dans ses 300 px', async ({ page }) => {
+  test('pendant une vague (HUD à sa largeur maximale, 6 chutes), le contenu du HUD tient dans ses 300 px', async ({ page }) => {
     await open(page, '&nospawn=0&lvl=chutes:5');
     await page.evaluate(() => { const zs = window.__zs; zs.setPlanks('fenetre-nord', 2); zs.setPlayer(1800, 900); zs.step(3.5); });
-    await expect(page.locator('#repair')).toBeVisible();
     const hud = await rect(page, '#hud');
-    const rep = await rect(page, '#repair');
     const pause = await rect(page, '#btn-pause');
-    expect(apart(hud, rep)).toBe(true);
-    expect(apart(rep, pause)).toBe(true);
+    expect(apart(hud, pause)).toBe(true);
     const fit = await page.evaluate(() => [...document.querySelectorAll('#hud .hud-life-row, #hud .hud-chips, #hud .hud-windows')].map((e) => [e.scrollWidth, e.clientWidth]));
     for (const [sw, cw] of fit) expect(sw).toBeLessThanOrEqual(cw);
     expect(hud.w).toBeLessThanOrEqual(300);
-  });
-
-  test('E2-9 reste à 16 px des bords et ne touche ni le HUD ni Pause ni E2-10 (667×375)', async ({ page }) => {
-    await open(page);
-    await near(page);
-    await page.evaluate(() => { window.__zs.downPlayer(); window.__zs.step(0.1); });
-    const rep = await rect(page, '#repair');
-    expect(rep.t).toBeGreaterThanOrEqual(15.5);
-    for (const sel of ['#hud', '#btn-pause']) expect(apart(rep, await rect(page, sel)), sel).toBe(true);
-    if (await page.locator('#down-title').isVisible()) expect(apart(rep, await rect(page, '#down-title')), '#down-title').toBe(true);
   });
 });
 
@@ -363,7 +311,7 @@ test.describe('E2-11 flèches au bord de l\'écran', () => {
     await expect.poll(() => anim(page)).toBe('none');
   });
 
-  test('la flèche ne recouvre ni le HUD, ni Pause, ni E2-9, ni les cadres de repos des sticks', async ({ page }) => {
+  test('la flèche ne recouvre ni le HUD, ni Pause, ni les cadres de repos des sticks', async ({ page }) => {
     await open(page);
     await page.evaluate(() => {
       const root = document.getElementById('game-root');
@@ -380,7 +328,7 @@ test.describe('E2-11 flèches au bord de l\'écran', () => {
       const r = (el) => { const b = el.getBoundingClientRect(); return { l: b.left, t: b.top, r: b.right, b: b.bottom }; };
       return {
         arrows: [...document.querySelectorAll('#edges .edge-arrow:not([hidden])')].map(r),
-        others: ['#hud', '#btn-pause', '#repair:not([hidden])', '#stick-left:not([hidden]) .stick-base', '#stick-right:not([hidden]) .stick-base'].map((sel) => document.querySelector(sel)).filter(Boolean).map(r),
+        others: ['#hud', '#btn-pause', '#stick-left:not([hidden]) .stick-base', '#stick-right:not([hidden]) .stick-base'].map((sel) => document.querySelector(sel)).filter(Boolean).map(r),
       };
     });
     for (const a of boxes.arrows) for (const o of boxes.others) expect(apart(a, o), JSON.stringify([a, o])).toBe(true);
@@ -388,28 +336,27 @@ test.describe('E2-11 flèches au bord de l\'écran', () => {
 });
 
 test.describe('structure, accessibilité, hygiène', () => {
-  test('l\'ordre des blocs dans le HTML : E2-2, E2-8, E2-9, E2-10, E2-11, E2-5, E2-3, E2-4', async ({ page }) => {
+  test('l\'ordre des blocs dans le HTML : E2-2, E2-8, E2-10, E2-11, E2-5, E2-3, E2-4', async ({ page }) => {
     await open(page);
     const order = await page.evaluate(() => [...document.querySelectorAll('#game-root > [data-block]')].map((e) => e.dataset.block));
-    expect(order).toEqual(['E2-2', 'E2-8', 'E2-9', 'E2-10', 'E2-11', 'E2-5', 'E2-3', 'E2-4']);
+    expect(order).toEqual(['E2-2', 'E2-8', 'E2-10', 'E2-11', 'E2-5', 'E2-3', 'E2-4']);
   });
 
-  test('E2-11 est aria-hidden et ne reçoit aucun événement ; aucun focus volé par le HUD, E2-9 ou E2-11', async ({ page }) => {
+  test('E2-11 est aria-hidden et ne reçoit aucun événement ; aucun focus volé par le HUD ou E2-11', async ({ page }) => {
     await open(page);
     await page.evaluate(() => { window.__zs.setPlayer(1800, 1400); window.__zs.setPlanks('fenetre-ouest', 0); window.__zs.setPlanks('fenetre-nord', 2); window.__zs.step(0.3); });
     const r = await page.evaluate(() => ({
       aria: document.getElementById('edges').getAttribute('aria-hidden'),
       events: getComputedStyle(document.getElementById('edges')).pointerEvents,
       active: document.activeElement?.tagName,
-      focusable: document.querySelectorAll('#hud [tabindex], #hud button, #hud a, #repair button, #edges [tabindex], #edges button').length,
+      focusable: document.querySelectorAll('#hud [tabindex], #hud button, #hud a, #edges [tabindex], #edges button').length,
     }));
     expect(r).toEqual({ aria: 'true', events: 'none', active: 'BODY', focusable: 0 });
   });
 
-  test('axe : aucune violation avec le HUD, des puces de fenêtre, E2-9 et E2-11 affichés', async ({ page }) => {
+  test('axe : aucune violation avec le HUD, des puces de fenêtre et E2-11 affichés', async ({ page }) => {
     await open(page);
     await page.evaluate(() => { const zs = window.__zs; zs.setPlayer(1800, 900); zs.setPlanks('fenetre-nord', 2); zs.setPlanks('fenetre-ouest', 0); zs.setPlanks('fenetre-est', 1); zs.step(0.5); });
-    await expect(page.locator('#repair')).toBeVisible();
     await expect(page.locator('#hud-windows')).toBeVisible();
     expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
   });
@@ -455,10 +402,9 @@ test.describe('écran d\'accueil (jeu.html seulement)', () => {
     expect(html).not.toMatch(/rel="manifest"|serviceWorker/);
   });
 
-  test('les marges de sécurité sont respectées : le HUD, E2-9 et les flèches s\'appuient sur --safe-*', async () => {
+  test('les marges de sécurité sont respectées : le HUD et les flèches s\'appuient sur --safe-*', async () => {
     const css = readFileSync('css/game.css', 'utf8');
     expect(css).toMatch(/\.hud \{[^}]*var\(--game-margin\) \+ var\(--safe-top\)[^}]*var\(--game-margin\) \+ var\(--safe-left\)/s);
-    expect(css).toMatch(/\.repair \{[^}]*var\(--safe-top\)/s);
     expect(readFileSync('js/game/game.js', 'utf8')).toMatch(/--safe-/);
   });
 });

@@ -490,53 +490,6 @@ export function createGame(ctx) {
   const hudWindows = () => geoms.map((g) => ({ id: g.id, planks: sim.win.windows[g.id].planks, maxPlanks: sim.win.windows[g.id].maxPlanks, attacked: sim.repair[g.id]?.attacked === true }));
   const windowsHud = () => windowChips(hudWindows(), { labels: hudLabels });
 
-  // E2-9 : indicateur de réparation sur une ligne, fixe en haut au centre (hors du titre de vague et de l'état à terre) ; affiché quand le joueur est près
-  // d'une fenêtre qui manque de planches. Un seul tour d'anneau pour toute la fenêtre : (planches posées + progression de la planche en cours) / maximum.
-  // Texte : « Fenêtre nord · 2/4 », ou « Fenêtre nord · occupée » (croix à la place de l'anneau) quand un zombie occupe la fenêtre ; la phrase longue
-  // de la réparation bloquée passe par #hud-live (une fois par fenêtre et par 10 s, voir step).
-  const repairEl = document.getElementById('repair');
-  const repairLabel = document.getElementById('repair-label');
-  let repairShown = { visible: null, label: null, blocked: null, progress: null };
-  function updateRepairIndicator() {
-    if (!repairEl) return;
-    let best = null;
-    let bestD = Infinity;
-    for (const g of geoms) {
-      const w = sim.win.windows[g.id];
-      const d = Math.hypot(sim.player.x - g.repairSpot.x, sim.player.y - g.repairSpot.y);
-      if (w.planks < w.maxPlanks && d <= 2 * windowsCfg.repairRadius && d < bestD) {
-        bestD = d;
-        best = g;
-      }
-    }
-    const visible = best !== null && !sim.dead;
-    let label = '';
-    let blocked = false;
-    let progress = 0;
-    if (visible) {
-      const w = sim.win.windows[best.id];
-      blocked = sim.repair[best.id]?.blocked === true;
-      label = fmt(ctx.dict[blocked ? WINDOW_TEXTS.busy : WINDOW_TEXTS.repair], { name: dictName(best.id), n: w.planks, max: w.maxPlanks });
-      progress = Math.round(((w.planks + num(w.repairProgress)) / w.maxPlanks) * 100) / 100;
-    }
-    if (visible !== repairShown.visible) repairEl.hidden = !visible;
-    if (visible) {
-      if (label !== repairShown.label) repairLabel.textContent = label;
-      if (blocked !== repairShown.blocked) repairEl.dataset.state = blocked ? 'blocked' : 'repair';
-      if (progress !== repairShown.progress) repairEl.style.setProperty('--repair-progress', String(progress));
-    }
-    // Centré en haut, mais jamais sur le HUD (qui s'élargit pendant une vague) ni sur le bouton Pause : décalé vers la place libre au besoin.
-    if (visible) {
-      const hudBox = document.getElementById('hud').getBoundingClientRect();
-      const pauseBox = document.getElementById('btn-pause').getBoundingClientRect();
-      const half = repairEl.offsetWidth / 2;
-      const center = Math.max(hudBox.right + 8 + half, Math.min(window.innerWidth / 2, pauseBox.left - 8 - half));
-      const left = `${Math.round(center)}px`;
-      if (repairEl.style.left !== left) repairEl.style.left = left;
-    }
-    repairShown = { visible, label: visible ? label : null, blocked: visible ? blocked : null, progress: visible ? progress : null };
-  }
-
   // E2-11 : flèches au bord de l'écran vers les 2 fenêtres en alerte les plus urgentes qui ne sont pas à l'écran (js/core/edge-arrow.js). Aucune
   // pulsation ni clic ; les flèches glissent le long du bord pour ne pas recouvrir le HUD, le bouton Pause ni l'indicateur de réparation.
   const edgeEls = [...document.querySelectorAll('#edges .edge-arrow')];
@@ -565,9 +518,9 @@ export function createGame(ctx) {
         if (shots.length >= 2) break;
       }
     }
-    // Obstacles à éviter : le HUD, le bouton Pause, l'indicateur de réparation, les cadres des sticks (rectangles réels, lus seulement si une flèche est affichée).
+    // Obstacles à éviter : le HUD, le bouton Pause, les cadres des sticks (rectangles réels, lus seulement si une flèche est affichée).
     if (shots.length > 0) {
-      const blockers = [...['hud', 'btn-pause', 'repair'].map((id) => document.getElementById(id)), ...document.querySelectorAll('.stick:not([hidden]) .stick-base')].filter((node) => node && !node.hidden).map((node) => node.getBoundingClientRect());
+      const blockers = [...['hud', 'btn-pause'].map((id) => document.getElementById(id)), ...document.querySelectorAll('.stick:not([hidden]) .stick-base')].filter((node) => node && !node.hidden).map((node) => node.getBoundingClientRect());
       const placed = [];
       for (const shot of shots) {
         const onVertical = shot.x <= inset.left + margin + 0.5 || shot.x >= w - inset.right - margin - 0.5;
@@ -603,9 +556,6 @@ export function createGame(ctx) {
   function hudState() {
     const rect = (id) => document.getElementById(id)?.getBoundingClientRect();
     const hud = rect('hud');
-    const repairBox = rect('repair');
-    const labelEl = document.getElementById('repair-label');
-    const lineHeight = Number.parseFloat(getComputedStyle(labelEl).lineHeight) || 1;
     const chips = windowChips(hudWindows(), { labels: hudLabels });
     return {
       height: hud.height,
@@ -613,7 +563,6 @@ export function createGame(ctx) {
       chips: chips.chips.map((c) => ({ ...c })),
       more: chips.more,
       arrows: edgeState.map((a) => ({ ...a })),
-      e29: { text: labelEl.textContent, lines: repairEl.hidden ? 0 : Math.round(labelEl.getBoundingClientRect().height / lineHeight), blocked: repairEl.dataset.state === 'blocked', width: repairBox.width, height: repairBox.height },
     };
   }
 
@@ -697,7 +646,7 @@ export function createGame(ctx) {
     });
     hud.update(sim.player, sim.kills, waveInfo(sim.waves), { chips: windowsHud(), names: hudNames, chutes: sim.down.chutes });
     updateDownView();
-    updateRepairIndicator();
+    world.windowMeshes?.sync(sim.win); // pastille de la planche en cours de réparation : elle se remplit peu à peu
     updateEdgeArrows();
     world.debris?.sync(sim.debris.items, reduced);
     splashView.apply(sim.splashView);

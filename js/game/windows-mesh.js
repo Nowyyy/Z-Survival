@@ -112,7 +112,7 @@ export function createWindowMeshes({ scene, material, geoms, settings: p, sheet,
     mesh.receiveShadow = false;
     mesh.name = `fenetre-${g.id}`;
     scene.add(mesh);
-    const entry = { id: g.id, geom: g, mesh, items, buf, full, inner, uvOn, uvOff, planks: -1, nailed: 0, stats: { triangles: total, minY: null, minWallGap: null, beams: 0, voidVisible: false, pipsOn: 0 } };
+    const entry = { id: g.id, geom: g, mesh, items, buf, full, inner, uvOn, uvOff, planks: -1, fill: 0, nailed: 0, stats: { triangles: total, minY: null, minWallGap: null, beams: 0, voidVisible: false, pipsOn: 0 } };
     return entry;
   }
 
@@ -123,9 +123,10 @@ export function createWindowMeshes({ scene, material, geoms, settings: p, sheet,
     else e.buf.pos.fill(0, a, b);
   };
 
-  function refresh(e, planks) {
+  function refresh(e, planks, fill = 0) {
     const max = count;
     e.planks = planks;
+    e.fill = fill;
     let nailed = 0;
     for (const item of e.items) {
       if (item.kind === 'beam') {
@@ -137,8 +138,23 @@ export function createWindowMeshes({ scene, material, geoms, settings: p, sheet,
     e.nailed = nailed;
     // Carré intérieur de chaque pastille : plein si la planche est présente, sombre sinon (forme et luminosité, jamais la couleur seule).
     e.inner.forEach((from, i) => {
-      const uv = i < planks ? e.uvOn : e.uvOff;
+      const filling = i === planks && fill > 0; // la planche en cours de réparation : son carré se remplit peu à peu
+      const uv = i < planks || filling ? e.uvOn : e.uvOff;
       for (let k = 0; k < 6; k += 1) e.buf.uv.set(uv[0], (from + k) * 2);
+      // Sommets du carré intérieur : taille pleine, ou réduite autour de son centre pendant le remplissage.
+      const k = filling ? fill : 1;
+      const a = from * 3;
+      let cx = 0;
+      let cz = 0;
+      for (let v = 0; v < 6; v += 1) {
+        cx += e.full[a + v * 3] / 6;
+        cz += e.full[a + v * 3 + 2] / 6;
+      }
+      for (let v = 0; v < 6; v += 1) {
+        e.buf.pos[a + v * 3] = cx + (e.full[a + v * 3] - cx) * k;
+        e.buf.pos[a + v * 3 + 1] = e.full[a + v * 3 + 1];
+        e.buf.pos[a + v * 3 + 2] = cz + (e.full[a + v * 3 + 2] - cz) * k;
+      }
     });
     e.mesh.geometry.attributes.position.needsUpdate = true;
     e.mesh.geometry.attributes.uv.needsUpdate = true;
@@ -176,7 +192,10 @@ export function createWindowMeshes({ scene, material, geoms, settings: p, sheet,
     sync(state) {
       for (const e of entries) {
         const planks = Math.max(0, Math.min(count, Math.floor(Number(state?.windows?.[e.id]?.planks) || 0)));
-        if (planks !== e.planks) refresh(e, planks);
+        // Progression de la planche en cours de réparation (seizièmes) : le carré de sa pastille se remplit ; aucune réécriture sans changement.
+        const raw = Number(state?.windows?.[e.id]?.repairProgress);
+        const fill = planks < count && Number.isFinite(raw) ? Math.max(0, Math.min(1, Math.round(raw * 16) / 16)) : 0;
+        if (planks !== e.planks || fill !== e.fill) refresh(e, planks, fill);
       }
     },
     // Poutres clouées visibles (tous maillages).

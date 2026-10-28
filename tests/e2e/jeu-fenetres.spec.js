@@ -363,7 +363,7 @@ test.describe('tirs et déplacements', () => {
   }
 });
 
-test.describe('interface : ligne Fenêtres, indicateur E2-9, annonces', () => {
+test.describe('interface : rangée Fenêtres, annonces', () => {
   for (const size of [SIZE, { width: 1440, height: 900 }]) {
     test(`la rangée « Fenêtres » est masquée tant que rien n'est attaqué ni ouvert ; le HUD est dans les marges de 16 px et sans chevaucher Pause (${size.width}×${size.height})`, async ({ page }) => {
       await open(page, '', size);
@@ -390,45 +390,16 @@ test.describe('interface : ligne Fenêtres, indicateur E2-9, annonces', () => {
     await expect(page.locator('.hud-win[data-id="fenetre-nord"] .hud-win-notch')).toHaveCount(4);
   });
 
-  test('E2-9 apparaît près de la fenêtre pendant la réparation : fenêtre et planches posées sur une ligne, un seul tour d\'anneau, dans les marges, sans toucher le HUD ni Pause', async ({ page }) => {
+  test('pendant la réparation, les carrés au sol se remplissent peu à peu (plus d\'indicateur noir E2-9)', async ({ page }) => {
     await open(page);
-    await page.evaluate(([x, y]) => { window.__zs.setPlanks('fenetre-nord', 2); window.__zs.setPlayer(x, y); window.__zs.step(0.9); }, [N.repairSpot.x, N.repairSpot.y]);
-    const repair = page.locator('#repair');
-    await expect(repair).toBeVisible();
-    await expect(repair).toHaveAttribute('data-block', 'E2-9');
-    await expect(repair).toHaveAttribute('aria-hidden', 'true');
-    await expect(page.locator('#repair-label')).toHaveText('Fenêtre nord · 2/4');
-    // un seul tour pour toute la fenêtre : (2 planches + une demi-planche) / 4
-    await expect.poll(() => repair.evaluate((el) => Number(el.style.getPropertyValue('--repair-progress')))).toBeGreaterThan(0.55);
-    const box = await repair.boundingBox();
-    expect(box.x).toBeGreaterThanOrEqual(16);
-    expect(box.y).toBeGreaterThanOrEqual(16);
-    expect(box.x + box.width).toBeLessThanOrEqual(SIZE.width - 16);
-    const others = await page.evaluate(() => ['#hud', '#btn-pause'].map((sel) => { const r = document.querySelector(sel).getBoundingClientRect(); return { l: r.left, r: r.right, t: r.top, b: r.bottom }; }));
-    for (const o of others) expect(box.x >= o.r || box.x + box.width <= o.l || box.y >= o.b || box.y + box.height <= o.t).toBe(true);
-    expect(await repair.evaluate((el) => getComputedStyle(el).pointerEvents)).toBe('none');
-  });
-
-  test('E2-9 explique le blocage (« Fenêtre nord · occupée », croix) quand la réparation est impossible', async ({ page }) => {
-    await open(page);
-    await page.evaluate(([x, y]) => {
-      const zs = window.__zs;
-      zs.spawnAtWindow('fenetre-nord', 'marcheur');
-      for (let i = 0; i < 600; i += 1) { zs.step(0.05); if (zs.getState().windows[0].tearers > 0) break; }
-      zs.setPlanks('fenetre-nord', 3);
-      zs.setPlayer(x, y);
-      zs.step(0.1);
-    }, [N.repairSpot.x, N.repairSpot.y]);
-    await expect(page.locator('#repair-label')).toHaveText('Fenêtre nord · occupée');
-    await expect(page.locator('#repair')).toHaveAttribute('data-state', 'blocked');
-  });
-
-  test('E2-9 est masqué loin de la fenêtre et quand toutes les planches sont là', async ({ page }) => {
-    await open(page);
-    await page.evaluate(() => window.__zs.step(0.1));
-    await expect(page.locator('#repair')).toBeHidden();
-    await page.evaluate(([x, y]) => { window.__zs.setPlanks('fenetre-nord', 1); window.__zs.setPlayer(x, y + 300); window.__zs.step(0.1); }, [N.repairSpot.x, N.repairSpot.y]);
-    await expect(page.locator('#repair')).toBeHidden();
+    expect(await page.locator('#repair').count()).toBe(0);
+    await page.evaluate(([x, y]) => { window.__zs.setPlanks('fenetre-nord', 2); window.__zs.setPlayer(x, y); window.__zs.step(0.3); }, [N.repairSpot.x, N.repairSpot.y]);
+    const a = await win(page);
+    expect(a.mesh.pipsOn).toBe(3); // 2 planches + la pastille en cours de remplissage
+    await page.evaluate(() => window.__zs.step(1.8));
+    const b = await win(page);
+    expect(b.planks).toBe(3);
+    expect(b.mesh.pipsOn).toBeGreaterThanOrEqual(3);
   });
 
   test('#hud-live annonce « Fenêtre nord ouverte » une fois par fenêtre et par 10 s, jamais le décompte de planches', async ({ page }) => {
@@ -456,7 +427,6 @@ test.describe('interface : ligne Fenêtres, indicateur E2-9, annonces', () => {
   test('axe sans violation avec l\'indicateur de réparation et la ligne Fenêtres', async ({ page }) => {
     await open(page);
     await page.evaluate(([x, y]) => { window.__zs.setPlanks('fenetre-nord', 2); window.__zs.setPlayer(x, y); window.__zs.step(0.5); }, [N.repairSpot.x, N.repairSpot.y]);
-    await expect(page.locator('#repair')).toBeVisible();
     expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
   });
 });

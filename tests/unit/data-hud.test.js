@@ -44,15 +44,6 @@ describe('lot 3a : contrastes du HUD (color.js, pire fond : panneau à son opaci
     expect(contrast(color('--color-on-action'), color('--color-surface'))).toBeGreaterThanOrEqual(4.5);
   });
 
-  it('indicateur de réparation (E2-9) : texte sur son panneau plein, au moins 4,5', () => {
-    expect(contrast(color('--game-repair-text'), color('--game-repair-panel'))).toBeGreaterThanOrEqual(4.5);
-  });
-
-  it('anneau de progression et croix sur le panneau : au moins 3', () => {
-    expect(contrast(color('--game-repair-ring'), color('--game-repair-panel'))).toBeGreaterThanOrEqual(3);
-    expect(contrast(color('--game-repair-track'), color('--game-repair-panel'))).toBeGreaterThanOrEqual(3);
-  });
-
   it('contour des puces sur le pire fond : au moins 3 (forme lisible)', () => {
     expect(contrast(color('--hud-border'), worstPanel)).toBeGreaterThanOrEqual(3);
   });
@@ -66,7 +57,7 @@ describe('lot 3a : contrastes du HUD (color.js, pire fond : panneau à son opaci
 describe('lot 3a : interdits sur le HUD (css/game.css)', () => {
   const block = (start, end) => gameCss.slice(gameCss.indexOf(start), gameCss.indexOf(end));
   const hudCss = block('/* HUD (E2-2, lot 3a)', '/* Annonce de vague (E2-8');
-  const repairCss = block('/* Indicateur de réparation (E2-9, lots 3 et 3a)', '/* État à terre (E2-10');
+  const repairCss = block('/* Flèches au bord de l\'écran (E2-11', '/* État à terre (E2-10');
 
   it.each(['filter', 'mix-blend-mode', 'backdrop-filter'])('ni %s dans le HUD, E2-9 ni E2-11', (prop) => {
     for (const text of [hudCss, repairCss]) expect(text.replace(/\/\*[\s\S]*?\*\//g, '')).not.toMatch(new RegExp(`(^|[\\s;{])${prop}\\s*:`));

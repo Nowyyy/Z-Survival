@@ -131,8 +131,6 @@
   "game.windows.name.ouest": "ouest",
   "game.windows.name.est": "est",
   "game.windows.name.sud": "sud",
-  "game.windows.repair": "Fenêtre {name} · {n}/{max}",
-  "game.windows.busy": "Fenêtre {name} · occupée",
   "game.windows.live.busy": "Fenêtre {name} : un zombie occupe la fenêtre, réparation impossible",
   "game.windows.live.open": "Fenêtre {name} ouverte",
   "game.windows.live.repaired": "Fenêtre {name} réparée",

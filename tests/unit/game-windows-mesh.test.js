@@ -126,6 +126,26 @@ describe('windows-mesh.js : un maillage par fenêtre', () => {
     expect(set.stats(new THREE.PerspectiveCamera()).map((s) => s.pipsOn)).toEqual([2, 2, 2]);
   });
 
+  it('réparation : le carré de la pastille en cours se remplit avec la progression (côté 8 × progression), sans réécriture si elle ne change pas', () => {
+    const { set } = make();
+    const side = (progress) => {
+      const st = state(2);
+      st.windows['fenetre-nord'].repairProgress = progress;
+      set.sync(st);
+      const pos = positions(set.meshes[0]);
+      const base = (78 + 2 * 12 + 6) * 3; // pastille 2 (la troisième), carré intérieur
+      const xs = Array.from({ length: 6 }, (_, k) => [pos[base + k * 3], pos[base + k * 3 + 2]]);
+      return Math.max(...xs.map((a) => Math.max(...xs.map((b) => Math.hypot(a[0] - b[0], a[1] - b[1])))));
+    };
+    expect(side(0)).toBeCloseTo(Math.hypot(8, 8), 4);
+    expect(side(0.5)).toBeCloseTo(Math.hypot(4, 4), 4);
+    expect(side(1)).toBeCloseTo(Math.hypot(8, 8), 4);
+    expect(set.stats(new THREE.PerspectiveCamera())[0].pipsOn).toBe(3);
+    const v = set.meshes[0].geometry.attributes.position.version;
+    set.sync((() => { const st = state(2); st.windows['fenetre-nord'].repairProgress = 1; return st; })());
+    expect(set.meshes[0].geometry.attributes.position.version).toBe(v);
+  });
+
   it('pastilles : carrés de 16 au sol à 0,3, alignés le long du mur et centrés sur le point de réparation', () => {
     const { set } = make();
     for (const [w, g] of geoms.entries()) {
