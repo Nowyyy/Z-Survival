@@ -87,7 +87,7 @@ export function createGame(ctx) {
   document.getElementById('game-canvas').appendChild(renderer.domElement);
 
   const textures = createThreeTextures(ctx.textureData, renderer);
-  const world = buildWorld({ palette, layout, render, textures, windowGeoms: geoms, windowsCfg, seed: ctx.seed });
+  const world = buildWorld({ palette, layout, render, textures, windowGeoms: geoms, windowsCfg, seed: ctx.seed, plankStyle: ctx.params.pk });
   const rig = createCamera(render.camera, cfg.camera, layout, params.tilt, params.zoom);
   const kit = createKit({ textures, variants: ctx.variants, hit: palette.hit });
   const effects = createEffects(world.scene, palette, { gunHeight: render.gunHeight, bulletRadius: cfg.weapon.bulletRadius });
