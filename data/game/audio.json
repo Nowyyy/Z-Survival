@@ -1,5 +1,5 @@
 {
-  "_provisoire": "Réglages audio du lot 1d : valeurs provisoires, jamais écoutées par l'agent (à juger à l'oreille). Gains par catégorie (lot 2c : catégorie annonce, gain 0,6 provisoire, priorité après joueur, tir et impact, avant voix), compresseur, atténuation selon la distance, étouffement, voix simultanées, délais minimaux par son, hauteur de lecture par variante de zombie, reprise de l'ambiance.",
+  "_provisoire": "Réglages audio du lot 1d : valeurs provisoires, jamais écoutées par l'agent (à juger à l'oreille). Gains par catégorie (lot 2c : catégorie annonce, gain 0,6 provisoire, priorité après joueur, tir et impact, avant voix), compresseur, atténuation selon la distance, étouffement, voix simultanées, délais minimaux par son, hauteur de lecture par variante de zombie, reprise de l'ambiance. Lot 3 : catégorie fenetre (planches), gain 0,7 provisoire, priorité entre annonce et voix (les priorités supérieures sont décalées d'un cran) ; windowGap : délai minimal entre deux sons de planche d'une même fenêtre.",
   "categoryGain": {
     "tir": 1.0,
     "impact": 0.8,
@@ -8,7 +8,8 @@
     "joueur": 0.9,
     "interface": 0.6,
     "annonce": 0.6,
-    "ambiance": 0.15
+    "ambiance": 0.15,
+    "fenetre": 0.7
   },
   "masterGain": 0.8,
   "compressor": {
@@ -40,7 +41,11 @@
     "pas-zombie": 0.08,
     "zombie-attaque": 0.3,
     "ui-pause": 0.1,
-    "ui-reprise": 0.1
+    "ui-reprise": 0.1,
+    "planche-arrachee": 0.05,
+    "planche-posee": 0.05,
+    "joueur-chute": 0.3,
+    "joueur-releve": 0.3
   },
   "zombieRate": {
     "grand": 0.82,
@@ -59,11 +64,12 @@
     "max": 0.9
   },
   "priority": {
-    "joueur": 5,
-    "interface": 5,
-    "tir": 4,
-    "impact": 4,
-    "annonce": 3,
+    "joueur": 6,
+    "interface": 6,
+    "tir": 5,
+    "impact": 5,
+    "annonce": 4,
+    "fenetre": 3,
     "voix": 2,
     "pas": 1,
     "ambiance": 0
@@ -86,6 +92,9 @@
     "minSpeed": 20,
     "minInterval": 0.15,
     "maxSpeed": 70,
-    "silentGaits": ["rampe"]
-  }
+    "silentGaits": [
+      "rampe"
+    ]
+  },
+  "windowGap": 0.12
 }

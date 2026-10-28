@@ -203,3 +203,14 @@ export function stepFlow(state, dt, grid, target, interval = 0.25) {
   if (cell !== state.cell && timer >= wait) return { flow: buildFlow(grid, target), cell, timer: 0, recomputed: true };
   return { flow: state.flow, cell: state.cell, timer, recomputed: false };
 }
+
+// Lot 3 : champ de flux d'une fenêtre. nav : { grid } où grid est la grille EXTÉRIEURE (obstacles du décor gonflés, murs fermés, ouvertures
+// des fenêtres bloquées) ; geom : windowGeometry (windows.js). Le champ part de entryOuter et couvre la zone extérieure : un zombie qui le
+// suit arrive devant sa fenêtre sans jamais passer par une ouverture. Calculé une seule fois au chargement du niveau.
+// Renvoie { id, grid, flow, source, reachable }.
+export function buildWindowField(nav, geom) {
+  const grid = nav?.grid;
+  if (!grid || !geom?.entryOuter) return { id: geom?.id ?? null, grid: null, flow: null, source: -1, reachable: 0 };
+  const flow = buildFlow(grid, geom.entryOuter);
+  return { id: geom.id ?? null, grid, flow, source: flow.source, reachable: flow.reachable };
+}

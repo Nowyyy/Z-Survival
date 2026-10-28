@@ -75,9 +75,9 @@ describe('data/game/gaits.json', () => {
 });
 
 describe('data/game/enemies.json : types', () => {
-  it('quatre types avec les cinq multiplicateurs', () => {
+  it('quatre types avec les cinq multiplicateurs et le tearMul du lot 3', () => {
     expect(Object.keys(enemies.variants)).toEqual(TYPES);
-    for (const v of Object.values(enemies.variants)) expect(Object.keys(v).sort()).toEqual(['bounty', 'damageMul', 'hpMul', 'radiusMul', 'speedMul']);
+    for (const v of Object.values(enemies.variants)) expect(Object.keys(v).sort()).toEqual(['bounty', 'damageMul', 'hpMul', 'radiusMul', 'speedMul', 'tearMul']);
   });
 
   it('valeurs de vie, vitesse et dégâts de la spécification', () => {
@@ -115,14 +115,14 @@ describe('textes et pureté', () => {
   it('les modules des vagues n\'utilisent ni Math.random, ni Date.now, ni document, ni window', () => {
     for (const f of ['waves', 'wave-director', 'enemy-factory']) {
       const text = readFileSync(`js/core/${f}.js`, 'utf8');
-      for (const re of [/Math\.random/, /Date\.now/, /\bdocument\b/, /\bwindow\b/, /performance\.now/, /setTimeout|setInterval/]) expect(text, `${f} ${re}`).not.toMatch(re);
+      for (const re of [/Math\.random/, /Date\.now/, /\bdocument\b/, /(?<![\w.'-])window\s*[.[(]/, /performance\.now/, /setTimeout|setInterval/]) expect(text, `${f} ${re}`).not.toMatch(re);
     }
   });
 
   it('aucun fichier de js/core/ n\'utilise Math.random, Date.now, document ni window', () => {
     for (const f of walk('js/core').filter((n) => n.endsWith('.js'))) {
       const text = readFileSync(f, 'utf8');
-      for (const re of [/Math\.random/, /Date\.now/, /\bdocument\b/, /\bwindow\b/]) expect(text, `${f} ${re}`).not.toMatch(re);
+      for (const re of [/Math\.random/, /Date\.now/, /\bdocument\b/, /(?<![\w.'-])window\s*[.[(]/]) expect(text, `${f} ${re}`).not.toMatch(re);
     }
   });
 

@@ -78,3 +78,14 @@ export function activeCount(state, category, now) {
 export function dropCategory(state, category) {
   return { voices: (Array.isArray(state?.voices) ? state.voices : []).filter((v) => v.category !== category), last: { ...(state?.last ?? {}) }, nextId: num(state?.nextId, 1) };
 }
+
+// Délai minimal par clé (lot 3 : 120 ms par fenêtre pour les planches). last : { clé: dernier instant accepté }. Renvoie { ok, last } sans modifier
+// l'argument ; une clé acceptée est mémorisée, une clé refusée garde son dernier instant.
+export function admitGap(last, key, now, gap) {
+  const map = last !== null && typeof last === 'object' && !Array.isArray(last) ? last : {};
+  const t = num(now);
+  const k = typeof key === 'string' ? key : String(key);
+  const before = Object.hasOwn(map, k) ? map[k] : undefined;
+  if (isNum(before) && t - before < Math.max(0, num(gap))) return { ok: false, last: { ...map } };
+  return { ok: true, last: { ...map, [k]: t } };
+}

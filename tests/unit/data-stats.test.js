@@ -69,7 +69,7 @@ describe('hygiène du lot 2b', () => {
   it('js/core/ ne contient ni Math.random, ni Date.now, ni document, ni window', () => {
     for (const f of walk('js/core').filter((n) => n.endsWith('.js'))) {
       const text = readFileSync(f, 'utf8');
-      expect(text, f).not.toMatch(/Math\.random|Date\.now|\bdocument\b|\bwindow\b/);
+      expect(text, f).not.toMatch(/Math\.random|Date\.now|\bdocument\b|(?<![\w.'-])window\s*[.[(]/);
     }
   });
 

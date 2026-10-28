@@ -348,6 +348,7 @@ test.describe('vagues du lot 2', () => {
 
   test('la mort affiche « Vague atteinte : N » ; Rejouer repart à la vague 1', async ({ page }) => {
     await open(page);
+    await page.evaluate(() => window.__zs.setChutes(0)); // lot 3 : sans chute restante, la vie à 0 est la mort (comme avant)
     await page.evaluate(() => window.__zs.startWave(4));
     await step(page, 3.2);
     expect((await state(page)).waves.wave).toBe(4);
@@ -370,6 +371,7 @@ test.describe('vagues du lot 2', () => {
 
   test('avec ?wave=N, Rejouer repart à la vague N', async ({ page }) => {
     await open(page, '&wave=3');
+    await page.evaluate(() => window.__zs.setChutes(0)); // lot 3 : sans chute restante, la vie à 0 est la mort (comme avant)
     await step(page, 3.2);
     await page.evaluate(() => {
       const zs = window.__zs;

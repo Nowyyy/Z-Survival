@@ -6,6 +6,11 @@ import { isNum } from './vec.js';
 export const STATES = ['marche', 'arret', 'tir', 'zombie', 'lent', 'rampe', 'course'];
 // Allures de zombie : « zombie » reste l'équivalent de « marche » ; les trois autres sont purement visuelles (lot 2).
 export const ZOMBIE_STATES = ['zombie', 'lent', 'rampe', 'course'];
+// Lot 3 : poses du siège (arracher une planche, escalader une fenêtre) et du joueur à terre. Purement visuelles ; STATES et ZOMBIE_STATES
+// restent ceux des lots précédents.
+export const SIEGE_STATES = ['arracher', 'escalade'];
+export const DOWN_STATE = 'terre';
+const KNOWN_STATES = [...STATES, ...SIEGE_STATES, DOWN_STATE];
 const TAU = Math.PI * 2;
 
 // Bornes plausibles de chaque angle (min, max).
@@ -44,7 +49,7 @@ export function zombieTraits(seed) {
 // amount : 0 à 1, vitesse de marche relative ; recoil : 0 à 1, recul du tir.
 export function computePose(input) {
   const src = input !== null && typeof input === 'object' ? input : {};
-  const state = STATES.includes(src.state) ? src.state : 'arret';
+  const state = KNOWN_STATES.includes(src.state) ? src.state : 'arret';
   const phase = wrap(num(src.phase));
   const time = num(src.time);
   const recoil = clamp(num(src.recoil), LIMITS.recoil);
@@ -141,6 +146,55 @@ export function computePose(input) {
     pose.bob = 0.05 + 0.04 * amount * Math.abs(lift);
     pose.pelvisHeight = -0.25;
     pose.torsoPitch = 1.3;
+  } else if (state === 'arracher') {
+    // Arrachage : pieds immobiles, tronc penché, bras tendus qui tirent à tour de rôle au rythme de la phase (avancée par le jeu avec
+    // la progression de l'arrachage).
+    const t = zombieTraits(src.seed);
+    const pull = Math.sin(phase);
+    const pullL = Math.max(0, pull);
+    const pullR = Math.max(0, -pull);
+    pose.hipL = 0.12;
+    pose.hipR = -0.12;
+    pose.kneeL = 0.12;
+    pose.kneeR = 0.12;
+    pose.shoulderL = 1.5 - 0.55 * pullL;
+    pose.shoulderR = 1.5 - 0.55 * pullR;
+    pose.elbowL = 0.15 + 1.0 * pullL;
+    pose.elbowR = 0.15 + 1.0 * pullR;
+    pose.torsoTwist = 0.1 * pull;
+    pose.headTilt = 0.4 + 0.05 * Math.sin(time * t.freq + t.offset);
+    pose.bob = 0.04 + 0.03 * Math.abs(pull);
+    pose.torsoPitch = 0.3 + 0.1 * Math.abs(pull);
+  } else if (state === 'escalade') {
+    // Escalade : tronc penché de 0,35 rad, jambes écartées, bras en appui sur le rebord.
+    pose.hipL = 0.6;
+    pose.hipR = -0.4;
+    pose.kneeL = 0.5;
+    pose.kneeR = 0.25;
+    pose.shoulderL = 1.0;
+    pose.shoulderR = 1.0;
+    pose.elbowL = 0.6;
+    pose.elbowR = 0.6;
+    pose.torsoTwist = 0;
+    pose.headTilt = 0.3;
+    pose.bob = 0.1;
+    pose.pelvisHeight = -0.08;
+    pose.torsoPitch = 0.35;
+  } else if (state === 'terre') {
+    // Joueur à terre : corps abaissé et presque horizontal (plus bas que la rampe), bras mous, sans mouvement.
+    pose.hipL = -0.5;
+    pose.hipR = -0.4;
+    pose.kneeL = 1.1;
+    pose.kneeR = 0.9;
+    pose.shoulderL = -0.3;
+    pose.shoulderR = -0.5;
+    pose.elbowL = 0.3;
+    pose.elbowR = 0.2;
+    pose.torsoTwist = 0;
+    pose.headTilt = 0.3;
+    pose.bob = 0.02;
+    pose.pelvisHeight = -0.5;
+    pose.torsoPitch = 1.5;
   } else {
     // Joueur : arme tenue à deux mains, bras de devant qui balancent à peine pendant la marche.
     const aimed = state === 'tir';

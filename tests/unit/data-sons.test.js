@@ -30,7 +30,10 @@ const each = (filter = () => true) => rendered.filter(filter).map((r) => [r.name
 // un son tenu (voix, ambiance) de 8 à 14 dB. Les bornes laissent de la marge aux deux extrêmes sans accepter un son quasi muet.
 // Tir : fenêtre haute à -8 dB, le tir est dense depuis le retour du propriétaire (« pas assez percutant »).
 // Annonce (lot 2c) : sons longs et graves à montée progressive, facteur de crête de 12 à 18 dB sous un impact : -30 à -12 dBFS.
-const RMS_WINDOW = { tir: [-28, -8], impact: [-30, -12], voix: [-26, -10], pas: [-32, -14], joueur: [-22, -8], interface: [-26, -12], ambiance: [-26, -14], annonce: [-30, -12] };
+const RMS_WINDOW = { tir: [-28, -8], impact: [-30, -12], voix: [-26, -10], pas: [-32, -14], joueur: [-22, -8], interface: [-26, -12], ambiance: [-26, -14], annonce: [-30, -12], fenetre: [-30, -10] };
+// Lot 3 : sons de planches (catégorie fenetre, -30 à -10 dBFS, justifiée dans data-sons-lot3.test.js). Le coup au sol et le relevage du joueur (catégorie joueur)
+// ne sont pas des voix : ni fondamentale à 60-240 Hz ni centre de gravité de voix ; ils sont mesurés dans data-sons-lot3.test.js.
+const NOT_VOICE_LIKE = new Set(['joueur-chute', 'joueur-releve']);
 // Centre de gravité spectral (Hz). Tir et impact : mesuré sur les 512 premiers échantillons (11,6 ms à 44,1 kHz), un claquement a un
 // transitoire large bande : plutôt aigu, au moins 500 Hz (un simple « boum » grave serait sous 250 Hz). Voix et joueur : sur tout le son,
 // dominé par le premier formant (300 à 800 Hz) et la pente de la source : entre 150 et 1 500 Hz. Pas : de la bosse grave du zombie au
@@ -39,8 +42,8 @@ const RMS_WINDOW = { tir: [-28, -8], impact: [-30, -12], voix: [-26, -10], pas: 
 const ATTACK_CENTROID = [500, 9000];
 const FULL_CENTROID = { voix: [150, 1500], joueur: [150, 1500], pas: [100, 6000], interface: [200, 2000], ambiance: [60, 1500] };
 // Durées attendues par identifiant (s), d'après le cahier des charges ; les autres sons : 0,1 à 1 s (hors ambiance).
-const DURATION = { 'zombie-gemissement': [1.2, 2], 'zombie-grognement': [0.4, 0.8], 'zombie-plainte': [1.8, 3], 'zombie-mort': [1, 2], 'joueur-mort': [1, 1.5], ambiance: [4, 4], tir: [0.3, 1], 'vague-annonce': [3.8, 3.8], 'vague-renforcee': [4.2, 4.2], 'vague-fin': [1.4, 1.4] };
-const NO_PITCH = new Set(['zombie-souffle']); // souffle rauque : dominé par le bruit, pas de hauteur mesurable
+const DURATION = { 'zombie-gemissement': [1.2, 2], 'zombie-grognement': [0.4, 0.8], 'zombie-plainte': [1.8, 3], 'zombie-mort': [1, 2], 'joueur-mort': [1, 1.5], ambiance: [4, 4], tir: [0.3, 1], 'vague-annonce': [3.8, 3.8], 'vague-renforcee': [4.2, 4.2], 'vague-fin': [1.4, 1.4], 'planche-arrachee': [0.4, 0.6], 'planche-posee': [0.35, 0.55], 'joueur-chute': [1, 1.5], 'joueur-releve': [0.6, 1] };
+const NO_PITCH = new Set(['zombie-souffle', ...NOT_VOICE_LIKE]); // souffle rauque : dominé par le bruit, pas de hauteur mesurable
 
 describe('mesures de chaque son (tous les sons, toutes les variantes)', () => {
   it('chaque son a au moins une variante et les nombres de variantes de la spécification', () => {
@@ -94,7 +97,7 @@ describe('mesures de chaque son (tous les sons, toutes les variantes)', () => {
     expect(c).toBeLessThanOrEqual(ATTACK_CENTROID[1]);
   });
 
-  it.each(each((r) => FULL_CENTROID[r.recipe.category]))('%s : centre de gravité spectral dans la fenêtre de sa catégorie', (_n, { recipe, result }) => {
+  it.each(each((r) => FULL_CENTROID[r.recipe.category] && !NOT_VOICE_LIKE.has(r.recipe.id)))('%s : centre de gravité spectral dans la fenêtre de sa catégorie', (_n, { recipe, result }) => {
     const size = 2 ** Math.floor(Math.log2(result.samples.length));
     const c = centroid(result.samples, result.sampleRate, 0, Math.min(size, 16384));
     const [lo, hi] = FULL_CENTROID[recipe.category];
@@ -131,8 +134,8 @@ describe('mesures de chaque son (tous les sons, toutes les variantes)', () => {
 });
 
 describe('cohérence des données sonores', () => {
-  const EVENT_SOUNDS = ['tir', 'douille', 'impact-zombie', 'impact-bois', 'impact-metal', 'impact-pierre', 'impact-voiture', 'pas', 'pas-zombie', 'zombie-gemissement', 'zombie-grognement', 'zombie-plainte', 'zombie-souffle', 'zombie-blessure', 'zombie-mort', 'zombie-attaque', 'joueur-blesse', 'joueur-mort', 'ui-pause', 'ui-reprise', 'ambiance', 'vague-annonce', 'vague-renforcee', 'vague-fin'];
-  const CATEGORIES = ['tir', 'impact', 'voix', 'pas', 'joueur', 'interface', 'ambiance', 'annonce'];
+  const EVENT_SOUNDS = ['tir', 'douille', 'impact-zombie', 'impact-bois', 'impact-metal', 'impact-pierre', 'impact-voiture', 'pas', 'pas-zombie', 'zombie-gemissement', 'zombie-grognement', 'zombie-plainte', 'zombie-souffle', 'zombie-blessure', 'zombie-mort', 'zombie-attaque', 'joueur-blesse', 'joueur-mort', 'ui-pause', 'ui-reprise', 'ambiance', 'vague-annonce', 'vague-renforcee', 'vague-fin', 'planche-arrachee', 'planche-posee', 'joueur-chute', 'joueur-releve'];
+  const CATEGORIES = ['tir', 'impact', 'voix', 'pas', 'joueur', 'interface', 'ambiance', 'annonce', 'fenetre'];
 
   it('au moins 40 tampons, dont des sons essentiels et des sons de fond', () => {
     expect(rendered.length).toBeGreaterThanOrEqual(40);
@@ -173,9 +176,9 @@ describe('cohérence des données sonores', () => {
     }
   });
 
-  it('les sons de fond sont les voix de zombies (sauf blessure et mort, jouées à l\'impact), l\'ambiance et deux sons d\'annonce (lot 2c)', () => {
+  it('les sons de fond sont les voix de zombies (sauf blessure et mort, jouées à l\'impact), l\'ambiance, deux sons d\'annonce (lot 2c) et le relevage du joueur (lot 3)', () => {
     const fond = sounds.filter((s) => s.set === 'fond').map((s) => s.id).sort();
-    expect(fond).toEqual(['ambiance', 'vague-fin', 'vague-renforcee', 'zombie-attaque', 'zombie-gemissement', 'zombie-grognement', 'zombie-plainte', 'zombie-souffle']);
+    expect(fond).toEqual(['ambiance', 'joueur-releve', 'vague-fin', 'vague-renforcee', 'zombie-attaque', 'zombie-gemissement', 'zombie-grognement', 'zombie-plainte', 'zombie-souffle']);
   });
 
   it('les voix de zombies ont une fondamentale de base proche de 110 Hz', () => {

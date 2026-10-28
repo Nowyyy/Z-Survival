@@ -39,6 +39,34 @@ export function wallRects(room, windows, size, thickness) {
   return out;
 }
 
+// Ouvertures des fenêtres dans les murs (les rectangles qui ont été retirés par wallRects), pour les planches : [{ id, x, y, w, h }].
+// Une ouverture couvre toute l'épaisseur du mur et la largeur `size` de la fenêtre.
+export function windowGaps(room, windows, size, thickness) {
+  const x = num(room?.x);
+  const y = num(room?.y);
+  const w = num(room?.width);
+  const h = num(room?.height);
+  const inner = num(room?.wall);
+  const outer = inner - num(thickness, 40);
+  const half = Math.max(0, num(size)) / 2;
+  const depth = inner - outer;
+  const out = [];
+  for (const win of Array.isArray(windows) ? windows : []) {
+    if (!win || !isNum(win.x) || !isNum(win.y)) continue;
+    const item = { id: win.id };
+    if (win.side === 'nord') Object.assign(item, { x: win.x - half, y: y + outer, w: half * 2, h: depth });
+    else if (win.side === 'sud') Object.assign(item, { x: win.x - half, y: y + h - inner, w: half * 2, h: depth });
+    else if (win.side === 'ouest') Object.assign(item, { x: x + outer, y: win.y - half, w: depth, h: half * 2 });
+    else if (win.side === 'est') Object.assign(item, { x: x + w - inner, y: win.y - half, w: depth, h: half * 2 });
+    else continue;
+    if (item.w > 0 && item.h > 0) out.push(item);
+  }
+  return out;
+}
+
+// Fenêtres de la salle avec leur ouverture (win.gap), prêtes pour windowGeometry (windows.js).
+export const windowsWithGaps = (layout) => (layout?.windows ?? []).map((win) => ({ ...win, gap: (layout?.gaps ?? []).find((g) => g.id === win.id) }));
+
 // world : world.json ; decorCfg : decor.json ; opts.empty : salle du lot 1m seule (world.legacy), sans meuble ni décor, sans murs
 // pleins (les zombies y apparaissent aux fenêtres comme au lot 1m), mêmes coordonnées qu'au lot 1m ; opts.slack : dépassement de vue permis.
 export function buildLayout(world, decorCfg, opts = {}) {
@@ -59,6 +87,7 @@ export function buildLayout(world, decorCfg, opts = {}) {
       furniture: [],
       barriers: [],
       walls: [],
+      gaps: [],
       decor: null,
       playerObstacles: [],
       zombieObstacles: [],
@@ -87,6 +116,7 @@ export function buildLayout(world, decorCfg, opts = {}) {
     furniture,
     barriers,
     walls,
+    gaps: windowGaps(room, windows, num(world?.windowSize), num(world?.wallThickness, 40)),
     decor,
     // Le joueur est enfermé par les barrières des fenêtres ; les zombies passent par les ouvertures des murs.
     playerObstacles: [...furniture, ...barriers],

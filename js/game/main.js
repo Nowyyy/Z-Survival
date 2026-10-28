@@ -29,6 +29,12 @@ function ratioCap(value) {
   return value !== null && Number.isFinite(n) && n >= 0.5 && n <= DEFAULT_RATIO_CAP ? n : DEFAULT_RATIO_CAP;
 }
 
+// ?planks=N : nombre de planches de départ de chaque fenêtre (entier de 0 à max) ; toute autre valeur est ignorée (null : le maximum).
+function planksParam(value, max) {
+  const n = Number(value);
+  return value !== null && /^\d+$/.test(value) && n >= 0 && n <= max ? n : null;
+}
+
 // ?wave=N : démarre à la vague N (entier de 1 à 200) ; toute autre valeur est ignorée.
 function waveParam(value) {
   const n = Number(value);
@@ -40,7 +46,8 @@ const testMode = query.get('test') === '1';
 const fpsMode = query.get('fps') === '1';
 const seedParam = Number.parseInt(query.get('seed') ?? '', 10);
 
-const [dict, world, decor, camera, nav, player, weapons, enemies, render, texturesCfg, variants, soundsCfg, audioCfg, materialsCfg, voiceCfg, wavesCfg, gaitsCfg, statsCfg, splashCfg, vhsCfg] = await Promise.all([
+const [dict, world, decor, camera, nav, player, weapons, enemies, render, texturesCfg, variants, soundsCfg, audioCfg, materialsCfg, voiceCfg, wavesCfg, gaitsCfg, statsCfg, splashCfg, vhsCfg, windowsCfg, downCfg] = await Promise.all([
+
   loadDict(),
   loadJson('data/game/world.json'),
   loadJson('data/game/decor.json'),
@@ -61,6 +68,8 @@ const [dict, world, decor, camera, nav, player, weapons, enemies, render, textur
   loadJson('data/game/player-stats.json'),
   loadJson('data/game/splash.json'),
   loadJson('data/game/vhs.json'),
+  loadJson('data/game/windows.json'),
+  loadJson('data/game/player-down.json'),
 ]);
 
 applyTexts(dict);
@@ -91,16 +100,17 @@ root.hidden = false;
 const layout = buildLayout(world, decor, { empty: testMode && query.get('empty') === '1', slack: camera.slack });
 
 const ctx = {
-  cfg: { layout, player, weapon: weapons.pistol, stats: statsCfg, zombie: enemies.zombie, enemies, gaits: gaitsCfg, waves: wavesCfg, render, camera, nav },
+  cfg: { layout, player, weapon: weapons.pistol, stats: statsCfg, zombie: enemies.zombie, enemies, gaits: gaitsCfg, waves: wavesCfg, render, camera, nav, windows: windowsCfg, down: downCfg },
   palette,
   dict,
   textureData,
   variants,
-  perf: fpsMode ? { flowSum: 0, flowCount: 0, flowMax: 0 } : null,
+  perf: fpsMode ? { flowSum: 0, flowCount: 0, flowMax: 0, windowsMs: 0 } : null,
   params: {
     test: testMode,
     nospawn: query.get('nospawn') === '1',
     wave: waveParam(query.get('wave')),
+    planks: planksParam(query.get('planks'), windowsCfg.planks),
     tilt: parseTilt(query.get('tilt'), render.camera.tilt),
     zoom: parseZoom(query.get('zoom'), camera.zoom),
     maxRatio: ratioCap(query.get('dpr')),
@@ -179,7 +189,8 @@ if (game === null) {
       const a = ctx.audio.stats;
       const textures = fmt(dict[TEXTURE_TEXTS.fps], { ms: Math.round(textureData.ms), flow: p.flowCount ? (p.flowSum / p.flowCount).toFixed(2) : '0', max: p.flowMax.toFixed(2) });
       const stats = game.statsLine();
-      return `${textures}\n${fmt(dict[TEXTURE_TEXTS.fpsSons], { essential: Math.round(a.essentialMs), background: Math.round(a.backgroundMs), voices: a.zombieVoices })}\n${fmt(dict[TEXTURE_TEXTS.fpsStats], { levels: stats.levels, angle: stats.angle })}`;
+      const windowsLine = fmt(dict[TEXTURE_TEXTS.fpsWindows], { ms: p.windowsMs.toFixed(1) });
+      return `${textures}\n${windowsLine}\n${fmt(dict[TEXTURE_TEXTS.fpsSons], { essential: Math.round(a.essentialMs), background: Math.round(a.backgroundMs), voices: a.zombieVoices })}\n${fmt(dict[TEXTURE_TEXTS.fpsStats], { levels: stats.levels, angle: stats.angle })}`;
     }));
   }
   if (testMode) installTestHook(ctx, game);

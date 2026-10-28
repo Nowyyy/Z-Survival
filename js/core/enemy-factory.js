@@ -19,7 +19,7 @@ export function enemySpeed(type, gait, speedMul, enemies, gaits) {
 }
 
 // spec : sortie de waveSpec (hpMul, speedMul, damageMul) ; enemies : enemies.json ; gaits : gaits.json.
-// Renvoie { type, gait, hp, maxHp, speed, damage, radius, stride, bounty }.
+// Renvoie { type, gait, hp, maxHp, speed, damage, radius, stride, bounty, tearMul } (tearMul : vitesse d'arrachage des planches, lot 3).
 export function createEnemy(type, gait, spec, enemies, gaits) {
   const t = isType(type) ? type : FALLBACK_TYPE;
   const g = isGait(gait) ? gait : FALLBACK_GAIT;
@@ -36,5 +36,6 @@ export function createEnemy(type, gait, spec, enemies, gaits) {
     radius: Math.max(0, num(base.radius)) * (isNum(v.radiusMul) && v.radiusMul > 0 ? v.radiusMul : 1),
     stride: Math.max(1, num(gaits?.gaits?.[g]?.stride, 52)),
     bounty: Math.max(0, num(v.bounty)),
+    tearMul: isNum(v.tearMul) && v.tearMul > 0 ? v.tearMul : 1,
   };
 }

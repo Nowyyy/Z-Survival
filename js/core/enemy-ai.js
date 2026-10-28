@@ -8,6 +8,11 @@ import { clampDt, isNum, normalize, num } from './vec.js';
 // (nav.js), nav : { lookahead, stuckDistance, stuckTime, pushTime } }. Poursuite directe si la ligne de vue est libre, sinon direction
 // du champ de flux ; un zombie qui avance de moins de stuckDistance en stuckTime secondes est poussé vers le champ de flux pendant
 // pushTime secondes (champs enemy.stuckT, ax, ay et push, ajoutés seulement avec un monde).
+// Lot 3 : un zombie dont le mode est approche, attente, arrache ou escalade (siege.js) exécute l'intention décidée (target, hold, climb) :
+// il suit le champ de sa fenêtre (world.windows.fields[window] : { grid, flow }), va à sa place puis s'y arrête, reste à son emplacement
+// ou traverse l'ouverture en ligne droite sans collision de fenêtre. Les modes dedans, libre et absent gardent le comportement du lot 2c.
+const SIEGE_MOVE = new Set(['approche', 'attente', 'arrache', 'escalade']);
+
 export function stepEnemies(enemies, player, dt, def, world = null) {
   const list = Array.isArray(enemies) ? enemies : [];
   const step = clampDt(dt);
@@ -27,7 +32,53 @@ export function stepEnemies(enemies, player, dt, def, world = null) {
     let vx = gap > 0 ? toPlayer.x : 0;
     let vy = gap > 0 ? toPlayer.y : 0;
     let track = null;
-    if (world) {
+    const mode = world && SIEGE_MOVE.has(enemy?.mode) ? enemy.mode : null;
+    const climbing = mode === 'escalade' && enemy.climb && num(enemy.climb.t) > 0;
+    if (climbing) {
+      // Traversée de l'ouverture : trajet rectiligne de from à to, sans aucune collision.
+      const t = Math.min(1, Math.max(0, num(enemy.climb.t)));
+      const px2 = num(enemy.climb.from?.x) + (num(enemy.climb.to?.x) - num(enemy.climb.from?.x)) * t;
+      const py2 = num(enemy.climb.from?.y) + (num(enemy.climb.to?.y) - num(enemy.climb.from?.y)) * t;
+      return { ...enemy, stuckT: 0, ax: px2, ay: py2, push: 0, x: px2, y: py2 };
+    }
+    if (mode) {
+      // Intention du siège : aller vers la cible (champ de la fenêtre pour l'approche), s'y arrêter, ou ne pas bouger (hold, arrache en place).
+      const target = enemy.target && isNum(enemy.target.x) && isNum(enemy.target.y) ? enemy.target : null;
+      const field = mode === 'approche' ? world.windows?.fields?.[enemy.window] : null;
+      let dx = 0;
+      let dy = 0;
+      let far = 0;
+      if (target) {
+        dx = target.x - x;
+        dy = target.y - y;
+        far = Math.hypot(dx, dy);
+      }
+      vx = 0;
+      vy = 0;
+      if (mode === 'approche' && enemy.hold === true) {
+        // arrêté loin du mur : file pleine
+      } else if (target && far > num(world.windows?.arrive, 3)) {
+        const direct = lineOfSight({ x, y }, target, world.obstacles, r + 2);
+        if (field?.flow && field.grid && (!direct || far > num(world.windows?.directRange, 120))) {
+          const way = flowDirection(field.grid, field.flow, { x, y }, world.nav?.lookahead);
+          if (way.x !== 0 || way.y !== 0) {
+            vx = way.x;
+            vy = way.y;
+          } else {
+            vx = dx / far;
+            vy = dy / far;
+          }
+        } else {
+          vx = dx / far;
+          vy = dy / far;
+        }
+      }
+      // Arrivée : on se pose exactement sur la cible (pas de tremblement devant la fenêtre).
+      if (target && far > 0 && far <= speed * step && mode !== 'approche') {
+        return { ...enemy, stuckT: 0, ax: target.x, ay: target.y, push: 0, x: target.x, y: target.y };
+      }
+      track = { stuckT: 0, ax: x, ay: y, push: 0 };
+    } else if (world) {
       const cfg = world.nav ?? {};
       const stuckTime = isNum(cfg.stuckTime) && cfg.stuckTime > 0 ? cfg.stuckTime : 2;
       let push = Math.max(0, num(enemy?.push) - step);
@@ -59,7 +110,7 @@ export function stepEnemies(enemies, player, dt, def, world = null) {
     let pushX = 0;
     let pushY = 0;
     list.forEach((other, j) => {
-      if (i === j || !other) return;
+      if (i === j || !other || mode === 'arrache' || (mode === 'approche' && enemy.hold === true)) return;
       const dx = x - num(other.x);
       const dy = y - num(other.y);
       const overlap = r + Math.max(0, num(other.r)) - Math.hypot(dx, dy);

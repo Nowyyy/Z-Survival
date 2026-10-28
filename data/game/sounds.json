@@ -1,5 +1,5 @@
 {
-  "_provisoire": "Recettes sonores du lot 1d : toutes les valeurs sont provisoires et jamais écoutées par l'agent qui les a écrites (à juger à l'oreille avec sons.html). Chaque recette est calculée par js/core/synth.js ; la variante v perturbe fréquences (±8 %), gains (±1,5 dB), départs et bruit selon seed + v. set : essentiel (calculé avant la partie) ou fond (calculé pendant la partie).",
+  "_provisoire": "Recettes sonores du lot 1d : toutes les valeurs sont provisoires et jamais écoutées par l'agent qui les a écrites (à juger à l'oreille avec sons.html). Chaque recette est calculée par js/core/synth.js ; la variante v perturbe fréquences (±8 %), gains (±1,5 dB), départs et bruit selon seed + v. set : essentiel (calculé avant la partie) ou fond (calculé pendant la partie). Lot 3 : cinq sons (planche-arrachee, planche-posee, joueur-chute, joueur-releve ; quatre recettes, la chute en deux variantes) à 22 050 Hz, jamais écoutés par l'agent.",
   "sounds": [
     {
       "id": "tir",
@@ -2388,6 +2388,348 @@
         "saturation": 0,
         "targetPeak": 0.55,
         "fadeOut": 0.2
+      }
+    },
+    {
+      "id": "planche-arrachee",
+      "category": "fenetre",
+      "set": "essentiel",
+      "sampleRate": 22050,
+      "duration": 0.5,
+      "variants": 3,
+      "seed": 61,
+      "loop": false,
+      "layers": [
+        {
+          "type": "noise",
+          "color": "pink",
+          "start": 0,
+          "dur": 0.07,
+          "attack": 0.0003,
+          "decay": 0.012,
+          "gain": 3.0,
+          "filter": {
+            "type": "bandpass",
+            "freq": [
+              3000,
+              1200
+            ],
+            "q": 1.1,
+            "sweep": 0.05
+          }
+        },
+        {
+          "type": "noise",
+          "color": "white",
+          "start": 0.05,
+          "startJitter": 0.01,
+          "dur": 0.06,
+          "attack": 0.0003,
+          "decay": 0.01,
+          "gain": 1.6,
+          "filter": {
+            "type": "bandpass",
+            "freq": 2200,
+            "q": 1.4
+          }
+        },
+        {
+          "type": "osc",
+          "wave": "saw",
+          "freq": [
+            800,
+            1600
+          ],
+          "sweepTime": 0.15,
+          "start": 0.02,
+          "startJitter": 0.01,
+          "dur": 0.22,
+          "attack": 0.015,
+          "decay": 0.09,
+          "gain": 0.22
+        },
+        {
+          "type": "osc",
+          "wave": "sine",
+          "freq": [
+            200,
+            90
+          ],
+          "sweepTime": 0.08,
+          "start": 0,
+          "dur": 0.2,
+          "attack": 0.001,
+          "decay": 0.05,
+          "gain": 0.8
+        }
+      ],
+      "post": {
+        "reverb": {
+          "decay": 0.3,
+          "mix": 0.35,
+          "damping": 0.5
+        },
+        "saturation": 0.6,
+        "targetPeak": 0.85,
+        "fadeOut": 0.05
+      }
+    },
+    {
+      "id": "planche-posee",
+      "category": "fenetre",
+      "set": "essentiel",
+      "sampleRate": 22050,
+      "duration": 0.45,
+      "variants": 3,
+      "seed": 67,
+      "loop": false,
+      "layers": [
+        {
+          "type": "noise",
+          "color": "white",
+          "start": 0,
+          "startJitter": 0.008,
+          "dur": 0.05,
+          "attack": 0.0002,
+          "decay": 0.007,
+          "gain": 2.0,
+          "filter": {
+            "type": "lowpass",
+            "freq": 1800,
+            "q": 0.7
+          }
+        },
+        {
+          "type": "osc",
+          "wave": "sine",
+          "freq": [
+            420,
+            260
+          ],
+          "sweepTime": 0.03,
+          "start": 0,
+          "startJitter": 0.008,
+          "dur": 0.12,
+          "attack": 0.0004,
+          "decay": 0.025,
+          "gain": 0.9
+        },
+        {
+          "type": "noise",
+          "color": "white",
+          "start": 0.13,
+          "startJitter": 0.008,
+          "dur": 0.05,
+          "attack": 0.0002,
+          "decay": 0.007,
+          "gain": 1.7,
+          "filter": {
+            "type": "lowpass",
+            "freq": 1800,
+            "q": 0.7
+          }
+        },
+        {
+          "type": "osc",
+          "wave": "sine",
+          "freq": [
+            420,
+            260
+          ],
+          "sweepTime": 0.03,
+          "start": 0.13,
+          "startJitter": 0.008,
+          "dur": 0.12,
+          "attack": 0.0004,
+          "decay": 0.025,
+          "gain": 0.765
+        },
+        {
+          "type": "noise",
+          "color": "white",
+          "start": 0.27,
+          "startJitter": 0.008,
+          "dur": 0.05,
+          "attack": 0.0002,
+          "decay": 0.007,
+          "gain": 1.9,
+          "filter": {
+            "type": "lowpass",
+            "freq": 1800,
+            "q": 0.7
+          }
+        },
+        {
+          "type": "osc",
+          "wave": "sine",
+          "freq": [
+            420,
+            260
+          ],
+          "sweepTime": 0.03,
+          "start": 0.27,
+          "startJitter": 0.008,
+          "dur": 0.12,
+          "attack": 0.0004,
+          "decay": 0.025,
+          "gain": 0.855
+        }
+      ],
+      "post": {
+        "reverb": {
+          "decay": 0.25,
+          "mix": 0.2,
+          "damping": 0.5
+        },
+        "saturation": 0.4,
+        "targetPeak": 0.85,
+        "fadeOut": 0.06
+      }
+    },
+    {
+      "id": "joueur-chute",
+      "category": "joueur",
+      "set": "essentiel",
+      "sampleRate": 22050,
+      "duration": 1.3,
+      "variants": 2,
+      "seed": 71,
+      "loop": false,
+      "layers": [
+        {
+          "type": "osc",
+          "wave": "sine",
+          "freq": [
+            90,
+            45
+          ],
+          "sweepTime": 0.25,
+          "start": 0,
+          "dur": 0.6,
+          "attack": 0.004,
+          "decay": 0.14,
+          "gain": 1.4
+        },
+        {
+          "type": "noise",
+          "color": "brown",
+          "start": 0,
+          "dur": 0.25,
+          "attack": 0.002,
+          "decay": 0.05,
+          "gain": 2.0,
+          "filter": {
+            "type": "lowpass",
+            "freq": 350,
+            "q": 0.7
+          }
+        },
+        {
+          "type": "noise",
+          "color": "pink",
+          "start": 0.08,
+          "dur": 0.8,
+          "attack": 0.02,
+          "decay": 0.25,
+          "gain": 0.5,
+          "filter": {
+            "type": "bandpass",
+            "freq": [
+              1100,
+              500
+            ],
+            "q": 0.9,
+            "sweep": 0.7
+          }
+        },
+        {
+          "type": "osc",
+          "wave": "sine",
+          "freq": 3300,
+          "start": 0.35,
+          "dur": 0.95,
+          "attack": 0.35,
+          "decay": 0.6,
+          "gain": 0.03
+        }
+      ],
+      "post": {
+        "reverb": {
+          "decay": 0.35,
+          "mix": 0.25,
+          "damping": 0.5
+        },
+        "saturation": 0.5,
+        "targetPeak": 0.85,
+        "fadeOut": 0.12
+      }
+    },
+    {
+      "id": "joueur-releve",
+      "category": "joueur",
+      "set": "fond",
+      "sampleRate": 22050,
+      "duration": 0.8,
+      "variants": 2,
+      "seed": 73,
+      "loop": false,
+      "layers": [
+        {
+          "type": "noise",
+          "color": "pink",
+          "start": 0,
+          "dur": 0.55,
+          "attack": 0.4,
+          "decay": 0.3,
+          "gain": 1.5,
+          "filter": {
+            "type": "bandpass",
+            "freq": [
+              500,
+              1500
+            ],
+            "q": 0.7,
+            "sweep": 0.5
+          }
+        },
+        {
+          "type": "noise",
+          "color": "brown",
+          "start": 0.55,
+          "dur": 0.2,
+          "attack": 0.002,
+          "decay": 0.04,
+          "gain": 0.9,
+          "filter": {
+            "type": "lowpass",
+            "freq": 450,
+            "q": 0.7
+          }
+        },
+        {
+          "type": "osc",
+          "wave": "sine",
+          "freq": [
+            130,
+            60
+          ],
+          "sweepTime": 0.08,
+          "start": 0.55,
+          "dur": 0.2,
+          "attack": 0.002,
+          "decay": 0.05,
+          "gain": 0.6
+        }
+      ],
+      "post": {
+        "reverb": {
+          "decay": 0.25,
+          "mix": 0.2,
+          "damping": 0.5
+        },
+        "saturation": 0.4,
+        "targetPeak": 0.8,
+        "fadeOut": 0.08
       }
     }
   ]

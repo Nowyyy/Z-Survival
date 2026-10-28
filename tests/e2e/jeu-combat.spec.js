@@ -114,6 +114,7 @@ test.describe('tir automatique', () => {
 test.describe('mort, pause', () => {
   test('le joueur meurt au contact, le panneau de fin apparaît, Rejouer relance une partie propre', async ({ page }) => {
     await open(page);
+    await page.evaluate(() => window.__zs.setChutes(0)); // lot 3 : sans chute restante, la vie à 0 est la mort (comme avant)
     await page.evaluate(() => window.__zs.setInput({ aim: { angle: -Math.PI / 2 } }));
     for (const [x, y] of [[850, 450], [750, 450], [800, 500], [835, 480], [770, 480]]) await spawn(page, x, y);
     await expect(page.locator('#end-panel')).toBeVisible({ timeout: 60_000 });

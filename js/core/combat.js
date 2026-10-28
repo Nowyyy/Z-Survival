@@ -61,7 +61,8 @@ export function healOnKill(hp, maxHp, regen, alive) {
 }
 
 // Dégâts au contact, avec délai par ennemi (enemy.hitCooldown). Renvoie { player, enemies, damage }.
-export function stepContact(player, enemies, dt, def) {
+// invulnerable (lot 3, faux par défaut) : le joueur à terre ou protégé ne subit aucun dégât ; les délais des ennemis ne sont pas relancés.
+export function stepContact(player, enemies, dt, def, invulnerable = false) {
   const step = clampDt(dt);
   const delay = Math.max(0, num(def?.contactDelay));
   const power = Math.max(0, num(def?.contactDamage));
@@ -70,7 +71,7 @@ export function stepContact(player, enemies, dt, def) {
     let cooldown = Math.max(0, num(enemy?.hitCooldown) - step);
     const hit = isNum(enemy?.damage) ? Math.max(0, enemy.damage) : power; // lot 2 : dégâts du type et de la vague
     const touching = Math.hypot(num(enemy?.x) - num(player?.x), num(enemy?.y) - num(player?.y)) <= num(player?.r) + num(enemy?.r) + 1;
-    if (touching && cooldown <= 0 && num(player?.health) > damage) {
+    if (invulnerable !== true && touching && cooldown <= 0 && num(player?.health) > damage) {
       damage += hit;
       cooldown = delay;
     }

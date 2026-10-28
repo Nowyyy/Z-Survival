@@ -324,6 +324,7 @@ test.describe('statistiques : vie et régénération', () => {
 
   test('aucun soin après la mort du joueur', async ({ page }) => {
     await open(page, '&empty=1&nospawn=1&lvl=regen:10');
+    await page.evaluate(() => window.__zs.setChutes(0)); // lot 3 : sans chute restante, la vie à 0 est la mort (comme avant)
     const r = await page.evaluate(() => {
       const zs = window.__zs;
       zs.setInput({ aim: { angle: Math.PI } });
@@ -422,7 +423,7 @@ test.describe('budget et sons au niveau maximal', () => {
     expect(r.cone).not.toBeNull();
     expect(r.render.calls).toBeLessThanOrEqual(300);
     expect(r.render.triangles).toBeLessThanOrEqual(15000);
-    expect(r.render.triangles).toBeLessThanOrEqual(14858 + 10);
+    expect(r.render.triangles).toBeLessThanOrEqual(15000); // lot 3 : +24 triangles de planches (14 858 + 10 au lot 2b, 14 862 + 120 = 14 982 mesurés)
   });
 
   test('niveau 10 partout : une rafale de 20 s n\'a jamais plus de 16 voix actives', async ({ page }) => {

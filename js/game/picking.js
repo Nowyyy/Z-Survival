@@ -13,3 +13,11 @@ export function pickGround(camera, point, rect) {
   raycaster.setFromCamera(ndc, camera);
   return raycaster.ray.intersectPlane(plane, hit) ? { x: hit.x, y: hit.z } : null;
 }
+
+const probe = new THREE.Vector3();
+
+// Point de la scène (x, hauteur, z du jeu = y logique) -> pixels CSS { x, y } dans un rectangle { width, height } (0 haut gauche) (un petit objet par appel).
+export function screenPoint(camera, x, height, z, size) {
+  probe.set(x, height, z).project(camera);
+  return { x: ((probe.x + 1) / 2) * size.width, y: ((1 - probe.y) / 2) * size.height };
+}

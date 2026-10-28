@@ -1,6 +1,6 @@
 // Outil de contrôle (non publié) : rend tous les sons de data/game/sounds.json en Node, mesure le temps de calcul et le niveau de
 // chaque variante, et écrit une planche PNG (forme d'onde en haut, spectrogramme en bas, un cadre par son et par variante).
-// Sans dépendance : PNG écrit avec node:zlib, étiquettes en police point 5×7 intégrée. Usage : node scripts/planche-sons.mjs <sortie.png>  (ONLY=<expression> pour un sous-ensemble)
+// Sans dépendance : PNG écrit avec node:zlib, étiquettes en police point 5×7 intégrée. Usage : node scripts/planche-sons.mjs <sortie.png>  (ONLY=<expression> pour un sous-ensemble ; lot 3 : ONLY='planche|joueur-(chute|releve)' pour les sons des fenêtres et de la chute)
 import { readFileSync, writeFileSync } from 'node:fs';
 import { deflateSync } from 'node:zlib';
 import { renderSound, soundBytes, variantCount } from '../js/core/synth.js';
