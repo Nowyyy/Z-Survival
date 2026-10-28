@@ -12,7 +12,7 @@ import { clampDt, isNum } from './vec.js';
 export const FALLBACK = {
   count: 4, thickness: 14, height: 6, visible: 16, overhang: 16, wallGap: 2, rollMax: 0.12, spacing: 1.5, sill: 16, lintel: 44, wall: 60, pipShift: 8,
   frameWidth: 5, frameGap: 0.4, voidGap: 0.2, pip: 16, pipStep: 18, pipInner: 8, pipLift: 0.3,
-  debrisLength: 62, debrisWidth: 12, debrisThickness: 6, debrisMax: 12, debrisLife: 25, debrisFade: 1, debrisYaw: 0.61,
+  debrisLength: 62, debrisWidth: 12, debrisThickness: 6, debrisLife: 25, debrisFade: 1, debrisYaw: 0.61,
   debrisNear: 40, debrisFar: 110, debrisSide: 40, debrisApart: 30, debrisMargin: 6, debrisTries: 12,
 };
 
@@ -49,8 +49,7 @@ export function cleanParams(raw) {
     debrisLength: pos(p.debrisLength, f.debrisLength),
     debrisWidth: pos(p.debrisWidth, f.debrisWidth),
     debrisThickness: pos(p.debrisThickness, f.debrisThickness),
-    debrisMax: whole(p.debrisMax, f.debrisMax, 1, 64),
-    debrisLife: nonNeg(p.debrisLife, f.debrisLife), // 0 : les débris restent à l'infini (jusqu'à réparation ou plafond de 12)
+    debrisLife: nonNeg(p.debrisLife, f.debrisLife), // 0 : les débris restent à l'infini (jusqu'à réparation de la planche)
     debrisFade: nonNeg(p.debrisFade, f.debrisFade),
     debrisYaw: Math.min(Math.PI / 2, nonNeg(p.debrisYaw, f.debrisYaw)),
     debrisNear: pos(p.debrisNear, f.debrisNear),
@@ -296,7 +295,7 @@ export const createDebris = () => ({ items: [], serial: 0 });
 const itemsOf = (state) => (Array.isArray(state?.items) ? state.items : []);
 const serialOf = (state) => (isNum(state?.serial) && state.serial >= 0 ? Math.trunc(state.serial) : 0);
 
-// Ajoute le débris suivant d'une fenêtre (rien si aucune place) ; s'il y en a déjà debrisMax, le plus ancien disparaît. Renvoie un nouvel état.
+// Ajoute le débris suivant d'une fenêtre (rien si aucune place) ; aucun plafond : toutes les planches arrachées de toutes les fenêtres restent au sol. Renvoie un nouvel état.
 // layout : comme debrisPose, sans `others` (calculé d'après l'état).
 export function addDebris(state, geom, seed, layout) {
   const items = itemsOf(state);
@@ -305,11 +304,9 @@ export function addDebris(state, geom, seed, layout) {
   const g = cleanGeom(geom);
   const next = { items: items.map((d) => ({ ...d })), serial: serial + 1 };
   if (g === null) return next;
-  const room = items.length >= p.debrisMax ? items.slice(1) : items; // la place du plus ancien se libère avant le tirage
-  const pose = debrisPose(g, serial, seed, { ...layout, params: p, others: room.map((d) => ({ x: d.x, z: d.z, yaw: d.yaw, size: d.size })) });
+  const pose = debrisPose(g, serial, seed, { ...layout, params: p, others: items.map((d) => ({ x: d.x, z: d.z, yaw: d.yaw, size: d.size })) });
   if (pose === null) return next;
-  const kept = items.length >= p.debrisMax ? next.items.slice(1) : next.items;
-  return { items: [...kept, { id: serial, window: g.id, x: pose.x, y: pose.y, z: pose.z, yaw: pose.yaw, size: [...pose.size], age: 0 }], serial: serial + 1 };
+  return { items: [...next.items, { id: serial, window: g.id, x: pose.x, y: pose.y, z: pose.z, yaw: pose.yaw, size: [...pose.size], age: 0 }], serial: serial + 1 };
 }
 
 // Retire les n débris les plus récents d'une fenêtre (une planche réparée en consomme un). Renvoie un nouvel état.

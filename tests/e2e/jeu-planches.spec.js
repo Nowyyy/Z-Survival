@@ -79,12 +79,12 @@ test.describe('planches 3D : géométrie lue sur les sommets réels', () => {
   });
 });
 
-test.describe('débris : à plat, hors meubles, 12 au plus, sans limite de durée', () => {
-  test('toutes les fenêtres ouvertes : 12 débris au plus, tous à plat (y ≥ 0,3), aucun dans un meuble, dans la salle', async ({ page }) => {
+test.describe('débris : à plat, hors meubles, sans plafond ni limite de durée', () => {
+  test('toutes les fenêtres ouvertes : un débris par planche (12), tous à plat (y ≥ 0,3), aucun dans un meuble, dans la salle', async ({ page }) => {
     await open(page, '&planks=0');
     const s = await STATE(page);
     expect(s.debris.length).toBeGreaterThan(0);
-    expect(s.debris.length).toBeLessThanOrEqual(12);
+    expect(s.debris.length).toBeLessThanOrEqual(12); // 3 fenêtres × 4 planches : un débris par planche arrachée, aucun retiré
     for (const d of s.debris) {
       expect(d.y).toBeGreaterThanOrEqual(0.3);
       expect(d.y).toBeLessThan(6);
@@ -109,23 +109,24 @@ test.describe('débris : à plat, hors meubles, 12 au plus, sans limite de duré
     expect(r.late).toBe(0); // réparée : les débris de la fenêtre sont consommés
   });
 
-  test('jamais plus de 12 débris, même en arrachant et en réparant à répétition', async ({ page }) => {
+  test('jamais plus de débris que de planches manquantes, même en arrachant et en réparant à répétition ; rien n\'est retiré d\'office', async ({ page }) => {
     await open(page);
-    const counts = await page.evaluate(() => {
+    const r = await page.evaluate(() => {
       const zs = window.__zs;
-      const out = [];
+      const gaps = [];
       for (let round = 0; round < 3; round += 1) {
         for (const id of ['fenetre-nord', 'fenetre-ouest', 'fenetre-est']) {
           zs.setPlanks(id, 0);
-          out.push(zs.getState().debris.length);
           zs.setPlanks(id, 2);
           zs.setPlanks(id, 0);
-          out.push(zs.getState().debris.length);
+          const s = zs.getState();
+          gaps.push(s.windows.reduce((n, w) => n + (w.maxPlanks - w.planks), 0) - s.debris.length);
         }
       }
-      return out;
+      return gaps;
     });
-    expect(Math.max(...counts)).toBeLessThanOrEqual(12);
+    for (const g of r) expect(g).toBeGreaterThanOrEqual(0); // jamais plus de débris que de planches manquantes
+    expect(r.at(-1)).toBeLessThanOrEqual(1); // à peine une place qui manque : tout est resté au sol
   });
 
   test('une planche réparée consomme un débris ; la remise à zéro (Rejouer) les retire tous', async ({ page }) => {

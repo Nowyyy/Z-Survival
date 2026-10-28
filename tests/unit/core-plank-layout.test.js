@@ -27,7 +27,7 @@ const debrisLayout = (extra = {}) => ({ params: P, obstacles: layout.furniture, 
 
 describe('plank-layout.js : réglages (windows.json planks3d, render.json)', () => {
   it('les valeurs de départ de la spécification', () => {
-    expect(P).toMatchObject({ count: 4, thickness: 14, visible: 16, overhang: 16, wallGap: 2, rollMax: 0.12, sill: 16, lintel: 44, debrisMax: 12, debrisFade: 1 });
+    expect(P).toMatchObject({ count: 4, thickness: 14, visible: 16, overhang: 16, wallGap: 2, rollMax: 0.12, sill: 16, lintel: 44, debrisFade: 1 });
   });
 
   it('cleanParams : tout paramètre absent, négatif ou non numérique prend son repli', () => {
@@ -296,14 +296,17 @@ describe('plank-layout.js : durée de vie et plafond des débris', () => {
     return s;
   };
 
-  it('au plus 12 débris : le plus ancien disparaît le premier', () => {
-    const s = fill(30);
-    expect(s.items.length).toBeLessThanOrEqual(12);
-    expect(s.items.length).toBeGreaterThan(0);
+  it('aucun plafond : aucun débris n\'est retiré, même au-delà de 12, et les identifiants restent croissants', () => {
+    let s = createDebris();
+    const gs = world.windows.map((w) => geomOf(w));
+    for (let i = 0; i < 60; i += 1) s = addDebris(s, gs[i % 3], 4 + Math.floor(i / 3), debrisLayout());
+    expect(s.items.length).toBeGreaterThan(12);
     const ids = s.items.map((d) => d.id);
     expect(ids).toEqual([...ids].sort((a, b) => a - b));
-    expect(Math.max(...ids)).toBeGreaterThanOrEqual(20);
-    expect(Math.min(...ids)).toBeGreaterThan(5);
+    expect(Math.min(...ids)).toBe(ids[0]);
+    let again = s;
+    for (let i = 0; i < 10; i += 1) again = addDebris(again, gs[i % 3], 99, debrisLayout());
+    for (const d of s.items) expect(again.items.some((e) => e.id === d.id)).toBe(true);
   });
 
   it('un débris vit 25 s de temps de jeu : présent à 24,9 s, disparu à 25 s', () => {

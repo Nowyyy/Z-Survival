@@ -263,10 +263,14 @@ describe('windows-mesh.js : débris', () => {
     expect(mesh.count()).toBe(n);
   });
 
-  it('plafonné à 12 débris même si la liste est plus longue', () => {
+  it('aucun plafond : la capacité double au besoin (30 puis 100 débris dessinés)', () => {
     const { mesh } = make2();
-    mesh.sync(Array.from({ length: 30 }, (_, i) => ({ ...items(1)[0], id: i })));
-    expect(mesh.count()).toBe(12);
+    for (const n of [30, 100]) {
+      mesh.sync(Array.from({ length: n }, (_, i) => ({ ...items(1)[0], id: i })));
+      expect(mesh.count()).toBe(n);
+      expect(mesh.mesh.geometry.drawRange.count).toBe(n * 12);
+      expect(mesh.mesh.geometry.attributes.position.count).toBeGreaterThanOrEqual(n * 12);
+    }
   });
 
   it('tous les sommets à 0,3 du sol ou plus ; retour à l\'invisible quand la liste se vide', () => {

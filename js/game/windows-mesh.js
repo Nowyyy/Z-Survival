@@ -210,16 +210,20 @@ export function createWindowMeshes({ scene, material, geoms, settings: p, sheet,
   };
 }
 
-// Débris : un seul maillage (capacité debrisMax × 4 triangles) réécrit quand la liste ou une échelle change. Chaque planche est un dessus et un côté
+// Débris : un seul maillage (4 triangles par débris, capacité qui double au besoin) réécrit quand la liste ou une échelle change. Chaque planche est un dessus et un côté
 // tourné vers le sud (la caméra) ; la matière est celle des fenêtres. Dessiné seulement s'il y a des débris.
 export function createDebrisMesh({ scene, material, settings: p, sheet }) {
-  const capacity = p.debrisMax;
-  const verts = capacity * 12;
-  const buf = { pos: new Float32Array(verts * 3), nor: new Float32Array(verts * 3), uv: new Float32Array(verts * 2) };
+  let capacity = 16; // débris ; aucun plafond : les tampons doublent quand la liste dépasse leur capacité
+  let buf = null;
   const geometry = new THREE.BufferGeometry();
-  geometry.setAttribute('position', new THREE.BufferAttribute(buf.pos, 3));
-  geometry.setAttribute('normal', new THREE.BufferAttribute(buf.nor, 3));
-  geometry.setAttribute('uv', new THREE.BufferAttribute(buf.uv, 2));
+  const alloc = (n) => {
+    capacity = n;
+    buf = { pos: new Float32Array(n * 12 * 3), nor: new Float32Array(n * 12 * 3), uv: new Float32Array(n * 12 * 2) };
+    geometry.setAttribute('position', new THREE.BufferAttribute(buf.pos, 3));
+    geometry.setAttribute('normal', new THREE.BufferAttribute(buf.nor, 3));
+    geometry.setAttribute('uv', new THREE.BufferAttribute(buf.uv, 2));
+  };
+  alloc(capacity);
   geometry.setDrawRange(0, 0);
   geometry.boundingSphere = new THREE.Sphere(new THREE.Vector3(), 0);
   const mesh = new THREE.Mesh(geometry, material);
@@ -234,7 +238,13 @@ export function createDebrisMesh({ scene, material, settings: p, sheet }) {
     count: () => (mesh.visible ? geometry.drawRange.count / 12 : 0),
     // items : liste de plank-layout (id, x, y, z, yaw, size, age) ; reduced : pas de mise à l'échelle de fin de vie.
     sync(items, reduced = false) {
-      const list = (Array.isArray(items) ? items : []).slice(0, capacity);
+      const list = Array.isArray(items) ? items : [];
+      if (list.length > capacity) {
+        let n = capacity;
+        while (n < list.length) n *= 2;
+        alloc(n);
+        signature = '';
+      }
       const scales = list.map((d) => debrisScale(d, p, reduced));
       const sig = list.map((d, i) => `${d.id}:${scales[i].toFixed(3)}`).join('|');
       if (sig === signature) return;
