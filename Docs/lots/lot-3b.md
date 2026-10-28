@@ -4,11 +4,12 @@ Aucun levier Lighthouse appliqué (50 / 50, seuil 45). Branche `lot-3b` (la sess
 
 **Livré**
 - `data/game/maps/rez-de-chaussee/plan.json` (pixels seulement), `data/game/maps/params.json`, `js/core/maps.js` (`planToWorld`, `resolveMapId`, `analyzeMap`, `mergeInterstices`), `js/core/shape.js` (rectangles, polygone, murs), `scripts/plan-vers-monde.mjs` (`npm run carte`), `world.json` et `decor.json` générés, `js/core/map-svg.js` + `carte.html`, `css/carte.css`, `js/carte/main.js`, `scripts/plan-carte.mjs`.
-- Jeu : `layout.js` accepte les cartes à segments (salle inchangée), `decor.js`, `siege.js`, `plank-layout.js`, `player-down.js` généralisés par `layout.inside`, rendu des murs, piliers, escaliers, rampe, débris par fenêtre (`createDebrisMeshes`), flèches et `#hud-live` F1 à F8, `?labels=1`, `?map=`, `getState().map`, caméra `?zoom=1`. Workflow, `index.html`, `seed.md`, `world.json` et `decor.json` d'origine : inchangés. `player-down.js` : 2 lignes ajoutées (test `inside`), comportement ancien identique.
+- Jeu : `layout.js` accepte les cartes à segments (salle inchangée), `decor.js`, `siege.js`, `plank-layout.js`, `player-down.js` généralisés par `layout.inside`, rendu des murs, piliers, escaliers, rampe, débris par fenêtre (`createDebrisMeshes`), `#hud-live` F1 à F8, `?labels=1`, `?map=`, `getState().map`, caméra `?zoom=1`. Workflow, `index.html`, `seed.md`, `world.json` et `decor.json` d'origine : inchangés. `player-down.js` : 2 lignes ajoutées (test `inside`), comportement ancien identique.
 
 **Choix**
 - Schéma : `contour`, `walls` (segments, 40 d'épaisseur), `openings`, fenêtres sur la ligne du mur, `obstacles`, `pillars`, `stairs`, `ramp`, `zoom` (3,4 = même échelle qu'au lot 3a). Détails : `Docs/ref/conventions.md`.
-- Fenêtres décalées : F5 de 50, F6 de 40, F7 de 45 (valeurs du lot) ; F4 de 15 vers l'est (automatique : le bloc fusionné touchait sa zone libre). F9 absente.
+- Fenêtres : largeur 80 au lieu de 140 (retour du propriétaire : environ 2 joueurs de large, `windowSize` de `params.json`) ; décalées : F5 de 50, F6 de 40, F7 de 45 (valeurs du lot) ; F4 n'a plus besoin d'être décalée. F9 absente.
+- Retour du propriétaire : flèches E2-11 au bord de l'écran retirées (marqueurs des fenêtres cassées) ; le code de calcul reste dormant, sans élément `#edges`. L'échelle de la carte (5 unités par pixel) n'a pas été réduite : couloirs de 90 et départ libre de 120 en dépendent.
 - Fusions : escalier courbe + pilier (350,292) + pilier (412,301) en un bloc de 445 × 300 ; M2 + M3 + M4 (comptoir du fond, M2 prolongé de 20 jusqu'au mur). Prolongés jusqu'au mur : M2, M8, M12.
 - Mobilier retiré : M5 (à 15 du pilier), M6 (recouvre le pilier), M10 (à 20,6 du mur, en diagonale), M11 (à 75 du pilier). Choix : jamais de fusion entre mobilier et structure (le mobilier est retiré).
 - Domaine du champ du joueur : non restreint (recalcul 5 ms en Node, 7 ms dans le navigateur ; seuil 8 ms en Node).
@@ -28,7 +29,7 @@ Aucun levier Lighthouse appliqué (50 / 50, seuil 45). Branche `lot-3b` (la sess
 
 **Points ouverts** : fidélité visuelle non jugée par l'agent (coordonnées approximatives du plan, ±5 px) ; F1 est cachée derrière le HUD à `?zoom=1` en 667 × 375 ; comportement sur vrai téléphone non vérifié ; l'aperçu publié n'a pas pu être ouvert.
 
-**Choix à valider** : F4 à 2555 (décalée) et F5 à 50 du plan ; rampe de F3 (bande de sol de 225 × 350) ; alcôve nord (380 × 180) fermée à l'est par l'escalier ; escaliers pleins (le courbe fusionné avec deux piliers) ; départ libre sur 120 (141 réels) ; apparitions à 450 et 650 ; mobilier M5, M6, M10, M11 retiré ; budget 193 appels (+2).
+**Choix à valider** : largeur des fenêtres (80) ; F5 à 50 du plan ; rampe de F3 (bande de sol de 225 × 350) ; alcôve nord (380 × 180) fermée à l'est par l'escalier ; escaliers pleins (le courbe fusionné avec deux piliers) ; départ libre sur 120 (141 réels) ; apparitions à 450 et 650 ; mobilier M5, M6, M10, M11 retiré ; budget 193 appels (+2).
 
 **Corriger la carte** : (1) ouvrir `plan.json` ; (2) changer un chiffre (pixels) ; (3) `npm run carte` (liste décalages, fusions, retraits ; échoue si une règle casse) ; (4) ouvrir `carte.html` et comparer au plan ; (5) `npm test`, commit de `plan.json`, `world.json`, `decor.json`.
 

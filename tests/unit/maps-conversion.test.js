@@ -66,12 +66,12 @@ describe('fenêtres décalées (10 px au plus = 50 unités)', () => {
 
   it('aucune fenêtre n\'est décalée de plus de 50 unités (décalages automatiques compris)', () => {
     for (const s of out.report.shifts) expect(s.units, s.id).toBeLessThanOrEqual(50);
-    expect(out.report.shifts.map((s) => s.id).sort()).toEqual(['F4', 'F5', 'F6', 'F7']);
+    expect(out.report.shifts.map((s) => s.id).sort()).toEqual(['F5', 'F6', 'F7']);
   });
 
-  it('F4 est décalée automatiquement (bloc fusionné près de sa zone) de 15 unités vers l\'est', () => {
-    expect(bySide('F4').x).toBe(2555);
-    expect(out.report.shifts.find((s) => s.id === 'F4').auto).toBe(true);
+  it('F4 reste à sa place du plan : sa zone libre (80 de large) ne touche pas le bloc fusionné', () => {
+    expect(bySide('F4').x).toBe(2540);
+    expect(out.report.shifts.find((s) => s.id === 'F4')).toBeUndefined();
   });
 
   it('un pilier dans la zone d\'une fenêtre la fait glisser le long du mur, sans dépasser 50 unités', () => {
@@ -88,7 +88,7 @@ describe('fenêtres décalées (10 px au plus = 50 unités)', () => {
     expect(shift.auto).toBe(true);
     expect(shift.units).toBeGreaterThan(0);
     expect(shift.units).toBeLessThanOrEqual(50);
-    const zone = windowZone(r.world.windows[0], 140, 150, 40);
+    const zone = windowZone(r.world.windows[0], 80, 150, 40);
     for (const o of r.world.obstacles) expect(o.x >= zone.x + zone.w || o.x + o.w <= zone.x || o.y >= zone.y + zone.h || o.y + o.h <= zone.y).toBe(true);
   });
 
@@ -188,7 +188,7 @@ describe('planToWorld : pureté, déterminisme, entrées hostiles', () => {
   it('paramètres hostiles : les valeurs de repli s\'appliquent', () => {
     for (const bad of WEIRD) expect(() => planToWorld(plan, bad)).not.toThrow();
     expect(planToWorld(plan, null).world.size).toEqual({ width: 3880, height: 3180 });
-    expect(planToWorld(plan, { scale: -3, margin: 'x', windowSize: NaN }).world.windowSize).toBe(140);
+    expect(planToWorld(plan, { scale: -3, margin: 'x', windowSize: NaN }).world.windowSize).toBe(80);
   });
 
   it('cleanPlan et cleanParams ne lèvent pas d\'exception', () => {

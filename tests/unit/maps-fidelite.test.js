@@ -75,16 +75,16 @@ describe('fidélité au plan : contour, murs, ouvertures', () => {
 });
 
 describe('fidélité au plan : fenêtres F1 à F8', () => {
-  it('8 fenêtres F1 à F8, de largeur 140', () => {
+  it('8 fenêtres F1 à F8, de largeur 80', () => {
     expect(world.windows.map((w) => w.id)).toEqual(['F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8']);
-    expect(world.windowSize).toBe(140);
-    for (const g of layout.gaps) expect(Math.max(g.w, g.h)).toBe(140);
+    expect(world.windowSize).toBe(80);
+    for (const g of layout.gaps) expect(Math.max(g.w, g.h)).toBe(80);
   });
 
   it.each(Object.entries(PLAN_WINDOWS))('%s : bon mur, bonne normale, à moins de 50 unités du plan', (id, [side, x, y]) => {
     const w = world.windows.find((q) => q.id === id);
     expect(w.side).toBe(side);
-    const geom = windowGeometry({ ...w, size: 140 }, windowsCfg);
+    const geom = windowGeometry({ ...w, size: 80 }, windowsCfg);
     expect(geom.normal).toEqual(NORMALS[side]);
     const p = px(x, y);
     const planned = plan.windows.find((q) => q.id === id);
@@ -195,7 +195,7 @@ describe('fidélité au plan : aires, hauteurs', () => {
   });
 
   it('windowGap est cohérent avec les ouvertures des murs', () => {
-    for (const w of world.windows) expect(layout.gaps.find((g) => g.id === w.id)).toMatchObject(windowGap(w, 140, 40));
-    expect(params.windowSize).toBe(140);
+    for (const w of world.windows) expect(layout.gaps.find((g) => g.id === w.id)).toMatchObject(windowGap(w, 80, 40));
+    expect(params.windowSize).toBe(80);
   });
 });

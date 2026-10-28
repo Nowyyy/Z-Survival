@@ -120,7 +120,7 @@ test.describe('HUD compact E2-2', () => {
       }
       return out;
     });
-    expect(sizes.length).toBeGreaterThan(3);
+    expect(sizes.length).toBeGreaterThan(1); // lot 3b : avant 3 ; plus de flèches E2-11, donc moins de textes
     for (const s of sizes) expect(s.size, `${s.root} ${s.text}`).toBeGreaterThanOrEqual(14);
   });
 
@@ -219,100 +219,33 @@ test.describe('réparation bloquée et HUD en vague', () => {
   });
 });
 
-test.describe('E2-11 flèches au bord de l\'écran', () => {
-  test('aucune flèche sans fenêtre attaquée ni ouverte', async ({ page }) => {
-    await open(page);
-    expect(await page.locator('#edges .edge-arrow:not([hidden])').count()).toBe(0);
-    expect((await STATE(page)).hud.arrows).toEqual([]);
-  });
-
-  test('une fenêtre attaquée hors écran : une flèche à 16 px du bord, tournée vers elle, avec son initiale', async ({ page }) => {
+// E2-11 (flèches au bord de l'écran) retiré à la demande du propriétaire après le lot 3b : aucune flèche, même avec des fenêtres cassées hors écran.
+test.describe('E2-11 retiré', () => {
+  test('aucune flèche au bord de l\'écran, même avec des fenêtres attaquées ou ouvertes hors écran', async ({ page }) => {
     await open(page);
     await page.evaluate(() => { window.__zs.setPlayer(1800, 1400); window.__zs.step(0.2); });
     await attack(page, 'fenetre-ouest');
-    const a = await page.evaluate(() => {
-      const s = window.__zs.getState();
-      const el = document.querySelector('#edges .edge-arrow:not([hidden])');
-      const r = el.getBoundingClientRect();
-      return { arrows: s.hud.arrows, box: { l: r.left, t: r.top, r: r.right, b: r.bottom }, letter: el.querySelector('.edge-letter').textContent, w: innerWidth, h: innerHeight, win: s.windows.find((w) => w.id === 'fenetre-ouest').screen };
-    });
-    expect(a.arrows).toHaveLength(1);
-    expect(a.letter).toBe('O');
-    expect(a.box.l).toBeGreaterThanOrEqual(15);
-    expect(a.box.l).toBeLessThanOrEqual(17);
-    expect(Math.abs(Math.abs(a.arrows[0].angle) - Math.PI)).toBeLessThan(0.6); // vers la gauche
-    expect(a.win.x).toBeLessThan(0); // la fenêtre est bien hors de l'écran
-  });
-
-  test('l\'ouest est hors champ puis, quand le joueur s\'en approche, la flèche disparaît', async ({ page }) => {
-    await open(page);
-    await page.evaluate(() => { window.__zs.setPlayer(1800, 1400); window.__zs.step(0.2); });
-    await attack(page, 'fenetre-ouest');
-    expect((await STATE(page)).hud.arrows).toHaveLength(1);
-    await page.evaluate(() => { window.__zs.setPlayer(900, 1400); window.__zs.step(0.1); window.__zs.sampleScreen(0, 0, 4, 4); });
+    await page.evaluate(() => { window.__zs.setPlanks('fenetre-nord', 0); window.__zs.step(0.2); });
+    expect(await page.locator('#edges').count()).toBe(0);
     expect((await STATE(page)).hud.arrows).toEqual([]);
-    expect(await page.locator('#edges .edge-arrow:not([hidden])').count()).toBe(0);
-  });
-
-  test('deux flèches au plus, même avec trois fenêtres ouvertes', async ({ page }) => {
-    await open(page);
-    await page.evaluate(() => { const zs = window.__zs; zs.setPlayer(1800, 1900); for (const id of ['fenetre-nord', 'fenetre-ouest', 'fenetre-est']) zs.setPlanks(id, 0); zs.step(0.2); zs.sampleScreen(0, 0, 4, 4); });
-    const s = await STATE(page);
-    expect(s.hud.arrows.length).toBeGreaterThan(0);
-    expect(s.hud.arrows.length).toBeLessThanOrEqual(2);
-    expect(await page.locator('#edges .edge-arrow:not([hidden])').count()).toBe(s.hud.arrows.length);
-  });
-
-  test('pas de pulsation sous mouvement réduit ; une pulsation douce sinon', async ({ page }) => {
-    await open(page);
-    await page.evaluate(() => { window.__zs.setPlayer(1800, 1400); window.__zs.setPlanks('fenetre-ouest', 0); window.__zs.step(0.2); });
-    const anim = (p) => p.evaluate(() => getComputedStyle(document.querySelector('#edges .edge-arrow:not([hidden]) .edge-letter')).animationName);
-    expect(await anim(page)).toBe('edge-pulse');
-    await page.emulateMedia({ reducedMotion: 'reduce' });
-    await expect.poll(() => anim(page)).toBe('none');
-  });
-
-  test('la flèche ne recouvre ni le HUD, ni Pause, ni les cadres de repos des sticks', async ({ page }) => {
-    await open(page);
-    await page.evaluate(() => {
-      const root = document.getElementById('game-root');
-      root.dispatchEvent(new PointerEvent('pointerdown', { pointerType: 'touch', pointerId: 9, clientX: 80, clientY: 250, bubbles: true }));
-      root.dispatchEvent(new PointerEvent('pointerup', { pointerType: 'touch', pointerId: 9, clientX: 80, clientY: 250, bubbles: true }));
-      const zs = window.__zs;
-      zs.setPlayer(1800, 1500);
-      zs.setPlanks('fenetre-nord', 0);
-      zs.setPlanks('fenetre-ouest', 0);
-      zs.step(0.2);
-    });
-    await expect(page.locator('#edges .edge-arrow:not([hidden])').first()).toBeVisible();
-    const boxes = await page.evaluate(() => {
-      const r = (el) => { const b = el.getBoundingClientRect(); return { l: b.left, t: b.top, r: b.right, b: b.bottom }; };
-      return {
-        arrows: [...document.querySelectorAll('#edges .edge-arrow:not([hidden])')].map(r),
-        others: ['#hud', '#btn-pause', '#stick-left:not([hidden]) .stick-base', '#stick-right:not([hidden]) .stick-base'].map((sel) => document.querySelector(sel)).filter(Boolean).map(r),
-      };
-    });
-    for (const a of boxes.arrows) for (const o of boxes.others) expect(apart(a, o), JSON.stringify([a, o])).toBe(true);
   });
 });
 
 test.describe('structure, accessibilité, hygiène', () => {
-  test('l\'ordre des blocs dans le HTML : E2-2, E2-8, E2-10, E2-11, E2-5, E2-3, E2-4', async ({ page }) => {
+  test('l\'ordre des blocs dans le HTML : E2-2, E2-8, E2-10, E2-5, E2-3, E2-4', async ({ page }) => {
     await open(page);
     const order = await page.evaluate(() => [...document.querySelectorAll('#game-root > [data-block]')].map((e) => e.dataset.block));
-    expect(order).toEqual(['E2-2', 'E2-8', 'E2-10', 'E2-11', 'E2-5', 'E2-3', 'E2-4']);
+    expect(order).toEqual(['E2-2', 'E2-8', 'E2-10', 'E2-5', 'E2-3', 'E2-4']);
   });
 
-  test('E2-11 est aria-hidden et ne reçoit aucun événement ; aucun focus volé par le HUD ou E2-11', async ({ page }) => {
+  test('aucun focus volé par le HUD', async ({ page }) => {
     await open(page);
     await page.evaluate(() => { window.__zs.setPlayer(1800, 1400); window.__zs.setPlanks('fenetre-ouest', 0); window.__zs.setPlanks('fenetre-nord', 2); window.__zs.step(0.3); });
     const r = await page.evaluate(() => ({
-      aria: document.getElementById('edges').getAttribute('aria-hidden'),
-      events: getComputedStyle(document.getElementById('edges')).pointerEvents,
       active: document.activeElement?.tagName,
       focusable: document.querySelectorAll('#hud [tabindex], #hud button, #hud a, #edges [tabindex], #edges button').length,
     }));
-    expect(r).toEqual({ aria: 'true', events: 'none', active: 'BODY', focusable: 0 });
+    expect(r).toEqual({ active: 'BODY', focusable: 0 });
   });
 
   test('axe : aucune violation avec le HUD et E2-11 affichés', async ({ page }) => {

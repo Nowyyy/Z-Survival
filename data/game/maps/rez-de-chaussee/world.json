@@ -39,28 +39,28 @@
     { "id": "ouverture-aile", "x1": 1550, "y1": 1505, "x2": 1550, "y2": 1825 },
     { "id": "ouverture-alcove", "x1": 1550, "y1": 1505, "x2": 1930, "y2": 1505 }
   ],
-  "windowSize": 140,
+  "windowSize": 80,
   "wallThickness": 40,
   "wallHeight": 60,
   "windows": [
     { "id": "F1", "side": "nord", "x": 1195, "y": 800 },
     { "id": "F2", "side": "est", "x": 1550, "y": 1215 },
     { "id": "F3", "side": "ouest", "x": 1040, "y": 1795 },
-    { "id": "F4", "side": "nord", "x": 2555, "y": 1505 },
+    { "id": "F4", "side": "nord", "x": 2540, "y": 1505 },
     { "id": "F5", "side": "nord", "x": 2910, "y": 1505 },
     { "id": "F6", "side": "est", "x": 3065, "y": 1635 },
     { "id": "F7", "side": "sud", "x": 1700, "y": 2340 },
     { "id": "F8", "side": "sud", "x": 2945, "y": 2365 }
   ],
   "playerBarriers": [
-    { "id": "barriere-F1", "fenetre": "F1", "x": 1125, "y": 780, "w": 140, "h": 40 },
-    { "id": "barriere-F2", "fenetre": "F2", "x": 1530, "y": 1145, "w": 40, "h": 140 },
-    { "id": "barriere-F3", "fenetre": "F3", "x": 1020, "y": 1725, "w": 40, "h": 140 },
-    { "id": "barriere-F4", "fenetre": "F4", "x": 2485, "y": 1485, "w": 140, "h": 40 },
-    { "id": "barriere-F5", "fenetre": "F5", "x": 2840, "y": 1485, "w": 140, "h": 40 },
-    { "id": "barriere-F6", "fenetre": "F6", "x": 3045, "y": 1565, "w": 40, "h": 140 },
-    { "id": "barriere-F7", "fenetre": "F7", "x": 1630, "y": 2320, "w": 140, "h": 40 },
-    { "id": "barriere-F8", "fenetre": "F8", "x": 2875, "y": 2345, "w": 140, "h": 40 }
+    { "id": "barriere-F1", "fenetre": "F1", "x": 1155, "y": 780, "w": 80, "h": 40 },
+    { "id": "barriere-F2", "fenetre": "F2", "x": 1530, "y": 1175, "w": 40, "h": 80 },
+    { "id": "barriere-F3", "fenetre": "F3", "x": 1020, "y": 1755, "w": 40, "h": 80 },
+    { "id": "barriere-F4", "fenetre": "F4", "x": 2500, "y": 1485, "w": 80, "h": 40 },
+    { "id": "barriere-F5", "fenetre": "F5", "x": 2870, "y": 1485, "w": 80, "h": 40 },
+    { "id": "barriere-F6", "fenetre": "F6", "x": 3045, "y": 1595, "w": 40, "h": 80 },
+    { "id": "barriere-F7", "fenetre": "F7", "x": 1660, "y": 2320, "w": 80, "h": 40 },
+    { "id": "barriere-F8", "fenetre": "F8", "x": 2905, "y": 2345, "w": 80, "h": 40 }
   ],
   "startZone": 120,
   "windowDepth": 150,
@@ -118,7 +118,6 @@
   ],
   "generation": {
     "shifts": [
-      { "id": "F4", "units": 15, "auto": true },
       { "id": "F5", "units": 50, "auto": false },
       { "id": "F6", "units": 40, "auto": false },
       { "id": "F7", "units": 45, "auto": false }

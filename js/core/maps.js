@@ -28,7 +28,7 @@ export const DEFAULT_PARAMS = {
   round: 20,
   wallThickness: 40,
   wallHeight: 60,
-  windowSize: 140,
+  windowSize: 80,
   startZone: 120,
   windowDepth: 150,
   minCorridor: 90,

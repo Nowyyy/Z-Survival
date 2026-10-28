@@ -57,7 +57,7 @@ Voir `Docs/ref/conventions.md` : index.html, jeu.html, sons.html, carte.html, ap
 - Siège : siege.js (approche, attente, arrache, escalade, dedans, libre) ; 2 emplacements, file de 6, 2 grimpeurs ; jamais d'entrée sans fenêtre ouverte ; ?empty=1 = zombies libres ; réparation bloquée si un zombie occupe la fenêtre.
 - Chutes : player-down.js (debout, terre, mort) ; 1 chute de base, à terre 5 s invulnérable, zombies repoussés, relevage à 50 % ; stats chutes (0 à 5), reparation (0 à 10).
 - Planches : plank-layout.js (pivot au bas, aucun coin dans le sol ni le mur), texture planche (128 px) ; un maillage par fenêtre, 42 triangles au plus, dessiné si visible ; débris à plat, un maillage par fenêtre, à l'infini.
-- HUD : un seul rectangle E2-2 (96 × 300 px au plus), aucune ligne Fenêtres ; flèches E2-11 étiquetées F1 à F8 ; E2-9 retiré (code non réutilisé) ; réparation = carrés sur le mur, E2-10 (à terre) ; marges 16 px + env(safe-area-inset-*) ; icônes SVG ; texte ≥ 14 px ; #hud-live : À terre, Relevé, fenêtre ouverte, réparée, occupée.
+- HUD : un seul rectangle E2-2 (96 × 300 px au plus), aucune ligne Fenêtres ; E2-9 et E2-11 (flèches au bord) retirés ; réparation = carrés sur le mur, E2-10 (à terre) ; marges 16 px + env(safe-area-inset-*) ; icônes SVG ; texte ≥ 14 px ; #hud-live : À terre, Relevé, fenêtre ouverte, réparée, occupée.
 - jeu.html : balises apple-mobile-web-app-capable (essai d'un jeu sans barres de Safari) ; pas de manifeste.
 - Journal des versions : chaque lot ajoute une entrée à data/changelog.json et adapte data-changelog et dev.spec.
 - Annonce de vague : E2-8, animation centrale (wave-splash.js, horloge du jeu figée par la pause), 3,0 s avant les apparitions ; #hud-live annonce la vague, jamais le compte à rebours.

@@ -79,8 +79,8 @@ describe('règles de la carte : départ et fenêtres', () => {
 
   it.each(['F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8'])('150 unités de profondeur libre derrière %s, sur toute sa largeur', (id) => {
     const w = world.windows.find((q) => q.id === id);
-    const zone = windowZone(w, 140, 150, 40);
-    expect(zone.w * zone.h).toBe(140 * 150);
+    const zone = windowZone(w, 80, 150, 40);
+    expect(zone.w * zone.h).toBe(80 * 150);
     for (const o of world.obstacles.filter((q) => !q.outside)) expect(overlapArea(zone, o), `${id} / ${o.id}`).toBe(0);
     expect(layout.inside(zone.x + zone.w / 2, zone.y + zone.h / 2)).toBe(true);
   });
@@ -230,7 +230,7 @@ describe('règles de la carte : temps de calcul, planches, simulation', () => {
 
   it('les quatre orientations sont couvertes par les vraies fenêtres', () => {
     expect([...new Set(geoms.map((g) => g.side))].sort()).toEqual(['est', 'nord', 'ouest', 'sud']);
-    expect(windowGeometry({ ...world.windows[0], size: 140 }, windowsCfg).normal).toEqual({ x: 0, y: -1 });
+    expect(windowGeometry({ ...world.windows[0], size: 80 }, windowsCfg).normal).toEqual({ x: 0, y: -1 });
   });
 
   it('simulation pure de 60 s depuis chacun des 16 points : aucun zombie bloqué plus de 2 s, tous atteignent l\'intérieur fenêtre ouverte', () => {

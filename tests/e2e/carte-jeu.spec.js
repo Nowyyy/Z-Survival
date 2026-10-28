@@ -398,27 +398,19 @@ test.describe('vagues, interface, caméra, budget', () => {
     expect(await page.locator('[data-block="E2-9"]').count()).toBe(0);
     expect(await page.locator('#hud').getByText('Fenêtres').count()).toBe(0);
     const blocks = await page.locator('[data-block]').evaluateAll((els) => els.map((e) => e.dataset.block));
-    expect(blocks.slice(0, 8)).toEqual(['E2-1', 'E2-2', 'E2-8', 'E2-10', 'E2-11', 'E2-5', 'E2-3', 'E2-4']);
+    expect(blocks.slice(0, 7)).toEqual(['E2-1', 'E2-2', 'E2-8', 'E2-10', 'E2-5', 'E2-3', 'E2-4']);
   });
 
-  test('avec 8 fenêtres attaquées : 2 flèches E2-11 au plus, étiquetées F1 à F8, à 16 px du bord', async ({ page }) => {
+  test('avec 8 fenêtres attaquées : aucune flèche au bord de l\'écran (E2-11 retiré)', async ({ page }) => {
     await open(page);
     const r = await page.evaluate(() => {
       const zs = window.__zs;
       zs.setPlayer(1980, 2065);
       for (const id of ['F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8']) zs.spawnAtWindow(id, 'marcheur');
-      for (let i = 0; i < 400 && zs.getState().hud.arrows.length === 0; i += 1) zs.step(0.5);
-      const s = zs.getState();
-      return { arrows: s.hud.arrows, w: window.innerWidth, h: window.innerHeight, count: document.querySelectorAll('#edges .edge-arrow:not([hidden])').length };
+      zs.step(15);
+      return { arrows: zs.getState().hud.arrows, count: document.querySelectorAll('#edges').length };
     });
-    expect(r.count).toBeLessThanOrEqual(2);
-    expect(r.arrows.length).toBeLessThanOrEqual(2);
-    expect(r.arrows.length).toBeGreaterThan(0);
-    for (const a of r.arrows) {
-      expect(a.label).toMatch(/^F[1-8]$/);
-      const edge = Math.min(a.x, a.y, r.w - a.x, r.h - a.y);
-      expect(edge).toBeGreaterThanOrEqual(16 + 20 - 1);
-    }
+    expect(r).toEqual({ arrows: [], count: 0 });
   });
 
   test('#hud-live annonce « Fenêtre F3 ouverte »', async ({ page }) => {
