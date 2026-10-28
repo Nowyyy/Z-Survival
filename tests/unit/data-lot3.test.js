@@ -3,7 +3,7 @@ import { execSync } from 'node:child_process';
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { circleOverlapsRect } from '../../js/core/collision.js';
 import { moveCircle } from '../../js/core/movement.js';
-import { DOWN_TEXTS, WINDOW_NAMES, WINDOW_TEXTS } from '../../js/game/texts.js';
+import { DOWN_TEXTS, WINDOW_INITIALS, WINDOW_NAMES, WINDOW_TEXTS } from '../../js/game/texts.js';
 import { layout, load } from './helpers/monde.js';
 import { geoms } from './helpers/sim-siege.js';
 
@@ -117,8 +117,8 @@ describe('géométrie des fenêtres et du monde (world.json inchangé)', () => {
 
 describe('textes, jetons, pureté et hygiène du lot 3', () => {
   it('chaque clé de texte des fenêtres et de l\'état à terre existe dans fr.json et seulement là (clés game.* en français seul)', () => {
-    for (const key of [...Object.values(WINDOW_TEXTS), ...Object.values(WINDOW_NAMES), ...Object.values(DOWN_TEXTS)]) expect(fr[key], key).toBeTruthy();
-    expect(Object.keys(fr).filter((k) => k.startsWith('game.windows.') || k.startsWith('game.down.')).length).toBe(Object.values(WINDOW_TEXTS).length + Object.values(WINDOW_NAMES).length + Object.values(DOWN_TEXTS).length);
+    for (const key of [...Object.values(WINDOW_TEXTS), ...Object.values(WINDOW_NAMES), ...Object.values(WINDOW_INITIALS), ...Object.values(DOWN_TEXTS)]) expect(fr[key], key).toBeTruthy();
+    expect(Object.keys(fr).filter((k) => k.startsWith('game.windows.') || k.startsWith('game.down.')).length).toBe(Object.values(WINDOW_TEXTS).length + Object.values(WINDOW_NAMES).length + Object.values(WINDOW_INITIALS).length + Object.values(DOWN_TEXTS).length);
   });
 
   it('les noms de fenêtres couvrent celles de world.json', () => {

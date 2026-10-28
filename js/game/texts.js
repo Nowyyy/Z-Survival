@@ -28,15 +28,20 @@ export const VHS_TEXTS = { label: 'game.vhs.label', on: 'game.vhs.on', off: 'gam
 // Clés des textes de l'animation de vague (E2-8) : les mêmes que js/core/wave-splash.js (KEYS), pour que fr.json n'ait pas de clé orpheline.
 export const SPLASH_TEXTS = { debut: 'game.splash.debut', renforcee: 'game.splash.renforcee', fin: 'game.splash.fin', vieRestauree: 'game.splash.vieRestauree' };
 
-// Lot 3 : textes des fenêtres à planches (HUD « Fenêtres », indicateur de réparation E2-9, annonces vocales) et de l'état à terre (E2-10).
+// Lot 3 et 3a : textes des fenêtres (puces du HUD, indicateur de réparation E2-9 sur une ligne, annonces vocales) et de l'état à terre (E2-10).
 // Le nom d'une fenêtre vient de son identifiant dans world.json ; une fenêtre inconnue garde son identifiant.
 export const WINDOW_TEXTS = {
-  title: 'game.windows.title', hud: 'game.windows.hud', sep: 'game.windows.sep', entry: 'game.windows.entry', open: 'game.windows.entry.open', attacked: 'game.windows.entry.attacked',
-  repair: 'game.windows.repair', todoOne: 'game.windows.todo.one', todoMany: 'game.windows.todo.many', busy: 'game.windows.busy', liveOpen: 'game.windows.live.open', liveRepaired: 'game.windows.live.repaired',
+  title: 'game.windows.title', chipOpen: 'game.windows.chip.open', chipAttacked: 'game.windows.chip.attacked', chipMore: 'game.windows.chip.more',
+  chipLabel: 'game.windows.chip.label', chipLabelAttacked: 'game.windows.chip.label.attacked', chipLabelOpen: 'game.windows.chip.label.open', chipMoreLabel: 'game.windows.chip.more.label',
+  repair: 'game.windows.repair', busy: 'game.windows.busy', liveBusy: 'game.windows.live.busy', liveOpen: 'game.windows.live.open', liveRepaired: 'game.windows.live.repaired',
 };
 export const WINDOW_NAMES = {
   'fenetre-nord': 'game.windows.name.nord', 'fenetre-ouest': 'game.windows.name.ouest', 'fenetre-est': 'game.windows.name.est', 'fenetre-sud': 'game.windows.name.sud',
 };
+// Initiale du nom de chaque fenêtre (puces du HUD, flèches au bord) : une donnée de fr.json, jamais calculée dans le code.
+export const WINDOW_INITIALS = {
+  'fenetre-nord': 'game.windows.initial.nord', 'fenetre-ouest': 'game.windows.initial.ouest', 'fenetre-est': 'game.windows.initial.est', 'fenetre-sud': 'game.windows.initial.sud',
+};
 export const DOWN_TEXTS = {
-  chutes: 'game.down.chutes', title: 'game.down.title', countdown: 'game.down.countdown', grace: 'game.down.grace', liveDown: 'game.down.live.down', liveUp: 'game.down.live.up',
+  chutes: 'game.down.chutes', chutesLabel: 'game.down.chutes.label', title: 'game.down.title', countdown: 'game.down.countdown', grace: 'game.down.grace', liveDown: 'game.down.live.down', liveUp: 'game.down.live.up',
 };

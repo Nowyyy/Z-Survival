@@ -139,14 +139,14 @@ test.describe('chute et relevage', () => {
     expect(s.dead).toBe(false);
     expect(s.player.down).toMatchObject({ state: 'debout', chutes: 1, chutesMax: 1, grace: 0 });
     expect(s.player.health).toBe(100);
-    await expect(page.locator('#hud-chutes')).toHaveText('Chutes : 1');
+    await expect(page.locator('#hud-chutes')).toHaveText('Chutes 1');
   });
 });
 
 test.describe('statistiques chutes et reparation', () => {
-  test('?lvl=chutes:2 : 3 chutes (HUD « Chutes : 3 »), la quatrième vie à 0 est la mort', async ({ page }) => {
+  test('?lvl=chutes:2 : 3 chutes (HUD « Chutes 3 »), la quatrième vie à 0 est la mort', async ({ page }) => {
     await open(page, '&lvl=chutes:2');
-    await expect(page.locator('#hud-chutes')).toHaveText('Chutes : 3');
+    await expect(page.locator('#hud-chutes')).toHaveText('Chutes 3');
     for (let i = 0; i < 3; i += 1) {
       await fall(page);
       expect((await dn(page)).state).toBe('terre');
@@ -161,7 +161,7 @@ test.describe('statistiques chutes et reparation', () => {
   test('?lvl=chutes:9 est borné à 5 (6 chutes) ; ?lvl=all:5 applique chutes et reparation au niveau 5', async ({ page }) => {
     await open(page, '&lvl=chutes:9');
     expect((await state(page)).stats.values.maxFalls).toBe(6);
-    await expect(page.locator('#hud-chutes')).toHaveText('Chutes : 6');
+    await expect(page.locator('#hud-chutes')).toHaveText('Chutes 6');
     await open(page, '&lvl=all:5');
     const s = await state(page);
     expect(s.stats.values.maxFalls).toBe(6);
@@ -253,7 +253,7 @@ test.describe('interface E2-10 et annonces', () => {
 
   test('E2-10 est sous l\'animation de vague dans l\'ordre du HTML et affiche « Protégé N s » après le relevage', async ({ page }) => {
     await open(page);
-    expect(await page.evaluate(() => [...document.querySelectorAll('#game-root [data-block]')].map((e) => e.dataset.block))).toEqual(['E2-2', 'E2-8', 'E2-9', 'E2-10', 'E2-5', 'E2-3', 'E2-4']);
+    expect(await page.evaluate(() => [...document.querySelectorAll('#game-root [data-block]')].map((e) => e.dataset.block))).toEqual(['E2-2', 'E2-8', 'E2-9', 'E2-10', 'E2-11', 'E2-5', 'E2-3', 'E2-4']);
     await fall(page);
     await step(page, 5.1);
     await expect(page.locator('#down')).toBeVisible();
@@ -293,13 +293,13 @@ test.describe('interface E2-10 et annonces', () => {
     expect(seen.every((t) => !/\d+ s/.test(t))).toBe(true);
   });
 
-  test('HUD : « Chutes » et « Fenêtres » ne se chevauchent pas à 667×375 ; axe sans violation avec E2-9 et E2-10', async ({ page }) => {
+  test('HUD compact : la rangée des chutes ne chevauche ni Pause ni E2-9 à 667×375 ; axe sans violation avec E2-9 et E2-10', async ({ page }) => {
     await open(page);
     const r = await page.evaluate(() => {
       const b = (sel) => { const e = document.querySelector(sel).getBoundingClientRect(); return { l: e.left, t: e.top, r: e.right, b: e.bottom }; };
-      return { chutes: b('#hud-chutes'), windows: b('#hud-windows'), hud: b('#hud'), pause: b('#btn-pause'), h: innerHeight };
+      return { chutes: b('#hud-chutes'), hud: b('#hud'), pause: b('#btn-pause'), h: innerHeight };
     });
-    expect(r.chutes.b).toBeLessThanOrEqual(r.windows.t + 1);
+    expect(r.chutes.b).toBeLessThanOrEqual(r.hud.b + 1);
     expect(r.hud.r).toBeLessThanOrEqual(r.pause.l);
     expect(r.hud.b).toBeLessThan(r.h - 16);
     await page.evaluate(() => { window.__zs.setPlanks('fenetre-nord', 2); window.__zs.setPlayer(1800, 882); window.__zs.step(0.3); });

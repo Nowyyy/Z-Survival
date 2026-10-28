@@ -171,4 +171,11 @@
   --game-window-void: #0b0b0d;      /* trou sombre dans le mur d'une fenêtre ouverte, et intérieur vide d'une pastille */
   --game-pip-on: #efe6d2;           /* pastille au sol : planche présente (carré plein clair, 3:1 sur le sol) */
   --game-pip-off: #928270;          /* pastille au sol : cadre du carré (planche présente ou non) */
+
+  /* Jeu, lot 3a : HUD compact en puces (E2-2), indicateur de réparation (E2-9) et flèches au bord (E2-11). Provisoires, à valider (contrastes contrôlés par tests/unit/data-hud.test.js). */
+  --hud-bg: #050505;                /* fond des puces et de la barre de vie (noir du thème) */
+  --hud-bg-alpha: 0.78;             /* opacité du fond (nombre, pas une couleur) : le texte reste à 4,5:1 sur le pire sol du jeu */
+  --hud-border: #6a6a6e;            /* contour des puces et de la barre */
+  --hud-radius: 6px;                /* rayon des puces */
+  --hud-gap: 4px;                   /* espace entre les rangées et entre les puces (demi-pas de la grille de 8 px, pour tenir dans 96 px) */
 }

@@ -72,28 +72,154 @@ body.game {
   cursor: pointer;
 }
 
-/* HUD (E2-2) : en HTML au-dessus du canvas, en haut à gauche. */
+/* HUD (E2-2, lot 3a) : compact, en haut à gauche, trois rangées au plus (96 px de haut et 300 px de large à 667×375) : la barre de vie avec « 100/100 »
+   dedans et la puce des chutes (jusqu'à 6 silhouettes : elle ne tient pas dans la rangée 2), les puces (vague, restants ou compte à rebours, tués), puis les seules fenêtres attaquées ou ouvertes (rangée masquée, sans réserver de
+   hauteur, quand tout va bien). Chaque puce est une zone pleine (--hud-bg) : le texte n'est jamais posé directement sur le jeu. Ni filter, ni
+   mix-blend-mode, ni backdrop-filter. */
 .hud {
   position: absolute;
   top: calc(var(--game-margin) + var(--safe-top));
   left: calc(var(--game-margin) + var(--safe-left));
   display: flex;
   flex-direction: column;
-  gap: var(--space-1);
-  width: 13rem;
-  max-width: calc(100% - 2 * var(--game-margin) - 8rem);
-  padding: var(--space-2) var(--space-3);
-  border-radius: var(--radius-md);
-  background: var(--color-overlay);
+  gap: var(--hud-gap);
+  box-sizing: border-box;
+  width: max-content;
+  max-width: min(300px, calc(100% - 2 * var(--game-margin) - 8rem));
   pointer-events: none;
 }
 
-.hud-text {
+.hud-life-row,
+.hud-chips,
+.hud-windows {
+  display: flex;
+  align-items: center;
+  gap: var(--hud-gap);
+}
+
+.hud-chips,
+.hud-windows {
+  flex-wrap: nowrap;
+}
+
+.hud-windows[hidden] {
+  display: none;
+}
+
+.hud-icon {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  fill: var(--color-action-text);
+}
+
+.hud-bar,
+.hud-chip,
+.hud-wave,
+.hud-win {
+  box-sizing: border-box;
   margin: 0;
-  font-size: var(--text-md);
-  font-weight: 700;
-  line-height: 1.2;
+  border: 1px solid var(--hud-border);
+  border-radius: var(--hud-radius);
+  background: color-mix(in srgb, var(--hud-bg) calc(var(--hud-bg-alpha) * 100%), transparent);
   color: var(--color-text);
+  white-space: nowrap;
+}
+
+.hud-chip,
+.hud-win {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--hud-gap);
+  height: 26px;
+  padding: 0 6px;
+  font-size: var(--text-sm);
+  font-weight: 700;
+  line-height: 1;
+}
+
+.hud-chip[hidden] {
+  display: none;
+}
+
+.hud-chutes-icons {
+  display: inline-flex;
+  gap: 1px;
+}
+
+.hud-chutes-icons svg {
+  width: 10px;
+  height: 16px;
+  fill: var(--color-text);
+}
+
+/* Barre de vie : le texte « 100/100 » est dans la barre, bone sur le rouge plein comme sur la piste sombre (4,5:1 des deux côtés). */
+.hud-bar {
+  position: relative;
+  flex: 1;
+  min-width: 96px;
+  height: 24px;
+  overflow: hidden;
+  border-width: 2px;
+  background: var(--color-surface);
+}
+
+.hud-fill {
+  position: absolute;
+  inset: 0;
+  background: var(--color-action);
+  transform-origin: left center;
+}
+
+.hud-bar-text {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--text-sm);
+  font-weight: 700;
+  line-height: 1;
+  color: var(--color-on-action);
+}
+
+/* Numéro de vague : lettres de sang (police titre), en permanence dans la première puce de la rangée 2. */
+.hud-wave {
+  display: flex;
+  align-items: center;
+  height: 28px;
+  padding: 0 6px;
+  font-family: var(--font-display);
+  font-size: 1.375rem;
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  color: var(--color-action-text);
+}
+
+.hud-wave[hidden] {
+  display: none;
+}
+
+/* Puces de fenêtre : initiale, quatre encoches (pleine = planche posée, vide = absente) et « ! » si attaquée, ou le mot « ouverte » à 0 planche. */
+.hud-win {
+  height: 24px;
+}
+
+.hud-win-notches {
+  display: inline-flex;
+  gap: 2px;
+}
+
+.hud-win-notch {
+  box-sizing: border-box;
+  width: 6px;
+  height: 12px;
+  border: 1px solid var(--color-text);
+}
+
+.hud-win-notch[data-on="1"] {
+  background: var(--color-text);
 }
 
 /* Annonce de vague (E2-8, lot 2c) : animation centrale, sans focus ni clic. Aucune animation CSS autonome : js/game/splash-view.js met à jour
@@ -204,32 +330,6 @@ body.game {
 
 .wave-announce.is-fin .wave-announce-sub {
   color: var(--game-splash-end-sub);
-}
-
-/* Numéro de vague : lettres de sang (police titre), en permanence sous la barre de vie. */
-.hud-wave {
-  margin: 0;
-  font-family: var(--font-display);
-  font-size: var(--text-xl);
-  font-weight: 400;
-  line-height: 1.1;
-  letter-spacing: 0.02em;
-  color: var(--color-action-text);
-}
-
-.hud-bar {
-  height: 0.875rem;
-  overflow: hidden;
-  border: 2px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  background: var(--color-surface);
-}
-
-.hud-fill {
-  width: 100%;
-  height: 100%;
-  background: var(--color-action);
-  transform-origin: left center;
 }
 
 .game-error {
@@ -610,14 +710,9 @@ body.game {
   transform: translateX(calc(var(--vhs-track-shift) * 1px));
 }
 
-/* Ligne « Fenêtres » du HUD (lot 3, dans E2-2) : texte compact, renvoi à la ligne autorisé, jamais de dépassement. */
-.hud-windows {
-  overflow-wrap: anywhere;
-}
-
-/* Indicateur de réparation (E2-9, lot 3) : fixe en haut au centre, entre le HUD et le bouton Pause, loin du titre de vague (centre) et de l'état à terre
-   (tiers bas). Anneau de progression par variable CSS (--repair-progress de 0 à 1, un seul tour pour toute la fenêtre), sans filter, mix-blend-mode
-   ni backdrop-filter. Zone pleine sous le texte. */
+/* Indicateur de réparation (E2-9, lots 3 et 3a) : une seule ligne, fixe en haut au centre (300 px et 44 px au plus). Anneau de progression par variable CSS
+   (--repair-progress de 0 à 1, un seul tour pour toute la fenêtre) ; quand un zombie occupe la fenêtre, une croix remplace l'anneau. Sans filter,
+   mix-blend-mode ni backdrop-filter, sans animation d'apparition. Zone pleine sous le texte. */
 .repair {
   --repair-progress: 0;
   position: absolute;
@@ -627,8 +722,9 @@ body.game {
   align-items: center;
   gap: var(--space-2);
   box-sizing: border-box;
-  max-width: 12rem;
-  padding: var(--space-2) var(--space-3);
+  max-width: 300px;
+  height: 36px;
+  padding: 0 var(--space-3);
   border-radius: var(--radius-md);
   background: var(--game-repair-panel);
   color: var(--game-repair-text);
@@ -642,31 +738,110 @@ body.game {
 
 .repair-ring {
   flex: none;
-  width: 1.75rem;
-  height: 1.75rem;
+  width: 1.5rem;
+  height: 1.5rem;
   border-radius: 50%;
   background: conic-gradient(var(--game-repair-ring) calc(var(--repair-progress) * 1turn), var(--game-repair-track) 0);
-  -webkit-mask: radial-gradient(circle, transparent 0.5rem, currentcolor 0.55rem);
-  mask: radial-gradient(circle, transparent 0.5rem, currentcolor 0.55rem);
+  -webkit-mask: radial-gradient(circle, transparent 0.4rem, currentcolor 0.45rem);
+  mask: radial-gradient(circle, transparent 0.4rem, currentcolor 0.45rem);
 }
 
-.repair-text {
-  min-width: 0;
+.repair-cross {
+  display: none;
+  flex: none;
+  width: 1.5rem;
+  height: 1.5rem;
+  fill: none;
+  stroke: var(--game-repair-text);
+  stroke-width: 2.4;
+  stroke-linecap: round;
 }
 
-.repair-label,
-.repair-sub {
-  margin: 0;
-  font-weight: 700;
-  line-height: 1.2;
+.repair[data-state="blocked"] .repair-ring {
+  display: none;
+}
+
+.repair[data-state="blocked"] .repair-cross {
+  display: block;
 }
 
 .repair-label {
-  font-size: var(--text-md);
+  margin: 0;
+  overflow: hidden;
+  font-size: var(--text-sm);
+  font-weight: 700;
+  line-height: 1.2;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
-.repair-sub {
-  font-size: 0.875rem;
+/* Flèches au bord de l'écran (E2-11, lot 3a) : vers les deux fenêtres en alerte les plus urgentes qui ne sont pas à l'écran. Décoratives (aria-hidden, aucun
+   événement) ; la lettre porte l'identité, jamais la couleur seule. Position posée par js/game/game.js (variables --edge-x, --edge-y en pixels,
+   --edge-angle en radians) ; pulsation douce seulement si le mouvement n'est pas réduit. */
+.edges {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.edge-arrow {
+  --edge-x: 0px;
+  --edge-y: 0px;
+  --edge-angle: 0rad;
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 40px;
+  height: 40px;
+  transform: translate(calc(var(--edge-x) - 20px), calc(var(--edge-y) - 20px));
+  pointer-events: none;
+}
+
+.edge-arrow[hidden] {
+  display: none;
+}
+
+.edge-pointer {
+  position: absolute;
+  inset: 0;
+  fill: var(--color-text);
+  stroke: var(--hud-bg);
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+  transform: rotate(var(--edge-angle));
+}
+
+.edge-letter {
+  position: absolute;
+  left: 6px;
+  top: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--hud-border);
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--hud-bg) calc(var(--hud-bg-alpha) * 100%), transparent);
+  color: var(--color-text);
+  font-size: var(--text-sm);
+  font-weight: 700;
+  line-height: 1;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .edge-letter {
+    animation: edge-pulse 1.2s ease-in-out infinite;
+  }
+}
+
+@keyframes edge-pulse {
+  50% {
+    opacity: 0.6;
+  }
 }
 
 /* État à terre (E2-10, lot 3) : voile de bord (dégradé radial, sans filter, mix-blend-mode ni backdrop-filter) et texte centré dans le tiers bas

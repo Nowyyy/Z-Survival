@@ -62,7 +62,8 @@ test.describe('planches au départ', () => {
   test('?planks= n\'expose rien sans ?test=1 et ne stocke rien', async ({ page }) => {
     await page.setViewportSize(SIZE);
     await page.goto('/jeu.html?seed=1&nospawn=1&planks=2');
-    await expect(page.locator('#hud-windows')).toContainText('Fenêtres : N 2 · O 2 · E 2');
+    await expect(page.locator('#hud-windows')).toBeHidden(); // lot 3a : seules les fenêtres attaquées ou ouvertes ont une puce
+    expect(await page.locator('.hud-win').count()).toBe(0);
     expect(await page.evaluate(() => [typeof window.__zs, localStorage.length, sessionStorage.length, document.cookie])).toEqual(['undefined', 0, 0, '']);
   });
 });
@@ -364,12 +365,12 @@ test.describe('tirs et déplacements', () => {
 
 test.describe('interface : ligne Fenêtres, indicateur E2-9, annonces', () => {
   for (const size of [SIZE, { width: 1440, height: 900 }]) {
-    test(`la ligne « Fenêtres » est présente, dans les marges de 16 px et sans chevaucher Pause (${size.width}×${size.height})`, async ({ page }) => {
+    test(`la rangée « Fenêtres » est masquée tant que rien n'est attaqué ni ouvert ; le HUD est dans les marges de 16 px et sans chevaucher Pause (${size.width}×${size.height})`, async ({ page }) => {
       await open(page, '', size);
-      await expect(page.locator('#hud-windows')).toHaveText('Fenêtres : N 4 · O 4 · E 4');
+      await expect(page.locator('#hud-windows')).toBeHidden();
       const r = await page.evaluate(() => {
         const b = (sel) => document.querySelector(sel).getBoundingClientRect();
-        return { line: b('#hud-windows'), hud: b('#hud'), pause: b('#btn-pause') };
+        return { line: b('#hud'), hud: b('#hud'), pause: b('#btn-pause') };
       });
       expect(r.line.left).toBeGreaterThanOrEqual(16);
       expect(r.line.top).toBeGreaterThanOrEqual(16);
@@ -378,24 +379,25 @@ test.describe('interface : ligne Fenêtres, indicateur E2-9, annonces', () => {
     });
   }
 
-  test('une fenêtre sans planche est écrite « ouverte » en texte, une fenêtre attaquée est suivie d\'un « ! »', async ({ page }) => {
+  test('une fenêtre sans planche est écrite « ouverte » en texte, une fenêtre attaquée porte un « ! » et quatre encoches', async ({ page }) => {
     await open(page);
     await page.evaluate(() => window.__zs.setPlanks('fenetre-ouest', 0));
     await page.evaluate(() => window.__zs.step(0.05));
-    await expect(page.locator('#hud-windows')).toContainText('O ouverte');
+    await expect(page.locator('#hud-windows')).toContainText('O');
     await page.evaluate((slots) => { const zs = window.__zs; zs.spawnAtWindow('fenetre-nord', 'marcheur'); for (let i = 0; i < 400; i += 1) { zs.step(0.05); if (zs.getState().enemies.some((e) => e.mode === 'arrache' && Math.hypot(e.x - slots[e.slot].x, e.y - slots[e.slot].y) < 5)) break; } zs.step(0.1); }, N.slots);
-    await expect(page.locator('#hud-windows')).toContainText('N 4 !');
+    await expect(page.locator('#hud-windows')).toContainText('ouverte');
+    await expect(page.locator('.hud-win[data-id="fenetre-nord"]')).toContainText('!');
+    await expect(page.locator('.hud-win[data-id="fenetre-nord"] .hud-win-notch')).toHaveCount(4);
   });
 
-  test('E2-9 apparaît près de la fenêtre pendant la réparation : fenêtre, nombre de planches à poser, un seul tour d\'anneau, dans les marges, sans toucher le HUD ni Pause', async ({ page }) => {
+  test('E2-9 apparaît près de la fenêtre pendant la réparation : fenêtre et planches posées sur une ligne, un seul tour d\'anneau, dans les marges, sans toucher le HUD ni Pause', async ({ page }) => {
     await open(page);
     await page.evaluate(([x, y]) => { window.__zs.setPlanks('fenetre-nord', 2); window.__zs.setPlayer(x, y); window.__zs.step(0.9); }, [N.repairSpot.x, N.repairSpot.y]);
     const repair = page.locator('#repair');
     await expect(repair).toBeVisible();
     await expect(repair).toHaveAttribute('data-block', 'E2-9');
     await expect(repair).toHaveAttribute('aria-hidden', 'true');
-    await expect(page.locator('#repair-label')).toHaveText('Réparation : fenêtre nord');
-    await expect(page.locator('#repair-sub')).toHaveText('2 planches à poser');
+    await expect(page.locator('#repair-label')).toHaveText('Fenêtre nord · 2/4');
     // un seul tour pour toute la fenêtre : (2 planches + une demi-planche) / 4
     await expect.poll(() => repair.evaluate((el) => Number(el.style.getPropertyValue('--repair-progress')))).toBeGreaterThan(0.55);
     const box = await repair.boundingBox();
@@ -407,7 +409,7 @@ test.describe('interface : ligne Fenêtres, indicateur E2-9, annonces', () => {
     expect(await repair.evaluate((el) => getComputedStyle(el).pointerEvents)).toBe('none');
   });
 
-  test('E2-9 explique le blocage (« Zombie à la fenêtre ») quand la réparation est impossible', async ({ page }) => {
+  test('E2-9 explique le blocage (« Fenêtre nord · occupée », croix) quand la réparation est impossible', async ({ page }) => {
     await open(page);
     await page.evaluate(([x, y]) => {
       const zs = window.__zs;
@@ -417,7 +419,8 @@ test.describe('interface : ligne Fenêtres, indicateur E2-9, annonces', () => {
       zs.setPlayer(x, y);
       zs.step(0.1);
     }, [N.repairSpot.x, N.repairSpot.y]);
-    await expect(page.locator('#repair-sub')).toContainText('Zombie à la fenêtre');
+    await expect(page.locator('#repair-label')).toHaveText('Fenêtre nord · occupée');
+    await expect(page.locator('#repair')).toHaveAttribute('data-state', 'blocked');
   });
 
   test('E2-9 est masqué loin de la fenêtre et quand toutes les planches sont là', async ({ page }) => {

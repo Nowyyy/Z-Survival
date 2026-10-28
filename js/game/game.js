@@ -7,6 +7,8 @@ import { stepEnemies } from '../core/enemy-ai.js';
 import { createEnemy, isGait, isType } from '../core/enemy-factory.js';
 import { entryWindow, windowsWithGaps } from '../core/layout.js';
 import { occupancy, stepSiege } from '../core/siege.js';
+import { edgeIndicator } from '../core/edge-arrow.js';
+import { urgentWindows, windowChips } from '../core/hud-windows.js';
 import { closedRects, createWindowsState, stepWindows, windowGeometries } from '../core/windows.js';
 import { moveCircle } from '../core/movement.js';
 import { addDebris, createDebris, faceDistance, plankSettings, removeDebris, stepDebris } from '../core/plank-layout.js';
@@ -32,7 +34,7 @@ import { createHud } from './hud.js';
 import { createSplashView } from './splash-view.js';
 import { pickGround } from './picking.js';
 import { STRIDE } from './skeleton.js';
-import { DOWN_TEXTS, fmt, WINDOW_NAMES, WINDOW_TEXTS } from './texts.js';
+import { DOWN_TEXTS, fmt, WINDOW_INITIALS, WINDOW_NAMES, WINDOW_TEXTS } from './texts.js';
 import { createThreeTextures } from './textures.js';
 import { buildWorld, createCamera } from './world.js';
 
@@ -179,6 +181,7 @@ export function createGame(ctx) {
       win: createWindowsState(geoms, windowsCfg, { planks: params.planks ?? undefined }),
       repair: {},
       announced: {},
+      announcedBusy: {},
       rng: createRng(seed),
       walk: { phase: 0, steps: createFootsteps() },
       kills: 0,
@@ -344,6 +347,13 @@ export function createGame(ctx) {
         const wr = stepWindows(sim.win, { tearing: sg.tearing, repairing, repairBlocked: sg.repairBlocked, repairTime: eff.player.repairTime }, dt, windowsCfg);
         sim.win = wr.state;
         sim.repair = Object.fromEntries(geoms.map((g) => [g.id, { repairing: repairing[g.id] === true && sg.repairBlocked[g.id] !== true, blocked: sg.repairBlocked[g.id] === true, progress: sim.win.windows[g.id].repairProgress, attacked: (sg.tearing[g.id] ?? []).length > 0 }]));
+        // Réparation bloquée : phrase longue annoncée par #hud-live, au plus une fois par fenêtre et par 10 s (E2-9 reste muet pour les lecteurs d'écran).
+        for (const g of geoms) {
+          if (repairing[g.id] && sg.repairBlocked[g.id] === true && sim.time - (sim.announcedBusy[g.id] ?? -Infinity) >= 10) {
+            sim.announcedBusy[g.id] = sim.time;
+            windowLive = fmt(ctx.dict[WINDOW_TEXTS.liveBusy], { name: dictName(g.id) });
+          }
+        }
         let changed = false;
         for (const ev of wr.events) {
           const g = geomById.get(ev.windowId);
@@ -474,24 +484,19 @@ export function createGame(ctx) {
     downShown = { mode, sub };
   }
 
-  // Ligne « Fenêtres » du HUD : une entrée par fenêtre (initiale, planches ou « ouverte », « ! » si elle est attaquée).
-  function windowsHud() {
-    return geoms.map((g) => {
-      const w = sim.win.windows[g.id];
-      const name = dictName(g.id);
-      const initial = name.charAt(0).toUpperCase();
-      const entry = w.planks === 0 ? fmt(ctx.dict[WINDOW_TEXTS.open], { initial }) : fmt(ctx.dict[WINDOW_TEXTS.entry], { initial, n: w.planks });
-      return sim.repair[g.id]?.attacked ? fmt(ctx.dict[WINDOW_TEXTS.attacked], { entry }) : entry;
-    });
-  }
+  // Rangée « Fenêtres » du HUD (js/core/hud-windows.js) : seulement les fenêtres attaquées ou ouvertes, les plus urgentes d'abord, 3 puces au plus.
+  const hudLabels = Object.fromEntries(geoms.map((g) => [g.id, ctx.dict[WINDOW_INITIALS[g.id]] ?? '']));
+  const hudNames = Object.fromEntries(geoms.map((g) => [g.id, dictName(g.id)]));
+  const hudWindows = () => geoms.map((g) => ({ id: g.id, planks: sim.win.windows[g.id].planks, maxPlanks: sim.win.windows[g.id].maxPlanks, attacked: sim.repair[g.id]?.attacked === true }));
+  const windowsHud = () => windowChips(hudWindows(), { labels: hudLabels });
 
-  // E2-9 : indicateur de réparation, fixe en haut au centre de l'écran (hors du titre de vague et de l'état à terre) ; affiché quand le joueur est
-  // près d'une fenêtre qui manque de planches. Un seul tour d'anneau pour toute la fenêtre : (planches posées + progression de la planche en
-  // cours) / maximum. Texte : la fenêtre et le nombre de planches à poser, ou la raison du blocage.
+  // E2-9 : indicateur de réparation sur une ligne, fixe en haut au centre (hors du titre de vague et de l'état à terre) ; affiché quand le joueur est près
+  // d'une fenêtre qui manque de planches. Un seul tour d'anneau pour toute la fenêtre : (planches posées + progression de la planche en cours) / maximum.
+  // Texte : « Fenêtre nord · 2/4 », ou « Fenêtre nord · occupée » (croix à la place de l'anneau) quand un zombie occupe la fenêtre ; la phrase longue
+  // de la réparation bloquée passe par #hud-live (une fois par fenêtre et par 10 s, voir step).
   const repairEl = document.getElementById('repair');
   const repairLabel = document.getElementById('repair-label');
-  const repairSub = document.getElementById('repair-sub');
-  let repairShown = { visible: null, label: null, sub: null, progress: null };
+  let repairShown = { visible: null, label: null, blocked: null, progress: null };
   function updateRepairIndicator() {
     if (!repairEl) return;
     let best = null;
@@ -506,23 +511,110 @@ export function createGame(ctx) {
     }
     const visible = best !== null && !sim.dead;
     let label = '';
-    let sub = '';
+    let blocked = false;
     let progress = 0;
     if (visible) {
       const w = sim.win.windows[best.id];
-      const info = sim.repair[best.id];
-      const todo = w.maxPlanks - w.planks;
-      label = fmt(ctx.dict[WINDOW_TEXTS.repair], { name: dictName(best.id) });
-      sub = info?.blocked ? ctx.dict[WINDOW_TEXTS.busy] : fmt(ctx.dict[todo === 1 ? WINDOW_TEXTS.todoOne : WINDOW_TEXTS.todoMany], { n: todo });
+      blocked = sim.repair[best.id]?.blocked === true;
+      label = fmt(ctx.dict[blocked ? WINDOW_TEXTS.busy : WINDOW_TEXTS.repair], { name: dictName(best.id), n: w.planks, max: w.maxPlanks });
       progress = Math.round(((w.planks + num(w.repairProgress)) / w.maxPlanks) * 100) / 100;
     }
     if (visible !== repairShown.visible) repairEl.hidden = !visible;
     if (visible) {
       if (label !== repairShown.label) repairLabel.textContent = label;
-      if (sub !== repairShown.sub) repairSub.textContent = sub;
+      if (blocked !== repairShown.blocked) repairEl.dataset.state = blocked ? 'blocked' : 'repair';
       if (progress !== repairShown.progress) repairEl.style.setProperty('--repair-progress', String(progress));
     }
-    repairShown = { visible, label: visible ? label : null, sub: visible ? sub : null, progress: visible ? progress : null };
+    // Centré en haut, mais jamais sur le HUD (qui s'élargit pendant une vague) ni sur le bouton Pause : décalé vers la place libre au besoin.
+    if (visible) {
+      const hudBox = document.getElementById('hud').getBoundingClientRect();
+      const pauseBox = document.getElementById('btn-pause').getBoundingClientRect();
+      const half = repairEl.offsetWidth / 2;
+      const center = Math.max(hudBox.right + 8 + half, Math.min(window.innerWidth / 2, pauseBox.left - 8 - half));
+      const left = `${Math.round(center)}px`;
+      if (repairEl.style.left !== left) repairEl.style.left = left;
+    }
+    repairShown = { visible, label: visible ? label : null, blocked: visible ? blocked : null, progress: visible ? progress : null };
+  }
+
+  // E2-11 : flèches au bord de l'écran vers les 2 fenêtres en alerte les plus urgentes qui ne sont pas à l'écran (js/core/edge-arrow.js). Aucune
+  // pulsation ni clic ; les flèches glissent le long du bord pour ne pas recouvrir le HUD, le bouton Pause ni l'indicateur de réparation.
+  const edgeEls = [...document.querySelectorAll('#edges .edge-arrow')];
+  const EDGE_HALF = 20;
+  let edgeShown = [];
+  const edgeState = []; // { id, x, y, angle, label } des flèches affichées (tests)
+  const overlaps = (a, b) => a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
+  function updateEdgeArrows() {
+    if (edgeEls.length === 0) return;
+    const w = window.innerWidth;
+    const h = window.innerHeight;
+    const css = getComputedStyle(document.documentElement);
+    const safe = ['top', 'right', 'bottom', 'left'].map((side) => Number.parseFloat(css.getPropertyValue(`--safe-${side}`)) || 0);
+    const inset = { top: safe[0], right: safe[1], bottom: safe[2], left: safe[3] };
+    const view = { width: Math.max(1, w - inset.left - inset.right), height: Math.max(1, h - inset.top - inset.bottom) };
+    const margin = 16 + EDGE_HALF;
+    const shots = [];
+    if (!sim.dead) {
+      for (const chip of urgentWindows(hudWindows(), { labels: hudLabels })) {
+        const g = debrisGeoms.get(chip.id);
+        const away = g.inner + plankCfg.wallGap + plankCfg.thickness / 2;
+        const at = screenAt(g.center.x - g.normal.x * away, (plankCfg.sill + plankCfg.lintel) / 2, g.center.y - g.normal.y * away);
+        const point = { x: (at.x * w - inset.left) / view.width, y: (at.y * h - inset.top) / view.height, behind: at.behind };
+        const arrow = edgeIndicator(point, view, margin);
+        if (arrow.visible) shots.push({ id: chip.id, label: chip.label, x: arrow.x + inset.left, y: arrow.y + inset.top, angle: arrow.angle });
+        if (shots.length >= 2) break;
+      }
+    }
+    // Obstacles à éviter : le HUD, le bouton Pause, l'indicateur de réparation, les cadres des sticks (rectangles réels, lus seulement si une flèche est affichée).
+    if (shots.length > 0) {
+      const blockers = [...['hud', 'btn-pause', 'repair'].map((id) => document.getElementById(id)), ...document.querySelectorAll('.stick:not([hidden]) .stick-base')].filter((node) => node && !node.hidden).map((node) => node.getBoundingClientRect());
+      const placed = [];
+      for (const shot of shots) {
+        const onVertical = shot.x <= inset.left + margin + 0.5 || shot.x >= w - inset.right - margin - 0.5;
+        const box = () => ({ left: shot.x - EDGE_HALF - 4, right: shot.x + EDGE_HALF + 4, top: shot.y - EDGE_HALF - 4, bottom: shot.y + EDGE_HALF + 4 });
+        for (let tries = 0; tries < 6; tries += 1) {
+          const hit = [...blockers, ...placed].find((r) => overlaps(box(), r));
+          if (!hit) break;
+          if (onVertical) shot.y = shot.y < (hit.top + hit.bottom) / 2 ? hit.top - EDGE_HALF - 5 : hit.bottom + EDGE_HALF + 5;
+          else shot.x = shot.x < (hit.left + hit.right) / 2 ? hit.left - EDGE_HALF - 5 : hit.right + EDGE_HALF + 5;
+        }
+        shot.x = Math.min(w - inset.right - margin, Math.max(inset.left + margin, shot.x));
+        shot.y = Math.min(h - inset.bottom - margin, Math.max(inset.top + margin, shot.y));
+        placed.push(box());
+      }
+    }
+    const signature = shots.map((a) => `${a.id}:${a.x.toFixed(1)}:${a.y.toFixed(1)}:${a.angle.toFixed(3)}`).join('|');
+    if (signature === edgeShown.join('|')) return;
+    edgeShown = signature === '' ? [] : [signature];
+    edgeState.length = 0;
+    edgeEls.forEach((node, i) => {
+      const a = shots[i];
+      node.hidden = !a;
+      if (!a) return;
+      node.style.setProperty('--edge-x', `${a.x}px`);
+      node.style.setProperty('--edge-y', `${a.y}px`);
+      node.style.setProperty('--edge-angle', `${a.angle}rad`);
+      node.querySelector('.edge-letter').textContent = a.label;
+      edgeState.push({ id: a.id, label: a.label, x: a.x, y: a.y, angle: a.angle });
+    });
+  }
+
+  // Tests : mesures du HUD lues dans le DOM (hauteur, largeur, puces, flèches, indicateur de réparation).
+  function hudState() {
+    const rect = (id) => document.getElementById(id)?.getBoundingClientRect();
+    const hud = rect('hud');
+    const repairBox = rect('repair');
+    const labelEl = document.getElementById('repair-label');
+    const lineHeight = Number.parseFloat(getComputedStyle(labelEl).lineHeight) || 1;
+    const chips = windowChips(hudWindows(), { labels: hudLabels });
+    return {
+      height: hud.height,
+      width: hud.width,
+      chips: chips.chips.map((c) => ({ ...c })),
+      more: chips.more,
+      arrows: edgeState.map((a) => ({ ...a })),
+      e29: { text: labelEl.textContent, lines: repairEl.hidden ? 0 : Math.round(labelEl.getBoundingClientRect().height / lineHeight), blocked: repairEl.dataset.state === 'blocked', width: repairBox.width, height: repairBox.height },
+    };
   }
 
   // Place les personnages, le laser et les effets d'après l'état simulé, puis la lumière.
@@ -603,9 +695,10 @@ export function createGame(ctx) {
       flashSize: reduced ? 4 : 7,
       unitsPerPixel: size.unitsPerPixel,
     });
-    hud.update(sim.player, sim.kills, waveInfo(sim.waves), { windows: windowsHud(), chutes: sim.down.chutes });
+    hud.update(sim.player, sim.kills, waveInfo(sim.waves), { chips: windowsHud(), names: hudNames, chutes: sim.down.chutes });
     updateDownView();
     updateRepairIndicator();
+    updateEdgeArrows();
     world.debris?.sync(sim.debris.items, reduced);
     splashView.apply(sim.splashView);
   }
@@ -626,8 +719,10 @@ export function createGame(ctx) {
   const projectPlayer = () => screenOf(sim.player.x, sim.player.y);
   // Point de la scène (x, hauteur, y du jeu) à l'écran, de 0 à 1 (tests : fenêtres, meubles, luminance autour d'un point).
   function screenAt(x, height, y) {
-    probe.set(x, height, y).project(rig.camera);
-    return { x: (probe.x + 1) / 2, y: (1 - probe.y) / 2 };
+    probe.set(x, height, y).applyMatrix4(rig.camera.matrixWorldInverse);
+    const behind = probe.z > 0; // la caméra regarde vers -z : un point de z positif est derrière elle
+    probe.applyMatrix4(rig.camera.projectionMatrix);
+    return { x: (probe.x + 1) / 2, y: (1 - probe.y) / 2, behind };
   }
 
   let last = null;
@@ -851,6 +946,7 @@ export function createGame(ctx) {
           const m = meshStats.find((e) => e.id === g.id);
           return { id: g.id, planks: w.planks, maxPlanks: w.maxPlanks, tearers: o.tearers, climbers: o.climbers, queue: o.queue, repairing: r.repairing, repairProgress: w.repairProgress, repairBlocked: r.blocked, open: w.planks === 0, x: g.center.x, y: g.center.y, screen: screenAt(g.center.x - g.normal.x * (debrisGeoms.get(g.id).inner + plankCfg.wallGap + plankCfg.thickness / 2), (plankCfg.sill + plankCfg.lintel) / 2, g.center.y - g.normal.y * (debrisGeoms.get(g.id).inner + plankCfg.wallGap + plankCfg.thickness / 2)), mesh: m ? { triangles: m.triangles, inFrustum: m.inFrustum, minY: m.minY, minWallGap: m.minWallGap, beams: m.beams, voidVisible: m.voidVisible, pipsOn: m.pipsOn } : null };
         }),
+        hud: hudState(),
         plankMesh: { nailed: world.windowMeshes?.nailed() ?? 0, debris: sim.debris.items.length },
         debris: sim.debris.items.map((d) => ({ x: d.x, y: d.y, z: d.z, yaw: d.yaw, age: d.age })),
         windowPositions: layout.windows.map((w) => ({ id: w.id ?? null, x: w.x, y: w.y })),
