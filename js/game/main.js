@@ -109,7 +109,6 @@ const ctx = {
   params: {
     test: testMode,
     nospawn: query.get('nospawn') === '1',
-    pk: query.get('pk'),
     wave: waveParam(query.get('wave')),
     planks: planksParam(query.get('planks'), windowsCfg.planks),
     tilt: parseTilt(query.get('tilt'), render.camera.tilt),

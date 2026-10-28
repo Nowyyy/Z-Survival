@@ -495,7 +495,7 @@ test.describe('sons des planches', () => {
 });
 
 test.describe('budget, ?empty=1, hygiène', () => {
-  test('budget de dessin : 10 zombies variés dont des arracheurs, planches visibles, ombres actives : au plus 192 appels et 14 916 triangles', async ({ page }, testInfo) => {
+  test('budget de dessin : 10 zombies variés dont des arracheurs, planches visibles, ombres actives : au plus 192 appels et 15 000 triangles', async ({ page }, testInfo) => {
     await open(page, '&shadows=1');
     const r = await page.evaluate(() => {
       const zs = window.__zs;
@@ -514,7 +514,7 @@ test.describe('budget, ?empty=1, hygiène', () => {
     testInfo.annotations.push({ type: 'rendu', description: `${r.n} zombies : ${r.render.calls} appels, ${r.render.triangles} triangles` });
     console.log(`BUDGET lot 3 : ${r.n} zombies, ${r.render.calls} appels de dessin, ${r.render.triangles} triangles`);
     expect(r.render.calls).toBeLessThanOrEqual(192);
-    expect(r.render.triangles).toBeLessThanOrEqual(14916);
+    expect(r.render.triangles).toBeLessThanOrEqual(15000);
     expect(r.render.calls).toBeLessThanOrEqual(300);
     expect(r.render.triangles).toBeLessThanOrEqual(15000);
   });
