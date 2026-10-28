@@ -67,6 +67,35 @@ test.describe('planches au départ', () => {
   });
 });
 
+test.describe('maillage des planches', () => {
+  test('le maillage suit chaque planche arrachée ou posée : planches clouées et débris au sol', async ({ page }) => {
+    await open(page);
+    expect((await state(page)).plankMesh).toEqual({ nailed: 12, debris: 0 });
+    const r = await page.evaluate(([x, y]) => {
+      const zs = window.__zs;
+      const counts = () => zs.getState().plankMesh;
+      zs.spawnAtWindow('fenetre-nord', 'marcheur');
+      for (let i = 0; i < 1200 && zs.getState().windows[0].planks > 3; i += 1) zs.step(0.05);
+      const torn = counts();
+      zs.killAll();
+      zs.setPlayer(x, y);
+      const seen = [];
+      for (let i = 0; i < 400 && zs.getState().windows[0].planks < 4; i += 1) { zs.step(0.05); const c = counts(); if (seen.at(-1)?.nailed !== c.nailed) seen.push(c); }
+      return { torn, seen, end: counts() };
+    }, [N.repairSpot.x, N.repairSpot.y]);
+    expect(r.torn).toEqual({ nailed: 11, debris: 1 });
+    expect(r.end).toEqual({ nailed: 12, debris: 0 });
+    expect(r.seen.at(-1)).toEqual({ nailed: 12, debris: 0 });
+  });
+
+  test('trois fenêtres ouvertes : douze débris et aucune planche clouée ; setPlanks resynchronise', async ({ page }) => {
+    await open(page, '&planks=0');
+    expect((await state(page)).plankMesh).toEqual({ nailed: 0, debris: 12 });
+    await page.evaluate(() => window.__zs.setPlanks('fenetre-nord', 2));
+    expect((await state(page)).plankMesh).toEqual({ nailed: 2, debris: 10 });
+  });
+});
+
 test.describe('siège : arrachage, file, escalade', () => {
   test('un zombie créé par spawnAtWindow va à son emplacement, arrache les 4 planches (8,8 s à ±15 %) puis escalade (1,2 s ±15 %) et entre', async ({ page }) => {
     await open(page);
@@ -466,7 +495,7 @@ test.describe('sons des planches', () => {
 });
 
 test.describe('budget, ?empty=1, hygiène', () => {
-  test('budget de dessin : 10 zombies variés dont des arracheurs, planches visibles, ombres actives : au plus 192 appels et 14 892 triangles', async ({ page }, testInfo) => {
+  test('budget de dessin : 10 zombies variés dont des arracheurs, planches visibles, ombres actives : au plus 192 appels et 14 916 triangles', async ({ page }, testInfo) => {
     await open(page, '&shadows=1');
     const r = await page.evaluate(() => {
       const zs = window.__zs;
@@ -485,7 +514,7 @@ test.describe('budget, ?empty=1, hygiène', () => {
     testInfo.annotations.push({ type: 'rendu', description: `${r.n} zombies : ${r.render.calls} appels, ${r.render.triangles} triangles` });
     console.log(`BUDGET lot 3 : ${r.n} zombies, ${r.render.calls} appels de dessin, ${r.render.triangles} triangles`);
     expect(r.render.calls).toBeLessThanOrEqual(192);
-    expect(r.render.triangles).toBeLessThanOrEqual(14892);
+    expect(r.render.triangles).toBeLessThanOrEqual(14916);
     expect(r.render.calls).toBeLessThanOrEqual(300);
     expect(r.render.triangles).toBeLessThanOrEqual(15000);
   });

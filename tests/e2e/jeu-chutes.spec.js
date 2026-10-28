@@ -357,7 +357,7 @@ test.describe('repoussement et budget', () => {
     expect(r.outsideMoved).toBeLessThan(4); // un pas de marche (70 × 0,05 = 3,5), pas un repoussement de 160
   });
 
-  test('budget de dessin avec le joueur à terre : au plus 192 appels et 14 892 triangles (10 zombies, planches, ombres)', async ({ page }, testInfo) => {
+  test('budget de dessin avec le joueur à terre : au plus 192 appels et 14 916 triangles (10 zombies, planches, ombres)', async ({ page }, testInfo) => {
     await open(page, '&shadows=1');
     const r = await page.evaluate(() => {
       const zs = window.__zs;
@@ -377,7 +377,7 @@ test.describe('repoussement et budget', () => {
     console.log(`BUDGET lot 3 (joueur à terre) : ${r.n} zombies, ${r.render.calls} appels de dessin, ${r.render.triangles} triangles`);
     expect(r.down).toBe('terre');
     expect(r.render.calls).toBeLessThanOrEqual(192);
-    expect(r.render.triangles).toBeLessThanOrEqual(14892);
+    expect(r.render.triangles).toBeLessThanOrEqual(14916);
     expect(r.pose.pelvisHeight).toBeLessThan(-0.4); // pose « terre » : corps abaissé
     expect(r.pose.torsoPitch).toBeGreaterThan(1.3);
   });

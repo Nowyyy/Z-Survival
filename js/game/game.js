@@ -345,6 +345,7 @@ export function createGame(ctx) {
           } else if (ev.type === 'plank-repaired' && ev.planks === sim.win.windows[ev.windowId].maxPlanks) windowLive = fmt(ctx.dict[WINDOW_TEXTS.liveRepaired], { name: dictName(ev.windowId) });
         }
         if (changed) syncWindows();
+        else if (wr.events.length > 0) world.planks?.sync(sim.win); // planche arrachée ou posée : le maillage suit (seules les planches modifiées sont réécrites)
       }
       if (windowLive !== null) ctx.ui.setLive(windowLive);
       sim.enemies = stepEnemies(sim.enemies, sim.player, dt, cfg.zombie, { obstacles: zombieSolids, bounds: layout.worldBounds, grid, flow: sim.flow.flow, nav: cfg.nav, windows: { fields: windowFields } });
@@ -822,6 +823,7 @@ export function createGame(ctx) {
           const o = occupancy(sim.enemies, g.id);
           return { id: g.id, planks: w.planks, maxPlanks: w.maxPlanks, tearers: o.tearers, climbers: o.climbers, queue: o.queue, repairing: r.repairing, repairProgress: w.repairProgress, repairBlocked: r.blocked, open: w.planks === 0, x: g.center.x, y: g.center.y };
         }),
+        plankMesh: world.planks?.counts() ?? { nailed: 0, debris: 0 },
         windowPositions: layout.windows.map((w) => ({ id: w.id ?? null, x: w.x, y: w.y })),
         spawnPoints: (layout.spawnPoints ?? []).map((p) => ({ id: p.id, fenetre: p.fenetre, x: p.x, y: p.y })),
         spawnLog: spawnLog.map((l) => ({ ...l })),

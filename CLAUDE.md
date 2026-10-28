@@ -60,7 +60,7 @@ Docs/seed.md (propriétaire) · Docs/ref/ · Docs/lots/ (bilans) · .github/work
 - Statistiques : player-stats.js (7 stats, niveaux 0 à 10) ; effectiveWeapon et effectivePlayer donnent les valeurs effectives ; niveaux via ?lvl=, jamais stockés.
 - Vie : la vie maximale effective sert à la barre, au HUD et à la remise de vie de fin de vague (100 %) ; régénération par kill (combat.js healOnKill).
 - Budget de triangles : marge de 138 seulement (14 862 avec 10 zombies et le cône) ; ne rien ajouter sans mesurer.
-- Fenêtres : windows.json et js/core/windows.js (4 planches, arrachage 2,2 s, réparation 1,8 s) ; les planches ne bloquent ni laser ni balles, seulement les zombies (closedRects) ; budget : 1 appel et 30 triangles au plus.
+- Fenêtres : windows.json et js/core/windows.js (4 planches, arrachage 2,2 s, réparation 1,8 s) ; les planches ne bloquent ni laser ni balles, seulement les zombies (closedRects) ; budget : 1 appel et 48 triangles.
 - Siège : js/core/siege.js (modes approche, attente, arrache, escalade, dedans, libre) ; 2 emplacements, file de 6, 2 grimpeurs ; jamais d'entrée sans fenêtre ouverte ; ?empty=1 = zombies libres ; réparation automatique, bloquée si un zombie occupe la fenêtre.
 - Chutes : js/core/player-down.js (debout, terre, mort) ; 1 chute de base, à terre 5 s invulnérable, zombies repoussés, relevage à 50 % ; soin de fin de vague reporté ; statistiques chutes (0 à 5) et reparation (0 à 10) via ?lvl=.
 - Interface : E2-2 (Chutes, Fenêtres), E2-9 (réparation), E2-10 (à terre) ; #hud-live annonce À terre, Relevé, fenêtre ouverte ou réparée.

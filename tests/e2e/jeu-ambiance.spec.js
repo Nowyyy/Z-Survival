@@ -577,7 +577,7 @@ test.describe('panneau de pause avec l\'interrupteur, accessibilité, budget, co
     expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
   });
 
-  test('budget de dessin du lot 2c plus les planches du lot 3 : 191 appels, 14 886 triangles (10 zombies)', async ({ page }, testInfo) => {
+  test('budget de dessin du lot 2c plus les planches du lot 3 : 191 appels, 14 910 triangles (10 zombies)', async ({ page }, testInfo) => {
     await open(page, '&nospawn=1&shadows=1');
     const r = await page.evaluate(() => {
       const zs = window.__zs;
@@ -595,7 +595,7 @@ test.describe('panneau de pause avec l\'interrupteur, accessibilité, budget, co
     console.log(`BUDGET 10 zombies (lot 2c) : ${r.render.calls} appels de dessin, ${r.render.triangles} triangles`);
     expect(r.vhs).toBe(true);
     expect(r.render.calls).toBe(191); // lot 2c : 190 + 1 appel (planches)
-    expect(r.render.triangles).toBe(14886); // lot 2c : 14 862 + 24 triangles de planches (12 quadrilatères)
+    expect(r.render.triangles).toBe(14910); // lot 2c : 14 862 + 48 triangles (12 planches clouées et 12 débris)
   });
 
   test('console propre et aucune requête externe pendant une vague avec animation, mélodie, effet et interrupteur', async ({ page, baseURL }) => {

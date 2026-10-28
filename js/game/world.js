@@ -306,42 +306,59 @@ export function buildWorld({ palette, layout, render, textures, windowGeoms = []
 }
 
 const PLANK_TILT = (4 * Math.PI) / 180; // inclinaison maximale d'une planche
-const PLANK_LEAN = 30; // les planches s'appuient contre le mur et avancent dans la salle (mieux vues d'en haut) : avancée du bas de la pile
-const PLANK_INSET = 15; // planches clouées sur la face intérieure du mur (à 12 du centre de la fenêtre) : elles ressortent côté salle
+const PLANK_INSET = 13.5; // planches clouées contre la face intérieure du mur (à 12 du centre de la fenêtre), 1,5 en avant pour ne pas se confondre avec elle
 const PLANK_OVER = 8; // dépassement de la pile au-dessus et au-dessous de l'ouverture, et de chaque côté
+const DEBRIS_LENGTH = 62; // planche arrachée tombée au sol : longueur et largeur
+const DEBRIS_WIDTH = 8;
 
+// Planches des fenêtres : un seul maillage dynamique de 2 triangles par quadrilatère. Les planches clouées (4 par fenêtre) sont collées à la face
+// intérieure du mur, un peu plus larges et hautes que l'ouverture ; chaque planche arrachée apparaît en débris à plat sur le sol de la salle, éparpillé
+// devant la fenêtre (position et angle tirés de la graine). Une planche ou un débris absent est écrasé en un point (triangles dégénérés).
 function createPlanks({ scene, material, rect, geoms, count, render, seed }) {
   const total = geoms.length * count;
-  const base = new Float32Array(total * 18);
-  const uvs = new Float32Array(total * 12);
+  const base = new Float32Array(total * 2 * 18);
+  const uvs = new Float32Array(total * 2 * 12);
   const sill = render.sillHeight - PLANK_OVER;
-  const open = render.lintelBottom - render.sillHeight + 2 * PLANK_OVER; // hauteur de la pile : l'ouverture plus un dépassement
-  const h = open / count; // hauteur d'une planche, jointoyée par 1 unité
+  const open = render.lintelBottom - render.sillHeight + 2 * PLANK_OVER;
+  const h = open / count;
   const index = new Map(); // fenêtre -> premier numéro de planche
+  const put = (n, corners, v0, v1) => {
+    const quadUv = [[rect.u0, v0], [rect.u1, v0], [rect.u1, v1], [rect.u0, v1]];
+    [0, 1, 2, 0, 2, 3].forEach((c, k) => {
+      base.set(corners[c], n * 18 + k * 3);
+      uvs.set(quadUv[c], n * 12 + k * 2);
+    });
+  };
   geoms.forEach((g, w) => {
     index.set(g.id, w * count);
     const cx = g.center.x - g.normal.x * PLANK_INSET;
     const cz = g.center.y - g.normal.y * PLANK_INSET;
     for (let i = 0; i < count; i += 1) {
       const n = w * count + i;
+      const v0 = rect.v0 + ((rect.v1 - rect.v0) * i) / count;
+      const v1 = rect.v0 + ((rect.v1 - rect.v0) * (i + 1)) / count;
+      // Planche clouée : coins (le long du mur, hauteur) tournés dans le plan du mur autour du centre de la planche.
       const tilt = (unit(seed + 7, n) * 2 - 1) * PLANK_TILT;
       const half = g.width / 2 + PLANK_OVER;
       const hh = h / 2 - 0.5;
       const cy = sill + h * (i + 0.5);
-      // Coins (le long du mur, hauteur) tournés dans le plan du mur autour du centre de la planche.
-      const corners = [[-half, hh], [half, hh], [half, -hh], [-half, -hh]].map(([a, b]) => {
+      put(n, [[-half, hh], [half, hh], [half, -hh], [-half, -hh]].map(([a, b]) => {
         const ra = a * Math.cos(tilt) - b * Math.sin(tilt);
         const rb = a * Math.sin(tilt) + b * Math.cos(tilt);
-        const lean = -(1 - (cy + rb - sill) / open) * PLANK_LEAN; // le haut reste contre le mur, le bas avance dans la salle (planches posées en appui : face tournée vers le haut, bien éclairée)
-        return [cx + g.tangent.x * ra + g.normal.x * (i * 0.2 + lean), cy + rb, cz + g.tangent.y * ra + g.normal.y * (i * 0.2 + lean)];
-      });
-      const v0 = rect.v0 + ((rect.v1 - rect.v0) * i) / count;
-      const v1 = rect.v0 + ((rect.v1 - rect.v0) * (i + 1)) / count;
-      const quadUv = [[rect.u0, v0], [rect.u1, v0], [rect.u1, v1], [rect.u0, v1]];
-      [0, 1, 2, 0, 2, 3].forEach((c, k) => {
-        base.set(corners[c], n * 18 + k * 3);
-        uvs.set(quadUv[c], n * 12 + k * 2);
-      });
+        return [cx + g.tangent.x * ra + g.normal.x * i * 0.2, cy + rb, cz + g.tangent.y * ra + g.normal.y * i * 0.2];
+      }), v0, v1);
+      // Débris : à plat sur le sol, entre 35 et 120 devant le mur et jusqu'à ±(largeur/2 + 30) le long du mur, orienté au hasard.
+      const along = (unit(seed + 21, n) * 2 - 1) * (g.width / 2 + 30);
+      const depth = 35 + unit(seed + 35, n) * 85;
+      const angle = unit(seed + 49, n) * Math.PI;
+      const dx = Math.cos(angle) * (DEBRIS_LENGTH / 2);
+      const dz = Math.sin(angle) * (DEBRIS_LENGTH / 2);
+      const wx = -Math.sin(angle) * (DEBRIS_WIDTH / 2);
+      const wz = Math.cos(angle) * (DEBRIS_WIDTH / 2);
+      const mx = g.center.x - g.normal.x * depth + g.tangent.x * along;
+      const mz = g.center.y - g.normal.y * depth + g.tangent.y * along;
+      const y = 0.6 + i * 0.15;
+      put(total + n, [[mx - dx - wx, y, mz - dz - wz], [mx + dx - wx, y, mz + dz - wz], [mx + dx + wx, y, mz + dz + wz], [mx - dx + wx, y, mz - dz + wz]], v0, v1);
     }
   });
   const positions = new Float32Array(base);
@@ -349,7 +366,7 @@ function createPlanks({ scene, material, rect, geoms, count, render, seed }) {
   geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
   geometry.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
   geometry.computeVertexNormals();
-  geometry.boundingSphere = new THREE.Sphere(new THREE.Vector3(0, 0, 0), 1e5); // les planches ne sont jamais écartées par la caméra
+  geometry.boundingSphere = new THREE.Sphere(new THREE.Vector3(0, 0, 0), 1e5); // jamais écarté par la caméra
   const plankMaterial = material.clone();
   plankMaterial.side = THREE.DoubleSide;
   const mesh = new THREE.Mesh(geometry, plankMaterial);
@@ -357,23 +374,27 @@ function createPlanks({ scene, material, rect, geoms, count, render, seed }) {
   mesh.receiveShadow = false;
   mesh.frustumCulled = false;
   scene.add(mesh);
-  const shown = new Int8Array(total).fill(-1); // dernier état écrit (1 posée, 0 arrachée)
+  const shown = new Int8Array(total * 2).fill(-1); // dernier état écrit (1 visible, 0 écrasé)
+  const write = (n, on) => {
+    if (shown[n] === on) return false;
+    shown[n] = on;
+    if (on) positions.set(base.subarray(n * 18, n * 18 + 18), n * 18);
+    else positions.fill(0, n * 18, n * 18 + 18);
+    return true;
+  };
   return {
     mesh,
-    triangles: total * 2,
-    // state : sortie de createWindowsState / stepWindows ; ne réécrit que les planches dont l'état a changé.
+    triangles: total * 4,
+    // Nombre de planches clouées et de débris actuellement visibles (tests).
+    counts: () => ({ nailed: shown.subarray(0, total).reduce((n, v) => n + (v === 1 ? 1 : 0), 0), debris: shown.subarray(total).reduce((n, v) => n + (v === 1 ? 1 : 0), 0) }),
+    // state : sortie de createWindowsState / stepWindows ; ne réécrit que ce qui a changé (planche posée ou arrachée).
     sync(state) {
       let changed = false;
       for (const [id, first] of index) {
         const have = state?.windows?.[id]?.planks ?? 0;
         for (let i = 0; i < count; i += 1) {
-          const on = i < have ? 1 : 0;
-          const n = first + i;
-          if (shown[n] === on) continue;
-          shown[n] = on;
-          changed = true;
-          if (on) positions.set(base.subarray(n * 18, n * 18 + 18), n * 18);
-          else positions.fill(0, n * 18, n * 18 + 18);
+          if (write(first + i, i < have ? 1 : 0)) changed = true;
+          if (write(total + first + i, i < have ? 0 : 1)) changed = true;
         }
       }
       if (changed) geometry.attributes.position.needsUpdate = true;

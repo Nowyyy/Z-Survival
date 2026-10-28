@@ -423,7 +423,7 @@ test.describe('budget et sons au niveau maximal', () => {
     expect(r.cone).not.toBeNull();
     expect(r.render.calls).toBeLessThanOrEqual(300);
     expect(r.render.triangles).toBeLessThanOrEqual(15000);
-    expect(r.render.triangles).toBeLessThanOrEqual(14892); // lot 3 : +24 triangles de planches (14 858 + 10 au lot 2b, 14 862 + 24 = 14 886 mesurés)
+    expect(r.render.triangles).toBeLessThanOrEqual(14916); // lot 3 : +24 triangles de planches (14 858 + 10 au lot 2b, 14 862 + 48 = 14 910 mesurés)
   });
 
   test('niveau 10 partout : une rafale de 20 s n\'a jamais plus de 16 voix actives', async ({ page }) => {
