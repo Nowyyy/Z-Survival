@@ -11,7 +11,7 @@ import { edgeIndicator } from '../core/edge-arrow.js';
 import { urgentWindows, windowChips } from '../core/hud-windows.js';
 import { closedRects, createWindowsState, stepWindows, windowGeometries } from '../core/windows.js';
 import { moveCircle } from '../core/movement.js';
-import { addDebris, createDebris, faceDistance, plankSettings, removeDebris, stepDebris } from '../core/plank-layout.js';
+import { addDebris, createDebris, plankSettings, removeDebris, stepDebris } from '../core/plank-layout.js';
 import { applyHeal, canFire, canHealOnKill, canMove, createPlayerDown, isInvulnerable, knockbackZombies, stepPlayerDown } from '../core/player-down.js';
 import { effectivePlayer, effectiveWeapon, normalizeLevels, STAT_IDS, statValues } from '../core/player-stats.js';
 import { buildWindowField, createFlowState, createGrid, stepFlow } from '../core/nav.js';
@@ -65,11 +65,11 @@ export function createGame(ctx) {
   const siegeOn = !layout.empty;
   const geoms = siegeOn ? windowGeometries(windowsWithGaps(layout), windowsCfg) : [];
   const geomById = new Map(geoms.map((g) => [g.id, g]));
-  const siegeParams = { ...windowsCfg, bounds: layout.bounds };
+  const siegeParams = { ...windowsCfg, bounds: layout.bounds, inside: layout.inside };
   // Débris des planches arrachées (lot 3a) : jamais dans un meuble ni hors de la salle ; la géométrie des planches est dans js/core/plank-layout.js.
   const plankCfg = plankSettings(windowsCfg, cfg.render);
-  const debrisLayout = { params: plankCfg, obstacles: layout.furniture, bounds: layout.bounds };
-  const debrisGeoms = new Map(geoms.map((g) => [g.id, { ...g, inner: faceDistance(layout.room, g) }]));
+  const debrisLayout = { params: plankCfg, obstacles: layout.furniture, bounds: layout.bounds, inside: layout.inside };
+  const debrisGeoms = new Map(geoms.map((g) => [g.id, { ...g, inner: layout.faceInner(g) }]));
   const gridOpts = { cell: cfg.nav.cell, radius: cfg.zombie.radius, inflate: cfg.nav.inflate };
   // Champ de flux de chaque fenêtre, calculé une seule fois au chargement sur la grille extérieure (ouvertures bloquées) ; durée mesurée (?fps=1).
   const fieldStart = performance.now();
@@ -268,7 +268,7 @@ export function createGame(ctx) {
     const standing = canMove(sim.down);
     const dir = standing ? override.move ?? input.move() : { x: 0, y: 0 };
     const before = sim.player;
-    const pos = moveCircle(sim.player, dir, eff.player.speed, dt, layout.room, layout.playerObstacles);
+    const pos = moveCircle(sim.player, dir, eff.player.speed, dt, layout.moveRoom, layout.playerObstacles);
     sim.player = { ...sim.player, ...pos };
     // Pas : la phase de marche avance avec la distance réellement parcourue (même rythme que les poses : STRIDE par unité).
     const moved = Math.hypot(sim.player.x - before.x, sim.player.y - before.y);
@@ -281,7 +281,7 @@ export function createGame(ctx) {
     sim.aim = aimAngle(sim.aim);
 
     // Laser : sert à viser et à déclencher le tir, jamais aux dégâts.
-    const muzzle = muzzlePoint(sim.player, sim.aim.angle, weapon.muzzleOffset, bounds);
+    const muzzle = muzzlePoint(sim.player, sim.aim.angle, weapon.muzzleOffset, layout.muzzleBounds);
     const ray = castRay(muzzle, sim.aim.angle, weapon.laserRange, sim.enemies, shotBounds, blockers);
     laser = !canFire(sim.down) ? null : { from: muzzle, ray, cone: { angle: sim.aim.angle, half: toRadians(halfAngle()), length: weapon.laserRange } };
     // Le tir part aussi quand la visée passe sur un ennemi au-delà de la portée du laser (le trait s'estompe, la balle continue) ;
@@ -378,7 +378,7 @@ export function createGame(ctx) {
       sim.debris = stepDebris(sim.debris, dt, plankCfg);
       sim.enemies = stepEnemies(sim.enemies, sim.player, dt, cfg.zombie, { obstacles: zombieSolids, bounds: layout.worldBounds, grid, flow: sim.flow.flow, nav: cfg.nav, windows: { fields: windowFields } });
       // Par quelle fenêtre chaque zombie est entré : la plus proche de l'endroit où il franchit la limite de la salle.
-      sim.enemies = sim.enemies.map((e) => (e.entered || e.x < bounds.minX || e.x > bounds.maxX || e.y < bounds.minY || e.y > bounds.maxY ? e : { ...e, entered: entryWindow(e, layout.windows) }));
+      sim.enemies = sim.enemies.map((e) => (e.entered || !layout.inside(e.x, e.y) ? e : { ...e, entered: entryWindow(e, layout.windows) }));
     } else {
       sim.enemies = stepEnemies(sim.enemies, sim.player, dt, cfg.zombie);
     }
@@ -437,7 +437,7 @@ export function createGame(ctx) {
       }
     }
     if (pd.knockback) {
-      sim.enemies = knockbackZombies(sim.enemies, sim.player, pd.knockback, { bounds: layout.bounds, furniture: layout.furniture, walls: layout.walls, gaps: layout.gaps });
+      sim.enemies = knockbackZombies(sim.enemies, sim.player, pd.knockback, { bounds: layout.bounds, inside: layout.inside, furniture: layout.furniture, walls: layout.walls, gaps: layout.gaps });
     }
 
     audio?.handle({ time: sim.time, listener: sim.player, walls: audioWalls, paused: ctx.ui.isPaused(), events, zombies: sim.enemies.map((e) => ({ id: e.id, x: e.x, y: e.y, variant: variantName(e.id), gait: e.gait, stride: e.stride })) });
@@ -550,6 +550,40 @@ export function createGame(ctx) {
     });
   }
 
+  // ?labels=1 : étiquettes F1 à F8 en HTML, projetées à l'écran à chaque image (même mécanisme que les flèches). Décoratives, jamais mémorisées.
+  const labelsRoot = params.labels ? document.getElementById('labels') : null;
+  const labelEls = new Map();
+  const labelState = []; // { id, x, y, visible } en pixels CSS (tests)
+  if (labelsRoot) {
+    labelsRoot.hidden = false;
+    for (const g of geoms) {
+      const el = document.createElement('span');
+      el.className = 'map-label';
+      el.textContent = ctx.dict[WINDOW_INITIALS[g.id]] ?? g.id;
+      el.hidden = true;
+      labelsRoot.appendChild(el);
+      labelEls.set(g.id, el);
+    }
+  }
+  function updateLabels() {
+    if (!labelsRoot) return;
+    const w = window.innerWidth;
+    const h = window.innerHeight;
+    labelState.length = 0;
+    for (const g of geoms) {
+      const away = debrisGeoms.get(g.id).inner + plankCfg.wallGap + plankCfg.thickness / 2;
+      const at = screenAt(g.center.x - g.normal.x * away, (plankCfg.sill + plankCfg.lintel) / 2, g.center.y - g.normal.y * away);
+      const visible = !at.behind && at.x >= 0 && at.x <= 1 && at.y >= 0 && at.y <= 1;
+      const el = labelEls.get(g.id);
+      if (el.hidden === visible) el.hidden = !visible;
+      if (visible) {
+        el.style.setProperty('--label-x', `${(at.x * w).toFixed(1)}px`);
+        el.style.setProperty('--label-y', `${(at.y * h).toFixed(1)}px`);
+      }
+      labelState.push({ id: g.id, x: at.x * w, y: at.y * h, visible });
+    }
+  }
+
   // Tests : mesures du HUD lues dans le DOM (hauteur, largeur, puces, flèches, indicateur de réparation).
   function hudState() {
     const rect = (id) => document.getElementById(id)?.getBoundingClientRect();
@@ -646,6 +680,7 @@ export function createGame(ctx) {
     updateDownView();
     world.windowMeshes?.sync(sim.win); // pastille de la planche en cours de réparation : elle se remplit peu à peu
     updateEdgeArrows();
+    updateLabels();
     world.debris?.sync(sim.debris.items, reduced);
     splashView.apply(sim.splashView);
   }
@@ -885,16 +920,19 @@ export function createGame(ctx) {
         laserEnd: laser ? { x: laser.ray.end.x, y: laser.ray.end.y } : null,
         laser: laser ? { length: laser.ray.length, hit: laser.ray.hit?.id ?? null, stoppedBy: laser.ray.stoppedBy?.id ?? null, range: laser.cone.length, cone: { leftAngle: sim.aim.angle - laser.cone.half, rightAngle: sim.aim.angle + laser.cone.half } } : null,
         world: { width: layout.size.width, height: layout.size.height, empty: layout.empty },
+        map: { id: layout.id, size: { width: layout.size.width, height: layout.size.height }, windowIds: geoms.map((g) => g.id), pillars: layout.pillars.map((o) => ({ id: o.id, x: o.x, y: o.y, w: o.w, h: o.h })), start: { ...layout.start } },
+        labels: labelState.map((l) => ({ ...l })),
         obstacles: layout.furniture.map((o) => ({ id: o.id, kind: o.kind, x: o.x, y: o.y, w: o.w, h: o.h, hauteur: o.hauteur, screen: screenAt(o.x + o.w / 2, o.hauteur, o.y + o.h / 2) })),
         windows: !siegeOn ? layout.windows.map((w) => ({ id: w.id ?? null, x: w.x, y: w.y })) : geoms.map((g) => {
           const w = sim.win.windows[g.id];
           const r = sim.repair[g.id] ?? { repairing: false, blocked: false, progress: 0 };
           const o = occupancy(sim.enemies, g.id);
           const m = meshStats.find((e) => e.id === g.id);
-          return { id: g.id, planks: w.planks, maxPlanks: w.maxPlanks, tearers: o.tearers, climbers: o.climbers, queue: o.queue, repairing: r.repairing, repairProgress: w.repairProgress, repairBlocked: r.blocked, open: w.planks === 0, x: g.center.x, y: g.center.y, screen: screenAt(g.center.x - g.normal.x * (debrisGeoms.get(g.id).inner + plankCfg.wallGap + plankCfg.thickness / 2), (plankCfg.sill + plankCfg.lintel) / 2, g.center.y - g.normal.y * (debrisGeoms.get(g.id).inner + plankCfg.wallGap + plankCfg.thickness / 2)), mesh: m ? { triangles: m.triangles, inFrustum: m.inFrustum, minY: m.minY, minWallGap: m.minWallGap, beams: m.beams, voidVisible: m.voidVisible, pipsOn: m.pipsOn } : null };
+          return { id: g.id, planks: w.planks, maxPlanks: w.maxPlanks, tearers: o.tearers, climbers: o.climbers, queue: o.queue, repairing: r.repairing, repairProgress: w.repairProgress, repairBlocked: r.blocked, open: w.planks === 0, x: g.center.x, y: g.center.y, screen: screenAt(g.center.x - g.normal.x * (debrisGeoms.get(g.id).inner + plankCfg.wallGap + plankCfg.thickness / 2), (plankCfg.sill + plankCfg.lintel) / 2, g.center.y - g.normal.y * (debrisGeoms.get(g.id).inner + plankCfg.wallGap + plankCfg.thickness / 2)), mesh: m ? { triangles: m.triangles, inFrustum: m.inFrustum, minY: m.minY, minWallGap: m.minWallGap, beams: m.beams, voidVisible: m.voidVisible, pipsOn: m.pipsOn, pipY: m.pipY } : null };
         }),
         hud: hudState(),
         plankMesh: { nailed: world.windowMeshes?.nailed() ?? 0, debris: sim.debris.items.length },
+        debrisMeshes: world.debris?.stats(rig.camera) ?? [],
         debris: sim.debris.items.map((d) => ({ x: d.x, y: d.y, z: d.z, yaw: d.yaw, age: d.age })),
         windowPositions: layout.windows.map((w) => ({ id: w.id ?? null, x: w.x, y: w.y })),
         spawnPoints: (layout.spawnPoints ?? []).map((p) => ({ id: p.id, fenetre: p.fenetre, x: p.x, y: p.y })),

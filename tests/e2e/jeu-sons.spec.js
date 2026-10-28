@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 import AxeBuilder from '@axe-core/playwright';
 import { buildLayout } from '../../js/core/layout.js';
-import { waitReady } from './helpers.js';
+import { waitReady, salle } from './helpers.js';
 
 // Lot 1d : les sons se vérifient par le journal des lectures (?test=1), jamais à l'écoute ; 667×375 pour un rendu logiciel plus rapide.
 const SIZE = { width: 667, height: 375 };
@@ -67,7 +67,7 @@ test.describe('sons : démarrage et journal', () => {
 
   test('une balle sur le bois, l\'étagère, la pierre et la voiture donne la bonne matière', async ({ page }) => {
     await page.setViewportSize(SIZE);
-    await page.goto('/jeu.html?test=1&nospawn=1&seed=1'); // monde complet : meubles et décor
+    await page.goto(salle('/jeu.html?test=1&nospawn=1&seed=1')); // monde complet : meubles et décor
     await waitReady(page);
     await unlock(page);
     const room = world.room;

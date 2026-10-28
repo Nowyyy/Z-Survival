@@ -156,5 +156,21 @@
   "dev.carte.frame": "100 px du plan",
   "dev.carte.start": "Départ",
   "dev.carte.stats": "{name} : monde {w} × {h} · {windows} fenêtres · {pillars} piliers · {obstacles} obstacles",
-  "dev.carte.error": "Impossible de charger la carte."
+  "dev.carte.error": "Impossible de charger la carte.",
+  "game.windows.initial.F1": "F1",
+  "game.windows.name.F1": "F1",
+  "game.windows.initial.F2": "F2",
+  "game.windows.name.F2": "F2",
+  "game.windows.initial.F3": "F3",
+  "game.windows.name.F3": "F3",
+  "game.windows.initial.F4": "F4",
+  "game.windows.name.F4": "F4",
+  "game.windows.initial.F5": "F5",
+  "game.windows.name.F5": "F5",
+  "game.windows.initial.F6": "F6",
+  "game.windows.name.F6": "F6",
+  "game.windows.initial.F7": "F7",
+  "game.windows.name.F7": "F7",
+  "game.windows.initial.F8": "F8",
+  "game.windows.name.F8": "F8"
 }

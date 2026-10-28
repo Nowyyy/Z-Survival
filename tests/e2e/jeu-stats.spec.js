@@ -1,11 +1,11 @@
 import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
-import { waitReady } from './helpers.js';
+import { waitReady, salle } from './helpers.js';
 
 // Lot 2b : cône de tir, sept statistiques (?lvl=), régénération par kill. Petite fenêtre (rendu logiciel plus rapide) ; le temps de jeu
 // n'avance que par step() (requestAnimationFrame neutralisé), les mesures sont donc exactes et ne dépendent pas de la vitesse du rendu.
 const SIZE = { width: 667, height: 375 };
-const PAGE = (extra = '') => `/jeu.html?test=1&seed=1${extra}`;
+const PAGE = (extra = '') => salle(`/jeu.html?test=1&seed=1${extra}`);
 const BROWSER_NOISE = /GL Driver Message|ReadPixels|GPU stall/;
 const DEG = Math.PI / 180;
 
@@ -370,7 +370,7 @@ test.describe('?lvl= et état', () => {
   test('sans ?test=1, ?lvl= s\'applique mais rien n\'est exposé', async ({ page }) => {
     await page.setViewportSize(SIZE);
     test.setTimeout(120_000);
-    await page.goto('/jeu.html?lvl=vie:5&nospawn=1');
+    await page.goto(salle('/jeu.html?lvl=vie:5&nospawn=1'));
     await expect(page.locator('#hud-life')).toHaveText('160/160', { timeout: 90_000 });
     expect(await page.evaluate(() => typeof window.__zs)).toBe('undefined');
   });
@@ -392,7 +392,7 @@ test.describe('?lvl= et état', () => {
     expect(problems).toEqual([]);
     expect(await page.evaluate(() => [localStorage.length, sessionStorage.length, document.cookie])).toEqual([0, 0, '']);
     expect(await page.context().cookies()).toEqual([]);
-    expect(new URL(page.url()).search).toBe('?test=1&seed=1&empty=1&lvl=all:5&wave=3');
+    expect(new URL(page.url()).search).toBe('?map=salle&test=1&seed=1&empty=1&lvl=all:5&wave=3'); // lot 3b : avant « ?test=1&seed=1&empty=1&lvl=all:5&wave=3 »
   });
 
   test('axe sans violation avec ?lvl=all:10 (667×375)', async ({ page }) => {

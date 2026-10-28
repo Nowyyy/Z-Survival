@@ -2,14 +2,14 @@ import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { readFileSync } from 'node:fs';
 import { trackingEvents } from '../../js/core/vhs.js';
-import { waitReady } from './helpers.js';
+import { waitReady, salle } from './helpers.js';
 
 // Lot 2c : animation de vague (E2-8), mélodie d'annonce et effet VHS. Tout passe par step() (temps de jeu), l'horloge d'effet réglée par
 // setVhsClock() et le journal des sons : aucune animation ni mélodie n'est attendue en temps réel. 667×375 par défaut ; les tests se
 // désactivent seuls si WebGL manque.
 const SIZE = { width: 667, height: 375 };
 const vhsParams = JSON.parse(readFileSync('data/game/vhs.json', 'utf8'));
-const URL = (extra = '') => `/jeu.html?test=1&seed=1${extra}`;
+const URL = (extra = '') => salle(`/jeu.html?test=1&seed=1${extra}`);
 const state = (page) => page.evaluate(() => window.__zs.getState());
 const splash = async (page) => (await state(page)).splash;
 const audio = async (page) => (await state(page)).audio;

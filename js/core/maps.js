@@ -52,8 +52,8 @@ export const DEFAULT_PARAMS = {
     paths: { length: 300, width: 100 },
     scatter: {
       voitures: { count: 4, long: 92, court: 46, hauteur: 55 },
-      arbres: { count: 14, tronc: 32, hauteur: 50, couronne: 46 },
-      buissons: { count: 12, rayonMin: 12, rayonMax: 22, hauteur: 18 },
+      arbres: { count: 24, tronc: 32, hauteur: 50, couronne: 46 },
+      buissons: { count: 18, rayonMin: 12, rayonMax: 22, hauteur: 18 },
       lampadaires: { count: 6, hauteur: 90 },
       barrieres: { count: 4, long: 120, epaisseur: 8, hauteur: 26 },
       espaceSolides: 80,

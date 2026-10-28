@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { readFileSync } from 'node:fs';
 import { waveSpec, GAITS, TYPES } from '../../js/core/waves.js';
-import { waitReady } from './helpers.js';
+import { waitReady, salle } from './helpers.js';
 
 // Lot 2 : vagues numérotées, allures et types de zombies. Tout passe par step() (temps de jeu), killAll() et les hooks : aucune vague n'est
 // attendue en temps réel. Petite fenêtre (667×375) ; les tests se désactivent seuls si WebGL manque.
@@ -13,7 +13,7 @@ const enemies = load('enemies');
 const gaits = load('gaits');
 const variants = load('zombie-variants').zombie.variants.map((v) => v.id);
 const audioCfg = load('audio');
-const URL = (extra = '') => `/jeu.html?test=1&seed=1${extra}`;
+const URL = (extra = '') => salle(`/jeu.html?test=1&seed=1${extra}`);
 const state = (page) => page.evaluate(() => window.__zs.getState());
 const step = (page, seconds) => page.evaluate((s) => window.__zs.step(s), seconds);
 const BROWSER_NOISE = /GL Driver Message|ReadPixels|GPU stall/;

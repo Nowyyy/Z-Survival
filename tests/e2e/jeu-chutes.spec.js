@@ -1,13 +1,13 @@
 import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { readFileSync } from 'node:fs';
-import { waitReady } from './helpers.js';
+import { waitReady, salle } from './helpers.js';
 
 // Lot 3-C : chutes du joueur (à terre, relevage, mort), interface E2-10, statistiques chutes et reparation. Tout passe par step() et les hooks :
 // aucune durée n'est attendue en temps réel (sauf la pause, qui doit figer l'horloge de jeu). Petite fenêtre (667×375).
 const SIZE = { width: 667, height: 375 };
 const down = JSON.parse(readFileSync('data/game/player-down.json', 'utf8'));
-const URL = (extra = '') => `/jeu.html?test=1&seed=1${extra.includes('nospawn') ? '' : '&nospawn=1'}${extra}`;
+const URL = (extra = '') => salle(`/jeu.html?test=1&seed=1${extra.includes('nospawn') ? '' : '&nospawn=1'}${extra}`);
 const state = (page) => page.evaluate(() => window.__zs.getState());
 const dn = async (page) => (await state(page)).player.down;
 const step = (page, seconds) => page.evaluate((s) => window.__zs.step(s), seconds);

@@ -1,11 +1,11 @@
 import { test, expect } from '@playwright/test';
 import { readFileSync } from 'node:fs';
-import { waitReady } from './helpers.js';
+import { waitReady, salle } from './helpers.js';
 
 // Lot 1c-B : textures générées en code, écran de préparation, décor texturé. 667×375 et step() de préférence ; les tests se
 // désactivent seuls si WebGL manque. En WebGL logiciel, aucune conclusion de performance.
 const SIZE = { width: 667, height: 375 };
-const PAGE = (extra = '') => `/jeu.html?test=1&seed=1&nospawn=1${extra}`;
+const PAGE = (extra = '') => salle(`/jeu.html?test=1&seed=1&nospawn=1${extra}`);
 const { textures } = JSON.parse(readFileSync('data/game/textures.json', 'utf8'));
 const NOISE = /ReadPixels|GL Driver/;
 const state = (page) => page.evaluate(() => window.__zs.getState());
@@ -137,7 +137,7 @@ test.describe('textures du lot 1c-B', () => {
 
   test('sans ?test=1, ni sampleScreen ni textures ne sont exposés', async ({ page }) => {
     await page.setViewportSize(SIZE);
-    await page.goto('/jeu.html');
+    await page.goto(salle('/jeu.html'));
     await page.waitForFunction(() => document.getElementById('loading')?.hidden === true || document.getElementById('game-error')?.hidden === false, null, { timeout: 60_000 });
     expect(await page.evaluate(() => typeof window.__zs)).toBe('undefined');
   });

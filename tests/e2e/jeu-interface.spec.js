@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { readFileSync } from 'node:fs';
-import { waitReady } from './helpers.js';
+import { waitReady, salle } from './helpers.js';
 
 // Lot 3a-B : interface compacte (HUD E2-2 en puces, E2-11 flèches au bord). Tout passe par step() et les hooks de ?test=1 ;
 // 667×375 de préférence, 1440×900 pour les marges. Les tests se désactivent seuls si WebGL manque.
@@ -12,7 +12,7 @@ const BROWSER_NOISE = /GL Driver Message|ReadPixels|GPU stall/;
 
 async function open(page, extra = '', size = SIZE) {
   await page.setViewportSize(size);
-  await page.goto(`/jeu.html?test=1&seed=1${extra.includes('nospawn') ? '' : '&nospawn=1'}&vhs=0${extra}`);
+  await page.goto(salle(`/jeu.html?test=1&seed=1${extra.includes('nospawn') ? '' : '&nospawn=1'}&vhs=0${extra}`));
   await waitReady(page);
   await page.evaluate(() => { window.requestAnimationFrame = () => 0; });
   await page.evaluate(() => new Promise((resolve) => setTimeout(resolve, 150)));

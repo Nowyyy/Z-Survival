@@ -3,7 +3,7 @@ import AxeBuilder from '@axe-core/playwright';
 import { readFileSync } from 'node:fs';
 import { buildLayout, windowsWithGaps } from '../../js/core/layout.js';
 import { windowGeometries } from '../../js/core/windows.js';
-import { waitReady } from './helpers.js';
+import { waitReady, salle } from './helpers.js';
 
 // Lot 3-B : fenêtres à planches, siège par les zombies, réparation automatique, sons de planches. Tout passe par step() (temps de jeu) et les hooks :
 // aucune durée n'est attendue en temps réel. Petite fenêtre (667×375) ; les tests se désactivent seuls si WebGL manque.
@@ -14,7 +14,7 @@ const world = load('world');
 const layout = buildLayout(world, load('decor'), {});
 const geoms = windowGeometries(windowsWithGaps(layout), cfg);
 const N = geoms.find((g) => g.id === 'fenetre-nord');
-const URL = (extra = '') => `/jeu.html?test=1&seed=1${extra.includes('nospawn') ? '' : '&nospawn=1'}${extra}`;
+const URL = (extra = '') => salle(`/jeu.html?test=1&seed=1${extra.includes('nospawn') ? '' : '&nospawn=1'}${extra}`);
 const state = (page) => page.evaluate(() => window.__zs.getState());
 const win = async (page, id = 'fenetre-nord') => (await state(page)).windows.find((w) => w.id === id);
 const BROWSER_NOISE = /GL Driver Message|ReadPixels|GPU stall/;
@@ -61,7 +61,7 @@ test.describe('planches au départ', () => {
 
   test('?planks= n\'expose rien sans ?test=1 et ne stocke rien', async ({ page }) => {
     await page.setViewportSize(SIZE);
-    await page.goto('/jeu.html?seed=1&nospawn=1&planks=2');
+    await page.goto(salle('/jeu.html?seed=1&nospawn=1&planks=2'));
     expect(await page.locator('#hud-windows, .hud-win').count()).toBe(0); // lot 3a : plus d'état des fenêtres dans le HUD
     expect(await page.evaluate(() => [typeof window.__zs, localStorage.length, sessionStorage.length, document.cookie])).toEqual(['undefined', 0, 0, '']);
   });
