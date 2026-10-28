@@ -162,4 +162,13 @@
   --game-repair-ring: #f4f1ec;      /* anneau de progression de la planche en cours */
   --game-repair-track: #8a857d;     /* piste de l'anneau (3:1 sur le fond du jeu) */
   --game-repair-text: #f4f1ec;      /* « Réparation » et « Fenêtre occupée » */
+
+  /* Jeu, lot 3a : planches, cadre, trou et pastilles des fenêtres (texture « planche »). Provisoires, à valider (contrastes contrôlés par tests/unit/data-planches.test.js). */
+  --game-plank: #e6d3a6;            /* planches : bois brut clair (3:1 sur le sol, 2,5:1 sur le mur, 1,8:1 sur les meubles) */
+  --game-plank-dark: #9a7d52;       /* planches : veines, nœuds et fissure */
+  --game-nail: #2b2520;             /* planches : têtes de clou */
+  --game-frame: #3a2c20;            /* cadre plat autour de l'ouverture d'une fenêtre */
+  --game-window-void: #0b0b0d;      /* trou sombre dans le mur d'une fenêtre ouverte, et intérieur vide d'une pastille */
+  --game-pip-on: #efe6d2;           /* pastille au sol : planche présente (carré plein clair, 3:1 sur le sol) */
+  --game-pip-off: #928270;          /* pastille au sol : cadre du carré (planche présente ou non) */
 }

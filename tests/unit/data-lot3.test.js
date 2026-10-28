@@ -38,8 +38,8 @@ describe('data/game/windows.json', () => {
     expect(windows[key]).toBe(value);
   });
 
-  it('toutes les valeurs sont des nombres finis et positifs', () => {
-    for (const [k, v] of Object.entries(windows)) if (k !== '_provisoire') expect(Number.isFinite(v) && v > 0, k).toBe(true);
+  it('toutes les valeurs sont des nombres finis et positifs (planks3d : lot 3a, voir data-planches.test.js)', () => {
+    for (const [k, v] of Object.entries(windows)) if (k !== '_provisoire' && k !== 'planks3d') expect(Number.isFinite(v) && v > 0, k).toBe(true);
   });
 
   it('cohérence : arracheurs actifs ≤ emplacements, durées compatibles avec les statistiques', () => {
@@ -110,7 +110,7 @@ describe('géométrie des fenêtres et du monde (world.json inchangé)', () => {
   });
 
   it('les fichiers que le lot ne doit pas toucher sont inchangés depuis main', () => {
-    const changed = git('diff --name-only main -- js/core/waves.js js/core/wave-splash.js js/core/vhs.js js/core/projectile.js js/core/ray.js js/core/spread.js js/core/camera.js data/game/waves.json data/game/gaits.json data/game/weapons.json data/game/textures.json data/game/decor.json data/game/splash.json data/game/vhs.json index.html Docs/seed.md .github');
+    const changed = git('diff --name-only main -- js/core/waves.js js/core/wave-splash.js js/core/vhs.js js/core/projectile.js js/core/ray.js js/core/spread.js js/core/camera.js data/game/waves.json data/game/gaits.json data/game/weapons.json data/game/decor.json data/game/splash.json data/game/vhs.json index.html Docs/seed.md .github');
     if (changed !== null) expect(changed).toEqual([]);
   });
 });

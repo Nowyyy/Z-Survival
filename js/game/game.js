@@ -9,6 +9,7 @@ import { entryWindow, windowsWithGaps } from '../core/layout.js';
 import { occupancy, stepSiege } from '../core/siege.js';
 import { closedRects, createWindowsState, stepWindows, windowGeometries } from '../core/windows.js';
 import { moveCircle } from '../core/movement.js';
+import { addDebris, createDebris, faceDistance, plankSettings, removeDebris, stepDebris } from '../core/plank-layout.js';
 import { applyHeal, canFire, canHealOnKill, canMove, createPlayerDown, isInvulnerable, knockbackZombies, stepPlayerDown } from '../core/player-down.js';
 import { effectivePlayer, effectiveWeapon, normalizeLevels, STAT_IDS, statValues } from '../core/player-stats.js';
 import { buildWindowField, createFlowState, createGrid, stepFlow } from '../core/nav.js';
@@ -63,6 +64,10 @@ export function createGame(ctx) {
   const geoms = siegeOn ? windowGeometries(windowsWithGaps(layout), windowsCfg) : [];
   const geomById = new Map(geoms.map((g) => [g.id, g]));
   const siegeParams = { ...windowsCfg, bounds: layout.bounds };
+  // Débris des planches arrachées (lot 3a) : jamais dans un meuble ni hors de la salle ; la géométrie des planches est dans js/core/plank-layout.js.
+  const plankCfg = plankSettings(windowsCfg, cfg.render);
+  const debrisLayout = { params: plankCfg, obstacles: layout.furniture, bounds: layout.bounds };
+  const debrisGeoms = new Map(geoms.map((g) => [g.id, { ...g, inner: faceDistance(layout.room, g) }]));
   const gridOpts = { cell: cfg.nav.cell, radius: cfg.zombie.radius, inflate: cfg.nav.inflate };
   // Champ de flux de chaque fenêtre, calculé une seule fois au chargement sur la grille extérieure (ouvertures bloquées) ; durée mesurée (?fps=1).
   const fieldStart = performance.now();
@@ -137,8 +142,13 @@ export function createGame(ctx) {
       grid = createGrid(layout.size, zombieSolids, gridOpts);
       sim.flow = createFlowState();
     }
-    world.planks?.sync(sim.win);
+    world.windowMeshes?.sync(sim.win);
   }
+  // Débris : une planche arrachée en laisse un au sol (le plus ancien disparaît au-delà de 12, tous après 25 s) ; une planche réparée en retire un.
+  const dropDebris = (id, n) => {
+    const g = debrisGeoms.get(id);
+    for (let i = 0; i < n && g; i += 1) sim.debris = addDebris(sim.debris, g, ctx.seed, debrisLayout);
+  };
   function dictName(id) {
     const key = WINDOW_NAMES[id];
     return key ? ctx.dict[key] : id;
@@ -182,6 +192,8 @@ export function createGame(ctx) {
       spread: 0, // rapport de vitesse lissé, de 0 (arrêt) à 1 (pleine vitesse)
     };
     splashView.apply(sim.splashView);
+    sim.debris = createDebris();
+    for (const g of geoms) dropDebris(g.id, g.id in sim.win.windows ? sim.win.windows[g.id].maxPlanks - sim.win.windows[g.id].planks : 0);
     syncWindows();
     anim = { phase: 0, facing: 0, x: sim.player.x, y: sim.player.y };
     rig.snap(sim.player.x, sim.player.y);
@@ -335,8 +347,13 @@ export function createGame(ctx) {
         let changed = false;
         for (const ev of wr.events) {
           const g = geomById.get(ev.windowId);
-          if (ev.type === 'plank-torn') events.push({ type: 'plankTorn', x: g.center.x, y: g.center.y, windowId: ev.windowId });
-          else if (ev.type === 'plank-repaired') events.push({ type: 'plankRepaired', x: g.center.x, y: g.center.y, windowId: ev.windowId });
+          if (ev.type === 'plank-torn') {
+            events.push({ type: 'plankTorn', x: g.center.x, y: g.center.y, windowId: ev.windowId });
+            dropDebris(ev.windowId, 1);
+          } else if (ev.type === 'plank-repaired') {
+            events.push({ type: 'plankRepaired', x: g.center.x, y: g.center.y, windowId: ev.windowId });
+            sim.debris = removeDebris(sim.debris, ev.windowId, 1);
+          }
           if (ev.type === 'window-open' || ev.type === 'window-closed') changed = true;
           // Annonces vocales : « ouverte » au plus une fois par fenêtre et par 10 s, « réparée » quand toutes les planches sont revenues.
           if (ev.type === 'window-open' && sim.time - (sim.announced[ev.windowId] ?? -Infinity) >= 10) {
@@ -345,9 +362,10 @@ export function createGame(ctx) {
           } else if (ev.type === 'plank-repaired' && ev.planks === sim.win.windows[ev.windowId].maxPlanks) windowLive = fmt(ctx.dict[WINDOW_TEXTS.liveRepaired], { name: dictName(ev.windowId) });
         }
         if (changed) syncWindows();
-        else if (wr.events.length > 0) world.planks?.sync(sim.win); // planche arrachée ou posée : le maillage suit (seules les planches modifiées sont réécrites)
+        else if (wr.events.length > 0) world.windowMeshes?.sync(sim.win); // planche arrachée ou posée : le maillage suit (seules les planches modifiées sont réécrites)
       }
       if (windowLive !== null) ctx.ui.setLive(windowLive);
+      sim.debris = stepDebris(sim.debris, dt, plankCfg);
       sim.enemies = stepEnemies(sim.enemies, sim.player, dt, cfg.zombie, { obstacles: zombieSolids, bounds: layout.worldBounds, grid, flow: sim.flow.flow, nav: cfg.nav, windows: { fields: windowFields } });
       // Par quelle fenêtre chaque zombie est entré : la plus proche de l'endroit où il franchit la limite de la salle.
       sim.enemies = sim.enemies.map((e) => (e.entered || e.x < bounds.minX || e.x > bounds.maxX || e.y < bounds.minY || e.y > bounds.maxY ? e : { ...e, entered: entryWindow(e, layout.windows) }));
@@ -588,6 +606,7 @@ export function createGame(ctx) {
     hud.update(sim.player, sim.kills, waveInfo(sim.waves), { windows: windowsHud(), chutes: sim.down.chutes });
     updateDownView();
     updateRepairIndicator();
+    world.debris?.sync(sim.debris.items, reduced);
     splashView.apply(sim.splashView);
   }
 
@@ -605,6 +624,11 @@ export function createGame(ctx) {
     return { x: (probe.x + 1) / 2, y: (1 - probe.y) / 2 };
   }
   const projectPlayer = () => screenOf(sim.player.x, sim.player.y);
+  // Point de la scène (x, hauteur, y du jeu) à l'écran, de 0 à 1 (tests : fenêtres, meubles, luminance autour d'un point).
+  function screenAt(x, height, y) {
+    probe.set(x, height, y).project(rig.camera);
+    return { x: (probe.x + 1) / 2, y: (1 - probe.y) / 2 };
+  }
 
   let last = null;
   let frameId = 0;
@@ -759,6 +783,8 @@ export function createGame(ctx) {
       const w = sim.win.windows[id];
       if (!w || !Number.isInteger(n) || n < 0 || n > w.maxPlanks) return false;
       sim.win = { ...sim.win, windows: { ...sim.win.windows, [id]: { ...w, planks: n, tearProgress: 0, repairProgress: 0 } } };
+      if (n < w.planks) dropDebris(id, w.planks - n);
+      else if (n > w.planks) sim.debris = removeDebris(sim.debris, id, n - w.planks);
       syncWindows();
       stale = true;
       return true;
@@ -787,6 +813,7 @@ export function createGame(ctx) {
     },
     snapshot() {
       const cam = rig.camera.position;
+      const meshStats = world.windowMeshes?.stats(rig.camera) ?? [];
       return {
         player: { x: sim.player.x, y: sim.player.y, health: sim.player.health, maxHp: sim.player.maxHealth, spread: halfAngle(), speedRatio: sim.spread, down: { state: sim.down.state, chutes: sim.down.chutes, chutesMax: sim.down.chutesMax, timeLeft: sim.down.timeLeft, grace: sim.down.grace, invulnerable: isInvulnerable(sim.down) } },
         stats: {
@@ -816,14 +843,16 @@ export function createGame(ctx) {
         laserEnd: laser ? { x: laser.ray.end.x, y: laser.ray.end.y } : null,
         laser: laser ? { length: laser.ray.length, hit: laser.ray.hit?.id ?? null, stoppedBy: laser.ray.stoppedBy?.id ?? null, range: laser.cone.length, cone: { leftAngle: sim.aim.angle - laser.cone.half, rightAngle: sim.aim.angle + laser.cone.half } } : null,
         world: { width: layout.size.width, height: layout.size.height, empty: layout.empty },
-        obstacles: layout.furniture.map((o) => ({ id: o.id, kind: o.kind, x: o.x, y: o.y, w: o.w, h: o.h, hauteur: o.hauteur })),
+        obstacles: layout.furniture.map((o) => ({ id: o.id, kind: o.kind, x: o.x, y: o.y, w: o.w, h: o.h, hauteur: o.hauteur, screen: screenAt(o.x + o.w / 2, o.hauteur, o.y + o.h / 2) })),
         windows: !siegeOn ? layout.windows.map((w) => ({ id: w.id ?? null, x: w.x, y: w.y })) : geoms.map((g) => {
           const w = sim.win.windows[g.id];
           const r = sim.repair[g.id] ?? { repairing: false, blocked: false, progress: 0 };
           const o = occupancy(sim.enemies, g.id);
-          return { id: g.id, planks: w.planks, maxPlanks: w.maxPlanks, tearers: o.tearers, climbers: o.climbers, queue: o.queue, repairing: r.repairing, repairProgress: w.repairProgress, repairBlocked: r.blocked, open: w.planks === 0, x: g.center.x, y: g.center.y };
+          const m = meshStats.find((e) => e.id === g.id);
+          return { id: g.id, planks: w.planks, maxPlanks: w.maxPlanks, tearers: o.tearers, climbers: o.climbers, queue: o.queue, repairing: r.repairing, repairProgress: w.repairProgress, repairBlocked: r.blocked, open: w.planks === 0, x: g.center.x, y: g.center.y, screen: screenAt(g.center.x - g.normal.x * (debrisGeoms.get(g.id).inner + plankCfg.wallGap + plankCfg.thickness / 2), (plankCfg.sill + plankCfg.lintel) / 2, g.center.y - g.normal.y * (debrisGeoms.get(g.id).inner + plankCfg.wallGap + plankCfg.thickness / 2)), mesh: m ? { triangles: m.triangles, inFrustum: m.inFrustum, minY: m.minY, minWallGap: m.minWallGap, beams: m.beams, voidVisible: m.voidVisible, pipsOn: m.pipsOn } : null };
         }),
-        plankMesh: world.planks?.counts() ?? { nailed: 0, debris: 0 },
+        plankMesh: { nailed: world.windowMeshes?.nailed() ?? 0, debris: sim.debris.items.length },
+        debris: sim.debris.items.map((d) => ({ x: d.x, y: d.y, z: d.z, yaw: d.yaw, age: d.age })),
         windowPositions: layout.windows.map((w) => ({ id: w.id ?? null, x: w.x, y: w.y })),
         spawnPoints: (layout.spawnPoints ?? []).map((p) => ({ id: p.id, fenetre: p.fenetre, x: p.x, y: p.y })),
         spawnLog: spawnLog.map((l) => ({ ...l })),

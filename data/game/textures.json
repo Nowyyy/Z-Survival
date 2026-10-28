@@ -594,6 +594,25 @@
      }
     ]
    }
+  },
+  {
+   "id": "planche",
+   "kind": "planche-brute",
+   "size": 128,
+   "repeat": 100,
+   "seed": 19,
+   "colors": {
+    "plank": "--game-plank",
+    "dark": "--game-plank-dark",
+    "nail": "--game-nail",
+    "frame": "--game-frame",
+    "void": "--game-window-void",
+    "on": "--game-pip-on",
+    "off": "--game-pip-off"
+   },
+   "params": {
+    "band": 0.125
+   }
   }
  ]
 }

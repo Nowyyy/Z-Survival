@@ -68,11 +68,14 @@ export function createThreeTextures(generated, renderer) {
     texture.wrapT = wrap;
     texture.needsUpdate = true;
     textures.set(entry.id, texture);
-    info.set(entry.id, { repeat: entry.repeat, size: width, regions: new Map((entry.params?.regions ?? []).map((r) => [r.id, r])) });
+    info.set(entry.id, { repeat: entry.repeat, size: width, params: entry.params ?? {}, regions: new Map((entry.params?.regions ?? []).map((r) => [r.id, r])) });
   }
   return {
     texture: (id) => textures.get(id),
     repeat: (id) => info.get(id)?.repeat ?? 1,
+    // Côté et paramètres d'une texture (disposition de la texture « planche »).
+    size: (id) => info.get(id)?.size ?? 1,
+    params: (id) => info.get(id)?.params ?? {},
     // Rectangle UV d'une région d'atlas, rentré d'un demi-texel, et unités du monde couvertes par la région entière (scale).
     region(atlasId, regionId) {
       const atlas = info.get(atlasId);

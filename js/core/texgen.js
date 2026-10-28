@@ -572,6 +572,73 @@ GENRES.grain = {
   },
 };
 
+// Planche brute (lot 3a) : bois clair à veines, nœuds, quatre têtes de clou sombres (deux près de chaque bout) et une fissure, tuilable le long de x.
+// Le corps est découpé en `strips` bandes horizontales (4 par défaut : une par planche d'une fenêtre), chacune avec ses veines, ses nœuds et sa fissure ;
+// les motifs sont dessinés étirés (nœuds et clous hauts et étroits) parce qu'une bande de 128 × 28 pixels couvre une planche d'environ 170 × 6 unités
+// du monde. Les dernières lignes (params.band, part de la hauteur, 0,125 par défaut) sont un bandeau de quatre teintes unies, de gauche à droite :
+// cadre de fenêtre, trou sombre, pastille pleine, pastille vide (le décor d'une fenêtre tient ainsi en une seule matière et un seul appel de dessin).
+GENRES['planche-brute'] = {
+  colors: ['plank', 'dark', 'nail', 'frame', 'void', 'on', 'off'], main: 'plank', tile: 'x',
+  make({ w, h, c, p, seed }) {
+    const bandRows = Math.min(h - 1, Math.max(0, Math.round(h * param(p, 'band', 0.125, 0, 0.5))));
+    const bodyH = h - bandRows;
+    const strips = Math.round(param(p, 'strips', 4, 1, 8));
+    const stripH = bodyH / strips;
+    const solids = [c.frame, c.void, c.on, c.off];
+    const layers = Array.from({ length: strips }, (_, i) => ({
+      grain: makeFbm(3, 4, seed + 1 + i * 31, 3, 0.5),
+      streak: makeNoise(6, 5, seed + 2 + i * 31),
+      blotch: makeFbm(2, 2, seed + 3 + i * 31, 2, 0.5),
+      knots: [0, 1].map((k) => ({ x: (0.2 + 0.6 * hash(k + i * 5, 1, seed + 4)) * w, r: 2.5 + hash(k + i * 5, 3, seed + 4) * 2 })),
+      crack: (0.3 + 0.4 * hash(i, 7, seed + 5)) * w,
+    }));
+    const nailX = [0.055 * w, 0.105 * w, 0.895 * w, 0.945 * w];
+    return (x, y, out) => {
+      if (y >= bodyH) {
+        const cell = solids[Math.min(3, Math.floor((x / w) * 4))];
+        out[0] = cell[0];
+        out[1] = cell[1];
+        out[2] = cell[2];
+        return;
+      }
+      const i = Math.min(strips - 1, Math.floor(y / stripH));
+      const ly = y - i * stripH;
+      const layer = layers[i];
+      const u = x / w;
+      const v = ly / stripH;
+      let k = 1 + (layer.grain(u, v) - 0.5) * 0.3 + (layer.blotch(u, v) - 0.5) * 0.14 + (hash(x, y, seed + 6) - 0.5) * 0.08;
+      let t = smooth(0.62, 0.8, layer.streak(u, v)) * 0.5;
+      for (const kn of layer.knots) {
+        const dx = Math.min(Math.abs(x - kn.x), w - Math.abs(x - kn.x));
+        const d = Math.hypot(dx / kn.r, (ly - stripH / 2) / (stripH * 0.4));
+        if (d < 1) {
+          t = Math.max(t, 0.9 - d * 0.35);
+          k *= 0.9 + 0.1 * Math.cos(d * 9);
+        } else if (d < 1.4) t = Math.max(t, (1.4 - d) * 0.6);
+      }
+      // Fissure en travers de la planche, légèrement en dents de scie.
+      if (Math.abs(x - (layer.crack + Math.sin(v * 9 + i) * 1.4)) < 0.7 && v > 0.1 && v < 0.9) t = 0.95;
+      let r = c.plank[0] + (c.dark[0] - c.plank[0]) * t;
+      let g = c.plank[1] + (c.dark[1] - c.plank[1]) * t;
+      let b = c.plank[2] + (c.dark[2] - c.plank[2]) * t;
+      for (const nx of nailX) {
+        const d = Math.hypot((x - nx) / 1.3, (ly - stripH / 2) / (stripH * 0.28));
+        if (d < 1) {
+          r = c.nail[0];
+          g = c.nail[1];
+          b = c.nail[2];
+          k = 1;
+        } else if (d < 1.5) k *= 0.72;
+      }
+      const edge = Math.min(ly, stripH - 1 - ly);
+      if (edge < 1.5) k *= 0.72 + Math.max(0, edge) * 0.18; // arête sombre en haut et en bas de chaque planche
+      out[0] = r * k;
+      out[1] = g * k;
+      out[2] = b * k;
+    };
+  },
+};
+
 // Atlas : régions { id, x, y, w, h, kind, colors, params, seed } ; chaque région est entourée d'une marge qui répète son bord.
 // Les régions ne se chevauchent pas (marges comprises) : chaque pixel ne dépend que de ses coordonnées.
 GENRES.atlas = { colors: [], main: null, tile: '', make: null };
@@ -737,6 +804,23 @@ export function buildSpec(entry, lookup) {
   const params = e.params !== null && typeof e.params === 'object' ? { ...e.params } : {};
   if (Array.isArray(params.regions)) params.regions = params.regions.map((r) => ({ ...r, colors: colorsOf(r?.colors) }));
   return { id: e.id, kind: e.kind, width: e.size ?? e.width, height: e.size ?? e.height, seed: e.seed, colors: colorsOf(e.colors), params };
+}
+
+// Disposition de la texture « planche » (genre planche-brute) pour le rendu : rectangles UV de chaque planche (v0, v1 en v = y / hauteur) et centre des
+// quatre teintes unies du bandeau (cadre, trou, pastille pleine, pastille vide). size : côté de la texture ; params : ceux de la texture (band, strips).
+export function plankSheet(size, params) {
+  const s = isNum(size) && size >= 1 ? size : 128;
+  const p = params !== null && typeof params === 'object' ? params : {};
+  const bandRows = Math.min(s - 1, Math.max(0, Math.round(s * param(p, 'band', 0.125, 0, 0.5))));
+  const bodyH = s - bandRows;
+  const count = Math.round(param(p, 'strips', 4, 1, 8));
+  const stripH = bodyH / count;
+  return {
+    u0: 0.5 / s,
+    u1: 1 - 0.5 / s,
+    strips: Array.from({ length: count }, (_, i) => ({ v0: (i * stripH + 0.75) / s, v1: ((i + 1) * stripH - 0.75) / s })),
+    cells: ['frame', 'void', 'on', 'off'].map((name, i) => ({ name, u: (i + 0.5) / 4, v: (bodyH + bandRows / 2) / s })),
+  };
 }
 
 // Moyenne des pixels d'une texture : [r, g, b].
