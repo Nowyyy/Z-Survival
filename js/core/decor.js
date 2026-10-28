@@ -3,6 +3,7 @@
 // sont décoratifs. Rien ici ne crée d'objet de rendu.
 import { rectGap, validRects } from './collision.js';
 import { createRng, nextFloat } from './rng.js';
+import { polygonRects } from './shape.js';
 import { isNum, num } from './vec.js';
 
 const round = (n) => Math.round(n);
@@ -11,6 +12,7 @@ const side = (w) => w?.side;
 // Une bande de largeur `width` devant chaque fenêtre, de la face extérieure du mur au bord du monde. world : world.json.
 // Renvoie [{ id (fenêtre), x, y, w, h }].
 export function approachCorridors(world, width = 160) {
+  if (Array.isArray(world?.walls) && Array.isArray(world?.contour)) return segmentedCorridors(world, width);
   const room = world?.room ?? {};
   const half = Math.max(0, num(width, 160)) / 2;
   const outer = num(room.wall) - num(world?.wallThickness, 40); // face extérieure du mur, relative au bord de la salle
@@ -27,6 +29,27 @@ export function approachCorridors(world, width = 160) {
   return rects.filter((r) => r.w > 0 && r.h > 0);
 }
 
+// Carte à segments de mur (lot 3b) : la bande part de la face extérieure du mur (centre de la fenêtre + demi-épaisseur) jusqu'au bord du monde.
+function segmentedCorridors(world, width) {
+  const half = Math.max(0, num(width, 160)) / 2;
+  const face = num(world?.wallThickness, 40) / 2;
+  const W = num(world?.size?.width);
+  const H = num(world?.size?.height);
+  const rects = [];
+  for (const w of Array.isArray(world?.windows) ? world.windows : []) {
+    if (!w || !isNum(w.x) || !isNum(w.y)) continue;
+    if (side(w) === 'nord') rects.push({ id: w.id, x: w.x - half, y: 0, w: half * 2, h: w.y - face });
+    else if (side(w) === 'sud') rects.push({ id: w.id, x: w.x - half, y: w.y + face, w: half * 2, h: H - (w.y + face) });
+    else if (side(w) === 'ouest') rects.push({ id: w.id, x: 0, y: w.y - half, w: w.x - face, h: half * 2 });
+    else if (side(w) === 'est') rects.push({ id: w.id, x: w.x + face, y: w.y - half, w: W - (w.x + face), h: half * 2 });
+  }
+  return rects.filter((r) => r.w > 0 && r.h > 0);
+}
+
+// Emprise du bâtiment : la salle, ou les rectangles du contour d'une carte à segments.
+const footprint = (world) => (Array.isArray(world?.contour) ? polygonRects(world.contour) : [roomRect(world)]);
+const gapToFootprint = (r, world) => Math.min(...footprint(world).map((f) => rectGap(r, f)));
+
 const roomRect = (world) => ({ x: num(world?.room?.x), y: num(world?.room?.y), w: num(world?.room?.width), h: num(world?.room?.height) });
 
 // Génère le décor. cfg : decor.json ; world : world.json. Renvoie
@@ -38,7 +61,6 @@ export function generateDecor(cfg, world) {
   const corridors = approachCorridors(world, num(cfg?.approachWidth, 160));
   const ground = validRects(cfg?.ground).map((g) => ({ ...g }));
   const spawnPoints = (Array.isArray(cfg?.spawnPoints) ? cfg.spawnPoints : []).filter((p) => p && isNum(p.x) && isNum(p.y)).map((p) => ({ ...p }));
-  const room = roomRect(world);
   let rng = createRng(isNum(cfg?.seed) ? cfg.seed : 1);
   const rand = () => {
     const r = nextFloat(rng);
@@ -65,7 +87,7 @@ export function generateDecor(cfg, world) {
     }
     return out;
   };
-  const solidOk = (r, out) => inside(r, 40) && rectGap(r, room) >= fromRoom && !nearCorridor(r, 20) && !nearSpawn(r)
+  const solidOk = (r, out) => inside(r, 40) && gapToFootprint(r, world) >= fromRoom && !nearCorridor(r, 20) && !nearSpawn(r)
     && ![...solids, ...out].some((o) => rectGap(r, o) < spacing);
 
   // Voitures abandonnées sur la route (la première bande de sol de type « route »).
@@ -86,7 +108,7 @@ export function generateDecor(cfg, world) {
   }), (r, out) => solidOk(r, out) && !onGround(r));
   solids.push(...trees);
 
-  const decoOk = (r) => inside(r, 20) && rectGap(r, room) >= 60 && !nearCorridor(r, 10);
+  const decoOk = (r) => inside(r, 20) && gapToFootprint(r, world) >= 60 && !nearCorridor(r, 10);
   const bushes = place(num(s.buissons?.count), (n) => {
     const radius = round(between(num(s.buissons?.rayonMin, 12), num(s.buissons?.rayonMax, 22)));
     return { id: `buisson-${n}`, kind: 'buisson', x: round(between(30, W - 30)), y: round(between(30, H - 30)), r: radius, hauteur: num(s.buissons?.hauteur, 18) };
@@ -122,13 +144,12 @@ export function decorProblems(decor, world) {
   const out = [];
   const W = num(world?.size?.width);
   const H = num(world?.size?.height);
-  const room = roomRect(world);
   const corridors = Array.isArray(decor?.corridors) ? decor.corridors : [];
   const tall = [...(decor?.solids ?? []), ...(decor?.fences ?? [])];
   for (const o of tall) {
     if (!(o.x >= 0 && o.y >= 0 && o.x + o.w <= W && o.y + o.h <= H)) out.push(`${o.id} sort du monde`);
     for (const c of corridors) if (rectGap(o, c) === 0) out.push(`${o.id} entre dans le couloir de ${c.id}`);
-    if (rectGap(o, room) === 0) out.push(`${o.id} entre dans la salle`);
+    if (gapToFootprint(o, world) === 0) out.push(`${o.id} entre dans la salle`);
     for (const p of decor?.spawnPoints ?? []) if (rectGap(o, { x: p.x, y: p.y, w: 1, h: 1 }) === 0) out.push(`${o.id} recouvre ${p.id}`);
   }
   for (const b of [...(decor?.bushes ?? []), ...(decor?.lamps ?? [])]) {

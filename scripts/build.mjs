@@ -2,7 +2,7 @@
 import { cpSync, existsSync, mkdirSync, rmSync } from 'node:fs';
 
 const OUT = '_site';
-const ENTRIES = ['index.html', 'jeu.html', 'sons.html', 'apercu.txt', 'dev', 'css', 'js', 'data', 'fonts', 'vendor'];
+const ENTRIES = ['index.html', 'jeu.html', 'sons.html', 'carte.html', 'apercu.txt', 'dev', 'css', 'js', 'data', 'fonts', 'vendor'];
 
 rmSync(OUT, { recursive: true, force: true });
 mkdirSync(OUT);

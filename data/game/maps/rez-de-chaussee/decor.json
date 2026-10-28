@@ -1,0 +1,43 @@
+{
+  "_provisoire": "Décor extérieur généré par npm run carte (même schéma que data/game/decor.json) : sol, points d'apparition (2 par fenêtre, à 450 et 650 du mur) et nombres d'objets provisoires ; graine fixe. Ne jamais éditer à la main : changer plan.json ou params.json puis relancer la commande.",
+  "seed": 30211,
+  "approachWidth": 160,
+  "ground": [
+    { "id": "trottoir-sud", "kind": "trottoir", "x": 0, "y": 2485, "w": 3880, "h": 90 },
+    { "id": "route-sud", "kind": "route", "x": 0, "y": 2575, "w": 3880, "h": 160 },
+    { "id": "sentier-F1", "kind": "sentier", "x": 1145, "y": 480, "w": 100, "h": 300 },
+    { "id": "sentier-F2", "kind": "sentier", "x": 1570, "y": 1165, "w": 300, "h": 100 },
+    { "id": "sentier-F4", "kind": "sentier", "x": 2505, "y": 1185, "w": 100, "h": 300 },
+    { "id": "sentier-F5", "kind": "sentier", "x": 2860, "y": 1185, "w": 100, "h": 300 },
+    { "id": "sentier-F6", "kind": "sentier", "x": 3085, "y": 1585, "w": 300, "h": 100 },
+    { "id": "rampe-F3", "kind": "trottoir", "x": 815, "y": 1555, "w": 225, "h": 350 }
+  ],
+  "spawnPoints": [
+    { "id": "F1-a", "fenetre": "F1", "window": "F1", "x": 1195, "y": 350 },
+    { "id": "F1-b", "fenetre": "F1", "window": "F1", "x": 1195, "y": 150 },
+    { "id": "F2-a", "fenetre": "F2", "window": "F2", "x": 2000, "y": 1215 },
+    { "id": "F2-b", "fenetre": "F2", "window": "F2", "x": 2200, "y": 1215 },
+    { "id": "F3-a", "fenetre": "F3", "window": "F3", "x": 590, "y": 1795 },
+    { "id": "F3-b", "fenetre": "F3", "window": "F3", "x": 390, "y": 1795 },
+    { "id": "F4-a", "fenetre": "F4", "window": "F4", "x": 2555, "y": 1055 },
+    { "id": "F4-b", "fenetre": "F4", "window": "F4", "x": 2555, "y": 855 },
+    { "id": "F5-a", "fenetre": "F5", "window": "F5", "x": 2910, "y": 1055 },
+    { "id": "F5-b", "fenetre": "F5", "window": "F5", "x": 2910, "y": 855 },
+    { "id": "F6-a", "fenetre": "F6", "window": "F6", "x": 3515, "y": 1635 },
+    { "id": "F6-b", "fenetre": "F6", "window": "F6", "x": 3715, "y": 1635 },
+    { "id": "F7-a", "fenetre": "F7", "window": "F7", "x": 1700, "y": 2790 },
+    { "id": "F7-b", "fenetre": "F7", "window": "F7", "x": 1700, "y": 2990 },
+    { "id": "F8-a", "fenetre": "F8", "window": "F8", "x": 2945, "y": 2815 },
+    { "id": "F8-b", "fenetre": "F8", "window": "F8", "x": 2945, "y": 3015 }
+  ],
+  "scatter": {
+    "voitures": { "count": 4, "long": 92, "court": 46, "hauteur": 55 },
+    "arbres": { "count": 14, "tronc": 32, "hauteur": 50, "couronne": 46 },
+    "buissons": { "count": 12, "rayonMin": 12, "rayonMax": 22, "hauteur": 18 },
+    "lampadaires": { "count": 6, "hauteur": 90 },
+    "barrieres": { "count": 4, "long": 120, "epaisseur": 8, "hauteur": 26 },
+    "espaceSolides": 80,
+    "distanceSalle": 160,
+    "distanceApparition": 70
+  }
+}

@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <meta name="color-scheme" content="dark">
+  <title>Z-Survival · Contrôle de la carte</title>
+  <link rel="icon" href="data:,">
+  <link rel="preload" href="fonts/barlow-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="data/i18n/fr.json" as="fetch" crossorigin>
+  <link rel="stylesheet" href="css/tokens.css">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/carte.css">
+  <script type="module" src="js/carte/main.js"></script>
+</head>
+<body class="carte-page">
+  <noscript>
+    <p class="noscript">Cette page a besoin de JavaScript. / This page needs JavaScript.</p>
+  </noscript>
+  <main id="app" class="carte" hidden>
+    <h1 class="carte-title" data-i18n="dev.carte.title"></h1>
+    <p class="carte-intro" data-i18n="dev.carte.intro"></p>
+    <p class="carte-note" data-i18n="dev.carte.provisoire"></p>
+    <nav aria-label="Cartes" data-i18n-label="dev.carte.nav">
+      <ul class="carte-nav">
+        <li><a id="lien-rez" class="carte-link" href="carte.html" data-i18n="dev.carte.map.rez"></a></li>
+        <li><a id="lien-salle" class="carte-link" href="carte.html?map=salle" data-i18n="dev.carte.map.salle"></a></li>
+        <li><a id="lien-jeu" class="carte-link" href="jeu.html?labels=1&amp;zoom=1" data-i18n="dev.carte.play"></a></li>
+      </ul>
+    </nav>
+    <p id="stats" class="carte-stats" role="status" aria-live="polite"></p>
+    <figure id="figure" class="carte-figure"></figure>
+    <ul class="carte-legend" aria-label="Légende" data-i18n-label="dev.carte.legend">
+      <li><span class="carte-swatch sw-mur"></span><span data-i18n="dev.carte.legend.mur"></span></li>
+      <li><span class="carte-swatch sw-fenetre"></span><span data-i18n="dev.carte.legend.fenetre"></span></li>
+      <li><span class="carte-swatch sw-pilier"></span><span data-i18n="dev.carte.legend.pilier"></span></li>
+      <li><span class="carte-swatch sw-escalier"></span><span data-i18n="dev.carte.legend.escalier"></span></li>
+      <li><span class="carte-swatch sw-rampe"></span><span data-i18n="dev.carte.legend.rampe"></span></li>
+      <li><span class="carte-swatch sw-meuble"></span><span data-i18n="dev.carte.legend.meuble"></span></li>
+      <li><span class="carte-swatch sw-depart"></span><span data-i18n="dev.carte.legend.depart"></span></li>
+      <li><span class="carte-swatch sw-apparition"></span><span data-i18n="dev.carte.legend.apparition"></span></li>
+    </ul>
+  </main>
+</body>
+</html>

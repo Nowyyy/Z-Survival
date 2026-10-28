@@ -46,10 +46,11 @@ export function stepSiege(zombies, windowsState, geoms, dt, params) {
 
   // Auto-correction : un zombie « dedans » resté plus de strandedTime hors de la salle repasse en approche vers la fenêtre la plus proche.
   const b = p.bounds;
-  if (b && [b.minX, b.minY, b.maxX, b.maxY].every(isNum) && geomList.length > 0) {
+  const hasInside = typeof p.inside === 'function'; // carte à murs (lot 3b) : l'intérieur n'est pas un rectangle
+  if ((hasInside || (b && [b.minX, b.minY, b.maxX, b.maxY].every(isNum))) && geomList.length > 0) {
     for (const z of active) {
       if (z.mode !== 'dedans') continue;
-      const outside = z.x < b.minX || z.x > b.maxX || z.y < b.minY || z.y > b.maxY;
+      const outside = hasInside ? !p.inside(z.x, z.y) : z.x < b.minX || z.x > b.maxX || z.y < b.minY || z.y > b.maxY;
       z.outsideT = outside ? num(z.outsideT) + step : 0;
       if (outside && z.outsideT > num(p.strandedTime, 3)) {
         let best = geomList[0];

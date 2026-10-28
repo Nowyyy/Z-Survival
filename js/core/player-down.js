@@ -107,13 +107,13 @@ export function knockbackZombies(zombies, center, params, layout) {
     if (!isObject(z) || !isNum(z.x) || !isNum(z.y)) return z;
     const mode = z.mode ?? 'libre';
     if (mode !== 'dedans' && mode !== 'libre') return z;
-    if (bounds && (z.x < bounds.minX || z.x > bounds.maxX || z.y < bounds.minY || z.y > bounds.maxY)) return z;
+    if (typeof layout?.inside === 'function' ? !layout.inside(z.x, z.y) : bounds && (z.x < bounds.minX || z.x > bounds.maxX || z.y < bounds.minY || z.y > bounds.maxY)) return z;
     const dx = z.x - cx;
     const dy = z.y - cy;
     if (Math.hypot(dx, dy) > radius) return z;
     // Superposé au centre : direction fixe, choisie d'après l'identifiant (déterministe).
     const away = Math.hypot(dx, dy) > 1e-9 ? normalize({ x: dx, y: dy }) : { x: num(z.id) % 2 === 0 ? 1 : -1, y: 0 };
-    const moved = moveWithCollision({ x: z.x, y: z.y, r: Math.max(0, num(z.r)) }, { x: away.x * distance, y: away.y * distance }, solids, bounds ?? undefined);
+    const moved = moveWithCollision({ x: z.x, y: z.y, r: Math.max(0, num(z.r)) }, { x: away.x * distance, y: away.y * distance }, solids, typeof layout?.inside === 'function' ? undefined : bounds ?? undefined);
     return { ...z, x: moved.x, y: moved.y };
   });
 }

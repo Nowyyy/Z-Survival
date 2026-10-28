@@ -1,0 +1,129 @@
+/* Page de contrôle de la carte (lot 3b) : page technique, mêmes jetons que le reste du site, aucun habillage de jeu. À retirer au lot 13. */
+.carte {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  max-width: 80rem;
+  margin: 0 auto;
+}
+
+.carte-title {
+  font-family: var(--font-sans);
+  font-size: var(--text-xl);
+  font-weight: var(--font-weight-bold);
+  line-height: 1.2;
+  color: var(--color-action-text);
+}
+
+.carte-intro,
+.carte-stats,
+.carte-note {
+  color: var(--color-text-muted);
+}
+
+.carte-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.carte-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--touch-target);
+  min-width: var(--touch-target);
+  padding: 0 var(--space-4);
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-weight: var(--font-weight-bold);
+  text-decoration: none;
+}
+
+.carte-link[aria-current="page"] {
+  border-color: var(--color-action);
+  background: var(--color-action-deep);
+}
+
+.carte-link:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.carte-figure {
+  margin: 0;
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  overflow: hidden;
+}
+
+.carte-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 80vh;
+}
+
+.carte-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+
+.carte-legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.carte-swatch {
+  width: 1rem;
+  height: 1rem;
+  border: 1px solid var(--color-border);
+}
+
+.sw-mur { background: var(--game-wall-base); }
+.sw-fenetre { background: var(--color-focus); }
+.sw-pilier { background: var(--game-metal); }
+.sw-escalier { background: var(--game-wood-dark); }
+.sw-rampe { background: var(--game-sidewalk); }
+.sw-meuble { background: var(--game-wood); }
+.sw-depart { background: var(--color-success); }
+.sw-apparition { background: var(--color-warning); }
+
+/* Dessin SVG : tout par classes, aucune couleur dans le script. */
+.monde { fill: var(--game-grass-a); }
+.sol-route { fill: var(--game-asphalt); }
+.sol-trottoir { fill: var(--game-sidewalk); }
+.sol-sentier { fill: var(--game-soil); }
+.sol-batiment { fill: var(--game-tile-b); stroke: var(--game-tile-b); stroke-width: 1; }
+.mur { fill: var(--game-wall-base); }
+.fenetre { fill: var(--color-focus); opacity: 0.85; }
+.fenetre-etiquette { fill: var(--color-text); font-family: var(--font-sans); font-weight: var(--font-weight-bold); paint-order: stroke; stroke: var(--color-bg); stroke-width: 8px; }
+.pilier { fill: var(--game-metal); stroke: var(--color-bg); stroke-width: 4; }
+.escalier { fill: var(--game-wood-dark); stroke: var(--game-wood); stroke-width: 4; }
+.rampe { fill: none; stroke: var(--game-line); stroke-width: 6; stroke-dasharray: 24 14; }
+.meuble { fill: var(--game-wood); stroke: var(--color-bg); stroke-width: 3; opacity: 0.9; }
+.bloc { fill: none; stroke: var(--color-warning); stroke-width: 5; stroke-dasharray: 18 10; }
+.depart-zone { fill: var(--color-success); opacity: 0.18; stroke: var(--color-success); stroke-width: 4; }
+.depart-point { fill: var(--color-success); }
+.depart-etiquette,
+.apparition-etiquette,
+.echelle-etiquette,
+.cadre-etiquette { fill: var(--color-text-muted); font-family: var(--font-sans); }
+.apparition { fill: var(--color-warning); }
+.cadre-trait { fill: none; stroke: var(--color-text-muted); stroke-width: 4; stroke-dasharray: 30 20; opacity: 0.45; }
+.cadre-etiquette { opacity: 0.55; }
+.echelle-trait,
+.echelle-bout { stroke: var(--color-text); stroke-width: 8; }

@@ -2,7 +2,10 @@
 // zombies, les murs percés de leurs fenêtres, les barrières invisibles. Pur : n'utilise que les données reçues.
 import { validRects } from './collision.js';
 import { generateDecor } from './decor.js';
+import { windowGap } from './maps.js';
 import { innerBounds } from './movement.js';
+import { faceDistance } from './plank-layout.js';
+import { polygonRects, segmentRects, unionRects } from './shape.js';
 import { isNum, num } from './vec.js';
 
 // Murs de la salle sous forme de rectangles, percés d'une ouverture de `size` de large à chaque fenêtre. La face intérieure est à
@@ -67,7 +70,86 @@ export function windowGaps(room, windows, size, thickness) {
 // Fenêtres de la salle avec leur ouverture (win.gap), prêtes pour windowGeometry (windows.js).
 export const windowsWithGaps = (layout) => (layout?.windows ?? []).map((win) => ({ ...win, gap: (layout?.gaps ?? []).find((g) => g.id === win.id) }));
 
-// world : world.json ; decorCfg : decor.json ; opts.empty : salle du lot 1m seule (world.legacy), sans meuble ni décor, sans murs
+const insideRects = (rects) => (x, y) => rects.some((r) => x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h);
+
+// Champs communs de lot 3b : sol, intérieur libre de murs, test « dans le bâtiment », zone de déplacement, bouche de l'arme, distance à la face
+// intérieure du mur, zone de vue. Salle rectangulaire (world.json d'origine, ?empty=1) : tout se déduit de room et de ses bornes.
+function roomExtras(room, bounds) {
+  const r = { x: bounds.minX, y: bounds.minY, w: bounds.maxX - bounds.minX, h: bounds.maxY - bounds.minY };
+  return {
+    id: 'salle',
+    segmented: false,
+    floor: [{ x: num(room.x), y: num(room.y), w: num(room.width), h: num(room.height) }],
+    interior: [r],
+    inside: (x, y) => x >= bounds.minX && x <= bounds.maxX && y >= bounds.minY && y <= bounds.maxY,
+    moveRoom: room,
+    muzzleBounds: bounds,
+    faceInner: (g) => faceDistance(room, g),
+    viewPlay: { width: Math.max(1, num(room.width) - 2 * num(room.wall)), height: Math.max(1, num(room.height) - 2 * num(room.wall)) },
+    zoom: null,
+    pillars: [],
+    stairs: [],
+    ramp: null,
+    wallHeight: null,
+  };
+}
+
+// Carte à segments de mur (lot 3b) : contour, murs { x1, y1, x2, y2 } d'épaisseur wallThickness, fenêtres posées sur un mur (centre, côté), obstacles
+// (piliers, escaliers, mobilier, dont certains hors du bâtiment), barrières du joueur. Mêmes sorties que la salle.
+function segmentedLayout(world, decorCfg) {
+  const t = num(world.wallThickness, 40);
+  const size = { width: num(world.size?.width), height: num(world.size?.height) };
+  const windowSize = num(world.windowSize, 140);
+  const windows = (Array.isArray(world.windows) ? world.windows : []).map((win) => ({ ...win, size: windowSize }));
+  const floor = polygonRects(world.contour);
+  const raw = segmentRects(world.walls, t);
+  const gaps = windows.map((win) => ({ id: win.id, ...windowGap(win, windowSize, t) })).filter((g) => isNum(g.w));
+  const walls = unionRects(raw, gaps).map((r, i) => ({ id: `mur-${i + 1}`, ...r }));
+  const interior = unionRects(floor, raw);
+  const furniture = validRects(world.obstacles).map((o) => ({ ...o }));
+  const barriers = validRects(world.playerBarriers).map((b) => ({ ...b }));
+  const decor = generateDecor(decorCfg, world);
+  const room = { ...world.room };
+  const start = { x: num(world.start?.x), y: num(world.start?.y) };
+  return {
+    empty: false,
+    id: typeof world.id === 'string' ? world.id : 'carte',
+    segmented: true,
+    size,
+    margin: num(world.margin),
+    room,
+    bounds: innerBounds(room),
+    windows,
+    windowSize,
+    wallThickness: t,
+    furniture,
+    barriers,
+    walls,
+    gaps,
+    decor,
+    floor,
+    interior,
+    inside: insideRects(interior),
+    // Le joueur est borné par le monde ; ce sont les murs et les barrières des fenêtres qui l'enferment.
+    moveRoom: { x: 0, y: 0, width: size.width, height: size.height, wall: 0 },
+    muzzleBounds: { minX: 0, minY: 0, maxX: size.width, maxY: size.height },
+    faceInner: () => t / 2,
+    viewPlay: { width: num(room.width, 1), height: num(room.height, 1) },
+    zoom: isNum(world.zoom) ? world.zoom : null,
+    pillars: Array.isArray(world.pillars) ? world.pillars.map((o) => ({ ...o })) : [],
+    stairs: Array.isArray(world.stairs) ? world.stairs.map((o) => ({ ...o })) : [],
+    ramp: world.ramp ? { ...world.ramp } : null,
+    wallHeight: num(world.wallHeight, 60),
+    playerObstacles: [...furniture, ...barriers, ...walls],
+    zombieObstacles: [...furniture, ...walls, ...decor.solids],
+    spawnPoints: decor.spawnPoints,
+    worldBounds: { minX: 0, minY: 0, maxX: size.width, maxY: size.height },
+    cameraBounds: { minX: 0, minY: 0, maxX: size.width, maxY: size.height },
+    start,
+  };
+}
+
+// world : world.json : decor.json ; opts.empty : salle du lot 1m seule (world.legacy), sans meuble ni décor, sans murs
 // pleins (les zombies y apparaissent aux fenêtres comme au lot 1m), mêmes coordonnées qu'au lot 1m ; opts.slack : dépassement de vue permis.
 export function buildLayout(world, decorCfg, opts = {}) {
   if (opts.empty) {
@@ -76,6 +158,7 @@ export function buildLayout(world, decorCfg, opts = {}) {
     const room = { x: 0, y: 0, width: num(l.width), height: num(l.height), wall: num(l.wall) };
     const windows = (Array.isArray(l.windows) ? l.windows : []).map((win) => ({ ...win }));
     return {
+      ...roomExtras(room, innerBounds(room)),
       empty: true,
       size: { width: room.width, height: room.height },
       margin: num(l.margin),
@@ -97,6 +180,7 @@ export function buildLayout(world, decorCfg, opts = {}) {
       start: { x: room.width / 2, y: room.height / 2 },
     };
   }
+  if (Array.isArray(world?.walls) && Array.isArray(world?.contour)) return segmentedLayout(world, decorCfg);
   const room = { ...world?.room };
   const windows = (Array.isArray(world?.windows) ? world.windows : []).map((win) => ({ ...win, size: num(world?.windowSize) }));
   const furniture = validRects(world?.obstacles).map((o) => ({ ...o }));
@@ -105,6 +189,7 @@ export function buildLayout(world, decorCfg, opts = {}) {
   const walls = wallRects(room, windows, num(world?.windowSize), num(world?.wallThickness, 40));
   const size = { width: num(world?.size?.width), height: num(world?.size?.height) };
   return {
+    ...roomExtras(room, innerBounds(room)),
     empty: false,
     size,
     margin: num(world?.margin),
