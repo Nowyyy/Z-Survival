@@ -34,15 +34,15 @@ const walk = (page, move, seconds) => page.evaluate(([m, s]) => {
 }, [move, seconds]);
 
 test.describe('carte par défaut', () => {
-  test('par défaut : rez-de-chaussée, 8 fenêtres F1 à F8 à 4 planches, monde de 3 880 × 3 180', async ({ page }) => {
+  test('par défaut : rez-de-chaussée, 8 fenêtres F1 à F8 à 4 planches, monde de 4 040 × 3 460', async ({ page }) => {
     await open(page);
     const s = await STATE(page);
     expect(s.map.id).toBe('rez-de-chaussee');
-    expect(s.map.size).toEqual({ width: 3880, height: 3180 });
+    expect(s.map.size).toEqual(world.size);
     expect(s.map.windowIds).toEqual(IDS);
     expect(s.windows.map((w) => [w.id, w.planks, w.maxPlanks])).toEqual(IDS.map((id) => [id, 4, 4]));
     expect(s.map.pillars.length).toBe(11);
-    expect(s.world).toMatchObject({ width: 3880, height: 3180, empty: false });
+    expect(s.world).toMatchObject({ width: 4040, height: 3460, empty: false });
   });
 
   test('?map=salle charge l\'ancienne salle (3 fenêtres, 14 meubles) ; une valeur inconnue retombe sur la carte par défaut sans erreur', async ({ page }) => {
@@ -87,10 +87,10 @@ test.describe('carte par défaut', () => {
 });
 
 test.describe('déplacements, obstacles, tir', () => {
-  test('le joueur démarre au centre (318,360) = (1980, 2065)', async ({ page }) => {
+  test('le joueur démarre à la position du plan (grande salle)', async ({ page }) => {
     await open(page);
     const p = (await STATE(page)).player;
-    expect([p.x, p.y]).toEqual([1980, 2065]);
+    expect([p.x, p.y]).toEqual([world.start.x, world.start.y]);
   });
 
   test('un pilier arrête le joueur', async ({ page }) => {
@@ -104,7 +104,7 @@ test.describe('déplacements, obstacles, tir', () => {
 
   test('un escalier plein arrête le joueur', async ({ page }) => {
     await open(page);
-    const st = world.stairs.find((s) => s.id === 'escalier-central'); // 1930..2400 × 1325..1505
+    const st = world.stairs[0];
     await page.evaluate(([x, y]) => window.__zs.setPlayer(x, y), [st.x + st.w / 2, st.y + st.h + 80]);
     const end = await walk(page, { x: 0, y: -1 }, 2);
     expect(end.y).toBeGreaterThanOrEqual(st.y + st.h + 17);
@@ -122,14 +122,14 @@ test.describe('déplacements, obstacles, tir', () => {
     expect(end.x).toBeGreaterThanOrEqual(f3.x + 20);
   });
 
-  test('on passe de la grande salle à l\'aile par l\'ouverture (largeur ≥ 280), pas ailleurs', async ({ page }) => {
+  test('on passe de la grande salle à l\'aile par l\'ouverture (85 de large), pas ailleurs', async ({ page }) => {
     await open(page);
     const o = world.openings.find((q) => q.id === 'ouverture-aile');
-    expect(Math.abs(o.y2 - o.y1)).toBeGreaterThanOrEqual(280);
+    expect(Math.abs(o.y2 - o.y1)).toBeGreaterThanOrEqual(80);
     await page.evaluate(([x, y]) => window.__zs.setPlayer(x, y), [o.x1 + 200, (o.y1 + o.y2) / 2]);
     let end = await walk(page, { x: -1, y: 0 }, 3);
     expect(end.x).toBeLessThan(o.x1 - 40);
-    await page.evaluate(([x, y]) => window.__zs.setPlayer(x, y), [o.x1 + 200, o.y2 + 300]);
+    await page.evaluate(([x, y]) => window.__zs.setPlayer(x, y), [o.x1 + 200, Math.max(o.y1, o.y2) + 250]);
     end = await walk(page, { x: -1, y: 0 }, 3);
     expect(end.x).toBeGreaterThan(o.x1 + 20);
   });
@@ -188,49 +188,48 @@ test.describe('siège sur les huit fenêtres', () => {
     });
   }
 
-  test('F3 : le zombie atteint la fenêtre par la rampe (praticable)', async ({ page }) => {
-    await open(page);
-    const ramp = world.ramp;
-    const r = await page.evaluate(([rx, ry, rw, rh]) => {
-      const zs = window.__zs;
-      zs.spawnAtWindow('F3', 'marcheur');
-      let onRamp = false;
-      for (let i = 0; i < 1200; i += 1) {
-        zs.step(0.05);
-        const z = zs.getState().enemies[0];
-        if (z.x >= rx && z.x <= rx + rw && z.y >= ry && z.y <= ry + rh) onRamp = true;
-        if (z.mode === 'arrache') break;
-      }
-      return { onRamp, mode: zs.getState().enemies[0].mode };
-    }, [ramp.x, ramp.y, ramp.w, ramp.h]);
-    expect(r.onRamp).toBe(true);
-    expect(r.mode).toBe('arrache');
-  });
-
-  test('un zombie entré par F1 rejoint le joueur dans la grande salle par l\'ouverture ; un zombie dans la poche nord en sort', async ({ page }) => {
+  test('F3 (ouest de l\'aile) : le zombie atteint son emplacement et arrache', async ({ page }) => {
     await open(page);
     const r = await page.evaluate(() => {
       const zs = window.__zs;
-      zs.setPlayer(2300, 2000);
+      zs.spawnAtWindow('F3', 'marcheur');
+      for (let i = 0; i < 1200; i += 1) {
+        zs.step(0.05);
+        if (zs.getState().enemies[0].mode === 'arrache') break;
+      }
+      return zs.getState().enemies[0].mode;
+    });
+    expect(r).toBe('arrache');
+  });
+
+  test('un zombie entré par F1 rejoint le joueur dans la grande salle en passant par l\'ouverture ; un zombie de l\'aile aussi', async ({ page }) => {
+    await open(page);
+    const r = await page.evaluate(() => {
+      const zs = window.__zs;
       zs.setPlanks('F1', 0);
       zs.spawnAtWindow('F1', 'marcheur');
       let contact = null;
-      for (let i = 0; i < 2400 && contact === null; i += 1) {
+      for (let i = 0; i < 3600 && contact === null; i += 1) {
         zs.step(0.05);
         const s = zs.getState();
         const z = s.enemies[0];
         if (Math.hypot(z.x - s.player.x, z.y - s.player.y) < 60) contact = i * 0.05;
       }
-      // Poche nord : un zombie « libre » dans l'alcôve (1570..1930 × 1345..1505) doit en sortir.
       zs.killAll();
-      zs.setPlayer(2300, 2000);
-      zs.spawnEnemy(1700, 1400);
-      zs.step(15);
-      const z2 = zs.getState().enemies[0];
-      return { contact, pocket: { x: z2.x, y: z2.y }, hp: zs.getState().player.health };
+      const aile = zs.getState().windows.find((w) => w.id === 'F3');
+      zs.spawnEnemy(aile.x + 150, aile.y - 300);
+      let contact2 = null;
+      for (let i = 0; i < 2400 && contact2 === null; i += 1) {
+        zs.step(0.05);
+        const s = zs.getState();
+        const z = s.enemies[0];
+        if (z && Math.hypot(z.x - s.player.x, z.y - s.player.y) < 60) contact2 = i * 0.05;
+        if (s.dead) break;
+      }
+      return { contact, contact2 };
     });
     expect(r.contact).not.toBeNull();
-    expect(r.pocket.y).toBeGreaterThan(1505);
+    expect(r.contact2).not.toBeNull();
   });
 
   test('réparation d\'une fenêtre à chaque coin de la carte (F1, F3, F6, F8) selon les règles du lot 3', async ({ page }) => {

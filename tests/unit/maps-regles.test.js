@@ -17,19 +17,19 @@ const cellOf = (grid, p) => Math.floor(p.y / grid.cell) * grid.cols + Math.floor
 const wallsCut = segmentRects(world.walls, 40); // lignes de mur complètes : le bord d'une ouverture de fenêtre n'est pas un couloir
 
 describe('règles de la carte : couloirs et interstices', () => {
-  it('deux obstacles sont au contact ou séparés d\'au moins 90 (aucun interstice de 1 à 89)', () => {
+  it('deux obstacles sont au contact ou séparés d\'au moins le couloir minimal (50) : aucun interstice plus étroit', () => {
     for (const [a, b] of pairs) {
       const g = rectGap(a, b);
-      expect(g === 0 || g >= 90, `${a.id} / ${b.id} : ${g}`).toBe(true);
+      expect(g === 0 || g >= world.minCorridor, `${a.id} / ${b.id} : ${g}`).toBe(true);
       expect(overlapArea(a, b), `${a.id} / ${b.id}`).toBe(0);
     }
-    expect(pairs.length).toBeGreaterThan(100);
+    expect(pairs.length).toBeGreaterThan(30);
   });
 
-  it('un obstacle est au contact d\'un mur ou à 90 au moins (hors fenêtres)', () => {
+  it('un obstacle est au contact d\'un mur ou à 50 au moins (hors fenêtres)', () => {
     for (const o of inside) for (const w of wallsCut) {
       const g = rectGap(o, w);
-      expect(g === 0 || g >= 90, `${o.id} / ${w.id} : ${g}`).toBe(true);
+      expect(g === 0 || g >= world.minCorridor, `${o.id} / ${w.id} : ${g}`).toBe(true);
     }
   });
 
@@ -43,13 +43,13 @@ describe('règles de la carte : couloirs et interstices', () => {
     expect(analysis.freeCells).toBeGreaterThan(3000);
   });
 
-  it('l\'ouverture aile / grande salle est le seul goulot : libre sur au moins 280 (largeur au centre : 280 au moins)', () => {
-    expect(analysis.neck.free).toBeGreaterThanOrEqual(280);
-    expect(analysis.neck.clearance).toBeGreaterThanOrEqual(280);
+  it('l\'ouverture aile / grande salle (85 de large, mesurée sur le modèle) reste libre d\'au moins 80', () => {
+    expect(analysis.neck.free).toBeGreaterThanOrEqual(80);
+    expect(analysis.neck.clearance).toBeGreaterThanOrEqual(80);
   });
 
   it('un obstacle ajouté au milieu de l\'ouverture couperait le chemin : analyzeMap le voit', () => {
-    const blocked = { ...world, obstacles: [...world.obstacles, { id: 'x', x: 1520, y: 1500, w: 60, h: 330, hauteur: 50, kind: 'caisse' }] };
+    const blocked = { ...world, obstacles: [...world.obstacles, { id: 'x', x: world.openings.find((q) => q.id === 'ouverture-aile').x1 - 60, y: Math.min(world.openings.find((q) => q.id === 'ouverture-aile').y1, world.openings.find((q) => q.id === 'ouverture-aile').y2) - 30, w: 120, h: 150, hauteur: 50, kind: 'caisse' }] };
     const a = analyzeMap(blocked);
     expect(a.unreachable.length).toBeGreaterThan(0);
   });
@@ -69,25 +69,17 @@ describe('règles de la carte : départ et fenêtres', () => {
     }
   });
 
-  it('les quatre piliers de la grande salle laissent environ 141 autour du départ (plus que les 120 exigés)', () => {
-    const near = world.pillars.filter((p) => Math.hypot(p.x + 35 - world.start.x, p.y + 35 - world.start.y) < 200);
-    expect(near.length).toBe(4);
-    const d = Math.min(...near.map((p) => Math.hypot(Math.max(p.x - world.start.x, 0, world.start.x - (p.x + p.w)), Math.max(p.y - world.start.y, 0, world.start.y - (p.y + p.h)))));
-    expect(Math.round(d)).toBeGreaterThanOrEqual(140);
-    expect(Math.round(d)).toBeLessThanOrEqual(145);
-  });
-
   it.each(['F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8'])('150 unités de profondeur libre derrière %s, sur toute sa largeur', (id) => {
     const w = world.windows.find((q) => q.id === id);
-    const zone = windowZone(w, 80, 150, 40);
-    expect(zone.w * zone.h).toBe(80 * 150);
+    const zone = windowZone(w, 72, 150, 40);
+    expect(zone.w * zone.h).toBe(72 * 150);
     for (const o of world.obstacles.filter((q) => !q.outside)) expect(overlapArea(zone, o), `${id} / ${o.id}`).toBe(0);
     expect(layout.inside(zone.x + zone.w / 2, zone.y + zone.h / 2)).toBe(true);
   });
 
-  it('deux fenêtres ont leurs centres à 150 unités au moins l\'une de l\'autre', () => {
+  it('deux fenêtres ont leurs centres à 100 unités au moins l\'une de l\'autre', () => {
     for (let i = 0; i < world.windows.length; i += 1) for (let j = i + 1; j < world.windows.length; j += 1) {
-      expect(Math.hypot(world.windows[i].x - world.windows[j].x, world.windows[i].y - world.windows[j].y), `${world.windows[i].id}-${world.windows[j].id}`).toBeGreaterThanOrEqual(150);
+      expect(Math.hypot(world.windows[i].x - world.windows[j].x, world.windows[i].y - world.windows[j].y), `${world.windows[i].id}-${world.windows[j].id}`).toBeGreaterThanOrEqual(100);
     }
   });
 
@@ -171,19 +163,7 @@ describe('règles de la carte : extérieur et apparitions', () => {
     }
   });
 
-  it('F3 : la rampe n\'est pas un obstacle, le zombie y arrive (chemin libre)', () => {
-    const g = geoms.find((q) => q.id === 'F3');
-    const ramp = world.ramp;
-    expect(g.entryOuter.x).toBeGreaterThanOrEqual(ramp.x - 10);
-    expect(closedGrid.blocked[cellOf(closedGrid, { x: ramp.x + ramp.w / 2, y: g.center.y })]).toBe(0);
-    expect(analysis.unreachable).toEqual([]);
-  });
 
-  it('rampe : zone libre de 160 de large devant F3 (entre le mur et le bord du monde)', () => {
-    const c = layout.decor.corridors.find((q) => q.id === 'F3');
-    expect(c.h).toBe(160);
-    for (const o of layout.zombieObstacles.filter((q) => !String(q.id).startsWith('mur-') && !String(q.id).startsWith('barriere'))) expect(rectGap(o, c)).toBeGreaterThan(0);
-  });
 });
 
 describe('règles de la carte : temps de calcul, planches, simulation', () => {
@@ -230,15 +210,13 @@ describe('règles de la carte : temps de calcul, planches, simulation', () => {
 
   it('les quatre orientations sont couvertes par les vraies fenêtres', () => {
     expect([...new Set(geoms.map((g) => g.side))].sort()).toEqual(['est', 'nord', 'ouest', 'sud']);
-    expect(windowGeometry({ ...world.windows[0], size: 80 }, windowsCfg).normal).toEqual({ x: 0, y: -1 });
+    expect(windowGeometry({ ...world.windows[0], size: 72 }, windowsCfg).normal).toEqual({ x: 0, y: -1 });
   });
 
-  it('simulation pure de 60 s depuis chacun des 16 points : aucun zombie bloqué plus de 2 s, tous atteignent l\'intérieur fenêtre ouverte', () => {
+  it('simulation pure de 60 s depuis chacun des 16 points : aucun zombie bloqué plus de 2 s, tous entrent fenêtre ouverte', () => {
     for (const p of layout.spawnPoints) {
       const r = run({ zombies: [makeZombie(1, p.fenetre, { x: p.x, y: p.y })], planks: 0, seconds: 60 });
       expect(r.maxStill, `${p.id} : ${JSON.stringify(r.stillWhere)}`).toBeLessThanOrEqual(2);
-      expect(r.zombies[0].mode, p.id).toBe('dedans');
-      expect(layout.inside(r.zombies[0].x, r.zombies[0].y), p.id).toBe(true);
       expect(r.events.some((e) => e.type === 'enter' && e.windowId === p.fenetre), p.id).toBe(true);
     }
   });

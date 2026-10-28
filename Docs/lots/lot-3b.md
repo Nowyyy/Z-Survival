@@ -36,3 +36,6 @@ Aucun levier Lighthouse appliqué (50 / 50, seuil 45). Branche `lot-3b` (la sess
 **À tester par moi** : `carte.html` sur téléphone en paysage et sur ordinateur, comparée à mon plan ; `jeu.html?labels=1&zoom=1` pour F1 à F8 ; jouer, défendre F3, F5, F7 ; vérifier le passage aile / grande salle, la poche, les piliers, la rampe, les carrés et débris des fenêtres sud. Retours par identifiant (`F7 : trop à gauche`, `pilier (176,228) : manquant`, `ouverture aile : trop étroite`).
 
 **Fusion (à faire par moi)** : Pull Request `lot-3b` vers `main`, « Create a merge commit », ne pas supprimer la branche ; pages : `/`, `/dev/` (journal), `/lots/lot-3b/jeu.html`, `/lots/lot-3b/carte.html`.
+
+## Mise à jour : carte refaite d'après le modèle SketchUp
+Retours du propriétaire : fenêtres de 80 (puis 72 mesurées sur le modèle), flèches de bord retirées, couloir minimal abaissé de 90 à 50, `plan.json` refait d'après le modèle (coupe à 1,2 m) : aile de 441 × 1 656, grande salle de 1 644 × 621, ouverture de 85, 8 fenêtres de 72, 11 piliers de 35, un escalier, sans rampe, monde de 4 040 × 3 460. Tests de fidélité réécrits d'après le nouveau plan ; budget de dessin toujours mesuré par le test (193 appels). Détails : `Docs/ref/conventions.md`.

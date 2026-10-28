@@ -8,70 +8,63 @@ const out = planToWorld(plan, params);
 const bySide = (id) => world.windows.find((w) => w.id === id);
 
 describe('conversion plan -> monde : formule, origine, échelle', () => {
-  it('x_monde = (x_px - 82) * 5 + 800 et y_monde = (y_px - 107) * 5 + 800', () => {
-    expect(px(130, 107)).toEqual({ x: 1040, y: 800 });
-    expect(px(535, 420)).toEqual({ x: 3065, y: 2365 });
-    expect(px(318, 360)).toEqual({ x: 1980, y: 2065 });
+  it('x_monde = (x_px - x0) * 5 + 800 et y_monde = (y_px - y0) * 5 + 800, (x0, y0) = coin haut gauche de la boîte englobante', () => {
+    const { x0, y0 } = plan.bbox;
+    expect(px(x0, y0)).toEqual({ x: 800, y: 800 });
+    expect(px(x0 + 100, y0 + 40)).toEqual({ x: 1300, y: 1000 });
   });
 
-  it('planToWorld applique la formule aux sommets du contour (valeurs de contrôle du lot)', () => {
-    expect(out.world.contour[0]).toEqual([1040, 800]);
-    expect(out.world.contour[6]).toEqual([3065, 2365]);
+  it('planToWorld applique la formule aux sommets du contour (12 sommets)', () => {
     expect(out.world.contour.length).toBe(12);
     plan.contour.forEach(([x, y], i) => expect(out.world.contour[i]).toEqual([px(x, y).x, px(x, y).y]));
+    expect(out.world.contour[0]).toEqual([1045, 900]);
   });
 
-  it('le départ du joueur (318, 360) devient (1980, 2065)', () => {
-    expect(out.world.start).toEqual({ x: 1980, y: 2065 });
+  it('le départ du joueur est converti avec la même formule', () => {
+    expect(out.world.start).toEqual(px(plan.start[0], plan.start[1]));
   });
 
-  it('taille du monde = boîte englobante du plan + 2 × 800, arrondie au multiple de 20 : 3 880 × 3 180', () => {
-    expect(out.world.size).toEqual({ width: 3880, height: 3180 });
-    expect(out.world.size.width % 20).toBe(0);
-    expect(out.world.size.height % 20).toBe(0);
-    expect((535 - 82) * 5 + 1600).toBe(3865);
-    expect((422 - 107) * 5 + 1600).toBe(3175);
+  it('taille du monde = boîte englobante du plan + 2 × 800, arrondie au multiple de 20 supérieur : 4 040 × 3 460', () => {
+    const { x0, y0, x1, y1 } = plan.bbox;
+    expect(out.world.size).toEqual({ width: Math.ceil(((x1 - x0) * 5 + 1600) / 20) * 20, height: Math.ceil(((y1 - y0) * 5 + 1600) / 20) * 20 });
+    expect(out.world.size).toEqual({ width: 4040, height: 3460 });
   });
 
   it('la boîte englobante du bâtiment (room) est celle du contour converti', () => {
-    expect(out.world.room).toEqual({ x: 1040, y: 800, width: 2025, height: 1565, wall: 0 });
+    const xs = out.world.contour.map((c) => c[0]);
+    const ys = out.world.contour.map((c) => c[1]);
+    expect(out.world.room).toEqual({ x: Math.min(...xs), y: Math.min(...ys), width: Math.max(...xs) - Math.min(...xs), height: Math.max(...ys) - Math.min(...ys), wall: 0 });
   });
 
   it('une autre échelle ou une autre marge change le monde en conséquence (aucun chiffre en dur)', () => {
     const big = planToWorld(plan, { ...params, scale: 4, margin: 400 });
-    expect(big.world.contour[0]).toEqual([(130 - 82) * 4 + 400, 400]);
-    expect(big.world.size.width).toBe(Math.ceil(((535 - 82) * 4 + 800) / 20) * 20);
+    const [cx, cy] = plan.contour[0];
+    expect(big.world.contour[0]).toEqual([(cx - plan.bbox.x0) * 4 + 400, (cy - plan.bbox.y0) * 4 + 400]);
+    expect(big.world.size.width).toBe(Math.ceil(((plan.bbox.x1 - plan.bbox.x0) * 4 + 800) / 20) * 20);
   });
 
-  it('les ouvertures sans porte sont converties : aile / grande salle et alcôve nord', () => {
+  it('les ouvertures sans porte sont converties : aile / grande salle (85 de large) et passage vers le haut de l\'aile', () => {
     const aile = out.world.openings.find((o) => o.id === 'ouverture-aile');
-    const alcove = out.world.openings.find((o) => o.id === 'ouverture-alcove');
-    expect(aile).toMatchObject({ x1: 1550, y1: 1505, x2: 1550, y2: 1825 });
-    expect(alcove).toMatchObject({ x1: 1550, y1: 1505, x2: 1930, y2: 1505 });
+    const haut = out.world.openings.find((o) => o.id === 'ouverture-haut');
+    expect(Math.abs(aile.y2 - aile.y1)).toBe(85);
+    expect(Math.abs(haut.x2 - haut.x1)).toBeGreaterThan(300);
   });
 
   it('les murs sont des segments (contour puis murs intérieurs) d\'épaisseur 40', () => {
-    expect(out.world.walls.length).toBe(14);
+    expect(out.world.walls.length).toBe(15);
     expect(out.world.wallThickness).toBe(40);
     expect(out.world.wallHeight).toBe(60);
   });
 });
 
-describe('fenêtres décalées (10 px au plus = 50 unités)', () => {
-  it.each([['F5', 50], ['F6', 40], ['F7', 45]])('%s est décalée de %i unités par rapport au plan', (id, units) => {
-    const shift = out.report.shifts.find((s) => s.id === id);
-    expect(shift.units).toBe(units);
-    expect(shift.units).toBeLessThanOrEqual(50);
+describe('fenêtres : positions du plan, largeur 72, décalage maximal de 50 unités', () => {
+  it('les fenêtres du plan (relevées sur le modèle) ne sont pas décalées', () => {
+    expect(out.report.shifts).toEqual([]);
+    for (const w of plan.windows) expect(bySide(w.id)).toMatchObject({ x: px(w.x, w.y).x, y: px(w.x, w.y).y, side: w.side });
   });
 
   it('aucune fenêtre n\'est décalée de plus de 50 unités (décalages automatiques compris)', () => {
     for (const s of out.report.shifts) expect(s.units, s.id).toBeLessThanOrEqual(50);
-    expect(out.report.shifts.map((s) => s.id).sort()).toEqual(['F5', 'F6', 'F7']);
-  });
-
-  it('F4 reste à sa place du plan : sa zone libre (80 de large) ne touche pas le bloc fusionné', () => {
-    expect(bySide('F4').x).toBe(2540);
-    expect(out.report.shifts.find((s) => s.id === 'F4')).toBeUndefined();
   });
 
   it('un pilier dans la zone d\'une fenêtre la fait glisser le long du mur, sans dépasser 50 unités', () => {
@@ -79,7 +72,7 @@ describe('fenêtres décalées (10 px au plus = 50 unités)', () => {
       bbox: { x0: 0, y0: 0, x1: 100, y1: 80 },
       contour: [[10, 10], [90, 10], [90, 70], [10, 70]],
       windows: [{ id: 'A', side: 'nord', x: 50, y: 10 }],
-      pillars: [[60, 18]],
+      pillars: [[58, 18]],
       pillarSize: 6,
       start: [20, 60],
     };
@@ -88,7 +81,7 @@ describe('fenêtres décalées (10 px au plus = 50 unités)', () => {
     expect(shift.auto).toBe(true);
     expect(shift.units).toBeGreaterThan(0);
     expect(shift.units).toBeLessThanOrEqual(50);
-    const zone = windowZone(r.world.windows[0], 80, 150, 40);
+    const zone = windowZone(r.world.windows[0], 72, 150, 40);
     for (const o of r.world.obstacles) expect(o.x >= zone.x + zone.w || o.x + o.w <= zone.x || o.y >= zone.y + zone.h || o.y + o.h <= zone.y).toBe(true);
   });
 
@@ -136,9 +129,9 @@ describe('fusion des interstices', () => {
     expect(r.items[0].hauteur).toBe(70);
   });
 
-  it('dans la carte : l\'escalier courbe et les deux piliers voisins forment un bloc, le comptoir du fond aussi', () => {
-    expect(out.report.merged.map((m) => m.id).sort()).toEqual(['M2+M3+M4', 'escalier-courbe+pilier-6+pilier-11']);
-    expect(out.world.obstacles.find((o) => o.id === 'escalier-courbe+pilier-6+pilier-11')).toMatchObject({ x: 2040, y: 1505, w: 445, h: 300, hauteur: 70 });
+  it('dans la carte : les blocs fusionnés du rapport sont des obstacles du monde', () => {
+    for (const m of out.report.merged) expect(out.world.obstacles.find((o) => o.id === m.id), m.id).toBeDefined();
+    expect(out.world.generation.merged).toEqual(out.report.merged);
   });
 });
 
@@ -175,7 +168,7 @@ describe('planToWorld : pureté, déterminisme, entrées hostiles', () => {
     const a = planToWorld(plan, params);
     a.world.obstacles.length = 0;
     a.world.windows[0].x = -1;
-    expect(planToWorld(plan, params).world.windows[0].x).toBe(1195);
+    expect(planToWorld(plan, params).world.windows[0].x).toBe(out.world.windows[0].x);
   });
 
   it.each(WEIRD.map((w) => [JSON.stringify(w) ?? String(w), w]))('plan hostile %s : aucun monde, aucune exception', (_n, bad) => {
@@ -187,8 +180,8 @@ describe('planToWorld : pureté, déterminisme, entrées hostiles', () => {
 
   it('paramètres hostiles : les valeurs de repli s\'appliquent', () => {
     for (const bad of WEIRD) expect(() => planToWorld(plan, bad)).not.toThrow();
-    expect(planToWorld(plan, null).world.size).toEqual({ width: 3880, height: 3180 });
-    expect(planToWorld(plan, { scale: -3, margin: 'x', windowSize: NaN }).world.windowSize).toBe(80);
+    expect(planToWorld(plan, null).world.size).toEqual({ width: 4040, height: 3460 });
+    expect(planToWorld(plan, { scale: -3, margin: 'x', windowSize: NaN }).world.windowSize).toBe(72);
   });
 
   it('cleanPlan et cleanParams ne lèvent pas d\'exception', () => {

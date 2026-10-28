@@ -41,10 +41,10 @@ describe('map-svg.js : carte du rez-de-chaussée', () => {
     expect(count(svg, /class="fenetre"/g)).toBe(8);
   });
 
-  it('onze piliers, trois escaliers, une rampe, des meubles et 16 points d\'apparition', () => {
+  it('onze piliers, un escalier, aucune rampe, des meubles et 16 points d\'apparition', () => {
     expect(count(svg, /class="pilier"/g)).toBe(11);
-    expect(count(svg, /class="escalier"/g)).toBe(3);
-    expect(count(svg, /<rect class="rampe"/g)).toBe(1);
+    expect(count(svg, /class="escalier"/g)).toBe(1);
+    expect(count(svg, /<rect class="rampe"/g)).toBe(0);
     expect(count(svg, /class="meuble /g)).toBe(world.obstacles.filter((o) => !['pilier', 'escalier'].includes(o.kind)).length);
     expect(count(svg, /class="apparition"/g)).toBe(16);
   });
@@ -64,8 +64,8 @@ describe('map-svg.js : carte du rez-de-chaussée', () => {
     expect(count(svg, /class="mur"/g)).toBeGreaterThan(14);
   });
 
-  it('un blocs fusionnés est signalé (3 pièces et 2 pièces)', () => {
-    expect(count(svg, /class="bloc"/g)).toBe(2);
+  it('les blocs fusionnés du monde sont signalés', () => {
+    expect(count(svg, /class="bloc"/g)).toBe(world.obstacles.filter((o) => (o.parts ?? []).length > 1).length);
   });
 
   it('aucune couleur dans la sortie : tout passe par des classes', () => {
@@ -95,8 +95,9 @@ describe('map-svg.js : texte, options, entrées hostiles', () => {
 
   it('crop « batiment » resserre la vue ; showSpawns faux retire les points d\'apparition', () => {
     const near = mapToSvg(world, decorCfg, { crop: 'batiment', labels: LABELS });
-    expect(near).toContain('viewBox="740 500 2625 2165"');
-    expect(svg).toContain('viewBox="0 0 3880 3180"');
+    expect(near).toMatch(/viewBox="\d+ \d+ \d+ \d+"/);
+    expect(near).not.toContain(`viewBox="0 0 ${world.size.width} ${world.size.height}"`);
+    expect(svg).toContain(`viewBox="0 0 ${world.size.width} ${world.size.height}"`);
     const bare = mapToSvg(world, decorCfg, { showSpawns: false, labels: LABELS });
     expect(count(bare, /class="apparition"/g)).toBe(0);
   });

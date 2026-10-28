@@ -25,8 +25,8 @@ export const geoms = windowGeometries(windowsWithGaps(layout), windowsCfg);
 export const siegeParams = { ...windowsCfg, bounds: layout.bounds, inside: layout.inside };
 export const gridOpts = { cell: navCfg.cell, radius: zombieR, inflate: navCfg.inflate };
 
-// Pixels du plan -> unités du monde (formule du lot : 5 unités par pixel, origine (82, 107), marge de 800).
-export const px = (x, y) => ({ x: (x - 82) * 5 + 800, y: (y - 107) * 5 + 800 });
+// Pixels du plan -> unités du monde (5 unités par pixel, origine = coin haut gauche de la boîte englobante du plan, marge de 800).
+export const px = (x, y) => ({ x: (x - plan.bbox.x0) * 5 + 800, y: (y - plan.bbox.y0) * 5 + 800 });
 
 export const closedGrid = createGrid(layout.size, [...layout.zombieObstacles, ...layout.gaps], gridOpts);
 export const fields = Object.fromEntries(geoms.map((g) => [g.id, buildWindowField({ grid: closedGrid }, g)]));
