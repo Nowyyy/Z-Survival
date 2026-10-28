@@ -216,7 +216,7 @@ function addDecor(b, region, decor, outdoorSoil) {
 
 // layout : sortie de js/core/layout.js ; textures : sortie de createThreeTextures (js/game/textures.js).
 // Renvoie { scene, setShadows, followSun }.
-export function buildWorld({ palette, layout, render, textures }) {
+export function buildWorld({ palette, layout, render, textures, windowGeoms = [], windowsCfg = null, seed = 1 }) {
   const { room, size } = layout;
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(palette.ground);
@@ -281,8 +281,14 @@ export function buildWorld({ palette, layout, render, textures }) {
   b.scenery.mesh(scene, atlasMaterial, { receive: true });
   b.props.mesh(scene, atlasMaterial, { cast: true, receive: true });
 
+  // Planches des fenêtres (lot 3) : un seul maillage dynamique, 2 triangles par planche (quadrilatère vertical dans l'ouverture, légèrement
+  // incliné d'un angle propre à chaque planche, graine du jeu), texture de bois de l'atlas de props (région existante), double face, sans ombre.
+  // Une planche arrachée est écrasée en un point (triangles dégénérés), une planche posée reprend sa place : aucun objet recréé.
+  const planks = windowGeoms.length > 0 && windowsCfg ? createPlanks({ scene, material: atlasMaterial, rect: region('bois'), geoms: windowGeoms, count: windowsCfg.planks, render, seed }) : null;
+
   return {
     scene,
+    planks,
     setShadows(on) {
       sun.castShadow = Boolean(on);
     },
@@ -295,6 +301,81 @@ export function buildWorld({ palette, layout, render, textures }) {
         Object.assign(sun.shadow.camera, { left: -h, right: h, top: h, bottom: -h });
         sun.shadow.camera.updateProjectionMatrix();
       }
+    },
+  };
+}
+
+const PLANK_TILT = (4 * Math.PI) / 180; // inclinaison maximale d'une planche
+const PLANK_LEAN = 10; // le haut des planches penche vers la salle (mieux vu d'en haut) : écart entre le bas et le haut de la pile
+const PLANK_INSET = 8; // la planche est clouée près de la face intérieure du mur (position de la fenêtre moins 8 le long de la normale)
+
+function createPlanks({ scene, material, rect, geoms, count, render, seed }) {
+  const total = geoms.length * count;
+  const base = new Float32Array(total * 18);
+  const uvs = new Float32Array(total * 12);
+  const sill = render.sillHeight;
+  const open = render.lintelBottom - render.sillHeight; // hauteur de l'ouverture
+  const h = open / count; // hauteur d'une planche, jointoyée par 1 unité
+  const index = new Map(); // fenêtre -> premier numéro de planche
+  geoms.forEach((g, w) => {
+    index.set(g.id, w * count);
+    const cx = g.center.x - g.normal.x * PLANK_INSET;
+    const cz = g.center.y - g.normal.y * PLANK_INSET;
+    for (let i = 0; i < count; i += 1) {
+      const n = w * count + i;
+      const tilt = (unit(seed + 7, n) * 2 - 1) * PLANK_TILT;
+      const half = g.width / 2 - 2;
+      const hh = h / 2 - 0.5;
+      const cy = sill + h * (i + 0.5);
+      // Coins (le long du mur, hauteur) tournés dans le plan du mur autour du centre de la planche.
+      const corners = [[-half, hh], [half, hh], [half, -hh], [-half, -hh]].map(([a, b]) => {
+        const ra = a * Math.cos(tilt) - b * Math.sin(tilt);
+        const rb = a * Math.sin(tilt) + b * Math.cos(tilt);
+        const lean = -((cy + rb - sill) / open - 0.5) * PLANK_LEAN * 2; // le bas sort vers l'extérieur, le haut entre dans la salle
+        return [cx + g.tangent.x * ra + g.normal.x * (i * 0.2 + lean), cy + rb, cz + g.tangent.y * ra + g.normal.y * (i * 0.2 + lean)];
+      });
+      const v0 = rect.v0 + ((rect.v1 - rect.v0) * i) / count;
+      const v1 = rect.v0 + ((rect.v1 - rect.v0) * (i + 1)) / count;
+      const quadUv = [[rect.u0, v0], [rect.u1, v0], [rect.u1, v1], [rect.u0, v1]];
+      [0, 1, 2, 0, 2, 3].forEach((c, k) => {
+        base.set(corners[c], n * 18 + k * 3);
+        uvs.set(quadUv[c], n * 12 + k * 2);
+      });
+    }
+  });
+  const positions = new Float32Array(base);
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+  geometry.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
+  geometry.computeVertexNormals();
+  geometry.boundingSphere = new THREE.Sphere(new THREE.Vector3(0, 0, 0), 1e5); // les planches ne sont jamais écartées par la caméra
+  const plankMaterial = material.clone();
+  plankMaterial.side = THREE.DoubleSide;
+  const mesh = new THREE.Mesh(geometry, plankMaterial);
+  mesh.castShadow = false;
+  mesh.receiveShadow = false;
+  mesh.frustumCulled = false;
+  scene.add(mesh);
+  const shown = new Int8Array(total).fill(-1); // dernier état écrit (1 posée, 0 arrachée)
+  return {
+    mesh,
+    triangles: total * 2,
+    // state : sortie de createWindowsState / stepWindows ; ne réécrit que les planches dont l'état a changé.
+    sync(state) {
+      let changed = false;
+      for (const [id, first] of index) {
+        const have = state?.windows?.[id]?.planks ?? 0;
+        for (let i = 0; i < count; i += 1) {
+          const on = i < have ? 1 : 0;
+          const n = first + i;
+          if (shown[n] === on) continue;
+          shown[n] = on;
+          changed = true;
+          if (on) positions.set(base.subarray(n * 18, n * 18 + 18), n * 18);
+          else positions.fill(0, n * 18, n * 18 + 18);
+        }
+      }
+      if (changed) geometry.attributes.position.needsUpdate = true;
     },
   };
 }

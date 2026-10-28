@@ -205,7 +205,7 @@ test.describe('monde du lot 1b', () => {
   });
 
   test('aucun zombie n\'est bloqué plus de 2 s contre un meuble (huit zombies, 60 s)', async ({ page }) => {
-    await open(page, '');
+    await open(page, '&planks=0'); // lot 3 : fenêtres ouvertes (sans elles, les zombies attendent à leur fenêtre, ce qui n'est pas un blocage contre un meuble)
     const stuck = await page.evaluate(() => {
       const problems = [];
       const anchors = new Map();

@@ -5,10 +5,12 @@ import { aimFromPoint, aimFromStick, createAim } from '../core/aim.js';
 import { applyImpacts, createWeaponState, displayHealth, healOnKill, muzzlePoint, stepContact, stepWeapon } from '../core/combat.js';
 import { stepEnemies } from '../core/enemy-ai.js';
 import { createEnemy, isGait, isType } from '../core/enemy-factory.js';
-import { entryWindow } from '../core/layout.js';
+import { entryWindow, windowsWithGaps } from '../core/layout.js';
+import { occupancy, stepSiege } from '../core/siege.js';
+import { closedRects, createWindowsState, stepWindows, windowGeometries } from '../core/windows.js';
 import { moveCircle } from '../core/movement.js';
 import { effectivePlayer, effectiveWeapon, normalizeLevels, STAT_IDS, statValues } from '../core/player-stats.js';
-import { createFlowState, createGrid, stepFlow } from '../core/nav.js';
+import { buildWindowField, createFlowState, createGrid, stepFlow } from '../core/nav.js';
 import { computePose } from '../core/pose.js';
 import { createBullet, stepBullets } from '../core/projectile.js';
 import { castRay } from '../core/ray.js';
@@ -28,9 +30,10 @@ import { createHud } from './hud.js';
 import { createSplashView } from './splash-view.js';
 import { pickGround } from './picking.js';
 import { STRIDE } from './skeleton.js';
-import { fmt } from './texts.js';
+import { fmt, WINDOW_NAMES, WINDOW_TEXTS } from './texts.js';
 import { createThreeTextures } from './textures.js';
 import { buildWorld, createCamera } from './world.js';
+import { screenPoint } from './picking.js';
 
 const RECOIL_TIME = 0.12;
 const HIT_FLASH_TIME = 0.1;
@@ -54,7 +57,22 @@ export function createGame(ctx) {
   const blockers = layout.empty ? [] : [...layout.furniture, ...layout.walls, ...layout.decor.solids];
   const shotBounds = layout.empty ? bounds : layout.worldBounds;
   // Les zombies contournent les meubles par un champ de flux ; la salle du lot 1m (?empty=1) garde la poursuite en ligne droite.
-  const grid = layout.empty ? null : createGrid(layout.size, layout.zombieObstacles, { cell: cfg.nav.cell, radius: cfg.zombie.radius, inflate: cfg.nav.inflate });
+  // Lot 3 : les fenêtres de la salle ont des planches (siège par les zombies) ; la salle du lot 1m (?empty=1) n'a ni planches ni siège.
+  const windowsCfg = cfg.windows;
+  const siegeOn = !layout.empty;
+  const geoms = siegeOn ? windowGeometries(windowsWithGaps(layout), windowsCfg) : [];
+  const geomById = new Map(geoms.map((g) => [g.id, g]));
+  const siegeParams = { ...windowsCfg, bounds: layout.bounds };
+  const gridOpts = { cell: cfg.nav.cell, radius: cfg.zombie.radius, inflate: cfg.nav.inflate };
+  // Champ de flux de chaque fenêtre, calculé une seule fois au chargement sur la grille extérieure (ouvertures bloquées) ; durée mesurée (?fps=1).
+  const fieldStart = performance.now();
+  const closedGrid = siegeOn ? createGrid(layout.size, [...layout.zombieObstacles, ...layout.gaps], gridOpts) : null;
+  const windowFields = Object.fromEntries(geoms.map((g) => [g.id, buildWindowField({ grid: closedGrid }, g)]));
+  const fieldMs = performance.now() - fieldStart;
+  if (ctx.perf) ctx.perf.windowsMs = fieldMs;
+  // Obstacles des zombies : décor, murs et meubles, plus les ouvertures qui ont encore des planches (mis à jour quand une fenêtre s'ouvre ou se ferme).
+  let zombieSolids = layout.zombieObstacles;
+  let grid = layout.empty ? null : createGrid(layout.size, zombieSolids, gridOpts);
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   let renderer;
@@ -69,7 +87,7 @@ export function createGame(ctx) {
   document.getElementById('game-canvas').appendChild(renderer.domElement);
 
   const textures = createThreeTextures(ctx.textureData, renderer);
-  const world = buildWorld({ palette, layout, render, textures });
+  const world = buildWorld({ palette, layout, render, textures, windowGeoms: geoms, windowsCfg, seed: ctx.seed });
   const rig = createCamera(render.camera, cfg.camera, layout, params.tilt, params.zoom);
   const kit = createKit({ textures, variants: ctx.variants, hit: palette.hit });
   const effects = createEffects(world.scene, palette, { gunHeight: render.gunHeight, bulletRadius: cfg.weapon.bulletRadius });
@@ -111,6 +129,21 @@ export function createGame(ctx) {
   let size = { width: 1, height: 1, unitsPerPixel: 1 };
   let stale = true; // vrai tant que l'image affichée n'est pas à jour
 
+  // Planches : les obstacles et la grille des zombies suivent l'état des fenêtres (seulement quand une fenêtre s'ouvre ou se ferme), le maillage
+  // des planches aussi.
+  function syncWindows() {
+    zombieSolids = siegeOn ? [...layout.zombieObstacles, ...closedRects(sim.win, geoms)] : layout.zombieObstacles;
+    if (grid) {
+      grid = createGrid(layout.size, zombieSolids, gridOpts);
+      sim.flow = createFlowState();
+    }
+    world.planks?.sync(sim.win);
+  }
+  function dictName(id) {
+    const key = WINDOW_NAMES[id];
+    return key ? ctx.dict[key] : id;
+  }
+
   // Partie neuve : état pur remis à zéro, zombies retirés (leurs personnages vont dans le stock).
   function reset(seed) {
     for (const z of zombies.values()) {
@@ -133,6 +166,9 @@ export function createGame(ctx) {
       splash: createSplash(),
       splashView: stepSplash(createSplash(), null, 0, splashOptions).view,
       flow: createFlowState(),
+      win: createWindowsState(geoms, windowsCfg, { planks: params.planks ?? undefined }),
+      repair: {},
+      announced: {},
       rng: createRng(seed),
       walk: { phase: 0, steps: createFootsteps() },
       kills: 0,
@@ -145,6 +181,7 @@ export function createGame(ctx) {
       spread: 0, // rapport de vitesse lissé, de 0 (arrêt) à 1 (pleine vitesse)
     };
     splashView.apply(sim.splashView);
+    syncWindows();
     anim = { phase: 0, facing: 0, x: sim.player.x, y: sim.player.y };
     rig.snap(sim.player.x, sim.player.y);
     lastFire = -10;
@@ -175,13 +212,13 @@ export function createGame(ctx) {
 
   // Crée un zombie (createEnemy : type, allure, vague). Sans type (zombie de test), c'est un marcheur de la vague 1 en allure « marche »,
   // dont la variante visuelle vient de variantFor comme avant le lot 2.
-  function addEnemy(x, y, { type, gait, spec, from } = {}) {
+  function addEnemy(x, y, { type, gait, spec, from, window: windowId = null, mode = 'libre' } = {}) {
     const typed = isType(type);
     const created = createEnemy(typed ? type : 'marcheur', isGait(gait) ? gait : 'marche', spec ?? waveSpec(1, sim.waveParams), cfg.enemies, cfg.gaits);
     const visual = typed ? typeIndex.get(type) : variantFor(sim.nextId, ctx.seed, kit.variants.length);
     const enemy = {
       id: sim.nextId, x, y, r: created.radius, health: created.hp, maxHealth: created.maxHp, hitCooldown: 0, flash: 0,
-      type: created.type, gait: created.gait, speed: created.speed, damage: created.damage, stride: created.stride, visual, ...(from === undefined || from === null ? {} : { from }),
+      type: created.type, gait: created.gait, speed: created.speed, damage: created.damage, stride: created.stride, visual, tearMul: created.tearMul, mode, window: windowId, slot: null, ...(from === undefined || from === null ? {} : { from }),
     };
     voices.set(enemy.id, zombieNames[visual]);
     sim.nextId += 1;
@@ -279,7 +316,35 @@ export function createGame(ctx) {
         ctx.perf.flowCount += 1;
         ctx.perf.flowMax = Math.max(ctx.perf.flowMax, ms);
       }
-      sim.enemies = stepEnemies(sim.enemies, sim.player, dt, cfg.zombie, { obstacles: layout.zombieObstacles, bounds: layout.worldBounds, grid, flow: sim.flow.flow, nav: cfg.nav });
+      let windowLive = null;
+      if (siegeOn) {
+        // Siège (js/core/siege.js) : modes et intentions des zombies, arrachage des planches ; réparation automatique près de la fenêtre.
+        const sg = stepSiege(sim.enemies, sim.win, geoms, dt, siegeParams);
+        sim.enemies = sg.zombies;
+        const repairing = {};
+        for (const g of geoms) {
+          const w = sim.win.windows[g.id];
+          repairing[g.id] = !sim.dead && Math.hypot(sim.player.x - g.repairSpot.x, sim.player.y - g.repairSpot.y) <= windowsCfg.repairRadius && w.planks < w.maxPlanks;
+        }
+        const wr = stepWindows(sim.win, { tearing: sg.tearing, repairing, repairBlocked: sg.repairBlocked, repairTime: eff.player.repairTime }, dt, windowsCfg);
+        sim.win = wr.state;
+        sim.repair = Object.fromEntries(geoms.map((g) => [g.id, { repairing: repairing[g.id] === true && sg.repairBlocked[g.id] !== true, blocked: sg.repairBlocked[g.id] === true, progress: sim.win.windows[g.id].repairProgress, attacked: (sg.tearing[g.id] ?? []).length > 0 }]));
+        let changed = false;
+        for (const ev of wr.events) {
+          const g = geomById.get(ev.windowId);
+          if (ev.type === 'plank-torn') events.push({ type: 'plankTorn', x: g.center.x, y: g.center.y, windowId: ev.windowId });
+          else if (ev.type === 'plank-repaired') events.push({ type: 'plankRepaired', x: g.center.x, y: g.center.y, windowId: ev.windowId });
+          if (ev.type === 'window-open' || ev.type === 'window-closed') changed = true;
+          // Annonces vocales : « ouverte » au plus une fois par fenêtre et par 10 s, « réparée » quand toutes les planches sont revenues.
+          if (ev.type === 'window-open' && sim.time - (sim.announced[ev.windowId] ?? -Infinity) >= 10) {
+            sim.announced[ev.windowId] = sim.time;
+            windowLive = fmt(ctx.dict[WINDOW_TEXTS.liveOpen], { name: dictName(ev.windowId) });
+          } else if (ev.type === 'plank-repaired' && ev.planks === sim.win.windows[ev.windowId].maxPlanks) windowLive = fmt(ctx.dict[WINDOW_TEXTS.liveRepaired], { name: dictName(ev.windowId) });
+        }
+        if (changed) syncWindows();
+      }
+      if (windowLive !== null) ctx.ui.setLive(windowLive);
+      sim.enemies = stepEnemies(sim.enemies, sim.player, dt, cfg.zombie, { obstacles: zombieSolids, bounds: layout.worldBounds, grid, flow: sim.flow.flow, nav: cfg.nav, windows: { fields: windowFields } });
       // Par quelle fenêtre chaque zombie est entré : la plus proche de l'endroit où il franchit la limite de la salle.
       sim.enemies = sim.enemies.map((e) => (e.entered || e.x < bounds.minX || e.x > bounds.maxX || e.y < bounds.minY || e.y > bounds.maxY ? e : { ...e, entered: entryWindow(e, layout.windows) }));
     } else {
@@ -291,10 +356,10 @@ export function createGame(ctx) {
     let waveLive = null;
     if (sim.waves.phase !== 'inactif') {
       const view = layout.empty ? null : visibleRect();
-      const out = stepDirector(sim.waves, { dt, alive: sim.enemies.length, view, points: layout.spawnPoints ?? layout.windows });
+      const out = stepDirector(sim.waves, { dt, alive: sim.enemies.length, view, points: layout.spawnPoints ?? layout.windows, siege: siegeOn });
       sim.waves = out.state;
       for (const r of out.requests) {
-        addEnemy(r.x, r.y, { type: r.type, gait: r.gait, spec: out.state.spec, from: r.pointId });
+        addEnemy(r.x, r.y, { type: r.type, gait: r.gait, spec: out.state.spec, from: r.pointId, window: r.window, mode: siegeOn ? r.mode : 'libre' });
         spawnLog.push({ id: r.pointId, time: sim.time, hidden: view ? isHidden(r, view, 0, 0) : true, type: r.type, gait: r.gait });
       }
       for (const ev of out.events) {
@@ -346,6 +411,63 @@ export function createGame(ctx) {
     }
   }
 
+  // Ligne « Fenêtres » du HUD : une entrée par fenêtre (initiale, planches ou « ouverte », « ! » si elle est attaquée).
+  function windowsHud() {
+    return geoms.map((g) => {
+      const w = sim.win.windows[g.id];
+      const name = dictName(g.id);
+      const initial = name.charAt(0).toUpperCase();
+      const entry = w.planks === 0 ? fmt(ctx.dict[WINDOW_TEXTS.open], { initial }) : fmt(ctx.dict[WINDOW_TEXTS.entry], { initial, n: w.planks });
+      return sim.repair[g.id]?.attacked ? fmt(ctx.dict[WINDOW_TEXTS.attacked], { entry }) : entry;
+    });
+  }
+
+  // E2-9 : indicateur de réparation à l'écran (projection du point de réparation de la fenêtre la plus proche qui manque de planches).
+  const repairEl = document.getElementById('repair');
+  const repairLabel = document.getElementById('repair-label');
+  let repairShown = { visible: null, text: null, progress: null, x: null, y: null };
+  function updateRepairIndicator() {
+    if (!repairEl) return;
+    let best = null;
+    let bestD = Infinity;
+    for (const g of geoms) {
+      const w = sim.win.windows[g.id];
+      const d = Math.hypot(sim.player.x - g.repairSpot.x, sim.player.y - g.repairSpot.y);
+      if (w.planks < w.maxPlanks && d <= 2 * windowsCfg.repairRadius && d < bestD) {
+        bestD = d;
+        best = g;
+      }
+    }
+    let visible = false;
+    let x = 0;
+    let y = 0;
+    let text = '';
+    let progress = 0;
+    if (best && !sim.dead) {
+      const pt = screenPoint(rig.camera, best.repairSpot.x, 20, best.repairSpot.y, size);
+      // Il ne déborde jamais des marges : masqué si son centre est trop près d'un bord.
+      const halfW = repairEl.offsetWidth / 2 || 60;
+      const h = repairEl.offsetHeight || 60;
+      const m = 16;
+      visible = pt.x - halfW >= m && pt.x + halfW <= size.width - m && pt.y - h >= m && pt.y <= size.height - m;
+      x = Math.round(pt.x);
+      y = Math.round(pt.y);
+      const info = sim.repair[best.id];
+      text = ctx.dict[info?.blocked ? WINDOW_TEXTS.busy : WINDOW_TEXTS.repair];
+      progress = info?.blocked ? 0 : Math.round(num(info?.progress) * 100) / 100;
+    }
+    if (visible !== repairShown.visible) repairEl.hidden = !visible;
+    if (visible) {
+      if (text !== repairShown.text) repairLabel.textContent = text;
+      if (progress !== repairShown.progress) repairEl.style.setProperty('--repair-progress', String(progress));
+      if (x !== repairShown.x || y !== repairShown.y) {
+        repairEl.style.left = `${x}px`;
+        repairEl.style.top = `${y}px`;
+      }
+    }
+    repairShown = { visible, text: visible ? text : null, progress: visible ? progress : null, x: visible ? x : null, y: visible ? y : null };
+  }
+
   // Place les personnages, le laser et les effets d'après l'état simulé, puis la lumière.
   function draw(dt) {
     sim.flash = Math.max(0, sim.flash - dt);
@@ -392,9 +514,14 @@ export function createGame(ctx) {
       z.phase += (moved * TAU) / e.stride; // la phase de marche avance de distance / foulée de l'allure
       z.x = e.x;
       z.y = e.y;
-      z.char.setPose(computePose({ phase: z.phase, aim: 0, facing: 0, state: GAIT_POSE[e.gait] ?? 'zombie', time: sim.time, seed: e.id, amount: zs > 5 ? 0.7 : 0.15 }));
+      // Siège : poses « arracher » (au rythme du temps d'arrachage de son type) et « escalade » ; il fait face à la fenêtre tant qu'il est dehors.
+      const gw = geomById.get(e.window);
+      const sieging = gw && (e.mode === 'arrache' || e.mode === 'escalade');
+      const tearRate = (TAU * num(e.tearMul, 1)) / Math.max(0.1, windowsCfg.tearTime);
+      const poseState = e.mode === 'arrache' ? 'arracher' : e.mode === 'escalade' ? 'escalade' : GAIT_POSE[e.gait] ?? 'zombie';
+      z.char.setPose(computePose({ phase: e.mode === 'arrache' ? sim.time * tearRate + e.id : z.phase, aim: 0, facing: 0, state: poseState, time: sim.time, seed: e.id, amount: zs > 5 ? 0.7 : 0.15 }));
       z.char.root.position.set(e.x, 0, e.y);
-      z.char.root.rotation.y = Math.PI / 2 - Math.atan2(p.y - e.y, p.x - e.x);
+      z.char.root.rotation.y = sieging ? Math.PI / 2 - Math.atan2(-gw.normal.y, -gw.normal.x) : Math.PI / 2 - Math.atan2(p.y - e.y, p.x - e.x);
       const flashing = e.flash > 0;
       if (flashing !== z.flashing) {
         z.flashing = flashing;
@@ -419,7 +546,8 @@ export function createGame(ctx) {
       flashSize: reduced ? 4 : 7,
       unitsPerPixel: size.unitsPerPixel,
     });
-    hud.update(sim.player, sim.kills, waveInfo(sim.waves));
+    hud.update(sim.player, sim.kills, waveInfo(sim.waves), { windows: windowsHud() });
+    updateRepairIndicator();
     splashView.apply(sim.splashView);
   }
 
@@ -586,6 +714,22 @@ export function createGame(ctx) {
       sim.waveParams = mergeParams(sim.waveParams, partial && typeof partial === 'object' ? partial : {});
       sim.waves = setParams(sim.waves, sim.waveParams);
     },
+    // Test : règle le nombre de planches d'une fenêtre (0 à son maximum) ; renvoie vrai si la fenêtre existe.
+    setPlanks(id, n) {
+      const w = sim.win.windows[id];
+      if (!w || !Number.isInteger(n) || n < 0 || n > w.maxPlanks) return false;
+      sim.win = { ...sim.win, windows: { ...sim.win.windows, [id]: { ...w, planks: n, tearProgress: 0, repairProgress: 0 } } };
+      syncWindows();
+      stale = true;
+      return true;
+    },
+    // Test : un zombie en approche à 400 du mur de la fenêtre ; renvoie son identifiant (null si la fenêtre n'existe pas).
+    spawnAtWindow(id, type) {
+      const g = geomById.get(id);
+      if (!g) return null;
+      const typed = isType(type);
+      return addEnemy(g.center.x + g.normal.x * 400, g.center.y + g.normal.y * 400, { type: typed ? type : 'marcheur', gait: 'marche', spec: waveSpec(1, sim.waveParams), window: id, mode: 'approche' }).id;
+    },
     // Remet une partie propre (Rejouer, Recommencer).
     restart() {
       ctx.seedRun += 1;
@@ -596,11 +740,12 @@ export function createGame(ctx) {
       return {
         player: { x: sim.player.x, y: sim.player.y, health: sim.player.health, maxHp: sim.player.maxHealth, spread: halfAngle(), speedRatio: sim.spread },
         stats: {
-          levels: { ...eff.levels.levels },
+          levels: Object.fromEntries(STAT_IDS.map((id) => [id, eff.levels.levels[id]])), // les sept d'origine ; chutes et reparation dans extraLevels
+          extraLevels: { chutes: eff.levels.levels.chutes ?? 0, reparation: eff.levels.levels.reparation ?? 0 },
           warnings: [...eff.levels.warnings],
           values: {
             damage: eff.weapon.damage, fireRange: eff.weapon.fireRange, laserRange: eff.weapon.laserRange, bulletMaxDistance: eff.weapon.bulletMaxDistance, fireDelay: eff.weapon.fireDelay,
-            speed: eff.player.speed, maxHealth: eff.player.maxHealth, regen: eff.player.regen, coneStill: eff.weapon.coneStill, coneMove: eff.weapon.coneMove,
+            speed: eff.player.speed, maxHealth: eff.player.maxHealth, regen: eff.player.regen, maxFalls: eff.player.maxFalls, repairTime: eff.player.repairTime, coneStill: eff.weapon.coneStill, coneMove: eff.weapon.coneMove,
           },
         },
         shots: shotLog.map((l) => ({ ...l })),
@@ -608,6 +753,7 @@ export function createGame(ctx) {
         enemies: sim.enemies.map((e) => ({
           id: e.id, x: e.x, y: e.y, health: e.health, entered: e.entered ?? null, from: e.from ?? null, variant: e.visual, screen: screenOf(e.x, e.y), pose: zombies.get(e.id)?.char.readPose() ?? null,
           type: e.type, gait: e.gait, hp: e.health, maxHp: e.maxHealth, speed: e.speed, damage: e.damage, stride: e.stride, radius: e.r, phase: zombies.get(e.id)?.phase ?? 0,
+          mode: e.mode ?? 'libre', window: e.window ?? null, slot: e.slot ?? null, climb: e.climb ? { t: e.climb.t } : null,
         })),
         bullets: sim.bullets.map((b) => ({ id: b.id, x: b.x, y: b.y, angle: b.angle, aimAngle: b.aimAngle, damage: b.damage, maxDistance: b.maxDistance })),
         kills: sim.kills,
@@ -621,7 +767,13 @@ export function createGame(ctx) {
         laser: laser ? { length: laser.ray.length, hit: laser.ray.hit?.id ?? null, stoppedBy: laser.ray.stoppedBy?.id ?? null, range: laser.cone.length, cone: { leftAngle: sim.aim.angle - laser.cone.half, rightAngle: sim.aim.angle + laser.cone.half } } : null,
         world: { width: layout.size.width, height: layout.size.height, empty: layout.empty },
         obstacles: layout.furniture.map((o) => ({ id: o.id, kind: o.kind, x: o.x, y: o.y, w: o.w, h: o.h, hauteur: o.hauteur })),
-        windows: layout.windows.map((w) => ({ id: w.id ?? null, x: w.x, y: w.y })),
+        windows: !siegeOn ? layout.windows.map((w) => ({ id: w.id ?? null, x: w.x, y: w.y })) : geoms.map((g) => {
+          const w = sim.win.windows[g.id];
+          const r = sim.repair[g.id] ?? { repairing: false, blocked: false, progress: 0 };
+          const o = occupancy(sim.enemies, g.id);
+          return { id: g.id, planks: w.planks, maxPlanks: w.maxPlanks, tearers: o.tearers, climbers: o.climbers, queue: o.queue, repairing: r.repairing, repairProgress: w.repairProgress, repairBlocked: r.blocked, open: w.planks === 0, x: g.center.x, y: g.center.y };
+        }),
+        windowPositions: layout.windows.map((w) => ({ id: w.id ?? null, x: w.x, y: w.y })),
         spawnPoints: (layout.spawnPoints ?? []).map((p) => ({ id: p.id, fenetre: p.fenetre, x: p.x, y: p.y })),
         spawnLog: spawnLog.map((l) => ({ ...l })),
         pose: { ...playerChar.readPose(), expected: { ...lastPose } },

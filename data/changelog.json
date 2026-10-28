@@ -68,6 +68,13 @@
       "Une mélodie angoissante, calculée par du code (aucun fichier audio), accompagne l'annonce ; la vague renforcée a sa variante, la fin de vague un son plus doux.",
       "Un effet VHS (grain, lignes de balayage, bords rouge et cyan, bande de suivi) recouvre le jeu : il se coupe dans le menu pause, ou avec ?vhs=0 ; ?vhs=1 le force.",
       "L'animation s'affiche sans mouvement et l'effet VHS est coupé si ton appareil demande de réduire les animations."
+    ] },
+    { "name": "lot-3", "titre": "Fenêtres à planches, siège par les zombies, réparation et chutes", "points": [
+      "Chaque fenêtre porte 4 planches : les zombies viennent à leur fenêtre, en arrachent les planches depuis 2 emplacements (les autres font la queue), puis escaladent et entrent.",
+      "Le joueur répare les planches automatiquement en restant près de la fenêtre, sauf tant qu'un zombie l'occupe ; un indicateur et une ligne « Fenêtres » du HUD montrent l'état.",
+      "À 0 de vie, le joueur tombe, reste à terre 5 secondes (invulnérable, zombies repoussés) puis se relève à 50 % de vie ; sans chute restante, c'est la fin de partie.",
+      "Deux statistiques de plus : chutes (1 à 6) et réparation (1,8 s à 0,5 s par planche), réglées par ?lvl=chutes:2,reparation:5.",
+      "?planks=2 règle le nombre de planches de départ ; quatre nouveaux sons synthétisés (planche arrachée, planche clouée, chute, relevage)."
     ] }
   ]
 }

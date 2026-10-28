@@ -1,7 +1,7 @@
 // HUD en HTML (bloc E2-2) : barre de vie, « Vie x/y », « Zombies tués », « Vague N », « Restants : x », « Prochaine vague dans N s ».
 // L'annonce de vague (E2-8) est une animation centrale : js/game/splash-view.js. N'écrit dans le DOM que si une valeur change.
 import { displayHealth } from '../core/combat.js';
-import { fmt } from './texts.js';
+import { fmt, WINDOW_TEXTS } from './texts.js';
 
 export function createHud(dict, root = document) {
   const life = root.getElementById('hud-life');
@@ -10,6 +10,7 @@ export function createHud(dict, root = document) {
   const wave = root.getElementById('hud-wave');
   const remaining = root.getElementById('hud-remaining');
   const next = root.getElementById('hud-next');
+  const windows = root.getElementById('hud-windows');
   let last = { hp: null, max: null, kills: null, phase: null };
   const shown = { wave: null, remaining: null, total: null, wait: null }; // dernières valeurs écrites
   const setText = (el, text) => {
@@ -17,7 +18,7 @@ export function createHud(dict, root = document) {
   };
   return {
     // player : { health, maxHealth } ; waves : sortie de wave-director.info().
-    update(player, killCount, waves) {
+    update(player, killCount, waves, extras = {}) {
       const hp = displayHealth(player.health);
       if (hp !== last.hp || player.maxHealth !== last.max) {
         life.textContent = fmt(dict['game.hud.life'], { hp, max: player.maxHealth });
@@ -46,6 +47,11 @@ export function createHud(dict, root = document) {
         shown.wait = wait;
         setText(next, fmt(dict['game.wave.next'], { n: wait }));
       }
+      // Ligne « Fenêtres » (lot 3) : écrite seulement si le texte change ; masquée sans fenêtre (salle du lot 1m).
+      const list = Array.isArray(extras.windows) ? extras.windows : [];
+      const line = list.length > 0 ? fmt(dict[WINDOW_TEXTS.hud], { list: list.join(dict[WINDOW_TEXTS.sep]) }) : '';
+      if (windows.hidden === (list.length > 0)) windows.hidden = list.length === 0;
+      setText(windows, line);
       last = { hp, max: player.maxHealth, kills: killCount, phase: fighting ? 'combat' : waiting ? 'attente' : 'inactif' };
     },
   };

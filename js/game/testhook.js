@@ -27,6 +27,9 @@ export function installTestHook(ctx, game) {
     audioEvent: (events) => game.emitAudio(Array.isArray(events) ? events : [events]),
     // Fige l'horloge d'effet VHS à t secondes (null : horloge réelle) ; applique une image tout de suite.
     setVhsClock: (t) => ctx.vhs?.setClock(t),
+    // Lot 3 : règle les planches d'une fenêtre (0 à 4) ; crée un zombie en approche à 400 de la fenêtre (type facultatif) et renvoie son identifiant.
+    setPlanks: (id, n) => game.setPlanks(id, n),
+    spawnAtWindow: (id, type) => game.spawnAtWindow(id, type),
     // Place le joueur (et la caméra) d'un coup.
     setPlayer: (x, y) => game.placePlayer(x, y),
     // Tire une balle dans la direction `angle` depuis la bouche de l'arme, sans passer par la visée (balle d'essai).

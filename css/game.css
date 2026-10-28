@@ -609,3 +609,48 @@ body.game {
   background: color-mix(in srgb, var(--game-vhs-track) calc(var(--vhs-track-opacity) * 100%), transparent);
   transform: translateX(calc(var(--vhs-track-shift) * 1px));
 }
+
+/* Ligne « Fenêtres » du HUD (lot 3, dans E2-2) : texte compact, renvoi à la ligne autorisé, jamais de dépassement. */
+.hud-windows {
+  overflow-wrap: anywhere;
+}
+
+/* Indicateur de réparation (E2-9, lot 3) : placé à l'écran par js/game/game.js (left/top = projection du point de réparation), au-dessus du point.
+   Anneau de progression par variable CSS (--repair-progress de 0 à 1), sans filter, mix-blend-mode ni backdrop-filter. Zone pleine sous le texte. */
+.repair {
+  --repair-progress: 0;
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-3) var(--space-1) var(--space-1);
+  border-radius: var(--radius-md);
+  background: var(--game-repair-panel);
+  color: var(--game-repair-text);
+  transform: translate(-50%, -100%);
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.repair[hidden] {
+  display: none;
+}
+
+.repair-ring {
+  flex: none;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 50%;
+  background: conic-gradient(var(--game-repair-ring) calc(var(--repair-progress) * 1turn), var(--game-repair-track) 0);
+  -webkit-mask: radial-gradient(circle, transparent 0.4rem, currentcolor 0.45rem);
+  mask: radial-gradient(circle, transparent 0.4rem, currentcolor 0.45rem);
+}
+
+.repair-label {
+  margin: 0;
+  font-size: var(--text-md);
+  font-weight: 700;
+  line-height: 1.2;
+}

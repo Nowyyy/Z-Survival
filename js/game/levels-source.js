@@ -6,6 +6,7 @@ import { normalizeLevels, parseLevelsParam } from '../core/player-stats.js';
 export function readLevels(search, params) {
   const raw = new URLSearchParams(search).get('lvl');
   const parsed = parseLevelsParam(raw ?? '', params);
-  const normal = normalizeLevels(parsed.levels, params);
+  // Lot 3 : chutes et reparation (parsed.extra) rejoignent les sept autres niveaux.
+  const normal = normalizeLevels({ ...parsed.levels, ...parsed.extra }, params);
   return { levels: normal.levels, warnings: [...parsed.warnings, ...normal.warnings] };
 }
