@@ -91,7 +91,7 @@ test.describe('HUD HTML (E2-2) et marges', () => {
     await page.evaluate(() => { window.__zs.setInput({ aim: { angle: 0 } }); window.__zs.spawnEnemy(1100, 450); });
     await expect(page.locator('#hud-kills')).toHaveText('Zombies tués : 1', { timeout: 60_000 });
     const order = await page.evaluate(() => [...document.querySelectorAll('#game-root [data-block]')].map((el) => el.dataset.block));
-    expect(order).toEqual(['E2-2', 'E2-8', 'E2-9', 'E2-5', 'E2-3', 'E2-4']); // lot 2 : l'annonce de vague E2-8 s'intercale ; lot 3 : l'indicateur de réparation E2-9 (E2-10 arrive en partie C)
+    expect(order).toEqual(['E2-2', 'E2-8', 'E2-9', 'E2-10', 'E2-5', 'E2-3', 'E2-4']); // lot 2 : l'annonce de vague E2-8 s'intercale ; lot 3 : l'indicateur de réparation E2-9 et l'état à terre E2-10
     const [hud, pause] = await page.evaluate(() => ['#hud', '#btn-pause'].map((s) => document.querySelector(s).getBoundingClientRect().left));
     expect(hud).toBeLessThan(pause);
   });

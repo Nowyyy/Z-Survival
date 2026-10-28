@@ -324,6 +324,7 @@ test.describe('statistiques : vie et régénération', () => {
 
   test('aucun soin après la mort du joueur', async ({ page }) => {
     await open(page, '&empty=1&nospawn=1&lvl=regen:10');
+    await page.evaluate(() => window.__zs.setChutes(0)); // lot 3 : sans chute restante, la vie à 0 est la mort (comme avant)
     const r = await page.evaluate(() => {
       const zs = window.__zs;
       zs.setInput({ aim: { angle: Math.PI } });

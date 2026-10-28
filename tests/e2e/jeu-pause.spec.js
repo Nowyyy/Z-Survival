@@ -198,6 +198,7 @@ test.describe('mesures et parcours', () => {
       window.__zs.spawnEnemy(1100, 450);
     });
     await expect.poll(async () => (await state(page)).kills, { timeout: 60_000 }).toBe(1);
+    await page.evaluate(() => window.__zs.setChutes(0)); // lot 3 : sans chute restante, la vie à 0 est la mort (comme avant)
     // Mourir : des zombies au contact pendant que le laser vise le vide.
     await page.evaluate(() => {
       window.__zs.setInput({ aim: { angle: -Math.PI / 2 } });

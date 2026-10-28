@@ -126,7 +126,7 @@ test.describe('panneaux et marges', () => {
       await open(page);
       if (trigger === 'pause') await page.keyboard.press('KeyP');
       else {
-        await page.evaluate(() => { window.__zs.setInput({ aim: { angle: -Math.PI / 2 } }); for (const [x, y] of [[850, 450], [750, 450], [800, 500], [835, 480], [770, 480]]) window.__zs.spawnEnemy(x, y); });
+        await page.evaluate(() => { window.__zs.setChutes(0); window.__zs.setInput({ aim: { angle: -Math.PI / 2 } }); for (const [x, y] of [[850, 450], [750, 450], [800, 500], [835, 480], [770, 480]]) window.__zs.spawnEnemy(x, y); });
       }
       await expect(page.locator(`${id} .panel`)).toBeVisible({ timeout: 60_000 });
       const box = await page.locator(`${id} .panel`).boundingBox();

@@ -1,7 +1,7 @@
 // HUD en HTML (bloc E2-2) : barre de vie, « Vie x/y », « Zombies tués », « Vague N », « Restants : x », « Prochaine vague dans N s ».
 // L'annonce de vague (E2-8) est une animation centrale : js/game/splash-view.js. N'écrit dans le DOM que si une valeur change.
 import { displayHealth } from '../core/combat.js';
-import { fmt, WINDOW_TEXTS } from './texts.js';
+import { DOWN_TEXTS, fmt, WINDOW_TEXTS } from './texts.js';
 
 export function createHud(dict, root = document) {
   const life = root.getElementById('hud-life');
@@ -11,6 +11,8 @@ export function createHud(dict, root = document) {
   const remaining = root.getElementById('hud-remaining');
   const next = root.getElementById('hud-next');
   const windows = root.getElementById('hud-windows');
+  const chutes = root.getElementById('hud-chutes');
+  let shownChutes = null;
   let last = { hp: null, max: null, kills: null, phase: null };
   const shown = { wave: null, remaining: null, total: null, wait: null }; // dernières valeurs écrites
   const setText = (el, text) => {
@@ -46,6 +48,10 @@ export function createHud(dict, root = document) {
       if (waiting && wait !== shown.wait) {
         shown.wait = wait;
         setText(next, fmt(dict['game.wave.next'], { n: wait }));
+      }
+      if (extras.chutes !== shownChutes) {
+        shownChutes = extras.chutes;
+        chutes.textContent = fmt(dict[DOWN_TEXTS.chutes], { n: extras.chutes ?? 0 });
       }
       // Ligne « Fenêtres » (lot 3) : écrite seulement si le texte change ; masquée sans fenêtre (salle du lot 1m).
       const list = Array.isArray(extras.windows) ? extras.windows : [];

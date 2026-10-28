@@ -9,6 +9,7 @@ import { entryWindow, windowsWithGaps } from '../core/layout.js';
 import { occupancy, stepSiege } from '../core/siege.js';
 import { closedRects, createWindowsState, stepWindows, windowGeometries } from '../core/windows.js';
 import { moveCircle } from '../core/movement.js';
+import { applyHeal, canFire, canHealOnKill, canMove, createPlayerDown, isInvulnerable, knockbackZombies, stepPlayerDown } from '../core/player-down.js';
 import { effectivePlayer, effectiveWeapon, normalizeLevels, STAT_IDS, statValues } from '../core/player-stats.js';
 import { buildWindowField, createFlowState, createGrid, stepFlow } from '../core/nav.js';
 import { computePose } from '../core/pose.js';
@@ -30,7 +31,7 @@ import { createHud } from './hud.js';
 import { createSplashView } from './splash-view.js';
 import { pickGround } from './picking.js';
 import { STRIDE } from './skeleton.js';
-import { fmt, WINDOW_NAMES, WINDOW_TEXTS } from './texts.js';
+import { DOWN_TEXTS, fmt, WINDOW_NAMES, WINDOW_TEXTS } from './texts.js';
 import { createThreeTextures } from './textures.js';
 import { buildWorld, createCamera } from './world.js';
 import { screenPoint } from './picking.js';
@@ -174,6 +175,7 @@ export function createGame(ctx) {
       kills: 0,
       time: 0,
       nextId: 1,
+      down: createPlayerDown(eff.player.maxFalls),
       dead: false,
       flash: 0,
       recoil: 0,
@@ -248,7 +250,9 @@ export function createGame(ctx) {
     sim.time += dt;
 
     const events = []; // événements sonores de cette image (traités par js/core/sound-director.js)
-    const dir = override.move ?? input.move();
+    // À terre, le joueur ne bouge pas, ne tire pas et son laser est masqué (js/core/player-down.js).
+    const standing = canMove(sim.down);
+    const dir = standing ? override.move ?? input.move() : { x: 0, y: 0 };
     const before = sim.player;
     const pos = moveCircle(sim.player, dir, eff.player.speed, dt, layout.room, layout.playerObstacles);
     sim.player = { ...sim.player, ...pos };
@@ -265,12 +269,12 @@ export function createGame(ctx) {
     // Laser : sert à viser et à déclencher le tir, jamais aux dégâts.
     const muzzle = muzzlePoint(sim.player, sim.aim.angle, weapon.muzzleOffset, bounds);
     const ray = castRay(muzzle, sim.aim.angle, weapon.laserRange, sim.enemies, shotBounds, blockers);
-    laser = { from: muzzle, ray, cone: { angle: sim.aim.angle, half: toRadians(halfAngle()), length: weapon.laserRange } };
+    laser = !canFire(sim.down) ? null : { from: muzzle, ray, cone: { angle: sim.aim.angle, half: toRadians(halfAngle()), length: weapon.laserRange } };
     // Le tir part aussi quand la visée passe sur un ennemi au-delà de la portée du laser (le trait s'estompe, la balle continue) ;
     // un ennemi caché derrière un meuble ne déclenche jamais de tir.
     // Marge de visée : le tir part si la ligne passe à moins de aimTolerance du bord d'un ennemi ; la balle suit la vraie visée et peut le rater.
     const wide = sim.enemies.map((e) => ({ ...e, r: e.r + num(weapon.aimTolerance) }));
-    const aimed = ray.hit !== null || castRay(muzzle, sim.aim.angle, weapon.fireRange, wide, shotBounds, blockers).hit !== null;
+    const aimed = canFire(sim.down) && (ray.hit !== null || castRay(muzzle, sim.aim.angle, weapon.fireRange, wide, shotBounds, blockers).hit !== null);
 
     const trigger = stepWeapon(sim.weapon, dt, aimed, weapon, sim.bullets.length);
     sim.weapon = trigger.state;
@@ -305,7 +309,7 @@ export function createGame(ctx) {
     }
     sim.kills += result.killed.length;
     // Régénération : chaque zombie tué rend des points de vie, jamais au-delà du maximum, jamais après la mort.
-    for (let i = 0; i < result.killed.length; i += 1) sim.player = { ...sim.player, health: healOnKill(sim.player.health, sim.player.maxHealth, eff.player.regen, !sim.dead && sim.player.health > 0) };
+    for (let i = 0; i < result.killed.length; i += 1) sim.player = { ...sim.player, health: healOnKill(sim.player.health, sim.player.maxHealth, eff.player.regen, !sim.dead && canHealOnKill(sim.down) && sim.player.health > 0) };
 
     if (grid) {
       const t0 = ctx.perf ? performance.now() : 0;
@@ -366,9 +370,10 @@ export function createGame(ctx) {
         if (ev.type === 'waveStart') {
           waveLive = fmt(ctx.dict['game.wave.live'], { n: ev.wave });
         } else if (ev.type === 'waveEnd') {
-          // Fin de vague : la vie du joueur est remise à son maximum (healFraction), sans dépasser.
-          const max = sim.player.maxHealth;
-          sim.player = { ...sim.player, health: Math.min(max, sim.player.health + max * ev.healFraction) };
+          // Fin de vague : la vie du joueur est remise à son maximum (healFraction), sans dépasser ; à terre, le soin attend le relevage.
+          const healed = applyHeal(sim.player.health, sim.player.maxHealth, ev.healFraction, sim.down);
+          sim.player = { ...sim.player, health: healed.hp };
+          sim.down = healed.down;
           waveLive = fmt(ctx.dict['game.wave.liveDone'], { n: ev.wave });
         }
       }
@@ -381,24 +386,43 @@ export function createGame(ctx) {
     sim.splashView = spl.view;
     if (spl.view.sound) events.push(spl.view.sound.name === 'vague-fin' ? { type: 'waveEnd', variant: spl.view.sound.variant } : { type: 'waveSplash', sound: spl.view.sound.name, variant: spl.view.sound.variant });
 
-    const contact = stepContact(sim.player, sim.enemies, dt, cfg.zombie);
+    const contact = stepContact(sim.player, sim.enemies, dt, cfg.zombie, isInvulnerable(sim.down));
     sim.player = contact.player;
     sim.enemies = contact.enemies;
     // Cri d'attaque : les zombies dont le délai de frappe vient d'être relancé ont frappé pendant cette image.
     for (const e of contact.enemies) if (cfg.zombie.contactDelay > 0 && e.hitCooldown === cfg.zombie.contactDelay) events.push({ type: 'zombieAttack', x: e.x, y: e.y, zombie: variantName(e.id) });
-    const dying = sim.player.health <= 0;
-    if (contact.damage > 0) events.push({ type: dying ? 'playerDeath' : 'playerHurt' });
+    // Chutes : à 0 de vie, le joueur tombe s'il lui reste une chute (son « joueur-chute »), sinon c'est la mort.
+    const lethal = sim.player.health <= 0;
+    const willFall = lethal && sim.down.state === 'debout' && sim.down.chutes > 0;
+    if (contact.damage > 0 && !willFall) events.push({ type: lethal ? 'playerDeath' : 'playerHurt' });
+    const pd = stepPlayerDown(sim.down, { hp: sim.player.health, maxHp: sim.player.maxHealth }, dt, cfg.down);
+    sim.down = pd.down;
+    sim.player = { ...sim.player, health: pd.hp };
+    let downLive = null;
+    for (const ev of pd.events) {
+      if (ev === 'fall') {
+        events.push({ type: 'playerDown' });
+        downLive = ctx.dict[DOWN_TEXTS.liveDown];
+      } else if (ev === 'standup') {
+        events.push({ type: 'playerUp' });
+        downLive = ctx.dict[DOWN_TEXTS.liveUp];
+      }
+    }
+    if (pd.knockback) {
+      sim.enemies = knockbackZombies(sim.enemies, sim.player, pd.knockback, { bounds: layout.bounds, furniture: layout.furniture, walls: layout.walls, gaps: layout.gaps });
+    }
 
     audio?.handle({ time: sim.time, listener: sim.player, walls: audioWalls, paused: ctx.ui.isPaused(), events, zombies: sim.enemies.map((e) => ({ id: e.id, x: e.x, y: e.y, variant: variantName(e.id), gait: e.gait, stride: e.stride })) });
 
     const bucket = Math.ceil((displayHealth(sim.player.health) / sim.player.maxHealth) * 10);
-    if (bucket !== sim.lifeBucket && sim.player.health > 0) {
+    if (bucket !== sim.lifeBucket && sim.player.health > 0 && sim.down.state === 'debout') {
       sim.lifeBucket = bucket;
       ctx.ui.setLive(fmt(ctx.dict['game.live.life'], { hp: displayHealth(sim.player.health), max: sim.player.maxHealth }));
     }
     // Le message de vague passe avant le message de vie (le soin de fin de vague change aussi la vie).
     if (waveLive !== null) ctx.ui.setLive(waveLive);
-    if (sim.player.health <= 0) {
+    if (downLive !== null) ctx.ui.setLive(downLive);
+    if (sim.down.state === 'mort') {
       sim.dead = true;
       // Mort : l'animation est masquée aussitôt et la mélodie s'arrête en fondu (0,3 s).
       const off = stepSplash(sim.splash, { ...waveInfo(sim.waves), playerAlive: false }, 0, splashOptions);
@@ -409,6 +433,27 @@ export function createGame(ctx) {
       ctx.ui.setLive(fmt(ctx.dict['game.live.dead'], { n: sim.kills }));
       ctx.ui.showEnd(sim.kills, waveInfo(sim.waves).wave);
     }
+  }
+
+  // E2-10 : état à terre (« À terre », « Tu te relèves dans N s », voile de bord) puis « Protégé N s » pendant la protection ; écrit seulement si le texte change.
+  const downEl = document.getElementById('down');
+  const downTitle = document.getElementById('down-title');
+  const downSub = document.getElementById('down-sub');
+  let downShown = { mode: null, sub: null };
+  function updateDownView() {
+    if (!downEl) return;
+    const grounded = sim.down.state === 'terre';
+    const guarded = sim.down.state === 'debout' && sim.down.grace > 0 && !sim.dead;
+    const mode = grounded ? 'terre' : guarded ? 'grace' : null;
+    const sub = grounded ? fmt(ctx.dict[DOWN_TEXTS.countdown], { n: Math.ceil(sim.down.timeLeft - 1e-6) }) : guarded ? fmt(ctx.dict[DOWN_TEXTS.grace], { n: Math.ceil(sim.down.grace - 1e-6) }) : '';
+    if (mode !== downShown.mode) {
+      downEl.hidden = mode === null;
+      downEl.dataset.mode = mode ?? '';
+      downTitle.hidden = mode !== 'terre';
+      if (mode === 'terre') downTitle.textContent = ctx.dict[DOWN_TEXTS.title];
+    }
+    if (sub !== downShown.sub) downSub.textContent = sub;
+    downShown = { mode, sub };
   }
 
   // Ligne « Fenêtres » du HUD : une entrée par fenêtre (initiale, planches ou « ouverte », « ! » si elle est attaquée).
@@ -493,7 +538,7 @@ export function createGame(ctx) {
     anim.phase += dir * speed * dt * STRIDE;
     anim.x = p.x;
     anim.y = p.y;
-    const state = sim.time - lastFire < FIRE_POSE_TIME ? 'tir' : moving ? 'marche' : 'arret';
+    const state = sim.down.state === 'terre' ? 'terre' : sim.time - lastFire < FIRE_POSE_TIME ? 'tir' : moving ? 'marche' : 'arret';
     lastPose = computePose({ phase: anim.phase, aim, facing: anim.facing, state, time: sim.time, seed: 0, amount: Math.min(1, speed / eff.player.speed), recoil: sim.recoil / RECOIL_TIME });
     playerChar.setPose(lastPose);
     playerChar.root.position.set(p.x, 0, p.y);
@@ -546,7 +591,8 @@ export function createGame(ctx) {
       flashSize: reduced ? 4 : 7,
       unitsPerPixel: size.unitsPerPixel,
     });
-    hud.update(sim.player, sim.kills, waveInfo(sim.waves), { windows: windowsHud() });
+    hud.update(sim.player, sim.kills, waveInfo(sim.waves), { windows: windowsHud(), chutes: sim.down.chutes });
+    updateDownView();
     updateRepairIndicator();
     splashView.apply(sim.splashView);
   }
@@ -723,6 +769,16 @@ export function createGame(ctx) {
       stale = true;
       return true;
     },
+    // Test : règle le nombre de chutes restantes (0 : la prochaine vie à 0 est la mort, comme avant le lot 3).
+    setChutes(n) {
+      const k = Number.isInteger(n) && n >= 0 && n <= 99 ? n : sim.down.chutes;
+      sim.down = { ...sim.down, chutes: k, chutesMax: Math.max(k, sim.down.chutesMax) };
+    },
+    // Test : met la vie à 0 pour déclencher la chute (ou la mort s'il ne reste aucune chute) au prochain pas.
+    downPlayer() {
+      sim.player = { ...sim.player, health: 0 };
+      stale = true;
+    },
     // Test : un zombie en approche à 400 du mur de la fenêtre ; renvoie son identifiant (null si la fenêtre n'existe pas).
     spawnAtWindow(id, type) {
       const g = geomById.get(id);
@@ -738,7 +794,7 @@ export function createGame(ctx) {
     snapshot() {
       const cam = rig.camera.position;
       return {
-        player: { x: sim.player.x, y: sim.player.y, health: sim.player.health, maxHp: sim.player.maxHealth, spread: halfAngle(), speedRatio: sim.spread },
+        player: { x: sim.player.x, y: sim.player.y, health: sim.player.health, maxHp: sim.player.maxHealth, spread: halfAngle(), speedRatio: sim.spread, down: { state: sim.down.state, chutes: sim.down.chutes, chutesMax: sim.down.chutesMax, timeLeft: sim.down.timeLeft, grace: sim.down.grace, invulnerable: isInvulnerable(sim.down) } },
         stats: {
           levels: Object.fromEntries(STAT_IDS.map((id) => [id, eff.levels.levels[id]])), // les sept d'origine ; chutes et reparation dans extraLevels
           extraLevels: { chutes: eff.levels.levels.chutes ?? 0, reparation: eff.levels.levels.reparation ?? 0 },

@@ -200,7 +200,7 @@ test.describe('animation de vague : contenu, chronologie, position', () => {
     });
     expect(info).toMatchObject({ aria: 'true', pointer: 'none', tab: -1, buttons: 0, position: 'fixed', canvasBeforeVhs: true, vhsBeforeHud: true, hudBeforeSplash: true });
     expect(info.active).not.toBe('wave-announce');
-    expect(info.blocks).toEqual(['E2-1', 'E2-2', 'E2-8', 'E2-9', 'E2-5', 'E2-3', 'E2-4', 'E2-6', 'E2-7']);
+    expect(info.blocks).toEqual(['E2-1', 'E2-2', 'E2-8', 'E2-9', 'E2-10', 'E2-5', 'E2-3', 'E2-4', 'E2-6', 'E2-7']);
     await step(page, 3); // l'annonce vocale suit le début de la vague (apparitions), comme au lot 2 : elle n'a pas changé
     await expect(page.locator('#hud-live')).toHaveText('Vague 1.');
   });
@@ -295,6 +295,7 @@ test.describe('animation de vague : sons', () => {
 
   test('une mélodie jouée est comptée (annonceActive) puis arrêtée en fondu à la mort', async ({ page }) => {
     await open(page, '', SIZE, { live: true });
+    await page.evaluate(() => window.__zs.setChutes(0)); // lot 3 : sans chute restante, la vie à 0 est la mort (comme avant)
     await unlock(page);
     await page.evaluate(() => window.__zs.startWave(1));
     await page.evaluate(() => window.__zs.step(0.2));

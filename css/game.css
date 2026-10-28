@@ -654,3 +654,62 @@ body.game {
   font-weight: 700;
   line-height: 1.2;
 }
+
+/* État à terre (E2-10, lot 3) : voile de bord (dégradé radial, sans filter, mix-blend-mode ni backdrop-filter) et texte centré dans le tiers bas
+   de l'écran, sous l'animation de vague, sur une zone pleine. Aucune animation : l'apparition est immédiate (donc rien à réduire sous
+   prefers-reduced-motion). Pendant la protection qui suit le relevage, seul « Protégé N s » reste. */
+.down {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* Le HUD et le bouton Pause restent lisibles au-dessus du voile de bord. */
+.hud,
+.pause-button {
+  z-index: 2;
+}
+
+.down[hidden] {
+  display: none;
+}
+
+.down-veil {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse 75% 70% at center, transparent 45%, color-mix(in srgb, var(--game-down-veil) calc(var(--game-down-veil-alpha) * 100%), transparent) 100%);
+}
+
+.down[data-mode="grace"] .down-veil {
+  display: none;
+}
+
+.down-body {
+  position: absolute;
+  left: 50%;
+  top: 84%;
+  transform: translate(-50%, -50%);
+  box-sizing: border-box;
+  max-width: calc(100vw - 2 * var(--game-margin) - var(--safe-left) - var(--safe-right));
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--game-down-panel);
+  text-align: center;
+}
+
+.down-title {
+  margin: 0;
+  font-size: var(--text-lg);
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--game-down-text);
+}
+
+.down-sub {
+  margin: 0;
+  font-size: var(--text-md);
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--game-down-sub);
+}
