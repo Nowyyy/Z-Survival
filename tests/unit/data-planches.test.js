@@ -110,7 +110,8 @@ describe('lot 3a : textures.json et windows.json', () => {
     } catch {
       return; // pas de branche main : rien à comparer
     }
-    expect(texturesJson.textures.filter((t) => t.id !== 'planche')).toEqual(before.textures);
+    // Valable avant et après la fusion du lot : `main` contient la texture « planche » une fois le lot fusionné.
+    expect(texturesJson.textures.filter((t) => t.id !== 'planche')).toEqual(before.textures.filter((t) => t.id !== 'planche'));
     expect(texturesJson.budget).toEqual(before.budget);
   });
 
@@ -139,8 +140,10 @@ describe('lot 3a : textures.json et windows.json', () => {
       return;
     }
     const { planks3d, ...rest } = windows;
+    const { planks3d: _ignored, ...older } = before; // valable avant et après la fusion du lot (main contient alors planks3d)
+    void _ignored;
     expect(planks3d).toBeTruthy();
-    expect(rest).toEqual(before);
+    expect(rest).toEqual(older);
   });
 });
 
