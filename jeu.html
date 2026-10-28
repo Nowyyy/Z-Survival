@@ -5,6 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="robots" content="noindex">
   <meta name="color-scheme" content="dark">
+  <!-- Essai « Sur l'écran d'accueil » (lot 3a) : le jeu lancé depuis l'icône s'affiche sans les barres du navigateur ; ni manifeste, ni service worker, ni image. -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#050505">
   <title>Z-Survival · Jeu</title>
   <link rel="icon" href="data:,">
   <!-- La table d'import doit précéder tout préchargement de module : Firefox l'ignore sinon (« three » non remappé). -->
@@ -64,14 +69,20 @@
       <div class="vhs-track"></div>
     </div>
     <div id="hud" class="hud" data-block="E2-2">
-      <p id="hud-life" class="hud-text"></p>
-      <div class="hud-bar" aria-hidden="true"><div id="hud-fill" class="hud-fill"></div></div>
-      <p id="hud-wave" class="hud-wave" hidden></p>
-      <p id="hud-remaining" class="hud-text" hidden></p>
-      <p id="hud-next" class="hud-text" hidden></p>
-      <p id="hud-kills" class="hud-text"></p>
-      <p id="hud-chutes" class="hud-text"></p>
-      <p id="hud-windows" class="hud-text hud-windows" hidden></p>
+      <div class="hud-life-row">
+        <svg class="hud-icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M8 14.5 1.8 8.3A3.6 3.6 0 0 1 8 3.9a3.6 3.6 0 0 1 6.2 4.4Z"/></svg>
+        <div id="hud-bar" class="hud-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="100" data-i18n-label="game.hud.lifeLabel">
+          <div id="hud-fill" class="hud-fill"></div>
+          <span id="hud-life" class="hud-bar-text"></span>
+        </div>
+        <p id="hud-chutes" class="hud-chip"><span id="hud-chutes-icons" class="hud-chutes-icons" aria-hidden="true"></span><span id="hud-chutes-text"></span></p>
+      </div>
+      <div class="hud-chips">
+        <p id="hud-wave" class="hud-wave" hidden></p>
+        <p id="hud-remaining" class="hud-chip" hidden></p>
+        <p id="hud-next" class="hud-chip" hidden></p>
+        <p id="hud-kills" class="hud-chip"></p>
+      </div>
     </div>
     <div id="wave-announce" class="wave-announce" data-block="E2-8" aria-hidden="true">
       <div class="wave-announce-veil"></div>
@@ -84,19 +95,16 @@
         <p id="wave-announce-sub" class="wave-announce-sub" hidden></p>
       </div>
     </div>
-    <div id="repair" class="repair" data-block="E2-9" aria-hidden="true" hidden>
-      <div class="repair-ring"></div>
-      <div class="repair-text">
-        <p id="repair-label" class="repair-label"></p>
-        <p id="repair-sub" class="repair-sub"></p>
-      </div>
-    </div>
     <div id="down" class="down" data-block="E2-10" aria-hidden="true" hidden>
       <div class="down-veil"></div>
       <div class="down-body">
         <p id="down-title" class="down-title"></p>
         <p id="down-sub" class="down-sub"></p>
       </div>
+    </div>
+    <div id="edges" class="edges" data-block="E2-11" aria-hidden="true">
+      <div class="edge-arrow" data-slot="0" hidden><svg class="edge-pointer" viewBox="0 0 40 40" focusable="false"><path d="M27 12 38 20 27 28Z"/></svg><span class="edge-letter"></span></div>
+      <div class="edge-arrow" data-slot="1" hidden><svg class="edge-pointer" viewBox="0 0 40 40" focusable="false"><path d="M27 12 38 20 27 28Z"/></svg><span class="edge-letter"></span></div>
     </div>
     <button id="btn-pause" class="button pause-button" data-block="E2-5" type="button" data-i18n="game.pause.open"></button>
     <div id="stick-left" class="stick" data-block="E2-3" aria-hidden="true" hidden>

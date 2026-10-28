@@ -7,8 +7,11 @@ import { stepEnemies } from '../core/enemy-ai.js';
 import { createEnemy, isGait, isType } from '../core/enemy-factory.js';
 import { entryWindow, windowsWithGaps } from '../core/layout.js';
 import { occupancy, stepSiege } from '../core/siege.js';
+import { edgeIndicator } from '../core/edge-arrow.js';
+import { urgentWindows, windowChips } from '../core/hud-windows.js';
 import { closedRects, createWindowsState, stepWindows, windowGeometries } from '../core/windows.js';
 import { moveCircle } from '../core/movement.js';
+import { addDebris, createDebris, faceDistance, plankSettings, removeDebris, stepDebris } from '../core/plank-layout.js';
 import { applyHeal, canFire, canHealOnKill, canMove, createPlayerDown, isInvulnerable, knockbackZombies, stepPlayerDown } from '../core/player-down.js';
 import { effectivePlayer, effectiveWeapon, normalizeLevels, STAT_IDS, statValues } from '../core/player-stats.js';
 import { buildWindowField, createFlowState, createGrid, stepFlow } from '../core/nav.js';
@@ -31,7 +34,7 @@ import { createHud } from './hud.js';
 import { createSplashView } from './splash-view.js';
 import { pickGround } from './picking.js';
 import { STRIDE } from './skeleton.js';
-import { DOWN_TEXTS, fmt, WINDOW_NAMES, WINDOW_TEXTS } from './texts.js';
+import { DOWN_TEXTS, fmt, WINDOW_INITIALS, WINDOW_NAMES, WINDOW_TEXTS } from './texts.js';
 import { createThreeTextures } from './textures.js';
 import { buildWorld, createCamera } from './world.js';
 
@@ -63,6 +66,10 @@ export function createGame(ctx) {
   const geoms = siegeOn ? windowGeometries(windowsWithGaps(layout), windowsCfg) : [];
   const geomById = new Map(geoms.map((g) => [g.id, g]));
   const siegeParams = { ...windowsCfg, bounds: layout.bounds };
+  // Débris des planches arrachées (lot 3a) : jamais dans un meuble ni hors de la salle ; la géométrie des planches est dans js/core/plank-layout.js.
+  const plankCfg = plankSettings(windowsCfg, cfg.render);
+  const debrisLayout = { params: plankCfg, obstacles: layout.furniture, bounds: layout.bounds };
+  const debrisGeoms = new Map(geoms.map((g) => [g.id, { ...g, inner: faceDistance(layout.room, g) }]));
   const gridOpts = { cell: cfg.nav.cell, radius: cfg.zombie.radius, inflate: cfg.nav.inflate };
   // Champ de flux de chaque fenêtre, calculé une seule fois au chargement sur la grille extérieure (ouvertures bloquées) ; durée mesurée (?fps=1).
   const fieldStart = performance.now();
@@ -137,8 +144,13 @@ export function createGame(ctx) {
       grid = createGrid(layout.size, zombieSolids, gridOpts);
       sim.flow = createFlowState();
     }
-    world.planks?.sync(sim.win);
+    world.windowMeshes?.sync(sim.win);
   }
+  // Débris : une planche arrachée en laisse un au sol (le plus ancien disparaît au-delà de 12, tous après 25 s) ; une planche réparée en retire un.
+  const dropDebris = (id, n) => {
+    const g = debrisGeoms.get(id);
+    for (let i = 0; i < n && g; i += 1) sim.debris = addDebris(sim.debris, g, ctx.seed, debrisLayout);
+  };
   function dictName(id) {
     const key = WINDOW_NAMES[id];
     return key ? ctx.dict[key] : id;
@@ -169,6 +181,7 @@ export function createGame(ctx) {
       win: createWindowsState(geoms, windowsCfg, { planks: params.planks ?? undefined }),
       repair: {},
       announced: {},
+      announcedBusy: {},
       rng: createRng(seed),
       walk: { phase: 0, steps: createFootsteps() },
       kills: 0,
@@ -182,6 +195,8 @@ export function createGame(ctx) {
       spread: 0, // rapport de vitesse lissé, de 0 (arrêt) à 1 (pleine vitesse)
     };
     splashView.apply(sim.splashView);
+    sim.debris = createDebris();
+    for (const g of geoms) dropDebris(g.id, g.id in sim.win.windows ? sim.win.windows[g.id].maxPlanks - sim.win.windows[g.id].planks : 0);
     syncWindows();
     anim = { phase: 0, facing: 0, x: sim.player.x, y: sim.player.y };
     rig.snap(sim.player.x, sim.player.y);
@@ -332,11 +347,23 @@ export function createGame(ctx) {
         const wr = stepWindows(sim.win, { tearing: sg.tearing, repairing, repairBlocked: sg.repairBlocked, repairTime: eff.player.repairTime }, dt, windowsCfg);
         sim.win = wr.state;
         sim.repair = Object.fromEntries(geoms.map((g) => [g.id, { repairing: repairing[g.id] === true && sg.repairBlocked[g.id] !== true, blocked: sg.repairBlocked[g.id] === true, progress: sim.win.windows[g.id].repairProgress, attacked: (sg.tearing[g.id] ?? []).length > 0 }]));
+        // Réparation bloquée : phrase longue annoncée par #hud-live, au plus une fois par fenêtre et par 10 s (E2-9 reste muet pour les lecteurs d'écran).
+        for (const g of geoms) {
+          if (repairing[g.id] && sg.repairBlocked[g.id] === true && sim.time - (sim.announcedBusy[g.id] ?? -Infinity) >= 10) {
+            sim.announcedBusy[g.id] = sim.time;
+            windowLive = fmt(ctx.dict[WINDOW_TEXTS.liveBusy], { name: dictName(g.id) });
+          }
+        }
         let changed = false;
         for (const ev of wr.events) {
           const g = geomById.get(ev.windowId);
-          if (ev.type === 'plank-torn') events.push({ type: 'plankTorn', x: g.center.x, y: g.center.y, windowId: ev.windowId });
-          else if (ev.type === 'plank-repaired') events.push({ type: 'plankRepaired', x: g.center.x, y: g.center.y, windowId: ev.windowId });
+          if (ev.type === 'plank-torn') {
+            events.push({ type: 'plankTorn', x: g.center.x, y: g.center.y, windowId: ev.windowId });
+            dropDebris(ev.windowId, 1);
+          } else if (ev.type === 'plank-repaired') {
+            events.push({ type: 'plankRepaired', x: g.center.x, y: g.center.y, windowId: ev.windowId });
+            sim.debris = removeDebris(sim.debris, ev.windowId, 1);
+          }
           if (ev.type === 'window-open' || ev.type === 'window-closed') changed = true;
           // Annonces vocales : « ouverte » au plus une fois par fenêtre et par 10 s, « réparée » quand toutes les planches sont revenues.
           if (ev.type === 'window-open' && sim.time - (sim.announced[ev.windowId] ?? -Infinity) >= 10) {
@@ -345,9 +372,10 @@ export function createGame(ctx) {
           } else if (ev.type === 'plank-repaired' && ev.planks === sim.win.windows[ev.windowId].maxPlanks) windowLive = fmt(ctx.dict[WINDOW_TEXTS.liveRepaired], { name: dictName(ev.windowId) });
         }
         if (changed) syncWindows();
-        else if (wr.events.length > 0) world.planks?.sync(sim.win); // planche arrachée ou posée : le maillage suit (seules les planches modifiées sont réécrites)
+        else if (wr.events.length > 0) world.windowMeshes?.sync(sim.win); // planche arrachée ou posée : le maillage suit (seules les planches modifiées sont réécrites)
       }
       if (windowLive !== null) ctx.ui.setLive(windowLive);
+      sim.debris = stepDebris(sim.debris, dt, plankCfg);
       sim.enemies = stepEnemies(sim.enemies, sim.player, dt, cfg.zombie, { obstacles: zombieSolids, bounds: layout.worldBounds, grid, flow: sim.flow.flow, nav: cfg.nav, windows: { fields: windowFields } });
       // Par quelle fenêtre chaque zombie est entré : la plus proche de l'endroit où il franchit la limite de la salle.
       sim.enemies = sim.enemies.map((e) => (e.entered || e.x < bounds.minX || e.x > bounds.maxX || e.y < bounds.minY || e.y > bounds.maxY ? e : { ...e, entered: entryWindow(e, layout.windows) }));
@@ -456,55 +484,84 @@ export function createGame(ctx) {
     downShown = { mode, sub };
   }
 
-  // Ligne « Fenêtres » du HUD : une entrée par fenêtre (initiale, planches ou « ouverte », « ! » si elle est attaquée).
-  function windowsHud() {
-    return geoms.map((g) => {
-      const w = sim.win.windows[g.id];
-      const name = dictName(g.id);
-      const initial = name.charAt(0).toUpperCase();
-      const entry = w.planks === 0 ? fmt(ctx.dict[WINDOW_TEXTS.open], { initial }) : fmt(ctx.dict[WINDOW_TEXTS.entry], { initial, n: w.planks });
-      return sim.repair[g.id]?.attacked ? fmt(ctx.dict[WINDOW_TEXTS.attacked], { entry }) : entry;
+  // Fenêtres en alerte (js/core/hud-windows.js) : attaquées ou ouvertes, les plus urgentes d'abord ; elles guident les flèches E2-11 (plus de rangée dans le HUD).
+  const hudLabels = Object.fromEntries(geoms.map((g) => [g.id, ctx.dict[WINDOW_INITIALS[g.id]] ?? '']));
+  const hudWindows = () => geoms.map((g) => ({ id: g.id, planks: sim.win.windows[g.id].planks, maxPlanks: sim.win.windows[g.id].maxPlanks, attacked: sim.repair[g.id]?.attacked === true }));
+
+  // E2-11 : flèches au bord de l'écran vers les 2 fenêtres en alerte les plus urgentes qui ne sont pas à l'écran (js/core/edge-arrow.js). Aucune
+  // pulsation ni clic ; les flèches glissent le long du bord pour ne pas recouvrir le HUD, le bouton Pause ni l'indicateur de réparation.
+  const edgeEls = [...document.querySelectorAll('#edges .edge-arrow')];
+  const EDGE_HALF = 20;
+  let edgeShown = [];
+  const edgeState = []; // { id, x, y, angle, label } des flèches affichées (tests)
+  const overlaps = (a, b) => a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
+  function updateEdgeArrows() {
+    if (edgeEls.length === 0) return;
+    const w = window.innerWidth;
+    const h = window.innerHeight;
+    const css = getComputedStyle(document.documentElement);
+    const safe = ['top', 'right', 'bottom', 'left'].map((side) => Number.parseFloat(css.getPropertyValue(`--safe-${side}`)) || 0);
+    const inset = { top: safe[0], right: safe[1], bottom: safe[2], left: safe[3] };
+    const view = { width: Math.max(1, w - inset.left - inset.right), height: Math.max(1, h - inset.top - inset.bottom) };
+    const margin = 16 + EDGE_HALF;
+    const shots = [];
+    if (!sim.dead) {
+      for (const chip of urgentWindows(hudWindows(), { labels: hudLabels })) {
+        const g = debrisGeoms.get(chip.id);
+        const away = g.inner + plankCfg.wallGap + plankCfg.thickness / 2;
+        const at = screenAt(g.center.x - g.normal.x * away, (plankCfg.sill + plankCfg.lintel) / 2, g.center.y - g.normal.y * away);
+        const point = { x: (at.x * w - inset.left) / view.width, y: (at.y * h - inset.top) / view.height, behind: at.behind };
+        const arrow = edgeIndicator(point, view, margin);
+        if (arrow.visible) shots.push({ id: chip.id, label: chip.label, x: arrow.x + inset.left, y: arrow.y + inset.top, angle: arrow.angle });
+        if (shots.length >= 2) break;
+      }
+    }
+    // Obstacles à éviter : le HUD, le bouton Pause, les cadres des sticks (rectangles réels, lus seulement si une flèche est affichée).
+    if (shots.length > 0) {
+      const blockers = [...['hud', 'btn-pause'].map((id) => document.getElementById(id)), ...document.querySelectorAll('.stick:not([hidden]) .stick-base')].filter((node) => node && !node.hidden).map((node) => node.getBoundingClientRect());
+      const placed = [];
+      for (const shot of shots) {
+        const onVertical = shot.x <= inset.left + margin + 0.5 || shot.x >= w - inset.right - margin - 0.5;
+        const box = () => ({ left: shot.x - EDGE_HALF - 4, right: shot.x + EDGE_HALF + 4, top: shot.y - EDGE_HALF - 4, bottom: shot.y + EDGE_HALF + 4 });
+        for (let tries = 0; tries < 6; tries += 1) {
+          const hit = [...blockers, ...placed].find((r) => overlaps(box(), r));
+          if (!hit) break;
+          if (onVertical) shot.y = shot.y < (hit.top + hit.bottom) / 2 ? hit.top - EDGE_HALF - 5 : hit.bottom + EDGE_HALF + 5;
+          else shot.x = shot.x < (hit.left + hit.right) / 2 ? hit.left - EDGE_HALF - 5 : hit.right + EDGE_HALF + 5;
+        }
+        shot.x = Math.min(w - inset.right - margin, Math.max(inset.left + margin, shot.x));
+        shot.y = Math.min(h - inset.bottom - margin, Math.max(inset.top + margin, shot.y));
+        placed.push(box());
+      }
+    }
+    const signature = shots.map((a) => `${a.id}:${a.x.toFixed(1)}:${a.y.toFixed(1)}:${a.angle.toFixed(3)}`).join('|');
+    if (signature === edgeShown.join('|')) return;
+    edgeShown = signature === '' ? [] : [signature];
+    edgeState.length = 0;
+    edgeEls.forEach((node, i) => {
+      const a = shots[i];
+      node.hidden = !a;
+      if (!a) return;
+      node.style.setProperty('--edge-x', `${a.x}px`);
+      node.style.setProperty('--edge-y', `${a.y}px`);
+      node.style.setProperty('--edge-angle', `${a.angle}rad`);
+      node.querySelector('.edge-letter').textContent = a.label;
+      edgeState.push({ id: a.id, label: a.label, x: a.x, y: a.y, angle: a.angle });
     });
   }
 
-  // E2-9 : indicateur de réparation, fixe en haut au centre de l'écran (hors du titre de vague et de l'état à terre) ; affiché quand le joueur est
-  // près d'une fenêtre qui manque de planches. Un seul tour d'anneau pour toute la fenêtre : (planches posées + progression de la planche en
-  // cours) / maximum. Texte : la fenêtre et le nombre de planches à poser, ou la raison du blocage.
-  const repairEl = document.getElementById('repair');
-  const repairLabel = document.getElementById('repair-label');
-  const repairSub = document.getElementById('repair-sub');
-  let repairShown = { visible: null, label: null, sub: null, progress: null };
-  function updateRepairIndicator() {
-    if (!repairEl) return;
-    let best = null;
-    let bestD = Infinity;
-    for (const g of geoms) {
-      const w = sim.win.windows[g.id];
-      const d = Math.hypot(sim.player.x - g.repairSpot.x, sim.player.y - g.repairSpot.y);
-      if (w.planks < w.maxPlanks && d <= 2 * windowsCfg.repairRadius && d < bestD) {
-        bestD = d;
-        best = g;
-      }
-    }
-    const visible = best !== null && !sim.dead;
-    let label = '';
-    let sub = '';
-    let progress = 0;
-    if (visible) {
-      const w = sim.win.windows[best.id];
-      const info = sim.repair[best.id];
-      const todo = w.maxPlanks - w.planks;
-      label = fmt(ctx.dict[WINDOW_TEXTS.repair], { name: dictName(best.id) });
-      sub = info?.blocked ? ctx.dict[WINDOW_TEXTS.busy] : fmt(ctx.dict[todo === 1 ? WINDOW_TEXTS.todoOne : WINDOW_TEXTS.todoMany], { n: todo });
-      progress = Math.round(((w.planks + num(w.repairProgress)) / w.maxPlanks) * 100) / 100;
-    }
-    if (visible !== repairShown.visible) repairEl.hidden = !visible;
-    if (visible) {
-      if (label !== repairShown.label) repairLabel.textContent = label;
-      if (sub !== repairShown.sub) repairSub.textContent = sub;
-      if (progress !== repairShown.progress) repairEl.style.setProperty('--repair-progress', String(progress));
-    }
-    repairShown = { visible, label: visible ? label : null, sub: visible ? sub : null, progress: visible ? progress : null };
+  // Tests : mesures du HUD lues dans le DOM (hauteur, largeur, puces, flèches, indicateur de réparation).
+  function hudState() {
+    const rect = (id) => document.getElementById(id)?.getBoundingClientRect();
+    const hud = rect('hud');
+    const chips = windowChips(hudWindows(), { labels: hudLabels });
+    return {
+      height: hud.height,
+      width: hud.width,
+      chips: chips.chips.map((c) => ({ ...c })),
+      more: chips.more,
+      arrows: edgeState.map((a) => ({ ...a })),
+    };
   }
 
   // Place les personnages, le laser et les effets d'après l'état simulé, puis la lumière.
@@ -585,9 +642,11 @@ export function createGame(ctx) {
       flashSize: reduced ? 4 : 7,
       unitsPerPixel: size.unitsPerPixel,
     });
-    hud.update(sim.player, sim.kills, waveInfo(sim.waves), { windows: windowsHud(), chutes: sim.down.chutes });
+    hud.update(sim.player, sim.kills, waveInfo(sim.waves), { chutes: sim.down.chutes });
     updateDownView();
-    updateRepairIndicator();
+    world.windowMeshes?.sync(sim.win); // pastille de la planche en cours de réparation : elle se remplit peu à peu
+    updateEdgeArrows();
+    world.debris?.sync(sim.debris.items, reduced);
     splashView.apply(sim.splashView);
   }
 
@@ -605,6 +664,13 @@ export function createGame(ctx) {
     return { x: (probe.x + 1) / 2, y: (1 - probe.y) / 2 };
   }
   const projectPlayer = () => screenOf(sim.player.x, sim.player.y);
+  // Point de la scène (x, hauteur, y du jeu) à l'écran, de 0 à 1 (tests : fenêtres, meubles, luminance autour d'un point).
+  function screenAt(x, height, y) {
+    probe.set(x, height, y).applyMatrix4(rig.camera.matrixWorldInverse);
+    const behind = probe.z > 0; // la caméra regarde vers -z : un point de z positif est derrière elle
+    probe.applyMatrix4(rig.camera.projectionMatrix);
+    return { x: (probe.x + 1) / 2, y: (1 - probe.y) / 2, behind };
+  }
 
   let last = null;
   let frameId = 0;
@@ -759,6 +825,8 @@ export function createGame(ctx) {
       const w = sim.win.windows[id];
       if (!w || !Number.isInteger(n) || n < 0 || n > w.maxPlanks) return false;
       sim.win = { ...sim.win, windows: { ...sim.win.windows, [id]: { ...w, planks: n, tearProgress: 0, repairProgress: 0 } } };
+      if (n < w.planks) dropDebris(id, w.planks - n);
+      else if (n > w.planks) sim.debris = removeDebris(sim.debris, id, n - w.planks);
       syncWindows();
       stale = true;
       return true;
@@ -787,6 +855,7 @@ export function createGame(ctx) {
     },
     snapshot() {
       const cam = rig.camera.position;
+      const meshStats = world.windowMeshes?.stats(rig.camera) ?? [];
       return {
         player: { x: sim.player.x, y: sim.player.y, health: sim.player.health, maxHp: sim.player.maxHealth, spread: halfAngle(), speedRatio: sim.spread, down: { state: sim.down.state, chutes: sim.down.chutes, chutesMax: sim.down.chutesMax, timeLeft: sim.down.timeLeft, grace: sim.down.grace, invulnerable: isInvulnerable(sim.down) } },
         stats: {
@@ -816,14 +885,17 @@ export function createGame(ctx) {
         laserEnd: laser ? { x: laser.ray.end.x, y: laser.ray.end.y } : null,
         laser: laser ? { length: laser.ray.length, hit: laser.ray.hit?.id ?? null, stoppedBy: laser.ray.stoppedBy?.id ?? null, range: laser.cone.length, cone: { leftAngle: sim.aim.angle - laser.cone.half, rightAngle: sim.aim.angle + laser.cone.half } } : null,
         world: { width: layout.size.width, height: layout.size.height, empty: layout.empty },
-        obstacles: layout.furniture.map((o) => ({ id: o.id, kind: o.kind, x: o.x, y: o.y, w: o.w, h: o.h, hauteur: o.hauteur })),
+        obstacles: layout.furniture.map((o) => ({ id: o.id, kind: o.kind, x: o.x, y: o.y, w: o.w, h: o.h, hauteur: o.hauteur, screen: screenAt(o.x + o.w / 2, o.hauteur, o.y + o.h / 2) })),
         windows: !siegeOn ? layout.windows.map((w) => ({ id: w.id ?? null, x: w.x, y: w.y })) : geoms.map((g) => {
           const w = sim.win.windows[g.id];
           const r = sim.repair[g.id] ?? { repairing: false, blocked: false, progress: 0 };
           const o = occupancy(sim.enemies, g.id);
-          return { id: g.id, planks: w.planks, maxPlanks: w.maxPlanks, tearers: o.tearers, climbers: o.climbers, queue: o.queue, repairing: r.repairing, repairProgress: w.repairProgress, repairBlocked: r.blocked, open: w.planks === 0, x: g.center.x, y: g.center.y };
+          const m = meshStats.find((e) => e.id === g.id);
+          return { id: g.id, planks: w.planks, maxPlanks: w.maxPlanks, tearers: o.tearers, climbers: o.climbers, queue: o.queue, repairing: r.repairing, repairProgress: w.repairProgress, repairBlocked: r.blocked, open: w.planks === 0, x: g.center.x, y: g.center.y, screen: screenAt(g.center.x - g.normal.x * (debrisGeoms.get(g.id).inner + plankCfg.wallGap + plankCfg.thickness / 2), (plankCfg.sill + plankCfg.lintel) / 2, g.center.y - g.normal.y * (debrisGeoms.get(g.id).inner + plankCfg.wallGap + plankCfg.thickness / 2)), mesh: m ? { triangles: m.triangles, inFrustum: m.inFrustum, minY: m.minY, minWallGap: m.minWallGap, beams: m.beams, voidVisible: m.voidVisible, pipsOn: m.pipsOn } : null };
         }),
-        plankMesh: world.planks?.counts() ?? { nailed: 0, debris: 0 },
+        hud: hudState(),
+        plankMesh: { nailed: world.windowMeshes?.nailed() ?? 0, debris: sim.debris.items.length },
+        debris: sim.debris.items.map((d) => ({ x: d.x, y: d.y, z: d.z, yaw: d.yaw, age: d.age })),
         windowPositions: layout.windows.map((w) => ({ id: w.id ?? null, x: w.x, y: w.y })),
         spawnPoints: (layout.spawnPoints ?? []).map((p) => ({ id: p.id, fenetre: p.fenetre, x: p.x, y: p.y })),
         spawnLog: spawnLog.map((l) => ({ ...l })),

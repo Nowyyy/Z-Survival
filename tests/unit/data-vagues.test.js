@@ -104,7 +104,7 @@ describe('textes et pureté', () => {
     const fr = JSON.parse(readFileSync('data/i18n/fr.json', 'utf8'));
     const keys = Object.keys(fr).filter((k) => k.startsWith('game.wave.'));
     // Lot 2c : les textes de l'annonce (announce, reinforced, done) sont devenus game.splash.* (l'annonce est une animation centrale).
-    expect(keys.sort()).toEqual(['game.wave.hud', 'game.wave.live', 'game.wave.liveDone', 'game.wave.next', 'game.wave.reached', 'game.wave.remaining']);
+    expect(keys.sort()).toEqual(['game.wave.hud', 'game.wave.live', 'game.wave.liveDone', 'game.wave.next', 'game.wave.reached', 'game.wave.remaining', 'game.wave.remaining.one']);
     for (const k of keys) expect(fr[k], k).toContain('{n}');
     const html = readFileSync('jeu.html', 'utf8');
     for (const id of ['hud-wave', 'hud-remaining', 'hud-next', 'wave-announce', 'wave-announce-title', 'wave-announce-sub', 'end-wave']) expect(html, id).toContain(`id="${id}"`);

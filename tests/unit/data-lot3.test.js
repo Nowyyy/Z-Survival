@@ -3,7 +3,7 @@ import { execSync } from 'node:child_process';
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { circleOverlapsRect } from '../../js/core/collision.js';
 import { moveCircle } from '../../js/core/movement.js';
-import { DOWN_TEXTS, WINDOW_NAMES, WINDOW_TEXTS } from '../../js/game/texts.js';
+import { DOWN_TEXTS, WINDOW_INITIALS, WINDOW_NAMES, WINDOW_TEXTS } from '../../js/game/texts.js';
 import { layout, load } from './helpers/monde.js';
 import { geoms } from './helpers/sim-siege.js';
 
@@ -38,8 +38,8 @@ describe('data/game/windows.json', () => {
     expect(windows[key]).toBe(value);
   });
 
-  it('toutes les valeurs sont des nombres finis et positifs', () => {
-    for (const [k, v] of Object.entries(windows)) if (k !== '_provisoire') expect(Number.isFinite(v) && v > 0, k).toBe(true);
+  it('toutes les valeurs sont des nombres finis et positifs (planks3d : lot 3a, voir data-planches.test.js)', () => {
+    for (const [k, v] of Object.entries(windows)) if (k !== '_provisoire' && k !== 'planks3d') expect(Number.isFinite(v) && v > 0, k).toBe(true);
   });
 
   it('cohérence : arracheurs actifs ≤ emplacements, durées compatibles avec les statistiques', () => {
@@ -110,15 +110,15 @@ describe('géométrie des fenêtres et du monde (world.json inchangé)', () => {
   });
 
   it('les fichiers que le lot ne doit pas toucher sont inchangés depuis main', () => {
-    const changed = git('diff --name-only main -- js/core/waves.js js/core/wave-splash.js js/core/vhs.js js/core/projectile.js js/core/ray.js js/core/spread.js js/core/camera.js data/game/waves.json data/game/gaits.json data/game/weapons.json data/game/textures.json data/game/decor.json data/game/splash.json data/game/vhs.json index.html Docs/seed.md .github');
+    const changed = git('diff --name-only main -- js/core/waves.js js/core/wave-splash.js js/core/vhs.js js/core/projectile.js js/core/ray.js js/core/spread.js js/core/camera.js data/game/waves.json data/game/gaits.json data/game/weapons.json data/game/decor.json data/game/splash.json data/game/vhs.json index.html Docs/seed.md .github');
     if (changed !== null) expect(changed).toEqual([]);
   });
 });
 
 describe('textes, jetons, pureté et hygiène du lot 3', () => {
   it('chaque clé de texte des fenêtres et de l\'état à terre existe dans fr.json et seulement là (clés game.* en français seul)', () => {
-    for (const key of [...Object.values(WINDOW_TEXTS), ...Object.values(WINDOW_NAMES), ...Object.values(DOWN_TEXTS)]) expect(fr[key], key).toBeTruthy();
-    expect(Object.keys(fr).filter((k) => k.startsWith('game.windows.') || k.startsWith('game.down.')).length).toBe(Object.values(WINDOW_TEXTS).length + Object.values(WINDOW_NAMES).length + Object.values(DOWN_TEXTS).length);
+    for (const key of [...Object.values(WINDOW_TEXTS), ...Object.values(WINDOW_NAMES), ...Object.values(WINDOW_INITIALS), ...Object.values(DOWN_TEXTS)]) expect(fr[key], key).toBeTruthy();
+    expect(Object.keys(fr).filter((k) => k.startsWith('game.windows.') || k.startsWith('game.down.')).length).toBe(Object.values(WINDOW_TEXTS).length + Object.values(WINDOW_NAMES).length + Object.values(WINDOW_INITIALS).length + Object.values(DOWN_TEXTS).length);
   });
 
   it('les noms de fenêtres couvrent celles de world.json', () => {

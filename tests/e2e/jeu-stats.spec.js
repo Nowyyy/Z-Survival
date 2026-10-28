@@ -264,19 +264,19 @@ test.describe('statistiques : vie et régénération', () => {
     const s0 = await state(page);
     expect(s0.player.maxHp).toBe(160);
     expect(s0.player.health).toBe(160);
-    await expect(page.locator('#hud-life')).toHaveText('Vie 160/160');
+    await expect(page.locator('#hud-life')).toHaveText('160/160');
     await expect(page.locator('#hud-fill')).toHaveCSS('transform', 'matrix(1, 0, 0, 1, 0, 0)');
     await page.evaluate(([x, y]) => { window.__zs.setInput({ aim: { angle: -Math.PI / 2 } }); window.__zs.spawnEnemy(x + 30, y); }, [s0.player.x, s0.player.y]);
     await step(page, 0.3);
     const hurt = (await state(page)).player.health;
     expect(hurt).toBeLessThan(160);
-    await expect(page.locator('#hud-life')).toHaveText(new RegExp(`^Vie ${Math.ceil(hurt)}/160$`));
+    await expect(page.locator('#hud-life')).toHaveText(new RegExp(`^${Math.ceil(hurt)}/160$`));
     const scale = await page.locator('#hud-fill').evaluate((el) => new DOMMatrix(getComputedStyle(el).transform).a);
     expect(scale).toBeCloseTo(Math.ceil(hurt) / 160, 2);
     await page.evaluate(() => window.__zs.killAll());
     await step(page, 0.1);
     expect((await state(page)).player.health).toBe(160);
-    await expect(page.locator('#hud-life')).toHaveText('Vie 160/160');
+    await expect(page.locator('#hud-life')).toHaveText('160/160');
   });
 
   // Un zombie qui meurt d'une balle d'essai (marcheur, 50 de vie : deux balles niveau 0) ; renvoie la vie avant et après.
@@ -371,7 +371,7 @@ test.describe('?lvl= et état', () => {
     await page.setViewportSize(SIZE);
     test.setTimeout(120_000);
     await page.goto('/jeu.html?lvl=vie:5&nospawn=1');
-    await expect(page.locator('#hud-life')).toHaveText('Vie 160/160', { timeout: 90_000 });
+    await expect(page.locator('#hud-life')).toHaveText('160/160', { timeout: 90_000 });
     expect(await page.evaluate(() => typeof window.__zs)).toBe('undefined');
   });
 

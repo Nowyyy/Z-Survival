@@ -75,6 +75,14 @@
       "À 0 de vie, le joueur tombe, reste à terre 5 secondes (invulnérable, zombies repoussés) puis se relève à 50 % de vie ; sans chute restante, c'est la fin de partie.",
       "Deux statistiques de plus : chutes (1 à 6) et réparation (1,8 s à 0,5 s par planche), réglées par ?lvl=chutes:2,reparation:5.",
       "?planks=2 règle le nombre de planches de départ ; quatre nouveaux sons synthétisés (planche arrachée, planche clouée, chute, relevage)."
+    ] },
+    { "name": "lot-3a", "titre": "Planches lisibles, fenêtres sans clipping, interface compacte", "points": [
+      "Les planches ont leur propre bois clair (clous, fissures), un cadre autour de l'ouverture, un trou sombre dans le mur et quatre pastilles au sol qui comptent les planches vues de dessus.",
+      "Les planches ne traversent plus ni le sol ni le mur ; une planche arrachée gît à plat sur le sol et y reste jusqu'à la réparation, sans limite de nombre.",
+      "Chaque fenêtre est un seul maillage, dessiné seulement quand elle est à l'écran : le coût de dessin ne dépasse plus celui du lot 3.",
+      "Le HUD tient en puces dans 96 × 300 pixels : barre de vie avec 100/100, vague, restants, tués, chutes ; seules les fenêtres attaquées ou ouvertes ont une puce.",
+      "L'indicateur de réparation tient sur une ligne, et des flèches au bord de l'écran montrent les deux fenêtres en alerte les plus urgentes hors du champ.",
+      "Essai « Sur l'écran d'accueil » : jeu.html se lance sans les barres du navigateur (à vérifier sur iPhone)."
     ] }
   ]
 }

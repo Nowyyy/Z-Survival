@@ -80,8 +80,8 @@ test.describe('HUD HTML (E2-2) et marges', () => {
         expect(b.width, b.sel).toBeGreaterThan(0);
         for (const side of ['left', 'top', 'right', 'bottom']) expect(b[side], `${b.sel} ${side}`).toBeGreaterThanOrEqual(16);
       }
-      await expect(page.locator('#hud-life')).toHaveText('Vie 100/100');
-      await expect(page.locator('#hud-kills')).toHaveText('Zombies tués : 0');
+      await expect(page.locator('#hud-life')).toHaveText('100/100');
+      await expect(page.locator('#hud-kills')).toHaveText('0 tués');
       await expect(page.locator('#hud')).toHaveAttribute('data-block', 'E2-2');
     });
   }
@@ -89,9 +89,9 @@ test.describe('HUD HTML (E2-2) et marges', () => {
   test('le HUD suit la vie et les zombies tués, et l\'ordre du HTML est l\'ordre à l\'écran', async ({ page }) => {
     await open(page, { width: 667, height: 375 });
     await page.evaluate(() => { window.__zs.setInput({ aim: { angle: 0 } }); window.__zs.spawnEnemy(1100, 450); });
-    await expect(page.locator('#hud-kills')).toHaveText('Zombies tués : 1', { timeout: 60_000 });
+    await expect(page.locator('#hud-kills')).toHaveText('1 tué', { timeout: 60_000 });
     const order = await page.evaluate(() => [...document.querySelectorAll('#game-root [data-block]')].map((el) => el.dataset.block));
-    expect(order).toEqual(['E2-2', 'E2-8', 'E2-9', 'E2-10', 'E2-5', 'E2-3', 'E2-4']); // lot 2 : l'annonce de vague E2-8 s'intercale ; lot 3 : l'indicateur de réparation E2-9 et l'état à terre E2-10
+    expect(order).toEqual(['E2-2', 'E2-8', 'E2-10', 'E2-11', 'E2-5', 'E2-3', 'E2-4']); // lot 2 : l'annonce de vague E2-8 s'intercale ; lot 3 : l'état à terre E2-10 ; lot 3a : les flèches au bord E2-11 (l'indicateur de réparation E2-9 est retiré)
     const [hud, pause] = await page.evaluate(() => ['#hud', '#btn-pause'].map((s) => document.querySelector(s).getBoundingClientRect().left));
     expect(hud).toBeLessThan(pause);
   });
