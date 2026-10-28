@@ -32,7 +32,7 @@ export const SPLASH_TEXTS = { debut: 'game.splash.debut', renforcee: 'game.splas
 // Le nom d'une fenêtre vient de son identifiant dans world.json ; une fenêtre inconnue garde son identifiant.
 export const WINDOW_TEXTS = {
   title: 'game.windows.title', hud: 'game.windows.hud', sep: 'game.windows.sep', entry: 'game.windows.entry', open: 'game.windows.entry.open', attacked: 'game.windows.entry.attacked',
-  repair: 'game.windows.repair', busy: 'game.windows.busy', liveOpen: 'game.windows.live.open', liveRepaired: 'game.windows.live.repaired',
+  repair: 'game.windows.repair', todoOne: 'game.windows.todo.one', todoMany: 'game.windows.todo.many', busy: 'game.windows.busy', liveOpen: 'game.windows.live.open', liveRepaired: 'game.windows.live.repaired',
 };
 export const WINDOW_NAMES = {
   'fenetre-nord': 'game.windows.name.nord', 'fenetre-ouest': 'game.windows.name.ouest', 'fenetre-est': 'game.windows.name.est', 'fenetre-sud': 'game.windows.name.sud',

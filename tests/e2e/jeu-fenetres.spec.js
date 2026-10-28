@@ -358,23 +358,27 @@ test.describe('interface : ligne Fenêtres, indicateur E2-9, annonces', () => {
     await expect(page.locator('#hud-windows')).toContainText('N 4 !');
   });
 
-  test('E2-9 apparaît près de la fenêtre pendant la réparation : « Réparation », progression, dans les marges', async ({ page }) => {
+  test('E2-9 apparaît près de la fenêtre pendant la réparation : fenêtre, nombre de planches à poser, un seul tour d\'anneau, dans les marges, sans toucher le HUD ni Pause', async ({ page }) => {
     await open(page);
     await page.evaluate(([x, y]) => { window.__zs.setPlanks('fenetre-nord', 2); window.__zs.setPlayer(x, y); window.__zs.step(0.9); }, [N.repairSpot.x, N.repairSpot.y]);
     const repair = page.locator('#repair');
     await expect(repair).toBeVisible();
     await expect(repair).toHaveAttribute('data-block', 'E2-9');
     await expect(repair).toHaveAttribute('aria-hidden', 'true');
-    await expect(page.locator('#repair-label')).toHaveText('Réparation');
-    await expect.poll(() => repair.evaluate((el) => Number(el.style.getPropertyValue('--repair-progress')))).toBeGreaterThan(0.3);
+    await expect(page.locator('#repair-label')).toHaveText('Réparation : fenêtre nord');
+    await expect(page.locator('#repair-sub')).toHaveText('2 planches à poser');
+    // un seul tour pour toute la fenêtre : (2 planches + une demi-planche) / 4
+    await expect.poll(() => repair.evaluate((el) => Number(el.style.getPropertyValue('--repair-progress')))).toBeGreaterThan(0.55);
     const box = await repair.boundingBox();
     expect(box.x).toBeGreaterThanOrEqual(16);
     expect(box.y).toBeGreaterThanOrEqual(16);
     expect(box.x + box.width).toBeLessThanOrEqual(SIZE.width - 16);
+    const others = await page.evaluate(() => ['#hud', '#btn-pause'].map((sel) => { const r = document.querySelector(sel).getBoundingClientRect(); return { l: r.left, r: r.right, t: r.top, b: r.bottom }; }));
+    for (const o of others) expect(box.x >= o.r || box.x + box.width <= o.l || box.y >= o.b || box.y + box.height <= o.t).toBe(true);
     expect(await repair.evaluate((el) => getComputedStyle(el).pointerEvents)).toBe('none');
   });
 
-  test('E2-9 affiche « Fenêtre occupée » quand la réparation est bloquée', async ({ page }) => {
+  test('E2-9 explique le blocage (« Zombie à la fenêtre ») quand la réparation est impossible', async ({ page }) => {
     await open(page);
     await page.evaluate(([x, y]) => {
       const zs = window.__zs;
@@ -384,7 +388,7 @@ test.describe('interface : ligne Fenêtres, indicateur E2-9, annonces', () => {
       zs.setPlayer(x, y);
       zs.step(0.1);
     }, [N.repairSpot.x, N.repairSpot.y]);
-    await expect(page.locator('#repair-label')).toHaveText('Fenêtre occupée');
+    await expect(page.locator('#repair-sub')).toContainText('Zombie à la fenêtre');
   });
 
   test('E2-9 est masqué loin de la fenêtre et quand toutes les planches sont là', async ({ page }) => {

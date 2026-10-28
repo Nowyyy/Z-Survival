@@ -34,7 +34,6 @@ import { STRIDE } from './skeleton.js';
 import { DOWN_TEXTS, fmt, WINDOW_NAMES, WINDOW_TEXTS } from './texts.js';
 import { createThreeTextures } from './textures.js';
 import { buildWorld, createCamera } from './world.js';
-import { screenPoint } from './picking.js';
 
 const RECOIL_TIME = 0.12;
 const HIT_FLASH_TIME = 0.1;
@@ -467,10 +466,13 @@ export function createGame(ctx) {
     });
   }
 
-  // E2-9 : indicateur de réparation à l'écran (projection du point de réparation de la fenêtre la plus proche qui manque de planches).
+  // E2-9 : indicateur de réparation, fixe en haut au centre de l'écran (hors du titre de vague et de l'état à terre) ; affiché quand le joueur est
+  // près d'une fenêtre qui manque de planches. Un seul tour d'anneau pour toute la fenêtre : (planches posées + progression de la planche en
+  // cours) / maximum. Texte : la fenêtre et le nombre de planches à poser, ou la raison du blocage.
   const repairEl = document.getElementById('repair');
   const repairLabel = document.getElementById('repair-label');
-  let repairShown = { visible: null, text: null, progress: null, x: null, y: null };
+  const repairSub = document.getElementById('repair-sub');
+  let repairShown = { visible: null, label: null, sub: null, progress: null };
   function updateRepairIndicator() {
     if (!repairEl) return;
     let best = null;
@@ -483,34 +485,25 @@ export function createGame(ctx) {
         best = g;
       }
     }
-    let visible = false;
-    let x = 0;
-    let y = 0;
-    let text = '';
+    const visible = best !== null && !sim.dead;
+    let label = '';
+    let sub = '';
     let progress = 0;
-    if (best && !sim.dead) {
-      const pt = screenPoint(rig.camera, best.repairSpot.x, 20, best.repairSpot.y, size);
-      // Il ne déborde jamais des marges : masqué si son centre est trop près d'un bord.
-      const halfW = repairEl.offsetWidth / 2 || 60;
-      const h = repairEl.offsetHeight || 60;
-      const m = 16;
-      visible = pt.x - halfW >= m && pt.x + halfW <= size.width - m && pt.y - h >= m && pt.y <= size.height - m;
-      x = Math.round(pt.x);
-      y = Math.round(pt.y);
+    if (visible) {
+      const w = sim.win.windows[best.id];
       const info = sim.repair[best.id];
-      text = ctx.dict[info?.blocked ? WINDOW_TEXTS.busy : WINDOW_TEXTS.repair];
-      progress = info?.blocked ? 0 : Math.round(num(info?.progress) * 100) / 100;
+      const todo = w.maxPlanks - w.planks;
+      label = fmt(ctx.dict[WINDOW_TEXTS.repair], { name: dictName(best.id) });
+      sub = info?.blocked ? ctx.dict[WINDOW_TEXTS.busy] : fmt(ctx.dict[todo === 1 ? WINDOW_TEXTS.todoOne : WINDOW_TEXTS.todoMany], { n: todo });
+      progress = Math.round(((w.planks + num(w.repairProgress)) / w.maxPlanks) * 100) / 100;
     }
     if (visible !== repairShown.visible) repairEl.hidden = !visible;
     if (visible) {
-      if (text !== repairShown.text) repairLabel.textContent = text;
+      if (label !== repairShown.label) repairLabel.textContent = label;
+      if (sub !== repairShown.sub) repairSub.textContent = sub;
       if (progress !== repairShown.progress) repairEl.style.setProperty('--repair-progress', String(progress));
-      if (x !== repairShown.x || y !== repairShown.y) {
-        repairEl.style.left = `${x}px`;
-        repairEl.style.top = `${y}px`;
-      }
     }
-    repairShown = { visible, text: visible ? text : null, progress: visible ? progress : null, x: visible ? x : null, y: visible ? y : null };
+    repairShown = { visible, label: visible ? label : null, sub: visible ? sub : null, progress: visible ? progress : null };
   }
 
   // Place les personnages, le laser et les effets d'après l'état simulé, puis la lumière.

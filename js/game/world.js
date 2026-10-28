@@ -306,15 +306,16 @@ export function buildWorld({ palette, layout, render, textures, windowGeoms = []
 }
 
 const PLANK_TILT = (4 * Math.PI) / 180; // inclinaison maximale d'une planche
-const PLANK_LEAN = 10; // le haut des planches penche vers la salle (mieux vu d'en haut) : écart entre le bas et le haut de la pile
-const PLANK_INSET = 8; // la planche est clouée près de la face intérieure du mur (position de la fenêtre moins 8 le long de la normale)
+const PLANK_LEAN = 30; // les planches s'appuient contre le mur et avancent dans la salle (mieux vues d'en haut) : avancée du bas de la pile
+const PLANK_INSET = 15; // planches clouées sur la face intérieure du mur (à 12 du centre de la fenêtre) : elles ressortent côté salle
+const PLANK_OVER = 8; // dépassement de la pile au-dessus et au-dessous de l'ouverture, et de chaque côté
 
 function createPlanks({ scene, material, rect, geoms, count, render, seed }) {
   const total = geoms.length * count;
   const base = new Float32Array(total * 18);
   const uvs = new Float32Array(total * 12);
-  const sill = render.sillHeight;
-  const open = render.lintelBottom - render.sillHeight; // hauteur de l'ouverture
+  const sill = render.sillHeight - PLANK_OVER;
+  const open = render.lintelBottom - render.sillHeight + 2 * PLANK_OVER; // hauteur de la pile : l'ouverture plus un dépassement
   const h = open / count; // hauteur d'une planche, jointoyée par 1 unité
   const index = new Map(); // fenêtre -> premier numéro de planche
   geoms.forEach((g, w) => {
@@ -324,14 +325,14 @@ function createPlanks({ scene, material, rect, geoms, count, render, seed }) {
     for (let i = 0; i < count; i += 1) {
       const n = w * count + i;
       const tilt = (unit(seed + 7, n) * 2 - 1) * PLANK_TILT;
-      const half = g.width / 2 - 2;
+      const half = g.width / 2 + PLANK_OVER;
       const hh = h / 2 - 0.5;
       const cy = sill + h * (i + 0.5);
       // Coins (le long du mur, hauteur) tournés dans le plan du mur autour du centre de la planche.
       const corners = [[-half, hh], [half, hh], [half, -hh], [-half, -hh]].map(([a, b]) => {
         const ra = a * Math.cos(tilt) - b * Math.sin(tilt);
         const rb = a * Math.sin(tilt) + b * Math.cos(tilt);
-        const lean = -((cy + rb - sill) / open - 0.5) * PLANK_LEAN * 2; // le bas sort vers l'extérieur, le haut entre dans la salle
+        const lean = -(1 - (cy + rb - sill) / open) * PLANK_LEAN; // le haut reste contre le mur, le bas avance dans la salle (planches posées en appui : face tournée vers le haut, bien éclairée)
         return [cx + g.tangent.x * ra + g.normal.x * (i * 0.2 + lean), cy + rb, cz + g.tangent.y * ra + g.normal.y * (i * 0.2 + lean)];
       });
       const v0 = rect.v0 + ((rect.v1 - rect.v0) * i) / count;
