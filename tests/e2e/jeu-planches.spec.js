@@ -79,7 +79,7 @@ test.describe('planches 3D : géométrie lue sur les sommets réels', () => {
   });
 });
 
-test.describe('débris : à plat, hors meubles, 12 au plus, durée de vie des données', () => {
+test.describe('débris : à plat, hors meubles, 12 au plus, sans limite de durée', () => {
   test('toutes les fenêtres ouvertes : 12 débris au plus, tous à plat (y ≥ 0,3), aucun dans un meuble, dans la salle', async ({ page }) => {
     await open(page, '&planks=0');
     const s = await STATE(page);
@@ -93,21 +93,20 @@ test.describe('débris : à plat, hors meubles, 12 au plus, durée de vie des do
     expect(s.plankMesh.debris).toBe(s.debris.length);
   });
 
-  test('un débris disparaît après sa durée de vie (300 s de temps de jeu, step), pas avant', async ({ page }) => {
+  test('les débris restent à l\'infini (1 000 s de temps de jeu), jusqu\'à ce que la planche soit réparée', async ({ page }) => {
     await open(page);
     const r = await page.evaluate(() => {
       const zs = window.__zs;
       zs.setPlanks('fenetre-nord', 0);
       const born = zs.getState().debris.length;
-      for (let i = 0; i < 29; i += 1) zs.step(10);
+      for (let i = 0; i < 100; i += 1) zs.step(10);
       const early = zs.getState().debris.length;
-      for (let i = 0; i < 2; i += 1) zs.step(10);
-      zs.step(1.2);
+      zs.setPlanks('fenetre-nord', 4);
       return { born, early, late: zs.getState().debris.length };
     });
     expect(r.born).toBe(4);
     expect(r.early).toBe(4);
-    expect(r.late).toBe(0);
+    expect(r.late).toBe(0); // réparée : les débris de la fenêtre sont consommés
   });
 
   test('jamais plus de 12 débris, même en arrachant et en réparant à répétition', async ({ page }) => {

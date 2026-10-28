@@ -118,13 +118,13 @@ describe('lot 3a : textures.json et windows.json', () => {
     const p = windows.planks3d;
     expect(p._provisoire).toBeTruthy();
     for (const k of Object.keys(FALLBACK).filter((key) => !['count', 'sill', 'lintel', 'wall'].includes(key))) expect(p, k).toHaveProperty(k);
-    expect(p).toMatchObject({ thickness: 14, visible: 16, overhang: 16, wallGap: 2, rollMax: 0.12, debrisMax: 12, debrisLife: 300, pipShift: 8, debrisFade: 1, debrisNear: 40, debrisFar: 110, debrisSide: 40, debrisApart: 30, debrisMargin: 6, debrisTries: 12, pip: 16, pipLift: 0.3 });
+    expect(p).toMatchObject({ thickness: 14, visible: 16, overhang: 16, wallGap: 2, rollMax: 0.12, debrisMax: 12, debrisLife: 0, pipShift: 8, debrisFade: 1, debrisNear: 40, debrisFar: 110, debrisSide: 40, debrisApart: 30, debrisMargin: 6, debrisTries: 12, pip: 16, pipLift: 0.3 });
     for (const [k, v] of Object.entries(p)) if (k !== '_provisoire') expect(Number.isFinite(v) && v >= 0, k).toBe(true);
   });
 
   it('les réglages lus des données valent les replis du code (aucun écart caché)', () => {
     const settings = plankSettings(windows, render);
-    for (const [k, v] of Object.entries(FALLBACK)) if (k !== 'debrisLife') expect(settings[k], k).toBe(v); // la durée de vie des débris : 300 s dans les données, 25 s de repli
+    for (const [k, v] of Object.entries(FALLBACK)) if (k !== 'debrisLife') expect(settings[k], k).toBe(v); // la durée de vie des débris : 0 (à l'infini) dans les données, 25 s de repli
   });
 
   it('les valeurs de rendu utilisées : allège 16, linteau 44, mur 60', () => {

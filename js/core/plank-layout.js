@@ -50,7 +50,7 @@ export function cleanParams(raw) {
     debrisWidth: pos(p.debrisWidth, f.debrisWidth),
     debrisThickness: pos(p.debrisThickness, f.debrisThickness),
     debrisMax: whole(p.debrisMax, f.debrisMax, 1, 64),
-    debrisLife: pos(p.debrisLife, f.debrisLife),
+    debrisLife: nonNeg(p.debrisLife, f.debrisLife), // 0 : les débris restent à l'infini (jusqu'à réparation ou plafond de 12)
     debrisFade: nonNeg(p.debrisFade, f.debrisFade),
     debrisYaw: Math.min(Math.PI / 2, nonNeg(p.debrisYaw, f.debrisYaw)),
     debrisNear: pos(p.debrisNear, f.debrisNear),
@@ -329,13 +329,14 @@ export function removeDebris(state, windowId, n) {
 export function stepDebris(state, dt, params) {
   const p = cleanParams(params);
   const step = clampDt(dt);
-  return { items: itemsOf(state).filter((d) => isNum(d?.age)).map((d) => ({ ...d, age: d.age + step })).filter((d) => d.age < p.debrisLife), serial: serialOf(state) };
+  return { items: itemsOf(state).filter((d) => isNum(d?.age)).map((d) => ({ ...d, age: d.age + step })).filter((d) => p.debrisLife === 0 || d.age < p.debrisLife), serial: serialOf(state) };
 }
 
 // Échelle d'affichage d'un débris : 1, puis de 1 à 0 pendant la dernière seconde (debrisFade) ; toujours 1 sous mouvement réduit (disparition immédiate).
 export function debrisScale(item, params, reduced = false) {
   const p = cleanParams(params);
   const age = isNum(item?.age) ? item.age : 0;
+  if (p.debrisLife === 0) return 1;
   if (reduced === true || p.debrisFade <= 0) return age >= p.debrisLife ? 0 : 1;
   return Math.max(0, Math.min(1, (p.debrisLife - age) / p.debrisFade));
 }

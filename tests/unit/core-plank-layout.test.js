@@ -316,6 +316,17 @@ describe('plank-layout.js : durée de vie et plafond des débris', () => {
     expect(s.items).toHaveLength(0);
   });
 
+  it('durée de vie 0 : les débris restent à l\'infini, sans mise à l\'échelle', () => {
+    const forever = { ...P, debrisLife: 0 };
+    let s = fill(3);
+    const n = s.items.length;
+    for (let t = 0; t < 20; t += 1) s = stepDebris(s, 0.05, forever);
+    for (let t = 0; t < 4000; t += 1) s = stepDebris(s, 0.05, forever);
+    expect(s.items).toHaveLength(n);
+    expect(debrisScale({ age: 1e6 }, forever)).toBe(1);
+    expect(debrisScale({ age: 1e6 }, forever, true)).toBe(1);
+  });
+
   it('dt est borné à 0,05 s et un dt négatif ou invalide ne fait pas vieillir', () => {
     const s = fill(1);
     expect(stepDebris(s, 5, P).items[0].age).toBeCloseTo(0.05, 12);
