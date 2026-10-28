@@ -146,19 +146,19 @@ describe('windows-mesh.js : un maillage par fenêtre', () => {
     expect(set.meshes[0].geometry.attributes.position.version).toBe(v);
   });
 
-  it('pastilles : carrés de 16 au sol à 0,3, alignés le long du mur et centrés sur le point de réparation', () => {
+  it('pastilles : carrés de 16 sur le dessus du mur (60,3), alignés le long du mur et centrés sur la fenêtre', () => {
     const { set } = make();
     for (const [w, g] of geoms.entries()) {
       const pos = positions(set.meshes[w]);
       const xs = [];
       for (let i = 0; i < 4; i += 1) {
         const pts = Array.from({ length: 6 }, (_, k) => pos.slice((78 + i * 12 + k) * 3, (78 + i * 12 + k) * 3 + 3));
-        for (const p of pts) expect(p[1]).toBeCloseTo(0.3, 6);
-        const lat = pts.map((p) => (p[0] - g.repairSpot.x) * g.tangent.x + (p[2] - g.repairSpot.y) * g.tangent.y);
+        for (const p of pts) expect(p[1]).toBeCloseTo(60.3, 4);
+        const lat = pts.map((p) => (p[0] - g.center.x) * g.tangent.x + (p[2] - g.center.y) * g.tangent.y);
         expect(Math.max(...lat) - Math.min(...lat)).toBeCloseTo(16, 6);
         xs.push((Math.max(...lat) + Math.min(...lat)) / 2);
-        const depth = pts.map((p) => (p[0] - g.repairSpot.x) * g.normal.x + (p[2] - g.repairSpot.y) * g.normal.y);
-        expect((Math.max(...depth) + Math.min(...depth)) / 2).toBeCloseTo(0, 6);
+        const depth = pts.map((p) => (p[0] - g.center.x) * g.normal.x + (p[2] - g.center.y) * g.normal.y);
+        expect((Math.max(...depth) + Math.min(...depth)) / 2).toBeCloseTo(8, 6);
       }
       expect(xs.reduce((a, b) => a + b, 0)).toBeCloseTo(0, 6);
       expect(xs[1] - xs[0]).toBeCloseTo(18, 6);
@@ -243,7 +243,7 @@ describe('windows-mesh.js : débris', () => {
   const make2 = () => {
     const scene = new THREE.Scene();
     const material = new THREE.MeshBasicMaterial();
-    return { scene, mesh: createDebrisMesh({ scene, material, settings, sheet }), material };
+    return { scene, mesh: createDebrisMesh({ scene, material, settings: { ...settings, debrisLife: 25 }, sheet }), material };
   };
 
   it('un maillage, invisible sans débris (aucun appel de dessin), sans ombre, partageant la matière', () => {

@@ -91,17 +91,18 @@ test.describe('HUD compact E2-2', () => {
     await expect(bar).toHaveAttribute('aria-valuenow', /^\d+$/);
   });
 
-  test('« Chutes » : une silhouette par chute restante et le nombre affiché', async ({ page }) => {
+  test('chutes : une silhouette avec un « + » par chute restante et le nombre, sans le mot « Chutes »', async ({ page }) => {
     for (const [lvl, n] of [['', 1], ['&lvl=chutes:2', 3]]) {
       await open(page, lvl);
-      const r = await page.evaluate(() => ({ icons: document.querySelectorAll('#hud-chutes-icons svg').length, text: document.getElementById('hud-chutes').textContent, label: document.getElementById('hud-chutes').getAttribute('aria-label') }));
+      const r = await page.evaluate(() => ({ icons: document.querySelectorAll('#hud-chutes-icons svg').length, text: document.getElementById('hud-chutes').textContent, label: document.getElementById('hud-chutes').getAttribute('aria-label'), pluses: document.querySelectorAll('#hud-chutes-icons .hud-plus').length }));
       expect(r.icons).toBe(n);
-      expect(r.text).toBe(`Chutes ${n}`);
+      expect(r.text).toBe(String(n));
+      expect(r.pluses).toBe(n);
       expect(r.label).toBe(`Chutes restantes : ${n}`);
     }
     await page.evaluate(() => { window.__zs.downPlayer(); window.__zs.step(0.1); });
     expect(await page.locator('#hud-chutes-icons svg').count()).toBe(2);
-    await expect(page.locator('#hud-chutes')).toHaveText('Chutes 2');
+    await expect(page.locator('#hud-chutes')).toHaveText('2');
   });
 
   test('le texte fait 14 px au moins partout (HUD, E2-11) et reste lisible', async ({ page }) => {
@@ -119,7 +120,7 @@ test.describe('HUD compact E2-2', () => {
       }
       return out;
     });
-    expect(sizes.length).toBeGreaterThan(5);
+    expect(sizes.length).toBeGreaterThan(3);
     for (const s of sizes) expect(s.size, `${s.root} ${s.text}`).toBeGreaterThanOrEqual(14);
   });
 
@@ -147,52 +148,30 @@ test.describe('HUD compact E2-2', () => {
   });
 });
 
-test.describe('rangée des fenêtres', () => {
-  test('tout est fermé et intact : la rangée est masquée, sans hauteur réservée, et son apparition ne décale rien (CLS nul)', async ({ page }) => {
+test.describe('HUD en un seul rectangle noir, sans état des fenêtres', () => {
+  test('un seul rectangle noir : le fond est sur #hud, la barre, les puces et les rangées n\'ont pas de fond ; plus de rangée « Fenêtres »', async ({ page }) => {
     await open(page);
-    await expect(page.locator('#hud-windows')).toBeHidden();
-    const before = await page.evaluate(() => {
-      window.__shift = 0;
-      new PerformanceObserver((list) => { for (const e of list.getEntries()) if (!e.hadRecentInput) window.__shift += e.value; }).observe({ type: 'layout-shift', buffered: true });
-      const r = (s) => { const b = document.querySelector(s).getBoundingClientRect(); return [b.left, b.top, b.width, b.height]; };
-      return { hud: r('#hud'), pause: r('#btn-pause'), chips: r('.hud-chips'), life: r('.hud-life-row') };
-    });
     await page.evaluate(() => { window.__zs.setPlanks('fenetre-nord', 0); window.__zs.step(0.05); });
-    await expect(page.locator('#hud-windows')).toBeVisible();
-    const after = await page.evaluate(() => {
-      const r = (s) => { const b = document.querySelector(s).getBoundingClientRect(); return [b.left, b.top, b.width, b.height]; };
-      return { pause: r('#btn-pause'), chips: r('.hud-chips'), life: r('.hud-life-row'), shift: window.__shift };
+    const r = await page.evaluate(() => {
+      const bg = (sel) => getComputedStyle(document.querySelector(sel)).backgroundColor;
+      return { hud: bg('#hud'), chips: ['#hud-kills', '#hud-chutes', '.hud-chips', '.hud-life-row'].map(bg), windows: document.querySelectorAll('#hud-windows, .hud-win').length, border: getComputedStyle(document.querySelector('#hud-kills')).borderTopWidth };
     });
-    expect(after.pause).toEqual(before.pause);
-    expect(after.chips).toEqual(before.chips);
-    expect(after.life).toEqual(before.life);
-    expect(after.shift).toBeLessThanOrEqual(0.001);
+    expect(r.hud).not.toBe('rgba(0, 0, 0, 0)');
+    for (const c of r.chips) expect(c).toBe('rgba(0, 0, 0, 0)');
+    expect(r.windows).toBe(0);
+    expect(r.border).toBe('0px');
   });
 
-  test('une fenêtre attaquée apparaît avec son initiale, ses 4 encoches et « ! » ; elle disparaît quand elle n\'est plus attaquée', async ({ page }) => {
+  test('un fenêtre ouverte ou attaquée ne change ni la taille ni la place du HUD (rien à décaler)', async ({ page }) => {
     await open(page);
-    await attack(page, 'fenetre-nord');
-    const chip = page.locator('.hud-win[data-id="fenetre-nord"]');
-    await expect(chip).toBeVisible();
-    await expect(chip).toContainText('N');
-    await expect(chip).toContainText('!');
-    await expect(chip.locator('.hud-win-notch')).toHaveCount(4);
-    await expect(chip.locator('.hud-win-notch[data-on="1"]')).toHaveCount((await STATE(page)).windows[0].planks);
-    await expect(chip).toHaveAttribute('aria-label', /Fenêtre nord attaquée : \d planches sur 4/);
-    await page.evaluate(() => { window.__zs.killAll(); window.__zs.step(0.1); });
-    await expect(page.locator('#hud-windows')).toBeHidden();
+    const box = () => page.evaluate(() => { const b = document.getElementById('hud').getBoundingClientRect(); return [b.left, b.top, b.width, b.height]; });
+    const before = await box();
+    await page.evaluate(() => { window.__zs.setPlanks('fenetre-nord', 0); window.__zs.step(0.05); });
+    await attack(page, 'fenetre-est');
+    expect(await box()).toEqual(before);
   });
 
-  test('une fenêtre à 0 planche affiche « ouverte », sans « ! » ; les initiales viennent de fr.json', async ({ page }) => {
-    await open(page);
-    await page.evaluate(() => { window.__zs.setPlanks('fenetre-est', 0); window.__zs.setPlanks('fenetre-ouest', 0); window.__zs.step(0.05); });
-    await expect(page.locator('.hud-win[data-id="fenetre-est"]')).toHaveText('Eouverte');
-    await expect(page.locator('.hud-win[data-id="fenetre-ouest"]')).toHaveText('Oouverte');
-    await expect(page.locator('.hud-win[data-state="open"]')).toHaveCount(2);
-    await expect(page.locator('#hud-windows .hud-win-alert')).toHaveCount(0);
-  });
-
-  test('trois fenêtres en alerte : triées par urgence (ouverte, puis le moins de planches), 96 px de haut au plus', async ({ page }) => {
+  test('les fenêtres en alerte restent calculées pour les flèches : triées par urgence (ouverte, puis le moins de planches)', async ({ page }) => {
     await open(page);
     await page.evaluate(() => { const zs = window.__zs; zs.setPlanks('fenetre-ouest', 0); zs.setPlanks('fenetre-est', 1); zs.step(0.05); });
     await attack(page, 'fenetre-est');
@@ -200,26 +179,8 @@ test.describe('rangée des fenêtres', () => {
     await attack(page, 'fenetre-nord');
     const s = await STATE(page);
     expect(s.hud.chips.map((c) => c.id)).toEqual(['fenetre-ouest', 'fenetre-est', 'fenetre-nord']);
-    expect(await page.locator('#hud-windows .hud-win').evaluateAll((els) => els.map((e) => e.dataset.id))).toEqual(['fenetre-ouest', 'fenetre-est', 'fenetre-nord']);
     expect(s.hud.height).toBeLessThanOrEqual(96);
     expect(s.hud.width).toBeLessThanOrEqual(300);
-  });
-
-  test('quatre fenêtres en alerte : trois puces et « +1 » (rendu réel de hud.js)', async ({ page }) => {
-    await open(page);
-    const r = await page.evaluate(async () => {
-      const { createHud } = await import('/js/game/hud.js');
-      const dict = await (await fetch('/data/i18n/fr.json')).json();
-      const hud = createHud(dict);
-      const chips = ['n', 'o', 'e', 's'].map((k, i) => ({ id: `fenetre-${k}`, label: k.toUpperCase(), planks: i, max: 4, attacked: true, open: i === 0 }));
-      hud.update({ health: 100, maxHealth: 100 }, 0, { active: false }, { chutes: 1, chips: { chips: chips.slice(0, 3), more: 1 }, names: {} });
-      const box = document.getElementById('hud').getBoundingClientRect();
-      return { n: document.querySelectorAll('#hud-windows .hud-win').length, text: [...document.querySelectorAll('#hud-windows .hud-win')].map((e) => e.textContent), height: box.height, width: box.width };
-    });
-    expect(r.n).toBe(4);
-    expect(r.text.at(-1)).toBe('+1');
-    expect(r.height).toBeLessThanOrEqual(96);
-    expect(r.width).toBeLessThanOrEqual(300);
   });
 });
 
@@ -252,7 +213,7 @@ test.describe('réparation bloquée et HUD en vague', () => {
     const hud = await rect(page, '#hud');
     const pause = await rect(page, '#btn-pause');
     expect(apart(hud, pause)).toBe(true);
-    const fit = await page.evaluate(() => [...document.querySelectorAll('#hud .hud-life-row, #hud .hud-chips, #hud .hud-windows')].map((e) => [e.scrollWidth, e.clientWidth]));
+    const fit = await page.evaluate(() => [...document.querySelectorAll('#hud .hud-life-row, #hud .hud-chips')].map((e) => [e.scrollWidth, e.clientWidth]));
     for (const [sw, cw] of fit) expect(sw).toBeLessThanOrEqual(cw);
     expect(hud.w).toBeLessThanOrEqual(300);
   });
@@ -354,10 +315,9 @@ test.describe('structure, accessibilité, hygiène', () => {
     expect(r).toEqual({ aria: 'true', events: 'none', active: 'BODY', focusable: 0 });
   });
 
-  test('axe : aucune violation avec le HUD, des puces de fenêtre et E2-11 affichés', async ({ page }) => {
+  test('axe : aucune violation avec le HUD et E2-11 affichés', async ({ page }) => {
     await open(page);
     await page.evaluate(() => { const zs = window.__zs; zs.setPlayer(1800, 900); zs.setPlanks('fenetre-nord', 2); zs.setPlanks('fenetre-ouest', 0); zs.setPlanks('fenetre-est', 1); zs.step(0.5); });
-    await expect(page.locator('#hud-windows')).toBeVisible();
     expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
   });
 

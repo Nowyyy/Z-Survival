@@ -139,14 +139,14 @@ test.describe('chute et relevage', () => {
     expect(s.dead).toBe(false);
     expect(s.player.down).toMatchObject({ state: 'debout', chutes: 1, chutesMax: 1, grace: 0 });
     expect(s.player.health).toBe(100);
-    await expect(page.locator('#hud-chutes')).toHaveText('Chutes 1');
+    await expect(page.locator('#hud-chutes')).toHaveText('1');
   });
 });
 
 test.describe('statistiques chutes et reparation', () => {
-  test('?lvl=chutes:2 : 3 chutes (HUD « Chutes 3 »), la quatrième vie à 0 est la mort', async ({ page }) => {
+  test('?lvl=chutes:2 : 3 chutes (HUD : 3), la quatrième vie à 0 est la mort', async ({ page }) => {
     await open(page, '&lvl=chutes:2');
-    await expect(page.locator('#hud-chutes')).toHaveText('Chutes 3');
+    await expect(page.locator('#hud-chutes')).toHaveText('3');
     for (let i = 0; i < 3; i += 1) {
       await fall(page);
       expect((await dn(page)).state).toBe('terre');
@@ -161,7 +161,7 @@ test.describe('statistiques chutes et reparation', () => {
   test('?lvl=chutes:9 est borné à 5 (6 chutes) ; ?lvl=all:5 applique chutes et reparation au niveau 5', async ({ page }) => {
     await open(page, '&lvl=chutes:9');
     expect((await state(page)).stats.values.maxFalls).toBe(6);
-    await expect(page.locator('#hud-chutes')).toHaveText('Chutes 6');
+    await expect(page.locator('#hud-chutes')).toHaveText('6');
     await open(page, '&lvl=all:5');
     const s = await state(page);
     expect(s.stats.values.maxFalls).toBe(6);

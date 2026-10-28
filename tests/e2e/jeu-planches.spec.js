@@ -79,7 +79,7 @@ test.describe('planches 3D : géométrie lue sur les sommets réels', () => {
   });
 });
 
-test.describe('débris : à plat, hors meubles, 12 au plus, 25 s', () => {
+test.describe('débris : à plat, hors meubles, 12 au plus, durée de vie des données', () => {
   test('toutes les fenêtres ouvertes : 12 débris au plus, tous à plat (y ≥ 0,3), aucun dans un meuble, dans la salle', async ({ page }) => {
     await open(page, '&planks=0');
     const s = await STATE(page);
@@ -93,14 +93,15 @@ test.describe('débris : à plat, hors meubles, 12 au plus, 25 s', () => {
     expect(s.plankMesh.debris).toBe(s.debris.length);
   });
 
-  test('un débris disparaît après 25 s de temps de jeu (step), pas avant', async ({ page }) => {
+  test('un débris disparaît après sa durée de vie (300 s de temps de jeu, step), pas avant', async ({ page }) => {
     await open(page);
     const r = await page.evaluate(() => {
       const zs = window.__zs;
       zs.setPlanks('fenetre-nord', 0);
       const born = zs.getState().debris.length;
-      zs.step(24);
+      for (let i = 0; i < 29; i += 1) zs.step(10);
       const early = zs.getState().debris.length;
+      for (let i = 0; i < 2; i += 1) zs.step(10);
       zs.step(1.2);
       return { born, early, late: zs.getState().debris.length };
     });

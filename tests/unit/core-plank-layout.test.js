@@ -21,12 +21,13 @@ const geomOf = (win) => {
 };
 const SEEDS = Array.from({ length: 200 }, (_, i) => i + 1);
 const EPS = 1e-9;
+const L25 = { ...P, debrisLife: 25 }; // la mécanique de durée de vie, indépendamment du réglage des données
 const lateral = (g, c) => (c[0] - g.center.x) * g.tangent.x + (c[2] - g.center.y) * g.tangent.y;
 const debrisLayout = (extra = {}) => ({ params: P, obstacles: layout.furniture, bounds: layout.bounds, ...extra });
 
 describe('plank-layout.js : réglages (windows.json planks3d, render.json)', () => {
   it('les valeurs de départ de la spécification', () => {
-    expect(P).toMatchObject({ count: 4, thickness: 14, visible: 16, overhang: 16, wallGap: 2, rollMax: 0.12, sill: 16, lintel: 44, debrisMax: 12, debrisLife: 25, debrisFade: 1 });
+    expect(P).toMatchObject({ count: 4, thickness: 14, visible: 16, overhang: 16, wallGap: 2, rollMax: 0.12, sill: 16, lintel: 44, debrisMax: 12, debrisFade: 1 });
   });
 
   it('cleanParams : tout paramètre absent, négatif ou non numérique prend son repli', () => {
@@ -308,10 +309,10 @@ describe('plank-layout.js : durée de vie et plafond des débris', () => {
   it('un débris vit 25 s de temps de jeu : présent à 24,9 s, disparu à 25 s', () => {
     let s = fill(3);
     const n = s.items.length;
-    for (let t = 0; t < 498; t += 1) s = stepDebris(s, 0.05, P);
+    for (let t = 0; t < 498; t += 1) s = stepDebris(s, 0.05, L25);
     expect(s.items).toHaveLength(n);
     expect(s.items[0].age).toBeCloseTo(24.9, 6);
-    for (let t = 0; t < 4; t += 1) s = stepDebris(s, 0.05, P);
+    for (let t = 0; t < 4; t += 1) s = stepDebris(s, 0.05, L25);
     expect(s.items).toHaveLength(0);
   });
 
@@ -324,11 +325,11 @@ describe('plank-layout.js : durée de vie et plafond des débris', () => {
 
   it('disparition en 1 s par mise à l\'échelle ; immédiate sous mouvement réduit', () => {
     expect(debrisScale({ age: 0 }, P)).toBe(1);
-    expect(debrisScale({ age: 24 }, P)).toBe(1);
-    expect(debrisScale({ age: 24.5 }, P)).toBeCloseTo(0.5, 9);
-    expect(debrisScale({ age: 25 }, P)).toBe(0);
-    expect(debrisScale({ age: 24.5 }, P, true)).toBe(1);
-    expect(debrisScale({ age: 25 }, P, true)).toBe(0);
+    expect(debrisScale({ age: 24 }, L25)).toBe(1);
+    expect(debrisScale({ age: 24.5 }, L25)).toBeCloseTo(0.5, 9);
+    expect(debrisScale({ age: 25 }, L25)).toBe(0);
+    expect(debrisScale({ age: 24.5 }, L25, true)).toBe(1);
+    expect(debrisScale({ age: 25 }, L25, true)).toBe(0);
   });
 
   it('removeDebris retire les plus récents de la fenêtre et laisse les autres', () => {

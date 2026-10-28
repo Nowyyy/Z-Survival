@@ -86,24 +86,21 @@ body.game {
   box-sizing: border-box;
   width: max-content;
   max-width: min(300px, calc(100% - 2 * var(--game-margin) - 8rem));
+  padding: 6px 8px;
+  border-radius: var(--hud-radius);
+  background: color-mix(in srgb, var(--hud-bg) calc(var(--hud-bg-alpha) * 100%), transparent);
   pointer-events: none;
 }
 
 .hud-life-row,
-.hud-chips,
-.hud-windows {
+.hud-chips {
   display: flex;
   align-items: center;
   gap: var(--hud-gap);
 }
 
-.hud-chips,
-.hud-windows {
+.hud-chips {
   flex-wrap: nowrap;
-}
-
-.hud-windows[hidden] {
-  display: none;
 }
 
 .hud-icon {
@@ -115,24 +112,19 @@ body.game {
 
 .hud-bar,
 .hud-chip,
-.hud-wave,
-.hud-win {
+.hud-wave {
   box-sizing: border-box;
   margin: 0;
-  border: 1px solid var(--hud-border);
-  border-radius: var(--hud-radius);
-  background: color-mix(in srgb, var(--hud-bg) calc(var(--hud-bg-alpha) * 100%), transparent);
   color: var(--color-text);
   white-space: nowrap;
 }
 
-.hud-chip,
-.hud-win {
+.hud-chip {
   display: inline-flex;
   align-items: center;
   gap: var(--hud-gap);
-  height: 26px;
-  padding: 0 6px;
+  height: 24px;
+  padding: 0 4px;
   font-size: var(--text-sm);
   font-weight: 700;
   line-height: 1;
@@ -148,14 +140,23 @@ body.game {
 }
 
 .hud-chutes-icons svg {
-  width: 10px;
+  width: 16px;
   height: 16px;
   fill: var(--color-text);
+}
+
+.hud-chutes-icons .hud-plus {
+  fill: none;
+  stroke: var(--color-text);
+  stroke-width: 1.8;
+  stroke-linecap: round;
 }
 
 /* Barre de vie : le texte « 100/100 » est dans la barre, bone sur le rouge plein comme sur la piste sombre (4,5:1 des deux côtés). */
 .hud-bar {
   position: relative;
+  border: 1px solid var(--hud-border);
+  border-radius: var(--radius-sm);
   flex: 1;
   min-width: 96px;
   height: 24px;
@@ -188,7 +189,7 @@ body.game {
   display: flex;
   align-items: center;
   height: 28px;
-  padding: 0 6px;
+  padding: 0 4px;
   font-family: var(--font-display);
   font-size: 1.375rem;
   font-weight: 400;
@@ -199,27 +200,6 @@ body.game {
 
 .hud-wave[hidden] {
   display: none;
-}
-
-/* Puces de fenêtre : initiale, quatre encoches (pleine = planche posée, vide = absente) et « ! » si attaquée, ou le mot « ouverte » à 0 planche. */
-.hud-win {
-  height: 24px;
-}
-
-.hud-win-notches {
-  display: inline-flex;
-  gap: 2px;
-}
-
-.hud-win-notch {
-  box-sizing: border-box;
-  width: 6px;
-  height: 12px;
-  border: 1px solid var(--color-text);
-}
-
-.hud-win-notch[data-on="1"] {
-  background: var(--color-text);
 }
 
 /* Annonce de vague (E2-8, lot 2c) : animation centrale, sans focus ni clic. Aucune animation CSS autonome : js/game/splash-view.js met à jour

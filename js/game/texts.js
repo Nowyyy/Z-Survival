@@ -31,8 +31,6 @@ export const SPLASH_TEXTS = { debut: 'game.splash.debut', renforcee: 'game.splas
 // Lot 3 et 3a : textes des fenêtres (puces du HUD, indicateur de réparation E2-9 sur une ligne, annonces vocales) et de l'état à terre (E2-10).
 // Le nom d'une fenêtre vient de son identifiant dans world.json ; une fenêtre inconnue garde son identifiant.
 export const WINDOW_TEXTS = {
-  title: 'game.windows.title', chipOpen: 'game.windows.chip.open', chipAttacked: 'game.windows.chip.attacked', chipMore: 'game.windows.chip.more',
-  chipLabel: 'game.windows.chip.label', chipLabelAttacked: 'game.windows.chip.label.attacked', chipLabelOpen: 'game.windows.chip.label.open', chipMoreLabel: 'game.windows.chip.more.label',
   liveBusy: 'game.windows.live.busy', liveOpen: 'game.windows.live.open', liveRepaired: 'game.windows.live.repaired',
 };
 export const WINDOW_NAMES = {

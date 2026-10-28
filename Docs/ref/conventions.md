@@ -166,3 +166,6 @@ Versions du lot 3 des lignes de `CLAUDE.md` raccourcies, fusionnées ou remplac�
 - Annonce de vague : E2-8, animation centrale (js/core/wave-splash.js, état pur, horloge du jeu figée par la pause), 3,0 s avant les apparitions, fin à l'état terminee ; #hud-live annonce la vague, jamais le compte à rebours.
 - Sons d'annonce : vague-annonce, vague-renforcee, vague-fin (catégorie annonce) ; une demande par animation ; sautée si le son n'est pas débloqué ; fondu à la mort.
 - Effet VHS : #vhs (js/core/vhs.js, horloge d'effet réelle) ; interdits : mix-blend-mode, filter, backdrop-filter, post-traitement 3D ; ?vhs=0|1 ; coupé sous prefers-reduced-motion ; jamais plus de 3 clignotements par seconde.
+
+## Retours du propriétaire après le lot 3a
+- Pastilles : sur le dessus du mur (y = hauteur du mur + 0,3), centrées sur la fenêtre et décalées de 8 vers l'extérieur, et non plus au sol. Débris : 300 s de vie (`debrisLife`) au lieu de 25 s, pour qu'une fenêtre cassée garde ses planches au sol. HUD : un seul rectangle noir (fond sur `.hud`, puces sans fond), plus de rangée « Fenêtres » (les fenêtres en alerte ne servent plus qu'aux flèches E2-11) ; chutes : silhouette avec un petit « + » (revive) par chute et le nombre, sans le mot « Chutes ».

@@ -62,8 +62,7 @@ test.describe('planches au départ', () => {
   test('?planks= n\'expose rien sans ?test=1 et ne stocke rien', async ({ page }) => {
     await page.setViewportSize(SIZE);
     await page.goto('/jeu.html?seed=1&nospawn=1&planks=2');
-    await expect(page.locator('#hud-windows')).toBeHidden(); // lot 3a : seules les fenêtres attaquées ou ouvertes ont une puce
-    expect(await page.locator('.hud-win').count()).toBe(0);
+    expect(await page.locator('#hud-windows, .hud-win').count()).toBe(0); // lot 3a : plus d'état des fenêtres dans le HUD
     expect(await page.evaluate(() => [typeof window.__zs, localStorage.length, sessionStorage.length, document.cookie])).toEqual(['undefined', 0, 0, '']);
   });
 });
@@ -363,11 +362,10 @@ test.describe('tirs et déplacements', () => {
   }
 });
 
-test.describe('interface : rangée Fenêtres, annonces', () => {
+test.describe('interface : annonces des fenêtres', () => {
   for (const size of [SIZE, { width: 1440, height: 900 }]) {
-    test(`la rangée « Fenêtres » est masquée tant que rien n'est attaqué ni ouvert ; le HUD est dans les marges de 16 px et sans chevaucher Pause (${size.width}×${size.height})`, async ({ page }) => {
+    test(`le HUD est dans les marges de 16 px et sans chevaucher Pause (${size.width}×${size.height})`, async ({ page }) => {
       await open(page, '', size);
-      await expect(page.locator('#hud-windows')).toBeHidden();
       const r = await page.evaluate(() => {
         const b = (sel) => document.querySelector(sel).getBoundingClientRect();
         return { line: b('#hud'), hud: b('#hud'), pause: b('#btn-pause') };
@@ -378,17 +376,6 @@ test.describe('interface : rangée Fenêtres, annonces', () => {
       expect(r.hud.bottom).toBeLessThan(size.height - 16);
     });
   }
-
-  test('une fenêtre sans planche est écrite « ouverte » en texte, une fenêtre attaquée porte un « ! » et quatre encoches', async ({ page }) => {
-    await open(page);
-    await page.evaluate(() => window.__zs.setPlanks('fenetre-ouest', 0));
-    await page.evaluate(() => window.__zs.step(0.05));
-    await expect(page.locator('#hud-windows')).toContainText('O');
-    await page.evaluate((slots) => { const zs = window.__zs; zs.spawnAtWindow('fenetre-nord', 'marcheur'); for (let i = 0; i < 400; i += 1) { zs.step(0.05); if (zs.getState().enemies.some((e) => e.mode === 'arrache' && Math.hypot(e.x - slots[e.slot].x, e.y - slots[e.slot].y) < 5)) break; } zs.step(0.1); }, N.slots);
-    await expect(page.locator('#hud-windows')).toContainText('ouverte');
-    await expect(page.locator('.hud-win[data-id="fenetre-nord"]')).toContainText('!');
-    await expect(page.locator('.hud-win[data-id="fenetre-nord"] .hud-win-notch')).toHaveCount(4);
-  });
 
   test('pendant la réparation, les carrés au sol se remplissent peu à peu (plus d\'indicateur noir E2-9)', async ({ page }) => {
     await open(page);
@@ -503,7 +490,6 @@ test.describe('budget, ?empty=1, hygiène', () => {
     });
     expect(r.mode).toBe('libre');
     expect(r.planks).toBe(true);
-    await expect(page.locator('#hud-windows')).toBeHidden();
   });
 
   test('un zombie créé par spawnEnemy est libre (aucun siège), un zombie d\'une vague est en approche', async ({ page }) => {

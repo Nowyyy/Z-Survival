@@ -48,9 +48,11 @@ describe('lot 3a : contrastes du HUD (color.js, pire fond : panneau à son opaci
     expect(contrast(color('--hud-border'), worstPanel)).toBeGreaterThanOrEqual(3);
   });
 
-  it('encoche pleine (bone) sur la puce : au moins 3, et l\'encoche vide se distingue par sa forme (contour seul)', () => {
-    expect(contrast(color('--color-text'), worstPanel)).toBeGreaterThanOrEqual(3);
-    expect(gameCss).toMatch(/\.hud-win-notch\[data-on="1"\]\s*{[^}]*background/);
+  it('le HUD est un seul rectangle noir : fond sur .hud, aucun fond ni contour sur les puces', () => {
+    const hud = /\.hud \{([^}]*)\}/.exec(gameCss)[1];
+    expect(hud).toMatch(/background: color-mix\(in srgb, var\(--hud-bg\)/);
+    const chip = /\.hud-bar,\n\.hud-chip,\n\.hud-wave \{([^}]*)\}/.exec(gameCss)[1];
+    expect(chip).not.toMatch(/background|border:|border-radius/);
   });
 });
 

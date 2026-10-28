@@ -82,8 +82,8 @@ export function createWindowMeshes({ scene, material, geoms, settings: p, sheet,
     writeQuad(buf, at, rect(-half, half, p.sill, p.lintel, p.voidGap), solid('void'), faceDir);
     at += 6;
     add('void', 0, voidFrom, at);
-    // Pastilles au sol, alignées le long du mur et centrées sur le point de réparation : carré de cadre, puis carré intérieur plein (planche présente) ou sombre.
-    const spot = g.repairSpot;
+    // Pastilles sur le dessus du mur, alignées le long du mur et centrées sur la fenêtre : carré de cadre, puis carré intérieur plein (planche présente) ou sombre.
+    const spot = { x: g.center.x + g.normal.x * p.pipShift, y: g.center.y + g.normal.y * p.pipShift }; // milieu du dessus du mur
     const inner = [];
     for (let i = 0; i < count; i += 1) {
       const along = (i - (count - 1) / 2) * p.pipStep;
@@ -93,8 +93,8 @@ export function createWindowMeshes({ scene, material, geoms, settings: p, sheet,
         spot.y + g.tangent.y * (along + sa * h) + g.normal.y * sb * h,
       ]);
       const from = at;
-      writeQuad(buf, at, square(p.pip / 2, p.pipLift), solid('off'), [0, 1, 0]);
-      writeQuad(buf, at + 6, square(p.pipInner / 2, p.pipLift + 0.05), solid('on'), [0, 1, 0]);
+      writeQuad(buf, at, square(p.pip / 2, p.wall + p.pipLift), solid('off'), [0, 1, 0]);
+      writeQuad(buf, at + 6, square(p.pipInner / 2, p.wall + p.pipLift + 0.05), solid('on'), [0, 1, 0]);
       inner.push(at + 6);
       at += 12;
       add('pip', i, from, at);

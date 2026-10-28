@@ -484,11 +484,9 @@ export function createGame(ctx) {
     downShown = { mode, sub };
   }
 
-  // Rangée « Fenêtres » du HUD (js/core/hud-windows.js) : seulement les fenêtres attaquées ou ouvertes, les plus urgentes d'abord, 3 puces au plus.
+  // Fenêtres en alerte (js/core/hud-windows.js) : attaquées ou ouvertes, les plus urgentes d'abord ; elles guident les flèches E2-11 (plus de rangée dans le HUD).
   const hudLabels = Object.fromEntries(geoms.map((g) => [g.id, ctx.dict[WINDOW_INITIALS[g.id]] ?? '']));
-  const hudNames = Object.fromEntries(geoms.map((g) => [g.id, dictName(g.id)]));
   const hudWindows = () => geoms.map((g) => ({ id: g.id, planks: sim.win.windows[g.id].planks, maxPlanks: sim.win.windows[g.id].maxPlanks, attacked: sim.repair[g.id]?.attacked === true }));
-  const windowsHud = () => windowChips(hudWindows(), { labels: hudLabels });
 
   // E2-11 : flèches au bord de l'écran vers les 2 fenêtres en alerte les plus urgentes qui ne sont pas à l'écran (js/core/edge-arrow.js). Aucune
   // pulsation ni clic ; les flèches glissent le long du bord pour ne pas recouvrir le HUD, le bouton Pause ni l'indicateur de réparation.
@@ -644,7 +642,7 @@ export function createGame(ctx) {
       flashSize: reduced ? 4 : 7,
       unitsPerPixel: size.unitsPerPixel,
     });
-    hud.update(sim.player, sim.kills, waveInfo(sim.waves), { chips: windowsHud(), names: hudNames, chutes: sim.down.chutes });
+    hud.update(sim.player, sim.kills, waveInfo(sim.waves), { chutes: sim.down.chutes });
     updateDownView();
     world.windowMeshes?.sync(sim.win); // pastille de la planche en cours de réparation : elle se remplit peu à peu
     updateEdgeArrows();

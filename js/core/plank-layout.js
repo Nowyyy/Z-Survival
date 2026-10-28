@@ -10,7 +10,7 @@ import { clampDt, isNum } from './vec.js';
 
 // Valeurs de repli si windows.json (planks3d) manque ou est invalide ; les vraies valeurs vivent dans les données.
 export const FALLBACK = {
-  count: 4, thickness: 14, height: 6, visible: 16, overhang: 16, wallGap: 2, rollMax: 0.12, spacing: 1.5, sill: 16, lintel: 44,
+  count: 4, thickness: 14, height: 6, visible: 16, overhang: 16, wallGap: 2, rollMax: 0.12, spacing: 1.5, sill: 16, lintel: 44, wall: 60, pipShift: 8,
   frameWidth: 5, frameGap: 0.4, voidGap: 0.2, pip: 16, pipStep: 18, pipInner: 8, pipLift: 0.3,
   debrisLength: 62, debrisWidth: 12, debrisThickness: 6, debrisMax: 12, debrisLife: 25, debrisFade: 1, debrisYaw: 0.61,
   debrisNear: 40, debrisFar: 110, debrisSide: 40, debrisApart: 30, debrisMargin: 6, debrisTries: 12,
@@ -36,6 +36,8 @@ export function cleanParams(raw) {
     rollMax: Math.min(0.5, nonNeg(p.rollMax, f.rollMax)),
     spacing: isNum(p.spacing) && p.spacing >= 1 ? p.spacing : f.spacing,
     sill,
+    wall: pos(p.wall, f.wall),
+    pipShift: nonNeg(p.pipShift, f.pipShift),
     lintel: isNum(p.lintel) && p.lintel > sill ? p.lintel : Math.max(f.lintel, sill + 1),
     frameWidth: pos(p.frameWidth, f.frameWidth),
     frameGap: nonNeg(p.frameGap, f.frameGap),
@@ -64,7 +66,7 @@ export function cleanParams(raw) {
 export function plankSettings(windowsCfg, render) {
   const w = isObject(windowsCfg) ? windowsCfg : {};
   const r = isObject(render) ? render : {};
-  return cleanParams({ ...(isObject(w.planks3d) ? w.planks3d : {}), count: w.planks, sill: r.sillHeight, lintel: r.lintelBottom });
+  return cleanParams({ ...(isObject(w.planks3d) ? w.planks3d : {}), count: w.planks, sill: r.sillHeight, lintel: r.lintelBottom, wall: r.wallHeight });
 }
 
 // Géométrie nettoyée d'une fenêtre ou null : { id, center, normal, tangent, width, inner }.
