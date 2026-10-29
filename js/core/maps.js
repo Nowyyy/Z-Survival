@@ -308,7 +308,7 @@ const shape = (it) => ({ id: it.id, x: it.rect.x, y: it.rect.y, w: it.rect.w, h:
 export function planToWorld(plan, params) {
   const p = cleanParams(params);
   const pl = cleanPlan(plan);
-  const report = { valid: false, errors: [], shifts: [], merged: [], retired: [], snapped: [], violations: [], areas: { interior: 0, free: 0 }, size: { width: 0, height: 0 } };
+  const report = { valid: false, errors: [], shifts: [], merged: [], retired: [], snapped: [], clipped: [], violations: [], areas: { interior: 0, free: 0 }, size: { width: 0, height: 0 } };
   if (!pl) {
     report.errors.push('plan invalide : boîte englobante et contour (4 sommets au moins) obligatoires');
     return { world: null, decor: null, report };
@@ -485,6 +485,27 @@ export function planToWorld(plan, params) {
     if (failure !== null) report.retired.push({ id: f.id, reason: failure });
   }
 
+  // Un obstacle ne traverse jamais un mur : rogné au ras de la face du mur (par l'axe de plus faible pénétration) ; absorbé par le mur s'il en reste moins de 20.
+  const clipToWalls = (it) => {
+    if (it.outside) return it;
+    let rect = { ...it.rect };
+    for (const w of wallRects) {
+      const ox = Math.min(rect.x + rect.w, w.x + w.w) - Math.max(rect.x, w.x);
+      const oy = Math.min(rect.y + rect.h, w.y + w.h) - Math.max(rect.y, w.y);
+      if (ox <= 0.5 || oy <= 0.5) continue;
+      if (ox <= oy) rect = rect.x + rect.w / 2 < w.x + w.w / 2 ? { ...rect, w: r6(w.x - rect.x) } : { ...rect, x: r6(w.x + w.w), w: r6(rect.x + rect.w - (w.x + w.w)) };
+      else rect = rect.y + rect.h / 2 < w.y + w.h / 2 ? { ...rect, h: r6(w.y - rect.y) } : { ...rect, y: r6(w.y + w.h), h: r6(rect.y + rect.h - (w.y + w.h)) };
+      if (rect.w < 20 || rect.h < 20) {
+        report.clipped.push({ id: it.id, absorbed: true });
+        return null;
+      }
+    }
+    if (rect.x !== it.rect.x || rect.y !== it.rect.y || rect.w !== it.rect.w || rect.h !== it.rect.h) report.clipped.push({ id: it.id });
+    return { ...it, rect };
+  };
+  accepted = accepted.map(clipToWalls).filter((it) => it !== null);
+  const absorbed = new Set(report.clipped.filter((c) => c.absorbed).map((c) => c.id));
+
   // Résultat.
   const obstacles = accepted.map(shape);
   const barriers = windows.map((w) => ({ id: `barriere-${w.id}`, fenetre: w.id, ...gapRectOf(w) }));
@@ -516,11 +537,11 @@ export function planToWorld(plan, params) {
     maxHeight: p.maxHeight,
     start,
     zoom: p.zoom,
-    pillars: pillars.map((o) => ({ ...o })),
+    pillars: pillars.filter((o) => absorbed.has(o.id) === false).map((o) => ({ ...o })),
     stairs: stairs.map((o) => ({ ...o })),
     ramp,
     obstacles,
-    generation: { shifts: report.shifts, merged: report.merged, retired: report.retired, snapped: report.snapped },
+    generation: { shifts: report.shifts, merged: report.merged, retired: report.retired, snapped: report.snapped, clipped: report.clipped },
   };
 
   // Décor : sol (sentiers, trottoir et route au sud, rampe de la fenêtre qui la porte), 2 points d'apparition par fenêtre, objets du décor (graine).

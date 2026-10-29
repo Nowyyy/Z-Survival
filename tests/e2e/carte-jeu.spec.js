@@ -41,7 +41,7 @@ test.describe('carte par défaut', () => {
     expect(s.map.size).toEqual(world.size);
     expect(s.map.windowIds).toEqual(IDS);
     expect(s.windows.map((w) => [w.id, w.planks, w.maxPlanks])).toEqual(IDS.map((id) => [id, 4, 4]));
-    expect(s.map.pillars.length).toBe(11);
+    expect(s.map.pillars.length).toBe(10);
     expect(s.world).toMatchObject({ width: 4040, height: 3460, empty: false });
   });
 

@@ -23,7 +23,7 @@ test('se charge sans erreur ni requête externe, noindex, 8 étiquettes F1 à F8
   await expect(page.locator('text.fenetre-etiquette')).toHaveText(['F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8']);
   await expect(page.locator('rect.cadre-trait')).toHaveCount(1);
   await expect(page.locator('line.echelle-trait')).toHaveCount(1);
-  await expect(page.locator('rect.pilier')).toHaveCount(11);
+  await expect(page.locator('rect.pilier')).toHaveCount(10);
   await expect(page.locator('#stats')).toContainText('8 fenêtres');
   await page.waitForLoadState('networkidle');
   expect(external).toEqual([]);

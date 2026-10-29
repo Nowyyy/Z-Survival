@@ -41,8 +41,8 @@ describe('map-svg.js : carte du rez-de-chaussée', () => {
     expect(count(svg, /class="fenetre"/g)).toBe(8);
   });
 
-  it('onze piliers, un escalier, aucune rampe, des meubles et 16 points d\'apparition', () => {
-    expect(count(svg, /class="pilier"/g)).toBe(11);
+  it('dix piliers, un escalier, aucune rampe, des meubles et 16 points d\'apparition', () => {
+    expect(count(svg, /class="pilier"/g)).toBe(10);
     expect(count(svg, /class="escalier"/g)).toBe(1);
     expect(count(svg, /<rect class="rampe"/g)).toBe(0);
     expect(count(svg, /class="meuble /g)).toBe(world.obstacles.filter((o) => !['pilier', 'escalier'].includes(o.kind)).length);

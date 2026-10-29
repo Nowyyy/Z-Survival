@@ -79,8 +79,7 @@
     { "id": "pilier-7", "x": 1987.5, "y": 2057.5, "w": 35, "h": 35, "hauteur": 70, "kind": "pilier" },
     { "id": "pilier-8", "x": 1772.5, "y": 2347.5, "w": 35, "h": 35, "hauteur": 70, "kind": "pilier" },
     { "id": "pilier-9", "x": 1987.5, "y": 2347.5, "w": 35, "h": 35, "hauteur": 70, "kind": "pilier" },
-    { "id": "pilier-10", "x": 1772.5, "y": 1922.5, "w": 35, "h": 35, "hauteur": 70, "kind": "pilier" },
-    { "id": "pilier-11", "x": 1987.5, "y": 1922.5, "w": 35, "h": 35, "hauteur": 70, "kind": "pilier" }
+    { "id": "pilier-10", "x": 1772.5, "y": 1922.5, "w": 35, "h": 35, "hauteur": 70, "kind": "pilier" }
   ],
   "stairs": [
     { "id": "escalier-courbe", "x": 2105, "y": 2010, "w": 135, "h": 95, "hauteur": 70, "kind": "escalier" }
@@ -97,16 +96,15 @@
     { "id": "pilier-8", "x": 1772.5, "y": 2347.5, "w": 35, "h": 35, "hauteur": 70, "kind": "pilier" },
     { "id": "pilier-9", "x": 1987.5, "y": 2347.5, "w": 35, "h": 35, "hauteur": 70, "kind": "pilier" },
     { "id": "pilier-10", "x": 1772.5, "y": 1922.5, "w": 35, "h": 35, "hauteur": 70, "kind": "pilier" },
-    { "id": "pilier-11", "x": 1987.5, "y": 1922.5, "w": 35, "h": 35, "hauteur": 70, "kind": "pilier" },
-    { "id": "escalier-courbe", "x": 2105, "y": 2010, "w": 135, "h": 95, "hauteur": 70, "kind": "escalier" },
-    { "id": "M4", "x": 1165, "y": 2420, "w": 40, "h": 55, "hauteur": 55, "kind": "comptoir" },
+    { "id": "escalier-courbe", "x": 2105, "y": 2010, "w": 130, "h": 95, "hauteur": 70, "kind": "escalier" },
+    { "id": "M4", "x": 1165, "y": 2420, "w": 40, "h": 40, "hauteur": 55, "kind": "comptoir" },
     { "id": "M10", "x": 2610, "y": 2295, "w": 65, "h": 60, "hauteur": 40, "kind": "table" },
     {
       "id": "M1+M3+M7+M9+M13+M14+M16",
       "x": 920,
       "y": 2170,
       "w": 245,
-      "h": 305,
+      "h": 290,
       "hauteur": 55,
       "kind": "table",
       "parts": ["M1", "M3", "M7", "M9", "M13", "M14", "M16"]
@@ -115,27 +113,27 @@
       "id": "M12+M15+M17+M18",
       "x": 1450,
       "y": 2160,
-      "w": 30,
+      "w": 20,
       "h": 145,
       "hauteur": 70,
       "kind": "etagere",
       "parts": ["M12", "M15", "M17", "M18"]
     },
-    { "id": "M19", "x": 1450, "y": 2135, "w": 30, "h": 25, "hauteur": 70, "kind": "etagere" },
-    { "id": "M21", "x": 3030, "y": 2100, "w": 85, "h": 25, "hauteur": 45, "kind": "caisse" },
-    { "id": "M22", "x": 2565, "y": 1950, "w": 140, "h": 160, "hauteur": 55, "kind": "comptoir" },
+    { "id": "M19", "x": 1450, "y": 2135, "w": 20, "h": 25, "hauteur": 70, "kind": "etagere" },
+    { "id": "M21", "x": 3030, "y": 2100, "w": 80, "h": 25, "hauteur": 45, "kind": "caisse" },
+    { "id": "M22", "x": 2565, "y": 1960, "w": 140, "h": 150, "hauteur": 55, "kind": "comptoir" },
     {
       "id": "M26+M28+M29+M31",
       "x": 1390,
-      "y": 1850,
-      "w": 125,
-      "h": 115,
+      "y": 1860,
+      "w": 80,
+      "h": 105,
       "hauteur": 70,
       "kind": "etagere",
       "parts": ["M26", "M28", "M29", "M31"]
     },
-    { "id": "M32", "x": 1445, "y": 1670, "w": 35, "h": 35, "hauteur": 45, "kind": "caisse" },
-    { "id": "M33+M34+M35", "x": 1365, "y": 920, "w": 115, "h": 285, "hauteur": 70, "kind": "comptoir", "parts": ["M33", "M34", "M35"] }
+    { "id": "M32", "x": 1445, "y": 1670, "w": 25, "h": 35, "hauteur": 45, "kind": "caisse" },
+    { "id": "M33+M34+M35", "x": 1365, "y": 920, "w": 105, "h": 285, "hauteur": 70, "kind": "comptoir", "parts": ["M33", "M34", "M35"] }
   ],
   "generation": {
     "shifts": [],
@@ -166,6 +164,19 @@
       { "id": "M26+M28" },
       { "id": "M26+M28+M29" },
       { "id": "M33+M34" },
+      { "id": "M33+M34+M35" }
+    ],
+    "clipped": [
+      { "id": "pilier-11", "absorbed": true },
+      { "id": "escalier-courbe" },
+      { "id": "M4" },
+      { "id": "M1+M3+M7+M9+M13+M14+M16" },
+      { "id": "M12+M15+M17+M18" },
+      { "id": "M19" },
+      { "id": "M21" },
+      { "id": "M22" },
+      { "id": "M26+M28+M29+M31" },
+      { "id": "M32" },
       { "id": "M33+M34+M35" }
     ]
   }

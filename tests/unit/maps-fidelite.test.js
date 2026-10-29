@@ -98,11 +98,14 @@ describe('fidélité au modèle : fenêtres F1 à F8', () => {
 });
 
 describe('fidélité au modèle : piliers, escalier, départ', () => {
-  it('11 piliers aux places du plan (0,55 m, soit 35)', () => {
-    expect(world.pillars.length).toBe(11);
+  it('11 piliers du plan, dont pilier-11 absorbé par l\'angle d\'un mur : 10 dans le monde, aux places du plan (0,55 m, soit 35)', () => {
+    expect(plan.pillars.length).toBe(11);
+    expect(world.generation.clipped).toContainEqual({ id: 'pilier-11', absorbed: true });
+    expect(world.pillars.length).toBe(10);
     plan.pillars.forEach(([x, y], i) => {
       const c = px(x, y);
       const p = world.pillars[i];
+      if (!p) return;
       expect(p.x + p.w / 2).toBe(c.x);
       expect(p.y + p.h / 2).toBe(c.y);
       expect([p.w, p.h]).toEqual([35, 35]);
@@ -178,5 +181,18 @@ describe('fidélité au modèle : aires, hauteurs', () => {
   it('couloir minimal : 50 (le joueur fait 36 de diamètre, un zombie 40) au lieu de 90', () => {
     expect(world.minCorridor).toBe(50);
     expect(params.minCorridor).toBe(50);
+  });
+});
+
+describe('fidélité au modèle : rien ne traverse un mur', () => {
+  it('aucun obstacle (mobilier, pilier, escalier) ne recouvre un rectangle de mur', () => {
+    const wallRects = layout.walls;
+    for (const o of layout.furniture) {
+      for (const w of wallRects) {
+        const ox = Math.min(o.x + o.w, w.x + w.w) - Math.max(o.x, w.x);
+        const oy = Math.min(o.y + o.h, w.y + w.h) - Math.max(o.y, w.y);
+        expect(ox > 0.5 && oy > 0.5, `${o.id} traverse ${w.id}`).toBe(false);
+      }
+    }
   });
 });
