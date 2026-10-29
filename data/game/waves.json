@@ -1,5 +1,5 @@
 {
-  "_provisoire": "Courbe de difficulté du lot 2 : toutes les valeurs sont provisoires, à régler en jouant (équilibrage non jugé par l'agent). Forme de la vie inspirée de Black Ops 3 (montée linéaire jusqu'à la manche 9, puis ×1,1 par manche), plafonnée ici ; le reste est de conception propre. Lue par js/core/waves.js et js/core/wave-director.js.",
+  "_provisoire": "Lot 3c : wavesPerWorld (fin du monde), doorIntermission (pause de 12 s qui précède l'ouverture d'une porte), doorSplashAt (annonce « Nouvelle zone », depuis la fin de la manche), doorOpenAt (ouverture) et doorSinkTime (enfoncement de la porte) sont provisoires. Courbe de difficulté du lot 2 : toutes les valeurs sont provisoires, à régler en jouant (équilibrage non jugé par l'agent). Forme de la vie inspirée de Black Ops 3 (montée linéaire jusqu'à la manche 9, puis ×1,1 par manche), plafonnée ici ; le reste est de conception propre. Lue par js/core/waves.js et js/core/wave-director.js.",
   "total": { "base": 5, "linear": 1.6, "quadratic": 0.05, "cap": 150, "reinforcedEvery": 5, "reinforcedMul": 1.3 },
   "maxConcurrent": { "base": 6, "every": 2, "cap": 10 },
   "spawnInterval": { "base": 2.5, "factor": 0.95, "min": 0.9 },
@@ -24,5 +24,10 @@
   "intermission": { "first": 3, "between": 8 },
   "healFraction": 1,
   "wavesPerLevel": 5,
+  "wavesPerWorld": 40,
+  "doorIntermission": 12,
+  "doorSplashAt": 3.0,
+  "doorOpenAt": 3.6,
+  "doorSinkTime": 1.2,
   "spawn": { "viewMargin": 150, "viewRatio": 0.25 }
 }

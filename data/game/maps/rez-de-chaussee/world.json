@@ -4,6 +4,7 @@
   "title": "Rez-de-chaussée",
   "size": { "width": 4040, "height": 3460 },
   "margin": 800,
+  "transform": { "scale": 5, "margin": 800, "x0": 0, "y0": 0 },
   "room": { "x": 900, "y": 900, "width": 2230, "height": 1660, "wall": 0 },
   "contour": [
     [1045, 900],
@@ -133,7 +134,20 @@
       "parts": ["M26", "M28", "M29", "M31"]
     },
     { "id": "M32", "x": 1445, "y": 1670, "w": 25, "h": 35, "hauteur": 45, "kind": "caisse" },
-    { "id": "M33+M34+M35", "x": 1365, "y": 920, "w": 105, "h": 285, "hauteur": 70, "kind": "comptoir", "parts": ["M33", "M34", "M35"] }
+    { "id": "M33+M34+M35", "x": 1365, "y": 920, "w": 105, "h": 285, "hauteur": 70, "kind": "comptoir", "parts": ["M33", "M34", "M35"] },
+    { "id": "P1", "x": 1065, "y": 1100, "w": 40, "h": 160, "hauteur": 65, "kind": "armoire", "provisional": true },
+    { "id": "P2", "x": 1065, "y": 1340, "w": 40, "h": 130, "hauteur": 65, "kind": "armoire", "provisional": true },
+    { "id": "P3", "x": 1000, "y": 1860, "w": 160, "h": 120, "hauteur": 55, "kind": "comptoir", "provisional": true },
+    { "id": "P4", "x": 1410, "y": 2380, "w": 60, "h": 80, "hauteur": 65, "kind": "armoire", "provisional": true },
+    { "id": "P5", "x": 1065, "y": 1540, "w": 100, "h": 70, "hauteur": 40, "kind": "table", "provisional": true },
+    { "id": "P6", "x": 1880, "y": 2460, "w": 370, "h": 80, "hauteur": 55, "kind": "comptoir", "provisional": true },
+    { "id": "P7", "x": 2780, "y": 1960, "w": 260, "h": 70, "hauteur": 55, "kind": "comptoir", "provisional": true },
+    { "id": "P8", "x": 1900, "y": 2185, "w": 200, "h": 90, "hauteur": 55, "kind": "comptoir", "provisional": true },
+    { "id": "P9", "x": 2350, "y": 2190, "w": 120, "h": 90, "hauteur": 40, "kind": "table", "provisional": true },
+    { "id": "P10", "x": 3040, "y": 2270, "w": 70, "h": 90, "hauteur": 45, "kind": "caisse", "provisional": true },
+    { "id": "P11", "x": 3070, "y": 2440, "w": 40, "h": 100, "hauteur": 65, "kind": "armoire", "provisional": true },
+    { "id": "P12", "x": 1660, "y": 2180, "w": 120, "h": 90, "hauteur": 40, "kind": "table", "provisional": true },
+    { "id": "P13", "x": 2560, "y": 2440, "w": 140, "h": 100, "hauteur": 45, "kind": "caisse", "provisional": true }
   ],
   "generation": {
     "shifts": [],
@@ -164,7 +178,8 @@
       { "id": "M26+M28" },
       { "id": "M26+M28+M29" },
       { "id": "M33+M34" },
-      { "id": "M33+M34+M35" }
+      { "id": "M33+M34+M35" },
+      { "id": "P3" }
     ],
     "clipped": [
       { "id": "pilier-11", "absorbed": true },

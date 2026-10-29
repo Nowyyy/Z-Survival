@@ -123,7 +123,7 @@ test.describe('déplacements, obstacles, tir', () => {
   });
 
   test('on passe de la grande salle à l\'aile par l\'ouverture (85 de large), pas ailleurs', async ({ page }) => {
-    await open(page);
+    await open(page, '&wave=11');
     const o = world.openings.find((q) => q.id === 'ouverture-aile');
     expect(Math.abs(o.y2 - o.y1)).toBeGreaterThanOrEqual(80);
     await page.evaluate(([x, y]) => window.__zs.setPlayer(x, y), [o.x1 + 200, (o.y1 + o.y2) / 2]);
@@ -160,7 +160,7 @@ test.describe('déplacements, obstacles, tir', () => {
 test.describe('siège sur les huit fenêtres', () => {
   for (const id of IDS) {
     test(`${id} : un zombie va à l'emplacement, arrache les 4 planches, escalade, entre ; personne dedans avant l'ouverture`, async ({ page }) => {
-      await open(page);
+      await open(page, '&wave=11');
       const r = await page.evaluate((windowId) => {
         const zs = window.__zs;
         zs.setPlayer(1980, 2065);
@@ -189,7 +189,7 @@ test.describe('siège sur les huit fenêtres', () => {
   }
 
   test('F3 (ouest de l\'aile) : le zombie atteint son emplacement et arrache', async ({ page }) => {
-    await open(page);
+    await open(page, '&wave=11');
     const r = await page.evaluate(() => {
       const zs = window.__zs;
       zs.spawnAtWindow('F3', 'marcheur');
@@ -203,7 +203,7 @@ test.describe('siège sur les huit fenêtres', () => {
   });
 
   test('un zombie entré par F1 rejoint le joueur dans la grande salle en passant par l\'ouverture ; un zombie de l\'aile aussi', async ({ page }) => {
-    await open(page);
+    await open(page, '&wave=11');
     const r = await page.evaluate(() => {
       const zs = window.__zs;
       zs.setPlanks('F1', 0);
@@ -233,7 +233,7 @@ test.describe('siège sur les huit fenêtres', () => {
   });
 
   test('réparation d\'une fenêtre à chaque coin de la carte (F1, F3, F6, F8) selon les règles du lot 3', async ({ page }) => {
-    await open(page);
+    await open(page, '&wave=11');
     for (const id of ['F1', 'F3', 'F6', 'F8']) {
       const r = await page.evaluate((windowId) => {
         const zs = window.__zs;
@@ -413,7 +413,7 @@ test.describe('vagues, interface, caméra, budget', () => {
   });
 
   test('#hud-live annonce « Fenêtre F3 ouverte »', async ({ page }) => {
-    await open(page);
+    await open(page, '&wave=11');
     await page.evaluate(() => {
       const zs = window.__zs;
       zs.spawnAtWindow('F3', 'marcheur');
@@ -499,7 +499,7 @@ test.describe('vagues, interface, caméra, budget', () => {
     });
     testInfo.annotations.push({ type: 'rendu', description: `${r.calls} appels, ${r.triangles} triangles` });
     console.log(`BUDGET lot 3b : ${r.calls} appels de dessin, ${r.triangles} triangles (référence main : 191 et 14 904)`);
-    expect(r.calls).toBeLessThanOrEqual(191 + 3);
+    expect(r.calls).toBeLessThanOrEqual(194 + 2); // lot 3c : référence 194 mesurée sur main, + 2 (porte, meubles modélisés)
     expect(r.triangles).toBeLessThanOrEqual(Math.min(14904 + 100, 15000));
   });
 });

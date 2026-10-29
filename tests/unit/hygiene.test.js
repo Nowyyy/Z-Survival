@@ -17,7 +17,8 @@ describe('hygiène du dépôt', () => {
   });
 
   it('n\'a aucun fichier de plus de 5 Mo', () => {
-    const big = tracked.filter((f) => statSync(f).size > 5 * 1024 * 1024);
+    // Exception documentée (lot 3c) : Docs/ref/modele-rdc/ (captures du modèle 3D) est exclu du contrôle de taille.
+    const big = tracked.filter((f) => !f.startsWith('Docs/ref/modele-rdc/') && statSync(f).size > 5 * 1024 * 1024);
     expect(big).toEqual([]);
   });
 

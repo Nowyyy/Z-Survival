@@ -1,5 +1,5 @@
 {
-  "_provisoire": "Animation de changement de vague (lot 2c) : toutes les durées, amplitudes et teintes sont provisoires, jamais jugées à l'œil ni à l'oreille par l'agent (à valider). Temps en secondes de jeu (l'animation est figée par la pause). Les nombres décoratifs (secousse, décalage de couleur, déchirures, scintillement) sont tirés au pas de 1/rate s avec une graine par vague.",
+  "_provisoire": "Animation de changement de vague (lot 2c ; lot 3c : entrée zone, « Nouvelle zone », sans son, calme comme la fin de vague) : toutes les durées, amplitudes et teintes sont provisoires, jamais jugées à l'œil ni à l'oreille par l'agent (à valider). Temps en secondes de jeu (l'animation est figée par la pause). Les nombres décoratifs (secousse, décalage de couleur, déchirures, scintillement) sont tirés au pas de 1/rate s avec une graine par vague.",
   "leadTime": 3.0,
   "overlapExit": 0.15,
   "seed": 4207,
@@ -16,6 +16,15 @@
     "enter": 0.25,
     "hold": 2.0,
     "exit": 0.4,
+    "scaleFrom": 1.06,
+    "zoomHold": 1.01,
+    "exitScale": 1.03,
+    "intensity": 0.25
+  },
+  "zone": {
+    "enter": 0.4,
+    "hold": 2.2,
+    "exit": 0.5,
     "scaleFrom": 1.06,
     "zoomHold": 1.01,
     "exitScale": 1.03,

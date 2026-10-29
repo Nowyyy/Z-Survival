@@ -42,7 +42,10 @@ export const DEFAULT_PARAMS = {
   pathMax: 900,
   stairsHeight: 70,
   pillarHeight: 70,
-  kindHeights: { table: 40, comptoir: 55, caisse: 45, etagere: 70 },
+  kindHeights: { table: 40, comptoir: 55, caisse: 45, etagere: 70, armoire: 65, colonne: 70 },
+  doorClearance: 100,
+  repairClearance: 80,
+  repairDistance: 70,
   zoom: 3.5,
   decor: {
     seed: 30211,
@@ -102,6 +105,9 @@ export function cleanParams(raw) {
     stairsHeight: pos(r.stairsHeight, d.stairsHeight),
     pillarHeight: pos(r.pillarHeight, d.pillarHeight),
     kindHeights: kinds,
+    doorClearance: isNum(r.doorClearance) && r.doorClearance >= 0 ? r.doorClearance : d.doorClearance,
+    repairClearance: isNum(r.repairClearance) && r.repairClearance >= 0 ? r.repairClearance : d.repairClearance,
+    repairDistance: isNum(r.repairDistance) && r.repairDistance >= 0 ? r.repairDistance : d.repairDistance,
     zoom: pos(r.zoom, d.zoom),
     decor: {
       seed: isNum(dec.seed) ? Math.trunc(dec.seed) : d.decor.seed,
@@ -137,7 +143,7 @@ export function cleanPlan(plan) {
     stairs: list(plan.stairs, (s) => isObject(s) && box(s)).map((s, i) => ({ id: typeof s.id === 'string' ? s.id : `escalier-${i + 1}`, x0: s.x0, y0: s.y0, x1: s.x1, y1: s.y1 })),
     ramp: isObject(plan.ramp) && box(plan.ramp) ? { id: typeof plan.ramp.id === 'string' ? plan.ramp.id : 'rampe', window: typeof plan.ramp.window === 'string' ? plan.ramp.window : null, x0: plan.ramp.x0, y0: plan.ramp.y0, x1: plan.ramp.x1, y1: plan.ramp.y1 } : null,
     start: isPoint(plan.start) ? [plan.start[0], plan.start[1]] : null,
-    furniture: list(plan.furniture, (f) => isObject(f) && box(f)).map((f, i) => ({ id: typeof f.id === 'string' ? f.id : `M${i + 1}`, x0: f.x0, y0: f.y0, x1: f.x1, y1: f.y1, kind: typeof f.kind === 'string' ? f.kind : 'caisse' })),
+    furniture: list(plan.furniture, (f) => isObject(f) && box(f)).map((f, i) => ({ id: typeof f.id === 'string' ? f.id : `M${i + 1}`, x0: f.x0, y0: f.y0, x1: f.x1, y1: f.y1, kind: typeof f.kind === 'string' ? f.kind : 'caisse', ...(f.provisional === true ? { provisional: true } : {}), ...(f.source === 'modele' ? { source: 'modele' } : {}) })),
   };
 }
 
@@ -292,7 +298,7 @@ export function mergeInterstices(items, minGap, canMerge = () => true) {
     const [a, b] = [list[pair[0]], list[pair[1]]];
     const big = rectArea(a.rect) >= rectArea(b.rect) ? a : b;
     const parts = sortedParts([...a.parts, ...b.parts]);
-    const merged = { ...big, id: parts.join('+'), rect: boundingRect([a.rect, b.rect]), parts, hauteur: Math.max(num(a.hauteur), num(b.hauteur)) };
+    const merged = { ...big, id: parts.join('+'), rect: boundingRect([a.rect, b.rect]), parts, hauteur: Math.max(num(a.hauteur), num(b.hauteur)), ...(a.provisional || b.provisional ? { provisional: true } : {}) };
     list = list.filter((_, k) => k !== pair[0] && k !== pair[1]);
     list.splice(pair[0], 0, merged);
   }
@@ -301,11 +307,13 @@ export function mergeInterstices(items, minGap, canMerge = () => true) {
 const rectArea = (r) => r.w * r.h;
 const sortedParts = (list) => [...new Set(list)].sort((a, b) => a.localeCompare(b, 'fr', { numeric: true }));
 
-const shape = (it) => ({ id: it.id, x: it.rect.x, y: it.rect.y, w: it.rect.w, h: it.rect.h, hauteur: it.hauteur, kind: it.kind, ...(it.parts.length > 1 ? { parts: [...it.parts] } : {}), ...(it.outside ? { outside: true } : {}) });
+const shape = (it) => ({ id: it.id, x: it.rect.x, y: it.rect.y, w: it.rect.w, h: it.rect.h, hauteur: it.hauteur, kind: it.kind, ...(it.parts.length > 1 ? { parts: [...it.parts] } : {}), ...(it.outside ? { outside: true } : {}), ...(it.provisional ? { provisional: true } : {}), ...(it.source ? { source: it.source } : {}) });
 
 // Convertit un plan en monde. Renvoie { world, decor, report } ; world et decor sont null si le plan est invalide (report.valid faux).
-// report : { valid, errors, shifts, merged, retired, snapped, violations, areas, size }.
-export function planToWorld(plan, params) {
+// extras (lot 3c, facultatif) : { doors: [{ id, opening: { x1, y1, x2, y2 } (pixels du plan) }] } ; une pièce de complément (marquée provisional ou
+// source « modele ») reste à doorClearance au moins de chaque ouverture de porte et à repairClearance au moins du point de réparation d'une fenêtre.
+// report : { valid, errors, shifts, merged, retired, snapped, clipped, violations, areas, size }.
+export function planToWorld(plan, params, extras) {
   const p = cleanParams(params);
   const pl = cleanPlan(plan);
   const report = { valid: false, errors: [], shifts: [], merged: [], retired: [], snapped: [], clipped: [], violations: [], areas: { interior: 0, free: 0 }, size: { width: 0, height: 0 } };
@@ -421,6 +429,14 @@ export function planToWorld(plan, params) {
     windows.push(chosen);
   }
   const zones = windows.map((w) => ({ id: w.id, rect: windowZone(w, p.windowSize, p.windowDepth, t) }));
+  // Lot 3c : zone de dégagement de chaque porte (l'ouverture, épaisseur du mur) et point de réparation de chaque fenêtre.
+  const doorSpots = (Array.isArray(extras?.doors) ? extras.doors : []).filter((d) => isObject(d) && isObject(d.opening) && [d.opening.x1, d.opening.y1, d.opening.x2, d.opening.y2].every(isNum)).map((d) => {
+    const o = d.opening;
+    const a = { x: X(Math.min(o.x1, o.x2)), y: Y(Math.min(o.y1, o.y2)) };
+    const b = { x: X(Math.max(o.x1, o.x2)), y: Y(Math.max(o.y1, o.y2)) };
+    return { id: d.id, rect: { x: a.x - (o.x1 === o.x2 ? t / 2 : 0), y: a.y - (o.y1 === o.y2 ? t / 2 : 0), w: b.x - a.x + (o.x1 === o.x2 ? t : 0), h: b.y - a.y + (o.y1 === o.y2 ? t : 0) } };
+  });
+  const repairSpots = windows.map((w) => ({ id: w.id, x: w.x - SIDES[w.side].normal.x * p.repairDistance, y: w.y - SIDES[w.side].normal.y * p.repairDistance }));
 
   // Mobilier bas : une pièce qui viole une règle de jeu est retirée (liste dans report.retired) ; deux pièces à moins de minCorridor sont fusionnées.
   const pieceRules = (cand, others) => {
@@ -436,6 +452,10 @@ export function planToWorld(plan, params) {
     if (distanceToRect(start.x, start.y, cand.rect) < p.startZone) reasons.push('dans la zone de départ');
     for (const z of zones) if (overlapArea(cand.rect, z.rect) > 0) reasons.push(`devant la fenêtre ${z.id}`);
     if (cand.hauteur > p.maxHeight) reasons.push('trop haute');
+    if (cand.complement) {
+      for (const d of doorSpots) if (rectGap(cand.rect, d.rect) < p.doorClearance) reasons.push(`à moins de ${p.doorClearance} de la porte ${d.id}`);
+      for (const r of repairSpots) if (distanceToRect(r.x, r.y, cand.rect) < p.repairClearance) reasons.push(`à moins de ${p.repairClearance} du point de réparation de ${r.id}`);
+    }
     const merge = [];
     for (const o of others) {
       if (o.outside) continue; // de l'autre côté d'un mur : sans rapport avec le mobilier intérieur
@@ -451,7 +471,7 @@ export function planToWorld(plan, params) {
   const build = () => ({ contour, walls, openings, windows, obstacles: accepted.map(shape), start, wallThickness: t, minCorridor: p.minCorridor });
   for (const f of pl.furniture) {
     const r = rectPx(f.x0, f.y0, f.x1, f.y1);
-    let cand = { id: f.id, rect: r, hauteur: Object.hasOwn(p.kindHeights, f.kind) ? p.kindHeights[f.kind] : 45, kind: f.kind, structure: false, parts: [f.id] };
+    let cand = { id: f.id, rect: r, hauteur: Object.hasOwn(p.kindHeights, f.kind) ? p.kindHeights[f.kind] : 45, kind: f.kind, structure: false, parts: [f.id], ...(f.provisional ? { provisional: true } : {}), ...(f.source ? { source: f.source } : {}), complement: f.provisional === true || f.source === 'modele' };
     let rest = accepted;
     let failure = null;
     for (let guard = 0; guard < 20; guard += 1) {
@@ -463,7 +483,7 @@ export function planToWorld(plan, params) {
       if (check.merge.length === 0) break;
       const group = [cand, ...check.merge];
       const parts = sortedParts(group.flatMap((g) => g.parts));
-      cand = { ...cand, id: parts.join('+'), rect: boundingRect(group.map((g) => g.rect)), parts, hauteur: Math.max(...group.map((g) => g.hauteur)) };
+      cand = { ...cand, id: parts.join('+'), rect: boundingRect(group.map((g) => g.rect)), parts, hauteur: Math.max(...group.map((g) => g.hauteur)), ...(group.some((g) => g.provisional) ? { provisional: true } : {}) };
       rest = rest.filter((o) => !check.merge.includes(o));
     }
     if (failure === null) {
@@ -522,6 +542,7 @@ export function planToWorld(plan, params) {
     title: pl.title,
     size,
     margin: p.margin,
+    transform: { scale: s, margin: p.margin, x0: pl.bbox.x0, y0: pl.bbox.y0 },
     room: { x: bbox.x, y: bbox.y, width: bbox.w, height: bbox.h, wall: 0 },
     contour: contour.map((c) => [...c]),
     walls: walls.map((w) => ({ ...w })),

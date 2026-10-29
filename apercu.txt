@@ -1,3 +1,3 @@
 jeu.html
 type: hifi
-titre: Rez-de-chaussée
+titre: Zones et première porte

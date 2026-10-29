@@ -146,8 +146,8 @@ describe('fidélité au modèle : aires, hauteurs', () => {
     expect(totalArea(unionRects(polygonRects(world.contour), walls))).toBe(analysis.interiorArea);
   });
 
-  it('aire libre après obstacles (escalier, piliers, mobilier) : plus de 1,4 million, moins que l\'aire intérieure', () => {
-    expect(analysis.freeArea).toBeGreaterThan(1.4e6);
+  it('aire libre après obstacles (escalier, piliers, mobilier, complément du lot 3c) : plus de 1,2 million, moins que l\'aire intérieure', () => {
+    expect(analysis.freeArea).toBeGreaterThan(1.2e6);
     expect(analysis.freeArea).toBeLessThan(analysis.interiorArea);
   });
 

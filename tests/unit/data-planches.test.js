@@ -183,7 +183,7 @@ describe('lot 3a : hygiène', () => {
     } catch {
       return;
     }
-    expect(added.split('\n').filter((f) => /\.(mp3|wav|ogg|m4a|flac|png|jpe?g|gif|webp|avif|ico|svg|woff2?|ttf|otf)$/i.test(f))).toEqual([]);
+    expect(added.split('\n').filter((f) => !f.startsWith('Docs/ref/modele-rdc/') && /\.(mp3|wav|ogg|m4a|flac|png|jpe?g|gif|webp|avif|ico|svg|woff2?|ttf|otf)$/i.test(f))).toEqual([]);
     expect(walk('js').filter((f) => /\.(mp3|wav|ogg|png|jpe?g|woff2?)$/i.test(f))).toEqual([]);
   });
 

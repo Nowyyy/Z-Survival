@@ -206,11 +206,12 @@ describe('hygiène du lot 2c', () => {
     } catch {
       return; // pas de dépôt git ou de branche main : rien à comparer
     }
-    expect(added.filter((f) => /\.(wav|mp3|ogg|m4a|flac|webm|aac|opus|aiff?|png|jpe?g|gif|webp|avif|ico|bmp|woff2?|ttf|otf|eot)$/i.test(f))).toEqual([]);
+    expect(added.filter((f) => !f.startsWith('Docs/ref/modele-rdc/') && /\.(wav|mp3|ogg|m4a|flac|webm|aac|opus|aiff?|png|jpe?g|gif|webp|avif|ico|bmp|woff2?|ttf|otf|eot)$/i.test(f))).toEqual([]);
   });
 
   it('aucun fichier de plus de 5 Mo dans le dépôt', () => {
-    const files = execSync('git ls-files', { encoding: 'utf8' }).split('\n').filter((f) => f && existsSync(f) && !f.startsWith('node_modules/'));
+    // Exception documentée (lot 3c) : les captures du modèle 3D de Docs/ref/modele-rdc/ ne comptent pas dans le contrôle de taille.
+    const files = execSync('git ls-files', { encoding: 'utf8' }).split('\n').filter((f) => f && existsSync(f) && !f.startsWith('node_modules/') && !f.startsWith('Docs/ref/modele-rdc/'));
     const big = files.filter((f) => readFileSync(f).length > 5 * 1048576);
     expect(big).toEqual([]);
   });

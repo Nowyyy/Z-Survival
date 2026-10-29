@@ -9,7 +9,7 @@ export function createUi(dict, handlers) {
     pausePanel: $('pause-panel'), endPanel: $('end-panel'), live: $('hud-live'), rotate: $('rotate'),
     pauseBtn: $('btn-pause'), resume: $('btn-resume'), fullscreen: $('btn-fullscreen'), sound: $('btn-sound'),
     vhs: $('btn-vhs'), restart: $('btn-restart'), replay: $('btn-replay'), endKills: $('end-kills'), endWave: $('end-wave'),
-    volumeRow: $('volume-row'), volume: $('volume'), volumeValue: $('volume-value'),
+    volumeRow: $('volume-row'), volume: $('volume'), volumeValue: $('volume-value'), endTitle: $('end-title'), pauseNext: $('pause-next'),
   };
   const rotateQuery = matchMedia(PORTRAIT_PHONE);
   const canFullscreen = Boolean(document.fullscreenEnabled && document.documentElement.requestFullscreen);
@@ -18,6 +18,13 @@ export function createUi(dict, handlers) {
   const ui = {
     isPaused: () => !els.pausePanel.hidden || rotateQuery.matches || document.hidden,
     isEnded: () => !els.endPanel.hidden,
+
+    // Panneau de pause : « Prochaine zone : manche N » (n absent ou nul : ligne masquée).
+    setNextZone(n) {
+      const shown = Number.isInteger(n) && n > 0;
+      els.pauseNext.textContent = shown ? fmt(dict['game.pause.nextZone'], { n }) : '';
+      els.pauseNext.hidden = !shown;
+    },
 
     setLive(text) {
       els.live.textContent = text;
@@ -44,9 +51,11 @@ export function createUi(dict, handlers) {
       else ui.closePause();
     },
 
-    // wave : vague en cours à la mort (0 ou absente quand les vagues sont coupées par ?nospawn=1 : la ligne est masquée).
-    showEnd(kills, wave = 0) {
+    // wave : vague en cours à la mort (0 ou absente quand les vagues sont coupées par ?nospawn=1 : la ligne est masquée). variant « world » (lot 3c) :
+    // « Monde terminé » à la place de « Tu es mort » (la variante de mort est inchangée).
+    showEnd(kills, wave = 0, variant = 'death') {
       els.pausePanel.hidden = true;
+      els.endTitle.textContent = dict[variant === 'world' ? 'game.end.world' : 'game.end.title'];
       els.endKills.textContent = fmt(dict['game.end.kills'], { n: kills });
       els.endWave.textContent = wave > 0 ? fmt(dict['game.wave.reached'], { n: wave }) : '';
       els.endWave.hidden = !(wave > 0);

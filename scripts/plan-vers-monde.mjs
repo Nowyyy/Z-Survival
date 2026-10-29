@@ -4,6 +4,7 @@
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { planToWorld } from '../js/core/maps.js';
+import { parseZones } from '../js/core/zones.js';
 
 const ROOT = new URL('../data/game/maps/', import.meta.url);
 const isPrimitive = (v) => v === null || typeof v !== 'object';
@@ -32,7 +33,8 @@ export function formatJson(value, indent = '') {
 export function generateMapFiles(id = 'rez-de-chaussee') {
   const plan = JSON.parse(readFileSync(new URL(`${id}/plan.json`, ROOT), 'utf8'));
   const params = JSON.parse(readFileSync(new URL('params.json', ROOT), 'utf8'));
-  const out = planToWorld(plan, params);
+  const zones = parseZones(JSON.parse(readFileSync(new URL(`${id}/zones.json`, ROOT), 'utf8')));
+  const out = planToWorld(plan, params, { doors: zones.doors.filter((d) => !d.planned) });
   if (!out.world) throw new Error(`plan invalide : ${out.report.errors.join(' ; ')}`);
   return { world: `${formatJson(out.world)}\n`, decor: `${formatJson(out.decor)}\n`, report: out.report };
 }

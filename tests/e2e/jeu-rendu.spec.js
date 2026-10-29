@@ -175,9 +175,12 @@ test.describe('portée du tir, laser qui s\'estompe, ombres lointaines', () => {
   });
 
   test('le bout du laser s\'estompe : plein près de l\'arme, presque invisible à la portée', async ({ page }) => {
-    await open(page, '&zoom=1', { width: 1440, height: 900 });
-    await page.evaluate(() => window.__zs.setInput({ aim: { angle: 0 } }));
-    await page.waitForFunction(() => window.__zs.getState().time > 0.3);
+    await open(page, '&zoom=1&vhs=0', { width: 1440, height: 900 }); // effet VHS coupé : son grain et sa bande de suivi (horloge réelle) faisaient varier les pixels mesurés
+    // Image figée et déterministe (test intermittent : la caméra lissée et la phase des pixels du laser variaient avec la vitesse de la machine) : boucle de rendu arrêtée,
+    // 2 s de jeu simulées (la caméra est posée), une image rendue à la demande, puis la capture.
+    await page.evaluate(() => { window.requestAnimationFrame = () => 0; });
+    await page.evaluate(() => new Promise((resolve) => setTimeout(resolve, 150)));
+    await page.evaluate(() => { window.__zs.setInput({ aim: { angle: 0 } }); window.__zs.step(2); window.__zs.sampleScreen(0, 0, 4, 4); });
     const { camera } = await state(page);
     const redness = async (groundX) => {
       const p = projectGround(groundX - camera.target.x, 450 - camera.target.y, camera.distance, camera.tilt, 40, 1440 / 900);
