@@ -1,8 +1,7 @@
 import { test, expect } from '@playwright/test';
-import AxeBuilder from '@axe-core/playwright';
 import { readFileSync } from 'node:fs';
 import { parseZones, zonesToWorld } from '../../js/core/zones.js';
-import { salle, waitReady } from './helpers.js';
+import { waitReady } from './helpers.js';
 
 // Lot 3e-B : l'étage, les escaliers, le fondu, les zombies sur deux étages, la porte 2. Tout passe par step() (temps de jeu) et les hooks de ?test=1 ; 667×375.
 const SIZE = { width: 667, height: 375 };
@@ -14,7 +13,6 @@ const STAIR = (id) => zonesWorld.stairs.find((s) => s.id === id);
 const AILE = STAIR('escalier-aile');
 const center = (r) => ({ x: r.x + r.w / 2, y: r.y + r.h / 2 });
 const STATE = (page) => page.evaluate(() => window.__zs.getState());
-const BROWSER_NOISE = /GL Driver Message|ReadPixels|GPU stall/;
 
 async function open(page, extra = '', size = SIZE, { freeze = true } = {}) {
   await page.setViewportSize(size);
@@ -24,24 +22,6 @@ async function open(page, extra = '', size = SIZE, { freeze = true } = {}) {
   await page.evaluate(() => new Promise((resolve) => setTimeout(resolve, 150)));
   await page.evaluate(() => window.__zs.step(0.05));
 }
-
-const until = (page, condition, maxSeconds = 40) => page.evaluate(([body, max]) => {
-  const zs = window.__zs;
-  const test = new Function('s', `return (${body});`);
-  const t0 = zs.getState().time;
-  for (let i = 0; i < Math.round(max / 0.05); i += 1) {
-    const s = zs.getState();
-    if (test(s)) return { state: s, elapsed: s.time - t0, time: s.time };
-    zs.step(0.05);
-  }
-  return null;
-}, [condition, maxSeconds]);
-
-const finishWave = (page) => page.evaluate(() => {
-  window.__zs.skipWave();
-  window.__zs.step(0.05);
-  return window.__zs.getState().time;
-});
 
 test.describe('étage : départ, visibilité, étiquettes', () => {
   test('?wave=1 : rez-de-chaussée, puce « RDC », aucun maillage de l\'étage dessiné, escaliers fermés, aucune zone marquée', async ({ page }) => {
