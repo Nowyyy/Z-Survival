@@ -6,8 +6,11 @@
 import { createRng, nextFloat, nextInt } from './rng.js';
 import { isNum } from './vec.js';
 
-export const KINDS = Object.freeze(['debut', 'renforcee', 'fin']);
-export const KEYS = Object.freeze({ debut: 'game.splash.debut', renforcee: 'game.splash.renforcee', fin: 'game.splash.fin', vieRestauree: 'game.splash.vieRestauree' });
+export const KINDS = Object.freeze(['debut', 'renforcee', 'fin', 'zone']);
+export const KEYS = Object.freeze({ debut: 'game.splash.debut', renforcee: 'game.splash.renforcee', fin: 'game.splash.fin', vieRestauree: 'game.splash.vieRestauree', zoneTitle: 'game.splash.zone.title', zoneSubtitle: 'game.splash.zone.subtitle' });
+// Lot 3c : « fin » (fin de vague) et « zone » (nouvelle zone) durent un temps fixe (enter + hold + exit) et cèdent la place à une annonce de début.
+const FIXED = Object.freeze(['fin', 'zone']);
+const isFixed = (kind) => FIXED.includes(kind);
 const EPS = 1e-9; // les temps s'additionnent par pas de dt : une frontière atteinte à 1e-16 près compte comme atteinte
 const MAX_DT = 5; // un dt énorme (onglet resté en arrière-plan) termine simplement l'animation en cours
 
@@ -19,13 +22,13 @@ const hash = (...parts) => parts.reduce((h, p) => (Math.imul(h ^ (p | 0), 0x9e37
 
 const HIDDEN = Object.freeze({ visible: false, kind: null, title: null, subtitle: null, step: null, t: 0, opacity: 0, scale: 1, shiftX: 0, rgbSplit: 0, tears: Object.freeze([]), flicker: 0, sound: null });
 
-export const createSplash = () => ({ shown: { debut: 0, fin: 0 }, anims: [] });
+export const createSplash = () => ({ shown: { debut: 0, fin: 0, zone: 0 }, anims: [] });
 
 // Chronologie d'un genre : { enter, holdEnd, exit, total, scaleFrom, zoomHold, exitScale, intensity } ; null si les paramètres sont absurdes.
 function timeline(kind, params) {
-  const p = kind === 'fin' ? params.fin : params.debut;
+  const p = kind === 'fin' ? params.fin : kind === 'zone' ? params.zone : params.debut;
   if (!isObject(p) || !isNum(p.enter) || !isNum(p.exit)) return null;
-  const holdEnd = kind === 'fin' ? p.enter + (isNum(p.hold) ? p.hold : 0) : (isNum(params.leadTime) ? params.leadTime : 0) + (isNum(p.holdAfter) ? p.holdAfter : 0);
+  const holdEnd = isFixed(kind) ? p.enter + (isNum(p.hold) ? p.hold : 0) : (isNum(params.leadTime) ? params.leadTime : 0) + (isNum(p.holdAfter) ? p.holdAfter : 0);
   const enter = Math.max(0, p.enter);
   const exit = Math.max(0, p.exit);
   const end = Math.max(enter, holdEnd);
@@ -53,7 +56,7 @@ function viewOf(anim, params, reduced) {
   const tl = timeline(anim.kind, params);
   if (tl === null) return HIDDEN;
   const t = clamp(anim.t, 0, tl.total);
-  const fin = anim.kind === 'fin';
+  const fin = isFixed(anim.kind); // calme comme la fin de vague : pas de déchirure, secousse et scintillement atténués
   const climax = !fin && t + EPS >= params.leadTime && t + EPS < params.leadTime + (isNum(params.debut?.holdAfter) ? params.debut.holdAfter : 0);
   const env = envelope(tl, t, climax);
   const calm = isNum(params.calmLevel) ? params.calmLevel : 0.3;
@@ -64,8 +67,8 @@ function viewOf(anim, params, reduced) {
     opacity = anim.cut.opacity * (1 - u);
     scale = anim.cut.scale;
   }
-  const title = { key: anim.kind === 'fin' ? KEYS.fin : KEYS.debut, n: anim.wave };
-  const subtitle = anim.kind === 'renforcee' ? { key: KEYS.renforcee } : fin ? { key: KEYS.vieRestauree } : null;
+  const title = { key: anim.kind === 'zone' ? KEYS.zoneTitle : anim.kind === 'fin' ? KEYS.fin : KEYS.debut, n: anim.wave };
+  const subtitle = anim.kind === 'renforcee' ? { key: KEYS.renforcee } : anim.kind === 'zone' ? { key: KEYS.zoneSubtitle } : fin ? { key: KEYS.vieRestauree } : null;
   const base = { visible: true, kind: anim.kind, title, subtitle, step: env.step, t, sound: null };
   if (reduced) return { ...base, opacity: 1, scale: 1, shiftX: 0, rgbSplit: 0, tears: [], flicker: 0 };
   // Nombres décoratifs : un tirage par pas de 1/rate s, reproductible (graine = vague, genre, pas) ; plus faibles en fin de vague.
@@ -96,7 +99,9 @@ function viewOf(anim, params, reduced) {
   return { ...base, opacity, scale, shiftX, rgbSplit, tears, flicker };
 }
 
-// info : { active, phase, wave, waitLeft, reinforced, playerAlive } ; options : { reducedMotion, params }.
+// info : { active, phase, wave, waitLeft, reinforced, playerAlive, doorAnnounce } ; options : { reducedMotion, params }.
+// doorAnnounce (lot 3c) : entier positif donné à l'image où le directeur émet doorAnnounce (la manche qui vient de s'achever) ; l'animation « zone » part une
+// seule fois par valeur, sans son (aucune entrée « zone » dans sounds).
 // Renvoie { state, view } ; view.sound n'est non nul qu'à l'image où une animation démarre.
 export function stepSplash(state, info, dt, options) {
   const params = options?.params;
@@ -127,18 +132,32 @@ export function stepSplash(state, info, dt, options) {
     shown.debut = wave;
     // Une animation de fin encore visible sort en overlapExit s ; celle de début l'emporte.
     anims = anims.map((a) => {
-      if (a.kind !== 'fin' || a.cut) return a;
+      if (!isFixed(a.kind) || a.cut) return a;
       const v = viewOf(a, params, false);
       return { ...a, cut: { at: a.t, opacity: v.opacity, scale: v.scale } };
     });
     start(info.reinforced === true ? 'renforcee' : 'debut', clamp(params.leadTime - info.waitLeft, 0, step));
   } else if (wave > 0 && info.phase === 'terminee' && shown.fin !== wave) {
     shown.fin = wave;
-    start('fin', 0, anims.some((a) => a.kind !== 'fin'));
+    start('fin', 0, anims.some((a) => !isFixed(a.kind)));
+  }
+  // Nouvelle zone : une fois par ouverture ; une annonce de début déjà visible l'emporte (elle sort de l'écran sans que « zone » ne s'affiche).
+  if (Number.isInteger(info.doorAnnounce) && info.doorAnnounce > 0 && shown.zone !== info.doorAnnounce) {
+    shown.zone = info.doorAnnounce;
+    if (anims.some((a) => !isFixed(a.kind))) {
+      /* début de manche déjà affiché : rien à montrer */
+    } else {
+      anims = anims.map((a) => {
+        if (a.kind !== 'fin' || a.cut) return a;
+        const v = viewOf(a, params, false);
+        return { ...a, cut: { at: a.t, opacity: v.opacity, scale: v.scale } };
+      });
+      anims = [...anims, { kind: 'zone', wave: info.doorAnnounce, t: 0, cut: null }];
+    }
   }
 
   // Une seule animation s'affiche : une fin qui sort d'abord, sinon le début, sinon la fin.
-  const shownAnim = anims.find((a) => a.cut) ?? anims.find((a) => a.kind !== 'fin') ?? anims[0];
+  const shownAnim = anims.find((a) => a.cut) ?? anims.find((a) => !isFixed(a.kind)) ?? anims.find((a) => a.kind === 'zone') ?? anims[0];
   const view = shownAnim ? { ...viewOf(shownAnim, params, reduced), sound } : { ...HIDDEN, sound };
   return { state: { shown, anims }, view };
 }

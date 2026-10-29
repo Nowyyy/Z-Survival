@@ -66,6 +66,19 @@
     { "id": "M33", "x0": 124, "y0": 60, "x1": 135, "y1": 81, "kind": "comptoir" },
     { "id": "M34", "x0": 126, "y0": 52, "x1": 131, "y1": 58, "kind": "etagere" },
     { "id": "M35", "x0": 113, "y0": 27, "x1": 136, "y1": 45, "kind": "comptoir" },
-    { "id": "M36", "x0": 68, "y0": 23, "x1": 83, "y1": 26, "kind": "comptoir" }
+    { "id": "M36", "x0": 68, "y0": 23, "x1": 83, "y1": 26, "kind": "comptoir" },
+    { "id": "P1", "x0": 53, "y0": 60, "x1": 61, "y1": 92, "kind": "armoire", "provisional": true },
+    { "id": "P2", "x0": 53, "y0": 108, "x1": 61, "y1": 134, "kind": "armoire", "provisional": true },
+    { "id": "P3", "x0": 40, "y0": 216, "x1": 72, "y1": 236, "kind": "comptoir", "provisional": true },
+    { "id": "P4", "x0": 122, "y0": 316, "x1": 134, "y1": 332, "kind": "armoire", "provisional": true },
+    { "id": "P5", "x0": 53, "y0": 148, "x1": 73, "y1": 162, "kind": "table", "provisional": true },
+    { "id": "P6", "x0": 216, "y0": 332, "x1": 290, "y1": 348, "kind": "comptoir", "provisional": true },
+    { "id": "P7", "x0": 396, "y0": 232, "x1": 448, "y1": 246, "kind": "comptoir", "provisional": true },
+    { "id": "P8", "x0": 220, "y0": 277, "x1": 260, "y1": 295, "kind": "comptoir", "provisional": true },
+    { "id": "P9", "x0": 310, "y0": 278, "x1": 334, "y1": 296, "kind": "table", "provisional": true },
+    { "id": "P10", "x0": 448, "y0": 294, "x1": 462, "y1": 312, "kind": "caisse", "provisional": true },
+    { "id": "P11", "x0": 454, "y0": 328, "x1": 462, "y1": 348, "kind": "armoire", "provisional": true },
+    { "id": "P12", "x0": 172, "y0": 276, "x1": 196, "y1": 294, "kind": "table", "provisional": true },
+    { "id": "P13", "x0": 352, "y0": 328, "x1": 380, "y1": 348, "kind": "caisse", "provisional": true }
   ]
 }

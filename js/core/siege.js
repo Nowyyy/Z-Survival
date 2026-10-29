@@ -21,14 +21,16 @@ const isObject = (o) => o !== null && typeof o === 'object' && !Array.isArray(o)
 const joinDistance = (k, p) => Math.max(num(p.approachRadius, 140), num(p.queueStep) * (k + 1) + num(p.joinMargin, 40));
 
 // zombies : [{ id, x, y, mode, window, tearMul?, slot?, qi?, ord?, climb?, outsideT?, walkT? }] ; windowsState : sortie de windows.js ;
-// geoms : windowGeometry de chaque fenêtre ; params : windows.json plus { bounds } (limites de la salle, pour l'auto-correction).
+// geoms : windowGeometry de chaque fenêtre ; params : windows.json plus { bounds } (limites de la salle, pour l'auto-correction) et, facultatif, { active }.
 // Renvoie { zombies (nouveaux objets, même ordre, avec mode, slot, qi, ord, climb, target, hold), tearing, repairBlocked, events }.
 // events : { type: 'climb' | 'enter' | 'stranded', windowId, id }.
 export function stepSiege(zombies, windowsState, geoms, dt, params) {
   const step = clampDt(dt);
   const p = isObject(params) ? params : {};
   const list = Array.isArray(zombies) ? zombies : [];
-  const geomList = (Array.isArray(geoms) ? geoms : []).filter((g) => g && typeof g.id === 'string' && g.center && g.entryOuter && g.entryInner && Array.isArray(g.slots));
+  // Lot 3c : params.active (identifiants) limite le siège aux fenêtres des zones actives ; une fenêtre inactive n'a ni emplacement, ni file, ni cible.
+  const activeIds = Array.isArray(p.active) ? new Set(p.active.filter((id) => typeof id === 'string')) : null;
+  const geomList = (Array.isArray(geoms) ? geoms : []).filter((g) => g && typeof g.id === 'string' && g.center && g.entryOuter && g.entryInner && Array.isArray(g.slots) && (activeIds === null || activeIds.has(g.id)));
   const byId = new Map(geomList.map((g) => [g.id, g]));
   const states = isObject(windowsState?.windows) ? windowsState.windows : {};
   const events = [];

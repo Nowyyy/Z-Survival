@@ -46,14 +46,14 @@ describe('mêmes règles qu\'au lot 1', () => {
 
   // Lot 1b : les modules du monde sont nouveaux ou étendus (paramètres facultatifs, valeurs par défaut = lot 1m, prouvé par les simulations
   // « identiques au lot 1 » ci-dessus) ; tout autre fichier de js/core/ reste inchangé.
-  it('js/core/ est inchangé depuis main, sauf pose.js, viewport.js, les modules du monde du lot 1b et les modules du lot 1c (color, texgen, variants) et du lot 1d (sons : synth, audio-mix, footsteps, sound-director, zombie-voice ; sound-params retiré) et du lot 2 (waves, wave-director, enemy-factory) et du lot 2b (player-stats, spread, combat, projectile) et du lot 2c (wave-splash, vhs ; synth, texgen, audio-mix, sound-director étendus) et du lot 3 (windows, siege, player-down ; nav, layout, enemy-ai, combat, pose, player-stats, audio-mix, sound-director, wave-director, enemy-factory étendus) et du lot 3a (plank-layout, hud-windows, edge-arrow ; texgen étendu) et du lot 3b (maps, map-svg, shape, fog ; layout, decor, siege, plank-layout, player-down étendus)', () => {
+  it('js/core/ est inchangé depuis main, sauf pose.js, viewport.js, les modules du monde du lot 1b et les modules du lot 1c (color, texgen, variants) et du lot 1d (sons : synth, audio-mix, footsteps, sound-director, zombie-voice ; sound-params retiré) et du lot 2 (waves, wave-director, enemy-factory) et du lot 2b (player-stats, spread, combat, projectile) et du lot 2c (wave-splash, vhs ; synth, texgen, audio-mix, sound-director étendus) et du lot 3 (windows, siege, player-down ; nav, layout, enemy-ai, combat, pose, player-stats, audio-mix, sound-director, wave-director, enemy-factory étendus) et du lot 3a (plank-layout, hud-windows, edge-arrow ; texgen étendu) et du lot 3b (maps, map-svg, shape, fog ; layout, decor, siege, plank-layout, player-down étendus) et du lot 3c (zones ; maps, layout, nav, siege, wave-director, wave-splash étendus)', () => {
     let changed;
     try {
       changed = execSync('git diff --name-only main -- js/core', { encoding: 'utf8' }).split('\n').filter(Boolean);
     } catch {
       return; // pas de dépôt git ou de branche main (copie de travail) : rien à comparer
     }
-    const allowed = ['pose', 'viewport', 'camera', 'collision', 'nav', 'decor', 'layout', 'movement', 'ray', 'projectile', 'enemy-ai', 'spawner', 'color', 'texgen', 'variants', 'synth', 'audio-mix', 'footsteps', 'sound-director', 'zombie-voice', 'sound-params', 'waves', 'wave-director', 'enemy-factory', 'combat', 'player-stats', 'spread', 'wave-splash', 'vhs', 'windows', 'siege', 'player-down', 'plank-layout', 'hud-windows', 'edge-arrow', 'maps', 'map-svg', 'shape', 'fog'].map((n) => `js/core/${n}.js`);
+    const allowed = ['pose', 'viewport', 'camera', 'collision', 'nav', 'decor', 'layout', 'movement', 'ray', 'projectile', 'enemy-ai', 'spawner', 'color', 'texgen', 'variants', 'synth', 'audio-mix', 'footsteps', 'sound-director', 'zombie-voice', 'sound-params', 'waves', 'wave-director', 'enemy-factory', 'combat', 'player-stats', 'spread', 'wave-splash', 'vhs', 'windows', 'siege', 'player-down', 'plank-layout', 'hud-windows', 'edge-arrow', 'maps', 'map-svg', 'shape', 'fog', 'zones'].map((n) => `js/core/${n}.js`);
     expect(changed.filter((f) => !allowed.includes(f))).toEqual([]);
   });
 });

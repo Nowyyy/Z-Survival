@@ -1,5 +1,5 @@
 {
-  "_provisoire": "Paramètres de la conversion plan -> monde (js/core/maps.js, scripts/plan-vers-monde.mjs) : chiffres en unités du jeu, tous provisoires. Le plan (plan.json) est en pixels ; scale = unités par pixel, l'origine du monde est le coin haut gauche de la boîte englobante du plan, margin = marge extérieure.",
+  "_provisoire": "Paramètres de la conversion plan -> monde (js/core/maps.js, scripts/plan-vers-monde.mjs) : chiffres en unités du jeu, tous provisoires. Le plan (plan.json) est en pixels ; scale = unités par pixel, l'origine du monde est le coin haut gauche de la boîte englobante du plan, margin = marge extérieure. Lot 3c : doorClearance (distance minimale entre une pièce de complément et l'ouverture d'une porte), repairClearance (distance minimale à un point de réparation, repairDistance de windows.json), armoire et colonne (hauteurs).",
   "scale": 5,
   "margin": 800,
   "round": 20,
@@ -19,7 +19,10 @@
   "pathMax": 900,
   "stairsHeight": 70,
   "pillarHeight": 70,
-  "kindHeights": { "table": 40, "comptoir": 55, "caisse": 45, "etagere": 70 },
+  "kindHeights": { "table": 40, "comptoir": 55, "caisse": 45, "etagere": 70, "armoire": 65, "colonne": 70 },
+  "doorClearance": 100,
+  "repairClearance": 80,
+  "repairDistance": 70,
   "zoom": 3.5,
   "decor": {
     "seed": 30211,

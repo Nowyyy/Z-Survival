@@ -30,7 +30,7 @@ describe('hygiène du lot 3b', () => {
     const added = git('diff --name-only --diff-filter=A main');
     if (added === null) return;
     const files = [...added, ...(git('ls-files --others --exclude-standard') ?? [])];
-    expect(files.filter((f) => /\.(png|jpe?g|gif|webp|svg|ico|mp3|wav|ogg|flac|woff2?|ttf|otf)$/i.test(f))).toEqual([]);
+    expect(files.filter((f) => !f.startsWith('Docs/ref/modele-rdc/') && /\.(png|jpe?g|gif|webp|svg|ico|mp3|wav|ogg|flac|woff2?|ttf|otf)$/i.test(f))).toEqual([]);
   });
 
   it('data/game/world.json et decor.json d\'origine sont inchangés (git diff vide)', () => {
@@ -40,7 +40,7 @@ describe('hygiène du lot 3b', () => {
   });
 
   it('règles de tir, vagues, statistiques, chutes, caméra, textures et sons inchangées (git diff vide)', () => {
-    const changed = git('diff --name-only main -- js/core/waves.js js/core/wave-director.js js/core/wave-splash.js js/core/vhs.js js/core/projectile.js js/core/ray.js js/core/spread.js js/core/player-stats.js js/core/camera.js js/core/synth.js data/game/waves.json data/game/gaits.json data/game/weapons.json data/game/player-stats.json data/game/player-down.json data/game/windows.json data/game/textures.json data/game/sounds.json');
+    const changed = git('diff --name-only main -- js/core/waves.js js/core/vhs.js js/core/projectile.js js/core/ray.js js/core/spread.js js/core/player-stats.js js/core/camera.js js/core/synth.js data/game/gaits.json data/game/weapons.json data/game/player-stats.json data/game/player-down.json data/game/windows.json data/game/textures.json data/game/sounds.json');
     if (changed === null) return;
     expect(changed).toEqual([]);
   });

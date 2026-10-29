@@ -110,7 +110,7 @@ describe('géométrie des fenêtres et du monde (world.json inchangé)', () => {
   });
 
   it('les fichiers que le lot ne doit pas toucher sont inchangés depuis main', () => {
-    const changed = git('diff --name-only main -- js/core/waves.js js/core/wave-splash.js js/core/vhs.js js/core/projectile.js js/core/ray.js js/core/spread.js js/core/camera.js data/game/waves.json data/game/gaits.json data/game/weapons.json data/game/decor.json data/game/splash.json data/game/vhs.json index.html Docs/seed.md .github');
+    const changed = git('diff --name-only main -- js/core/waves.js js/core/vhs.js js/core/projectile.js js/core/ray.js js/core/spread.js js/core/camera.js data/game/gaits.json data/game/weapons.json data/game/decor.json data/game/vhs.json index.html Docs/seed.md .github');
     if (changed !== null) expect(changed).toEqual([]);
   });
 });
@@ -151,12 +151,13 @@ describe('textes, jetons, pureté et hygiène du lot 3', () => {
 
   it('aucun fichier audio, image ou police ajouté depuis main', () => {
     const added = git('diff --name-only --diff-filter=A main');
-    if (added !== null) expect(added.filter((f) => /\.(wav|mp3|ogg|m4a|flac|webm|aac|opus|png|jpe?g|gif|webp|svg|ico|woff2?|ttf|otf)$/i.test(f))).toEqual([]);
+    if (added !== null) expect(added.filter((f) => !f.startsWith('Docs/ref/modele-rdc/') && /\.(wav|mp3|ogg|m4a|flac|webm|aac|opus|png|jpe?g|gif|webp|svg|ico|woff2?|ttf|otf)$/i.test(f))).toEqual([]);
   });
 
   it('aucune dépendance d\'exécution, aucun fichier de plus de 5 Mo', () => {
     expect(pkg.dependencies ?? {}).toEqual({});
-    const tracked = (git('ls-files') ?? []).filter((f) => existsSync(f));
+    // Exception documentée (lot 3c) : Docs/ref/modele-rdc/ (captures du modèle 3D) est exclu du contrôle de taille.
+    const tracked = (git('ls-files') ?? []).filter((f) => existsSync(f) && !f.startsWith('Docs/ref/modele-rdc/'));
     for (const f of tracked) expect(statSync(f).size, f).toBeLessThan(5 * 1024 * 1024);
   });
 

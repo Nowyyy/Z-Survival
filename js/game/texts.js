@@ -26,7 +26,10 @@ export const TEXTURE_TEXTS = { loading: 'game.loading', done: 'game.loading.done
 export const VHS_TEXTS = { label: 'game.vhs.label', on: 'game.vhs.on', off: 'game.vhs.off', reduced: 'game.vhs.reduced' };
 
 // Clés des textes de l'animation de vague (E2-8) : les mêmes que js/core/wave-splash.js (KEYS), pour que fr.json n'ait pas de clé orpheline.
-export const SPLASH_TEXTS = { debut: 'game.splash.debut', renforcee: 'game.splash.renforcee', fin: 'game.splash.fin', vieRestauree: 'game.splash.vieRestauree' };
+export const SPLASH_TEXTS = { debut: 'game.splash.debut', renforcee: 'game.splash.renforcee', fin: 'game.splash.fin', vieRestauree: 'game.splash.vieRestauree', zoneTitle: 'game.splash.zone.title', zoneSubtitle: 'game.splash.zone.subtitle' };
+
+// Lot 3c : zones et fin de monde (ligne de la pause, variante de l'écran de fin, annonces vocales) ; l'annonce centrale « zone » est dans wave-splash.js.
+export const ZONE_TEXTS = { nextZone: 'game.pause.nextZone', endWorld: 'game.end.world', liveZone: 'game.live.zone', liveWorld: 'game.live.world' };
 
 // Lot 3 et 3a : textes des fenêtres (puces du HUD, indicateur de réparation E2-9 sur une ligne, annonces vocales) et de l'état à terre (E2-10).
 // Le nom d'une fenêtre vient de son identifiant dans world.json ; une fenêtre inconnue garde son identifiant.

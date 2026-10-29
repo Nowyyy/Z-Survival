@@ -5,6 +5,7 @@ import { generateDecor } from './decor.js';
 import { windowGap } from './maps.js';
 import { innerBounds } from './movement.js';
 import { faceDistance } from './plank-layout.js';
+import { doorRect } from './zones.js';
 import { polygonRects, segmentRects, unionRects } from './shape.js';
 import { isNum, num } from './vec.js';
 
@@ -96,7 +97,7 @@ function roomExtras(room, bounds) {
 
 // Carte à segments de mur (lot 3b) : contour, murs { x1, y1, x2, y2 } d'épaisseur wallThickness, fenêtres posées sur un mur (centre, côté), obstacles
 // (piliers, escaliers, mobilier, dont certains hors du bâtiment), barrières du joueur. Mêmes sorties que la salle.
-function segmentedLayout(world, decorCfg) {
+function segmentedLayout(world, decorCfg, opts = {}) {
   const t = num(world.wallThickness, 40);
   const size = { width: num(world.size?.width), height: num(world.size?.height) };
   const windowSize = num(world.windowSize, 140);
@@ -111,9 +112,17 @@ function segmentedLayout(world, decorCfg) {
   const decor = generateDecor(decorCfg, world);
   const room = { ...world.room };
   const start = { x: num(world.start?.x), y: num(world.start?.y) };
+  // Lot 3c : portes pleines de la carte (zones.json en unités du jeu, opts.zones) ; les portes planned n'existent pas encore.
+  const zones = opts?.zones && Array.isArray(opts.zones.zones) ? opts.zones : null;
+  const doors = (zones && Array.isArray(zones.doors) ? zones.doors : [])
+    .filter((d) => d && d.planned !== true && typeof d.id === 'string')
+    .map((d) => ({ id: d.id, opens: Array.isArray(d.opens) ? [...d.opens] : [], openAfterWave: d.openAfterWave, opening: d.opening ? { ...d.opening } : null, rect: doorRect(d, { wallThickness: t, wallHeight: num(world.wallHeight, 60) }) }))
+    .filter((d) => d.rect !== null);
   return {
     empty: false,
     id: typeof world.id === 'string' ? world.id : 'carte',
+    zones,
+    doors,
     segmented: true,
     size,
     margin: num(world.margin),
@@ -159,6 +168,8 @@ export function buildLayout(world, decorCfg, opts = {}) {
     const windows = (Array.isArray(l.windows) ? l.windows : []).map((win) => ({ ...win }));
     return {
       ...roomExtras(room, innerBounds(room)),
+      zones: null,
+      doors: [],
       empty: true,
       size: { width: room.width, height: room.height },
       margin: num(l.margin),
@@ -180,7 +191,7 @@ export function buildLayout(world, decorCfg, opts = {}) {
       start: { x: room.width / 2, y: room.height / 2 },
     };
   }
-  if (Array.isArray(world?.walls) && Array.isArray(world?.contour)) return segmentedLayout(world, decorCfg);
+  if (Array.isArray(world?.walls) && Array.isArray(world?.contour)) return segmentedLayout(world, decorCfg, opts);
   const room = { ...world?.room };
   const windows = (Array.isArray(world?.windows) ? world.windows : []).map((win) => ({ ...win, size: num(world?.windowSize) }));
   const furniture = validRects(world?.obstacles).map((o) => ({ ...o }));
@@ -190,6 +201,8 @@ export function buildLayout(world, decorCfg, opts = {}) {
   const size = { width: num(world?.size?.width), height: num(world?.size?.height) };
   return {
     ...roomExtras(room, innerBounds(room)),
+    zones: null,
+    doors: [],
     empty: false,
     size,
     margin: num(world?.margin),
@@ -227,3 +240,11 @@ export function entryWindow(p, windows) {
   }
   return best;
 }
+
+// Lot 3c : rectangles pleins des portes encore fermées (openIds : portes ouvertes), { id, kind: 'porte', x, y, w, h, hauteur }.
+export const closedDoors = (layout, openIds = []) => (Array.isArray(layout?.doors) ? layout.doors : []).filter((d) => d.rect && !openIds.includes(d.id)).map((d) => ({ ...d.rect }));
+
+// Ce qui bloque le joueur, les zombies, les balles et le laser, portes fermées comprises. Les portes arrêtent aussi les balles et le laser (sans dégâts).
+export const playerSolids = (layout, openIds) => [...(layout?.playerObstacles ?? []), ...closedDoors(layout, openIds)];
+export const zombieSolidsOf = (layout, openIds) => [...(layout?.zombieObstacles ?? []), ...closedDoors(layout, openIds)];
+export const shotBlockers = (layout, openIds) => (layout?.empty ? [] : [...(layout?.furniture ?? []), ...(layout?.walls ?? []), ...(layout?.decor?.solids ?? []), ...closedDoors(layout, openIds)]);

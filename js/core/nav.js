@@ -214,3 +214,13 @@ export function buildWindowField(nav, geom) {
   const flow = buildFlow(grid, geom.entryOuter);
   return { id: geom.id ?? null, grid, flow, source: flow.source, reachable: flow.reachable };
 }
+
+// Lot 3c : vrai si un chemin existe de from à to dans la grille (cases libres, diagonales sans coin coupé). Un point dans une case bloquée part de la case
+// libre la plus proche, comme buildFlow.
+export function hasPath(grid, from, to) {
+  if (!grid || !Number.isInteger(grid.cols)) return false;
+  const flow = buildFlow(grid, to);
+  if (flow.source < 0) return false;
+  const start = nearestFree(grid, cellIndex(grid, from));
+  return start >= 0 && flow.dist[start] !== INF;
+}

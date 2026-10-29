@@ -41,7 +41,7 @@ export function createSplashView(dict, root = document) {
         }
         if (view.kind !== shown.kind) {
           shown.kind = view.kind;
-          el.classList.toggle('is-fin', view.kind === 'fin');
+          el.classList.toggle('is-fin', view.kind === 'fin' || view.kind === 'zone'); // « Nouvelle zone » prend le style calme de la fin de vague
           el.classList.toggle('is-renforcee', view.kind === 'renforcee');
         }
       }
