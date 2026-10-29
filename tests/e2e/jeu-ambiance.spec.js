@@ -318,13 +318,17 @@ test.describe('animation de vague : sons', () => {
     await page.evaluate(([x, y]) => { for (let i = 0; i < 6; i += 1) window.__zs.spawnEnemy(x + 20 + i, y); }, [p.x, p.y]);
     await page.evaluate(() => window.__zs.step(40));
     await expect(page.locator('#end-panel')).toBeVisible();
-    await page.getByRole('button', { name: 'Rejouer' }).click();
+    // Clic, lecture de l'état et premier pas dans le même appel : la boucle réelle (3 s d'attente avant la vague 1) ne peut pas devancer la lecture, même sur un runner lent.
+    const s = await page.evaluate(() => {
+      [...document.querySelectorAll('button')].find((b) => b.textContent.trim() === 'Rejouer').click();
+      const state = window.__zs.getState();
+      window.__zs.step(0.1);
+      return { dead: state.dead, waves: state.waves };
+    });
     await expect(page.locator('#end-panel')).toBeHidden();
     await expect.poll(async () => (await audio(page)).annonceActive).toBe(0);
-    const s = await state(page);
     expect(s.dead).toBe(false);
     expect(s.waves).toMatchObject({ phase: 'attente', wave: 1 });
-    await page.evaluate(() => window.__zs.step(0.1));
     expect(await splash(page)).toMatchObject({ visible: true, kind: 'debut', wave: 1 });
   });
 

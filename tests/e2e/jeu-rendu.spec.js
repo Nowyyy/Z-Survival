@@ -200,8 +200,9 @@ test.describe('portée du tir, laser qui s\'estompe, ombres lointaines', () => {
       }, [shot, cx, cy]);
     };
     // Le laser part de 826 et porte 300 : il finit à 1126 et s'estompe sur son dernier tiers.
-    expect(await redness(900)).toBeGreaterThan(120);
-    expect(await redness(1000)).toBeGreaterThan(120);
+    // Le rouge maximal du laser (--game-laser) est d'environ 123 : seuil à 105 pour absorber le lissage du rendu (116 mesuré sur le runner).
+    expect(await redness(900)).toBeGreaterThan(105);
+    expect(await redness(1000)).toBeGreaterThan(105);
     expect(await redness(1120)).toBeLessThan(40);
   });
 
