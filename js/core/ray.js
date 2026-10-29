@@ -1,5 +1,6 @@
 // Laser : rayon contre des cercles. Sert à tracer le laser et à décider qu'un tir part ; ne produit JAMAIS de dégâts.
 import { firstOnSegment } from './collision.js';
+import { floorOf, isFloorId } from './floors.js';
 import { fromAngle, isNum, num } from './vec.js';
 
 // Plus petit t >= 0 où le rayon (origine o, direction unitaire d) touche le cercle ; null sinon. Tangent = touché.
@@ -31,7 +32,8 @@ export function rayToBounds(o, d, bounds) {
 // enemies : [{ id, x, y, r }] ; obstacles : rectangles pleins { id, x, y, w, h } qui arrêtent le rayon (aucun par défaut).
 // Renvoie { end, length, hit, stoppedByWall, stoppedBy } ; hit = { id, distance } de l'ennemi le plus proche visible, ou null ;
 // stoppedBy = { id, distance } de l'obstacle qui arrête le rayon, ou null. Un ennemi caché derrière un obstacle n'est jamais touché.
-export function castRay(origin, angle, maxLength, enemies, bounds, obstacles = []) {
+// Lot 3e : floor (étage du tireur) : seuls les ennemis de cet étage comptent, et jamais un zombie en train de franchir un escalier ; sans floor, tous.
+export function castRay(origin, angle, maxLength, enemies, bounds, obstacles = [], floor = null) {
   const o = { x: num(origin?.x), y: num(origin?.y) };
   const d = fromAngle(angle);
   const range = isNum(maxLength) && maxLength > 0 ? maxLength : 0;
@@ -46,6 +48,7 @@ export function castRay(origin, angle, maxLength, enemies, bounds, obstacles = [
   let hit = null;
   for (const enemy of Array.isArray(enemies) ? enemies : []) {
     if (!enemy || !isNum(enemy.x) || !isNum(enemy.y)) continue;
+    if (isFloorId(floor) && (floorOf(enemy) !== floor || enemy.mode === 'escalier')) continue;
     const t = rayCircle(o, d, enemy);
     // Un ennemi pile au bord d'un obstacle est derrière lui : l'obstacle passe d'abord.
     if (t !== null && (blocker ? t < limit : t <= limit) && (hit === null || t < hit.distance)) hit = { id: enemy?.id, distance: t };

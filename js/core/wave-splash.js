@@ -7,7 +7,9 @@ import { createRng, nextFloat, nextInt } from './rng.js';
 import { isNum } from './vec.js';
 
 export const KINDS = Object.freeze(['debut', 'renforcee', 'fin', 'zone']);
-export const KEYS = Object.freeze({ debut: 'game.splash.debut', renforcee: 'game.splash.renforcee', fin: 'game.splash.fin', vieRestauree: 'game.splash.vieRestauree', zoneTitle: 'game.splash.zone.title', zoneSubtitle: 'game.splash.zone.subtitle' });
+export const KEYS = Object.freeze({ debut: 'game.splash.debut', renforcee: 'game.splash.renforcee', fin: 'game.splash.fin', vieRestauree: 'game.splash.vieRestauree', zoneTitle: 'game.splash.zone.title', zoneSubtitle: 'game.splash.zone.subtitle', zoneSubEscalier: 'game.splash.zone.sub.escalier', zoneSubEscalierPorte: 'game.splash.zone.sub.escalier-porte' });
+// Lot 3e : sous-titres permis de l'annonce « Nouvelle zone », selon la porte (subtitleKey de zones.json) : porte, escalier, escalier et porte.
+export const ZONE_SUBTITLES = Object.freeze([KEYS.zoneSubtitle, KEYS.zoneSubEscalier, KEYS.zoneSubEscalierPorte]);
 // Lot 3c : « fin » (fin de vague) et « zone » (nouvelle zone) durent un temps fixe (enter + hold + exit) et cèdent la place à une annonce de début.
 const FIXED = Object.freeze(['fin', 'zone']);
 const isFixed = (kind) => FIXED.includes(kind);
@@ -68,7 +70,7 @@ function viewOf(anim, params, reduced) {
     scale = anim.cut.scale;
   }
   const title = { key: anim.kind === 'zone' ? KEYS.zoneTitle : anim.kind === 'fin' ? KEYS.fin : KEYS.debut, n: anim.wave };
-  const subtitle = anim.kind === 'renforcee' ? { key: KEYS.renforcee } : anim.kind === 'zone' ? { key: KEYS.zoneSubtitle } : fin ? { key: KEYS.vieRestauree } : null;
+  const subtitle = anim.kind === 'renforcee' ? { key: KEYS.renforcee } : anim.kind === 'zone' ? { key: ZONE_SUBTITLES.includes(anim.subtitleKey) ? anim.subtitleKey : KEYS.zoneSubtitle } : fin ? { key: KEYS.vieRestauree } : null;
   const base = { visible: true, kind: anim.kind, title, subtitle, step: env.step, t, sound: null };
   if (reduced) return { ...base, opacity: 1, scale: 1, shiftX: 0, rgbSplit: 0, tears: [], flicker: 0 };
   // Nombres décoratifs : un tirage par pas de 1/rate s, reproductible (graine = vague, genre, pas) ; plus faibles en fin de vague.
@@ -100,6 +102,7 @@ function viewOf(anim, params, reduced) {
 }
 
 // info : { active, phase, wave, waitLeft, reinforced, playerAlive, doorAnnounce } ; options : { reducedMotion, params }.
+// doorSubtitle (lot 3e) : clé du sous-titre de l'annonce « zone » (une des ZONE_SUBTITLES ; sinon « Une porte s'ouvre »).
 // doorAnnounce (lot 3c) : entier positif donné à l'image où le directeur émet doorAnnounce (la manche qui vient de s'achever) ; l'animation « zone » part une
 // seule fois par valeur, sans son (aucune entrée « zone » dans sounds).
 // Renvoie { state, view } ; view.sound n'est non nul qu'à l'image où une animation démarre.
@@ -152,7 +155,7 @@ export function stepSplash(state, info, dt, options) {
         const v = viewOf(a, params, false);
         return { ...a, cut: { at: a.t, opacity: v.opacity, scale: v.scale } };
       });
-      anims = [...anims, { kind: 'zone', wave: info.doorAnnounce, t: 0, cut: null }];
+      anims = [...anims, { kind: 'zone', wave: info.doorAnnounce, t: 0, cut: null, subtitleKey: typeof info.doorSubtitle === 'string' ? info.doorSubtitle : KEYS.zoneSubtitle }];
     }
   }
 

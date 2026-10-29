@@ -17,7 +17,7 @@ describe('zones : parseZones', () => {
   it('lit zones.json de la carte sans avertissement', () => {
     expect(zones.warnings).toEqual([]);
     expect(zones.wavesPerWorld).toBe(40);
-    expect(zones.zones.map((z) => [z.id, z.openAtStart])).toEqual([['depart', true], ['aile', false]]);
+    expect(zones.zones.map((z) => [z.id, z.openAtStart])).toEqual([['depart', true], ['aile', false], ['etage-gauche', false], ['etage-droite', false]]);
     expect(zones.doors.map((d) => [d.id, d.kind, d.openAfterWave, d.planned])).toEqual([['porte-1', 'porte', 10, false], ['porte-2', 'escalier', 20, true], ['porte-3', 'escalier', 30, true]]);
   });
 

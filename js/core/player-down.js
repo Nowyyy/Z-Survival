@@ -3,6 +3,7 @@
 // Pur : temps (dt borné à 0,05 s, 0 en pause) et paramètres (data/game/player-down.json) en argument ; aucun argument n'est modifié,
 // aucune exception, aucun hasard.
 import { moveWithCollision, validRects } from './collision.js';
+import { floorOf } from './floors.js';
 import { clampDt, isNum, normalize, num } from './vec.js';
 
 export const DOWN_STATES = ['debout', 'terre', 'mort'];
@@ -95,6 +96,7 @@ export function applyHeal(hp, maxHp, fraction, down) {
 // Repousse les zombies « dedans » ou « libre » situés dans la salle à moins de radius du centre : ils s'éloignent de distance unités au
 // plus, en s'arrêtant aux murs, aux meubles et aux fenêtres (même ouvertes). layout : { bounds, furniture, walls, gaps } (rectangles).
 // Les zombies hors de la salle ou en approche, attente, arrache, escalade ne bougent pas. Renvoie une nouvelle liste.
+// Lot 3e : seuls les zombies du même étage que center (champ floor, rez-de-chaussée par défaut) sont repoussés ; layout est la couche de cet étage.
 export function knockbackZombies(zombies, center, params, layout) {
   const cx = num(center?.x);
   const cy = num(center?.y);
@@ -107,6 +109,7 @@ export function knockbackZombies(zombies, center, params, layout) {
     if (!isObject(z) || !isNum(z.x) || !isNum(z.y)) return z;
     const mode = z.mode ?? 'libre';
     if (mode !== 'dedans' && mode !== 'libre') return z;
+    if (floorOf(z) !== floorOf(center)) return z;
     if (typeof layout?.inside === 'function' ? !layout.inside(z.x, z.y) : bounds && (z.x < bounds.minX || z.x > bounds.maxX || z.y < bounds.minY || z.y > bounds.maxY)) return z;
     const dx = z.x - cx;
     const dy = z.y - cy;

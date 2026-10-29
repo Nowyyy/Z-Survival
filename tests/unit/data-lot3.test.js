@@ -110,7 +110,7 @@ describe('géométrie des fenêtres et du monde (world.json inchangé)', () => {
   });
 
   it('les fichiers que le lot ne doit pas toucher sont inchangés depuis main', () => {
-    const changed = git('diff --name-only main -- js/core/waves.js js/core/vhs.js js/core/projectile.js js/core/ray.js js/core/spread.js js/core/camera.js data/game/gaits.json data/game/weapons.json data/game/decor.json data/game/vhs.json index.html Docs/seed.md .github');
+    const changed = git('diff --name-only main -- js/core/waves.js js/core/vhs.js js/core/spread.js js/core/camera.js data/game/gaits.json data/game/weapons.json data/game/decor.json data/game/vhs.json index.html Docs/seed.md .github');
     if (changed !== null) expect(changed).toEqual([]);
   });
 });

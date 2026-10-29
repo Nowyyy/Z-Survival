@@ -26,7 +26,8 @@
   "pillarSize": 7,
   "pillars": [[92, 85], [92, 147], [92, 209], [92, 255], [92, 313], [198, 255], [241, 255], [198, 313], [241, 313], [198, 228], [241, 228]],
   "stairs": [
-    { "id": "escalier-courbe", "x0": 261, "y0": 242, "x1": 288, "y1": 261 }
+    { "id": "escalier-courbe", "role": "escalier-depart", "x0": 261, "y0": 242, "x1": 288, "y1": 261 },
+    { "id": "escalier-aile", "role": "escalier-aile", "x0": 24, "y0": 257, "x1": 52, "y1": 301 }
   ],
   "ramp": null,
   "start": [403, 283],

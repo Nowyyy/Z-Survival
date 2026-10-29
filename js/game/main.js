@@ -1,7 +1,7 @@
 // Point d'entrée de jeu.html : charge les textes et les données, prépare le DOM, lance la partie en 3D (Three.js).
 import { buildLayout } from '../core/layout.js';
 import { resolveMapId } from '../core/maps.js';
-import { parseZones, zonesToWorld } from '../core/zones.js';
+import { parseZones, restrictToFloors, zonesToWorld } from '../core/zones.js';
 import { parseTilt, parseZoom } from '../core/viewport.js';
 import { createAudio } from './audio.js';
 import { createGame } from './game.js';
@@ -108,7 +108,8 @@ loading.done();
 root.hidden = false;
 
 // ?empty=1 (seulement avec ?test=1) : la salle du lot 1m sans meuble ni décor, mêmes coordonnées qu'au lot 1m.
-const zones = zonesJson ? zonesToWorld(parseZones(zonesJson), world.transform) : null;
+// Lot 3e, partie A : l'étage et les escaliers sont dans les données et la logique, le jeu ne les consomme pas encore (un seul étage, comme au lot 3c).
+const zones = zonesJson ? restrictToFloors(zonesToWorld(parseZones(zonesJson), world.transform), ['rdc']) : null;
 const layout = buildLayout(world, decor, { empty: emptyMode, slack: camera.slack, zones });
 
 const ctx = {

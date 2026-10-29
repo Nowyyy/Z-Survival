@@ -5,6 +5,7 @@
 // englobante du plan. Les chiffres (échelle, marge, épaisseurs, règles de jeu) viennent de data/game/maps/params.json ; DEFAULT_PARAMS n'est
 // que le repli (un test vérifie qu'il est identique au fichier).
 import { distanceToRect, isRect, rectGap, validRects } from './collision.js';
+import { isFloorId } from './floors.js';
 import { boundingRect, coveredBy, overlapArea, pointInPolygon, polygonArea, polygonRects, segmentRects, totalArea, unionRects } from './shape.js';
 import { isNum, num } from './vec.js';
 
@@ -133,6 +134,7 @@ export function cleanPlan(plan) {
   return {
     id: typeof plan.id === 'string' && plan.id !== '' ? plan.id : 'carte',
     title: typeof plan.title === 'string' ? plan.title : '',
+    floor: isFloorId(plan.floor) ? plan.floor : 'rdc',
     bbox: { x0: plan.bbox.x0, y0: plan.bbox.y0, x1: plan.bbox.x1, y1: plan.bbox.y1 },
     contour,
     walls: list(plan.walls, segment).map((s, i) => ({ id: typeof s.id === 'string' ? s.id : `mur-interieur-${i + 1}`, x1: s.x1, y1: s.y1, x2: s.x2, y2: s.y2 })),
@@ -140,7 +142,7 @@ export function cleanPlan(plan) {
     windows: list(plan.windows, (w) => isObject(w) && typeof w.id === 'string' && Object.hasOwn(SIDES, w.side) && isNum(w.x) && isNum(w.y)).map((w) => ({ id: w.id, side: w.side, x: w.x, y: w.y, ...(isNum(w.planX) ? { planX: w.planX } : {}), ...(isNum(w.planY) ? { planY: w.planY } : {}) })),
     pillarSize: pos(plan.pillarSize, 14),
     pillars: list(plan.pillars, isPoint).map((p) => [p[0], p[1]]),
-    stairs: list(plan.stairs, (s) => isObject(s) && box(s)).map((s, i) => ({ id: typeof s.id === 'string' ? s.id : `escalier-${i + 1}`, x0: s.x0, y0: s.y0, x1: s.x1, y1: s.y1 })),
+    stairs: list(plan.stairs, (s) => isObject(s) && box(s)).map((s, i) => ({ id: typeof s.id === 'string' ? s.id : `escalier-${i + 1}`, ...(typeof s.role === 'string' && s.role !== '' ? { role: s.role } : {}), x0: s.x0, y0: s.y0, x1: s.x1, y1: s.y1 })),
     ramp: isObject(plan.ramp) && box(plan.ramp) ? { id: typeof plan.ramp.id === 'string' ? plan.ramp.id : 'rampe', window: typeof plan.ramp.window === 'string' ? plan.ramp.window : null, x0: plan.ramp.x0, y0: plan.ramp.y0, x1: plan.ramp.x1, y1: plan.ramp.y1 } : null,
     start: isPoint(plan.start) ? [plan.start[0], plan.start[1]] : null,
     furniture: list(plan.furniture, (f) => isObject(f) && box(f)).map((f, i) => ({ id: typeof f.id === 'string' ? f.id : `M${i + 1}`, x0: f.x0, y0: f.y0, x1: f.x1, y1: f.y1, kind: typeof f.kind === 'string' ? f.kind : 'caisse', ...(f.provisional === true ? { provisional: true } : {}), ...(f.source === 'modele' ? { source: 'modele' } : {}) })),
@@ -350,7 +352,7 @@ export function planToWorld(plan, params, extras) {
   const pillars = pl.pillars.map(([x, y], i) => ({ id: `pilier-${i + 1}`, x: r6(X(x) - half), y: r6(Y(y) - half), w: r6(half * 2), h: r6(half * 2), hauteur: p.pillarHeight, kind: 'pilier' }));
   const stairs = pl.stairs.map((st) => {
     const r = rectPx(st.x0, st.y0, st.x1, st.y1);
-    return { id: st.id, ...r, hauteur: p.stairsHeight, kind: 'escalier', ...(isInside(r) ? {} : { outside: true }) };
+    return { id: st.id, ...(st.role ? { role: st.role } : {}), ...r, hauteur: p.stairsHeight, kind: 'escalier', ...(isInside(r) ? {} : { outside: true }) };
   });
   const structure = [...pillars, ...stairs].map((o) => ({ id: o.id, rect: { x: o.x, y: o.y, w: o.w, h: o.h }, hauteur: o.hauteur, kind: o.kind, structure: true, outside: o.outside === true, parts: [o.id] }));
   const fixedMerge = mergeInterstices(structure, p.minCorridor);
@@ -540,6 +542,7 @@ export function planToWorld(plan, params, extras) {
     _provisoire: 'Carte générée par npm run carte (scripts/plan-vers-monde.mjs) d\'après plan.json : ne jamais éditer à la main, changer plan.json puis relancer la commande. Valeurs provisoires. Coordonnées du monde : (0, 0) = coin nord-ouest, x vers l\'est, y vers le sud.',
     id: pl.id,
     title: pl.title,
+    ...(pl.floor === 'rdc' ? {} : { floor: pl.floor }),
     size,
     margin: p.margin,
     transform: { scale: s, margin: p.margin, x0: pl.bbox.x0, y0: pl.bbox.y0 },

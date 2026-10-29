@@ -1,20 +1,25 @@
 // Plan d'une carte en texte (1 caractère = 100 unités) : node scripts/plan-carte.mjs [id]. Murs #, fenêtres 1 à 8 (F1 à F8), piliers P, escaliers S,
 // rampe r, mobilier m (n : pièce de complément du lot 3c), départ o, apparitions *, porte D (lot 3c) ; un point pour la zone de départ, deux points
 // superposés ':' pour la zone d'une porte (aile). Ne modifie rien ; sert à regarder la carte sans navigateur.
+// Lot 3e : avec --etage, l'étage (etage.world.json) : fenêtres U1 à U7 (chiffre), zones de déclenchement T, arrivées A, cages d'escalier S, bloc de la porte D.
 import { readFileSync } from 'node:fs';
 import { existsSync } from 'node:fs';
 import { buildLayout } from '../js/core/layout.js';
 import { parseZones, zonesToWorld } from '../js/core/zones.js';
 import { pointInPolygon } from '../js/core/shape.js';
 
-const id = process.argv[2] ?? 'rez-de-chaussee';
+const id = process.argv.slice(2).find((a) => !a.startsWith('--')) ?? 'rez-de-chaussee';
+const upper = process.argv.includes('--etage');
 const load = (n) => JSON.parse(readFileSync(new URL(`../data/game/maps/${id}/${n}.json`, import.meta.url), 'utf8'));
-const world = load('world');
-const decor = load('decor');
+const world = load(upper ? 'etage.world' : 'world');
+const decor = upper ? { spawnPoints: world.spawnPoints, ground: [], scatter: {} } : load('decor');
 const zonesFile = new URL(`../data/game/maps/${id}/zones.json`, import.meta.url);
-const zones = existsSync(zonesFile) ? zonesToWorld(parseZones(JSON.parse(readFileSync(zonesFile, 'utf8'))), world.transform) : null;
-const L = buildLayout(world, decor, { zones });
-const closedZone = (x, y) => zones !== null && zones.zones.some((z) => !z.openAtStart && pointInPolygon(x, y, z.region));
+const zones = existsSync(zonesFile) ? zonesToWorld(parseZones(JSON.parse(readFileSync(zonesFile, 'utf8'))), upper ? load('world').transform : world.transform) : null;
+const L = buildLayout(world, decor, { zones: upper ? { ...zones, doors: zones.doors.map((d) => ({ ...d, planned: false })) } : zones, floor: upper ? 'etage' : 'rdc' });
+const floorName = upper ? 'etage' : 'rdc';
+const triggers = (zones?.stairs ?? []).map((st) => st.floors[floorName]?.trigger).filter(Boolean);
+const arrivals = (zones?.stairs ?? []).map((st) => st.floors[floorName]?.arrival).filter(Boolean);
+const closedZone = (x, y) => zones !== null && zones.zones.some((z) => !z.openAtStart && (z.floor ?? 'rdc') === floorName && pointInPolygon(x, y, z.region));
 const inR = (x, y, r) => x >= r.x && x < r.x + r.w && y >= r.y && y < r.y + r.h;
 const step = 100;
 const rows = [];
@@ -26,7 +31,9 @@ for (let y = 0; y < L.size.height; y += step) {
     const win = L.gaps.find((g) => cx >= g.x - 40 && cx <= g.x + g.w + 40 && cy >= g.y - 55 && cy <= g.y + g.h + 55);
     const o = L.furniture.find((q) => inR(cx, cy, q));
     if (win) row += win.id.slice(1);
-    else if (L.doors.some((d) => x < d.rect.x + d.rect.w && x + step > d.rect.x && y < d.rect.y + d.rect.h && y + step > d.rect.y)) row += 'D';
+    else if (arrivals.some((a) => Math.abs(a.x - cx) < 50 && Math.abs(a.y - cy) < 50)) row += 'A';
+    else if (triggers.some((t) => inR(cx, cy, t))) row += 'T';
+    else if (L.doors.some((d) => d.blocks.some((b) => x < b.rect.x + b.rect.w && x + step > b.rect.x && y < b.rect.y + b.rect.h && y + step > b.rect.y))) row += 'D';
     else if (decor.spawnPoints.some((p) => Math.abs(p.x - cx) < 50 && Math.abs(p.y - cy) < 50)) row += '*';
     else if (Math.hypot(cx - L.start.x, cy - L.start.y) < 60) row += 'o';
     else if (L.walls.some((w) => inR(cx, cy, w))) row += '#';
@@ -37,5 +44,5 @@ for (let y = 0; y < L.size.height; y += step) {
   }
   rows.push(row.replace(/\s+$/, ''));
 }
-console.log(`${id} ${L.size.width} × ${L.size.height} (1 caractère = ${step})`);
-console.log(rows.slice(8, 26).join('\n'));
+console.log(`${id}${upper ? " (étage)" : ""} ${L.size.width} × ${L.size.height} (1 caractère = ${step})`);
+console.log(rows.slice(upper ? 8 : 8, 26).join('\n'));
