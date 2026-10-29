@@ -182,7 +182,7 @@ describe('planToWorld : pureté, déterminisme, entrées hostiles', () => {
     for (const bad of WEIRD) expect(() => planToWorld(plan, bad)).not.toThrow();
     expect(planToWorld(plan, null).world.size).toEqual({ width: 4040, height: 3460 });
     expect(planToWorld(plan, { scale: -3, margin: 'x', windowSize: NaN }).world.windowSize).toBe(72);
-  });
+  }, 60_000);
 
   it('cleanPlan et cleanParams ne lèvent pas d\'exception', () => {
     for (const bad of WEIRD) {

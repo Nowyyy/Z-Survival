@@ -1,1 +1,71 @@
-{"_provisoire": "Plan du rez-de-chaussée relevé sur le modèle SketchUp du propriétaire (« Nacht der Untoten », coupe à 1,2 m de haut) : uniquement des PIXELS (12 px par mètre du modèle, 5 unités du jeu par pixel, donc 60 unités par mètre). Aucune unité de jeu ici : npm run carte convertit en world.json et decor.json (même dossier). Pour corriger la carte, change un chiffre ici puis relance npm run carte.", "id": "rez-de-chaussee", "title": "Rez-de-chaussée", "bbox": {"x0": 0, "y0": 0, "x1": 486, "y1": 372}, "contour": [[49, 20], [138, 20], [138, 208], [244, 208], [244, 228], [466, 228], [466, 352], [138, 352], [138, 336], [20, 336], [20, 208], [49, 208]], "walls": [{"id": "mur-interieur-1", "x1": 138, "y1": 336, "x2": 138, "y2": 250}, {"id": "mur-interieur-2", "x1": 138, "y1": 233, "x2": 138, "y2": 208}, {"id": "mur-interieur-3", "x1": 291, "y1": 228, "x2": 291, "y2": 272}], "openings": [{"id": "ouverture-aile", "x1": 138, "y1": 250, "x2": 138, "y2": 233}, {"id": "ouverture-haut", "x1": 49, "y1": 208, "x2": 138, "y2": 208}], "windows": [{"id": "F1", "side": "nord", "x": 75, "y": 20}, {"id": "F2", "side": "est", "x": 138, "y": 127}, {"id": "F3", "side": "ouest", "x": 49, "y": 178}, {"id": "F4", "side": "nord", "x": 326, "y": 228}, {"id": "F5", "side": "sud", "x": 435, "y": 352}, {"id": "F6", "side": "sud", "x": 311, "y": 352}, {"id": "F7", "side": "sud", "x": 187, "y": 352}, {"id": "F8", "side": "sud", "x": 161, "y": 352}], "pillarSize": 7, "pillars": [[92, 85], [92, 147], [92, 209], [92, 255], [92, 313], [198, 255], [241, 255], [198, 313], [241, 313], [198, 228], [241, 228]], "stairs": [{"id": "escalier-courbe", "x0": 261, "y0": 242, "x1": 288, "y1": 261}], "ramp": null, "start": [403, 283], "furniture": [{"id": "M1", "x0": 82, "y0": 316, "x1": 97, "y1": 333, "kind": "caisse"}, {"id": "M2", "x0": 98, "y0": 324, "x1": 114, "y1": 333, "kind": "caisse"}, {"id": "M3", "x0": 294, "y0": 250, "x1": 302, "y1": 256, "kind": "caisse"}, {"id": "M4", "x0": 294, "y0": 242, "x1": 302, "y1": 249, "kind": "caisse"}, {"id": "M5", "x0": 366, "y0": 301, "x1": 378, "y1": 309, "kind": "table"}, {"id": "M6", "x0": 120, "y0": 218, "x1": 128, "y1": 226, "kind": "caisse"}]}
+{
+  "_provisoire": "Plan du rez-de-chaussée relevé sur le modèle SketchUp du propriétaire (« Nacht der Untoten », coupe à 1,2 m de haut) : uniquement des PIXELS (12 px par mètre du modèle, 5 unités du jeu par pixel, donc 60 unités par mètre). Aucune unité de jeu ici : npm run carte convertit en world.json et decor.json (même dossier). Pour corriger la carte, change un chiffre ici puis relance npm run carte.",
+  "id": "rez-de-chaussee",
+  "title": "Rez-de-chaussée",
+  "bbox": { "x0": 0, "y0": 0, "x1": 486, "y1": 372 },
+  "contour": [[49, 20], [138, 20], [138, 208], [244, 208], [244, 228], [466, 228], [466, 352], [138, 352], [138, 336], [20, 336], [20, 208], [49, 208]],
+  "walls": [
+    { "id": "mur-interieur-1", "x1": 138, "y1": 336, "x2": 138, "y2": 250 },
+    { "id": "mur-interieur-2", "x1": 138, "y1": 233, "x2": 138, "y2": 208 },
+    { "id": "mur-interieur-3", "x1": 291, "y1": 228, "x2": 291, "y2": 272 }
+  ],
+  "openings": [
+    { "id": "ouverture-aile", "x1": 138, "y1": 250, "x2": 138, "y2": 233 },
+    { "id": "ouverture-haut", "x1": 49, "y1": 208, "x2": 138, "y2": 208 }
+  ],
+  "windows": [
+    { "id": "F1", "side": "nord", "x": 75, "y": 20 },
+    { "id": "F2", "side": "est", "x": 138, "y": 127 },
+    { "id": "F3", "side": "ouest", "x": 49, "y": 178 },
+    { "id": "F4", "side": "nord", "x": 326, "y": 228 },
+    { "id": "F5", "side": "sud", "x": 435, "y": 352 },
+    { "id": "F6", "side": "sud", "x": 311, "y": 352 },
+    { "id": "F7", "side": "sud", "x": 187, "y": 352 },
+    { "id": "F8", "side": "sud", "x": 161, "y": 352 }
+  ],
+  "pillarSize": 7,
+  "pillars": [[92, 85], [92, 147], [92, 209], [92, 255], [92, 313], [198, 255], [241, 255], [198, 313], [241, 313], [198, 228], [241, 228]],
+  "stairs": [
+    { "id": "escalier-courbe", "x0": 261, "y0": 242, "x1": 288, "y1": 261 }
+  ],
+  "ramp": null,
+  "start": [403, 283],
+  "furniture": [
+    { "id": "M1", "x0": 43, "y0": 327, "x1": 57, "y1": 335, "kind": "table" },
+    { "id": "M2", "x0": 98, "y0": 324, "x1": 113, "y1": 335, "kind": "table" },
+    { "id": "M3", "x0": 65, "y0": 324, "x1": 73, "y1": 335, "kind": "comptoir" },
+    { "id": "M4", "x0": 73, "y0": 324, "x1": 81, "y1": 335, "kind": "comptoir" },
+    { "id": "M5", "x0": 81, "y0": 317, "x1": 98, "y1": 333, "kind": "table" },
+    { "id": "M6", "x0": 60, "y0": 323, "x1": 65, "y1": 328, "kind": "caisse" },
+    { "id": "M7", "x0": 43, "y0": 318, "x1": 57, "y1": 326, "kind": "table" },
+    { "id": "M8", "x0": 107, "y0": 302, "x1": 132, "y1": 323, "kind": "comptoir" },
+    { "id": "M9", "x0": 37, "y0": 297, "x1": 52, "y1": 314, "kind": "table" },
+    { "id": "M10", "x0": 362, "y0": 299, "x1": 375, "y1": 311, "kind": "table" },
+    { "id": "M11", "x0": 375, "y0": 295, "x1": 389, "y1": 309, "kind": "table" },
+    { "id": "M12", "x0": 130, "y0": 296, "x1": 136, "y1": 301, "kind": "etagere" },
+    { "id": "M13", "x0": 36, "y0": 290, "x1": 43, "y1": 298, "kind": "caisse" },
+    { "id": "M14", "x0": 43, "y0": 290, "x1": 50, "y1": 298, "kind": "caisse" },
+    { "id": "M15", "x0": 130, "y0": 291, "x1": 136, "y1": 295, "kind": "etagere" },
+    { "id": "M16", "x0": 30, "y0": 274, "x1": 46, "y1": 291, "kind": "table" },
+    { "id": "M17", "x0": 130, "y0": 286, "x1": 136, "y1": 290, "kind": "etagere" },
+    { "id": "M18", "x0": 130, "y0": 272, "x1": 136, "y1": 277, "kind": "etagere" },
+    { "id": "M19", "x0": 130, "y0": 267, "x1": 136, "y1": 272, "kind": "etagere" },
+    { "id": "M20", "x0": 379, "y0": 251, "x1": 387, "y1": 269, "kind": "caisse" },
+    { "id": "M21", "x0": 446, "y0": 260, "x1": 463, "y1": 265, "kind": "caisse" },
+    { "id": "M22", "x0": 353, "y0": 230, "x1": 381, "y1": 262, "kind": "comptoir" },
+    { "id": "M23", "x0": 292, "y0": 249, "x1": 298, "y1": 256, "kind": "etagere" },
+    { "id": "M24", "x0": 293, "y0": 245, "x1": 298, "y1": 250, "kind": "etagere" },
+    { "id": "M25", "x0": 293, "y0": 240, "x1": 298, "y1": 244, "kind": "etagere" },
+    { "id": "M26", "x0": 118, "y0": 222, "x1": 129, "y1": 233, "kind": "etagere" },
+    { "id": "M27", "x0": 177, "y0": 225, "x1": 194, "y1": 231, "kind": "caisse" },
+    { "id": "M28", "x0": 138, "y0": 218, "x1": 143, "y1": 222, "kind": "etagere" },
+    { "id": "M29", "x0": 118, "y0": 210, "x1": 127, "y1": 221, "kind": "table" },
+    { "id": "M30", "x0": 83, "y0": 213, "x1": 100, "y1": 219, "kind": "caisse" },
+    { "id": "M31", "x0": 137, "y0": 212, "x1": 143, "y1": 218, "kind": "etagere" },
+    { "id": "M32", "x0": 129, "y0": 174, "x1": 136, "y1": 181, "kind": "caisse" },
+    { "id": "M33", "x0": 124, "y0": 60, "x1": 135, "y1": 81, "kind": "comptoir" },
+    { "id": "M34", "x0": 126, "y0": 52, "x1": 131, "y1": 58, "kind": "etagere" },
+    { "id": "M35", "x0": 113, "y0": 27, "x1": 136, "y1": 45, "kind": "comptoir" },
+    { "id": "M36", "x0": 68, "y0": 23, "x1": 83, "y1": 26, "kind": "comptoir" }
+  ]
+}
