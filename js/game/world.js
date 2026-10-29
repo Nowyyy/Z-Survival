@@ -7,6 +7,7 @@ import * as THREE from 'three';
 import { boundTarget, overview, snapCamera, stepCamera } from '../core/camera.js';
 import { cameraPosition, fitDistance, groundView } from '../core/viewport.js';
 import { fogGrid } from '../core/fog.js';
+import { furnitureParts } from '../core/furniture-model.js';
 import { plankSettings } from '../core/plank-layout.js';
 import { plankSheet } from '../core/texgen.js';
 import { createDebrisMeshes, createWindowMeshes } from './windows-mesh.js';
@@ -263,7 +264,7 @@ export function buildWorld({ palette, layout, render, textures, windowGeoms = []
   const region = (id) => textures.region(ATLAS, id);
   const b = {
     floor: new Builder(), wall: new Builder(), road: new Builder(), sidewalk: new Builder(), grass: new Builder(), soil: new Builder(),
-    scenery: new Builder(), props: new Builder(),
+    scenery: new Builder(), props: new Builder(), detail: new Builder(),
     repeat: { road: textures.repeat('route'), sidewalk: textures.repeat('trottoir') },
   };
   const outdoorSoil = textures.repeat('sol-exterieur');
@@ -290,9 +291,16 @@ export function buildWorld({ palette, layout, render, textures, windowGeoms = []
   bars.forEach((bar, i) => b.scenery.box(extents(bar), { rect: region('tole'), scale: region('tole').scale, seed: 500 + i }));
 
   // Meubles : boîtes aux hauteurs de world.json, une région d'atlas par type.
+  // Lot 3c (retour du propriétaire) : tables, chaises et armoires modélisées (js/core/furniture-model.js) ; les corps projettent une ombre, les pieds, dossiers et
+  // socles forment un second maillage sans ombre portée. Les collisions gardent le rectangle d'origine.
   layout.furniture.forEach((f, i) => {
-    const id = FURNITURE_REGION[f.kind] ?? FURNITURE_REGION.table;
-    b.props.box(rectBox(f, 0, f.hauteur), { rect: region(id), scale: region(id).scale, seed: i + 1 });
+    const parts = furnitureParts({ ...f, hauteur: f.hauteur }, FURNITURE_REGION);
+    const draw = (builder, p, k) => {
+      const r = region(p.region);
+      builder.box({ x0: p.x0, x1: p.x1, y0: p.y0, y1: p.y1, z0: p.z0, z1: p.z1 }, { rect: r, scale: r.scale, seed: i * 8 + k + 1 }, p.faces);
+    };
+    parts.body.forEach((p, k) => draw(b.props, p, k));
+    parts.detail.forEach((p, k) => draw(b.detail, p, k + 4));
   });
 
   if (layout.decor) addDecor(b, region, layout.decor, outdoorSoil);
@@ -301,6 +309,7 @@ export function buildWorld({ palette, layout, render, textures, windowGeoms = []
   for (const [name, material] of sceneryMaterials) b[name].mesh(scene, material, { receive: true });
   b.scenery.mesh(scene, atlasMaterial, { receive: true });
   b.props.mesh(scene, atlasMaterial, { cast: true, receive: true });
+  b.detail.mesh(scene, atlasMaterial, { cast: false, receive: true });
 
   // Mur de brouillard (lot 3b, cartes à murs) : un plan horizontal translucide au-dessus du sol extérieur (plus haut que les zombies), dont l'opacité vient de la
   // distance au bâtiment (js/core/fog.js, texture générée) : clair près des murs, opaque loin ; les zombies surgissent de la brume.
@@ -349,7 +358,15 @@ export function buildWorld({ palette, layout, render, textures, windowGeoms = []
   const addDoor = (door) => {
     if (doorMeshes.has(door.id)) return;
     const builder = new Builder();
-    builder.box(rectBox(door.rect, 0, door.rect.hauteur), { rect: doorRegion, scale: doorRegion.scale, seed: 900 });
+    // Le dessin est un peu plus petit que l'obstacle (débord de 4 des collisions) : 1 de moins de chaque côté du mur, 0,5 de jeu aux bouts, 1 de moins en hauteur,
+    // pour qu'aucune face ne coïncide avec celles des murs voisins (clipping).
+    const o = door.opening;
+    const vertical = o.x1 === o.x2;
+    const t = layout.wallThickness - 2;
+    const visual = vertical
+      ? { x: o.x1 - t / 2, y: Math.min(o.y1, o.y2) + 0.5, w: t, h: Math.abs(o.y2 - o.y1) - 1 }
+      : { x: Math.min(o.x1, o.x2) + 0.5, y: o.y1 - t / 2, w: Math.abs(o.x2 - o.x1) - 1, h: t };
+    builder.box(rectBox(visual, 0, door.rect.hauteur - 1), { rect: doorRegion, scale: doorRegion.scale, seed: 900 });
     const mesh = builder.mesh(scene, atlasMaterial, { cast: false, receive: true });
     if (mesh) {
       mesh.name = door.id;

@@ -587,7 +587,7 @@ test.describe('zones : mobilier de complément, budget, interface', () => {
     }
   });
 
-  test('budget : 10 zombies variés, planches, ombres, cône, porte fermée : au plus la référence + 2 appels et + 300 triangles', async ({ page }, testInfo) => {
+  test('budget : 10 zombies variés, planches, ombres, cône, porte fermée : au plus la référence + 2 appels et 15 000 triangles (meubles modélisés : +300 dépassé à la demande du propriétaire)', async ({ page }, testInfo) => {
     await open(page, '&shadows=1&nospawn=1');
     // spot : 'ref' = la mise en place du test de budget du lot 3b (près de F1, la porte hors du champ) ; 'porte' = le joueur devant la porte, qui est à l'écran.
     const measure = (spot) => page.evaluate((where) => {
@@ -608,13 +608,13 @@ test.describe('zones : mobilier de complément, budget, interface', () => {
     testInfo.annotations.push({ type: 'rendu', description: `porte fermée : ${ref.calls} appels, ${ref.triangles} triangles (référence ${REF.calls} et ${REF.triangles})` });
     console.log(`BUDGET lot 3c, porte fermée (mise en place du lot 3b) : ${ref.calls} appels, ${ref.triangles} triangles (référence main : ${REF.calls} et ${REF.triangles})`);
     expect(ref.calls).toBeLessThanOrEqual(REF.calls + 2);
-    expect(ref.triangles).toBeLessThanOrEqual(Math.min(REF.triangles + 300, 15000));
+    expect(ref.triangles).toBeLessThanOrEqual(15000);
     expect(ref.calls).toBeLessThanOrEqual(300);
     await page.evaluate(() => window.__zs.killAll());
     const closed = await measure('porte');
     console.log(`BUDGET lot 3c, porte fermée à l'écran : ${closed.calls} appels, ${closed.triangles} triangles`);
     expect(closed.calls).toBeLessThanOrEqual(REF.calls + 2);
-    expect(closed.triangles).toBeLessThanOrEqual(Math.min(REF.triangles + 300, 15000));
+    expect(closed.triangles).toBeLessThanOrEqual(15000);
     await page.evaluate(() => window.__zs.setDoor('porte-1', true));
     const opened = await measure('porte');
     console.log(`BUDGET lot 3c, porte ouverte à l'écran : ${opened.calls} appels, ${opened.triangles} triangles`);

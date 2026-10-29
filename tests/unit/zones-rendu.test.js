@@ -46,7 +46,7 @@ describe('rendu de la porte (lot 3c) : matière existante, lisible contre le mur
   });
 
   it('un maillage par porte fermée, boîte sans dessous (10 triangles, 12 au plus), sans ombre portée ; l\'enfoncement libère la géométrie', () => {
-    expect(world).toMatch(/builder\.box\(rectBox\(door\.rect, 0, door\.rect\.hauteur\)/);
+    expect(world).toMatch(/builder\.box\(rectBox\(visual, 0, door\.rect\.hauteur - 1\)/);
     expect(world).toMatch(/cast: false, receive: true/);
     expect(world).toMatch(/mesh\.geometry\.dispose\(\)/);
     expect(world).toMatch(/\(1 - Math\.min\(1, Math\.max\(0, progress\)\)\) \*\* 2/);

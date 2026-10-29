@@ -49,7 +49,7 @@ Avant de modifier une page, lis `Docs/ref/conventions.md` (arborescence, pages, 
 - Vagues : waves.js + wave-director.js d'après waves.json (vie BO3 ×30 au plus) ; numérotation continue ; 10 zombies simultanés au plus ; pas de lanceur continu.
 - Zombies : 4 types × 4 allures (enemies.json, gaits.json), createEnemy ; vitesse ≤ 190 ; la rampe est visuelle, sans effet sur la hitbox.
 - Statistiques : player-stats.js (7 stats, niveaux 0 à 10, ?lvl=, jamais stockés) ; effectiveWeapon et effectivePlayer ; régénération par kill.
-- Budget de dessin : 300 appels et 15 000 triangles ; lot 3c : au plus la référence 3b + 2 appels et + 300 triangles avec 10 zombies, ombres et cône ; ne rien ajouter sans mesurer.
+- Budget de dessin : 300 appels et 15 000 triangles ; lot 3c : au plus la référence 3b + 2 appels, 15 000 triangles (14 752 mesurés) avec 10 zombies, ombres et cône ; ne rien ajouter sans mesurer.
 - Fenêtres : windows.json, windows.js (4 planches, arrachage 2,2 s, réparation 1,8 s) ; les planches ne bloquent que les zombies (closedRects).
 - Siège : siege.js (approche, attente, arrache, escalade, dedans, libre) ; 2 emplacements, file de 6, 2 grimpeurs ; jamais d'entrée sans fenêtre ouverte ni active ; ?empty=1 = zombies libres.
 - Chutes : player-down.js ; 1 chute de base, à terre 5 s invulnérable, relevage à 50 % ; stats chutes (0 à 5), reparation (0 à 10).
