@@ -9,9 +9,11 @@ const git = (args) => {
     return null; // pas de dépôt git ou de branche main : rien à comparer
   }
 };
+// Commit de `main` juste avant le lot 3c : après la fusion, `main` contient déjà le lot.
+const BASE = '5669eb1';
 const showMain = (path) => {
   try {
-    return JSON.parse(execSync(`git show main:${path}`, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }));
+    return JSON.parse(execSync(`git show ${BASE}:${path}`, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }));
   } catch {
     return null;
   }

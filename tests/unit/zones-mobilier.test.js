@@ -12,6 +12,8 @@ import { globalStats, loadMap, zoneStats } from '../../scripts/lib/carte-zones.m
 const map = loadMap();
 const { plan, world, params, zones, geoms, decor } = map;
 const p = cleanParams(params);
+// Commit de `main` juste avant le lot 3c (« Update seed.md ») : après la fusion, `main` contient déjà le lot, la comparaison doit rester valable.
+const BASE = '5669eb1';
 const ORIGINAL = Array.from({ length: 36 }, (_, i) => `M${i + 1}`);
 const added = plan.furniture.filter((f) => !ORIGINAL.includes(f.id));
 // Règles de la carte : rectangles du plan (world.obstacles), pas les boîtes de collision ajustées des chaises.
@@ -41,10 +43,10 @@ describe('mobilier de complément : plan.json, source unique', () => {
     for (const a of added) expect(a.provisional, a.id).toBe(true);
   });
 
-  it('les 36 pièces d\'origine de plan.json sont inchangées depuis main', () => {
+  it('les 36 pièces d\'origine de plan.json sont inchangées depuis le commit précédant le lot', () => {
     let before;
     try {
-      before = JSON.parse(execSync('git show main:data/game/maps/rez-de-chaussee/plan.json', { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }));
+      before = JSON.parse(execSync(`git show ${BASE}:data/game/maps/rez-de-chaussee/plan.json`, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }));
     } catch {
       return;
     }
@@ -99,10 +101,10 @@ describe('mobilier de complément : aire libre', () => {
     }
   });
 
-  it('l\'aire libre a baissé par rapport à main (le mobilier ajouté occupe de la place)', () => {
+  it('l\'aire libre a baissé par rapport à l\'état précédant le lot (le mobilier ajouté occupe de la place)', () => {
     let before;
     try {
-      before = JSON.parse(execSync('git show main:data/game/maps/rez-de-chaussee/world.json', { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }));
+      before = JSON.parse(execSync(`git show ${BASE}:data/game/maps/rez-de-chaussee/world.json`, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }));
     } catch {
       return;
     }
