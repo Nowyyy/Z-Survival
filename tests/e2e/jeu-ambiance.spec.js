@@ -318,12 +318,16 @@ test.describe('animation de vague : sons', () => {
     await page.evaluate(([x, y]) => { for (let i = 0; i < 6; i += 1) window.__zs.spawnEnemy(x + 20 + i, y); }, [p.x, p.y]);
     await page.evaluate(() => window.__zs.step(40));
     await expect(page.locator('#end-panel')).toBeVisible();
+    // Le compte à rebours de 3 s tourne en temps réel : sur un poste lent il s'écoulait avant la vérification (test intermittent). La boucle de rendu est donc
+    // arrêtée avant le clic (au plus une image encore en attente, dt <= 0,05 s) : l'état juste après « Rejouer » ne dépend plus de la vitesse de la machine.
+    await page.evaluate(() => { window.requestAnimationFrame = () => 0; });
     await page.getByRole('button', { name: 'Rejouer' }).click();
     await expect(page.locator('#end-panel')).toBeHidden();
     await expect.poll(async () => (await audio(page)).annonceActive).toBe(0);
     const s = await state(page);
     expect(s.dead).toBe(false);
     expect(s.waves).toMatchObject({ phase: 'attente', wave: 1 });
+    expect(s.waves.waitLeft).toBeGreaterThan(2.9);
     await page.evaluate(() => window.__zs.step(0.1));
     expect(await splash(page)).toMatchObject({ visible: true, kind: 'debut', wave: 1 });
   });
