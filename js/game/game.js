@@ -214,6 +214,7 @@ export function createGame(ctx) {
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, params.maxRatio));
     renderer.setSize(width, height);
     rig.resize(width, height);
+    world.setFog(rig.view.distance);
     size = { width, height, unitsPerPixel: (2 * rig.view.distance * Math.tan((render.camera.fov * Math.PI) / 360)) / height };
     stale = true;
     ctx.input.refresh();
@@ -822,6 +823,7 @@ export function createGame(ctx) {
     // Test : montre tout le monde (vrai) ou revient au suivi du joueur (faux) ; l'image est mise à jour au prochain rendu.
     overview(on = true) {
       rig.setOverview(on);
+      world.setFog(rig.view.distance);
       followCamera(0);
       size = { ...size, unitsPerPixel: (2 * rig.view.distance * Math.tan((render.camera.fov * Math.PI) / 360)) / size.height };
       stale = true;

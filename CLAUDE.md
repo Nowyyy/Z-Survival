@@ -64,4 +64,5 @@ Voir `Docs/ref/conventions.md` : index.html, jeu.html, sons.html, carte.html, ap
 - Effet VHS : #vhs (vhs.js, horloge réelle) ; interdits : mix-blend-mode, filter, backdrop-filter, post-traitement 3D ; ?vhs=0|1 ; coupé sous prefers-reduced-motion ; 3 clignotements par seconde au plus.
 - Cartes : data/game/maps/<id>/ ; défaut rez-de-chaussee (plan.json en pixels, source unique ; world.json et decor.json générés par npm run carte, jamais édités à la main) ; ?map=salle charge l'ancienne salle (data/game/world.json et decor.json, inchangés).
 - Carte rez-de-chaussee : 8 fenêtres F1 à F8 (72 de large), 11 piliers, escalier plein, aucune porte, relevée sur le modèle SketchUp (60 unités par mètre) ; couloirs ≥ 50, interstices < 50 fusionnés ; départ libre sur 120 ; 16 apparitions (2 par fenêtre) ; mobilier non conforme retiré.
+- Nuit : dehors, nuit et brume (scene.fog réglé par la distance de caméra, --game-fog, render.json fog) ; textures d'après les captures du modèle (béton chaud, herbe morte).
 - Contrôle : carte.html (SVG, à retirer au lot 13) et ?labels=1 pour comparer la carte au plan ; ?zoom=1 montre tout le bâtiment.

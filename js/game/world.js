@@ -237,7 +237,9 @@ function addDecor(b, region, decor, outdoorSoil) {
 export function buildWorld({ palette, layout, render, textures, windowGeoms = [], windowsCfg = null, seed = 1 }) {
   const { room, size } = layout;
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color(palette.ground);
+  scene.background = new THREE.Color(palette.fog);
+  // Nuit et brume (lot 3b) : le brouillard est réglé par setFog d'après la distance de la caméra (render.json : fog.near et fog.far, en multiples de cette distance).
+  scene.fog = new THREE.Fog(palette.fog, 1e6, 2e6);
 
   scene.add(new THREE.AmbientLight(palette.ambient, render.light.ambient));
   const sun = new THREE.DirectionalLight(palette.sun, render.light.sun);
@@ -316,6 +318,10 @@ export function buildWorld({ palette, layout, render, textures, windowGeoms = []
     scene,
     windowMeshes,
     debris,
+    setFog(distance) {
+      scene.fog.near = distance * render.fog.near;
+      scene.fog.far = distance * render.fog.far;
+    },
     setShadows(on) {
       sun.castShadow = Boolean(on);
     },
