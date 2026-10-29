@@ -59,7 +59,7 @@ export function zoneStats(map, zoneId) {
   const zone = map.zones.zones.find((z) => z.id === zoneId);
   const inside = unionRects(polygonRects(zone.region), map.layout.walls); // même convention que analyzeMap : les murs ne comptent pas
   const interior = totalArea(inside);
-  const free = totalArea(unionRects(inside, map.layout.furniture.filter((o) => o.outside !== true)));
+  const free = totalArea(unionRects(inside, map.world.obstacles.filter((o) => o.outside !== true)));
   const wins = Object.entries(map.assignment).filter(([, z]) => z === zoneId).map(([id]) => id);
   return { id: zoneId, interior, free, ratio: interior > 0 ? free / interior : 0, windows: wins, spawnPoints: map.decor.spawnPoints.filter((p) => wins.includes(p.window ?? p.fenetre)).map((p) => p.id) };
 }
@@ -75,7 +75,7 @@ export function smallestCorridor(map, zoneId) {
   const zone = map.zones.zones.find((z) => z.id === zoneId);
   const rects = polygonRects(zone.region);
   const inZone = (o) => rects.some((r) => o.x + o.w / 2 > r.x && o.x + o.w / 2 < r.x + r.w && o.y + o.h / 2 > r.y && o.y + o.h / 2 < r.y + r.h);
-  const items = [...map.layout.furniture, ...map.layout.pillars, ...map.layout.stairs].filter((o) => o.outside !== true && inZone(o));
+  const items = [...map.world.obstacles, ...map.layout.pillars, ...map.layout.stairs].filter((o) => o.outside !== true && inZone(o));
   const fullWalls = segmentRects(map.world.walls, map.world.wallThickness); // lignes de mur complètes : le bord d'une ouverture de fenêtre n'est pas un couloir
   let best = Infinity;
   for (let i = 0; i < items.length; i += 1) {

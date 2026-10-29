@@ -294,7 +294,7 @@ export function buildWorld({ palette, layout, render, textures, windowGeoms = []
   // Lot 3c (retour du propriétaire) : tables, chaises et armoires modélisées (js/core/furniture-model.js) ; les corps projettent une ombre, les pieds, dossiers et
   // socles forment un second maillage sans ombre portée. Les collisions gardent le rectangle d'origine.
   layout.furniture.forEach((f, i) => {
-    const parts = furnitureParts({ ...f, hauteur: f.hauteur }, FURNITURE_REGION);
+    const parts = furnitureParts(f, FURNITURE_REGION, layout.walls);
     const draw = (builder, p, k) => {
       const r = region(p.region);
       builder.box({ x0: p.x0, x1: p.x1, y0: p.y0, y1: p.y1, z0: p.z0, z1: p.z1 }, { rect: r, scale: r.scale, seed: i * 8 + k + 1 }, p.faces);

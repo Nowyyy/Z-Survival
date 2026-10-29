@@ -191,7 +191,7 @@ describe('zones : zombies, couloirs et simulation pure', () => {
   it('chaque intervalle non nul entre une pièce ajoutée et un voisin ou un mur est franchissable : sa cellule centrale est libre dans la grille', () => {
     const open = gridFor(map, ['porte-1']);
     const walls = segmentRects(world.walls, world.wallThickness);
-    const items = base.furniture.filter((o) => o.outside !== true);
+    const items = world.obstacles.filter((o) => o.outside !== true);
     const added = items.filter((o) => o.provisional);
     expect(added.length).toBeGreaterThanOrEqual(8);
     for (const a of added) {

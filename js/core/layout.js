@@ -6,6 +6,7 @@ import { windowGap } from './maps.js';
 import { innerBounds } from './movement.js';
 import { faceDistance } from './plank-layout.js';
 import { doorRect } from './zones.js';
+import { furnitureHitbox } from './furniture-model.js';
 import { polygonRects, segmentRects, unionRects } from './shape.js';
 import { isNum, num } from './vec.js';
 
@@ -107,7 +108,8 @@ function segmentedLayout(world, decorCfg, opts = {}) {
   const gaps = windows.map((win) => ({ id: win.id, ...windowGap(win, windowSize, t) })).filter((g) => isNum(g.w));
   const walls = unionRects(raw, gaps).map((r, i) => ({ id: `mur-${i + 1}`, ...r }));
   const interior = unionRects(floor, raw);
-  const furniture = validRects(world.obstacles).map((o) => ({ ...o }));
+  // Lot 3c : une chaise ne bloque que son assise (furnitureHitbox) ; le rectangle du plan reste dans `plan` pour le dessin.
+  const furniture = validRects(world.obstacles).map((o) => furnitureHitbox(o));
   const barriers = validRects(world.playerBarriers).map((b) => ({ ...b }));
   const decor = generateDecor(decorCfg, world);
   const room = { ...world.room };

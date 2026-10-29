@@ -10,11 +10,12 @@ import { metrics } from '../../scripts/zones-metriques.mjs';
 import { globalStats, loadMap, zoneStats } from '../../scripts/lib/carte-zones.mjs';
 
 const map = loadMap();
-const { plan, world, params, zones, layout, geoms, decor } = map;
+const { plan, world, params, zones, geoms, decor } = map;
 const p = cleanParams(params);
 const ORIGINAL = Array.from({ length: 36 }, (_, i) => `M${i + 1}`);
 const added = plan.furniture.filter((f) => !ORIGINAL.includes(f.id));
-const items = layout.furniture.filter((o) => o.outside !== true);
+// Règles de la carte : rectangles du plan (world.obstacles), pas les boîtes de collision ajustées des chaises.
+const items = world.obstacles.filter((o) => o.outside !== true);
 const addedWorld = items.filter((o) => (o.parts ?? [o.id]).some((id) => added.some((a) => a.id === id)));
 const walls = segmentRects(world.walls, world.wallThickness);
 const doorRectWorld = (() => {
