@@ -39,8 +39,8 @@ test.describe('carte par défaut', () => {
     const s = await STATE(page);
     expect(s.map.id).toBe('rez-de-chaussee');
     expect(s.map.size).toEqual(world.size);
-    expect(s.map.windowIds).toEqual(IDS);
-    expect(s.windows.map((w) => [w.id, w.planks, w.maxPlanks])).toEqual(IDS.map((id) => [id, 4, 4]));
+    expect(s.map.windowIds.filter((id) => id.startsWith('F'))).toEqual(IDS); // lot 3e : U1 à U7 s'y ajoutent (étage)
+    expect(s.windows.filter((w) => w.id.startsWith('F')).map((w) => [w.id, w.planks, w.maxPlanks])).toEqual(IDS.map((id) => [id, 4, 4]));
     expect(s.map.pillars.length).toBe(10);
     expect(s.world).toMatchObject({ width: 4040, height: 3460, empty: false });
   });
@@ -58,7 +58,7 @@ test.describe('carte par défaut', () => {
     await open(page, '&map=nimporte');
     s = await STATE(page);
     expect(s.map.id).toBe('rez-de-chaussee');
-    expect(s.windows.length).toBe(8);
+    expect(s.windows.filter((w) => w.id.startsWith('F')).length).toBe(8); // + U1 à U7 (lot 3e)
     expect(problems).toEqual([]);
   });
 
@@ -299,7 +299,7 @@ test.describe('planches et débris sur les vraies fenêtres', () => {
       const s = zs.getState();
       return { meshes: s.debrisMeshes, windows: s.windows.map((w) => ({ id: w.id, inFrustum: w.mesh.inFrustum })), total: s.debris.length };
     });
-    expect(r.meshes.length).toBe(8);
+    expect(r.meshes.length).toBe(15); // F1 à F8 et U1 à U7
     expect(r.total).toBeLessThanOrEqual(32);
     for (const m of r.meshes) {
       expect(m.count).toBeLessThanOrEqual(4);

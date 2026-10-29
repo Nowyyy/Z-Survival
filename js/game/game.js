@@ -161,7 +161,7 @@ export function createGame(ctx) {
   let stale = true; // vrai tant que l'image affichée n'est pas à jour
 
   // Étage du joueur : un état du jeu (js/core/floor-sim.js le porte avec les grilles) ; tout calcul qui le concerne ne voit que les entités de cet étage.
-  const pf = () => sim.fs.playerFloor;
+  const pf = () => sim.fs?.playerFloor ?? 'rdc';
   // Portes (lot 3c) : une porte fermée est un obstacle plein pour le joueur, les zombies (grille de chemin), les balles et le laser ; ouverte, elle n'est nulle part.
   // Lot 3e : un bloc par étage ; les escaliers dont la porte est ouverte deviennent utilisables.
   const doorById = new Map(doorCfgs.map((d) => [d.id, d]));
@@ -1243,7 +1243,7 @@ export function createGame(ctx) {
           const r = sim.repair[g.id] ?? { repairing: false, blocked: false, progress: 0 };
           const o = occupancy(sim.enemies, g.id);
           const m = meshStats.find((e) => e.id === g.id);
-          return { id: g.id, floor: g.floor, zone: zoneOf[g.id], active: activeNow.includes(g.id), planks: w.planks, maxPlanks: w.maxPlanks, tearers: o.tearers, climbers: o.climbers, queue: o.queue, repairing: r.repairing, repairProgress: w.repairProgress, repairBlocked: r.blocked, open: w.planks === 0, x: g.center.x, y: g.center.y, screen: screenAt(g.center.x - g.normal.x * (debrisGeoms.get(g.id).inner + plankCfg.wallGap + plankCfg.thickness / 2), (plankCfg.sill + plankCfg.lintel) / 2, g.center.y - g.normal.y * (debrisGeoms.get(g.id).inner + plankCfg.wallGap + plankCfg.thickness / 2)), mesh: m ? { triangles: m.triangles, inFrustum: m.inFrustum, minY: m.minY, minWallGap: m.minWallGap, beams: m.beams, voidVisible: m.voidVisible, pipsOn: m.pipsOn, pipY: m.pipY } : null };
+          return { id: g.id, floor: g.floor, zone: zoneOf[g.id], active: activeNow.includes(g.id), planks: w.planks, maxPlanks: w.maxPlanks, tearers: o.tearers, climbers: o.climbers, queue: o.queue, repairing: r.repairing, repairProgress: w.repairProgress, repairBlocked: r.blocked, open: w.planks === 0, x: g.center.x, y: g.center.y, repairSpot: { x: g.repairSpot.x, y: g.repairSpot.y }, screen: screenAt(g.center.x - g.normal.x * (debrisGeoms.get(g.id).inner + plankCfg.wallGap + plankCfg.thickness / 2), (plankCfg.sill + plankCfg.lintel) / 2, g.center.y - g.normal.y * (debrisGeoms.get(g.id).inner + plankCfg.wallGap + plankCfg.thickness / 2)), mesh: m ? { triangles: m.triangles, inFrustum: m.inFrustum, minY: m.minY, minWallGap: m.minWallGap, beams: m.beams, voidVisible: m.voidVisible, pipsOn: m.pipsOn, pipY: m.pipY } : null };
         }),
         hud: hudState(),
         plankMesh: { nailed: world.windowMeshes?.nailed() ?? 0, debris: sim.debris.items.length },
