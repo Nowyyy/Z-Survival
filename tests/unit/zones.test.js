@@ -8,8 +8,8 @@ const raw = JSON.parse(readFileSync(`${MAP}/zones.json`, 'utf8'));
 const plan = JSON.parse(readFileSync(`${MAP}/plan.json`, 'utf8'));
 const decor = JSON.parse(readFileSync(`${MAP}/decor.json`, 'utf8'));
 const world = JSON.parse(readFileSync(`${MAP}/world.json`, 'utf8'));
-// Lot 3e : porte-2 est active ; ces tests du lot 3c décrivent l'état d'avant (porte-2 planned), la porte 2 est testée dans etage-directeur.test.js.
-const raw3c = { ...raw, doors: raw.doors.map((d) => (d.id === 'porte-2' ? { ...d, planned: true } : d)) };
+// Lot 3e : les portes 2 et 3 sont actives ; ces tests du lot 3c décrivent l'état d'avant (portes 2 et 3 planned), elles sont testées dans etage-directeur.test.js.
+const raw3c = { ...raw, doors: raw.doors.map((d) => (d.id !== 'porte-1' ? { ...d, planned: true } : d)) };
 const zones = parseZones(raw3c);
 const PX = 12; // distance « entrée intérieure » en pixels du plan (60 unités / 5)
 const assignment = assignWindows(zones, plan.windows, PX);

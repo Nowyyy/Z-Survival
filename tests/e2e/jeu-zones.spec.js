@@ -74,7 +74,7 @@ test.describe('zones : départ, porte fermée', () => {
     expect(s.windows.filter((w) => w.active).map((w) => w.id)).toEqual(HALL);
     expect(s.windows.filter((w) => w.floor !== 'etage').map((w) => [w.id, w.zone])).toEqual([...WING.map((id) => [id, 'aile']), ...HALL.map((id) => [id, 'depart'])]);
     expect(s.zones.next).toEqual({ id: 'porte-1', wave: 11 });
-    expect(s.zones.doors.map((d) => [d.id, d.open, d.planned])).toEqual([['porte-1', false, false], ['porte-2', false, false], ['porte-3', false, true]]);
+    expect(s.zones.doors.map((d) => [d.id, d.open, d.planned])).toEqual([['porte-1', false, false], ['porte-2', false, false], ['porte-3', false, false]]);
   });
 
   test('la porte est visible (un maillage de 12 triangles au plus) et solide : le joueur ne passe pas dans l\'aile', async ({ page }) => {
@@ -420,9 +420,9 @@ test.describe('zones : ?wave=N, fin de monde, Rejouer, ancienne salle', () => {
     expect(await page.evaluate(() => [localStorage.length, sessionStorage.length, document.cookie])).toEqual([0, 0, '']);
   });
 
-  test('aucune transition aux manches 20 et 30 (portes planned) : pause de 8 s', async ({ page }) => {
-    await open(page, '&wave=30');
-    for (const n of [30]) { // la manche 20 ouvre la porte 2 (lot 3e)
+  test('aucune transition après la manche 31 (les portes 1 à 3 sont ouvertes) : pause de 8 s', async ({ page }) => {
+    await open(page, '&wave=31');
+    for (const n of [31]) { // les manches 20 et 30 ouvrent les portes 2 et 3 (lot 3e)
       const t0 = await endWave(page, n);
       const next = await until(page, `s.waves.wave === ${n + 1} && s.waves.phase === 'apparition'`, 12);
       expect(next.time - t0, `après la manche ${n}`).toBeGreaterThan(7.7);
@@ -430,8 +430,8 @@ test.describe('zones : ?wave=N, fin de monde, Rejouer, ancienne salle', () => {
     }
     const s = await STATE(page);
     expect(s.events).toEqual([]);
-    expect(s.zones.doors.filter((d) => d.planned).every((d) => !d.open)).toBe(true);
-    expect(s.doorMeshes.ids).toEqual(['porte-3']);
+    expect(s.zones.doors.every((d) => d.open)).toBe(true);
+    expect(s.doorMeshes.ids).toEqual([]);
   });
 
   test('?map=salle : une seule zone, aucune porte, aucune fin de monde, pause de 8 s, pas de ligne « Prochaine zone »', async ({ page }) => {
@@ -481,7 +481,11 @@ test.describe('zones : panneau de pause, mouvement réduit, interruptions', () =
     await page.locator('#btn-resume').click();
     await page.evaluate(() => { window.__zs.startWave(21); window.__zs.step(0.05); });
     await page.locator('#btn-pause').click();
-    await expect(page.locator('#pause-next')).toBeHidden(); // la porte 3 reste « planned » jusqu'à la partie C
+    await expect(page.locator('#pause-next')).toHaveText('Prochaine zone : manche 31'); // puis la porte 3
+    await page.locator('#btn-resume').click();
+    await page.evaluate(() => { window.__zs.startWave(31); window.__zs.step(0.05); });
+    await page.locator('#btn-pause').click();
+    await expect(page.locator('#pause-next')).toBeHidden();
   });
 
   test('mouvement réduit : la porte disparaît sans mouvement, l\'annonce n\'a ni secousse ni échelle', async ({ page }) => {

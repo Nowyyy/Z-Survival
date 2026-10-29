@@ -49,7 +49,6 @@ Avant de modifier une page, lis `Docs/ref/conventions.md` (arborescence, pages, 
 - Vagues : waves.js + wave-director.js d'après waves.json (vie BO3 ×30 au plus) ; numérotation continue ; 10 zombies simultanés au plus ; pas de lanceur continu.
 - Zombies : 4 types × 4 allures (enemies.json, gaits.json), createEnemy ; vitesse ≤ 190 ; la rampe est visuelle, sans effet sur la hitbox.
 - Statistiques : player-stats.js (7 stats, niveaux 0 à 10, ?lvl=, jamais stockés) ; effectiveWeapon et effectivePlayer ; régénération par kill.
-- Budget de dessin : 300 appels et 15 000 triangles ; lot 3c : au plus la référence 3b + 2 appels, 15 000 triangles (14 752 mesurés) avec 10 zombies, ombres et cône ; ne rien ajouter sans mesurer.
 - Fenêtres : windows.json, windows.js (4 planches, arrachage 2,2 s, réparation 1,8 s) ; les planches ne bloquent que les zombies (closedRects).
 - Siège : siege.js (approche, attente, arrache, escalade, dedans, libre) ; 2 emplacements, file de 6, 2 grimpeurs ; jamais d'entrée sans fenêtre ouverte ni active ; ?empty=1 = zombies libres.
 - Chutes : player-down.js ; 1 chute de base, à terre 5 s invulnérable, relevage à 50 % ; stats chutes (0 à 5), reparation (0 à 10).
@@ -57,12 +56,11 @@ Avant de modifier une page, lis `Docs/ref/conventions.md` (arborescence, pages, 
 - HUD : un seul rectangle E2-2 (96 × 300 px au plus) ; E2-9 et E2-11 retirés ; E2-10 (à terre) ; marges 16 px + env(safe-area-inset-*) ; icônes SVG ; texte ≥ 14 px ; #hud-live annonce les événements.
 - jeu.html : apple-mobile-web-app-capable (essai sans barres de Safari) ; pas de manifeste.
 - Journal des versions : chaque lot ajoute une entrée à data/changelog.json et adapte data-changelog et dev.spec.
-- Annonce de vague : E2-8 (wave-splash.js, horloge du jeu figée par la pause), 3,0 s avant les apparitions ; type zone, sans son ; #hud-live annonce la vague, jamais le compte à rebours.
 - Effet VHS : #vhs (vhs.js, horloge réelle) ; interdits : mix-blend-mode, filter, backdrop-filter, post-traitement 3D ; ?vhs=0|1 ; coupé sous prefers-reduced-motion.
-- Cartes : data/game/maps/<id>/ ; défaut rez-de-chaussee (plan.json en pixels, source unique ; world.json et decor.json générés par npm run carte, jamais édités) ; ?map=salle = ancienne salle.
-- Carte rez-de-chaussee : 8 fenêtres F1 à F8 (72 de large), 10 piliers, escalier plein, relevée sur le modèle SketchUp (60 unités par mètre) ; couloirs ≥ 50 ; départ libre sur 120 ; 2 apparitions par fenêtre.
-- Nuit : dehors, nuit et brume (scene.fog, --game-fog, render.json fog) ; mur de brouillard (fog.js) ; béton gris froid, herbe morte.
+- Budget, annonce de vague, nuit, cartes, zones, portes, ouverture et mobilier : `Docs/ref/conventions.md` (« consolidation du lot 3e », texte intégral déplacé).
 - Contrôle : carte.html (à retirer au lot 13), ?labels=1 et ?zoom=1 comparent la carte au plan.
-- Zones et portes : data/game/maps/<id>/zones.json (pixels du plan), js/core/zones.js ; zones depart (F4 à F8) et aile (F1 à F3) ; porte-1 s'ouvre à la fin de la manche 10 (dès la 11), sans achat ; portes 2 et 3 planned (lot 3e, sans effet) ; zone fermée = fenêtres et points inertes, porte pleine (collisions, grille, balles, laser).
-- Ouverture : pause de 12 s ; doorAnnounce à 3,0 s ; doorOpen à 3,6 s (collisions, grille, champ du joueur, fenêtres et points actifs) ; enfoncement de 1,2 s ; planches non remises à neuf ; chutes non rendues ; aucun son ; 40 manches puis Monde terminé ; ?endless=1 ; ?wave=N ouvre les portes dont openAfterWave < N ; ?map=salle sans zones.
-- Mobilier : plan.json est la source unique (compléments marqués modele ou provisional) ; aire libre 76 à 83 % ; couloirs ≥ params.json et franchissables dans la grille ; rien dans l'ouverture de la porte ni à moins de 100 ; le mobilier ne bouge plus.
+- Étages : etage.json (pixels, même repère que plan.json), zones.json (floors, stairs, blocks) ; floor (rdc, etage) sur zombies, fenêtres, balles, obstacles, points d'apparition ; une couche de collisions par étage ; js/core/floors.js, stairs.js, floor-transition.js ; plan.json ne change que pour les escaliers ; notes de relevé dans Docs/ref/etage.md.
+- Escaliers : zone de déclenchement libre (≥ 64 × 64) au pied de l'emprise pleine ; fermés par un bloc (comme la porte 1) ; cooldown 0,8 s, pas de rebond ; zombies : mode escalier (1,5 s, 2 à la fois) vers l'escalier utilisable le plus proche par chemin (champs de flux calculés au chargement et à l'ouverture).
+- Fondu : #floor-fade (voile couleur --game-fog, 0,25 + 0,25 s), swap une fois, joueur immobile et invulnérable 0,5 s, aucun matériau transparent ; mouvement réduit : échange instantané.
+- Visibilité : userData.floor (rdc, etage, exterieur) ; un seul étage dessiné ; exterieur toujours ; dalle sombre à l'étage ; aucune reconstruction au changement d'étage ; zombies, balles, sons de l'autre étage (étouffés) ; spawns indépendants de l'étage du joueur.
+- Portes : porte 1 manche 10, porte 2 (escalier de l'aile) manche 20, porte 3 (second escalier + porte de l'étage) manche 30 ; ?wave=N ouvre celles dont openAfterWave < N ; ?floor=N ; hooks setFloor, useStair ; budget étage 15 000 / 300, rez-de-chaussée référence + 12 / + 4 ; le lot 3d est reporté.

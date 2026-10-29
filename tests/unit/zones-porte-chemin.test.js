@@ -23,8 +23,8 @@ const hallEntries = geoms.filter((g) => map.assignment[g.id] === 'depart');
 const midY = door.rect.y + door.rect.h / 2;
 
 describe('porte 1 : obstacle plein dans l\'ouverture', () => {
-  it('layout.doors : la porte 1 et, lot 3e, les blocs des escaliers fermés (portes 2 et 3, planned : jamais ouvertes par le directeur)', () => {
-    expect(layout.doors.map((d) => [d.id, d.planned])).toEqual([['porte-1', false], ['porte-2', false], ['porte-3', true]]);
+  it('layout.doors : la porte 1 et, lot 3e, les blocs des escaliers fermés (portes 2 et 3)', () => {
+    expect(layout.doors.map((d) => [d.id, d.planned])).toEqual([['porte-1', false], ['porte-2', false], ['porte-3', false]]);
     expect(layout.doors[0]).toMatchObject({ opens: ['aile'], openAfterWave: 10 });
   });
 

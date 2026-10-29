@@ -1,0 +1,31 @@
+# Lot 3e — Étage : fondu entre étages, zombies sur deux étages, escaliers et portes 2 et 3
+
+**Le modèle 3D a été lu** (`Sanstitre.zip`, `model.dae`, fourni en cours de session, jamais versionné) : l'étage est relevé dessus (calage sur le rez-de-chaussée : 91 % des pixels du contour). Seules 2 pièces de mobilier (E1, E2) viennent du modèle ; 6 (Q1 à Q6) sont **provisoires**. Esthétique, confort du fondu et difficulté de l'étage : **non jugés par l'agent**.
+
+**Livré** (workflow `pages.yml` inchangé)
+- Données : `etage.json`, `etage.world.json` (généré), `zones.json` (floors, stairs, blocks, subtitleKey, portes 2 et 3 actives), `stairs.json`, `Docs/ref/etage.md` ; `plan.json` : seulement l'escalier de l'aile (+ mobilier coupé par son emprise).
+- Pur (`js/core/`) : `floors.js`, `stairs.js`, `floor-transition.js`, `stair-zombies.js`, `floor-sim.js`, `floor-rules.js` ; adaptés : `layout`, `zones`, `nav`, `siege`, `spawner`, `wave-director`, `enemy-ai`, `combat`, `ray`, `projectile`, `player-down`, `sound-director`.
+- Jeu : `world.js` (groupes exterieur / rdc / etage, `showFloor`, dalle, marques), `game.js`, `floor-fade.js` (`#floor-fade`), HUD (puce « RDC » / « Étage »), hooks `setFloor`, `useStair`, `getState().floor`, `?floor=N`, `?labels=1` par étage ; `carte.html` : boutons « Rez-de-chaussée » / « Étage » (`?floor=`), zones de déclenchement, arrivées, blocs de portes.
+
+**Choix** : étage = aile + poche + moitié ouest de la grande salle (le reste, découvert, n'est pas une salle) ; fenêtres U1 à U7 (72, espacées de 150 ; fenêtre est, planche d'angle et mur sud de la salle de droite : écarts dans `etage.md`) ; fondu 0,25 + 0,25 s, verrou 0,5 s puis 1,0 s de protection ; escalier 1,5 s, 2 par escalier ; sons de l'autre étage ×0,5 et 700 Hz ; **levier de budget : champs de flux des fenêtres calculés au premier accès** (Lighthouse). Cages d'escalier de l'étage dessinées en blocs de 70 (provisoire).
+
+**Critères (chiffres)**
+- Départ `main` : Vitest 3 046, Playwright 801 (+ 151 ignorés). Fin : Vitest 3 299 (+253) ; Playwright 945 réussis, 151 ignorés, 0 échec (+144 ; `etage.spec.js` 41 tests, `etage-salle.spec.js` 22, `carte.spec.js` +8).
+- `zones-metriques` : rdc `depart` 977 900 / libre 83,9 %, couloir 50 ; `aile` 81,3 %, 53 ; étage `etage-gauche` 709 660 / 91,2 % ; `etage-droite` 429 920 / 73,3 %. Après porte 3 : 14 points d'étage, entrées 7/7 reliées, 0 zombie bloqué sur 14.
+- Budget (`main` → lot) : R1 195 / 14 392 → 195 / 13 148 (4 meubles retirés par l'emprise de l'escalier) ; R2 192 / 14 988 → 194 / 14 988 ; R3 195 / 14 392 → 195 / 13 148 ; **R4 195 / 14 360 → 197 / 14 380 (+2 appels, +20 triangles : au-dessus de la limite +12, voir Points ouverts)** ; étage : U1 198 / 13 878, U2 199 / 13 888, U4 (seconde salle) 201 / 14 004 (limites 300 / 15 000). Aucune fuite après 10 allers-retours.
+- Construction : étage 47,7 ms (« Étage : X ms », WebGL logiciel, non représentatif) ; recalcul du champ du joueur 0,5 ms (navigateur), 0,5 ms au plus (Node, seuil 8) ; synchronisation de la porte 3 : 4 ms ; `createFloorWorld` 53 ms en Node avant le levier.
+- Lighthouse `jeu.html` : avant le levier 41 à 45 (`main` 44 à 58, moyenne 48) ; après : 49 à 51 avec VHS et avec `&vhs=0` (seuil 45) ; accessibilité 100, bonnes pratiques 100, CLS 0,002.
+- Simulations (joueur immobile au centre du rez-de-chaussée, WebGL logiciel) : `?wave=21` : F2 13,1 s, U2 14,3 s, F6 14,7 s, U1 19,8 s, première descente d'un zombie 24,8 s, 1 chute consommée, mort à 27,7 s (à l'étage : 30,7 s) ; `?wave=31` : U2 13,7 s, U5 (seconde salle) 14,8 s, première descente 17,9 s, mort à 30 s. 120 s avec changement d'étage toutes les 20 s et éclaircissement : jamais plus de 10 zombies, aucun zombie immobile plus de 2 s.
+- `CLAUDE.md` : 8 407 → 8 140 caractères (consolidation puis 5 lignes ; limite 8 400).
+
+**Tests adaptés (avant / après)** : `zones`, `zones-directeur` (portes 2 et 3 « planned » dans `zones.json` → variante forcée « avant ») ; `zones-hygiene` (1 puis 3 portes actives) ; `zones-porte-chemin`, `etage-donnees`, `data-changelog` (lot-3c → lot-3e), `data-ambiance` (`#vhs` → `#floor-fade` puis `#vhs`), `lot1-regles` ; e2e : `carte-jeu` (8 → 8 F + 7 U, maillages 8 → 15), `jeu-zones` (2 → 4 zones, maillages de portes, « Prochaine zone » 11 → 21 → 31, planches 32 → 60), `jeu-planches` (193 → 193 + 4 appels), `dev.spec` (Lot 3c → 3e). **Supprimés : aucun.**
+
+**Points ouverts** : R4 dépasse de 8 triangles la limite +12 (deux blocs d'escalier fermés dans le champ ; levier possible : blocs réduits à leurs faces visibles) ; WebGL logiciel : aucune conclusion sur les images par seconde ; l'adresse publiée n'a pas été ouverte depuis la session ; `projectile.js` (+3 lignes, étage de la balle) et `world.json` du rez-de-chaussée (escalier de l'aile) diffèrent de `main`, extensions prévues.
+
+**Choix à valider** : fondu de 0,5 s avec voile de brume ; verrou invulnérable ; zombies de l'autre étage invisibles, sons étouffés (×0,5, 700 Hz) ; 2 zombies à la fois par escalier, 1,5 s ; budget de l'étage ; mobilier de l'étage (6 pièces provisoires) ; aucun indicateur pour les fenêtres de l'autre étage.
+
+**Corriger l'étage** : (1) modifier `etage.json`, `zones.json` ou `plan.json` (escaliers) ; (2) `npm run carte` ; (3) `node scripts/zones-metriques.mjs --etages` ; (4) regarder `carte.html?floor=1` et `jeu.html?labels=1&wave=31&zoom=1&floor=1` ; (5) `npm test`.
+
+**À tester par moi** (téléphone en paysage et ordinateur, `…/lots/lot-3e/jeu.html?fps=1&wave=21`) : monter par l'escalier de l'aile, juger le fondu ; rester en bas, laisser les zombies ouvrir les fenêtres de l'étage : les entends-tu, descendent-ils ? `&wave=21&floor=1` : rester en haut pendant qu'ils montent ; `&wave=30` : porte 3 ; `&wave=31&zoom=1&floor=1&labels=1` : tout l'étage à comparer au modèle 3D. Retours par identifiant (`U2 : trop près du mur`, `escalier de l'aile : zone trop petite`, `fondu : trop long`, `armoire de l'étage : manquante`).
+
+**Fusion (à faire par moi)** : Pull Request `lot-3e` vers `main`, « Create a merge commit », ne pas supprimer la branche ; pages : `/`, `/dev/` (journal), `/lots/lot-3e/jeu.html`, `/lots/lot-3e/carte.html`.

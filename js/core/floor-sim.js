@@ -30,8 +30,22 @@ export function createFloorWorld(layouts, cfg) {
     const layout = layouts[f];
     geoms[f] = windowGeometries(windowsWithGaps(layout), cfg?.windows).map((g) => ({ ...g, floor: f }));
     // Champ de flux de chaque fenêtre : grille EXTÉRIEURE (ouvertures des fenêtres bloquées), calculé une seule fois au chargement.
-    closedGrids[f] = createGrid(layout.size, [...layout.zombieObstacles, ...layout.gaps], cfg?.grid);
-    for (const g of geoms[f]) fields[g.id] = buildWindowField({ grid: closedGrids[f] }, g);
+    // Paresseux (lot 3e) : la grille extérieure et le champ de chaque fenêtre d'un étage ne sont calculés qu'au premier accès (l'étage n'est actif qu'après la porte 2 :
+    // le chargement ne paie que le rez-de-chaussée), puis gardés ; les valeurs sont celles du calcul immédiat.
+    let grid = null;
+    const gridOf = () => { grid ??= createGrid(layout.size, [...layout.zombieObstacles, ...layout.gaps], cfg?.grid); return grid; };
+    Object.defineProperty(closedGrids, f, { enumerable: true, configurable: true, get: gridOf });
+    for (const g of geoms[f]) {
+      Object.defineProperty(fields, g.id, {
+        enumerable: true,
+        configurable: true,
+        get() {
+          const value = buildWindowField({ grid: gridOf() }, g);
+          Object.defineProperty(fields, g.id, { value, enumerable: true, configurable: true, writable: true });
+          return value;
+        },
+      });
+    }
   }
   const all = floors.flatMap((f) => geoms[f]);
   return { floors, layouts, geoms, all, geomById: new Map(all.map((g) => [g.id, g])), fields, closedGrids, cfg: cfg ?? {}, stairs: Array.isArray(layouts?.stairs) ? layouts.stairs : [] };

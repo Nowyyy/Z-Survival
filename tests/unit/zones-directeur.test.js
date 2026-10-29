@@ -6,9 +6,9 @@ import { deepFreeze, WEIRD } from './helpers/carte.js';
 
 const params = JSON.parse(readFileSync('data/game/waves.json', 'utf8'));
 const decor = JSON.parse(readFileSync('data/game/maps/rez-de-chaussee/decor.json', 'utf8'));
-// Lot 3e : porte-2 est active ; ces tests du lot 3c décrivent l'état d'avant (porte-2 planned), la porte 2 est testée dans etage-directeur.test.js.
+// Lot 3e : les portes 2 et 3 sont actives ; ces tests du lot 3c décrivent l'état d'avant (portes 2 et 3 planned), elles sont testées dans etage-directeur.test.js.
 const rawZones = JSON.parse(readFileSync('data/game/maps/rez-de-chaussee/zones.json', 'utf8'));
-const zones = parseZones({ ...rawZones, doors: rawZones.doors.map((d) => (d.id === 'porte-2' ? { ...d, planned: true } : d)) });
+const zones = parseZones({ ...rawZones, doors: rawZones.doors.map((d) => (d.id !== 'porte-1' ? { ...d, planned: true } : d)) });
 const DOORS = zones.doors; // porte-1 active, porte-2 et porte-3 planned
 const points = decor.spawnPoints.slice(0, 10);
 const DT = 0.05;

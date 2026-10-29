@@ -45,7 +45,7 @@ test.describe('étage : départ, visibilité, étiquettes', () => {
     await open(page, '&wave=21&nospawn=1');
     const s = await STATE(page);
     expect(s.floor.current).toBe('rdc');
-    expect(s.zones.doors.map((d) => [d.id, d.open, d.planned])).toEqual([['porte-1', true, false], ['porte-2', true, false], ['porte-3', false, true]]);
+    expect(s.zones.doors.map((d) => [d.id, d.open, d.planned])).toEqual([['porte-1', true, false], ['porte-2', true, false], ['porte-3', false, false]]);
     expect(s.zones.list.map((z) => [z.id, z.floor, z.open])).toEqual([['depart', 'rdc', true], ['aile', 'rdc', true], ['etage-gauche', 'etage', true], ['etage-droite', 'etage', false]]);
     expect(s.floor.stairs.map((q) => [q.id, q.usable])).toEqual([['escalier-aile', true], ['escalier-depart', false]]);
     expect(s.scene.marks).toEqual(['escalier-aile:rdc']);

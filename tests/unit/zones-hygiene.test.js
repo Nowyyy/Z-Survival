@@ -108,7 +108,7 @@ describe('hygiène du lot 3c : données et textes', () => {
     expect(raw + readFileSync('js/core/zones.js', 'utf8')).not.toMatch(/#[0-9a-fA-F]{3,8}\b|rgba?\(|hsla?\(/);
     const z = JSON.parse(raw);
     for (const d of z.doors.filter((q) => q.planned)) expect(d.opening).toBeNull();
-    expect(z.doors.filter((q) => !q.planned)).toHaveLength(2); // lot 3e : la porte 1 et la porte 2 (escalier de l'aile) ; la porte 3 reste planned jusqu'à la partie C
+    expect(z.doors.filter((q) => !q.planned)).toHaveLength(3); // lot 3e : les portes 1, 2 (escalier de l'aile) et 3 (second escalier et porte de l'étage)
   });
 
   it('Docs/ref/modele-rdc/ n\'existe pas (aucun modèle 3D fourni) : le mobilier ajouté est donc marqué provisoire', () => {

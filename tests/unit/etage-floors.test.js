@@ -304,3 +304,19 @@ describe('zones converties : étage de chaque zone et de chaque bloc', () => {
     expect(() => restrictToFloors(deepFreeze(zones), ['rdc'])).not.toThrow();
   });
 });
+
+describe('floor-sim : champs de flux des fenêtres paresseux (chargement allégé du lot 3e)', () => {
+  it('un champ est calculé au premier accès, gardé ensuite, et identique au calcul immédiat', async () => {
+    const { buildWindowField } = await import('../../js/core/nav.js');
+    const { createGrid } = await import('../../js/core/nav.js');
+    const { floorWorld, gridOpts } = await import('./helpers/etage.js');
+    const g = floorWorld.geomById.get('U3');
+    const first = floorWorld.fields.U3;
+    expect(floorWorld.fields.U3).toBe(first);
+    const layout = floorWorld.layouts.etage;
+    const grid = createGrid(layout.size, [...layout.zombieObstacles, ...layout.gaps], gridOpts);
+    const eager = buildWindowField({ grid }, g);
+    expect(first.flow).toEqual(eager.flow);
+    expect(Object.keys(floorWorld.fields).sort()).toEqual([...floorWorld.all.map((q) => q.id)].sort());
+  });
+});

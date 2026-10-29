@@ -1,5 +1,5 @@
 {
-  "_provisoire": "Lot 3c : zones et portes du rez-de-chaussée, en PIXELS du plan (comme plan.json ; js/core/zones.js les convertit en unités du jeu). Chiffres provisoires, jamais jugés par l'agent. Une zone fermée est inerte : ses fenêtres n'ont aucun point d'apparition actif ni siège. region : polygone du côté intérieur de la zone (les régions ne se recouvrent pas, leur union recouvre l'intérieur du bâtiment). Une porte s'ouvre d'elle-même, sans achat, quand la manche openAfterWave est terminée (porte-1 : fermée toute la manche 10, aile active dès la manche 11). opening : segment de plan.json (clé openings) qui relie les deux zones. Les portes planned (escaliers, lot 3e) n'ont aucun effet : leurs zones n'existent pas encore. Lot 3e : floors (rdc, etage), floor de chaque zone, stairs (escaliers : à chaque étage une emprise pleine solid, une zone de déclenchement trigger libre d'au moins 64 × 64 unités au pied de l'emprise et un point d'arrivée arrival libre), blocks des portes (obstacles pleins retirés à l'ouverture : rect en pixels ou opening, segment de plan.json ou de etage.json), subtitleKey (sous-titre de l'annonce « Nouvelle zone »). Le fichier sans floors se lit comme un seul étage rdc. porte-2 (manche 20, escalier de l'aile) est active depuis la partie B du lot 3e ; porte-3 (manche 30, second escalier et porte de l'étage) reste planned jusqu'à la partie C (ses blocs existent déjà : elle ne s'ouvre pas).",
+  "_provisoire": "Lot 3c : zones et portes du rez-de-chaussée, en PIXELS du plan (comme plan.json ; js/core/zones.js les convertit en unités du jeu). Chiffres provisoires, jamais jugés par l'agent. Une zone fermée est inerte : ses fenêtres n'ont aucun point d'apparition actif ni siège. region : polygone du côté intérieur de la zone (les régions ne se recouvrent pas, leur union recouvre l'intérieur du bâtiment). Une porte s'ouvre d'elle-même, sans achat, quand la manche openAfterWave est terminée (porte-1 : fermée toute la manche 10, aile active dès la manche 11). opening : segment de plan.json (clé openings) qui relie les deux zones. Les portes planned (escaliers, lot 3e) n'ont aucun effet : leurs zones n'existent pas encore. Lot 3e : floors (rdc, etage), floor de chaque zone, stairs (escaliers : à chaque étage une emprise pleine solid, une zone de déclenchement trigger libre d'au moins 64 × 64 unités au pied de l'emprise et un point d'arrivée arrival libre), blocks des portes (obstacles pleins retirés à l'ouverture : rect en pixels ou opening, segment de plan.json ou de etage.json), subtitleKey (sous-titre de l'annonce « Nouvelle zone »). Le fichier sans floors se lit comme un seul étage rdc. porte-2 (manche 20, escalier de l'aile) est active depuis la partie B du lot 3e ; porte-3 (manche 30, second escalier et porte de l'étage) est active depuis la partie C du lot 3e.",
   "wavesPerWorld": 40,
   "floors": ["rdc", "etage"],
   "zones": [
@@ -110,7 +110,7 @@
         }
       ],
       "subtitleKey": "game.splash.zone.sub.escalier-porte",
-      "planned": true
+      "planned": false
     }
   ]
 }
