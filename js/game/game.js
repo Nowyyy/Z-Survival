@@ -12,6 +12,7 @@ import { closedDoors, entryWindow } from '../core/layout.js';
 import { occupancy } from '../core/siege.js';
 import { edgeIndicator } from '../core/edge-arrow.js';
 import { urgentWindows, windowChips } from '../core/hud-windows.js';
+import { entryDirection, heightOf, startWalk, stepWalk, wantsStairs } from '../core/stair-walk.js';
 import { arrivalKnockback, createStairWatch, stairArrival, stairParams, stairState, stairTriggers, startStairCooldown, stepStairWatch } from '../core/stairs.js';
 import { createWindowsState } from '../core/windows.js';
 import { moveCircle } from '../core/movement.js';
@@ -118,13 +119,16 @@ export function createGame(ctx) {
   if (ctx.perf) ctx.perf.floorsMs = performance.now() - buildStart;
   const rig = createCamera(render.camera, cfg.camera, layout, params.tilt, params.zoom);
   const kit = createKit({ textures, variants: ctx.variants, hit: palette.hit });
-  const effects = createEffects(world.scene, palette, { gunHeight: render.gunHeight, bulletRadius: cfg.weapon.bulletRadius });
+  const effects = createEffects(world.dynamic, palette, { gunHeight: render.gunHeight, bulletRadius: cfg.weapon.bulletRadius });
   const hud = createHud(ctx.dict);
   const floorFade = createFloorFade();
   const splashView = createSplashView(ctx.dict);
   const splashOptions = { reducedMotion: reduced, params: ctx.splashCfg };
   const playerChar = createCharacter(kit, 'player');
   world.scene.add(playerChar.root);
+  // Hauteur d'un étage (render.json) : le joueur reste à y = 0, c'est le monde qui descend quand il monte (world.setElevation).
+  const LIFT = Number.isFinite(render.floorLift) ? render.floorLift : 0;
+  const liftOf = (f) => (f === 'etage' ? LIFT : 0);
   const zombies = new Map(); // id -> { char, phase, x, y, flashing }
   const spare = kit.variants.map(() => []); // personnages retirés, un stock par variante (leurs géométries diffèrent)
   // Type de chaque obstacle (meubles et décor solide, des deux étages) pour le son d'impact ; les murs se reconnaissent à leur identifiant.
@@ -232,6 +236,7 @@ export function createGame(ctx) {
 
   // Étage affiché : seul l'étage du joueur est dessiné (l'extérieur toujours) ; aucune reconstruction.
   function showFloor(f) {
+    sim.elev = liftOf(f);
     world.showFloor(f);
     syncSolids();
     stale = true;
@@ -247,7 +252,7 @@ export function createGame(ctx) {
   // Partie neuve : état pur remis à zéro, zombies retirés (leurs personnages vont dans le stock).
   function reset(seed) {
     for (const z of zombies.values()) {
-      world.scene.remove(z.char.root);
+      world.dynamic.remove(z.char.root);
       z.char.setFlash(false);
       spare[z.char.variant].push(z.char);
     }
@@ -291,6 +296,8 @@ export function createGame(ctx) {
       tr: createTransition(), // fondu entre étages (js/core/floor-transition.js)
       trView: { veil: 0, locked: false, swap: false, phase: 'idle' },
       stairWatch: createStairWatch(),
+      sw: null, // escalier physique en cours : { stair, s, floor, from, auto } (js/core/stair-walk.js)
+      elev: liftOf(startFloor), // hauteur du joueur, de 0 à floorLift
       floorGrace: 0, // protection de 1,0 s après l'arrivée à un étage (en plus du verrou du fondu)
       floorLive: null,
     };
@@ -366,6 +373,53 @@ export function createGame(ctx) {
   // Demi-angle courant du cône, en degrés.
   const halfAngle = () => spreadHalfAngle(sim.spread, eff.values);
 
+  // Les zombies trop proches du point d'arrivée du joueur sont repoussés (même routine que la chute, restreinte à l'étage d'arrivée).
+  function knockArrival(at, to) {
+    const kb = arrivalKnockback(at, stairCfg);
+    const l = layoutOf(to);
+    sim.enemies = knockbackZombies(sim.enemies, { ...kb.center, floor: to }, { radius: kb.radius, distance: kb.distance }, { bounds: l.bounds, inside: l.inside, furniture: [...l.furniture, ...closedDoors(l, openIds())], walls: l.walls, gaps: l.gaps });
+  }
+
+  // Escalier physique (mise à jour du lot 3e) : le joueur marche dans l'escalier, sa position suit le chemin et sa hauteur monte (js/core/stair-walk.js) ; son étage
+  // logique change à mi-hauteur (collisions, étage dessiné pour les zombies, balles supprimées), sans fondu ni téléportation.
+  function startPhysical(stairId, auto = false) {
+    const usable = stairState(stairsWorld, openIds()).find((q) => q.id === stairId)?.usable === true;
+    const def = stairsWorld.find((q) => q.id === stairId);
+    if (!usable || !def?.walk || sim.sw !== null || sim.dead || sim.tr.phase !== 'idle') return false;
+    sim.sw = startWalk(stairId, pf(), auto);
+    return sim.sw !== null;
+  }
+  function crossFloor(to) {
+    const from = pf();
+    sim.fs = setPlayerFloor(fw, sim.fs, to);
+    sim.player = { ...sim.player, floor: to };
+    sim.bullets = [];
+    laser = null;
+    syncSolids();
+    sim.floorLive = ctx.dict[FLOOR_TEXTS.live[to]];
+    stairLog.push({ type: 'playerStairs', stair: sim.sw?.stair ?? null, from, to, time: sim.time, instant: false, walk: true });
+  }
+  function advanceWalk(dir, dt) {
+    const def = stairsWorld.find((q) => q.id === sim.sw.stair);
+    const r = stepWalk(sim.sw, def?.walk?.path, { dir, speed: eff.player.speed, dt });
+    sim.player = { ...sim.player, x: r.point.x, y: r.point.y };
+    sim.elev = heightOf(r.point.t, LIFT);
+    if (r.floor !== pf()) crossFloor(r.floor);
+    if (r.done === null) {
+      sim.sw = r.walk;
+      return;
+    }
+    // Sortie de l'escalier (en haut, en bas, ou demi-tour) : délai de 0,8 s et verrou tant que le joueur reste dans la zone ; protection de 1,0 s s'il a changé d'étage.
+    const from = sim.sw.from;
+    const stairId = sim.sw.stair;
+    sim.sw = null;
+    sim.elev = liftOf(r.done);
+    sim.stairWatch = startStairCooldown(sim.stairWatch, stairId, stairCfg);
+    if (r.done !== from) sim.floorGrace = stairCfg.stairGraceAfter;
+    knockArrival(sim.player, r.done);
+    stale = true;
+  }
+
   // Change l'étage du joueur (au milieu du fondu, ou d'un coup pour le hook setFloor) : il est placé au point d'arrivée de l'escalier, les balles en vol disparaissent,
   // les zombies trop proches de l'arrivée sont repoussés (même routine que la chute, restreinte à l'étage d'arrivée), il est protégé 1,0 s.
   function arriveAt(stairId, to, { instant = false } = {}) {
@@ -378,9 +432,7 @@ export function createGame(ctx) {
     sim.bullets = [];
     sim.floorGrace = stairCfg.stairGraceAfter;
     sim.stairWatch = startStairCooldown(sim.stairWatch, stairId, stairCfg);
-    const kb = arrivalKnockback(at, stairCfg);
-    const l = layoutOf(to);
-    sim.enemies = knockbackZombies(sim.enemies, { ...kb.center, floor: to }, { radius: kb.radius, distance: kb.distance }, { bounds: l.bounds, inside: l.inside, furniture: [...l.furniture, ...closedDoors(l, openIds())], walls: l.walls, gaps: l.gaps });
+    knockArrival(at, to);
     showFloor(to);
     rig.snap(at.x, at.y);
     anim = { ...anim, x: at.x, y: at.y };
@@ -416,12 +468,15 @@ export function createGame(ctx) {
     const events = []; // événements sonores de cette image (traités par js/core/sound-director.js)
     // À terre ou pendant le fondu, le joueur ne bouge pas, ne tire pas et son laser est masqué (js/core/player-down.js).
     const standing = canMove(sim.down) && !locked;
-    const firing = canFire(sim.down) && !locked;
+    const firing = canFire(sim.down) && !locked && sim.sw === null;
     const dir = standing ? override.move ?? input.move() : { x: 0, y: 0 };
     const before = sim.player;
     advanceDoors(dt);
-    const pos = moveCircle(sim.player, dir, eff.player.speed, dt, layout.moveRoom, playerSolids);
-    sim.player = { ...sim.player, ...pos };
+    if (sim.sw !== null) advanceWalk(dir, dt);
+    else {
+      const pos = moveCircle(sim.player, dir, eff.player.speed, dt, layout.moveRoom, playerSolids);
+      sim.player = { ...sim.player, ...pos };
+    }
     // Pas : la phase de marche avance avec la distance réellement parcourue (même rythme que les poses : STRIDE par unité).
     const moved = Math.hypot(sim.player.x - before.x, sim.player.y - before.y);
     const phase = sim.walk.phase + moved * STRIDE;
@@ -434,11 +489,17 @@ export function createGame(ctx) {
 
     // Escaliers (lot 3e) : le centre du joueur dans la zone de déclenchement d'un escalier utilisable de son étage, délai de 0,8 s écoulé et sorti de la zone du
     // dernier escalier pris : le fondu démarre. Un escalier fermé n'a aucune zone.
-    if (multi && !locked && standing && !sim.dead) {
+    if (multi && !locked && standing && !sim.dead && sim.sw === null) {
       const watch = stepStairWatch(sim.stairWatch, dt, sim.player, stairTriggers(stairsWorld, pf(), openIds()));
       sim.stairWatch = watch.watch;
-      if (watch.trigger) beginFloorChange(watch.trigger.stair);
-    } else sim.stairWatch = stepStairWatch(sim.stairWatch, dt, { x: NaN, y: NaN }, []).watch;
+      if (watch.trigger) {
+        const def = stairsWorld.find((q) => q.id === watch.trigger.stair);
+        if (reduced || !def?.walk) beginFloorChange(watch.trigger.stair);
+        else if (wantsStairs(dir, entryDirection(def.walk.path, pf()))) startPhysical(watch.trigger.stair);
+        else sim.stairWatch = { cooldown: watch.watch.cooldown, lock: null }; // passe à côté : l'escalier n'est pris qu'en marchant vers lui
+      }
+    } else if (sim.sw !== null) sim.stairWatch = { cooldown: 0, lock: sim.sw.stair };
+    else sim.stairWatch = stepStairWatch(sim.stairWatch, dt, { x: NaN, y: NaN }, []).watch;
 
     // Laser : sert à viser et à déclencher le tir, jamais aux dégâts.
     const muzzle = muzzlePoint(sim.player, sim.aim.angle, weapon.muzzleOffset, layout.muzzleBounds);
@@ -635,7 +696,8 @@ export function createGame(ctx) {
       // Mort : le fondu est annulé aussitôt (voile à 0) et l'étage affiché est le rez-de-chaussée.
       sim.tr = cancelTransition();
       sim.trView = { veil: 0, locked: false, swap: false, phase: 'idle' };
-      if (multi && pf() !== 'rdc') {
+      if (multi && (pf() !== 'rdc' || sim.sw !== null || sim.elev > 0)) {
+        sim.sw = null;
         sim.fs = setPlayerFloor(fw, sim.fs, 'rdc');
         sim.player = { ...sim.player, floor: 'rdc' };
         showFloor('rdc');
@@ -814,6 +876,7 @@ export function createGame(ctx) {
 
   // Place les personnages, le laser et les effets d'après l'état simulé, puis la lumière.
   function draw(dt) {
+    world.setElevation(sim.elev, pf());
     sim.flash = Math.max(0, sim.flash - dt);
     sim.recoil = Math.max(0, sim.recoil - dt);
     for (const spark of sparks) spark.age += dt;
@@ -850,7 +913,7 @@ export function createGame(ctx) {
       if (!z) {
         const variant = e.visual;
         z = { char: spare[variant].pop() ?? createCharacter(kit, 'zombie', variant), phase: 0, x: e.x, y: e.y, flashing: false };
-        world.scene.add(z.char.root);
+        world.dynamic.add(z.char.root);
         zombies.set(e.id, z);
       }
       const moved = Math.hypot(e.x - z.x, e.y - z.y);
@@ -879,7 +942,7 @@ export function createGame(ctx) {
     // Les zombies tués disparaissent (sang et corps au lot 8).
     for (const [id, z] of zombies) {
       if (alive.has(id)) continue;
-      world.scene.remove(z.char.root);
+      world.dynamic.remove(z.char.root);
       z.char.setFlash(false);
       spare[z.char.variant].push(z.char);
       zombies.delete(id);
@@ -1000,6 +1063,8 @@ export function createGame(ctx) {
       byFloor: counts,
       hidden: sim.enemies.filter((e) => floorOf(e) !== pf()).length,
       grace: sim.floorGrace,
+      elevation: sim.elev,
+      walk: sim.sw === null ? null : { stair: sim.sw.stair, s: sim.sw.s, floor: sim.sw.floor, from: sim.sw.from, auto: sim.sw.auto },
     };
   }
 
@@ -1099,10 +1164,12 @@ export function createGame(ctx) {
       // Un joueur à l'étage dont l'escalier se referme revient au rez-de-chaussée.
       sim.tr = cancelTransition();
       sim.trView = { veil: 0, locked: false, swap: false, phase: 'idle' };
-      if (pf() !== 'rdc' && !stairState(stairsWorld, openNow).some((q) => q.usable)) {
-        sim.fs = setPlayerFloor(fw, sim.fs, 'rdc');
-        sim.player = { ...sim.player, ...layout.start, floor: 'rdc' };
-        showFloor('rdc');
+      if (sim.sw !== null || (pf() !== 'rdc' && !stairState(stairsWorld, openNow).some((q) => q.usable))) {
+        const to = sim.sw !== null && stairState(stairsWorld, openNow).some((q) => q.usable) ? pf() : 'rdc';
+        sim.sw = null;
+        sim.fs = setPlayerFloor(fw, sim.fs, to);
+        sim.player = { ...sim.player, ...floorStart(to), floor: to };
+        showFloor(to);
         rig.snap(sim.player.x, sim.player.y);
       }
       floorFade.set(0);
@@ -1160,6 +1227,7 @@ export function createGame(ctx) {
       if (open.length === 0) return false;
       sim.tr = cancelTransition();
       sim.trView = { veil: 0, locked: false, swap: false, phase: 'idle' };
+      sim.sw = null;
       floorFade.set(0);
       const ok = arriveAt(open[0].id, target, { instant: true });
       sim.floorGrace = 0;
@@ -1169,7 +1237,7 @@ export function createGame(ctx) {
     // Test (lot 3e) : déclenche le fondu comme si le joueur avait marché dans la zone de déclenchement de l'escalier (de son étage) ; faux si l'escalier est fermé.
     useStair(id) {
       stale = true;
-      return multi ? beginFloorChange(id) : false;
+      return multi ? (reduced ? beginFloorChange(id) : startPhysical(id, true)) : false;
     },
     // Test : règle le nombre de chutes restantes (0 : la prochaine vie à 0 est la mort, comme avant le lot 3).
     setChutes(n) {

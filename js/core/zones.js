@@ -101,6 +101,19 @@ function cleanBlocks(blocks, floors, warnings, doorId) {
   return out;
 }
 
+// Escalier physique (lot 3e, mise à jour) : { path: [{ x, y, t }], width } ou null ; t est la fraction de la hauteur d'un étage (0 au pied, 1 en haut).
+function cleanWalk(raw) {
+  if (!isObject(raw) || !Array.isArray(raw.path) || raw.path.length < 3 || !isNum(raw.width) || raw.width <= 0) return null;
+  const path = [];
+  for (const q of raw.path) {
+    if (!Array.isArray(q) || q.length < 3 || !q.slice(0, 3).every(isNum) || q[2] < 0 || q[2] > 1) return null;
+    path.push({ x: q[0], y: q[1], t: q[2] });
+  }
+  if (path[0].t !== 0 || path[path.length - 1].t !== 1) return null;
+  for (let i = 1; i < path.length; i += 1) if (path[i].t < path[i - 1].t) return null;
+  return { path, width: raw.width };
+}
+
 // Escaliers : { id, label, door, planned, floors: { rdc: { solid, trigger, arrival }, etage: {...} } } ; un escalier dont une description est invalide est ignoré
 // avec un avertissement. `planned` vient de sa porte (porte inconnue ou planned : l'escalier n'est pas utilisable).
 function cleanStairs(list, floors, doors, warnings) {
@@ -126,9 +139,11 @@ function cleanStairs(list, floors, doors, warnings) {
       continue;
     }
     seen.add(st.id);
+    const walk = cleanWalk(st.walk);
+    if (st.walk !== undefined && !walk) warnings.push(`escalier ${st.id} : walk invalide (au moins 3 points [x, y, t], t de 0 à 1, premier t = 0, dernier t = 1, largeur > 0) : escalier instantané`);
     const door = doors.find((d) => d.id === st.door);
     if (!door) warnings.push(`escalier ${st.id} : porte inconnue`);
-    out.push({ id: st.id, label: typeof st.label === 'string' ? st.label : st.id, door: typeof st.door === 'string' ? st.door : null, planned: !door || door.planned === true, floors: by });
+    out.push({ id: st.id, label: typeof st.label === 'string' ? st.label : st.id, door: typeof st.door === 'string' ? st.door : null, planned: !door || door.planned === true, floors: by, walk });
   }
   return out;
 }
@@ -162,6 +177,7 @@ export function zonesToWorld(parsed, transform) {
     stairs: (Array.isArray(src.stairs) ? src.stairs : []).map((st) => ({
       id: st.id, label: st.label, door: st.door ?? null, planned: st.planned === true,
       floors: Object.fromEntries(Object.entries(isObject(st.floors) ? st.floors : {}).map(([f, d]) => [f, { solid: rectW(d?.solid), trigger: rectW(d?.trigger), arrival: pointW(d?.arrival) }])),
+      walk: isObject(st.walk) && Array.isArray(st.walk.path) ? { path: st.walk.path.map((q) => ({ x: X(q.x), y: Y(q.y), t: q.t })), width: Math.round(st.walk.width * scale * 1e6) / 1e6 } : null,
     })),
     warnings: Array.isArray(src.warnings) ? [...src.warnings] : [],
   };

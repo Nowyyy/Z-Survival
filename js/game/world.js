@@ -237,6 +237,45 @@ function addDecor(b, region, decor, outdoorSoil) {
 
 // layout : couche du rez-de-chaussée (js/core/layout.js) ; layouts : sortie de buildLayouts (lot 3e : une couche par étage, facultatif) ; textures : sortie de
 // createThreeTextures (js/game/textures.js). Renvoie { scene, groups, showFloor, ... }.
+// Escalier physique (lot 3e, mise à jour) : rectangle de la rampe (partie du chemin où la hauteur monte), axe du chemin et sens de la montée. Le chemin est rectiligne sur la
+// montée (les sommets de t = 0 puis de t = 1 qui l'encadrent) ; la largeur vient de zones.json (walk.width).
+export function riseOf(walk) {
+  const path = Array.isArray(walk?.path) ? walk.path : [];
+  if (path.length < 2) return null;
+  const hi = path.findIndex((q) => q.t >= 1);
+  if (hi < 1) return null;
+  const lo = path.findLastIndex((q, i) => i < hi && q.t <= 0);
+  if (lo < 0) return null;
+  const a = path[lo];
+  const b = path[hi];
+  const vertical = Math.abs(b.y - a.y) >= Math.abs(b.x - a.x);
+  const w = num(walk.width, 100) / 2;
+  const rect = vertical ? { x0: a.x - w, x1: a.x + w, y0: Math.min(a.y, b.y), y1: Math.max(a.y, b.y) } : { x0: Math.min(a.x, b.x), x1: Math.max(a.x, b.x), y0: a.y - w, y1: a.y + w };
+  return { a, b, vertical, rect };
+}
+
+// Rectangles { x, y, w, h } privés d'un trou { x0, y0, x1, y1 } : au plus quatre morceaux par rectangle.
+export function subtractHole(rects, hole) {
+  const out = [];
+  for (const r of rects) {
+    const x1 = r.x + r.w;
+    const y1 = r.y + r.h;
+    if (hole.x1 <= r.x || hole.x0 >= x1 || hole.y1 <= r.y || hole.y0 >= y1) {
+      out.push(r);
+      continue;
+    }
+    const ix0 = Math.max(r.x, hole.x0);
+    const ix1 = Math.min(x1, hole.x1);
+    const iy0 = Math.max(r.y, hole.y0);
+    const iy1 = Math.min(y1, hole.y1);
+    if (iy0 > r.y) out.push({ x: r.x, y: r.y, w: r.w, h: iy0 - r.y });
+    if (iy1 < y1) out.push({ x: r.x, y: iy1, w: r.w, h: y1 - iy1 });
+    if (ix0 > r.x) out.push({ x: r.x, y: iy0, w: ix0 - r.x, h: iy1 - iy0 });
+    if (ix1 < x1) out.push({ x: ix1, y: iy0, w: x1 - ix1, h: iy1 - iy0 });
+  }
+  return out;
+}
+
 // Lot 3e : chaque maillage porte userData.floor (rdc, etage ou exterieur) et vit dans le groupe de son étage ; showFloor(floor) ne change que la visibilité des groupes
 // (aucune reconstruction, aucun dispose) : un seul étage est dessiné à la fois, l'extérieur (sol, décor, brume) toujours.
 export function buildWorld({ palette, layout, layouts = null, render, textures, windowGeoms = [], windowsCfg = null, seed = 1, closedDoors = null, stairs = [] }) {
@@ -247,13 +286,23 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
   scene.background = new THREE.Color(palette.fog);
   // Nuit et brume (lot 3b) : le brouillard est réglé par setFog d'après la distance de la caméra (render.json : fog.near et fog.far, en multiples de cette distance).
   scene.fog = new THREE.Fog(palette.fog, 1e6, 2e6);
-  const groups = { exterieur: new THREE.Group(), rdc: new THREE.Group(), etage: new THREE.Group() };
+  // Groupes : exterieur (sol, décor, brume), rdc (meubles, détails, fenêtres, portes, marques : seulement quand le joueur est au rez-de-chaussée), rdcShell (sol, murs et
+  // rampes du rez-de-chaussée : toujours dessinés, on les voit sous l'étage), etage (tout l'étage : seulement quand le joueur est monté). Ils sont décalés en hauteur
+  // par setElevation : le joueur reste à y = 0, c'est le monde qui descend quand il monte (et dynamic porte les zombies et les effets de l'étage du joueur).
+  const groups = { exterieur: new THREE.Group(), rdc: new THREE.Group(), rdcShell: new THREE.Group(), etage: new THREE.Group() };
   for (const [name, g] of Object.entries(groups)) {
     g.name = name;
-    g.userData.floor = name;
+    g.userData.floor = name === 'rdcShell' ? 'rdc' : name;
     scene.add(g);
   }
   groups.etage.visible = false;
+  const dynamic = new THREE.Group();
+  dynamic.name = 'dynamique';
+  scene.add(dynamic);
+  const lift = num(render.floorLift, 0);
+  const shellOf = (f) => (f === 'rdc' ? groups.rdcShell : groups[f]);
+  // Trous du sol de l'étage : la rampe de chaque escalier (on voit l'escalier et le rez-de-chaussée en dessous).
+  const holes = stairs.map((st) => ({ id: st.id, rise: riseOf(st.walk) })).filter((h) => h.rise !== null);
 
   scene.add(new THREE.AmbientLight(palette.ambient, render.light.ambient));
   const sun = new THREE.DirectionalLight(palette.sun, render.light.sun);
@@ -294,7 +343,8 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
     const l = layoutOf(f);
     const fb = onFloor[f];
     // Sol de la salle : carrelage (la dalle commence au coin de la salle, les carreaux sont alignés dessus). Chaque étage est dessiné à y = 0 quand il est affiché.
-    for (const fl of l.floor) fb.floor.slab(fl.x, fl.y, fl.x + fl.w, fl.y + fl.h, 0, textures.repeat('sol-salle'), l.room.x, l.room.y);
+    const floorRects = f === 'etage' ? holes.reduce((rects, h) => subtractHole(rects, h.rise.rect), l.floor) : l.floor;
+    for (const fl of floorRects) fb.floor.slab(fl.x, fl.y, fl.x + fl.w, fl.y + fl.h, 0, textures.repeat('sol-salle'), l.room.x, l.room.y);
     // Murs (allège, linteau et barreaux des fenêtres compris) : enduit sur les côtés, dessus de la couleur --game-wall sans texture.
     const { walls, bars } = l.segmented ? segmentedWallBoxes(l, render) : wallBoxes(l.room, l.windows, l.windowSize, render);
     for (const w of walls) {
@@ -305,6 +355,7 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
     // Meubles : boîtes aux hauteurs de world.json, une région d'atlas par type. Lot 3c : tables, chaises et armoires modélisées (js/core/furniture-model.js) ; les corps
     // projettent une ombre, les pieds, dossiers et socles forment un maillage sans ombre portée. Les collisions gardent le rectangle d'origine.
     l.furniture.forEach((fu, i) => {
+      if (fu.kind === 'escalier') return; // dessiné par la rampe (escalier physique)
       const parts = furnitureParts(fu, FURNITURE_REGION, l.walls);
       const draw = (builder, p, k) => {
         const r = region(p.region);
@@ -329,32 +380,79 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
   const wallMat = mat('mur');
   for (const f of floors) {
     const fb = onFloor[f];
-    tag(fb.floor.mesh(groups[f], floorMat, { receive: true }), f);
-    tag(fb.wall.mesh(groups[f], wallMat, { receive: true }), f);
+    tag(fb.floor.mesh(shellOf(f), floorMat, { receive: true }), f);
+    tag(fb.wall.mesh(shellOf(f), wallMat, { receive: true }), f);
     tag(fb.detail.mesh(groups[f], atlasMaterial, { cast: false, receive: true }), f);
     tag(fb.props.mesh(groups[f], atlasMaterial, { cast: true, receive: true }), f);
   }
 
-  // Dalle sombre (lot 3e) : quand le joueur est à l'étage, un quadrilatère opaque (2 triangles, --game-void) couvre l'emprise du rez-de-chaussée à y = -1, sous l'étage :
-  // on ne voit ni le rez-de-chaussée caché ni l'herbe à l'intérieur du bâtiment.
+  // Jupe sombre (lot 3e, mise à jour : l'étage est au-dessus) : sous chaque morceau du sol de l'étage, quatre faces opaques (--game-void) jusqu'au sol du rez-de-chaussée, que
+  // l'on voit en dessous ; elles forment aussi les parois du trou de chaque escalier. 8 triangles par morceau.
   let slab = null;
   if (floors.includes('etage')) {
-    const bb = layout.floor.reduce((r, fl) => ({ x0: Math.min(r.x0, fl.x), y0: Math.min(r.y0, fl.y), x1: Math.max(r.x1, fl.x + fl.w), y1: Math.max(r.y1, fl.y + fl.h) }), { x0: Infinity, y0: Infinity, x1: -Infinity, y1: -Infinity });
-    const geometry = new THREE.BufferGeometry();
-    // Jupe (lot 3e, retour du propriétaire : l'étage doit être au-dessus) : quatre faces sombres de la dalle jusqu'au sol de l'extérieur, abaissé de floorLift à l'étage.
-    const lo = -num(render.floorLift, 0) - 1;
+    const l = layoutOf('etage');
+    const rects = holes.reduce((r, h) => subtractHole(r, h.rise.rect), l.floor);
+    const pos = [];
+    const idx = [];
     const top = -0.5;
-    geometry.setAttribute('position', new THREE.Float32BufferAttribute([
-      bb.x0, top, bb.y0, bb.x1, top, bb.y0, bb.x1, top, bb.y1, bb.x0, top, bb.y1,
-      bb.x0, lo, bb.y0, bb.x1, lo, bb.y0, bb.x1, lo, bb.y1, bb.x0, lo, bb.y1,
-    ], 3));
-    geometry.setIndex([0, 2, 1, 0, 3, 2, 0, 1, 5, 0, 5, 4, 1, 2, 6, 1, 6, 5, 2, 3, 7, 2, 7, 6, 3, 0, 4, 3, 4, 7]);
-    geometry.computeBoundingSphere();
-    slab = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({ color: palette.void, fog: false, side: THREE.DoubleSide }));
-    slab.name = 'dalle-sombre';
-    slab.userData.floor = 'etage';
-    groups.etage.add(slab);
+    const lo = -lift;
+    for (const r of rects) {
+      const x1 = r.x + r.w;
+      const y1 = r.y + r.h;
+      const corners = [[r.x, r.y], [x1, r.y], [x1, y1], [r.x, y1]];
+      for (let k = 0; k < 4; k += 1) {
+        const [ax, az] = corners[k];
+        const [bx, bz] = corners[(k + 1) % 4];
+        const base = pos.length / 3;
+        pos.push(ax, top, az, bx, top, bz, bx, lo, bz, ax, lo, az);
+        idx.push(base, base + 1, base + 2, base, base + 2, base + 3);
+      }
+    }
+    if (pos.length > 0) {
+      const geometry = new THREE.BufferGeometry();
+      geometry.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+      geometry.setIndex(idx);
+      geometry.computeBoundingSphere();
+      slab = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({ color: palette.void, fog: false, side: THREE.DoubleSide }));
+      slab.name = 'jupe-sombre';
+      slab.userData.floor = 'etage';
+      groups.etage.add(slab);
+    }
   }
+
+  // Rampes (lot 3e, mise à jour) : l'escalier est dessiné en marches (douze boîtes de bois qui montent jusqu'à floorLift, un maillage par escalier) dans le rez-de-chaussée ;
+  // quand l'escalier est fermé (porte pas encore ouverte), un couvercle de sol ferme son trou à l'étage.
+  const STEPS = 12;
+  const covers = new Map();
+  const treadRegion = region('bois');
+  holes.forEach(({ id, rise }, n) => {
+    const { a, b, vertical, rect } = rise;
+    const builder = new Builder();
+    for (let i = 0; i < STEPS; i += 1) {
+      const k0 = i / STEPS;
+      const k1 = (i + 1) / STEPS;
+      const h = (lift * (i + 1)) / STEPS;
+      const along = (k) => (vertical ? a.y + (b.y - a.y) * k : a.x + (b.x - a.x) * k);
+      const lo = Math.min(along(k0), along(k1));
+      const hi = Math.max(along(k0), along(k1));
+      const box = vertical ? { x0: rect.x0, x1: rect.x1, z0: lo, z1: hi, y0: 0, y1: h } : { x0: lo, x1: hi, z0: rect.y0, z1: rect.y1, y0: 0, y1: h };
+      builder.box(box, { rect: treadRegion, scale: treadRegion.scale, seed: 700 + n * 20 + i });
+    }
+    const mesh = builder.mesh(groups.rdcShell, atlasMaterial, { cast: true, receive: true });
+    if (mesh) {
+      mesh.name = `rampe-${id}`;
+      mesh.userData.floor = 'rdc';
+      mesh.userData.part = 'rampe';
+    }
+    const cover = new Builder();
+    cover.slab(rect.x0, rect.y0, rect.x1, rect.y1, 0.05, textures.repeat('sol-salle'), layoutOf('etage').room.x, layoutOf('etage').room.y);
+    const coverMesh = cover.mesh(groups.etage, floorMat, { receive: true });
+    if (coverMesh) {
+      coverMesh.name = `couvercle-${id}`;
+      coverMesh.userData.floor = 'etage';
+      covers.set(id, coverMesh);
+    }
+  });
 
   // Zones de déclenchement des escaliers (lot 3e) : un quadrilatère plat de 2 triangles par zone, à y = 0,3, couleur --game-stairs-mark, visible seulement à l'étage où
   // il se trouve et seulement si l'escalier est utilisable (setStairUsable) ; aucune nouvelle texture.
@@ -477,6 +575,7 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
   for (const door of doorList) if (closedDoors === null || closedDoors.includes(door.id)) addDoor(door);
   const meshesOf = (id) => [...doorMeshes.values()].filter((m) => m.userData.door === id);
 
+  let elevationNow = 0;
   return {
     scene,
     groups,
@@ -506,16 +605,31 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
     // Étage affiché : les groupes de l'autre étage sont cachés (maillages, planches, débris, blocs, zones marquées) ; l'extérieur reste dessiné ; la dalle sombre
     // n'est dessinée qu'à l'étage. Aucune reconstruction, aucun dispose.
     showFloor(floor) {
-      for (const f of floors) groups[f].visible = f === floor;
-      // À l'étage, le sol de l'extérieur est abaissé de floorLift : l'étage est physiquement au-dessus (le joueur, les zombies et la caméra restent à y = 0).
-      groups.exterieur.position.y = floor === 'etage' ? -num(render.floorLift, 0) : 0;
+      this.setElevation(floor === 'etage' ? lift : 0, floor);
     },
+    // Hauteur du joueur (0 au rez-de-chaussée, floorLift à l'étage, entre les deux dans l'escalier) et étage logique : le monde descend de elevation (le joueur et la caméra
+    // restent à y = 0). L'étage n'est dessiné que s'il y a de la hauteur ; le rez-de-chaussée complet que si le joueur y est, sa coque (sol, murs, rampes) toujours.
+    setElevation(elevation, floor) {
+      const e = Math.min(lift, Math.max(0, num(elevation)));
+      groups.exterieur.position.y = 0 - e;
+      groups.rdc.position.y = 0 - e;
+      groups.rdcShell.position.y = 0 - e;
+      groups.etage.position.y = lift - e;
+      groups.etage.visible = floors.includes('etage') && e > 0.01;
+      groups.rdc.visible = floor !== 'etage';
+      dynamic.position.y = (floor === 'etage' ? lift : 0) - e;
+      elevationNow = e;
+    },
+    dynamic,
+    get elevation() { return elevationNow; },
     // Zone de déclenchement d'un escalier : dessinée (à l'étage où elle se trouve) seulement quand l'escalier est utilisable.
     setStairUsable(id, usable) {
       for (const f of floors) {
         const m = marks.get(`${id}:${f}`);
         if (m) m.visible = usable === true;
       }
+      const cover = covers.get(id);
+      if (cover) cover.visible = usable !== true;
     },
     // Mesures pour les tests : maillages visibles par étage (la visibilité tient compte du groupe) et nombre de marques dessinées.
     floorStats() {
@@ -526,7 +640,7 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
         });
         return g.visible ? n : 0;
       };
-      return { exteriorY: groups.exterieur.position.y, visible: Object.fromEntries(Object.entries(groups).map(([k, g]) => [k, visibleOf(g)])), slab: slab ? slab.visible && groups.etage.visible : false, marks: [...marks].filter(([, m]) => m.visible && m.parent?.visible).map(([k]) => k) };
+      return { exteriorY: groups.exterieur.position.y, elevation: elevationNow, visible: Object.fromEntries(Object.entries(groups).map(([k, g]) => [k, visibleOf(g)])), slab: slab ? slab.visible && groups.etage.visible : false, marks: [...marks].filter(([, m]) => m.visible && m.parent?.visible).map(([k]) => k) };
     },
     setFog(distance) {
       scene.fog.near = distance * render.fog.near;

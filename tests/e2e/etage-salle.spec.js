@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { readFileSync } from 'node:fs';
+import { entryDirection } from '../../js/core/stair-walk.js';
 import { parseZones, zonesToWorld } from '../../js/core/zones.js';
 import { waitReady } from './helpers.js';
 
@@ -179,11 +180,12 @@ test.describe('la porte de l\'étage et la seconde salle', () => {
   test('monter par l\'escalier de départ (arrivée dans la seconde salle), traverser la porte, redescendre par l\'escalier de l\'aile : fondus justes, aucun rebond', async ({ page }) => {
     await open(page, '&wave=31&nospawn=1');
     const t = center(DEPART.floors.rdc.trigger);
-    await page.evaluate((p) => window.__zs.setPlayer(p.x, p.y), t);
-    await page.evaluate(() => window.__zs.step(0.7));
+    await page.evaluate(([p, d]) => { window.__zs.setPlayer(p.x, p.y); window.__zs.setInput({ move: d }); window.__zs.step(0.2); }, [t, entryDirection(DEPART.walk.path, 'rdc')]);
+    await page.evaluate(() => { const zs = window.__zs; while (zs.getState().floor.walk !== null) zs.step(0.05); zs.setInput({}); });
     let s = await STATE(page);
     expect(s.floor.current).toBe('etage');
-    expect(Math.hypot(s.player.x - DEPART.floors.etage.arrival.x, s.player.y - DEPART.floors.etage.arrival.y)).toBeLessThan(1);
+    const top = center(DEPART.floors.etage.trigger);
+    expect(Math.hypot(s.player.x - top.x, s.player.y - top.y)).toBeLessThan(1);
     expect(s.player.x).toBeGreaterThan(RIGHT_ROOM.x0 - 40);
     await expect(page.locator('#hud-floor')).toHaveText('Étage');
     await page.evaluate(() => window.__zs.step(3)); // pas de rebond
@@ -199,8 +201,8 @@ test.describe('la porte de l\'étage et la seconde salle', () => {
     }, [DOOR_Y]);
     expect(x).toBeLessThan(DOOR_X - 40);
     const u = center(AILE.floors.etage.trigger);
-    await page.evaluate((p) => window.__zs.setPlayer(p.x, p.y), u);
-    await page.evaluate(() => window.__zs.step(0.7));
+    await page.evaluate(([p, d]) => { window.__zs.setPlayer(p.x, p.y); window.__zs.setInput({ move: d }); window.__zs.step(0.2); }, [u, entryDirection(AILE.walk.path, 'etage')]);
+    await page.evaluate(() => { const zs = window.__zs; while (zs.getState().floor.walk !== null) zs.step(0.05); zs.setInput({}); });
     s = await STATE(page);
     expect(s.floor.current).toBe('rdc');
     expect(s.stairLog.filter((l) => l.type === 'playerStairs').map((l) => [l.stair, l.from, l.to])).toEqual([['escalier-depart', 'rdc', 'etage'], ['escalier-aile', 'etage', 'rdc']]);

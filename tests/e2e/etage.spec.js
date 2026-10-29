@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { readFileSync } from 'node:fs';
+import { entryDirection } from '../../js/core/stair-walk.js';
 import { parseZones, zonesToWorld } from '../../js/core/zones.js';
 import { waitReady } from './helpers.js';
 
@@ -102,69 +103,141 @@ test.describe('étage : départ, visibilité, étiquettes', () => {
   });
 });
 
-test.describe('fondu entre étages', () => {
-  test('useStair : verrou, voile de 0 à 1 en 0,25 s, échange une seule fois, voile de 1 à 0 en 0,25 s, joueur à l\'arrivée', async ({ page }) => {
+// Escalier physique (mise à jour du lot 3e) : on marche dans l'escalier, sa hauteur monte, l'étage logique change à mi-hauteur ; plus de fondu ni de téléportation.
+const ENTRY_RDC = entryDirection(AILE.walk.path, 'rdc');
+const ENTRY_ETAGE = entryDirection(AILE.walk.path, 'etage');
+const LIFT = load('data/game/render.json').floorLift;
+const tick = (page, seconds) => page.evaluate((sec) => { for (let i = 0; i < Math.round(sec / 0.05); i += 1) window.__zs.step(0.05); }, seconds);
+
+test.describe('escalier physique', () => {
+  test('useStair : marche automatique le long de l\'escalier, hauteur de 0 à floorLift, une seule bascule d\'étage, aucun saut de position, aucun voile', async ({ page }) => {
     await open(page, '&wave=21&nospawn=1');
+    const foot = center(AILE.floors.rdc.trigger);
+    await page.evaluate((t) => window.__zs.setPlayer(t.x, t.y), foot);
     const r = await page.evaluate(() => {
       const zs = window.__zs;
-      const out = [];
-      out.push(zs.useStair('escalier-aile'));
-      for (let i = 0; i < 12; i += 1) {
+      const out = { ok: zs.useStair('escalier-aile'), steps: [] };
+      let prev = zs.getState().player;
+      for (let i = 0; i < 100; i += 1) {
         zs.step(0.05);
         const g = zs.getState();
-        out.push([g.floor.current, Math.round(g.floor.fade.veil * 100) / 100, g.floor.fade.locked, g.stairLog.filter((l) => l.type === 'playerStairs').length]);
+        out.steps.push({ f: g.floor.current, e: g.floor.elevation, walking: g.floor.walk !== null, jump: Math.hypot(g.player.x - prev.x, g.player.y - prev.y), veil: g.floor.fade.veil, swaps: g.stairLog.filter((l) => l.type === 'playerStairs').length });
+        prev = g.player;
+        if (g.floor.walk === null) break;
       }
       return out;
     });
-    expect(r[0]).toBe(true);
-    expect(r.slice(1, 5).map((q) => q[1])).toEqual([0.2, 0.4, 0.6, 0.8]);
-    expect(r[5]).toEqual(['etage', 1, true, 1]);
-    expect(r.slice(6, 10).map((q) => q[1])).toEqual([0.8, 0.6, 0.4, 0.2]);
-    expect(r[10]).toEqual(['etage', 0, false, 1]);
-    expect(r.slice(1, 5).every((q) => q[0] === 'rdc' && q[2])).toBe(true);
+    expect(r.ok).toBe(true);
+    const e = r.steps.map((q) => q.e);
+    expect(e.every((v, i) => i === 0 || v >= e[i - 1])).toBe(true);
+    expect(e.at(-1)).toBe(LIFT);
+    expect(Math.max(...r.steps.map((q) => q.jump))).toBeLessThan(15); // pas de téléportation : au plus un pas de marche par image
+    expect(r.steps.every((q) => q.veil === 0)).toBe(true);
+    expect(r.steps.at(-1)).toMatchObject({ f: 'etage', walking: false, swaps: 1 });
+    const swapAt = r.steps.find((q) => q.f === 'etage').e;
+    expect(swapAt).toBeGreaterThan(LIFT * 0.45);
+    expect(swapAt).toBeLessThan(LIFT * 0.65);
+    expect(r.steps.length).toBeGreaterThan(20); // la montée dure plus d'une seconde
     const s = await STATE(page);
-    const a = AILE.floors.etage.arrival;
-    expect(Math.hypot(s.player.x - a.x, s.player.y - a.y)).toBeLessThan(1);
+    const end = center(AILE.floors.etage.trigger);
+    expect(Math.hypot(s.player.x - end.x, s.player.y - end.y)).toBeLessThan(1);
     expect(s.floor.stairs[0].cooldown).toBeGreaterThan(0.2);
   });
 
-  test('un escalier fermé n\'est pas déclenchable', async ({ page }) => {
+  test('un escalier fermé n\'est pas utilisable', async ({ page }) => {
     await open(page, '&wave=20&nospawn=1');
     expect(await page.evaluate(() => window.__zs.useStair('escalier-aile'))).toBe(false);
     expect(await page.evaluate(() => window.__zs.setFloor(1))).toBe(false);
-    expect((await STATE(page)).floor.fade.locked).toBe(false);
+    expect((await STATE(page)).floor.walk).toBeNull();
   });
 
-  test('pendant les 0,5 s : joueur immobile, aucun tir, invulnérable malgré un zombie au contact ; puis 1,0 s de protection', async ({ page }) => {
+  test('en marchant : entrer dans la zone en allant vers l\'escalier le monte, sans bouton ; le sens inverse le descend', async ({ page }) => {
+    await open(page, '&wave=21&nospawn=1');
+    const t = center(AILE.floors.rdc.trigger);
+    await page.evaluate(([p, d]) => { window.__zs.setPlayer(p.x, p.y); window.__zs.setInput({ move: d }); window.__zs.step(0.2); }, [t, ENTRY_RDC]);
+    expect((await STATE(page)).floor.walk).not.toBeNull();
+    await tick(page, 2.5);
+    let s = await STATE(page);
+    expect(s.floor).toMatchObject({ current: 'etage', walk: null, elevation: LIFT });
+    // Descendre : de la zone de l'étage, marcher vers l'escalier.
+    await page.evaluate(() => { window.__zs.setInput({}); window.__zs.step(1.2); });
+    await page.evaluate((d) => { window.__zs.setInput({ move: d }); }, ENTRY_ETAGE);
+    await tick(page, 0.3);
+    expect((await STATE(page)).floor.walk).not.toBeNull();
+    await tick(page, 2.5);
+    s = await STATE(page);
+    expect(s.floor).toMatchObject({ current: 'rdc', walk: null, elevation: 0 });
+    expect(s.stairLog.filter((l) => l.type === 'playerStairs').map((l) => [l.from, l.to])).toEqual([['rdc', 'etage'], ['etage', 'rdc']]);
+    await expect(page.locator('#hud-floor')).toHaveText('RDC');
+  });
+
+  test('passer à côté de la zone (marcher sans aller vers l\'escalier) ne le prend pas ; rester dans la zone non plus', async ({ page }) => {
+    await open(page, '&wave=21&nospawn=1');
+    const t = center(AILE.floors.rdc.trigger);
+    await page.evaluate(([p]) => { window.__zs.setPlayer(p.x, p.y); window.__zs.setInput({ move: { x: 1, y: 0 } }); window.__zs.step(0.5); window.__zs.setInput({}); window.__zs.step(2); }, [t]);
+    const s = await STATE(page);
+    expect(s.floor).toMatchObject({ current: 'rdc', walk: null, elevation: 0 });
+    expect(s.stairLog).toEqual([]);
+  });
+
+  test('demi-tour avant mi-hauteur : retour au rez-de-chaussée sans changement d\'étage ; après mi-hauteur : on redescend', async ({ page }) => {
+    await open(page, '&wave=21&nospawn=1');
+    const t = center(AILE.floors.rdc.trigger);
+    await page.evaluate(([p, d]) => { window.__zs.setPlayer(p.x, p.y); window.__zs.setInput({ move: d }); window.__zs.step(0.2); }, [t, ENTRY_RDC]);
+    await page.evaluate(() => { const zs = window.__zs; while (zs.getState().floor.elevation < 40) zs.step(0.05); zs.setInput({ move: { x: 0, y: -1 } }); });
+    await tick(page, 2);
+    let s = await STATE(page);
+    expect(s.floor).toMatchObject({ current: 'rdc', walk: null, elevation: 0 });
+    expect(s.stairLog.filter((l) => l.type === 'playerStairs')).toEqual([]);
+    // Seconde tentative : monter au-delà de mi-hauteur puis faire demi-tour.
+    await page.evaluate(() => { window.__zs.setInput({}); window.__zs.step(1.2); });
+    await page.evaluate(([p, d]) => { window.__zs.setPlayer(p.x, p.y); window.__zs.setInput({ move: d }); window.__zs.step(0.2); }, [t, ENTRY_RDC]);
+    await page.evaluate(() => { const zs = window.__zs; while (zs.getState().floor.elevation < 120) zs.step(0.05); zs.setInput({ move: { x: 0, y: -1 } }); });
+    expect((await STATE(page)).floor.current).toBe('etage');
+    await tick(page, 3);
+    s = await STATE(page);
+    expect(s.floor).toMatchObject({ current: 'rdc', walk: null, elevation: 0 });
+    expect(s.stairLog.filter((l) => l.type === 'playerStairs').map((l) => [l.from, l.to])).toEqual([['rdc', 'etage'], ['etage', 'rdc']]);
+  });
+
+  test('pendant la montée : aucun tir (même avec un zombie dans la ligne), les deux étages sont dessinés, le rez-de-chaussée complet jusqu\'à mi-hauteur', async ({ page }) => {
     await open(page, '&wave=21&nospawn=1');
     const r = await page.evaluate(() => {
       const zs = window.__zs;
-      const s0 = zs.getState();
-      zs.setInput({ move: { x: 1, y: 0 } });
-      zs.spawnEnemy(s0.player.x + 30, s0.player.y, { mode: 'dedans' });
+      const p = zs.getState().player;
+      zs.setInput({ aim: { angle: 0 } });
       zs.useStair('escalier-aile');
-      const during = [];
-      for (let i = 0; i < 4; i += 1) {
-        zs.step(0.05);
-        const g = zs.getState();
-        during.push({ x: g.player.x, hp: g.player.health, shots: g.shots.length, laser: g.laser });
-      }
-      return { start: s0.player, during };
+      zs.step(0.4);
+      const g = zs.getState();
+      zs.spawnEnemy(g.player.x + 100, g.player.y, { mode: 'libre' });
+      let shots = 0;
+      for (let i = 0; i < 6; i += 1) { zs.step(0.05); shots += zs.getState().bullets.length; }
+      const mid = zs.getState();
+      return { shots, laser: mid.laser, walking: mid.floor.walk !== null, vis: mid.scene.visible, start: p };
     });
-    for (const d of r.during) {
-      expect(d.x).toBeCloseTo(r.start.x, 3);
-      expect(d.hp).toBe(r.start.health);
-      expect(d.shots).toBe(0);
-      expect(d.laser).toBeNull();
-    }
+    expect(r.walking).toBe(true);
+    expect(r.shots).toBe(0);
+    expect(r.laser).toBeNull();
+    expect(r.vis.etage).toBeGreaterThan(5); // l'étage est dessiné dès que le joueur a pris de la hauteur
+    expect(r.vis.rdcShell).toBeGreaterThan(0);
+    expect(r.vis.rdc).toBeGreaterThan(5);
   });
 
-  test('protection de 1,0 s après l\'arrivée (en plus du verrou) : un zombie au contact ne blesse pas', async ({ page }) => {
+  test('de l\'étage, on voit le sol du rez-de-chaussée en dessous (coque : sol, murs et rampes) ; son mobilier et ses fenêtres ne sont pas dessinés', async ({ page }) => {
+    await open(page, '&wave=31&floor=1&nospawn=1');
+    const s = await STATE(page);
+    expect(s.scene.visible.rdcShell).toBeGreaterThanOrEqual(3);
+    expect(s.scene.visible.rdc).toBe(0);
+    expect(s.scene.elevation).toBe(LIFT);
+    expect(s.scene.exteriorY).toBe(-LIFT);
+  });
+
+  test('protection de 1,0 s après avoir changé d\'étage : un zombie au contact ne blesse pas', async ({ page }) => {
     await open(page, '&wave=21&nospawn=1');
-    await page.evaluate(() => { window.__zs.useStair('escalier-aile'); window.__zs.step(0.3); });
+    await page.evaluate(() => { window.__zs.useStair('escalier-aile'); const zs = window.__zs; while (zs.getState().floor.walk !== null) zs.step(0.05); });
     const s = await STATE(page);
     expect(s.floor.current).toBe('etage');
-    expect(s.floor.grace).toBeGreaterThan(0.5);
+    expect(s.floor.grace).toBeGreaterThan(0.8);
     await page.evaluate(() => {
       const g = window.__zs.getState();
       window.__zs.spawnEnemy(g.player.x - 30, g.player.y, { floor: 'etage', mode: 'libre' });
@@ -175,7 +248,7 @@ test.describe('fondu entre étages', () => {
     expect((await STATE(page)).player.health).toBeLessThan(s.player.health);
   });
 
-  test('#floor-fade : décoratif, sans événement, opacité égale au voile, entre le canvas et #vhs, sans filtre ni mélange', async ({ page }) => {
+  test('#floor-fade reste inerte (décoratif, voile à 0) : l\'escalier n\'utilise plus de fondu, il sert au mouvement réduit seulement', async ({ page }) => {
     await open(page, '&wave=21&nospawn=1');
     const fade = page.locator('#floor-fade');
     await expect(fade).toHaveAttribute('aria-hidden', 'true');
@@ -183,17 +256,16 @@ test.describe('fondu entre étages', () => {
     await expect(fade).toHaveCSS('position', 'fixed');
     const order = await page.evaluate(() => [...document.getElementById('game-root').children].map((n) => n.id).filter((id) => ['game-canvas', 'floor-fade', 'vhs', 'hud'].includes(id)));
     expect(order.slice(0, 3)).toEqual(['game-canvas', 'floor-fade', order[2]]);
-    await page.evaluate(() => { window.__zs.useStair('escalier-aile'); window.__zs.step(0.1); });
-    const veil = (await STATE(page)).floor.fade.veil;
-    expect(veil).toBeGreaterThan(0);
-    await expect(fade).toHaveCSS('opacity', String(veil));
+    await page.evaluate(() => { window.__zs.useStair('escalier-aile'); window.__zs.step(0.5); });
+    expect((await STATE(page)).floor.fade.veil).toBe(0);
+    await expect(fade).toHaveCSS('opacity', '0');
     const css = await fade.evaluate((el) => { const c = getComputedStyle(el); return [c.filter, c.mixBlendMode, c.backdropFilter, c.backgroundColor]; });
     expect(css.slice(0, 3)).toEqual(['none', 'normal', 'none']);
     const fog = await page.evaluate(() => { const probe = document.createElement('i'); probe.style.color = 'var(--game-fog)'; document.body.append(probe); const c = getComputedStyle(probe).color; probe.remove(); return c; });
     expect(css[3]).toBe(fog);
   });
 
-  test('prefers-reduced-motion : aucun voile, échange immédiat, verrou de 0,2 s', async ({ browser }) => {
+  test('prefers-reduced-motion : aucune marche dans l\'escalier, échange immédiat, verrou de 0,2 s, aucun voile', async ({ browser }) => {
     const context = await browser.newContext({ reducedMotion: 'reduce', viewport: SIZE });
     const page = await context.newPage();
     await open(page, '&wave=21&nospawn=1');
@@ -204,85 +276,69 @@ test.describe('fondu entre étages', () => {
       for (let i = 0; i < 6; i += 1) {
         zs.step(0.05);
         const g = zs.getState();
-        out.push([g.floor.current, g.floor.fade.veil, g.floor.fade.locked]);
+        out.push([g.floor.current, g.floor.fade.veil, g.floor.fade.locked, g.floor.walk]);
       }
       return out;
     });
-    expect(r[0]).toEqual(['etage', 0, true]);
-    expect(r.every((q) => q[1] === 0)).toBe(true);
+    expect(r[0].slice(0, 3)).toEqual(['etage', 0, true]);
+    expect(r.every((q) => q[1] === 0 && q[3] === null)).toBe(true);
     expect(r.slice(0, 3).every((q) => q[2])).toBe(true);
     expect(r[4][2]).toBe(false);
     await context.close();
   });
 
-  test('pause : le fondu est figé', async ({ page }) => {
+  test('pause : la montée est figée', async ({ page }) => {
     await open(page, '&wave=21&nospawn=1', SIZE, { freeze: false });
-    await page.evaluate(() => window.__zs.useStair('escalier-aile'));
+    await page.evaluate(() => { window.__zs.useStair('escalier-aile'); window.__zs.step(0.3); });
     await page.click('#btn-pause');
     const a = await STATE(page);
     await page.waitForTimeout(500);
     const b = await STATE(page);
-    expect(b.floor.fade.veil).toBe(a.floor.fade.veil);
-    expect(b.floor.current).toBe(a.floor.current);
+    expect(b.floor.elevation).toBe(a.floor.elevation);
+    expect(b.floor.walk).toEqual(a.floor.walk);
   });
 
-  test('« Rejouer » annule le fondu et ramène au rez-de-chaussée, voile à 0 ; #hud-live annonce « Étage » puis « Rez-de-chaussée »', async ({ page }) => {
+  test('« Rejouer » en pleine montée : retour au rez-de-chaussée, hauteur 0 ; #hud-live annonce « Étage » puis « Rez-de-chaussée »', async ({ page }) => {
     await open(page, '&wave=21&nospawn=1');
     await page.evaluate(() => {
       window.__live = [];
       new MutationObserver(() => window.__live.push(document.getElementById('hud-live').textContent)).observe(document.getElementById('hud-live'), { childList: true, characterData: true, subtree: true });
       window.__zs.useStair('escalier-aile');
-      window.__zs.step(0.6);
+      window.__zs.step(3);
     });
     expect((await STATE(page)).floor.current).toBe('etage');
-    await page.evaluate(() => { window.__zs.useStair('escalier-aile'); window.__zs.step(0.2); });
-    await page.evaluate(() => window.__zs.step(0.6));
+    await page.evaluate(() => { window.__zs.step(1.2); window.__zs.useStair('escalier-aile'); window.__zs.step(3); });
     expect((await STATE(page)).floor.current).toBe('rdc');
     expect(await page.evaluate(() => window.__live)).toEqual(expect.arrayContaining(['Étage', 'Rez-de-chaussée']));
-    await page.evaluate(() => { window.__zs.useStair('escalier-aile'); window.__zs.step(0.1); });
+    await page.evaluate(() => { window.__zs.step(1.2); window.__zs.useStair('escalier-aile'); window.__zs.step(0.6); });
+    expect((await STATE(page)).floor.walk).not.toBeNull();
     await page.evaluate(() => { document.getElementById('btn-pause').click(); });
     await page.click('#btn-restart');
     const s = await STATE(page);
-    expect(s.floor.current).toBe('rdc');
-    expect(s.floor.fade).toMatchObject({ veil: 0, locked: false });
-    await expect(page.locator('#floor-fade')).toHaveCSS('opacity', '0');
+    expect(s.floor).toMatchObject({ current: 'rdc', walk: null, elevation: 0 });
+    expect(s.scene.exteriorY).toBe(0);
   });
 
-  test('mort du joueur : le fondu est annulé, le rez-de-chaussée est affiché', async ({ page }) => {
+  test('mort du joueur en pleine montée : escalier quitté, rez-de-chaussée affiché, hauteur 0', async ({ page }) => {
+    await open(page, '&wave=21&nospawn=1');
+    await page.evaluate(() => { window.__zs.useStair('escalier-aile'); window.__zs.step(1.2); window.__zs.setChutes(0); window.__zs.downPlayer(); window.__zs.step(0.2); });
+    const s = await STATE(page);
+    expect(s.dead).toBe(true);
+    expect(s.floor).toMatchObject({ current: 'rdc', walk: null, elevation: 0 });
+    expect(s.scene.visible.etage).toBe(0);
+  });
+
+  test('mort à l\'étage : le rez-de-chaussée est affiché', async ({ page }) => {
     await open(page, '&wave=21&floor=1&nospawn=1');
     await page.evaluate(() => { window.__zs.setChutes(0); window.__zs.downPlayer(); window.__zs.step(0.2); });
     const s = await STATE(page);
     expect(s.dead).toBe(true);
     expect(s.floor.current).toBe('rdc');
-    expect(s.floor.fade.veil).toBe(0);
     expect(s.scene.visible.etage).toBe(0);
   });
 });
 
 test.describe('déclenchement par le mouvement réel', () => {
-  test('un joueur déplacé dans la zone de déclenchement change d\'étage ; pas de rebond tant qu\'il y reste ; nouveau déclenchement après en être sorti', async ({ page }) => {
-    await open(page, '&wave=21&nospawn=1');
-    const t = center(AILE.floors.rdc.trigger);
-    await page.evaluate((p) => window.__zs.setPlayer(p.x, p.y), { x: t.x, y: t.y + 120 });
-    await page.evaluate(() => window.__zs.step(0.2));
-    expect((await STATE(page)).floor.current).toBe('rdc');
-    await page.evaluate((p) => window.__zs.setPlayer(p.x, p.y), t);
-    await page.evaluate(() => window.__zs.step(0.7));
-    let s = await STATE(page);
-    expect(s.floor.current).toBe('etage');
-    expect(s.stairLog.filter((l) => l.type === 'playerStairs')).toHaveLength(1);
-    // Pas de rebond : l'arrivée est hors de la zone, le joueur y reste.
-    await page.evaluate(() => window.__zs.step(3));
-    expect((await STATE(page)).stairLog.filter((l) => l.type === 'playerStairs')).toHaveLength(1);
-    // Retour : marcher dans la zone de l'étage.
-    const u = center(AILE.floors.etage.trigger);
-    await page.evaluate((p) => window.__zs.setPlayer(p.x, p.y), u);
-    await page.evaluate(() => window.__zs.step(0.7));
-    s = await STATE(page);
-    expect(s.floor.current).toBe('rdc');
-    expect(s.stairLog.filter((l) => l.type === 'playerStairs')).toHaveLength(2);
-  });
-
   test('l\'escalier fermé (?wave=20) est bloqué par son bloc : on ne peut pas atteindre sa zone', async ({ page }) => {
     await open(page, '&wave=20&nospawn=1');
     const t = center(AILE.floors.rdc.trigger);
@@ -400,7 +456,7 @@ test.describe('zombies sur deux étages', () => {
       const hp = zs.getState().enemies[0].hp;
       zs.fire(0);
       zs.useStair('escalier-aile');
-      zs.step(0.3);
+      zs.step(2.5);
       return { b, hp, max: zs.getState().enemies[0].maxHp, after: zs.getState().bullets.length, floor: zs.getState().floor.current };
     });
     expect(r.b).toEqual(['rdc']);
