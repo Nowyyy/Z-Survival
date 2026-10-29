@@ -1,11 +1,10 @@
 import { describe, it, expect } from 'vitest';
 import { arrivalKnockback, createStairWatch, portalsFor, stairArrival, stairHit, stairParams, stairSolid, STAIR_DEFAULTS, stairState, stairTriggers, startStairCooldown, stepStairWatch } from '../../js/core/stairs.js';
-import { parseZones, zonesToWorld } from '../../js/core/zones.js';
-import { centerOf, stairsCfg, world, zonesActive, zonesJson } from './helpers/etage.js';
+import { centerOf, stairsCfg, zonesActive, zonesPlanned } from './helpers/etage.js';
 import { deepFreeze, WEIRD } from './helpers/carte.js';
 
 const stairs = zonesActive.stairs; // portes 2 et 3 actives (le jeu les active aux parties B et C)
-const plannedStairs = zonesToWorld(parseZones(zonesJson), world.transform).stairs;
+const plannedStairs = zonesPlanned.stairs;
 const AILE = stairs.find((s) => s.id === 'escalier-aile');
 const DEPART = stairs.find((s) => s.id === 'escalier-depart');
 const inside = (t) => ({ x: t.cx, y: t.cy, r: 18 });

@@ -82,6 +82,11 @@ export function syncWindowGrid(world, state, floor) {
   return { ...state, grids: { ...state.grids, [f]: createGrid(layout.size, solidsFor(world, state, f), world.cfg.grid) }, flow: f === state.playerFloor ? createFlowState() : state.flow };
 }
 
+// Avance le champ de flux du joueur à son étage (recalculé seulement quand il change de cellule, au plus toutes les 0,25 s : nav.json recompute).
+export function stepPlayerFlow(world, state, dt, player) {
+  return { ...state, flow: stepFlow(state.flow, dt, state.grids[state.playerFloor], player, world.cfg.nav?.recompute) };
+}
+
 // Le joueur change d'étage : le champ de flux du joueur repart de zéro.
 export const setPlayerFloor = (world, state, floor) => ({ ...state, playerFloor: world.floors.includes(floor) ? floor : state.playerFloor, flow: createFlowState() });
 
@@ -133,7 +138,8 @@ export function stepFloors(world, state, input) {
   for (const f of changed) next = syncWindowGrid(world, next, f);
 
   // 3. Déplacement : à l'étage du joueur, poursuite du joueur ; à l'autre, champ de flux vers l'escalier utilisable le plus proche par chemin.
-  const flow = stepFlow(next.flow, dt, next.grids[pf], player, cfg.nav?.recompute);
+  // input.flowDone : le champ de flux du joueur a déjà été avancé par stepPlayerFlow (le jeu le mesure) ; il est refait si la grille de son étage vient de changer.
+  const flow = input?.flowDone === true && !changed.has(pf) ? next.flow : stepFlow(next.flow, dt, next.grids[pf], player, cfg.nav?.recompute);
   next = { ...next, flow };
   for (const f of world.floors) {
     const layout = layoutOf(world, f);

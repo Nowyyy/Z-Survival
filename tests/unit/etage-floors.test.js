@@ -11,7 +11,7 @@ import { createRng } from '../../js/core/rng.js';
 import { createDirector, stepDirector } from '../../js/core/wave-director.js';
 import { parseZones, restrictToFloors, zonesToWorld } from '../../js/core/zones.js';
 import { createWindowsState, windowGeometries } from '../../js/core/windows.js';
-import { decor, etageWorld, layouts, wavesCfg, windowsCfg, world, zones, zonesActive, zonesJson } from './helpers/etage.js';
+import { decor, etageWorld, layouts, wavesCfg, windowsCfg, world, zones, zonesActive, zonesJson, zonesPlanned } from './helpers/etage.js';
 import { deepFreeze, WEIRD } from './helpers/carte.js';
 
 const inRect = (r, x, y) => x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h;
@@ -187,10 +187,10 @@ describe('couches de collisions par étage (layout.js)', () => {
     expect(closedDoors(layouts.rdc, ['porte-2']).map((r) => r.id)).toEqual(['porte-1', 'porte-3']);
   });
 
-  it('les portes planned (zones.json avant les parties B et C) n\'ont aucun bloc dans les couches', () => {
-    const planned = buildLayouts({ rdc: { world, decor }, etage: { world: etageWorld }, zones });
-    expect(planned.doors.map((d) => d.id)).toEqual(['porte-1']);
-    expect(closedDoors(planned.etage, [])).toEqual([]);
+  it('les portes « planned » gardent leurs blocs pleins mais sont marquées planned : le directeur ne les ouvre pas', () => {
+    const planned = buildLayouts({ rdc: { world, decor }, etage: { world: etageWorld }, zones: zonesPlanned });
+    expect(planned.doors.map((d) => [d.id, d.planned])).toEqual([['porte-1', false], ['porte-2', true], ['porte-3', true]]);
+    expect(closedDoors(planned.etage, []).map((r) => r.id)).toEqual(['porte-3']);
   });
 
   it('les blocs de l\'étage et du rez-de-chaussée sont dans le bâtiment de leur étage', () => {

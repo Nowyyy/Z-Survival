@@ -122,13 +122,15 @@ function segmentedLayout(world, decorCfg, opts = {}) {
   const zones = opts?.zones && Array.isArray(opts.zones.zones) ? opts.zones : null;
   const blockParams = { wallThickness: t, wallHeight: num(world.wallHeight, 60) };
   const blockRect = (id, b) => (b.rect ? { id, kind: 'porte', x: b.rect.x, y: b.rect.y, w: b.rect.w, h: b.rect.h, hauteur: blockParams.wallHeight } : doorRect({ id, opening: b.opening }, blockParams));
+  // Un escalier fermé et la porte de l'étage ont leurs blocs pleins même si la porte est « planned » (jamais ouverte tant que le jeu ne l'active pas) : le champ planned est
+  // rendu avec la porte, le directeur ne l'ouvre pas.
   const doors = (zones && Array.isArray(zones.doors) ? zones.doors : [])
-    .filter((d) => d && d.planned !== true && typeof d.id === 'string')
+    .filter((d) => d && typeof d.id === 'string')
     .map((d) => {
       const defs = Array.isArray(d.blocks) && d.blocks.length > 0 ? d.blocks.filter((b) => floorOf(b) === floorId) : floorOf(d) === floorId ? [{ opening: d.opening }] : [];
       const rects = defs.map((b) => blockRect(d.id, b)).filter((r) => r !== null);
-      const blocks = rects.map((r, i) => ({ id: rects.length > 1 ? `${d.id}-${i + 1}` : d.id, rect: { ...r, id: rects.length > 1 ? `${d.id}-${i + 1}` : d.id } }));
-      return { id: d.id, opens: Array.isArray(d.opens) ? [...d.opens] : [], openAfterWave: d.openAfterWave, opening: d.opening ? { ...d.opening } : null, rect: blocks[0]?.rect ?? null, blocks };
+      const blocks = rects.map((r, i) => ({ id: rects.length > 1 ? `${d.id}-${i + 1}` : d.id, wall: defs[i] && !defs[i].rect, rect: { ...r, id: rects.length > 1 ? `${d.id}-${i + 1}` : d.id } }));
+      return { id: d.id, planned: d.planned === true, opens: Array.isArray(d.opens) ? [...d.opens] : [], openAfterWave: d.openAfterWave, opening: d.opening ? { ...d.opening } : null, rect: blocks[0]?.rect ?? null, blocks };
     })
     .filter((d) => d.blocks.length > 0);
   // Lot 3e : sur l'étage, chaque donnée porte son étage (rdc par défaut : le rez-de-chaussée reste identique à avant).
@@ -288,8 +290,8 @@ export function buildLayouts(input, opts = {}) {
   const ids = new Map();
   for (const [floor, l] of Object.entries(layers)) {
     for (const d of l.doors ?? []) {
-      const entry = ids.get(d.id) ?? { id: d.id, opens: d.opens, openAfterWave: d.openAfterWave, opening: d.opening, blocks: { [DEFAULT_FLOOR]: [], [UPPER_FLOOR]: [] } };
-      entry.blocks[floor] = d.blocks.map((b) => ({ id: b.id, rect: { ...b.rect } }));
+      const entry = ids.get(d.id) ?? { id: d.id, planned: d.planned === true, opens: d.opens, openAfterWave: d.openAfterWave, opening: d.opening, blocks: { [DEFAULT_FLOOR]: [], [UPPER_FLOOR]: [] } };
+      entry.blocks[floor] = d.blocks.map((b) => ({ id: b.id, wall: b.wall === true, rect: { ...b.rect } }));
       ids.set(d.id, entry);
     }
   }

@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { createDirector, info, stepDirector } from '../../js/core/wave-director.js';
 import { createSplash, KEYS, stepSplash, ZONE_SUBTITLES } from '../../js/core/wave-splash.js';
 import { activeSpawnPoints, activeWindows, activeZones, assignWindows, doorsOpenAtStart, nextDoor, parseZones } from '../../js/core/zones.js';
-import { floorWorld, wavesCfg, zonesActive, zonesJson } from './helpers/etage.js';
+import { floorWorld, wavesCfg, zonesActive, zonesJson, zonesPlannedPx } from './helpers/etage.js';
 
 const splashCfg = JSON.parse(readFileSync('data/game/splash.json', 'utf8'));
 const parsed = parseZones(zonesJson);
@@ -72,9 +72,9 @@ describe('directeur : portes 2 et 3 (fins des manches 20 et 30)', () => {
     expect(nextDoor(zones, 1, ['porte-1', 'porte-2', 'porte-3'])).toBeNull();
   });
 
-  it('tant que les portes sont « planned » (avant les parties B et C), « Prochaine zone » ne les voit pas', () => {
-    expect(nextDoor(parsed, 1, ['porte-1'])).toBeNull();
-    expect(doorsOpenAtStart(parsed, 31)).toEqual(['porte-1']);
+  it('tant que les portes sont « planned » (état d\'avant le lot 3e), « Prochaine zone » ne les voit pas', () => {
+    expect(nextDoor(zonesPlannedPx, 1, ['porte-1'])).toBeNull();
+    expect(doorsOpenAtStart(zonesPlannedPx, 31)).toEqual(['porte-1']);
   });
 
   it('la fin de monde à la manche 40 est conservée', () => {

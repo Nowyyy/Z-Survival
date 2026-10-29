@@ -27,6 +27,9 @@ export const gridOpts = { cell: navCfg.cell, radius: enemiesCfg.zombie.radius, i
 // zones.json lu avec les portes 2 et 3 actives (planned faux) : le jeu les active aux parties B et C ; les tests de simulation les utilisent dès maintenant.
 export const zonesPx = parseZones(zonesJson);
 export const zonesActive = zonesToWorld({ ...zonesPx, doors: zonesPx.doors.map((d) => ({ ...d, planned: false })), stairs: zonesPx.stairs.map((s) => ({ ...s, planned: false })) }, world.transform);
+// Variante où les portes 2 et 3 sont « planned » (aucun effet) : état d'avant les parties B et C du lot 3e.
+export const zonesPlannedPx = { ...zonesPx, doors: zonesPx.doors.map((d) => (d.id === 'porte-1' ? d : { ...d, planned: true })), stairs: zonesPx.stairs.map((s) => ({ ...s, planned: true })) };
+export const zonesPlanned = zonesToWorld(zonesPlannedPx, world.transform);
 export const zones = zonesToWorld(zonesPx, world.transform);
 
 export const layouts = buildLayouts({ rdc: { world, decor }, etage: { world: etageWorld }, zones: zonesActive });

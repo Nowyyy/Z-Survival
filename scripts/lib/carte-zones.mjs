@@ -33,7 +33,8 @@ export function loadMap(id = 'rez-de-chaussee', root = 'data/game/maps') {
   const layout = buildLayout(world, decor);
   const geoms = windowGeometries(windowsWithGaps(layout), windowsCfg);
   const assignment = assignWindowsDetailed(zones, geoms.map((g) => ({ id: g.id, entryInner: g.entryInner }))).map;
-  const doors = zones.doors.filter((d) => !d.planned).map((d) => ({ ...d, rect: doorRect(d, { wallThickness: world.wallThickness, wallHeight: world.wallHeight }) }));
+  // Portes de la couche du rez-de-chaussée (lot 3e : les escaliers fermés ont aussi leur bloc, même planned).
+  const doors = buildLayout(world, decor, { zones }).doors.flatMap((d) => d.blocks.map((b) => ({ ...zones.doors.find((q) => q.id === d.id), rect: b.rect })));
   const gridOpts = { cell: navCfg.cell, radius: enemiesCfg.zombie.radius, inflate: navCfg.inflate };
   return { id, plan, params, world, decor, zonesPx, zones, windowsCfg, wavesCfg, gaitsCfg, enemiesCfg, navCfg, layout, geoms, assignment, doors, gridOpts };
 }

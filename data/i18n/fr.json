@@ -77,6 +77,7 @@
   "game.volume": "Volume",
   "game.volume.value": "{n} %",
   "game.fps.windows": "Fenêtres : {ms} ms",
+  "game.fps.etage": "Étage : {ms} ms",
   "game.fps.stats": "Stats : {levels} ; cône : {angle}°",
   "game.fps.sons": "Sons : {essential} ms (essentiels), {background} ms (fond) ; voix : {voices}",
   "dev.sons.title": "Écoute des sons",

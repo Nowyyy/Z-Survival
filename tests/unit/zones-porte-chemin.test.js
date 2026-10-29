@@ -23,8 +23,8 @@ const hallEntries = geoms.filter((g) => map.assignment[g.id] === 'depart');
 const midY = door.rect.y + door.rect.h / 2;
 
 describe('porte 1 : obstacle plein dans l\'ouverture', () => {
-  it('layout.doors ne contient que la porte active (les portes planned n\'existent pas)', () => {
-    expect(layout.doors.map((d) => d.id)).toEqual(['porte-1']);
+  it('layout.doors : la porte 1 et, lot 3e, les blocs des escaliers fermés (portes 2 et 3, planned : jamais ouvertes par le directeur)', () => {
+    expect(layout.doors.map((d) => [d.id, d.planned])).toEqual([['porte-1', false], ['porte-2', false], ['porte-3', true]]);
     expect(layout.doors[0]).toMatchObject({ opens: ['aile'], openAfterWave: 10 });
   });
 
@@ -65,7 +65,7 @@ describe('porte 1 : obstacle plein dans l\'ouverture', () => {
   it('les murs et les meubles restent identiques avec ou sans zones (la porte s\'y ajoute seulement)', () => {
     expect(layout.playerObstacles).toEqual(base.playerObstacles);
     expect(layout.zombieObstacles).toEqual(base.zombieObstacles);
-    expect(playerSolids(layout)).toHaveLength(base.playerObstacles.length + 1);
+    expect(playerSolids(layout)).toHaveLength(base.playerObstacles.length + 3); // porte 1 et les blocs des deux escaliers (lot 3e)
   });
 });
 

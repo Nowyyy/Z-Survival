@@ -20,7 +20,7 @@ export function applyTexts(dict) {
 }
 
 // Clés des textes de l'écran de préparation des textures et de la ligne de diagnostic ?fps=1 (fr.json).
-export const TEXTURE_TEXTS = { loading: 'game.loading', done: 'game.loading.done', fps: 'game.fps.textures', fpsSons: 'game.fps.sons', fpsStats: 'game.fps.stats', fpsWindows: 'game.fps.windows', error: 'game.loading.error' };
+export const TEXTURE_TEXTS = { loading: 'game.loading', done: 'game.loading.done', fps: 'game.fps.textures', fpsSons: 'game.fps.sons', fpsStats: 'game.fps.stats', fpsWindows: 'game.fps.windows', fpsEtage: 'game.fps.etage', error: 'game.loading.error' };
 
 // Clés du libellé et des états de l'interrupteur « Effet VHS » du panneau de pause (fr.json).
 export const VHS_TEXTS = { label: 'game.vhs.label', on: 'game.vhs.on', off: 'game.vhs.off', reduced: 'game.vhs.reduced' };

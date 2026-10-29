@@ -302,10 +302,10 @@ describe('zones.json étendu : étages, escaliers, blocs, portes 2 et 3', () => 
     expect(blocksOf(map, 'etage', []).map((r) => r.id)).toEqual(['porte-3']);
   });
 
-  it('zones.json est lu sans avertissement ; les portes 2 et 3 sont « planned » tant que le jeu ne les consomme pas (parties B et C)', () => {
+  it('zones.json est lu sans avertissement ; la porte 2 est active (partie B), la porte 3 reste « planned » jusqu\'à la partie C', () => {
     const p = parseZones(zonesJson);
     expect(p.warnings).toEqual([]);
-    expect(p.doors.map((d) => [d.id, d.planned])).toEqual([['porte-1', false], ['porte-2', true], ['porte-3', true]]);
-    expect(p.stairs.every((s) => s.planned)).toBe(true);
+    expect(p.doors.map((d) => [d.id, d.planned])).toEqual([['porte-1', false], ['porte-2', false], ['porte-3', true]]);
+    expect(p.stairs.map((s) => [s.id, s.planned])).toEqual([['escalier-aile', false], ['escalier-depart', true]]);
   });
 });
