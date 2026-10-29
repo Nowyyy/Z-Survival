@@ -100,7 +100,7 @@
     ] },
   { "name": "lot-3e", "titre": "Étage, escaliers et portes 2 et 3", "points": [
       "Le bâtiment a un étage, reproduit d'après le modèle 3D : une aile et une poche à gauche, une salle à droite, sept fenêtres U1 à U7. Une puce « RDC » / « Étage » indique où l'on est.",
-      "Deux escaliers relient les étages : on les prend en marchant sur la zone marquée au sol, avec un fondu de 0,5 s pendant lequel le joueur est immobile et protégé.",
+      "Deux escaliers relient les étages : on les monte et on les descend en marchant (marches, hauteur qui change, déplacement libre dans la largeur), sans téléportation ; depuis l'étage on voit le sol du rez-de-chaussée dessous.",
       "Les zombies vivent sur les deux étages : ceux qui ne trouvent pas le joueur rejoignent un escalier ouvert et changent d'étage. Les bruits de l'autre étage sont étouffés.",
       "Porte 2 (manche 20 terminée) : l'escalier de l'aile s'ouvre, avec la zone de gauche de l'étage. Porte 3 (manche 30 terminée) : le second escalier et la salle de droite.",
       "?floor=1 démarre à l'étage, ?labels=1 numérote les fenêtres de l'étage affiché, carte.html propose un sélecteur d'étage."

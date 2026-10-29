@@ -1,22 +1,29 @@
 import { describe, it, expect } from 'vitest';
-import { cleanPath, entryDirection, heightOf, pathLength, pointAt, startWalk, stepWalk, SWAP_DOWN, SWAP_UP, wantsStairs } from '../../js/core/stair-walk.js';
+import { cleanPath, entryDirection, heightOf, pathLength, pointAt, project, startWalk, stepWalk, SWAP_DOWN, SWAP_UP, wantsStairs } from '../../js/core/stair-walk.js';
 import { parseZones, zonesToWorld } from '../../js/core/zones.js';
 import { deepFreeze, WEIRD } from './helpers/carte.js';
 import { world, zonesJson } from './helpers/etage.js';
 
-// Chemin de test : palier d'entrée de 10, rampe de 40 (t de 0 à 1), palier de sortie vers l'ouest.
+// Chemin de test : palier d'entrée de 10, rampe de 40 (t de 0 à 1), palier de sortie vers l'ouest ; largeur 60, rayon du joueur 10 (jeu latéral de 20).
 const PATH = deepFreeze([{ x: 0, y: 0, t: 0 }, { x: 0, y: 10, t: 0 }, { x: 0, y: 50, t: 1 }, { x: -40, y: 57, t: 1 }]);
-const run = (walk, dir, seconds, speed = 100, path = PATH) => {
+const OPTS = { speed: 100, width: 60, radius: 10 };
+// Marche de `seconds` secondes depuis pos ; dir peut être une fonction (étape, position, résultat précédent) pour tourner.
+const run = (walk, pos, dir, seconds, opts = OPTS, path = PATH) => {
   let w = walk;
+  let p = pos;
   const out = [];
   for (let i = 0; i < Math.round(seconds / 0.05); i += 1) {
-    const r = stepWalk(w, path, { dir, speed, dt: 0.05 });
+    const d = typeof dir === 'function' ? dir(i, p, out.at(-1)) : dir;
+    const r = stepWalk(w, path, { ...opts, pos: p, dir: d, dt: 0.05 });
     out.push(r);
     if (r.done) break;
     w = r.walk;
+    p = r.pos;
   }
   return out;
 };
+// Direction qui suit le chemin (montée) : vers le sud sur la rampe, puis vers la sortie.
+const climb = (i, p) => (p.y < 52 ? { x: 0, y: 1 } : { x: -1, y: 0.2 });
 
 describe('stair-walk.js : chemin', () => {
   it('cleanPath garde les points valides et refuse le reste', () => {
@@ -72,152 +79,195 @@ describe('stair-walk.js : chemin', () => {
   });
 });
 
-describe('stair-walk.js : marche dans l\'escalier', () => {
-  it('startWalk : du premier point depuis le rez-de-chaussée, du dernier depuis l\'étage ; refuse les entrées invalides', () => {
-    expect(startWalk('a', 'rdc')).toMatchObject({ stair: 'a', s: 0, floor: 'rdc', from: 'rdc', auto: false, sign: 1 });
-    expect(startWalk('a', 'etage', true)).toMatchObject({ s: 1, floor: 'etage', from: 'etage', auto: true, sign: -1 });
+describe('stair-walk.js : projection', () => {
+  it('project : point le plus proche, distance, dépassement des bouts', () => {
+    const on = project(PATH, { x: 20, y: 30 });
+    expect(on).toMatchObject({ x: 0, y: 30, dist: 20, beforeStart: 0, pastEnd: 0 });
+    expect(on.t).toBeCloseTo(0.5, 6);
+    expect(project(PATH, { x: 0, y: -15 })).toMatchObject({ x: 0, y: 0, beforeStart: 15, t: 0 });
+    const end = project(PATH, { x: -60, y: 60 });
+    expect(end.pastEnd).toBeGreaterThan(15);
+    expect(end.t).toBe(1);
+    expect(project(null, { x: 0, y: 0 }).dist).toBe(Infinity);
+    expect(project(PATH, null).dist).toBe(Infinity);
+  });
+
+  it('s croît le long du chemin', () => {
+    const a = project(PATH, { x: 0, y: 5 }).s;
+    const b = project(PATH, { x: 0, y: 40 }).s;
+    const c = project(PATH, { x: -20, y: 54 }).s;
+    expect(a).toBeLessThan(b);
+    expect(b).toBeLessThan(c);
+  });
+});
+
+describe('stair-walk.js : marche libre dans l\'escalier', () => {
+  it('startWalk : étage de départ, désarmé ; refuse les entrées invalides', () => {
+    expect(startWalk('a', 'rdc')).toEqual({ stair: 'a', floor: 'rdc', from: 'rdc', auto: false, armed: false });
+    expect(startWalk('a', 'etage', true)).toMatchObject({ from: 'etage', floor: 'etage', auto: true });
     expect(startWalk(3, 'rdc')).toBeNull();
     expect(startWalk('a', 'cave')).toBeNull();
   });
 
-  it('mouvement vers l\'escalier : la hauteur monte sans jamais baisser, l\'étage change une seule fois, sortie en haut', () => {
-    const steps = run(startWalk('a', 'rdc'), { x: 0, y: 1 }, 6);
+  it('on monte en marchant : la hauteur ne baisse jamais, l\'étage logique change une seule fois à mi-hauteur, sortie par le dernier bout', () => {
+    const steps = run(startWalk('a', 'rdc'), { x: 0, y: -5 }, climb, 8);
     const ts = steps.map((r) => r.point.t);
     expect(ts.every((t, i) => i === 0 || t >= ts[i - 1] - 1e-12)).toBe(true);
     const floors = steps.map((r) => r.floor);
     expect(floors.filter((f, i) => i > 0 && f !== floors[i - 1])).toHaveLength(1);
     const swap = steps.find((r) => r.floor === 'etage');
     expect(swap.point.t).toBeGreaterThanOrEqual(SWAP_UP);
-    expect(swap.point.t).toBeLessThan(SWAP_UP + 0.15);
+    expect(swap.point.t).toBeLessThan(SWAP_UP + 0.12);
     expect(steps.at(-1)).toMatchObject({ done: 'etage', walk: null, floor: 'etage' });
-    expect(steps.at(-1).point).toMatchObject({ x: -40, y: 57, t: 1 });
   });
 
-  it('vitesse : au plus speed × dt par pas, jamais de saut', () => {
-    const steps = run(startWalk('a', 'rdc'), { x: 0, y: 1 }, 6, 120);
-    let prev = pointAt(PATH, 0);
+  it('aucun saut : au plus speed × dt par pas, sauf le premier pas qui ramène dans le tube', () => {
+    const steps = run(startWalk('a', 'rdc'), { x: 0, y: -5 }, climb, 8);
+    let prev = { x: 0, y: -5 };
     for (const r of steps) {
-      expect(Math.hypot(r.point.x - prev.x, r.point.y - prev.y)).toBeLessThanOrEqual(120 * 0.05 + 1e-9);
-      prev = r.point;
+      expect(Math.hypot(r.pos.x - prev.x, r.pos.y - prev.y)).toBeLessThanOrEqual(100 * 0.05 + 1e-9);
+      prev = r.pos;
     }
   });
 
-  it('dt est borné à 0,05 s (une image très longue ne saute pas l\'escalier) et vaut 0 en pause', () => {
-    const w = startWalk('a', 'rdc');
-    const big = stepWalk(w, PATH, { dir: { x: 0, y: 1 }, speed: 100, dt: 5 });
-    expect(big.point.y).toBeLessThanOrEqual(5.0001);
-    const still = stepWalk(w, PATH, { dir: { x: 0, y: 1 }, speed: 100, dt: 0 });
-    expect(still.walk.s).toBe(0);
+  it('déplacement libre : on peut marcher de côté dans la largeur sans changer de hauteur, puis les rambardes arrêtent', () => {
+    let w = startWalk('a', 'rdc');
+    let pos = { x: 0, y: 5 };
+    for (let i = 0; i < 4; i += 1) {
+      const r = stepWalk(w, PATH, { ...OPTS, pos, dir: { x: 0, y: 1 }, dt: 0.05 });
+      w = r.walk;
+      pos = r.pos;
+    }
+    const before = project(PATH, pos);
+    expect(before.t).toBeGreaterThan(0);
+    const side = run(w, pos, { x: 1, y: 0 }, 1);
+    const last = side.at(-1);
+    expect(last.pos.y).toBeCloseTo(pos.y, 6); // la hauteur ne dépend que de la position le long du chemin
+    expect(last.point.t).toBeCloseTo(before.t, 6);
+    expect(last.pos.x).toBeGreaterThan(5);
+    expect(last.pos.x).toBeLessThanOrEqual(20 + 1e-9); // rambarde : largeur / 2 - rayon
+    expect(last.done).toBeNull();
+    const left = run(w, pos, { x: -1, y: 0 }, 1).at(-1);
+    expect(left.pos.x).toBeGreaterThanOrEqual(-20 - 1e-9);
   });
 
-  it('sans mouvement le joueur reste en place ; un mouvement de côté ne fait pas avancer sur la rampe', () => {
-    let w = startWalk('a', 'rdc');
-    for (let i = 0; i < 8; i += 1) w = stepWalk(w, PATH, { dir: { x: 0, y: 1 }, speed: 100, dt: 0.05 }).walk; // sur la rampe
-    const at = w.s;
-    expect(stepWalk(w, PATH, { dir: { x: 0, y: 0 }, speed: 100, dt: 0.05 }).walk.s).toBe(at);
-    expect(stepWalk(w, PATH, { dir: { x: 1, y: 0 }, speed: 100, dt: 0.05 }).walk.s).toBeCloseTo(at, 9);
+  it('on peut s\'arrêter, reculer et repartir en pleine rampe', () => {
+    const up = run(startWalk('a', 'rdc'), { x: 0, y: 5 }, { x: 0, y: 1 }, 0.5);
+    const mid = up.at(-1);
+    const still = run(mid.walk, mid.pos, { x: 0, y: 0 }, 1).at(-1);
+    expect(still.pos).toEqual(mid.pos);
+    expect(still.point.t).toBe(mid.point.t);
+    const back = run(mid.walk, mid.pos, { x: 0, y: -1 }, 0.3).at(-1);
+    expect(back.point.t).toBeLessThan(mid.point.t);
+    expect(back.done).toBeNull();
   });
 
   it('demi-tour avant mi-hauteur : sortie par le bas sans changement d\'étage', () => {
-    let w = startWalk('a', 'rdc');
-    for (let i = 0; i < 4; i += 1) w = stepWalk(w, PATH, { dir: { x: 0, y: 1 }, speed: 100, dt: 0.05 }).walk;
-    expect(pointAt(PATH, w.s).t).toBeLessThan(SWAP_DOWN);
-    const back = run(w, { x: 0, y: -1 }, 5);
+    const w = run(startWalk('a', 'rdc'), { x: 0, y: -5 }, { x: 0, y: 1 }, 0.25).at(-1);
+    expect(w.point.t).toBeLessThan(SWAP_DOWN);
+    expect(w.point.t).toBeGreaterThan(0);
+    const back = run(w.walk, w.pos, { x: 0, y: -1 }, 4);
     expect(back.at(-1)).toMatchObject({ done: 'rdc', floor: 'rdc' });
     expect(back.every((r) => r.floor === 'rdc')).toBe(true);
   });
 
-  it('demi-tour après mi-hauteur : l\'étage logique redevient le rez-de-chaussée sous SWAP_DOWN (hystérésis)', () => {
-    let w = startWalk('a', 'rdc');
-    let r;
-    for (let i = 0; i < 9; i += 1) {
-      r = stepWalk(w, PATH, { dir: { x: 0, y: 1 }, speed: 100, dt: 0.05 });
-      w = r.walk;
-    }
-    expect(r.floor).toBe('etage');
-    const back = run(w, { x: 0, y: -1 }, 5);
+  it('demi-tour après mi-hauteur : l\'étage logique redevient le rez-de-chaussée sous SWAP_DOWN (hystérésis), une seule bascule de retour', () => {
+    const up = run(startWalk('a', 'rdc'), { x: 0, y: -5 }, { x: 0, y: 1 }, 1.0);
+    const top = up.at(-1);
+    expect(top.floor).toBe('etage');
+    expect(top.done).toBeNull();
+    const back = run(top.walk, top.pos, { x: 0, y: -1 }, 5);
     expect(back.at(-1)).toMatchObject({ done: 'rdc' });
     const turn = back.find((q) => q.floor === 'rdc');
     expect(turn.point.t).toBeLessThan(SWAP_DOWN);
     expect(back.filter((q, i) => i > 0 && q.floor !== back[i - 1].floor)).toHaveLength(1);
   });
 
-  it('hystérésis : rester entre SWAP_DOWN et SWAP_UP ne change pas l\'étage', () => {
+  it('hystérésis : osciller entre SWAP_DOWN et SWAP_UP ne change pas l\'étage plus d\'une fois', () => {
     expect(SWAP_DOWN).toBeLessThan(SWAP_UP);
     let w = startWalk('a', 'rdc');
-    for (let i = 0; i < 6; i += 1) w = stepWalk(w, PATH, { dir: { x: 0, y: 1 }, speed: 100, dt: 0.05 }).walk;
+    let pos = { x: 0, y: 5 };
+    for (let i = 0; i < 6; i += 1) {
+      const r = stepWalk(w, PATH, { ...OPTS, pos, dir: { x: 0, y: 1 }, dt: 0.05 });
+      w = r.walk;
+      pos = r.pos;
+    }
     const floors = [];
-    for (let i = 0; i < 20; i += 1) {
-      const dir = i % 2 === 0 ? { x: 0, y: 1 } : { x: 0, y: -1 };
-      const r = stepWalk(w, PATH, { dir, speed: 6, dt: 0.05 });
+    for (let i = 0; i < 24; i += 1) {
+      const r = stepWalk(w, PATH, { ...OPTS, pos, dir: { x: 0, y: i % 2 === 0 ? 1 : -1 }, speed: 6, dt: 0.05 });
       floors.push(r.floor);
       w = r.walk;
+      pos = r.pos;
     }
-    expect(new Set(floors).size).toBeLessThanOrEqual(2);
     expect(floors.filter((f, i) => i > 0 && f !== floors[i - 1]).length).toBeLessThanOrEqual(1);
   });
 
-  it('depuis l\'étage : on part du dernier point, en descendant la hauteur baisse, sortie en bas au premier point', () => {
-    const dir = entryDirection(PATH, 'etage');
-    const steps = run(startWalk('a', 'etage'), dir, 8);
+  it('virage au palier du haut : il faut tourner vers la sortie ; continuer tout droit reste dans l\'escalier (rambarde)', () => {
+    const up = run(startWalk('a', 'rdc'), { x: 0, y: -5 }, { x: 0, y: 1 }, 3);
+    const stuck = up.at(-1);
+    expect(stuck.done).toBeNull();
+    expect(stuck.point.t).toBe(1);
+    const out = run(stuck.walk, stuck.pos, { x: -1, y: 0.15 }, 3);
+    expect(out.at(-1)).toMatchObject({ done: 'etage' });
+  });
+
+  it('on n\'est pas « sorti » avant d\'avoir rejoint le chemin : partir de derrière le premier bout, on entre', () => {
+    const steps = run(startWalk('a', 'rdc'), { x: 0, y: -30 }, { x: 0, y: 1 }, 2);
+    expect(steps.every((r) => r.done === null)).toBe(true);
+    expect(steps.at(-1).point.t).toBeGreaterThan(0);
+  });
+
+  it('depuis l\'étage : on part du dernier bout, la hauteur baisse en descendant, sortie par le premier bout', () => {
+    const dir = (i, p) => (p.y > 12 ? { x: 0.1, y: -1 } : { x: 0, y: -1 });
+    const steps = run(startWalk('a', 'etage'), { x: -38, y: 56.5 }, (i, p, r) => (p.x < -2 && p.y > 50 ? { x: 1, y: -0.2 } : dir(i, p, r)), 10);
     expect(steps[0].floor).toBe('etage');
+    expect(steps.at(-1)).toMatchObject({ done: 'rdc', floor: 'rdc' });
     const ts = steps.map((r) => r.point.t);
-    expect(ts.every((t, i) => i === 0 || t <= ts[i - 1] + 1e-12)).toBe(true);
-    expect(steps.at(-1)).toMatchObject({ done: 'rdc', floor: 'rdc' });
-    expect(steps.at(-1).point).toMatchObject({ x: 0, y: 0, t: 0 });
-  });
-
-  it('palier du haut : tout mouvement qui ne fait pas demi-tour mène vers la sortie ; un demi-tour y rentre', () => {
-    const w = { ...startWalk('a', 'rdc'), s: 0.8, floor: 'etage', sign: 1 };
-    const out = stepWalk(w, PATH, { dir: { x: -1, y: 0 }, speed: 100, dt: 0.05 });
-    expect(out.walk.s).toBeGreaterThan(0.8);
-    const south = stepWalk(w, PATH, { dir: { x: 0, y: 1 }, speed: 100, dt: 0.05 });
-    expect(south.walk.s).toBeGreaterThan(0.8); // de côté : vers la sortie aussi
-    const back = stepWalk(w, PATH, { dir: { x: 1, y: 0 }, speed: 100, dt: 0.05 });
-    expect(back.walk.s).toBeLessThan(0.8); // demi-tour : on rentre dans l'escalier
-  });
-
-  it('palier du bas : s\'éloigner de l\'escalier en sort sans changer d\'étage', () => {
-    const w = { ...startWalk('a', 'rdc'), s: 0.05, sign: 1 };
-    const steps = run(w, { x: 0, y: -1 }, 2);
-    expect(steps.at(-1)).toMatchObject({ done: 'rdc', floor: 'rdc' });
-    const stay = stepWalk(w, PATH, { dir: { x: 0, y: 1 }, speed: 100, dt: 0.05 });
-    expect(stay.walk.s).toBeGreaterThan(0.05);
+    expect(Math.max(...ts)).toBe(1);
+    expect(ts.at(-1)).toBe(0);
   });
 
   it('mode auto : suit le chemin sans mouvement, dans le sens de l\'étage de départ', () => {
-    const up = run(startWalk('a', 'rdc', true), { x: 0, y: 0 }, 6);
+    const up = run(startWalk('a', 'rdc', true), { x: 0, y: 0 }, { x: 0, y: 0 }, 8);
     expect(up.at(-1)).toMatchObject({ done: 'etage' });
-    const down = run(startWalk('a', 'etage', true), { x: 0, y: 0 }, 6);
+    const down = run(startWalk('a', 'etage', true), { x: -40, y: 57 }, { x: 0, y: 0 }, 8);
     expect(down.at(-1)).toMatchObject({ done: 'rdc' });
   });
 
-  it('durée de la montée : longueur du chemin ÷ vitesse (à un pas près)', () => {
-    const speed = 150;
-    const steps = run(startWalk('a', 'rdc'), { x: 0, y: 1 }, 20, speed);
-    expect(steps.length * 0.05).toBeGreaterThan(pathLength(PATH) / speed - 0.06);
-    expect(steps.length * 0.05).toBeLessThan(pathLength(PATH) / speed + 0.4);
+  it('dt est borné à 0,05 s (une image très longue ne saute pas l\'escalier), 0 en pause', () => {
+    const w = startWalk('a', 'rdc');
+    const big = stepWalk(w, PATH, { ...OPTS, pos: { x: 0, y: 0 }, dir: { x: 0, y: 1 }, dt: 5 });
+    expect(big.pos.y).toBeLessThanOrEqual(5.0001);
+    const still = stepWalk(w, PATH, { ...OPTS, pos: { x: 0, y: 0 }, dir: { x: 0, y: 1 }, dt: 0 });
+    expect(still.pos).toEqual({ x: 0, y: 0 });
+    expect(still.done).toBeNull();
   });
 
-  it('entrées hostiles : chemin absent, état absent, mouvement non numérique : aucune exception, la marche se termine', () => {
+  it('un mouvement plus long que 1 est ramené à 1 (pas de course en diagonale)', () => {
+    const r = stepWalk(startWalk('a', 'rdc'), PATH, { ...OPTS, pos: { x: 0, y: 0 }, dir: { x: 5, y: 5 }, dt: 0.05 });
+    expect(Math.hypot(r.pos.x, r.pos.y)).toBeLessThanOrEqual(5 + 1e-9);
+  });
+
+  it('entrées hostiles : chemin absent, état absent, position ou mouvement non numériques : aucune exception, la marche se termine', () => {
     for (const bad of WEIRD) {
-      expect(() => stepWalk(bad, PATH, { dir: { x: 0, y: 1 }, speed: 100, dt: 0.05 })).not.toThrow();
-      expect(() => stepWalk(startWalk('a', 'rdc'), bad, { dir: bad, speed: bad, dt: bad })).not.toThrow();
+      expect(() => stepWalk(bad, PATH, { ...OPTS, pos: { x: 0, y: 0 }, dir: { x: 0, y: 1 }, dt: 0.05 })).not.toThrow();
+      expect(() => stepWalk(startWalk('a', 'rdc'), bad, { pos: bad, dir: bad, speed: bad, dt: bad, width: bad, radius: bad })).not.toThrow();
     }
-    expect(stepWalk(startWalk('a', 'rdc'), null, { dir: { x: 0, y: 1 }, speed: 100, dt: 0.05 }).done).toBe('rdc');
+    expect(stepWalk(startWalk('a', 'rdc'), null, { pos: { x: 0, y: 0 } }).done).toBe('rdc');
     expect(stepWalk(null, PATH).done).toBe('rdc');
   });
 
   it('ne modifie pas ses arguments (gelés) et renvoie de nouveaux objets', () => {
     const w = deepFreeze(startWalk('a', 'rdc'));
-    const r = stepWalk(w, PATH, { dir: Object.freeze({ x: 0, y: 1 }), speed: 100, dt: 0.05 });
+    const pos = Object.freeze({ x: 0, y: 0 });
+    const r = stepWalk(w, PATH, { ...OPTS, pos, dir: Object.freeze({ x: 0, y: 1 }), dt: 0.05 });
     expect(r.walk).not.toBe(w);
-    expect(w.s).toBe(0);
+    expect(r.pos).not.toBe(pos);
   });
 
   it('déterministe', () => {
-    const a = run(startWalk('a', 'rdc'), { x: 0.3, y: 0.9 }, 4);
-    const b = run(startWalk('a', 'rdc'), { x: 0.3, y: 0.9 }, 4);
+    const a = run(startWalk('a', 'rdc'), { x: 3, y: -5 }, climb, 5);
+    const b = run(startWalk('a', 'rdc'), { x: 3, y: -5 }, climb, 5);
     expect(a).toEqual(b);
   });
 });

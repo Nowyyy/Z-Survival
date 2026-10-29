@@ -387,6 +387,13 @@ export function createGame(ctx) {
     const def = stairsWorld.find((q) => q.id === stairId);
     if (!usable || !def?.walk || sim.sw !== null || sim.dead || sim.tr.phase !== 'idle') return false;
     sim.sw = startWalk(stairId, pf(), auto);
+    if (sim.sw !== null && auto) {
+      // Hook de test : le joueur est placé au bout du chemin de son étage (premier point au rez-de-chaussée, dernier à l'étage) avant la marche automatique.
+      const path = def.walk.path;
+      const end = pf() === 'etage' ? path[path.length - 1] : path[0];
+      sim.player = { ...sim.player, x: end.x, y: end.y };
+      anim = { ...anim, x: end.x, y: end.y };
+    }
     return sim.sw !== null;
   }
   function crossFloor(to) {
@@ -401,15 +408,16 @@ export function createGame(ctx) {
   }
   function advanceWalk(dir, dt) {
     const def = stairsWorld.find((q) => q.id === sim.sw.stair);
-    const r = stepWalk(sim.sw, def?.walk?.path, { dir, speed: eff.player.speed, dt });
-    sim.player = { ...sim.player, x: r.point.x, y: r.point.y };
+    const r = stepWalk(sim.sw, def?.walk?.path, { pos: sim.player, dir, speed: eff.player.speed, dt, width: def?.walk?.width, radius: sim.player.r });
+    sim.player = { ...sim.player, x: r.pos.x, y: r.pos.y };
     sim.elev = heightOf(r.point.t, LIFT);
-    if (r.floor !== pf()) crossFloor(r.floor);
+    if (r.floor !== pf() && !r.done) crossFloor(r.floor);
     if (r.done === null) {
       sim.sw = r.walk;
       return;
     }
-    // Sortie de l'escalier (en haut, en bas, ou demi-tour) : délai de 0,8 s et verrou tant que le joueur reste dans la zone ; protection de 1,0 s s'il a changé d'étage.
+    // Sortie de l'escalier par un bout (en haut, en bas, ou demi-tour) : délai de 0,8 s et verrou tant que le joueur reste dans la zone ; protection de 1,0 s s'il a changé d'étage.
+    if (r.done !== pf()) crossFloor(r.done);
     const from = sim.sw.from;
     const stairId = sim.sw.stair;
     sim.sw = null;
@@ -1064,7 +1072,7 @@ export function createGame(ctx) {
       hidden: sim.enemies.filter((e) => floorOf(e) !== pf()).length,
       grace: sim.floorGrace,
       elevation: sim.elev,
-      walk: sim.sw === null ? null : { stair: sim.sw.stair, s: sim.sw.s, floor: sim.sw.floor, from: sim.sw.from, auto: sim.sw.auto },
+      walk: sim.sw === null ? null : { stair: sim.sw.stair, armed: sim.sw.armed, floor: sim.sw.floor, from: sim.sw.from, auto: sim.sw.auto },
     };
   }
 

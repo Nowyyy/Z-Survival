@@ -140,7 +140,7 @@ test.describe('escalier physique', () => {
     expect(r.steps.length).toBeGreaterThan(20); // la montée dure plus d'une seconde
     const s = await STATE(page);
     const end = center(AILE.floors.etage.trigger);
-    expect(Math.hypot(s.player.x - end.x, s.player.y - end.y)).toBeLessThan(1);
+    expect(Math.hypot(s.player.x - end.x, s.player.y - end.y)).toBeLessThan(15); // la marche finit juste au-delà du bout du chemin
     expect(s.floor.stairs[0].cooldown).toBeGreaterThan(0.2);
   });
 
@@ -180,6 +180,33 @@ test.describe('escalier physique', () => {
     expect(s.stairLog).toEqual([]);
   });
 
+  test('déplacement libre dans l\'escalier : on peut aller de côté (la hauteur ne change pas), s\'arrêter, reculer ; les rambardes bornent la largeur', async ({ page }) => {
+    await open(page, '&wave=21&nospawn=1');
+    const t = center(AILE.floors.rdc.trigger);
+    await page.evaluate(([p, d]) => { window.__zs.setPlayer(p.x, p.y); window.__zs.setInput({ move: d }); }, [t, ENTRY_RDC]);
+    await page.evaluate(() => { const zs = window.__zs; while (zs.getState().floor.elevation < 60) zs.step(0.05); zs.setInput({}); zs.step(0.1); });
+    const a = await STATE(page);
+    expect(a.floor.walk).not.toBeNull();
+    // Immobile : rien ne bouge. De côté : x change, pas la hauteur.
+    await page.evaluate(() => window.__zs.step(0.5));
+    const still = await STATE(page);
+    expect(still.player).toMatchObject({ x: a.player.x, y: a.player.y });
+    expect(still.floor.elevation).toBe(a.floor.elevation);
+    await page.evaluate(() => { window.__zs.setInput({ move: { x: 1, y: 0 } }); window.__zs.step(2); window.__zs.setInput({}); });
+    const east = await STATE(page);
+    expect(east.player.x).toBeGreaterThan(a.player.x + 5);
+    expect(Math.abs(east.floor.elevation - a.floor.elevation)).toBeLessThan(15);
+    expect(east.player.x).toBeLessThanOrEqual(t.x + AILE.walk.width / 2); // rambarde
+    expect(east.floor.walk).not.toBeNull();
+    await page.evaluate(() => { window.__zs.setInput({ move: { x: -1, y: 0 } }); window.__zs.step(4); window.__zs.setInput({}); });
+    const west = await STATE(page);
+    expect(west.player.x).toBeGreaterThanOrEqual(t.x - AILE.walk.width / 2);
+    expect(west.player.x).toBeLessThan(east.player.x);
+    // Reculer : la hauteur baisse.
+    await page.evaluate(() => { window.__zs.setInput({ move: { x: 0, y: -1 } }); window.__zs.step(0.3); window.__zs.setInput({}); });
+    expect((await STATE(page)).floor.elevation).toBeLessThan(a.floor.elevation);
+  });
+
   test('demi-tour avant mi-hauteur : retour au rez-de-chaussée sans changement d\'étage ; après mi-hauteur : on redescend', async ({ page }) => {
     await open(page, '&wave=21&nospawn=1');
     const t = center(AILE.floors.rdc.trigger);
@@ -190,7 +217,7 @@ test.describe('escalier physique', () => {
     expect(s.floor).toMatchObject({ current: 'rdc', walk: null, elevation: 0 });
     expect(s.stairLog.filter((l) => l.type === 'playerStairs')).toEqual([]);
     // Seconde tentative : monter au-delà de mi-hauteur puis faire demi-tour.
-    await page.evaluate(() => { window.__zs.setInput({}); window.__zs.step(1.2); });
+    await page.evaluate(([p]) => { window.__zs.setInput({}); window.__zs.setPlayer(p.x, p.y - 250); window.__zs.step(1.2); }, [t]); // hors de la zone : l'escalier est de nouveau armé
     await page.evaluate(([p, d]) => { window.__zs.setPlayer(p.x, p.y); window.__zs.setInput({ move: d }); window.__zs.step(0.2); }, [t, ENTRY_RDC]);
     await page.evaluate(() => { const zs = window.__zs; while (zs.getState().floor.elevation < 120) zs.step(0.05); zs.setInput({ move: { x: 0, y: -1 } }); });
     expect((await STATE(page)).floor.current).toBe('etage');
@@ -219,14 +246,14 @@ test.describe('escalier physique', () => {
     expect(r.shots).toBe(0);
     expect(r.laser).toBeNull();
     expect(r.vis.etage).toBeGreaterThan(5); // l'étage est dessiné dès que le joueur a pris de la hauteur
-    expect(r.vis.rdcShell).toBeGreaterThan(0);
+    expect(r.vis.rdcShell).toBeGreaterThanOrEqual(2);
     expect(r.vis.rdc).toBeGreaterThan(5);
   });
 
   test('de l\'étage, on voit le sol du rez-de-chaussée en dessous (coque : sol, murs et rampes) ; son mobilier et ses fenêtres ne sont pas dessinés', async ({ page }) => {
     await open(page, '&wave=31&floor=1&nospawn=1');
     const s = await STATE(page);
-    expect(s.scene.visible.rdcShell).toBeGreaterThanOrEqual(3);
+    expect(s.scene.visible.rdcShell).toBeGreaterThanOrEqual(2); // sol et murs (les marches sont dans le maillage des murs)
     expect(s.scene.visible.rdc).toBe(0);
     expect(s.scene.elevation).toBe(LIFT);
     expect(s.scene.exteriorY).toBe(-LIFT);

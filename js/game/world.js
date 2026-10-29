@@ -302,6 +302,7 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
   const lift = num(render.floorLift, 0);
   const shellOf = (f) => (f === 'rdc' ? groups.rdcShell : groups[f]);
   // Trous du sol de l'étage : la rampe de chaque escalier (on voit l'escalier et le rez-de-chaussée en dessous).
+  const STEPS = 8;
   const holes = stairs.map((st) => ({ id: st.id, rise: riseOf(st.walk) })).filter((h) => h.rise !== null);
 
   scene.add(new THREE.AmbientLight(palette.ambient, render.light.ambient));
@@ -350,6 +351,20 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
     for (const w of walls) {
       fb.wall.box(extents(w), { repeat: wallRepeat }, 'cotes');
       fb.wall.box(extents(w), { fixed: [0.31, 0.62] }, 'dessus'); // dessus : un seul texel du mur, donc sans texture
+    }
+    // Escaliers physiques (lot 3e, mise à jour) : marches de béton (huit boîtes qui montent jusqu'à floorLift) dans le maillage des murs du rez-de-chaussée : aucun appel de
+    // dessin de plus, visibles de l'étage à travers le trou de chaque escalier.
+    if (f === 'rdc') {
+      holes.forEach(({ rise }) => {
+        const { a, b, vertical, rect } = rise;
+        for (let i = 0; i < STEPS; i += 1) {
+          const along = (k) => (vertical ? a.y + (b.y - a.y) * k : a.x + (b.x - a.x) * k);
+          const lo = Math.min(along(i / STEPS), along((i + 1) / STEPS));
+          const hi = Math.max(along(i / STEPS), along((i + 1) / STEPS));
+          const h = (lift * (i + 1)) / STEPS;
+          fb.wall.box(vertical ? { x0: rect.x0, x1: rect.x1, z0: lo, z1: hi, y0: 0, y1: h } : { x0: lo, x1: hi, z0: rect.y0, z1: rect.y1, y0: 0, y1: h }, { repeat: wallRepeat });
+        }
+      });
     }
     bars.forEach((bar, i) => fb.detail.box(extents(bar), { rect: region('tole'), scale: region('tole').scale, seed: 500 + i }));
     // Meubles : boîtes aux hauteurs de world.json, une région d'atlas par type. Lot 3c : tables, chaises et armoires modélisées (js/core/furniture-model.js) ; les corps
@@ -420,30 +435,10 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
     }
   }
 
-  // Rampes (lot 3e, mise à jour) : l'escalier est dessiné en marches (douze boîtes de bois qui montent jusqu'à floorLift, un maillage par escalier) dans le rez-de-chaussée ;
-  // quand l'escalier est fermé (porte pas encore ouverte), un couvercle de sol ferme son trou à l'étage.
-  const STEPS = 12;
+  // Couvercles de sol (lot 3e, mise à jour) : quand l'escalier est fermé (porte pas encore ouverte), un couvercle de sol ferme son trou à l'étage.
   const covers = new Map();
-  const treadRegion = region('bois');
-  holes.forEach(({ id, rise }, n) => {
-    const { a, b, vertical, rect } = rise;
-    const builder = new Builder();
-    for (let i = 0; i < STEPS; i += 1) {
-      const k0 = i / STEPS;
-      const k1 = (i + 1) / STEPS;
-      const h = (lift * (i + 1)) / STEPS;
-      const along = (k) => (vertical ? a.y + (b.y - a.y) * k : a.x + (b.x - a.x) * k);
-      const lo = Math.min(along(k0), along(k1));
-      const hi = Math.max(along(k0), along(k1));
-      const box = vertical ? { x0: rect.x0, x1: rect.x1, z0: lo, z1: hi, y0: 0, y1: h } : { x0: lo, x1: hi, z0: rect.y0, z1: rect.y1, y0: 0, y1: h };
-      builder.box(box, { rect: treadRegion, scale: treadRegion.scale, seed: 700 + n * 20 + i });
-    }
-    const mesh = builder.mesh(groups.rdcShell, atlasMaterial, { cast: true, receive: true });
-    if (mesh) {
-      mesh.name = `rampe-${id}`;
-      mesh.userData.floor = 'rdc';
-      mesh.userData.part = 'rampe';
-    }
+  holes.forEach(({ id, rise }) => {
+    const { rect } = rise;
     const cover = new Builder();
     cover.slab(rect.x0, rect.y0, rect.x1, rect.y1, 0.05, textures.repeat('sol-salle'), layoutOf('etage').room.x, layoutOf('etage').room.y);
     const coverMesh = cover.mesh(groups.etage, floorMat, { receive: true });
