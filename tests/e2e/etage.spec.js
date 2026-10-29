@@ -36,6 +36,7 @@ test.describe('étage : départ, visibilité, étiquettes', () => {
     expect(s.scene.visible.rdc).toBeGreaterThan(5);
     expect(s.scene.visible.exterieur).toBeGreaterThan(3);
     expect(s.scene.slab).toBe(false);
+    expect(s.scene.exteriorY).toBe(0);
     expect(s.scene.marks).toEqual([]);
     await expect(page.locator('#hud-floor')).toHaveText('RDC');
     expect(s.enemies).toEqual([]);
@@ -62,6 +63,7 @@ test.describe('étage : départ, visibilité, étiquettes', () => {
     expect(s.scene.visible.etage).toBeGreaterThan(5);
     expect(s.scene.visible.exterieur).toBeGreaterThan(3);
     expect(s.scene.slab).toBe(true);
+    expect(s.scene.exteriorY).toBe(-180); // retour du propriétaire : l'étage est au-dessus, le sol de l'extérieur est abaissé de floorLift
     expect(s.scene.marks).toEqual(['escalier-aile:etage']);
     await expect(page.locator('#hud-floor')).toHaveText('Étage');
     const a = AILE.floors.etage.arrival;

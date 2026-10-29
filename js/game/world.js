@@ -4,6 +4,7 @@
 // texture) ; les coordonnées de texture sont calculées ici : proportionnelles aux dimensions réelles pour les textures répétées
 // (1 répétition = `repeat` unités du monde), fenêtre dans une région de l'atlas de props pour le reste.
 import * as THREE from 'three';
+import { num } from '../core/vec.js';
 import { boundTarget, overview, snapCamera, stepCamera } from '../core/camera.js';
 import { cameraPosition, fitDistance, groundView } from '../core/viewport.js';
 import { fogGrid } from '../core/fog.js';
@@ -340,10 +341,16 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
   if (floors.includes('etage')) {
     const bb = layout.floor.reduce((r, fl) => ({ x0: Math.min(r.x0, fl.x), y0: Math.min(r.y0, fl.y), x1: Math.max(r.x1, fl.x + fl.w), y1: Math.max(r.y1, fl.y + fl.h) }), { x0: Infinity, y0: Infinity, x1: -Infinity, y1: -Infinity });
     const geometry = new THREE.BufferGeometry();
-    geometry.setAttribute('position', new THREE.Float32BufferAttribute([bb.x0, -0.5, bb.y0, bb.x1, -0.5, bb.y0, bb.x1, -0.5, bb.y1, bb.x0, -0.5, bb.y1], 3));
-    geometry.setIndex([0, 2, 1, 0, 3, 2]);
+    // Jupe (lot 3e, retour du propriétaire : l'étage doit être au-dessus) : quatre faces sombres de la dalle jusqu'au sol de l'extérieur, abaissé de floorLift à l'étage.
+    const lo = -num(render.floorLift, 0) - 1;
+    const top = -0.5;
+    geometry.setAttribute('position', new THREE.Float32BufferAttribute([
+      bb.x0, top, bb.y0, bb.x1, top, bb.y0, bb.x1, top, bb.y1, bb.x0, top, bb.y1,
+      bb.x0, lo, bb.y0, bb.x1, lo, bb.y0, bb.x1, lo, bb.y1, bb.x0, lo, bb.y1,
+    ], 3));
+    geometry.setIndex([0, 2, 1, 0, 3, 2, 0, 1, 5, 0, 5, 4, 1, 2, 6, 1, 6, 5, 2, 3, 7, 2, 7, 6, 3, 0, 4, 3, 4, 7]);
     geometry.computeBoundingSphere();
-    slab = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({ color: palette.void, fog: false }));
+    slab = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({ color: palette.void, fog: false, side: THREE.DoubleSide }));
     slab.name = 'dalle-sombre';
     slab.userData.floor = 'etage';
     groups.etage.add(slab);
@@ -500,6 +507,8 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
     // n'est dessinée qu'à l'étage. Aucune reconstruction, aucun dispose.
     showFloor(floor) {
       for (const f of floors) groups[f].visible = f === floor;
+      // À l'étage, le sol de l'extérieur est abaissé de floorLift : l'étage est physiquement au-dessus (le joueur, les zombies et la caméra restent à y = 0).
+      groups.exterieur.position.y = floor === 'etage' ? -num(render.floorLift, 0) : 0;
     },
     // Zone de déclenchement d'un escalier : dessinée (à l'étage où elle se trouve) seulement quand l'escalier est utilisable.
     setStairUsable(id, usable) {
@@ -517,7 +526,7 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
         });
         return g.visible ? n : 0;
       };
-      return { visible: Object.fromEntries(Object.entries(groups).map(([k, g]) => [k, visibleOf(g)])), slab: slab ? slab.visible && groups.etage.visible : false, marks: [...marks].filter(([, m]) => m.visible && m.parent?.visible).map(([k]) => k) };
+      return { exteriorY: groups.exterieur.position.y, visible: Object.fromEntries(Object.entries(groups).map(([k, g]) => [k, visibleOf(g)])), slab: slab ? slab.visible && groups.etage.visible : false, marks: [...marks].filter(([, m]) => m.visible && m.parent?.visible).map(([k]) => k) };
     },
     setFog(distance) {
       scene.fog.near = distance * render.fog.near;

@@ -320,3 +320,11 @@ describe('floor-sim : champs de flux des fenêtres paresseux (chargement allég�
     expect(Object.keys(floorWorld.fields).sort()).toEqual([...floorWorld.all.map((q) => q.id)].sort());
   });
 });
+
+describe('render.json : floorLift (l\'étage est au-dessus de l\'extérieur)', () => {
+  it('floorLift est un nombre positif, au moins la hauteur des murs', async () => {
+    const { readFileSync } = await import('node:fs');
+    const render = JSON.parse(readFileSync('data/game/render.json', 'utf8'));
+    expect(render.floorLift).toBeGreaterThanOrEqual(60);
+  });
+});
