@@ -6,6 +6,7 @@
 import * as THREE from 'three';
 import { boundTarget, overview, snapCamera, stepCamera } from '../core/camera.js';
 import { cameraPosition, fitDistance, groundView } from '../core/viewport.js';
+import { fogGrid } from '../core/fog.js';
 import { plankSettings } from '../core/plank-layout.js';
 import { plankSheet } from '../core/texgen.js';
 import { createDebrisMeshes, createWindowMeshes } from './windows-mesh.js';
@@ -300,6 +301,32 @@ export function buildWorld({ palette, layout, render, textures, windowGeoms = []
   for (const [name, material] of sceneryMaterials) b[name].mesh(scene, material, { receive: true });
   b.scenery.mesh(scene, atlasMaterial, { receive: true });
   b.props.mesh(scene, atlasMaterial, { cast: true, receive: true });
+
+  // Mur de brouillard (lot 3b, cartes à murs) : un plan horizontal translucide au-dessus du sol extérieur (plus haut que les zombies), dont l'opacité vient de la
+  // distance au bâtiment (js/core/fog.js, texture générée) : clair près des murs, opaque loin ; les zombies surgissent de la brume.
+  if (layout.segmented) {
+    const f = render.fog;
+    const area = { x: -f.wallPad, y: -f.wallPad, w: size.width + 2 * f.wallPad, h: size.height + 2 * f.wallPad };
+    const grid = fogGrid(layout.floor, area, f.wallNear, f.wallFar, f.wallCell);
+    const rgba = new Uint8Array(grid.cols * grid.rows * 4);
+    for (let i = 0; i < grid.data.length; i += 1) rgba.set([255, 255, 255, grid.data[i]], i * 4);
+    const tex = new THREE.DataTexture(rgba, grid.cols, grid.rows, THREE.RGBAFormat);
+    tex.magFilter = THREE.LinearFilter;
+    tex.minFilter = THREE.LinearFilter;
+    tex.wrapS = THREE.ClampToEdgeWrapping;
+    tex.wrapT = THREE.ClampToEdgeWrapping;
+    tex.needsUpdate = true;
+    const y = f.wallHeight;
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.Float32BufferAttribute([area.x, y, area.y, area.x + area.w, y, area.y, area.x + area.w, y, area.y + area.h, area.x, y, area.y + area.h], 3));
+    geometry.setAttribute('uv', new THREE.Float32BufferAttribute([0, 0, 1, 0, 1, 1, 0, 1], 2));
+    geometry.setIndex([0, 2, 1, 0, 3, 2]);
+    geometry.computeBoundingSphere();
+    const mist = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({ map: tex, color: palette.fog, transparent: true, depthWrite: false, fog: false, side: THREE.DoubleSide }));
+    mist.renderOrder = 10;
+    mist.frustumCulled = false;
+    scene.add(mist);
+  }
 
   // Fenêtres (lots 3 et 3a) : un maillage par fenêtre (planches en relief, cadre, trou sombre, pastilles au sol) et un maillage de débris, tous dans
   // la matière « planche » (texture de 128 px, hors atlas), sans ombre ; un maillage n'est dessiné que s'il est dans le champ de la caméra.

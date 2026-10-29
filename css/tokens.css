@@ -72,7 +72,7 @@
 
   /* Jeu : couleurs de la scène 3D (lues par js/game/palette.js). Provisoires, à valider. */
   --game-floor: #2a2a2e;            /* sol de la salle */
-  --game-wall: #55443a;             /* murs : rouge brun sombre */
+  --game-wall: #464a50;             /* murs : rouge brun sombre */
   --game-ground: #131a24;           /* décor extérieur, fond de caméra */
   --game-player: #f4f1ec;           /* joueur : os */
   --game-zombie: #6f9a5e;           /* zombie : vert terne (réussite assombrie) */
@@ -86,9 +86,9 @@
   --game-gun: #8a8a86;              /* pistolet, barreaux des fenêtres */
   --game-zombie-clothes: #6a6650;   /* haillons des zombies (la peau est --game-zombie) */
   --game-zombie-trousers: #4a483c;  /* pantalon, chaussures et cheveux des zombies */
-  --game-fog: #1a2230;              /* brume de nuit : fond de caméra et couleur du brouillard (lot 3b) */
-  --game-sun: #cfc6b4;              /* lumière directionnelle */
-  --game-ambient: #938b7c;          /* lumière ambiante */
+  --game-fog: #3c4655;              /* brume de nuit : fond de caméra et couleur du brouillard (lot 3b) */
+  --game-sun: #cfd5e0;              /* lumière directionnelle */
+  --game-ambient: #8e95a2;          /* lumière ambiante */
   --game-road: #2c2c31;             /* route (le trottoir et le sentier en sont des variantes) */
   --game-grass: #20282a;            /* herbe sombre du décor extérieur */
   --game-car: #6b2b2b;              /* voitures abandonnées (rouge sale, provisoire) */
@@ -96,21 +96,21 @@
   --game-furniture: #7a6448;        /* meubles (leurs variantes par type sont calculées dans le rendu) */
 
   /* Jeu, lot 1c : couleurs des textures générées en code (passées aux générateurs par js/game/palette.js). Provisoires, à valider. */
-  --game-tile-a: #524e48;           /* carrelage de la salle, teinte claire */
-  --game-tile-b: #34312c;           /* carrelage de la salle, teinte sombre */
-  --game-grout: #1a1816;            /* joints du carrelage et du trottoir */
-  --game-wall-base: #6e5848;        /* enduit des murs */
-  --game-wall-dirt: #3a2b22;        /* salissures et coulures des murs */
+  --game-tile-a: #4d5156;           /* carrelage de la salle, teinte claire */
+  --game-tile-b: #36393d;           /* carrelage de la salle, teinte sombre */
+  --game-grout: #17191b;            /* joints du carrelage et du trottoir */
+  --game-wall-base: #5e6268;        /* enduit des murs */
+  --game-wall-dirt: #383c42;        /* salissures et coulures des murs */
   --game-wood: #8f7352;             /* bois clair : tables, comptoirs, caisses */
   --game-wood-dark: #58432d;        /* bois sombre : veines, armoires, étagères */
-  --game-metal: #837f76;            /* tôle, barreaux, lampadaires */
+  --game-metal: #7d8187;            /* tôle, barreaux, lampadaires */
   --game-asphalt: #262629;          /* route */
   --game-line: #d8c35a;             /* lignes de la route */
   --game-sidewalk: #38383c;         /* dalles du trottoir */
   --game-grass-a: #20282a;          /* herbe, teinte sombre */
   --game-grass-b: #2f383a;          /* herbe, teinte claire */
   --game-soil: #2d2822;             /* terre du sol extérieur et des sentiers */
-  --game-gravel: #473f37;           /* gravier */
+  --game-gravel: #47484a;           /* gravier */
   --game-bark: #54402f;             /* écorce */
   --game-leaf: #3c4d47;             /* feuillage (arbres, buissons) */
   --game-glass: #5d8097;            /* vitres des voitures */

@@ -42,3 +42,6 @@ Retours du propriétaire : fenêtres de 80 (puis 72 mesurées sur le modèle), f
 
 ## Mise à jour : textures de nuit
 D'après les captures du propriétaire : intérieur en béton chaud (carrelage gris-brun, murs brun rosé), extérieur de nuit (herbe morte bleutée, feuillage éteint) et brume (`scene.fog`, jeton `--game-fog`, distances en multiples de la distance de la caméra dans `render.json`). Jetons de `tokens.css` seulement (aucune image) ; laser éclairci pour garder 4,5:1 ; les seuils des tests n'ont pas changé. L'ancienne salle prend aussi ces couleurs.
+
+## Mise à jour : béton gris froid et mur de brouillard
+Béton gris froid (la teinte brun rosé venait des flammes de la carte d'origine) : jetons `--game-wall*`, `--game-tile-*`, `--game-gravel`, `--game-metal`, `--game-fog`. Mur de brouillard : `js/core/fog.js` (pur) calcule une grille d'opacité d'après la distance au bâtiment ; `world.js` l'affiche en plan translucide horizontal (1 appel de dessin de plus, test de budget ≤ 194). Transparent près des murs, opaque à partir de `wallFar` (480) : les zombies (apparitions à 450 et 650) surgissent de la brume. Réglage : `data/game/render.json` (`fog.wallNear` 180, `wallFar` 480, `wallHeight`, `wallPad`, `wallCell`). L'ancienne salle prend les couleurs mais sans mur de brouillard.
