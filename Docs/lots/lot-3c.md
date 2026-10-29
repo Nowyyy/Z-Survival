@@ -1,0 +1,32 @@
+# Lot 3c — Zones, porte 1 débloquée par manche et mobilier du rez-de-chaussée
+
+**Le modèle 3D du propriétaire n'était nulle part** (ni `Docs/ref/modele-rdc/`, ni `Docs/ref/`, ni l'historique Git) : les 13 pièces de mobilier ajoutées sont **provisoires**, marquées `provisional: true`, jamais comparées à un modèle. Aucun levier Lighthouse appliqué. Branche `lot-3c` créée depuis `main` (la session proposait une autre branche de travail) ; la branche locale `main` était en retard sur `origin/main` (3 tests rouges) : avancée en fast-forward. Parties A (`4d1aa8d`) et B faites.
+
+**Livré**
+- `data/game/maps/rez-de-chaussee/zones.json` (pixels), `js/core/zones.js` (pur : `parseZones`, `zonesToWorld`, `assignWindows`, `doorsOpenAtStart`, `activeZones/Windows/SpawnPoints`, `nextDoor`, `doorRect`), `layout.js` (`doors`, `closedDoors`, `playerSolids`, `shotBlockers`), `nav.js` (`hasPath`), `siege.js` (`params.active`), `wave-director.js` (pause de 12 s, `doorAnnounce`, `doorOpen`, `monde-termine`, `endless`, `finishWave`, `markDoor`), `wave-splash.js` (type `zone`), `maps.js` (règles porte et point de réparation), `scripts/zones-metriques.mjs`, `scripts/lib/carte-zones.mjs`, `plan-carte.mjs` (zones, porte D, pièces n).
+- Jeu : porte (maillage, enfoncement), fenêtres et points inertes, ligne de pause, variante « Monde terminé », `?endless=1`, `?wave=N`, `getState().zones`, hooks `skipWave` et `setDoor`. Workflow, `index.html`, `seed.md`, plan des murs, `world.json` et `decor.json` d'origine : inchangés.
+
+**Choix**
+- Zones : `depart` (F4 à F8, 10 points) et `aile` (F1 à F3, 6 points), répartition obtenue par `entryInner`, conforme à l'attendu. Porte 1 dans « ouverture-aile » (85), pleine, hauteur 60 ; portes 2 et 3 déclarées `planned`, sans effet.
+- Ouverture : fin de la manche 10, pause de 12 s : « Nouvelle zone » à 3,0 s, `doorOpen` à 3,6 s, enfoncement de 1,2 s ; rien d'autre ne change. Aucun son, aucun achat.
+- Mobilier : 13 pièces provisoires (4 armoires, 3 tables, 4 comptoirs, 2 caisses) ; aire libre 90,1 % → 80,9 % (le prompt citait 85 %, ancien plan). Écarts de 70 au moins ou contact. Pièces retirées au lot 3b (M2, M5, M6, M8, M11, M20, M23 à M25, M27, M30, M36) non replacées : leurs règles (50 des piliers et escaliers, 40 du mur) valent toujours. Règle « 100 de la porte » appliquée aux pièces ajoutées seulement : M26+ (relevée) touche l'ouverture.
+- Porte : région `tole` de l'atlas (contraste 1,65:1 contre le mur), aucune nouvelle variable, 10 triangles, sans ombre portée.
+
+**Critères (chiffres)**
+- Départ `main` : Vitest 2 816 ; Playwright 740 réussis, 151 ignorés, 1 échec intermittent (« Rejouer » ; passe 3/3) : le prompt annonçait 745. Fin : Vitest 3 038 (+222) ; Playwright 954 tests : 801 réussis, 151 ignorés, 2 échecs intermittents déjà présents sur `main` (« Rejouer » ; laser qui s'estompe, 3 échecs sur 5 sur `main`), verts en relance. Premier passage de la partie B : 8 tests de `carte-jeu` (×2) rouges, adaptés.
+- Zones (`zones-metriques`) : `depart` 977 900 / libre 820 825 (83,9 %), couloir 50 ; `aile` 716 720 / 552 745 (77,1 %), couloir 53 ; total 1 683 100 / 1 362 050. Simulation pure de 60 s : 0 zombie bloqué (10 points fermée, 16 ouverte).
+- Budget (10 zombies, planches, ombres, cône) : référence `main` 194 appels, 14 032 triangles (le bilan 3b citait 193 et 14 058) ; porte fermée 194 / 14 292 (+0 / +260) ; porte à l'écran 194 / 14 260 ; ouverte 192 / 14 110 ; géométrie libérée.
+- Flux : recalcul du joueur 2,4 ms en Node (médiane, comme `main`, seuil 8) ; navigateur : pas suivant l'ouverture 0,5 ms (résolution de 0,1 ms). Lighthouse `jeu.html` : 50 avec VHS, 51 avec `&vhs=0` (`main` 51 et 49), accessibilité et bonnes pratiques 100, CLS 0,002. WebGL logiciel, 10,9 images/s : non représentatif.
+- Simulation 120 s, joueur immobile au départ, manche 5, 5 fenêtres : ouvertures F7 15,3 s, F4 19,3, F8 23,0, F6 27,5, F5 29,6 ; chute à 32,1 s, mort à 40,6 s (`main`, 8 fenêtres : F2 16,6, F6 18,7, F5 23,4, F7 23,9, F4 31,7 ; chute 30,9, mort 38,8). `?wave=11` : identique à `main` à 0,1 s près (mort 28,4 s). `CLAUDE.md` : 8 391 caractères.
+
+**Tests adaptés (avant / après)** : exceptions `Docs/ref/modele-rdc/` (5 tests de taille et de fichiers ajoutés : avant sans, après avec) ; `data-lot3` et `maps-hygiene` : `wave-splash.js`, `wave-director.js`, `waves.json`, `splash.json` retirés de la liste « inchangés » (remplacés par `zones-hygiene` : clés d'avant intactes) ; `maps-fidelite` : aire libre > 1,4 M → > 1,2 M ; `lot1-regles` : `zones` autorisé ; `data-changelog` et `dev.spec` : lot 3b → 3c ; `carte-jeu` : 8 tests (`siège` F1 à F8, ouverture, réparation, `#hud-live` F3) ouverts avec `&wave=11`. **Supprimés** : aucun.
+
+**Points ouverts** : modèle 3D non vu ; difficulté des 10 premières manches (5 fenêtres, la chute arrive à 32 s) et esthétique de la porte non jugées par l'agent ; budget de triangles à +260 sur +300 ; l'aperçu publié n'a pas pu être ouvert.
+
+**Choix à valider** : porte à la manche 10 (dès la 11) ; pause de 12 s ; aucun achat ; chutes non rendues ; planches non remises à neuf ; 40 manches ; 13 pièces provisoires ; porte grise (tôle) qui s'enfonce.
+
+**Corriger les zones et le mobilier** : (1) modifier `zones.json` ou `plan.json` (pièces `P1` à `P13`) ; (2) `npm run carte` ; (3) `node scripts/zones-metriques.mjs` et `node scripts/plan-carte.mjs` ; (4) comparer sur `carte.html` et `jeu.html?labels=1&zoom=1&wave=11` ; (5) `npm test`, commit des sources et des fichiers générés.
+
+**À tester par moi** (téléphone en paysage et ordinateur, `…/lots/lot-3c/jeu.html?fps=1`) : manches 1 à 3 dans la salle de départ seule (5 fenêtres, difficulté) ; `&wave=10` (annonce, porte qui s'enfonce, aile) ; `&wave=11&labels=1&zoom=1` (bâtiment et mobilier, à comparer au modèle 3D) ; `&wave=40` (« Monde terminé »). Retours par pièce et zone : `armoire de l'aile : manquante`, `porte : trop sombre`, `table de la grande salle : trop près de F7`, `manche 3 : trop dur avec 5 fenêtres`.
+
+**Fusion (à faire par moi)** : Pull Request `lot-3c` vers `main`, « Create a merge commit », ne pas supprimer la branche ; pages : `/`, `/dev/` (journal), `/lots/lot-3c/jeu.html`, `/lots/lot-3c/carte.html`.

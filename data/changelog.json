@@ -90,6 +90,13 @@
       "La carte est calculée par un script à partir d'un seul fichier en pixels du plan (npm run carte) : corriger un chiffre suffit.",
       "Nouvelle page de contrôle carte.html (le plan en SVG, fenêtres numérotées, échelle) et ?labels=1 pour voir F1 à F8 dans le jeu ; ?zoom=1 montre tout le bâtiment.",
       "?map=salle ramène l'ancienne salle de 2000 × 1200 et ses trois fenêtres."
+    ] },
+  { "name": "lot-3c", "titre": "Zones, première porte et mobilier du rez-de-chaussée", "points": [
+      "Au départ, seule la salle de départ (grande salle et poche, fenêtres F4 à F8) est active : l'aile de gauche est fermée par une porte et ses fenêtres F1 à F3 sont inertes.",
+      "À la fin de la manche 10, la porte 1 s'ouvre toute seule, sans achat : annonce « Nouvelle zone », porte qui s'enfonce, puis l'aile et ses trois fenêtres entrent dans la partie dès la manche 11 (planches non remises à neuf, chutes non rendues).",
+      "Le monde dure 40 manches ; la manche 40 terminée, un écran provisoire « Monde terminé » s'affiche (?endless=1 pour continuer sans fin).",
+      "Treize meubles provisoires (armoires, tables, comptoirs, caisses) complètent le rez-de-chaussée et cassent les longues lignes de tir de la grande salle.",
+      "Le panneau de pause indique « Prochaine zone : manche 11 » ; ?wave=11 ouvre l'aile dès le chargement, ?wave=10 la garde fermée."
     ] }
   ]
 }

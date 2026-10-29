@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
-import { createDirector, info, PHASES, setParams, startWave, stepDirector } from '../../js/core/wave-director.js';
+import { createDirector, finishWave, info, markDoor, PHASES, setParams, startWave, stepDirector } from '../../js/core/wave-director.js';
 import { doorsOpenAtStart, parseZones } from '../../js/core/zones.js';
 import { deepFreeze, WEIRD } from './helpers/carte.js';
 
@@ -328,5 +328,51 @@ describe('directeur : paramètres, déterminisme, arguments gelés, entrées hos
     expect(info(mid.d).openDoors).toEqual(['porte-1']);
     const again = createDirector(params, world({ seed: 99 }));
     expect(info(again)).toMatchObject({ wave: 1, openDoors: [], phase: 'attente' });
+  });
+});
+
+describe('directeur : hooks de test finishWave et markDoor', () => {
+  it('finishWave annule les apparitions restantes : la manche passe en combat et se termine au pas suivant, sans demande', () => {
+    const d = run(createDirector(params, world({ wave: 7 })), { stop: (s) => info(s).phase === 'apparition' }).d;
+    expect(info(d).toSpawn).toBeGreaterThan(0);
+    const skipped = finishWave(d);
+    expect(info(skipped)).toMatchObject({ phase: 'combat', toSpawn: 0 });
+    const out = stepDirector(skipped, input());
+    expect(out.requests).toEqual([]);
+    expect(out.events).toEqual([{ type: 'waveEnd', wave: 7, healFraction: 1 }]);
+  });
+
+  it('finishWave pendant le compte à rebours de départ termine aussi la manche (sans apparition)', () => {
+    const d = finishWave(createDirector(params, world({ wave: 10 })));
+    const out = stepDirector(d, input());
+    expect(out.events).toMatchObject([{ type: 'waveEnd', wave: 10 }]);
+    expect(info(out.state).doorPending).toEqual({ id: 'porte-1', openAfterWave: 10 });
+  });
+
+  it('finishWave ne fait rien hors d\'une manche : directeur inactif, fin de monde, pause d\'une porte', () => {
+    const inactive = createDirector(params, world({ inactive: true }));
+    expect(finishWave(inactive)).toBe(inactive);
+    const ended = run(createDirector(params, world({ wave: 40 })), { stop: (s) => info(s).worldEnd }).d;
+    expect(finishWave(ended)).toBe(ended);
+    const pause = run(createDirector(params, world({ wave: 10 })), { stop: (s, out) => out.events.some((e) => e.type === 'waveEnd') }).d;
+    const mid = run(pause, { maxSeconds: 1 }).d;
+    expect(finishWave(mid)).toBe(mid);
+  });
+
+  it('markDoor ouvre ou ferme une porte connue d\'un coup, abandonne la transition, ignore une porte inconnue', () => {
+    const d = createDirector(params, world());
+    expect(info(markDoor(d, 'porte-1', true)).openDoors).toEqual(['porte-1']);
+    expect(info(markDoor(markDoor(d, 'porte-1', true), 'porte-1', false)).openDoors).toEqual([]);
+    expect(markDoor(d, 'inconnue', true)).toBe(d);
+    const atEnd = run(createDirector(params, world({ wave: 10 })), { stop: (s, out) => out.events.some((e) => e.type === 'waveEnd') }).d;
+    const cut = run(markDoor(atEnd, 'porte-1', true), { maxSeconds: 6 });
+    expect(cut.log.filter((e) => e.type === 'doorOpen')).toEqual([]);
+    expect(info(cut.d).openDoors).toEqual(['porte-1']);
+  });
+
+  it('finishWave et markDoor : arguments gelés et entrées hostiles sans exception', () => {
+    const frozen = deepFreeze(createDirector(params, world()));
+    expect(() => { finishWave(frozen); markDoor(frozen, 'porte-1', true); }).not.toThrow();
+    for (const bad of WEIRD) expect(() => { finishWave(bad); markDoor(bad, bad, bad); }).not.toThrow();
   });
 });

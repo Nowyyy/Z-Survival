@@ -5,7 +5,7 @@ import { aimFromPoint, aimFromStick, createAim } from '../core/aim.js';
 import { applyImpacts, createWeaponState, displayHealth, healOnKill, muzzlePoint, stepContact, stepWeapon } from '../core/combat.js';
 import { stepEnemies } from '../core/enemy-ai.js';
 import { createEnemy, isGait, isType } from '../core/enemy-factory.js';
-import { entryWindow, windowsWithGaps } from '../core/layout.js';
+import { closedDoors, entryWindow, windowsWithGaps } from '../core/layout.js';
 import { occupancy, stepSiege } from '../core/siege.js';
 import { edgeIndicator } from '../core/edge-arrow.js';
 import { urgentWindows, windowChips } from '../core/hud-windows.js';
@@ -25,16 +25,17 @@ import { isHidden } from '../core/spawner.js';
 import { materialFor } from '../core/sound-director.js';
 import { variantFor } from '../core/variants.js';
 import { clampDt, num } from '../core/vec.js';
-import { createDirector, info as waveInfo, setParams, startWave as jumpToWave, stepDirector } from '../core/wave-director.js';
+import { createDirector, finishWave, info as waveInfo, markDoor, setParams, startWave as jumpToWave, stepDirector } from '../core/wave-director.js';
 import { createSplash, stepSplash } from '../core/wave-splash.js';
 import { waveSpec } from '../core/waves.js';
+import { activeSpawnPoints, activeWindows, activeZones, assignWindows, doorsOpenAtStart, nextDoor } from '../core/zones.js';
 import { createCharacter, createKit } from './character.js';
 import { createEffects, MAX_SPARKS, SPARK_TIME } from './effects.js';
 import { createHud } from './hud.js';
 import { createSplashView } from './splash-view.js';
 import { pickGround } from './picking.js';
 import { STRIDE } from './skeleton.js';
-import { DOWN_TEXTS, fmt, WINDOW_INITIALS, WINDOW_NAMES, WINDOW_TEXTS } from './texts.js';
+import { DOWN_TEXTS, fmt, WINDOW_INITIALS, WINDOW_NAMES, WINDOW_TEXTS, ZONE_TEXTS } from './texts.js';
 import { createThreeTextures } from './textures.js';
 import { buildWorld, createCamera } from './world.js';
 
@@ -57,7 +58,10 @@ export function createGame(ctx) {
   const bounds = layout.bounds;
   // Les meubles, les murs (percés de leurs fenêtres : on tire à travers) et les obstacles du décor arrêtent le laser, la ligne de tir et
   // les balles ; elles volent jusqu'au bord du monde. Salle du lot 1m (?empty=1) : les limites de la salle, comme avant.
-  const blockers = layout.empty ? [] : [...layout.furniture, ...layout.walls, ...layout.decor.solids];
+  // Lot 3c : les portes fermées arrêtent aussi les balles et le laser (sans dégâts) ; la liste suit l'état des portes (syncSolids).
+  const baseBlockers = layout.empty ? [] : [...layout.furniture, ...layout.walls, ...layout.decor.solids];
+  let blockers = baseBlockers;
+  let playerSolids = layout.playerObstacles;
   const shotBounds = layout.empty ? bounds : layout.worldBounds;
   // Les zombies contournent les meubles par un champ de flux ; la salle du lot 1m (?empty=1) garde la poursuite en ligne droite.
   // Lot 3 : les fenêtres de la salle ont des planches (siège par les zombies) ; la salle du lot 1m (?empty=1) n'a ni planches ni siège.
@@ -65,6 +69,12 @@ export function createGame(ctx) {
   const siegeOn = !layout.empty;
   const geoms = siegeOn ? windowGeometries(windowsWithGaps(layout), windowsCfg) : [];
   const geomById = new Map(geoms.map((g) => [g.id, g]));
+  // Zones et portes (lot 3c) : layout.zones (zones.json en unités du jeu) et layout.doors existent seulement sur la carte à zones ; l'ancienne salle
+  // (?map=salle, ?empty=1) n'a qu'une zone, aucune porte et aucune fin de monde.
+  const zoneCfg = layout.zones;
+  const doorCfgs = layout.doors ?? [];
+  const zoneOf = zoneCfg ? assignWindows(zoneCfg, geoms.map((g) => ({ id: g.id, entryInner: g.entryInner }))) : Object.fromEntries(geoms.map((g) => [g.id, 'depart']));
+  const doorSink = num(cfg.waves.doorSinkTime, 1.2);
   const siegeParams = { ...windowsCfg, bounds: layout.bounds, inside: layout.inside };
   // Débris des planches arrachées (lot 3a) : jamais dans un meuble ni hors de la salle ; la géométrie des planches est dans js/core/plank-layout.js.
   const plankCfg = plankSettings(windowsCfg, cfg.render);
@@ -94,7 +104,9 @@ export function createGame(ctx) {
   document.getElementById('game-canvas').appendChild(renderer.domElement);
 
   const textures = createThreeTextures(ctx.textureData, renderer);
-  const world = buildWorld({ palette, layout, render, textures, windowGeoms: geoms, windowsCfg, seed: ctx.seed });
+  // ?wave=N ouvre les portes dont openAfterWave < N dès le chargement : leur maillage n'est même pas construit.
+  const startOpen = zoneCfg ? doorsOpenAtStart(zoneCfg, params.wave ?? 1) : [];
+  const world = buildWorld({ palette, layout, render, textures, windowGeoms: geoms, windowsCfg, seed: ctx.seed, closedDoors: doorCfgs.filter((d) => !startOpen.includes(d.id)).map((d) => d.id) });
   const rig = createCamera(render.camera, cfg.camera, layout, params.tilt, params.zoom);
   const kit = createKit({ textures, variants: ctx.variants, hit: palette.hit });
   const effects = createEffects(world.scene, palette, { gunHeight: render.gunHeight, bulletRadius: cfg.weapon.bulletRadius });
@@ -125,6 +137,7 @@ export function createGame(ctx) {
   };
 
   let sim;
+  const eventLog = []; // journal des événements de zone : { type: 'doorAnnounce' | 'doorOpen', door, wave, time } (tests)
   let anim;
   let lastFire;
   let sparks;
@@ -136,10 +149,55 @@ export function createGame(ctx) {
   let size = { width: 1, height: 1, unitsPerPixel: 1 };
   let stale = true; // vrai tant que l'image affichée n'est pas à jour
 
+  // Portes (lot 3c) : une porte fermée est un obstacle plein pour le joueur, les zombies (grille de chemin), les balles et le laser ; ouverte, elle n'est nulle part.
+  const doorById = new Map(doorCfgs.map((d) => [d.id, d]));
+  const openIds = () => doorCfgs.filter((d) => sim.doors[d.id]?.open).map((d) => d.id);
+  function syncSolids() {
+    const open = openIds();
+    playerSolids = [...layout.playerObstacles, ...closedDoors(layout, open)];
+    blockers = layout.empty ? [] : [...baseBlockers, ...closedDoors(layout, open)];
+  }
+  const activeIdsNow = () => (zoneCfg ? activeWindows(zoneCfg, zoneOf, openIds()) : geoms.map((g) => g.id));
+  const activePointsNow = () => (zoneCfg ? activeSpawnPoints(zoneCfg, zoneOf, layout.spawnPoints ?? [], openIds()) : layout.spawnPoints ?? layout.windows);
+  // Ouverture d'une porte (événement doorOpen du directeur), dans l'ordre : l'obstacle quitte les collisions et la grille de chemin, le champ de flux du joueur est
+  // recalculé (syncWindows), les fenêtres et points d'apparition de la zone s'activent (activeIdsNow, activePointsNow lisent l'état), le rendu lance l'enfoncement.
+  // Rien d'autre ne change : planches, débris et chutes sont conservés.
+  function openDoor(id) {
+    if (!doorById.has(id) || sim.doors[id]?.open) return;
+    const animate = !reduced;
+    sim.doors = { ...sim.doors, [id]: { open: true, sink: animate ? 0 : 1, sinking: animate } };
+    syncWindows();
+    if (!animate) world.doors.remove(id);
+  }
+  // Test (setDoor, startWave) : ouvre ou ferme une porte d'un coup, sans transition ni annonce.
+  function setDoorInstant(id, open) {
+    if (!doorById.has(id)) return false;
+    sim.doors = { ...sim.doors, [id]: { open, sink: open ? 1 : 0, sinking: false } };
+    if (open) world.doors.remove(id);
+    else {
+      world.doors.add(id);
+      world.doors.sink(id, 0);
+    }
+    syncWindows();
+    return true;
+  }
+  // Enfoncement : avance avec le temps de jeu (figé par la pause) ; la porte est retirée de la scène, géométrie libérée, quand elle a disparu.
+  function advanceDoors(dt) {
+    for (const d of doorCfgs) {
+      const st = sim.doors[d.id];
+      if (!st?.sinking) continue;
+      const sink = Math.min(1, st.sink + dt / Math.max(0.05, doorSink));
+      sim.doors = { ...sim.doors, [d.id]: { open: true, sink, sinking: sink < 1 } };
+      if (sink >= 1) world.doors.remove(d.id);
+      else world.doors.sink(d.id, sink);
+    }
+  }
+
   // Planches : les obstacles et la grille des zombies suivent l'état des fenêtres (seulement quand une fenêtre s'ouvre ou se ferme), le maillage
   // des planches aussi.
   function syncWindows() {
-    zombieSolids = siegeOn ? [...layout.zombieObstacles, ...closedRects(sim.win, geoms)] : layout.zombieObstacles;
+    syncSolids();
+    zombieSolids = siegeOn ? [...layout.zombieObstacles, ...closedDoors(layout, openIds()), ...closedRects(sim.win, geoms)] : layout.zombieObstacles;
     if (grid) {
       grid = createGrid(layout.size, zombieSolids, gridOpts);
       sim.flow = createFlowState();
@@ -167,13 +225,16 @@ export function createGame(ctx) {
     voices.clear();
     spawnLog.length = 0;
     shotLog.length = 0;
+    eventLog.length = 0;
     sim = {
       player: { x: layout.start.x, y: layout.start.y, r: cfg.player.radius, health: eff.player.maxHealth, maxHealth: eff.player.maxHealth },
       aim: createAim(0),
       enemies: [],
       bullets: [],
       weapon: createWeaponState(),
-      waves: createDirector(cfg.waves, { seed, wave: params.wave ?? 1, inactive: params.nospawn }),
+      waves: createDirector(cfg.waves, { seed, wave: params.wave ?? 1, inactive: params.nospawn, doors: doorCfgs.map((d) => ({ id: d.id, openAfterWave: d.openAfterWave })), wavesPerWorld: zoneCfg ? zoneCfg.wavesPerWorld : null, endless: params.endless === true }),
+      doors: Object.fromEntries(doorCfgs.map((d) => [d.id, startOpen.includes(d.id) ? { open: true, sink: 1, sinking: false } : { open: false, sink: 0, sinking: false }])),
+      worldOver: false,
       waveParams: cfg.waves,
       splash: createSplash(),
       splashView: stepSplash(createSplash(), null, 0, splashOptions).view,
@@ -197,6 +258,7 @@ export function createGame(ctx) {
     splashView.apply(sim.splashView);
     sim.debris = createDebris();
     for (const g of geoms) dropDebris(g.id, g.id in sim.win.windows ? sim.win.windows[g.id].maxPlanks - sim.win.windows[g.id].planks : 0);
+    world.doors.reset(doorCfgs.filter((d) => !sim.doors[d.id].open).map((d) => d.id));
     syncWindows();
     anim = { phase: 0, facing: 0, x: sim.player.x, y: sim.player.y };
     rig.snap(sim.player.x, sim.player.y);
@@ -269,7 +331,8 @@ export function createGame(ctx) {
     const standing = canMove(sim.down);
     const dir = standing ? override.move ?? input.move() : { x: 0, y: 0 };
     const before = sim.player;
-    const pos = moveCircle(sim.player, dir, eff.player.speed, dt, layout.moveRoom, layout.playerObstacles);
+    advanceDoors(dt);
+    const pos = moveCircle(sim.player, dir, eff.player.speed, dt, layout.moveRoom, playerSolids);
     sim.player = { ...sim.player, ...pos };
     // Pas : la phase de marche avance avec la distance réellement parcourue (même rythme que les poses : STRIDE par unité).
     const moved = Math.hypot(sim.player.x - before.x, sim.player.y - before.y);
@@ -338,12 +401,13 @@ export function createGame(ctx) {
       let windowLive = null;
       if (siegeOn) {
         // Siège (js/core/siege.js) : modes et intentions des zombies, arrachage des planches ; réparation automatique près de la fenêtre.
-        const sg = stepSiege(sim.enemies, sim.win, geoms, dt, siegeParams);
+        const activeIds = activeIdsNow();
+        const sg = stepSiege(sim.enemies, sim.win, geoms, dt, zoneCfg ? { ...siegeParams, active: activeIds } : siegeParams);
         sim.enemies = sg.zombies;
         const repairing = {};
         for (const g of geoms) {
           const w = sim.win.windows[g.id];
-          repairing[g.id] = !sim.dead && Math.hypot(sim.player.x - g.repairSpot.x, sim.player.y - g.repairSpot.y) <= windowsCfg.repairRadius && w.planks < w.maxPlanks;
+          repairing[g.id] = !sim.dead && activeIds.includes(g.id) && Math.hypot(sim.player.x - g.repairSpot.x, sim.player.y - g.repairSpot.y) <= windowsCfg.repairRadius && w.planks < w.maxPlanks;
         }
         const wr = stepWindows(sim.win, { tearing: sg.tearing, repairing, repairBlocked: sg.repairBlocked, repairTime: eff.player.repairTime }, dt, windowsCfg);
         sim.win = wr.state;
@@ -387,9 +451,11 @@ export function createGame(ctx) {
     // Vagues (js/core/wave-director.js) : jamais à l'écran, seuls les points hors de la vue (agrandie) sont possibles ; la salle du lot 1m
     // (?empty=1) n'a pas de vue limitée. ?nospawn=1 : directeur inactif, aucune vague.
     let waveLive = null;
+    let announcedDoor; // manche qui vient de s'achever, à l'image où le directeur annonce la nouvelle zone
+    let worldEnded = false;
     if (sim.waves.phase !== 'inactif') {
       const view = layout.empty ? null : visibleRect();
-      const out = stepDirector(sim.waves, { dt, alive: sim.enemies.length, view, points: layout.spawnPoints ?? layout.windows, siege: siegeOn });
+      const out = stepDirector(sim.waves, { dt, alive: sim.enemies.length, view, points: activePointsNow(), siege: siegeOn });
       sim.waves = out.state;
       for (const r of out.requests) {
         addEnemy(r.x, r.y, { type: r.type, gait: r.gait, spec: out.state.spec, from: r.pointId, window: r.window, mode: siegeOn ? r.mode : 'libre' });
@@ -398,6 +464,15 @@ export function createGame(ctx) {
       for (const ev of out.events) {
         if (ev.type === 'waveStart') {
           waveLive = fmt(ctx.dict['game.wave.live'], { n: ev.wave });
+        } else if (ev.type === 'doorAnnounce') {
+          announcedDoor = ev.wave;
+          eventLog.push({ type: 'doorAnnounce', door: ev.door, wave: ev.wave, time: sim.time });
+          waveLive = ctx.dict[ZONE_TEXTS.liveZone];
+        } else if (ev.type === 'doorOpen') {
+          openDoor(ev.door);
+          eventLog.push({ type: 'doorOpen', door: ev.door, wave: ev.wave, time: sim.time });
+        } else if (ev.type === 'worldEnd') {
+          worldEnded = true;
         } else if (ev.type === 'waveEnd') {
           // Fin de vague : la vie du joueur est remise à son maximum (healFraction), sans dépasser ; à terre, le soin attend le relevage.
           const healed = applyHeal(sim.player.health, sim.player.maxHealth, ev.healFraction, sim.down);
@@ -410,7 +485,7 @@ export function createGame(ctx) {
 
     // Animation de vague (E2-8) : état pur (wave-splash.js) avancé avec le temps de jeu, donc figé par la pause ; sa mélodie part avec l'image
     // de démarrage (une demande par animation). Une animation de début démarre 3,0 s avant les apparitions, celle de fin à l'état terminee.
-    const spl = stepSplash(sim.splash, { ...waveInfo(sim.waves), playerAlive: sim.player.health > 0 }, dt, splashOptions);
+    const spl = stepSplash(sim.splash, { ...waveInfo(sim.waves), playerAlive: sim.player.health > 0, doorAnnounce: announcedDoor }, dt, splashOptions);
     sim.splash = spl.state;
     sim.splashView = spl.view;
     if (spl.view.sound) events.push(spl.view.sound.name === 'vague-fin' ? { type: 'waveEnd', variant: spl.view.sound.variant } : { type: 'waveSplash', sound: spl.view.sound.name, variant: spl.view.sound.variant });
@@ -438,7 +513,7 @@ export function createGame(ctx) {
       }
     }
     if (pd.knockback) {
-      sim.enemies = knockbackZombies(sim.enemies, sim.player, pd.knockback, { bounds: layout.bounds, inside: layout.inside, furniture: layout.furniture, walls: layout.walls, gaps: layout.gaps });
+      sim.enemies = knockbackZombies(sim.enemies, sim.player, pd.knockback, { bounds: layout.bounds, inside: layout.inside, furniture: [...layout.furniture, ...closedDoors(layout, openIds())], walls: layout.walls, gaps: layout.gaps });
     }
 
     audio?.handle({ time: sim.time, listener: sim.player, walls: audioWalls, paused: ctx.ui.isPaused(), events, zombies: sim.enemies.map((e) => ({ id: e.id, x: e.x, y: e.y, variant: variantName(e.id), gait: e.gait, stride: e.stride })) });
@@ -462,6 +537,26 @@ export function createGame(ctx) {
       ctx.ui.setLive(fmt(ctx.dict['game.live.dead'], { n: sim.kills }));
       ctx.ui.showEnd(sim.kills, waveInfo(sim.waves).wave);
     }
+    // Fin du monde (lot 3c) : la manche wavesPerWorld est terminée ; écran provisoire « Monde terminé », la partie s'arrête (Rejouer repart de la manche 1).
+    if (worldEnded && !sim.dead) {
+      sim.worldOver = true;
+      sim.splash = createSplash();
+      sim.splashView = stepSplash(sim.splash, null, 0, splashOptions).view;
+      audio?.stopAnnounce();
+      input.releaseAll();
+      ctx.ui.setLive(ctx.dict[ZONE_TEXTS.liveWorld]);
+      ctx.ui.showEnd(sim.kills, waveInfo(sim.waves).wave, 'world');
+    }
+  }
+
+  // Panneau de pause (E2-6) : « Prochaine zone : manche N » tant qu'une porte active reste fermée ; écrit seulement si la valeur change.
+  let nextZoneShown;
+  function updateNextZone() {
+    const next = zoneCfg ? nextDoor(zoneCfg, 1, openIds()) : null;
+    const wave = next ? next.wave : null;
+    if (wave === nextZoneShown) return;
+    nextZoneShown = wave;
+    ctx.ui.setNextZone(wave);
   }
 
   // E2-10 : état à terre (« À terre », « Tu te relèves dans N s », voile de bord) puis « Protégé N s » pendant la protection ; écrit seulement si le texte change.
@@ -682,6 +777,7 @@ export function createGame(ctx) {
     world.windowMeshes?.sync(sim.win); // pastille de la planche en cours de réparation : elle se remplit peu à peu
     updateEdgeArrows();
     updateLabels();
+    updateNextZone();
     world.debris?.sync(sim.debris.items, reduced);
     splashView.apply(sim.splashView);
   }
@@ -719,7 +815,7 @@ export function createGame(ctx) {
     // En pause rien ne bouge : une dernière image suffit (ou après un redimensionnement), puis on n'affiche plus rien.
     if (paused && !stale) return;
     stale = !paused;
-    if (!paused && !sim.dead) step(dt);
+    if (!paused && !sim.dead && !sim.worldOver) step(dt);
     draw(paused ? 0 : dt);
     followCamera(paused ? 0 : dt);
     renderer.render(world.scene, rig.camera);
@@ -752,6 +848,24 @@ export function createGame(ctx) {
     return { distinctColors: seen.size, meanLuminance: lum / (pixels.length / 4) / 255 };
   }
 
+  // Zones et portes pour les tests (getState().zones). L'ancienne salle n'a qu'une zone, aucune porte, aucune fin de monde.
+  function zonesState() {
+    const open = openIds();
+    const points = layout.spawnPoints ?? [];
+    const pointsOf = (zoneId) => points.filter((p) => zoneOf[p.window ?? p.fenetre] === zoneId).map((p) => p.id);
+    if (!zoneCfg) {
+      return { list: [{ id: 'depart', open: true, windows: geoms.map((g) => g.id), spawnPoints: points.map((p) => p.id) }], doors: [], next: null, activeSpawnPoints: points.map((p) => p.id), activeWindows: geoms.map((g) => g.id) };
+    }
+    const active = activeZones(zoneCfg, open);
+    return {
+      list: zoneCfg.zones.map((z) => ({ id: z.id, open: active.includes(z.id), windows: geoms.filter((g) => zoneOf[g.id] === z.id).map((g) => g.id), spawnPoints: pointsOf(z.id) })),
+      doors: zoneCfg.doors.map((d) => ({ id: d.id, open: sim.doors[d.id]?.open === true, planned: d.planned === true, openAfterWave: d.openAfterWave, sinkProgress: sim.doors[d.id]?.sink ?? 0 })),
+      next: nextDoor(zoneCfg, 1, open),
+      activeSpawnPoints: activePointsNow().map((p) => p.id),
+      activeWindows: activeIdsNow(),
+    };
+  }
+
   // État des vagues pour les tests (getState().waves).
   function wavesState() {
     const i = waveInfo(sim.waves);
@@ -759,6 +873,7 @@ export function createGame(ctx) {
     return {
       active: i.active, phase: i.phase, wave: i.wave, level: i.level, total: i.total, alive: i.alive, toSpawn: i.toSpawn, remaining: i.remaining,
       maxConcurrent: i.maxConcurrent, waitLeft: i.waitLeft, hpMul: spec.hpMul, speedMul: spec.speedMul, damageMul: spec.damageMul, reinforced: i.reinforced,
+      doorPending: i.doorPending ? { ...i.doorPending } : null, worldEnd: i.worldEnd,
     };
   }
 
@@ -795,7 +910,7 @@ export function createGame(ctx) {
     // Test : avance la simulation de `seconds` par pas de 0,05 s, sans attendre le rendu (puis une image à jour).
     advance(seconds) {
       const n = Math.min(4000, Math.max(0, Math.round(Number(seconds) / STEP) || 0));
-      for (let i = 0; i < n && !sim.dead; i += 1) {
+      for (let i = 0; i < n && !sim.dead && !sim.worldOver; i += 1) {
         step(STEP);
         followCamera(STEP);
       }
@@ -841,6 +956,10 @@ export function createGame(ctx) {
     startWave(n) {
       sim.enemies = [];
       sim.waves = jumpToWave(sim.waves, n);
+      // Les portes se ferment ou s'ouvrent comme au chargement de ?wave=n (openAfterWave < n : ouvertes), d'un coup.
+      const openNow = zoneCfg ? doorsOpenAtStart(zoneCfg, n) : [];
+      for (const d of doorCfgs) setDoorInstant(d.id, openNow.includes(d.id));
+      sim.worldOver = false;
       sim.splash = createSplash();
       sim.splashView = stepSplash(sim.splash, null, 0, splashOptions).view;
       splashView.apply(sim.splashView);
@@ -851,6 +970,23 @@ export function createGame(ctx) {
       const n = sim.enemies.length;
       sim.enemies = [];
       return n;
+    },
+    // Test (lot 3c) : termine la manche courante : zombies vivants tués (sans compter de tués), apparitions restantes annulées ; la fin de manche suit au pas
+    // suivant. Sans effet pendant la pause d'une porte ni hors d'une manche ; renvoie le nombre de zombies retirés.
+    skipWave() {
+      const next = finishWave(sim.waves);
+      if (next === sim.waves) return 0;
+      const n = sim.enemies.length;
+      sim.enemies = [];
+      sim.waves = next;
+      return n;
+    },
+    // Test (lot 3c) : ouvre ou ferme une porte d'un coup, sans transition ni annonce ; renvoie faux si la porte n'existe pas.
+    setDoor(id, open) {
+      const ok = setDoorInstant(id, open === true);
+      if (ok) sim.waves = markDoor(sim.waves, id, open === true);
+      stale = true;
+      return ok;
     },
     // Test : surcharge temporaire de waves.json (sections fusionnées), valable jusqu'à Rejouer.
     setWaveParams(partial) {
@@ -915,7 +1051,11 @@ export function createGame(ctx) {
         kills: sim.kills,
         waves: wavesState(),
         camera: { x: cam.x, y: cam.y, z: cam.z, distance: rig.view.distance, tilt: rig.view.tilt, zoom: rig.view.zoom, target: { ...rig.view.target } },
-        render: { ...lastInfo },
+        render: { ...lastInfo, geometries: renderer.info.memory.geometries },
+        zones: zonesState(),
+        events: eventLog.map((e) => ({ ...e })),
+        doorMeshes: { ids: world.doors.ids(), ...world.doors.stats(), scaleY: Object.fromEntries(world.doors.ids().map((id) => [id, world.doors.scaleY(id)])) },
+        worldOver: sim.worldOver === true,
         textures: { count: ctx.textureData.count, bytes: ctx.textureData.bytes, readyMs: Math.round(ctx.textureData.ms), ready: true },
         view: visibleRect(),
         playerScreen: projectPlayer(),
@@ -926,11 +1066,12 @@ export function createGame(ctx) {
         labels: labelState.map((l) => ({ ...l })),
         obstacles: layout.furniture.map((o) => ({ id: o.id, kind: o.kind, x: o.x, y: o.y, w: o.w, h: o.h, hauteur: o.hauteur, screen: screenAt(o.x + o.w / 2, o.hauteur, o.y + o.h / 2) })),
         windows: !siegeOn ? layout.windows.map((w) => ({ id: w.id ?? null, x: w.x, y: w.y })) : geoms.map((g) => {
+          const activeNow = activeIdsNow();
           const w = sim.win.windows[g.id];
           const r = sim.repair[g.id] ?? { repairing: false, blocked: false, progress: 0 };
           const o = occupancy(sim.enemies, g.id);
           const m = meshStats.find((e) => e.id === g.id);
-          return { id: g.id, planks: w.planks, maxPlanks: w.maxPlanks, tearers: o.tearers, climbers: o.climbers, queue: o.queue, repairing: r.repairing, repairProgress: w.repairProgress, repairBlocked: r.blocked, open: w.planks === 0, x: g.center.x, y: g.center.y, screen: screenAt(g.center.x - g.normal.x * (debrisGeoms.get(g.id).inner + plankCfg.wallGap + plankCfg.thickness / 2), (plankCfg.sill + plankCfg.lintel) / 2, g.center.y - g.normal.y * (debrisGeoms.get(g.id).inner + plankCfg.wallGap + plankCfg.thickness / 2)), mesh: m ? { triangles: m.triangles, inFrustum: m.inFrustum, minY: m.minY, minWallGap: m.minWallGap, beams: m.beams, voidVisible: m.voidVisible, pipsOn: m.pipsOn, pipY: m.pipY } : null };
+          return { id: g.id, zone: zoneOf[g.id], active: activeNow.includes(g.id), planks: w.planks, maxPlanks: w.maxPlanks, tearers: o.tearers, climbers: o.climbers, queue: o.queue, repairing: r.repairing, repairProgress: w.repairProgress, repairBlocked: r.blocked, open: w.planks === 0, x: g.center.x, y: g.center.y, screen: screenAt(g.center.x - g.normal.x * (debrisGeoms.get(g.id).inner + plankCfg.wallGap + plankCfg.thickness / 2), (plankCfg.sill + plankCfg.lintel) / 2, g.center.y - g.normal.y * (debrisGeoms.get(g.id).inner + plankCfg.wallGap + plankCfg.thickness / 2)), mesh: m ? { triangles: m.triangles, inFrustum: m.inFrustum, minY: m.minY, minWallGap: m.minWallGap, beams: m.beams, voidVisible: m.voidVisible, pipsOn: m.pipsOn, pipY: m.pipY } : null };
         }),
         hud: hudState(),
         plankMesh: { nailed: world.windowMeshes?.nailed() ?? 0, debris: sim.debris.items.length },

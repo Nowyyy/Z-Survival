@@ -1,6 +1,7 @@
 // Point d'entrée de jeu.html : charge les textes et les données, prépare le DOM, lance la partie en 3D (Three.js).
 import { buildLayout } from '../core/layout.js';
 import { resolveMapId } from '../core/maps.js';
+import { parseZones, zonesToWorld } from '../core/zones.js';
 import { parseTilt, parseZoom } from '../core/viewport.js';
 import { createAudio } from './audio.js';
 import { createGame } from './game.js';
@@ -53,6 +54,9 @@ const emptyMode = testMode && query.get('empty') === '1';
 const mapId = emptyMode ? 'salle' : resolveMapId(location.search);
 const mapDir = mapId === 'salle' ? 'data/game' : `data/game/maps/${mapId}`;
 
+// Zones et portes (lot 3c) : zones.json de la carte (pixels du plan), absent de l'ancienne salle (?map=salle, ?empty=1) qui garde une seule zone.
+const zonesJson = mapId === 'salle' ? null : await loadJson(`${mapDir}/zones.json`);
+
 const [dict, world, decor, camera, nav, player, weapons, enemies, render, texturesCfg, variants, soundsCfg, audioCfg, materialsCfg, voiceCfg, wavesCfg, gaitsCfg, statsCfg, splashCfg, vhsCfg, windowsCfg, downCfg] = await Promise.all([
 
   loadDict(),
@@ -104,7 +108,8 @@ loading.done();
 root.hidden = false;
 
 // ?empty=1 (seulement avec ?test=1) : la salle du lot 1m sans meuble ni décor, mêmes coordonnées qu'au lot 1m.
-const layout = buildLayout(world, decor, { empty: emptyMode, slack: camera.slack });
+const zones = zonesJson ? zonesToWorld(parseZones(zonesJson), world.transform) : null;
+const layout = buildLayout(world, decor, { empty: emptyMode, slack: camera.slack, zones });
 
 const ctx = {
   cfg: { layout, player, weapon: weapons.pistol, stats: statsCfg, zombie: enemies.zombie, enemies, gaits: gaitsCfg, waves: wavesCfg, render, camera, nav, windows: windowsCfg, down: downCfg },
@@ -117,6 +122,8 @@ const ctx = {
     test: testMode,
     nospawn: query.get('nospawn') === '1',
     wave: waveParam(query.get('wave')),
+    // ?endless=1 (lot 3c) : les manches continuent après la manche 40, sans fin de monde ; fonctionne sans ?test=1, n'expose rien et n'est jamais mémorisé.
+    endless: query.get('endless') === '1',
     planks: planksParam(query.get('planks'), windowsCfg.planks),
     tilt: parseTilt(query.get('tilt'), render.camera.tilt),
     zoom: parseZoom(query.get('zoom'), layout.zoom ?? camera.zoom),

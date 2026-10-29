@@ -235,7 +235,7 @@ function addDecor(b, region, decor, outdoorSoil) {
 
 // layout : sortie de js/core/layout.js ; textures : sortie de createThreeTextures (js/game/textures.js).
 // Renvoie { scene, setShadows, followSun }.
-export function buildWorld({ palette, layout, render, textures, windowGeoms = [], windowsCfg = null, seed = 1 }) {
+export function buildWorld({ palette, layout, render, textures, windowGeoms = [], windowsCfg = null, seed = 1, closedDoors = null }) {
   const { room, size } = layout;
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(palette.fog);
@@ -341,10 +341,56 @@ export function buildWorld({ palette, layout, render, textures, windowGeoms = []
     debris = createDebrisMeshes({ scene, material, settings, sheet, ids: windowGeoms.map((g) => g.id) });
   }
 
+  // Portes (lot 3c) : un maillage par porte fermée, une boîte de la hauteur du mur (10 triangles) dans la région « tole » de l'atlas de props (matière
+  // existante, plus claire que le mur : contraste de luminance d'au moins 1,5:1, mesuré par un test), sans ombre portée. Une porte ouverte au chargement
+  // (?wave=N) n'est même pas construite. L'enfoncement met l'échelle verticale (origine au sol) de 1 à 0,001 ; le maillage est ensuite retiré et sa géométrie libérée.
+  const doorMeshes = new Map();
+  const doorRegion = region('tole');
+  const addDoor = (door) => {
+    if (doorMeshes.has(door.id)) return;
+    const builder = new Builder();
+    builder.box(rectBox(door.rect, 0, door.rect.hauteur), { rect: doorRegion, scale: doorRegion.scale, seed: 900 });
+    const mesh = builder.mesh(scene, atlasMaterial, { cast: false, receive: true });
+    if (mesh) {
+      mesh.name = door.id;
+      doorMeshes.set(door.id, mesh);
+    }
+  };
+  const dropDoor = (id) => {
+    const mesh = doorMeshes.get(id);
+    if (!mesh) return false;
+    scene.remove(mesh);
+    mesh.geometry.dispose();
+    doorMeshes.delete(id);
+    return true;
+  };
+  const doorList = Array.isArray(layout.doors) ? layout.doors : [];
+  for (const door of doorList) if (closedDoors === null || closedDoors.includes(door.id)) addDoor(door);
+
   return {
     scene,
     windowMeshes,
     debris,
+    doors: {
+      ids: () => [...doorMeshes.keys()],
+      add: (id) => { const d = doorList.find((q) => q.id === id); if (d) addDoor(d); },
+      remove: dropDoor,
+      // progress de 0 (fermée) à 1 (disparue) : sortie ralentie, échelle verticale de 1 à 0,001.
+      sink(id, progress) {
+        const mesh = doorMeshes.get(id);
+        if (mesh) mesh.scale.y = Math.max(0.001, (1 - Math.min(1, Math.max(0, progress))) ** 2);
+      },
+      scaleY: (id) => doorMeshes.get(id)?.scale.y ?? null,
+      // Remet exactement les portes données (Rejouer).
+      reset(ids) {
+        for (const id of [...doorMeshes.keys()]) dropDoor(id);
+        for (const id of ids) {
+          const d = doorList.find((q) => q.id === id);
+          if (d) addDoor(d);
+        }
+      },
+      stats: () => ({ meshes: doorMeshes.size, triangles: [...doorMeshes.values()].reduce((n, m) => n + m.geometry.attributes.position.count / 3, 0) }),
+    },
     setFog(distance) {
       scene.fog.near = distance * render.fog.near;
       scene.fog.far = distance * render.fog.far;

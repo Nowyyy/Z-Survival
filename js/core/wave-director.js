@@ -189,3 +189,20 @@ export function stepDirector(state, input) {
   }
   return { state: s, requests, events };
 }
+
+// Lot 3c (hooks de test) : termine la manche courante sans la jouer : les apparitions restantes sont annulées et la manche passe en combat ; la fin de manche
+// (waveEnd, soin, annonce) vient au prochain pas quand plus aucun zombie n'est vivant. Sans effet hors d'une manche (inactif, terminee, monde-termine) ni pendant la pause d'une porte.
+export function finishWave(state) {
+  const s = state !== null && typeof state === 'object' && state.spec ? state : null;
+  // Pendant la pause qui porte l'annonce et l'ouverture d'une porte, la manche suivante n'a pas commencé : rien à terminer.
+  if (s === null || !['attente', 'apparition', 'combat'].includes(s.phase) || s.door) return s ?? createDirector({}, { inactive: true });
+  return { ...s, phase: 'combat', spawned: s.spec.total, waitLeft: 0, door: null };
+}
+
+// Lot 3c (hooks de test) : marque une porte ouverte ou fermée d'un coup, sans transition (la transition en cours est abandonnée). Une porte inconnue ne change rien.
+export function markDoor(state, id, open) {
+  const s = state !== null && typeof state === 'object' && state.spec ? state : null;
+  if (s === null || !Array.isArray(s.doors) || !s.doors.some((d) => d.id === id)) return s ?? createDirector({}, { inactive: true });
+  const opened = s.opened.filter((q) => q !== id);
+  return { ...s, opened: open === true ? [...opened, id] : opened, door: s.door?.id === id ? null : s.door };
+}
