@@ -1,6 +1,6 @@
 import { test, expect, chromium } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
-import { expectedDistance, waitReady } from './helpers.js';
+import { expectedDistance, waitReady, salle } from './helpers.js';
 
 const URL = '/jeu.html?test=1&empty=1&seed=1';
 // Message du pilote graphique à la création du premier contexte WebGL du navigateur : du bruit du navigateur, pas du jeu.
@@ -169,7 +169,7 @@ test('axe : aucune violation', async ({ page, isMobile }) => {
 test('sans JavaScript, seul le message noscript est visible', async ({ baseURL }) => {
   const browser = await chromium.launch({ channel: process.env.CI ? 'chrome' : undefined, args: ['--blink-settings=scriptEnabled=false'] });
   const page = await browser.newPage({ locale: 'fr-FR' });
-  await page.goto(`${baseURL}/jeu.html`);
+  await page.goto(salle(`${baseURL}/jeu.html`));
   await expect(page.locator('#game-root')).toBeHidden();
   const text = (await page.evaluate(() => document.body.innerText)).trim();
   expect(text).toBe('Ce jeu a besoin de JavaScript. / This game needs JavaScript.');

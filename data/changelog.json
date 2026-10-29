@@ -83,6 +83,13 @@
       "Le HUD tient en puces dans 96 × 300 pixels : barre de vie avec 100/100, vague, restants, tués, chutes ; seules les fenêtres attaquées ou ouvertes ont une puce.",
       "L'indicateur de réparation tient sur une ligne, et des flèches au bord de l'écran montrent les deux fenêtres en alerte les plus urgentes hors du champ.",
       "Essai « Sur l'écran d'accueil » : jeu.html se lance sans les barres du navigateur (à vérifier sur iPhone)."
+    ] },
+    { "name": "lot-3b", "titre": "Première carte : le rez-de-chaussée d'un bâtiment", "points": [
+      "Le jeu se joue maintenant dans le rez-de-chaussée d'un bâtiment reproduit d'après un plan : une longue aile, une grande salle, une alcôve au nord, des piliers et des escaliers pleins, sans aucune porte.",
+      "Huit fenêtres F1 à F8, avec leurs planches, leurs débris et leurs flèches étiquetées ; les zombies naissent dehors, hors de la vue, par deux points par fenêtre (une rampe mène à F3).",
+      "La carte est calculée par un script à partir d'un seul fichier en pixels du plan (npm run carte) : corriger un chiffre suffit.",
+      "Nouvelle page de contrôle carte.html (le plan en SVG, fenêtres numérotées, échelle) et ?labels=1 pour voir F1 à F8 dans le jeu ; ?zoom=1 montre tout le bâtiment.",
+      "?map=salle ramène l'ancienne salle de 2000 × 1200 et ses trois fenêtres."
     ] }
   ]
 }

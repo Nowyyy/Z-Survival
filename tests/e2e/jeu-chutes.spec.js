@@ -1,13 +1,13 @@
 import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { readFileSync } from 'node:fs';
-import { waitReady } from './helpers.js';
+import { waitReady, salle } from './helpers.js';
 
 // Lot 3-C : chutes du joueur (à terre, relevage, mort), interface E2-10, statistiques chutes et reparation. Tout passe par step() et les hooks :
 // aucune durée n'est attendue en temps réel (sauf la pause, qui doit figer l'horloge de jeu). Petite fenêtre (667×375).
 const SIZE = { width: 667, height: 375 };
 const down = JSON.parse(readFileSync('data/game/player-down.json', 'utf8'));
-const URL = (extra = '') => `/jeu.html?test=1&seed=1${extra.includes('nospawn') ? '' : '&nospawn=1'}${extra}`;
+const URL = (extra = '') => salle(`/jeu.html?test=1&seed=1${extra.includes('nospawn') ? '' : '&nospawn=1'}${extra}`);
 const state = (page) => page.evaluate(() => window.__zs.getState());
 const dn = async (page) => (await state(page)).player.down;
 const step = (page, seconds) => page.evaluate((s) => window.__zs.step(s), seconds);
@@ -253,7 +253,7 @@ test.describe('interface E2-10 et annonces', () => {
 
   test('E2-10 est sous l\'animation de vague dans l\'ordre du HTML et affiche « Protégé N s » après le relevage', async ({ page }) => {
     await open(page);
-    expect(await page.evaluate(() => [...document.querySelectorAll('#game-root [data-block]')].map((e) => e.dataset.block))).toEqual(['E2-2', 'E2-8', 'E2-10', 'E2-11', 'E2-5', 'E2-3', 'E2-4']);
+    expect(await page.evaluate(() => [...document.querySelectorAll('#game-root [data-block]')].map((e) => e.dataset.block))).toEqual(['E2-2', 'E2-8', 'E2-10', 'E2-5', 'E2-3', 'E2-4']);
     await fall(page);
     await step(page, 5.1);
     await expect(page.locator('#down')).toBeVisible();

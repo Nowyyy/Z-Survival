@@ -35,10 +35,13 @@ export const WINDOW_TEXTS = {
 };
 export const WINDOW_NAMES = {
   'fenetre-nord': 'game.windows.name.nord', 'fenetre-ouest': 'game.windows.name.ouest', 'fenetre-est': 'game.windows.name.est', 'fenetre-sud': 'game.windows.name.sud',
+  // Carte du lot 3b : fenêtres F1 à F8 (clés écrites en toutes lettres : pas de clé orpheline).
+  F1: 'game.windows.name.F1', F2: 'game.windows.name.F2', F3: 'game.windows.name.F3', F4: 'game.windows.name.F4', F5: 'game.windows.name.F5', F6: 'game.windows.name.F6', F7: 'game.windows.name.F7', F8: 'game.windows.name.F8',
 };
 // Initiale du nom de chaque fenêtre (puces du HUD, flèches au bord) : une donnée de fr.json, jamais calculée dans le code.
 export const WINDOW_INITIALS = {
   'fenetre-nord': 'game.windows.initial.nord', 'fenetre-ouest': 'game.windows.initial.ouest', 'fenetre-est': 'game.windows.initial.est', 'fenetre-sud': 'game.windows.initial.sud',
+  F1: 'game.windows.initial.F1', F2: 'game.windows.initial.F2', F3: 'game.windows.initial.F3', F4: 'game.windows.initial.F4', F5: 'game.windows.initial.F5', F6: 'game.windows.initial.F6', F7: 'game.windows.initial.F7', F8: 'game.windows.initial.F8',
 };
 export const DOWN_TEXTS = {
   chutes: 'game.down.chutes', chutesLabel: 'game.down.chutes.label', title: 'game.down.title', countdown: 'game.down.countdown', grace: 'game.down.grace', liveDown: 'game.down.live.down', liveUp: 'game.down.live.up',

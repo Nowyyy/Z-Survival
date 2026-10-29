@@ -181,7 +181,8 @@ export function createWindowMeshes({ scene, material, geoms, settings: p, sheet,
     for (let v = hole.from * 3; v < hole.to * 3; v += 1) if (pos[v] !== 0) voidVisible = true;
     const on = e.uvOn[0].map((v) => Math.fround(v));
     const pipsOn = e.inner.filter((from) => e.buf.uv[from * 2] === on[0] && e.buf.uv[from * 2 + 1] === on[1]).length;
-    e.stats = { triangles, minY: Number.isFinite(minY) ? minY : null, minWallGap: Number.isFinite(minGap) ? minGap : null, beams: e.nailed, voidVisible, pipsOn };
+    const pipItem = e.items.find((item) => item.kind === 'pip');
+    e.stats = { triangles, minY: Number.isFinite(minY) ? minY : null, minWallGap: Number.isFinite(minGap) ? minGap : null, beams: e.nailed, voidVisible, pipsOn, pipY: pipItem ? e.full[pipItem.from * 3 + 1] : null };
   }
 
   const frustum = new THREE.Frustum();
@@ -212,8 +213,8 @@ export function createWindowMeshes({ scene, material, geoms, settings: p, sheet,
 
 // Débris : un seul maillage (4 triangles par débris, capacité qui double au besoin) réécrit quand la liste ou une échelle change. Chaque planche est un dessus et un côté
 // tourné vers le sud (la caméra) ; la matière est celle des fenêtres. Dessiné seulement s'il y a des débris.
-export function createDebrisMesh({ scene, material, settings: p, sheet }) {
-  let capacity = 16; // débris ; aucun plafond : les tampons doublent quand la liste dépasse leur capacité
+export function createDebrisMesh({ scene, material, settings: p, sheet, capacity: initial = 16, name = 'debris' }) {
+  let capacity = initial; // débris ; aucun plafond : les tampons doublent quand la liste dépasse leur capacité
   let buf = null;
   const geometry = new THREE.BufferGeometry();
   const alloc = (n) => {
@@ -229,7 +230,7 @@ export function createDebrisMesh({ scene, material, settings: p, sheet }) {
   const mesh = new THREE.Mesh(geometry, material);
   mesh.castShadow = false;
   mesh.receiveShadow = false;
-  mesh.name = 'debris';
+  mesh.name = name;
   mesh.visible = false;
   scene.add(mesh);
   let signature = '';
@@ -278,6 +279,29 @@ export function createDebrisMesh({ scene, material, settings: p, sheet }) {
         for (const d of list) r = Math.max(r, Math.hypot(d.x - c.x, d.z - c.z));
         geometry.boundingSphere.set(c, r + p.debrisLength);
       }
+    },
+  };
+}
+
+// Débris par fenêtre (lot 3b) : un maillage par fenêtre (capacité de départ : 4, une par planche), dessiné seulement si sa fenêtre est dans le champ de la
+// caméra (volume englobant recalculé quand ses débris changent). items : liste de plank-layout (champ `window`). Renvoie { meshes, count(), sync(items, reduced), stats(camera) }.
+export function createDebrisMeshes({ scene, material, settings, sheet, ids }) {
+  const by = new Map((Array.isArray(ids) ? ids : []).map((id) => [id, createDebrisMesh({ scene, material, settings, sheet, capacity: 4, name: `debris-${id}` })]));
+  const frustum = new THREE.Frustum();
+  const matrix = new THREE.Matrix4();
+  return {
+    meshes: [...by.values()].map((d) => d.mesh),
+    count: () => [...by.values()].reduce((n, d) => n + d.count(), 0),
+    sync(items, reduced = false) {
+      const list = Array.isArray(items) ? items : [];
+      for (const [id, d] of by) d.sync(list.filter((item) => item.window === id), reduced);
+    },
+    // Par fenêtre : nombre de débris dessinés et présence dans le champ de la caméra (tests).
+    stats(camera) {
+      camera.updateMatrixWorld();
+      matrix.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
+      frustum.setFromProjectionMatrix(matrix);
+      return [...by].map(([id, d]) => ({ id, count: d.count(), inFrustum: d.mesh.visible && frustum.intersectsObject(d.mesh) }));
     },
   };
 }

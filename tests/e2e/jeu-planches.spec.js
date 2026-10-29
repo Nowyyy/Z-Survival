@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { waitReady } from './helpers.js';
+import { waitReady, salle } from './helpers.js';
 
 // Lot 3a-A : planches lisibles et sans clipping. Tout passe par step() (temps de jeu) et les hooks de ?test=1 ; les mesures lisent les sommets réels
 // des maillages (getState().windows[i].mesh), pas la fonction pure. 667×375 de préférence ; les tests se désactivent seuls si WebGL manque.
@@ -10,7 +10,7 @@ const BROWSER_NOISE = /GL Driver Message|ReadPixels|GPU stall/;
 
 async function open(page, extra = '', size = SIZE, seed = 1) {
   await page.setViewportSize(size);
-  await page.goto(`/jeu.html?test=1&seed=${seed}&nospawn=1${extra}`);
+  await page.goto(salle(`/jeu.html?test=1&seed=${seed}&nospawn=1${extra}`));
   await waitReady(page);
   await page.evaluate(() => { window.requestAnimationFrame = () => 0; });
   await page.evaluate(() => new Promise((resolve) => setTimeout(resolve, 150)));
@@ -186,8 +186,9 @@ test.describe('culling : seules les fenêtres dans le champ sont dessinées', ()
       return { base, out, near, d: [d0, d1, d2], frustum: zs.getState().windows.map((w) => w.mesh.inFrustum) };
     });
     expect(r.frustum).toEqual([true, false, false]);
-    // Seuls les débris (un maillage, 4 triangles chacun) changent le total : les fenêtres est et ouest, hors champ, ne coûtent rien.
-    expect(r.out - r.base).toBe(4 * (r.d[1] - r.d[0]));
+    // Lot 3b : un maillage de débris par fenêtre, masqué avec elle : les fenêtres est et ouest, hors champ, ne coûtent rien (avant : 4 triangles par débris, un seul maillage).
+    expect(r.d[1]).toBeGreaterThan(r.d[0]);
+    expect(r.out - r.base).toBe(0);
     expect(r.near - r.out).toBe(4 * (r.d[2] - r.d[1])); // un maillage de fenêtre a une capacité fixe : 42 triangles dessinés quel que soit le nombre de planches
   });
 
@@ -291,7 +292,7 @@ test.describe('hygiène', () => {
 
   test('sans ?test=1 rien n\'est exposé (mesh, debris)', async ({ page }) => {
     await page.setViewportSize(SIZE);
-    await page.goto('/jeu.html?seed=1&nospawn=1');
+    await page.goto(salle('/jeu.html?seed=1&nospawn=1'));
     await page.waitForFunction(() => document.getElementById('game-root')?.hidden === false || document.getElementById('game-error')?.hidden === false);
     expect(await page.evaluate(() => typeof window.__zs)).toBe('undefined');
   });

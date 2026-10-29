@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { projectGround } from '../../js/core/viewport.js';
-import { waitReady } from './helpers.js';
+import { waitReady, salle } from './helpers.js';
 
 // Rendu et enveloppe du jeu en 3D (lot 1m, partie B). Petite fenêtre : le rendu logiciel y est plus rapide.
 const SIZE = { width: 667, height: 375 };
@@ -68,7 +68,7 @@ test.describe('enveloppe', () => {
 
   test('sans ?test=1, rien n\'est exposé (window.__zs absent)', async ({ page }) => {
     await page.setViewportSize(SIZE);
-    await page.goto('/jeu.html?nospawn=1');
+    await page.goto(salle('/jeu.html?nospawn=1'));
     await expect(page.locator('#hud-life')).toHaveText('100/100');
     expect(await page.evaluate(() => typeof window.__zs)).toBe('undefined');
   });

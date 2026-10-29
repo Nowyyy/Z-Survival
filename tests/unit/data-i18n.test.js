@@ -5,11 +5,11 @@ const load = (lang) => JSON.parse(readFileSync(`data/i18n/${lang}.json`, 'utf8')
 const fr = load('fr');
 const en = load('en');
 // Sources qui consomment des clés : les pages HTML et les scripts du site.
-const pages = ['index.html', 'dev/index.html', 'sons.html'].map((f) => readFileSync(f, 'utf8'));
+const pages = ['index.html', 'dev/index.html', 'sons.html', 'carte.html'].map((f) => readFileSync(f, 'utf8'));
 const gamePage = readFileSync('jeu.html', 'utf8');
 const html = pages[0];
 // Lot 1d : la page d'écoute (js/sons/) et le script planche-sons.mjs lisent les étiquettes de sons par `dev.sons.etiquette.${id}`.
-const extra = [...(existsSync('js/sons') ? readdirSync('js/sons').map((f) => `js/sons/${f}`) : []), 'scripts/planche-sons.mjs'];
+const extra = [...(existsSync('js/sons') ? readdirSync('js/sons').map((f) => `js/sons/${f}`) : []), ...readdirSync('js/carte').map((f) => `js/carte/${f}`), 'scripts/planche-sons.mjs']; // lot 3b : page carte.html
 const scripts = ['js/main.js', 'js/page.js', 'dev/dev.js', ...readdirSync('js/game').map((f) => `js/game/${f}`), ...extra].map((f) => readFileSync(f, 'utf8'));
 // Une clé est utilisée si elle apparaît entre apostrophes ou si son préfixe est construit dynamiquement (`préfixe.${…}`).
 const dynamicUse = (k) => scripts.some((js) => js.includes(`${k.slice(0, k.lastIndexOf('.') + 1)}\${`));

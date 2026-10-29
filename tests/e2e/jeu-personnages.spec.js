@@ -1,10 +1,10 @@
 import { test, expect } from '@playwright/test';
-import { waitReady } from './helpers.js';
+import { waitReady, salle } from './helpers.js';
 
 // Lot 1c-C : personnages finaux, quatre variantes de zombies, budget de dessin, lisibilité. 667×375 de préférence ; les tests se
 // désactivent seuls si WebGL manque. En WebGL logiciel, aucune conclusion de performance.
 const SIZE = { width: 667, height: 375 };
-const PAGE = (extra = '') => `/jeu.html?test=1&seed=1&nospawn=1${extra}`;
+const PAGE = (extra = '') => salle(`/jeu.html?test=1&seed=1&nospawn=1${extra}`);
 const state = (page) => page.evaluate(() => window.__zs.getState());
 
 async function open(page, extra = '', size = SIZE) {

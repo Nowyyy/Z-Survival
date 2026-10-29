@@ -1,0 +1,183 @@
+{
+  "_provisoire": "Carte générée par npm run carte (scripts/plan-vers-monde.mjs) d'après plan.json : ne jamais éditer à la main, changer plan.json puis relancer la commande. Valeurs provisoires. Coordonnées du monde : (0, 0) = coin nord-ouest, x vers l'est, y vers le sud.",
+  "id": "rez-de-chaussee",
+  "title": "Rez-de-chaussée",
+  "size": { "width": 4040, "height": 3460 },
+  "margin": 800,
+  "room": { "x": 900, "y": 900, "width": 2230, "height": 1660, "wall": 0 },
+  "contour": [
+    [1045, 900],
+    [1490, 900],
+    [1490, 1840],
+    [2020, 1840],
+    [2020, 1940],
+    [3130, 1940],
+    [3130, 2560],
+    [1490, 2560],
+    [1490, 2480],
+    [900, 2480],
+    [900, 1840],
+    [1045, 1840]
+  ],
+  "walls": [
+    { "id": "mur-1", "x1": 1045, "y1": 900, "x2": 1490, "y2": 900 },
+    { "id": "mur-2", "x1": 1490, "y1": 900, "x2": 1490, "y2": 1840 },
+    { "id": "mur-3", "x1": 1490, "y1": 1840, "x2": 2020, "y2": 1840 },
+    { "id": "mur-4", "x1": 2020, "y1": 1840, "x2": 2020, "y2": 1940 },
+    { "id": "mur-5", "x1": 2020, "y1": 1940, "x2": 3130, "y2": 1940 },
+    { "id": "mur-6", "x1": 3130, "y1": 1940, "x2": 3130, "y2": 2560 },
+    { "id": "mur-7", "x1": 3130, "y1": 2560, "x2": 1490, "y2": 2560 },
+    { "id": "mur-8", "x1": 1490, "y1": 2560, "x2": 1490, "y2": 2480 },
+    { "id": "mur-9", "x1": 1490, "y1": 2480, "x2": 900, "y2": 2480 },
+    { "id": "mur-10", "x1": 900, "y1": 2480, "x2": 900, "y2": 1840 },
+    { "id": "mur-11", "x1": 900, "y1": 1840, "x2": 1045, "y2": 1840 },
+    { "id": "mur-12", "x1": 1045, "y1": 1840, "x2": 1045, "y2": 900 },
+    { "id": "mur-interieur-1", "x1": 1490, "y1": 2480, "x2": 1490, "y2": 2050 },
+    { "id": "mur-interieur-2", "x1": 1490, "y1": 1965, "x2": 1490, "y2": 1840 },
+    { "id": "mur-interieur-3", "x1": 2255, "y1": 1940, "x2": 2255, "y2": 2160 }
+  ],
+  "openings": [
+    { "id": "ouverture-aile", "x1": 1490, "y1": 2050, "x2": 1490, "y2": 1965 },
+    { "id": "ouverture-haut", "x1": 1045, "y1": 1840, "x2": 1490, "y2": 1840 }
+  ],
+  "windowSize": 72,
+  "wallThickness": 40,
+  "wallHeight": 60,
+  "windows": [
+    { "id": "F1", "side": "nord", "x": 1175, "y": 900 },
+    { "id": "F2", "side": "est", "x": 1490, "y": 1435 },
+    { "id": "F3", "side": "ouest", "x": 1045, "y": 1690 },
+    { "id": "F4", "side": "nord", "x": 2430, "y": 1940 },
+    { "id": "F5", "side": "sud", "x": 2975, "y": 2560 },
+    { "id": "F6", "side": "sud", "x": 2355, "y": 2560 },
+    { "id": "F7", "side": "sud", "x": 1735, "y": 2560 },
+    { "id": "F8", "side": "sud", "x": 1605, "y": 2560 }
+  ],
+  "playerBarriers": [
+    { "id": "barriere-F1", "fenetre": "F1", "x": 1139, "y": 880, "w": 72, "h": 40 },
+    { "id": "barriere-F2", "fenetre": "F2", "x": 1470, "y": 1399, "w": 40, "h": 72 },
+    { "id": "barriere-F3", "fenetre": "F3", "x": 1025, "y": 1654, "w": 40, "h": 72 },
+    { "id": "barriere-F4", "fenetre": "F4", "x": 2394, "y": 1920, "w": 72, "h": 40 },
+    { "id": "barriere-F5", "fenetre": "F5", "x": 2939, "y": 2540, "w": 72, "h": 40 },
+    { "id": "barriere-F6", "fenetre": "F6", "x": 2319, "y": 2540, "w": 72, "h": 40 },
+    { "id": "barriere-F7", "fenetre": "F7", "x": 1699, "y": 2540, "w": 72, "h": 40 },
+    { "id": "barriere-F8", "fenetre": "F8", "x": 1569, "y": 2540, "w": 72, "h": 40 }
+  ],
+  "startZone": 120,
+  "windowDepth": 150,
+  "minCorridor": 50,
+  "maxHeight": 70,
+  "start": { "x": 2815, "y": 2215 },
+  "zoom": 3.5,
+  "pillars": [
+    { "id": "pilier-1", "x": 1242.5, "y": 1207.5, "w": 35, "h": 35, "hauteur": 70, "kind": "pilier" },
+    { "id": "pilier-2", "x": 1242.5, "y": 1517.5, "w": 35, "h": 35, "hauteur": 70, "kind": "pilier" },
+    { "id": "pilier-3", "x": 1242.5, "y": 1827.5, "w": 35, "h": 35, "hauteur": 70, "kind": "pilier" },
+    { "id": "pilier-4", "x": 1242.5, "y": 2057.5, "w": 35, "h": 35, "hauteur": 70, "kind": "pilier" },
+    { "id": "pilier-5", "x": 1242.5, "y": 2347.5, "w": 35, "h": 35, "hauteur": 70, "kind": "pilier" },
+    { "id": "pilier-6", "x": 1772.5, "y": 2057.5, "w": 35, "h": 35, "hauteur": 70, "kind": "pilier" },
+    { "id": "pilier-7", "x": 1987.5, "y": 2057.5, "w": 35, "h": 35, "hauteur": 70, "kind": "pilier" },
+    { "id": "pilier-8", "x": 1772.5, "y": 2347.5, "w": 35, "h": 35, "hauteur": 70, "kind": "pilier" },
+    { "id": "pilier-9", "x": 1987.5, "y": 2347.5, "w": 35, "h": 35, "hauteur": 70, "kind": "pilier" },
+    { "id": "pilier-10", "x": 1772.5, "y": 1922.5, "w": 35, "h": 35, "hauteur": 70, "kind": "pilier" }
+  ],
+  "stairs": [
+    { "id": "escalier-courbe", "x": 2105, "y": 2010, "w": 135, "h": 95, "hauteur": 70, "kind": "escalier" }
+  ],
+  "ramp": null,
+  "obstacles": [
+    { "id": "pilier-1", "x": 1242.5, "y": 1207.5, "w": 35, "h": 35, "hauteur": 70, "kind": "pilier" },
+    { "id": "pilier-2", "x": 1242.5, "y": 1517.5, "w": 35, "h": 35, "hauteur": 70, "kind": "pilier" },
+    { "id": "pilier-3", "x": 1242.5, "y": 1827.5, "w": 35, "h": 35, "hauteur": 70, "kind": "pilier" },
+    { "id": "pilier-4", "x": 1242.5, "y": 2057.5, "w": 35, "h": 35, "hauteur": 70, "kind": "pilier" },
+    { "id": "pilier-5", "x": 1242.5, "y": 2347.5, "w": 35, "h": 35, "hauteur": 70, "kind": "pilier" },
+    { "id": "pilier-6", "x": 1772.5, "y": 2057.5, "w": 35, "h": 35, "hauteur": 70, "kind": "pilier" },
+    { "id": "pilier-7", "x": 1987.5, "y": 2057.5, "w": 35, "h": 35, "hauteur": 70, "kind": "pilier" },
+    { "id": "pilier-8", "x": 1772.5, "y": 2347.5, "w": 35, "h": 35, "hauteur": 70, "kind": "pilier" },
+    { "id": "pilier-9", "x": 1987.5, "y": 2347.5, "w": 35, "h": 35, "hauteur": 70, "kind": "pilier" },
+    { "id": "pilier-10", "x": 1772.5, "y": 1922.5, "w": 35, "h": 35, "hauteur": 70, "kind": "pilier" },
+    { "id": "escalier-courbe", "x": 2105, "y": 2010, "w": 130, "h": 95, "hauteur": 70, "kind": "escalier" },
+    { "id": "M4", "x": 1165, "y": 2420, "w": 40, "h": 40, "hauteur": 55, "kind": "comptoir" },
+    { "id": "M10", "x": 2610, "y": 2295, "w": 65, "h": 60, "hauteur": 40, "kind": "table" },
+    {
+      "id": "M1+M3+M7+M9+M13+M14+M16",
+      "x": 920,
+      "y": 2170,
+      "w": 245,
+      "h": 290,
+      "hauteur": 55,
+      "kind": "table",
+      "parts": ["M1", "M3", "M7", "M9", "M13", "M14", "M16"]
+    },
+    {
+      "id": "M12+M15+M17+M18",
+      "x": 1450,
+      "y": 2160,
+      "w": 20,
+      "h": 145,
+      "hauteur": 70,
+      "kind": "etagere",
+      "parts": ["M12", "M15", "M17", "M18"]
+    },
+    { "id": "M19", "x": 1450, "y": 2135, "w": 20, "h": 25, "hauteur": 70, "kind": "etagere" },
+    { "id": "M21", "x": 3030, "y": 2100, "w": 80, "h": 25, "hauteur": 45, "kind": "caisse" },
+    { "id": "M22", "x": 2565, "y": 1960, "w": 140, "h": 150, "hauteur": 55, "kind": "comptoir" },
+    {
+      "id": "M26+M28+M29+M31",
+      "x": 1390,
+      "y": 1860,
+      "w": 80,
+      "h": 105,
+      "hauteur": 70,
+      "kind": "etagere",
+      "parts": ["M26", "M28", "M29", "M31"]
+    },
+    { "id": "M32", "x": 1445, "y": 1670, "w": 25, "h": 35, "hauteur": 45, "kind": "caisse" },
+    { "id": "M33+M34+M35", "x": 1365, "y": 920, "w": 105, "h": 285, "hauteur": 70, "kind": "comptoir", "parts": ["M33", "M34", "M35"] }
+  ],
+  "generation": {
+    "shifts": [],
+    "merged": [
+      { "id": "M1+M3+M7+M9+M13+M14+M16", "parts": ["M1", "M3", "M7", "M9", "M13", "M14", "M16"] },
+      { "id": "M12+M15+M17+M18", "parts": ["M12", "M15", "M17", "M18"] },
+      { "id": "M26+M28+M29+M31", "parts": ["M26", "M28", "M29", "M31"] },
+      { "id": "M33+M34+M35", "parts": ["M33", "M34", "M35"] }
+    ],
+    "retired": [
+      { "id": "M2", "reason": "à 40 de pilier-5" },
+      { "id": "M5", "reason": "à 3 de pilier-5" },
+      { "id": "M6", "reason": "à 50 de pilier-5" },
+      { "id": "M8", "reason": "à 45 d'un mur" },
+      { "id": "M11", "reason": "dans la zone de départ" },
+      { "id": "M20", "reason": "dans la zone de départ" },
+      { "id": "M23", "reason": "à 20 de escalier-courbe" },
+      { "id": "M24", "reason": "à 25 de escalier-courbe" },
+      { "id": "M25", "reason": "à 25 de escalier-courbe" },
+      { "id": "M27", "reason": "à 3 de pilier-10" },
+      { "id": "M30", "reason": "à 3 de pilier-3" },
+      { "id": "M36", "reason": "devant la fenêtre F1" }
+    ],
+    "snapped": [
+      { "id": "M1+M3+M7" },
+      { "id": "M1+M3+M7+M9+M13+M14+M16" },
+      { "id": "M26" },
+      { "id": "M26+M28" },
+      { "id": "M26+M28+M29" },
+      { "id": "M33+M34" },
+      { "id": "M33+M34+M35" }
+    ],
+    "clipped": [
+      { "id": "pilier-11", "absorbed": true },
+      { "id": "escalier-courbe" },
+      { "id": "M4" },
+      { "id": "M1+M3+M7+M9+M13+M14+M16" },
+      { "id": "M12+M15+M17+M18" },
+      { "id": "M19" },
+      { "id": "M21" },
+      { "id": "M22" },
+      { "id": "M26+M28+M29+M31" },
+      { "id": "M32" },
+      { "id": "M33+M34+M35" }
+    ]
+  }
+}

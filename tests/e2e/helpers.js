@@ -12,3 +12,9 @@ export async function waitReady(page) {
 export const PLAY = { width: 1552, height: 852 };
 export const DEFAULT_ZOOM = 2.5; // rapprochement par défaut (data/game/render.json) ; ?zoom=1 montre toute la zone de jeu
 export const expectedDistance = (aspect, tilt = 75, zoom = DEFAULT_ZOOM) => fitDistance(aspect, PLAY, tilt, 40, 0.02) / zoom;
+
+// Lot 3b : la carte par défaut est le rez-de-chaussée ; les tests écrits pour l'ancienne salle (2000 × 1200, 3 fenêtres) ajoutent ?map=salle à leur adresse.
+export const salle = (url) => {
+  const i = url.indexOf('?');
+  return i < 0 ? `${url}?map=salle` : `${url.slice(0, i + 1)}map=salle&${url.slice(i + 1)}`;
+};

@@ -6,16 +6,17 @@
 import * as THREE from 'three';
 import { boundTarget, overview, snapCamera, stepCamera } from '../core/camera.js';
 import { cameraPosition, fitDistance, groundView } from '../core/viewport.js';
-import { faceDistance, plankSettings } from '../core/plank-layout.js';
+import { fogGrid } from '../core/fog.js';
+import { plankSettings } from '../core/plank-layout.js';
 import { plankSheet } from '../core/texgen.js';
-import { createDebrisMesh, createWindowMeshes } from './windows-mesh.js';
+import { createDebrisMeshes, createWindowMeshes } from './windows-mesh.js';
 
 const FAR_GROUND = 40_000; // sol extérieur étendu bien au-delà du monde
 const ROAD_Y = 0.4; // route, trottoir et sentiers : plaques plates au-dessus de l'herbe
 const ATLAS = 'atlas-props';
 
 // Région d'atlas par type de meuble (data/game/world.json : table, comptoir, caisse, armoire, colonne, etagere).
-const FURNITURE_REGION = { table: 'bois', comptoir: 'tole', caisse: 'caisse', armoire: 'bois-sombre', colonne: 'colonne', etagere: 'etagere' };
+const FURNITURE_REGION = { table: 'bois', comptoir: 'tole', caisse: 'caisse', armoire: 'bois-sombre', colonne: 'colonne', etagere: 'etagere', pilier: 'colonne', escalier: 'tole' }; // lot 3b : pilier et escalier plein (texture du comptoir)
 const CAR_PAINTS = ['peinture-1', 'peinture-2', 'peinture-3'];
 
 const unitCylinder = new THREE.CylinderGeometry(1, 1, 1, 8);
@@ -179,6 +180,21 @@ function wallBoxes(room, windows, windowSize, render) {
   return { walls, bars };
 }
 
+// Murs d'une carte à segments (lot 3b) : les rectangles de layout.walls (déjà percés), plus allège, linteau et un barreau central par ouverture de fenêtre
+// (layout.gaps). Un seul barreau par fenêtre : le budget de triangles de la carte est serré.
+function segmentedWallBoxes(layout, render) {
+  const { wallHeight: top, sillHeight: sill, lintelBottom: lintel } = render;
+  const walls = layout.walls.map((r) => ({ x: r.x + r.w / 2, y: top / 2, z: r.y + r.h / 2, sx: r.w, sy: top, sz: r.h }));
+  const bars = [];
+  for (const g of layout.gaps) {
+    const cx = g.x + g.w / 2;
+    const cz = g.y + g.h / 2;
+    walls.push({ x: cx, y: sill / 2, z: cz, sx: g.w, sy: sill, sz: g.h }, { x: cx, y: (lintel + top) / 2, z: cz, sx: g.w, sy: top - lintel, sz: g.h });
+    bars.push({ x: cx, y: (sill + lintel) / 2, z: cz, sx: 3, sy: lintel - sill, sz: 3 });
+  }
+  return { walls, bars };
+}
+
 // Décor extérieur (graine fixe, voir js/core/decor.js) : `b` = constructeurs par matière, `region(id, scale?)` = fenêtre d'atlas.
 // Voitures : les seuls éléments du décor qui projettent une ombre (comme les meubles), donc dans b.props.
 function addDecor(b, region, decor, outdoorSoil) {
@@ -222,7 +238,9 @@ function addDecor(b, region, decor, outdoorSoil) {
 export function buildWorld({ palette, layout, render, textures, windowGeoms = [], windowsCfg = null, seed = 1 }) {
   const { room, size } = layout;
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color(palette.ground);
+  scene.background = new THREE.Color(palette.fog);
+  // Nuit et brume (lot 3b) : le brouillard est réglé par setFog d'après la distance de la caméra (render.json : fog.near et fog.far, en multiples de cette distance).
+  scene.fog = new THREE.Fog(palette.fog, 1e6, 2e6);
 
   scene.add(new THREE.AmbientLight(palette.ambient, render.light.ambient));
   const sun = new THREE.DirectionalLight(palette.sun, render.light.sun);
@@ -251,7 +269,7 @@ export function buildWorld({ palette, layout, render, textures, windowGeoms = []
   const outdoorSoil = textures.repeat('sol-exterieur');
 
   // Sol de la salle : carrelage (la dalle commence au coin de la salle, les carreaux sont alignés dessus).
-  b.floor.slab(room.x, room.y, room.x + room.width, room.y + room.height, 0, textures.repeat('sol-salle'), room.x, room.y);
+  for (const f of layout.floor) b.floor.slab(f.x, f.y, f.x + f.w, f.y + f.h, 0, textures.repeat('sol-salle'), room.x, room.y);
 
   // Sol extérieur de terre étendu bien au-delà du monde ; dans le monde, l'herbe (salle du lot 1m : marge plate de terre, comme avant).
   b.soil.slab(size.width / 2 - FAR_GROUND / 2, size.height / 2 - FAR_GROUND / 2, size.width / 2 + FAR_GROUND / 2, size.height / 2 + FAR_GROUND / 2, -1.5, outdoorSoil);
@@ -263,7 +281,7 @@ export function buildWorld({ palette, layout, render, textures, windowGeoms = []
   }
 
   // Murs (allège, linteau et barreaux des fenêtres compris) : enduit sur les côtés, dessus de la couleur --game-wall sans texture.
-  const { walls, bars } = wallBoxes(room, layout.windows, layout.windowSize, render);
+  const { walls, bars } = layout.segmented ? segmentedWallBoxes(layout, render) : wallBoxes(room, layout.windows, layout.windowSize, render);
   const wallRepeat = textures.repeat('mur');
   for (const w of walls) {
     b.wall.box(extents(w), { repeat: wallRepeat }, 'cotes');
@@ -284,6 +302,32 @@ export function buildWorld({ palette, layout, render, textures, windowGeoms = []
   b.scenery.mesh(scene, atlasMaterial, { receive: true });
   b.props.mesh(scene, atlasMaterial, { cast: true, receive: true });
 
+  // Mur de brouillard (lot 3b, cartes à murs) : un plan horizontal translucide au-dessus du sol extérieur (plus haut que les zombies), dont l'opacité vient de la
+  // distance au bâtiment (js/core/fog.js, texture générée) : clair près des murs, opaque loin ; les zombies surgissent de la brume.
+  if (layout.segmented) {
+    const f = render.fog;
+    const area = { x: -f.wallPad, y: -f.wallPad, w: size.width + 2 * f.wallPad, h: size.height + 2 * f.wallPad };
+    const grid = fogGrid(layout.floor, area, f.wallNear, f.wallFar, f.wallCell);
+    const rgba = new Uint8Array(grid.cols * grid.rows * 4);
+    for (let i = 0; i < grid.data.length; i += 1) rgba.set([255, 255, 255, grid.data[i]], i * 4);
+    const tex = new THREE.DataTexture(rgba, grid.cols, grid.rows, THREE.RGBAFormat);
+    tex.magFilter = THREE.LinearFilter;
+    tex.minFilter = THREE.LinearFilter;
+    tex.wrapS = THREE.ClampToEdgeWrapping;
+    tex.wrapT = THREE.ClampToEdgeWrapping;
+    tex.needsUpdate = true;
+    const y = f.wallHeight;
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.Float32BufferAttribute([area.x, y, area.y, area.x + area.w, y, area.y, area.x + area.w, y, area.y + area.h, area.x, y, area.y + area.h], 3));
+    geometry.setAttribute('uv', new THREE.Float32BufferAttribute([0, 0, 1, 0, 1, 1, 0, 1], 2));
+    geometry.setIndex([0, 2, 1, 0, 3, 2]);
+    geometry.computeBoundingSphere();
+    const mist = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({ map: tex, color: palette.fog, transparent: true, depthWrite: false, fog: false, side: THREE.DoubleSide }));
+    mist.renderOrder = 10;
+    mist.frustumCulled = false;
+    scene.add(mist);
+  }
+
   // Fenêtres (lots 3 et 3a) : un maillage par fenêtre (planches en relief, cadre, trou sombre, pastilles au sol) et un maillage de débris, tous dans
   // la matière « planche » (texture de 128 px, hors atlas), sans ombre ; un maillage n'est dessiné que s'il est dans le champ de la caméra.
   let windowMeshes = null;
@@ -292,15 +336,19 @@ export function buildWorld({ palette, layout, render, textures, windowGeoms = []
     const settings = plankSettings(windowsCfg, render);
     const sheet = plankSheet(textures.size('planche'), textures.params('planche'));
     const material = new THREE.MeshLambertMaterial({ map: textures.texture('planche') });
-    const geoms = windowGeoms.map((g) => ({ ...g, inner: faceDistance(room, g) }));
+    const geoms = windowGeoms.map((g) => ({ ...g, inner: layout.faceInner(g) }));
     windowMeshes = createWindowMeshes({ scene, material, geoms, settings, sheet, seed });
-    debris = createDebrisMesh({ scene, material, settings, sheet });
+    debris = createDebrisMeshes({ scene, material, settings, sheet, ids: windowGeoms.map((g) => g.id) });
   }
 
   return {
     scene,
     windowMeshes,
     debris,
+    setFog(distance) {
+      scene.fog.near = distance * render.fog.near;
+      scene.fog.far = distance * render.fog.far;
+    },
     setShadows(on) {
       sun.castShadow = Boolean(on);
     },
@@ -323,9 +371,11 @@ export function createCamera(cfg, follow, layout, tilt, zoom) {
   const camera = new THREE.PerspectiveCamera(cfg.fov, 1, cfg.near, cfg.far);
   camera.up.set(0, 0, -1);
   const { room } = layout;
-  const play = { width: room.width - 2 * room.wall, height: room.height - 2 * room.wall };
+  const play = layout.viewPlay;
   const center = { x: room.x + room.width / 2, y: room.y + room.height / 2 };
   const view = { tilt, zoom, distance: 0, aspect: 1, ground: { width: 1, north: 0, south: 0 }, target: { ...center }, overview: false };
+  // Vue d'ensemble (?zoom=1) d'une carte à murs : la caméra reste au centre du bâtiment, pour qu'il tienne en entier (lot 3b).
+  const lock = layout.segmented && zoom <= 1;
   let want = { ...center };
   const opts = () => ({ smoothing: follow.smoothing, deadZone: follow.deadZone, bounds: layout.cameraBounds, view: view.ground });
 
@@ -342,7 +392,7 @@ export function createCamera(cfg, follow, layout, tilt, zoom) {
       view.ground = groundView(view.aspect, view.distance, tilt, cfg.fov);
       view.target = o.target;
     } else {
-      view.distance = fitDistance(view.aspect, play, tilt, cfg.fov, cfg.margin) / zoom;
+      view.distance = fitDistance(view.aspect, play, tilt, cfg.fov, lock ? Math.max(cfg.margin, 0.08) : cfg.margin) / zoom;
       view.ground = groundView(view.aspect, view.distance, tilt, cfg.fov);
       view.target = boundTarget(want, layout.cameraBounds, view.ground);
     }
@@ -362,13 +412,13 @@ export function createCamera(cfg, follow, layout, tilt, zoom) {
     },
     // Place la caméra d'un coup sur (x, y), sans lissage (début de partie).
     snap(x, y) {
-      want = { x, y };
+      want = lock ? { ...center } : { x, y };
       if (!view.overview) view.target = snapCamera(want, opts());
       place();
     },
     // Suit (x, y) avec le lissage de camera.json, indépendant du nombre d'images par seconde.
     follow(dt, x, y) {
-      want = { x, y };
+      want = lock ? { ...center } : { x, y };
       if (!view.overview) view.target = stepCamera(view.target, want, dt, opts());
       place();
     },

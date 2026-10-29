@@ -1,5 +1,6 @@
 // Point d'entrée de jeu.html : charge les textes et les données, prépare le DOM, lance la partie en 3D (Three.js).
 import { buildLayout } from '../core/layout.js';
+import { resolveMapId } from '../core/maps.js';
 import { parseTilt, parseZoom } from '../core/viewport.js';
 import { createAudio } from './audio.js';
 import { createGame } from './game.js';
@@ -46,11 +47,17 @@ const testMode = query.get('test') === '1';
 const fpsMode = query.get('fps') === '1';
 const seedParam = Number.parseInt(query.get('seed') ?? '', 10);
 
+// Carte (lot 3b) : ?map=salle charge l'ancienne salle (data/game/world.json et decor.json), sinon la carte par défaut (data/game/maps/<id>/) ; ?empty=1
+// (avec ?test=1) garde la salle du lot 1m, donc les anciens fichiers.
+const emptyMode = testMode && query.get('empty') === '1';
+const mapId = emptyMode ? 'salle' : resolveMapId(location.search);
+const mapDir = mapId === 'salle' ? 'data/game' : `data/game/maps/${mapId}`;
+
 const [dict, world, decor, camera, nav, player, weapons, enemies, render, texturesCfg, variants, soundsCfg, audioCfg, materialsCfg, voiceCfg, wavesCfg, gaitsCfg, statsCfg, splashCfg, vhsCfg, windowsCfg, downCfg] = await Promise.all([
 
   loadDict(),
-  loadJson('data/game/world.json'),
-  loadJson('data/game/decor.json'),
+  loadJson(`${mapDir}/world.json`),
+  loadJson(`${mapDir}/decor.json`),
   loadJson('data/game/camera.json'),
   loadJson('data/game/nav.json'),
   loadJson('data/game/player.json'),
@@ -97,7 +104,7 @@ loading.done();
 root.hidden = false;
 
 // ?empty=1 (seulement avec ?test=1) : la salle du lot 1m sans meuble ni décor, mêmes coordonnées qu'au lot 1m.
-const layout = buildLayout(world, decor, { empty: testMode && query.get('empty') === '1', slack: camera.slack });
+const layout = buildLayout(world, decor, { empty: emptyMode, slack: camera.slack });
 
 const ctx = {
   cfg: { layout, player, weapon: weapons.pistol, stats: statsCfg, zombie: enemies.zombie, enemies, gaits: gaitsCfg, waves: wavesCfg, render, camera, nav, windows: windowsCfg, down: downCfg },
@@ -112,7 +119,8 @@ const ctx = {
     wave: waveParam(query.get('wave')),
     planks: planksParam(query.get('planks'), windowsCfg.planks),
     tilt: parseTilt(query.get('tilt'), render.camera.tilt),
-    zoom: parseZoom(query.get('zoom'), camera.zoom),
+    zoom: parseZoom(query.get('zoom'), layout.zoom ?? camera.zoom),
+    labels: query.get('labels') === '1',
     maxRatio: ratioCap(query.get('dpr')),
     shadows: query.get('shadows') !== '0',
   },

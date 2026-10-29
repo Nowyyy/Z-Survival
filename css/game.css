@@ -817,3 +817,35 @@ body.game {
   line-height: 1.3;
   color: var(--game-down-sub);
 }
+
+/* Étiquettes F1 à F8 (?labels=1, lot 3b) : décoratives (aria-hidden, aucun événement), posées à chaque image sur la fenêtre (variables --label-x et --label-y en
+   pixels écrites par js/game/game.js), masquées quand la fenêtre est hors de l'écran. Contraste du texte : même pastille noire que le HUD. */
+.map-labels {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.map-label {
+  --label-x: 0px;
+  --label-y: 0px;
+  position: absolute;
+  left: 0;
+  top: 0;
+  padding: 0 6px;
+  border: 1px solid var(--hud-border);
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--hud-bg) calc(var(--hud-bg-alpha) * 100%), transparent);
+  color: var(--color-text);
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-bold);
+  line-height: 1.4;
+  transform: translate(calc(var(--label-x) - 50%), calc(var(--label-y) - 150%));
+  pointer-events: none;
+}
+
+.map-label[hidden] {
+  display: none;
+}

@@ -165,7 +165,7 @@ test.describe('journal des versions', () => {
     await expect(page.getByRole('heading', { name: 'Journal des versions' })).toBeVisible();
     const summaries = page.locator('.changelog-entry summary');
     expect(await summaries.count()).toBeGreaterThanOrEqual(9);
-    await expect(summaries.first()).toContainText('Lot 3a');
+    await expect(summaries.first()).toContainText('Lot 3b');
     await expect(summaries.last()).toContainText('Lot 0');
     const first = page.locator('.changelog-entry').first();
     await expect(first.locator('.changelog-points')).toBeHidden();
@@ -181,7 +181,7 @@ test.describe('journal des versions', () => {
     await expect(lot1.locator('.changelog-date')).not.toHaveText('');
     await lot1.locator('summary').click();
     await expect(lot1.getByRole('link', { name: 'Ouvrir ce lot' })).toHaveAttribute('href', '../lots/lot-1/jeu.html');
-    const unpublished = page.locator('.changelog-entry', { hasText: 'Lot 3a ·' });
+    const unpublished = page.locator('.changelog-entry', { hasText: 'Lot 3b ·' });
     await unpublished.locator('summary').click();
     await expect(unpublished.getByRole('link', { name: 'Ouvrir ce lot' })).toHaveCount(0);
   });

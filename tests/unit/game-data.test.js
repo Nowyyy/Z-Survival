@@ -10,7 +10,7 @@ const zombie = load('enemies').zombie;
 
 describe('data/game/*.json', () => {
   it('chaque fichier est marqué provisoire', () => {
-    for (const f of readdirSync('data/game')) expect(JSON.parse(readFileSync(`data/game/${f}`, 'utf8'))._provisoire, f).toBeTruthy();
+    for (const f of readdirSync('data/game').filter((n) => n.endsWith('.json'))) expect(JSON.parse(readFileSync(`data/game/${f}`, 'utf8'))._provisoire, f).toBeTruthy();
   });
 
   it('contient les valeurs de départ de la spécification', () => {

@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 import { buildLayout } from '../../js/core/layout.js';
-import { waitReady } from './helpers.js';
+import { waitReady, salle } from './helpers.js';
 
 // Lot 1d-C : voix de zombies, ambiance, étouffement. Le journal des lectures (?test=1) remplace l'écoute ; 667×375 pour un rendu rapide.
 const SIZE = { width: 667, height: 375 };
@@ -106,7 +106,7 @@ test.describe('voix de zombies', () => {
 
   test('un zombie à l\'extérieur derrière un mur est joué étouffé ; le même devant une fenêtre ne l\'est pas', async ({ page }) => {
     await page.setViewportSize(SIZE);
-    await page.goto('/jeu.html?test=1&nospawn=1&seed=1');
+    await page.goto(salle('/jeu.html?test=1&nospawn=1&seed=1'));
     await waitReady(page);
     await unlock(page);
     const win = layout.windows.find((w) => w.side === 'nord');

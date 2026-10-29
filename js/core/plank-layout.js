@@ -281,7 +281,9 @@ export function debrisPose(geom, k, seed, layout) {
       yaw,
       size,
     };
-    if (isObject(b) && [b.minX, b.minY, b.maxX, b.maxY].every(isNum) && footprint(d).some((q) => q[0] < b.minX || q[0] > b.maxX || q[1] < b.minY || q[1] > b.maxY)) continue;
+    if (typeof layout?.inside === 'function') {
+      if (footprint(d).some((q) => !layout.inside(q[0], q[1]))) continue; // carte à murs (lot 3b) : intérieur quelconque
+    } else if (isObject(b) && [b.minX, b.minY, b.maxX, b.maxY].every(isNum) && footprint(d).some((q) => q[0] < b.minX || q[0] > b.maxX || q[1] < b.minY || q[1] > b.maxY)) continue;
     if (obstacles.some((o) => touchesRect(d, o, p.debrisMargin))) continue;
     if (others.some((o) => Math.hypot(o.x - d.x, o.z - d.z) < p.debrisApart || (Array.isArray(o.size) && isNum(o.yaw) && touchesDebris(d, o, 0.5)))) continue;
     return d;

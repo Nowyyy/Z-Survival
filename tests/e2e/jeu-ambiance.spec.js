@@ -2,14 +2,14 @@ import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { readFileSync } from 'node:fs';
 import { trackingEvents } from '../../js/core/vhs.js';
-import { waitReady } from './helpers.js';
+import { waitReady, salle } from './helpers.js';
 
 // Lot 2c : animation de vague (E2-8), mélodie d'annonce et effet VHS. Tout passe par step() (temps de jeu), l'horloge d'effet réglée par
 // setVhsClock() et le journal des sons : aucune animation ni mélodie n'est attendue en temps réel. 667×375 par défaut ; les tests se
 // désactivent seuls si WebGL manque.
 const SIZE = { width: 667, height: 375 };
 const vhsParams = JSON.parse(readFileSync('data/game/vhs.json', 'utf8'));
-const URL = (extra = '') => `/jeu.html?test=1&seed=1${extra}`;
+const URL = (extra = '') => salle(`/jeu.html?test=1&seed=1${extra}`);
 const state = (page) => page.evaluate(() => window.__zs.getState());
 const splash = async (page) => (await state(page)).splash;
 const audio = async (page) => (await state(page)).audio;
@@ -200,7 +200,7 @@ test.describe('animation de vague : contenu, chronologie, position', () => {
     });
     expect(info).toMatchObject({ aria: 'true', pointer: 'none', tab: -1, buttons: 0, position: 'fixed', canvasBeforeVhs: true, vhsBeforeHud: true, hudBeforeSplash: true });
     expect(info.active).not.toBe('wave-announce');
-    expect(info.blocks).toEqual(['E2-1', 'E2-2', 'E2-8', 'E2-10', 'E2-11', 'E2-5', 'E2-3', 'E2-4', 'E2-6', 'E2-7']);
+    expect(info.blocks).toEqual(['E2-1', 'E2-2', 'E2-8', 'E2-10', 'E2-5', 'E2-3', 'E2-4', 'E2-6', 'E2-7']);
     await step(page, 3); // l'annonce vocale suit le début de la vague (apparitions), comme au lot 2 : elle n'a pas changé
     await expect(page.locator('#hud-live')).toHaveText('Vague 1.');
   });

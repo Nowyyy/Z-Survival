@@ -1,11 +1,11 @@
 import { test, expect } from '@playwright/test';
 import { projectGround } from '../../js/core/viewport.js';
-import { waitReady } from './helpers.js';
+import { waitReady, salle } from './helpers.js';
 
 // Monde du lot 1b : salle de 2000 × 1200 avec meubles, décor extérieur, zombies qui arrivent de dehors. Petite fenêtre (667×375) et
 // state.step() (simulation avancée sans attendre le rendu) de préférence. Les tests se désactivent seuls si WebGL manque.
 const SIZE = { width: 667, height: 375 };
-const PAGE = (extra = '') => `/jeu.html?test=1&seed=1${extra}`;
+const PAGE = (extra = '') => salle(`/jeu.html?test=1&seed=1${extra}`);
 const state = (page) => page.evaluate(() => window.__zs.getState());
 async function open(page, extra = '&nospawn=1', size = SIZE) {
   await page.setViewportSize(size);
@@ -290,7 +290,7 @@ test.describe('monde du lot 1b', () => {
     expect(outside).toEqual([]);
     for (const url of requests.filter((u) => u.startsWith(baseURL) && !u.includes('/jeu.html?'))) expect(new globalThis.URL(url).search, url).toBe('');
     expect(await page.evaluate(() => [localStorage.length, sessionStorage.length, document.cookie])).toEqual([0, 0, '']);
-    expect(await page.evaluate(() => [location.search, location.hash])).toEqual([`?test=1&seed=1&nospawn=1`.replace('&nospawn=1', '') + '', '']);
+    expect(await page.evaluate(() => [location.search, location.hash])).toEqual(['?map=salle&test=1&seed=1', '']); // lot 3b : avant « ?test=1&seed=1 »
   });
 
   test('sans ?test=1, ni window.__zs ni ?empty=1 ne sont actifs', async ({ page }) => {

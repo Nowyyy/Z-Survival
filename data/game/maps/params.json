@@ -1,0 +1,39 @@
+{
+  "_provisoire": "Paramètres de la conversion plan -> monde (js/core/maps.js, scripts/plan-vers-monde.mjs) : chiffres en unités du jeu, tous provisoires. Le plan (plan.json) est en pixels ; scale = unités par pixel, l'origine du monde est le coin haut gauche de la boîte englobante du plan, margin = marge extérieure.",
+  "scale": 5,
+  "margin": 800,
+  "round": 20,
+  "wallThickness": 40,
+  "wallHeight": 60,
+  "windowSize": 72,
+  "startZone": 120,
+  "windowDepth": 150,
+  "minCorridor": 50,
+  "maxHeight": 70,
+  "windowSpacing": 100,
+  "shiftMax": 50,
+  "shiftStep": 5,
+  "wallSnap": 40,
+  "approachWidth": 160,
+  "spawnDistances": [450, 650],
+  "pathMax": 900,
+  "stairsHeight": 70,
+  "pillarHeight": 70,
+  "kindHeights": { "table": 40, "comptoir": 55, "caisse": 45, "etagere": 70 },
+  "zoom": 3.5,
+  "decor": {
+    "seed": 30211,
+    "distanceSalle": 160,
+    "distanceApparition": 70,
+    "tarmac": { "offset": 100, "sidewalk": 90, "road": 160 },
+    "paths": { "length": 300, "width": 100 },
+    "scatter": {
+      "voitures": { "count": 4, "long": 92, "court": 46, "hauteur": 55 },
+      "arbres": { "count": 24, "tronc": 32, "hauteur": 50, "couronne": 46 },
+      "buissons": { "count": 18, "rayonMin": 12, "rayonMax": 22, "hauteur": 18 },
+      "lampadaires": { "count": 6, "hauteur": 90 },
+      "barrieres": { "count": 4, "long": 120, "epaisseur": 8, "hauteur": 26 },
+      "espaceSolides": 80
+    }
+  }
+}
