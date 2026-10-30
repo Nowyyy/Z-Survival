@@ -71,3 +71,7 @@
 - **Objet qui disparaît en montant** : un meuble du rez-de-chaussée dont deux coins au moins dépassent du sol de l'étage (`partlyUncovered`) reste dessiné en entier. Un objet entièrement sous le sol de l'étage reste caché (le sol est opaque).
 - **Mur invisible** : à la sortie d'un escalier, le joueur est dans la zone de déclenchement et le verrou « sortir de la zone avant de la reprendre » l'empêchait de remonter. Plus de verrou à la sortie d'un escalier marché (délai de 0,8 s seulement) ; l'escalier est repris en y marchant. Test e2e ajouté.
 - **Budget** : garde-corps à une seule face par barre (matière à deux faces), pour tenir 15 000 triangles.
+
+## Mise à jour 8 (demande du propriétaire) : limite à 30 000 triangles, rien ne disparaît
+- **Limite** : 30 000 triangles (300 appels inchangés) ; tests, `conventions.md` et `CLAUDE.md` mis à jour. Le garde-corps garde une seule face (économie sans objet visible).
+- **Rez-de-chaussée** : tout le groupe `rdc` reste dessiné à l'étage (plus de masquage au changement d'étage logique) ; seul le sol opaque de l'étage cache ce qui est dessous, sans transparence.

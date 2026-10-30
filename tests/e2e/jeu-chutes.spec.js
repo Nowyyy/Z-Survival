@@ -376,7 +376,7 @@ test.describe('repoussement et budget', () => {
     console.log(`BUDGET lot 3 (joueur à terre) : ${r.n} zombies, ${r.render.calls} appels de dessin, ${r.render.triangles} triangles`);
     expect(r.down).toBe('terre');
     expect(r.render.calls).toBeLessThanOrEqual(192);
-    expect(r.render.triangles).toBeLessThanOrEqual(15000);
+    expect(r.render.triangles).toBeLessThanOrEqual(30000);
     expect(r.pose.pelvisHeight).toBeLessThan(-0.4); // pose « terre » : corps abaissé
     expect(r.pose.torsoPitch).toBeGreaterThan(1.3);
   });

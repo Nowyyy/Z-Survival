@@ -616,13 +616,13 @@ test.describe('zones : mobilier de complément, budget, interface', () => {
     testInfo.annotations.push({ type: 'rendu', description: `porte fermée : ${ref.calls} appels, ${ref.triangles} triangles (référence ${REF.calls} et ${REF.triangles})` });
     console.log(`BUDGET lot 3c, porte fermée (mise en place du lot 3b) : ${ref.calls} appels, ${ref.triangles} triangles (référence main : ${REF.calls} et ${REF.triangles})`);
     expect(ref.calls).toBeLessThanOrEqual(REF.calls + 2);
-    expect(ref.triangles).toBeLessThanOrEqual(15000);
+    expect(ref.triangles).toBeLessThanOrEqual(30000);
     expect(ref.calls).toBeLessThanOrEqual(300);
     await page.evaluate(() => window.__zs.killAll());
     const closed = await measure('porte');
     console.log(`BUDGET lot 3c, porte fermée à l'écran : ${closed.calls} appels, ${closed.triangles} triangles`);
     expect(closed.calls).toBeLessThanOrEqual(REF.calls + 4); // lot 3e : au plus 4 appels de plus que la référence
-    expect(closed.triangles).toBeLessThanOrEqual(15000);
+    expect(closed.triangles).toBeLessThanOrEqual(30000);
     await page.evaluate(() => window.__zs.setDoor('porte-1', true));
     const opened = await measure('porte');
     console.log(`BUDGET lot 3c, porte ouverte à l'écran : ${opened.calls} appels, ${opened.triangles} triangles`);

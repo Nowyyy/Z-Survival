@@ -736,7 +736,7 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
       groups.rdcExposed.position.y = 0 - e;
       groups.etage.position.y = lift - e;
       groups.etage.visible = floors.includes('etage') && e > 0.01;
-      groups.rdc.visible = floor !== 'etage';
+      groups.rdc.visible = true; // rien du rez-de-chaussée ne disparaît à l'étage (le sol de l'étage, opaque, cache seulement ce qui est dessous)
       dynamic.position.y = (floor === 'etage' ? lift : 0) - e;
       elevationNow = e;
     },

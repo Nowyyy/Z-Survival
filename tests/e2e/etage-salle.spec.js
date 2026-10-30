@@ -390,7 +390,7 @@ test.describe('budget, hygiène', () => {
     testInfo.annotations.push({ type: 'rendu', description: `U1 ${u1.calls}/${u1.triangles} ; U4 ${u4.calls}/${u4.triangles}` });
     for (const m of [u1, u4]) {
       expect(m.calls).toBeLessThanOrEqual(300);
-      expect(m.triangles).toBeLessThanOrEqual(15000);
+      expect(m.triangles).toBeLessThanOrEqual(30000);
     }
   });
 
@@ -404,7 +404,7 @@ test.describe('budget, hygiène', () => {
     console.log(`BUDGET lot 3e-C, rez-de-chaussée : fermés ${closed.calls} / ${closed.triangles}, ouverts ${opened.calls} / ${opened.triangles}`);
     expect(opened.calls - closed.calls).toBeLessThanOrEqual(4);
     expect(opened.calls).toBeLessThanOrEqual(300);
-    expect(opened.triangles).toBeLessThanOrEqual(15000);
+    expect(opened.triangles).toBeLessThanOrEqual(30000);
   });
 
   test('aucune requête externe, aucun stockage, console propre pendant l\'ouverture de la porte 3 et les deux escaliers', async ({ page, baseURL, context }) => {

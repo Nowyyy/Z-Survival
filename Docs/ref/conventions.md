@@ -267,6 +267,6 @@ Lignes reprises mot pour mot ; `CLAUDE.md` n'en garde qu'un renvoi.
 
 **Portes 2 et 3.** Pause de 12 s, `doorAnnounce` à 3,0 s, `doorOpen` à 3,6 s, enfoncement de 1,2 s, comme la porte 1. Porte 2 (fin de la manche 20, « Un escalier s'ouvre ») : bloc de l'escalier de l'aile, `etage-gauche`. Porte 3 (fin de la manche 30, « Un escalier et une porte s'ouvrent ») : bloc de l'escalier de départ et bloc de la porte de l'étage, `etage-droite`. `?wave=N` ouvre celles dont `openAfterWave < N` ; « Prochaine zone » : 11, 21, 31 puis rien ; `?floor=1` (ignoré sans escalier ouvert) ; hooks `setFloor`, `useStair`, `getState().floor`.
 
-**Budget.** Étage : 15 000 triangles et 300 appels au plus (mesurés : voir le bilan). Rez-de-chaussée : référence de `main` + 12 triangles et + 4 appels. Le lot 3d (coût de dessin) est reporté.
+**Budget.** Étage : 30 000 triangles et 300 appels au plus (mesurés : voir le bilan). Rez-de-chaussée : référence de `main` + 12 triangles et + 4 appels. Le lot 3d (coût de dessin) est reporté.
 
 **Corriger l'étage.** Modifier `etage.json`, `zones.json` ou `plan.json` (escaliers) ; `npm run carte` ; `node scripts/zones-metriques.mjs --etages` ; regarder `carte.html?floor=1` et `jeu.html?labels=1&wave=31&zoom=1&floor=1` ; `npm test`.

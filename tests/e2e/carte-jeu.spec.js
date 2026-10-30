@@ -500,6 +500,6 @@ test.describe('vagues, interface, caméra, budget', () => {
     testInfo.annotations.push({ type: 'rendu', description: `${r.calls} appels, ${r.triangles} triangles` });
     console.log(`BUDGET lot 3b : ${r.calls} appels de dessin, ${r.triangles} triangles (référence main : 191 et 14 904)`);
     expect(r.calls).toBeLessThanOrEqual(194 + 2); // lot 3c : référence 194 mesurée sur main, + 2 (porte, meubles modélisés)
-    expect(r.triangles).toBeLessThanOrEqual(Math.min(14904 + 100, 15000));
+    expect(r.triangles).toBeLessThanOrEqual(Math.min(14904 + 100, 30000));
   });
 });

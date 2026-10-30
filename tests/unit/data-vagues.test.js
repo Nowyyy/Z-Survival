@@ -40,7 +40,7 @@ describe('data/game/waves.json', () => {
     const fixed = 13222 - 8 * 624;
     expect(fixed).toBe(8230);
     expect(fixed + 624 * waves.maxConcurrent.cap).toBe(14470);
-    expect(fixed + 624 * waves.maxConcurrent.cap).toBeLessThanOrEqual(15000);
+    expect(fixed + 624 * waves.maxConcurrent.cap).toBeLessThanOrEqual(30000);
   });
 
   it('les poids d\'allures totalisent 100 à chaque point d\'ancrage, rangés par vague croissante', () => {
