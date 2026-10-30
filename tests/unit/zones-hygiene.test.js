@@ -66,7 +66,9 @@ describe('hygiène du lot 3c : pureté et fichiers', () => {
     const now = JSON.parse(readFileSync('data/game/maps/rez-de-chaussee/plan.json', 'utf8'));
     for (const key of ['bbox', 'contour', 'walls', 'openings', 'windows', 'pillarSize', 'pillars', 'ramp', 'start']) expect(now[key], key).toEqual(before[key]);
     // Lot 3e : l'escalier existant est seulement marqué (role) et le second escalier est ajouté ; rien d'autre ne change.
-    expect(now.stairs.slice(0, before.stairs.length).map((st) => Object.fromEntries(Object.entries(st).filter(([k]) => k !== 'role'))), 'stairs').toEqual(before.stairs);
+    // Lot 3e (mise à jour) : l'emprise de l'escalier courbe est redessinée (escalier physique arrondi).
+    const strip = (list) => list.map((st) => (st.id === 'escalier-courbe' ? { id: st.id } : Object.fromEntries(Object.entries(st).filter(([k]) => k !== 'role'))));
+    expect(strip(now.stairs.slice(0, before.stairs.length)), 'stairs').toEqual(strip(before.stairs));
   });
 });
 

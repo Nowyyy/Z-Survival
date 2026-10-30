@@ -237,24 +237,87 @@ function addDecor(b, region, decor, outdoorSoil) {
 
 // layout : couche du rez-de-chaussée (js/core/layout.js) ; layouts : sortie de buildLayouts (lot 3e : une couche par étage, facultatif) ; textures : sortie de
 // createThreeTextures (js/game/textures.js). Renvoie { scene, groups, showFloor, ... }.
-// Escalier physique (lot 3e, mise à jour) : rectangle de la rampe (partie du chemin où la hauteur monte), axe du chemin et sens de la montée. Le chemin est rectiligne sur la
-// montée (les sommets de t = 0 puis de t = 1 qui l'encadrent) ; la largeur vient de zones.json (walk.width).
+// Escalier physique (lot 3e, mise à jour) : la montée est la partie du chemin où la hauteur monte (du dernier point à t = 0 au premier point à t = 1), une ligne brisée
+// (droite, ou courbe pour l'escalier de départ) ; la largeur vient de zones.json (walk.width).
 export function riseOf(walk) {
   const path = Array.isArray(walk?.path) ? walk.path : [];
-  if (path.length < 2) return null;
   const hi = path.findIndex((q) => q.t >= 1);
-  if (hi < 1) return null;
+  if (path.length < 2 || hi < 1) return null;
   const lo = path.findLastIndex((q, i) => i < hi && q.t <= 0);
   if (lo < 0) return null;
-  const a = path[lo];
-  const b = path[hi];
-  const vertical = Math.abs(b.y - a.y) >= Math.abs(b.x - a.x);
-  const w = num(walk.width, 100) / 2;
-  const rect = vertical ? { x0: a.x - w, x1: a.x + w, y0: Math.min(a.y, b.y), y1: Math.max(a.y, b.y) } : { x0: Math.min(a.x, b.x), x1: Math.max(a.x, b.x), y0: a.y - w, y1: a.y + w };
-  return { a, b, vertical, rect };
+  const points = path.slice(lo, hi + 1).map((q) => ({ x: q.x, y: q.y, t: q.t }));
+  const lengths = points.slice(1).map((q, i) => Math.hypot(q.x - points[i].x, q.y - points[i].y));
+  return { points, lengths, total: lengths.reduce((n, l) => n + l, 0), width: num(walk.width, 100) };
 }
 
-// Rectangles { x, y, w, h } privés d'un trou { x0, y0, x1, y1 } : au plus quatre morceaux par rectangle.
+// Point de la montée à la fraction k (0 au pied, 1 en haut) : { x, y, t, tx, ty } (tangente unitaire).
+export function riseAt(rise, k) {
+  const at = Math.min(1, Math.max(0, k)) * rise.total;
+  let walked = 0;
+  for (let i = 0; i < rise.lengths.length; i += 1) {
+    const len = rise.lengths[i];
+    if (at <= walked + len || i === rise.lengths.length - 1) {
+      const a = rise.points[i];
+      const b = rise.points[i + 1];
+      const f = len > 0 ? Math.min(1, Math.max(0, (at - walked) / len)) : 0;
+      return { x: a.x + (b.x - a.x) * f, y: a.y + (b.y - a.y) * f, t: a.t + (b.t - a.t) * f, tx: len > 0 ? (b.x - a.x) / len : 1, ty: len > 0 ? (b.y - a.y) / len : 0 };
+    }
+    walked += len;
+  }
+  return { ...rise.points[0], tx: 1, ty: 0 };
+}
+
+// Distance d'un point à la montée, et de combien il dépasse un bout (le tube est coupé droit aux deux bouts).
+function distanceToRise(rise, x, y) {
+  let best = { d: Infinity, beyond: 0 };
+  rise.points.slice(1).forEach((b, i) => {
+    const a = rise.points[i];
+    const len = rise.lengths[i];
+    const raw = len > 0 ? ((x - a.x) * (b.x - a.x) + (y - a.y) * (b.y - a.y)) / len : 0;
+    const k = Math.min(len, Math.max(0, raw));
+    const d = Math.hypot(x - (a.x + ((b.x - a.x) / (len || 1)) * k), y - (a.y + ((b.y - a.y) / (len || 1)) * k));
+    const beyond = (i === 0 ? Math.max(0, -raw) : 0) + (i === rise.lengths.length - 1 ? Math.max(0, raw - len) : 0);
+    if (d < best.d - 1e-9) best = { d, beyond };
+  });
+  return best;
+}
+
+// Trou dans le sol de l'étage : un seul rectangle pour une montée droite parallèle à un axe ; sinon des bandes horizontales de `strip` unités, toutes à l'intérieur de la
+// largeur (le sol déborde un peu sur la rampe, jamais l'inverse). Rectangles { x0, y0, x1, y1 }.
+export function holeRects(rise, strip = 15) {
+  const hw = rise.width / 2;
+  const [a, b] = [rise.points[0], rise.points.at(-1)];
+  if (rise.points.length === 2) {
+    if (Math.abs(b.x - a.x) < 1e-6) return [{ x0: a.x - hw, x1: a.x + hw, y0: Math.min(a.y, b.y), y1: Math.max(a.y, b.y) }];
+    if (Math.abs(b.y - a.y) < 1e-6) return [{ x0: Math.min(a.x, b.x), x1: Math.max(a.x, b.x), y0: a.y - hw, y1: a.y + hw }];
+  }
+  const xs = rise.points.map((q) => q.x);
+  const ys = rise.points.map((q) => q.y);
+  const minX = Math.min(...xs) - hw;
+  const maxX = Math.max(...xs) + hw;
+  const minY = Math.min(...ys) - hw;
+  const maxY = Math.max(...ys) + hw;
+  const inside = (x, y) => {
+    const m = distanceToRise(rise, x, y);
+    return m.d <= hw - 2 && m.beyond <= 0;
+  };
+  const rects = [];
+  for (let y0 = minY; y0 < maxY; y0 += strip) {
+    const y1 = Math.min(maxY, y0 + strip);
+    let runStart = null;
+    for (let x = minX; x <= maxX + 4; x += 4) {
+      const ok = x <= maxX && [y0, (y0 + y1) / 2, y1].every((y) => inside(x, y));
+      if (ok && runStart === null) runStart = x;
+      if (!ok && runStart !== null) {
+        if (x - 4 - runStart >= 4) rects.push({ x0: runStart, x1: x - 4, y0, y1 });
+        runStart = null;
+      }
+    }
+  }
+  return rects;
+}
+
+// Rectangles { x, y, w, h } privés des trous { x0, y0, x1, y1 } : au plus quatre morceaux par rectangle et par trou.
 export function subtractHole(rects, hole) {
   const out = [];
   for (const r of rects) {
@@ -274,6 +337,22 @@ export function subtractHole(rects, hole) {
     if (ix1 < x1) out.push({ x: ix1, y: iy0, w: x1 - ix1, h: iy1 - iy0 });
   }
   return out;
+}
+
+// Boîte orientée (marche) : cinq faces (pas de dessous) autour du point (cx, cz), longueur le long de (dx, dz), largeur perpendiculaire, de y = 0 à y = h.
+function orientedStep(builder, cx, cz, dx, dz, length, width, h, repeat) {
+  const nx = -dz;
+  const nz = dx;
+  const corner = (a, b, y) => [cx + dx * (length / 2) * a + nx * (width / 2) * b, y, cz + dz * (length / 2) * a + nz * (width / 2) * b];
+  const uvOf = (p) => [p[0] / repeat, p[2] / repeat];
+  const top = [corner(-1, -1, h), corner(1, -1, h), corner(1, 1, h), corner(-1, 1, h)];
+  builder.quad(top, [0, 1, 0], top.map(uvOf));
+  const sides = [[[-1, -1], [1, -1], [0, -1]], [[1, -1], [1, 1], [1, 0]], [[1, 1], [-1, 1], [0, 1]], [[-1, 1], [-1, -1], [-1, 0]]];
+  for (const [p, q, n] of sides) {
+    const quad = [corner(p[0], p[1], h), corner(q[0], q[1], h), corner(q[0], q[1], 0), corner(p[0], p[1], 0)];
+    const normal = [dx * n[0] + nx * n[1], 0, dz * n[0] + nz * n[1]];
+    builder.quad(quad, normal, quad.map((c) => [(c[0] + c[2]) / repeat, -c[1] / repeat]));
+  }
 }
 
 // Lot 3e : chaque maillage porte userData.floor (rdc, etage ou exterieur) et vit dans le groupe de son étage ; showFloor(floor) ne change que la visibilité des groupes
@@ -302,8 +381,8 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
   const lift = num(render.floorLift, 0);
   const shellOf = (f) => (f === 'rdc' ? groups.rdcShell : groups[f]);
   // Trous du sol de l'étage : la rampe de chaque escalier (on voit l'escalier et le rez-de-chaussée en dessous).
-  const STEPS = 8;
-  const holes = stairs.map((st) => ({ id: st.id, rise: riseOf(st.walk) })).filter((h) => h.rise !== null);
+  const STEPS = 10;
+  const holes = stairs.map((st) => ({ id: st.id, rise: riseOf(st.walk) })).filter((h) => h.rise !== null).map((h) => ({ ...h, rects: holeRects(h.rise) }));
 
   scene.add(new THREE.AmbientLight(palette.ambient, render.light.ambient));
   const sun = new THREE.DirectionalLight(palette.sun, render.light.sun);
@@ -344,7 +423,7 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
     const l = layoutOf(f);
     const fb = onFloor[f];
     // Sol de la salle : carrelage (la dalle commence au coin de la salle, les carreaux sont alignés dessus). Chaque étage est dessiné à y = 0 quand il est affiché.
-    const floorRects = f === 'etage' ? holes.reduce((rects, h) => subtractHole(rects, h.rise.rect), l.floor) : l.floor;
+    const floorRects = f === 'etage' ? holes.reduce((rects, h) => h.rects.reduce(subtractHole, rects), l.floor) : l.floor;
     for (const fl of floorRects) fb.floor.slab(fl.x, fl.y, fl.x + fl.w, fl.y + fl.h, 0, textures.repeat('sol-salle'), l.room.x, l.room.y);
     // Murs (allège, linteau et barreaux des fenêtres compris) : enduit sur les côtés, dessus de la couleur --game-wall sans texture.
     const { walls, bars } = l.segmented ? segmentedWallBoxes(l, render) : wallBoxes(l.room, l.windows, l.windowSize, render);
@@ -352,19 +431,17 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
       fb.wall.box(extents(w), { repeat: wallRepeat }, 'cotes');
       fb.wall.box(extents(w), { fixed: [0.31, 0.62] }, 'dessus'); // dessus : un seul texel du mur, donc sans texture
     }
-    // Escaliers physiques (lot 3e, mise à jour) : marches de béton (huit boîtes qui montent jusqu'à floorLift) dans le maillage des murs du rez-de-chaussée : aucun appel de
-    // dessin de plus, visibles de l'étage à travers le trou de chaque escalier.
+    // Escaliers physiques (lot 3e, mise à jour) : marches de béton (dix boîtes qui suivent la montée, droite ou courbe, et montent jusqu'à floorLift) dans le maillage des murs
+    // du rez-de-chaussée : aucun appel de dessin de plus, visibles de l'étage à travers le trou de chaque escalier.
     if (f === 'rdc') {
-      holes.forEach(({ rise }) => {
-        const { a, b, vertical, rect } = rise;
+      for (const { rise } of holes) {
         for (let i = 0; i < STEPS; i += 1) {
-          const along = (k) => (vertical ? a.y + (b.y - a.y) * k : a.x + (b.x - a.x) * k);
-          const lo = Math.min(along(i / STEPS), along((i + 1) / STEPS));
-          const hi = Math.max(along(i / STEPS), along((i + 1) / STEPS));
-          const h = (lift * (i + 1)) / STEPS;
-          fb.wall.box(vertical ? { x0: rect.x0, x1: rect.x1, z0: lo, z1: hi, y0: 0, y1: h } : { x0: lo, x1: hi, z0: rect.y0, z1: rect.y1, y0: 0, y1: h }, { repeat: wallRepeat });
+          const p0 = riseAt(rise, i / STEPS);
+          const p1 = riseAt(rise, (i + 1) / STEPS);
+          const run = Math.hypot(p1.x - p0.x, p1.y - p0.y) || 1;
+          orientedStep(fb.wall, (p0.x + p1.x) / 2, (p0.y + p1.y) / 2, (p1.x - p0.x) / run, (p1.y - p0.y) / run, run + 1, rise.width, lift * p1.t, wallRepeat);
         }
-      });
+      }
     }
     bars.forEach((bar, i) => fb.detail.box(extents(bar), { rect: region('tole'), scale: region('tole').scale, seed: 500 + i }));
     // Meubles : boîtes aux hauteurs de world.json, une région d'atlas par type. Lot 3c : tables, chaises et armoires modélisées (js/core/furniture-model.js) ; les corps
@@ -401,46 +478,52 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
     tag(fb.props.mesh(groups[f], atlasMaterial, { cast: true, receive: true }), f);
   }
 
-  // Jupe sombre (lot 3e, mise à jour : l'étage est au-dessus) : sous chaque morceau du sol de l'étage, quatre faces opaques (--game-void) jusqu'au sol du rez-de-chaussée, que
-  // l'on voit en dessous ; elles forment aussi les parois du trou de chaque escalier. 8 triangles par morceau.
+  // Jupe sombre (lot 3e, mise à jour : l'étage est au-dessus) : sous chaque rectangle du sol de l'étage, quatre faces opaques (--game-void) jusqu'au sol du rez-de-chaussée,
+  // que l'on voit en dessous ; plus deux parois le long de chaque montée (les parois du trou). 8 triangles par rectangle, 4 par tronçon et par côté.
   let slab = null;
   if (floors.includes('etage')) {
     const l = layoutOf('etage');
-    const rects = holes.reduce((r, h) => subtractHole(r, h.rise.rect), l.floor);
     const pos = [];
     const idx = [];
     const top = -0.5;
     const lo = -lift;
-    for (const r of rects) {
+    const wall = (ax, az, bx, bz) => {
+      const base = pos.length / 3;
+      pos.push(ax, top, az, bx, top, bz, bx, lo, bz, ax, lo, az);
+      idx.push(base, base + 1, base + 2, base, base + 2, base + 3);
+    };
+    for (const r of l.floor) {
       const x1 = r.x + r.w;
       const y1 = r.y + r.h;
       const corners = [[r.x, r.y], [x1, r.y], [x1, y1], [r.x, y1]];
-      for (let k = 0; k < 4; k += 1) {
-        const [ax, az] = corners[k];
-        const [bx, bz] = corners[(k + 1) % 4];
-        const base = pos.length / 3;
-        pos.push(ax, top, az, bx, top, bz, bx, lo, bz, ax, lo, az);
-        idx.push(base, base + 1, base + 2, base, base + 2, base + 3);
+      for (let k = 0; k < 4; k += 1) wall(corners[k][0], corners[k][1], corners[(k + 1) % 4][0], corners[(k + 1) % 4][1]);
+    }
+    for (const { rise } of holes) {
+      for (const side of [-1, 1]) {
+        for (let k = 0; k < rise.lengths.length; k += 1) {
+          const a = rise.points[k];
+          const b = rise.points[k + 1];
+          const len = rise.lengths[k] || 1;
+          const off = (side * rise.width) / 2;
+          wall(a.x - ((b.y - a.y) / len) * off, a.y + ((b.x - a.x) / len) * off, b.x - ((b.y - a.y) / len) * off, b.y + ((b.x - a.x) / len) * off);
+        }
       }
     }
-    if (pos.length > 0) {
-      const geometry = new THREE.BufferGeometry();
-      geometry.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
-      geometry.setIndex(idx);
-      geometry.computeBoundingSphere();
-      slab = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({ color: palette.void, fog: false, side: THREE.DoubleSide }));
-      slab.name = 'jupe-sombre';
-      slab.userData.floor = 'etage';
-      groups.etage.add(slab);
-    }
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    geometry.setIndex(idx);
+    geometry.computeBoundingSphere();
+    slab = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({ color: palette.void, fog: false, side: THREE.DoubleSide }));
+    slab.name = 'jupe-sombre';
+    slab.userData.floor = 'etage';
+    groups.etage.add(slab);
   }
 
   // Couvercles de sol (lot 3e, mise à jour) : quand l'escalier est fermé (porte pas encore ouverte), un couvercle de sol ferme son trou à l'étage.
   const covers = new Map();
-  holes.forEach(({ id, rise }) => {
-    const { rect } = rise;
+  holes.forEach(({ id, rects }) => {
     const cover = new Builder();
-    cover.slab(rect.x0, rect.y0, rect.x1, rect.y1, 0.05, textures.repeat('sol-salle'), layoutOf('etage').room.x, layoutOf('etage').room.y);
+    for (const r of rects) cover.slab(r.x0, r.y0, r.x1, r.y1, 0.05, textures.repeat('sol-salle'), layoutOf('etage').room.x, layoutOf('etage').room.y);
     const coverMesh = cover.mesh(groups.etage, floorMat, { receive: true });
     if (coverMesh) {
       coverMesh.name = `couvercle-${id}`;
@@ -449,26 +532,8 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
     }
   });
 
-  // Zones de déclenchement des escaliers (lot 3e) : un quadrilatère plat de 2 triangles par zone, à y = 0,3, couleur --game-stairs-mark, visible seulement à l'étage où
-  // il se trouve et seulement si l'escalier est utilisable (setStairUsable) ; aucune nouvelle texture.
+  // Les zones de déclenchement des escaliers ne sont plus dessinées au sol (retour du propriétaire : on entre dans l'escalier en marchant vers lui).
   const marks = new Map();
-  const markMaterial = new THREE.MeshBasicMaterial({ color: palette.stairsMark, fog: false });
-  for (const st of stairs) {
-    for (const f of floors) {
-      const t = st.floors?.[f]?.trigger;
-      if (!t) continue;
-      const geometry = new THREE.BufferGeometry();
-      geometry.setAttribute('position', new THREE.Float32BufferAttribute([t.x, 0.3, t.y, t.x + t.w, 0.3, t.y, t.x + t.w, 0.3, t.y + t.h, t.x, 0.3, t.y + t.h], 3));
-      geometry.setIndex([0, 2, 1, 0, 3, 2]);
-      geometry.computeBoundingSphere();
-      const mesh = new THREE.Mesh(geometry, markMaterial);
-      mesh.name = `zone-${st.id}-${f}`;
-      mesh.userData.floor = f;
-      mesh.visible = false;
-      groups[f].add(mesh);
-      marks.set(`${st.id}:${f}`, mesh);
-    }
-  }
 
   // Mur de brouillard (lot 3b, cartes à murs) : un plan horizontal translucide au-dessus du sol extérieur (plus haut que les zombies), dont l'opacité vient de la
   // distance au bâtiment (js/core/fog.js, texture générée) : clair près des murs, opaque loin ; les zombies surgissent de la brume.

@@ -293,16 +293,25 @@ describe('zones.json : chemins des escaliers physiques', () => {
     }
   });
 
-  it('la montée (de t = 0 à t = 1) est rectiligne et fait au moins 100 unités, pente de 1,8 au plus', () => {
+  it('la montée (de t = 0 à t = 1) fait au moins 100 unités de long, pente de 1,8 au plus, t croissant ; l\'escalier de départ est arrondi (quart de tour)', () => {
     for (const st of zones.stairs) {
       const path = st.walk.path;
       const lo = path.findLastIndex((q, i) => q.t <= 0 && i < path.length - 1);
       const hi = path.findIndex((q) => q.t >= 1);
       expect(hi, st.id).toBeGreaterThan(lo);
-      const run2 = Math.hypot(path[hi].x - path[lo].x, path[hi].y - path[lo].y);
+      let run2 = 0;
+      for (let i = lo; i < hi; i += 1) {
+        run2 += Math.hypot(path[i + 1].x - path[i].x, path[i + 1].y - path[i].y);
+        expect(path[i + 1].t, st.id).toBeGreaterThanOrEqual(path[i].t);
+      }
       expect(run2, st.id).toBeGreaterThanOrEqual(100);
       expect(180 / run2, st.id).toBeLessThanOrEqual(1.8);
-      for (let i = lo; i < hi; i += 1) expect(path[i].t === 0 || path[i + 1].t === 1 || i + 1 === hi).toBe(true);
+      if (st.id === 'escalier-depart') {
+        const dirs = [];
+        for (let i = lo; i < hi; i += 1) dirs.push(Math.atan2(path[i + 1].y - path[i].y, path[i + 1].x - path[i].x));
+        expect(Math.abs(dirs.at(-1) - dirs[0])).toBeGreaterThan(Math.PI / 3); // la montée tourne d'au moins 60 degrés
+        expect(hi - lo).toBeGreaterThanOrEqual(4); // plusieurs tronçons : une courbe
+      }
     }
   });
 

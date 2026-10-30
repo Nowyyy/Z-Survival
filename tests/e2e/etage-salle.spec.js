@@ -91,7 +91,7 @@ test.describe('porte 3 : second escalier et porte de l\'étage', () => {
     expect(s.zones.activeWindows.filter((id) => ['U5', 'U6', 'U7'].includes(id))).toEqual(['U5', 'U6', 'U7']);
     expect(s.zones.activeSpawnPoints.filter((id) => /^U[567]-/.test(id))).toHaveLength(6);
     expect(s.player.down.chutes).toBe(before.player.down.chutes);
-    expect(s.scene.marks.sort()).toEqual(['escalier-aile:rdc', 'escalier-depart:rdc']);
+    expect(s.scene.marks).toEqual([]); // plus de zone jaune au sol (retour du propriétaire)
   });
 
   test('« Prochaine zone » : 11, 21, 31 puis rien', async ({ page }) => {

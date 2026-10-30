@@ -83,7 +83,7 @@
     { "id": "pilier-10", "x": 1772.5, "y": 1922.5, "w": 35, "h": 35, "hauteur": 70, "kind": "pilier" }
   ],
   "stairs": [
-    { "id": "escalier-courbe", "role": "escalier-depart", "x": 2105, "y": 2010, "w": 135, "h": 95, "hauteur": 70, "kind": "escalier" },
+    { "id": "escalier-courbe", "role": "escalier-depart", "x": 2075, "y": 2015, "w": 165, "h": 135, "hauteur": 70, "kind": "escalier" },
     { "id": "escalier-aile", "role": "escalier-aile", "x": 920, "y": 2085, "w": 140, "h": 220, "hauteur": 70, "kind": "escalier" }
   ],
   "ramp": null,
@@ -98,7 +98,7 @@
     { "id": "pilier-8", "x": 1772.5, "y": 2347.5, "w": 35, "h": 35, "hauteur": 70, "kind": "pilier" },
     { "id": "pilier-9", "x": 1987.5, "y": 2347.5, "w": 35, "h": 35, "hauteur": 70, "kind": "pilier" },
     { "id": "pilier-10", "x": 1772.5, "y": 1922.5, "w": 35, "h": 35, "hauteur": 70, "kind": "pilier" },
-    { "id": "escalier-courbe", "x": 2105, "y": 2010, "w": 130, "h": 95, "hauteur": 70, "kind": "escalier" },
+    { "id": "escalier-courbe", "x": 2075, "y": 2015, "w": 160, "h": 135, "hauteur": 70, "kind": "escalier" },
     { "id": "escalier-aile", "x": 920, "y": 2085, "w": 140, "h": 220, "hauteur": 70, "kind": "escalier" },
     { "id": "M4", "x": 1165, "y": 2420, "w": 40, "h": 40, "hauteur": 55, "kind": "comptoir" },
     { "id": "M1+M3+M7", "x": 1015, "y": 2390, "w": 150, "h": 70, "hauteur": 55, "kind": "table", "parts": ["M1", "M3", "M7"] },
@@ -135,7 +135,7 @@
     { "id": "P5", "x": 1065, "y": 1540, "w": 100, "h": 70, "hauteur": 40, "kind": "table", "provisional": true },
     { "id": "P6", "x": 1880, "y": 2460, "w": 370, "h": 80, "hauteur": 55, "kind": "comptoir", "provisional": true },
     { "id": "P7", "x": 2780, "y": 1960, "w": 260, "h": 70, "hauteur": 55, "kind": "comptoir", "provisional": true },
-    { "id": "P8", "x": 1900, "y": 2185, "w": 200, "h": 90, "hauteur": 55, "kind": "comptoir", "provisional": true },
+    { "id": "P8", "x": 1880, "y": 2205, "w": 200, "h": 90, "hauteur": 55, "kind": "comptoir", "provisional": true },
     { "id": "P9", "x": 2350, "y": 2190, "w": 120, "h": 90, "hauteur": 40, "kind": "table", "provisional": true },
     { "id": "P10", "x": 3040, "y": 2270, "w": 70, "h": 90, "hauteur": 45, "kind": "caisse", "provisional": true },
     { "id": "P11", "x": 3070, "y": 2440, "w": 40, "h": 100, "hauteur": 65, "kind": "armoire", "provisional": true },

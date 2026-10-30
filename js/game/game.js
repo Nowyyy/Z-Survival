@@ -396,6 +396,14 @@ export function createGame(ctx) {
     }
     return sim.sw !== null;
   }
+  // Cible des zombies de l'étage du joueur : dans l'escalier le joueur est au milieu de l'emprise (un obstacle, donc sans chemin) ; ils le suivent jusqu'au bout de l'escalier
+  // de son étage logique (le pied au rez-de-chaussée, le palier à l'étage) et le rejoignent dès qu'il en sort.
+  function chaseTarget() {
+    if (sim.sw === null) return sim.player;
+    const path = stairsWorld.find((q) => q.id === sim.sw.stair)?.walk?.path;
+    const end = path ? (pf() === 'etage' ? path[path.length - 1] : path[0]) : null;
+    return end ? { ...sim.player, x: end.x, y: end.y } : sim.player;
+  }
   function crossFloor(to) {
     const from = pf();
     sim.fs = setPlayerFloor(fw, sim.fs, to);
@@ -558,7 +566,7 @@ export function createGame(ctx) {
       // Champ de flux du joueur (à son étage) : recalculé au plus toutes les 0,25 s de jeu et seulement s'il change de cellule ; durée mesurée (?fps=1).
       const t0 = ctx.perf ? performance.now() : 0;
       const before = sim.fs.flow;
-      sim.fs = stepPlayerFlow(fw, sim.fs, dt, sim.player);
+      sim.fs = stepPlayerFlow(fw, sim.fs, dt, chaseTarget());
       if (ctx.perf && sim.fs.flow !== before && sim.fs.flow.recomputed) {
         const ms = performance.now() - t0;
         ctx.perf.flowSum += ms;
@@ -569,7 +577,7 @@ export function createGame(ctx) {
       // Siège de chaque étage (js/core/siege.js), planches, réparation automatique près d'une fenêtre de l'étage du joueur, déplacement des zombies de chaque étage
       // (poursuite du joueur à son étage, champ de flux vers l'escalier le plus proche à l'autre), franchissement des escaliers (js/core/floor-sim.js).
       const activeIds = activeIdsNow();
-      const out = stepFloors(fw, sim.fs, { enemies: sim.enemies, player: sim.player, dt, active: activeIds, canRepair: !sim.dead && !locked, repairTime: eff.player.repairTime, flowDone: true });
+      const out = stepFloors(fw, sim.fs, { enemies: sim.enemies, player: chaseTarget(), dt, active: activeIds, canRepair: !sim.dead && !locked, repairTime: eff.player.repairTime, flowDone: true });
       sim.fs = out.state;
       sim.enemies = out.enemies;
       sim.win = out.state.win;

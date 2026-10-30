@@ -18,7 +18,7 @@ Ce fichier remplace le modèle SketchUp pour les lots suivants. Source : `model.
 | Cloison basse de l'aile | x 112 à 116 (0,30 m), y 89 à 201 (9,3 m), avec une colonne en son milieu | meuble E1 (`comptoir`, modèle) |
 | Pile de caisses | x 185 à 195, y 235 à 247 | meuble E2 (`caisse`, modèle) |
 | Cage de l'escalier de l'aile | rectangle de x 24 à 52, y 254 à 298 (escalier droit de 2,44 m de large qui monte vers le sud ; la cage est fermée par des rambardes sur trois côtés, ouverte au sud) | `stairs.escalier-aile-etage` |
-| Cage de l'escalier courbe | rectangle de x 246 à 289, y 230 à 303 (quart de tour qui monte vers le nord-ouest ; rambarde en arc au sud-ouest) | `stairs.escalier-depart-etage` |
+| Cage de l'escalier courbe | modèle : x 246 à 289, y 230 à 303 (quart de tour qui monte vers le nord-ouest) ; **jeu (retour du propriétaire, escalier physique arrondi) : x 255 à 288, y 243 à 270, aux deux étages** | `stairs.escalier-depart-etage` |
 
 ## Fenêtres U1 à U7 (72 de large, 150 de profondeur libre, centres à 150 au moins)
 Triées par x croissant puis y. Position = centre sur la ligne du mur. `planX` = position du modèle quand elle a été décalée (au plus 50 unités).
@@ -48,10 +48,15 @@ Triées par x croissant puis y. Position = centre sur la ligne du mur. `planX` =
 |---|---|---|---|---|
 | escalier-aile | rez-de-chaussée | 24, 257 → 52, 301 | 26, 238 → 50, 256 (au pied nord, 120 × 90 u.) | 66, 248 |
 | escalier-aile | étage | 24, 254 → 52, 298 | 26, 299 → 44, 319 (à la tête sud, 90 × 100 u.) | 60, 308 |
-| escalier-depart | rez-de-chaussée | 261, 242 → 288, 261 | 261, 262 → 286, 276 (au pied sud, 125 × 70 u.) | 275, 300 |
-| escalier-depart | étage | 246, 230 → 289, 303 | 225, 231 → 238, 247 (à l'ouest de la tête, 65 × 80 u.) | 226, 276 |
+| escalier-depart | rez-de-chaussée | 255, 243 → 288, 270 (quart de tour arrondi) | 261, 270 → 286, 284 (au pied sud, 125 × 70 u.) | 275, 300 |
+| escalier-depart | étage | 255, 243 → 288, 270 (même emprise qu'en bas) | 232, 238 → 250, 256 (à l'ouest de la tête, 90 × 90 u.) | 226, 276 |
 
-Blocs : porte 2 : rez-de-chaussée 24, 238 → 52, 257 ; porte 3 : rez-de-chaussée 260, 262 → 287, 277 et la porte de l'étage (segment x = 138, y 262 à 301).
+Blocs : porte 2 : rez-de-chaussée 24, 238 → 52, 257 ; porte 3 : rez-de-chaussée 260, 269 → 287, 285 et la porte de l'étage (segment x = 138, y 262 à 301).
 
 ## Corriger l'étage
 Voir la section du bilan `Docs/lots/lot-3e.md` : modifier `etage.json`, `zones.json` ou `plan.json` (escaliers), `npm run carte`, `node scripts/zones-metriques.mjs --etages`, `carte.html` et `jeu.html?labels=1&wave=31&zoom=1&floor=1`.
+
+## Escaliers physiques (mise à jour du lot 3e)
+- `zones.json` `walk` : `path` (points `[x, y, t]` du pied au haut, en pixels) et `width`. **Escalier de l'aile** : droit, du sud au nord à l'étage (de (38, 247) à (35, 309)), largeur 24. **Escalier de départ** : arrondi, quart de tour de rayon 19 centré en (254,5, 270) (de (273,5, 270) vers le nord, puis l'ouest, jusqu'à (254,5, 251)), puis un palier de 14 px vers la zone de l'étage (241, 247) ; largeur 16 ; hauteur de 0 à 1 le long de l'arc (180 unités sur 180 de longueur).
+- L'emprise pleine de l'escalier de départ (255, 243 → 288, 270) est la même aux deux étages et ne dépasse pas la rampe : plus de cage invisible autour. La zone de déclenchement du rez-de-chaussée est au pied (261, 270 → 286, 284) ; celle de l'étage (232, 238 → 250, 256) est au bout du palier. Le pilier de l'étage (242, 253) est descendu en (240, 264) pour libérer le palier ; la pièce P8 est descendue de 4 px.
+- Aucune zone n'est plus dessinée au sol.

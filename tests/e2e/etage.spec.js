@@ -50,7 +50,7 @@ test.describe('étage : départ, visibilité, étiquettes', () => {
     expect(s.zones.doors.map((d) => [d.id, d.open, d.planned])).toEqual([['porte-1', true, false], ['porte-2', true, false], ['porte-3', false, false]]);
     expect(s.zones.list.map((z) => [z.id, z.floor, z.open])).toEqual([['depart', 'rdc', true], ['aile', 'rdc', true], ['etage-gauche', 'etage', true], ['etage-droite', 'etage', false]]);
     expect(s.floor.stairs.map((q) => [q.id, q.usable])).toEqual([['escalier-aile', true], ['escalier-depart', false]]);
-    expect(s.scene.marks).toEqual(['escalier-aile:rdc']);
+    expect(s.scene.marks).toEqual([]); // plus de zone jaune au sol (retour du propriétaire)
     expect(s.zones.activeWindows.filter((id) => id.startsWith('U'))).toEqual(['U1', 'U2', 'U3', 'U4']);
     expect(s.zones.activeSpawnPoints.filter((id) => id.startsWith('U'))).toHaveLength(8);
     expect(s.doorMeshes.ids).toEqual(['porte-3']); // le bloc de la porte de l'étage et celui de l'escalier de départ restent
@@ -65,7 +65,7 @@ test.describe('étage : départ, visibilité, étiquettes', () => {
     expect(s.scene.visible.exterieur).toBeGreaterThan(3);
     expect(s.scene.slab).toBe(true);
     expect(s.scene.exteriorY).toBe(-180); // retour du propriétaire : l'étage est au-dessus, le sol de l'extérieur est abaissé de floorLift
-    expect(s.scene.marks).toEqual(['escalier-aile:etage']);
+    expect(s.scene.marks).toEqual([]);
     await expect(page.locator('#hud-floor')).toHaveText('Étage');
     const a = AILE.floors.etage.arrival;
     expect(Math.hypot(s.player.x - a.x, s.player.y - a.y)).toBeLessThan(1);
@@ -362,6 +362,80 @@ test.describe('escalier physique', () => {
     expect(s.dead).toBe(true);
     expect(s.floor.current).toBe('rdc');
     expect(s.scene.visible.etage).toBe(0);
+  });
+});
+
+test.describe('escalier de départ arrondi, zombies et murs invisibles', () => {
+  const DEP = STAIR('escalier-depart');
+  const DENTRY = entryDirection(DEP.walk.path, 'rdc');
+
+  test('l\'escalier de départ tourne : sa montée suit un quart de tour et finit à l\'ouest, vers la zone de l\'étage', async ({ page }) => {
+    await open(page, '&wave=31&nospawn=1');
+    const t = center(DEP.floors.rdc.trigger);
+    await page.evaluate(([p, d]) => { window.__zs.setPlayer(p.x, p.y); window.__zs.setInput({ move: d }); window.__zs.step(0.2); }, [t, DENTRY]);
+    const r = await page.evaluate(() => {
+      const zs = window.__zs;
+      const xs = [];
+      let n = 0;
+      while (zs.getState().floor.walk !== null && n < 400) {
+        const g = zs.getState();
+        // On suit la courbe comme un joueur : vers le nord, puis vers l'ouest dès que la hauteur dépasse les trois quarts.
+        zs.setInput({ move: g.floor.elevation < 140 ? { x: 0, y: -1 } : { x: -1, y: -0.2 } });
+        zs.step(0.05);
+        xs.push(Math.round(g.player.x));
+        n += 1;
+      }
+      zs.setInput({});
+      return { xs, state: zs.getState() };
+    });
+    expect(r.state.floor.current).toBe('etage');
+    const top = center(DEP.floors.etage.trigger);
+    expect(Math.hypot(r.state.player.x - top.x, r.state.player.y - top.y)).toBeLessThan(120);
+    expect(Math.min(...r.xs)).toBeLessThan(Math.max(...r.xs) - 100); // la montée se termine plus à l'ouest qu'elle ne commence
+  });
+
+  test('aucun mur invisible autour de l\'escalier de départ : à l\'étage on marche tout autour (sauf dans la cage de l\'escalier lui-même)', async ({ page }) => {
+    await open(page, '&wave=31&floor=1&nospawn=1');
+    const cage = DEP.floors.etage.solid;
+    // Points de passage autour de la cage : à l'ouest, au sud, à l'est (dans la salle) ; chacun doit être atteignable en marchant depuis le palier.
+    const spots = [{ x: cage.x - 120, y: cage.y + cage.h / 2 }, { x: cage.x + cage.w / 2, y: cage.y + cage.h + 80 }, { x: cage.x - 60, y: cage.y + cage.h + 200 }];
+    for (const spot of spots) {
+      const r = await page.evaluate(([from, to]) => {
+        const zs = window.__zs;
+        zs.setPlayer(from.x, from.y);
+        for (let i = 0; i < 160; i += 1) {
+          const p = zs.getState().player;
+          const d = Math.hypot(to.x - p.x, to.y - p.y);
+          if (d < 25) return { ok: true, d };
+          zs.setInput({ move: { x: (to.x - p.x) / d, y: (to.y - p.y) / d } });
+          zs.step(0.05);
+        }
+        zs.setInput({});
+        return { ok: false, d: Math.hypot(to.x - zs.getState().player.x, to.y - zs.getState().player.y) };
+      }, [{ x: cage.x - 150, y: cage.y + cage.h + 200 }, spot]);
+      expect(r.ok, `${Math.round(spot.x)},${Math.round(spot.y)} : reste à ${Math.round(r.d)}`).toBe(true);
+    }
+  });
+
+  test('les zombies de l\'étage suivent le joueur qui est dans l\'escalier : ils vont au bout de l\'escalier de son étage et le rejoignent quand il en sort', async ({ page }) => {
+    await open(page, '&wave=31&nospawn=1');
+    const t = center(DEP.floors.rdc.trigger);
+    const r = await page.evaluate(([p, d]) => {
+      const zs = window.__zs;
+      // Le joueur monte ; des zombies du rez-de-chaussée le poursuivent depuis la salle.
+      zs.setPlayer(p.x, p.y + 400);
+      for (let i = 0; i < 3; i += 1) zs.spawnEnemy(p.x - 300 + i * 60, p.y + 500, { floor: 'rdc', mode: 'dedans' });
+      zs.setPlayer(p.x, p.y);
+      zs.setInput({ move: d });
+      zs.step(0.2);
+      const before = zs.getState().enemies.map((e) => [e.x, e.y]);
+      for (let i = 0; i < 6; i += 1) zs.step(0.05); // dans l'escalier
+      const during = zs.getState();
+      const moved = during.enemies.map((e, i) => Math.hypot(e.x - before[i][0], e.y - before[i][1]));
+      return { walking: during.floor.walk !== null, moved };
+    }, [t, DENTRY]);
+    expect(r.walking).toBe(true);
+    expect(Math.max(...r.moved)).toBeGreaterThan(5); // ils avancent vers le pied de l'escalier au lieu de rester bloqués
   });
 });
 

@@ -162,14 +162,16 @@ describe('couches de collisions par étage (layout.js)', () => {
   });
 
   it('la cage d\'escalier de l\'étage bloque à l\'étage et pas au rez-de-chaussée (au moins un point de la cage est libre en bas) ; l\'emprise du rez-de-chaussée bloque en bas', () => {
-    const well = zonesActive.stairs.find((s) => s.id === 'escalier-depart').floors.etage.solid;
+    // Les deux escaliers ont une emprise pleine à chaque étage (collisions de chaque couche) ; l'escalier de départ (courbe) a la même aux deux étages.
     const up = playerSolids(layouts.etage, []);
     const down = playerSolids(layouts.rdc, []);
-    let onlyUp = 0;
-    for (let x = well.x + 5; x < well.x + well.w; x += 10) {
-      for (let y = well.y + 5; y < well.y + well.h; y += 10) if (up.some((o) => inRect(o, x, y)) && !down.some((o) => inRect(o, x, y))) onlyUp += 1;
+    for (const id of ['escalier-aile', 'escalier-depart']) {
+      const st = zonesActive.stairs.find((q) => q.id === id).floors;
+      for (const [layer, solids] of [['etage', up], ['rdc', down]]) {
+        const r = st[layer].solid;
+        expect(solids.some((o) => inRect(o, r.x + r.w / 2, r.y + r.h / 2)), `${id} ${layer}`).toBe(true);
+      }
     }
-    expect(onlyUp).toBeGreaterThan(10);
     const stair = zonesActive.stairs.find((s) => s.id === 'escalier-aile').floors.rdc.solid;
     expect(down.some((o) => inRect(o, stair.x + stair.w / 2, stair.y + stair.h / 2))).toBe(true);
     expect(up.some((o) => inRect(o, stair.x + stair.w / 2, stair.y + stair.h / 2))).toBe(true);

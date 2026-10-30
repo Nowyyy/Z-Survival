@@ -59,7 +59,7 @@
     { "id": "pilier-2", "x": 1197.5, "y": 1507.5, "w": 35, "h": 35, "hauteur": 70, "kind": "pilier" },
     { "id": "pilier-3", "x": 1197.5, "y": 1822.5, "w": 35, "h": 35, "hauteur": 70, "kind": "pilier" },
     { "id": "pilier-4", "x": 1197.5, "y": 2047.5, "w": 35, "h": 35, "hauteur": 70, "kind": "pilier" },
-    { "id": "pilier-5", "x": 1992.5, "y": 2047.5, "w": 35, "h": 35, "hauteur": 70, "kind": "pilier" },
+    { "id": "pilier-5", "x": 1982.5, "y": 2102.5, "w": 35, "h": 35, "hauteur": 70, "kind": "pilier" },
     { "id": "pilier-6", "x": 1772.5, "y": 2342.5, "w": 35, "h": 35, "hauteur": 70, "kind": "pilier" }
   ],
   "stairs": [
@@ -67,10 +67,10 @@
     {
       "id": "escalier-depart-etage",
       "role": "escalier-depart",
-      "x": 2030,
-      "y": 1950,
-      "w": 215,
-      "h": 365,
+      "x": 2075,
+      "y": 2015,
+      "w": 165,
+      "h": 135,
       "hauteur": 70,
       "kind": "escalier"
     }
@@ -81,18 +81,10 @@
     { "id": "pilier-2", "x": 1197.5, "y": 1507.5, "w": 35, "h": 35, "hauteur": 70, "kind": "pilier" },
     { "id": "pilier-3", "x": 1197.5, "y": 1822.5, "w": 35, "h": 35, "hauteur": 70, "kind": "pilier" },
     { "id": "pilier-4", "x": 1197.5, "y": 2047.5, "w": 35, "h": 35, "hauteur": 70, "kind": "pilier" },
-    {
-      "id": "escalier-depart-etage+pilier-5",
-      "x": 1992.5,
-      "y": 1950,
-      "w": 252.5,
-      "h": 365,
-      "hauteur": 70,
-      "kind": "escalier",
-      "parts": ["escalier-depart-etage", "pilier-5"]
-    },
+    { "id": "pilier-5", "x": 1982.5, "y": 2102.5, "w": 35, "h": 35, "hauteur": 70, "kind": "pilier" },
     { "id": "pilier-6", "x": 1772.5, "y": 2342.5, "w": 35, "h": 35, "hauteur": 70, "kind": "pilier" },
     { "id": "escalier-aile-etage", "x": 920, "y": 2070, "w": 140, "h": 220, "hauteur": 70, "kind": "escalier" },
+    { "id": "escalier-depart-etage", "x": 2075, "y": 2015, "w": 170, "h": 135, "hauteur": 70, "kind": "escalier" },
     { "id": "E1", "x": 1360, "y": 1245, "w": 20, "h": 560, "hauteur": 55, "kind": "comptoir", "source": "modele" },
     { "id": "E2", "x": 1725, "y": 1950, "w": 45, "h": 85, "hauteur": 45, "kind": "caisse", "source": "modele" },
     { "id": "Q1", "x": 1510, "y": 1950, "w": 120, "h": 35, "hauteur": 70, "kind": "etagere", "provisional": true },
@@ -109,11 +101,10 @@
       { "id": "U6", "units": 10, "auto": false },
       { "id": "U7", "units": 5, "auto": false }
     ],
-    "merged": [
-      { "id": "escalier-depart-etage+pilier-5", "parts": ["escalier-depart-etage", "pilier-5"] }
-    ],
+    "merged": [],
     "retired": [],
     "snapped": [
+      { "id": "escalier-depart-etage" },
       { "id": "E2" },
       { "id": "Q1" },
       { "id": "Q4" },
