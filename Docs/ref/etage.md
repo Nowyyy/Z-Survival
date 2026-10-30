@@ -17,7 +17,7 @@ Ce fichier remplace le modèle SketchUp pour les lots suivants. Source : `model.
 | Colonnes (35) | aile : (83, 83), (83, 145) ; frontière poche/aile : (83, 208) ; poche : (83, 253) ; salle de droite : (242, 253), (198, 312) | `pillars` |
 | Cloison basse de l'aile | x 112 à 116 (0,30 m), y 89 à 201 (9,3 m), avec une colonne en son milieu | meuble E1 (`comptoir`, modèle) |
 | Pile de caisses | x 185 à 195, y 235 à 247 | meuble E2 (`caisse`, modèle) |
-| Cage de l'escalier de l'aile | rectangle de x 24 à 52, y 254 à 298 (escalier droit de 2,44 m de large qui monte vers le sud ; la cage est fermée par des rambardes sur trois côtés, ouverte au sud) | `stairs.escalier-aile-etage` |
+| Cage de l'escalier de l'aile | rectangle de x 24 à 52, y 254 à 298 dans le modèle (dans le jeu : y 246 à 298, le trou du sol de l'étage couvre le pied de la rampe, limite posée par la règle des 80 unités d'un point de réparation ; escalier droit de 2,44 m de large qui monte vers le sud ; la cage est fermée par des rambardes sur trois côtés, ouverte au sud) | `stairs.escalier-aile-etage` |
 | Cage de l'escalier courbe | modèle : x 246 à 289, y 230 à 303 (quart de tour qui monte vers le nord-ouest) ; **jeu (retour du propriétaire, escalier physique arrondi) : x 255 à 288, y 243 à 270, aux deux étages** | `stairs.escalier-depart-etage` |
 
 ## Fenêtres U1 à U7 (72 de large, 150 de profondeur libre, centres à 150 au moins)

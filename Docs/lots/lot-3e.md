@@ -1,5 +1,15 @@
 # Lot 3e — Étage : fondu entre étages, zombies sur deux étages, escaliers et portes 2 et 3
 
+## État final du lot (lire d'abord ; les sections suivantes sont l'historique des parties A à C et des mises à jour 1 à 14)
+- **Étage** : relevé sur le modèle 3D, physiquement au-dessus du rez-de-chaussée ; deux escaliers (aile : droit ; départ : courbe) ; portes 2 (manche 20) et 3 (manche 30).
+- **Escaliers** : le joueur et les zombies y marchent librement (tube autour de `walk.path`, hauteur selon la position, étage logique à mi-hauteur), sans fondu, sans téléportation, sans délai d'entrée ni de sortie, sans limite de nombre. Les zombies y sont touchables (laser, balles) et frappent ; le joueur peut tirer dedans ; rampants relevés de 14.
+- **Vue** : tout le rez-de-chaussée reste dessiné (le sol opaque de l'étage cache le dessous) ; trou sans paroi autour de chaque escalier, garde-corps (texture générée `garde-corps`) sauf à l'entrée ; portes d'escalier minces (24) ; laser et balles à la hauteur du joueur.
+- **Limites** : 30 000 triangles et 300 appels (étage), rez-de-chaussée référence + 12 / + 5 ; `CLAUDE.md` 8 391 caractères (limite 8 400).
+- **Mesures de fin** : étage sans zombie, ombres : 46 appels, 6 456 triangles ; budgets e2e dans la limite de 30 000. Vitest 3 336 réussis. Playwright : voir la ligne « Suite complète » ci-dessous.
+- **Reste à faire (demandé, non fait)** : fermer les murs et les piliers du rez-de-chaussée jusqu'au sol de l'étage (voir « À faire » en bas) ; suivi des zombies autour des obstacles (aucun correctif mesuré, voir mise à jour 14) ; zombies qui peuvent faire des allers-retours tant que le joueur reste dans un escalier ; plafond « 2 à la fois / 1,5 s » des sections anciennes : abandonné.
+- **Choix à valider en jouant** : protection de 1 s après un changement d'étage (gardée) ; vitesse de marche des zombies dans l'escalier (leur vitesse normale) ; hauteur de relevage des rampants.
+
+
 **Le modèle 3D a été lu** (`Sanstitre.zip`, `model.dae`, fourni en cours de session, jamais versionné) : l'étage est relevé dessus (calage sur le rez-de-chaussée : 91 % des pixels du contour). Seules 2 pièces de mobilier (E1, E2) viennent du modèle ; 6 (Q1 à Q6) sont **provisoires**. Esthétique, confort du fondu et difficulté de l'étage : **non jugés par l'agent**.
 
 **Livré** (workflow `pages.yml` inchangé)
