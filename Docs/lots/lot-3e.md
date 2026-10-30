@@ -100,3 +100,7 @@
 
 ## Mise à jour 13 (demande du propriétaire) : l'escalier est un sol comme un autre
 - **Aucun délai** : `stairCooldownPlayer` passe à 0 (le joueur reprend l'escalier tout de suite, en y marchant) et le délai de 1,5 s des zombies après une sortie est supprimé : ils entrent et sortent des escaliers quand ils veulent. Le verrou de zone reste pour les changements d'étage instantanés (mouvement réduit, hooks), sinon l'arrivée dans la zone les renverrait aussitôt. La protection de 1,0 s après un changement d'étage (`stairGraceAfter`) reste : ce n'est pas un délai de déplacement.
+
+## Mise à jour 14 (retours du propriétaire) : rampants relevés, suivi des zombies
+- **Rampants** : dans un escalier, un zombie rampant est relevé de 14 (les autres de 3) : il ne disparaît plus derrière les marches.
+- **Suivi (non modifié)** : j'ai essayé deux correctifs dans `enemy-ai.js` (garder le champ de flux 0,4 s après une ligne de vue coupée ; garder le cap 0,6 s contre un demi-tour du champ) et un recalcul plus fréquent du champ. Sur des simulations d'obstacles (mur, deux caisses, joueur en zigzag ou en cercle), aucun ne réduisait les demi-tours ni la distance moyenne au joueur ; le cap tenu l'aggravait. Rien n'a été gardé. Il faut un cas précis (où, quel obstacle, joueur en mouvement ou non) pour corriger.

@@ -48,6 +48,7 @@ const RECOIL_TIME = 0.12;
 const HIT_FLASH_TIME = 0.1;
 const FIRE_POSE_TIME = 0.3;
 const STEP = 0.05; // pas de la simulation avancée à la demande (hook de test step)
+const STAIR_CRAWL_LIFT = 14; // unités dont un zombie rampant est relevé dans un escalier
 const TAU = Math.PI * 2;
 // Pose de chaque allure (pose.js : « zombie » reste l'équivalent de « marche »).
 const GAIT_POSE = { lent: 'lent', marche: 'zombie', rampe: 'rampe', course: 'course' };
@@ -958,7 +959,8 @@ export function createGame(ctx) {
       const visible = drawnOf(e);
       if (e.mode === 'escalier') {
         // Dans un escalier : il marche librement comme le joueur ; sa hauteur suit sa position sur la rampe (t × floorLift), face à son sens de marche.
-        at = { x: e.x, y: e.y, h: LIFT * num(e.stairT) - liftOf(pf()) };
+        // Les rampants sont relevés (ils se cachaient derrière les marches) ; les autres un peu aussi.
+        at = { x: e.x, y: e.y, h: LIFT * num(e.stairT) - liftOf(pf()) + (e.gait === 'rampe' ? STAIR_CRAWL_LIFT : 3) };
         face = { x: num(e.fx), y: num(e.fy) };
       }
       z.char.root.position.set(at.x, at.h, at.y);
