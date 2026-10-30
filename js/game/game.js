@@ -427,10 +427,10 @@ export function createGame(ctx) {
     // Sortie de l'escalier par un bout (en haut, en bas, ou demi-tour) : délai de 0,8 s et verrou tant que le joueur reste dans la zone ; protection de 1,0 s s'il a changé d'étage.
     if (r.done !== pf()) crossFloor(r.done);
     const from = sim.sw.from;
-    const stairId = sim.sw.stair;
     sim.sw = null;
     sim.elev = liftOf(r.done);
-    sim.stairWatch = startStairCooldown(sim.stairWatch, stairId, stairCfg);
+    // Pas de verrou de zone à la sortie : le joueur sort dans la zone de déclenchement et doit pouvoir reprendre l'escalier en y marchant (délai de 0,8 s seulement).
+    sim.stairWatch = { cooldown: stairCfg.stairCooldownPlayer, lock: null };
     if (r.done !== from) sim.floorGrace = stairCfg.stairGraceAfter;
     knockArrival(sim.player, r.done);
     stale = true;
@@ -577,7 +577,7 @@ export function createGame(ctx) {
       // Siège de chaque étage (js/core/siege.js), planches, réparation automatique près d'une fenêtre de l'étage du joueur, déplacement des zombies de chaque étage
       // (poursuite du joueur à son étage, champ de flux vers l'escalier le plus proche à l'autre), franchissement des escaliers (js/core/floor-sim.js).
       const activeIds = activeIdsNow();
-      const out = stepFloors(fw, sim.fs, { enemies: sim.enemies, player: chaseTarget(), dt, active: activeIds, canRepair: !sim.dead && !locked, repairTime: eff.player.repairTime, flowDone: true });
+      const out = stepFloors(fw, sim.fs, { enemies: sim.enemies, player: chaseTarget(), dt, active: activeIds, canRepair: !sim.dead && !locked, repairTime: eff.player.repairTime, flowDone: true, follow: sim.sw?.stair });
       sim.fs = out.state;
       sim.enemies = out.enemies;
       sim.win = out.state.win;

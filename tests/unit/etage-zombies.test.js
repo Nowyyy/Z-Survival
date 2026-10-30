@@ -146,6 +146,16 @@ describe('mode « escalier » (stair-zombies.js)', () => {
     expect(r.enemies[0]).toMatchObject({ floor: 'rdc', mode: 'dedans', x: a.x, y: a.y, stair: null });
   });
 
+  it('joueur dans l\'escalier (follow) : un zombie de son étage arrivé au bout de cet escalier le prend aussi, pas un autre escalier ni sans follow', () => {
+    const base = { playerFloor: 'rdc', portals: portalsBy(), params };
+    const step = (z, extra) => stepStairZombies([z], { ...base, ...extra }, 0.05);
+    expect(step(atTrigger(1, 'rdc'), {}).enemies[0].mode).toBe('dedans');
+    const r = step(atTrigger(1, 'rdc'), { follow: P.escalier });
+    expect(r.enemies[0]).toMatchObject({ mode: 'escalier', stair: P.escalier, stairFrom: 'rdc', stairTo: 'etage' });
+    expect(r.events[0]).toMatchObject({ type: 'stairStart', from: 'rdc', to: 'etage' });
+    expect(step(atTrigger(2, 'rdc', P.depart), { follow: P.escalier }).enemies[0].mode).toBe('dedans');
+  });
+
   it('on monte aussi : un zombie du rez-de-chaussée arrive à l\'étage quand le joueur y est', () => {
     const r = run([atTrigger(1, 'rdc', P.depart)], 'etage', 2);
     const a = arrivalOf(P.depart, 'etage');

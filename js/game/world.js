@@ -68,19 +68,19 @@ class Builder {
     this.quad([[x0, y, z0], [x1, y, z0], [x1, y, z1], [x0, y, z1]], [0, 1, 0], [uv(x0, z0), uv(x1, z0), uv(x1, z1), uv(x0, z1)]);
   }
 
-  // Boîte (sans dessous). faces : 'tout', 'cotes' (sans le dessus), 'longs' (les deux grandes faces verticales) ou 'dessus' (rien d'autre). Texture répétée { repeat } ou fenêtre d'atlas { rect, scale, seed }.
+  // Boîte (sans dessous). faces : 'tout', 'cotes' (sans le dessus), 'longs' (les deux grandes faces verticales), 'plan' (une seule) ou 'dessus' (rien d'autre). Texture répétée { repeat } ou fenêtre d'atlas { rect, scale, seed }.
   box({ x0, y0, z0, x1, y1, z1 }, mapping, faces = 'tout') {
     const dims = { x: x1 - x0, y: y1 - y0, z: z1 - z0 };
     const list = [];
     if (faces !== 'cotes') list.push({ n: [0, 1, 0], c: [[x0, y1, z0], [x1, y1, z0], [x1, y1, z1], [x0, y1, z1]], s: [0, 1, 1, 0], t: [0, 0, 1, 1], fw: dims.x, fh: dims.z, a: (p) => p[0], b: (p) => p[2] });
     if (faces !== 'dessus') {
-      const long = faces === 'longs' ? (dims.x >= dims.z ? 'x' : 'z') : null; // 'longs' : seulement les deux grandes faces verticales
+      const long = faces === 'longs' || faces === 'plan' ? (dims.x >= dims.z ? 'x' : 'z') : null; // 'longs' : les deux grandes faces verticales ; 'plan' : une seule (matière à deux faces)
       const along = (axis) => (p) => p[axis];
       list.push(
         { n: [0, 0, 1], skip: long === 'z', c: [[x0, y1, z1], [x1, y1, z1], [x1, y0, z1], [x0, y0, z1]], s: [0, 1, 1, 0], t: [0, 0, 1, 1], fw: dims.x, fh: dims.y, a: along(0), b: (p) => -p[1] },
-        { n: [0, 0, -1], skip: long === 'z', c: [[x0, y1, z0], [x1, y1, z0], [x1, y0, z0], [x0, y0, z0]], s: [0, 1, 1, 0], t: [0, 0, 1, 1], fw: dims.x, fh: dims.y, a: along(0), b: (p) => -p[1] },
+        { n: [0, 0, -1], skip: long === 'z' || (faces === 'plan' && long === 'x'), c: [[x0, y1, z0], [x1, y1, z0], [x1, y0, z0], [x0, y0, z0]], s: [0, 1, 1, 0], t: [0, 0, 1, 1], fw: dims.x, fh: dims.y, a: along(0), b: (p) => -p[1] },
         { n: [1, 0, 0], skip: long === 'x', c: [[x1, y1, z0], [x1, y1, z1], [x1, y0, z1], [x1, y0, z0]], s: [0, 1, 1, 0], t: [0, 0, 1, 1], fw: dims.z, fh: dims.y, a: along(2), b: (p) => -p[1] },
-        { n: [-1, 0, 0], skip: long === 'x', c: [[x0, y1, z0], [x0, y1, z1], [x0, y0, z1], [x0, y0, z0]], s: [0, 1, 1, 0], t: [0, 0, 1, 1], fw: dims.z, fh: dims.y, a: along(2), b: (p) => -p[1] },
+        { n: [-1, 0, 0], skip: long === 'x' || (faces === 'plan' && long === 'z'), c: [[x0, y1, z0], [x0, y1, z1], [x0, y0, z1], [x0, y0, z0]], s: [0, 1, 1, 0], t: [0, 0, 1, 1], fw: dims.z, fh: dims.y, a: along(2), b: (p) => -p[1] },
       );
     }
     list.forEach((f, k) => {
@@ -395,6 +395,8 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
   const inRect = (r, x, z) => x >= r.x && x <= r.x + r.w && z >= r.y && z <= r.y + r.h;
   // Un rectangle (meuble, porte) qui touche un trou est dessiné en entier dans le groupe toujours visible : rien n'apparaît ni ne disparaît à moitié.
   const touchesHole = (r) => holes.some((h) => h.rects.some((q) => r.x < q.x1 && r.x + r.w > q.x0 && r.y < q.y1 && r.y + r.h > q.y0));
+  // Un rectangle dont deux coins au moins dépassent du sol de l'étage (la moitié au plus est couverte) : il reste dessiné en entier.
+  const partlyUncovered = (r) => etageFloorRects !== null && [[r.x, r.y], [r.x + r.w, r.y], [r.x, r.y + r.h], [r.x + r.w, r.y + r.h]].filter(([x, z]) => !etageFloorRects.some((q) => inRect(q, x, z))).length >= 2;
   const exposedAt = (x, z) => etageFloorRects !== null && (!etageFloorRects.some((r) => inRect(r, x, z)) || holes.some((h) => h.rects.some((r) => x >= r.x0 && x <= r.x1 && z >= r.y0 && z <= r.y1)));
 
   scene.add(new THREE.AmbientLight(palette.ambient, render.light.ambient));
@@ -469,7 +471,7 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
         const r = region(p.region);
         builder.box({ x0: p.x0, x1: p.x1, y0: p.y0, y1: p.y1, z0: p.z0, z1: p.z1 }, { rect: r, scale: r.scale, seed: i * 8 + k + 1 }, p.faces);
       };
-      const up = f === 'rdc' && (exposedAt(fu.x + fu.w / 2, fu.y + fu.h / 2) || touchesHole(fu));
+      const up = f === 'rdc' && (exposedAt(fu.x + fu.w / 2, fu.y + fu.h / 2) || touchesHole(fu) || partlyUncovered(fu));
       parts.body.forEach((p, k) => draw(up ? fb.propsUp : fb.props, p, k));
       parts.detail.forEach((p, k) => draw(up ? fb.detailUp : fb.detail, p, k + 4));
     });
@@ -560,7 +562,7 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
       if (d.y < 0) exits.push({ t: (r.y0 - a.y) / d.y, side: 'y0' });
       const exit = exits.filter((q) => q.t >= -1e-6).sort((m, n) => m.t - n.t)[0] ?? null;
       const gapAt = exit ? { side: exit.side, c: exit.side[0] === 'x' ? a.y + d.y * Math.max(0, exit.t) : a.x + d.x * Math.max(0, exit.t), half: rise.width / 2 + 8 } : null;
-      const box = (x0, x1, z0, z1) => { if (x1 - x0 > 0.5 && z1 - z0 > 0.5) fence.box({ x0, x1, y0: 0, y1: FENCE_HEIGHT, z0, z1 }, { repeat }, 'longs'); };
+      const box = (x0, x1, z0, z1) => { if (x1 - x0 > 0.5 && z1 - z0 > 0.5) fence.box({ x0, x1, y0: 0, y1: FENCE_HEIGHT, z0, z1 }, { repeat }, 'plan'); };
       const run = (side, from, to, put) => {
         const hole = gapAt?.side === side ? [gapAt.c - gapAt.half, gapAt.c + gapAt.half] : null;
         if (hole === null) put(from, to);
@@ -574,7 +576,9 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
       run('x0', r.y0, r.y1, (u, v) => box(r.x0 - T, r.x0, u, v));
       run('x1', r.y0, r.y1, (u, v) => box(r.x1, r.x1 + T, u, v));
     }
-    const fenceMesh = fence.mesh(groups.etage, mat('garde-corps'), { cast: false, receive: true });
+    const fenceMat = mat('garde-corps');
+    fenceMat.side = THREE.DoubleSide; // une seule face par barre (2 triangles) : visible des deux côtés
+    const fenceMesh = fence.mesh(groups.etage, fenceMat, { cast: false, receive: true });
     if (fenceMesh) {
       fenceMesh.name = 'garde-corps';
       fenceMesh.userData.floor = 'etage';

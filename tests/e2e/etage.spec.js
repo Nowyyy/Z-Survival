@@ -570,6 +570,29 @@ test.describe('zombies sur deux étages', () => {
     expect(r.down).toBeGreaterThanOrEqual(1);
   });
 
+  test('on sort de l\'escalier par le haut puis on le reprend en y marchant : aucun mur invisible (pas de verrou de zone)', async ({ page }) => {
+    await open(page, '&wave=31&nospawn=1', SIZE, { freeze: false });
+    const r = await page.evaluate((st) => {
+      const zs = window.__zs;
+      const [p0, p3] = [st.walk.path[0], st.walk.path.at(-1)];
+      zs.setPlayer(p0.x, p0.y - 50);
+      zs.setInput({ move: { x: 0, y: 1 } });
+      for (let i = 0; i < 120 && zs.getState().floor.current !== 'etage'; i += 1) zs.step(0.05);
+      for (let i = 0; i < 80; i += 1) zs.step(0.05);
+      const top = { floor: zs.getState().floor.current, walk: zs.getState().floor.walk, y: zs.getState().player.y, end: p3.y };
+      zs.setInput({ move: { x: 0, y: -1 } });
+      let back = null;
+      for (let i = 0; i < 120; i += 1) { zs.step(0.05); if (back === null && zs.getState().floor.walk !== null) back = i; }
+      zs.setInput({ move: { x: 0, y: -1 } });
+      for (let i = 0; i < 80; i += 1) zs.step(0.05);
+      return { top, back, floor: zs.getState().floor.current };
+    }, AILE);
+    expect(r.top.floor).toBe('etage');
+    expect(r.top.walk).toBeNull();
+    expect(r.back).not.toBeNull();
+    expect(r.floor).toBe('rdc');
+  });
+
   test('au plus 2 zombies à la fois dans un escalier ; les autres attendent', async ({ page }) => {
     await open(page, '&wave=21&nospawn=1');
     await page.evaluate((b) => {

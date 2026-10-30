@@ -38,13 +38,15 @@ export function reachedPortal(enemy, portals, reach) {
   return best;
 }
 
-// enemies : tous les zombies, des deux étages. input : { playerFloor, portals: { rdc: [...], etage: [...] } (portalsFor de chaque étage), params (stairs.json) }.
+// enemies : tous les zombies, des deux étages. input : { playerFloor, follow (escalier où marche le joueur, facultatif), portals: { rdc: [...], etage: [...] } (portalsFor de chaque étage), params (stairs.json) }.
 // Renvoie { enemies (nouveaux objets, même ordre), events }. events : { type: 'stairStart' | 'stairArrive', id, stair, from, to }.
 export function stepStairZombies(enemies, input, dt) {
   const list = Array.isArray(enemies) ? enemies : [];
   const p = stairParams(input?.params);
   const step = clampDt(dt);
   const events = [];
+  const playerFloor = isFloorId(input?.playerFloor) ? input.playerFloor : DEFAULT_FLOOR;
+  const follow = typeof input?.follow === 'string' ? input.follow : null; // escalier où marche le joueur : les zombies de son étage arrivés à son bout le prennent aussi
   const out = list.map((e) => (isObject(e) ? { ...e } : e));
   const live = out.filter((e) => isObject(e) && isNum(e.x) && isNum(e.y));
   // 1. Franchissements en cours : le temps avance ; à la fin, arrivée si le point est libre (aucun autre zombie du même étage à moins de la somme des rayons).
@@ -68,9 +70,10 @@ export function stepStairZombies(enemies, input, dt) {
   }
   // 2. Départs : un zombie « dedans » d'un autre étage que le joueur, arrivé à la zone de déclenchement, monte ou descend s'il reste de la place sur l'escalier.
   const load = stairLoad(out);
-  const seekers = live.filter((e) => seeksStair(e, input?.playerFloor)).sort(byId);
+  const seekers = live.filter((e) => seeksStair(e, input?.playerFloor) || (follow !== null && e.mode === 'dedans' && floorOf(e) === playerFloor)).sort(byId);
   for (const e of seekers) {
     const portal = reachedPortal(e, input?.portals, p.triggerReach);
+    if (portal && !seeksStair(e, input?.playerFloor) && portal.stair !== follow) continue;
     if (!portal || (load[portal.stair] ?? 0) >= p.stairMaxAtOnce) continue;
     load[portal.stair] = (load[portal.stair] ?? 0) + 1;
     events.push({ type: 'stairStart', id: e.id, stair: portal.stair, from: portal.from, to: portal.to });
