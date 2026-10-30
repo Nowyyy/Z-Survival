@@ -45,6 +45,8 @@ export const arrivalOf = (stairId, floor) => zonesActive.stairs.find((s) => s.id
 export const triggerOf = (stairId, floor) => zonesActive.stairs.find((s) => s.id === stairId).floors[floor].trigger;
 export const centerOf = (r) => ({ x: r.x + r.w / 2, y: r.y + r.h / 2 });
 export const portals = (floor, open = ALL_DOORS) => portalsFor(zonesActive.stairs, floor, open);
+// Chemins et largeurs des escaliers (les zombies y marchent : stair-zombies.js).
+export const walks = Object.fromEntries(zonesActive.stairs.filter((q) => q.walk).map((q) => [q.id, { path: q.walk.path, width: q.walk.width }]));
 
 // Simulation pure de seconds secondes (pas de 0,05 s) : zombies des deux étages, joueur immobile à `player` de l'étage `playerFloor`.
 // options : { zombies, playerFloor, player, open (portes ouvertes), planks, seconds, onStep(state, enemies, i, events) , switchEvery (change l'étage du joueur toutes les n s, à l'arrivée de l'escalier-aile) }.
@@ -67,7 +69,7 @@ export function simulate({ zombies, playerFloor = 'rdc', player = null, open = A
       p = { ...a, r: 18 };
       state = setPlayerFloor(floorWorld, state, pf);
     }
-    const out = stepFloors(floorWorld, state, { enemies, player: p, dt, active: ids, canRepair: true });
+    const out = stepFloors(floorWorld, state, { enemies, player: p, realPlayer: p, walks, dt, active: ids, canRepair: true });
     state = out.state;
     enemies = out.enemies;
     events.push(...out.events.map((e) => ({ ...e, i })));

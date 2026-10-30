@@ -48,7 +48,7 @@ export function castRay(origin, angle, maxLength, enemies, bounds, obstacles = [
   let hit = null;
   for (const enemy of Array.isArray(enemies) ? enemies : []) {
     if (!enemy || !isNum(enemy.x) || !isNum(enemy.y)) continue;
-    if (isFloorId(floor) && (floorOf(enemy) !== floor || enemy.mode === 'escalier')) continue;
+    if (isFloorId(floor) && floorOf(enemy) !== floor) continue;
     const t = rayCircle(o, d, enemy);
     // Un ennemi pile au bord d'un obstacle est derrière lui : l'obstacle passe d'abord.
     if (t !== null && (blocker ? t < limit : t <= limit) && (hit === null || t < hit.distance)) hit = { id: enemy?.id, distance: t };

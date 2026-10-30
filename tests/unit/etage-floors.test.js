@@ -210,8 +210,9 @@ describe('aucune entité d\'un étage n\'interagit avec une entité de l\'autre'
     expect(castRay({ x: 0, y: 0 }, 0, 500, [zombie(1, 'etage')], null, [], 'etage').hit.id).toBe(1);
   });
 
-  it('le laser ignore un zombie en train de franchir un escalier', () => {
-    expect(castRay({ x: 0, y: 0 }, 0, 500, [zombie(1, undefined, 100, 0, { mode: 'escalier' })], null, [], 'rdc').hit).toBeNull();
+  it('le laser voit un zombie dans un escalier (à son étage logique), pas celui de l\'autre étage', () => {
+    expect(castRay({ x: 0, y: 0 }, 0, 500, [zombie(1, undefined, 100, 0, { mode: 'escalier' })], null, [], 'rdc').hit.id).toBe(1);
+    expect(castRay({ x: 0, y: 0 }, 0, 500, [zombie(1, 'etage', 100, 0, { mode: 'escalier' })], null, [], 'rdc').hit).toBeNull();
   });
 
   it('sans étage donné, le laser voit tout le monde (comportement d\'avant)', () => {
@@ -224,7 +225,7 @@ describe('aucune entité d\'un étage n\'interagit avec une entité de l\'autre'
     expect(stepBullets([shot()], [zombie(1, 'etage')], 0.05, null).impacts).toHaveLength(0);
     expect(stepBullets([shot('etage')], [zombie(1, 'etage')], 0.05, null).impacts).toHaveLength(1);
     expect(stepBullets([shot()], [zombie(1)], 0.05, null).impacts).toHaveLength(1);
-    expect(stepBullets([shot()], [zombie(1, undefined, 100, 0, { mode: 'escalier' })], 0.05, null).impacts).toHaveLength(0);
+    expect(stepBullets([shot()], [zombie(1, undefined, 100, 0, { mode: 'escalier' })], 0.05, null).impacts).toHaveLength(1); // un zombie dans un escalier se touche
   });
 
   it('le contact d\'un zombie de l\'autre étage ne blesse pas le joueur', () => {
@@ -233,7 +234,8 @@ describe('aucune entité d\'un étage n\'interagit avec une entité de l\'autre'
     expect(stepContact(player, [zombie(1, 'etage')], 0.05, def).damage).toBe(0);
     expect(stepContact({ ...player, floor: 'etage' }, [zombie(1, 'etage')], 0.05, def).damage).toBe(10);
     expect(stepContact(player, [zombie(1)], 0.05, def).damage).toBe(10);
-    expect(stepContact(player, [zombie(1, undefined, 100, 0, { mode: 'escalier' })], 0.05, def).damage).toBe(0);
+    expect(stepContact(player, [zombie(1, undefined, 100, 0, { mode: 'escalier' })], 0.05, def).damage).toBe(10); // dans un escalier il frappe
+    expect(stepContact(player, [zombie(1, 'etage', 100, 0, { mode: 'escalier' })], 0.05, def).damage).toBe(0);
   });
 
   it('le repoussement ne déplace pas les zombies de l\'autre étage', () => {

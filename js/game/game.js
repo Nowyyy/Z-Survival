@@ -12,7 +12,7 @@ import { closedDoors, entryWindow } from '../core/layout.js';
 import { occupancy } from '../core/siege.js';
 import { edgeIndicator } from '../core/edge-arrow.js';
 import { urgentWindows, windowChips } from '../core/hud-windows.js';
-import { SWAP_UP, entryDirection, heightOf, pointAt, startWalk, stepWalk, wantsStairs } from '../core/stair-walk.js';
+import { SWAP_UP, entryDirection, heightOf, startWalk, stepWalk, wantsStairs } from '../core/stair-walk.js';
 import { arrivalKnockback, createStairWatch, stairArrival, stairParams, stairState, stairTriggers, startStairCooldown, stepStairWatch } from '../core/stairs.js';
 import { createWindowsState } from '../core/windows.js';
 import { moveCircle } from '../core/movement.js';
@@ -152,6 +152,7 @@ export function createGame(ctx) {
 
   let sim;
   const eventLog = []; // journal des événements de zone : { type: 'doorAnnounce' | 'doorOpen', door, wave, time } (tests)
+  const stairWalks = Object.fromEntries(stairsWorld.filter((q) => q.walk).map((q) => [q.id, { path: q.walk.path, width: q.walk.width }]));
   const stairLog = []; // journal des escaliers : { type: 'stairStart' | 'stairArrive' | 'playerStairs', ... } (tests)
   let anim;
   let lastFire;
@@ -174,7 +175,7 @@ export function createGame(ctx) {
     const open = openIds();
     const l = layoutOf(pf());
     playerSolids = [...l.playerObstacles, ...closedDoors(l, open)];
-    blockers = l.empty ? [] : [...l.furniture, ...l.walls, ...(l.decor?.solids ?? []), ...closedDoors(l, open)];
+    blockers = l.empty ? [] : [...l.furniture.filter((f) => f.kind !== 'escalier'), ...l.walls, ...(l.decor?.solids ?? []), ...closedDoors(l, open)];
   }
   const activeIdsNow = () => (zoneCfg ? activeWindows(zoneCfg, zoneOf, openIds()) : geoms.map((g) => g.id));
   const allSpawnPoints = () => layouts.floors.flatMap((f) => (layoutOf(f).spawnPoints ?? layoutOf(f).windows).map((p) => ({ ...p, floor: f })));
@@ -484,7 +485,7 @@ export function createGame(ctx) {
     const events = []; // événements sonores de cette image (traités par js/core/sound-director.js)
     // À terre ou pendant le fondu, le joueur ne bouge pas, ne tire pas et son laser est masqué (js/core/player-down.js).
     const standing = canMove(sim.down) && !locked;
-    const firing = canFire(sim.down) && !locked && sim.sw === null;
+    const firing = canFire(sim.down) && !locked;
     const dir = standing ? override.move ?? input.move() : { x: 0, y: 0 };
     const before = sim.player;
     advanceDoors(dt);
@@ -577,7 +578,7 @@ export function createGame(ctx) {
       // Siège de chaque étage (js/core/siege.js), planches, réparation automatique près d'une fenêtre de l'étage du joueur, déplacement des zombies de chaque étage
       // (poursuite du joueur à son étage, champ de flux vers l'escalier le plus proche à l'autre), franchissement des escaliers (js/core/floor-sim.js).
       const activeIds = activeIdsNow();
-      const out = stepFloors(fw, sim.fs, { enemies: sim.enemies, player: chaseTarget(), dt, active: activeIds, canRepair: !sim.dead && !locked, repairTime: eff.player.repairTime, flowDone: true, follow: sim.sw?.stair });
+      const out = stepFloors(fw, sim.fs, { enemies: sim.enemies, player: chaseTarget(), dt, active: activeIds, canRepair: !sim.dead && !locked, repairTime: eff.player.repairTime, flowDone: true, follow: sim.sw?.stair, realPlayer: sim.player, walks: stairWalks });
       sim.fs = out.state;
       sim.enemies = out.enemies;
       sim.win = out.state.win;
@@ -941,7 +942,7 @@ export function createGame(ctx) {
       const gw = geomById.get(e.window);
       const sieging = gw && (e.mode === 'arrache' || e.mode === 'escalade');
       const tearRate = (TAU * num(e.tearMul, 1)) / Math.max(0.1, windowsCfg.tearTime);
-      const poseState = e.mode === 'arrache' ? 'arracher' : e.mode === 'escalade' || e.mode === 'escalier' ? 'escalade' : GAIT_POSE[e.gait] ?? 'zombie';
+      const poseState = e.mode === 'arrache' ? 'arracher' : e.mode === 'escalade' ? 'escalade' : GAIT_POSE[e.gait] ?? 'zombie';
       z.char.setPose(computePose({ phase: e.mode === 'arrache' ? sim.time * tearRate + e.id : z.phase, aim: 0, facing: 0, state: poseState, time: sim.time, seed: e.id, amount: zs > 5 ? 0.7 : 0.15 }));
       // Lot 3e : un zombie de l'étage du joueur est dessiné ; depuis l'étage on voit aussi ceux du rez-de-chaussée, plus bas de floorLift, par le trou des escaliers et
       // dans la partie découverte (le sol de l'étage les cache ailleurs) ; depuis le rez-de-chaussée ceux de l'étage ne sont pas dessinés (ni ombrés). Leur logique continue.
@@ -949,23 +950,16 @@ export function createGame(ctx) {
       const shown = zf === pf() || (pf() === 'etage' && zf === 'rdc');
       let at = { x: e.x, y: e.y, h: zf === pf() ? 0 : liftOf(zf) - liftOf(pf()) };
       let face = null;
-      let onStair = false;
+      let visible = shown;
       if (e.mode === 'escalier') {
-        // Franchissement : le zombie monte (ou descend) la rampe pendant stairT, selon le chemin et la hauteur de l'escalier, face à son sens de marche.
-        const path = stairsWorld.find((q) => q.id === e.stair)?.walk?.path;
-        if (path) {
-          const dir = e.stairFrom === 'etage' ? -1 : 1;
-          const k = Math.min(1, Math.max(0, num(e.stairT) / Math.max(0.1, stairCfg.stairTime)));
-          const q = pointAt(path, dir > 0 ? k : 1 - k);
-          at = { x: q.x, y: q.y, h: LIFT * q.t - liftOf(pf()) };
-          face = { x: q.tx * dir, y: q.ty * dir };
-          onStair = pf() === 'etage' || q.t < SWAP_UP + 0.1;
-        }
+        // Dans un escalier : il marche librement comme le joueur ; sa hauteur suit sa position sur la rampe (t × floorLift), face à son sens de marche.
+        at = { x: e.x, y: e.y, h: LIFT * num(e.stairT) - liftOf(pf()) };
+        face = { x: num(e.fx), y: num(e.fy) };
+        visible = pf() === 'etage' || num(e.stairT) < SWAP_UP + 0.1;
       }
-      const visible = e.mode === 'escalier' && face ? onStair : shown;
       z.char.root.position.set(at.x, at.h, at.y);
       if (z.char.root.visible !== visible) z.char.root.visible = visible;
-      z.char.root.rotation.y = face ? Math.PI / 2 - Math.atan2(face.y, face.x) : sieging ? Math.PI / 2 - Math.atan2(-gw.normal.y, -gw.normal.x) : Math.PI / 2 - Math.atan2(p.y - e.y, p.x - e.x);
+      z.char.root.rotation.y = face && (face.x !== 0 || face.y !== 0) ? Math.PI / 2 - Math.atan2(face.y, face.x) : sieging ? Math.PI / 2 - Math.atan2(-gw.normal.y, -gw.normal.x) : Math.PI / 2 - Math.atan2(p.y - e.y, p.x - e.x);
       const flashing = e.flash > 0;
       if (flashing !== z.flashing) {
         z.flashing = flashing;

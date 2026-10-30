@@ -227,7 +227,7 @@ test.describe('escalier physique', () => {
     expect(s.stairLog.filter((l) => l.type === 'playerStairs').map((l) => [l.from, l.to])).toEqual([['rdc', 'etage'], ['etage', 'rdc']]);
   });
 
-  test('pendant la montée : aucun tir (même avec un zombie dans la ligne), les deux étages sont dessinés, le rez-de-chaussée complet jusqu\'à mi-hauteur', async ({ page }) => {
+  test('pendant la montée : les deux étages sont dessinés, le rez-de-chaussée complet jusqu\'à mi-hauteur (on peut tirer dans l\'escalier)', async ({ page }) => {
     await open(page, '&wave=21&nospawn=1');
     const r = await page.evaluate(() => {
       const zs = window.__zs;
@@ -243,8 +243,6 @@ test.describe('escalier physique', () => {
       return { shots, laser: mid.laser, walking: mid.floor.walk !== null, vis: mid.scene.visible, start: p };
     });
     expect(r.walking).toBe(true);
-    expect(r.shots).toBe(0);
-    expect(r.laser).toBeNull();
     expect(r.vis.etage).toBeGreaterThan(5); // l'étage est dessiné dès que le joueur a pris de la hauteur
     expect(r.vis.rdcShell).toBeGreaterThanOrEqual(2);
     expect(r.vis.rdc + r.vis.rdcExposed).toBeGreaterThan(5);
@@ -526,7 +524,7 @@ test.describe('zombies sur deux étages', () => {
     expect(s.enemies.map((e) => [e.floor, e.visible])).toEqual([['rdc', true], ['etage', true]]); // depuis l'étage on voit aussi ceux du rez-de-chaussée, plus bas
   });
 
-  test('un zombie de l\'étage atteint l\'escalier, y passe 1,5 s, arrive au rez-de-chaussée au point d\'arrivée', async ({ page }) => {
+  test('un zombie de l\'étage atteint l\'escalier, le descend en marchant et en sort au rez-de-chaussée près du point d\'arrivée', async ({ page }) => {
     await open(page, '&wave=21&nospawn=1');
     await page.evaluate((b) => { window.__zs.spawnEnemy(b.x, b.y + 150, { floor: 'etage', mode: 'dedans' }); }, A_ETAGE);
     const done = await until(page, `s.stairLog.some((l) => l.type === 'stairArrive')`, 60);
@@ -536,9 +534,9 @@ test.describe('zombies sur deux étages', () => {
     const arrive = log.find((l) => l.type === 'stairArrive');
     expect(start).toMatchObject({ stair: 'escalier-aile', from: 'etage', to: 'rdc' });
     expect(arrive).toMatchObject({ stair: 'escalier-aile', from: 'etage', to: 'rdc' });
-    expect(arrive.time - start.time).toBeGreaterThanOrEqual(1.5 - 0.06);
+    expect(arrive.time - start.time).toBeGreaterThan(1);
     expect(done.state.enemies[0].floor).toBe('rdc');
-    expect(Math.hypot(done.state.enemies[0].x - A_RDC.x, done.state.enemies[0].y - A_RDC.y)).toBeLessThan(80);
+    expect(Math.hypot(done.state.enemies[0].x - A_RDC.x, done.state.enemies[0].y - A_RDC.y)).toBeLessThan(250);
   });
 
   test('un zombie du rez-de-chaussée monte quand le joueur est à l\'étage', async ({ page }) => {
@@ -591,6 +589,35 @@ test.describe('zombies sur deux étages', () => {
     expect(r.top.walk).toBeNull();
     expect(r.back).not.toBeNull();
     expect(r.floor).toBe('rdc');
+  });
+
+  test('un zombie qui marche dans l\'escalier est libre de ses mouvements : on le touche d\'une balle depuis l\'extérieur, il se déplace sur la rampe', async ({ page }) => {
+    await open(page, '&wave=31&lvl=10&nospawn=1', SIZE, { freeze: false });
+    const r = await page.evaluate((st) => {
+      const zs = window.__zs;
+      const [p0, p3] = [st.walk.path[0], st.walk.path.at(-1)];
+      zs.setPlayer(p0.x + 60, p0.y - 70); // au rez-de-chaussée, à côté du pied de la rampe
+      zs.spawnEnemy(p3.x, p3.y + 15, { floor: 'etage', mode: 'dedans' });
+      let seen = null;
+      const track = [];
+      for (let i = 0; i < 400 && seen === null; i += 1) {
+        zs.step(0.05);
+        const e = zs.getState().enemies[0];
+        if (e && e.mode === 'escalier') track.push({ x: e.x, y: e.y, t: e.stairT });
+        if (e && e.mode === 'escalier' && e.stairT < 0.4 && e.floor === 'rdc') seen = e;
+      }
+      if (seen === null) return { track, hit: null };
+      const g = zs.getState();
+      const e = g.enemies[0];
+      const before = e.hp;
+      zs.fire(Math.atan2(e.y - g.player.y, e.x - g.player.x));
+      for (let i = 0; i < 6; i += 1) zs.step(0.05);
+      const after = zs.getState().enemies[0];
+      return { track, hit: after ? before - after.hp : before };
+    }, AILE);
+    expect(r.track.length).toBeGreaterThan(5);
+    expect(Math.hypot(r.track.at(-1).x - r.track[0].x, r.track.at(-1).y - r.track[0].y)).toBeGreaterThan(30);
+    expect(r.hit).toBeGreaterThan(0);
   });
 
   test('au plus 2 zombies à la fois dans un escalier ; les autres attendent', async ({ page }) => {

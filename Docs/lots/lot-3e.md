@@ -81,3 +81,9 @@
 
 ## À faire (demandé par le propriétaire, non fait)
 - **Fermer les murs et les piliers** du rez-de-chaussée jusqu'au plafond matérialisé par le sol du deuxième étage : ils s'arrêtent aujourd'hui à 60 de haut (hauteur des murs) alors que le sol de l'étage est à `floorLift` (180). À traiter : prolonger les murs et les piliers du rez-de-chaussée jusqu'à `floorLift` sous l'emprise de l'étage, en restant dans le budget (30 000 triangles, 300 appels) ; les fenêtres et les portes gardent leurs ouvertures.
+
+## Mise à jour 10 (demande du propriétaire) : le zombie est libre dans l'escalier
+- **Marche libre** : en mode escalier, `stepStairZombies` fait marcher le zombie avec `stepWalk` (comme le joueur : tube autour de `walk.path`, hauteur selon sa position, étage logique à mi-hauteur, sortie par un bout). Il va droit sur le joueur si celui-ci marche dans le même escalier, sinon vers le bout qui donne sur l'étage du joueur, puis sort et le poursuit. `stairTime` et le délai d'arrivée ne servent plus.
+- **Combat** : le laser, les balles et le contact comptent les zombies en mode escalier (à leur étage logique). L'emprise des escaliers ne bloque plus les balles ni le laser (elle bloque toujours les déplacements) ; le joueur peut tirer en marchant dans l'escalier.
+- **Dessin** : le zombie est dessiné à sa vraie position et à sa hauteur sur la rampe, avec son allure de marche.
+- **Tests** : tests unitaires réécrits (marche, sortie, 2 à la fois, joueur dans l'escalier), un test e2e (touché depuis l'extérieur, se déplace sur la rampe).

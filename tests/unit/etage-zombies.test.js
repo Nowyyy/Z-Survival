@@ -4,12 +4,13 @@ import { createFloorState, createFloorWorld, stairsOf, stepFloors, syncDoors, ta
 import { reachedPortal, seeksStair, stairLoad, stepStairZombies } from '../../js/core/stair-zombies.js';
 import { stepEnemies } from '../../js/core/enemy-ai.js';
 import { buildLayouts } from '../../js/core/layout.js';
-import { ALL_DOORS, arrivalOf, centerOf, decor, etageWorld, floorWorld, gridOpts, layouts, makeZombie, navCfg, portals, simulate, stairsCfg, triggerOf, windowsCfg, world, zonesActive, enemiesCfg } from './helpers/etage.js';
+import { ALL_DOORS, arrivalOf, centerOf, decor, etageWorld, floorWorld, gridOpts, layouts, makeZombie, navCfg, portals, simulate, stairsCfg, triggerOf, walks, windowsCfg, world, zonesActive, enemiesCfg } from './helpers/etage.js';
 import { restrictToFloors } from '../../js/core/zones.js';
 import { deepFreeze, WEIRD } from './helpers/carte.js';
 
 const P = { escalier: 'escalier-aile', depart: 'escalier-depart' };
 const at = (stair, floor, who = 'trigger') => (who === 'trigger' ? centerOf(triggerOf(stair, floor)) : arrivalOf(stair, floor));
+const pointMid = (path) => ({ x: (path[1].x + path[2].x) / 2, y: (path[1].y + path[2].y) / 2 });
 const state0 = (open = ALL_DOORS, pf = 'rdc') => createFloorState(floorWorld, { planks: 4, openDoors: open, playerFloor: pf });
 
 describe('champ de flux vers les escaliers (buildPortalField)', () => {
@@ -110,7 +111,7 @@ describe('mode « escalier » (stair-zombies.js)', () => {
     let enemies = list;
     const events = [];
     for (let i = 0; i < Math.round(seconds / 0.05); i += 1) {
-      const r = stepStairZombies(enemies, { playerFloor: floor, portals: portalsBy(open), params }, 0.05);
+      const r = stepStairZombies(enemies, { playerFloor: floor, portals: portalsBy(open), walks, params }, 0.05);
       enemies = r.enemies;
       events.push(...r.events.map((e) => ({ ...e, i })));
     }
@@ -126,28 +127,36 @@ describe('mode « escalier » (stair-zombies.js)', () => {
     expect(seeksStair(null, 'rdc')).toBe(false);
   });
 
-  it('un zombie arrivé à la zone de déclenchement passe en « escalier » (pose escalade) pendant 1,5 s', () => {
-    const r = run([atTrigger(1, 'etage')], 'rdc', 3);
+  it('un zombie arrivé à la zone de déclenchement entre dans l\'escalier, le descend en marchant (hauteur de 1 à 0) et en sort au pied', () => {
+    const r = run([atTrigger(1, 'etage')], 'rdc', 12);
     const start = r.events.find((e) => e.type === 'stairStart');
     const end = r.events.find((e) => e.type === 'stairArrive');
     expect(start).toMatchObject({ id: 1, stair: P.escalier, from: 'etage', to: 'rdc' });
-    expect((end.i - start.i) * 0.05).toBeCloseTo(1.5, 5);
+    expect(end).toMatchObject({ id: 1, from: 'etage', to: 'rdc' });
+    expect((end.i - start.i) * 0.05).toBeGreaterThan(1);
   });
 
-  it('pendant le franchissement : mode escalier, escalier connu, étage de départ gardé, position fixe', () => {
+  it('pendant le franchissement : mode escalier, escalier connu, il avance sur la rampe et sa hauteur baisse', () => {
     let list = [atTrigger(1, 'etage')];
-    for (let i = 0; i < 5; i += 1) list = stepStairZombies(list, { playerFloor: 'rdc', portals: portalsBy(), params }, 0.05).enemies;
-    expect(list[0]).toMatchObject({ mode: 'escalier', stair: P.escalier, floor: 'etage', stairFrom: 'etage', stairTo: 'rdc' });
+    const seen = [];
+    for (let i = 0; i < 20; i += 1) {
+      list = stepStairZombies(list, { playerFloor: 'rdc', portals: portalsBy(), walks, params }, 0.05).enemies;
+      seen.push({ x: list[0].x, y: list[0].y, t: list[0].stairT });
+    }
+    expect(list[0]).toMatchObject({ mode: 'escalier', stair: P.escalier, stairFrom: 'etage', stairTo: 'rdc' });
+    expect(seen[19].t).toBeLessThan(seen[0].t);
+    expect(Math.hypot(seen[19].x - seen[0].x, seen[19].y - seen[0].y)).toBeGreaterThan(20);
   });
 
-  it('à l\'arrivée : étage changé, point d\'arrivée de l\'autre étage, mode dedans', () => {
-    const r = run([atTrigger(1, 'etage')], 'rdc', 2);
+  it('à la sortie : étage changé, mode dedans, près du point d\'arrivée de l\'autre étage', () => {
+    const r = run([atTrigger(1, 'etage')], 'rdc', 12);
     const a = arrivalOf(P.escalier, 'rdc');
-    expect(r.enemies[0]).toMatchObject({ floor: 'rdc', mode: 'dedans', x: a.x, y: a.y, stair: null });
+    expect(r.enemies[0]).toMatchObject({ floor: 'rdc', mode: 'dedans', stair: null });
+    expect(Math.hypot(r.enemies[0].x - a.x, r.enemies[0].y - a.y)).toBeLessThan(150);
   });
 
   it('joueur dans l\'escalier (follow) : un zombie de son étage arrivé au bout de cet escalier le prend aussi, pas un autre escalier ni sans follow', () => {
-    const base = { playerFloor: 'rdc', portals: portalsBy(), params };
+    const base = { playerFloor: 'rdc', portals: portalsBy(), walks, params };
     const step = (z, extra) => stepStairZombies([z], { ...base, ...extra }, 0.05);
     expect(step(atTrigger(1, 'rdc'), {}).enemies[0].mode).toBe('dedans');
     const r = step(atTrigger(1, 'rdc'), { follow: P.escalier });
@@ -157,39 +166,39 @@ describe('mode « escalier » (stair-zombies.js)', () => {
   });
 
   it('on monte aussi : un zombie du rez-de-chaussée arrive à l\'étage quand le joueur y est', () => {
-    const r = run([atTrigger(1, 'rdc', P.depart)], 'etage', 2);
+    const r = run([atTrigger(1, 'rdc', P.depart)], 'etage', 14);
     const a = arrivalOf(P.depart, 'etage');
-    expect(r.enemies[0]).toMatchObject({ floor: 'etage', mode: 'dedans', x: a.x, y: a.y });
+    expect(r.enemies[0]).toMatchObject({ floor: 'etage', mode: 'dedans' });
+    expect(Math.hypot(r.enemies[0].x - a.x, r.enemies[0].y - a.y)).toBeLessThan(250);
   });
 
   it('au plus 2 zombies à la fois sur un escalier : le troisième attend', () => {
     const list = [1, 2, 3].map((id) => atTrigger(id, 'etage'));
-    const first = stepStairZombies(list, { playerFloor: 'rdc', portals: portalsBy(), params }, 0.05);
+    const first = stepStairZombies(list, { playerFloor: 'rdc', portals: portalsBy(), walks, params }, 0.05);
     expect(stairLoad(first.enemies)).toEqual({ [P.escalier]: 2 });
     expect(first.enemies.filter((e) => e.mode === 'dedans')).toHaveLength(1);
   });
 
   it('le troisième monte à son tour dès qu\'une place se libère (file)', () => {
-    const r = run([1, 2, 3].map((id) => atTrigger(id, 'etage')), 'rdc', 6);
+    const r = run([1, 2, 3].map((id) => atTrigger(id, 'etage')), 'rdc', 25);
     expect(r.events.filter((e) => e.type === 'stairStart')).toHaveLength(3);
     expect(r.enemies.every((e) => e.floor === 'rdc')).toBe(true);
   });
 
   it('le plafond de 2 vaut par escalier : deux zombies sur chacun des deux escaliers', () => {
     const list = [1, 2, 3].map((id) => atTrigger(id, 'etage')).concat([4, 5, 6].map((id) => atTrigger(id, 'etage', P.depart)));
-    const r = stepStairZombies(list, { playerFloor: 'rdc', portals: portalsBy(), params }, 0.05);
+    const r = stepStairZombies(list, { playerFloor: 'rdc', portals: portalsBy(), walks, params }, 0.05);
     expect(stairLoad(r.enemies)).toEqual({ [P.escalier]: 2, [P.depart]: 2 });
   });
 
-  it('si le point d\'arrivée est occupé par un autre zombie, il attend en file au bout de l\'escalier', () => {
-    const a = arrivalOf(P.escalier, 'rdc');
-    const blocker = makeZombie(9, a, { floor: 'rdc' });
-    const r = run([atTrigger(1, 'etage'), blocker, { ...blocker, id: 10, x: a.x + 30 }, { ...blocker, id: 11, x: a.x - 30 }, { ...blocker, id: 12, y: a.y + 30 }, { ...blocker, id: 13, y: a.y - 30 }, { ...blocker, id: 14, x: a.x + 21, y: a.y + 21 }, { ...blocker, id: 15, x: a.x - 21, y: a.y - 21 }, { ...blocker, id: 16, x: a.x + 21, y: a.y - 21 }, { ...blocker, id: 17, x: a.x - 21, y: a.y + 21 }], 'rdc', 3);
-    const z = r.enemies.find((e) => e.id === 1);
-    expect(z.mode).toBe('escalier');
-    expect(z.floor).toBe('etage');
-    const freed = run([atTrigger(1, 'etage'), { ...blocker, x: a.x + 500 }], 'rdc', 4);
-    expect(freed.enemies.find((e) => e.id === 1)).toMatchObject({ mode: 'dedans', floor: 'rdc' });
+  it('le joueur marche dans l\'escalier : le zombie qui y est va droit sur lui, on peut le toucher (étage logique à mi-hauteur)', () => {
+    const path = walks[P.escalier].path;
+    const mid = pointMid(path);
+    const z = { ...atTrigger(1, 'rdc'), mode: 'escalier', stair: P.escalier, stairFrom: 'rdc', stairTo: 'etage', stairT: 0, walk: { stair: P.escalier, floor: 'rdc', from: 'rdc', auto: false, armed: true } };
+    let list = [z];
+    for (let i = 0; i < 40; i += 1) list = stepStairZombies(list, { playerFloor: 'rdc', follow: P.escalier, player: mid, portals: portalsBy(), walks, params }, 0.05).enemies;
+    expect(list[0].mode).toBe('escalier');
+    expect(Math.hypot(list[0].x - mid.x, list[0].y - mid.y)).toBeLessThan(Math.hypot(z.x - mid.x, z.y - mid.y));
   });
 
   it('un zombie de l\'étage du joueur ne prend jamais un escalier', () => {
@@ -212,13 +221,13 @@ describe('mode « escalier » (stair-zombies.js)', () => {
   it('stepStairZombies : entrées hostiles sans exception, arguments gelés intacts', () => {
     for (const bad of WEIRD) expect(() => stepStairZombies(bad, bad, bad)).not.toThrow();
     const list = deepFreeze([atTrigger(1, 'etage')]);
-    expect(() => stepStairZombies(list, deepFreeze({ playerFloor: 'rdc', portals: portalsBy(), params }), 0.05)).not.toThrow();
+    expect(() => stepStairZombies(list, deepFreeze({ playerFloor: 'rdc', portals: portalsBy(), walks, params }), 0.05)).not.toThrow();
   });
 
   it('déterministe : mêmes entrées, mêmes sorties', () => {
     const list = [1, 2, 3].map((id) => atTrigger(id, 'etage'));
-    const a = stepStairZombies(list, { playerFloor: 'rdc', portals: portalsBy(), params }, 0.05);
-    const b = stepStairZombies(list, { playerFloor: 'rdc', portals: portalsBy(), params }, 0.05);
+    const a = stepStairZombies(list, { playerFloor: 'rdc', portals: portalsBy(), walks, params }, 0.05);
+    const b = stepStairZombies(list, { playerFloor: 'rdc', portals: portalsBy(), walks, params }, 0.05);
     expect(a).toEqual(b);
   });
 
