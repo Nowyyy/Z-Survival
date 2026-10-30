@@ -24,10 +24,10 @@
     { "id": "U7", "side": "sud", "x": 281, "y": 350, "planX": 282 }
   ],
   "pillarSize": 7,
-  "pillars": [[83, 83], [83, 145], [83, 208], [83, 253], [240, 264], [198, 312]],
+  "pillars": [[83, 83], [83, 145], [83, 208], [83, 253], [231, 264], [198, 312]],
   "stairs": [
     { "id": "escalier-aile-etage", "role": "escalier-aile", "x0": 24, "y0": 254, "x1": 52, "y1": 298 },
-    { "id": "escalier-depart-etage", "role": "escalier-depart", "x0": 255, "y0": 243, "x1": 288, "y1": 270 }
+    { "id": "escalier-depart-etage", "role": "escalier-depart", "x0": 250, "y0": 230, "x1": 290, "y1": 290 }
   ],
   "ramp": null,
   "start": [226, 276],

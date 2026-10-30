@@ -943,9 +943,11 @@ export function createGame(ctx) {
       const tearRate = (TAU * num(e.tearMul, 1)) / Math.max(0.1, windowsCfg.tearTime);
       const poseState = e.mode === 'arrache' ? 'arracher' : e.mode === 'escalade' || e.mode === 'escalier' ? 'escalade' : GAIT_POSE[e.gait] ?? 'zombie';
       z.char.setPose(computePose({ phase: e.mode === 'arrache' ? sim.time * tearRate + e.id : z.phase, aim: 0, facing: 0, state: poseState, time: sim.time, seed: e.id, amount: zs > 5 ? 0.7 : 0.15 }));
-      z.char.root.position.set(e.x, 0, e.y);
-      // Lot 3e : un zombie de l'autre étage n'est pas dessiné (ni ombré) ; sa logique continue.
-      const shown = floorOf(e) === pf();
+      // Lot 3e : un zombie de l'étage du joueur est dessiné ; depuis l'étage on voit aussi ceux du rez-de-chaussée, plus bas de floorLift, par le trou des escaliers et
+      // dans la partie découverte (le sol de l'étage les cache ailleurs) ; depuis le rez-de-chaussée ceux de l'étage ne sont pas dessinés (ni ombrés). Leur logique continue.
+      const zf = floorOf(e);
+      const shown = zf === pf() || (pf() === 'etage' && zf === 'rdc');
+      z.char.root.position.set(e.x, zf === pf() ? 0 : liftOf(zf) - liftOf(pf()), e.y);
       if (z.char.root.visible !== shown) z.char.root.visible = shown;
       z.char.root.rotation.y = sieging ? Math.PI / 2 - Math.atan2(-gw.normal.y, -gw.normal.x) : Math.PI / 2 - Math.atan2(p.y - e.y, p.x - e.x);
       const flashing = e.flash > 0;
@@ -1297,7 +1299,7 @@ export function createGame(ctx) {
           id: e.id, x: e.x, y: e.y, health: e.health, entered: e.entered ?? null, from: e.from ?? null, variant: e.visual, screen: screenOf(e.x, e.y), pose: zombies.get(e.id)?.char.readPose() ?? null,
           type: e.type, gait: e.gait, hp: e.health, maxHp: e.maxHealth, speed: e.speed, damage: e.damage, stride: e.stride, radius: e.r, phase: zombies.get(e.id)?.phase ?? 0,
           mode: e.mode ?? 'libre', window: e.window ?? null, slot: e.slot ?? null, climb: e.climb ? { t: e.climb.t } : null,
-          floor: floorOf(e), visible: floorOf(e) === pf(), stair: e.stair ?? null, stairT: e.stairT ?? 0,
+          floor: floorOf(e), visible: floorOf(e) === pf() || (pf() === 'etage' && floorOf(e) === 'rdc'), stair: e.stair ?? null, stairT: e.stairT ?? 0,
         })),
         bullets: sim.bullets.map((b) => ({ id: b.id, floor: floorOf(b), x: b.x, y: b.y, angle: b.angle, aimAngle: b.aimAngle, damage: b.damage, maxDistance: b.maxDistance })),
         kills: sim.kills,

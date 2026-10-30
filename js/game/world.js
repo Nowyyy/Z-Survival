@@ -382,7 +382,9 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
   const shellOf = (f) => (f === 'rdc' ? groups.rdcShell : groups[f]);
   // Trous du sol de l'étage : la rampe de chaque escalier (on voit l'escalier et le rez-de-chaussée en dessous).
   const STEPS = 10;
-  const holes = stairs.map((st) => ({ id: st.id, rise: riseOf(st.walk) })).filter((h) => h.rise !== null).map((h) => ({ ...h, rects: holeRects(h.rise) }));
+  // Le trou de chaque escalier dans le sol de l'étage est son emprise pleine de l'étage (zones.json : la même zone est un obstacle pour les joueurs et les zombies, donc on ne
+  // peut pas passer derrière l'escalier et on voit le rez-de-chaussée en dessous) ; sans emprise, des bandes qui suivent la montée.
+  const holes = stairs.map((st) => ({ id: st.id, rise: riseOf(st.walk), solid: st.floors?.etage?.solid ?? null })).filter((h) => h.rise !== null).map((h) => ({ ...h, rects: h.solid ? [{ x0: h.solid.x, y0: h.solid.y, x1: h.solid.x + h.solid.w, y1: h.solid.y + h.solid.h }] : holeRects(h.rise) }));
 
   scene.add(new THREE.AmbientLight(palette.ambient, render.light.ambient));
   const sun = new THREE.DirectionalLight(palette.sun, render.light.sun);
@@ -479,7 +481,7 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
   }
 
   // Jupe sombre (lot 3e, mise à jour : l'étage est au-dessus) : sous chaque rectangle du sol de l'étage, quatre faces opaques (--game-void) jusqu'au sol du rez-de-chaussée,
-  // que l'on voit en dessous ; plus deux parois le long de chaque montée (les parois du trou). 8 triangles par rectangle, 4 par tronçon et par côté.
+  // que l'on voit en dessous ; plus quatre parois autour de chaque trou d'escalier. 8 triangles par rectangle.
   let slab = null;
   if (floors.includes('etage')) {
     const l = layoutOf('etage');
@@ -498,15 +500,10 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
       const corners = [[r.x, r.y], [x1, r.y], [x1, y1], [r.x, y1]];
       for (let k = 0; k < 4; k += 1) wall(corners[k][0], corners[k][1], corners[(k + 1) % 4][0], corners[(k + 1) % 4][1]);
     }
-    for (const { rise } of holes) {
-      for (const side of [-1, 1]) {
-        for (let k = 0; k < rise.lengths.length; k += 1) {
-          const a = rise.points[k];
-          const b = rise.points[k + 1];
-          const len = rise.lengths[k] || 1;
-          const off = (side * rise.width) / 2;
-          wall(a.x - ((b.y - a.y) / len) * off, a.y + ((b.x - a.x) / len) * off, b.x - ((b.y - a.y) / len) * off, b.y + ((b.x - a.x) / len) * off);
-        }
+    for (const { rects } of holes) {
+      for (const r of rects) {
+        const corners = [[r.x0, r.y0], [r.x1, r.y0], [r.x1, r.y1], [r.x0, r.y1]];
+        for (let k = 0; k < 4; k += 1) wall(corners[k][0], corners[k][1], corners[(k + 1) % 4][0], corners[(k + 1) % 4][1]);
       }
     }
     const geometry = new THREE.BufferGeometry();

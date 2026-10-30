@@ -44,3 +44,8 @@
 - **Mur invisible** : l'ancienne cage de l'étage (246, 230 → 289, 303) était bien plus grande que la rampe ; elle est ramenée à l'emprise de la rampe, la même aux deux étages (255, 243 → 288, 270) ; le pilier voisin (242, 253) et la pièce P8 sont déplacés. Test : on atteint à pied trois points autour de la cage.
 - **Zombies** : pendant que le joueur est dans l'escalier, sa position est dans une emprise pleine (donc sans chemin) : les zombies de son étage n'avaient plus de cible et restaient immobiles. Ils visent maintenant le bout de l'escalier de son étage logique (le pied au rez-de-chaussée, le palier à l'étage), puis le joueur dès qu'il en sort.
 - **Tests** : 3 tests e2e (`escalier de départ arrondi`, mur invisible, zombies), tests de données adaptés (`plan.json` : l'emprise de l'escalier courbe est redessinée), `stair-walk.test.js` (courbe).
+
+## Mise à jour 3 (retours du propriétaire) : trou autour de l'escalier, zombies du rez-de-chaussée visibles d'en haut
+- **Trou** : à l'étage, le coin autour de l'escalier de départ (derrière la rampe, à côté, en dessous, jusqu'aux murs : 250, 230 → 290, 290) est un trou dans le sol et un obstacle (la même zone) : on ne peut plus passer derrière l'escalier et on y voit le rez-de-chaussée. Parois sombres sur les quatre côtés ; le trou de l'escalier de l'aile reste celui de sa rampe. Le pilier voisin est déplacé.
+- **Zombies** : depuis l'étage, les zombies du rez-de-chaussée sont dessinés (floorLift plus bas), visibles par le trou et dans la partie découverte ; ceux de l'étage ne le sont toujours pas depuis le rez-de-chaussée. Aucun changement de logique (tir, contact, siège restent par étage).
+- **Tests** : 2 tests e2e (trou et zombies) ; test du mur invisible adapté.

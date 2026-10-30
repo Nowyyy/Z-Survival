@@ -398,7 +398,7 @@ test.describe('escalier de départ arrondi, zombies et murs invisibles', () => {
     await open(page, '&wave=31&floor=1&nospawn=1');
     const cage = DEP.floors.etage.solid;
     // Points de passage autour de la cage : à l'ouest, au sud, à l'est (dans la salle) ; chacun doit être atteignable en marchant depuis le palier.
-    const spots = [{ x: cage.x - 120, y: cage.y + cage.h / 2 }, { x: cage.x + cage.w / 2, y: cage.y + cage.h + 80 }, { x: cage.x - 60, y: cage.y + cage.h + 200 }];
+    const spots = [{ x: cage.x - 120, y: cage.y + cage.h / 2 - 60, from: { x: cage.x - 250, y: cage.y + cage.h / 2 - 60 } }, { x: cage.x + cage.w / 2, y: cage.y + cage.h + 80 }, { x: cage.x - 60, y: cage.y + cage.h + 200 }];
     for (const spot of spots) {
       const r = await page.evaluate(([from, to]) => {
         const zs = window.__zs;
@@ -412,7 +412,7 @@ test.describe('escalier de départ arrondi, zombies et murs invisibles', () => {
         }
         zs.setInput({});
         return { ok: false, d: Math.hypot(to.x - zs.getState().player.x, to.y - zs.getState().player.y) };
-      }, [{ x: cage.x - 150, y: cage.y + cage.h + 200 }, spot]);
+      }, [spot.from ?? { x: cage.x - 150, y: cage.y + cage.h + 200 }, spot]);
       expect(r.ok, `${Math.round(spot.x)},${Math.round(spot.y)} : reste à ${Math.round(r.d)}`).toBe(true);
     }
   });
@@ -436,6 +436,49 @@ test.describe('escalier de départ arrondi, zombies et murs invisibles', () => {
     }, [t, DENTRY]);
     expect(r.walking).toBe(true);
     expect(Math.max(...r.moved)).toBeGreaterThan(5); // ils avancent vers le pied de l'escalier au lieu de rester bloqués
+  });
+});
+
+test.describe('trou autour de l\'escalier de départ et zombies du rez-de-chaussée vus d\'en haut', () => {
+  const DEP = STAIR('escalier-depart');
+  const hole = DEP.floors.etage.solid;
+
+  test('autour de l\'escalier de départ, le sol de l\'étage est un trou (le joueur ne passe ni derrière, ni à côté) : on y voit le rez-de-chaussée', async ({ page }) => {
+    await open(page, '&wave=31&floor=1&nospawn=1');
+    const r = await page.evaluate(([h]) => {
+      const zs = window.__zs;
+      const out = [];
+      for (const [fx, fy, dx, dy] of [[h.x - 150, h.y + h.h / 2, 1, 0], [h.x + h.w / 2, h.y + h.h + 120, 0, -1], [h.x + h.w / 2, h.y - 5, 0, 1]]) {
+        zs.setPlayer(fx, fy);
+        zs.setInput({ move: { x: dx, y: dy } });
+        zs.step(3);
+        zs.setInput({});
+        const p = zs.getState().player;
+        out.push({ x: p.x, y: p.y, inside: p.x > h.x + 18 && p.x < h.x + h.w - 18 && p.y > h.y + 18 && p.y < h.y + h.h - 18 });
+      }
+      return out;
+    }, [hole]);
+    for (const q of r) expect(q.inside, JSON.stringify(q)).toBe(false);
+    const s = await STATE(page);
+    expect(s.scene.visible.rdcShell).toBeGreaterThanOrEqual(2);
+  });
+
+  test('zombies : depuis l\'étage on voit ceux du rez-de-chaussée, floorLift plus bas ; depuis le rez-de-chaussée on ne voit pas ceux de l\'étage', async ({ page }) => {
+    await open(page, '&wave=31&floor=1&nospawn=1');
+    const r = await page.evaluate(() => {
+      const zs = window.__zs;
+      const p = zs.getState().player;
+      zs.spawnEnemy(p.x + 60, p.y, { floor: 'rdc', mode: 'libre' });
+      zs.spawnEnemy(p.x + 60, p.y + 80, { floor: 'etage', mode: 'libre' });
+      zs.step(0.1);
+      const up = zs.getState().enemies.map((e) => [e.floor, e.visible]);
+      zs.setFloor(0);
+      zs.step(0.1);
+      const down = zs.getState().enemies.map((e) => [e.floor, e.visible]);
+      return { up, down };
+    });
+    expect(r.up).toEqual([['rdc', true], ['etage', true]]);
+    expect(r.down).toEqual([['rdc', true], ['etage', false]]);
   });
 });
 
@@ -467,7 +510,7 @@ const A_RDC = AILE.floors.rdc.arrival;
 const A_ETAGE = AILE.floors.etage.arrival;
 
 test.describe('zombies sur deux étages', () => {
-  test('un zombie n\'est dessiné que sur l\'étage du joueur ; le changement d\'étage inverse les deux', async ({ page }) => {
+  test('un zombie du rez-de-chaussée est dessiné depuis l\'étage (plus bas) ; un zombie de l\'étage n\'est jamais dessiné depuis le rez-de-chaussée', async ({ page }) => {
     await open(page, '&wave=21&nospawn=1');
     await page.evaluate(([a, b]) => {
       window.__zs.spawnEnemy(a.x + 60, a.y, { floor: 'rdc', mode: 'dedans' });
@@ -478,7 +521,7 @@ test.describe('zombies sur deux étages', () => {
     expect(s.enemies.map((e) => [e.floor, e.visible])).toEqual([['rdc', true], ['etage', false]]);
     await page.evaluate(() => { window.__zs.setFloor(1); window.__zs.step(0.05); });
     s = await STATE(page);
-    expect(s.enemies.map((e) => [e.floor, e.visible])).toEqual([['rdc', false], ['etage', true]]);
+    expect(s.enemies.map((e) => [e.floor, e.visible])).toEqual([['rdc', true], ['etage', true]]); // depuis l'étage on voit aussi ceux du rez-de-chaussée, plus bas
   });
 
   test('un zombie de l\'étage atteint l\'escalier, y passe 1,5 s, arrive au rez-de-chaussée au point d\'arrivée', async ({ page }) => {

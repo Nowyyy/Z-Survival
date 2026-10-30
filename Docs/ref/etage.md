@@ -49,7 +49,7 @@ Triées par x croissant puis y. Position = centre sur la ligne du mur. `planX` =
 | escalier-aile | rez-de-chaussée | 24, 257 → 52, 301 | 26, 238 → 50, 256 (au pied nord, 120 × 90 u.) | 66, 248 |
 | escalier-aile | étage | 24, 254 → 52, 298 | 26, 299 → 44, 319 (à la tête sud, 90 × 100 u.) | 60, 308 |
 | escalier-depart | rez-de-chaussée | 255, 243 → 288, 270 (quart de tour arrondi) | 261, 270 → 286, 284 (au pied sud, 125 × 70 u.) | 275, 300 |
-| escalier-depart | étage | 255, 243 → 288, 270 (même emprise qu'en bas) | 232, 238 → 250, 256 (à l'ouest de la tête, 90 × 90 u.) | 226, 276 |
+| escalier-depart | étage | 250, 230 → 290, 290 (trou dans le sol et obstacle : tout le coin autour de la rampe) | 232, 238 → 250, 256 (à l'ouest de la tête, 90 × 90 u.) | 226, 276 |
 
 Blocs : porte 2 : rez-de-chaussée 24, 238 → 52, 257 ; porte 3 : rez-de-chaussée 260, 269 → 287, 285 et la porte de l'étage (segment x = 138, y 262 à 301).
 
@@ -58,5 +58,5 @@ Voir la section du bilan `Docs/lots/lot-3e.md` : modifier `etage.json`, `zones.j
 
 ## Escaliers physiques (mise à jour du lot 3e)
 - `zones.json` `walk` : `path` (points `[x, y, t]` du pied au haut, en pixels) et `width`. **Escalier de l'aile** : droit, du sud au nord à l'étage (de (38, 247) à (35, 309)), largeur 24. **Escalier de départ** : arrondi, quart de tour de rayon 19 centré en (254,5, 270) (de (273,5, 270) vers le nord, puis l'ouest, jusqu'à (254,5, 251)), puis un palier de 14 px vers la zone de l'étage (241, 247) ; largeur 16 ; hauteur de 0 à 1 le long de l'arc (180 unités sur 180 de longueur).
-- L'emprise pleine de l'escalier de départ (255, 243 → 288, 270) est la même aux deux étages et ne dépasse pas la rampe : plus de cage invisible autour. La zone de déclenchement du rez-de-chaussée est au pied (261, 270 → 286, 284) ; celle de l'étage (232, 238 → 250, 256) est au bout du palier. Le pilier de l'étage (242, 253) est descendu en (240, 264) pour libérer le palier ; la pièce P8 est descendue de 4 px.
+- L'emprise pleine de l'escalier de départ est (255, 243 → 288, 270) au rez-de-chaussée (la rampe) et (250, 230 → 290, 290) à l'étage : à l'étage tout le coin autour de la rampe (derrière, à côté et en dessous, jusqu'aux murs) est un **trou** dans le sol (on y voit le rez-de-chaussée) et un obstacle ; on ne peut donc pas passer derrière l'escalier. La zone de déclenchement du rez-de-chaussée est au pied (261, 270 → 286, 284) ; celle de l'étage (232, 238 → 250, 256) est au bout du palier. Le pilier de l'étage (242, 253) est déplacé en (231, 264) pour libérer le palier et le trou ; la pièce P8 est descendue de 4 px.
 - Aucune zone n'est plus dessinée au sol.
