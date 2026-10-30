@@ -16,6 +16,7 @@ import { createDebrisMeshes, createWindowMeshes } from './windows-mesh.js';
 const FAR_GROUND = 40_000; // sol extérieur étendu bien au-delà du monde
 const ROAD_Y = 0.4; // route, trottoir et sentiers : plaques plates au-dessus de l'herbe
 const ATLAS = 'atlas-props';
+const HOLE_EDGE = 12; // épaisseur du sol de l'étage vue sur le bord d'un trou d'escalier : au-dessous, on voit le rez-de-chaussée (pas de paroi pleine)
 const FENCE_HEIGHT = 36; // garde-corps du trou des escaliers : une répétition de la texture « garde-corps »
 
 // Région d'atlas par type de meuble (data/game/world.json : table, comptoir, caisse, armoire, colonne, etagere).
@@ -498,7 +499,7 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
   }
 
   // Jupe sombre (lot 3e, mise à jour : l'étage est au-dessus) : sous chaque rectangle du sol de l'étage, quatre faces opaques (--game-void) jusqu'au sol du rez-de-chaussée,
-  // que l'on voit en dessous ; plus quatre parois autour de chaque trou d'escalier. 8 triangles par rectangle.
+  // que l'on voit en dessous ; plus, autour de chaque trou d'escalier, une tranche mince (HOLE_EDGE) : on voit le rez-de-chaussée par le trou. 8 triangles par rectangle.
   let slab = null;
   if (floors.includes('etage')) {
     const l = layoutOf('etage');
@@ -506,9 +507,9 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
     const idx = [];
     const top = -0.5;
     const lo = -lift;
-    const wall = (ax, az, bx, bz) => {
+    const wall = (ax, az, bx, bz, depth = lo) => {
       const base = pos.length / 3;
-      pos.push(ax, top, az, bx, top, bz, bx, lo, bz, ax, lo, az);
+      pos.push(ax, top, az, bx, top, bz, bx, depth, bz, ax, depth, az);
       idx.push(base, base + 1, base + 2, base, base + 2, base + 3);
     };
     for (const r of l.floor) {
@@ -520,7 +521,7 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
     for (const { rects } of holes) {
       for (const r of rects) {
         const corners = [[r.x0, r.y0], [r.x1, r.y0], [r.x1, r.y1], [r.x0, r.y1]];
-        for (let k = 0; k < 4; k += 1) wall(corners[k][0], corners[k][1], corners[(k + 1) % 4][0], corners[(k + 1) % 4][1]);
+        for (let k = 0; k < 4; k += 1) wall(corners[k][0], corners[k][1], corners[(k + 1) % 4][0], corners[(k + 1) % 4][1], -HOLE_EDGE);
       }
     }
     const geometry = new THREE.BufferGeometry();
