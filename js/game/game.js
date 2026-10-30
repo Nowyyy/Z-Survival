@@ -119,7 +119,7 @@ export function createGame(ctx) {
   if (ctx.perf) ctx.perf.floorsMs = performance.now() - buildStart;
   const rig = createCamera(render.camera, cfg.camera, layout, params.tilt, params.zoom);
   const kit = createKit({ textures, variants: ctx.variants, hit: palette.hit });
-  const effects = createEffects(world.dynamic, palette, { gunHeight: render.gunHeight, bulletRadius: cfg.weapon.bulletRadius });
+  const effects = createEffects(world.effectsRoot, palette, { gunHeight: render.gunHeight, bulletRadius: cfg.weapon.bulletRadius });
   const hud = createHud(ctx.dict);
   const floorFade = createFloorFade();
   const splashView = createSplashView(ctx.dict);

@@ -7,13 +7,13 @@ import { clampDt, isNum, num } from './vec.js';
 // Valeurs de repli de data/game/stairs.json (les vraies valeurs vivent dans les données ; un test vérifie qu'elles sont identiques).
 export const STAIR_DEFAULTS = Object.freeze({
   stairTime: 1.5,
-  stairMaxAtOnce: 2,
+  stairMaxAtOnce: 4,
   stairCooldownPlayer: 0.8,
   stairGraceAfter: 1.0,
   arrivalPush: 80,
   arrivalPushRadius: 60,
   triggerMin: 64,
-  triggerReach: 40,
+  triggerReach: 60,
   arrivalWait: 2,
   fadeOut: 0.25,
   fadeIn: 0.25,

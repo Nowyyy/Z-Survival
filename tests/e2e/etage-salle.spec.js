@@ -227,10 +227,10 @@ test.describe('deux escaliers', () => {
     expect(Object.values(byZombie).sort()).toEqual(['escalier-aile', 'escalier-depart']);
   });
 
-  test('au plus 2 zombies à la fois par escalier, même avec les deux escaliers utilisables', async ({ page }) => {
+  test('au plus 4 zombies à la fois par escalier, même avec les deux escaliers utilisables', async ({ page }) => {
     await open(page, '&wave=31&nospawn=1');
     await page.evaluate(([a, b]) => {
-      for (let i = 0; i < 4; i += 1) {
+      for (let i = 0; i < 6; i += 1) {
         window.__zs.spawnEnemy(a.x + (i % 2) * 14, a.y + 30 + i * 10, { floor: 'etage', mode: 'dedans' });
         window.__zs.spawnEnemy(b.x + (i % 2) * 14, b.y - 40 - i * 10, { floor: 'etage', mode: 'dedans' });
       }
@@ -246,7 +246,7 @@ test.describe('deux escaliers', () => {
       }
       return { max, arrived: zs.getState().stairLog.filter((l) => l.type === 'stairArrive').length };
     });
-    expect(r.max).toBe(2);
+    expect(r.max).toBe(4);
     expect(r.arrived).toBeGreaterThanOrEqual(4);
   });
 

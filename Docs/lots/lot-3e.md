@@ -87,3 +87,7 @@
 - **Combat** : le laser, les balles et le contact comptent les zombies en mode escalier (à leur étage logique). L'emprise des escaliers ne bloque plus les balles ni le laser (elle bloque toujours les déplacements) ; le joueur peut tirer en marchant dans l'escalier.
 - **Dessin** : le zombie est dessiné à sa vraie position et à sa hauteur sur la rampe, avec son allure de marche.
 - **Tests** : tests unitaires réécrits (marche, sortie, 2 à la fois, joueur dans l'escalier), un test e2e (touché depuis l'extérieur, se déplace sur la rampe).
+
+## Mise à jour 11 (retours du propriétaire) : un seul zombie à la fois, laser qui ne suit pas
+- **Zombies** : au plus 4 zombies à la fois par escalier (au lieu de 2) et portée de départ 60 (au lieu de 40) : avec la marche libre, le plafond ne sert plus qu'à l'entrée, et une meute entre maintenant à plusieurs. `stairs.json`, `STAIR_DEFAULTS`, `CLAUDE.md`, `conventions.md` et les tests mis à jour.
+- **Laser** : le laser, les balles et les étincelles étaient dans le groupe des zombies (décalé de `floorLift` et de l'élévation) : ils restaient en bas ou en haut quand le joueur montait. Ils ont leur propre groupe (`effectsRoot`), toujours à la hauteur du joueur.

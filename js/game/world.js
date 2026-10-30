@@ -382,6 +382,10 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
   const dynamic = new THREE.Group();
   dynamic.name = 'dynamique';
   scene.add(dynamic);
+  // Laser, balles et étincelles : à la hauteur du joueur (y = 0), jamais décalés avec l'étage ou l'élévation (sinon ils restent en bas ou en haut quand il monte).
+  const effectsRoot = new THREE.Group();
+  effectsRoot.name = 'effets';
+  scene.add(effectsRoot);
   const lift = num(render.floorLift, 0);
   const shellOf = (f) => (f === 'rdc' ? groups.rdcShell : groups[f]);
   // Trous du sol de l'étage : la rampe de chaque escalier (on voit l'escalier et le rez-de-chaussée en dessous).
@@ -741,6 +745,7 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
       elevationNow = e;
     },
     dynamic,
+    effectsRoot,
     get elevation() { return elevationNow; },
     // Zone de déclenchement d'un escalier : dessinée (à l'étage où elle se trouve) seulement quand l'escalier est utilisable.
     setStairUsable(id, usable) {

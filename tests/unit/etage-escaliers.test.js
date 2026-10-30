@@ -227,7 +227,7 @@ describe('stairs.js : paramètres et arguments gelés', () => {
   });
 
   it('le temps de franchissement est 1,5 s, 2 zombies à la fois, délai du joueur 0,8 s, protection 1,0 s, repoussement 80 dans 60', () => {
-    expect([stairsCfg.stairTime, stairsCfg.stairMaxAtOnce, stairsCfg.stairCooldownPlayer, stairsCfg.stairGraceAfter, stairsCfg.arrivalPush, stairsCfg.arrivalPushRadius, stairsCfg.triggerMin]).toEqual([1.5, 2, 0.8, 1.0, 80, 60, 64]);
+    expect([stairsCfg.stairTime, stairsCfg.stairMaxAtOnce, stairsCfg.stairCooldownPlayer, stairsCfg.stairGraceAfter, stairsCfg.arrivalPush, stairsCfg.arrivalPushRadius, stairsCfg.triggerMin]).toEqual([1.5, 4, 0.8, 1.0, 80, 60, 64]);
   });
 
   it('aucune fonction ne modifie ses arguments gelés', () => {
