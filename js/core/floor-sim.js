@@ -165,7 +165,7 @@ export function stepFloors(world, state, input) {
 
   // 4. Escaliers : les zombies arrivés à une zone de déclenchement montent ou descendent (1,5 s, 2 à la fois), ceux qui arrivent changent d'étage.
   if (world.floors.length > 1) {
-    const st = stepStairZombies(enemies, { playerFloor: pf, follow: input?.follow, portals: next.portals, params: cfg.stair }, dt);
+    const st = stepStairZombies(enemies, { playerFloor: pf, portals: next.portals, params: cfg.stair }, dt);
     enemies = st.enemies;
     for (const ev of st.events) events.push({ ...ev, floor: ev.type === 'stairArrive' ? ev.to : ev.from });
   }

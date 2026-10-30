@@ -577,7 +577,7 @@ export function createGame(ctx) {
       // Siège de chaque étage (js/core/siege.js), planches, réparation automatique près d'une fenêtre de l'étage du joueur, déplacement des zombies de chaque étage
       // (poursuite du joueur à son étage, champ de flux vers l'escalier le plus proche à l'autre), franchissement des escaliers (js/core/floor-sim.js).
       const activeIds = activeIdsNow();
-      const out = stepFloors(fw, sim.fs, { enemies: sim.enemies, player: chaseTarget(), dt, active: activeIds, canRepair: !sim.dead && !locked, repairTime: eff.player.repairTime, flowDone: true, follow: sim.sw?.stair });
+      const out = stepFloors(fw, sim.fs, { enemies: sim.enemies, player: chaseTarget(), dt, active: activeIds, canRepair: !sim.dead && !locked, repairTime: eff.player.repairTime, flowDone: true });
       sim.fs = out.state;
       sim.enemies = out.enemies;
       sim.win = out.state.win;

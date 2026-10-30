@@ -16,7 +16,6 @@ import { createDebrisMeshes, createWindowMeshes } from './windows-mesh.js';
 const FAR_GROUND = 40_000; // sol extérieur étendu bien au-delà du monde
 const ROAD_Y = 0.4; // route, trottoir et sentiers : plaques plates au-dessus de l'herbe
 const ATLAS = 'atlas-props';
-const HOLE_EDGE = 12; // épaisseur du sol de l'étage vue sur le bord d'un trou d'escalier : au-dessous, on voit le rez-de-chaussée (pas de paroi pleine)
 const FENCE_HEIGHT = 36; // garde-corps du trou des escaliers : une répétition de la texture « garde-corps »
 
 // Région d'atlas par type de meuble (data/game/world.json : table, comptoir, caisse, armoire, colonne, etagere).
@@ -394,6 +393,8 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
   // sol de l'étage cache le reste, inutile de le dessiner (budget de triangles).
   const etageFloorRects = floors.includes('etage') ? layoutOf('etage').floor : null;
   const inRect = (r, x, z) => x >= r.x && x <= r.x + r.w && z >= r.y && z <= r.y + r.h;
+  // Un rectangle (meuble, porte) qui touche un trou est dessiné en entier dans le groupe toujours visible : rien n'apparaît ni ne disparaît à moitié.
+  const touchesHole = (r) => holes.some((h) => h.rects.some((q) => r.x < q.x1 && r.x + r.w > q.x0 && r.y < q.y1 && r.y + r.h > q.y0));
   const exposedAt = (x, z) => etageFloorRects !== null && (!etageFloorRects.some((r) => inRect(r, x, z)) || holes.some((h) => h.rects.some((r) => x >= r.x0 && x <= r.x1 && z >= r.y0 && z <= r.y1)));
 
   scene.add(new THREE.AmbientLight(palette.ambient, render.light.ambient));
@@ -468,7 +469,7 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
         const r = region(p.region);
         builder.box({ x0: p.x0, x1: p.x1, y0: p.y0, y1: p.y1, z0: p.z0, z1: p.z1 }, { rect: r, scale: r.scale, seed: i * 8 + k + 1 }, p.faces);
       };
-      const up = f === 'rdc' && exposedAt(fu.x + fu.w / 2, fu.y + fu.h / 2);
+      const up = f === 'rdc' && (exposedAt(fu.x + fu.w / 2, fu.y + fu.h / 2) || touchesHole(fu));
       parts.body.forEach((p, k) => draw(up ? fb.propsUp : fb.props, p, k));
       parts.detail.forEach((p, k) => draw(up ? fb.detailUp : fb.detail, p, k + 4));
     });
@@ -499,7 +500,7 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
   }
 
   // Jupe sombre (lot 3e, mise à jour : l'étage est au-dessus) : sous chaque rectangle du sol de l'étage, quatre faces opaques (--game-void) jusqu'au sol du rez-de-chaussée,
-  // que l'on voit en dessous ; plus, autour de chaque trou d'escalier, une tranche mince (HOLE_EDGE) : on voit le rez-de-chaussée par le trou. 8 triangles par rectangle.
+  // que l'on voit en dessous ; aucune paroi autour des trous d'escalier : on voit le rez-de-chaussée par le trou. 8 triangles par rectangle.
   let slab = null;
   if (floors.includes('etage')) {
     const l = layoutOf('etage');
@@ -507,9 +508,9 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
     const idx = [];
     const top = -0.5;
     const lo = -lift;
-    const wall = (ax, az, bx, bz, depth = lo) => {
+    const wall = (ax, az, bx, bz) => {
       const base = pos.length / 3;
-      pos.push(ax, top, az, bx, top, bz, bx, depth, bz, ax, depth, az);
+      pos.push(ax, top, az, bx, top, bz, bx, lo, bz, ax, lo, az);
       idx.push(base, base + 1, base + 2, base, base + 2, base + 3);
     };
     for (const r of l.floor) {
@@ -517,12 +518,6 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
       const y1 = r.y + r.h;
       const corners = [[r.x, r.y], [x1, r.y], [x1, y1], [r.x, y1]];
       for (let k = 0; k < 4; k += 1) wall(corners[k][0], corners[k][1], corners[(k + 1) % 4][0], corners[(k + 1) % 4][1]);
-    }
-    for (const { rects } of holes) {
-      for (const r of rects) {
-        const corners = [[r.x0, r.y0], [r.x1, r.y0], [r.x1, r.y1], [r.x0, r.y1]];
-        for (let k = 0; k < 4; k += 1) wall(corners[k][0], corners[k][1], corners[(k + 1) % 4][0], corners[(k + 1) % 4][1], -HOLE_EDGE);
-      }
     }
     const geometry = new THREE.BufferGeometry();
     geometry.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
@@ -672,7 +667,7 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
         visual = r.h > r.w ? { x: r.x + r.w / 2 - t / 2, y: r.y + 4 + 0.5, w: t, h: along - 1 } : { x: r.x + 4 + 0.5, y: r.y + r.h / 2 - t / 2, w: along - 1, h: t };
       }
       builder.box(rectBox(visual, 0, r.hauteur - 1), { rect: doorRegion, scale: doorRegion.scale, seed: 900 });
-      const mesh = builder.mesh(bl.floor === 'rdc' && exposedAt(r.x + r.w / 2, r.y + r.h / 2) ? groups.rdcExposed : groups[bl.floor], atlasMaterial, { cast: false, receive: true });
+      const mesh = builder.mesh(bl.floor === 'rdc' && (exposedAt(r.x + r.w / 2, r.y + r.h / 2) || touchesHole(r)) ? groups.rdcExposed : groups[bl.floor], atlasMaterial, { cast: false, receive: true });
       if (mesh) {
         mesh.name = bl.id;
         mesh.userData.floor = bl.floor;
