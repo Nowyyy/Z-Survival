@@ -1,5 +1,6 @@
 // Balles : avancée par pas de temps, impact calculé sur le segment parcouru (jamais de traversée), un impact au plus par balle.
 import { firstOnSegment } from './collision.js';
+import { floorOf } from './floors.js';
 import { clampDt, fromAngle, isNum, num } from './vec.js';
 
 const TRAIL_LENGTH = 3;
@@ -81,6 +82,8 @@ export function stepBullets(bullets, enemies, dt, bounds, obstacles = []) {
     const radius = Math.max(0, num(bullet.radius));
     let best = null;
     for (const enemy of targets) {
+      // Lot 3e : une balle ne touche que les zombies de son étage (rez-de-chaussée par défaut), y compris dans un escalier (étage logique à mi-hauteur).
+      if (floorOf(enemy) !== floorOf(bullet)) continue;
       const t = segmentCircle(bullet.x, bullet.y, sx, sy, enemy, Math.max(0, num(enemy?.r)) + radius);
       if (t !== null && (best === null || t < best.t)) best = { t, enemy };
     }

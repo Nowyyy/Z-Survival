@@ -58,6 +58,13 @@ export function mapToSvg(world, decor, options = {}) {
   parts.push(`<g class="piliers">${pillars.filter((o) => [o.x, o.y, o.w, o.h].every(isNum)).map((o) => rectTag(o, 'pilier', ` data-id="${escapeXml(o.id ?? '')}"`)).join('')}</g>`);
   parts.push(`<g class="blocs">${layout.furniture.filter((o) => Array.isArray(o.parts) && o.parts.length > 1).map((o) => rectTag(o, 'bloc', ` data-id="${escapeXml(o.id)}"`)).join('')}</g>`);
 
+  // Lot 3e : zones de déclenchement des escaliers, arrivées et blocs de portes de l'étage affiché (unités du jeu, fournis par la page).
+  const overlays = isObject(opts.overlays) ? opts.overlays : {};
+  const rects = (list) => (Array.isArray(list) ? list.filter((o) => isObject(o) && [o.x, o.y, o.w, o.h].every(isNum)) : []);
+  parts.push(`<g class="portes">${rects(overlays.blocks).map((o) => rectTag(o, 'bloc-porte', ` data-id="${escapeXml(o.id ?? '')}"`)).join('')}</g>`);
+  parts.push(`<g class="declencheurs">${rects(overlays.triggers).map((o) => `${rectTag(o, 'declencheur', ` data-id="${escapeXml(o.id ?? '')}"`)}${textTag(o.x + o.w / 2, o.y + o.h / 2 + unit * 0.4, 'declencheur-etiquette', o.label ?? '', unit * 1.1)}`).join('')}</g>`);
+  parts.push(`<g class="arrivees">${(Array.isArray(overlays.arrivals) ? overlays.arrivals : []).filter((a) => isObject(a) && isNum(a.x) && isNum(a.y)).map((a) => `<circle class="arrivee" cx="${n(a.x)}" cy="${n(a.y)}" r="${n(unit * 0.6)}" data-id="${escapeXml(a.id ?? '')}"/>`).join('')}</g>`);
+
   // Départ du joueur et zone libre.
   const zone = num(world.startZone, 0);
   parts.push(`<g class="depart"><circle class="depart-zone" cx="${n(layout.start.x)}" cy="${n(layout.start.y)}" r="${n(zone)}"/><circle class="depart-point" cx="${n(layout.start.x)}" cy="${n(layout.start.y)}" r="${n(unit * 0.5)}"/>${textTag(layout.start.x, layout.start.y - zone - unit * 0.5, 'depart-etiquette', labels.start ?? '', unit * 1.2)}</g>`);

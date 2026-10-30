@@ -6,6 +6,7 @@
 // Modes : approche (vers la fenêtre visée), attente (dans la file), arrache (à un emplacement, arrache les planches), escalade (traverse
 // l'ouverture), dedans (comportement normal), libre (aucun siège : lot 2c). Tout l'état du siège est porté par les zombies eux-mêmes :
 // un zombie tué libère donc sa place, son rang et son escalade aussitôt.
+import { floorOf, isFloorId } from './floors.js';
 import { clampDt, isNum, num } from './vec.js';
 import { queuePosition } from './windows.js';
 
@@ -44,7 +45,9 @@ export function stepSiege(zombies, windowsState, geoms, dt, params) {
     if (c.climb) c.climb = copyClimb(c.climb);
     return c;
   });
-  const active = out.filter((z) => isObject(z) && SIEGE.has(z.mode) && isNum(z.x) && isNum(z.y));
+  // Lot 3e : params.floor limite le siège aux zombies de cet étage (les fenêtres de geoms sont celles de l'étage) ; les autres sont recopiés tels quels.
+  const onlyFloor = isFloorId(p.floor) ? p.floor : null;
+  const active = out.filter((z) => isObject(z) && SIEGE.has(z.mode) && isNum(z.x) && isNum(z.y) && (onlyFloor === null || floorOf(z) === onlyFloor));
 
   // Auto-correction : un zombie « dedans » resté plus de strandedTime hors de la salle repasse en approche vers la fenêtre la plus proche.
   const b = p.bounds;

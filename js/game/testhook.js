@@ -11,7 +11,8 @@ export function installTestHook(ctx, game) {
     spawnEnemy: (x, y, opts = {}) => {
       const typed = opts?.type !== undefined || opts?.gait !== undefined || opts?.wave !== undefined;
       const spec = typed ? game.specOf(opts.wave) : undefined;
-      return game.addEnemy(x, y, { type: opts?.type, gait: opts?.gait, spec }).id;
+      // Lot 3e : opts.floor ('rdc' ou 'etage') et opts.mode ('libre' par défaut ; 'dedans' pour un zombie qui suit le joueur ou un escalier) pour les tests à deux étages.
+      return game.addEnemy(x, y, { type: opts?.type, gait: opts?.gait, spec, floor: opts?.floor, mode: opts?.mode }).id;
     },
     // Saute à la vague n (zombies retirés, compte à rebours de 3 s) ; sans effet avec ?nospawn=1.
     startWave: (n) => game.startWave(n),
@@ -34,6 +35,9 @@ export function installTestHook(ctx, game) {
     // Lot 3 : règle les planches d'une fenêtre (0 à 4) ; crée un zombie en approche à 400 de la fenêtre (type facultatif) et renvoie son identifiant.
     setPlanks: (id, n) => game.setPlanks(id, n),
     spawnAtWindow: (id, type) => game.spawnAtWindow(id, type),
+    // Lot 3e : change l'étage du joueur d'un coup, sans fondu (0 ou 1), si un escalier est utilisable ; useStair déclenche le fondu comme si le joueur marchait dans la zone.
+    setFloor: (n) => game.setFloor(n),
+    useStair: (id) => game.useStair(id),
     // Lot 3 : met la vie du joueur à 0 : il tombe au prochain pas s'il lui reste une chute, sinon c'est la mort.
     downPlayer: () => game.downPlayer(),
     // Lot 3 : règle les chutes restantes (0 : la prochaine vie à 0 est la mort) ; sert aux tests de mort des lots précédents.

@@ -1,0 +1,133 @@
+{
+  "_provisoire": "Étage généré par npm run carte (scripts/plan-vers-monde.mjs) d'après etage.json : ne jamais éditer à la main, changer etage.json puis relancer la commande. Même repère et mêmes unités que world.json (rez-de-chaussée) ; pas de décor, aucun obstacle à l'extérieur ; spawnPoints : 2 par fenêtre, à 450 et 650 du mur. Valeurs provisoires.",
+  "id": "etage",
+  "title": "Étage",
+  "floor": "etage",
+  "size": { "width": 4040, "height": 3460 },
+  "margin": 800,
+  "transform": { "scale": 5, "margin": 800, "x0": 0, "y0": 0 },
+  "room": { "x": 900, "y": 915, "width": 1365, "height": 1635, "wall": 0 },
+  "contour": [[1050, 915], [1490, 915], [1490, 1930], [2265, 1930], [2265, 2550], [1490, 2550], [1490, 2480], [900, 2480], [900, 1840], [1050, 1840]],
+  "walls": [
+    { "id": "mur-1", "x1": 1050, "y1": 915, "x2": 1490, "y2": 915 },
+    { "id": "mur-2", "x1": 1490, "y1": 915, "x2": 1490, "y2": 1930 },
+    { "id": "mur-3", "x1": 1490, "y1": 1930, "x2": 2265, "y2": 1930 },
+    { "id": "mur-4", "x1": 2265, "y1": 1930, "x2": 2265, "y2": 2550 },
+    { "id": "mur-5", "x1": 2265, "y1": 2550, "x2": 1490, "y2": 2550 },
+    { "id": "mur-6", "x1": 1490, "y1": 2550, "x2": 1490, "y2": 2480 },
+    { "id": "mur-7", "x1": 1490, "y1": 2480, "x2": 900, "y2": 2480 },
+    { "id": "mur-8", "x1": 900, "y1": 2480, "x2": 900, "y2": 1840 },
+    { "id": "mur-9", "x1": 900, "y1": 1840, "x2": 1050, "y2": 1840 },
+    { "id": "mur-10", "x1": 1050, "y1": 1840, "x2": 1050, "y2": 915 },
+    { "id": "mur-interieur-1", "x1": 1490, "y1": 2480, "x2": 1490, "y2": 2305 },
+    { "id": "mur-interieur-2", "x1": 1490, "y1": 2110, "x2": 1490, "y2": 1930 },
+    { "id": "mur-interieur-3", "x1": 1790, "y1": 1930, "x2": 1790, "y2": 2065 }
+  ],
+  "openings": [
+    { "id": "porte-etage", "x1": 1490, "y1": 2305, "x2": 1490, "y2": 2110 },
+    { "id": "ouverture-haut", "x1": 1050, "y1": 1840, "x2": 1490, "y2": 1840 }
+  ],
+  "windowSize": 72,
+  "wallThickness": 40,
+  "wallHeight": 60,
+  "windows": [
+    { "id": "U1", "side": "ouest", "x": 900, "y": 1950 },
+    { "id": "U2", "side": "ouest", "x": 1050, "y": 1095 },
+    { "id": "U3", "side": "nord", "x": 1280, "y": 915 },
+    { "id": "U4", "side": "nord", "x": 1430, "y": 915 },
+    { "id": "U5", "side": "nord", "x": 1860, "y": 1930 },
+    { "id": "U6", "side": "sud", "x": 2055, "y": 2550 },
+    { "id": "U7", "side": "sud", "x": 2205, "y": 2550 }
+  ],
+  "playerBarriers": [
+    { "id": "barriere-U1", "fenetre": "U1", "x": 880, "y": 1914, "w": 40, "h": 72 },
+    { "id": "barriere-U2", "fenetre": "U2", "x": 1030, "y": 1059, "w": 40, "h": 72 },
+    { "id": "barriere-U3", "fenetre": "U3", "x": 1244, "y": 895, "w": 72, "h": 40 },
+    { "id": "barriere-U4", "fenetre": "U4", "x": 1394, "y": 895, "w": 72, "h": 40 },
+    { "id": "barriere-U5", "fenetre": "U5", "x": 1824, "y": 1910, "w": 72, "h": 40 },
+    { "id": "barriere-U6", "fenetre": "U6", "x": 2019, "y": 2530, "w": 72, "h": 40 },
+    { "id": "barriere-U7", "fenetre": "U7", "x": 2169, "y": 2530, "w": 72, "h": 40 }
+  ],
+  "startZone": 120,
+  "windowDepth": 150,
+  "minCorridor": 50,
+  "maxHeight": 70,
+  "start": { "x": 1930, "y": 2180 },
+  "zoom": 3.5,
+  "pillars": [
+    { "id": "pilier-1", "x": 1197.5, "y": 1197.5, "w": 35, "h": 35, "hauteur": 70, "kind": "pilier" },
+    { "id": "pilier-2", "x": 1197.5, "y": 1507.5, "w": 35, "h": 35, "hauteur": 70, "kind": "pilier" },
+    { "id": "pilier-3", "x": 1197.5, "y": 1822.5, "w": 35, "h": 35, "hauteur": 70, "kind": "pilier" },
+    { "id": "pilier-4", "x": 1197.5, "y": 2047.5, "w": 35, "h": 35, "hauteur": 70, "kind": "pilier" },
+    { "id": "pilier-5", "x": 1937.5, "y": 2102.5, "w": 35, "h": 35, "hauteur": 70, "kind": "pilier" },
+    { "id": "pilier-6", "x": 1772.5, "y": 2342.5, "w": 35, "h": 35, "hauteur": 70, "kind": "pilier" }
+  ],
+  "stairs": [
+    { "id": "escalier-aile-etage", "role": "escalier-aile", "x": 920, "y": 2030, "w": 140, "h": 260, "hauteur": 70, "kind": "escalier" },
+    {
+      "id": "escalier-depart-etage",
+      "role": "escalier-depart",
+      "x": 2050,
+      "y": 1950,
+      "w": 200,
+      "h": 300,
+      "hauteur": 70,
+      "kind": "escalier"
+    }
+  ],
+  "ramp": null,
+  "obstacles": [
+    { "id": "pilier-1", "x": 1197.5, "y": 1197.5, "w": 35, "h": 35, "hauteur": 70, "kind": "pilier" },
+    { "id": "pilier-2", "x": 1197.5, "y": 1507.5, "w": 35, "h": 35, "hauteur": 70, "kind": "pilier" },
+    { "id": "pilier-3", "x": 1197.5, "y": 1822.5, "w": 35, "h": 35, "hauteur": 70, "kind": "pilier" },
+    { "id": "pilier-4", "x": 1197.5, "y": 2047.5, "w": 35, "h": 35, "hauteur": 70, "kind": "pilier" },
+    { "id": "pilier-5", "x": 1937.5, "y": 2102.5, "w": 35, "h": 35, "hauteur": 70, "kind": "pilier" },
+    { "id": "pilier-6", "x": 1772.5, "y": 2342.5, "w": 35, "h": 35, "hauteur": 70, "kind": "pilier" },
+    { "id": "escalier-aile-etage", "x": 920, "y": 2030, "w": 140, "h": 260, "hauteur": 70, "kind": "escalier" },
+    { "id": "escalier-depart-etage", "x": 2050, "y": 1950, "w": 195, "h": 300, "hauteur": 70, "kind": "escalier" },
+    { "id": "E1", "x": 1360, "y": 1245, "w": 20, "h": 560, "hauteur": 55, "kind": "comptoir", "source": "modele" },
+    { "id": "E2", "x": 1725, "y": 1950, "w": 45, "h": 85, "hauteur": 45, "kind": "caisse", "source": "modele" },
+    { "id": "Q1", "x": 1510, "y": 1950, "w": 120, "h": 35, "hauteur": 70, "kind": "etagere", "provisional": true },
+    { "id": "Q2", "x": 1600, "y": 2390, "w": 120, "h": 80, "hauteur": 40, "kind": "table", "provisional": true },
+    { "id": "Q3", "x": 1280, "y": 2325, "w": 40, "h": 70, "hauteur": 65, "kind": "armoire", "provisional": true },
+    { "id": "Q4", "x": 1070, "y": 1350, "w": 100, "h": 80, "hauteur": 40, "kind": "table", "provisional": true },
+    { "id": "Q5", "x": 1070, "y": 1650, "w": 80, "h": 60, "hauteur": 45, "kind": "caisse", "provisional": true },
+    { "id": "Q6", "x": 1650, "y": 2225, "w": 60, "h": 60, "hauteur": 45, "kind": "caisse", "provisional": true }
+  ],
+  "generation": {
+    "shifts": [
+      { "id": "U3", "units": 5, "auto": false },
+      { "id": "U5", "units": 20, "auto": false },
+      { "id": "U6", "units": 10, "auto": false },
+      { "id": "U7", "units": 5, "auto": false }
+    ],
+    "merged": [],
+    "retired": [],
+    "snapped": [
+      { "id": "E2" },
+      { "id": "Q1" },
+      { "id": "Q4" },
+      { "id": "Q5" }
+    ],
+    "clipped": [
+      { "id": "escalier-depart-etage" },
+      { "id": "E2" }
+    ]
+  },
+  "spawnPoints": [
+    { "id": "U1-a", "fenetre": "U1", "window": "U1", "x": 450, "y": 1950 },
+    { "id": "U1-b", "fenetre": "U1", "window": "U1", "x": 250, "y": 1950 },
+    { "id": "U2-a", "fenetre": "U2", "window": "U2", "x": 600, "y": 1095 },
+    { "id": "U2-b", "fenetre": "U2", "window": "U2", "x": 400, "y": 1095 },
+    { "id": "U3-a", "fenetre": "U3", "window": "U3", "x": 1280, "y": 465 },
+    { "id": "U3-b", "fenetre": "U3", "window": "U3", "x": 1280, "y": 265 },
+    { "id": "U4-a", "fenetre": "U4", "window": "U4", "x": 1430, "y": 465 },
+    { "id": "U4-b", "fenetre": "U4", "window": "U4", "x": 1430, "y": 265 },
+    { "id": "U5-a", "fenetre": "U5", "window": "U5", "x": 1860, "y": 1480 },
+    { "id": "U5-b", "fenetre": "U5", "window": "U5", "x": 1860, "y": 1280 },
+    { "id": "U6-a", "fenetre": "U6", "window": "U6", "x": 2055, "y": 3000 },
+    { "id": "U6-b", "fenetre": "U6", "window": "U6", "x": 2055, "y": 3200 },
+    { "id": "U7-a", "fenetre": "U7", "window": "U7", "x": 2205, "y": 3000 },
+    { "id": "U7-b", "fenetre": "U7", "window": "U7", "x": 2205, "y": 3200 }
+  ]
+}

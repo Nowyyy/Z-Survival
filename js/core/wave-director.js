@@ -120,7 +120,8 @@ export function info(state) {
   };
 }
 
-// input : { dt, alive (zombies vivants), view (rectangle visible), points (points d'apparition { id, x, y, fenetre? }), siege (faux : zombies libres) }.
+// input : { dt, alive (zombies vivants des deux étages), view (rectangle visible de l'étage du joueur), points (points d'apparition { id, x, y, fenetre?, floor? } de
+// tous les étages), playerFloor (lot 3e : étage du joueur ; la règle « jamais dans la vue » ne vaut que pour ses points), siege (faux : zombies libres) }.
 // Renvoie { state, requests, events } : au plus une demande { pointId, type, gait, x, y, fenetre?, window, mode } par appel (lot 3 : window = fenêtre
 // du point d'apparition ou null, mode = « approche », ou « libre » si le siège est désactivé) ; événements
 // { type: 'waveStart', wave, level, reinforced } et { type: 'waveEnd', wave, healFraction } (le soin à appliquer au joueur).
@@ -170,10 +171,10 @@ export function stepDirector(state, input) {
       const points = Array.isArray(input?.points) ? input.points : [];
       const def = { spawnInterval: spec.spawnInterval, maxPresent: spec.maxConcurrent, viewMargin: s.params?.spawn?.viewMargin, viewRatio: s.params?.spawn?.viewRatio };
       // Le délai est déjà écoulé : spawner.js choisit seulement le point, hors de la vue (rien n'apparaît si tous les points sont en vue).
-      const pick = stepSpawner({ timer: spec.spawnInterval }, 0, alive, def, points, s.rng, view);
+      const pick = stepSpawner({ timer: spec.spawnInterval }, 0, alive, def, points, s.rng, view, input?.playerFloor ?? null);
       if (pick.spawn) {
         const z = s.order[s.spawned];
-        requests.push({ pointId: pick.spawn.id ?? null, x: pick.spawn.x, y: pick.spawn.y, ...(pick.spawn.fenetre === undefined ? {} : { fenetre: pick.spawn.fenetre }), type: z.type, gait: z.gait, window: pick.spawn.fenetre ?? null, mode: input?.siege === false ? 'libre' : 'approche' });
+        requests.push({ pointId: pick.spawn.id ?? null, x: pick.spawn.x, y: pick.spawn.y, ...(pick.spawn.fenetre === undefined ? {} : { fenetre: pick.spawn.fenetre }), type: z.type, gait: z.gait, window: pick.spawn.fenetre ?? null, ...(pick.spawn.floor === undefined ? {} : { floor: pick.spawn.floor }), mode: input?.siege === false ? 'libre' : 'approche' });
         s = { ...s, rng: pick.rng, spawned: s.spawned + 1, sinceSpawn: 0 };
         spawnedNow = true;
       }

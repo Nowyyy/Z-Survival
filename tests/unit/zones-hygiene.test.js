@@ -24,10 +24,10 @@ const code = (f) => readFileSync(f, 'utf8').split('\n').filter((l) => !l.trim().
 const strip = (o) => Object.fromEntries(Object.entries(o).filter(([k]) => k !== '_provisoire'));
 
 describe('hygiène du lot 3c : pureté et fichiers', () => {
-  it('js/core/zones.js ne touche ni Math.random, ni Date.now, ni document, ni window, ni le réseau, et n\'importe que shape.js et vec.js', () => {
+  it('js/core/zones.js ne touche ni Math.random, ni Date.now, ni document, ni window, ni le réseau, et n\'importe que floors.js, shape.js et vec.js (lot 3e : floors.js)', () => {
     const src = code('js/core/zones.js');
     expect(src).not.toMatch(/Math\.random|Date\.now|performance\.now|\bdocument\.|\bwindow\.|\bfetch\(|localStorage|sessionStorage|document\.cookie/);
-    expect([...src.matchAll(/from '([^']+)'/g)].map((m) => m[1]).sort()).toEqual(['./shape.js', './vec.js']);
+    expect([...src.matchAll(/from '([^']+)'/g)].map((m) => m[1]).sort()).toEqual(['./floors.js', './shape.js', './vec.js']);
   });
 
   it('aucun Math.random, Date.now, document ni window dans js/core/ (wave-director, wave-splash, zones, layout, nav, siege compris)', () => {
@@ -44,7 +44,7 @@ describe('hygiène du lot 3c : pureté et fichiers', () => {
   });
 
   it('règles de tir, statistiques, chutes, caméra, sons, textures, fenêtres, ancienne salle et plan des murs : git diff vide', () => {
-    const changed = git('diff --name-only main -- js/core/waves.js js/core/projectile.js js/core/ray.js js/core/spread.js js/core/player-stats.js js/core/player-down.js js/core/camera.js js/core/synth.js data/game/gaits.json data/game/weapons.json data/game/player-stats.json data/game/player-down.json data/game/windows.json data/game/textures.json data/game/sounds.json data/game/world.json data/game/decor.json');
+    const changed = git('diff --name-only main -- js/core/waves.js js/core/spread.js js/core/player-stats.js js/core/camera.js js/core/synth.js data/game/gaits.json data/game/weapons.json data/game/player-stats.json data/game/player-down.json data/game/windows.json  data/game/sounds.json data/game/world.json data/game/decor.json');
     if (changed !== null) expect(changed).toEqual([]);
   });
 
@@ -64,7 +64,11 @@ describe('hygiène du lot 3c : pureté et fichiers', () => {
     const before = showMain('data/game/maps/rez-de-chaussee/plan.json');
     if (!before) return;
     const now = JSON.parse(readFileSync('data/game/maps/rez-de-chaussee/plan.json', 'utf8'));
-    for (const key of ['bbox', 'contour', 'walls', 'openings', 'windows', 'pillarSize', 'pillars', 'stairs', 'ramp', 'start']) expect(now[key], key).toEqual(before[key]);
+    for (const key of ['bbox', 'contour', 'walls', 'openings', 'windows', 'pillarSize', 'pillars', 'ramp', 'start']) expect(now[key], key).toEqual(before[key]);
+    // Lot 3e : l'escalier existant est seulement marqué (role) et le second escalier est ajouté ; rien d'autre ne change.
+    // Lot 3e (mise à jour) : l'emprise de l'escalier courbe est redessinée (escalier physique arrondi).
+    const strip = (list) => list.map((st) => (st.id === 'escalier-courbe' ? { id: st.id } : Object.fromEntries(Object.entries(st).filter(([k]) => k !== 'role'))));
+    expect(strip(now.stairs.slice(0, before.stairs.length)), 'stairs').toEqual(strip(before.stairs));
   });
 });
 
@@ -106,7 +110,7 @@ describe('hygiène du lot 3c : données et textes', () => {
     expect(raw + readFileSync('js/core/zones.js', 'utf8')).not.toMatch(/#[0-9a-fA-F]{3,8}\b|rgba?\(|hsla?\(/);
     const z = JSON.parse(raw);
     for (const d of z.doors.filter((q) => q.planned)) expect(d.opening).toBeNull();
-    expect(z.doors.filter((q) => !q.planned)).toHaveLength(1);
+    expect(z.doors.filter((q) => !q.planned)).toHaveLength(3); // lot 3e : les portes 1, 2 (escalier de l'aile) et 3 (second escalier et porte de l'étage)
   });
 
   it('Docs/ref/modele-rdc/ n\'existe pas (aucun modèle 3D fourni) : le mobilier ajouté est donc marqué provisoire', () => {

@@ -2,7 +2,7 @@
 // (une silhouette avec un « + » par chute restante, et le nombre). N'écrit dans le DOM que si une
 // valeur change. L'annonce de vague (E2-8) est une animation centrale : js/game/splash-view.js.
 import { displayHealth } from '../core/combat.js';
-import { DOWN_TEXTS, fmt } from './texts.js';
+import { DOWN_TEXTS, FLOOR_TEXTS, fmt } from './texts.js';
 
 const SVG = 'http://www.w3.org/2000/svg';
 const SILHOUETTE = 'M5 1.5a2 2 0 1 1 0 4 2 2 0 0 1 0-4ZM2 7.5c0-1 .8-1.7 1.8-1.7h2.4c1 0 1.8.7 1.8 1.7V12H6.5v3.5h-3V12H2Z';
@@ -30,6 +30,8 @@ export function createHud(dict, root = document) {
   const fill = el('hud-fill');
   const kills = el('hud-kills');
   const wave = el('hud-wave');
+  const floor = el('hud-floor');
+  let shownFloor;
   const remaining = el('hud-remaining');
   const next = el('hud-next');
   const chutes = el('hud-chutes');
@@ -74,6 +76,13 @@ export function createHud(dict, root = document) {
       if (waiting && wait !== shown.wait) {
         shown.wait = wait;
         setText(next, fmt(dict['game.wave.next'], { n: wait }));
+      }
+      // Lot 3e : puce « RDC » ou « Étage » à côté de « Vague N », seulement quand la carte a des étages (extras.floor nul sinon).
+      if (extras.floor !== shownFloor) {
+        shownFloor = extras.floor;
+        floor.hidden = !extras.floor;
+        floor.textContent = extras.floor ? dict[FLOOR_TEXTS.chip[extras.floor]] : '';
+        floor.dataset.floor = extras.floor ?? '';
       }
       if (extras.chutes !== shownChutes) {
         shownChutes = extras.chutes;

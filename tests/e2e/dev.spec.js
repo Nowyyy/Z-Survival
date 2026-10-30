@@ -165,13 +165,13 @@ test.describe('journal des versions', () => {
     await expect(page.getByRole('heading', { name: 'Journal des versions' })).toBeVisible();
     const summaries = page.locator('.changelog-entry summary');
     expect(await summaries.count()).toBeGreaterThanOrEqual(9);
-    await expect(summaries.first()).toContainText('Lot 3c');
+    await expect(summaries.first()).toContainText('Lot 3e');
     await expect(summaries.last()).toContainText('Lot 0');
     const first = page.locator('.changelog-entry').first();
     await expect(first.locator('.changelog-points')).toBeHidden();
     await summaries.first().click();
     await expect(first.locator('.changelog-points li').first()).toBeVisible();
-    await expect(first).toContainText('planches');
+    await expect(first).toContainText('escaliers');
   });
 
   test('les lots publiés ont leur date et un lien pour les ouvrir ; les autres n\'en ont pas', async ({ page }) => {
@@ -181,7 +181,7 @@ test.describe('journal des versions', () => {
     await expect(lot1.locator('.changelog-date')).not.toHaveText('');
     await lot1.locator('summary').click();
     await expect(lot1.getByRole('link', { name: 'Ouvrir ce lot' })).toHaveAttribute('href', '../lots/lot-1/jeu.html');
-    const unpublished = page.locator('.changelog-entry', { hasText: 'Lot 3c ·' });
+    const unpublished = page.locator('.changelog-entry', { hasText: 'Lot 3e ·' });
     await unpublished.locator('summary').click();
     await expect(unpublished.getByRole('link', { name: 'Ouvrir ce lot' })).toHaveCount(0);
   });

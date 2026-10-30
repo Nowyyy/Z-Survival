@@ -34,10 +34,10 @@ describe('rendu de la porte (lot 3c) : matière existante, lisible contre le mur
   const region = byId['atlas-props'].params.regions.find((r) => r.id === 'tole');
   const doorMean = mean(atlas.data, region.x, region.y, region.w, region.h, atlas.width);
 
-  it('la porte utilise la région « tole » de l\'atlas de props (aucune nouvelle texture ni variable de teinte)', () => {
+  it('la porte utilise la région « tole » de l\'atlas de props (aucune variable de teinte ; la seule nouvelle texture du lot 3e est « garde-corps »)', () => {
     expect(world).toMatch(/region\('tole'\)/);
     expect(readFileSync('css/tokens.css', 'utf8')).not.toMatch(/--game-door/);
-    expect(texturesJson.textures.map((t) => t.id)).toEqual(['sol-salle', 'mur', 'route', 'trottoir', 'herbe', 'sol-exterieur', 'atlas-props', 'atlas-persos', 'planche']);
+    expect(texturesJson.textures.map((t) => t.id)).toEqual(['sol-salle', 'mur', 'route', 'trottoir', 'herbe', 'sol-exterieur', 'garde-corps', 'atlas-props', 'atlas-persos', 'planche']);
   });
 
   it('luminance de la porte contre le mur voisin : au moins 1,5:1 (color.js, moyennes des textures)', () => {
@@ -46,7 +46,7 @@ describe('rendu de la porte (lot 3c) : matière existante, lisible contre le mur
   });
 
   it('un maillage par porte fermée, boîte sans dessous (10 triangles, 12 au plus), sans ombre portée ; l\'enfoncement libère la géométrie', () => {
-    expect(world).toMatch(/builder\.box\(rectBox\(visual, 0, door\.rect\.hauteur - 1\)/);
+    expect(world).toMatch(/builder\.box\(rectBox\(visual, 0, r\.hauteur - 1\)/);
     expect(world).toMatch(/cast: false, receive: true/);
     expect(world).toMatch(/mesh\.geometry\.dispose\(\)/);
     expect(world).toMatch(/\(1 - Math\.min\(1, Math\.max\(0, progress\)\)\) \*\* 2/);

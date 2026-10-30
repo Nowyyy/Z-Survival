@@ -112,9 +112,10 @@ describe('fidélité au modèle : piliers, escalier, départ', () => {
     });
   });
 
-  it('un escalier plein de hauteur 70', () => {
-    expect(world.stairs.length).toBe(1);
-    expect(world.stairs[0]).toMatchObject({ hauteur: 70, kind: 'escalier' });
+  it('des escaliers pleins de hauteur 70', () => {
+    // Lot 3e : l'escalier courbe (salle de départ) et l'escalier de l'aile.
+    expect(world.stairs.length).toBe(2);
+    for (const st of world.stairs) expect(st).toMatchObject({ hauteur: 70, kind: 'escalier' });
   });
 
   it('les escaliers et les piliers bloquent le joueur, les zombies, les balles et le laser (obstacles pleins)', () => {

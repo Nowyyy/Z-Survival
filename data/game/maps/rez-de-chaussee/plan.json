@@ -26,7 +26,8 @@
   "pillarSize": 7,
   "pillars": [[92, 85], [92, 147], [92, 209], [92, 255], [92, 313], [198, 255], [241, 255], [198, 313], [241, 313], [198, 228], [241, 228]],
   "stairs": [
-    { "id": "escalier-courbe", "x0": 261, "y0": 242, "x1": 288, "y1": 261 }
+    { "id": "escalier-courbe", "role": "escalier-depart", "x0": 255, "y0": 243, "x1": 288, "y1": 270 },
+    { "id": "escalier-aile", "role": "escalier-aile", "x0": 24, "y0": 257, "x1": 52, "y1": 301 }
   ],
   "ramp": null,
   "start": [403, 283],
@@ -74,7 +75,7 @@
     { "id": "P5", "x0": 53, "y0": 148, "x1": 73, "y1": 162, "kind": "table", "provisional": true },
     { "id": "P6", "x0": 216, "y0": 332, "x1": 290, "y1": 348, "kind": "comptoir", "provisional": true },
     { "id": "P7", "x0": 396, "y0": 232, "x1": 448, "y1": 246, "kind": "comptoir", "provisional": true },
-    { "id": "P8", "x0": 220, "y0": 277, "x1": 260, "y1": 295, "kind": "comptoir", "provisional": true },
+    { "id": "P8", "x0": 216, "y0": 281, "x1": 256, "y1": 299, "kind": "comptoir", "provisional": true },
     { "id": "P9", "x0": 310, "y0": 278, "x1": 334, "y1": 296, "kind": "table", "provisional": true },
     { "id": "P10", "x0": 448, "y0": 294, "x1": 462, "y1": 312, "kind": "caisse", "provisional": true },
     { "id": "P11", "x0": 454, "y0": 328, "x1": 462, "y1": 348, "kind": "armoire", "provisional": true },

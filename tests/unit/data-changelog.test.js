@@ -16,19 +16,19 @@ describe('data/changelog.json', () => {
     }
   });
 
-  it('un seul bloc par lot, et le lot courant (lot-3c) est décrit', () => {
+  it('un seul bloc par lot, et le lot courant (lot-3e) est décrit', () => {
     const names = lots.map((e) => e.name);
     expect(new Set(names).size).toBe(names.length);
-    expect(names).toContain('lot-3c');
+    expect(names).toContain('lot-3e');
   });
 
   it('chaque bilan de Docs/lots/ a son entrée', () => {
     for (const f of readdirSync('Docs/lots').filter((n) => n.endsWith('.md'))) expect(lots.map((e) => e.name), f).toContain(f.replace('.md', ''));
   });
 
-  it('le fichier est dans l\'ordre chronologique : lot-0 en premier, lot-3c en dernier', () => {
+  it('le fichier est dans l\'ordre chronologique : lot-0 en premier, lot-3e en dernier', () => {
     expect(lots[0].name).toBe('lot-0');
-    expect(lots.at(-1).name).toBe('lot-3c');
+    expect(lots.at(-1).name).toBe('lot-3e');
   });
 
   it('les textes de la section existent en français et le fichier est publié par le build', () => {

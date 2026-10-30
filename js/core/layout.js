@@ -5,6 +5,7 @@ import { generateDecor } from './decor.js';
 import { windowGap } from './maps.js';
 import { innerBounds } from './movement.js';
 import { faceDistance } from './plank-layout.js';
+import { DEFAULT_FLOOR, floorOf, UPPER_FLOOR } from './floors.js';
 import { doorRect } from './zones.js';
 import { furnitureHitbox } from './furniture-model.js';
 import { polygonRects, segmentRects, unionRects } from './shape.js';
@@ -115,14 +116,31 @@ function segmentedLayout(world, decorCfg, opts = {}) {
   const room = { ...world.room };
   const start = { x: num(world.start?.x), y: num(world.start?.y) };
   // Lot 3c : portes pleines de la carte (zones.json en unités du jeu, opts.zones) ; les portes planned n'existent pas encore.
+  // Lot 3e : une porte peut avoir plusieurs blocs pleins (zones.json, clé blocks : un par étage au plus ici) ; seuls ceux de l'étage de cette couche (opts.floor,
+  // rez-de-chaussée par défaut) comptent. Une porte sans blocs est le segment d'ouverture de la porte 1 (floor rdc).
+  const floorId = opts?.floor === UPPER_FLOOR ? UPPER_FLOOR : DEFAULT_FLOOR;
   const zones = opts?.zones && Array.isArray(opts.zones.zones) ? opts.zones : null;
+  const blockParams = { wallThickness: t, wallHeight: num(world.wallHeight, 60) };
+  const blockRect = (id, b) => (b.rect ? { id, kind: 'porte', x: b.rect.x, y: b.rect.y, w: b.rect.w, h: b.rect.h, hauteur: blockParams.wallHeight } : doorRect({ id, opening: b.opening }, blockParams));
+  // Un escalier fermé et la porte de l'étage ont leurs blocs pleins même si la porte est « planned » (jamais ouverte tant que le jeu ne l'active pas) : le champ planned est
+  // rendu avec la porte, le directeur ne l'ouvre pas.
   const doors = (zones && Array.isArray(zones.doors) ? zones.doors : [])
-    .filter((d) => d && d.planned !== true && typeof d.id === 'string')
-    .map((d) => ({ id: d.id, opens: Array.isArray(d.opens) ? [...d.opens] : [], openAfterWave: d.openAfterWave, opening: d.opening ? { ...d.opening } : null, rect: doorRect(d, { wallThickness: t, wallHeight: num(world.wallHeight, 60) }) }))
-    .filter((d) => d.rect !== null);
+    .filter((d) => d && typeof d.id === 'string')
+    .map((d) => {
+      const defs = Array.isArray(d.blocks) && d.blocks.length > 0 ? d.blocks.filter((b) => floorOf(b) === floorId) : floorOf(d) === floorId ? [{ opening: d.opening }] : [];
+      const rects = defs.map((b) => blockRect(d.id, b)).filter((r) => r !== null);
+      const blocks = rects.map((r, i) => ({ id: rects.length > 1 ? `${d.id}-${i + 1}` : d.id, wall: defs[i] && !defs[i].rect, rect: { ...r, id: rects.length > 1 ? `${d.id}-${i + 1}` : d.id } }));
+      return { id: d.id, planned: d.planned === true, opens: Array.isArray(d.opens) ? [...d.opens] : [], openAfterWave: d.openAfterWave, opening: d.opening ? { ...d.opening } : null, rect: blocks[0]?.rect ?? null, blocks };
+    })
+    .filter((d) => d.blocks.length > 0);
+  // Lot 3e : sur l'étage, chaque donnée porte son étage (rdc par défaut : le rez-de-chaussée reste identique à avant).
+  const tag = (list) => (floorId === DEFAULT_FLOOR ? list : list.map((o) => ({ ...o, floor: floorId })));
+  const furnitureT = tag(furniture);
+  const wallsT = tag(walls);
   return {
     empty: false,
     id: typeof world.id === 'string' ? world.id : 'carte',
+    floorId,
     zones,
     doors,
     segmented: true,
@@ -130,13 +148,13 @@ function segmentedLayout(world, decorCfg, opts = {}) {
     margin: num(world.margin),
     room,
     bounds: innerBounds(room),
-    windows,
+    windows: tag(windows),
     windowSize,
     wallThickness: t,
-    furniture,
+    furniture: furnitureT,
     barriers,
-    walls,
-    gaps,
+    walls: wallsT,
+    gaps: tag(gaps),
     decor,
     floor,
     interior,
@@ -151,9 +169,9 @@ function segmentedLayout(world, decorCfg, opts = {}) {
     stairs: Array.isArray(world.stairs) ? world.stairs.map((o) => ({ ...o })) : [],
     ramp: world.ramp ? { ...world.ramp } : null,
     wallHeight: num(world.wallHeight, 60),
-    playerObstacles: [...furniture, ...barriers, ...walls],
-    zombieObstacles: [...furniture, ...walls, ...decor.solids],
-    spawnPoints: decor.spawnPoints,
+    playerObstacles: [...furnitureT, ...barriers, ...wallsT],
+    zombieObstacles: [...furnitureT, ...wallsT, ...decor.solids],
+    spawnPoints: tag(decor.spawnPoints),
     worldBounds: { minX: 0, minY: 0, maxX: size.width, maxY: size.height },
     cameraBounds: { minX: 0, minY: 0, maxX: size.width, maxY: size.height },
     start,
@@ -244,9 +262,38 @@ export function entryWindow(p, windows) {
 }
 
 // Lot 3c : rectangles pleins des portes encore fermées (openIds : portes ouvertes), { id, kind: 'porte', x, y, w, h, hauteur }.
-export const closedDoors = (layout, openIds = []) => (Array.isArray(layout?.doors) ? layout.doors : []).filter((d) => d.rect && !openIds.includes(d.id)).map((d) => ({ ...d.rect }));
+// Lot 3e : une porte peut avoir plusieurs blocs sur l'étage de cette couche (identifiants porte-N-1, porte-N-2…) ; ils quittent tous les collisions ensemble quand la porte s'ouvre.
+export const closedDoors = (layout, openIds = []) => (Array.isArray(layout?.doors) ? layout.doors : [])
+  .filter((d) => !openIds.includes(d.id))
+  .flatMap((d) => (Array.isArray(d.blocks) ? d.blocks.map((b) => ({ ...b.rect })) : d.rect ? [{ ...d.rect }] : []));
 
 // Ce qui bloque le joueur, les zombies, les balles et le laser, portes fermées comprises. Les portes arrêtent aussi les balles et le laser (sans dégâts).
 export const playerSolids = (layout, openIds) => [...(layout?.playerObstacles ?? []), ...closedDoors(layout, openIds)];
 export const zombieSolidsOf = (layout, openIds) => [...(layout?.zombieObstacles ?? []), ...closedDoors(layout, openIds)];
 export const shotBlockers = (layout, openIds) => (layout?.empty ? [] : [...(layout?.furniture ?? []), ...(layout?.walls ?? []), ...(layout?.decor?.solids ?? []), ...closedDoors(layout, openIds)]);
+
+// Lot 3e : couches de collisions par étage. rdc et etage : { world, decor } (world.json et decor.json du rez-de-chaussée, etage.world.json de l'étage, sans décor) ;
+// zones : zonesToWorld(...). Sans étage (ou sans zones à deux étages : ?map=salle, zones.json d'avant) : une seule couche, celle du rez-de-chaussée, identique à
+// buildLayout. Renvoie { floors, multi, rdc, etage?, doors, stairs, zones } ; layoutFor (floors.js) donne la couche d'un étage ; doors : { id, opens, openAfterWave,
+// opening, blocks: { rdc: [...], etage: [...] } } des portes actives de la carte.
+export function buildLayouts(input, opts = {}) {
+  const zones = input?.zones && Array.isArray(input.zones.zones) ? input.zones : null;
+  const base = buildLayout(input?.rdc?.world, input?.rdc?.decor, { ...opts, zones, floor: DEFAULT_FLOOR });
+  const upperWorld = input?.etage?.world;
+  const multi = !opts?.empty && zones !== null && zones.multiFloor === true && Array.isArray(upperWorld?.walls) && Array.isArray(upperWorld?.contour);
+  const layers = { [DEFAULT_FLOOR]: base };
+  if (multi) {
+    // Aucun décor sur l'étage : l'extérieur de l'étage n'a aucun obstacle solide ; ses points d'apparition viennent de etage.world.json.
+    const bare = { seed: 1, approachWidth: 160, ground: [], spawnPoints: Array.isArray(upperWorld.spawnPoints) ? upperWorld.spawnPoints : [], scatter: { voitures: { count: 0 }, arbres: { count: 0 }, buissons: { count: 0 }, lampadaires: { count: 0 }, barrieres: { count: 0 } } };
+    layers[UPPER_FLOOR] = buildLayout(upperWorld, bare, { ...opts, zones, floor: UPPER_FLOOR });
+  }
+  const ids = new Map();
+  for (const [floor, l] of Object.entries(layers)) {
+    for (const d of l.doors ?? []) {
+      const entry = ids.get(d.id) ?? { id: d.id, planned: d.planned === true, opens: d.opens, openAfterWave: d.openAfterWave, opening: d.opening, blocks: { [DEFAULT_FLOOR]: [], [UPPER_FLOOR]: [] } };
+      entry.blocks[floor] = d.blocks.map((b) => ({ id: b.id, wall: b.wall === true, rect: { ...b.rect } }));
+      ids.set(d.id, entry);
+    }
+  }
+  return { floors: multi ? [DEFAULT_FLOOR, UPPER_FLOOR] : [DEFAULT_FLOOR], multi, ...layers, doors: [...ids.values()], stairs: multi && Array.isArray(zones.stairs) ? zones.stairs.map((st) => ({ ...st })) : [], zones };
+}

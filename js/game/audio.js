@@ -38,7 +38,7 @@ export function createAudio({ config, test = false, seed = 1, autoAmbience = tru
     buffer.copyToChannel(item.samples, 0);
     buffers.set(name, buffer);
   };
-  const entry = (r, gameTime, extra = {}) => ({ sound: r.sound, variant: r.variant, gameTime, gain: r.gain, pan: r.pan, lowpass: r.lowpass, rate: r.rate, ...(r.zombie === undefined ? {} : { zombie: r.zombie }), ...extra });
+  const entry = (r, gameTime, extra = {}) => ({ sound: r.sound, variant: r.variant, gameTime, gain: r.gain, pan: r.pan, lowpass: r.lowpass, rate: r.rate, ...(r.lowpassHz === undefined ? {} : { lowpassHz: r.lowpassHz }), ...(r.zombie === undefined ? {} : { zombie: r.zombie }), ...extra });
   const note = (e) => {
     if (!test) return;
     log.push(e);
@@ -109,7 +109,7 @@ export function createAudio({ config, test = false, seed = 1, autoAmbience = tru
     if (r.lowpass) {
       const filter = ctx.createBiquadFilter();
       filter.type = 'lowpass';
-      filter.frequency.value = config.audio.muffle.lowpass;
+      filter.frequency.value = r.lowpassHz ?? config.audio.muffle.lowpass;
       tail.connect(filter);
       tail = filter;
       nodes.push(filter);
@@ -247,7 +247,7 @@ export function createAudio({ config, test = false, seed = 1, autoAmbience = tru
     // Événements du jeu d'une image : frame = { time, listener: { x, y }, walls, paused, events }.
     handle(frame) {
       if (!ctx) return { requests: [], played: [] }; // aucun son demandé avant le premier geste
-      lastFrame = { time: frame.time, listener: frame.listener, walls: frame.walls ?? [] };
+      lastFrame = { time: frame.time, listener: frame.listener, walls: frame.walls ?? [], floor: frame.floor };
       const out = direct(director, frame, cfg);
       director = out.state;
       const played = out.requests.filter((r) => play(r, frame.time));

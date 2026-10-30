@@ -11,6 +11,8 @@ import { clampDt, isNum, normalize, num } from './vec.js';
 // Lot 3 : un zombie dont le mode est approche, attente, arrache ou escalade (siege.js) exécute l'intention décidée (target, hold, climb) :
 // il suit le champ de sa fenêtre (world.windows.fields[window] : { grid, flow }), va à sa place puis s'y arrête, reste à son emplacement
 // ou traverse l'ouverture en ligne droite sans collision de fenêtre. Les modes dedans, libre et absent gardent le comportement du lot 2c.
+// Lot 3e : un zombie « escalier » (stair-zombies.js) ne bouge pas ici ; avec world.offFloor (le joueur est à l'autre étage), un zombie « dedans » ignore le joueur et
+// suit world.portalFlow (nav.js, buildPortalField : champ de flux vers l'escalier utilisable le plus proche par chemin) ; sans escalier utilisable il reste en place.
 const SIEGE_MOVE = new Set(['approche', 'attente', 'arrache', 'escalade']);
 
 export function stepEnemies(enemies, player, dt, def, world = null) {
@@ -21,6 +23,7 @@ export function stepEnemies(enemies, player, dt, def, world = null) {
   const py = num(player?.y);
   const pr = isNum(player?.r) ? player.r : 0;
   return list.map((enemy, i) => {
+    if (enemy?.mode === 'escalier') return { ...enemy };
     // Lot 2 : chaque zombie porte sa vitesse (type, allure, vague) ; sans elle, la vitesse commune du lot 1.
     const speed = isNum(enemy?.speed) ? Math.max(0, enemy.speed) : defaultSpeed;
     const x = num(enemy?.x);
@@ -78,6 +81,27 @@ export function stepEnemies(enemies, player, dt, def, world = null) {
         return { ...enemy, stuckT: 0, ax: target.x, ay: target.y, push: 0, x: target.x, y: target.y };
       }
       track = { stuckT: 0, ax: x, ay: y, push: 0 };
+    } else if (world && world.offFloor === true) {
+      vx = 0;
+      vy = 0;
+      if (world.portalFlow && world.grid) {
+        const way = flowDirection(world.grid, world.portalFlow, { x, y }, world.nav?.lookahead);
+        vx = way.x;
+        vy = way.y;
+        // Dans la zone de déclenchement (cellules sources du champ), le champ ne dit plus rien : on va droit au centre de l'escalier le plus proche.
+        if (vx === 0 && vy === 0) {
+          let best = null;
+          for (const t of Array.isArray(world.portalTargets) ? world.portalTargets : []) {
+            const d = Math.hypot(num(t?.x) - x, num(t?.y) - y);
+            if (isNum(t?.x) && isNum(t?.y) && d > 1 && (best === null || d < best.d)) best = { d, dx: t.x - x, dy: t.y - y };
+          }
+          if (best) {
+            vx = best.dx / best.d;
+            vy = best.dy / best.d;
+          }
+        }
+      }
+      track = { stuckT: 0, ax: x, ay: y, push: 0 };
     } else if (world) {
       const cfg = world.nav ?? {};
       const stuckTime = isNum(cfg.stuckTime) && cfg.stuckTime > 0 ? cfg.stuckTime : 2;
@@ -110,7 +134,7 @@ export function stepEnemies(enemies, player, dt, def, world = null) {
     let pushX = 0;
     let pushY = 0;
     list.forEach((other, j) => {
-      if (i === j || !other || mode === 'arrache' || (mode === 'approche' && enemy.hold === true)) return;
+      if (i === j || !other || other.mode === 'escalier' || mode === 'arrache' || (mode === 'approche' && enemy.hold === true)) return;
       const dx = x - num(other.x);
       const dy = y - num(other.y);
       const overlap = r + Math.max(0, num(other.r)) - Math.hypot(dx, dy);

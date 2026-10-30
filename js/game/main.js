@@ -1,5 +1,5 @@
 // Point d'entrée de jeu.html : charge les textes et les données, prépare le DOM, lance la partie en 3D (Three.js).
-import { buildLayout } from '../core/layout.js';
+import { buildLayouts } from '../core/layout.js';
 import { resolveMapId } from '../core/maps.js';
 import { parseZones, zonesToWorld } from '../core/zones.js';
 import { parseTilt, parseZoom } from '../core/viewport.js';
@@ -43,6 +43,11 @@ function waveParam(value) {
   return value !== null && /^\d+$/.test(value) && n >= 1 && n <= 200 ? n : null;
 }
 
+// ?floor=N (lot 3e) : 0 (rez-de-chaussée) ou 1 (étage) ; toute autre valeur est ignorée.
+function floorParam(value) {
+  return value === '1' ? 'etage' : value === '0' ? 'rdc' : null;
+}
+
 const query = new URLSearchParams(location.search);
 const testMode = query.get('test') === '1';
 const fpsMode = query.get('fps') === '1';
@@ -56,8 +61,10 @@ const mapDir = mapId === 'salle' ? 'data/game' : `data/game/maps/${mapId}`;
 
 // Zones et portes (lot 3c) : zones.json de la carte (pixels du plan), absent de l'ancienne salle (?map=salle, ?empty=1) qui garde une seule zone.
 const zonesJson = mapId === 'salle' ? null : await loadJson(`${mapDir}/zones.json`);
+// Étage (lot 3e) : etage.world.json de la carte (généré par npm run carte) ; l'ancienne salle n'a qu'un étage.
+const upperWorld = mapId === 'salle' ? null : await loadJson(`${mapDir}/etage.world.json`);
 
-const [dict, world, decor, camera, nav, player, weapons, enemies, render, texturesCfg, variants, soundsCfg, audioCfg, materialsCfg, voiceCfg, wavesCfg, gaitsCfg, statsCfg, splashCfg, vhsCfg, windowsCfg, downCfg] = await Promise.all([
+const [dict, world, decor, camera, nav, player, weapons, enemies, render, texturesCfg, variants, soundsCfg, audioCfg, materialsCfg, voiceCfg, wavesCfg, gaitsCfg, statsCfg, splashCfg, vhsCfg, windowsCfg, downCfg, stairsCfg] = await Promise.all([
 
   loadDict(),
   loadJson(`${mapDir}/world.json`),
@@ -81,6 +88,7 @@ const [dict, world, decor, camera, nav, player, weapons, enemies, render, textur
   loadJson('data/game/vhs.json'),
   loadJson('data/game/windows.json'),
   loadJson('data/game/player-down.json'),
+  loadJson('data/game/stairs.json'),
 ]);
 
 applyTexts(dict);
@@ -109,15 +117,17 @@ root.hidden = false;
 
 // ?empty=1 (seulement avec ?test=1) : la salle du lot 1m sans meuble ni décor, mêmes coordonnées qu'au lot 1m.
 const zones = zonesJson ? zonesToWorld(parseZones(zonesJson), world.transform) : null;
-const layout = buildLayout(world, decor, { empty: emptyMode, slack: camera.slack, zones });
+// Une couche de collisions par étage (lot 3e) ; layouts.rdc est la couche d'avant, qui sert aussi à la caméra et aux dimensions du monde.
+const layouts = buildLayouts({ rdc: { world, decor }, etage: upperWorld ? { world: upperWorld } : null, zones }, { empty: emptyMode, slack: camera.slack });
+const layout = layouts.rdc;
 
 const ctx = {
-  cfg: { layout, player, weapon: weapons.pistol, stats: statsCfg, zombie: enemies.zombie, enemies, gaits: gaitsCfg, waves: wavesCfg, render, camera, nav, windows: windowsCfg, down: downCfg },
+  cfg: { layout, layouts, stairs: stairsCfg, player, weapon: weapons.pistol, stats: statsCfg, zombie: enemies.zombie, enemies, gaits: gaitsCfg, waves: wavesCfg, render, camera, nav, windows: windowsCfg, down: downCfg },
   palette,
   dict,
   textureData,
   variants,
-  perf: fpsMode ? { flowSum: 0, flowCount: 0, flowMax: 0, windowsMs: 0 } : null,
+  perf: fpsMode ? { flowSum: 0, flowCount: 0, flowMax: 0, windowsMs: 0, floorsMs: 0 } : null,
   params: {
     test: testMode,
     nospawn: query.get('nospawn') === '1',
@@ -128,6 +138,8 @@ const ctx = {
     tilt: parseTilt(query.get('tilt'), render.camera.tilt),
     zoom: parseZoom(query.get('zoom'), layout.zoom ?? camera.zoom),
     labels: query.get('labels') === '1',
+    // ?floor=N (lot 3e) : démarre à l'étage (1) ou au rez-de-chaussée (0) si l'escalier correspondant est ouvert au chargement ; sinon ignoré, jamais mémorisé.
+    floor: floorParam(query.get('floor')),
     maxRatio: ratioCap(query.get('dpr')),
     shadows: query.get('shadows') !== '0',
   },
@@ -204,7 +216,7 @@ if (game === null) {
       const a = ctx.audio.stats;
       const textures = fmt(dict[TEXTURE_TEXTS.fps], { ms: Math.round(textureData.ms), flow: p.flowCount ? (p.flowSum / p.flowCount).toFixed(2) : '0', max: p.flowMax.toFixed(2) });
       const stats = game.statsLine();
-      const windowsLine = fmt(dict[TEXTURE_TEXTS.fpsWindows], { ms: p.windowsMs.toFixed(1) });
+      const windowsLine = `${fmt(dict[TEXTURE_TEXTS.fpsWindows], { ms: p.windowsMs.toFixed(1) })}\n${fmt(dict[TEXTURE_TEXTS.fpsEtage], { ms: (p.floorsMs ?? 0).toFixed(1) })}`;
       return `${textures}\n${windowsLine}\n${fmt(dict[TEXTURE_TEXTS.fpsSons], { essential: Math.round(a.essentialMs), background: Math.round(a.backgroundMs), voices: a.zombieVoices })}\n${fmt(dict[TEXTURE_TEXTS.fpsStats], { levels: stats.levels, angle: stats.angle })}`;
     }));
   }

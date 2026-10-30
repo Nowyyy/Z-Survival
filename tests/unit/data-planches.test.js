@@ -111,7 +111,8 @@ describe('lot 3a : textures.json et windows.json', () => {
       return; // pas de branche main : rien à comparer
     }
     // Valable avant et après la fusion du lot : `main` contient la texture « planche » une fois le lot fusionné.
-    expect(texturesJson.textures.filter((t) => t.id !== 'planche')).toEqual(before.textures.filter((t) => t.id !== 'planche'));
+    // Lot 3e (mise à jour) : « garde-corps » (barrière de l'étage, demandée par le propriétaire) s'ajoute aux textures ; les autres sont intactes.
+    expect(texturesJson.textures.filter((t) => !['planche', 'garde-corps'].includes(t.id))).toEqual(before.textures.filter((t) => t.id !== 'planche'));
     expect(texturesJson.budget).toEqual(before.budget);
   });
 

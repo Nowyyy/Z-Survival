@@ -1,13 +1,118 @@
 {
-  "_provisoire": "Lot 3c : zones et portes du rez-de-chaussée, en PIXELS du plan (comme plan.json ; js/core/zones.js les convertit en unités du jeu). Chiffres provisoires, jamais jugés par l'agent. Une zone fermée est inerte : ses fenêtres n'ont aucun point d'apparition actif ni siège. region : polygone du côté intérieur de la zone (les régions ne se recouvrent pas, leur union recouvre l'intérieur du bâtiment). Une porte s'ouvre d'elle-même, sans achat, quand la manche openAfterWave est terminée (porte-1 : fermée toute la manche 10, aile active dès la manche 11). opening : segment de plan.json (clé openings) qui relie les deux zones. Les portes planned (escaliers, lot 3e) n'ont aucun effet : leurs zones n'existent pas encore.",
+  "_provisoire": "Lot 3c : zones et portes du rez-de-chaussée, en PIXELS du plan (comme plan.json ; js/core/zones.js les convertit en unités du jeu). Chiffres provisoires, jamais jugés par l'agent. Une zone fermée est inerte : ses fenêtres n'ont aucun point d'apparition actif ni siège. region : polygone du côté intérieur de la zone (les régions ne se recouvrent pas, leur union recouvre l'intérieur du bâtiment). Une porte s'ouvre d'elle-même, sans achat, quand la manche openAfterWave est terminée (porte-1 : fermée toute la manche 10, aile active dès la manche 11). opening : segment de plan.json (clé openings) qui relie les deux zones. Les portes planned (escaliers, lot 3e) n'ont aucun effet : leurs zones n'existent pas encore. Lot 3e : floors (rdc, etage), floor de chaque zone, stairs (escaliers : à chaque étage une emprise pleine solid, une zone de déclenchement trigger libre d'au moins 64 × 64 unités au pied de l'emprise et un point d'arrivée arrival libre), blocks des portes (obstacles pleins retirés à l'ouverture : rect en pixels ou opening, segment de plan.json ou de etage.json), subtitleKey (sous-titre de l'annonce « Nouvelle zone »). Le fichier sans floors se lit comme un seul étage rdc. porte-2 (manche 20, escalier de l'aile) est active depuis la partie B du lot 3e ; porte-3 (manche 30, second escalier et porte de l'étage) est active depuis la partie C du lot 3e. walk (escalier physique, mise à jour du lot 3e) : path = points [x, y, t] du pied au haut de l'escalier, en pixels (t = fraction de la hauteur d'un étage : 0 au pied, 1 en haut ; le premier point est le centre de la zone de déclenchement du rez-de-chaussée, le dernier celui de l'étage), width = largeur de la rampe dessinée.",
   "wavesPerWorld": 40,
+  "floors": ["rdc", "etage"],
   "zones": [
-    { "id": "depart", "label": "Salle de départ (grande salle et poche)", "openAtStart": true, "region": [[138, 208], [244, 208], [244, 228], [466, 228], [466, 352], [138, 352]] },
-    { "id": "aile", "label": "Aile de gauche", "openAtStart": false, "region": [[49, 20], [138, 20], [138, 336], [20, 336], [20, 208], [49, 208]] }
+    {
+      "id": "depart",
+      "label": "Salle de départ (grande salle et poche)",
+      "floor": "rdc",
+      "openAtStart": true,
+      "region": [[138, 208], [244, 208], [244, 228], [466, 228], [466, 352], [138, 352]]
+    },
+    {
+      "id": "aile",
+      "label": "Aile de gauche",
+      "floor": "rdc",
+      "openAtStart": false,
+      "region": [[49, 20], [138, 20], [138, 336], [20, 336], [20, 208], [49, 208]]
+    },
+    {
+      "id": "etage-gauche",
+      "label": "Étage de gauche (au-dessus de l'aile et de la poche)",
+      "floor": "etage",
+      "openAtStart": false,
+      "region": [[50, 23], [138, 23], [138, 336], [20, 336], [20, 208], [50, 208]]
+    },
+    {
+      "id": "etage-droite",
+      "label": "Étage de droite (au-dessus de la salle de départ)",
+      "floor": "etage",
+      "openAtStart": false,
+      "region": [[138, 226], [293, 226], [293, 350], [138, 350]]
+    }
+  ],
+  "stairs": [
+    {
+      "id": "escalier-aile",
+      "label": "Escalier de l'aile (dans la poche)",
+      "door": "porte-2",
+      "rdc": {
+        "solid": { "x0": 24, "y0": 257, "x1": 52, "y1": 301 },
+        "trigger": { "x0": 26, "y0": 238, "x1": 50, "y1": 256 },
+        "arrival": { "x": 66, "y": 248 }
+      },
+      "etage": {
+        "solid": { "x0": 24, "y0": 246, "x1": 52, "y1": 298 },
+        "trigger": { "x0": 26, "y0": 299, "x1": 44, "y1": 319 },
+        "arrival": { "x": 60, "y": 308 }
+      },
+      "walk": { "path": [[38, 247, 0], [38, 257, 0], [38, 298, 1], [35, 309, 1]], "width": 24 }
+    },
+    {
+      "id": "escalier-depart",
+      "label": "Escalier de la salle de départ (escalier courbe)",
+      "door": "porte-3",
+      "rdc": {
+        "solid": { "x0": 255, "y0": 243, "x1": 288, "y1": 270 },
+        "trigger": { "x0": 261, "y0": 270, "x1": 286, "y1": 284 },
+        "arrival": { "x": 275, "y": 300 }
+      },
+      "etage": {
+        "solid": { "x0": 250, "y0": 230, "x1": 290, "y1": 290 },
+        "trigger": { "x0": 232, "y0": 238, "x1": 250, "y1": 256 },
+        "arrival": { "x": 226, "y": 276 }
+      },
+      "walk": { "path": [[273.5, 277, 0], [273.5, 270, 0], [272.85, 265.08, 0.1667], [270.95, 260.5, 0.3333], [267.94, 256.56, 0.5], [264, 253.55, 0.6667], [259.42, 251.65, 0.8333], [254.5, 251, 1], [241, 247, 1]], "width": 16 }
+    }
   ],
   "doors": [
-    { "id": "porte-1", "kind": "porte", "openAfterWave": 10, "opens": ["aile"], "opening": { "x1": 138, "y1": 250, "x2": 138, "y2": 233 }, "planned": false },
-    { "id": "porte-2", "kind": "escalier", "openAfterWave": 20, "opens": ["etage-gauche"], "opening": null, "planned": true },
-    { "id": "porte-3", "kind": "escalier", "openAfterWave": 30, "opens": ["etage-droite"], "opening": null, "planned": true }
+    {
+      "id": "porte-1",
+      "kind": "porte",
+      "openAfterWave": 10,
+      "opens": ["aile"],
+      "opening": { "x1": 138, "y1": 250, "x2": 138, "y2": 233 },
+      "planned": false,
+      "floor": "rdc",
+      "subtitleKey": "game.splash.zone.subtitle",
+      "blocks": []
+    },
+    {
+      "id": "porte-2",
+      "kind": "escalier",
+      "openAfterWave": 20,
+      "opens": ["etage-gauche"],
+      "opening": null,
+      "stairs": ["escalier-aile"],
+      "blocks": [
+        {
+          "floor": "rdc",
+          "rect": { "x0": 24, "y0": 238, "x1": 52, "y1": 257 }
+        }
+      ],
+      "subtitleKey": "game.splash.zone.sub.escalier",
+      "planned": false
+    },
+    {
+      "id": "porte-3",
+      "kind": "escalier",
+      "openAfterWave": 30,
+      "opens": ["etage-droite"],
+      "opening": null,
+      "stairs": ["escalier-depart"],
+      "blocks": [
+        {
+          "floor": "rdc",
+          "rect": { "x0": 260, "y0": 269, "x1": 287, "y1": 285 }
+        },
+        {
+          "floor": "etage",
+          "opening": { "x1": 138, "y1": 262, "x2": 138, "y2": 301 }
+        }
+      ],
+      "subtitleKey": "game.splash.zone.sub.escalier-porte",
+      "planned": false
+    }
   ]
 }

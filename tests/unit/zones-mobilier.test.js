@@ -51,7 +51,11 @@ describe('mobilier de complément : plan.json, source unique', () => {
       return;
     }
     expect(plan.furniture.filter((f) => ORIGINAL.includes(f.id))).toEqual(before.furniture);
-    expect({ ...plan, furniture: undefined }).toEqual({ ...before, furniture: undefined });
+    // Lot 3e : seul l'escalier existant est marqué (role) et un second escalier est ajouté (stairs) ; rien d'autre ne change dans plan.json.
+    expect({ ...plan, furniture: undefined, stairs: undefined }).toEqual({ ...before, furniture: undefined, stairs: undefined });
+    // Lot 3e (mise à jour) : l'emprise de l'escalier courbe est redessinée (escalier physique arrondi) ; l'escalier est toujours là, sous le même identifiant.
+    const strip = (list) => list.map((st) => (st.id === 'escalier-courbe' ? { id: st.id } : Object.fromEntries(Object.entries(st).filter(([k]) => k !== 'role'))));
+    expect(strip(plan.stairs.slice(0, before.stairs.length))).toEqual(strip(before.stairs));
   });
 
   it('genres existants seulement ; hauteurs de params.json (au plus 70)', () => {

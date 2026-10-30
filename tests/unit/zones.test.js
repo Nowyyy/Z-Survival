@@ -8,7 +8,9 @@ const raw = JSON.parse(readFileSync(`${MAP}/zones.json`, 'utf8'));
 const plan = JSON.parse(readFileSync(`${MAP}/plan.json`, 'utf8'));
 const decor = JSON.parse(readFileSync(`${MAP}/decor.json`, 'utf8'));
 const world = JSON.parse(readFileSync(`${MAP}/world.json`, 'utf8'));
-const zones = parseZones(raw);
+// Lot 3e : les portes 2 et 3 sont actives ; ces tests du lot 3c décrivent l'état d'avant (portes 2 et 3 planned), elles sont testées dans etage-directeur.test.js.
+const raw3c = { ...raw, doors: raw.doors.map((d) => (d.id !== 'porte-1' ? { ...d, planned: true } : d)) };
+const zones = parseZones(raw3c);
 const PX = 12; // distance « entrée intérieure » en pixels du plan (60 unités / 5)
 const assignment = assignWindows(zones, plan.windows, PX);
 const ALL = ['F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8'];
@@ -17,7 +19,7 @@ describe('zones : parseZones', () => {
   it('lit zones.json de la carte sans avertissement', () => {
     expect(zones.warnings).toEqual([]);
     expect(zones.wavesPerWorld).toBe(40);
-    expect(zones.zones.map((z) => [z.id, z.openAtStart])).toEqual([['depart', true], ['aile', false]]);
+    expect(zones.zones.map((z) => [z.id, z.openAtStart])).toEqual([['depart', true], ['aile', false], ['etage-gauche', false], ['etage-droite', false]]);
     expect(zones.doors.map((d) => [d.id, d.kind, d.openAfterWave, d.planned])).toEqual([['porte-1', 'porte', 10, false], ['porte-2', 'escalier', 20, true], ['porte-3', 'escalier', 30, true]]);
   });
 

@@ -81,13 +81,23 @@ function nearestFree(grid, index) {
 // la plus proche libre). Parcours par seaux (Dial) : un parcours en largeur dont les diagonales coûtent 14 et les droites 10.
 // Renvoie { dist (Int32Array, INF = inaccessible), source (index ou -1), reachable (cellules atteintes) }.
 export function buildFlow(grid, target) {
-  const dist = new Int32Array(grid.cols * grid.rows).fill(INF);
   const source = nearestFree(grid, cellIndex(grid, target));
-  if (source < 0) return { dist, source, reachable: 0 };
-  const buckets = [[source]];
-  dist[source] = 0;
+  if (source < 0) return { dist: new Int32Array(grid.cols * grid.rows).fill(INF), source, reachable: 0 };
+  return { ...flowFromSources(grid, [source]), source };
+}
+
+// Parcours par seaux depuis plusieurs cellules sources (distance 0). Renvoie { dist, reachable }.
+function flowFromSources(grid, sources) {
+  const dist = new Int32Array(grid.cols * grid.rows).fill(INF);
+  const buckets = [[]];
+  let pending = 0;
+  for (const source of sources) {
+    if (source < 0 || dist[source] === 0) continue;
+    dist[source] = 0;
+    buckets[0].push(source);
+    pending += 1;
+  }
   let reachable = 0;
-  let pending = 1;
   for (let d = 0; pending > 0; d += 1) {
     const bucket = buckets[d];
     if (!bucket) continue;
@@ -114,7 +124,7 @@ export function buildFlow(grid, target) {
       }
     }
   }
-  return { dist, source, reachable };
+  return { dist, reachable };
 }
 
 // Cellule voisine de index qui rapproche le plus de la cible, ou -1. Hors cellule libre : le voisin le moins coûteux, coins ignorés.
@@ -223,4 +233,39 @@ export function hasPath(grid, from, to) {
   if (flow.source < 0) return false;
   const start = nearestFree(grid, cellIndex(grid, from));
   return start >= 0 && flow.dist[start] !== INF;
+}
+
+// Lot 3e : champ de flux d'un étage vers ses escaliers utilisables. nav : { grid } (grille de l'étage : une couche de grille par étage) ; portals : points de passage
+// de cet étage (stairs.js, portalsFor : { rect: { x, y, w, h }, x, y }). Parcours multi-sources depuis les cellules libres des zones de déclenchement (à défaut, depuis
+// la cellule libre la plus proche de leur centre) : chaque cellule a le coût du plus court chemin vers l'escalier le PLUS PROCHE PAR CHEMIN. Calculé une seule fois au
+// chargement et recalculé seulement quand un escalier devient utilisable (jamais par image, jamais quand le joueur bouge). Sans escalier : champ vide (tout est
+// inaccessible). Renvoie { floor, grid, flow: { dist, source, sources, reachable } | null, sources, reachable }.
+export function buildPortalField(nav, floor, portals) {
+  const grid = nav?.grid;
+  const list = Array.isArray(portals) ? portals.filter((p) => p && p.rect && [p.rect.x, p.rect.y, p.rect.w, p.rect.h].every(isNum)) : [];
+  if (!grid || !Number.isInteger(grid.cols) || list.length === 0) return { floor: floor ?? null, grid: grid ?? null, flow: null, sources: [], reachable: 0 };
+  const sources = new Set();
+  for (const p of list) {
+    const r = p.rect;
+    const found = [];
+    const c0 = Math.max(0, Math.floor(r.x / grid.cell));
+    const c1 = Math.min(grid.cols - 1, Math.floor((r.x + r.w) / grid.cell));
+    const r0 = Math.max(0, Math.floor(r.y / grid.cell));
+    const r1 = Math.min(grid.rows - 1, Math.floor((r.y + r.h) / grid.cell));
+    for (let row = r0; row <= r1; row += 1) {
+      for (let col = c0; col <= c1; col += 1) {
+        const cx = (col + 0.5) * grid.cell;
+        const cy = (row + 0.5) * grid.cell;
+        if (cx >= r.x && cx <= r.x + r.w && cy >= r.y && cy <= r.y + r.h && free(grid, col, row)) found.push(row * grid.cols + col);
+      }
+    }
+    if (found.length === 0) {
+      const near = nearestFree(grid, cellIndex(grid, { x: p.x, y: p.y }));
+      if (near >= 0) found.push(near);
+    }
+    for (const index of found) sources.add(index);
+  }
+  const list2 = [...sources].sort((a, b) => a - b);
+  const flow = flowFromSources(grid, list2);
+  return { floor: floor ?? null, grid, flow: { dist: flow.dist, source: list2[0] ?? -1, sources: list2, reachable: flow.reachable }, sources: list2, reachable: flow.reachable };
 }

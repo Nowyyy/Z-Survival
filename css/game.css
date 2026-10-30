@@ -635,6 +635,15 @@ body.game {
   max-width: 40vw;
 }
 
+/* Voile du fondu entre étages (lot 3e) : décoratif, de la couleur de la brume, entre le canvas et l'effet VHS (ordre du DOM) ; opacité = voile (floor-fade.js). */
+.floor-fade {
+  position: fixed;
+  inset: 0;
+  background: var(--game-fog);
+  opacity: 0;
+  pointer-events: none;
+}
+
 /* Effet VHS (lot 2c) : surcouche décorative #vhs, trois couches, entre le canvas et le HUD. js/game/vhs-layer.js met à jour les variables
    --vhs-* ; aucun mix-blend-mode, aucun filter, aucun backdrop-filter (coût de composition sur téléphone). Retiré du DOM quand il est coupé. */
 .vhs {

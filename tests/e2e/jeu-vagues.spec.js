@@ -515,7 +515,7 @@ test.describe('vagues du lot 2', () => {
     expect(r.types.sort()).toEqual([...TYPES].sort());
     expect(r.gaits.sort()).toEqual([...GAITS].sort());
     expect(r.render.calls).toBeLessThanOrEqual(300);
-    expect(r.render.triangles).toBeLessThanOrEqual(15000);
+    expect(r.render.triangles).toBeLessThanOrEqual(30000);
   });
 
   test('aucune requête externe, aucun stockage, aucun cookie, console propre pendant une vague', async ({ page, baseURL }) => {

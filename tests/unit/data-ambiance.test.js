@@ -193,7 +193,7 @@ describe('hygiène du lot 2c', () => {
     const css = readFileSync('css/game.css', 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
     expect(css).not.toMatch(/mix-blend-mode|backdrop-filter|(?<![-\w])filter\s*:/);
     const html = readFileSync('jeu.html', 'utf8');
-    expect(html).toMatch(/<div id="game-canvas"[^>]*><\/div>\s*<div id="vhs" class="vhs" aria-hidden="true">\s*<div class="vhs-static"><\/div>\s*<div class="vhs-grain"><\/div>\s*<div class="vhs-track"><\/div>\s*<\/div>/);
+    expect(html).toMatch(/<div id="game-canvas"[^>]*><\/div>\s*<div id="floor-fade" class="floor-fade" aria-hidden="true"><\/div>\s*<div id="vhs" class="vhs" aria-hidden="true">\s*<div class="vhs-static"><\/div>\s*<div class="vhs-grain"><\/div>\s*<div class="vhs-track"><\/div>\s*<\/div>/);
     expect(html.indexOf('id="vhs"')).toBeLessThan(html.indexOf('id="hud"'));
     expect(html.indexOf('id="hud"')).toBeLessThan(html.indexOf('id="wave-announce"'));
     expect(html).not.toMatch(/id="vhs"[^>]*data-block/);

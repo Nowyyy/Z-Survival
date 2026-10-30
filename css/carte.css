@@ -101,6 +101,8 @@
 .sw-meuble { background: var(--game-wood); }
 .sw-depart { background: var(--color-success); }
 .sw-apparition { background: var(--color-warning); }
+.sw-declencheur { background: var(--game-stairs-mark); }
+.sw-porte { background: var(--game-metal); }
 
 /* Dessin SVG : tout par classes, aucune couleur dans le script. */
 .monde { fill: var(--game-grass-a); }
@@ -115,6 +117,10 @@
 .escalier { fill: var(--game-wood-dark); stroke: var(--game-wood); stroke-width: 4; }
 .rampe { fill: none; stroke: var(--game-line); stroke-width: 6; stroke-dasharray: 24 14; }
 .meuble { fill: var(--game-wood); stroke: var(--color-bg); stroke-width: 3; opacity: 0.9; }
+.bloc-porte { fill: var(--game-metal); opacity: 0.8; stroke: var(--color-warning); stroke-width: 4; }
+.declencheur { fill: var(--game-stairs-mark); opacity: 0.55; stroke: var(--game-stairs-mark); stroke-width: 4; }
+.declencheur-etiquette { fill: var(--color-text); font-family: var(--font-sans); font-weight: var(--font-weight-bold); paint-order: stroke; stroke: var(--color-bg); stroke-width: 6px; text-anchor: middle; }
+.arrivee { fill: none; stroke: var(--color-text); stroke-width: 6; }
 .bloc { fill: none; stroke: var(--color-warning); stroke-width: 5; stroke-dasharray: 18 10; }
 .depart-zone { fill: var(--color-success); opacity: 0.18; stroke: var(--color-success); stroke-width: 4; }
 .depart-point { fill: var(--color-success); }

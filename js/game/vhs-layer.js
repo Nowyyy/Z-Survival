@@ -31,7 +31,7 @@ const fixed = (n, digits = 4) => String(Math.round(n * 10 ** digits) / 10 ** dig
 // params : data/game/vhs.json ; lookup : jeton -> [r, g, b] (palette.js) ; forced : valeur de parseVhsParam ; reducedMotion : prefers-reduced-motion.
 export function createVhs({ params, lookup, forced = null, reducedMotion = false, root = document }) {
   const template = root.getElementById('vhs').cloneNode(true);
-  const anchor = root.getElementById('game-canvas');
+  const anchor = root.getElementById('floor-fade') ?? root.getElementById('game-canvas'); // le voile de fondu (lot 3e) est entre le canvas et #vhs
   let current = root.getElementById('vhs');
   let enabled = forced ?? params.enabled === true;
   let address = null;

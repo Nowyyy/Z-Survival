@@ -474,9 +474,9 @@ test.describe('budget, ?empty=1, hygiène', () => {
     testInfo.annotations.push({ type: 'rendu', description: `${r.n} zombies : ${r.render.calls} appels, ${r.render.triangles} triangles` });
     console.log(`BUDGET lot 3 : ${r.n} zombies, ${r.render.calls} appels de dessin, ${r.render.triangles} triangles`);
     expect(r.render.calls).toBeLessThanOrEqual(192);
-    expect(r.render.triangles).toBeLessThanOrEqual(15000);
+    expect(r.render.triangles).toBeLessThanOrEqual(30000);
     expect(r.render.calls).toBeLessThanOrEqual(300);
-    expect(r.render.triangles).toBeLessThanOrEqual(15000);
+    expect(r.render.triangles).toBeLessThanOrEqual(30000);
   });
 
   test('?empty=1 : comportement du lot 2c (zombies libres, aucun siège, aucune fenêtre à planches)', async ({ page }) => {

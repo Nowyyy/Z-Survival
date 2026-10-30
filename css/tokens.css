@@ -87,6 +87,8 @@
   --game-zombie-clothes: #6a6650;   /* haillons des zombies (la peau est --game-zombie) */
   --game-zombie-trousers: #4a483c;  /* pantalon, chaussures et cheveux des zombies */
   --game-fog: #3c4655;              /* brume de nuit : fond de caméra et couleur du brouillard (lot 3b) */
+  --game-void: #2b323d;             /* dalle sombre sous l'étage (lot 3e) : remplace le rez-de-chaussée caché, teinte proche de --game-fog mais plus sombre */
+  --game-stairs-mark: #c9b34c;      /* zone de déclenchement d'un escalier utilisable, marquée au sol (lot 3e) : jaune terne, au moins 1,5:1 sur le sol */
   --game-sun: #cfd5e0;              /* lumière directionnelle */
   --game-ambient: #8e95a2;          /* lumière ambiante */
   --game-road: #2c2c31;             /* route (le trottoir et le sentier en sont des variantes) */
