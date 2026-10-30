@@ -144,7 +144,8 @@ describe('stairs.js : points de passage des zombies (portalsFor)', () => {
   });
 });
 
-describe('stairs.js : délai de 0,8 s et absence de rebond (stepStairWatch)', () => {
+describe('stairs.js : mécanisme de délai (0,8 s dans ces tests, 0 dans le jeu) et absence de rebond (stepStairWatch)', () => {
+  const cfg08 = { ...stairsCfg, stairCooldownPlayer: 0.8 };
   const [trig] = stairTriggers(stairs, 'rdc', ['porte-2']);
   const out = { x: trig.x - 200, y: trig.cy, r: 18 };
 
@@ -155,14 +156,14 @@ describe('stairs.js : délai de 0,8 s et absence de rebond (stepStairWatch)', ()
   });
 
   it('après un changement d\'étage, le délai de 0,8 s démarre et se vide avec le temps de jeu', () => {
-    let w = startStairCooldown(createStairWatch(), 'escalier-aile', stairsCfg);
+    let w = startStairCooldown(createStairWatch(), 'escalier-aile', cfg08);
     expect(w.cooldown).toBeCloseTo(0.8, 9);
     for (let i = 0; i < 16; i += 1) w = stepStairWatch(w, 0.05, out, [trig]).watch;
     expect(w.cooldown).toBe(0);
   });
 
   it('pendant le délai, même hors du verrou, rien ne se déclenche', () => {
-    let w = startStairCooldown(createStairWatch(), 'escalier-depart', stairsCfg);
+    let w = startStairCooldown(createStairWatch(), 'escalier-depart', cfg08);
     w = stepStairWatch(w, 0.05, out, [trig]).watch; // verrou d'un autre escalier levé, délai en cours
     const r = stepStairWatch(w, 0.05, inside(trig), [trig]);
     expect(w.cooldown).toBeGreaterThan(0);
@@ -171,7 +172,7 @@ describe('stairs.js : délai de 0,8 s et absence de rebond (stepStairWatch)', ()
 
   it('aucun rebond : rester dans la zone après un changement d\'étage ne redéclenche pas, même délai écoulé', () => {
     let w = stepStairWatch(createStairWatch(), 0.05, inside(trig), [trig]).watch;
-    w = startStairCooldown(w, 'escalier-aile', stairsCfg);
+    w = startStairCooldown(w, 'escalier-aile', cfg08);
     for (let i = 0; i < 60; i += 1) {
       const r = stepStairWatch(w, 0.05, inside(trig), [trig]);
       expect(r.trigger).toBeNull();
@@ -182,7 +183,7 @@ describe('stairs.js : délai de 0,8 s et absence de rebond (stepStairWatch)', ()
   });
 
   it('on redéclenche après être sorti de la zone puis y être revenu (délai écoulé)', () => {
-    let w = startStairCooldown(stepStairWatch(createStairWatch(), 0.05, inside(trig), [trig]).watch, 'escalier-aile', stairsCfg);
+    let w = startStairCooldown(stepStairWatch(createStairWatch(), 0.05, inside(trig), [trig]).watch, 'escalier-aile', cfg08);
     for (let i = 0; i < 20; i += 1) w = stepStairWatch(w, 0.05, inside(trig), [trig]).watch;
     w = stepStairWatch(w, 0.05, out, [trig]).watch;
     expect(w.lock).toBeNull();
@@ -190,24 +191,24 @@ describe('stairs.js : délai de 0,8 s et absence de rebond (stepStairWatch)', ()
   });
 
   it('sortir de la zone avant la fin du délai ne permet pas de redéclencher avant sa fin', () => {
-    let w = startStairCooldown(createStairWatch(), 'escalier-aile', stairsCfg);
+    let w = startStairCooldown(createStairWatch(), 'escalier-aile', cfg08);
     w = stepStairWatch(w, 0.05, out, [trig]).watch;
     expect(stepStairWatch(w, 0.05, inside(trig), [trig]).trigger).toBeNull();
   });
 
   it('dt à 0 (pause) : le délai ne baisse pas', () => {
-    const w = startStairCooldown(createStairWatch(), 'escalier-aile', stairsCfg);
+    const w = startStairCooldown(createStairWatch(), 'escalier-aile', cfg08);
     expect(stepStairWatch(w, 0, out, [trig]).watch.cooldown).toBe(w.cooldown);
     expect(stepStairWatch(w, -5, out, [trig]).watch.cooldown).toBe(w.cooldown);
   });
 
   it('dt énorme : borné à 0,05 s', () => {
-    const w = startStairCooldown(createStairWatch(), 'escalier-aile', stairsCfg);
+    const w = startStairCooldown(createStairWatch(), 'escalier-aile', cfg08);
     expect(stepStairWatch(w, 1e9, out, [trig]).watch.cooldown).toBeCloseTo(0.75, 9);
   });
 
   it('déterministe', () => {
-    const w = startStairCooldown(createStairWatch(), 'escalier-aile', stairsCfg);
+    const w = startStairCooldown(createStairWatch(), 'escalier-aile', cfg08);
     expect(stepStairWatch(w, 0.05, inside(trig), [trig])).toEqual(stepStairWatch(w, 0.05, inside(trig), [trig]));
   });
 });
@@ -226,8 +227,8 @@ describe('stairs.js : paramètres et arguments gelés', () => {
     expect(stairParams({ stairTime: 2 }).stairTime).toBe(2);
   });
 
-  it('le temps de franchissement est 1,5 s, 2 zombies à la fois, délai du joueur 0,8 s, protection 1,0 s, repoussement 80 dans 60', () => {
-    expect([stairsCfg.stairTime, stairsCfg.stairCooldownPlayer, stairsCfg.stairGraceAfter, stairsCfg.arrivalPush, stairsCfg.arrivalPushRadius, stairsCfg.triggerMin]).toEqual([1.5, 0.8, 1.0, 80, 60, 64]);
+  it('le temps de franchissement est 1,5 s, aucun délai du joueur (0), protection 1,0 s, repoussement 80 dans 60', () => {
+    expect([stairsCfg.stairTime, stairsCfg.stairCooldownPlayer, stairsCfg.stairGraceAfter, stairsCfg.arrivalPush, stairsCfg.arrivalPushRadius, stairsCfg.triggerMin]).toEqual([1.5, 0, 1.0, 80, 60, 64]);
   });
 
   it('aucune fonction ne modifie ses arguments gelés', () => {

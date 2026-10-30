@@ -11,7 +11,6 @@ import { pathLength, pointAt, project, startWalk, stepWalk } from './stair-walk.
 import { clampDt, isNum, num } from './vec.js';
 
 export const STAIR_MODE = 'escalier';
-const STAIR_COOLDOWN = 1.5; // secondes avant qu'un zombie sorti d'un escalier puisse en reprendre un (évite les allers-retours à l'entrée)
 const isObject = (o) => o !== null && typeof o === 'object' && !Array.isArray(o);
 const byId = (a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
 const listOf = (portals, floor) => (isObject(portals) && Array.isArray(portals[floor]) ? portals[floor].filter((p) => isObject(p) && isNum(p.x) && isNum(p.y) && isObject(p.arrival) && isNum(p.arrival.x) && isNum(p.arrival.y) && isFloorId(p.to)) : []);
@@ -80,13 +79,12 @@ export function stepStairZombies(enemies, input, dt) {
     Object.assign(e, { x: r.pos.x, y: r.pos.y, stairT: r.point.t, fx: dir.x, fy: dir.y, floor: r.floor, walk: r.walk, stairSlack: Math.max(0, slack - num(e.speed) * clampDt(dt) * 0.8) });
     if (r.done !== null) {
       events.push({ type: 'stairArrive', id: e.id, stair: e.stair, from: e.stairFrom, to: r.done });
-      Object.assign(e, { mode: 'dedans', stair: null, walk: null, stairT: 0, stairFrom: null, stairTo: null, stuckT: 0, ax: e.x, ay: e.y, push: 0, stairCool: STAIR_COOLDOWN });
+      Object.assign(e, { mode: 'dedans', stair: null, walk: null, stairT: 0, stairFrom: null, stairTo: null, stuckT: 0, ax: e.x, ay: e.y, push: 0 });
     }
   }
-  // 2. Départs : un zombie « dedans » d'un autre étage que le joueur, arrivé à la zone de déclenchement, entre dans l'escalier s'il reste de la place ; si le joueur marche
+  // 2. Départs : un zombie « dedans » d'un autre étage que le joueur, arrivé à la zone de déclenchement, entre dans l'escalier (aucun délai) ; si le joueur marche
   // dans cet escalier, un zombie de son étage arrivé au bout de cet escalier y entre aussi.
-  for (const e of live) if (e.mode !== STAIR_MODE && num(e.stairCool) > 0) e.stairCool = Math.max(0, e.stairCool - clampDt(dt));
-  const seekers = live.filter((e) => num(e.stairCool) <= 0 && (seeksStair(e, input?.playerFloor) || (follow !== null && e.mode === 'dedans' && floorOf(e) === playerFloor))).sort(byId);
+  const seekers = live.filter((e) => seeksStair(e, input?.playerFloor) || (follow !== null && e.mode === 'dedans' && floorOf(e) === playerFloor)).sort(byId);
   for (const e of seekers) {
     const portal = reachedPortal(e, input?.portals, p.triggerReach);
     if (portal && !seeksStair(e, input?.playerFloor) && portal.stair !== follow) continue;

@@ -141,7 +141,7 @@ test.describe('escalier physique', () => {
     const s = await STATE(page);
     const end = center(AILE.floors.etage.trigger);
     expect(Math.hypot(s.player.x - end.x, s.player.y - end.y)).toBeLessThan(15); // la marche finit juste au-delà du bout du chemin
-    expect(s.floor.stairs[0].cooldown).toBeGreaterThan(0.2);
+    expect(s.floor.stairs[0].cooldown).toBe(0); // aucun délai : on peut reprendre l'escalier tout de suite
   });
 
   test('un escalier fermé n\'est pas utilisable', async ({ page }) => {

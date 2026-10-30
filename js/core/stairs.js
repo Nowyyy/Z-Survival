@@ -1,5 +1,5 @@
 // Escaliers (lot 3e) : quels escaliers sont utilisables, leurs zones de déclenchement à chaque étage, détection du joueur dans une zone, point d'arrivée,
-// points de passage des zombies, délai de 0,8 s et absence de rebond. Pur : n'utilise que ses arguments (les escaliers de zonesToWorld, en unités du jeu), renvoie
+// points de passage des zombies, aucun délai (valeur 0 par défaut) et absence de rebond du fondu. Pur : n'utilise que ses arguments (les escaliers de zonesToWorld, en unités du jeu), renvoie
 // de nouveaux objets, ne modifie pas ses arguments (gelés acceptés), ne lève aucune exception sur des entrées inattendues, déterministe, aucune horloge.
 import { DEFAULT_FLOOR, FLOOR_IDS, isFloorId, otherFloor } from './floors.js';
 import { clampDt, isNum, num } from './vec.js';
@@ -7,7 +7,7 @@ import { clampDt, isNum, num } from './vec.js';
 // Valeurs de repli de data/game/stairs.json (les vraies valeurs vivent dans les données ; un test vérifie qu'elles sont identiques).
 export const STAIR_DEFAULTS = Object.freeze({
   stairTime: 1.5,
-  stairCooldownPlayer: 0.8,
+  stairCooldownPlayer: 0,
   stairGraceAfter: 1.0,
   arrivalPush: 80,
   arrivalPushRadius: 60,
