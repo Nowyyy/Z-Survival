@@ -399,6 +399,13 @@ export function createGame(ctx) {
   }
   // Cible des zombies de l'étage du joueur : dans l'escalier le joueur est au milieu de l'emprise (un obstacle, donc sans chemin) ; ils le suivent jusqu'au bout de l'escalier
   // de son étage logique (le pied au rez-de-chaussée, le palier à l'étage) et le rejoignent dès qu'il en sort.
+  // Un zombie est dessiné : ceux de l'étage du joueur ; depuis l'étage aussi ceux du rez-de-chaussée (plus bas, vus par le trou) ; ceux qui marchent dans un escalier
+  // tant qu'ils sont à portée de vue (toute la rampe depuis l'étage, sa moitié basse depuis le rez-de-chaussée).
+  function drawnOf(e) {
+    const zf = floorOf(e);
+    if (e.mode === 'escalier') return pf() === 'etage' || num(e.stairT) < SWAP_UP + 0.1;
+    return zf === pf() || (pf() === 'etage' && zf === 'rdc');
+  }
   function chaseTarget() {
     if (sim.sw === null) return sim.player;
     const path = stairsWorld.find((q) => q.id === sim.sw.stair)?.walk?.path;
@@ -432,8 +439,7 @@ export function createGame(ctx) {
     sim.elev = liftOf(r.done);
     // Pas de verrou de zone à la sortie : le joueur sort dans la zone de déclenchement et doit pouvoir reprendre l'escalier en y marchant (délai de 0,8 s seulement).
     sim.stairWatch = { cooldown: stairCfg.stairCooldownPlayer, lock: null };
-    if (r.done !== from) sim.floorGrace = stairCfg.stairGraceAfter;
-    knockArrival(sim.player, r.done);
+    if (r.done !== from) sim.floorGrace = stairCfg.stairGraceAfter; // pas de repoussement : les zombies sont libres dans l'escalier, aucun saut à la sortie
     stale = true;
   }
 
@@ -947,15 +953,13 @@ export function createGame(ctx) {
       // Lot 3e : un zombie de l'étage du joueur est dessiné ; depuis l'étage on voit aussi ceux du rez-de-chaussée, plus bas de floorLift, par le trou des escaliers et
       // dans la partie découverte (le sol de l'étage les cache ailleurs) ; depuis le rez-de-chaussée ceux de l'étage ne sont pas dessinés (ni ombrés). Leur logique continue.
       const zf = floorOf(e);
-      const shown = zf === pf() || (pf() === 'etage' && zf === 'rdc');
       let at = { x: e.x, y: e.y, h: zf === pf() ? 0 : liftOf(zf) - liftOf(pf()) };
       let face = null;
-      let visible = shown;
+      const visible = drawnOf(e);
       if (e.mode === 'escalier') {
         // Dans un escalier : il marche librement comme le joueur ; sa hauteur suit sa position sur la rampe (t × floorLift), face à son sens de marche.
         at = { x: e.x, y: e.y, h: LIFT * num(e.stairT) - liftOf(pf()) };
         face = { x: num(e.fx), y: num(e.fy) };
-        visible = pf() === 'etage' || num(e.stairT) < SWAP_UP + 0.1;
       }
       z.char.root.position.set(at.x, at.h, at.y);
       if (z.char.root.visible !== visible) z.char.root.visible = visible;
@@ -1309,7 +1313,7 @@ export function createGame(ctx) {
           id: e.id, x: e.x, y: e.y, health: e.health, entered: e.entered ?? null, from: e.from ?? null, variant: e.visual, screen: screenOf(e.x, e.y), pose: zombies.get(e.id)?.char.readPose() ?? null,
           type: e.type, gait: e.gait, hp: e.health, maxHp: e.maxHealth, speed: e.speed, damage: e.damage, stride: e.stride, radius: e.r, phase: zombies.get(e.id)?.phase ?? 0,
           mode: e.mode ?? 'libre', window: e.window ?? null, slot: e.slot ?? null, climb: e.climb ? { t: e.climb.t } : null,
-          floor: floorOf(e), visible: floorOf(e) === pf() || (pf() === 'etage' && floorOf(e) === 'rdc'), stair: e.stair ?? null, stairT: e.stairT ?? 0,
+          floor: floorOf(e), visible: drawnOf(e), stair: e.stair ?? null, stairT: e.stairT ?? 0,
         })),
         bullets: sim.bullets.map((b) => ({ id: b.id, floor: floorOf(b), x: b.x, y: b.y, angle: b.angle, aimAngle: b.aimAngle, damage: b.damage, maxDistance: b.maxDistance })),
         kills: sim.kills,

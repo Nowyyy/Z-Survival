@@ -172,23 +172,23 @@ describe('mode « escalier » (stair-zombies.js)', () => {
     expect(Math.hypot(r.enemies[0].x - a.x, r.enemies[0].y - a.y)).toBeLessThan(250);
   });
 
-  it('au plus 4 zombies à la fois sur un escalier : le cinquième attend', () => {
+  it('aucune limite de nombre : cinq zombies arrivés à la zone entrent ensemble dans l\'escalier', () => {
     const list = [1, 2, 3, 4, 5].map((id) => atTrigger(id, 'etage'));
     const first = stepStairZombies(list, { playerFloor: 'rdc', portals: portalsBy(), walks, params }, 0.05);
-    expect(stairLoad(first.enemies)).toEqual({ [P.escalier]: 4 });
-    expect(first.enemies.filter((e) => e.mode === 'dedans')).toHaveLength(1);
+    expect(stairLoad(first.enemies)).toEqual({ [P.escalier]: 5 });
+    expect(first.enemies.filter((e) => e.mode === 'dedans')).toHaveLength(0);
   });
 
-  it('le cinquième monte à son tour dès qu\'une place se libère (file)', () => {
+  it('tous les zombies descendent l\'escalier et finissent au rez-de-chaussée', () => {
     const r = run([1, 2, 3, 4, 5].map((id) => atTrigger(id, 'etage')), 'rdc', 30);
-    expect(r.events.filter((e) => e.type === 'stairStart')).toHaveLength(5);
+    expect(r.events.filter((e) => e.type === 'stairStart').length).toBeGreaterThanOrEqual(5);
     expect(r.enemies.every((e) => e.floor === 'rdc')).toBe(true);
   });
 
-  it('le plafond de 4 vaut par escalier : quatre zombies sur chacun des deux escaliers', () => {
+  it('aucun plafond sur les deux escaliers : cinq zombies sur chacun', () => {
     const list = [1, 2, 3, 4, 5].map((id) => atTrigger(id, 'etage')).concat([6, 7, 8, 9, 10].map((id) => atTrigger(id, 'etage', P.depart)));
     const r = stepStairZombies(list, { playerFloor: 'rdc', portals: portalsBy(), walks, params }, 0.05);
-    expect(stairLoad(r.enemies)).toEqual({ [P.escalier]: 4, [P.depart]: 4 });
+    expect(stairLoad(r.enemies)).toEqual({ [P.escalier]: 5, [P.depart]: 5 });
   });
 
   it('le joueur marche dans l\'escalier : le zombie qui y est va droit sur lui, on peut le toucher (étage logique à mi-hauteur)', () => {
@@ -299,12 +299,12 @@ describe('zombies sur deux étages : simulations pures', () => {
     expect(r.maxStill, JSON.stringify(r.stillWhere)).toBeLessThanOrEqual(2);
   });
 
-  it('plafond de 4 par escalier tenu pendant toute la simulation (6 zombies sur le même escalier)', () => {
+  it('6 zombies sur le même escalier : ils y entrent tous ensemble', () => {
     const list = [1, 2, 3, 4, 5, 6].map((id) => makeZombie(id, { x: at(P.depart, 'etage').x + (id % 3) * 15, y: at(P.depart, 'etage').y + id * 4 }, { floor: 'etage' }));
     let peak = 0;
     simulate({ zombies: list, playerFloor: 'rdc', seconds: 30, onStep: (s, enemies) => { for (const n of Object.values(stairLoad(enemies))) peak = Math.max(peak, n); } });
     expect(peak).toBeGreaterThan(0);
-    expect(peak).toBeLessThanOrEqual(4);
+    expect(peak).toBeGreaterThan(4);
   });
 
   it('siège à l\'étage, joueur en bas : le zombie arrache les planches de U1 sans que rien ne bouge au rez-de-chaussée', () => {

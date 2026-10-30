@@ -16,6 +16,7 @@ import { createDebrisMeshes, createWindowMeshes } from './windows-mesh.js';
 const FAR_GROUND = 40_000; // sol extérieur étendu bien au-delà du monde
 const ROAD_Y = 0.4; // route, trottoir et sentiers : plaques plates au-dessus de l'herbe
 const ATLAS = 'atlas-props';
+const DOOR_THICKNESS = 24; // épaisseur dessinée d'une porte d'escalier (le bloc de collision garde toute son emprise)
 const FENCE_HEIGHT = 36; // garde-corps du trou des escaliers : une répétition de la texture « garde-corps »
 
 // Région d'atlas par type de meuble (data/game/world.json : table, comptoir, caisse, armoire, colonne, etagere).
@@ -673,6 +674,11 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
         const t = layout.wallThickness - 2;
         const along = Math.max(r.w, r.h) - 2 * 4;
         visual = r.h > r.w ? { x: r.x + r.w / 2 - t / 2, y: r.y + 4 + 0.5, w: t, h: along - 1 } : { x: r.x + 4 + 0.5, y: r.y + r.h / 2 - t / 2, w: along - 1, h: t };
+      }
+      if (!bl.wall) {
+        // Bloc d'escalier (surface pleine) : dessiné comme une porte mince (DOOR_THICKNESS) au centre de son emprise, dans le sens de sa plus petite dimension.
+        const thin = Math.min(DOOR_THICKNESS, Math.min(visual.w, visual.h));
+        visual = visual.h <= visual.w ? { x: visual.x, y: visual.y + visual.h / 2 - thin / 2, w: visual.w, h: thin } : { x: visual.x + visual.w / 2 - thin / 2, y: visual.y, w: thin, h: visual.h };
       }
       builder.box(rectBox(visual, 0, r.hauteur - 1), { rect: doorRegion, scale: doorRegion.scale, seed: 900 });
       const mesh = builder.mesh(bl.floor === 'rdc' && (exposedAt(r.x + r.w / 2, r.y + r.h / 2) || touchesHole(r)) ? groups.rdcExposed : groups[bl.floor], atlasMaterial, { cast: false, receive: true });

@@ -227,7 +227,7 @@ test.describe('deux escaliers', () => {
     expect(Object.values(byZombie).sort()).toEqual(['escalier-aile', 'escalier-depart']);
   });
 
-  test('au plus 4 zombies à la fois par escalier, même avec les deux escaliers utilisables', async ({ page }) => {
+  test('aucune limite de zombies dans un escalier, même avec les deux escaliers utilisables', async ({ page }) => {
     await open(page, '&wave=31&nospawn=1');
     await page.evaluate(([a, b]) => {
       for (let i = 0; i < 6; i += 1) {
@@ -246,7 +246,7 @@ test.describe('deux escaliers', () => {
       }
       return { max, arrived: zs.getState().stairLog.filter((l) => l.type === 'stairArrive').length };
     });
-    expect(r.max).toBe(4);
+    expect(r.max).toBeGreaterThan(4);
     expect(r.arrived).toBeGreaterThanOrEqual(4);
   });
 

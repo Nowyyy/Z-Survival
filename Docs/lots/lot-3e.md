@@ -91,3 +91,9 @@
 ## Mise à jour 11 (retours du propriétaire) : un seul zombie à la fois, laser qui ne suit pas
 - **Zombies** : au plus 4 zombies à la fois par escalier (au lieu de 2) et portée de départ 60 (au lieu de 40) : avec la marche libre, le plafond ne sert plus qu'à l'entrée, et une meute entre maintenant à plusieurs. `stairs.json`, `STAIR_DEFAULTS`, `CLAUDE.md`, `conventions.md` et les tests mis à jour.
 - **Laser** : le laser, les balles et les étincelles étaient dans le groupe des zombies (décalé de `floorLift` et de l'élévation) : ils restaient en bas ou en haut quand le joueur montait. Ils ont leur propre groupe (`effectsRoot`), toujours à la hauteur du joueur.
+
+## Mise à jour 12 (retours du propriétaire) : zombies sans limite dans l'escalier, clignotements, portes plus minces
+- **Sans limite** : plus de plafond de zombies par escalier (`stairMaxAtOnce` supprimé de `stairs.json` et de `STAIR_DEFAULTS`). Dans l'escalier ils se déplacent comme le joueur (dans la largeur, dans les deux sens) et ne se superposent pas (poussée de 6 au plus par image).
+- **Clignotements** : trois causes retirées. Le repoussement des zombies à la sortie de l'escalier du joueur (`knockArrival`, un saut de 80) ne s'applique plus aux marches physiques ; un zombie qui entre dans l'escalier n'est plus téléporté au centre de la zone (le tube se resserre autour de lui) ; un zombie sorti d'un escalier attend 1,5 s avant d'en reprendre un (plus d'allers-retours à l'entrée). La visibilité d'un zombie vient d'une seule fonction (`drawnOf`), identique pour le dessin et pour `getState()`.
+- **Portes d'escalier** : un bloc d'escalier est dessiné comme une porte de 24 d'épaisseur au centre de son emprise (la collision garde toute l'emprise).
+- Limite connue : le saut mesuré à la chute du joueur (repoussement de la chute, 80 à 160) reste ; ce n'est pas lié aux escaliers.

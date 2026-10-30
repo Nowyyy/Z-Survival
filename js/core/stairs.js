@@ -7,7 +7,6 @@ import { clampDt, isNum, num } from './vec.js';
 // Valeurs de repli de data/game/stairs.json (les vraies valeurs vivent dans les données ; un test vérifie qu'elles sont identiques).
 export const STAIR_DEFAULTS = Object.freeze({
   stairTime: 1.5,
-  stairMaxAtOnce: 4,
   stairCooldownPlayer: 0.8,
   stairGraceAfter: 1.0,
   arrivalPush: 80,
@@ -31,7 +30,6 @@ export function stairParams(raw) {
   const d = STAIR_DEFAULTS;
   return {
     stairTime: posNum(r.stairTime, d.stairTime),
-    stairMaxAtOnce: isNum(r.stairMaxAtOnce) && r.stairMaxAtOnce >= 1 ? Math.floor(r.stairMaxAtOnce) : d.stairMaxAtOnce,
     stairCooldownPlayer: nonNeg(r.stairCooldownPlayer, d.stairCooldownPlayer),
     stairGraceAfter: nonNeg(r.stairGraceAfter, d.stairGraceAfter),
     arrivalPush: nonNeg(r.arrivalPush, d.arrivalPush),
