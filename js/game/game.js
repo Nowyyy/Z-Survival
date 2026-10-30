@@ -12,7 +12,7 @@ import { closedDoors, entryWindow } from '../core/layout.js';
 import { occupancy } from '../core/siege.js';
 import { edgeIndicator } from '../core/edge-arrow.js';
 import { urgentWindows, windowChips } from '../core/hud-windows.js';
-import { entryDirection, heightOf, startWalk, stepWalk, wantsStairs } from '../core/stair-walk.js';
+import { SWAP_UP, entryDirection, heightOf, pointAt, startWalk, stepWalk, wantsStairs } from '../core/stair-walk.js';
 import { arrivalKnockback, createStairWatch, stairArrival, stairParams, stairState, stairTriggers, startStairCooldown, stepStairWatch } from '../core/stairs.js';
 import { createWindowsState } from '../core/windows.js';
 import { moveCircle } from '../core/movement.js';
@@ -947,9 +947,25 @@ export function createGame(ctx) {
       // dans la partie découverte (le sol de l'étage les cache ailleurs) ; depuis le rez-de-chaussée ceux de l'étage ne sont pas dessinés (ni ombrés). Leur logique continue.
       const zf = floorOf(e);
       const shown = zf === pf() || (pf() === 'etage' && zf === 'rdc');
-      z.char.root.position.set(e.x, zf === pf() ? 0 : liftOf(zf) - liftOf(pf()), e.y);
-      if (z.char.root.visible !== shown) z.char.root.visible = shown;
-      z.char.root.rotation.y = sieging ? Math.PI / 2 - Math.atan2(-gw.normal.y, -gw.normal.x) : Math.PI / 2 - Math.atan2(p.y - e.y, p.x - e.x);
+      let at = { x: e.x, y: e.y, h: zf === pf() ? 0 : liftOf(zf) - liftOf(pf()) };
+      let face = null;
+      let onStair = false;
+      if (e.mode === 'escalier') {
+        // Franchissement : le zombie monte (ou descend) la rampe pendant stairT, selon le chemin et la hauteur de l'escalier, face à son sens de marche.
+        const path = stairsWorld.find((q) => q.id === e.stair)?.walk?.path;
+        if (path) {
+          const dir = e.stairFrom === 'etage' ? -1 : 1;
+          const k = Math.min(1, Math.max(0, num(e.stairT) / Math.max(0.1, stairCfg.stairTime)));
+          const q = pointAt(path, dir > 0 ? k : 1 - k);
+          at = { x: q.x, y: q.y, h: LIFT * q.t - liftOf(pf()) };
+          face = { x: q.tx * dir, y: q.ty * dir };
+          onStair = pf() === 'etage' || q.t < SWAP_UP + 0.1;
+        }
+      }
+      const visible = e.mode === 'escalier' && face ? onStair : shown;
+      z.char.root.position.set(at.x, at.h, at.y);
+      if (z.char.root.visible !== visible) z.char.root.visible = visible;
+      z.char.root.rotation.y = face ? Math.PI / 2 - Math.atan2(face.y, face.x) : sieging ? Math.PI / 2 - Math.atan2(-gw.normal.y, -gw.normal.x) : Math.PI / 2 - Math.atan2(p.y - e.y, p.x - e.x);
       const flashing = e.flash > 0;
       if (flashing !== z.flashing) {
         z.flashing = flashing;

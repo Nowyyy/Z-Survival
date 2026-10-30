@@ -75,3 +75,9 @@
 ## Mise à jour 8 (demande du propriétaire) : limite à 30 000 triangles, rien ne disparaît
 - **Limite** : 30 000 triangles (300 appels inchangés) ; tests, `conventions.md` et `CLAUDE.md` mis à jour. Le garde-corps garde une seule face (économie sans objet visible).
 - **Rez-de-chaussée** : tout le groupe `rdc` reste dessiné à l'étage (plus de masquage au changement d'étage logique) ; seul le sol opaque de l'étage cache ce qui est dessous, sans transparence.
+
+## Mise à jour 9 (retours du propriétaire) : zombies visibles dans les escaliers
+- **Zombies dans l'escalier** : pendant le mode escalier (1,5 s), le zombie monte ou descend la rampe en suivant `walk.path` et la hauteur de l'escalier, face à son sens de marche, au lieu de rester figé à l'entrée puis d'apparaître de l'autre côté. Depuis l'étage on le voit sur toute la rampe ; depuis le rez-de-chaussée, sur sa moitié basse.
+
+## À faire (demandé par le propriétaire, non fait)
+- **Fermer les murs et les piliers** du rez-de-chaussée jusqu'au plafond matérialisé par le sol du deuxième étage : ils s'arrêtent aujourd'hui à 60 de haut (hauteur des murs) alors que le sol de l'étage est à `floorLift` (180). À traiter : prolonger les murs et les piliers du rez-de-chaussée jusqu'à `floorLift` sous l'emprise de l'étage, en restant dans le budget (30 000 triangles, 300 appels) ; les fenêtres et les portes gardent leurs ouvertures.
