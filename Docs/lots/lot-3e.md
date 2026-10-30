@@ -56,3 +56,7 @@
 - **Garde-corps** : nouvelle texture générée `garde-corps` (genre `railing`, `textures.json`, 10 textures sur 14), barrière de 36 de haut autour du trou de chaque escalier de l'étage, sauf à l'entrée de l'escalier (largeur de la rampe + 8 de chaque côté, là où le chemin franchit le bord). Un seul maillage, deux grandes faces par barre (12 triangles de moins par barre que `tout`).
 - **Budget** : étage U4 (10 zombies, ombres) ≤ 15 000 triangles / 300 appels (mesuré par le test). Tests : e2e adaptés (mobilier exposé, garde-corps), délai Vitest 30 s (simulations lourdes lentes en CI).
 
+
+## Mise à jour 5 (retours du propriétaire) : sol visible au pied de l'escalier de l'aile, zombies dans les escaliers
+- **Trou de l'aile** : le trou du sol de l'étage (et l'obstacle de l'étage) commence 8 px plus au nord (254 → 246 en px du plan, `zones.json` et `etage.json`, `npm run carte` rejoué) : il couvre le pied de la rampe, donc le sol du rez-de-chaussée et les zombies qui y attendent se voient d'en haut. Limite : 246, car en dessous un point de réparation (U1) serait à moins de 80 du trou (test de `etage-donnees`).
+- **Zombies bloqués** : non reproduit. Simulations à la manche 31 (joueur au rez-de-chaussée ou à l'étage, deux escaliers, zombies sous le palier ou au pied) : tous montent et descendent. Un nouveau test e2e couvre le cas de l'aile (deux zombies du rez-de-chaussée montent, un zombie de l'étage descend). À revérifier en jouant.

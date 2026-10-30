@@ -550,6 +550,26 @@ test.describe('zombies sur deux étages', () => {
     expect(done.state.enemies[0].floor).toBe('etage');
   });
 
+  test('escalier de l\'aile : des zombies du rez-de-chaussée, même sous le palier, montent derrière le joueur ; un zombie de l\'étage le suit en bas', async ({ page }) => {
+    await open(page, '&wave=31&lvl=10&nospawn=1', SIZE, { freeze: false });
+    const r = await page.evaluate((st) => {
+      const zs = window.__zs;
+      const [p0, p3] = [st.walk.path[0], st.walk.path.at(-1)];
+      zs.setPlayer(p0.x + 40, p0.y - 40);
+      zs.spawnEnemy(p3.x + 40, p3.y - 60, { floor: 'rdc', mode: 'dedans' });
+      zs.spawnEnemy(p0.x + 150, p0.y + 60, { floor: 'rdc', mode: 'dedans' });
+      zs.useStair('escalier-aile');
+      for (let i = 0; i < 1200 && zs.getState().stairLog.filter((l) => l.type === 'stairArrive').length < 2; i += 1) zs.step(0.05);
+      const up = zs.getState().stairLog.filter((l) => l.type === 'stairArrive' && l.to === 'etage').length;
+      zs.spawnEnemy(p3.x + 40, p3.y + 40, { floor: 'etage', mode: 'dedans' });
+      zs.useStair('escalier-aile');
+      for (let i = 0; i < 1200 && zs.getState().stairLog.filter((l) => l.type === 'stairArrive' && l.to === 'rdc').length < 1; i += 1) zs.step(0.05);
+      return { up, down: zs.getState().stairLog.filter((l) => l.type === 'stairArrive' && l.to === 'rdc').length };
+    }, AILE);
+    expect(r.up).toBe(2);
+    expect(r.down).toBeGreaterThanOrEqual(1);
+  });
+
   test('au plus 2 zombies à la fois dans un escalier ; les autres attendent', async ({ page }) => {
     await open(page, '&wave=21&nospawn=1');
     await page.evaluate((b) => {
