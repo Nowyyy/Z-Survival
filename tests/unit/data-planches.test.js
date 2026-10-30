@@ -106,11 +106,11 @@ describe('lot 3a : textures.json et windows.json', () => {
   it('les textures existantes ne changent pas (mêmes entrées que main)', () => {
     let before;
     try {
-      before = JSON.parse(execSync('git show main:data/game/textures.json', { encoding: 'utf8' }));
+      before = JSON.parse(execSync('git show 5653aa0:data/game/textures.json', { encoding: 'utf8' }));
     } catch {
       return; // pas de branche main : rien à comparer
     }
-    // Valable avant et après la fusion du lot : `main` contient la texture « planche » une fois le lot fusionné.
+    // Comparé au commit qui précède le lot 3e (5653aa0) : valable avant et après la fusion du lot.
     // Lot 3e (mise à jour) : « garde-corps » (barrière de l'étage, demandée par le propriétaire) s'ajoute aux textures ; les autres sont intactes.
     expect(texturesJson.textures.filter((t) => !['planche', 'garde-corps'].includes(t.id))).toEqual(before.textures.filter((t) => t.id !== 'planche'));
     expect(texturesJson.budget).toEqual(before.budget);
@@ -136,7 +136,7 @@ describe('lot 3a : textures.json et windows.json', () => {
   it('les autres clés de windows.json sont inchangées depuis main (aucune règle ni valeur d\'équilibrage)', () => {
     let before;
     try {
-      before = JSON.parse(execSync('git show main:data/game/windows.json', { encoding: 'utf8' }));
+      before = JSON.parse(execSync('git show 5653aa0:data/game/windows.json', { encoding: 'utf8' }));
     } catch {
       return;
     }
@@ -191,7 +191,7 @@ describe('lot 3a : hygiène', () => {
   it('l\'atlas de props n\'est pas touché par la texture « planche » (régions identiques à main)', () => {
     let before;
     try {
-      before = JSON.parse(execSync('git show main:data/game/textures.json', { encoding: 'utf8' }));
+      before = JSON.parse(execSync('git show 5653aa0:data/game/textures.json', { encoding: 'utf8' }));
     } catch {
       return;
     }
