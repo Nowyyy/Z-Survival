@@ -295,6 +295,37 @@ GENRES.metal = {
   },
 };
 
+// Garde-corps (lot 3e, mise à jour) : barreaux verticaux entre deux lisses, métal sombre sur fond encore plus sombre (la texture est opaque : les vides entre les
+// barreaux sont le fond). Se répète en x et en y ; une hauteur de garde-corps = une répétition.
+GENRES.railing = {
+  colors: ['metal', 'dark'], main: 'metal', tile: 'xy',
+  make({ w, h, c, p, seed }) {
+    const bars = Math.round(param(p, 'bars', 6, 2, 16));
+    const barWidth = param(p, 'barWidth', 0.3, 0.1, 0.6);
+    const rail = param(p, 'rail', 0.14, 0.05, 0.3);
+    const grain = makeNoise(2, 96, seed + 1);
+    const rust = makeFbm(3, 3, seed + 2, 3, 0.5);
+    const pitch = w / bars;
+    return (x, y, out) => {
+      const u = x / w;
+      const v = y / h;
+      const cx = (x % pitch) / pitch;
+      const onRail = v < rail || v > 1 - rail;
+      const onBar = Math.abs(cx - 0.5) < barWidth / 2;
+      const base = onRail || onBar ? c.metal : c.dark;
+      let k = 1 + (grain(u, v) - 0.5) * 0.16 + (rust(u, v) - 0.5) * 0.24 + (hash(x, y, seed + 3) - 0.5) * 0.06;
+      if (onRail) {
+        const edge = Math.min(v, 1 - v);
+        if (edge < rail * 0.18) k *= 1.18; // arête éclairée de la lisse
+        else if (edge > rail * 0.85) k *= 0.8;
+      } else if (onBar) k *= Math.abs(cx - 0.5) < barWidth / 5 ? 1.12 : 0.92;
+      out[0] = base[0] * k;
+      out[1] = base[1] * k;
+      out[2] = base[2] * k;
+    };
+  },
+};
+
 // Asphalte seul : fonction partagée par asphalt et markings.
 function asphaltPixel({ w, h, c, p, seed }) {
   const stones = makeNoise(96, 96, seed + 1);

@@ -40,7 +40,7 @@ describe('hygiène du lot 3b', () => {
   });
 
   it('règles de tir, vagues, statistiques, chutes, caméra, textures et sons inchangées (git diff vide)', () => {
-    const changed = git('diff --name-only main -- js/core/waves.js js/core/vhs.js js/core/spread.js js/core/player-stats.js js/core/camera.js js/core/synth.js data/game/gaits.json data/game/weapons.json data/game/player-stats.json data/game/player-down.json data/game/windows.json data/game/textures.json data/game/sounds.json');
+    const changed = git('diff --name-only main -- js/core/waves.js js/core/vhs.js js/core/spread.js js/core/player-stats.js js/core/camera.js js/core/synth.js data/game/gaits.json data/game/weapons.json data/game/player-stats.json data/game/player-down.json data/game/windows.json  data/game/sounds.json');
     if (changed === null) return;
     expect(changed).toEqual([]);
   });

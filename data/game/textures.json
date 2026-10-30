@@ -93,6 +93,22 @@
    "params": {}
   },
   {
+   "id": "garde-corps",
+   "kind": "railing",
+   "size": 128,
+   "repeat": 36,
+   "seed": 18,
+   "colors": {
+    "metal": "--game-metal",
+    "dark": "--game-grout"
+   },
+   "params": {
+    "bars": 6,
+    "barWidth": 0.3,
+    "rail": 0.14
+   }
+  },
+  {
    "id": "atlas-props",
    "kind": "atlas",
    "size": 512,

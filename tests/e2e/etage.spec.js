@@ -34,7 +34,7 @@ test.describe('étage : départ, visibilité, étiquettes', () => {
     expect(s.floor.multi).toBe(true);
     expect(s.floor.stairs.map((q) => [q.id, q.usable])).toEqual([['escalier-aile', false], ['escalier-depart', false]]);
     expect(s.scene.visible.etage).toBe(0);
-    expect(s.scene.visible.rdc).toBeGreaterThan(5);
+    expect(s.scene.visible.rdc + s.scene.visible.rdcExposed).toBeGreaterThan(5);
     expect(s.scene.visible.exterieur).toBeGreaterThan(3);
     expect(s.scene.slab).toBe(false);
     expect(s.scene.exteriorY).toBe(0);
@@ -247,14 +247,16 @@ test.describe('escalier physique', () => {
     expect(r.laser).toBeNull();
     expect(r.vis.etage).toBeGreaterThan(5); // l'étage est dessiné dès que le joueur a pris de la hauteur
     expect(r.vis.rdcShell).toBeGreaterThanOrEqual(2);
-    expect(r.vis.rdc).toBeGreaterThan(5);
+    expect(r.vis.rdc + r.vis.rdcExposed).toBeGreaterThan(5);
   });
 
-  test('de l\'étage, on voit le sol du rez-de-chaussée en dessous (coque : sol, murs et rampes) ; son mobilier et ses fenêtres ne sont pas dessinés', async ({ page }) => {
+  test('de l\'étage, on voit le sol du rez-de-chaussée en dessous (coque : sol, murs et rampes) ; son mobilier reste dessiné (rien ne disparaît), sauf ce qui est couvert par l\'étage ; une barrière entoure le trou', async ({ page }) => {
     await open(page, '&wave=31&floor=1&nospawn=1');
     const s = await STATE(page);
     expect(s.scene.visible.rdcShell).toBeGreaterThanOrEqual(2); // sol et murs (les marches sont dans le maillage des murs)
     expect(s.scene.visible.rdc).toBe(0);
+    expect(s.scene.visible.rdcExposed).toBeGreaterThan(3); // mobilier, fenêtres et portes découverts par le trou ou hors de l'étage
+    expect(await page.evaluate(() => window.__zs.getState().scene.fence)).toBeGreaterThan(0);
     expect(s.scene.elevation).toBe(LIFT);
     expect(s.scene.exteriorY).toBe(-LIFT);
   });

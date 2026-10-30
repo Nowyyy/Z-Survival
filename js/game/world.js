@@ -16,6 +16,7 @@ import { createDebrisMeshes, createWindowMeshes } from './windows-mesh.js';
 const FAR_GROUND = 40_000; // sol extérieur étendu bien au-delà du monde
 const ROAD_Y = 0.4; // route, trottoir et sentiers : plaques plates au-dessus de l'herbe
 const ATLAS = 'atlas-props';
+const FENCE_HEIGHT = 36; // garde-corps du trou des escaliers : une répétition de la texture « garde-corps »
 
 // Région d'atlas par type de meuble (data/game/world.json : table, comptoir, caisse, armoire, colonne, etagere).
 const FURNITURE_REGION = { table: 'bois', comptoir: 'tole', caisse: 'caisse', armoire: 'bois-sombre', colonne: 'colonne', etagere: 'etagere', pilier: 'colonne', escalier: 'tole' }; // lot 3b : pilier et escalier plein (texture du comptoir)
@@ -67,21 +68,23 @@ class Builder {
     this.quad([[x0, y, z0], [x1, y, z0], [x1, y, z1], [x0, y, z1]], [0, 1, 0], [uv(x0, z0), uv(x1, z0), uv(x1, z1), uv(x0, z1)]);
   }
 
-  // Boîte (sans dessous). faces : 'tout', 'cotes' (sans le dessus) ou 'dessus' (rien d'autre). Texture répétée { repeat } ou fenêtre d'atlas { rect, scale, seed }.
+  // Boîte (sans dessous). faces : 'tout', 'cotes' (sans le dessus), 'longs' (les deux grandes faces verticales) ou 'dessus' (rien d'autre). Texture répétée { repeat } ou fenêtre d'atlas { rect, scale, seed }.
   box({ x0, y0, z0, x1, y1, z1 }, mapping, faces = 'tout') {
     const dims = { x: x1 - x0, y: y1 - y0, z: z1 - z0 };
     const list = [];
     if (faces !== 'cotes') list.push({ n: [0, 1, 0], c: [[x0, y1, z0], [x1, y1, z0], [x1, y1, z1], [x0, y1, z1]], s: [0, 1, 1, 0], t: [0, 0, 1, 1], fw: dims.x, fh: dims.z, a: (p) => p[0], b: (p) => p[2] });
     if (faces !== 'dessus') {
+      const long = faces === 'longs' ? (dims.x >= dims.z ? 'x' : 'z') : null; // 'longs' : seulement les deux grandes faces verticales
       const along = (axis) => (p) => p[axis];
       list.push(
-        { n: [0, 0, 1], c: [[x0, y1, z1], [x1, y1, z1], [x1, y0, z1], [x0, y0, z1]], s: [0, 1, 1, 0], t: [0, 0, 1, 1], fw: dims.x, fh: dims.y, a: along(0), b: (p) => -p[1] },
-        { n: [0, 0, -1], c: [[x0, y1, z0], [x1, y1, z0], [x1, y0, z0], [x0, y0, z0]], s: [0, 1, 1, 0], t: [0, 0, 1, 1], fw: dims.x, fh: dims.y, a: along(0), b: (p) => -p[1] },
-        { n: [1, 0, 0], c: [[x1, y1, z0], [x1, y1, z1], [x1, y0, z1], [x1, y0, z0]], s: [0, 1, 1, 0], t: [0, 0, 1, 1], fw: dims.z, fh: dims.y, a: along(2), b: (p) => -p[1] },
-        { n: [-1, 0, 0], c: [[x0, y1, z0], [x0, y1, z1], [x0, y0, z1], [x0, y0, z0]], s: [0, 1, 1, 0], t: [0, 0, 1, 1], fw: dims.z, fh: dims.y, a: along(2), b: (p) => -p[1] },
+        { n: [0, 0, 1], skip: long === 'z', c: [[x0, y1, z1], [x1, y1, z1], [x1, y0, z1], [x0, y0, z1]], s: [0, 1, 1, 0], t: [0, 0, 1, 1], fw: dims.x, fh: dims.y, a: along(0), b: (p) => -p[1] },
+        { n: [0, 0, -1], skip: long === 'z', c: [[x0, y1, z0], [x1, y1, z0], [x1, y0, z0], [x0, y0, z0]], s: [0, 1, 1, 0], t: [0, 0, 1, 1], fw: dims.x, fh: dims.y, a: along(0), b: (p) => -p[1] },
+        { n: [1, 0, 0], skip: long === 'x', c: [[x1, y1, z0], [x1, y1, z1], [x1, y0, z1], [x1, y0, z0]], s: [0, 1, 1, 0], t: [0, 0, 1, 1], fw: dims.z, fh: dims.y, a: along(2), b: (p) => -p[1] },
+        { n: [-1, 0, 0], skip: long === 'x', c: [[x0, y1, z0], [x0, y1, z1], [x0, y0, z1], [x0, y0, z0]], s: [0, 1, 1, 0], t: [0, 0, 1, 1], fw: dims.z, fh: dims.y, a: along(2), b: (p) => -p[1] },
       );
     }
     list.forEach((f, k) => {
+      if (f.skip) return;
       let uv;
       if (mapping?.rect) {
         const { rect, scale, seed } = mapping;
@@ -365,13 +368,14 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
   scene.background = new THREE.Color(palette.fog);
   // Nuit et brume (lot 3b) : le brouillard est réglé par setFog d'après la distance de la caméra (render.json : fog.near et fog.far, en multiples de cette distance).
   scene.fog = new THREE.Fog(palette.fog, 1e6, 2e6);
-  // Groupes : exterieur (sol, décor, brume), rdc (meubles, détails, fenêtres, portes, marques : seulement quand le joueur est au rez-de-chaussée), rdcShell (sol, murs et
+  // Groupes : exterieur (sol, décor, brume), rdc (meubles, détails, fenêtres, portes recouverts par le sol de l'étage : seulement quand le joueur est au rez-de-chaussée),
+  // rdcExposed (les mêmes, mais hors du sol de l'étage ou sous un trou d'escalier : toujours dessinés, rien ne disparaît vu d'en haut), rdcShell (sol, murs et
   // rampes du rez-de-chaussée : toujours dessinés, on les voit sous l'étage), etage (tout l'étage : seulement quand le joueur est monté). Ils sont décalés en hauteur
   // par setElevation : le joueur reste à y = 0, c'est le monde qui descend quand il monte (et dynamic porte les zombies et les effets de l'étage du joueur).
-  const groups = { exterieur: new THREE.Group(), rdc: new THREE.Group(), rdcShell: new THREE.Group(), etage: new THREE.Group() };
+  const groups = { exterieur: new THREE.Group(), rdc: new THREE.Group(), rdcExposed: new THREE.Group(), rdcShell: new THREE.Group(), etage: new THREE.Group() };
   for (const [name, g] of Object.entries(groups)) {
     g.name = name;
-    g.userData.floor = name === 'rdcShell' ? 'rdc' : name;
+    g.userData.floor = name === 'rdcShell' || name === 'rdcExposed' ? 'rdc' : name;
     scene.add(g);
   }
   groups.etage.visible = false;
@@ -384,7 +388,12 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
   const STEPS = 10;
   // Le trou de chaque escalier dans le sol de l'étage est son emprise pleine de l'étage (zones.json : la même zone est un obstacle pour les joueurs et les zombies, donc on ne
   // peut pas passer derrière l'escalier et on voit le rez-de-chaussée en dessous) ; sans emprise, des bandes qui suivent la montée.
-  const holes = stairs.map((st) => ({ id: st.id, rise: riseOf(st.walk), solid: st.floors?.etage?.solid ?? null })).filter((h) => h.rise !== null).map((h) => ({ ...h, rects: h.solid ? [{ x0: h.solid.x, y0: h.solid.y, x1: h.solid.x + h.solid.w, y1: h.solid.y + h.solid.h }] : holeRects(h.rise) }));
+  const holes = stairs.map((st) => ({ id: st.id, rise: riseOf(st.walk), solid: st.floors?.etage?.solid ?? null, end: st.walk?.path?.at(-1) ?? null })).filter((h) => h.rise !== null).map((h) => ({ ...h, rects: h.solid ? [{ x0: h.solid.x, y0: h.solid.y, x1: h.solid.x + h.solid.w, y1: h.solid.y + h.solid.h }] : holeRects(h.rise) }));
+  // Un élément du rez-de-chaussée est « exposé » (dessiné aussi quand le joueur est à l'étage) s'il n'est pas sous le sol de l'étage, ou s'il est sous un trou d'escalier : le
+  // sol de l'étage cache le reste, inutile de le dessiner (budget de triangles).
+  const etageFloorRects = floors.includes('etage') ? layoutOf('etage').floor : null;
+  const inRect = (r, x, z) => x >= r.x && x <= r.x + r.w && z >= r.y && z <= r.y + r.h;
+  const exposedAt = (x, z) => etageFloorRects !== null && (!etageFloorRects.some((r) => inRect(r, x, z)) || holes.some((h) => h.rects.some((r) => x >= r.x0 && x <= r.x1 && z >= r.y0 && z <= r.y1)));
 
   scene.add(new THREE.AmbientLight(palette.ambient, render.light.ambient));
   const sun = new THREE.DirectionalLight(palette.sun, render.light.sun);
@@ -409,7 +418,7 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
     repeat: { road: textures.repeat('route'), sidewalk: textures.repeat('trottoir') },
   };
   const outdoorSoil = textures.repeat('sol-exterieur');
-  const onFloor = Object.fromEntries(floors.map((f) => [f, { floor: new Builder(), wall: new Builder(), detail: new Builder(), props: new Builder() }]));
+  const onFloor = Object.fromEntries(floors.map((f) => [f, { floor: new Builder(), wall: new Builder(), detail: new Builder(), props: new Builder(), detailUp: new Builder(), propsUp: new Builder() }]));
 
   // Sol extérieur de terre étendu bien au-delà du monde ; dans le monde, l'herbe (salle du lot 1m : marge plate de terre, comme avant).
   ex.soil.slab(size.width / 2 - FAR_GROUND / 2, size.height / 2 - FAR_GROUND / 2, size.width / 2 + FAR_GROUND / 2, size.height / 2 + FAR_GROUND / 2, -1.5, outdoorSoil);
@@ -441,7 +450,10 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
           const p0 = riseAt(rise, i / STEPS);
           const p1 = riseAt(rise, (i + 1) / STEPS);
           const run = Math.hypot(p1.x - p0.x, p1.y - p0.y) || 1;
-          orientedStep(fb.wall, (p0.x + p1.x) / 2, (p0.y + p1.y) / 2, (p1.x - p0.x) / run, (p1.y - p0.y) / run, run + 1, rise.width, lift * p1.t, wallRepeat);
+          // La dernière marche se prolonge de 26 unités sous le sol de l'étage : plus de vide entre l'escalier et le sol (un peu sous le niveau du sol, pour ne pas le doubler).
+          const last = i === STEPS - 1;
+          const ext = last ? 26 : 0;
+          orientedStep(fb.wall, (p0.x + p1.x) / 2 + ((p1.x - p0.x) / run) * (ext / 2), (p0.y + p1.y) / 2 + ((p1.y - p0.y) / run) * (ext / 2), (p1.x - p0.x) / run, (p1.y - p0.y) / run, run + 1 + ext, rise.width, lift * p1.t - (last ? 0.2 : 0), wallRepeat);
         }
       }
     }
@@ -455,8 +467,9 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
         const r = region(p.region);
         builder.box({ x0: p.x0, x1: p.x1, y0: p.y0, y1: p.y1, z0: p.z0, z1: p.z1 }, { rect: r, scale: r.scale, seed: i * 8 + k + 1 }, p.faces);
       };
-      parts.body.forEach((p, k) => draw(fb.props, p, k));
-      parts.detail.forEach((p, k) => draw(fb.detail, p, k + 4));
+      const up = f === 'rdc' && exposedAt(fu.x + fu.w / 2, fu.y + fu.h / 2);
+      parts.body.forEach((p, k) => draw(up ? fb.propsUp : fb.props, p, k));
+      parts.detail.forEach((p, k) => draw(up ? fb.detailUp : fb.detail, p, k + 4));
     });
   }
 
@@ -478,6 +491,10 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
     tag(fb.wall.mesh(shellOf(f), wallMat, { receive: true }), f);
     tag(fb.detail.mesh(groups[f], atlasMaterial, { cast: false, receive: true }), f);
     tag(fb.props.mesh(groups[f], atlasMaterial, { cast: true, receive: true }), f);
+    if (f === 'rdc') {
+      tag(fb.detailUp.mesh(groups.rdcExposed, atlasMaterial, { cast: false, receive: true }), f);
+      tag(fb.propsUp.mesh(groups.rdcExposed, atlasMaterial, { cast: true, receive: true }), f);
+    }
   }
 
   // Jupe sombre (lot 3e, mise à jour : l'étage est au-dessus) : sous chaque rectangle du sol de l'étage, quatre faces opaques (--game-void) jusqu'au sol du rez-de-chaussée,
@@ -529,6 +546,45 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
     }
   });
 
+  // Garde-corps (lot 3e, mise à jour du propriétaire) : une barrière basse (texture « garde-corps », générée) tout autour de chaque trou d'escalier de l'étage, sauf à
+  // l'entrée de l'escalier (là où le palier du chemin franchit le bord du trou : largeur de la rampe + 8 de chaque côté).
+  if (floors.includes('etage') && holes.length > 0) {
+    const fence = new Builder();
+    const repeat = textures.repeat('garde-corps');
+    const T = 5; // épaisseur
+    for (const { rise, rects, end: b } of holes) {
+      const r = rects[0];
+      const a = rise.points.at(-1);
+      // Sortie de la droite A → B hors du rectangle : le bord franchi et le point.
+      const d = { x: b.x - a.x, y: b.y - a.y };
+      const exits = [];
+      if (d.x > 0) exits.push({ t: (r.x1 - a.x) / d.x, side: 'x1' });
+      if (d.x < 0) exits.push({ t: (r.x0 - a.x) / d.x, side: 'x0' });
+      if (d.y > 0) exits.push({ t: (r.y1 - a.y) / d.y, side: 'y1' });
+      if (d.y < 0) exits.push({ t: (r.y0 - a.y) / d.y, side: 'y0' });
+      const exit = exits.filter((q) => q.t >= -1e-6).sort((m, n) => m.t - n.t)[0] ?? null;
+      const gapAt = exit ? { side: exit.side, c: exit.side[0] === 'x' ? a.y + d.y * Math.max(0, exit.t) : a.x + d.x * Math.max(0, exit.t), half: rise.width / 2 + 8 } : null;
+      const box = (x0, x1, z0, z1) => { if (x1 - x0 > 0.5 && z1 - z0 > 0.5) fence.box({ x0, x1, y0: 0, y1: FENCE_HEIGHT, z0, z1 }, { repeat }, 'longs'); };
+      const run = (side, from, to, put) => {
+        const hole = gapAt?.side === side ? [gapAt.c - gapAt.half, gapAt.c + gapAt.half] : null;
+        if (hole === null) put(from, to);
+        else {
+          put(from, Math.min(to, hole[0]));
+          put(Math.max(from, hole[1]), to);
+        }
+      };
+      run('y0', r.x0 - T, r.x1 + T, (u, v) => box(u, v, r.y0 - T, r.y0));
+      run('y1', r.x0 - T, r.x1 + T, (u, v) => box(u, v, r.y1, r.y1 + T));
+      run('x0', r.y0, r.y1, (u, v) => box(r.x0 - T, r.x0, u, v));
+      run('x1', r.y0, r.y1, (u, v) => box(r.x1, r.x1 + T, u, v));
+    }
+    const fenceMesh = fence.mesh(groups.etage, mat('garde-corps'), { cast: false, receive: true });
+    if (fenceMesh) {
+      fenceMesh.name = 'garde-corps';
+      fenceMesh.userData.floor = 'etage';
+    }
+  }
+
   // Les zones de déclenchement des escaliers ne sont plus dessinées au sol (retour du propriétaire : on entre dans l'escalier en marchant vers lui).
   const marks = new Map();
 
@@ -569,9 +625,15 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
     const sheet = plankSheet(textures.size('planche'), textures.params('planche'));
     const material = new THREE.MeshLambertMaterial({ map: textures.texture('planche') });
     const geoms = windowGeoms.map((g) => ({ ...g, inner: layoutOf(g.floor ?? 'rdc').faceInner(g) }));
-    const parts = floors.map((f) => ({ f, geoms: geoms.filter((g) => (g.floor ?? 'rdc') === f) })).filter((q) => q.geoms.length > 0);
-    const wm = parts.map(({ f, geoms: gs }) => createWindowMeshes({ scene: groups[f], material, geoms: gs, settings, sheet, seed }));
-    const dm = parts.map(({ f, geoms: gs }) => createDebrisMeshes({ scene: groups[f], material, settings, sheet, ids: gs.map((g) => g.id) }));
+    // Les fenêtres du rez-de-chaussée hors du sol de l'étage (ou sous un trou) vivent dans le groupe toujours dessiné, les autres dans celui du rez-de-chaussée.
+    const parts = floors.flatMap((f) => {
+      const mine = geoms.filter((g) => (g.floor ?? 'rdc') === f);
+      if (f !== 'rdc' || etageFloorRects === null) return [{ scene: groups[f], geoms: mine }];
+      const up = mine.filter((g) => exposedAt(g.center.x, g.center.y));
+      return [{ scene: groups.rdc, geoms: mine.filter((g) => !up.includes(g)) }, { scene: groups.rdcExposed, geoms: up }];
+    }).filter((q) => q.geoms.length > 0);
+    const wm = parts.map(({ scene, geoms: gs }) => createWindowMeshes({ scene, material, geoms: gs, settings, sheet, seed }));
+    const dm = parts.map(({ scene, geoms: gs }) => createDebrisMeshes({ scene, material, settings, sheet, ids: gs.map((g) => g.id) }));
     windowMeshes = {
       meshes: wm.flatMap((w) => w.meshes),
       sync: (state) => wm.forEach((w) => w.sync(state)),
@@ -609,7 +671,7 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
         visual = r.h > r.w ? { x: r.x + r.w / 2 - t / 2, y: r.y + 4 + 0.5, w: t, h: along - 1 } : { x: r.x + 4 + 0.5, y: r.y + r.h / 2 - t / 2, w: along - 1, h: t };
       }
       builder.box(rectBox(visual, 0, r.hauteur - 1), { rect: doorRegion, scale: doorRegion.scale, seed: 900 });
-      const mesh = builder.mesh(groups[bl.floor], atlasMaterial, { cast: false, receive: true });
+      const mesh = builder.mesh(bl.floor === 'rdc' && exposedAt(r.x + r.w / 2, r.y + r.h / 2) ? groups.rdcExposed : groups[bl.floor], atlasMaterial, { cast: false, receive: true });
       if (mesh) {
         mesh.name = bl.id;
         mesh.userData.floor = bl.floor;
@@ -671,6 +733,7 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
       groups.exterieur.position.y = 0 - e;
       groups.rdc.position.y = 0 - e;
       groups.rdcShell.position.y = 0 - e;
+      groups.rdcExposed.position.y = 0 - e;
       groups.etage.position.y = lift - e;
       groups.etage.visible = floors.includes('etage') && e > 0.01;
       groups.rdc.visible = floor !== 'etage';
@@ -697,7 +760,7 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
         });
         return g.visible ? n : 0;
       };
-      return { exteriorY: groups.exterieur.position.y, elevation: elevationNow, visible: Object.fromEntries(Object.entries(groups).map(([k, g]) => [k, visibleOf(g)])), slab: slab ? slab.visible && groups.etage.visible : false, marks: [...marks].filter(([, m]) => m.visible && m.parent?.visible).map(([k]) => k) };
+      return { exteriorY: groups.exterieur.position.y, elevation: elevationNow, visible: Object.fromEntries(Object.entries(groups).map(([k, g]) => [k, visibleOf(g)])), slab: slab ? slab.visible && groups.etage.visible : false, fence: groups.etage.children.filter((m) => m.name === 'garde-corps').length, marks: [...marks].filter(([, m]) => m.visible && m.parent?.visible).map(([k]) => k) };
     },
     setFog(distance) {
       scene.fog.near = distance * render.fog.near;

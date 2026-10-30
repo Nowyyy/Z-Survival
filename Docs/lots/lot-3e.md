@@ -49,3 +49,10 @@
 - **Trou** : à l'étage, le coin autour de l'escalier de départ (derrière la rampe, à côté, en dessous, jusqu'aux murs : 250, 230 → 290, 290) est un trou dans le sol et un obstacle (la même zone) : on ne peut plus passer derrière l'escalier et on y voit le rez-de-chaussée. Parois sombres sur les quatre côtés ; le trou de l'escalier de l'aile reste celui de sa rampe. Le pilier voisin est déplacé.
 - **Zombies** : depuis l'étage, les zombies du rez-de-chaussée sont dessinés (floorLift plus bas), visibles par le trou et dans la partie découverte ; ceux de l'étage ne le sont toujours pas depuis le rez-de-chaussée. Aucun changement de logique (tir, contact, siège restent par étage).
 - **Tests** : 2 tests e2e (trou et zombies) ; test du mur invisible adapté.
+
+## Mise à jour 4 (retours du propriétaire) : rien ne disparaît, haut de l'escalier, garde-corps
+- **Rien ne disparaît** : depuis l'étage, le mobilier, les fenêtres, les planches et les portes du rez-de-chaussée restent dessinés quand ils ne sont pas sous le sol de l'étage (groupe `rdcExposed`, toujours visible) ; seul ce qui est couvert par l'étage (groupe `rdc`) est caché.
+- **Haut de l'escalier** : la dernière marche est prolongée de 26 unités vers le sol de l'étage et affleure (0,2 sous le sol) : plus de vide entre le sol et la rampe.
+- **Garde-corps** : nouvelle texture générée `garde-corps` (genre `railing`, `textures.json`, 10 textures sur 14), barrière de 36 de haut autour du trou de chaque escalier de l'étage, sauf à l'entrée de l'escalier (largeur de la rampe + 8 de chaque côté, là où le chemin franchit le bord). Un seul maillage, deux grandes faces par barre (12 triangles de moins par barre que `tout`).
+- **Budget** : étage U4 (10 zombies, ombres) ≤ 15 000 triangles / 300 appels (mesuré par le test). Tests : e2e adaptés (mobilier exposé, garde-corps), délai Vitest 30 s (simulations lourdes lentes en CI).
+
