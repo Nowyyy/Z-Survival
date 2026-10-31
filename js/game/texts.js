@@ -54,3 +54,14 @@ export const FLOOR_TEXTS = { chip: { rdc: 'game.hud.floor.rdc', etage: 'game.hud
 export const DOWN_TEXTS = {
   chutes: 'game.down.chutes', chutesLabel: 'game.down.chutes.label', title: 'game.down.title', countdown: 'game.down.countdown', grace: 'game.down.grace', liveDown: 'game.down.live.down', liveUp: 'game.down.live.up',
 };
+
+// Lot 4 : argent et sauvegarde. Puce d'argent du HUD (aria-label), ligne de solde de la pause, lignes de l'écran de fin (E2-7), annonces vocales ; le texte de
+// l'état de la sauvegarde dépend de getState().save.status (saved, pending, failed, readonly, locked, unavailable, memory).
+export const MONEY_TEXTS = {
+  chip: 'game.hud.moneyLabel', pauseBalance: 'game.pause.balance', earned: 'game.end.earned', balance: 'game.end.balance', best: 'game.end.best', record: 'game.end.record',
+  trial: 'game.end.trial', saveLink: 'game.end.saveLink', worldBonus: 'game.end.worldBonus', liveWave: 'game.live.waveBonus', liveRecord: 'game.live.record',
+};
+export const SAVE_TEXTS = {
+  saved: 'game.save.status.saved', pending: 'game.save.status.pending', failed: 'game.save.status.failed', readonly: 'game.save.status.readonly',
+  locked: 'game.save.status.locked', unavailable: 'game.save.status.unavailable', memory: 'game.save.status.memory',
+};
