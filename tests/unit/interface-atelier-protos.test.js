@@ -149,9 +149,19 @@ describe('rendu HTML des directions (écrans de jeu)', () => {
     expect(html.indexOf('data-ui="essai"')).toBeLessThan(html.indexOf('p-cluster p-tr'));
   });
 
-  it('B : argent et tués de même largeur, et ensemble de la hauteur du bouton Pause (qui garde 44 px au moins) ; à terre sans cadre', () => {
+  it('B : restants et tués à droite, de même largeur, ensemble de la hauteur du bouton Pause (44 px au moins) ; REC, VIE et chutes + étage alignés à droite ; à terre sans cadre', () => {
     const b = css['proto-b'];
-    expect(b).toMatch(/\.ui3k-dir-b \.p-kills,\n\.ui3k-dir-b \.p-money \{[^}]*width: 7em;/);
+    const w = (sel) => new RegExp(`\\.ui3k-dir-b \\.${sel} \\{[^}]*?width: ([^;]+);`).exec(b)[1];
+    expect(w('p-remaining')).toBe(w('p-kills'));
+    expect(w('p-life')).toBe(w('p-chrono'));
+    expect(w('p-floor')).toBe(`calc(${w('p-chrono')} - ${w('p-chutes')} - var(--ui3k-gap))`);
+    expect(b).toMatch(/\.ui3k-dir-b \.p-tl \{[^}]*width: calc\(8\.8em \+ 0\.35em\);[^}]*padding: 0\.35em 0 0 0\.35em;/);
+    const html = renderHud(combat, 'B', MACROS.B, t);
+    const tr = html.slice(html.indexOf('p-cluster p-tr'));
+    expect(tr.indexOf('data-ui="restants"')).toBeLessThan(tr.indexOf('data-ui="tues"'));
+    expect(tr).not.toContain('data-ui="argent"');
+    const tc = html.slice(html.indexOf('p-cluster p-tc'), html.indexOf('p-cluster p-tr'));
+    expect(tc.indexOf('data-ui="vague"')).toBeLessThan(tc.indexOf('data-ui="argent"'));
     expect(b).toMatch(/--ui3k-pause-size: max\(44px, calc\(2 \* var\(--ui3k-row\) \+ var\(--ui3k-gap\)\)\);/);
     expect(b).toMatch(/\.ui3k-dir-b \.p-tr \.p-block \{\s*height: calc\(\(var\(--ui3k-pause-size\) - var\(--ui3k-gap\)\) \/ 2\);/);
     expect(b).not.toMatch(/\.ui3k-dir-b \.p-down-body \{[^}]*border:/);
@@ -228,7 +238,7 @@ describe('« Mes choix » : format, lecture, entrées hostiles', () => {
 
   it('format exact : une ligne par écran (ordre des écrans), puis priorite2', () => {
     expect(serializeChoices(choices, cfg)).toBe([
-      'ecran=hud;direction=B;argent=haut-droite;texte=M;densite=compacte;fond=leger;contour=aucun',
+      'ecran=hud;direction=B;argent=sous-vague;texte=M;densite=compacte;fond=leger;contour=aucun',
       'ecran=pause;direction=A;argent=haut-droite;texte=M;densite=compacte;fond=transparent;contour=fin',
       'ecran=menu;direction=actuel',
       'priorite2=retour-degats:B',
@@ -297,7 +307,7 @@ describe('macros aux limites : débordement calculé à 667×375 (largeurs fixes
   };
   const LAYOUT = {
     a: { tl: ['p-life', 'p-chutes', 'p-floor'], tc: ['p-wave'], tr: ['p-money'], pause: 44, pad: 0 },
-    b: { tl: ['p-tl'], tc: ['p-wave'], tr: ['p-money'], pause: 47, pad: 0.35 },
+    b: { tl: ['p-chrono'], tc: ['p-wave'], tr: ['p-remaining'], pause: 47, pad: 0.35 },
     c: { tl: ['p-tl'], tc: ['p-wave'], tr: ['p-money'], pause: 52, pad: 0 },
   };
   it.each(['a', 'b', 'c'].flatMap((d) => ['S', 'M', 'L'].map((s) => [d, s])))('direction %s, texte %s : les trois colonnes ne se touchent pas', (d, size) => {

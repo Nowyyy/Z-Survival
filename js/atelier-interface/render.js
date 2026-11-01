@@ -52,10 +52,12 @@ export function renderHud(s, dir, macros, t) {
   const corners = dir === 'B' ? '<span class="p-corner p-corner-tl" aria-hidden="true"></span><span class="p-corner p-corner-tr" aria-hidden="true"></span>' : '';
   const pos = macros?.argent ?? 'haut-droite';
   const tl = { A: [life, chutes, floor], B: [chrono, life, chutes, floor], C: [life, chutes, floor] }[dir];
-  const tc = dir === 'B' ? [wave, remaining, trial] : [wave, remaining];
-  const tr = { A: [trial], B: [kills], C: [trial] }[dir];
+  // B (retour du propriétaire) : « Restants » passe à droite au-dessus des tués, l'argent sous la vague (macro « sous-vague » par défaut).
+  const tc = dir === 'B' ? [wave, trial] : [wave, remaining];
+  const tr = { A: [trial], B: [remaining, kills], C: [trial] }[dir];
   if (pos === 'haut-gauche') tl.push(money);
-  else if (pos === 'sous-vague') tc.push(money);
+  else if (pos === 'sous-vague') tc.splice(1, 0, money);
+  else if (dir === 'B') tr.push(money);
   else tr.unshift(money);
   return `<div class="p-hud" data-block="E2-2">${corners}<div class="p-cluster p-tl">${tl.join('')}</div><div class="p-cluster p-tc">${tc.join('')}</div><div class="p-cluster p-tr">${tr.join('')}</div></div>${pause}`;
 }

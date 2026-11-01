@@ -285,7 +285,7 @@ test.describe('page : accessibilité, cibles, CLS, simulateurs, Mes choix', () =
     await page.click('#btn-keep');
     await set(page, { direction: 'A', screen: 'pause' });
     await page.click('#btn-keep');
-    await expect(page.locator('#choices')).toHaveValue('ecran=hud;direction=B;argent=haut-droite;texte=M;densite=compacte;fond=leger;contour=aucun\necran=pause;direction=A;argent=haut-droite;texte=M;densite=compacte;fond=transparent;contour=fin');
+    await expect(page.locator('#choices')).toHaveValue('ecran=hud;direction=B;argent=sous-vague;texte=M;densite=compacte;fond=leger;contour=aucun\necran=pause;direction=A;argent=haut-droite;texte=M;densite=compacte;fond=transparent;contour=fin');
     await page.click('#btn-copy');
     await expect(page.locator('#choices-status')).not.toHaveText('');
     const parsed = await page.evaluate(() => window.__zsUi.parseChoices(window.__zsUi.choicesText()));

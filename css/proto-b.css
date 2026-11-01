@@ -27,6 +27,7 @@
   color: var(--color-action-text);
 }
 
+/* Colonne de gauche (retour du propriétaire) : REC, VIE et la ligne chutes + étage s'arrêtent au même bord droit, celui de REC (8,8 em). */
 .ui3k-dir-b .p-chrono {
   width: 8.8em;
 }
@@ -47,7 +48,7 @@
 }
 
 .ui3k-dir-b .p-life {
-  width: 7.6em;
+  width: 8.8em;
 }
 
 .ui3k-dir-b .p-life-text {
@@ -82,21 +83,25 @@
 }
 
 .ui3k-dir-b .p-remaining {
-  justify-content: center;
+  justify-content: flex-end;
   width: 8.6em;
 }
 
 /* Étage : largeur fixe pour « RDC » comme pour « Étage » (rien ne bouge en changeant d'étage). */
 .ui3k-dir-b .p-floor {
   justify-content: center;
-  width: 5em;
+  width: calc(8.8em - 3em - var(--ui3k-gap));
 }
 
-/* Argent et tués : même largeur (tués sur 4 chiffres : au-delà de 999), lignes de hauteur fixe. */
-.ui3k-dir-b .p-kills,
-.ui3k-dir-b .p-money {
+/* Colonne de droite : restants et tués de même largeur (tués sur 4 chiffres), lignes de hauteur fixe ; l'argent sous la vague, de la largeur de la vague. */
+.ui3k-dir-b .p-kills {
   justify-content: flex-end;
-  width: 7em;
+  width: 8.6em;
+}
+
+.ui3k-dir-b .p-money {
+  justify-content: center;
+  width: 8.6em;
 }
 
 .ui3k-dir-b .p-tr .p-block {
@@ -138,7 +143,7 @@
   flex-direction: row;
   flex-wrap: wrap;
   align-content: flex-start;
-  width: 9em;
+  width: calc(8.8em + 0.35em); /* largeur de REC plus le retrait de gauche (boîte « border-box ») */
   padding: 0.35em 0 0 0.35em;
 }
 

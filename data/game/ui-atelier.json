@@ -79,7 +79,7 @@
   },
   "macroDefaults": {
     "A": { "texte": "M", "densite": "compacte", "fond": "transparent", "argent": "haut-droite", "contour": "fin" },
-    "B": { "texte": "M", "densite": "compacte", "fond": "leger", "argent": "haut-droite", "contour": "aucun" },
+    "B": { "texte": "M", "densite": "compacte", "fond": "leger", "argent": "sous-vague", "contour": "aucun" },
     "C": { "texte": "M", "densite": "aeree", "fond": "plein", "argent": "haut-gauche", "contour": "aucun" }
   },
   "macroValues": {
