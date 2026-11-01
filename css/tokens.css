@@ -195,8 +195,8 @@
   --perso-tissu-sable: #d3c6a5;     /* toile sable */
   --perso-tissu-ciel: #c4d4dd;      /* chemise bleu pâle */
   --perso-tissu-kaki: #ccd2bc;      /* veste kaki délavée */
-  --perso-tissu-rose: #e2c4bf;      /* pull rose fané */
-  --perso-tissu-gris: #c9c9c4;      /* sweat gris */
+  --perso-tissu-rose: #ebd0cb;      /* pull rose fané */
+  --perso-tissu-gris: #d2d2cd;      /* sweat gris */
   --perso-tissu-bleu: #c0cdd8;      /* blouse bleue */
   --perso-tissu-olive: #c8d2b6;     /* parka olive délavée */
   --perso-pantalon-jean: #b3c3d8;   /* jean délavé */
@@ -208,8 +208,8 @@
   --perso-casque: #f2c94c;          /* casque de chantier */
   --perso-orange: #f2b45c;          /* gilet et brassard orange */
   --perso-sac: #cdb48a;             /* sac en toile */
-  --perso-crasse: #c2baa6;          /* salissure de l'usure (mélangée aux tissus) */
-  --perso-dechirure: #8a857a;       /* déchirures (faces assombries) */
+  --perso-crasse: #d2cbba;          /* salissure de l'usure (mélangée aux tissus) */
+  --perso-dechirure: #a29d92;       /* déchirures (faces assombries) */
   --perso-joueur-veste: #e0d4ae;    /* joueur A : veste tactique sable */
   --perso-joueur-sweat: #d4d8dc;    /* joueur B : sweat à capuche gris clair */
   --perso-joueur-vif: #8fdbe0;      /* joueur C : couleur dominante turquoise, contrastée avec tous les sols */

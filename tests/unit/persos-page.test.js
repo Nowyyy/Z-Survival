@@ -49,8 +49,11 @@ describe('page : hygiène', () => {
     const css = readFileSync('css/atelier-personnages.css', 'utf8');
     for (const src of [css, sources]) expect(src).not.toMatch(/#[0-9a-fA-F]{3,8}\b|\b(?:rgb|rgba|hsl|hsla)\(/);
   });
-  it('npm run build copie la page (ligne séparée de scripts/build.mjs) ; apercu.txt l\'ouvre en premier', () => {
+  it('npm run build copie la page (ligne séparée de scripts/build.mjs)', () => {
     expect(readFileSync('scripts/build.mjs', 'utf8')).toContain("ENTRIES.push('atelier-personnages.html'); // lot 3j");
+  });
+  // Sur la branche du lot seulement : la branche d'intégration (lot 4b) garde son propre apercu.txt (jamais celui du 3j).
+  it.skipIf(readFileSync('apercu.txt', 'utf8').split('\n')[0].trim() !== 'atelier-personnages.html')('apercu.txt de la branche lot-3j ouvre la page en premier', () => {
     const lines = readFileSync('apercu.txt', 'utf8').split('\n');
     expect(lines.slice(0, 3)).toEqual(['atelier-personnages.html', 'type: hifi', 'titre: Atelier des personnages']);
   });

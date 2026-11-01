@@ -110,7 +110,9 @@
       "Silhouettes distinctes par type (petit, marcheur, voûté, grand), lisibles sur tous les sols, escalier et sols tachés compris ; 6 tenues par zombie et 4 paliers d'usure selon la manche.",
       "Nouvelles animations : attaque, touché, trois morts, réparation, relevage ; marches sans glissement des pieds.",
       "Sang à trois niveaux (aucun, réduit, complet) : particules, taches au sol, taches sur les corps, cadavres qui s'enfoncent ; mini-arène pour l'essayer.",
-      "Essai dans le vrai jeu avec ?perso=A|B|C|riche et ?sang=reduit|1 ; sans ces paramètres, le jeu est inchangé."
+      "Dans le jeu : variantes « riche » et sang complet par défaut ; ?sang=reduit ou ?sang=0 (futur menu d'options), ?perso=actuel&sang=0 pour l'ancien rendu.",
+      "Joueur : pistolet tenu bras tendus, recul à chaque tir, laser et balles qui partent du canon ; pas de laser ni de tir pendant la réparation.",
+      "Zombies : ils enjambent les fenêtres (appui, corps couché, retombée) et tombent à l'opposé du tireur (en arrière s'ils sont touchés de face)."
     ] },
     { "name": "lot-4", "titre": "Argent et sauvegarde locale", "points": [
       "Chaque zombie tué par une balle rapporte 10, chaque planche de fenêtre posée 1 (montants fixes, qui évolueront avec les améliorations), chaque manche terminée un bonus, la fin du monde un gros bonus : tout est conservé à la mort.",

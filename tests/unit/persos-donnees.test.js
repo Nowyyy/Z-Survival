@@ -5,6 +5,9 @@ import { PART_KINDS, expandParts } from '../../js/core/character-parts.js';
 import { characters, load, poses, texturesJson } from '../../scripts/personnages/lib.mjs';
 
 // Lot 3j : données des personnages (characters-v2.json, poses-v2.json) et hygiène du lot (fichiers interdits, assets, pureté).
+// Garde-fous du lot 3j contre main : actifs seulement sur la branche du lot (première ligne d'apercu.txt = atelier-personnages.html) ;
+// dans la branche d'intégration (lot 4b), d'autres lots modifient les mêmes fichiers : ils se taisent (voir Docs/ref/passation-personnages-4b.md).
+const ON_LOT = readFileSync('apercu.txt', 'utf8').split('\n')[0].trim() === 'atelier-personnages.html';
 const git = (cmd) => {
   try {
     return execSync(`git ${cmd}`, { encoding: 'utf8' }).split('\n').filter(Boolean);
@@ -83,7 +86,7 @@ describe('hygiène du lot 3j', () => {
     if (added === null) return;
     expect(added.filter((f) => /\.(png|jpe?g|gif|webp|avif|svg|ico|woff2?|ttf|otf|glb|gltf|obj|fbx|dae|wav|mp3|ogg|flac|m4a)$/i.test(f))).toEqual([]);
   });
-  it('fichiers interdits du lot inchangés depuis main', () => {
+  it.skipIf(!ON_LOT)('fichiers interdits du lot inchangés depuis main', () => {
     const forbidden = ['jeu.html', 'index.html', 'css/game.css', 'js/game/hud.js', 'js/game/ui.js', 'js/game/world.js', 'js/game/windows-mesh.js', 'js/game/textures.js', 'js/game/palette.js', 'js/core/texgen.js', 'js/core/maps.js', 'js/core/pose.js', 'js/core/enemy-factory.js', 'data/game/zombie-variants.json', 'data/game/enemies.json', 'data/game/gaits.json', 'data/game/textures.json', 'data/game/render.json', 'data/game/save.json', 'CLAUDE.md', 'Docs/ref/conventions.md', 'Docs/seed.md', 'data/i18n/fr.json', 'data/i18n/en.json', 'tests/unit/data-changelog.test.js', 'tests/e2e/dev.spec.js', '.github/workflows/pages.yml', 'playwright.config.js'];
     const changed = git(`diff --name-only main -- ${forbidden.join(' ')}`);
     if (changed === null) return;
