@@ -106,6 +106,11 @@
       "Treize meubles provisoires (armoires, tables, comptoirs, caisses) complètent le rez-de-chaussée et cassent les longues lignes de tir de la grande salle.",
       "Le panneau de pause indique « Prochaine zone : manche 11 » ; ?wave=11 ouvre l'aile dès le chargement, ?wave=10 la garde fermée."
     ] },
+  { "name": "lot-3h", "titre": "Atelier des sons", "points": [
+    "Page technique atelier-sons.html pour comparer les sons actuels et trois nouvelles variantes (réaliste, horreur, sec) de chaque pas, voix de zombie, son de planche, d'escalade et du joueur.",
+    "Propositions (vent, grincements, cœur, porte, achat, feu qui crépite…), quatre scènes de 30 s, curseurs de réglage et « Mes choix » à copier.",
+    "Rien ne change dans le jeu : l'intégration des sons choisis viendra au lot 3i."
+  ] },
   { "name": "lot-3e", "titre": "Étage, escaliers et portes 2 et 3", "points": [
       "Le bâtiment a un étage, reproduit d'après le modèle 3D : une aile et une poche à gauche, une salle à droite, sept fenêtres U1 à U7. Une puce « RDC » / « Étage » indique où l'on est.",
       "Deux escaliers relient les étages : on les monte et on les descend en marchant (marches, hauteur qui change, déplacement libre dans la largeur), sans téléportation, sans délai ; depuis l'étage on voit tout le rez-de-chaussée par un trou entouré d'un garde-corps.",
