@@ -306,7 +306,7 @@ export function createV2Kit(options) {
       get outfit() { return outfit; },
       get wear() { return wear; },
       readPose() {
-        return { anim: state.anim, phase: state.phase, outfit, wear, wound: woundTier, choice, slot: slotId, triangles: current.geometry.attributes.position.count / 3 };
+        return { anim: state.anim, phase: state.phase, outfit, wear, wound: woundTier, choice, slot: slotId, triangles: current.geometry.attributes.position.count / 3, hurt: state.time - state.hurtAt < (Number(poses.durations?.touche) || 0.25) };
       },
       setFlash(on) {
         flashing = Boolean(on);

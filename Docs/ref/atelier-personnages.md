@@ -1,6 +1,6 @@
 # Atelier des personnages (lot 3j)
 
-Document de référence du lot 3j : méthode, architecture de rendu, kit de pièces, squelette, données, variantes, animations, page de l'atelier. Les sections sang, paramètres d'essai et intégration sont complétées aux parties C et D.
+Document de référence du lot 3j : méthode, architecture de rendu, kit de pièces, squelette, données, variantes, animations, page de l'atelier, sang, essai en jeu, procédures. Plan d'intégration : `Docs/ref/integration-personnages.md` ; manifeste de fusion : `Docs/ref/fusion-3j.md`.
 
 ## Méthode
 
@@ -106,3 +106,20 @@ Projection (`node scripts/personnages/projection.mjs`) : décor de la référenc
 | riche | 1 | 33 / 23924 | 79 / 42054 | 70 / 42672 | 86 / 42892 | 92 / 43776 | 208 appels, -13776 triangles | 308 appels, 1224 triangles |
 
 Textures (Node, non représentatif d'un téléphone) : 4 atlas de zombies 23.0 ms, joueur 1.3 ms ; mémoire estimée avec le sang : 1835006 octets (limite 4194304).
+
+## Essai en jeu (partie D)
+
+- **Paramètres** (`js/game/persos-params.js`) : `?perso=actuel|A|B|C|riche` (défaut `actuel`), `?sang=0|reduit|1` (défaut `0`), `?usure=auto|0|1|2|3` (défaut `auto` : palier de la manche en cours). Valeur inconnue : défaut, sans erreur. Jamais mémorisés ; absents de `readOnlyParams` (`save.json`) : ils ne déclenchent pas le mode essai, la sauvegarde reste écrite.
+- **Chargeur** : `game.js` ne fait `import('./persos-loader.js')` que si l'adresse porte `?perso=`, `?sang=` ou `?usure=` (par défaut : 85 fichiers JavaScript, liste identique à `main`) ; le chargeur (≤ 30 lignes) n'importe `persos-runtime.js` et les données (`characters-v2.json`, `poses-v2.json`, `blood.json`) que si un paramètre n'a pas sa valeur par défaut.
+- **Accroches** : `character.js` (1 ligne : `kit.v2` aiguille `createCharacter`), `game.js` (18 lignes `// lot 3j` : impacts, morts, coups reçus, pas du sang, synchronisation par étage et manche, contexte du joueur, `getState().persos`), `effects.js` inchangé. Les personnages v2 reçoivent l'entrée de `computePose` et l'entité (zombie) ou le contexte (joueur) : allure, siège, escalier (marche d'escalier ; rampants en rampe, toujours relevés de 14 par le jeu), attaque (relance du délai de contact), touché (flash), à terre, relevage, réparation (durée par planche de la statistique).
+- **Invariance** : à graine fixe et 600 pas, `getState()` (positions, vies, tués, vague, argent) est identique pour `actuel`, A, B, C, `riche` et les trois niveaux de sang (`tests/e2e/persos-jeu.spec.js`, boucle d'images figée).
+- Crochet « spawnVariety » : le crochet existant `spawnEnemy(x, y, { type, gait, wave, floor, mode })` suffit (zombies de types et d'allures variés) ; `killAll` est inchangé.
+- `?test=1` : `getState().persos` = `{ perso, sang, usure, wear, architecture, characters: { joueur, zombies }, blood: { particules, taches, cadavres, calls, triangles, dessines }, textures, render }`.
+
+## Procédures
+
+- **Ajouter une variante** : une entrée dans `variants` de l'emplacement voulu (`characters-v2.json`) : `skeleton: 'v2'`, `style`, `scale`, `joints` (épaules et hanches au moins), `posture`, `parts` (types du kit, `palette` = clé de la palette), `shadow` (≤ 64 triangles), `palette` (jetons `--perso-*`), `anchors`, `macros`, `outfits`, `contacts` (accessoires du tronc) ; puis `node scripts/personnages/variantes.mjs` et les tests `persos-variantes`, `persos-animations` (budget, contrastes, silhouettes, animations).
+- **Ajouter une tenue** : une entrée `{ id, label, palette: { tenue, pantalon, accent } }` dans `outfits` (6 par type de zombie, 3 pour le joueur) ; une pièce facultative prend `outfits: [indices]`.
+- **Ajouter une animation** : une fonction dans `js/core/pose-v2.js` (phase → angles), son nom dans `ZOMBIE_ANIMS` ou `PLAYER_ANIMS` (et `CYCLIC` si elle boucle), ses réglages par style dans `poses-v2.json`, son libellé `dev.persos.anim.<nom>` ; les tests de `persos-animations` la contrôlent alors d'office.
+- **Lire « Mes choix »** : `parseChoices(texte)` renvoie `{ persos: [{ perso, variante, … }], extra: { sang } }` ; `node scripts/personnages/projection.mjs mes-choix.txt` imprime le budget correspondant.
+- **Intégrer** : `Docs/ref/integration-personnages.md`.
