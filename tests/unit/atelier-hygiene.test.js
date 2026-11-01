@@ -71,9 +71,10 @@ describe('hygiène du lot 3g : fichiers', () => {
     expect(changed).toEqual([]);
   });
 
-  it('l\'aperçu de la branche s\'ouvre sur visite.html (accepté par parseEntry)', async () => {
+  // Branche lot-3g : l'aperçu s'ouvre sur visite.html ; une fois fusionné dans une branche d'intégration (lot-4b), sur la page de celle-ci (jeu.html).
+  it('l\'aperçu de la branche s\'ouvre sur visite.html ou, après intégration, sur jeu.html (accepté par parseEntry)', async () => {
     const { parseEntry } = await import('../../js/lots.js');
-    expect(parseEntry(readFileSync('apercu.txt', 'utf8'))).toBe('visite.html');
+    expect(['visite.html', 'jeu.html']).toContain(parseEntry(readFileSync('apercu.txt', 'utf8')));
     expect(readFileSync('apercu.txt', 'utf8')).toMatch(/type: hifi/);
   });
 
