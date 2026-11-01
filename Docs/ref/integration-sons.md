@@ -1,5 +1,7 @@
 # Intégration des sons de l'atelier (plan pour le lot 3i)
 
+**Fiche par son (à quoi sert chaque son, quand le déclencher) : `Docs/ref/sons-a-integrer.md`.** **Limite de 8 Mo levée par le propriétaire** après ses choix : les dépassements ci-dessous sont informatifs ; au lot 3i, relever le plafond du test `data-sons`.
+
 Plan établi au lot 3h, **sans rien intégrer** : le lot 3i appliquera les choix du propriétaire (texte de « Mes choix »). Les poids sont au format du jeu (Float32 mono, 4 octets par échantillon, 22 050 Hz). **Aucun son n'a été écouté par l'agent.** Le plan de chaque emplacement est aussi dans `data/game/sounds-atelier.json` (champ `integration` : identifiants produits, identifiants remplacés, nombre de versions), lu par `scripts/sons/projection.mjs`.
 
 ## Principe

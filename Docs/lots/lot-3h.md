@@ -29,4 +29,6 @@
 
 **Retours du propriétaire (itération 3).** Pas du joueur et escalier C −3 demi-tons, pas des zombies A, planches A, réparation C (le coup seul reprend son marteau), achat B ×0,85, feu B ; escalade refaite en trois propositions (bois sec, frottement sur pierre, pas secs, réception lourde, sans grognement), choisie ensuite en **C** : tous les emplacements ont maintenant un choix. Projection de tous les choix : 12,44 Mo (voix par type) ou 10,50 Mo (hauteur de lecture), au-delà des 8 Mo : boucles d'ambiance à raccourcir au lot 3i.
 
+**Après les choix.** Tous les sons ont un choix (escalade C) ; la limite de 8 Mo est levée par le propriétaire ; fiche d'intégration par son (à quoi il sert, quand le déclencher, identifiant, spatialisation) : `Docs/ref/sons-a-integrer.md`.
+
 **Fusion (à faire par moi).** Cette branche peut rester un atelier. Pour la fusionner : Pull Request `lot-3h` vers `main`, « Create a merge commit », ne pas supprimer la branche, **remettre `apercu.txt` sur `jeu.html` avant la fusion**, ajouter l'entrée du journal et les lignes de `CLAUDE.md` ; pages à vérifier : `/`, `/dev/`, `/lots/lot-3h/atelier-sons.html`, `/lots/lot-3h/sons.html`.
