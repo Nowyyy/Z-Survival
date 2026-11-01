@@ -55,7 +55,7 @@ describe('mêmes règles qu\'au lot 1', () => {
     }
     const allowed = ['pose', 'viewport', 'camera', 'collision', 'nav', 'decor', 'layout', 'movement', 'ray', 'projectile', 'enemy-ai', 'spawner', 'color', 'texgen', 'variants', 'synth', 'audio-mix', 'footsteps', 'sound-director', 'zombie-voice', 'sound-params', 'waves', 'wave-director', 'enemy-factory', 'combat', 'player-stats', 'spread', 'wave-splash', 'vhs', 'windows', 'siege', 'player-down', 'plank-layout', 'hud-windows', 'edge-arrow', 'maps', 'map-svg', 'shape', 'fog', 'zones', 'furniture-model', 'floors', 'stairs', 'floor-transition', 'stair-zombies', 'floor-sim', 'floor-rules', 'stair-walk',
       // Lot 3h : atelier des sons (nouveaux fichiers seulement).
-      'audio-analysis', 'synth2', 'synth2-dsp', 'synth2-sources', 'atelier-check'].map((n) => `js/core/${n}.js`);
+      'audio-analysis', 'synth2', 'synth2-dsp', 'synth2-sources', 'atelier-check', 'atelier-choices', 'sound-cache', 'wave-svg'].map((n) => `js/core/${n}.js`);
     expect(changed.filter((f) => !allowed.includes(f))).toEqual([]);
   });
 });
