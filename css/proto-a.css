@@ -123,3 +123,12 @@
   border-color: var(--color-text);
   background: var(--color-action);
 }
+
+/* Écrans hors partie : cartes sans contour, surfaces sombres. */
+.ui3k-dir-a .p-card {
+  border-color: transparent;
+}
+
+.ui3k-dir-a .p-menu-title {
+  font-size: 2em;
+}

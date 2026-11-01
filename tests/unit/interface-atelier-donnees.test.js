@@ -135,7 +135,7 @@ describe('ui-atelier.json : fausses données des écrans hors partie', () => {
     expect(cfg.fake.pseudo).toEqual({ min: 3, max: 20 });
   });
 
-  it('classement fictif : un tableau par monde, rangs croissants, pseudos « Exemple… », ligne du joueur marquée exemple', () => {
+  it('classement fictif : un tableau par monde, rangs croissants, pseudos « Exemple… », ligne du joueur au pseudo d\'exemple', () => {
     for (const w of cfg.fake.worlds) {
       const rows = cfg.fake.leaderboard[w.id];
       expect(Array.isArray(rows)).toBe(true);
@@ -145,7 +145,7 @@ describe('ui-atelier.json : fausses données des écrans hors partie', () => {
         expect(r.wave).toBeLessThanOrEqual(cfg.maxWave);
       });
     }
-    expect(cfg.fake.player.pseudo).toMatch(/exemple/);
+    expect(cfg.fake.player.pseudo).toMatch(/^Exemple\d+$/);
   });
 });
 

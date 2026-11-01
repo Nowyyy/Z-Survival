@@ -89,6 +89,31 @@ export function createView(els, ctx) {
   async function syncFrame(o, state) {
     const offGame = !ctx.cfg.gameScreens.includes(o.screen);
     const wantGame = o.background === 'jeu' && !(offGame && o.direction !== 'actuel');
+    if (o.direction === 'actuel' && o.screen === 'menu') {
+      // E1 « actuel » : la page d'attente du site (index.html), point de départ du menu.
+      const key = `menu|${o.size.id}|${o.textScale}`;
+      if (key === frameKey) return;
+      frameKey = key;
+      const mine = ++token;
+      floor.hidden = true;
+      frame.hidden = false;
+      frameState = { status: 'loading', notes: [], available: true };
+      notify();
+      await new Promise((resolve) => {
+        frame.addEventListener('load', resolve, { once: true });
+        frame.src = 'index.html';
+      });
+      await wait(300);
+      if (mine !== token) return;
+      if (o.textScale !== 100) {
+        const style = frame.contentDocument.createElement('style');
+        style.id = 'ui3k-text';
+        style.textContent = `html { font-size: ${o.textScale}% !important; }`;
+        frame.contentDocument.head.append(style);
+      }
+      frameState = { status: 'ready', notes: [], available: true, menu: true };
+      return;
+    }
     if (o.direction === 'actuel' && offGame) {
       frame.hidden = true;
       floor.hidden = false;
@@ -178,12 +203,15 @@ export function createView(els, ctx) {
       if (o.direction === 'actuel') {
         if (!frameState.available || frame.hidden) return { available: false, notes: frameState.notes, verdict: null };
         const doc = frame.contentDocument;
-        const m = collect(doc, { root: doc.body, viewport: viewportSize, safe: o.safe, modal, hudNames: ACTUEL_HUD_NAMES, items: actuelItems(o.screen) });
-        return { available: true, notes: frameState.notes, measure: m, verdict: evaluate(m, ctx.backgrounds, ctx.cfg.rules), dom: domCount(doc.getElementById('game-root')) };
+        const menu = o.screen === 'menu';
+        const m = collect(doc, { root: doc.body, scene: menu ? 'html' : undefined, viewport: viewportSize, safe: o.safe, modal, hudNames: ACTUEL_HUD_NAMES, items: actuelItems(o.screen) });
+        return { available: true, notes: frameState.notes, measure: m, verdict: evaluate(m, ctx.backgrounds, ctx.cfg.rules), dom: domCount(menu ? doc.body : doc.getElementById('game-root')), scrolledOut: 0 };
       }
       const scope = overlay.querySelector('.p-modal, .p-page') ?? overlay;
       const items = [...scope.querySelectorAll('[data-ui]')].map((el) => ({
-        name: el.dataset.ui, element: el, role: el.dataset.role, target: el.dataset.role === 'button', parent: el.dataset.parent ?? null,
+        name: el.dataset.ui, element: el, role: el.dataset.role, target: el.dataset.role === 'button',
+        // Parent : déclaré, sinon le plus proche ancêtre mesuré (un bouton dans sa carte ou sa ligne n'est pas un chevauchement).
+        parent: el.dataset.parent ?? (el.parentElement?.closest('[data-ui]') && el.parentElement.closest('[data-ui]') !== scope ? el.parentElement.closest('[data-ui]').dataset.ui : null),
         noText: 'notext' in el.dataset, checkOverflow: el.dataset.role === 'hud' || el.dataset.role === 'panel',
       }));
       const hudNames = items.filter((i) => i.role === 'hud' || (i.role === 'button' && !modal)).map((i) => i.name);
@@ -191,7 +219,7 @@ export function createView(els, ctx) {
       m.animations = animationsUnder(overlay);
       m.reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
       const lines = m.elements.reduce((n, e) => n + e.texts.reduce((k, t) => k + t.lines, 0), 0);
-      return { available: true, notes: [], measure: m, verdict: evaluate(m, ctx.backgrounds, ctx.cfg.rules), dom: domCount(overlay) - 1, lines };
+      return { available: true, notes: [], measure: m, verdict: evaluate(m, ctx.backgrounds, ctx.cfg.rules), dom: domCount(overlay) - 1, lines, scrolledOut: m.scrolledOut };
     },
     // Stabilité : parcourt les valeurs (vie, argent, vague…) et compare toutes les boîtes [data-ui] au premier relevé (0 px attendu).
     stability(sweeps) {

@@ -216,7 +216,7 @@ test.describe('le vrai jeu dans le cadre (même origine)', () => {
     await expect(page.frameLocator('#frame').locator('#pause-panel')).toBeVisible();
     await set(page, { screen: 'fin-mort', stateId: 'mort' });
     await expect(page.frameLocator('#frame').locator('#end-title')).toHaveText('Tu es mort');
-    await set(page, { screen: 'menu' });
+    await set(page, { screen: 'reglages' }); // écran hors partie absent du jeu (le menu « actuel » est index.html depuis la partie C)
     await expect(page.locator('#status')).toContainText('non disponible dans « Actuel »');
   });
 

@@ -39,10 +39,10 @@ function outlineOf(style) {
 // Fonds des ancêtres jusqu'à `root` exclu, du plus profond (le plus éloigné) au plus proche. Les fonds de la scène (body, #game-root, la scène de
 // l'atelier) ne comptent pas : le pire fond est un sol, un mur ou la brume du jeu (ui-atelier.json).
 const SCENE = 'html, body, #game-root, .ui3k-stage';
-function layersOf(el, root, win) {
+function layersOf(el, root, win, scene = SCENE) {
   const out = [];
   for (let n = el; n && n.nodeType === 1 && n !== root; n = n.parentElement) {
-    if (n.matches(SCENE)) continue;
+    if (n.matches(scene)) continue;
     const bg = win.getComputedStyle(n).backgroundColor;
     if (bg && bg !== 'transparent' && !/\/\s*0\)$|,\s*0\)$/.test(bg)) out.push(bg);
   }
@@ -50,7 +50,7 @@ function layersOf(el, root, win) {
 }
 
 // Textes visibles portés par un élément et ses descendants : { text, px, weight, fg, layers, outline, lines }.
-export function textsOf(el, root, win) {
+export function textsOf(el, root, win, scene = SCENE) {
   const out = [];
   const walker = el.ownerDocument.createTreeWalker(el, 4);
   const seen = new Set();
@@ -64,7 +64,7 @@ export function textsOf(el, root, win) {
     const range = el.ownerDocument.createRange();
     range.selectNodeContents(host);
     const lines = new Set([...range.getClientRects()].map((r) => Math.round(r.top))).size;
-    out.push({ text: host.textContent.trim().slice(0, 60), px: Number.parseFloat(s.fontSize), weight: Number(s.fontWeight) || 400, fg: s.color, layers: layersOf(host, root, win), outline: outlineOf(s), lines });
+    out.push({ text: host.textContent.trim().slice(0, 60), px: Number.parseFloat(s.fontSize), weight: Number(s.fontWeight) || 400, fg: s.color, layers: layersOf(host, root, win, scene), outline: outlineOf(s), lines });
   }
   return out;
 }
@@ -80,16 +80,26 @@ export function collect(doc, spec) {
     return { left: (r.left - o.left) / scale, top: (r.top - o.top) / scale, width: r.width / scale, height: r.height / scale };
   };
   const elements = [];
+  let hidden = 0; // éléments d'une liste qui défile, hors de sa partie visible : comptés, pas mesurés
   for (const item of spec.items ?? []) {
     const nodes = item.element ? [item.element] : item.all ? [...doc.querySelectorAll(item.selector)] : [doc.querySelector(item.selector)].filter(Boolean);
     nodes.forEach((el, i) => {
       if (!visible(el, win)) return;
+      const port = el.closest('.p-scroll');
+      if (port && port !== el) {
+        const r = el.getBoundingClientRect();
+        const q = port.getBoundingClientRect();
+        if (r.top < q.top - 0.5 || r.bottom > q.bottom + 0.5) {
+          hidden += 1;
+          return;
+        }
+      }
       const name = nodes.length > 1 ? `${item.name}${el.id ? `#${el.id}` : `-${i + 1}`}` : item.name;
       const overflow = item.checkOverflow ? el.scrollWidth > el.clientWidth + 1 || el.scrollHeight > el.clientHeight + 1 : false;
-      elements.push({ name, role: item.role, target: Boolean(item.target), parent: item.parent ?? null, overflow, box: box(el), texts: item.noText ? [] : textsOf(el, spec.root ?? doc.body, win) });
+      elements.push({ name, role: item.role, target: Boolean(item.target), parent: item.parent ?? null, overflow, box: box(el), texts: item.noText ? [] : textsOf(el, spec.root ?? doc.body, win, spec.scene ?? SCENE) });
     });
   }
-  return { viewport: spec.viewport, safe: spec.safe, modal: Boolean(spec.modal), hudNames: spec.hudNames, elements };
+  return { viewport: spec.viewport, safe: spec.safe, modal: Boolean(spec.modal), hudNames: spec.hudNames, elements, scrolledOut: hidden };
 }
 
 // Animations en cours sous `root` : { name, running, perSecond, kind }.

@@ -738,3 +738,503 @@
 .ui3k-page .button-quiet:hover:not(:disabled) {
   background: var(--color-ground-light);
 }
+
+/* ---------- Écrans hors partie (lot 3k-C, propositions) : E1 menu, E3 boutique, E5 réglages, classement ---------- */
+.p-page {
+  position: absolute;
+  inset: 0;
+  z-index: 12;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5em;
+  padding: var(--ui3k-edge-t) var(--ui3k-edge-r) var(--ui3k-edge-b) var(--ui3k-edge-l);
+  background: var(--color-bg);
+  font-weight: var(--font-weight-normal);
+  pointer-events: auto;
+}
+
+.p-page-head {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 0.6em;
+}
+
+.p-page-title {
+  flex: 1;
+  min-width: 0;
+}
+
+.p-balance {
+  gap: 0.3em;
+  height: auto;
+  font-weight: var(--font-weight-bold);
+}
+
+.p-balance .p-value {
+  color: var(--color-money);
+}
+
+.p-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+.p-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5em;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.p-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(19em, 1fr));
+}
+
+.p-card {
+  box-sizing: border-box;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 0.2em 0.6em;
+  padding: 0.45em 0.7em;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+}
+
+.p-card-title,
+.p-card-sub {
+  display: flex;
+  align-items: center;
+  gap: 0.3em;
+  grid-column: 1;
+}
+
+.p-card-title {
+  font-weight: var(--font-weight-bold);
+  white-space: nowrap;
+}
+
+.p-card-level,
+.p-card-sub {
+  color: var(--color-text-muted);
+}
+
+.p-item .p-buy {
+  grid-column: 2;
+  grid-row: 1 / span 3;
+  gap: 0.3em;
+}
+
+.p-buy.is-insufficient,
+.p-buy.is-max,
+.p-buy.is-owned {
+  cursor: not-allowed;
+}
+
+.p-buy.is-insufficient {
+  border-style: dashed;
+}
+
+.p-buy.is-max,
+.p-buy.is-owned {
+  border-color: var(--color-success);
+  color: var(--color-success);
+}
+
+.p-levels {
+  display: inline-flex;
+  gap: 2px;
+}
+
+.p-lv {
+  box-sizing: border-box;
+  width: 0.55em;
+  height: 0.55em;
+  border: 2px solid var(--color-text);
+  border-radius: 2px;
+}
+
+.p-lv.is-on {
+  background: var(--color-text);
+}
+
+.p-tabs,
+.p-choices {
+  display: flex;
+  flex: none;
+  flex-wrap: wrap;
+  gap: 0.5em;
+}
+
+.p-tab[aria-pressed="true"],
+.p-choice[aria-pressed="true"] {
+  border-color: var(--color-action);
+  background: var(--color-action);
+  color: var(--color-on-action);
+}
+
+.p-fake {
+  flex: none;
+}
+
+/* Menu (E1) : titre en Rubik Wet Paint (grand texte, 3:1), Jouer, solde, choix du monde, accès boutique, réglages, classement, pied de page. */
+.p-menu-head {
+  justify-content: space-between;
+}
+
+.p-menu-title {
+  font-family: var(--font-display);
+  font-weight: var(--font-weight-normal);
+  font-size: 2.2em;
+  line-height: 1.25;
+  color: var(--color-action);
+}
+
+.p-menu-body {
+  display: grid;
+  flex: 1;
+  grid-template-columns: minmax(9em, 1fr) 2fr;
+  align-items: start;
+  gap: 0.8em;
+  min-height: 0;
+}
+
+.p-btn-big {
+  width: 100%;
+  min-height: max(var(--ui3k-target, 44px), 2.6em);
+  font-size: 1.25em;
+}
+
+.p-menu-worlds .p-cards {
+  flex-direction: row;
+}
+
+.p-world {
+  flex: 1;
+  grid-template-columns: 1fr;
+  min-width: 0;
+}
+
+.p-world .p-card-sub {
+  white-space: normal;
+}
+
+.p-world.is-locked {
+  border-style: dashed;
+}
+
+.p-menu-nav {
+  display: flex;
+  flex: none;
+  gap: 0.5em;
+}
+
+.p-menu-nav .p-btn {
+  flex: 1;
+}
+
+.p-menu-foot {
+  display: flex;
+  flex: none;
+  flex-wrap: wrap;
+  gap: 0 0.8em;
+  color: var(--color-text-muted);
+}
+
+/* Réglages (E5) : une ligne de 44 px par réglage, deux colonnes sur les grands écrans. */
+.p-rows {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(19em, 1fr));
+  gap: 0.4em 1em;
+}
+
+.p-row {
+  box-sizing: border-box;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.3em 0.6em;
+  min-height: var(--ui3k-target, 44px);
+  padding: 0.2em 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.p-row-wide {
+  grid-column: 1 / -1;
+}
+
+.p-select,
+.p-input {
+  box-sizing: border-box;
+  min-height: var(--ui3k-target, 44px);
+  padding: 0 0.5em;
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+}
+
+.p-input {
+  flex: 1;
+  min-width: 8em;
+}
+
+.p-input:disabled {
+  opacity: 0.6;
+}
+
+.p-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5em;
+  min-height: var(--ui3k-target, 44px);
+}
+
+.p-check input {
+  width: 24px;
+  height: 24px;
+  accent-color: var(--color-action);
+}
+
+.p-hint-text {
+  flex-basis: 100%;
+  color: var(--color-text-muted);
+}
+
+.p-row.p-volume {
+  display: grid;
+}
+
+/* Classement : sélecteur de monde, compte (bouton fictif), tableau ; la ligne du joueur est marquée par un fond, une étoile et le mot « Toi ». */
+.p-board-bar {
+  display: flex;
+  flex: none;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5em;
+}
+
+.p-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+
+.p-table th,
+.p-table td {
+  padding: 0.25em 0.5em;
+  border-bottom: 1px solid var(--color-border);
+  text-align: left;
+}
+
+.p-table th {
+  color: var(--color-text-muted);
+}
+
+.p-table td .p-icon {
+  margin-right: 0.2em;
+  vertical-align: -0.15em;
+  color: var(--color-money);
+}
+
+/* La ligne du joueur reste visible en bas de la liste qui défile. */
+.p-table tr.is-me {
+  position: sticky;
+  bottom: 0;
+  outline: 2px solid var(--color-money);
+  outline-offset: -2px;
+  background: var(--color-warning-surface);
+}
+
+.p-me {
+  color: var(--color-money);
+  font-weight: var(--font-weight-bold);
+}
+
+/* ---------- Propositions de priorité 2 (au plus 5, deux variantes) ---------- */
+.p2-hit {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+}
+
+/* Variante A : cadre rouge fixe de 6 px (forme : un cadre, pas une couleur seule), une impulsion sans animation. */
+.p2-hit-a {
+  box-shadow: inset 0 0 0 6px var(--color-action);
+}
+
+/* Variante B : liseré dégradé sur les bords, 3 impulsions de 0,4 s (2,5 par seconde, au plus 3), fixe en mouvement réduit. */
+.p2-hit-b {
+  background: radial-gradient(ellipse 80% 75% at center, transparent 62%, color-mix(in srgb, var(--color-action) 60%, transparent) 100%);
+  animation: p2-pulse 0.4s ease-out 3;
+}
+
+@keyframes p2-pulse {
+  50% {
+    opacity: 0.35;
+  }
+}
+
+.p2-low {
+  position: absolute;
+  left: 50%;
+  top: calc(var(--ui3k-edge-t) + var(--ui3k-p2-top, 5.2em));
+  height: 1.7em;
+  padding: 0 0.6em;
+  border: 2px solid var(--color-action-text);
+  border-radius: var(--radius-md);
+  background: var(--color-bg);
+  color: var(--color-text);
+  transform: translateX(-50%);
+}
+
+.p2-low .p-icon {
+  color: var(--color-action-text);
+}
+
+.p2-low-b .p-icon {
+  animation: p2-beat 1s steps(1, end) infinite;
+}
+
+@keyframes p2-beat {
+  50% {
+    opacity: 0.3;
+  }
+}
+
+.p2-aim {
+  position: absolute;
+  left: 65%;
+  top: 32%;
+  width: 44px;
+  height: 44px;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.p2-aim-a {
+  box-sizing: border-box;
+  border: 2px solid var(--game-laser);
+  border-radius: 50%;
+  box-shadow: 0 0 0 2px var(--color-bg);
+}
+
+.p2-aim span {
+  position: absolute;
+  background: var(--game-laser);
+}
+
+.p2-aim-a span {
+  display: none;
+}
+
+.p2-aim-a::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--game-laser);
+  transform: translate(-50%, -50%);
+}
+
+.p2-aim-b span:nth-child(1),
+.p2-aim-b span:nth-child(2) {
+  left: 50%;
+  width: 3px;
+  height: 12px;
+  transform: translateX(-50%);
+}
+
+.p2-aim-b span:nth-child(1) {
+  top: 0;
+}
+
+.p2-aim-b span:nth-child(2) {
+  bottom: 0;
+}
+
+.p2-aim-b span:nth-child(3),
+.p2-aim-b span:nth-child(4) {
+  top: 50%;
+  width: 12px;
+  height: 3px;
+  transform: translateY(-50%);
+}
+
+.p2-aim-b span:nth-child(3) {
+  left: 0;
+}
+
+.p2-aim-b span:nth-child(4) {
+  right: 0;
+}
+
+/* « Nouvelle zone » : mêmes polices et couleurs que l'annonce de vague E2-8 (non modifiée), dans la moitié haute. */
+.p2-zone {
+  position: absolute;
+  left: 50%;
+  top: calc(var(--ui3k-edge-t) + var(--ui3k-p2-top, 5.2em));
+  box-sizing: border-box;
+  padding: 0.4em 1em;
+  background: var(--color-bg);
+  text-align: center;
+  transform: translateX(-50%);
+}
+
+.p2-zone-title {
+  font-family: var(--font-display);
+  font-size: 1.6em;
+  line-height: 1.1;
+  color: var(--game-splash-title);
+  text-transform: uppercase;
+}
+
+.p2-zone-sub {
+  color: var(--game-splash-sub);
+}
+
+.p2-zone-a {
+  border-top: 3px solid var(--color-action);
+}
+
+.p2-zone-b {
+  border: 0;
+  border-radius: var(--radius-md);
+}
+
+.p2-zone-b .p2-zone-title {
+  font-size: 2em;
+}
+
+.p2-zone-title,
+.p2-zone-sub {
+  white-space: nowrap;
+}
+
+.p2-help-b {
+  border: 2px dashed var(--color-text);
+}
+
+.p2-arrow {
+  display: inline-block;
+  width: 0;
+  height: 0;
+  margin-right: 0.4em;
+  border-top: 0.4em solid transparent;
+  border-bottom: 0.4em solid transparent;
+  border-left: 0.6em solid var(--color-text);
+  vertical-align: 0.05em;
+}

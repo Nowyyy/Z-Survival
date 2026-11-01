@@ -58,6 +58,7 @@
         <div class="ui3k-field"><label for="f-safe" data-i18n="atelier.field.safe"></label><select id="f-safe"></select></div>
         <div class="ui3k-field"><label for="f-cvd" data-i18n="atelier.field.cvd"></label><select id="f-cvd"></select></div>
         <div class="ui3k-field"><label for="f-textscale" data-i18n="atelier.field.textScale"></label><select id="f-textscale"></select></div>
+        <div class="ui3k-field"><label for="f-p2" data-i18n="atelier.field.p2"></label><select id="f-p2"></select></div>
       </div>
       <div class="ui3k-row">
         <label class="ui3k-check"><input id="f-guide" type="checkbox"><span data-i18n="atelier.field.guide"></span></label>
@@ -86,6 +87,7 @@
       <p class="ui3k-intro" data-i18n="atelier.choices.help"></p>
       <div class="ui3k-row">
         <button id="btn-keep" class="button" type="button" data-i18n="atelier.choices.keep"></button>
+        <button id="btn-keep-p2" class="button button-quiet" type="button" data-i18n="atelier.choices.keepP2"></button>
         <button id="btn-copy" class="button" type="button" data-i18n="atelier.choices.copy"></button>
         <button id="btn-clear" class="button button-quiet" type="button" data-i18n="atelier.choices.clear"></button>
       </div>
@@ -96,6 +98,18 @@
 
     <section class="ui3k-section" aria-labelledby="mesures-title">
       <h2 id="mesures-title" class="ui3k-heading" data-i18n="atelier.section.mesures"></h2>
+      <div class="ui3k-row">
+        <button id="btn-compare" class="button" type="button" aria-pressed="false" data-i18n="atelier.compare.button"></button>
+      </div>
+      <div id="compare" class="ui3k-compare" hidden></div>
+      <div class="ui3k-table-wrap">
+        <table class="ui3k-table">
+          <caption class="ui3k-legend" data-i18n="atelier.compare.caption"></caption>
+          <thead><tr><th scope="col" data-i18n="atelier.compare.direction"></th><th scope="col" data-i18n="atelier.compare.coverage"></th><th scope="col" data-i18n="atelier.compare.text"></th><th scope="col" data-i18n="atelier.compare.target"></th><th scope="col" data-i18n="atelier.compare.contrast"></th><th scope="col" data-i18n="atelier.compare.dom"></th><th scope="col" data-i18n="atelier.compare.verdict"></th></tr></thead>
+          <tbody id="compare-rows"></tbody>
+        </table>
+      </div>
+      <h3 class="ui3k-heading" data-i18n="atelier.measure.current"></h3>
       <p id="measure-summary"></p>
       <div class="ui3k-table-wrap">
         <table class="ui3k-table">

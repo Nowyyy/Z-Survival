@@ -138,3 +138,28 @@
   width: 60px;
   height: 60px;
 }
+
+/* Écrans hors partie : cartes aérées, pastilles de niveau plus grandes, cibles de 52 px. */
+.ui3k-dir-c .p-card {
+  padding: 0.55em 0.8em;
+  border-width: 2px;
+}
+
+.ui3k-dir-c .p-lv {
+  width: 0.7em;
+  height: 0.7em;
+}
+
+/* Priorité 2 : sous la colonne centrale, plus haute en C (vague sur trois lignes). */
+.ui3k-dir-c {
+  --ui3k-p2-top: 7.1em;
+}
+
+.ui3k-dir-c .p2-zone-title,
+.ui3k-dir-c .p2-zone-b .p2-zone-title {
+  font-size: 1.5em;
+}
+
+.ui3k-dir-c .p2-zone {
+  padding: 0.2em 1em;
+}

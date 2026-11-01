@@ -101,7 +101,7 @@
       { "id": "monde-2", "unlocked": false, "bestWave": 0 },
       { "id": "monde-3", "unlocked": false, "bestWave": 0 }
     ],
-    "levels": { "degats": 3, "portee": 1, "precision": 10, "cadence": 0, "vitesse": 2, "vie": 4, "regen": 0, "chutes": 5, "reparation": 6 },
+    "levels": { "degats": 3, "portee": 1, "precision": 10, "cadence": 0, "vitesse": 2, "vie": 4, "regen": 0, "chutes": 5, "reparation": 8 },
     "stats": ["degats", "portee", "precision", "cadence", "vitesse", "vie", "regen", "chutes", "reparation"],
     "price": { "base": 150, "growth": 1.6, "statMul": { "degats": 1.4, "portee": 1, "precision": 1.1, "cadence": 1.3, "vitesse": 1, "vie": 1.2, "regen": 0.9, "chutes": 3, "reparation": 0.8 } },
     "weapons": [
@@ -130,6 +130,6 @@
       ],
       "monde-3": []
     },
-    "player": { "pseudo": "Toi (exemple)", "rank": 37, "wave": 14, "time": 1380, "world": "monde-1" }
+    "player": { "pseudo": "Exemple37", "rank": 37, "wave": 14, "time": 1380, "world": "monde-1" }
   }
 }

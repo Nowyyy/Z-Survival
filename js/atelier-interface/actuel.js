@@ -18,6 +18,8 @@ export function actuelUrl(state, { vhs = true, extra = '' } = {}) {
 
 // Éléments mesurés de l'interface actuelle, par écran.
 export function actuelItems(screen) {
+  // E1 « actuel » : la page d'attente index.html (titre, état, bandeaux).
+  if (screen === 'menu') return [{ name: 'titre', selector: '.title', role: 'hud' }, { name: 'statut', selector: '.status', role: 'hud' }, { name: 'badge', selector: '.crumb', role: 'hud' }, { name: 'pied', selector: '.foot .zone', role: 'hud' }];
   const hud = [
     { name: 'hud', selector: '#hud', role: 'hud' },
     { name: 'argent', selector: '#hud-money', role: 'hud' },

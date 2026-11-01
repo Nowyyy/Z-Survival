@@ -209,3 +209,34 @@
     animation: none;
   }
 }
+
+/* Écrans hors partie : angles droits, titres de cartes en Rubik Dirt. */
+.ui3k-dir-b .p-card,
+.ui3k-dir-b .p-select,
+.ui3k-dir-b .p-input,
+.ui3k-dir-b .p-page .p-btn {
+  border-radius: 0;
+}
+
+.ui3k-dir-b .p-card-title,
+.ui3k-dir-b .p-page-title {
+  font-family: var(--font-label);
+  font-weight: var(--font-weight-normal);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.ui3k-dir-b .p-card-level {
+  font-family: var(--font-sans);
+  font-weight: var(--font-weight-bold);
+  text-transform: none;
+}
+
+/* Rubik Dirt est plus large : cartes de la boutique d'au moins 21 em (« RÉGÉNÉRATION » tient sur une ligne). */
+.ui3k-dir-b .p-grid {
+  grid-template-columns: repeat(auto-fill, minmax(21em, 1fr));
+}
+
+.ui3k-dir-b .p-card-title {
+  white-space: normal;
+}
