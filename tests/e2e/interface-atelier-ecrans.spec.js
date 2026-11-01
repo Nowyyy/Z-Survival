@@ -153,8 +153,8 @@ test.describe('priorité 2, côte à côte, choix', () => {
     expect(rows.map((r) => r.direction)).toEqual(['actuel', 'A', 'B', 'C']);
     const actual = rows[0];
     test.skip(!actual.available, 'WebGL indisponible : « Actuel » non mesurable');
-    expect(actual.verdict.outOfTarget.some((o) => o.rule === 'zone-sure')).toBe(true); // marges du lot 4 dans l'îlot (47 px)
-    await expect(page.locator('#compare-rows tr').first()).toContainText('hors cible');
+    // Lot 3l : « Actuel » est l'interface intégrée, avec les marges de la maquette (16 px + zone) : plus rien dans l'îlot (avant : « zone-sure », marges du lot 4).
+    expect(actual.verdict.outOfTarget.filter((o) => o.rule === 'zone-sure')).toEqual([]);
     for (const r of rows.slice(1)) expect(r.verdict.outOfTarget).toEqual([]);
     const sizes = await page.evaluate(() => [...document.querySelectorAll('#compare .ui3k-stage')].map((s) => `${s.style.width}×${s.style.height}`));
     expect(new Set(sizes)).toEqual(new Set(['844px×390px']));

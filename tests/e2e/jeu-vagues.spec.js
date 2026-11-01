@@ -411,22 +411,25 @@ test.describe('vagues du lot 2', () => {
     expect((await state(page)).waves.wave).toBe(200);
   });
 
-  test('HUD : « Début dans N s », puis « Vague N » et « N restants », avec 16 px de marge', async ({ page }) => {
+  // Lot 3l (direction B) : « Début dans 3 s » → « DÉBUT 3 s », « Vague 1 » → « VAGUE 01 » (libellé en Rubik Dirt, avant : Rubik Wet Paint), « 5 restants » → « RESTANTS 05 ».
+  test('HUD : « DÉBUT N s », puis « VAGUE 01 » et « RESTANTS 05 » dans la même boîte, avec 16 px de marge', async ({ page }) => {
     await open(page);
-    await expect(page.locator('#hud-next')).toHaveText('Début dans 3 s');
-    await expect(page.locator('#hud-wave')).toHaveText('Vague 1'); // permanent, même pendant l'attente
+    await expect(page.locator('#hud-next')).toHaveText('Début 3 s');
+    await expect(page.locator('#hud-wave-text')).toHaveText('01'); // permanent, même pendant l'attente (l'ancienne salle n'a pas de « / 40 »)
     await expect(page.locator('#hud-remaining')).toBeHidden();
-    await expect(page.locator('#hud-wave')).toHaveCSS('font-family', /Rubik Wet Paint/);
+    await expect(page.locator('#hud-wave .hud-label')).toHaveCSS('font-family', /Rubik Dirt/);
+    const slot = await page.locator('#hud-next').boundingBox();
     await step(page, 3.2);
-    await expect(page.locator('#hud-wave')).toHaveText('Vague 1');
-    await expect(page.locator('#hud-remaining')).toHaveText('5 restants');
+    await expect(page.locator('#hud-wave-text')).toHaveText('01');
+    await expect(page.locator('#hud-remaining-text')).toHaveText('05');
     await expect(page.locator('#hud-next')).toBeHidden();
+    expect(await page.locator('#hud-remaining').boundingBox()).toEqual(slot);
     const box = await page.locator('#hud').boundingBox();
     expect(box.x).toBeGreaterThanOrEqual(15.5);
     expect(box.y).toBeGreaterThanOrEqual(15.5);
     await page.evaluate(() => window.__zs.killAll());
     await step(page, 0.05);
-    await expect(page.locator('#hud-remaining')).toHaveText('4 restants');
+    await expect(page.locator('#hud-remaining-text')).toHaveText('04');
   });
 
   test('#hud-live annonce la vague, jamais le compte à rebours ni les restants', async ({ page }) => {

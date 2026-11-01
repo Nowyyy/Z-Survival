@@ -24,6 +24,7 @@
   <link rel="stylesheet" href="css/tokens.css">
   <link rel="stylesheet" href="css/base.css">
   <link rel="stylesheet" href="css/game.css">
+  <link rel="stylesheet" href="css/game-ui.css">
   <script>
     // Si le chargement échoue (script introuvable, erreur au démarrage), le dire à l'écran au lieu de rester à 0 %.
     (function () {
@@ -70,28 +71,32 @@
       <div class="vhs-grain"></div>
       <div class="vhs-track"></div>
     </div>
-    <div class="hud-left">
+    <!-- HUD E2-2 (lot 3l, direction B « caméscope » de l'atelier) : trois colonnes de blocs de taille fixe (em) ; textes écrits par js/game/hud.js. -->
     <div id="hud" class="hud" data-block="E2-2">
-      <div class="hud-life-row">
-        <svg class="hud-icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M8 14.5 1.8 8.3A3.6 3.6 0 0 1 8 3.9a3.6 3.6 0 0 1 6.2 4.4Z"/></svg>
-        <div id="hud-bar" class="hud-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="100" data-i18n-label="game.hud.lifeLabel">
-          <div id="hud-fill" class="hud-fill"></div>
-          <span id="hud-life" class="hud-bar-text"></span>
+      <span class="hud-corner hud-corner-tl" aria-hidden="true"></span>
+      <span class="hud-corner hud-corner-tr" aria-hidden="true"></span>
+      <div class="hud-col hud-tl">
+        <p id="hud-chrono" class="hud-block hud-chrono"><span id="hud-rec" class="hud-rec" aria-hidden="true"></span> <span class="hud-label" data-i18n="game.hud.rec"></span> <span id="hud-chrono-text" class="hud-value"></span></p>
+        <div id="hud-bar" class="hud-block hud-life" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="100" data-i18n-label="game.hud.lifeLabel"><span class="hud-label" data-i18n="game.hud.lifeShort"></span> <span id="hud-life" class="hud-value hud-life-text"></span></div>
+        <p id="hud-chutes" class="hud-block hud-chutes"><span id="hud-chutes-icons" class="hud-chutes-icons" aria-hidden="true"></span><span id="hud-chutes-text" class="hud-value"></span></p>
+        <p id="hud-floor" class="hud-block hud-floor" hidden><svg class="hud-icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M1.5 14.5h4v-3.5h3.5V7.5h3.5V4h2v10.5z"/></svg><span id="hud-floor-text" class="hud-value"></span></p>
+        <p id="hud-trial" class="hud-block hud-trial" data-i18n="game.hud.trial" hidden></p>
+      </div>
+      <div class="hud-col hud-tc">
+        <p id="hud-wave" class="hud-block hud-wave" data-idle="true"><span class="hud-label" data-i18n="game.hud.waveShort"></span> <span id="hud-wave-text" class="hud-value"></span> <span id="hud-reinforced" class="hud-tag"></span></p>
+        <p id="hud-money" class="hud-block hud-money"><svg class="hud-icon hud-coin" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><circle cx="8" cy="8" r="6.5"/><path d="M8 4.2v7.6M5.6 6.2h3.7a1.2 1.2 0 0 1 0 2.4H6.7a1.2 1.2 0 0 0 0 2.4h3.7"/></svg><span id="hud-money-text" class="hud-value"></span><span id="hud-gain" class="hud-gain" aria-hidden="true" hidden></span></p>
+        <div id="down-body" class="down-body" aria-hidden="true" hidden>
+          <p id="down-title" class="down-title"><svg class="hud-icon down-shield" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M8 1 14 3.4v4.2c0 3.4-2.5 6.1-6 7.4-3.5-1.3-6-4-6-7.4V3.4Z"/></svg><span id="down-title-text"></span></p>
+          <p id="down-sub" class="down-sub"></p>
+          <span class="down-bar"><span id="down-fill" class="down-fill"></span></span>
         </div>
-        <p id="hud-chutes" class="hud-chip"><span id="hud-chutes-icons" class="hud-chutes-icons" aria-hidden="true"></span><span id="hud-chutes-text"></span></p>
       </div>
-      <div class="hud-chips">
-        <p id="hud-remaining" class="hud-chip" hidden></p>
-        <p id="hud-next" class="hud-chip" hidden></p>
-        <p id="hud-kills" class="hud-chip"></p>
+      <div class="hud-col hud-tr">
+        <p id="hud-remaining" class="hud-block hud-remaining" hidden><span class="hud-label" data-i18n="game.hud.remainingShort"></span> <span id="hud-remaining-text" class="hud-value"></span></p>
+        <p id="hud-next" class="hud-block hud-remaining" hidden><span class="hud-label" data-i18n="game.hud.nextShort"></span> <span id="hud-next-text" class="hud-value"></span></p>
+        <p id="hud-kills" class="hud-block hud-kills"><span class="hud-label" data-i18n="game.hud.killsShort"></span> <span id="hud-kills-text" class="hud-value"></span></p>
       </div>
-      <p id="hud-floor" class="hud-chip hud-floor" hidden></p>
     </div>
-    <div class="hud-block">
-      <p id="hud-money" class="hud-chip hud-money"><svg class="hud-coin" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><circle cx="8" cy="8" r="6.5"/><path d="M8 4.2v7.6M5.6 6.2h3.7a1.2 1.2 0 0 1 0 2.4H6.7a1.2 1.2 0 0 0 0 2.4h3.7"/></svg><span id="hud-money-text"></span><span id="hud-gain" class="hud-gain" aria-hidden="true"></span></p>
-    </div>
-    </div>
-    <p id="hud-wave" class="hud-wave" hidden></p>
     <div id="wave-announce" class="wave-announce" data-block="E2-8" aria-hidden="true">
       <div class="wave-announce-veil"></div>
       <div class="wave-announce-body">
@@ -105,13 +110,9 @@
     </div>
     <div id="down" class="down" data-block="E2-10" aria-hidden="true" hidden>
       <div class="down-veil"></div>
-      <div class="down-body">
-        <p id="down-title" class="down-title"></p>
-        <p id="down-sub" class="down-sub"></p>
-      </div>
     </div>
     <div id="labels" class="map-labels" aria-hidden="true" hidden></div>
-    <button id="btn-pause" class="button pause-button" data-block="E2-5" type="button" data-i18n-label="game.pause.open"><svg viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M4.5 3h2.4v10H4.5zM9.1 3h2.4v10H9.1z"/></svg></button>
+    <button id="btn-pause" class="pause-button" data-block="E2-5" type="button" data-i18n-label="game.pause.open"><svg viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M4.5 3h2.4v10H4.5zM9.1 3h2.4v10H9.1z"/></svg></button>
     <div id="stick-left" class="stick" data-block="E2-3" aria-hidden="true" hidden>
       <div class="stick-base"></div>
       <div class="stick-knob"></div>
@@ -124,38 +125,47 @@
     <p id="hud-live" class="sr-only" aria-live="polite"></p>
   </div>
   <p id="game-error" class="game-error" role="alert" hidden></p>
+  <!-- Pause (E2-6) et fin (E2-7), lot 3l, direction B : cadre angulaire, titre en Rubik Dirt ; boutons de 44 px, angles droits. -->
   <div id="pause-panel" class="panel-wrap" data-block="E2-6" role="dialog" aria-modal="true" aria-labelledby="pause-title" hidden>
-    <div class="panel">
+    <div class="panel panel-pause">
       <h2 id="pause-title" class="panel-title" data-i18n="game.pause.title"></h2>
-      <p id="pause-next" class="panel-text" hidden></p>
-      <p id="pause-balance" class="panel-text"></p>
-      <p id="pause-save" class="panel-note"></p>
-      <button id="btn-resume" class="button" type="button" data-i18n="game.pause.resume"></button>
-      <button id="btn-fullscreen" class="button button-quiet" type="button" data-i18n="game.pause.fullscreen" hidden></button>
-      <button id="btn-sound" class="button button-quiet" type="button" hidden></button>
-      <button id="btn-vhs" class="button button-quiet" type="button" aria-pressed="true"></button>
-      <div id="volume-row" class="volume" hidden>
-        <label id="volume-label" for="volume" data-i18n="game.volume"></label>
-        <input id="volume" class="volume-range" type="range" min="0" max="100" step="10" value="100">
-        <output id="volume-value" class="volume-value" for="volume"></output>
+      <div class="panel-facts">
+        <p id="pause-balance" class="panel-line"><svg class="hud-icon hud-coin" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><circle cx="8" cy="8" r="6.5"/><path d="M8 4.2v7.6M5.6 6.2h3.7a1.2 1.2 0 0 1 0 2.4H6.7a1.2 1.2 0 0 0 0 2.4h3.7"/></svg><span id="pause-balance-text"></span></p>
+        <p id="pause-save" class="panel-note"></p>
+        <p id="pause-next" class="panel-line" hidden></p>
       </div>
-      <button id="btn-restart" class="button button-quiet" type="button" data-i18n="game.pause.restart"></button>
+      <div class="panel-actions">
+        <button id="btn-resume" class="button button-main" type="button" data-i18n="game.pause.resume"></button>
+        <button id="btn-fullscreen" class="button button-quiet" type="button" data-i18n="game.pause.fullscreen" hidden></button>
+        <button id="btn-sound" class="button button-quiet" type="button" hidden></button>
+        <button id="btn-vhs" class="button button-quiet" type="button" aria-pressed="true"></button>
+        <button id="btn-restart" class="button button-quiet" type="button" data-i18n="game.pause.restart"></button>
+        <div id="volume-row" class="volume" hidden>
+          <label id="volume-label" for="volume" data-i18n="game.volume"></label>
+          <input id="volume" class="volume-range" type="range" min="0" max="100" step="10" value="100">
+          <output id="volume-value" class="volume-value" for="volume"></output>
+        </div>
+      </div>
     </div>
   </div>
   <div id="end-panel" class="panel-wrap" data-block="E2-7" role="alertdialog" aria-modal="true" aria-labelledby="end-title" hidden>
-    <div class="panel">
-      <h2 id="end-title" class="panel-title" data-i18n="game.end.title"></h2>
-      <p id="end-kills" class="panel-text"></p>
-      <p id="end-wave" class="panel-text" hidden></p>
-      <p id="end-earned" class="panel-text"></p>
-      <p id="end-bonus" class="panel-text" hidden></p>
-      <p id="end-balance" class="panel-text"></p>
-      <p id="end-best" class="panel-text"></p>
-      <p id="end-record" class="panel-text end-record" hidden></p>
-      <p id="end-save" class="panel-note" hidden></p>
-      <p class="panel-note" data-i18n="game.end.provisional"></p>
-      <button id="btn-replay" class="button" type="button" data-i18n="game.end.replay"></button>
-      <a id="end-save-link" class="button button-quiet" href="sauvegarde.html" data-i18n="game.end.saveLink"></a>
+    <div id="end-box" class="panel panel-end" data-variant="death">
+      <h2 id="end-title" class="panel-title"><svg class="hud-icon end-icon end-icon-death" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M8 1.5c3.3 0 5.5 2.3 5.5 5.2 0 1.8-.9 3-2 3.7V13H4.5v-2.6c-1.1-.7-2-1.9-2-3.7C2.5 3.8 4.7 1.5 8 1.5Zm-2.3 5a1.3 1.3 0 1 0 0 2.6 1.3 1.3 0 0 0 0-2.6Zm4.6 0a1.3 1.3 0 1 0 0 2.6 1.3 1.3 0 0 0 0-2.6Z"/></svg><svg class="hud-icon end-icon end-icon-world" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="m2 8.5 1.6-1.6 2.9 2.9 6-6L14 5.4l-7.5 7.5Z"/></svg><span id="end-title-text" data-i18n="game.end.title"></span></h2>
+      <div class="panel-facts">
+        <p id="end-wave" class="panel-line" hidden></p>
+        <p id="end-kills" class="panel-line"></p>
+        <p id="end-earned" class="panel-line"><svg class="hud-icon hud-coin" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><circle cx="8" cy="8" r="6.5"/><path d="M8 4.2v7.6M5.6 6.2h3.7a1.2 1.2 0 0 1 0 2.4H6.7a1.2 1.2 0 0 0 0 2.4h3.7"/></svg><span id="end-earned-text"></span></p>
+        <p id="end-bonus" class="panel-line" hidden><svg class="hud-icon hud-coin" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><circle cx="8" cy="8" r="6.5"/><path d="M8 4.2v7.6M5.6 6.2h3.7a1.2 1.2 0 0 1 0 2.4H6.7a1.2 1.2 0 0 0 0 2.4h3.7"/></svg><span id="end-bonus-text"></span></p>
+        <p id="end-balance" class="panel-line"></p>
+        <p id="end-best" class="panel-line"></p>
+        <p id="end-record" class="panel-line end-record" hidden><svg class="hud-icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="m8 1.3 2 4.3 4.7.5-3.5 3.2 1 4.6L8 11.5l-4.2 2.4 1-4.6L1.3 6.1 6 5.6Z"/></svg><span id="end-record-text"></span></p>
+        <p id="end-save" class="panel-note" hidden></p>
+        <p class="panel-note" data-i18n="game.end.provisional"></p>
+      </div>
+      <div class="panel-actions">
+        <button id="btn-replay" class="button button-main" type="button" data-i18n="game.end.replay"></button>
+        <button id="btn-menu" class="button button-quiet" type="button" data-i18n="game.end.menu"></button>
+      </div>
     </div>
   </div>
   <div id="rotate" class="rotate" role="status" hidden>

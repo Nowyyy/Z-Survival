@@ -395,11 +395,11 @@ test.describe('vagues, interface, caméra, budget', () => {
     expect(r.maxStill, JSON.stringify(r.where)).toBeLessThanOrEqual(2.05);
   });
 
-  test('HUD E2-2 inchangé : un seul rectangle (300 px au plus), aucune ligne « Fenêtres », E2-9 absent, ordre des blocs', async ({ page }) => {
+  // Lot 3l : le HUD intégré (direction B) est une bande de trois colonnes : la hauteur reste bornée (120 px : quatre rangées en mode essai), plus la largeur de 300 px.
+  test('HUD E2-2 : bande de trois colonnes (120 px de haut au plus), aucune ligne « Fenêtres », E2-9 absent, ordre des blocs', async ({ page }) => {
     await open(page);
     const s = await STATE(page);
-    expect(s.hud.width).toBeLessThanOrEqual(300);
-    expect(s.hud.height).toBeLessThanOrEqual(96);
+    expect(s.hud.height).toBeLessThanOrEqual(120);
     expect(await page.locator('#repair').count()).toBe(0);
     expect(await page.locator('[data-block="E2-9"]').count()).toBe(0);
     expect(await page.locator('#hud').getByText('Fenêtres').count()).toBe(0);

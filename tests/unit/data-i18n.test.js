@@ -12,6 +12,9 @@ const html = pages[0];
 // Lot 4 : js/sauvegarde/ (page sauvegarde.html) lit les messages d'erreur du code (clés construites par `game.save.page.error.${code}`).
 const extra = [...(existsSync('js/sons') ? readdirSync('js/sons').map((f) => `js/sons/${f}`) : []), ...readdirSync('js/carte').map((f) => `js/carte/${f}`), ...readdirSync('js/sauvegarde').map((f) => `js/sauvegarde/${f}`), 'scripts/planche-sons.mjs', 'js/visite/main.js', 'js/ecarts/main.js', 'js/core/visite.js']; // lot 3b : page carte.html ; lot 3g : visite.html et ecarts.html
 const scripts = ['js/main.js', 'js/page.js', 'dev/dev.js', ...readdirSync('js/game').map((f) => `js/game/${f}`), ...extra].map((f) => readFileSync(f, 'utf8'));
+// Lot 3l : l'atelier de l'interface (lot 3k, toujours publié) lit des clés game.* de fr.json pour ses propositions A et C (« Vague N / 40 », « N restants »,
+// « Voir ma sauvegarde ») que le jeu intégré (B) n'affiche plus : ses modules comptent comme consommateurs.
+scripts.push(...readdirSync('js/atelier-interface').map((f) => readFileSync(`js/atelier-interface/${f}`, 'utf8')));
 // Une clé est utilisée si elle apparaît entre apostrophes ou si son préfixe est construit dynamiquement (`préfixe.${…}`).
 const dynamicUse = (k) => scripts.some((js) => js.includes(`${k.slice(0, k.lastIndexOf('.') + 1)}\${`));
 const usedKeys = new Set([...pages, gamePage].flatMap((p) => [...p.matchAll(/data-(?:i18n|title-key|i18n-label)="([^"]+)"/g)].map((m) => m[1])));
