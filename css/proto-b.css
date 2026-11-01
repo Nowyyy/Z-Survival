@@ -110,6 +110,8 @@
 }
 
 .ui3k-dir-b .p-trial {
+  justify-content: center;
+  width: 8.8em;
   font-family: var(--font-label);
   font-weight: var(--font-weight-normal);
   text-transform: uppercase;

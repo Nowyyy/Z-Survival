@@ -137,7 +137,7 @@ describe('rendu HTML des directions (écrans de jeu)', () => {
     expect(html).toContain('aria-label="Chutes restantes : 3"');
   });
 
-  it('B (retours du propriétaire) : vie sans barre (« Vie » et « 64/100 »), « Vague » et « Restants » en entier, tués sur 4 chiffres, « Mode essai » au centre', () => {
+  it('B (retours du propriétaire) : vie sans barre (« Vie » et « 64/100 »), « Vague » et « Restants » en entier, tués sans zéros devant (place réservée pour 4 chiffres), « Mode essai » à gauche sous chutes + étage', () => {
     const html = renderHud(mockState({ hp: 64, kills: 57, trial: true }, cfg), 'B', MACROS.B, t);
     const life = html.slice(html.indexOf('data-ui="vie"'), html.indexOf('data-ui="chutes"'));
     expect(life).not.toMatch(/p-bar|p-seg|p-fill/);
@@ -145,8 +145,10 @@ describe('rendu HTML des directions (écrans de jeu)', () => {
     expect(life).toContain('64/100');
     expect(html).toContain('>Vague<');
     expect(html).toContain('>Restants<');
-    expect(html).toContain('>0057<');
-    expect(html.indexOf('data-ui="essai"')).toBeLessThan(html.indexOf('p-cluster p-tr'));
+    expect(html).toContain('>57<');
+    expect(html).not.toContain('>0057<');
+    expect(html.indexOf('data-ui="essai"')).toBeLessThan(html.indexOf('p-cluster p-tc'));
+    expect(html.indexOf('data-ui="etage"')).toBeLessThan(html.indexOf('data-ui="essai"'));
   });
 
   it('B : restants et tués à droite, de même largeur, ensemble de la hauteur du bouton Pause (44 px au moins) ; REC, VIE et chutes + étage alignés à droite ; à terre sans cadre', () => {
@@ -174,12 +176,13 @@ describe('rendu HTML des directions (écrans de jeu)', () => {
     expect(html).toContain('data-block="E2-6"');
   });
 
-  it('fin de partie : mort et monde terminé (vague atteinte, argent gagné, solde, record, bonus de fin de monde, lien de sauvegarde, rejouer)', () => {
+  it('fin de partie : mort et monde terminé (vague atteinte, argent gagné, solde, record, bonus de fin de monde, rejouer, « Revenir au menu principal » non branché)', () => {
     const death = renderEnd(mockState({ end: 'death', wave: 14, earned: 1840, record: true }, cfg), 'C', t, '500');
     expect(death).toContain(esc(fr['game.end.title']));
     expect(death).toContain('Vague atteinte : 14');
     expect(death).toContain(esc(fr['game.end.record']));
-    expect(death).toContain('href="sauvegarde.html"');
+    expect(death).not.toContain('sauvegarde.html'); // retour du propriétaire : « Voir ma sauvegarde » remplacé
+    expect(death).toMatch(/<button class="p-btn p-btn-quiet" type="button" data-ui="btn-menu"[^>]*>Revenir au menu principal<\/button>/);
     expect(death).not.toContain('Bonus de fin de monde');
     const world = renderEnd(mockState({ end: 'world' }, cfg), 'C', t, '500');
     expect(world).toContain(esc(fr['game.end.world']));
@@ -353,6 +356,16 @@ describe('publication : aperçu et build', () => {
 });
 
 describe('interface retenue (choix du propriétaire)', () => {
+  it('à terre en B : le texte est dans la colonne centrale juste sous l\'argent ; seul le voile reste en plein écran', () => {
+    const html = renderGameScreen('a-terre', mockState({ down: 'down', downSeconds: 3 }, cfg), 'B', MACROS.B, t);
+    const tc = html.slice(html.indexOf('p-cluster p-tc'), html.indexOf('p-cluster p-tr'));
+    expect(tc.indexOf('data-ui="argent"')).toBeLessThan(tc.indexOf('data-ui="a-terre"'));
+    expect(tc).toContain('p-down-body is-inline');
+    expect((html.match(/data-ui="a-terre"/g) ?? []).length).toBe(1);
+    expect(html).toContain('data-block="E2-10"');
+    expect(css['atelier-interface']).toMatch(/\.p-down-body\.is-inline \{\s*position: static;\s*transform: none;/);
+  });
+
   it('HUD, pause, fins et à terre en B, sticks en A ; le menu n\'est pas encore choisi', () => {
     expect(cfg.retenue).toMatchObject({ hud: 'B', pause: 'B', 'fin-mort': 'B', 'fin-monde': 'B', 'a-terre': 'B', sticks: 'A' });
     expect(cfg.retenue.menu).toBeUndefined();

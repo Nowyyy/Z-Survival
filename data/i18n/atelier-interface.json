@@ -226,5 +226,6 @@
   "atelier.retenue.col.screen": "Écran",
   "atelier.retenue.statusGame": "Fond : le vrai jeu, son interface masquée de l'extérieur ; par-dessus : l'interface retenue (maquette).",
   "atelier.retenue.statusFloor": "Fond : sol généré ; par-dessus : l'interface retenue (maquette).",
-  "atelier.retenue.atelierLink": "Voir toutes les directions dans l'atelier de l'interface"
+  "atelier.retenue.atelierLink": "Voir toutes les directions dans l'atelier de l'interface",
+  "ui3k.end.menu": "Revenir au menu principal"
 }

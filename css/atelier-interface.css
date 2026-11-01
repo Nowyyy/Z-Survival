@@ -1244,3 +1244,9 @@
 .ui3k-link {
   color: var(--color-focus);
 }
+
+/* À terre dans la colonne du HUD (B, retour du propriétaire) : sous l'argent, dans le flux de la colonne centrale. */
+.p-down-body.is-inline {
+  position: static;
+  transform: none;
+}

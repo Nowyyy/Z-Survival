@@ -33,7 +33,8 @@ function lifeBar(s, dir) {
 }
 
 // HUD (E2-2) et bouton Pause (E2-5). macros.argent : haut-gauche, haut-droite ou sous-vague.
-export function renderHud(s, dir, macros, t) {
+// opts.afterMoney : HTML posé juste sous l'argent (B : texte « À terre », retour du propriétaire).
+export function renderHud(s, dir, macros, t, opts = {}) {
   const life = `<div class="p-block p-life${s.lowHp ? ' is-low' : ''}" ${attr('vie', 'hud')} role="progressbar" aria-valuemin="0" aria-valuemax="${s.maxHp}" aria-valuenow="${s.hp}" aria-label="${esc(t('game.hud.lifeLabel'))}">
     ${dir === 'B' ? `<span class="p-label">${esc(t('ui3k.hud.lifeShort'))}</span>` : ICONS.heart}${lifeBar(s, dir)}<span class="p-value p-life-text">${esc(t('game.hud.life', { hp: s.hp, max: s.maxHp }))}</span></div>`;
   const chutes = `<div class="p-block p-chutes" ${attr('chutes', 'hud')} aria-label="${esc(t('game.down.chutes.label', { n: s.chutes }))}">${dir === 'A' ? pips(s.chutes) : ICONS.person}<span class="p-value">${esc(t('game.down.chutes', { n: s.chutes }))}</span></div>`;
@@ -47,18 +48,20 @@ export function renderHud(s, dir, macros, t) {
   const money = `<div class="p-block p-money" ${attr('argent', 'hud')} aria-label="${esc(t('game.hud.moneyLabel', { n: s.moneyText }))}">${ICONS.coin}<span class="p-value">${esc(s.moneyCompact)}</span></div>`;
   const trial = s.trial ? `<div class="p-block p-trial" ${attr('essai', 'hud')}>${esc(t('ui3k.hud.trial'))}</div>` : '';
   const chrono = dir === 'B' ? `<div class="p-block p-chrono" ${attr('chrono', 'hud')}><span class="p-rec" data-blink="rec" data-blink-cycles="1" aria-hidden="true"></span><span class="p-label">${esc(t('ui3k.hud.rec'))}</span><span class="p-value">${esc(s.chronoText)}</span></div>` : '';
-  const kills = dir === 'B' ? `<div class="p-block p-kills" ${attr('tues', 'hud')}><span class="p-label">${esc(t('ui3k.hud.killsShort'))}</span><span class="p-value">${String(s.kills).padStart(4, '0')}</span></div>` : '';
+  const kills = dir === 'B' ? `<div class="p-block p-kills" ${attr('tues', 'hud')}><span class="p-label">${esc(t('ui3k.hud.killsShort'))}</span><span class="p-value">${String(s.kills)}</span></div>` : '';
   const pause = `<button class="p-pause" type="button" data-block="E2-5" ${attr('pause', 'button')} aria-label="${esc(t('game.pause.open'))}">${ICONS.pause}</button>`;
   const corners = dir === 'B' ? '<span class="p-corner p-corner-tl" aria-hidden="true"></span><span class="p-corner p-corner-tr" aria-hidden="true"></span>' : '';
   const pos = macros?.argent ?? 'haut-droite';
-  const tl = { A: [life, chutes, floor], B: [chrono, life, chutes, floor], C: [life, chutes, floor] }[dir];
+  const tl = { A: [life, chutes, floor], B: [chrono, life, chutes, floor, trial], C: [life, chutes, floor] }[dir];
   // B (retour du propriétaire) : « Restants » passe à droite au-dessus des tués, l'argent sous la vague (macro « sous-vague » par défaut).
-  const tc = dir === 'B' ? [wave, trial] : [wave, remaining];
+  // B : « Mode essai » sous chutes + étage (à gauche) : la colonne centrale garde la vague, l'argent et, à terre, le texte « À terre ».
+  const tc = dir === 'B' ? [wave] : [wave, remaining];
   const tr = { A: [trial], B: [remaining, kills], C: [trial] }[dir];
-  if (pos === 'haut-gauche') tl.push(money);
-  else if (pos === 'sous-vague') tc.splice(1, 0, money);
-  else if (dir === 'B') tr.push(money);
-  else tr.unshift(money);
+  const moneyAndMore = money + (opts.afterMoney ?? '');
+  if (pos === 'haut-gauche') tl.push(moneyAndMore);
+  else if (pos === 'sous-vague') tc.splice(1, 0, moneyAndMore);
+  else if (dir === 'B') tr.push(moneyAndMore);
+  else tr.unshift(moneyAndMore);
   return `<div class="p-hud" data-block="E2-2">${corners}<div class="p-cluster p-tl">${tl.join('')}</div><div class="p-cluster p-tc">${tc.join('')}</div><div class="p-cluster p-tr">${tr.join('')}</div></div>${pause}`;
 }
 
@@ -106,24 +109,30 @@ export function renderEnd(s, dir, t, worldBonusText) {
       <div class="p-facts">${facts}</div>
       <div class="p-actions">
         <button class="p-btn p-btn-main" type="button" ${attr('btn-rejouer', 'button', ' data-parent="panneau" data-notext')}>${esc(t('game.end.replay'))}</button>
-        <a class="p-btn p-btn-quiet" href="sauvegarde.html" target="_blank" rel="noopener" ${attr('btn-sauvegarde', 'button', ' data-parent="panneau" data-notext')}>${esc(t('game.end.saveLink'))}</a>
+        <button class="p-btn p-btn-quiet" type="button" ${attr('btn-menu', 'button', ' data-parent="panneau" data-notext')}>${esc(t('ui3k.end.menu'))}</button>
       </div>
     </div>
   </div>`;
 }
 
 // État à terre (E2-10) : voile de bord, compte à rebours de 5 s (texte + barre), puis « Protégé N s ».
-export function renderDown(s, dir, t) {
+// opts.inline : le texte est rendu à part (renderDownBody) dans la colonne du HUD, sous l'argent ; seul le voile reste en plein écran.
+export function renderDown(s, dir, t, opts = {}) {
   const grace = s.down.mode === 'grace';
-  const total = grace ? 2 : 5;
-  const ratio = Math.max(0, Math.min(1, s.down.seconds / total));
+  return `<div class="p-down${grace ? ' is-grace' : ''}" data-block="E2-10" aria-hidden="true">
+    <div class="p-down-veil" data-ui="voile-terre" data-role="overlay" data-notext></div>
+    ${opts.inline ? '' : renderDownBody(s, t)}
+  </div>`;
+}
+
+// Texte de l'état à terre (« À terre », compte à rebours de 5 s et sa barre, ou « Protégé N s »).
+export function renderDownBody(s, t, { inline = false } = {}) {
+  const grace = s.down.mode === 'grace';
+  const ratio = Math.max(0, Math.min(1, s.down.seconds / (grace ? 2 : 5)));
   const body = grace
     ? `<p class="p-down-title">${ICONS.shield}<span>${esc(t('game.down.grace', { n: s.down.seconds }))}</span></p>`
     : `<p class="p-down-title">${esc(t('game.down.title'))}</p><p class="p-down-sub">${esc(t('game.down.countdown', { n: s.down.seconds }))}</p>`;
-  return `<div class="p-down${grace ? ' is-grace' : ''}" data-block="E2-10" aria-hidden="true">
-    <div class="p-down-veil" data-ui="voile-terre" data-role="overlay" data-notext></div>
-    <div class="p-down-body" ${attr('a-terre', 'hud')}>${body}<span class="p-down-bar" aria-hidden="true"><span class="p-fill" style="--ui3k-p: ${ratio.toFixed(3)}"></span></span></div>
-  </div>`;
+  return `<div class="p-down-body${inline ? ' is-inline' : ''}" ${attr('a-terre', 'hud')} aria-hidden="true">${body}<span class="p-down-bar" aria-hidden="true"><span class="p-fill" style="--ui3k-p: ${ratio.toFixed(3)}"></span></span></div>`;
 }
 
 // Sticks flottants (E2-3 gauche actif, E2-4 droit au repos) et aide de démarrage facultative.
@@ -138,7 +147,12 @@ export function renderGameScreen(screen, s, dir, macros, t, extra = {}) {
   const hud = renderHud(s, dir, macros, t);
   if (screen === 'pause') return hud + renderPause(s, dir, t);
   if (screen === 'fin-mort' || screen === 'fin-monde') return hud + renderEnd({ ...s, end: screen === 'fin-monde' ? 'world' : 'death' }, dir, t, extra.worldBonusText ?? '');
-  if (screen === 'a-terre') return hud + renderDown(s.down.mode === 'none' ? { ...s, down: { mode: 'down', seconds: 5 } } : s, dir, t);
+  if (screen === 'a-terre') {
+    const down = s.down.mode === 'none' ? { ...s, down: { mode: 'down', seconds: 5 } } : s;
+    // B (retour du propriétaire) : le texte « À terre » se place sous l'argent, plus au milieu de l'écran.
+    if (dir === 'B') return renderHud(s, dir, macros, t, { afterMoney: renderDownBody(down, t, { inline: true }) }) + renderDown(down, dir, t, { inline: true });
+    return hud + renderDown(down, dir, t);
+  }
   if (screen === 'sticks') return hud + renderSticks(dir, t, { help: Boolean(extra.help) });
   return hud;
 }
