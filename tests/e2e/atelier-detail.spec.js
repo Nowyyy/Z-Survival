@@ -124,7 +124,8 @@ test.describe('textures', () => {
   });
 
   // Sol nu : le joueur au centre, la zone échantillonnée sous lui (aucun meuble, aucun décor léger).
-  for (const [id, url, at] of [['grande salle', '', [U(352), U(272)]], ['aile', '&wave=11', [U(110), U(170)]], ['étage', '&wave=31&floor=1', [U(120), U(250)]]]) {
+  // Grande salle : point déplacé (retours du propriétaire) : l'ancien (352, 272) touche le feu de P9 (lueur et fumée).
+  for (const [id, url, at] of [['grande salle', '', [U(225), U(222)]], ['aile', '&wave=11', [U(110), U(170)]], ['étage', '&wave=31&floor=1', [U(120), U(250)]]]) {
     test(`sol de ${id} : plus de couleurs distinctes avec le détail, luminance moyenne à ±6 %`, async ({ page }, testInfo) => {
       const sample = async (extra) => {
         await open(page, `${url}${extra}`);
