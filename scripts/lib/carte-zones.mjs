@@ -80,8 +80,12 @@ export function smallestCorridor(map, zoneId) {
   const items = [...map.world.obstacles, ...map.layout.pillars, ...map.layout.stairs].filter((o) => o.outside !== true && inZone(o));
   const fullWalls = segmentRects(map.world.walls, map.world.wallThickness); // lignes de mur complètes : le bord d'une ouverture de fenêtre n'est pas un couloir
   let best = Infinity;
+  // Lot 3g : les morceaux d'une même emprise d'escalier (« escalier-courbe », « escalier-courbe.2 »…) ne forment pas un couloir entre eux.
+  const base = (o) => String(o.id).replace(/\.\d+$/, '');
+  const sameStair = (a, b) => a.kind === 'escalier' && b.kind === 'escalier' && base(a) === base(b);
   for (let i = 0; i < items.length; i += 1) {
     for (let j = i + 1; j < items.length; j += 1) {
+      if (sameStair(items[i], items[j])) continue;
       const g = rectGap(items[i], items[j]);
       if (g > 0) best = Math.min(best, g);
     }

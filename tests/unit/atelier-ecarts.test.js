@@ -281,12 +281,13 @@ describe('releve.json et ecarts-decisions.json', () => {
     expect(releve.calage.residu.score).toBeGreaterThanOrEqual(85);
   });
 
-  it('décisions : champs valides ; plus-60 jamais approuvée par défaut', () => {
+  it('décisions : champs valides ; plus-60 approuvée seulement à la demande du propriétaire', () => {
     for (const d of decisions.decisions) {
       expect(ACTIONS).toContain(d.action);
       expect(LEVELS).toContain(d.level);
       expect(['rdc', 'etage']).toContain(d.floor);
-      if (d.level === 'plus-60') expect(d.approved).not.toBe(true);
+      // Une décision plus-60 n'est approuvée que par le propriétaire (raison qui le dit).
+      if (d.level === 'plus-60' && d.approved === true) expect(d.reason, d.id).toMatch(/propriétaire/);
     }
   });
 

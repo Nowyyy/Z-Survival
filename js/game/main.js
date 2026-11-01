@@ -67,6 +67,8 @@ const upperWorld = mapId === 'salle' ? null : await loadJson(`${mapDir}/etage.wo
 // decor-interieur.world.json de la carte (généré par npm run carte), passé au rendu par render.decorInterieur ; absent de l'ancienne salle.
 const detail = query.get('detail') !== '0';
 const decorInterieur = detail && mapId !== 'salle' ? await loadJson(`${mapDir}/decor-interieur.world.json`).catch(() => null) : null;
+// Retours du propriétaire : mobilier dessiné d'après le modèle (mobilier.world.json, avec le détail) ; ?murs=bas : murs et piliers à l'ancienne hauteur (essai).
+const mobilier = detail && mapId !== 'salle' ? await loadJson(`${mapDir}/mobilier.world.json`).catch(() => null) : null;
 
 const [dict, world, decor, camera, nav, player, weapons, enemies, render, texturesCfg, variants, soundsCfg, audioCfg, materialsCfg, voiceCfg, wavesCfg, gaitsCfg, statsCfg, splashCfg, vhsCfg, windowsCfg, downCfg, stairsCfg] = await Promise.all([
 
@@ -109,6 +111,8 @@ const loading = createLoading(dict);
 // Police du titre de l'animation de vague : chargée à la demande derrière l'écran de préparation (aucune nouvelle police, aucune requête externe).
 const titleFont = document.fonts?.load ? Promise.race([document.fonts.load('1em "Rubik Wet Paint"'), new Promise((resolve) => setTimeout(resolve, 2000))]).catch(() => {}) : Promise.resolve();
 render.decorInterieur = decorInterieur?.items ?? []; // lot 3g
+render.mobilier = mobilier?.pieces ?? null;
+render.ceilingWalls = mapId !== 'salle' && render.ceilingWalls === true && query.get('murs') !== 'bas';
 const textureData = await generateTextureData(texturesCfg.textures, { lookup: createTokenLookup(), onProgress: (p) => loading.update(p * TEXTURE_SHARE), detail });
 const audio = createAudio({ config: { audio: audioCfg, materials: materialsCfg, voice: voiceCfg, sounds: soundsCfg.sounds }, test: testMode, seed: Number.isFinite(seedParam) ? seedParam : 1 });
 const essential = await renderSounds(planSounds(soundsCfg.sounds, 'essentiel'), { onProgress: (p) => loading.update(TEXTURE_SHARE + (1 - TEXTURE_SHARE) * p) });

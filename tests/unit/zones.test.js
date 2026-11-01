@@ -13,7 +13,7 @@ const raw3c = { ...raw, doors: raw.doors.map((d) => (d.id !== 'porte-1' ? { ...d
 const zones = parseZones(raw3c);
 const PX = 12; // distance « entrée intérieure » en pixels du plan (60 unités / 5)
 const assignment = assignWindows(zones, plan.windows, PX);
-const ALL = ['F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8'];
+const ALL = ['F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F8'];
 
 describe('zones : parseZones', () => {
   it('lit zones.json de la carte sans avertissement', () => {
@@ -82,7 +82,7 @@ describe('zones : parseZones', () => {
 
 describe('zones : régions et répartition des fenêtres', () => {
   it('F4 à F8 sont dans « depart », F1 à F3 dans « aile »', () => {
-    expect(assignment).toEqual({ F1: 'aile', F2: 'aile', F3: 'aile', F4: 'depart', F5: 'depart', F6: 'depart', F7: 'depart', F8: 'depart' });
+    expect(assignment).toEqual({ F1: 'aile', F2: 'aile', F3: 'aile', F4: 'depart', F5: 'depart', F6: 'depart', F8: 'depart' });
   });
 
   it('la même répartition se retrouve en unités du jeu, avec les entrées intérieures des fenêtres de world.json', () => {
@@ -143,17 +143,17 @@ describe('zones : portes ouvertes au départ, zones et fenêtres actives', () =>
     expect(activeZones(zones, ['porte-2', 'porte-3', 'inconnue'])).toEqual(['depart']);
   });
 
-  it('activeWindows : F4 à F8, puis les huit fenêtres', () => {
-    expect(activeWindows(zones, assignment, [])).toEqual(['F4', 'F5', 'F6', 'F7', 'F8']);
+  it('activeWindows : F4 à F8 sans F7, puis les sept fenêtres', () => {
+    expect(activeWindows(zones, assignment, [])).toEqual(['F4', 'F5', 'F6', 'F8']);
     expect(activeWindows(zones, assignment, ['porte-1']).sort()).toEqual(ALL);
   });
 
-  it('activeSpawnPoints : 10 points avant l\'ouverture, 16 après (deux par fenêtre)', () => {
+  it('activeSpawnPoints : 8 points avant l\'ouverture, 14 après (deux par fenêtre)', () => {
     const before = activeSpawnPoints(zones, assignment, decor.spawnPoints, []);
     const after = activeSpawnPoints(zones, assignment, decor.spawnPoints, ['porte-1']);
-    expect(before).toHaveLength(10);
-    expect(after).toHaveLength(16);
-    expect(before.every((p) => ['F4', 'F5', 'F6', 'F7', 'F8'].includes(p.window))).toBe(true);
+    expect(before).toHaveLength(8); // lot 3g : F7 retirée (grille du modèle)
+    expect(after).toHaveLength(14); // lot 3g : F7 retirée (grille du modèle)
+    expect(before.every((p) => ['F4', 'F5', 'F6', 'F8'].includes(p.window))).toBe(true);
     expect(before.some((p) => ['F1', 'F2', 'F3'].includes(p.window))).toBe(false);
   });
 

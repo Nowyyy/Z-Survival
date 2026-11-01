@@ -22,6 +22,8 @@
     {"id":"MC1","floor":"rdc","action":"ajouter","to":{"x0":335,"y0":308,"x1":382,"y1":346,"kind":"cloison"},"reason":"cloison ou bloc du bâti sans équivalent dans la carte : à approuver","level":"plus-60","approved":false},
     {"id":"U5","floor":"etage","action":"corriger","to":{"x":217},"reason":"centre du modèle (Component_8, Component_5) à 216.5 px","level":"15-60"},
     {"id":"pilier 231,264","floor":"etage","action":"corriger","to":{"at":[242,253]},"reason":"pilier du modèle en 242, 253 px (déplacé par un lot précédent ?) : à approuver","level":"plus-60","approved":false},
-    {"id":"MQ4","floor":"etage","action":"ajouter","to":{"at":[55,254]},"reason":"pilier du modèle sans pilier de la carte : à approuver","level":"plus-60","approved":false}
+    {"id":"MQ4","floor":"etage","action":"ajouter","to":{"at":[55,254]},"reason":"pilier du modèle sans pilier de la carte : à approuver","level":"plus-60","approved":false},
+    {"id":"escalier-courbe","floor":"rdc","action":"corriger","to":{"free":[{"x0":255,"y0":261,"x1":264,"y1":270},{"x0":283,"y0":243,"x1":288,"y1":270},{"x0":280,"y0":243,"x1":283,"y1":258},{"x0":276,"y0":243,"x1":280,"y1":252}]},"reason":"retour du propriétaire (mur invisible autour de l'escalier courbe) : l'obstacle suit l'arc des marches (rayons 11 à 27 px autour du pivot 254,5, 270) ; coin intérieur et coin extérieur libres. Forme, walk.path et zone de déclenchement inchangés.","level":"15-60","approved":true},
+    {"id":"F7","floor":"rdc","action":"retirer","to":null,"reason":"retour du propriétaire : dans le modèle, l'ouverture voisine de F8 est une grille qui fait office de mur (trou à barreaux de 2,45 m, aucun ouvrage à planches) ; F7 devient un mur plein avec une grille dessinée","level":"plus-60","approved":true}
   ]
 }

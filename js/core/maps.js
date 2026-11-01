@@ -142,7 +142,7 @@ export function cleanPlan(plan) {
     windows: list(plan.windows, (w) => isObject(w) && typeof w.id === 'string' && Object.hasOwn(SIDES, w.side) && isNum(w.x) && isNum(w.y)).map((w) => ({ id: w.id, side: w.side, x: w.x, y: w.y, ...(isNum(w.planX) ? { planX: w.planX } : {}), ...(isNum(w.planY) ? { planY: w.planY } : {}) })),
     pillarSize: pos(plan.pillarSize, 14),
     pillars: list(plan.pillars, isPoint).map((p) => [p[0], p[1]]),
-    stairs: list(plan.stairs, (s) => isObject(s) && box(s)).map((s, i) => ({ id: typeof s.id === 'string' ? s.id : `escalier-${i + 1}`, ...(typeof s.role === 'string' && s.role !== '' ? { role: s.role } : {}), x0: s.x0, y0: s.y0, x1: s.x1, y1: s.y1 })),
+    stairs: list(plan.stairs, (s) => isObject(s) && box(s)).map((s, i) => ({ id: typeof s.id === 'string' ? s.id : `escalier-${i + 1}`, ...(typeof s.role === 'string' && s.role !== '' ? { role: s.role } : {}), x0: s.x0, y0: s.y0, x1: s.x1, y1: s.y1, ...(Array.isArray(s.free) && s.free.some(box) ? { free: s.free.filter(box).map((f) => ({ x0: f.x0, y0: f.y0, x1: f.x1, y1: f.y1 })) } : {}) })),
     ramp: isObject(plan.ramp) && box(plan.ramp) ? { id: typeof plan.ramp.id === 'string' ? plan.ramp.id : 'rampe', window: typeof plan.ramp.window === 'string' ? plan.ramp.window : null, x0: plan.ramp.x0, y0: plan.ramp.y0, x1: plan.ramp.x1, y1: plan.ramp.y1 } : null,
     start: isPoint(plan.start) ? [plan.start[0], plan.start[1]] : null,
     furniture: list(plan.furniture, (f) => isObject(f) && box(f)).map((f, i) => ({ id: typeof f.id === 'string' ? f.id : `M${i + 1}`, x0: f.x0, y0: f.y0, x1: f.x1, y1: f.y1, kind: typeof f.kind === 'string' ? f.kind : 'caisse', ...(f.provisional === true ? { provisional: true } : {}), ...(f.source === 'modele' ? { source: 'modele' } : {}) })),
@@ -354,8 +354,19 @@ export function planToWorld(plan, params, extras) {
     const r = rectPx(st.x0, st.y0, st.x1, st.y1);
     return { id: st.id, ...(st.role ? { role: st.role } : {}), ...r, hauteur: p.stairsHeight, kind: 'escalier', ...(isInside(r) ? {} : { outside: true }) };
   });
-  const structure = [...pillars, ...stairs].map((o) => ({ id: o.id, rect: { x: o.x, y: o.y, w: o.w, h: o.h }, hauteur: o.hauteur, kind: o.kind, structure: true, outside: o.outside === true, parts: [o.id] }));
-  const fixedMerge = mergeInterstices(structure, p.minCorridor);
+  // Lot 3g (retour du propriétaire) : `free` d'un escalier = parties libres de son emprise (coin intérieur et coin extérieur d'un escalier courbe) ; l'obstacle
+  // devient l'emprise moins ces parties (plusieurs rectangles : « escalier-courbe », « escalier-courbe.2 »…). world.stairs garde l'emprise entière.
+  const stairBlocks = stairs.flatMap((o) => {
+    const st = pl.stairs.find((q) => q.id === o.id);
+    if (!st?.free) return [o];
+    const holes = st.free.map((f) => rectPx(f.x0, f.y0, f.x1, f.y1));
+    return unionRects([o], holes).map((r, k) => ({ ...o, id: k === 0 ? o.id : `${o.id}.${k + 1}`, x: r6(r.x), y: r6(r.y), w: r6(r.w), h: r6(r.h) }));
+  });
+  const structure = [...pillars, ...stairBlocks].map((o) => ({ id: o.id, rect: { x: o.x, y: o.y, w: o.w, h: o.h }, hauteur: o.hauteur, kind: o.kind, structure: true, outside: o.outside === true, parts: [o.id] }));
+  // Les morceaux d'un même escalier (lot 3g) ne fusionnent jamais entre eux : sinon l'emprise redeviendrait un seul rectangle.
+  const stairOf = (id) => String(id).replace(/\.\d+$/, '');
+  const sameStair = (a, b) => a.parts.some((x) => b.parts.some((y) => x !== y && stairOf(x) === stairOf(y) && pl.stairs.some((q) => q.id === stairOf(x))));
+  const fixedMerge = mergeInterstices(structure, p.minCorridor, (a, b) => !sameStair(a, b));
   let fixed = fixedMerge.items;
   report.merged.push(...fixedMerge.merges);
 

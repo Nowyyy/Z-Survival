@@ -58,7 +58,7 @@ describe('étage : fichiers générés et sources', () => {
     const adds = JSON.parse(readFileSync('data/game/maps/rez-de-chaussee/ecarts-decisions.json', 'utf8')).decisions.filter((d) => d.floor === 'rdc' && d.action === 'ajouter' && d.to && 'x0' in d.to && (d.level !== 'plus-60' || d.approved === true));
     expect(plan.furniture.length).toBe(49 + adds.length);
     expect(adds.length).toBeLessThanOrEqual(12);
-    expect(plan.windows.map((w) => w.id)).toEqual(['F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8']);
+    expect(plan.windows.map((w) => w.id)).toEqual(['F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F8']);
   });
 });
 

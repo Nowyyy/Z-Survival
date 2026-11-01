@@ -34,7 +34,7 @@ export function planToUnits(px, py, transform) {
   const t = isObject(transform) ? transform : {};
   const s = num(t.scale, UNITS_PER_PX);
   const m = num(t.margin, 800);
-  const o = isObject(t.origin) ? t.origin : {};
+  const o = isObject(t.origin) ? t.origin : { x: num(t.x0), y: num(t.y0) }; // world.json : x0, y0
   return [(num(px) - num(o.x)) * s + m, (num(py) - num(o.y)) * s + m];
 }
 

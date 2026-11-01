@@ -62,6 +62,7 @@
     {"id":"sacs-2","floor":"rdc","kind":"sacs","x":184,"y":219,"w":11,"h":6,"source":"modele"},
     {"id":"bidon-salle","floor":"rdc","kind":"bidon","x":440,"y":272,"w":4,"h":4,"provisional":true},
     {"id":"bidon-poche","floor":"rdc","kind":"bidon","x":62,"y":300,"w":4,"h":4,"provisional":true},
+    {"id":"grille-F7","floor":"rdc","kind":"grille","on":"contour-7","from":0.8064,"to":0.8948,"source":"modele"},
     {"id":"bidon-etage","floor":"etage","kind":"bidon","x":262,"y":322,"w":4,"h":4,"provisional":true}
   ]
 }

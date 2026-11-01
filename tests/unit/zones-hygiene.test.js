@@ -64,7 +64,12 @@ describe('hygiène du lot 3c : pureté et fichiers', () => {
     const before = showMain('data/game/maps/rez-de-chaussee/plan.json');
     if (!before) return;
     const now = JSON.parse(readFileSync('data/game/maps/rez-de-chaussee/plan.json', 'utf8'));
-    for (const key of ['bbox', 'contour', 'walls', 'openings', 'windows', 'pillarSize', 'pillars', 'ramp', 'start']) expect(now[key], key).toEqual(before[key]);
+    for (const key of ['bbox', 'contour', 'walls', 'openings', 'pillarSize', 'pillars', 'ramp', 'start']) expect(now[key], key).toEqual(before[key]);
+    // Lot 3g (avant : fenêtres identiques) : les fenêtres ne changent que par ecarts-decisions.json (recalage de 50 au plus, ou F7 retirée à la demande du propriétaire).
+    const { decisions } = JSON.parse(readFileSync('data/game/maps/rez-de-chaussee/ecarts-decisions.json', 'utf8'));
+    const removed = decisions.filter((d) => d.floor === 'rdc' && d.action === 'retirer' && d.approved === true).map((d) => d.id);
+    expect(now.windows.map((w) => w.id), 'windows').toEqual(before.windows.map((w) => w.id).filter((id) => !removed.includes(id)));
+    for (const w of now.windows) expect(w, w.id).toEqual(before.windows.find((q) => q.id === w.id));
     // Lot 3e : l'escalier existant est seulement marqué (role) et le second escalier est ajouté ; rien d'autre ne change.
     // Lot 3e (mise à jour) : l'emprise de l'escalier courbe est redessinée (escalier physique arrondi).
     const strip = (list) => list.map((st) => (st.id === 'escalier-courbe' ? { id: st.id } : Object.fromEntries(Object.entries(st).filter(([k]) => k !== 'role'))));

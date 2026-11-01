@@ -80,7 +80,7 @@ describe('décisions du dépôt appliquées aux sources', () => {
 
 describe('fenêtres, escaliers, portes et zones inchangés', () => {
   it('F1 à F8 : identifiants, côtés et murs conservés ; décalage de 50 au plus de leur origine', () => {
-    expect(plan.windows.map((w) => [w.id, w.side])).toEqual([['F1', 'nord'], ['F2', 'est'], ['F3', 'ouest'], ['F4', 'nord'], ['F5', 'sud'], ['F6', 'sud'], ['F7', 'sud'], ['F8', 'sud']]);
+    expect(plan.windows.map((w) => [w.id, w.side])).toEqual([['F1', 'nord'], ['F2', 'est'], ['F3', 'ouest'], ['F4', 'nord'], ['F5', 'sud'], ['F6', 'sud'], ['F8', 'sud']]);
     for (const w of world.windows.filter((q) => q.id.startsWith('F'))) {
       const p = plan.windows.find((q) => q.id === w.id);
       const ox = ((p.planX ?? p.x) - plan.bbox.x0) * 5 + 800;
@@ -99,7 +99,8 @@ describe('fenêtres, escaliers, portes et zones inchangés', () => {
   it('escaliers, ouvertures et contour inchangés depuis la base', () => {
     if (!before.plan) return;
     for (const [now, old] of [[plan, before.plan], [etage, before.etage]]) {
-      expect(now.stairs).toEqual(old.stairs);
+      // Retour du propriétaire : seule l'emprise de collision d'un escalier (`free`, décision approuvée) peut changer ; sa forme (x0 à y1), son rôle et walk.path non.
+      expect(now.stairs.map((st) => ({ ...st, free: undefined }))).toEqual(old.stairs.map((st) => ({ ...st, free: undefined })));
       expect(now.openings).toEqual(old.openings);
       expect(now.contour).toEqual(old.contour);
       expect(now.walls).toEqual(old.walls);
@@ -111,9 +112,11 @@ describe('fenêtres, escaliers, portes et zones inchangés', () => {
     expect(load(`${DIR}/zones.json`)).toEqual(before.zones);
   });
 
-  it('les décisions ne touchent ni escalier, ni porte, ni ouverture', () => {
-    const ids = new Set([...plan.stairs, ...etage.stairs, ...plan.openings, ...etage.openings].map((x) => x.id));
+  it('les décisions ne touchent ni porte ni ouverture ; un escalier seulement par son emprise (`free`), avec l\'accord du propriétaire', () => {
+    const ids = new Set([...plan.openings, ...etage.openings].map((x) => x.id));
     for (const d of decisions.filter((x) => x.action !== 'garder')) expect(ids.has(d.id), d.id).toBe(false);
+    const stairIds = new Set([...plan.stairs, ...etage.stairs].map((x) => x.id));
+    for (const d of decisions.filter((x) => stairIds.has(x.id))) expect([d.action, Object.keys(d.to ?? {}), d.approved]).toEqual(['corriger', ['free'], true]);
   });
 });
 
@@ -167,9 +170,9 @@ describe('règles de jeu sur la nouvelle géométrie (portes fermées puis ouver
     }
   });
 
-  it('16 points d\'apparition au rez-de-chaussée et 14 à l\'étage, toutes portes ouvertes', () => {
+  it('14 points d\'apparition au rez-de-chaussée (F7 retirée) et 14 à l\'étage, toutes portes ouvertes', () => {
     const last = m.states.at(-1);
-    expect(last.floors.rdc.points).toBe(16);
+    expect(last.floors.rdc.points).toBe(14); // lot 3g : F7 retirée (grille du modèle)
     expect(last.floors.etage.points).toBe(14);
   });
 

@@ -126,7 +126,7 @@ test.describe('porte 3 : second escalier et porte de l\'étage', () => {
     expect(s.events).toEqual([]);
     expect(s.zones.next).toBeNull();
     expect(s.zones.list.every((z) => z.open)).toBe(true);
-    expect(s.zones.activeWindows).toHaveLength(15);
+    expect(s.zones.activeWindows).toHaveLength(14); // lot 3g : F7 retirée (7 + U1 à U7)
     await open(page, '&wave=30&nospawn=1');
     s = await STATE(page);
     expect(s.zones.doors[2]).toMatchObject({ open: false, sinkProgress: 0 });

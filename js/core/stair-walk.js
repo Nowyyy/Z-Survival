@@ -104,7 +104,9 @@ export function startWalk(stairId, from, auto = false) {
 // du joueur ; dt est borné à 0,05 s (0 en pause). Le joueur va où il veut mais reste dans le tube (distance au chemin ≤ width / 2 - radius), sauf au-delà des deux bouts.
 // Renvoie { walk, pos: { x, y }, point: { t, s }, floor (étage logique, change à mi-hauteur), done } ; done vaut l'étage du bout franchi ('rdc' au premier point, 'etage'
 // au dernier) quand le joueur sort de l'escalier, sinon null. Un chemin invalide termine tout de suite.
-export function stepWalk(walk, path, { pos = { x: 0, y: 0 }, dir = { x: 0, y: 0 }, speed = 0, dt = 0, width = 100, radius = 18 } = {}) {
+// sideExit (lot 3g, retour du propriétaire ; joueur seulement) : sur le tronçon plat du pied (t = 0, avant la première marche), les côtés sont ouverts : le joueur
+// qui s'écarte du chemin sort de l'escalier au rez-de-chaussée (aucun mur invisible avant la première marche).
+export function stepWalk(walk, path, { pos = { x: 0, y: 0 }, dir = { x: 0, y: 0 }, speed = 0, dt = 0, width = 100, radius = 18, sideExit = false } = {}) {
   const p = cleanPath(path);
   const at = isObject(pos) && isNum(pos.x) && isNum(pos.y) ? { x: pos.x, y: pos.y } : null;
   if (!isObject(walk) || !p || at === null) return { walk: null, pos: at ?? { x: 0, y: 0 }, point: { t: 0, s: 0 }, floor: 'rdc', done: walk?.from ?? 'rdc' };
@@ -133,6 +135,9 @@ export function stepWalk(walk, path, { pos = { x: 0, y: 0 }, dir = { x: 0, y: 0 
   // Rambardes : au-delà d'un bout, le tube est ouvert ; ailleurs le joueur est ramené dans la largeur (glisse le long de la rambarde).
   const allowed = Math.max(0, num(width, 100) / 2 - Math.max(0, num(radius, 18)));
   const open = q.beforeStart > 0 || q.pastEnd > 0;
+  if (sideExit === true && !open && q.t <= 1e-6 && q.dist > allowed) {
+    return { walk: null, pos: { x, y }, point: { t: 0, s: q.s }, floor: 'rdc', done: 'rdc' };
+  }
   if (!open && q.dist > allowed && q.dist > 0) {
     const k = allowed / q.dist;
     x = q.x + (x - q.x) * k;

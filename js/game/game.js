@@ -425,7 +425,7 @@ export function createGame(ctx) {
   }
   function advanceWalk(dir, dt) {
     const def = stairsWorld.find((q) => q.id === sim.sw.stair);
-    const r = stepWalk(sim.sw, def?.walk?.path, { pos: sim.player, dir, speed: eff.player.speed, dt, width: def?.walk?.width, radius: sim.player.r });
+    const r = stepWalk(sim.sw, def?.walk?.path, { pos: sim.player, dir, speed: eff.player.speed, dt, width: def?.walk?.width, radius: sim.player.r, sideExit: true }); // lot 3g : sortie par le côté au pied
     sim.player = { ...sim.player, x: r.pos.x, y: r.pos.y };
     sim.elev = heightOf(r.point.t, LIFT);
     if (r.floor !== pf() && !r.done) crossFloor(r.floor);

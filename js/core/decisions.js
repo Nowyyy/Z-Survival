@@ -67,8 +67,27 @@ function applyOne(plan, d) {
     return { status: STATUS.done, details: `${nid} ajoutée (${kind})` };
   }
 
-  // Fenêtre : décalage le long de son mur (x pour nord et sud, y pour est et ouest), 50 unités au plus de sa position d'origine.
+  // Escalier (lot 3g, retour du propriétaire) : « corriger » avec to.free = parties libres de son emprise (l'obstacle suit les marches) ; la forme, walk.path et la zone
+  // de déclenchement ne changent pas.
+  const stair = list(plan.stairs).find((q) => q.id === id);
+  if (stair) {
+    if (!approved) return { status: STATUS.refused, details: 'escalier : accord du propriétaire exigé (approved: true)' };
+    if (d.action !== 'corriger' || !Array.isArray(to?.free) || !to.free.every(RECT)) return { status: STATUS.missing, details: 'escalier : seule « corriger » avec to.free (rectangles) est prise en charge' };
+    const free = to.free.map((f) => ({ x0: f.x0, y0: f.y0, x1: f.x1, y1: f.y1 }));
+    if (JSON.stringify(stair.free ?? null) === JSON.stringify(free)) return { status: STATUS.already, details: `${id} : ${free.length} partie(s) libre(s)` };
+    stair.free = free;
+    return { status: STATUS.done, details: `${id} : ${free.length} partie(s) libre(s) dans l'emprise` };
+  }
+
+  // Fenêtre : décalage le long de son mur (x pour nord et sud, y pour est et ouest), 50 unités au plus de sa position d'origine ; « retirer » (lot 3g, accord exigé) :
+  // la fenêtre devient un mur plein.
   const win = list(plan.windows).find((w) => w.id === id);
+  if (d.action === 'retirer' && /^[FU]\d+$/.test(id)) {
+    if (!win) return { status: STATUS.already, details: `${id} absente` };
+    if (!approved) return { status: STATUS.refused, details: 'retirer une fenêtre : accord du propriétaire exigé (approved: true)' };
+    plan.windows = list(plan.windows).filter((w) => w.id !== id);
+    return { status: STATUS.done, details: `${id} retirée (mur plein)` };
+  }
   if (win) {
     if (d.action !== 'corriger' || !to) return { status: STATUS.missing, details: 'fenêtre : seule « corriger » est prise en charge' };
     const horiz = win.side === 'nord' || win.side === 'sud';

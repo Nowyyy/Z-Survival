@@ -62,7 +62,9 @@ describe('mobilier de complément : plan.json, source unique', () => {
     const expected = before.furniture.map((f) => (fixes.has(f.id) ? { ...f, x0: fixes.get(f.id).x0, y0: fixes.get(f.id).y0, x1: fixes.get(f.id).x1, y1: fixes.get(f.id).y1 } : f));
     expect(plan.furniture.filter((f) => ORIGINAL.includes(f.id))).toEqual(expected);
     // Lot 3e : seul l'escalier existant est marqué (role) et un second escalier est ajouté (stairs) ; rien d'autre ne change dans plan.json.
-    expect({ ...plan, furniture: undefined, stairs: undefined }).toEqual({ ...before, furniture: undefined, stairs: undefined });
+    // Lot 3g : sauf les fenêtres retirées à la demande du propriétaire (F7, grille du modèle) par ecarts-decisions.json.
+    const removedWindows = DECISIONS.filter((d) => d.floor === 'rdc' && d.action === 'retirer' && /^F\d+$/.test(d.id)).map((d) => d.id);
+    expect({ ...plan, furniture: undefined, stairs: undefined }).toEqual({ ...before, furniture: undefined, stairs: undefined, windows: before.windows.filter((w) => !removedWindows.includes(w.id)) });
     // Lot 3e (mise à jour) : l'emprise de l'escalier courbe est redessinée (escalier physique arrondi) ; l'escalier est toujours là, sous le même identifiant.
     const strip = (list) => list.map((st) => (st.id === 'escalier-courbe' ? { id: st.id } : Object.fromEntries(Object.entries(st).filter(([k]) => k !== 'role'))));
     expect(strip(plan.stairs.slice(0, before.stairs.length))).toEqual(strip(before.stairs));
@@ -135,7 +137,9 @@ describe('mobilier de complément : aire libre', () => {
 describe('mobilier de complément : règles de la carte, zone par zone, porte fermée et ouverte', () => {
   it('deux pièces sont au contact ou séparées d\'au moins le couloir minimal (50), sans recouvrement', () => {
     const pairs = items.flatMap((a, i) => items.slice(i + 1).map((b) => [a, b]));
+    const base = (o) => String(o.id).replace(/\.\d+$/, ''); // lot 3g : morceaux d'une même emprise d'escalier (voir maps-regles)
     for (const [a, b] of pairs) {
+      if (a.kind === 'escalier' && b.kind === 'escalier' && base(a) === base(b)) continue;
       const gap = rectGap(a, b);
       expect(gap === 0 || gap >= world.minCorridor, `${a.id} / ${b.id} : ${gap}`).toBe(true);
       expect(overlapArea(a, b), `${a.id} / ${b.id}`).toBe(0);
@@ -170,7 +174,7 @@ describe('mobilier de complément : règles de la carte, zone par zone, porte fe
     for (const o of items) expect(distanceToRect(world.start.x, world.start.y, o), o.id).toBeGreaterThanOrEqual(120);
   });
 
-  it.each(['F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8'])('aucune pièce dans les 150 de profondeur libre derrière %s ni à moins de 80 de son point de réparation', (id) => {
+  it.each(['F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F8'])('aucune pièce dans les 150 de profondeur libre derrière %s ni à moins de 80 de son point de réparation', (id) => {
     const w = world.windows.find((q) => q.id === id);
     const zone = windowZone(w, world.windowSize, 150, world.wallThickness);
     const g = geoms.find((q) => q.id === id);

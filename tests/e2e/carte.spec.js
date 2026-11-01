@@ -11,7 +11,7 @@ async function open(page, extra = '', size = SIZES[0]) {
   await expect(page.locator('svg.carte-svg')).toBeVisible({ timeout: 30_000 });
 }
 
-test('se charge sans erreur ni requête externe, noindex, 8 étiquettes F1 à F8, le cadre et l\'échelle', async ({ page, baseURL }) => {
+test('se charge sans erreur ni requête externe, noindex, 7 étiquettes F1 à F8 (F7 retirée au lot 3g), le cadre et l\'échelle', async ({ page, baseURL }) => {
   const external = [];
   const problems = [];
   page.on('request', (r) => !r.url().startsWith(baseURL) && !r.url().startsWith('data:') && external.push(r.url()));
@@ -20,11 +20,11 @@ test('se charge sans erreur ni requête externe, noindex, 8 étiquettes F1 à F8
   page.on('response', (r) => r.status() >= 400 && problems.push(`${r.status()} ${r.url()}`));
   await open(page);
   await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', 'noindex');
-  await expect(page.locator('text.fenetre-etiquette')).toHaveText(['F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8']);
+  await expect(page.locator('text.fenetre-etiquette')).toHaveText(['F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F8']);
   await expect(page.locator('rect.cadre-trait')).toHaveCount(1);
   await expect(page.locator('line.echelle-trait')).toHaveCount(1);
   await expect(page.locator('rect.pilier')).toHaveCount(10);
-  await expect(page.locator('#stats')).toContainText('8 fenêtres');
+  await expect(page.locator('#stats')).toContainText('7 fenêtres');
   await page.waitForLoadState('networkidle');
   expect(external).toEqual([]);
   expect(problems).toEqual([]);
@@ -62,7 +62,7 @@ test('?map=salle affiche l\'ancienne salle (3 fenêtres, 14 meubles, aucun pilie
 
 test('?map= inconnu retombe sur le rez-de-chaussée', async ({ page }) => {
   await open(page, '?map=nimporte');
-  await expect(page.locator('text.fenetre-etiquette')).toHaveCount(8);
+  await expect(page.locator('text.fenetre-etiquette')).toHaveCount(7);
 });
 
 // Lot 3e-C : sélecteur d'étage (?floor=0 ou 1, deux boutons de 44 px), zones de déclenchement, arrivées et blocs de portes.
@@ -70,7 +70,7 @@ test.describe('sélecteur d\'étage', () => {
   test('par défaut et ?floor=0 : le rez-de-chaussée (F1 à F8), ses deux zones de déclenchement et leurs arrivées ; le bouton courant est marqué', async ({ page }) => {
     for (const q of ['', '?floor=0']) {
       await open(page, q);
-      await expect(page.locator('text.fenetre-etiquette')).toHaveText(['F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8']);
+      await expect(page.locator('text.fenetre-etiquette')).toHaveText(['F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F8']);
       await expect(page.locator('rect.declencheur')).toHaveCount(2);
       await expect(page.locator('circle.arrivee')).toHaveCount(2);
       await expect(page.locator('#lien-etage-rdc')).toHaveAttribute('aria-current', 'page');
@@ -108,7 +108,7 @@ test.describe('sélecteur d\'étage', () => {
     await expect(page.locator('#lien-etage')).toHaveAttribute('href', 'carte.html?floor=1');
     await expect(page.locator('#lien-jeu')).toHaveAttribute('href', 'jeu.html?wave=31&labels=1&zoom=1&floor=1');
     await page.locator('#lien-etage-rdc').click();
-    await expect(page.locator('text.fenetre-etiquette')).toHaveCount(8);
+    await expect(page.locator('text.fenetre-etiquette')).toHaveCount(7);
   });
 
   for (const size of SIZES) {

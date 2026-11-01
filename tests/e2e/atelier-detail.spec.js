@@ -9,6 +9,9 @@ const SIZE = { width: 667, height: 375 };
 const BROWSER_NOISE = /GL Driver Message|ReadPixels|GPU stall/;
 const load = (path) => JSON.parse(readFileSync(path, 'utf8'));
 const decor = load('data/game/maps/rez-de-chaussee/decor-interieur.world.json');
+// Retours du propriétaire (après C) : mobilier redessiné d'après le modèle, dans le maillage des meubles (aucun appel ajouté) ; ses triangles comptent deux fois
+// (passe d'ombre). Budget du détail : décor léger 1 500 + 2 × triangles du mobilier ; 30 000 au plus (budget de l'étage).
+const MOBILIER = 2 * load('data/game/maps/rez-de-chaussee/mobilier.world.json').triangles;
 const STATE = (page) => page.evaluate(() => window.__zs.getState());
 const U = (px) => px * 5 + 800;
 // Références mesurées sur main au lancement du lot (scripts/modele/mesures-rendu.mjs) : [appels, triangles].
@@ -75,7 +78,7 @@ test.describe('?detail=0 et ?detail=1', () => {
   });
 });
 
-test.describe('budgets de rendu avec le détail (≤ référence + 1 500 triangles et + 6 appels)', () => {
+test.describe('budgets de rendu avec le détail (≤ référence + 1 500 triangles + mobilier, 30 000 au plus, et + 6 appels)', () => {
   for (const [id, sc] of Object.entries(SCENES)) {
     test(`${id}`, async ({ page }, testInfo) => {
       await open(page, `${sc.url}&shadows=1&detail=0`);
@@ -85,13 +88,15 @@ test.describe('budgets de rendu avec le détail (≤ référence + 1 500 triangl
       const note = `${id} : detail=0 ${off.calls} appels / ${off.triangles} triangles ; detail=1 ${on.calls} / ${on.triangles} (référence ${REF[id].join(' / ')})`;
       testInfo.annotations.push({ type: 'rendu', description: note });
       console.log(`BUDGET lot 3g-C ${note}`);
-      expect(on.triangles).toBeLessThanOrEqual(REF[id][1] + 1500);
+      expect(on.triangles).toBeLessThanOrEqual(Math.min(REF[id][1] + 1500 + MOBILIER, 30000));
       expect(on.calls).toBeLessThanOrEqual(REF[id][0] + 6);
-      expect(on.triangles - off.triangles).toBeLessThanOrEqual(1500);
+      expect(on.triangles - off.triangles).toBeLessThanOrEqual(1500 + MOBILIER);
       expect(on.calls - off.calls).toBeLessThanOrEqual(6);
-      // Sans le détail : la référence, à la géométrie corrigée de la partie B près (quelques triangles).
-      expect(Math.abs(off.triangles - REF[id][1])).toBeLessThanOrEqual(60);
-      expect(off.calls).toBe(REF[id][0]);
+      // Sans le détail : la référence, à la géométrie corrigée de la partie B près (quelques triangles) ; F7 retirée après C (son maillage, un appel,
+      // manque quand elle était dans le champ : U4).
+      expect(Math.abs(off.triangles - REF[id][1])).toBeLessThanOrEqual(80);
+      expect(off.calls).toBeLessThanOrEqual(REF[id][0]);
+      expect(off.calls).toBeGreaterThanOrEqual(REF[id][0] - 1);
     });
   }
 });

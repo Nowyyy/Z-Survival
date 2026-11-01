@@ -20,9 +20,9 @@ const atlas = load('data/game/textures.json').textures.find((t) => t.id === 'atl
 const overlap = (a, b) => a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
 
 describe('catalogue du décor léger', () => {
-  it('fermé : 8 types au plus', () => {
-    expect(KINDS.length).toBeLessThanOrEqual(8);
-    expect(KINDS).toEqual(['plinthe', 'tuyau', 'applique', 'affiche', 'tapis', 'tache', 'sacs', 'bidon']);
+  it('fermé : les 8 types du lot et la grille demandée par le propriétaire (ancienne F7)', () => {
+    expect(KINDS.length).toBeLessThanOrEqual(9);
+    expect(KINDS).toEqual(['plinthe', 'tuyau', 'applique', 'affiche', 'tapis', 'tache', 'sacs', 'bidon', 'grille']);
   });
 
   it.each(KINDS)('%s : 24 triangles au plus, hauteur 70 au plus, région d\'atlas existante', (k) => {

@@ -8,7 +8,7 @@ const isObject = (o) => o !== null && typeof o === 'object' && !Array.isArray(o)
 const list = (a) => (Array.isArray(a) ? a : []);
 const r2 = (v) => Math.round(num(v) * 100) / 100;
 
-// Catalogue fermé (8 types). wall : posé contre un mur (désigné par l'identifiant du segment) ; z0 / z1 : hauteurs (unités) ; tris : triangles
+// Catalogue fermé (9 types : les 8 du lot et la grille demandée par le propriétaire). wall : posé contre un mur (désigné par l'identifiant du segment) ; z0 / z1 : hauteurs (unités) ; tris : triangles
 // au plus par élément ; region : région de l'atlas de props ; scale : unités du monde par largeur de région (fenêtre de texture).
 export const CATALOGUE = Object.freeze({
   plinthe: Object.freeze({ wall: true, z0: 0, z1: 8, depth: 2.5, tris: 4, region: 'bois-sombre', scale: 100 }),
@@ -19,6 +19,8 @@ export const CATALOGUE = Object.freeze({
   tache: Object.freeze({ wall: false, z0: 0.4, z1: 0.4, tris: 8, region: 'ecorce', scale: 80 }),
   sacs: Object.freeze({ wall: false, z0: 0, z1: 18, tris: 10, region: 'bois', scale: 40 }),
   bidon: Object.freeze({ wall: false, z0: 0, z1: 28, tris: 10, region: 'barriere', scale: 40 }),
+  // Lot 3g (retour du propriétaire) : grille à barreaux devant un mur plein (ouverture à barreaux du modèle, ancienne fenêtre F7) : 8 barreaux et 2 traverses.
+  grille: Object.freeze({ wall: true, z0: 0, z1: 58, depth: 3, tris: 20, region: 'tole', scale: 40 }),
 });
 export const KINDS = Object.freeze(Object.keys(CATALOGUE));
 export const MAX_HEIGHT = 70; // aucun élément au-dessus
@@ -40,7 +42,7 @@ export function decorToWorld(source, sources, transform, opts = {}) {
   const t = isObject(transform) ? transform : {};
   const s = num(t.scale, 5);
   const m = num(t.margin, 800);
-  const o = isObject(t.origin) ? t.origin : {};
+  const o = isObject(t.origin) ? t.origin : { x: num(t.x0), y: num(t.y0) }; // world.json : x0, y0
   const X = (px) => r2((num(px) - num(o.x)) * s + m);
   const Y = (py) => r2((num(py) - num(o.y)) * s + m);
   const half = num(opts.wallThickness, 40) / 2;
@@ -150,6 +152,22 @@ export function itemQuads(item) {
     const front = (h0, h1) => q([[fa[0], h1, fa[1]], [fb[0], h1, fb[1]], [fb[0], h0, fb[1]], [fa[0], h0, fa[1]]], [n.x, 0, n.y], [L, h1 - h0]);
     const top = (h) => q([[a.x, h, a.y], [b.x, h, b.y], [fb[0], h, fb[1]], [fa[0], h, fa[1]]], [0, 1, 0], [L, d]);
     if (item.kind === 'plinthe') return [front(z0, z1), top(z1)];
+    if (item.kind === 'grille') {
+      const ux = (b.x - a.x) / L;
+      const uy = (b.y - a.y) / L;
+      const bar = (s0, s1, h0, h1) => {
+        const p0 = [a.x + ux * s0 + n.x * d, a.y + uy * s0 + n.y * d];
+        const p1 = [a.x + ux * s1 + n.x * d, a.y + uy * s1 + n.y * d];
+        return q([[p0[0], h1, p0[1]], [p1[0], h1, p1[1]], [p1[0], h0, p1[1]], [p0[0], h0, p0[1]]], [n.x, 0, n.y], [s1 - s0, h1 - h0]);
+      };
+      const quads = [];
+      for (let k = 0; k < 8; k += 1) {
+        const c = ((k + 0.5) / 8) * L;
+        quads.push(bar(c - 1.5, c + 1.5, z0, z1));
+      }
+      quads.push(bar(0, L, z1 - 4, z1), bar(0, L, z0 + 6, z0 + 10));
+      return quads;
+    }
     if (item.kind === 'affiche') return [front(z0, z1)];
     if (item.kind === 'applique') {
       const side = (p, sgn) => q([[p[0], z1, p[1]], [p[0] + n.x * d, z1, p[1] + n.y * d], [p[0] + n.x * d, z0, p[1] + n.y * d], [p[0], z0, p[1]]], [((b.x - a.x) / L) * sgn, 0, ((b.y - a.y) / L) * sgn], [d, z1 - z0]);

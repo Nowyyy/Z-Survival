@@ -51,7 +51,6 @@
     { "id": "F4", "side": "nord", "x": 2430, "y": 1940 },
     { "id": "F5", "side": "sud", "x": 2975, "y": 2560 },
     { "id": "F6", "side": "sud", "x": 2355, "y": 2560 },
-    { "id": "F7", "side": "sud", "x": 1735, "y": 2560 },
     { "id": "F8", "side": "sud", "x": 1605, "y": 2560 }
   ],
   "playerBarriers": [
@@ -61,7 +60,6 @@
     { "id": "barriere-F4", "fenetre": "F4", "x": 2394, "y": 1920, "w": 72, "h": 40 },
     { "id": "barriere-F5", "fenetre": "F5", "x": 2939, "y": 2540, "w": 72, "h": 40 },
     { "id": "barriere-F6", "fenetre": "F6", "x": 2319, "y": 2540, "w": 72, "h": 40 },
-    { "id": "barriere-F7", "fenetre": "F7", "x": 1699, "y": 2540, "w": 72, "h": 40 },
     { "id": "barriere-F8", "fenetre": "F8", "x": 1569, "y": 2540, "w": 72, "h": 40 }
   ],
   "startZone": 120,
@@ -98,7 +96,10 @@
     { "id": "pilier-8", "x": 1772.5, "y": 2347.5, "w": 35, "h": 35, "hauteur": 70, "kind": "pilier" },
     { "id": "pilier-9", "x": 1987.5, "y": 2347.5, "w": 35, "h": 35, "hauteur": 70, "kind": "pilier" },
     { "id": "pilier-10", "x": 1772.5, "y": 1922.5, "w": 35, "h": 35, "hauteur": 70, "kind": "pilier" },
-    { "id": "escalier-courbe", "x": 2075, "y": 2015, "w": 160, "h": 135, "hauteur": 70, "kind": "escalier" },
+    { "id": "escalier-courbe", "x": 2075, "y": 2015, "w": 105, "h": 45, "hauteur": 70, "kind": "escalier" },
+    { "id": "escalier-courbe.2", "x": 2075, "y": 2060, "w": 160, "h": 30, "hauteur": 70, "kind": "escalier" },
+    { "id": "escalier-courbe.3", "x": 2075, "y": 2090, "w": 160, "h": 15, "hauteur": 70, "kind": "escalier" },
+    { "id": "escalier-courbe.4", "x": 2120, "y": 2105, "w": 115, "h": 45, "hauteur": 70, "kind": "escalier" },
     { "id": "escalier-aile", "x": 920, "y": 2085, "w": 140, "h": 220, "hauteur": 70, "kind": "escalier" },
     { "id": "M4", "x": 1165, "y": 2420, "w": 40, "h": 40, "hauteur": 55, "kind": "comptoir" },
     { "id": "M1+M3+M7", "x": 1015, "y": 2390, "w": 150, "h": 70, "hauteur": 55, "kind": "table", "parts": ["M1", "M3", "M7"] },
@@ -184,15 +185,18 @@
       { "id": "M14", "reason": "à 0 de escalier-aile" },
       { "id": "M16", "reason": "à 0 de escalier-aile" },
       { "id": "M20", "reason": "dans la zone de départ" },
-      { "id": "M23", "reason": "à 20 de escalier-courbe" },
-      { "id": "M24", "reason": "à 25 de escalier-courbe" },
-      { "id": "M25", "reason": "à 25 de escalier-courbe" },
+      { "id": "M23", "reason": "à 25 de escalier-courbe.2" },
+      { "id": "M24", "reason": "à 32 de escalier-courbe.2" },
       { "id": "M27", "reason": "à 3 de pilier-10" },
       { "id": "M30", "reason": "à 3 de pilier-3" },
       { "id": "M36", "reason": "devant la fenêtre F1" }
     ],
     "snapped": [
+      { "id": "escalier-courbe.2" },
+      { "id": "escalier-courbe.3" },
+      { "id": "escalier-courbe.4" },
       { "id": "M1+M3+M7" },
+      { "id": "M25" },
       { "id": "M26" },
       { "id": "M26+M28" },
       { "id": "M26+M28+M29" },
@@ -202,12 +206,12 @@
     ],
     "clipped": [
       { "id": "pilier-11", "absorbed": true },
-      { "id": "escalier-courbe" },
       { "id": "M4" },
       { "id": "M1+M3+M7" },
       { "id": "M12+M15+M17+M18" },
       { "id": "M19" },
       { "id": "M22" },
+      { "id": "M25", "absorbed": true },
       { "id": "M26+M28+M29+M31" },
       { "id": "M32" },
       { "id": "M33+M34+M35" }

@@ -447,7 +447,11 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
     const floorRects = f === 'etage' ? holes.reduce((rects, h) => h.rects.reduce(subtractHole, rects), l.floor) : l.floor;
     for (const fl of floorRects) fb.floor.slab(fl.x, fl.y, fl.x + fl.w, fl.y + fl.h, 0, textures.repeat('sol-salle'), l.room.x, l.room.y);
     // Murs (allège, linteau et barreaux des fenêtres compris) : enduit sur les côtés, dessus de la couleur --game-wall sans texture.
-    const { walls, bars } = l.segmented ? segmentedWallBoxes(l, render) : wallBoxes(l.room, l.windows, l.windowSize, render);
+    // Lot 3g (essai demandé par le propriétaire) : render.ceilingWalls monte les murs et les piliers du rez-de-chaussée jusqu'au dessous de l'étage (floorLift) ;
+    // ?murs=bas revient à la hauteur d'avant. Le dessin seulement : collisions, tirs et fenêtres inchangés.
+    const tall = f === 'rdc' && render.ceilingWalls === true && lift > num(render.wallHeight);
+    const wallRender = tall ? { ...render, wallHeight: lift - 1 } : render;
+    const { walls, bars } = l.segmented ? segmentedWallBoxes(l, wallRender) : wallBoxes(l.room, l.windows, l.windowSize, wallRender);
     for (const w of walls) {
       fb.wall.box(extents(w), { repeat: wallRepeat }, 'cotes');
       fb.wall.box(extents(w), { fixed: [0.31, 0.62] }, 'dessus'); // dessus : un seul texel du mur, donc sans texture
@@ -472,7 +476,19 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
     // projettent une ombre, les pieds, dossiers et socles forment un maillage sans ombre portée. Les collisions gardent le rectangle d'origine.
     l.furniture.forEach((fu, i) => {
       if (fu.kind === 'escalier') return; // dessiné par la rampe (escalier physique)
-      const parts = furnitureParts(fu, FURNITURE_REGION, l.walls);
+      const up0 = f === 'rdc' && (exposedAt(fu.x + fu.w / 2, fu.y + fu.h / 2) || touchesHole(fu) || partlyUncovered(fu));
+      // Lot 3g (retour du propriétaire) : aspect du mobilier d'après le modèle (render.mobilier : mobilier.world.json, absent avec ?detail=0) ; chaque pièce de
+      // l'obstacle est dessinée par ses propres boîtes (étagères, classeurs, caisses…), les collisions gardent le rectangle de l'obstacle.
+      const ids = Array.isArray(fu.parts) ? fu.parts : [fu.id];
+      const looks = render.mobilier && fu.kind !== 'pilier' ? ids.map((id) => render.mobilier[id]).filter(Boolean) : [];
+      if (looks.length > 0 && looks.length === ids.length) {
+        looks.forEach((m, k) => m.boxes.forEach((b, j) => {
+          const r = region(b.region);
+          (up0 ? fb.propsUp : fb.props).box({ x0: b.x0, x1: b.x1, y0: b.y0, y1: b.y1, z0: b.z0, z1: b.z1 }, { rect: r, scale: r.scale, seed: i * 31 + k * 7 + j + 1 }, b.faces);
+        }));
+        return;
+      }
+      const parts = furnitureParts(tall && fu.kind === 'pilier' ? { ...fu, hauteur: lift - 1 } : fu, FURNITURE_REGION, l.walls);
       const draw = (builder, p, k) => {
         const r = region(p.region);
         builder.box({ x0: p.x0, x1: p.x1, y0: p.y0, y1: p.y1, z0: p.z0, z1: p.z1 }, { rect: r, scale: r.scale, seed: i * 8 + k + 1 }, p.faces);

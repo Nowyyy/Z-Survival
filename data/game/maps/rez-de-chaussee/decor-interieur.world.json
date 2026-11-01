@@ -1,6 +1,6 @@
 {
   "_provisoire": "Décor léger intérieur généré par npm run carte (scripts/plan-vers-monde.mjs) d'après decor-interieur.json : ne jamais éditer à la main. Unités du jeu ; non solide (aucune collision, aucun effet sur le chemin, les tirs ni les règles). Valeurs provisoires.",
-  "triangles": 440,
+  "triangles": 456,
   "items": [
     {
       "id": "plinthe-rdc-1.1",
@@ -198,33 +198,16 @@
       "provisional": true,
       "on": "contour-7",
       "a": { "x": 2307, "y": 2540 },
-      "b": { "x": 1783, "y": 2540 },
-      "n": { "x": 0, "y": -1 },
-      "depth": 2.5,
-      "x": 1783,
-      "y": 2537.5,
-      "w": 524,
-      "h": 2.5
-    },
-    {
-      "id": "plinthe-rdc-7.4",
-      "floor": "rdc",
-      "kind": "plinthe",
-      "z0": 0,
-      "z1": 8,
-      "provisional": true,
-      "on": "contour-7",
-      "a": { "x": 1687, "y": 2540 },
       "b": { "x": 1653, "y": 2540 },
       "n": { "x": 0, "y": -1 },
       "depth": 2.5,
       "x": 1653,
       "y": 2537.5,
-      "w": 34,
+      "w": 654,
       "h": 2.5
     },
     {
-      "id": "plinthe-rdc-7.5",
+      "id": "plinthe-rdc-7.4",
       "floor": "rdc",
       "kind": "plinthe",
       "z0": 0,
@@ -1275,6 +1258,23 @@
       "w": 20,
       "h": 20,
       "rot": 0
+    },
+    {
+      "id": "grille-F7",
+      "floor": "rdc",
+      "kind": "grille",
+      "z0": 0,
+      "z1": 58,
+      "source": "modele",
+      "on": "contour-7",
+      "a": { "x": 1807.5, "y": 2540 },
+      "b": { "x": 1662.53, "y": 2540 },
+      "n": { "x": 0, "y": -1 },
+      "depth": 3,
+      "x": 1662.53,
+      "y": 2537,
+      "w": 144.97,
+      "h": 3
     },
     {
       "id": "bidon-etage",

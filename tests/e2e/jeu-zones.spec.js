@@ -17,7 +17,7 @@ const EAST = { x: 1570, y: 2007 }; // grande salle, devant la porte
 const WEST = { x: 1400, y: 2007 }; // aile, derrière la porte
 const BROWSER_NOISE = /GL Driver Message|ReadPixels|GPU stall/;
 const STATE = (page) => page.evaluate(() => window.__zs.getState());
-const HALL = ['F4', 'F5', 'F6', 'F7', 'F8'];
+const HALL = ['F4', 'F5', 'F6', 'F8'];
 const WING = ['F1', 'F2', 'F3'];
 // Références mesurées sur main (lot 3b) dans les mêmes conditions : 10 zombies variés, planches, ombres, cône (voir le bilan du lot 3c).
 const REF = { calls: 194, triangles: 14032 };
@@ -236,9 +236,9 @@ test.describe('zones : ouverture de la porte 1 à la fin de la manche 10', () =>
     expect(done.player.down.chutes).toBe(chutes);
     expect(done.windows.find((w) => w.id === 'F5').planks).toBe(1);
     expect(done.plankMesh.debris).toBeGreaterThan(0);
-    // 8 fenêtres, 16 points actifs, et la manche 11 démarre 12 s après la fin de la manche 10 avec son annonce de début de 3,0 s.
-    expect(done.zones.activeWindows).toHaveLength(8);
-    expect(done.zones.activeSpawnPoints).toHaveLength(16);
+    // 7 fenêtres, 14 points actifs (lot 3g : F7 retirée), et la manche 11 démarre 12 s après la fin de la manche 10 avec son annonce de début de 3,0 s.
+    expect(done.zones.activeWindows).toHaveLength(7);
+    expect(done.zones.activeSpawnPoints).toHaveLength(14);
     const debut = await until(page, `s.splash.kind === 'debut' && s.splash.visible`, 12);
     expect(debut.state.splash.title).toBe('Vague 11');
     expect(debut.time - t0).toBeGreaterThan(8.8);
@@ -346,7 +346,7 @@ test.describe('zones : ?wave=N, fin de monde, Rejouer, ancienne salle', () => {
     expect(s.splash.visible).toBe(false);
     expect(s.events).toEqual([]);
     expect(s.zones.list.map((z) => z.open)).toEqual([true, true, false, false]);
-    expect(s.zones.activeWindows).toHaveLength(8);
+    expect(s.zones.activeWindows).toHaveLength(7); // lot 3g : F7 retirée
     expect(s.zones.next).toEqual({ id: 'porte-2', wave: 21 });
     await open(page, '&wave=10&nospawn=1');
     s = await STATE(page);

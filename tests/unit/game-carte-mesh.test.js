@@ -16,14 +16,14 @@ const mk = () => {
 };
 const layoutArg = { params: settings, obstacles: layout.furniture, bounds: layout.bounds, inside: layout.inside };
 
-describe('rendu de la carte (lot 3b) : maillages des 8 fenêtres', () => {
-  it('huit maillages de fenêtre à capacité fixe de 42 triangles', () => {
+describe('rendu de la carte (lot 3b) : maillages des 7 fenêtres (F7 retirée au lot 3g)', () => {
+  it('sept maillages de fenêtre à capacité fixe de 42 triangles', () => {
     const { scene, material } = mk();
     const set = createWindowMeshes({ scene, material, geoms, settings, sheet, seed: 1 });
-    expect(set.meshes.length).toBe(8);
+    expect(set.meshes.length).toBe(7); // lot 3g : F7 retirée (grille du modèle)
     set.sync({ windows: Object.fromEntries(geoms.map((g) => [g.id, { planks: 4, maxPlanks: 4 }])) });
     for (const m of set.meshes) expect(m.geometry.attributes.position.count / 3).toBe(42);
-    expect(set.nailed()).toBe(32);
+    expect(set.nailed()).toBe(28); // lot 3g : F7 retirée (grille du modèle)
   });
 
   it('les quatre carrés de chaque fenêtre sont sur le dessus du mur (y = 60,3) et dans la surface du mur', () => {
@@ -50,7 +50,7 @@ describe('rendu de la carte (lot 3b) : maillages des 8 fenêtres', () => {
   it('débris : un maillage par fenêtre, invisible sans débris, 4 triangles par débris, 4 débris au plus par fenêtre (32 au total)', () => {
     const { scene, material } = mk();
     const meshes = createDebrisMeshes({ scene, material, settings, sheet, ids: geoms.map((g) => g.id) });
-    expect(meshes.meshes.length).toBe(8);
+    expect(meshes.meshes.length).toBe(7); // lot 3g : F7 retirée (grille du modèle)
     for (const m of meshes.meshes) expect(m.visible).toBe(false);
     let state = createDebris();
     for (const g of geoms) for (let k = 0; k < 4; k += 1) state = addDebris(state, g, 3, layoutArg);
@@ -76,7 +76,7 @@ describe('rendu de la carte (lot 3b) : maillages des 8 fenêtres', () => {
     camera.position.set(1980, 700, 2500);
     camera.lookAt(1980, 0, 2065);
     const stats = meshes.stats(camera);
-    expect(stats.length).toBe(8);
+    expect(stats.length).toBe(7); // lot 3g : F7 retirée (grille du modèle)
     expect(stats.find((s) => s.id === 'F1').inFrustum).toBe(false);
     expect(stats.some((s) => s.inFrustum)).toBe(true);
   });
