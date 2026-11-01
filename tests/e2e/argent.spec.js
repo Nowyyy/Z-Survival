@@ -544,6 +544,22 @@ test.describe('interface', () => {
     await expect(page.locator('#hud-money svg')).toHaveAttribute('aria-hidden', 'true');
   });
 
+  test('HUD : « Vague 1 / 40 » sur la ligne du bas, l\'argent seul sur sa ligne, largeur du HUD indépendante du montant', async ({ page }) => {
+    await open(page);
+    await step(page, 0.2);
+    await expect(page.locator('#hud-wave')).toHaveText('Vague 1 / 40');
+    const rows = () => page.evaluate(() => {
+      const r = (sel) => document.querySelector(sel).getBoundingClientRect();
+      return { hudW: r('#hud').width, life: r('.hud-life-row').bottom, money: r('#hud-money').top, moneyBottom: r('#hud-money').bottom, wave: r('#hud-wave').top };
+    });
+    const a = await rows();
+    expect(a.money).toBeGreaterThanOrEqual(a.life);
+    expect(a.wave).toBeGreaterThanOrEqual(a.moneyBottom);
+    await page.evaluate(() => { window.__zs.giveMoney(9_999_999); window.__zs.step(0.1); });
+    const b = await rows();
+    expect(b.hudW).toBe(a.hudW);
+  });
+
   test('HUD ≤ 300 × 96 px à 667×375 dans le pire cas, sans chevauchement avec Pause et E2-10', async ({ page }) => {
     await open(page, `${LOCAL}&floor=1&wave=40`);
     const m = await page.evaluate(() => {

@@ -1018,7 +1018,7 @@ export function createGame(ctx) {
       flashSize: reduced ? 4 : 7,
       unitsPerPixel: size.unitsPerPixel,
     });
-    hud.update(sim.player, sim.kills, waveInfo(sim.waves), { chutes: sim.down.chutes, floor: multi ? pf() : null, money: { balance: bank.balance(), gain: bank.gain() } });
+    hud.update(sim.player, sim.kills, waveInfo(sim.waves), { chutes: sim.down.chutes, floor: multi ? pf() : null, maxWave: zoneCfg && !sim.waves.endless ? zoneCfg.wavesPerWorld : null, money: { balance: bank.balance(), gain: bank.gain() } });
     floorFade.set(sim.trView.veil);
     updateDownView();
     world.windowMeshes?.sync(sim.win); // pastille de la planche en cours de réparation : elle se remplit peu à peu

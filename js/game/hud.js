@@ -45,7 +45,7 @@ export function createHud(dict, root = document) {
   let shownMoney = null;
   let shownGain = null;
   let last = { hp: null, max: null, kills: null, phase: null };
-  const shown = { wave: null, remaining: null, total: null, wait: null }; // dernières valeurs écrites
+  const shown = { wave: null, max: null, remaining: null, total: null, wait: null }; // dernières valeurs écrites
   const setText = (node, text) => {
     if (node.textContent !== text) node.textContent = text;
   };
@@ -70,9 +70,21 @@ export function createHud(dict, root = document) {
       if (wave.hidden === active) wave.hidden = !active;
       if (fighting !== (last.phase === 'combat')) remaining.hidden = !fighting;
       if (waiting !== (last.phase === 'attente')) next.hidden = !waiting;
-      if (active && waves.wave !== shown.wave) {
+      // Lot 4 : « Vague 1 / 40 » quand le monde a un nombre de manches (extras.maxWave) ; « Vague N » sinon (ancienne salle, ?endless=1 au-delà de la dernière).
+      const max = Number.isInteger(extras.maxWave) && extras.maxWave >= waves?.wave ? extras.maxWave : null;
+      if (active && (waves.wave !== shown.wave || max !== shown.max)) {
         shown.wave = waves.wave;
-        setText(wave, fmt(dict['game.wave.hud'], { n: waves.wave }));
+        shown.max = max;
+        // Le « / 40 » est un second morceau (petite police) : le texte lu reste « Vague 1 / 40 ».
+        const full = fmt(dict[max === null ? 'game.wave.hud' : 'game.wave.hudOf'], { n: waves.wave, max });
+        const cut = max === null ? -1 : full.indexOf(' /');
+        wave.replaceChildren(document.createTextNode(cut < 0 ? full : full.slice(0, cut)));
+        if (cut >= 0) {
+          const rest = document.createElement('span');
+          rest.className = 'hud-wave-max';
+          rest.textContent = full.slice(cut);
+          wave.append(rest);
+        }
       }
       if (fighting && (waves.remaining !== shown.remaining || waves.total !== shown.total)) {
         shown.remaining = waves.remaining;

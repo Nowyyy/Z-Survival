@@ -203,6 +203,16 @@ body.game {
   display: none;
 }
 
+/* « / 40 » après le numéro de vague : petite police du HUD, pour que la rangée tienne dans 300 px (lot 4). */
+.hud-wave-max {
+  margin-left: 3px;
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  font-weight: 700;
+  letter-spacing: 0;
+  color: var(--color-text);
+}
+
 /* Annonce de vague (E2-8, lot 2c) : animation centrale, sans focus ni clic. Aucune animation CSS autonome : js/game/splash-view.js met à jour
    les variables --splash-* à chaque image avec l'horloge du jeu, donc la pause la fige ; sous prefers-reduced-motion la vue pure ne produit
    aucun mouvement (opacité 0 ou 1, échelle 1, décalages nuls). Au-dessus du canvas, de l'effet VHS et du HUD, sous les panneaux. */
@@ -866,9 +876,12 @@ body.game {
   gap: 3px;
 }
 
-/* La puce d'argent est dans la rangée de la vie ; si la rangée ne tient pas dans 300 px (6 chutes, gros « +N »), elle passe à la ligne suivante du même rectangle. */
-.hud-life-row {
-  flex-wrap: wrap;
+/* L'argent a sa propre rangée (entre la vie et les puces) : la largeur du HUD ne dépend plus du montant. */
+.hud-money-row {
+  display: flex;
+  align-items: center;
+  gap: var(--hud-gap);
+  min-height: 24px;
 }
 
 .hud-coin {
