@@ -15,6 +15,7 @@ import { plankSettings } from '../core/plank-layout.js';
 import { plankSheet } from '../core/texgen.js';
 import { createDebrisMeshes, createWindowMeshes } from './windows-mesh.js';
 import { createSeeThrough } from './see-through.js';
+import { createFire } from './fire.js';
 import { seeThroughSettings } from '../core/see-through.js';
 
 const FAR_GROUND = 40_000; // sol extérieur étendu bien au-delà du monde
@@ -242,7 +243,7 @@ export function cutGrilles(walls, grilles, thick, open) {
       piece(a1, w1, y0, y1);
       piece(a0, a1, Math.max(y0, open), y1);
       const across = alongX ? { z0: w.z - w.sz / 2 + 1, z1: w.z + w.sz / 2 - 1 } : { x0: w.x - w.sx / 2 + 1, x1: w.x + w.sx / 2 - 1 };
-      holes.push(alongX ? { x: a0, y: across.z0, w: a1 - a0, h: across.z1 - across.z0, top: Math.min(open, y1) - 0.5 } : { x: across.x0, y: a0, w: across.x1 - across.x0, h: a1 - a0, top: Math.min(open, y1) - 0.5 });
+      holes.push(alongX ? { x: a0, y: across.z0, w: a1 - a0, h: across.z1 - across.z0, top: Math.min(open, y1) - 0.5, alongX } : { x: across.x0, y: a0, w: across.x1 - across.x0, h: a1 - a0, top: Math.min(open, y1) - 0.5, alongX });
     }
     out = next;
   }
@@ -490,8 +491,8 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
 
   // Portes et blocs (lots 3c et 3e) : liste de zones.json (voir plus bas).
   const doorList = Array.isArray(layouts?.doors) ? layouts.doors.map((d) => ({ id: d.id, blocks: floors.flatMap((f) => (d.blocks?.[f] ?? []).map((b) => ({ floor: f, ...b }))) })) : (Array.isArray(layout.doors) ? layout.doors : []).map((d) => ({ id: d.id, blocks: (d.blocks ?? [{ id: d.id, wall: true, rect: d.rect }]).map((b) => ({ floor: 'rdc', ...b })) }));
-  // Lot 3g (retours du propriétaire) : murs du rez-de-chaussée jusqu'au plafond (essai, render.ceilingWalls ; ?murs=bas l'annule).
-  const tallRdc = render.ceilingWalls === true && lift > num(render.wallHeight);
+  // Lot 3g (retours du propriétaire) : murs et piliers jusqu'à floorLift - 1, au rez-de-chaussée et à l'étage (essai, render.ceilingWalls ; ?murs=bas l'annule).
+  const tallWalls = render.ceilingWalls === true && lift > num(render.wallHeight);
   // Dessin d'une porte dans un mur : un peu plus mince que le mur (1 de moins de chaque côté), 0,5 de jeu aux bouts (le débord de 4 des collisions n'est pas dessiné).
   const wallDoorRect = (r, thickness) => {
     const t = thickness - 2;
@@ -499,6 +500,8 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
     return r.h > r.w ? { x: r.x + r.w / 2 - t / 2, y: r.y + 4 + 0.5, w: t, h: along - 1 } : { x: r.x + 4 + 0.5, y: r.y + r.h / 2 - t / 2, w: along - 1, h: t };
   };
   const grillesOf = (f) => (Array.isArray(render.decorInterieur) ? render.decorInterieur : []).filter((it) => it?.kind === 'grille' && it.floor === f && it.a && it.b && it.n);
+  // Mur percé (lot 3g, retours) : boîtes qui peuvent cacher le joueur (murs, piliers, meubles), par étage, pour le test de la caméra à chaque image.
+  const occluders = [];
   const wallRepeat = textures.repeat('mur');
   for (const f of floors) {
     const l = layoutOf(f);
@@ -507,9 +510,9 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
     const floorRects = f === 'etage' ? holes.reduce((rects, h) => h.rects.reduce(subtractHole, rects), l.floor) : l.floor;
     for (const fl of floorRects) fb.floor.slab(fl.x, fl.y, fl.x + fl.w, fl.y + fl.h, 0, textures.repeat('sol-salle'), l.room.x, l.room.y);
     // Murs (allège, linteau et barreaux des fenêtres compris) : enduit sur les côtés, dessus de la couleur --game-wall sans texture.
-    // Lot 3g (essai demandé par le propriétaire) : render.ceilingWalls monte les murs et les piliers du rez-de-chaussée jusqu'au dessous de l'étage (floorLift) ;
+    // Lot 3g (essai demandé par le propriétaire) : render.ceilingWalls monte les murs et les piliers jusqu'à floorLift - 1 (rez-de-chaussée, puis l'étage aussi à la troisième passe des retours) ;
     // ?murs=bas revient à la hauteur d'avant. Le dessin seulement : collisions, tirs et fenêtres inchangés.
-    const tall = f === 'rdc' && render.ceilingWalls === true && lift > num(render.wallHeight);
+    const tall = tallWalls; // troisième passe des retours : l'étage aussi, pour que ce soit uniforme
     const wallRender = tall ? { ...render, wallHeight: lift - 1 } : render;
     const built = l.segmented ? segmentedWallBoxes(l, wallRender) : wallBoxes(l.room, l.windows, l.windowSize, wallRender);
     const { bars } = built;
@@ -519,11 +522,12 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
     // Ouverture grillagée sur toute la hauteur (vue du dessus, on voit la traverse et les barreaux ; un linteau les cacherait).
     const cut = cutGrilles(built.walls, grillesOf(f), thickness, num(wallRender.wallHeight) + 1);
     const walls = cut.walls;
-    cut.holes.forEach((h, k) => grilleBoxes(h, h.top).forEach((b, j) => {
+    cut.holes.forEach((h, k) => grilleBoxes(h, h.top, 10, h.alongX).forEach((b, j) => {
       const r = region(b.region);
       fb.detail.box(b, { rect: r, scale: r.scale, seed: 700 + k * 40 + j }, b.faces);
     }));
     for (const w of walls) {
+      occluders.push({ ...extents(w), floor: f });
       fb.wall.box(extents(w), { repeat: wallRepeat }, 'cotes');
       fb.wall.box(extents(w), { fixed: [0.31, 0.62] }, 'dessus'); // dessus : un seul texel du mur, donc sans texture
     }
@@ -547,6 +551,8 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
     // projettent une ombre, les pieds, dossiers et socles forment un maillage sans ombre portée. Les collisions gardent le rectangle d'origine.
     l.furniture.forEach((fu, i) => {
       if (fu.kind === 'escalier') return; // dessiné par la rampe (escalier physique)
+      const occH = fu.kind === 'pilier' && tall ? lift - 1 : Math.min(num(fu.hauteur, 60), fu.kind === 'pilier' ? num(render.wallHeight, 60) : 70);
+      occluders.push({ ...rectBox(fu, 0, occH), floor: f });
       const up0 = f === 'rdc' && (exposedAt(fu.x + fu.w / 2, fu.y + fu.h / 2) || touchesHole(fu) || partlyUncovered(fu));
       // Lot 3g (retour du propriétaire) : aspect du mobilier d'après le modèle (render.mobilier : mobilier.world.json, absent avec ?detail=0) ; chaque pièce de
       // l'obstacle est dessinée par ses propres boîtes (étagères, classeurs, caisses…), les collisions gardent le rectangle de l'obstacle.
@@ -586,6 +592,22 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
       b.quad(q.p, q.n, q.uv.map(([u, v]) => [r.u0 + u * su * (r.u1 - r.u0), r.v0 + v * sv * (r.v1 - r.v0)]));
     }
     decorCount[it.floor] += 1;
+  }
+
+  // Lot 3g (retour du propriétaire) : feux avec fumée sur des piles de caisses (render.feux : feux.json ; absent avec ?detail=0), posés au centre et sur le dessus
+  // de la pièce (boîtes de mobilier.world.json). Trois appels de dessin par feu, dans le groupe de son étage.
+  const fires = [];
+  for (const fe of Array.isArray(render.feux) ? render.feux : []) {
+    const boxes = render.mobilier?.[fe?.piece]?.boxes;
+    if (!floors.includes(fe?.floor) || !Array.isArray(boxes) || boxes.length === 0) continue;
+    const x0 = Math.min(...boxes.map((b) => b.x0));
+    const x1 = Math.max(...boxes.map((b) => b.x1));
+    const z0 = Math.min(...boxes.map((b) => b.z0));
+    const z1 = Math.max(...boxes.map((b) => b.z1));
+    const fire = createFire({ id: fe.id, x: (x0 + x1) / 2, z: (z0 + z1) / 2, y: Math.max(...boxes.map((b) => b.y1)), w: x1 - x0, d: z1 - z0 }, palette, { reduced: render.reducedMotion === true });
+    fire.group.userData.floor = fe.floor;
+    groups[fe.floor].add(fire.group);
+    fires.push(fire);
   }
 
   if (layout.decor) addDecor(ex, region, layout.decor, outdoorSoil);
@@ -745,9 +767,9 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
       const up = mine.filter((g) => exposedAt(g.center.x, g.center.y));
       return [{ scene: groups.rdc, geoms: mine.filter((g) => !up.includes(g)) }, { scene: groups.rdcExposed, geoms: up }];
     }).filter((q) => q.geoms.length > 0);
-    // Lot 3g (retour du propriétaire) : murs jusqu'au plafond : pastilles du rez-de-chaussée incrustées dans le mur, juste au-dessus du cadre de la fenêtre.
-    const pipOn = (gs) => (tallRdc && gs.every((g) => (g.floor ?? 'rdc') === 'rdc') ? { ...settings, pipFace: true, pipCenter: settings.lintel + settings.frameWidth + 4 + settings.pip / 2 } : settings);
-    const wm = parts.map(({ scene, geoms: gs }) => createWindowMeshes({ scene, material, geoms: gs, settings: pipOn(gs), sheet, seed }));
+    // Lot 3g (retour du propriétaire) : murs jusqu'au plafond : pastilles incrustées dans le mur, juste au-dessus du cadre de la fenêtre (les deux étages).
+    const pipOn = () => (tallWalls ? { ...settings, pipFace: true, pipCenter: settings.lintel + settings.frameWidth + 4 + settings.pip / 2 } : settings);
+    const wm = parts.map(({ scene, geoms: gs }) => createWindowMeshes({ scene, material, geoms: gs, settings: pipOn(), sheet, seed }));
     const dm = parts.map(({ scene, geoms: gs }) => createDebrisMeshes({ scene, material, settings, sheet, ids: gs.map((g) => g.id) }));
     windowMeshes = {
       meshes: wm.flatMap((w) => w.meshes),
@@ -785,7 +807,7 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
         const thin = Math.min(DOOR_THICKNESS, Math.min(visual.w, visual.h));
         visual = visual.h <= visual.w ? { x: visual.x, y: visual.y + visual.h / 2 - thin / 2, w: visual.w, h: thin } : { x: visual.x + visual.w / 2 - thin / 2, y: visual.y, w: thin, h: visual.h };
       }
-      const height = bl.wall && bl.floor === 'rdc' && tallRdc ? DOOR_TALL : r.hauteur - 1;
+      const height = bl.wall && tallWalls ? DOOR_TALL : r.hauteur - 1;
       const boxes = plain ? [{ ...rectBox(visual, 0, height), region: 'tole', faces: 'tout' }] : (bl.wall ? doorBoxes(visual, height, bl.id) : rubbleBoxes(visual, Math.min(height, 66), bl.id));
       boxes.forEach((b, j) => {
         const rg = region(b.region);
@@ -844,7 +866,12 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
     // Étage affiché : les groupes de l'autre étage sont cachés (maillages, planches, débris, blocs, zones marquées) ; l'extérieur reste dessiné ; la dalle sombre
     // n'est dessinée qu'à l'étage. Aucune reconstruction, aucun dispose.
     // Lot 3g : position du joueur pour le mur percé (à chaque image, avec la caméra) ; état pour les tests.
-    seeThrough: (x, y) => seeThrough.set(x, y),
+    // À chaque image (temps de jeu dt) : feux, et mur percé (position du joueur, caméra).
+    frame(dt, x, y, camera) {
+      for (const fire of fires) fire.update(dt);
+      seeThrough.update(x, y, camera, occluders, (b) => (b.floor === 'etage' ? lift : 0) - elevationNow);
+    },
+    fireStats: () => fires.map((f) => f.stats()),
     seeThroughState: () => seeThrough.state(),
     showFloor(floor) {
       this.setElevation(floor === 'etage' ? lift : 0, floor);

@@ -135,8 +135,12 @@ export function stepWalk(walk, path, { pos = { x: 0, y: 0 }, dir = { x: 0, y: 0 
   // Rambardes : au-delà d'un bout, le tube est ouvert ; ailleurs le joueur est ramené dans la largeur (glisse le long de la rambarde).
   const allowed = Math.max(0, num(width, 100) / 2 - Math.max(0, num(radius, 18)));
   const open = q.beforeStart > 0 || q.pastEnd > 0;
-  if (sideExit === true && !open && q.t <= 1e-6 && q.dist > allowed) {
-    return { walk: null, pos: { x, y }, point: { t: 0, s: q.s }, floor: 'rdc', done: 'rdc' };
+  // Lot 3g (retours du propriétaire) : sortie par le côté sur un palier plat, au pied (t = 0, vers le rez-de-chaussée) ou en haut (t = 1, vers l'étage) ; sideExit
+  // vaut true ou { free(pos) } (vrai si la place est libre sur l'étage de sortie : sinon la rambarde retient, par exemple au-dessus du trou de l'escalier).
+  const flat = q.t <= 1e-6 ? 'rdc' : q.t >= 1 - 1e-6 ? 'etage' : null;
+  const exitOk = sideExit === true || (isObject(sideExit) && typeof sideExit.free === 'function' && sideExit.free({ x, y }, flat) === true);
+  if (sideExit && flat !== null && !open && q.dist > allowed && exitOk) {
+    return { walk: null, pos: { x, y }, point: { t: q.t, s: q.s }, floor: flat, done: flat };
   }
   if (!open && q.dist > allowed && q.dist > 0) {
     const k = allowed / q.dist;

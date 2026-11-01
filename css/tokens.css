@@ -96,6 +96,9 @@
   --game-car: #6b2b2b;              /* voitures abandonnées (rouge sale, provisoire) */
   --game-tree: #34433e;             /* feuillage des arbres et des buissons */
   --game-furniture: #7a6448;        /* meubles (leurs variantes par type sont calculées dans le rendu) */
+  --game-fire: #ffd27a;             /* lot 3g (retour du propriétaire) : cœur des flammes du feu de caisses (provisoire) */
+  --game-fire-edge: #e2582a;        /* lot 3g : bord des flammes et lueur au sol (provisoire) */
+  --game-smoke: #2e2b2a;            /* lot 3g : fumée du feu (provisoire) */
 
   /* Jeu, lot 1c : couleurs des textures générées en code (passées aux générateurs par js/game/palette.js). Provisoires, à valider. */
   --game-tile-a: #4d5156;           /* carrelage de la salle, teinte claire */

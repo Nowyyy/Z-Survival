@@ -115,6 +115,8 @@ render.mobilier = mobilier?.pieces ?? null;
 render.ceilingWalls = mapId !== 'salle' && render.ceilingWalls === true && query.get('murs') !== 'bas';
 render.detailDoors = detail; // vraies portes et éboulis (lot 3g, retours) ; ?detail=0 : anciens blocs
 render.seeThrough = query.get('percee') === '0' ? null : (render.seeThrough ?? null); // mur percé autour du joueur caché (lot 3g, retours) ; ?percee=0 l'enlève
+render.feux = detail && mapId !== 'salle' ? ((await loadJson(`${mapDir}/feux.json`).catch(() => null))?.feux ?? []) : []; // feux sur des caisses (lot 3g, retours)
+render.reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const textureData = await generateTextureData(texturesCfg.textures, { lookup: createTokenLookup(), onProgress: (p) => loading.update(p * TEXTURE_SHARE), detail });
 const audio = createAudio({ config: { audio: audioCfg, materials: materialsCfg, voice: voiceCfg, sounds: soundsCfg.sounds }, test: testMode, seed: Number.isFinite(seedParam) ? seedParam : 1 });
 const essential = await renderSounds(planSounds(soundsCfg.sounds, 'essentiel'), { onProgress: (p) => loading.update(TEXTURE_SHARE + (1 - TEXTURE_SHARE) * p) });

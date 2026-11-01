@@ -56,6 +56,23 @@ test.describe('mur percé autour du joueur caché', () => {
     expect(Math.abs(on.meanLuminance - off.meanLuminance)).toBeLessThan(0.002);
   });
 
+  // Troisième passe : le joueur devant un mur (au nord du mur sud, assez loin pour être vu) : rien n'est tramé.
+  test('le joueur devant un mur, visible : même image avec et sans ?percee', async ({ page }) => {
+    const sample = () => page.evaluate(() => {
+      const zs = window.__zs;
+      zs.setPlayer(2300, 2470);
+      zs.step(0.05);
+      const ps = zs.getState().playerScreen;
+      return zs.sampleScreen(ps.x * innerWidth - 30, ps.y * innerHeight - 30, 60, 60);
+    });
+    await open(page, '&percee=0');
+    const off = await sample();
+    await open(page);
+    const on = await sample();
+    expect(on.distinctColors).toBe(off.distinctColors);
+    expect(Math.abs(on.meanLuminance - off.meanLuminance)).toBeLessThan(0.002);
+  });
+
   test('aucun matériau transparent ajouté ; le mur percé ne change pas le nombre d\'appels', async ({ page }) => {
     await open(page, '&percee=0');
     const off = (await STATE(page)).render;
@@ -63,6 +80,33 @@ test.describe('mur percé autour du joueur caché', () => {
     const on = (await STATE(page)).render;
     expect(on.calls).toBe(off.calls);
     expect(on.triangles).toBe(off.triangles);
+  });
+});
+
+test.describe('sortie d\'escalier par le côté en haut (troisième passe)', () => {
+  test('arrêté sur le palier du haut de l\'escalier de l\'aile, le joueur sort vers l\'est (aucun mur invisible)', async ({ page }) => {
+    await open(page, '&wave=31');
+    const r = await page.evaluate(([sx, sy, stop]) => {
+      const zs = window.__zs;
+      zs.setPlayer(sx, sy);
+      zs.step(0.05);
+      zs.setInput({ move: { x: 0, y: 1 } });
+      for (let n = 0; n < 400; n += 1) {
+        zs.step(0.05);
+        const s = zs.getState();
+        if (s.floor.walk && s.player.y >= stop) break;
+      }
+      const a = zs.getState();
+      zs.setInput({ move: { x: 1, y: 0 } });
+      for (let i = 0; i < 30; i += 1) zs.step(0.05);
+      zs.setInput({});
+      const b = zs.getState();
+      return { a: [a.player.x, a.player.y, a.floor.current, Boolean(a.floor.walk)], b: [b.player.x, b.floor.current, Boolean(b.floor.walk)] };
+    }, [U(38), U(235), U(303)]);
+    expect(r.a.slice(2)).toEqual(['etage', true]);
+    expect(r.b[1]).toBe('etage');
+    expect(r.b[2]).toBe(false);
+    expect(r.b[0]).toBeGreaterThan(r.a[0] + 150);
   });
 });
 

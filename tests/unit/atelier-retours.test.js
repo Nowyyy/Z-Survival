@@ -11,7 +11,7 @@ import { generateMapFiles } from '../../scripts/plan-vers-monde.mjs';
 import * as THREE from 'three';
 import { REGIONS } from '../../js/core/mobilier-aspect.js';
 import { doorBoxes, grilleBoxes, rubbleBoxes } from '../../js/core/portes-aspect.js';
-import { DEFAULTS, seeThroughLevel, seeThroughSettings } from '../../js/core/see-through.js';
+import { DEFAULTS, hiddenFrom, segmentHitsBox, seeThroughLevel, seeThroughSettings } from '../../js/core/see-through.js';
 import { plankSettings } from '../../js/core/plank-layout.js';
 import { plankSheet } from '../../js/core/texgen.js';
 import { cutGrilles } from '../../js/game/world.js';
@@ -244,6 +244,13 @@ describe('portes, éboulis et grilles (portes-aspect.js)', () => {
     for (const b of boxes.slice(2)) expect((b.z0 + b.z1) / 2).toBeCloseTo(19, 5);
   });
 
+  it('grille plus étroite que le mur n\'est épais (30 sur 38) : les barreaux suivent le mur (axe imposé), pas l\'épaisseur', () => {
+    const r = { x: 0, y: 0, w: 30, h: 38 };
+    const boxes = grilleBoxes(r, 179, 10, true);
+    for (const b of boxes) expect((b.z0 + b.z1) / 2).toBeCloseTo(19, 5);
+    expect(boxes[0].x1 - boxes[0].x0).toBeCloseTo(30, 5);
+  });
+
   it('entrées invalides : aucune boîte ; déterministe', () => {
     expect(doorBoxes(null, 10)).toEqual([]);
     expect(rubbleBoxes({ x: 0, y: 0, w: 0, h: 3 })).toEqual([]);
@@ -255,7 +262,7 @@ describe('portes, éboulis et grilles (portes-aspect.js)', () => {
     const wall = { x: 500, y: 90, z: 1000, sx: 1000, sy: 180, sz: 40 };
     const g = { a: { x: 600, y: 980 }, b: { x: 500, y: 980 }, n: { x: 0, y: -1 } };
     const { walls, holes } = cutGrilles([wall], [g], 40, 181);
-    expect(holes).toEqual([{ x: 500, y: 981, w: 100, h: 38, top: 179.5 }]);
+    expect(holes).toEqual([{ x: 500, y: 981, w: 100, h: 38, top: 179.5, alongX: true }]);
     expect(walls.map((w) => [w.x - w.sx / 2, w.x + w.sx / 2]).sort((p, q) => p[0] - q[0])).toEqual([[0, 500], [600, 1000]]);
     // Un mur qui ne contient pas l'ouverture n'est pas touché.
     expect(cutGrilles([{ ...wall, z: 2000 }], [g], 40, 181).walls).toEqual([{ ...wall, z: 2000 }]);
@@ -286,7 +293,7 @@ describe('mur percé autour du joueur caché (see-through.js)', () => {
   });
 
   it('réglages : render.json ; null si désactivé ; valeurs invalides remplacées', () => {
-    expect(seeThroughSettings(load('data/game/render.json').seeThrough)).toMatchObject({ radius: 46, chest: 26 });
+    expect(seeThroughSettings(load('data/game/render.json').seeThrough)).toMatchObject({ radius: 80, chest: 26, ahead: 12 });
     expect(seeThroughSettings(null)).toBeNull();
     expect(seeThroughSettings({ on: false })).toBeNull();
     expect(seeThroughSettings({ radius: -3 }).radius).toBe(DEFAULTS.radius);
@@ -313,5 +320,94 @@ describe('pastilles incrustées dans le mur (murs jusqu\'au plafond)', () => {
     expect([s.pipY, n.pipY]).toEqual([61, 61]);
     expect([s.pipsOn, n.pipsOn]).toEqual([4, 4]);
     expect(s.triangles).toBeLessThanOrEqual(42);
+  });
+});
+
+// Retours du propriétaire (troisième passe) : sortie d'escalier en haut, mur percé seulement si le joueur est caché, feu, murs hauts à l'étage.
+describe('escalier : sortie par le côté sur le palier du haut (vers l\'étage)', () => {
+  const TOP = [{ x: 0, y: 0, t: 0 }, { x: 0, y: 200, t: 1 }, { x: 0, y: 260, t: 1 }];
+
+  it('sur le palier plat du haut (t = 1), s\'écarter fait sortir à l\'étage', () => {
+    const r = stepWalk(startWalk('e', 'rdc'), TOP, { pos: { x: 40, y: 230 }, dir: { x: 1, y: 0 }, speed: 200, dt: 0.05, width: 120, radius: 18, sideExit: true });
+    expect(r.done).toBe('etage');
+    expect(r.floor).toBe('etage');
+  });
+
+  it('place occupée sur l\'étage (free faux : au-dessus du trou) : la rambarde retient', () => {
+    const r = stepWalk(startWalk('e', 'rdc'), TOP, { pos: { x: 40, y: 230 }, dir: { x: 1, y: 0 }, speed: 200, dt: 0.05, width: 120, radius: 18, sideExit: { free: () => false } });
+    expect(r.done).toBeNull();
+    expect(r.pos.x).toBeLessThanOrEqual(42 + 1e-6);
+  });
+
+  it('place libre (free vrai) : sortie ; au pied aussi', () => {
+    expect(stepWalk(startWalk('e', 'rdc'), TOP, { pos: { x: 40, y: 230 }, dir: { x: 1, y: 0 }, speed: 200, dt: 0.05, width: 120, radius: 18, sideExit: { free: () => true } }).done).toBe('etage');
+    expect(stepWalk(startWalk('e', 'rdc'), PATH, { pos: { x: 40, y: 20 }, dir: { x: 1, y: 0 }, speed: 200, dt: 0.05, width: 120, radius: 18, sideExit: { free: () => true } }).done).toBe('rdc');
+  });
+});
+
+describe('mur percé : seulement quand le joueur est caché, jamais derrière lui', () => {
+  const cam = { x: 0, y: 300, z: 300 };
+  const wall = { x0: -500, x1: 500, y0: 0, y1: 179, z0: 30, z1: 70 }; // mur entre la caméra (sud) et le joueur
+
+  it('segmentHitsBox : traversée, à côté, au-dessus', () => {
+    expect(segmentHitsBox({ x: 0, y: 300, z: 300 }, { x: 0, y: 26, z: 0 }, wall)).toBe(true);
+    expect(segmentHitsBox({ x: 0, y: 300, z: 300 }, { x: 0, y: 26, z: 0 }, { ...wall, x0: 100, x1: 200 })).toBe(false);
+    expect(segmentHitsBox({ x: 0, y: 300, z: 300 }, { x: 0, y: 26, z: 0 }, { ...wall, y1: 20 })).toBe(false);
+  });
+
+  it('hiddenFrom : caché derrière un mur haut ; visible derrière un mur bas loin de lui ; un mur derrière lui ne le cache pas', () => {
+    expect(hiddenFrom(cam, { x: 0, y: 0, z: 0 }, [wall])).toBe(true);
+    expect(hiddenFrom(cam, { x: 0, y: 0, z: -200 }, [{ ...wall, y1: 10 }])).toBe(false);
+    expect(hiddenFrom(cam, { x: 0, y: 0, z: 0 }, [{ ...wall, z0: -70, z1: -30 }])).toBe(false);
+    // Décalage vertical (étage, élévation) : le même mur descendu sous le sol ne cache plus.
+    expect(hiddenFrom(cam, { x: 0, y: 0, z: 0 }, [wall], DEFAULTS, () => -180)).toBe(false);
+  });
+
+  it('un point au-dessus du joueur mais derrière lui à l\'horizontale n\'est jamais tramé (pilier au nord du joueur)', () => {
+    expect(seeThroughLevel({ x: 0, y: 150, z: -20 }, cam, { x: 0, y: 26, z: 0 })).toBe(0);
+  });
+});
+
+describe('feu et murs hauts à l\'étage', () => {
+  it('feux.json : un feu sur la pile de caisses P9 (une pièce de mobilier.world.json, aspect caisses)', () => {
+    const feux = load(`${DIR}/feux.json`).feux;
+    expect(feux).toEqual([{ id: 'feu-P9', floor: 'rdc', piece: 'P9' }]);
+    expect(mobilier.pieces.P9.look).toBe('caisses');
+  });
+
+  it('createFire : trois maillages (flammes, fumée, lueur), aucune ombre, immobile en mouvement réduit, mêmes particules d\'une partie à l\'autre', async () => {
+    const { createFire } = await import('../../js/game/fire.js');
+    const palette = { fire: '#000001', fireEdge: '#000002', smoke: '#000003' };
+    const spec = { id: 'feu-P9', x: 100, z: 100, y: 37, w: 120, d: 90 };
+    const a = createFire(spec, palette);
+    const b = createFire(spec, palette);
+    expect(a.group.children.map((c) => c.name)).toEqual(['flammes', 'fumee', 'lueur']);
+    for (const c of a.group.children) expect(c.castShadow).toBe(false);
+    a.update(0.5);
+    b.update(0.5);
+    expect([...a.group.children[0].geometry.attributes.position.array]).toEqual([...b.group.children[0].geometry.attributes.position.array]);
+    const still = createFire(spec, palette, { reduced: true });
+    const before = [...still.group.children[0].geometry.attributes.position.array];
+    still.update(0.5);
+    expect([...still.group.children[0].geometry.attributes.position.array]).toEqual(before);
+    // Flammes au-dessus de la pile, dans son emprise (à la dérive près).
+    const pos = a.group.children[0].geometry.attributes.position.array;
+    for (let i = 0; i < pos.length; i += 3) {
+      expect(pos[i + 1]).toBeGreaterThanOrEqual(37);
+      expect(Math.abs(pos[i] - 100)).toBeLessThan(80);
+    }
+  });
+
+  it('aucune couleur en dur dans le feu ; jetons --game-fire, --game-fire-edge, --game-smoke lus par palette.js', () => {
+    expect(readFileSync('js/game/fire.js', 'utf8')).not.toMatch(/#[0-9a-fA-F]{3,8}\b|rgba?\(/);
+    const tokens = readFileSync('css/tokens.css', 'utf8');
+    for (const t of ['--game-fire:', '--game-fire-edge:', '--game-smoke:']) expect(tokens).toContain(t);
+    expect(readFileSync('js/game/palette.js', 'utf8')).toMatch(/'fire', 'fire-edge', 'smoke'/);
+  });
+
+  it('murs hauts aux deux étages (troisième passe) : plus de condition « rdc » sur la hauteur des murs', () => {
+    const w = readFileSync('js/game/world.js', 'utf8');
+    expect(w).toMatch(/const tall = tallWalls;/);
+    expect(w).not.toMatch(/f === 'rdc' && render\.ceilingWalls/);
   });
 });

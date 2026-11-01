@@ -16,6 +16,7 @@ import { SWAP_UP, entryDirection, heightOf, startWalk, stepWalk, wantsStairs } f
 import { arrivalKnockback, createStairWatch, stairArrival, stairParams, stairState, stairTriggers, startStairCooldown, stepStairWatch } from '../core/stairs.js';
 import { createWindowsState } from '../core/windows.js';
 import { moveCircle } from '../core/movement.js';
+import { circleOverlapsRect } from '../core/collision.js';
 import { addDebris, createDebris, plankSettings, removeDebris, stepDebris } from '../core/plank-layout.js';
 import { applyHeal, canFire, canHealOnKill, canMove, createPlayerDown, isInvulnerable, knockbackZombies, stepPlayerDown } from '../core/player-down.js';
 import { effectivePlayer, effectiveWeapon, normalizeLevels, STAT_IDS, statValues } from '../core/player-stats.js';
@@ -425,7 +426,7 @@ export function createGame(ctx) {
   }
   function advanceWalk(dir, dt) {
     const def = stairsWorld.find((q) => q.id === sim.sw.stair);
-    const r = stepWalk(sim.sw, def?.walk?.path, { pos: sim.player, dir, speed: eff.player.speed, dt, width: def?.walk?.width, radius: sim.player.r, sideExit: true }); // lot 3g : sortie par le côté au pied
+    const r = stepWalk(sim.sw, def?.walk?.path, { pos: sim.player, dir, speed: eff.player.speed, dt, width: def?.walk?.width, radius: sim.player.r, sideExit: { free: (p) => !playerSolids.some((o) => circleOverlapsRect({ x: p.x, y: p.y, r: sim.player.r }, o)) } }); // lot 3g : sortie par le côté sur un palier
     sim.player = { ...sim.player, x: r.pos.x, y: r.pos.y };
     sim.elev = heightOf(r.point.t, LIFT);
     if (r.floor !== pf() && !r.done) crossFloor(r.floor);
@@ -1004,7 +1005,7 @@ export function createGame(ctx) {
   // La caméra suit le joueur (js/core/camera.js), la lumière et sa carte d'ombres suivent la caméra.
   function followCamera(dt) {
     rig.follow(dt, sim.player.x, sim.player.y);
-    world.seeThrough?.(sim.player.x, sim.player.y); // lot 3g (retour du propriétaire) : mur percé autour du joueur caché
+    world.frame?.(dt, sim.player.x, sim.player.y, rig.camera.position); // lot 3g (retours du propriétaire) : feux, mur percé autour du joueur caché
     // Carte d'ombres : demi-diagonale de la vue au sol, avec de la marge pour la perspective.
     world.followSun(rig.view.target.x, rig.view.target.y, Math.hypot(rig.view.ground.width / 2, (rig.view.ground.north + rig.view.ground.south) / 2) * 1.3);
   }

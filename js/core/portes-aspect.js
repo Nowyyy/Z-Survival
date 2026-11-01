@@ -12,8 +12,9 @@ const box = (x0, x1, z0, z1, y0, y1, region, faces = 'tout') => ({ x0: r2(x0), x
 const okRect = (r) => r !== null && typeof r === 'object' && [r.x, r.y, r.w, r.h].every(isNum) && r.w > 0 && r.h > 0;
 
 // Repère d'un rectangle allongé : `along` le grand côté, `across` le petit ; place(a0, a1, c0, c1, y0, y1) rend une boîte du monde.
-function frame(r) {
-  const long = r.w >= r.h;
+// `alongX` (facultatif) force l'axe : sinon le grand côté (une ouverture plus étroite que le mur est épais serait prise dans le mauvais sens).
+function frame(r, alongX = null) {
+  const long = typeof alongX === 'boolean' ? alongX : r.w >= r.h;
   const len = long ? r.w : r.h;
   const thick = long ? r.h : r.w;
   const place = (a0, a1, c0, c1, y0, y1, region, faces) => (long
@@ -97,10 +98,11 @@ export function rubbleBoxes(r, top, id = '') {
   return out;
 }
 
-// Grille : ouverture r (épaisseur du mur) de hauteur h ; barreaux tous les `pitch` (10 par défaut), traverses en bas et en haut, au milieu de l'épaisseur.
-export function grilleBoxes(r, h, pitch = 10) {
+// Grille : ouverture r (épaisseur du mur) de hauteur h ; barreaux tous les `pitch` (10 par défaut), traverses en bas et en haut, au milieu de l'épaisseur ;
+// alongX : l'ouverture court le long de x (mur est-ouest), sinon de y (null : le grand côté).
+export function grilleBoxes(r, h, pitch = 10, alongX = null) {
   if (!okRect(r) || !isNum(h) || h <= 6) return [];
-  const { len, thick, place } = frame(r);
+  const { len, thick, place } = frame(r, alongX);
   const c0 = thick / 2 - 1.5;
   const c1 = thick / 2 + 1.5;
   const out = [place(0, len, c0 - 0.5, c1 + 0.5, 0, 3, REGIONS.metal), place(0, len, c0 - 0.5, c1 + 0.5, h - 4, h, REGIONS.metal)];
