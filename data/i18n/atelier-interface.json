@@ -214,5 +214,17 @@
   "ui3k.board.signin": "Connecte-toi pour participer.",
   "ui3k.board.google": "Se connecter avec Google (bouton fictif)",
   "ui3k.board.join": "Participer",
-  "ui3k.p2.low": "Vie faible"
+  "ui3k.p2.low": "Vie faible",
+  "atelier.retenue.title": "Interface retenue",
+  "atelier.retenue.intro": "Seulement tes choix : HUD, pause, fins (mort et monde terminé) et état à terre en B « caméscope », sticks en A « sobre » sous le HUD B. Le menu viendra plus tard. Maquette : rien n'est encore intégré au jeu ; les autres directions restent dans l'atelier.",
+  "atelier.retenue.section.choix": "Écran et état",
+  "atelier.retenue.section.apercu": "Aperçu",
+  "atelier.retenue.section.mesures": "Mesures",
+  "atelier.retenue.all": "Tous les écrans d'un coup",
+  "atelier.retenue.screenDir": "{screen} ({d})",
+  "atelier.retenue.kills": "Zombies tués",
+  "atelier.retenue.col.screen": "Écran",
+  "atelier.retenue.statusGame": "Fond : le vrai jeu, son interface masquée de l'extérieur ; par-dessus : l'interface retenue (maquette).",
+  "atelier.retenue.statusFloor": "Fond : sol généré ; par-dessus : l'interface retenue (maquette).",
+  "atelier.retenue.atelierLink": "Voir toutes les directions dans l'atelier de l'interface"
 }

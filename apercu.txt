@@ -1,3 +1,3 @@
-atelier-interface.html
+interface-retenue.html
 type: hifi
-titre: Atelier de l'interface
+titre: Interface retenue

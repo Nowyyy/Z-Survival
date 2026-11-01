@@ -179,12 +179,12 @@
   text-transform: uppercase;
 }
 
-/* Sticks : base carrée aux coins arrondis, pastille rouge. */
-.ui3k-dir-b .p-stick-base {
+/* Sticks : base carrée aux coins arrondis, pastille rouge (sticks posés directement dans l'écran B ; ceux d'une couche A imbriquée gardent le style A). */
+.ui3k-dir-b > .p-stick .p-stick-base {
   border-radius: 12px;
 }
 
-.ui3k-dir-b .p-stick-knob {
+.ui3k-dir-b > .p-stick .p-stick-knob {
   border-radius: 6px;
 }
 

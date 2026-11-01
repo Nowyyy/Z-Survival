@@ -6,7 +6,7 @@ const ENTRIES = ['index.html', 'jeu.html', 'sons.html', 'carte.html', 'sauvegard
 
 rmSync(OUT, { recursive: true, force: true });
 mkdirSync(OUT);
-ENTRIES.push('atelier-interface.html'); // lot 3k : atelier de l'interface (ligne à part, voir Docs/ref/fusion-3k.md)
+ENTRIES.push('atelier-interface.html', 'interface-retenue.html'); // lot 3k : atelier de l'interface et interface retenue (ligne à part, voir Docs/ref/fusion-3k.md)
 for (const entry of ENTRIES) {
   if (existsSync(entry)) cpSync(entry, `${OUT}/${entry}`, { recursive: true });
 }

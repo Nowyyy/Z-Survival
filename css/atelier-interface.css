@@ -1239,3 +1239,8 @@
   border-left: 0.6em solid var(--color-text);
   vertical-align: 0.05em;
 }
+
+/* Lien de texte (dans une phrase : la règle des 44 px ne s'applique pas aux liens en ligne). */
+.ui3k-link {
+  color: var(--color-focus);
+}

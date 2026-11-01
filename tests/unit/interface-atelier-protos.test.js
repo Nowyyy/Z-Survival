@@ -70,7 +70,7 @@ describe('feuilles proto-*.css : variables, couleurs, interdits', () => {
 
 describe('textes : clés existantes de fr.json ou de atelier-interface.json', () => {
   const sources = readdirSync('js/atelier-interface').map((f) => readFileSync(`js/atelier-interface/${f}`, 'utf8'));
-  const html = readFileSync('atelier-interface.html', 'utf8');
+  const html = readFileSync('atelier-interface.html', 'utf8') + readFileSync('interface-retenue.html', 'utf8');
 
   it('chaque clé littérale t(\'…\') des scripts existe', () => {
     for (const src of sources) for (const m of src.matchAll(/\bt\('([a-zA-Z0-9.-]+)'/g)) expect(dict[m[1]], m[1]).toBeDefined();
@@ -316,22 +316,22 @@ describe('macros aux limites : débordement calculé à 667×375 (largeurs fixes
 });
 
 describe('publication : aperçu et build', () => {
-  it('apercu.txt : première ligne atelier-interface.html (acceptée par parseEntry), type hifi, titre', async () => {
+  it('apercu.txt : première ligne interface-retenue.html (acceptée par parseEntry), type hifi, titre', async () => {
     const { parseEntry } = await import('../../js/lots.js');
     const text = readFileSync('apercu.txt', 'utf8');
-    expect(parseEntry(text)).toBe('atelier-interface.html');
+    expect(parseEntry(text)).toBe('interface-retenue.html'); // après les choix du propriétaire : l'aperçu ouvre l'interface retenue
     expect(text).toMatch(/^type: hifi$/m);
-    expect(text).toMatch(/^titre: Atelier de l'interface$/m);
+    expect(text).toMatch(/^titre: Interface retenue$/m);
   });
 
   it('scripts/build.mjs copie la page sur une ligne à part (fusion sans conflit avec la liste ENTRIES)', () => {
     const build = readFileSync('scripts/build.mjs', 'utf8');
-    expect(build).toMatch(/^ENTRIES\.push\('atelier-interface\.html'\);/m);
+    expect(build).toMatch(/^ENTRIES\.push\('atelier-interface\.html', 'interface-retenue\.html'\);/m);
     expect(build.split('\n').find((l) => l.startsWith('const ENTRIES'))).not.toContain('atelier-interface');
   });
 
-  it('la page : noindex, lang="fr", noscript, aucun id dupliqué, aucun style en ligne, aucune ressource externe', () => {
-    const html = readFileSync('atelier-interface.html', 'utf8');
+  it.each(['atelier-interface.html', 'interface-retenue.html'])('%s : noindex, lang="fr", noscript, aucun id dupliqué, aucun style en ligne, aucune ressource externe', (page) => {
+    const html = readFileSync(page, 'utf8');
     expect(html).toContain('<html lang="fr">');
     expect(html).toContain('name="robots" content="noindex"');
     expect(html).toContain('<noscript>');
@@ -339,5 +339,24 @@ describe('publication : aperçu et build', () => {
     expect(new Set(ids).size).toBe(ids.length);
     expect(html).not.toMatch(/\sstyle="/);
     expect(html).not.toMatch(/(src|href)="(https?:)?\/\//);
+  });
+});
+
+describe('interface retenue (choix du propriétaire)', () => {
+  it('HUD, pause, fins et à terre en B, sticks en A ; le menu n\'est pas encore choisi', () => {
+    expect(cfg.retenue).toMatchObject({ hud: 'B', pause: 'B', 'fin-mort': 'B', 'fin-monde': 'B', 'a-terre': 'B', sticks: 'A' });
+    expect(cfg.retenue.menu).toBeUndefined();
+  });
+
+  it('la page ne charge que les feuilles des directions retenues (A pour les sticks, B), jamais C', () => {
+    const page = readFileSync('interface-retenue.html', 'utf8');
+    expect(page).toContain('css/proto-b.css');
+    expect(page).toContain('css/proto-a.css');
+    expect(page).not.toContain('proto-c.css');
+  });
+
+  it('les sticks de B ne s\'appliquent qu\'aux sticks posés directement dans l\'écran B (une couche A imbriquée garde le style A)', () => {
+    expect(css['proto-b']).toMatch(/\.ui3k-dir-b > \.p-stick \.p-stick-base \{/);
+    expect(css['proto-b']).not.toMatch(/\.ui3k-dir-b \.p-stick-base/);
   });
 });

@@ -69,6 +69,7 @@
   "screens": ["hud", "pause", "fin-mort", "fin-monde", "a-terre", "sticks", "menu", "boutique", "reglages", "classement"],
   "gameScreens": ["hud", "pause", "fin-mort", "fin-monde", "a-terre", "sticks"],
   "directions": ["actuel", "A", "B", "C"],
+  "retenue": { "_note": "Choix du propriétaire après le lot 3k : direction retenue par écran de jeu (le menu viendra plus tard ; boutique, réglages et classement non choisis).", "hud": "B", "pause": "B", "fin-mort": "B", "fin-monde": "B", "a-terre": "B", "sticks": "A" },
   "macros": {
     "texte": ["S", "M", "L"],
     "densite": ["compacte", "aeree"],

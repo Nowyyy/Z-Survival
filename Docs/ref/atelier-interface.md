@@ -1,6 +1,6 @@
 # Atelier de l'interface (lot 3k)
 
-Page technique `atelier-interface.html` (aperçu de la branche : `…/lots/lot-3k/atelier-interface.html`). Elle montre l'interface actuelle du jeu et trois directions de refonte, mesure chaque vue et produit un texte « Mes choix » à copier. Elle n'intègre rien dans le jeu, n'enregistre rien et ne fait aucune requête hors de l'origine.
+Page technique `atelier-interface.html` (`…/lots/lot-3k/atelier-interface.html`). Depuis les choix du propriétaire, `interface-retenue.html` (aperçu de la branche) ne montre que l'interface retenue (`ui-atelier.json`, `retenue` : HUD, pause, fins, à terre en B ; sticks en A), écran par écran ou les six d'un coup. Elle montre l'interface actuelle du jeu et trois directions de refonte, mesure chaque vue et produit un texte « Mes choix » à copier. Elle n'intègre rien dans le jeu, n'enregistre rien et ne fait aucune requête hors de l'origine.
 
 ## Méthode
 1. **Actuel** : `jeu.html?test=1&seed=1` dans un `<iframe>` de même origine, interface d'origine. L'état est obtenu par les hooks existants de `window.__zs` (`startWave`, `giveMoney`, `setChutes`, `setLevels`, `setWaveParams`, `downPlayer`, `skipWave`, `step`) et des événements de pointeur (sticks), boucle d'images figée comme dans les tests (`js/atelier-interface/actuel.js`). Ce qu'aucun hook ne règle est écrit dans l'état de la vue (vie approchée par des coups de zombie, tués à 0, sauvegarde en mémoire). Écrans absents du jeu : « état non disponible dans « Actuel » » ; le menu E1 « actuel » est la page d'attente `index.html`.
