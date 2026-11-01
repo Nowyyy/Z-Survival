@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="robots" content="noindex">
+  <meta name="color-scheme" content="dark">
+  <title>Z-Survival · Sauvegarde</title>
+  <link rel="icon" href="data:,">
+  <link rel="preload" href="fonts/barlow-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="data/i18n/fr.json" as="fetch" crossorigin>
+  <link rel="stylesheet" href="css/tokens.css">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/sauvegarde.css">
+  <script type="module" src="js/sauvegarde/main.js"></script>
+</head>
+<body class="save-page">
+  <noscript>
+    <p class="noscript">Cette page a besoin de JavaScript. / This page needs JavaScript.</p>
+  </noscript>
+  <main id="app" class="save" hidden>
+    <h1 class="save-title" data-i18n="game.save.page.title"></h1>
+    <p class="save-intro" data-i18n="game.save.page.intro"></p>
+    <p id="live" class="save-live" role="status" aria-live="polite"></p>
+
+    <section class="save-section" aria-labelledby="state-title">
+      <h2 id="state-title" class="save-heading" data-i18n="game.save.page.state.title"></h2>
+      <dl id="state-list" class="save-facts"></dl>
+    </section>
+
+    <p class="save-warning" data-i18n="game.save.page.warning"></p>
+
+    <section class="save-section" aria-labelledby="export-title">
+      <h2 id="export-title" class="save-heading" data-i18n="game.save.page.export.title"></h2>
+      <label class="save-label" for="export-code" data-i18n="game.save.page.export.label"></label>
+      <textarea id="export-code" class="save-code" rows="5" readonly spellcheck="false" autocomplete="off"></textarea>
+      <div class="save-row">
+        <button id="btn-copy" class="button" type="button" data-i18n="game.save.page.export.copy"></button>
+        <p id="export-length" class="save-meta"></p>
+      </div>
+    </section>
+
+    <section id="import-section" class="save-section" aria-labelledby="import-title">
+      <h2 id="import-title" class="save-heading" data-i18n="game.save.page.import.title"></h2>
+      <label class="save-label" for="import-code" data-i18n="game.save.page.import.label"></label>
+      <textarea id="import-code" class="save-code" rows="5" spellcheck="false" autocomplete="off" autocapitalize="off" autocorrect="off"></textarea>
+      <div class="save-row">
+        <button id="btn-verify" class="button" type="button" data-i18n="game.save.page.import.verify"></button>
+      </div>
+      <p id="import-error" class="save-error" role="alert" hidden></p>
+      <div id="import-preview" class="save-preview" hidden>
+        <h3 class="save-subheading" data-i18n="game.save.page.import.preview"></h3>
+        <p id="import-warnings" class="save-meta" hidden></p>
+        <table class="save-table">
+          <thead><tr><th scope="col" data-i18n="game.save.page.import.col.what"></th><th scope="col" data-i18n="game.save.page.import.col.current"></th><th scope="col" data-i18n="game.save.page.import.col.incoming"></th></tr></thead>
+          <tbody id="import-rows"></tbody>
+        </table>
+        <label class="save-check"><input id="import-ack" type="checkbox"><span data-i18n="game.save.page.import.ack"></span></label>
+        <div class="save-row">
+          <button id="btn-replace" class="button" type="button" data-i18n="game.save.page.import.replace" disabled></button>
+        </div>
+      </div>
+    </section>
+
+    <section id="locked-section" class="save-section save-section-alert" aria-labelledby="locked-title" hidden>
+      <h2 id="locked-title" class="save-heading" data-i18n="game.save.page.locked.title"></h2>
+      <p data-i18n="game.save.page.locked.text"></p>
+      <label class="save-label" for="locked-raw" data-i18n="game.save.page.locked.raw"></label>
+      <textarea id="locked-raw" class="save-code" rows="4" readonly spellcheck="false" autocomplete="off"></textarea>
+      <div class="save-row">
+        <button id="btn-copy-raw" class="button button-quiet" type="button" data-i18n="game.save.page.export.copy"></button>
+        <button id="btn-locked-import" class="button" type="button" data-i18n="game.save.page.locked.import"></button>
+        <button id="btn-locked-reset" class="button button-quiet" type="button" data-i18n="game.save.page.locked.reset"></button>
+      </div>
+      <div id="locked-confirm" class="save-confirm" hidden>
+        <p data-i18n="game.save.page.locked.confirm"></p>
+        <div class="save-row">
+          <button id="btn-locked-reset-yes" class="button" type="button" data-i18n="game.save.page.locked.resetYes"></button>
+          <button id="btn-locked-reset-no" class="button button-quiet" type="button" data-i18n="game.save.page.cancel"></button>
+        </div>
+      </div>
+    </section>
+
+    <section class="save-section" aria-labelledby="clear-title">
+      <h2 id="clear-title" class="save-heading" data-i18n="game.save.page.clear.title"></h2>
+      <p data-i18n="game.save.page.clear.text"></p>
+      <div class="save-row">
+        <button id="btn-clear" class="button button-quiet" type="button" data-i18n="game.save.page.clear.button"></button>
+      </div>
+      <div id="clear-confirm" class="save-confirm" hidden>
+        <label class="save-check"><input id="clear-ack" type="checkbox"><span data-i18n="game.save.page.clear.ack"></span></label>
+        <div class="save-row">
+          <button id="btn-clear-yes" class="button" type="button" data-i18n="game.save.page.clear.yes" disabled></button>
+          <button id="btn-clear-no" class="button button-quiet" type="button" data-i18n="game.save.page.cancel"></button>
+        </div>
+      </div>
+    </section>
+
+    <p class="save-back"><a class="save-link" href="jeu.html" data-i18n="game.save.page.back"></a></p>
+  </main>
+</body>
+</html>

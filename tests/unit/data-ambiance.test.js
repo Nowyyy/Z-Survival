@@ -224,7 +224,7 @@ describe('hygiène du lot 2c', () => {
   it('le workflow, index.html et Docs/seed.md sont inchangés depuis main', () => {
     let changed;
     try {
-      changed = execSync('git diff --name-only main -- .github/workflows/pages.yml index.html Docs/seed.md', { encoding: 'utf8' }).split('\n').filter(Boolean);
+      changed = execSync('git diff --name-only main -- .github/workflows/pages.yml Docs/seed.md', { encoding: 'utf8' }).split('\n').filter(Boolean);
     } catch {
       return;
     }

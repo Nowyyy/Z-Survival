@@ -57,9 +57,8 @@ describe('data/game/*.json', () => {
         else if (typeof v === 'object') check(v);
         else {
           expect(typeof v, k).toBe('number');
-          // Lot 2 : bounty (argent du lot 4) vaut 0 partout tant que l'argent n'existe pas.
-          if (k === 'bounty') expect(v).toBe(0);
-          else expect(v, k).toBeGreaterThan(0);
+          // Lot 4 : bounty (argent gagné par zombie tué) est strictement positif (valeurs exactes : core-enemy-factory.test.js).
+          expect(v, k).toBeGreaterThan(0);
         }
       }
     };

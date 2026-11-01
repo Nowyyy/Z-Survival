@@ -48,8 +48,8 @@ describe('hygiène du lot 3c : pureté et fichiers', () => {
     if (changed !== null) expect(changed).toEqual([]);
   });
 
-  it('le workflow, index.html, Docs/seed.md et les bilans existants sont inchangés', () => {
-    const changed = git('diff --name-only main -- .github index.html Docs/seed.md Docs/lots/lot-1.md Docs/lots/lot-2.md Docs/lots/lot-2b.md Docs/lots/lot-2c.md Docs/lots/lot-3.md Docs/lots/lot-3a.md Docs/lots/lot-3b.md');
+  it('le workflow, Docs/seed.md et les bilans existants sont inchangés (index.html : icône du site ajoutée au lot 4)', () => {
+    const changed = git('diff --name-only main -- .github Docs/seed.md Docs/lots/lot-1.md Docs/lots/lot-2.md Docs/lots/lot-2b.md Docs/lots/lot-2c.md Docs/lots/lot-3.md Docs/lots/lot-3a.md Docs/lots/lot-3b.md');
     if (changed !== null) expect(changed).toEqual([]);
   });
 

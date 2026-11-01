@@ -327,37 +327,6 @@ a.item {
   white-space: nowrap;
 }
 
-.picker {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-  padding-left: 28px;
-}
-
-.picker label {
-  font-size: var(--text-sm);
-  color: var(--color-text-muted);
-}
-
-.picker-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
-}
-
-.select {
-  flex: 1 1 12rem;
-  min-width: 0;
-  min-height: var(--touch-target);
-  padding: var(--space-2) var(--space-3);
-  border: 2px solid var(--color-border);
-  border-radius: var(--radius-md);
-  background: var(--color-surface);
-  color: var(--color-text);
-  font: inherit;
-}
-
-.select:disabled,
 .button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
@@ -384,11 +353,39 @@ a.item {
   background: var(--color-action-active);
 }
 
-/* Journal des versions (/dev) : un bloc repliable par lot, du plus récent au plus ancien. */
+/* Journal des versions (/dev) : tout le journal est replié par défaut (beaucoup de lots) ; une fois ouvert, un bloc repliable par lot, du plus récent au plus ancien, dans une
+   zone qui défile. */
 .changelog {
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
+}
+
+.changelog-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  min-height: var(--touch-target);
+  cursor: pointer;
+  list-style: none;
+}
+
+.changelog-summary::-webkit-details-marker {
+  display: none;
+}
+
+.changelog-summary::after {
+  content: "+";
+  flex: none;
+  width: var(--touch-target);
+  text-align: center;
+  font-size: var(--text-xl);
+  font-weight: var(--font-weight-bold);
+}
+
+.changelog[open] > .changelog-summary::after {
+  content: "−";
 }
 
 .changelog-title {
@@ -403,9 +400,20 @@ a.item {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
+  /* La page ouverte tient dans l'écran : hauteur de l'écran moins le reste de la page (≈ 33 rem), au moins 10 rem ; le reste du journal défile dans la liste. */
+  max-height: max(10rem, calc(100dvh - 33rem));
+  overflow-y: auto;
+  overscroll-behavior: contain;
   margin: 0;
   padding: 0;
   list-style: none;
+}
+
+@media (min-width: 768px) {
+  /* Écran large : le titre et les marges de la page sont plus grands (≈ 41 rem hors liste). */
+  .changelog-list {
+    max-height: max(10rem, calc(100dvh - 41rem));
+  }
 }
 
 .changelog-entry {

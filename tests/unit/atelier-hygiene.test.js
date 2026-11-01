@@ -12,6 +12,8 @@ const git = (args) => {
 };
 // Commit de `main` au lancement du lot 3g (base de la branche lot-3g).
 const BASE = '4b3f41c';
+// main après le lot 4 (récupéré dans la branche lot-3g, sans fusion dans main).
+const MAIN = 'c166e53';
 const code = (f) => readFileSync(f, 'utf8').split('\n').filter((l) => !l.trim().startsWith('//')).join('\n').replace(/\s\/\/.*$/gm, '');
 const NEW_CORE = ['releve', 'ecarts', 'ecarts-svg', 'visite', 'mobilier-aspect', 'portes-aspect', 'see-through', 'decor-vivant'].map((n) => `js/core/${n}.js`);
 const walk = (dir) => readdirSync(dir, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? walk(`${dir}/${e.name}`) : [`${dir}/${e.name}`]));
@@ -63,7 +65,8 @@ describe('hygiène du lot 3g : fichiers', () => {
   // data/changelog.json, data-changelog et dev.spec : entrée « lot-3g » ajoutée à la demande du propriétaire (le bilan de Docs/lots/ l'exige).
   it('fichiers réservés aux autres lots inchangés (jeu, HUD, interface, CLAUDE.md, conventions, workflow, index, seed)', () => {
     // js/game/game.js : une ligne (sortie de l'escalier par le côté, retour du propriétaire) ; js/core/stair-walk.js : option sideExit (même retour).
-    const changed = git(`diff --name-only ${BASE} -- js/game/hud.js js/game/ui.js js/game/levels-source.js jeu.html css/game.css CLAUDE.md Docs/ref/conventions.md data/game/enemies.json .github index.html Docs/seed.md`);
+    // main (lot 4) récupéré dans la branche : la comparaison se fait avec ce main (MAIN), pas avec la base du lot.
+    const changed = git(`diff --name-only ${MAIN} -- js/game/hud.js js/game/ui.js js/game/levels-source.js jeu.html css/game.css CLAUDE.md Docs/ref/conventions.md data/game/enemies.json .github index.html Docs/seed.md`);
     if (changed === null) return;
     expect(changed).toEqual([]);
   });

@@ -60,7 +60,7 @@ describe('data/game/weapons.json (lot 2b)', () => {
 
 describe('hygiène du lot 2b', () => {
   it('aucune clé de fr.json orpheline : chaque clé « game.* » et « dev.* » est utilisée dans le code ou les pages', () => {
-    const sources = [...walk('js'), ...walk('dev'), 'jeu.html', 'index.html', 'sons.html'].map((f) => readFileSync(f, 'utf8')).join('\n');
+    const sources = [...walk('js'), ...walk('dev'), 'jeu.html', 'index.html', 'sons.html', 'sauvegarde.html'].map((f) => readFileSync(f, 'utf8')).join('\n');
     const dynamic = ['game.wave.', 'game.hud.', 'game.live.', 'dev.'];
     const orphans = Object.keys(fr).filter((k) => /^(game|dev)\./.test(k) && !sources.includes(k) && !dynamic.some((d) => k.startsWith(d) && sources.includes(d)));
     expect(orphans).toEqual([]);

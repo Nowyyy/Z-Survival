@@ -44,9 +44,14 @@ describe('hygiène du lot 3e : fichiers et textes', () => {
   });
 
   it('le workflow, index.html et Docs/seed.md sont inchangés', () => {
-    const changed = git(`diff --name-only ${BASE} -- .github index.html Docs/seed.md`);
+    // Lot 4 : index.html reçoit l'icône du site (demande du propriétaire) ; seul le workflow reste comparé.
+    const changed = git(`diff --name-only ${BASE} -- .github`);
     if (changed === null) return;
     expect(changed).toEqual([]);
+    // Lot 4 : Docs/seed.md appartient au propriétaire, qui l'a mis à jour dans main après la fusion du lot 3e (avant : comparé au commit BASE, donc en échec).
+    // Il est maintenant comparé à main : la branche ne le modifie jamais.
+    const seed = git('diff --name-only main -- Docs/seed.md');
+    if (seed !== null) expect(seed).toEqual([]);
   });
 
   it('aucune clé de fr.json du lot 3e n\'est orpheline : chacune est écrite dans le code', () => {

@@ -114,10 +114,11 @@ describe('types : cohérence avec le rendu et le son', () => {
     expect(createEnemy(type, 'marche', spec(1), enemies, gaits).radius).toBeCloseTo(enemies.zombie.radius * visual.scale, 9);
   });
 
-  it('bounty vaut 0 pour tous les types (réservé au lot 4)', () => {
+  it('bounty vaut 10 pour tous les types (lot 4 : avant, 0 ; montant fixe, il évoluera avec les améliorations)', () => {
+    const expected = { marcheur: 10, petit: 10, voute: 10, grand: 10 };
     for (const t of TYPES) {
-      expect(enemies.variants[t].bounty).toBe(0);
-      expect(createEnemy(t, 'marche', spec(5), enemies, gaits).bounty).toBe(0);
+      expect(enemies.variants[t].bounty).toBe(expected[t]);
+      expect(createEnemy(t, 'marche', spec(5), enemies, gaits).bounty).toBe(expected[t]);
     }
   });
 

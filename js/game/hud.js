@@ -2,7 +2,8 @@
 // (une silhouette avec un « + » par chute restante, et le nombre). N'écrit dans le DOM que si une
 // valeur change. L'annonce de vague (E2-8) est une animation centrale : js/game/splash-view.js.
 import { displayHealth } from '../core/combat.js';
-import { DOWN_TEXTS, FLOOR_TEXTS, fmt } from './texts.js';
+import { formatMoney, formatMoneyCompact } from '../core/economy.js';
+import { DOWN_TEXTS, FLOOR_TEXTS, MONEY_TEXTS, fmt } from './texts.js';
 
 const SVG = 'http://www.w3.org/2000/svg';
 const SILHOUETTE = 'M5 1.5a2 2 0 1 1 0 4 2 2 0 0 1 0-4ZM2 7.5c0-1 .8-1.7 1.8-1.7h2.4c1 0 1.8.7 1.8 1.7V12H6.5v3.5h-3V12H2Z';
@@ -38,8 +39,13 @@ export function createHud(dict, root = document) {
   const chuteIcons = el('hud-chutes-icons');
   const chuteText = el('hud-chutes-text');
   let shownChutes = null;
+  const money = el('hud-money');
+  const moneyText = el('hud-money-text');
+  const gain = el('hud-gain');
+  let shownMoney = null;
+  let shownGain = null;
   let last = { hp: null, max: null, kills: null, phase: null };
-  const shown = { wave: null, remaining: null, total: null, wait: null }; // dernières valeurs écrites
+  const shown = { wave: null, max: null, remaining: null, total: null, wait: null }; // dernières valeurs écrites
   const setText = (node, text) => {
     if (node.textContent !== text) node.textContent = text;
   };
@@ -64,9 +70,12 @@ export function createHud(dict, root = document) {
       if (wave.hidden === active) wave.hidden = !active;
       if (fighting !== (last.phase === 'combat')) remaining.hidden = !fighting;
       if (waiting !== (last.phase === 'attente')) next.hidden = !waiting;
-      if (active && waves.wave !== shown.wave) {
+      // Lot 4 : « Vague 1 / 40 » quand le monde a un nombre de manches (extras.maxWave) ; « Vague N » sinon (ancienne salle, ?endless=1 au-delà de la dernière).
+      const max = Number.isInteger(extras.maxWave) && extras.maxWave >= waves?.wave ? extras.maxWave : null;
+      if (active && (waves.wave !== shown.wave || max !== shown.max)) {
         shown.wave = waves.wave;
-        setText(wave, fmt(dict['game.wave.hud'], { n: waves.wave }));
+        shown.max = max;
+        setText(wave, fmt(dict[max === null ? 'game.wave.hud' : 'game.wave.hudOf'], { n: waves.wave, max }));
       }
       if (fighting && (waves.remaining !== shown.remaining || waves.total !== shown.total)) {
         shown.remaining = waves.remaining;
@@ -84,10 +93,24 @@ export function createHud(dict, root = document) {
         floor.textContent = extras.floor ? dict[FLOOR_TEXTS.chip[extras.floor]] : '';
         floor.dataset.floor = extras.floor ?? '';
       }
+      // Lot 4 : puce d'argent (montant court, aria-label avec le montant entier) et « +N » (décoratif, aria-hidden), écrits seulement s'ils changent.
+      if (extras.money && extras.money.balance !== shownMoney) {
+        shownMoney = extras.money.balance;
+        setText(moneyText, formatMoneyCompact(shownMoney));
+        money.setAttribute('aria-label', fmt(dict[MONEY_TEXTS.chip], { n: formatMoney(shownMoney) }));
+      }
+      const gainText = extras.money?.gain?.visible ? extras.money.gain.text : '';
+      if (gainText !== shownGain) {
+        shownGain = gainText;
+        setText(gain, gainText);
+        gain.hidden = gainText === '';
+        gain.dataset.animate = extras.money?.gain?.animate === false ? 'false' : 'true';
+      }
       if (extras.chutes !== shownChutes) {
         shownChutes = extras.chutes;
         const n = Number.isInteger(extras.chutes) && extras.chutes > 0 ? extras.chutes : 0;
-        chuteIcons.replaceChildren(...Array.from({ length: n }, silhouette));
+        // Retour du propriétaire : une seule silhouette, seul le nombre à côté change (avant : une silhouette par chute restante).
+        if (chuteIcons.childElementCount === 0) chuteIcons.replaceChildren(silhouette());
         chuteText.textContent = fmt(dict[DOWN_TEXTS.chutes], { n });
         chutes.setAttribute('aria-label', fmt(dict[DOWN_TEXTS.chutesLabel], { n }));
       }

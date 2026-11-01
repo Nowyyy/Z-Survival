@@ -7,6 +7,8 @@ import { createAudio } from './audio.js';
 import { createGame } from './game.js';
 import { createLoading } from './loading.js';
 import { readLevels } from './levels-source.js';
+import { makeEconomy } from '../core/economy.js';
+import { createRepository } from '../save/index.js';
 import { createInput } from './input.js';
 import { createTokenLookup, readPalette } from './palette.js';
 import { createVhs, parseVhsParam } from './vhs-layer.js';
@@ -70,7 +72,7 @@ const decorInterieur = detail && mapId !== 'salle' ? await loadJson(`${mapDir}/d
 // Retours du propriétaire : mobilier dessiné d'après le modèle (mobilier.world.json, avec le détail) ; ?murs=bas : murs et piliers à l'ancienne hauteur (essai).
 const mobilier = detail && mapId !== 'salle' ? await loadJson(`${mapDir}/mobilier.world.json`).catch(() => null) : null;
 
-const [dict, world, decor, camera, nav, player, weapons, enemies, render, texturesCfg, variants, soundsCfg, audioCfg, materialsCfg, voiceCfg, wavesCfg, gaitsCfg, statsCfg, splashCfg, vhsCfg, windowsCfg, downCfg, stairsCfg] = await Promise.all([
+const [dict, world, decor, camera, nav, player, weapons, enemies, render, texturesCfg, variants, soundsCfg, audioCfg, materialsCfg, voiceCfg, wavesCfg, gaitsCfg, statsCfg, splashCfg, vhsCfg, windowsCfg, downCfg, stairsCfg, economyCfg, saveCfg] = await Promise.all([
 
   loadDict(),
   loadJson(`${mapDir}/world.json`),
@@ -95,6 +97,8 @@ const [dict, world, decor, camera, nav, player, weapons, enemies, render, textur
   loadJson('data/game/windows.json'),
   loadJson('data/game/player-down.json'),
   loadJson('data/game/stairs.json'),
+  loadJson('data/game/economy.json'),
+  loadJson('data/game/save.json'),
 ]);
 
 applyTexts(dict);
@@ -134,6 +138,28 @@ const zones = zonesJson ? zonesToWorld(parseZones(zonesJson), world.transform) :
 const layouts = buildLayouts({ rdc: { world, decor }, etage: upperWorld ? { world: upperWorld } : null, zones }, { empty: emptyMode, slack: camera.slack });
 const layout = layouts.rdc;
 
+// Sauvegarde (lot 4) : le dépôt est choisi d'après l'adresse (mémoire pour ?test=1, lecture seule pour les paramètres d'essai) ; la seule clé de stockage
+// est zs.save.v1. L'accès à localStorage peut lever (stockage bloqué) : le dépôt local passe alors à « indisponible », le jeu continue.
+const storage = (() => {
+  try {
+    return window.localStorage;
+  } catch {
+    return null;
+  }
+})();
+const saveParams = { save: saveCfg, economy: economyCfg, stats: statsCfg };
+const { repository, mode: saveMode } = createRepository({
+  search: location.search,
+  storage,
+  params: saveParams,
+  listen: (handler) => {
+    window.addEventListener('storage', handler);
+    return () => window.removeEventListener('storage', handler);
+  },
+  persist: () => navigator.storage?.persist?.(),
+});
+const loadedSave = repository.load();
+
 const ctx = {
   cfg: { layout, layouts, stairs: stairsCfg, player, weapon: weapons.pistol, stats: statsCfg, zombie: enemies.zombie, enemies, gaits: gaitsCfg, waves: wavesCfg, render, camera, nav, windows: windowsCfg, down: downCfg },
   palette,
@@ -158,7 +184,11 @@ const ctx = {
   },
   seed: Number.isFinite(seedParam) ? seedParam : Date.now() % 2147483647,
   seedRun: 0,
-  levels: readLevels(location.search, statsCfg),
+  levels: readLevels(location.search, statsCfg, loadedSave.status === 'ok' ? loadedSave.save : null),
+  repository,
+  mode: saveMode,
+  economy: makeEconomy(economyCfg, enemies),
+  saveCfg,
   override: {},
   splashCfg,
   vhs,
@@ -182,7 +212,10 @@ ctx.ui = createUi(dict, {
     ctx.vhs.toggle();
     ctx.ui.syncVhs(ctx.vhs);
   },
-  onPausePanel: (open) => ctx.audio.ui(open ? 'pause' : 'resume'),
+  onPausePanel: (open) => {
+    ctx.audio.ui(open ? 'pause' : 'resume');
+    if (open) game?.onPauseOpen();
+  },
   onPauseChange: (paused) => {
     ctx.audio.setSuspended(paused);
     syncHint();
