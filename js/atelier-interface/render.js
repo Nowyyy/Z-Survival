@@ -26,10 +26,10 @@ function pips(n, max = 5) {
   return `<span class="p-pips" aria-hidden="true">${Array.from({ length: max }, (_, i) => `<span class="p-pip${i < n ? ' is-on' : ''}"></span>`).join('')}</span>`;
 }
 
-// Barre de vie : pleine (A, C) ou segmentée en 10 (B) ; la largeur ne change jamais, seul le remplissage (transform) varie.
+// Barre de vie : pleine (A, C) ; aucune barre en B (retour du propriétaire : « VIE » et « 100/100 » suffisent). La largeur ne change jamais.
 function lifeBar(s, dir) {
-  const segs = dir === 'B' ? `<span class="p-segs" aria-hidden="true">${Array.from({ length: 10 }, (_, i) => `<span class="p-seg${i < Math.ceil(s.hpRatio * 10) ? ' is-on' : ''}"></span>`).join('')}</span>` : `<span class="p-fill" style="--ui3k-p: ${s.hpRatio.toFixed(3)}"></span>`;
-  return `<span class="p-bar" aria-hidden="true">${segs}</span>`;
+  if (dir === 'B') return '';
+  return `<span class="p-bar" aria-hidden="true"><span class="p-fill" style="--ui3k-p: ${s.hpRatio.toFixed(3)}"></span></span>`;
 }
 
 // HUD (E2-2) et bouton Pause (E2-5). macros.argent : haut-gauche, haut-droite ou sous-vague.
@@ -47,13 +47,13 @@ export function renderHud(s, dir, macros, t) {
   const money = `<div class="p-block p-money" ${attr('argent', 'hud')} aria-label="${esc(t('game.hud.moneyLabel', { n: s.moneyText }))}">${ICONS.coin}<span class="p-value">${esc(s.moneyCompact)}</span></div>`;
   const trial = s.trial ? `<div class="p-block p-trial" ${attr('essai', 'hud')}>${esc(t('ui3k.hud.trial'))}</div>` : '';
   const chrono = dir === 'B' ? `<div class="p-block p-chrono" ${attr('chrono', 'hud')}><span class="p-rec" data-blink="rec" data-blink-cycles="1" aria-hidden="true"></span><span class="p-label">${esc(t('ui3k.hud.rec'))}</span><span class="p-value">${esc(s.chronoText)}</span></div>` : '';
-  const kills = dir === 'B' ? `<div class="p-block p-kills" ${attr('tues', 'hud')}><span class="p-label">${esc(t('ui3k.hud.killsShort'))}</span><span class="p-value">${String(s.kills).padStart(3, '0')}</span></div>` : '';
+  const kills = dir === 'B' ? `<div class="p-block p-kills" ${attr('tues', 'hud')}><span class="p-label">${esc(t('ui3k.hud.killsShort'))}</span><span class="p-value">${String(s.kills).padStart(4, '0')}</span></div>` : '';
   const pause = `<button class="p-pause" type="button" data-block="E2-5" ${attr('pause', 'button')} aria-label="${esc(t('game.pause.open'))}">${ICONS.pause}</button>`;
   const corners = dir === 'B' ? '<span class="p-corner p-corner-tl" aria-hidden="true"></span><span class="p-corner p-corner-tr" aria-hidden="true"></span>' : '';
   const pos = macros?.argent ?? 'haut-droite';
   const tl = { A: [life, chutes, floor], B: [chrono, life, chutes, floor], C: [life, chutes, floor] }[dir];
-  const tc = [wave, remaining];
-  const tr = { A: [trial], B: [kills, trial], C: [trial] }[dir];
+  const tc = dir === 'B' ? [wave, remaining, trial] : [wave, remaining];
+  const tr = { A: [trial], B: [kills], C: [trial] }[dir];
   if (pos === 'haut-gauche') tl.push(money);
   else if (pos === 'sous-vague') tc.push(money);
   else tr.unshift(money);

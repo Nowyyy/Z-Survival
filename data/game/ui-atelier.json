@@ -38,7 +38,7 @@
     "money": [0, 9999999],
     "wave": [1, 40],
     "remaining": [0, 10],
-    "kills": [0, 999],
+    "kills": [0, 9999],
     "chrono": [0, 35999],
     "downSeconds": [0, 5],
     "graceSeconds": [0, 2],
@@ -49,7 +49,7 @@
   "saveStatuses": ["saved", "pending", "failed", "readonly", "locked", "unavailable", "memory"],
   "floors": ["rdc", "etage"],
   "defaults": { "hp": 100, "maxHp": 100, "chutes": 1, "money": 0, "wave": 1, "reinforced": false, "floor": "rdc", "remaining": 5, "kills": 0, "chrono": 0, "save": "saved", "trial": false, "down": "none", "downSeconds": 5, "paused": false, "end": "none", "earned": 0, "bestWave": 0, "record": false, "nextZone": 10, "multiFloor": true },
-  "worst": { "hp": 100, "maxHp": 220, "chutes": 5, "money": 9999999, "wave": 40, "reinforced": true, "floor": "etage", "remaining": 10, "kills": 999, "chrono": 35999, "save": "unavailable", "trial": true, "earned": 9999999, "bestWave": 40, "record": true, "nextZone": 30 },
+  "worst": { "hp": 100, "maxHp": 220, "chutes": 5, "money": 9999999, "wave": 40, "reinforced": true, "floor": "etage", "remaining": 10, "kills": 9999, "chrono": 35999, "save": "unavailable", "trial": true, "earned": 9999999, "bestWave": 40, "record": true, "nextZone": 30 },
   "states": [
     { "id": "debut", "params": { "wave": 1, "remaining": 5, "money": 0, "kills": 0, "chrono": 4 } },
     { "id": "combat", "params": { "hp": 64, "wave": 7, "remaining": 8, "money": 1234, "kills": 57, "chutes": 1, "chrono": 512, "save": "pending" } },

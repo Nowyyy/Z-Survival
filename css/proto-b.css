@@ -1,10 +1,15 @@
 /* Direction B « caméscope » (lot 3k, proposition non intégrée) : en accord avec l'effet VHS. Coins de cadre en haut (les coins bas tomberaient sous les
-   pouces : retirés), libellés courts en Rubik Dirt (REC, VIE, VAG, RST, TUÉS), chronomètre de jeu, point « REC » qui clignote une fois par seconde
-   (au plus 2 : règle du lot ; fixe sous prefers-reduced-motion), barre de vie segmentée en 10, noir et rouge sang. Blocs de taille fixe (em). Ni filter,
-   ni mix-blend-mode, ni backdrop-filter. */
+   pouces : retirés), libellés en Rubik Dirt (REC, VIE, VAGUE, RESTANTS, TUÉS), chronomètre de jeu, point « REC » qui clignote une fois par seconde
+   (au plus 2 : règle du lot ; fixe sous prefers-reduced-motion), noir et rouge sang. Retours du propriétaire : vie sans barre (« VIE » et « 100/100 »),
+   mots entiers, argent et tués de même largeur (4 chiffres de tués) et, ensemble, de la hauteur du bouton Pause ; à terre sans cadre blanc.
+   Blocs de taille fixe (em). Ni filter, ni mix-blend-mode, ni backdrop-filter. */
 
 .ui3k-dir-b {
-  --ui3k-pause-size: 44px;
+  /* Colonne de droite : deux lignes (argent, tués) exactement de la hauteur du bouton Pause, qui grandit avec le texte (44 px au moins). */
+  --ui3k-row: calc(var(--ui3k-fs) * 1.3);
+  --ui3k-pause-size: max(44px, calc(2 * var(--ui3k-row) + var(--ui3k-gap)));
+  /* Priorité 2 : sous la colonne centrale (vague, restants, mode essai). */
+  --ui3k-p2-top: 6.5em;
 }
 
 .ui3k-dir-b .p-block {
@@ -42,30 +47,7 @@
 }
 
 .ui3k-dir-b .p-life {
-  width: 12.1em;
-}
-
-/* Barre segmentée : 10 cases, pleines (rouge) ou vides (contour) : la forme porte la valeur, et le nombre est écrit. */
-.ui3k-dir-b .p-segs {
-  display: flex;
-  gap: 0.08em;
-  height: 100%;
-}
-
-.ui3k-dir-b .p-bar {
-  width: 4.2em;
-  height: 0.7em;
-}
-
-.ui3k-dir-b .p-seg {
-  box-sizing: border-box;
-  flex: 1;
-  border: 1px solid var(--color-border);
-}
-
-.ui3k-dir-b .p-seg.is-on {
-  border-color: var(--color-action);
-  background: var(--color-action);
+  width: 7.6em;
 }
 
 .ui3k-dir-b .p-life-text {
@@ -82,7 +64,7 @@
   align-content: center;
   justify-content: center;
   gap: 0 0.3em;
-  width: 7em;
+  width: 8.6em;
   height: 2.6em;
   line-height: 1.15;
 }
@@ -101,22 +83,25 @@
 
 .ui3k-dir-b .p-remaining {
   justify-content: center;
-  width: 4.8em;
+  width: 8.6em;
 }
 
+/* Étage : largeur fixe pour « RDC » comme pour « Étage » (rien ne bouge en changeant d'étage). */
 .ui3k-dir-b .p-floor {
   justify-content: center;
-  width: 4.8em;
+  width: 5em;
 }
 
-.ui3k-dir-b .p-kills {
-  justify-content: flex-end;
-  width: 6.2em;
-}
-
+/* Argent et tués : même largeur (tués sur 4 chiffres : au-delà de 999), lignes de hauteur fixe. */
+.ui3k-dir-b .p-kills,
 .ui3k-dir-b .p-money {
   justify-content: flex-end;
-  width: 5.4em;
+  width: 7em;
+}
+
+.ui3k-dir-b .p-tr .p-block {
+  height: calc((var(--ui3k-pause-size) - var(--ui3k-gap)) / 2);
+  line-height: 1.1;
 }
 
 .ui3k-dir-b .p-trial {
@@ -153,7 +138,7 @@
   flex-direction: row;
   flex-wrap: wrap;
   align-content: flex-start;
-  width: 12.1em;
+  width: 9em;
   padding: 0.35em 0 0 0.35em;
 }
 
@@ -185,7 +170,6 @@
 }
 
 .ui3k-dir-b .p-down-body {
-  border: 2px solid var(--color-text);
   border-radius: 0;
 }
 

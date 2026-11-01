@@ -9,9 +9,9 @@ const own = (o, k) => isObject(o) && Object.hasOwn(o, k);
 
 // Valeurs de secours si la configuration manque (mêmes bornes que ui-atelier.json).
 const FALLBACK = Object.freeze({
-  ranges: { hp: [0, 100], maxHp: [1, 220], chutes: [0, 5], money: [0, 9_999_999], wave: [1, 40], remaining: [0, 10], kills: [0, 999], chrono: [0, 35_999], downSeconds: [0, 5], graceSeconds: [0, 2], earned: [0, 9_999_999], bestWave: [0, 40] },
+  ranges: { hp: [0, 100], maxHp: [1, 220], chutes: [0, 5], money: [0, 9_999_999], wave: [1, 40], remaining: [0, 10], kills: [0, 9999], chrono: [0, 35_999], downSeconds: [0, 5], graceSeconds: [0, 2], earned: [0, 9_999_999], bestWave: [0, 40] },
   defaults: { hp: 100, maxHp: 100, chutes: 1, money: 0, wave: 1, reinforced: false, floor: 'rdc', remaining: 5, kills: 0, chrono: 0, save: 'saved', trial: false, down: 'none', downSeconds: 5, paused: false, end: 'none', earned: 0, bestWave: 0, record: false, nextZone: 10, multiFloor: true },
-  worst: { hp: 100, maxHp: 220, chutes: 5, money: 9_999_999, wave: 40, reinforced: true, floor: 'etage', remaining: 10, kills: 999, chrono: 35_999, save: 'unavailable', trial: true, earned: 9_999_999, bestWave: 40, record: true, nextZone: 30 },
+  worst: { hp: 100, maxHp: 220, chutes: 5, money: 9_999_999, wave: 40, reinforced: true, floor: 'etage', remaining: 10, kills: 9999, chrono: 35_999, save: 'unavailable', trial: true, earned: 9_999_999, bestWave: 40, record: true, nextZone: 30 },
   saveStatuses: ['saved', 'pending', 'failed', 'readonly', 'locked', 'unavailable', 'memory'],
   floors: ['rdc', 'etage'],
   maxWave: 40,
@@ -143,7 +143,7 @@ export function mockState(params, config) {
   };
 }
 
-// État le plus large : « Vague 40 / 40 », étage, 5 chutes, 9 999 999, 10 restants, 999 tués (valeurs de `worst`).
+// État le plus large : « Vague 40 / 40 », étage, 5 chutes, 9 999 999, 10 restants, 9 999 tués (999 au départ du lot ; 4 chiffres à la demande du propriétaire) (valeurs de `worst`).
 export function worstCase(config) {
   const cfg = mockConfig(config);
   return mockState({ ...cfg.defaults, ...cfg.worst }, config);

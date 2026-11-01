@@ -20,7 +20,7 @@ const MACROS = { A: cfg.macroDefaults.A, B: cfg.macroDefaults.B, C: cfg.macroDef
 const combat = mockState(cfg.states.find((s) => s.id === 'combat').params, cfg);
 
 describe('feuilles proto-*.css : variables, couleurs, interdits', () => {
-  const defined = new Set([...Object.keys(tokens), ...[...css['atelier-interface'].matchAll(/(--ui3k-[a-z0-9-]+):/g)].map((m) => m[1])]);
+  const defined = new Set([...Object.keys(tokens), ...Object.values(css).flatMap((text) => [...text.matchAll(/(--ui3k-[a-z0-9-]+):/g)].map((m) => m[1]))]);
 
   it.each(PROTOS)('%s : n\'utilise que des variables définies (tokens.css ou --ui3k-*)', (name) => {
     for (const m of strip(css[name]).matchAll(/var\((--[a-z0-9-]+)/g)) {
@@ -137,10 +137,24 @@ describe('rendu HTML des directions (écrans de jeu)', () => {
     expect(html).toContain('aria-label="Chutes restantes : 3"');
   });
 
-  it('vie segmentée (B) : 10 segments, autant de pleins que de dixièmes de vie (arrondi supérieur)', () => {
-    const html = renderHud(mockState({ hp: 64 }, cfg), 'B', MACROS.B, t);
-    expect((html.match(/class="p-seg[ "]/g) ?? []).length).toBe(10);
-    expect((html.match(/p-seg is-on/g) ?? []).length).toBe(7);
+  it('B (retours du propriétaire) : vie sans barre (« Vie » et « 64/100 »), « Vague » et « Restants » en entier, tués sur 4 chiffres, « Mode essai » au centre', () => {
+    const html = renderHud(mockState({ hp: 64, kills: 57, trial: true }, cfg), 'B', MACROS.B, t);
+    const life = html.slice(html.indexOf('data-ui="vie"'), html.indexOf('data-ui="chutes"'));
+    expect(life).not.toMatch(/p-bar|p-seg|p-fill/);
+    expect(life).toContain('>Vie<');
+    expect(life).toContain('64/100');
+    expect(html).toContain('>Vague<');
+    expect(html).toContain('>Restants<');
+    expect(html).toContain('>0057<');
+    expect(html.indexOf('data-ui="essai"')).toBeLessThan(html.indexOf('p-cluster p-tr'));
+  });
+
+  it('B : argent et tués de même largeur, et ensemble de la hauteur du bouton Pause (qui garde 44 px au moins) ; à terre sans cadre', () => {
+    const b = css['proto-b'];
+    expect(b).toMatch(/\.ui3k-dir-b \.p-kills,\n\.ui3k-dir-b \.p-money \{[^}]*width: 7em;/);
+    expect(b).toMatch(/--ui3k-pause-size: max\(44px, calc\(2 \* var\(--ui3k-row\) \+ var\(--ui3k-gap\)\)\);/);
+    expect(b).toMatch(/\.ui3k-dir-b \.p-tr \.p-block \{\s*height: calc\(\(var\(--ui3k-pause-size\) - var\(--ui3k-gap\)\) \/ 2\);/);
+    expect(b).not.toMatch(/\.ui3k-dir-b \.p-down-body \{[^}]*border:/);
   });
 
   it('pause : reprendre, plein écran, son, effet VHS, recommencer, volume ; solde, état de la sauvegarde, prochaine zone', () => {
@@ -283,7 +297,7 @@ describe('macros aux limites : débordement calculé à 667×375 (largeurs fixes
   };
   const LAYOUT = {
     a: { tl: ['p-life', 'p-chutes', 'p-floor'], tc: ['p-wave'], tr: ['p-money'], pause: 44, pad: 0 },
-    b: { tl: ['p-tl'], tc: ['p-wave'], tr: ['p-money', 'p-kills'], pause: 44, pad: 0.35 },
+    b: { tl: ['p-tl'], tc: ['p-wave'], tr: ['p-money'], pause: 47, pad: 0.35 },
     c: { tl: ['p-tl'], tc: ['p-wave'], tr: ['p-money'], pause: 52, pad: 0 },
   };
   it.each(['a', 'b', 'c'].flatMap((d) => ['S', 'M', 'L'].map((s) => [d, s])))('direction %s, texte %s : les trois colonnes ne se touchent pas', (d, size) => {

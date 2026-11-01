@@ -383,7 +383,7 @@ if (TEST) {
     setParam: (k, v) => setParam(k, v),
     measure: () => view.measure(),
     lastReport: () => lastReport,
-    stability: (fields = ['hp', 'money', 'wave', 'chutes', 'remaining', 'kills', 'chrono']) => view.stability(Object.fromEntries(fields.map((f) => [f, sweepValues(f, cfg)]))),
+    stability: (fields = ['hp', 'money', 'wave', 'chutes', 'remaining', 'kills', 'chrono', 'floor', 'reinforced']) => view.stability(Object.fromEntries(fields.map((f) => [f, f === 'floor' ? cfg.floors : f === 'reinforced' ? [false, true] : sweepValues(f, cfg)]))),
     keepChoice,
     keepP2,
     compare: () => lastCompare,

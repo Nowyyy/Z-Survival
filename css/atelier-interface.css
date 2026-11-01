@@ -320,7 +320,8 @@
   z-index: 5;
   overflow: hidden;
   font-family: var(--font-sans);
-  font-size: calc(14px * var(--ui3k-scale) * var(--ui3k-sys));
+  --ui3k-fs: calc(14px * var(--ui3k-scale) * var(--ui3k-sys));
+  font-size: var(--ui3k-fs);
   font-weight: var(--font-weight-bold);
   line-height: 1.2;
   font-variant-numeric: tabular-nums;

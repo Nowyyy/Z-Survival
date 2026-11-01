@@ -32,3 +32,5 @@ A, B, C × 7 tailles × 12 cas (HUD combat et pire cas, pause, mort, monde termi
 **À tester par moi** (iPhone en paysage) : ouvrir `atelier-interface.html` ; comparer « Actuel » et A, B, C pour le HUD, la pause, la mort, le monde terminé et l'état à terre (« Côte à côte ») ; essayer les macros (taille du texte, position de l'argent, fond) et l'état « Pire cas » ; regarder menu, boutique, réglages, classement ; retenir tes favoris, puis « Copier mes choix » et me les envoyer ; retours par élément, par exemple `B : le chrono gêne la vue`, `C : les gros chiffres masquent le sol`, `A : barre de vie trop fine`.
 
 **Fusion (à faire par moi)** : cette branche sera fusionnée dans la branche d'intégration du lot 4b avec les autres lots, pas directement dans `main` ; ne pas fusionner `apercu.txt` (reprendre la ligne de `main`).
+
+**Après le bilan (retour du propriétaire)** : choix HUD, pause, fins, à terre en B, sticks en A, menu plus tard ; HUD B retouché dans l'atelier (vie sans barre, mots entiers, argent et tués de même largeur sur la hauteur de Pause, tués sur 4 chiffres, étage de largeur fixe, à terre sans cadre) : détails dans `Docs/ref/integration-interface.md`.

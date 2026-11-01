@@ -17,7 +17,7 @@ describe('mockState : valeurs par défaut et plages', () => {
 
   it.each([
     ['hp', -5, 0], ['hp', 500, 100], ['chutes', 9, 5], ['chutes', -2, 0], ['money', -1, 0], ['money', 1e9, 9_999_999],
-    ['wave', 0, 1], ['wave', 99, 40], ['remaining', 50, 10], ['kills', 5000, 999], ['chrono', -9, 0], ['chrono', 1e7, 35_999],
+    ['wave', 0, 1], ['wave', 99, 40], ['remaining', 50, 10], ['kills', 50_000, 9999], ['chrono', -9, 0], ['chrono', 1e7, 35_999],
   ])('%s = %s est borné à %s avec un avertissement', (k, v, expected) => {
     const s = mockState({ [k]: v }, cfg);
     expect(s[k]).toBe(expected);
@@ -125,15 +125,15 @@ describe('mockState : entrées hostiles', () => {
 });
 
 describe('worstCase et états nommés', () => {
-  it('pire cas : « Vague 40 / 40 », étage, 5 chutes, 9 999 999, 10 restants, 999 tués', () => {
+  it('pire cas : « Vague 40 / 40 », étage, 5 chutes, 9 999 999, 10 restants, 9 999 tués (4 chiffres, retour du propriétaire)', () => {
     const w = worstCase(cfg);
-    expect(w).toMatchObject({ wave: 40, maxWave: 40, floor: 'etage', chutes: 5, money: 9_999_999, remaining: 10, kills: 999, trial: true, reinforced: true });
+    expect(w).toMatchObject({ wave: 40, maxWave: 40, floor: 'etage', chutes: 5, money: 9_999_999, remaining: 10, kills: 9999, trial: true, reinforced: true });
     expect(w.moneyCompact).toBe(formatMoneyCompact(9_999_999));
     expect(w.chronoText).toBe('9:59:59');
   });
 
   it('pire cas sans configuration : mêmes bornes de secours', () => {
-    expect(worstCase()).toMatchObject({ wave: 40, money: 9_999_999, chutes: 5, kills: 999 });
+    expect(worstCase()).toMatchObject({ wave: 40, money: 9_999_999, chutes: 5, kills: 9999 });
   });
 
   it('states() : liste des états nommés, identifiants uniques, copies indépendantes', () => {
