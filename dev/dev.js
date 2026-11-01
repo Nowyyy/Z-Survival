@@ -69,7 +69,7 @@ function render({ t, lang }) {
   latestLink.hidden = !latest;
   if (latest) {
     latestLink.href = lotUrl(latest, ROOT);
-    latestLabel.textContent = t('dev.latest').replace('{lot}', lotLabel(latest.name));
+    latestLabel.textContent = t('dev.latest').replace('{lot}', lotLabel(latest.name, latest.nom));
     latestMeta.textContent = formatDate(latest.date, lang);
   }
 
@@ -83,7 +83,7 @@ function render({ t, lang }) {
     const details = document.createElement('details');
     details.className = 'changelog-entry';
     const summary = document.createElement('summary');
-    summary.append(`${lotLabel(entry.name)} · ${entry.titre}`);
+    summary.append(`${lotLabel(entry.name, lot?.nom)} · ${entry.titre}`);
     const date = lot ? formatDate(lot.date, lang) : '';
     if (date) {
       const small = document.createElement('span');

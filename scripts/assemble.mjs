@@ -1,12 +1,12 @@
 // Assemble le site complet dans _site/ :
 //  - la racine = la branche courante (main), construite par scripts/build.mjs ;
 //  - _site/lots/<lot>/ = chaque branche lot-*, construite avec son propre build ;
-//  - _site/lots.json = la liste des lots (nom, commit, date) lue par /dev.
+//  - _site/lots.json = la liste des lots (nom, commit, date, page d'ouverture, nom affiché facultatif) lue par /dev.
 // Les branches sont lues dans origin/* : le dépôt doit être cloné avec tout l'historique.
 import { execFileSync } from 'node:child_process';
 import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { parseEntry, parseLot, sortLots } from '../js/lots.js';
+import { parseEntry, parseLot, parseName, sortLots } from '../js/lots.js';
 
 const OUT = '_site';
 const WORK = '.lots';
@@ -35,9 +35,11 @@ for (const name of names) {
     }
     cpSync(join(dir, OUT), join(OUT, 'lots', name), { recursive: true });
     const [sha, date] = git('log', '-1', '--format=%h|%cI', `origin/${name}`).split('|');
-    // apercu.txt (première ligne) désigne la page à ouvrir pour ce lot, par exemple jeu.html.
-    const entry = existsSync(join(dir, 'apercu.txt')) ? parseEntry(readFileSync(join(dir, 'apercu.txt'), 'utf8')) : '';
-    lots.push({ name, sha, date, entry });
+    // apercu.txt (première ligne) désigne la page à ouvrir pour ce lot, par exemple jeu.html ; une ligne « nom: » facultative, son nom affiché (lot-4b : V0.1).
+    const apercu = existsSync(join(dir, 'apercu.txt')) ? readFileSync(join(dir, 'apercu.txt'), 'utf8') : '';
+    const entry = parseEntry(apercu);
+    const nom = parseName(apercu);
+    lots.push({ name, sha, date, entry, ...(nom ? { nom } : {}) });
   } catch (error) {
     console.warn(`Lot ignoré (${name}) : ${error.message.split('\n')[0]}`);
   }

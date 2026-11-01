@@ -36,9 +36,20 @@ export function splitLots(lots) {
   return { latest: sorted.at(-1) ?? null, previous: sorted.slice(0, -1).reverse() };
 }
 
-export function lotLabel(name) {
+// Nom affiché d'un lot : `nom` (ligne « nom: » de son apercu.txt, voir parseName) s'il est donné, sinon « Lot 4b » d'après le nom de la branche.
+export function lotLabel(name, nom = '') {
+  const shown = parseName(`nom: ${nom ?? ''}`);
+  if (shown) return shown;
   const p = parseLot(name);
   return p ? `Lot ${p.num}${p.suffix}` : String(name);
+}
+
+// Nom d'affichage facultatif d'un lot (lot 4b : « V0.1 ») : ligne « nom: … » de apercu.txt, 1 à 24 lettres, chiffres, espaces, points, tirets ou soulignés ;
+// sinon '' (le nom de la branche reste l'adresse : lots/<branche>/).
+export function parseName(text) {
+  const line = typeof text === 'string' ? text.split(/\r?\n/).find((l) => /^\s*nom\s*:/i.test(l)) : undefined;
+  const value = line ? line.replace(/^\s*nom\s*:/i, '').trim() : '';
+  return /^[\p{L}\p{N} ._-]{1,24}$/u.test(value) ? value : '';
 }
 
 // Page d'aperçu d'un lot : première ligne de apercu.txt (caractères A-Za-z0-9._/-, sans « .. » ni « / » initial). Sinon '' (racine du lot).

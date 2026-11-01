@@ -27,6 +27,14 @@ test('affiche main et le dernier lot ; plus de menu déroulant d\'anciens lots (
   await expect(page.getByRole('button', { name: 'Ouvrir' })).toHaveCount(0);
 });
 
+// Lot 4b : nom affiché (champ « nom » de lots.json, ligne « nom: » de apercu.txt) à la place de « Lot 4b » ; l'adresse reste celle de la branche.
+test('un lot avec un nom affiché (V0.1) : le lien du dernier lot et le journal l\'affichent, l\'adresse reste lots/lot-4b/', async ({ page }) => {
+  await withLots(page, { lots: [{ name: 'lot-4', date: '2026-11-01T14:24:00Z', entry: 'jeu.html' }, { name: 'lot-4b', date: '2026-11-01T16:00:00Z', entry: 'jeu.html', nom: 'V0.1' }] }, { lots: [{ name: 'lot-4b', titre: 'Intégration des refontes', points: ['Essai'] }] });
+  await page.goto('/dev/');
+  const latest = page.getByRole('link', { name: /Dernier lot : V0\.1/ });
+  await expect(latest).toHaveAttribute('href', '../lots/lot-4b/jeu.html');
+});
+
 test('un ancien lot s\'ouvre depuis le journal (lien « Ouvrir ce lot »)', async ({ page }) => {
   await withLots(page);
   await page.route('**/lots/lot-0b/', (route) => route.fulfill({ contentType: 'text/html', body: '<title>lot-0b</title>' }));
