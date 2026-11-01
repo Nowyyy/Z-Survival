@@ -1,7 +1,7 @@
 // Sons de l'atelier intégrés au jeu (lot 3i), pur : mode de ?sons=, recette de rendu d'une entrée « atelier » de data/game/sounds.json,
 // nom des tampons (graines, durée de réparation), poids et mémoire estimée du pack. Aucun Web Audio, DOM, réseau, stockage ni horloge.
-// Rendu : renderVariant de js/core/synth2.js (Float32 mono, 22 050 Hz, crête ≤ −3 dBFS) ; version k = graine k (1 à seeds), comme l'atelier.
-import { renderVariant, macroSpec } from './synth2.js';
+// Rendu : js/core/sound-render.js (renderVariant de synth2.js : Float32 mono, 22 050 Hz, crête ≤ −3 dBFS) ; version k = graine k (1 à seeds).
+// Ce module n'importe pas synth2.js : le fil principal du jeu ne charge pas le moteur de l'atelier (seul le calculateur d'arrière-plan le fait).
 import { isNum } from './vec.js';
 
 export const SOUND_MODES = Object.freeze(['choix', 'ancien', 'A', 'B', 'C']);
@@ -32,12 +32,15 @@ export const seedCount = (recipe) => Math.max(1, Math.floor(isNum(recipe?.varian
 // Durée de réparation arrondie au centième de seconde (clé du cache des tampons à durée variable).
 export const roundDuration = (sec) => Math.round(Math.max(0, isNum(sec) ? sec : 0) * 100) / 100;
 
-// Une entrée dont la macro « durée » est en secondes peut être rendue à une autre durée (réparation : 0,4 à 1,8 s).
+// Une entrée dont la macro « durée » est en secondes peut être rendue à une autre durée (réparation : 0,4 à 1,8 s). Bornes de la variante
+// retenue (mêmes règles que macroSpec de synth2.js : min, max ≥ min, unité).
 export function durationRange(recipe) {
   if (!isAtelier(recipe)) return null;
   const variant = recipe.atelier.slot.variants?.find((v) => v?.id === recipe.atelier.variant);
-  const spec = macroSpec(variant, 'duree');
-  return spec.unit === 's' ? { min: spec.min, max: spec.max } : null;
+  const own = variant?.macros?.duree;
+  if (!isObj(own) || own.unit !== 's') return null;
+  const min = isNum(own.min) ? own.min : 0.6;
+  return { min, max: Math.max(min, isNum(own.max) ? own.max : 1.6) };
 }
 
 // Nom du tampon : « id-k » (k dès 1) ; à une durée différente de celle de l'entrée (réparation), « id@cs-k » (cs : centièmes de seconde).
@@ -73,14 +76,6 @@ export function renderSpec(recipe, { mode = DEFAULT_MODE, slots = null, seed = 1
     if (range) macros = { ...macros, duree: roundDuration(Math.min(range.max, Math.max(range.min, durationSec))) };
   }
   return { slot, variant, macros, seed: Math.max(1, Math.floor(isNum(seed) ? seed : 1)) };
-}
-
-// Rendu d'une entrée atelier : { samples, sampleRate, duration, bytes } (Float32Array mono).
-export function renderChoice(recipe, options = {}) {
-  const spec = renderSpec(recipe, options);
-  if (!spec) return { samples: new Float32Array(0), sampleRate: 22050, duration: 0, bytes: 0 };
-  const r = renderVariant(spec.slot, spec.variant, spec.macros, spec.seed);
-  return { samples: r.samples, sampleRate: r.sampleRate, duration: r.duration, bytes: r.bytes };
 }
 
 // Poids et mémoire d'un ensemble de tampons [{ samples, channels? }] : octets des tampons calculés (Float32, 4 octets par échantillon)

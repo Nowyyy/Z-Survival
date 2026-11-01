@@ -35,6 +35,9 @@ export function voiceFor(table, sound, kind, rates) {
 
 export const createDirector = (seed = 1) => ({ rng: createRng(seed), lastShot: -Infinity, last: {}, voices: createVoiceState(), planner: createVoicePlanner(seed + 101), zsteps: {}, windowLast: {} });
 
+// Lot 3i : hasard propre aux grincements du bâtiment (flux séparé : les tirages des autres sons ne changent pas).
+const creakRng = (state, seed) => state?.creakRng ?? createRng(num(seed, 1) + 303);
+
 // Lot 3e : frame.floor est l'étage de l'écouteur ; un événement (champ floor) ou un zombie (champ floor) d'un AUTRE étage est entendu étouffé : gain × audio.floorGain
 // et un seul filtre passe-bas à audio.floorLowpass Hz (jamais plus d'un filtre : l'étouffement par les murs, qui ne vaut que sur l'étage de l'écouteur, n'y est pas ajouté).
 // frame : { time, paused, floor?, listener: { x, y }, walls, events: [...], zombies: [{ id, x, y, variant, floor? }] }. cfg : { audio, materials, voice, sounds: soundTable(...) }.
@@ -125,7 +128,11 @@ export function direct(state, frame, cfg) {
     } else if (type === 'waveSplash') {
       // Mélodie d'annonce : une demande par animation (le choix est fait par js/core/wave-splash.js) ; seuls deux sons sont permis.
       if (e.sound === 'vague-annonce' || e.sound === 'vague-renforcee') add(e.sound, { spatial: false, variant: e.variant });
-    } else if (type === 'waveEnd') add('vague-fin', { spatial: false, variant: e.variant });
+    } else if (type === 'waveEnd') {
+      add('vague-fin', { spatial: false, variant: e.variant });
+      // Lot 3i : gémissements lointains une fois par pause, après « Vague N terminée » (déjà filtrés comme lointains : non spatialisés).
+      add('ambiance-lointains', { spatial: false, delay: table['vague-fin']?.duration ?? 0 });
+    }
     else if (type === 'plankTorn' || type === 'plankRepaired' || type === 'plankRepairStart') {
       // Planches (lot 3) : au plus un son toutes les 120 ms par fenêtre ; le son vient de la fenêtre et traverse l'ouverture sans s'étouffer.
       // Lot 3i : la réparation de l'atelier (trigger 'repairStart') sonne au début de la pose (plankRepairStart), à la durée de pose, et
@@ -144,12 +151,28 @@ export function direct(state, frame, cfg) {
     } else if (type === 'plankRepairStop') {
       // Pose interrompue (joueur parti, réparation bloquée) : la réparation de cette fenêtre s'arrête.
       if (table['planche-posee']?.trigger === 'repairStart') stops.push({ sound: 'planche-posee', key: `${e.windowId ?? 'fenetre'}` });
+    } else if (type === 'windowOpen') {
+      // Lot 3i : la dernière planche d'une fenêtre cède ; le craquement traverse l'ouverture.
+      add('planche-craquement', { x: e.x, y: e.y, through: true, floor: e.floor });
+    } else if (type === 'zombieClimb') add('zombie-escalade', { x: e.x, y: e.y, through: true, floor: e.floor });
+    else if (type === 'doorSink') add('porte-enfoncee', { x: e.x, y: e.y, floor: e.floor });
+    else if (type === 'playerVitals') {
+      // Battement de cœur (lot 3i) : relancé tant que la vie reste sous le seuil (délai minimal = durée du battement) ; coupé à terre et à la mort.
+      const hb = audio.heartbeat;
+      if (hb && table[hb.sound]) {
+        if (e.state === 'debout' && num(e.health, 1) > 0 && num(e.health, 1) <= num(hb.threshold, 0.25)) add(hb.sound, { spatial: false });
+        else if (e.state !== 'debout') stops.push({ sound: hb.sound, key: null });
+      }
     } else if (type === 'playerDown') add('joueur-chute', { spatial: false });
     else if (type === 'playerUp') add('joueur-releve', { spatial: false });
     else if (type === 'playerHurt') add('joueur-blesse', { spatial: false });
-    else if (type === 'playerDeath') add('joueur-mort', { spatial: false });
-    else if (type === 'playerStep') add('pas', { volume: num(e.volume, 1), pan: e.foot === 'droit' ? 0.15 : e.foot === 'gauche' ? -0.15 : 0, spatial: false });
+    else if (type === 'playerDeath') {
+      add('joueur-mort', { spatial: false });
+      if (audio.heartbeat && table[audio.heartbeat.sound]) stops.push({ sound: audio.heartbeat.sound, key: null });
+    }
+    else if (type === 'playerStep') add(stepSound(e.surface), { volume: num(e.volume, 1), pan: e.foot === 'droit' ? 0.15 : e.foot === 'gauche' ? -0.15 : 0, spatial: false });
   }
+  if (!paused) creak();
   if (!paused && zombies.length > 0) {
     // Voix occasionnelles (js/core/zombie-voice.js) et pas traînants des zombies les plus proches.
     const plan = planVoice(s.planner, { time, player: listener, zombies, busy: zombieVoicesActive(s, time) }, { voice: cfg?.voice, sounds: table, rates: audio.zombieRate });
@@ -162,6 +185,41 @@ export function direct(state, frame, cfg) {
   }
   return { state: s, requests, stops };
 
+  // Son de pas du joueur selon la surface (audio.json, stepSurfaces) ; sans son propre (pack d'avant), le pas d'intérieur.
+  function stepSound(surface) {
+    const id = audio.stepSurfaces?.[surface];
+    return typeof id === 'string' && table[id] ? id : 'pas';
+  }
+  // Pas d'un zombie selon son allure (zombieSteps.gaitSounds) ; sans son propre, le pas traînant commun.
+  function gaitSound(gait) {
+    const id = audio.zombieSteps?.gaitSounds?.[gait];
+    return typeof id === 'string' && table[id] ? id : 'pas-zombie';
+  }
+  // Grincements du bâtiment (lot 3i) : au hasard toutes les creak.min à creak.max s, à une position au hasard dans l'emprise des murs de
+  // l'étage de l'écouteur (autour de lui s'il n'y a pas de murs).
+  function creak() {
+    const c = audio.creak;
+    if (!c || !table[c.sound]) return;
+    let rng = creakRng(s, s.creakSeed);
+    const draw = () => {
+      const r = nextFloat(rng);
+      rng = r.rng;
+      return r.value;
+    };
+    const lo = num(c.min, 20);
+    const hi = Math.max(lo, num(c.max, 60));
+    let at = isNum(s.creakAt) ? s.creakAt : time + lo + draw() * (hi - lo);
+    if (time >= at) {
+      const rects = walls.filter((w) => w && isNum(w.x) && isNum(w.y) && isNum(w.w) && isNum(w.h));
+      const box = rects.length > 0
+        ? { x0: Math.min(...rects.map((w) => w.x)), y0: Math.min(...rects.map((w) => w.y)), x1: Math.max(...rects.map((w) => w.x + w.w)), y1: Math.max(...rects.map((w) => w.y + w.h)) }
+        : { x0: listener.x - 300, y0: listener.y - 300, x1: listener.x + 300, y1: listener.y + 300 };
+      add(c.sound, { x: box.x0 + draw() * (box.x1 - box.x0), y: box.y0 + draw() * (box.y1 - box.y0) });
+      at = time + lo + draw() * (hi - lo);
+    }
+    s = { ...s, creakRng: rng, creakAt: at };
+  }
+
   // Phase de marche de chaque zombie (distance parcourue × stride) ; seuls les `count` plus proches, à moins de `range`, font du bruit.
   function walkZombies(list) {
     const zs = audio.zombieSteps;
@@ -169,6 +227,8 @@ export function direct(state, frame, cfg) {
     const ranked = list.map((z) => ({ z, d: Math.hypot(z.x - listener.x, z.y - listener.y) })).sort((a, b) => a.d - b.d);
     const silent = new Set(Array.isArray(zs.silentGaits) ? zs.silentGaits : []); // allures sans bruit de pas (la rampe : corps au sol)
     const loud = new Set(ranked.filter((r) => r.d < num(zs.range, 450) && !silent.has(r.z.gait)).slice(0, num(zs.count, 3)).map((r) => r.z.id));
+    const crawl = zs.crawl && table[zs.crawl.sound] ? zs.crawl : null;
+    const crawlers = new Set(crawl ? ranked.filter((r) => r.d < num(zs.range, 450) && r.z.gait === crawl.gait).slice(0, num(crawl.count, 2)).map((r) => r.z.id) : []);
     const next = {};
     for (const { z } of ranked) {
       const before = s.zsteps?.[z.id];
@@ -178,7 +238,11 @@ export function direct(state, frame, cfg) {
       const dtz = before ? Math.max(1e-6, time - before.time) : 1;
       const r = stepFootsteps(before?.steps ?? createFootsteps(), before?.phase ?? 0, phase, moved / dtz, time, zs.maxSpeed, { minSpeed: zs.minSpeed, minInterval: zs.minInterval, minVolume: 0.5 });
       next[z.id] = { x: z.x, y: z.y, phase, time, steps: r.state };
-      if (r.step && loud.has(z.id)) add('pas-zombie', { x: z.x, y: z.y, volume: num(zs.volume, 0.6) * r.step.volume, floor: z.floor });
+      const crawls = crawlers.has(z.id) ? (before?.crawls ?? 0) + (r.step ? 1 : 0) : 0;
+      next[z.id] = { ...next[z.id], crawls };
+      if (r.step && loud.has(z.id)) add(gaitSound(z.gait), { x: z.x, y: z.y, volume: num(zs.volume, 0.6) * r.step.volume, floor: z.floor });
+      // Rampant (lot 3i) : un frottement par cycle de foulée (un pas sur deux), seulement les `crawl.count` rampants les plus proches.
+      else if (r.step && crawlers.has(z.id) && crawls % 2 === 1) add(zs.crawl.sound, { x: z.x, y: z.y, volume: num(zs.crawl.volume, 1), floor: z.floor });
     }
     s = { ...s, zsteps: next };
   }

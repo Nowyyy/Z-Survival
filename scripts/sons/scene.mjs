@@ -5,7 +5,8 @@
 import { readFileSync } from 'node:fs';
 import { renderSound, variantCount } from '../../js/core/synth.js';
 import { createDirector, direct, soundTable } from '../../js/core/sound-director.js';
-import { bufferName, isAtelier, packStats, renderChoice, seedCount } from '../../js/core/sound-choice.js';
+import { bufferName, isAtelier, packStats, seedCount } from '../../js/core/sound-choice.js';
+import { renderChoice } from '../../js/core/sound-render.js';
 import { createRng, nextFloat } from '../../js/core/rng.js';
 
 const read = (f) => JSON.parse(readFileSync(f, 'utf8'));

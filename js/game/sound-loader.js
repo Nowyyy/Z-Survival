@@ -6,7 +6,7 @@
 // ?sons=ancien : les recettes remplacées (data/game/sounds-legacy.json) sont chargées par import dynamique et calculées à la place ;
 // ?sons=A|B|C : la variante A, B ou C de l'atelier (data/game/sounds-atelier.json, import dynamique) pour chaque son de l'atelier.
 import { finishRender, startRender, renderStep, variantCount } from '../core/synth.js';
-import { isAtelier, parseSoundMode, renderChoice, renderSpec, seedCount } from '../core/sound-choice.js';
+import { isAtelier, parseSoundMode, renderSpec, seedCount } from '../core/sound-choice.js';
 
 export const ESSENTIAL_SLICE_MS = 8;
 export const BACKGROUND_SLICE_MS = 4;
@@ -35,12 +35,12 @@ export async function nextVisibleFrame() {
 }
 
 // Liste des tampons à calculer pour un ensemble (« essentiel » ou « fond ») : [{ name, recipe, variant }], name = « id-n » (n dès 1).
-// Son de l'atelier : les `preload` premières versions (graines) ; les autres sont calculées au premier usage (js/game/audio.js).
+// Son de l'atelier : les `preload` premières versions (graines, 0 possible) ; les autres sont calculées au premier usage (js/game/audio.js).
 export function planSounds(recipes, set) {
   const jobs = [];
   for (const recipe of Array.isArray(recipes) ? recipes : []) {
     if (set && recipe.set !== set) continue;
-    const count = isAtelier(recipe) ? Math.min(seedCount(recipe), Math.max(1, Math.floor(recipe.preload ?? seedCount(recipe)))) : variantCount(recipe);
+    const count = isAtelier(recipe) ? Math.min(seedCount(recipe), Math.max(0, Math.floor(recipe.preload ?? seedCount(recipe)))) : variantCount(recipe);
     for (let v = 0; v < count; v += 1) jobs.push({ name: `${recipe.id}-${v + 1}`, recipe, variant: v });
   }
   return jobs;
@@ -113,7 +113,9 @@ function getWorker() {
 export async function renderAtelier(recipe, { version = 1, durationSec = null, mode = soundMode(), now = () => performance.now(), inlineOnly = false } = {}) {
   const slots = mode === 'A' || mode === 'B' || mode === 'C' ? await loadAtelierSlots() : null;
   const spec = renderSpec(recipe, { mode, slots, seed: version, durationSec });
-  const inline = () => {
+  // Repli sans calculateur : le moteur de l'atelier est chargé à ce moment-là (import dynamique), puis le rendu se fait sur le fil principal.
+  const inline = async () => {
+    const { renderChoice } = await import('../core/sound-render.js');
     const t0 = now();
     const r = renderChoice(recipe, { mode, slots, seed: version, durationSec });
     return { samples: r.samples, sampleRate: r.sampleRate, ms: now() - t0 };

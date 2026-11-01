@@ -24,6 +24,19 @@ Généré par `node scripts/sons/lister-integres.mjs` d'après `data/game/sounds
 | `voix-grand-mort` | `zombie-mort-grand` | C (par défaut) | 5 | 496 120 | 1,12 | 683 | -9,5 / -8 | mort du grand (zombieHit, killed: true) |
 | `planche-arrachage` | `planche-arrachee` | A (ampleur 0,10) | 5 | 418 960 (132 300) | 0,95 (0,50) | 1 662 (2 629) | -12,0 / -12 (-10,4) | un zombie arrache une planche (plankTorn), traverse l'ouverture, 120 ms par fenêtre |
 | `reparation` | `planche-posee` | C (duree 1,80) | 5 | 793 800 (119 076) | 1,80 (0,45) | 1 045 (1 240) | -14,1 / -12 (-13,7) | début de la pose d'une planche (plankRepairStart), durée = temps de pose (statistique reparation), arrêt si la pose est interrompue |
+| `pas-joueur-exterieur` | `pas-exterieur` | A (ampleur 0,10) | 5 | 70 560 | 0,16 | 554 | -20,0 / -20 | playerStep dehors (hors des pièces de l'étage du joueur) |
+| `pas-joueur-escalier` | `pas-escalier` | C (hauteur -3) | 5 | 44 100 | 0,10 | 1 812 | -20,2 / -18 | playerStep dans un escalier (marche de stair-walk.js) |
+| `pas-zombie-lent` | `pas-zombie-lent` | A (ampleur 0,10) | 5 | 132 300 | 0,30 | 2 279 | -17,7 / -16 | pas d'un zombie à l'allure « lent » (même logique que pas-zombie) |
+| `pas-zombie-course` | `pas-zombie-course` | A (ampleur 0,10) | 5 | 66 160 | 0,15 | 1 686 | -18,0 / -16 | pas d'un zombie à l'allure « course » (délai minimal 0,06 s) |
+| `zombie-rampe` | `zombie-rampe` | B (ampleur 0,30) | 5 | 441 000 | 1,00 | 566 | -18,0 / -18 | frottement d'un zombie rampant : un par cycle de foulée, 2 plus proches au plus |
+| `planche-craquement` | `planche-craquement` | A (ampleur 0,10) | 5 | 374 860 | 0,85 | 1 888 | -14,0 / -14 | la dernière planche d'une fenêtre cède (plankTorn qui ouvre la fenêtre), traverse l'ouverture |
+| `escalade` | `zombie-escalade` | C (par défaut) | 5 | 463 060 | 1,05 | 2 158 | -14,0 / -14 | un zombie commence à franchir la fenêtre (mode escalade de siege.js), à la position de la fenêtre |
+| `joueur-coeur` | `joueur-coeur` | B (ampleur 0,20) | 1 | 141 120 | 1,60 | 65 | -14,0 / -14 | vie ≤ 25 % (exemple de la fiche), relancé toutes les 1,6 s, arrêté à terre et à la mort ; non spatialisé |
+| `ambiance-vent` | `ambiance-vent` | A (ampleur 0,10) | 1 | 882 000 | 10,00 | 675 | -26,2 / -24 | boucle de 10 s, fond constant faible (option de la fiche), une seule voix, arrêtée à la pause, à la mort et à « Rejouer » |
+| `ambiance-grincements` | `ambiance-grincements` | B (ampleur 0,20) | 2 | 617 400 | 3,50 | 363 | -22,1 / -22 | au hasard toutes les 20 à 60 s, position au hasard dans le bâtiment (murs de l'étage du joueur) |
+| `ambiance-lointains` | `ambiance-lointains` | B (ampleur 0,20) | 2 | 670 320 | 3,80 | 567 | -24,0 / -24 | une fois par pause entre les manches, après « Vague N terminée » (waveEnd) ; non spatialisé |
+| `ambiance-feu` | `ambiance-feu` | B (ampleur 0,20) | 1 | 705 600 | 8,00 | 1 609 | -22,4 / -22 | boucle de 8 s au feu de décor le plus proche (feux.json), une seule voix |
+| `porte-enfoncee` | `porte-enfoncee` | A (ampleur 0,10) | 1 | 105 840 | 1,20 | 217 | -8,0 / -8 | le bloc d'une porte s'enfonce à l'ouverture d'une zone (doorOpen), à la position de la porte |
 
 ## Non intégrés
 
@@ -36,4 +49,4 @@ Généré par `node scripts/sons/lister-integres.mjs` d'après `data/game/sounds
 - `joueur-essouffle` (`joueur-essouffle`) : choix « aucun » (pas de sprint).
 - `interface-piece` (`interface-piece`) : choix « aucun » (pas de pièce ramassée).
 
-Total des sons de l'atelier intégrés : 6 543 800 octets (6,24 Mo), mémoire décodée estimée identique (mono). Aucun plafond de poids (décision du propriétaire).
+Total des sons de l'atelier intégrés : 11 258 120 octets (10,74 Mo), mémoire décodée estimée identique (mono). Aucun plafond de poids (décision du propriétaire).

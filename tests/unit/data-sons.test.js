@@ -226,7 +226,9 @@ describe('cohérence des données sonores', () => {
     expect(audio.compressor.ratio).toBeGreaterThan(1);
     expect(audio.muffle.lowpass).toBeGreaterThan(100);
     expect(audio.muffle.gain).toBeLessThan(1);
-    for (const id of Object.keys(audio.minDelay)) expect(sounds.map((s) => s.id), id).toContain(id);
+    // Lot 3i : les délais minimaux portent aussi sur les sons de l'atelier (sounds.json complet, sons nouveaux compris).
+    const allIds = JSON.parse(readFileSync('data/game/sounds.json', 'utf8')).sounds.map((s) => s.id);
+    for (const id of Object.keys(audio.minDelay)) expect([...sounds.map((s) => s.id), ...allIds], id).toContain(id);
     expect(audio.minDelay['zombie-blessure']).toBe(0.06);
     expect(audio.casing.minDelay).toBeLessThan(audio.casing.maxDelay);
   });

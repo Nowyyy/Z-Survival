@@ -120,6 +120,8 @@ export function createGame(ctx) {
   const buildStart = performance.now();
   const world = buildWorld({ palette, layout, layouts, render, textures, windowGeoms: geoms, windowsCfg, seed: ctx.seed, closedDoors: doorCfgs.filter((d) => !startOpen.includes(d.id)).map((d) => d.id), stairs: stairsWorld });
   if (ctx.perf) ctx.perf.floorsMs = performance.now() - buildStart;
+  // Lot 3i : feux de décor (feux.json sur le mobilier : centre des boîtes de la pièce) pour la boucle de feu.
+  ctx.audio?.setFires?.((render.feux ?? []).map((fe) => ({ fe, boxes: render.mobilier?.[fe?.piece]?.boxes })).filter((f) => Array.isArray(f.boxes) && f.boxes.length > 0).map(({ fe, boxes }) => ({ x: (Math.min(...boxes.map((b) => b.x0)) + Math.max(...boxes.map((b) => b.x1))) / 2, y: (Math.min(...boxes.map((b) => b.z0)) + Math.max(...boxes.map((b) => b.z1))) / 2, floor: fe.floor })));
   const rig = createCamera(render.camera, cfg.camera, layout, params.tilt, params.zoom);
   const kit = createKit({ textures, variants: ctx.variants, hit: palette.hit });
   const effects = createEffects(world.effectsRoot, palette, { gunHeight: render.gunHeight, bulletRadius: cfg.weapon.bulletRadius });
@@ -528,6 +530,7 @@ export function createGame(ctx) {
     // Cône : le rapport de vitesse (vitesse réelle / vitesse maximale effective) est lissé, indépendamment du nombre d'images par seconde.
     sim.spread = stepSpreadRatio(sim.spread, speedRatio(dt > 0 ? moved / dt : 0, eff.player.speed), dt, cfg.stats.spread?.widenTime, cfg.stats.spread?.narrowTime);
     if (foot.step) events.push({ type: 'playerStep', ...foot.step });
+    if (foot.step) events[events.length - 1].surface = sim.sw !== null ? 'escalier' : layoutOf(pf()).inside?.(sim.player.x, sim.player.y) === false ? 'exterieur' : 'dur'; // lot 3i : surface du pas
     sim.aim = aimAngle(sim.aim);
 
     // Escaliers (lot 3e) : le centre du joueur dans la zone de déclenchement d'un escalier utilisable de son étage, délai de 0,8 s écoulé et sorti de la zone du
@@ -632,6 +635,7 @@ export function createGame(ctx) {
         } else if (ev.type === 'stairStart' || ev.type === 'stairArrive') {
           stairLog.push({ type: ev.type, id: ev.id, stair: ev.stair, from: ev.from, to: ev.to, time: sim.time });
         }
+        if (ev.type === 'window-open' && g) events.push({ type: 'windowOpen', x: g.center.x, y: g.center.y, windowId: ev.windowId, floor: g.floor }); // lot 3i : la dernière planche cède
         // Annonces vocales : « ouverte » au plus une fois par fenêtre et par 10 s (même pour une fenêtre de l'autre étage : annonce vocale seulement), « réparée »
         // quand toutes les planches sont revenues.
         if (ev.type === 'window-open' && sim.time - (sim.announced[ev.windowId] ?? -Infinity) >= 10) {
@@ -683,6 +687,8 @@ export function createGame(ctx) {
           waveLive = announcedKey && announcedKey !== SPLASH_TEXTS.zoneSubtitle ? `${ctx.dict[SPLASH_TEXTS.zoneTitle]}. ${ctx.dict[announcedKey]}.` : ctx.dict[ZONE_TEXTS.liveZone];
         } else if (ev.type === 'doorOpen') {
           openDoor(ev.door);
+          const sunk = doorById.get(ev.door)?.opening; // lot 3i : son du bloc de porte qui s'enfonce, à la position de la porte
+          if (sunk) events.push({ type: 'doorSink', x: (sunk.x1 + sunk.x2) / 2, y: (sunk.y1 + sunk.y2) / 2, floor: doorById.get(ev.door).floor, door: ev.door });
           eventLog.push({ type: 'doorOpen', door: ev.door, wave: ev.wave, time: sim.time });
         } else if (ev.type === 'worldEnd') {
           worldEnded = true;
@@ -733,6 +739,10 @@ export function createGame(ctx) {
       sim.enemies = knockbackZombies(sim.enemies, sim.player, pd.knockback, { bounds: l.bounds, inside: l.inside, furniture: [...l.furniture, ...closedDoors(l, openIds())], walls: l.walls, gaps: l.gaps });
     }
 
+    // Lot 3i : vie basse (battement de cœur) et zombies qui commencent à franchir une fenêtre (escalade, à la position de la fenêtre).
+    events.push({ type: 'playerVitals', health: sim.player.health / Math.max(1, sim.player.maxHealth), state: sim.down.state });
+    for (const e of sim.enemies) if (e.mode === 'escalade' && !sim.climbers?.has(e.id) && geomById.get(e.window)) events.push({ type: 'zombieClimb', x: geomById.get(e.window).center.x, y: geomById.get(e.window).center.y, windowId: e.window, floor: floorOf(e) });
+    sim.climbers = new Set(sim.enemies.filter((e) => e.mode === 'escalade').map((e) => e.id));
     // Sons : chaque événement et chaque zombie porte son étage ; ceux de l'autre étage sont entendus étouffés (js/core/sound-director.js).
     audio?.handle({ time: sim.time, listener: sim.player, floor: pf(), walls: wallsOf(pf()), paused: ctx.ui.isPaused(), events, zombies: sim.enemies.filter((e) => e.mode !== 'escalier').map((e) => ({ id: e.id, x: e.x, y: e.y, variant: variantName(e.id), gait: e.gait, stride: e.stride, floor: floorOf(e) })) });
 

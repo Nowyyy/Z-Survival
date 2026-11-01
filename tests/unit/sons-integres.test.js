@@ -7,7 +7,8 @@ import { measureSound } from '../../js/core/atelier-check.js';
 import { pickVariant } from '../../js/core/audio-mix.js';
 import { createRng } from '../../js/core/rng.js';
 import { createDirector, direct, soundTable, voiceFor } from '../../js/core/sound-director.js';
-import { DEFAULT_MODE, SOUND_MODES, bufferName, checkChoices, durationRange, isAtelier, packStats, parseSoundMode, renderChoice, renderSpec, seedCount } from '../../js/core/sound-choice.js';
+import { DEFAULT_MODE, SOUND_MODES, bufferName, checkChoices, durationRange, isAtelier, packStats, parseSoundMode, renderSpec, seedCount } from '../../js/core/sound-choice.js';
+import { renderChoice } from '../../js/core/sound-render.js';
 import { integrate } from '../../scripts/sons/integrer.mjs';
 import { planSounds, resolveJobs } from '../../js/game/sound-loader.js';
 
@@ -31,7 +32,7 @@ const audio = read('data/game/audio.json');
 const voice = read('data/game/zombie-voice.json');
 const byId = new Map(sounds.map((s) => [s.id, s]));
 const owner = parseChoices(readFileSync('data/game/sounds-atelier-choix.txt', 'utf8'), atelier.slots).choices;
-const B = choix.choix;
+const B = choix.choix.filter((c) => c.part === 'B'); // partie C : sons-integres-ambiances.test.js
 const REPLACED = ['pas', 'pas-zombie', 'zombie-gemissement', 'zombie-attaque', 'zombie-blessure', 'zombie-mort', 'planche-arrachee', 'planche-posee'];
 // Gardés tels quels (fiche) : mélodie, annonces, tir, douille, impacts, chute et relevage du joueur, joueur blessé et mort, trois voix, interface, ambiance.
 const KEPT = ['tir', 'douille', 'impact-zombie', 'impact-bois', 'impact-metal', 'impact-pierre', 'impact-voiture', 'vague-annonce', 'vague-renforcee', 'vague-fin', 'joueur-chute', 'joueur-releve', 'joueur-blesse', 'joueur-mort', 'zombie-grognement', 'zombie-plainte', 'zombie-souffle', 'ui-pause', 'ui-reprise', 'ambiance'];
@@ -280,7 +281,7 @@ describe('chargeur : aucun octet du pack ancien par défaut', () => {
   });
 });
 
-describe('poids et mémoire (limite de 8 Mo levée par le propriétaire)', () => {
+describe('poids et mémoire (limite de huit mégaoctets levée par le propriétaire)', () => {
   // Décision du propriétaire (lot 3h) : plus aucun plafond de conception. Seul garde-fou : 64 Mo, valeur PROVISOIRE pour attraper une
   // erreur de génération (emballement), pas une limite de conception.
   const RUNAWAY_GUARD_BYTES = 64 * 1024 * 1024;
@@ -303,8 +304,10 @@ describe('poids et mémoire (limite de 8 Mo levée par le propriétaire)', () =>
     expect(stats.bytes).toBeLessThan(RUNAWAY_GUARD_BYTES);
   });
 
-  it('plus aucune comparaison à la limite de 8 Mo dans le code, les données, les pages, les scripts et les tests', () => {
-    const pattern = ['(^|[^0-9.,])8 ?M', 'o\\b|(^|[^0-9.,])8 ?MB\\b|\\b8388608\\b|(^|[^0-9.])8000000\\b|8_000_000|8 \\* 1024 \\* 1024|8 \\* 1048576'].join('');
+  it('plus aucune comparaison à la limite de huit mégaoctets dans le code, les données, les pages, les scripts et les tests', () => {
+    // Motif construit par morceaux, pour que ce test ne se trouve pas lui-même (les huit mégaoctets écrits de toutes les façons connues).
+    const eight = 8;
+    const pattern = [`(^|[^0-9.,])${eight} ?M` + 'o\\b', `(^|[^0-9.,])${eight} ?MB\\b`, `\\b${2 ** 23}\\b`, `(^|[^0-9.])${eight * 1e6}\\b`, `${eight}_000_000`.replace('_000_000', '_0{3}_0{3}'), `${eight} \\* 1024 \\* 1024`, `${eight} \\* ${2 ** 20}`].join('|');
     const out = git(`grep -nIE "${pattern}" -- js data scripts tests '*.html' css`);
     if (out === null) return; // aucune correspondance (git grep sort en erreur) ou pas de dépôt
     expect(out.split('\n').filter(Boolean)).toEqual([]);

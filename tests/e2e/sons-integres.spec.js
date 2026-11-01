@@ -3,7 +3,8 @@ import { readFileSync } from 'node:fs';
 import AxeBuilder from '@axe-core/playwright';
 import { waitReady } from './helpers.js';
 import { renderSound } from '../../js/core/synth.js';
-import { isAtelier, renderChoice } from '../../js/core/sound-choice.js';
+import { isAtelier } from '../../js/core/sound-choice.js';
+import { renderChoice } from '../../js/core/sound-render.js';
 import { resolveAtelier } from '../../js/core/synth2.js';
 
 // Lot 3i-B : sons de l'atelier à la place des anciens. Vérifiés par le journal des lectures (?test=1) et l'empreinte des tampons, jamais à

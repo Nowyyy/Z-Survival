@@ -14,5 +14,18 @@
   "dev.sons.etiquette.zombie-mort-petit": "Petit : mort",
   "dev.sons.etiquette.zombie-mort-voute": "Voûté : mort",
   "dev.sons.etiquette.zombie-mort-grand": "Grand : mort",
-  "dev.sons.etiquette.planche-posee.atelier": "Réparation : raclement puis coups de marteau (durée = temps de pose)"
+  "dev.sons.etiquette.planche-posee.atelier": "Réparation : raclement puis coups de marteau (durée = temps de pose)",
+  "dev.sons.etiquette.pas-exterieur": "Pas du joueur dehors (terre, herbe)",
+  "dev.sons.etiquette.pas-escalier": "Pas du joueur dans un escalier",
+  "dev.sons.etiquette.pas-zombie-lent": "Pas d'un zombie lent",
+  "dev.sons.etiquette.pas-zombie-course": "Pas d'un zombie qui court",
+  "dev.sons.etiquette.zombie-rampe": "Frottement d'un zombie rampant",
+  "dev.sons.etiquette.planche-craquement": "La dernière planche cède",
+  "dev.sons.etiquette.zombie-escalade": "Zombie qui franchit la fenêtre",
+  "dev.sons.etiquette.joueur-coeur": "Battement de cœur (vie basse)",
+  "dev.sons.etiquette.ambiance-vent": "Vent par les fenêtres (boucle)",
+  "dev.sons.etiquette.ambiance-grincements": "Bois du bâtiment qui grince",
+  "dev.sons.etiquette.ambiance-lointains": "Gémissements lointains (pause entre les manches)",
+  "dev.sons.etiquette.ambiance-feu": "Feu qui crépite (boucle)",
+  "dev.sons.etiquette.porte-enfoncee": "Bloc de porte qui s'enfonce"
 }

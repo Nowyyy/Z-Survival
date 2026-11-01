@@ -6,7 +6,8 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { renderSound, variantCount } from '../../js/core/synth.js';
 import { resolveAtelier } from '../../js/core/synth2.js';
 import { measureSound } from '../../js/core/atelier-check.js';
-import { isAtelier, packStats, renderChoice, seedCount } from '../../js/core/sound-choice.js';
+import { isAtelier, packStats, seedCount } from '../../js/core/sound-choice.js';
+import { renderChoice } from '../../js/core/sound-render.js';
 
 const read = (f) => JSON.parse(readFileSync(f, 'utf8'));
 const fr = (n, d = 0) => n.toFixed(d).replace('.', ',');
