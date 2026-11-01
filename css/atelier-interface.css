@@ -1,0 +1,740 @@
+/* Atelier de l'interface (lot 3k) : page technique (habillage, choix, aperçu mis à l'échelle, mesures) et base commune des propositions A, B, C.
+   Couleurs : jetons de tokens.css seulement ; variables propres à l'atelier : --ui3k-* (posées par js/atelier-interface/main.js sur l'aperçu).
+   L'habillage de la page peut utiliser filter (simulateur de daltonisme, sur le cadre d'aperçu seulement) ; les propositions (proto-*.css), jamais. */
+
+.ui3k-page {
+  margin: 0;
+  min-height: 100dvh;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  line-height: var(--line-height);
+}
+
+.ui3k {
+  box-sizing: border-box;
+  max-width: 100rem;
+  margin: 0 auto;
+  padding: calc(var(--space-4) + env(safe-area-inset-top, 0px)) calc(var(--space-4) + env(safe-area-inset-right, 0px)) calc(var(--space-6) + env(safe-area-inset-bottom, 0px)) calc(var(--space-4) + env(safe-area-inset-left, 0px));
+}
+
+.ui3k[hidden] {
+  display: none;
+}
+
+.ui3k-title {
+  margin: 0 0 var(--space-2);
+  font-family: var(--font-display);
+  font-weight: var(--font-weight-normal);
+  font-size: var(--text-xl);
+  line-height: 1.1;
+  color: var(--color-action-text);
+}
+
+.ui3k-intro,
+.ui3k-honesty {
+  margin: 0 0 var(--space-2);
+  max-width: 60rem;
+  color: var(--color-text-muted);
+}
+
+.ui3k-honesty {
+  color: var(--color-warning);
+}
+
+.ui3k-section {
+  margin-top: var(--space-5);
+}
+
+.ui3k-heading {
+  margin: 0 0 var(--space-3);
+  font-size: var(--text-lg);
+  font-weight: var(--font-weight-bold);
+}
+
+/* Choix : grille de contrôles (étiquette au-dessus, contrôle de 44 px). */
+.ui3k-controls {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr));
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.ui3k-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.ui3k-field label,
+.ui3k-legend {
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-muted);
+}
+
+.ui3k-field select,
+.ui3k-field input[type="number"] {
+  box-sizing: border-box;
+  min-height: var(--touch-target);
+  padding: 0 var(--space-2);
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+}
+
+.ui3k-field input[type="range"] {
+  min-height: var(--touch-target);
+  margin: 0;
+  accent-color: var(--color-action);
+}
+
+.ui3k-field output {
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text);
+}
+
+.ui3k-field select:disabled,
+.ui3k-field input:disabled {
+  opacity: 0.6;
+}
+
+.ui3k-directions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.ui3k-directions .button[aria-pressed="true"] {
+  outline: 3px solid var(--color-text);
+  outline-offset: 2px;
+}
+
+.ui3k-directions .button[aria-pressed="false"] {
+  background: var(--color-surface-raised);
+  border: 2px solid var(--color-border);
+}
+
+.ui3k-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+
+.ui3k-check {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--touch-target);
+}
+
+.ui3k-check input {
+  width: 24px;
+  height: 24px;
+  accent-color: var(--color-action);
+}
+
+:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+/* Aperçu : la scène a la taille réelle du préréglage ; elle est mise à l'échelle pour tenir dans la page (transform), sa boîte d'accueil
+   réserve la place à l'échelle : aucun décalage de mise en page quand on change de taille. */
+.ui3k-dims {
+  margin: 0 0 var(--space-2);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-muted);
+}
+
+.ui3k-viewport {
+  position: relative;
+  overflow: hidden;
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-ground);
+}
+
+.ui3k-viewport[data-cvd="protanopie"] {
+  filter: url("#ui3k-protan");
+}
+
+.ui3k-viewport[data-cvd="deuteranopie"] {
+  filter: url("#ui3k-deutan");
+}
+
+.ui3k-viewport[data-cvd="tritanopie"] {
+  filter: url("#ui3k-tritan");
+}
+
+.ui3k-viewport[data-cvd="gris"] {
+  filter: grayscale(1);
+}
+
+.ui3k-stage {
+  --ui3k-safe-top: 0px;
+  --ui3k-safe-right: 0px;
+  --ui3k-safe-bottom: 0px;
+  --ui3k-safe-left: 0px;
+  --ui3k-sys: 1;
+  --ui3k-scale: 1.125;
+  --ui3k-alpha: 0.78;
+  --ui3k-o: 1;
+  --ui3k-gap: 4px;
+  --ui3k-edge-t: calc(16px + var(--ui3k-safe-top));
+  --ui3k-edge-r: calc(16px + var(--ui3k-safe-right));
+  --ui3k-edge-b: calc(16px + var(--ui3k-safe-bottom));
+  --ui3k-edge-l: calc(16px + var(--ui3k-safe-left));
+  position: absolute;
+  top: 0;
+  left: 0;
+  overflow: hidden;
+  transform-origin: 0 0;
+  container-type: size;
+  container-name: ui3k;
+  background: var(--game-ground);
+}
+
+.ui3k-frame {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+/* Fond de sol généré (si le vrai jeu ne peut pas s'afficher, ou au choix) : carrelage de la salle et bande de mur, couleurs du jeu. */
+.ui3k-floor {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(to bottom, var(--game-wall-base) 0 18%, var(--game-wall-dirt) 18% 20%, transparent 20%),
+    repeating-conic-gradient(var(--game-tile-a) 0 25%, var(--game-tile-b) 0 50%) 0 0 / 56px 56px;
+}
+
+.ui3k-floor[hidden],
+.ui3k-frame[hidden] {
+  display: none;
+}
+
+/* Zone sûre simulée : cadre pointillé décoratif (encoche, coins, barre d'accueil). */
+.ui3k-safe-guide {
+  position: absolute;
+  top: var(--ui3k-safe-top);
+  right: var(--ui3k-safe-right);
+  bottom: var(--ui3k-safe-bottom);
+  left: var(--ui3k-safe-left);
+  z-index: 30;
+  border: 2px dashed var(--color-focus);
+  pointer-events: none;
+}
+
+.ui3k-safe-guide[hidden] {
+  display: none;
+}
+
+.ui3k-status {
+  min-height: 4.5em;
+  margin: var(--space-2) 0 0;
+  color: var(--color-warning);
+}
+
+/* Côte à côte : quatre aperçus à la même taille et dans le même état. */
+.ui3k-compare {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 22rem), 1fr));
+  gap: var(--space-3);
+}
+
+.ui3k-compare[hidden] {
+  display: none;
+}
+
+.ui3k-compare figure {
+  margin: 0;
+}
+
+.ui3k-compare figcaption {
+  margin-bottom: var(--space-1);
+  font-weight: var(--font-weight-bold);
+}
+
+/* Tableau des mesures : texte, « hors cible » écrit en toutes lettres. */
+.ui3k-table-wrap {
+  overflow-x: auto;
+}
+
+.ui3k-table {
+  border-collapse: collapse;
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+.ui3k-table th,
+.ui3k-table td {
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid var(--color-border);
+  text-align: left;
+  vertical-align: top;
+}
+
+.ui3k-table .is-out {
+  color: var(--color-danger);
+  font-weight: var(--font-weight-bold);
+}
+
+.ui3k-choices {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 8rem;
+  padding: var(--space-2);
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: var(--text-sm) / 1.5 ui-monospace, monospace;
+}
+
+.ui3k-noscript {
+  padding: var(--space-5);
+}
+
+@media (min-width: 768px) {
+  .ui3k {
+    padding-left: calc(var(--space-6) + env(safe-area-inset-left, 0px));
+    padding-right: calc(var(--space-6) + env(safe-area-inset-right, 0px));
+  }
+}
+
+/* ---------- Base commune des propositions (A, B, C) ---------- */
+.ui3k-screen {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  overflow: hidden;
+  font-family: var(--font-sans);
+  font-size: calc(14px * var(--ui3k-scale) * var(--ui3k-sys));
+  font-weight: var(--font-weight-bold);
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text);
+  pointer-events: none;
+  --ui3k-shadow: calc(var(--ui3k-o) * 1px) 0 0 var(--color-bg), calc(var(--ui3k-o) * -1px) 0 0 var(--color-bg), 0 calc(var(--ui3k-o) * 1px) 0 var(--color-bg), 0 calc(var(--ui3k-o) * -1px) 0 var(--color-bg), calc(var(--ui3k-o) * 1px) calc(var(--ui3k-o) * 1px) 0 var(--color-bg), calc(var(--ui3k-o) * -1px) calc(var(--ui3k-o) * 1px) 0 var(--color-bg), calc(var(--ui3k-o) * 1px) calc(var(--ui3k-o) * -1px) 0 var(--color-bg), calc(var(--ui3k-o) * -1px) calc(var(--ui3k-o) * -1px) 0 var(--color-bg);
+}
+
+.ui3k-screen button,
+.ui3k-screen a,
+.ui3k-screen input,
+.ui3k-screen select,
+.ui3k-screen label {
+  pointer-events: auto;
+}
+
+.ui3k-screen p,
+.ui3k-screen h2,
+.ui3k-screen h3 {
+  margin: 0;
+}
+
+.p-icon {
+  flex: none;
+  width: 1.1em;
+  height: 1.1em;
+  fill: currentColor;
+}
+
+.p-coin {
+  fill: none;
+  stroke: var(--color-money);
+  stroke-width: 1.5;
+  stroke-linecap: round;
+}
+
+.p-cluster {
+  position: absolute;
+  top: var(--ui3k-edge-t);
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui3k-gap);
+}
+
+.p-tl {
+  left: var(--ui3k-edge-l);
+  align-items: flex-start;
+}
+
+.p-tc {
+  left: 50%;
+  align-items: center;
+  transform: translateX(-50%);
+}
+
+.p-tr {
+  right: calc(var(--ui3k-edge-r) + var(--ui3k-pause-size, 44px) + var(--ui3k-gap));
+  align-items: flex-end;
+}
+
+.p-block {
+  box-sizing: border-box;
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 0.3em;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.p-value {
+  font-variant-numeric: tabular-nums;
+}
+
+.p-money .p-value {
+  color: var(--color-money);
+}
+
+.p-tag.is-empty {
+  visibility: hidden;
+}
+
+.p-bar {
+  position: relative;
+  flex: none;
+  overflow: hidden;
+}
+
+.p-fill {
+  position: absolute;
+  inset: 0;
+  background: var(--color-action);
+  transform: scaleX(var(--ui3k-p, 1));
+  transform-origin: left center;
+}
+
+.p-pause {
+  position: absolute;
+  top: var(--ui3k-edge-t);
+  right: var(--ui3k-edge-r);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: var(--ui3k-pause-size, 44px);
+  height: var(--ui3k-pause-size, 44px);
+  padding: 0;
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.p-pause svg {
+  width: 45%;
+  height: 45%;
+  fill: currentColor;
+}
+
+/* Panneaux modaux (pause E2-6, fin E2-7) : voile sur tout l'écran, panneau centré dans la zone sûre, deux colonnes quand l'écran est bas. */
+.p-modal {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--ui3k-edge-t) var(--ui3k-edge-r) var(--ui3k-edge-b) var(--ui3k-edge-l);
+  background: var(--color-overlay);
+}
+
+.p-panel {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6em;
+  width: min(100%, 26em);
+  max-height: 100%;
+  overflow: auto;
+  padding: 1em 1.2em;
+  background: var(--color-surface);
+  font-weight: var(--font-weight-normal);
+}
+
+.p-title {
+  display: flex;
+  align-items: center;
+  gap: 0.35em;
+  font-family: var(--font-display);
+  font-weight: var(--font-weight-normal);
+  font-size: 1.75em;
+  line-height: 1.1;
+  color: var(--color-action-text);
+}
+
+.p-facts {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25em;
+}
+
+.p-line {
+  display: flex;
+  align-items: center;
+  gap: 0.35em;
+}
+
+.p-note {
+  color: var(--color-text-muted);
+}
+
+.p-record {
+  color: var(--color-money);
+  font-weight: var(--font-weight-bold);
+}
+
+.p-actions {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.5em;
+}
+
+.p-btn {
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--ui3k-target, 44px);
+  padding: 0.3em 0.8em;
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-raised);
+  color: var(--color-text);
+  font: inherit;
+  font-weight: var(--font-weight-bold);
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.p-btn-main {
+  border-color: var(--color-action);
+  background: var(--color-action);
+  color: var(--color-on-action);
+}
+
+.p-volume {
+  display: grid;
+  grid-template-columns: auto 1fr 3.5em;
+  align-items: center;
+  gap: 0.5em;
+  min-height: var(--ui3k-target, 44px);
+}
+
+.p-volume input {
+  min-width: 0;
+  height: var(--ui3k-target, 44px);
+  margin: 0;
+  accent-color: var(--color-action);
+}
+
+.p-volume output {
+  text-align: right;
+  color: var(--color-text-muted);
+}
+
+@container ui3k (max-height: 520px) {
+  .p-panel {
+    width: min(100%, 40em);
+    padding: 0.7em 1em;
+  }
+
+  .p-panel {
+    gap: 0.45em;
+  }
+
+  .p-actions {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .p-actions .p-volume {
+    grid-column: 1 / -1;
+  }
+
+  .p-panel-end .p-actions {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .p-title {
+    font-size: 1.35em;
+  }
+
+  .p-panel-pause .p-facts,
+  .p-panel-end .p-facts {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    column-gap: 1em;
+  }
+}
+
+/* État à terre (E2-10) : voile de bord (dégradé, sans filtre) et texte sur zone pleine, au-dessus de la moitié de l'écran (hors des pouces). */
+.p-down {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  pointer-events: none;
+}
+
+.p-down-veil {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse 75% 70% at center, transparent 45%, color-mix(in srgb, var(--game-down-veil) calc(var(--game-down-veil-alpha) * 100%), transparent) 100%);
+}
+
+.p-down.is-grace .p-down-veil {
+  display: none;
+}
+
+/* Bas du texte à 4 px au-dessus de la moitié de l'écran : sous les blocs du haut, au-dessus des zones des pouces. */
+.p-down-body {
+  position: absolute;
+  left: 50%;
+  top: calc(50% - 4px);
+  box-sizing: border-box;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: center;
+  gap: 0.25em 0.5em;
+  width: 19em;
+  max-width: calc(100% - var(--ui3k-edge-l) - var(--ui3k-edge-r));
+  padding: 0.5em 1em;
+  border-radius: var(--radius-md);
+  background: var(--game-down-panel);
+  text-align: center;
+  transform: translate(-50%, -100%);
+}
+
+.p-down-title {
+  display: flex;
+  align-items: center;
+  gap: 0.35em;
+  font-size: 1.15em;
+  color: var(--game-down-text);
+}
+
+.p-down-sub {
+  color: var(--game-down-sub);
+}
+
+.p-down-bar {
+  position: relative;
+  flex-basis: 100%;
+  width: 100%;
+  height: 0.4em;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+}
+
+/* Sticks (E2-3, E2-4) : place par défaut du jeu (16 % et 84 % de la largeur, 68 % de la hauteur). */
+.p-stick {
+  position: absolute;
+  top: 68%;
+  width: 112px;
+  height: 112px;
+  transform: translate(-50%, -50%);
+}
+
+.p-stick[data-ui="stick-gauche"] {
+  left: 16%;
+}
+
+.p-stick[data-ui="stick-droit"] {
+  left: 84%;
+}
+
+.p-stick-base,
+.p-stick-knob {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  box-sizing: border-box;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.p-stick-base {
+  width: 100%;
+  height: 100%;
+  border: 3px solid var(--color-border);
+  background: var(--color-overlay);
+}
+
+.p-stick-knob {
+  width: 52px;
+  height: 52px;
+  border: 3px solid var(--color-on-action);
+  background: var(--color-action);
+}
+
+.p-stick.is-active .p-stick-knob {
+  transform: translate(calc(-50% + 26px), calc(-50% - 18px));
+}
+
+.p-stick.is-idle {
+  opacity: 0.5;
+}
+
+.p-stick[data-ui="stick-droit"] .p-stick-knob {
+  background: var(--color-surface-raised);
+}
+
+.p-hint {
+  position: absolute;
+  top: 38%;
+  box-sizing: border-box;
+  width: 40%;
+  padding: 0.4em 0.6em;
+  border-radius: var(--radius-md);
+  background: var(--color-bg);
+  text-align: center;
+}
+
+.p-hint-left {
+  left: var(--ui3k-edge-l);
+}
+
+.p-hint-right {
+  right: var(--ui3k-edge-r);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ui3k-screen *,
+  .ui3k-screen *::before,
+  .ui3k-screen *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* Boutons secondaires de la page (même rendu que sauvegarde.html) ; survol lisible (le rouge de survol du site est à 3,7:1). */
+.ui3k-page .button-quiet {
+  border: 2px solid var(--color-border);
+  background: var(--color-surface-raised);
+  color: var(--color-text);
+}
+
+.ui3k-page .button:hover:not(:disabled) {
+  background: var(--color-action-active);
+}
+
+.ui3k-page .button-quiet:hover:not(:disabled) {
+  background: var(--color-ground-light);
+}

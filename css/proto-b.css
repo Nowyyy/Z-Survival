@@ -1,0 +1,211 @@
+/* Direction B « caméscope » (lot 3k, proposition non intégrée) : en accord avec l'effet VHS. Coins de cadre en haut (les coins bas tomberaient sous les
+   pouces : retirés), libellés courts en Rubik Dirt (REC, VIE, VAG, RST, TUÉS), chronomètre de jeu, point « REC » qui clignote une fois par seconde
+   (au plus 2 : règle du lot ; fixe sous prefers-reduced-motion), barre de vie segmentée en 10, noir et rouge sang. Blocs de taille fixe (em). Ni filter,
+   ni mix-blend-mode, ni backdrop-filter. */
+
+.ui3k-dir-b {
+  --ui3k-pause-size: 44px;
+}
+
+.ui3k-dir-b .p-block {
+  height: 1.6em;
+  padding: 0 0.35em;
+  background: color-mix(in srgb, var(--hud-bg) calc(var(--ui3k-alpha) * 100%), transparent);
+  text-shadow: var(--ui3k-shadow);
+}
+
+.ui3k-dir-b .p-label {
+  font-family: var(--font-label);
+  font-weight: var(--font-weight-normal);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-action-text);
+}
+
+.ui3k-dir-b .p-chrono {
+  width: 8.8em;
+}
+
+.ui3k-dir-b .p-rec {
+  flex: none;
+  width: 0.7em;
+  height: 0.7em;
+  border-radius: 50%;
+  background: var(--color-action-text);
+  animation: ui3k-rec 1s steps(1, end) infinite;
+}
+
+@keyframes ui3k-rec {
+  50% {
+    opacity: 0.25;
+  }
+}
+
+.ui3k-dir-b .p-life {
+  width: 12.1em;
+}
+
+/* Barre segmentée : 10 cases, pleines (rouge) ou vides (contour) : la forme porte la valeur, et le nombre est écrit. */
+.ui3k-dir-b .p-segs {
+  display: flex;
+  gap: 0.08em;
+  height: 100%;
+}
+
+.ui3k-dir-b .p-bar {
+  width: 4.2em;
+  height: 0.7em;
+}
+
+.ui3k-dir-b .p-seg {
+  box-sizing: border-box;
+  flex: 1;
+  border: 1px solid var(--color-border);
+}
+
+.ui3k-dir-b .p-seg.is-on {
+  border-color: var(--color-action);
+  background: var(--color-action);
+}
+
+.ui3k-dir-b .p-life-text {
+  width: 3.9em;
+  text-align: right;
+}
+
+.ui3k-dir-b .p-chutes {
+  width: 3em;
+}
+
+.ui3k-dir-b .p-wave {
+  flex-wrap: wrap;
+  align-content: center;
+  justify-content: center;
+  gap: 0 0.3em;
+  width: 7em;
+  height: 2.6em;
+  line-height: 1.15;
+}
+
+.ui3k-dir-b .p-wave .p-tag {
+  flex-basis: 100%;
+  text-align: center;
+}
+
+.ui3k-dir-b .p-tag {
+  font-family: var(--font-label);
+  font-weight: var(--font-weight-normal);
+  text-transform: uppercase;
+  color: var(--color-action-text);
+}
+
+.ui3k-dir-b .p-remaining {
+  justify-content: center;
+  width: 4.8em;
+}
+
+.ui3k-dir-b .p-floor {
+  justify-content: center;
+  width: 4.8em;
+}
+
+.ui3k-dir-b .p-kills {
+  justify-content: flex-end;
+  width: 6.2em;
+}
+
+.ui3k-dir-b .p-money {
+  justify-content: flex-end;
+  width: 5.4em;
+}
+
+.ui3k-dir-b .p-trial {
+  font-family: var(--font-label);
+  font-weight: var(--font-weight-normal);
+  text-transform: uppercase;
+  color: var(--color-warning);
+}
+
+/* Coins du viseur (décoratifs) : deux équerres en haut, dans la marge de 16 px plus la zone de sécurité. */
+.ui3k-dir-b .p-corner {
+  position: absolute;
+  top: var(--ui3k-edge-t);
+  box-sizing: border-box;
+  width: 1.8em;
+  height: 1.8em;
+  border: 0 solid var(--color-text);
+  pointer-events: none;
+}
+
+.ui3k-dir-b .p-corner-tl {
+  left: var(--ui3k-edge-l);
+  border-top-width: 2px;
+  border-left-width: 2px;
+}
+
+.ui3k-dir-b .p-corner-tr {
+  right: var(--ui3k-edge-r);
+  border-top-width: 2px;
+  border-right-width: 2px;
+}
+
+.ui3k-dir-b .p-tl {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  width: 12.1em;
+  padding: 0.35em 0 0 0.35em;
+}
+
+.ui3k-dir-b .p-pause {
+  top: calc(var(--ui3k-edge-t) + 0.35em);
+  right: calc(var(--ui3k-edge-r) + 0.35em);
+  border-radius: 0;
+}
+
+.ui3k-dir-b .p-tr {
+  top: calc(var(--ui3k-edge-t) + 0.35em);
+  right: calc(var(--ui3k-edge-r) + 0.35em + var(--ui3k-pause-size) + var(--ui3k-gap));
+}
+
+/* Panneaux : cadre angulaire, titre en Rubik Dirt. */
+.ui3k-dir-b .p-panel {
+  border: 2px solid var(--color-text);
+  border-radius: 0;
+}
+
+.ui3k-dir-b .p-title {
+  font-family: var(--font-label);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.ui3k-dir-b .p-btn {
+  border-radius: 0;
+}
+
+.ui3k-dir-b .p-down-body {
+  border: 2px solid var(--color-text);
+  border-radius: 0;
+}
+
+.ui3k-dir-b .p-down-title {
+  font-family: var(--font-label);
+  font-weight: var(--font-weight-normal);
+  text-transform: uppercase;
+}
+
+/* Sticks : base carrée aux coins arrondis, pastille rouge. */
+.ui3k-dir-b .p-stick-base {
+  border-radius: 12px;
+}
+
+.ui3k-dir-b .p-stick-knob {
+  border-radius: 6px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ui3k-dir-b .p-rec {
+    animation: none;
+  }
+}

@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="robots" content="noindex">
+  <meta name="color-scheme" content="dark">
+  <title>Z-Survival · Atelier de l'interface</title>
+  <link rel="icon" href="data:,">
+  <link rel="preload" href="fonts/barlow-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="fonts/barlow-latin-700-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="css/tokens.css">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/atelier-interface.css">
+  <link rel="stylesheet" href="css/proto-a.css">
+  <link rel="stylesheet" href="css/proto-b.css">
+  <link rel="stylesheet" href="css/proto-c.css">
+  <script type="module" src="js/atelier-interface/main.js"></script>
+</head>
+<body class="ui3k-page">
+  <noscript>
+    <p class="ui3k-noscript">Cette page a besoin de JavaScript. / This page needs JavaScript.</p>
+  </noscript>
+  <!-- Filtres du simulateur de daltonisme (matrices de Machado et al., 2009, sévérité 1) : appliqués au cadre d'aperçu seulement, jamais aux propositions. -->
+  <svg class="sr-only" aria-hidden="true" focusable="false" width="0" height="0">
+    <filter id="ui3k-protan"><feColorMatrix type="matrix" values="0.152 1.053 -0.205 0 0 0.115 0.786 0.099 0 0 -0.004 -0.048 1.052 0 0 0 0 0 1 0"/></filter>
+    <filter id="ui3k-deutan"><feColorMatrix type="matrix" values="0.367 0.861 -0.228 0 0 0.280 0.673 0.047 0 0 -0.012 0.043 0.969 0 0 0 0 0 1 0"/></filter>
+    <filter id="ui3k-tritan"><feColorMatrix type="matrix" values="1.256 -0.077 -0.179 0 0 -0.078 0.931 0.148 0 0 0.005 0.691 0.304 0 0 0 0 0 1 0"/></filter>
+  </svg>
+  <main id="app" class="ui3k" hidden>
+    <h1 class="ui3k-title" data-i18n="atelier.title"></h1>
+    <p class="ui3k-intro" data-i18n="atelier.intro"></p>
+    <p class="ui3k-honesty" data-i18n="atelier.honesty"></p>
+
+    <section class="ui3k-section" aria-labelledby="choix-title">
+      <h2 id="choix-title" class="ui3k-heading" data-i18n="atelier.section.choix"></h2>
+      <div class="ui3k-field">
+        <span id="direction-legend" class="ui3k-legend" data-i18n="atelier.field.direction"></span>
+        <div id="directions" class="ui3k-directions" role="group" aria-labelledby="direction-legend"></div>
+        <p id="direction-desc" class="ui3k-intro"></p>
+      </div>
+      <div class="ui3k-controls">
+        <div class="ui3k-field"><label for="f-size" data-i18n="atelier.field.size"></label><select id="f-size"></select></div>
+        <div class="ui3k-field"><label for="f-screen" data-i18n="atelier.field.screen"></label><select id="f-screen"></select></div>
+        <div class="ui3k-field"><label for="f-state" data-i18n="atelier.field.state"></label><select id="f-state"></select></div>
+        <div class="ui3k-field"><label for="f-background" data-i18n="atelier.field.background"></label><select id="f-background"></select></div>
+        <div class="ui3k-field"><label for="f-hp" data-i18n="atelier.field.hp"></label><input id="f-hp" type="range" min="0" max="100" step="1"><output id="o-hp" for="f-hp"></output></div>
+        <div class="ui3k-field"><label for="f-chutes" data-i18n="atelier.field.chutes"></label><input id="f-chutes" type="range" min="0" max="5" step="1"><output id="o-chutes" for="f-chutes"></output></div>
+        <div class="ui3k-field"><label for="f-money" data-i18n="atelier.field.money"></label><input id="f-money" type="number" min="0" max="9999999" step="1" inputmode="numeric"></div>
+        <div class="ui3k-field"><label for="f-wave" data-i18n="atelier.field.wave"></label><input id="f-wave" type="range" min="1" max="40" step="1"><output id="o-wave" for="f-wave"></output></div>
+        <div class="ui3k-field"><label for="f-floor" data-i18n="atelier.field.floor"></label><select id="f-floor"></select></div>
+        <div class="ui3k-field"><label for="f-save" data-i18n="atelier.field.save"></label><select id="f-save"></select></div>
+        <div class="ui3k-field"><label for="f-texte" data-i18n="atelier.macro.texte"></label><select id="f-texte" data-macro="texte"></select></div>
+        <div class="ui3k-field"><label for="f-densite" data-i18n="atelier.macro.densite"></label><select id="f-densite" data-macro="densite"></select></div>
+        <div class="ui3k-field"><label for="f-fond" data-i18n="atelier.macro.fond"></label><select id="f-fond" data-macro="fond"></select></div>
+        <div class="ui3k-field"><label for="f-argent" data-i18n="atelier.macro.argent"></label><select id="f-argent" data-macro="argent"></select></div>
+        <div class="ui3k-field"><label for="f-contour" data-i18n="atelier.macro.contour"></label><select id="f-contour" data-macro="contour"></select></div>
+        <div class="ui3k-field"><label for="f-safe" data-i18n="atelier.field.safe"></label><select id="f-safe"></select></div>
+        <div class="ui3k-field"><label for="f-cvd" data-i18n="atelier.field.cvd"></label><select id="f-cvd"></select></div>
+        <div class="ui3k-field"><label for="f-textscale" data-i18n="atelier.field.textScale"></label><select id="f-textscale"></select></div>
+      </div>
+      <div class="ui3k-row">
+        <label class="ui3k-check"><input id="f-guide" type="checkbox"><span data-i18n="atelier.field.guide"></span></label>
+        <label class="ui3k-check"><input id="f-reinforced" type="checkbox"><span data-i18n="atelier.field.reinforced"></span></label>
+        <label class="ui3k-check"><input id="f-trial" type="checkbox"><span data-i18n="atelier.field.trial"></span></label>
+      </div>
+    </section>
+
+    <section class="ui3k-section" aria-labelledby="apercu-title">
+      <h2 id="apercu-title" class="ui3k-heading" data-i18n="atelier.section.apercu"></h2>
+      <p id="dims" class="ui3k-dims"></p>
+      <div id="viewport" class="ui3k-viewport" data-cvd="aucun">
+        <div id="stage" class="ui3k-stage">
+          <iframe id="frame" class="ui3k-frame" data-i18n-title="atelier.frame.title" tabindex="-1" hidden></iframe>
+          <div id="floor" class="ui3k-floor" hidden></div>
+          <div id="overlay" class="ui3k-screen"></div>
+          <div id="guide" class="ui3k-safe-guide" hidden></div>
+        </div>
+      </div>
+      <p id="status" class="ui3k-status" role="status" aria-live="polite"></p>
+    </section>
+
+
+    <section class="ui3k-section" aria-labelledby="choices-title">
+      <h2 id="choices-title" class="ui3k-heading" data-i18n="atelier.section.choices"></h2>
+      <p class="ui3k-intro" data-i18n="atelier.choices.help"></p>
+      <div class="ui3k-row">
+        <button id="btn-keep" class="button" type="button" data-i18n="atelier.choices.keep"></button>
+        <button id="btn-copy" class="button" type="button" data-i18n="atelier.choices.copy"></button>
+        <button id="btn-clear" class="button button-quiet" type="button" data-i18n="atelier.choices.clear"></button>
+      </div>
+      <label class="ui3k-legend" for="choices" data-i18n="atelier.choices.label"></label>
+      <textarea id="choices" class="ui3k-choices" readonly spellcheck="false" autocomplete="off"></textarea>
+      <p id="choices-status" class="ui3k-status" role="status" aria-live="polite"></p>
+    </section>
+
+    <section class="ui3k-section" aria-labelledby="mesures-title">
+      <h2 id="mesures-title" class="ui3k-heading" data-i18n="atelier.section.mesures"></h2>
+      <p id="measure-summary"></p>
+      <div class="ui3k-table-wrap">
+        <table class="ui3k-table">
+          <thead><tr><th scope="col" data-i18n="atelier.measure.rule"></th><th scope="col" data-i18n="atelier.measure.element"></th><th scope="col" data-i18n="atelier.measure.value"></th><th scope="col" data-i18n="atelier.measure.limit"></th><th scope="col" data-i18n="atelier.measure.reason"></th></tr></thead>
+          <tbody id="measure-rows"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+</body>
+</html>
