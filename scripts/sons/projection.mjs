@@ -4,7 +4,8 @@
 // 4 octets par échantillon), comparé à la limite de 8 Mo ; temps de calcul au chargement mesuré en Node, comparé à la référence.
 // Usage : node scripts/sons/projection.mjs [--variante=A|B|C] [--choix=<fichier « Mes choix »>] [--p1] [--voix=type|hauteur]
 //   --variante : la même variante partout (A par défaut ; un emplacement sans cette variante garde A) ; --choix : un fichier texte au
-//   format de « Mes choix » (les emplacements absents gardent la variante par défaut) ; --p1 : priorité 1 seulement ;
+//   format de « Mes choix » : seuls les emplacements cités sont intégrés (« actuel » : le son du jeu reste, « aucun » : pas de son) ;
+//   --p1 : priorité 1 seulement ;
 //   --voix=hauteur : un seul jeu de voix (celles du marcheur) lu à la hauteur de chaque type, comme aujourd'hui.
 import { readFileSync } from 'node:fs';
 import { renderSound, variantCount } from '../../js/core/synth.js';
@@ -14,7 +15,7 @@ import { parseChoices } from '../../js/core/atelier-choices.js';
 export const LIMIT_BYTES = 8 * 1024 * 1024;
 const arg = (name) => process.argv.find((a) => a.startsWith(`--${name}=`))?.split('=')[1] ?? null;
 
-export function project({ atelierRaw, sounds, choices = {}, variant = 'A', p1Only = false, voicePlan = 'type', measureTime = true }) {
+export function project({ atelierRaw, sounds, choices = {}, variant = 'A', p1Only = false, voicePlan = 'type', measureTime = true, onlyChosen = false }) {
   const data = resolveAtelier(atelierRaw);
   const current = new Map();
   let refBytes = 0;
@@ -40,6 +41,8 @@ export function project({ atelierRaw, sounds, choices = {}, variant = 'A', p1Onl
     if (!plan || plan.versions <= 0) continue;
     if (voicePlan === 'hauteur' && plan.pitchPlan) continue;
     const chosen = choices[slot.id];
+    if (onlyChosen && !chosen) continue;
+    if (chosen && (chosen.variant === 'actuel' || chosen.variant === 'aucun')) continue;
     const vId = chosen?.variant ?? (slot.variants.some((v) => v.id === variant) ? variant : 'A');
     const macros = chosen?.macros ?? {};
     let bytes = 0;
@@ -78,7 +81,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   for (const e of choices.errors) console.log(`ligne ${e.line} ignorée (${e.reason}) : ${e.text}`);
   const variant = arg('variante') ?? 'A';
   const voicePlan = arg('voix') === 'hauteur' ? 'hauteur' : 'type';
-  const r = project({ atelierRaw, sounds, choices: choices.choices, variant, p1Only: process.argv.includes('--p1'), voicePlan });
+  const r = project({ atelierRaw, sounds, choices: choices.choices, variant, p1Only: process.argv.includes('--p1'), voicePlan, onlyChosen: Boolean(file) });
   console.log(`Choix : ${file ? `fichier ${file}` : `variante ${variant} partout`} ; voix : ${voicePlan === 'type' ? 'un jeu de tampons par type' : 'hauteur de lecture (comme aujourd\'hui)'}${process.argv.includes('--p1') ? ' ; priorité 1 seulement' : ''}.`);
   console.log('emplacement\tvariante\tidentifiants\tversions\tdurée s\toctets\tms');
   for (const row of r.rows) console.log(`${row.slot}\t${row.variant}\t${row.ids.join(',')}\t${row.versions}\t${row.seconds.toFixed(2)}\t${row.bytes}\t${row.ms.toFixed(0)}`);

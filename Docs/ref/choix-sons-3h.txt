@@ -1,0 +1,35 @@
+# Choix du propriétaire après l’écoute de l’atelier (lot 3h, itération 1), au format de « Mes choix ».
+# actuel : garder le son actuel du jeu ; aucun : pas de son pour cet emplacement.
+# À réécouter (refaits à l’itération 2, pas encore choisis) : pas-joueur-dur, pas-joueur-escalier, pas-zombie-lent,
+# pas-zombie-marche, pas-zombie-course, planche-arrachage, reparation, planche-craquement, planche-chute, interface-achat, ambiance-feu (nouveau).
+# Escalade B : sans le grognement de fin (retiré de la recette B à l’itération 2). Gémissements lointains B : refaits avec les voix choisies.
+pas-joueur-exterieur=A(hauteur=0,matiere=0,grain=1,duree=1,ampleur=0.1)
+zombie-rampe=B(hauteur=0,matiere=0,grain=1,duree=1,ampleur=0.3)
+voix-marcheur-errance=C(hauteur=0,matiere=0,grain=1,duree=1,ampleur=0)
+voix-marcheur-attaque=C(hauteur=-6,matiere=0,grain=1,duree=0.7,ampleur=0)
+voix-marcheur-touche=B(hauteur=-5,matiere=0,grain=1,duree=1,ampleur=0.3)
+voix-marcheur-mort=C(hauteur=0,matiere=0,grain=1,duree=1,ampleur=0)
+voix-petit-errance=C(hauteur=0,matiere=0,grain=1,duree=1,ampleur=0)
+voix-petit-attaque=C(hauteur=0,matiere=0,grain=1,duree=1,ampleur=0)
+voix-petit-touche=C(hauteur=0,matiere=0,grain=1,duree=1,ampleur=0)
+voix-petit-mort=C(hauteur=3,matiere=0,grain=1,duree=1,ampleur=0)
+voix-voute-errance=C(hauteur=0,matiere=0,grain=1,duree=1,ampleur=0)
+voix-voute-attaque=C(hauteur=0,matiere=0,grain=1,duree=1,ampleur=0)
+voix-voute-touche=C(hauteur=0,matiere=0,grain=1,duree=1,ampleur=0)
+voix-voute-mort=C(hauteur=0,matiere=0,grain=1,duree=1,ampleur=0)
+voix-grand-errance=C(hauteur=0,matiere=0,grain=1,duree=1,ampleur=0)
+voix-grand-attaque=C(hauteur=0,matiere=0,grain=1,duree=1,ampleur=0)
+voix-grand-touche=C(hauteur=0,matiere=0,grain=1,duree=1,ampleur=0)
+voix-grand-mort=C(hauteur=0,matiere=0,grain=1,duree=1,ampleur=0)
+reparation-coup=C(hauteur=-6,matiere=-1,grain=0,duree=0.6,ampleur=0)
+escalade=B(hauteur=0,matiere=0,grain=1,duree=1,ampleur=0.3)
+joueur-souffle-terre=actuel
+joueur-relevage=actuel
+ambiance-vent=A(hauteur=0,matiere=0,grain=1,duree=1,ampleur=0.1)
+ambiance-grincements=B(hauteur=0,matiere=0,grain=1,duree=1,ampleur=0.2)
+ambiance-neon=aucun
+joueur-coeur=B(hauteur=0,matiere=0,grain=1,duree=1,ampleur=0.2)
+joueur-essouffle=aucun
+ambiance-lointains=B(hauteur=0,matiere=0,grain=1,duree=1,ampleur=0.2)
+porte-enfoncee=A(hauteur=0,matiere=0,grain=1,duree=1,ampleur=0.1)
+interface-piece=aucun

@@ -1,11 +1,13 @@
 // « Mes choix » de l'atelier des sons (lot 3h), pur : un emplacement par ligne, au format
 // `emplacement=variante(hauteur=…,matiere=…,grain=…,duree=…,ampleur=…)` ; nombres avec un point décimal, deux décimales au plus.
+// Mots-clés (itération 2) : `emplacement=actuel` (garder le son actuel du jeu), `emplacement=aucun` (aucun son pour cet emplacement).
 // Ce texte est ce que le propriétaire copie et envoie ; scripts/sons/projection.mjs le relit. Rien n'est stocké.
 import { MACRO_IDS, macroValues } from './synth2.js';
 import { isNum } from './vec.js';
 
 const isObj = (o) => o !== null && typeof o === 'object' && !Array.isArray(o);
-const LINE = /^\s*([a-z0-9-]+)\s*=\s*([A-Z])\s*(?:\((.*)\))?\s*$/;
+const LINE = /^\s*([a-z0-9-]+)\s*=\s*([A-Z]|actuel|aucun)\s*(?:\((.*)\))?\s*$/;
+export const KEYWORDS = Object.freeze(['actuel', 'aucun']);
 
 // Nombre court : deux décimales au plus, sans zéros inutiles, jamais « -0 ».
 export function formatNumber(n) {
@@ -22,7 +24,12 @@ export function serializeChoices(choices, slots = null) {
   const lines = [];
   for (const id of ids) {
     const c = choices[id];
-    if (!isObj(c) || typeof c.variant !== 'string' || !/^[A-Z]$/.test(c.variant) || !/^[a-z0-9-]+$/.test(id)) continue;
+    if (!isObj(c) || typeof c.variant !== 'string' || !/^[a-z0-9-]+$/.test(id)) continue;
+    if (KEYWORDS.includes(c.variant)) {
+      lines.push(`${id}=${c.variant}`);
+      continue;
+    }
+    if (!/^[A-Z]$/.test(c.variant)) continue;
     const slot = Array.isArray(slots) ? slots.find((s) => s?.id === id) : null;
     const variant = slot?.variants?.find((v) => v?.id === c.variant) ?? null;
     const values = variant ? macroValues(variant, c.macros) : Object.fromEntries(MACRO_IDS.map((k) => [k, isNum(c.macros?.[k]) ? c.macros[k] : 0]));
@@ -46,6 +53,15 @@ export function parseChoices(text, slots = null) {
       return;
     }
     const [, id, variant, args] = m;
+    if (KEYWORDS.includes(variant)) {
+      const slot = Array.isArray(slots) ? slots.find((s) => s?.id === id) : null;
+      if (Array.isArray(slots) && (!slot || (variant === 'actuel' && !slot.current))) {
+        errors.push({ line: index + 1, text: line, reason: slot ? 'actuel' : 'emplacement' });
+        return;
+      }
+      choices[id] = { variant };
+      return;
+    }
     const macros = {};
     let bad = false;
     for (const part of (args ?? '').split(',').map((p) => p.trim()).filter(Boolean)) {

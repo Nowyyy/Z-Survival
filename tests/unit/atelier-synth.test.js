@@ -29,6 +29,10 @@ const RECIPES = {
   heart: { kind: 'heart', dur: 1.6, bpm: 80 },
   layers: { kind: 'layers', dur: 1.2, parts: [{ kind: 'creak', at: 0.1, dur: 0.6, modes: [{ f: 300, decay: 0.02 }] }, { kind: 'voice', at: 0.5, dur: 0.5, f0: 90, lp: 900 }] },
   sink: { kind: 'sink', dur: 1.2, modes: [{ f: 120, decay: 0.05 }], thud: { at: 1.05, f: 60, gain: 0.9 } },
+  // Itération 2 : bois qui cède, caisse enregistreuse, feu.
+  break: { kind: 'break', dur: 0.8, groan: { dur: 0.3, dense: { from: 250, to: 1800, count: 8, decay: 0.012 } }, splinter: { at: 0.28, dur: 0.1, dense: { from: 300, to: 5000, count: 10, decay: 0.008 }, thump: { f: 85, gain: 0.4 } }, fall: { at: 0.45, dense: { from: 180, to: 3000, count: 8, decay: 0.015 }, noise: { gain: 0.5 }, bounces: { count: 2 } } },
+  register: { kind: 'register', dur: 1.0, lever: { gain: 0.4, dense: { from: 1200, to: 7000, count: 8, decay: 0.006 }, thud: { f: 140, gain: 0.3 } }, bell: { at: 0.07, f: 2100, gain: 1.5 }, drawer: { at: 0.1, gain: 0.3 }, coins: { at: 0.25, count: 4, gain: 0.2 } },
+  fire: { kind: 'fire', dur: 1.5, roar: { gain: 1.5 }, hiss: 0.1, crackle: { rate: 8, gain: 0.3 }, pop: { rate: 1, gain: 0.6 } },
   chime: { kind: 'chime', dur: 0.5, partials: [{ f: 2800, decay: 0.08 }], strikes: [{ at: 0.005, gain: 1 }, { at: 0.1, gain: 0.6 }], rattle: { at: 0.1, dur: 0.1, gain: 0.1 } },
 };
 

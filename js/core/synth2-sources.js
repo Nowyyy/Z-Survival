@@ -13,6 +13,25 @@ const isObj = (o) => o !== null && typeof o === 'object' && !Array.isArray(o);
 const modesOf = (list, k = 1) => (Array.isArray(list) ? list : []).filter((m) => isObj(m) && isNum(m.f)).map((m) => ({ f: m.f * k, gain: num(m.gain, 1), decay: num(m.decay, 0.05) }));
 const at = (ctx, t) => Math.round(num(t) * ctx.tm * ctx.sr);
 
+// Modes denses (bois, pierre) : `count` modes répartis en échelle logarithmique de `from` à `to` Hz, décalés au hasard (graine) de
+// ±`spread` d'intervalle, décroissance `decay` × (f / from)^`tilt` (les aigus s'éteignent plus vite) et gain (f / from)^`slope`.
+// Beaucoup de modes très amortis : un choc bruité et sec, pas une note.
+function denseModes(spec, k, seed) {
+  if (!isObj(spec)) return [];
+  const rnd = createRandom(seed);
+  const n = clamp(Math.round(num(spec.count, 8)), 1, 40);
+  const lo = Math.max(20, num(spec.from, 150));
+  const hi = Math.max(lo * 1.01, num(spec.to, 2000));
+  const out = [];
+  for (let i = 0; i < n; i += 1) {
+    const u = n > 1 ? (i + clamp(num(spec.spread, 0.4), 0, 0.5) * rnd.signed()) / (n - 1) : 0;
+    const f = lo * (hi / lo) ** clamp(u, 0, 1) * k;
+    out.push({ f, gain: num(spec.gain, 1) * (f / (lo * k)) ** num(spec.slope, -0.3) * (0.6 + 0.4 * rnd.next()), decay: num(spec.decay, 0.02) * (f / (lo * k)) ** num(spec.tilt, -0.4) });
+  }
+  return out;
+}
+const allModes = (sec, k, seed) => [...modesOf(sec?.modes, k), ...denseModes(sec?.dense, k, seed)];
+
 // Excitation d'un choc : impulsion de contact en demi-sinus de `dur` s (force toujours positive : spectre plat jusqu'à ~1/dur puis
 // décroissant, le même d'une graine à l'autre), plus un peu de bruit décroissant (texture, part `noisy`), passe-bas à `lp` Hz.
 // impulse : un seul échantillon (pointe métallique d'un clou : spectre plat).
@@ -99,7 +118,7 @@ function band(ctx, { dur = 0.05, f = 800, q = 0.8, attack = 0.005, decay = 0.02,
 function stepAt(ctx, r, n, seedBase) {
   const layers = [];
   const heel = isObj(r.heel) ? r.heel : {};
-  const modes = modesOf(r.modes, ctx.pitch * ctx.vary);
+  const modes = allModes(r, ctx.pitch * ctx.vary, seedBase + 5);
   // Un appui (talon ou pointe) : coup sourd, modes du sol, claquement ; le tout monte en `heel.attack` (semelle qui s'écrase : 5 à
   // 25 ms d'attaque mesurée).
   const strike = (offset, g, s) => {
@@ -125,7 +144,7 @@ function stepAt(ctx, r, n, seedBase) {
     const gn = Math.max(2, Math.round(num(g.dur, 0.06) * ctx.tm * ctx.sr));
     const pulses = stickSlip(gn, ctx, num(g.rate, 300), { jitter: 0.8, irregular: 0.9, seed: seedBase + 31 });
     const env = bumps(pulses, ctx, 0.0004, num(g.grainDecay, 0.0015));
-    const x = biquad(noise(gn, 'white', seedBase + 32), { type: 'bandpass', freq: clamp(num(g.f, 1500) * ctx.bright, 200, 3800), q: num(g.q, 1.2) }, ctx.sr);
+    const x = biquad(noise(gn, 'white', seedBase + 32), { type: 'bandpass', freq: clamp(num(g.f, 1500) * ctx.bright, 200, ctx.sr * 0.4), q: num(g.q, 1.2) }, ctx.sr);
     const fade = envAD(gn, ctx.sr, 0.004, num(g.dur, 0.06) * ctx.tm * 0.5);
     for (let i = 0; i < gn; i += 1) x[i] *= env[i] * fade[i] * num(g.gain) * ctx.grain;
     layers.push({ buf: x, offset: at(ctx, g.at ?? 0.005) });
@@ -135,7 +154,7 @@ function stepAt(ctx, r, n, seedBase) {
 
 function kindStep(r, ctx) {
   const x = stepAt(ctx, r, ctx.n, ctx.seed);
-  return highpass1(lowpassSteep(x, clamp(num(r.lp, 3000) * ctx.bright, 300, 3800), ctx.sr), num(r.hp, 35), ctx.sr);
+  return highpass1(lowpassSteep(x, clamp(num(r.lp, 3000) * ctx.bright, 300, ctx.sr * 0.45), ctx.sr), num(r.hp, 35), ctx.sr);
 }
 
 // Corps traîné (rampant) : bruit brun et rose dans une bande glissante, modulé par un collé-glissé irrégulier (raclements), tissu
@@ -234,12 +253,18 @@ function kindVoice(r, ctx) {
 // ---------- bois ----------
 
 // Impact sur le bois : éclat d'excitation -> résonateurs (modes du bois, décroissances de 40 à 120 ms).
-function woodHit(ctx, modes, { gain = 1, dur = 0.002, lp = 3000, seed = 1, len = 0.25, decayScale = 1, impulse = false } = {}) {
+function woodHit(ctx, modes, { gain = 1, dur = 0.002, lp = 3000, seed = 1, len = 0.25, decayScale = 1, impulse = false, noise: nz = null } = {}) {
   const n = Math.max(4, Math.round(len * ctx.sr));
   const pad = new Float64Array(n);
   const ex = burst(ctx, { dur, lp, gain, seed, impulse });
   pad.set(ex.subarray(0, Math.min(ex.length, n)));
-  return resonate(pad, ctx.sr, modes, { decayScale });
+  const out = resonate(pad, ctx.sr, modes, { decayScale });
+  // Bruit de contact (fibres, frottement) : bande large très brève, ce qui rend le choc sec plutôt qu'accordé.
+  if (isObj(nz) && num(nz.gain) > 0) {
+    const b = band(ctx, { dur: num(nz.decay, 0.008) * 6, f: num(nz.f, 1500), q: num(nz.q, 0.6), attack: 0.0005, decay: num(nz.decay, 0.008), gain: num(nz.gain) * gain, color: 'white', seed: seed + 7 });
+    for (let i = 0; i < Math.min(n, b.length); i += 1) out[i] += b[i];
+  }
+  return out;
 }
 
 // Éclat de fibres : bruit bref passe-bande (aigu modéré).
@@ -304,9 +329,11 @@ function kindCreak(r, ctx) {
 // Chute d'une planche : rebonds de plus en plus rapprochés et faibles (coefficient de restitution), deux bouts qui touchent au premier
 // choc, modes de flexion d'une poutre libre (rapports 1 ; 2,76 ; 5,40 ; 8,93), claque du sol (bruit grave), glissement final.
 function kindFall(r, ctx) {
-  const n = ctx.n;
+  return highpass1(lowpassSteep(fallCore(r, ctx, ctx.n), clamp(num(r.lp, 4000) * ctx.bright, 500, ctx.sr * 0.45), ctx.sr), 40, ctx.sr);
+}
+function fallCore(r, ctx, n) {
   const rnd = createRandom(ctx.seed + 3);
-  const modes = modesOf(r.modes, ctx.pitch * ctx.vary);
+  const modes = allModes(r, ctx.pitch * ctx.vary, ctx.seed + 4);
   const b = isObj(r.bounces) ? r.bounces : {};
   const layers = [];
   let t = num(b.first, 0.01);
@@ -315,15 +342,52 @@ function kindFall(r, ctx) {
   const count = clamp(Math.round(num(b.count, 4)), 1, 8);
   for (let k = 0; k < count; k += 1) {
     const s = ctx.seed + 10 * k;
-    layers.push({ buf: woodHit(ctx, modes, { gain: g, dur: 0.002, lp: num(b.lp, 3000), seed: s, len: 0.3 }), offset: at(ctx, t) });
-    if (k === 0 && num(b.secondEnd) > 0) layers.push({ buf: woodHit(ctx, modesOf(r.modes, ctx.pitch * ctx.vary * 1.06), { gain: g * 0.7, dur: 0.002, lp: 2500, seed: s + 1, len: 0.3 }), offset: at(ctx, t + num(b.secondEnd)) });
+    layers.push({ buf: woodHit(ctx, modes, { gain: g, dur: 0.002, lp: num(b.lp, 3000), seed: s, len: 0.3, noise: r.noise }), offset: at(ctx, t) });
+    if (k === 0 && num(b.secondEnd) > 0) layers.push({ buf: woodHit(ctx, allModes(r, ctx.pitch * ctx.vary * 1.06, ctx.seed + 5), { gain: g * 0.7, dur: 0.002, lp: 2500, seed: s + 1, len: 0.3, noise: r.noise }), offset: at(ctx, t + num(b.secondEnd)) });
     if (isObj(r.slap)) layers.push({ buf: thump(ctx, { ...r.slap, gain: num(r.slap.gain, 0.5) * g }), offset: at(ctx, t) });
     t += gap * (1 + 0.1 * rnd.signed());
     gap *= clamp(num(b.restitution, 0.55), 0.2, 0.9);
     g *= clamp(num(b.restitution, 0.55), 0.2, 0.9) * (0.9 + 0.2 * rnd.next());
   }
   if (isObj(r.slide) && num(r.slide.gain) > 0) layers.push({ buf: band(ctx, { ...r.slide, gain: num(r.slide.gain) * ctx.grain, seed: ctx.seed + 99 }), offset: at(ctx, t) });
-  return highpass1(lowpassSteep(mixLayers(n, layers), clamp(num(r.lp, 4000) * ctx.bright, 500, ctx.sr * 0.45), ctx.sr), 40, ctx.sr);
+  return mixLayers(n, layers);
+}
+
+// Bois qui travaille puis cède : gémissement (collé-glissé lent dans des modes amortis), éclatement fibreux (salve de micro-cassures
+// qui s'accélère, modes denses très amortis et bruit de fibres, cassure finale sèche), puis la planche qui tombe (rebonds secs).
+function kindBreak(r, ctx) {
+  const n = ctx.n;
+  const layers = [];
+  const g = isObj(r.groan) ? r.groan : null;
+  if (g && num(g.gain, 1) > 0) {
+    const gn = Math.max(8, Math.round(num(g.dur, 0.4) * ctx.tm * ctx.sr));
+    const p = stickSlip(gn, ctx, g.rate ?? [[0, 18], [1, 45]], { jitter: num(g.jitter, 0.3), irregular: num(g.irregular, 0.6), seed: ctx.seed + 1, pitch: ctx.pitch ** 0.5 });
+    const x = resonate(lowpass1(p, 2500 * ctx.bright, ctx.sr), ctx.sr, allModes(g, ctx.pitch * ctx.vary, ctx.seed + 2));
+    const env = envCurve(gn, g.env ?? [[0, 0], [0.3, 0.7], [0.85, 1], [1, 0.2]]);
+    for (let i = 0; i < gn; i += 1) x[i] *= env[i] * num(g.gain, 1);
+    layers.push({ buf: x, offset: at(ctx, g.at ?? 0) });
+  }
+  const sp = isObj(r.splinter) ? r.splinter : null;
+  if (sp && num(sp.gain, 1) > 0) {
+    const sn = Math.max(8, Math.round(num(sp.dur, 0.12) * ctx.tm * ctx.sr));
+    const pulses = stickSlip(sn, ctx, sp.rate ?? [[0, 60], [1, 500]], { jitter: 0.6, irregular: 0.7, seed: ctx.seed + 3 });
+    const env = envCurve(sn, sp.env ?? [[0, 0.3], [0.8, 1], [1, 0.6]]);
+    for (let i = 0; i < sn; i += 1) pulses[i] *= env[i];
+    pulses[sn - 1] = Math.max(pulses[sn - 1], num(sp.snap, 1.5));
+    const ex = new Float64Array(sn + Math.round(0.2 * ctx.sr));
+    ex.set(lowpass1(pulses, num(sp.lp, 6000) * ctx.bright, ctx.sr));
+    const body = resonate(ex, ctx.sr, allModes(sp, ctx.pitch * ctx.vary, ctx.seed + 4));
+    const fib = biquad(noise(ex.length, 'white', ctx.seed + 5), { type: 'bandpass', freq: num(sp.noiseF, 2200) * ctx.bright, q: 0.6 }, ctx.sr);
+    const fe = bumps(ex, ctx, 0.0003, num(sp.noiseDecay, 0.004));
+    for (let i = 0; i < body.length; i += 1) body[i] = (body[i] + fib[i] * fe[i] * num(sp.noise, 2) * ctx.grain) * num(sp.gain, 1);
+    layers.push({ buf: body, offset: at(ctx, sp.at ?? 0.3) });
+    if (isObj(sp.thump)) layers.push({ buf: thump(ctx, sp.thump), offset: at(ctx, sp.at ?? 0.3) + sn });
+  }
+  if (isObj(r.fall)) {
+    const off = at(ctx, r.fall.at ?? 0.45);
+    if (off < n) layers.push({ buf: fallCore(r.fall, { ...ctx, seed: ctx.seed + 50 }, n - off), gain: num(r.fall.gain, 1), offset: off });
+  }
+  return highpass1(lowpassSteep(mixLayers(n, layers), clamp(num(r.lp, 6000) * ctx.bright, 500, ctx.sr * 0.45), ctx.sr), num(r.hp, 45), ctx.sr);
 }
 
 // ---------- marteau ----------
@@ -335,7 +399,12 @@ export function hammerHit(ctx, h, { strength = 1, dry = false, ring = 1, seed = 
   const decayScale = dry ? num(h.dryDecay, 0.55) : 1;
   const body = isObj(h.body) ? h.body : {};
   const nail = isObj(h.nail) ? h.nail : {};
-  const out = woodHit(ctx, modesOf(body.modes, ctx.pitch * ctx.vary * (dry ? num(h.dryPitch, 1.08) : 1)), { gain: num(body.gain, 1) * strength, dur: num(body.burst, 0.0015), lp: num(body.lp, 2500), seed, len: len / ctx.sr, decayScale });
+  const out = woodHit(ctx, allModes(body, ctx.pitch * ctx.vary * (dry ? num(h.dryPitch, 1.08) : 1), seed + 3), { gain: num(body.gain, 1) * strength, dur: num(body.burst, 0.0015), lp: num(body.lp, 2500), seed, len: len / ctx.sr, decayScale, noise: body.noise });
+  // Coup sourd du marteau sur une planche tenue (poids, grave).
+  if (isObj(h.thud) && num(h.thud.gain) > 0) {
+    const th = thump(ctx, { ...h.thud, gain: num(h.thud.gain) * strength }, len);
+    for (let i = 0; i < len; i += 1) out[i] += th[i];
+  }
   if (num(nail.gain) > 0) {
     const nm = modesOf(nail.partials, ctx.pitch ** 0.5 * ring * ctx.bright ** 0.3).map((m) => ({ ...m, decay: m.decay * decayScale }));
     const ping = woodHit(ctx, nm, { gain: num(nail.gain) * strength, dur: 0.0004, lp: 7000, seed: seed + 1, len: len / ctx.sr, impulse: true });
@@ -623,5 +692,72 @@ function kindChime(r, ctx) {
   return highpass1(lowpassSteep(mixLayers(ctx.n, layers), clamp(num(r.lp, 9000) * ctx.bright, 1000, ctx.sr * 0.45), ctx.sr), 150, ctx.sr);
 }
 
+// Caisse enregistreuse (achat) : levier mécanique (claquement métallique dense et sourd), sonnette (partiels de cloche à longue
+// décroissance), tiroir qui glisse et cogne, pièces qui s'entrechoquent.
+function kindRegister(r, ctx) {
+  const layers = [];
+  const rnd = createRandom(ctx.seed + 9);
+  const lv = isObj(r.lever) ? r.lever : null;
+  if (lv) {
+    layers.push({ buf: woodHit(ctx, allModes(lv, ctx.pitch, ctx.seed + 1), { gain: num(lv.gain, 1), dur: 0.0006, lp: 9000, seed: ctx.seed + 1, len: 0.15, noise: lv.noise }), offset: at(ctx, lv.at ?? 0) });
+    if (isObj(lv.thud)) layers.push({ buf: thump(ctx, lv.thud), offset: at(ctx, lv.at ?? 0) });
+  }
+  const bl = isObj(r.bell) ? r.bell : null;
+  if (bl) {
+    const f = num(bl.f, 2100) * ctx.pitch;
+    const ratios = Array.isArray(bl.ratios) ? bl.ratios : [1, 2.32, 4.1, 5.4];
+    const decays = Array.isArray(bl.decays) ? bl.decays : [0.45, 0.25, 0.12, 0.07];
+    const modes = ratios.map((q, i) => ({ f: f * num(q, 1), gain: (i === 0 ? 1 : 0.5 / i) * (0.9 + 0.2 * rnd.next()), decay: num(decays[i], 0.1) }));
+    layers.push({ buf: woodHit(ctx, modes, { gain: num(bl.gain, 0.8), dur: 0.0003, lp: 10000, seed: ctx.seed + 2, len: num(bl.len, 0.9), impulse: true }), offset: at(ctx, bl.at ?? 0.06) });
+  }
+  const dr = isObj(r.drawer) ? r.drawer : null;
+  if (dr && num(dr.gain) > 0) {
+    layers.push({ buf: band(ctx, { dur: num(dr.dur, 0.14), f: num(dr.f, 900), q: 0.7, attack: 0.02, decay: num(dr.dur, 0.14) * 0.6, gain: num(dr.gain) * ctx.grain, seed: ctx.seed + 3 }), offset: at(ctx, dr.at ?? 0.12) });
+    layers.push({ buf: woodHit(ctx, denseModes({ from: 300, to: 3500, count: 10, decay: 0.012, tilt: -0.5 }, ctx.pitch, ctx.seed + 4), { gain: num(dr.gain) * 1.2, dur: 0.002, lp: 5000, seed: ctx.seed + 4, len: 0.12 }), offset: at(ctx, (dr.at ?? 0.12) + num(dr.dur, 0.14)) });
+  }
+  const co = isObj(r.coins) ? r.coins : null;
+  if (co && num(co.gain) > 0) {
+    for (let k = 0; k < clamp(Math.round(num(co.count, 5)), 0, 20); k += 1) {
+      const fq = 3000 + 3500 * rnd.next();
+      const modes = [{ f: fq * ctx.pitch, gain: 1, decay: 0.03 }, { f: fq * 1.47 * ctx.pitch, gain: 0.5, decay: 0.02 }];
+      layers.push({ buf: woodHit(ctx, modes, { gain: num(co.gain) * (0.4 + 0.6 * rnd.next()) * ctx.grain, dur: 0.0003, lp: 10000, seed: ctx.seed + 20 + k, len: 0.1, impulse: true }), offset: at(ctx, num(co.at, 0.2) + rnd.next() * num(co.spread, 0.15)) });
+    }
+  }
+  return highpass1(lowpassSteep(mixLayers(ctx.n, layers), clamp(num(r.lp, 9000) * ctx.bright, 1000, ctx.sr * 0.45), ctx.sr), 80, ctx.sr);
+}
+
+// Feu qui crépite (boucle) : grondement grave qui vacille (bruit brun et rose filtrés, flamme), souffle aigu léger, crépitements
+// (petites explosions de sève : impulsions au hasard dans des modes denses très amortis) et quelques claquements plus gros.
+function kindFire(r, ctx) {
+  const n = ctx.n;
+  const out = new Float64Array(n);
+  const fl = slowNoise(n, ctx, num(r.flickerStep, 0.25), ctx.seed + 1);
+  const ro = isObj(r.roar) ? r.roar : {};
+  const b = biquad(noise(n, 'brown', ctx.seed + 2), { type: 'lowpass', freq: num(ro.lp, 400) * ctx.bright, q: 0.7 }, ctx.sr);
+  const pk = biquad(noise(n, 'pink', ctx.seed + 3), { type: 'bandpass', freq: num(ro.f, 600) * ctx.bright, q: 0.5 }, ctx.sr);
+  for (let i = 0; i < n; i += 1) out[i] = (b[i] + 0.4 * pk[i]) * num(ro.gain, 1) * (1 - num(ro.flicker, 0.5) + num(ro.flicker, 0.5) * fl[i]);
+  if (num(r.hiss) > 0) {
+    const h = biquad(noise(n, 'pink', ctx.seed + 4), { type: 'highpass', freq: 2500 * ctx.bright, q: 0.7 }, ctx.sr);
+    for (let i = 0; i < n; i += 1) out[i] += h[i] * num(r.hiss) * ctx.grain * (0.5 + 0.5 * fl[i]);
+  }
+  for (const [k, c] of [r.crackle, r.pop].entries()) {
+    if (!isObj(c) || num(c.gain) <= 0) continue;
+    const rnd = createRandom(ctx.seed + 10 + k);
+    const pulses = new Float64Array(n);
+    let t = 0;
+    while (true) {
+      t += -Math.log(Math.max(1e-6, rnd.next())) / Math.max(0.1, num(c.rate, 8));
+      const i = Math.floor(t * ctx.sr);
+      if (i >= n) break;
+      pulses[i] = (rnd.next() ** 2) * (rnd.next() < 0.5 ? -1 : 1);
+    }
+    const x = resonate(pulses, ctx.sr, denseModes(c.dense ?? { from: 1500, to: 7000, count: 10, decay: 0.003 }, ctx.pitch, ctx.seed + 20 + k));
+    const nz = biquad(noise(n, 'white', ctx.seed + 30 + k), { type: 'bandpass', freq: num(c.noiseF, 3000) * ctx.bright, q: 0.7 }, ctx.sr);
+    const e = bumps(pulses.map(Math.abs), ctx, 0.0002, num(c.noiseDecay, 0.002));
+    for (let i = 0; i < n; i += 1) out[i] += (x[i] + nz[i] * e[i] * num(c.noise, 1.5)) * num(c.gain) * ctx.grain;
+  }
+  return highpass1(lowpassSteep(out, clamp(num(r.lp, 9000) * ctx.bright, 500, ctx.sr * 0.45), ctx.sr), 30, ctx.sr);
+}
+
 const KINDS_BASE = { step: kindStep, drag: kindDrag, voice: kindVoice, tear: kindTear, creak: kindCreak, fall: kindFall, hammer: kindHammer, repair: kindRepair, climb: kindClimb, breath: kindBreath, getup: kindGetup };
-export const KINDS = Object.freeze({ ...KINDS_BASE, wind: kindWind, hum: kindHum, heart: kindHeart, layers: kindLayers, sink: kindSink, chime: kindChime });
+export const KINDS = Object.freeze({ ...KINDS_BASE, wind: kindWind, hum: kindHum, heart: kindHeart, layers: kindLayers, sink: kindSink, chime: kindChime, break: kindBreak, register: kindRegister, fire: kindFire });

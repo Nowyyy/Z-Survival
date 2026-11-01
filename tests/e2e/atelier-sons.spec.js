@@ -145,6 +145,13 @@ test('le favori de chaque emplacement apparaît dans « Mes choix » au format a
   expect((await page.evaluate(() => window.__zsSons.choices())).split('\n')[0]).toMatch(/^pas-joueur-dur=A\(/);
 });
 
+test('itération 2 : le favori « Actuel » garde le son du jeu (ligne « emplacement=actuel ») ; absent quand il n\'y a pas de son actuel', async ({ page }) => {
+  await open(page);
+  await slotCard(page, 'joueur-relevage').getByLabel('Actuel', { exact: true }).check();
+  expect(await page.evaluate(() => window.__zsSons.choices())).toBe('joueur-relevage=actuel');
+  await expect(slotCard(page, 'escalade').getByLabel('Actuel', { exact: true })).toHaveCount(0);
+});
+
 test('« Copier mes choix » passe par le presse-papiers (simulé)', async ({ page }) => {
   await page.addInitScript(() => {
     window.__copied = null;

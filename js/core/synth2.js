@@ -246,7 +246,11 @@ export function resolveRecipe(recipe, presets = {}, depth = 0) {
   delete merged.scale;
   delete merged.use;
   // Sous-recettes (par exemple le coup de marteau d'une réparation, le pas d'un relevage) : leur propre `use` est résolu aussi.
-  for (const [k, v] of Object.entries(merged)) if (isObj(v) && Array.isArray(v.use) && depth < 6) merged[k] = resolveRecipe(v, presets, depth + 1);
+  for (const [k, v] of Object.entries(merged)) {
+    if (isObj(v) && Array.isArray(v.use) && depth < 6) merged[k] = resolveRecipe(v, presets, depth + 1);
+    // Couches (parts d'une recette composée) : chaque élément peut aussi utiliser des préréglages.
+    else if (Array.isArray(v) && depth < 6) merged[k] = v.map((x) => (isObj(x) && Array.isArray(x.use) ? resolveRecipe(x, presets, depth + 1) : x));
+  }
   return merged;
 }
 

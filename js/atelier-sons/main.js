@@ -276,13 +276,14 @@ function buildSlot(slot) {
 
   // Favori : un seul par emplacement.
   const fav = el('fieldset', { class: 'slot-fav' }, [el('legend', { text: t('dev.atelier.favorite') })]);
-  for (const id of ['', ...slot.variants.map((v) => v.id)]) {
+  // « Aucun » : pas de favori ; « Actuel » (s'il existe) : garder le son du jeu ; puis les variantes.
+  for (const id of ['', ...(slot.current ? ['actuel'] : []), ...slot.variants.map((v) => v.id)]) {
     const input = el('input', { type: 'radio', name: `fav-${slot.id}`, value: id, checked: id === '', id: `fav-${slot.id}-${id || 'aucun'}` });
     input.addEventListener('change', () => {
       st.favorite = id || null;
       updateChoices();
     });
-    fav.append(el('label', { for: input.id }, [input, id ? id : t('dev.atelier.favorite.none')]));
+    fav.append(el('label', { for: input.id }, [input, id === '' ? t('dev.atelier.favorite.none') : (id === 'actuel' ? t('dev.atelier.current') : id)]));
   }
   card.append(fav);
 
@@ -353,7 +354,7 @@ for (const g of atelierRaw.groups) {
 // Choix courant d'un emplacement : le favori coché, sinon la dernière variante jouée (ou A).
 function currentChoice(slotId) {
   const st = states.get(slotId);
-  const variant = st?.favorite ?? st?.active ?? 'A';
+  const variant = st?.favorite && st.favorite !== 'actuel' ? st.favorite : (st?.active ?? 'A');
   return { variant, macros: { ...(st?.macros?.[variant] ?? {}) } };
 }
 let scene = null;
@@ -441,7 +442,7 @@ nav.append(el('li', {}, [el('a', { href: '#choices', text: t('dev.atelier.choice
 // ---------- mes choix ----------
 function choicesObject() {
   const out = {};
-  for (const [id, st] of states) if (st.favorite) out[id] = { variant: st.favorite, macros: { ...st.macros[st.favorite] } };
+  for (const [id, st] of states) if (st.favorite) out[id] = st.favorite === 'actuel' ? { variant: 'actuel' } : { variant: st.favorite, macros: { ...st.macros[st.favorite] } };
   return out;
 }
 function updateChoices() {

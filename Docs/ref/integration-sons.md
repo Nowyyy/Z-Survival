@@ -13,12 +13,12 @@ Plan établi au lot 3h, **sans rien intégrer** : le lot 3i appliquera les choix
 
 | Emplacement | Actuel (octets, niveau / tir) | Identifiant(s) produit(s) dans sounds.json | Versions | Octets A / B | Niveau / tir (cible) | Tests à adapter |
 |---|---|---|---|---|---|---|
-| `pas-joueur-dur` | `pas` : 155232, −25,5 dB | `pas` (même identifiant) | 4 | 52928 / 63504 | −18 dB | `data-sons` (44 100 -> 22 050 Hz, 4 variantes, niveau de la catégorie pas), `core-sound-director` (playerStep), `jeu-sons` |
+| `pas-joueur-dur` | `pas` : 155232, −25,5 dB | `pas` (même identifiant) | 4 | 45872 / 59984 | −18 dB | `data-sons` (44 100 -> 22 050 Hz, 4 variantes, niveau de la catégorie pas), `core-sound-director` (playerStep), `jeu-sons` |
 | `pas-joueur-exterieur` | `pas` : 155232, −25,5 dB | `pas-exterieur` (nouveau) | 4 | 56448 / 70560 | −20 dB | `data-sons` (liste des sons attendus), `core-sound-director` (nouvel événement) |
-| `pas-joueur-escalier` | `pas` : 155232, −25,5 dB | `pas-escalier` (nouveau) | 4 | 52928 / 67040 | −18 dB | `data-sons` (liste des sons attendus), `core-sound-director` (nouvel événement) |
+| `pas-joueur-escalier` | `pas` : 155232, −25,5 dB | `pas-escalier` (nouveau) | 4 | 49392 / 63504 | −18 dB | `data-sons` (liste des sons attendus), `core-sound-director` (nouvel événement) |
 | `pas-zombie-lent` | `pas-zombie` : 70560, −17,3 dB | `pas-zombie-lent` (nouveau) | 2 | 52920 / 59976 | −16 dB | `data-sons` (liste des sons attendus), `core-sound-director` (nouvel événement) |
-| `pas-zombie-marche` | `pas-zombie` : 70560, −17,3 dB | `pas-zombie` (même identifiant) | 3 | 58212 / 68796 | −16 dB | `data-sons` (2 -> 3 variantes, durée 0,4 -> 0,22 s), `core-sound-director` (pas de zombie) |
-| `pas-zombie-course` | `pas-zombie` : 70560, −17,3 dB | `pas-zombie-course` (nouveau) | 2 | 28224 / 33520 | −16 dB | `data-sons` (liste des sons attendus), `core-sound-director` (nouvel événement) |
+| `pas-zombie-marche` | `pas-zombie` : 70560, −17,3 dB | `pas-zombie` (même identifiant) | 3 | 52920 / 66156 | −16 dB | `data-sons` (2 -> 3 variantes, durée 0,4 -> 0,22 s), `core-sound-director` (pas de zombie) |
+| `pas-zombie-course` | `pas-zombie` : 70560, −17,3 dB | `pas-zombie-course` (nouveau) | 2 | 26464 / 31752 | −16 dB | `data-sons` (liste des sons attendus), `core-sound-director` (nouvel événement) |
 | `zombie-rampe` | aucun | `zombie-rampe` (nouveau) | 2 | 141120 / 176400 | −18 dB | `data-sons` (liste des sons attendus), `core-sound-director` (nouvel événement) |
 | `voix-marcheur-errance` | `zombie-gemissement` : 423360, −11,0 dB | `zombie-gemissement` (même identifiant) | 3 | 449820 / 539784 | −10 dB | `data-sons` (« fondamentale proche de 110 Hz » -> 75-110 Hz ; durée 1,6 -> 1,7 s), `core-zombie-voice`, `jeu-voix` |
 | `voix-marcheur-attaque` | `zombie-attaque` : 185220, −12,2 dB | `zombie-attaque` (même identifiant) | 3 | 198456 / 238140 | −8 dB | `data-sons` (fondamentale, durée 0,7 -> 0,75 s), `jeu-voix` (cri d'attaque) |
@@ -36,10 +36,10 @@ Plan établi au lot 3h, **sans rien intégrer** : le lot 3i appliquera les choix
 | `voix-grand-attaque` | `zombie-attaque` × 0,82 : 185220, −12,2 dB | `zombie-attaque-grand` (nouveau) ; ou hauteur de lecture : 0 tampon (le tampon du marcheur lu à zombieRate) | 3 | 198456 / 238140 | −6 dB | `data-sons` (liste des sons attendus), `core-sound-director` (nouvel événement) |
 | `voix-grand-touche` | `zombie-blessure` × 0,82 : 119076, −12,2 dB | `zombie-blessure-grand` (nouveau) ; ou hauteur de lecture : 0 tampon (le tampon du marcheur lu à zombieRate) | 3 | 84672 / 101604 | −8 dB | `data-sons` (liste des sons attendus), `core-sound-director` (nouvel événement) |
 | `voix-grand-mort` | `zombie-mort` × 0,82 : 264600, −13,8 dB | `zombie-mort-grand` (nouveau) ; ou hauteur de lecture : 0 tampon (le tampon du marcheur lu à zombieRate) | 2 | 264600 / 317520 | −8 dB | `data-sons` (liste des sons attendus), `core-sound-director` (nouvel événement) |
-| `planche-arrachage` | `planche-arrachee` : 132300, −9,8 dB | `planche-arrachee` (même identifiant) | 3 | 132300 / 174636 | −12 dB | `data-sons-lot3` (attaque < 6 ms, centre de gravité 300-3 000 Hz) |
+| `planche-arrachage` | `planche-arrachee` : 132300, −9,8 dB | `planche-arrachee` (même identifiant) | 3 | 251376 / 304284 | −12 dB | `data-sons-lot3` (attaque < 6 ms, centre de gravité 300-3 000 Hz) |
 | `reparation` | `planche-posee` : 119076, −14,0 dB | `planche-posee` (même identifiant) | 3 | 476280 / 476280 | −12 dB | `data-sons-lot3` (« 2 à 3 pics séparés de 80 ms » -> 2 à 5 coups selon la durée), `core-sound-director` (plankRepaired) |
 | `reparation-coup` | aucun | variante de remplacement de la réparation (coups seuls, séquence jouée par le directeur de sons) : non comptée par défaut | 0 | 0 / 0 | −12 dB | – |
-| `planche-craquement` | aucun | `planche-craquement` (nouveau) | 2 | 123480 / 158760 | −14 dB | `data-sons` (liste des sons attendus), `core-sound-director` (nouvel événement) |
+| `planche-craquement` | aucun | `planche-craquement` (nouveau) | 2 | 149944 / 176400 | −14 dB | `data-sons` (liste des sons attendus), `core-sound-director` (nouvel événement) |
 | `planche-chute` | aucun | `planche-chute` (nouveau) | 2 | 132304 / 167584 | −12 dB | `data-sons` (liste des sons attendus), `core-sound-director` (nouvel événement) |
 | `escalade` | aucun | `zombie-escalade` (nouveau) | 2 | 264600 / 335160 | −14 dB | `data-sons` (liste des sons attendus), `core-sound-director` (nouvel événement) |
 | `joueur-souffle-terre` | `joueur-chute` : 229320, −2,8 dB | `joueur-chute` (même identifiant) | 2 | 299880 / 370440 | −10 dB | `data-sons-lot3` (« pic dans les 80 premières ms, 1,0 à 1,5 s » -> grognement d'abord, 1,7 s) |
@@ -49,21 +49,26 @@ Plan établi au lot 3h, **sans rien intégrer** : le lot 3i appliquera les choix
 | `ambiance-neon` | aucun | `ambiance-neon` (nouveau) | 1 | 705600 / 705600 | −30 dB | `data-sons` (liste des sons attendus), `core-sound-director` (nouvel événement) |
 | `joueur-coeur` | aucun | `joueur-coeur` (nouveau) | 1 | 141120 / 141120 | −14 dB | `data-sons` (liste des sons attendus), `core-sound-director` (nouvel événement) |
 | `joueur-essouffle` | aucun | `joueur-essouffle` (nouveau) | 2 | 352800 / 352800 | −14 dB | `data-sons` (liste des sons attendus), `core-sound-director` (nouvel événement) |
-| `ambiance-lointains` | aucun | `ambiance-lointains` (nouveau) | 2 | 529200 / 617400 | −24 dB | `data-sons` (liste des sons attendus), `core-sound-director` (nouvel événement) |
+| `ambiance-lointains` | aucun | `ambiance-lointains` (nouveau) | 2 | 529200 / 670320 | −24 dB | `data-sons` (liste des sons attendus), `core-sound-director` (nouvel événement) |
 | `porte-enfoncee` | aucun | `porte-enfoncee` (nouveau) | 1 | 105840 / 105840 | −8 dB | `data-sons` (liste des sons attendus), `core-sound-director` (nouvel événement) |
 | `interface-piece` | aucun | `interface-piece` (nouveau) | 3 | 119076 / 132300 | −14 dB | `data-sons` (liste des sons attendus), `core-sound-director` (nouvel événement) |
-| `interface-achat` | aucun | `interface-achat` (nouveau) | 1 | 79380 / 88200 | −12 dB | `data-sons` (liste des sons attendus), `core-sound-director` (nouvel événement) |
+| `interface-achat` | aucun | `interface-achat` (nouveau) | 1 | 97020 / 110252 | −12 dB | `data-sons` (liste des sons attendus), `core-sound-director` (nouvel événement) |
+| `ambiance-feu` | aucun | `ambiance-feu` (nouveau) | 1 | 705600 / 705600 | −22 dB | `data-sons` (liste des sons attendus), `core-sound-director` (nouvel événement) |
 
 ## Projections (`node scripts/sons/projection.mjs`, mesurées sur cette machine)
 
 | Choix | Voix | Poids projeté | Limite 8 Mo | Calcul au chargement (référence) |
 |---|---|---|---|---|
-| A partout (priorités 1 et 2) | par type | 14 231 400 octets (13,57 Mo) | **dépassée** de 5,8 Mo | 2 989 ms (1 333 ms) |
-| B partout (priorités 1 et 2) | par type | 15 558 300 octets (14,84 Mo) | **dépassée** de 7,2 Mo | 3 789 ms (1 348 ms) |
-| A partout (priorités 1 et 2) | hauteur de lecture | 11 518 080 octets (10,98 Mo) | **dépassée** de 3,1 Mo | 2 630 ms (1 488 ms) |
-| B partout (priorités 1 et 2) | hauteur de lecture | 12 302 336 octets (11,73 Mo) | **dépassée** de 3,9 Mo | 3 056 ms (1 541 ms) |
-| A partout, priorité 1 seule | hauteur de lecture | 8 073 864 octets (7,70 Mo) | tenue | 1 955 ms (1 454 ms) |
-| B partout, priorité 1 seule | hauteur de lecture | 8 659 676 octets (8,26 Mo) | **dépassée** de 0,26 Mo | 2 159 ms (1 219 ms) |
+| **Choix du propriétaire** (`Docs/ref/choix-sons-3h.txt`, emplacements cités seulement) | par type | 11 663 632 octets (11,12 Mo) | **dépassée** de 3,1 Mo | 3 022 ms (1 379 ms) |
+| **Choix du propriétaire** | hauteur de lecture | 9 628 648 octets (9,18 Mo) | **dépassée** de 1,2 Mo | 2 242 ms (1 292 ms) |
+| A partout (priorités 1 et 2) | par type | 15 082 536 octets (14,38 Mo) | **dépassée** de 6,4 Mo | 3 935 ms (1 399 ms) |
+| B partout (priorités 1 et 2) | par type | 16 474 696 octets (15,71 Mo) | **dépassée** de 7,7 Mo | 4 398 ms (1 435 ms) |
+| A partout (priorités 1 et 2) | hauteur de lecture | 12 369 216 octets (11,80 Mo) | **dépassée** de 3,8 Mo | 3 084 ms (1 458 ms) |
+| B partout (priorités 1 et 2) | hauteur de lecture | 13 218 732 octets (12,61 Mo) | **dépassée** de 4,6 Mo | 3 683 ms (1 462 ms) |
+| A partout, priorité 1 seule | hauteur de lecture | 8 201 760 octets (7,82 Mo) | tenue | 2 088 ms (1 428 ms) |
+| B partout, priorité 1 seule | hauteur de lecture | 8 795 500 octets (8,39 Mo) | **dépassée** de 0,39 Mo | 2 187 ms (1 291 ms) |
+
+Itération 2 : avec les choix du propriétaire (les sons encore à réécouter ne sont pas comptés), les plus gros postes sont le vent (10 s : 882 000 octets), les gémissements lointains B (2 × 3,8 s : 670 320), les voix par type et le feu s'il est retenu (8 s : 705 600). Pistes : boucles de 4 à 6 s, une seule version des gémissements lointains, voix à la hauteur de lecture.
 
 Référence : 6 894 612 octets (6,58 Mo), 65 tampons ; le temps de référence varie de 1 219 à 1 541 ms d'une exécution à l'autre (charge de la machine). Ce qui pèse : les boucles d'ambiance (vent 10 s : 882 000 octets ; néon 8 s : 705 600), les voix par type (×4), la réparation à 1,8 s (3 × 158 760 octets), l'escalade (2 × 1,5 s). **À raccourcir si besoin** (le script les liste par poids décroissant) : boucles de 10 et 8 s -> 4 à 6 s, voix par type -> hauteur de lecture, réparation -> coups seuls, deux versions au lieu de trois pour les sons longs. Le plafond de 8 Mo et la fréquence d'échantillonnage du jeu ne changent pas (hors lot).
 

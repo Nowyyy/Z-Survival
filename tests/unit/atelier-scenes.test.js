@@ -34,8 +34,8 @@ describe('propositions (priorité 2)', () => {
     }
   });
 
-  it('couvre les propositions du cadrage (vent, grincements, néon, cœur, souffle, gémissements lointains, porte, pièce, achat)', () => {
-    expect(p2.map((s) => s.id).sort()).toEqual(['ambiance-grincements', 'ambiance-lointains', 'ambiance-neon', 'ambiance-vent', 'interface-achat', 'interface-piece', 'joueur-coeur', 'joueur-essouffle', 'porte-enfoncee']);
+  it('couvre les propositions du cadrage (vent, grincements, néon, cœur, souffle, gémissements lointains, porte, pièce, achat) et le feu demandé par le propriétaire', () => {
+    expect(p2.map((s) => s.id).sort()).toEqual(['ambiance-feu', 'ambiance-grincements', 'ambiance-lointains', 'ambiance-neon', 'ambiance-vent', 'interface-achat', 'interface-piece', 'joueur-coeur', 'joueur-essouffle', 'porte-enfoncee']);
   });
 
   it.each(p2.flatMap((s) => s.variants.map((v) => [s.id, v.id])))('%s %s : dans ses cibles (version 1, macros par défaut)', (id, v) => {
@@ -58,10 +58,10 @@ describe('propositions (priorité 2)', () => {
   });
 });
 
-describe('boucles sans raccord (vent, néon)', () => {
+describe('boucles sans raccord (vent, néon, feu)', () => {
   const loops = p2.filter((s) => s.loop);
-  it('les boucles sont le vent et le néon, de 8 à 12 s, recettes en boucle', () => {
-    expect(loops.map((s) => s.id).sort()).toEqual(['ambiance-neon', 'ambiance-vent']);
+  it('les boucles sont le vent, le néon et le feu, de 8 à 12 s, recettes en boucle', () => {
+    expect(loops.map((s) => s.id).sort()).toEqual(['ambiance-feu', 'ambiance-neon', 'ambiance-vent']);
     for (const s of loops) for (const v of s.variants) {
       expect(v.recipe.loop, `${s.id} ${v.id}`).toBe(true);
       expect(v.recipe.dur).toBeGreaterThanOrEqual(8);
@@ -236,6 +236,62 @@ describe('projection du poids (limite de 8 Mo)', () => {
       expect(Number.isInteger(s.integration.versions), s.id).toBe(true);
       for (const id of s.integration.replaces) expect(sounds.some((x) => x.id === id), id).toBe(true);
     }
+  });
+});
+
+describe('itération 2 : retours du propriétaire', () => {
+  it('le fichier de choix du propriétaire se relit sans erreur (variantes, macros, « actuel », « aucun »)', () => {
+    const { choices, errors } = parseChoices(readFileSync('Docs/ref/choix-sons-3h.txt', 'utf8'), data.slots);
+    expect(errors).toEqual([]);
+    expect(choices['voix-marcheur-attaque']).toEqual({ variant: 'C', macros: { hauteur: -6, matiere: 0, grain: 1, duree: 0.7, ampleur: 0 } });
+    expect(choices['joueur-relevage']).toEqual({ variant: 'actuel' });
+    expect(choices['ambiance-neon']).toEqual({ variant: 'aucun' });
+  });
+
+  it('« actuel » et « aucun » : écrits et relus ; « actuel » refusé pour un emplacement sans son actuel', () => {
+    const text = serializeChoices({ 'joueur-chute-x': { variant: 'aucun' }, 'joueur-relevage': { variant: 'actuel' } }, data.slots);
+    expect(text.split('\n')).toEqual(['joueur-relevage=actuel', 'joueur-chute-x=aucun']);
+    expect(parseChoices('escalade=actuel', data.slots).errors.map((e) => e.reason)).toEqual(['actuel']);
+  });
+
+  it('projection d\'un fichier de choix : seuls les emplacements cités sont intégrés ; « actuel » et « aucun » n\'ajoutent rien', () => {
+    const { choices } = parseChoices('joueur-relevage=actuel\nambiance-neon=aucun\npas-joueur-exterieur=A()', data.slots);
+    const r = project({ atelierRaw: raw, sounds, choices, measureTime: false, onlyChosen: true });
+    expect(r.rows.map((row) => row.slot)).toEqual(['pas-joueur-exterieur']);
+    expect(r.removed).toEqual([]);
+  });
+
+  it('pas sur pierre : énergie au-delà de 1 kHz (centroïde ≥ 1 000 Hz), attaque sèche (≤ 6 ms), plus aucun mode accordé au médium', () => {
+    for (const id of ['pas-joueur-dur', 'pas-joueur-escalier']) for (const v of ['A', 'B', 'C']) {
+      const s = slotOf(id);
+      const m = measureSound(renderOnce(id, v).samples, FORMAT.sampleRate, s, raw.levelRef);
+      expect(m.centroid, `${id} ${v}`).toBeGreaterThanOrEqual(1000);
+      expect(m.attackMs, `${id} ${v}`).toBeLessThanOrEqual(6);
+      expect(s.variants.find((x) => x.id === v).recipe.modes ?? [], `${id} ${v}`).toEqual([]);
+    }
+  });
+
+  it('escalade B : plus de grognement ; gémissements lointains B : faits des voix d\'errance choisies (C) des quatre types', () => {
+    expect(slotOf('escalade').variants.find((v) => v.id === 'B').recipe.grunt).toBeUndefined();
+    const parts = slotOf('ambiance-lointains').variants.find((v) => v.id === 'B').recipe.parts;
+    expect(parts.length).toBe(4);
+    for (const type of ['marcheur', 'petit', 'voute', 'grand']) {
+      const voice = slotOf(`voix-${type}-errance`).variants.find((v) => v.id === 'C').recipe;
+      expect(parts.some((p) => p.f0 === voice.f0 && p.formantScale === voice.formantScale), type).toBe(true);
+    }
+  });
+
+  it('bois et marteau de la réparation : modes denses très amortis (≥ 10 modes, décroissance ≤ 40 ms), plus de résonance accordée', () => {
+    for (const id of ['planche-arrachage', 'planche-chute', 'reparation']) for (const v of slotOf(id).variants) {
+      const r = v.recipe;
+      const dense = r.splinter?.dense ?? r.dense ?? r.hit?.body?.dense;
+      expect(dense.count, `${id} ${v.id}`).toBeGreaterThanOrEqual(10);
+      expect(dense.decay, `${id} ${v.id}`).toBeLessThanOrEqual(0.04);
+    }
+  });
+
+  it('planche arrachée : on entend le bois céder puis la planche tomber (au moins trois coups séparés)', () => {
+    for (const v of ['A', 'B', 'C']) expect(onsets(renderOnce('planche-arrachage', v).samples, FORMAT.sampleRate, { threshold: 0.2, minGap: 0.08 }).length, v).toBeGreaterThanOrEqual(3);
   });
 });
 
