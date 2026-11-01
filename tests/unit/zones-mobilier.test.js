@@ -15,6 +15,8 @@ const p = cleanParams(params);
 // Commit de `main` juste avant le lot 3c (« Update seed.md ») : après la fusion, `main` contient déjà le lot, la comparaison doit rester valable.
 const BASE = '5669eb1';
 const ORIGINAL = Array.from({ length: 36 }, (_, i) => `M${i + 1}`);
+// Lot 3g : décisions rejouables appliquées aux sources (scripts/modele/appliquer-decisions.mjs).
+const DECISIONS = JSON.parse(readFileSync('data/game/maps/rez-de-chaussee/ecarts-decisions.json', 'utf8')).decisions.filter((d) => d.level !== 'plus-60' || d.approved === true);
 const added = plan.furniture.filter((f) => !ORIGINAL.includes(f.id));
 // Règles de la carte : rectangles du plan (world.obstacles), pas les boîtes de collision ajustées des chaises.
 const items = world.obstacles.filter((o) => o.outside !== true);
@@ -37,10 +39,13 @@ describe('mobilier de complément : plan.json, source unique', () => {
     for (const o of plan.furniture.filter((f) => ORIGINAL.includes(f.id))) expect(o.provisional === undefined && o.source === undefined, o.id).toBe(true);
   });
 
-  it('le modèle 3D du propriétaire est absent du dépôt : toutes les pièces ajoutées sont provisoires', () => {
+  // Lot 3g (avant : « toutes les pièces ajoutées sont provisoires ») : le modèle a été relevé (scripts/modele/) mais reste hors du dépôt ; une pièce
+  // ajoutée est provisoire, ou relevée sur le modèle (source « modele ») par une décision « remplacer » ou « ajouter » de ecarts-decisions.json.
+  it('le modèle 3D du propriétaire est absent du dépôt ; une pièce ajoutée est provisoire ou vient d\'une décision du relevé', () => {
     const files = execSync('git ls-files', { encoding: 'utf8' }).split('\n');
-    expect(files.some((f) => f.startsWith('Docs/ref/modele-rdc/'))).toBe(false);
-    for (const a of added) expect(a.provisional, a.id).toBe(true);
+    expect(files.some((f) => f.startsWith('Docs/ref/modele-rdc/') || /model\.dae|Sanstitre/i.test(f))).toBe(false);
+    const decided = new Set(DECISIONS.filter((d) => d.floor === 'rdc' && (d.action === 'remplacer' || d.action === 'ajouter')).map((d) => (d.action === 'ajouter' ? (d.to?.id ?? `R-${d.id}`) : d.id)));
+    for (const a of added) expect(a.provisional === true || (a.source === 'modele' && decided.has(a.id)), a.id).toBe(true);
   });
 
   it('les 36 pièces d\'origine de plan.json sont inchangées depuis le commit précédant le lot', () => {
@@ -50,9 +55,16 @@ describe('mobilier de complément : plan.json, source unique', () => {
     } catch {
       return;
     }
-    expect(plan.furniture.filter((f) => ORIGINAL.includes(f.id))).toEqual(before.furniture);
+    // Lot 3g (avant : égalité stricte) : seules les pièces d'origine visées par une décision « corriger » de ecarts-decisions.json changent, et exactement
+    // vers le rectangle de la décision ; aucune n'est retirée par une décision.
+    const fixes = new Map(DECISIONS.filter((d) => d.floor === 'rdc' && d.action === 'corriger' && ORIGINAL.includes(d.id)).map((d) => [d.id, d.to]));
+    expect(DECISIONS.filter((d) => d.floor === 'rdc' && d.action === 'retirer' && ORIGINAL.includes(d.id) && d.approved !== true).filter((d) => d.level !== 'plus-60')).toEqual([]);
+    const expected = before.furniture.map((f) => (fixes.has(f.id) ? { ...f, x0: fixes.get(f.id).x0, y0: fixes.get(f.id).y0, x1: fixes.get(f.id).x1, y1: fixes.get(f.id).y1 } : f));
+    expect(plan.furniture.filter((f) => ORIGINAL.includes(f.id))).toEqual(expected);
     // Lot 3e : seul l'escalier existant est marqué (role) et un second escalier est ajouté (stairs) ; rien d'autre ne change dans plan.json.
-    expect({ ...plan, furniture: undefined, stairs: undefined }).toEqual({ ...before, furniture: undefined, stairs: undefined });
+    // Lot 3g : sauf les fenêtres retirées à la demande du propriétaire (F7, grille du modèle) par ecarts-decisions.json.
+    const removedWindows = DECISIONS.filter((d) => d.floor === 'rdc' && d.action === 'retirer' && /^F\d+$/.test(d.id)).map((d) => d.id);
+    expect({ ...plan, furniture: undefined, stairs: undefined }).toEqual({ ...before, furniture: undefined, stairs: undefined, windows: before.windows.filter((w) => !removedWindows.includes(w.id)) });
     // Lot 3e (mise à jour) : l'emprise de l'escalier courbe est redessinée (escalier physique arrondi) ; l'escalier est toujours là, sous le même identifiant.
     const strip = (list) => list.map((st) => (st.id === 'escalier-courbe' ? { id: st.id } : Object.fromEntries(Object.entries(st).filter(([k]) => k !== 'role'))));
     expect(strip(plan.stairs.slice(0, before.stairs.length))).toEqual(strip(before.stairs));
@@ -74,9 +86,15 @@ describe('mobilier de complément : plan.json, source unique', () => {
     expect(out.report.valid).toBe(true);
   });
 
-  it('chaque pièce ajoutée est dans world.json, marquée provisoire, sans avoir été retirée', () => {
-    expect(addedWorld.length).toBeGreaterThanOrEqual(added.length - 2);
-    for (const o of addedWorld) expect(o.provisional, o.id).toBe(true);
+  // Lot 3g (avant : addedWorld ≥ ajoutées − 2 et toutes provisoires) : les pièces du modèle fusionnent avec leurs voisines (une fusion par bloc) ; un bloc est
+  // provisoire dès qu'il contient une pièce provisoire, et un bloc sans pièce provisoire ne contient que des pièces du modèle.
+  it('chaque pièce ajoutée est dans world.json (seule ou dans un bloc), avec son origine, sans avoir été retirée', () => {
+    expect(addedWorld.length).toBeGreaterThanOrEqual(added.length - 4);
+    for (const o of addedWorld) {
+      const parts = (o.parts ?? [o.id]).map((id) => plan.furniture.find((f) => f.id === id)).filter(Boolean);
+      expect(o.provisional === true || parts.every((f) => f.source === 'modele' || ORIGINAL.includes(f.id)), o.id).toBe(true);
+      expect(o.provisional === true, o.id).toBe(parts.some((f) => f.provisional === true));
+    }
     const retired = world.generation.retired.map((r) => r.id);
     for (const a of added) expect(retired.includes(a.id), a.id).toBe(false);
     for (const a of added) expect(addedWorld.some((o) => (o.parts ?? [o.id]).includes(a.id)), a.id).toBe(true);
@@ -119,7 +137,9 @@ describe('mobilier de complément : aire libre', () => {
 describe('mobilier de complément : règles de la carte, zone par zone, porte fermée et ouverte', () => {
   it('deux pièces sont au contact ou séparées d\'au moins le couloir minimal (50), sans recouvrement', () => {
     const pairs = items.flatMap((a, i) => items.slice(i + 1).map((b) => [a, b]));
+    const base = (o) => String(o.id).replace(/\.\d+$/, ''); // lot 3g : morceaux d'une même emprise d'escalier (voir maps-regles)
     for (const [a, b] of pairs) {
+      if (a.kind === 'escalier' && b.kind === 'escalier' && base(a) === base(b)) continue;
       const gap = rectGap(a, b);
       expect(gap === 0 || gap >= world.minCorridor, `${a.id} / ${b.id} : ${gap}`).toBe(true);
       expect(overlapArea(a, b), `${a.id} / ${b.id}`).toBe(0);
@@ -154,7 +174,7 @@ describe('mobilier de complément : règles de la carte, zone par zone, porte fe
     for (const o of items) expect(distanceToRect(world.start.x, world.start.y, o), o.id).toBeGreaterThanOrEqual(120);
   });
 
-  it.each(['F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8'])('aucune pièce dans les 150 de profondeur libre derrière %s ni à moins de 80 de son point de réparation', (id) => {
+  it.each(['F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F8'])('aucune pièce dans les 150 de profondeur libre derrière %s ni à moins de 80 de son point de réparation', (id) => {
     const w = world.windows.find((q) => q.id === id);
     const zone = windowZone(w, world.windowSize, 150, world.wallThickness);
     const g = geoms.find((q) => q.id === id);

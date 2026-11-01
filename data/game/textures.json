@@ -1,5 +1,5 @@
 {
- "_provisoire": "Textures du lot 1c : tailles, graines, couleurs (jetons --game-* de css/tokens.css) et réglages provisoires. Tout est calculé par js/core/texgen.js, rien n'est importé. repeat = unités du monde par répétition ; les atlas ne se répètent pas (repeat 0) et chaque région est entourée d'une marge de 8 px qui répète son bord ; scale = unités du monde couvertes par une région entière.",
+ "_provisoire": "Textures du lot 1c : tailles, graines, couleurs (jetons --game-* de css/tokens.css) et réglages provisoires. Tout est calculé par js/core/texgen.js, rien n'est importé. repeat = unités du monde par répétition ; les atlas ne se répètent pas (repeat 0) et chaque région est entourée d'une marge de 8 px qui répète son bord ; scale = unités du monde couvertes par une région entière. Lot 3g : « fine » = réglages ajoutés quand ?detail vaut 1 (par défaut) : la même texture plus détaillée (joints irréguliers, éclats, taches, coulures, fissures) ; ?detail=0 rend la texture d'avant le lot, à l'identique.",
  "budget": {
   "maxTextures": 14,
   "maxSize": 1024,
@@ -22,6 +22,11 @@
     "cells": 10,
     "joint": 3,
     "wear": 0.6
+   },
+   "fine": {
+    "params": {
+     "fine": 1
+    }
    }
   },
   {
@@ -34,7 +39,12 @@
     "base": "--game-wall-base",
     "dirt": "--game-wall-dirt"
    },
-   "params": {}
+   "params": {},
+   "fine": {
+    "params": {
+     "fine": 1
+    }
+   }
   },
   {
    "id": "route",
@@ -51,6 +61,11 @@
     "dashLen": 0.56,
     "lineWidth": 0.045,
     "edge": 0.07
+   },
+   "fine": {
+    "params": {
+     "fine": 1
+    }
    }
   },
   {
@@ -66,6 +81,11 @@
    "params": {
     "cells": 2,
     "joint": 3
+   },
+   "fine": {
+    "params": {
+     "fine": 1
+    }
    }
   },
   {
@@ -78,7 +98,12 @@
     "a": "--game-grass-a",
     "b": "--game-grass-b"
    },
-   "params": {}
+   "params": {},
+   "fine": {
+    "params": {
+     "fine": 1
+    }
+   }
   },
   {
    "id": "sol-exterieur",
@@ -90,7 +115,12 @@
     "soil": "--game-soil",
     "gravel": "--game-gravel"
    },
-   "params": {}
+   "params": {},
+   "fine": {
+    "params": {
+     "fine": 1
+    }
+   }
   },
   {
    "id": "garde-corps",

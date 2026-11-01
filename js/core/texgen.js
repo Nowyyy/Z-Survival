@@ -115,6 +115,10 @@ const GENRES = {};
 // Dalles : carrelage et trottoir.
 function slabs(ctx, { cells, joint, wear, crack, bevel, names }) {
   const { w, h, c, seed } = ctx;
+  // Lot 3g : détail fin (params.fine, 0 à 1 ; absent = rendu d'avant le lot, à l'identique) — joints irréguliers et encrassés, éclats aux bords,
+  // micro-fissures, taches, teinte propre à chaque carreau, points de saleté. Couches périodiques : la texture reste raccordable.
+  const fineK = param(ctx.p, 'fine', 0, 0, 1);
+  const fineLayer = fineK > 0 ? slabsFine(ctx, cells, joint / 2, fineK) : null;
   const A = c[names[0]];
   const B = c[names[1]];
   const G = c[names[2]];
@@ -135,6 +139,13 @@ function slabs(ctx, { cells, joint, wear, crack, bevel, names }) {
     const u = x / w;
     const v = y / h;
     const f = fine(u, v);
+    if (fineLayer !== null) {
+      fineLayer(x, y, tx, ty, d, u, v, f, out);
+      if (out[3] === -1) {
+        out[3] = 255;
+        return;
+      }
+    }
     if (d < jh) {
       const k = 0.85 + f * 0.3;
       out[0] = G[0] * k;
@@ -151,9 +162,52 @@ function slabs(ctx, { cells, joint, wear, crack, bevel, names }) {
     if (d < jh + bevel) k *= 0.8 + (0.2 * (d - jh)) / bevel;
     else if (lx < bevel + jh + 1 && ly < bevel + jh + 1) k *= 1.06;
     if (crack > 0 && Math.abs(fissure(u, v) - 0.5) < crack * smooth(0.74, 0.82, gate(u, v))) k *= 0.7;
+    if (fineLayer !== null) k *= out[3];
     out[0] = (A[0] + (B[0] - A[0]) * t) * k;
     out[1] = (A[1] + (B[1] - A[1]) * t) * k;
     out[2] = (A[2] + (B[2] - A[2]) * t) * k;
+    if (fineLayer !== null) out[3] = 255;
+  };
+}
+
+// Couche fine des dalles (lot 3g). Écrit soit un pixel complet (joint ou éclat : out[3] = -1), soit un facteur multiplicatif dans out[3].
+function slabsFine(ctx, cells, jh, amount) {
+  const { c, seed } = ctx;
+  const G = c.grout ?? c[Object.keys(c).at(-1)];
+  const jitter = makeNoise(cells * 3, cells * 3, seed + 21);
+  const chip = makeNoise(cells * 6, cells * 6, seed + 22);
+  const microCrack = makeFbm(cells, cells, seed + 23, 3, 0.55);
+  const microGate = makeNoise(cells * 2, cells * 2, seed + 24);
+  const blot = makeFbm(6, 6, seed + 25, 4, 0.55);
+  const grain = makeNoise(128, 128, seed + 26);
+  return (x, y, tx, ty, d, u, v, f, out) => {
+    // Joint irrégulier : largeur qui varie le long du joint, plus sombre et encrassé.
+    const jw = jh * (1 + (jitter(u, v) - 0.5) * 1.1 * amount);
+    const dirt = 0.82 + f * 0.26 - (hash(x, y, seed + 27) < 0.12 ? 0.12 : 0);
+    if (d < jw) {
+      out[0] = G[0] * dirt;
+      out[1] = G[1] * dirt;
+      out[2] = G[2] * dirt;
+      out[3] = -1;
+      return;
+    }
+    // Éclat au bord d'un carreau : le carreau est cassé, on voit le mortier.
+    if (d < jw + 3.5 && chip(u, v) > 0.8) {
+      out[0] = G[0] * (dirt + 0.08);
+      out[1] = G[1] * (dirt + 0.08);
+      out[2] = G[2] * (dirt + 0.08);
+      out[3] = -1;
+      return;
+    }
+    let k = 1 + (hash(tx, ty, seed + 28) - 0.5) * 0.12 * amount + (grain(u, v) - 0.5) * 0.08 * amount;
+    if (d < jw + 3) k *= 1 - 0.14 * amount * (1 - (d - jw) / 3); // crasse au bord du joint
+    const b = blot(u, v);
+    if (b > 0.6) k *= 1 - (b - 0.6) * 0.9 * amount; // taches
+    if (Math.abs(microCrack(u, v) - 0.5) < 0.0045 * amount && microGate(u, v) > 0.62) k *= 0.74; // micro-fissures
+    const s = hash(x, y, seed + 29);
+    if (s > 0.996) k *= 0.62;
+    else if (s > 0.99) k *= 1.12;
+    out[3] = k * (1 + 0.035 * amount); // compense l'assombrissement des joints et des taches (luminance moyenne à ±6 %)
   };
 }
 
@@ -250,7 +304,9 @@ GENRES.crate = {
 
 GENRES.plaster = {
   colors: ['base', 'dirt'], main: 'base', tile: 'xy',
-  make({ w, h, c, seed }) {
+  make({ w, h, c, p, seed }) {
+    const fineK = param(p, 'fine', 0, 0, 1);
+    const fineLayer = fineK > 0 ? plasterFine(seed, fineK) : null;
     const blotch = makeFbm(4, 4, seed + 1, 3, 0.55);
     const drip = makeNoise(40, 2, seed + 2);
     const dripGate = makeNoise(5, 2, seed + 3);
@@ -263,13 +319,43 @@ GENRES.plaster = {
       const dirt = smooth(0.45, 0.8, blotch(u, v)) * 0.4 + smooth(0.68, 0.92, drip(u, v)) * smooth(0.5, 0.75, dripGate(u, v)) * 0.4;
       let k = 1 + (rough(u, v) - 0.5) * 0.12 + (hash(x, y, seed + 7) - 0.5) * 0.06;
       if (Math.abs(crack(u, v) - 0.5) < 0.003 * smooth(0.74, 0.82, gate(u, v))) k *= 0.65;
-      const t = Math.min(0.9, dirt);
+      let t = Math.min(0.9, dirt);
+      if (fineLayer !== null) {
+        const r = fineLayer(x, y, u, v);
+        k *= r.k;
+        t = Math.min(0.95, t + r.t);
+      }
       out[0] = (c.base[0] + (c.dirt[0] - c.base[0]) * t) * k;
       out[1] = (c.base[1] + (c.dirt[1] - c.base[1]) * t) * k;
       out[2] = (c.base[2] + (c.dirt[2] - c.base[2]) * t) * k;
     };
   },
 };
+
+// Couche fine de l'enduit (lot 3g) : coulures verticales, plaques d'enduit tombé, réseau de fissures fines, grain. Renvoie { k, t } (facteur, salissure ajoutée).
+function plasterFine(seed, amount) {
+  const streak = makeNoise(48, 2, seed + 31);
+  const streakGate = makeNoise(6, 3, seed + 32);
+  const spall = makeFbm(5, 5, seed + 33, 4, 0.55);
+  const net = makeFbm(7, 7, seed + 34, 3, 0.5);
+  const netGate = makeNoise(4, 4, seed + 35);
+  const grain = makeNoise(160, 160, seed + 36);
+  const out = { k: 1, t: 0 };
+  return (x, y, u, v) => {
+    let k = 1 + (grain(u, v) - 0.5) * 0.1 * amount;
+    let t = smooth(0.62, 0.9, streak(u, v)) * smooth(0.45, 0.75, streakGate(u, v)) * 0.35 * amount;
+    const sp = spall(u, v);
+    if (sp > 0.66) {
+      k *= 1 - 0.1 * amount;
+      if (sp < 0.675) k *= 1 - 0.25 * amount; // bord de la plaque tombée
+      t += 0.12 * amount;
+    }
+    if (Math.abs(net(u, v) - 0.5) < 0.004 * amount && netGate(u, v) > 0.5) k *= 0.7;
+    out.k = k * (1 + 0.045 * amount);
+    out.t = t;
+    return out;
+  };
+}
 
 GENRES.metal = {
   colors: ['metal'], main: 'metal', tile: 'xy',
@@ -328,6 +414,10 @@ GENRES.railing = {
 
 // Asphalte seul : fonction partagée par asphalt et markings.
 function asphaltPixel({ w, h, c, p, seed }) {
+  const fineK = param(p, 'fine', 0, 0, 1);
+  const oil = fineK > 0 ? makeFbm(4, 4, seed + 41, 4, 0.55) : null;
+  const alligator = fineK > 0 ? makeFbm(9, 9, seed + 42, 3, 0.5) : null;
+  const alliGate = fineK > 0 ? makeNoise(3, 3, seed + 43) : null;
   const stones = makeNoise(96, 96, seed + 1);
   const coarse = makeFbm(4, 4, seed + 2, 3, 0.55);
   const patch = makeFbm(3, 3, seed + 3, 2, 0.5);
@@ -342,6 +432,14 @@ function asphaltPixel({ w, h, c, p, seed }) {
     if (patch(u, v) > 0.58) k *= 0.88;
     if (Math.abs(crack(u, v) - 0.5) < 0.003 * smooth(0.72, 0.8, gate(u, v))) k *= 0.65;
     if (seamH > 0 && Math.min((y % seamH) + 0.5, seamH - (y % seamH) - 0.5) < 0.9) k *= 0.6;
+    if (oil !== null) {
+      // Lot 3g : taches d'huile, faïençage (fissures en réseau), gravillons clairs.
+      const o = oil(u, v);
+      if (o > 0.62) k *= 1 - (o - 0.62) * 1.1 * fineK;
+      if (Math.abs(alligator(u, v) - 0.5) < 0.006 * fineK && alliGate(u, v) > 0.55) k *= 0.7;
+      if (hash(x, y, seed + 44) > 0.985) k *= 1.25;
+      k *= 1 + 0.03 * fineK;
+    }
     out[0] = c.asphalt[0] * k;
     out[1] = c.asphalt[1] * k;
     out[2] = c.asphalt[2] * k;
@@ -379,7 +477,10 @@ GENRES.markings = {
 
 GENRES.grass = {
   colors: ['a', 'b'], main: 'a', tile: 'xy',
-  make({ w, h, c, seed }) {
+  make({ w, h, c, p, seed }) {
+    const fineK = param(p, 'fine', 0, 0, 1);
+    const dead = fineK > 0 ? makeFbm(6, 6, seed + 51, 4, 0.55) : null;
+    const dry = fineK > 0 ? makeNoise(140, 40, seed + 52) : null;
     const patch = makeFbm(4, 4, seed + 1, 3, 0.55);
     const blades = makeNoise(110, 28, seed + 2);
     const tuft = makeNoise(18, 18, seed + 3);
@@ -390,6 +491,13 @@ GENRES.grass = {
       let k = 1 + (blades(u, v) - 0.5) * 0.45 + (hash(x, y, seed + 4) - 0.5) * 0.2;
       const tf = tuft(u, v);
       if (tf > 0.66) k += (tf - 0.66) * 1.2;
+      if (dead !== null) {
+        // Lot 3g : plaques d'herbe morte plus sombres et brins secs plus clairs.
+        const dd = dead(u, v);
+        if (dd > 0.6) k *= 1 - (dd - 0.6) * 0.8 * fineK;
+        if (dry(u, v) > 0.8) k *= 1 + 0.25 * fineK;
+        k *= 1 + 0.02 * fineK;
+      }
       out[0] = (c.a[0] + (c.b[0] - c.a[0]) * t) * k;
       out[1] = (c.a[1] + (c.b[1] - c.a[1]) * t) * k;
       out[2] = (c.a[2] + (c.b[2] - c.a[2]) * t) * k;
@@ -399,7 +507,9 @@ GENRES.grass = {
 
 GENRES.soil = {
   colors: ['soil', 'gravel'], main: 'soil', tile: 'xy',
-  make({ w, h, c, seed }) {
+  make({ w, h, c, p, seed }) {
+    const fineK = param(p, 'fine', 0, 0, 1);
+    const clod = fineK > 0 ? makeNoise(48, 48, seed + 61) : null;
     const lumps = makeFbm(5, 5, seed + 1, 3, 0.55);
     const pebbles = makeNoise(72, 72, seed + 2);
     const speck = makeNoise(150, 150, seed + 3);
@@ -414,6 +524,13 @@ GENRES.soil = {
         k *= pb > 0.72 ? 1 : 0.8;
       }
       if (speck(u, v) > 0.8) t = Math.max(t, 0.4);
+      if (clod !== null) {
+        // Lot 3g : mottes (ombre en bas, lumière en haut) et grain fin.
+        const a = clod(u, v);
+        const b = clod(u, v + 1.5 / h);
+        if (a > 0.66) k *= 1 + (a - b) * 3 * fineK;
+        k *= 1 + (hash(x, y, seed + 62) - 0.5) * 0.12 * fineK;
+      }
       out[0] = (c.soil[0] + (c.gravel[0] - c.soil[0]) * t) * k;
       out[1] = (c.soil[1] + (c.gravel[1] - c.soil[1]) * t) * k;
       out[2] = (c.soil[2] + (c.gravel[2] - c.soil[2]) * t) * k;
@@ -829,9 +946,12 @@ export function regionRect(size, region) {
 }
 
 // Transforme une entrée de data/game/textures.json en spécification : lookup(jeton) -> [r, g, b] ou null (jeton inconnu).
-export function buildSpec(entry, lookup) {
+// opts.detail (lot 3g, vrai par défaut) : les réglages fins de l'entrée (`fine` : { size, params }) s'ajoutent ; faux = texture d'avant le lot, à l'identique.
+export function buildSpec(entry, lookup, opts = {}) {
   const colorsOf = (map) => Object.fromEntries(Object.entries(map !== null && typeof map === 'object' ? map : {}).map(([name, token]) => [name, lookup(token)]));
-  const e = entry !== null && typeof entry === 'object' ? entry : {};
+  const base = entry !== null && typeof entry === 'object' ? entry : {};
+  const fine = opts?.detail !== false && base.fine !== null && typeof base.fine === 'object' ? base.fine : null;
+  const e = fine ? { ...base, ...(isNum(fine.size) ? { size: fine.size } : {}), params: { ...(base.params ?? {}), ...(fine.params ?? {}) } } : base;
   const params = e.params !== null && typeof e.params === 'object' ? { ...e.params } : {};
   if (Array.isArray(params.regions)) params.regions = params.regions.map((r) => ({ ...r, colors: colorsOf(r?.colors) }));
   return { id: e.id, kind: e.kind, width: e.size ?? e.width, height: e.size ?? e.height, seed: e.seed, colors: colorsOf(e.colors), params };

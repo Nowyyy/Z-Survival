@@ -83,18 +83,24 @@ export function createWindowMeshes({ scene, material, geoms, settings: p, sheet,
     at += 6;
     add('void', 0, voidFrom, at);
     // Pastilles sur le dessus du mur, alignées le long du mur et centrées sur la fenêtre : carré de cadre, puis carré intérieur plein (planche présente) ou sombre.
+    // Lot 3g (retour du propriétaire) : avec les murs jusqu'au plafond (p.pipFace), les pastilles sont incrustées dans la face du mur au-dessus des planches (hauteur
+    // p.pipCenter), sur la face que voit la caméra (au sud du joueur, tournée vers le nord) : la face intérieure, sauf pour un mur sud (sa face extérieure).
+    const innerDir = { x: -g.normal.x, y: -g.normal.y };
+    const pipSide = p.pipFace === true ? (innerDir.y < -0.5 ? 'exterieur' : 'interieur') : 'dessus';
     const spot = { x: g.center.x + g.normal.x * p.pipShift, y: g.center.y + g.normal.y * p.pipShift }; // milieu du dessus du mur
+    const out = pipSide === 'exterieur' ? { x: g.normal.x, y: g.normal.y } : innerDir;
+    const faceAt = (lift) => (pipSide === 'exterieur' ? g.inner + lift : -(g.inner + lift)); // distance signée au centre, le long de la normale (vers l'extérieur)
+    const pipWant = pipSide === 'dessus' ? [0, 1, 0] : [out.x, 0, out.y];
     const inner = [];
     for (let i = 0; i < count; i += 1) {
       const along = (i - (count - 1) / 2) * p.pipStep;
-      const square = (h, y) => [[-1, -1], [1, -1], [1, 1], [-1, 1]].map(([sa, sb]) => [
-        spot.x + g.tangent.x * (along + sa * h) + g.normal.x * sb * h,
-        y,
-        spot.y + g.tangent.y * (along + sa * h) + g.normal.y * sb * h,
-      ]);
+      const square = (h, y) => [[-1, -1], [1, -1], [1, 1], [-1, 1]].map(([sa, sb]) => (pipSide === 'dessus'
+        ? [spot.x + g.tangent.x * (along + sa * h) + g.normal.x * sb * h, y, spot.y + g.tangent.y * (along + sa * h) + g.normal.y * sb * h]
+        : [g.center.x + g.tangent.x * (along + sa * h) + g.normal.x * faceAt(y), p.pipCenter + sb * h, g.center.y + g.tangent.y * (along + sa * h) + g.normal.y * faceAt(y)]));
       const from = at;
-      writeQuad(buf, at, square(p.pip / 2, p.wall + p.pipLift), solid('off'), [0, 1, 0]);
-      writeQuad(buf, at + 6, square(p.pipInner / 2, p.wall + p.pipLift + 0.05), solid('on'), [0, 1, 0]);
+      // Sur la face : le second argument est l'écart à la face du mur (pipLift, puis un peu plus pour le carré intérieur).
+      writeQuad(buf, at, square(p.pip / 2, pipSide === 'dessus' ? p.wall + p.pipLift : p.pipLift), solid('off'), pipWant);
+      writeQuad(buf, at + 6, square(p.pipInner / 2, pipSide === 'dessus' ? p.wall + p.pipLift + 0.05 : p.pipLift + 0.05), solid('on'), pipWant);
       inner.push(at + 6);
       at += 12;
       add('pip', i, from, at);
@@ -112,7 +118,7 @@ export function createWindowMeshes({ scene, material, geoms, settings: p, sheet,
     mesh.receiveShadow = false;
     mesh.name = `fenetre-${g.id}`;
     scene.add(mesh);
-    const entry = { id: g.id, geom: g, mesh, items, buf, full, inner, uvOn, uvOff, planks: -1, fill: 0, nailed: 0, stats: { triangles: total, minY: null, minWallGap: null, beams: 0, voidVisible: false, pipsOn: 0 } };
+    const entry = { id: g.id, geom: g, mesh, items, buf, full, inner, uvOn, uvOff, pipSide, pipY: pipSide === 'dessus' ? p.wall + p.pipLift : p.pipCenter, planks: -1, fill: 0, nailed: 0, stats: { triangles: total, minY: null, minWallGap: null, beams: 0, voidVisible: false, pipsOn: 0 } };
     return entry;
   }
 
@@ -182,7 +188,7 @@ export function createWindowMeshes({ scene, material, geoms, settings: p, sheet,
     const on = e.uvOn[0].map((v) => Math.fround(v));
     const pipsOn = e.inner.filter((from) => e.buf.uv[from * 2] === on[0] && e.buf.uv[from * 2 + 1] === on[1]).length;
     const pipItem = e.items.find((item) => item.kind === 'pip');
-    e.stats = { triangles, minY: Number.isFinite(minY) ? minY : null, minWallGap: Number.isFinite(minGap) ? minGap : null, beams: e.nailed, voidVisible, pipsOn, pipY: pipItem ? e.full[pipItem.from * 3 + 1] : null };
+    e.stats = { triangles, minY: Number.isFinite(minY) ? minY : null, minWallGap: Number.isFinite(minGap) ? minGap : null, beams: e.nailed, voidVisible, pipsOn, pipY: pipItem ? e.pipY : null, pipSide: e.pipSide };
   }
 
   const frustum = new THREE.Frustum();

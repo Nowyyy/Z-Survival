@@ -35,18 +35,18 @@ describe('map-svg.js : carte du rez-de-chaussée', () => {
     expect(wellFormed(svg)).toBe(true);
   });
 
-  it('huit étiquettes de fenêtre F1 à F8, en texte', () => {
+  it('sept étiquettes de fenêtre F1 à F8 sans F7, en texte', () => {
     const ids = [...svg.matchAll(/<text class="fenetre-etiquette"[^>]*>([^<]*)<\/text>/g)].map((m) => m[1]);
-    expect(ids).toEqual(['F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8']);
-    expect(count(svg, /class="fenetre"/g)).toBe(8);
+    expect(ids).toEqual(['F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F8']);
+    expect(count(svg, /class="fenetre"/g)).toBe(7); // lot 3g : F7 retirée (grille du modèle)
   });
 
-  it('dix piliers, deux escaliers, aucune rampe, des meubles et 16 points d\'apparition', () => {
+  it('dix piliers, deux escaliers, aucune rampe, des meubles et 14 points d\'apparition', () => {
     expect(count(svg, /class="pilier"/g)).toBe(10);
     expect(count(svg, /class="escalier"/g)).toBe(2);
     expect(count(svg, /<rect class="rampe"/g)).toBe(0);
     expect(count(svg, /class="meuble /g)).toBe(world.obstacles.filter((o) => !['pilier', 'escalier'].includes(o.kind)).length);
-    expect(count(svg, /class="apparition"/g)).toBe(16);
+    expect(count(svg, /class="apparition"/g)).toBe(14); // lot 3g : F7 retirée (grille du modèle)
   });
 
   it('zone de départ, échelle de 500 unités et cadre de 100 px de plan (500 unités) en filigrane', () => {

@@ -766,27 +766,37 @@ test.describe('budget et performance', () => {
   test.skip(({ isMobile }) => isMobile, 'bureau');
   // Références mesurées avant le lot (partie C non commencée) : 10 zombies variés, ombres, joueur au départ / près d'une fenêtre / à l'étage.
   const REF = { R1: [198, 13800], U1: [207, 15346] };
+  // Branche lot-3g (main récupéré) : l'atelier de la carte ajoute du rendu (mobilier, portes, feux, extérieur, brume). Le lot 4 n'ajoute rien : sans le détail de
+  // l'atelier (?detail=0), la référence à quelques éléments près (+ 2 appels : nappes de brume ; + 1 : fenêtre ; triangles à 120 près) ; avec : les plafonds du projet.
+  const measure = (page, mode) => page.evaluate((m) => {
+    const zs = window.__zs;
+    if (m === 'window') {
+      const w = zs.getState().windows.find((q) => q.floor === 'rdc') ?? zs.getState().windows[0];
+      zs.setPlayer(w.repairSpot.x, w.repairSpot.y);
+    }
+    const p = zs.getState().player;
+    const fl = zs.getState().floor?.player ?? 'rdc';
+    zs.setInput({ aim: { angle: Math.PI } });
+    const T = ['marcheur', 'petit', 'voute', 'grand'];
+    const G = ['lent', 'marche', 'rampe', 'course'];
+    for (let i = 0; i < 10; i += 1) zs.spawnEnemy(p.x + 40 + (i % 5) * 30, p.y + (Math.floor(i / 5) - 0.5) * 60, { type: T[i % 4], gait: G[(i + Math.floor(i / 4)) % 4], wave: 10, floor: typeof fl === 'string' ? fl : 'rdc' });
+    zs.step(0.05);
+    zs.sampleScreen(0, 0, 8, 8);
+    const s = zs.getState();
+    return { calls: s.render.calls, triangles: s.render.triangles };
+  }, mode);
   for (const [name, extra, where] of [['R1', '&nospawn=1', 'start'], ['U1', '&wave=21&floor=1&nospawn=1', 'start']]) {
-    test(`${name} : appels de dessin et triangles identiques à la référence (écart 0)`, async ({ page }) => {
+    test(`${name} : sans le détail de l'atelier, la référence (à la brume près) ; avec, 30 000 triangles et 240 appels au plus`, async ({ page }) => {
+      await open(page, `/jeu.html?test=1&seed=1&shadows=1${extra}&detail=0`);
+      const off = await measure(page, where);
+      expect(off.calls).toBeGreaterThanOrEqual(REF[name][0] - 1);
+      expect(off.calls).toBeLessThanOrEqual(REF[name][0] + 3);
+      expect(Math.abs(off.triangles - REF[name][1])).toBeLessThanOrEqual(120);
       await open(page, `/jeu.html?test=1&seed=1&shadows=1${extra}`);
-      const r = await page.evaluate((mode) => {
-        const zs = window.__zs;
-        if (mode === 'window') {
-          const w = zs.getState().windows.find((q) => q.floor === 'rdc') ?? zs.getState().windows[0];
-          zs.setPlayer(w.repairSpot.x, w.repairSpot.y);
-        }
-        const p = zs.getState().player;
-        const fl = zs.getState().floor?.player ?? 'rdc';
-        zs.setInput({ aim: { angle: Math.PI } });
-        const T = ['marcheur', 'petit', 'voute', 'grand'];
-        const G = ['lent', 'marche', 'rampe', 'course'];
-        for (let i = 0; i < 10; i += 1) zs.spawnEnemy(p.x + 40 + (i % 5) * 30, p.y + (Math.floor(i / 5) - 0.5) * 60, { type: T[i % 4], gait: G[(i + Math.floor(i / 4)) % 4], wave: 10, floor: typeof fl === 'string' ? fl : 'rdc' });
-        zs.step(0.05);
-        zs.sampleScreen(0, 0, 8, 8);
-        const s = zs.getState();
-        return { calls: s.render.calls, triangles: s.render.triangles };
-      }, where);
-      expect([r.calls, r.triangles]).toEqual(REF[name]);
+      const on = await measure(page, where);
+      console.log(`BUDGET lot 4 / 3g ${name} : detail=0 ${off.calls} / ${off.triangles} ; detail=1 ${on.calls} / ${on.triangles} (référence ${REF[name].join(' / ')})`);
+      expect(on.triangles).toBeLessThanOrEqual(30000);
+      expect(on.calls).toBeLessThanOrEqual(240);
     });
   }
 

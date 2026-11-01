@@ -23,8 +23,6 @@
     { "id": "F5-b", "fenetre": "F5", "window": "F5", "x": 2975, "y": 3210 },
     { "id": "F6-a", "fenetre": "F6", "window": "F6", "x": 2355, "y": 3010 },
     { "id": "F6-b", "fenetre": "F6", "window": "F6", "x": 2355, "y": 3210 },
-    { "id": "F7-a", "fenetre": "F7", "window": "F7", "x": 1735, "y": 3010 },
-    { "id": "F7-b", "fenetre": "F7", "window": "F7", "x": 1735, "y": 3210 },
     { "id": "F8-a", "fenetre": "F8", "window": "F8", "x": 1605, "y": 3010 },
     { "id": "F8-b", "fenetre": "F8", "window": "F8", "x": 1605, "y": 3210 }
   ],
