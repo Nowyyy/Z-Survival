@@ -165,13 +165,13 @@ test.describe('journal des versions', () => {
     await expect(page.getByRole('heading', { name: 'Journal des versions' })).toBeVisible();
     const summaries = page.locator('.changelog-entry summary');
     expect(await summaries.count()).toBeGreaterThanOrEqual(9);
-    await expect(summaries.first()).toContainText('Lot 3e');
+    await expect(summaries.first()).toContainText('Lot 3g');
     await expect(summaries.last()).toContainText('Lot 0');
     const first = page.locator('.changelog-entry').first();
     await expect(first.locator('.changelog-points')).toBeHidden();
     await summaries.first().click();
     await expect(first.locator('.changelog-points li').first()).toBeVisible();
-    await expect(first).toContainText('escaliers');
+    await expect(first).toContainText('Visite libre');
   });
 
   test('les lots publiés ont leur date et un lien pour les ouvrir ; les autres n\'en ont pas', async ({ page }) => {

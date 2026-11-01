@@ -60,8 +60,9 @@ describe('hygiène du lot 3g : fichiers', () => {
     expect(changed).toEqual([]);
   });
 
-  it('fichiers réservés aux autres lots inchangés (jeu, HUD, interface, journal, CLAUDE.md, conventions, workflow, index, seed)', () => {
-    const changed = git(`diff --name-only ${BASE} -- js/game/game.js js/game/hud.js js/game/ui.js js/game/levels-source.js jeu.html css/game.css CLAUDE.md Docs/ref/conventions.md data/changelog.json tests/unit/data-changelog.test.js tests/e2e/dev.spec.js data/game/enemies.json .github index.html Docs/seed.md`);
+  // data/changelog.json, data-changelog et dev.spec : entrée « lot-3g » ajoutée à la demande du propriétaire (le bilan de Docs/lots/ l'exige).
+  it('fichiers réservés aux autres lots inchangés (jeu, HUD, interface, CLAUDE.md, conventions, workflow, index, seed)', () => {
+    const changed = git(`diff --name-only ${BASE} -- js/game/game.js js/game/hud.js js/game/ui.js js/game/levels-source.js jeu.html css/game.css CLAUDE.md Docs/ref/conventions.md data/game/enemies.json .github index.html Docs/seed.md`);
     if (changed === null) return;
     expect(changed).toEqual([]);
   });
