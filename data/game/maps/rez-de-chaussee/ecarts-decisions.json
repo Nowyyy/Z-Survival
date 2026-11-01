@@ -1,0 +1,285 @@
+{
+  "_provisoire": "Lot 3g : décisions rejouables (pixels du plan) appliquées aux sources par scripts/modele/appliquer-decisions.mjs. Brouillon généré par scripts/modele/rapport.mjs ; `approved: true` = accord du propriétaire (obligatoire pour le niveau plus-60). Voir Docs/ref/affinage.md.",
+  "decisions": [
+    {
+      "id": "MP12",
+      "floor": "rdc",
+      "action": "ajouter",
+      "to": {
+        "at": [
+          52,
+          312
+        ]
+      },
+      "reason": "pilier du modèle sans pilier de la carte : à approuver",
+      "level": "plus-60",
+      "approved": false
+    },
+    {
+      "id": "M2",
+      "floor": "rdc",
+      "action": "corriger",
+      "to": {
+        "x0": 98,
+        "y0": 319,
+        "x1": 114,
+        "y1": 332,
+        "kind": "table"
+      },
+      "reason": "objet du modèle O32 + O33 + O34 (Component_1, Component_2)",
+      "level": "15-60"
+    },
+    {
+      "id": "M3",
+      "floor": "rdc",
+      "action": "retirer",
+      "to": null,
+      "reason": "doublon : recouverte à plus de 50 % par l'objet O37 déjà associé à M4",
+      "level": "15-60"
+    },
+    {
+      "id": "M4",
+      "floor": "rdc",
+      "action": "corriger",
+      "to": {
+        "x0": 65,
+        "y0": 321,
+        "x1": 82,
+        "y1": 332,
+        "kind": "comptoir"
+      },
+      "reason": "objet du modèle O37 (Computer_desk_30x36x27)",
+      "level": "15-60"
+    },
+    {
+      "id": "M10",
+      "floor": "rdc",
+      "action": "corriger",
+      "to": {
+        "x0": 362,
+        "y0": 298,
+        "x1": 378,
+        "y1": 309,
+        "kind": "table"
+      },
+      "reason": "objet du modèle O10 + O11 (Component_2)",
+      "level": "15-60"
+    },
+    {
+      "id": "M21",
+      "floor": "rdc",
+      "action": "corriger",
+      "to": {
+        "x0": 445,
+        "y0": 257,
+        "x1": 462,
+        "y1": 263,
+        "kind": "caisse"
+      },
+      "reason": "objet du modèle O13 + O14 + O15 (Vertical_filing_short, Component_2)",
+      "level": "15-60"
+    },
+    {
+      "id": "M34",
+      "floor": "rdc",
+      "action": "corriger",
+      "to": {
+        "x0": 126,
+        "y0": 49,
+        "x1": 133,
+        "y1": 56,
+        "kind": "etagere"
+      },
+      "reason": "objet du modèle O65 (Bar_stool)",
+      "level": "15-60"
+    },
+    {
+      "id": "M36",
+      "floor": "rdc",
+      "action": "retirer",
+      "to": null,
+      "reason": "recouvre l'ouvrage de fenêtre MW10 (Component_6) : sans doute le cadre de la fenêtre, pas un meuble",
+      "level": "plus-60",
+      "approved": false
+    },
+    {
+      "id": "P2",
+      "floor": "rdc",
+      "action": "remplacer",
+      "to": {
+        "x0": 53,
+        "y0": 116,
+        "x1": 60,
+        "y1": 138,
+        "kind": "etagere"
+      },
+      "reason": "pièce provisoire associée à O56 + O61 + O62 (shelf, Component_2) : remplacée par la pièce du modèle",
+      "level": "15-60"
+    },
+    {
+      "id": "P4",
+      "floor": "rdc",
+      "action": "remplacer",
+      "to": {
+        "x0": 112,
+        "y0": 325,
+        "x1": 134,
+        "y1": 332,
+        "kind": "etagere"
+      },
+      "reason": "pièce provisoire associée à O31 (shelf) : remplacée par la pièce du modèle",
+      "level": "15-60"
+    },
+    {
+      "id": "G1",
+      "floor": "rdc",
+      "action": "ajouter",
+      "to": {
+        "x0": 142,
+        "y0": 286,
+        "x1": 149,
+        "y1": 308,
+        "kind": "etagere"
+      },
+      "reason": "objet du modèle sans équivalent : pièce solide proposée (règles de la carte vérifiées par npm run carte)",
+      "level": "15-60"
+    },
+    {
+      "id": "G2",
+      "floor": "rdc",
+      "action": "ajouter",
+      "to": {
+        "x0": 216,
+        "y0": 212,
+        "x1": 238,
+        "y1": 219,
+        "kind": "etagere"
+      },
+      "reason": "objet du modèle sans équivalent : pièce solide proposée (règles de la carte vérifiées par npm run carte)",
+      "level": "15-60"
+    },
+    {
+      "id": "G3",
+      "floor": "rdc",
+      "action": "ajouter",
+      "to": {
+        "x0": 383,
+        "y0": 232,
+        "x1": 407,
+        "y1": 245,
+        "kind": "etagere"
+      },
+      "reason": "objet du modèle sans équivalent : pièce solide proposée (règles de la carte vérifiées par npm run carte)",
+      "level": "15-60"
+    },
+    {
+      "id": "G16",
+      "floor": "rdc",
+      "action": "ajouter",
+      "to": {
+        "x0": 127,
+        "y0": 211,
+        "x1": 134,
+        "y1": 231,
+        "kind": "etagere"
+      },
+      "reason": "objet du modèle sans équivalent : pièce solide proposée (règles de la carte vérifiées par npm run carte)",
+      "level": "15-60"
+    },
+    {
+      "id": "G32",
+      "floor": "rdc",
+      "action": "ajouter",
+      "to": {
+        "x0": 24,
+        "y0": 300,
+        "x1": 31,
+        "y1": 322,
+        "kind": "etagere"
+      },
+      "reason": "objet du modèle sans équivalent : pièce solide proposée (règles de la carte vérifiées par npm run carte)",
+      "level": "15-60"
+    },
+    {
+      "id": "G37",
+      "floor": "rdc",
+      "action": "ajouter",
+      "to": {
+        "x0": 24,
+        "y0": 212,
+        "x1": 31,
+        "y1": 234,
+        "kind": "etagere"
+      },
+      "reason": "objet du modèle sans équivalent : pièce solide proposée (règles de la carte vérifiées par npm run carte)",
+      "level": "15-60"
+    },
+    {
+      "id": "G39",
+      "floor": "rdc",
+      "action": "ajouter",
+      "to": {
+        "x0": 53,
+        "y0": 93,
+        "x1": 63,
+        "y1": 115,
+        "kind": "etagere"
+      },
+      "reason": "objet du modèle sans équivalent : pièce solide proposée (règles de la carte vérifiées par npm run carte)",
+      "level": "15-60"
+    },
+    {
+      "id": "MC1",
+      "floor": "rdc",
+      "action": "ajouter",
+      "to": {
+        "x0": 335,
+        "y0": 308,
+        "x1": 382,
+        "y1": 346,
+        "kind": "cloison"
+      },
+      "reason": "cloison ou bloc du bâti sans équivalent dans la carte : à approuver",
+      "level": "plus-60",
+      "approved": false
+    },
+    {
+      "id": "U5",
+      "floor": "etage",
+      "action": "corriger",
+      "to": {
+        "x": 217
+      },
+      "reason": "centre du modèle (Component_8, Component_5) à 216.5 px",
+      "level": "15-60"
+    },
+    {
+      "id": "pilier 231,264",
+      "floor": "etage",
+      "action": "corriger",
+      "to": {
+        "at": [
+          242,
+          253
+        ]
+      },
+      "reason": "pilier du modèle en 242, 253 px (déplacé par un lot précédent ?) : à approuver",
+      "level": "plus-60",
+      "approved": false
+    },
+    {
+      "id": "MQ4",
+      "floor": "etage",
+      "action": "ajouter",
+      "to": {
+        "at": [
+          55,
+          254
+        ]
+      },
+      "reason": "pilier du modèle sans pilier de la carte : à approuver",
+      "level": "plus-60",
+      "approved": false
+    }
+  ]
+}
