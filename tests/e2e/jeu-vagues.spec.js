@@ -117,7 +117,7 @@ test.describe('vagues du lot 2', () => {
     expect(s.splash).toMatchObject({ visible: true, kind: 'fin', wave: 1 }); // lot 2c : l'annonce est l'animation centrale (avant : waves.announce)
     await expect(page.locator('#wave-announce')).toHaveClass(/is-visible/);
     await expect(page.locator('#wave-announce-title')).toHaveText('Vague 1 terminée');
-    await expect(page.locator('#hud-live')).toHaveText('Vague 1 terminée.');
+    await expect(page.locator('#hud-live')).toHaveText('Manche 1 terminée, bonus +12.');
     await step(page, 7.7);
     expect((await state(page)).waves.phase).toBe('attente');
     await step(page, 0.4);
@@ -432,7 +432,7 @@ test.describe('vagues du lot 2', () => {
     await step(page, 3.2);
     await expect(page.locator('#hud-live')).toHaveText('Vague 1.');
     await page.evaluate(() => { window.__zs.setWaveParams({ total: { base: 1, linear: 0, quadratic: 0 } }); window.__zs.killAll(); window.__zs.step(0.3); });
-    await expect(page.locator('#hud-live')).toHaveText('Vague 1 terminée.');
+    await expect(page.locator('#hud-live')).toHaveText('Manche 1 terminée, bonus +12.');
     await step(page, 5);
     for (const t of seen) expect(t).not.toMatch(/Prochaine|Restants|\ds\b/);
     expect(seen.some((t) => /Vague 1/.test(t))).toBe(true);

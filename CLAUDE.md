@@ -40,15 +40,15 @@ Avant de modifier une page, lis `Docs/ref/conventions.md` (arborescence, pages, 
 - Poses : pose.js (pur) donne les angles ; géométries et matériaux partagés, jamais recréés par image.
 - Entrées : event.code (jamais event.key) ; tir automatique quand le laser touche.
 - Tir : balle dans un cône (spread.js) ; dégâts figés à la création, appliqués à l'impact ; le laser (ray.js) vise sans dégâts ; à travers les fenêtres ; portée 700, laser 300.
-- Tests : ?test=1 expose window.__zs (getState, step, skipWave, setDoor, setPlanks, spawnAtWindow…) ; ?seed ?nospawn ?empty ?fps ?dpr ?shadows ?wave ?lvl ?planks ?endless ; 667×375, step() et le journal, jamais une durée réelle ; Math.random interdit ; helpers e2e : map=salle ; scripts/zones-metriques.mjs ; Docs/ref/modele-rdc/ exclu du contrôle de 5 Mo.
+- Tests : ?test=1 expose window.__zs (getState, step, skipWave, setDoor, flushSave, giveMoney…) ; 667×375, step() et le journal, jamais une durée réelle ; Math.random interdit ; helpers e2e : map=salle ; Docs/ref/modele-rdc/ exclu des 5 Mo.
 - Monde : decor.json (extérieur, apparitions hors de la vue) ; collision.js, nav.js ; meubles et portes fermées bloquent tout ; hauteurs : murs 60, meubles ≤ 70, voitures 55.
 - Textures : texgen.js (pur) d'après textures.json, aucune image ; contraste ≥ 3:1 personnages / sol, laser et balle ≥ 4,5:1.
 - Personnages : 12 pièces, 700 triangles au plus ; 4 variantes (variants.js) ; objectif 240 appels de dessin, 10 zombies au plus.
-- Sons : synth.js (d'après sounds.json, aucun fichier audio), audio.js, sound-director.js ; jamais de son dans js/core/ ; sons.html à retirer au lot 13.
-- Chargement : textures (8 ms par tranche) et sons essentiels derrière l'écran de préparation ; aucun son avant le premier geste.
-- Vagues : waves.js + wave-director.js d'après waves.json (vie BO3 ×30 au plus) ; numérotation continue ; 10 zombies simultanés au plus.
+- Sons : synth.js (sounds.json, aucun fichier audio), audio.js, sound-director.js ; jamais de son dans js/core/ ; sons.html à retirer au lot 13.
+- Chargement : textures et sons essentiels derrière l'écran de préparation ; aucun son avant le premier geste.
+- Vagues : waves.js + wave-director.js d'après waves.json (vie BO3 ×30 au plus) ; 10 zombies simultanés au plus.
 - Zombies : 4 types × 4 allures (enemies.json, gaits.json), createEnemy ; vitesse ≤ 190 ; la rampe est visuelle, sans effet sur la hitbox.
-- Statistiques : player-stats.js (7 stats, niveaux 0 à 10, ?lvl=, jamais stockés) ; effectiveWeapon et effectivePlayer ; régénération par kill.
+- Statistiques : player-stats.js (9 stats, niveaux 0 à 10 ; chutes 0 à 5) ; niveaux = ?lvl= > sauvegarde > zéros ; effectiveWeapon et effectivePlayer.
 - Fenêtres : windows.json, windows.js (4 planches, arrachage 2,2 s, réparation 1,8 s) ; les planches ne bloquent que les zombies (closedRects).
 - Siège : siege.js (approche, attente, arrache, escalade, dedans, libre) ; 2 emplacements, file de 6, 2 grimpeurs ; jamais d'entrée sans fenêtre ouverte ni active ; ?empty=1 : zombies libres.
 - Chutes : player-down.js ; 1 chute de base, à terre 5 s invulnérable, relevage à 50 % ; stats chutes (0 à 5), reparation (0 à 10).
@@ -59,8 +59,13 @@ Avant de modifier une page, lis `Docs/ref/conventions.md` (arborescence, pages, 
 - Effet VHS : #vhs (vhs.js, horloge réelle) ; interdits : mix-blend-mode, filter, backdrop-filter, post-traitement 3D ; ?vhs=0|1 ; coupé en mouvement réduit.
 - Budget, annonce de vague, nuit, cartes, zones, portes, mobilier : `Docs/ref/conventions.md` (« consolidation du lot 3e »).
 - Contrôle : carte.html (à retirer au lot 13), ?labels=1 et ?zoom=1 comparent la carte au plan.
-- Étages : etage.json (pixels, repère de plan.json), zones.json (floors, stairs, blocks) ; floor (rdc, etage) sur zombies, fenêtres, balles, obstacles, apparitions ; une couche de collisions par étage ; floors.js, stairs.js, floor-transition.js ; plan.json ne change que pour les escaliers ; relevé : Docs/ref/etage.md.
-- Escaliers physiques : zone de déclenchement libre (≥ 64 × 64) ; en marchant vers l'escalier, le joueur entre dans un tube autour de walk.path (zones.json ; stair-walk.js), libre dans la largeur, hauteur = t × floorLift (render.json), étage logique à mi-hauteur, sortie par un bout ; fermés par un bloc (porte mince) ; aucun délai (joueur, zombies) ; zombies : mode escalier (sans limite) vers l'escalier le plus proche par chemin, puis marche libre dans le tube (touchables, ils frappent ; laser et balles traversent l'emprise).
-- Fondu : #floor-fade (voile --game-fog) seulement en mouvement réduit (échange instantané, verrou 0,2 s) ; aucun matériau transparent ; useStair = marche auto.
-- Visibilité : userData.floor (rdc, etage, exterieur) ; setElevation : le joueur reste à y = 0, le monde descend ; l'étage dès qu'il y a de la hauteur, tout le rez-de-chaussée toujours dessiné (le sol opaque de l'étage cache le dessous) ; garde-corps autour des trous ; laser et balles dans effectsRoot (y = 0) ; zombies, balles, sons de l'autre étage (étouffés) ; spawns indépendants de l'étage du joueur.
-- Portes : porte 1 manche 10, porte 2 (escalier de l'aile) 20, porte 3 (second escalier + porte de l'étage) 30 ; ?wave=N ouvre celles dont openAfterWave < N ; ?floor=N ; hooks setFloor, useStair ; budget étage 30 000 / 300, rez-de-chaussée référence + 12 / + 5 ; le lot 3d est reporté.
+- Étages : etage.json, zones.json (floors, stairs, blocks) ; floor (rdc, etage) sur zombies, fenêtres, balles, obstacles ; une couche de collisions par étage ; relevé : Docs/ref/etage.md.
+- Escaliers physiques : tube autour de `walk.path` (stair-walk.js, zones.json), hauteur = t × floorLift, aucun délai, zombies touchables dans l'escalier, bloc de porte mince ; détails dans `conventions.md` (consolidation du lot 4).
+- Fondu : #floor-fade seulement en mouvement réduit ; aucun matériau transparent ; useStair = marche auto.
+- Visibilité : userData.floor ; setElevation (le monde descend, le joueur reste à y = 0) ; tout le rez-de-chaussée toujours dessiné ; garde-corps ; laser et balles dans effectsRoot.
+- Portes : 1 manche 10, 2 manche 20, 3 manche 30 ; ?wave=N ouvre celles dont openAfterWave < N ; ?floor=N ; budget étage 30 000 / 300 ; le lot 3d est reporté.
+- Sauvegarde : js/core/save.js (schéma v1, migrations, commitDelta, code ZS1.<base64url>.<crc32>) pur ; js/save/ seul à toucher localStorage, clé unique zs.save.v1 ; écriture par différences ; illisible ou version future = verrouillée, jamais écrasée.
+- Mode essai : wave, lvl, planks, map, empty, nospawn, endless, floor, money = sauvegarde en lecture seule (aucune écriture, solde réel lu) ; ?test=1 = mémoire, ?test=1&store=local = vrai localStorage.
+- Argent : economy.js, economy.json, bounty ; gain par kill (balle seulement, jamais killAll/skipWave), par manche, fin de monde ; tout est conservé à la mort ; jamais de calcul d'argent hors de economy.js.
+- Interface : puce d'argent dans E2-2, « +N » agrégé, solde et état dans la pause et E2-7 ; sauvegarde.html (technique, remplacée au lot 7) ; aucun nouveau bloc E2.
+- Tests lot 4 : getState().save et economy ; scripts/economie.mjs et code-sauvegarde.mjs ; détails : `conventions.md` (« Argent et sauvegarde »).

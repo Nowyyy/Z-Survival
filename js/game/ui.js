@@ -1,5 +1,6 @@
 // Panneaux HTML : pause (E2-6), fin provisoire (E2-7), message de rotation, région vocale, plein écran.
-import { fmt, VHS_TEXTS } from './texts.js';
+import { formatMoney } from '../core/economy.js';
+import { fmt, MONEY_TEXTS, SAVE_TEXTS, VHS_TEXTS } from './texts.js';
 
 const PORTRAIT_PHONE = '(orientation: portrait) and (pointer: coarse) and (max-width: 600px)';
 
@@ -10,6 +11,8 @@ export function createUi(dict, handlers) {
     pauseBtn: $('btn-pause'), resume: $('btn-resume'), fullscreen: $('btn-fullscreen'), sound: $('btn-sound'),
     vhs: $('btn-vhs'), restart: $('btn-restart'), replay: $('btn-replay'), endKills: $('end-kills'), endWave: $('end-wave'),
     volumeRow: $('volume-row'), volume: $('volume'), volumeValue: $('volume-value'), endTitle: $('end-title'), pauseNext: $('pause-next'),
+    pauseBalance: $('pause-balance'), pauseSave: $('pause-save'), endEarned: $('end-earned'), endBonus: $('end-bonus'), endBalance: $('end-balance'), endBest: $('end-best'),
+    endRecord: $('end-record'), endSave: $('end-save'),
   };
   const rotateQuery = matchMedia(PORTRAIT_PHONE);
   const canFullscreen = Boolean(document.fullscreenEnabled && document.documentElement.requestFullscreen);
@@ -53,12 +56,39 @@ export function createUi(dict, handlers) {
 
     // wave : vague en cours à la mort (0 ou absente quand les vagues sont coupées par ?nospawn=1 : la ligne est masquée). variant « world » (lot 3c) :
     // « Monde terminé » à la place de « Tu es mort » (la variante de mort est inchangée).
-    showEnd(kills, wave = 0, variant = 'death') {
+    // Lot 4 : « Solde » et état de la sauvegarde (summary : { balance, status }, de js/game/bank.js).
+    setPauseInfo(summary) {
+      els.pauseBalance.textContent = fmt(dict[MONEY_TEXTS.pauseBalance], { n: formatMoney(summary?.balance) });
+      els.pauseSave.textContent = dict[SAVE_TEXTS[summary?.status] ?? SAVE_TEXTS.saved];
+      els.pauseSave.dataset.status = summary?.status ?? 'saved';
+    },
+
+    // info (lot 4, de bank.runEnd) : { earned, world, balance, best, record, status } ; absent : les lignes d'argent restent vides.
+    showEnd(kills, wave = 0, variant = 'death', info = null) {
       els.pausePanel.hidden = true;
       els.endTitle.textContent = dict[variant === 'world' ? 'game.end.world' : 'game.end.title'];
       els.endKills.textContent = fmt(dict['game.end.kills'], { n: kills });
       els.endWave.textContent = wave > 0 ? fmt(dict['game.wave.reached'], { n: wave }) : '';
       els.endWave.hidden = !(wave > 0);
+      const money = info !== null && info !== undefined;
+      els.endEarned.hidden = !money;
+      els.endBalance.hidden = !money;
+      els.endBest.hidden = !money;
+      if (money) {
+        els.endEarned.textContent = fmt(dict[MONEY_TEXTS.earned], { n: formatMoney(info.earned) });
+        els.endBalance.textContent = fmt(dict[MONEY_TEXTS.balance], { n: formatMoney(info.balance) });
+        els.endBest.textContent = fmt(dict[MONEY_TEXTS.best], { n: info.best });
+      }
+      const world = money && variant === 'world';
+      els.endBonus.hidden = !world;
+      if (world) els.endBonus.textContent = fmt(dict[MONEY_TEXTS.worldBonus], { n: formatMoney(info.world) });
+      els.endRecord.hidden = !(money && info.record === true);
+      els.endRecord.textContent = dict[MONEY_TEXTS.record];
+      // Ligne d'état seulement quand l'argent n'est pas écrit : mode essai (texte propre à l'écran de fin), sauvegarde illisible, indisponible, échec.
+      const status = money ? info.status : 'saved';
+      const note = status === 'readonly' ? MONEY_TEXTS.trial : status === 'locked' || status === 'unavailable' || status === 'failed' ? SAVE_TEXTS[status] : null;
+      els.endSave.hidden = note === null;
+      els.endSave.textContent = note === null ? '' : dict[note];
       els.endPanel.hidden = false;
       els.replay.focus();
     },

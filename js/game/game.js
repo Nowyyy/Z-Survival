@@ -36,11 +36,12 @@ import { activeSpawnPoints, activeWindows, activeZones, assignWindows, doorsOpen
 import { createCharacter, createKit } from './character.js';
 import { createEffects, MAX_SPARKS, SPARK_TIME } from './effects.js';
 import { createFloorFade } from './floor-fade.js';
+import { createBank } from './bank.js';
 import { createHud } from './hud.js';
 import { createSplashView } from './splash-view.js';
 import { pickGround } from './picking.js';
 import { STRIDE } from './skeleton.js';
-import { DOWN_TEXTS, FLOOR_TEXTS, fmt, SPLASH_TEXTS, WINDOW_INITIALS, WINDOW_NAMES, WINDOW_TEXTS, ZONE_TEXTS } from './texts.js';
+import { DOWN_TEXTS, FLOOR_TEXTS, fmt, MONEY_TEXTS, SPLASH_TEXTS, WINDOW_INITIALS, WINDOW_NAMES, WINDOW_TEXTS, ZONE_TEXTS } from './texts.js';
 import { createThreeTextures } from './textures.js';
 import { buildWorld, createCamera } from './world.js';
 
@@ -149,6 +150,22 @@ export function createGame(ctx) {
     eff.weapon = effectiveWeapon(cfg.weapon, eff.levels.levels, cfg.stats);
     eff.player = effectivePlayer(cfg.player, eff.levels.levels, cfg.stats);
     if (sim) sim.player = { ...sim.player, maxHealth: eff.player.maxHealth, health: Math.min(sim.player.health, eff.player.maxHealth) };
+  };
+
+  // Argent et sauvegarde (lot 4) : js/game/bank.js relie les événements de la partie à l'économie (js/core/economy.js) et au dépôt de sauvegarde (js/save/).
+  // Son horloge est le temps de jeu cumulé (millisecondes, jamais remis à zéro par « Rejouer »), la date enregistrée est l'horloge murale.
+  let bankMs = 0;
+  const bank = createBank({ repository: ctx.repository, mode: ctx.mode, economy: ctx.economy, save: ctx.saveCfg, clock: () => bankMs, wall: () => Date.now(), reducedMotion: reduced });
+  // Mise à l'abri de la sauvegarde quand la page est cachée ou fermée (en plus de l'écriture à l'ouverture de la pause).
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) bank.flush('hidden');
+  });
+  window.addEventListener('pagehide', () => bank.flush('pagehide'));
+
+  // Vue de test de la banque : getState().save (sans le journal) et getState().economy.
+  const bankView = () => {
+    const { economy, writes, mode, ...save } = bank.snapshot();
+    return { save: { ...save, writes }, economy, mode };
   };
 
   let sim;
@@ -489,6 +506,7 @@ export function createGame(ctx) {
     const locked = fade.view.locked;
     sim.floorGrace = Math.max(0, sim.floorGrace - dt);
 
+    bankMs += dt * 1000;
     const events = []; // événements sonores de cette image (traités par js/core/sound-director.js)
     // À terre ou pendant le fondu, le joueur ne bouge pas, ne tire pas et son laser est masqué (js/core/player-down.js).
     const standing = canMove(sim.down) && !locked;
@@ -553,6 +571,7 @@ export function createGame(ctx) {
     // Balles : les dégâts n'existent qu'à l'impact.
     const flight = stepBullets(sim.bullets, sim.enemies, dt, shotBounds, blockers);
     sim.bullets = flight.bullets;
+    const typeOf = new Map(sim.enemies.map((e) => [e.id, e.type]));
     const result = applyImpacts(sim.enemies, flight.impacts);
     sim.enemies = result.enemies;
     if (!reduced) {
@@ -567,6 +586,8 @@ export function createGame(ctx) {
       if (gone.reason === 'obstacle') events.push({ type: 'obstacleHit', x: gone.x, y: gone.y, obstacleId: gone.obstacleId, material: materialFor(obstacleKinds.get(gone.obstacleId), gone.obstacleId, ctx.audioMaterials) });
     }
     sim.kills += result.killed.length;
+    // Argent (lot 4) : un zombie tué par l'impact d'une balle rapporte sa prime (killAll et skipWave ne passent jamais ici).
+    for (const k of result.killed) bank.kill(typeOf.get(k.id) ?? 'marcheur', waveInfo(sim.waves).wave || 1);
     // Régénération : chaque zombie tué rend des points de vie, jamais au-delà du maximum, jamais après la mort.
     for (let i = 0; i < result.killed.length; i += 1) sim.player = { ...sim.player, health: healOnKill(sim.player.health, sim.player.maxHealth, eff.player.regen, !sim.dead && canHealOnKill(sim.down) && sim.player.health > 0) };
 
@@ -642,6 +663,7 @@ export function createGame(ctx) {
       }
       for (const ev of out.events) {
         if (ev.type === 'waveStart') {
+          bank.waveStart(ev.wave);
           waveLive = fmt(ctx.dict['game.wave.live'], { n: ev.wave });
         } else if (ev.type === 'doorAnnounce') {
           announcedDoor = ev.wave;
@@ -659,7 +681,9 @@ export function createGame(ctx) {
           const healed = applyHeal(sim.player.health, sim.player.maxHealth, ev.healFraction, sim.down);
           sim.player = { ...sim.player, health: healed.hp };
           sim.down = healed.down;
-          waveLive = fmt(ctx.dict['game.wave.liveDone'], { n: ev.wave });
+          // Lot 4 : bonus de fin de manche (une seule fois par manche), annoncé avec la fin de manche.
+          const paid = bank.waveEnd(ev.wave, waveInfo(sim.waves).reinforced === true);
+          waveLive = paid.bonus > 0 ? fmt(ctx.dict[MONEY_TEXTS.liveWave], { n: ev.wave, bonus: paid.bonus }) : fmt(ctx.dict['game.wave.liveDone'], { n: ev.wave });
         }
       }
     }
@@ -732,8 +756,9 @@ export function createGame(ctx) {
       sim.splashView = off.view;
       audio?.stopAnnounce();
       input.releaseAll();
-      ctx.ui.setLive(fmt(ctx.dict['game.live.dead'], { n: sim.kills }));
-      ctx.ui.showEnd(sim.kills, waveInfo(sim.waves).wave);
+      const end = bank.runEnd({ kills: sim.kills, reason: 'death' });
+      ctx.ui.setLive(`${fmt(ctx.dict['game.live.dead'], { n: sim.kills })}${end?.record ? ` ${fmt(ctx.dict[MONEY_TEXTS.liveRecord], { n: end.reached })}` : ''}`);
+      ctx.ui.showEnd(sim.kills, waveInfo(sim.waves).wave, 'death', end);
     }
     // Fin du monde (lot 3c) : la manche wavesPerWorld est terminée ; écran provisoire « Monde terminé », la partie s'arrête (Rejouer repart de la manche 1).
     if (worldEnded && !sim.dead) {
@@ -742,9 +767,12 @@ export function createGame(ctx) {
       sim.splashView = stepSplash(sim.splash, null, 0, splashOptions).view;
       audio?.stopAnnounce();
       input.releaseAll();
-      ctx.ui.setLive(ctx.dict[ZONE_TEXTS.liveWorld]);
-      ctx.ui.showEnd(sim.kills, waveInfo(sim.waves).wave, 'world');
+      bank.worldEnd();
+      const end = bank.runEnd({ kills: sim.kills, reason: 'world' });
+      ctx.ui.setLive(`${ctx.dict[ZONE_TEXTS.liveWorld]}${end?.record ? ` ${fmt(ctx.dict[MONEY_TEXTS.liveRecord], { n: end.reached })}` : ''}`);
+      ctx.ui.showEnd(sim.kills, waveInfo(sim.waves).wave, 'world', end);
     }
+    bank.tick(); // commit regroupé échu (toutes les autosaveMs de temps de jeu), « +N » du HUD
   }
 
   // Panneau de pause (E2-6) : « Prochaine zone : manche N » tant qu'une porte active reste fermée ; écrit seulement si la valeur change.
@@ -990,7 +1018,7 @@ export function createGame(ctx) {
       flashSize: reduced ? 4 : 7,
       unitsPerPixel: size.unitsPerPixel,
     });
-    hud.update(sim.player, sim.kills, waveInfo(sim.waves), { chutes: sim.down.chutes, floor: multi ? pf() : null });
+    hud.update(sim.player, sim.kills, waveInfo(sim.waves), { chutes: sim.down.chutes, floor: multi ? pf() : null, money: { balance: bank.balance(), gain: bank.gain() } });
     floorFade.set(sim.trView.veil);
     updateDownView();
     world.windowMeshes?.sync(sim.win); // pastille de la planche en cours de réparation : elle se remplit peu à peu
@@ -1290,17 +1318,32 @@ export function createGame(ctx) {
       const typed = isType(type);
       return addEnemy(g.center.x + g.normal.x * 400, g.center.y + g.normal.y * 400, { type: typed ? type : 'marcheur', gait: 'marche', spec: waveSpec(1, sim.waveParams), window: id, mode: 'approche', floor: g.floor }).id;
     },
+    // Lot 4 : écriture immédiate de la sauvegarde (hook de test flushSave) et gain de test (giveMoney, type « test » du journal).
+    flushSave: () => bank.flush('test'),
+    giveMoney: (n) => bank.giveMoney(n),
+    // Ouverture du panneau de pause : écriture immédiate de ce qui attend, puis « Solde » et état de la sauvegarde.
+    onPauseOpen() {
+      bank.flush('pause');
+      ctx.ui.setPauseInfo(bank.summary());
+    },
     // Remet une partie propre (Rejouer, Recommencer).
     restart() {
+      // Lot 4 : la partie en cours (ni morte, ni terminée) s'arrête ici : ses records et son argent sont écrits avant la remise à zéro.
+      if (!sim.dead && !sim.worldOver) bank.runEnd({ kills: sim.kills, reason: 'restart' });
+      bank.restart();
       ctx.seedRun += 1;
       reset(ctx.seed + ctx.seedRun);
     },
     snapshot() {
+      const bankState = bankView();
       const cam = rig.camera.position;
       const meshStats = world.windowMeshes?.stats(rig.camera) ?? [];
       return {
         player: { x: sim.player.x, y: sim.player.y, health: sim.player.health, maxHp: sim.player.maxHealth, spread: halfAngle(), speedRatio: sim.spread, down: { state: sim.down.state, chutes: sim.down.chutes, chutesMax: sim.down.chutesMax, timeLeft: sim.down.timeLeft, grace: sim.down.grace, invulnerable: isInvulnerable(sim.down) } },
+        save: bankState.save,
+        economy: bankState.economy,
         stats: {
+          source: ctx.levels?.source ?? 'default',
           levels: Object.fromEntries(STAT_IDS.map((id) => [id, eff.levels.levels[id]])), // les sept d'origine ; chutes et reparation dans extraLevels
           extraLevels: { chutes: eff.levels.levels.chutes ?? 0, reparation: eff.levels.levels.reparation ?? 0 },
           warnings: [...eff.levels.warnings],

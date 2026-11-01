@@ -100,7 +100,8 @@ body.game {
 }
 
 .hud-chips {
-  flex-wrap: nowrap;
+  /* Lot 4 : les puces passent à la ligne suivante du même rectangle quand elles ne tiennent pas dans 300 px (« Vague 40 », « Étage », « 10 restants », « 999 tués »). */
+  flex-wrap: wrap;
 }
 
 .hud-icon {
@@ -158,7 +159,7 @@ body.game {
   border: 1px solid var(--hud-border);
   border-radius: var(--radius-sm);
   flex: 1;
-  min-width: 96px;
+  min-width: 64px; /* lot 4 : 96 avant ; la puce d'argent partage la rangée (6 chutes + 9,9 M tiennent dans 300 px) */
   height: 24px;
   overflow: hidden;
   border-width: 2px;
@@ -857,4 +858,89 @@ body.game {
 
 .map-label[hidden] {
   display: none;
+}
+
+/* Argent (lot 4) : puce d'argent du HUD E2-2 (pièce en SVG, montant court, « +N » décoratif) ; aucune animation (le « +N » apparaît et disparaît d'un coup,
+   quel que soit prefers-reduced-motion : jamais de clignotement). Jaune réservé à l'argent. */
+.hud-money {
+  gap: 3px;
+}
+
+/* La puce d'argent est dans la rangée de la vie ; si la rangée ne tient pas dans 300 px (6 chutes, gros « +N »), elle passe à la ligne suivante du même rectangle. */
+.hud-life-row {
+  flex-wrap: wrap;
+}
+
+.hud-coin {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: var(--color-money);
+  stroke-width: 1.4;
+  stroke-linecap: round;
+}
+
+.hud-money #hud-money-text,
+.hud-gain {
+  color: var(--color-money);
+}
+
+/* « +N » : hors du rectangle (à sa droite), sur une puce pleine, pour ne jamais agrandir le HUD ; décoratif (aria-hidden), sans animation. */
+.hud-gain {
+  position: absolute;
+  top: 6px;
+  left: calc(100% + var(--hud-gap));
+  box-sizing: border-box;
+  height: 24px;
+  padding: 0 6px;
+  border-radius: var(--hud-radius);
+  background: color-mix(in srgb, var(--hud-bg) calc(var(--hud-bg-alpha) * 100%), transparent);
+  font-size: var(--text-sm);
+  font-weight: 700;
+  line-height: 24px;
+}
+
+.hud-gain[hidden] {
+  display: none;
+}
+
+/* Écran de fin (lot 4) : lien « Voir ma sauvegarde » en bouton de 44 px, à la suite de « Rejouer ». */
+a.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  text-align: center;
+  text-decoration: none;
+}
+
+.end-record {
+  color: var(--color-money);
+  font-weight: var(--font-weight-bold);
+}
+
+@media (max-height: 460px) {
+  /* E2-7 compact (lot 4) : deux colonnes pour tenir à 667 × 375 avec toutes les lignes, marges et cibles de 44 px inchangées. */
+  #end-panel .panel {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    align-items: center;
+    column-gap: var(--space-3);
+    width: min(100%, 34rem);
+  }
+
+  #end-panel .panel-title,
+  #end-panel .panel-note {
+    grid-column: 1 / -1;
+  }
+
+  #end-panel .panel-text {
+    font-size: var(--text-md);
+  }
+
+  /* Pause (lot 4) : « Solde » à côté de « Prochaine zone », l'état de la sauvegarde sur toute la largeur : une rangée de plus seulement. */
+  #pause-panel #pause-save {
+    grid-column: 1 / -1;
+  }
 }

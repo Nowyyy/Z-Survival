@@ -77,6 +77,7 @@
           <span id="hud-life" class="hud-bar-text"></span>
         </div>
         <p id="hud-chutes" class="hud-chip"><span id="hud-chutes-icons" class="hud-chutes-icons" aria-hidden="true"></span><span id="hud-chutes-text"></span></p>
+        <p id="hud-money" class="hud-chip hud-money"><svg class="hud-coin" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><circle cx="8" cy="8" r="6.5"/><path d="M8 4.2v7.6M5.6 6.2h3.7a1.2 1.2 0 0 1 0 2.4H6.7a1.2 1.2 0 0 0 0 2.4h3.7"/></svg><span id="hud-money-text"></span><span id="hud-gain" class="hud-gain" aria-hidden="true"></span></p>
       </div>
       <div class="hud-chips">
         <p id="hud-wave" class="hud-wave" hidden></p>
@@ -122,6 +123,8 @@
     <div class="panel">
       <h2 id="pause-title" class="panel-title" data-i18n="game.pause.title"></h2>
       <p id="pause-next" class="panel-text" hidden></p>
+      <p id="pause-balance" class="panel-text"></p>
+      <p id="pause-save" class="panel-note"></p>
       <button id="btn-resume" class="button" type="button" data-i18n="game.pause.resume"></button>
       <button id="btn-fullscreen" class="button button-quiet" type="button" data-i18n="game.pause.fullscreen" hidden></button>
       <button id="btn-sound" class="button button-quiet" type="button" hidden></button>
@@ -139,8 +142,15 @@
       <h2 id="end-title" class="panel-title" data-i18n="game.end.title"></h2>
       <p id="end-kills" class="panel-text"></p>
       <p id="end-wave" class="panel-text" hidden></p>
+      <p id="end-earned" class="panel-text"></p>
+      <p id="end-bonus" class="panel-text" hidden></p>
+      <p id="end-balance" class="panel-text"></p>
+      <p id="end-best" class="panel-text"></p>
+      <p id="end-record" class="panel-text end-record" hidden></p>
+      <p id="end-save" class="panel-note" hidden></p>
       <p class="panel-note" data-i18n="game.end.provisional"></p>
       <button id="btn-replay" class="button" type="button" data-i18n="game.end.replay"></button>
+      <a id="end-save-link" class="button button-quiet" href="sauvegarde.html" data-i18n="game.end.saveLink"></a>
     </div>
   </div>
   <div id="rotate" class="rotate" role="status" hidden>

@@ -104,6 +104,13 @@
       "Les zombies vivent sur les deux étages et marchent librement dans les escaliers, sans limite de nombre : on peut les toucher et ils frappent. Les bruits de l'autre étage sont étouffés.",
       "Porte 2 (manche 20 terminée) : l'escalier de l'aile s'ouvre, avec la zone de gauche de l'étage. Porte 3 (manche 30 terminée) : le second escalier et la salle de droite.",
       "?floor=1 démarre à l'étage, ?labels=1 numérote les fenêtres de l'étage affiché, carte.html propose un sélecteur d'étage."
+    ] },
+    { "name": "lot-4", "titre": "Argent et sauvegarde locale", "points": [
+      "Chaque zombie tué par une balle rapporte de l'argent (5, 6, 8 ou 12, qui monte avec la manche), chaque manche terminée un bonus, la fin du monde un gros bonus : tout est conservé à la mort.",
+      "Le solde et les niveaux des statistiques sont enregistrés sur l'appareil (clé unique, écriture par différences, jamais écrasée si elle est illisible) et survivent au rechargement.",
+      "Les adresses d'essai (?wave=, ?lvl=, ?map=, ?money=…) lisent ta vraie sauvegarde mais n'écrivent jamais : la pause et l'écran de fin le disent.",
+      "La page sauvegarde.html permet d'exporter la sauvegarde par un code, de l'importer (avec aperçu et confirmation), de la réparer ou de l'effacer : utile car Safari efface les données d'un site après 7 jours d'usage sans visite.",
+      "L'interface montre l'argent dans le HUD (avec un « +N » agrégé), le solde et l'état de la sauvegarde dans la pause, l'argent gagné et les records sur l'écran de fin."
     ] }
   ]
 }

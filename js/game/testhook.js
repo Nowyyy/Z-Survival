@@ -20,6 +20,9 @@ export function installTestHook(ctx, game) {
     killAll: () => game.killAll(),
     // Lot 3c : termine la manche courante (zombies vivants retirés, apparitions restantes annulées, sans compter de tués) ; renvoie le nombre de zombies retirés.
     skipWave: () => game.skipWave(),
+    // Lot 4 : écrit tout de suite ce qui attend (renvoie { ok, skipped?, applied?, error? }) ; giveMoney(n) ajoute n au journal des gains (type « test »).
+    flushSave: () => game.flushSave(),
+    giveMoney: (n) => game.giveMoney(n),
     // Lot 3c : ouvre ou ferme une porte d'un coup (sans transition ni annonce) ; renvoie faux si la porte n'existe pas.
     setDoor: (id, open) => game.setDoor(id, open),
     // Surcharge temporaire de data/game/waves.json (sections fusionnées), jusqu'à Rejouer.
