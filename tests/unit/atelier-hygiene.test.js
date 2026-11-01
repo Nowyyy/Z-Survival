@@ -13,8 +13,10 @@ const git = (args) => {
     return null;
   }
 };
-// Base de comparaison : origin/main si elle existe (CI, session), sinon main ; null si aucune (copie sans dépôt) : tests sautés.
-const BASE = ['origin/main', 'main'].find((b) => git(`rev-parse --verify --quiet ${b}`) !== null) ?? null;
+// Base de comparaison : le point de départ du lot (base commune de HEAD et d'origin/main, sinon de main), pour que la comparaison
+// reste juste quand main avance (fusion d'un autre lot) ; null si aucune (copie sans dépôt) : tests sautés.
+const MAIN = ['origin/main', 'main'].find((b) => git(`rev-parse --verify --quiet ${b}`) !== null) ?? null;
+const BASE = MAIN ? (git(`merge-base HEAD ${MAIN}`) ?? '').trim() || null : null;
 const NEW_CORE = ['audio-analysis', 'synth2', 'synth2-dsp', 'synth2-sources', 'atelier-check', 'atelier-choices', 'sound-cache', 'wave-svg', 'scenes-sons'].map((n) => `js/core/${n}.js`);
 // Moteur sonore existant, page des sons actuels et tests de sons : jamais modifiés par ce lot.
 const ENGINE = ['js/core/synth.js', 'js/core/sound-director.js', 'js/core/audio-mix.js', 'js/core/zombie-voice.js', 'js/core/footsteps.js', 'js/game/audio.js', 'js/game/sound-loader.js',
