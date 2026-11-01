@@ -171,6 +171,8 @@ test.describe('journal des versions', () => {
     expect(await list.evaluate((el) => getComputedStyle(el).overflowY)).toBe('auto');
     expect(await list.evaluate((el) => el.getBoundingClientRect().height <= innerHeight * 0.61)).toBe(true);
     expect(await page.evaluate(() => document.documentElement.scrollHeight)).toBeGreaterThan(closedHeight - 1);
+    // Ouvert, le journal n'agrandit pas la page au-delà de l'écran : la liste défile à l'intérieur.
+    expect(await page.evaluate(() => document.documentElement.scrollHeight <= innerHeight + 1)).toBe(true);
     await section.locator('> summary').click();
     await expect(section).not.toHaveAttribute('open', '');
   });
