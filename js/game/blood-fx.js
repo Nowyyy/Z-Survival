@@ -3,7 +3,7 @@
 // au plus 6, enfoncés dans le sol à la fin de leur durée ; ils ne sont ni ciblés ni solides : le jeu ne les connaît pas). Le sang suit
 // l'étage de son événement : à l'étage du joueur et au rez-de-chaussée, caché à l'étage quand le joueur est en bas.
 import * as THREE from 'three';
-import { burst, capParticles, corpseSink, corpsesAdd, corpsesStep, decalAlpha, decalAtlas, decalsAdd, decalsStep, impactDecals, settings, stepParticles } from '../core/blood.js';
+import { burst, capParticles, corpseSink, corpsesAdd, corpsesStep, deathFor, decalAlpha, decalAtlas, decalsAdd, decalsStep, impactDecals, settings, stepParticles } from '../core/blood.js';
 
 const UP = new THREE.Vector3(0, 1, 0);
 const _m = new THREE.Matrix4();
@@ -109,13 +109,13 @@ export function createBloodFx(options) {
       addParticles(burst((seed += 1), 'hit', dir, level, cfg, { x, y, floor }));
       addDecals(impactDecals(seed, 'hit', { x, y, floor }, dir, cfg));
     },
-    // Mort d'un zombie : gerbe, flaque sous le corps et cadavre visuel (pose de mort jusqu'au bout, puis enfoncement).
+    // Mort d'un zombie : gerbe, flaque sous le corps et cadavre visuel (pose de mort jusqu'au bout, puis enfoncement) ; facing : orientation du
+    // zombie à sa mort (le cadavre la garde), dir : sens de la balle.
     kill({ x, y, floor = 'rdc', dir = { x: 1, y: 0 }, type = 'marcheur', variant = 0, facing = 0 }) {
       if (s.kill <= 0) return;
       addParticles(burst((seed += 1), 'kill', dir, level, cfg, { x, y, floor }));
       addDecals(impactDecals(seed, 'kill', { x, y, floor }, dir, cfg));
-      const deaths = cfg.corpses?.deaths ?? ['mortAvant'];
-      const anim = deaths[seed % deaths.length];
+      const anim = deathFor(facing, dir, seed, cfg.corpses?.deaths); // tombe à l'opposé du tireur (en arrière s'il est touché de face)
       const before = new Set(corpses.map((c) => c.id));
       corpses = corpsesAdd(corpses, { id: nextCorpse, x, y, floor, type, variant, anim, born: time, facing }, level, cfg);
       nextCorpse += 1;

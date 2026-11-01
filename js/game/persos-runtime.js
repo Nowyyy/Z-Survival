@@ -36,6 +36,7 @@ export function createPersos(params, data) {
   let wave = 1;
   let lastHp = null;
   let dynamic = null;
+  const facings = new Map(); // orientation dessinée de chaque zombie (identifiant -> radians), pour la chute de son cadavre
   const pools = new Map(); // cadavres réutilisés, par variante de zombie (aucune création à chaque mort)
   const bodyStains = settings(data.blood, params.sang).bodyStains;
   const wear = () => (params.usure === 'auto' ? wearTier(wave, data.characters.wearByWave) : params.usure);
@@ -85,8 +86,11 @@ export function createPersos(params, data) {
         if (!e) continue;
         const d = Math.hypot(e.x - player.x, e.y - player.y) || 1;
         const ev = { x: i.x, y: i.y, floor: floorOf(e), dir: { x: (e.x - player.x) / d, y: (e.y - player.y) / d } };
-        if (dead.has(e.id)) blood.kill({ ...ev, x: e.x, y: e.y, type: e.type, variant: e.visual, facing: Math.atan2(player.y - e.y, player.x - e.x) });
-        else blood.hit(ev);
+        // Le cadavre garde l'orientation du zombie (dessinée à l'image précédente ; inconnue : face au joueur) : touché de face, il tombe en arrière.
+        if (dead.has(e.id)) {
+          blood.kill({ ...ev, x: e.x, y: e.y, type: e.type, variant: e.visual, facing: facings.get(e.id) ?? Math.atan2(player.y - e.y, player.x - e.x) });
+          facings.delete(e.id);
+        } else blood.hit(ev);
       }
     },
     playerHit(p, floor) {
@@ -100,6 +104,8 @@ export function createPersos(params, data) {
     },
     // Taches sur le corps d'un zombie v2 selon sa vie (niveau complet seulement).
     zombie(char, e) {
+      if (facings.size > 64 && !facings.has(e.id)) facings.clear(); // zombies retirés sans mort (killAll, fin de manche) : rien ne s'accumule
+      facings.set(e.id, Math.PI / 2 - char.root.rotation.y);
       if (char.v2) char.setWound(bodyStains ? woundTier(e.health / Math.max(1e-9, e.maxHealth), data.blood.wounds) : 0);
     },
     update(dt) {
@@ -110,6 +116,7 @@ export function createPersos(params, data) {
       blood?.sync(floor);
     },
     reset() {
+      facings.clear();
       blood?.reset();
       lastHp = null;
     },

@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import * as THREE from 'three';
 import { contrast, luminance } from '../../js/core/color.js';
-import { LEVELS, bloodBudget, burst, capParticles, corpseSink, corpsesAdd, corpsesStep, decalAlpha, decalAtlas, decalsAdd, decalsStep, impactDecals, levelOf, settings, stepParticles, woundTier } from '../../js/core/blood.js';
+import { LEVELS, bloodBudget, burst, capParticles, corpseSink, corpsesAdd, corpsesStep, deathFor, decalAlpha, decalAtlas, decalsAdd, decalsStep, impactDecals, levelOf, settings, stepParticles, woundTier } from '../../js/core/blood.js';
 import { createBloodFx } from '../../js/game/blood-fx.js';
 import { ZOMBIES, characters, floorMeans, gameView, load, lookup, radiusOf, slotOf, variantMetrics } from '../../scripts/personnages/lib.mjs';
 
@@ -235,3 +235,42 @@ describe('lisibilité sur le sol taché', () => {
     expect(game).not.toMatch(/blood\.(stats|snapshot)\(\)\.[a-z]+\s*[<>=]/);
   });
 });
+
+// Retour du propriétaire : « qu'il tombe en arrière s'il se fait tirer dessus par devant ». Le corps tombe à l'opposé du tireur.
+describe('mort selon le côté touché (deathFor)', () => {
+  const deaths = cfg.corpses.deaths;
+  const seeds = Array.from({ length: 12 }, (_, i) => i);
+  // Zombie tourné vers l'ouest (facing π), balle venant de l'ouest vers l'est (dir +x) : le tireur est devant lui.
+  it('touché de face : toujours en arrière, quelle que soit la graine', () => {
+    for (const k of seeds) expect(deathFor(Math.PI, { x: 1, y: 0 }, k, deaths)).toBe('mortArriere');
+    for (const k of seeds) expect(deathFor(Math.PI / 2 + 0.3, { x: 0.2, y: -1 }, k, deaths)).toBe('mortArriere'); // de face, en biais
+  });
+  it('touché de dos : en avant ou effondré (les deux selon la graine), jamais en arrière', () => {
+    const got = new Set(seeds.map((k) => deathFor(0, { x: 1, y: 0 }, k, deaths)));
+    expect([...got].sort()).toEqual(['effondrement', 'mortAvant']);
+  });
+  it('les animations finales vont bien dans ce sens (repère du personnage : +z devant)', async () => {
+    const { poseAt, rigOf } = await import('../../js/core/pose-v2.js');
+    const { jointMatrices, jointsOf } = await import('../../js/core/character-parts.js');
+    const { poses, resolve, skeletons } = await import('../../scripts/personnages/lib.mjs');
+    for (const id of ZOMBIES) {
+      const res = resolve(slotOf(id).variants.find((v) => v.id === 'A'));
+      const head = (a) => jointMatrices(jointsOf(res, skeletons), poseAt(rigOf(res, skeletons), a, 1, {}, poses), res.scale).head.t[2];
+      expect(head('mortArriere'), id).toBeLessThan(-10);
+      expect(head('mortAvant'), id).toBeGreaterThan(10);
+    }
+  });
+  it('liste restreinte, entrées hostiles : une mort permise, sans erreur', () => {
+    expect(deathFor(Math.PI, { x: 1, y: 0 }, 3, ['mortAvant'])).toBe('mortAvant');
+    expect(deathFor(NaN, null, -7, [])).toBe('mortAvant');
+    expect(['mortAvant', 'mortArriere', 'effondrement']).toContain(deathFor(undefined, undefined, undefined));
+  });
+  it('blood-fx : le cadavre d\'un zombie touché de face reçoit mortArriere et garde son orientation', () => {
+    const parent = new THREE.Group();
+    const fx = createBloodFx({ parent, cfg, level: '1', lookup, seed: 4 });
+    for (let k = 0; k < 5; k += 1) fx.kill({ x: k * 50, y: 0, dir: { x: 1, y: 0 }, facing: Math.PI });
+    expect(fx.snapshot().corpses.map((c) => [c.anim, c.facing])).toEqual(Array.from({ length: 5 }, () => ['mortArriere', Math.PI]));
+    fx.dispose();
+  });
+});
+

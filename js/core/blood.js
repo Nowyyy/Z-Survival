@@ -9,6 +9,18 @@ const num = (v, d = 0) => (isNum(v) ? v : d);
 const obj = (v) => (v !== null && typeof v === 'object' && !Array.isArray(v) ? v : {});
 const range = (r, d) => (Array.isArray(r) && isNum(r[0]) && isNum(r[1]) ? r : d);
 
+// Animation de mort selon le côté touché : le corps tombe à l'opposé du tireur. Tiré de face (tireur devant le zombie) : en arrière ;
+// de dos : en avant ou effondré (une fois sur deux, selon seed). facing : orientation du zombie (radians, plan de jeu) ; dir : sens de la balle
+// (du tireur vers le zombie) ; deaths : morts permises (blood.json, corpses.deaths). Une mort absente de la liste est remplacée par une permise.
+export function deathFor(facing, dir, seed = 0, deaths = ['mortAvant', 'mortArriere', 'effondrement']) {
+  const list = Array.isArray(deaths) && deaths.length ? deaths : ['mortAvant'];
+  const d = obj(dir);
+  const front = Math.cos(num(facing)) * -num(d.x) + Math.sin(num(facing)) * -num(d.y) >= 0;
+  const wanted = (front ? ['mortArriere'] : ['mortAvant', 'effondrement']).filter((id) => list.includes(id));
+  const pool = wanted.length ? wanted : list;
+  return pool[Math.abs(Math.trunc(num(seed))) % pool.length];
+}
+
 // Niveau d'après le paramètre ?sang= : '0', 'reduit' (ou « réduit »), '1' (ou « complet ») ; toute autre valeur : '0'.
 export function levelOf(value) {
   const v = typeof value === 'string' ? value.trim().toLowerCase() : value === 1 ? '1' : '';
