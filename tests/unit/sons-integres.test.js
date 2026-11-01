@@ -328,10 +328,11 @@ describe('hygiène du lot 3i', () => {
     const added = (git(`diff --name-only --diff-filter=A ${base}`) ?? '').split('\n').filter(Boolean);
     expect(added.filter((f) => /\.(mp3|ogg|wav|flac|m4a|aac|png|jpe?g|gif|webp|svg|ico|woff2?|ttf|otf)$/i.test(f))).toEqual([]);
   });
+  // data/changelog.json : entrée lot-3i ajoutée à la demande du propriétaire (CI rouge sans elle : data-changelog exige une entrée par bilan).
   it('fichiers interdits au lot inchangés', () => {
     const base = git('merge-base HEAD origin/lot-4b')?.trim();
     if (!base) return;
-    const files = ['jeu.html', 'index.html', 'css/game.css', 'js/game/hud.js', 'js/game/ui.js', 'js/game/world.js', 'js/game/character.js', 'js/game/effects.js', 'js/game/main.js', 'CLAUDE.md', 'Docs/ref/conventions.md', 'Docs/seed.md', 'data/changelog.json', 'tests/unit/data-changelog.test.js', 'tests/e2e/dev.spec.js', '.github', 'package.json', 'package-lock.json', 'data/game/save.json'];
+    const files = ['jeu.html', 'index.html', 'css/game.css', 'js/game/hud.js', 'js/game/ui.js', 'js/game/world.js', 'js/game/character.js', 'js/game/effects.js', 'js/game/main.js', 'CLAUDE.md', 'Docs/ref/conventions.md', 'Docs/seed.md', 'tests/unit/data-changelog.test.js', 'tests/e2e/dev.spec.js', '.github', 'package.json', 'package-lock.json', 'data/game/save.json'];
     expect((git(`diff --name-only ${base} -- ${files.join(' ')}`) ?? '').split('\n').filter(Boolean)).toEqual([]);
   });
   it('apercu.txt : jeu.html, hifi (titre « Sons intégrés » sur lot-3i, celui de lot-4b après la fusion)', () => {
