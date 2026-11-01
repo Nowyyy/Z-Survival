@@ -66,7 +66,7 @@ describe('lot 3a : interdits sur le HUD (css/game.css)', () => {
   });
 
   it('texte de 14 px au moins : aucune taille de police sous var(--text-sm) dans le HUD', () => {
-    for (const m of hudCss.matchAll(/font-size:\s*([^;]+);/g)) expect(['var(--text-sm)', 'var(--text-md)', '1.375rem']).toContain(m[1].trim());
+    for (const m of hudCss.matchAll(/font-size:\s*([^;]+);/g)) expect(['var(--text-sm)', 'var(--text-md)', '1rem', '1.375rem']).toContain(m[1].trim());
   });
 
   it('aucune couleur en dur dans le HUD', () => {

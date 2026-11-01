@@ -1,0 +1,11 @@
+{
+  "_provisoire": "Lot 4 : réglages de la sauvegarde locale (provisoires). Lu par js/core/save.js et js/save/. La seule clé de stockage du jeu est storageKey. readOnlyParams : un de ces paramètres d'adresse met la sauvegarde en lecture seule (mode essai : aucune écriture). memoryByDefaultWith : ?test=1 utilise la mémoire, sauf ?store=local.",
+  "storageKey": "zs.save.v1",
+  "schemaVersion": 1,
+  "autosaveMs": 2000,
+  "maxStoredBytes": 16384,
+  "maxCodeLength": 2048,
+  "exportPrefix": "ZS1",
+  "readOnlyParams": ["wave", "lvl", "planks", "map", "empty", "nospawn", "endless", "floor", "money"],
+  "memoryByDefaultWith": ["test"]
+}
