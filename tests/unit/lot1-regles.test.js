@@ -56,6 +56,8 @@ describe('mêmes règles qu\'au lot 1', () => {
     const allowed = ['pose', 'viewport', 'camera', 'collision', 'nav', 'decor', 'layout', 'movement', 'ray', 'projectile', 'enemy-ai', 'spawner', 'color', 'texgen', 'variants', 'synth', 'audio-mix', 'footsteps', 'sound-director', 'zombie-voice', 'sound-params', 'waves', 'wave-director', 'enemy-factory', 'combat', 'player-stats', 'spread', 'wave-splash', 'vhs', 'windows', 'siege', 'player-down', 'plank-layout', 'hud-windows', 'edge-arrow', 'maps', 'map-svg', 'shape', 'fog', 'zones', 'furniture-model', 'floors', 'stairs', 'floor-transition', 'stair-zombies', 'floor-sim', 'floor-rules', 'stair-walk', 'economy', 'money-gain', 'save'].map((n) => `js/core/${n}.js`);
     allowed.push('js/core/character-parts.js'); // lot 3j : kit de construction des personnages (nouveau fichier)
     allowed.push('js/core/pose-v2.js'); // lot 3j : poses v2 (nouveau fichier)
+    allowed.push('js/core/persos-variants.js'); // lot 3j : variantes, tenues, usure, « Mes choix » (nouveau fichier)
+    allowed.push('js/core/texgen-persos.js'); // lot 3j : textures des personnages (nouveau fichier)
     expect(changed.filter((f) => !allowed.includes(f))).toEqual([]);
   });
 });

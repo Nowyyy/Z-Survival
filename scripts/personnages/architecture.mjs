@@ -1,6 +1,6 @@
 // Évaluation des deux architectures de rendu des personnages (lot 3j), en Node avec Three.js (devDependency), sans rendu :
 // 1. pièces articulées (js/game/character.js : un maillage par pièce) ; 2. os rigides (js/game/character-v2.js : un SkinnedMesh par
-// matière et un proxy d'ombre). Mesures pour 10 zombies (types variés) et le joueur : appels de dessin (passe principale et passe
+// matière et un proxy d'ombre dessiné sans couleur ni profondeur dans la passe principale). Mesures pour 10 zombies (types variés) et le joueur : appels de dessin (passe principale et passe
 // d'ombre), triangles, mémoire des géométries, temps de mise à jour d'une pose pour 11 personnages. Imprime, n'écrit rien.
 // Usage : node scripts/personnages/architecture.mjs
 import * as THREE from 'three';
@@ -75,7 +75,7 @@ let a2Shadow = 0;
 let a2Tri = 0;
 let a2ShadowTri = 0;
 for (const { char } of a2) {
-  a2Calls += char.body.geometry.groups.length;
+  a2Calls += char.body.geometry.groups.length + (char.shadow ? 1 : 0); // corps + proxy d'ombre (sans couleur ni profondeur)
   a2Tri += char.body.geometry.attributes.position.count / 3;
   if (char.shadow) {
     a2Shadow += 1;
@@ -105,7 +105,7 @@ const rows = [
   ['appels (passe principale)', a1Calls, a2Calls],
   ['appels (passe d\'ombre)', a1Shadow, a2Shadow],
   ['appels au total (11 personnages)', a1Calls + a1Shadow, a2Calls + a2Shadow],
-  ['appels par personnage (zombie)', characterStats(characters.slots[1].current, { architecture: 'articulated', skeletons }).calls + 5, 1 + 1],
+  ['appels par personnage (zombie)', characterStats(characters.slots[1].current, { architecture: 'articulated', skeletons }).calls + 5, 1 + 1 + 1],
   ['triangles (passe principale)', a1Tri, a2Tri],
   ['triangles (passe d\'ombre)', a1ShadowTri, a2ShadowTri],
   ['mémoire des géométries partagées (octets)', a1Bytes, a2Bytes],

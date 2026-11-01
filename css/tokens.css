@@ -182,3 +182,40 @@
   --hud-radius: 6px;                /* rayon des puces */
   --hud-gap: 4px;                   /* espace entre les rangées et entre les puces (demi-pas de la grille de 8 px, pour tenir dans 96 px) */
 }
+
+/* Personnages et sang (lot 3j) : couleurs provisoires des personnages v2 (?perso=) et du sang (?sang=) ; contrastes contrôlés par tests/unit/persos-*.test.js. */
+:root {
+  --perso-peau-cendre: #d3dbc4;     /* peau gris-vert pâle (zombies A) */
+  --perso-peau-verte: #c6d6a8;      /* peau verdâtre */
+  --perso-peau-grise: #cfd2c8;      /* peau grise */
+  --perso-peau-jaune: #ddd6b0;      /* peau jaunie */
+  --perso-peau-tendue: #dfe7c9;     /* peau tendue, très pâle (zombies B) */
+  --perso-peau-joueur: #e8c9a8;     /* peau du joueur */
+  --perso-tissu-os: #e6dccb;        /* chemise blanc cassé */
+  --perso-tissu-sable: #d3c6a5;     /* toile sable */
+  --perso-tissu-ciel: #c4d4dd;      /* chemise bleu pâle */
+  --perso-tissu-kaki: #ccd2bc;      /* veste kaki délavée */
+  --perso-tissu-rose: #e2c4bf;      /* pull rose fané */
+  --perso-tissu-gris: #c9c9c4;      /* sweat gris */
+  --perso-tissu-bleu: #c0cdd8;      /* blouse bleue */
+  --perso-tissu-olive: #c8d2b6;     /* parka olive délavée */
+  --perso-pantalon-jean: #b3c3d8;   /* jean délavé */
+  --perso-pantalon-toile: #cfc7ad;  /* pantalon de toile */
+  --perso-pantalon-gris: #c0c0ba;   /* pantalon gris */
+  --perso-sombre: #4a4d45;          /* chaussures, ceintures, volumes sombres du dos */
+  --perso-cuir: #b39270;            /* cuir, sangles */
+  --perso-metal: #b7bcc2;           /* chaînes, boucles */
+  --perso-casque: #f2c94c;          /* casque de chantier */
+  --perso-orange: #f2b45c;          /* gilet et brassard orange */
+  --perso-sac: #cdb48a;             /* sac en toile */
+  --perso-crasse: #c2baa6;          /* salissure de l'usure (mélangée aux tissus) */
+  --perso-dechirure: #8a857a;       /* déchirures (faces assombries) */
+  --perso-joueur-veste: #e0d4ae;    /* joueur A : veste tactique sable */
+  --perso-joueur-sweat: #d4d8dc;    /* joueur B : sweat à capuche gris clair */
+  --perso-joueur-vif: #8fdbe0;      /* joueur C : couleur dominante turquoise, contrastée avec tous les sols */
+  --perso-lampe: #fff1b8;           /* lampe frontale du joueur B (teinte émissive faible) */
+  --perso-yeux: #d8e070;            /* lueur des yeux (proposition de priorité 2, jamais seule porteuse d'information) */
+  --sang-frais: #7a0a0a;            /* sang frais : rouge profond du site */
+  --sang-sec: #4a1010;              /* sang séché (taches qui vieillissent) */
+  --sang-reduit: #2e0a0a;           /* niveau « réduit » : teinte plus sombre */
+}

@@ -97,7 +97,7 @@ describe('description fidèle des personnages actuels', () => {
     }
   });
 
-  it.each(slots)('%s : prototype os rigides, une seule géométrie partagée et 1 appel de corps + 1 proxy d\'ombre', (_id, slot) => {
+  it.each(slots)('%s : prototype os rigides, une seule géométrie partagée, 1 appel de corps et un proxy d\'ombre (couleur et profondeur coupées)', (_id, slot) => {
     const shared = rigidShared(slot.current, { skeletons, rect: () => ({ u0: 0, v0: 0, u1: 1, v1: 1 }), color: () => [1, 1, 1], materials: [new THREE.MeshLambertMaterial()], shadowMaterial: new THREE.MeshBasicMaterial() });
     const a = createRigidCharacter(shared);
     const b = createRigidCharacter(shared);
@@ -107,7 +107,7 @@ describe('description fidèle des personnages actuels', () => {
     expect(a.body.geometry.groups).toHaveLength(1);
     expect(a.shadow.castShadow).toBe(true);
     expect(a.body.castShadow).toBe(false);
-    expect(a.shadow.layers.isEnabled(0)).toBe(false);
+    expect(a.shadow.skeleton).toBe(a.skeleton);
     expect(a.body.geometry.attributes.position.count / 3).toBe(expandParts(slot.current).reduce((n, p) => n + (p.kind === 'box' ? 12 : 0), 0) + characterStats({ ...slot.current, parts: slot.current.parts.filter((p) => p.kind !== 'box') }, { skeletons }).triangles);
   });
 });

@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="robots" content="noindex">
+  <meta name="color-scheme" content="dark">
+  <title>Z-Survival · Atelier des personnages</title>
+  <link rel="icon" href="data:,">
+  <script type="importmap">{"imports":{"three":"./vendor/three/three.module.js"}}</script>
+  <link rel="preload" href="fonts/barlow-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="fonts/barlow-latin-700-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="css/tokens.css">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/atelier-personnages.css">
+  <script type="module" src="js/atelier-personnages/main.js"></script>
+</head>
+<body class="persos-page">
+  <noscript>
+    <p class="noscript">Cette page a besoin de JavaScript.</p>
+  </noscript>
+  <main id="app" class="persos" hidden>
+    <header class="persos-head" aria-labelledby="persos-title">
+      <h1 id="persos-title" class="persos-title" data-i18n="dev.persos.title">Atelier des personnages</h1>
+      <p class="persos-intro" data-i18n="dev.persos.intro"></p>
+      <p class="persos-warning" data-i18n="dev.persos.warning"></p>
+      <p id="status" class="persos-status" role="status" aria-live="polite"></p>
+      <p id="webgl-error" class="persos-error" data-i18n="dev.persos.webgl" hidden></p>
+      <nav class="persos-nav" aria-labelledby="nav-title">
+        <h2 id="nav-title" class="persos-nav-title" data-i18n="dev.persos.nav"></h2>
+        <ul class="persos-nav-list">
+          <li><a class="persos-link" href="#section-choix" data-i18n="dev.persos.choose"></a></li>
+          <li><a class="persos-link" href="#section-comparaison" data-i18n="dev.persos.compare"></a></li>
+          <li><a class="persos-link" href="#section-mesures" data-i18n="dev.persos.measures"></a></li>
+          <li><a class="persos-link" href="#section-curseurs" data-i18n="dev.persos.macros"></a></li>
+          <li><a class="persos-link" href="#section-sang" data-i18n="dev.persos.blood"></a></li>
+          <li><a class="persos-link" href="#section-arene" data-i18n="dev.persos.arena"></a></li>
+          <li><a class="persos-link" href="#section-mes-choix" data-i18n="dev.persos.choices"></a></li>
+        </ul>
+      </nav>
+    </header>
+
+    <section id="section-choix" class="persos-section" aria-labelledby="choix-title">
+      <h2 id="choix-title" class="persos-heading" data-i18n="dev.persos.choose"></h2>
+      <p class="persos-note" data-i18n="dev.persos.choose.intro"></p>
+      <div class="persos-controls">
+        <div class="persos-field"><label for="ctl-perso" data-i18n="dev.persos.perso"></label><select id="ctl-perso" class="persos-select"></select></div>
+        <div class="persos-field"><label for="ctl-variante" data-i18n="dev.persos.variante"></label><select id="ctl-variante" class="persos-select"></select></div>
+        <div class="persos-field"><label for="ctl-tenue" data-i18n="dev.persos.tenue"></label><select id="ctl-tenue" class="persos-select"></select></div>
+        <div class="persos-field"><label for="ctl-usure" data-i18n="dev.persos.usure"></label><select id="ctl-usure" class="persos-select"></select></div>
+        <div class="persos-field persos-field-range"><label for="ctl-manche" data-i18n="dev.persos.manche"></label><input id="ctl-manche" class="persos-range" type="range" min="1" max="40" step="1" value="1"><output id="out-manche" class="persos-value" for="ctl-manche">1</output></div>
+        <div class="persos-field"><label for="ctl-anim" data-i18n="dev.persos.anim"></label><select id="ctl-anim" class="persos-select"></select></div>
+        <div class="persos-field"><label for="ctl-sol" data-i18n="dev.persos.sol"></label><select id="ctl-sol" class="persos-select"></select></div>
+        <div class="persos-field"><label for="ctl-vue" data-i18n="dev.persos.vue"></label><select id="ctl-vue" class="persos-select"></select></div>
+        <div class="persos-field persos-field-range"><label for="ctl-orbite" data-i18n="dev.persos.orbite"></label><input id="ctl-orbite" class="persos-range" type="range" min="-60" max="60" step="5" value="0"><output id="out-orbite" class="persos-value" for="ctl-orbite">0°</output></div>
+        <div class="persos-field"><label for="ctl-vitesse" data-i18n="dev.persos.vitesse"></label><select id="ctl-vitesse" class="persos-select"></select></div>
+        <button id="btn-play" class="button persos-button" type="button" aria-pressed="true" data-i18n="dev.persos.pause"></button>
+      </div>
+      <h3 class="persos-subheading" data-i18n="dev.persos.main"></h3>
+      <div class="persos-stage persos-stage-main"><canvas id="canvas-main" class="persos-canvas" width="667" height="375" aria-hidden="true"></canvas></div>
+    </section>
+
+    <section id="section-comparaison" class="persos-section" aria-labelledby="comparaison-title">
+      <h2 id="comparaison-title" class="persos-heading" data-i18n="dev.persos.compare"></h2>
+      <p class="persos-note" data-i18n="dev.persos.compare.intro"></p>
+      <div class="persos-stage persos-stage-grid"><canvas id="canvas-grid" class="persos-canvas" width="640" height="480" aria-hidden="true"></canvas></div>
+      <p id="grid-legend" class="persos-legend"></p>
+    </section>
+
+    <section id="section-mesures" class="persos-section" aria-labelledby="mesures-title">
+      <h2 id="mesures-title" class="persos-heading" data-i18n="dev.persos.measures"></h2>
+      <p class="persos-note" data-i18n="dev.persos.measures.intro"></p>
+      <ul id="measures" class="persos-measures"></ul>
+    </section>
+
+    <section id="section-curseurs" class="persos-section" aria-labelledby="curseurs-title">
+      <h2 id="curseurs-title" class="persos-heading" data-i18n="dev.persos.macros"></h2>
+      <p class="persos-note" data-i18n="dev.persos.macros.intro"></p>
+      <div id="macros" class="persos-controls"></div>
+    </section>
+
+    <section id="section-sang" class="persos-section" aria-labelledby="sang-title">
+      <h2 id="sang-title" class="persos-heading" data-i18n="dev.persos.blood"></h2>
+      <div id="blood-panel"></div>
+    </section>
+
+    <section id="section-arene" class="persos-section" aria-labelledby="arene-title">
+      <h2 id="arene-title" class="persos-heading" data-i18n="dev.persos.arena"></h2>
+      <div id="arena-panel"></div>
+    </section>
+
+    <section id="section-mes-choix" class="persos-section" aria-labelledby="mes-choix-title">
+      <h2 id="mes-choix-title" class="persos-heading" data-i18n="dev.persos.choices"></h2>
+      <p class="persos-note" data-i18n="dev.persos.choices.intro"></p>
+      <button id="btn-pick" class="button persos-button" type="button" data-i18n="dev.persos.choices.pick"></button>
+      <label class="persos-choices-label" for="choices-text" data-i18n="dev.persos.choices.label"></label>
+      <textarea id="choices-text" class="persos-choices" rows="7" readonly spellcheck="false"></textarea>
+      <button id="btn-copy" class="button persos-button" type="button" data-i18n="dev.persos.copy"></button>
+      <p id="copy-status" class="persos-note" role="status" aria-live="polite"></p>
+    </section>
+  </main>
+</body>
+</html>

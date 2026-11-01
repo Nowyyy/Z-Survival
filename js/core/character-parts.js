@@ -315,16 +315,19 @@ export function jointsOf(variant, skeletons) {
 }
 
 // Matrices monde (repère du personnage, échelle comprise) de chaque articulation pour des angles { joint: [x, y, z] } (Euler 'YXZ',
-// comme les groupes de js/game/character.js) et des translations en plus { joint: [dx, dy, dz] }.
+// comme les groupes de js/game/character.js), des translations en plus { joint: [dx, dy, dz] } et des échelles { joint: s } (0 : la
+// pièce et ses enfants disparaissent, comme l'arme pendant la réparation).
 export function jointMatrices(joints, pose = {}, scale = 1) {
   const angles = obj(obj(pose).angles);
   const offsets = obj(obj(pose).offsets);
+  const scales = obj(obj(pose).scales);
   const k = isNum(scale) && scale > 0 ? scale : 1;
   const out = {};
   for (const j of joints) {
     const parent = j.parent && out[j.parent] ? out[j.parent] : { m: scaleM([k, k, k]), t: [0, 0, 0] };
     const extra = vec3(offsets[j.id]);
-    const local = { m: eulerMatrix(angles[j.id], 'YXZ'), t: [j.offset[0] + extra[0], j.offset[1] + extra[1], j.offset[2] + extra[2]] };
+    const s = isNum(scales[j.id]) && scales[j.id] >= 0 ? scales[j.id] : 1;
+    const local = { m: mul3(eulerMatrix(angles[j.id], 'YXZ'), scaleM([s, s, s])), t: [j.offset[0] + extra[0], j.offset[1] + extra[1], j.offset[2] + extra[2]] };
     out[j.id] = compose(parent, local);
   }
   return out;
@@ -380,8 +383,8 @@ export function boundsOf(boxes) {
 
 // --- Fusion par matière (architecture « os rigides ») ----------------------------------------------------------------------------------
 // parts : pièces développées ; options : { joints (articulations, ordre = indice d'os), matrices (repos, par articulation), rect(part) (région
-// d'atlas { u0, v0, u1, v1 }), color(part) ([r, g, b] 0 à 1) }. Renvoie [{ material, positions, normals, uvs, colors, bones, triangles }]
-// non indexés (une couleur par sommet), un groupe par matière (part.material, défaut 'body').
+// d'atlas { u0, v0, u1, v1 }), color(part) ([r, g, b] 0 à 1) }. Renvoie [{ material, positions, normals, uvs, colors, bones, parts (indice de
+// la pièce de chaque triangle), triangles }] non indexés (une couleur par sommet), un groupe par matière (part.material, défaut 'body').
 export function mergeParts(parts, { joints = null, matrices = null, rect = null, color = null } = {}) {
   const list = Array.isArray(parts) ? parts : [];
   const order = Array.isArray(joints) ? joints.map((j) => (typeof j === 'string' ? j : j.id)) : [...new Set(list.map((p) => p?.joint))];
@@ -390,7 +393,7 @@ export function mergeParts(parts, { joints = null, matrices = null, rect = null,
     const bone = order.indexOf(part?.joint);
     if (bone < 0 || !partDims(part)) continue;
     const mat = typeof part.material === 'string' ? part.material : 'body';
-    if (!groups.has(mat)) groups.set(mat, { material: mat, positions: [], normals: [], uvs: [], colors: [], bones: [], triangles: 0 });
+    if (!groups.has(mat)) groups.set(mat, { material: mat, positions: [], normals: [], uvs: [], colors: [], bones: [], parts: [], triangles: 0 });
     const g = groups.get(mat);
     const geo = buildPartGeometry(part);
     const m = matrices?.[part.joint] ?? IDENTITY;
@@ -405,6 +408,7 @@ export function mergeParts(parts, { joints = null, matrices = null, rect = null,
       g.colors.push(...(Array.isArray(c) ? c.slice(0, 3) : [1, 1, 1]));
       g.bones.push(bone);
     }
+    for (let t = 0; t < geo.indices.length / 3; t += 1) g.parts.push(list.indexOf(part));
     g.triangles += geo.indices.length / 3;
   }
   return [...groups.values()];
@@ -423,7 +427,9 @@ export function characterStats(variant, { architecture = 'rigid', skeletons = {}
   const shadow = Array.isArray(obj(variant).shadow) ? expandParts({ parts: variant.shadow }) : [];
   const shadowTriangles = architecture === 'rigid' && shadow.length > 0 ? shadow.reduce((s, p) => s + partTriangles(p), 0) : casters.reduce((s, p) => s + partTriangles(p), 0);
   const casterPieces = [...new Set(casters.map((p) => p.piece ?? p.id))];
-  const calls = architecture === 'rigid' ? materials.length : pieces.length;
+  // Os rigides : un appel par matière, plus le proxy d'ombre dans la passe principale (matière sans couleur ni profondeur).
+  const proxy = architecture === 'rigid' && (shadow.length > 0 || casters.length > 0) ? 1 : 0;
+  const calls = architecture === 'rigid' ? materials.length + proxy : pieces.length;
   const shadowCalls = architecture === 'rigid' ? (shadow.length > 0 || casters.length > 0 ? 1 : 0) : casterPieces.length;
   const rest = boundsOf(fkPose(variant, {}, { skeletons }).boxes);
   return { parts: valid.length, pieces: pieces.length, triangles, calls, shadowCalls, shadowTriangles, casters: architecture === 'rigid' ? shadowCalls : casterPieces.length, joints: [...new Set(valid.map((p) => p.joint))], rest, materials };

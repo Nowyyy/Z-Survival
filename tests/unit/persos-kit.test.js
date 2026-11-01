@@ -174,7 +174,7 @@ describe('characterStats', () => {
   });
   it('os rigides : un appel par matière, un proxy d\'ombre', () => {
     const s = characterStats({ ...BODY, shadow: [box('o', 'spine', { w: 10, h: 20, d: 6 })] }, { architecture: 'rigid', skeletons: SKEL });
-    expect([s.calls, s.shadowCalls, s.shadowTriangles]).toEqual([1, 1, 12]);
+    expect([s.calls, s.shadowCalls, s.shadowTriangles]).toEqual([2, 1, 12]); // corps + proxy (passe principale), proxy (passe d'ombre)
   });
   it('boîte au repos : hauteur du sol au sommet de la tête', () => {
     const s = characterStats(BODY, { skeletons: SKEL });
@@ -202,8 +202,8 @@ describe('checkVariant : chaque violation', () => {
   });
   it('budget d\'appels (os rigides : une matière de trop)', () => {
     const v = { ...BODY, parts: BODY.parts.map((p, i) => ({ ...p, material: `m${i}` })) };
-    expect(codes(v, { budget: { calls: 3 } })).toContain('budget-appels');
-    expect(codes(v, { budget: { calls: 4 } })).not.toContain('budget-appels');
+    expect(codes(v, { budget: { calls: 4 } })).toContain('budget-appels'); // 4 matières + proxy d'ombre
+    expect(codes(v, { budget: { calls: 5 } })).not.toContain('budget-appels');
   });
   it('budget de pièces (pièces articulées)', () => expect(codes(BODY, { architecture: 'articulated', budget: { pieces: 4 } })).toContain('budget-pieces'));
   it('ombres : appels et triangles du proxy', () => {

@@ -14,7 +14,7 @@ const git = (cmd) => {
 };
 const regions = texturesJson.textures.find((t) => t.id === 'atlas-persos').params.regions.map((r) => r.id);
 const ORDER = ['joueur', 'marcheur', 'petit', 'voute', 'grand'];
-const NEW_CORE = ['character-parts', 'pose-v2'].map((n) => `js/core/${n}.js`);
+const NEW_CORE = ['character-parts', 'pose-v2', 'persos-variants', 'texgen-persos'].map((n) => `js/core/${n}.js`);
 
 describe('characters-v2.json', () => {
   it('version, texte provisoire, cinq emplacements dans l\'ordre joueur, marcheur, petit, voûté, grand', () => {
