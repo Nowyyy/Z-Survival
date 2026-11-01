@@ -5,10 +5,12 @@ import { createDirector, direct, soundTable } from '../../js/core/sound-director
 import { renderSound } from '../../js/core/synth.js';
 import { peakOf } from './helpers/dsp.js';
 import { deepFreeze, WEIRD } from './helpers/monde.js';
+import { synthRecipes } from './helpers/sons-anciens.js';
 
 const read = (f) => JSON.parse(readFileSync(`data/game/${f}.json`, 'utf8'));
 const audio = read('audio');
-const cfg = { audio, materials: read('sound-materials'), voice: read('zombie-voice'), sounds: soundTable(read('sounds').sounds) };
+// Lot 3i : table du pack d'avant (?sons=ancien) ; les gémissements lointains après la fin de manche sont vérifiés dans sons-integres-ambiances.test.js.
+const cfg = { audio, materials: read('sound-materials'), voice: read('zombie-voice'), sounds: soundTable(synthRecipes()) };
 const frame = (events, extra = {}) => ({ time: 10, listener: { x: 800, y: 600 }, walls: [], paused: false, events, ...extra });
 const run = (events, extra, state = createDirector(1)) => direct(state, frame(events, extra), cfg);
 

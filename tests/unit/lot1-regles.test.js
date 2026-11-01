@@ -55,7 +55,9 @@ describe('mêmes règles qu\'au lot 1', () => {
     }
     const allowed = ['pose', 'viewport', 'camera', 'collision', 'nav', 'decor', 'layout', 'movement', 'ray', 'projectile', 'enemy-ai', 'spawner', 'color', 'texgen', 'variants', 'synth', 'audio-mix', 'footsteps', 'sound-director', 'zombie-voice', 'sound-params', 'waves', 'wave-director', 'enemy-factory', 'combat', 'player-stats', 'spread', 'wave-splash', 'vhs', 'windows', 'siege', 'player-down', 'plank-layout', 'hud-windows', 'edge-arrow', 'maps', 'map-svg', 'shape', 'fog', 'zones', 'furniture-model', 'floors', 'stairs', 'floor-transition', 'stair-zombies', 'floor-sim', 'floor-rules', 'stair-walk', 'releve', 'ecarts', 'ecarts-svg', 'visite', 'decisions', 'decor-interieur', 'mobilier-aspect', 'portes-aspect', 'see-through', 'decor-vivant', 'economy', 'money-gain', 'save',
       // Lot 3h : atelier des sons (nouveaux fichiers seulement).
-      'audio-analysis', 'synth2', 'synth2-dsp', 'synth2-sources', 'atelier-check', 'atelier-choices', 'sound-cache', 'wave-svg', 'scenes-sons'].map((n) => `js/core/${n}.js`); // lot 3g : relevé, écarts, visite, décisions, décor léger, aspect du mobilier ; lot 4 : économie, sauvegarde
+      'audio-analysis', 'synth2', 'synth2-dsp', 'synth2-sources', 'atelier-check', 'atelier-choices', 'sound-cache', 'wave-svg', 'scenes-sons',
+      // Lot 3i : sons de l'atelier intégrés au jeu (modules nouveaux ; sound-director étendu, déjà listé).
+      'sound-choice', 'sound-render'].map((n) => `js/core/${n}.js`); // lot 3g : relevé, écarts, visite, décisions, décor léger, aspect du mobilier ; lot 4 : économie, sauvegarde
     expect(changed.filter((f) => !allowed.includes(f))).toEqual([]);
   });
 });

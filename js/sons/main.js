@@ -1,7 +1,10 @@
 // Page d'écoute des sons (lot 1d) : page technique. Calcule tous les sons avec les mêmes fonctions que le jeu (js/core/synth.js, via
 // sound-loader.js), les joue avec le même lecteur (js/game/audio.js) et permet de juger chaque variante, une rafale, une horde et l'ambiance.
 // ?test=1 expose window.__zs.getState().audio (journal des lectures) et accélère « Horde » et « Rafale » (temps simulé, sans attente).
+// Lot 3i : liste les sons intégrés au jeu (ceux de l'atelier sous les identifiants du jeu, toutes leurs versions calculées ici) et affiche
+// le poids du pack et la mémoire estimée une fois décodé, sans plafond.
 import { variantCount } from '../core/synth.js';
+import { isAtelier, packStats, seedCount } from '../core/sound-choice.js';
 import { createAudio } from '../game/audio.js';
 import { planSounds, renderSounds } from '../game/sound-loader.js';
 import { translate } from '../i18n.js';
@@ -23,13 +26,16 @@ const LISTENER = { x: 1000, y: 1000 };
 
 const query = new URLSearchParams(location.search);
 const testMode = query.get('test') === '1';
-const [dict, soundsCfg, audioCfg, materialsCfg, voiceCfg, weapons, variantsCfg] = await Promise.all([
+const [baseDict, soundsCfg, audioCfg, materialsCfg, voiceCfg, weapons, variantsCfg, extraDict] = await Promise.all([
   loadJson('data/i18n/fr.json'), loadJson('data/game/sounds.json'), loadJson('data/game/audio.json'), loadJson('data/game/sound-materials.json'),
-  loadJson('data/game/zombie-voice.json'), loadJson('data/game/weapons.json'), loadJson('data/game/zombie-variants.json'),
+  loadJson('data/game/zombie-voice.json'), loadJson('data/game/weapons.json'), loadJson('data/game/zombie-variants.json'), loadJson('data/i18n/sons-integres.json'),
 ]);
+const dict = { ...baseDict, ...extraDict };
+const countOf = (recipe) => (isAtelier(recipe) ? seedCount(recipe) : variantCount(recipe));
 const BURST_GAP = weapons.pistol.fireDelay; // cadence du pistolet (data/game/weapons.json)
 const t = (key, params) => fmt(translate(dict, key), params);
 for (const el of document.querySelectorAll('[data-i18n]')) el.textContent = translate(dict, el.dataset.i18n);
+$('atelier-link').textContent = t('dev.sons.atelier.link'); // lot 3i : texte de data/i18n/sons-integres.json
 $('app').hidden = false;
 
 const audio = createAudio({ config: { audio: audioCfg, materials: materialsCfg, voice: voiceCfg, sounds: soundsCfg.sounds }, test: testMode, seed: 7, autoAmbience: false });
@@ -95,17 +101,21 @@ function drawWave(canvas, samples) {
 }
 
 // Tous les tampons, par blocs, avec le pourcentage affiché.
-const jobs = planSounds(soundsCfg.sounds);
+const jobs = planSounds(soundsCfg.sounds.map((r) => (isAtelier(r) ? { ...r, preload: seedCount(r) } : r)), null);
 const rendered = await renderSounds(jobs, { onProgress: (p) => { status.textContent = t('dev.sons.loading', { n: Math.round(p * 100) }); } });
 audio.addSounds(rendered.items);
 const byName = new Map(rendered.items.map((i) => [i.name, i]));
 status.textContent = audio.supported ? t('dev.sons.ready', { count: rendered.count, mb: (rendered.bytes / 1048576).toFixed(1) }) : t('dev.sons.noaudio');
+const pack = packStats(rendered.items);
+$('pack').textContent = t('dev.sons.pack', { count: pack.buffers, bytes: pack.bytes, mb: (pack.bytes / 1048576).toFixed(2), mem: (pack.decodedBytes / 1048576).toFixed(2) });
+$('pack').dataset.bytes = String(pack.bytes);
+$('pack').dataset.decoded = String(pack.decodedBytes);
 
 const db = (x) => (20 * Math.log10(Math.max(x, 1e-9))).toFixed(1);
 const list = $('list');
 const buttons = [];
 for (const recipe of soundsCfg.sounds) {
-  const items = Array.from({ length: variantCount(recipe) }, (_, v) => byName.get(`${recipe.id}-${v + 1}`));
+  const items = Array.from({ length: countOf(recipe) }, (_, v) => byName.get(`${recipe.id}-${v + 1}`));
   const peak = Math.max(...items.map((i) => i.samples.reduce((m, s) => Math.max(m, Math.abs(s)), 0)));
   const rms = items.reduce((sum, i) => sum + Math.sqrt(i.samples.reduce((e, s) => e + s * s, 0) / i.samples.length), 0) / items.length;
   const li = document.createElement('li');
@@ -116,7 +126,8 @@ for (const recipe of soundsCfg.sounds) {
   const id = document.createElement('code');
   id.className = 'sound-id';
   id.textContent = recipe.id;
-  title.append(id, ` · ${translate(dict, `dev.sons.etiquette.${recipe.id}`)}`);
+  const label = isAtelier(recipe) && dict[`dev.sons.etiquette.${recipe.id}.atelier`] ? `dev.sons.etiquette.${recipe.id}.atelier` : `dev.sons.etiquette.${recipe.id}`;
+  title.append(id, ` · ${translate(dict, label)}`);
   const meta = document.createElement('p');
   meta.className = 'sound-meta';
   meta.textContent = t('dev.sons.meta', { category: recipe.category, duration: recipe.duration.toFixed(2), peak: peak.toFixed(2), rms: db(rms) });
@@ -142,7 +153,15 @@ for (const recipe of soundsCfg.sounds) {
     buttons.push({ button, recipe, v, canvas, item });
     row.append(button);
   });
-  li.append(title, meta, canvas, row);
+  li.append(title, meta);
+  if (isAtelier(recipe)) {
+    li.dataset.atelier = recipe.atelier.slot.id;
+    const origin = document.createElement('p');
+    origin.className = 'sound-meta sound-origin';
+    origin.textContent = t('dev.sons.atelier.meta', { slot: recipe.atelier.slot.id, variant: recipe.atelier.variant, seeds: seedCount(recipe) });
+    li.append(origin);
+  }
+  li.append(canvas, row);
   list.append(li);
   drawWave(canvas, items[0].samples);
 }

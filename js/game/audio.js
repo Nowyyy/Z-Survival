@@ -2,16 +2,39 @@
 // qu'après le premier geste du joueur. Chaîne : source -> gain -> balance -> [passe-bas si étouffé] -> compresseur -> gain général -> sortie.
 // Les événements du jeu passent par js/core/sound-director.js (demandes de lecture) ; ce fichier les joue, limite les voix et tient le
 // journal des lectures (seulement avec ?test=1).
-import { dropCategory } from '../core/audio-mix.js';
+import { distanceGain, dropCategory } from '../core/audio-mix.js';
 import { createDirector, direct, soundTable } from '../core/sound-director.js';
+import { bufferName, isAtelier, packStats } from '../core/sound-choice.js';
+import { loadLegacy, renderAtelier, soundMode } from './sound-loader.js';
 
 const LOG_MAX = 200;
 
 // config : { audio, materials, voice, sounds } (data/game/audio.json, sound-materials.json, zombie-voice.json, liste de sounds.json) ; test : tient le journal.
 // autoAmbience : l'ambiance démarre toute seule (le jeu) ou seulement à la demande (page d'écoute).
-export function createAudio({ config, test = false, seed = 1, autoAmbience = true } = {}) {
+// Lot 3i : mode des sons (?sons=choix|ancien|A|B|C, défaut choix) ; avec ?sons=ancien, la table des sons est celle d'avant le lot (recettes
+// remplacées chargées par import dynamique, sons nouveaux absents). Versions (graines) d'un son de l'atelier non encore calculées : calculées au
+// premier usage, gardées ensuite (cache sans éviction) ; en attendant, une version déjà prête du même son est jouée.
+export function createAudio({ config, test = false, seed = 1, autoAmbience = true, mode = soundMode() } = {}) {
   const Context = typeof window === 'undefined' ? undefined : (window.AudioContext ?? window.webkitAudioContext);
-  const cfg = { audio: config.audio, materials: config.materials, voice: config.voice, sounds: soundTable(config.sounds) };
+  const recipes = new Map((Array.isArray(config.sounds) ? config.sounds : []).map((r) => [r.id, r]));
+  const legacyMode = mode === 'ancien';
+  const cfg = { audio: config.audio, materials: config.materials, voice: config.voice, sounds: soundTable(legacyMode ? config.sounds.filter((r) => !isAtelier(r)) : config.sounds) };
+  if (legacyMode) {
+    loadLegacy().then((list) => {
+      for (const r of list) recipes.set(r.id, r);
+      cfg.sounds = soundTable([...config.sounds.filter((r) => !isAtelier(r)), ...list]);
+    }).catch(() => {});
+  }
+  // ?test=1 : empreinte de chaque tampon (somme pondérée des échantillons), comparée en test au rendu de Node.
+  const sums = new Map();
+  const fingerprint = (name, samples) => {
+    if (!test) return;
+    let sum = 0;
+    for (let i = 0; i < samples.length; i += 1) sum += samples[i] * ((i % 7) + 1);
+    sums.set(name, sum.toFixed(6));
+  };
+  const lazy = new Map(); // nom de tampon -> promesse de calcul au premier usage (cache sans éviction)
+  const lazyStats = { count: 0, ms: 0 };
   const pcm = new Map(); // nom -> { sampleRate, samples, loop }
   const buffers = new Map(); // nom -> AudioBuffer
   const log = [];
@@ -27,6 +50,13 @@ export function createAudio({ config, test = false, seed = 1, autoAmbience = tru
   let suspendTimer = 0;
   let nextVoice = 0;
   let lastFrame = { time: 0, listener: { x: 0, y: 0 }, walls: [] };
+  // Lot 3i : ambiances en boucle (audio.json, loops) : une seule voix par boucle, lancée pendant la partie, coupée à la pause, à la mort
+  // (jusqu'à « Rejouer ») et quand le son est coupé ; le feu suit le feu de décor le plus proche (distance, autre étage étouffé).
+  const loopVoices = new Map(); // nom de boucle -> { source, gain, filter }
+  let fires = [];
+  let ended = false;
+  const lastPlayed = new Map(); // son -> dernière version jouée (repli sans répétition)
+  const waiting = new Map(); // réparation en attente de son tampon : clé (fenêtre) -> { stopped }
   let onState = () => {};
   const stats = { essentialMs: 0, backgroundMs: 0, ready: false, zombieVoices: 0 };
 
@@ -44,6 +74,74 @@ export function createAudio({ config, test = false, seed = 1, autoAmbience = tru
     log.push(e);
     if (log.length > LOG_MAX) log.shift();
   };
+
+  function startLoop(name, def) {
+    const buffer = buffers.get(`${def.sound}-1`);
+    // Boucle calculée au premier usage : demandée ici, lancée à une image suivante quand son tampon est prêt.
+    if (!buffer && !legacyMode && isAtelier(recipes.get(def.sound))) ensure(`${def.sound}-1`, recipes.get(def.sound), { sound: def.sound, variant: 0 });
+    if (!ctx || !buffer || loopVoices.has(name)) return;
+    const source = ctx.createBufferSource();
+    source.buffer = buffer;
+    source.loop = true;
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(0, ctx.currentTime);
+    source.connect(gain);
+    let tail = gain;
+    let filter = null;
+    if (def.spatial) {
+      filter = ctx.createBiquadFilter();
+      filter.type = 'lowpass';
+      filter.frequency.value = 20000;
+      gain.connect(filter);
+      tail = filter;
+    }
+    tail.connect(compressor);
+    source.start();
+    loopVoices.set(name, { source, gain, filter, def });
+    note({ sound: def.sound, loop: true, start: true, gameTime: lastFrame.time });
+  }
+  function stopLoops() {
+    for (const [name, v] of loopVoices) {
+      try {
+        v.source.stop();
+        v.source.disconnect();
+        v.gain.disconnect();
+        v.filter?.disconnect();
+      } catch { /* déjà arrêtée */ }
+      note({ sound: v.def.sound, loop: true, stop: true, gameTime: lastFrame.time });
+      loopVoices.delete(name);
+    }
+  }
+  // Gain visé d'une boucle à cette image : fond constant (vent) ou feu le plus proche (distance ; autre étage : × floorGain et passe-bas).
+  function loopLevel(def, frame) {
+    const base = (config.audio.categoryGain.ambiance ?? 0.15) * (def.gain ?? 1);
+    if (!def.spatial) return { gain: base, lowpass: 20000 };
+    let best = null;
+    for (const f of fires) {
+      const d = Math.hypot(f.x - frame.listener.x, f.y - frame.listener.y);
+      if (!best || d < best.d) best = { d, floor: f.floor };
+    }
+    if (!best) return { gain: 0, lowpass: 20000 };
+    const other = typeof frame.floor === 'string' && typeof best.floor === 'string' && best.floor !== frame.floor;
+    const g = base * distanceGain(best.d, config.audio.referenceDistance, config.audio.maxDistance) * (other ? (config.audio.floorGain ?? 0.5) : 1);
+    return { gain: g, lowpass: other ? (config.audio.floorLowpass ?? 700) : 20000 };
+  }
+  function updateLoops(frame) {
+    const defs = config.audio.loops ?? {};
+    if (!ctx || !autoAmbience || ended || suspended || muted || frame.paused) {
+      if (frame.paused || ended) stopLoops();
+      return;
+    }
+    for (const [name, def] of Object.entries(defs)) {
+      if (!cfg.sounds[def.sound]) continue;
+      startLoop(name, def);
+      const v = loopVoices.get(name);
+      if (!v) continue;
+      const level = loopLevel(def, frame);
+      v.gain.gain.setTargetAtTime(level.gain, ctx.currentTime, 0.15);
+      if (v.filter) v.filter.frequency.setTargetAtTime(level.lowpass, ctx.currentTime, 0.05);
+    }
+  }
 
   function startAmbience() {
     if (!ctx || ambience || suspended || muted) return;
@@ -75,7 +173,54 @@ export function createAudio({ config, test = false, seed = 1, autoAmbience = tru
       note(entry(r, gameTime, { muted: true }));
       return false;
     }
-    const buffer = buffers.get(`${r.sound}-${r.variant + 1}`);
+    const recipe = recipes.get(r.sound);
+    let name = bufferName(r.sound, r.variant + 1, r.durationSec ?? null, legacyMode ? null : recipe);
+    let buffer = buffers.get(name);
+    let playedVariant = r.variant;
+    if (!buffer && ctx && !suspended && !legacyMode && isAtelier(recipe)) {
+      // Version pas encore calculée : une version prête du même son (à la même durée pour la réparation) la remplace cette fois-ci, autre
+      // que la précédente si possible ; la version demandée (`asked` au journal) est calculée en arrière-plan pour la prochaine fois.
+      const ready = [];
+      for (let k = 1; k <= (cfg.sounds[r.sound]?.variants ?? 1); k += 1) if (buffers.has(bufferName(r.sound, k, r.durationSec ?? null, recipe))) ready.push(k - 1);
+      const pick = ready.find((v) => v !== lastPlayed.get(r.sound)) ?? ready[0];
+      // Aucune version prête (réparation à une nouvelle durée, son calculé seulement au premier usage) : joué dès que son tampon arrive (ensure),
+      // la réparation en phase avec la pose.
+      ensure(name, recipe, r, pick === undefined);
+      if (pick === undefined) return false;
+      name = bufferName(r.sound, pick + 1, r.durationSec ?? null, recipe);
+      buffer = buffers.get(name);
+      playedVariant = pick;
+    }
+    return start(r, gameTime, buffer, playedVariant, name);
+  }
+
+  // Calcul au premier usage d'un tampon de l'atelier (version non préchargée, réparation à une autre durée) ; une réparation demandée est
+  // lancée à sa réception, décalée du temps écoulé pour rester en phase avec la pose (sauf si elle a été arrêtée entre-temps).
+  function ensure(name, recipe, r, startWhenReady = false) {
+    const asked = ctx ? ctx.currentTime : 0;
+    if (!lazy.has(name)) {
+      const m = /-(\d+)$/.exec(name);
+      lazy.set(name, renderAtelier(recipe, { version: m ? Number(m[1]) : 1, durationSec: r.durationSec ?? null, mode }).then((res) => {
+        lazyStats.count += 1;
+        lazyStats.ms += res.ms;
+        pcm.set(name, { sampleRate: res.sampleRate, samples: res.samples, loop: false });
+        fingerprint(name, res.samples);
+        toBuffer(name);
+        return name;
+      }).catch(() => null));
+    }
+    if (!startWhenReady) return;
+    const token = { stopped: false };
+    waiting.set(r.key ?? name, token);
+    lazy.get(name).then((done) => {
+      if (!done || token.stopped || waiting.get(r.key ?? name) !== token) return;
+      waiting.delete(r.key ?? name);
+      const late = ctx && r.durationSec !== undefined ? Math.max(0, ctx.currentTime - asked) : 0;
+      start({ ...r, offset: (r.offset ?? 0) + late }, r.gameTime ?? 0, buffers.get(name), r.variant, name);
+    });
+  }
+
+  function start(r, gameTime, buffer, playedVariant, name) {
     if (!ctx || !buffer || suspended) return false;
     // Limite réelle de voix : au plus maxVoices sources en train de jouer ; la moins prioritaire (la plus ancienne à priorité égale) cède la
     // place, sauf si elle est plus prioritaire que la nouvelle voix.
@@ -119,11 +264,36 @@ export function createAudio({ config, test = false, seed = 1, autoAmbience = tru
       for (const n of nodes) n.disconnect();
       active.delete(id);
     };
-    active.set(id, { source, gain, category: r.category, priority, start: nextVoice, fading: false });
-    source.start(ctx.currentTime + r.delay);
+    active.set(id, { source, gain, category: r.category, priority, start: nextVoice, fading: false, sound: r.sound, key: r.key ?? null });
+    const offset = Math.min(Math.max(0, r.offset ?? 0), Math.max(0, buffer.duration - 0.01));
+    source.start(ctx.currentTime + r.delay, offset);
     if (r.category === 'voix') stats.zombieVoices += 1;
-    note(entry(r, gameTime));
+    lastPlayed.set(r.sound, playedVariant);
+    note(entry({ ...r, variant: playedVariant }, gameTime, { buffer: name, ...(playedVariant === r.variant ? {} : { asked: r.variant }), ...(offset > 0 ? { offset } : {}), ...(r.key ? { key: r.key } : {}) }));
     return true;
+  }
+
+  // Arrêt de voix précises (réparation interrompue) : demande en attente annulée, voix jouées coupées après un fondu de 30 ms.
+  function stopVoices(list) {
+    for (const st of list) {
+      const w = waiting.get(st.key);
+      if (w) {
+        w.stopped = true;
+        waiting.delete(st.key);
+      }
+      if (!ctx) continue;
+      const t = ctx.currentTime;
+      for (const v of active.values()) {
+        if (v.sound !== st.sound || v.key !== st.key || v.fading) continue;
+        v.fading = true;
+        try {
+          v.gain.gain.setValueAtTime(v.gain.gain.value, t);
+          v.gain.gain.linearRampToValueAtTime(0, t + 0.03);
+          v.source.stop(t + 0.05);
+        } catch { /* déjà arrêtée */ }
+      }
+      note({ sound: st.sound, stop: true, key: st.key, gameTime: lastFrame.time });
+    }
   }
 
   // Arrêt en fondu des voix d'une catégorie (mélodie d'annonce à la mort et à « Rejouer ») : le gain tombe à 0 en `fade` s, puis la source
@@ -205,6 +375,7 @@ export function createAudio({ config, test = false, seed = 1, autoAmbience = tru
     addSounds(items) {
       for (const it of items) {
         pcm.set(it.name, { sampleRate: it.sampleRate, samples: it.samples, loop: it.loop });
+        fingerprint(it.name, it.samples);
         toBuffer(it.name);
       }
       if (autoAmbience && pcm.has('ambiance-1')) startAmbience();
@@ -213,7 +384,10 @@ export function createAudio({ config, test = false, seed = 1, autoAmbience = tru
     toggleMute() {
       muted = !muted;
       if (master) master.gain.value = masterGain();
-      if (muted) stopAmbience();
+      if (muted) {
+        stopAmbience();
+        stopLoops();
+      }
       else if (autoAmbience) startAmbience();
       return muted;
     },
@@ -235,6 +409,7 @@ export function createAudio({ config, test = false, seed = 1, autoAmbience = tru
       if (!ctx) return;
       if (flag) {
         stopAmbience();
+        stopLoops();
         suspendTimer = setTimeout(() => {
           if (suspended) ctx.suspend?.().catch(() => {});
         }, (config.audio.suspendDelay ?? 0.4) * 1000);
@@ -250,7 +425,9 @@ export function createAudio({ config, test = false, seed = 1, autoAmbience = tru
       lastFrame = { time: frame.time, listener: frame.listener, walls: frame.walls ?? [], floor: frame.floor };
       const out = direct(director, frame, cfg);
       director = out.state;
-      const played = out.requests.filter((r) => play(r, frame.time));
+      if (out.stops?.length) stopVoices(out.stops);
+      updateLoops({ ...lastFrame, paused: frame.paused === true });
+      const played = out.requests.filter((r) => play({ ...r, gameTime: frame.time }, frame.time));
       return { requests: out.requests, played };
     },
 
@@ -277,13 +454,29 @@ export function createAudio({ config, test = false, seed = 1, autoAmbience = tru
     // Mort du joueur : la mélodie d'annonce s'arrête en fondu (0,3 s).
     stopAnnounce(fade = 0.3) {
       fadeCategory('annonce', fade);
+      // Lot 3i : à la mort, les boucles s'arrêtent jusqu'à « Rejouer » et le battement de cœur se tait.
+      ended = true;
+      stopLoops();
+      if (config.audio.heartbeat) stopVoices([{ sound: config.audio.heartbeat.sound, key: null }]);
+    },
+
+    // Lot 3i : feux de décor (positions du jeu, étage) pour la boucle de feu.
+    setFires(list) {
+      fires = (Array.isArray(list) ? list : []).filter((f) => Number.isFinite(f?.x) && Number.isFinite(f?.y)).map((f) => ({ x: f.x, y: f.y, floor: f.floor }));
     },
 
     // Remise à zéro d'une partie (la mélodie d'annonce en cours s'arrête en fondu).
     reset(seed2) {
       fadeCategory('annonce');
+      stopLoops();
+      ended = false;
       director = createDirector(seed2);
       lastFrame = { time: 0, listener: lastFrame.listener, walls: lastFrame.walls };
+    },
+
+    // Poids du pack calculé (octets des tampons) et mémoire estimée une fois décodé (mono : 4 octets par échantillon), sans plafond.
+    pack() {
+      return { mode, ...packStats([...pcm.values()]), lazy: lazyStats.count, lazyMs: Math.round(lazyStats.ms) };
     },
 
     // Rapport pour ?test=1.
@@ -291,8 +484,8 @@ export function createAudio({ config, test = false, seed = 1, autoAmbience = tru
       let bytes = 0;
       for (const it of pcm.values()) bytes += it.samples.length * 4;
       return {
-        supported: Boolean(Context), unlocked: ctx !== null, contextState: ctx ? ctx.state : 'aucun', started: ctx !== null, muted, volume, suspended, buffers: pcm.size, loaded: [...pcm.keys()], bytes,
-        essentialMs: Math.round(stats.essentialMs), backgroundMs: Math.round(stats.backgroundMs), ready: stats.ready, activeVoices: active.size, annonceActive: [...active.values()].filter((v) => v.category === 'annonce').length, ambience: ambience !== null, log: log.map((e) => ({ ...e })),
+        supported: Boolean(Context), unlocked: ctx !== null, contextState: ctx ? ctx.state : 'aucun', started: ctx !== null, muted, volume, suspended, buffers: pcm.size, loaded: [...pcm.keys()], bytes, mode, pack: api.pack(),
+        essentialMs: Math.round(stats.essentialMs), backgroundMs: Math.round(stats.backgroundMs), ready: stats.ready, activeVoices: active.size, annonceActive: [...active.values()].filter((v) => v.category === 'annonce').length, sums: Object.fromEntries(sums), ambience: ambience !== null, loops: [...loopVoices.values()].map((v) => v.def.sound), fires: fires.length, log: log.map((e) => ({ ...e })),
       };
     },
   };

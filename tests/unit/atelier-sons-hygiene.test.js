@@ -85,7 +85,9 @@ describe('hygiène du lot 3h : pureté et fichiers', () => {
   });
 
   it('les scripts de scripts/sons/ n\'écrivent aucun fichier (sortie standard seulement)', () => {
-    for (const f of readdirSync('scripts/sons').map((n) => `scripts/sons/${n}`)) expect(readFileSync(f, 'utf8'), f).not.toMatch(/writeFile|appendFile|createWriteStream|mkdirSync/);
+    // Lot 3i : integrer.mjs et lister-integres.mjs écrivent le pack intégré et son tableau (demandé par le lot) ; les scripts du lot 3h n'écrivent rien.
+    const WRITERS = ['scripts/sons/integrer.mjs', 'scripts/sons/lister-integres.mjs'];
+    for (const f of readdirSync('scripts/sons').map((n) => `scripts/sons/${n}`).filter((n) => !WRITERS.includes(n))) expect(readFileSync(f, 'utf8'), f).not.toMatch(/writeFile|appendFile|createWriteStream|mkdirSync/);
   });
 
   it('synth2.js n\'importe pas js/core/synth.js (le moteur du jeu n\'est pas touché, pas même indirectement)', () => {

@@ -123,10 +123,12 @@ describe('parseName et lotLabel avec un nom affiché', () => {
     expect(lotLabel('lot-4b', undefined)).toBe('Lot 4b');
   });
 
+  // Lot 3i : sur la branche lot-3i, apercu.txt est celui du lot (titre « Sons intégrés », sans nom affiché) ; à la fusion, lot-4b garde le sien.
   it('apercu.txt de la branche d\'intégration : page jeu.html, nom affiché V0.5', () => {
     const text = readFileSync('apercu.txt', 'utf8');
     expect(parseEntry(text)).toBe('jeu.html');
-    expect(parseName(text)).toBe('V0.5');
+    if (/titre: Sons intégrés/.test(text)) expect(parseName(text)).toBe('');
+    else expect(parseName(text)).toBe('V0.5');
   });
 
   it('scripts/assemble.mjs recopie le nom affiché dans lots.json (champ nom, seulement s\'il existe)', () => {

@@ -1,7 +1,8 @@
 // Projection du pack de sons du jeu après intégration des choix de l'atelier (lot 3h, pour le lot 3i). Imprime, n'écrit rien.
 // Poids : tampons actuels de data/game/sounds.json − tampons remplacés + tampons des emplacements choisis (plan « integration » de
 // data/game/sounds-atelier.json : identifiants produits, identifiants remplacés, nombre de versions), au format du jeu (Float32 mono,
-// 4 octets par échantillon), comparé à la limite de 8 Mo ; temps de calcul au chargement mesuré en Node, comparé à la référence.
+// 4 octets par échantillon) et mémoire estimée une fois décodé (mono : identique), sans plafond (limite levée par le propriétaire au lot 3i) ;
+// temps de calcul au chargement mesuré en Node, comparé à la référence.
 // Usage : node scripts/sons/projection.mjs [--variante=A|B|C] [--choix=<fichier « Mes choix »>] [--p1] [--voix=type|hauteur]
 //   --variante : la même variante partout (A par défaut ; un emplacement sans cette variante garde A) ; --choix : un fichier texte au
 //   format de « Mes choix » : seuls les emplacements cités sont intégrés (« actuel » : le son du jeu reste, « aucun » : pas de son) ;
@@ -12,7 +13,6 @@ import { renderSound, variantCount } from '../../js/core/synth.js';
 import { renderVariant, resolveAtelier } from '../../js/core/synth2.js';
 import { parseChoices } from '../../js/core/atelier-choices.js';
 
-export const LIMIT_BYTES = 8 * 1024 * 1024;
 const arg = (name) => process.argv.find((a) => a.startsWith(`--${name}=`))?.split('=')[1] ?? null;
 
 export function project({ atelierRaw, sounds, choices = {}, variant = 'A', p1Only = false, voicePlan = 'type', measureTime = true, onlyChosen = false }) {
@@ -69,13 +69,15 @@ export function project({ atelierRaw, sounds, choices = {}, variant = 'A', p1Onl
   const added = rows.reduce((s, r) => s + r.bytes, 0);
   const addedMs = rows.reduce((s, r) => s + r.ms, 0);
   const total = refBytes - removedBytes + added;
-  return { refBytes, refMs, removedBytes, removedMs, added, addedMs, total, totalMs: refMs - removedMs + addedMs, limit: LIMIT_BYTES, over: total > LIMIT_BYTES, rows: rows.sort((a, b) => b.bytes - a.bytes), removed: [...removed] };
+  return { refBytes, refMs, removedBytes, removedMs, added, addedMs, total, decodedBytes: total, totalMs: refMs - removedMs + addedMs, rows: rows.sort((a, b) => b.bytes - a.bytes), removed: [...removed] };
 }
 
 const mb = (b) => (b / 1048576).toFixed(2);
 if (import.meta.url === `file://${process.argv[1]}`) {
   const atelierRaw = JSON.parse(readFileSync('data/game/sounds-atelier.json', 'utf8'));
-  const { sounds } = JSON.parse(readFileSync('data/game/sounds.json', 'utf8'));
+  // Lot 3i : la référence reste le pack d'avant l'intégration (recettes remplacées remises depuis sounds-legacy.json).
+  const legacy = new Map(JSON.parse(readFileSync('data/game/sounds-legacy.json', 'utf8')).sounds.map((r) => [r.id, r]));
+  const sounds = JSON.parse(readFileSync('data/game/sounds.json', 'utf8')).sounds.flatMap((r) => (r.engine === 'atelier' ? (legacy.has(r.id) ? [legacy.get(r.id)] : []) : [r]));
   const file = arg('choix');
   const choices = file ? parseChoices(readFileSync(file, 'utf8'), resolveAtelier(atelierRaw).slots) : { choices: {}, errors: [] };
   for (const e of choices.errors) console.log(`ligne ${e.line} ignorée (${e.reason}) : ${e.text}`);
@@ -87,15 +89,5 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   for (const row of r.rows) console.log(`${row.slot}\t${row.variant}\t${row.ids.join(',')}\t${row.versions}\t${row.seconds.toFixed(2)}\t${row.bytes}\t${row.ms.toFixed(0)}`);
   console.log(`\nRéférence (main) : ${r.refBytes} octets (${mb(r.refBytes)} Mo), calcul ${r.refMs.toFixed(0)} ms.`);
   console.log(`Retirés : ${r.removed.join(', ')} = ${r.removedBytes} octets, ${r.removedMs.toFixed(0)} ms ; ajoutés : ${r.added} octets, ${r.addedMs.toFixed(0)} ms.`);
-  console.log(`Pack projeté : ${r.total} octets (${mb(r.total)} Mo) pour une limite de ${mb(r.limit)} Mo : ${r.over ? 'DÉPASSÉE' : 'tenue'} ; calcul au chargement ${r.totalMs.toFixed(0)} ms (référence ${r.refMs.toFixed(0)} ms, ${r.totalMs >= r.refMs ? '+' : ''}${(r.totalMs - r.refMs).toFixed(0)} ms).`);
-  if (r.over) {
-    let excess = r.total - r.limit;
-    console.log(`À raccourcir (${excess} octets de trop), par poids décroissant :`);
-    for (const row of r.rows) {
-      if (excess <= 0) break;
-      const perVersion = row.bytes / row.versions;
-      console.log(`  ${row.slot} : ${row.bytes} octets (${row.versions} versions × ${row.ids.length} id) ; une version de moins : −${Math.round(perVersion)} octets`);
-      excess -= perVersion;
-    }
-  }
+  console.log(`Pack projeté : ${r.total} octets (${mb(r.total)} Mo) ; mémoire estimée une fois décodé : ${mb(r.decodedBytes)} Mo (mono) ; calcul au chargement ${r.totalMs.toFixed(0)} ms (référence ${r.refMs.toFixed(0)} ms, ${r.totalMs >= r.refMs ? '+' : ''}${(r.totalMs - r.refMs).toFixed(0)} ms).`);
 }

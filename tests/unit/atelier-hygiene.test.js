@@ -54,9 +54,11 @@ describe('hygiène du lot 3g : fichiers', () => {
     for (const f of walk('data/game/maps')) expect(statSync(f).size, f).toBeLessThan(5 * 1024 * 1024);
   });
 
+  // Lot 3i : data/game/sounds.json retiré de la liste (sons de l'atelier intégrés, décision du propriétaire) ; ses recettes gardées sont comparées à main
+  // dans sons-integres.test.js.
   it('règles de jeu inchangées depuis la base (tir, vagues, stats, chutes, siège, caméra, sons, sauvegarde, ancienne salle)', () => {
     const files = ['js/core/waves.js', 'js/core/wave-director.js', 'js/core/projectile.js', 'js/core/ray.js', 'js/core/spread.js', 'js/core/player-stats.js', 'js/core/player-down.js', 'js/core/siege.js', 'js/core/camera.js', 'js/core/synth.js', 'js/core/pose.js',
-      'data/game/waves.json', 'data/game/gaits.json', 'data/game/weapons.json', 'data/game/player-stats.json', 'data/game/player-down.json', 'data/game/windows.json', 'data/game/sounds.json', 'data/game/world.json', 'data/game/decor.json'];
+      'data/game/waves.json', 'data/game/gaits.json', 'data/game/weapons.json', 'data/game/player-stats.json', 'data/game/player-down.json', 'data/game/windows.json', 'data/game/world.json', 'data/game/decor.json'];
     const changed = git(`diff --name-only ${BASE} -- ${files.join(' ')}`);
     if (changed === null) return;
     expect(changed).toEqual([]);

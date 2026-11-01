@@ -273,30 +273,35 @@ test.describe('vagues du lot 2', () => {
     expect(variants).toContain(variants[list[4].variant]);
   });
 
-  test('la hauteur de la voix suit le type (journal des sons)', async ({ page }) => {
-    await open(page, '&empty=1&nospawn=1', SIZE, { live: true });
-    await page.mouse.click(40, 40);
-    await expect.poll(async () => (await state(page)).audio.unlocked).toBe(true);
-    await expect.poll(async () => (await state(page)).audio.ready, { timeout: 30_000 }).toBe(true);
-    const settle = () => expect.poll(async () => (await state(page)).audio.activeVoices, { timeout: 20_000 }).toBe(0);
-    for (const type of ['petit', 'grand']) {
-      await settle();
-      const rates = await page.evaluate(([t]) => {
-        const zs = window.__zs;
-        zs.killAll();
-        zs.setPlayer(800, 450);
-        zs.setInput({ aim: { angle: -Math.PI / 2 } });
-        const from = zs.getState().time;
-        zs.spawnEnemy(830, 450, { type: t, gait: 'marche', wave: 1 });
-        zs.step(1.5);
-        const cries = zs.getState().audio.log.filter((e) => e.sound === 'zombie-attaque' && e.gameTime >= from).map((e) => e.rate);
-        zs.killAll();
-        return cries;
-      }, [type]);
-      expect(rates.length, type).toBeGreaterThan(0);
-      expect(rates[0]).toBeCloseTo(audioCfg.zombieRate[type], 6);
-    }
-  });
+  // Lot 3i : par défaut, chaque type a sa propre voix (zombie-attaque-petit…), lue à la hauteur 1 ; avec ?sons=ancien (pack d'avant), la voix commune
+  // est lue à la hauteur du type (audio.json, zombieRate), comme avant le lot.
+  for (const [mode, extra] of [['pack d\'avant', '&sons=ancien'], ['sons de l\'atelier', '']]) {
+    test(`la hauteur de la voix suit le type (journal des sons, ${mode})`, async ({ page }) => {
+      await open(page, `&empty=1&nospawn=1${extra}`, SIZE, { live: true });
+      await page.mouse.click(40, 40);
+      await expect.poll(async () => (await state(page)).audio.unlocked).toBe(true);
+      await expect.poll(async () => (await state(page)).audio.ready, { timeout: 30_000 }).toBe(true);
+      const settle = () => expect.poll(async () => (await state(page)).audio.activeVoices, { timeout: 20_000 }).toBe(0);
+      for (const type of ['petit', 'grand']) {
+        await settle();
+        const sound = extra ? 'zombie-attaque' : `zombie-attaque-${type}`;
+        const rates = await page.evaluate(([t, id]) => {
+          const zs = window.__zs;
+          zs.killAll();
+          zs.setPlayer(800, 450);
+          zs.setInput({ aim: { angle: -Math.PI / 2 } });
+          const from = zs.getState().time;
+          zs.spawnEnemy(830, 450, { type: t, gait: 'marche', wave: 1 });
+          zs.step(1.5);
+          const cries = zs.getState().audio.log.filter((e) => e.sound === id && e.gameTime >= from).map((e) => e.rate);
+          zs.killAll();
+          return cries;
+        }, [type, sound]);
+        expect(rates.length, type).toBeGreaterThan(0);
+        expect(rates[0]).toBeCloseTo(extra ? audioCfg.zombieRate[type] : 1, 6);
+      }
+    });
+  }
 
   test('aucun pas de zombie pour l\'allure rampe ; la marche, elle, en fait', async ({ page }) => {
     await open(page, '&empty=1&nospawn=1', SIZE, { live: true });
