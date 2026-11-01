@@ -10,7 +10,10 @@
   "seeThrough": { "radius": 80, "chest": 26, "edge": 0.7, "ahead": 12 },
   "_seeThrough": "Retours du propriétaire (lot 3g) : quand le joueur est caché à la caméra (rayons vers sa tête, sa poitrine, ses pieds, ses côtés), murs, meubles et portes plus près de la caméra que lui (ahead) sont tramés (un pixel sur deux) dans un cône de rayon radius à la hauteur du joueur (chest) ; ?percee=0 l'enlève. Aucun matériau transparent.",
   "_ceilingWalls": "Essai demandé par le propriétaire (lot 3g) : murs et piliers montés à floorLift - 1, au rez-de-chaussée (jusqu'au dessous de l'étage) et à l'étage (même hauteur, pour l'uniformité) ; ?murs=bas revient à wallHeight. Peut être retiré.",
-  "fog": { "near": 1.2, "far": 2.6, "wallNear": 100, "wallFar": 320, "wallHeight": 110, "wallPad": 1500, "wallCell": 40 },
+  "fog": { "near": 1.2, "far": 2.6, "wallNear": 100, "wallFar": 320, "wallHeight": 110, "wallPad": 1500, "wallCell": 40,
+    "layerLight": 0.35,
+    "layers": [{ "y": 14, "strength": 0.5, "scale": 260, "wind": [0.05, 0.015], "floor": 0.12, "contrast": 0.24 }, { "y": 46, "strength": 0.32, "scale": 340, "wind": [0.035, -0.01], "floor": 0.08, "contrast": 0.2 }] },
+  "_fogLayers": "Retour du propriétaire (lot 3g) : nappes de brume basses sur le sol extérieur (hauteur y, opacité strength, taille des volutes scale, dérive wind par seconde de jeu), masquées près du bâtiment comme le mur de brume. Provisoire.",
   "camera": { "fov": 40, "tilt": 75, "margin": 0.02, "zoom": 2.5, "slack": 60, "smoothing": 0.12, "near": 20, "far": 9000 },
   "light": {
     "ambient": 2.3,

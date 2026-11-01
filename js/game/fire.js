@@ -1,11 +1,13 @@
 // Lot 3g (retour du propriétaire) : feu avec fumée sur une pile de caisses (data/game/maps/<carte>/feux.json). Trois appels de dessin par feu dans le champ (aucun hors du champ) : flammes (points,
 // mélange additif), fumée (points) et lueur au sol (disque). Couleurs : jetons --game-fire, --game-fire-edge, --game-smoke (palette.js). Particules à capacité
 // fixe, réécrites à chaque image par update(dt) (temps de jeu : la pause les fige) ; aucun hasard (suite pseudo-aléatoire tirée de l'identifiant), aucune horloge.
-// Mouvement réduit : le feu est dessiné, immobile. Pas d'ombre, pas de lumière ajoutée (aucun shader des autres matières ne change).
+// Mouvement réduit : le feu est dessiné, immobile. Pas d'ombre, pas de lumière ajoutée (aucun shader des autres matières ne change). Aucun son (lot du son à part).
 import * as THREE from 'three';
 
-const FLAMES = 40;
-const SMOKE = 26;
+const FLAMES = 64;
+const SMOKE = 64;
+// Vent (unités par seconde) : la fumée part vers l'est (la droite de l'écran), de plus en plus vite en montant (retour du propriétaire).
+const WIND = 34;
 
 // Suite pseudo-aléatoire déterministe (entier 32 bits) : chaque appel donne un nombre de [0, 1[.
 function sequence(text) {
@@ -55,14 +57,15 @@ void main() {
 }`;
 
 // spec : { id, x, z (centre), y (dessus de la pile), w, d (emprise) } ; palette : chaînes « #rrggbb » (fire, fireEdge, smoke).
-export function createFire(spec, palette, { reduced = false } = {}) {
+export function createFire(spec, palette, { reduced = false, scale = 1 } = {}) {
+  const k0 = Math.max(0.2, Math.min(2, Number(scale) || 1)); // taille du feu (bidon : plus petit)
   const group = new THREE.Group();
   group.name = `feu-${spec.id}`;
   const rnd = sequence(spec.id);
   const core = new THREE.Color(palette.fire);
   const edge = new THREE.Color(palette.fireEdge);
   const smokeColor = new THREE.Color(palette.smoke);
-  const spread = { x: Math.max(8, spec.w * 0.32), z: Math.max(8, spec.d * 0.32) };
+  const spread = { x: Math.max(8, spec.w * 0.38), z: Math.max(8, spec.d * 0.38) };
 
   const makePoints = (n, blending) => {
     const geometry = new THREE.BufferGeometry();
@@ -71,7 +74,7 @@ export function createFire(spec, palette, { reduced = false } = {}) {
     geometry.setAttribute('aColor', new THREE.BufferAttribute(new Float32Array(n * 4), 4));
     const material = new THREE.ShaderMaterial({ vertexShader: POINT_VERTEX, fragmentShader: POINT_FRAGMENT, uniforms: { uScale: { value: 400 } }, transparent: true, depthWrite: false, blending, premultipliedAlpha: true });
     // Sphère englobante fixe (toutes les positions possibles) : le feu hors du champ n'est pas dessiné (aucun appel), sans la recalculer à chaque image.
-    geometry.boundingSphere = new THREE.Sphere(new THREE.Vector3(spec.x, spec.y + 120, spec.z), 240);
+    geometry.boundingSphere = new THREE.Sphere(new THREE.Vector3(spec.x + 180, spec.y + 160, spec.z), 420);
     const points = new THREE.Points(geometry, material);
     points.onBeforeRender = (renderer, scene, camera) => {
       const h = renderer.getDrawingBufferSize(new THREE.Vector2()).y;
@@ -107,8 +110,8 @@ export function createFire(spec, palette, { reduced = false } = {}) {
   };
   const flameParts = Array.from({ length: FLAMES }, () => ({}));
   const smokeParts = Array.from({ length: SMOKE }, () => ({}));
-  flameParts.forEach((p) => { born(p, 0.45 + rnd() * 0.45); p.age = rnd() * p.life; p.rise = 45 + rnd() * 35; });
-  smokeParts.forEach((p) => { born(p, 2.4 + rnd() * 1.4); p.age = rnd() * p.life; p.rise = 22 + rnd() * 16; });
+  flameParts.forEach((p) => { born(p, 0.55 + rnd() * 0.5); p.age = rnd() * p.life; p.rise = (70 + rnd() * 50) * k0; });
+  smokeParts.forEach((p) => { born(p, 4 + rnd() * 2.5); p.age = rnd() * p.life; p.rise = (24 + rnd() * 18) * k0; });
   const tmp = new THREE.Color();
   let glowTime = 0;
 
@@ -118,10 +121,10 @@ export function createFire(spec, palette, { reduced = false } = {}) {
     const fc = flames.geometry.attributes.aColor.array;
     flameParts.forEach((p, i) => {
       const k = p.age / p.life;
-      fp[i * 3] = p.x + p.vx * p.age + Math.sin(p.phase + p.age * 9) * 2.5 * k;
+      fp[i * 3] = p.x + p.vx * p.age + Math.sin(p.phase + p.age * 9) * 4 * k + WIND * 0.25 * p.age * k;
       fp[i * 3 + 1] = spec.y + 2 + p.rise * p.age;
       fp[i * 3 + 2] = p.z + p.vz * p.age;
-      fs[i] = 26 * (1 - k * 0.75);
+      fs[i] = 52 * k0 * (1 - k * 0.7);
       tmp.copy(core).lerp(edge, Math.min(1, k * 1.4));
       fc.set([tmp.r, tmp.g, tmp.b, (1 - k) * 0.85], i * 4);
     });
@@ -130,11 +133,11 @@ export function createFire(spec, palette, { reduced = false } = {}) {
     const sc = smoke.geometry.attributes.aColor.array;
     smokeParts.forEach((p, i) => {
       const k = p.age / p.life;
-      sp[i * 3] = p.x + p.vx * p.age * 1.6 + Math.sin(p.phase + p.age * 1.3) * 6;
+      sp[i * 3] = p.x + p.vx * p.age * 1.6 + Math.sin(p.phase + p.age * 1.3) * 8 + WIND * p.age * (0.4 + k);
       sp[i * 3 + 1] = spec.y + 24 + p.rise * p.age;
       sp[i * 3 + 2] = p.z + p.vz * p.age * 1.6;
-      ss[i] = 28 + 70 * k;
-      sc.set([smokeColor.r, smokeColor.g, smokeColor.b, Math.sin(Math.PI * Math.min(1, k * 1.15)) * 0.42], i * 4);
+      ss[i] = (34 + 120 * k) * k0;
+      sc.set([smokeColor.r, smokeColor.g, smokeColor.b, Math.sin(Math.PI * Math.min(1, k * 1.15)) * 0.38], i * 4);
     });
     for (const pts of [flames, smoke]) for (const name of ['position', 'aSize', 'aColor']) pts.geometry.attributes[name].needsUpdate = true;
     glowMaterial.uniforms.uStrength.value = 0.3 + 0.06 * Math.sin(glowTime * 11) + 0.04 * Math.sin(glowTime * 23);
@@ -143,11 +146,11 @@ export function createFire(spec, palette, { reduced = false } = {}) {
   const step = (dt) => {
     for (const p of flameParts) {
       p.age += dt;
-      if (p.age >= p.life) born(p, 0.45 + rnd() * 0.45);
+      if (p.age >= p.life) born(p, 0.55 + rnd() * 0.5);
     }
     for (const p of smokeParts) {
       p.age += dt;
-      if (p.age >= p.life) born(p, 2.4 + rnd() * 1.4);
+      if (p.age >= p.life) born(p, 4 + rnd() * 2.5);
     }
     glowTime += dt;
   };

@@ -138,12 +138,17 @@ export function stepWalk(walk, path, { pos = { x: 0, y: 0 }, dir = { x: 0, y: 0 
   // Lot 3g (retours du propriétaire) : sortie par le côté sur un palier plat, au pied (t = 0, vers le rez-de-chaussée) ou en haut (t = 1, vers l'étage) ; sideExit
   // vaut true ou { free(pos) } (vrai si la place est libre sur l'étage de sortie : sinon la rambarde retient, par exemple au-dessus du trou de l'escalier).
   const flat = q.t <= 1e-6 ? 'rdc' : q.t >= 1 - 1e-6 ? 'etage' : null;
-  const exitOk = sideExit === true || (isObject(sideExit) && typeof sideExit.free === 'function' && sideExit.free({ x, y }, flat) === true);
+  // Seulement en s'écartant de l'axe (quatrième passe : entrer de biais par le côté n'est plus une sortie).
+  const leaving = q.dist > here.dist + 1e-9;
+  const exitOk = leaving && (sideExit === true || (isObject(sideExit) && typeof sideExit.free === 'function' && sideExit.free({ x, y }, flat) === true));
   if (sideExit && flat !== null && !open && q.dist > allowed && exitOk) {
     return { walk: null, pos: { x, y }, point: { t: q.t, s: q.s }, floor: flat, done: flat };
   }
-  if (!open && q.dist > allowed && q.dist > 0) {
-    const k = allowed / q.dist;
+  // Lot 3g (retour du propriétaire, quatrième passe) : entré de biais, plus loin de l'axe que la largeur permise, le joueur n'est plus ramené d'un coup (petite
+  // téléportation) : la rambarde se resserre de 60 % du pas au plus à chaque pas, jusqu'à la largeur permise.
+  const soft = Math.max(allowed, here.dist - step * 0.6);
+  if (!open && q.dist > soft && q.dist > 0) {
+    const k = soft / q.dist;
     x = q.x + (x - q.x) * k;
     y = q.y + (y - q.y) * k;
     q = project(p, { x, y });

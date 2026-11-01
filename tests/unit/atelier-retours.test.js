@@ -16,6 +16,8 @@ import { plankSettings } from '../../js/core/plank-layout.js';
 import { plankSheet } from '../../js/core/texgen.js';
 import { cutGrilles } from '../../js/game/world.js';
 import { createWindowMeshes } from '../../js/game/windows-mesh.js';
+import { generateLivelyDecor } from '../../js/core/decor-vivant.js';
+import { mistLayers } from '../../js/game/mist.js';
 
 const DIR = 'data/game/maps/rez-de-chaussee';
 const load = (f) => JSON.parse(readFileSync(f, 'utf8'));
@@ -409,5 +411,97 @@ describe('feu et murs hauts à l\'étage', () => {
     const w = readFileSync('js/game/world.js', 'utf8');
     expect(w).toMatch(/const tall = tallWalls;/);
     expect(w).not.toMatch(/f === 'rdc' && render\.ceilingWalls/);
+  });
+});
+
+// Retours du propriétaire (quatrième passe) : entrée d'escalier sans saut, extérieur plus vivant, brouillard, feu plus grand.
+describe('escalier : entrée de biais sans téléportation', () => {
+  const STRAIGHT = [{ x: 0, y: 0, t: 0 }, { x: 0, y: 50, t: 0 }, { x: 0, y: 250, t: 1 }];
+
+  it('entré à 50 de l\'axe (largeur permise 42) : ramené de 60 % du pas au plus, jamais d\'un coup', () => {
+    let w = startWalk('e', 'rdc');
+    let pos = { x: 70, y: 60 };
+    for (let i = 0; i < 12; i += 1) {
+      const r = stepWalk(w, STRAIGHT, { pos, dir: { x: 0, y: 1 }, speed: 220, dt: 0.05, width: 120, radius: 18, sideExit: true });
+      expect(Math.hypot(r.pos.x - pos.x, r.pos.y - pos.y)).toBeLessThanOrEqual(220 * 0.05 * 1.17 + 1e-6);
+      expect(r.done).toBeNull();
+      pos = r.pos;
+      w = r.walk;
+    }
+    expect(pos.x).toBeLessThanOrEqual(42 + 1e-6);
+  });
+
+  it('entrer par le côté vers l\'axe au pied n\'est pas une sortie ; s\'en écarter l\'est', () => {
+    expect(stepWalk(startWalk('e', 'rdc'), STRAIGHT, { pos: { x: 60, y: 20 }, dir: { x: -1, y: 0 }, speed: 200, dt: 0.05, width: 120, radius: 18, sideExit: true }).done).toBeNull();
+    expect(stepWalk(startWalk('e', 'rdc'), STRAIGHT, { pos: { x: 40, y: 20 }, dir: { x: 1, y: 0 }, speed: 200, dt: 0.05, width: 120, radius: 18, sideExit: true }).done).toBe('rdc');
+  });
+});
+
+describe('extérieur plus vivant (decor-vivant.js)', () => {
+  const layoutDecor = () => {
+    const decor = load(`${DIR}/decor.json`);
+    return { ground: decor.ground, spawnPoints: decor.spawnPoints, corridors: [], lamps: [], solids: [] };
+  };
+  const input = { size: world.size, footprint: [{ x: 1000, y: 900, w: 1500, h: 1500 }], decor: layoutDecor() };
+
+  it('déterministe ; des arbres morts, une clôture ouverte, des poteaux, des flaques, des herbes, des gravats, deux bidons', () => {
+    const a = generateLivelyDecor(input);
+    expect(generateLivelyDecor(input)).toEqual(a);
+    expect(a.deadTrees.length).toBeGreaterThan(10);
+    expect(a.fence.posts.length).toBeGreaterThan(40);
+    expect(a.fence.wires.length).toBeGreaterThan(1);
+    expect(a.poles.length).toBeGreaterThan(3);
+    expect(a.puddles.length).toBeGreaterThan(5);
+    expect(a.tufts.length).toBeGreaterThan(20);
+    expect(a.barrels.length).toBe(2);
+  });
+
+  it('jamais près des points d\'apparition ni dans le bâtiment', () => {
+    const a = generateLivelyDecor(input);
+    for (const t of a.deadTrees) for (const p of input.decor.spawnPoints) expect(Math.hypot(t.x - p.x, t.y - p.y), t.id).toBeGreaterThan(80);
+    for (const t of [...a.deadTrees, ...a.rubble, ...a.puddles]) {
+      const r = t.box ?? t;
+      expect(r.x + r.w < 1000 || r.x > 2500 || r.y + r.h < 900 || r.y > 2400, t.id).toBe(true);
+    }
+  });
+
+  it('entrées invalides : rien, sans exception', () => {
+    expect(generateLivelyDecor(null).deadTrees).toEqual([]);
+    expect(generateLivelyDecor({ size: { width: 100, height: 100 }, footprint: [] }).barrels).toEqual([]);
+  });
+});
+
+describe('brouillard retravaillé et feu plus grand', () => {
+  it('render.json : deux nappes basses sous le mur de brume, plus claires (layerLight)', () => {
+    const fog = load('data/game/render.json').fog;
+    const layers = mistLayers(fog.layers);
+    expect(layers).toHaveLength(2);
+    for (const l of layers) expect(l.y).toBeLessThan(fog.wallHeight);
+    expect(fog.layerLight).toBeGreaterThan(0);
+    expect(mistLayers(null)).toEqual([]);
+    expect(mistLayers([{ strength: 9 }])[0].strength).toBe(1);
+  });
+
+  it('nappes : une seule matière par nappe, masquée près du bâtiment, aucun hasard JavaScript', () => {
+    const src = readFileSync('js/game/mist.js', 'utf8');
+    expect(src).toMatch(/texture2D\(uMask, vUv\)\.a/);
+    expect(src).not.toMatch(/Math\.random|performance\.now|Date\.now/);
+  });
+
+  it('feu : bidon plus petit (scale), grand feu de caisses ; fumée poussée vers l\'est', async () => {
+    const { createFire } = await import('../../js/game/fire.js');
+    const palette = { fire: '#000001', fireEdge: '#000002', smoke: '#000003' };
+    const big = createFire({ id: 'a', x: 0, z: 0, y: 30, w: 100, d: 100 }, palette);
+    const small = createFire({ id: 'a', x: 0, z: 0, y: 30, w: 100, d: 100 }, palette, { scale: 0.5 });
+    const size = (f) => Math.max(...f.group.children[0].geometry.attributes.aSize.array);
+    expect(size(small)).toBeLessThan(size(big));
+    expect(size(big)).toBeGreaterThan(40);
+    big.update(0.1);
+    for (let i = 0; i < 60; i += 1) big.update(0.1);
+    const sp = big.group.children[1].geometry.attributes.position.array;
+    let mean = 0;
+    for (let i = 0; i < sp.length; i += 3) mean += sp[i];
+    expect(mean / (sp.length / 3)).toBeGreaterThan(20);
+    expect(big.stats().smoke).toBeGreaterThanOrEqual(60);
   });
 });

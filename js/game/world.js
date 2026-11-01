@@ -11,11 +11,13 @@ import { fogGrid } from '../core/fog.js';
 import { itemQuads, CATALOGUE as DECOR_CATALOGUE } from '../core/decor-interieur.js';
 import { furnitureParts } from '../core/furniture-model.js';
 import { doorBoxes, grilleBoxes, rubbleBoxes } from '../core/portes-aspect.js';
+import { generateLivelyDecor } from '../core/decor-vivant.js';
 import { plankSettings } from '../core/plank-layout.js';
 import { plankSheet } from '../core/texgen.js';
 import { createDebrisMeshes, createWindowMeshes } from './windows-mesh.js';
 import { createSeeThrough } from './see-through.js';
 import { createFire } from './fire.js';
+import { createMistLayer, mistLayers } from './mist.js';
 import { seeThroughSettings } from '../core/see-through.js';
 
 const FAR_GROUND = 40_000; // sol extérieur étendu bien au-delà du monde
@@ -33,6 +35,10 @@ const CAR_PAINTS = ['peinture-1', 'peinture-2', 'peinture-3'];
 const unitCylinder = new THREE.CylinderGeometry(1, 1, 1, 8);
 const crown = new THREE.IcosahedronGeometry(1, 0);
 const wheelAlongZ = new THREE.CylinderGeometry(1, 1, 1, 8).rotateX(Math.PI / 2);
+// Lot 3g (extérieur plus vivant) : tronc et branche (cylindres à 5 pans sans bouchons, la branche part de son pied), brin d'herbe.
+const thinTrunk = new THREE.CylinderGeometry(0.7, 1, 1, 5, 1, true);
+const branchGeom = new THREE.CylinderGeometry(0.45, 1, 1, 5, 1, true).translate(0, 0.5, 0);
+const bladeGeom = new THREE.BoxGeometry(1, 1, 1).translate(0, 0.5, 0);
 
 // Nombre pseudo-aléatoire stable dans [0, 1[ à partir de deux entiers (décalage de fenêtre de texture : sans hasard).
 function unit(seed, k) {
@@ -117,7 +123,7 @@ class Builder {
     const source = geometry.index ? geometry.toNonIndexed() : geometry;
     for (const it of items) {
       const g = source.clone();
-      g.applyMatrix4(this.matrix.compose(this.position.set(it.x, it.y, it.z), this.quaternion.setFromEuler(this.euler.set(0, it.rot ?? 0, 0)), this.scale.set(it.sx, it.sy, it.sz)));
+      g.applyMatrix4(this.matrix.compose(this.position.set(it.x, it.y, it.z), this.quaternion.setFromEuler(this.euler.set(it.tilt ?? 0, it.rot ?? 0, 0, 'YXZ')), this.scale.set(it.sx, it.sy, it.sz))); // tilt : inclinaison (lot 3g, branches)
       this.positions.push(...g.attributes.position.array);
       this.normals.push(...g.attributes.normal.array);
       const uv = g.attributes.uv.array;
@@ -286,6 +292,40 @@ function addDecor(b, region, decor, outdoorSoil) {
   b.scenery.geometry(unitCylinder, decor.lamps.map((l) => ({ x: l.x, y: l.hauteur / 2, z: l.y, sx: 2.5, sy: l.hauteur, sz: 2.5, rect: region('tole') })));
   b.scenery.geometry(crown, decor.lamps.map((l) => ({ x: l.x, y: l.hauteur + 4, z: l.y, sx: 8, sy: 6, sz: 8, rect: region('lampe') })));
   decor.fences.forEach((f, i) => b.scenery.box(rectBox(f, 0, f.hauteur), { rect: region('barriere'), scale: region('barriere').scale, seed: i + 300 }));
+}
+
+// Lot 3g (retour du propriétaire) : décor extérieur non solide de js/core/decor-vivant.js. Arbres morts (écorce), barbelés (poteaux de bois sombre, fils de tôle),
+// poteaux électriques et câbles, flaques (région « vitre », à plat), touffes d'herbes (brins inclinés), gravats (pierre), bidons (tôle rouillée).
+function addLively(b, region, lv) {
+  const bark = region('ecorce');
+  b.scenery.geometry(thinTrunk, lv.deadTrees.map((t) => ({ x: t.x, y: t.hauteur / 2, z: t.y, sx: t.rayon, sy: t.hauteur, sz: t.rayon, rect: bark })));
+  b.scenery.geometry(branchGeom, lv.deadTrees.flatMap((t) => t.branches.map((br) => ({ x: t.x, y: br.at, z: t.y, sx: br.r, sy: br.len, sz: br.r, tilt: br.tilt, rot: br.rot, rect: bark }))));
+  const wood = region('bois-sombre');
+  const metal = region('tole');
+  b.scenery.geometry(bladeGeom, lv.fence.posts.map((p) => ({ x: p.x, y: 0, z: p.y, sx: 4, sy: p.hauteur, sz: 4, tilt: p.lean, rect: wood })));
+  for (const w of lv.fence.wires) {
+    for (const h of [12, 22, 32]) {
+      const x0 = Math.min(w.x0, w.x1);
+      const x1 = Math.max(w.x0, w.x1);
+      const z0 = Math.min(w.y0, w.y1);
+      const z1 = Math.max(w.y0, w.y1);
+      b.scenery.box({ x0: x0 - 0.6, x1: x1 + 0.6, y0: h, y1: h + 1.2, z0: z0 - 0.6, z1: z1 + 0.6 }, { rect: metal, scale: metal.scale, seed: 11 }, 'cotes');
+    }
+  }
+  b.scenery.geometry(bladeGeom, lv.poles.map((p) => ({ x: p.x, y: 0, z: p.y, sx: 6, sy: p.hauteur, sz: 6, rect: wood })));
+  lv.poles.forEach((p, i) => b.scenery.box({ x0: p.x - 26, x1: p.x + 26, y0: p.hauteur - 14, y1: p.hauteur - 10, z0: p.y - 2.5, z1: p.y + 2.5 }, { rect: wood, scale: wood.scale, seed: 40 + i }));
+  const tire = region('pneu');
+  for (const c of lv.cables) for (const dz of [-20, 20]) b.scenery.box({ x0: c.x0 + dz, x1: c.x1 + dz, y0: c.h, y1: c.h + 1, z0: c.y - 0.5, z1: c.y + 0.5 }, { rect: tire, scale: tire.scale, seed: 3 }, 'cotes');
+  const water = region('vitre');
+  lv.puddles.forEach((p, i) => b.scenery.box({ x0: p.x, x1: p.x + p.w, y0: ROAD_Y, y1: ROAD_Y + 0.3, z0: p.y, z1: p.y + p.h }, { rect: water, scale: water.scale, seed: 60 + i }, 'dessus'));
+  const grass = region('buisson');
+  b.scenery.geometry(bladeGeom, lv.tufts.flatMap((t) => [0, 1, 2].map((k) => ({ x: t.x + Math.cos(t.rot + k * 2.1) * t.r * 0.4, y: 0, z: t.y + Math.sin(t.rot + k * 2.1) * t.r * 0.4, sx: 2, sy: t.hauteur * (0.75 + 0.15 * k), sz: 5, tilt: 0.25 + 0.12 * k, rot: t.rot + k * 2.1, rect: grass }))));
+  for (const r of lv.rubble) rubbleBoxes(r, 22, r.id).forEach((q, j) => {
+    const rg = region(q.region);
+    b.scenery.box(q, { rect: rg, scale: rg.scale, seed: 80 + j }, q.faces);
+  });
+  const rust = region('barriere');
+  b.scenery.geometry(unitCylinder, lv.barrels.map((br) => ({ x: br.x, y: br.hauteur / 2, z: br.y, sx: br.r, sy: br.hauteur, sz: br.r, rect: rust })));
 }
 
 // layout : couche du rez-de-chaussée (js/core/layout.js) ; layouts : sortie de buildLayouts (lot 3e : une couche par étage, facultatif) ; textures : sortie de
@@ -611,6 +651,18 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
   }
 
   if (layout.decor) addDecor(ex, region, layout.decor, outdoorSoil);
+  // Lot 3g (retour du propriétaire) : extérieur plus vivant (js/core/decor-vivant.js : non solide, provisoire) dans les maillages du décor extérieur (aucun appel de
+  // plus), sauf les bidons en feu (feu de fire.js, plus petit). Absent avec ?detail=0.
+  const lively = layout.decor && layout.segmented && render.detailDoors !== false ? generateLivelyDecor({ size, footprint: layout.floor, decor: layout.decor }) : null;
+  if (lively) {
+    addLively(ex, region, lively);
+    for (const b of lively.barrels) {
+      const fire = createFire({ id: b.id, x: b.x, z: b.y, y: b.hauteur, w: b.r * 2, d: b.r * 2 }, palette, { reduced: render.reducedMotion === true, scale: 0.55 });
+      fire.group.userData.floor = 'exterieur';
+      groups.exterieur.add(fire.group);
+      fires.push(fire);
+    }
+  }
 
   const tag = (mesh, name) => {
     if (mesh) mesh.userData.floor = name;
@@ -723,6 +775,7 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
   // Les zones de déclenchement des escaliers ne sont plus dessinées au sol (retour du propriétaire : on entre dans l'escalier en marchant vers lui).
   const marks = new Map();
 
+  const mists = [];
   // Mur de brouillard (lot 3b, cartes à murs) : un plan horizontal translucide au-dessus du sol extérieur (plus haut que les zombies), dont l'opacité vient de la
   // distance au bâtiment (js/core/fog.js, texture générée) : clair près des murs, opaque loin ; les zombies surgissent de la brume.
   if (layout.segmented) {
@@ -737,17 +790,20 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
     tex.wrapS = THREE.ClampToEdgeWrapping;
     tex.wrapT = THREE.ClampToEdgeWrapping;
     tex.needsUpdate = true;
-    const y = f.wallHeight;
-    const geometry = new THREE.BufferGeometry();
-    geometry.setAttribute('position', new THREE.Float32BufferAttribute([area.x, y, area.y, area.x + area.w, y, area.y, area.x + area.w, y, area.y + area.h, area.x, y, area.y + area.h], 3));
-    geometry.setAttribute('uv', new THREE.Float32BufferAttribute([0, 0, 1, 0, 1, 1, 0, 1], 2));
-    geometry.setIndex([0, 2, 1, 0, 3, 2]);
-    geometry.computeBoundingSphere();
-    const mist = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({ map: tex, color: palette.fog, transparent: true, depthWrite: false, fog: false, side: THREE.DoubleSide }));
-    mist.renderOrder = 10;
-    mist.frustumCulled = false;
-    mist.userData.floor = 'exterieur';
-    groups.exterieur.add(mist);
+    // Lot 3g (retour du propriétaire) : brouillard retravaillé (js/game/mist.js) : le mur de brume garde sa place et son masque, avec des volutes qui dérivent ;
+    // des nappes basses (render.fog.layers) roulent sur le sol extérieur, jamais dans le bâtiment. Temps de jeu ; immobiles en mouvement réduit.
+    const main = { y: f.wallHeight, strength: 1, scale: 420, wind: [0.012, 0.004], floor: 0.62, contrast: 0.3 };
+    const layers = [main, ...mistLayers(f.layers)];
+    layers.forEach((layer, i) => {
+      // Nappes basses : brume éclairée par la lune (mélange de --game-fog et de --game-sun), plus claire que le sol ; le mur de brume garde --game-fog.
+      const color = i === 0 ? palette.fog : `#${new THREE.Color(palette.fog).lerp(new THREE.Color(palette.sun), num(f.layerLight, 0.35)).getHexString()}`;
+      const mist = createMistLayer({ area, mask: tex, color, layer, name: i === 0 ? 'brume' : `brume-basse-${i}` });
+      mist.renderOrder = 10 + i;
+      mist.frustumCulled = false;
+      mist.userData.floor = 'exterieur';
+      groups.exterieur.add(mist);
+      mists.push(mist);
+    });
   }
 
   // Fenêtres (lots 3 et 3a) : un maillage par fenêtre (planches en relief, cadre, trou sombre, pastilles au sol) et un maillage de débris par fenêtre, tous dans
@@ -869,6 +925,8 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
     // À chaque image (temps de jeu dt) : feux, et mur percé (position du joueur, caméra).
     frame(dt, x, y, camera) {
       for (const fire of fires) fire.update(dt);
+      const still = render.reducedMotion === true;
+      for (const m of mists) if (!still) m.material.uniforms.uTime.value += Math.min(0.1, Math.max(0, Number(dt) || 0));
       seeThrough.update(x, y, camera, occluders, (b) => (b.floor === 'etage' ? lift : 0) - elevationNow);
     },
     fireStats: () => fires.map((f) => f.stats()),
