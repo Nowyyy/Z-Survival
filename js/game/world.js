@@ -24,7 +24,7 @@ const FAR_GROUND = 40_000; // sol extérieur étendu bien au-delà du monde
 const ROAD_Y = 0.4; // route, trottoir et sentiers : plaques plates au-dessus de l'herbe
 const ATLAS = 'atlas-props';
 const DOOR_THICKNESS = 24; // épaisseur dessinée d'une porte d'escalier (le bloc de collision garde toute son emprise)
-// Lot 3g (retours du propriétaire) : avec les murs jusqu'au plafond, hauteur d'une porte (au-dessus, l'ouverture reste libre : la porte se voit d'en haut).
+// Lot 3g (retours du propriétaire) : avec les murs jusqu'au plafond, hauteur d'une porte ; au-dessus, un linteau de béton jusqu'au plafond (cinquième passe).
 const DOOR_TALL = 120;
 const FENCE_HEIGHT = 36; // garde-corps du trou des escaliers : une répétition de la texture « garde-corps »
 
@@ -557,12 +557,22 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
     const wallRender = tall ? { ...render, wallHeight: lift - 1 } : render;
     const built = l.segmented ? segmentedWallBoxes(l, wallRender) : wallBoxes(l.room, l.windows, l.windowSize, wallRender);
     const { bars } = built;
-    // Lot 3g (retours du propriétaire) : ouvertures grillagées (le modèle n'a pas de mur à côté de F8 ni à la place de F7). Aucun linteau au-dessus des portes :
-    // vue du dessus, il cacherait la porte.
+    // Lot 3g (retours du propriétaire) : ouvertures grillagées (le modèle n'a pas de mur à côté de F8 ni à la place de F7) ; murs jusqu'au plafond : un linteau de
+    // béton au-dessus de chaque porte dans un mur (de DOOR_TALL jusqu'au plafond, aux deux étages ; cinquième passe, à la demande du propriétaire), qui reste quand
+    // la porte s'ouvre. Le dessin seulement : la collision de la porte ne change pas.
     const thickness = num(l.wallThickness, num(layout.wallThickness, 40));
     // Ouverture grillagée sur toute la hauteur (vue du dessus, on voit la traverse et les barreaux ; un linteau les cacherait).
     const cut = cutGrilles(built.walls, grillesOf(f), thickness, num(wallRender.wallHeight) + 1);
     const walls = cut.walls;
+    if (tall) {
+      for (const d of doorList) {
+        for (const bl of d.blocks) {
+          if (bl.floor !== f || !bl.wall || !bl.rect) continue;
+          const v = wallDoorRect(bl.rect, thickness + 2); // toute l'épaisseur du mur, sur la longueur de l'ouverture
+          walls.push({ x: v.x + v.w / 2, z: v.y + v.h / 2, sx: v.w, sz: v.h, y: (DOOR_TALL + lift - 1) / 2, sy: lift - 1 - DOOR_TALL });
+        }
+      }
+    }
     cut.holes.forEach((h, k) => grilleBoxes(h, h.top, 10, h.alongX).forEach((b, j) => {
       const r = region(b.region);
       fb.detail.box(b, { rect: r, scale: r.scale, seed: 700 + k * 40 + j }, b.faces);

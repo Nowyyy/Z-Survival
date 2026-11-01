@@ -505,3 +505,13 @@ describe('brouillard retravaillé et feu plus grand', () => {
     expect(big.stats().smoke).toBeGreaterThanOrEqual(60);
   });
 });
+
+// Retours du propriétaire (cinquième passe) : linteau de béton au-dessus des portes, jusqu'au plafond, aux deux étages.
+describe('linteau au-dessus des portes', () => {
+  it('avec les murs jusqu\'au plafond, chaque porte dans un mur a un mur de DOOR_TALL au plafond (lift - 1), à tous les étages', () => {
+    const w = readFileSync('js/game/world.js', 'utf8');
+    expect(w).toMatch(/const DOOR_TALL = 120;/);
+    expect(w).toMatch(/if \(bl\.floor !== f \|\| !bl\.wall \|\| !bl\.rect\) continue;/);
+    expect(w).toMatch(/y: \(DOOR_TALL \+ lift - 1\) \/ 2, sy: lift - 1 - DOOR_TALL/);
+  });
+});
