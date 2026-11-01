@@ -506,7 +506,7 @@ test.describe('vagues, interface, caméra, budget', () => {
     });
     testInfo.annotations.push({ type: 'rendu', description: `${r.calls} appels, ${r.triangles} triangles` });
     console.log(`BUDGET lot 3b : ${r.calls} appels de dessin, ${r.triangles} triangles (référence main : 191 et 14 904)`);
-    expect(r.calls).toBeLessThanOrEqual(194 + 2); // lot 3c : référence 194 mesurée sur main, + 2 (porte, meubles modélisés)
+    expect(r.calls).toBeLessThanOrEqual(194 + 2 + 2); // lot 3c : référence 194 mesurée sur main, + 2 (porte, meubles modélisés) ; lot 3g : + 2 (nappes de brume basses)
     // Lot 3g (retours du propriétaire) : mobilier d'après le modèle, ses triangles deux fois (passe d'ombre) ; 30 000 au plus.
     expect(r.triangles).toBeLessThanOrEqual(Math.min(14904 + 100 + MOBILIER, 30000));
   });
