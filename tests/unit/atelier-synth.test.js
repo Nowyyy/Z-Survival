@@ -23,6 +23,13 @@ const RECIPES = {
   climb: { kind: 'climb', dur: 1.0, modes: [{ f: 200, decay: 0.08 }], grabs: [{ at: 0.02, gain: 0.8 }], cloth: { at: 0.1, dur: 0.6, gain: 0.3 }, creak: { at: 0.3, dur: 0.3, gain: 0.2 }, grunt: { at: 0.4, dur: 0.3, f0: 90, gain: 0.4 }, land: { at: 0.85, f: 70, gain: 1 } },
   breath: { kind: 'breath', dur: 1.0, grunt: { dur: 0.3, f0: 120 }, cycles: [{ inhale: { at: 0.4, dur: 0.2 }, exhale: { at: 0.65, dur: 0.3, f0: 110, voiced: 0.3, breath: 0.9 } }] },
   getup: { kind: 'getup', dur: 0.7, rustle: { dur: 0.3 }, grunt: { at: 0.2, dur: 0.25, f0: 125 }, step: { at: 0.5, heel: { f: 100, gain: 0.5 }, modes: [{ f: 200, decay: 0.02 }] } },
+  // Lot 3h-C : familles des propositions.
+  wind: { kind: 'wind', dur: 1.5, gustStep: 0.4, whistles: [{ f: 700, q: 10, gain: 0.4, threshold: 0.4 }] },
+  hum: { kind: 'hum', dur: 1, f0: 100, buzz: 0.1, flicker: { step: 0.1, depth: 0.4 }, crackle: { rate: 3, gain: 0.3 } },
+  heart: { kind: 'heart', dur: 1.6, bpm: 80 },
+  layers: { kind: 'layers', dur: 1.2, parts: [{ kind: 'creak', at: 0.1, dur: 0.6, modes: [{ f: 300, decay: 0.02 }] }, { kind: 'voice', at: 0.5, dur: 0.5, f0: 90, lp: 900 }] },
+  sink: { kind: 'sink', dur: 1.2, modes: [{ f: 120, decay: 0.05 }], thud: { at: 1.05, f: 60, gain: 0.9 } },
+  chime: { kind: 'chime', dur: 0.5, partials: [{ f: 2800, decay: 0.08 }], strikes: [{ at: 0.005, gain: 1 }, { at: 0.1, gain: 0.6 }], rattle: { at: 0.1, dur: 0.1, gain: 0.1 } },
 };
 
 describe('hasard à graine et bruits colorés', () => {

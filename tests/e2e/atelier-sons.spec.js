@@ -55,7 +55,7 @@ test('sans ?test=1, window.__zsSons n\'existe pas', async ({ page }) => {
 
 test('liste tous les emplacements de la priorité 1 avec « Actuel », A, B, C et « Variante suivante »', async ({ page }) => {
   await open(page);
-  await expect(page.locator('.slot')).toHaveCount(P1.length);
+  await expect(page.locator('.slot[data-priority="1"]')).toHaveCount(P1.length);
   for (const s of P1) {
     const card = slotCard(page, s.id);
     await expect(card.locator('button[data-variant]')).toHaveCount(s.variants.length);

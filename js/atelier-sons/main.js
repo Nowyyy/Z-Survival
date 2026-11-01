@@ -9,6 +9,7 @@ import { waveToSvg } from '../core/wave-svg.js';
 import { variantCount } from '../core/synth.js';
 import { translate } from '../i18n.js';
 import { createPlayer } from './player.js';
+import { createScene, listenerFloor, mixFor } from '../core/scenes-sons.js';
 
 const fmt = (text, params) => String(text).replace(/\{(\w+)\}/g, (_, k) => String(params?.[k] ?? ''));
 const loadJson = async (path) => {
@@ -30,7 +31,11 @@ const el = (tag, props = {}, children = []) => {
 };
 const MACROS = ['hauteur', 'matiere', 'grain', 'duree', 'ampleur'];
 const dbToGain = (db) => 10 ** ((Number(db) || 0) / 20);
-const num = (x, d = 0) => (Number.isFinite(x) ? x.toFixed(d).replace('.', ',') : '–');
+const num = (x, d = 0) => {
+  if (!Number.isFinite(x)) return '–';
+  const r = Number(x.toFixed(d));
+  return (r === 0 ? 0 : r).toFixed(d).replace('.', ','); // jamais « −0,0 »
+};
 
 const query = new URLSearchParams(location.search);
 const testMode = query.get('test') === '1';
@@ -105,11 +110,12 @@ async function compute(job) {
 startWorker();
 
 // ---------- textes de mesure ----------
-function measuresText(name, r, target) {
+// La fondamentale n'est affichée que pour les sons voisés (voix, souffle) : pour un pas ou un choc, elle n'a pas de sens.
+function measuresText(name, r, target, voiced = false) {
   const m = r.measures;
   const level = target && Number.isFinite(target.level) ? t('dev.atelier.measures.target', { target: target.level, gap: num(m.levelRel - target.level, 1) }) : '';
   return t('dev.atelier.measures', {
-    name, duration: num(m.duration, 2), centroid: num(m.centroid), f0: m.f0 > 0 ? `${num(m.f0)} Hz` : t('dev.atelier.measures.f0none'), hf: num(100 * m.hf4k, 1),
+    name, duration: num(m.duration, 2), centroid: num(m.centroid), f0: voiced && m.f0 > 0 ? `${num(m.f0)} Hz` : t('dev.atelier.measures.f0none'), hf: num(100 * m.hf4k, 1),
     peak: num(m.peakDb, 1), rms: num(m.rmsDb, 1), level: num(m.levelRel, 1), target: level,
   });
 }
@@ -142,7 +148,7 @@ function gesture() {
   player.unlock();
   return true;
 }
-async function playJob(job, { name, gain, target = null, ui = null, loud = false }) {
+async function playJob(job, { name, gain, target = null, ui = null, loud = false, voiced = false }) {
   status.textContent = t('dev.atelier.status.generating', { name });
   let r;
   try {
@@ -154,7 +160,7 @@ async function playJob(job, { name, gain, target = null, ui = null, loud = false
   const voice = player.play(r.samples, r.sampleRate, { gain, rate: job.rate ?? 1 });
   const v = verdict(r);
   if (ui) {
-    ui.measures.replaceChildren(el('span', { text: `${measuresText(name, r, target)} · ` }), el('span', { class: v.out.length > 0 ? 'slot-out' : '', text: v.text }));
+    ui.measures.replaceChildren(el('span', { text: `${measuresText(name, r, target, voiced)} · ` }), el('span', { class: v.out.length > 0 ? 'slot-out' : '', text: v.text }));
     if (ui.wave) drawWave(ui.wave, r.samples);
   }
   status.textContent = loud ? t('dev.atelier.status.loud', { name }) : t('dev.atelier.status.playing', { name, seed: job.seed ?? 1 });
@@ -222,8 +228,9 @@ function buildSlot(slot) {
     st.macros[v.id] = macroValues(v, {});
   }
   states.set(slot.id, st);
+  const voiced = slot.group === 'voix' || Array.isArray(slot.target?.f0);
   const titleId = `t-${slot.id}`;
-  const card = el('li', { class: 'slot', 'data-slot': slot.id, id: `slot-${slot.id}` });
+  const card = el('li', { class: 'slot', 'data-slot': slot.id, 'data-priority': String(slot.priority), id: `slot-${slot.id}` });
   card.append(el('h3', { class: 'slot-title', id: titleId }, [t(slot.label), el('code', { class: 'slot-id', text: slot.id })]));
   if (slot.currentNote) card.append(el('p', { class: 'atelier-note', text: t(slot.currentNote) }));
   const ui = { measures: el('p', { class: 'slot-measures', text: t('dev.atelier.measures.none') }), wave: document.createElementNS('http://www.w3.org/2000/svg', 'svg') };
@@ -240,7 +247,7 @@ function buildSlot(slot) {
     const recipe = recipes.get(slot.current);
     st.currentSeed = (st.currentSeed % variantCount(recipe)) + 1;
     playJob({ kind: 'current', source: slot.current, seed: st.currentSeed, rate: slot.currentRate ?? 1, slot: slot.id, gainDb: 20 * Math.log10(audioCfg.categoryGain[recipe.category] ?? 1) },
-      { name: `${slot.current} (${t('dev.atelier.current')})`, gain: audioCfg.categoryGain[recipe.category] ?? 1, target: slot.target, ui });
+      { name: `${slot.current} (${t('dev.atelier.current')})`, gain: audioCfg.categoryGain[recipe.category] ?? 1, target: slot.target, ui, voiced });
   });
   row.append(current);
   const variantButtons = new Map();
@@ -263,7 +270,9 @@ function buildSlot(slot) {
     playVariant();
   });
   row.append(next);
-  card.append(row, el('p', { class: 'atelier-note', text: t('dev.atelier.variants.legend') }));
+  // Légende : intentions A, B, C (priorité 1) ou une phrase par variante (propositions).
+  const legend = slot.priority === 2 ? slot.variants.map((v) => t(v.label)).join(' · ') : t('dev.atelier.variants.legend');
+  card.append(row, el('p', { class: 'atelier-note', text: legend }));
 
   // Favori : un seul par emplacement.
   const fav = el('fieldset', { class: 'slot-fav' }, [el('legend', { text: t('dev.atelier.favorite') })]);
@@ -321,7 +330,7 @@ function buildSlot(slot) {
   }
   function playVariant() {
     const v = slot.variants.find((x) => x.id === st.active);
-    playJob({ kind: 'variant', slot: slot.id, variant: v.id, macros: { ...st.macros[v.id] }, seed: st.seeds[v.id] }, { name: `${slot.id} ${v.id}`, gain: dbToGain(slot.gainDb), target: slot.target, ui });
+    playJob({ kind: 'variant', slot: slot.id, variant: v.id, macros: { ...st.macros[v.id] }, seed: st.seeds[v.id] }, { name: `${slot.id} ${v.id}`, gain: dbToGain(slot.gainDb), target: slot.target, ui, voiced });
   }
   syncSliders();
   return card;
@@ -339,6 +348,94 @@ for (const g of atelierRaw.groups) {
   groupsRoot.append(section);
   nav.append(el('li', {}, [el('a', { href: `#${id}`, text: t(g.label) })]));
 }
+
+// ---------- scènes ----------
+// Choix courant d'un emplacement : le favori coché, sinon la dernière variante jouée (ou A).
+function currentChoice(slotId) {
+  const st = states.get(slotId);
+  const variant = st?.favorite ?? st?.active ?? 'A';
+  return { variant, macros: { ...(st?.macros?.[variant] ?? {}) } };
+}
+let scene = null;
+const sceneStatus = $('scene-status');
+function stopScene(silent = false) {
+  if (!scene) return;
+  if (scene.frame) cancelAnimationFrame(scene.frame);
+  scene = null;
+  if (!silent) sceneStatus.textContent = t('dev.atelier.scene.stopped');
+}
+function sceneJob(e) {
+  if (e.sonId.startsWith('ref:')) {
+    const source = e.sonId.slice(4);
+    const gain = audioCfg.categoryGain[recipes.get(source)?.category] ?? 1;
+    return { job: { kind: 'reference', source, seed: 1, gainDb: 20 * Math.log10(gain) }, gain, variant: null };
+  }
+  const slot = data.slots.find((x) => x.id === e.sonId);
+  const c = currentChoice(e.sonId);
+  return { job: { kind: 'variant', slot: e.sonId, variant: c.variant, macros: c.macros, seed: e.graine }, gain: dbToGain(slot?.gainDb), variant: c.variant };
+}
+// Avance la scène de dt secondes : joue (sans attente) les événements échus, puis s'arrête à la fin.
+function tickScene(dt) {
+  if (!scene) return;
+  scene.elapsed = Math.min(scene.duration, scene.elapsed + Math.max(0, dt));
+  while (scene.next < scene.events.length && scene.events[scene.next].t <= scene.elapsed) {
+    const e = scene.events[scene.next];
+    const prepared = scene.prepared[scene.next];
+    const mix = mixFor(e, audioCfg, listenerFloor(scene, e.t));
+    const gain = prepared.gain * mix.gain;
+    const voice = player.play(prepared.result.samples, prepared.result.sampleRate, { gain, lowpassHz: mix.lowpassHz });
+    note({ kind: 'scene-event', scene: scene.id, t: e.t, sonId: e.sonId, variant: prepared.variant, seed: e.graine, distance: e.distance, etage: e.etage, etouffement: e.etouffement, gain, lowpassHz: mix.lowpassHz, played: voice > 0, at: scene.elapsed });
+    scene.next += 1;
+    scene.played += voice > 0 ? 1 : 0;
+  }
+  sceneStatus.textContent = t('dev.atelier.scene.playing', { name: scene.name, played: scene.next, total: scene.events.length });
+  if (scene.elapsed >= scene.duration) {
+    note({ kind: 'scene-end', scene: scene.id, events: scene.next, elapsed: scene.elapsed });
+    sceneStatus.textContent = t('dev.atelier.scene.done', { name: scene.name, played: scene.next, s: Math.round(scene.elapsed) });
+    stopScene(true);
+  }
+}
+async function startScene(def) {
+  stopScene(true);
+  const name = t(def.label);
+  const repair = currentChoice('reparation').macros.duree;
+  const sc = createScene(def.id, def.seed, { repairDuration: repair });
+  const prepared = sc.events.map(sceneJob);
+  const token = {};
+  scene = { ...sc, name, token, next: 0, played: 0, elapsed: 0, prepared: null, frame: 0 };
+  const unique = new Set(prepared.map((p) => JSON.stringify(p.job)));
+  sceneStatus.textContent = t('dev.atelier.scene.preparing', { name, n: unique.size });
+  try {
+    for (const p of prepared) p.result = await compute(p.job);
+  } catch (error) {
+    status.textContent = t('dev.atelier.status.error', { msg: error.message });
+    stopScene(true);
+    return;
+  }
+  if (!scene || scene.token !== token) return; // arrêtée ou remplacée pendant la préparation
+  scene.prepared = prepared;
+  note({ kind: 'scene-start', scene: def.id, seed: def.seed, events: sc.events.length, repairDuration: repair });
+  tickScene(0);
+  if (testMode) return; // ?test=1 : l'horloge de la scène avance par window.__zsSons.stepScene(s)
+  let last = performance.now();
+  const loop = () => {
+    if (!scene || scene.token !== token) return;
+    const now = performance.now();
+    tickScene((now - last) / 1000);
+    last = now;
+    if (scene && scene.token === token) scene.frame = requestAnimationFrame(loop);
+  };
+  scene.frame = requestAnimationFrame(loop);
+}
+for (const def of atelierRaw.scenes ?? []) {
+  const button = el('button', { type: 'button', class: 'atelier-play', 'data-scene': def.id }, [t(def.label)]);
+  button.addEventListener('click', () => {
+    if (!gesture()) return;
+    startScene(def);
+  });
+  $('scenes-list').append(button);
+}
+nav.append(el('li', {}, [el('a', { href: '#scenes', text: t('dev.atelier.scenes') })]));
 nav.append(el('li', {}, [el('a', { href: '#choices', text: t('dev.atelier.choices') })]));
 
 // ---------- mes choix ----------
@@ -369,6 +466,7 @@ $('btn-copy').addEventListener('click', async () => {
 
 // ---------- tout arrêter ----------
 $('btn-stop').addEventListener('click', () => {
+  stopScene(true);
   player.stopAll();
   status.textContent = t('dev.atelier.status.stopped');
 });
@@ -384,6 +482,12 @@ if (testMode) {
     state: () => ({ supported: player.supported, unlocked: player.unlocked, contextState: player.state, volume: player.volume, cacheBytes: cacheBytes(cache), cacheEntries: cacheKeys(cache).length, cacheLimit: cache.limit, activeVoices: player.activeVoices, worker: worker !== null, slots: data.slots.length }),
     choices: () => $('choices-text').value,
     graph: () => player.graph(),
+    // Horloge de test des scènes : avance la scène en cours de `seconds` (temps simulé, aucune attente réelle).
+    stepScene: (seconds) => {
+      tickScene(Number(seconds) || 0);
+      return window.__zsSons.scene();
+    },
+    scene: () => (scene ? { id: scene.id, running: true, ready: scene.prepared !== null, elapsed: scene.elapsed, next: scene.next, total: scene.events.length } : { running: false }),
   };
 }
 // La page n'apparaît qu'une fois entièrement construite (aucun décalage de mise en page pendant la construction).

@@ -483,4 +483,145 @@ function kindGetup(r, ctx) {
   return highpass1(lowpassSteep(mixLayers(ctx.n, layers), clamp(num(r.lp, 3500) * ctx.bright, 400, 3900), ctx.sr), 40, ctx.sr);
 }
 
-export const KINDS = Object.freeze({ step: kindStep, drag: kindDrag, voice: kindVoice, tear: kindTear, creak: kindCreak, fall: kindFall, hammer: kindHammer, repair: kindRepair, climb: kindClimb, breath: kindBreath, getup: kindGetup });
+// ---------- propositions (priorité 2) ----------
+
+// Bruit lent lissé (rafales) : valeurs dans [0, 1], une nouvelle cible tous les `step` s, interpolation en cosinus.
+function slowNoise(n, ctx, step, seed) {
+  const rnd = createRandom(seed);
+  const len = Math.max(2, Math.round(step * ctx.sr));
+  const out = new Float64Array(n);
+  let a = rnd.next();
+  let b = rnd.next();
+  for (let i = 0; i < n; i += 1) {
+    const k = i % len;
+    if (k === 0 && i > 0) {
+      a = b;
+      b = rnd.next();
+    }
+    const w = 0.5 - 0.5 * Math.cos((Math.PI * k) / len);
+    out[i] = a + (b - a) * w;
+  }
+  return out;
+}
+
+// Vent à travers les fenêtres (boucle) : bruits rose et brun dans une bande qui suit les rafales, sifflements étroits dans les jours
+// des planches (résonances à fort Q) dont l'intensité suit les rafales.
+function kindWind(r, ctx) {
+  const n = ctx.n;
+  const gust = slowNoise(n, ctx, num(r.gustStep, 1.6), ctx.seed + 1);
+  const p = noise(n, 'pink', ctx.seed + 2);
+  const b = noise(n, 'brown', ctx.seed + 3);
+  const src = new Float64Array(n);
+  for (let i = 0; i < n; i += 1) src[i] = 0.6 * p[i] + b[i];
+  const fpts = [];
+  for (let k = 0; k <= 32; k += 1) fpts.push([k / 32, (num(r.bandLow, 250) + num(r.bandSpan, 500) * gust[Math.min(n - 1, Math.round((k / 32) * (n - 1)))]) * ctx.bright]);
+  const body = biquadSweep(src, 'bandpass', fpts, num(r.q, 0.7), ctx.sr);
+  const out = new Float64Array(n);
+  for (let i = 0; i < n; i += 1) out[i] = body[i] * (0.35 + 0.65 * gust[i]);
+  for (const [k, w] of (Array.isArray(r.whistles) ? r.whistles : []).entries()) {
+    if (!isObj(w)) continue;
+    const x = biquad(noise(n, 'white', ctx.seed + 10 + k), { type: 'bandpass', freq: num(w.f, 700) * ctx.pitch, q: num(w.q, 10) }, ctx.sr);
+    for (let i = 0; i < n; i += 1) {
+      const g = Math.max(0, gust[i] - num(w.threshold, 0.4)) / Math.max(0.05, 1 - num(w.threshold, 0.4));
+      out[i] += x[i] * g * g * num(w.gain, 0.5) * ctx.grain;
+    }
+  }
+  return highpass1(lowpassSteep(out, clamp(num(r.lp, 3000) * ctx.bright, 300, ctx.sr * 0.45), ctx.sr), 30, ctx.sr);
+}
+
+// Ronflement d'un néon (boucle) : harmoniques de 100 Hz (magnétostriction du ballast sur un secteur à 50 Hz), bourdonnement de scie
+// filtrée, scintillement irrégulier et crépitements (variante B). Fréquences entières : la boucle de 8 s contient un nombre entier de
+// périodes.
+function kindHum(r, ctx) {
+  const n = ctx.n;
+  const f0 = num(r.f0, 100);
+  const out = new Float64Array(n);
+  const harmonics = Array.isArray(r.harmonics) ? r.harmonics : [1, 0.5, 0.3, 0.15];
+  // Phases et poids des harmoniques tirés par version (graine) : chaque version est un ballast un peu différent.
+  const phases = harmonics.map(() => ctx.rnd.next() * TAU);
+  const weights = harmonics.map((g) => num(g) * (1 + 0.2 * ctx.rnd.signed()));
+  for (let i = 0; i < n; i += 1) {
+    let v = 0;
+    for (let h = 0; h < harmonics.length; h += 1) v += weights[h] * Math.sin((TAU * f0 * (h + 1) * i) / ctx.sr + phases[h]);
+    out[i] = v;
+  }
+  if (num(r.buzz) > 0) {
+    const saw = new Float64Array(n);
+    for (let i = 0; i < n; i += 1) saw[i] = 2 * (((f0 * i) / ctx.sr) % 1) - 1;
+    const z = biquad(saw, { type: 'bandpass', freq: num(r.buzzF, 1200) * ctx.bright, q: 1.2 }, ctx.sr);
+    for (let i = 0; i < n; i += 1) out[i] += z[i] * num(r.buzz) * ctx.grain;
+  }
+  if (isObj(r.flicker) && num(r.flicker.depth) > 0) {
+    const fl = slowNoise(n, ctx, num(r.flicker.step, 0.15), ctx.seed + 5);
+    for (let i = 0; i < n; i += 1) out[i] *= 1 - num(r.flicker.depth) * fl[i] * fl[i];
+  }
+  if (isObj(r.crackle) && num(r.crackle.gain) > 0) {
+    const pulses = stickSlip(n, ctx, num(r.crackle.rate, 3), { jitter: 0.9, irregular: 0.8, seed: ctx.seed + 6 });
+    const e = bumps(pulses, ctx, 0.0005, 0.004);
+    const x = biquad(noise(n, 'white', ctx.seed + 7), { type: 'bandpass', freq: 2500 * ctx.bright, q: 1 }, ctx.sr);
+    for (let i = 0; i < n; i += 1) out[i] += x[i] * e[i] * num(r.crackle.gain) * ctx.grain;
+  }
+  return lowpassSteep(out, clamp(num(r.lp, 4000) * ctx.bright, 500, ctx.sr * 0.45), ctx.sr);
+}
+
+// Battement de cœur : paires « boum-boum » (deux coups sourds très graves, le second plus faible), au rythme `bpm`.
+function kindHeart(r, ctx) {
+  const layers = [];
+  const period = 60 / clamp(num(r.bpm, 80), 30, 200);
+  const beats = Math.max(1, Math.floor((ctx.dur - num(r.first, 0.02) - 0.3) / period) + 1); // battements entiers, 0,3 s de queue
+  for (let k = 0; k < beats; k += 1) {
+    const t = num(r.first, 0.02) + k * period;
+    layers.push({ buf: thump(ctx, { f: num(r.f, 55), decay: num(r.decay, 0.05), attack: 0.004, drop: 0.7, gain: 1 }), offset: Math.round(t * ctx.sr) });
+    layers.push({ buf: thump(ctx, { f: num(r.f, 55) * 1.15, decay: num(r.decay, 0.05) * 0.8, attack: 0.004, drop: 0.7, gain: num(r.second, 0.6) }), offset: Math.round((t + num(r.gap, 0.16)) * ctx.sr) });
+  }
+  return highpass1(lowpassSteep(mixLayers(ctx.n, layers), clamp(num(r.lp, 400) * ctx.bright, 100, 3800), ctx.sr), 25, ctx.sr);
+}
+
+// Plusieurs événements composés (grincements du bâtiment, gémissements lointains) : chaque élément est une sous-recette d'une famille
+// connue, placée à `at` s avec un gain.
+function kindLayers(r, ctx) {
+  const layers = [];
+  (Array.isArray(r.parts) ? r.parts : []).forEach((part, k) => {
+    if (!isObj(part) || !Object.hasOwn(KINDS_BASE, part.kind)) return;
+    const m = Math.max(8, Math.round(num(part.dur, 0.5) * ctx.tm * ctx.sr));
+    const sub = { ...ctx, n: m, dur: m / ctx.sr, seed: ctx.seed + 100 * (k + 1) };
+    let x = KINDS_BASE[part.kind](part, sub);
+    if (num(part.lp) > 0) x = lowpass1(lowpass1(x, part.lp * ctx.bright, ctx.sr), part.lp * ctx.bright, ctx.sr);
+    let pk = 0;
+    for (let i = 0; i < x.length; i += 1) pk = Math.max(pk, Math.abs(x[i]));
+    if (pk > 1e-9) for (let i = 0; i < x.length; i += 1) x[i] /= pk;
+    const fade = envCurve(x.length, [[0, 0], [0.02, 1], [0.97, 1], [1, 0]]);
+    for (let i = 0; i < x.length; i += 1) x[i] *= fade[i];
+    layers.push({ buf: x, gain: num(part.gain, 1), offset: at(ctx, part.at) });
+  });
+  return mixLayers(ctx.n, layers);
+}
+
+// Porte (bloc) qui s'enfonce dans le sol : grondement grave (bruit brun), raclement par collé-glissé dans des modes graves, choc final.
+function kindSink(r, ctx) {
+  const n = ctx.n;
+  const env = envCurve(n, r.env ?? [[0, 0], [0.1, 1], [0.8, 0.9], [0.9, 0.3], [1, 0]]);
+  const rum = biquad(noise(n, 'brown', ctx.seed + 1), { type: 'lowpass', freq: num(r.rumbleLp, 180) * ctx.bright, q: 0.7 }, ctx.sr);
+  const p = stickSlip(n, ctx, r.grindRate ?? [[0, 14], [1, 28]], { jitter: 0.35, irregular: 0.5, seed: ctx.seed + 2, pitch: ctx.pitch ** 0.5 });
+  const grind = resonate(lowpass1(p, 1500, ctx.sr), ctx.sr, modesOf(r.modes, ctx.pitch * ctx.vary));
+  const out = new Float64Array(n);
+  for (let i = 0; i < n; i += 1) out[i] = (rum[i] * num(r.rumble, 1) + grind[i] * num(r.grind, 0.4) * ctx.grain) * env[i];
+  const layers = [{ buf: out }];
+  if (isObj(r.thud)) layers.push({ buf: thump(ctx, r.thud), offset: at(ctx, r.thud.at ?? 1.05) });
+  return highpass1(lowpassSteep(mixLayers(n, layers), clamp(num(r.lp, 2500) * ctx.bright, 300, 3800), ctx.sr), 25, ctx.sr);
+}
+
+// Métal frappé (pièce, carillon d'achat) : partiels inharmoniques à décroissance propre, une ou plusieurs frappes.
+function kindChime(r, ctx) {
+  const layers = [];
+  (Array.isArray(r.strikes) ? r.strikes : [{ at: 0, gain: 1 }]).forEach((s, k) => {
+    if (!isObj(s)) return;
+    const modes = modesOf(s.partials ?? r.partials, ctx.pitch * num(s.pitch, 1));
+    layers.push({ buf: woodHit(ctx, modes, { gain: num(s.gain, 1), dur: 0.0003, lp: 9000, seed: ctx.seed + k, len: num(r.len, 0.6), impulse: true }), offset: at(ctx, s.at) });
+  });
+  if (isObj(r.rattle) && num(r.rattle.gain) > 0) layers.push({ buf: band(ctx, { ...r.rattle, color: 'white', gain: num(r.rattle.gain) * ctx.grain, seed: ctx.seed + 50 }), offset: at(ctx, r.rattle.at ?? 0) });
+  return highpass1(lowpassSteep(mixLayers(ctx.n, layers), clamp(num(r.lp, 9000) * ctx.bright, 1000, ctx.sr * 0.45), ctx.sr), 150, ctx.sr);
+}
+
+const KINDS_BASE = { step: kindStep, drag: kindDrag, voice: kindVoice, tear: kindTear, creak: kindCreak, fall: kindFall, hammer: kindHammer, repair: kindRepair, climb: kindClimb, breath: kindBreath, getup: kindGetup };
+export const KINDS = Object.freeze({ ...KINDS_BASE, wind: kindWind, hum: kindHum, heart: kindHeart, layers: kindLayers, sink: kindSink, chime: kindChime });

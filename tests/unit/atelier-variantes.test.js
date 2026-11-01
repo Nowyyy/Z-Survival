@@ -42,6 +42,19 @@ describe('priorité 1 : variantes par défaut dans leurs cibles', () => {
   });
 });
 
+describe('voix : exigences des recettes', () => {
+  const voices = p1.filter((s) => s.group === 'voix').flatMap((s) => s.variants.map((v) => [s.id, v.id, v.recipe]));
+  it.each(voices)('%s %s : jitter de 2 à 8 %, un sous-harmonique, rugosité de 20 à 60 Hz, formants qui glissent (deux voyelles au moins, dérive lente)', (_s, _v, r) => {
+    expect(r.jitter).toBeGreaterThanOrEqual(0.02 - 1e-9);
+    expect(r.jitter).toBeLessThanOrEqual(0.08);
+    expect(r.sub).toBeGreaterThan(0);
+    expect(r.rough.rate).toBeGreaterThanOrEqual(20);
+    expect(r.rough.rate).toBeLessThanOrEqual(60);
+    expect(r.vowels.length).toBeGreaterThanOrEqual(2);
+    expect(r.drift).toBeGreaterThan(0);
+  });
+});
+
 describe('variantes distinctes', () => {
   it('le seuil de distinction est dans les données et justifié', () => {
     expect(raw.distinctness.threshold).toBeGreaterThan(0);
@@ -271,9 +284,11 @@ describe('données et textes de la page', () => {
   });
 
   it('?test=1 seul expose window.__zsSons', () => {
-    const main = readFileSync('js/atelier-sons/main.js', 'utf8').split('\n').filter((l) => !l.trim().startsWith('//')).join('\n');
+    const main = readFileSync('js/atelier-sons/main.js', 'utf8').split('\n').filter((l) => !l.trim().startsWith('//')).join('\n').replace(/\s\/\/.*$/gm, '');
     expect(main).toMatch(/if \(testMode\) \{\s*window\.__zsSons/);
-    expect((main.match(/__zsSons/g) ?? []).length).toBe(1);
+    expect((main.match(/__zsSons\s*=/g) ?? []).length).toBe(1);
+    // Toute mention de __zsSons est dans le bloc « if (testMode) { … } » (dernier bloc du fichier).
+    expect(main.indexOf('__zsSons')).toBeGreaterThan(main.indexOf('if (testMode) {'));
     expect(main).toMatch(/const testMode = query\.get\('test'\) === '1';/);
   });
 

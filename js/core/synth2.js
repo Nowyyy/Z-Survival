@@ -82,6 +82,42 @@ function zeroMean(x) {
   return x;
 }
 
+// Point de bouclage : indice k (rotation) qui minimise le saut |x[k] − x[k − 1]| (tampon circulaire), parmi ceux dont l'énergie des
+// `w` échantillons de chaque côté est équilibrée à ±5 % ; à défaut, le meilleur équilibre. Nouveau tableau.
+export function rotateToSeam(buf, w) {
+  const x = arr(buf);
+  const n = x.length;
+  if (n < 8) return x;
+  const win = Math.max(1, Math.min(Math.floor(n / 4), Math.round(num(w, 1))));
+  const sq = new Float64Array(2 * n + 1);
+  for (let i = 0; i < 2 * n; i += 1) sq[i + 1] = sq[i] + x[i % n] * x[i % n];
+  // énergie des win échantillons qui précèdent k (circulaire) et des win qui le suivent (k inclus)
+  const before = (k) => sq[k + n] - sq[k + n - win];
+  const after = (k) => sq[k + n + win] - sq[k + n];
+  let best = 0;
+  let bestStep = Infinity;
+  let fallback = 0;
+  let fallbackGap = Infinity;
+  for (let k = 0; k < n; k += 1) {
+    const b = before(k);
+    const a = after(k);
+    const gap = Math.abs(Math.sqrt(b) - Math.sqrt(a)) / Math.max(1e-12, Math.sqrt(Math.max(a, b)));
+    const step = Math.abs(x[k] - x[(k - 1 + n) % n]);
+    if (gap <= 0.05 && step < bestStep) {
+      bestStep = step;
+      best = k;
+    }
+    if (gap < fallbackGap) {
+      fallbackGap = gap;
+      fallback = k;
+    }
+  }
+  const k = bestStep < Infinity ? best : fallback;
+  const out = new Float64Array(n);
+  for (let i = 0; i < n; i += 1) out[i] = x[(i + k) % n];
+  return out;
+}
+
 // Rendu d'une recette. params : { pitch, bright, grain, room, durMul | durSec, levelDb (niveau court cible, dBFS), peakDb (plafond, −3) }.
 export function render(recipe, params = {}, seed = 1, sampleRate = FORMAT.sampleRate) {
   const sr = rateOf(sampleRate);
@@ -129,11 +165,14 @@ export function render(recipe, params = {}, seed = 1, sampleRate = FORMAT.sample
   }
   for (let i = 0; i < x.length; i += 1) x[i] *= k;
   if (loop) {
-    // Boucle : pas de fondu (la jonction fin -> début est continue par le fondu enchaîné) ; moyenne retirée uniformément.
+    // Boucle : pas de fondu (la jonction fin -> début est continue par le fondu enchaîné) ; moyenne retirée uniformément ; puis le
+    // point de bouclage est déplacé (rotation du tampon circulaire) là où le saut entre échantillons voisins est le plus petit et
+    // où l'énergie des 50 ms de chaque côté est équilibrée.
     let m = 0;
     for (let i = 0; i < x.length; i += 1) m += x[i];
     m /= x.length;
     for (let i = 0; i < x.length; i += 1) x[i] -= m;
+    x = rotateToSeam(x, Math.round(0.05 * sr));
   } else {
     x = fadeEdges(x, sr, num(post.fadeIn, 0.001), num(post.fadeOut, 0.012));
     x = zeroMean(x);

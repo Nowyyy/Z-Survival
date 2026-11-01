@@ -15,7 +15,7 @@ const git = (args) => {
 };
 // Base de comparaison : origin/main si elle existe (CI, session), sinon main ; null si aucune (copie sans dépôt) : tests sautés.
 const BASE = ['origin/main', 'main'].find((b) => git(`rev-parse --verify --quiet ${b}`) !== null) ?? null;
-const NEW_CORE = ['audio-analysis', 'synth2', 'synth2-dsp', 'synth2-sources', 'atelier-check', 'atelier-choices', 'sound-cache', 'wave-svg'].map((n) => `js/core/${n}.js`);
+const NEW_CORE = ['audio-analysis', 'synth2', 'synth2-dsp', 'synth2-sources', 'atelier-check', 'atelier-choices', 'sound-cache', 'wave-svg', 'scenes-sons'].map((n) => `js/core/${n}.js`);
 // Moteur sonore existant, page des sons actuels et tests de sons : jamais modifiés par ce lot.
 const ENGINE = ['js/core/synth.js', 'js/core/sound-director.js', 'js/core/audio-mix.js', 'js/core/zombie-voice.js', 'js/core/footsteps.js', 'js/game/audio.js', 'js/game/sound-loader.js',
   'data/game/sounds.json', 'data/game/audio.json', 'data/game/zombie-voice.json', 'data/game/sound-materials.json', 'sons.html', 'js/sons/main.js', 'css/sons.css', 'scripts/planche-sons.mjs',
