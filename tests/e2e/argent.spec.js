@@ -583,6 +583,19 @@ test.describe('interface', () => {
     expect(b.hud.width).toBe(a.hud.width);
   });
 
+  test('blocs de taille fixe : #hud, #hud-money et #hud-wave gardent leur rectangle quand le montant, la phase de vague et les chutes changent', async ({ page }) => {
+    await open(page);
+    const size = () => page.evaluate(() => ['hud', 'hud-money', 'hud-wave'].map((id) => { const r = document.getElementById(id).getBoundingClientRect(); return [Math.round(r.width * 10), Math.round(r.height * 10)]; }));
+    const first = await size();
+    await page.evaluate(() => { window.__zs.giveMoney(9_999_999); window.__zs.setChutes(6); window.__zs.step(0.3); });
+    expect(await size()).toEqual(first);
+    await step(page, 3.5); // « Début dans N s » devient « N restants »
+    expect(await size()).toEqual(first);
+    await page.evaluate(() => window.__zs.startWave(40));
+    await step(page, 0.3);
+    expect(await size()).toEqual(first);
+  });
+
   test('HUD ≤ 300 × 96 px à 667×375 dans le pire cas, sans chevauchement avec Pause et E2-10', async ({ page }) => {
     await open(page, `${LOCAL}&floor=1&wave=40`);
     const m = await page.evaluate(() => {

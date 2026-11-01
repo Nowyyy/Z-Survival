@@ -297,7 +297,7 @@ test.describe('écran d\'accueil (jeu.html seulement)', () => {
 
   test('les marges de sécurité sont respectées : le HUD et les flèches s\'appuient sur --safe-*', async () => {
     const css = readFileSync('css/game.css', 'utf8');
-    expect(css).toMatch(/\.hud-left \{[^}]*var\(--game-margin\) \+ var\(--safe-top\)[^}]*var\(--game-margin\) \+ var\(--safe-left\)/s);
+    expect(css).toMatch(/\.hud-left \{[^}]*var\(--game-margin\) \+ var\(--safe-top\)[^}]*var\(--edge-left\)/s);
     expect(readFileSync('js/game/game.js', 'utf8')).toMatch(/--safe-/);
   });
 });

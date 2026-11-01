@@ -48,6 +48,9 @@ body.game {
 /* Marges de sécurité : 16 px au moins des bords, plus les zones de sécurité lues par js/game/safe-area.js. */
 :root {
   --game-margin: 16px;
+  /* Haut de l'écran (retour du propriétaire : plus près des bords) : 16 px au moins, et la zone de sécurité ne compte que pour ce qu'elle dépasse 28 px (coins arrondis, encoche à mi-hauteur). */
+  --edge-left: max(var(--game-margin), calc(var(--safe-left) - 28px));
+  --edge-right: max(var(--game-margin), calc(var(--safe-right) - 28px));
   --safe-top: 0px;
   --safe-right: 0px;
   --safe-bottom: 0px;
@@ -68,7 +71,7 @@ body.game {
 .pause-button {
   position: absolute;
   top: calc(var(--game-margin) + var(--safe-top));
-  right: calc(var(--game-margin) + var(--safe-right));
+  right: var(--edge-right);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -94,7 +97,7 @@ body.game {
 .hud-left {
   position: absolute;
   top: calc(var(--game-margin) + var(--safe-top));
-  left: calc(var(--game-margin) + var(--safe-left));
+  left: var(--edge-left);
   z-index: 2;
   display: flex;
   align-items: flex-start;
@@ -111,9 +114,10 @@ body.game {
   flex-direction: column;
   gap: 2px;
   box-sizing: border-box;
-  width: max-content;
   flex: none;
-  max-width: min(300px, calc(100vw - 2 * var(--game-margin) - 8rem));
+  /* Largeur fixe : « Début dans 6 s » et « 5 restants » occupent le même rectangle ; la barre de vie prend la place restante. */
+  width: 12.5rem;
+  max-width: calc(100vw - 2 * var(--game-margin) - 8rem);
   padding: 4px 6px;
   border-radius: var(--hud-radius);
   background: color-mix(in srgb, var(--hud-bg) calc(var(--hud-bg-alpha) * 100%), transparent);
@@ -197,7 +201,7 @@ body.game {
   border: 1px solid var(--hud-border);
   border-radius: var(--radius-sm);
   flex: 1;
-  min-width: 64px; /* lot 4 : 96 avant ; la puce d'argent partage la rangée (6 chutes + 9,9 M tiennent dans 300 px) */
+  min-width: 40px; /* lot 4 : 96 avant ; la puce d'argent partage la rangée (6 chutes + 9,9 M tiennent dans 300 px) */
   height: 20px;
   overflow: hidden;
   border-width: 2px;
@@ -903,6 +907,8 @@ body.game {
 .hud-money {
   position: relative;
   gap: 3px;
+  /* Rectangle fixe : le montant (0 à « 9,9 M ») change dans un cadre qui ne bouge pas. */
+  width: 5.5rem;
 }
 
 /* Lot 4 (retour du propriétaire) : cinq lignes, de haut en bas : vie et chutes ; restants et tués ; étage ; argent ; vague (« Vague 1 / 40 », même police). Chaque ligne
@@ -991,6 +997,9 @@ a.button {
 .hud-wave {
   position: absolute;
   top: calc(var(--game-margin) + var(--safe-top) + 11px);
-  right: calc(var(--game-margin) + var(--safe-right) + 48px);
+  right: calc(var(--edge-right) + 48px);
   align-self: auto;
+  /* Largeur fixe : « Vague 9 / 40 » et « Vague 40 / 40 » occupent le même rectangle. */
+  justify-content: center;
+  width: 9rem;
 }

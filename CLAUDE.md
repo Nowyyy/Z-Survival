@@ -53,7 +53,7 @@ Avant de modifier une page, lis `Docs/ref/conventions.md` (arborescence, pages, 
 - Siège : siege.js (approche, attente, arrache, escalade, dedans, libre) ; 2 emplacements, file de 6, 2 grimpeurs ; jamais d'entrée sans fenêtre ouverte ni active ; ?empty=1 : zombies libres.
 - Chutes : player-down.js ; 1 chute de base, à terre 5 s invulnérable, relevage à 50 % ; stats chutes (0 à 5), reparation (0 à 10).
 - Planches : plank-layout.js (pivot au bas) ; un maillage par fenêtre, 42 triangles au plus ; débris à plat, à l'infini.
-- HUD : bloc E2-2 (96 × 300 px au plus : vie, restants, étage), puis bloc d'argent à sa droite ; vague « Vague 1 / 40 » et bouton Pause (icône) à droite ; E2-9 et E2-11 retirés ; E2-10 (à terre) ; marges 16 px + safe-area ; icônes SVG ; texte ≥ 14 px ; #hud-live annonce les événements.
+- HUD : blocs de taille fixe : E2-2 (200 × 96 px au plus : vie, restants, étage), argent à sa droite ; « Vague 1 / 40 » et Pause (icône) à droite ; E2-9 et E2-11 retirés ; E2-10 ; marges 16 px (--edge-*, safe-area au-delà de 28 px) ; icônes SVG ; texte ≥ 14 px ; #hud-live annonce.
 - jeu.html : apple-mobile-web-app-capable (essai sans barres de Safari) ; pas de manifeste.
 - Journal des versions : chaque lot ajoute une entrée à data/changelog.json et adapte data-changelog et dev.spec.
 - Effet VHS : #vhs (vhs.js, horloge réelle) ; interdits : mix-blend-mode, filter, backdrop-filter, post-traitement 3D ; ?vhs=0|1 ; coupé en mouvement réduit.
@@ -67,5 +67,5 @@ Avant de modifier une page, lis `Docs/ref/conventions.md` (arborescence, pages, 
 - Sauvegarde : js/core/save.js (schéma v1, migrations, commitDelta, code ZS1.<base64url>.<crc32>) pur ; js/save/ seul à toucher localStorage, clé unique zs.save.v1 ; écriture par différences ; illisible ou version future = verrouillée, jamais écrasée.
 - Mode essai : wave, lvl, planks, map, empty, nospawn, endless, floor, money = sauvegarde en lecture seule (aucune écriture, solde réel lu) ; ?test=1 = mémoire, ?test=1&store=local = vrai localStorage.
 - Argent : economy.js, economy.json, bounty ; 10 par kill (balle seulement, jamais killAll/skipWave), 1 par planche posée, bonus de manche, fin de monde ; tout est conservé à la mort ; jamais de calcul d'argent hors de economy.js.
-- Interface : puce d'argent dans E2-2, « +N » agrégé, solde et état dans la pause et E2-7 ; sauvegarde.html (technique, remplacée au lot 7) ; aucun nouveau bloc E2.
+- Interface : argent (« +N » agrégé), solde et état dans la pause et E2-7 ; sauvegarde.html (technique, remplacée au lot 7).
 - Lot 4 : getState().save et economy ; scripts/economie.mjs, code-sauvegarde.mjs ; détails : `conventions.md`.
