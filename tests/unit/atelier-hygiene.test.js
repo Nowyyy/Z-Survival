@@ -23,7 +23,7 @@ const ENGINE = ['js/core/synth.js', 'js/core/sound-director.js', 'js/core/audio-
   'data/game/sounds.json', 'data/game/audio.json', 'data/game/zombie-voice.json', 'data/game/sound-materials.json', 'sons.html', 'js/sons/main.js', 'css/sons.css', 'scripts/planche-sons.mjs',
   'tests/unit/core-synth.test.js', 'tests/unit/data-sons.test.js', 'tests/unit/data-sons-lot3.test.js', 'tests/unit/data-annonce-sons.test.js', 'tests/unit/core-audio-mix.test.js', 'tests/unit/core-sound-director.test.js',
   'tests/unit/core-zombie-voice.test.js', 'tests/unit/core-audio-lot3.test.js', 'tests/unit/core-ambiance-audio.test.js', 'tests/unit/helpers/dsp.js', 'tests/e2e/jeu-sons.spec.js', 'tests/e2e/jeu-voix.spec.js', 'tests/e2e/sons-page.spec.js'];
-const GAME = ['jeu.html', 'js/game', 'css/game.css', 'index.html', 'CLAUDE.md', 'Docs/ref/conventions.md', 'Docs/seed.md', 'data/changelog.json', 'tests/unit/data-changelog.test.js', 'tests/e2e/dev.spec.js', '.github'];
+const GAME = ['jeu.html', 'js/game', 'css/game.css', 'index.html', 'CLAUDE.md', 'Docs/ref/conventions.md', 'Docs/seed.md', 'tests/unit/data-changelog.test.js', 'tests/e2e/dev.spec.js', '.github'];
 const code = (f) => readFileSync(f, 'utf8').split('\n').filter((l) => !l.trim().startsWith('//')).join('\n');
 const atelier = JSON.parse(readFileSync('data/game/sounds-atelier.json', 'utf8'));
 const { sounds } = JSON.parse(readFileSync('data/game/sounds.json', 'utf8'));
@@ -46,9 +46,17 @@ describe('hygiène du lot 3h : pureté et fichiers', () => {
     expect((git(`diff --name-only ${BASE} -- ${ENGINE.join(' ')}`) ?? '').split('\n').filter(Boolean)).toEqual([]);
   });
 
-  it('le jeu (jeu.html, js/game/, css/game.css), index.html, CLAUDE.md, conventions, seed, journal des versions et workflow sont inchangés', () => {
+  it('le jeu (jeu.html, js/game/, css/game.css), index.html, CLAUDE.md, conventions, seed, tests du journal et workflow sont inchangés', () => {
     if (!BASE) return;
     expect((git(`diff --name-only ${BASE} -- ${GAME.join(' ')}`) ?? '').split('\n').filter(Boolean)).toEqual([]);
+  });
+
+  it('journal des versions : seule l\'entrée lot-3h est ajoutée (exigée par data-changelog pour le bilan Docs/lots/lot-3h.md), rien d\'autre ne change', () => {
+    if (!BASE) return;
+    const before = JSON.parse(git(`show ${BASE}:data/changelog.json`)).lots;
+    const after = JSON.parse(readFileSync('data/changelog.json', 'utf8')).lots;
+    expect(after.filter((e) => e.name !== 'lot-3h')).toEqual(before);
+    expect(after.filter((e) => e.name === 'lot-3h').length).toBe(1);
   });
 
   it('les recettes de la mélodie, des annonces, du tir et des impacts sont identiques à celles de main', () => {
