@@ -1,6 +1,6 @@
 # Manifeste de fusion du lot 3k (atelier de l'interface)
 
-La branche `lot-3k` ne modifie aucun fichier du jeu. Elle ajoute des fichiers neufs et touche **trois fichiers partagés**, chacun par des lignes à part. Elle sera fusionnée dans la branche d'intégration du lot 4b avec `lot-3g`, `lot-3h` et `lot-3j`, pas directement dans `main`.
+La branche `lot-3k` ne modifie aucun fichier du jeu. Elle ajoute des fichiers neufs et touche **six fichiers partagés**, chacun par des lignes à part. Elle sera fusionnée dans la branche d'intégration du lot 4b avec `lot-3g`, `lot-3h` et `lot-3j`, pas directement dans `main`.
 
 ## Fichiers partagés modifiés (liste exacte)
 | Fichier | Lignes ajoutées ou changées | Résolution en cas de conflit |
@@ -8,6 +8,8 @@ La branche `lot-3k` ne modifie aucun fichier du jeu. Elle ajoute des fichiers ne
 | `apercu.txt` | 1re ligne `jeu.html` → `atelier-interface.html` ; 3e ligne `titre: Argent et sauvegarde` → `titre: Atelier de l'interface` | **Ne jamais fusionner la première ligne** : reprendre le fichier de `main` (ou celui que le lot 4b choisit). |
 | `scripts/build.mjs` | une ligne neuve après `mkdirSync(OUT);` : `ENTRIES.push('atelier-interface.html'); // lot 3k …` (la liste `ENTRIES` n'est pas touchée) | Garder les deux versions : la liste `ENTRIES` de l'autre branche, puis la ligne `push` du lot 3k. |
 | `tests/unit/lot1-regles.test.js` | deux lignes neuves après `const allowed = […]` : `allowed.push('js/core/ui-mock.js');` et `allowed.push('js/core/ui-measure.js');` | Garder les deux versions : la liste et les lignes `push` de chaque lot (le lot 3j ajoute aussi des lignes `push`). |
+| `data/changelog.json` | une entrée neuve `lot-3k` en fin de liste (ajoutée après le bilan, à la demande du propriétaire, pour que la CI de la branche repasse au vert) | Garder les deux versions : toutes les entrées, dans l'ordre chronologique de fusion. |
+| `tests/unit/data-changelog.test.js`, `tests/e2e/dev.spec.js` | lot courant `lot-4` → `lot-3k` (dernier du journal ; premier affiché, texte « interface ») | Mettre le dernier lot fusionné. |
 
 La consigne parlait d'« une ligne dans `npm run build` de `package.json` » : la liste des fichiers publiés est dans `scripts/build.mjs` (`package.json` appelle seulement `node scripts/build.mjs`). `package.json` n'est donc **pas** modifié. `core-purity.test.js` n'a pas de liste d'autorisation (il parcourt `js/core/`) : non modifié, les deux nouveaux modules le passent. Le test de clés de textes `data-i18n.test.js` n'est **pas** modifié : les textes de l'atelier sont dans `data/i18n/atelier-interface.json`, lu par la page seule (`fetch` de même origine, fusionné en mémoire avec `fr.json`) et vérifié par `tests/unit/interface-atelier-protos.test.js` (clés utilisées, clés présentes, aucune clé commune avec `fr.json`). Résolution recommandée au lot 4b : charger `data/i18n/*.json` par glob dans `data-i18n.test.js`, ou déplacer les clés `ui3k.*` retenues dans `fr.json` (voir `integration-interface.md`).
 
@@ -29,4 +31,4 @@ Tous dans la liste tolérée. **Fusion combinée** (`fusion-essai-3k-tous`, ordr
 1. Fusionner `lot-3g` et `lot-3h` d'abord (conflit `atelier-hygiene.test.js` entre eux : renommer l'un des deux fichiers).
 2. Fusionner `lot-3k` : résoudre `apercu.txt` (ligne de `main`), `scripts/build.mjs` et `lot1-regles.test.js` en gardant les deux versions.
 3. Retirer les garde-fous de branche : le groupe « le jeu n'est pas modifié » de `tests/unit/interface-atelier-hygiene.test.js` et le test `apercu.txt` de `tests/unit/interface-atelier-protos.test.js`.
-4. Ajouter l'entrée `lot-3k` à `data/changelog.json` (texte proposé dans `Docs/lots/lot-3k.md`) et adapter `data-changelog.test.js` et `dev.spec.js` : sans elle, le test « chaque bilan de Docs/lots/ a son entrée » échoue (ces fichiers étaient interdits au lot 3k).
+4. Journal des versions : l'entrée `lot-3k` est déjà dans `data/changelog.json` ; garder celles des autres lots et mettre le dernier lot fusionné dans `data-changelog.test.js` et `dev.spec.js`.

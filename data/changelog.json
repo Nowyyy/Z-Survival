@@ -112,6 +112,13 @@
       "La page sauvegarde.html permet d'exporter la sauvegarde par un code, de l'importer (avec aperçu et confirmation), de la réparer ou de l'effacer : utile car Safari efface les données d'un site après 7 jours d'usage sans visite.",
       "L'interface est plus compacte : blocs de taille fixe (vie, argent, « Vague 1 / 40 »), bouton Pause en icône, une seule silhouette pour les chutes ; le solde et l'état de la sauvegarde sont dans la pause, l'argent gagné et les records sur l'écran de fin.",
       "Menu /dev : plus de liste déroulante, le journal des versions est replié ; icône « Z » pour l'écran d'accueil ; tests de bout en bout ramenés à 4 minutes."
+    ] },
+    { "name": "lot-3k", "titre": "Atelier de l'interface", "points": [
+      "Nouvelle page technique atelier-interface.html : l'interface actuelle du jeu et trois directions de refonte (sobre, caméscope, tactile), sur 7 tailles d'écran et dans de nombreux états, avec le vrai jeu en fond.",
+      "Chaque vue est mesurée : place occupée à l'écran, taille des textes, contrastes, cibles tactiles, zones de sécurité et zones des pouces ; tout écart est écrit en toutes lettres.",
+      "Menu, boutique, réglages et classement en maquettes, avec de fausses données annoncées comme telles ; cinq propositions de priorité 2 (retour de dégâts, vie faible, aide de démarrage, curseur de visée, nouvelle zone).",
+      "Comparaison côte à côte et texte « Mes choix » à copier ; après les premiers choix, le HUD caméscope est retouché (vie en texte, mots entiers, argent et tués alignés sur le bouton Pause).",
+      "Rien n'est encore intégré au jeu : l'intégration se fera au lot 4b."
     ] }
   ]
 }

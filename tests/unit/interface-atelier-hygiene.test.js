@@ -48,7 +48,7 @@ describe('le jeu n\'est pas modifié (git diff avec main)', () => {
 
   it('data/game/ (hors ui-atelier.json) et data/i18n/fr.json, en.json : inchangés', () => {
     expect(changed('data/game').filter((f) => f !== 'data/game/ui-atelier.json')).toEqual([]);
-    expect(changed('data/i18n/fr.json data/i18n/en.json data/changelog.json')).toEqual([]);
+    expect(changed('data/i18n/fr.json data/i18n/en.json')).toEqual([]); // data/changelog.json : entrée lot-3k ajoutée à la demande du propriétaire (CI)
   });
 
   it('documents du propriétaire et règles : CLAUDE.md, seed, conventions, bilans existants, workflow inchangés', () => {
@@ -59,7 +59,8 @@ describe('le jeu n\'est pas modifié (git diff avec main)', () => {
 
   it('tests existants : seuls les tests de pureté listés sont adaptés, aucun supprimé', () => {
     const touched = ref ? diff(`--diff-filter=MD ${ref} -- tests`) : [];
-    expect(touched.filter((f) => !['tests/unit/lot1-regles.test.js'].includes(f))).toEqual([]);
+    // lot1-regles : deux modules de js/core/ ; data-changelog et dev.spec : entrée lot-3k du journal (demande du propriétaire, CI).
+    expect(touched.filter((f) => !['tests/unit/lot1-regles.test.js', 'tests/unit/data-changelog.test.js', 'tests/e2e/dev.spec.js'].includes(f))).toEqual([]);
   });
 
   it('package.json : dépendances inchangées', () => {

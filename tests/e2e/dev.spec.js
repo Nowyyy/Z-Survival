@@ -148,13 +148,13 @@ test.describe('journal des versions', () => {
     await page.locator('#changelog > summary').click();
     const summaries = page.locator('.changelog-entry summary');
     expect(await summaries.count()).toBeGreaterThanOrEqual(9);
-    await expect(summaries.first()).toContainText('Lot 4');
+    await expect(summaries.first()).toContainText('Lot 3k');
     await expect(summaries.last()).toContainText('Lot 0');
     const first = page.locator('.changelog-entry').first();
     await expect(first.locator('.changelog-points')).toBeHidden();
     await summaries.first().click();
     await expect(first.locator('.changelog-points li').first()).toBeVisible();
-    await expect(first).toContainText('sauvegarde');
+    await expect(first).toContainText('interface');
   });
 
   test('le journal est replié par défaut (page courte), s\'ouvre au toucher et défile quand il est long', async ({ page }) => {
