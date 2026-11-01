@@ -29,8 +29,8 @@ async function loadLots() {
 }
 
 // Journal des versions : data/changelog.json de la copie du menu elle-même (le menu d'un aperçu montre le journal de son lot).
-// Lot 4b (demande du propriétaire) : si le fichier a une liste « versions » (version, lot, enCours), seules ces entrées sont montrées, dans cet ordre, sous leur
-// numéro de version (V0.1…) ; les autres lots restent dans le fichier (historique) mais ne sont plus affichés. Sans cette liste : tous les lots, du plus récent au plus ancien.
+// Lot 4b (demande du propriétaire) : si le fichier a une liste « versions » (version, lot, enCours), seules ces entrées sont montrées, de la plus récente (en haut) à la
+// plus ancienne, sous leur numéro de version (V0.5…V0.1) ; les autres lots restent dans le fichier (historique) mais ne sont plus affichés. Sans cette liste : tous les lots.
 async function readChangelog(url) {
   try {
     const response = await fetch(url);
@@ -52,10 +52,10 @@ async function loadChangelog(latest) {
   return fromLatest.lots.length > own.lots.length ? fromLatest : own;
 }
 
-// Entrées affichées : les versions majeures dans l'ordre du fichier, sinon tous les lots du plus récent au plus ancien.
+// Entrées affichées, de la plus récente à la plus ancienne : les versions majeures (liste « versions », dans l'ordre chronologique du fichier), sinon tous les lots.
 function shownEntries(log) {
   if (log.versions.length === 0) return [...log.lots].reverse();
-  return log.versions.map((v) => ({ ...log.lots.find((e) => e.name === v.lot), version: v.version, enCours: v.enCours === true }));
+  return log.versions.map((v) => ({ ...log.lots.find((e) => e.name === v.lot), version: v.version, enCours: v.enCours === true })).reverse();
 }
 
 const lots = await loadLots();

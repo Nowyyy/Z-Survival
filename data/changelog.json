@@ -1,6 +1,6 @@
 {
   "_note": "Journal des versions affiché par la page /dev (liste des lots). Une entrée par lot, dans l'ordre chronologique (la plus récente en dernier) ; la page les affiche du plus récent au plus ancien. À compléter à chaque lot.",
-  "_versions": "Versions majeures montrées par /dev, dans cet ordre (demande du propriétaire) : version, lot du journal, encore en cours ou non. Les autres lots restent dans « lots » (historique) mais ne sont plus affichés.",
+  "_versions": "Versions majeures montrées par /dev (demande du propriétaire), dans l'ordre chronologique ici et affichées de la plus récente (en haut) à la plus ancienne : version, lot du journal, encore en cours ou non. Les autres lots restent dans « lots » (historique) mais ne sont plus affichés. Un nouveau lot n'est ajouté à cette liste que sur indication du propriétaire (Docs/lots/lot-4b.md).",
   "versions": [
     { "version": "V0.1", "lot": "lot-1" },
     { "version": "V0.2", "lot": "lot-1d" },

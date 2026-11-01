@@ -150,8 +150,8 @@ test('cibles tactiles d\'au moins 44 px', async ({ page }) => {
 });
 
 test.describe('journal des versions', () => {
-  // Lot 4b (demande du propriétaire) : seules les versions majeures, dans l'ordre de la liste « versions » du journal (V0.1 à V0.5, la dernière en cours).
-  test('liste les versions majeures V0.1 à V0.5 dans cet ordre, repliées, avec leurs points une fois ouvertes ; aucun autre lot', async ({ page }) => {
+  // Lot 4b (demande du propriétaire) : seules les versions majeures de la liste « versions » du journal, de la plus récente (V0.5, en cours, en haut) à V0.1.
+  test('liste les versions majeures de V0.5 (en haut) à V0.1, repliées, avec leurs points une fois ouvertes ; aucun autre lot', async ({ page }) => {
     await withLots(page);
     await page.goto('/dev/');
     await expect(page.getByRole('heading', { name: 'Journal des versions' })).toBeVisible();
@@ -159,15 +159,15 @@ test.describe('journal des versions', () => {
     const summaries = page.locator('.changelog-entry summary');
     await expect(summaries).toHaveCount(5);
     const texts = await summaries.allTextContents();
-    expect(texts.map((x) => x.split(' · ')[0])).toEqual(['V0.1', 'V0.2', 'V0.3', 'V0.4', 'V0.5']);
-    expect(texts[0]).toContain('Cœur du jeu');
-    expect(texts[4]).toContain('Intégration des refontes (en cours)');
+    expect(texts.map((x) => x.split(' · ')[0])).toEqual(['V0.5', 'V0.4', 'V0.3', 'V0.2', 'V0.1']);
+    expect(texts[0]).toContain('Intégration des refontes (en cours)');
+    expect(texts[4]).toContain('Cœur du jeu');
     for (const x of texts) expect(x).not.toMatch(/^Lot /);
-    const last = page.locator('.changelog-entry').last();
-    await expect(last.locator('.changelog-points')).toBeHidden();
-    await summaries.last().click();
-    await expect(last.locator('.changelog-points li').first()).toBeVisible();
-    await expect(last).toContainText('Atelier de la carte');
+    const first = page.locator('.changelog-entry').first();
+    await expect(first.locator('.changelog-points')).toBeHidden();
+    await summaries.first().click();
+    await expect(first.locator('.changelog-points li').first()).toBeVisible();
+    await expect(first).toContainText('Atelier de la carte');
   });
 
   test('le journal est replié par défaut (page courte), s\'ouvre au toucher et défile quand il est long', async ({ page }) => {
