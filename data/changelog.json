@@ -1,5 +1,13 @@
 {
   "_note": "Journal des versions affiché par la page /dev (liste des lots). Une entrée par lot, dans l'ordre chronologique (la plus récente en dernier) ; la page les affiche du plus récent au plus ancien. À compléter à chaque lot.",
+  "_versions": "Versions majeures montrées par /dev, dans cet ordre (demande du propriétaire) : version, lot du journal, encore en cours ou non. Les autres lots restent dans « lots » (historique) mais ne sont plus affichés.",
+  "versions": [
+    { "version": "V0.1", "lot": "lot-1" },
+    { "version": "V0.2", "lot": "lot-1d" },
+    { "version": "V0.3", "lot": "lot-2c" },
+    { "version": "V0.4", "lot": "lot-3e" },
+    { "version": "V0.5", "lot": "lot-4b", "enCours": true }
+  ],
   "lots": [
     { "name": "lot-0", "titre": "Socle, jetons et publication", "points": [
       "Outillage (ESLint, Vitest, Playwright, Lighthouse) et publication automatique sur GitHub Pages.",
@@ -119,6 +127,12 @@
       "La page sauvegarde.html permet d'exporter la sauvegarde par un code, de l'importer (avec aperçu et confirmation), de la réparer ou de l'effacer : utile car Safari efface les données d'un site après 7 jours d'usage sans visite.",
       "L'interface est plus compacte : blocs de taille fixe (vie, argent, « Vague 1 / 40 »), bouton Pause en icône, une seule silhouette pour les chutes ; le solde et l'état de la sauvegarde sont dans la pause, l'argent gagné et les records sur l'écran de fin.",
       "Menu /dev : plus de liste déroulante, le journal des versions est replié ; icône « Z » pour l'écran d'accueil ; tests de bout en bout ramenés à 4 minutes."
+        ] },
+    { "name": "lot-4b", "titre": "Intégration des refontes", "points": [
+      "En cours : branche d'intégration des refontes, réunies ici avant d'entrer dans le jeu publié.",
+      "Atelier de la carte (lot 3g) intégré : carte corrigée d'après le modèle 3D, mobilier redessiné, vraies portes et éboulis, murs jusqu'au plafond, mur percé autour du joueur caché, feux, extérieur plus vivant et brouillard en volutes.",
+      "Argent et sauvegarde locale (lot 4) compris.",
+      "Menu /dev : seules les versions majeures (V0.1 à V0.5) restent dans le journal."
     ] }
   ]
 }

@@ -123,10 +123,10 @@ describe('parseName et lotLabel avec un nom affiché', () => {
     expect(lotLabel('lot-4b', undefined)).toBe('Lot 4b');
   });
 
-  it('apercu.txt de la branche d\'intégration : page jeu.html, nom affiché V0.1', () => {
+  it('apercu.txt de la branche d\'intégration : page jeu.html, nom affiché V0.5', () => {
     const text = readFileSync('apercu.txt', 'utf8');
     expect(parseEntry(text)).toBe('jeu.html');
-    expect(parseName(text)).toBe('V0.1');
+    expect(parseName(text)).toBe('V0.5');
   });
 
   it('scripts/assemble.mjs recopie le nom affiché dans lots.json (champ nom, seulement s\'il existe)', () => {

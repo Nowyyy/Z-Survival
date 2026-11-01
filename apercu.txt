@@ -1,4 +1,4 @@
 jeu.html
 type: hifi
 titre: Intégration des refontes
-nom: V0.1
+nom: V0.5
