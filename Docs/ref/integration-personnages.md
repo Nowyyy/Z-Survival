@@ -1,6 +1,6 @@
 # Plan d'intégration des personnages v2 et du sang (lot 3j → lot 4b)
 
-Ce plan prépare le passage des variantes au jeu par défaut. Rien n'est fait dans le lot 3j : le jeu par défaut est inchangé, tout passe par `?perso=` et `?sang=`. Les choix viennent du texte « Mes choix » de `atelier-personnages.html` (format : `Docs/ref/atelier-personnages.md`) ; `node scripts/personnages/projection.mjs mes-choix.txt` imprime leur budget.
+Ce plan prépare le passage des variantes au jeu par défaut. **Mise à jour après la livraison (demande du propriétaire)** : le jeu par défaut utilise déjà les variantes « riche » et le sang complet (`?perso=actuel&sang=0` : le jeu d'avant) ; les sections 1 et 2 ci-dessous restent valables pour remplacer « riche » par les choix définitifs. Les choix viennent du texte « Mes choix » de `atelier-personnages.html` (format : `Docs/ref/atelier-personnages.md`) ; `node scripts/personnages/projection.mjs mes-choix.txt` imprime leur budget.
 
 ## 1. Variante par défaut de chaque personnage
 
@@ -13,8 +13,8 @@ Sang : valeur de la ligne `sang=` (défaut proposé : `reduit` tant que l'écran
 
 ## 2. Valeurs par défaut à changer
 
-- `js/game/persos-params.js` : défaut de `perso` (`actuel` → la variante choisie, ou une valeur par personnage lue dans `characters-v2.json`), de `sang` (`0` → `reduit` ou `1`), `usure` reste `auto`.
-- `js/game/game.js` : la condition `/[?&](perso|sang|usure)=/` disparaît ; le chargeur devient un import statique (le budget de requêtes de Lighthouse est à remesurer : environ 12 modules et 3 fichiers de données de plus).
+- `js/game/persos-params.js` : défauts actuels `perso: 'riche'`, `sang: '1'` (fait) ; à remplacer par la variante choisie (ou une valeur par personnage lue dans `characters-v2.json`) ; `usure` reste `auto`. Le futur écran de réglages lira le niveau de sang (`0`, `reduit`, `1`) dans la sauvegarde au lieu de l'adresse.
+- `js/game/game.js` : le chargeur est déjà importé à chaque partie (fait) ; il pourra devenir un import statique quand `actuel` disparaîtra. Lighthouse `jeu.html` (rendu logiciel, 6 mesures) : 41 à 54 par défaut, médiane 47,5 (référence `?perso=actuel&sang=0` : 49 à 59) ; seuil 45.
 
 ## 3. Code à supprimer ensuite
 
@@ -40,7 +40,7 @@ Le bloc « Personnages et sang (lot 3j) » est déjà en place : `--perso-*` (pe
 ## 6. Budget et mémoire
 
 - Appels : 11 personnages = 33 appels (os rigides) au lieu de 177 (pièces articulées) ; sang ≤ 2 appels ; 6 cadavres = 18 appels. Pire cas mesuré en jeu avec `?perso=B&sang=1` : voir le bilan du lot.
-- Triangles : A, B, C sans sang ≈ la référence (+0 à +3 %) ; avec le sang complet et 6 cadavres : 20 000 à 22 700 dans R1, R2, U1, U4 (limites actuelles 30 000) ; « riche » : jusqu'à 43 800 (sous la limite de refonte de 45 000 seulement).
+- Triangles : A, B, C sans sang ≈ la référence (+0 à +3 %) ; avec le sang complet et 6 cadavres : 20 000 à 22 700 dans R1, R2, U1, U4 (limites actuelles 30 000) ; « riche » : jusqu'à 43 800 (sous la limite de refonte de 45 000 seulement). « Riche » étant le défaut, les plafonds de triangles des tests e2e existants sont passés à 45 000 (voir `Docs/ref/fusion-3j.md`) ; mesuré par défaut : R1 61 appels / 28 576 triangles, R2 50 / 29 176, U1 68 / 29 414, U4 74 / 30 298.
 - Mémoire : textures des personnages 1,49 Mo + sang 0,35 Mo (≤ 4 Mo) ; géométries ≈ 140 Ko par variante et par tenue utilisée ; une texture d'os de 4 Ko par personnage vivant ou cadavre.
 
 ## 7. Sons à prévoir (non faits dans ce lot)

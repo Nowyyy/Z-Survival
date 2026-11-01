@@ -15,38 +15,44 @@ const BOUNDS = new THREE.Sphere(new THREE.Vector3(0, 28, 0), 62);
 
 // Géométrie fusionnée d'une liste de pièces : attributs position, normal, uv, color, skinIndex, skinWeight ; un groupe par matière.
 // options : { joints (articulations effectives), rect(part), color(part), materials (ordre des matières) }.
-export function rigidGeometry(parts, { joints, rect = null, color = null, materials = null } = {}) {
+export function rigidGeometry(parts, options = {}) {
+  return rigidBuild(parts, options).geometry;
+}
+
+// Géométrie et groupes de mergeParts (le jeu en lit les pièces de chaque triangle : une seule fusion par tenue).
+function rigidBuild(parts, { joints, rect = null, color = null, materials = null } = {}) {
   const rest = jointMatrices(joints, {}, 1);
   const groups = mergeParts(parts, { joints, matrices: rest, rect, color });
   const order = materials ?? groups.map((g) => g.material);
   const sorted = order.map((m) => groups.find((g) => g.material === m)).filter(Boolean);
-  const pos = [];
-  const nor = [];
-  const uv = [];
-  const col = [];
-  const idx = [];
+  const count = sorted.reduce((n, g) => n + g.positions.length / 3, 0);
+  const pos = new Float32Array(count * 3);
+  const nor = new Float32Array(count * 3);
+  const uv = new Float32Array(count * 2);
+  const col = new Float32Array(count * 3);
+  const idx = new Uint16Array(count * 4);
   const geometry = new THREE.BufferGeometry();
   let start = 0;
-  sorted.forEach((g) => {
-    pos.push(...g.positions);
-    nor.push(...g.normals);
-    uv.push(...g.uvs);
-    col.push(...g.colors);
-    for (const b of g.bones) idx.push(b, 0, 0, 0);
-    const count = g.positions.length / 3;
-    geometry.addGroup(start, count, order.indexOf(g.material));
-    start += count;
-  });
-  geometry.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
-  geometry.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3));
-  geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
-  geometry.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
-  geometry.setAttribute('skinIndex', new THREE.Uint16BufferAttribute(idx, 4));
+  for (const g of sorted) {
+    const n = g.positions.length / 3;
+    pos.set(g.positions, start * 3);
+    nor.set(g.normals, start * 3);
+    uv.set(g.uvs, start * 2);
+    col.set(g.colors, start * 3);
+    g.bones.forEach((b, i) => { idx[(start + i) * 4] = b; });
+    geometry.addGroup(start, n, order.indexOf(g.material));
+    start += n;
+  }
+  geometry.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  geometry.setAttribute('normal', new THREE.BufferAttribute(nor, 3));
+  geometry.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
+  geometry.setAttribute('color', new THREE.BufferAttribute(col, 3));
+  geometry.setAttribute('skinIndex', new THREE.BufferAttribute(idx, 4));
   const weights = new Float32Array(idx.length);
   for (let i = 0; i < weights.length; i += 4) weights[i] = 1;
   geometry.setAttribute('skinWeight', new THREE.BufferAttribute(weights, 4));
   geometry.boundingSphere = BOUNDS.clone();
-  return geometry;
+  return { geometry, groups };
 }
 
 // Inverses des matrices de repos des os (partagées par tous les personnages d'une variante).
@@ -146,7 +152,13 @@ const torn = (i, seed) => {
 // zombieIds (ordre des variantes de zombie-variants.json), seed, wear () => palier (0 à 3), macros: { slot: { taille, ... } },
 // styleOf: { slot: 'A' | ... }, outfitOf: { slot: indice } (atelier : tenue imposée) }.
 export function createV2Kit(options) {
-  const { characters, poses, lookup } = options;
+  const { characters, poses } = options;
+  // Jetons lus une fois chacun (getComputedStyle est lent : des milliers d'appels par géométrie sinon).
+  const tokenCache = new Map();
+  const lookup = (token) => {
+    if (!tokenCache.has(token)) tokenCache.set(token, options.lookup(token));
+    return tokenCache.get(token);
+  };
   const skeletons = poses.skeletons;
   const zombieIds = options.zombieIds ?? ['marcheur', 'petit', 'grand', 'voute'];
   const hitMat = new THREE.MeshBasicMaterial({ color: options.hit ?? 0xffffff });
@@ -200,8 +212,7 @@ export function createV2Kit(options) {
       const parts = expandParts(res);
       const rect = (p) => persoRegionRect(k.spec, PALETTE_REGION[p.palette] ?? 'sombre');
       const order = parts.some((p) => p.material === 'glow') ? ['body', 'glow'] : ['body'];
-      const geometry = rigidGeometry(parts, { joints, rect, color: () => [1, 1, 1], materials: order });
-      const groups = mergeParts(parts, { joints, matrices: jointMatrices(joints, {}, 1) });
+      const { geometry, groups } = rigidBuild(parts, { joints, rect, color: () => [1, 1, 1], materials: order });
       const triParts = order.flatMap((m) => groups.find((g) => g.material === m)?.parts ?? []);
       const shadowParts = Array.isArray(res.shadow) ? expandParts({ parts: res.shadow }) : [];
       shared = { joints, parts, geometry, triParts, inverses: boneInverses(joints), shadowGeometry: shadowParts.length ? rigidGeometry(shadowParts, { joints }) : null, order };
@@ -210,20 +221,25 @@ export function createV2Kit(options) {
     const colors = new Float32Array(shared.geometry.attributes.position.count * 3);
     const tearRgb = lookup(res.palette.dechirure) ?? [0, 0, 0];
     const tears = Number(res.wear?.tears) || 0;
+    // Les couleurs des jetons sont en sRGB ; le rendu travaille en linéaire (les textures aussi sont déclarées sRGB). Une conversion par
+    // couleur (pièce ou déchirure), pas par sommet ; Math.fround : la valeur sRGB passe en flottant 32 bits avant la conversion.
+    const linear = new Map();
+    const linearOf = (key, rgb) => {
+      if (!linear.has(key)) {
+        const [r, g, b] = rgb.map((x) => Math.fround(x / 255));
+        const c = new THREE.Color().setRGB(r, g, b, THREE.SRGBColorSpace);
+        linear.set(key, [c.r, c.g, c.b]);
+      }
+      return linear.get(key);
+    };
     shared.triParts.forEach((pi, t) => {
       const part = shared.parts[pi];
-      let c = partRgb(part, res, lookup);
-      if (part.cloth && torn(t, outfit) < tears) c = tearRgb;
-      for (let v = 0; v < 3; v += 1) colors.set(c.map((x) => x / 255), (t * 3 + v) * 3);
+      const c = part.cloth && torn(t, outfit) < tears ? linearOf('dechirure', tearRgb) : linearOf(pi, partRgb(part, res, lookup));
+      for (let v = 0; v < 3; v += 1) colors.set(c, (t * 3 + v) * 3);
     });
     const g = new THREE.BufferGeometry();
     for (const name of ['position', 'normal', 'uv', 'skinIndex', 'skinWeight']) g.setAttribute(name, shared.geometry.getAttribute(name));
-    const color = new THREE.Float32BufferAttribute(colors, 3);
-    // Les couleurs des jetons sont en sRGB ; le rendu travaille en linéaire (les textures aussi sont déclarées sRGB).
-    for (let i = 0; i < color.count; i += 1) {
-      const c = new THREE.Color().setRGB(color.getX(i), color.getY(i), color.getZ(i), THREE.SRGBColorSpace);
-      color.setXYZ(i, c.r, c.g, c.b);
-    }
+    const color = new THREE.BufferAttribute(colors, 3);
     g.setAttribute('color', color);
     for (const gr of shared.geometry.groups) g.addGroup(gr.start, gr.count, gr.materialIndex);
     g.boundingSphere = shared.geometry.boundingSphere;
@@ -234,10 +250,15 @@ export function createV2Kit(options) {
 
   // Un personnage v2 : même interface que createCharacter (root, kind, variant, gun, readPose, setFlash, setPose) plus setWound,
   // setOutfit, setAnim (atelier) et dispose.
-  function create(kind, variantIndex = 0, opts = {}) {
+  function kitOf(kind, variantIndex, opts) {
     const slotId = kind === 'player' ? 'joueur' : SLOT_OF_TYPE[zombieIds[variantIndex % zombieIds.length]] ?? 'marcheur';
     const choice = opts.choice ?? options.styleOf?.[slotId] ?? options.choice ?? 'A';
-    const k = slotKit(slotId, choice);
+    return { slotId, choice, k: slotKit(slotId, choice) };
+  }
+  const wearNow = () => Math.max(0, Math.min(3, Math.floor(num(options.wear ? options.wear() : 0, 0))));
+
+  function create(kind, variantIndex = 0, opts = {}) {
+    const { slotId, choice, k } = kitOf(kind, variantIndex, opts);
     let outfit = Number.isInteger(opts.outfit) ? opts.outfit : 0;
     let wear = k.isPlayer ? 0 : Math.max(0, Math.min(3, Math.floor(num(opts.wear, options.wear ? options.wear() : 0))));
     let current = geometryFor(k, outfit, wear);
@@ -378,6 +399,14 @@ export function createV2Kit(options) {
   return {
     create,
     slotKit,
+    // Préparation d'avance (jeu : une tâche par appel, hors de l'image) : texture d'une variante de zombie et géométrie d'une tenue au palier
+    // d'usure du moment. Caches purs : aucun effet sur le jeu ni sur le hasard. Renvoie le nombre de tenues de la variante.
+    prewarm(variantIndex, outfit = 0) {
+      const { k } = kitOf('zombie', variantIndex, {});
+      const outfits = k.variant.outfits?.length ?? 1;
+      geometryFor(k, Math.max(0, Math.min(outfits - 1, outfit)), wearNow());
+      return outfits;
+    },
     resolved: (slotId, choice, outfit = 0, wear = 0) => resolved(slotKit(slotId, choice), outfit, wear),
     textureBytes: () => textures.reduce((s, t) => s + t.bytes, 0),
     textureCount: () => textures.length,

@@ -377,8 +377,10 @@ test.describe('repoussement et budget', () => {
     expect(r.down).toBe('terre');
     expect(r.render.calls).toBeLessThanOrEqual(192);
     expect(r.render.triangles).toBeLessThanOrEqual(30000);
-    expect(r.pose.pelvisHeight).toBeLessThan(-0.4); // pose « terre » : corps abaissé
-    expect(r.pose.torsoPitch).toBeGreaterThan(1.3);
+    if (r.pose.pelvisHeight !== undefined) {
+      expect(r.pose.pelvisHeight).toBeLessThan(-0.4); // pose « terre » : corps abaissé
+      expect(r.pose.torsoPitch).toBeGreaterThan(1.3);
+    } else expect(r.pose.anim).toBe('terre'); // lot 3j : personnages v2 par défaut (animation « terre »)
   });
 
   test('aucun appel réseau, aucun stockage, console propre pendant une chute et un relevage', async ({ page, baseURL }) => {

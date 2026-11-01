@@ -143,7 +143,7 @@ test.describe('atelier des personnages', () => {
     const lines = text.split('\n');
     expect(lines[0]).toMatch(/^perso=marcheur;variante=B;taille=0;carrure=-2;usure=0;teinte=0;posture=0;tenue=\+1;style=B;amplitude=0;rythme=0;lourdeur=0$/);
     expect(lines[1]).toMatch(/^perso=joueur;variante=C;/);
-    expect(lines.at(-1)).toBe('sang=0');
+    expect(lines.at(-1)).toBe('sang=1'); // sang complet par défaut
   });
 
   test('rien dans localStorage, sessionStorage ni les cookies', async ({ page, context }) => {

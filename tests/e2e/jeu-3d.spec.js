@@ -107,7 +107,7 @@ test.describe('personnages et poses', () => {
   test.skip(({ isMobile }) => isMobile, 'clavier');
 
   test('les angles du joueur changent quand il marche et reviennent à zéro à l\'arrêt', async ({ page }) => {
-    await open(page, { width: 667, height: 375 });
+    await open(page, { width: 667, height: 375 }, '&perso=actuel&sang=0'); // lot 3j : angles de pose.js (personnages actuels)
     const rest = (await state(page)).pose;
     expect(Math.abs(rest.hipL)).toBeLessThan(1e-6);
     expect(Math.abs(rest.hipR)).toBeLessThan(1e-6);

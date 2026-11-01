@@ -768,7 +768,9 @@ test.describe('budget et performance', () => {
   const REF = { R1: [198, 13800], U1: [207, 15346] };
   for (const [name, extra, where] of [['R1', '&nospawn=1', 'start'], ['U1', '&wave=21&floor=1&nospawn=1', 'start']]) {
     test(`${name} : appels de dessin et triangles identiques à la référence (écart 0)`, async ({ page }) => {
-      await open(page, `/jeu.html?test=1&seed=1&shadows=1${extra}`);
+      // Lot 3j : la référence a été mesurée avec les personnages actuels ; le défaut est désormais « riche » et sang complet (budget couvert par
+      // tests/e2e/persos-jeu.spec.js) : ce test garde l'ancien rendu (?perso=actuel&sang=0) pour vérifier qu'il n'a pas changé.
+      await open(page, `/jeu.html?test=1&seed=1&shadows=1&perso=actuel&sang=0${extra}`);
       const r = await page.evaluate((mode) => {
         const zs = window.__zs;
         if (mode === 'window') {

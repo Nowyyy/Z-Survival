@@ -47,6 +47,7 @@ test.describe('sang et mini-arène', () => {
 
   test('niveau 0 : aucune particule, aucune tache, aucun cadavre, aucune instance', async ({ page }) => {
     await open(page);
+    await set(page, 'ctl-sang', '0'); // le niveau par défaut est désormais « complet »
     await page.click('#btn-hit');
     await page.click('#btn-kill');
     await page.evaluate(() => window.__zsPersos.step(0.3));

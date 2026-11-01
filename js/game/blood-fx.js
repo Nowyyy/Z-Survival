@@ -34,9 +34,18 @@ export function createBloodFx(options) {
   particlesMesh.frustumCulled = false;
   particlesMesh.name = 'sang-particules';
   // Taches : atlas de formes (alpha), forme et opacité par instance (attributs aShape, aAlpha) ; transparentes, sans écriture de profondeur.
-  const atlas = decalAtlas(cfg.texture?.size ?? 256, cfg.texture?.seed ?? 31);
-  const tex = new THREE.DataTexture(new Uint8Array(atlas.data.buffer), atlas.size, atlas.size, THREE.RGBAFormat);
-  tex.needsUpdate = true;
+  // L'atlas (quelques dizaines de ms sur téléphone) est calculé hors du démarrage : au premier moment libre, ou à la première tache.
+  const atlasSize = [64, 128, 256].includes(cfg.texture?.size) ? cfg.texture.size : 256;
+  const tex = new THREE.DataTexture(new Uint8Array(atlasSize * atlasSize * 4), atlasSize, atlasSize, THREE.RGBAFormat);
+  let atlasReady = false;
+  const ensureAtlas = () => {
+    if (atlasReady) return;
+    atlasReady = true;
+    tex.image.data.set(decalAtlas(atlasSize, cfg.texture?.seed ?? 31).data);
+    tex.needsUpdate = true;
+  };
+  if (globalThis.requestIdleCallback) globalThis.requestIdleCallback(ensureAtlas, { timeout: 2000 });
+  else setTimeout(ensureAtlas, 100);
   tex.magFilter = THREE.LinearFilter;
   tex.minFilter = THREE.LinearMipmapLinearFilter;
   tex.generateMipmaps = true;
@@ -60,6 +69,8 @@ export function createBloodFx(options) {
   decalsMesh.frustumCulled = false;
   decalsMesh.renderOrder = -1;
   decalsMesh.name = 'sang-taches';
+  particlesMesh.visible = false;
+  decalsMesh.visible = false;
   options.parent.add(decalsMesh, particlesMesh);
 
   let time = 0;
@@ -79,6 +90,7 @@ export function createBloodFx(options) {
     particles = capParticles([...particles, ...list], s.maxParticles);
   }
   function addDecals(list) {
+    ensureAtlas();
     decals = decalsAdd(decals, list, level, cfg, time, (seed += 1));
   }
   const api = {
@@ -143,6 +155,7 @@ export function createBloodFx(options) {
         n += 1;
       }
       particlesMesh.count = n;
+      particlesMesh.visible = n > 0; // vide : ni appel de dessin ni shader compilé (compilé au premier sang)
       particlesMesh.instanceMatrix.needsUpdate = true;
       if (particlesMesh.instanceColor) particlesMesh.instanceColor.needsUpdate = true;
       let k = 0;
@@ -158,6 +171,7 @@ export function createBloodFx(options) {
         k += 1;
       }
       decalsMesh.count = k;
+      decalsMesh.visible = k > 0;
       decalsMesh.instanceMatrix.needsUpdate = true;
       shapeAttr.needsUpdate = true;
       alphaAttr.needsUpdate = true;
@@ -194,6 +208,8 @@ export function createBloodFx(options) {
       corpses = Object.freeze([]);
       particlesMesh.count = 0;
       decalsMesh.count = 0;
+      particlesMesh.visible = false;
+      decalsMesh.visible = false;
     },
     dispose() {
       api.reset();

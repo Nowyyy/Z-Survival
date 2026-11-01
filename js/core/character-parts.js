@@ -400,15 +400,25 @@ export function mergeParts(parts, { joints = null, matrices = null, rect = null,
     const nm = transpose3(invert3(m.m));
     const r = typeof rect === 'function' ? rect(part) : null;
     const c = typeof color === 'function' ? color(part) : null;
+    // Chaque sommet transformé une fois (les indices le reprennent) ; tableaux poussés élément par élément (sans tableaux intermédiaires).
+    const nv = geo.positions.length / 3;
+    const tp = new Array(nv);
+    const tn = new Array(nv);
+    const rgb = Array.isArray(c) ? [c[0], c[1], c[2]] : [1, 1, 1];
     for (const i of geo.indices) {
-      g.positions.push(...applyAffine(m, geo.positions.slice(i * 3, i * 3 + 3)));
-      g.normals.push(...normalize(apply3(nm, geo.normals.slice(i * 3, i * 3 + 3))));
-      const [u, v] = [geo.uvs[i * 2], geo.uvs[i * 2 + 1]];
-      g.uvs.push(...(r ? [r.u0 + u * (r.u1 - r.u0), r.v0 + v * (r.v1 - r.v0)] : [u, v]));
-      g.colors.push(...(Array.isArray(c) ? c.slice(0, 3) : [1, 1, 1]));
+      tp[i] ??= applyAffine(m, [geo.positions[i * 3], geo.positions[i * 3 + 1], geo.positions[i * 3 + 2]]);
+      tn[i] ??= normalize(apply3(nm, [geo.normals[i * 3], geo.normals[i * 3 + 1], geo.normals[i * 3 + 2]]));
+      g.positions.push(tp[i][0], tp[i][1], tp[i][2]);
+      g.normals.push(tn[i][0], tn[i][1], tn[i][2]);
+      const u = geo.uvs[i * 2];
+      const v = geo.uvs[i * 2 + 1];
+      if (r) g.uvs.push(r.u0 + u * (r.u1 - r.u0), r.v0 + v * (r.v1 - r.v0));
+      else g.uvs.push(u, v);
+      g.colors.push(rgb[0], rgb[1], rgb[2]);
       g.bones.push(bone);
     }
-    for (let t = 0; t < geo.indices.length / 3; t += 1) g.parts.push(list.indexOf(part));
+    const pi = list.indexOf(part);
+    for (let t = 0; t < geo.indices.length / 3; t += 1) g.parts.push(pi);
     g.triangles += geo.indices.length / 3;
   }
   return [...groups.values()];

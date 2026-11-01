@@ -91,8 +91,8 @@ const camera = gameView(world, render, cameraJson);
 // --- État des réglages -------------------------------------------------------------------------------------------------------------------
 const state = {
   // Mouvement réduit : rien ne s'anime tout seul (bouton Lecture) ; ?test=1 : le temps n'avance que par step().
-  perso: 'marcheur', variante: 'A', tenue: 0, usure: 'auto', manche: 1, anim: 'marche', sol: 'carrelage', vue: 'jeu', orbite: 0, vitesse: 1, playing: !testMode && !matchMedia('(prefers-reduced-motion: reduce)').matches, time: 0,
-  sang: '0',
+  perso: 'marcheur', variante: 'riche', tenue: 0, usure: 'auto', manche: 1, anim: 'marche', sol: 'carrelage', vue: 'jeu', orbite: 0, vitesse: 1, playing: !testMode && !matchMedia('(prefers-reduced-motion: reduce)').matches, time: 0,
+  sang: '1',
   macros: Object.fromEntries(SLOTS.map((s) => [s, Object.fromEntries([...MACRO_IDS, ...ANIM_MACROS].map((m) => [m, 0]))])),
   picks: new Map(),
 };

@@ -19,14 +19,16 @@ function hash(x, y, seed) {
 function noise(x, y, seed) {
   const xi = Math.floor(x);
   const yi = Math.floor(y);
-  const fx = x - xi;
-  const fy = y - yi;
-  const s = (t) => t * t * (3 - 2 * t);
+  const sx = smooth(x - xi);
+  const sy = smooth(y - yi);
   const a = hash(xi, yi, seed);
   const b = hash(xi + 1, yi, seed);
   const c = hash(xi, yi + 1, seed);
   const d = hash(xi + 1, yi + 1, seed);
-  return a + (b - a) * s(fx) + (c - a) * s(fy) + (a - b - c + d) * s(fx) * s(fy);
+  return a + (b - a) * sx + (c - a) * sy + (a - b - c + d) * sx * sy;
+}
+function smooth(t) {
+  return t * t * (3 - 2 * t);
 }
 
 // Facteur de détail (0 à 1) d'un pixel (u, v de 0 à 1 dans la région) selon le type de région.
@@ -71,6 +73,8 @@ export function createPersoTexture(spec) {
   const data = new Uint8ClampedArray(size * size * 4);
   const tile = size / sp.tiles;
   const cell = tile / GRID;
+  // Le détail ne dépend que de la position dans la tuile : calculé une fois et repris par les quatre tuiles (seul le sang diffère).
+  const detailOf = new Float64Array(tile * tile).fill(-1);
   for (let y = 0; y < size; y += 1) {
     for (let x = 0; x < size; x += 1) {
       const tx = Math.floor(x / tile);
@@ -82,24 +86,25 @@ export function createPersoTexture(spec) {
       const kind = REGION_KINDS[ri] ?? 'sombre';
       const u = (lx % cell) / cell;
       const v = (ly % cell) / cell;
-      const g = Math.min(1, Math.max(0, detail(kind, u, v, sp.seed + ri * 31)));
-      let rgb = [g * 255, g * 255, g * 255];
+      const di = ly * tile + lx;
+      if (detailOf[di] < 0) detailOf[di] = Math.min(1, Math.max(0, detail(kind, u, v, sp.seed + ri * 31)));
+      const g = detailOf[di];
+      const i = (y * size + x) * 4;
+      data[i] = g * 255;
+      data[i + 1] = g * 255;
+      data[i + 2] = g * 255;
+      data[i + 3] = 255;
       const cover = sp.coverage[tier] ?? 0;
       if (cover > 0 && sp.blood && kind !== 'lampe' && kind !== 'metal') {
         const b = noise(u * 5 + tier * 3.1, v * 5, sp.seed + 99 + ri);
         if (b < cover) {
+          // Calcul par canal sans tableau intermédiaire (même arithmétique, même ordre : pixels identiques).
           const fresh = sp.blood[0] ?? [122, 10, 10];
           const dry = sp.blood[1] ?? fresh;
           const k = Math.min(1, (cover - b) / Math.max(1e-6, cover) * 2);
-          const c = fresh.map((ch, i) => ch + (dry[i] - ch) * (1 - k));
-          rgb = c.map((ch) => ch * (0.7 + 0.3 * g) * 1.6);
+          for (let ch = 0; ch < 3; ch += 1) data[i + ch] = (fresh[ch] + (dry[ch] - fresh[ch]) * (1 - k)) * (0.7 + 0.3 * g) * 1.6;
         }
       }
-      const i = (y * size + x) * 4;
-      data[i] = rgb[0];
-      data[i + 1] = rgb[1];
-      data[i + 2] = rgb[2];
-      data[i + 3] = 255;
     }
   }
   return { width: size, height: size, data, bytes: Math.round((size * size * 4 * 4) / 3) };

@@ -599,7 +599,7 @@ test.describe('panneau de pause avec l\'interrupteur, accessibilité, budget, co
     console.log(`BUDGET 10 zombies (lot 2c) : ${r.render.calls} appels de dessin, ${r.render.triangles} triangles`);
     expect(r.vhs).toBe(true);
     expect(r.render.calls).toBeLessThanOrEqual(193); // lot 3 : 191 exactement (1 appel de planches) ; lot 3a : un appel par fenêtre dans le champ, plus les débris
-    expect(r.render.triangles).toBeLessThanOrEqual(14982); // lot 3 : 14 982 exactement (120 triangles de planches, toujours dessinés) ; lot 3a : 42 au plus par fenêtre dans le champ
+    expect(r.render.triangles).toBeLessThanOrEqual(45000); // lot 3j : « riche » par défaut, limite de refonte (avant : 14 982 ; lot 3 : 14 982 exactement (120 triangles de planches, toujours dessinés) ; lot 3a : 42 au plus par fenêtre dans le champ
   });
 
   test('console propre et aucune requête externe pendant une vague avec animation, mélodie, effet et interrupteur', async ({ page, baseURL }) => {

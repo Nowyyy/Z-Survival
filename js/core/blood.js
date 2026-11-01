@@ -190,7 +190,7 @@ export function decalAtlas(size = 256, seed = 31) {
   // Chaque forme : un disque déformé par des lobes (rayon variable selon l'angle) et quelques gouttes satellites.
   const shapes = Array.from({ length: 4 }, (_, k) => ({
     lobes: Array.from({ length: 5 + k }, () => ({ a: draw() * Math.PI * 2, w: 0.1 + 0.18 * draw(), f: 2 + Math.floor(draw() * 4) })),
-    drops: Array.from({ length: 2 + k }, () => ({ a: draw() * Math.PI * 2, d: 0.62 + 0.25 * draw(), r: 0.05 + 0.06 * draw() })),
+    drops: Array.from({ length: 2 + k }, () => ({ a: draw() * Math.PI * 2, d: 0.62 + 0.25 * draw(), r: 0.05 + 0.06 * draw() })).map((d) => ({ ...d, cx: Math.cos(d.a) * d.d * 0.5, cy: Math.sin(d.a) * d.d * 0.5 })),
     base: 0.5 + 0.08 * k,
   }));
   for (let y = 0; y < s; y += 1) {
@@ -199,11 +199,18 @@ export function decalAtlas(size = 256, seed = 31) {
       const u = ((x % half) + 0.5) / half - 0.5;
       const v = ((y % half) + 0.5) / half - 0.5;
       const sh = shapes[k];
-      const ang = Math.atan2(v, u);
-      let r = sh.base * 0.5;
-      for (const l of sh.lobes) r += 0.5 * l.w * Math.max(0, Math.cos(l.f * (ang - l.a))) * 0.5;
-      let a = Math.hypot(u, v) < Math.min(0.47, r) ? 1 : 0;
-      for (const d of sh.drops) if (Math.hypot(u - Math.cos(d.a) * d.d * 0.5, v - Math.sin(d.a) * d.d * 0.5) < d.r * 0.5) a = 1;
+      // Les lobes ne font que grandir le rayon (base / 2 au moins) et le disque s'arrête à 0,47 : hors de cette couronne, inutile de les
+      // calculer (même résultat, au pixel près, en deux fois moins de temps : l'atlas est construit au démarrage du jeu).
+      const dist = Math.hypot(u, v);
+      let a = 0;
+      if (dist < 0.47 && dist < sh.base * 0.5) a = 1;
+      else if (dist < 0.47) {
+        const ang = Math.atan2(v, u);
+        let r = sh.base * 0.5;
+        for (const l of sh.lobes) r += 0.5 * l.w * Math.max(0, Math.cos(l.f * (ang - l.a))) * 0.5;
+        a = dist < Math.min(0.47, r) ? 1 : 0;
+      }
+      for (const d of sh.drops) if (a === 0 && Math.hypot(u - d.cx, v - d.cy) < d.r * 0.5) a = 1;
       const i = (y * s + x) * 4;
       data[i] = 255;
       data[i + 1] = 255;

@@ -234,7 +234,7 @@ test.describe('vagues du lot 2', () => {
   });
 
   test('la rampe baisse le bassin et couche le tronc ; la phase de marche avance avec distance / foulée', async ({ page }) => {
-    await open(page, '&empty=1&nospawn=1');
+    await open(page, '&empty=1&nospawn=1&perso=actuel&sang=0'); // lot 3j : angles de pose.js (personnages actuels)
     const r = await page.evaluate(() => {
       const zs = window.__zs;
       zs.setPlayer(800, 450);

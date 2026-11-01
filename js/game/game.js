@@ -45,8 +45,8 @@ import { DOWN_TEXTS, FLOOR_TEXTS, fmt, MONEY_TEXTS, SPLASH_TEXTS, WINDOW_INITIAL
 import { createThreeTextures } from './textures.js';
 import { buildWorld, createCamera } from './world.js';
 
-// Lot 3j : personnages v2 et sang, seulement avec ?perso=, ?sang= ou ?usure= (import dynamique : rien de plus n'est chargé par défaut).
-const persos = /[?&](perso|sang|usure)=/.test(location.search) ? await import('./persos-loader.js').then((m) => m.loadPersos(location.search)) : null;
+// Lot 3j : personnages v2 (« riche » par défaut) et sang (complet par défaut) ; ?perso=actuel&sang=0 : le jeu d'avant (rien de plus chargé).
+const persos = await import('./persos-loader.js').then((m) => m.loadPersos(location.search));
 const RECOIL_TIME = 0.12;
 const HIT_FLASH_TIME = 0.1;
 const FIRE_POSE_TIME = 0.3;

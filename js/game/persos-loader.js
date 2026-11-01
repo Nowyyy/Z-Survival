@@ -1,6 +1,5 @@
-// Chargeur des personnages v2 et du sang (lot 3j). jeu.html ne le demande que si l'adresse porte ?perso=, ?sang= ou ?usure= (test dans
-// game.js) : par défaut, aucun module ni aucune donnée de ce lot n'est chargé. Ici, les modules et les données ne sont importés que si un
-// paramètre a une valeur autre que son défaut ; sinon, rien (le jeu reste celui d'aujourd'hui).
+// Chargeur des personnages v2 et du sang (lot 3j), importé par game.js. Par défaut (variantes « riche », sang complet), il importe le module
+// d'exécution et ses données ; avec ?perso=actuel&sang=0, il n'importe rien (le jeu d'avant le lot 3j).
 import { readPersosParams } from './persos-params.js';
 
 const json = (path) => fetch(path).then((r) => {

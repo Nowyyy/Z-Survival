@@ -56,17 +56,22 @@ const sixHundredSteps = (page) => page.evaluate(() => {
 test.describe('essai en jeu des personnages v2 et du sang', () => {
   test.skip(({ isMobile }) => isMobile, 'bureau (la fenêtre est réglée par chaque test)');
 
-  test.describe('par défaut', () => {
-    test('aucun module ni aucune donnée du lot 3j n\'est demandé au réseau', async ({ page }, testInfo) => {
+  test.describe('par défaut (choix du propriétaire : variantes « riche », sang complet)', () => {
+    test('sans paramètre : personnages « riche », sang complet, architecture os rigides', async ({ page }, testInfo) => {
       const files = [];
       page.on('request', (r) => files.push(new URL(r.url()).pathname));
-      await open(page, '');
-      await page.waitForTimeout(500);
-      expect(files.filter((f) => LOT_FILES.test(f))).toEqual([]);
-      testInfo.annotations.push({ type: 'réseau', description: `${files.filter((f) => /\.js$/.test(f)).length} fichiers JavaScript (référence main : 85)` });
-    });
-    test('getState().persos absent ; personnages actuels (pièces articulées)', async ({ page }) => {
       await open(page, '&nospawn=1');
+      await spawnTen(page);
+      await page.evaluate(() => window.__zs.step(0.3));
+      const s = await S(page);
+      expect(s.persos).toMatchObject({ perso: 'riche', sang: '1', architecture: 'rigid', characters: { joueur: 'riche', zombies: 10 } });
+      expect(s.pose.choice).toBe('riche');
+      for (const e of s.enemies) expect(e.pose.choice).toBe('riche');
+      expect(files).toContain('/data/game/blood.json');
+      testInfo.annotations.push({ type: 'réseau', description: `${files.filter((f) => /\.js$/.test(f)).length} fichiers JavaScript (main : 85)` });
+    });
+    test('?perso=actuel&sang=0 : getState().persos absent ; personnages actuels (pièces articulées)', async ({ page }) => {
+      await open(page, '&nospawn=1&perso=actuel&sang=0');
       await spawnTen(page);
       const s = await S(page);
       expect(s.persos).toBeUndefined();
@@ -78,7 +83,7 @@ test.describe('essai en jeu des personnages v2 et du sang', () => {
       await page.waitForTimeout(2500);
       expect(await page.evaluate(() => [typeof window.__zs, typeof window.__zsPersos])).toEqual(['undefined', 'undefined']);
     });
-    test('?perso=actuel&sang=0 : aucun module du lot au-delà du chargeur et des paramètres', async ({ page }) => {
+    test('?perso=actuel&sang=0 : aucun module ni aucune donnée du lot au-delà du chargeur et des paramètres', async ({ page }) => {
       const files = [];
       page.on('request', (r) => files.push(new URL(r.url()).pathname));
       await open(page, '&perso=actuel&sang=0');
@@ -93,7 +98,7 @@ test.describe('essai en jeu des personnages v2 et du sang', () => {
       await spawnTen(page);
       await page.evaluate(() => window.__zs.step(0.3));
       const s = await S(page);
-      expect(s.persos).toMatchObject({ perso: v, sang: '0', architecture: 'rigid', characters: { joueur: v } });
+      expect(s.persos).toMatchObject({ perso: v, sang: '1', architecture: 'rigid', characters: { joueur: v } }); // sang complet par défaut
       expect(s.persos.characters.zombies).toBe(10);
       expect(s.pose.choice).toBe(v);
       expect(new Set(s.enemies.map((e) => e.pose.slot))).toEqual(new Set(T));
@@ -224,7 +229,7 @@ test.describe('essai en jeu des personnages v2 et du sang', () => {
     });
   }
 
-  test('?sang=0 (avec ?perso=B) : aucune particule, aucune tache, aucun cadavre', async ({ page }) => {
+  test('?sang=0 (avec ?perso=B, réservé au futur menu d\'options) : aucune particule, aucune tache, aucun cadavre', async ({ page }) => {
     await open(page, '&perso=B&sang=0&nospawn=1');
     await spawnTen(page);
     await page.evaluate(() => window.__zs.step(6));
@@ -288,9 +293,9 @@ test.describe('essai en jeu des personnages v2 et du sang', () => {
     expect(s.stored).toBe(true);
   });
 
-  for (const q of ['&perso=A', '&perso=B', '&perso=C', '&perso=riche', '&sang=reduit', '&sang=1', '&perso=B&sang=1']) {
-    test(`invariance : ${q} donne le même état logique que le jeu par défaut (graine 5, 600 pas)`, async ({ page }) => {
-      await openFrozen(page, '&seed=5&wave=3');
+  for (const q of ['', '&perso=A', '&perso=B', '&perso=C', '&perso=riche&sang=0', '&perso=actuel&sang=reduit', '&perso=actuel&sang=1', '&perso=B&sang=reduit']) {
+    test(`invariance : « ${q || 'par défaut'} » donne le même état logique que le jeu d'avant le lot (?perso=actuel&sang=0, graine 5, 600 pas)`, async ({ page }) => {
+      await openFrozen(page, '&seed=5&wave=3&perso=actuel&sang=0');
       await sixHundredSteps(page);
       const base = await logic(page);
       await openFrozen(page, `&seed=5&wave=3${q}`);
@@ -301,13 +306,13 @@ test.describe('essai en jeu des personnages v2 et du sang', () => {
   }
 
   for (const [id, query, player, floor, wave, aim] of [['R1', '', [2575, 2250], 'rdc', 10, 0], ['R2', '&map=salle', [1800, 900], 'rdc', 10, Math.PI], ['U1', '&wave=21&floor=1', [1195, 1700], 'etage', 21, 0], ['U4', '&wave=31&floor=1', [1990, 2245], 'etage', 31, 0]]) {
-    test(`budget ${id} avec ?perso=B&sang=1, ombres et cône : au plus 45 000 triangles et 400 appels`, async ({ page }, testInfo) => {
-      await open(page, `&nospawn=1&shadows=1&perso=B&sang=1${query}`);
+    test(`budget ${id} par défaut (« riche », sang complet), ombres et cône : au plus 45 000 triangles et 400 appels`, async ({ page }, testInfo) => {
+      await open(page, `&nospawn=1&shadows=1${query}`);
       await page.evaluate(([x, y]) => window.__zs.setPlayer(x, y), player);
       await spawnTen(page, wave, floor, aim);
       const r = await measure(page);
       testInfo.annotations.push({ type: 'rendu', description: `${id} : ${r.calls} appels, ${r.triangles} triangles` });
-      console.log(`BUDGET 3j ${id} perso=B&sang=1 : ${r.calls} appels, ${r.triangles} triangles`);
+      console.log(`BUDGET 3j ${id} défaut (riche, sang complet) : ${r.calls} appels, ${r.triangles} triangles`);
       expect(r.calls).toBeLessThanOrEqual(400);
       expect(r.triangles).toBeLessThanOrEqual(45_000);
     });

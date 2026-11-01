@@ -20,7 +20,12 @@ const git = (cmd) => {
 const variants = load('zombie-variants');
 
 describe('persos-params.js : lecture des paramètres', () => {
-  it('défauts : actuel, 0, auto ; inactif', () => expect(readPersosParams('')).toEqual({ perso: 'actuel', sang: '0', usure: 'auto', active: false }));
+  it('défauts (choix du propriétaire) : variantes riche, sang complet, usure auto ; actif', () => expect(readPersosParams('')).toEqual({ perso: 'riche', sang: '1', usure: 'auto', active: true }));
+  it('?perso=actuel&sang=0 : le jeu d\'avant le lot 3j, inactif ; réduit et 0 restent disponibles pour le menu d\'options', () => {
+    expect(readPersosParams('?perso=actuel&sang=0')).toEqual({ perso: 'actuel', sang: '0', usure: 'auto', active: false });
+    expect(readPersosParams('?sang=reduit').sang).toBe('reduit');
+    expect(readPersosParams('?sang=0').active).toBe(true);
+  });
   it.each(PERSO_VALUES)('?perso=%s', (v) => expect(readPersosParams(`?perso=${v}`).perso).toBe(v));
   it.each(SANG_VALUES)('?sang=%s', (v) => expect(readPersosParams(`?sang=${v}`).sang).toBe(v));
   it.each(USURE_VALUES)('?usure=%s', (v) => expect(readPersosParams(`?usure=${v}`).usure).toBe(v === 'auto' ? 'auto' : Number(v)));
@@ -32,11 +37,11 @@ describe('persos-params.js : lecture des paramètres', () => {
   });
   it('entrées hostiles : non-chaîne, très longue : défaut sans exception', () => {
     for (const s of [null, undefined, 42, {}, `?perso=${'A'.repeat(100000)}`]) expect(() => readPersosParams(s)).not.toThrow();
-    expect(readPersosParams(null).perso).toBe('actuel');
+    expect(readPersosParams(null).perso).toBe('riche');
   });
-  it('actif dès qu\'un paramètre n\'a pas sa valeur par défaut ; ?usure= seul ne charge rien', () => {
+  it('actif dès qu\'il y a des personnages v2 ou du sang ; ?perso=actuel&sang=0 ne charge rien, même avec ?usure=', () => {
     expect(readPersosParams('?perso=B').active).toBe(true);
-    expect(readPersosParams('?sang=reduit').active).toBe(true);
+    expect(readPersosParams('?perso=actuel&sang=reduit').active).toBe(true);
     expect(readPersosParams('?perso=actuel&sang=0&usure=2').active).toBe(false);
   });
   it('les paramètres cosmétiques ne sont pas des paramètres d\'essai de la sauvegarde (readOnlyParams de save.json)', () => {
@@ -45,11 +50,11 @@ describe('persos-params.js : lecture des paramètres', () => {
   });
 });
 
-describe('chargeur : rien par défaut, import dynamique sinon', () => {
+describe('chargeur : chargé par défaut, rien avec ?perso=actuel&sang=0', () => {
   const game = readFileSync('js/game/game.js', 'utf8');
   const loader = readFileSync('js/game/persos-loader.js', 'utf8');
-  it('game.js ne charge le chargeur que si l\'adresse porte ?perso=, ?sang= ou ?usure= (import dynamique, aucun import statique)', () => {
-    expect(game).toMatch(/\/\[\?&\]\(perso\|sang\|usure\)=\/\.test\(location\.search\) \? await import\('\.\/persos-loader\.js'\)/);
+  it('game.js charge toujours le chargeur (import dynamique en tête de module)', () => {
+    expect(game).toContain("const persos = await import('./persos-loader.js').then((m) => m.loadPersos(location.search));");
     expect(game).not.toMatch(/^import .*persos-/m);
   });
   it('persos-loader.js : 30 lignes au plus, modules du lot importés dynamiquement seulement', () => {
@@ -57,11 +62,11 @@ describe('chargeur : rien par défaut, import dynamique sinon', () => {
     expect(loader).toContain("import('./persos-runtime.js')");
     expect(loader).not.toMatch(/^import .*persos-runtime/m);
   });
-  it('paramètres par défaut : aucune requête, aucun module chargé', async () => {
+  it('?perso=actuel&sang=0 : aucune requête, aucun module chargé', async () => {
     const fetchSpy = vi.fn(() => Promise.reject(new Error('aucune requête attendue')));
     vi.stubGlobal('fetch', fetchSpy);
     expect(await loadPersos('?perso=actuel&sang=0')).toBeNull();
-    expect(await loadPersos('')).toBeNull();
+    expect(await loadPersos('?perso=actuel&sang=0&usure=3')).toBeNull();
     expect(fetchSpy).not.toHaveBeenCalled();
     vi.unstubAllGlobals();
   });

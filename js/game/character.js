@@ -68,10 +68,14 @@ export function createKit({ textures, variants, hit }) {
   const rect = (id) => textures.region(ATLAS, id);
   const bodyMaterial = new THREE.MeshLambertMaterial({ map: textures.texture(ATLAS) });
   const { player, zombie } = variants;
+  let geo = null; // lot 3j : construites au premier personnage actuel (inutiles avec les personnages v2)
   return {
-    geo: {
-      player: buildGeometries({ outfit: player.outfit, trousers: player.trousers, boot: player.boot, hair: player.hair, skin: player.skin, gun: player.gun, sleeves: player.outfit }, rect),
-      zombies: zombie.variants.map((v) => buildGeometries({ outfit: v.outfit, trousers: v.trousers, boot: zombie.boot, skin: v.skin, sleeves: v.skin }, rect)),
+    get geo() {
+      geo ??= {
+        player: buildGeometries({ outfit: player.outfit, trousers: player.trousers, boot: player.boot, hair: player.hair, skin: player.skin, gun: player.gun, sleeves: player.outfit }, rect),
+        zombies: zombie.variants.map((v) => buildGeometries({ outfit: v.outfit, trousers: v.trousers, boot: zombie.boot, skin: v.skin, sleeves: v.skin }, rect)),
+      };
+      return geo;
     },
     variants: zombie.variants,
     mat: {

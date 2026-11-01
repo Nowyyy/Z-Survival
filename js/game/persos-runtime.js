@@ -10,6 +10,25 @@ import { createCharacter } from './character.js';
 import { createV2Kit } from './character-v2.js';
 import { createTokenLookup } from './palette.js';
 
+// Zombies préparés d'avance, une tenue par tâche (moins de 50 ms, même sur téléphone) quand le navigateur est libre : sinon texture et géométrie
+// seraient construites dans l'image où le zombie apparaît (tâche longue). Purement un cache : rien ne change dans le jeu.
+function prewarm(v2, count) {
+  const idle = globalThis.requestIdleCallback ? (f) => globalThis.requestIdleCallback(f, { timeout: 2000 }) : (f) => setTimeout(f, 50);
+  const jobs = Array.from({ length: count }, (_, i) => i);
+  let outfit = 0;
+  let max = 1;
+  const next = () => {
+    if (!jobs.length) {
+      outfit += 1;
+      if (outfit >= max) return;
+      jobs.push(...Array.from({ length: count }, (_, i) => i));
+    }
+    max = Math.max(max, v2.prewarm(jobs.shift(), outfit));
+    idle(next);
+  };
+  idle(next);
+}
+
 export function createPersos(params, data) {
   let v2 = null;
   let blood = null;
@@ -51,6 +70,7 @@ export function createPersos(params, data) {
       if (params.perso !== 'actuel') {
         v2 = createV2Kit({ characters: data.characters, poses: data.poses, lookup, hit: palette.hit, choice: params.perso, zombieIds: variants.zombie.variants.map((v) => v.id), seed, wear });
         kit.v2 = v2;
+        prewarm(v2, variants.zombie.variants.length);
       }
       const lift = (f) => (f === 'etage' && Number.isFinite(render.floorLift) ? render.floorLift : 0);
       if (params.sang !== '0') blood = createBloodFx({ parent: world.dynamic, cfg: data.blood, level: params.sang, lookup, seed, lift, corpse: takeCorpse, corpseRelease: giveCorpse });
