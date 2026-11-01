@@ -1025,7 +1025,8 @@ export function createGame(ctx) {
 
     pv?.sync(pf(), waveInfo(sim.waves).wave); // lot 3j : instances du sang et palier d'usure
     effects.update({
-      laser: laser && !sim.dead ? laser : null,
+      // Lot 3j (demande du propriétaire) : pas de laser pendant la réparation (la visée continue : un zombie visé arrête la réparation).
+      laser: laser && !sim.dead && !Object.values(sim.repair).some((r) => r.repairing) ? laser : null,
       gun, // lot 3j
       bullets: sim.bullets,
       sparks,

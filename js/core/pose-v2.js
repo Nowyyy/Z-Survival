@@ -198,14 +198,17 @@ function locomote(rig, phase, params, data, key) {
 }
 
 // Pistolet tenu à deux mains, bras tendus, centré sur l'axe de visée à hauteur de poitrine (articulation « prop ») : main droite sur la
-// poignée, main gauche en soutien ; recul : l'arme recule et remonte. HOLD : position de l'arme dans le repère de la poitrine.
+// poignée, main gauche en soutien. Recul (recoil 1 au coup de feu, puis 0) : l'arme recule, remonte et se cabre (le canon se relève), les
+// bras suivent. HOLD : position de l'arme dans le repère de la poitrine ; KICK : recul [haut, arrière, cabrage en radians] au plus fort.
 export const HOLD = [-1, -1, 14];
+export const KICK = [2.2, 3, 0.5];
 function playerArms(rig, pose, recoil) {
   const prop = rig.joints.find((j) => j.id === 'prop')?.offset ?? [-1.5, -4, 13];
-  const r = clamp(num(recoil), [0, 1]);
-  const at = [HOLD[0], HOLD[1] + 1.2 * r, HOLD[2] - 3 * r];
+  const k = clamp(num(recoil), [0, 1]);
+  const r = k * k * (3 - 2 * k); // coup sec puis retour adouci
+  const at = [HOLD[0], HOLD[1] + KICK[0] * r, HOLD[2] - KICK[1] * r];
   pose.offsets.prop = [at[0] - prop[0], at[1] - prop[1], at[2] - prop[2]];
-  set(pose, 'prop', -0.25 * r, 0, 0);
+  set(pose, 'prop', -KICK[2] * r, 0, 0);
   const grip = { R: [at[0], at[1] - 2, at[2] - 3], L: [at[0] + 1.5, at[1] - 1, at[2] - 0.5] };
   for (const [s, side] of SIDES) {
     const sh = [side * Math.abs(rig.shoulder[0]), rig.shoulder[1], rig.shoulder[2]];
@@ -525,7 +528,7 @@ export function poseAt(rig, anim, phase, params = {}, data = {}) {
   else if (a === 'attaque') pose = groundLift(r, attaque(r, p, params, d), d);
   else if (a === 'touche') return touche(r, p, params, d);
   else if (DEATHS.includes(a)) pose = groundLift(r, mort(r, a, p), d);
-  else if (a === 'repos') pose = groundLift(r, repos(r, p, params, d), d);
+  else if (a === 'repos') pose = groundLift(r, repos(r, p, params, d, num(obj(params).recoil)), d);
   else if (a === 'tir') pose = groundLift(r, repos(r, 0, params, d, Math.sin(Math.PI * p) ** 2 * (1 - p) * 2.6), d);
   else if (a === 'terre') pose = groundLift(r, terre(r, p, params, d), d);
   else if (a === 'relevage') pose = groundLift(r, keyed([{ t: 0, pose: terre(r, 0, params, d) }, { t: 0.45, pose: kneelPose(r) }, { t: 1, pose: repos(r, 0, params, d) }], p), d);

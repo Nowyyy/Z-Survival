@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { CYCLIC, DEATHS, LOCOMOTION, PLAYER_ANIMS, ZOMBIE_ANIMS, addPose, armIK, blendPoses, cycleSeconds, fromV1, poseAt, rigOf, strikesPerPlank, touche } from '../../js/core/pose-v2.js';
 import { computePose } from '../../js/core/pose.js';
-import { jointMatrices } from '../../js/core/character-parts.js';
+import { jointMatrices, jointsOf } from '../../js/core/character-parts.js';
 import { ANIMS_OF, animChecks, characters, footSlide, load, poses, resolve, skeletons, v2Rig } from '../../scripts/personnages/lib.mjs';
 
 // Lot 3j-B : toutes les animations de pose-v2.js sur toutes les variantes : plages articulaires, périodicité, continuité, glissement des pieds,
@@ -135,3 +135,24 @@ describe('fondu, touché, réparation, durées', () => {
     expect(rigOf(characters.slots[1].variants[0], skeletons).thigh).toBe(12);
   });
 });
+
+// Demande du propriétaire : le pistolet bouge quand le joueur tire (à l'arrêt comme en marchant). recoil = 1 au coup de feu, puis 0.
+describe('recul du pistolet', () => {
+  const tipOf = (res, anim, recoil) => {
+    const m = jointMatrices(jointsOf(res, skeletons), poseAt(rigOf(res, skeletons), anim, 0.25, { recoil }, poses), res.scale);
+    const { m: r, t } = m.prop;
+    const tip = [0, 0.7, 8]; // avant de la glissière (characters-v2.json, gunSlide)
+    return [0, 1, 2].map((i) => r[i * 3] * tip[0] + r[i * 3 + 1] * tip[1] + r[i * 3 + 2] * tip[2] + t[i]);
+  };
+  it.each(['A', 'riche'])('joueur %s : au coup de feu, le canon recule et se relève, à l\'arrêt comme en marchant ; il revient ensuite', (id) => {
+    const res = resolve(characters.slots.find((s) => s.id === 'joueur').variants.find((v) => v.id === id));
+    for (const anim of ['repos', 'marche']) {
+      const rest = tipOf(res, anim, 0);
+      const kick = tipOf(res, anim, 1);
+      expect(kick[1] - rest[1], anim).toBeGreaterThan(4); // relevé (cabrage et montée)
+      expect(rest[2] - kick[2], anim).toBeGreaterThan(2); // recul
+      expect(tipOf(res, anim, 0.5)[1]).toBeLessThan(kick[1]); // retour progressif
+    }
+  });
+});
+

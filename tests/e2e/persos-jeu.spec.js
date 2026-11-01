@@ -426,4 +426,45 @@ test.describe('tir ou réparation, jamais les deux', () => {
       expect(r.after.progress + r.after.planks).toBeGreaterThan(r.during.progress + 1);
     });
   }
+
+  // Pixels couleur laser (--game-laser #ff8c7c et son halo) comptés sur l'image rendue : jamais pendant la réparation, présents sinon.
+  test('aucun laser pendant la réparation ; il revient dès qu\'elle s\'arrête', async ({ page }) => {
+    await page.setViewportSize(SIZE);
+    await page.goto(salle('/jeu.html?test=1&seed=1&nospawn=1&vhs=0'));
+    await waitReady(page);
+    await page.evaluate(() => { window.requestAnimationFrame = () => 0; });
+    await page.evaluate(() => new Promise((resolve) => setTimeout(resolve, 150)));
+    const r = await page.evaluate(([x, y]) => {
+      const zs = window.__zs;
+      const laserPixels = () => {
+        zs.sampleScreen(0, 0, 4, 4); // rendu de l'image ; lue tout de suite, dans la même tâche
+        const src = document.querySelector('#game-canvas canvas');
+        const c = document.createElement('canvas');
+        c.width = src.width;
+        c.height = src.height;
+        const g = c.getContext('2d');
+        g.drawImage(src, 0, 0);
+        const d = g.getImageData(0, 0, c.width, c.height).data;
+        let n = 0;
+        for (let i = 0; i < d.length; i += 4) if (d[i] > 180 && d[i] - d[i + 1] > 60 && d[i] - d[i + 2] > 70 && d[i + 1] > 70) n += 1;
+        return n;
+      };
+      const repairing = () => zs.getState().windows.find((v) => v.id === 'fenetre-nord').repairing;
+      zs.step(0.05);
+      zs.setPlanks('fenetre-nord', 1);
+      zs.setPlayer(x, y);
+      zs.setInput({ aim: { angle: Math.PI / 2 } });
+      zs.step(0.3);
+      const during = { repairing: repairing(), pixels: laserPixels(), logic: zs.getState().laser !== null };
+      zs.setPlanks('fenetre-nord', 4); // fenêtre complète : plus de réparation
+      zs.step(0.1);
+      const after = { repairing: repairing(), pixels: laserPixels() };
+      return { during, after };
+    }, [N.repairSpot.x, N.repairSpot.y]);
+    expect(r.during.repairing).toBe(true);
+    expect(r.during.logic).toBe(true); // la visée continue (un zombie visé arrêterait la réparation)
+    expect(r.during.pixels).toBe(0);
+    expect(r.after.repairing).toBe(false);
+    expect(r.after.pixels).toBeGreaterThan(30);
+  });
 });
