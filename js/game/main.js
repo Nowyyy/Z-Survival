@@ -63,6 +63,10 @@ const mapDir = mapId === 'salle' ? 'data/game' : `data/game/maps/${mapId}`;
 const zonesJson = mapId === 'salle' ? null : await loadJson(`${mapDir}/zones.json`);
 // Étage (lot 3e) : etage.world.json de la carte (généré par npm run carte) ; l'ancienne salle n'a qu'un étage.
 const upperWorld = mapId === 'salle' ? null : await loadJson(`${mapDir}/etage.world.json`);
+// Lot 3g : ?detail=0|1 (1 par défaut ; jamais mémorisé) : 0 = textures et décor d'avant le lot, pour comparer. Décor léger intérieur (non solide) :
+// decor-interieur.world.json de la carte (généré par npm run carte), passé au rendu par render.decorInterieur ; absent de l'ancienne salle.
+const detail = query.get('detail') !== '0';
+const decorInterieur = detail && mapId !== 'salle' ? await loadJson(`${mapDir}/decor-interieur.world.json`).catch(() => null) : null;
 
 const [dict, world, decor, camera, nav, player, weapons, enemies, render, texturesCfg, variants, soundsCfg, audioCfg, materialsCfg, voiceCfg, wavesCfg, gaitsCfg, statsCfg, splashCfg, vhsCfg, windowsCfg, downCfg, stairsCfg] = await Promise.all([
 
@@ -104,7 +108,8 @@ const TEXTURE_SHARE = 0.8;
 const loading = createLoading(dict);
 // Police du titre de l'animation de vague : chargée à la demande derrière l'écran de préparation (aucune nouvelle police, aucune requête externe).
 const titleFont = document.fonts?.load ? Promise.race([document.fonts.load('1em "Rubik Wet Paint"'), new Promise((resolve) => setTimeout(resolve, 2000))]).catch(() => {}) : Promise.resolve();
-const textureData = await generateTextureData(texturesCfg.textures, { lookup: createTokenLookup(), onProgress: (p) => loading.update(p * TEXTURE_SHARE) });
+render.decorInterieur = decorInterieur?.items ?? []; // lot 3g
+const textureData = await generateTextureData(texturesCfg.textures, { lookup: createTokenLookup(), onProgress: (p) => loading.update(p * TEXTURE_SHARE), detail });
 const audio = createAudio({ config: { audio: audioCfg, materials: materialsCfg, voice: voiceCfg, sounds: soundsCfg.sounds }, test: testMode, seed: Number.isFinite(seedParam) ? seedParam : 1 });
 const essential = await renderSounds(planSounds(soundsCfg.sounds, 'essentiel'), { onProgress: (p) => loading.update(TEXTURE_SHARE + (1 - TEXTURE_SHARE) * p) });
 audio.addSounds(essential.items);

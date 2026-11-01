@@ -3,6 +3,7 @@
 // les fichiers versionnés diffèrent de la sortie. Les deux fichiers générés ne s'éditent jamais à la main.
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
+import { clearanceZones, decorToWorld, placeDecor, totalTriangles } from '../js/core/decor-interieur.js';
 import { floorProblems } from '../js/core/floor-rules.js';
 import { planToWorld } from '../js/core/maps.js';
 import { parseZones, zonesToWorld } from '../js/core/zones.js';
@@ -39,7 +40,9 @@ export function generateMapFiles(id = 'rez-de-chaussee') {
   const zones = parseZones(JSON.parse(readFileSync(new URL(`${id}/zones.json`, ROOT), 'utf8')));
   const out = planToWorld(plan, params, { doors: zones.doors.filter((d) => !d.planned) });
   if (!out.world) throw new Error(`plan invalide : ${out.report.errors.join(' ; ')}`);
-  const result = { world: `${formatJson(out.world)}\n`, decor: `${formatJson(out.decor)}\n`, etage: null, report: out.report, etageReport: null, problems: [] };
+  const result = { world: `${formatJson(out.world)}\n`, decor: `${formatJson(out.decor)}\n`, etage: null, report: out.report, etageReport: null, problems: [], decorInterieur: null, decorReport: null };
+  let etageWorldOut = null;
+  let etagePlanOut = null;
   const etageUrl = new URL(`${id}/etage.json`, ROOT);
   if (existsSync(etageUrl)) {
     const etagePlan = JSON.parse(readFileSync(etageUrl, 'utf8'));
@@ -49,10 +52,27 @@ export function generateMapFiles(id = 'rez-de-chaussee') {
     if (!up.world) throw new Error(`etage.json invalide : ${up.report.errors.join(' ; ')}`);
     const etageWorld = { ...up.world, _provisoire: 'Étage généré par npm run carte (scripts/plan-vers-monde.mjs) d\'après etage.json : ne jamais éditer à la main, changer etage.json puis relancer la commande. Même repère et mêmes unités que world.json (rez-de-chaussée) ; pas de décor, aucun obstacle à l\'extérieur ; spawnPoints : 2 par fenêtre, à 450 et 650 du mur. Valeurs provisoires.', spawnPoints: up.decor.spawnPoints.map((p) => ({ ...p })) };
     result.etage = `${formatJson(etageWorld)}\n`;
+    etageWorldOut = etageWorld;
+    etagePlanOut = etagePlan;
     result.etageReport = up.report;
     const world = out.world;
     result.problems = floorProblems({ rdc: world, etage: etageWorld, zones: zonesToWorld(zones, world.transform), params, plan: { rdc: plan, etage: etagePlan } });
     if (!up.report.valid) result.problems.push(...up.report.violations.map((v) => `étage : ${v}`));
+  }
+  // Lot 3g : décor léger intérieur (non solide) d'après decor-interieur.json (pixels) : unités du jeu, coupé autour des fenêtres et des escaliers,
+  // éléments au sol retirés des zones de dégagement. Écrit decor-interieur.world.json (jamais édité à la main).
+  const decorUrl = new URL(`${id}/decor-interieur.json`, ROOT);
+  if (existsSync(decorUrl)) {
+    const source = JSON.parse(readFileSync(decorUrl, 'utf8'));
+    const zw = zonesToWorld(zones, out.world.transform);
+    const conv = decorToWorld(source, { rdc: plan, etage: etagePlanOut }, out.world.transform, { wallThickness: params.wallThickness });
+    const worlds = { rdc: out.world, etage: etageWorldOut };
+    const zonesBy = Object.fromEntries(Object.entries(worlds).filter(([, w]) => w).map(([f, w]) => [f, clearanceZones(w, zw, params, f)]));
+    const windowsBy = Object.fromEntries(Object.entries(worlds).filter(([, w]) => w).map(([f, w]) => [f, w.windows]));
+    const placed = placeDecor(conv.items, zonesBy, windowsBy, { windowSize: params.windowSize });
+    const doc = { _provisoire: 'Décor léger intérieur généré par npm run carte (scripts/plan-vers-monde.mjs) d\'après decor-interieur.json : ne jamais éditer à la main. Unités du jeu ; non solide (aucune collision, aucun effet sur le chemin, les tirs ni les règles). Valeurs provisoires.', triangles: totalTriangles(placed.items), items: placed.items };
+    result.decorInterieur = `${formatJson(doc)}\n`;
+    result.decorReport = { warnings: conv.warnings, removed: placed.removed, count: placed.items.length, triangles: doc.triangles };
   }
   return result;
 }
@@ -62,8 +82,8 @@ if (isMain) {
   const args = process.argv.slice(2);
   const check = args.includes('--verifie');
   const id = args.find((a) => !a.startsWith('--')) ?? 'rez-de-chaussee';
-  const { world, decor, etage, report, etageReport, problems } = generateMapFiles(id);
-  const files = [['world.json', world], ['decor.json', decor], ...(etage === null ? [] : [['etage.world.json', etage]])].map(([name, text]) => [name, text, new URL(`${id}/${name}`, ROOT)]);
+  const { world, decor, etage, report, etageReport, problems, decorInterieur, decorReport } = generateMapFiles(id);
+  const files = [['world.json', world], ['decor.json', decor], ...(etage === null ? [] : [['etage.world.json', etage]]), ...(decorInterieur === null ? [] : [['decor-interieur.world.json', decorInterieur]])].map(([name, text]) => [name, text, new URL(`${id}/${name}`, ROOT)]);
   if (check) {
     const stale = files.filter(([, text, url]) => !existsSync(url) || readFileSync(url, 'utf8') !== text).map(([name]) => name);
     if (stale.length > 0) {
@@ -85,5 +105,10 @@ if (isMain) {
     for (const r of etageReport.retired) console.log(`Étage : retiré ${r.id} (${r.reason})`);
   }
   for (const v of problems) console.log(`PROBLÈME (étage) : ${v}`);
+  if (decorReport) {
+    console.log(`Décor léger : ${decorReport.count} éléments, ${decorReport.triangles} triangles.`);
+    for (const w of decorReport.warnings) console.log(`Décor léger : ${w}`);
+    for (const r of decorReport.removed) console.log(`Décor léger : retiré ${r.id} (${r.reasons.join(', ')})`);
+  }
   if (!report.valid || problems.length > 0) process.exit(1);
 }

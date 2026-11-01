@@ -22,11 +22,12 @@ const nextFrame = () => new Promise((resolve) => {
 });
 
 // entries : data/game/textures.json (textures) ; lookup : jeton -> [r, g, b]. onProgress(0..1) est appelé après chaque tranche.
+// detail (lot 3g, vrai par défaut) : réglages fins des entrées (`fine`) ; faux (?detail=0) = textures d'avant le lot, à l'identique.
 // Renvoie { items: [{ entry, width, height, data }], count, bytes (mémoire GPU estimée, mipmaps compris), ms }.
-export async function generateTextureData(entries, { lookup, onProgress = () => {}, now = () => performance.now(), wait = nextFrame, sliceMs = SLICE_MS }) {
+export async function generateTextureData(entries, { lookup, onProgress = () => {}, now = () => performance.now(), wait = nextFrame, sliceMs = SLICE_MS, detail = true }) {
   const start = now();
   const jobs = entries.map((entry) => {
-    const spec = buildSpec(entry, lookup);
+    const spec = buildSpec(entry, lookup, { detail });
     const { width, height } = textureSize(spec);
     return { entry, spec, width, height, data: new Uint8ClampedArray(width * height * 4), row: 0 };
   });

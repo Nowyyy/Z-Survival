@@ -216,6 +216,7 @@
   "dev.visite.etage": "Visiter l'étage",
   "dev.visite.etageZoom": "Vue d'ensemble de l'étage",
   "dev.visite.ecarts": "Comparer la carte au modèle 3D (écarts)",
+  "dev.visite.detail0": "Comparer : sans les nouveaux détails (textures et décor d'avant)",
   "dev.visite.error": "Impossible de lire zones.json : liens de la manche {wave} par défaut.",
   "dev.ecarts.page": "Z-Survival · Atelier de la carte : écarts avec le modèle",
   "dev.ecarts.title": "Écarts entre la carte et le modèle 3D",

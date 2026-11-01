@@ -29,7 +29,7 @@ try {
 }
 $('intro').textContent = t('dev.visite.intro', { wave });
 const ul = $('liens');
-for (const link of visitLinks(wave, upper, false)) {
+for (const link of visitLinks(wave, upper, true)) {
   const li = document.createElement('li');
   const a = document.createElement('a');
   a.id = link.id;

@@ -8,6 +8,7 @@ import { num } from '../core/vec.js';
 import { boundTarget, overview, snapCamera, stepCamera } from '../core/camera.js';
 import { cameraPosition, fitDistance, groundView } from '../core/viewport.js';
 import { fogGrid } from '../core/fog.js';
+import { itemQuads, CATALOGUE as DECOR_CATALOGUE } from '../core/decor-interieur.js';
 import { furnitureParts } from '../core/furniture-model.js';
 import { plankSettings } from '../core/plank-layout.js';
 import { plankSheet } from '../core/texgen.js';
@@ -482,6 +483,23 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
     });
   }
 
+  // Lot 3g : décor léger intérieur, non solide (render.decorInterieur : decor-interieur.world.json, absent avec ?detail=0 et ?map=salle). Un maillage
+  // par étage dans l'atlas de props (groupe rdc, toujours dessiné, ou etage), sans ombre portée, créé une fois : un appel de dessin par étage.
+  const decorB = Object.fromEntries(floors.map((f) => [f, new Builder()]));
+  const decorCount = Object.fromEntries(floors.map((f) => [f, 0]));
+  for (const it of Array.isArray(render.decorInterieur) ? render.decorInterieur : []) {
+    if (!floors.includes(it?.floor) || !DECOR_CATALOGUE[it.kind]) continue;
+    const b = decorB[it.floor];
+    const scale = DECOR_CATALOGUE[it.kind].scale;
+    for (const q of itemQuads(it)) {
+      const r = region(q.region);
+      const su = Math.min(1, q.size[0] / scale);
+      const sv = Math.min(1, q.size[1] / scale);
+      b.quad(q.p, q.n, q.uv.map(([u, v]) => [r.u0 + u * su * (r.u1 - r.u0), r.v0 + v * sv * (r.v1 - r.v0)]));
+    }
+    decorCount[it.floor] += 1;
+  }
+
   if (layout.decor) addDecor(ex, region, layout.decor, outdoorSoil);
 
   const tag = (mesh, name) => {
@@ -504,6 +522,8 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
       tag(fb.detailUp.mesh(groups.rdcExposed, atlasMaterial, { cast: false, receive: true }), f);
       tag(fb.propsUp.mesh(groups.rdcExposed, atlasMaterial, { cast: true, receive: true }), f);
     }
+    const decorMesh = tag(decorB[f].mesh(groups[f], atlasMaterial, { cast: false, receive: true }), f);
+    if (decorMesh) decorMesh.name = 'decor-leger';
   }
 
   // Jupe sombre (lot 3e, mise à jour : l'étage est au-dessus) : sous chaque rectangle du sol de l'étage, quatre faces opaques (--game-void) jusqu'au sol du rez-de-chaussée,
@@ -771,7 +791,12 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
         });
         return g.visible ? n : 0;
       };
-      return { exteriorY: groups.exterieur.position.y, elevation: elevationNow, visible: Object.fromEntries(Object.entries(groups).map(([k, g]) => [k, visibleOf(g)])), slab: slab ? slab.visible && groups.etage.visible : false, fence: groups.etage.children.filter((m) => m.name === 'garde-corps').length, marks: [...marks].filter(([, m]) => m.visible && m.parent?.visible).map(([k]) => k) };
+      // Lot 3g : décor léger (maillages « decor-leger ») : nombre, étage (userData.floor), dessinés ou non, triangles, éléments par étage.
+      const decorMeshes = [];
+      scene.traverse((m) => {
+        if (m.isMesh && m.name === 'decor-leger') decorMeshes.push({ floor: m.userData.floor, group: m.parent?.name, drawn: m.visible && m.parent?.visible === true, triangles: m.geometry.attributes.position.count / 3 });
+      });
+      return { exteriorY: groups.exterieur.position.y, elevation: elevationNow, visible: Object.fromEntries(Object.entries(groups).map(([k, g]) => [k, visibleOf(g)])), slab: slab ? slab.visible && groups.etage.visible : false, fence: groups.etage.children.filter((m) => m.name === 'garde-corps').length, marks: [...marks].filter(([, m]) => m.visible && m.parent?.visible).map(([k]) => k), decor: { meshes: decorMeshes, items: decorCount } };
     },
     setFog(distance) {
       scene.fog.near = distance * render.fog.near;

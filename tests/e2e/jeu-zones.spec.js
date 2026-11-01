@@ -621,7 +621,7 @@ test.describe('zones : mobilier de complément, budget, interface', () => {
     await page.evaluate(() => window.__zs.killAll());
     const closed = await measure('porte');
     console.log(`BUDGET lot 3c, porte fermée à l'écran : ${closed.calls} appels, ${closed.triangles} triangles`);
-    expect(closed.calls).toBeLessThanOrEqual(REF.calls + 5); // lot 3e : au plus 5 appels de plus que la référence
+    expect(closed.calls).toBeLessThanOrEqual(REF.calls + 5 + 6); // lot 3e : au plus 5 appels de plus que la référence ; lot 3g : + 6 au plus pour le décor léger (avant : + 5)
     expect(closed.triangles).toBeLessThanOrEqual(30000);
     await page.evaluate(() => window.__zs.setDoor('porte-1', true));
     const opened = await measure('porte');

@@ -182,10 +182,12 @@ test.describe('zones jouables sur la nouvelle géométrie', () => {
   });
 });
 
-test.describe('budgets de rendu après la partie B (≤ référence + 300 triangles)', () => {
+// Mesurés avec ?detail=0 : le budget de la partie B porte sur la géométrie corrigée ; le décor léger et les textures de la partie C ont leurs
+// propres budgets (tests/e2e/atelier-detail.spec.js : + 1 500 triangles et + 6 appels).
+test.describe('budgets de rendu après la partie B (≤ référence + 300 triangles, sans le détail de la partie C)', () => {
   for (const [id, sc] of Object.entries(SCENES)) {
     test(`${id} : appels et triangles`, async ({ page }, testInfo) => {
-      await open(page, `${sc.url}&shadows=1`);
+      await open(page, `${sc.url}&shadows=1&detail=0`);
       const r = await page.evaluate(({ at, floor, wave }) => {
         const zs = window.__zs;
         zs.setPlayer(at[0], at[1]);
