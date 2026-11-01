@@ -279,15 +279,14 @@ test.describe('planches et débris sur les vraies fenêtres', () => {
   });
 
   // Lot 3g (retours du propriétaire) : murs jusqu'au plafond : les carrés sont incrustés dans la face du mur au-dessus de la fenêtre (61 de haut), sur la face que voit la
-  // caméra (F8 est au sud : face extérieure) ; ?murs=bas : sur le dessus du mur, à sa hauteur (60), comme avant.
+  // caméra (F8 est au sud : face extérieure ; la face est vérifiée par atelier-retours.test.js) ; ?murs=bas : sur le dessus du mur, à sa hauteur (60), comme avant.
   for (const [extra, side, y0, y1] of [['', 'exterieur', 61, 61.01], ['&murs=bas', 'dessus', 60, 61]]) {
     test(`les quatre carrés de F8 (sud ; F7 retirée au lot 3g) sont visibles : ${side}, à ${y0} de haut${extra}`, async ({ page }) => {
       await open(page, extra);
-      const rows = await page.evaluate(() => window.__zs.getState().windows.filter((w) => ['F8'].includes(w.id)).map((w) => ({ id: w.id, pips: w.mesh.pipsOn, y: w.mesh.pipY, side: w.mesh.pipSide, tri: w.mesh.triangles })));
+      const rows = await page.evaluate(() => window.__zs.getState().windows.filter((w) => ['F8'].includes(w.id)).map((w) => ({ id: w.id, pips: w.mesh.pipsOn, y: w.mesh.pipY, tri: w.mesh.triangles })));
       expect(rows).toHaveLength(1);
       for (const r of rows) {
         expect(r.pips).toBe(4);
-        expect(r.side).toBe(side);
         expect(r.y).toBeGreaterThanOrEqual(y0);
         expect(r.y).toBeLessThan(y1);
         expect(r.tri).toBeGreaterThanOrEqual(38);

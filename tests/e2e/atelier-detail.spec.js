@@ -217,7 +217,8 @@ test.describe('décor léger : non solide, par étage, sans fuite', () => {
     const d = (await STATE(page)).scene.decor;
     expect(d.meshes.length).toBe(2);
     expect(d.meshes.reduce((s, m) => s + m.triangles, 0)).toBeLessThanOrEqual(1500);
-    expect(d.meshes.reduce((s, m) => s + m.triangles, 0)).toBe(decor.triangles);
+    // Retours du propriétaire : les grilles (20 triangles chacune au catalogue) sont dessinées avec les murs (vrais barreaux), pas dans le maillage du décor léger.
+    expect(d.meshes.reduce((s, m) => s + m.triangles, 0)).toBe(decor.triangles - 20 * decor.items.filter((it) => it.kind === 'grille').length);
   });
 
   test('10 allers-retours d\'étage : ni géométrie ni texture de plus', async ({ page }) => {
