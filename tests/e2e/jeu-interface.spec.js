@@ -36,7 +36,7 @@ test.describe('HUD compact E2-2', () => {
   test('au repos : au plus 96 px de haut et 300 px de large, marges de 16 px, sans chevaucher Pause (667×375)', async ({ page }) => {
     await open(page);
     const s = await STATE(page);
-    expect(s.hud.height).toBeLessThanOrEqual(156);
+    expect(s.hud.height).toBeLessThanOrEqual(96);
     expect(s.hud.width).toBeLessThanOrEqual(300);
     const hud = await rect(page, '#hud');
     const pause = await rect(page, '#btn-pause');
@@ -45,7 +45,7 @@ test.describe('HUD compact E2-2', () => {
     expect(apart(hud, pause)).toBe(true);
   });
 
-  test('pendant une vague avec trois fenêtres en alerte : toujours 156 × 300 au plus (cinq lignes depuis le lot 4 ; avant : 96 × 300)', async ({ page }) => {
+  test('pendant une vague avec trois fenêtres en alerte : toujours 120 × 300 au plus (cinq lignes depuis le lot 4 ; avant : 96 × 300)', async ({ page }) => {
     await open(page, '&nospawn=0');
     await page.evaluate(() => {
       const zs = window.__zs;
@@ -56,13 +56,13 @@ test.describe('HUD compact E2-2', () => {
     });
     const s = await STATE(page);
     expect(s.hud.chips).toHaveLength(3);
-    expect(s.hud.height).toBeLessThanOrEqual(156);
+    expect(s.hud.height).toBeLessThanOrEqual(96);
     expect(s.hud.width).toBeLessThanOrEqual(300);
     await expect(page.locator('#hud-wave')).toHaveText('Vague 1');
     await expect(page.locator('#hud-remaining')).toBeVisible();
   });
 
-  test('« Vague N » garde la police de titre, de 22 à 26 px ; le reste la police de lecture', async ({ page }) => {
+  test('« Vague N » garde la police de titre, de 16 à 26 px (16 depuis le lot 4 : bloc à part, plus petit) ; le reste la police de lecture', async ({ page }) => {
     await open(page, '&nospawn=0');
     await page.evaluate(() => window.__zs.step(3.5));
     const f = await page.evaluate(() => {
@@ -70,7 +70,7 @@ test.describe('HUD compact E2-2', () => {
       return { wave: css('#hud-wave'), kills: css('#hud-kills'), remaining: css('#hud-remaining') };
     });
     expect(f.wave.family).toMatch(/Rubik Wet Paint/);
-    expect(f.wave.size).toBeGreaterThanOrEqual(22);
+    expect(f.wave.size).toBeGreaterThanOrEqual(16);
     expect(f.wave.size).toBeLessThanOrEqual(26);
     expect(f.kills.family).toMatch(/Barlow/);
     expect(f.remaining.family).toMatch(/Barlow/);
@@ -179,7 +179,7 @@ test.describe('HUD en un seul rectangle noir, sans état des fenêtres', () => {
     await attack(page, 'fenetre-nord');
     const s = await STATE(page);
     expect(s.hud.chips.map((c) => c.id)).toEqual(['fenetre-ouest', 'fenetre-est', 'fenetre-nord']);
-    expect(s.hud.height).toBeLessThanOrEqual(156);
+    expect(s.hud.height).toBeLessThanOrEqual(96);
     expect(s.hud.width).toBeLessThanOrEqual(300);
   });
 });
@@ -234,7 +234,7 @@ test.describe('E2-11 retiré', () => {
 test.describe('structure, accessibilité, hygiène', () => {
   test('l\'ordre des blocs dans le HTML : E2-2, E2-8, E2-10, E2-5, E2-3, E2-4', async ({ page }) => {
     await open(page);
-    const order = await page.evaluate(() => [...document.querySelectorAll('#game-root > [data-block]')].map((e) => e.dataset.block));
+    const order = await page.evaluate(() => [...document.querySelectorAll('#game-root [data-block]')].map((e) => e.dataset.block));
     expect(order).toEqual(['E2-2', 'E2-8', 'E2-10', 'E2-5', 'E2-3', 'E2-4']);
   });
 
@@ -297,7 +297,7 @@ test.describe('écran d\'accueil (jeu.html seulement)', () => {
 
   test('les marges de sécurité sont respectées : le HUD et les flèches s\'appuient sur --safe-*', async () => {
     const css = readFileSync('css/game.css', 'utf8');
-    expect(css).toMatch(/\.hud \{[^}]*var\(--game-margin\) \+ var\(--safe-top\)[^}]*var\(--game-margin\) \+ var\(--safe-left\)/s);
+    expect(css).toMatch(/\.hud-left \{[^}]*var\(--game-margin\) \+ var\(--safe-top\)[^}]*var\(--game-margin\) \+ var\(--safe-left\)/s);
     expect(readFileSync('js/game/game.js', 'utf8')).toMatch(/--safe-/);
   });
 });

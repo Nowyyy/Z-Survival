@@ -894,7 +894,7 @@ test.describe('sons, budget, interface', () => {
     expect(await page.locator('#fps-counter').count()).toBe(0);
   });
 
-  test('HUD : au plus 156 × 300 (cinq lignes depuis le lot 4 ; avant : 96 × 300) px avec la puce d\'étage, marges de 16 px, texte de 14 px au moins, sans chevaucher Pause', async ({ page }) => {
+  test('HUD : au plus 96 × 300 px avec la puce d\'étage, marges de 16 px, texte de 14 px au moins, sans chevaucher Pause', async ({ page }) => {
     await open(page, '&wave=21&floor=1&nospawn=1');
     const r = await page.evaluate(() => {
       const hud = document.getElementById('hud').getBoundingClientRect();
@@ -904,7 +904,7 @@ test.describe('sons, budget, interface', () => {
       return { w: hud.width, h: hud.height, left: hud.left, top: hud.top, chipFont: parseFloat(getComputedStyle(chip).fontSize), chipInside: c.right <= hud.right + 1 && c.bottom <= hud.bottom + 1, overlap: !(hud.right <= pause.left || hud.left >= pause.right || hud.bottom <= pause.top || hud.top >= pause.bottom) };
     });
     expect(r.w).toBeLessThanOrEqual(300);
-    expect(r.h).toBeLessThanOrEqual(156);
+    expect(r.h).toBeLessThanOrEqual(96);
     expect(r.left).toBeGreaterThanOrEqual(16);
     expect(r.top).toBeGreaterThanOrEqual(16);
     expect(r.chipFont).toBeGreaterThanOrEqual(14);

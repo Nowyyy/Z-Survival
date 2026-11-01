@@ -655,7 +655,7 @@ test.describe('zones : mobilier de complément, budget, interface', () => {
     await open(page, '&nospawn=1');
     const s = await STATE(page);
     expect(s.hud.width).toBeLessThanOrEqual(300);
-    expect(s.hud.height).toBeLessThanOrEqual(156);
+    expect(s.hud.height).toBeLessThanOrEqual(96);
     const blocks = await page.evaluate(() => [...document.querySelectorAll('#game-root [data-block]')].map((el) => el.dataset.block));
     expect(blocks).toEqual(['E2-2', 'E2-8', 'E2-10', 'E2-5', 'E2-3', 'E2-4']);
     expect(await page.locator('[data-block="E2-9"], [data-block="E2-11"]').count()).toBe(0);

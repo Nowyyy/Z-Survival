@@ -562,23 +562,28 @@ test.describe('interface', () => {
     await expect(page.locator('#hud-money svg')).toHaveAttribute('aria-hidden', 'true');
   });
 
-  test('HUD : « Vague 1 / 40 » sur la ligne du bas, l\'argent seul sur sa ligne, largeur du HUD indépendante du montant', async ({ page }) => {
+  test('haut de l\'écran : bloc d\'interface, argent à sa droite, « Vague 1 / 40 » avant le bouton Pause (icône) ; largeur du HUD indépendante du montant', async ({ page }) => {
     await open(page);
     await step(page, 0.2);
     await expect(page.locator('#hud-wave')).toHaveText('Vague 1 / 40');
+    await expect(page.locator('#btn-pause')).toHaveAccessibleName('Pause');
+    await expect(page.locator('#btn-pause')).toHaveText('');
     const rows = () => page.evaluate(() => {
       const r = (sel) => document.querySelector(sel).getBoundingClientRect();
-      return { hudW: r('#hud').width, life: r('.hud-life-row').bottom, money: r('#hud-money').top, moneyBottom: r('#hud-money').bottom, wave: r('#hud-wave').top };
+      return { hud: r('#hud'), money: r('#hud-money'), wave: r('#hud-wave'), pause: r('#btn-pause') };
     });
     const a = await rows();
-    expect(a.money).toBeGreaterThanOrEqual(a.life);
-    expect(a.wave).toBeGreaterThanOrEqual(a.moneyBottom);
+    expect(a.money.left).toBeGreaterThanOrEqual(a.hud.right);
+    expect(a.wave.left).toBeGreaterThan(a.money.right);
+    expect(a.wave.right).toBeLessThanOrEqual(a.pause.left);
+    expect(a.pause.width).toBeGreaterThanOrEqual(44);
+    expect(a.pause.height).toBeGreaterThanOrEqual(44);
     await page.evaluate(() => { window.__zs.giveMoney(9_999_999); window.__zs.step(0.1); });
     const b = await rows();
-    expect(b.hudW).toBe(a.hudW);
+    expect(b.hud.width).toBe(a.hud.width);
   });
 
-  test('HUD ≤ 300 × 156 px à 667×375 (cinq lignes) dans le pire cas, sans chevauchement avec Pause et E2-10', async ({ page }) => {
+  test('HUD ≤ 300 × 96 px à 667×375 dans le pire cas, sans chevauchement avec Pause et E2-10', async ({ page }) => {
     await open(page, `${LOCAL}&floor=1&wave=40`);
     const m = await page.evaluate(() => {
       const z = window.__zs;
@@ -596,9 +601,9 @@ test.describe('interface', () => {
     });
     expect(m.text).toContain('Étage');
     expect(m.hud.width).toBeLessThanOrEqual(300);
-    expect(m.hud.height).toBeLessThanOrEqual(156);
+    expect(m.hud.height).toBeLessThanOrEqual(96);
     expect(m.hud.right).toBeLessThanOrEqual(m.pause.left);
-    expect(m.hud.bottom).toBeLessThan(m.vh * 0.5); // à 667×375 : 16 + 152 = 168 px, sous la moitié de la hauteur // E2-10 est au tiers bas (84 % de la hauteur) : jamais sous le HUD
+    expect(m.hud.bottom).toBeLessThan(m.vh * 0.5); // E2-10 est au tiers bas (84 % de la hauteur) : jamais sous le HUD
   });
 
   test('« +N » : un seul élément, agrégé, décoratif (aria-hidden), qui s\'efface ensuite', async ({ page }) => {

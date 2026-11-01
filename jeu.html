@@ -69,6 +69,7 @@
       <div class="vhs-grain"></div>
       <div class="vhs-track"></div>
     </div>
+    <div class="hud-left">
     <div id="hud" class="hud" data-block="E2-2">
       <div class="hud-life-row">
         <svg class="hud-icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M8 14.5 1.8 8.3A3.6 3.6 0 0 1 8 3.9a3.6 3.6 0 0 1 6.2 4.4Z"/></svg>
@@ -84,9 +85,12 @@
         <p id="hud-kills" class="hud-chip"></p>
       </div>
       <p id="hud-floor" class="hud-chip hud-floor" hidden></p>
-      <p id="hud-money" class="hud-chip hud-money"><svg class="hud-coin" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><circle cx="8" cy="8" r="6.5"/><path d="M8 4.2v7.6M5.6 6.2h3.7a1.2 1.2 0 0 1 0 2.4H6.7a1.2 1.2 0 0 0 0 2.4h3.7"/></svg><span id="hud-money-text"></span><span id="hud-gain" class="hud-gain" aria-hidden="true"></span></p>
-      <p id="hud-wave" class="hud-wave" hidden></p>
     </div>
+    <div class="hud-block">
+      <p id="hud-money" class="hud-chip hud-money"><svg class="hud-coin" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><circle cx="8" cy="8" r="6.5"/><path d="M8 4.2v7.6M5.6 6.2h3.7a1.2 1.2 0 0 1 0 2.4H6.7a1.2 1.2 0 0 0 0 2.4h3.7"/></svg><span id="hud-money-text"></span><span id="hud-gain" class="hud-gain" aria-hidden="true"></span></p>
+    </div>
+    </div>
+    <p id="hud-wave" class="hud-wave" hidden></p>
     <div id="wave-announce" class="wave-announce" data-block="E2-8" aria-hidden="true">
       <div class="wave-announce-veil"></div>
       <div class="wave-announce-body">
@@ -106,7 +110,7 @@
       </div>
     </div>
     <div id="labels" class="map-labels" aria-hidden="true" hidden></div>
-    <button id="btn-pause" class="button pause-button" data-block="E2-5" type="button" data-i18n="game.pause.open"></button>
+    <button id="btn-pause" class="button pause-button" data-block="E2-5" type="button" data-i18n-label="game.pause.open"><svg viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M4.5 3h2.4v10H4.5zM9.1 3h2.4v10H9.1z"/></svg></button>
     <div id="stick-left" class="stick" data-block="E2-3" aria-hidden="true" hidden>
       <div class="stick-base"></div>
       <div class="stick-knob"></div>

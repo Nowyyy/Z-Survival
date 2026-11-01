@@ -53,7 +53,7 @@ Avant de modifier une page, lis `Docs/ref/conventions.md` (arborescence, pages, 
 - Siège : siege.js (approche, attente, arrache, escalade, dedans, libre) ; 2 emplacements, file de 6, 2 grimpeurs ; jamais d'entrée sans fenêtre ouverte ni active ; ?empty=1 : zombies libres.
 - Chutes : player-down.js ; 1 chute de base, à terre 5 s invulnérable, relevage à 50 % ; stats chutes (0 à 5), reparation (0 à 10).
 - Planches : plank-layout.js (pivot au bas) ; un maillage par fenêtre, 42 triangles au plus ; débris à plat, à l'infini.
-- HUD : un seul rectangle E2-2 (156 × 300 px au plus ; 5 lignes : vie, restants, étage, argent, vague) ; E2-9 et E2-11 retirés ; E2-10 (à terre) ; marges 16 px + safe-area ; icônes SVG ; texte ≥ 14 px ; #hud-live annonce les événements.
+- HUD : bloc E2-2 (96 × 300 px au plus : vie, restants, étage), puis bloc d'argent à sa droite ; vague « Vague 1 / 40 » et bouton Pause (icône) à droite ; E2-9 et E2-11 retirés ; E2-10 (à terre) ; marges 16 px + safe-area ; icônes SVG ; texte ≥ 14 px ; #hud-live annonce les événements.
 - jeu.html : apple-mobile-web-app-capable (essai sans barres de Safari) ; pas de manifeste.
 - Journal des versions : chaque lot ajoute une entrée à data/changelog.json et adapte data-changelog et dev.spec.
 - Effet VHS : #vhs (vhs.js, horloge réelle) ; interdits : mix-blend-mode, filter, backdrop-filter, post-traitement 3D ; ?vhs=0|1 ; coupé en mouvement réduit.

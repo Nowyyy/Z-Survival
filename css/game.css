@@ -69,27 +69,65 @@ body.game {
   position: absolute;
   top: calc(var(--game-margin) + var(--safe-top));
   right: calc(var(--game-margin) + var(--safe-right));
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  padding: 0;
   cursor: pointer;
+}
+
+/* Bouton Pause réduit à une icône (retour du propriétaire : gagner de la place) ; le nom accessible vient de aria-label. */
+.pause-button svg {
+  width: 20px;
+  height: 20px;
+  fill: currentColor;
 }
 
 /* HUD (E2-2, lot 3a) : compact, en haut à gauche, trois rangées au plus (96 px de haut et 300 px de large à 667×375) : la barre de vie avec « 100/100 »
    dedans et la puce des chutes (jusqu'à 6 silhouettes : elle ne tient pas dans la rangée 2), les puces (vague, restants ou compte à rebours, tués), puis les seules fenêtres attaquées ou ouvertes (rangée masquée, sans réserver de
    hauteur, quand tout va bien). Chaque puce est une zone pleine (--hud-bg) : le texte n'est jamais posé directement sur le jeu. Ni filter, ni
    mix-blend-mode, ni backdrop-filter. */
-.hud {
+/* Haut de l'écran, de gauche à droite : le bloc d'interface (vie, restants, étage) puis le bloc d'argent, [« Touche ici pour activer le son » au centre], la vague, le bouton Pause. */
+.hud-left {
   position: absolute;
   top: calc(var(--game-margin) + var(--safe-top));
   left: calc(var(--game-margin) + var(--safe-left));
+  z-index: 2;
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+  pointer-events: none;
+}
+
+.hud-block {
+  position: relative;
+}
+
+.hud {
   display: flex;
   flex-direction: column;
-  gap: var(--hud-gap);
+  gap: 2px;
   box-sizing: border-box;
   width: max-content;
-  max-width: min(300px, calc(100% - 2 * var(--game-margin) - 8rem));
-  padding: 6px 8px;
+  flex: none;
+  max-width: min(300px, calc(100vw - 2 * var(--game-margin) - 8rem));
+  padding: 4px 6px;
   border-radius: var(--hud-radius);
   background: color-mix(in srgb, var(--hud-bg) calc(var(--hud-bg-alpha) * 100%), transparent);
   pointer-events: none;
+}
+
+/* Compact (retours du propriétaire : l'interface prenait trop de place) : le rectangle noir de #hud ne contient que la vie, les restants et l'étage ; l'argent et la vague
+   sont des blocs à part, chacun sur sa propre puce pleine. */
+.hud-money,
+.hud-wave {
+  box-sizing: border-box;
+  padding: 0 6px;
+  border-radius: var(--hud-radius);
+  background: color-mix(in srgb, var(--hud-bg) calc(var(--hud-bg-alpha) * 100%), transparent);
 }
 
 .hud-life-row,
@@ -124,8 +162,8 @@ body.game {
   display: inline-flex;
   align-items: center;
   gap: var(--hud-gap);
-  height: 24px;
-  padding: 0 4px;
+  height: 20px;
+  padding: 0;
   font-size: var(--text-sm);
   font-weight: 700;
   line-height: 1;
@@ -160,7 +198,7 @@ body.game {
   border-radius: var(--radius-sm);
   flex: 1;
   min-width: 64px; /* lot 4 : 96 avant ; la puce d'argent partage la rangée (6 chutes + 9,9 M tiennent dans 300 px) */
-  height: 24px;
+  height: 20px;
   overflow: hidden;
   border-width: 2px;
   background: var(--color-surface);
@@ -189,10 +227,9 @@ body.game {
 .hud-wave {
   display: flex;
   align-items: center;
-  height: 28px;
-  padding: 0 4px;
+  height: 22px;
   font-family: var(--font-display);
-  font-size: 1.375rem;
+  font-size: 1rem;
   font-weight: 400;
   line-height: 1;
   letter-spacing: 0.02em;
@@ -634,7 +671,7 @@ body.game {
   left: 50%;
   z-index: 5;
   transform: translateX(-50%);
-  max-width: 40vw;
+  max-width: 30vw;
 }
 
 /* Voile du fondu entre étages (lot 3e) : décoratif, de la couleur de la brume, entre le canvas et l'effet VHS (ordre du DOM) ; opacité = voile (floor-fade.js). */
@@ -781,7 +818,7 @@ body.game {
 }
 
 /* Le HUD et le bouton Pause restent lisibles au-dessus du voile de bord. */
-.hud,
+.hud-wave,
 .pause-button {
   z-index: 2;
 }
@@ -891,13 +928,13 @@ body.game {
   color: var(--color-money);
 }
 
-/* « +N » : hors du rectangle (à sa droite), sur une puce pleine, pour ne jamais agrandir le HUD ; décoratif (aria-hidden), sans animation. */
+/* « +N » : sous la puce d'argent, sur une puce pleine, pour ne jamais agrandir le HUD ; décoratif (aria-hidden), sans animation. */
 .hud-gain {
   position: absolute;
-  top: 0;
-  left: calc(100% + var(--hud-gap));
+  top: calc(100% + 2px);
+  left: 0;
   box-sizing: border-box;
-  height: 24px;
+  height: 22px;
   padding: 0 6px;
   border-radius: var(--hud-radius);
   background: color-mix(in srgb, var(--hud-bg) calc(var(--hud-bg-alpha) * 100%), transparent);
@@ -948,4 +985,12 @@ a.button {
   #pause-panel #pause-save {
     grid-column: 1 / -1;
   }
+}
+
+/* Vague (retour du propriétaire) : bloc à part, entre « Touche ici pour activer le son » (centre) et le bouton Pause, centré sur lui ; « Vague 1 / 40 » en police titre. */
+.hud-wave {
+  position: absolute;
+  top: calc(var(--game-margin) + var(--safe-top) + 11px);
+  right: calc(var(--game-margin) + var(--safe-right) + 48px);
+  align-self: auto;
 }
