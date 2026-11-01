@@ -109,7 +109,8 @@ export function createHud(dict, root = document) {
       if (extras.chutes !== shownChutes) {
         shownChutes = extras.chutes;
         const n = Number.isInteger(extras.chutes) && extras.chutes > 0 ? extras.chutes : 0;
-        chuteIcons.replaceChildren(...Array.from({ length: n }, silhouette));
+        // Retour du propriétaire : une seule silhouette, seul le nombre à côté change (avant : une silhouette par chute restante).
+        if (chuteIcons.childElementCount === 0) chuteIcons.replaceChildren(silhouette());
         chuteText.textContent = fmt(dict[DOWN_TEXTS.chutes], { n });
         chutes.setAttribute('aria-label', fmt(dict[DOWN_TEXTS.chutesLabel], { n }));
       }

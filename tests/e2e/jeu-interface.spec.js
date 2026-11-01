@@ -91,17 +91,17 @@ test.describe('HUD compact E2-2', () => {
     await expect(bar).toHaveAttribute('aria-valuenow', /^\d+$/);
   });
 
-  test('chutes : une silhouette avec un « + » par chute restante et le nombre, sans le mot « Chutes »', async ({ page }) => {
+  test('chutes : une seule silhouette avec un « + » et le nombre de chutes à côté (seul le nombre change), sans le mot « Chutes »', async ({ page }) => {
     for (const [lvl, n] of [['', 1], ['&lvl=chutes:2', 3]]) {
       await open(page, lvl);
       const r = await page.evaluate(() => ({ icons: document.querySelectorAll('#hud-chutes-icons svg').length, text: document.getElementById('hud-chutes').textContent, label: document.getElementById('hud-chutes').getAttribute('aria-label'), pluses: document.querySelectorAll('#hud-chutes-icons .hud-plus').length }));
-      expect(r.icons).toBe(n);
+      expect(r.icons).toBe(1); // avant le lot 4 : n silhouettes
       expect(r.text).toBe(String(n));
-      expect(r.pluses).toBe(n);
+      expect(r.pluses).toBe(1);
       expect(r.label).toBe(`Chutes restantes : ${n}`);
     }
     await page.evaluate(() => { window.__zs.downPlayer(); window.__zs.step(0.1); });
-    expect(await page.locator('#hud-chutes-icons svg').count()).toBe(2);
+    expect(await page.locator('#hud-chutes-icons svg').count()).toBe(1);
     await expect(page.locator('#hud-chutes')).toHaveText('2');
   });
 

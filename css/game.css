@@ -904,9 +904,10 @@ body.game {
 
 /* Argent (lot 4) : puce d'argent du HUD E2-2 (pièce en SVG, montant court, « +N » décoratif) ; aucune animation (le « +N » apparaît et disparaît d'un coup,
    quel que soit prefers-reduced-motion : jamais de clignotement). Jaune réservé à l'argent. */
-.hud-money {
+.hud-chip.hud-money {
   position: relative;
-  gap: 3px;
+  gap: 4px;
+  padding-left: 8px; /* la pièce ne touche plus le bord du rectangle */
   /* Rectangle fixe : le montant (0 à « 9,9 M ») change dans un cadre qui ne bouge pas. */
   width: 5.5rem;
 }
