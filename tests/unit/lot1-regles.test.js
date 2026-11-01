@@ -58,6 +58,8 @@ describe('mêmes règles qu\'au lot 1', () => {
       'audio-analysis', 'synth2', 'synth2-dsp', 'synth2-sources', 'atelier-check', 'atelier-choices', 'sound-cache', 'wave-svg', 'scenes-sons',
       // Lot 3i : sons de l'atelier intégrés au jeu (modules nouveaux ; sound-director étendu, déjà listé).
       'sound-choice', 'sound-render'].map((n) => `js/core/${n}.js`); // lot 3g : relevé, écarts, visite, décisions, décor léger, aspect du mobilier ; lot 4 : économie, sauvegarde
+    allowed.push('js/core/ui-mock.js'); // lot 3k : atelier de l'interface (nouveau fichier)
+    allowed.push('js/core/ui-measure.js'); // lot 3k : atelier de l'interface (nouveau fichier)
     expect(changed.filter((f) => !allowed.includes(f))).toEqual([]);
   });
 });

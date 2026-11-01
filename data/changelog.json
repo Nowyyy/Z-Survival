@@ -138,6 +138,13 @@
       "Sons nouveaux : pas dehors et dans l'escalier, allures des zombies, craquement, escalade, cœur, vent, feu, grincements, porte.",
       "?sons=ancien pour réentendre les anciens, ?sons=A, B ou C pour une variante."
     ] },
+    { "name": "lot-3k", "titre": "Atelier de l'interface", "points": [
+      "Nouvelle page technique atelier-interface.html : l'interface actuelle du jeu et trois directions de refonte (sobre, caméscope, tactile), sur 7 tailles d'écran et dans de nombreux états, avec le vrai jeu en fond.",
+      "Chaque vue est mesurée : place occupée à l'écran, taille des textes, contrastes, cibles tactiles, zones de sécurité et zones des pouces ; tout écart est écrit en toutes lettres.",
+      "Menu, boutique, réglages et classement en maquettes, avec de fausses données annoncées comme telles ; cinq propositions de priorité 2 (retour de dégâts, vie faible, aide de démarrage, curseur de visée, nouvelle zone).",
+      "Comparaison côte à côte et texte « Mes choix » à copier ; après les premiers choix, le HUD caméscope est retouché (vie en texte, mots entiers, argent et tués alignés sur le bouton Pause).",
+      "Rien n'est encore intégré au jeu : l'intégration se fera au lot 4b."
+    ] },
     { "name": "lot-4b", "titre": "Intégration des refontes", "points": [
       "En cours : branche d'intégration des refontes, réunies ici avant d'entrer dans le jeu publié.",
       "Atelier de la carte (lot 3g) intégré : carte corrigée d'après le modèle 3D, mobilier redessiné, vraies portes et éboulis, murs jusqu'au plafond, mur percé autour du joueur caché, feux, extérieur plus vivant et brouillard en volutes.",

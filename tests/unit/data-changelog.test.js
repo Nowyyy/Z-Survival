@@ -20,6 +20,8 @@ describe('data/changelog.json', () => {
     const names = lots.map((e) => e.name);
     expect(new Set(names).size).toBe(names.length);
     expect(names).toContain('lot-4b');
+    expect(names).toContain('lot-4');
+    expect(names).toContain('lot-3k'); // lot 3k fusionné dans lot-4b
   });
 
   it('chaque bilan de Docs/lots/ a son entrée', () => {
