@@ -1,0 +1,1357 @@
+{
+ "_provisoire": "Personnages du lot 3j (valeurs provisoires, purement visuelles). current : description fidèle du personnage actuel (js/game/character.js, data/game/zombie-variants.json : mêmes pièces, mêmes triangles ; regions = régions de l'atlas atlas-persos de textures.json) ; variants : variantes v2 (A « déchu réaliste » / « survivant tactique », B « horreur marquée » / « civil débrouillard », C « lisible d'abord », riche hors budget). Pièces : { id, piece, joint, kind, dims, offset, rotation (Euler XYZ), palette (clé de la palette de la variante) ou region (actuel), material, casts, mirror } ; palette : jetons --perso-* de css/tokens.css ; macros : curseurs (pas entiers de min à max, effet par pas) ; outfits : tenues (palettes) ; wear : paliers d'usure ; anchors : points d'attache du sang (articulation et décalage).",
+ "version": 1,
+ "slots": [
+  {
+   "id": "joueur",
+   "label": "Joueur",
+   "current": {
+    "source": "data/game/zombie-variants.json",
+    "key": "player",
+    "kind": "player",
+    "skeleton": "v1",
+    "scale": 1,
+    "lean": 0,
+    "headTilt": 0,
+    "armLift": 0,
+    "dominant": "--game-jacket",
+    "regions": {
+     "outfit": "veste",
+     "trousers": "jean",
+     "boot": "botte",
+     "hair": "cheveux",
+     "skin": "peau",
+     "gun": "arme",
+     "sleeves": "veste"
+    },
+    "parts": [
+     {
+      "id": "pelvis",
+      "piece": "pelvis",
+      "joint": "pelvis",
+      "kind": "capsule",
+      "dims": {
+       "r": 3.6,
+       "h": 15,
+       "caps": 1,
+       "radial": 8,
+       "sz": 0.62
+      },
+      "offset": [
+       -1.5,
+       0,
+       0
+      ],
+      "rotation": [
+       0,
+       0,
+       1.5707963267948966
+      ],
+      "region": "trousers",
+      "casts": true
+     },
+     {
+      "id": "torso",
+      "piece": "torso",
+      "joint": "torso",
+      "kind": "capsule",
+      "dims": {
+       "r": 5,
+       "h": 19,
+       "caps": 2,
+       "radial": 8,
+       "sx": 1.85
+      },
+      "offset": [
+       0,
+       9.5,
+       0
+      ],
+      "region": "outfit",
+      "casts": true
+     },
+     {
+      "id": "head",
+      "piece": "head",
+      "joint": "head",
+      "kind": "sphere",
+      "dims": {
+       "rx": 4.7,
+       "ry": 5.2,
+       "rz": 4.9,
+       "w": 8,
+       "h": 5
+      },
+      "offset": [
+       0,
+       5.4,
+       0
+      ],
+      "region": "skin",
+      "casts": true
+     },
+     {
+      "id": "hair",
+      "piece": "head",
+      "joint": "head",
+      "kind": "sphere",
+      "dims": {
+       "rx": 5,
+       "ry": 3,
+       "rz": 5.2,
+       "w": 8,
+       "h": 3
+      },
+      "offset": [
+       0,
+       8.2,
+       -0.3
+      ],
+      "region": "hair",
+      "casts": true
+     },
+     {
+      "id": "upperL",
+      "piece": "upperL",
+      "joint": "shoulderL",
+      "kind": "capsule",
+      "dims": {
+       "r": 2.5,
+       "h": 10,
+       "caps": 1,
+       "radial": 6
+      },
+      "offset": [
+       0,
+       -5,
+       0
+      ],
+      "region": "outfit",
+      "mirror": true
+     },
+     {
+      "id": "foreL",
+      "piece": "foreL",
+      "joint": "elbowL",
+      "kind": "capsule",
+      "dims": {
+       "r": 2.1,
+       "h": 10,
+       "caps": 1,
+       "radial": 6
+      },
+      "offset": [
+       0,
+       -5,
+       0
+      ],
+      "region": "sleeves",
+      "mirror": true
+     },
+     {
+      "id": "handL",
+      "piece": "foreL",
+      "joint": "elbowL",
+      "kind": "sphere",
+      "dims": {
+       "rx": 2.3,
+       "ry": 2.3,
+       "rz": 2.3,
+       "w": 6,
+       "h": 4
+      },
+      "offset": [
+       0,
+       -10.4,
+       0.3
+      ],
+      "region": "skin",
+      "mirror": true
+     },
+     {
+      "id": "thighL",
+      "piece": "thighL",
+      "joint": "hipL",
+      "kind": "capsule",
+      "dims": {
+       "r": 3.2,
+       "h": 13,
+       "caps": 1,
+       "radial": 6
+      },
+      "offset": [
+       0,
+       -6,
+       0
+      ],
+      "region": "trousers",
+      "casts": true,
+      "mirror": true
+     },
+     {
+      "id": "shinL",
+      "piece": "shinL",
+      "joint": "kneeL",
+      "kind": "capsule",
+      "dims": {
+       "r": 2.6,
+       "h": 12.5,
+       "caps": 1,
+       "radial": 6
+      },
+      "offset": [
+       0,
+       -5.75,
+       0
+      ],
+      "region": "trousers",
+      "mirror": true
+     },
+     {
+      "id": "bootL",
+      "piece": "shinL",
+      "joint": "kneeL",
+      "kind": "sphere",
+      "dims": {
+       "rx": 3.3,
+       "ry": 2.15,
+       "rz": 5.6,
+       "w": 6,
+       "h": 4
+      },
+      "offset": [
+       0,
+       -12.95,
+       2.2
+      ],
+      "region": "boot",
+      "mirror": true
+     },
+     {
+      "id": "gunGrip",
+      "piece": "gun",
+      "joint": "wristR",
+      "kind": "box",
+      "dims": {
+       "w": 2.8,
+       "h": 8.5,
+       "d": 3.4
+      },
+      "offset": [
+       0,
+       -6.4,
+       1.4
+      ],
+      "region": "gun"
+     },
+     {
+      "id": "gunSlide",
+      "piece": "gun",
+      "joint": "wristR",
+      "kind": "box",
+      "dims": {
+       "w": 2.8,
+       "h": 3,
+       "d": 4.2
+      },
+      "offset": [
+       0,
+       -3.4,
+       -1.6
+      ],
+      "region": "gun"
+     }
+    ]
+   },
+   "variants": []
+  },
+  {
+   "id": "marcheur",
+   "label": "Marcheur",
+   "current": {
+    "source": "data/game/zombie-variants.json",
+    "key": "zombie.variants[0]",
+    "index": 0,
+    "kind": "zombie",
+    "skeleton": "v1",
+    "scale": 1,
+    "lean": 0.14,
+    "headTilt": 0,
+    "armLift": 0,
+    "dominant": "--game-cloth-1",
+    "regions": {
+     "outfit": "tenue-1",
+     "trousers": "pantalon-1",
+     "boot": "botte",
+     "skin": "peau-1",
+     "sleeves": "peau-1"
+    },
+    "parts": [
+     {
+      "id": "pelvis",
+      "piece": "pelvis",
+      "joint": "pelvis",
+      "kind": "capsule",
+      "dims": {
+       "r": 3.6,
+       "h": 15,
+       "caps": 1,
+       "radial": 8,
+       "sz": 0.62
+      },
+      "offset": [
+       -1.5,
+       0,
+       0
+      ],
+      "rotation": [
+       0,
+       0,
+       1.5707963267948966
+      ],
+      "region": "trousers",
+      "casts": true
+     },
+     {
+      "id": "torso",
+      "piece": "torso",
+      "joint": "torso",
+      "kind": "capsule",
+      "dims": {
+       "r": 5,
+       "h": 19,
+       "caps": 2,
+       "radial": 8,
+       "sx": 1.85
+      },
+      "offset": [
+       0,
+       9.5,
+       0
+      ],
+      "region": "outfit",
+      "casts": true
+     },
+     {
+      "id": "head",
+      "piece": "head",
+      "joint": "head",
+      "kind": "sphere",
+      "dims": {
+       "rx": 4.7,
+       "ry": 5.2,
+       "rz": 4.9,
+       "w": 8,
+       "h": 5
+      },
+      "offset": [
+       0,
+       5.4,
+       0
+      ],
+      "region": "skin",
+      "casts": true
+     },
+     {
+      "id": "upperL",
+      "piece": "upperL",
+      "joint": "shoulderL",
+      "kind": "capsule",
+      "dims": {
+       "r": 2.5,
+       "h": 10,
+       "caps": 1,
+       "radial": 6
+      },
+      "offset": [
+       0,
+       -5,
+       0
+      ],
+      "region": "outfit",
+      "mirror": true
+     },
+     {
+      "id": "foreL",
+      "piece": "foreL",
+      "joint": "elbowL",
+      "kind": "capsule",
+      "dims": {
+       "r": 2.1,
+       "h": 10,
+       "caps": 1,
+       "radial": 6
+      },
+      "offset": [
+       0,
+       -5,
+       0
+      ],
+      "region": "sleeves",
+      "mirror": true
+     },
+     {
+      "id": "handL",
+      "piece": "foreL",
+      "joint": "elbowL",
+      "kind": "sphere",
+      "dims": {
+       "rx": 2.3,
+       "ry": 2.3,
+       "rz": 2.3,
+       "w": 6,
+       "h": 4
+      },
+      "offset": [
+       0,
+       -10.4,
+       0.3
+      ],
+      "region": "skin",
+      "mirror": true
+     },
+     {
+      "id": "thighL",
+      "piece": "thighL",
+      "joint": "hipL",
+      "kind": "capsule",
+      "dims": {
+       "r": 3.2,
+       "h": 13,
+       "caps": 1,
+       "radial": 6
+      },
+      "offset": [
+       0,
+       -6,
+       0
+      ],
+      "region": "trousers",
+      "casts": true,
+      "mirror": true
+     },
+     {
+      "id": "shinL",
+      "piece": "shinL",
+      "joint": "kneeL",
+      "kind": "capsule",
+      "dims": {
+       "r": 2.6,
+       "h": 12.5,
+       "caps": 1,
+       "radial": 6
+      },
+      "offset": [
+       0,
+       -5.75,
+       0
+      ],
+      "region": "trousers",
+      "mirror": true
+     },
+     {
+      "id": "bootL",
+      "piece": "shinL",
+      "joint": "kneeL",
+      "kind": "sphere",
+      "dims": {
+       "rx": 3.3,
+       "ry": 2.15,
+       "rz": 5.6,
+       "w": 6,
+       "h": 4
+      },
+      "offset": [
+       0,
+       -12.95,
+       2.2
+      ],
+      "region": "boot",
+      "mirror": true
+     }
+    ]
+   },
+   "variants": [
+    {
+     "id": "essai",
+     "label": "Essai (lot 3j-A)",
+     "intent": "Prototype minimal du squelette v2 : les pièces actuelles sur la colonne en deux segments, le cou et les chevilles (sert à l'évaluation de l'architecture).",
+     "skeleton": "v2",
+     "scale": 1,
+     "palette": {
+      "peau": "--game-zombie-skin",
+      "tenue": "--game-cloth-1",
+      "pantalon": "--game-denim-worn",
+      "botte": "--game-boot"
+     },
+     "parts": [
+      {
+       "id": "pelvis",
+       "joint": "pelvis",
+       "kind": "capsule",
+       "dims": {
+        "r": 3.6,
+        "h": 15,
+        "caps": 1,
+        "radial": 8,
+        "sz": 0.62
+       },
+       "offset": [
+        -1.5,
+        0,
+        0
+       ],
+       "rotation": [
+        0,
+        0,
+        1.5707963267948966
+       ],
+       "palette": "pantalon",
+       "casts": true
+      },
+      {
+       "id": "belly",
+       "joint": "spine",
+       "kind": "taper",
+       "dims": {
+        "r0": 5.4,
+        "r1": 6,
+        "h": 9.5,
+        "sides": 8,
+        "sx": 1.6,
+        "sz": 0.95
+       },
+       "offset": [
+        0,
+        4.6,
+        0
+       ],
+       "palette": "tenue",
+       "casts": true
+      },
+      {
+       "id": "chest",
+       "joint": "chest",
+       "kind": "capsule",
+       "dims": {
+        "r": 5,
+        "h": 11,
+        "caps": 2,
+        "radial": 8,
+        "sx": 1.85
+       },
+       "offset": [
+        0,
+        5,
+        0
+       ],
+       "palette": "tenue",
+       "casts": true
+      },
+      {
+       "id": "head",
+       "joint": "head",
+       "kind": "sphere",
+       "dims": {
+        "rx": 4.7,
+        "ry": 5.2,
+        "rz": 4.9,
+        "w": 8,
+        "h": 5
+       },
+       "offset": [
+        0,
+        4.6,
+        0
+       ],
+       "palette": "peau",
+       "casts": true
+      },
+      {
+       "id": "upperL",
+       "joint": "shoulderL",
+       "kind": "capsule",
+       "dims": {
+        "r": 2.5,
+        "h": 10,
+        "caps": 1,
+        "radial": 6
+       },
+       "offset": [
+        0,
+        -5,
+        0
+       ],
+       "palette": "tenue",
+       "mirror": true
+      },
+      {
+       "id": "foreL",
+       "joint": "elbowL",
+       "kind": "capsule",
+       "dims": {
+        "r": 2.1,
+        "h": 10,
+        "caps": 1,
+        "radial": 6
+       },
+       "offset": [
+        0,
+        -5,
+        0
+       ],
+       "palette": "peau",
+       "mirror": true
+      },
+      {
+       "id": "thighL",
+       "joint": "hipL",
+       "kind": "capsule",
+       "dims": {
+        "r": 3.2,
+        "h": 13,
+        "caps": 1,
+        "radial": 6
+       },
+       "offset": [
+        0,
+        -6,
+        0
+       ],
+       "palette": "pantalon",
+       "mirror": true,
+       "casts": true
+      },
+      {
+       "id": "shinL",
+       "joint": "kneeL",
+       "kind": "capsule",
+       "dims": {
+        "r": 2.6,
+        "h": 12.5,
+        "caps": 1,
+        "radial": 6
+       },
+       "offset": [
+        0,
+        -5.75,
+        0
+       ],
+       "palette": "pantalon",
+       "mirror": true
+      },
+      {
+       "id": "bootL",
+       "joint": "ankleL",
+       "kind": "sphere",
+       "dims": {
+        "rx": 3.3,
+        "ry": 2.15,
+        "rz": 5.6,
+        "w": 6,
+        "h": 4
+       },
+       "offset": [
+        0,
+        -1.45,
+        2.2
+       ],
+       "palette": "botte",
+       "mirror": true
+      }
+     ],
+     "shadow": [
+      {
+       "id": "ombre-tronc",
+       "joint": "chest",
+       "kind": "box",
+       "dims": {
+        "w": 18,
+        "h": 12,
+        "d": 9
+       },
+       "offset": [
+        0,
+        3,
+        0
+       ]
+      },
+      {
+       "id": "ombre-tete",
+       "joint": "head",
+       "kind": "box",
+       "dims": {
+        "w": 9,
+        "h": 10,
+        "d": 9
+       },
+       "offset": [
+        0,
+        4.6,
+        0
+       ]
+      },
+      {
+       "id": "ombre-bassin",
+       "joint": "pelvis",
+       "kind": "box",
+       "dims": {
+        "w": 14,
+        "h": 8,
+        "d": 8
+       },
+       "offset": [
+        0,
+        2,
+        0
+       ]
+      },
+      {
+       "id": "ombre-cuisseL",
+       "joint": "hipL",
+       "kind": "box",
+       "dims": {
+        "w": 6,
+        "h": 12,
+        "d": 6
+       },
+       "offset": [
+        0,
+        -6,
+        0
+       ],
+       "mirror": true
+      }
+     ],
+     "flags": {
+      "test": true
+     }
+    }
+   ]
+  },
+  {
+   "id": "petit",
+   "label": "Petit",
+   "current": {
+    "source": "data/game/zombie-variants.json",
+    "key": "zombie.variants[1]",
+    "index": 1,
+    "kind": "zombie",
+    "skeleton": "v1",
+    "scale": 0.93,
+    "lean": 0.14,
+    "headTilt": 0.18,
+    "armLift": -0.12,
+    "dominant": "--game-cloth-2",
+    "regions": {
+     "outfit": "tenue-2",
+     "trousers": "pantalon-2",
+     "boot": "botte",
+     "skin": "peau-2",
+     "sleeves": "peau-2"
+    },
+    "parts": [
+     {
+      "id": "pelvis",
+      "piece": "pelvis",
+      "joint": "pelvis",
+      "kind": "capsule",
+      "dims": {
+       "r": 3.6,
+       "h": 15,
+       "caps": 1,
+       "radial": 8,
+       "sz": 0.62
+      },
+      "offset": [
+       -1.5,
+       0,
+       0
+      ],
+      "rotation": [
+       0,
+       0,
+       1.5707963267948966
+      ],
+      "region": "trousers",
+      "casts": true
+     },
+     {
+      "id": "torso",
+      "piece": "torso",
+      "joint": "torso",
+      "kind": "capsule",
+      "dims": {
+       "r": 5,
+       "h": 19,
+       "caps": 2,
+       "radial": 8,
+       "sx": 1.85
+      },
+      "offset": [
+       0,
+       9.5,
+       0
+      ],
+      "region": "outfit",
+      "casts": true
+     },
+     {
+      "id": "head",
+      "piece": "head",
+      "joint": "head",
+      "kind": "sphere",
+      "dims": {
+       "rx": 4.7,
+       "ry": 5.2,
+       "rz": 4.9,
+       "w": 8,
+       "h": 5
+      },
+      "offset": [
+       0,
+       5.4,
+       0
+      ],
+      "region": "skin",
+      "casts": true
+     },
+     {
+      "id": "upperL",
+      "piece": "upperL",
+      "joint": "shoulderL",
+      "kind": "capsule",
+      "dims": {
+       "r": 2.5,
+       "h": 10,
+       "caps": 1,
+       "radial": 6
+      },
+      "offset": [
+       0,
+       -5,
+       0
+      ],
+      "region": "outfit",
+      "mirror": true
+     },
+     {
+      "id": "foreL",
+      "piece": "foreL",
+      "joint": "elbowL",
+      "kind": "capsule",
+      "dims": {
+       "r": 2.1,
+       "h": 10,
+       "caps": 1,
+       "radial": 6
+      },
+      "offset": [
+       0,
+       -5,
+       0
+      ],
+      "region": "sleeves",
+      "mirror": true
+     },
+     {
+      "id": "handL",
+      "piece": "foreL",
+      "joint": "elbowL",
+      "kind": "sphere",
+      "dims": {
+       "rx": 2.3,
+       "ry": 2.3,
+       "rz": 2.3,
+       "w": 6,
+       "h": 4
+      },
+      "offset": [
+       0,
+       -10.4,
+       0.3
+      ],
+      "region": "skin",
+      "mirror": true
+     },
+     {
+      "id": "thighL",
+      "piece": "thighL",
+      "joint": "hipL",
+      "kind": "capsule",
+      "dims": {
+       "r": 3.2,
+       "h": 13,
+       "caps": 1,
+       "radial": 6
+      },
+      "offset": [
+       0,
+       -6,
+       0
+      ],
+      "region": "trousers",
+      "casts": true,
+      "mirror": true
+     },
+     {
+      "id": "shinL",
+      "piece": "shinL",
+      "joint": "kneeL",
+      "kind": "capsule",
+      "dims": {
+       "r": 2.6,
+       "h": 12.5,
+       "caps": 1,
+       "radial": 6
+      },
+      "offset": [
+       0,
+       -5.75,
+       0
+      ],
+      "region": "trousers",
+      "mirror": true
+     },
+     {
+      "id": "bootL",
+      "piece": "shinL",
+      "joint": "kneeL",
+      "kind": "sphere",
+      "dims": {
+       "rx": 3.3,
+       "ry": 2.15,
+       "rz": 5.6,
+       "w": 6,
+       "h": 4
+      },
+      "offset": [
+       0,
+       -12.95,
+       2.2
+      ],
+      "region": "boot",
+      "mirror": true
+     }
+    ]
+   },
+   "variants": []
+  },
+  {
+   "id": "voute",
+   "label": "Voûté",
+   "current": {
+    "source": "data/game/zombie-variants.json",
+    "key": "zombie.variants[3]",
+    "index": 3,
+    "kind": "zombie",
+    "skeleton": "v1",
+    "scale": 0.98,
+    "lean": 0.14,
+    "headTilt": 0.28,
+    "armLift": 0.04,
+    "dominant": "--game-cloth-4",
+    "regions": {
+     "outfit": "tenue-4",
+     "trousers": "pantalon-2",
+     "boot": "botte",
+     "skin": "peau-4",
+     "sleeves": "peau-4"
+    },
+    "parts": [
+     {
+      "id": "pelvis",
+      "piece": "pelvis",
+      "joint": "pelvis",
+      "kind": "capsule",
+      "dims": {
+       "r": 3.6,
+       "h": 15,
+       "caps": 1,
+       "radial": 8,
+       "sz": 0.62
+      },
+      "offset": [
+       -1.5,
+       0,
+       0
+      ],
+      "rotation": [
+       0,
+       0,
+       1.5707963267948966
+      ],
+      "region": "trousers",
+      "casts": true
+     },
+     {
+      "id": "torso",
+      "piece": "torso",
+      "joint": "torso",
+      "kind": "capsule",
+      "dims": {
+       "r": 5,
+       "h": 19,
+       "caps": 2,
+       "radial": 8,
+       "sx": 1.85
+      },
+      "offset": [
+       0,
+       9.5,
+       0
+      ],
+      "region": "outfit",
+      "casts": true
+     },
+     {
+      "id": "head",
+      "piece": "head",
+      "joint": "head",
+      "kind": "sphere",
+      "dims": {
+       "rx": 4.7,
+       "ry": 5.2,
+       "rz": 4.9,
+       "w": 8,
+       "h": 5
+      },
+      "offset": [
+       0,
+       5.4,
+       0
+      ],
+      "region": "skin",
+      "casts": true
+     },
+     {
+      "id": "upperL",
+      "piece": "upperL",
+      "joint": "shoulderL",
+      "kind": "capsule",
+      "dims": {
+       "r": 2.5,
+       "h": 10,
+       "caps": 1,
+       "radial": 6
+      },
+      "offset": [
+       0,
+       -5,
+       0
+      ],
+      "region": "outfit",
+      "mirror": true
+     },
+     {
+      "id": "foreL",
+      "piece": "foreL",
+      "joint": "elbowL",
+      "kind": "capsule",
+      "dims": {
+       "r": 2.1,
+       "h": 10,
+       "caps": 1,
+       "radial": 6
+      },
+      "offset": [
+       0,
+       -5,
+       0
+      ],
+      "region": "sleeves",
+      "mirror": true
+     },
+     {
+      "id": "handL",
+      "piece": "foreL",
+      "joint": "elbowL",
+      "kind": "sphere",
+      "dims": {
+       "rx": 2.3,
+       "ry": 2.3,
+       "rz": 2.3,
+       "w": 6,
+       "h": 4
+      },
+      "offset": [
+       0,
+       -10.4,
+       0.3
+      ],
+      "region": "skin",
+      "mirror": true
+     },
+     {
+      "id": "thighL",
+      "piece": "thighL",
+      "joint": "hipL",
+      "kind": "capsule",
+      "dims": {
+       "r": 3.2,
+       "h": 13,
+       "caps": 1,
+       "radial": 6
+      },
+      "offset": [
+       0,
+       -6,
+       0
+      ],
+      "region": "trousers",
+      "casts": true,
+      "mirror": true
+     },
+     {
+      "id": "shinL",
+      "piece": "shinL",
+      "joint": "kneeL",
+      "kind": "capsule",
+      "dims": {
+       "r": 2.6,
+       "h": 12.5,
+       "caps": 1,
+       "radial": 6
+      },
+      "offset": [
+       0,
+       -5.75,
+       0
+      ],
+      "region": "trousers",
+      "mirror": true
+     },
+     {
+      "id": "bootL",
+      "piece": "shinL",
+      "joint": "kneeL",
+      "kind": "sphere",
+      "dims": {
+       "rx": 3.3,
+       "ry": 2.15,
+       "rz": 5.6,
+       "w": 6,
+       "h": 4
+      },
+      "offset": [
+       0,
+       -12.95,
+       2.2
+      ],
+      "region": "boot",
+      "mirror": true
+     }
+    ]
+   },
+   "variants": []
+  },
+  {
+   "id": "grand",
+   "label": "Grand",
+   "current": {
+    "source": "data/game/zombie-variants.json",
+    "key": "zombie.variants[2]",
+    "index": 2,
+    "kind": "zombie",
+    "skeleton": "v1",
+    "scale": 1.07,
+    "lean": 0.14,
+    "headTilt": -0.1,
+    "armLift": 0.1,
+    "dominant": "--game-cloth-3",
+    "regions": {
+     "outfit": "tenue-3",
+     "trousers": "pantalon-1",
+     "boot": "botte",
+     "skin": "peau-3",
+     "sleeves": "peau-3"
+    },
+    "parts": [
+     {
+      "id": "pelvis",
+      "piece": "pelvis",
+      "joint": "pelvis",
+      "kind": "capsule",
+      "dims": {
+       "r": 3.6,
+       "h": 15,
+       "caps": 1,
+       "radial": 8,
+       "sz": 0.62
+      },
+      "offset": [
+       -1.5,
+       0,
+       0
+      ],
+      "rotation": [
+       0,
+       0,
+       1.5707963267948966
+      ],
+      "region": "trousers",
+      "casts": true
+     },
+     {
+      "id": "torso",
+      "piece": "torso",
+      "joint": "torso",
+      "kind": "capsule",
+      "dims": {
+       "r": 5,
+       "h": 19,
+       "caps": 2,
+       "radial": 8,
+       "sx": 1.85
+      },
+      "offset": [
+       0,
+       9.5,
+       0
+      ],
+      "region": "outfit",
+      "casts": true
+     },
+     {
+      "id": "head",
+      "piece": "head",
+      "joint": "head",
+      "kind": "sphere",
+      "dims": {
+       "rx": 4.7,
+       "ry": 5.2,
+       "rz": 4.9,
+       "w": 8,
+       "h": 5
+      },
+      "offset": [
+       0,
+       5.4,
+       0
+      ],
+      "region": "skin",
+      "casts": true
+     },
+     {
+      "id": "upperL",
+      "piece": "upperL",
+      "joint": "shoulderL",
+      "kind": "capsule",
+      "dims": {
+       "r": 2.5,
+       "h": 10,
+       "caps": 1,
+       "radial": 6
+      },
+      "offset": [
+       0,
+       -5,
+       0
+      ],
+      "region": "outfit",
+      "mirror": true
+     },
+     {
+      "id": "foreL",
+      "piece": "foreL",
+      "joint": "elbowL",
+      "kind": "capsule",
+      "dims": {
+       "r": 2.1,
+       "h": 10,
+       "caps": 1,
+       "radial": 6
+      },
+      "offset": [
+       0,
+       -5,
+       0
+      ],
+      "region": "sleeves",
+      "mirror": true
+     },
+     {
+      "id": "handL",
+      "piece": "foreL",
+      "joint": "elbowL",
+      "kind": "sphere",
+      "dims": {
+       "rx": 2.3,
+       "ry": 2.3,
+       "rz": 2.3,
+       "w": 6,
+       "h": 4
+      },
+      "offset": [
+       0,
+       -10.4,
+       0.3
+      ],
+      "region": "skin",
+      "mirror": true
+     },
+     {
+      "id": "thighL",
+      "piece": "thighL",
+      "joint": "hipL",
+      "kind": "capsule",
+      "dims": {
+       "r": 3.2,
+       "h": 13,
+       "caps": 1,
+       "radial": 6
+      },
+      "offset": [
+       0,
+       -6,
+       0
+      ],
+      "region": "trousers",
+      "casts": true,
+      "mirror": true
+     },
+     {
+      "id": "shinL",
+      "piece": "shinL",
+      "joint": "kneeL",
+      "kind": "capsule",
+      "dims": {
+       "r": 2.6,
+       "h": 12.5,
+       "caps": 1,
+       "radial": 6
+      },
+      "offset": [
+       0,
+       -5.75,
+       0
+      ],
+      "region": "trousers",
+      "mirror": true
+     },
+     {
+      "id": "bootL",
+      "piece": "shinL",
+      "joint": "kneeL",
+      "kind": "sphere",
+      "dims": {
+       "rx": 3.3,
+       "ry": 2.15,
+       "rz": 5.6,
+       "w": 6,
+       "h": 4
+      },
+      "offset": [
+       0,
+       -12.95,
+       2.2
+      ],
+      "region": "boot",
+      "mirror": true
+     }
+    ]
+   },
+   "variants": []
+  }
+ ]
+}

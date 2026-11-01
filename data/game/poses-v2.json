@@ -1,0 +1,546 @@
+{
+ "_provisoire": "Squelettes et animations des personnages du lot 3j (valeurs provisoires, purement visuelles). Angles en radians, Euler 'YXZ' de Three.js par articulation (x : flexion, positif = vers l'arrière pour les hanches et les épaules, vers l'avant pour la colonne et la tête ; y : torsion ; z : écart latéral). v1 : squelette actuel de js/game/character.js (pose.js) ; v2 : squelette du lot 3j (colonne en deux segments, cou, chevilles). range : plage articulaire [min, max] par axe ; rest : pose de repos (tous les angles nuls).",
+ "version": 1,
+ "skeletons": {
+  "v1": {
+   "label": "Squelette actuel (lot 1c)",
+   "joints": [
+    {
+     "id": "pelvis",
+     "parent": null,
+     "offset": [
+      0,
+      27,
+      0
+     ]
+    },
+    {
+     "id": "torso",
+     "parent": "pelvis",
+     "offset": [
+      0,
+      4,
+      0
+     ]
+    },
+    {
+     "id": "head",
+     "parent": "torso",
+     "offset": [
+      0,
+      19,
+      0
+     ]
+    },
+    {
+     "id": "shoulderL",
+     "parent": "torso",
+     "offset": [
+      11.5,
+      17,
+      0
+     ]
+    },
+    {
+     "id": "elbowL",
+     "parent": "shoulderL",
+     "offset": [
+      0,
+      -10,
+      0
+     ]
+    },
+    {
+     "id": "wristL",
+     "parent": "elbowL",
+     "offset": [
+      0,
+      -9,
+      0
+     ]
+    },
+    {
+     "id": "shoulderR",
+     "parent": "torso",
+     "offset": [
+      -11.5,
+      17,
+      0
+     ]
+    },
+    {
+     "id": "elbowR",
+     "parent": "shoulderR",
+     "offset": [
+      0,
+      -10,
+      0
+     ]
+    },
+    {
+     "id": "wristR",
+     "parent": "elbowR",
+     "offset": [
+      0,
+      -9,
+      0
+     ]
+    },
+    {
+     "id": "hipL",
+     "parent": "pelvis",
+     "offset": [
+      5.5,
+      0,
+      0
+     ]
+    },
+    {
+     "id": "kneeL",
+     "parent": "hipL",
+     "offset": [
+      0,
+      -12,
+      0
+     ]
+    },
+    {
+     "id": "ankleL",
+     "parent": "kneeL",
+     "offset": [
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "id": "hipR",
+     "parent": "pelvis",
+     "offset": [
+      -5.5,
+      0,
+      0
+     ]
+    },
+    {
+     "id": "kneeR",
+     "parent": "hipR",
+     "offset": [
+      0,
+      -12,
+      0
+     ]
+    },
+    {
+     "id": "ankleR",
+     "parent": "kneeR",
+     "offset": [
+      0,
+      0,
+      0
+     ]
+    }
+   ]
+  },
+  "v2": {
+   "label": "Squelette v2 (lot 3j)",
+   "joints": [
+    {
+     "id": "pelvis",
+     "parent": null,
+     "offset": [
+      0,
+      27,
+      0
+     ],
+     "range": {
+      "x": [
+       -1.7,
+       1.7
+      ],
+      "y": [
+       -1.8,
+       1.8
+      ],
+      "z": [
+       -1.7,
+       1.7
+      ]
+     }
+    },
+    {
+     "id": "spine",
+     "parent": "pelvis",
+     "offset": [
+      0,
+      4,
+      0
+     ],
+     "range": {
+      "x": [
+       -0.5,
+       1.6
+      ],
+      "y": [
+       -1.8,
+       1.8
+      ],
+      "z": [
+       -0.5,
+       0.5
+      ]
+     }
+    },
+    {
+     "id": "chest",
+     "parent": "spine",
+     "offset": [
+      0,
+      9,
+      0
+     ],
+     "range": {
+      "x": [
+       -0.5,
+       1
+      ],
+      "y": [
+       -0.9,
+       0.9
+      ],
+      "z": [
+       -0.5,
+       0.5
+      ]
+     }
+    },
+    {
+     "id": "neck",
+     "parent": "chest",
+     "offset": [
+      0,
+      10,
+      0
+     ],
+     "range": {
+      "x": [
+       -0.7,
+       0.9
+      ],
+      "y": [
+       -0.9,
+       0.9
+      ],
+      "z": [
+       -0.5,
+       0.5
+      ]
+     }
+    },
+    {
+     "id": "head",
+     "parent": "neck",
+     "offset": [
+      0,
+      1.5,
+      0
+     ],
+     "range": {
+      "x": [
+       -0.7,
+       0.9
+      ],
+      "y": [
+       -0.9,
+       0.9
+      ],
+      "z": [
+       -0.5,
+       0.5
+      ]
+     }
+    },
+    {
+     "id": "shoulderL",
+     "parent": "chest",
+     "offset": [
+      11.5,
+      8,
+      0
+     ],
+     "range": {
+      "x": [
+       -3.1,
+       1.3
+      ],
+      "y": [
+       -1,
+       1
+      ],
+      "z": [
+       -1.4,
+       1.4
+      ]
+     }
+    },
+    {
+     "id": "shoulderR",
+     "parent": "chest",
+     "offset": [
+      -11.5,
+      8,
+      0
+     ],
+     "range": {
+      "x": [
+       -3.1,
+       1.3
+      ],
+      "y": [
+       -1,
+       1
+      ],
+      "z": [
+       -1.4,
+       1.4
+      ]
+     }
+    },
+    {
+     "id": "elbowL",
+     "parent": "shoulderL",
+     "offset": [
+      0,
+      -10,
+      0
+     ],
+     "range": {
+      "x": [
+       -2.5,
+       0.05
+      ],
+      "y": [
+       -1,
+       1
+      ],
+      "z": [
+       -0.3,
+       0.3
+      ]
+     }
+    },
+    {
+     "id": "elbowR",
+     "parent": "shoulderR",
+     "offset": [
+      0,
+      -10,
+      0
+     ],
+     "range": {
+      "x": [
+       -2.5,
+       0.05
+      ],
+      "y": [
+       -1,
+       1
+      ],
+      "z": [
+       -0.3,
+       0.3
+      ]
+     }
+    },
+    {
+     "id": "wristL",
+     "parent": "elbowL",
+     "offset": [
+      0,
+      -9,
+      0
+     ],
+     "range": {
+      "x": [
+       -1,
+       1
+      ],
+      "y": [
+       -1,
+       1
+      ],
+      "z": [
+       -0.6,
+       0.6
+      ]
+     }
+    },
+    {
+     "id": "wristR",
+     "parent": "elbowR",
+     "offset": [
+      0,
+      -9,
+      0
+     ],
+     "range": {
+      "x": [
+       -1,
+       1
+      ],
+      "y": [
+       -1,
+       1
+      ],
+      "z": [
+       -0.6,
+       0.6
+      ]
+     }
+    },
+    {
+     "id": "hipL",
+     "parent": "pelvis",
+     "offset": [
+      5.5,
+      0,
+      0
+     ],
+     "range": {
+      "x": [
+       -2,
+       1
+      ],
+      "y": [
+       -0.7,
+       0.7
+      ],
+      "z": [
+       -0.7,
+       0.7
+      ]
+     }
+    },
+    {
+     "id": "hipR",
+     "parent": "pelvis",
+     "offset": [
+      -5.5,
+      0,
+      0
+     ],
+     "range": {
+      "x": [
+       -2,
+       1
+      ],
+      "y": [
+       -0.7,
+       0.7
+      ],
+      "z": [
+       -0.7,
+       0.7
+      ]
+     }
+    },
+    {
+     "id": "kneeL",
+     "parent": "hipL",
+     "offset": [
+      0,
+      -12,
+      0
+     ],
+     "range": {
+      "x": [
+       -0.05,
+       2.5
+      ],
+      "y": [
+       -0.2,
+       0.2
+      ],
+      "z": [
+       -0.2,
+       0.2
+      ]
+     }
+    },
+    {
+     "id": "kneeR",
+     "parent": "hipR",
+     "offset": [
+      0,
+      -12,
+      0
+     ],
+     "range": {
+      "x": [
+       -0.05,
+       2.5
+      ],
+      "y": [
+       -0.2,
+       0.2
+      ],
+      "z": [
+       -0.2,
+       0.2
+      ]
+     }
+    },
+    {
+     "id": "ankleL",
+     "parent": "kneeL",
+     "offset": [
+      0,
+      -11.5,
+      0
+     ],
+     "range": {
+      "x": [
+       -0.9,
+       0.9
+      ],
+      "y": [
+       -0.4,
+       0.4
+      ],
+      "z": [
+       -0.4,
+       0.4
+      ]
+     }
+    },
+    {
+     "id": "ankleR",
+     "parent": "kneeR",
+     "offset": [
+      0,
+      -11.5,
+      0
+     ],
+     "range": {
+      "x": [
+       -0.9,
+       0.9
+      ],
+      "y": [
+       -0.4,
+       0.4
+      ],
+      "z": [
+       -0.4,
+       0.4
+      ]
+     }
+    }
+   ]
+  }
+ },
+ "rest": {
+  "angles": {},
+  "offsets": {}
+ }
+}
