@@ -1,7 +1,6 @@
-# Choix du propriétaire après l’écoute de l’atelier (lot 3h, itérations 1 à 3), au format de « Mes choix ».
+# Choix du propriétaire après l’écoute de l’atelier (lot 3h, itérations 1 à 3), au format de « Mes choix » : tous les emplacements sont choisis.
 # actuel : garder le son actuel du jeu ; aucun : pas de son pour cet emplacement.
-# Itération 3 : le coup de marteau seul reprend le marteau de la réparation (C, réglages par défaut).
-# Reste à choisir : escalade (trois nouvelles propositions à l’itération 3, dans la veine des sons choisis).
+# Itération 3 : le coup de marteau seul reprend le marteau de la réparation (C, réglages par défaut) ; escalade refaite, choisie en C.
 pas-joueur-dur=C(hauteur=-3,matiere=0,grain=1,duree=1,ampleur=0)
 pas-joueur-exterieur=A(hauteur=0,matiere=0,grain=1,duree=1,ampleur=0.1)
 pas-joueur-escalier=C(hauteur=-3,matiere=0,grain=1,duree=1,ampleur=0)
@@ -30,6 +29,7 @@ reparation=C(hauteur=0,matiere=0,grain=1,duree=1.8,ampleur=0)
 reparation-coup=C(hauteur=0,matiere=0,grain=1,duree=1,ampleur=0)
 planche-craquement=A(hauteur=0,matiere=0,grain=1,duree=1,ampleur=0.1)
 planche-chute=A(hauteur=0,matiere=0,grain=1,duree=1,ampleur=0.1)
+escalade=C(hauteur=0,matiere=0,grain=1,duree=1,ampleur=0)
 joueur-souffle-terre=actuel
 joueur-relevage=actuel
 ambiance-vent=A(hauteur=0,matiere=0,grain=1,duree=1,ampleur=0.1)

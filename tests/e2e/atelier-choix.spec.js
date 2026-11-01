@@ -64,9 +64,10 @@ test('« actuel » : seulement le son du jeu ; « aucun » : écarté et listé 
       await expect(page.locator('#ecartes-list'), id).toContainText(id);
     }
   }
-  // Itération 3 : seule l'escalade reste à choisir.
+  // Itération 3 : tout est choisi (l'escalade en dernier) ; un emplacement sans choix garderait toutes ses propositions.
   const todo = data.slots.filter((s) => !choices[s.id]);
-  expect(todo.map((s) => s.id)).toEqual(['escalade']);
+  expect(todo.map((s) => s.id)).toEqual([]);
+  await expect(page.locator('.slot-choice[data-choice="afaire"]')).toHaveCount(0);
   for (const s of todo) {
     await expect(slotCard(page, s.id).locator('button[data-variant]'), s.id).toHaveCount(s.variants.length);
     await expect(slotCard(page, s.id).locator('.slot-choice'), s.id).toHaveText('À choisir : trois propositions.');
@@ -79,8 +80,8 @@ test('« Mes choix » démarre avec les choix du propriétaire et se complète',
   const back = parseChoices(text, data.slots);
   expect(back.errors).toEqual([]);
   expect(back.choices).toEqual(choices);
-  await slotCard(page, 'escalade').getByLabel('B', { exact: true }).check();
-  expect((await page.evaluate(() => window.__zsSons.choices())).split('\n')).toContain('escalade=B(hauteur=0,matiere=0,grain=1,duree=1,ampleur=0.3)');
+  await slotCard(page, 'escalade').getByLabel('Aucun', { exact: true }).check();
+  expect((await page.evaluate(() => window.__zsSons.choices())).split('\n').some((l) => l.startsWith('escalade='))).toBe(false);
 });
 
 test('axe : aucune violation ; cibles d\'au moins 44 px', async ({ page }, testInfo) => {
