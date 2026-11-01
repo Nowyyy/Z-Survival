@@ -1,7 +1,8 @@
 /* Direction B « caméscope » (lot 3k, proposition non intégrée) : en accord avec l'effet VHS. Coins de cadre en haut (les coins bas tomberaient sous les
    pouces : retirés), libellés en Rubik Dirt (REC, VIE, VAGUE, RESTANTS, TUÉS), chronomètre de jeu, point « REC » qui clignote une fois par seconde
    (au plus 2 : règle du lot ; fixe sous prefers-reduced-motion), noir et rouge sang. Retours du propriétaire : vie sans barre (« VIE » et « 100/100 »),
-   mots entiers, argent et tués de même largeur (4 chiffres de tués) et, ensemble, de la hauteur du bouton Pause ; à terre sans cadre blanc.
+   mots entiers, restants et tués à droite (même largeur, place pour 4 chiffres, ensemble de la hauteur du bouton Pause), argent sous la
+   vague, REC, VIE et chutes + étage alignés à droite ; à terre sous l'argent, sans cadre blanc. Détail : Docs/ref/passation-interface-4b.md.
    Blocs de taille fixe (em). Ni filter, ni mix-blend-mode, ni backdrop-filter. */
 
 .ui3k-dir-b {
