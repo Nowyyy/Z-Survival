@@ -105,25 +105,24 @@ export function createAudio({ config, test = false, seed = 1, autoAmbience = tru
     let buffer = buffers.get(name);
     let playedVariant = r.variant;
     if (!buffer && ctx && !suspended && !legacyMode && isAtelier(recipe)) {
-      ensure(name, recipe, r);
-      // `asked` au journal : la version demandée, calculée en arrière-plan pour la prochaine fois.
-      if (r.durationSec !== undefined) return false; // réparation : jouée dès que son tampon est prêt (ensure), en phase avec la pose
-      // Version pas encore calculée : une version prête du même son la remplace cette fois-ci, autre que la précédente si possible.
+      // Version pas encore calculée : une version prête du même son (à la même durée pour la réparation) la remplace cette fois-ci, autre
+      // que la précédente si possible ; la version demandée (`asked` au journal) est calculée en arrière-plan pour la prochaine fois.
       const ready = [];
-      for (let k = 1; k <= (cfg.sounds[r.sound]?.variants ?? 1); k += 1) if (buffers.has(`${r.sound}-${k}`)) ready.push(k - 1);
+      for (let k = 1; k <= (cfg.sounds[r.sound]?.variants ?? 1); k += 1) if (buffers.has(bufferName(r.sound, k, r.durationSec ?? null, recipe))) ready.push(k - 1);
       const pick = ready.find((v) => v !== lastPlayed.get(r.sound)) ?? ready[0];
-      if (pick !== undefined) {
-        name = `${r.sound}-${pick + 1}`;
-        buffer = buffers.get(name);
-        playedVariant = pick;
-      }
+      // Réparation sans aucune version prête à cette durée : jouée dès que son tampon arrive, en phase avec la pose (ensure).
+      ensure(name, recipe, r, pick === undefined && r.durationSec !== undefined);
+      if (pick === undefined) return false;
+      name = bufferName(r.sound, pick + 1, r.durationSec ?? null, recipe);
+      buffer = buffers.get(name);
+      playedVariant = pick;
     }
     return start(r, gameTime, buffer, playedVariant, name);
   }
 
   // Calcul au premier usage d'un tampon de l'atelier (version non préchargée, réparation à une autre durée) ; une réparation demandée est
   // lancée à sa réception, décalée du temps écoulé pour rester en phase avec la pose (sauf si elle a été arrêtée entre-temps).
-  function ensure(name, recipe, r) {
+  function ensure(name, recipe, r, startWhenReady = false) {
     const asked = ctx ? ctx.currentTime : 0;
     if (!lazy.has(name)) {
       const m = /-(\d+)$/.exec(name);
@@ -136,7 +135,7 @@ export function createAudio({ config, test = false, seed = 1, autoAmbience = tru
         return name;
       }).catch(() => null));
     }
-    if (r.durationSec === undefined) return;
+    if (!startWhenReady) return;
     const token = { stopped: false };
     waiting.set(r.key ?? name, token);
     lazy.get(name).then((done) => {
