@@ -314,6 +314,12 @@ export function createV2Kit(options) {
       for (const [id, bone] of rig.bones) bone.scale.setScalar(pose.scales?.[id] ?? 1);
     }
     const cycle = (anim, extra) => cycleSeconds(gait, anim, { ...params(), ...extra }, poses) ?? 1;
+    // Bout du canon (avant de la glissière, repère de l'articulation « prop ») : le laser, l'éclair et les balles en partent à l'image.
+    const slide = current.shared.parts.find((p) => p.id === 'gunSlide');
+    const tip = slide ? new THREE.Vector3(slide.offset?.[0] ?? 0, slide.offset?.[1] ?? 0, (slide.offset?.[2] ?? 0) + (slide.dims?.d ?? 0) / 2) : null;
+    const propBone = rig.bones.get('prop');
+    const muzzleAt = new THREE.Vector3();
+    const muzzleOut = { x: 0, y: 0, height: 0 };
     return {
       root,
       kind,
@@ -328,6 +334,16 @@ export function createV2Kit(options) {
       get wear() { return wear; },
       readPose() {
         return { anim: state.anim, phase: state.phase, outfit, wear, wound: woundTier, choice, slot: slotId, triangles: current.geometry.attributes.position.count / 3, hurt: state.time - state.hurtAt < (Number(poses.durations?.touche) || 0.25) };
+      },
+      // Joueur : position du bout du canon dans le monde ({ x, y } du plan de jeu, height) après setPose et la pose de root ; null sans arme.
+      muzzle() {
+        if (!tip || !propBone || kind !== 'player') return null;
+        root.updateMatrixWorld(true);
+        muzzleAt.copy(tip).applyMatrix4(propBone.matrixWorld);
+        muzzleOut.x = muzzleAt.x;
+        muzzleOut.y = muzzleAt.z;
+        muzzleOut.height = muzzleAt.y;
+        return muzzleOut;
       },
       setFlash(on) {
         flashing = Boolean(on);

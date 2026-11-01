@@ -197,13 +197,16 @@ function locomote(rig, phase, params, data, key) {
   return pose;
 }
 
-// Arme tenue à deux mains, devant la poitrine (articulation « prop ») ; recul : l'arme recule et remonte.
+// Pistolet tenu à deux mains, bras tendus, centré sur l'axe de visée à hauteur de poitrine (articulation « prop ») : main droite sur la
+// poignée, main gauche en soutien ; recul : l'arme recule et remonte. HOLD : position de l'arme dans le repère de la poitrine.
+export const HOLD = [-1, -1, 14];
 function playerArms(rig, pose, recoil) {
   const prop = rig.joints.find((j) => j.id === 'prop')?.offset ?? [-1.5, -4, 13];
   const r = clamp(num(recoil), [0, 1]);
-  pose.offsets.prop = [0, 1.2 * r, -3 * r];
+  const at = [HOLD[0], HOLD[1] + 1.2 * r, HOLD[2] - 3 * r];
+  pose.offsets.prop = [at[0] - prop[0], at[1] - prop[1], at[2] - prop[2]];
   set(pose, 'prop', -0.25 * r, 0, 0);
-  const grip = { R: [prop[0] - 0.5, prop[1] + 1.2 * r - 1.5, prop[2] - 3 * r - 1], L: [prop[0] + 1.5, prop[1] + 1.2 * r + 0.5, prop[2] - 3 * r + 3] };
+  const grip = { R: [at[0], at[1] - 2, at[2] - 3], L: [at[0] + 1.5, at[1] - 1, at[2] - 0.5] };
   for (const [s, side] of SIDES) {
     const sh = [side * Math.abs(rig.shoulder[0]), rig.shoulder[1], rig.shoulder[2]];
     const t = [grip[s][0] - sh[0], grip[s][1] - sh[1], grip[s][2] - sh[2]];

@@ -612,7 +612,8 @@ export function createGame(ctx) {
       // Siège de chaque étage (js/core/siege.js), planches, réparation automatique près d'une fenêtre de l'étage du joueur, déplacement des zombies de chaque étage
       // (poursuite du joueur à son étage, champ de flux vers l'escalier le plus proche à l'autre), franchissement des escaliers (js/core/floor-sim.js).
       const activeIds = activeIdsNow();
-      const out = stepFloors(fw, sim.fs, { enemies: sim.enemies, player: chaseTarget(), dt, active: activeIds, canRepair: !sim.dead && !locked, repairTime: eff.player.repairTime, flowDone: true, follow: sim.sw?.stair, realPlayer: sim.player, walks: stairWalks });
+      // Lot 3j (demande du propriétaire) : jamais tirer et réparer à la fois ; le tir passe avant (la planche en cours garde sa progression).
+      const out = stepFloors(fw, sim.fs, { enemies: sim.enemies, player: chaseTarget(), dt, active: activeIds, canRepair: !sim.dead && !locked && !aimed, repairTime: eff.player.repairTime, flowDone: true, follow: sim.sw?.stair, realPlayer: sim.player, walks: stairWalks });
       sim.fs = out.state;
       sim.enemies = out.enemies;
       sim.win = out.state.win;
@@ -966,6 +967,7 @@ export function createGame(ctx) {
     playerChar.setPose(lastPose, poseIn, pv?.playerCtx(sim, eff)); // lot 3j : les personnages v2 lisent l'entrée et le contexte
     playerChar.root.position.set(p.x, 0, p.y);
     playerChar.root.rotation.y = Math.PI / 2 - anim.facing;
+    const gun = playerChar.muzzle?.() ?? null; // lot 3j : bout du canon du joueur v2 (laser, éclair et balles en partent à l'image)
 
     const alive = new Set();
     for (const e of sim.enemies) {
@@ -1024,6 +1026,7 @@ export function createGame(ctx) {
     pv?.sync(pf(), waveInfo(sim.waves).wave); // lot 3j : instances du sang et palier d'usure
     effects.update({
       laser: laser && !sim.dead ? laser : null,
+      gun, // lot 3j
       bullets: sim.bullets,
       sparks,
       flash: sim.flash,

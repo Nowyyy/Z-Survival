@@ -2,6 +2,9 @@ import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { readFileSync } from 'node:fs';
 import { parseZones, zonesToWorld } from '../../js/core/zones.js';
+import { buildLayout, windowsWithGaps } from '../../js/core/layout.js';
+import { windowGeometries } from '../../js/core/windows.js';
+import { salle, waitReady } from './helpers.js';
 
 // Lot 3j-D : essai en jeu derrière ?perso= et ?sang= (667 × 375, step() et hooks de ?test=1). Le jeu par défaut est inchangé.
 // Lancer : E2E_FULL=1 npx playwright test tests/e2e/persos-jeu.spec.js
@@ -376,4 +379,51 @@ test.describe('essai en jeu des personnages v2 et du sang', () => {
     const r = await new AxeBuilder({ page }).analyze();
     expect(r.violations.map((v) => `${v.id} : ${v.nodes.length}`)).toEqual([]);
   });
+});
+
+// Retour du propriétaire après la livraison : « il ne faut pas pouvoir construire et tirer en même temps ». Le tir passe avant : viser un
+// zombie interrompt la réparation (la planche garde sa progression), qui reprend sans cible. Salle de test, boucle d'images arrêtée.
+test.describe('tir ou réparation, jamais les deux', () => {
+  const N = windowGeometries(windowsWithGaps(buildLayout(load('data/game/world.json'), load('data/game/decor.json'), {})), load('data/game/windows.json')).find((g) => g.id === 'fenetre-nord');
+  for (const perso of ['riche', 'actuel']) {
+    test(`viser un zombie arrête la réparation, elle reprend sans cible (${perso})`, async ({ page }) => {
+      await page.setViewportSize(SIZE);
+      await page.goto(salle(`/jeu.html?test=1&seed=1&nospawn=1&perso=${perso}`));
+      await waitReady(page);
+      await page.evaluate(() => { window.requestAnimationFrame = () => 0; });
+      await page.evaluate(() => new Promise((resolve) => setTimeout(resolve, 150)));
+      const r = await page.evaluate(([x, y]) => {
+        const zs = window.__zs;
+        const w = () => zs.getState().windows.find((v) => v.id === 'fenetre-nord');
+        zs.step(0.05);
+        zs.setPlanks('fenetre-nord', 1);
+        zs.setPlayer(x, y);
+        zs.setInput({ aim: { angle: Math.PI / 2 } }); // vers le sud, dans la salle
+        zs.step(0.5);
+        const free = { repairing: w().repairing, progress: w().repairProgress };
+        zs.spawnEnemy(x, y + 220, { type: 'grand', gait: 'lent', wave: 30 });
+        zs.step(0.1);
+        const start = { progress: w().repairProgress, kills: zs.getState().kills };
+        let repairing = false;
+        let shots = 0;
+        for (let i = 0; i < 12; i += 1) {
+          zs.step(0.05);
+          repairing ||= w().repairing;
+          shots = Math.max(shots, zs.getState().bullets?.length ?? 0);
+        }
+        const during = { progress: w().repairProgress, enemies: zs.getState().enemies.length };
+        zs.killAll();
+        zs.step(0.6);
+        return { free, start, during, repairing, shots, after: { repairing: w().repairing, progress: w().repairProgress, planks: w().planks } };
+      }, [N.repairSpot.x, N.repairSpot.y]);
+      expect(r.free.repairing).toBe(true);
+      expect(r.free.progress).toBeGreaterThan(0);
+      expect(r.during.enemies).toBe(1); // le zombie (vie de la manche 30) est toujours visé
+      expect(r.shots).toBeGreaterThan(0); // le joueur tire
+      expect(r.repairing).toBe(false);
+      expect(r.during.progress).toBeCloseTo(r.start.progress, 6); // la planche garde sa progression, sans avancer
+      expect(r.after.repairing).toBe(true);
+      expect(r.after.progress + r.after.planks).toBeGreaterThan(r.during.progress + 1);
+    });
+  }
 });
