@@ -44,7 +44,8 @@ describe('hygiène du lot 3e : fichiers et textes', () => {
   });
 
   it('le workflow, index.html et Docs/seed.md sont inchangés', () => {
-    const changed = git(`diff --name-only ${BASE} -- .github index.html`);
+    // Lot 4 : index.html reçoit l'icône du site (demande du propriétaire) ; seul le workflow reste comparé.
+    const changed = git(`diff --name-only ${BASE} -- .github`);
     if (changed === null) return;
     expect(changed).toEqual([]);
     // Lot 4 : Docs/seed.md appartient au propriétaire, qui l'a mis à jour dans main après la fusion du lot 3e (avant : comparé au commit BASE, donc en échec).

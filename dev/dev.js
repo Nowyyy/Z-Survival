@@ -20,7 +20,7 @@ async function loadLots() {
     if (!response.ok) return null;
     const data = await response.json();
     const split = splitLots(Array.isArray(data.lots) ? data.lots : []);
-    // Seul le dernier lot est sondé d'avance ; les anciens le sont au moment de les ouvrir (pas de requêtes inutiles).
+    // Seul le dernier lot est sondé d'avance (lots.json porte le champ entry des autres).
     if (split.latest && typeof split.latest.entry !== 'string') split.latest = { ...split.latest, entry: await fetchEntry(split.latest) };
     return split;
   } catch {
@@ -56,8 +56,6 @@ const latestLink = document.getElementById('latest');
 const latestLabel = latestLink.querySelector('[data-label]');
 const latestMeta = latestLink.querySelector('[data-meta]');
 document.querySelector('a[href="../"]')?.setAttribute('href', ROOT);
-const picker = document.getElementById('picker');
-const select = document.getElementById('previous');
 const note = document.getElementById('note');
 
 const formatDate = (iso, lang) => {
@@ -67,7 +65,6 @@ const formatDate = (iso, lang) => {
 
 function render({ t, lang }) {
   const latest = lots?.latest ?? null;
-  const previous = lots?.previous ?? [];
 
   latestLink.hidden = !latest;
   if (latest) {
@@ -75,17 +72,6 @@ function render({ t, lang }) {
     latestLabel.textContent = t('dev.latest').replace('{lot}', lotLabel(latest.name));
     latestMeta.textContent = formatDate(latest.date, lang);
   }
-
-  const chosen = select.value;
-  select.replaceChildren(new Option(t('dev.choose'), ''));
-  for (const lot of previous) {
-    const date = formatDate(lot.date, lang);
-    select.add(new Option(date ? `${lotLabel(lot.name)} · ${date}` : lotLabel(lot.name), lotUrl(lot, ROOT)));
-  }
-  select.value = [...select.options].some((o) => o.value === chosen) ? chosen : '';
-  picker.hidden = !lots;
-  select.disabled = previous.length === 0;
-  picker.querySelector('button').disabled = previous.length === 0;
 
   // Journal : l'ordre du fichier est chronologique, on l'affiche du plus récent au plus ancien ; la date et le lien viennent de lots.json quand le lot y figure.
   const published = new Map((lots ? [lots.latest, ...lots.previous] : []).filter(Boolean).map((lot) => [lot.name, lot]));
@@ -126,15 +112,7 @@ function render({ t, lang }) {
 
   note.textContent = lots === null ? t('dev.unavailable') : latest ? '' : t('dev.noLots');
   note.hidden = note.textContent === '';
-  if (lots && previous.length === 0) select.options[0].textContent = t('dev.noPrevious');
 }
-
-picker.addEventListener('submit', async (event) => {
-  event.preventDefault();
-  if (!select.value) return;
-  const lot = lots?.previous.find((l) => select.value === lotUrl(l, ROOT));
-  location.assign(lot && typeof lot.entry !== 'string' ? lotUrl({ ...lot, entry: await fetchEntry(lot) }, ROOT) : select.value);
-});
 
 // Menu de développement : français seulement (la langue se réglera dans le jeu).
 await startPage({ base: '../', lang: 'fr', render });

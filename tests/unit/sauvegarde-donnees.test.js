@@ -190,8 +190,8 @@ describe('hygiène du lot 4 (partie A)', () => {
     expect(changed).toEqual([]);
   });
 
-  it('Docs/seed.md, le workflow et index.html sont inchangés', () => {
-    const changed = git('diff --name-only main -- Docs/seed.md .github index.html');
+  it('Docs/seed.md et le workflow sont inchangés (index.html : icône du site, demande du propriétaire)', () => {
+    const changed = git('diff --name-only main -- Docs/seed.md .github');
     if (changed === null) return;
     expect(changed).toEqual([]);
   });
