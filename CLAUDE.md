@@ -5,7 +5,7 @@ Mobile d'abord, français seul, sans dépendance d'exécution (Three.js : devDep
 Avant de modifier une page, lis `Docs/ref/conventions.md` (arborescence, pages, règles détaillées).
 
 ## Commandes
-- `npm ci` : installe · `npm run lint` · `npm test` (Vitest) · `npm run test:e2e` (Playwright, serveur sur :4173)
+- `npm ci` : installe · `npm run lint` · `npm test` (Vitest) · `npm run test:e2e` (Playwright essentiel, ~4 min ; `test:e2e:full` : tout, ~40 min)
 - `npm run vendor:three` : copie Three.js vers `vendor/three/` · `npm run build` : copie les pages et dossiers publiés dans `_site/`
 - `npm run assemble` : site complet = main + `_site/lots/<lot>/` par branche `origin/lot-*` + `_site/lots.json`.
 - `npm run lighthouse` : mobile (index.html 90 / 95 / 95 ; jeu.html 45 / 95 / 95 ; CLS ≤ 0,1) ; échoue sous les seuils
@@ -68,4 +68,4 @@ Avant de modifier une page, lis `Docs/ref/conventions.md` (arborescence, pages, 
 - Mode essai : wave, lvl, planks, map, empty, nospawn, endless, floor, money = sauvegarde en lecture seule (aucune écriture, solde réel lu) ; ?test=1 = mémoire, ?test=1&store=local = vrai localStorage.
 - Argent : economy.js, economy.json, bounty ; 10 par kill (balle seulement, jamais killAll/skipWave), 1 par planche posée, bonus de manche, fin de monde ; tout est conservé à la mort ; jamais de calcul d'argent hors de economy.js.
 - Interface : argent (« +N » agrégé), solde et état dans la pause et E2-7 ; sauvegarde.html (technique, remplacée au lot 7).
-- Lot 4 : getState().save et economy ; scripts/economie.mjs, code-sauvegarde.mjs ; détails : `conventions.md`.
+- Lot 4 : scripts/economie.mjs, code-sauvegarde.mjs ; détails : `conventions.md`.

@@ -110,7 +110,8 @@
       "Le solde et les niveaux des statistiques sont enregistrés sur l'appareil (clé unique, écriture par différences, jamais écrasée si elle est illisible) et survivent au rechargement.",
       "Les adresses d'essai (?wave=, ?lvl=, ?map=, ?money=…) lisent ta vraie sauvegarde mais n'écrivent jamais : la pause et l'écran de fin le disent.",
       "La page sauvegarde.html permet d'exporter la sauvegarde par un code, de l'importer (avec aperçu et confirmation), de la réparer ou de l'effacer : utile car Safari efface les données d'un site après 7 jours d'usage sans visite.",
-      "L'interface montre l'argent dans le HUD (avec un « +N » agrégé), le solde et l'état de la sauvegarde dans la pause, l'argent gagné et les records sur l'écran de fin."
+      "L'interface est plus compacte : blocs de taille fixe (vie, argent, « Vague 1 / 40 »), bouton Pause en icône, une seule silhouette pour les chutes ; le solde et l'état de la sauvegarde sont dans la pause, l'argent gagné et les records sur l'écran de fin.",
+      "Menu /dev : plus de liste déroulante, le journal des versions est replié ; icône « Z » pour l'écran d'accueil ; tests de bout en bout ramenés à 4 minutes."
     ] }
   ]
 }

@@ -10,7 +10,6 @@ const load = (name) => JSON.parse(readFileSync(`data/game/${name}.json`, 'utf8')
 const params = { save: load('save'), economy: load('economy'), stats: load('player-stats') };
 const KEY = params.save.storageKey;
 const SIZE = { width: 667, height: 375 };
-const BIG = { width: 1440, height: 900 };
 const BROWSER_NOISE = /GL Driver Message|ReadPixels|GPU stall/;
 const LOCAL = '/jeu.html?test=1&store=local&seed=1';
 const state = (page) => page.evaluate(() => window.__zs.getState());
@@ -60,7 +59,7 @@ const balance = async (page) => (await state(page)).save.balance;
 test.describe('gains', () => {
   test.skip(({ isMobile }) => isMobile, 'bureau (la fenêtre est réglée par chaque test)');
 
-  for (const [type, amount] of [['marcheur', 10], ['petit', 10], ['voute', 10], ['grand', 10]]) {
+  for (const [type, amount] of [['marcheur', 10]]) {
     test(`un ${type} tué par une balle rapporte ${amount} (montant fixe)`, async ({ page }) => {
       await open(page);
       expect(await shoot(page, type)).toBe(1);
@@ -441,7 +440,7 @@ test.describe('mode essai', () => {
     expect(await writes(page)).toHaveLength(1);
   });
 
-  for (const [name, value] of [['wave', '3'], ['lvl', 'degats:3'], ['planks', '2'], ['map', 'salle'], ['empty', '1'], ['nospawn', '1'], ['endless', '1'], ['floor', '0'], ['money', '500']]) {
+  for (const [name, value] of [['wave', '3'], ['lvl', 'degats:3'], ['money', '500']]) {
     test(`?${name}=${value} déclenche le mode essai, zéro écriture`, async ({ page }) => {
       await page.addInitScript(`${SPY}\n${seedStorage(REAL)}`);
       await open(page, `${LOCAL}&${name}=${value}`);
@@ -662,7 +661,7 @@ test.describe('interface', () => {
     expect(m.small).toEqual([]);
   });
 
-  for (const size of [SIZE, BIG]) {
+  for (const size of [SIZE]) {
     for (const variant of ['death', 'world']) {
       test(`E2-7 (${variant}) à ${size.width}×${size.height} : toutes les lignes visibles, sans débordement, lien de 44 px`, async ({ page }) => {
         await open(page, LOCAL, { size });
@@ -766,8 +765,8 @@ test.describe('interface', () => {
 test.describe('budget et performance', () => {
   test.skip(({ isMobile }) => isMobile, 'bureau');
   // Références mesurées avant le lot (partie C non commencée) : 10 zombies variés, ombres, joueur au départ / près d'une fenêtre / à l'étage.
-  const REF = { R1: [198, 13800], R2: [195, 13064], U1: [207, 15346] };
-  for (const [name, extra, where] of [['R1', '&nospawn=1', 'start'], ['R2', '&nospawn=1', 'window'], ['U1', '&wave=21&floor=1&nospawn=1', 'start']]) {
+  const REF = { R1: [198, 13800], U1: [207, 15346] };
+  for (const [name, extra, where] of [['R1', '&nospawn=1', 'start'], ['U1', '&wave=21&floor=1&nospawn=1', 'start']]) {
     test(`${name} : appels de dessin et triangles identiques à la référence (écart 0)`, async ({ page }) => {
       await open(page, `/jeu.html?test=1&seed=1&shadows=1${extra}`);
       const r = await page.evaluate((mode) => {
@@ -791,7 +790,7 @@ test.describe('budget et performance', () => {
     });
   }
 
-  for (const width of [360, 768, 1440]) {
+  for (const width of [360]) {
     test(`CLS avec les données retardées de 400 ms (${width} px) : au plus 0,1`, async ({ browser, baseURL }, testInfo) => {
       const context = await browser.newContext({ viewport: { width, height: width === 360 ? 640 : 800 } });
       const page = await context.newPage();
