@@ -5,13 +5,15 @@ import { checkTargets, measureSound } from '../../js/core/atelier-check.js';
 import { loopSeam, onsets, spectralDistance } from '../../js/core/audio-analysis.js';
 import { SCENE_DURATION, SCENE_IDS, createScene, listenerFloor, mixFor } from '../../js/core/scenes-sons.js';
 import { formatNumber, parseChoices, serializeChoices } from '../../js/core/atelier-choices.js';
-import { LIMIT_BYTES, project } from '../../scripts/sons/projection.mjs';
+import { project } from '../../scripts/sons/projection.mjs';
+import { synthRecipes } from './helpers/sons-anciens.js';
 
 // Lot 3h-C : propositions (priorité 2), boucles sans raccord, scènes de 30 s, projection du poids, format de « Mes choix ».
 const raw = JSON.parse(readFileSync('data/game/sounds-atelier.json', 'utf8'));
 const data = resolveAtelier(raw);
 const audio = JSON.parse(readFileSync('data/game/audio.json', 'utf8'));
-const { sounds } = JSON.parse(readFileSync('data/game/sounds.json', 'utf8'));
+// Lot 3i : recettes de synth.js (les recettes remplacées par l'atelier viennent de sounds-legacy.json ; l'atelier : sons-integres.test.js).
+const sounds = synthRecipes();
 const dict = JSON.parse(readFileSync('data/i18n/atelier-sons.json', 'utf8'));
 const p2 = data.slots.filter((s) => s.priority === 2);
 const slotOf = (id) => data.slots.find((s) => s.id === id);
@@ -201,14 +203,16 @@ describe('scènes de 30 s', () => {
   });
 });
 
-describe('projection du poids (limite de 8 Mo)', () => {
+// Lot 3i : la limite de poids est levée par décision du propriétaire ; la projection affiche le poids et la mémoire sans les comparer
+// (avant : limite de huit mégaoctets, champs limit et over).
+describe('projection du poids et de la mémoire (sans plafond)', () => {
   const choicesFor = (v) => ({ atelierRaw: raw, sounds, variant: v, measureTime: false });
   const a = project(choicesFor('A'));
   it('variante A partout : poids = référence − tampons remplacés + tampons ajoutés', () => {
     expect(a.refBytes).toBe(6894612);
     expect(a.total).toBe(a.refBytes - a.removedBytes + a.added);
-    expect(a.limit).toBe(LIMIT_BYTES);
-    expect(a.over).toBe(a.total > 8 * 1024 * 1024);
+    expect(a.decodedBytes).toBe(a.total);
+    expect(a).not.toHaveProperty('limit');
     expect(a.removed.sort()).toEqual(['joueur-chute', 'joueur-releve', 'pas', 'pas-zombie', 'planche-arrachee', 'planche-posee', 'zombie-attaque', 'zombie-blessure', 'zombie-gemissement', 'zombie-mort']);
   });
 
@@ -216,9 +220,9 @@ describe('projection du poids (limite de 8 Mo)', () => {
     expect(project(choicesFor('B')).total).toBeGreaterThan(a.total);
   });
 
-  it('priorité 1 seule, voix lues à la hauteur du type (comme aujourd\'hui) : tient dans les 8 Mo', () => {
+  it('priorité 1 seule, voix lues à la hauteur du type (comme aujourd\'hui) : plus légère que tout intégrer', () => {
     const r = project({ ...choicesFor('A'), p1Only: true, voicePlan: 'hauteur' });
-    expect(r.total).toBeLessThan(LIMIT_BYTES);
+    expect(r.total).toBeLessThan(a.total);
     expect(r.rows.some((row) => row.slot === 'voix-grand-errance')).toBe(false);
   });
 

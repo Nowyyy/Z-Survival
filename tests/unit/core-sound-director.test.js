@@ -2,11 +2,14 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { buildLayout } from '../../js/core/layout.js';
 import { createDirector, direct, materialFor, soundTable } from '../../js/core/sound-director.js';
+import { synthRecipes } from './helpers/sons-anciens.js';
 
 const read = (f) => JSON.parse(readFileSync(`data/game/${f}.json`, 'utf8'));
 const audio = read('audio');
 const materials = read('sound-materials');
-const cfg = { audio, materials, voice: read('zombie-voice'), sounds: soundTable(read('sounds').sounds) };
+// Lot 3i : table du pack d'avant (?sons=ancien) ; la voix par type, la réparation au début de la pose et le gain du pas de l'atelier sont
+// vérifiés dans sons-integres.test.js.
+const cfg = { audio, materials, voice: read('zombie-voice'), sounds: soundTable(synthRecipes()) };
 const layout = buildLayout(read('world'), read('decor'), {});
 const LISTENER = { x: 800, y: 600 };
 const frame = (events, extra = {}) => ({ time: 10, listener: LISTENER, walls: [], paused: false, events, ...extra });

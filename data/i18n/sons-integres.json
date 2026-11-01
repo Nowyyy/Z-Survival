@@ -1,0 +1,18 @@
+{
+  "dev.sons.pack": "Pack intégré (lot 3i) : {count} tampons, {bytes} octets ({mb} Mo) ; mémoire estimée une fois décodés : {mem} Mo (mono, 4 octets par échantillon). Aucun plafond de poids (décision du propriétaire).",
+  "dev.sons.atelier.link": "Ouvrir l'atelier des sons (variantes, réglages)",
+  "dev.sons.atelier.meta": "atelier : {slot}, variante {variant}, {seeds} versions",
+  "dev.sons.etiquette.zombie-gemissement-petit": "Petit : gémissement d'errance",
+  "dev.sons.etiquette.zombie-gemissement-voute": "Voûté : gémissement d'errance",
+  "dev.sons.etiquette.zombie-gemissement-grand": "Grand : gémissement d'errance",
+  "dev.sons.etiquette.zombie-attaque-petit": "Petit : cri d'attaque",
+  "dev.sons.etiquette.zombie-attaque-voute": "Voûté : cri d'attaque",
+  "dev.sons.etiquette.zombie-attaque-grand": "Grand : cri d'attaque",
+  "dev.sons.etiquette.zombie-blessure-petit": "Petit : touché",
+  "dev.sons.etiquette.zombie-blessure-voute": "Voûté : touché",
+  "dev.sons.etiquette.zombie-blessure-grand": "Grand : touché",
+  "dev.sons.etiquette.zombie-mort-petit": "Petit : mort",
+  "dev.sons.etiquette.zombie-mort-voute": "Voûté : mort",
+  "dev.sons.etiquette.zombie-mort-grand": "Grand : mort",
+  "dev.sons.etiquette.planche-posee.atelier": "Réparation : raclement puis coups de marteau (durée = temps de pose)"
+}

@@ -611,6 +611,7 @@ export function createGame(ctx) {
       sim.fs = out.state;
       sim.enemies = out.enemies;
       sim.win = out.state.win;
+      const repairWas = sim.repair; // lot 3i : réparation de l'image précédente (son de pose au début, arrêt si interrompue)
       sim.repair = Object.fromEntries(geoms.map((g) => [g.id, { repairing: out.repair[g.id].repairing, blocked: out.repair[g.id].blocked, progress: sim.win.windows[g.id].repairProgress, attacked: out.repair[g.id].attacked }]));
       // Réparation bloquée : phrase longue annoncée par #hud-live, au plus une fois par fenêtre et par 10 s (E2-9 reste muet pour les lecteurs d'écran).
       for (const g of geoms) {
@@ -637,6 +638,13 @@ export function createGame(ctx) {
           sim.announced[ev.windowId] = sim.time;
           windowLive = fmt(ctx.dict[WINDOW_TEXTS.liveOpen], { name: dictName(ev.windowId) });
         } else if (ev.type === 'plank-repaired' && ev.planks === sim.win.windows[ev.windowId].maxPlanks) windowLive = fmt(ctx.dict[WINDOW_TEXTS.liveRepaired], { name: dictName(ev.windowId) });
+      }
+      // Lot 3i : son de réparation au début de la pose de chaque planche (durée = temps de pose), arrêté si la pose est interrompue avant la fin.
+      for (const g of geoms) {
+        const now = sim.repair[g.id].repairing && sim.win.windows[g.id].planks < sim.win.windows[g.id].maxPlanks;
+        const posed = out.events.some((ev) => ev.type === 'plank-repaired' && ev.windowId === g.id);
+        if (now && (!repairWas?.[g.id]?.repairing || posed)) events.push({ type: 'plankRepairStart', x: g.center.x, y: g.center.y, windowId: g.id, floor: g.floor, duration: eff.player.repairTime, progress: sim.win.windows[g.id].repairProgress });
+        else if (!now && repairWas?.[g.id]?.repairing && !posed && sim.win.windows[g.id].planks < sim.win.windows[g.id].maxPlanks) events.push({ type: 'plankRepairStop', windowId: g.id });
       }
       world.windowMeshes?.sync(sim.win); // planche arrachée ou posée : le maillage suit (seules les planches modifiées sont réécrites)
       if (windowLive !== null) ctx.ui.setLive(windowLive);

@@ -38,9 +38,11 @@ describe('mémoire et temps de rendu des sons (tous les sons)', () => {
     }
   }
 
-  it('total des tampons : 8 Mo au plus (valeur mesurée rapportée)', () => {
+  // Lot 3i : plafond de poids levé par décision du propriétaire (avant : au plus huit mégaoctets) ; la valeur est mesurée et rapportée, le garde-fou
+  // d'emballement (64 Mo, provisoire) est dans sons-integres.test.js.
+  it('total des tampons : valeur mesurée rapportée (aucun plafond, décision du propriétaire)', () => {
     console.info(`mémoire audio : ${(bytes / 1048576).toFixed(2)} Mo pour ${count} tampons (dont ${(annonceBytes / 1048576).toFixed(2)} Mo d'annonces)`);
-    expect(bytes).toBeLessThanOrEqual(8 * 1048576);
+    expect(bytes).toBeGreaterThan(0);
   });
 
   it('les trois sons d\'annonce pèsent environ 2 Mo (1,5 à 2,5 Mo)', () => {

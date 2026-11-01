@@ -161,7 +161,7 @@ describe('textes, jetons, pureté et hygiène du lot 3', () => {
     for (const f of tracked) expect(statSync(f).size, f).toBeLessThan(5 * 1024 * 1024);
   });
 
-  it('mémoire audio totale ≤ 8 Mo (rapportée dans data-sons) et aucun dossier de rendu versionné', () => {
+  it('mémoire audio rapportée dans data-sons (plafond levé au lot 3i, décision du propriétaire) et aucun dossier de rendu versionné', () => {
     expect((git('ls-files') ?? []).filter((f) => /(^|\/)(node_modules|_site|dist)\//.test(f))).toEqual([]);
     expect(walk('data/game').filter((f) => f.endsWith('.json')).length).toBeGreaterThan(20);
   });

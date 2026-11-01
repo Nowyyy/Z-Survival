@@ -144,3 +144,20 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+
+/* Lot 3i : lien vers l'atelier des sons (cible de 44 px). */
+.sons-link-row {
+  margin: 0;
+}
+
+.sons-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--touch-target);
+  color: var(--color-action-text);
+}
+
+.sons-link:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
+}

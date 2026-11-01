@@ -4,10 +4,12 @@ import { admitGap, admitVoice, createVoiceState } from '../../js/core/audio-mix.
 import { createDirector, direct, soundTable } from '../../js/core/sound-director.js';
 import { buildLayout } from '../../js/core/layout.js';
 import { deepFreeze, WEIRD } from './helpers/monde.js';
+import { synthRecipes } from './helpers/sons-anciens.js';
 
 const read = (f) => JSON.parse(readFileSync(`data/game/${f}.json`, 'utf8'));
 const audio = read('audio');
-const sounds = read('sounds').sounds;
+// Lot 3i : table du pack d'avant (?sons=ancien) ; la réparation de l'atelier (au début de la pose) est vérifiée dans sons-integres.test.js.
+const sounds = synthRecipes();
 const cfg = { audio, materials: read('sound-materials'), voice: read('zombie-voice'), sounds: soundTable(sounds) };
 const layout = buildLayout(read('world'), read('decor'), {});
 const LISTENER = { x: 1800, y: 1400 };
