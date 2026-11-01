@@ -371,10 +371,11 @@ describe('mur percé : seulement quand le joueur est caché, jamais derrière lu
 });
 
 describe('feu et murs hauts à l\'étage', () => {
-  it('feux.json : un feu sur la pile de caisses P9 (une pièce de mobilier.world.json, aspect caisses)', () => {
+  it('feux.json : un feu sur la pile de caisses P9 et un sur Q2 à l\'étage (pièces de mobilier.world.json, aspect caisses)', () => {
     const feux = load(`${DIR}/feux.json`).feux;
-    expect(feux).toEqual([{ id: 'feu-P9', floor: 'rdc', piece: 'P9' }]);
+    expect(feux).toEqual([{ id: 'feu-P9', floor: 'rdc', piece: 'P9' }, { id: 'feu-Q2', floor: 'etage', piece: 'Q2' }]); // Q2 : pile de caisses de l'étage (sixième passe)
     expect(mobilier.pieces.P9.look).toBe('caisses');
+    expect(mobilier.pieces.Q2).toMatchObject({ look: 'caisses', floor: 'etage' });
   });
 
   it('createFire : trois maillages (flammes, fumée, lueur), aucune ombre, immobile en mouvement réduit, mêmes particules d\'une partie à l\'autre', async () => {

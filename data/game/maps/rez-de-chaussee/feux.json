@@ -1,6 +1,7 @@
 {
   "_provisoire": "Lot 3g (retour du propriétaire) : feux avec fumée posés sur des pièces de mobilier (identifiant de mobilier.world.json : le feu est au centre, sur le dessus de ses boîtes). Décor seulement : ni dégâts, ni collision, ni son. Absent avec ?detail=0.",
   "feux": [
-    { "id": "feu-P9", "floor": "rdc", "piece": "P9" }
+    { "id": "feu-P9", "floor": "rdc", "piece": "P9" },
+    { "id": "feu-Q2", "floor": "etage", "piece": "Q2" }
   ]
 }

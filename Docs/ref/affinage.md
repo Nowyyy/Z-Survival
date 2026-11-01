@@ -84,3 +84,4 @@ Atelier de la carte : visite libre, relevé du modèle, décisions rejouables. L
 
 ## Retours du propriétaire (cinquième passe)
 - **Linteau au-dessus des portes** : avec les murs jusqu'au plafond, un mur de béton de la hauteur de la porte (120) jusqu'au plafond (`floorLift` - 1), sur toute l'épaisseur du mur, au-dessus de chaque porte dans un mur (porte 1 au rez-de-chaussée, porte de l'étage) ; il reste quand la porte s'ouvre. Dessin seulement (collisions inchangées).
+- **Feu à l'étage** (sixième passe) : un second feu sur la pile de caisses Q2 de l'étage (`feux.json`), le même que celui de P9 (dans le groupe de l'étage).
