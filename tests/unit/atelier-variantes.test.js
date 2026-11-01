@@ -292,11 +292,12 @@ describe('données et textes de la page', () => {
     expect(main).toMatch(/const testMode = query\.get\('test'\) === '1';/);
   });
 
-  it('apercu.txt désigne atelier-sons.html (première ligne acceptée par le mécanisme d\'aperçu)', () => {
+  // Fusion dans lot-4b (lot 3i-A) : la branche d'intégration garde sa propre première ligne (jeu.html) ; sur lot-3h, c'est atelier-sons.html.
+  it('apercu.txt désigne atelier-sons.html sur lot-3h, ou la page de la branche d\'intégration (première ligne acceptée par le mécanisme d\'aperçu)', () => {
     const text = readFileSync('apercu.txt', 'utf8');
-    expect(parseEntry(text)).toBe('atelier-sons.html');
+    expect(['atelier-sons.html', 'jeu.html']).toContain(parseEntry(text));
     expect(text).toMatch(/type: hifi/);
-    expect(text).toMatch(/titre: Atelier des sons/);
+    if (parseEntry(text) === 'atelier-sons.html') expect(text).toMatch(/titre: Atelier des sons/);
   });
 
   it('la vue « sons choisis » lit les choix publiés (data/game/sounds-atelier-choix.txt) et se distingue par data-vue="choix" ; les deux pages se lient', () => {

@@ -17,6 +17,11 @@ const git = (args) => {
 // reste juste quand main avance (fusion d'un autre lot) ; null si aucune (copie sans dépôt) : tests sautés.
 const MAIN = ['origin/main', 'main'].find((b) => git(`rev-parse --verify --quiet ${b}`) !== null) ?? null;
 const BASE = MAIN ? (git(`merge-base HEAD ${MAIN}`) ?? '').trim() || null : null;
+// Lot 3i-A : après la fusion dans la branche d'intégration lot-4b (qui contient d'autres lots), « ce que le lot 3h a changé » se lit entre sa base
+// et la pointe de lot-3h (origin/lot-3h), pas entre main et HEAD ; sans cette branche distante, ces comparaisons sont sautées.
+const LOT = git('rev-parse --verify --quiet origin/lot-3h') !== null ? 'origin/lot-3h' : null;
+const LOT_BASE = LOT && MAIN ? (git(`merge-base ${LOT} ${MAIN}`) ?? '').trim() || null : null;
+const lotDiff = (paths) => (git(`diff --name-only ${LOT_BASE} ${LOT} -- ${paths.join(' ')}`) ?? '').split('\n').filter(Boolean);
 const NEW_CORE = ['audio-analysis', 'synth2', 'synth2-dsp', 'synth2-sources', 'atelier-check', 'atelier-choices', 'sound-cache', 'wave-svg', 'scenes-sons'].map((n) => `js/core/${n}.js`);
 // Moteur sonore existant, page des sons actuels et tests de sons : jamais modifiés par ce lot.
 const ENGINE = ['js/core/synth.js', 'js/core/sound-director.js', 'js/core/audio-mix.js', 'js/core/zombie-voice.js', 'js/core/footsteps.js', 'js/game/audio.js', 'js/game/sound-loader.js',
@@ -41,20 +46,20 @@ describe('hygiène du lot 3h : pureté et fichiers', () => {
     expect(added.filter((f) => /\.(wav|mp3|ogg|m4a|flac|webm|aac|opus|aiff?|png|jpe?g|gif|webp|avif|ico|bmp|svg|woff2?|ttf|otf|eot|glb|gltf|obj)$/i.test(f))).toEqual([]);
   });
 
-  it('le moteur sonore existant, sa page d\'écoute et ses tests sont inchangés (diff vide)', () => {
-    if (!BASE) return;
-    expect((git(`diff --name-only ${BASE} -- ${ENGINE.join(' ')}`) ?? '').split('\n').filter(Boolean)).toEqual([]);
+  it('le moteur sonore existant, sa page d\'écoute et ses tests sont inchangés par le lot 3h (diff vide)', () => {
+    if (!LOT_BASE) return;
+    expect(lotDiff(ENGINE)).toEqual([]);
   });
 
-  it('le jeu (jeu.html, js/game/, css/game.css), index.html, CLAUDE.md, conventions, seed, tests du journal et workflow sont inchangés', () => {
-    if (!BASE) return;
-    expect((git(`diff --name-only ${BASE} -- ${GAME.join(' ')}`) ?? '').split('\n').filter(Boolean)).toEqual([]);
+  it('le jeu (jeu.html, js/game/, css/game.css), index.html, CLAUDE.md, conventions, seed, tests du journal et workflow sont inchangés par le lot 3h', () => {
+    if (!LOT_BASE) return;
+    expect(lotDiff(GAME)).toEqual([]);
   });
 
   it('journal des versions : seule l\'entrée lot-3h est ajoutée (exigée par data-changelog pour le bilan Docs/lots/lot-3h.md), rien d\'autre ne change', () => {
-    if (!BASE) return;
-    const before = JSON.parse(git(`show ${BASE}:data/changelog.json`)).lots;
-    const after = JSON.parse(readFileSync('data/changelog.json', 'utf8')).lots;
+    if (!LOT_BASE) return;
+    const before = JSON.parse(git(`show ${LOT_BASE}:data/changelog.json`)).lots;
+    const after = JSON.parse(git(`show ${LOT}:data/changelog.json`)).lots;
     expect(after.filter((e) => e.name !== 'lot-3h')).toEqual(before);
     expect(after.filter((e) => e.name === 'lot-3h').length).toBe(1);
   });
