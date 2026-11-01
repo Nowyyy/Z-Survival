@@ -10,14 +10,19 @@ import { cameraPosition, fitDistance, groundView } from '../core/viewport.js';
 import { fogGrid } from '../core/fog.js';
 import { itemQuads, CATALOGUE as DECOR_CATALOGUE } from '../core/decor-interieur.js';
 import { furnitureParts } from '../core/furniture-model.js';
+import { doorBoxes, grilleBoxes, rubbleBoxes } from '../core/portes-aspect.js';
 import { plankSettings } from '../core/plank-layout.js';
 import { plankSheet } from '../core/texgen.js';
 import { createDebrisMeshes, createWindowMeshes } from './windows-mesh.js';
+import { createSeeThrough } from './see-through.js';
+import { seeThroughSettings } from '../core/see-through.js';
 
 const FAR_GROUND = 40_000; // sol extérieur étendu bien au-delà du monde
 const ROAD_Y = 0.4; // route, trottoir et sentiers : plaques plates au-dessus de l'herbe
 const ATLAS = 'atlas-props';
 const DOOR_THICKNESS = 24; // épaisseur dessinée d'une porte d'escalier (le bloc de collision garde toute son emprise)
+// Lot 3g (retours du propriétaire) : avec les murs jusqu'au plafond, hauteur d'une porte (au-dessus, l'ouverture reste libre : la porte se voit d'en haut).
+const DOOR_TALL = 120;
 const FENCE_HEIGHT = 36; // garde-corps du trou des escaliers : une répétition de la texture « garde-corps »
 
 // Région d'atlas par type de meuble (data/game/world.json : table, comptoir, caisse, armoire, colonne, etagere).
@@ -200,6 +205,48 @@ function segmentedWallBoxes(layout, render) {
     bars.push({ x: cx, y: (sill + lintel) / 2, z: cz, sx: 3, sy: lintel - sill, sz: 3 });
   }
   return { walls, bars };
+}
+
+// Lot 3g (retours du propriétaire) : ouverture grillagée dans un mur (décor léger « grille » : a, b sur la face intérieure, n vers la salle). Les boîtes de mur qui
+// contiennent le milieu de l'ouverture sont coupées sur la longueur [a, b] ; le mur reste au-dessus de `open` (linteau). Le dessin seulement : la collision du mur reste.
+// Rend les boîtes de mur coupées et les rectangles des ouvertures (épaisseur de la boîte coupée, 1 de moins de chaque côté).
+export function cutGrilles(walls, grilles, thick, open) {
+  let out = walls;
+  const holes = [];
+  for (const g of grilles) {
+    const mx = (g.a.x + g.b.x) / 2 - g.n.x * (thick / 2);
+    const mz = (g.a.y + g.b.y) / 2 - g.n.y * (thick / 2);
+    const alongX = Math.abs(g.n.y) >= Math.abs(g.n.x); // mur est-ouest : l'ouverture court le long de x
+    const lo = alongX ? Math.min(g.a.x, g.b.x) : Math.min(g.a.y, g.b.y);
+    const hi = alongX ? Math.max(g.a.x, g.b.x) : Math.max(g.a.y, g.b.y);
+    const next = [];
+    for (const w of out) {
+      const inside = Math.abs(mx - w.x) <= w.sx / 2 && Math.abs(mz - w.z) <= w.sz / 2 && w.y - w.sy / 2 < open;
+      if (!inside) {
+        next.push(w);
+        continue;
+      }
+      const c = alongX ? w.x : w.z;
+      const len = alongX ? w.sx : w.sz;
+      const w0 = c - len / 2;
+      const w1 = c + len / 2;
+      const a0 = Math.max(w0, lo);
+      const a1 = Math.min(w1, hi);
+      const piece = (p0, p1, y0, y1) => {
+        if (p1 - p0 <= 0.01 || y1 - y0 <= 0.01) return;
+        next.push(alongX ? { ...w, x: (p0 + p1) / 2, sx: p1 - p0, y: (y0 + y1) / 2, sy: y1 - y0 } : { ...w, z: (p0 + p1) / 2, sz: p1 - p0, y: (y0 + y1) / 2, sy: y1 - y0 });
+      };
+      const y0 = w.y - w.sy / 2;
+      const y1 = w.y + w.sy / 2;
+      piece(w0, a0, y0, y1);
+      piece(a1, w1, y0, y1);
+      piece(a0, a1, Math.max(y0, open), y1);
+      const across = alongX ? { z0: w.z - w.sz / 2 + 1, z1: w.z + w.sz / 2 - 1 } : { x0: w.x - w.sx / 2 + 1, x1: w.x + w.sx / 2 - 1 };
+      holes.push(alongX ? { x: a0, y: across.z0, w: a1 - a0, h: across.z1 - across.z0, top: Math.min(open, y1) - 0.5 } : { x: across.x0, y: a0, w: across.x1 - across.x0, h: a1 - a0, top: Math.min(open, y1) - 0.5 });
+    }
+    out = next;
+  }
+  return { walls: out, holes };
 }
 
 // Décor extérieur (graine fixe, voir js/core/decor.js) : `b` = constructeurs par matière, `region(id, scale?)` = fenêtre d'atlas.
@@ -421,7 +468,9 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
   // Une matière (donc un appel de dessin) par texture. Extérieur : sol de terre, herbe, route, trottoir, décor de l'atlas de props (arbres, buissons, lampadaires,
   // barrières) et voitures (avec ombre). Chaque étage : sol, murs, détails (barreaux, pieds, dossiers, socles : atlas sans ombre) et meubles (avec ombre).
   const mat = (id) => new THREE.MeshLambertMaterial({ map: textures.texture(id) });
-  const atlasMaterial = mat(ATLAS);
+  // Lot 3g (retours du propriétaire) : murs, meubles, portes et décor (atlas) percés autour du joueur caché (render.seeThrough ; ?percee=0 l'enlève).
+  const seeThrough = createSeeThrough(seeThroughSettings(render.seeThrough));
+  const atlasMaterial = seeThrough.apply(mat(ATLAS));
   const region = (id) => textures.region(ATLAS, id);
   const ex = {
     road: new Builder(), sidewalk: new Builder(), grass: new Builder(), soil: new Builder(), scenery: new Builder(), props: new Builder(),
@@ -439,6 +488,17 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
     ex.grass.slab(0, 0, size.width, size.height, -1, textures.repeat('herbe'));
   }
 
+  // Portes et blocs (lots 3c et 3e) : liste de zones.json (voir plus bas).
+  const doorList = Array.isArray(layouts?.doors) ? layouts.doors.map((d) => ({ id: d.id, blocks: floors.flatMap((f) => (d.blocks?.[f] ?? []).map((b) => ({ floor: f, ...b }))) })) : (Array.isArray(layout.doors) ? layout.doors : []).map((d) => ({ id: d.id, blocks: (d.blocks ?? [{ id: d.id, wall: true, rect: d.rect }]).map((b) => ({ floor: 'rdc', ...b })) }));
+  // Lot 3g (retours du propriétaire) : murs du rez-de-chaussée jusqu'au plafond (essai, render.ceilingWalls ; ?murs=bas l'annule).
+  const tallRdc = render.ceilingWalls === true && lift > num(render.wallHeight);
+  // Dessin d'une porte dans un mur : un peu plus mince que le mur (1 de moins de chaque côté), 0,5 de jeu aux bouts (le débord de 4 des collisions n'est pas dessiné).
+  const wallDoorRect = (r, thickness) => {
+    const t = thickness - 2;
+    const along = Math.max(r.w, r.h) - 2 * 4;
+    return r.h > r.w ? { x: r.x + r.w / 2 - t / 2, y: r.y + 4 + 0.5, w: t, h: along - 1 } : { x: r.x + 4 + 0.5, y: r.y + r.h / 2 - t / 2, w: along - 1, h: t };
+  };
+  const grillesOf = (f) => (Array.isArray(render.decorInterieur) ? render.decorInterieur : []).filter((it) => it?.kind === 'grille' && it.floor === f && it.a && it.b && it.n);
   const wallRepeat = textures.repeat('mur');
   for (const f of floors) {
     const l = layoutOf(f);
@@ -451,7 +511,18 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
     // ?murs=bas revient à la hauteur d'avant. Le dessin seulement : collisions, tirs et fenêtres inchangés.
     const tall = f === 'rdc' && render.ceilingWalls === true && lift > num(render.wallHeight);
     const wallRender = tall ? { ...render, wallHeight: lift - 1 } : render;
-    const { walls, bars } = l.segmented ? segmentedWallBoxes(l, wallRender) : wallBoxes(l.room, l.windows, l.windowSize, wallRender);
+    const built = l.segmented ? segmentedWallBoxes(l, wallRender) : wallBoxes(l.room, l.windows, l.windowSize, wallRender);
+    const { bars } = built;
+    // Lot 3g (retours du propriétaire) : ouvertures grillagées (le modèle n'a pas de mur à côté de F8 ni à la place de F7). Aucun linteau au-dessus des portes :
+    // vue du dessus, il cacherait la porte.
+    const thickness = num(l.wallThickness, num(layout.wallThickness, 40));
+    // Ouverture grillagée sur toute la hauteur (vue du dessus, on voit la traverse et les barreaux ; un linteau les cacherait).
+    const cut = cutGrilles(built.walls, grillesOf(f), thickness, num(wallRender.wallHeight) + 1);
+    const walls = cut.walls;
+    cut.holes.forEach((h, k) => grilleBoxes(h, h.top).forEach((b, j) => {
+      const r = region(b.region);
+      fb.detail.box(b, { rect: r, scale: r.scale, seed: 700 + k * 40 + j }, b.faces);
+    }));
     for (const w of walls) {
       fb.wall.box(extents(w), { repeat: wallRepeat }, 'cotes');
       fb.wall.box(extents(w), { fixed: [0.31, 0.62] }, 'dessus'); // dessus : un seul texel du mur, donc sans texture
@@ -505,6 +576,7 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
   const decorCount = Object.fromEntries(floors.map((f) => [f, 0]));
   for (const it of Array.isArray(render.decorInterieur) ? render.decorInterieur : []) {
     if (!floors.includes(it?.floor) || !DECOR_CATALOGUE[it.kind]) continue;
+    if (it.kind === 'grille') continue; // ouverture grillagée : mur coupé et barreaux dessinés avec les murs (cutGrilles, grilleBoxes)
     const b = decorB[it.floor];
     const scale = DECOR_CATALOGUE[it.kind].scale;
     for (const q of itemQuads(it)) {
@@ -527,7 +599,7 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
   tag(ex.scenery.mesh(groups.exterieur, atlasMaterial, { receive: true }), 'exterieur');
   tag(ex.props.mesh(groups.exterieur, atlasMaterial, { cast: true, receive: true }), 'exterieur');
   const floorMat = mat('sol-salle');
-  const wallMat = mat('mur');
+  const wallMat = seeThrough.apply(mat('mur'));
   for (const f of floors) {
     const fb = onFloor[f];
     tag(fb.floor.mesh(shellOf(f), floorMat, { receive: true }), f);
@@ -673,7 +745,9 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
       const up = mine.filter((g) => exposedAt(g.center.x, g.center.y));
       return [{ scene: groups.rdc, geoms: mine.filter((g) => !up.includes(g)) }, { scene: groups.rdcExposed, geoms: up }];
     }).filter((q) => q.geoms.length > 0);
-    const wm = parts.map(({ scene, geoms: gs }) => createWindowMeshes({ scene, material, geoms: gs, settings, sheet, seed }));
+    // Lot 3g (retour du propriétaire) : murs jusqu'au plafond : pastilles du rez-de-chaussée incrustées dans le mur, juste au-dessus du cadre de la fenêtre.
+    const pipOn = (gs) => (tallRdc && gs.every((g) => (g.floor ?? 'rdc') === 'rdc') ? { ...settings, pipFace: true, pipCenter: settings.lintel + settings.frameWidth + 4 + settings.pip / 2 } : settings);
+    const wm = parts.map(({ scene, geoms: gs }) => createWindowMeshes({ scene, material, geoms: gs, settings: pipOn(gs), sheet, seed }));
     const dm = parts.map(({ scene, geoms: gs }) => createDebrisMeshes({ scene, material, settings, sheet, ids: gs.map((g) => g.id) }));
     windowMeshes = {
       meshes: wm.flatMap((w) => w.meshes),
@@ -694,8 +768,6 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
   // ouverte au chargement (?wave=N) n'est même pas construite. L'enfoncement met l'échelle verticale (origine au sol) de 1 à 0,001 ; le maillage est ensuite retiré
   // et sa géométrie libérée. Clé d'un bloc : « étage:identifiant » (porte-3 a un bloc à chaque étage) ; les identifiants publics sont ceux des portes.
   const doorMeshes = new Map();
-  const doorRegion = region('tole');
-  const doorList = Array.isArray(layouts?.doors) ? layouts.doors.map((d) => ({ id: d.id, blocks: floors.flatMap((f) => (d.blocks?.[f] ?? []).map((b) => ({ floor: f, ...b }))) })) : (Array.isArray(layout.doors) ? layout.doors : []).map((d) => ({ id: d.id, blocks: (d.blocks ?? [{ id: d.id, wall: true, rect: d.rect }]).map((b) => ({ floor: 'rdc', ...b })) }));
   const addDoor = (door) => {
     for (const bl of door.blocks) {
       const key = `${bl.floor}:${bl.id}`;
@@ -705,18 +777,20 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
       // pour qu'aucune face ne coïncide avec celles des murs voisins (clipping).
       const r = bl.rect;
       let visual = { x: r.x + 1, y: r.y + 1, w: r.w - 2, h: r.h - 2 };
-      if (bl.wall) {
-        // Porte dans un mur : un peu plus mince que le mur (1 de moins de chaque côté), 0,5 de jeu aux bouts (le débord de 4 des collisions n'est pas dessiné).
-        const t = layout.wallThickness - 2;
-        const along = Math.max(r.w, r.h) - 2 * 4;
-        visual = r.h > r.w ? { x: r.x + r.w / 2 - t / 2, y: r.y + 4 + 0.5, w: t, h: along - 1 } : { x: r.x + 4 + 0.5, y: r.y + r.h / 2 - t / 2, w: along - 1, h: t };
-      }
-      if (!bl.wall) {
-        // Bloc d'escalier (surface pleine) : dessiné comme une porte mince (DOOR_THICKNESS) au centre de son emprise, dans le sens de sa plus petite dimension.
+      if (bl.wall) visual = wallDoorRect(r, layout.wallThickness);
+      // Lot 3g (retours du propriétaire) : une vraie porte de planches dans un mur ; un éboulis infranchissable sur un escalier fermé (js/core/portes-aspect.js).
+      // Avec ?detail=0 : l'ancien dessin (une boîte de tôle ; bloc d'escalier : porte mince de DOOR_THICKNESS au centre de son emprise).
+      const plain = render.detailDoors === false;
+      if (plain && !bl.wall) {
         const thin = Math.min(DOOR_THICKNESS, Math.min(visual.w, visual.h));
         visual = visual.h <= visual.w ? { x: visual.x, y: visual.y + visual.h / 2 - thin / 2, w: visual.w, h: thin } : { x: visual.x + visual.w / 2 - thin / 2, y: visual.y, w: thin, h: visual.h };
       }
-      builder.box(rectBox(visual, 0, r.hauteur - 1), { rect: doorRegion, scale: doorRegion.scale, seed: 900 });
+      const height = bl.wall && bl.floor === 'rdc' && tallRdc ? DOOR_TALL : r.hauteur - 1;
+      const boxes = plain ? [{ ...rectBox(visual, 0, height), region: 'tole', faces: 'tout' }] : (bl.wall ? doorBoxes(visual, height, bl.id) : rubbleBoxes(visual, Math.min(height, 66), bl.id));
+      boxes.forEach((b, j) => {
+        const rg = region(b.region);
+        builder.box(b, { rect: rg, scale: rg.scale, seed: 900 + j }, b.faces);
+      });
       const mesh = builder.mesh(bl.floor === 'rdc' && (exposedAt(r.x + r.w / 2, r.y + r.h / 2) || touchesHole(r)) ? groups.rdcExposed : groups[bl.floor], atlasMaterial, { cast: false, receive: true });
       if (mesh) {
         mesh.name = bl.id;
@@ -769,6 +843,9 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
     },
     // Étage affiché : les groupes de l'autre étage sont cachés (maillages, planches, débris, blocs, zones marquées) ; l'extérieur reste dessiné ; la dalle sombre
     // n'est dessinée qu'à l'étage. Aucune reconstruction, aucun dispose.
+    // Lot 3g : position du joueur pour le mur percé (à chaque image, avec la caméra) ; état pour les tests.
+    seeThrough: (x, y) => seeThrough.set(x, y),
+    seeThroughState: () => seeThrough.state(),
     showFloor(floor) {
       this.setElevation(floor === 'etage' ? lift : 0, floor);
     },

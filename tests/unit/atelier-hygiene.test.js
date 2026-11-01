@@ -13,7 +13,7 @@ const git = (args) => {
 // Commit de `main` au lancement du lot 3g (base de la branche lot-3g).
 const BASE = '4b3f41c';
 const code = (f) => readFileSync(f, 'utf8').split('\n').filter((l) => !l.trim().startsWith('//')).join('\n').replace(/\s\/\/.*$/gm, '');
-const NEW_CORE = ['releve', 'ecarts', 'ecarts-svg', 'visite', 'mobilier-aspect'].map((n) => `js/core/${n}.js`);
+const NEW_CORE = ['releve', 'ecarts', 'ecarts-svg', 'visite', 'mobilier-aspect', 'portes-aspect', 'see-through'].map((n) => `js/core/${n}.js`);
 const walk = (dir) => readdirSync(dir, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? walk(`${dir}/${e.name}`) : [`${dir}/${e.name}`]));
 
 describe('hygiène du lot 3g : modules purs', () => {

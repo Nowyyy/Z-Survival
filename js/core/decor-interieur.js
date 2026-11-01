@@ -19,7 +19,8 @@ export const CATALOGUE = Object.freeze({
   tache: Object.freeze({ wall: false, z0: 0.4, z1: 0.4, tris: 8, region: 'ecorce', scale: 80 }),
   sacs: Object.freeze({ wall: false, z0: 0, z1: 18, tris: 10, region: 'bois', scale: 40 }),
   bidon: Object.freeze({ wall: false, z0: 0, z1: 28, tris: 10, region: 'barriere', scale: 40 }),
-  // Lot 3g (retour du propriétaire) : grille à barreaux devant un mur plein (ouverture à barreaux du modèle, ancienne fenêtre F7) : 8 barreaux et 2 traverses.
+  // Lot 3g (retour du propriétaire) : ouverture à barreaux du modèle (à la place de F7, et à l'ouest de F8). Le jeu coupe le mur et dessine de vrais barreaux
+  // (js/game/world.js, js/core/portes-aspect.js : grilleBoxes) ; itemQuads n'en donne qu'un aperçu plat (8 barreaux, 2 traverses), non dessiné dans le jeu.
   grille: Object.freeze({ wall: true, z0: 0, z1: 58, depth: 3, tris: 20, region: 'tole', scale: 40 }),
 });
 export const KINDS = Object.freeze(Object.keys(CATALOGUE));

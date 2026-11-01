@@ -77,11 +77,12 @@ test.describe('zones : départ, porte fermée', () => {
     expect(s.zones.doors.map((d) => [d.id, d.open, d.planned])).toEqual([['porte-1', false, false], ['porte-2', false, false], ['porte-3', false, false]]);
   });
 
-  test('la porte est visible (un maillage de 12 triangles au plus) et solide : le joueur ne passe pas dans l\'aile', async ({ page }) => {
+  // Lot 3g (retours du propriétaire) : vraie porte de planches (environ 150 triangles) et éboulis aux escaliers fermés (environ 450 au plus) ; avant : 12 au plus.
+  test('la porte est visible (un maillage de 500 triangles au plus) et solide : le joueur ne passe pas dans l\'aile', async ({ page }) => {
     await open(page);
     const before = await STATE(page);
     expect(before.doorMeshes.ids).toContain('porte-1'); // lot 3e : les blocs des portes 2 et 3 sont aussi dessinés
-    expect(before.doorMeshes.triangles).toBeLessThanOrEqual(12 * before.doorMeshes.meshes);
+    expect(before.doorMeshes.triangles).toBeLessThanOrEqual(500 * before.doorMeshes.meshes);
     expect(before.doorMeshes.scaleY['porte-1']).toBe(1);
     const p = await page.evaluate(([x, y]) => {
       const zs = window.__zs;

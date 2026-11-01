@@ -93,9 +93,10 @@ test.describe('budgets de rendu avec le détail (≤ référence + 1 500 triangl
       expect(on.triangles - off.triangles).toBeLessThanOrEqual(1500 + MOBILIER);
       expect(on.calls - off.calls).toBeLessThanOrEqual(6);
       // Sans le détail : la référence, à la géométrie corrigée de la partie B près (quelques triangles) ; F7 retirée après C (son maillage, un appel,
-      // manque quand elle était dans le champ : U4).
+      // manque quand elle était dans le champ : U4) ; pastilles incrustées dans la face du mur (deuxième passe) : le volume d'une fenêtre change, elle peut entrer
+      // dans le champ (un appel, 42 triangles au plus : R1).
       expect(Math.abs(off.triangles - REF[id][1])).toBeLessThanOrEqual(80);
-      expect(off.calls).toBeLessThanOrEqual(REF[id][0]);
+      expect(off.calls).toBeLessThanOrEqual(REF[id][0] + 1);
       expect(off.calls).toBeGreaterThanOrEqual(REF[id][0] - 1);
     });
   }

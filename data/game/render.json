@@ -7,6 +7,8 @@
   "gunHeight": 43,
   "floorLift": 180,
   "ceilingWalls": true,
+  "seeThrough": { "radius": 46, "chest": 26, "edge": 0.7 },
+  "_seeThrough": "Retour du propriétaire (lot 3g) : murs, meubles et portes entre la caméra et le joueur tramés (un pixel sur deux) dans un cône de rayon radius à la hauteur du joueur (chest) ; ?percee=0 l'enlève. Aucun matériau transparent.",
   "_ceilingWalls": "Essai demandé par le propriétaire (lot 3g) : murs et piliers du rez-de-chaussée montés jusqu'au dessous de l'étage (floorLift) ; ?murs=bas revient à wallHeight. Peut être retiré.",
   "fog": { "near": 1.2, "far": 2.6, "wallNear": 100, "wallFar": 320, "wallHeight": 110, "wallPad": 1500, "wallCell": 40 },
   "camera": { "fov": 40, "tilt": 75, "margin": 0.02, "zoom": 2.5, "slack": 60, "smoothing": 0.12, "near": 20, "far": 9000 },

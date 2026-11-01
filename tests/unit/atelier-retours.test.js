@@ -1,4 +1,4 @@
-// Lot 3g, retours du propriétaire : sortie de l'escalier par le côté au pied (stair-walk.js), emprise d'escalier qui suit les marches (maps.js, `free`),
+// Lot 3g, retours du propriétaire (deux passes) : sortie de l'escalier par le côté au pied (stair-walk.js), emprise d'escalier qui suit les marches (maps.js, `free`),
 // fenêtre retirée et emprise d'escalier par décision (decisions.js), aspect du mobilier d'après le modèle (mobilier-aspect.js), grille (décor léger),
 // murs jusqu'au plafond (render.json).
 import { describe, it, expect } from 'vitest';
@@ -8,6 +8,14 @@ import { STATUS, applyDecisions } from '../../js/core/decisions.js';
 import { LOOKS, MAX_HEIGHT, boxTriangles, lookOf, pieceBoxes, unitHash } from '../../js/core/mobilier-aspect.js';
 import { CATALOGUE, itemQuads } from '../../js/core/decor-interieur.js';
 import { generateMapFiles } from '../../scripts/plan-vers-monde.mjs';
+import * as THREE from 'three';
+import { REGIONS } from '../../js/core/mobilier-aspect.js';
+import { doorBoxes, grilleBoxes, rubbleBoxes } from '../../js/core/portes-aspect.js';
+import { DEFAULTS, seeThroughLevel, seeThroughSettings } from '../../js/core/see-through.js';
+import { plankSettings } from '../../js/core/plank-layout.js';
+import { plankSheet } from '../../js/core/texgen.js';
+import { cutGrilles } from '../../js/game/world.js';
+import { createWindowMeshes } from '../../js/game/windows-mesh.js';
 
 const DIR = 'data/game/maps/rez-de-chaussee';
 const load = (f) => JSON.parse(readFileSync(f, 'utf8'));
@@ -194,5 +202,116 @@ describe('grille et murs jusqu\'au plafond', () => {
     const r = load('data/game/render.json');
     expect(r.ceilingWalls).toBe(true);
     expect(r.floorLift).toBeGreaterThan(r.wallHeight);
+  });
+});
+
+// Retours du propriétaire (deuxième passe) : vraies portes, éboulis aux escaliers fermés, ouvertures grillagées, mur percé autour du joueur, pastilles incrustées.
+describe('portes, éboulis et grilles (portes-aspect.js)', () => {
+  const inside = (b, r, h) => b.x0 >= r.x - 1e-6 && b.x1 <= r.x + r.w + 1e-6 && b.z0 >= r.y - 1e-6 && b.z1 <= r.y + r.h + 1e-6 && b.y0 >= -1e-6 && b.y1 <= h + 1e-6;
+
+  it('porte : montants, traverse, planches, renforts, poignée et gonds ; dans le rectangle à 4 près (renforts et poignées dépassent du battant, pas du mur)', () => {
+    const r = { x: 0, y: 0, w: 80, h: 38 };
+    const boxes = doorBoxes(r, 120, 'porte-1');
+    expect(boxes.length).toBeGreaterThanOrEqual(12);
+    for (const b of boxes) expect(inside(b, { x: -4, y: -4, w: 88, h: 46 }, 120), JSON.stringify(b)).toBe(true);
+    expect(boxes.filter((b) => b.region === REGIONS.metal).length).toBeGreaterThanOrEqual(4);
+    // Vertical : même porte, axe z.
+    for (const b of doorBoxes({ x: 0, y: 0, w: 38, h: 80 }, 59, 'x')) expect(b.y1).toBeLessThanOrEqual(59);
+  });
+
+  it('éboulis : couvre l\'emprise du bloc vue du dessus (aucun passage à l\'œil), 70 au plus, plus haut au milieu', () => {
+    const r = { x: 100, y: 200, w: 138, h: 93 };
+    const boxes = rubbleBoxes(r, 66, 'porte-2');
+    for (const b of boxes) expect(inside(b, r, 70), JSON.stringify(b)).toBe(true);
+    let covered = 0;
+    let n = 0;
+    for (let x = r.x + 1; x < r.x + r.w; x += 4) {
+      for (let z = r.y + 1; z < r.y + r.h; z += 4) {
+        n += 1;
+        if (boxes.some((b) => x >= b.x0 && x <= b.x1 && z >= b.z0 && z <= b.z1 && b.y0 === 0)) covered += 1;
+      }
+    }
+    expect(covered / n).toBeGreaterThanOrEqual(0.97);
+    const topAt = (x, z) => Math.max(0, ...boxes.filter((b) => x >= b.x0 && x <= b.x1 && z >= b.z0 && z <= b.z1).map((b) => b.y1));
+    expect(topAt(r.x + r.w / 2, r.y + r.h / 2)).toBeGreaterThan(topAt(r.x + 2, r.y + 2));
+  });
+
+  it('grille : barreaux tous les 10 environ et deux traverses, au milieu de l\'épaisseur', () => {
+    const r = { x: 0, y: 0, w: 115, h: 38 };
+    const boxes = grilleBoxes(r, 179);
+    expect(boxes).toHaveLength(2 + 11);
+    for (const b of boxes) expect(inside(b, r, 179)).toBe(true);
+    for (const b of boxes.slice(2)) expect((b.z0 + b.z1) / 2).toBeCloseTo(19, 5);
+  });
+
+  it('entrées invalides : aucune boîte ; déterministe', () => {
+    expect(doorBoxes(null, 10)).toEqual([]);
+    expect(rubbleBoxes({ x: 0, y: 0, w: 0, h: 3 })).toEqual([]);
+    expect(grilleBoxes({ x: 0, y: 0, w: 10, h: 3 }, 2)).toEqual([]);
+    expect(rubbleBoxes({ x: 0, y: 0, w: 50, h: 40 }, 60, 'a')).toEqual(rubbleBoxes({ x: 0, y: 0, w: 50, h: 40 }, 60, 'a'));
+  });
+
+  it('cutGrilles : le mur est ouvert sur [a, b] (toute sa hauteur), le reste du mur est gardé', () => {
+    const wall = { x: 500, y: 90, z: 1000, sx: 1000, sy: 180, sz: 40 };
+    const g = { a: { x: 600, y: 980 }, b: { x: 500, y: 980 }, n: { x: 0, y: -1 } };
+    const { walls, holes } = cutGrilles([wall], [g], 40, 181);
+    expect(holes).toEqual([{ x: 500, y: 981, w: 100, h: 38, top: 179.5 }]);
+    expect(walls.map((w) => [w.x - w.sx / 2, w.x + w.sx / 2]).sort((p, q) => p[0] - q[0])).toEqual([[0, 500], [600, 1000]]);
+    // Un mur qui ne contient pas l'ouverture n'est pas touché.
+    expect(cutGrilles([{ ...wall, z: 2000 }], [g], 40, 181).walls).toEqual([{ ...wall, z: 2000 }]);
+  });
+
+  it('deux ouvertures grillagées au sud, d\'après le modèle (aucun mur entre 175 et 198 px, ni entre 145 et 151 px)', () => {
+    const items = load(`${DIR}/decor-interieur.world.json`).items.filter((d) => d.kind === 'grille');
+    const span = (d) => [Math.min(d.a.x, d.b.x), Math.max(d.a.x, d.b.x)].map((v) => Math.round((v - 800) / 5));
+    expect(items.map(span).sort((p, q) => p[0] - q[0])).toEqual([[145, 151], [175, 198]]);
+  });
+});
+
+describe('mur percé autour du joueur caché (see-through.js)', () => {
+  const cam = { x: 0, y: 300, z: 300 };
+  const player = { x: 0, y: 26, z: 0 };
+
+  it('un point du mur entre la caméra et le joueur, sur la ligne de visée : tramé (une moitié des pixels)', () => {
+    expect(seeThroughLevel({ x: 0, y: 26 + 274 * 0.2, z: 300 * 0.2 }, cam, player)).toBe(0.5);
+  });
+
+  it('au bord du cône : un pixel sur quatre ; hors du cône, derrière le joueur ou au sol : dessiné', () => {
+    const t = 0.8; // part du chemin de la caméra au joueur : le rayon du cône y vaut 0,8 × radius
+    const on = { x: 0, y: 300 - 274 * t, z: 300 - 300 * t };
+    expect(seeThroughLevel({ ...on, x: DEFAULTS.radius * t * 0.85 }, cam, player)).toBe(0.25);
+    expect(seeThroughLevel({ ...on, x: DEFAULTS.radius * t * 1.1 }, cam, player)).toBe(0);
+    expect(seeThroughLevel({ x: 0, y: 10, z: -20 }, cam, player)).toBe(0);
+    expect(seeThroughLevel({ x: 0, y: 0.5, z: 5 }, cam, player)).toBe(0);
+  });
+
+  it('réglages : render.json ; null si désactivé ; valeurs invalides remplacées', () => {
+    expect(seeThroughSettings(load('data/game/render.json').seeThrough)).toMatchObject({ radius: 46, chest: 26 });
+    expect(seeThroughSettings(null)).toBeNull();
+    expect(seeThroughSettings({ on: false })).toBeNull();
+    expect(seeThroughSettings({ radius: -3 }).radius).toBe(DEFAULTS.radius);
+  });
+
+  it('le shader fait le même calcul (aucun matériau transparent : discard tramé)', () => {
+    const src = readFileSync('js/game/see-through.js', 'utf8');
+    expect(src).toMatch(/discard/);
+    expect(src).not.toMatch(/transparent\s*[:=]\s*true|opacity/);
+    expect(readFileSync('js/game/world.js', 'utf8')).toMatch(/seeThrough\.apply\(mat\('mur'\)\)/);
+  });
+});
+
+describe('pastilles incrustées dans le mur (murs jusqu\'au plafond)', () => {
+  const settings = { ...plankSettings(load('data/game/windows.json'), load('data/game/render.json')), pipFace: true, pipCenter: 61 };
+  const sheet = plankSheet(128, { band: 0.125, strips: 4 });
+  const geom = (id, normal) => ({ id, center: { x: 1000, y: 1000 }, normal, tangent: { x: -normal.y, y: normal.x }, width: 72, inner: 20 });
+
+  it('mur sud : face extérieure (celle que voit la caméra) ; mur nord : face intérieure ; à 61 de haut', () => {
+    const set = createWindowMeshes({ scene: new THREE.Scene(), material: new THREE.MeshBasicMaterial(), geoms: [geom('S', { x: 0, y: 1 }), geom('N', { x: 0, y: -1 })], settings, sheet, seed: 1 });
+    set.sync({ windows: { S: { planks: 4, maxPlanks: 4 }, N: { planks: 4, maxPlanks: 4 } } });
+    const [s, n] = set.stats(new THREE.PerspectiveCamera());
+    expect([s.pipSide, n.pipSide]).toEqual(['exterieur', 'interieur']);
+    expect([s.pipY, n.pipY]).toEqual([61, 61]);
+    expect([s.pipsOn, n.pipsOn]).toEqual([4, 4]);
+    expect(s.triangles).toBeLessThanOrEqual(42);
   });
 });
