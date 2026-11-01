@@ -319,3 +319,14 @@
     transition: none;
   }
 }
+
+/* Vue « sons choisis » : rappel du choix du propriétaire en tête de bloc. */
+.slot-choice {
+  margin: 0;
+  font-weight: var(--font-weight-bold);
+  color: var(--color-success);
+}
+
+.slot-choice[data-choice="afaire"] {
+  color: var(--color-warning);
+}

@@ -241,7 +241,7 @@ describe('projection du poids (limite de 8 Mo)', () => {
 
 describe('itération 2 : retours du propriétaire', () => {
   it('le fichier de choix du propriétaire se relit sans erreur (variantes, macros, « actuel », « aucun »)', () => {
-    const { choices, errors } = parseChoices(readFileSync('Docs/ref/choix-sons-3h.txt', 'utf8'), data.slots);
+    const { choices, errors } = parseChoices(readFileSync('data/game/sounds-atelier-choix.txt', 'utf8'), data.slots);
     expect(errors).toEqual([]);
     expect(choices['voix-marcheur-attaque']).toEqual({ variant: 'C', macros: { hauteur: -6, matiere: 0, grain: 1, duree: 0.7, ampleur: 0 } });
     expect(choices['joueur-relevage']).toEqual({ variant: 'actuel' });

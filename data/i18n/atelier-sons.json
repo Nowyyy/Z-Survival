@@ -172,5 +172,14 @@
   "dev.atelier.slot.ambiance-feu": "Feu qui crépite (boucle de 8 s)",
   "dev.atelier.note.prop.feu": "Flamme qui gronde et vacille, crépitements de sève et quelques gros claquements ; bouclage sans raccord.",
   "dev.atelier.variante.prop.feu.A": "A · petit feu de bois calme",
-  "dev.atelier.variante.prop.feu.B": "B · feu vif, crépitements serrés"
+  "dev.atelier.variante.prop.feu.B": "B · feu vif, crépitements serrés",
+  "dev.atelier.choix.title": "Mes sons choisis",
+  "dev.atelier.choix.intro": "Page technique du lot 3h : pour chaque son, seulement ton choix, avec tes réglages ; pour les sons encore à choisir, trois propositions (A, B, C). Tout est calculé par du code et provisoire ; rien n'a été écouté par l'agent. Rien n'est enregistré : « Mes choix » démarre avec tes choix, complète-le puis copie-le.",
+  "dev.atelier.choix.ecartes": "Sons écartés (« aucun »)",
+  "dev.atelier.choix.ecartes.none": "Aucun son écarté.",
+  "dev.atelier.choix.badge.variante": "Ton choix : {v}{reglages}.",
+  "dev.atelier.choix.badge.actuel": "Ton choix : garder le son actuel du jeu.",
+  "dev.atelier.choix.badge.afaire": "À choisir : trois propositions.",
+  "dev.atelier.lienChoix": "Mes sons choisis (atelier-choix.html)",
+  "dev.atelier.lienTout": "Toutes les variantes (atelier-sons.html)"
 }

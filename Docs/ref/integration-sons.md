@@ -59,7 +59,7 @@ Plan établi au lot 3h, **sans rien intégrer** : le lot 3i appliquera les choix
 
 | Choix | Voix | Poids projeté | Limite 8 Mo | Calcul au chargement (référence) |
 |---|---|---|---|---|
-| **Choix du propriétaire** (`Docs/ref/choix-sons-3h.txt`, emplacements cités seulement) | par type | 11 663 632 octets (11,12 Mo) | **dépassée** de 3,1 Mo | 3 022 ms (1 379 ms) |
+| **Choix du propriétaire** (`data/game/sounds-atelier-choix.txt`, emplacements cités seulement) | par type | 11 663 632 octets (11,12 Mo) | **dépassée** de 3,1 Mo | 3 022 ms (1 379 ms) |
 | **Choix du propriétaire** | hauteur de lecture | 9 628 648 octets (9,18 Mo) | **dépassée** de 1,2 Mo | 2 242 ms (1 292 ms) |
 | A partout (priorités 1 et 2) | par type | 15 082 536 octets (14,38 Mo) | **dépassée** de 6,4 Mo | 3 935 ms (1 399 ms) |
 | B partout (priorités 1 et 2) | par type | 16 474 696 octets (15,71 Mo) | **dépassée** de 7,7 Mo | 4 398 ms (1 435 ms) |

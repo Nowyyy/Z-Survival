@@ -3,7 +3,7 @@
 // Les sons sont calculés à la demande par un calculateur d'arrière-plan (worker.js ; repli sur place s'il est indisponible) et gardés
 // dans un cache de 24 Mo au plus. Aucun son avant un geste. ?test=1 expose window.__zsSons (journal, état, choix, graphe audio).
 import { macroSpec, macroValues, nextVersion, resolveAtelier } from '../core/synth2.js';
-import { serializeChoices } from '../core/atelier-choices.js';
+import { parseChoices, serializeChoices } from '../core/atelier-choices.js';
 import { cacheBytes, cacheGet, cachePut, cacheKeys, createCache } from '../core/sound-cache.js';
 import { waveToSvg } from '../core/wave-svg.js';
 import { variantCount } from '../core/synth.js';
@@ -46,6 +46,10 @@ const t = (key, params) => fmt(translate(dict, key), params);
 for (const node of document.querySelectorAll('[data-i18n]')) node.textContent = t(node.dataset.i18n);
 
 const data = resolveAtelier(atelierRaw);
+// Vue « sons choisis » (atelier-choix.html, body data-vue="choix") : pour chaque emplacement, seulement le choix du propriétaire
+// (data/game/sounds-atelier-choix.txt) ; les emplacements sans choix gardent leurs trois propositions, ceux marqués « aucun » sont écartés.
+const vueChoix = document.body.dataset.vue === 'choix';
+const owner = vueChoix ? parseChoices(await (await fetch('data/game/sounds-atelier-choix.txt')).text(), data.slots).choices : {};
 const page = atelierRaw.page;
 const recipes = new Map(soundsCfg.sounds.map((s) => [s.id, s]));
 const player = createPlayer({ volume: page.volumeDefault, limiter: page.limiter });
@@ -227,12 +231,30 @@ function buildSlot(slot) {
     st.seeds[v.id] = 1;
     st.macros[v.id] = macroValues(v, {});
   }
+  // Choix du propriétaire (vue « sons choisis ») : une variante réglée, ou « actuel » ; sinon toutes les variantes.
+  const mine = owner[slot.id];
+  const chosen = mine && slot.variants.some((v) => v.id === mine.variant) ? mine.variant : null;
+  const shown = mine?.variant === 'actuel' ? [] : slot.variants.filter((v) => !chosen || v.id === chosen);
+  if (chosen) {
+    st.active = chosen;
+    st.macros[chosen] = macroValues(slot.variants.find((v) => v.id === chosen), mine.macros);
+    st.favorite = chosen;
+  } else if (mine?.variant === 'actuel') st.favorite = 'actuel';
   states.set(slot.id, st);
   const voiced = slot.group === 'voix' || Array.isArray(slot.target?.f0);
   const titleId = `t-${slot.id}`;
   const card = el('li', { class: 'slot', 'data-slot': slot.id, 'data-priority': String(slot.priority), id: `slot-${slot.id}` });
   card.append(el('h3', { class: 'slot-title', id: titleId }, [t(slot.label), el('code', { class: 'slot-id', text: slot.id })]));
   if (slot.currentNote) card.append(el('p', { class: 'atelier-note', text: t(slot.currentNote) }));
+  if (vueChoix) {
+    let badge;
+    if (chosen) {
+      const v = slot.variants.find((x) => x.id === chosen);
+      const tweaks = MACROS.filter((id) => st.macros[chosen][id] !== macroSpec(v, id).default).map((id) => `${t(`dev.atelier.macro.${id}`).toLowerCase()} ${macroText(id, st.macros[chosen][id], macroSpec(v, id))}`);
+      badge = t('dev.atelier.choix.badge.variante', { v: chosen, reglages: tweaks.length > 0 ? ` (${tweaks.join(', ')})` : '' });
+    } else badge = t(mine?.variant === 'actuel' ? 'dev.atelier.choix.badge.actuel' : 'dev.atelier.choix.badge.afaire');
+    card.append(el('p', { class: 'slot-choice', 'data-choice': chosen ?? mine?.variant ?? 'afaire', text: badge }));
+  }
   const ui = { measures: el('p', { class: 'slot-measures', text: t('dev.atelier.measures.none') }), wave: document.createElementNS('http://www.w3.org/2000/svg', 'svg') };
   ui.wave.setAttribute('class', 'slot-wave');
   ui.wave.setAttribute('role', 'img');
@@ -251,7 +273,7 @@ function buildSlot(slot) {
   });
   row.append(current);
   const variantButtons = new Map();
-  for (const v of slot.variants) {
+  for (const v of shown) {
     const b = el('button', { type: 'button', class: 'atelier-play', 'data-variant': v.id, 'aria-describedby': titleId, 'aria-pressed': String(v.id === st.active), title: t(v.label) }, [v.id]);
     b.addEventListener('click', () => {
       if (!gesture()) return;
@@ -269,16 +291,17 @@ function buildSlot(slot) {
     st.seeds[st.active] = r.version;
     playVariant();
   });
-  row.append(next);
+  if (shown.length > 0) row.append(next);
   // Légende : intentions A, B, C (priorité 1) ou une phrase par variante (propositions).
-  const legend = slot.priority === 2 ? slot.variants.map((v) => t(v.label)).join(' · ') : t('dev.atelier.variants.legend');
-  card.append(row, el('p', { class: 'atelier-note', text: legend }));
+  const legend = slot.priority === 2 ? shown.map((v) => t(v.label)).join(' · ') : t('dev.atelier.variants.legend');
+  card.append(row);
+  if (shown.length > 0) card.append(el('p', { class: 'atelier-note', text: legend }));
 
   // Favori : un seul par emplacement.
   const fav = el('fieldset', { class: 'slot-fav' }, [el('legend', { text: t('dev.atelier.favorite') })]);
   // « Aucun » : pas de favori ; « Actuel » (s'il existe) : garder le son du jeu ; puis les variantes.
-  for (const id of ['', ...(slot.current ? ['actuel'] : []), ...slot.variants.map((v) => v.id)]) {
-    const input = el('input', { type: 'radio', name: `fav-${slot.id}`, value: id, checked: id === '', id: `fav-${slot.id}-${id || 'aucun'}` });
+  for (const id of ['', ...(slot.current ? ['actuel'] : []), ...shown.map((v) => v.id)]) {
+    const input = el('input', { type: 'radio', name: `fav-${slot.id}`, value: id, checked: id === (st.favorite ?? ''), id: `fav-${slot.id}-${id || 'aucun'}` });
     input.addEventListener('change', () => {
       st.favorite = id || null;
       updateChoices();
@@ -308,9 +331,11 @@ function buildSlot(slot) {
     sliders[id] = { input, output };
     macros.append(el('label', { for: inputId, text: t(`dev.atelier.macro.${id}`) }), input, output);
   }
-  card.append(macros, ui.measures, ui.wave);
+  if (shown.length > 0) card.append(macros);
+  card.append(ui.measures, ui.wave);
 
   function syncSliders() {
+    if (shown.length === 0) return;
     const v = slot.variants.find((x) => x.id === st.active);
     macroTitle.textContent = t('dev.atelier.macros', { v: st.active });
     for (const id of MACROS) {
@@ -338,8 +363,10 @@ function buildSlot(slot) {
 }
 
 const groupsRoot = $('groups');
+const ecartes = data.slots.filter((s) => owner[s.id]?.variant === 'aucun');
+if (vueChoix) $('ecartes-list').textContent = ecartes.length > 0 ? ecartes.map((s) => `${t(s.label)} (${s.id})`).join(' · ') : t('dev.atelier.choix.ecartes.none');
 for (const g of atelierRaw.groups) {
-  const list = data.slots.filter((s) => s.group === g.id);
+  const list = data.slots.filter((s) => s.group === g.id && owner[s.id]?.variant !== 'aucun');
   if (list.length === 0) continue;
   const id = `groupe-${g.id}`;
   const section = el('section', { class: 'atelier-section atelier-group', id, 'aria-labelledby': `${id}-titre` }, [el('h2', { class: 'atelier-heading', id: `${id}-titre`, text: t(g.label) })]);
@@ -443,6 +470,7 @@ nav.append(el('li', {}, [el('a', { href: '#choices', text: t('dev.atelier.choice
 function choicesObject() {
   const out = {};
   for (const [id, st] of states) if (st.favorite) out[id] = st.favorite === 'actuel' ? { variant: 'actuel' } : { variant: st.favorite, macros: { ...st.macros[st.favorite] } };
+  for (const s of ecartes) out[s.id] = { variant: 'aucun' };
   return out;
 }
 function updateChoices() {

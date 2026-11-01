@@ -21,7 +21,7 @@ const renderOnce = (slotId, variant, seed = 1, macros = {}) => {
   return rendered.get(key);
 };
 const dict = JSON.parse(readFileSync('data/i18n/atelier-sons.json', 'utf8'));
-const pageSources = [readFileSync('atelier-sons.html', 'utf8'), ...readdirSync('js/atelier-sons').map((f) => readFileSync(`js/atelier-sons/${f}`, 'utf8')), readFileSync('data/game/sounds-atelier.json', 'utf8')].join('\n');
+const pageSources = [readFileSync('atelier-sons.html', 'utf8'), readFileSync('atelier-choix.html', 'utf8'), ...readdirSync('js/atelier-sons').map((f) => readFileSync(`js/atelier-sons/${f}`, 'utf8')), readFileSync('data/game/sounds-atelier.json', 'utf8')].join('\n');
 
 describe('priorité 1 : variantes par défaut dans leurs cibles', () => {
   it('chaque emplacement de priorité 1 a au moins trois variantes A, B, C', () => {
@@ -251,11 +251,11 @@ describe('données et textes de la page', () => {
 
   it('chaque clé demandée par la page existe', () => {
     for (const m of pageSources.matchAll(/t\('(dev\.atelier\.[\w.-]+)'/g)) expect(dict[m[1]], m[1]).toBeDefined();
-    for (const m of readFileSync('atelier-sons.html', 'utf8').matchAll(/data-i18n="([^"]+)"/g)) expect(dict[m[1]], m[1]).toBeDefined();
+    for (const f of ['atelier-sons.html', 'atelier-choix.html']) for (const m of readFileSync(f, 'utf8').matchAll(/data-i18n="([^"]+)"/g)) expect(dict[m[1]], `${f} ${m[1]}`).toBeDefined();
   });
 
-  it('page technique : lang="fr", noindex, noscript, aucune ressource externe, aucun style en ligne, aucun identifiant en double', () => {
-    const html = readFileSync('atelier-sons.html', 'utf8');
+  it.each(['atelier-sons.html', 'atelier-choix.html'])('page technique %s : lang="fr", noindex, noscript, aucune ressource externe, aucun style en ligne, aucun identifiant en double', (file) => {
+    const html = readFileSync(file, 'utf8');
     expect(html).toContain('<html lang="fr">');
     expect(html).toContain('name="robots" content="noindex"');
     expect(html).toMatch(/<noscript>[\s\S]*Cette page a besoin de JavaScript[\s\S]*<\/noscript>/);
@@ -299,9 +299,17 @@ describe('données et textes de la page', () => {
     expect(text).toMatch(/titre: Atelier des sons/);
   });
 
+  it('la vue « sons choisis » lit les choix publiés (data/game/sounds-atelier-choix.txt) et se distingue par data-vue="choix" ; les deux pages se lient', () => {
+    expect(readFileSync('atelier-choix.html', 'utf8')).toContain('data-vue="choix"');
+    expect(readFileSync('js/atelier-sons/main.js', 'utf8')).toContain("fetch('data/game/sounds-atelier-choix.txt')");
+    expect(readFileSync('atelier-sons.html', 'utf8')).toContain('href="atelier-choix.html"');
+    expect(readFileSync('atelier-choix.html', 'utf8')).toContain('href="atelier-sons.html"');
+  });
+
   it('npm run build copie la page, sa feuille et son code', () => {
     const build = readFileSync('scripts/build.mjs', 'utf8');
     expect(build).toContain("'atelier-sons.html'");
+    expect(build).toContain("'atelier-choix.html'");
     expect(existsSync('css/atelier-sons.css') && existsSync('js/atelier-sons/main.js')).toBe(true);
   });
 });
