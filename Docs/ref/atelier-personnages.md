@@ -84,3 +84,25 @@ perso=marcheur;variante=B;taille=0;carrure=-2;usure=0;teinte=0;posture=0;tenue=+
 perso=joueur;variante=C;…
 sang=reduit
 ```
+
+## Sang, cadavres et mini-arène (partie C)
+
+- **Données** : `data/game/blood.json` (provisoire). Niveaux `0` (rien), `reduit` (3 particules par tir non mortel, 8 par mort, 96 vivantes au plus, 12 taches de 8 s, fondu de 3 s, corps sans taches, cadavres de 2 s, teinte `--sang-reduit`), `1` complet (8 et 20 particules, 256 au plus, 48 taches de 20 s dont 5 de fondu, taches sur les corps selon la vie, cadavres de 6 s). Joueur touché : 4 particules au plus, aucune tache. Au plus 6 cadavres (le plus ancien part), enfoncement de 0,8 s.
+- **Pur** (`js/core/blood.js`) : `levelOf`, `settings`, `burst(graine, type, direction de la balle, niveau, cfg, origine)`, `stepParticles` (gravité, aucun rebond, une particule qui touche le sol devient une goutte), `decalsAdd` / `decalsStep` / `decalAlpha` (taches gelées, plafond, éviction de la plus ancienne, fondu final), `impactDecals`, `woundTier` (0 à 3 : > 0,75, > 0,5, > 0,25 de vie), `corpsesAdd` / `corpsesStep` / `corpseSink`, `bloodBudget`, `decalAtlas` (4 formes générées).
+- **Rendu** (`js/game/blood-fx.js`) : un `InstancedMesh` de quadrilatères pour les particules (1 appel), un pour les taches (1 appel, atlas 256 × 256 généré, forme et opacité par instance), posées à y = 0,2 ; cadavres = personnages en pose de mort, jamais ciblés ni solides (le jeu ne les connaît pas). Pleine charge (complet) : 2 appels, 608 triangles (≤ 3 et ≤ 1 200). Le sang suit l'étage de son événement (affiché à l'étage du joueur et au rez-de-chaussée).
+- **Taches sur les corps** : 4 matières par type (une par palier de blessure, même image, décalage de texture), aucune géométrie en plus ; niveau complet seulement.
+- **Lisibilité** : contraste ≥ 3:1 de chaque variante sur chaque sol couvert de sang à 30, 60 et 100 % (test) ; aucun état de jeu ne se lit dans le sang ; aucun clignotement, aucun flash.
+- **Mini-arène** (`js/core/arena.js`, `js/core/crowd.js`) : 10 zombies en couronne (les 4 types par bloc de 4, allures tirées), vitesses et vies de `createEnemy` (manche 1), tir au délai (0,4 s) et aux dégâts (25) du pistolet sur le plus proche, sans collision ; pas fixes de 1/60 s : la vitesse d'affichage (×0,5, ×1, ×2) ne change pas les résultats.
+- **Propositions de priorité 2** (`priority2` de `blood.json`, données seulement, désactivées) : lueur des yeux (2 pièces, 48 triangles, 1 appel), lampe du joueur (déjà émissive sur B ; une vraie lumière dynamique en plus, non mesurée), copeaux de réparation (même instance que les particules, 1 appel).
+
+Projection (`node scripts/personnages/projection.mjs`) : décor de la référence + 10 zombies variés et le joueur + sang à pleine charge + 6 cadavres :
+
+| Personnages | Sang | Personnages seuls | R1 | R2 | U1 | U4 | Marge / limites actuelles (300, 30 000) | Marge / refonte (400, 45 000) |
+|---|---|---|---|---|---|---|---|---|
+| actuel | 0 | 177 / 9856 | 203 / 14370 | 194 / 14988 | 210 / 15208 | 216 / 16092 | 84 appels, 13908 triangles | 184 appels, 28908 triangles |
+| A | 1 | 33 / 9404 | 79 / 19662 | 70 / 20280 | 86 / 20500 | 92 / 21384 | 208 appels, 8616 triangles | 308 appels, 23616 triangles |
+| B | 1 | 34 / 10228 | 80 / 20894 | 71 / 21512 | 87 / 21732 | 93 / 22616 | 207 appels, 7384 triangles | 307 appels, 22384 triangles |
+| C | 1 | 33 / 9984 | 79 / 20170 | 70 / 20788 | 86 / 21008 | 92 / 21892 | 208 appels, 8108 triangles | 308 appels, 23108 triangles |
+| riche | 1 | 33 / 23924 | 79 / 42054 | 70 / 42672 | 86 / 42892 | 92 / 43776 | 208 appels, -13776 triangles | 308 appels, 1224 triangles |
+
+Textures (Node, non représentatif d'un téléphone) : 4 atlas de zombies 23.0 ms, joueur 1.3 ms ; mémoire estimée avec le sang : 1835006 octets (limite 4194304).

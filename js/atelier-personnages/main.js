@@ -12,6 +12,9 @@ import { computePose } from '../core/pose.js';
 import { PLAYER_ANIMS, ZOMBIE_ANIMS, cycleSeconds, rigOf } from '../core/pose-v2.js';
 import { ANIM_MACROS, MACRO_IDS, formatChoices, wearTier } from '../core/persos-variants.js';
 import { buildSpec, createTextureData, meanColor, regionRect } from '../core/texgen.js';
+import { ARENA_STEP, createArena, stepArena } from '../core/arena.js';
+import { LEVELS, woundTier } from '../core/blood.js';
+import { createBloodFx } from '../game/blood-fx.js';
 import { createMeasures, gameView } from './measures.js';
 import { VIEWS, createStage, viewCamera } from './scene.js';
 
@@ -26,9 +29,10 @@ const loadJson = async (path) => {
   if (!r.ok) throw new Error(`${path} : ${r.status}`);
   return r.json();
 };
-const [dict, characters, poses, render, cameraJson, texturesJson, variantsJson, enemies, gaits, player, world, windows] = await Promise.all([
+const [dict, characters, poses, render, cameraJson, texturesJson, variantsJson, enemies, gaits, player, world, windows, bloodCfg, weapons] = await Promise.all([
   'data/i18n/atelier-personnages.json', 'data/game/characters-v2.json', 'data/game/poses-v2.json', 'data/game/render.json', 'data/game/camera.json', 'data/game/textures.json',
   'data/game/zombie-variants.json', 'data/game/enemies.json', 'data/game/gaits.json', 'data/game/player.json', 'data/game/maps/rez-de-chaussee/world.json', 'data/game/windows.json',
+  'data/game/blood.json', 'data/game/weapons.json',
 ].map(loadJson));
 const t = (key, params) => fmt(translate(dict, key), params);
 for (const node of document.querySelectorAll('[data-i18n]')) node.textContent = t(node.dataset.i18n);
@@ -88,6 +92,7 @@ const camera = gameView(world, render, cameraJson);
 const state = {
   // Mouvement réduit : rien ne s'anime tout seul (bouton Lecture) ; ?test=1 : le temps n'avance que par step().
   perso: 'marcheur', variante: 'A', tenue: 0, usure: 'auto', manche: 1, anim: 'marche', sol: 'carrelage', vue: 'jeu', orbite: 0, vitesse: 1, playing: !testMode && !matchMedia('(prefers-reduced-motion: reduce)').matches, time: 0,
+  sang: '0',
   macros: Object.fromEntries(SLOTS.map((s) => [s, Object.fromEntries([...MACRO_IDS, ...ANIM_MACROS].map((m) => [m, 0]))])),
   picks: new Map(),
 };
@@ -189,7 +194,9 @@ function draw() {
   mainRenderer.setSize(mw, mh, false);
   const view = viewCamera(mainCam, { view: state.vue, width: mw, height: mh, zoom: 1, yaw: (state.orbite * Math.PI) / 180, gameDistance: camera.distance, fov: render.camera.fov, tilt: render.camera.tilt });
   mainStage.setFog(view.distance);
+  mainBlood.sync('rdc');
   mainRenderer.render(mainStage.scene, mainCam);
+  $('blood-stats').textContent = `${bloodText(mainBlood, mainRenderer)}${$('blood-stats').dataset.note ? ` — ${$('blood-stats').dataset.note}` : ''}`;
   lastInfo.main = { calls: mainRenderer.info.render.calls, triangles: mainRenderer.info.render.triangles };
   lastInfo.view = view;
   // Grille : Actuel | A | B | C sur trois rangées (×1, ×2, ×4), découpage par ciseaux ; un seul personnage visible par case.
@@ -329,7 +336,10 @@ function changed(rebuildChars = false) {
   if (rebuildChars) {
     const old = v2Kit;
     v2Kit = createV2Kit(v2Opts);
+    mainBlood.reset();
     rebuild();
+    arenaReset(arena.seed);
+    arenaDraw();
     old.dispose();
   }
   updateMeasures();
@@ -374,13 +384,176 @@ $('btn-copy').addEventListener('click', async () => {
   }
 });
 
+// --- Sang (section 5) : sur le personnage de la vue principale --------------------------------------------------------------------------
+// Cadavre : le personnage choisi (actuel : posé « à terre », il n'a pas d'animation de mort), en pose de mort jusqu'au bout.
+function corpseOf(slot, variant) {
+  const ch = makeChar(slot, variant);
+  if (!ch.v1) return ch.c;
+  ch.c.setPose(computePose({ state: 'terre', time: 0 }));
+  return { root: ch.c.root, setAnim() {} };
+}
+const makeBlood = (scene, seed, slot = () => state.perso) => createBloodFx({ parent: scene, cfg: bloodCfg, level: state.sang, lookup, seed, corpse: (type) => corpseOf(SLOTS.includes(type) ? type : slot(), state.variante) });
+let mainBlood = makeBlood(mainStage.scene, 3);
+let mainHp = 1;
+let shotSeed = 1;
+const mainDir = () => {
+  shotSeed += 1;
+  const a = -Math.PI / 2 + 0.6 * Math.sin(shotSeed * 1.7);
+  return { x: Math.cos(a), y: Math.sin(a) };
+};
+function shootMain(mortal) {
+  if (state.perso === 'joueur') {
+    mainBlood.playerHit({ x: 0, y: 0 });
+    $('blood-stats').dataset.note = t('dev.persos.blood.player');
+    return;
+  }
+  if (!mainChar.c.root.visible) return;
+  if (mortal) {
+    mainBlood.kill({ x: 0, y: 0, dir: mainDir(), type: state.perso, facing: Math.PI / 2 - mainChar.c.root.rotation.y });
+    mainChar.c.root.visible = false;
+    mainHp = 1;
+  } else {
+    mainBlood.hit({ x: 0, y: 0, dir: mainDir() });
+    mainHp = Math.max(0.05, mainHp - 0.25);
+  }
+  if (!mainChar.v1) mainChar.c.setWound(settingsBodyStains() ? woundTier(mainHp, bloodCfg.wounds) : 0);
+}
+const settingsBodyStains = () => bloodCfg.levels[state.sang]?.bodyStains === true;
+function bloodText(fx, renderer) {
+  const st = fx.stats();
+  return t('dev.persos.blood.stats', { p: st.particles, d: st.decals, c: st.corpses, calls: st.calls, tri: st.triangles, rcalls: renderer?.info.render.calls ?? 0, rtri: renderer?.info.render.triangles ?? 0 });
+}
+
+// --- Mini-arène (section 6) : simulation pure (js/core/arena.js), rendu à l'échelle du jeu ---------------------------------------------------
+const arenaRenderer = webgl ? makeRenderer($('canvas-arena')) : null;
+const arenaStage = createStage({ render, palette, floors: floorTextures });
+const arenaCam = new THREE.PerspectiveCamera();
+const arenaCfg = { enemies, gaits, weapon: weapons.pistol, player, count: 10, radius: 300 };
+const arena = { seed: 1, state: null, chars: new Map(), player: null, blood: null, acc: 0, speed: 1, playing: false, lastShot: -1, kills: [] };
+function arenaReset(seed) {
+  for (const ch of arena.chars.values()) arenaStage.scene.remove(ch.c.root);
+  arena.chars.clear();
+  if (arena.player) arenaStage.scene.remove(arena.player.c.root);
+  arena.blood?.dispose();
+  arena.seed = seed;
+  arena.state = createArena(seed, arenaCfg);
+  arena.acc = 0;
+  arena.lastShot = -1;
+  arena.player = makeChar('joueur', state.variante);
+  arenaStage.scene.add(arena.player.c.root);
+  for (const z of arena.state.zombies) {
+    const ch = makeChar(z.type, state.variante);
+    arena.chars.set(z.id, ch);
+    arenaStage.scene.add(ch.c.root);
+  }
+  arena.blood = makeBlood(arenaStage.scene, seed * 13);
+  arenaStage.ground.set(state.sol);
+}
+// Avance l'arène de `seconds` (temps d'arène, pas fixes) : mêmes résultats quelle que soit la vitesse d'affichage.
+function arenaRun(seconds) {
+  arena.acc += Math.max(0, seconds);
+  while (arena.acc >= ARENA_STEP - 1e-9) {
+    arena.acc -= ARENA_STEP;
+    if (arena.state.done) {
+      arena.blood.update(ARENA_STEP);
+      continue;
+    }
+    const r = stepArena(arena.state, ARENA_STEP, arenaCfg);
+    arena.state = r.state;
+    for (const e of r.events) {
+      if (e.type === 'shot') arena.lastShot = arena.state.time;
+      if (e.type === 'hit') {
+        arena.blood.hit({ x: e.x, y: e.y, dir: e.dir });
+        const ch = arena.chars.get(e.id);
+        if (ch && !ch.v1) ch.c.setWound(settingsBodyStains() ? woundTier(e.hpFraction, bloodCfg.wounds) : 0);
+      }
+      if (e.type === 'kill') {
+        arena.blood.kill({ x: e.x, y: e.y, dir: e.dir, type: e.zombie, facing: e.facing });
+        const ch = arena.chars.get(e.id);
+        if (ch) arenaStage.scene.remove(ch.c.root);
+        arena.chars.delete(e.id);
+      }
+    }
+    arena.blood.update(ARENA_STEP);
+  }
+}
+function arenaDraw() {
+  if (!webgl || !arena.state) return;
+  const tm = arena.state.time;
+  for (const z of arena.state.zombies) {
+    const ch = arena.chars.get(z.id);
+    if (!ch) continue;
+    ch.c.root.position.set(z.x, 0, z.y);
+    ch.c.root.rotation.y = Math.PI / 2 - z.facing;
+    const anim = z.attacking ? 'attaque' : { lent: 'marcheLente', marche: 'marche', rampe: 'rampe', course: 'course' }[z.gait];
+    if (ch.v1) ch.c.setPose(computePose({ phase: (z.distance * TAU) / gaits.gaits[z.gait].stride, state: V1_STATE[anim], time: tm, seed: z.id, amount: 0.7 }));
+    else ch.c.setAnim(anim, z.attacking ? tm % 1 : z.distance / gaits.gaits[z.gait].stride, {}, tm);
+  }
+  const pl = arena.player;
+  pl.c.root.rotation.y = Math.PI / 2 - arena.state.aim;
+  const recoil = Math.max(0, 1 - (tm - arena.lastShot) / 0.12);
+  if (pl.v1) pl.c.setPose(computePose({ state: 'tir', time: tm, recoil, aim: arena.state.aim, facing: arena.state.aim }));
+  else pl.c.setAnim('repos', tm / 3, { twist: 0, recoil }, tm);
+  arena.blood.sync('rdc');
+  const c = $('canvas-arena');
+  const w = Math.max(1, c.clientWidth);
+  const h = Math.max(1, c.clientHeight);
+  arenaRenderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+  arenaRenderer.setSize(w, h, false);
+  const v = viewCamera(arenaCam, { view: 'jeu', width: w, height: h, zoom: 1, gameDistance: camera.distance, fov: render.camera.fov, tilt: render.camera.tilt });
+  arenaStage.setFog(v.distance);
+  arenaStage.sun.position.set(render.light.sunOffset.x, render.light.sunOffset.y, render.light.sunOffset.z);
+  Object.assign(arenaStage.sun.shadow.camera, { left: -500, right: 500, top: 500, bottom: -500 });
+  arenaStage.sun.shadow.camera.updateProjectionMatrix();
+  arenaRenderer.render(arenaStage.scene, arenaCam);
+  const st = arena.blood.stats();
+  $('arena-stats').textContent = t('dev.persos.arena.stats', { seed: arena.seed, t: arena.state.time.toFixed(1).replace('.', ','), alive: arena.state.zombies.filter((z) => z.alive).length, kills: arena.state.kills, shots: arena.state.shots, p: st.particles, d: st.decals, c: st.corpses, calls: arenaRenderer.info.render.calls, tri: arenaRenderer.info.render.triangles });
+}
+fill($('ctl-arena-speed'), [0.5, 1, 2].map((k) => [k, t('dev.persos.speed.n', { k: String(k).replace('.', ',') })]), 1);
+$('ctl-arena-speed').addEventListener('change', () => { arena.speed = Number($('ctl-arena-speed').value); });
+$('btn-arena-restart').addEventListener('click', () => { arenaReset(arena.seed); arenaDraw(); });
+$('btn-arena-next').addEventListener('click', () => { arenaReset(arena.seed + 1); arenaDraw(); });
+$('btn-arena-play').addEventListener('click', () => {
+  arena.playing = !arena.playing;
+  $('btn-arena-play').textContent = t(arena.playing ? 'dev.persos.pause' : 'dev.persos.play');
+  $('btn-arena-play').setAttribute('aria-pressed', String(arena.playing));
+});
+fill($('ctl-sang'), LEVELS.map((l) => [l, t({ 0: 'dev.persos.blood.l0', reduit: 'dev.persos.blood.lreduit', 1: 'dev.persos.blood.l1' }[l])]), state.sang);
+$('ctl-sang').addEventListener('change', () => {
+  state.sang = $('ctl-sang').value;
+  mainBlood.setLevel(state.sang);
+  arena.blood?.setLevel(state.sang);
+  mainHp = 1;
+  if (mainChar && !mainChar.v1) mainChar.c.setWound(0);
+  mainChar.c.root.visible = true;
+  updateChoices();
+  draw();
+});
+$('btn-hit').addEventListener('click', () => { shootMain(false); draw(); });
+$('btn-kill').addEventListener('click', () => { shootMain(true); draw(); });
+$('btn-burst').addEventListener('click', () => {
+  for (let i = 0; i < 5; i += 1) shootMain(false);
+  draw();
+});
+// Pas de temps commun : animations de la page, sang de la vue principale, arène.
+function tick(dt) {
+  state.time += dt * state.vitesse;
+  mainBlood.update(dt * state.vitesse);
+  if (!mainChar.c.root.visible && mainBlood.stats().corpses === 0) {
+    mainChar.c.root.visible = true;
+    if (!mainChar.v1) mainChar.c.setWound(0);
+  }
+}
+
 rebuild();
 syncControls();
 $('grid-legend').textContent = `${COLUMNS.map((c) => t(`dev.persos.variant.${c}`)).join(' | ')} — ${SCALES.map((k) => (k === 1 ? t('dev.persos.scale.jeu') : t('dev.persos.scale', { k }))).join(', ')}`;
 updateMeasures();
 updateChoices();
 $('app').hidden = false;
+arenaReset(1);
 draw();
+arenaDraw();
 status.textContent = t('dev.persos.ready');
 
 // Lecture : le temps avance avec l'horloge réelle (sauf ?test=1, où seul step() le fait avancer).
@@ -389,8 +562,13 @@ const loop = (now) => {
   requestAnimationFrame(loop);
   const dt = last === null ? 0 : Math.min(0.1, (now - last) / 1000);
   last = now;
-  if (testMode || !state.playing || document.hidden) return;
-  state.time += dt * state.vitesse;
+  if (testMode || document.hidden) return;
+  if (arena.playing && !arena.state.done) {
+    arenaRun(dt * arena.speed);
+    arenaDraw();
+  }
+  if (!state.playing) return;
+  tick(dt);
   draw();
 };
 requestAnimationFrame(loop);
@@ -407,6 +585,9 @@ if (testMode) {
       camera: lastInfo.view ? { ...lastInfo.view, gameDistance: camera.distance, gameUnitsPerPixel: (2 * camera.distance * Math.tan((camera.fov * Math.PI) / 360)) / camera.height } : null,
       render: { main: { ...lastInfo.main }, grid: { ...lastInfo.grid } },
       textures: { count: v2Kit.textureCount(), bytes: v2Kit.textureBytes() },
+      sang: state.sang,
+      blood: mainBlood.stats(),
+      mainVisible: mainChar ? mainChar.c.root.visible : null,
       choices: $('choices-text').value,
     }),
     // Change un réglage comme le ferait l'utilisateur (id d'un contrôle : ctl-perso, ctl-variante, …, macro-taille).
@@ -418,9 +599,26 @@ if (testMode) {
       return true;
     },
     step(seconds) {
-      state.time += Math.max(0, Number(seconds) || 0) * state.vitesse;
+      const k = Math.max(0, Number(seconds) || 0);
+      for (let i = 0; i < Math.ceil(k / 0.05); i += 1) tick(Math.min(0.05, k - i * 0.05));
       draw();
       return state.time;
+    },
+    blood: () => mainBlood.stats(),
+    arena: {
+      // Avance l'arène de `seconds` secondes d'affichage à sa vitesse (×0,5, ×1, ×2) ; les résultats logiques ne dépendent que du temps d'arène.
+      step(seconds) {
+        arenaRun(Math.max(0, Number(seconds) || 0) * arena.speed);
+        arenaDraw();
+        return arena.state.time;
+      },
+      run(seconds) {
+        arenaRun(Math.max(0, Number(seconds) || 0));
+        arenaDraw();
+        return arena.state.time;
+      },
+      debug: () => arenaStage.scene.children.filter((o) => o.isGroup || o.type === 'Group').map((o) => ({ x: +o.position.x.toFixed(1), y: +o.position.y.toFixed(1), z: +o.position.z.toFixed(1), visible: o.visible, v2: o.userData.v2 === true, isPlayer: o === arena.player.c.root })),
+      state: () => ({ seed: arena.seed, time: arena.state.time, steps: arena.state.steps, done: arena.state.done, kills: arena.state.kills, shots: arena.state.shots, alive: arena.state.zombies.filter((z) => z.alive).length, zombies: arena.state.zombies.map((z) => ({ id: z.id, type: z.type, gait: z.gait, x: z.x, y: z.y, hp: z.hp, alive: z.alive })), blood: arena.blood.stats(), meshes: arena.chars.size, render: arenaRenderer ? { calls: arenaRenderer.info.render.calls, triangles: arenaRenderer.info.render.triangles } : null }),
     },
     render: () => draw(),
   };

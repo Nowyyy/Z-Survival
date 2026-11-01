@@ -81,12 +81,27 @@
 
     <section id="section-sang" class="persos-section" aria-labelledby="sang-title">
       <h2 id="sang-title" class="persos-heading" data-i18n="dev.persos.blood"></h2>
-      <div id="blood-panel"></div>
+      <p class="persos-note" data-i18n="dev.persos.blood.intro"></p>
+      <div class="persos-controls">
+        <div class="persos-field"><label for="ctl-sang" data-i18n="dev.persos.blood.level"></label><select id="ctl-sang" class="persos-select"></select></div>
+        <button id="btn-hit" class="button persos-button" type="button" data-i18n="dev.persos.blood.hit"></button>
+        <button id="btn-kill" class="button persos-button" type="button" data-i18n="dev.persos.blood.kill"></button>
+        <button id="btn-burst" class="button persos-button" type="button" data-i18n="dev.persos.blood.burst"></button>
+      </div>
+      <p id="blood-stats" class="persos-legend" role="status" aria-live="polite"></p>
     </section>
 
     <section id="section-arene" class="persos-section" aria-labelledby="arene-title">
       <h2 id="arene-title" class="persos-heading" data-i18n="dev.persos.arena"></h2>
-      <div id="arena-panel"></div>
+      <p class="persos-note" data-i18n="dev.persos.arena.intro"></p>
+      <div class="persos-controls">
+        <button id="btn-arena-restart" class="button persos-button" type="button" data-i18n="dev.persos.arena.restart"></button>
+        <button id="btn-arena-next" class="button persos-button" type="button" data-i18n="dev.persos.arena.next"></button>
+        <div class="persos-field"><label for="ctl-arena-speed" data-i18n="dev.persos.arena.speed"></label><select id="ctl-arena-speed" class="persos-select"></select></div>
+        <button id="btn-arena-play" class="button persos-button" type="button" aria-pressed="false" data-i18n="dev.persos.play"></button>
+      </div>
+      <div class="persos-stage persos-stage-main"><canvas id="canvas-arena" class="persos-canvas" width="667" height="375" aria-hidden="true"></canvas></div>
+      <p id="arena-stats" class="persos-legend" role="status" aria-live="polite"></p>
     </section>
 
     <section id="section-mes-choix" class="persos-section" aria-labelledby="mes-choix-title">
