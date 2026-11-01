@@ -555,8 +555,8 @@ test.describe('zones : panneau de pause, mouvement réduit, interruptions', () =
     expect(r.a).toBe(true);
     expect(r.b).toBe(true);
     expect(r.unknown).toBe(false);
-    expect(r.open).toEqual([true, [], 8]);
-    expect(r.closed).toEqual([false, ['porte-1'], 5]);
+    expect(r.open).toEqual([true, [], 7]); // lot 3g : F7 retirée
+    expect(r.closed).toEqual([false, ['porte-1'], 4]); // lot 3g : F7 retirée
   });
 });
 
