@@ -1,0 +1,7 @@
+{
+  "atelier.title": "Atelier de l'interface",
+  "atelier.intro": "Page technique du lot 3k : l'interface actuelle du jeu et trois directions de refonte (A, B, C), sur plusieurs tailles d'écran et plusieurs états. Rien n'est intégré au jeu. Prix, armes, joueurs et scores sont de fausses données.",
+  "atelier.honesty": "Les mesures sont calculées ; l'esthétique, le confort au pouce et le rendu sur un vrai téléphone ne sont pas jugés par l'agent.",
+  "atelier.loading": "Chargement de l'atelier…",
+  "atelier.error": "L'atelier n'a pas pu se charger : {detail}"
+}

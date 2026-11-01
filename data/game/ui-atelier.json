@@ -1,0 +1,135 @@
+{
+  "_provisoire": "Lot 3k : atelier de l'interface (page technique atelier-interface.html). Tailles d'écran, zones de sécurité simulées, règles mesurées, états nommés et FAUSSES DONNÉES (mondes, prix, armes, joueurs, scores) : rien de tout cela n'est réel ni branché au jeu. Zones de sécurité : aucune valeur n'existe dans le code du jeu (il lit env(safe-area-inset-*)) ; les valeurs des iPhone en paysage viennent des gabarits publics d'Apple (encoche 44, îlot 47 ou 59, barre d'accueil 21) et sont à vérifier sur un vrai téléphone.",
+  "sizes": [
+    { "id": "667x375", "width": 667, "height": 375, "safe": { "top": 0, "right": 0, "bottom": 0, "left": 0 }, "kind": "telephone" },
+    { "id": "812x375", "width": 812, "height": 375, "safe": { "top": 0, "right": 44, "bottom": 21, "left": 44 }, "kind": "telephone" },
+    { "id": "844x390", "width": 844, "height": 390, "safe": { "top": 0, "right": 47, "bottom": 21, "left": 47 }, "kind": "telephone" },
+    { "id": "932x430", "width": 932, "height": 430, "safe": { "top": 0, "right": 0, "bottom": 0, "left": 0 }, "kind": "telephone" },
+    { "id": "1024x768", "width": 1024, "height": 768, "safe": { "top": 0, "right": 0, "bottom": 0, "left": 0 }, "kind": "tablette" },
+    { "id": "1440x900", "width": 1440, "height": 900, "safe": { "top": 0, "right": 0, "bottom": 0, "left": 0 }, "kind": "ordinateur" },
+    { "id": "2560x1080", "width": 2560, "height": 1080, "safe": { "top": 0, "right": 0, "bottom": 0, "left": 0 }, "kind": "ordinateur" }
+  ],
+  "safePresets": [
+    { "id": "preset", "safe": null },
+    { "id": "aucune", "safe": { "top": 0, "right": 0, "bottom": 0, "left": 0 } },
+    { "id": "encoche", "safe": { "top": 0, "right": 44, "bottom": 21, "left": 44 } },
+    { "id": "ilot", "safe": { "top": 0, "right": 47, "bottom": 21, "left": 47 } },
+    { "id": "ilot-max", "safe": { "top": 0, "right": 59, "bottom": 21, "left": 59 } }
+  ],
+  "rules": {
+    "minTextPx": 14,
+    "minContrast": 4.5,
+    "minContrastLarge": 3,
+    "largeTextPx": 24,
+    "largeBoldTextPx": 18.66,
+    "minTargetPx": 44,
+    "edgePx": 16,
+    "maxFlashPerSecond": 3,
+    "recMaxBlinkPerSecond": 2,
+    "outlineMinPx": 1,
+    "stickBandTop": 0.5,
+    "maxCls": 0.1
+  },
+  "worstBackgrounds": ["--game-floor", "--game-tile-a", "--game-tile-b", "--game-sidewalk", "--game-road", "--game-asphalt", "--game-grass", "--game-grass-a", "--game-grass-b", "--game-soil", "--game-gravel", "--game-ground", "--game-wall", "--game-wall-base", "--game-wall-dirt", "--game-fog", "--game-void"],
+  "ranges": {
+    "hp": [0, 100],
+    "maxHp": [1, 220],
+    "chutes": [0, 5],
+    "money": [0, 9999999],
+    "wave": [1, 40],
+    "remaining": [0, 10],
+    "kills": [0, 999],
+    "chrono": [0, 35999],
+    "downSeconds": [0, 5],
+    "graceSeconds": [0, 2],
+    "earned": [0, 9999999],
+    "bestWave": [0, 40]
+  },
+  "maxWave": 40,
+  "saveStatuses": ["saved", "pending", "failed", "readonly", "locked", "unavailable", "memory"],
+  "floors": ["rdc", "etage"],
+  "defaults": { "hp": 100, "maxHp": 100, "chutes": 1, "money": 0, "wave": 1, "reinforced": false, "floor": "rdc", "remaining": 5, "kills": 0, "chrono": 0, "save": "saved", "trial": false, "down": "none", "downSeconds": 5, "paused": false, "end": "none", "earned": 0, "bestWave": 0, "record": false, "nextZone": 10, "multiFloor": true },
+  "worst": { "hp": 100, "maxHp": 220, "chutes": 5, "money": 9999999, "wave": 40, "reinforced": true, "floor": "etage", "remaining": 10, "kills": 999, "chrono": 35999, "save": "unavailable", "trial": true, "earned": 9999999, "bestWave": 40, "record": true, "nextZone": 30 },
+  "states": [
+    { "id": "debut", "params": { "wave": 1, "remaining": 5, "money": 0, "kills": 0, "chrono": 4 } },
+    { "id": "combat", "params": { "hp": 64, "wave": 7, "remaining": 8, "money": 1234, "kills": 57, "chutes": 1, "chrono": 512, "save": "pending" } },
+    { "id": "vie-faible", "params": { "hp": 12, "wave": 12, "remaining": 3, "money": 4560, "kills": 140, "chutes": 0, "chrono": 1100 } },
+    { "id": "renforcee", "params": { "hp": 88, "wave": 10, "reinforced": true, "remaining": 10, "money": 2890, "kills": 101, "chutes": 2, "chrono": 820 } },
+    { "id": "etage", "params": { "hp": 70, "maxHp": 136, "wave": 23, "floor": "etage", "remaining": 6, "money": 48210, "kills": 402, "chutes": 3, "chrono": 2400, "nextZone": 30 } },
+    { "id": "essai", "params": { "wave": 5, "trial": true, "save": "readonly", "money": 250, "kills": 22, "chrono": 300 } },
+    { "id": "pire-cas", "worst": true, "params": {} },
+    { "id": "a-terre", "params": { "hp": 0, "wave": 9, "down": "down", "downSeconds": 3, "money": 1900, "kills": 80, "chutes": 0, "chrono": 700 } },
+    { "id": "protege", "params": { "hp": 50, "wave": 9, "down": "grace", "downSeconds": 2, "money": 1900, "kills": 80, "chutes": 0, "chrono": 706 } },
+    { "id": "pause", "params": { "hp": 64, "wave": 7, "paused": true, "money": 1234, "kills": 57, "chrono": 512, "nextZone": 10 } },
+    { "id": "mort", "params": { "hp": 0, "wave": 14, "end": "death", "chutes": 0, "money": 6120, "earned": 1840, "kills": 212, "bestWave": 14, "record": true, "chrono": 1380 } },
+    { "id": "monde-termine", "params": { "hp": 72, "wave": 40, "end": "world", "money": 30500, "earned": 28740, "kills": 999, "bestWave": 40, "record": true, "chrono": 9800 } },
+    { "id": "sauvegarde-echec", "params": { "wave": 6, "save": "failed", "money": 700, "kills": 40, "chrono": 400 } },
+    { "id": "sauvegarde-verrouillee", "params": { "wave": 3, "save": "locked", "money": 0, "kills": 9, "chrono": 120 } }
+  ],
+  "screens": ["hud", "pause", "fin-mort", "fin-monde", "a-terre", "sticks", "menu", "boutique", "reglages", "classement"],
+  "gameScreens": ["hud", "pause", "fin-mort", "fin-monde", "a-terre", "sticks"],
+  "directions": ["actuel", "A", "B", "C"],
+  "macros": {
+    "texte": ["S", "M", "L"],
+    "densite": ["compacte", "aeree"],
+    "fond": ["transparent", "leger", "plein"],
+    "argent": ["haut-gauche", "haut-droite", "sous-vague"],
+    "contour": ["aucun", "fin", "epais"]
+  },
+  "macroDefaults": {
+    "A": { "texte": "M", "densite": "compacte", "fond": "transparent", "argent": "haut-droite", "contour": "fin" },
+    "B": { "texte": "M", "densite": "compacte", "fond": "leger", "argent": "haut-droite", "contour": "aucun" },
+    "C": { "texte": "M", "densite": "aeree", "fond": "plein", "argent": "haut-gauche", "contour": "aucun" }
+  },
+  "macroValues": {
+    "texte": { "S": 1, "M": 1.125, "L": 1.375 },
+    "fondAlpha": { "transparent": 0, "leger": 0.78, "plein": 1 },
+    "contourPx": { "aucun": 0, "fin": 1, "epais": 2 }
+  },
+  "priority2": [
+    { "id": "retour-degats", "variants": ["A", "B"] },
+    { "id": "vie-faible", "variants": ["A", "B"] },
+    { "id": "aide-demarrage", "variants": ["A", "B"] },
+    { "id": "curseur-visee", "variants": ["A", "B"] },
+    { "id": "nouvelle-zone", "variants": ["A", "B"] }
+  ],
+  "fake": {
+    "_fictif": "FAUSSES DONNÉES de démonstration : mondes, prix, armes, pseudos et scores sont inventés pour la planche ; aucun n'est réel, aucun service n'est appelé.",
+    "balance": 2450,
+    "worlds": [
+      { "id": "monde-1", "unlocked": true, "bestWave": 14 },
+      { "id": "monde-2", "unlocked": false, "bestWave": 0 },
+      { "id": "monde-3", "unlocked": false, "bestWave": 0 }
+    ],
+    "levels": { "degats": 3, "portee": 1, "precision": 10, "cadence": 0, "vitesse": 2, "vie": 4, "regen": 0, "chutes": 5, "reparation": 6 },
+    "stats": ["degats", "portee", "precision", "cadence", "vitesse", "vie", "regen", "chutes", "reparation"],
+    "price": { "base": 150, "growth": 1.6, "statMul": { "degats": 1.4, "portee": 1, "precision": 1.1, "cadence": 1.3, "vitesse": 1, "vie": 1.2, "regen": 0.9, "chutes": 3, "reparation": 0.8 } },
+    "weapons": [
+      { "id": "pistolet", "price": 0, "owned": true },
+      { "id": "fusil-pompe", "price": 1800, "owned": false },
+      { "id": "fusil-assaut", "price": 6500, "owned": false }
+    ],
+    "blood": ["0", "reduit", "1"],
+    "bloodDefault": "1",
+    "pseudo": { "min": 3, "max": 20 },
+    "leaderboard": {
+      "monde-1": [
+        { "rank": 1, "pseudo": "Exemple01", "wave": 40, "time": 9120 },
+        { "rank": 2, "pseudo": "Exemple02", "wave": 38, "time": 8410 },
+        { "rank": 3, "pseudo": "Exemple03", "wave": 35, "time": 7702 },
+        { "rank": 4, "pseudo": "Exemple04", "wave": 31, "time": 6290 },
+        { "rank": 5, "pseudo": "Exemple05", "wave": 28, "time": 5530 },
+        { "rank": 6, "pseudo": "Exemple06", "wave": 24, "time": 4410 },
+        { "rank": 7, "pseudo": "Exemple07", "wave": 21, "time": 3905 },
+        { "rank": 8, "pseudo": "Exemple08", "wave": 19, "time": 3320 }
+      ],
+      "monde-2": [
+        { "rank": 1, "pseudo": "Exemple11", "wave": 22, "time": 4100 },
+        { "rank": 2, "pseudo": "Exemple12", "wave": 17, "time": 3010 },
+        { "rank": 3, "pseudo": "Exemple13", "wave": 9, "time": 1490 }
+      ],
+      "monde-3": []
+    },
+    "player": { "pseudo": "Toi (exemple)", "rank": 37, "wave": 14, "time": 1380, "world": "monde-1" }
+  }
+}
