@@ -133,6 +133,11 @@
       "L'interface est plus compacte : blocs de taille fixe (vie, argent, « Vague 1 / 40 »), bouton Pause en icône, une seule silhouette pour les chutes ; le solde et l'état de la sauvegarde sont dans la pause, l'argent gagné et les records sur l'écran de fin.",
       "Menu /dev : plus de liste déroulante, le journal des versions est replié ; icône « Z » pour l'écran d'accueil ; tests de bout en bout ramenés à 4 minutes."
         ] },
+    { "name": "lot-3i", "titre": "Sons intégrés", "points": [
+      "Les sons choisis dans l'atelier remplacent les pas, les voix (une par type de zombie), les planches et la réparation, qui suit la durée de pose.",
+      "Sons nouveaux : pas dehors et dans l'escalier, allures des zombies, craquement, escalade, cœur, vent, feu, grincements, porte.",
+      "?sons=ancien pour réentendre les anciens, ?sons=A, B ou C pour une variante."
+    ] },
     { "name": "lot-4b", "titre": "Intégration des refontes", "points": [
       "En cours : branche d'intégration des refontes, réunies ici avant d'entrer dans le jeu publié.",
       "Atelier de la carte (lot 3g) intégré : carte corrigée d'après le modèle 3D, mobilier redessiné, vraies portes et éboulis, murs jusqu'au plafond, mur percé autour du joueur caché, feux, extérieur plus vivant et brouillard en volutes.",
