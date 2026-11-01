@@ -19,7 +19,7 @@
     { "id": "U2", "side": "ouest", "x": 50, "y": 59 },
     { "id": "U3", "side": "nord", "x": 96, "y": 23, "planX": 97 },
     { "id": "U4", "side": "nord", "x": 126, "y": 23, "planX": 126 },
-    { "id": "U5", "side": "nord", "x": 212, "y": 226, "planX": 216 },
+    { "id": "U5", "side": "nord", "x": 217, "y": 226, "planX": 216 },
     { "id": "U6", "side": "sud", "x": 251, "y": 350, "planX": 253 },
     { "id": "U7", "side": "sud", "x": 281, "y": 350, "planX": 282 }
   ],

@@ -102,7 +102,7 @@
     { "id": "escalier-aile", "x": 920, "y": 2085, "w": 140, "h": 220, "hauteur": 70, "kind": "escalier" },
     { "id": "M4", "x": 1165, "y": 2420, "w": 40, "h": 40, "hauteur": 55, "kind": "comptoir" },
     { "id": "M1+M3+M7", "x": 1015, "y": 2390, "w": 150, "h": 70, "hauteur": 55, "kind": "table", "parts": ["M1", "M3", "M7"] },
-    { "id": "M10", "x": 2610, "y": 2295, "w": 65, "h": 60, "hauteur": 40, "kind": "table" },
+    { "id": "M10", "x": 2610, "y": 2290, "w": 80, "h": 55, "hauteur": 40, "kind": "table" },
     {
       "id": "M12+M15+M17+M18",
       "x": 1450,
@@ -114,7 +114,7 @@
       "parts": ["M12", "M15", "M17", "M18"]
     },
     { "id": "M19", "x": 1450, "y": 2135, "w": 20, "h": 25, "hauteur": 70, "kind": "etagere" },
-    { "id": "M21", "x": 3030, "y": 2100, "w": 80, "h": 25, "hauteur": 45, "kind": "caisse" },
+    { "id": "M21", "x": 3025, "y": 2085, "w": 85, "h": 30, "hauteur": 45, "kind": "caisse" },
     { "id": "M22", "x": 2565, "y": 1960, "w": 140, "h": 150, "hauteur": 55, "kind": "comptoir" },
     {
       "id": "M26+M28+M29+M31",
@@ -128,11 +128,8 @@
     },
     { "id": "M32", "x": 1445, "y": 1670, "w": 25, "h": 35, "hauteur": 45, "kind": "caisse" },
     { "id": "M33+M34+M35", "x": 1365, "y": 920, "w": 105, "h": 285, "hauteur": 70, "kind": "comptoir", "parts": ["M33", "M34", "M35"] },
-    { "id": "P1", "x": 1065, "y": 1100, "w": 40, "h": 160, "hauteur": 65, "kind": "armoire", "provisional": true },
-    { "id": "P2", "x": 1065, "y": 1340, "w": 40, "h": 130, "hauteur": 65, "kind": "armoire", "provisional": true },
-    { "id": "P3", "x": 1000, "y": 1860, "w": 160, "h": 120, "hauteur": 55, "kind": "comptoir", "provisional": true },
-    { "id": "P4", "x": 1410, "y": 2380, "w": 60, "h": 80, "hauteur": 65, "kind": "armoire", "provisional": true },
-    { "id": "P5", "x": 1065, "y": 1540, "w": 100, "h": 70, "hauteur": 40, "kind": "table", "provisional": true },
+    { "id": "P4", "x": 1360, "y": 2425, "w": 110, "h": 35, "hauteur": 70, "kind": "etagere", "source": "modele" },
+    { "id": "P5", "x": 1065, "y": 1560, "w": 100, "h": 50, "hauteur": 40, "kind": "table", "provisional": true },
     { "id": "P6", "x": 1880, "y": 2460, "w": 370, "h": 80, "hauteur": 55, "kind": "comptoir", "provisional": true },
     { "id": "P7", "x": 2780, "y": 1960, "w": 260, "h": 70, "hauteur": 55, "kind": "comptoir", "provisional": true },
     { "id": "P8", "x": 1880, "y": 2205, "w": 200, "h": 90, "hauteur": 55, "kind": "comptoir", "provisional": true },
@@ -140,7 +137,31 @@
     { "id": "P10", "x": 3040, "y": 2270, "w": 70, "h": 90, "hauteur": 45, "kind": "caisse", "provisional": true },
     { "id": "P11", "x": 3070, "y": 2440, "w": 40, "h": 100, "hauteur": 65, "kind": "armoire", "provisional": true },
     { "id": "P12", "x": 1660, "y": 2180, "w": 120, "h": 90, "hauteur": 40, "kind": "table", "provisional": true },
-    { "id": "P13", "x": 2560, "y": 2440, "w": 140, "h": 100, "hauteur": 45, "kind": "caisse", "provisional": true }
+    { "id": "P13", "x": 2560, "y": 2440, "w": 140, "h": 100, "hauteur": 45, "kind": "caisse", "provisional": true },
+    {
+      "id": "P3+R-G37",
+      "x": 920,
+      "y": 1860,
+      "w": 240,
+      "h": 120,
+      "hauteur": 70,
+      "kind": "etagere",
+      "parts": ["P3", "R-G37"],
+      "provisional": true,
+      "source": "modele"
+    },
+    {
+      "id": "P1+P2+R-G39",
+      "x": 1065,
+      "y": 1100,
+      "w": 50,
+      "h": 390,
+      "hauteur": 70,
+      "kind": "etagere",
+      "parts": ["P1", "P2", "R-G39"],
+      "provisional": true,
+      "source": "modele"
+    }
   ],
   "generation": {
     "shifts": [],
@@ -148,7 +169,9 @@
       { "id": "M1+M3+M7", "parts": ["M1", "M3", "M7"] },
       { "id": "M12+M15+M17+M18", "parts": ["M12", "M15", "M17", "M18"] },
       { "id": "M26+M28+M29+M31", "parts": ["M26", "M28", "M29", "M31"] },
-      { "id": "M33+M34+M35", "parts": ["M33", "M34", "M35"] }
+      { "id": "M33+M34+M35", "parts": ["M33", "M34", "M35"] },
+      { "id": "P3+R-G37", "parts": ["P3", "R-G37"] },
+      { "id": "P1+P2+R-G39", "parts": ["P1", "P2", "R-G39"] }
     ],
     "retired": [
       { "id": "M2", "reason": "à 40 de pilier-5" },
@@ -184,7 +207,6 @@
       { "id": "M1+M3+M7" },
       { "id": "M12+M15+M17+M18" },
       { "id": "M19" },
-      { "id": "M21" },
       { "id": "M22" },
       { "id": "M26+M28+M29+M31" },
       { "id": "M32" },

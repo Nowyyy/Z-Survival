@@ -119,7 +119,10 @@ export function groupTouching(rects, gap = 1) {
 
 // Compare un étage. plan : plan.json ou etage.json (pixels) ; releve : releve.json ; floor : 'rdc' | 'etage'.
 // Renvoie { rows, unmatchedObjects: [groupes du modèle sans équivalent], high: [objets au-dessus de 1,2 m], walls: [comparaisons de murs] }.
-export function compareFloor(plan, releve, floor = 'rdc') {
+// opts.decisions : décisions de ecarts-decisions.json ; chaque ligne qui en a une reçoit `decision` { action, reason, approved } (la décision réelle,
+// par exemple « garder » quand une règle de la carte refuse la correction proposée).
+export function compareFloor(plan, releve, floor = 'rdc', opts = {}) {
+  const decisionOf = new Map(list(opts?.decisions).filter((d) => isObject(d) && d.floor === floor).map((d) => [String(d.id), d]));
   const rows = [];
   if (!isObject(plan) || !isObject(releve) || !isObject(releve.floors?.[floor])) return { rows, unmatchedObjects: [], high: [], walls: [] };
   const fl = releve.floors[floor];
@@ -247,8 +250,12 @@ export function compareFloor(plan, releve, floor = 'rdc') {
       else rows.push(row({ id: f.id, floor, nature: 'meuble', ref: null, delta: 0, level: 'plus-60', action: 'garder', reason: 'pièce relevée sans objet du modèle : signalée', details: f.kind }));
       continue;
     }
+    // Pièce déjà posée contre la face du mur du jeu (le modèle poussé hors de la bande du mur) : l'écart se mesure à cette position.
+    const pushed = pushOutOfWalls(g.plan, segsAll);
+    const atWall = rectDelta(f, pushed);
+    if (atWall.max < m.delta.max && atWall.max < 15) m.delta = { ...atWall };
     const level = deltaLevel(m.delta.max);
-    const to = { ...rectPx(pushOutOfWalls(g.plan, segsAll)), kind: f.provisional ? kindOf(g.components) : f.kind };
+    const to = { ...rectPx(pushed), kind: f.provisional ? kindOf(g.components) : f.kind };
     const action = f.provisional ? 'remplacer' : level === 'moins-15' ? 'garder' : 'corriger';
     rows.push(row({
       id: f.id, floor, nature: 'meuble', ref: g.key, delta: m.delta.max, level, action, to: action === 'garder' ? null : to,
@@ -281,7 +288,11 @@ export function compareFloor(plan, releve, floor = 'rdc') {
   });
   const high = list(releve.objects).filter((o) => isObject(o) && o.floor === floor && !o.outside && o.rule === 'haut');
   const ctx = { plan, releve, floor, mw, groups, mp, stairs: ms };
-  return { rows: rows.map((r) => ({ ...r, box: rowBox(r, ctx) })), unmatchedObjects, high, walls };
+  const withDecision = (r) => {
+    const d = decisionOf.get(String(r.id));
+    return d ? { ...r, decision: { action: d.action, reason: d.reason, ...(typeof d.approved === 'boolean' ? { approved: d.approved } : {}) } } : r;
+  };
+  return { rows: rows.map((r) => withDecision({ ...r, box: rowBox(r, ctx) })), unmatchedObjects, high, walls };
 }
 
 const union = (a, b) => (a && b ? { x0: Math.min(a.x0, b.x0), y0: Math.min(a.y0, b.y0), x1: Math.max(a.x1, b.x1), y1: Math.max(a.y1, b.y1) } : a ?? b ?? null);
@@ -333,6 +344,9 @@ export function draftDecisions(rows, previous = []) {
     return d;
   });
 }
+
+// Écart 15-60 encore ouvert : ni corrigé (sinon il serait sous 15), ni gardé par une décision (règle de la carte, escalier, porte).
+export const openMid = (rows) => list(rows).filter((r) => isObject(r) && r.level === '15-60' && r.action !== 'garder' && r.decision?.action !== 'garder');
 
 // Comptes du rapport : { [niveau]: { [nature]: n } }.
 export function countByLevel(rows) {

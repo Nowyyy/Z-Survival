@@ -2,7 +2,7 @@
 // écrit Docs/ref/ecarts-modele.md et le brouillon data/game/maps/rez-de-chaussee/ecarts-decisions.json.
 // L'accord du propriétaire (`approved`) déjà présent dans ecarts-decisions.json est conservé. Usage : node scripts/modele/rapport.mjs [--ecrire]
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
-import { compareFloor, countByLevel, draftDecisions } from '../../js/core/ecarts.js';
+import { compareFloor, countByLevel, draftDecisions, openMid } from '../../js/core/ecarts.js';
 import { LEVELS } from '../../js/core/releve.js';
 
 const DIR = 'data/game/maps/rez-de-chaussee';
@@ -15,7 +15,7 @@ const NAMES = { rdc: 'Rez-de-chaussée', etage: 'Étage' };
 const fmt = (v) => String(v).replace('.', ',');
 const cell = (v) => String(v ?? '').replace(/\|/g, '/');
 
-const results = Object.fromEntries(Object.entries(plans).map(([f, p]) => [f, compareFloor(p, releve, f)]));
+const results = Object.fromEntries(Object.entries(plans).map(([f, p]) => [f, compareFloor(p, releve, f, { decisions: previous })]));
 const allRows = Object.values(results).flatMap((r) => r.rows);
 // Une décision par ligne qui propose un changement, plus les lignes « plus-60 » (à approuver) ; les écarts sous 15 et les « garder » ne sont pas des décisions.
 const decisions = draftDecisions(allRows.filter((r) => r.action !== 'garder'), previous);
@@ -37,10 +37,12 @@ L.push('', 'Niveaux : **moins-15** ignoré ; **15-60** appliqué en partie B par
 
 for (const [f, r] of Object.entries(results)) {
   L.push(`## ${NAMES[f]} : écarts par élément`, '');
-  L.push('| Élément | Nature | Modèle | Écart (unités) | Niveau | Décision | Raison | Détails |', '|---|---|---|---|---|---|---|---|');
+  L.push(`Écarts 15-60 encore ouverts (ni corrigés ni gardés par une décision) : ${openMid(r.rows).map((x) => x.id).join(', ') || 'aucun'}.`, '');
+  L.push('| Élément | Nature | Modèle | Écart (unités) | Niveau | Proposition | Décision (ecarts-decisions.json) | Raison | Détails |', '|---|---|---|---|---|---|---|---|---|');
   const order = ['mur', 'ouverture', 'fenetre', 'pilier', 'escalier', 'meuble', 'objet'];
   for (const row of [...r.rows].sort((a, b) => order.indexOf(a.nature) - order.indexOf(b.nature))) {
-    L.push(`| ${cell(row.id)} | ${row.nature} | ${cell(row.ref ?? 'aucun')} | ${fmt(row.delta)} | ${row.level} | ${row.action}${row.to ? ` → ${cell(JSON.stringify(row.to))}` : ''} | ${cell(row.reason)} | ${cell(row.details)} |`);
+    const dec = row.decision ? `${row.decision.action}${row.decision.approved === false ? ' (à approuver)' : ''}${row.decision.action !== row.action ? ` : ${cell(row.decision.reason)}` : ''}` : '—';
+    L.push(`| ${cell(row.id)} | ${row.nature} | ${cell(row.ref ?? 'aucun')} | ${fmt(row.delta)} | ${row.level} | ${row.action}${row.to ? ` → ${cell(JSON.stringify(row.to))}` : ''} | ${dec} | ${cell(row.reason)} | ${cell(row.details)} |`);
   }
   L.push('');
   const furniture = r.rows.filter((x) => x.nature === 'meuble');

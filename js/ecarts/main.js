@@ -1,6 +1,6 @@
 // Page des écarts carte / modèle (lot 3g) : lit releve.json, plan.json (et etage.json), world.json (et etage.world.json) de la même origine,
 // compare (js/core/ecarts.js) et dessine (js/core/ecarts-svg.js). Sélecteur d'étage (boutons). Aucune écriture, aucune requête externe.
-import { compareFloor } from '../core/ecarts.js';
+import { compareFloor, openMid } from '../core/ecarts.js';
 import { ecartsToSvg } from '../core/ecarts-svg.js';
 import { translate } from '../i18n.js';
 
@@ -22,16 +22,17 @@ $('app').hidden = false;
 
 const optional = (path) => loadJson(path).catch(() => null);
 try {
-  const [releve, plan, world, etage, etageWorld] = await Promise.all([loadJson(`${DIR}/releve.json`), loadJson(`${DIR}/plan.json`), loadJson(`${DIR}/world.json`), optional(`${DIR}/etage.json`), optional(`${DIR}/etage.world.json`)]);
+  const [releve, plan, world, etage, etageWorld, decisionsFile] = await Promise.all([loadJson(`${DIR}/releve.json`), loadJson(`${DIR}/plan.json`), loadJson(`${DIR}/world.json`), optional(`${DIR}/etage.json`), optional(`${DIR}/etage.world.json`), optional(`${DIR}/ecarts-decisions.json`)]);
+  const decisions = decisionsFile?.decisions ?? [];
   const floors = { rdc: { plan, world, name: t('dev.carte.map.rez') } };
   if (etage && etageWorld && releve.floors?.etage) floors.etage = { plan: etage, world: etageWorld, name: t('dev.carte.name.etage') };
   if (!floors.etage) $('bouton-etage').parentElement.hidden = true;
   const show = (floor) => {
     const f = floors[floor] ?? floors.rdc;
     const id = floors[floor] ? floor : 'rdc';
-    const { rows } = compareFloor(f.plan, releve, id);
+    const { rows } = compareFloor(f.plan, releve, id, { decisions });
     $('figure').innerHTML = ecartsToSvg(releve, f.world, { floor: id, rows, labels: { title: t('dev.ecarts.svg.title', { name: f.name }), desc: t('dev.ecarts.intro'), scale: t('dev.carte.scale'), big: t('dev.ecarts.big') } });
-    $('stats').textContent = t('dev.ecarts.stats', { name: f.name, rows: rows.length, big: rows.filter((r) => r.level === 'plus-60').length, mid: rows.filter((r) => r.level === '15-60').length, objets: rows.filter((r) => r.nature === 'objet').length });
+    $('stats').textContent = t('dev.ecarts.stats', { name: f.name, rows: rows.length, big: rows.filter((r) => r.level === 'plus-60').length, mid: openMid(rows).length, objets: rows.filter((r) => r.nature === 'objet').length });
     for (const b of document.querySelectorAll('[data-floor]')) b.setAttribute('aria-pressed', String(b.dataset.floor === id));
     document.body.dataset.floor = id;
   };

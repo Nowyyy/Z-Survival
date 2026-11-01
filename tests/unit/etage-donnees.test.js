@@ -54,7 +54,10 @@ describe('étage : fichiers générés et sources', () => {
 
   it('plan.json n\'est modifié que pour les escaliers : identifiant et rôle de l\'existant, second escalier ajouté', () => {
     expect(plan.stairs.map((s) => [s.id, s.role])).toEqual([['escalier-courbe', 'escalier-depart'], ['escalier-aile', 'escalier-aile']]);
-    expect(plan.furniture.length).toBe(49);
+    // Lot 3g (avant : 49) : 49 + les pièces du modèle ajoutées par ecarts-decisions.json (décisions « ajouter » d'un meuble au rez-de-chaussée).
+    const adds = JSON.parse(readFileSync('data/game/maps/rez-de-chaussee/ecarts-decisions.json', 'utf8')).decisions.filter((d) => d.floor === 'rdc' && d.action === 'ajouter' && d.to && 'x0' in d.to && (d.level !== 'plus-60' || d.approved === true));
+    expect(plan.furniture.length).toBe(49 + adds.length);
+    expect(adds.length).toBeLessThanOrEqual(12);
     expect(plan.windows.map((w) => w.id)).toEqual(['F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8']);
   });
 });

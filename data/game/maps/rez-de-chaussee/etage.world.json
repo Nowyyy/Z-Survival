@@ -35,7 +35,7 @@
     { "id": "U2", "side": "ouest", "x": 1050, "y": 1095 },
     { "id": "U3", "side": "nord", "x": 1280, "y": 915 },
     { "id": "U4", "side": "nord", "x": 1430, "y": 915 },
-    { "id": "U5", "side": "nord", "x": 1860, "y": 1930 },
+    { "id": "U5", "side": "nord", "x": 1885, "y": 1930 },
     { "id": "U6", "side": "sud", "x": 2055, "y": 2550 },
     { "id": "U7", "side": "sud", "x": 2205, "y": 2550 }
   ],
@@ -44,7 +44,7 @@
     { "id": "barriere-U2", "fenetre": "U2", "x": 1030, "y": 1059, "w": 40, "h": 72 },
     { "id": "barriere-U3", "fenetre": "U3", "x": 1244, "y": 895, "w": 72, "h": 40 },
     { "id": "barriere-U4", "fenetre": "U4", "x": 1394, "y": 895, "w": 72, "h": 40 },
-    { "id": "barriere-U5", "fenetre": "U5", "x": 1824, "y": 1910, "w": 72, "h": 40 },
+    { "id": "barriere-U5", "fenetre": "U5", "x": 1849, "y": 1910, "w": 72, "h": 40 },
     { "id": "barriere-U6", "fenetre": "U6", "x": 2019, "y": 2530, "w": 72, "h": 40 },
     { "id": "barriere-U7", "fenetre": "U7", "x": 2169, "y": 2530, "w": 72, "h": 40 }
   ],
@@ -97,7 +97,7 @@
   "generation": {
     "shifts": [
       { "id": "U3", "units": 5, "auto": false },
-      { "id": "U5", "units": 20, "auto": false },
+      { "id": "U5", "units": 5, "auto": false },
       { "id": "U6", "units": 10, "auto": false },
       { "id": "U7", "units": 5, "auto": false }
     ],
@@ -123,8 +123,8 @@
     { "id": "U3-b", "fenetre": "U3", "window": "U3", "x": 1280, "y": 265 },
     { "id": "U4-a", "fenetre": "U4", "window": "U4", "x": 1430, "y": 465 },
     { "id": "U4-b", "fenetre": "U4", "window": "U4", "x": 1430, "y": 265 },
-    { "id": "U5-a", "fenetre": "U5", "window": "U5", "x": 1860, "y": 1480 },
-    { "id": "U5-b", "fenetre": "U5", "window": "U5", "x": 1860, "y": 1280 },
+    { "id": "U5-a", "fenetre": "U5", "window": "U5", "x": 1885, "y": 1480 },
+    { "id": "U5-b", "fenetre": "U5", "window": "U5", "x": 1885, "y": 1280 },
     { "id": "U6-a", "fenetre": "U6", "window": "U6", "x": 2055, "y": 3000 },
     { "id": "U6-b", "fenetre": "U6", "window": "U6", "x": 2055, "y": 3200 },
     { "id": "U7-a", "fenetre": "U7", "window": "U7", "x": 2205, "y": 3000 },

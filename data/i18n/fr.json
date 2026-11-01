@@ -227,6 +227,6 @@
   "dev.ecarts.legend.ecart": "Écart de plus de 60 unités (cadre)",
   "dev.ecarts.big": "> 60",
   "dev.ecarts.svg.title": "Écarts entre la carte et le modèle : {name}",
-  "dev.ecarts.stats": "{name} : {rows} éléments comparés · {big} écarts de plus de 60 unités · {mid} de 15 à 60 · {objets} objets du modèle sans équivalent",
+  "dev.ecarts.stats": "{name} : {rows} éléments comparés · {big} écarts de plus de 60 unités · {mid} de 15 à 60 encore ouverts · {objets} objets du modèle sans équivalent",
   "dev.ecarts.error": "Impossible de charger le relevé du modèle."
 }
