@@ -7,7 +7,7 @@ import { createRng, nextFloat } from './rng.js';
 import { rectGap } from './collision.js';
 
 export const DEFAULTS = Object.freeze({
-  seed: 7351, deadTrees: 22, puddles: 14, tufts: 40, rubble: 8, barrels: 2, poleGap: 420, postGap: 70, fenceGap: 300, fromRoom: 140, fromSpawn: 90, fromCorridor: 24,
+  seed: 7351, deadTrees: 22, puddles: 14, tufts: 30, rubble: 5, barrels: 2, poleGap: 420, postGap: 70, fenceGap: 300, fromRoom: 140, fromSpawn: 90, fromCorridor: 24,
 });
 
 const okRect = (r) => r && [r.x, r.y, r.w, r.h].every(isNum) && r.w > 0 && r.h > 0;
@@ -49,12 +49,12 @@ export function generateLivelyDecor(input, opts = {}) {
   };
   const apart = (r, others, m) => !others.some((q) => rectGap(r, q.box ?? q) < m);
 
-  // Arbres morts : tronc fin et haut, quatre branches nues inclinées, deux brindilles.
+  // Arbres morts : tronc fin et haut, trois branches nues inclinées, une brindille.
   const deadTrees = place(o.deadTrees, (n) => {
     const x = r1(between(60, W - 60));
     const y = r1(between(60, H - 60));
     const hauteur = r1(between(120, 175));
-    const branches = Array.from({ length: 6 }, (_, k) => ({ at: r1(hauteur * (k < 4 ? between(0.45, 0.85) : between(0.75, 0.95))), len: r1(k < 4 ? between(35, 70) : between(18, 30)), tilt: r1(between(0.55, 1.15) * 100) / 100, rot: r1(((k * 2.4) + between(-0.5, 0.5)) * 100) / 100, r: k < 4 ? 2.2 : 1.2 }));
+    const branches = Array.from({ length: 4 }, (_, k) => ({ at: r1(hauteur * (k < 3 ? between(0.45, 0.85) : between(0.75, 0.95))), len: r1(k < 3 ? between(35, 70) : between(18, 30)), tilt: r1(between(0.55, 1.15) * 100) / 100, rot: r1(((k * 2.4) + between(-0.5, 0.5)) * 100) / 100, r: k < 3 ? 2.2 : 1.2 }));
     return { id: `arbre-mort-${n}`, x, y, hauteur, rayon: r1(between(4.5, 7)), branches, box: { x: x - 10, y: y - 10, w: 20, h: 20 } };
   }, (t, out) => inside(t.box, 40) && fromRoom(t.box) >= o.fromRoom && clearOf(t.box, 40) && !onGround(t.box) && apart(t.box, out, 140));
 

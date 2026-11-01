@@ -78,7 +78,10 @@ test.describe('?detail=0 et ?detail=1', () => {
   });
 });
 
-test.describe('budgets de rendu avec le détail (≤ référence + 1 500 triangles + mobilier, 30 000 au plus, et + 6 appels)', () => {
+// Retours du propriétaire (quatrième passe) : avec le mobilier d'après le modèle, les portes, le feu, l'extérieur plus vivant et le brouillard, le budget du détail
+// n'est plus « référence + 1 500 » (décor léger seul) mais les plafonds du projet : 30 000 triangles (budget de l'étage) et 240 appels (objectif) ; le détail ajoute
+// au plus 12 appels (décor léger, feux) ; sans le détail, la référence à quelques triangles près (+ 2 appels : nappes de brume ; ± 1 : fenêtres F7 et pastilles).
+test.describe('budgets de rendu avec le détail (30 000 triangles et 240 appels au plus ; + 12 appels au plus avec le détail)', () => {
   for (const [id, sc] of Object.entries(SCENES)) {
     test(`${id}`, async ({ page }, testInfo) => {
       await open(page, `${sc.url}&shadows=1&detail=0`);
@@ -88,15 +91,12 @@ test.describe('budgets de rendu avec le détail (≤ référence + 1 500 triangl
       const note = `${id} : detail=0 ${off.calls} appels / ${off.triangles} triangles ; detail=1 ${on.calls} / ${on.triangles} (référence ${REF[id].join(' / ')})`;
       testInfo.annotations.push({ type: 'rendu', description: note });
       console.log(`BUDGET lot 3g-C ${note}`);
-      expect(on.triangles).toBeLessThanOrEqual(Math.min(REF[id][1] + 1500 + MOBILIER, 30000));
-      expect(on.calls).toBeLessThanOrEqual(REF[id][0] + 6);
-      expect(on.triangles - off.triangles).toBeLessThanOrEqual(1500 + MOBILIER);
-      expect(on.calls - off.calls).toBeLessThanOrEqual(6);
-      // Sans le détail : la référence, à la géométrie corrigée de la partie B près (quelques triangles) ; F7 retirée après C (son maillage, un appel,
-      // manque quand elle était dans le champ : U4) ; pastilles incrustées dans la face du mur (deuxième passe) : le volume d'une fenêtre change, elle peut entrer
-      // dans le champ (un appel, 42 triangles au plus : R1).
+      expect(on.triangles).toBeLessThanOrEqual(30000);
+      expect(on.calls).toBeLessThanOrEqual(240);
+      expect(on.calls - off.calls).toBeLessThanOrEqual(12);
+      expect(on.triangles - off.triangles).toBeLessThanOrEqual(1500 + MOBILIER + 4000);
       expect(Math.abs(off.triangles - REF[id][1])).toBeLessThanOrEqual(80);
-      expect(off.calls).toBeLessThanOrEqual(REF[id][0] + 1);
+      expect(off.calls).toBeLessThanOrEqual(REF[id][0] + 3);
       expect(off.calls).toBeGreaterThanOrEqual(REF[id][0] - 1);
     });
   }

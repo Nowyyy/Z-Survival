@@ -38,7 +38,8 @@ const wheelAlongZ = new THREE.CylinderGeometry(1, 1, 1, 8).rotateX(Math.PI / 2);
 // Lot 3g (extérieur plus vivant) : tronc et branche (cylindres à 5 pans sans bouchons, la branche part de son pied), brin d'herbe.
 const thinTrunk = new THREE.CylinderGeometry(0.7, 1, 1, 5, 1, true);
 const branchGeom = new THREE.CylinderGeometry(0.45, 1, 1, 5, 1, true).translate(0, 0.5, 0);
-const bladeGeom = new THREE.BoxGeometry(1, 1, 1).translate(0, 0.5, 0);
+const bladeGeom = new THREE.CylinderGeometry(0.5, 0.5, 1, 3, 1, true).translate(0, 0.5, 0); // prisme ouvert à 3 pans (6 triangles)
+const postGeom = new THREE.CylinderGeometry(0.5, 0.6, 1, 4, 1, true).translate(0, 0.5, 0); // poteau ouvert à 4 pans (8 triangles)
 
 // Nombre pseudo-aléatoire stable dans [0, 1[ à partir de deux entiers (décalage de fenêtre de texture : sans hasard).
 function unit(seed, k) {
@@ -302,7 +303,7 @@ function addLively(b, region, lv) {
   b.scenery.geometry(branchGeom, lv.deadTrees.flatMap((t) => t.branches.map((br) => ({ x: t.x, y: br.at, z: t.y, sx: br.r, sy: br.len, sz: br.r, tilt: br.tilt, rot: br.rot, rect: bark }))));
   const wood = region('bois-sombre');
   const metal = region('tole');
-  b.scenery.geometry(bladeGeom, lv.fence.posts.map((p) => ({ x: p.x, y: 0, z: p.y, sx: 4, sy: p.hauteur, sz: 4, tilt: p.lean, rect: wood })));
+  b.scenery.geometry(postGeom, lv.fence.posts.map((p) => ({ x: p.x, y: 0, z: p.y, sx: 4, sy: p.hauteur, sz: 4, tilt: p.lean, rect: wood })));
   for (const w of lv.fence.wires) {
     for (const h of [12, 22, 32]) {
       const x0 = Math.min(w.x0, w.x1);
@@ -312,14 +313,14 @@ function addLively(b, region, lv) {
       b.scenery.box({ x0: x0 - 0.6, x1: x1 + 0.6, y0: h, y1: h + 1.2, z0: z0 - 0.6, z1: z1 + 0.6 }, { rect: metal, scale: metal.scale, seed: 11 }, 'cotes');
     }
   }
-  b.scenery.geometry(bladeGeom, lv.poles.map((p) => ({ x: p.x, y: 0, z: p.y, sx: 6, sy: p.hauteur, sz: 6, rect: wood })));
+  b.scenery.geometry(postGeom, lv.poles.map((p) => ({ x: p.x, y: 0, z: p.y, sx: 7, sy: p.hauteur, sz: 7, rect: wood })));
   lv.poles.forEach((p, i) => b.scenery.box({ x0: p.x - 26, x1: p.x + 26, y0: p.hauteur - 14, y1: p.hauteur - 10, z0: p.y - 2.5, z1: p.y + 2.5 }, { rect: wood, scale: wood.scale, seed: 40 + i }));
   const tire = region('pneu');
   for (const c of lv.cables) for (const dz of [-20, 20]) b.scenery.box({ x0: c.x0 + dz, x1: c.x1 + dz, y0: c.h, y1: c.h + 1, z0: c.y - 0.5, z1: c.y + 0.5 }, { rect: tire, scale: tire.scale, seed: 3 }, 'cotes');
   const water = region('vitre');
   lv.puddles.forEach((p, i) => b.scenery.box({ x0: p.x, x1: p.x + p.w, y0: ROAD_Y, y1: ROAD_Y + 0.3, z0: p.y, z1: p.y + p.h }, { rect: water, scale: water.scale, seed: 60 + i }, 'dessus'));
   const grass = region('buisson');
-  b.scenery.geometry(bladeGeom, lv.tufts.flatMap((t) => [0, 1, 2].map((k) => ({ x: t.x + Math.cos(t.rot + k * 2.1) * t.r * 0.4, y: 0, z: t.y + Math.sin(t.rot + k * 2.1) * t.r * 0.4, sx: 2, sy: t.hauteur * (0.75 + 0.15 * k), sz: 5, tilt: 0.25 + 0.12 * k, rot: t.rot + k * 2.1, rect: grass }))));
+  b.scenery.geometry(bladeGeom, lv.tufts.flatMap((t) => [0, 1, 2].map((k) => ({ x: t.x + Math.cos(t.rot + k * 2.1) * t.r * 0.4, y: 0, z: t.y + Math.sin(t.rot + k * 2.1) * t.r * 0.4, sx: 3, sy: t.hauteur * (0.75 + 0.15 * k), sz: 3, tilt: 0.25 + 0.12 * k, rot: t.rot + k * 2.1, rect: grass }))));
   for (const r of lv.rubble) rubbleBoxes(r, 22, r.id).forEach((q, j) => {
     const rg = region(q.region);
     b.scenery.box(q, { rect: rg, scale: rg.scale, seed: 80 + j }, q.faces);
