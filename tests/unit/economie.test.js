@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
-import { clampMoney, createLedger, earningsTable, formatMoney, formatMoneyCompact, killMoney, killMoneyInfo, ledgerAdd, ledgerPending, ledgerTake, makeEconomy, waveBonus, worldBonus } from '../../js/core/economy.js';
+import { repairMoney, clampMoney, createLedger, earningsTable, formatMoney, formatMoneyCompact, killMoney, killMoneyInfo, ledgerAdd, ledgerPending, ledgerTake, makeEconomy, waveBonus, worldBonus } from '../../js/core/economy.js';
 import { emptyGainView, moneyGainView, pruneGains } from '../../js/core/money-gain.js';
 import { waveSpec, TYPES } from '../../js/core/waves.js';
 
@@ -21,7 +21,7 @@ const deepFreeze = (o) => {
 
 describe('makeEconomy', () => {
   it('reprend economy.json et la prime de chaque type de enemies.json', () => {
-    expect(params.bounty).toEqual({ marcheur: 5, petit: 6, voute: 8, grand: 12 });
+    expect(params.bounty).toEqual({ marcheur: 10, petit: 10, voute: 10, grand: 10 });
     expect(params.waveBonusBase).toBe(10);
     expect(params.maxMoney).toBe(9_999_999);
   });
@@ -39,7 +39,19 @@ describe('makeEconomy', () => {
   });
 });
 
-describe('killMoney : round(prime × min(plafond, 1 + 0,04 × (manche − 1)))', () => {
+describe('killMoney : montant fixe de 10 par zombie (données du lot)', () => {
+  it.each(TYPES.flatMap((t) => [1, 2, 11, 26, 40, 51, 200].map((w) => [t, w])))('%s à la manche %i rapporte 10', (type, wave) => {
+    expect(killMoney(type, wave, params)).toBe(10);
+  });
+
+  it('le montant ne dépend ni de la manche ni du type (il évoluera avec les améliorations)', () => {
+    expect(params.killWaveGrowth).toBe(0);
+    expect(new Set(TYPES.map((t) => params.bounty[t]))).toEqual(new Set([10]));
+  });
+});
+
+describe('killMoney : formule avec hausse par manche (paramètres explicites, prévue pour plus tard)', () => {
+  const growing = { ...params, killWaveGrowth: 0.04, killGrowthCap: 3, bounty: { marcheur: 5, petit: 6, voute: 8, grand: 12 } };
   const WAVES = [1, 2, 11, 26, 40, 51, 200];
   const EXPECTED = {
     marcheur: [5, 5, 7, 10, 13, 15, 15],
@@ -49,24 +61,18 @@ describe('killMoney : round(prime × min(plafond, 1 + 0,04 × (manche − 1)))',
   };
   const cases = Object.entries(EXPECTED).flatMap(([type, list]) => WAVES.map((wave, i) => [type, wave, list[i]]));
   it.each(cases)('%s à la manche %i rapporte %i', (type, wave, amount) => {
-    expect(killMoney(type, wave, params)).toBe(amount);
-  });
-
-  it('manche 1 : la prime brute (5, 6, 8, 12)', () => {
-    expect(TYPES.map((t) => killMoney(t, 1, params))).toEqual([5, 6, 8, 12]);
-  });
-
-  it('manche 11 : prime × 1,4', () => {
-    for (const t of TYPES) expect(killMoney(t, 11, params)).toBe(Math.round(enemies.variants[t].bounty * 1.4));
+    expect(killMoney(type, wave, growing)).toBe(amount);
   });
 
   it('plafond × 3 atteint à la manche 51 et jamais dépassé', () => {
     for (const t of TYPES) {
-      expect(killMoney(t, 51, params)).toBe(enemies.variants[t].bounty * 3);
-      expect(killMoney(t, 10_000, params)).toBe(enemies.variants[t].bounty * 3);
+      expect(killMoney(t, 51, growing)).toBe(growing.bounty[t] * 3);
+      expect(killMoney(t, 10_000, growing)).toBe(growing.bounty[t] * 3);
     }
   });
+});
 
+describe('killMoney : cas limites', () => {
   it('type inconnu : 0 avec un avertissement', () => {
     const r = killMoneyInfo('licorne', 5, params);
     expect(r.amount).toBe(0);
@@ -79,7 +85,7 @@ describe('killMoney : round(prime × min(plafond, 1 + 0,04 × (manche − 1)))',
   });
 
   it.each([0, -3, NaN, Infinity, 'x', null, undefined, 1.9])('manche invalide %j : traitée comme la manche 1', (wave) => {
-    expect(killMoney('marcheur', wave, params)).toBe(5);
+    expect(killMoney('marcheur', wave, params)).toBe(10);
   });
 
   it('est un entier ≥ 0, croissant avec la manche, pour toutes les manches de 1 à 300', () => {
@@ -139,6 +145,21 @@ describe('waveBonus : round((10 + 2 × manche) × (renforcée ? 1,5 : 1))', () =
   });
 });
 
+describe('repairMoney : une planche posée rapporte 1', () => {
+  it('vaut 1 (montant fixe) et 0 sans paramètres', () => {
+    expect(repairMoney(params)).toBe(1);
+    expect(repairMoney(null)).toBe(0);
+    expect(repairMoney({})).toBe(0);
+  });
+
+  it('entre au journal avec le type « repair »', () => {
+    const l = ledgerAdd(createLedger(), { kind: 'repair', amount: repairMoney(params) }, params);
+    expect(l.byKind.repair).toBe(1);
+    expect(l.killsRun).toBe(0);
+    expect(l.pending).toBe(1);
+  });
+});
+
 describe('earningsTable', () => {
   const table = earningsTable(wavesJson, economyJson, enemies, 40);
 
@@ -179,10 +200,10 @@ describe('earningsTable', () => {
     }
   });
 
-  it('valeurs de référence : manche 1 = 25 + 12, manche 5 = 101 + 30, manche 40 = 2 646 + 135', () => {
-    expect([table[0].killGain, table[0].bonus, table[0].gain]).toEqual([25, 12, 37]);
-    expect([table[4].killGain, table[4].bonus]).toEqual([101, 30]);
-    expect([table[39].killGain, table[39].bonus]).toEqual([2646, 135]);
+  it('valeurs de référence : manche 1 = 50 + 12, manche 5 = 160 + 30, manche 40 = 1 500 + 135', () => {
+    expect([table[0].killGain, table[0].bonus, table[0].gain]).toEqual([50, 12, 62]);
+    expect([table[4].killGain, table[4].bonus]).toEqual([160, 30]);
+    expect([table[39].killGain, table[39].bonus]).toEqual([1500, 135]);
   });
 
   it('maxWave borne le tableau (jamais plus de 40) ; accepte des paramètres déjà assemblés', () => {
@@ -205,7 +226,7 @@ describe('earningsTable', () => {
 
 describe('journal des gains', () => {
   it('démarre vide', () => {
-    expect(createLedger()).toEqual({ pending: 0, earnedRun: 0, killsRun: 0, byKind: { kill: 0, wave: 0, world: 0, test: 0 } });
+    expect(createLedger()).toEqual({ pending: 0, earnedRun: 0, killsRun: 0, byKind: { kill: 0, wave: 0, world: 0, repair: 0, test: 0 } });
   });
 
   it('cumule les gains par type et compte les kills', () => {
@@ -218,7 +239,7 @@ describe('journal des gains', () => {
     expect(l.pending).toBe(530);
     expect(l.earnedRun).toBe(530);
     expect(l.killsRun).toBe(2);
-    expect(l.byKind).toEqual({ kill: 11, wave: 12, world: 500, test: 7 });
+    expect(l.byKind).toEqual({ kill: 11, wave: 12, world: 500, repair: 0, test: 7 });
     expect(ledgerPending(l)).toBe(530);
   });
 

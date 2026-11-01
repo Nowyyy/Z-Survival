@@ -626,6 +626,7 @@ export function createGame(ctx) {
         } else if (ev.type === 'plank-repaired') {
           events.push({ type: 'plankRepaired', x: g.center.x, y: g.center.y, windowId: ev.windowId, floor: ev.floor });
           sim.debris = removeDebris(sim.debris, ev.windowId, 1);
+          bank.repair(); // lot 4 : une planche posée rapporte repairMoney
         } else if (ev.type === 'stairStart' || ev.type === 'stairArrive') {
           stairLog.push({ type: ev.type, id: ev.id, stair: ev.stair, from: ev.from, to: ev.to, time: sim.time });
         }

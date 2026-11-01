@@ -75,16 +75,7 @@ export function createHud(dict, root = document) {
       if (active && (waves.wave !== shown.wave || max !== shown.max)) {
         shown.wave = waves.wave;
         shown.max = max;
-        // Le « / 40 » est un second morceau (petite police) : le texte lu reste « Vague 1 / 40 ».
-        const full = fmt(dict[max === null ? 'game.wave.hud' : 'game.wave.hudOf'], { n: waves.wave, max });
-        const cut = max === null ? -1 : full.indexOf(' /');
-        wave.replaceChildren(document.createTextNode(cut < 0 ? full : full.slice(0, cut)));
-        if (cut >= 0) {
-          const rest = document.createElement('span');
-          rest.className = 'hud-wave-max';
-          rest.textContent = full.slice(cut);
-          wave.append(rest);
-        }
+        setText(wave, fmt(dict[max === null ? 'game.wave.hud' : 'game.wave.hudOf'], { n: waves.wave, max }));
       }
       if (fighting && (waves.remaining !== shown.remaining || waves.total !== shown.total)) {
         shown.remaining = waves.remaining;

@@ -203,15 +203,6 @@ body.game {
   display: none;
 }
 
-/* « / 40 » après le numéro de vague : petite police du HUD, pour que la rangée tienne dans 300 px (lot 4). */
-.hud-wave-max {
-  margin-left: 3px;
-  font-family: var(--font-sans);
-  font-size: var(--text-sm);
-  font-weight: 700;
-  letter-spacing: 0;
-  color: var(--color-text);
-}
 
 /* Annonce de vague (E2-8, lot 2c) : animation centrale, sans focus ni clic. Aucune animation CSS autonome : js/game/splash-view.js met à jour
    les variables --splash-* à chaque image avec l'horloge du jeu, donc la pause la fige ; sous prefers-reduced-motion la vue pure ne produit
@@ -873,15 +864,16 @@ body.game {
 /* Argent (lot 4) : puce d'argent du HUD E2-2 (pièce en SVG, montant court, « +N » décoratif) ; aucune animation (le « +N » apparaît et disparaît d'un coup,
    quel que soit prefers-reduced-motion : jamais de clignotement). Jaune réservé à l'argent. */
 .hud-money {
+  position: relative;
   gap: 3px;
 }
 
-/* L'argent a sa propre rangée (entre la vie et les puces) : la largeur du HUD ne dépend plus du montant. */
-.hud-money-row {
-  display: flex;
-  align-items: center;
-  gap: var(--hud-gap);
-  min-height: 24px;
+/* Lot 4 (retour du propriétaire) : cinq lignes, de haut en bas : vie et chutes ; restants et tués ; étage ; argent ; vague (« Vague 1 / 40 », même police). Chaque ligne
+   est une puce posée à gauche : la largeur du HUD ne dépend pas du montant. */
+.hud-floor,
+.hud-money,
+.hud-wave {
+  align-self: flex-start;
 }
 
 .hud-coin {
@@ -902,7 +894,7 @@ body.game {
 /* « +N » : hors du rectangle (à sa droite), sur une puce pleine, pour ne jamais agrandir le HUD ; décoratif (aria-hidden), sans animation. */
 .hud-gain {
   position: absolute;
-  top: 6px;
+  top: 0;
   left: calc(100% + var(--hud-gap));
   box-sizing: border-box;
   height: 24px;

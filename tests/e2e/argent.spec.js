@@ -60,8 +60,8 @@ const balance = async (page) => (await state(page)).save.balance;
 test.describe('gains', () => {
   test.skip(({ isMobile }) => isMobile, 'bureau (la fenêtre est réglée par chaque test)');
 
-  for (const [type, amount] of [['marcheur', 5], ['petit', 6], ['voute', 8], ['grand', 12]]) {
-    test(`un ${type} tué par une balle rapporte ${amount} à la manche 1`, async ({ page }) => {
+  for (const [type, amount] of [['marcheur', 10], ['petit', 10], ['voute', 10], ['grand', 10]]) {
+    test(`un ${type} tué par une balle rapporte ${amount} (montant fixe)`, async ({ page }) => {
       await open(page);
       expect(await shoot(page, type)).toBe(1);
       const s = await state(page);
@@ -72,17 +72,35 @@ test.describe('gains', () => {
     });
   }
 
-  test('à la manche 11, les gains valent round(prime × 1,4) ; plafond × 3 à la manche 51 et au-delà', async ({ page }) => {
+  test('le montant est fixe : 10 par zombie à la manche 11 comme à la manche 80', async ({ page }) => {
     await open(page);
     await page.evaluate(() => window.__zs.startWave(11));
     await step(page, 0.1);
     expect(await shoot(page, 'grand')).toBe(1);
-    expect((await state(page)).economy.byKind.kill).toBe(17);
+    expect((await state(page)).economy.byKind.kill).toBe(10);
     await page.evaluate(() => window.__zs.startWave(80));
     await step(page, 0.1);
     const before = (await state(page)).economy.byKind.kill;
     expect(await shoot(page, 'petit')).toBe(1);
-    expect((await state(page)).economy.byKind.kill - before).toBe(18);
+    expect((await state(page)).economy.byKind.kill - before).toBe(10);
+  });
+
+  test('réparer une fenêtre : chaque planche posée rapporte 1', async ({ page }) => {
+    await open(page);
+    const id = await page.evaluate(() => {
+      const zs = window.__zs;
+      const w = zs.getState().windows.find((q) => q.floor === 'rdc' && q.active) ?? zs.getState().windows[0];
+      zs.setPlanks(w.id, 1);
+      zs.setPlayer(w.repairSpot.x, w.repairSpot.y);
+      return w.id;
+    });
+    await step(page, 6);
+    const s = await state(page);
+    const planks = s.windows.find((q) => q.id === id).planks;
+    expect(planks).toBeGreaterThanOrEqual(3);
+    expect(s.economy.byKind.repair).toBe(planks - 1);
+    expect(s.save.balance).toBe(planks - 1);
+    expect(s.economy.killsRun).toBe(0);
   });
 
   test('killAll() et skipWave() ne rapportent aucun kill ; la fin de manche rapporte son bonus (12 à la manche 1)', async ({ page }) => {
@@ -180,18 +198,18 @@ test.describe('conservation à la mort', () => {
   test('la mort conserve tout : E2-7 affiche « Argent gagné » et « Solde » ; « Rejouer » repart avec le même solde ; la page rechargée aussi', async ({ page }) => {
     await open(page);
     await dieAfterKill(page);
-    await expect(page.locator('#end-earned')).toHaveText('Argent gagné : 5');
-    await expect(page.locator('#end-balance')).toHaveText('Solde : 5');
+    await expect(page.locator('#end-earned')).toHaveText('Argent gagné : 10');
+    await expect(page.locator('#end-balance')).toHaveText('Solde : 10');
     await expect(page.locator('#end-best')).toHaveText('Meilleure manche : 3');
-    expect((await storedJson(page)).money).toBe(5);
+    expect((await storedJson(page)).money).toBe(10);
     await page.locator('#btn-replay').click();
     await step(page, 0.1);
-    expect((await state(page)).save.balance).toBe(5);
+    expect((await state(page)).save.balance).toBe(10);
     expect((await state(page)).economy.earnedRun).toBe(0);
     await page.reload();
     await waitReady(page);
     const s = await state(page);
-    expect(s.save).toMatchObject({ balance: 5, status: 'saved' });
+    expect(s.save).toMatchObject({ balance: 10, status: 'saved' });
     expect(s.save.saved.records).toMatchObject({ bestWave: 3, bestKills: 1, runs: 1 });
   });
 
@@ -253,7 +271,7 @@ test.describe('écriture', () => {
     const s = await state(page);
     expect(s.economy.killsRun).toBe(10);
     expect((await writes(page)).length).toBeLessThanOrEqual(2);
-    expect((await storedJson(page)).money).toBe(50);
+    expect((await storedJson(page)).money).toBe(100);
     expect(s.save.pending).toBe(0);
   });
 
@@ -323,9 +341,9 @@ test.describe('multi-onglets', () => {
     expect(await shoot(other, 'marcheur')).toBe(1);
     expect((await page.evaluate(() => window.__zs.flushSave())).ok).toBe(true);
     expect((await other.evaluate(() => window.__zs.flushSave())).ok).toBe(true);
-    expect((await storedJson(page)).money).toBe(10);
-    await expect.poll(() => balance(page)).toBe(10);
-    expect(await balance(other)).toBe(10);
+    expect((await storedJson(page)).money).toBe(20);
+    await expect.poll(() => balance(page)).toBe(20);
+    expect(await balance(other)).toBe(20);
   });
 });
 
@@ -342,7 +360,7 @@ test.describe('échecs de stockage', () => {
     const r = await page.evaluate(() => window.__zs.flushSave());
     expect(r).toMatchObject({ ok: false, error: 'QuotaExceededError' });
     let s = await state(page);
-    expect(s.save).toMatchObject({ status: 'failed', pending: 5, balance: 5 });
+    expect(s.save).toMatchObject({ status: 'failed', pending: 10, balance: 10 });
     expect(s.save.lastCommit).toMatchObject({ ok: false, error: 'QuotaExceededError' });
     await page.getByRole('button', { name: 'Pause' }).click();
     await expect(page.locator('#pause-save')).toHaveText('Sauvegarde : échec, nouvelle tentative');
@@ -350,10 +368,10 @@ test.describe('échecs de stockage', () => {
     await page.evaluate(() => { window.__fail = false; });
     await step(page, 2.5);
     s = await state(page);
-    expect(s.save).toMatchObject({ pending: 0, balance: 5 });
-    expect((await storedJson(page)).money).toBe(5);
+    expect(s.save).toMatchObject({ pending: 0, balance: 10 });
+    expect((await storedJson(page)).money).toBe(10);
     await step(page, 5);
-    expect((await storedJson(page)).money).toBe(5);
+    expect((await storedJson(page)).money).toBe(10);
     expect((await state(page)).save.status).toBe('saved');
   });
 
@@ -368,7 +386,7 @@ test.describe('échecs de stockage', () => {
     expect(await shoot(page, 'petit')).toBe(1);
     await page.evaluate(() => window.__zs.flushSave());
     const s = await state(page);
-    expect(s.save).toMatchObject({ status: 'unavailable', balance: 6, locked: true });
+    expect(s.save).toMatchObject({ status: 'unavailable', balance: 10, locked: true });
     await page.getByRole('button', { name: 'Pause' }).click();
     await expect(page.locator('#pause-save')).toHaveText('Sauvegarde indisponible : le solde reste en mémoire');
     expect(problems).toEqual([]);
@@ -410,10 +428,10 @@ test.describe('mode essai', () => {
     expect((await state(page)).save).toMatchObject({ status: 'readonly', readOnly: true, balance: 300 });
     expect(await shoot(page, 'marcheur')).toBe(1);
     await page.evaluate(() => window.__zs.flushSave());
-    expect((await state(page)).save.balance).toBe(306);
+    expect((await state(page)).save.balance).toBe(310);
     await page.getByRole('button', { name: 'Pause' }).click();
     await expect(page.locator('#pause-save')).toHaveText('Mode essai : rien n\'est enregistré');
-    await expect(page.locator('#pause-balance')).toHaveText('Solde : 306');
+    await expect(page.locator('#pause-balance')).toHaveText('Solde : 310');
     await page.getByRole('button', { name: 'Reprendre' }).click();
     await page.evaluate(() => { window.__zs.setChutes(0); window.__zs.downPlayer(); });
     await step(page, 0.3);
@@ -560,7 +578,7 @@ test.describe('interface', () => {
     expect(b.hudW).toBe(a.hudW);
   });
 
-  test('HUD ≤ 300 × 96 px à 667×375 dans le pire cas, sans chevauchement avec Pause et E2-10', async ({ page }) => {
+  test('HUD ≤ 300 × 156 px à 667×375 (cinq lignes) dans le pire cas, sans chevauchement avec Pause et E2-10', async ({ page }) => {
     await open(page, `${LOCAL}&floor=1&wave=40`);
     const m = await page.evaluate(() => {
       const z = window.__zs;
@@ -578,9 +596,9 @@ test.describe('interface', () => {
     });
     expect(m.text).toContain('Étage');
     expect(m.hud.width).toBeLessThanOrEqual(300);
-    expect(m.hud.height).toBeLessThanOrEqual(96);
+    expect(m.hud.height).toBeLessThanOrEqual(156);
     expect(m.hud.right).toBeLessThanOrEqual(m.pause.left);
-    expect(m.hud.bottom).toBeLessThan(m.vh * 0.5); // E2-10 est au tiers bas (84 % de la hauteur) : jamais sous le HUD
+    expect(m.hud.bottom).toBeLessThan(m.vh * 0.5); // à 667×375 : 16 + 152 = 168 px, sous la moitié de la hauteur // E2-10 est au tiers bas (84 % de la hauteur) : jamais sous le HUD
   });
 
   test('« +N » : un seul élément, agrégé, décoratif (aria-hidden), qui s\'efface ensuite', async ({ page }) => {
@@ -686,7 +704,7 @@ test.describe('interface', () => {
     const log = await page.evaluate(() => window.__live);
     expect(log.filter((t) => t.startsWith('Manche 1 terminée'))).toHaveLength(1);
     expect(log.filter((t) => t.includes('Nouveau record : manche 1'))).toHaveLength(1);
-    expect(log.filter((t) => /Argent|\+5\b/.test(t) && !t.startsWith('Manche'))).toEqual([]);
+    expect(log.filter((t) => /Argent|\+10\b/.test(t) && !t.startsWith('Manche'))).toEqual([]);
   });
 
   test('l\'ordre des blocs E2 est inchangé, sans nouveau bloc', async ({ page }) => {

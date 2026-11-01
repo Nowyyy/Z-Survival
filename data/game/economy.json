@@ -1,6 +1,7 @@
 {
-  "_provisoire": "Lot 4 : toutes les valeurs sont provisoires, à régler en jouant (équilibrage non jugé par l'agent). Lu par js/core/economy.js, js/core/money-gain.js et js/core/save.js. Gain d'un zombie tué par une balle = round(bounty[type] × min(killGrowthCap, 1 + killWaveGrowth × (manche − 1))), bounty vient de enemies.json. Bonus de fin de manche = round((waveBonusBase + waveBonusPerWave × manche) × (renforcée ? reinforcedBonusMul : 1)). worldBonus : une fois par partie, à la fin du monde. maxMoney : plafond du solde. gainWindowMs et gainThrottleMs : agrégation et fréquence du « +N » affiché dans le HUD.",
-  "killWaveGrowth": 0.04,
+  "_provisoire": "Lot 4 : toutes les valeurs sont provisoires. Montants FIXES pour l'instant : un zombie tué rapporte 10 (killWaveGrowth 0 : aucune hausse avec la manche), une planche posée rapporte repairMoney (1) ; les améliorations les feront évoluer, à régler en jouant (équilibrage non jugé par l'agent). Lu par js/core/economy.js, js/core/money-gain.js et js/core/save.js. Gain d'un zombie tué par une balle = round(bounty[type] × min(killGrowthCap, 1 + killWaveGrowth × (manche − 1))), bounty vient de enemies.json. Bonus de fin de manche = round((waveBonusBase + waveBonusPerWave × manche) × (renforcée ? reinforcedBonusMul : 1)). worldBonus : une fois par partie, à la fin du monde. maxMoney : plafond du solde. gainWindowMs et gainThrottleMs : agrégation et fréquence du « +N » affiché dans le HUD.",
+  "killWaveGrowth": 0,
+  "repairMoney": 1,
   "killGrowthCap": 3,
   "waveBonusBase": 10,
   "waveBonusPerWave": 2,

@@ -9,7 +9,10 @@ import { createFakeStorage, quotaError } from './helpers/fake-storage.js';
 
 const load = (name) => JSON.parse(readFileSync(`data/game/${name}.json`, 'utf8'));
 const params = { save: load('save'), economy: load('economy'), stats: load('player-stats') };
-const economy = makeEconomy(params.economy, load('enemies'));
+const realEconomy = makeEconomy(params.economy, load('enemies'));
+// Les tests de mécanique (écritures, échecs, record…) utilisent des montants variés, indépendants du réglage du jeu (10 par zombie, qui changera avec les améliorations) :
+// primes 5 / 6 / 8 / 12 et hausse de 4 % par manche. Les montants réels sont vérifiés à part (« banque : montants du jeu »).
+const economy = { ...realEconomy, killWaveGrowth: 0.04, killGrowthCap: 3, bounty: { marcheur: 5, petit: 6, voute: 8, grand: 12 } };
 const KEY = params.save.storageKey;
 
 // Banque sur un faux stockage local, avec une horloge de jeu que le test avance.
@@ -307,5 +310,37 @@ describe('banque : « +N »', () => {
     expect(bank.snapshot().economy.gainText).toBe('+11');
     advance(1300);
     expect(bank.gain().visible).toBe(false);
+  });
+});
+
+describe('banque : montants du jeu (retour du propriétaire : montants fixes)', () => {
+  function real() {
+    const storage = createFakeStorage();
+    const { repository, mode } = createRepository({ search: '', storage, params });
+    const bank = createBank({ repository, mode, economy: realEconomy, save: params.save, clock: () => 0, wall: () => 1 });
+    return { bank, storage };
+  }
+
+  it('un zombie tué rapporte 10, quel que soit son type ou la manche', () => {
+    const { bank } = real();
+    expect(['marcheur', 'petit', 'voute', 'grand'].map((t) => bank.kill(t, 1))).toEqual([10, 10, 10, 10]);
+    expect(bank.kill('grand', 30)).toBe(10);
+    expect(bank.kill('petit', 200)).toBe(10);
+  });
+
+  it('une planche posée rapporte 1 (type « repair »)', () => {
+    const { bank } = real();
+    expect(bank.repair()).toBe(1);
+    expect(bank.repair()).toBe(1);
+    expect(bank.balance()).toBe(2);
+    expect(bank.snapshot().economy.byKind.repair).toBe(2);
+    expect(bank.snapshot().economy.killsRun).toBe(0);
+  });
+
+  it('plus de gain de réparation après la fin de la partie', () => {
+    const { bank } = real();
+    bank.waveStart(1);
+    bank.runEnd({ kills: 0, reason: 'death' });
+    expect(bank.repair()).toBe(0);
   });
 });

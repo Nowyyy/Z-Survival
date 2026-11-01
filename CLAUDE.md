@@ -48,12 +48,12 @@ Avant de modifier une page, lis `Docs/ref/conventions.md` (arborescence, pages, 
 - Chargement : textures et sons essentiels derrière l'écran de préparation ; aucun son avant le premier geste.
 - Vagues : waves.js + wave-director.js d'après waves.json (vie BO3 ×30 au plus) ; 10 zombies simultanés au plus.
 - Zombies : 4 types × 4 allures (enemies.json, gaits.json), createEnemy ; vitesse ≤ 190 ; la rampe est visuelle, sans effet sur la hitbox.
-- Statistiques : player-stats.js (9 stats, niveaux 0 à 10 ; chutes 0 à 5) ; niveaux = ?lvl= > sauvegarde > zéros ; effectiveWeapon et effectivePlayer.
+- Statistiques : player-stats.js (9 stats, niveaux 0 à 10) ; niveaux = ?lvl= > sauvegarde > zéros ; effectiveWeapon, effectivePlayer.
 - Fenêtres : windows.json, windows.js (4 planches, arrachage 2,2 s, réparation 1,8 s) ; les planches ne bloquent que les zombies (closedRects).
 - Siège : siege.js (approche, attente, arrache, escalade, dedans, libre) ; 2 emplacements, file de 6, 2 grimpeurs ; jamais d'entrée sans fenêtre ouverte ni active ; ?empty=1 : zombies libres.
 - Chutes : player-down.js ; 1 chute de base, à terre 5 s invulnérable, relevage à 50 % ; stats chutes (0 à 5), reparation (0 à 10).
 - Planches : plank-layout.js (pivot au bas) ; un maillage par fenêtre, 42 triangles au plus ; débris à plat, à l'infini.
-- HUD : un seul rectangle E2-2 (96 × 300 px au plus) ; E2-9 et E2-11 retirés ; E2-10 (à terre) ; marges 16 px + safe-area ; icônes SVG ; texte ≥ 14 px ; #hud-live annonce les événements.
+- HUD : un seul rectangle E2-2 (156 × 300 px au plus ; 5 lignes : vie, restants, étage, argent, vague) ; E2-9 et E2-11 retirés ; E2-10 (à terre) ; marges 16 px + safe-area ; icônes SVG ; texte ≥ 14 px ; #hud-live annonce les événements.
 - jeu.html : apple-mobile-web-app-capable (essai sans barres de Safari) ; pas de manifeste.
 - Journal des versions : chaque lot ajoute une entrée à data/changelog.json et adapte data-changelog et dev.spec.
 - Effet VHS : #vhs (vhs.js, horloge réelle) ; interdits : mix-blend-mode, filter, backdrop-filter, post-traitement 3D ; ?vhs=0|1 ; coupé en mouvement réduit.
@@ -66,6 +66,6 @@ Avant de modifier une page, lis `Docs/ref/conventions.md` (arborescence, pages, 
 - Portes : 1 manche 10, 2 manche 20, 3 manche 30 ; ?wave=N ouvre celles dont openAfterWave < N ; ?floor=N ; budget étage 30 000 / 300 ; le lot 3d est reporté.
 - Sauvegarde : js/core/save.js (schéma v1, migrations, commitDelta, code ZS1.<base64url>.<crc32>) pur ; js/save/ seul à toucher localStorage, clé unique zs.save.v1 ; écriture par différences ; illisible ou version future = verrouillée, jamais écrasée.
 - Mode essai : wave, lvl, planks, map, empty, nospawn, endless, floor, money = sauvegarde en lecture seule (aucune écriture, solde réel lu) ; ?test=1 = mémoire, ?test=1&store=local = vrai localStorage.
-- Argent : economy.js, economy.json, bounty ; gain par kill (balle seulement, jamais killAll/skipWave), par manche, fin de monde ; tout est conservé à la mort ; jamais de calcul d'argent hors de economy.js.
+- Argent : economy.js, economy.json, bounty ; 10 par kill (balle seulement, jamais killAll/skipWave), 1 par planche posée, bonus de manche, fin de monde ; tout est conservé à la mort ; jamais de calcul d'argent hors de economy.js.
 - Interface : puce d'argent dans E2-2, « +N » agrégé, solde et état dans la pause et E2-7 ; sauvegarde.html (technique, remplacée au lot 7) ; aucun nouveau bloc E2.
-- Tests lot 4 : getState().save et economy ; scripts/economie.mjs et code-sauvegarde.mjs ; détails : `conventions.md` (« Argent et sauvegarde »).
+- Lot 4 : getState().save et economy ; scripts/economie.mjs, code-sauvegarde.mjs ; détails : `conventions.md`.

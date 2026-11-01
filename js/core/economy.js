@@ -52,6 +52,9 @@ export function waveBonus(wave, reinforced, params) {
   return Math.max(0, Math.round(base * (reinforced === true ? Math.max(1, num(params?.reinforcedBonusMul, 1)) : 1)));
 }
 
+// Argent d'une planche posée (réparation d'une fenêtre) : montant fixe.
+export const repairMoney = (params) => Math.max(0, Math.round(num(params?.repairMoney)));
+
 // Bonus de fin de monde (une fois par partie).
 export const worldBonus = (params) => Math.max(0, Math.round(num(params?.worldBonus)));
 
@@ -74,12 +77,12 @@ export function earningsTable(wavesParams, economyParams, enemiesParams, maxWave
 }
 
 // ---------------------------------------------------------------------------------------------------------------------------------------------
-// Journal des gains (immuable) : { pending (à enregistrer), earnedRun (cette partie), killsRun, byKind { kill, wave, world, test } }.
-export const LEDGER_KINDS = ['kill', 'wave', 'world', 'test'];
+// Journal des gains (immuable) : { pending (à enregistrer), earnedRun (cette partie), killsRun, byKind { kill, wave, world, repair, test } }.
+export const LEDGER_KINDS = ['kill', 'wave', 'world', 'repair', 'test'];
 const SAFE = Number.MAX_SAFE_INTEGER;
 
 export function createLedger() {
-  return { pending: 0, earnedRun: 0, killsRun: 0, byKind: { kill: 0, wave: 0, world: 0, test: 0 } };
+  return { pending: 0, earnedRun: 0, killsRun: 0, byKind: { kill: 0, wave: 0, world: 0, repair: 0, test: 0 } };
 }
 
 const asLedger = (l) => {

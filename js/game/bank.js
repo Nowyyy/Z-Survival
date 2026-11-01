@@ -5,7 +5,7 @@
 // Écritures : le montant en attente est écrit par différences (commit) soit toutes les `autosaveMs` quand quelque chose attend, soit tout de suite
 // (fin de manche, fin de partie, pause, Recommencer, page cachée). Un commit échoué n'efface rien : le montant et les records en attente sont repris
 // au commit suivant (jamais perdus, jamais comptés deux fois).
-import { createLedger, formatMoney, killMoney, ledgerAdd, ledgerPending, ledgerTake, waveBonus, worldBonus } from '../core/economy.js';
+import { createLedger, formatMoney, killMoney, ledgerAdd, ledgerPending, ledgerTake, repairMoney, waveBonus, worldBonus } from '../core/economy.js';
 import { emptyGainView, moneyGainView, pruneGains } from '../core/money-gain.js';
 
 const ZERO_META = { runs: 0, worlds: 0, bestWave: 0, bestKills: 0 };
@@ -90,6 +90,11 @@ export function createBank({ repository, mode, economy, save: saveCfg, clock, wa
     kill(type, wave) {
       if (run.ended) return 0;
       return addGain('kill', killMoney(type, wave, economy));
+    },
+    // Une planche vient d'être posée (réparation d'une fenêtre). Renvoie le montant gagné.
+    repair() {
+      if (run.ended) return 0;
+      return addGain('repair', repairMoney(economy));
     },
     // Début d'une manche : la première de la partie compte une partie jouée ; la meilleure manche est demandée au prochain commit regroupé.
     waveStart(wave) {

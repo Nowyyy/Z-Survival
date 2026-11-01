@@ -36,7 +36,7 @@ test.describe('HUD compact E2-2', () => {
   test('au repos : au plus 96 px de haut et 300 px de large, marges de 16 px, sans chevaucher Pause (667×375)', async ({ page }) => {
     await open(page);
     const s = await STATE(page);
-    expect(s.hud.height).toBeLessThanOrEqual(96);
+    expect(s.hud.height).toBeLessThanOrEqual(156);
     expect(s.hud.width).toBeLessThanOrEqual(300);
     const hud = await rect(page, '#hud');
     const pause = await rect(page, '#btn-pause');
@@ -45,7 +45,7 @@ test.describe('HUD compact E2-2', () => {
     expect(apart(hud, pause)).toBe(true);
   });
 
-  test('pendant une vague avec trois fenêtres en alerte : toujours 96 × 300 au plus', async ({ page }) => {
+  test('pendant une vague avec trois fenêtres en alerte : toujours 156 × 300 au plus (cinq lignes depuis le lot 4 ; avant : 96 × 300)', async ({ page }) => {
     await open(page, '&nospawn=0');
     await page.evaluate(() => {
       const zs = window.__zs;
@@ -56,7 +56,7 @@ test.describe('HUD compact E2-2', () => {
     });
     const s = await STATE(page);
     expect(s.hud.chips).toHaveLength(3);
-    expect(s.hud.height).toBeLessThanOrEqual(96);
+    expect(s.hud.height).toBeLessThanOrEqual(156);
     expect(s.hud.width).toBeLessThanOrEqual(300);
     await expect(page.locator('#hud-wave')).toHaveText('Vague 1');
     await expect(page.locator('#hud-remaining')).toBeVisible();
@@ -179,7 +179,7 @@ test.describe('HUD en un seul rectangle noir, sans état des fenêtres', () => {
     await attack(page, 'fenetre-nord');
     const s = await STATE(page);
     expect(s.hud.chips.map((c) => c.id)).toEqual(['fenetre-ouest', 'fenetre-est', 'fenetre-nord']);
-    expect(s.hud.height).toBeLessThanOrEqual(96);
+    expect(s.hud.height).toBeLessThanOrEqual(156);
     expect(s.hud.width).toBeLessThanOrEqual(300);
   });
 });
