@@ -1,9 +1,13 @@
-# Choix du propriétaire après l’écoute de l’atelier (lot 3h, itération 1), au format de « Mes choix ».
+# Choix du propriétaire après l’écoute de l’atelier (lot 3h, itérations 1 à 3), au format de « Mes choix ».
 # actuel : garder le son actuel du jeu ; aucun : pas de son pour cet emplacement.
-# À réécouter (refaits à l’itération 2, pas encore choisis) : pas-joueur-dur, pas-joueur-escalier, pas-zombie-lent,
-# pas-zombie-marche, pas-zombie-course, planche-arrachage, reparation, planche-craquement, planche-chute, interface-achat, ambiance-feu (nouveau).
-# Escalade B : sans le grognement de fin (retiré de la recette B à l’itération 2). Gémissements lointains B : refaits avec les voix choisies.
+# Itération 3 : le coup de marteau seul reprend le marteau de la réparation (C, réglages par défaut).
+# Reste à choisir : escalade (trois nouvelles propositions à l’itération 3, dans la veine des sons choisis).
+pas-joueur-dur=C(hauteur=-3,matiere=0,grain=1,duree=1,ampleur=0)
 pas-joueur-exterieur=A(hauteur=0,matiere=0,grain=1,duree=1,ampleur=0.1)
+pas-joueur-escalier=C(hauteur=-3,matiere=0,grain=1,duree=1,ampleur=0)
+pas-zombie-lent=A(hauteur=0,matiere=0,grain=1,duree=1,ampleur=0.1)
+pas-zombie-marche=A(hauteur=0,matiere=0,grain=1,duree=1,ampleur=0.1)
+pas-zombie-course=A(hauteur=0,matiere=0,grain=1,duree=1,ampleur=0.1)
 zombie-rampe=B(hauteur=0,matiere=0,grain=1,duree=1,ampleur=0.3)
 voix-marcheur-errance=C(hauteur=0,matiere=0,grain=1,duree=1,ampleur=0)
 voix-marcheur-attaque=C(hauteur=-6,matiere=0,grain=1,duree=0.7,ampleur=0)
@@ -21,8 +25,11 @@ voix-grand-errance=C(hauteur=0,matiere=0,grain=1,duree=1,ampleur=0)
 voix-grand-attaque=C(hauteur=0,matiere=0,grain=1,duree=1,ampleur=0)
 voix-grand-touche=C(hauteur=0,matiere=0,grain=1,duree=1,ampleur=0)
 voix-grand-mort=C(hauteur=0,matiere=0,grain=1,duree=1,ampleur=0)
-reparation-coup=C(hauteur=-6,matiere=-1,grain=0,duree=0.6,ampleur=0)
-escalade=B(hauteur=0,matiere=0,grain=1,duree=1,ampleur=0.3)
+planche-arrachage=A(hauteur=0,matiere=0,grain=1,duree=1,ampleur=0.1)
+reparation=C(hauteur=0,matiere=0,grain=1,duree=1.8,ampleur=0)
+reparation-coup=C(hauteur=0,matiere=0,grain=1,duree=1,ampleur=0)
+planche-craquement=A(hauteur=0,matiere=0,grain=1,duree=1,ampleur=0.1)
+planche-chute=A(hauteur=0,matiere=0,grain=1,duree=1,ampleur=0.1)
 joueur-souffle-terre=actuel
 joueur-relevage=actuel
 ambiance-vent=A(hauteur=0,matiere=0,grain=1,duree=1,ampleur=0.1)
@@ -33,3 +40,5 @@ joueur-essouffle=aucun
 ambiance-lointains=B(hauteur=0,matiere=0,grain=1,duree=1,ampleur=0.2)
 porte-enfoncee=A(hauteur=0,matiere=0,grain=1,duree=1,ampleur=0.1)
 interface-piece=aucun
+interface-achat=B(hauteur=0,matiere=0,grain=1,duree=0.85,ampleur=0.2)
+ambiance-feu=B(hauteur=0,matiere=0,grain=1,duree=1,ampleur=0.2)

@@ -243,13 +243,13 @@
       "note": "révisée après le retour du propriétaire (itération 2)"
     },
     "reparation-coup": {
-      "duration": [0.08, 0.25],
-      "centroid": [700, 3000],
-      "peakHz": [100, 600],
-      "hf4k": 0.25,
+      "duration": [0.08, 0.3],
+      "centroid": [250, 2500],
+      "peakHz": [50, 600],
+      "hf4k": 0.2,
       "level": -12,
-      "tipBand": [2000, 5000],
-      "source": "prompt"
+      "source": "agent",
+      "note": "révisée après le retour du propriétaire (itération 3 : le coup seul reprend le marteau de la réparation)"
     },
     "planche-craquement": {
       "duration": [0.4, 1.1],
@@ -267,7 +267,14 @@
       "source": "agent",
       "note": "révisée après le retour du propriétaire (itération 2)"
     },
-    "escalade": { "duration": [1, 2], "centroid": [250, 1500], "peakHz": [60, 600], "hf4k": 0.1, "level": -14, "source": "agent" },
+    "escalade": {
+      "duration": [1, 2],
+      "centroid": [400, 3500],
+      "hf4k": 0.3,
+      "level": -14,
+      "source": "agent",
+      "note": "révisée après le retour du propriétaire (itération 3 : nouvelles propositions sur pierre et bois secs)"
+    },
     "joueur-souffle-terre": { "duration": [1, 2.2], "centroid": [300, 1500], "f0": [90, 170], "hf4k": 0.1, "level": -10, "source": "agent" },
     "joueur-relevage": { "duration": [0.6, 1.1], "centroid": [250, 1500], "peakHz": [60, 600], "hf4k": 0.1, "level": -12, "source": "agent" },
     "ambiance-vent": { "duration": [8, 12], "centroid": [200, 1500], "hf4k": 0.05, "level": -24, "loopSeam": 0.002, "source": "agent" },
@@ -921,27 +928,27 @@
       "coup": {
         "A": {
           "kind": "hammer",
-          "dur": 0.2,
+          "dur": 0.22,
           "vary": 0.04,
-          "hit": { "use": ["planche.marteau.A"] },
-          "lp": 6000,
-          "post": { "drive": 1.5 }
+          "hit": { "use": ["planche.marteau2.A"] },
+          "lp": 5000,
+          "post": { "drive": 2.6 }
         },
         "B": {
           "kind": "hammer",
-          "dur": 0.24,
+          "dur": 0.26,
           "vary": 0.04,
-          "hit": { "use": ["planche.marteau.B"] },
-          "lp": 5500,
-          "post": { "drive": 1.7 }
+          "hit": { "use": ["planche.marteau2.B"] },
+          "lp": 4500,
+          "post": { "drive": 2.8 }
         },
         "C": {
           "kind": "hammer",
-          "dur": 0.14,
+          "dur": 0.16,
           "vary": 0.04,
-          "hit": { "use": ["planche.marteau.C"] },
-          "lp": 6500,
-          "post": { "drive": 1.4 }
+          "hit": { "use": ["planche.marteau2.C"] },
+          "lp": 5500,
+          "post": { "drive": 6 }
         }
       },
       "marteau2": {
@@ -1170,100 +1177,177 @@
     "fenetre": {
       "escalade": {
         "A": {
-          "kind": "climb",
+          "kind": "layers",
           "dur": 1.5,
           "vary": 0.04,
-          "modes": [
-            { "f": 200, "gain": 1, "decay": 0.08 },
-            { "f": 480, "gain": 0.7, "decay": 0.05 },
-            { "f": 900, "gain": 0.4, "decay": 0.03 }
-          ],
-          "grabs": [{ "at": 0.02, "gain": 0.8 }, { "at": 0.22, "gain": 0.6 }],
-          "cloth": { "at": 0.1, "dur": 1, "f": 1400, "q": 0.8, "gain": 0.35, "am": 4 },
-          "creak": {
-            "at": 0.45,
-            "dur": 0.5,
-            "gain": 0.25,
-            "rate": [[0, 22], [1, 50]],
-            "modes": [{ "f": 350, "gain": 1, "decay": 0.02 }, { "f": 640, "gain": 0.7, "decay": 0.015 }]
-          },
-          "grunt": {
-            "dur": 0.4,
-            "gain": 0.45,
-            "f0": 88,
-            "contour": [[0, 1], [0.3, 1.15], [1, 0.9]],
-            "vowels": ["eu", "oe"],
-            "breath": 0.25,
-            "sub": 0.25,
-            "rough": { "rate": 35, "depth": 0.35 },
-            "env": [[0, 0], [0.1, 1], [0.7, 0.6], [1, 0]],
-            "tilt": 1800,
-            "drive": 1.5,
-            "formantScale": 0.92,
-            "jitter": 0.04,
-            "shimmer": 0.1,
-            "wander": 0.03,
-            "at": 0.55
-          },
-          "land": { "at": 1.25, "f": 72, "decay": 0.05, "attack": 0.006, "gain": 1 },
-          "lp": 3200,
-          "post": { "drive": 1.5 }
+          "post": { "drive": 2.5 },
+          "parts": [
+            {
+              "kind": "fall",
+              "at": 0.02,
+              "dur": 0.22,
+              "gain": 0.9,
+              "dense": { "from": 260, "to": 3120, "count": 12, "decay": 0.012, "tilt": -0.5 },
+              "noise": { "gain": 0.8, "f": 1300, "q": 0.6, "decay": 0.005 },
+              "bounces": { "first": 0.002, "count": 1, "lp": 5000 },
+              "slap": { "f": 110, "decay": 0.015, "attack": 0.001, "gain": 0.3 },
+              "lp": 7000
+            },
+            {
+              "kind": "fall",
+              "at": 0.24,
+              "dur": 0.22,
+              "gain": 0.7,
+              "dense": { "from": 240, "to": 2880, "count": 12, "decay": 0.012, "tilt": -0.5 },
+              "noise": { "gain": 0.8, "f": 1300, "q": 0.6, "decay": 0.005 },
+              "bounces": { "first": 0.002, "count": 1, "lp": 5000 },
+              "slap": { "f": 110, "decay": 0.015, "attack": 0.001, "gain": 0.3 },
+              "lp": 7000
+            },
+            {
+              "kind": "drag",
+              "at": 0.3,
+              "dur": 0.55,
+              "gain": 0.7,
+              "friction": { "f": [1500, 2400], "q": 0.7, "gain": 1, "rate": 12, "jitter": 0.5, "irregular": 0.6, "rise": 0.012, "fall": 0.04 },
+              "cloth": { "f": 2600, "q": 0.8, "gain": 0.35, "am": 6 },
+              "env": [[0, 0], [0.15, 1], [0.8, 0.8], [1, 0]],
+              "lp": 6000,
+              "hp": 120
+            },
+            { "use": ["pas.dur.C"], "at": 0.5, "gain": 0.45 },
+            { "use": ["pas.dur.C"], "at": 0.74, "gain": 0.4 },
+            {
+              "kind": "break",
+              "at": 0.42,
+              "dur": 0.5,
+              "gain": 0.45,
+              "groan": {
+                "at": 0,
+                "dur": 0.5,
+                "rate": [[0, 14], [0.6, 30], [1, 22]],
+                "jitter": 0.35,
+                "irregular": 0.6,
+                "modes": [
+                  { "f": 470, "gain": 1, "decay": 0.016 },
+                  { "f": 860, "gain": 0.8, "decay": 0.013 },
+                  { "f": 1420, "gain": 0.5, "decay": 0.009 }
+                ],
+                "gain": 1
+              },
+              "lp": 7000
+            },
+            { "use": ["pasz.marche.B"], "at": 1.18, "gain": 1 }
+          ]
         },
         "B": {
-          "kind": "climb",
+          "kind": "layers",
           "dur": 1.9,
           "vary": 0.04,
-          "modes": [
-            { "f": 170, "gain": 1, "decay": 0.1 },
-            { "f": 410, "gain": 0.7, "decay": 0.065 },
-            { "f": 770, "gain": 0.4, "decay": 0.04 }
-          ],
-          "grabs": [{ "at": 0.02, "gain": 0.9 }, { "at": 0.3, "gain": 0.7 }, { "at": 0.55, "gain": 0.5 }],
-          "cloth": { "at": 0.1, "dur": 1.4, "f": 1200, "q": 0.7, "gain": 0.45, "am": 3 },
-          "creak": {
-            "at": 0.6,
-            "dur": 0.7,
-            "gain": 0.35,
-            "rate": [[0, 16], [0.6, 40], [1, 30]],
-            "modes": [{ "f": 300, "gain": 1, "decay": 0.026 }, { "f": 560, "gain": 0.7, "decay": 0.02 }]
-          },
-          "land": { "at": 1.62, "f": 62, "decay": 0.065, "attack": 0.008, "gain": 1.1 },
-          "lp": 2900,
-          "post": { "drive": 1.7 }
+          "post": { "drive": 2.5 },
+          "parts": [
+            {
+              "kind": "fall",
+              "at": 0.02,
+              "dur": 0.22,
+              "gain": 1,
+              "dense": { "from": 140, "to": 1700, "count": 12, "decay": 0.012, "tilt": -0.5 },
+              "noise": { "gain": 0.8, "f": 1300, "q": 0.6, "decay": 0.005 },
+              "bounces": { "first": 0.002, "count": 1, "lp": 5000 },
+              "slap": { "f": 110, "decay": 0.015, "attack": 0.001, "gain": 0.3 },
+              "lp": 7000
+            },
+            {
+              "kind": "fall",
+              "at": 0.3,
+              "dur": 0.22,
+              "gain": 0.8,
+              "dense": { "from": 130, "to": 1600, "count": 12, "decay": 0.012, "tilt": -0.5 },
+              "noise": { "gain": 0.8, "f": 1300, "q": 0.6, "decay": 0.005 },
+              "bounces": { "first": 0.002, "count": 1, "lp": 5000 },
+              "slap": { "f": 110, "decay": 0.015, "attack": 0.001, "gain": 0.3 },
+              "lp": 7000
+            },
+            {
+              "kind": "fall",
+              "at": 0.58,
+              "dur": 0.22,
+              "gain": 0.6,
+              "dense": { "from": 135, "to": 1650, "count": 12, "decay": 0.012, "tilt": -0.5 },
+              "noise": { "gain": 0.8, "f": 1300, "q": 0.6, "decay": 0.005 },
+              "bounces": { "first": 0.002, "count": 1, "lp": 5000 },
+              "slap": { "f": 110, "decay": 0.015, "attack": 0.001, "gain": 0.3 },
+              "lp": 7000
+            },
+            {
+              "kind": "drag",
+              "at": 0.35,
+              "dur": 0.9,
+              "gain": 0.8,
+              "friction": { "f": [550, 1000], "q": 0.7, "gain": 1, "rate": 7, "jitter": 0.5, "irregular": 0.6, "rise": 0.012, "fall": 0.04 },
+              "cloth": { "f": 1400, "q": 0.8, "gain": 0.3, "am": 4 },
+              "env": [[0, 0], [0.15, 1], [0.8, 0.8], [1, 0]],
+              "lp": 6000,
+              "hp": 120
+            },
+            { "use": ["pas.dur.B"], "at": 0.62, "gain": 0.45 },
+            { "use": ["pas.dur.B"], "at": 0.9, "gain": 0.5 },
+            { "use": ["pas.dur.B"], "at": 1.12, "gain": 0.4 },
+            {
+              "kind": "break",
+              "at": 0.5,
+              "dur": 0.8,
+              "gain": 0.55,
+              "groan": {
+                "at": 0,
+                "dur": 0.8,
+                "rate": [[0, 14], [0.6, 30], [1, 22]],
+                "jitter": 0.35,
+                "irregular": 0.6,
+                "modes": [
+                  { "f": 470, "gain": 1, "decay": 0.016 },
+                  { "f": 860, "gain": 0.8, "decay": 0.013 },
+                  { "f": 1420, "gain": 0.5, "decay": 0.009 }
+                ],
+                "gain": 1
+              },
+              "lp": 7000
+            },
+            { "use": ["pasz.marche.B"], "at": 1.55, "gain": 1 },
+            { "use": ["pasz.course.B"], "at": 1.66, "gain": 0.6 }
+          ]
         },
         "C": {
-          "kind": "climb",
+          "kind": "layers",
           "dur": 1.05,
           "vary": 0.04,
-          "modes": [
-            { "f": 230, "gain": 1, "decay": 0.055 },
-            { "f": 550, "gain": 0.7, "decay": 0.035 },
-            { "f": 1030, "gain": 0.4, "decay": 0.022 }
-          ],
-          "grabs": [{ "at": 0.02, "gain": 0.8 }, { "at": 0.15, "gain": 0.55 }],
-          "cloth": { "at": 0.06, "dur": 0.7, "f": 1600, "q": 0.9, "gain": 0.3, "am": 5 },
-          "grunt": {
-            "dur": 0.3,
-            "gain": 0.4,
-            "f0": 95,
-            "contour": [[0, 1], [0.3, 1.15], [1, 0.9]],
-            "vowels": ["eu", "oe"],
-            "breath": 0.25,
-            "sub": 0.25,
-            "rough": { "rate": 35, "depth": 0.35 },
-            "env": [[0, 0], [0.1, 1], [0.7, 0.6], [1, 0]],
-            "tilt": 2000,
-            "drive": 1.5,
-            "formantScale": 0.92,
-            "jitter": 0.04,
-            "shimmer": 0.1,
-            "wander": 0.03,
-            "at": 0.35,
-            "hp": 150
-          },
-          "land": { "at": 0.86, "f": 82, "decay": 0.035, "attack": 0.005, "gain": 0.9 },
-          "lp": 3500,
-          "post": { "drive": 1.4 }
+          "post": { "drive": 3 },
+          "parts": [
+            {
+              "kind": "fall",
+              "at": 0.015,
+              "dur": 0.22,
+              "gain": 0.9,
+              "dense": { "from": 300, "to": 3600, "count": 12, "decay": 0.012, "tilt": -0.5 },
+              "noise": { "gain": 0.8, "f": 1300, "q": 0.6, "decay": 0.005 },
+              "bounces": { "first": 0.002, "count": 1, "lp": 5000 },
+              "slap": { "f": 110, "decay": 0.015, "attack": 0.001, "gain": 0.3 },
+              "lp": 7000
+            },
+            {
+              "kind": "drag",
+              "at": 0.15,
+              "dur": 0.35,
+              "gain": 0.6,
+              "friction": { "f": [2300, 3600], "q": 0.7, "gain": 1, "rate": 15, "jitter": 0.5, "irregular": 0.6, "rise": 0.012, "fall": 0.04 },
+              "cloth": { "f": 2600, "q": 0.8, "gain": 0.35, "am": 6 },
+              "env": [[0, 0], [0.15, 1], [0.8, 0.8], [1, 0]],
+              "lp": 6000,
+              "hp": 120
+            },
+            { "use": ["pas.dur.C"], "at": 0.4, "gain": 0.4 },
+            { "use": ["pasz.course.A"], "at": 0.78, "gain": 1 }
+          ]
         }
       }
     },

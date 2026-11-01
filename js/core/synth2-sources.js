@@ -651,10 +651,12 @@ function kindHeart(r, ctx) {
 function kindLayers(r, ctx) {
   const layers = [];
   (Array.isArray(r.parts) ? r.parts : []).forEach((part, k) => {
-    if (!isObj(part) || !Object.hasOwn(KINDS_BASE, part.kind)) return;
+    // Familles utilisables en couche : celles de base et la rupture du bois (bois qui gémit, éclats).
+    const LAYER_KINDS = { ...KINDS_BASE, break: kindBreak };
+    if (!isObj(part) || !Object.hasOwn(LAYER_KINDS, part.kind)) return;
     const m = Math.max(8, Math.round(num(part.dur, 0.5) * ctx.tm * ctx.sr));
     const sub = { ...ctx, n: m, dur: m / ctx.sr, seed: ctx.seed + 100 * (k + 1) };
-    let x = KINDS_BASE[part.kind](part, sub);
+    let x = LAYER_KINDS[part.kind](part, sub);
     if (num(part.lp) > 0) x = lowpass1(lowpass1(x, part.lp * ctx.bright, ctx.sr), part.lp * ctx.bright, ctx.sr);
     let pk = 0;
     for (let i = 0; i < x.length; i += 1) pk = Math.max(pk, Math.abs(x[i]));
