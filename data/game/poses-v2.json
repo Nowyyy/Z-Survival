@@ -866,7 +866,8 @@
   "attaque": 1,
   "relevage": 0.8,
   "blend": 0.15,
-  "tir": 0.3
+  "tir": 0.3,
+  "enjamber": 1.2
  },
  "repair": {
   "strike": 0.45,

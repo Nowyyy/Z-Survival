@@ -122,7 +122,7 @@ test.describe('essai en jeu des personnages v2 et du sang', () => {
     expect(anims).toEqual([['lent', 'marcheLente'], ['marche', 'marche'], ['rampe', 'rampe'], ['course', 'course']]);
   });
 
-  test('poses v2 du siège : attente, arracher, puis escalade', async ({ page }) => {
+  test('poses v2 du siège : attente, arracher, puis enjamber la fenêtre', async ({ page }) => {
     await open(page, '&perso=B&nospawn=1&map=salle');
     const seen = await page.evaluate(() => {
       const zs = window.__zs;
@@ -135,7 +135,7 @@ test.describe('essai en jeu des personnages v2 et du sang', () => {
       return [...anims];
     });
     expect(seen).toContain('arrache:arracher');
-    expect(seen).toContain('escalade:escalade');
+    expect(seen).toContain('escalade:enjamber'); // passage de la fenêtre piloté par climb.t (demande du propriétaire)
     expect(seen.some((x) => x.startsWith('attente:attente'))).toBe(true);
   });
 

@@ -69,7 +69,7 @@ export function createPersos(params, data) {
       dynamic = world.dynamic;
       const lookup = createTokenLookup();
       if (params.perso !== 'actuel') {
-        v2 = createV2Kit({ characters: data.characters, poses: data.poses, lookup, hit: palette.hit, choice: params.perso, zombieIds: variants.zombie.variants.map((v) => v.id), seed, wear });
+        v2 = createV2Kit({ characters: data.characters, poses: data.poses, lookup, hit: palette.hit, choice: params.perso, zombieIds: variants.zombie.variants.map((v) => v.id), seed, wear, sill: render.sillHeight });
         kit.v2 = v2;
         prewarm(v2, variants.zombie.variants.length);
       }

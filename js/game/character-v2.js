@@ -10,6 +10,8 @@ import { DEATHS, addPose, blendPoses, cycleSeconds, poseAt, rigOf, touche } from
 import { partRgb, pickOutfit, resolveVariant, wearTier } from '../core/persos-variants.js';
 import { PALETTE_REGION, createPersoTexture, persoRegionRect, persoSpec, regionFactor } from '../core/texgen-persos.js';
 
+const KICK_TIME = 0.25; // durée du recul du pistolet du joueur (secondes de jeu)
+
 // Sphère englobante fixe (repère du personnage) : couvre toutes les poses, chute au sol comprise ; sert au culling hors champ.
 const BOUNDS = new THREE.Sphere(new THREE.Vector3(0, 28, 0), 62);
 
@@ -269,7 +271,7 @@ export function createV2Kit(options) {
     let gait = rigOf(current.res, skeletons);
     let woundTier = 0;
     let flashing = false;
-    const state = { anim: null, prev: null, prevPose: null, since: 0, hurtAt: -10, lastFlash: 0, attackAt: -10, lastCooldown: 0, downWas: false, upAt: -10, time: 0, phase: 0, pose: null };
+    const state = { shotAt: -10, lastRecoil: 0, anim: null, prev: null, prevPose: null, since: 0, hurtAt: -10, lastFlash: 0, attackAt: -10, lastCooldown: 0, downWas: false, upAt: -10, time: 0, phase: 0, pose: null };
     const materials = () => [flashing ? hitMat : k.wound[Math.min(woundTier, k.wound.length - 1)], k.glow].slice(0, current.shared.order.length);
     const applyMaterials = () => {
       const m = materials();
@@ -387,7 +389,11 @@ export function createV2Kit(options) {
           else if (e.repairing) show('reparation', time / cycle('reparation', { repairTime: e.repairTime }), { repairTime: e.repairTime });
           else {
             const twist = Number.isFinite(input.aim) && Number.isFinite(input.facing) ? wrap(input.aim - input.facing) : 0;
-            const recoil = Math.max(0, Math.min(1, num(input.recoil)));
+            // Recul visible : le jeu ne le garde que 0,12 s (RECOIL_TIME) ; ici, chaque nouveau coup de feu le relance pour KICK_TIME.
+            const fired = num(input.recoil);
+            if (fired > state.lastRecoil + 0.3) state.shotAt = time;
+            state.lastRecoil = fired;
+            const recoil = Math.max(0, 1 - (time - state.shotAt) / KICK_TIME);
             if (num(input.amount) > 0.12) show('marche', num(input.phase) / TAU, { twist, recoil });
             else show('repos', time / cycle('repos'), { twist, recoil });
           }
@@ -400,7 +406,9 @@ export function createV2Kit(options) {
         state.lastCooldown = num(e.hitCooldown);
         const attack = Number(poses.durations?.attaque) || 1;
         if (input.state === 'arracher') show('arracher', num(input.phase) / TAU);
-        else if (input.state === 'escalade') show('escalade', time / cycle('escalade'));
+        // Passage de la fenêtre : « enjamber », piloté par la progression (climb.t) ; avant le passage, il marche jusqu'au bord extérieur.
+        else if (input.state === 'escalade' && num(e.climb?.t) > 0) show('enjamber', num(e.climb.t), { sill: options.sill });
+        else if (input.state === 'escalade') show(GAIT_ANIM[e.gait] ?? 'marche', num(input.phase) / TAU);
         else if (e.mode === 'escalier') show(e.gait === 'rampe' ? 'rampe' : 'escalier', num(input.phase) / TAU);
         else if (time - state.attackAt < attack && e.gait !== 'rampe') show('attaque', (time - state.attackAt) / attack);
         else if (e.mode === 'attente' || num(input.amount, 0.7) < 0.2) show(e.gait === 'rampe' ? 'rampe' : 'attente', e.gait === 'rampe' ? num(input.phase) / TAU : time / cycle('attente'));

@@ -12,8 +12,8 @@ const cases = variants.flatMap(([sid, vid, s, v]) => ANIMS_OF(s.id === 'joueur' 
 const FREE = [...DEATHS, 'terre', 'relevage'];
 
 describe('liste des animations', () => {
-  it('zombies : attente, marches, rampe, course, arracher, escalade, attaque, touché, trois morts, escalier', () => {
-    expect(ZOMBIE_ANIMS).toEqual(['attente', 'marcheLente', 'marche', 'rampe', 'course', 'arracher', 'escalade', 'attaque', 'touche', 'mortAvant', 'mortArriere', 'effondrement', 'escalier']);
+  it('zombies : attente, marches, rampe, course, arracher, escalade, enjamber, attaque, touché, trois morts, escalier', () => {
+    expect(ZOMBIE_ANIMS).toEqual(['attente', 'marcheLente', 'marche', 'rampe', 'course', 'arracher', 'escalade', 'enjamber', 'attaque', 'touche', 'mortAvant', 'mortArriere', 'effondrement', 'escalier']);
   });
   it('joueur : repos, marche, tir, touché, à terre, relevage, réparation', () => expect(PLAYER_ANIMS).toEqual(['repos', 'marche', 'tir', 'touche', 'terre', 'relevage', 'reparation']));
   it('trois styles (A mesuré, B lourd et saccadé, C amplitudes nettes) et trois macros d\'animation', () => {
@@ -153,6 +153,43 @@ describe('recul du pistolet', () => {
       expect(rest[2] - kick[2], anim).toBeGreaterThan(2); // recul
       expect(tipOf(res, anim, 0.5)[1]).toBeLessThan(kick[1]); // retour progressif
     }
+  });
+});
+
+// Demande du propriétaire : une animation quand les zombies passent les fenêtres. « enjamber » suit climb.t (0 dehors, 1 dedans) ; le chemin
+// du jeu va de slotDistance (55) dehors à innerDistance (60) dedans ; le mur (épaisseur wallThickness) est plein sous l'appui (sillHeight)
+// et au-dessus du linteau (lintelBottom), jusqu'à wallHeight.
+describe('enjamber une fenêtre', () => {
+  const win = load('windows');
+  const render = load('render');
+  const half = render.wallThickness / 2;
+  const sill = render.sillHeight;
+  it.each(['marcheur', 'petit', 'voute', 'grand'].flatMap((id) => ['A', 'B', 'C', 'riche'].map((v) => [id, v])))('%s %s : posé sur l\'appui à mi-passage, au sol aux deux bouts, jamais au-dessus du mur', async (id, vid) => {
+    const { fkPose } = await import('../../js/core/character-parts.js');
+    const res = resolve(characters.slots.find((s) => s.id === id).variants.find((v) => v.id === vid));
+    const rig = rigOf(res, skeletons);
+    const boxes = (t) => Object.values(fkPose(res, poseAt(rig, 'enjamber', t, { sill }, poses), { skeletons }).boxes);
+    const low = (t) => Math.min(...boxes(t).map((b) => b.min[1]));
+    // Le jeu pose le corps sur ses points de contact (semelles et leur rayon) : les boîtes des pièces descendent d'un peu moins de 2,5.
+    expect(Math.abs(low(0))).toBeLessThan(2.5);
+    expect(Math.abs(low(1))).toBeLessThan(2.5);
+    for (const t of [0.42, 0.5]) expect(Math.abs(low(t) - sill)).toBeLessThan(2.5);
+    let top = 0;
+    let overLintel = 0;
+    for (let i = 0; i <= 100; i += 1) {
+      const t = i / 100;
+      const z0 = -win.slotDistance + (win.slotDistance + win.innerDistance) * t;
+      for (const b of boxes(t)) {
+        if (z0 + b.max[2] < -half || z0 + b.min[2] > half) continue; // hors de l'épaisseur du mur
+        top = Math.max(top, b.max[1]);
+        overLintel = Math.max(overLintel, b.max[1] - render.lintelBottom);
+      }
+    }
+    expect(top).toBeLessThan(render.wallHeight); // rien ne sort par le dessus du mur
+    expect(overLintel).toBeLessThan(8); // au plus un frôlement du linteau (caché dans le mur plein)
+  });
+  it('durée : climbTime de windows.json (le passage dure autant que l\'escalade du jeu)', () => {
+    expect(poses.durations.enjamber).toBe(load('windows').climbTime);
   });
 });
 

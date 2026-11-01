@@ -40,7 +40,7 @@ export function fromV1(pose, traits = {}) {
 }
 
 // --- Animations v2 ---------------------------------------------------------------------------------------------------------------------
-export const ZOMBIE_ANIMS = ['attente', 'marcheLente', 'marche', 'rampe', 'course', 'arracher', 'escalade', 'attaque', 'touche', 'mortAvant', 'mortArriere', 'effondrement', 'escalier'];
+export const ZOMBIE_ANIMS = ['attente', 'marcheLente', 'marche', 'rampe', 'course', 'arracher', 'escalade', 'enjamber', 'attaque', 'touche', 'mortAvant', 'mortArriere', 'effondrement', 'escalier'];
 export const PLAYER_ANIMS = ['repos', 'marche', 'tir', 'touche', 'terre', 'relevage', 'reparation'];
 export const DEATHS = ['mortAvant', 'mortArriere', 'effondrement'];
 // Animations cycliques (phase 0 = phase 1) ; les autres (morts, relevage) vont de 0 à 1 une seule fois ; touché est additif.
@@ -185,7 +185,7 @@ function locomote(rig, phase, params, data, key) {
   const bob = Math.sin(2 * TAU * pu);
   const pitch = num(pl?.pitch ?? st.pitch) + 0.04 * heavy;
   set(pose, 'spine', pitch * 0.6 + 0.02 * amp * bob, -num(obj(params).twist) * 0.6 + num(st.twist) * amp * Math.sin(TAU * pu) * (key === 'player' ? 0.3 : 1), 0);
-  set(pose, 'chest', pitch * 0.4, -num(obj(params).twist) * 0.4, 0);
+  set(pose, 'chest', pitch * 0.4 - (key === 'player' ? KICK[3] * kickOf(obj(params).recoil) : 0), -num(obj(params).twist) * 0.4, 0);
   set(pose, 'neck', num(st.head) * 0.4, 0, 0);
   set(pose, 'head', num(st.head) * 0.6 + 0.03 * amp * bob, 0, 0.03 * amp * Math.sin(TAU * pu));
   if (key === 'player') playerArms(rig, pose, num(obj(params).recoil));
@@ -201,11 +201,14 @@ function locomote(rig, phase, params, data, key) {
 // poignée, main gauche en soutien. Recul (recoil 1 au coup de feu, puis 0) : l'arme recule, remonte et se cabre (le canon se relève), les
 // bras suivent. HOLD : position de l'arme dans le repère de la poitrine ; KICK : recul [haut, arrière, cabrage en radians] au plus fort.
 export const HOLD = [-1, -1, 14];
-export const KICK = [2.2, 3, 0.5];
+export const KICK = [2.2, 3, 0.5, 0.3]; // [haut, arrière, cabrage, buste rejeté en arrière (rad) : le recul qui se voit de dessus]
+const kickOf = (recoil) => {
+  const k = clamp(num(recoil), [0, 1]);
+  return k * k * (3 - 2 * k); // coup sec puis retour adouci
+};
 function playerArms(rig, pose, recoil) {
   const prop = rig.joints.find((j) => j.id === 'prop')?.offset ?? [-1.5, -4, 13];
-  const k = clamp(num(recoil), [0, 1]);
-  const r = k * k * (3 - 2 * k); // coup sec puis retour adouci
+  const r = kickOf(recoil);
   const at = [HOLD[0], HOLD[1] + KICK[0] * r, HOLD[2] - KICK[1] * r];
   pose.offsets.prop = [at[0] - prop[0], at[1] - prop[1], at[2] - prop[2]];
   set(pose, 'prop', -KICK[2] * r, 0, 0);
@@ -334,6 +337,47 @@ function escalade(rig, phase, params, data) {
   return pose;
 }
 
+// Enjamber une fenêtre (siège, mode « escalade », lot 3j) : t de 0 (dehors, devant l'appui) à 1 (dedans, retombé), piloté par la
+// progression du passage (climb.t), pas en boucle. Mains puis genou sur l'appui, corps couché pour passer entre l'appui et le linteau, jambes
+// ramenées, retombée accroupie. VAULT : clés (bassin cabré vers l'avant, jambe d'attaque R, jambe d'appui L, bras) et lift = hauteur du point
+// le plus bas du corps (× hauteur d'appui, params.sill, 16 par défaut) : à mi-passage, il repose sur l'appui.
+export const VAULT = [
+  { t: 0, pitch: 0.75, spine: 0.45, head: -0.35, lead: [-0.9, 1.2, -0.2], trail: [-0.6, 0.9, -0.2], arms: -1.1, elbows: -0.5, lift: 0 },
+  { t: 0.2, pitch: 1.15, spine: 0.35, head: -0.35, lead: [-1.9, 2.3, 0.4], trail: [-0.2, 0.6, 0.2], arms: -0.9, elbows: -1, lift: 0.85 },
+  { t: 0.42, pitch: 1.35, spine: 0.15, head: -0.35, lead: [-1.6, 2.3, 0.3], trail: [-1.3, 2.1, 0.3], arms: -0.7, elbows: -0.4, lift: 1 },
+  { t: 0.62, pitch: 1.35, spine: 0.1, head: -0.35, lead: [-0.7, 0.7, 0], trail: [-1.5, 2.1, 0.3], arms: -0.6, elbows: -0.2, lift: 0.9 },
+  { t: 0.8, pitch: 0.7, spine: 0.3, head: -0.25, lead: [-0.8, 0.9, -0.2], trail: [-1.3, 1.7, 0], arms: -0.8, elbows: -0.4, lift: 0.25 },
+  { t: 1, pitch: 0.2, spine: 0.25, head: -0.1, lead: [-0.45, 0.75, -0.3], trail: [-0.35, 0.65, -0.3], arms: -0.9, elbows: -0.6, lift: 0 },
+];
+function vaultPose(k) {
+  const pose = blank();
+  set(pose, 'pelvis', k.pitch, 0, 0);
+  set(pose, 'spine', k.spine, 0, 0);
+  set(pose, 'head', k.head, 0, 0);
+  for (const [s, side] of SIDES) {
+    const leg = s === 'R' ? k.lead : k.trail;
+    sideSet(pose, 'hip', s, side, leg[0], 0, 0.1);
+    sideSet(pose, 'knee', s, side, leg[1], 0, 0);
+    sideSet(pose, 'ankle', s, side, leg[2], 0, 0);
+    sideSet(pose, 'shoulder', s, side, k.arms, -0.2, 0.15);
+    sideSet(pose, 'elbow', s, side, k.elbows, 0, 0);
+  }
+  return pose;
+}
+function enjamber(rig, t, params, data) {
+  const k = clamp(num(t), [0, 1]);
+  let i = 0;
+  while (i < VAULT.length - 2 && k > VAULT[i + 1].t) i += 1;
+  const a = VAULT[i];
+  const b = VAULT[i + 1];
+  const u = ease((k - a.t) / (b.t - a.t));
+  const pose = groundLift(rig, blendPoses(vaultPose(a), vaultPose(b), u), data);
+  const lift = (a.lift + (b.lift - a.lift) * u) * num(obj(params).sill, 16);
+  const pv = pose.offsets.pelvis ?? [0, 0, 0];
+  pose.offsets.pelvis = [pv[0], pv[1] + lift, pv[2]];
+  return pose;
+}
+
 function attaque(rig, phase, params, data) {
   const st = styleOf(rig, data, 'attack');
   const amp = 1 + macro(params, data, 'amplitude');
@@ -448,7 +492,7 @@ function repos(rig, phase, params, data, recoil = 0) {
   stand(rig, pose, 0.08, 0.04);
   const br = Math.sin(TAU * phase);
   set(pose, 'spine', 0.02 * amp * br, -num(obj(params).twist) * 0.6, 0);
-  set(pose, 'chest', 0.015 * amp * br - 0.12 * recoil, -num(obj(params).twist) * 0.4, 0);
+  set(pose, 'chest', 0.015 * amp * br - KICK[3] * kickOf(recoil), -num(obj(params).twist) * 0.4, 0);
   set(pose, 'head', 0.06, 0, 0);
   playerArms(rig, pose, recoil);
   return pose;
@@ -525,6 +569,7 @@ export function poseAt(rig, anim, phase, params = {}, data = {}) {
   else if (a === 'rampe') pose = groundLift(r, rampe(r, p, params, d), d);
   else if (a === 'arracher') pose = groundLift(r, arracher(r, p, params, d), d);
   else if (a === 'escalade') pose = groundLift(r, escalade(r, p, params, d), d);
+  else if (a === 'enjamber') pose = enjamber(r, p, params, d);
   else if (a === 'attaque') pose = groundLift(r, attaque(r, p, params, d), d);
   else if (a === 'touche') return touche(r, p, params, d);
   else if (DEATHS.includes(a)) pose = groundLift(r, mort(r, a, p), d);
@@ -598,9 +643,9 @@ export function cycleSeconds(rig, anim, params = {}, data = {}) {
   const idle = num(styleOf(rig, d, 'idle').freq, 0.55);
   const climb = num(styleOf(rig, d, 'climb').freq, 0.8);
   const base = {
-    attente: 1 / idle, escalade: 1 / climb, attaque: num(obj(d.durations).attaque, 1), repos: 3, terre: 2.5, tir: num(obj(d.durations).tir, 0.3),
+    attente: 1 / idle, escalade: 1 / climb, enjamber: num(obj(d.durations).enjamber, 1.2), attaque: num(obj(d.durations).attaque, 1), repos: 3, terre: 2.5, tir: num(obj(d.durations).tir, 0.3),
     reparation: clamp(num(obj(params).repairTime, 1.8), [0.4, 1.8]) / strikesPerPlank(obj(params).repairTime, d),
   }[anim];
   if (!isNum(base)) return null;
-  return anim === 'reparation' || anim === 'attaque' || anim === 'tir' ? base : base / Math.max(0.2, speed);
+  return anim === 'reparation' || anim === 'attaque' || anim === 'tir' || anim === 'enjamber' ? base : base / Math.max(0.2, speed);
 }
