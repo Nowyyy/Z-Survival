@@ -105,6 +105,13 @@
       "Porte 2 (manche 20 terminée) : l'escalier de l'aile s'ouvre, avec la zone de gauche de l'étage. Porte 3 (manche 30 terminée) : le second escalier et la salle de droite.",
       "?floor=1 démarre à l'étage, ?labels=1 numérote les fenêtres de l'étage affiché, carte.html propose un sélecteur d'étage."
     ] },
+    { "name": "lot-3j", "titre": "Atelier des personnages", "points": [
+      "Page atelier-personnages.html : les personnages actuels et trois nouvelles variantes (A « déchu réaliste », B « horreur marquée », C « lisible d'abord ») côte à côte, à l'échelle du jeu, ×2 et ×4, avec mesures, curseurs et « Mes choix » à copier.",
+      "Silhouettes distinctes par type (petit, marcheur, voûté, grand), lisibles sur tous les sols, escalier et sols tachés compris ; 6 tenues par zombie et 4 paliers d'usure selon la manche.",
+      "Nouvelles animations : attaque, touché, trois morts, réparation, relevage ; marches sans glissement des pieds.",
+      "Sang à trois niveaux (aucun, réduit, complet) : particules, taches au sol, taches sur les corps, cadavres qui s'enfoncent ; mini-arène pour l'essayer.",
+      "Essai dans le vrai jeu avec ?perso=A|B|C|riche et ?sang=reduit|1 ; sans ces paramètres, le jeu est inchangé."
+    ] },
     { "name": "lot-4", "titre": "Argent et sauvegarde locale", "points": [
       "Chaque zombie tué par une balle rapporte 10, chaque planche de fenêtre posée 1 (montants fixes, qui évolueront avec les améliorations), chaque manche terminée un bonus, la fin du monde un gros bonus : tout est conservé à la mort.",
       "Le solde et les niveaux des statistiques sont enregistrés sur l'appareil (clé unique, écriture par différences, jamais écrasée si elle est illisible) et survivent au rechargement.",
