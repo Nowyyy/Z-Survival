@@ -182,9 +182,10 @@ describe('feuilles de style de l\'interface (css/game-ui.css, css/game.css, css/
     expect(sheets).toEqual(['css/tokens.css', 'css/base.css', 'css/game.css', 'css/game-ui.css']);
   });
 
-  it('marges de la maquette du lot 3k (choix du propriétaire) : 16 px plus la zone de sécurité de chaque côté (--edge-left, --edge-right, --edge-top)', () => {
-    expect(gameCss).toMatch(/--edge-left: calc\(var\(--game-margin\) \+ var\(--safe-left\)\);/);
-    expect(gameCss).toMatch(/--edge-right: calc\(var\(--game-margin\) \+ var\(--safe-right\)\);/);
+  // Retour du propriétaire sur iPhone : 16 px à gauche et à droite, toujours (avant, dans ce lot : 16 px + zone de sécurité, lue de façon inégale par Safari).
+  it('marges : 16 px à gauche et à droite sans la zone de sécurité ; en haut, 16 px + zone (--edge-left, --edge-right, --edge-top)', () => {
+    expect(gameCss).toMatch(/--edge-left: var\(--game-margin\);/);
+    expect(gameCss).toMatch(/--edge-right: var\(--game-margin\);/);
     expect(uiCss).toMatch(/--edge-top: calc\(var\(--game-margin\) \+ var\(--safe-top\)\);/);
     expect(uiCss).toMatch(/\.hud \{[^}]*top: var\(--edge-top\);[^}]*left: var\(--edge-left\);[^}]*right: var\(--edge-right\);/);
   });
@@ -280,6 +281,15 @@ describe('structure de jeu.html', () => {
 
   // Retours du propriétaire : « Nouveau record » à la place d'« Argent gagné » (colonne de gauche), « Argent gagné » entre « Zombies tués » et « Solde » ; note
   // « Écran de fin provisoire » retirée.
+  // Retour du propriétaire : le symbole d'argent vient après la somme (pause, mort, victoire).
+  it('pièce après la somme : « Solde : 234 », « Argent gagné : 154 », « Bonus de fin de monde : 500 » puis le symbole', () => {
+    for (const id of ['pause-balance', 'end-earned', 'end-bonus']) {
+      const line = html.slice(at(`id="${id}"`), html.indexOf('</p>', at(`id="${id}"`)));
+      expect(line.indexOf(`id="${id}-text"`), id).toBeLessThan(line.indexOf('hud-coin'));
+      expect(line.indexOf('hud-coin'), id).toBeGreaterThan(0);
+    }
+  });
+
   it('fin : colonne de gauche vague, record, meilleure manche ; colonne de droite tués, argent gagné, bonus, solde ; plus de note « provisoire »', () => {
     const end = html.slice(at('id="end-panel"'), at('id="rotate"'));
     const cols = end.split('class="facts-col"').slice(1).map((c) => [...c.matchAll(/id="(end-[a-z]+)"/g)].map((m) => m[1]).filter((i) => !i.endsWith('text')));
