@@ -411,3 +411,128 @@ test.describe('personnages intégrés (choix par défaut)', () => {
     expect(r.violations.map((v) => `${v.id} : ${v.nodes.length}`)).toEqual([]);
   });
 });
+
+// Lot 3m-C : leviers de chargement (le sang ne coûte rien tant qu'il ne sert pas) et compatibilité avec les autres refontes de lot-4b.
+test.describe('personnages intégrés : chargement et compatibilité', () => {
+  test.skip(({ isMobile }) => isMobile, 'bureau (la fenêtre est réglée par chaque test)');
+
+  test('?sang=0 : blood-fx.js n\'est jamais demandé ; aucun maillage de sang, personnages v2 quand même', async ({ page }) => {
+    const files = [];
+    page.on('request', (r) => files.push(new URL(r.url()).pathname));
+    await open(page, '&nospawn=1&sang=0');
+    await page.evaluate(() => {
+      const zs = window.__zs;
+      const p = zs.getState().player;
+      zs.setLevels({ degats: 10 });
+      zs.spawnEnemy(p.x + 150, p.y, { type: 'petit', gait: 'lent', wave: 1 });
+      zs.setInput({ aim: { angle: 0 } });
+      for (let i = 0; i < 60 && zs.getState().kills === 0; i += 1) zs.step(0.05);
+      zs.step(0.5);
+    });
+    const s = await S(page);
+    expect(files).not.toContain('/js/game/blood-fx.js');
+    expect(s.persos).toMatchObject({ sang: '0', slots: EXPECTED, blood: { particules: 0, taches: 0, cadavres: 0, calls: 0 } });
+    expect(s.kills).toBeGreaterThan(0);
+  });
+
+  test('?perso=actuel&sang=0 : ni la table des choix, ni le sang, ni les modules v2 ne sont demandés', async ({ page }) => {
+    const files = [];
+    page.on('request', (r) => files.push(new URL(r.url()).pathname));
+    await open(page, '&nospawn=1&perso=actuel&sang=0');
+    for (const f of ['/data/game/persos-choix.json', '/js/game/blood-fx.js', '/js/game/character-v2.js', '/js/game/persos-runtime.js']) expect(files).not.toContain(f);
+    for (const f of OLD) expect(files).toContain(f);
+  });
+
+  test('sang au premier usage : aucune tache ni particule avant le premier impact, puis des taches', async ({ page }) => {
+    await open(page, '&nospawn=1');
+    const r = await page.evaluate(() => {
+      const zs = window.__zs;
+      zs.step(2);
+      const before = { ...zs.getState().persos.blood };
+      const p = zs.getState().player;
+      zs.setLevels({ degats: 10 });
+      zs.spawnEnemy(p.x + 150, p.y, { type: 'marcheur', gait: 'lent', wave: 1 });
+      zs.setInput({ aim: { angle: 0 } });
+      for (let i = 0; i < 40 && zs.getState().kills === 0; i += 1) zs.step(0.05);
+      return { before, after: zs.getState().persos.blood };
+    });
+    expect(r.before).toMatchObject({ particules: 0, taches: 0, cadavres: 0 });
+    expect(r.after.taches).toBeGreaterThan(0);
+  });
+
+  for (const q of ['&wave=31', '&wave=31&floor=1']) {
+    test(`visite libre (lot 3g, ?nospawn=1${q}) : ni zombie ni cadavre en 30 s ; joueur v2 affiché`, async ({ page }) => {
+      await open(page, `&nospawn=1${q}`);
+      const r = await page.evaluate(() => {
+        const zs = window.__zs;
+        zs.setInput({ move: { x: 0.6, y: 0.3 } });
+        for (let i = 0; i < 60; i += 1) zs.step(0.5);
+        zs.setInput({});
+        const s = zs.getState();
+        return { enemies: s.enemies.length, corpses: s.persos.blood.cadavres, taches: s.persos.blood.taches, pose: s.pose, slots: s.persos.slots };
+      });
+      expect(r).toMatchObject({ enemies: 0, corpses: 0, taches: 0 });
+      expect(r.pose).toMatchObject({ slot: 'joueur', choice: EXPECTED.joueur });
+    });
+  }
+
+  test('interface (lot 3l) : le panneau de pause reste au-dessus des personnages, du sang et des cadavres', async ({ page }) => {
+    await open(page, '&nospawn=1');
+    await spawnTen(page);
+    await page.evaluate(() => {
+      window.__zs.setLevels({ degats: 10 });
+      for (let i = 0; i < 80; i += 1) window.__zs.step(0.05);
+    });
+    await page.locator('#btn-pause').click();
+    await expect(page.locator('#pause-panel')).toBeVisible();
+    const r = await page.evaluate(() => {
+      const panel = document.getElementById('pause-panel');
+      const box = panel.querySelector('.panel, [class*="panel"]')?.getBoundingClientRect() ?? panel.getBoundingClientRect();
+      const top = document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2);
+      return { inPanel: panel.contains(top), inCanvas: document.getElementById('game-canvas').contains(top), blood: window.__zs.getState().persos.blood.taches };
+    });
+    expect(r).toMatchObject({ inPanel: true, inCanvas: false });
+    expect(r.blood).toBeGreaterThan(0);
+  });
+
+  test('sons (lot 3i) : tuer des zombies ne joue que des sons existants (aucun son nouveau du lot)', async ({ page }) => {
+    const ids = load('data/game/sounds.json').sounds.map((x) => x.id);
+    await open(page, '&nospawn=1');
+    await page.mouse.click(300, 200); // premier geste : le son peut démarrer
+    await spawnTen(page);
+    const log = await page.evaluate(() => {
+      const zs = window.__zs;
+      zs.setLevels({ degats: 10 });
+      for (let i = 0; i < 80; i += 1) zs.step(0.05);
+      return zs.getState().audio.log.map((e) => e.sound ?? e.id).filter(Boolean);
+    });
+    for (const id of new Set(log)) expect(ids, id).toContain(id);
+  });
+
+  test('HUD lisible au pire cas (1440 × 900) : cadavres et taches sous chaque bloc du HUD', async ({ page }) => {
+    await open(page, '&nospawn=1', { width: 1440, height: 900 });
+    const r = await page.evaluate((types) => {
+      const zs = window.__zs;
+      const p = zs.getState().player;
+      zs.setLevels({ degats: 10 });
+      zs.setInput({ aim: { angle: 0 } });
+      for (let k = 0; k < 4; k += 1) {
+        zs.spawnEnemy(p.x + 90 + k * 8, p.y, { type: types[k], gait: 'lent', wave: 1 });
+        const before = zs.getState().kills;
+        for (let i = 0; i < 120 && zs.getState().kills === before; i += 1) zs.step(0.05);
+      }
+      const probe = document.createElement('style');
+      probe.textContent = '#hud, #hud * { pointer-events: auto !important; }';
+      document.head.append(probe);
+      const hud = document.getElementById('hud');
+      const covered = [...hud.querySelectorAll('.hud-block')].filter((b) => !b.hidden && b.getBoundingClientRect().width > 0).filter((b) => {
+        const box = b.getBoundingClientRect();
+        return !hud.contains(document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2));
+      }).map((b) => b.id);
+      probe.remove();
+      return { covered, blood: zs.getState().persos.blood };
+    }, T);
+    expect(r.covered).toEqual([]);
+    expect(r.blood.cadavres).toBeGreaterThan(0);
+  });
+});

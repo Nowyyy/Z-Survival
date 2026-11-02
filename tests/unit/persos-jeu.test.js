@@ -5,6 +5,7 @@ import { readFileSync } from 'node:fs';
 import { PERSO_VALUES, SANG_VALUES, USURE_VALUES, readPersosParams } from '../../js/game/persos-params.js';
 import { loadPersos } from '../../js/game/persos-loader.js';
 import { createPersos } from '../../js/game/persos-runtime.js';
+import * as bloodFx from '../../js/game/blood-fx.js';
 import { createCharacter, createKit } from '../../js/game/character.js';
 import { computePose } from '../../js/core/pose.js';
 import { CROWD, LIMITS, REFERENCE, characterCost, crowdCost, project } from '../../scripts/personnages/projection.mjs';
@@ -112,7 +113,7 @@ describe('persos-runtime.js : accroches (sans rendu)', () => {
     vi.stubGlobal('document', { documentElement: {} });
     const kit = createKit({ textures: stub, variants, hit: '#ffffff' });
     const world = { dynamic: new THREE.Group() };
-    const pv = createPersos(readPersosParams(`?perso=${perso}&sang=${sang}`), { characters, poses, blood: load('blood') }, { computePose, createKit, createCharacter });
+    const pv = createPersos(readPersosParams(`?perso=${perso}&sang=${sang}`), { characters, poses, blood: load('blood'), bloodFx }, { computePose, createKit, createCharacter }); // lot 3m-C : blood-fx fourni par le chargeur
     pv.attach({ kit, world, render: load('render'), palette: { hit: '#ffffff' }, variants, seed: 3 });
     return { kit, world, pv };
   };

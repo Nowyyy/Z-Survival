@@ -203,14 +203,22 @@ export function createV2Kit(options) {
     base.needsUpdate = true;
     textures.push({ id: key, texture: base, bytes: tex.bytes });
     const factors = Object.fromEntries(Object.values(PALETTE_REGION).map((k) => [k, regionFactor(tex, spec, k)]));
-    const wound = TILE_OFFSETS.slice(0, isPlayer ? 1 : 4).map(([u, v], i) => {
-      const t = i === 0 ? base : base.clone();
-      t.offset.set(u, v);
-      t.needsUpdate = i !== 0 ? true : t.needsUpdate;
-      return new THREE.MeshLambertMaterial({ map: t, vertexColors: true });
-    });
+    // Lot 3m (levier de chargement 1) : matières de blessure (tuiles 1 à 3 de l'atlas) créées au premier usage (premier palier de blessure),
+    // pas au démarrage : seule la tuile 0 (corps propre) est envoyée à la carte graphique avec le personnage.
+    const woundTiles = TILE_OFFSETS.slice(0, isPlayer ? 1 : 4);
+    const wound = woundTiles.map(() => null);
+    const woundAt = (i) => {
+      if (!wound[i]) {
+        const t = i === 0 ? base : base.clone();
+        t.offset.set(...woundTiles[i]);
+        t.needsUpdate = i !== 0 ? true : t.needsUpdate;
+        wound[i] = new THREE.MeshLambertMaterial({ map: t, vertexColors: true });
+      }
+      return wound[i];
+    };
+    woundAt(0);
     const glow = new THREE.MeshBasicMaterial({ color: new THREE.Color().setRGB(...lookup('--perso-lampe').map((c) => c / 255), THREE.SRGBColorSpace), vertexColors: false });
-    const k = { slot, variant, isPlayer, spec, factors, wound, glow, geoms: new Map(), shared: new Map(), lastOutfit: null, allowed: allowedOutfits(slotId, variant) };
+    const k = { slot, variant, isPlayer, spec, factors, wound, woundAt, glow, geoms: new Map(), shared: new Map(), lastOutfit: null, allowed: allowedOutfits(slotId, variant) };
     kits.set(key, k);
     return k;
   }
@@ -279,7 +287,7 @@ export function createV2Kit(options) {
     let outfit = Number.isInteger(opts.outfit) ? opts.outfit : k.allowed[0] ?? 0;
     let wear = k.isPlayer ? 0 : Math.max(0, Math.min(3, Math.floor(num(opts.wear, options.wear ? options.wear() : 0))));
     let current = geometryFor(k, outfit, wear);
-    const rig = createRigidCharacter({ ...current.shared, geometry: current.geometry, materials: [k.wound[0], k.glow].slice(0, current.shared.order.length), shadowMaterial: shadowMat });
+    const rig = createRigidCharacter({ ...current.shared, geometry: current.geometry, materials: [k.woundAt(0), k.glow].slice(0, current.shared.order.length), shadowMaterial: shadowMat });
     const root = rig.root;
     root.scale.setScalar(current.res.scale);
     root.userData.v2 = true;
@@ -287,7 +295,7 @@ export function createV2Kit(options) {
     let woundTier = 0;
     let flashing = false;
     const state = { shotAt: -10, lastRecoil: 0, anim: null, prev: null, prevPose: null, since: 0, hurtAt: -10, lastFlash: 0, attackAt: -10, lastCooldown: 0, downWas: false, upAt: -10, time: 0, phase: 0, pose: null };
-    const materials = () => [flashing ? hitMat : k.wound[Math.min(woundTier, k.wound.length - 1)], k.glow].slice(0, current.shared.order.length);
+    const materials = () => [flashing ? hitMat : k.woundAt(Math.min(woundTier, k.wound.length - 1)), k.glow].slice(0, current.shared.order.length);
     const applyMaterials = () => {
       const m = materials();
       rig.body.material = m.length === 1 ? m[0] : m;
@@ -475,7 +483,7 @@ export function createV2Kit(options) {
     dispose() {
       for (const t of textures) t.texture.dispose();
       for (const k of kits.values()) {
-        for (const m of [...k.wound, k.glow]) m.dispose();
+        for (const m of [...k.wound, k.glow]) m?.dispose();
         for (const g of k.geoms.values()) g.geometry.dispose();
         for (const s of k.shared.values()) {
           s.geometry.dispose();

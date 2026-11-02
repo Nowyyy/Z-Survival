@@ -4,7 +4,6 @@
 import { settings, woundTier } from '../core/blood.js';
 import { floorOf } from '../core/floors.js';
 import { wearTier } from '../core/persos-variants.js';
-import { createBloodFx } from './blood-fx.js';
 import { createV2Kit } from './character-v2.js';
 import { createTokenLookup } from './palette.js';
 
@@ -89,7 +88,8 @@ export function createPersos(params, data, model) {
         prewarm(v2, variants.zombie.variants.length, (i) => v2.handles('zombie', i));
       }
       const lift = (f) => (f === 'etage' && Number.isFinite(render.floorLift) ? render.floorLift : 0);
-      if (params.sang !== '0') blood = createBloodFx({ parent: world.dynamic, cfg: data.blood, level: params.sang, lookup, seed, lift, corpse: takeCorpse, corpseRelease: giveCorpse });
+      // Lot 3m (levier 2) : blood-fx.js fourni par le chargeur, jamais importé avec ?sang=0.
+      if (params.sang !== '0' && data.bloodFx) blood = data.bloodFx.createBloodFx({ parent: world.dynamic, cfg: data.blood, level: params.sang, lookup, seed, lift, corpse: takeCorpse, corpseRelease: giveCorpse });
       return this;
     },
     // Impacts de balles (avant leur application : enemies = zombies avant le tir) : gerbe dans le sens du tir, mort : flaque et cadavre.
