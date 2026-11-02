@@ -159,6 +159,12 @@
       "Pause, écrans de fin et état à terre refaits : texte « À terre » sous l'argent avec la barre du compte à rebours, « Revenir au menu principal » (sans action pour l'instant).",
       "Sticks sobres ; marges de 16 px plus la zone de sécurité."
     ] },
+    { "name": "lot-3m", "titre": "Personnages intégrés", "points": [
+      "Les nouveaux personnages (variante « riche ») et le sang complet sont maintenant le jeu par défaut, d'après une table de choix modifiable.",
+      "?perso=actuel montre l'ancien modèle pour comparer ; ?sang=reduit ou ?sang=0 réduisent ou coupent le sang (futur menu d'options).",
+      "Deux corps au sol à la fois au plus, pour tenir le budget d'affichage.",
+      "L'ancien modèle n'est plus chargé quand il ne sert pas ; le sang n'est préparé qu'à la première tache."
+    ] },
     { "name": "lot-4b", "titre": "Intégration des refontes", "points": [
       "En cours : branche d'intégration des refontes, réunies ici avant d'entrer dans le jeu publié.",
       "Atelier de la carte (lot 3g) intégré : carte corrigée d'après le modèle 3D, mobilier redessiné, vraies portes et éboulis, murs jusqu'au plafond, mur percé autour du joueur caché, feux, extérieur plus vivant et brouillard en volutes.",
