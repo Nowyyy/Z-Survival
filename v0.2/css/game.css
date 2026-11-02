@@ -1,0 +1,421 @@
+/* Page de jeu : le canvas occupe toute la fenêtre. Couleurs : jetons de tokens.css seulement. */
+html,
+body.game {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+  background: var(--game-ground);
+}
+
+body.game {
+  min-height: 0;
+}
+
+.game-root {
+  position: fixed;
+  inset: 0;
+  height: 100dvh;
+  overflow: hidden;
+  background: var(--game-ground);
+  touch-action: none;
+  overscroll-behavior: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+  cursor: crosshair;
+}
+
+.game-root[data-input="touch"] {
+  cursor: default;
+}
+
+.game-canvas {
+  position: absolute;
+  inset: 0;
+}
+
+.game-canvas canvas {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+  margin: 0 !important;
+}
+
+/* Marges de sécurité : 16 px au moins des bords, plus les zones de sécurité lues par js/game/safe-area.js. */
+:root {
+  --game-margin: 16px;
+  --safe-top: 0px;
+  --safe-right: 0px;
+  --safe-bottom: 0px;
+  --safe-left: 0px;
+}
+
+.safe-probe {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: 0;
+  visibility: hidden;
+  pointer-events: none;
+  padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
+}
+
+.pause-button {
+  position: absolute;
+  top: calc(var(--game-margin) + var(--safe-top));
+  right: calc(var(--game-margin) + var(--safe-right));
+  cursor: pointer;
+}
+
+/* HUD (E2-2) : en HTML au-dessus du canvas, en haut à gauche. */
+.hud {
+  position: absolute;
+  top: calc(var(--game-margin) + var(--safe-top));
+  left: calc(var(--game-margin) + var(--safe-left));
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  width: 13rem;
+  max-width: calc(100% - 2 * var(--game-margin) - 8rem);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--color-overlay);
+  pointer-events: none;
+}
+
+.hud-text {
+  margin: 0;
+  font-size: var(--text-md);
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--color-text);
+}
+
+.hud-bar {
+  height: 0.875rem;
+  overflow: hidden;
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+}
+
+.hud-fill {
+  width: 100%;
+  height: 100%;
+  background: var(--color-action);
+  transform-origin: left center;
+}
+
+.game-error {
+  position: fixed;
+  inset: 0;
+  z-index: 15;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  padding: var(--space-5);
+  text-align: center;
+  background: var(--color-bg);
+  font-size: var(--text-lg);
+}
+
+.game-error[hidden] {
+  display: none;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Sticks flottants : visibles seulement après un toucher. */
+.stick {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.stick-base,
+.stick-knob {
+  position: absolute;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.stick-base {
+  width: 112px;
+  height: 112px;
+  border: 3px solid var(--color-border);
+  background: var(--color-overlay);
+}
+
+.stick-knob {
+  width: 52px;
+  height: 52px;
+  background: var(--color-action);
+  border: 3px solid var(--color-on-action);
+  box-shadow: 0 0 14px var(--color-action-glow);
+}
+
+.stick.is-idle {
+  opacity: 0.45;
+}
+
+#stick-right .stick-knob {
+  background: var(--color-surface-raised);
+}
+
+/* Panneaux : pause (E2-6) et fin provisoire (E2-7). */
+.panel-wrap {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: calc(var(--game-margin) + var(--safe-top)) calc(var(--game-margin) + var(--safe-right)) calc(var(--game-margin) + var(--safe-bottom)) calc(var(--game-margin) + var(--safe-left));
+  background: var(--color-overlay);
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  width: min(100%, 22rem);
+  max-height: 100%;
+  overflow-y: auto;
+  padding: var(--space-5);
+  border: 3px solid var(--color-action);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  box-shadow: 0 0 28px 2px var(--color-action-glow);
+}
+
+.panel-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: var(--font-weight-normal);
+  font-size: var(--text-xl);
+  line-height: 1.1;
+  color: var(--color-action-text);
+}
+
+.panel-text {
+  font-size: var(--text-lg);
+}
+
+.panel-note {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+/* Curseur de volume du panneau de pause : une ligne de 44 px (cible tactile) avec l'étiquette et la valeur. */
+.volume {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: 44px;
+}
+
+.volume[hidden] {
+  display: none;
+}
+
+.volume-range {
+  flex: 1;
+  min-width: 0;
+  height: 44px;
+  margin: 0;
+  accent-color: var(--color-action);
+  cursor: pointer;
+}
+
+.volume-value {
+  min-width: 3.5ch;
+  text-align: right;
+  color: var(--color-text-muted);
+}
+
+.button-quiet {
+  background: var(--color-surface-raised);
+  border: 2px solid var(--color-border);
+}
+
+.button-quiet:hover:not(:disabled) {
+  background: var(--color-ground-light);
+}
+
+.button-quiet:active:not(:disabled) {
+  background: var(--color-surface);
+}
+
+/* Message « tourne ton téléphone » : téléphone tenu en portrait. */
+.rotate {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  padding: var(--space-5);
+  text-align: center;
+  background: var(--color-bg);
+  font-size: var(--text-lg);
+}
+
+.rotate-title {
+  font-family: var(--font-display);
+  font-size: var(--text-xl);
+  color: var(--color-action-text);
+}
+
+@media (orientation: portrait) and (pointer: coarse) and (max-width: 600px) {
+  .rotate {
+    display: flex;
+  }
+
+  .game-root,
+  .panel-wrap {
+    visibility: hidden;
+  }
+}
+
+/* Écrans bas (téléphone en paysage) : panneaux compacts. */
+@media (max-height: 460px) {
+  .panel {
+    padding: var(--space-3) var(--space-4);
+    gap: var(--space-2);
+  }
+
+  .panel-title {
+    font-size: var(--text-lg);
+  }
+}
+
+/* Indicateur de chargement : affiché avant l'évaluation de Three.js, retiré par main.js. */
+.boot {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  width: 64px;
+  height: 64px;
+  margin: -32px 0 0 -32px;
+}
+
+.boot-ring {
+  fill: none;
+  stroke: var(--color-action);
+  stroke-width: 4;
+  stroke-dasharray: 40 100;
+  transform-origin: 32px 32px;
+  animation: boot-spin var(--duration-slow) linear infinite;
+}
+
+.boot-core {
+  fill: var(--color-action-deep);
+}
+
+@keyframes boot-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .boot-ring {
+    animation: none;
+  }
+}
+
+/* Écran de préparation des textures : plein écran fixe, donc aucun décalage de mise en page. */
+.loading {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-4);
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+.loading[hidden] {
+  display: none;
+}
+
+.loading-text {
+  margin: 0;
+  font-size: var(--text-lg);
+  font-weight: var(--font-weight-bold);
+  text-align: center;
+}
+
+.loading-bar {
+  width: min(16rem, 70vw);
+  height: var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.loading-fill {
+  width: 100%;
+  height: 100%;
+  background: var(--color-action);
+  transform: scaleX(0);
+  transform-origin: left;
+}
+
+.loading-error {
+  margin: 0;
+  max-width: 28rem;
+  padding: 0 var(--space-4);
+  text-align: center;
+  color: var(--color-danger);
+  font-weight: var(--font-weight-bold);
+}
+
+.loading-detail {
+  margin: 0;
+  max-width: 28rem;
+  padding: 0 var(--space-4);
+  text-align: center;
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  overflow-wrap: anywhere;
+}
+
+.loading-error[hidden],
+.loading-detail[hidden] {
+  display: none;
+}
+
+/* Invitation à activer le son (téléphone) : le navigateur n'autorise l'audio qu'au relâchement d'un doigt, pas pendant qu'un stick est tenu. */
+.sound-hint {
+  position: fixed;
+  top: calc(var(--game-margin) + var(--safe-top));
+  left: 50%;
+  z-index: 5;
+  transform: translateX(-50%);
+  max-width: 40vw;
+}

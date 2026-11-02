@@ -1,0 +1,88 @@
+{
+  "_provisoire": "Réglages audio du lot 1d : valeurs provisoires, jamais écoutées par l'agent (à juger à l'oreille). Gains par catégorie, compresseur, atténuation selon la distance, étouffement, voix simultanées, délais minimaux par son, hauteur de lecture par variante de zombie, reprise de l'ambiance.",
+  "categoryGain": {
+    "tir": 1.0,
+    "impact": 0.8,
+    "voix": 0.7,
+    "pas": 0.35,
+    "joueur": 0.9,
+    "interface": 0.6,
+    "ambiance": 0.15
+  },
+  "masterGain": 0.8,
+  "compressor": {
+    "threshold": -18,
+    "knee": 12,
+    "ratio": 4,
+    "attack": 0.003,
+    "release": 0.25
+  },
+  "referenceDistance": 150,
+  "maxDistance": 1100,
+  "muffle": {
+    "lowpass": 900,
+    "gain": 0.6
+  },
+  "maxVoices": 16,
+  "minDelay": {
+    "tir": 0.05,
+    "douille": 0.05,
+    "zombie-blessure": 0.06,
+    "zombie-mort": 0.1,
+    "impact-zombie": 0.05,
+    "impact-bois": 0.06,
+    "impact-metal": 0.06,
+    "impact-pierre": 0.06,
+    "impact-voiture": 0.06,
+    "joueur-blesse": 0.3,
+    "pas": 0.15,
+    "pas-zombie": 0.08,
+    "zombie-attaque": 0.3,
+    "ui-pause": 0.1,
+    "ui-reprise": 0.1
+  },
+  "zombieRate": {
+    "grand": 0.82,
+    "marcheur": 1.0,
+    "voute": 1.12,
+    "petit": 1.35
+  },
+  "ambientFade": 0.5,
+  "casing": {
+    "minDelay": 0.25,
+    "maxDelay": 0.4,
+    "maxFireRate": 3
+  },
+  "pan": {
+    "range": 500,
+    "max": 0.9
+  },
+  "priority": {
+    "joueur": 4,
+    "interface": 4,
+    "tir": 3,
+    "impact": 3,
+    "voix": 2,
+    "pas": 1,
+    "ambiance": 0
+  },
+  "footsteps": {
+    "minSpeed": 20,
+    "minInterval": 0.15,
+    "minVolume": 0.35
+  },
+  "suspendDelay": 0.4,
+  "volume": {
+    "default": 100,
+    "step": 10
+  },
+  "zombieSteps": {
+    "count": 3,
+    "range": 450,
+    "stride": 0.09,
+    "volume": 0.6,
+    "minSpeed": 20,
+    "minInterval": 0.15,
+    "maxSpeed": 70
+  }
+}

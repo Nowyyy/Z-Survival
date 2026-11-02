@@ -1,0 +1,1552 @@
+{
+  "_provisoire": "Recettes sonores du lot 1d : toutes les valeurs sont provisoires et jamais écoutées par l'agent qui les a écrites (à juger à l'oreille avec sons.html). Chaque recette est calculée par js/core/synth.js ; la variante v perturbe fréquences (±8 %), gains (±1,5 dB), départs et bruit selon seed + v. set : essentiel (calculé avant la partie) ou fond (calculé pendant la partie).",
+  "sounds": [
+    {
+      "id": "tir",
+      "category": "tir",
+      "set": "essentiel",
+      "sampleRate": 44100,
+      "duration": 0.75,
+      "variants": 3,
+      "seed": 15,
+      "loop": false,
+      "layers": [
+        {
+          "type": "noise",
+          "color": "white",
+          "start": 0,
+          "dur": 0.03,
+          "attack": 0.0002,
+          "decay": 0.003,
+          "gain": 7,
+          "filter": {
+            "type": "highpass",
+            "freq": 2000,
+            "q": 0.7
+          }
+        },
+        {
+          "type": "osc",
+          "wave": "sine",
+          "freq": [
+            190,
+            38
+          ],
+          "sweepTime": 0.14,
+          "start": 0,
+          "dur": 0.3,
+          "attack": 0.002,
+          "decay": 0.09,
+          "gain": 1.1
+        },
+        {
+          "type": "noise",
+          "color": "brown",
+          "start": 0,
+          "dur": 0.25,
+          "attack": 0.001,
+          "decay": 0.08,
+          "gain": 1.1,
+          "filter": {
+            "type": "lowpass",
+            "freq": [
+              900,
+              250
+            ],
+            "sweep": 0.2,
+            "q": 0.7
+          }
+        },
+        {
+          "type": "noise",
+          "color": "pink",
+          "start": 0,
+          "dur": 0.22,
+          "attack": 0.0006,
+          "decay": 0.06,
+          "gain": 1.1,
+          "filter": {
+            "type": "bandpass",
+            "freq": [
+              2600,
+              700
+            ],
+            "sweep": 0.2,
+            "q": 0.8
+          }
+        },
+        {
+          "type": "noise",
+          "color": "white",
+          "start": 0.06,
+          "startJitter": 0.012,
+          "dur": 0.02,
+          "attack": 0.0004,
+          "decay": 0.004,
+          "gain": 0.3,
+          "filter": {
+            "type": "bandpass",
+            "freq": 3200,
+            "q": 3
+          }
+        },
+        {
+          "type": "noise",
+          "color": "white",
+          "start": 0,
+          "dur": 0.012,
+          "attack": 0.0001,
+          "decay": 0.0015,
+          "gain": 6,
+          "filter": {
+            "type": "highpass",
+            "freq": 1200,
+            "q": 0.7
+          }
+        }
+      ],
+      "post": {
+        "reverb": {
+          "decay": 0.45,
+          "mix": 0.3,
+          "damping": 0.45
+        },
+        "saturation": 1.8,
+        "targetPeak": 0.9,
+        "fadeOut": 0.01,
+        "saturationOut": 1.6
+      }
+    },
+    {
+      "id": "douille",
+      "category": "tir",
+      "set": "essentiel",
+      "sampleRate": 44100,
+      "duration": 0.55,
+      "variants": 2,
+      "seed": 21,
+      "loop": false,
+      "layers": [
+        {
+          "type": "ring",
+          "start": 0,
+          "dur": 0.2,
+          "partials": [
+            {
+              "freq": 4200,
+              "gain": 1,
+              "decay": 0.045
+            },
+            {
+              "freq": 5650,
+              "gain": 0.7,
+              "decay": 0.035
+            },
+            {
+              "freq": 7300,
+              "gain": 0.5,
+              "decay": 0.028
+            },
+            {
+              "freq": 9100,
+              "gain": 0.3,
+              "decay": 0.02
+            }
+          ]
+        },
+        {
+          "type": "ring",
+          "start": 0.085,
+          "startJitter": 0.01,
+          "dur": 0.2,
+          "partials": [
+            {
+              "freq": 4600,
+              "gain": 0.55,
+              "decay": 0.035
+            },
+            {
+              "freq": 6100,
+              "gain": 0.4,
+              "decay": 0.03
+            },
+            {
+              "freq": 7900,
+              "gain": 0.25,
+              "decay": 0.022
+            }
+          ]
+        },
+        {
+          "type": "ring",
+          "start": 0.17,
+          "startJitter": 0.015,
+          "dur": 0.2,
+          "partials": [
+            {
+              "freq": 4900,
+              "gain": 0.3,
+              "decay": 0.03
+            },
+            {
+              "freq": 6500,
+              "gain": 0.2,
+              "decay": 0.025
+            }
+          ]
+        },
+        {
+          "type": "noise",
+          "color": "white",
+          "start": 0,
+          "dur": 0.01,
+          "attack": 0.0002,
+          "decay": 0.002,
+          "gain": 0.4,
+          "filter": {
+            "type": "highpass",
+            "freq": 5000,
+            "q": 0.7
+          }
+        },
+        {
+          "type": "noise",
+          "color": "white",
+          "start": 0.085,
+          "dur": 0.008,
+          "attack": 0.0002,
+          "decay": 0.0015,
+          "gain": 0.2,
+          "filter": {
+            "type": "highpass",
+            "freq": 5000,
+            "q": 0.7
+          }
+        }
+      ],
+      "post": {
+        "reverb": {
+          "decay": 0.28,
+          "mix": 0.25,
+          "damping": 0.3
+        },
+        "saturation": 0,
+        "targetPeak": 0.6,
+        "fadeOut": 0.008
+      }
+    },
+    {
+      "id": "impact-zombie",
+      "category": "impact",
+      "set": "essentiel",
+      "sampleRate": 44100,
+      "duration": 0.4,
+      "variants": 3,
+      "seed": 31,
+      "loop": false,
+      "layers": [
+        {
+          "type": "osc",
+          "wave": "sine",
+          "freq": [
+            160,
+            60
+          ],
+          "sweepTime": 0.08,
+          "start": 0,
+          "dur": 0.2,
+          "attack": 0.001,
+          "decay": 0.04,
+          "gain": 0.7
+        },
+        {
+          "type": "noise",
+          "color": "brown",
+          "start": 0,
+          "dur": 0.18,
+          "attack": 0.001,
+          "decay": 0.05,
+          "gain": 0.6,
+          "filter": {
+            "type": "lowpass",
+            "freq": [
+              1100,
+              300
+            ],
+            "sweep": 0.12,
+            "q": 0.8
+          }
+        },
+        {
+          "type": "noise",
+          "color": "white",
+          "start": 0,
+          "dur": 0.03,
+          "attack": 0.0002,
+          "decay": 0.0025,
+          "gain": 2.2,
+          "filter": {
+            "type": "highpass",
+            "freq": 1500,
+            "q": 0.7
+          }
+        },
+        {
+          "type": "noise",
+          "color": "white",
+          "start": 0.022,
+          "startJitter": 0.008,
+          "dur": 0.015,
+          "attack": 0.0002,
+          "decay": 0.004,
+          "gain": 0.6,
+          "filter": {
+            "type": "bandpass",
+            "freq": 1500,
+            "q": 2
+          }
+        },
+        {
+          "type": "noise",
+          "color": "pink",
+          "start": 0.02,
+          "dur": 0.14,
+          "attack": 0.01,
+          "decay": 0.04,
+          "gain": 0.4,
+          "am": {
+            "rate": 55,
+            "depth": 0.6
+          },
+          "filter": {
+            "type": "bandpass",
+            "freq": [
+              650,
+              220
+            ],
+            "sweep": 0.14,
+            "q": 3
+          }
+        }
+      ],
+      "post": {
+        "reverb": {
+          "decay": 0.2,
+          "mix": 0.15,
+          "damping": 0.6
+        },
+        "saturation": 1.5,
+        "targetPeak": 0.8,
+        "fadeOut": 0.01
+      }
+    },
+    {
+      "id": "impact-bois",
+      "category": "impact",
+      "set": "essentiel",
+      "sampleRate": 44100,
+      "duration": 0.4,
+      "variants": 2,
+      "seed": 41,
+      "loop": false,
+      "layers": [
+        {
+          "type": "osc",
+          "wave": "sine",
+          "freq": [
+            320,
+            140
+          ],
+          "sweepTime": 0.05,
+          "start": 0,
+          "dur": 0.15,
+          "attack": 0.0008,
+          "decay": 0.025,
+          "gain": 0.9
+        },
+        {
+          "type": "noise",
+          "color": "white",
+          "start": 0,
+          "dur": 0.02,
+          "attack": 0.0002,
+          "decay": 0.004,
+          "gain": 0.9,
+          "filter": {
+            "type": "bandpass",
+            "freq": 1400,
+            "q": 1.5
+          }
+        },
+        {
+          "type": "ring",
+          "start": 0,
+          "dur": 0.3,
+          "partials": [
+            {
+              "freq": 410,
+              "gain": 0.6,
+              "decay": 0.06
+            },
+            {
+              "freq": 780,
+              "gain": 0.5,
+              "decay": 0.045
+            },
+            {
+              "freq": 1130,
+              "gain": 0.35,
+              "decay": 0.035
+            },
+            {
+              "freq": 1720,
+              "gain": 0.2,
+              "decay": 0.025
+            }
+          ]
+        }
+      ],
+      "post": {
+        "reverb": {
+          "decay": 0.22,
+          "mix": 0.2,
+          "damping": 0.5
+        },
+        "saturation": 0.8,
+        "targetPeak": 0.8,
+        "fadeOut": 0.01
+      }
+    },
+    {
+      "id": "impact-metal",
+      "category": "impact",
+      "set": "essentiel",
+      "sampleRate": 44100,
+      "duration": 0.7,
+      "variants": 2,
+      "seed": 51,
+      "loop": false,
+      "layers": [
+        {
+          "type": "noise",
+          "color": "white",
+          "start": 0,
+          "dur": 0.015,
+          "attack": 0.0001,
+          "decay": 0.003,
+          "gain": 2.5,
+          "filter": {
+            "type": "highpass",
+            "freq": 3000,
+            "q": 0.7
+          }
+        },
+        {
+          "type": "ring",
+          "start": 0,
+          "dur": 0.6,
+          "partials": [
+            {
+              "freq": 1180,
+              "gain": 0.4,
+              "decay": 0.22
+            },
+            {
+              "freq": 2410,
+              "gain": 0.3,
+              "decay": 0.17
+            },
+            {
+              "freq": 3730,
+              "gain": 0.225,
+              "decay": 0.12
+            },
+            {
+              "freq": 5210,
+              "gain": 0.15,
+              "decay": 0.08
+            },
+            {
+              "freq": 780,
+              "gain": 0.2,
+              "decay": 0.25
+            }
+          ]
+        },
+        {
+          "type": "osc",
+          "wave": "sine",
+          "freq": [
+            260,
+            140
+          ],
+          "sweepTime": 0.04,
+          "start": 0,
+          "dur": 0.1,
+          "attack": 0.001,
+          "decay": 0.02,
+          "gain": 0.25
+        }
+      ],
+      "post": {
+        "reverb": {
+          "decay": 0.35,
+          "mix": 0.25,
+          "damping": 0.3
+        },
+        "saturation": 1.0,
+        "targetPeak": 0.75,
+        "fadeOut": 0.02,
+        "targetRms": 0.095
+      }
+    },
+    {
+      "id": "impact-pierre",
+      "category": "impact",
+      "set": "essentiel",
+      "sampleRate": 44100,
+      "duration": 0.45,
+      "variants": 2,
+      "seed": 61,
+      "loop": false,
+      "layers": [
+        {
+          "type": "noise",
+          "color": "white",
+          "start": 0,
+          "dur": 0.025,
+          "attack": 0.0001,
+          "decay": 0.005,
+          "gain": 1.0,
+          "filter": {
+            "type": "highpass",
+            "freq": 2200,
+            "q": 0.7
+          }
+        },
+        {
+          "type": "noise",
+          "color": "pink",
+          "start": 0,
+          "dur": 0.1,
+          "attack": 0.0005,
+          "decay": 0.02,
+          "gain": 0.7,
+          "filter": {
+            "type": "bandpass",
+            "freq": 1800,
+            "q": 1
+          }
+        },
+        {
+          "type": "osc",
+          "wave": "sine",
+          "freq": [
+            180,
+            90
+          ],
+          "sweepTime": 0.05,
+          "start": 0,
+          "dur": 0.12,
+          "attack": 0.001,
+          "decay": 0.02,
+          "gain": 0.5
+        },
+        {
+          "type": "ring",
+          "start": 0,
+          "dur": 0.25,
+          "partials": [
+            {
+              "freq": 2050,
+              "gain": 0.25,
+              "decay": 0.05
+            },
+            {
+              "freq": 3330,
+              "gain": 0.15,
+              "decay": 0.035
+            }
+          ]
+        }
+      ],
+      "post": {
+        "reverb": {
+          "decay": 0.32,
+          "mix": 0.3,
+          "damping": 0.4
+        },
+        "saturation": 0.6,
+        "targetPeak": 0.8,
+        "fadeOut": 0.015
+      }
+    },
+    {
+      "id": "impact-voiture",
+      "category": "impact",
+      "set": "essentiel",
+      "sampleRate": 44100,
+      "duration": 0.7,
+      "variants": 2,
+      "seed": 71,
+      "loop": false,
+      "layers": [
+        {
+          "type": "noise",
+          "color": "white",
+          "start": 0,
+          "dur": 0.02,
+          "attack": 0.0001,
+          "decay": 0.004,
+          "gain": 2.5,
+          "filter": {
+            "type": "highpass",
+            "freq": 2600,
+            "q": 0.7
+          }
+        },
+        {
+          "type": "osc",
+          "wave": "sine",
+          "freq": [
+            210,
+            95
+          ],
+          "sweepTime": 0.06,
+          "start": 0,
+          "dur": 0.2,
+          "attack": 0.001,
+          "decay": 0.04,
+          "gain": 0.5
+        },
+        {
+          "type": "ring",
+          "start": 0,
+          "dur": 0.55,
+          "partials": [
+            {
+              "freq": 240,
+              "gain": 0.4,
+              "decay": 0.14
+            },
+            {
+              "freq": 610,
+              "gain": 0.3,
+              "decay": 0.12
+            },
+            {
+              "freq": 1350,
+              "gain": 0.225,
+              "decay": 0.09
+            },
+            {
+              "freq": 2600,
+              "gain": 0.15,
+              "decay": 0.06
+            }
+          ]
+        },
+        {
+          "type": "noise",
+          "color": "pink",
+          "start": 0.005,
+          "dur": 0.2,
+          "attack": 0.002,
+          "decay": 0.06,
+          "gain": 0.35,
+          "filter": {
+            "type": "bandpass",
+            "freq": 900,
+            "q": 1.2
+          }
+        }
+      ],
+      "post": {
+        "reverb": {
+          "decay": 0.4,
+          "mix": 0.3,
+          "damping": 0.45
+        },
+        "saturation": 1.0,
+        "targetPeak": 0.8,
+        "fadeOut": 0.02,
+        "targetRms": 0.095
+      }
+    },
+    {
+      "id": "pas",
+      "category": "pas",
+      "set": "essentiel",
+      "sampleRate": 44100,
+      "duration": 0.22,
+      "variants": 4,
+      "seed": 81,
+      "loop": false,
+      "layers": [
+        {
+          "type": "noise",
+          "color": "white",
+          "start": 0,
+          "dur": 0.015,
+          "attack": 0.0002,
+          "decay": 0.003,
+          "gain": 1.0,
+          "filter": {
+            "type": "highpass",
+            "freq": 1500,
+            "q": 0.7
+          }
+        },
+        {
+          "type": "osc",
+          "wave": "sine",
+          "freq": [
+            210,
+            110
+          ],
+          "sweepTime": 0.04,
+          "start": 0.001,
+          "dur": 0.09,
+          "attack": 0.001,
+          "decay": 0.018,
+          "gain": 0.8
+        },
+        {
+          "type": "noise",
+          "color": "pink",
+          "start": 0.002,
+          "dur": 0.04,
+          "attack": 0.001,
+          "decay": 0.01,
+          "gain": 0.4,
+          "filter": {
+            "type": "bandpass",
+            "freq": 4200,
+            "q": 2
+          }
+        },
+        {
+          "type": "ring",
+          "start": 0,
+          "dur": 0.08,
+          "partials": [
+            {
+              "freq": 3100,
+              "gain": 0.2,
+              "decay": 0.012
+            }
+          ]
+        }
+      ],
+      "post": {
+        "reverb": {
+          "decay": 0.2,
+          "mix": 0.25,
+          "damping": 0.5
+        },
+        "saturation": 0,
+        "targetPeak": 0.7,
+        "fadeOut": 0.01
+      }
+    },
+    {
+      "id": "pas-zombie",
+      "category": "pas",
+      "set": "essentiel",
+      "sampleRate": 22050,
+      "duration": 0.4,
+      "variants": 2,
+      "seed": 91,
+      "loop": false,
+      "layers": [
+        {
+          "type": "noise",
+          "color": "pink",
+          "start": 0.03,
+          "dur": 0.28,
+          "attack": 0.05,
+          "release": 0.1,
+          "gain": 0.7,
+          "am": {
+            "rate": 24,
+            "depth": 0.5
+          },
+          "filter": {
+            "type": "bandpass",
+            "freq": [
+              900,
+              450
+            ],
+            "sweep": 0.3,
+            "q": 1.2
+          },
+          "startJitter": 0.03
+        },
+        {
+          "type": "osc",
+          "wave": "sine",
+          "freq": [
+            95,
+            55
+          ],
+          "sweepTime": 0.08,
+          "start": 0,
+          "dur": 0.16,
+          "attack": 0.003,
+          "decay": 0.05,
+          "gain": 0.9,
+          "startJitter": 0.012
+        },
+        {
+          "type": "noise",
+          "color": "brown",
+          "start": 0,
+          "dur": 0.1,
+          "attack": 0.002,
+          "decay": 0.03,
+          "gain": 0.7,
+          "filter": {
+            "type": "lowpass",
+            "freq": 600,
+            "q": 0.7
+          },
+          "startJitter": 0.008
+        }
+      ],
+      "post": {
+        "reverb": {
+          "decay": 0.25,
+          "mix": 0.2,
+          "damping": 0.6
+        },
+        "saturation": 0.5,
+        "targetPeak": 0.6,
+        "fadeOut": 0.02
+      },
+      "freqVar": 0.15
+    },
+    {
+      "id": "zombie-gemissement",
+      "category": "voix",
+      "set": "fond",
+      "sampleRate": 22050,
+      "duration": 1.6,
+      "variants": 3,
+      "seed": 101,
+      "loop": false,
+      "layers": [
+        {
+          "type": "voice",
+          "f0": 110,
+          "contour": [
+            [
+              0,
+              0.85
+            ],
+            [
+              0.25,
+              1.1
+            ],
+            [
+              0.7,
+              1.0
+            ],
+            [
+              1,
+              0.7
+            ]
+          ],
+          "vowels": [
+            "o",
+            "a"
+          ],
+          "transition": [
+            0.2,
+            0.7
+          ],
+          "tremor": {
+            "rate": 5.5,
+            "depth": 0.03
+          },
+          "jitter": 0.03,
+          "breath": 0.12,
+          "attack": 0.18,
+          "release": 0.45,
+          "gain": 1.0
+        }
+      ],
+      "post": {
+        "reverb": {
+          "decay": 0.3,
+          "mix": 0.15,
+          "damping": 0.6
+        },
+        "saturation": 1.2,
+        "targetPeak": 0.75,
+        "fadeOut": 0.02
+      }
+    },
+    {
+      "id": "zombie-grognement",
+      "category": "voix",
+      "set": "fond",
+      "sampleRate": 22050,
+      "duration": 0.65,
+      "variants": 3,
+      "seed": 111,
+      "loop": false,
+      "layers": [
+        {
+          "type": "voice",
+          "f0": 90,
+          "contour": [
+            [
+              0,
+              1.0
+            ],
+            [
+              0.5,
+              0.88
+            ],
+            [
+              1,
+              0.72
+            ]
+          ],
+          "vowels": [
+            "a",
+            "o"
+          ],
+          "transition": [
+            0.1,
+            0.8
+          ],
+          "roughness": {
+            "rate": 38,
+            "depth": 0.6
+          },
+          "jitter": 0.04,
+          "breath": 0.2,
+          "attack": 0.04,
+          "release": 0.2,
+          "gain": 1.0
+        }
+      ],
+      "post": {
+        "reverb": {
+          "decay": 0.25,
+          "mix": 0.12,
+          "damping": 0.6
+        },
+        "saturation": 1.6,
+        "targetPeak": 0.75,
+        "fadeOut": 0.02
+      }
+    },
+    {
+      "id": "zombie-plainte",
+      "category": "voix",
+      "set": "fond",
+      "sampleRate": 22050,
+      "duration": 2.2,
+      "variants": 2,
+      "seed": 121,
+      "loop": false,
+      "layers": [
+        {
+          "type": "voice",
+          "f0": 125,
+          "contour": [
+            [
+              0,
+              0.8
+            ],
+            [
+              0.3,
+              1.15
+            ],
+            [
+              0.6,
+              1.2
+            ],
+            [
+              1,
+              0.75
+            ]
+          ],
+          "vowels": [
+            "u",
+            "e"
+          ],
+          "transition": [
+            0.3,
+            0.8
+          ],
+          "tremor": {
+            "rate": 6,
+            "depth": 0.05
+          },
+          "jitter": 0.03,
+          "breath": 0.1,
+          "attack": 0.3,
+          "release": 0.7,
+          "gain": 1.0
+        }
+      ],
+      "post": {
+        "reverb": {
+          "decay": 0.4,
+          "mix": 0.2,
+          "damping": 0.6
+        },
+        "saturation": 1.0,
+        "targetPeak": 0.7,
+        "fadeOut": 0.03
+      }
+    },
+    {
+      "id": "zombie-souffle",
+      "category": "voix",
+      "set": "fond",
+      "sampleRate": 22050,
+      "duration": 0.9,
+      "variants": 2,
+      "seed": 131,
+      "loop": false,
+      "layers": [
+        {
+          "type": "voice",
+          "f0": 100,
+          "contour": [
+            [
+              0,
+              1.0
+            ],
+            [
+              1,
+              0.8
+            ]
+          ],
+          "vowels": [
+            "eu",
+            "a"
+          ],
+          "voiced": 0.4,
+          "breath": 1.0,
+          "roughness": {
+            "rate": 30,
+            "depth": 0.5
+          },
+          "jitter": 0.05,
+          "attack": 0.12,
+          "release": 0.4,
+          "gain": 1.0
+        }
+      ],
+      "post": {
+        "reverb": {
+          "decay": 0.25,
+          "mix": 0.15,
+          "damping": 0.6
+        },
+        "saturation": 0.8,
+        "targetPeak": 0.6,
+        "fadeOut": 0.02
+      }
+    },
+    {
+      "id": "zombie-blessure",
+      "category": "voix",
+      "set": "essentiel",
+      "sampleRate": 22050,
+      "duration": 0.45,
+      "variants": 3,
+      "seed": 141,
+      "loop": false,
+      "layers": [
+        {
+          "type": "voice",
+          "f0": 150,
+          "contour": [
+            [
+              0,
+              1.3
+            ],
+            [
+              1,
+              0.8
+            ]
+          ],
+          "vowels": [
+            "a",
+            "o"
+          ],
+          "transition": [
+            0,
+            0.9
+          ],
+          "roughness": {
+            "rate": 42,
+            "depth": 0.4
+          },
+          "jitter": 0.04,
+          "breath": 0.15,
+          "attack": 0.01,
+          "release": 0.18,
+          "gain": 1.0
+        }
+      ],
+      "post": {
+        "reverb": {
+          "decay": 0.22,
+          "mix": 0.1,
+          "damping": 0.6
+        },
+        "saturation": 1.6,
+        "targetPeak": 0.75,
+        "fadeOut": 0.02
+      }
+    },
+    {
+      "id": "zombie-mort",
+      "category": "voix",
+      "set": "essentiel",
+      "sampleRate": 22050,
+      "duration": 1.5,
+      "variants": 2,
+      "seed": 151,
+      "loop": false,
+      "layers": [
+        {
+          "type": "voice",
+          "f0": 120,
+          "contour": [
+            [
+              0,
+              1.1
+            ],
+            [
+              0.4,
+              0.9
+            ],
+            [
+              1,
+              0.45
+            ]
+          ],
+          "vowels": [
+            "a",
+            "o"
+          ],
+          "transition": [
+            0,
+            0.8
+          ],
+          "tremor": {
+            "rate": 4.5,
+            "depth": 0.04
+          },
+          "roughness": {
+            "rate": 33,
+            "depth": 0.3
+          },
+          "jitter": 0.05,
+          "breath": 0.25,
+          "attack": 0.03,
+          "release": 0.6,
+          "gain": 1.0
+        }
+      ],
+      "post": {
+        "reverb": {
+          "decay": 0.3,
+          "mix": 0.15,
+          "damping": 0.6
+        },
+        "saturation": 1.3,
+        "targetPeak": 0.75,
+        "fadeOut": 0.03
+      }
+    },
+    {
+      "id": "zombie-attaque",
+      "category": "voix",
+      "set": "fond",
+      "sampleRate": 22050,
+      "duration": 0.7,
+      "variants": 3,
+      "seed": 161,
+      "loop": false,
+      "layers": [
+        {
+          "type": "voice",
+          "f0": 130,
+          "contour": [
+            [
+              0,
+              0.8
+            ],
+            [
+              0.2,
+              1.3
+            ],
+            [
+              1,
+              1.0
+            ]
+          ],
+          "vowels": [
+            "a",
+            "eu"
+          ],
+          "transition": [
+            0.2,
+            0.9
+          ],
+          "roughness": {
+            "rate": 45,
+            "depth": 0.5
+          },
+          "jitter": 0.05,
+          "breath": 0.25,
+          "attack": 0.03,
+          "release": 0.25,
+          "gain": 1.0
+        }
+      ],
+      "post": {
+        "reverb": {
+          "decay": 0.22,
+          "mix": 0.1,
+          "damping": 0.6
+        },
+        "saturation": 2.0,
+        "targetPeak": 0.8,
+        "fadeOut": 0.02
+      }
+    },
+    {
+      "id": "joueur-blesse",
+      "category": "joueur",
+      "set": "essentiel",
+      "sampleRate": 22050,
+      "duration": 0.22,
+      "variants": 3,
+      "seed": 171,
+      "loop": false,
+      "layers": [
+        {
+          "type": "voice",
+          "f0": 170,
+          "contour": [
+            [
+              0,
+              1.25
+            ],
+            [
+              0.35,
+              0.95
+            ],
+            [
+              1,
+              0.7
+            ]
+          ],
+          "vowels": [
+            "o",
+            "eu"
+          ],
+          "transition": [
+            0,
+            0.8
+          ],
+          "jitter": 0.02,
+          "breath": 0.1,
+          "attack": 0.004,
+          "release": 0.09,
+          "gain": 1.0
+        },
+        {
+          "type": "noise",
+          "color": "white",
+          "start": 0,
+          "dur": 0.015,
+          "attack": 0.0002,
+          "decay": 0.004,
+          "gain": 0.5,
+          "filter": {
+            "type": "bandpass",
+            "freq": 1200,
+            "q": 1.5
+          }
+        }
+      ],
+      "post": {
+        "reverb": {
+          "decay": 0.15,
+          "mix": 0.08,
+          "damping": 0.6
+        },
+        "saturation": 1.8,
+        "targetPeak": 0.85,
+        "fadeOut": 0.02
+      }
+    },
+    {
+      "id": "joueur-mort",
+      "category": "joueur",
+      "set": "essentiel",
+      "sampleRate": 22050,
+      "duration": 1.3,
+      "variants": 2,
+      "seed": 181,
+      "loop": false,
+      "layers": [
+        {
+          "type": "osc",
+          "wave": "saw",
+          "freq": [
+            110,
+            52
+          ],
+          "sweepTime": 1.1,
+          "start": 0,
+          "dur": 1.2,
+          "attack": 0.01,
+          "decay": 0.5,
+          "gain": 0.6,
+          "filter": {
+            "type": "lowpass",
+            "freq": [
+              1800,
+              200
+            ],
+            "sweep": 1.0,
+            "q": 0.8
+          }
+        },
+        {
+          "type": "osc",
+          "wave": "saw",
+          "freq": [
+            117,
+            55
+          ],
+          "sweepTime": 1.1,
+          "start": 0,
+          "dur": 1.2,
+          "attack": 0.01,
+          "decay": 0.5,
+          "gain": 0.5,
+          "filter": {
+            "type": "lowpass",
+            "freq": [
+              1800,
+              200
+            ],
+            "sweep": 1.0,
+            "q": 0.8
+          }
+        },
+        {
+          "type": "voice",
+          "f0": 140,
+          "contour": [
+            [
+              0,
+              1.1
+            ],
+            [
+              1,
+              0.5
+            ]
+          ],
+          "vowels": [
+            "o",
+            "u"
+          ],
+          "breath": 0.1,
+          "attack": 0.02,
+          "release": 0.5,
+          "gain": 0.7
+        },
+        {
+          "type": "noise",
+          "color": "brown",
+          "start": 0,
+          "dur": 0.2,
+          "attack": 0.002,
+          "decay": 0.05,
+          "gain": 0.8,
+          "filter": {
+            "type": "lowpass",
+            "freq": 300,
+            "q": 0.7
+          }
+        }
+      ],
+      "post": {
+        "reverb": {
+          "decay": 0.6,
+          "mix": 0.3,
+          "damping": 0.6
+        },
+        "saturation": 1.0,
+        "targetPeak": 0.8,
+        "fadeOut": 0.03
+      }
+    },
+    {
+      "id": "ui-pause",
+      "category": "interface",
+      "set": "essentiel",
+      "sampleRate": 44100,
+      "duration": 0.3,
+      "variants": 1,
+      "seed": 191,
+      "loop": false,
+      "layers": [
+        {
+          "type": "osc",
+          "wave": "triangle",
+          "freq": [
+            440,
+            330
+          ],
+          "sweepTime": 0.08,
+          "start": 0,
+          "dur": 0.12,
+          "attack": 0.004,
+          "decay": 0.04,
+          "gain": 0.8
+        },
+        {
+          "type": "osc",
+          "wave": "triangle",
+          "freq": [
+            330,
+            247
+          ],
+          "sweepTime": 0.08,
+          "start": 0.07,
+          "dur": 0.2,
+          "attack": 0.004,
+          "decay": 0.06,
+          "gain": 0.8
+        }
+      ],
+      "post": {
+        "reverb": {
+          "decay": 0.2,
+          "mix": 0.12,
+          "damping": 0.5
+        },
+        "saturation": 0,
+        "targetPeak": 0.5,
+        "fadeOut": 0.02
+      }
+    },
+    {
+      "id": "ui-reprise",
+      "category": "interface",
+      "set": "essentiel",
+      "sampleRate": 44100,
+      "duration": 0.3,
+      "variants": 1,
+      "seed": 201,
+      "loop": false,
+      "layers": [
+        {
+          "type": "osc",
+          "wave": "triangle",
+          "freq": [
+            247,
+            330
+          ],
+          "sweepTime": 0.08,
+          "start": 0,
+          "dur": 0.12,
+          "attack": 0.004,
+          "decay": 0.04,
+          "gain": 0.8
+        },
+        {
+          "type": "osc",
+          "wave": "triangle",
+          "freq": [
+            330,
+            440
+          ],
+          "sweepTime": 0.08,
+          "start": 0.07,
+          "dur": 0.2,
+          "attack": 0.004,
+          "decay": 0.06,
+          "gain": 0.8
+        }
+      ],
+      "post": {
+        "reverb": {
+          "decay": 0.2,
+          "mix": 0.12,
+          "damping": 0.5
+        },
+        "saturation": 0,
+        "targetPeak": 0.5,
+        "fadeOut": 0.02
+      }
+    },
+    {
+      "id": "ambiance",
+      "category": "ambiance",
+      "set": "fond",
+      "sampleRate": 22050,
+      "duration": 4.0,
+      "variants": 1,
+      "seed": 211,
+      "loop": true,
+      "loopOverlap": 0.5,
+      "layers": [
+        {
+          "type": "noise",
+          "color": "brown",
+          "gain": 1.0,
+          "filter": {
+            "type": "lowpass",
+            "freq": 280,
+            "q": 0.7
+          }
+        },
+        {
+          "type": "noise",
+          "color": "pink",
+          "gain": 0.5,
+          "am": {
+            "rate": 0.25,
+            "depth": 0.5
+          },
+          "filter": {
+            "type": "bandpass",
+            "freq": 650,
+            "q": 0.8
+          }
+        },
+        {
+          "type": "osc",
+          "wave": "sine",
+          "freq": 55,
+          "gain": 0.12,
+          "freqVar": 0
+        }
+      ],
+      "post": {
+        "reverb": {
+          "decay": 0.5,
+          "mix": 0.1,
+          "damping": 0.7
+        },
+        "targetPeak": 0.35
+      }
+    }
+  ]
+}
