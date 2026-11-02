@@ -5,6 +5,10 @@ import { ERROR_CODES, STAT_KEYS, statMaxLevels } from '../../js/core/save.js';
 import { ALL_STAT_IDS } from '../../js/core/player-stats.js';
 import { errorKey } from '../../js/sauvegarde/logic.js';
 import { TYPES } from '../../js/core/waves.js';
+// Lot 4c (publication par versions, seul lot autorisé à modifier le workflow) : workflow, accueil, ses textes et tests du journal modifiés ; ce garde-fou de branche
+// (comparaison à main ou à lot-4b) n'a plus de sens pour eux après l'entrée dans main : ils sortent de la liste.
+const LOT_4C = ['.github/workflows/pages.yml', 'index.html', 'data/i18n/fr.json', 'tests/unit/data-changelog.test.js', 'tests/e2e/dev.spec.js'];
+const notLot4c = (files) => (files ?? []).filter((f) => !LOT_4C.includes(f));
 
 const load = (name) => JSON.parse(readFileSync(`data/game/${name}.json`, 'utf8'));
 const economy = load('economy');
@@ -197,7 +201,7 @@ describe('hygiène du lot 4 (partie A)', () => {
   it('Docs/seed.md et le workflow sont inchangés (index.html : icône du site, demande du propriétaire)', () => {
     const changed = git('diff --name-only main -- Docs/seed.md .github');
     if (changed === null) return;
-    expect(changed).toEqual([]);
+    expect(notLot4c(changed)).toEqual([]);
   });
 
   it('package.json : toujours aucune dépendance d\'exécution', () => {

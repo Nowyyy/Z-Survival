@@ -11,6 +11,10 @@ import { DEFAULT_MODE, SOUND_MODES, bufferName, checkChoices, durationRange, isA
 import { renderChoice } from '../../js/core/sound-render.js';
 import { integrate } from '../../scripts/sons/integrer.mjs';
 import { planSounds, resolveJobs } from '../../js/game/sound-loader.js';
+// Lot 4c (publication par versions, seul lot autorisé à modifier le workflow) : workflow, accueil, ses textes et tests du journal modifiés ; ce garde-fou de branche
+// (comparaison à main ou à lot-4b) n'a plus de sens pour eux après l'entrée dans main : ils sortent de la liste.
+const LOT_4C = ['.github/workflows/pages.yml', 'index.html', 'data/i18n/fr.json', 'tests/unit/data-changelog.test.js', 'tests/e2e/dev.spec.js', 'package.json']; // package.json : scripts site, archive, serve:site (dépendances inchangées, voir publication.test.js)
+const notLot4c = (files) => (files ?? []).filter((f) => !LOT_4C.includes(f));
 
 // Lot 3i-B : sons de l'atelier (lot 3h) à la place des anciens, d'après Docs/ref/sons-a-integrer.md. Aucun son n'est écouté : mesures seules.
 const read = (f) => JSON.parse(readFileSync(f, 'utf8'));
@@ -338,7 +342,7 @@ describe('hygiène du lot 3i', () => {
     // Lot 3l (demande du propriétaire) : js/game/main.js reçoit ?fin=monde (aperçu de l'écran de victoire, mode essai seulement).
     // Lot 3j (fusionné dans lot-4b) : js/game/character.js et js/game/effects.js sont modifiés par ce lot autorisé (Docs/ref/passation-personnages-4b.md, § 5).
     const files = ['index.html', 'js/game/world.js', 'CLAUDE.md', 'Docs/ref/conventions.md', 'Docs/seed.md', 'tests/unit/data-changelog.test.js', 'tests/e2e/dev.spec.js', '.github', 'package.json', 'package-lock.json', 'data/game/save.json'];
-    expect((git(`diff --name-only ${base} -- ${files.join(' ')}`) ?? '').split('\n').filter(Boolean)).toEqual([]);
+    expect(notLot4c((git(`diff --name-only ${base} -- ${files.join(' ')}`) ?? '').split('\n').filter(Boolean))).toEqual([]);
   });
   it('apercu.txt : jeu.html, hifi (titre « Sons intégrés » sur lot-3i, celui de lot-4b après la fusion)', () => {
     const text = readFileSync('apercu.txt', 'utf8').split('\n');

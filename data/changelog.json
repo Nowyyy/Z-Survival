@@ -170,6 +170,12 @@
       "Atelier de la carte (lot 3g) intégré : carte corrigée d'après le modèle 3D, mobilier redessiné, vraies portes et éboulis, murs jusqu'au plafond, mur percé autour du joueur caché, feux, extérieur plus vivant et brouillard en volutes.",
       "Argent et sauvegarde locale (lot 4) compris.",
       "Menu /dev : seules les versions majeures (V0.1 à V0.5) restent dans le journal."
+    ] },
+    { "name": "lot-4c", "titre": "Publication par versions", "points": [
+      "Le site affiche à sa racine la dernière version publiée (V0.5) : bouton « Jouer », accès au dernier build de développement (/next/) et aux versions précédentes.",
+      "Versions V0.1 à V0.4 figées, servies dans /v0.1/ à /v0.4/ (branche archive, construites une fois depuis leur commit).",
+      "Aperçus par lot retirés du site : /lots/ renvoie vers l'accueil.",
+      "Journal des versions : lien « Ouvrir cette version » au lieu de « Ouvrir ce lot »."
     ] }
   ]
 }

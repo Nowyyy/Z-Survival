@@ -1,6 +1,6 @@
-# Publication par versions (lot 4c) — plan provisoire (partie A)
+# Publication par versions (lot 4c)
 
-> Document provisoire écrit en partie A ; il est complété en partie C (workflow avant/après, procédures).
+Écrit en partie A (inventaire, plan), complété en partie C (réalisation, workflow avant/après, procédures). Correspondance des versions : `Docs/ref/versions-correspondance.md` ; contrôle des archives : `Docs/ref/verification-versions.md`.
 
 ## Ce que fait la publication aujourd'hui (lecture du dépôt au commit `e6cf00e`)
 
@@ -64,7 +64,7 @@ Corrections par rapport au prompt :
 | `deploy` | `main` ; `npm run assemble` (toutes les branches `lot-*`) | `main` ou `dev` ; checkout de la branche courante, de l'autre (si elle existe) et d'`archive` (si elle existe) ; `npm ci` + `npm run build` pour `main` et `dev` ; assembleur ; mêmes actions Pages |
 | Concurrence | `pages-<ref>`, annulation sur PR | groupe unique `pages`, **sans annulation** |
 
-## Fichiers à modifier (parties B et C)
+## Fichiers modifiés (parties B et C)
 `scripts/versions/` (schéma, archiveur, vérificateur), `scripts/site/` (serveur local, site de test), `scripts/assemble.mjs`, `js/lots.js` (réduit), `index.html` + `css/accueil.css` + `js/accueil/`, `dev/index.html` + `dev/dev.js`, `data/i18n/fr.json` et `en.json` (clés de l'accueil et de `/dev/`, voir le bilan), `data/changelog.json` (entrée `lot-4c` dans `lots`), `versions.json`, `package.json` (scripts), `playwright.config.js` (`ESSENTIAL` et serveur du site de test), `.github/workflows/pages.yml`, tests (`versions-*`, `assemble`, `accueil`, `publication.spec`, adaptations listées dans le bilan).
 
 ## Risques
@@ -76,6 +76,62 @@ Corrections par rapport au prompt :
 - **Durée** : deux `npm ci` + deux builds au lieu de 27 builds de lots ; les archives ne sont jamais reconstruites par le workflow.
 - **Archives** : une version ancienne peut ne pas se construire (paquet disparu, ancien format) : elle est alors `indisponible`, jamais corrigée.
 
+## Réalisation (partie C)
+
+### `versions.json` (racine du dépôt)
+`{ schema: 1, latest, versions: [{ id, label, title, date, branch, ref, entry, status, note }], dev: { branch, path } }` ; schéma pur `scripts/versions/schema.mjs` (`validateVersions`, `checkChangelogConsistency`, `versionPath`). Statuts : `actuelle` (une seule, = `latest`, servie à la racine), `archive` (dossier `v0.N/` de la branche `archive`), `indisponible` (raison dans `note`). Chaque version correspond à une entrée de `data/changelog.json` → `versions` (même libellé, même branche) et réciproquement (tests `versions-schema`, `data-changelog`).
+
+### Archiveur et vérificateur (partie B)
+`npm run archive -- --id v0.N --ref <hash>` ou `--all` (`--dry-run`, `--replace`, `--no-push`) ; `node scripts/versions/verifier.mjs` (sans argument : contenu de `origin/archive`). Détails et résultats : `verification-versions.md`.
+
+### Assembleur (`scripts/assemble.mjs`)
+`node scripts/assemble.mjs --main <build de main> [--dev <build de dev>] [--archive <branche archive extraite>] [--versions versions.json] [--out _site] [--max-mb 900]` (ou `SITE_MAIN`, `SITE_DEV`, `SITE_ARCHIVE`, `SITE_VERSIONS`, `SITE_OUT`, `SITE_MAX_MB`) ; sans `--main`, il construit l'arbre courant. Produit : racine = build de main + `build-info.json` (`release`) ; `next/` = build de dev + `build-info.json` (`dev`, hash court, date UTC) ou, sans dev, une page « Aucun build de développement pour l'instant » (et un `build-info.json` au hash vide) ; `v0.N/` copiés seulement s'ils existent (sinon la version est publiée `indisponible`, « Archive non construite ») ; `versions.json` à la racine et dans `next/` ; `lots/index.html` (« Les aperçus par lot ont été retirés. », lien vers `../`) ; jamais de `lots/lot-*` ni de `lots.json`. Échecs clairs : racine sans `index.html`, version actuelle introuvable, `versions.json` invalide, site au-delà du plafond (900 Mo par défaut). Déterministe : aucune horloge (les dates viennent de git ou des arguments).
+- `build-info.json` du dépôt : canal `source` (arbre non publié) ; il évite une requête en échec quand le dépôt est servi en local (tests, Lighthouse) et il est remplacé dans le site publié.
+
+### Accueil (`index.html`, `css/accueil.css`, `js/accueil/`)
+`home.js` (pur) construit la page d'après `build-info.json` et `versions.json` du dossier courant (lus en parallèle, préchargés) : « Version V0.5 », « Jouer » (entrée de la version actuelle), section « Développement » (« Dernier build de développement » avec hash et date lus dans `next/build-info.json`, sinon « Aucun build de développement pour l'instant » ; « Journal des versions »), « Versions précédentes » (V0.4 → V0.1 vers leur entrée ; `indisponible` : texte non cliquable avec sa raison). Dans `next/` (canal `dev`) : bandeau « Build de développement — <hash> — <date> », section « Développement » masquée, liens des versions vers `../v0.N/`. `<noscript>` : message bilingue et liens statiques vers `jeu.html`, `next/`, `dev/`. Textes : clés `home.*` et `site.*` de `data/i18n/fr.json` et `en.json`.
+
+### Journal `/dev/`
+Structure par versions inchangée (liste `versions`, historique `lots`, repli, ordre V0.5 → V0.1). Les liens « Ouvrir cette version » viennent de `versions.json` : `../` pour l'actuelle, `../v0.N/<entrée>` pour une archive (l'`index.html` des anciennes versions est leur page d'attente « En construction »), aucun pour une version indisponible ; dates de `versions.json`. Plus de lien « Dernier lot », plus de `lots.json` ; aucun identifiant de lot affiché. Depuis `next/dev/`, les liens remontent à la racine (`build-info.json` du dossier parent : canal `dev`).
+
+### Exécution locale
+- `npm run site` (`scripts/site/local.mjs`) : la séquence du job `deploy` avec des worktrees (main = `HEAD`, dev = `origin/dev` ou `--dev <ref>`, archive = `origin/archive`), `npm ci`, `npm run build`, assembleur de main → `_site/` ; puis `npm run serve:site` (`http://localhost:4180/Z-Survival/`, préfixe simulé : un lien absolu y échoue).
+- Exécution à blanc du lot (main = dev = `HEAD`, archive = `origin/archive` `6d8c1bc`) : 13,5 s, `_site/` de 20,2 Mo et 906 fichiers ; racine, `next/`, `dev/`, `lots/`, `v0.1/` à `v0.4/`, `jeu.html` et `next/jeu.html` chargés dans Chromium sous `/Z-Survival/` sans erreur de console ni ressource manquante ; `lots/lot-4b/` : 404.
+- Tests de bout en bout : `scripts/site/e2e-site.mjs` assemble un site de test (archives fictives, V0.1 indisponible) servi sur le port 4174 (`playwright.config.js`).
+
+## Workflow avant / après
+
+| | Avant (`e6cf00e`) | Après (lot 4c) |
+|---|---|---|
+| Déclencheurs | `pull_request` ; `push` sur `main`, `lot-*` ; `workflow_dispatch` | `push` sur `main`, `dev` ; `workflow_dispatch` |
+| Concurrence | `pages-${{ github.ref }}`, annulation sur Pull Request | `pages`, `cancel-in-progress: false` |
+| `quick` | lint + Vitest, 10 min, à chaque événement | inchangé |
+| `e2e` | Pull Request, 4 tranches, 15 min, rapport en cas d'échec | `github.ref == refs/heads/dev` (push ou lancement manuel), mêmes commandes |
+| `refresh` | push `lot-*` → `gh workflow run pages.yml --ref main` (`actions: write`) | retiré |
+| `deploy` | `main` ; checkout complet (`fetch-depth: 0`), `npm run assemble` (28 branches `lot-*`) | `main` ou `dev`, après `quick` ; checkout de `main` (`path: main`), sonde `git ls-remote --heads origin dev archive`, checkouts facultatifs de `dev` et `archive` ; `npm ci && npm run build` dans `main` et `dev` ; `node main/scripts/assemble.mjs …` ; mêmes actions Pages |
+| Permissions | `contents: read` ; `actions: write` (refresh) ; `pages: write`, `id-token: write` (deploy) | `contents: read` ; `pages: write`, `id-token: write` (deploy) |
+| Actions | checkout v4.2.2, setup-node v4.4.0, upload-artifact v4.6.2, configure-pages v5.0.0, upload-pages-artifact v3.0.1, deploy-pages v4.0.5 | les mêmes, mêmes SHA |
+
+Validation : relecture ; `python3 -c "import yaml; yaml.safe_load(open('.github/workflows/pages.yml'))"` (déclencheurs `push: [main, dev]`, `workflow_dispatch` ; jobs `quick`, `e2e`, `deploy`) ; tests `workflow` et `publication` ; exécution à blanc locale ci-dessus. **Non vérifié par l'agent** : exécution réelle sur GitHub, environnement `github-pages`, réglages du dépôt.
+
+## Procédure de publication d'une version (exemple : V0.6)
+1. Vérifier `dev` : tests (`npm run lint`, `npm test`, `npm run test:e2e`, le job `e2e` du push sur `dev`), puis l'aperçu `https://nowyyy.github.io/Z-Survival/next/`.
+2. Archiver la version qui va être remplacée : `git fetch origin`, puis `node scripts/versions/archiver.mjs --id v0.5 --ref <hash du main actuel>` (`git rev-parse origin/main`) ; contrôle : `node scripts/versions/verifier.mjs`.
+3. Pull Request `dev` → `main` avec « Create a merge commit », nommée « V0.6 ».
+4. Mettre à jour `versions.json` (`latest: "v0.6"`, nouvelle entrée `actuelle` avec le hash de la fusion, V0.5 en `archive` avec le hash archivé) et la liste `versions` de `data/changelog.json` (V0.6, sans `enCours` sur V0.5) ; adapter `data-changelog`, `dev.spec`, `versions-schema`.
+5. Déclencher le workflow (onglet Actions → Pages → Run workflow sur `main`) et vérifier le site publié (racine, `/v0.5/`, `/dev/`).
+
+## Build de développement
+Une branche de correctif est fusionnée dans `dev` (Pull Request vers `dev`) ; le push sur `dev` lance `quick`, `e2e` et `deploy` : `https://nowyyy.github.io/Z-Survival/next/` montre le bandeau « Build de développement — <hash> — <date> ». La racine n'est pas touchée (elle est reconstruite depuis la tête de `main`).
+
 ## Retour arrière
 - Avant fusion : rien à faire (le site en ligne ne change pas tant que `lot-4c` n'est pas dans `main`).
-- Après fusion : `git revert -m 1 <hash de la fusion de lot-4c>` dans une branche, Pull Request vers `main`, puis `workflow_dispatch` ; ou restaurer seulement l'ancien workflow et l'ancien assembleur (`git checkout e6cf00e -- .github/workflows/pages.yml scripts/assemble.mjs dev js/lots.js index.html`). Les branches `lot-*` n'ayant jamais été supprimées, l'ancien site se reconstruit à l'identique.
+- Après fusion : `git revert -m 1 <hash de la fusion de lot-4c>` dans une branche, Pull Request vers `main`, puis `workflow_dispatch` ; ou restaurer seulement l'ancien workflow et l'ancien assembleur (`git checkout e6cf00e -- .github/workflows/pages.yml scripts/assemble.mjs dev js/lots.js index.html`). Les branches `lot-*` n'ayant jamais été supprimées, l'ancien site se reconstruit à l'identique. La branche `archive` peut rester (sans workflow, elle ne déclenche rien).
+
+## Suppression des anciennes branches (« Phase 2 »)
+Faite **par le propriétaire, jamais par un agent**, après la vérification de V0.1 à V0.5 et une sauvegarde complète du dépôt (`git clone --mirror`, puis `git bundle create … --all`). Elle **garde** `main`, `dev`, `archive` et les branches de `versions.json` (`lot-1`, `lot-1d`, `lot-2c`, `lot-3e`, `lot-4b`).
+
+## Réglages GitHub à vérifier (par le propriétaire)
+- Settings → Pages : source « GitHub Actions ».
+- Settings → Environments → `github-pages` → Deployment branches : `main` et `dev` seulement (sans `dev`, le déploiement depuis `dev` est refusé ; sans restriction, le vieux workflow d'une branche de version pourrait publier).
+- Après la fusion de `lot-4c` : créer `dev` depuis `main`, puis lancer le workflow à la main.

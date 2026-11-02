@@ -4,6 +4,9 @@ import { describe, it, expect } from 'vitest';
 import { execSync } from 'node:child_process';
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { downView, formatChrono, killsText, pad2, waveParts } from '../../js/core/hud-format.js';
+// Lot 4c (publication par versions, seul lot autorisé à modifier le workflow) : workflow, accueil, ses textes et tests du journal modifiés ; ce garde-fou de branche
+// (comparaison à main ou à lot-4b) n'a plus de sens pour eux après l'entrée dans main : ils sortent de la liste.
+const LOT_4C = ['.github/workflows/pages.yml', 'index.html', 'data/i18n/fr.json', 'tests/unit/data-changelog.test.js', 'tests/e2e/dev.spec.js'];
 
 const html = readFileSync('jeu.html', 'utf8');
 const fr = JSON.parse(readFileSync('data/i18n/fr.json', 'utf8'));
@@ -322,7 +325,7 @@ describe('hygiène du lot 3l (diff avec lot-4b avant le lot)', () => {
   // data/changelog.json : entrée lot-3l ajoutée à la demande du propriétaire (data-changelog exige une entrée par bilan de Docs/lots/).
   it('fichiers interdits inchangés : logique du jeu, personnages, effets, monde, index, sauvegarde, règles, tests du journal, workflow, seed', () => {
     // Lot 3j (fusionné dans lot-4b) : js/game/character.js et js/game/effects.js sont modifiés par ce lot autorisé (passation-personnages-4b.md, § 5).
-    expect(changedSince('js/game/world.js js/game/windows-mesh.js index.html sauvegarde.html CLAUDE.md Docs/ref/conventions.md Docs/seed.md tests/unit/data-changelog.test.js tests/e2e/dev.spec.js .github data/game/save.json')).toEqual([]);
+    expect(changedSince('js/game/world.js js/game/windows-mesh.js index.html sauvegarde.html CLAUDE.md Docs/ref/conventions.md Docs/seed.md tests/unit/data-changelog.test.js tests/e2e/dev.spec.js .github data/game/save.json').filter((f) => !LOT_4C.includes(f))).toEqual([]);
   });
 
   it('js/core/ : seul hud-format.js est ajouté ; aucun module de règles du jeu modifié', () => {

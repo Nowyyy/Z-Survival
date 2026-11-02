@@ -16,9 +16,10 @@ describe('data/changelog.json', () => {
     }
   });
 
-  it('un seul bloc par lot, et le lot courant (lot-4b, branche d\'intégration) est décrit', () => {
+  it('un seul bloc par lot, et le lot courant (lot-4c, publication par versions) est décrit, comme lot-4b', () => {
     const names = lots.map((e) => e.name);
     expect(new Set(names).size).toBe(names.length);
+    expect(names).toContain('lot-4c');
     expect(names).toContain('lot-4b');
     expect(names).toContain('lot-4');
     expect(names).toContain('lot-3k'); // lot 3k fusionné dans lot-4b
@@ -28,9 +29,10 @@ describe('data/changelog.json', () => {
     for (const f of readdirSync('Docs/lots').filter((n) => n.endsWith('.md'))) expect(lots.map((e) => e.name), f).toContain(f.replace('.md', ''));
   });
 
-  it('le fichier est dans l\'ordre chronologique : lot-0 en premier, lot-4b en dernier', () => {
+  it('le fichier est dans l\'ordre chronologique : lot-0 en premier, lot-4c en dernier (après lot-4b)', () => {
     expect(lots[0].name).toBe('lot-0');
-    expect(lots.at(-1).name).toBe('lot-4b');
+    expect(lots.at(-1).name).toBe('lot-4c');
+    expect(lots.at(-2).name).toBe('lot-4b');
   });
 
   // Lot 4b (demande du propriétaire) : versions majeures montrées par /dev, dans cet ordre ; chacune désigne un lot du journal.
@@ -40,8 +42,18 @@ describe('data/changelog.json', () => {
     for (const v of versions) expect(lots.map((e) => e.name)).toContain(v.lot);
   });
 
+  // Lot 4c (règle du propriétaire, lot 4b) : le lot ajoute son entrée à « lots » seulement ; « versions » ne change pas, aucune ligne « nom: » de plus.
+  it('lot-4c n\'est pas une version : absent de « versions » ; versions.json et « versions » se correspondent', () => {
+    const { versions } = JSON.parse(readFileSync('data/changelog.json', 'utf8'));
+    expect(versions.map((v) => v.lot)).not.toContain('lot-4c');
+    const published = JSON.parse(readFileSync('versions.json', 'utf8')).versions;
+    expect(published.map((v) => [v.label, v.branch])).toEqual(versions.map((v) => [v.version, v.lot]));
+    expect(readFileSync('apercu.txt', 'utf8').match(/^nom:/gm)).toHaveLength(1);
+  });
+
   it('les textes de la section existent en français et le fichier est publié par le build', () => {
     for (const k of ['dev.changelog', 'dev.changelog.open', 'dev.changelog.current']) expect(fr[k], k).toBeTruthy();
+    expect(fr['dev.changelog.open']).toBe('Ouvrir cette version'); // lot 4c (avant : « Ouvrir ce lot »)
     expect(existsSync('data/changelog.json')).toBe(true);
     expect(readFileSync('scripts/build.mjs', 'utf8')).toContain("'data'");
   });

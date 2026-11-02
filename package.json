@@ -12,6 +12,9 @@
     "build": "node scripts/build.mjs",
     "lighthouse": "node scripts/lighthouse.mjs",
     "assemble": "node scripts/assemble.mjs",
+    "site": "node scripts/site/local.mjs",
+    "archive": "node scripts/versions/archiver.mjs",
+    "serve:site": "node scripts/site/serve.mjs --root _site --base /Z-Survival/",
     "vendor:three": "node scripts/vendor-three.mjs",
     "carte": "node scripts/plan-vers-monde.mjs"
   },

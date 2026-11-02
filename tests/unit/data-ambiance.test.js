@@ -5,6 +5,10 @@ import { contrast, luminance, mix, parseColor } from '../../js/core/color.js';
 import { renderSound, soundBytes, variantCount } from '../../js/core/synth.js';
 import { KEYS } from '../../js/core/wave-splash.js';
 import { SPLASH_TEXTS, VHS_TEXTS } from '../../js/game/texts.js';
+// Lot 4c (publication par versions, seul lot autorisé à modifier le workflow) : workflow, accueil, ses textes et tests du journal modifiés ; ce garde-fou de branche
+// (comparaison à main ou à lot-4b) n'a plus de sens pour eux après l'entrée dans main : ils sortent de la liste.
+const LOT_4C = ['.github/workflows/pages.yml', 'index.html', 'data/i18n/fr.json', 'tests/unit/data-changelog.test.js', 'tests/e2e/dev.spec.js'];
+const notLot4c = (files) => (files ?? []).filter((f) => !LOT_4C.includes(f));
 
 // Cohérence des données du lot 2c : animation de vague, sons d'annonce, effet VHS.
 const read = (f) => JSON.parse(readFileSync(`data/game/${f}.json`, 'utf8'));
@@ -230,6 +234,6 @@ describe('hygiène du lot 2c', () => {
     } catch {
       return;
     }
-    expect(changed).toEqual([]);
+    expect(notLot4c(changed)).toEqual([]);
   });
 });

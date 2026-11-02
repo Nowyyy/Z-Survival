@@ -27,7 +27,9 @@ test('la page est en français, sans bouton de langue, même avec un navigateur 
   await page.goto(baseURL);
   await expect(page.locator('html')).toHaveAttribute('lang', 'fr');
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Z-Survival');
-  await expect(page.getByText('En construction. Reviens bientôt !')).toBeVisible();
+  // Lot 4c : l'accueil remplace la page d'attente (avant : « En construction. Reviens bientôt ! ») ; servi depuis le dépôt (build-info.json « source »).
+  await expect(page.locator('#version')).toHaveText('Version V0.5');
+  await expect(page.getByRole('link', { name: 'Jouer' })).toHaveAttribute('href', 'jeu.html');
   await expect(page.locator('[data-lang-toggle]')).toHaveCount(0);
   await expect(page.getByRole('button')).toHaveCount(0);
   await context.close();
@@ -66,22 +68,25 @@ test('axe : aucune violation', async ({ page }) => {
   expect(results.violations).toEqual([]);
 });
 
-test('sans JavaScript, seul le message noscript est visible', async ({ baseURL }) => {
+// Lot 4c : le <noscript> porte aussi des liens statiques vers le jeu, next/ et dev/ (avant : le message seul).
+test('sans JavaScript, seuls le message noscript et ses liens sont visibles', async ({ baseURL }) => {
   // Le réglage de Blink désactive vraiment les scripts : <noscript> est alors rendu comme dans un vrai navigateur.
   const browser = await chromium.launch({ channel: process.env.CI ? 'chrome' : undefined, args: ['--blink-settings=scriptEnabled=false'] });
   const page = await browser.newPage({ locale: 'fr-FR' });
   await page.goto(baseURL);
   await expect(page.locator('#app')).toBeHidden();
   const text = (await page.evaluate(() => document.body.innerText)).trim();
-  expect(text).toBe('Ce jeu a besoin de JavaScript. / This game needs JavaScript.');
+  expect(text.split('\n').map((l) => l.trim()).filter(Boolean)).toEqual(['Ce jeu a besoin de JavaScript. / This game needs JavaScript.', 'Jouer / Play', 'Dernier build de développement / Latest development build', 'Journal des versions / Version history']);
   await browser.close();
 });
 
-test('prefers-reduced-motion coupe l\'animation', async ({ browser, baseURL }) => {
+// Lot 4c : la barre animée de la page d'attente est retirée ; l'accueil n'a aucune animation, et la règle de base.css coupe toute animation en mouvement réduit.
+test('prefers-reduced-motion : aucune animation sur l\'accueil', async ({ browser, baseURL }) => {
   const context = await browser.newContext({ reducedMotion: 'reduce', locale: 'fr-FR' });
   const page = await context.newPage();
   await page.goto(baseURL);
-  const duration = await page.evaluate(() => getComputedStyle(document.querySelector('.bar'), '::after').animationDuration);
-  expect(parseFloat(duration)).toBeLessThan(0.001);
+  await expect(page.locator('#app')).toBeVisible();
+  expect(await page.evaluate(() => document.getAnimations().length)).toBe(0);
+  await expect(page.getByRole('link', { name: 'Jouer' })).toHaveCSS('transition-duration', /^(0s|1e-05s)$/);
   await context.close();
 });
