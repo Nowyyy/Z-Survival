@@ -2,6 +2,10 @@
 import { describe, it, expect } from 'vitest';
 import { execSync } from 'node:child_process';
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
+// Lot 4c (publication par versions, seul lot autorisé à modifier le workflow) : workflow, accueil, ses textes et tests du journal modifiés ; ce garde-fou de branche
+// (comparaison à main ou à lot-4b) n'a plus de sens pour eux après l'entrée dans main : ils sortent de la liste.
+const LOT_4C = ['.github/workflows/pages.yml', 'index.html', 'data/i18n/fr.json', 'tests/unit/data-changelog.test.js', 'tests/e2e/dev.spec.js'];
+const notLot4c = (files) => (files ?? []).filter((f) => !LOT_4C.includes(f));
 
 const git = (args) => {
   try {
@@ -72,7 +76,7 @@ describe('hygiène du lot 3g : fichiers', () => {
     // Lot 4b (demande du propriétaire) : CLAUDE.md et conventions.md reçoivent les règles de tous les lots intégrés ; ils sortent de la liste.
     const changed = git(`diff --name-only ${MAIN} -- js/game/levels-source.js data/game/enemies.json .github index.html Docs/seed.md`);
     if (changed === null) return;
-    expect(changed).toEqual([]);
+    expect(notLot4c(changed)).toEqual([]);
   });
 
   // Branche lot-3g : l'aperçu s'ouvre sur visite.html ; une fois fusionné dans une branche d'intégration (lot-4b), sur la page de celle-ci (jeu.html).

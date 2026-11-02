@@ -8,6 +8,10 @@ import { createV2Kit } from '../../js/game/character-v2.js';
 import { ANIM_MACROS, MACRO_IDS } from '../../js/core/persos-variants.js';
 import { LIMITS, characterCost, choicesOf, crowdCost, project } from '../../scripts/personnages/projection.mjs';
 import { characters, load, poses } from '../../scripts/personnages/lib.mjs';
+// Lot 4c (publication par versions, seul lot autorisé à modifier le workflow) : workflow, accueil, ses textes et tests du journal modifiés ; ce garde-fou de branche
+// (comparaison à main ou à lot-4b) n'a plus de sens pour eux après l'entrée dans main : ils sortent de la liste.
+const LOT_4C = ['.github/workflows/pages.yml', 'index.html', 'data/i18n/fr.json', 'tests/unit/data-changelog.test.js', 'tests/e2e/dev.spec.js'];
+const notLot4c = (files) => (files ?? []).filter((f) => !LOT_4C.includes(f));
 
 // Lot 3m : les personnages choisis (data/game/persos-choix.json) deviennent le défaut du jeu ; l'ancien modèle reste derrière ?perso=actuel.
 const choix = JSON.parse(readFileSync('data/game/persos-choix.json', 'utf8'));
@@ -305,7 +309,7 @@ describe('logique inchangée (données et vitesses)', () => {
     const base = git('merge-base HEAD origin/lot-4b')?.trim();
     if (!base) return;
     const files = ['jeu.html', 'index.html', 'css/game.css', 'js/game/hud.js', 'js/game/ui.js', 'js/game/world.js', 'js/game/windows-mesh.js', 'js/game/textures.js', 'CLAUDE.md', 'Docs/ref/conventions.md', 'Docs/seed.md', 'data/i18n/fr.json', 'tests/unit/data-changelog.test.js', 'tests/e2e/dev.spec.js', '.github'];
-    expect(git(`diff --name-only ${base} -- ${files.join(' ')}`)?.trim()).toBe('');
+    expect(notLot4c(git(`diff --name-only ${base} -- ${files.join(' ')}`)?.trim().split('\n').filter(Boolean))).toEqual([]);
   });
 });
 

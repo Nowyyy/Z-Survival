@@ -1,6 +1,10 @@
 import { describe, it, expect } from 'vitest';
 import { execSync } from 'node:child_process';
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
+// Lot 4c (publication par versions, seul lot autorisé à modifier le workflow) : workflow, accueil, ses textes et tests du journal modifiés ; ce garde-fou de branche
+// (comparaison à main ou à lot-4b) n'a plus de sens pour eux après l'entrée dans main : ils sortent de la liste.
+const LOT_4C = ['.github/workflows/pages.yml', 'index.html', 'data/i18n/fr.json', 'tests/unit/data-changelog.test.js', 'tests/e2e/dev.spec.js'];
+const notLot4c = (files) => (files ?? []).filter((f) => !LOT_4C.includes(f));
 
 const git = (args) => {
   try {
@@ -52,7 +56,7 @@ describe('hygiène du lot 3c : pureté et fichiers', () => {
 
   it('le workflow, Docs/seed.md et les bilans existants sont inchangés (index.html : icône du site ajoutée au lot 4)', () => {
     const changed = git('diff --name-only main -- .github Docs/seed.md Docs/lots/lot-1.md Docs/lots/lot-2.md Docs/lots/lot-2b.md Docs/lots/lot-2c.md Docs/lots/lot-3.md Docs/lots/lot-3a.md Docs/lots/lot-3b.md');
-    if (changed !== null) expect(changed).toEqual([]);
+    if (changed !== null) expect(notLot4c(changed)).toEqual([]);
   });
 
   it('aucune dépendance d\'exécution ni nouvelle dépendance de développement', () => {

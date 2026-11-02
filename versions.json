@@ -1,0 +1,65 @@
+{
+  "schema": 1,
+  "latest": "v0.5",
+  "versions": [
+    {
+      "id": "v0.1",
+      "label": "V0.1",
+      "title": "Cœur du jeu en Phaser (remplacé ensuite par Three.js)",
+      "date": "2026-10-26",
+      "branch": "lot-1",
+      "ref": "1ffbf76e8521a8cfc384b603e90d422842d5d8e3",
+      "entry": "jeu.html",
+      "status": "archive",
+      "note": ""
+    },
+    {
+      "id": "v0.2",
+      "label": "V0.2",
+      "title": "Jeu en Three.js : monde, textures, personnages, sons",
+      "date": "2026-10-27",
+      "branch": "lot-1d",
+      "ref": "8a098f02510d03ea97dffb8a9bdce3ab6bc5bdba",
+      "entry": "jeu.html",
+      "status": "archive",
+      "note": ""
+    },
+    {
+      "id": "v0.3",
+      "label": "V0.3",
+      "title": "Vagues, allures et types de zombies, cône de tir, statistiques, animation de manche, effet VHS",
+      "date": "2026-10-27",
+      "branch": "lot-2c",
+      "ref": "0eee61905f1a3d1dd102949b7752392d8d7439cc",
+      "entry": "jeu.html",
+      "status": "archive",
+      "note": ""
+    },
+    {
+      "id": "v0.4",
+      "label": "V0.4",
+      "title": "Fenêtres à planches, carte à deux étages, escaliers, portes qui s'ouvrent par manche",
+      "date": "2026-10-30",
+      "branch": "lot-3e",
+      "ref": "b4a0e315d644ce934894549dee8c8bd044bfaa68",
+      "entry": "jeu.html",
+      "status": "archive",
+      "note": ""
+    },
+    {
+      "id": "v0.5",
+      "label": "V0.5",
+      "title": "Argent et sauvegarde, refontes (carte, sons, interface, personnages, sang)",
+      "date": "2026-11-02",
+      "branch": "lot-4b",
+      "ref": "e6cf00e0392250d1125e4c14c11a91837fca29db",
+      "entry": "jeu.html",
+      "status": "actuelle",
+      "note": "Hash : commit de fusion de lot-4b dans main (Pull Request #20)."
+    }
+  ],
+  "dev": {
+    "branch": "dev",
+    "path": "next/"
+  }
+}

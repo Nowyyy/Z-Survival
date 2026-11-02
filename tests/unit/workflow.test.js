@@ -19,8 +19,9 @@ describe('workflow GitHub Pages', () => {
     expect(wf).toMatch(/^permissions:\n {2}contents: read$/m);
   });
 
-  it('ne déploie que depuis main et publie seulement _site', () => {
-    expect(wf).toContain("github.ref == 'refs/heads/main'");
+  // Lot 4c : main (racine) ou dev (next/) ; avant : main seulement.
+  it('ne déploie que depuis main ou dev et publie seulement _site', () => {
+    expect(wf).toContain("if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev'");
     expect(wf).toMatch(/path: _site/);
   });
 
@@ -28,21 +29,23 @@ describe('workflow GitHub Pages', () => {
     for (const c of ['npm run lint', 'npm test', 'npm run test:e2e']) expect(wf).toContain(c);
   });
 
-  it('publie le site complet (racine, /dev, /lots) avec l\'historique des branches', () => {
-    expect(wf).toContain('npm run assemble');
-    expect(wf).toMatch(/fetch-depth: 0/);
+  // Lot 4c : le site (racine, next/, v0.N/, lots/) est assemblé par scripts/assemble.mjs de main ; avant : npm run assemble et tout l'historique (fetch-depth: 0).
+  it('publie le site assemblé (racine, next/, archives) par l\'assembleur de main', () => {
+    expect(wf).toContain('node main/scripts/assemble.mjs');
+    expect(wf).not.toMatch(/fetch-depth: 0/);
   });
 
-  it('relance le déploiement depuis main quand une branche de lot est poussée', () => {
-    expect(wf).toContain("branches: [main, 'lot-*']");
+  // Lot 4c : plus aucun aperçu par lot ; avant : branches [main, 'lot-*'] et relance par gh workflow run (job refresh).
+  it('ne se déclenche plus sur les branches de lot et ne relance plus rien', () => {
+    expect(wf).toContain('branches: [main, dev]');
     expect(wf).toContain('workflow_dispatch:');
-    expect(wf).toContain('gh workflow run pages.yml');
+    expect(wf).not.toContain("'lot-*'");
+    expect(wf).not.toContain('gh workflow run');
   });
 
-  it('ne donne le droit actions: write qu\'au seul job de relance', () => {
-    expect(wf.match(/actions: write/g)).toHaveLength(1);
-    const refresh = wf.slice(wf.indexOf('  refresh:'), wf.indexOf('  deploy:'));
-    expect(refresh).toContain('actions: write');
+  // Lot 4c : le job refresh (seul à avoir actions: write) est retiré ; avant : actions: write sur lui seul.
+  it('aucun job n\'a le droit actions: write', () => {
+    expect(wf).not.toContain('actions: write');
   });
 
   it('n\'installe aucun navigateur : Playwright pilote le Chrome du runner', () => {

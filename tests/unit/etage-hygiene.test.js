@@ -1,6 +1,10 @@
 import { describe, it, expect } from 'vitest';
 import { execSync } from 'node:child_process';
 import { readFileSync, readdirSync } from 'node:fs';
+// Lot 4c (publication par versions, seul lot autorisé à modifier le workflow) : workflow, accueil, ses textes et tests du journal modifiés ; ce garde-fou de branche
+// (comparaison à main ou à lot-4b) n'a plus de sens pour eux après l'entrée dans main : ils sortent de la liste.
+const LOT_4C = ['.github/workflows/pages.yml', 'index.html', 'data/i18n/fr.json', 'tests/unit/data-changelog.test.js', 'tests/e2e/dev.spec.js'];
+const notLot4c = (files) => (files ?? []).filter((f) => !LOT_4C.includes(f));
 
 const walk = (dir) => readdirSync(dir, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? walk(`${dir}/${e.name}`) : [`${dir}/${e.name}`]));
 const git = (args) => {
@@ -49,7 +53,7 @@ describe('hygiène du lot 3e : fichiers et textes', () => {
     // Lot 4 : index.html reçoit l'icône du site (demande du propriétaire) ; seul le workflow reste comparé.
     const changed = git(`diff --name-only ${BASE} -- .github`);
     if (changed === null) return;
-    expect(changed).toEqual([]);
+    expect(notLot4c(changed)).toEqual([]);
     // Lot 4 : Docs/seed.md appartient au propriétaire, qui l'a mis à jour dans main après la fusion du lot 3e (avant : comparé au commit BASE, donc en échec).
     // Il est maintenant comparé à main : la branche ne le modifie jamais.
     const seed = git('diff --name-only main -- Docs/seed.md');

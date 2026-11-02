@@ -2,103 +2,77 @@ import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { readFileSync } from 'node:fs';
 
-const LOTS = {
-  lots: [
-    { name: 'lot-0', sha: 'aaaaaaa', date: '2026-10-26T00:11:53+00:00' },
-    { name: 'lot-0b', sha: 'bbbbbbb', date: '2026-10-27T10:00:00+00:00' },
-    { name: 'lot-1', sha: 'ccccccc', date: '2026-11-02T10:00:00+00:00', entry: 'jeu.html' },
-  ],
+// Lot 4c : les aperçus par lot (lots.json, /lots/lot-N/) sont retirés ; les liens du journal viennent de versions.json (racine du site).
+// Avant le lot 4c : lots.json (dernier lot, nom affiché, entry, copie du menu dans un aperçu), lien « Ouvrir ce lot ».
+const VERSIONS = JSON.parse(readFileSync('versions.json', 'utf8'));
+
+const withVersions = async (page, body = VERSIONS) => {
+  await page.route('**/versions.json', (route) => (body ? route.fulfill({ json: body }) : route.fulfill({ status: 404, body: 'no' })));
 };
 
-// Le journal du dernier lot est lu aussi (le menu de main ne connaît pas encore le lot en cours) : ici il est vide par défaut.
-const withLots = async (page, body = LOTS, latestLog = { lots: [] }) => {
-  await page.route('**/lots/*/data/changelog.json', (route) => route.fulfill({ json: latestLog }));
-  await page.route('**/lots.json', (route) => route.fulfill({ json: body }));
-};
-
-test('affiche main et le dernier lot ; plus de menu déroulant d\'anciens lots (avant le lot 4 : un menu et un bouton « Ouvrir »)', async ({ page }) => {
-  await withLots(page);
+test('le lien « Accueil (version actuelle) » ramène à la racine ; plus de lien « Dernier lot » ni de menu d\'anciens lots', async ({ page }) => {
+  await withVersions(page);
   await page.goto('/dev');
   await expect(page).toHaveURL(/\/dev\/$/);
-  await expect(page.getByRole('link', { name: /Branche main/ })).toHaveAttribute('href', '../');
-  const latest = page.getByRole('link', { name: /Dernier lot : V0\.1/ }); // lot-1 = V0.1 (liste « versions » du journal, lot 4b)
-  await expect(latest).toHaveAttribute('href', '../lots/lot-1/jeu.html');
-  await expect(page.locator('select, #previous, #picker')).toHaveCount(0);
+  await expect(page.getByRole('link', { name: /Accueil \(version actuelle\)/ })).toHaveAttribute('href', '../');
+  await expect(page.locator('#latest, select, #previous, #picker')).toHaveCount(0);
+  await expect(page.getByRole('link', { name: /Dernier lot/ })).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Ouvrir' })).toHaveCount(0);
 });
 
-// Lot 4b : nom affiché (champ « nom » de lots.json, ligne « nom: » de apercu.txt) à la place de « Lot 4b » ; l'adresse reste celle de la branche.
-test('un lot avec un nom affiché (V0.5) : le lien du dernier lot l\'affiche, l\'adresse reste lots/lot-4b/', async ({ page }) => {
-  await withLots(page, { lots: [{ name: 'lot-4', date: '2026-11-01T14:24:00Z', entry: 'jeu.html' }, { name: 'lot-4b', date: '2026-11-01T16:00:00Z', entry: 'jeu.html', nom: 'V0.5' }] }, { lots: [{ name: 'lot-4b', titre: 'Intégration des refontes', points: ['Essai'] }] });
-  await page.goto('/dev/');
-  const latest = page.getByRole('link', { name: /Dernier lot : V0\.5/ });
-  await expect(latest).toHaveAttribute('href', '../lots/lot-4b/jeu.html');
-});
-
-test('une version s\'ouvre depuis le journal (lien « Ouvrir ce lot ») ; un lot qui n\'est pas une version majeure n\'y est plus', async ({ page }) => {
-  await withLots(page);
-  await page.route('**/lots/lot-1/jeu.html', (route) => route.fulfill({ contentType: 'text/html', body: '<title>lot-1</title>' }));
+test('une version s\'ouvre depuis le journal (lien « Ouvrir cette version » vers son dossier et sa page d\'entrée)', async ({ page }) => {
+  await withVersions(page);
+  await page.route('**/v0.1/jeu.html', (route) => route.fulfill({ contentType: 'text/html', body: '<title>v0.1</title>' }));
   await page.goto('/dev/');
   await page.locator('#changelog > summary').click();
   await expect(page.locator('.changelog-entry', { hasText: 'Lot 0b ·' })).toHaveCount(0);
   const entry = page.locator('.changelog-entry', { hasText: 'V0.1 ·' });
   await entry.locator('summary').click();
-  await entry.getByRole('link', { name: 'Ouvrir ce lot' }).click();
-  await expect(page).toHaveURL(/\/lots\/lot-1\/jeu\.html$/);
+  await entry.getByRole('link', { name: 'Ouvrir cette version' }).click();
+  await expect(page).toHaveURL(/\/v0\.1\/jeu\.html$/);
 });
 
-test('lots.json sans champ entry (ancien script) : la page d\'aperçu vient de apercu.txt', async ({ page }) => {
-  await withLots(page, { lots: [{ name: 'lot-0' }, { name: 'lot-1' }] });
-  await page.route('**/lots/lot-1/apercu.txt', (route) => route.fulfill({ contentType: 'text/plain', body: 'jeu.html\ntype: hifi\n' }));
-  await page.goto('/dev/');
-  await expect(page.getByRole('link', { name: /Dernier lot : V0\.1/ })).toHaveAttribute('href', '../lots/lot-1/jeu.html');
-});
-
-test('depuis la copie du menu dans un aperçu, les liens remontent à la racine du site', async ({ page }) => {
-  // Simule l'aperçu publié : /lots/lot-1/... sert les fichiers du dépôt (comme le build du lot).
-  await page.route('**/lots/lot-1/**', (route) => {
-    const path = new URL(route.request().url()).pathname.replace('/lots/lot-1/', '');
+test('depuis le journal du build de développement (next/dev/), les liens remontent à la racine du site', async ({ page }) => {
+  // Simule next/ : il sert les fichiers du dépôt, avec un build-info.json « dev ».
+  await page.route('**/next/**', (route) => {
+    const path = new URL(route.request().url()).pathname.replace('/next/', '');
+    if (path === 'build-info.json') return route.fulfill({ json: { channel: 'dev', version: 'V0.5', branch: 'dev', sha: 'abcdef1', date: '2026-11-02T12:00:00Z' } });
     const file = path === '' || path.endsWith('/') ? `${path}index.html` : path;
     const type = file.endsWith('.js') ? 'text/javascript' : file.endsWith('.json') ? 'application/json' : file.endsWith('.css') ? 'text/css' : file.endsWith('.html') ? 'text/html' : 'application/octet-stream';
     return route.fulfill({ contentType: type, body: readFileSync(file) });
   });
-  await page.route('**/lots.json', (route) => route.fulfill({ json: { lots: [{ name: 'lot-0' }, { name: 'lot-1' }] } }));
-  await page.route('**/lots/lot-1/apercu.txt', (route) => route.fulfill({ contentType: 'text/plain', body: 'jeu.html' }));
-  await page.goto('/lots/lot-1/dev/');
-  await expect(page.getByRole('link', { name: /Dernier lot : V0\.1/ })).toHaveAttribute('href', '../../../lots/lot-1/jeu.html');
-  await expect(page.getByRole('link', { name: /Branche main/ })).toHaveAttribute('href', '../../../');
+  await page.goto('/next/dev/');
+  await expect(page.getByRole('link', { name: /Accueil \(version actuelle\)/ })).toHaveAttribute('href', '../../');
+  await page.locator('#changelog > summary').click();
+  const entry = page.locator('.changelog-entry', { hasText: 'V0.4 ·' });
+  await entry.locator('summary').click();
+  await expect(entry.getByRole('link', { name: 'Ouvrir cette version' })).toHaveAttribute('href', '../../v0.4/jeu.html');
 });
 
-test('le lien main ramène à la page d\'attente', async ({ page }) => {
-  await withLots(page);
+test('le lien Accueil ramène à l\'accueil', async ({ page }) => {
+  await withVersions(page);
   await page.goto('/dev/');
-  await page.getByRole('link', { name: /Branche main/ }).click();
+  await page.getByRole('link', { name: /Accueil \(version actuelle\)/ }).click();
   await expect(page).toHaveURL(/localhost:4173\/$/);
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Z-Survival');
 });
 
-test('un seul lot : le dernier lot est proposé, sans menu d\'anciens lots', async ({ page }) => {
-  await withLots(page, { lots: [LOTS.lots[0]] });
+test('versions.json indisponible : le journal reste, sans lien « Ouvrir cette version » ; le lien Accueil est toujours là', async ({ page }) => {
+  await withVersions(page, null);
   await page.goto('/dev/');
-  await expect(page.getByRole('link', { name: /Dernier lot : Lot 0/ })).toBeVisible();
-  await expect(page.locator('#previous')).toHaveCount(0);
-});
-
-test('liste indisponible : message clair et lien main toujours là', async ({ page }) => {
-  await page.route('**/lots.json', (route) => route.fulfill({ status: 404, body: 'no' }));
-  await page.goto('/dev/');
-  await expect(page.getByText('La liste des lots est indisponible.')).toBeVisible();
-  await expect(page.getByRole('link', { name: /Branche main/ })).toBeVisible();
-  await expect(page.locator('#previous')).toHaveCount(0);
+  await expect(page.getByRole('link', { name: /Accueil \(version actuelle\)/ })).toBeVisible();
+  await page.locator('#changelog > summary').click();
+  await page.locator('.changelog-entry summary').first().click();
+  await expect(page.getByRole('link', { name: 'Ouvrir cette version' })).toHaveCount(0);
 });
 
 test('le menu est en français, sans bouton de langue, même avec un navigateur en anglais', async ({ browser, baseURL }) => {
   const context = await browser.newContext({ locale: 'en-US' });
   const page = await context.newPage();
-  await withLots(page);
+  await withVersions(page);
   await page.goto(`${baseURL}/dev/`);
   await expect(page.locator('html')).toHaveAttribute('lang', 'fr');
-  await expect(page.getByRole('link', { name: /Branche main/ })).toBeVisible();
+  await expect(page.getByRole('link', { name: /Accueil \(version actuelle\)/ })).toBeVisible();
   await expect(page.getByRole('button', { name: /English|Switch/ })).toHaveCount(0);
   await expect(page.locator('[data-lang-toggle]')).toHaveCount(0);
   const raw = await page.getByRole('main').innerText();
@@ -109,7 +83,7 @@ test('le menu est en français, sans bouton de langue, même avec un navigateur 
 test('aucune requête externe et console propre', async ({ page, baseURL }) => {
   const external = [];
   const problems = [];
-  await withLots(page);
+  await withVersions(page);
   page.on('request', (r) => {
     if (!r.url().startsWith(baseURL) && !r.url().startsWith('data:')) external.push(r.url());
   });
@@ -123,7 +97,7 @@ test('aucune requête externe et console propre', async ({ page, baseURL }) => {
 
 for (const width of [375, 768, 1440]) {
   test(`pas de débordement horizontal à ${width} px`, async ({ page }) => {
-    await withLots(page);
+    await withVersions(page);
     await page.setViewportSize({ width, height: 900 });
     await page.goto('/dev/');
     await expect(page.locator('#app')).toBeVisible();
@@ -133,7 +107,7 @@ for (const width of [375, 768, 1440]) {
 }
 
 test('axe : aucune violation', async ({ page }) => {
-  await withLots(page);
+  await withVersions(page);
   await page.goto('/dev/');
   await expect(page.locator('#app')).toBeVisible();
   const results = await new AxeBuilder({ page }).analyze();
@@ -141,9 +115,9 @@ test('axe : aucune violation', async ({ page }) => {
 });
 
 test('cibles tactiles d\'au moins 44 px', async ({ page }) => {
-  await withLots(page);
+  await withVersions(page);
   await page.goto('/dev/');
-  for (const locator of [page.getByRole('link', { name: /Branche main/ }), page.locator('#changelog > summary')]) {
+  for (const locator of [page.getByRole('link', { name: /Accueil \(version actuelle\)/ }), page.locator('#changelog > summary')]) {
     const box = await locator.boundingBox();
     expect(box.height).toBeGreaterThanOrEqual(44);
   }
@@ -152,7 +126,7 @@ test('cibles tactiles d\'au moins 44 px', async ({ page }) => {
 test.describe('journal des versions', () => {
   // Lot 4b (demande du propriétaire) : seules les versions majeures de la liste « versions » du journal, de la plus récente (V0.5, en cours, en haut) à V0.1.
   test('liste les versions majeures de V0.5 (en haut) à V0.1, repliées, avec leurs points une fois ouvertes ; aucun autre lot', async ({ page }) => {
-    await withLots(page);
+    await withVersions(page);
     await page.goto('/dev/');
     await expect(page.getByRole('heading', { name: 'Journal des versions' })).toBeVisible();
     await page.locator('#changelog > summary').click();
@@ -171,7 +145,7 @@ test.describe('journal des versions', () => {
   });
 
   test('le journal est replié par défaut (page courte), s\'ouvre au toucher et défile quand il est long', async ({ page }) => {
-    await withLots(page);
+    await withVersions(page);
     await page.goto('/dev/');
     const section = page.locator('#changelog');
     await expect(section).not.toHaveAttribute('open', '');
@@ -190,36 +164,44 @@ test.describe('journal des versions', () => {
     await expect(section).not.toHaveAttribute('open', '');
   });
 
-  test('les lots publiés ont leur date et un lien pour les ouvrir ; les autres n\'en ont pas', async ({ page }) => {
-    await withLots(page);
+  // Lot 4c : date et lien viennent de versions.json ; actuelle → racine, archive → v0.N/<entrée>, indisponible → aucun lien (avant : lots.json, « Ouvrir ce lot »).
+  test('les versions publiées ont leur date et un lien pour les ouvrir ; une version indisponible n\'en a pas', async ({ page }) => {
+    const versions = structuredClone(VERSIONS);
+    versions.versions[1].status = 'indisponible';
+    versions.versions[1].note = 'Essai.';
+    await withVersions(page, versions);
     await page.goto('/dev/');
     await page.locator('#changelog > summary').click();
-    const lot1 = page.locator('.changelog-entry', { hasText: 'V0.1 · Cœur du jeu' });
-    await expect(lot1.locator('.changelog-date')).not.toHaveText('');
-    await lot1.locator('summary').click();
-    await expect(lot1.getByRole('link', { name: 'Ouvrir ce lot' })).toHaveAttribute('href', '../lots/lot-1/jeu.html');
-    const unpublished = page.locator('.changelog-entry', { hasText: 'V0.5 ·' });
-    await unpublished.locator('summary').click();
-    await expect(unpublished.getByRole('link', { name: 'Ouvrir ce lot' })).toHaveCount(0);
+    const v1 = page.locator('.changelog-entry', { hasText: 'V0.1 · Cœur du jeu' });
+    await expect(v1.locator('.changelog-date')).toHaveText('26 oct. 2026');
+    await v1.locator('summary').click();
+    await expect(v1.getByRole('link', { name: 'Ouvrir cette version' })).toHaveAttribute('href', '../v0.1/jeu.html');
+    const current = page.locator('.changelog-entry', { hasText: 'V0.5 ·' });
+    await current.locator('summary').click();
+    await expect(current.getByRole('link', { name: 'Ouvrir cette version' })).toHaveAttribute('href', '../');
+    const off = page.locator('.changelog-entry', { hasText: 'V0.2 ·' });
+    await off.locator('summary').click();
+    await expect(off.getByRole('link', { name: 'Ouvrir cette version' })).toHaveCount(0);
+    await expect(page.locator('#changelog')).not.toContainText(/\blot-\d/);
   });
 
-  test('sans lots.json le journal s\'affiche quand même', async ({ page }) => {
-    await page.route('**/lots.json', (route) => route.fulfill({ status: 404, body: 'no' }));
+  test('sans versions.json le journal s\'affiche quand même', async ({ page }) => {
+    await withVersions(page, null);
     await page.goto('/dev/');
     await page.locator('#changelog > summary').click();
     await expect(page.locator('.changelog-entry').first()).toBeVisible();
   });
 
   test('journal indisponible : la section est masquée, le menu reste', async ({ page }) => {
-    await withLots(page);
+    await withVersions(page);
     await page.route('**/data/changelog.json', (route) => route.fulfill({ status: 404, body: 'no' }));
     await page.goto('/dev/');
     await expect(page.locator('#changelog')).toBeHidden();
-    await expect(page.getByRole('link', { name: /Branche main/ })).toBeVisible();
+    await expect(page.getByRole('link', { name: /Accueil \(version actuelle\)/ })).toBeVisible();
   });
 
   test('axe : aucune violation avec le journal ouvert', async ({ page }) => {
-    await withLots(page);
+    await withVersions(page);
     await page.goto('/dev/');
     await page.locator('#changelog > summary').click();
     await page.locator('.changelog-entry summary').first().click();
@@ -228,17 +210,9 @@ test.describe('journal des versions', () => {
   });
 
   test('aucune cible tactile de moins de 44 px dans le journal', async ({ page }) => {
-    await withLots(page);
+    await withVersions(page);
     await page.goto('/dev/');
     await page.locator('#changelog > summary').click();
     for (const box of await page.locator('.changelog-entry summary').evaluateAll((els) => els.map((e) => e.getBoundingClientRect().height))) expect(box).toBeGreaterThanOrEqual(44);
   });
-});
-
-test('le journal affiche le lot en cours lu dans le dernier lot publié, même absent du journal de main', async ({ page }) => {
-  const own = JSON.parse(readFileSync('data/changelog.json', 'utf8')).lots;
-  const log = { lots: [...own, { name: 'lot-9', titre: 'Lot en cours', points: ['Nouveauté du lot en cours.'] }] };
-  await withLots(page, LOTS, log);
-  await page.goto('/dev/');
-  await expect(page.locator('.changelog-entry summary').first()).toContainText('Lot 9 · Lot en cours');
 });

@@ -1,0 +1,4 @@
+{
+  "channel": "source",
+  "note": "Arbre source du dépôt (non publié tel quel) : le site assemblé remplace ce fichier par celui du canal release (racine) ou dev (next/), écrit par scripts/assemble.mjs."
+}
