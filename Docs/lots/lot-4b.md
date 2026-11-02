@@ -98,7 +98,7 @@ Chaque fusion garde la première ligne d'`apercu.txt` de `lot-4b` (`jeu.html`, t
 
 ## Points ouverts (tous lots)
 - **Performance** :
-  - Lighthouse de `jeu.html` sous 45 depuis la fusion du 3j (« riche » et sang complet lourds au chargement).
+  - Lighthouse de `jeu.html` sous 45 depuis la fusion du 3j (« riche » et sang complet lourds au chargement) : **à traiter au lot d'optimisation** (section ci-dessous).
   - **Essai du propriétaire sur iPhone : tout est correct sauf la fluidité, qui tombe parfois sous 40 images/s.**
   - **Le propriétaire fera un changement d'optimisation** ; pistes : compiler les shaders des personnages et du sang hors du démarrage, préparer la texture du joueur pendant le chargement, instancier les zombies identiques (lot 3d), cadavres en géométrie simplifiée.
 - **Sons** :
@@ -114,6 +114,22 @@ Chaque fusion garde la première ligne d'`apercu.txt` de `lot-4b` (`jeu.html`, t
   - mentions de 8 Mo pour les sons (`conventions.md`, `Docs/seed.md`) ;
   - mentions de « 12 pièces et 700 triangles » (`CLAUDE.md`, `conventions.md`, `Docs/seed.md`).
 - Esthétique, caractère effrayant, confort au pouce : jugés par le propriétaire seulement.
+
+## À traiter au lot d'optimisation (décision du propriétaire)
+- **Lighthouse mobile de `jeu.html` sous le seuil du projet (45)** : médiane 42 sans paramètre et 44 avec `?vhs=0`. Références : `main` 50 (48), `lot-4b` avant le 3j 47 (47), juste après la fusion du 3j 44 (44). Accessibilité, bonnes pratiques et CLS restent bons (100, 100, 0,002).
+  - Mesure : `LH_ONLY=jeu npm run lighthouse`, et `LH_QUERY='?vhs=0'` pour la variante. En rendu logiciel, une passe varie de ± 6 : prendre la médiane d'au moins 5 passes.
+  - Déjà fait au lot 3m : atlas du sang et matières de blessure au premier usage, `blood-fx.js` jamais chargé avec `?sang=0`.
+  - Essayé sans gain mesurable, puis retiré : tenues au premier usage, textures des personnages réduites d'un cran.
+  - Le seuil n'a jamais été modifié.
+- **Fluidité sur iPhone** : parfois sous 40 images/s (essai du propriétaire, `?fps=1`).
+- **Pistes** :
+  - compiler les shaders des personnages v2 et du sang hors du démarrage (`renderer.compileAsync`) ;
+  - préparer la texture du joueur pendant l'écran de chargement ;
+  - instancier les zombies identiques (lot 3d) ;
+  - cadavres en géométrie simplifiée ;
+  - mesurer le coût par image du sang et des ombres des personnages ;
+  - vérifier les tâches longues au démarrage (préparation des zombies en `requestIdleCallback`, calcul des sons).
+- **Critères à tenir** : Lighthouse `jeu.html` ≥ 45 avec et sans `?vhs=0` (médiane), aucun changement de la logique du jeu, budgets de 45 000 triangles et 400 appels.
 
 ## Règle pour les prochains lots (demande du propriétaire)
 **Un nouveau lot n'apparaît plus dans l'interface de `/dev/`.** Il continue d'ajouter son entrée dans `data/changelog.json` → `lots` (historique, exigé par `data-changelog` : une entrée par bilan), mais **n'ajoute rien à la liste `versions`** et ne met pas de ligne `nom:` dans son `apercu.txt`. **C'est le propriétaire qui indique quand une version est ajoutée** (numéro `V0.x`, lot concerné) ; alors seulement, une entrée est ajoutée à `versions`, et les tests `data-changelog` et `dev.spec` sont adaptés.
