@@ -321,7 +321,8 @@ describe('structure de jeu.html', () => {
 describe('hygiène du lot 3l (diff avec lot-4b avant le lot)', () => {
   // data/changelog.json : entrée lot-3l ajoutée à la demande du propriétaire (data-changelog exige une entrée par bilan de Docs/lots/).
   it('fichiers interdits inchangés : logique du jeu, personnages, effets, monde, index, sauvegarde, règles, tests du journal, workflow, seed', () => {
-    expect(changedSince('js/game/character.js js/game/effects.js js/game/world.js js/game/windows-mesh.js index.html sauvegarde.html CLAUDE.md Docs/ref/conventions.md Docs/seed.md tests/unit/data-changelog.test.js tests/e2e/dev.spec.js .github data/game/save.json')).toEqual([]);
+    // Lot 3j (fusionné dans lot-4b) : js/game/character.js et js/game/effects.js sont modifiés par ce lot autorisé (passation-personnages-4b.md, § 5).
+    expect(changedSince('js/game/world.js js/game/windows-mesh.js index.html sauvegarde.html CLAUDE.md Docs/ref/conventions.md Docs/seed.md tests/unit/data-changelog.test.js tests/e2e/dev.spec.js .github data/game/save.json')).toEqual([]);
   });
 
   it('js/core/ : seul hud-format.js est ajouté ; aucun module de règles du jeu modifié', () => {

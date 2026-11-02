@@ -117,8 +117,10 @@ describe('compatibilité avec les refontes de lot-4b', () => {
     expect(hudJs).toMatch(/setHidden\(els\.remaining, !fighting\);\s*setHidden\(els\.next, !waiting\);/);
   });
 
-  it('lot 3j (sang, personnages v2) : absent de lot-4b au moment du lot 3l (vérification faite en e2e quand il y sera)', () => {
-    expect(existsSync('Docs/lots/lot-3j.md')).toBe(false);
+  // Lot 3j fusionné dans lot-4b (lot 3m-A) : la vérification annoncée est faite en e2e (interface-integree.spec.js, &sang=1&perso=B).
+  it('lot 3j (sang, personnages v2) : présent dans lot-4b depuis sa fusion ; vérifié en e2e avec le sang et les personnages v2', () => {
+    expect(existsSync('Docs/lots/lot-3j.md')).toBe(true);
+    expect(readFileSync('tests/e2e/interface-integree.spec.js', 'utf8')).toContain('&sang=1&perso=B');
   });
 
   it('ordre des couches : HUD (z-index 2) au-dessus du voile à terre (z-index 1) et sous les panneaux (z-index 10)', () => {

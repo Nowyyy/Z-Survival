@@ -490,7 +490,7 @@ test.describe('vagues, interface, caméra, budget', () => {
   });
 
   test('budget : 10 zombies variés, planches, ombres, cône : au plus la référence (191 appels, 14 904 triangles) + 3 et + 100', async ({ page }, testInfo) => {
-    await open(page, '&shadows=1');
+    await open(page, '&shadows=1&perso=actuel&sang=0');
     const r = await page.evaluate(() => {
       const zs = window.__zs;
       const first = zs.getState().windowPositions[0];

@@ -46,6 +46,8 @@ import { DOWN_TEXTS, FLOOR_TEXTS, fmt, MONEY_TEXTS, SPLASH_TEXTS, WINDOW_INITIAL
 import { createThreeTextures } from './textures.js';
 import { buildWorld, createCamera } from './world.js';
 
+// Lot 3j : personnages v2 (« riche » par défaut) et sang (complet par défaut) ; ?perso=actuel&sang=0 : le jeu d'avant (rien de plus chargé).
+const persos = await import('./persos-loader.js').then((m) => m.loadPersos(location.search));
 const RECOIL_TIME = 0.12;
 const HIT_FLASH_TIME = 0.1;
 const FIRE_POSE_TIME = 0.3;
@@ -124,6 +126,7 @@ export function createGame(ctx) {
   ctx.audio?.setFires?.((render.feux ?? []).map((fe) => ({ fe, boxes: render.mobilier?.[fe?.piece]?.boxes })).filter((f) => Array.isArray(f.boxes) && f.boxes.length > 0).map(({ fe, boxes }) => ({ x: (Math.min(...boxes.map((b) => b.x0)) + Math.max(...boxes.map((b) => b.x1))) / 2, y: (Math.min(...boxes.map((b) => b.z0)) + Math.max(...boxes.map((b) => b.z1))) / 2, floor: fe.floor })));
   const rig = createCamera(render.camera, cfg.camera, layout, params.tilt, params.zoom);
   const kit = createKit({ textures, variants: ctx.variants, hit: palette.hit });
+  const pv = persos?.attach({ kit, world, render, palette, variants: ctx.variants, seed: ctx.seed }) ?? null; // lot 3j : kit.v2 et sang
   const effects = createEffects(world.effectsRoot, palette, { gunHeight: render.gunHeight, bulletRadius: cfg.weapon.bulletRadius });
   const hud = createHud(ctx.dict);
   const floorFade = createFloorFade();
@@ -338,6 +341,7 @@ export function createGame(ctx) {
     rig.snap(sim.player.x, sim.player.y);
     lastFire = -10;
     sparks = [];
+    pv?.reset(); // lot 3j
     laser = null;
     ctx.ui.setLive('');
     ctx.audio?.reset(seed);
@@ -500,6 +504,7 @@ export function createGame(ctx) {
     const { input, override, audio } = ctx;
     const weapon = eff.weapon;
     sim.time += dt;
+    pv?.update(dt); // lot 3j : le sang avance avec le temps de jeu
 
     // Fondu entre étages : il avance avec le temps de jeu (figé par la pause) ; à l'image où le voile est plein, l'étage du joueur change, une seule fois. Pendant la
     // transition (0,5 s) le joueur est verrouillé : immobile, sans tir, invulnérable ; les zombies continuent.
@@ -578,6 +583,7 @@ export function createGame(ctx) {
     sim.bullets = flight.bullets;
     const typeOf = new Map(sim.enemies.map((e) => [e.id, e.type]));
     const result = applyImpacts(sim.enemies, flight.impacts);
+    pv?.impacts(flight.impacts, result.killed, sim.enemies, sim.player); // lot 3j : sang (zombies d'avant le tir)
     sim.enemies = result.enemies;
     if (!reduced) {
       for (const impact of flight.impacts) sparks.push({ x: impact.x, y: impact.y, age: 0 });
@@ -611,7 +617,8 @@ export function createGame(ctx) {
       // Siège de chaque étage (js/core/siege.js), planches, réparation automatique près d'une fenêtre de l'étage du joueur, déplacement des zombies de chaque étage
       // (poursuite du joueur à son étage, champ de flux vers l'escalier le plus proche à l'autre), franchissement des escaliers (js/core/floor-sim.js).
       const activeIds = activeIdsNow();
-      const out = stepFloors(fw, sim.fs, { enemies: sim.enemies, player: chaseTarget(), dt, active: activeIds, canRepair: !sim.dead && !locked, repairTime: eff.player.repairTime, flowDone: true, follow: sim.sw?.stair, realPlayer: sim.player, walks: stairWalks });
+      // Lot 3j (demande du propriétaire) : jamais tirer et réparer à la fois ; le tir passe avant (la planche en cours garde sa progression).
+      const out = stepFloors(fw, sim.fs, { enemies: sim.enemies, player: chaseTarget(), dt, active: activeIds, canRepair: !sim.dead && !locked && !aimed, repairTime: eff.player.repairTime, flowDone: true, follow: sim.sw?.stair, realPlayer: sim.player, walks: stairWalks });
       sim.fs = out.state;
       sim.enemies = out.enemies;
       sim.win = out.state.win;
@@ -721,6 +728,7 @@ export function createGame(ctx) {
     const lethal = sim.player.health <= 0;
     const willFall = lethal && sim.down.state === 'debout' && sim.down.chutes > 0;
     if (contact.damage > 0 && !willFall) events.push({ type: lethal ? 'playerDeath' : 'playerHurt' });
+    if (contact.damage > 0) pv?.playerHit(sim.player, pf()); // lot 3j
     const pd = stepPlayerDown(sim.down, { hp: sim.player.health, maxHp: sim.player.maxHealth }, dt, cfg.down);
     sim.down = pd.down;
     sim.player = { ...sim.player, health: pd.hp };
@@ -953,10 +961,12 @@ export function createGame(ctx) {
     anim.x = p.x;
     anim.y = p.y;
     const state = sim.down.state === 'terre' ? 'terre' : sim.time - lastFire < FIRE_POSE_TIME ? 'tir' : moving ? 'marche' : 'arret';
-    lastPose = computePose({ phase: anim.phase, aim, facing: anim.facing, state, time: sim.time, seed: 0, amount: Math.min(1, speed / eff.player.speed), recoil: sim.recoil / RECOIL_TIME });
-    playerChar.setPose(lastPose);
+    const poseIn = { phase: anim.phase, aim, facing: anim.facing, state, time: sim.time, seed: 0, amount: Math.min(1, speed / eff.player.speed), recoil: sim.recoil / RECOIL_TIME };
+    lastPose = computePose(poseIn);
+    playerChar.setPose(lastPose, poseIn, pv?.playerCtx(sim, eff)); // lot 3j : les personnages v2 lisent l'entrée et le contexte
     playerChar.root.position.set(p.x, 0, p.y);
     playerChar.root.rotation.y = Math.PI / 2 - anim.facing;
+    const gun = playerChar.muzzle?.() ?? null; // lot 3j : bout du canon du joueur v2 (laser, éclair et balles en partent à l'image)
 
     const alive = new Set();
     for (const e of sim.enemies) {
@@ -978,7 +988,9 @@ export function createGame(ctx) {
       const sieging = gw && (e.mode === 'arrache' || e.mode === 'escalade');
       const tearRate = (TAU * num(e.tearMul, 1)) / Math.max(0.1, windowsCfg.tearTime);
       const poseState = e.mode === 'arrache' ? 'arracher' : e.mode === 'escalade' ? 'escalade' : GAIT_POSE[e.gait] ?? 'zombie';
-      z.char.setPose(computePose({ phase: e.mode === 'arrache' ? sim.time * tearRate + e.id : z.phase, aim: 0, facing: 0, state: poseState, time: sim.time, seed: e.id, amount: zs > 5 ? 0.7 : 0.15 }));
+      const zIn = { phase: e.mode === 'arrache' ? sim.time * tearRate + e.id : z.phase, aim: 0, facing: 0, state: poseState, time: sim.time, seed: e.id, amount: zs > 5 ? 0.7 : 0.15 };
+      z.char.setPose(computePose(zIn), zIn, e);
+      pv?.zombie(z.char, e); // lot 3j : taches sur le corps selon la vie
       // Lot 3e : un zombie de l'étage du joueur est dessiné ; depuis l'étage on voit aussi ceux du rez-de-chaussée, plus bas de floorLift, par le trou des escaliers et
       // dans la partie découverte (le sol de l'étage les cache ailleurs) ; depuis le rez-de-chaussée ceux de l'étage ne sont pas dessinés (ni ombrés). Leur logique continue.
       const zf = floorOf(e);
@@ -1010,8 +1022,11 @@ export function createGame(ctx) {
       zombies.delete(id);
     }
 
+    pv?.sync(pf(), waveInfo(sim.waves).wave); // lot 3j : instances du sang et palier d'usure
     effects.update({
-      laser: laser && !sim.dead ? laser : null,
+      // Lot 3j (demande du propriétaire) : pas de laser pendant la réparation (la visée continue : un zombie visé arrête la réparation).
+      laser: laser && !sim.dead && !Object.values(sim.repair).some((r) => r.repairing) ? laser : null,
+      gun, // lot 3j
       bullets: sim.bullets,
       sparks,
       flash: sim.flash,
@@ -1403,6 +1418,7 @@ export function createGame(ctx) {
         dead: sim.dead,
         time: sim.time,
         audio: ctx.audio.state(),
+        ...(pv ? { persos: pv.state(lastInfo) } : {}), // lot 3j
         splash: splashView.readout(),
         vhs: ctx.vhs.readout(),
       };

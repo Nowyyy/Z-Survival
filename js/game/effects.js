@@ -86,17 +86,24 @@ export function createEffects(scene, palette, { gunHeight, bulletRadius }) {
   }
 
   return {
-    // frame : { laser: { from, ray } | null, bullets, sparks: [{ x, y, age }], flash (secondes restantes), flashSize, unitsPerPixel }
+    // frame : { laser: { from, ray } | null, gun ({ x, y, height } : bout du canon du joueur v2, lot 3j), bullets, sparks: [{ x, y, age }],
+    // flash (secondes restantes), flashSize, unitsPerPixel }
     update(frame) {
       const upp = Math.max(1e-3, frame.unitsPerPixel);
+      // Lot 3j : avec un personnage v2, le laser et l'éclair partent du bout du canon, à sa hauteur ; les balles et les étincelles volent à
+      // la hauteur de l'arme (la logique du tir, elle, part toujours de muzzlePoint).
+      const gun = frame.gun && Number.isFinite(frame.gun.height) ? frame.gun : null;
+      const laserY = gun ? gun.height : laserHeight;
+      const shotY = gun ? gun.height : gunHeight;
       if (frame.laser) {
-        const { from, ray } = frame.laser;
+        const { ray } = frame.laser;
+        const from = gun ?? frame.laser.from;
         const thick = Math.max(1.2, 2 * upp);
         // Arrêté par un ennemi, un meuble ou un mur : trait plein et point ; arrêté par la portée : le trait s'estompe, sans point.
         const faded = !ray.hit && !ray.stoppedByWall && !ray.stoppedBy;
         const [line, halo, offLine, offHalo] = faded ? [laserFade, glowFade, laser, glow] : [laser, glow, laserFade, glowFade];
-        strip(line, from.x, from.y, ray.end.x, ray.end.y, laserHeight, thick);
-        strip(halo, from.x, from.y, ray.end.x, ray.end.y, laserHeight, thick * 2.6);
+        strip(line, from.x, from.y, ray.end.x, ray.end.y, laserY, thick);
+        strip(halo, from.x, from.y, ray.end.x, ray.end.y, laserY, thick * 2.6);
         offLine.visible = false;
         offHalo.visible = false;
         // Cône : de l'arme, ± le demi-angle de l'axe, sur la longueur du laser effectif (pas arrêtées par les obstacles : repère de dispersion).
@@ -107,16 +114,16 @@ export function createEffects(scene, palette, { gunHeight, bulletRadius }) {
             continue;
           }
           const a = cone.angle + (i === 0 ? -cone.half : cone.half);
-          strip(coneLines[i], from.x, from.y, from.x + Math.cos(a) * cone.length, from.y + Math.sin(a) * cone.length, laserHeight, thick);
+          strip(coneLines[i], from.x, from.y, from.x + Math.cos(a) * cone.length, from.y + Math.sin(a) * cone.length, laserY, thick);
         }
-        dot.position.set(ray.end.x, laserHeight, ray.end.y);
+        dot.position.set(ray.end.x, laserY, ray.end.y);
         dot.scale.setScalar(Math.max(ray.hit ? 3.2 : 2, (ray.hit ? 3.5 : 2.5) * upp));
         dot.visible = !faded;
         const flashing = frame.flash > 0;
         flashOuter.visible = flashing;
         flashCore.visible = flashing;
         if (flashing) {
-          flashOuter.position.set(from.x, gunHeight, from.y);
+          flashOuter.position.set(from.x, gun ? gun.height : gunHeight, from.y);
           flashCore.position.copy(flashOuter.position);
           flashOuter.scale.setScalar(frame.flashSize);
           flashCore.scale.setScalar(frame.flashSize * 0.45);
@@ -137,9 +144,9 @@ export function createEffects(scene, palette, { gunHeight, bulletRadius }) {
           continue;
         }
         const len = bulletRadius * 5;
-        segment(slot.head, b.x - b.dirX * len, b.y - b.dirY * len, b.x, b.y, gunHeight, thick);
+        segment(slot.head, b.x - b.dirX * len, b.y - b.dirY * len, b.x, b.y, shotY, thick);
         const tail = b.trail.length > 0 ? b.trail[b.trail.length - 1] : null;
-        if (tail) segment(slot.trail, tail.x, tail.y, b.x - b.dirX * len, b.y - b.dirY * len, gunHeight, thick * 0.6);
+        if (tail) segment(slot.trail, tail.x, tail.y, b.x - b.dirX * len, b.y - b.dirY * len, shotY, thick * 0.6);
         else slot.trail.visible = false;
       }
 
@@ -149,7 +156,7 @@ export function createEffects(scene, palette, { gunHeight, bulletRadius }) {
           sparks[i].visible = false;
           continue;
         }
-        sparks[i].position.set(s.x, gunHeight, s.y);
+        sparks[i].position.set(s.x, shotY, s.y);
         sparks[i].scale.setScalar(Math.max(1, (7 - 5 * (s.age / SPARK_TIME)) * Math.max(1, upp * 0.8)));
         sparks[i].visible = true;
       }

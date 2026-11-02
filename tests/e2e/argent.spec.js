@@ -800,12 +800,12 @@ test.describe('budget et performance', () => {
   }, mode);
   for (const [name, extra, where] of [['R1', '&nospawn=1', 'start'], ['U1', '&wave=21&floor=1&nospawn=1', 'start']]) {
     test(`${name} : sans le détail de l'atelier, la référence (à la brume près) ; avec, 30 000 triangles et 240 appels au plus`, async ({ page }) => {
-      await open(page, `/jeu.html?test=1&seed=1&shadows=1${extra}&detail=0`);
+      await open(page, `/jeu.html?test=1&seed=1&shadows=1&perso=actuel&sang=0${extra}&detail=0`);
       const off = await measure(page, where);
       expect(off.calls).toBeGreaterThanOrEqual(REF[name][0] - 1);
       expect(off.calls).toBeLessThanOrEqual(REF[name][0] + 3);
       expect(Math.abs(off.triangles - REF[name][1])).toBeLessThanOrEqual(120);
-      await open(page, `/jeu.html?test=1&seed=1&shadows=1${extra}`);
+      await open(page, `/jeu.html?test=1&seed=1&shadows=1&perso=actuel&sang=0${extra}`);
       const on = await measure(page, where);
       console.log(`BUDGET lot 4 / 3g ${name} : detail=0 ${off.calls} / ${off.triangles} ; detail=1 ${on.calls} / ${on.triangles} (référence ${REF[name].join(' / ')})`);
       expect(on.triangles).toBeLessThanOrEqual(30000);

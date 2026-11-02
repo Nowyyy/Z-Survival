@@ -61,6 +61,13 @@ describe('mêmes règles qu\'au lot 1', () => {
     allowed.push('js/core/ui-mock.js'); // lot 3k : atelier de l'interface (nouveau fichier)
     allowed.push('js/core/ui-measure.js'); // lot 3k : atelier de l'interface (nouveau fichier)
     allowed.push('js/core/hud-format.js'); // lot 3l : formats du HUD intégré (nouveau fichier, pur)
+    allowed.push('js/core/character-parts.js'); // lot 3j : kit de construction des personnages (nouveau fichier)
+    allowed.push('js/core/pose-v2.js'); // lot 3j : poses v2 (nouveau fichier)
+    allowed.push('js/core/persos-variants.js'); // lot 3j : variantes, tenues, usure, « Mes choix » (nouveau fichier)
+    allowed.push('js/core/texgen-persos.js'); // lot 3j : textures des personnages (nouveau fichier)
+    allowed.push('js/core/blood.js'); // lot 3j : sang (nouveau fichier)
+    allowed.push('js/core/arena.js'); // lot 3j : mini-arène (nouveau fichier)
+    allowed.push('js/core/crowd.js'); // lot 3j : foule de la mini-arène (nouveau fichier)
     expect(changed.filter((f) => !allowed.includes(f))).toEqual([]);
   });
 });
