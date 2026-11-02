@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <meta name="color-scheme" content="dark">
+  <title>Z-Survival · Écoute des sons</title>
+  <link rel="icon" href="data:,">
+  <link rel="preload" href="fonts/barlow-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="data/i18n/fr.json" as="fetch" crossorigin>
+  <link rel="stylesheet" href="css/tokens.css">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/sons.css">
+  <script type="module" src="js/sons/main.js"></script>
+</head>
+<body class="sons-page">
+  <noscript>
+    <p class="noscript">Cette page a besoin de JavaScript. / This page needs JavaScript.</p>
+  </noscript>
+  <main id="app" class="sons" hidden>
+    <h1 class="sons-title" data-i18n="dev.sons.title"></h1>
+    <p class="sons-intro" data-i18n="dev.sons.intro"></p>
+    <p id="status" class="sons-status" role="status" aria-live="polite"></p>
+    <section class="sons-controls" aria-labelledby="controls-title">
+      <h2 id="controls-title" class="sons-heading" data-i18n="dev.sons.controls"></h2>
+      <div class="volume">
+        <label id="volume-label" for="volume" data-i18n="dev.sons.volume"></label>
+        <input id="volume" class="volume-range" type="range" min="0" max="100" step="10" value="100">
+        <output id="volume-value" class="volume-value" for="volume"></output>
+      </div>
+      <div class="actions">
+        <button id="btn-all" class="button" type="button" data-i18n="dev.sons.all" disabled></button>
+        <button id="btn-burst" class="button" type="button" data-i18n="dev.sons.burst" disabled></button>
+        <button id="btn-horde" class="button" type="button" data-i18n="dev.sons.horde" disabled></button>
+        <button id="btn-ambience" class="button" type="button" data-i18n="dev.sons.ambience" disabled></button>
+      </div>
+      <p id="live" class="sons-status" role="status" aria-live="polite"></p>
+    </section>
+    <section aria-labelledby="list-title">
+      <h2 id="list-title" class="sons-heading" data-i18n="dev.sons.list"></h2>
+      <ul id="list" class="sound-list"></ul>
+    </section>
+  </main>
+</body>
+</html>

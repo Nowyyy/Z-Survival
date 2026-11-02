@@ -1,0 +1,43 @@
+// Accès pour les tests : exposé seulement avec ?test=1. Ne stocke ni n'envoie rien.
+import { createRng } from '../core/rng.js';
+
+export function installTestHook(ctx, game) {
+  window.__zs = {
+    getState: () => game.snapshot(),
+    setSeed: (n) => {
+      game.sim.rng = createRng(n);
+    },
+    // Sans options : marcheur de la vague 1 en allure « marche » (comme avant le lot 2). Options : { type, gait, wave } (vague du directeur par défaut).
+    spawnEnemy: (x, y, opts = {}) => {
+      const typed = opts?.type !== undefined || opts?.gait !== undefined || opts?.wave !== undefined;
+      const spec = typed ? game.specOf(opts.wave) : undefined;
+      return game.addEnemy(x, y, { type: opts?.type, gait: opts?.gait, spec }).id;
+    },
+    // Saute à la vague n (zombies retirés, compte à rebours de 3 s) ; sans effet avec ?nospawn=1.
+    startWave: (n) => game.startWave(n),
+    // Tue tous les zombies vivants sans compter de tués (pour tester la fin de vague) ; renvoie leur nombre.
+    killAll: () => game.killAll(),
+    // Surcharge temporaire de data/game/waves.json (sections fusionnées), jusqu'à Rejouer.
+    setWaveParams: (partial) => game.setWaveParams(partial),
+    // Remplace les niveaux des statistiques (ex. { degats: 5 } ; absent = 0), sans rien stocker ; les balles en vol gardent leurs dégâts.
+    setLevels: (levels) => game.setLevels(levels),
+    // Avance la simulation de `seconds` secondes de jeu (pas de 0,05 s), sans attendre le rendu.
+    step: (seconds) => game.advance(seconds),
+    // Injecte des événements sonores (ex. { type: 'zombieHit', x, y, killed: false, zombie: 'marcheur' }) : seul le journal des sons les voit.
+    audioEvent: (events) => game.emitAudio(Array.isArray(events) ? events : [events]),
+    // Fige l'horloge d'effet VHS à t secondes (null : horloge réelle) ; applique une image tout de suite.
+    setVhsClock: (t) => ctx.vhs?.setClock(t),
+    // Place le joueur (et la caméra) d'un coup.
+    setPlayer: (x, y) => game.placePlayer(x, y),
+    // Tire une balle dans la direction `angle` depuis la bouche de l'arme, sans passer par la visée (balle d'essai).
+    fire: (angle) => game.fireBullet(angle),
+    // Règle la caméra pour montrer tout le monde (captures) ; overview(false) rend la caméra au joueur.
+    overview: (on = true) => game.overview(on),
+    // Pixels de la zone (x, y, w, h) en pixels CSS : { distinctColors (16 niveaux par canal), meanLuminance (0 à 1) }.
+    sampleScreen: (x, y, w, h) => game.sample(x, y, w, h),
+    setInput: ({ move, aim } = {}) => {
+      ctx.override.move = move ?? undefined;
+      ctx.override.aim = aim ?? undefined;
+    },
+  };
+}

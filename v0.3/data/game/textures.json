@@ -1,0 +1,599 @@
+{
+ "_provisoire": "Textures du lot 1c : tailles, graines, couleurs (jetons --game-* de css/tokens.css) et réglages provisoires. Tout est calculé par js/core/texgen.js, rien n'est importé. repeat = unités du monde par répétition ; les atlas ne se répètent pas (repeat 0) et chaque région est entourée d'une marge de 8 px qui répète son bord ; scale = unités du monde couvertes par une région entière.",
+ "budget": {
+  "maxTextures": 14,
+  "maxSize": 1024,
+  "maxBytes": 20971520,
+  "margin": 8
+ },
+ "textures": [
+  {
+   "id": "sol-salle",
+   "kind": "tiles",
+   "size": 512,
+   "repeat": 600,
+   "seed": 11,
+   "colors": {
+    "a": "--game-tile-a",
+    "b": "--game-tile-b",
+    "grout": "--game-grout"
+   },
+   "params": {
+    "cells": 10,
+    "joint": 3,
+    "wear": 0.6
+   }
+  },
+  {
+   "id": "mur",
+   "kind": "plaster",
+   "size": 256,
+   "repeat": 240,
+   "seed": 12,
+   "colors": {
+    "base": "--game-wall-base",
+    "dirt": "--game-wall-dirt"
+   },
+   "params": {}
+  },
+  {
+   "id": "route",
+   "kind": "markings",
+   "size": 256,
+   "repeat": 160,
+   "seed": 13,
+   "colors": {
+    "asphalt": "--game-asphalt",
+    "line": "--game-line"
+   },
+   "params": {
+    "dashes": 1,
+    "dashLen": 0.56,
+    "lineWidth": 0.045,
+    "edge": 0.07
+   }
+  },
+  {
+   "id": "trottoir",
+   "kind": "sidewalk",
+   "size": 256,
+   "repeat": 90,
+   "seed": 14,
+   "colors": {
+    "base": "--game-sidewalk",
+    "grout": "--game-grout"
+   },
+   "params": {
+    "cells": 2,
+    "joint": 3
+   }
+  },
+  {
+   "id": "herbe",
+   "kind": "grass",
+   "size": 256,
+   "repeat": 300,
+   "seed": 15,
+   "colors": {
+    "a": "--game-grass-a",
+    "b": "--game-grass-b"
+   },
+   "params": {}
+  },
+  {
+   "id": "sol-exterieur",
+   "kind": "soil",
+   "size": 256,
+   "repeat": 300,
+   "seed": 16,
+   "colors": {
+    "soil": "--game-soil",
+    "gravel": "--game-gravel"
+   },
+   "params": {}
+  },
+  {
+   "id": "atlas-props",
+   "kind": "atlas",
+   "size": 512,
+   "repeat": 0,
+   "seed": 17,
+   "colors": {},
+   "params": {
+    "margin": 8,
+    "regions": [
+     {
+      "id": "bois",
+      "x": 8,
+      "y": 8,
+      "w": 112,
+      "h": 112,
+      "kind": "planks",
+      "seed": 101,
+      "scale": 100,
+      "colors": {
+       "wood": "--game-wood",
+       "dark": "--game-wood-dark"
+      },
+      "params": {
+       "rows": 6,
+       "segs": 2
+      }
+     },
+     {
+      "id": "bois-sombre",
+      "x": 136,
+      "y": 8,
+      "w": 112,
+      "h": 112,
+      "kind": "planks",
+      "seed": 102,
+      "scale": 100,
+      "colors": {
+       "wood": "--game-wood-dark",
+       "dark": "--game-bark"
+      },
+      "params": {
+       "rows": 5,
+       "segs": 2
+      }
+     },
+     {
+      "id": "caisse",
+      "x": 264,
+      "y": 8,
+      "w": 112,
+      "h": 112,
+      "kind": "crate",
+      "seed": 103,
+      "scale": 70,
+      "colors": {
+       "wood": "--game-wood",
+       "dark": "--game-wood-dark"
+      },
+      "params": {
+       "slats": 4
+      }
+     },
+     {
+      "id": "tole",
+      "x": 392,
+      "y": 8,
+      "w": 112,
+      "h": 112,
+      "kind": "metal",
+      "seed": 104,
+      "scale": 100,
+      "colors": {
+       "metal": "--game-metal"
+      },
+      "params": {
+       "panels": 3
+      }
+     },
+     {
+      "id": "etagere",
+      "x": 8,
+      "y": 136,
+      "w": 112,
+      "h": 112,
+      "kind": "planks",
+      "seed": 105,
+      "scale": 100,
+      "colors": {
+       "wood": "--game-wood-dark",
+       "dark": "--game-wood"
+      },
+      "params": {
+       "rows": 4,
+       "segs": 1
+      }
+     },
+     {
+      "id": "colonne",
+      "x": 136,
+      "y": 136,
+      "w": 112,
+      "h": 112,
+      "kind": "plaster",
+      "seed": 106,
+      "scale": 100,
+      "colors": {
+       "base": "--game-sidewalk",
+       "dirt": "--game-grout"
+      }
+     },
+     {
+      "id": "peinture-1",
+      "x": 264,
+      "y": 136,
+      "w": 112,
+      "h": 112,
+      "kind": "paint",
+      "seed": 107,
+      "scale": 100,
+      "colors": {
+       "paint": "--game-paint-1",
+       "rust": "--game-rust"
+      }
+     },
+     {
+      "id": "peinture-2",
+      "x": 392,
+      "y": 136,
+      "w": 112,
+      "h": 112,
+      "kind": "paint",
+      "seed": 108,
+      "scale": 100,
+      "colors": {
+       "paint": "--game-paint-2",
+       "rust": "--game-rust"
+      }
+     },
+     {
+      "id": "peinture-3",
+      "x": 8,
+      "y": 264,
+      "w": 112,
+      "h": 112,
+      "kind": "paint",
+      "seed": 109,
+      "scale": 100,
+      "colors": {
+       "paint": "--game-paint-3",
+       "rust": "--game-rust"
+      }
+     },
+     {
+      "id": "vitre",
+      "x": 136,
+      "y": 264,
+      "w": 112,
+      "h": 112,
+      "kind": "glass",
+      "seed": 110,
+      "scale": 100,
+      "colors": {
+       "glass": "--game-glass"
+      }
+     },
+     {
+      "id": "pneu",
+      "x": 264,
+      "y": 264,
+      "w": 112,
+      "h": 112,
+      "kind": "leather",
+      "seed": 111,
+      "scale": 40,
+      "colors": {
+       "leather": "--game-boot"
+      }
+     },
+     {
+      "id": "ecorce",
+      "x": 392,
+      "y": 264,
+      "w": 112,
+      "h": 112,
+      "kind": "bark",
+      "seed": 112,
+      "scale": 60,
+      "colors": {
+       "bark": "--game-bark"
+      }
+     },
+     {
+      "id": "feuillage",
+      "x": 8,
+      "y": 392,
+      "w": 112,
+      "h": 112,
+      "kind": "leaves",
+      "seed": 113,
+      "scale": 120,
+      "colors": {
+       "leaf": "--game-leaf"
+      }
+     },
+     {
+      "id": "buisson",
+      "x": 136,
+      "y": 392,
+      "w": 112,
+      "h": 112,
+      "kind": "leaves",
+      "seed": 114,
+      "scale": 60,
+      "colors": {
+       "leaf": "--game-grass-b"
+      }
+     },
+     {
+      "id": "barriere",
+      "x": 264,
+      "y": 392,
+      "w": 112,
+      "h": 112,
+      "kind": "paint",
+      "seed": 115,
+      "scale": 60,
+      "colors": {
+       "paint": "--game-metal",
+       "rust": "--game-rust"
+      }
+     },
+     {
+      "id": "lampe",
+      "x": 392,
+      "y": 392,
+      "w": 112,
+      "h": 112,
+      "kind": "glass",
+      "seed": 116,
+      "scale": 30,
+      "colors": {
+       "glass": "--game-hit"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "id": "atlas-persos",
+   "kind": "atlas",
+   "size": 256,
+   "repeat": 0,
+   "seed": 18,
+   "colors": {},
+   "params": {
+    "margin": 8,
+    "regions": [
+     {
+      "id": "veste",
+      "x": 8,
+      "y": 8,
+      "w": 48,
+      "h": 48,
+      "kind": "cloth",
+      "seed": 201,
+      "scale": 48,
+      "colors": {
+       "cloth": "--game-jacket"
+      },
+      "params": {
+       "threads": 12
+      }
+     },
+     {
+      "id": "jean",
+      "x": 72,
+      "y": 8,
+      "w": 48,
+      "h": 48,
+      "kind": "denim",
+      "seed": 202,
+      "scale": 48,
+      "colors": {
+       "denim": "--game-denim"
+      }
+     },
+     {
+      "id": "botte",
+      "x": 136,
+      "y": 8,
+      "w": 48,
+      "h": 48,
+      "kind": "leather",
+      "seed": 203,
+      "scale": 48,
+      "colors": {
+       "leather": "--game-boot"
+      }
+     },
+     {
+      "id": "cheveux",
+      "x": 200,
+      "y": 8,
+      "w": 48,
+      "h": 48,
+      "kind": "leather",
+      "seed": 204,
+      "scale": 48,
+      "colors": {
+       "leather": "--game-hair"
+      }
+     },
+     {
+      "id": "peau",
+      "x": 8,
+      "y": 72,
+      "w": 48,
+      "h": 48,
+      "kind": "skin",
+      "seed": 205,
+      "scale": 48,
+      "colors": {
+       "skin": "--game-skin",
+       "vein": "--game-vein"
+      }
+     },
+     {
+      "id": "arme",
+      "x": 72,
+      "y": 72,
+      "w": 48,
+      "h": 48,
+      "kind": "metal",
+      "seed": 206,
+      "scale": 48,
+      "colors": {
+       "metal": "--game-gun"
+      },
+      "params": {
+       "panels": 2
+      }
+     },
+     {
+      "id": "tenue-1",
+      "x": 136,
+      "y": 72,
+      "w": 48,
+      "h": 48,
+      "kind": "cloth",
+      "seed": 211,
+      "scale": 48,
+      "colors": {
+       "cloth": "--game-cloth-1"
+      },
+      "params": {
+       "threads": 12,
+       "tears": 0.9
+      }
+     },
+     {
+      "id": "tenue-2",
+      "x": 200,
+      "y": 72,
+      "w": 48,
+      "h": 48,
+      "kind": "cloth",
+      "seed": 212,
+      "scale": 48,
+      "colors": {
+       "cloth": "--game-cloth-2"
+      },
+      "params": {
+       "threads": 12,
+       "tears": 0.9
+      }
+     },
+     {
+      "id": "tenue-3",
+      "x": 8,
+      "y": 136,
+      "w": 48,
+      "h": 48,
+      "kind": "cloth",
+      "seed": 213,
+      "scale": 48,
+      "colors": {
+       "cloth": "--game-cloth-3"
+      },
+      "params": {
+       "threads": 12,
+       "tears": 0.9
+      }
+     },
+     {
+      "id": "tenue-4",
+      "x": 72,
+      "y": 136,
+      "w": 48,
+      "h": 48,
+      "kind": "cloth",
+      "seed": 214,
+      "scale": 48,
+      "colors": {
+       "cloth": "--game-cloth-4"
+      },
+      "params": {
+       "threads": 12,
+       "tears": 0.9
+      }
+     },
+     {
+      "id": "pantalon-1",
+      "x": 136,
+      "y": 136,
+      "w": 48,
+      "h": 48,
+      "kind": "denim",
+      "seed": 221,
+      "scale": 48,
+      "colors": {
+       "denim": "--game-denim-worn"
+      },
+      "params": {
+       "tears": 0.9
+      }
+     },
+     {
+      "id": "pantalon-2",
+      "x": 200,
+      "y": 136,
+      "w": 48,
+      "h": 48,
+      "kind": "cloth",
+      "seed": 222,
+      "scale": 48,
+      "colors": {
+       "cloth": "--game-pants-dark"
+      },
+      "params": {
+       "threads": 12,
+       "tears": 0.9
+      }
+     },
+     {
+      "id": "peau-1",
+      "x": 8,
+      "y": 200,
+      "w": 48,
+      "h": 48,
+      "kind": "skin",
+      "seed": 231,
+      "scale": 48,
+      "colors": {
+       "skin": "--game-zombie-skin",
+       "vein": "--game-vein"
+      }
+     },
+     {
+      "id": "peau-2",
+      "x": 72,
+      "y": 200,
+      "w": 48,
+      "h": 48,
+      "kind": "skin",
+      "seed": 232,
+      "scale": 48,
+      "colors": {
+       "skin": "--game-zombie-skin-2",
+       "vein": "--game-vein"
+      }
+     },
+     {
+      "id": "peau-3",
+      "x": 136,
+      "y": 200,
+      "w": 48,
+      "h": 48,
+      "kind": "skin",
+      "seed": 233,
+      "scale": 48,
+      "colors": {
+       "skin": "--game-zombie-skin-3",
+       "vein": "--game-vein"
+      }
+     },
+     {
+      "id": "peau-4",
+      "x": 200,
+      "y": 200,
+      "w": 48,
+      "h": 48,
+      "kind": "skin",
+      "seed": 234,
+      "scale": 48,
+      "colors": {
+       "skin": "--game-zombie-skin-4",
+       "vein": "--game-vein"
+      }
+     }
+    ]
+   }
+  }
+ ]
+}
