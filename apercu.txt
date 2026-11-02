@@ -1,3 +1,4 @@
 jeu.html
 type: hifi
-titre: Personnages intégrés
+titre: Intégration des refontes
+nom: V0.5
