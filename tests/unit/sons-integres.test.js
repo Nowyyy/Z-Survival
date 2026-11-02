@@ -342,7 +342,7 @@ describe('hygiène du lot 3i', () => {
     const text = readFileSync('apercu.txt', 'utf8').split('\n');
     expect(text[0]).toBe('jeu.html');
     expect(text).toContain('type: hifi');
-    expect(text.some((l) => l === 'titre: Sons intégrés' || l === 'titre: Intégration des refontes' || l === 'titre: Interface intégrée')).toBe(true); // lot 3l : sa branche
+    expect(text.some((l) => l === 'titre: Sons intégrés' || l === 'titre: Intégration des refontes' || l === 'titre: Interface intégrée' || l === 'titre: Personnages intégrés')).toBe(true); // lot 3l : sa branche ; lot 3m : la sienne
   });
   it('les textes de sons.html du lot sont dans un fichier séparé (data/i18n/sons-integres.json, clés dev.* en français)', () => {
     expect(existsSync('data/i18n/sons-integres.json')).toBe(true);

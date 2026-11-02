@@ -34,7 +34,8 @@ export function createBloodFx(options) {
   particlesMesh.frustumCulled = false;
   particlesMesh.name = 'sang-particules';
   // Taches : atlas de formes (alpha), forme et opacité par instance (attributs aShape, aAlpha) ; transparentes, sans écriture de profondeur.
-  // L'atlas (quelques dizaines de ms sur téléphone) est calculé hors du démarrage : au premier moment libre, ou à la première tache.
+  // L'atlas (quelques dizaines de ms sur téléphone) est calculé hors du démarrage, à la première tache (lot 3m, levier de chargement 1 ;
+  // avant : au premier moment libre).
   const atlasSize = [64, 128, 256].includes(cfg.texture?.size) ? cfg.texture.size : 256;
   const tex = new THREE.DataTexture(new Uint8Array(atlasSize * atlasSize * 4), atlasSize, atlasSize, THREE.RGBAFormat);
   let atlasReady = false;
@@ -44,8 +45,6 @@ export function createBloodFx(options) {
     tex.image.data.set(decalAtlas(atlasSize, cfg.texture?.seed ?? 31).data);
     tex.needsUpdate = true;
   };
-  if (globalThis.requestIdleCallback) globalThis.requestIdleCallback(ensureAtlas, { timeout: 2000 });
-  else setTimeout(ensureAtlas, 100);
   tex.magFilter = THREE.LinearFilter;
   tex.minFilter = THREE.LinearMipmapLinearFilter;
   tex.generateMipmaps = true;

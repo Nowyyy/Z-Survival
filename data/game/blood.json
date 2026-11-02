@@ -1,10 +1,10 @@
 {
-  "_provisoire": "Sang du lot 3j (valeurs provisoires, purement visuelles, aucun effet de jeu). levels : niveaux de ?sang= (0 : aucun ; reduit : moins de particules et de taches, plus courtes, teinte plus sombre, corps sans taches ; 1 : complet). hit, kill, player : particules par tir non mortel, par mort, par coup reçu par le joueur ; maxParticles, maxDecals : plafonds (la plus ancienne tache est évincée) ; decalLife, fade : durée de vie et fondu final des taches (secondes) ; corpseLife : durée d'un cadavre visuel avant de s'enfoncer (secondes) ; bodyStains : taches sur les corps selon la vie. Unités du jeu (y = hauteur).",
+  "_provisoire": "Sang du lot 3j (valeurs provisoires, purement visuelles, aucun effet de jeu). levels : niveaux de ?sang= (0 : aucun ; reduit : moins de particules et de taches, plus courtes, teinte plus sombre, corps sans taches ; 1 : complet). hit, kill, player : particules par tir non mortel, par mort, par coup reçu par le joueur ; maxParticles, maxDecals : plafonds (la plus ancienne tache est évincée) ; decalLife, fade : durée de vie et fondu final des taches (secondes) ; corpseLife : durée d'un cadavre visuel avant de s'enfoncer (secondes) ; bodyStains : taches sur les corps selon la vie. corpses : cadavres simultanés du niveau (lot 3m : 2 au lieu de 6 en réduit et complet : avec les variantes « riche » par défaut, un cadavre coûte environ 2 100 triangles et 6 cadavres plus 10 zombies dépassaient 45 000 triangles dans R1, U1, U4 ; corpses.max reste le plafond absolu, 6). Unités du jeu (y = hauteur).",
   "version": 1,
   "levels": {
     "0": { "label": "aucun", "hit": 0, "kill": 0, "player": 0, "maxParticles": 0, "maxDecals": 0, "decalLife": 0, "fade": 0, "corpses": 0, "corpseLife": 0, "bodyStains": false, "tint": "--sang-frais" },
-    "reduit": { "label": "réduit", "hit": 3, "kill": 8, "player": 4, "maxParticles": 96, "maxDecals": 12, "decalLife": 8, "fade": 3, "corpses": 6, "corpseLife": 2, "bodyStains": false, "tint": "--sang-reduit" },
-    "1": { "label": "complet", "hit": 8, "kill": 20, "player": 4, "maxParticles": 256, "maxDecals": 48, "decalLife": 20, "fade": 5, "corpses": 6, "corpseLife": 6, "bodyStains": true, "tint": "--sang-frais" }
+    "reduit": { "label": "réduit", "hit": 3, "kill": 8, "player": 4, "maxParticles": 96, "maxDecals": 12, "decalLife": 8, "fade": 3, "corpses": 2, "corpseLife": 2, "bodyStains": false, "tint": "--sang-reduit" },
+    "1": { "label": "complet", "hit": 8, "kill": 20, "player": 4, "maxParticles": 256, "maxDecals": 48, "decalLife": 20, "fade": 5, "corpses": 2, "corpseLife": 6, "bodyStains": true, "tint": "--sang-frais" }
   },
   "particles": {
     "gravity": 520,

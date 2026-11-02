@@ -127,7 +127,7 @@ describe('parseName et lotLabel avec un nom affiché', () => {
   it('apercu.txt de la branche d\'intégration : page jeu.html, nom affiché V0.5', () => {
     const text = readFileSync('apercu.txt', 'utf8');
     expect(parseEntry(text)).toBe('jeu.html');
-    if (/titre: (Sons intégrés|Interface intégrée)/.test(text)) expect(parseName(text)).toBe(''); // lot 3l : sa branche, même règle que lot-3i
+    if (/titre: (Sons intégrés|Interface intégrée|Personnages intégrés)/.test(text)) expect(parseName(text)).toBe(''); // lot 3l : sa branche, même règle que lot-3i ; lot 3m : la sienne
     else expect(parseName(text)).toBe('V0.5');
   });
 

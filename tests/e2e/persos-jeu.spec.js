@@ -67,7 +67,8 @@ test.describe('essai en jeu des personnages v2 et du sang', () => {
       await spawnTen(page);
       await page.evaluate(() => window.__zs.step(0.3));
       const s = await S(page);
-      expect(s.persos).toMatchObject({ perso: 'riche', sang: '1', architecture: 'rigid', characters: { joueur: 'riche', zombies: 10 } });
+      // Lot 3m : le défaut est la table des choix (?perso=choix), « riche » pour les 5 personnages et sang complet.
+      expect(s.persos).toMatchObject({ perso: 'choix', sang: '1', architecture: 'rigid', characters: { joueur: 'riche', zombies: 10 } });
       expect(s.pose.choice).toBe('riche');
       for (const e of s.enemies) expect(e.pose.choice).toBe('riche');
       expect(files).toContain('/data/game/blood.json');

@@ -150,10 +150,12 @@ describe('stepParticles et taches', () => {
 
 describe('blessures et cadavres', () => {
   it.each([[1, 0], [0.76, 0], [0.75, 1], [0.51, 1], [0.5, 2], [0.26, 2], [0.25, 3], [0, 3], [-1, 3], [NaN, 0], [2, 0]])('woundTier(%f) = %i (bornes 0,75, 0,5, 0,25)', (f, t) => expect(woundTier(f, cfg.wounds)).toBe(t));
-  it('cadavres : au plus 6, le plus ancien évincé ; niveau 0 : aucun', () => {
+  // Lot 3m : le niveau complet garde 2 cadavres (avant : 6) : budget de 45 000 triangles avec les variantes « riche » par défaut.
+  it('cadavres : au plus le nombre du niveau (complet : 2 ; plafond absolu 6), le plus ancien évincé ; niveau 0 : aucun', () => {
     let c = [];
     for (let i = 0; i < 9; i += 1) c = corpsesAdd(c, { id: i, born: i }, '1', cfg);
-    expect(c.map((x) => x.id)).toEqual([3, 4, 5, 6, 7, 8]);
+    expect(settings(cfg, '1').corpses).toBe(2);
+    expect(c.map((x) => x.id)).toEqual([7, 8]);
     expect(corpsesAdd([], { id: 1, born: 0 }, '0', cfg)).toEqual([]);
   });
   it.each([['reduit', 2], ['1', 6]])('niveau %s : cadavre de %i s après sa chute de 1,2 s, puis enfoncement de 0,8 s', (l, life) => {
@@ -269,7 +271,8 @@ describe('mort selon le côté touché (deathFor)', () => {
     const parent = new THREE.Group();
     const fx = createBloodFx({ parent, cfg, level: '1', lookup, seed: 4 });
     for (let k = 0; k < 5; k += 1) fx.kill({ x: k * 50, y: 0, dir: { x: 1, y: 0 }, facing: Math.PI });
-    expect(fx.snapshot().corpses.map((c) => [c.anim, c.facing])).toEqual(Array.from({ length: 5 }, () => ['mortArriere', Math.PI]));
+    const n = Math.min(5, settings(cfg, '1').corpses); // lot 3m : cadavres du niveau complet (2 ; avant : 6), les plus récents gardés
+    expect(fx.snapshot().corpses.map((c) => [c.anim, c.facing])).toEqual(Array.from({ length: n }, () => ['mortArriere', Math.PI]));
     fx.dispose();
   });
 });

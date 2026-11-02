@@ -390,8 +390,8 @@ test.describe('budget, hygiène', () => {
     console.log(`BUDGET lot 3e-C, étage : U1 ${u1.calls} appels / ${u1.triangles} tri, U4 (seconde salle) ${u4.calls} / ${u4.triangles}`);
     testInfo.annotations.push({ type: 'rendu', description: `U1 ${u1.calls}/${u1.triangles} ; U4 ${u4.calls}/${u4.triangles}` });
     for (const m of [u1, u4]) {
-      expect(m.calls).toBeLessThanOrEqual(300);
-      expect(m.triangles).toBeLessThanOrEqual(30000);
+      expect(m.calls).toBeLessThanOrEqual(400); // lot 3m : limites de refonte relevées par le propriétaire (avant : 300)
+      expect(m.triangles).toBeLessThanOrEqual(45000); // lot 3m : limites de refonte relevées par le propriétaire (avant : 30000)
     }
   });
 
@@ -404,8 +404,8 @@ test.describe('budget, hygiène', () => {
     const opened = await run('&wave=31');
     console.log(`BUDGET lot 3e-C, rez-de-chaussée : fermés ${closed.calls} / ${closed.triangles}, ouverts ${opened.calls} / ${opened.triangles}`);
     expect(opened.calls - closed.calls).toBeLessThanOrEqual(4);
-    expect(opened.calls).toBeLessThanOrEqual(300);
-    expect(opened.triangles).toBeLessThanOrEqual(30000);
+    expect(opened.calls).toBeLessThanOrEqual(400); // lot 3m : limites de refonte relevées par le propriétaire (avant : 300)
+    expect(opened.triangles).toBeLessThanOrEqual(45000); // lot 3m : limites de refonte relevées par le propriétaire (avant : 30000)
   });
 
   test('aucune requête externe, aucun stockage, console propre pendant l\'ouverture de la porte 3 et les deux escaliers', async ({ page, baseURL, context }) => {

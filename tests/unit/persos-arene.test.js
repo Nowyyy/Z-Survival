@@ -105,8 +105,9 @@ describe('arena.js : mini-arène', () => {
     for (const e of r.events.filter((x) => x.type === 'kill').slice(0, 3)) fx.kill(e);
     fx.update(0.01);
     fx.sync('rdc');
-    expect(fx.stats().corpses).toBe(3);
-    expect(created).toBe(3);
+    const n = Math.min(3, load('blood').levels['1'].corpses); // lot 3m : cadavres du niveau complet (2 ; avant : 6)
+    expect(fx.stats().corpses).toBe(n);
+    expect(created).toBe(n);
     expect(fx.stats().particles).toBeGreaterThan(0);
   });
   it('entrées hostiles : graine non numérique, configuration vide, état nul : aucune exception', () => {

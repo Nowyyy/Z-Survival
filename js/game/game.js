@@ -20,7 +20,6 @@ import { circleOverlapsRect } from '../core/collision.js';
 import { addDebris, createDebris, plankSettings, removeDebris, stepDebris } from '../core/plank-layout.js';
 import { applyHeal, canFire, canHealOnKill, canMove, createPlayerDown, isInvulnerable, knockbackZombies, stepPlayerDown } from '../core/player-down.js';
 import { effectivePlayer, effectiveWeapon, normalizeLevels, STAT_IDS, statValues } from '../core/player-stats.js';
-import { computePose } from '../core/pose.js';
 import { createBullet, stepBullets } from '../core/projectile.js';
 import { castRay } from '../core/ray.js';
 import { createRng } from '../core/rng.js';
@@ -34,7 +33,6 @@ import { createDirector, finishWave, info as waveInfo, markDoor, setParams, star
 import { createSplash, stepSplash } from '../core/wave-splash.js';
 import { waveSpec } from '../core/waves.js';
 import { activeSpawnPoints, activeWindows, activeZones, assignWindows, doorsOpenAtStart, nextDoor } from '../core/zones.js';
-import { createCharacter, createKit } from './character.js';
 import { createEffects, MAX_SPARKS, SPARK_TIME } from './effects.js';
 import { createFloorFade } from './floor-fade.js';
 import { createBank } from './bank.js';
@@ -48,6 +46,7 @@ import { buildWorld, createCamera } from './world.js';
 
 // Lot 3j : personnages v2 (« riche » par défaut) et sang (complet par défaut) ; ?perso=actuel&sang=0 : le jeu d'avant (rien de plus chargé).
 const persos = await import('./persos-loader.js').then((m) => m.loadPersos(location.search));
+const { computePose, createKit, createCharacter } = persos.model; // lot 3m : ancien modèle (pose.js, character.js) importé seulement si un personnage est « actuel »
 const RECOIL_TIME = 0.12;
 const HIT_FLASH_TIME = 0.1;
 const FIRE_POSE_TIME = 0.3;
