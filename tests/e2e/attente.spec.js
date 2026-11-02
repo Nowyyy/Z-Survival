@@ -28,7 +28,7 @@ test('la page est en français, sans bouton de langue, même avec un navigateur 
   await expect(page.locator('html')).toHaveAttribute('lang', 'fr');
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Z-Survival');
   // Lot 4c : l'accueil remplace la page d'attente (avant : « En construction. Reviens bientôt ! ») ; servi depuis le dépôt (build-info.json « source »).
-  await expect(page.locator('#version')).toHaveText('Version V0.5');
+  await expect(page.locator('#version')).toHaveText('Recette · Version V0.5');
   await expect(page.getByRole('link', { name: 'Jouer' })).toHaveAttribute('href', 'jeu.html');
   await expect(page.locator('[data-lang-toggle]')).toHaveCount(0);
   await expect(page.getByRole('button')).toHaveCount(0);
@@ -86,7 +86,8 @@ test('prefers-reduced-motion : aucune animation sur l\'accueil', async ({ browse
   const page = await context.newPage();
   await page.goto(baseURL);
   await expect(page.locator('#app')).toBeVisible();
-  expect(await page.evaluate(() => document.getAnimations().length)).toBe(0);
+  // En mouvement réduit, une animation éventuelle dure 0,01 ms : il n'en reste aucune en cours (lue par expect.poll, jamais juste après une action).
+  await expect.poll(() => page.evaluate(() => document.getAnimations().filter((a) => a.playState === 'running').length)).toBe(0);
   await expect(page.getByRole('link', { name: 'Jouer' })).toHaveCSS('transition-duration', /^(0s|1e-05s)$/);
   await context.close();
 });

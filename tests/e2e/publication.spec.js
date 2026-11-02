@@ -24,9 +24,9 @@ for (const viewport of [{ width: 667, height: 375 }, { width: 1440, height: 900 
   test.describe(`site publié ${viewport.width}×${viewport.height}`, () => {
     test.use({ viewport });
 
-    test('la racine affiche « Version V0.5 » et « Jouer » mène à jeu.html, qui se charge', async ({ page }) => {
+    test('la racine (main) affiche « Recette · Version V0.5 » et « Jouer » mène à jeu.html, qui se charge', async ({ page }) => {
       await page.goto(FULL);
-      await expect(page.locator('#version')).toHaveText('Version V0.5');
+      await expect(page.locator('#version')).toHaveText('Recette · Version V0.5');
       await expect(page.getByRole('heading', { level: 1 })).toHaveText('Z-Survival');
       const play = page.getByRole('link', { name: 'Jouer' });
       await expect(play).toHaveAttribute('href', 'jeu.html');
@@ -49,6 +49,7 @@ for (const viewport of [{ width: 667, height: 375 }, { width: 1440, height: 900 
     test('next/ : bandeau du build de développement, section « Développement » masquée, versions précédentes à la racine', async ({ page }) => {
       const { problems } = watch(page);
       await page.goto(`${FULL}next/`);
+      await expect(page.locator('#version')).toHaveText('Développement · Version V0.5');
       await expect(page.locator('#dev-banner')).toHaveText('Build de développement — abcdef1 — 2 nov. 2026');
       await expect(page.locator('#dev-section')).toBeHidden();
       await expect(page.getByRole('link', { name: /^V0\.4/ })).toHaveAttribute('href', '../v0.4/jeu.html');

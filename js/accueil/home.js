@@ -1,6 +1,7 @@
 // Accueil du site (lot 4c) : logique pure, sans DOM, réseau ni horloge. Construit le modèle de la page d'après versions.json et build-info.json.
 // Contextes : « release » (racine du site), « dev » (next/ : bandeau, section Développement masquée, racine du site = ../),
 // « source » ou inconnu (arbre du dépôt servi en local) : comme la racine, sans build de développement.
+// Libellés affichés : main (racine, « release », et l'arbre source) = « Recette » ; dev (next/) = « Développement ». La production viendra avec un serveur.
 const ID_RE = /^v(0|[1-9]\d{0,2})\.(0|[1-9]\d{0,2})$/;
 const SHA_RE = /^[0-9a-f]{7,40}$/;
 const STATUSES = ['actuelle', 'archive', 'indisponible'];
@@ -59,6 +60,7 @@ export function homeModel({ versions = null, info = null, nextInfo = null } = {}
   }));
   return {
     channel,
+    channelKey: channel === 'dev' ? 'dev' : 'recette',
     root,
     version: current?.label ?? '',
     play: current?.entry ?? 'jeu.html',

@@ -44,7 +44,7 @@ function item(label, meta, href) {
 }
 
 function render({ t, lang }) {
-  $('version').textContent = model.version ? fill(t('home.version'), { version: model.version }) : t('home.versionUnknown');
+  $('version').textContent = model.version ? fill(t('home.version'), { channel: t(`home.channel.${model.channelKey}`), version: model.version }) : t('home.versionUnknown');
   $('play').href = model.play;
 
   const banner = $('dev-banner');

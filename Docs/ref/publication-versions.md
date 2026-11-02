@@ -1,5 +1,7 @@
 # Publication par versions (lot 4c)
 
+**Noms affichés (demande du propriétaire)** : `main` = **Recette** (racine du site, canal technique `release`), `dev` = **Développement** (`/next/`, canal `dev`). Les branches gardent leurs noms ; la **Production** viendra plus tard, avec un serveur.
+
 Écrit en partie A (inventaire, plan), complété en partie C (réalisation, workflow avant/après, procédures). Correspondance des versions : `Docs/ref/versions-correspondance.md` ; contrôle des archives : `Docs/ref/verification-versions.md`.
 
 ## Ce que fait la publication aujourd'hui (lecture du dépôt au commit `e6cf00e`)

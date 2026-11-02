@@ -227,7 +227,7 @@ describe('accueil (js/accueil/home.js)', () => {
 
   it('racine publiée : « V0.5 », Jouer vers jeu.html, build de développement et journal, versions précédentes de V0.4 à V0.1', () => {
     const model = homeModel({ versions: real, info: release, nextInfo });
-    expect(model).toMatchObject({ channel: 'release', root: '', version: 'V0.5', play: 'jeu.html', banner: null });
+    expect(model).toMatchObject({ channel: 'release', channelKey: 'recette', root: '', version: 'V0.5', play: 'jeu.html', banner: null });
     expect(model.devSection).toEqual({ next: { sha: 'abcdef1', date: '2026-11-02T12:00:00.000Z' }, nextHref: 'next/', journal: 'dev/' });
     expect(model.previous.map((v) => [v.label, v.href])).toEqual([['V0.4', 'v0.4/jeu.html'], ['V0.3', 'v0.3/jeu.html'], ['V0.2', 'v0.2/jeu.html'], ['V0.1', 'v0.1/jeu.html']]);
   });
@@ -244,7 +244,7 @@ describe('accueil (js/accueil/home.js)', () => {
 
   it('dans next/ (channel dev) : bandeau avec hash et date, section Développement masquée, liens remontés à la racine', () => {
     const model = homeModel({ versions: real, info: nextInfo });
-    expect(model).toMatchObject({ channel: 'dev', root: '../', devSection: null, banner: { sha: 'abcdef1' } });
+    expect(model).toMatchObject({ channel: 'dev', channelKey: 'dev', root: '../', devSection: null, banner: { sha: 'abcdef1' } });
     expect(model.previous[0].href).toBe('../v0.4/jeu.html');
     expect(model.play).toBe('jeu.html');
   });
@@ -314,7 +314,8 @@ describe('accueil : page et textes', () => {
   });
 
   it('textes de l\'accueil et des pages produites dans fr.json', () => {
-    expect(fr['home.version']).toBe('Version {version}');
+    expect(fr['home.version']).toBe('{channel} · Version {version}');
+    expect([fr['home.channel.recette'], fr['home.channel.dev']]).toEqual(['Recette', 'Développement']); // main = Recette, dev = Développement (demande du propriétaire)
     expect(fr['home.play']).toBe('Jouer');
     expect(fr['home.next']).toBe('Dernier build de développement');
     expect(fr['home.nextNone']).toBe('Aucun build de développement pour l\'instant');
