@@ -36,7 +36,10 @@ const B = choix.choix.filter((c) => c.part === 'B'); // partie C : sons-integres
 const REPLACED = ['pas', 'pas-zombie', 'zombie-gemissement', 'zombie-attaque', 'zombie-blessure', 'zombie-mort', 'planche-arrachee', 'planche-posee'];
 // Gardés tels quels (fiche) : mélodie, annonces, tir, douille, impacts, chute et relevage du joueur, joueur blessé et mort, trois voix, interface, ambiance.
 const KEPT = ['tir', 'douille', 'impact-zombie', 'impact-bois', 'impact-metal', 'impact-pierre', 'impact-voiture', 'vague-annonce', 'vague-renforcee', 'vague-fin', 'joueur-chute', 'joueur-releve', 'joueur-blesse', 'joueur-mort', 'zombie-grognement', 'zombie-plainte', 'zombie-souffle', 'ui-pause', 'ui-reprise', 'ambiance'];
-const mainSounds = MAIN ? JSON.parse(git(`show ${MAIN}:data/game/sounds.json`) ?? 'null')?.sounds ?? null : null;
+// Référence « main » d'avant l'intégration des refontes (lot 4, c166e53) : depuis la fusion de lot-4b, main contient les sons de l'atelier.
+// Absente (clone superficiel) : repli sur main, comme avant la fusion.
+const MAIN_AVANT = git('rev-parse --verify --quiet c166e53^{commit}') !== null ? 'c166e53' : MAIN;
+const mainSounds = MAIN_AVANT ? JSON.parse(git(`show ${MAIN_AVANT}:data/game/sounds.json`) ?? 'null')?.sounds ?? null : null;
 const rendered = new Map(B.map((c) => [c.id, renderChoice(byId.get(c.id), { seed: 1 })]));
 
 describe('table des choix (data/game/sounds-choix.json)', () => {

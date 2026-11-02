@@ -20,7 +20,9 @@ const BASE = MAIN ? (git(`merge-base HEAD ${MAIN}`) ?? '').trim() || null : null
 // Lot 3i-A : après la fusion dans la branche d'intégration lot-4b (qui contient d'autres lots), « ce que le lot 3h a changé » se lit entre sa base
 // et la pointe de lot-3h (origin/lot-3h), pas entre main et HEAD ; sans cette branche distante, ces comparaisons sont sautées.
 const LOT = git('rev-parse --verify --quiet origin/lot-3h') !== null ? 'origin/lot-3h' : null;
-const LOT_BASE = LOT && MAIN ? (git(`merge-base ${LOT} ${MAIN}`) ?? '').trim() || null : null;
+// Depuis la fusion de lot-4b dans main, main contient lot-3h : la base du lot se lit contre main d'avant l'intégration (lot 4, c166e53).
+const MAIN_AVANT = git('rev-parse --verify --quiet c166e53^{commit}') !== null ? 'c166e53' : MAIN;
+const LOT_BASE = LOT && MAIN_AVANT ? (git(`merge-base ${LOT} ${MAIN_AVANT}`) ?? '').trim() || null : null;
 const lotDiff = (paths) => (git(`diff --name-only ${LOT_BASE} ${LOT} -- ${paths.join(' ')}`) ?? '').split('\n').filter(Boolean);
 const NEW_CORE = ['audio-analysis', 'synth2', 'synth2-dsp', 'synth2-sources', 'atelier-check', 'atelier-choices', 'sound-cache', 'wave-svg', 'scenes-sons'].map((n) => `js/core/${n}.js`);
 // Moteur sonore existant, page des sons actuels et tests de sons : jamais modifiés par ce lot.
