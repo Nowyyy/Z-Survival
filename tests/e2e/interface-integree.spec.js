@@ -57,7 +57,8 @@ test.describe('les 7 tailles de l\'atelier : HUD, pire cas, à terre, protégé,
       expect(hud.verdict.minTargetPx).toBeGreaterThanOrEqual(44);
       expect(hud.verdict.minContrast).toBeGreaterThanOrEqual(4.5);
       // Pire cas : 9 999 999, 5 chutes, « 40 / 40 », renforcée, 9 999 tués, chrono de plus d'une heure : rien ne déborde de sa boîte.
-      await page.evaluate(() => { const zs = window.__zs; zs.giveMoney(9_999_999); zs.setChutes(5); zs.step(0.1); });
+      // Le « +N » de 9 999 999 (hook de test) est attendu effacé : un gain réel tient dans la largeur de Pause (test « +N » plus bas, et « +635 » de la fin de monde).
+      await page.evaluate(() => { const zs = window.__zs; zs.giveMoney(9_999_999); zs.setChutes(5); zs.step(2.1); });
       await writeWorst(page);
       await page.evaluate(() => { document.getElementById('hud-reinforced').textContent = 'Renforcée'; });
       const worst = await measure(page, 'hud', size, { overflow: true });
@@ -243,13 +244,17 @@ test.describe('états du jeu', () => {
     }
   });
 
-  test('« +N » : à gauche de l\'argent, sans chevaucher la colonne de gauche ni l\'argent, décoratif', async ({ page }) => {
+  // Retour du propriétaire : l'argent est à droite sous les tués et le « +N » sous le bouton Pause (avant : à gauche de l'argent, au centre).
+  test('« +N » : sous le bouton Pause, sur la ligne de l\'argent, sans chevaucher l\'argent ni Pause, décoratif', async ({ page }) => {
     await open(page, '&map=salle');
-    await page.evaluate(() => { window.__zs.giveMoney(512); window.__zs.step(0.1); });
-    await expect(page.locator('#hud-gain')).toBeVisible();
+    await page.evaluate(() => { window.__zs.giveMoney(635); window.__zs.step(0.1); }); // le plus gros gain réel observé : fin de monde (500 + manche)
+    await expect(page.locator('#hud-gain')).toHaveText('+635');
     const b = await hudBoxes(page);
-    expect(b['#hud-gain'].r).toBeLessThanOrEqual(b['#hud-money'].l);
-    for (const sel of ['#hud-chrono', '#hud-bar', '#hud-chutes', '#hud-trial']) if (b[sel]) expect(apart(b['#hud-gain'], b[sel]), sel).toBe(true);
+    expect(b['#hud-gain'].t).toBeGreaterThanOrEqual(b['#btn-pause'].b - 0.5);
+    expect(Math.abs(b['#hud-gain'].l - b['#btn-pause'].l)).toBeLessThan(0.5);
+    expect(Math.abs(b['#hud-gain'].t - b['#hud-money'].t)).toBeLessThan(0.5);
+    for (const sel of ['#hud-money', '#btn-pause', '#hud-kills']) expect(apart(b['#hud-gain'], b[sel]), sel).toBe(true);
+    expect(b['#hud-gain'].r).toBeLessThanOrEqual(SIZE.width - 16 + 0.5); // dans la marge de 16 px
     await expect(page.locator('#hud-gain')).toHaveAttribute('aria-hidden', 'true');
   });
 
@@ -291,15 +296,59 @@ test.describe('états du jeu', () => {
     await expect(page.locator('#end-box .end-icon-world')).toBeHidden();
   });
 
-  test('pause : ordre des boutons (Reprendre, Plein écran, Son, Effet VHS, Recommencer, volume en dernier) ; focus sur Reprendre ; tabulation dans l\'ordre', async ({ page }) => {
+  // Retours du propriétaire : solde à côté de « PAUSE » ; Reprendre, Recommencer, Quitter (désactivé) à gauche ; Son, Effet VHS (sous Son), Plein écran à droite ;
+  // ni prochaine zone, ni état de la sauvegarde, ni volume.
+  test('pause : solde à côté de « PAUSE » ; Reprendre, Recommencer, Quitter (désactivé) | Son, Effet VHS, Plein écran ; focus sur Reprendre ; rien d\'autre', async ({ page }) => {
     await open(page);
     await page.locator('#btn-pause').click();
     await expect(page.locator('#btn-resume')).toBeFocused();
-    const order = await page.evaluate(() => [...document.querySelectorAll('#pause-panel button, #pause-panel input')].filter((e) => e.getClientRects().length).map((e) => e.id));
-    const expected = ['btn-resume', 'btn-fullscreen', 'btn-sound', 'btn-vhs', 'btn-restart', 'volume'].filter((id) => order.includes(id));
-    expect(order).toEqual(expected);
+    const r = await page.evaluate(() => {
+      const b = (id) => { const e = document.getElementById(id); if (!e || !e.getClientRects().length) return null; const q = e.getBoundingClientRect(); return { l: q.left, t: q.top, r: q.right, b: q.bottom }; };
+      return { title: b('pause-title'), balance: b('pause-balance'), resume: b('btn-resume'), restart: b('btn-restart'), quit: b('btn-quit'), sound: b('btn-sound'), vhs: b('btn-vhs'), inputs: document.querySelectorAll('#pause-panel input').length, lines: document.querySelectorAll('#pause-panel p').length };
+    });
+    expect(r.balance.l).toBeGreaterThan(r.title.r);
+    expect(r.balance.t).toBeLessThan(r.title.b);
+    for (const [a, b] of [['resume', 'restart'], ['restart', 'quit']]) {
+      expect(Math.abs(r[a].l - r[b].l)).toBeLessThan(0.5);
+      expect(r[b].t).toBeGreaterThan(r[a].b);
+    }
+    expect(Math.abs(r.sound.l - r.vhs.l)).toBeLessThan(0.5);
+    expect(r.vhs.t).toBeGreaterThan(r.sound.b);
+    expect(Math.abs(r.vhs.t - r.restart.t)).toBeLessThan(0.5);
+    expect(r.sound.l).toBeGreaterThan(r.resume.r);
+    expect([r.inputs, r.lines]).toEqual([0, 1]); // seule ligne : le solde
+    await expect(page.locator('#btn-quit')).toBeDisabled();
+    await expect(page.locator('#btn-quit')).toHaveText('Quitter');
     await page.keyboard.press('Tab');
-    await expect(page.locator(`#${expected[1]}`)).toBeFocused();
+    await expect(page.locator('#btn-sound')).toBeFocused();
+  });
+
+  test('?wave=40&fin=monde : écran de victoire « Monde terminé » tout de suite (bonus de fin de monde, mode essai), aucune écriture ; ignoré hors mode essai', async ({ page }) => {
+    await page.setViewportSize(SIZE);
+    await page.goto('/jeu.html?wave=40&fin=monde&vhs=0');
+    await expect(page.locator('#end-panel')).toBeVisible({ timeout: 60_000 });
+    await expect(page.locator('#end-title')).toHaveText('Monde terminé');
+    await expect(page.locator('#end-bonus')).toBeVisible();
+    await expect(page.locator('#end-save')).toHaveText('Mode essai : cet argent n\'est pas enregistré');
+    expect(await page.evaluate(() => localStorage.length)).toBe(0);
+    await page.goto('/jeu.html?test=1&fin=monde&vhs=0'); // ?test=1 seul : sauvegarde en mémoire, pas en lecture seule
+    await waitReady(page);
+    await expect(page.locator('#end-panel')).toBeHidden();
+  });
+
+  test('fin : vague, « Nouveau record », meilleure manche à gauche ; tués, argent gagné, solde à droite ; plus de note « provisoire »', async ({ page }) => {
+    await page.setViewportSize(SIZE);
+    await page.goto('/jeu.html?test=1&store=local&seed=1&vhs=0');
+    await waitReady(page);
+    await page.evaluate(() => { window.requestAnimationFrame = () => 0; const zs = window.__zs; zs.step(3.3); zs.skipWave(); zs.step(0.3); zs.setChutes(0); zs.downPlayer(); zs.step(0.3); });
+    await expect(page.locator('#end-record')).toBeVisible();
+    const col = (ids) => page.evaluate((list) => list.map((id) => { const q = document.getElementById(id).getBoundingClientRect(); return [q.left, q.top]; }), ids);
+    const left = await col(['end-wave', 'end-record', 'end-best']);
+    const right = await col(['end-kills', 'end-earned', 'end-balance']);
+    for (const c of [left, right]) for (let i = 1; i < c.length; i += 1) { expect(Math.abs(c[i][0] - c[0][0])).toBeLessThan(0.5); expect(c[i][1]).toBeGreaterThan(c[i - 1][1]); }
+    expect(right[0][0]).toBeGreaterThan(left[0][0] + 100);
+    expect(Math.abs(left[1][1] - right[1][1])).toBeLessThan(0.5); // record sur la ligne d'« Argent gagné »
+    await expect(page.locator('#end-panel')).not.toContainText('provisoire');
   });
 });
 
@@ -433,7 +482,7 @@ test.describe('annonces, réseau, stockage, accessibilité, CLS', () => {
 // Lot 3l-C : retours du propriétaire mesurés dans le jeu, priorité 2 absente (aucune proposition retenue), compatibilité avec les refontes de lot-4b, atelier.
 test.describe('retours du propriétaire, mesurés (lot 3l-C)', () => {
   for (const size of [SIZE, { width: 844, height: 390 }, { width: 1440, height: 900 }]) {
-    test(`REC, VIE et chutes + étage finissent au même bord droit ; restants et tués dans la hauteur de Pause ; argent centré sous la vague (${size.width}×${size.height})`, async ({ page }) => {
+    test(`REC, VIE et chutes + étage finissent au même bord droit ; restants et tués dans la hauteur de Pause ; argent sous les tués (${size.width}×${size.height})`, async ({ page }) => {
       await open(page, '&wave=21&floor=1', size);
       await step(page, 3.3);
       const b = await hudBoxes(page);
@@ -443,8 +492,8 @@ test.describe('retours du propriétaire, mesurés (lot 3l-C)', () => {
       expect(b['#hud-remaining'].t).toBeGreaterThanOrEqual(b['#btn-pause'].t - 0.5);
       expect(b['#hud-kills'].b).toBeLessThanOrEqual(b['#btn-pause'].b + 0.5);
       expect(b['#hud-remaining'].b).toBeLessThanOrEqual(b['#hud-kills'].t);
-      expect(b['#hud-money'].t).toBeGreaterThanOrEqual(b['#hud-wave'].b);
-      expect(Math.abs((b['#hud-money'].l + b['#hud-money'].r) / 2 - size.width / 2)).toBeLessThan(0.5);
+      expect(b['#hud-money'].t).toBeGreaterThanOrEqual(b['#hud-kills'].b);
+      expect(Math.abs(b['#hud-money'].r - b['#hud-kills'].r)).toBeLessThan(0.5); // retour du propriétaire : argent à droite sous les tués
       expect(b['#hud-trial'].t).toBeGreaterThan(b['#hud-chutes'].b);
     });
   }
@@ -460,11 +509,11 @@ test.describe('retours du propriétaire, mesurés (lot 3l-C)', () => {
     await expect(page.locator('#hud-wave-text')).toHaveText(/^\d{2} \/ 40$/);
   });
 
-  test('à terre : texte juste sous l\'argent (4 px), barre rouge qui se vide avec les secondes ; protégé : bouclier et barre sur 2 s', async ({ page }) => {
+  test('à terre : texte juste sous la vague (4 px), barre rouge qui se vide avec les secondes ; protégé : bouclier et barre sur 2 s', async ({ page }) => {
     await open(page);
     await page.evaluate(() => { const zs = window.__zs; zs.step(3.3); zs.downPlayer(); zs.step(0.1); });
     const b = await hudBoxes(page);
-    expect(b['#down-body'].t - b['#hud-money'].b).toBeCloseTo(4, 0);
+    expect(b['#down-body'].t - b['#hud-wave'].b).toBeCloseTo(4, 0); // l'argent est parti à droite (retour du propriétaire)
     const fill = () => page.locator('#down-fill').evaluate((el) => new DOMMatrix(getComputedStyle(el).transform).a);
     expect(await fill()).toBeCloseTo(1, 3);
     await step(page, 2);

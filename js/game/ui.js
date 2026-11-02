@@ -1,5 +1,5 @@
 // Panneaux HTML : pause (E2-6), fin provisoire (E2-7), message de rotation, région vocale, plein écran. Lot 3l : direction B de l'atelier (icônes du titre de fin,
-// pièce devant les montants, étoile du record, « Revenir au menu principal » sans action tant que le menu n'existe pas, volume en dernier).
+// pièce devant les montants, étoile du record, « Revenir au menu principal » et « Quitter » sans action tant que le menu n'existe pas).
 import { formatMoney } from '../core/economy.js';
 import { fmt, MONEY_TEXTS, SAVE_TEXTS, VHS_TEXTS } from './texts.js';
 
@@ -11,8 +11,7 @@ export function createUi(dict, handlers) {
     pausePanel: $('pause-panel'), endPanel: $('end-panel'), live: $('hud-live'), rotate: $('rotate'),
     pauseBtn: $('btn-pause'), resume: $('btn-resume'), fullscreen: $('btn-fullscreen'), sound: $('btn-sound'),
     vhs: $('btn-vhs'), restart: $('btn-restart'), replay: $('btn-replay'), endKills: $('end-kills'), endWave: $('end-wave'),
-    volumeRow: $('volume-row'), volume: $('volume'), volumeValue: $('volume-value'), endBox: $('end-box'), endTitle: $('end-title-text'), pauseNext: $('pause-next'),
-    pauseBalance: $('pause-balance-text'), pauseSave: $('pause-save'), endEarned: $('end-earned'), endEarnedText: $('end-earned-text'), endBonus: $('end-bonus'), endBonusText: $('end-bonus-text'),
+    endBox: $('end-box'), endTitle: $('end-title-text'), pauseBalance: $('pause-balance-text'), endEarned: $('end-earned'), endEarnedText: $('end-earned-text'), endBonus: $('end-bonus'), endBonusText: $('end-bonus-text'),
     endBalance: $('end-balance'), endBest: $('end-best'), endRecord: $('end-record'), endRecordText: $('end-record-text'), endSave: $('end-save'),
   };
   const rotateQuery = matchMedia(PORTRAIT_PHONE);
@@ -23,12 +22,8 @@ export function createUi(dict, handlers) {
     isPaused: () => !els.pausePanel.hidden || rotateQuery.matches || document.hidden,
     isEnded: () => !els.endPanel.hidden,
 
-    // Panneau de pause : « Prochaine zone : manche N » (n absent ou nul : ligne masquée).
-    setNextZone(n) {
-      const shown = Number.isInteger(n) && n > 0;
-      els.pauseNext.textContent = shown ? fmt(dict['game.pause.nextZone'], { n }) : '';
-      els.pauseNext.hidden = !shown;
-    },
+    // Lot 3l (retour du propriétaire) : « Prochaine zone » n'est plus affichée dans la pause ; game.js l'appelle toujours, sans effet.
+    setNextZone() {},
 
     setLive(text) {
       els.live.textContent = text;
@@ -57,11 +52,10 @@ export function createUi(dict, handlers) {
 
     // wave : vague en cours à la mort (0 ou absente quand les vagues sont coupées par ?nospawn=1 : la ligne est masquée). variant « world » (lot 3c) :
     // « Monde terminé » à la place de « Tu es mort » (la variante de mort est inchangée).
-    // Lot 4 : « Solde » et état de la sauvegarde (summary : { balance, status }, de js/game/bank.js).
+    // Lot 4 : « Solde » (summary : { balance, status }, de js/game/bank.js). Lot 3l (retour du propriétaire) : à côté de « PAUSE » ; l'état de la sauvegarde
+    // n'est plus dans la pause (il reste sur l'écran de fin quand il pose problème : illisible, indisponible, échec, mode essai).
     setPauseInfo(summary) {
       els.pauseBalance.textContent = fmt(dict[MONEY_TEXTS.pauseBalance], { n: formatMoney(summary?.balance) });
-      els.pauseSave.textContent = dict[SAVE_TEXTS[summary?.status] ?? SAVE_TEXTS.saved];
-      els.pauseSave.dataset.status = summary?.status ?? 'saved';
     },
 
     // info (lot 4, de bank.runEnd) : { earned, world, balance, best, record, status } ; absent : les lignes d'argent restent vides.
@@ -106,17 +100,12 @@ export function createUi(dict, handlers) {
       else document.documentElement.requestFullscreen({ navigationUI: 'hide' }).catch(() => {});
     },
 
-    // Libellé du bouton Son et valeur du curseur de volume selon l'état courant ; masqués sans moteur audio utilisable.
+    // Libellé du bouton Son selon l'état courant ; masqué sans moteur audio utilisable. Lot 3l (retour du propriétaire) : plus de curseur de volume.
     syncSound(audio) {
       hasAudio = Boolean(audio?.supported);
       els.sound.hidden = !hasAudio;
-      els.volumeRow.hidden = !hasAudio;
       if (!hasAudio) return;
       els.sound.textContent = dict[audio.muted ? 'game.sound.off' : 'game.sound.on'];
-      els.volume.value = String(audio.volume);
-      const text = fmt(dict['game.volume.value'], { n: audio.volume });
-      els.volumeValue.textContent = text;
-      els.volume.setAttribute('aria-valuetext', text);
     },
   };
 
@@ -134,9 +123,6 @@ export function createUi(dict, handlers) {
   els.fullscreen.addEventListener('click', () => ui.toggleFullscreen());
   els.sound.addEventListener('click', () => {
     if (hasAudio) handlers.onToggleSound();
-  });
-  els.volume.addEventListener('input', () => {
-    if (hasAudio) handlers.onVolume?.(Number(els.volume.value));
   });
   els.restart.addEventListener('click', () => {
     ui.closePause();

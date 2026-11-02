@@ -333,7 +333,8 @@ describe('hygiène du lot 3i', () => {
     const base = git('merge-base HEAD origin/lot-4b')?.trim();
     if (!base) return;
     // Lot 3l (interface intégrée) : jeu.html, css/game.css, js/game/hud.js et js/game/ui.js sont modifiés par ce lot autorisé, sur sa branche puis dans lot-4b.
-    const files = ['index.html', 'js/game/world.js', 'js/game/character.js', 'js/game/effects.js', 'js/game/main.js', 'CLAUDE.md', 'Docs/ref/conventions.md', 'Docs/seed.md', 'tests/unit/data-changelog.test.js', 'tests/e2e/dev.spec.js', '.github', 'package.json', 'package-lock.json', 'data/game/save.json'];
+    // Lot 3l (demande du propriétaire) : js/game/main.js reçoit ?fin=monde (aperçu de l'écran de victoire, mode essai seulement).
+    const files = ['index.html', 'js/game/world.js', 'js/game/character.js', 'js/game/effects.js', 'CLAUDE.md', 'Docs/ref/conventions.md', 'Docs/seed.md', 'tests/unit/data-changelog.test.js', 'tests/e2e/dev.spec.js', '.github', 'package.json', 'package-lock.json', 'data/game/save.json'];
     expect((git(`diff --name-only ${base} -- ${files.join(' ')}`) ?? '').split('\n').filter(Boolean)).toEqual([]);
   });
   it('apercu.txt : jeu.html, hifi (titre « Sons intégrés » sur lot-3i, celui de lot-4b après la fusion)', () => {

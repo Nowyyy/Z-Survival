@@ -94,14 +94,15 @@ test.describe('porte 3 : second escalier et porte de l\'étage', () => {
     expect(s.scene.marks).toEqual([]); // plus de zone jaune au sol (retour du propriétaire)
   });
 
+  // Lot 3l (retour du propriétaire) : plus de ligne « Prochaine zone » dans la pause ; la donnée (getState().zones.next) est vérifiée.
   test('« Prochaine zone » : 11, 21, 31 puis rien', async ({ page }) => {
     await open(page, '&nospawn=1');
     const expected = [[1, 11], [10, 11], [11, 21], [20, 21], [21, 31], [30, 31], [31, null], [35, null]];
     for (const [w, next] of expected) {
       await page.evaluate((n) => { window.__zs.startWave(n); window.__zs.step(0.05); }, w);
       await page.locator('#btn-pause').click();
-      if (next === null) await expect(page.locator('#pause-next')).toBeHidden();
-      else await expect(page.locator('#pause-next')).toHaveText(`Prochaine zone : manche ${next}`);
+      await expect(page.locator('#pause-next')).toHaveCount(0);
+      expect((await STATE(page)).zones.next?.wave ?? null).toBe(next);
       await page.locator('#btn-resume').click();
     }
   });

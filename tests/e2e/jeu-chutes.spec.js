@@ -228,7 +228,7 @@ test.describe('interface E2-10 et annonces', () => {
   for (const size of [SIZE, { width: 1440, height: 900 }]) {
     // Lot 3l (direction B, retour du propriétaire) : avant, texte centré dans le tiers bas ; après, dans la colonne centrale du HUD, juste sous l'argent, au-dessus de la
     // mi-hauteur (zone des pouces libre), avec une barre de compte à rebours.
-    test(`E2-10 : « À terre » et « Tu te relèves dans N s », dans les marges, centré sous l'argent au-dessus de la mi-hauteur, sans filter ni mix-blend-mode ni backdrop-filter (${size.width}×${size.height})`, async ({ page }) => {
+    test(`E2-10 : « À terre » et « Tu te relèves dans N s », dans les marges, centré sous la vague au-dessus de la mi-hauteur, sans filter ni mix-blend-mode ni backdrop-filter (${size.width}×${size.height})`, async ({ page }) => {
       await open(page, '', size);
       await expect(page.locator('#down')).toBeHidden();
       await fall(page);
@@ -241,7 +241,7 @@ test.describe('interface E2-10 et annonces', () => {
       await expect(page.locator('#down-sub')).toHaveText('Tu te relèves dans 3 s');
       const r = await page.evaluate(() => {
         const box = document.querySelector('.down-body').getBoundingClientRect();
-        const money = document.getElementById('hud-money').getBoundingClientRect();
+        const money = document.getElementById('hud-wave').getBoundingClientRect(); // lot 3l : sous la vague (l'argent est parti à droite, retour du propriétaire)
         const styles = ['#down', '.down-veil', '.down-body', '#down-title', '#down-sub', '.down-bar'].map((sel) => { const c = getComputedStyle(document.querySelector(sel)); return [c.filter, c.mixBlendMode, c.backdropFilter]; });
         const fill = new DOMMatrix(getComputedStyle(document.getElementById('down-fill')).transform).a;
         return { box: { left: box.left, right: box.right, top: box.top, bottom: box.bottom }, money: money.bottom, styles, fill, w: innerWidth, h: innerHeight };

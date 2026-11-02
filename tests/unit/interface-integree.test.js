@@ -193,12 +193,13 @@ describe('feuilles de style de l\'interface (css/game-ui.css, css/game.css, css/
 // Table des identifiants : conservés, ajoutés, retirés (Docs/ref/interface-integree.md).
 describe('identifiants de jeu.html (table de Docs/ref/interface-integree.md)', () => {
   const KEPT = ['hud', 'hud-bar', 'hud-life', 'hud-chutes', 'hud-chutes-icons', 'hud-chutes-text', 'hud-floor', 'hud-wave', 'hud-money', 'hud-money-text', 'hud-gain', 'hud-remaining', 'hud-next', 'hud-kills',
-    'down', 'down-title', 'down-sub', 'btn-pause', 'stick-left', 'stick-right', 'sound-hint', 'hud-live', 'pause-panel', 'pause-title', 'pause-next', 'pause-balance', 'pause-save',
-    'btn-resume', 'btn-fullscreen', 'btn-sound', 'btn-vhs', 'volume-row', 'volume', 'volume-value', 'btn-restart', 'end-panel', 'end-title', 'end-kills', 'end-wave', 'end-earned', 'end-bonus',
+    'down', 'down-title', 'down-sub', 'btn-pause', 'stick-left', 'stick-right', 'sound-hint', 'hud-live', 'pause-panel', 'pause-title', 'pause-balance',
+    'btn-resume', 'btn-fullscreen', 'btn-sound', 'btn-vhs', 'btn-restart', 'end-panel', 'end-title', 'end-kills', 'end-wave', 'end-earned', 'end-bonus',
     'end-balance', 'end-best', 'end-record', 'end-save', 'btn-replay', 'wave-announce', 'labels', 'rotate'];
   const ADDED = ['hud-chrono', 'hud-rec', 'hud-chrono-text', 'hud-floor-text', 'hud-trial', 'hud-wave-text', 'hud-reinforced', 'hud-remaining-text', 'hud-next-text', 'hud-kills-text',
-    'down-body', 'down-title-text', 'down-fill', 'pause-balance-text', 'end-box', 'end-title-text', 'end-earned-text', 'end-bonus-text', 'end-record-text', 'btn-menu'];
-  const REMOVED = ['hud-fill', 'end-save-link'];
+    'down-body', 'down-title-text', 'down-fill', 'pause-balance-text', 'end-box', 'end-title-text', 'end-earned-text', 'end-bonus-text', 'end-record-text', 'btn-menu', 'btn-quit'];
+  // Retours du propriétaire après l'intégration : « Prochaine zone », état de la sauvegarde et volume quittent la pause.
+  const REMOVED = ['hud-fill', 'end-save-link', 'pause-next', 'pause-save', 'volume-row', 'volume', 'volume-value'];
   const doc = existsSync('Docs/ref/interface-integree.md') ? readFileSync('Docs/ref/interface-integree.md', 'utf8') : '';
 
   it.each(KEPT)('conservé : #%s', (id) => expect(ids.has(id)).toBe(true));
@@ -243,11 +244,11 @@ describe('structure de jeu.html', () => {
     expect(order).toEqual(['E2-1', 'E2-2', 'E2-8', 'E2-10', 'E2-5', 'E2-3', 'E2-4', 'E2-6', 'E2-7']);
   });
 
-  it('HUD en trois colonnes : REC, VIE, chutes, étage, essai à gauche ; vague, argent, à terre au centre ; restants, début, tués à droite', () => {
+  it('HUD en trois colonnes : REC, VIE, chutes, étage, essai à gauche ; vague et à terre au centre ; restants, début, tués, argent à droite', () => {
     const col = (cls) => html.slice(at(`class="hud-col ${cls}"`), html.indexOf('\n      </div>', at(`class="hud-col ${cls}"`)));
     expect([...col('hud-tl').matchAll(/id="(hud-[a-z]+|down-body)"/g)].map((m) => m[1]).filter((i) => !i.endsWith('-text'))).toEqual(['hud-chrono', 'hud-rec', 'hud-bar', 'hud-life', 'hud-chutes', 'hud-floor', 'hud-trial']);
-    expect(col('hud-tc')).toMatch(/id="hud-wave"[\s\S]*id="hud-money"[\s\S]*id="hud-gain"[\s\S]*id="down-body"/);
-    expect(col('hud-tr')).toMatch(/id="hud-remaining"[\s\S]*id="hud-next"[\s\S]*id="hud-kills"/);
+    expect(col('hud-tc')).toMatch(/id="hud-wave"[\s\S]*id="down-body"/);
+    expect(html.slice(at('class="hud-col hud-tr"'), at('id="wave-announce"'))).toMatch(/id="hud-remaining"[\s\S]*id="hud-next"[\s\S]*id="hud-kills"[\s\S]*id="hud-money"[\s\S]*id="hud-gain"/);
   });
 
   it('vie : role="progressbar" avec valeurs et nom accessible, sans barre (#hud-fill retiré, retour du propriétaire)', () => {
@@ -261,9 +262,13 @@ describe('structure de jeu.html', () => {
     expect(html).not.toMatch(/<img|\.png|\.jpe?g|\.webp|\.svg"/);
   });
 
-  it('pause : boutons dans l\'ordre Reprendre, Plein écran, Son, Effet VHS, Recommencer, puis le volume (dernier)', () => {
-    const order = ['btn-resume', 'btn-fullscreen', 'btn-sound', 'btn-vhs', 'btn-restart', 'volume-row'].map((id) => at(`id="${id}"`));
+  // Retours du propriétaire : solde à côté de « PAUSE » ; deux colonnes Reprendre, Recommencer, Quitter (désactivé) | Son, Effet VHS, Plein écran ; ordre du HTML = lecture.
+  it('pause : « PAUSE » et le solde en tête ; boutons Reprendre, Son, Recommencer, Effet VHS, Quitter (désactivé), Plein écran ; ni volume, ni prochaine zone, ni sauvegarde', () => {
+    const order = ['pause-title', 'pause-balance', 'btn-resume', 'btn-sound', 'btn-restart', 'btn-vhs', 'btn-quit', 'btn-fullscreen'].map((id) => at(`id="${id}"`));
     expect(order.every((p, i) => p > 0 && (i === 0 || p > order[i - 1]))).toBe(true);
+    expect(html).toMatch(/<button id="btn-quit" class="button button-quiet" type="button" data-i18n="game\.pause\.quit" disabled><\/button>/);
+    const pause = html.slice(at('id="pause-panel"'), at('id="end-panel"'));
+    expect(pause).not.toMatch(/volume|pause-next|pause-save/);
   });
 
   it('fin : « Rejouer » puis « Revenir au menu principal » (bouton sans lien ni action), plus de lien « Voir ma sauvegarde »', () => {
@@ -273,9 +278,27 @@ describe('structure de jeu.html', () => {
     expect(readFileSync('js/game/ui.js', 'utf8')).not.toMatch(/btn-menu|menu\.addEventListener/);
   });
 
-  it('à terre : le voile (#down, E2-10) reste en plein écran, le texte (#down-body) est dans le HUD, sous l\'argent', () => {
+  // Retours du propriétaire : « Nouveau record » à la place d'« Argent gagné » (colonne de gauche), « Argent gagné » entre « Zombies tués » et « Solde » ; note
+  // « Écran de fin provisoire » retirée.
+  it('fin : colonne de gauche vague, record, meilleure manche ; colonne de droite tués, argent gagné, bonus, solde ; plus de note « provisoire »', () => {
+    const end = html.slice(at('id="end-panel"'), at('id="rotate"'));
+    const cols = end.split('class="facts-col"').slice(1).map((c) => [...c.matchAll(/id="(end-[a-z]+)"/g)].map((m) => m[1]).filter((i) => !i.endsWith('text')));
+    expect(cols[0]).toEqual(['end-wave', 'end-record', 'end-best']);
+    expect(cols[1].slice(0, 4)).toEqual(['end-kills', 'end-earned', 'end-bonus', 'end-balance']);
+    expect(end).not.toContain('game.end.provisional');
+    expect(fr['game.end.provisional']).toBeUndefined();
+    expect(readFileSync('js/game/ui.js', 'utf8')).not.toMatch(/btn-quit/);
+  });
+
+  it('?fin=monde (aperçu de la victoire) : seulement en mode essai et sur une carte avec fin de monde ; la dernière manche est terminée par les vrais calculs', () => {
+    const main = readFileSync('js/game/main.js', 'utf8');
+    expect(main).toMatch(/if \(query\.get\('fin'\) === 'monde' && saveMode\.readOnly && Number\.isInteger\(zonesJson\?\.wavesPerWorld\)\) \{\s*game\.startWave\(zonesJson\.wavesPerWorld\);\s*game\.advance\(3\.2\);\s*game\.skipWave\(\);/);
+    expect(JSON.parse(readFileSync('data/game/save.json', 'utf8')).readOnlyParams).not.toContain('fin');
+  });
+
+  it('à terre : le voile (#down, E2-10) reste en plein écran, le texte (#down-body) est dans le HUD, sous la vague', () => {
     expect(html).toMatch(/<div id="down" class="down" data-block="E2-10" aria-hidden="true" hidden>\s*<div class="down-veil"><\/div>\s*<\/div>/);
-    expect(at('id="down-body"')).toBeGreaterThan(at('id="hud-money"'));
+    expect(at('id="down-body"')).toBeGreaterThan(at('id="hud-wave"'));
     expect(at('id="down-body"')).toBeLessThan(at('class="hud-col hud-tr"'));
   });
 
