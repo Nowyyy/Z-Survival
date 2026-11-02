@@ -421,9 +421,9 @@ test.describe('budget et sons au niveau maximal', () => {
     console.log(`BUDGET lot 2b, 10 zombies, cône affiché : ${r.render.calls} appels de dessin, ${r.render.triangles} triangles`);
     expect(r.count).toBe(10);
     expect(r.cone).not.toBeNull();
-    expect(r.render.calls).toBeLessThanOrEqual(300);
-    expect(r.render.triangles).toBeLessThanOrEqual(30000);
-    expect(r.render.triangles).toBeLessThanOrEqual(30000); // lot 3 : +24 triangles de planches (14 858 + 10 au lot 2b, 14 862 + 120 = 14 982 mesurés)
+    expect(r.render.calls).toBeLessThanOrEqual(400); // lot 3m : limites de refonte relevées par le propriétaire (avant : 300)
+    expect(r.render.triangles).toBeLessThanOrEqual(45000); // lot 3m : limites de refonte relevées par le propriétaire (avant : 30000)
+    expect(r.render.triangles).toBeLessThanOrEqual(45000); // lot 3m : limites de refonte relevées par le propriétaire (avant : 30000) ; lot 3 : +24 triangles de planches (14 858 + 10 au lot 2b, 14 862 + 120 = 14 982 mesurés)
   });
 
   test('niveau 10 partout : une rafale de 20 s n\'a jamais plus de 16 voix actives', async ({ page }) => {

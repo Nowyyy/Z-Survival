@@ -619,13 +619,13 @@ test.describe('zones : mobilier de complément, budget, interface', () => {
     testInfo.annotations.push({ type: 'rendu', description: `porte fermée : ${ref.calls} appels, ${ref.triangles} triangles (référence ${REF.calls} et ${REF.triangles})` });
     console.log(`BUDGET lot 3c, porte fermée (mise en place du lot 3b) : ${ref.calls} appels, ${ref.triangles} triangles (référence main : ${REF.calls} et ${REF.triangles})`);
     expect(ref.calls).toBeLessThanOrEqual(REF.calls + 5);
-    expect(ref.triangles).toBeLessThanOrEqual(30000);
-    expect(ref.calls).toBeLessThanOrEqual(300);
+    expect(ref.triangles).toBeLessThanOrEqual(45000); // lot 3m : limites de refonte relevées par le propriétaire (avant : 30000)
+    expect(ref.calls).toBeLessThanOrEqual(400); // lot 3m : limites de refonte relevées par le propriétaire (avant : 300)
     await page.evaluate(() => window.__zs.killAll());
     const closed = await measure('porte');
     console.log(`BUDGET lot 3c, porte fermée à l'écran : ${closed.calls} appels, ${closed.triangles} triangles`);
     expect(closed.calls).toBeLessThanOrEqual(REF.calls + 5 + 6); // lot 3e : au plus 5 appels de plus que la référence ; lot 3g : + 6 au plus pour le décor léger (avant : + 5)
-    expect(closed.triangles).toBeLessThanOrEqual(30000);
+    expect(closed.triangles).toBeLessThanOrEqual(45000); // lot 3m : limites de refonte relevées par le propriétaire (avant : 30000)
     await page.evaluate(() => window.__zs.setDoor('porte-1', true));
     const opened = await measure('porte');
     console.log(`BUDGET lot 3c, porte ouverte à l'écran : ${opened.calls} appels, ${opened.triangles} triangles`);

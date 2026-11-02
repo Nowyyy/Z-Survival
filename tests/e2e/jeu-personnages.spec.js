@@ -34,7 +34,7 @@ test.describe('personnages du lot 1c-C', () => {
     expect(s.enemies).toHaveLength(8);
     testInfo.annotations.push({ type: 'rendu', description: `${s.render.calls} appels de dessin, ${s.render.triangles} triangles (8 zombies, ombres actives)` });
     console.log(`lot 1c-C : ${s.render.calls} appels de dessin (objectif 240), ${s.render.triangles} triangles`);
-    expect(s.render.calls).toBeLessThanOrEqual(300);
+    expect(s.render.calls).toBeLessThanOrEqual(400); // lot 3m : limites de refonte relevées par le propriétaire (avant : 300)
     expect(s.render.calls).toBeLessThanOrEqual(240);
     expect(s.render.triangles).toBeLessThanOrEqual(45_000); // lot 3j : variantes « riche » par défaut, plafond de triangles relevé à la limite de refonte (choix du propriétaire)
   });
@@ -133,7 +133,7 @@ test.describe('personnages du lot 1c-C', () => {
     await spawnEight(page);
     await page.evaluate(() => window.__zs.sampleScreen(0, 0, 4, 4));
     const s = await state(page);
-    expect(s.render.calls).toBeLessThanOrEqual(300);
+    expect(s.render.calls).toBeLessThanOrEqual(400); // lot 3m : limites de refonte relevées par le propriétaire (avant : 300)
     expect(s.render.triangles).toBeLessThanOrEqual(45_000); // lot 3j : variantes « riche » par défaut, plafond de triangles relevé à la limite de refonte (choix du propriétaire)
   });
 });

@@ -1,11 +1,11 @@
 // Projection du budget de dessin (lot 3j) : 10 zombies variés (3 marcheurs, 3 petits, 2 voûtés, 2 grands, comme les mesures du jeu) et
 // le joueur, plus le sang à pleine charge et 6 cadavres, pour une variante (A, B, C, riche) ou pour un fichier « Mes choix » ; comparés à la référence
 // mesurée sur main (R1, R2, U1, U4), aux limites actuelles (30 000 triangles, 300 appels) et aux limites de refonte (45 000, 400).
-// Imprime, n'écrit rien. Usage : node scripts/personnages/projection.mjs [mes-choix.txt]
+// Imprime, n'écrit rien. Usage : node scripts/personnages/projection.mjs [mes-choix.txt | data/game/persos-choix.json]
 import { readFileSync } from 'node:fs';
 import { performance } from 'node:perf_hooks';
 import { characterStats } from '../../js/core/character-parts.js';
-import { bloodBudget } from '../../js/core/blood.js';
+import { bloodBudget, settings } from '../../js/core/blood.js';
 import { parseChoices } from '../../js/core/persos-variants.js';
 import { createPersoTexture, persoSpec } from '../../js/core/texgen-persos.js';
 import { characters, load, resolve, skeletons, slotOf } from './lib.mjs';
@@ -39,15 +39,25 @@ export function project(choiceOf, level = '1') {
   const actual = crowdCost(() => 'actuel');
   const chosen = crowdCost(choiceOf);
   const blood = bloodBudget(load('blood'), level);
-  const nCorpses = level === '0' ? 0 : load('blood').corpses.max;
+  const nCorpses = settings(load('blood'), level).corpses; // lot 3m : cadavres du niveau (complet et réduit : 2), plus le plafond absolu
   const corpse = characterCost('marcheur', choiceOf('marcheur') === 'actuel' ? 'actuel' : choiceOf('marcheur'));
   return Object.fromEntries(Object.entries(REFERENCE).map(([k, r]) => [k, { calls: r.calls - actual.calls + chosen.calls + blood.calls + nCorpses * corpse.calls, triangles: r.triangles - actual.triangles + chosen.triangles + blood.triangles + nCorpses * corpse.triangles }]));
+}
+
+// Lot 3m : variante de chaque personnage d'après la table des choix (variante absente ou inconnue : actuel, comme en jeu).
+export function choicesOf(table) {
+  const persos = table?.persos ?? {};
+  return (id) => (['A', 'B', 'C', 'riche', 'actuel'].includes(persos[id]?.variante) ? persos[id].variante : 'actuel');
 }
 
 const main = () => {
   const file = process.argv[2];
   const rows = [];
-  if (file) {
+  if (file?.endsWith('.json')) {
+    // Lot 3m : table des choix du jeu (data/game/persos-choix.json) : variante de chaque personnage et sang par défaut.
+    const table = JSON.parse(readFileSync(file, 'utf8'));
+    rows.push([`choix (${file})`, choicesOf(table), String(table.sang ?? '0')]);
+  } else if (file) {
     const parsed = parseChoices(readFileSync(file, 'utf8'));
     const by = Object.fromEntries(parsed.persos.map((p) => [p.perso, String(p.variante ?? 'A')]));
     rows.push([`choix (${file})`, (id) => by[id] ?? 'actuel', String(parsed.extra.sang ?? '1')]);

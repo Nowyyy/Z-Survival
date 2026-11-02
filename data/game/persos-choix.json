@@ -1,0 +1,14 @@
+{
+  "_provisoire": "Table des choix des personnages et du sang (lot 3m), provisoire : reportée de Docs/ref/passation-personnages-4b.md (§ 2 et 3 : variantes « riche » pour le joueur et les quatre zombies, 6 tenues par zombie tirées à chaque apparition, 4 paliers d'usure selon la manche, sang complet). Le fichier ne précise ni les macros, ni le style d'animation, ni les macros d'animation : ce sont les valeurs des données de la variante « riche » (characters-v2.json, poses-v2.json), recopiées sans changement. Joueur : il ne tire pas de tenue, il garde sa palette par défaut (la première). Changer un défaut : modifier cette table (variante A, B, C, riche ou actuel) ; ?perso=actuel compare avec l'ancien modèle.",
+  "version": 1,
+  "source": "passation-personnages-4b.md",
+  "persos": {
+    "joueur": { "variante": "riche", "macros": { "taille": 0, "carrure": 0, "usure": 0, "teinte": 0, "posture": 0 }, "animation": { "amplitude": 0, "rythme": 0, "lourdeur": 0 }, "style": "A", "tenues": ["sable"], "source": "passation-personnages-4b.md" },
+    "marcheur": { "variante": "riche", "macros": { "taille": 0, "carrure": 0, "usure": 0, "teinte": 0, "posture": 0 }, "animation": { "amplitude": 0, "rythme": 0, "lourdeur": 0 }, "style": "A", "tenues": "toutes", "source": "passation-personnages-4b.md" },
+    "petit": { "variante": "riche", "macros": { "taille": 0, "carrure": 0, "usure": 0, "teinte": 0, "posture": 0 }, "animation": { "amplitude": 0, "rythme": 0, "lourdeur": 0 }, "style": "A", "tenues": "toutes", "source": "passation-personnages-4b.md" },
+    "voute": { "variante": "riche", "macros": { "taille": 0, "carrure": 0, "usure": 0, "teinte": 0, "posture": 0 }, "animation": { "amplitude": 0, "rythme": 0, "lourdeur": 0 }, "style": "A", "tenues": "toutes", "source": "passation-personnages-4b.md" },
+    "grand": { "variante": "riche", "macros": { "taille": 0, "carrure": 0, "usure": 0, "teinte": 0, "posture": 0 }, "animation": { "amplitude": 0, "rythme": 0, "lourdeur": 0 }, "style": "A", "tenues": "toutes", "source": "passation-personnages-4b.md" }
+  },
+  "sang": "1",
+  "usure": "auto"
+}

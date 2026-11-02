@@ -849,8 +849,8 @@ test.describe('sons, budget, interface', () => {
     });
     console.log(`BUDGET lot 3e, étage : ${m.calls} appels, ${m.triangles} triangles`);
     testInfo.annotations.push({ type: 'rendu', description: `étage : ${m.calls} appels, ${m.triangles} triangles` });
-    expect(m.calls).toBeLessThanOrEqual(300);
-    expect(m.triangles).toBeLessThanOrEqual(30000);
+    expect(m.calls).toBeLessThanOrEqual(400); // lot 3m : limites de refonte relevées par le propriétaire (avant : 300)
+    expect(m.triangles).toBeLessThanOrEqual(45000); // lot 3m : limites de refonte relevées par le propriétaire (avant : 30000)
   });
 
   test('budget au rez-de-chaussée avec les escaliers de la manche 21 : pas plus de 4 appels ni 12 triangles de plus que les escaliers fermés', async ({ page }) => {
@@ -871,8 +871,8 @@ test.describe('sons, budget, interface', () => {
     console.log(`BUDGET lot 3e, rez-de-chaussée : escaliers fermés ${closed.calls} appels / ${closed.triangles} tri, ouverts ${opened.calls} / ${opened.triangles}`);
     expect(opened.calls - closed.calls).toBeLessThanOrEqual(4);
     expect(opened.triangles - closed.triangles).toBeLessThanOrEqual(12 + 1000); // la zone de l'aile apporte aussi ses zombies : borne large, la limite dure est 15 000
-    expect(opened.triangles).toBeLessThanOrEqual(30000);
-    expect(opened.calls).toBeLessThanOrEqual(300);
+    expect(opened.triangles).toBeLessThanOrEqual(45000); // lot 3m : limites de refonte relevées par le propriétaire (avant : 30000)
+    expect(opened.calls).toBeLessThanOrEqual(400); // lot 3m : limites de refonte relevées par le propriétaire (avant : 300)
   });
 
   test('aller-retour répétés : le nombre de géométries et de textures ne croît pas (aucune fuite)', async ({ page }) => {

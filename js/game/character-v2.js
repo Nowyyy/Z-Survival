@@ -152,7 +152,9 @@ const torn = (i, seed) => {
 
 // options : { characters, poses (données), lookup (jeton -> [r, g, b]), hit (couleur du flash), choice ('A' | 'B' | 'C' | 'riche'),
 // zombieIds (ordre des variantes de zombie-variants.json), seed, wear () => palier (0 à 3), macros: { slot: { taille, ... } },
-// styleOf: { slot: 'A' | ... }, outfitOf: { slot: indice } (atelier : tenue imposée) }.
+// styleOf: { slot: 'A' | ... | 'actuel' } (variante de chaque personnage ; actuel : ancien modèle, voir handles), outfitOf: { slot: indice }
+// (atelier : tenue imposée) ; lot 3m (table des choix) : styleAnim: { slot: 'A' | 'B' | 'C' } (style d'animation), outfitsOf: { slot:
+// 'toutes' | [identifiants de tenues] } (tenues tirées), animMacros: { slot: { amplitude, rythme, lourdeur } }.
 export function createV2Kit(options) {
   const { characters, poses } = options;
   // Jetons lus une fois chacun (getComputedStyle est lent : des milliers d'appels par géométrie sinon).
@@ -172,11 +174,24 @@ export function createV2Kit(options) {
   let rng = createRng(Number.isFinite(options.seed) ? options.seed : 1);
   const kits = new Map();
 
+  // Lot 3m : variante d'un emplacement avec le style d'animation de la table des choix ; tenues retenues (indices ; aucune reconnue : toutes).
+  function variantOf(slotId, choice) {
+    const slot = slots.get(slotId);
+    const base = slot.variants.find((v) => v.id === choice) ?? slot.variants.find((v) => v.id === 'A');
+    const style = options.styleAnim?.[slotId];
+    return { slot, variant: ['A', 'B', 'C'].includes(style) ? { ...base, style } : base };
+  }
+  function allowedOutfits(slotId, variant) {
+    const all = (variant.outfits ?? [{}]).map((_, i) => i);
+    const list = options.outfitsOf?.[slotId];
+    if (!Array.isArray(list)) return all;
+    const picked = all.filter((i) => list.includes(variant.outfits?.[i]?.id));
+    return picked.length ? picked : all;
+  }
   function slotKit(slotId, choice) {
     const key = `${slotId}:${choice}`;
     if (kits.has(key)) return kits.get(key);
-    const slot = slots.get(slotId);
-    const variant = slot.variants.find((v) => v.id === choice) ?? slot.variants.find((v) => v.id === 'A');
+    const { slot, variant } = variantOf(slotId, choice);
     const isPlayer = variant.kind === 'player';
     const spec = persoSpec({ size: isPlayer ? 128 : 256, tiles: isPlayer ? 1 : 2, seed: 11 + characters.slots.indexOf(slot) * 17, blood });
     const tex = createPersoTexture(spec);
@@ -195,7 +210,7 @@ export function createV2Kit(options) {
       return new THREE.MeshLambertMaterial({ map: t, vertexColors: true });
     });
     const glow = new THREE.MeshBasicMaterial({ color: new THREE.Color().setRGB(...lookup('--perso-lampe').map((c) => c / 255), THREE.SRGBColorSpace), vertexColors: false });
-    const k = { slot, variant, isPlayer, spec, factors, wound, glow, geoms: new Map(), shared: new Map(), lastOutfit: null };
+    const k = { slot, variant, isPlayer, spec, factors, wound, glow, geoms: new Map(), shared: new Map(), lastOutfit: null, allowed: allowedOutfits(slotId, variant) };
     kits.set(key, k);
     return k;
   }
@@ -261,7 +276,7 @@ export function createV2Kit(options) {
 
   function create(kind, variantIndex = 0, opts = {}) {
     const { slotId, choice, k } = kitOf(kind, variantIndex, opts);
-    let outfit = Number.isInteger(opts.outfit) ? opts.outfit : 0;
+    let outfit = Number.isInteger(opts.outfit) ? opts.outfit : k.allowed[0] ?? 0;
     let wear = k.isPlayer ? 0 : Math.max(0, Math.min(3, Math.floor(num(opts.wear, options.wear ? options.wear() : 0))));
     let current = geometryFor(k, outfit, wear);
     const rig = createRigidCharacter({ ...current.shared, geometry: current.geometry, materials: [k.wound[0], k.glow].slice(0, current.shared.order.length), shadowMaterial: shadowMat });
@@ -287,10 +302,11 @@ export function createV2Kit(options) {
     // Tenue tirée à chaque apparition (le jeu réutilise ses personnages) : jamais la même que la précédente de ce type.
     if (!k.isPlayer && opts.outfit === undefined) {
       root.addEventListener('added', () => {
-        const r = pickOutfit(rng, k.variant.outfits?.length ?? 1, k.lastOutfit);
+        // Lot 3m : tirée parmi les tenues retenues (k.allowed ; k.lastOutfit : rang de la précédente dans cette liste).
+        const r = pickOutfit(rng, k.allowed.length, k.lastOutfit);
         rng = r.rng;
         k.lastOutfit = r.index;
-        outfit = r.index;
+        outfit = k.allowed[r.index] ?? 0;
         wear = options.wear ? Math.max(0, Math.min(3, options.wear())) : wear;
         woundTier = 0;
         state.anim = null;
@@ -427,9 +443,24 @@ export function createV2Kit(options) {
     // d'usure du moment. Caches purs : aucun effet sur le jeu ni sur le hasard. Renvoie le nombre de tenues de la variante.
     prewarm(variantIndex, outfit = 0) {
       const { k } = kitOf('zombie', variantIndex, {});
-      const outfits = k.variant.outfits?.length ?? 1;
-      geometryFor(k, Math.max(0, Math.min(outfits - 1, outfit)), wearNow());
+      const outfits = k.allowed.length;
+      geometryFor(k, k.allowed[Math.max(0, Math.min(outfits - 1, outfit))], wearNow());
       return outfits;
+    },
+    // Lot 3m : ce personnage est-il un personnage v2 ? (variante « actuel » de la table ou de l'adresse : l'ancien modèle le construit).
+    handles(kind, variantIndex = 0) {
+      const slotId = kind === 'player' ? 'joueur' : SLOT_OF_TYPE[zombieIds[variantIndex % zombieIds.length]] ?? 'marcheur';
+      return (options.styleOf?.[slotId] ?? options.choice) !== 'actuel';
+    },
+    // Lot 3m : réglages appliqués à chaque personnage (variante, style d'animation, tenues retenues, macros), sans rien construire.
+    choices() {
+      return Object.fromEntries(characters.slots.map((s) => {
+        const choice = options.styleOf?.[s.id] ?? options.choice ?? 'A';
+        if (choice === 'actuel') return [s.id, { variante: 'actuel' }];
+        const { variant } = variantOf(s.id, choice);
+        const res = resolveVariant(variant, { macros: options.macros?.[s.id], wearTiers: characters.wearTiers });
+        return [s.id, { variante: variant.id, style: variant.style, tenues: allowedOutfits(s.id, variant).map((i) => variant.outfits?.[i]?.id ?? String(i)), macros: res.macroValues, animation: { ...(options.animMacros?.[s.id] ?? {}) } }];
+      }));
     },
     resolved: (slotId, choice, outfit = 0, wear = 0) => resolved(slotKit(slotId, choice), outfit, wear),
     textureBytes: () => textures.reduce((s, t) => s + t.bytes, 0),

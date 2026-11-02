@@ -84,9 +84,9 @@ test.describe('?detail=0 et ?detail=1', () => {
 test.describe('budgets de rendu avec le détail (30 000 triangles et 240 appels au plus ; + 12 appels au plus avec le détail)', () => {
   for (const [id, sc] of Object.entries(SCENES)) {
     test(`${id}`, async ({ page }, testInfo) => {
-      await open(page, `${sc.url}&shadows=1&detail=0`);
+      await open(page, `${sc.url}&shadows=1&detail=0&perso=actuel&sang=0`); // lot 3m : référence mesurée avec l'ancien modèle des personnages
       const off = await measure(page, sc);
-      await open(page, `${sc.url}&shadows=1`);
+      await open(page, `${sc.url}&shadows=1&perso=actuel&sang=0`); // lot 3m : même modèle que la mesure sans le détail
       const on = await measure(page, sc);
       const note = `${id} : detail=0 ${off.calls} appels / ${off.triangles} triangles ; detail=1 ${on.calls} / ${on.triangles} (référence ${REF[id].join(' / ')})`;
       testInfo.annotations.push({ type: 'rendu', description: note });

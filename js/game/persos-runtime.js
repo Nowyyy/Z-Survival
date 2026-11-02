@@ -1,35 +1,48 @@
-// Essai en jeu des personnages v2 et du sang (lot 3j), chargé seulement avec ?perso= ou ?sang= (js/game/persos-loader.js). Purement
+// Personnages v2 et sang en jeu (lot 3j ; défaut du jeu depuis le lot 3m), chargé par js/game/persos-loader.js. Purement
 // visuel : il lit l'état du jeu (impacts, morts, coups reçus, étage, manche) et ne l'écrit jamais. Le jeu l'appelle par quelques lignes
 // (js/game/game.js) ; les personnages v2 passent par l'aiguillage de createCharacter (js/game/character.js, kit.v2).
 import { settings, woundTier } from '../core/blood.js';
 import { floorOf } from '../core/floors.js';
-import { computePose } from '../core/pose.js';
 import { wearTier } from '../core/persos-variants.js';
 import { createBloodFx } from './blood-fx.js';
-import { createCharacter } from './character.js';
 import { createV2Kit } from './character-v2.js';
 import { createTokenLookup } from './palette.js';
 
 // Zombies préparés d'avance, une tenue par tâche (moins de 50 ms, même sur téléphone) quand le navigateur est libre : sinon texture et géométrie
 // seraient construites dans l'image où le zombie apparaît (tâche longue). Purement un cache : rien ne change dans le jeu.
-function prewarm(v2, count) {
+function prewarm(v2, count, handles = () => true) {
   const idle = globalThis.requestIdleCallback ? (f) => globalThis.requestIdleCallback(f, { timeout: 2000 }) : (f) => setTimeout(f, 50);
-  const jobs = Array.from({ length: count }, (_, i) => i);
+  const ids = Array.from({ length: count }, (_, i) => i).filter((i) => handles(i));
+  const jobs = [...ids];
   let outfit = 0;
   let max = 1;
   const next = () => {
     if (!jobs.length) {
       outfit += 1;
       if (outfit >= max) return;
-      jobs.push(...Array.from({ length: count }, (_, i) => i));
+      jobs.push(...ids);
     }
     max = Math.max(max, v2.prewarm(jobs.shift(), outfit));
     idle(next);
   };
-  idle(next);
+  if (jobs.length) idle(next);
 }
 
-export function createPersos(params, data) {
+// Réglages de la table des choix (?perso=choix seulement) : macros, macros d'animation, style d'animation et tenues de chaque personnage.
+const CHOICE_KEYS = { macros: 'macros', animation: 'animMacros', style: 'styleAnim', tenues: 'outfitsOf' };
+export function choiceOptions(params, choices) {
+  if (params.perso !== 'choix') return {};
+  const table = choices?.persos ?? {};
+  const out = {};
+  for (const [key, opt] of Object.entries(CHOICE_KEYS)) {
+    out[opt] = Object.fromEntries(Object.entries(table).filter(([slot, c]) => params.slots[slot] && params.slots[slot] !== 'actuel' && c?.[key] !== undefined).map(([slot, c]) => [slot, c[key]]));
+  }
+  return out;
+}
+
+// Lot 3m : model = ancien modèle ({ computePose, createKit, createCharacter } de pose.js et character.js, importés seulement si un personnage
+// est « actuel ») ou modèle v2 seul ; data.choices = table des choix (persos-choix.json, ?perso=choix).
+export function createPersos(params, data, model) {
   let v2 = null;
   let blood = null;
   let kit = null;
@@ -50,13 +63,13 @@ export function createPersos(params, data) {
       c.root.userData.corpse = true;
       return c;
     };
-    if (v2) {
+    if (v2?.handles('zombie', variant)) {
       const c = v2.create('zombie', variant, { outfit: 0 });
       c.setWound(bodyStains ? 3 : 0);
       return mark(c);
     }
-    const c = createCharacter(kit, 'zombie', variant);
-    c.setPose(computePose({ state: 'terre', time: 0 }));
+    const c = model.createCharacter(kit, 'zombie', variant);
+    c.setPose(model.computePose({ state: 'terre', time: 0 }));
     return mark({ root: c.root, variant, setAnim() {} });
   }
   const giveCorpse = (c) => pools.get(c.variant)?.push(c);
@@ -68,10 +81,12 @@ export function createPersos(params, data) {
       kit = k;
       dynamic = world.dynamic;
       const lookup = createTokenLookup();
-      if (params.perso !== 'actuel') {
-        v2 = createV2Kit({ characters: data.characters, poses: data.poses, lookup, hit: palette.hit, choice: params.perso, zombieIds: variants.zombie.variants.map((v) => v.id), seed, wear, sill: render.sillHeight });
+      if (params.v2) {
+        // Lot 3m : variante de chaque personnage (params.slots ; « actuel » : ancien modèle) ; avec ?perso=choix, macros, style, macros
+        // d'animation et tenues de la table des choix.
+        v2 = createV2Kit({ characters: data.characters, poses: data.poses, lookup, hit: palette.hit, choice: params.perso, styleOf: params.slots, ...choiceOptions(params, data.choices), zombieIds: variants.zombie.variants.map((v) => v.id), seed, wear, sill: render.sillHeight });
         kit.v2 = v2;
-        prewarm(v2, variants.zombie.variants.length);
+        prewarm(v2, variants.zombie.variants.length, (i) => v2.handles('zombie', i));
       }
       const lift = (f) => (f === 'etage' && Number.isFinite(render.floorLift) ? render.floorLift : 0);
       if (params.sang !== '0') blood = createBloodFx({ parent: world.dynamic, cfg: data.blood, level: params.sang, lookup, seed, lift, corpse: takeCorpse, corpseRelease: giveCorpse });
@@ -125,8 +140,8 @@ export function createPersos(params, data) {
       dynamic?.children.forEach((o) => { if (o.userData.v2 && !o.userData.corpse && o.visible) zombies += 1; });
       const b = blood?.stats() ?? { particles: 0, decals: 0, corpses: 0, calls: 0, triangles: 0, drawnParticles: 0, drawnDecals: 0, corpseMeshes: 0 };
       return {
-        perso: params.perso, sang: params.sang, usure: params.usure, wear: wear(), architecture: params.perso === 'actuel' ? 'articulated' : 'rigid',
-        characters: { joueur: params.perso, zombies }, blood: { particules: b.particles, taches: b.decals, cadavres: b.corpses, calls: b.calls, triangles: b.triangles, dessines: { particules: b.drawnParticles, taches: b.drawnDecals } },
+        perso: params.perso, sang: params.sang, usure: params.usure, wear: wear(), architecture: params.actuel ? (params.v2 ? 'mixed' : 'articulated') : 'rigid',
+        characters: { joueur: params.slots.joueur, zombies }, slots: { ...params.slots }, choix: v2?.choices() ?? null, blood: { particules: b.particles, taches: b.decals, cadavres: b.corpses, calls: b.calls, triangles: b.triangles, dessines: { particules: b.drawnParticles, taches: b.drawnDecals } },
         textures: v2 ? { count: v2.textureCount(), bytes: v2.textureBytes() } : null, render: { ...render },
       };
     },

@@ -277,7 +277,7 @@ test.describe('monde du lot 1b', () => {
     await expect.poll(async () => (await state(page)).render.calls, { timeout: 30_000 }).toBeGreaterThan(40);
     const { render, enemies } = await state(page);
     expect(enemies).toHaveLength(8);
-    expect(render.calls).toBeLessThanOrEqual(300); // chaque personnage coûte 32 appels (16 pièces, passe d'ombres comprise) : 9 × 32 = 288
+    expect(render.calls).toBeLessThanOrEqual(400); // lot 3m : limites de refonte relevées par le propriétaire (avant : 300) ; chaque personnage coûte 32 appels (16 pièces, passe d'ombres comprise) : 9 × 32 = 288
     testInfo.annotations.push({ type: 'rendu', description: `${render.calls} appels de dessin, ${render.triangles} triangles (8 zombies, ombres actives, 667×375)` });
   });
 
