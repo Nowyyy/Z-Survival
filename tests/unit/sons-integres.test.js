@@ -21,7 +21,6 @@ const git = (args) => {
     return null;
   }
 };
-const MAIN = ['origin/main', 'main'].find((b) => git(`rev-parse --verify --quiet ${b}`) !== null) ?? null;
 const choix = read('data/game/sounds-choix.json');
 const atelierRaw = read('data/game/sounds-atelier.json');
 const atelier = resolveAtelier(atelierRaw);
@@ -37,8 +36,8 @@ const REPLACED = ['pas', 'pas-zombie', 'zombie-gemissement', 'zombie-attaque', '
 // Gardés tels quels (fiche) : mélodie, annonces, tir, douille, impacts, chute et relevage du joueur, joueur blessé et mort, trois voix, interface, ambiance.
 const KEPT = ['tir', 'douille', 'impact-zombie', 'impact-bois', 'impact-metal', 'impact-pierre', 'impact-voiture', 'vague-annonce', 'vague-renforcee', 'vague-fin', 'joueur-chute', 'joueur-releve', 'joueur-blesse', 'joueur-mort', 'zombie-grognement', 'zombie-plainte', 'zombie-souffle', 'ui-pause', 'ui-reprise', 'ambiance'];
 // Référence « main » d'avant l'intégration des refontes (lot 4, c166e53) : depuis la fusion de lot-4b, main contient les sons de l'atelier.
-// Absente (clone superficiel) : repli sur main, comme avant la fusion.
-const MAIN_AVANT = git('rev-parse --verify --quiet c166e53^{commit}') !== null ? 'c166e53' : MAIN;
+// Absente (clone superficiel de la CI) : comparaison sautée (main contient déjà ces sons, il ne peut plus servir de référence).
+const MAIN_AVANT = git('rev-parse --verify --quiet c166e53^{commit}') !== null ? 'c166e53' : null;
 const mainSounds = MAIN_AVANT ? JSON.parse(git(`show ${MAIN_AVANT}:data/game/sounds.json`) ?? 'null')?.sounds ?? null : null;
 const rendered = new Map(B.map((c) => [c.id, renderChoice(byId.get(c.id), { seed: 1 })]));
 

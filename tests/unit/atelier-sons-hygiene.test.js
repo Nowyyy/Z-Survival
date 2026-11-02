@@ -21,7 +21,7 @@ const BASE = MAIN ? (git(`merge-base HEAD ${MAIN}`) ?? '').trim() || null : null
 // et la pointe de lot-3h (origin/lot-3h), pas entre main et HEAD ; sans cette branche distante, ces comparaisons sont sautées.
 const LOT = git('rev-parse --verify --quiet origin/lot-3h') !== null ? 'origin/lot-3h' : null;
 // Depuis la fusion de lot-4b dans main, main contient lot-3h : la base du lot se lit contre main d'avant l'intégration (lot 4, c166e53).
-const MAIN_AVANT = git('rev-parse --verify --quiet c166e53^{commit}') !== null ? 'c166e53' : MAIN;
+const MAIN_AVANT = git('rev-parse --verify --quiet c166e53^{commit}') !== null ? 'c166e53' : null; // absente (clone superficiel) : test sauté
 const LOT_BASE = LOT && MAIN_AVANT ? (git(`merge-base ${LOT} ${MAIN_AVANT}`) ?? '').trim() || null : null;
 const lotDiff = (paths) => (git(`diff --name-only ${LOT_BASE} ${LOT} -- ${paths.join(' ')}`) ?? '').split('\n').filter(Boolean);
 const NEW_CORE = ['audio-analysis', 'synth2', 'synth2-dsp', 'synth2-sources', 'atelier-check', 'atelier-choices', 'sound-cache', 'wave-svg', 'scenes-sons'].map((n) => `js/core/${n}.js`);
