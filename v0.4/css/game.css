@@ -1,0 +1,860 @@
+/* Page de jeu : le canvas occupe toute la fenêtre. Couleurs : jetons de tokens.css seulement. */
+html,
+body.game {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+  background: var(--game-ground);
+}
+
+body.game {
+  min-height: 0;
+}
+
+.game-root {
+  position: fixed;
+  inset: 0;
+  height: 100dvh;
+  overflow: hidden;
+  background: var(--game-ground);
+  touch-action: none;
+  overscroll-behavior: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+  cursor: crosshair;
+}
+
+.game-root[data-input="touch"] {
+  cursor: default;
+}
+
+.game-canvas {
+  position: absolute;
+  inset: 0;
+}
+
+.game-canvas canvas {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+  margin: 0 !important;
+}
+
+/* Marges de sécurité : 16 px au moins des bords, plus les zones de sécurité lues par js/game/safe-area.js. */
+:root {
+  --game-margin: 16px;
+  --safe-top: 0px;
+  --safe-right: 0px;
+  --safe-bottom: 0px;
+  --safe-left: 0px;
+}
+
+.safe-probe {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: 0;
+  visibility: hidden;
+  pointer-events: none;
+  padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
+}
+
+.pause-button {
+  position: absolute;
+  top: calc(var(--game-margin) + var(--safe-top));
+  right: calc(var(--game-margin) + var(--safe-right));
+  cursor: pointer;
+}
+
+/* HUD (E2-2, lot 3a) : compact, en haut à gauche, trois rangées au plus (96 px de haut et 300 px de large à 667×375) : la barre de vie avec « 100/100 »
+   dedans et la puce des chutes (jusqu'à 6 silhouettes : elle ne tient pas dans la rangée 2), les puces (vague, restants ou compte à rebours, tués), puis les seules fenêtres attaquées ou ouvertes (rangée masquée, sans réserver de
+   hauteur, quand tout va bien). Chaque puce est une zone pleine (--hud-bg) : le texte n'est jamais posé directement sur le jeu. Ni filter, ni
+   mix-blend-mode, ni backdrop-filter. */
+.hud {
+  position: absolute;
+  top: calc(var(--game-margin) + var(--safe-top));
+  left: calc(var(--game-margin) + var(--safe-left));
+  display: flex;
+  flex-direction: column;
+  gap: var(--hud-gap);
+  box-sizing: border-box;
+  width: max-content;
+  max-width: min(300px, calc(100% - 2 * var(--game-margin) - 8rem));
+  padding: 6px 8px;
+  border-radius: var(--hud-radius);
+  background: color-mix(in srgb, var(--hud-bg) calc(var(--hud-bg-alpha) * 100%), transparent);
+  pointer-events: none;
+}
+
+.hud-life-row,
+.hud-chips {
+  display: flex;
+  align-items: center;
+  gap: var(--hud-gap);
+}
+
+.hud-chips {
+  flex-wrap: nowrap;
+}
+
+.hud-icon {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  fill: var(--color-action-text);
+}
+
+.hud-bar,
+.hud-chip,
+.hud-wave {
+  box-sizing: border-box;
+  margin: 0;
+  color: var(--color-text);
+  white-space: nowrap;
+}
+
+.hud-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--hud-gap);
+  height: 24px;
+  padding: 0 4px;
+  font-size: var(--text-sm);
+  font-weight: 700;
+  line-height: 1;
+}
+
+.hud-chip[hidden] {
+  display: none;
+}
+
+.hud-chutes-icons {
+  display: inline-flex;
+  gap: 1px;
+}
+
+.hud-chutes-icons svg {
+  width: 16px;
+  height: 16px;
+  fill: var(--color-text);
+}
+
+.hud-chutes-icons .hud-plus {
+  fill: none;
+  stroke: var(--color-text);
+  stroke-width: 1.8;
+  stroke-linecap: round;
+}
+
+/* Barre de vie : le texte « 100/100 » est dans la barre, bone sur le rouge plein comme sur la piste sombre (4,5:1 des deux côtés). */
+.hud-bar {
+  position: relative;
+  border: 1px solid var(--hud-border);
+  border-radius: var(--radius-sm);
+  flex: 1;
+  min-width: 96px;
+  height: 24px;
+  overflow: hidden;
+  border-width: 2px;
+  background: var(--color-surface);
+}
+
+.hud-fill {
+  position: absolute;
+  inset: 0;
+  background: var(--color-action);
+  transform-origin: left center;
+}
+
+.hud-bar-text {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--text-sm);
+  font-weight: 700;
+  line-height: 1;
+  color: var(--color-on-action);
+}
+
+/* Numéro de vague : lettres de sang (police titre), en permanence dans la première puce de la rangée 2. */
+.hud-wave {
+  display: flex;
+  align-items: center;
+  height: 28px;
+  padding: 0 4px;
+  font-family: var(--font-display);
+  font-size: 1.375rem;
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  color: var(--color-action-text);
+}
+
+.hud-wave[hidden] {
+  display: none;
+}
+
+/* Annonce de vague (E2-8, lot 2c) : animation centrale, sans focus ni clic. Aucune animation CSS autonome : js/game/splash-view.js met à jour
+   les variables --splash-* à chaque image avec l'horloge du jeu, donc la pause la fige ; sous prefers-reduced-motion la vue pure ne produit
+   aucun mouvement (opacité 0 ou 1, échelle 1, décalages nuls). Au-dessus du canvas, de l'effet VHS et du HUD, sous les panneaux. */
+.wave-announce {
+  --splash-opacity: 0;
+  --splash-scale: 1;
+  --splash-shift: 0;
+  --splash-split: 0;
+  --splash-flicker: 0;
+  --splash-tear1-y: 0;
+  --splash-tear1-h: 0;
+  --splash-tear2-y: 0;
+  --splash-tear2-h: 0;
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: calc(var(--game-margin) + var(--safe-top)) calc(var(--game-margin) + var(--safe-right)) calc(var(--game-margin) + var(--safe-bottom)) calc(var(--game-margin) + var(--safe-left));
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.wave-announce.is-visible {
+  visibility: visible;
+}
+
+/* Voile sombre radial derrière le titre : la lisibilité ne dépend pas du fond (contrastes calculés par data-ambiance.test.js). */
+.wave-announce-veil {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse 65% 60% at center, color-mix(in srgb, var(--game-splash-veil) calc(var(--game-splash-veil-alpha) * 100%), transparent) 0%, color-mix(in srgb, var(--game-splash-veil) calc(var(--game-splash-veil-alpha) * 55%), transparent) 55%, transparent 100%);
+  opacity: var(--splash-opacity);
+}
+
+/* Le texte reste dans les marges même à l'échelle maximale (1,18) : largeur de la zone libre divisée par 1,25. */
+.wave-announce-body {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  max-width: calc((100vw - 2 * var(--game-margin) - var(--safe-left) - var(--safe-right)) / 1.25);
+  text-align: center;
+  opacity: calc(var(--splash-opacity) * (1 + var(--splash-flicker)));
+  transform: translateX(calc(var(--splash-shift) * 1px)) scale(var(--splash-scale));
+}
+
+.wave-announce-head {
+  position: relative;
+}
+
+.wave-announce-title,
+.wave-announce-tear {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: var(--font-weight-normal);
+  font-size: var(--text-2xl);
+  line-height: 1.05;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  overflow-wrap: anywhere;
+  color: var(--game-splash-title);
+}
+
+/* Décalage de couleur : deux ombres de texte, rouge à gauche et cyan à droite (4 px au plus). */
+.wave-announce-title {
+  text-shadow: calc(var(--splash-split) * -1px) 0 var(--game-splash-split-red), calc(var(--splash-split) * 1px) 0 var(--game-splash-split-cyan);
+}
+
+/* Déchirures : copies du titre découpées en bande horizontale et décalées. Hauteur nulle = invisible. */
+.wave-announce-tear {
+  position: absolute;
+  inset: 0;
+  color: var(--game-splash-tear);
+  pointer-events: none;
+}
+
+.wave-announce-tear[data-tear="1"] {
+  clip-path: inset(calc(var(--splash-tear1-y) * 100%) 0 calc((1 - var(--splash-tear1-y) - var(--splash-tear1-h)) * 100%) 0);
+  transform: translateX(calc(var(--splash-tear1-h) * 60px));
+}
+
+.wave-announce-tear[data-tear="2"] {
+  clip-path: inset(calc(var(--splash-tear2-y) * 100%) 0 calc((1 - var(--splash-tear2-y) - var(--splash-tear2-h)) * 100%) 0);
+  transform: translateX(calc(var(--splash-tear2-h) * -60px));
+}
+
+.wave-announce-sub {
+  margin: 0;
+  font-size: var(--text-lg);
+  font-weight: var(--font-weight-bold);
+  line-height: 1.2;
+  letter-spacing: 0.04em;
+  color: var(--game-splash-sub);
+}
+
+.wave-announce-sub[hidden] {
+  display: none;
+}
+
+/* Fin de vague : texte os, plus petit, sans secousse forte (la vue pure en donne le quart). */
+.wave-announce.is-fin .wave-announce-title {
+  font-size: clamp(1.6rem, 6vw, 3rem);
+  color: var(--game-splash-end);
+}
+
+.wave-announce.is-fin .wave-announce-sub {
+  color: var(--game-splash-end-sub);
+}
+
+.game-error {
+  position: fixed;
+  inset: 0;
+  z-index: 15;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  padding: var(--space-5);
+  text-align: center;
+  background: var(--color-bg);
+  font-size: var(--text-lg);
+}
+
+.game-error[hidden] {
+  display: none;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Sticks flottants : visibles seulement après un toucher. */
+.stick {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.stick-base,
+.stick-knob {
+  position: absolute;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.stick-base {
+  width: 112px;
+  height: 112px;
+  border: 3px solid var(--color-border);
+  background: var(--color-overlay);
+}
+
+.stick-knob {
+  width: 52px;
+  height: 52px;
+  background: var(--color-action);
+  border: 3px solid var(--color-on-action);
+  box-shadow: 0 0 14px var(--color-action-glow);
+}
+
+.stick.is-idle {
+  opacity: 0.45;
+}
+
+#stick-right .stick-knob {
+  background: var(--color-surface-raised);
+}
+
+/* Panneaux : pause (E2-6) et fin provisoire (E2-7). */
+.panel-wrap {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: calc(var(--game-margin) + var(--safe-top)) calc(var(--game-margin) + var(--safe-right)) calc(var(--game-margin) + var(--safe-bottom)) calc(var(--game-margin) + var(--safe-left));
+  background: var(--color-overlay);
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  width: min(100%, 22rem);
+  max-height: 100%;
+  overflow-y: auto;
+  padding: var(--space-5);
+  border: 3px solid var(--color-action);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  box-shadow: 0 0 28px 2px var(--color-action-glow);
+}
+
+.panel-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: var(--font-weight-normal);
+  font-size: var(--text-xl);
+  line-height: 1.1;
+  color: var(--color-action-text);
+}
+
+.panel-text {
+  font-size: var(--text-lg);
+}
+
+.panel-note {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+/* Curseur de volume du panneau de pause : une ligne de 44 px (cible tactile) avec l'étiquette et la valeur. */
+.volume {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: 44px;
+}
+
+.volume[hidden] {
+  display: none;
+}
+
+.volume-range {
+  flex: 1;
+  min-width: 0;
+  height: 44px;
+  margin: 0;
+  accent-color: var(--color-action);
+  cursor: pointer;
+}
+
+.volume-value {
+  min-width: 3.5ch;
+  text-align: right;
+  color: var(--color-text-muted);
+}
+
+.button-quiet {
+  background: var(--color-surface-raised);
+  border: 2px solid var(--color-border);
+}
+
+.button-quiet:hover:not(:disabled) {
+  background: var(--color-ground-light);
+}
+
+.button-quiet:active:not(:disabled) {
+  background: var(--color-surface);
+}
+
+/* Message « tourne ton téléphone » : téléphone tenu en portrait. */
+.rotate {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  padding: var(--space-5);
+  text-align: center;
+  background: var(--color-bg);
+  font-size: var(--text-lg);
+}
+
+.rotate-title {
+  font-family: var(--font-display);
+  font-size: var(--text-xl);
+  color: var(--color-action-text);
+}
+
+@media (orientation: portrait) and (pointer: coarse) and (max-width: 600px) {
+  .rotate {
+    display: flex;
+  }
+
+  .game-root,
+  .panel-wrap {
+    visibility: hidden;
+  }
+}
+
+/* Écrans bas (téléphone en paysage) : panneaux compacts. */
+@media (max-height: 460px) {
+  .panel {
+    padding: var(--space-3) var(--space-4);
+    gap: var(--space-2);
+  }
+
+  .panel-title {
+    font-size: var(--text-lg);
+  }
+
+  /* Pause (lot 2c) : cinq lignes de 44 px au plus à 667 × 375, donc deux colonnes (titre et volume sur toute la largeur). */
+  #pause-panel .panel {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    align-items: center;
+    column-gap: var(--space-3);
+    width: min(100%, 34rem);
+  }
+
+  #pause-panel .panel-title,
+  #pause-panel .volume {
+    grid-column: 1 / -1;
+  }
+}
+
+/* Indicateur de chargement : affiché avant l'évaluation de Three.js, retiré par main.js. */
+.boot {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  width: 64px;
+  height: 64px;
+  margin: -32px 0 0 -32px;
+}
+
+.boot-ring {
+  fill: none;
+  stroke: var(--color-action);
+  stroke-width: 4;
+  stroke-dasharray: 40 100;
+  transform-origin: 32px 32px;
+  animation: boot-spin var(--duration-slow) linear infinite;
+}
+
+.boot-core {
+  fill: var(--color-action-deep);
+}
+
+@keyframes boot-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .boot-ring {
+    animation: none;
+  }
+}
+
+/* Écran de préparation des textures : plein écran fixe, donc aucun décalage de mise en page. */
+.loading {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-4);
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+.loading[hidden] {
+  display: none;
+}
+
+.loading-text {
+  margin: 0;
+  font-size: var(--text-lg);
+  font-weight: var(--font-weight-bold);
+  text-align: center;
+}
+
+.loading-bar {
+  width: min(16rem, 70vw);
+  height: var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.loading-fill {
+  width: 100%;
+  height: 100%;
+  background: var(--color-action);
+  transform: scaleX(0);
+  transform-origin: left;
+}
+
+.loading-error {
+  margin: 0;
+  max-width: 28rem;
+  padding: 0 var(--space-4);
+  text-align: center;
+  color: var(--color-danger);
+  font-weight: var(--font-weight-bold);
+}
+
+.loading-detail {
+  margin: 0;
+  max-width: 28rem;
+  padding: 0 var(--space-4);
+  text-align: center;
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  overflow-wrap: anywhere;
+}
+
+.loading-error[hidden],
+.loading-detail[hidden] {
+  display: none;
+}
+
+/* Invitation à activer le son (téléphone) : le navigateur n'autorise l'audio qu'au relâchement d'un doigt, pas pendant qu'un stick est tenu. */
+.sound-hint {
+  position: fixed;
+  top: calc(var(--game-margin) + var(--safe-top));
+  left: 50%;
+  z-index: 5;
+  transform: translateX(-50%);
+  max-width: 40vw;
+}
+
+/* Voile du fondu entre étages (lot 3e) : décoratif, de la couleur de la brume, entre le canvas et l'effet VHS (ordre du DOM) ; opacité = voile (floor-fade.js). */
+.floor-fade {
+  position: fixed;
+  inset: 0;
+  background: var(--game-fog);
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Effet VHS (lot 2c) : surcouche décorative #vhs, trois couches, entre le canvas et le HUD. js/game/vhs-layer.js met à jour les variables
+   --vhs-* ; aucun mix-blend-mode, aucun filter, aucun backdrop-filter (coût de composition sur téléphone). Retiré du DOM quand il est coupé. */
+.vhs {
+  --vhs-scan: 0;
+  --vhs-edge: 0;
+  --vhs-vignette: 0;
+  --vhs-grain-opacity: 0;
+  --vhs-gx: 0;
+  --vhs-gy: 0;
+  --vhs-flicker: 0;
+  --vhs-track-y: 0;
+  --vhs-track-h: 0;
+  --vhs-track-opacity: 0;
+  --vhs-track-shift: 0;
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+/* Couche 1 : lignes de balayage fixes (période de 3 px), vignette, bords rouge à gauche et cyan à droite (faux décalage de couleur). */
+.vhs-static {
+  position: absolute;
+  inset: 0;
+  opacity: calc(0.97 + var(--vhs-flicker));
+  background:
+    repeating-linear-gradient(to bottom, color-mix(in srgb, var(--game-vhs-scan) calc(var(--vhs-scan) * 100%), transparent) 0 1px, transparent 1px 3px),
+    radial-gradient(ellipse at center, transparent 55%, color-mix(in srgb, var(--game-vhs-vignette) calc(var(--vhs-vignette) * 100%), transparent) 100%),
+    linear-gradient(to right, color-mix(in srgb, var(--game-vhs-edge-red) calc(var(--vhs-edge) * 100%), transparent) 0, transparent 7%, transparent 93%, color-mix(in srgb, var(--game-vhs-edge-cyan) calc(var(--vhs-edge) * 100%), transparent) 100%);
+}
+
+/* Couche 2 : grain de 128 × 128 px (généré par du code) sur une couche plus grande que l'écran ; sa position saute au pas de 10 par seconde. */
+.vhs-grain {
+  position: absolute;
+  inset: -128px;
+  background-image: var(--vhs-grain-url, none);
+  background-size: 128px 128px;
+  background-repeat: repeat;
+  image-rendering: pixelated;
+  opacity: var(--vhs-grain-opacity);
+  transform: translate3d(calc(var(--vhs-gx) * -1px), calc(var(--vhs-gy) * -1px), 0);
+  will-change: transform;
+}
+
+/* Couche 3 : bande de suivi, légèrement plus claire et décalée de quelques pixels, qui traverse l'écran de haut en bas. */
+.vhs-track {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(var(--vhs-track-y) * 100%);
+  height: calc(var(--vhs-track-h) * 100%);
+  background: color-mix(in srgb, var(--game-vhs-track) calc(var(--vhs-track-opacity) * 100%), transparent);
+  transform: translateX(calc(var(--vhs-track-shift) * 1px));
+}
+
+/* Flèches au bord de l'écran (E2-11, lot 3a) : vers les deux fenêtres en alerte les plus urgentes qui ne sont pas à l'écran. Décoratives (aria-hidden, aucun
+   événement) ; la lettre porte l'identité, jamais la couleur seule. Position posée par js/game/game.js (variables --edge-x, --edge-y en pixels,
+   --edge-angle en radians) ; pulsation douce seulement si le mouvement n'est pas réduit. */
+.edges {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.edge-arrow {
+  --edge-x: 0px;
+  --edge-y: 0px;
+  --edge-angle: 0rad;
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 40px;
+  height: 40px;
+  transform: translate(calc(var(--edge-x) - 20px), calc(var(--edge-y) - 20px));
+  pointer-events: none;
+}
+
+.edge-arrow[hidden] {
+  display: none;
+}
+
+.edge-pointer {
+  position: absolute;
+  inset: 0;
+  fill: var(--color-text);
+  stroke: var(--hud-bg);
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+  transform: rotate(var(--edge-angle));
+}
+
+.edge-letter {
+  position: absolute;
+  left: 6px;
+  top: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--hud-border);
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--hud-bg) calc(var(--hud-bg-alpha) * 100%), transparent);
+  color: var(--color-text);
+  font-size: var(--text-sm);
+  font-weight: 700;
+  line-height: 1;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .edge-letter {
+    animation: edge-pulse 1.2s ease-in-out infinite;
+  }
+}
+
+@keyframes edge-pulse {
+  50% {
+    opacity: 0.6;
+  }
+}
+
+/* État à terre (E2-10, lot 3) : voile de bord (dégradé radial, sans filter, mix-blend-mode ni backdrop-filter) et texte centré dans le tiers bas
+   de l'écran, sous l'animation de vague, sur une zone pleine. Aucune animation : l'apparition est immédiate (donc rien à réduire sous
+   prefers-reduced-motion). Pendant la protection qui suit le relevage, seul « Protégé N s » reste. */
+.down {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* Le HUD et le bouton Pause restent lisibles au-dessus du voile de bord. */
+.hud,
+.pause-button {
+  z-index: 2;
+}
+
+.down[hidden] {
+  display: none;
+}
+
+.down-veil {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse 75% 70% at center, transparent 45%, color-mix(in srgb, var(--game-down-veil) calc(var(--game-down-veil-alpha) * 100%), transparent) 100%);
+}
+
+.down[data-mode="grace"] .down-veil {
+  display: none;
+}
+
+.down-body {
+  position: absolute;
+  left: 50%;
+  top: 84%;
+  transform: translate(-50%, -50%);
+  box-sizing: border-box;
+  max-width: calc(100vw - 2 * var(--game-margin) - var(--safe-left) - var(--safe-right));
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--game-down-panel);
+  text-align: center;
+}
+
+.down-title {
+  margin: 0;
+  font-size: var(--text-lg);
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--game-down-text);
+}
+
+.down-sub {
+  margin: 0;
+  font-size: var(--text-md);
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--game-down-sub);
+}
+
+/* Étiquettes F1 à F8 (?labels=1, lot 3b) : décoratives (aria-hidden, aucun événement), posées à chaque image sur la fenêtre (variables --label-x et --label-y en
+   pixels écrites par js/game/game.js), masquées quand la fenêtre est hors de l'écran. Contraste du texte : même pastille noire que le HUD. */
+.map-labels {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.map-label {
+  --label-x: 0px;
+  --label-y: 0px;
+  position: absolute;
+  left: 0;
+  top: 0;
+  padding: 0 6px;
+  border: 1px solid var(--hud-border);
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--hud-bg) calc(var(--hud-bg-alpha) * 100%), transparent);
+  color: var(--color-text);
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-bold);
+  line-height: 1.4;
+  transform: translate(calc(var(--label-x) - 50%), calc(var(--label-y) - 150%));
+  pointer-events: none;
+}
+
+.map-label[hidden] {
+  display: none;
+}

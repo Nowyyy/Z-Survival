@@ -1,0 +1,19 @@
+{
+  "_provisoire": "Valeurs de rendu 3D provisoires à régler en test (lot 1m). Une unité du jeu = une unité de la scène.",
+  "wallHeight": 60,
+  "wallThickness": 40,
+  "sillHeight": 16,
+  "lintelBottom": 44,
+  "gunHeight": 43,
+  "floorLift": 180,
+  "fog": { "near": 1.2, "far": 2.6, "wallNear": 100, "wallFar": 320, "wallHeight": 110, "wallPad": 1500, "wallCell": 40 },
+  "camera": { "fov": 40, "tilt": 75, "margin": 0.02, "zoom": 2.5, "slack": 60, "smoothing": 0.12, "near": 20, "far": 9000 },
+  "light": {
+    "ambient": 2.3,
+    "sun": 3.5,
+    "sunOffset": { "x": -880, "y": 1200, "z": 560 },
+    "shadowMap": 1024,
+    "shadowHalfSize": 950,
+    "shadowFar": 4000
+  }
+}
