@@ -849,8 +849,8 @@ test.describe('sons, budget, interface', () => {
     });
     console.log(`BUDGET lot 3e, étage : ${m.calls} appels, ${m.triangles} triangles`);
     testInfo.annotations.push({ type: 'rendu', description: `étage : ${m.calls} appels, ${m.triangles} triangles` });
-    expect(m.calls).toBeLessThanOrEqual(300);
-    expect(m.triangles).toBeLessThanOrEqual(30000);
+    expect(m.calls).toBeLessThanOrEqual(400); // lot 3m : limites de refonte relevées par le propriétaire (avant : 300)
+    expect(m.triangles).toBeLessThanOrEqual(45000); // lot 3m : limites de refonte relevées par le propriétaire (avant : 30000)
   });
 
   test('budget au rez-de-chaussée avec les escaliers de la manche 21 : pas plus de 4 appels ni 12 triangles de plus que les escaliers fermés', async ({ page }) => {
@@ -871,8 +871,8 @@ test.describe('sons, budget, interface', () => {
     console.log(`BUDGET lot 3e, rez-de-chaussée : escaliers fermés ${closed.calls} appels / ${closed.triangles} tri, ouverts ${opened.calls} / ${opened.triangles}`);
     expect(opened.calls - closed.calls).toBeLessThanOrEqual(4);
     expect(opened.triangles - closed.triangles).toBeLessThanOrEqual(12 + 1000); // la zone de l'aile apporte aussi ses zombies : borne large, la limite dure est 15 000
-    expect(opened.triangles).toBeLessThanOrEqual(30000);
-    expect(opened.calls).toBeLessThanOrEqual(300);
+    expect(opened.triangles).toBeLessThanOrEqual(45000); // lot 3m : limites de refonte relevées par le propriétaire (avant : 30000)
+    expect(opened.calls).toBeLessThanOrEqual(400); // lot 3m : limites de refonte relevées par le propriétaire (avant : 300)
   });
 
   test('aller-retour répétés : le nombre de géométries et de textures ne croît pas (aucune fuite)', async ({ page }) => {
@@ -894,17 +894,20 @@ test.describe('sons, budget, interface', () => {
     expect(await page.locator('#fps-counter').count()).toBe(0);
   });
 
-  test('HUD : au plus 96 × 300 px avec la puce d\'étage, marges de 16 px, texte de 14 px au moins, sans chevaucher Pause', async ({ page }) => {
+  // Lot 3l : avant, #hud ≤ 96 × 300 px ; après, la colonne de gauche (REC, VIE, chutes + étage, MODE ESSAI) ≤ 145 × 120 px, l'étage à côté des chutes.
+  test('HUD : colonne de gauche ≤ 145 × 120 px avec la puce d\'étage, marges de 16 px, texte de 14 px au moins, sans chevaucher Pause', async ({ page }) => {
     await open(page, '&wave=21&floor=1&nospawn=1');
     const r = await page.evaluate(() => {
-      const hud = document.getElementById('hud').getBoundingClientRect();
+      const hud = document.querySelector('.hud-tl').getBoundingClientRect();
       const chip = document.getElementById('hud-floor');
       const c = chip.getBoundingClientRect();
+      const chutes = document.getElementById('hud-chutes').getBoundingClientRect();
       const pause = document.getElementById('btn-pause').getBoundingClientRect();
-      return { w: hud.width, h: hud.height, left: hud.left, top: hud.top, chipFont: parseFloat(getComputedStyle(chip).fontSize), chipInside: c.right <= hud.right + 1 && c.bottom <= hud.bottom + 1, overlap: !(hud.right <= pause.left || hud.left >= pause.right || hud.bottom <= pause.top || hud.top >= pause.bottom) };
+      return { w: hud.width, h: hud.height, left: hud.left, top: hud.top, row: Math.abs(c.top - chutes.top), chipFont: parseFloat(getComputedStyle(chip).fontSize), chipInside: c.right <= hud.right + 1 && c.bottom <= hud.bottom + 1, overlap: !(hud.right <= pause.left || hud.left >= pause.right || hud.bottom <= pause.top || hud.top >= pause.bottom) };
     });
-    expect(r.w).toBeLessThanOrEqual(300);
-    expect(r.h).toBeLessThanOrEqual(96);
+    expect(r.w).toBeLessThanOrEqual(145);
+    expect(r.h).toBeLessThanOrEqual(120);
+    expect(r.row).toBeLessThan(0.5);
     expect(r.left).toBeGreaterThanOrEqual(16);
     expect(r.top).toBeGreaterThanOrEqual(16);
     expect(r.chipFont).toBeGreaterThanOrEqual(14);

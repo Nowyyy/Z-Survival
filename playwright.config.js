@@ -8,7 +8,7 @@ const channel = process.env.CI ? 'chrome' : undefined;
 // lancent à la demande avec `npm run test:e2e:full` (environ 40 minutes). Le projet mobile ne passe que les pages courtes qui dépendent du téléphone.
 const FULL = process.env.E2E_FULL === '1';
 const files = (names) => (FULL ? undefined : names.map((n) => `**/${n}.spec.js`));
-const ESSENTIAL = ['attente', 'dev', 'carte', 'sons-page', 'sauvegarde', 'argent', 'jeu-interface'];
+const ESSENTIAL = ['attente', 'dev', 'carte', 'sons-page', 'sauvegarde', 'argent', 'jeu-interface', 'atelier-retours', 'interface-integree', 'persos-integres']; // lot 3g : retours du propriétaire (portes, mur percé, escaliers) ; lot 3l : interface intégrée ; lot 3m : personnages intégrés
 const PAGES = ['attente', 'dev', 'sauvegarde', 'sons-page'];
 
 export default defineConfig({

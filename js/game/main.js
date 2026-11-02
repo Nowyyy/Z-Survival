@@ -65,6 +65,12 @@ const mapDir = mapId === 'salle' ? 'data/game' : `data/game/maps/${mapId}`;
 const zonesJson = mapId === 'salle' ? null : await loadJson(`${mapDir}/zones.json`);
 // Étage (lot 3e) : etage.world.json de la carte (généré par npm run carte) ; l'ancienne salle n'a qu'un étage.
 const upperWorld = mapId === 'salle' ? null : await loadJson(`${mapDir}/etage.world.json`);
+// Lot 3g : ?detail=0|1 (1 par défaut ; jamais mémorisé) : 0 = textures et décor d'avant le lot, pour comparer. Décor léger intérieur (non solide) :
+// decor-interieur.world.json de la carte (généré par npm run carte), passé au rendu par render.decorInterieur ; absent de l'ancienne salle.
+const detail = query.get('detail') !== '0';
+const decorInterieur = detail && mapId !== 'salle' ? await loadJson(`${mapDir}/decor-interieur.world.json`).catch(() => null) : null;
+// Retours du propriétaire : mobilier dessiné d'après le modèle (mobilier.world.json, avec le détail) ; ?murs=bas : murs et piliers à l'ancienne hauteur (essai).
+const mobilier = detail && mapId !== 'salle' ? await loadJson(`${mapDir}/mobilier.world.json`).catch(() => null) : null;
 
 const [dict, world, decor, camera, nav, player, weapons, enemies, render, texturesCfg, variants, soundsCfg, audioCfg, materialsCfg, voiceCfg, wavesCfg, gaitsCfg, statsCfg, splashCfg, vhsCfg, windowsCfg, downCfg, stairsCfg, economyCfg, saveCfg] = await Promise.all([
 
@@ -108,7 +114,14 @@ const TEXTURE_SHARE = 0.8;
 const loading = createLoading(dict);
 // Police du titre de l'animation de vague : chargée à la demande derrière l'écran de préparation (aucune nouvelle police, aucune requête externe).
 const titleFont = document.fonts?.load ? Promise.race([document.fonts.load('1em "Rubik Wet Paint"'), new Promise((resolve) => setTimeout(resolve, 2000))]).catch(() => {}) : Promise.resolve();
-const textureData = await generateTextureData(texturesCfg.textures, { lookup: createTokenLookup(), onProgress: (p) => loading.update(p * TEXTURE_SHARE) });
+render.decorInterieur = decorInterieur?.items ?? []; // lot 3g
+render.mobilier = mobilier?.pieces ?? null;
+render.ceilingWalls = mapId !== 'salle' && render.ceilingWalls === true && query.get('murs') !== 'bas';
+render.detailDoors = detail; // vraies portes et éboulis (lot 3g, retours) ; ?detail=0 : anciens blocs
+render.seeThrough = query.get('percee') === '0' ? null : (render.seeThrough ?? null); // mur percé autour du joueur caché (lot 3g, retours) ; ?percee=0 l'enlève
+render.feux = detail && mapId !== 'salle' ? ((await loadJson(`${mapDir}/feux.json`).catch(() => null))?.feux ?? []) : []; // feux sur des caisses (lot 3g, retours)
+render.reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const textureData = await generateTextureData(texturesCfg.textures, { lookup: createTokenLookup(), onProgress: (p) => loading.update(p * TEXTURE_SHARE), detail });
 const audio = createAudio({ config: { audio: audioCfg, materials: materialsCfg, voice: voiceCfg, sounds: soundsCfg.sounds }, test: testMode, seed: Number.isFinite(seedParam) ? seedParam : 1 });
 const essential = await renderSounds(planSounds(soundsCfg.sounds, 'essentiel'), { onProgress: (p) => loading.update(TEXTURE_SHARE + (1 - TEXTURE_SHARE) * p) });
 audio.addSounds(essential.items);
@@ -254,6 +267,15 @@ if (game === null) {
     }));
   }
   if (testMode) installTestHook(ctx, game);
+  // Lot 3l (demande du propriétaire) : ?fin=monde montre tout de suite l'écran de victoire « Monde terminé » : la dernière manche du monde est lancée puis
+  // terminée d'office (vrais calculs : bonus, record). Seulement en mode essai (sauvegarde en lecture seule, par exemple avec ?wave=40) : rien n'est
+  // jamais écrit ; ignoré sinon, et sur une carte sans fin de monde (?map=salle).
+  if (query.get('fin') === 'monde' && saveMode.readOnly && Number.isInteger(zonesJson?.wavesPerWorld)) {
+    game.startWave(zonesJson.wavesPerWorld);
+    game.advance(3.2);
+    game.skipWave();
+    game.advance(0.3);
+  }
 }
 // Les sons « fond » (voix de zombies, ambiance) sont calculés pendant la partie, 4 ms par image au plus ; ils ne sont joués qu'une fois prêts.
 renderSounds(planSounds(soundsCfg.sounds, 'fond'), { sliceMs: BACKGROUND_SLICE_MS, wait: nextVisibleFrame, onItem: (item) => ctx.audio.addSounds([item]) }).then((done) => {

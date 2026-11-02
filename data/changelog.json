@@ -1,5 +1,13 @@
 {
   "_note": "Journal des versions affiché par la page /dev (liste des lots). Une entrée par lot, dans l'ordre chronologique (la plus récente en dernier) ; la page les affiche du plus récent au plus ancien. À compléter à chaque lot.",
+  "_versions": "Versions majeures montrées par /dev (demande du propriétaire), dans l'ordre chronologique ici et affichées de la plus récente (en haut) à la plus ancienne : version, lot du journal, encore en cours ou non. Les autres lots restent dans « lots » (historique) mais ne sont plus affichés. Un nouveau lot n'est ajouté à cette liste que sur indication du propriétaire (Docs/lots/lot-4b.md).",
+  "versions": [
+    { "version": "V0.1", "lot": "lot-1" },
+    { "version": "V0.2", "lot": "lot-1d" },
+    { "version": "V0.3", "lot": "lot-2c" },
+    { "version": "V0.4", "lot": "lot-3e" },
+    { "version": "V0.5", "lot": "lot-4b", "enCours": true }
+  ],
   "lots": [
     { "name": "lot-0", "titre": "Socle, jetons et publication", "points": [
       "Outillage (ESLint, Vitest, Playwright, Lighthouse) et publication automatique sur GitHub Pages.",
@@ -98,12 +106,33 @@
       "Treize meubles provisoires (armoires, tables, comptoirs, caisses) complètent le rez-de-chaussée et cassent les longues lignes de tir de la grande salle.",
       "Le panneau de pause indique « Prochaine zone : manche 11 » ; ?wave=11 ouvre l'aile dès le chargement, ?wave=10 la garde fermée."
     ] },
+  { "name": "lot-3h", "titre": "Atelier des sons", "points": [
+    "Page technique atelier-sons.html pour comparer les sons actuels et trois nouvelles variantes (réaliste, horreur, sec) de chaque pas, voix de zombie, son de planche, d'escalade et du joueur.",
+    "Propositions (vent, grincements, cœur, porte, achat, feu qui crépite…), quatre scènes de 30 s, curseurs de réglage et « Mes choix » à copier.",
+    "Rien ne change dans le jeu : l'intégration des sons choisis viendra au lot 3i."
+  ] },
   { "name": "lot-3e", "titre": "Étage, escaliers et portes 2 et 3", "points": [
       "Le bâtiment a un étage, reproduit d'après le modèle 3D : une aile et une poche à gauche, une salle à droite, sept fenêtres U1 à U7. Une puce « RDC » / « Étage » indique où l'on est.",
       "Deux escaliers relient les étages : on les monte et on les descend en marchant (marches, hauteur qui change, déplacement libre dans la largeur), sans téléportation, sans délai ; depuis l'étage on voit tout le rez-de-chaussée par un trou entouré d'un garde-corps.",
       "Les zombies vivent sur les deux étages et marchent librement dans les escaliers, sans limite de nombre : on peut les toucher et ils frappent. Les bruits de l'autre étage sont étouffés.",
       "Porte 2 (manche 20 terminée) : l'escalier de l'aile s'ouvre, avec la zone de gauche de l'étage. Porte 3 (manche 30 terminée) : le second escalier et la salle de droite.",
       "?floor=1 démarre à l'étage, ?labels=1 numérote les fenêtres de l'étage affiché, carte.html propose un sélecteur d'étage."
+    ] },
+    { "name": "lot-3g", "titre": "Atelier de la carte", "points": [
+      "Visite libre de la carte sans zombie ni porte, sur les deux étages (page visite.html), pour s'y promener avec les contrôles du jeu.",
+      "Le modèle 3D est relevé et comparé à la carte : la page ecarts.html montre les écarts ; les corrections sont des décisions rejouables (ecarts-decisions.json).",
+      "Mobilier corrigé d'après le modèle : deux étagères ajoutées, deux pièces provisoires remplacées par les étagères du modèle, quelques meubles recalés.",
+      "Décor léger non solide : plinthes, tuyaux, appliques, affiches, tapis, taches, sacs de sable et bidons.",
+      "Textures plus fines (joints irréguliers, éclats, fissures, coulures, taches) ; ?detail=0 montre l'ancien rendu pour comparer."
+    ] },
+    { "name": "lot-3j", "titre": "Atelier des personnages", "points": [
+      "Page atelier-personnages.html : les personnages actuels et trois nouvelles variantes (A « déchu réaliste », B « horreur marquée », C « lisible d'abord ») côte à côte, à l'échelle du jeu, ×2 et ×4, avec mesures, curseurs et « Mes choix » à copier.",
+      "Silhouettes distinctes par type (petit, marcheur, voûté, grand), lisibles sur tous les sols, escalier et sols tachés compris ; 6 tenues par zombie et 4 paliers d'usure selon la manche.",
+      "Nouvelles animations : attaque, touché, trois morts, réparation, relevage ; marches sans glissement des pieds.",
+      "Sang à trois niveaux (aucun, réduit, complet) : particules, taches au sol, taches sur les corps, cadavres qui s'enfoncent ; mini-arène pour l'essayer.",
+      "Dans le jeu : variantes « riche » et sang complet par défaut ; ?sang=reduit ou ?sang=0 (futur menu d'options), ?perso=actuel&sang=0 pour l'ancien rendu.",
+      "Joueur : pistolet tenu bras tendus, recul à chaque tir, laser et balles qui partent du canon ; pas de laser ni de tir pendant la réparation.",
+      "Zombies : ils enjambent les fenêtres (appui, corps couché, retombée) et tombent à l'opposé du tireur (en arrière s'ils sont touchés de face)."
     ] },
     { "name": "lot-4", "titre": "Argent et sauvegarde locale", "points": [
       "Chaque zombie tué par une balle rapporte 10, chaque planche de fenêtre posée 1 (montants fixes, qui évolueront avec les améliorations), chaque manche terminée un bonus, la fin du monde un gros bonus : tout est conservé à la mort.",
@@ -112,6 +141,35 @@
       "La page sauvegarde.html permet d'exporter la sauvegarde par un code, de l'importer (avec aperçu et confirmation), de la réparer ou de l'effacer : utile car Safari efface les données d'un site après 7 jours d'usage sans visite.",
       "L'interface est plus compacte : blocs de taille fixe (vie, argent, « Vague 1 / 40 »), bouton Pause en icône, une seule silhouette pour les chutes ; le solde et l'état de la sauvegarde sont dans la pause, l'argent gagné et les records sur l'écran de fin.",
       "Menu /dev : plus de liste déroulante, le journal des versions est replié ; icône « Z » pour l'écran d'accueil ; tests de bout en bout ramenés à 4 minutes."
+        ] },
+    { "name": "lot-3i", "titre": "Sons intégrés", "points": [
+      "Les sons choisis dans l'atelier remplacent les pas, les voix (une par type de zombie), les planches et la réparation, qui suit la durée de pose.",
+      "Sons nouveaux : pas dehors et dans l'escalier, allures des zombies, craquement, escalade, cœur, vent, feu, grincements, porte.",
+      "?sons=ancien pour réentendre les anciens, ?sons=A, B ou C pour une variante."
+    ] },
+    { "name": "lot-3k", "titre": "Atelier de l'interface", "points": [
+      "Nouvelle page technique atelier-interface.html : l'interface actuelle du jeu et trois directions de refonte (sobre, caméscope, tactile), sur 7 tailles d'écran et dans de nombreux états, avec le vrai jeu en fond.",
+      "Chaque vue est mesurée : place occupée à l'écran, taille des textes, contrastes, cibles tactiles, zones de sécurité et zones des pouces ; tout écart est écrit en toutes lettres.",
+      "Menu, boutique, réglages et classement en maquettes, avec de fausses données annoncées comme telles ; cinq propositions de priorité 2 (retour de dégâts, vie faible, aide de démarrage, curseur de visée, nouvelle zone).",
+      "Comparaison côte à côte et texte « Mes choix » à copier ; après les premiers choix, le HUD caméscope est retouché (vie en texte, mots entiers, argent et tués alignés sur le bouton Pause).",
+      "Rien n'est encore intégré au jeu : l'intégration se fera au lot 4b."
+    ] },
+    { "name": "lot-3l", "titre": "Interface intégrée", "points": [
+      "Le HUD caméscope retenu dans l'atelier remplace l'ancien : REC et temps de jeu, vie, chutes, étage, vague, argent, restants et tués, en blocs de taille fixe.",
+      "Pause, écrans de fin et état à terre refaits : texte « À terre » sous l'argent avec la barre du compte à rebours, « Revenir au menu principal » (sans action pour l'instant).",
+      "Sticks sobres ; marges de 16 px plus la zone de sécurité."
+    ] },
+    { "name": "lot-3m", "titre": "Personnages intégrés", "points": [
+      "Les nouveaux personnages (variante « riche ») et le sang complet sont maintenant le jeu par défaut, d'après une table de choix modifiable.",
+      "?perso=actuel montre l'ancien modèle pour comparer ; ?sang=reduit ou ?sang=0 réduisent ou coupent le sang (futur menu d'options).",
+      "Deux corps au sol à la fois au plus, pour tenir le budget d'affichage.",
+      "L'ancien modèle n'est plus chargé quand il ne sert pas ; le sang n'est préparé qu'à la première tache."
+    ] },
+    { "name": "lot-4b", "titre": "Intégration des refontes", "points": [
+      "En cours : branche d'intégration des refontes, réunies ici avant d'entrer dans le jeu publié.",
+      "Atelier de la carte (lot 3g) intégré : carte corrigée d'après le modèle 3D, mobilier redessiné, vraies portes et éboulis, murs jusqu'au plafond, mur percé autour du joueur caché, feux, extérieur plus vivant et brouillard en volutes.",
+      "Argent et sauvegarde locale (lot 4) compris.",
+      "Menu /dev : seules les versions majeures (V0.1 à V0.5) restent dans le journal."
     ] }
   ]
 }

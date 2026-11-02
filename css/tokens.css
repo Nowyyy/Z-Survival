@@ -96,6 +96,9 @@
   --game-car: #6b2b2b;              /* voitures abandonnées (rouge sale, provisoire) */
   --game-tree: #34433e;             /* feuillage des arbres et des buissons */
   --game-furniture: #7a6448;        /* meubles (leurs variantes par type sont calculées dans le rendu) */
+  --game-fire: #ffd27a;             /* lot 3g (retour du propriétaire) : cœur des flammes du feu de caisses (provisoire) */
+  --game-fire-edge: #e2582a;        /* lot 3g : bord des flammes et lueur au sol (provisoire) */
+  --game-smoke: #2e2b2a;            /* lot 3g : fumée du feu (provisoire) */
 
   /* Jeu, lot 1c : couleurs des textures générées en code (passées aux générateurs par js/game/palette.js). Provisoires, à valider. */
   --game-tile-a: #4d5156;           /* carrelage de la salle, teinte claire */
@@ -181,4 +184,50 @@
   --hud-border: #6a6a6e;            /* contour des puces et de la barre */
   --hud-radius: 6px;                /* rayon des puces */
   --hud-gap: 4px;                   /* espace entre les rangées et entre les puces (demi-pas de la grille de 8 px, pour tenir dans 96 px) */
+}
+
+/* Personnages et sang (lot 3j) : couleurs provisoires des personnages v2 (?perso=) et du sang (?sang=) ; contrastes contrôlés par tests/unit/persos-*.test.js. */
+:root {
+  --perso-peau-cendre: #d3dbc4;     /* peau gris-vert pâle (zombies A) */
+  --perso-peau-verte: #c6d6a8;      /* peau verdâtre */
+  --perso-peau-grise: #cfd2c8;      /* peau grise */
+  --perso-peau-jaune: #ddd6b0;      /* peau jaunie */
+  --perso-peau-tendue: #dfe7c9;     /* peau tendue, très pâle (zombies B) */
+  --perso-peau-joueur: #e8c9a8;     /* peau du joueur */
+  --perso-tissu-os: #e6dccb;        /* chemise blanc cassé */
+  --perso-tissu-sable: #d3c6a5;     /* toile sable */
+  --perso-tissu-ciel: #c4d4dd;      /* chemise bleu pâle */
+  --perso-tissu-kaki: #ccd2bc;      /* veste kaki délavée */
+  --perso-tissu-rose: #ebd0cb;      /* pull rose fané */
+  --perso-tissu-gris: #d2d2cd;      /* sweat gris */
+  --perso-tissu-bleu: #c0cdd8;      /* blouse bleue */
+  --perso-tissu-olive: #c8d2b6;     /* parka olive délavée */
+  --perso-pantalon-jean: #b3c3d8;   /* jean délavé */
+  --perso-pantalon-toile: #cfc7ad;  /* pantalon de toile */
+  --perso-pantalon-gris: #c0c0ba;   /* pantalon gris */
+  --perso-sombre: #4a4d45;          /* chaussures, ceintures, volumes sombres du dos */
+  --perso-cuir: #b39270;            /* cuir, sangles */
+  --perso-metal: #ccd1d6;           /* pistolet du joueur, chaînes, boucles */
+  --perso-casque: #f2c94c;          /* casque de chantier */
+  --perso-orange: #f2b45c;          /* gilet et brassard orange */
+  --perso-sac: #cdb48a;             /* sac en toile */
+  --perso-crasse: #d2cbba;          /* salissure de l'usure (mélangée aux tissus) */
+  --perso-dechirure: #a29d92;       /* déchirures (faces assombries) */
+  --perso-joueur-veste: #e0d4ae;    /* joueur A : veste tactique sable */
+  --perso-joueur-sweat: #d4d8dc;    /* joueur B : sweat à capuche gris clair */
+  --perso-joueur-vif: #8fdbe0;      /* joueur C : couleur dominante turquoise, contrastée avec tous les sols */
+  --perso-lampe: #fff1b8;           /* lampe frontale du joueur B (teinte émissive faible) */
+  --perso-yeux: #d8e070;            /* lueur des yeux (proposition de priorité 2, jamais seule porteuse d'information) */
+  --sang-frais: #7a0a0a;            /* sang frais : rouge profond du site */
+  --sang-sec: #4a1010;              /* sang séché (taches qui vieillissent) */
+  --sang-reduit: #2e0a0a;           /* niveau « réduit » : teinte plus sombre */
+}
+
+/* Interface intégrée (lot 3l) */
+:root {
+  --hud-text-scale: 1.125;          /* macro « texte M » de la direction B, figée : 14 px × 1,125 = 15,75 px (HUD, panneaux, état à terre) */
+  --hud-fs: calc(14px * var(--hud-text-scale)); /* taille de base de l'interface de jeu : toutes les tailles des blocs en découlent (em) */
+  --hud-row: calc(var(--hud-fs) * 1.3); /* hauteur d'une ligne de la colonne de droite (restants, tués) avant partage de Pause */
+  --hud-pause-size: max(44px, calc(2 * var(--hud-row) + var(--hud-gap))); /* côté du bouton Pause : deux lignes de droite et l'espace, 44 px au moins */
+  --hud-target: 44px;               /* cible tactile des boutons et du curseur de volume des panneaux */
 }

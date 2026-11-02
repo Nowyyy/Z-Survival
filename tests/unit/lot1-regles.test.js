@@ -46,14 +46,28 @@ describe('mêmes règles qu\'au lot 1', () => {
 
   // Lot 1b : les modules du monde sont nouveaux ou étendus (paramètres facultatifs, valeurs par défaut = lot 1m, prouvé par les simulations
   // « identiques au lot 1 » ci-dessus) ; tout autre fichier de js/core/ reste inchangé.
-  it('js/core/ est inchangé depuis main, sauf pose.js, viewport.js, les modules du monde du lot 1b et les modules du lot 1c (color, texgen, variants) et du lot 1d (sons : synth, audio-mix, footsteps, sound-director, zombie-voice ; sound-params retiré) et du lot 2 (waves, wave-director, enemy-factory) et du lot 2b (player-stats, spread, combat, projectile) et du lot 2c (wave-splash, vhs ; synth, texgen, audio-mix, sound-director étendus) et du lot 3 (windows, siege, player-down ; nav, layout, enemy-ai, combat, pose, player-stats, audio-mix, sound-director, wave-director, enemy-factory étendus) et du lot 3a (plank-layout, hud-windows, edge-arrow ; texgen étendu) et du lot 3b (maps, map-svg, shape, fog ; layout, decor, siege, plank-layout, player-down étendus) et du lot 3c (zones, furniture-model ; maps, layout, nav, siege, wave-director, wave-splash étendus) et du lot 3e (floors, stairs, floor-transition, stair-zombies, floor-sim, floor-rules, stair-walk ; zones, maps, layout, nav, siege, spawner, wave-director, wave-splash, enemy-ai, combat, ray, projectile, player-down, sound-director étendus) et du lot 4 (economy, money-gain, save)', () => {
+  it('js/core/ est inchangé depuis main, sauf pose.js, viewport.js, les modules du monde du lot 1b et les modules du lot 1c (color, texgen, variants) et du lot 1d (sons : synth, audio-mix, footsteps, sound-director, zombie-voice ; sound-params retiré) et du lot 2 (waves, wave-director, enemy-factory) et du lot 2b (player-stats, spread, combat, projectile) et du lot 2c (wave-splash, vhs ; synth, texgen, audio-mix, sound-director étendus) et du lot 3 (windows, siege, player-down ; nav, layout, enemy-ai, combat, pose, player-stats, audio-mix, sound-director, wave-director, enemy-factory étendus) et du lot 3a (plank-layout, hud-windows, edge-arrow ; texgen étendu) et du lot 3b (maps, map-svg, shape, fog ; layout, decor, siege, plank-layout, player-down étendus) et du lot 3c (zones, furniture-model ; maps, layout, nav, siege, wave-director, wave-splash étendus) et du lot 3e (floors, stairs, floor-transition, stair-zombies, floor-sim, floor-rules, stair-walk ; zones, maps, layout, nav, siege, spawner, wave-director, wave-splash, enemy-ai, combat, ray, projectile, player-down, sound-director étendus) et du lot 3g (releve, ecarts, ecarts-svg, visite, decisions, decor-interieur, mobilier-aspect, portes-aspect, see-through, decor-vivant) et du lot 4 (economy, money-gain, save) et du lot 3h (atelier des sons : modules nouveaux, aucun module existant modifié)', () => {
     let changed;
     try {
       changed = execSync('git diff --name-only main -- js/core', { encoding: 'utf8' }).split('\n').filter(Boolean);
     } catch {
       return; // pas de dépôt git ou de branche main (copie de travail) : rien à comparer
     }
-    const allowed = ['pose', 'viewport', 'camera', 'collision', 'nav', 'decor', 'layout', 'movement', 'ray', 'projectile', 'enemy-ai', 'spawner', 'color', 'texgen', 'variants', 'synth', 'audio-mix', 'footsteps', 'sound-director', 'zombie-voice', 'sound-params', 'waves', 'wave-director', 'enemy-factory', 'combat', 'player-stats', 'spread', 'wave-splash', 'vhs', 'windows', 'siege', 'player-down', 'plank-layout', 'hud-windows', 'edge-arrow', 'maps', 'map-svg', 'shape', 'fog', 'zones', 'furniture-model', 'floors', 'stairs', 'floor-transition', 'stair-zombies', 'floor-sim', 'floor-rules', 'stair-walk', 'economy', 'money-gain', 'save'].map((n) => `js/core/${n}.js`);
+    const allowed = ['pose', 'viewport', 'camera', 'collision', 'nav', 'decor', 'layout', 'movement', 'ray', 'projectile', 'enemy-ai', 'spawner', 'color', 'texgen', 'variants', 'synth', 'audio-mix', 'footsteps', 'sound-director', 'zombie-voice', 'sound-params', 'waves', 'wave-director', 'enemy-factory', 'combat', 'player-stats', 'spread', 'wave-splash', 'vhs', 'windows', 'siege', 'player-down', 'plank-layout', 'hud-windows', 'edge-arrow', 'maps', 'map-svg', 'shape', 'fog', 'zones', 'furniture-model', 'floors', 'stairs', 'floor-transition', 'stair-zombies', 'floor-sim', 'floor-rules', 'stair-walk', 'releve', 'ecarts', 'ecarts-svg', 'visite', 'decisions', 'decor-interieur', 'mobilier-aspect', 'portes-aspect', 'see-through', 'decor-vivant', 'economy', 'money-gain', 'save',
+      // Lot 3h : atelier des sons (nouveaux fichiers seulement).
+      'audio-analysis', 'synth2', 'synth2-dsp', 'synth2-sources', 'atelier-check', 'atelier-choices', 'sound-cache', 'wave-svg', 'scenes-sons',
+      // Lot 3i : sons de l'atelier intégrés au jeu (modules nouveaux ; sound-director étendu, déjà listé).
+      'sound-choice', 'sound-render'].map((n) => `js/core/${n}.js`); // lot 3g : relevé, écarts, visite, décisions, décor léger, aspect du mobilier ; lot 4 : économie, sauvegarde
+    allowed.push('js/core/ui-mock.js'); // lot 3k : atelier de l'interface (nouveau fichier)
+    allowed.push('js/core/ui-measure.js'); // lot 3k : atelier de l'interface (nouveau fichier)
+    allowed.push('js/core/hud-format.js'); // lot 3l : formats du HUD intégré (nouveau fichier, pur)
+    allowed.push('js/core/character-parts.js'); // lot 3j : kit de construction des personnages (nouveau fichier)
+    allowed.push('js/core/pose-v2.js'); // lot 3j : poses v2 (nouveau fichier)
+    allowed.push('js/core/persos-variants.js'); // lot 3j : variantes, tenues, usure, « Mes choix » (nouveau fichier)
+    allowed.push('js/core/texgen-persos.js'); // lot 3j : textures des personnages (nouveau fichier)
+    allowed.push('js/core/blood.js'); // lot 3j : sang (nouveau fichier)
+    allowed.push('js/core/arena.js'); // lot 3j : mini-arène (nouveau fichier)
+    allowed.push('js/core/crowd.js'); // lot 3j : foule de la mini-arène (nouveau fichier)
     expect(changed.filter((f) => !allowed.includes(f))).toEqual([]);
   });
 });

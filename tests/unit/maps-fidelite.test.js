@@ -6,7 +6,7 @@ import { decorCfg, layout, params, plan, px, windowsCfg, world } from './helpers
 
 // Plan relevé sur le modèle SketchUp du propriétaire (coupe à 1,2 m) : 12 px par mètre du modèle, 5 unités par pixel, donc 60 unités par mètre.
 const NORMALS = { nord: { x: 0, y: -1 }, sud: { x: 0, y: 1 }, est: { x: 1, y: 0 }, ouest: { x: -1, y: 0 } };
-const SIDES = { F1: 'nord', F2: 'est', F3: 'ouest', F4: 'nord', F5: 'sud', F6: 'sud', F7: 'sud', F8: 'sud' };
+const SIDES = { F1: 'nord', F2: 'est', F3: 'ouest', F4: 'nord', F5: 'sud', F6: 'sud', F8: 'sud' };
 const METRE = 60;
 const analysis = analyzeMap(world);
 const near = (a, b, tol) => Math.abs(a - b) <= tol;
@@ -69,8 +69,8 @@ describe('fidélité au modèle : contour, murs, ouvertures', () => {
 });
 
 describe('fidélité au modèle : fenêtres F1 à F8', () => {
-  it('8 fenêtres F1 à F8, de largeur 72 (1,2 m mesuré sur le modèle)', () => {
-    expect(world.windows.map((w) => w.id)).toEqual(['F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8']);
+  it('7 fenêtres F1 à F8 sans F7 (grille du modèle, lot 3g), de largeur 72 (1,2 m mesuré sur le modèle)', () => {
+    expect(world.windows.map((w) => w.id)).toEqual(['F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F8']);
     expect(world.windowSize).toBe(72);
     for (const g of layout.gaps) expect(Math.max(g.w, g.h)).toBe(72);
   });
@@ -87,8 +87,8 @@ describe('fidélité au modèle : fenêtres F1 à F8', () => {
     expect(onWall).toBe(true);
   });
 
-  it('quatre fenêtres sur le mur sud (dont une large à barreaux du modèle), une au nord de la grande salle, une par côté de l\'aile', () => {
-    expect(Object.values(SIDES).filter((s) => s === 'sud').length).toBe(4);
+  it('trois fenêtres sur le mur sud (l\'ouverture large à barreaux du modèle est une grille : un mur, lot 3g), une au nord de la grande salle, une par côté de l\'aile', () => {
+    expect(Object.values(SIDES).filter((s) => s === 'sud').length).toBe(3); // lot 3g : F7 retirée (grille du modèle)
     expect(world.windows.filter((w) => w.side === 'sud').every((w) => w.y === Math.max(...ys))).toBe(true);
   });
 

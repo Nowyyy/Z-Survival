@@ -9,7 +9,9 @@ const SIZE = { width: 667, height: 375 };
 const BIG = { width: 1440, height: 900 };
 const load = (path) => JSON.parse(readFileSync(path, 'utf8'));
 const world = load('data/game/maps/rez-de-chaussee/world.json');
-const IDS = ['F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8'];
+// Lot 3g (retours du propriétaire) : triangles du mobilier d'après le modèle, comptés deux fois (passe d'ombre).
+const MOBILIER = 2 * load('data/game/maps/rez-de-chaussee/mobilier.world.json').triangles;
+const IDS = ['F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F8'];
 const BROWSER_NOISE = /GL Driver Message|ReadPixels|GPU stall/;
 const STATE = (page) => page.evaluate(() => window.__zs.getState());
 const pillar = (id) => world.pillars.find((p) => p.id === id);
@@ -58,7 +60,7 @@ test.describe('carte par défaut', () => {
     await open(page, '&map=nimporte');
     s = await STATE(page);
     expect(s.map.id).toBe('rez-de-chaussee');
-    expect(s.windows.filter((w) => w.id.startsWith('F')).length).toBe(8); // + U1 à U7 (lot 3e)
+    expect(s.windows.filter((w) => w.id.startsWith('F')).length).toBe(7); // + U1 à U7 (lot 3e) ; lot 3g : F7 retirée
     expect(problems).toEqual([]);
   });
 
@@ -112,10 +114,10 @@ test.describe('déplacements, obstacles, tir', () => {
 
   test('un mur arrête le joueur, et il ne franchit jamais une fenêtre', async ({ page }) => {
     await open(page);
-    const f7 = world.windows.find((w) => w.id === 'F7');
-    await page.evaluate(([x, y]) => window.__zs.setPlayer(x, y), [f7.x, f7.y - 120]);
+    const f8 = world.windows.find((w) => w.id === 'F8'); // lot 3g : F7 retirée (grille du modèle), F8 la remplace ici
+    await page.evaluate(([x, y]) => window.__zs.setPlayer(x, y), [f8.x, f8.y - 120]);
     let end = await walk(page, { x: 0, y: 1 }, 4);
-    expect(end.y).toBeLessThanOrEqual(f7.y - 20);
+    expect(end.y).toBeLessThanOrEqual(f8.y - 20);
     const f3 = world.windows.find((w) => w.id === 'F3');
     await page.evaluate(([x, y]) => window.__zs.setPlayer(x, y), [f3.x + 120, f3.y]);
     end = await walk(page, { x: -1, y: 0 }, 4);
@@ -276,31 +278,36 @@ test.describe('planches et débris sur les vraies fenêtres', () => {
     }
   });
 
-  test('les quatre carrés de F7 et F8 (sud) sont visibles, sur le dessus du mur, à sa hauteur (60)', async ({ page }) => {
-    await open(page);
-    const rows = await page.evaluate(() => window.__zs.getState().windows.filter((w) => ['F7', 'F8'].includes(w.id)).map((w) => ({ id: w.id, pips: w.mesh.pipsOn, y: w.mesh.pipY, tri: w.mesh.triangles })));
-    for (const r of rows) {
-      expect(r.pips).toBe(4);
-      expect(r.y).toBeGreaterThanOrEqual(60);
-      expect(r.y).toBeLessThan(61);
-      expect(r.tri).toBeGreaterThanOrEqual(38);
-      expect(r.tri).toBeLessThanOrEqual(42);
-    }
-  });
+  // Lot 3g (retours du propriétaire) : murs jusqu'au plafond : les carrés sont incrustés dans la face du mur au-dessus de la fenêtre (61 de haut), sur la face que voit la
+  // caméra (F8 est au sud : face extérieure ; la face est vérifiée par atelier-retours.test.js) ; ?murs=bas : sur le dessus du mur, à sa hauteur (60), comme avant.
+  for (const [extra, side, y0, y1] of [['', 'exterieur', 61, 61.01], ['&murs=bas', 'dessus', 60, 61]]) {
+    test(`les quatre carrés de F8 (sud ; F7 retirée au lot 3g) sont visibles : ${side}, à ${y0} de haut${extra}`, async ({ page }) => {
+      await open(page, extra);
+      const rows = await page.evaluate(() => window.__zs.getState().windows.filter((w) => ['F8'].includes(w.id)).map((w) => ({ id: w.id, pips: w.mesh.pipsOn, y: w.mesh.pipY, tri: w.mesh.triangles })));
+      expect(rows).toHaveLength(1);
+      for (const r of rows) {
+        expect(r.pips).toBe(4);
+        expect(r.y).toBeGreaterThanOrEqual(y0);
+        expect(r.y).toBeLessThan(y1);
+        expect(r.tri).toBeGreaterThanOrEqual(38);
+        expect(r.tri).toBeLessThanOrEqual(42);
+      }
+    });
+  }
 
   test('débris : un maillage par fenêtre, 4 au plus par fenêtre, masqué quand sa fenêtre est hors champ', async ({ page }) => {
     await open(page);
     const r = await page.evaluate(() => {
       const zs = window.__zs;
-      for (const id of ['F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8']) zs.setPlanks(id, 0);
+      for (const id of ['F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F8']) zs.setPlanks(id, 0);
       zs.setPlayer(1980, 2065);
       zs.step(0.05);
       zs.sampleScreen(0, 0, 8, 8);
       const s = zs.getState();
       return { meshes: s.debrisMeshes, windows: s.windows.map((w) => ({ id: w.id, inFrustum: w.mesh.inFrustum })), total: s.debris.length };
     });
-    expect(r.meshes.length).toBe(15); // F1 à F8 et U1 à U7
-    expect(r.total).toBeLessThanOrEqual(32);
+    expect(r.meshes.length).toBe(14); // F1 à F6, F8 et U1 à U7 (lot 3g : F7 retirée)
+    expect(r.total).toBeLessThanOrEqual(28);
     for (const m of r.meshes) {
       expect(m.count).toBeLessThanOrEqual(4);
       if (!m.inFrustum) expect(m.count === 0 || m.inFrustum === false).toBe(true);
@@ -314,11 +321,11 @@ test.describe('planches et débris sur les vraies fenêtres', () => {
     await open(page);
     const r = await page.evaluate(() => {
       const zs = window.__zs;
-      zs.setPlanks('F7', 0);
-      const a = zs.getState().debrisMeshes.find((m) => m.id === 'F7').count;
+      zs.setPlanks('F8', 0); // lot 3g : F7 retirée
+      const a = zs.getState().debrisMeshes.find((m) => m.id === 'F8').count;
       zs.step(40);
       const b = zs.getState().debris.length;
-      zs.setPlanks('F7', 4);
+      zs.setPlanks('F8', 4);
       return { a, b, after: zs.getState().debris.length };
     });
     expect(r.b).toBeGreaterThanOrEqual(3);
@@ -388,11 +395,11 @@ test.describe('vagues, interface, caméra, budget', () => {
     expect(r.maxStill, JSON.stringify(r.where)).toBeLessThanOrEqual(2.05);
   });
 
-  test('HUD E2-2 inchangé : un seul rectangle (300 px au plus), aucune ligne « Fenêtres », E2-9 absent, ordre des blocs', async ({ page }) => {
+  // Lot 3l : le HUD intégré (direction B) est une bande de trois colonnes : la hauteur reste bornée (120 px : quatre rangées en mode essai), plus la largeur de 300 px.
+  test('HUD E2-2 : bande de trois colonnes (120 px de haut au plus), aucune ligne « Fenêtres », E2-9 absent, ordre des blocs', async ({ page }) => {
     await open(page);
     const s = await STATE(page);
-    expect(s.hud.width).toBeLessThanOrEqual(300);
-    expect(s.hud.height).toBeLessThanOrEqual(96);
+    expect(s.hud.height).toBeLessThanOrEqual(120);
     expect(await page.locator('#repair').count()).toBe(0);
     expect(await page.locator('[data-block="E2-9"]').count()).toBe(0);
     expect(await page.locator('#hud').getByText('Fenêtres').count()).toBe(0);
@@ -405,7 +412,7 @@ test.describe('vagues, interface, caméra, budget', () => {
     const r = await page.evaluate(() => {
       const zs = window.__zs;
       zs.setPlayer(1980, 2065);
-      for (const id of ['F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8']) zs.spawnAtWindow(id, 'marcheur');
+      for (const id of ['F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F8']) zs.spawnAtWindow(id, 'marcheur');
       zs.step(15);
       return { arrows: zs.getState().hud.arrows, count: document.querySelectorAll('#edges').length };
     });
@@ -425,12 +432,12 @@ test.describe('vagues, interface, caméra, budget', () => {
     await expect(page.locator('#hud-live')).toHaveText('Fenêtre F3 ouverte');
   });
 
-  test('?labels=1 : 8 étiquettes alignées sur les fenêtres (écart < 40 px), masquées hors écran', async ({ page }) => {
+  test('?labels=1 : 7 étiquettes (lot 3g : F7 retirée) alignées sur les fenêtres (écart < 40 px), masquées hors écran', async ({ page }) => {
     await open(page, '&labels=1', BIG);
     await page.evaluate(() => window.__zs.overview(true));
     await page.evaluate(() => window.__zs.step(0.05));
     const s = await STATE(page);
-    expect(s.labels.length).toBe(8);
+    expect(s.labels.length).toBe(7);
     for (const l of s.labels) {
       const w = s.windows.find((q) => q.id === l.id);
       expect(Math.hypot(l.x - w.screen.x * 1440, l.y - w.screen.y * 900), l.id).toBeLessThan(40);
@@ -483,7 +490,7 @@ test.describe('vagues, interface, caméra, budget', () => {
   });
 
   test('budget : 10 zombies variés, planches, ombres, cône : au plus la référence (191 appels, 14 904 triangles) + 3 et + 100', async ({ page }, testInfo) => {
-    await open(page, '&shadows=1');
+    await open(page, '&shadows=1&perso=actuel&sang=0');
     const r = await page.evaluate(() => {
       const zs = window.__zs;
       const first = zs.getState().windowPositions[0];
@@ -499,7 +506,8 @@ test.describe('vagues, interface, caméra, budget', () => {
     });
     testInfo.annotations.push({ type: 'rendu', description: `${r.calls} appels, ${r.triangles} triangles` });
     console.log(`BUDGET lot 3b : ${r.calls} appels de dessin, ${r.triangles} triangles (référence main : 191 et 14 904)`);
-    expect(r.calls).toBeLessThanOrEqual(194 + 2); // lot 3c : référence 194 mesurée sur main, + 2 (porte, meubles modélisés)
-    expect(r.triangles).toBeLessThanOrEqual(Math.min(14904 + 100, 30000));
+    expect(r.calls).toBeLessThanOrEqual(194 + 2 + 2); // lot 3c : référence 194 mesurée sur main, + 2 (porte, meubles modélisés) ; lot 3g : + 2 (nappes de brume basses)
+    // Lot 3g (retours du propriétaire) : mobilier d'après le modèle, ses triangles deux fois (passe d'ombre) ; 30 000 au plus.
+    expect(r.triangles).toBeLessThanOrEqual(Math.min(14904 + 100 + MOBILIER, 30000));
   });
 });

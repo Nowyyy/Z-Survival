@@ -17,7 +17,7 @@ const EAST = { x: 1570, y: 2007 }; // grande salle, devant la porte
 const WEST = { x: 1400, y: 2007 }; // aile, derrière la porte
 const BROWSER_NOISE = /GL Driver Message|ReadPixels|GPU stall/;
 const STATE = (page) => page.evaluate(() => window.__zs.getState());
-const HALL = ['F4', 'F5', 'F6', 'F7', 'F8'];
+const HALL = ['F4', 'F5', 'F6', 'F8'];
 const WING = ['F1', 'F2', 'F3'];
 // Références mesurées sur main (lot 3b) dans les mêmes conditions : 10 zombies variés, planches, ombres, cône (voir le bilan du lot 3c).
 const REF = { calls: 194, triangles: 14032 };
@@ -61,14 +61,14 @@ async function endWave(page, n) {
 }
 
 test.describe('zones : départ, porte fermée', () => {
-  test('au départ : « depart » ouverte, « aile » fermée ; F4 à F8 actives, F1 à F3 inactives ; 10 points d\'apparition actifs', async ({ page }) => {
+  test('au départ : « depart » ouverte, « aile » fermée ; F4 à F8 actives, F1 à F3 inactives ; 8 points d\'apparition actifs (lot 3g : F7 retirée)', async ({ page }) => {
     await open(page);
     const s = await STATE(page);
     expect(s.zones.list.map((z) => [z.id, z.open])).toEqual([['depart', true], ['aile', false], ['etage-gauche', false], ['etage-droite', false]]); // lot 3e : deux zones d'étage
     expect(s.zones.list[0].windows).toEqual(HALL);
     expect(s.zones.list[1].windows).toEqual(WING);
     expect(s.zones.activeWindows).toEqual(HALL);
-    expect(s.zones.activeSpawnPoints).toHaveLength(10);
+    expect(s.zones.activeSpawnPoints).toHaveLength(8); // lot 3g : F7 retirée (avant : 10)
     expect(s.zones.activeSpawnPoints.every((id) => HALL.some((w) => id.startsWith(`${w}-`)))).toBe(true);
     expect(s.zones.list[1].spawnPoints).toHaveLength(6);
     expect(s.windows.filter((w) => w.active).map((w) => w.id)).toEqual(HALL);
@@ -77,11 +77,12 @@ test.describe('zones : départ, porte fermée', () => {
     expect(s.zones.doors.map((d) => [d.id, d.open, d.planned])).toEqual([['porte-1', false, false], ['porte-2', false, false], ['porte-3', false, false]]);
   });
 
-  test('la porte est visible (un maillage de 12 triangles au plus) et solide : le joueur ne passe pas dans l\'aile', async ({ page }) => {
+  // Lot 3g (retours du propriétaire) : vraie porte de planches (environ 150 triangles) et éboulis aux escaliers fermés (environ 450 au plus) ; avant : 12 au plus.
+  test('la porte est visible (un maillage de 500 triangles au plus) et solide : le joueur ne passe pas dans l\'aile', async ({ page }) => {
     await open(page);
     const before = await STATE(page);
     expect(before.doorMeshes.ids).toContain('porte-1'); // lot 3e : les blocs des portes 2 et 3 sont aussi dessinés
-    expect(before.doorMeshes.triangles).toBeLessThanOrEqual(12 * before.doorMeshes.meshes);
+    expect(before.doorMeshes.triangles).toBeLessThanOrEqual(500 * before.doorMeshes.meshes);
     expect(before.doorMeshes.scaleY['porte-1']).toBe(1);
     const p = await page.evaluate(([x, y]) => {
       const zs = window.__zs;
@@ -95,13 +96,13 @@ test.describe('zones : départ, porte fermée', () => {
     expect(pointInPolygon(p.x, p.y, AILE)).toBe(false);
   });
 
-  test('les 8 fenêtres ont leurs 4 planches visibles, y compris celles de la zone fermée', async ({ page }) => {
+  test('les 7 fenêtres (lot 3g : F7 retirée) ont leurs 4 planches visibles, y compris celles de la zone fermée', async ({ page }) => {
     await open(page);
     const s = await STATE(page);
-    expect(s.windows.filter((w) => w.floor !== 'etage').map((w) => w.planks)).toEqual(Array(8).fill(4));
-    expect(s.plankMesh.nailed).toBe(32 + 28); // F1 à F8 et U1 à U7 (lot 3e)
+    expect(s.windows.filter((w) => w.floor !== 'etage').map((w) => w.planks)).toEqual(Array(7).fill(4));
+    expect(s.plankMesh.nailed).toBe(28 + 28); // F1 à F6, F8 et U1 à U7 (lot 3e ; lot 3g : F7 retirée)
     await open(page, '&planks=2');
-    expect((await STATE(page)).windows.filter((w) => w.floor !== 'etage').map((w) => w.planks)).toEqual(Array(8).fill(2));
+    expect((await STATE(page)).windows.filter((w) => w.floor !== 'etage').map((w) => w.planks)).toEqual(Array(7).fill(2));
   });
 
   test('aucun zombie dans l\'aile pendant 60 s de jeu simulé à la manche 5, ni aucune planche de F1 à F3 arrachée', async ({ page }) => {
@@ -236,9 +237,9 @@ test.describe('zones : ouverture de la porte 1 à la fin de la manche 10', () =>
     expect(done.player.down.chutes).toBe(chutes);
     expect(done.windows.find((w) => w.id === 'F5').planks).toBe(1);
     expect(done.plankMesh.debris).toBeGreaterThan(0);
-    // 8 fenêtres, 16 points actifs, et la manche 11 démarre 12 s après la fin de la manche 10 avec son annonce de début de 3,0 s.
-    expect(done.zones.activeWindows).toHaveLength(8);
-    expect(done.zones.activeSpawnPoints).toHaveLength(16);
+    // 7 fenêtres, 14 points actifs (lot 3g : F7 retirée), et la manche 11 démarre 12 s après la fin de la manche 10 avec son annonce de début de 3,0 s.
+    expect(done.zones.activeWindows).toHaveLength(7);
+    expect(done.zones.activeSpawnPoints).toHaveLength(14);
     const debut = await until(page, `s.splash.kind === 'debut' && s.splash.visible`, 12);
     expect(debut.state.splash.title).toBe('Vague 11');
     expect(debut.time - t0).toBeGreaterThan(8.8);
@@ -346,7 +347,7 @@ test.describe('zones : ?wave=N, fin de monde, Rejouer, ancienne salle', () => {
     expect(s.splash.visible).toBe(false);
     expect(s.events).toEqual([]);
     expect(s.zones.list.map((z) => z.open)).toEqual([true, true, false, false]);
-    expect(s.zones.activeWindows).toHaveLength(8);
+    expect(s.zones.activeWindows).toHaveLength(7); // lot 3g : F7 retirée
     expect(s.zones.next).toEqual({ id: 'porte-2', wave: 21 });
     await open(page, '&wave=10&nospawn=1');
     s = await STATE(page);
@@ -388,7 +389,7 @@ test.describe('zones : ?wave=N, fin de monde, Rejouer, ancienne salle', () => {
     expect(s.worldOver).toBe(false);
     expect(s.zones.doors[0]).toMatchObject({ open: true, sinkProgress: 1 });
     expect(s.events).toEqual([]);
-    expect(s.windows.filter((w) => w.floor !== 'etage').map((w) => w.planks)).toEqual(Array(8).fill(4));
+    expect(s.windows.filter((w) => w.floor !== 'etage').map((w) => w.planks)).toEqual(Array(7).fill(4)); // lot 3g : F7 retirée
     expect(s.kills).toBe(0);
     // Sans ?wave : la porte ouverte pendant la partie est refermée par Rejouer, et la manche 1 revient.
     await open(page, '&nospawn=1');
@@ -453,17 +454,19 @@ test.describe('zones : ?wave=N, fin de monde, Rejouer, ancienne salle', () => {
     expect(s.worldOver).toBe(false);
     expect(s.waves.worldEnd).toBe(false);
     await page.locator('#btn-pause').click();
-    await expect(page.locator('#pause-next')).toBeHidden();
+    await expect(page.locator('#pause-next')).toHaveCount(0); // lot 3l : plus de ligne « Prochaine zone » dans la pause (retour du propriétaire)
   });
 });
 
 test.describe('zones : panneau de pause, mouvement réduit, interruptions', () => {
-  test('pause : « Prochaine zone : manche 11 » aux manches 1 à 10, masquée dès la manche 11 ; le panneau tient à 667×375', async ({ page }) => {
+  // Lot 3l (retour du propriétaire) : la ligne « Prochaine zone » quitte la pause ; la donnée reste (getState().zones.next) et le panneau doit toujours tenir.
+  test('pause : prochaine zone (donnée) 11 aux manches 1 à 10, puis 21, 31, aucune ; plus de ligne dans la pause ; le panneau tient à 667×375', async ({ page }) => {
     await open(page, '&nospawn=1');
     for (const n of [1, 5, 10]) {
       await page.evaluate((w) => { window.__zs.startWave(w); window.__zs.step(0.05); }, n);
       await page.locator('#btn-pause').click();
-      await expect(page.locator('#pause-next')).toHaveText('Prochaine zone : manche 11');
+      await expect(page.locator('#pause-next')).toHaveCount(0);
+      expect((await STATE(page)).zones.next?.wave).toBe(11);
       const fit = await page.evaluate(() => {
         const r = document.querySelector('#pause-panel .panel').getBoundingClientRect();
         return { top: r.top, bottom: r.bottom, left: r.left, right: r.right, w: innerWidth, h: innerHeight, small: [...document.querySelectorAll('#pause-panel button')].filter((b) => !b.hidden && b.getBoundingClientRect().height < 44).length };
@@ -477,15 +480,15 @@ test.describe('zones : panneau de pause, mouvement réduit, interruptions', () =
     }
     await page.evaluate(() => { window.__zs.startWave(11); window.__zs.step(0.05); });
     await page.locator('#btn-pause').click();
-    await expect(page.locator('#pause-next')).toHaveText('Prochaine zone : manche 21'); // lot 3e : la porte 2 suit
+    expect((await STATE(page)).zones.next?.wave).toBe(21); // lot 3e : la porte 2 suit
     await page.locator('#btn-resume').click();
     await page.evaluate(() => { window.__zs.startWave(21); window.__zs.step(0.05); });
     await page.locator('#btn-pause').click();
-    await expect(page.locator('#pause-next')).toHaveText('Prochaine zone : manche 31'); // puis la porte 3
+    expect((await STATE(page)).zones.next?.wave).toBe(31); // puis la porte 3
     await page.locator('#btn-resume').click();
     await page.evaluate(() => { window.__zs.startWave(31); window.__zs.step(0.05); });
     await page.locator('#btn-pause').click();
-    await expect(page.locator('#pause-next')).toBeHidden();
+    expect((await STATE(page)).zones.next).toBeNull();
   });
 
   test('mouvement réduit : la porte disparaît sans mouvement, l\'annonce n\'a ni secousse ni échelle', async ({ page }) => {
@@ -554,8 +557,8 @@ test.describe('zones : panneau de pause, mouvement réduit, interruptions', () =
     expect(r.a).toBe(true);
     expect(r.b).toBe(true);
     expect(r.unknown).toBe(false);
-    expect(r.open).toEqual([true, [], 8]);
-    expect(r.closed).toEqual([false, ['porte-1'], 5]);
+    expect(r.open).toEqual([true, [], 7]); // lot 3g : F7 retirée
+    expect(r.closed).toEqual([false, ['porte-1'], 4]); // lot 3g : F7 retirée
   });
 });
 
@@ -616,13 +619,13 @@ test.describe('zones : mobilier de complément, budget, interface', () => {
     testInfo.annotations.push({ type: 'rendu', description: `porte fermée : ${ref.calls} appels, ${ref.triangles} triangles (référence ${REF.calls} et ${REF.triangles})` });
     console.log(`BUDGET lot 3c, porte fermée (mise en place du lot 3b) : ${ref.calls} appels, ${ref.triangles} triangles (référence main : ${REF.calls} et ${REF.triangles})`);
     expect(ref.calls).toBeLessThanOrEqual(REF.calls + 5);
-    expect(ref.triangles).toBeLessThanOrEqual(30000);
-    expect(ref.calls).toBeLessThanOrEqual(300);
+    expect(ref.triangles).toBeLessThanOrEqual(45000); // lot 3m : limites de refonte relevées par le propriétaire (avant : 30000)
+    expect(ref.calls).toBeLessThanOrEqual(400); // lot 3m : limites de refonte relevées par le propriétaire (avant : 300)
     await page.evaluate(() => window.__zs.killAll());
     const closed = await measure('porte');
     console.log(`BUDGET lot 3c, porte fermée à l'écran : ${closed.calls} appels, ${closed.triangles} triangles`);
-    expect(closed.calls).toBeLessThanOrEqual(REF.calls + 5); // lot 3e : au plus 5 appels de plus que la référence
-    expect(closed.triangles).toBeLessThanOrEqual(30000);
+    expect(closed.calls).toBeLessThanOrEqual(REF.calls + 5 + 6); // lot 3e : au plus 5 appels de plus que la référence ; lot 3g : + 6 au plus pour le décor léger (avant : + 5)
+    expect(closed.triangles).toBeLessThanOrEqual(45000); // lot 3m : limites de refonte relevées par le propriétaire (avant : 30000)
     await page.evaluate(() => window.__zs.setDoor('porte-1', true));
     const opened = await measure('porte');
     console.log(`BUDGET lot 3c, porte ouverte à l'écran : ${opened.calls} appels, ${opened.triangles} triangles`);
@@ -651,11 +654,11 @@ test.describe('zones : mobilier de complément, budget, interface', () => {
     }
   });
 
-  test('interface : HUD E2-2 inchangé, aucun nouveau bloc, ordre des blocs, cibles de 44 px', async ({ page }) => {
+  // Lot 3l : HUD intégré en trois colonnes ; la hauteur reste bornée (120 px : quatre rangées en mode essai, ?nospawn=1), plus la largeur de 300 px.
+  test('interface : HUD E2-2 en bande, aucun nouveau bloc, ordre des blocs, cibles de 44 px', async ({ page }) => {
     await open(page, '&nospawn=1');
     const s = await STATE(page);
-    expect(s.hud.width).toBeLessThanOrEqual(300);
-    expect(s.hud.height).toBeLessThanOrEqual(96);
+    expect(s.hud.height).toBeLessThanOrEqual(120);
     const blocks = await page.evaluate(() => [...document.querySelectorAll('#game-root [data-block]')].map((el) => el.dataset.block));
     expect(blocks).toEqual(['E2-2', 'E2-8', 'E2-10', 'E2-5', 'E2-3', 'E2-4']);
     expect(await page.locator('[data-block="E2-9"], [data-block="E2-11"]').count()).toBe(0);

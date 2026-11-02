@@ -368,11 +368,13 @@ test.describe('interface : annonces des fenêtres', () => {
       await open(page, '', size);
       const r = await page.evaluate(() => {
         const b = (sel) => document.querySelector(sel).getBoundingClientRect();
-        return { line: b('#hud'), hud: b('#hud'), pause: b('#btn-pause') };
+        return { line: b('#hud'), hud: b('#hud'), left: b('.hud-tl'), right: b('.hud-tr'), pause: b('#btn-pause') };
       });
       expect(r.line.left).toBeGreaterThanOrEqual(16);
       expect(r.line.top).toBeGreaterThanOrEqual(16);
-      expect(r.hud.right).toBeLessThanOrEqual(r.pause.left);
+      // Lot 3l : #hud est la bande des trois colonnes ; la colonne de droite (restants, tués) s'arrête avant Pause (avant : #hud entier).
+      expect(r.left.right).toBeLessThanOrEqual(r.pause.left);
+      expect(r.right.right).toBeLessThanOrEqual(r.pause.left);
       expect(r.hud.bottom).toBeLessThan(size.height - 16);
     });
   }
@@ -474,9 +476,9 @@ test.describe('budget, ?empty=1, hygiène', () => {
     testInfo.annotations.push({ type: 'rendu', description: `${r.n} zombies : ${r.render.calls} appels, ${r.render.triangles} triangles` });
     console.log(`BUDGET lot 3 : ${r.n} zombies, ${r.render.calls} appels de dessin, ${r.render.triangles} triangles`);
     expect(r.render.calls).toBeLessThanOrEqual(192);
-    expect(r.render.triangles).toBeLessThanOrEqual(30000);
-    expect(r.render.calls).toBeLessThanOrEqual(300);
-    expect(r.render.triangles).toBeLessThanOrEqual(30000);
+    expect(r.render.triangles).toBeLessThanOrEqual(45000); // lot 3m : limites de refonte relevées par le propriétaire (avant : 30000)
+    expect(r.render.calls).toBeLessThanOrEqual(400); // lot 3m : limites de refonte relevées par le propriétaire (avant : 300)
+    expect(r.render.triangles).toBeLessThanOrEqual(45000); // lot 3m : limites de refonte relevées par le propriétaire (avant : 30000)
   });
 
   test('?empty=1 : comportement du lot 2c (zombies libres, aucun siège, aucune fenêtre à planches)', async ({ page }) => {

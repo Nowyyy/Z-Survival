@@ -45,8 +45,11 @@ describe('rendu de la porte (lot 3c) : matière existante, lisible contre le mur
     expect(luminance(doorMean)).toBeGreaterThan(luminance(wallMean));
   });
 
-  it('un maillage par porte fermée, boîte sans dessous (10 triangles, 12 au plus), sans ombre portée ; l\'enfoncement libère la géométrie', () => {
-    expect(world).toMatch(/builder\.box\(rectBox\(visual, 0, r\.hauteur - 1\)/);
+  // Lot 3g (retours du propriétaire) : une vraie porte de planches (doorBoxes) ou un éboulis (rubbleBoxes) par bloc ; la boîte de tôle d'avant reste avec ?detail=0.
+  it('un maillage par porte fermée (boîte sans dessous avec ?detail=0 ; porte de planches ou éboulis sinon), sans ombre portée ; l\'enfoncement libère la géométrie', () => {
+    expect(world).toMatch(/rectBox\(visual, 0, height\), region: 'tole'/);
+    expect(world).toMatch(/doorBoxes\(visual, height, bl\.id\)/);
+    expect(world).toMatch(/rubbleBoxes\(visual, Math\.min\(height, 66\), bl\.id\)/);
     expect(world).toMatch(/cast: false, receive: true/);
     expect(world).toMatch(/mesh\.geometry\.dispose\(\)/);
     expect(world).toMatch(/\(1 - Math\.min\(1, Math\.max\(0, progress\)\)\) \*\* 2/);

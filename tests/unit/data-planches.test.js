@@ -112,7 +112,9 @@ describe('lot 3a : textures.json et windows.json', () => {
     }
     // Comparé au commit qui précède le lot 3e (5653aa0) : valable avant et après la fusion du lot.
     // Lot 3e (mise à jour) : « garde-corps » (barrière de l'étage, demandée par le propriétaire) s'ajoute aux textures ; les autres sont intactes.
-    expect(texturesJson.textures.filter((t) => !['planche', 'garde-corps'].includes(t.id))).toEqual(before.textures.filter((t) => t.id !== 'planche'));
+    // Lot 3g (avant : égalité stricte des entrées) : les entrées gagnent seulement une clé « fine » (réglages fins, ignorés avec ?detail=0) ; le reste est intact.
+    const plain = (t) => Object.fromEntries(Object.entries(t).filter(([k]) => k !== 'fine'));
+    expect(texturesJson.textures.filter((t) => !['planche', 'garde-corps'].includes(t.id)).map(plain)).toEqual(before.textures.filter((t) => t.id !== 'planche'));
     expect(texturesJson.budget).toEqual(before.budget);
   });
 

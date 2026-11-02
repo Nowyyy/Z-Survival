@@ -3,8 +3,10 @@ import { execSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 import { renderSound, soundBytes, variantCount } from '../../js/core/synth.js';
 import { attackTime, centroid, maxCorrelation, mean, medianPitch, peakOf, rmsOf, toDb } from './helpers/dsp.js';
+import { synthRecipes } from './helpers/sons-anciens.js';
 
-const { sounds } = JSON.parse(readFileSync('data/game/sounds.json', 'utf8'));
+// Lot 3i : recettes de synth.js (les recettes remplacées par l'atelier viennent de sounds-legacy.json ; l'atelier : sons-integres.test.js).
+const sounds = synthRecipes();
 const audio = JSON.parse(readFileSync('data/game/audio.json', 'utf8'));
 const materials = JSON.parse(readFileSync('data/game/sound-materials.json', 'utf8'));
 const world = JSON.parse(readFileSync('data/game/world.json', 'utf8'));
@@ -142,11 +144,14 @@ describe('cohérence des données sonores', () => {
     expect(new Set(sounds.map((s) => s.set))).toEqual(new Set(['essentiel', 'fond']));
   });
 
-  it('mémoire audio estimée (4 octets par échantillon) : 8 Mo au plus', () => {
+  // Lot 3i : plafond de huit mégaoctets levé par décision du propriétaire (avant : expect(bytes) au plus huit mégaoctets) ; mesure rapportée seulement ; garde-fou
+  // d'emballement de 64 Mo (provisoire) dans sons-integres.test.js.
+  it('mémoire audio estimée (4 octets par échantillon) : rapportée, sans plafond (décision du propriétaire)', () => {
     const bytes = rendered.reduce((sum, r) => sum + soundBytes(r.result), 0);
     console.info(`mémoire audio : ${(bytes / 1048576).toFixed(2)} Mo pour ${rendered.length} tampons`);
-    expect(bytes).toBeLessThanOrEqual(8 * 1048576);
+    expect(bytes).toBeGreaterThan(0);
   });
+
 
   it('temps de rendu en Node : ensemble essentiel et tout (seuils larges pour la CI ; objectifs 800 et 1 500 ms)', () => {
     const all = timing.essentiel + timing.fond;
@@ -221,7 +226,9 @@ describe('cohérence des données sonores', () => {
     expect(audio.compressor.ratio).toBeGreaterThan(1);
     expect(audio.muffle.lowpass).toBeGreaterThan(100);
     expect(audio.muffle.gain).toBeLessThan(1);
-    for (const id of Object.keys(audio.minDelay)) expect(sounds.map((s) => s.id), id).toContain(id);
+    // Lot 3i : les délais minimaux portent aussi sur les sons de l'atelier (sounds.json complet, sons nouveaux compris).
+    const allIds = JSON.parse(readFileSync('data/game/sounds.json', 'utf8')).sounds.map((s) => s.id);
+    for (const id of Object.keys(audio.minDelay)) expect([...sounds.map((s) => s.id), ...allIds], id).toContain(id);
     expect(audio.minDelay['zombie-blessure']).toBe(0.06);
     expect(audio.casing.minDelay).toBeLessThan(audio.casing.maxDelay);
   });

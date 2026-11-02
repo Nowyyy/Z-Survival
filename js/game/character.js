@@ -68,10 +68,14 @@ export function createKit({ textures, variants, hit }) {
   const rect = (id) => textures.region(ATLAS, id);
   const bodyMaterial = new THREE.MeshLambertMaterial({ map: textures.texture(ATLAS) });
   const { player, zombie } = variants;
+  let geo = null; // lot 3j : construites au premier personnage actuel (inutiles avec les personnages v2)
   return {
-    geo: {
-      player: buildGeometries({ outfit: player.outfit, trousers: player.trousers, boot: player.boot, hair: player.hair, skin: player.skin, gun: player.gun, sleeves: player.outfit }, rect),
-      zombies: zombie.variants.map((v) => buildGeometries({ outfit: v.outfit, trousers: v.trousers, boot: zombie.boot, skin: v.skin, sleeves: v.skin }, rect)),
+    get geo() {
+      geo ??= {
+        player: buildGeometries({ outfit: player.outfit, trousers: player.trousers, boot: player.boot, hair: player.hair, skin: player.skin, gun: player.gun, sleeves: player.outfit }, rect),
+        zombies: zombie.variants.map((v) => buildGeometries({ outfit: v.outfit, trousers: v.trousers, boot: zombie.boot, skin: v.skin, sleeves: v.skin }, rect)),
+      };
+      return geo;
     },
     variants: zombie.variants,
     mat: {
@@ -90,6 +94,7 @@ const gunWorld = new THREE.Vector3();
 
 // kind : 'player' (arme tenue en main) ou 'zombie' (bras tendus, tête penchée, pas d'arme) ; variant : indice dans zombie-variants.json.
 export function createCharacter(kit, kind, variant = 0) {
+  if (kit.v2?.handles(kind, variant)) return kit.v2.create(kind, variant); // lots 3j et 3m : personnage v2 de sa variante (js/game/character-v2.js) ; « actuel » : ci-dessous
   const traits = kind === 'zombie' ? kit.variants[variant % kit.variants.length] : { scale: 1, headTilt: 0, armLift: 0 };
   const g = kind === 'zombie' ? kit.geo.zombies[variant % kit.geo.zombies.length] : kit.geo.player;
   const base = kit.mat.body;

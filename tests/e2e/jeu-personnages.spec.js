@@ -34,9 +34,9 @@ test.describe('personnages du lot 1c-C', () => {
     expect(s.enemies).toHaveLength(8);
     testInfo.annotations.push({ type: 'rendu', description: `${s.render.calls} appels de dessin, ${s.render.triangles} triangles (8 zombies, ombres actives)` });
     console.log(`lot 1c-C : ${s.render.calls} appels de dessin (objectif 240), ${s.render.triangles} triangles`);
-    expect(s.render.calls).toBeLessThanOrEqual(300);
+    expect(s.render.calls).toBeLessThanOrEqual(400); // lot 3m : limites de refonte relevées par le propriétaire (avant : 300)
     expect(s.render.calls).toBeLessThanOrEqual(240);
-    expect(s.render.triangles).toBeLessThanOrEqual(15_000);
+    expect(s.render.triangles).toBeLessThanOrEqual(45_000); // lot 3j : variantes « riche » par défaut, plafond de triangles relevé à la limite de refonte (choix du propriétaire)
   });
 
   test('les zombies d\'une partie utilisent au moins 3 variantes différentes', async ({ page }) => {
@@ -62,7 +62,7 @@ test.describe('personnages du lot 1c-C', () => {
   });
 
   test('les poses du joueur s\'appliquent : angles non nuls en marche, nuls à l\'arrêt', async ({ page }) => {
-    await open(page);
+    await open(page, '&perso=actuel&sang=0'); // lot 3j : angles de pose.js, ceux des personnages actuels
     await page.evaluate(() => window.__zs.setInput({ move: { x: 1, y: 0 }, aim: { angle: 0 } }));
     await page.evaluate(() => window.__zs.step(0.6));
     const walking = await state(page);
@@ -76,7 +76,7 @@ test.describe('personnages du lot 1c-C', () => {
   });
 
   test('les poses des zombies s\'appliquent : bras tendus, hanches qui balancent en marche', async ({ page }) => {
-    await open(page);
+    await open(page, '&perso=actuel&sang=0'); // lot 3j : angles de pose.js, ceux des personnages actuels
     await page.evaluate(() => window.__zs.spawnEnemy(1800, 1500));
     await page.evaluate(() => window.__zs.step(1));
     const z = (await state(page)).enemies[0];
@@ -133,7 +133,7 @@ test.describe('personnages du lot 1c-C', () => {
     await spawnEight(page);
     await page.evaluate(() => window.__zs.sampleScreen(0, 0, 4, 4));
     const s = await state(page);
-    expect(s.render.calls).toBeLessThanOrEqual(300);
-    expect(s.render.triangles).toBeLessThanOrEqual(15_000);
+    expect(s.render.calls).toBeLessThanOrEqual(400); // lot 3m : limites de refonte relevées par le propriétaire (avant : 300)
+    expect(s.render.triangles).toBeLessThanOrEqual(45_000); // lot 3j : variantes « riche » par défaut, plafond de triangles relevé à la limite de refonte (choix du propriétaire)
   });
 });

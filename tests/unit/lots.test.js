@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { compareLots, lotLabel, lotUrl, parseEntry, parseLot, sortLots, splitLots } from '../../js/lots.js';
+import { compareLots, lotLabel, lotUrl, parseEntry, parseLot, parseName, sortLots, splitLots } from '../../js/lots.js';
+import { readFileSync } from 'node:fs';
 
 const lot = (name) => ({ name });
 
@@ -96,5 +97,43 @@ describe('sortLots : même numéro, départagé par la date', () => {
     expect(sortLots(dated).map((l) => l.name)).toEqual(['lot-1', 'lot-1m', 'lot-1b']);
     expect(splitLots(dated).latest.name).toBe('lot-1b');
     expect(sortLots([{ name: 'lot-1m' }, { name: 'lot-1b' }]).map((l) => l.name)).toEqual(['lot-1b', 'lot-1m']);
+  });
+});
+
+// Lot 4b (demande du propriétaire) : nom affiché facultatif, ligne « nom: » de apercu.txt (la branche reste lot-4b, son adresse aussi).
+describe('parseName et lotLabel avec un nom affiché', () => {
+  it('lit la ligne « nom: », où qu\'elle soit ; sinon rien', () => {
+    expect(parseName('jeu.html\ntype: hifi\nnom: V0.1\n')).toBe('V0.1');
+    expect(parseName('jeu.html\r\nNom :  Version 2-b \r\n')).toBe('Version 2-b');
+    expect(parseName('jeu.html\ntype: hifi\n')).toBe('');
+    expect(parseName(null)).toBe('');
+  });
+
+  it('refuse un nom vide, trop long ou avec des caractères spéciaux', () => {
+    expect(parseName('nom:')).toBe('');
+    expect(parseName(`nom: ${'x'.repeat(25)}`)).toBe('');
+    expect(parseName('nom: <b>V0.1</b>')).toBe('');
+    expect(parseName('nom: ../V0.1')).toBe('');
+  });
+
+  it('lotLabel : le nom affiché s\'il est valide, sinon « Lot 4b »', () => {
+    expect(lotLabel('lot-4b', 'V0.1')).toBe('V0.1');
+    expect(lotLabel('lot-4b')).toBe('Lot 4b');
+    expect(lotLabel('lot-4b', '<script>')).toBe('Lot 4b');
+    expect(lotLabel('lot-4b', undefined)).toBe('Lot 4b');
+  });
+
+  // Lot 3i : sur la branche lot-3i, apercu.txt est celui du lot (titre « Sons intégrés », sans nom affiché) ; à la fusion, lot-4b garde le sien.
+  it('apercu.txt de la branche d\'intégration : page jeu.html, nom affiché V0.5', () => {
+    const text = readFileSync('apercu.txt', 'utf8');
+    expect(parseEntry(text)).toBe('jeu.html');
+    if (/titre: (Sons intégrés|Interface intégrée|Personnages intégrés)/.test(text)) expect(parseName(text)).toBe(''); // lot 3l : sa branche, même règle que lot-3i ; lot 3m : la sienne
+    else expect(parseName(text)).toBe('V0.5');
+  });
+
+  it('scripts/assemble.mjs recopie le nom affiché dans lots.json (champ nom, seulement s\'il existe)', () => {
+    const src = readFileSync('scripts/assemble.mjs', 'utf8');
+    expect(src).toMatch(/const nom = parseName\(apercu\);/);
+    expect(src).toMatch(/\.\.\.\(nom \? \{ nom \} : \{\}\)/);
   });
 });

@@ -16,10 +16,10 @@ import { SWAP_UP, entryDirection, heightOf, startWalk, stepWalk, wantsStairs } f
 import { arrivalKnockback, createStairWatch, stairArrival, stairParams, stairState, stairTriggers, startStairCooldown, stepStairWatch } from '../core/stairs.js';
 import { createWindowsState } from '../core/windows.js';
 import { moveCircle } from '../core/movement.js';
+import { circleOverlapsRect } from '../core/collision.js';
 import { addDebris, createDebris, plankSettings, removeDebris, stepDebris } from '../core/plank-layout.js';
 import { applyHeal, canFire, canHealOnKill, canMove, createPlayerDown, isInvulnerable, knockbackZombies, stepPlayerDown } from '../core/player-down.js';
 import { effectivePlayer, effectiveWeapon, normalizeLevels, STAT_IDS, statValues } from '../core/player-stats.js';
-import { computePose } from '../core/pose.js';
 import { createBullet, stepBullets } from '../core/projectile.js';
 import { castRay } from '../core/ray.js';
 import { createRng } from '../core/rng.js';
@@ -33,7 +33,6 @@ import { createDirector, finishWave, info as waveInfo, markDoor, setParams, star
 import { createSplash, stepSplash } from '../core/wave-splash.js';
 import { waveSpec } from '../core/waves.js';
 import { activeSpawnPoints, activeWindows, activeZones, assignWindows, doorsOpenAtStart, nextDoor } from '../core/zones.js';
-import { createCharacter, createKit } from './character.js';
 import { createEffects, MAX_SPARKS, SPARK_TIME } from './effects.js';
 import { createFloorFade } from './floor-fade.js';
 import { createBank } from './bank.js';
@@ -45,6 +44,9 @@ import { DOWN_TEXTS, FLOOR_TEXTS, fmt, MONEY_TEXTS, SPLASH_TEXTS, WINDOW_INITIAL
 import { createThreeTextures } from './textures.js';
 import { buildWorld, createCamera } from './world.js';
 
+// Lot 3j : personnages v2 (« riche » par défaut) et sang (complet par défaut) ; ?perso=actuel&sang=0 : le jeu d'avant (rien de plus chargé).
+const persos = await import('./persos-loader.js').then((m) => m.loadPersos(location.search));
+const { computePose, createKit, createCharacter } = persos.model; // lot 3m : ancien modèle (pose.js, character.js) importé seulement si un personnage est « actuel »
 const RECOIL_TIME = 0.12;
 const HIT_FLASH_TIME = 0.1;
 const FIRE_POSE_TIME = 0.3;
@@ -119,8 +121,11 @@ export function createGame(ctx) {
   const buildStart = performance.now();
   const world = buildWorld({ palette, layout, layouts, render, textures, windowGeoms: geoms, windowsCfg, seed: ctx.seed, closedDoors: doorCfgs.filter((d) => !startOpen.includes(d.id)).map((d) => d.id), stairs: stairsWorld });
   if (ctx.perf) ctx.perf.floorsMs = performance.now() - buildStart;
+  // Lot 3i : feux de décor (feux.json sur le mobilier : centre des boîtes de la pièce) pour la boucle de feu.
+  ctx.audio?.setFires?.((render.feux ?? []).map((fe) => ({ fe, boxes: render.mobilier?.[fe?.piece]?.boxes })).filter((f) => Array.isArray(f.boxes) && f.boxes.length > 0).map(({ fe, boxes }) => ({ x: (Math.min(...boxes.map((b) => b.x0)) + Math.max(...boxes.map((b) => b.x1))) / 2, y: (Math.min(...boxes.map((b) => b.z0)) + Math.max(...boxes.map((b) => b.z1))) / 2, floor: fe.floor })));
   const rig = createCamera(render.camera, cfg.camera, layout, params.tilt, params.zoom);
   const kit = createKit({ textures, variants: ctx.variants, hit: palette.hit });
+  const pv = persos?.attach({ kit, world, render, palette, variants: ctx.variants, seed: ctx.seed }) ?? null; // lot 3j : kit.v2 et sang
   const effects = createEffects(world.effectsRoot, palette, { gunHeight: render.gunHeight, bulletRadius: cfg.weapon.bulletRadius });
   const hud = createHud(ctx.dict);
   const floorFade = createFloorFade();
@@ -163,6 +168,7 @@ export function createGame(ctx) {
   window.addEventListener('pagehide', () => bank.flush('pagehide'));
 
   // Vue de test de la banque : getState().save (sans le journal) et getState().economy.
+  const trialMode = bank.summary().readOnly === true; // lot 3l : « Mode essai » dans le HUD (adresse d'essai : sauvegarde en lecture seule)
   const bankView = () => {
     const { economy, writes, mode, ...save } = bank.snapshot();
     return { save: { ...save, writes }, economy, mode };
@@ -334,6 +340,7 @@ export function createGame(ctx) {
     rig.snap(sim.player.x, sim.player.y);
     lastFire = -10;
     sparks = [];
+    pv?.reset(); // lot 3j
     laser = null;
     ctx.ui.setLive('');
     ctx.audio?.reset(seed);
@@ -442,7 +449,7 @@ export function createGame(ctx) {
   }
   function advanceWalk(dir, dt) {
     const def = stairsWorld.find((q) => q.id === sim.sw.stair);
-    const r = stepWalk(sim.sw, def?.walk?.path, { pos: sim.player, dir, speed: eff.player.speed, dt, width: def?.walk?.width, radius: sim.player.r });
+    const r = stepWalk(sim.sw, def?.walk?.path, { pos: sim.player, dir, speed: eff.player.speed, dt, width: def?.walk?.width, radius: sim.player.r, sideExit: { free: (p) => !playerSolids.some((o) => circleOverlapsRect({ x: p.x, y: p.y, r: sim.player.r }, o)) } }); // lot 3g : sortie par le côté sur un palier
     sim.player = { ...sim.player, x: r.pos.x, y: r.pos.y };
     sim.elev = heightOf(r.point.t, LIFT);
     if (r.floor !== pf() && !r.done) crossFloor(r.floor);
@@ -496,6 +503,7 @@ export function createGame(ctx) {
     const { input, override, audio } = ctx;
     const weapon = eff.weapon;
     sim.time += dt;
+    pv?.update(dt); // lot 3j : le sang avance avec le temps de jeu
 
     // Fondu entre étages : il avance avec le temps de jeu (figé par la pause) ; à l'image où le voile est plein, l'étage du joueur change, une seule fois. Pendant la
     // transition (0,5 s) le joueur est verrouillé : immobile, sans tir, invulnérable ; les zombies continuent.
@@ -527,6 +535,7 @@ export function createGame(ctx) {
     // Cône : le rapport de vitesse (vitesse réelle / vitesse maximale effective) est lissé, indépendamment du nombre d'images par seconde.
     sim.spread = stepSpreadRatio(sim.spread, speedRatio(dt > 0 ? moved / dt : 0, eff.player.speed), dt, cfg.stats.spread?.widenTime, cfg.stats.spread?.narrowTime);
     if (foot.step) events.push({ type: 'playerStep', ...foot.step });
+    if (foot.step) events[events.length - 1].surface = sim.sw !== null ? 'escalier' : layoutOf(pf()).inside?.(sim.player.x, sim.player.y) === false ? 'exterieur' : 'dur'; // lot 3i : surface du pas
     sim.aim = aimAngle(sim.aim);
 
     // Escaliers (lot 3e) : le centre du joueur dans la zone de déclenchement d'un escalier utilisable de son étage, délai de 0,8 s écoulé et sorti de la zone du
@@ -573,6 +582,7 @@ export function createGame(ctx) {
     sim.bullets = flight.bullets;
     const typeOf = new Map(sim.enemies.map((e) => [e.id, e.type]));
     const result = applyImpacts(sim.enemies, flight.impacts);
+    pv?.impacts(flight.impacts, result.killed, sim.enemies, sim.player); // lot 3j : sang (zombies d'avant le tir)
     sim.enemies = result.enemies;
     if (!reduced) {
       for (const impact of flight.impacts) sparks.push({ x: impact.x, y: impact.y, age: 0 });
@@ -606,10 +616,12 @@ export function createGame(ctx) {
       // Siège de chaque étage (js/core/siege.js), planches, réparation automatique près d'une fenêtre de l'étage du joueur, déplacement des zombies de chaque étage
       // (poursuite du joueur à son étage, champ de flux vers l'escalier le plus proche à l'autre), franchissement des escaliers (js/core/floor-sim.js).
       const activeIds = activeIdsNow();
-      const out = stepFloors(fw, sim.fs, { enemies: sim.enemies, player: chaseTarget(), dt, active: activeIds, canRepair: !sim.dead && !locked, repairTime: eff.player.repairTime, flowDone: true, follow: sim.sw?.stair, realPlayer: sim.player, walks: stairWalks });
+      // Lot 3j (demande du propriétaire) : jamais tirer et réparer à la fois ; le tir passe avant (la planche en cours garde sa progression).
+      const out = stepFloors(fw, sim.fs, { enemies: sim.enemies, player: chaseTarget(), dt, active: activeIds, canRepair: !sim.dead && !locked && !aimed, repairTime: eff.player.repairTime, flowDone: true, follow: sim.sw?.stair, realPlayer: sim.player, walks: stairWalks });
       sim.fs = out.state;
       sim.enemies = out.enemies;
       sim.win = out.state.win;
+      const repairWas = sim.repair; // lot 3i : réparation de l'image précédente (son de pose au début, arrêt si interrompue)
       sim.repair = Object.fromEntries(geoms.map((g) => [g.id, { repairing: out.repair[g.id].repairing, blocked: out.repair[g.id].blocked, progress: sim.win.windows[g.id].repairProgress, attacked: out.repair[g.id].attacked }]));
       // Réparation bloquée : phrase longue annoncée par #hud-live, au plus une fois par fenêtre et par 10 s (E2-9 reste muet pour les lecteurs d'écran).
       for (const g of geoms) {
@@ -630,12 +642,20 @@ export function createGame(ctx) {
         } else if (ev.type === 'stairStart' || ev.type === 'stairArrive') {
           stairLog.push({ type: ev.type, id: ev.id, stair: ev.stair, from: ev.from, to: ev.to, time: sim.time });
         }
+        if (ev.type === 'window-open' && g) events.push({ type: 'windowOpen', x: g.center.x, y: g.center.y, windowId: ev.windowId, floor: g.floor }); // lot 3i : la dernière planche cède
         // Annonces vocales : « ouverte » au plus une fois par fenêtre et par 10 s (même pour une fenêtre de l'autre étage : annonce vocale seulement), « réparée »
         // quand toutes les planches sont revenues.
         if (ev.type === 'window-open' && sim.time - (sim.announced[ev.windowId] ?? -Infinity) >= 10) {
           sim.announced[ev.windowId] = sim.time;
           windowLive = fmt(ctx.dict[WINDOW_TEXTS.liveOpen], { name: dictName(ev.windowId) });
         } else if (ev.type === 'plank-repaired' && ev.planks === sim.win.windows[ev.windowId].maxPlanks) windowLive = fmt(ctx.dict[WINDOW_TEXTS.liveRepaired], { name: dictName(ev.windowId) });
+      }
+      // Lot 3i : son de réparation au début de la pose de chaque planche (durée = temps de pose), arrêté si la pose est interrompue avant la fin.
+      for (const g of geoms) {
+        const now = sim.repair[g.id].repairing && sim.win.windows[g.id].planks < sim.win.windows[g.id].maxPlanks;
+        const posed = out.events.some((ev) => ev.type === 'plank-repaired' && ev.windowId === g.id);
+        if (now && (!repairWas?.[g.id]?.repairing || posed)) events.push({ type: 'plankRepairStart', x: g.center.x, y: g.center.y, windowId: g.id, floor: g.floor, duration: eff.player.repairTime, progress: sim.win.windows[g.id].repairProgress });
+        else if (!now && repairWas?.[g.id]?.repairing && !posed && sim.win.windows[g.id].planks < sim.win.windows[g.id].maxPlanks) events.push({ type: 'plankRepairStop', windowId: g.id });
       }
       world.windowMeshes?.sync(sim.win); // planche arrachée ou posée : le maillage suit (seules les planches modifiées sont réécrites)
       if (windowLive !== null) ctx.ui.setLive(windowLive);
@@ -674,6 +694,8 @@ export function createGame(ctx) {
           waveLive = announcedKey && announcedKey !== SPLASH_TEXTS.zoneSubtitle ? `${ctx.dict[SPLASH_TEXTS.zoneTitle]}. ${ctx.dict[announcedKey]}.` : ctx.dict[ZONE_TEXTS.liveZone];
         } else if (ev.type === 'doorOpen') {
           openDoor(ev.door);
+          const sunk = doorById.get(ev.door)?.opening; // lot 3i : son du bloc de porte qui s'enfonce, à la position de la porte
+          if (sunk) events.push({ type: 'doorSink', x: (sunk.x1 + sunk.x2) / 2, y: (sunk.y1 + sunk.y2) / 2, floor: doorById.get(ev.door).floor, door: ev.door });
           eventLog.push({ type: 'doorOpen', door: ev.door, wave: ev.wave, time: sim.time });
         } else if (ev.type === 'worldEnd') {
           worldEnded = true;
@@ -705,6 +727,7 @@ export function createGame(ctx) {
     const lethal = sim.player.health <= 0;
     const willFall = lethal && sim.down.state === 'debout' && sim.down.chutes > 0;
     if (contact.damage > 0 && !willFall) events.push({ type: lethal ? 'playerDeath' : 'playerHurt' });
+    if (contact.damage > 0) pv?.playerHit(sim.player, pf()); // lot 3j
     const pd = stepPlayerDown(sim.down, { hp: sim.player.health, maxHp: sim.player.maxHealth }, dt, cfg.down);
     sim.down = pd.down;
     sim.player = { ...sim.player, health: pd.hp };
@@ -724,6 +747,10 @@ export function createGame(ctx) {
       sim.enemies = knockbackZombies(sim.enemies, sim.player, pd.knockback, { bounds: l.bounds, inside: l.inside, furniture: [...l.furniture, ...closedDoors(l, openIds())], walls: l.walls, gaps: l.gaps });
     }
 
+    // Lot 3i : vie basse (battement de cœur) et zombies qui commencent à franchir une fenêtre (escalade, à la position de la fenêtre).
+    events.push({ type: 'playerVitals', health: sim.player.health / Math.max(1, sim.player.maxHealth), state: sim.down.state });
+    for (const e of sim.enemies) if (e.mode === 'escalade' && !sim.climbers?.has(e.id) && geomById.get(e.window)) events.push({ type: 'zombieClimb', x: geomById.get(e.window).center.x, y: geomById.get(e.window).center.y, windowId: e.window, floor: floorOf(e) });
+    sim.climbers = new Set(sim.enemies.filter((e) => e.mode === 'escalade').map((e) => e.id));
     // Sons : chaque événement et chaque zombie porte son étage ; ceux de l'autre étage sont entendus étouffés (js/core/sound-director.js).
     audio?.handle({ time: sim.time, listener: sim.player, floor: pf(), walls: wallsOf(pf()), paused: ctx.ui.isPaused(), events, zombies: sim.enemies.filter((e) => e.mode !== 'escalier').map((e) => ({ id: e.id, x: e.x, y: e.y, variant: variantName(e.id), gait: e.gait, stride: e.stride, floor: floorOf(e) })) });
 
@@ -784,27 +811,6 @@ export function createGame(ctx) {
     if (wave === nextZoneShown) return;
     nextZoneShown = wave;
     ctx.ui.setNextZone(wave);
-  }
-
-  // E2-10 : état à terre (« À terre », « Tu te relèves dans N s », voile de bord) puis « Protégé N s » pendant la protection ; écrit seulement si le texte change.
-  const downEl = document.getElementById('down');
-  const downTitle = document.getElementById('down-title');
-  const downSub = document.getElementById('down-sub');
-  let downShown = { mode: null, sub: null };
-  function updateDownView() {
-    if (!downEl) return;
-    const grounded = sim.down.state === 'terre';
-    const guarded = sim.down.state === 'debout' && sim.down.grace > 0 && !sim.dead;
-    const mode = grounded ? 'terre' : guarded ? 'grace' : null;
-    const sub = grounded ? fmt(ctx.dict[DOWN_TEXTS.countdown], { n: Math.ceil(sim.down.timeLeft - 1e-6) }) : guarded ? fmt(ctx.dict[DOWN_TEXTS.grace], { n: Math.ceil(sim.down.grace - 1e-6) }) : '';
-    if (mode !== downShown.mode) {
-      downEl.hidden = mode === null;
-      downEl.dataset.mode = mode ?? '';
-      downTitle.hidden = mode !== 'terre';
-      if (mode === 'terre') downTitle.textContent = ctx.dict[DOWN_TEXTS.title];
-    }
-    if (sub !== downShown.sub) downSub.textContent = sub;
-    downShown = { mode, sub };
   }
 
   // Fenêtres en alerte (js/core/hud-windows.js) : attaquées ou ouvertes, les plus urgentes d'abord ; elles guident les flèches E2-11 (plus de rangée dans le HUD).
@@ -954,10 +960,12 @@ export function createGame(ctx) {
     anim.x = p.x;
     anim.y = p.y;
     const state = sim.down.state === 'terre' ? 'terre' : sim.time - lastFire < FIRE_POSE_TIME ? 'tir' : moving ? 'marche' : 'arret';
-    lastPose = computePose({ phase: anim.phase, aim, facing: anim.facing, state, time: sim.time, seed: 0, amount: Math.min(1, speed / eff.player.speed), recoil: sim.recoil / RECOIL_TIME });
-    playerChar.setPose(lastPose);
+    const poseIn = { phase: anim.phase, aim, facing: anim.facing, state, time: sim.time, seed: 0, amount: Math.min(1, speed / eff.player.speed), recoil: sim.recoil / RECOIL_TIME };
+    lastPose = computePose(poseIn);
+    playerChar.setPose(lastPose, poseIn, pv?.playerCtx(sim, eff)); // lot 3j : les personnages v2 lisent l'entrée et le contexte
     playerChar.root.position.set(p.x, 0, p.y);
     playerChar.root.rotation.y = Math.PI / 2 - anim.facing;
+    const gun = playerChar.muzzle?.() ?? null; // lot 3j : bout du canon du joueur v2 (laser, éclair et balles en partent à l'image)
 
     const alive = new Set();
     for (const e of sim.enemies) {
@@ -979,7 +987,9 @@ export function createGame(ctx) {
       const sieging = gw && (e.mode === 'arrache' || e.mode === 'escalade');
       const tearRate = (TAU * num(e.tearMul, 1)) / Math.max(0.1, windowsCfg.tearTime);
       const poseState = e.mode === 'arrache' ? 'arracher' : e.mode === 'escalade' ? 'escalade' : GAIT_POSE[e.gait] ?? 'zombie';
-      z.char.setPose(computePose({ phase: e.mode === 'arrache' ? sim.time * tearRate + e.id : z.phase, aim: 0, facing: 0, state: poseState, time: sim.time, seed: e.id, amount: zs > 5 ? 0.7 : 0.15 }));
+      const zIn = { phase: e.mode === 'arrache' ? sim.time * tearRate + e.id : z.phase, aim: 0, facing: 0, state: poseState, time: sim.time, seed: e.id, amount: zs > 5 ? 0.7 : 0.15 };
+      z.char.setPose(computePose(zIn), zIn, e);
+      pv?.zombie(z.char, e); // lot 3j : taches sur le corps selon la vie
       // Lot 3e : un zombie de l'étage du joueur est dessiné ; depuis l'étage on voit aussi ceux du rez-de-chaussée, plus bas de floorLift, par le trou des escaliers et
       // dans la partie découverte (le sol de l'étage les cache ailleurs) ; depuis le rez-de-chaussée ceux de l'étage ne sont pas dessinés (ni ombrés). Leur logique continue.
       const zf = floorOf(e);
@@ -1011,17 +1021,20 @@ export function createGame(ctx) {
       zombies.delete(id);
     }
 
+    pv?.sync(pf(), waveInfo(sim.waves).wave); // lot 3j : instances du sang et palier d'usure
     effects.update({
-      laser: laser && !sim.dead ? laser : null,
+      // Lot 3j (demande du propriétaire) : pas de laser pendant la réparation (la visée continue : un zombie visé arrête la réparation).
+      laser: laser && !sim.dead && !Object.values(sim.repair).some((r) => r.repairing) ? laser : null,
+      gun, // lot 3j
       bullets: sim.bullets,
       sparks,
       flash: sim.flash,
       flashSize: reduced ? 4 : 7,
       unitsPerPixel: size.unitsPerPixel,
     });
-    hud.update(sim.player, sim.kills, waveInfo(sim.waves), { chutes: sim.down.chutes, floor: multi ? pf() : null, maxWave: zoneCfg && !sim.waves.endless ? zoneCfg.wavesPerWorld : null, money: { balance: bank.balance(), gain: bank.gain() } });
+    hud.update(sim.player, sim.kills, waveInfo(sim.waves), { chutes: sim.down.chutes, floor: multi ? pf() : null, maxWave: zoneCfg && !sim.waves.endless ? zoneCfg.wavesPerWorld : null, money: { balance: bank.balance(), gain: bank.gain() }, time: sim.time, trial: trialMode });
     floorFade.set(sim.trView.veil);
-    updateDownView();
+    hud.updateDown(sim.down, sim.dead, cfg.down); // lot 3l : E2-10 dans la colonne centrale du HUD (js/game/hud.js)
     world.windowMeshes?.sync(sim.win); // pastille de la planche en cours de réparation : elle se remplit peu à peu
     updateEdgeArrows();
     updateLabels();
@@ -1033,6 +1046,7 @@ export function createGame(ctx) {
   // La caméra suit le joueur (js/core/camera.js), la lumière et sa carte d'ombres suivent la caméra.
   function followCamera(dt) {
     rig.follow(dt, sim.player.x, sim.player.y);
+    world.frame?.(dt, sim.player.x, sim.player.y, rig.camera.position); // lot 3g (retours du propriétaire) : feux, mur percé autour du joueur caché
     // Carte d'ombres : demi-diagonale de la vue au sol, avec de la marge pour la perspective.
     world.followSun(rig.view.target.x, rig.view.target.y, Math.hypot(rig.view.ground.width / 2, (rig.view.ground.north + rig.view.ground.south) / 2) * 1.3);
   }
@@ -1403,6 +1417,7 @@ export function createGame(ctx) {
         dead: sim.dead,
         time: sim.time,
         audio: ctx.audio.state(),
+        ...(pv ? { persos: pv.state(lastInfo) } : {}), // lot 3j
         splash: splashView.readout(),
         vhs: ctx.vhs.readout(),
       };

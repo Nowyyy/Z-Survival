@@ -226,7 +226,9 @@ test.describe('soin, régénération, pause', () => {
 
 test.describe('interface E2-10 et annonces', () => {
   for (const size of [SIZE, { width: 1440, height: 900 }]) {
-    test(`E2-10 : « À terre » et « Tu te relèves dans N s », dans les marges, centré dans le tiers bas, sans filter ni mix-blend-mode ni backdrop-filter (${size.width}×${size.height})`, async ({ page }) => {
+    // Lot 3l (direction B, retour du propriétaire) : avant, texte centré dans le tiers bas ; après, dans la colonne centrale du HUD, juste sous l'argent, au-dessus de la
+    // mi-hauteur (zone des pouces libre), avec une barre de compte à rebours.
+    test(`E2-10 : « À terre » et « Tu te relèves dans N s », dans les marges, centré sous la vague au-dessus de la mi-hauteur, sans filter ni mix-blend-mode ni backdrop-filter (${size.width}×${size.height})`, async ({ page }) => {
       await open(page, '', size);
       await expect(page.locator('#down')).toBeHidden();
       await fall(page);
@@ -239,28 +241,35 @@ test.describe('interface E2-10 et annonces', () => {
       await expect(page.locator('#down-sub')).toHaveText('Tu te relèves dans 3 s');
       const r = await page.evaluate(() => {
         const box = document.querySelector('.down-body').getBoundingClientRect();
-        const styles = ['#down', '.down-veil', '.down-body', '#down-title', '#down-sub'].map((sel) => { const c = getComputedStyle(document.querySelector(sel)); return [c.filter, c.mixBlendMode, c.backdropFilter]; });
-        return { box: { left: box.left, right: box.right, top: box.top, bottom: box.bottom }, styles, w: innerWidth, h: innerHeight };
+        const money = document.getElementById('hud-wave').getBoundingClientRect(); // lot 3l : sous la vague (l'argent est parti à droite, retour du propriétaire)
+        const styles = ['#down', '.down-veil', '.down-body', '#down-title', '#down-sub', '.down-bar'].map((sel) => { const c = getComputedStyle(document.querySelector(sel)); return [c.filter, c.mixBlendMode, c.backdropFilter]; });
+        const fill = new DOMMatrix(getComputedStyle(document.getElementById('down-fill')).transform).a;
+        return { box: { left: box.left, right: box.right, top: box.top, bottom: box.bottom }, money: money.bottom, styles, fill, w: innerWidth, h: innerHeight };
       });
       expect(r.box.left).toBeGreaterThanOrEqual(16);
       expect(r.w - r.box.right).toBeGreaterThanOrEqual(16);
-      expect(r.h - r.box.bottom).toBeGreaterThanOrEqual(16);
-      expect((r.box.top + r.box.bottom) / 2).toBeGreaterThan((r.h * 2) / 3);
+      expect(r.box.top).toBeGreaterThanOrEqual(r.money);
+      expect(r.box.top - r.money).toBeLessThanOrEqual(8);
+      expect(r.box.bottom).toBeLessThan(r.h / 2);
       expect(Math.abs((r.box.left + r.box.right) / 2 - r.w / 2)).toBeLessThan(2);
+      expect(r.fill).toBeCloseTo(3 / 5, 3); // barre : secondes affichées / 5
       for (const [filter, blend, backdrop] of r.styles) expect([filter, blend, backdrop]).toEqual(['none', 'normal', 'none']);
     });
   }
 
+  // Lot 3l : « Protégé N s » passe du sous-titre au titre (avec un bouclier), la barre se vide sur 2 s.
   test('E2-10 est sous l\'animation de vague dans l\'ordre du HTML et affiche « Protégé N s » après le relevage', async ({ page }) => {
     await open(page);
     expect(await page.evaluate(() => [...document.querySelectorAll('#game-root [data-block]')].map((e) => e.dataset.block))).toEqual(['E2-2', 'E2-8', 'E2-10', 'E2-5', 'E2-3', 'E2-4']);
     await fall(page);
     await step(page, 5.1);
     await expect(page.locator('#down')).toBeVisible();
-    await expect(page.locator('#down-title')).toBeHidden();
-    await expect(page.locator('#down-sub')).toHaveText('Protégé 2 s');
+    await expect(page.locator('#down-sub')).toBeHidden();
+    await expect(page.locator('#down-title')).toHaveText('Protégé 2 s');
+    await expect(page.locator('#down-body .down-shield')).toBeVisible();
     await step(page, 2.1);
     await expect(page.locator('#down')).toBeHidden();
+    await expect(page.locator('#down-body')).toBeHidden();
   });
 
   test('sous prefers-reduced-motion, aucune animation ni transition', async ({ browser }) => {
@@ -268,7 +277,7 @@ test.describe('interface E2-10 et annonces', () => {
     const page = await ctx.newPage();
     await open(page);
     await fall(page);
-    const r = await page.evaluate(() => ['#down', '.down-veil', '.down-body'].map((sel) => { const c = getComputedStyle(document.querySelector(sel)); return [c.animationName, c.transitionDuration]; }));
+    const r = await page.evaluate(() => ['#down', '.down-veil', '.down-body', '#down-fill', '#hud-rec'].map((sel) => { const c = getComputedStyle(document.querySelector(sel)); return [c.animationName, c.transitionDuration]; })); // lot 3l : barre et point REC
     for (const [animation, transition] of r) {
       expect(animation).toBe('none');
       expect(Number.parseFloat(transition)).toBeLessThan(0.001); // prefers-reduced-motion : base.css ramène toutes les durées à 0,00001 s
@@ -293,14 +302,16 @@ test.describe('interface E2-10 et annonces', () => {
     expect(seen.every((t) => !/\d+ s/.test(t))).toBe(true);
   });
 
+  // Lot 3l : #hud est le conteneur des trois colonnes ; on compare la colonne de gauche (chutes) et la colonne de droite à Pause.
   test('HUD compact : la rangée des chutes ne chevauche pas Pause à 667×375 ; axe sans violation avec E2-10', async ({ page }) => {
     await open(page);
     const r = await page.evaluate(() => {
       const b = (sel) => { const e = document.querySelector(sel).getBoundingClientRect(); return { l: e.left, t: e.top, r: e.right, b: e.bottom }; };
-      return { chutes: b('#hud-chutes'), hud: b('#hud'), pause: b('#btn-pause'), h: innerHeight };
+      return { chutes: b('#hud-chutes'), hud: b('#hud'), left: b('.hud-tl'), right: b('.hud-tr'), pause: b('#btn-pause'), h: innerHeight };
     });
     expect(r.chutes.b).toBeLessThanOrEqual(r.hud.b + 1);
-    expect(r.hud.r).toBeLessThanOrEqual(r.pause.l);
+    expect(r.left.r).toBeLessThanOrEqual(r.pause.l);
+    expect(r.right.r).toBeLessThanOrEqual(r.pause.l);
     expect(r.hud.b).toBeLessThan(r.h - 16);
     await page.evaluate(() => { window.__zs.setPlanks('fenetre-nord', 2); window.__zs.setPlayer(1800, 882); window.__zs.step(0.3); });
     await fall(page);
@@ -376,9 +387,11 @@ test.describe('repoussement et budget', () => {
     console.log(`BUDGET lot 3 (joueur à terre) : ${r.n} zombies, ${r.render.calls} appels de dessin, ${r.render.triangles} triangles`);
     expect(r.down).toBe('terre');
     expect(r.render.calls).toBeLessThanOrEqual(192);
-    expect(r.render.triangles).toBeLessThanOrEqual(30000);
-    expect(r.pose.pelvisHeight).toBeLessThan(-0.4); // pose « terre » : corps abaissé
-    expect(r.pose.torsoPitch).toBeGreaterThan(1.3);
+    expect(r.render.triangles).toBeLessThanOrEqual(45000); // lot 3m : limites de refonte relevées par le propriétaire (avant : 30000)
+    if (r.pose.pelvisHeight !== undefined) {
+      expect(r.pose.pelvisHeight).toBeLessThan(-0.4); // pose « terre » : corps abaissé
+      expect(r.pose.torsoPitch).toBeGreaterThan(1.3);
+    } else expect(r.pose.anim).toBe('terre'); // lot 3j : personnages v2 par défaut (animation « terre »)
   });
 
   test('aucun appel réseau, aucun stockage, console propre pendant une chute et un relevage', async ({ page, baseURL }) => {

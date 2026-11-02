@@ -217,8 +217,8 @@ test.describe('portée du tir, laser qui s\'estompe, ombres lointaines', () => {
       await expect.poll(async () => (await state(page)).render.calls).toBeGreaterThan(base);
       return (await state(page)).render.calls - base;
     };
-    const withShadows = await added('&zoom=1');
-    const without = await added('&zoom=1&shadows=0');
+    const withShadows = await added('&zoom=1&perso=actuel&sang=0'); // lot 3j : 5 pièces d'ombre des personnages actuels (v2 : un proxy)
+    const without = await added('&zoom=1&shadows=0&perso=actuel&sang=0');
     // Lot 1c : seules les pièces principales (bassin, tronc, tête, deux cuisses : 5) projettent une ombre ; elles sont dessinées une seconde
     // fois dans la passe d'ombres, même pour un zombie à l'autre bout de la salle (avant le lot 1c : chaque pièce, donc au moins 1,8 fois plus).
     expect(withShadows).toBeGreaterThanOrEqual(without + 5);

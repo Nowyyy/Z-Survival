@@ -38,7 +38,9 @@ describe('hygiène du lot 3e : fichiers et textes', () => {
   });
 
   it('data/game/world.json et decor.json d\'origine (ancienne salle) sont inchangés', () => {
-    const changed = git(`diff --name-only ${BASE} -- data/game/world.json data/game/decor.json js/core/waves.js js/core/spread.js js/core/camera.js js/core/synth.js js/core/pose.js js/core/player-stats.js data/game/waves.json data/game/gaits.json data/game/weapons.json data/game/player-stats.json data/game/player-down.json data/game/windows.json  data/game/sounds.json`);
+    // Lot 3i : data/game/sounds.json change (sons de l'atelier intégrés, décision du propriétaire) ; ses recettes gardées (tir, mélodie, impacts…) sont
+    // comparées à main, objet par objet, dans sons-integres.test.js.
+    const changed = git(`diff --name-only ${BASE} -- data/game/world.json data/game/decor.json js/core/waves.js js/core/spread.js js/core/camera.js js/core/synth.js js/core/pose.js js/core/player-stats.js data/game/waves.json data/game/gaits.json data/game/weapons.json data/game/player-stats.json data/game/player-down.json data/game/windows.json `);
     if (changed === null) return;
     expect(changed).toEqual([]);
   });

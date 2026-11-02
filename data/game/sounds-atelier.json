@@ -1,0 +1,4181 @@
+{
+  "_provisoire": "Atelier des sons du lot 3h : emplacements, cibles et recettes PROVISOIRES, jamais écoutés par l'agent (qui ne peut pas écouter). Les cibles marquées « prompt » viennent du cadrage du lot (valeurs de connaissance générale, non vérifiées) ; celles marquées « agent » en sont dérivées par l'agent. Niveau d'une cible (level) : dB relatifs au tir tel qu'entendu en jeu = niveau court du tampon (RMS de la fenêtre de 100 ms la plus forte) + gain de la catégorie du jeu (gainDb, d'après audio.json) − niveau court du tir (levelRef). Ces sons ne sont pas utilisés par le jeu.",
+  "version": 1,
+  "sampleRate": 22050,
+  "format": { "channels": 1, "type": "Float32", "bytesPerSample": 4 },
+  "levelRef": { "source": "tir", "windowSec": 0.1, "dbfs": -4.55, "tolerance": 3 },
+  "distinctness": {
+    "threshold": 0.035,
+    "note": "Distance spectrale minimale entre deux variantes d'un même emplacement (audio-analysis.js, spectralDistance : écart moyen en dB par tiers d'octave / 60). 0,035 ≈ 2,1 dB d'écart moyen par bande, 1,4 fois la médiane des écarts entre deux versions (graines) d'une même variante (0,025 mesuré au lot 3h)."
+  },
+  "page": {
+    "volumeDefault": 40,
+    "volumeStep": 5,
+    "cacheMb": 24,
+    "versions": 5,
+    "steps": { "hauteur": 1, "matiere": 0.1, "grain": 0.1, "duree": 0.05, "dureeSeconds": 0.1, "ampleur": 0.05 },
+    "limiter": { "threshold": -6, "knee": 0, "ratio": 20, "attack": 0.002, "release": 0.1 }
+  },
+  "groups": [
+    { "id": "pas", "label": "dev.atelier.group.pas" },
+    { "id": "voix", "label": "dev.atelier.group.voix" },
+    { "id": "planches", "label": "dev.atelier.group.planches" },
+    { "id": "fenetre", "label": "dev.atelier.group.fenetre" },
+    { "id": "joueur", "label": "dev.atelier.group.joueur" },
+    { "id": "propositions", "label": "dev.atelier.group.propositions" }
+  ],
+  "targets": {
+    "pas-joueur-dur": {
+      "duration": [0.06, 0.2],
+      "centroid": [1000, 4500],
+      "hf4k": 0.45,
+      "level": -18,
+      "attackMs": [0, 6],
+      "source": "agent",
+      "note": "révisée après le retour du propriétaire (itération 2)"
+    },
+    "pas-joueur-exterieur": {
+      "duration": [0.1, 0.2],
+      "centroid": [250, 800],
+      "peakHz": [60, 300],
+      "hf4k": 0.02,
+      "level": -20,
+      "attackMs": [5, 25],
+      "source": "prompt"
+    },
+    "pas-joueur-escalier": {
+      "duration": [0.06, 0.2],
+      "centroid": [1000, 4500],
+      "hf4k": 0.45,
+      "level": -18,
+      "attackMs": [0, 6],
+      "source": "agent",
+      "note": "révisée après le retour du propriétaire (itération 2)"
+    },
+    "pas-zombie-lent": {
+      "duration": [0.16, 0.36],
+      "centroid": [600, 4000],
+      "hf4k": 0.4,
+      "level": -16,
+      "attackMs": [0, 10],
+      "source": "agent",
+      "note": "révisée après le retour du propriétaire (itération 2)"
+    },
+    "pas-zombie-marche": {
+      "duration": [0.1, 0.26],
+      "centroid": [600, 4000],
+      "hf4k": 0.4,
+      "level": -16,
+      "attackMs": [0, 10],
+      "source": "agent",
+      "note": "révisée après le retour du propriétaire (itération 2)"
+    },
+    "pas-zombie-course": {
+      "duration": [0.08, 0.22],
+      "centroid": [600, 4000],
+      "hf4k": 0.4,
+      "level": -16,
+      "attackMs": [0, 10],
+      "source": "agent",
+      "note": "révisée après le retour du propriétaire (itération 2)"
+    },
+    "zombie-rampe": { "duration": [0.5, 1.2], "centroid": [250, 900], "peakHz": [60, 600], "hf4k": 0.05, "level": -18, "source": "agent" },
+    "voix-marcheur-errance": {
+      "duration": [0.9, 2.5],
+      "centroid": [300, 1100],
+      "f0": [75, 110],
+      "hf4k": 0.08,
+      "level": -10,
+      "hnr": [6, 14],
+      "source": "prompt"
+    },
+    "voix-marcheur-attaque": {
+      "duration": [0.4, 1.1],
+      "centroid": [300, 1100],
+      "f0": [75, 160],
+      "hf4k": 0.08,
+      "level": -8,
+      "hnr": [6, 14],
+      "source": "agent"
+    },
+    "voix-marcheur-touche": {
+      "duration": [0.15, 0.5],
+      "centroid": [300, 1100],
+      "f0": [80, 175],
+      "hf4k": 0.08,
+      "level": -10,
+      "hnr": [6, 14],
+      "source": "agent"
+    },
+    "voix-marcheur-mort": {
+      "duration": [0.8, 2.2],
+      "centroid": [300, 1100],
+      "f0": [55, 120],
+      "hf4k": 0.08,
+      "level": -10,
+      "hnr": [6, 14],
+      "source": "agent"
+    },
+    "voix-grand-errance": {
+      "duration": [1, 2.5],
+      "centroid": [250, 900],
+      "f0": [55, 80],
+      "hf4k": 0.06,
+      "level": -8,
+      "hnr": [6, 14],
+      "source": "prompt"
+    },
+    "voix-grand-attaque": {
+      "duration": [0.4, 1.1],
+      "centroid": [250, 900],
+      "f0": [55, 115],
+      "hf4k": 0.06,
+      "level": -6,
+      "hnr": [6, 14],
+      "source": "agent"
+    },
+    "voix-grand-touche": {
+      "duration": [0.15, 0.5],
+      "centroid": [250, 900],
+      "f0": [60, 130],
+      "hf4k": 0.06,
+      "level": -8,
+      "hnr": [6, 14],
+      "source": "agent"
+    },
+    "voix-grand-mort": {
+      "duration": [0.8, 2.2],
+      "centroid": [250, 900],
+      "f0": [40, 90],
+      "hf4k": 0.06,
+      "level": -8,
+      "hnr": [6, 14],
+      "source": "agent"
+    },
+    "voix-voute-errance": {
+      "duration": [1, 2.5],
+      "centroid": [400, 1300],
+      "f0": [85, 125],
+      "hf4k": 0.12,
+      "level": -10,
+      "hnr": [6, 14],
+      "source": "prompt"
+    },
+    "voix-voute-attaque": {
+      "duration": [0.4, 1.1],
+      "centroid": [400, 1300],
+      "f0": [85, 180],
+      "hf4k": 0.12,
+      "level": -8,
+      "hnr": [6, 14],
+      "source": "agent"
+    },
+    "voix-voute-touche": {
+      "duration": [0.15, 0.5],
+      "centroid": [400, 1300],
+      "f0": [90, 200],
+      "hf4k": 0.12,
+      "level": -10,
+      "hnr": [6, 14],
+      "source": "agent"
+    },
+    "voix-voute-mort": {
+      "duration": [0.8, 2.2],
+      "centroid": [400, 1300],
+      "f0": [65, 140],
+      "hf4k": 0.12,
+      "level": -10,
+      "hnr": [6, 14],
+      "source": "agent"
+    },
+    "voix-petit-errance": {
+      "duration": [0.5, 1.5],
+      "centroid": [500, 1600],
+      "f0": [110, 180],
+      "hf4k": 0.15,
+      "level": -10,
+      "hnr": [6, 14],
+      "source": "prompt"
+    },
+    "voix-petit-attaque": {
+      "duration": [0.4, 1.1],
+      "centroid": [500, 1600],
+      "f0": [110, 260],
+      "hf4k": 0.15,
+      "level": -8,
+      "hnr": [6, 14],
+      "source": "agent"
+    },
+    "voix-petit-touche": {
+      "duration": [0.15, 0.5],
+      "centroid": [500, 1600],
+      "f0": [115, 290],
+      "hf4k": 0.15,
+      "level": -10,
+      "hnr": [6, 14],
+      "source": "agent"
+    },
+    "voix-petit-mort": {
+      "duration": [0.8, 2.2],
+      "centroid": [500, 1600],
+      "f0": [85, 200],
+      "hf4k": 0.15,
+      "level": -10,
+      "hnr": [6, 14],
+      "source": "agent"
+    },
+    "planche-arrachage": {
+      "duration": [0.5, 1.3],
+      "centroid": [600, 3500],
+      "hf4k": 0.3,
+      "level": -12,
+      "source": "agent",
+      "note": "révisée après le retour du propriétaire (itération 2)"
+    },
+    "reparation": {
+      "duration": [0.4, 1.8],
+      "centroid": [250, 2000],
+      "peakHz": [50, 600],
+      "hf4k": 0.2,
+      "level": -12,
+      "hits": [2, 5],
+      "source": "agent",
+      "note": "révisée après le retour du propriétaire (itération 2)"
+    },
+    "reparation-coup": {
+      "duration": [0.08, 0.3],
+      "centroid": [250, 2500],
+      "peakHz": [50, 600],
+      "hf4k": 0.2,
+      "level": -12,
+      "source": "agent",
+      "note": "révisée après le retour du propriétaire (itération 3 : le coup seul reprend le marteau de la réparation)"
+    },
+    "planche-craquement": {
+      "duration": [0.4, 1.1],
+      "centroid": [400, 3500],
+      "hf4k": 0.3,
+      "level": -14,
+      "source": "agent",
+      "note": "révisée après le retour du propriétaire (itération 2)"
+    },
+    "planche-chute": {
+      "duration": [0.4, 1],
+      "centroid": [300, 3000],
+      "hf4k": 0.25,
+      "level": -12,
+      "source": "agent",
+      "note": "révisée après le retour du propriétaire (itération 2)"
+    },
+    "escalade": {
+      "duration": [1, 2],
+      "centroid": [400, 3500],
+      "hf4k": 0.3,
+      "level": -14,
+      "source": "agent",
+      "note": "révisée après le retour du propriétaire (itération 3 : nouvelles propositions sur pierre et bois secs)"
+    },
+    "joueur-souffle-terre": { "duration": [1, 2.2], "centroid": [300, 1500], "f0": [90, 170], "hf4k": 0.1, "level": -10, "source": "agent" },
+    "joueur-relevage": { "duration": [0.6, 1.1], "centroid": [250, 1500], "peakHz": [60, 600], "hf4k": 0.1, "level": -12, "source": "agent" },
+    "ambiance-vent": { "duration": [8, 12], "centroid": [200, 1500], "hf4k": 0.05, "level": -24, "loopSeam": 0.002, "source": "agent" },
+    "ambiance-grincements": { "duration": [2, 4], "centroid": [300, 1800], "peakHz": [100, 900], "hf4k": 0.1, "level": -22, "source": "agent" },
+    "ambiance-neon": {
+      "duration": [8, 12],
+      "centroid": [100, 1500],
+      "peakHz": [95, 405],
+      "hf4k": 0.05,
+      "level": -30,
+      "loopSeam": 0.002,
+      "source": "agent"
+    },
+    "joueur-coeur": { "duration": [1, 2], "centroid": [30, 300], "peakHz": [30, 120], "hf4k": 0.01, "level": -14, "source": "agent" },
+    "joueur-essouffle": { "duration": [1.5, 2.5], "centroid": [300, 1800], "hf4k": 0.1, "level": -14, "source": "agent" },
+    "ambiance-lointains": { "duration": [2, 4], "centroid": [150, 900], "f0": [55, 140], "hf4k": 0.02, "level": -24, "source": "agent" },
+    "porte-enfoncee": { "duration": [1.1, 1.3], "centroid": [80, 900], "peakHz": [30, 300], "hf4k": 0.02, "level": -8, "source": "agent" },
+    "interface-piece": {
+      "duration": [0.2, 0.6],
+      "centroid": [2000, 6000],
+      "peakHz": [2000, 6500],
+      "hf4k": 0.7,
+      "level": -14,
+      "source": "agent"
+    },
+    "interface-achat": {
+      "duration": [0.6, 1.4],
+      "centroid": [1200, 6000],
+      "peakHz": [1500, 3000],
+      "hf4k": 0.6,
+      "level": -12,
+      "source": "agent",
+      "note": "révisée après le retour du propriétaire (itération 2)"
+    },
+    "ambiance-feu": {
+      "duration": [6, 12],
+      "centroid": [200, 4000],
+      "hf4k": 0.5,
+      "level": -22,
+      "loopSeam": 0.002,
+      "source": "agent",
+      "note": "demande du propriétaire (itération 2)"
+    }
+  },
+  "presets": {
+    "pas": {
+      "dur": {
+        "A": {
+          "kind": "step",
+          "dur": 0.13,
+          "vary": 0.06,
+          "heel": { "f": 95, "decay": 0.012, "attack": 0.0008, "drop": 0.7, "gain": 0.35, "burst": 0.0005, "burstLp": 9000 },
+          "dense": { "from": 900, "to": 6000, "count": 12, "decay": 0.004, "tilt": -0.6, "slope": -0.2, "spread": 0.45 },
+          "modeGain": 1,
+          "click": { "f": 2500, "q": 0.7, "decay": 0.0025, "gain": 0.5 },
+          "toe": { "at": 0.055, "gain": 0.45 },
+          "grit": { "at": 0.003, "rate": 900, "f": 4000, "q": 0.8, "dur": 0.03, "gain": 0.56, "grainDecay": 0.0006 },
+          "scuff": { "at": 0.05, "f": 3000, "q": 0.6, "dur": 0.04, "attack": 0.004, "decay": 0.012, "gain": 0.18 },
+          "lp": 9000,
+          "hp": 60,
+          "post": { "drive": 5 }
+        },
+        "B": {
+          "kind": "step",
+          "dur": 0.17,
+          "vary": 0.06,
+          "heel": { "f": 75, "decay": 0.02, "attack": 0.001, "drop": 0.65, "gain": 0.6, "burst": 0.0007, "burstLp": 7000 },
+          "dense": { "from": 700, "to": 5000, "count": 12, "decay": 0.005, "tilt": -0.6, "slope": -0.2, "spread": 0.45 },
+          "modeGain": 1,
+          "click": { "f": 2000, "q": 0.7, "decay": 0.003, "gain": 0.45 },
+          "toe": { "at": 0.065, "gain": 0.5 },
+          "grit": { "at": 0.004, "rate": 600, "f": 3500, "q": 0.8, "dur": 0.06, "gain": 0.8, "grainDecay": 0.0008 },
+          "scuff": { "at": 0.06, "f": 2400, "q": 0.6, "dur": 0.09, "attack": 0.008, "decay": 0.03, "gain": 0.38 },
+          "lp": 8000,
+          "hp": 45,
+          "post": { "drive": 5 }
+        },
+        "C": {
+          "kind": "step",
+          "dur": 0.1,
+          "vary": 0.06,
+          "heel": { "f": 110, "decay": 0.014, "attack": 0.0005, "drop": 0.75, "gain": 0.8, "burst": 0.0004, "burstLp": 10000 },
+          "dense": { "from": 1200, "to": 7000, "count": 12, "decay": 0.003, "tilt": -0.6, "slope": -0.2, "spread": 0.45 },
+          "modeGain": 1,
+          "click": { "f": 3000, "q": 0.8, "decay": 0.002, "gain": 0.45 },
+          "toe": { "at": 0.045, "gain": 0.35 },
+          "grit": { "at": 0.002, "rate": 1000, "f": 4500, "q": 0.9, "dur": 0.02, "gain": 0.48, "grainDecay": 0.0005 },
+          "lp": 10000,
+          "hp": 80,
+          "post": { "drive": 8 }
+        }
+      },
+      "ancien": {
+        "A": {
+          "kind": "step",
+          "dur": 0.15,
+          "vary": 0.06,
+          "heel": { "f": 110, "decay": 0.012, "attack": 0.02, "drop": 0.7, "gain": 0.3, "burst": 0.0025, "burstLp": 2500 },
+          "modes": [
+            { "f": 190, "gain": 0.6, "decay": 0.025 },
+            { "f": 340, "gain": 1, "decay": 0.02 },
+            { "f": 560, "gain": 0.65, "decay": 0.014 },
+            { "f": 830, "gain": 0.45, "decay": 0.01 }
+          ],
+          "modeGain": 1.2,
+          "click": { "f": 1150, "q": 0.9, "decay": 0.006, "gain": 0.7 },
+          "toe": { "at": 0.06, "gain": 0.45 },
+          "scuff": { "at": 0.045, "f": 950, "q": 0.7, "dur": 0.07, "attack": 0.012, "decay": 0.025, "gain": 0.3 },
+          "lp": 3000,
+          "hp": 40,
+          "post": { "drive": 1.4 }
+        },
+        "B": {
+          "kind": "step",
+          "dur": 0.18,
+          "vary": 0.06,
+          "heel": { "f": 85, "decay": 0.02, "attack": 0.024, "drop": 0.6, "gain": 0.55, "burst": 0.003, "burstLp": 2000 },
+          "modes": [
+            { "f": 170, "gain": 0.8, "decay": 0.035 },
+            { "f": 310, "gain": 1, "decay": 0.028 },
+            { "f": 520, "gain": 0.7, "decay": 0.02 },
+            { "f": 780, "gain": 0.5, "decay": 0.014 }
+          ],
+          "modeGain": 1.2,
+          "click": { "f": 950, "q": 0.8, "decay": 0.006, "gain": 0.65 },
+          "toe": { "at": 0.07, "gain": 0.35 },
+          "scuff": { "at": 0.05, "f": 750, "q": 0.6, "dur": 0.11, "attack": 0.02, "decay": 0.04, "gain": 0.35 },
+          "grit": { "at": 0.05, "rate": 220, "f": 1300, "q": 1, "dur": 0.07, "gain": 0.25 },
+          "lp": 2700,
+          "hp": 35,
+          "post": { "drive": 1.6 }
+        },
+        "C": {
+          "kind": "step",
+          "dur": 0.11,
+          "vary": 0.06,
+          "heel": { "f": 125, "decay": 0.014, "attack": 0.026, "drop": 0.75, "gain": 0.25, "burst": 0.002, "burstLp": 3000 },
+          "modes": [
+            { "f": 240, "gain": 0.7, "decay": 0.014 },
+            { "f": 370, "gain": 1, "decay": 0.012 },
+            { "f": 650, "gain": 0.6, "decay": 0.009 },
+            { "f": 960, "gain": 0.45, "decay": 0.006 }
+          ],
+          "modeGain": 1.2,
+          "click": { "f": 1350, "q": 1, "decay": 0.007, "gain": 0.85 },
+          "toe": { "at": 0.045, "gain": 0.35 },
+          "lp": 3400,
+          "hp": 60,
+          "post": { "drive": 2.2 }
+        }
+      },
+      "ext": {
+        "A": {
+          "kind": "step",
+          "dur": 0.16,
+          "vary": 0.06,
+          "heel": { "f": 90, "decay": 0.014, "attack": 0.022, "drop": 0.7, "gain": 0.45, "burst": 0.003, "burstLp": 1200 },
+          "modes": [
+            { "f": 130, "gain": 1, "decay": 0.012 },
+            { "f": 230, "gain": 0.8, "decay": 0.01 },
+            { "f": 360, "gain": 0.5, "decay": 0.008 }
+          ],
+          "modeGain": 1,
+          "toe": { "at": 0.07, "gain": 0.35 },
+          "grit": { "at": 0.004, "rate": 320, "f": 1250, "q": 1, "dur": 0.09, "gain": 0.55, "grainDecay": 0.0015 },
+          "scuff": { "at": 0.03, "f": 1050, "q": 0.6, "dur": 0.09, "attack": 0.02, "decay": 0.03, "gain": 0.3 },
+          "lp": 2200,
+          "hp": 35,
+          "post": { "drive": 1.4 }
+        },
+        "B": {
+          "kind": "step",
+          "dur": 0.2,
+          "vary": 0.06,
+          "heel": { "f": 72, "decay": 0.022, "attack": 0.026, "drop": 0.6, "gain": 0.7, "burst": 0.004, "burstLp": 1000 },
+          "modes": [
+            { "f": 105, "gain": 1, "decay": 0.016 },
+            { "f": 190, "gain": 0.8, "decay": 0.013 },
+            { "f": 300, "gain": 0.5, "decay": 0.01 }
+          ],
+          "modeGain": 1,
+          "toe": { "at": 0.085, "gain": 0.45 },
+          "grit": { "at": 0.006, "rate": 260, "f": 1100, "q": 0.9, "dur": 0.13, "gain": 0.7, "grainDecay": 0.002 },
+          "scuff": { "at": 0.04, "f": 850, "q": 0.6, "dur": 0.13, "attack": 0.03, "decay": 0.045, "gain": 0.45 },
+          "lp": 2000,
+          "hp": 30,
+          "post": { "drive": 1.6 }
+        },
+        "C": {
+          "kind": "step",
+          "dur": 0.12,
+          "vary": 0.06,
+          "heel": { "f": 100, "decay": 0.014, "attack": 0.03, "drop": 0.75, "gain": 0.35, "burst": 0.0025, "burstLp": 1400 },
+          "modes": [
+            { "f": 150, "gain": 1, "decay": 0.009 },
+            { "f": 270, "gain": 0.8, "decay": 0.008 },
+            { "f": 420, "gain": 0.5, "decay": 0.006 }
+          ],
+          "modeGain": 1,
+          "toe": { "at": 0.05, "gain": 0.3 },
+          "grit": { "at": 0.003, "rate": 380, "f": 1400, "q": 1.1, "dur": 0.05, "gain": 0.45, "grainDecay": 0.0012 },
+          "scuff": { "at": 0.02, "f": 1150, "q": 0.7, "dur": 0.05, "attack": 0.01, "decay": 0.02, "gain": 0.15 },
+          "lp": 2400,
+          "hp": 45,
+          "post": { "drive": 2.2 }
+        }
+      },
+      "esc": {
+        "A": {
+          "kind": "step",
+          "dur": 0.14,
+          "vary": 0.06,
+          "heel": { "f": 100, "decay": 0.012, "attack": 0.0008, "drop": 0.7, "gain": 0.35, "burst": 0.0005, "burstLp": 9000 },
+          "dense": { "from": 800, "to": 5500, "count": 12, "decay": 0.0045, "tilt": -0.6, "slope": -0.2, "spread": 0.45 },
+          "modeGain": 1,
+          "click": { "f": 2300, "q": 0.7, "decay": 0.0025, "gain": 0.55 },
+          "toe": { "at": 0.04, "gain": 0.6 },
+          "grit": { "at": 0.003, "rate": 800, "f": 3800, "q": 0.8, "dur": 0.03, "gain": 0.48, "grainDecay": 0.0006 },
+          "scuff": { "at": 0.07, "f": 2800, "q": 0.6, "dur": 0.04, "attack": 0.004, "decay": 0.012, "gain": 0.3 },
+          "lp": 9000,
+          "hp": 60,
+          "post": { "drive": 5 }
+        },
+        "B": {
+          "kind": "step",
+          "dur": 0.18,
+          "vary": 0.06,
+          "heel": { "f": 80, "decay": 0.02, "attack": 0.001, "drop": 0.65, "gain": 0.6, "burst": 0.0007, "burstLp": 7000 },
+          "dense": { "from": 650, "to": 4800, "count": 12, "decay": 0.0055, "tilt": -0.6, "slope": -0.2, "spread": 0.45 },
+          "modeGain": 1,
+          "click": { "f": 1900, "q": 0.7, "decay": 0.003, "gain": 0.45 },
+          "toe": { "at": 0.05, "gain": 0.65 },
+          "grit": { "at": 0.004, "rate": 600, "f": 3300, "q": 0.8, "dur": 0.06, "gain": 0.72, "grainDecay": 0.0008 },
+          "scuff": { "at": 0.085, "f": 2300, "q": 0.6, "dur": 0.08, "attack": 0.008, "decay": 0.03, "gain": 0.45 },
+          "lp": 8000,
+          "hp": 45,
+          "post": { "drive": 5 }
+        },
+        "C": {
+          "kind": "step",
+          "dur": 0.1,
+          "vary": 0.06,
+          "heel": { "f": 115, "decay": 0.012, "attack": 0.0005, "drop": 0.75, "gain": 0.65, "burst": 0.0004, "burstLp": 10000 },
+          "dense": { "from": 1100, "to": 7000, "count": 12, "decay": 0.003, "tilt": -0.6, "slope": -0.2, "spread": 0.45 },
+          "modeGain": 1,
+          "click": { "f": 2900, "q": 0.8, "decay": 0.002, "gain": 0.45 },
+          "toe": { "at": 0.033, "gain": 0.3 },
+          "grit": { "at": 0.002, "rate": 1000, "f": 4300, "q": 0.9, "dur": 0.02, "gain": 0.48, "grainDecay": 0.0005 },
+          "lp": 10000,
+          "hp": 80,
+          "post": { "drive": 8 }
+        }
+      }
+    },
+    "pasz": {
+      "marche": {
+        "A": {
+          "kind": "step",
+          "dur": 0.2,
+          "vary": 0.06,
+          "heel": { "f": 75, "decay": 0.02, "attack": 0.002, "drop": 0.6, "gain": 0.6, "burst": 0.0007, "burstLp": 7000 },
+          "dense": { "from": 600, "to": 4500, "count": 12, "decay": 0.005, "tilt": -0.6, "slope": -0.2, "spread": 0.45 },
+          "modeGain": 1,
+          "click": { "f": 1800, "q": 0.7, "decay": 0.003, "gain": 0.35 },
+          "toe": { "at": 0.08, "gain": 0.35 },
+          "grit": { "at": 0.004, "rate": 500, "f": 3500, "q": 0.8, "dur": 0.08, "gain": 0.48, "grainDecay": 0.0008 },
+          "scuff": { "at": 0.05, "f": 2500, "q": 0.6, "dur": 0.12, "attack": 0.02, "decay": 0.04, "gain": 0.45 },
+          "lp": 8000,
+          "hp": 40,
+          "post": { "drive": 5 }
+        },
+        "B": {
+          "kind": "step",
+          "dur": 0.25,
+          "vary": 0.06,
+          "heel": { "f": 62, "decay": 0.028, "attack": 0.003, "drop": 0.55, "gain": 0.9, "burst": 0.0009, "burstLp": 6000 },
+          "dense": { "from": 500, "to": 4000, "count": 12, "decay": 0.006, "tilt": -0.6, "slope": -0.2, "spread": 0.45 },
+          "modeGain": 1,
+          "click": { "f": 1500, "q": 0.7, "decay": 0.003, "gain": 0.3 },
+          "toe": { "at": 0.1, "gain": 0.4 },
+          "grit": { "at": 0.005, "rate": 400, "f": 3000, "q": 0.8, "dur": 0.12, "gain": 0.64, "grainDecay": 0.001 },
+          "scuff": { "at": 0.06, "f": 2200, "q": 0.6, "dur": 0.18, "attack": 0.03, "decay": 0.06, "gain": 0.68 },
+          "lp": 7500,
+          "hp": 35,
+          "post": { "drive": 5 }
+        },
+        "C": {
+          "kind": "step",
+          "dur": 0.13,
+          "vary": 0.06,
+          "heel": { "f": 88, "decay": 0.014, "attack": 0.0015, "drop": 0.65, "gain": 0.45, "burst": 0.0006, "burstLp": 8000 },
+          "dense": { "from": 800, "to": 5500, "count": 12, "decay": 0.004, "tilt": -0.6, "slope": -0.2, "spread": 0.45 },
+          "modeGain": 1,
+          "click": { "f": 2200, "q": 0.8, "decay": 0.0025, "gain": 0.45 },
+          "toe": { "at": 0.055, "gain": 0.3 },
+          "grit": { "at": 0.003, "rate": 700, "f": 3800, "q": 0.9, "dur": 0.04, "gain": 0.4, "grainDecay": 0.0006 },
+          "scuff": { "at": 0.04, "f": 2600, "q": 0.7, "dur": 0.06, "attack": 0.012, "decay": 0.02, "gain": 0.3 },
+          "lp": 9000,
+          "hp": 50,
+          "post": { "drive": 5 }
+        }
+      },
+      "lent": {
+        "A": {
+          "use": ["pasz.marche.A"],
+          "dur": 0.3,
+          "heel": { "attack": 0.003, "decay": 0.032 },
+          "post": { "drive": 6 },
+          "toe": { "at": 0.14, "gain": 0.3 },
+          "scuff": { "at": 0.05, "dur": 0.22, "decay": 0.09, "gain": 0.65 }
+        },
+        "B": {
+          "use": ["pasz.marche.B"],
+          "dur": 0.34,
+          "heel": { "attack": 0.004 },
+          "toe": { "at": 0.16, "gain": 0.35 },
+          "scuff": { "at": 0.06, "dur": 0.26, "decay": 0.11, "gain": 0.6 }
+        },
+        "C": {
+          "use": ["pasz.marche.C"],
+          "dur": 0.2,
+          "heel": { "attack": 0.002, "decay": 0.024 },
+          "post": { "drive": 6 },
+          "toe": { "at": 0.09, "gain": 0.28 },
+          "scuff": { "at": 0.04, "dur": 0.12, "decay": 0.04, "gain": 0.5 }
+        }
+      },
+      "course": {
+        "A": {
+          "use": ["pasz.marche.A"],
+          "dur": 0.15,
+          "heel": { "f": 88, "decay": 0.014, "gain": 0.75 },
+          "toe": { "at": 0.035, "gain": 0.55 },
+          "click": { "gain": 0.45 },
+          "scuff": { "at": 0.03, "dur": 0.05, "decay": 0.02, "gain": 0.2 }
+        },
+        "B": {
+          "use": ["pasz.marche.B"],
+          "dur": 0.18,
+          "heel": { "f": 72, "decay": 0.02, "gain": 0.95 },
+          "toe": { "at": 0.04, "gain": 0.6 },
+          "scuff": { "at": 0.035, "dur": 0.08, "decay": 0.03, "gain": 0.35 }
+        },
+        "C": {
+          "use": ["pasz.marche.C"],
+          "dur": 0.11,
+          "heel": { "f": 98, "decay": 0.011, "gain": 0.6 },
+          "toe": { "at": 0.03, "gain": 0.45 },
+          "scuff": { "at": 0.025, "dur": 0.035, "decay": 0.012, "gain": 0.15 }
+        }
+      },
+      "rampe": {
+        "A": {
+          "kind": "drag",
+          "dur": 0.8,
+          "vary": 0.05,
+          "friction": { "f": [420, 580], "q": 0.9, "gain": 1, "rate": 9, "jitter": 0.35, "irregular": 0.5, "rise": 0.03, "fall": 0.07 },
+          "cloth": { "f": 1500, "q": 0.9, "gain": 0.25, "am": 3 },
+          "knock": { "at": 0.02, "f": 85, "decay": 0.03, "attack": 0.005, "drop": 0.85, "gain": 0.5 },
+          "env": [[0, 0], [0.1, 1], [0.75, 0.85], [1, 0]],
+          "lp": 2400,
+          "post": { "drive": 1.2 }
+        },
+        "B": {
+          "kind": "drag",
+          "dur": 1,
+          "vary": 0.05,
+          "friction": { "f": [220, 320], "q": 0.8, "gain": 1.2, "rate": 7, "jitter": 0.45, "irregular": 0.6, "rise": 0.04, "fall": 0.09 },
+          "cloth": { "f": 1300, "q": 0.8, "gain": 0.35, "am": 2.5 },
+          "knock": { "at": 0.03, "f": 80, "decay": 0.04, "attack": 0.006, "drop": 0.9, "gain": 0.6 },
+          "env": [[0, 0], [0.12, 1], [0.8, 0.9], [1, 0]],
+          "lp": 2000,
+          "hp": 70,
+          "post": { "drive": 1.4 }
+        },
+        "C": {
+          "kind": "drag",
+          "dur": 0.55,
+          "vary": 0.05,
+          "friction": { "f": [620, 900], "q": 1, "gain": 1, "rate": 11, "jitter": 0.3, "irregular": 0.45, "rise": 0.02, "fall": 0.05 },
+          "cloth": { "f": 1700, "q": 1, "gain": 0.15, "am": 4 },
+          "knock": { "at": 0.015, "f": 95, "decay": 0.022, "attack": 0.004, "gain": 0.4 },
+          "env": [[0, 0], [0.08, 1], [0.7, 0.8], [1, 0]],
+          "lp": 2800,
+          "post": { "drive": 1.1 }
+        }
+      }
+    },
+    "voix": {
+      "base": {
+        "kind": "voice",
+        "vary": 0.03,
+        "jitter": 0.025,
+        "shimmer": 0.1,
+        "oq": 0.6,
+        "sq": 2.5,
+        "wander": 0.03,
+        "breathPulse": 0.6,
+        "drift": 0.04,
+        "driftRate": 0.4,
+        "hp": 70,
+        "tilt": 1500,
+        "drive": 2.5
+      },
+      "action": {
+        "errance": {
+          "dur": 1.7,
+          "contour": [[0, 0.92], [0.25, 1.06], [0.6, 1], [1, 0.82]],
+          "vowels": ["o", "a", "o", "u"],
+          "env": [[0, 0], [0.12, 0.9], [0.4, 1], [0.75, 0.8], [1, 0]],
+          "breath": 0.12,
+          "sub": 0.2,
+          "rough": { "rate": 32, "depth": 0.18 }
+        },
+        "attaque": {
+          "dur": 0.75,
+          "contour": [[0, 1], [0.15, 1.28], [0.6, 1.18], [1, 0.95]],
+          "vowels": ["ae", "a", "a"],
+          "env": [[0, 0], [0.06, 1], [0.6, 0.9], [1, 0]],
+          "breath": 0.09,
+          "sub": 0.25,
+          "rough": { "rate": 48, "depth": 0.14 },
+          "jitter": 0.02,
+          "drive": 3.2
+        },
+        "touche": {
+          "dur": 0.32,
+          "contour": [[0, 1.34], [0.25, 1.24], [1, 1.05]],
+          "vowels": ["ae", "eu"],
+          "env": [[0, 0], [0.05, 1], [0.5, 0.6], [1, 0]],
+          "breath": 0.12,
+          "sub": 0.1,
+          "rough": { "rate": 40, "depth": 0.15 },
+          "drive": 2.8
+        },
+        "mort": {
+          "dur": 1.5,
+          "contour": [[0, 1.1], [0.3, 1], [0.8, 0.76], [1, 0.62]],
+          "vowels": ["a", "o", "u"],
+          "env": [[0, 0], [0.06, 1], [0.5, 0.8], [0.85, 0.35], [1, 0]],
+          "breath": 0.11,
+          "sub": 0.22,
+          "rough": { "rate": 26, "depth": 0.15 },
+          "rattle": { "from": 0.55, "rate": 16, "gain": 0.1, "f": 800 },
+          "jitter": 0.022
+        }
+      },
+      "type": {
+        "marcheur": { "f0": 92, "formantScale": 0.92 },
+        "grand": { "f0": 66, "formantScale": 0.8, "bw": 1.1, "scale": { "drive": 1.5, "tilt": 0.55 } },
+        "voute": { "f0": 104, "formantScale": 0.97, "hiss": { "f": 3200, "q": 1.6, "gain": 0.08 }, "scale": { "tilt": 0.8 } },
+        "petit": {
+          "f0": 140,
+          "formantScale": 1.12,
+          "jitter": 0.02,
+          "rough": { "rate": 45 },
+          "scale": { "dur": 0.72, "rough.depth": 0.5, "breath": 0.85, "drive": 0.75 }
+        }
+      },
+      "style": {
+        "A": { "tilt": 850, "scale": { "sub": 0.6, "rough.depth": 0.6, "breath": 0.8 } },
+        "B": {
+          "tilt": 1100,
+          "bw": 1.3,
+          "double": { "detune": 0.008, "delay": 0.011, "gain": 0.35 },
+          "ingressive": { "dur": 0.25, "gain": 0.35, "vowels": ["h", "u"] },
+          "scale": { "sub": 1.15, "rough.depth": 1.1, "breath": 1.05, "dur": 1.2, "f0": 0.93, "drive": 1.15 }
+        },
+        "C": {
+          "tilt": 1500,
+          "hp": 180,
+          "presence": { "f": 1100, "q": 0.9, "gain": 7 },
+          "scale": { "dur": 0.75, "breath": 0.9, "rough.depth": 0.8, "sub": 0.8, "drive": 0.75 }
+        }
+      }
+    },
+    "planche": {
+      "arrachage": {
+        "A": {
+          "kind": "break",
+          "dur": 0.95,
+          "vary": 0.05,
+          "groan": {
+            "at": 0,
+            "dur": 0.32,
+            "rate": [[0, 15], [0.7, 35], [1, 60]],
+            "dense": { "from": 250, "to": 1800, "count": 10, "decay": 0.012, "tilt": -0.5 },
+            "gain": 0.6
+          },
+          "splinter": {
+            "at": 0.28,
+            "dur": 0.12,
+            "rate": [[0, 80], [1, 600]],
+            "dense": { "from": 300, "to": 5000, "count": 16, "decay": 0.008, "tilt": -0.5 },
+            "noise": 2,
+            "noiseF": 2500,
+            "snap": 1.5,
+            "gain": 1,
+            "thump": { "f": 85, "decay": 0.03, "attack": 0.002, "gain": 0.4 }
+          },
+          "fall": {
+            "at": 0.5,
+            "gain": 0.8,
+            "dense": { "from": 180, "to": 3000, "count": 12, "decay": 0.015, "tilt": -0.5 },
+            "noise": { "gain": 0.6, "f": 1200, "q": 0.6, "decay": 0.006 },
+            "bounces": { "first": 0, "interval": 0.12, "restitution": 0.5, "count": 3, "secondEnd": 0.015, "lp": 5000 },
+            "slap": { "f": 80, "decay": 0.025, "attack": 0.002, "gain": 0.5 },
+            "slide": { "dur": 0.1, "f": 1500, "q": 0.6, "attack": 0.01, "decay": 0.03, "gain": 0.1 }
+          },
+          "lp": 7000,
+          "post": { "drive": 1.5 }
+        },
+        "B": {
+          "kind": "break",
+          "dur": 1.15,
+          "vary": 0.05,
+          "groan": {
+            "at": 0,
+            "dur": 0.5,
+            "rate": [[0, 10], [0.6, 25], [1, 50]],
+            "dense": { "from": 144, "to": 1120, "count": 10, "decay": 0.0192, "tilt": -0.5 },
+            "gain": 0.7
+          },
+          "splinter": {
+            "at": 0.45,
+            "dur": 0.18,
+            "rate": [[0, 50], [1, 500]],
+            "dense": { "from": 176, "to": 3360, "count": 16, "decay": 0.012, "tilt": -0.5 },
+            "noise": 2.2,
+            "noiseF": 2000,
+            "snap": 1.8,
+            "gain": 1,
+            "thump": { "f": 70, "decay": 0.04, "attack": 0.002, "gain": 0.55 }
+          },
+          "fall": {
+            "at": 0.7,
+            "gain": 0.9,
+            "dense": { "from": 120, "to": 2000, "count": 12, "decay": 0.0216, "tilt": -0.5 },
+            "noise": { "gain": 0.7, "f": 1000, "q": 0.6, "decay": 0.008 },
+            "bounces": { "first": 0, "interval": 0.14, "restitution": 0.5, "count": 3, "secondEnd": 0.02, "lp": 4500 },
+            "slap": { "f": 68, "decay": 0.035, "attack": 0.002, "gain": 0.7 },
+            "slide": { "dur": 0.14, "f": 1300, "q": 0.6, "attack": 0.01, "decay": 0.04, "gain": 0.14 }
+          },
+          "lp": 6500,
+          "post": { "drive": 1.6 }
+        },
+        "C": {
+          "kind": "break",
+          "dur": 0.65,
+          "vary": 0.05,
+          "groan": {
+            "at": 0,
+            "dur": 0.15,
+            "rate": [[0, 25], [1, 70]],
+            "dense": { "from": 450, "to": 3000, "count": 10, "decay": 0.0054, "tilt": -0.5 },
+            "gain": 0.5
+          },
+          "splinter": {
+            "at": 0.13,
+            "dur": 0.08,
+            "rate": [[0, 120], [1, 700]],
+            "dense": { "from": 525, "to": 8250, "count": 16, "decay": 0.0036, "tilt": -0.5 },
+            "noise": 2,
+            "noiseF": 2800,
+            "snap": 1.4,
+            "gain": 1,
+            "thump": { "f": 95, "decay": 0.022, "attack": 0.002, "gain": 0.35 }
+          },
+          "fall": {
+            "at": 0.28,
+            "gain": 0.7,
+            "dense": { "from": 300, "to": 4800, "count": 12, "decay": 0.0066, "tilt": -0.5 },
+            "noise": { "gain": 0.6, "f": 1400, "q": 0.6, "decay": 0.005 },
+            "bounces": { "first": 0, "interval": 0.1, "restitution": 0.45, "count": 2, "secondEnd": 0.012, "lp": 5500 },
+            "slap": { "f": 90, "decay": 0.02, "attack": 0.002, "gain": 0.4 }
+          },
+          "lp": 7500,
+          "post": { "drive": 1.4 }
+        }
+      },
+      "marteau": {
+        "A": {
+          "len": 0.2,
+          "body": {
+            "modes": [
+              { "f": 160, "gain": 1, "decay": 0.075 },
+              { "f": 340, "gain": 0.8, "decay": 0.055 },
+              { "f": 540, "gain": 0.5, "decay": 0.04 },
+              { "f": 900, "gain": 0.3, "decay": 0.025 }
+            ],
+            "gain": 1,
+            "lp": 2200,
+            "burst": 0.0015
+          },
+          "nail": {
+            "gain": 3.2,
+            "partials": [
+              { "f": 2650, "gain": 1, "decay": 0.016 },
+              { "f": 3700, "gain": 0.6, "decay": 0.011 },
+              { "f": 4500, "gain": 0.35, "decay": 0.008 }
+            ]
+          },
+          "click": { "f": 1600, "q": 1, "decay": 0.0025, "gain": 0.45 },
+          "dryDecay": 0.5,
+          "dryPitch": 1.08
+        },
+        "B": {
+          "len": 0.24,
+          "body": {
+            "modes": [
+              { "f": 135, "gain": 1, "decay": 0.1 },
+              { "f": 290, "gain": 0.85, "decay": 0.07 },
+              { "f": 460, "gain": 0.55, "decay": 0.05 },
+              { "f": 770, "gain": 0.3, "decay": 0.03 }
+            ],
+            "gain": 0.75,
+            "lp": 1900,
+            "burst": 0.002
+          },
+          "nail": {
+            "gain": 3.4,
+            "partials": [
+              { "f": 2300, "gain": 1, "decay": 0.02 },
+              { "f": 3250, "gain": 0.6, "decay": 0.014 },
+              { "f": 4100, "gain": 0.3, "decay": 0.009 }
+            ]
+          },
+          "click": { "f": 1300, "q": 0.9, "decay": 0.003, "gain": 0.45 },
+          "dryDecay": 0.5,
+          "dryPitch": 1.06
+        },
+        "C": {
+          "len": 0.14,
+          "body": {
+            "modes": [
+              { "f": 185, "gain": 1, "decay": 0.045 },
+              { "f": 390, "gain": 0.8, "decay": 0.035 },
+              { "f": 620, "gain": 0.5, "decay": 0.025 },
+              { "f": 1020, "gain": 0.3, "decay": 0.016 }
+            ],
+            "gain": 1,
+            "lp": 2600,
+            "burst": 0.0012
+          },
+          "nail": { "gain": 3.2, "partials": [{ "f": 2900, "gain": 1, "decay": 0.011 }, { "f": 4000, "gain": 0.6, "decay": 0.008 }] },
+          "click": { "f": 1800, "q": 1.1, "decay": 0.002, "gain": 0.6 },
+          "dryDecay": 0.55,
+          "dryPitch": 1.1
+        }
+      },
+      "coup": {
+        "A": {
+          "kind": "hammer",
+          "dur": 0.22,
+          "vary": 0.04,
+          "hit": { "use": ["planche.marteau2.A"] },
+          "lp": 5000,
+          "post": { "drive": 2.6 }
+        },
+        "B": {
+          "kind": "hammer",
+          "dur": 0.26,
+          "vary": 0.04,
+          "hit": { "use": ["planche.marteau2.B"] },
+          "lp": 4500,
+          "post": { "drive": 2.8 }
+        },
+        "C": {
+          "kind": "hammer",
+          "dur": 0.16,
+          "vary": 0.04,
+          "hit": { "use": ["planche.marteau2.C"] },
+          "lp": 5500,
+          "post": { "drive": 6 }
+        }
+      },
+      "marteau2": {
+        "A": {
+          "len": 0.22,
+          "thud": { "f": 80, "decay": 0.025, "attack": 0.001, "drop": 0.75, "gain": 0.9 },
+          "body": {
+            "dense": { "from": 110, "to": 1600, "count": 12, "decay": 0.03, "tilt": -0.5, "slope": -0.4 },
+            "gain": 1,
+            "lp": 2500,
+            "burst": 0.0012,
+            "noise": { "gain": 0.8, "f": 900, "q": 0.6, "decay": 0.006 }
+          },
+          "nail": {
+            "gain": 0.8,
+            "partials": [
+              { "f": 1900, "gain": 1, "decay": 0.006 },
+              { "f": 2850, "gain": 0.6, "decay": 0.004 },
+              { "f": 3800, "gain": 0.35, "decay": 0.003 }
+            ]
+          },
+          "click": { "f": 1400, "q": 0.8, "decay": 0.002, "gain": 0.3 },
+          "dryDecay": 0.5,
+          "dryPitch": 1.05
+        },
+        "B": {
+          "len": 0.26,
+          "thud": { "f": 65, "decay": 0.035, "attack": 0.001, "drop": 0.7, "gain": 1.1 },
+          "body": {
+            "dense": { "from": 90, "to": 1300, "count": 12, "decay": 0.04, "tilt": -0.5, "slope": -0.4 },
+            "gain": 1,
+            "lp": 2200,
+            "burst": 0.0015,
+            "noise": { "gain": 0.9, "f": 750, "q": 0.6, "decay": 0.008 }
+          },
+          "nail": { "gain": 0.7, "partials": [{ "f": 1700, "gain": 1, "decay": 0.007 }, { "f": 2550, "gain": 0.6, "decay": 0.005 }] },
+          "click": { "f": 1200, "q": 0.8, "decay": 0.002, "gain": 0.25 },
+          "dryDecay": 0.5,
+          "dryPitch": 1.05
+        },
+        "C": {
+          "len": 0.16,
+          "thud": { "f": 90, "decay": 0.018, "attack": 0.001, "drop": 0.75, "gain": 0.8 },
+          "body": {
+            "dense": { "from": 195, "to": 2850, "count": 12, "decay": 0.012, "tilt": -0.5, "slope": -0.4 },
+            "gain": 1,
+            "lp": 2800,
+            "burst": 0.001,
+            "noise": { "gain": 0.8, "f": 1100, "q": 0.6, "decay": 0.005 }
+          },
+          "nail": { "gain": 0.8, "partials": [{ "f": 2100, "gain": 1, "decay": 0.005 }, { "f": 3150, "gain": 0.6, "decay": 0.003 }] },
+          "click": { "f": 1600, "q": 0.8, "decay": 0.0018, "gain": 0.35 },
+          "dryDecay": 0.55,
+          "dryPitch": 1.06
+        }
+      },
+      "reparation": {
+        "A": {
+          "kind": "repair",
+          "dur": 1.8,
+          "vary": 0.04,
+          "hit": { "use": ["planche.marteau2.A"] },
+          "scrape": { "f": 700, "q": 0.8, "gain": 0.35, "rate": 12 },
+          "ringRise": 0.02,
+          "lp": 5000,
+          "post": { "drive": 2.6 }
+        },
+        "B": {
+          "kind": "repair",
+          "dur": 1.8,
+          "vary": 0.04,
+          "hit": { "use": ["planche.marteau2.B"] },
+          "scrape": { "f": 600, "q": 0.7, "gain": 0.45, "rate": 10 },
+          "ringRise": 0.02,
+          "lp": 4500,
+          "post": { "drive": 1.8 }
+        },
+        "C": {
+          "kind": "repair",
+          "dur": 1.8,
+          "vary": 0.04,
+          "hit": { "use": ["planche.marteau2.C"] },
+          "scrape": { "f": 800, "q": 0.9, "gain": 0.25, "rate": 14 },
+          "ringRise": 0.02,
+          "lp": 5500,
+          "post": { "drive": 6 }
+        }
+      },
+      "craquement": {
+        "A": {
+          "kind": "break",
+          "dur": 0.85,
+          "vary": 0.05,
+          "groan": {
+            "at": 0,
+            "dur": 0.6,
+            "rate": [[0, 18], [0.5, 40], [0.85, 75], [1, 55]],
+            "jitter": 0.35,
+            "irregular": 0.6,
+            "modes": [
+              { "f": 470, "gain": 1, "decay": 0.016 },
+              { "f": 860, "gain": 0.8, "decay": 0.013 },
+              { "f": 1420, "gain": 0.5, "decay": 0.009 }
+            ],
+            "gain": 1,
+            "env": [[0, 0], [0.2, 0.6], [0.85, 1], [1, 0.4]]
+          },
+          "splinter": {
+            "at": 0.6,
+            "dur": 0.1,
+            "rate": [[0, 100], [1, 700]],
+            "dense": { "from": 400, "to": 6000, "count": 18, "decay": 0.005, "tilt": -0.6 },
+            "noise": 2.5,
+            "noiseF": 2800,
+            "noiseDecay": 0.003,
+            "snap": 1.3,
+            "gain": 0.9
+          },
+          "lp": 8000,
+          "post": { "drive": 1.6 }
+        },
+        "B": {
+          "kind": "break",
+          "dur": 1,
+          "vary": 0.05,
+          "groan": {
+            "at": 0,
+            "dur": 0.75,
+            "rate": [[0, 18], [0.5, 40], [0.85, 80], [1, 55]],
+            "jitter": 0.35,
+            "irregular": 0.6,
+            "modes": [
+              { "f": 320, "gain": 1, "decay": 0.026 },
+              { "f": 590, "gain": 0.8, "decay": 0.022 },
+              { "f": 980, "gain": 0.5, "decay": 0.015 }
+            ],
+            "gain": 1.1,
+            "env": [[0, 0], [0.15, 0.6], [0.8, 1], [1, 0.4]]
+          },
+          "splinter": {
+            "at": 0.75,
+            "dur": 0.14,
+            "rate": [[0, 70], [1, 600]],
+            "dense": { "from": 300, "to": 5500, "count": 18, "decay": 0.006, "tilt": -0.6 },
+            "noise": 2.8,
+            "noiseF": 2400,
+            "noiseDecay": 0.0035,
+            "snap": 1.4,
+            "gain": 1,
+            "thump": { "f": 75, "decay": 0.025, "attack": 0.002, "gain": 0.3 }
+          },
+          "lp": 7500,
+          "post": { "drive": 1.8 }
+        },
+        "C": {
+          "kind": "break",
+          "dur": 0.55,
+          "vary": 0.05,
+          "groan": {
+            "at": 0,
+            "dur": 0.35,
+            "rate": [[0, 30], [0.6, 70], [1, 100]],
+            "jitter": 0.3,
+            "irregular": 0.5,
+            "modes": [
+              { "f": 400, "gain": 1, "decay": 0.016 },
+              { "f": 730, "gain": 0.8, "decay": 0.012 },
+              { "f": 1200, "gain": 0.5, "decay": 0.009 }
+            ],
+            "gain": 1,
+            "env": [[0, 0], [0.2, 0.6], [0.85, 1], [1, 0.4]]
+          },
+          "splinter": {
+            "at": 0.35,
+            "dur": 0.07,
+            "rate": [[0, 150], [1, 800]],
+            "dense": { "from": 500, "to": 6500, "count": 18, "decay": 0.004, "tilt": -0.6 },
+            "noise": 2.4,
+            "noiseF": 3000,
+            "noiseDecay": 0.0025,
+            "snap": 1.2,
+            "gain": 0.9
+          },
+          "lp": 8500,
+          "post": { "drive": 1.5 }
+        }
+      },
+      "chute": {
+        "A": {
+          "kind": "fall",
+          "dur": 0.75,
+          "vary": 0.05,
+          "dense": { "from": 200, "to": 3000, "count": 12, "decay": 0.016, "tilt": -0.5 },
+          "noise": { "gain": 0.7, "f": 1200, "q": 0.6, "decay": 0.006 },
+          "bounces": { "first": 0.005, "interval": 0.14, "restitution": 0.55, "count": 4, "secondEnd": 0.012, "lp": 5000 },
+          "slap": { "f": 80, "decay": 0.03, "attack": 0.002, "gain": 0.55 },
+          "slide": { "dur": 0.12, "f": 1400, "q": 0.6, "attack": 0.01, "decay": 0.04, "gain": 0.14 },
+          "lp": 7000,
+          "post": { "drive": 2.6 }
+        },
+        "B": {
+          "kind": "fall",
+          "dur": 0.95,
+          "vary": 0.05,
+          "dense": { "from": 128, "to": 2000, "count": 12, "decay": 0.024, "tilt": -0.5 },
+          "noise": { "gain": 0.8, "f": 1000, "q": 0.6, "decay": 0.008 },
+          "bounces": { "first": 0.005, "interval": 0.17, "restitution": 0.6, "count": 5, "secondEnd": 0.02, "lp": 4500 },
+          "slap": { "f": 68, "decay": 0.04, "attack": 0.003, "gain": 0.75 },
+          "slide": { "dur": 0.2, "f": 1200, "q": 0.6, "attack": 0.02, "decay": 0.07, "gain": 0.2 },
+          "lp": 6500,
+          "post": { "drive": 1.8 }
+        },
+        "C": {
+          "kind": "fall",
+          "dur": 0.5,
+          "vary": 0.05,
+          "dense": { "from": 360, "to": 5100, "count": 12, "decay": 0.0066, "tilt": -0.5 },
+          "noise": { "gain": 0.6, "f": 1400, "q": 0.6, "decay": 0.005 },
+          "bounces": { "first": 0.004, "interval": 0.11, "restitution": 0.5, "count": 3, "secondEnd": 0.008, "lp": 5500 },
+          "slap": { "f": 92, "decay": 0.022, "attack": 0.002, "gain": 0.45 },
+          "lp": 7500,
+          "post": { "drive": 4.5 }
+        }
+      }
+    },
+    "fenetre": {
+      "escalade": {
+        "A": {
+          "kind": "layers",
+          "dur": 1.5,
+          "vary": 0.04,
+          "post": { "drive": 2.5 },
+          "parts": [
+            {
+              "kind": "fall",
+              "at": 0.02,
+              "dur": 0.22,
+              "gain": 0.9,
+              "dense": { "from": 260, "to": 3120, "count": 12, "decay": 0.012, "tilt": -0.5 },
+              "noise": { "gain": 0.8, "f": 1300, "q": 0.6, "decay": 0.005 },
+              "bounces": { "first": 0.002, "count": 1, "lp": 5000 },
+              "slap": { "f": 110, "decay": 0.015, "attack": 0.001, "gain": 0.3 },
+              "lp": 7000
+            },
+            {
+              "kind": "fall",
+              "at": 0.24,
+              "dur": 0.22,
+              "gain": 0.7,
+              "dense": { "from": 240, "to": 2880, "count": 12, "decay": 0.012, "tilt": -0.5 },
+              "noise": { "gain": 0.8, "f": 1300, "q": 0.6, "decay": 0.005 },
+              "bounces": { "first": 0.002, "count": 1, "lp": 5000 },
+              "slap": { "f": 110, "decay": 0.015, "attack": 0.001, "gain": 0.3 },
+              "lp": 7000
+            },
+            {
+              "kind": "drag",
+              "at": 0.3,
+              "dur": 0.55,
+              "gain": 0.7,
+              "friction": { "f": [1500, 2400], "q": 0.7, "gain": 1, "rate": 12, "jitter": 0.5, "irregular": 0.6, "rise": 0.012, "fall": 0.04 },
+              "cloth": { "f": 2600, "q": 0.8, "gain": 0.35, "am": 6 },
+              "env": [[0, 0], [0.15, 1], [0.8, 0.8], [1, 0]],
+              "lp": 6000,
+              "hp": 120
+            },
+            { "use": ["pas.dur.C"], "at": 0.5, "gain": 0.45 },
+            { "use": ["pas.dur.C"], "at": 0.74, "gain": 0.4 },
+            {
+              "kind": "break",
+              "at": 0.42,
+              "dur": 0.5,
+              "gain": 0.45,
+              "groan": {
+                "at": 0,
+                "dur": 0.5,
+                "rate": [[0, 14], [0.6, 30], [1, 22]],
+                "jitter": 0.35,
+                "irregular": 0.6,
+                "modes": [
+                  { "f": 470, "gain": 1, "decay": 0.016 },
+                  { "f": 860, "gain": 0.8, "decay": 0.013 },
+                  { "f": 1420, "gain": 0.5, "decay": 0.009 }
+                ],
+                "gain": 1
+              },
+              "lp": 7000
+            },
+            { "use": ["pasz.marche.B"], "at": 1.18, "gain": 1 }
+          ]
+        },
+        "B": {
+          "kind": "layers",
+          "dur": 1.9,
+          "vary": 0.04,
+          "post": { "drive": 2.5 },
+          "parts": [
+            {
+              "kind": "fall",
+              "at": 0.02,
+              "dur": 0.22,
+              "gain": 1,
+              "dense": { "from": 140, "to": 1700, "count": 12, "decay": 0.012, "tilt": -0.5 },
+              "noise": { "gain": 0.8, "f": 1300, "q": 0.6, "decay": 0.005 },
+              "bounces": { "first": 0.002, "count": 1, "lp": 5000 },
+              "slap": { "f": 110, "decay": 0.015, "attack": 0.001, "gain": 0.3 },
+              "lp": 7000
+            },
+            {
+              "kind": "fall",
+              "at": 0.3,
+              "dur": 0.22,
+              "gain": 0.8,
+              "dense": { "from": 130, "to": 1600, "count": 12, "decay": 0.012, "tilt": -0.5 },
+              "noise": { "gain": 0.8, "f": 1300, "q": 0.6, "decay": 0.005 },
+              "bounces": { "first": 0.002, "count": 1, "lp": 5000 },
+              "slap": { "f": 110, "decay": 0.015, "attack": 0.001, "gain": 0.3 },
+              "lp": 7000
+            },
+            {
+              "kind": "fall",
+              "at": 0.58,
+              "dur": 0.22,
+              "gain": 0.6,
+              "dense": { "from": 135, "to": 1650, "count": 12, "decay": 0.012, "tilt": -0.5 },
+              "noise": { "gain": 0.8, "f": 1300, "q": 0.6, "decay": 0.005 },
+              "bounces": { "first": 0.002, "count": 1, "lp": 5000 },
+              "slap": { "f": 110, "decay": 0.015, "attack": 0.001, "gain": 0.3 },
+              "lp": 7000
+            },
+            {
+              "kind": "drag",
+              "at": 0.35,
+              "dur": 0.9,
+              "gain": 0.8,
+              "friction": { "f": [550, 1000], "q": 0.7, "gain": 1, "rate": 7, "jitter": 0.5, "irregular": 0.6, "rise": 0.012, "fall": 0.04 },
+              "cloth": { "f": 1400, "q": 0.8, "gain": 0.3, "am": 4 },
+              "env": [[0, 0], [0.15, 1], [0.8, 0.8], [1, 0]],
+              "lp": 6000,
+              "hp": 120
+            },
+            { "use": ["pas.dur.B"], "at": 0.62, "gain": 0.45 },
+            { "use": ["pas.dur.B"], "at": 0.9, "gain": 0.5 },
+            { "use": ["pas.dur.B"], "at": 1.12, "gain": 0.4 },
+            {
+              "kind": "break",
+              "at": 0.5,
+              "dur": 0.8,
+              "gain": 0.55,
+              "groan": {
+                "at": 0,
+                "dur": 0.8,
+                "rate": [[0, 14], [0.6, 30], [1, 22]],
+                "jitter": 0.35,
+                "irregular": 0.6,
+                "modes": [
+                  { "f": 470, "gain": 1, "decay": 0.016 },
+                  { "f": 860, "gain": 0.8, "decay": 0.013 },
+                  { "f": 1420, "gain": 0.5, "decay": 0.009 }
+                ],
+                "gain": 1
+              },
+              "lp": 7000
+            },
+            { "use": ["pasz.marche.B"], "at": 1.55, "gain": 1 },
+            { "use": ["pasz.course.B"], "at": 1.66, "gain": 0.6 }
+          ]
+        },
+        "C": {
+          "kind": "layers",
+          "dur": 1.05,
+          "vary": 0.04,
+          "post": { "drive": 3 },
+          "parts": [
+            {
+              "kind": "fall",
+              "at": 0.015,
+              "dur": 0.22,
+              "gain": 0.9,
+              "dense": { "from": 300, "to": 3600, "count": 12, "decay": 0.012, "tilt": -0.5 },
+              "noise": { "gain": 0.8, "f": 1300, "q": 0.6, "decay": 0.005 },
+              "bounces": { "first": 0.002, "count": 1, "lp": 5000 },
+              "slap": { "f": 110, "decay": 0.015, "attack": 0.001, "gain": 0.3 },
+              "lp": 7000
+            },
+            {
+              "kind": "drag",
+              "at": 0.15,
+              "dur": 0.35,
+              "gain": 0.6,
+              "friction": { "f": [2300, 3600], "q": 0.7, "gain": 1, "rate": 15, "jitter": 0.5, "irregular": 0.6, "rise": 0.012, "fall": 0.04 },
+              "cloth": { "f": 2600, "q": 0.8, "gain": 0.35, "am": 6 },
+              "env": [[0, 0], [0.15, 1], [0.8, 0.8], [1, 0]],
+              "lp": 6000,
+              "hp": 120
+            },
+            { "use": ["pas.dur.C"], "at": 0.4, "gain": 0.4 },
+            { "use": ["pasz.course.A"], "at": 0.78, "gain": 1 }
+          ]
+        }
+      }
+    },
+    "joueur": {
+      "souffle": {
+        "A": {
+          "kind": "breath",
+          "dur": 1.7,
+          "vary": 0.03,
+          "grunt": {
+            "at": 0,
+            "dur": 0.45,
+            "gain": 1,
+            "f0": 118,
+            "contour": [[0, 1.15], [0.3, 1], [1, 0.85]],
+            "vowels": ["oe", "eu"],
+            "breath": 0.3,
+            "sub": 0.1,
+            "rough": { "rate": 30, "depth": 0.25 },
+            "env": [[0, 0], [0.08, 1], [0.6, 0.7], [1, 0]],
+            "tilt": 2200,
+            "drive": 1.2,
+            "formantScale": 1,
+            "jitter": 0.025,
+            "shimmer": 0.08,
+            "wander": 0.02
+          },
+          "cycles": [
+            {
+              "inhale": { "at": 0.55, "dur": 0.28, "gain": 0.35 },
+              "exhale": {
+                "dur": 0.4,
+                "gain": 0.5,
+                "f0": 108,
+                "voiced": 0.35,
+                "breath": 0.9,
+                "breathPulse": 0.3,
+                "vowels": ["h", "eu"],
+                "env": [[0, 0], [0.15, 1], [0.6, 0.6], [1, 0]],
+                "tilt": 2000,
+                "jitter": 0.03,
+                "shimmer": 0.1,
+                "wander": 0.02,
+                "formantScale": 1,
+                "at": 0.85
+              }
+            },
+            { "inhale": { "at": 1.28, "dur": 0.22, "gain": 0.3 } }
+          ],
+          "lp": 3800,
+          "post": { "drive": 1.3 }
+        },
+        "B": {
+          "kind": "breath",
+          "dur": 2.1,
+          "vary": 0.03,
+          "grunt": {
+            "at": 0,
+            "dur": 0.6,
+            "gain": 1,
+            "f0": 108,
+            "contour": [[0, 1.2], [0.25, 1.05], [1, 0.8]],
+            "vowels": ["a", "oe", "eu"],
+            "breath": 0.4,
+            "sub": 0.25,
+            "rough": { "rate": 28, "depth": 0.4 },
+            "env": [[0, 0], [0.06, 1], [0.6, 0.75], [1, 0]],
+            "tilt": 2400,
+            "drive": 1.6,
+            "formantScale": 0.97,
+            "jitter": 0.035,
+            "shimmer": 0.12,
+            "wander": 0.03
+          },
+          "cycles": [
+            {
+              "inhale": { "at": 0.7, "dur": 0.35, "gain": 0.45 },
+              "exhale": {
+                "dur": 0.5,
+                "gain": 0.5,
+                "f0": 100,
+                "voiced": 0.35,
+                "breath": 0.9,
+                "breathPulse": 0.3,
+                "vowels": ["h", "eu"],
+                "env": [[0, 0], [0.15, 1], [0.6, 0.6], [1, 0]],
+                "tilt": 2000,
+                "jitter": 0.03,
+                "shimmer": 0.1,
+                "wander": 0.02,
+                "formantScale": 1,
+                "at": 1.08,
+                "rough": { "rate": 25, "depth": 0.3 }
+              }
+            },
+            { "inhale": { "at": 1.65, "dur": 0.3, "gain": 0.4 } }
+          ],
+          "lp": 3600,
+          "post": { "drive": 1.5 }
+        },
+        "C": {
+          "kind": "breath",
+          "dur": 1.25,
+          "vary": 0.03,
+          "grunt": {
+            "at": 0,
+            "dur": 0.32,
+            "gain": 1,
+            "f0": 125,
+            "contour": [[0, 1.1], [1, 0.9]],
+            "vowels": ["eu"],
+            "breath": 0.25,
+            "sub": 0.05,
+            "rough": { "rate": 32, "depth": 0.2 },
+            "env": [[0, 0], [0.08, 1], [0.6, 0.6], [1, 0]],
+            "tilt": 2000,
+            "hp": 150,
+            "drive": 1.1,
+            "formantScale": 1,
+            "jitter": 0.02,
+            "shimmer": 0.08,
+            "wander": 0.02
+          },
+          "cycles": [
+            {
+              "inhale": { "at": 0.42, "dur": 0.22, "gain": 0.3 },
+              "exhale": {
+                "dur": 0.32,
+                "gain": 0.5,
+                "f0": 112,
+                "voiced": 0.35,
+                "breath": 0.9,
+                "breathPulse": 0.3,
+                "vowels": ["h", "eu"],
+                "env": [[0, 0], [0.15, 1], [0.6, 0.6], [1, 0]],
+                "tilt": 2000,
+                "jitter": 0.03,
+                "shimmer": 0.1,
+                "wander": 0.02,
+                "formantScale": 1,
+                "at": 0.68,
+                "hp": 150
+              }
+            }
+          ],
+          "lp": 3800,
+          "post": { "drive": 1.2 }
+        }
+      },
+      "relevage": {
+        "A": {
+          "kind": "getup",
+          "dur": 0.85,
+          "vary": 0.03,
+          "rustle": { "at": 0, "dur": 0.4, "f": 1500, "q": 0.8, "gain": 0.5, "am": 6 },
+          "grunt": {
+            "at": 0.22,
+            "dur": 0.32,
+            "gain": 0.7,
+            "f0": 125,
+            "contour": [[0, 0.9], [0.6, 1.15], [1, 1.05]],
+            "vowels": ["eu", "a"],
+            "breath": 0.3,
+            "sub": 0.05,
+            "rough": { "rate": 30, "depth": 0.2 },
+            "env": [[0, 0], [0.1, 1], [0.7, 0.7], [1, 0]],
+            "tilt": 2200,
+            "drive": 1.2,
+            "formantScale": 1,
+            "jitter": 0.025,
+            "shimmer": 0.08,
+            "wander": 0.02
+          },
+          "step": { "use": ["pas.ancien.A"], "at": 0.6, "gain": 0.9 },
+          "lp": 3600,
+          "post": { "drive": 1.3 }
+        },
+        "B": {
+          "kind": "getup",
+          "dur": 1.05,
+          "vary": 0.03,
+          "rustle": { "at": 0, "dur": 0.55, "f": 1300, "q": 0.7, "gain": 0.6, "am": 4 },
+          "grunt": {
+            "at": 0.3,
+            "dur": 0.45,
+            "gain": 0.8,
+            "f0": 112,
+            "contour": [[0, 0.85], [0.5, 1.2], [1, 1]],
+            "vowels": ["oe", "a", "eu"],
+            "breath": 0.4,
+            "sub": 0.2,
+            "rough": { "rate": 28, "depth": 0.35 },
+            "env": [[0, 0], [0.1, 1], [0.7, 0.75], [1, 0]],
+            "tilt": 2400,
+            "drive": 1.5,
+            "formantScale": 0.97,
+            "jitter": 0.035,
+            "shimmer": 0.1,
+            "wander": 0.03
+          },
+          "step": { "use": ["pas.ancien.B"], "at": 0.78, "gain": 1 },
+          "lp": 3400,
+          "post": { "drive": 1.5 }
+        },
+        "C": {
+          "kind": "getup",
+          "dur": 0.62,
+          "vary": 0.03,
+          "rustle": { "at": 0, "dur": 0.28, "f": 1700, "q": 0.9, "gain": 0.4, "am": 7 },
+          "grunt": {
+            "at": 0.15,
+            "dur": 0.24,
+            "gain": 0.6,
+            "f0": 132,
+            "contour": [[0, 0.95], [0.6, 1.12], [1, 1.05]],
+            "vowels": ["eu"],
+            "breath": 0.25,
+            "sub": 0,
+            "rough": { "rate": 32, "depth": 0.15 },
+            "env": [[0, 0], [0.1, 1], [0.7, 0.6], [1, 0]],
+            "tilt": 2000,
+            "hp": 150,
+            "drive": 1.1,
+            "formantScale": 1,
+            "jitter": 0.02,
+            "shimmer": 0.08,
+            "wander": 0.02
+          },
+          "step": { "use": ["pas.ancien.C"], "at": 0.44, "gain": 0.8 },
+          "lp": 3800,
+          "post": { "drive": 2.2 }
+        }
+      }
+    },
+    "prop": {
+      "vent": {
+        "A": {
+          "kind": "wind",
+          "dur": 10,
+          "loop": true,
+          "loopOverlap": 1,
+          "vary": 0,
+          "gustStep": 1.8,
+          "bandLow": 220,
+          "bandSpan": 420,
+          "q": 0.7,
+          "whistles": [{ "f": 720, "q": 12, "gain": 0.25, "threshold": 0.55 }],
+          "lp": 2600
+        },
+        "B": {
+          "kind": "wind",
+          "dur": 10,
+          "loop": true,
+          "loopOverlap": 1,
+          "vary": 0,
+          "gustStep": 1.2,
+          "bandLow": 300,
+          "bandSpan": 700,
+          "q": 0.8,
+          "whistles": [{ "f": 640, "q": 14, "gain": 0.6, "threshold": 0.4 }, { "f": 1180, "q": 16, "gain": 0.35, "threshold": 0.5 }],
+          "lp": 3200
+        }
+      },
+      "grincements": {
+        "A": {
+          "kind": "layers",
+          "dur": 3,
+          "vary": 0.04,
+          "post": { "drive": 2 },
+          "parts": [
+            {
+              "kind": "creak",
+              "at": 0.1,
+              "dur": 0.9,
+              "gain": 1,
+              "modes": [
+                { "f": 260, "gain": 1, "decay": 0.03 },
+                { "f": 481, "gain": 0.7, "decay": 0.022 },
+                { "f": 806, "gain": 0.4, "decay": 0.014 }
+              ],
+              "creak": {
+                "dur": 0.81,
+                "rate": [[0, 12], [0.5, 30], [1, 18]],
+                "jitter": 0.35,
+                "gain": 1,
+                "irregular": 0.6,
+                "env": [[0, 0], [0.3, 0.8], [0.7, 1], [1, 0]]
+              },
+              "lp": 3000
+            },
+            {
+              "kind": "creak",
+              "at": 1.4,
+              "dur": 0.7,
+              "gain": 0.7,
+              "modes": [
+                { "f": 330, "gain": 1, "decay": 0.03 },
+                { "f": 610.5, "gain": 0.7, "decay": 0.022 },
+                { "f": 1023, "gain": 0.4, "decay": 0.014 }
+              ],
+              "creak": {
+                "dur": 0.63,
+                "rate": [[0, 12], [0.5, 30], [1, 18]],
+                "jitter": 0.35,
+                "gain": 1,
+                "irregular": 0.6,
+                "env": [[0, 0], [0.3, 0.8], [0.7, 1], [1, 0]]
+              },
+              "lp": 3000
+            },
+            {
+              "kind": "creak",
+              "at": 2.2,
+              "dur": 0.6,
+              "gain": 0.5,
+              "modes": [
+                { "f": 290, "gain": 1, "decay": 0.03 },
+                { "f": 536.5, "gain": 0.7, "decay": 0.022 },
+                { "f": 899, "gain": 0.4, "decay": 0.014 }
+              ],
+              "creak": {
+                "dur": 0.54,
+                "rate": [[0, 12], [0.5, 30], [1, 18]],
+                "jitter": 0.35,
+                "gain": 1,
+                "irregular": 0.6,
+                "env": [[0, 0], [0.3, 0.8], [0.7, 1], [1, 0]]
+              },
+              "lp": 3000
+            }
+          ]
+        },
+        "B": {
+          "kind": "layers",
+          "dur": 3.5,
+          "vary": 0.04,
+          "post": { "drive": 2 },
+          "parts": [
+            {
+              "kind": "creak",
+              "at": 0.1,
+              "dur": 1.4,
+              "gain": 1,
+              "modes": [
+                { "f": 170, "gain": 1, "decay": 0.03 },
+                { "f": 314.5, "gain": 0.7, "decay": 0.022 },
+                { "f": 527, "gain": 0.4, "decay": 0.014 }
+              ],
+              "creak": { "dur": 1.3, "rate": [[0, 8], [0.6, 20], [1, 12]], "jitter": 0.4, "gain": 1, "irregular": 0.6 },
+              "lp": 3000
+            },
+            {
+              "kind": "creak",
+              "at": 1.8,
+              "dur": 1.2,
+              "gain": 0.8,
+              "modes": [
+                { "f": 210, "gain": 1, "decay": 0.03 },
+                { "f": 388.5, "gain": 0.7, "decay": 0.022 },
+                { "f": 651, "gain": 0.4, "decay": 0.014 }
+              ],
+              "creak": {
+                "dur": 1.08,
+                "rate": [[0, 12], [0.5, 30], [1, 18]],
+                "jitter": 0.35,
+                "gain": 1,
+                "irregular": 0.6,
+                "env": [[0, 0], [0.3, 0.8], [0.7, 1], [1, 0]]
+              },
+              "lp": 3000
+            },
+            {
+              "kind": "fall",
+              "at": 2.9,
+              "dur": 0.5,
+              "gain": 0.35,
+              "modes": [{ "f": 140, "gain": 1, "decay": 0.08 }, { "f": 390, "gain": 0.6, "decay": 0.05 }],
+              "bounces": { "count": 2, "interval": 0.1, "restitution": 0.5 },
+              "lp": 2000
+            }
+          ]
+        }
+      },
+      "neon": {
+        "A": {
+          "kind": "hum",
+          "dur": 8,
+          "loop": true,
+          "loopOverlap": 0.5,
+          "vary": 0,
+          "f0": 100,
+          "harmonics": [1, 0.45, 0.25, 0.12, 0.06],
+          "buzz": 0.04,
+          "buzzF": 1200,
+          "lp": 3000
+        },
+        "B": {
+          "kind": "hum",
+          "dur": 8,
+          "loop": true,
+          "loopOverlap": 0.5,
+          "vary": 0,
+          "f0": 100,
+          "harmonics": [0.8, 0.6, 0.4, 0.25, 0.15, 0.1],
+          "buzz": 0.2,
+          "buzzF": 1500,
+          "flicker": { "step": 0.12, "depth": 0.5 },
+          "crackle": { "rate": 2.5, "gain": 0.6 },
+          "lp": 4000
+        }
+      },
+      "coeur": {
+        "A": { "kind": "heart", "dur": 1.6, "vary": 0.02, "bpm": 75, "f": 55, "decay": 0.05, "gap": 0.16, "second": 0.6, "lp": 300 },
+        "B": {
+          "kind": "heart",
+          "dur": 1.6,
+          "vary": 0.02,
+          "bpm": 112,
+          "f": 48,
+          "decay": 0.07,
+          "gap": 0.14,
+          "second": 0.75,
+          "lp": 260
+        }
+      },
+      "essouffle": {
+        "A": {
+          "kind": "breath",
+          "dur": 2,
+          "vary": 0.03,
+          "cycles": [
+            {
+              "inhale": { "at": 0.05, "dur": 0.24, "gain": 0.5 },
+              "exhale": {
+                "dur": 0.26,
+                "gain": 0.55,
+                "f0": 115,
+                "voiced": 0.15,
+                "breath": 0.9,
+                "breathPulse": 0.3,
+                "vowels": ["h", "eu"],
+                "env": [[0, 0], [0.15, 1], [0.6, 0.6], [1, 0]],
+                "tilt": 2000,
+                "jitter": 0.03,
+                "shimmer": 0.1,
+                "wander": 0.02,
+                "formantScale": 1,
+                "at": 0.32
+              }
+            },
+            {
+              "inhale": { "at": 0.67, "dur": 0.24, "gain": 0.5 },
+              "exhale": {
+                "dur": 0.26,
+                "gain": 0.55,
+                "f0": 115,
+                "voiced": 0.15,
+                "breath": 0.9,
+                "breathPulse": 0.3,
+                "vowels": ["h", "eu"],
+                "env": [[0, 0], [0.15, 1], [0.6, 0.6], [1, 0]],
+                "tilt": 2000,
+                "jitter": 0.03,
+                "shimmer": 0.1,
+                "wander": 0.02,
+                "formantScale": 1,
+                "at": 0.94
+              }
+            },
+            {
+              "inhale": { "at": 1.29, "dur": 0.24, "gain": 0.5 },
+              "exhale": {
+                "dur": 0.26,
+                "gain": 0.55,
+                "f0": 115,
+                "voiced": 0.15,
+                "breath": 0.9,
+                "breathPulse": 0.3,
+                "vowels": ["h", "eu"],
+                "env": [[0, 0], [0.15, 1], [0.6, 0.6], [1, 0]],
+                "tilt": 2000,
+                "jitter": 0.03,
+                "shimmer": 0.1,
+                "wander": 0.02,
+                "formantScale": 1,
+                "at": 1.56
+              }
+            }
+          ],
+          "lp": 3800
+        },
+        "B": {
+          "kind": "breath",
+          "dur": 2,
+          "vary": 0.03,
+          "cycles": [
+            {
+              "inhale": { "at": 0.04, "dur": 0.2, "gain": 0.55, "vowels": ["h", "u"] },
+              "exhale": {
+                "dur": 0.2,
+                "gain": 0.6,
+                "f0": 108,
+                "voiced": 0.3,
+                "breath": 0.9,
+                "breathPulse": 0.3,
+                "vowels": ["h", "eu"],
+                "env": [[0, 0], [0.15, 1], [0.6, 0.6], [1, 0]],
+                "tilt": 2000,
+                "jitter": 0.03,
+                "shimmer": 0.1,
+                "wander": 0.02,
+                "formantScale": 1,
+                "at": 0.26,
+                "rough": { "rate": 30, "depth": 0.25 }
+              }
+            },
+            {
+              "inhale": { "at": 0.52, "dur": 0.2, "gain": 0.55, "vowels": ["h", "u"] },
+              "exhale": {
+                "dur": 0.2,
+                "gain": 0.6,
+                "f0": 108,
+                "voiced": 0.3,
+                "breath": 0.9,
+                "breathPulse": 0.3,
+                "vowels": ["h", "eu"],
+                "env": [[0, 0], [0.15, 1], [0.6, 0.6], [1, 0]],
+                "tilt": 2000,
+                "jitter": 0.03,
+                "shimmer": 0.1,
+                "wander": 0.02,
+                "formantScale": 1,
+                "at": 0.74,
+                "rough": { "rate": 30, "depth": 0.25 }
+              }
+            },
+            {
+              "inhale": { "at": 1, "dur": 0.2, "gain": 0.55, "vowels": ["h", "u"] },
+              "exhale": {
+                "dur": 0.2,
+                "gain": 0.6,
+                "f0": 108,
+                "voiced": 0.3,
+                "breath": 0.9,
+                "breathPulse": 0.3,
+                "vowels": ["h", "eu"],
+                "env": [[0, 0], [0.15, 1], [0.6, 0.6], [1, 0]],
+                "tilt": 2000,
+                "jitter": 0.03,
+                "shimmer": 0.1,
+                "wander": 0.02,
+                "formantScale": 1,
+                "at": 1.22,
+                "rough": { "rate": 30, "depth": 0.25 }
+              }
+            },
+            {
+              "inhale": { "at": 1.48, "dur": 0.2, "gain": 0.55, "vowels": ["h", "u"] },
+              "exhale": {
+                "dur": 0.2,
+                "gain": 0.6,
+                "f0": 108,
+                "voiced": 0.3,
+                "breath": 0.9,
+                "breathPulse": 0.3,
+                "vowels": ["h", "eu"],
+                "env": [[0, 0], [0.15, 1], [0.6, 0.6], [1, 0]],
+                "tilt": 2000,
+                "jitter": 0.03,
+                "shimmer": 0.1,
+                "wander": 0.02,
+                "formantScale": 1,
+                "at": 1.7,
+                "rough": { "rate": 30, "depth": 0.25 }
+              }
+            }
+          ],
+          "lp": 3600
+        }
+      },
+      "lointains": {
+        "A": {
+          "kind": "layers",
+          "dur": 3,
+          "vary": 0.03,
+          "parts": [
+            {
+              "kind": "voice",
+              "at": 0.1,
+              "dur": 1.6,
+              "gain": 1,
+              "f0": 88,
+              "contour": [[0, 0.92], [0.3, 1.05], [0.7, 1], [1, 0.8]],
+              "vowels": ["o", "a", "u"],
+              "env": [[0, 0], [0.2, 0.9], [0.5, 1], [0.8, 0.7], [1, 0]],
+              "breath": 0.12,
+              "sub": 0.15,
+              "rough": { "rate": 30, "depth": 0.15 },
+              "jitter": 0.025,
+              "shimmer": 0.1,
+              "wander": 0.03,
+              "breathPulse": 0.6,
+              "drift": 0.04,
+              "tilt": 1000,
+              "hp": 70,
+              "drive": 2,
+              "formantScale": 0.92,
+              "lp": 900
+            },
+            {
+              "kind": "voice",
+              "at": 1.3,
+              "dur": 1.5,
+              "gain": 0.7,
+              "f0": 104,
+              "contour": [[0, 0.92], [0.3, 1.05], [0.7, 1], [1, 0.8]],
+              "vowels": ["a", "o"],
+              "env": [[0, 0], [0.2, 0.9], [0.5, 1], [0.8, 0.7], [1, 0]],
+              "breath": 0.12,
+              "sub": 0.15,
+              "rough": { "rate": 30, "depth": 0.15 },
+              "jitter": 0.025,
+              "shimmer": 0.1,
+              "wander": 0.03,
+              "breathPulse": 0.6,
+              "drift": 0.04,
+              "tilt": 1000,
+              "hp": 70,
+              "drive": 2,
+              "formantScale": 0.92,
+              "lp": 900
+            }
+          ]
+        },
+        "B": {
+          "kind": "layers",
+          "dur": 3.8,
+          "vary": 0.03,
+          "parts": [
+            { "use": ["voix.base", "voix.action.errance", "voix.type.marcheur", "voix.style.C"], "at": 0.1, "gain": 1, "lp": 900 },
+            { "use": ["voix.base", "voix.action.errance", "voix.type.petit", "voix.style.C"], "at": 0.9, "gain": 0.6, "lp": 900 },
+            { "use": ["voix.base", "voix.action.errance", "voix.type.voute", "voix.style.C"], "at": 1.6, "gain": 0.75, "lp": 850 },
+            { "use": ["voix.base", "voix.action.errance", "voix.type.grand", "voix.style.C"], "at": 2.4, "gain": 1, "lp": 800 }
+          ]
+        }
+      },
+      "porte": {
+        "A": {
+          "kind": "sink",
+          "dur": 1.2,
+          "vary": 0.03,
+          "rumbleLp": 160,
+          "rumble": 1,
+          "grind": 0.45,
+          "grindRate": [[0, 12], [1, 26]],
+          "modes": [
+            { "f": 120, "gain": 1, "decay": 0.05 },
+            { "f": 260, "gain": 0.7, "decay": 0.035 },
+            { "f": 410, "gain": 0.4, "decay": 0.025 }
+          ],
+          "thud": { "at": 1.05, "f": 60, "decay": 0.05, "attack": 0.004, "gain": 0.9 },
+          "lp": 2000,
+          "post": { "drive": 2 }
+        },
+        "B": {
+          "kind": "sink",
+          "dur": 1.2,
+          "vary": 0.03,
+          "rumbleLp": 120,
+          "rumble": 1.2,
+          "grind": 0.7,
+          "grindRate": [[0, 8], [0.7, 18], [1, 30]],
+          "modes": [
+            { "f": 95, "gain": 1, "decay": 0.07 },
+            { "f": 210, "gain": 0.7, "decay": 0.05 },
+            { "f": 350, "gain": 0.5, "decay": 0.03 },
+            { "f": 560, "gain": 0.3, "decay": 0.02 }
+          ],
+          "thud": { "at": 1.08, "f": 48, "decay": 0.07, "attack": 0.005, "gain": 1.1 },
+          "lp": 1800,
+          "post": { "drive": 2 }
+        }
+      },
+      "piece": {
+        "A": {
+          "kind": "chime",
+          "dur": 0.45,
+          "vary": 0.03,
+          "len": 0.45,
+          "partials": [
+            { "f": 2800, "gain": 1, "decay": 0.09 },
+            { "f": 4270, "gain": 0.6, "decay": 0.06 },
+            { "f": 6140, "gain": 0.35, "decay": 0.04 }
+          ],
+          "strikes": [{ "at": 0.005, "gain": 1 }],
+          "lp": 8000
+        },
+        "B": {
+          "kind": "chime",
+          "dur": 0.5,
+          "vary": 0.03,
+          "len": 0.4,
+          "partials": [
+            { "f": 2400, "gain": 1, "decay": 0.07 },
+            { "f": 3690, "gain": 0.6, "decay": 0.05 },
+            { "f": 5300, "gain": 0.35, "decay": 0.03 }
+          ],
+          "strikes": [{ "at": 0.005, "gain": 1 }, { "at": 0.085, "gain": 0.7, "pitch": 1.08 }],
+          "rattle": { "at": 0.09, "dur": 0.12, "f": 3500, "q": 1, "attack": 0.002, "decay": 0.03, "gain": 0.15 },
+          "lp": 8000
+        }
+      },
+      "achat": {
+        "A": {
+          "kind": "register",
+          "dur": 1.1,
+          "vary": 0.02,
+          "lever": {
+            "at": 0,
+            "gain": 0.35,
+            "dense": { "from": 1200, "to": 7000, "count": 12, "decay": 0.006, "tilt": -0.5 },
+            "noise": { "gain": 0.6, "f": 3000, "q": 0.7, "decay": 0.003 },
+            "thud": { "f": 140, "decay": 0.02, "attack": 0.001, "gain": 0.25 }
+          },
+          "bell": { "at": 0.07, "f": 2100, "gain": 1.6, "len": 0.95 },
+          "lp": 9500
+        },
+        "B": {
+          "kind": "register",
+          "dur": 1.25,
+          "vary": 0.02,
+          "lever": {
+            "at": 0,
+            "gain": 0.35,
+            "dense": { "from": 1000, "to": 6500, "count": 12, "decay": 0.007, "tilt": -0.5 },
+            "noise": { "gain": 0.7, "f": 2600, "q": 0.7, "decay": 0.004 },
+            "thud": { "f": 120, "decay": 0.025, "attack": 0.001, "gain": 0.3 }
+          },
+          "bell": { "at": 0.06, "f": 1850, "gain": 1.5, "len": 1 },
+          "drawer": { "at": 0.1, "dur": 0.15, "f": 800, "gain": 0.25 },
+          "coins": { "at": 0.27, "count": 6, "spread": 0.18, "gain": 0.2 },
+          "lp": 9500
+        }
+      },
+      "feu": {
+        "A": {
+          "kind": "fire",
+          "dur": 8,
+          "loop": true,
+          "loopOverlap": 0.5,
+          "vary": 0,
+          "flickerStep": 0.3,
+          "roar": { "lp": 350, "f": 500, "gain": 1.9, "flicker": 0.5 },
+          "hiss": 0.08,
+          "crackle": {
+            "rate": 6,
+            "gain": 0.25,
+            "dense": { "from": 1500, "to": 7000, "count": 10, "decay": 0.003, "tilt": -0.5 },
+            "noise": 1.5,
+            "noiseF": 3500
+          },
+          "pop": {
+            "rate": 0.5,
+            "gain": 0.6,
+            "dense": { "from": 500, "to": 4000, "count": 12, "decay": 0.008, "tilt": -0.5 },
+            "noise": 1,
+            "noiseF": 2000
+          },
+          "lp": 9000,
+          "post": { "drive": 4 }
+        },
+        "B": {
+          "kind": "fire",
+          "dur": 8,
+          "loop": true,
+          "loopOverlap": 0.5,
+          "vary": 0,
+          "flickerStep": 0.18,
+          "roar": { "lp": 450, "f": 650, "gain": 1.9, "flicker": 0.6 },
+          "hiss": 0.15,
+          "crackle": {
+            "rate": 14,
+            "gain": 0.35,
+            "dense": { "from": 1300, "to": 7000, "count": 10, "decay": 0.003, "tilt": -0.5 },
+            "noise": 1.5,
+            "noiseF": 3200
+          },
+          "pop": {
+            "rate": 1.2,
+            "gain": 0.6,
+            "dense": { "from": 450, "to": 3800, "count": 12, "decay": 0.009, "tilt": -0.5 },
+            "noise": 1,
+            "noiseF": 1800
+          },
+          "lp": 9000,
+          "post": { "drive": 4 }
+        }
+      }
+    }
+  },
+  "slots": [
+    {
+      "id": "pas-joueur-dur",
+      "group": "pas",
+      "label": "dev.atelier.slot.pas-joueur-dur",
+      "category": "pas",
+      "gainDb": -9.12,
+      "current": "pas",
+      "currentNote": "dev.atelier.note.pasUnique",
+      "priority": 1,
+      "loop": false,
+      "variants": [
+        {
+          "id": "A",
+          "label": "dev.atelier.variante.A",
+          "recipe": { "use": ["pas.dur.A"] },
+          "macros": {
+            "hauteur": { "min": -6, "max": 6, "default": 0, "unit": "demi-ton" },
+            "matiere": { "min": -1, "max": 1, "default": 0, "unit": "octave" },
+            "grain": { "min": 0, "max": 2, "default": 1, "unit": "x" },
+            "duree": { "min": 0.6, "max": 1.6, "default": 1, "unit": "x" },
+            "ampleur": { "min": 0, "max": 0.6, "default": 0.1, "unit": "mix" }
+          }
+        },
+        {
+          "id": "B",
+          "label": "dev.atelier.variante.B",
+          "recipe": { "use": ["pas.dur.B"] },
+          "macros": {
+            "hauteur": { "min": -6, "max": 6, "default": 0, "unit": "demi-ton" },
+            "matiere": { "min": -1, "max": 1, "default": 0, "unit": "octave" },
+            "grain": { "min": 0, "max": 2, "default": 1, "unit": "x" },
+            "duree": { "min": 0.6, "max": 1.6, "default": 1, "unit": "x" },
+            "ampleur": { "min": 0, "max": 0.6, "default": 0.3, "unit": "mix" }
+          }
+        },
+        {
+          "id": "C",
+          "label": "dev.atelier.variante.C",
+          "recipe": { "use": ["pas.dur.C"] },
+          "macros": {
+            "hauteur": { "min": -6, "max": 6, "default": 0, "unit": "demi-ton" },
+            "matiere": { "min": -1, "max": 1, "default": 0, "unit": "octave" },
+            "grain": { "min": 0, "max": 2, "default": 1, "unit": "x" },
+            "duree": { "min": 0.6, "max": 1.6, "default": 1, "unit": "x" },
+            "ampleur": { "min": 0, "max": 0.6, "default": 0, "unit": "mix" }
+          }
+        }
+      ],
+      "integration": { "ids": ["pas"], "replaces": ["pas"], "versions": 4 }
+    },
+    {
+      "id": "pas-joueur-exterieur",
+      "group": "pas",
+      "label": "dev.atelier.slot.pas-joueur-exterieur",
+      "category": "pas",
+      "gainDb": -9.12,
+      "current": "pas",
+      "currentNote": "dev.atelier.note.pasUnique",
+      "priority": 1,
+      "loop": false,
+      "variants": [
+        {
+          "id": "A",
+          "label": "dev.atelier.variante.A",
+          "recipe": { "use": ["pas.ext.A"] },
+          "macros": {
+            "hauteur": { "min": -6, "max": 6, "default": 0, "unit": "demi-ton" },
+            "matiere": { "min": -1, "max": 1, "default": 0, "unit": "octave" },
+            "grain": { "min": 0, "max": 2, "default": 1, "unit": "x" },
+            "duree": { "min": 0.6, "max": 1.6, "default": 1, "unit": "x" },
+            "ampleur": { "min": 0, "max": 0.6, "default": 0.1, "unit": "mix" }
+          }
+        },
+        {
+          "id": "B",
+          "label": "dev.atelier.variante.B",
+          "recipe": { "use": ["pas.ext.B"] },
+          "macros": {
+            "hauteur": { "min": -6, "max": 6, "default": 0, "unit": "demi-ton" },
+            "matiere": { "min": -1, "max": 1, "default": 0, "unit": "octave" },
+            "grain": { "min": 0, "max": 2, "default": 1, "unit": "x" },
+            "duree": { "min": 0.6, "max": 1.6, "default": 1, "unit": "x" },
+            "ampleur": { "min": 0, "max": 0.6, "default": 0.3, "unit": "mix" }
+          }
+        },
+        {
+          "id": "C",
+          "label": "dev.atelier.variante.C",
+          "recipe": { "use": ["pas.ext.C"] },
+          "macros": {
+            "hauteur": { "min": -6, "max": 6, "default": 0, "unit": "demi-ton" },
+            "matiere": { "min": -1, "max": 1, "default": 0, "unit": "octave" },
+            "grain": { "min": 0, "max": 2, "default": 1, "unit": "x" },
+            "duree": { "min": 0.6, "max": 1.6, "default": 1, "unit": "x" },
+            "ampleur": { "min": 0, "max": 0.6, "default": 0, "unit": "mix" }
+          }
+        }
+      ],
+      "integration": { "ids": ["pas-exterieur"], "replaces": [], "versions": 4 }
+    },
+    {
+      "id": "pas-joueur-escalier",
+      "group": "pas",
+      "label": "dev.atelier.slot.pas-joueur-escalier",
+      "category": "pas",
+      "gainDb": -9.12,
+      "current": "pas",
+      "currentNote": "dev.atelier.note.pasUnique",
+      "priority": 1,
+      "loop": false,
+      "variants": [
+        {
+          "id": "A",
+          "label": "dev.atelier.variante.A",
+          "recipe": { "use": ["pas.esc.A"] },
+          "macros": {
+            "hauteur": { "min": -6, "max": 6, "default": 0, "unit": "demi-ton" },
+            "matiere": { "min": -1, "max": 1, "default": 0, "unit": "octave" },
+            "grain": { "min": 0, "max": 2, "default": 1, "unit": "x" },
+            "duree": { "min": 0.6, "max": 1.6, "default": 1, "unit": "x" },
+            "ampleur": { "min": 0, "max": 0.6, "default": 0.1, "unit": "mix" }
+          }
+        },
+        {
+          "id": "B",
+          "label": "dev.atelier.variante.B",
+          "recipe": { "use": ["pas.esc.B"] },
+          "macros": {
+            "hauteur": { "min": -6, "max": 6, "default": 0, "unit": "demi-ton" },
+            "matiere": { "min": -1, "max": 1, "default": 0, "unit": "octave" },
+            "grain": { "min": 0, "max": 2, "default": 1, "unit": "x" },
+            "duree": { "min": 0.6, "max": 1.6, "default": 1, "unit": "x" },
+            "ampleur": { "min": 0, "max": 0.6, "default": 0.3, "unit": "mix" }
+          }
+        },
+        {
+          "id": "C",
+          "label": "dev.atelier.variante.C",
+          "recipe": { "use": ["pas.esc.C"] },
+          "macros": {
+            "hauteur": { "min": -6, "max": 6, "default": 0, "unit": "demi-ton" },
+            "matiere": { "min": -1, "max": 1, "default": 0, "unit": "octave" },
+            "grain": { "min": 0, "max": 2, "default": 1, "unit": "x" },
+            "duree": { "min": 0.6, "max": 1.6, "default": 1, "unit": "x" },
+            "ampleur": { "min": 0, "max": 0.6, "default": 0, "unit": "mix" }
+          }
+        }
+      ],
+      "integration": { "ids": ["pas-escalier"], "replaces": [], "versions": 4 }
+    },
+    {
+      "id": "pas-zombie-lent",
+      "group": "pas",
+      "label": "dev.atelier.slot.pas-zombie-lent",
+      "category": "pas",
+      "gainDb": -9.12,
+      "current": "pas-zombie",
+      "currentNote": "dev.atelier.note.pasZombieUnique",
+      "priority": 1,
+      "loop": false,
+      "variants": [
+        {
+          "id": "A",
+          "label": "dev.atelier.variante.A",
+          "recipe": { "use": ["pasz.lent.A"] },
+          "macros": {
+            "hauteur": { "min": -6, "max": 6, "default": 0, "unit": "demi-ton" },
+            "matiere": { "min": -1, "max": 1, "default": 0, "unit": "octave" },
+            "grain": { "min": 0, "max": 2, "default": 1, "unit": "x" },
+            "duree": { "min": 0.6, "max": 1.6, "default": 1, "unit": "x" },
+            "ampleur": { "min": 0, "max": 0.6, "default": 0.1, "unit": "mix" }
+          }
+        },
+        {
+          "id": "B",
+          "label": "dev.atelier.variante.B",
+          "recipe": { "use": ["pasz.lent.B"] },
+          "macros": {
+            "hauteur": { "min": -6, "max": 6, "default": 0, "unit": "demi-ton" },
+            "matiere": { "min": -1, "max": 1, "default": 0, "unit": "octave" },
+            "grain": { "min": 0, "max": 2, "default": 1, "unit": "x" },
+            "duree": { "min": 0.6, "max": 1.6, "default": 1, "unit": "x" },
+            "ampleur": { "min": 0, "max": 0.6, "default": 0.3, "unit": "mix" }
+          }
+        },
+        {
+          "id": "C",
+          "label": "dev.atelier.variante.C",
+          "recipe": { "use": ["pasz.lent.C"] },
+          "macros": {
+            "hauteur": { "min": -6, "max": 6, "default": 0, "unit": "demi-ton" },
+            "matiere": { "min": -1, "max": 1, "default": 0, "unit": "octave" },
+            "grain": { "min": 0, "max": 2, "default": 1, "unit": "x" },
+            "duree": { "min": 0.6, "max": 1.6, "default": 1, "unit": "x" },
+            "ampleur": { "min": 0, "max": 0.6, "default": 0, "unit": "mix" }
+          }
+        }
+      ],
+      "integration": { "ids": ["pas-zombie-lent"], "replaces": [], "versions": 2 }
+    },
+    {
+      "id": "pas-zombie-marche",
+      "group": "pas",
+      "label": "dev.atelier.slot.pas-zombie-marche",
+      "category": "pas",
+      "gainDb": -9.12,
+      "current": "pas-zombie",
+      "currentNote": "dev.atelier.note.pasZombieUnique",
+      "priority": 1,
+      "loop": false,
+      "variants": [
+        {
+          "id": "A",
+          "label": "dev.atelier.variante.A",
+          "recipe": { "use": ["pasz.marche.A"] },
+          "macros": {
+            "hauteur": { "min": -6, "max": 6, "default": 0, "unit": "demi-ton" },
+            "matiere": { "min": -1, "max": 1, "default": 0, "unit": "octave" },
+            "grain": { "min": 0, "max": 2, "default": 1, "unit": "x" },
+            "duree": { "min": 0.6, "max": 1.6, "default": 1, "unit": "x" },
+            "ampleur": { "min": 0, "max": 0.6, "default": 0.1, "unit": "mix" }
+          }
+        },
+        {
+          "id": "B",
+          "label": "dev.atelier.variante.B",
+          "recipe": { "use": ["pasz.marche.B"] },
+          "macros": {
+            "hauteur": { "min": -6, "max": 6, "default": 0, "unit": "demi-ton" },
+            "matiere": { "min": -1, "max": 1, "default": 0, "unit": "octave" },
+            "grain": { "min": 0, "max": 2, "default": 1, "unit": "x" },
+            "duree": { "min": 0.6, "max": 1.6, "default": 1, "unit": "x" },
+            "ampleur": { "min": 0, "max": 0.6, "default": 0.3, "unit": "mix" }
+          }
+        },
+        {
+          "id": "C",
+          "label": "dev.atelier.variante.C",
+          "recipe": { "use": ["pasz.marche.C"] },
+          "macros": {
+            "hauteur": { "min": -6, "max": 6, "default": 0, "unit": "demi-ton" },
+            "matiere": { "min": -1, "max": 1, "default": 0, "unit": "octave" },
+            "grain": { "min": 0, "max": 2, "default": 1, "unit": "x" },
+            "duree": { "min": 0.6, "max": 1.6, "default": 1, "unit": "x" },
+            "ampleur": { "min": 0, "max": 0.6, "default": 0, "unit": "mix" }
+          }
+        }
+      ],
+      "integration": { "ids": ["pas-zombie"], "replaces": ["pas-zombie"], "versions": 3 }
+    },
+    {
+      "id": "pas-zombie-course",
+      "group": "pas",
+      "label": "dev.atelier.slot.pas-zombie-course",
+      "category": "pas",
+      "gainDb": -9.12,
+      "current": "pas-zombie",
+      "currentNote": "dev.atelier.note.pasZombieUnique",
+      "priority": 1,
+      "loop": false,
+      "variants": [
+        {
+          "id": "A",
+          "label": "dev.atelier.variante.A",
+          "recipe": { "use": ["pasz.course.A"] },
+          "macros": {
+            "hauteur": { "min": -6, "max": 6, "default": 0, "unit": "demi-ton" },
+            "matiere": { "min": -1, "max": 1, "default": 0, "unit": "octave" },
+            "grain": { "min": 0, "max": 2, "default": 1, "unit": "x" },
+            "duree": { "min": 0.6, "max": 1.6, "default": 1, "unit": "x" },
+            "ampleur": { "min": 0, "max": 0.6, "default": 0.1, "unit": "mix" }
+          }
+        },
+        {
+          "id": "B",
+          "label": "dev.atelier.variante.B",
+          "recipe": { "use": ["pasz.course.B"] },
+          "macros": {
+            "hauteur": { "min": -6, "max": 6, "default": 0, "unit": "demi-ton" },
+            "matiere": { "min": -1, "max": 1, "default": 0, "unit": "octave" },
+            "grain": { "min": 0, "max": 2, "default": 1, "unit": "x" },
+            "duree": { "min": 0.6, "max": 1.6, "default": 1, "unit": "x" },
+            "ampleur": { "min": 0, "max": 0.6, "default": 0.3, "unit": "mix" }
+          }
+        },
+        {
+          "id": "C",
+          "label": "dev.atelier.variante.C",
+          "recipe": { "use": ["pasz.course.C"] },
+          "macros": {
+            "hauteur": { "min": -6, "max": 6, "default": 0, "unit": "demi-ton" },
+            "matiere": { "min": -1, "max": 1, "default": 0, "unit": "octave" },
+            "grain": { "min": 0, "max": 2, "default": 1, "unit": "x" },
+            "duree": { "min": 0.6, "max": 1.6, "default": 1, "unit": "x" },
+            "ampleur": { "min": 0, "max": 0.6, "default": 0, "unit": "mix" }
+          }
+        }
+      ],
+      "integration": { "ids": ["pas-zombie-course"], "replaces": [], "versions": 2 }
+    },
+    {
+      "id": "zombie-rampe",
+      "group": "pas",
+      "label": "dev.atelier.slot.zombie-rampe",
+      "category": "pas",
+      "gainDb": -9.12,
+      "current": null,
+      "currentNote": "dev.atelier.note.rampeMuette",
+      "priority": 1,
+      "loop": false,
+      "variants": [
+        {
+          "id": "A",
+          "label": "dev.atelier.variante.A",
+          "recipe": { "use": ["pasz.rampe.A"] },
+          "macros": {
+            "hauteur": { "min": -6, "max": 6, "default": 0, "unit": "demi-ton" },
+            "matiere": { "min": -1, "max": 1, "default": 0, "unit": "octave" },
+            "grain": { "min": 0, "max": 2, "default": 1, "unit": "x" },
+            "duree": { "min": 0.6, "max": 1.6, "default": 1, "unit": "x" },
+            "ampleur": { "min": 0, "max": 0.6, "default": 0.1, "unit": "mix" }
+          }
+        },
+        {
+          "id": "B",
+          "label": "dev.atelier.variante.B",
+          "recipe": { "use": ["pasz.rampe.B"] },
+          "macros": {
+            "hauteur": { "min": -6, "max": 6, "default": 0, "unit": "demi-ton" },
+            "matiere": { "min": -1, "max": 1, "default": 0, "unit": "octave" },
+            "grain": { "min": 0, "max": 2, "default": 1, "unit": "x" },
+            "duree": { "min": 0.6, "max": 1.6, "default": 1, "unit": "x" },
+            "ampleur": { "min": 0, "max": 0.6, "default": 0.3, "unit": "mix" }
+          }
+        },
+        {
+          "id": "C",
+          "label": "dev.atelier.variante.C",
+          "recipe": { "use": ["pasz.rampe.C"] },
+          "macros": {
+            "hauteur": { "min": -6, "max": 6, "default": 0, "unit": "demi-ton" },
+            "matiere": { "min": -1, "max": 1, "default": 0, "unit": "octave" },
+            "grain": { "min": 0, "max": 2, "default": 1, "unit": "x" },
+            "duree": { "min": 0.6, "max": 1.6, "default": 1, "unit": "x" },
+            "ampleur": { "min": 0, "max": 0.6, "default": 0, "unit": "mix" }
+          }
+        }
+      ],
+      "integration": { "ids": ["zombie-rampe"], "replaces": [], "versions": 2 }
+    },
+    {
+      "id": "voix-marcheur-errance",
+      "group": "voix",
+      "label": "dev.atelier.slot.voix-marcheur-errance",
+      "category": "voix",
+      "gainDb": -3.1,
+      "current": "zombie-gemissement",
+      "currentRate": 1,
+      "currentNote": "dev.atelier.note.voixHauteur",
+      "priority": 1,
+      "loop": false,
+      "variants": [
+        {
+          "id": "A",
+          "label": "dev.atelier.variante.A",
+          "recipe": { "use": ["voix.base", "voix.action.errance", "voix.type.marcheur", "voix.style.A"] },
+          "macros": {
+            "hauteur": { "min": -6, "max": 6, "default": 0, "unit": "demi-ton" },
+            "matiere": { "min": -1, "max": 1, "default": 0, "unit": "octave" },
+            "grain": { "min": 0, "max": 2, "default": 1, "unit": "x" },
+            "duree": { "min": 0.6, "max": 1.6, "default": 1, "unit": "x" },
+            "ampleur": { "min": 0, "max": 0.6, "default": 0.1, "unit": "mix" }
+          }
+        },
+        {
+          "id": "B",
+          "label": "dev.atelier.variante.B",
+          "recipe": { "use": ["voix.base", "voix.action.errance", "voix.type.marcheur", "voix.style.B"] },
+          "macros": {
+            "hauteur": { "min": -6, "max": 6, "default": 0, "unit": "demi-ton" },
+            "matiere": { "min": -1, "max": 1, "default": 0, "unit": "octave" },
+            "grain": { "min": 0, "max": 2, "default": 1, "unit": "x" },
+            "duree": { "min": 0.6, "max": 1.6, "default": 1, "unit": "x" },
+            "ampleur": { "min": 0, "max": 0.6, "default": 0.3, "unit": "mix" }
+          }
+        },
+        {
+          "id": "C",
+          "label": "dev.atelier.variante.C",
+          "recipe": { "use": ["voix.base", "voix.action.errance", "voix.type.marcheur", "voix.style.C"] },
+          "macros": {
+            "hauteur": { "min": -6, "max": 6, "default": 0, "unit": "demi-ton" },
+            "matiere": { "min": -1, "max": 1, "default": 0, "unit": "octave" },
+            "grain": { "min": 0, "max": 2, "default": 1, "unit": "x" },
+            "duree": { "min": 0.6, "max": 1.6, "default": 1, "unit": "x" },
+            "ampleur": { "min": 0, "max": 0.6, "default": 0, "unit": "mix" }
+          }
+        }
+      ],
+      "integration": { "ids": ["zombie-gemissement"], "replaces": ["zombie-gemissement"], "versions": 3 }
+    },
+    {
+      "id": "voix-marcheur-attaque",
+      "group": "voix",
+      "label": "dev.atelier.slot.voix-marcheur-attaque",
+      "category": "voix",
+      "gainDb": -3.1,
+      "current": "zombie-attaque",
+      "currentRate": 1,
+      "currentNote": "dev.atelier.note.voixHauteur",
+      "priority": 1,
+      "loop": false,
+      "variants": [
+        {
+          "id": "A",
+          "label": "dev.atelier.variante.A",
+          "recipe": { "use": ["voix.base", "voix.action.attaque", "voix.type.marcheur", "voix.style.A"] },
+          "macros": {
+            "hauteur": { "min": -6, "max": 6, "default": 0, "unit": "demi-ton" },
+            "matiere": { "min": -1, "max": 1, "default": 0, "unit": "octave" },
+            "grain": { "min": 0, "max": 2, "default": 1, "unit": "x" },
+            "duree": { "min": 0.6, "max": 1.6, "default": 1, "unit": "x" },
+            "ampleur": { "min": 0, "max": 0.6, "default": 0.1, "unit": "mix" }
+          }
+        },
+        {
+          "id": "B",
+          "label": "dev.atelier.variante.B",
+          "recipe": { "use": ["voix.base", "voix.action.attaque", "voix.type.marcheur", "voix.style.B"] },
+          "macros": {
+            "hauteur": { "min": -6, "max": 6, "default": 0, "unit": "demi-ton" },
+            "matiere": { "min": -1, "max": 1, "default": 0, "unit": "octave" },
+            "grain": { "min": 0, "max": 2, "default": 1, "unit": "x" },
+            "duree": { "min": 0.6, "max": 1.6, "default": 1, "unit": "x" },
+            "ampleur": { "min": 0, "max": 0.6, "default": 0.3, "unit": "mix" }
+          }
+        },
+        {
+          "id": "C",
+          "label": "dev.atelier.variante.C",
+          "recipe": { "use": ["voix.base", "voix.action.attaque", "voix.type.marcheur", "voix.style.C"] },
+          "macros": {
+            "hauteur": { "min": -6, "max": 6, "default": 0, "unit": "demi-ton" },
+            "matiere": { "min": -1, "max": 1, "default": 0, "unit": "octave" },
+            "grain": { "min": 0, "max": 2, "default": 1, "unit": "x" },
+            "duree": { "min": 0.6, "max": 1.6, "default": 1, "unit": "x" },
+            "ampleur": { "min": 0, "max": 0.6, "default": 0, "unit": "mix" }
+          }
+        }
+      ],
+      "integration": { "ids": ["zombie-attaque"], "replaces": ["zombie-attaque"], "versions": 3 }
+    },
+    {
+      "id": "voix-marcheur-touche",
+      "group": "voix",
+      "label": "dev.atelier.slot.voix-marcheur-touche",
+      "category": "voix",
+      "gainDb": -3.1,
+      "current": "zombie-blessure",
+      "currentRate": 1,
+      "currentNote": "dev.atelier.note.voixHauteur",
+      "priority": 1,
+      "loop": false,
+      "variants": [
+        {
+          "id": "A",
+          "label": "dev.atelier.variante.A",
+          "recipe": { "use": ["voix.base", "voix.action.touche", "voix.type.marcheur", "voix.style.A"] },
+          "macros": {
+            "hauteur": { "min": -6, "max": 6, "default": 0, "unit": "demi-ton" },
+            "matiere": { "min": -1, "max": 1, "default": 0, "unit": "octave" },
+            "grain": { "min": 0, "max": 2, "default": 1, "unit": "x" },
+            "duree": { "min": 0.6, "max": 1.6, "default": 1, "unit": "x" },
+            "ampleur": { "min": 0, "max": 0.6, "default": 0.1, "unit": "mix" }
+          }
+        },
+        {
+          "id": "B",
+          "label": "dev.atelier.variante.B",
+          "recipe": { "use": ["voix.base", "voix.action.touche", "voix.type.marcheur", "voix.style.B"] },
+          "macros": {
+            "hauteur": { "min": -6, "max": 6, "default": 0, "unit": "demi-ton" },
+            "matiere": { "min": -1, "max": 1, "default": 0, "unit": "octave" },
+            "grain": { "min": 0, "max": 2, "default": 1, "unit": "x" },
+            "duree": { "min": 0.6, "max": 1.6, "default": 1, "unit": "x" },
+            "ampleur": { "min": 0, "max": 0.6, "default": 0.3, "unit": "mix" }
+          }
+        },
+        {
+          "id": "C",
+          "label": "dev.atelier.variante.C",
+          "recipe": { "use": ["voix.base", "voix.action.touche", "voix.type.marcheur", "voix.style.C"] },
+          "macros": {
+            "hauteur": { "min": -6, "max": 6, "default": 0, "unit": "demi-ton" },
+            "matiere": { "min": -1, "max": 1, "default": 0, "unit": "octave" },
+            "grain": { "min": 0, "max": 2, "default": 1, "unit": "x" },
+            "duree": { "min": 0.6, "max": 1.6, "default": 1, "unit": "x" },
+            "ampleur": { "min": 0, "max": 0.6, "default": 0, "unit": "mix" }
+          }
+        }
+      ],
+      "integration": { "ids": ["zombie-blessure"], "replaces": ["zombie-blessure"], "versions": 3 }
+    },
+    {
+      "id": "voix-marcheur-mort",
+      "group": "voix",
+      "label": "dev.atelier.slot.voix-marcheur-mort",
+      "category": "voix",
+      "gainDb": -3.1,
+      "current": "zombie-mort",
+      "currentRate": 1,
+      "currentNote": "dev.atelier.note.voixHauteur",
+      "priority": 1,
+      "loop": false,
+      "variants": [
+        {
+          "id": "A",
+          "label": "dev.atelier.variante.A",
+          "recipe": { "use": ["voix.base", "voix.action.mort", "voix.type.marcheur", "voix.style.A"] },
+          "macros": {
+            "hauteur": { "min": -6, "max": 6, "default": 0, "unit": "demi-ton" },
+            "matiere": { "min": -1, "max": 1, "default": 0, "unit": "octave" },
+            "grain": { "min": 0, "max": 2, "default": 1, "unit": "x" },
+            "duree": { "min": 0.6, "max": 1.6, "default": 1, "unit": "x" },
+            "ampleur": { "min": 0, "max": 0.6, "default": 0.1, "unit": "mix" }
+          }
+        },
+        {
+          "id": "B",
+          "label": "dev.atelier.variante.B",
+          "recipe": { "use": ["voix.base", "voix.action.mort", "voix.type.marcheur", "voix.style.B"] },
+          "macros": {
+            "hauteur": { "min": -6, "max": 6, "default": 0, "unit": "demi-ton" },
+            "matiere": { "min": -1, "max": 1, "default": 0, "unit": "octave" },
+            "grain": { "min": 0, "max": 2, "default": 1, "unit": "x" },
+            "duree": { "min": 0.6, "max": 1.6, "default": 1, "unit": "x" },
+            "ampleur": { "min": 0, "max": 0.6, "default": 0.3, "unit": "mix" }
+          }
+        },
+        {
+          "id": "C",
+          "label": "dev.atelier.variante.C",
+          "recipe": { "use": ["voix.base", "voix.action.mort", "voix.type.marcheur", "voix.style.C"] },
+          "macros": {
+            "hauteur": { "min": -6, "max": 6, "default": 0, "unit": "demi-ton" },
+            "matiere": { "min": -1, "max": 1, "default": 0, "unit": "octave" },
+            "grain": { "min": 0, "max": 2, "default": 1, "unit": "x" },
+            "duree": { "min": 0.6, "max": 1.6, "default": 1, "unit": "x" },
+            "ampleur": { "min": 0, "max": 0.6, "default": 0, "unit": "mix" }
+          }
+        }
+      ],
+      "integration": { "ids": ["zombie-mort"], "replaces": ["zombie-mort"], "versions": 2 }
+    },
+    {
+      "id": "voix-petit-errance",
+      "group": "voix",
+      "label": "dev.atelier.slot.voix-petit-errance",
+      "category": "voix",
+      "gainDb": -3.1,
+      "current": "zombie-gemissement",
+      "currentRate": 1.35,
+      "currentNote": "dev.atelier.note.voixHauteur",
+      "priority": 1,
+      "loop": false,
+      "variants": [
+        {
+          "id": "A",
+          "label": "dev.atelier.variante.A",
+          "recipe": { "use": ["voix.base", "voix.action.errance", "voix.type.petit", "voix.style.A"] },
+          "macros": {
+            "hauteur": { "min": -6, "max": 6, "default": 0, "unit": "demi-ton" },
+            "matiere": { "min": -1, "max": 1, "default": 0, "unit": "octave" },
+            "grain": { "min": 0, "max": 2, "default": 1, "unit": "x" },
+            "duree": { "min": 0.6, "max": 1.6, "default": 1, "unit": "x" },
+            "ampleur": { "min": 0, "max": 0.6, "default": 0.1, "unit": "mix" }
+          }
+        },
+        {
+          "id": "B",
+          "label": "dev.atelier.variante.B",
+          "recipe": { "use": ["voix.base", "voix.action.errance", "voix.type.petit", "voix.style.B"] },
+          "macros": {
+            "hauteur": { "min": -6, "max": 6, "default": 0, "unit": "demi-ton" },
+            "matiere": { "min": -1, "max": 1, "default": 0, "unit": "octave" },
+            "grain": { "min": 0, "max": 2, "default": 1, "unit": "x" },
+            "duree": { "min": 0.6, "max": 1.6, "default": 1, "unit": "x" },
+            "ampleur": { "min": 0, "max": 0.6, "default": 0.3, "unit": "mix" }
+          }
+        },
+        {
+          "id": "C",
+          "label": "dev.atelier.variante.C",
+          "recipe": { "use": ["voix.base", "voix.action.errance", "voix.type.petit", "voix.style.C"] },
+          "macros": {
+            "hauteur": { "min": -6, "max": 6, "default": 0, "unit": "demi-ton" },
+            "matiere": { "min": -1, "max": 1, "default": 0, "unit": "octave" },
+            "grain": { "min": 0, "max": 2, "default": 1, "unit": "x" },
+            "duree": { "min": 0.6, "max": 1.6, "default": 1, "unit": "x" },
+            "ampleur": { "min": 0, "max": 0.6, "default": 0, "unit": "mix" }
+          }
+        }
+      ],
+      "integration": {
+        "ids": ["zombie-gemissement-petit"],
+        "replaces": [],
+        "versions": 3,
+        "pitchPlan": "hauteur de lecture : 0 tampon (le tampon du marcheur lu à zombieRate)"
+      }
+    },
+    {
+      "id": "voix-petit-attaque",
+      "group": "voix",
+      "label": "dev.atelier.slot.voix-petit-attaque",
+      "category": "voix",
+      "gainDb": -3.1,
+      "current": "zombie-attaque",
+      "currentRate": 1.35,
+      "currentNote": "dev.atelier.note.voixHauteur",
+      "priority": 1,
+      "loop": false,
+      "variants": [
+        {
+          "id": "A",
+          "label": "dev.atelier.variante.A",
+          "recipe": { "use": ["voix.base", "voix.action.attaque", "voix.type.petit", "voix.style.A"] },
+          "macros": {
+            "hauteur": { "min": -6, "max": 6, "default": 0, "unit": "demi-ton" },
+            "matiere": { "min": -1, "max": 1, "default": 0, "unit": "octave" },
+            "grain": { "min": 0, "max": 2, "default": 1, "unit": "x" },
+            "duree": { "min": 0.6, "max": 1.6, "default": 1, "unit": "x" },
+            "ampleur": { "min": 0, "max": 0.6, "default": 0.1, "unit": "mix" }
+          }
+        },
+        {
+          "id": "B",
+          "label": "dev.atelier.variante.B",
+          "recipe": { "use": ["voix.base", "voix.action.attaque", "voix.type.petit", "voix.style.B"] },
+          "macros": {
+            "hauteur": { "min": -6, "max": 6, "default": 0, "unit": "demi-ton" },
+            "matiere": { "min": -1, "max": 1, "default": 0, "unit": "octave" },
+            "grain": { "min": 0, "max": 2, "default": 1, "unit": "x" },
+            "duree": { "min": 0.6, "max": 1.6, "default": 1, "unit": "x" },
+            "ampleur": { "min": 0, "max": 0.6, "default": 0.3, "unit": "mix" }
+          },
+          "outOfTarget": {
+            "mesure": "HNR 5,7 dB (cible 6 à 14 dB)",
+            "reason": "Jitter minimal de 2 % exigé pour les voix, plus la voix doublée, la prise d'air et la saturation de la variante B : sur la voix aiguë du petit (f0 ≈ 190 Hz en attaque), la part de bruit dépasse la cible. Trois réglages essayés (souffle 0,11 -> 0,09, rugosité × 0,7 -> × 0,5, saturation × 0,75) : 5,26 -> 5,71 dB."
+          }
+        },
+        {
+          "id": "C",
+          "label": "dev.atelier.variante.C",
+          "recipe": { "use": ["voix.base", "voix.action.attaque", "voix.type.petit", "voix.style.C"] },
+          "macros": {
+            "hauteur": { "min": -6, "max": 6, "default": 0, "unit": "demi-ton" },
+            "matiere": { "min": -1, "max": 1, "default": 0, "unit": "octave" },
+            "grain": { "min": 0, "max": 2, "default": 1, "unit": "x" },
+            "duree": { "min": 0.6, "max": 1.6, "default": 1, "unit": "x" },
+            "ampleur": { "min": 0, "max": 0.6, "default": 0, "unit": "mix" }
+          }
+        }
+      ],
+      "integration": {
+        "ids": ["zombie-attaque-petit"],
+        "replaces": [],
+        "versions": 3,
+        "pitchPlan": "hauteur de lecture : 0 tampon (le tampon du marcheur lu à zombieRate)"
+      }
+    },
+    {
+      "id": "voix-petit-touche",
+      "group": "voix",
+      "label": "dev.atelier.slot.voix-petit-touche",
+      "category": "voix",
+      "gainDb": -3.1,
+      "current": "zombie-blessure",
+      "currentRate": 1.35,
+      "currentNote": "dev.atelier.note.voixHauteur",
+      "priority": 1,
+      "loop": false,
+      "variants": [
+        {
+          "id": "A",
+          "label": "dev.atelier.variante.A",
+          "recipe": { "use": ["voix.base", "voix.action.touche", "voix.type.petit", "voix.style.A"] },
+          "macros": {
+            "hauteur": { "min": -6, "max": 6, "default": 0, "unit": "demi-ton" },
+            "matiere": { "min": -1, "max": 1, "default": 0, "unit": "octave" },
+            "grain": { "min": 0, "max": 2, "default": 1, "unit": "x" },
+            "duree": { "min": 0.6, "max": 1.6, "default": 1, "unit": "x" },
+            "ampleur": { "min": 0, "max": 0.6, "default": 0.1, "unit": "mix" }
+          }
+        },
+        {
+          "id": "B",
+          "label": "dev.atelier.variante.B",
+          "recipe": { "use": ["voix.base", "voix.action.touche", "voix.type.petit", "voix.style.B"] },
+          "macros": {
+            "hauteur": { "min": -6, "max": 6, "default": 0, "unit": "demi-ton" },
+            "matiere": { "min": -1, "max": 1, "default": 0, "unit": "octave" },
+            "grain": { "min": 0, "max": 2, "default": 1, "unit": "x" },
+            "duree": { "min": 0.6, "max": 1.6, "default": 1, "unit": "x" },
+            "ampleur": { "min": 0, "max": 0.6, "default": 0.3, "unit": "mix" }
+          }
+        },
+        {
+          "id": "C",
+          "label": "dev.atelier.variante.C",
+          "recipe": { "use": ["voix.base", "voix.action.touche", "voix.type.petit", "voix.style.C"] },
+          "macros": {
+            "hauteur": { "min": -6, "max": 6, "default": 0, "unit": "demi-ton" },
+            "matiere": { "min": -1, "max": 1, "default": 0, "unit": "octave" },
+            "grain": { "min": 0, "max": 2, "default": 1, "unit": "x" },
+            "duree": { "min": 0.6, "max": 1.6, "default": 1, "unit": "x" },
+            "ampleur": { "min": 0, "max": 0.6, "default": 0, "unit": "mix" }
+          }
+        }
+      ],
+      "integration": {
+        "ids": ["zombie-blessure-petit"],
+        "replaces": [],
+        "versions": 3,
+        "pitchPlan": "hauteur de lecture : 0 tampon (le tampon du marcheur lu à zombieRate)"
+      }
+    },
+    {
+      "id": "voix-petit-mort",
+      "group": "voix",
+      "label": "dev.atelier.slot.voix-petit-mort",
+      "category": "voix",
+      "gainDb": -3.1,
+      "current": "zombie-mort",
+      "currentRate": 1.35,
+      "currentNote": "dev.atelier.note.voixHauteur",
+      "priority": 1,
+      "loop": false,
+      "variants": [
+        {
+          "id": "A",
+          "label": "dev.atelier.variante.A",
+          "recipe": { "use": ["voix.base", "voix.action.mort", "voix.type.petit", "voix.style.A"] },
+          "macros": {
+            "hauteur": { "min": -6, "max": 6, "default": 0, "unit": "demi-ton" },
+            "matiere": { "min": -1, "max": 1, "default": 0, "unit": "octave" },
+            "grain": { "min": 0, "max": 2, "default": 1, "unit": "x" },
+            "duree": { "min": 0.6, "max": 1.6, "default": 1, "unit": "x" },
+            "ampleur": { "min": 0, "max": 0.6, "default": 0.1, "unit": "mix" }
+          }
+        },
+        {
+          "id": "B",
+          "label": "dev.atelier.variante.B",
+          "recipe": { "use": ["voix.base", "voix.action.mort", "voix.type.petit", "voix.style.B"] },
+          "macros": {
+            "hauteur": { "min": -6, "max": 6, "default": 0, "unit": "demi-ton" },
+            "matiere": { "min": -1, "max": 1, "default": 0, "unit": "octave" },
+            "grain": { "min": 0, "max": 2, "default": 1, "unit": "x" },
+            "duree": { "min": 0.6, "max": 1.6, "default": 1, "unit": "x" },
+            "ampleur": { "min": 0, "max": 0.6, "default": 0.3, "unit": "mix" }
+          }
+        },
+        {
+          "id": "C",
+          "label": "dev.atelier.variante.C",
+          "recipe": { "use": ["voix.base", "voix.action.mort", "voix.type.petit", "voix.style.C"] },
+          "macros": {
+            "hauteur": { "min": -6, "max": 6, "default": 0, "unit": "demi-ton" },
+            "matiere": { "min": -1, "max": 1, "default": 0, "unit": "octave" },
+            "grain": { "min": 0, "max": 2, "default": 1, "unit": "x" },
+            "duree": { "min": 0.6, "max": 1.6, "default": 1, "unit": "x" },
+            "ampleur": { "min": 0, "max": 0.6, "default": 0, "unit": "mix" }
+          }
+        }
+      ],
+      "integration": {
+        "ids": ["zombie-mort-petit"],
+        "replaces": [],
+        "versions": 2,
+        "pitchPlan": "hauteur de lecture : 0 tampon (le tampon du marcheur lu à zombieRate)"
+      }
+    },
+    {
+      "id": "voix-voute-errance",
+      "group": "voix",
+      "label": "dev.atelier.slot.voix-voute-errance",
+      "category": "voix",
+      "gainDb": -3.1,
+      "current": "zombie-gemissement",
+      "currentRate": 1.12,
+      "currentNote": "dev.atelier.note.voixHauteur",
+      "priority": 1,
+      "loop": false,
+      "variants": [
+        {
+          "id": "A",
+          "label": "dev.atelier.variante.A",
+          "recipe": { "use": ["voix.base", "voix.action.errance", "voix.type.voute", "voix.style.A"] },
+          "macros": {
+            "hauteur": { "min": -6, "max": 6, "default": 0, "unit": "demi-ton" },
+            "matiere": { "min": -1, "max": 1, "default": 0, "unit": "octave" },
+            "grain": { "min": 0, "max": 2, "default": 1, "unit": "x" },
+            "duree": { "min": 0.6, "max": 1.6, "default": 1, "unit": "x" },
+            "ampleur": { "min": 0, "max": 0.6, "default": 0.1, "unit": "mix" }
+          }
+        },
+        {
+          "id": "B",
+          "label": "dev.atelier.variante.B",
+          "recipe": { "use": ["voix.base", "voix.action.errance", "voix.type.voute", "voix.style.B"] },
+          "macros": {
+            "hauteur": { "min": -6, "max": 6, "default": 0, "unit": "demi-ton" },
+            "matiere": { "min": -1, "max": 1, "default": 0, "unit": "octave" },
+            "grain": { "min": 0, "max": 2, "default": 1, "unit": "x" },
+            "duree": { "min": 0.6, "max": 1.6, "default": 1, "unit": "x" },
+            "ampleur": { "min": 0, "max": 0.6, "default": 0.3, "unit": "mix" }
+          }
+        },
+        {
+          "id": "C",
+          "label": "dev.atelier.variante.C",
+          "recipe": { "use": ["voix.base", "voix.action.errance", "voix.type.voute", "voix.style.C"] },
+          "macros": {
+            "hauteur": { "min": -6, "max": 6, "default": 0, "unit": "demi-ton" },
+            "matiere": { "min": -1, "max": 1, "default": 0, "unit": "octave" },
+            "grain": { "min": 0, "max": 2, "default": 1, "unit": "x" },
+            "duree": { "min": 0.6, "max": 1.6, "default": 1, "unit": "x" },
+            "ampleur": { "min": 0, "max": 0.6, "default": 0, "unit": "mix" }
+          }
+        }
+      ],
+      "integration": {
+        "ids": ["zombie-gemissement-voute"],
+        "replaces": [],
+        "versions": 3,
+        "pitchPlan": "hauteur de lecture : 0 tampon (le tampon du marcheur lu à zombieRate)"
+      }
+    },
+    {
+      "id": "voix-voute-attaque",
+      "group": "voix",
+      "label": "dev.atelier.slot.voix-voute-attaque",
+      "category": "voix",
+      "gainDb": -3.1,
+      "current": "zombie-attaque",
+      "currentRate": 1.12,
+      "currentNote": "dev.atelier.note.voixHauteur",
+      "priority": 1,
+      "loop": false,
+      "variants": [
+        {
+          "id": "A",
+          "label": "dev.atelier.variante.A",
+          "recipe": { "use": ["voix.base", "voix.action.attaque", "voix.type.voute", "voix.style.A"] },
+          "macros": {
+            "hauteur": { "min": -6, "max": 6, "default": 0, "unit": "demi-ton" },
+            "matiere": { "min": -1, "max": 1, "default": 0, "unit": "octave" },
+            "grain": { "min": 0, "max": 2, "default": 1, "unit": "x" },
+            "duree": { "min": 0.6, "max": 1.6, "default": 1, "unit": "x" },
+            "ampleur": { "min": 0, "max": 0.6, "default": 0.1, "unit": "mix" }
+          }
+        },
+        {
+          "id": "B",
+          "label": "dev.atelier.variante.B",
+          "recipe": { "use": ["voix.base", "voix.action.attaque", "voix.type.voute", "voix.style.B"] },
+          "macros": {
+            "hauteur": { "min": -6, "max": 6, "default": 0, "unit": "demi-ton" },
+            "matiere": { "min": -1, "max": 1, "default": 0, "unit": "octave" },
+            "grain": { "min": 0, "max": 2, "default": 1, "unit": "x" },
+            "duree": { "min": 0.6, "max": 1.6, "default": 1, "unit": "x" },
+            "ampleur": { "min": 0, "max": 0.6, "default": 0.3, "unit": "mix" }
+          }
+        },
+        {
+          "id": "C",
+          "label": "dev.atelier.variante.C",
+          "recipe": { "use": ["voix.base", "voix.action.attaque", "voix.type.voute", "voix.style.C"] },
+          "macros": {
+            "hauteur": { "min": -6, "max": 6, "default": 0, "unit": "demi-ton" },
+            "matiere": { "min": -1, "max": 1, "default": 0, "unit": "octave" },
+            "grain": { "min": 0, "max": 2, "default": 1, "unit": "x" },
+            "duree": { "min": 0.6, "max": 1.6, "default": 1, "unit": "x" },
+            "ampleur": { "min": 0, "max": 0.6, "default": 0, "unit": "mix" }
+          }
+        }
+      ],
+      "integration": {
+        "ids": ["zombie-attaque-voute"],
+        "replaces": [],
+        "versions": 3,
+        "pitchPlan": "hauteur de lecture : 0 tampon (le tampon du marcheur lu à zombieRate)"
+      }
+    },
+    {
+      "id": "voix-voute-touche",
+      "group": "voix",
+      "label": "dev.atelier.slot.voix-voute-touche",
+      "category": "voix",
+      "gainDb": -3.1,
+      "current": "zombie-blessure",
+      "currentRate": 1.12,
+      "currentNote": "dev.atelier.note.voixHauteur",
+      "priority": 1,
+      "loop": false,
+      "variants": [
+        {
+          "id": "A",
+          "label": "dev.atelier.variante.A",
+          "recipe": { "use": ["voix.base", "voix.action.touche", "voix.type.voute", "voix.style.A"] },
+          "macros": {
+            "hauteur": { "min": -6, "max": 6, "default": 0, "unit": "demi-ton" },
+            "matiere": { "min": -1, "max": 1, "default": 0, "unit": "octave" },
+            "grain": { "min": 0, "max": 2, "default": 1, "unit": "x" },
+            "duree": { "min": 0.6, "max": 1.6, "default": 1, "unit": "x" },
+            "ampleur": { "min": 0, "max": 0.6, "default": 0.1, "unit": "mix" }
+          }
+        },
+        {
+          "id": "B",
+          "label": "dev.atelier.variante.B",
+          "recipe": { "use": ["voix.base", "voix.action.touche", "voix.type.voute", "voix.style.B"] },
+          "macros": {
+            "hauteur": { "min": -6, "max": 6, "default": 0, "unit": "demi-ton" },
+            "matiere": { "min": -1, "max": 1, "default": 0, "unit": "octave" },
+            "grain": { "min": 0, "max": 2, "default": 1, "unit": "x" },
+            "duree": { "min": 0.6, "max": 1.6, "default": 1, "unit": "x" },
+            "ampleur": { "min": 0, "max": 0.6, "default": 0.3, "unit": "mix" }
+          }
+        },
+        {
+          "id": "C",
+          "label": "dev.atelier.variante.C",
+          "recipe": { "use": ["voix.base", "voix.action.touche", "voix.type.voute", "voix.style.C"] },
+          "macros": {
+            "hauteur": { "min": -6, "max": 6, "default": 0, "unit": "demi-ton" },
+            "matiere": { "min": -1, "max": 1, "default": 0, "unit": "octave" },
+            "grain": { "min": 0, "max": 2, "default": 1, "unit": "x" },
+            "duree": { "min": 0.6, "max": 1.6, "default": 1, "unit": "x" },
+            "ampleur": { "min": 0, "max": 0.6, "default": 0, "unit": "mix" }
+          }
+        }
+      ],
+      "integration": {
+        "ids": ["zombie-blessure-voute"],
+        "replaces": [],
+        "versions": 3,
+        "pitchPlan": "hauteur de lecture : 0 tampon (le tampon du marcheur lu à zombieRate)"
+      }
+    },
+    {
+      "id": "voix-voute-mort",
+      "group": "voix",
+      "label": "dev.atelier.slot.voix-voute-mort",
+      "category": "voix",
+      "gainDb": -3.1,
+      "current": "zombie-mort",
+      "currentRate": 1.12,
+      "currentNote": "dev.atelier.note.voixHauteur",
+      "priority": 1,
+      "loop": false,
+      "variants": [
+        {
+          "id": "A",
+          "label": "dev.atelier.variante.A",
+          "recipe": { "use": ["voix.base", "voix.action.mort", "voix.type.voute", "voix.style.A"] },
+          "macros": {
+            "hauteur": { "min": -6, "max": 6, "default": 0, "unit": "demi-ton" },
+            "matiere": { "min": -1, "max": 1, "default": 0, "unit": "octave" },
+            "grain": { "min": 0, "max": 2, "default": 1, "unit": "x" },
+            "duree": { "min": 0.6, "max": 1.6, "default": 1, "unit": "x" },
+            "ampleur": { "min": 0, "max": 0.6, "default": 0.1, "unit": "mix" }
+          }
+        },
+        {
+          "id": "B",
+          "label": "dev.atelier.variante.B",
+          "recipe": { "use": ["voix.base", "voix.action.mort", "voix.type.voute", "voix.style.B"] },
+          "macros": {
+            "hauteur": { "min": -6, "max": 6, "default": 0, "unit": "demi-ton" },
+            "matiere": { "min": -1, "max": 1, "default": 0, "unit": "octave" },
+            "grain": { "min": 0, "max": 2, "default": 1, "unit": "x" },
+            "duree": { "min": 0.6, "max": 1.6, "default": 1, "unit": "x" },
+            "ampleur": { "min": 0, "max": 0.6, "default": 0.3, "unit": "mix" }
+          }
+        },
+        {
+          "id": "C",
+          "label": "dev.atelier.variante.C",
+          "recipe": { "use": ["voix.base", "voix.action.mort", "voix.type.voute", "voix.style.C"] },
+          "macros": {
+            "hauteur": { "min": -6, "max": 6, "default": 0, "unit": "demi-ton" },
+            "matiere": { "min": -1, "max": 1, "default": 0, "unit": "octave" },
+            "grain": { "min": 0, "max": 2, "default": 1, "unit": "x" },
+            "duree": { "min": 0.6, "max": 1.6, "default": 1, "unit": "x" },
+            "ampleur": { "min": 0, "max": 0.6, "default": 0, "unit": "mix" }
+          }
+        }
+      ],
+      "integration": {
+        "ids": ["zombie-mort-voute"],
+        "replaces": [],
+        "versions": 2,
+        "pitchPlan": "hauteur de lecture : 0 tampon (le tampon du marcheur lu à zombieRate)"
+      }
+    },
+    {
+      "id": "voix-grand-errance",
+      "group": "voix",
+      "label": "dev.atelier.slot.voix-grand-errance",
+      "category": "voix",
+      "gainDb": -3.1,
+      "current": "zombie-gemissement",
+      "currentRate": 0.82,
+      "currentNote": "dev.atelier.note.voixHauteur",
+      "priority": 1,
+      "loop": false,
+      "variants": [
+        {
+          "id": "A",
+          "label": "dev.atelier.variante.A",
+          "recipe": { "use": ["voix.base", "voix.action.errance", "voix.type.grand", "voix.style.A"] },
+          "macros": {
+            "hauteur": { "min": -6, "max": 6, "default": 0, "unit": "demi-ton" },
+            "matiere": { "min": -1, "max": 1, "default": 0, "unit": "octave" },
+            "grain": { "min": 0, "max": 2, "default": 1, "unit": "x" },
+            "duree": { "min": 0.6, "max": 1.6, "default": 1, "unit": "x" },
+            "ampleur": { "min": 0, "max": 0.6, "default": 0.1, "unit": "mix" }
+          }
+        },
+        {
+          "id": "B",
+          "label": "dev.atelier.variante.B",
+          "recipe": { "use": ["voix.base", "voix.action.errance", "voix.type.grand", "voix.style.B"] },
+          "macros": {
+            "hauteur": { "min": -6, "max": 6, "default": 0, "unit": "demi-ton" },
+            "matiere": { "min": -1, "max": 1, "default": 0, "unit": "octave" },
+            "grain": { "min": 0, "max": 2, "default": 1, "unit": "x" },
+            "duree": { "min": 0.6, "max": 1.6, "default": 1, "unit": "x" },
+            "ampleur": { "min": 0, "max": 0.6, "default": 0.3, "unit": "mix" }
+          }
+        },
+        {
+          "id": "C",
+          "label": "dev.atelier.variante.C",
+          "recipe": { "use": ["voix.base", "voix.action.errance", "voix.type.grand", "voix.style.C"] },
+          "macros": {
+            "hauteur": { "min": -6, "max": 6, "default": 0, "unit": "demi-ton" },
+            "matiere": { "min": -1, "max": 1, "default": 0, "unit": "octave" },
+            "grain": { "min": 0, "max": 2, "default": 1, "unit": "x" },
+            "duree": { "min": 0.6, "max": 1.6, "default": 1, "unit": "x" },
+            "ampleur": { "min": 0, "max": 0.6, "default": 0, "unit": "mix" }
+          }
+        }
+      ],
+      "integration": {
+        "ids": ["zombie-gemissement-grand"],
+        "replaces": [],
+        "versions": 3,
+        "pitchPlan": "hauteur de lecture : 0 tampon (le tampon du marcheur lu à zombieRate)"
+      }
+    },
+    {
+      "id": "voix-grand-attaque",
+      "group": "voix",
+      "label": "dev.atelier.slot.voix-grand-attaque",
+      "category": "voix",
+      "gainDb": -3.1,
+      "current": "zombie-attaque",
+      "currentRate": 0.82,
+      "currentNote": "dev.atelier.note.voixHauteur",
+      "priority": 1,
+      "loop": false,
+      "variants": [
+        {
+          "id": "A",
+          "label": "dev.atelier.variante.A",
+          "recipe": { "use": ["voix.base", "voix.action.attaque", "voix.type.grand", "voix.style.A"] },
+          "macros": {
+            "hauteur": { "min": -6, "max": 6, "default": 0, "unit": "demi-ton" },
+            "matiere": { "min": -1, "max": 1, "default": 0, "unit": "octave" },
+            "grain": { "min": 0, "max": 2, "default": 1, "unit": "x" },
+            "duree": { "min": 0.6, "max": 1.6, "default": 1, "unit": "x" },
+            "ampleur": { "min": 0, "max": 0.6, "default": 0.1, "unit": "mix" }
+          }
+        },
+        {
+          "id": "B",
+          "label": "dev.atelier.variante.B",
+          "recipe": { "use": ["voix.base", "voix.action.attaque", "voix.type.grand", "voix.style.B"] },
+          "macros": {
+            "hauteur": { "min": -6, "max": 6, "default": 0, "unit": "demi-ton" },
+            "matiere": { "min": -1, "max": 1, "default": 0, "unit": "octave" },
+            "grain": { "min": 0, "max": 2, "default": 1, "unit": "x" },
+            "duree": { "min": 0.6, "max": 1.6, "default": 1, "unit": "x" },
+            "ampleur": { "min": 0, "max": 0.6, "default": 0.3, "unit": "mix" }
+          }
+        },
+        {
+          "id": "C",
+          "label": "dev.atelier.variante.C",
+          "recipe": { "use": ["voix.base", "voix.action.attaque", "voix.type.grand", "voix.style.C"] },
+          "macros": {
+            "hauteur": { "min": -6, "max": 6, "default": 0, "unit": "demi-ton" },
+            "matiere": { "min": -1, "max": 1, "default": 0, "unit": "octave" },
+            "grain": { "min": 0, "max": 2, "default": 1, "unit": "x" },
+            "duree": { "min": 0.6, "max": 1.6, "default": 1, "unit": "x" },
+            "ampleur": { "min": 0, "max": 0.6, "default": 0, "unit": "mix" }
+          }
+        }
+      ],
+      "integration": {
+        "ids": ["zombie-attaque-grand"],
+        "replaces": [],
+        "versions": 3,
+        "pitchPlan": "hauteur de lecture : 0 tampon (le tampon du marcheur lu à zombieRate)"
+      }
+    },
+    {
+      "id": "voix-grand-touche",
+      "group": "voix",
+      "label": "dev.atelier.slot.voix-grand-touche",
+      "category": "voix",
+      "gainDb": -3.1,
+      "current": "zombie-blessure",
+      "currentRate": 0.82,
+      "currentNote": "dev.atelier.note.voixHauteur",
+      "priority": 1,
+      "loop": false,
+      "variants": [
+        {
+          "id": "A",
+          "label": "dev.atelier.variante.A",
+          "recipe": { "use": ["voix.base", "voix.action.touche", "voix.type.grand", "voix.style.A"] },
+          "macros": {
+            "hauteur": { "min": -6, "max": 6, "default": 0, "unit": "demi-ton" },
+            "matiere": { "min": -1, "max": 1, "default": 0, "unit": "octave" },
+            "grain": { "min": 0, "max": 2, "default": 1, "unit": "x" },
+            "duree": { "min": 0.6, "max": 1.6, "default": 1, "unit": "x" },
+            "ampleur": { "min": 0, "max": 0.6, "default": 0.1, "unit": "mix" }
+          }
+        },
+        {
+          "id": "B",
+          "label": "dev.atelier.variante.B",
+          "recipe": { "use": ["voix.base", "voix.action.touche", "voix.type.grand", "voix.style.B"] },
+          "macros": {
+            "hauteur": { "min": -6, "max": 6, "default": 0, "unit": "demi-ton" },
+            "matiere": { "min": -1, "max": 1, "default": 0, "unit": "octave" },
+            "grain": { "min": 0, "max": 2, "default": 1, "unit": "x" },
+            "duree": { "min": 0.6, "max": 1.6, "default": 1, "unit": "x" },
+            "ampleur": { "min": 0, "max": 0.6, "default": 0.3, "unit": "mix" }
+          }
+        },
+        {
+          "id": "C",
+          "label": "dev.atelier.variante.C",
+          "recipe": { "use": ["voix.base", "voix.action.touche", "voix.type.grand", "voix.style.C"] },
+          "macros": {
+            "hauteur": { "min": -6, "max": 6, "default": 0, "unit": "demi-ton" },
+            "matiere": { "min": -1, "max": 1, "default": 0, "unit": "octave" },
+            "grain": { "min": 0, "max": 2, "default": 1, "unit": "x" },
+            "duree": { "min": 0.6, "max": 1.6, "default": 1, "unit": "x" },
+            "ampleur": { "min": 0, "max": 0.6, "default": 0, "unit": "mix" }
+          }
+        }
+      ],
+      "integration": {
+        "ids": ["zombie-blessure-grand"],
+        "replaces": [],
+        "versions": 3,
+        "pitchPlan": "hauteur de lecture : 0 tampon (le tampon du marcheur lu à zombieRate)"
+      }
+    },
+    {
+      "id": "voix-grand-mort",
+      "group": "voix",
+      "label": "dev.atelier.slot.voix-grand-mort",
+      "category": "voix",
+      "gainDb": -3.1,
+      "current": "zombie-mort",
+      "currentRate": 0.82,
+      "currentNote": "dev.atelier.note.voixHauteur",
+      "priority": 1,
+      "loop": false,
+      "variants": [
+        {
+          "id": "A",
+          "label": "dev.atelier.variante.A",
+          "recipe": { "use": ["voix.base", "voix.action.mort", "voix.type.grand", "voix.style.A"] },
+          "macros": {
+            "hauteur": { "min": -6, "max": 6, "default": 0, "unit": "demi-ton" },
+            "matiere": { "min": -1, "max": 1, "default": 0, "unit": "octave" },
+            "grain": { "min": 0, "max": 2, "default": 1, "unit": "x" },
+            "duree": { "min": 0.6, "max": 1.6, "default": 1, "unit": "x" },
+            "ampleur": { "min": 0, "max": 0.6, "default": 0.1, "unit": "mix" }
+          }
+        },
+        {
+          "id": "B",
+          "label": "dev.atelier.variante.B",
+          "recipe": { "use": ["voix.base", "voix.action.mort", "voix.type.grand", "voix.style.B"] },
+          "macros": {
+            "hauteur": { "min": -6, "max": 6, "default": 0, "unit": "demi-ton" },
+            "matiere": { "min": -1, "max": 1, "default": 0, "unit": "octave" },
+            "grain": { "min": 0, "max": 2, "default": 1, "unit": "x" },
+            "duree": { "min": 0.6, "max": 1.6, "default": 1, "unit": "x" },
+            "ampleur": { "min": 0, "max": 0.6, "default": 0.3, "unit": "mix" }
+          }
+        },
+        {
+          "id": "C",
+          "label": "dev.atelier.variante.C",
+          "recipe": { "use": ["voix.base", "voix.action.mort", "voix.type.grand", "voix.style.C"] },
+          "macros": {
+            "hauteur": { "min": -6, "max": 6, "default": 0, "unit": "demi-ton" },
+            "matiere": { "min": -1, "max": 1, "default": 0, "unit": "octave" },
+            "grain": { "min": 0, "max": 2, "default": 1, "unit": "x" },
+            "duree": { "min": 0.6, "max": 1.6, "default": 1, "unit": "x" },
+            "ampleur": { "min": 0, "max": 0.6, "default": 0, "unit": "mix" }
+          }
+        }
+      ],
+      "integration": {
+        "ids": ["zombie-mort-grand"],
+        "replaces": [],
+        "versions": 2,
+        "pitchPlan": "hauteur de lecture : 0 tampon (le tampon du marcheur lu à zombieRate)"
+      }
+    },
+    {
+      "id": "planche-arrachage",
+      "group": "planches",
+      "label": "dev.atelier.slot.planche-arrachage",
+      "category": "fenetre",
+      "gainDb": -3.1,
+      "current": "planche-arrachee",
+      "priority": 1,
+      "loop": false,
+      "variants": [
+        {
+          "id": "A",
+          "label": "dev.atelier.variante.A",
+          "recipe": { "use": ["planche.arrachage.A"] },
+          "macros": {
+            "hauteur": { "min": -6, "max": 6, "default": 0, "unit": "demi-ton" },
+            "matiere": { "min": -1, "max": 1, "default": 0, "unit": "octave" },
+            "grain": { "min": 0, "max": 2, "default": 1, "unit": "x" },
+            "duree": { "min": 0.6, "max": 1.6, "default": 1, "unit": "x" },
+            "ampleur": { "min": 0, "max": 0.6, "default": 0.1, "unit": "mix" }
+          }
+        },
+        {
+          "id": "B",
+          "label": "dev.atelier.variante.B",
+          "recipe": { "use": ["planche.arrachage.B"] },
+          "macros": {
+            "hauteur": { "min": -6, "max": 6, "default": 0, "unit": "demi-ton" },
+            "matiere": { "min": -1, "max": 1, "default": 0, "unit": "octave" },
+            "grain": { "min": 0, "max": 2, "default": 1, "unit": "x" },
+            "duree": { "min": 0.6, "max": 1.6, "default": 1, "unit": "x" },
+            "ampleur": { "min": 0, "max": 0.6, "default": 0.3, "unit": "mix" }
+          }
+        },
+        {
+          "id": "C",
+          "label": "dev.atelier.variante.C",
+          "recipe": { "use": ["planche.arrachage.C"] },
+          "macros": {
+            "hauteur": { "min": -6, "max": 6, "default": 0, "unit": "demi-ton" },
+            "matiere": { "min": -1, "max": 1, "default": 0, "unit": "octave" },
+            "grain": { "min": 0, "max": 2, "default": 1, "unit": "x" },
+            "duree": { "min": 0.6, "max": 1.6, "default": 1, "unit": "x" },
+            "ampleur": { "min": 0, "max": 0.6, "default": 0, "unit": "mix" }
+          }
+        }
+      ],
+      "integration": { "ids": ["planche-arrachee"], "replaces": ["planche-arrachee"], "versions": 3 }
+    },
+    {
+      "id": "reparation",
+      "group": "planches",
+      "label": "dev.atelier.slot.reparation",
+      "category": "fenetre",
+      "gainDb": -3.1,
+      "current": "planche-posee",
+      "currentNote": "dev.atelier.note.reparation",
+      "priority": 1,
+      "loop": false,
+      "variants": [
+        {
+          "id": "A",
+          "label": "dev.atelier.variante.A",
+          "recipe": { "use": ["planche.reparation.A"] },
+          "macros": {
+            "hauteur": { "min": -6, "max": 6, "default": 0, "unit": "demi-ton" },
+            "matiere": { "min": -1, "max": 1, "default": 0, "unit": "octave" },
+            "grain": { "min": 0, "max": 2, "default": 1, "unit": "x" },
+            "duree": { "min": 0.4, "max": 1.8, "default": 1.8, "unit": "s" },
+            "ampleur": { "min": 0, "max": 0.6, "default": 0.1, "unit": "mix" }
+          }
+        },
+        {
+          "id": "B",
+          "label": "dev.atelier.variante.B",
+          "recipe": { "use": ["planche.reparation.B"] },
+          "macros": {
+            "hauteur": { "min": -6, "max": 6, "default": 0, "unit": "demi-ton" },
+            "matiere": { "min": -1, "max": 1, "default": 0, "unit": "octave" },
+            "grain": { "min": 0, "max": 2, "default": 1, "unit": "x" },
+            "duree": { "min": 0.4, "max": 1.8, "default": 1.8, "unit": "s" },
+            "ampleur": { "min": 0, "max": 0.6, "default": 0.3, "unit": "mix" }
+          }
+        },
+        {
+          "id": "C",
+          "label": "dev.atelier.variante.C",
+          "recipe": { "use": ["planche.reparation.C"] },
+          "macros": {
+            "hauteur": { "min": -6, "max": 6, "default": 0, "unit": "demi-ton" },
+            "matiere": { "min": -1, "max": 1, "default": 0, "unit": "octave" },
+            "grain": { "min": 0, "max": 2, "default": 1, "unit": "x" },
+            "duree": { "min": 0.4, "max": 1.8, "default": 1.8, "unit": "s" },
+            "ampleur": { "min": 0, "max": 0.6, "default": 0, "unit": "mix" }
+          }
+        }
+      ],
+      "integration": { "ids": ["planche-posee"], "replaces": ["planche-posee"], "versions": 3 }
+    },
+    {
+      "id": "reparation-coup",
+      "group": "planches",
+      "label": "dev.atelier.slot.reparation-coup",
+      "category": "fenetre",
+      "gainDb": -3.1,
+      "current": null,
+      "currentNote": "dev.atelier.note.coupDansPosee",
+      "priority": 1,
+      "loop": false,
+      "variants": [
+        {
+          "id": "A",
+          "label": "dev.atelier.variante.A",
+          "recipe": { "use": ["planche.coup.A"] },
+          "macros": {
+            "hauteur": { "min": -6, "max": 6, "default": 0, "unit": "demi-ton" },
+            "matiere": { "min": -1, "max": 1, "default": 0, "unit": "octave" },
+            "grain": { "min": 0, "max": 2, "default": 1, "unit": "x" },
+            "duree": { "min": 0.6, "max": 1.6, "default": 1, "unit": "x" },
+            "ampleur": { "min": 0, "max": 0.6, "default": 0.1, "unit": "mix" }
+          }
+        },
+        {
+          "id": "B",
+          "label": "dev.atelier.variante.B",
+          "recipe": { "use": ["planche.coup.B"] },
+          "macros": {
+            "hauteur": { "min": -6, "max": 6, "default": 0, "unit": "demi-ton" },
+            "matiere": { "min": -1, "max": 1, "default": 0, "unit": "octave" },
+            "grain": { "min": 0, "max": 2, "default": 1, "unit": "x" },
+            "duree": { "min": 0.6, "max": 1.6, "default": 1, "unit": "x" },
+            "ampleur": { "min": 0, "max": 0.6, "default": 0.3, "unit": "mix" }
+          }
+        },
+        {
+          "id": "C",
+          "label": "dev.atelier.variante.C",
+          "recipe": { "use": ["planche.coup.C"] },
+          "macros": {
+            "hauteur": { "min": -6, "max": 6, "default": 0, "unit": "demi-ton" },
+            "matiere": { "min": -1, "max": 1, "default": 0, "unit": "octave" },
+            "grain": { "min": 0, "max": 2, "default": 1, "unit": "x" },
+            "duree": { "min": 0.6, "max": 1.6, "default": 1, "unit": "x" },
+            "ampleur": { "min": 0, "max": 0.6, "default": 0, "unit": "mix" }
+          }
+        }
+      ],
+      "integration": {
+        "ids": [],
+        "replaces": [],
+        "versions": 0,
+        "note": "variante de remplacement de la réparation (coups seuls, séquence jouée par le directeur de sons) : non comptée par défaut"
+      }
+    },
+    {
+      "id": "planche-craquement",
+      "group": "planches",
+      "label": "dev.atelier.slot.planche-craquement",
+      "category": "fenetre",
+      "gainDb": -3.1,
+      "current": null,
+      "priority": 1,
+      "loop": false,
+      "variants": [
+        {
+          "id": "A",
+          "label": "dev.atelier.variante.A",
+          "recipe": { "use": ["planche.craquement.A"] },
+          "macros": {
+            "hauteur": { "min": -6, "max": 6, "default": 0, "unit": "demi-ton" },
+            "matiere": { "min": -1, "max": 1, "default": 0, "unit": "octave" },
+            "grain": { "min": 0, "max": 2, "default": 1, "unit": "x" },
+            "duree": { "min": 0.6, "max": 1.6, "default": 1, "unit": "x" },
+            "ampleur": { "min": 0, "max": 0.6, "default": 0.1, "unit": "mix" }
+          }
+        },
+        {
+          "id": "B",
+          "label": "dev.atelier.variante.B",
+          "recipe": { "use": ["planche.craquement.B"] },
+          "macros": {
+            "hauteur": { "min": -6, "max": 6, "default": 0, "unit": "demi-ton" },
+            "matiere": { "min": -1, "max": 1, "default": 0, "unit": "octave" },
+            "grain": { "min": 0, "max": 2, "default": 1, "unit": "x" },
+            "duree": { "min": 0.6, "max": 1.6, "default": 1, "unit": "x" },
+            "ampleur": { "min": 0, "max": 0.6, "default": 0.3, "unit": "mix" }
+          }
+        },
+        {
+          "id": "C",
+          "label": "dev.atelier.variante.C",
+          "recipe": { "use": ["planche.craquement.C"] },
+          "macros": {
+            "hauteur": { "min": -6, "max": 6, "default": 0, "unit": "demi-ton" },
+            "matiere": { "min": -1, "max": 1, "default": 0, "unit": "octave" },
+            "grain": { "min": 0, "max": 2, "default": 1, "unit": "x" },
+            "duree": { "min": 0.6, "max": 1.6, "default": 1, "unit": "x" },
+            "ampleur": { "min": 0, "max": 0.6, "default": 0, "unit": "mix" }
+          }
+        }
+      ],
+      "integration": { "ids": ["planche-craquement"], "replaces": [], "versions": 2 }
+    },
+    {
+      "id": "planche-chute",
+      "group": "planches",
+      "label": "dev.atelier.slot.planche-chute",
+      "category": "fenetre",
+      "gainDb": -3.1,
+      "current": null,
+      "priority": 1,
+      "loop": false,
+      "variants": [
+        {
+          "id": "A",
+          "label": "dev.atelier.variante.A",
+          "recipe": { "use": ["planche.chute.A"] },
+          "macros": {
+            "hauteur": { "min": -6, "max": 6, "default": 0, "unit": "demi-ton" },
+            "matiere": { "min": -1, "max": 1, "default": 0, "unit": "octave" },
+            "grain": { "min": 0, "max": 2, "default": 1, "unit": "x" },
+            "duree": { "min": 0.6, "max": 1.6, "default": 1, "unit": "x" },
+            "ampleur": { "min": 0, "max": 0.6, "default": 0.1, "unit": "mix" }
+          }
+        },
+        {
+          "id": "B",
+          "label": "dev.atelier.variante.B",
+          "recipe": { "use": ["planche.chute.B"] },
+          "macros": {
+            "hauteur": { "min": -6, "max": 6, "default": 0, "unit": "demi-ton" },
+            "matiere": { "min": -1, "max": 1, "default": 0, "unit": "octave" },
+            "grain": { "min": 0, "max": 2, "default": 1, "unit": "x" },
+            "duree": { "min": 0.6, "max": 1.6, "default": 1, "unit": "x" },
+            "ampleur": { "min": 0, "max": 0.6, "default": 0.3, "unit": "mix" }
+          }
+        },
+        {
+          "id": "C",
+          "label": "dev.atelier.variante.C",
+          "recipe": { "use": ["planche.chute.C"] },
+          "macros": {
+            "hauteur": { "min": -6, "max": 6, "default": 0, "unit": "demi-ton" },
+            "matiere": { "min": -1, "max": 1, "default": 0, "unit": "octave" },
+            "grain": { "min": 0, "max": 2, "default": 1, "unit": "x" },
+            "duree": { "min": 0.6, "max": 1.6, "default": 1, "unit": "x" },
+            "ampleur": { "min": 0, "max": 0.6, "default": 0, "unit": "mix" }
+          }
+        }
+      ],
+      "integration": { "ids": ["planche-chute"], "replaces": [], "versions": 2 }
+    },
+    {
+      "id": "escalade",
+      "group": "fenetre",
+      "label": "dev.atelier.slot.escalade",
+      "category": "fenetre",
+      "gainDb": -3.1,
+      "current": null,
+      "currentNote": "dev.atelier.note.escaladeMuette",
+      "priority": 1,
+      "loop": false,
+      "variants": [
+        {
+          "id": "A",
+          "label": "dev.atelier.variante.A",
+          "recipe": { "use": ["fenetre.escalade.A"] },
+          "macros": {
+            "hauteur": { "min": -6, "max": 6, "default": 0, "unit": "demi-ton" },
+            "matiere": { "min": -1, "max": 1, "default": 0, "unit": "octave" },
+            "grain": { "min": 0, "max": 2, "default": 1, "unit": "x" },
+            "duree": { "min": 0.6, "max": 1.6, "default": 1, "unit": "x" },
+            "ampleur": { "min": 0, "max": 0.6, "default": 0.1, "unit": "mix" }
+          }
+        },
+        {
+          "id": "B",
+          "label": "dev.atelier.variante.B",
+          "recipe": { "use": ["fenetre.escalade.B"] },
+          "macros": {
+            "hauteur": { "min": -6, "max": 6, "default": 0, "unit": "demi-ton" },
+            "matiere": { "min": -1, "max": 1, "default": 0, "unit": "octave" },
+            "grain": { "min": 0, "max": 2, "default": 1, "unit": "x" },
+            "duree": { "min": 0.6, "max": 1.6, "default": 1, "unit": "x" },
+            "ampleur": { "min": 0, "max": 0.6, "default": 0.3, "unit": "mix" }
+          }
+        },
+        {
+          "id": "C",
+          "label": "dev.atelier.variante.C",
+          "recipe": { "use": ["fenetre.escalade.C"] },
+          "macros": {
+            "hauteur": { "min": -6, "max": 6, "default": 0, "unit": "demi-ton" },
+            "matiere": { "min": -1, "max": 1, "default": 0, "unit": "octave" },
+            "grain": { "min": 0, "max": 2, "default": 1, "unit": "x" },
+            "duree": { "min": 0.6, "max": 1.6, "default": 1, "unit": "x" },
+            "ampleur": { "min": 0, "max": 0.6, "default": 0, "unit": "mix" }
+          }
+        }
+      ],
+      "integration": { "ids": ["zombie-escalade"], "replaces": [], "versions": 2 }
+    },
+    {
+      "id": "joueur-souffle-terre",
+      "group": "joueur",
+      "label": "dev.atelier.slot.joueur-souffle-terre",
+      "category": "joueur",
+      "gainDb": -0.92,
+      "current": "joueur-chute",
+      "priority": 1,
+      "loop": false,
+      "variants": [
+        {
+          "id": "A",
+          "label": "dev.atelier.variante.A",
+          "recipe": { "use": ["joueur.souffle.A"] },
+          "macros": {
+            "hauteur": { "min": -6, "max": 6, "default": 0, "unit": "demi-ton" },
+            "matiere": { "min": -1, "max": 1, "default": 0, "unit": "octave" },
+            "grain": { "min": 0, "max": 2, "default": 1, "unit": "x" },
+            "duree": { "min": 0.6, "max": 1.6, "default": 1, "unit": "x" },
+            "ampleur": { "min": 0, "max": 0.6, "default": 0.1, "unit": "mix" }
+          }
+        },
+        {
+          "id": "B",
+          "label": "dev.atelier.variante.B",
+          "recipe": { "use": ["joueur.souffle.B"] },
+          "macros": {
+            "hauteur": { "min": -6, "max": 6, "default": 0, "unit": "demi-ton" },
+            "matiere": { "min": -1, "max": 1, "default": 0, "unit": "octave" },
+            "grain": { "min": 0, "max": 2, "default": 1, "unit": "x" },
+            "duree": { "min": 0.6, "max": 1.6, "default": 1, "unit": "x" },
+            "ampleur": { "min": 0, "max": 0.6, "default": 0.3, "unit": "mix" }
+          }
+        },
+        {
+          "id": "C",
+          "label": "dev.atelier.variante.C",
+          "recipe": { "use": ["joueur.souffle.C"] },
+          "macros": {
+            "hauteur": { "min": -6, "max": 6, "default": 0, "unit": "demi-ton" },
+            "matiere": { "min": -1, "max": 1, "default": 0, "unit": "octave" },
+            "grain": { "min": 0, "max": 2, "default": 1, "unit": "x" },
+            "duree": { "min": 0.6, "max": 1.6, "default": 1, "unit": "x" },
+            "ampleur": { "min": 0, "max": 0.6, "default": 0, "unit": "mix" }
+          }
+        }
+      ],
+      "integration": { "ids": ["joueur-chute"], "replaces": ["joueur-chute"], "versions": 2 }
+    },
+    {
+      "id": "joueur-relevage",
+      "group": "joueur",
+      "label": "dev.atelier.slot.joueur-relevage",
+      "category": "joueur",
+      "gainDb": -0.92,
+      "current": "joueur-releve",
+      "priority": 1,
+      "loop": false,
+      "variants": [
+        {
+          "id": "A",
+          "label": "dev.atelier.variante.A",
+          "recipe": { "use": ["joueur.relevage.A"] },
+          "macros": {
+            "hauteur": { "min": -6, "max": 6, "default": 0, "unit": "demi-ton" },
+            "matiere": { "min": -1, "max": 1, "default": 0, "unit": "octave" },
+            "grain": { "min": 0, "max": 2, "default": 1, "unit": "x" },
+            "duree": { "min": 0.6, "max": 1.6, "default": 1, "unit": "x" },
+            "ampleur": { "min": 0, "max": 0.6, "default": 0.1, "unit": "mix" }
+          }
+        },
+        {
+          "id": "B",
+          "label": "dev.atelier.variante.B",
+          "recipe": { "use": ["joueur.relevage.B"] },
+          "macros": {
+            "hauteur": { "min": -6, "max": 6, "default": 0, "unit": "demi-ton" },
+            "matiere": { "min": -1, "max": 1, "default": 0, "unit": "octave" },
+            "grain": { "min": 0, "max": 2, "default": 1, "unit": "x" },
+            "duree": { "min": 0.6, "max": 1.6, "default": 1, "unit": "x" },
+            "ampleur": { "min": 0, "max": 0.6, "default": 0.3, "unit": "mix" }
+          }
+        },
+        {
+          "id": "C",
+          "label": "dev.atelier.variante.C",
+          "recipe": { "use": ["joueur.relevage.C"] },
+          "macros": {
+            "hauteur": { "min": -6, "max": 6, "default": 0, "unit": "demi-ton" },
+            "matiere": { "min": -1, "max": 1, "default": 0, "unit": "octave" },
+            "grain": { "min": 0, "max": 2, "default": 1, "unit": "x" },
+            "duree": { "min": 0.6, "max": 1.6, "default": 1, "unit": "x" },
+            "ampleur": { "min": 0, "max": 0.6, "default": 0, "unit": "mix" }
+          }
+        }
+      ],
+      "integration": { "ids": ["joueur-releve"], "replaces": ["joueur-releve"], "versions": 2 }
+    },
+    {
+      "id": "ambiance-vent",
+      "group": "propositions",
+      "label": "dev.atelier.slot.ambiance-vent",
+      "category": "ambiance",
+      "gainDb": -16.48,
+      "current": null,
+      "currentNote": "dev.atelier.note.prop.vent",
+      "priority": 2,
+      "loop": true,
+      "variants": [
+        {
+          "id": "A",
+          "label": "dev.atelier.variante.prop.vent.A",
+          "recipe": { "use": ["prop.vent.A"] },
+          "macros": {
+            "hauteur": { "min": -6, "max": 6, "default": 0, "unit": "demi-ton" },
+            "matiere": { "min": -1, "max": 1, "default": 0, "unit": "octave" },
+            "grain": { "min": 0, "max": 2, "default": 1, "unit": "x" },
+            "duree": { "min": 0.6, "max": 1.6, "default": 1, "unit": "x" },
+            "ampleur": { "min": 0, "max": 0.6, "default": 0.1, "unit": "mix" }
+          }
+        },
+        {
+          "id": "B",
+          "label": "dev.atelier.variante.prop.vent.B",
+          "recipe": { "use": ["prop.vent.B"] },
+          "macros": {
+            "hauteur": { "min": -6, "max": 6, "default": 0, "unit": "demi-ton" },
+            "matiere": { "min": -1, "max": 1, "default": 0, "unit": "octave" },
+            "grain": { "min": 0, "max": 2, "default": 1, "unit": "x" },
+            "duree": { "min": 0.6, "max": 1.6, "default": 1, "unit": "x" },
+            "ampleur": { "min": 0, "max": 0.6, "default": 0.2, "unit": "mix" }
+          }
+        }
+      ],
+      "integration": { "ids": ["ambiance-vent"], "replaces": [], "versions": 1 }
+    },
+    {
+      "id": "ambiance-grincements",
+      "group": "propositions",
+      "label": "dev.atelier.slot.ambiance-grincements",
+      "category": "ambiance",
+      "gainDb": -16.48,
+      "current": null,
+      "currentNote": "dev.atelier.note.prop.grincements",
+      "priority": 2,
+      "loop": false,
+      "variants": [
+        {
+          "id": "A",
+          "label": "dev.atelier.variante.prop.grincements.A",
+          "recipe": { "use": ["prop.grincements.A"] },
+          "macros": {
+            "hauteur": { "min": -6, "max": 6, "default": 0, "unit": "demi-ton" },
+            "matiere": { "min": -1, "max": 1, "default": 0, "unit": "octave" },
+            "grain": { "min": 0, "max": 2, "default": 1, "unit": "x" },
+            "duree": { "min": 0.6, "max": 1.6, "default": 1, "unit": "x" },
+            "ampleur": { "min": 0, "max": 0.6, "default": 0.1, "unit": "mix" }
+          }
+        },
+        {
+          "id": "B",
+          "label": "dev.atelier.variante.prop.grincements.B",
+          "recipe": { "use": ["prop.grincements.B"] },
+          "macros": {
+            "hauteur": { "min": -6, "max": 6, "default": 0, "unit": "demi-ton" },
+            "matiere": { "min": -1, "max": 1, "default": 0, "unit": "octave" },
+            "grain": { "min": 0, "max": 2, "default": 1, "unit": "x" },
+            "duree": { "min": 0.6, "max": 1.6, "default": 1, "unit": "x" },
+            "ampleur": { "min": 0, "max": 0.6, "default": 0.2, "unit": "mix" }
+          }
+        }
+      ],
+      "integration": { "ids": ["ambiance-grincements"], "replaces": [], "versions": 2 }
+    },
+    {
+      "id": "ambiance-neon",
+      "group": "propositions",
+      "label": "dev.atelier.slot.ambiance-neon",
+      "category": "ambiance",
+      "gainDb": -16.48,
+      "current": null,
+      "currentNote": "dev.atelier.note.prop.neon",
+      "priority": 2,
+      "loop": true,
+      "variants": [
+        {
+          "id": "A",
+          "label": "dev.atelier.variante.prop.neon.A",
+          "recipe": { "use": ["prop.neon.A"] },
+          "macros": {
+            "hauteur": { "min": -6, "max": 6, "default": 0, "unit": "demi-ton" },
+            "matiere": { "min": -1, "max": 1, "default": 0, "unit": "octave" },
+            "grain": { "min": 0, "max": 2, "default": 1, "unit": "x" },
+            "duree": { "min": 0.6, "max": 1.6, "default": 1, "unit": "x" },
+            "ampleur": { "min": 0, "max": 0.6, "default": 0.1, "unit": "mix" }
+          }
+        },
+        {
+          "id": "B",
+          "label": "dev.atelier.variante.prop.neon.B",
+          "recipe": { "use": ["prop.neon.B"] },
+          "macros": {
+            "hauteur": { "min": -6, "max": 6, "default": 0, "unit": "demi-ton" },
+            "matiere": { "min": -1, "max": 1, "default": 0, "unit": "octave" },
+            "grain": { "min": 0, "max": 2, "default": 1, "unit": "x" },
+            "duree": { "min": 0.6, "max": 1.6, "default": 1, "unit": "x" },
+            "ampleur": { "min": 0, "max": 0.6, "default": 0.2, "unit": "mix" }
+          }
+        }
+      ],
+      "integration": { "ids": ["ambiance-neon"], "replaces": [], "versions": 1 }
+    },
+    {
+      "id": "joueur-coeur",
+      "group": "propositions",
+      "label": "dev.atelier.slot.joueur-coeur",
+      "category": "joueur",
+      "gainDb": -0.92,
+      "current": null,
+      "currentNote": "dev.atelier.note.prop.coeur",
+      "priority": 2,
+      "loop": false,
+      "variants": [
+        {
+          "id": "A",
+          "label": "dev.atelier.variante.prop.coeur.A",
+          "recipe": { "use": ["prop.coeur.A"] },
+          "macros": {
+            "hauteur": { "min": -6, "max": 6, "default": 0, "unit": "demi-ton" },
+            "matiere": { "min": -1, "max": 1, "default": 0, "unit": "octave" },
+            "grain": { "min": 0, "max": 2, "default": 1, "unit": "x" },
+            "duree": { "min": 0.6, "max": 1.6, "default": 1, "unit": "x" },
+            "ampleur": { "min": 0, "max": 0.6, "default": 0.1, "unit": "mix" }
+          }
+        },
+        {
+          "id": "B",
+          "label": "dev.atelier.variante.prop.coeur.B",
+          "recipe": { "use": ["prop.coeur.B"] },
+          "macros": {
+            "hauteur": { "min": -6, "max": 6, "default": 0, "unit": "demi-ton" },
+            "matiere": { "min": -1, "max": 1, "default": 0, "unit": "octave" },
+            "grain": { "min": 0, "max": 2, "default": 1, "unit": "x" },
+            "duree": { "min": 0.6, "max": 1.6, "default": 1, "unit": "x" },
+            "ampleur": { "min": 0, "max": 0.6, "default": 0.2, "unit": "mix" }
+          }
+        }
+      ],
+      "integration": { "ids": ["joueur-coeur"], "replaces": [], "versions": 1 }
+    },
+    {
+      "id": "joueur-essouffle",
+      "group": "propositions",
+      "label": "dev.atelier.slot.joueur-essouffle",
+      "category": "joueur",
+      "gainDb": -0.92,
+      "current": null,
+      "currentNote": "dev.atelier.note.prop.essouffle",
+      "priority": 2,
+      "loop": false,
+      "variants": [
+        {
+          "id": "A",
+          "label": "dev.atelier.variante.prop.essouffle.A",
+          "recipe": { "use": ["prop.essouffle.A"] },
+          "macros": {
+            "hauteur": { "min": -6, "max": 6, "default": 0, "unit": "demi-ton" },
+            "matiere": { "min": -1, "max": 1, "default": 0, "unit": "octave" },
+            "grain": { "min": 0, "max": 2, "default": 1, "unit": "x" },
+            "duree": { "min": 0.6, "max": 1.6, "default": 1, "unit": "x" },
+            "ampleur": { "min": 0, "max": 0.6, "default": 0.1, "unit": "mix" }
+          }
+        },
+        {
+          "id": "B",
+          "label": "dev.atelier.variante.prop.essouffle.B",
+          "recipe": { "use": ["prop.essouffle.B"] },
+          "macros": {
+            "hauteur": { "min": -6, "max": 6, "default": 0, "unit": "demi-ton" },
+            "matiere": { "min": -1, "max": 1, "default": 0, "unit": "octave" },
+            "grain": { "min": 0, "max": 2, "default": 1, "unit": "x" },
+            "duree": { "min": 0.6, "max": 1.6, "default": 1, "unit": "x" },
+            "ampleur": { "min": 0, "max": 0.6, "default": 0.2, "unit": "mix" }
+          }
+        }
+      ],
+      "integration": { "ids": ["joueur-essouffle"], "replaces": [], "versions": 2 }
+    },
+    {
+      "id": "ambiance-lointains",
+      "group": "propositions",
+      "label": "dev.atelier.slot.ambiance-lointains",
+      "category": "ambiance",
+      "gainDb": -16.48,
+      "current": null,
+      "currentNote": "dev.atelier.note.prop.lointains",
+      "priority": 2,
+      "loop": false,
+      "variants": [
+        {
+          "id": "A",
+          "label": "dev.atelier.variante.prop.lointains.A",
+          "recipe": { "use": ["prop.lointains.A"] },
+          "macros": {
+            "hauteur": { "min": -6, "max": 6, "default": 0, "unit": "demi-ton" },
+            "matiere": { "min": -1, "max": 1, "default": 0, "unit": "octave" },
+            "grain": { "min": 0, "max": 2, "default": 1, "unit": "x" },
+            "duree": { "min": 0.6, "max": 1.6, "default": 1, "unit": "x" },
+            "ampleur": { "min": 0, "max": 0.6, "default": 0.1, "unit": "mix" }
+          }
+        },
+        {
+          "id": "B",
+          "label": "dev.atelier.variante.prop.lointains.B",
+          "recipe": { "use": ["prop.lointains.B"] },
+          "macros": {
+            "hauteur": { "min": -6, "max": 6, "default": 0, "unit": "demi-ton" },
+            "matiere": { "min": -1, "max": 1, "default": 0, "unit": "octave" },
+            "grain": { "min": 0, "max": 2, "default": 1, "unit": "x" },
+            "duree": { "min": 0.6, "max": 1.6, "default": 1, "unit": "x" },
+            "ampleur": { "min": 0, "max": 0.6, "default": 0.2, "unit": "mix" }
+          }
+        }
+      ],
+      "integration": { "ids": ["ambiance-lointains"], "replaces": [], "versions": 2 }
+    },
+    {
+      "id": "porte-enfoncee",
+      "group": "propositions",
+      "label": "dev.atelier.slot.porte-enfoncee",
+      "category": "impact",
+      "gainDb": -1.94,
+      "current": null,
+      "currentNote": "dev.atelier.note.prop.porte",
+      "priority": 2,
+      "loop": false,
+      "variants": [
+        {
+          "id": "A",
+          "label": "dev.atelier.variante.prop.porte.A",
+          "recipe": { "use": ["prop.porte.A"] },
+          "macros": {
+            "hauteur": { "min": -6, "max": 6, "default": 0, "unit": "demi-ton" },
+            "matiere": { "min": -1, "max": 1, "default": 0, "unit": "octave" },
+            "grain": { "min": 0, "max": 2, "default": 1, "unit": "x" },
+            "duree": { "min": 0.6, "max": 1.6, "default": 1, "unit": "x" },
+            "ampleur": { "min": 0, "max": 0.6, "default": 0.1, "unit": "mix" }
+          }
+        },
+        {
+          "id": "B",
+          "label": "dev.atelier.variante.prop.porte.B",
+          "recipe": { "use": ["prop.porte.B"] },
+          "macros": {
+            "hauteur": { "min": -6, "max": 6, "default": 0, "unit": "demi-ton" },
+            "matiere": { "min": -1, "max": 1, "default": 0, "unit": "octave" },
+            "grain": { "min": 0, "max": 2, "default": 1, "unit": "x" },
+            "duree": { "min": 0.6, "max": 1.6, "default": 1, "unit": "x" },
+            "ampleur": { "min": 0, "max": 0.6, "default": 0.2, "unit": "mix" }
+          }
+        }
+      ],
+      "integration": { "ids": ["porte-enfoncee"], "replaces": [], "versions": 1 }
+    },
+    {
+      "id": "interface-piece",
+      "group": "propositions",
+      "label": "dev.atelier.slot.interface-piece",
+      "category": "interface",
+      "gainDb": -4.44,
+      "current": null,
+      "currentNote": "dev.atelier.note.prop.piece",
+      "priority": 2,
+      "loop": false,
+      "variants": [
+        {
+          "id": "A",
+          "label": "dev.atelier.variante.prop.piece.A",
+          "recipe": { "use": ["prop.piece.A"] },
+          "macros": {
+            "hauteur": { "min": -6, "max": 6, "default": 0, "unit": "demi-ton" },
+            "matiere": { "min": -1, "max": 1, "default": 0, "unit": "octave" },
+            "grain": { "min": 0, "max": 2, "default": 1, "unit": "x" },
+            "duree": { "min": 0.6, "max": 1.6, "default": 1, "unit": "x" },
+            "ampleur": { "min": 0, "max": 0.6, "default": 0.1, "unit": "mix" }
+          }
+        },
+        {
+          "id": "B",
+          "label": "dev.atelier.variante.prop.piece.B",
+          "recipe": { "use": ["prop.piece.B"] },
+          "macros": {
+            "hauteur": { "min": -6, "max": 6, "default": 0, "unit": "demi-ton" },
+            "matiere": { "min": -1, "max": 1, "default": 0, "unit": "octave" },
+            "grain": { "min": 0, "max": 2, "default": 1, "unit": "x" },
+            "duree": { "min": 0.6, "max": 1.6, "default": 1, "unit": "x" },
+            "ampleur": { "min": 0, "max": 0.6, "default": 0.2, "unit": "mix" }
+          }
+        }
+      ],
+      "integration": { "ids": ["interface-piece"], "replaces": [], "versions": 3 }
+    },
+    {
+      "id": "interface-achat",
+      "group": "propositions",
+      "label": "dev.atelier.slot.interface-achat",
+      "category": "interface",
+      "gainDb": -4.44,
+      "current": null,
+      "currentNote": "dev.atelier.note.prop.achat",
+      "priority": 2,
+      "loop": false,
+      "variants": [
+        {
+          "id": "A",
+          "label": "dev.atelier.variante.prop.achat.A",
+          "recipe": { "use": ["prop.achat.A"] },
+          "macros": {
+            "hauteur": { "min": -6, "max": 6, "default": 0, "unit": "demi-ton" },
+            "matiere": { "min": -1, "max": 1, "default": 0, "unit": "octave" },
+            "grain": { "min": 0, "max": 2, "default": 1, "unit": "x" },
+            "duree": { "min": 0.6, "max": 1.6, "default": 1, "unit": "x" },
+            "ampleur": { "min": 0, "max": 0.6, "default": 0.1, "unit": "mix" }
+          }
+        },
+        {
+          "id": "B",
+          "label": "dev.atelier.variante.prop.achat.B",
+          "recipe": { "use": ["prop.achat.B"] },
+          "macros": {
+            "hauteur": { "min": -6, "max": 6, "default": 0, "unit": "demi-ton" },
+            "matiere": { "min": -1, "max": 1, "default": 0, "unit": "octave" },
+            "grain": { "min": 0, "max": 2, "default": 1, "unit": "x" },
+            "duree": { "min": 0.6, "max": 1.6, "default": 1, "unit": "x" },
+            "ampleur": { "min": 0, "max": 0.6, "default": 0.2, "unit": "mix" }
+          }
+        }
+      ],
+      "integration": { "ids": ["interface-achat"], "replaces": [], "versions": 1 }
+    },
+    {
+      "id": "ambiance-feu",
+      "group": "propositions",
+      "label": "dev.atelier.slot.ambiance-feu",
+      "category": "ambiance",
+      "gainDb": -16.48,
+      "current": null,
+      "currentNote": "dev.atelier.note.prop.feu",
+      "priority": 2,
+      "loop": true,
+      "variants": [
+        {
+          "id": "A",
+          "label": "dev.atelier.variante.prop.feu.A",
+          "recipe": { "use": ["prop.feu.A"] },
+          "macros": {
+            "hauteur": { "min": -6, "max": 6, "default": 0, "unit": "demi-ton" },
+            "matiere": { "min": -1, "max": 1, "default": 0, "unit": "octave" },
+            "grain": { "min": 0, "max": 2, "default": 1, "unit": "x" },
+            "duree": { "min": 0.6, "max": 1.6, "default": 1, "unit": "x" },
+            "ampleur": { "min": 0, "max": 0.6, "default": 0.1, "unit": "mix" }
+          }
+        },
+        {
+          "id": "B",
+          "label": "dev.atelier.variante.prop.feu.B",
+          "recipe": { "use": ["prop.feu.B"] },
+          "macros": {
+            "hauteur": { "min": -6, "max": 6, "default": 0, "unit": "demi-ton" },
+            "matiere": { "min": -1, "max": 1, "default": 0, "unit": "octave" },
+            "grain": { "min": 0, "max": 2, "default": 1, "unit": "x" },
+            "duree": { "min": 0.6, "max": 1.6, "default": 1, "unit": "x" },
+            "ampleur": { "min": 0, "max": 0.6, "default": 0.2, "unit": "mix" }
+          }
+        }
+      ],
+      "integration": { "ids": ["ambiance-feu"], "replaces": [], "versions": 1 }
+    }
+  ],
+  "references": [
+    { "id": "ref-melodie", "label": "dev.atelier.ref.melodie", "source": "vague-annonce", "loud": true },
+    { "id": "ref-renforcee", "label": "dev.atelier.ref.renforcee", "source": "vague-renforcee", "loud": true },
+    { "id": "ref-fin", "label": "dev.atelier.ref.fin", "source": "vague-fin", "loud": false },
+    { "id": "ref-tir", "label": "dev.atelier.ref.tir", "source": "tir", "loud": true },
+    { "id": "ref-douille", "label": "dev.atelier.ref.douille", "source": "douille", "loud": false },
+    { "id": "ref-impact-zombie", "label": "dev.atelier.ref.impactZombie", "source": "impact-zombie", "loud": false },
+    { "id": "ref-impact-bois", "label": "dev.atelier.ref.impactBois", "source": "impact-bois", "loud": false },
+    { "id": "ref-impact-metal", "label": "dev.atelier.ref.impactMetal", "source": "impact-metal", "loud": false },
+    { "id": "ref-impact-pierre", "label": "dev.atelier.ref.impactPierre", "source": "impact-pierre", "loud": false },
+    { "id": "ref-impact-voiture", "label": "dev.atelier.ref.impactVoiture", "source": "impact-voiture", "loud": false }
+  ],
+  "scenes": [
+    { "id": "couloir", "label": "dev.atelier.scene.couloir", "seed": 1, "duration": 30 },
+    { "id": "siege", "label": "dev.atelier.scene.siege", "seed": 1, "duration": 30 },
+    { "id": "reparation", "label": "dev.atelier.scene.reparation", "seed": 1, "duration": 30 },
+    { "id": "meute", "label": "dev.atelier.scene.meute", "seed": 1, "duration": 30 }
+  ]
+}

@@ -1,15 +1,17 @@
-// HUD en HTML (bloc E2-2, lot 3a) : barre de vie avec « 100/100 » dedans (role="progressbar"), puces « Vague N », restants (ou compte à rebours), tués et chutes
-// (une silhouette avec un « + » par chute restante, et le nombre). N'écrit dans le DOM que si une
-// valeur change. L'annonce de vague (E2-8) est une animation centrale : js/game/splash-view.js.
+// HUD en HTML (bloc E2-2), lot 3l : direction B « caméscope » de l'atelier (lot 3k). Trois colonnes de blocs de taille fixe écrits une fois dans jeu.html :
+// à gauche REC + chrono (temps de jeu), VIE « 64/100 » (role="progressbar", sans barre), chutes (une silhouette « + » et le nombre) et étage, « Mode essai » ;
+// au centre « VAGUE 07 / 40 » (+ « Renforcée »), l'argent (et son « +N »), puis le texte de l'état à terre (E2-10) ; à droite « RESTANTS 05 » (ou « DÉBUT 3 s »
+// pendant l'attente) et « TUÉS 57 ». N'écrit dans le DOM que si une valeur change. L'annonce de vague (E2-8) est dans js/game/splash-view.js.
 import { displayHealth } from '../core/combat.js';
 import { formatMoney, formatMoneyCompact } from '../core/economy.js';
-import { DOWN_TEXTS, FLOOR_TEXTS, MONEY_TEXTS, fmt } from './texts.js';
+import { downView, formatChrono, killsText, pad2, waveParts } from '../core/hud-format.js';
+import { DOWN_TEXTS, FLOOR_TEXTS, HUD_TEXTS, MONEY_TEXTS, fmt } from './texts.js';
 
 const SVG = 'http://www.w3.org/2000/svg';
 const SILHOUETTE = 'M5 1.5a2 2 0 1 1 0 4 2 2 0 0 1 0-4ZM2 7.5c0-1 .8-1.7 1.8-1.7h2.4c1 0 1.8.7 1.8 1.7V12H6.5v3.5h-3V12H2Z';
 const PLUS = 'M12.5 1.5v5M10 4h5'; // petit « + » à côté de la tête : une chute restante = un revive
 
-// Icône de silhouette d'une chute restante (SVG en ligne, décorative).
+// Icône de silhouette des chutes (SVG en ligne, décorative).
 function silhouette() {
   const svg = document.createElementNS(SVG, 'svg');
   svg.setAttribute('viewBox', '0 0 16 16');
@@ -26,95 +28,98 @@ function silhouette() {
 
 export function createHud(dict, root = document) {
   const el = (id) => root.getElementById(id);
-  const bar = el('hud-bar');
-  const life = el('hud-life');
-  const fill = el('hud-fill');
-  const kills = el('hud-kills');
-  const wave = el('hud-wave');
-  const floor = el('hud-floor');
-  let shownFloor;
-  const remaining = el('hud-remaining');
-  const next = el('hud-next');
-  const chutes = el('hud-chutes');
-  const chuteIcons = el('hud-chutes-icons');
-  const chuteText = el('hud-chutes-text');
-  let shownChutes = null;
-  const money = el('hud-money');
-  const moneyText = el('hud-money-text');
-  const gain = el('hud-gain');
-  let shownMoney = null;
-  let shownGain = null;
-  let last = { hp: null, max: null, kills: null, phase: null };
-  const shown = { wave: null, max: null, remaining: null, total: null, wait: null }; // dernières valeurs écrites
+  const els = {
+    chrono: el('hud-chrono-text'), bar: el('hud-bar'), life: el('hud-life'), chutes: el('hud-chutes'), chuteIcons: el('hud-chutes-icons'), chuteText: el('hud-chutes-text'),
+    floor: el('hud-floor'), floorText: el('hud-floor-text'), trial: el('hud-trial'), wave: el('hud-wave'), waveText: el('hud-wave-text'), reinforced: el('hud-reinforced'),
+    money: el('hud-money'), moneyText: el('hud-money-text'), gain: el('hud-gain'), remaining: el('hud-remaining'), remainingText: el('hud-remaining-text'),
+    next: el('hud-next'), nextText: el('hud-next-text'), kills: el('hud-kills-text'),
+    down: el('down'), downBody: el('down-body'), downTitle: el('down-title-text'), downSub: el('down-sub'), downFill: el('down-fill'),
+  };
+  const shown = {}; // dernières valeurs écrites, par nom
+  // Écrit seulement si la valeur a changé depuis la dernière écriture.
+  const changed = (key, value) => {
+    if (shown[key] === value) return false;
+    shown[key] = value;
+    return true;
+  };
   const setText = (node, text) => {
     if (node.textContent !== text) node.textContent = text;
   };
+  const setHidden = (node, hidden) => {
+    if (node.hidden !== hidden) node.hidden = hidden;
+  };
 
   return {
-    // player : { health, maxHealth } ; waves : sortie de wave-director.info() ; extras : { chutes }.
+    // player : { health, maxHealth } ; waves : sortie de wave-director.info() ; extras : { chutes, floor, maxWave, money: { balance, gain }, time, trial }.
     update(player, killCount, waves, extras = {}) {
       const hp = displayHealth(player.health);
-      if (hp !== last.hp || player.maxHealth !== last.max) {
-        life.textContent = fmt(dict['game.hud.life'], { hp, max: player.maxHealth });
-        fill.style.transform = `scaleX(${player.maxHealth > 0 ? Math.min(1, hp / player.maxHealth) : 0})`;
-        bar.setAttribute('aria-valuenow', String(hp));
-        bar.setAttribute('aria-valuemax', String(player.maxHealth));
+      if (changed('life', `${hp}/${player.maxHealth}`)) {
+        setText(els.life, fmt(dict['game.hud.life'], { hp, max: player.maxHealth }));
+        els.bar.setAttribute('aria-valuenow', String(hp));
+        els.bar.setAttribute('aria-valuemax', String(player.maxHealth));
       }
-      if (killCount !== last.kills) kills.textContent = fmt(dict[killCount === 1 ? 'game.hud.kills.one' : 'game.hud.kills'], { n: killCount });
-      // Pendant l'attente : seulement le compte à rebours ; pendant la vague : son numéro et les zombies restants ; sans vagues : rien.
+      if (changed('chrono', formatChrono(extras.time))) setText(els.chrono, shown.chrono);
+      if (changed('kills', killsText(killCount))) setText(els.kills, shown.kills);
+      // Vague : en permanence pendant les manches (vague à venir pendant l'attente) ; sans vagues (visite libre), le bloc est invisible mais garde sa place.
       const active = Boolean(waves?.active);
       const waiting = active && waves.phase === 'attente';
       const fighting = active && !waiting;
-      const wait = waiting ? Math.ceil(waves.waitLeft) : 0;
-      // Le numéro de vague reste affiché en permanence (vague à venir pendant l'attente) ; les restants seulement pendant la vague.
-      if (wave.hidden === active) wave.hidden = !active;
-      if (fighting !== (last.phase === 'combat')) remaining.hidden = !fighting;
-      if (waiting !== (last.phase === 'attente')) next.hidden = !waiting;
-      // Lot 4 : « Vague 1 / 40 » quand le monde a un nombre de manches (extras.maxWave) ; « Vague N » sinon (ancienne salle, ?endless=1 au-delà de la dernière).
-      const max = Number.isInteger(extras.maxWave) && extras.maxWave >= waves?.wave ? extras.maxWave : null;
-      if (active && (waves.wave !== shown.wave || max !== shown.max)) {
-        shown.wave = waves.wave;
-        shown.max = max;
-        setText(wave, fmt(dict[max === null ? 'game.wave.hud' : 'game.wave.hudOf'], { n: waves.wave, max }));
+      if (changed('active', active)) els.wave.dataset.idle = String(!active);
+      if (active) {
+        const { n, max } = waveParts(waves.wave, extras.maxWave);
+        if (changed('wave', `${n}/${max}`)) setText(els.waveText, max === null ? n : fmt(dict[HUD_TEXTS.waveOf], { n, max }));
+        if (changed('reinforced', waves.reinforced === true)) setText(els.reinforced, shown.reinforced ? dict[HUD_TEXTS.reinforced] : '');
       }
-      if (fighting && (waves.remaining !== shown.remaining || waves.total !== shown.total)) {
-        shown.remaining = waves.remaining;
-        shown.total = waves.total;
-        setText(remaining, fmt(dict[waves.remaining === 1 ? 'game.wave.remaining.one' : 'game.wave.remaining'], { n: waves.remaining }));
+      // Colonne de droite, ligne 1 : « RESTANTS 05 » pendant la manche, « DÉBUT 3 s » pendant l'attente, vide sans vagues (même boîte, taille fixe).
+      setHidden(els.remaining, !fighting);
+      setHidden(els.next, !waiting);
+      if (fighting && changed('remaining', pad2(waves.remaining))) setText(els.remainingText, shown.remaining);
+      if (waiting && changed('next', Math.ceil(waves.waitLeft))) setText(els.nextText, fmt(dict[HUD_TEXTS.nextValue], { n: shown.next }));
+      // Lot 3e : « RDC » ou « Étage », seulement quand la carte a des étages (extras.floor nul sinon).
+      if (changed('floor', extras.floor ?? null)) {
+        setHidden(els.floor, !extras.floor);
+        setText(els.floorText, extras.floor ? dict[FLOOR_TEXTS.chip[extras.floor]] : '');
+        els.floor.dataset.floor = extras.floor ?? '';
       }
-      if (waiting && wait !== shown.wait) {
-        shown.wait = wait;
-        setText(next, fmt(dict['game.wave.next'], { n: wait }));
-      }
-      // Lot 3e : puce « RDC » ou « Étage » à côté de « Vague N », seulement quand la carte a des étages (extras.floor nul sinon).
-      if (extras.floor !== shownFloor) {
-        shownFloor = extras.floor;
-        floor.hidden = !extras.floor;
-        floor.textContent = extras.floor ? dict[FLOOR_TEXTS.chip[extras.floor]] : '';
-        floor.dataset.floor = extras.floor ?? '';
-      }
-      // Lot 4 : puce d'argent (montant court, aria-label avec le montant entier) et « +N » (décoratif, aria-hidden), écrits seulement s'ils changent.
-      if (extras.money && extras.money.balance !== shownMoney) {
-        shownMoney = extras.money.balance;
-        setText(moneyText, formatMoneyCompact(shownMoney));
-        money.setAttribute('aria-label', fmt(dict[MONEY_TEXTS.chip], { n: formatMoney(shownMoney) }));
+      if (changed('trial', extras.trial === true)) setHidden(els.trial, !shown.trial);
+      // Lot 4 : argent (montant court, aria-label avec le montant entier) et « +N » (décoratif, aria-hidden), écrits seulement s'ils changent.
+      if (extras.money && changed('money', extras.money.balance)) {
+        setText(els.moneyText, formatMoneyCompact(shown.money));
+        els.money.setAttribute('aria-label', fmt(dict[MONEY_TEXTS.chip], { n: formatMoney(shown.money) }));
       }
       const gainText = extras.money?.gain?.visible ? extras.money.gain.text : '';
-      if (gainText !== shownGain) {
-        shownGain = gainText;
-        setText(gain, gainText);
-        gain.hidden = gainText === '';
-        gain.dataset.animate = extras.money?.gain?.animate === false ? 'false' : 'true';
+      if (changed('gain', gainText)) {
+        setText(els.gain, gainText);
+        setHidden(els.gain, gainText === '');
+        els.gain.dataset.animate = extras.money?.gain?.animate === false ? 'false' : 'true';
       }
-      if (extras.chutes !== shownChutes) {
-        shownChutes = extras.chutes;
+      if (changed('chutes', extras.chutes)) {
         const n = Number.isInteger(extras.chutes) && extras.chutes > 0 ? extras.chutes : 0;
-        // Retour du propriétaire : une seule silhouette, seul le nombre à côté change (avant : une silhouette par chute restante).
-        if (chuteIcons.childElementCount === 0) chuteIcons.replaceChildren(silhouette());
-        chuteText.textContent = fmt(dict[DOWN_TEXTS.chutes], { n });
-        chutes.setAttribute('aria-label', fmt(dict[DOWN_TEXTS.chutesLabel], { n }));
+        // Retour du propriétaire (lot 4) : une seule silhouette, seul le nombre à côté change.
+        if (els.chuteIcons.childElementCount === 0) els.chuteIcons.replaceChildren(silhouette());
+        setText(els.chuteText, fmt(dict[DOWN_TEXTS.chutes], { n }));
+        els.chutes.setAttribute('aria-label', fmt(dict[DOWN_TEXTS.chutesLabel], { n }));
       }
-      last = { hp, max: player.maxHealth, kills: killCount, phase: fighting ? 'combat' : waiting ? 'attente' : 'inactif' };
+    },
+
+    // E2-10 : état à terre. Le voile (#down) reste en plein écran ; le texte est dans la colonne centrale, sous l'argent : « À terre », « Tu te relèves
+    // dans N s » et la barre (N / 5), puis « Protégé N s » (bouclier, barre sur 2 s). down : sim.down ; params : data/game/player-down.json.
+    updateDown(down, dead, params) {
+      const v = downView(down, dead, params);
+      if (changed('downMode', v.mode)) {
+        setHidden(els.down, v.mode === null);
+        setHidden(els.downBody, v.mode === null);
+        els.down.dataset.mode = v.mode ?? '';
+        els.downBody.dataset.mode = v.mode ?? '';
+        setHidden(els.downSub, v.mode !== 'terre');
+        setText(els.downTitle, v.mode === 'terre' ? dict[DOWN_TEXTS.title] : '');
+        shown.downSeconds = null;
+      }
+      if (v.mode !== null && changed('downSeconds', v.seconds)) {
+        if (v.mode === 'terre') setText(els.downSub, fmt(dict[DOWN_TEXTS.countdown], { n: v.seconds }));
+        else setText(els.downTitle, fmt(dict[DOWN_TEXTS.grace], { n: v.seconds }));
+        els.downFill.style.setProperty('--down-p', v.ratio.toFixed(3));
+      }
     },
   };
 }

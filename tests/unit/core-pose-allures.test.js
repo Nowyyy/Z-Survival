@@ -111,7 +111,10 @@ describe('sound-director : pas de zombie et allure rampe', () => {
   const table = Object.fromEntries(sounds.map((s) => [s.id, { category: s.category, variants: Math.max(1, s.variants ?? 1), duration: s.duration ?? 0.5 }]));
   const cfg = { audio, sounds: table, voice: JSON.parse(readFileSync('data/game/zombie-voice.json', 'utf8')), materials: {} };
 
-  // Fait marcher des zombies de l'allure donnée pendant 20 s, renvoie le nombre de demandes « pas-zombie ».
+  // Lot 3i : pas propres à chaque allure (pas-zombie-lent, pas-zombie, pas-zombie-course : audio.json, zombieSteps.gaitSounds) ; le frottement d'un
+  // rampant (zombie-rampe) n'est pas un pas.
+  const STEP_SOUNDS = new Set(['pas-zombie', ...Object.values(audio.zombieSteps.gaitSounds ?? {})]);
+  // Fait marcher des zombies de l'allure donnée pendant 20 s, renvoie le nombre de demandes de pas de zombie.
   const stepsFor = (gait) => {
     let state = createSound(3);
     let count = 0;
@@ -120,7 +123,7 @@ describe('sound-director : pas de zombie et allure rampe', () => {
       const zombies = [{ id: 1, x: 150 + i * 2.5, y: 0, variant: 'marcheur', gait }, { id: 2, x: -200 - i * 2.5, y: 40, variant: 'petit', gait }];
       const out = direct(state, { time, paused: false, listener: { x: 0, y: 0 }, walls: [], events: [], zombies }, cfg);
       state = out.state;
-      count += out.requests.filter((r) => r.sound === 'pas-zombie').length;
+      count += out.requests.filter((r) => STEP_SOUNDS.has(r.sound)).length;
     }
     return count;
   };
@@ -140,7 +143,7 @@ describe('sound-director : pas de zombie et allure rampe', () => {
       const zombies = [1, 2, 3].map((n) => ({ id: n, x: 40 * n + i * 2, y: 0, variant: 'marcheur', gait: 'rampe' })).concat([{ id: 9, x: 400 + i * 2, y: 0, variant: 'marcheur', gait: 'marche' }]);
       const out = direct(state, { time: i * 0.05, paused: false, listener: { x: 0, y: 0 }, walls: [], events: [], zombies }, cfg);
       state = out.state;
-      count += out.requests.filter((r) => r.sound === 'pas-zombie').length;
+      count += out.requests.filter((r) => STEP_SOUNDS.has(r.sound)).length;
     }
     expect(count).toBeGreaterThan(0);
   });

@@ -85,7 +85,7 @@ describe('porte 1 : chemin dans la grille des zombies', () => {
     expect(hasPath(open, layout.start, g.entryInner)).toBe(true);
   });
 
-  it.each(['F4', 'F5', 'F6', 'F7', 'F8'])('%s est reliée au départ, porte fermée comme ouverte', (id) => {
+  it.each(['F4', 'F5', 'F6', 'F8'])('%s est reliée au départ, porte fermée comme ouverte', (id) => {
     const g = geoms.find((q) => q.id === id);
     expect(hasPath(closed, g.entryInner, layout.start)).toBe(true);
     expect(hasPath(open, g.entryInner, layout.start)).toBe(true);
@@ -211,9 +211,9 @@ describe('zones : zombies, couloirs et simulation pure', () => {
     }
   });
 
-  it('aucun zombie bloqué plus de 2 s en 60 s depuis chacun des 10 points d\'apparition actifs, porte fermée', () => {
+  it('aucun zombie bloqué plus de 2 s en 60 s depuis chacun des 8 points d\'apparition actifs, porte fermée', () => {
     const points = decor.spawnPoints.filter((p) => map.assignment[p.window] === 'depart');
-    expect(points).toHaveLength(10);
+    expect(points).toHaveLength(8); // lot 3g : F7 retirée (grille du modèle)
     const out = simulateEachSpawn(map, points, { seconds: 60, openIds: [] });
     for (const r of out) {
       expect(r.maxStill, `${r.id} ${JSON.stringify(r.stillWhere)}`).toBeLessThanOrEqual(2);
@@ -221,8 +221,8 @@ describe('zones : zombies, couloirs et simulation pure', () => {
     }
   });
 
-  it('aucun zombie bloqué plus de 2 s en 60 s depuis chacun des 16 points, porte ouverte', () => {
-    expect(decor.spawnPoints).toHaveLength(16);
+  it('aucun zombie bloqué plus de 2 s en 60 s depuis chacun des 14 points, porte ouverte', () => {
+    expect(decor.spawnPoints).toHaveLength(14); // lot 3g : F7 retirée (grille du modèle)
     const out = simulateEachSpawn(map, decor.spawnPoints, { seconds: 60, openIds: ['porte-1'] });
     for (const r of out) expect(r.maxStill, `${r.id} ${JSON.stringify(r.stillWhere)}`).toBeLessThanOrEqual(2);
     expect(out.every((r) => r.entered)).toBe(true);
@@ -234,12 +234,12 @@ describe('zones : zombies, couloirs et simulation pure', () => {
     let inside = 0;
     const out = simulate(map, specs, { seconds: 60, player, openIds: [], onStep: (zs) => { inside += zs.filter((z) => pointInPolygon(z.x, z.y, aile)).length; } });
     expect(inside).toBe(0);
-    expect(out.positions).toHaveLength(10);
+    expect(out.positions).toHaveLength(8); // lot 3g : F7 retirée (grille du modèle)
   });
 
   it('porte ouverte, les mêmes zombies atteignent le joueur dans l\'aile', () => {
     const player = { x: 1200, y: 1500, r: 18 };
-    const specs = [{ id: 1, x: 1735, y: 3010, window: 'F7' }];
+    const specs = [{ id: 1, x: 1605, y: 3010, window: 'F8' }]; // lot 3g : F7 retirée, F8 (x 1605) la remplace
     let reached = false;
     simulate(map, specs, { seconds: 90, player, openIds: ['porte-1'], onStep: (zs) => { if (zs.some((z) => Math.hypot(z.x - player.x, z.y - player.y) < 60)) reached = true; } });
     expect(reached).toBe(true);
@@ -251,14 +251,14 @@ describe('zones : zombies, couloirs et simulation pure', () => {
     const { windowsCfg, layout: lay } = map;
     const zs = [{ id: 1, x: 1175, y: 900 - 55, r: 20, mode: 'approche', window: 'F1' }, { id: 2, x: 2430, y: 1940 - 55, r: 20, mode: 'approche', window: 'F4' }];
     const state = createWindowsState(geoms, windowsCfg);
-    const active = ['F4', 'F5', 'F6', 'F7', 'F8'];
+    const active = ['F4', 'F5', 'F6', 'F8'];
     const out = stepSiege(zs, state, geoms, 0.05, { ...windowsCfg, bounds: lay.bounds, inside: lay.inside, active });
     expect(out.zombies[0]).toMatchObject({ mode: 'approche', target: null });
     expect(out.zombies[1].target).not.toBeNull();
     expect(Object.keys(out.tearing).sort()).toEqual(active);
     expect(out.tearing.F1).toBeUndefined();
     const all = stepSiege(zs, state, geoms, 0.05, { ...windowsCfg, bounds: lay.bounds, inside: lay.inside });
-    expect(Object.keys(all.tearing)).toHaveLength(8);
+    expect(Object.keys(all.tearing)).toHaveLength(7); // lot 3g : F7 retirée (grille du modèle)
   });
 
   it('les fenêtres F1 à F3 restent des ouvertures du mur fermées par leurs planches : closedRects les compte toujours', async () => {

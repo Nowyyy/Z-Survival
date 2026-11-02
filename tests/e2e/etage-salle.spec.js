@@ -94,14 +94,15 @@ test.describe('porte 3 : second escalier et porte de l\'étage', () => {
     expect(s.scene.marks).toEqual([]); // plus de zone jaune au sol (retour du propriétaire)
   });
 
+  // Lot 3l (retour du propriétaire) : plus de ligne « Prochaine zone » dans la pause ; la donnée (getState().zones.next) est vérifiée.
   test('« Prochaine zone » : 11, 21, 31 puis rien', async ({ page }) => {
     await open(page, '&nospawn=1');
     const expected = [[1, 11], [10, 11], [11, 21], [20, 21], [21, 31], [30, 31], [31, null], [35, null]];
     for (const [w, next] of expected) {
       await page.evaluate((n) => { window.__zs.startWave(n); window.__zs.step(0.05); }, w);
       await page.locator('#btn-pause').click();
-      if (next === null) await expect(page.locator('#pause-next')).toBeHidden();
-      else await expect(page.locator('#pause-next')).toHaveText(`Prochaine zone : manche ${next}`);
+      await expect(page.locator('#pause-next')).toHaveCount(0);
+      expect((await STATE(page)).zones.next?.wave ?? null).toBe(next);
       await page.locator('#btn-resume').click();
     }
   });
@@ -126,7 +127,7 @@ test.describe('porte 3 : second escalier et porte de l\'étage', () => {
     expect(s.events).toEqual([]);
     expect(s.zones.next).toBeNull();
     expect(s.zones.list.every((z) => z.open)).toBe(true);
-    expect(s.zones.activeWindows).toHaveLength(15);
+    expect(s.zones.activeWindows).toHaveLength(14); // lot 3g : F7 retirée (7 + U1 à U7)
     await open(page, '&wave=30&nospawn=1');
     s = await STATE(page);
     expect(s.zones.doors[2]).toMatchObject({ open: false, sinkProgress: 0 });
@@ -389,8 +390,8 @@ test.describe('budget, hygiène', () => {
     console.log(`BUDGET lot 3e-C, étage : U1 ${u1.calls} appels / ${u1.triangles} tri, U4 (seconde salle) ${u4.calls} / ${u4.triangles}`);
     testInfo.annotations.push({ type: 'rendu', description: `U1 ${u1.calls}/${u1.triangles} ; U4 ${u4.calls}/${u4.triangles}` });
     for (const m of [u1, u4]) {
-      expect(m.calls).toBeLessThanOrEqual(300);
-      expect(m.triangles).toBeLessThanOrEqual(30000);
+      expect(m.calls).toBeLessThanOrEqual(400); // lot 3m : limites de refonte relevées par le propriétaire (avant : 300)
+      expect(m.triangles).toBeLessThanOrEqual(45000); // lot 3m : limites de refonte relevées par le propriétaire (avant : 30000)
     }
   });
 
@@ -403,8 +404,8 @@ test.describe('budget, hygiène', () => {
     const opened = await run('&wave=31');
     console.log(`BUDGET lot 3e-C, rez-de-chaussée : fermés ${closed.calls} / ${closed.triangles}, ouverts ${opened.calls} / ${opened.triangles}`);
     expect(opened.calls - closed.calls).toBeLessThanOrEqual(4);
-    expect(opened.calls).toBeLessThanOrEqual(300);
-    expect(opened.triangles).toBeLessThanOrEqual(30000);
+    expect(opened.calls).toBeLessThanOrEqual(400); // lot 3m : limites de refonte relevées par le propriétaire (avant : 300)
+    expect(opened.triangles).toBeLessThanOrEqual(45000); // lot 3m : limites de refonte relevées par le propriétaire (avant : 30000)
   });
 
   test('aucune requête externe, aucun stockage, console propre pendant l\'ouverture de la porte 3 et les deux escaliers', async ({ page, baseURL, context }) => {

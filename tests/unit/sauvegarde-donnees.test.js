@@ -181,13 +181,17 @@ describe('hygiène du lot 4 (partie A)', () => {
   it('les cartes, world.json et decor.json sont inchangés (git diff vide)', () => {
     const changed = git('diff --name-only main -- data/game/world.json data/game/decor.json data/game/maps');
     if (changed === null) return;
-    expect(changed).toEqual([]);
+    // Branche lot-3g (main récupéré dedans) : la carte du rez-de-chaussée et de l'étage est corrigée par l'atelier de la carte (lot 3g), pas par le lot 4.
+    expect(changed.filter((f) => !f.startsWith('data/game/maps/rez-de-chaussee/'))).toEqual([]);
   });
 
   it('les règles de tir, de vague, de siège, de chute, d\'étage et de caméra sont inchangées', () => {
-    const changed = git('diff --name-only main -- js/core/waves.js js/core/wave-director.js js/core/projectile.js js/core/ray.js js/core/spread.js js/core/player-stats.js js/core/player-down.js js/core/siege.js js/core/stair-walk.js js/core/camera.js js/core/synth.js js/core/pose.js data/game/waves.json data/game/gaits.json data/game/weapons.json data/game/player-stats.json data/game/player-down.json data/game/windows.json data/game/textures.json data/game/sounds.json');
+    // Lot 3i : data/game/sounds.json change (sons de l'atelier intégrés, décision du propriétaire) ; ses recettes gardées (tir, mélodie, impacts…) sont
+    // comparées à main, objet par objet, dans sons-integres.test.js.
+    const changed = git('diff --name-only main -- js/core/waves.js js/core/wave-director.js js/core/projectile.js js/core/ray.js js/core/spread.js js/core/player-stats.js js/core/player-down.js js/core/siege.js js/core/stair-walk.js js/core/camera.js js/core/synth.js js/core/pose.js data/game/waves.json data/game/gaits.json data/game/weapons.json data/game/player-stats.json data/game/player-down.json data/game/windows.json data/game/textures.json');
     if (changed === null) return;
-    expect(changed).toEqual([]);
+    // Branche lot-3g : sortie d'escalier par le côté et entrée sans saut (stair-walk.js), textures plus fines (textures.json) : changements de l'atelier (lot 3g).
+    expect(changed.filter((f) => !['js/core/stair-walk.js', 'data/game/textures.json'].includes(f))).toEqual([]);
   });
 
   it('Docs/seed.md et le workflow sont inchangés (index.html : icône du site, demande du propriétaire)', () => {

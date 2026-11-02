@@ -234,7 +234,7 @@ test.describe('vagues du lot 2', () => {
   });
 
   test('la rampe baisse le bassin et couche le tronc ; la phase de marche avance avec distance / foulée', async ({ page }) => {
-    await open(page, '&empty=1&nospawn=1');
+    await open(page, '&empty=1&nospawn=1&perso=actuel&sang=0'); // lot 3j : angles de pose.js (personnages actuels)
     const r = await page.evaluate(() => {
       const zs = window.__zs;
       zs.setPlayer(800, 450);
@@ -273,30 +273,35 @@ test.describe('vagues du lot 2', () => {
     expect(variants).toContain(variants[list[4].variant]);
   });
 
-  test('la hauteur de la voix suit le type (journal des sons)', async ({ page }) => {
-    await open(page, '&empty=1&nospawn=1', SIZE, { live: true });
-    await page.mouse.click(40, 40);
-    await expect.poll(async () => (await state(page)).audio.unlocked).toBe(true);
-    await expect.poll(async () => (await state(page)).audio.ready, { timeout: 30_000 }).toBe(true);
-    const settle = () => expect.poll(async () => (await state(page)).audio.activeVoices, { timeout: 20_000 }).toBe(0);
-    for (const type of ['petit', 'grand']) {
-      await settle();
-      const rates = await page.evaluate(([t]) => {
-        const zs = window.__zs;
-        zs.killAll();
-        zs.setPlayer(800, 450);
-        zs.setInput({ aim: { angle: -Math.PI / 2 } });
-        const from = zs.getState().time;
-        zs.spawnEnemy(830, 450, { type: t, gait: 'marche', wave: 1 });
-        zs.step(1.5);
-        const cries = zs.getState().audio.log.filter((e) => e.sound === 'zombie-attaque' && e.gameTime >= from).map((e) => e.rate);
-        zs.killAll();
-        return cries;
-      }, [type]);
-      expect(rates.length, type).toBeGreaterThan(0);
-      expect(rates[0]).toBeCloseTo(audioCfg.zombieRate[type], 6);
-    }
-  });
+  // Lot 3i : par défaut, chaque type a sa propre voix (zombie-attaque-petit…), lue à la hauteur 1 ; avec ?sons=ancien (pack d'avant), la voix commune
+  // est lue à la hauteur du type (audio.json, zombieRate), comme avant le lot.
+  for (const [mode, extra] of [['pack d\'avant', '&sons=ancien'], ['sons de l\'atelier', '']]) {
+    test(`la hauteur de la voix suit le type (journal des sons, ${mode})`, async ({ page }) => {
+      await open(page, `&empty=1&nospawn=1${extra}`, SIZE, { live: true });
+      await page.mouse.click(40, 40);
+      await expect.poll(async () => (await state(page)).audio.unlocked).toBe(true);
+      await expect.poll(async () => (await state(page)).audio.ready, { timeout: 30_000 }).toBe(true);
+      const settle = () => expect.poll(async () => (await state(page)).audio.activeVoices, { timeout: 20_000 }).toBe(0);
+      for (const type of ['petit', 'grand']) {
+        await settle();
+        const sound = extra ? 'zombie-attaque' : `zombie-attaque-${type}`;
+        const rates = await page.evaluate(([t, id]) => {
+          const zs = window.__zs;
+          zs.killAll();
+          zs.setPlayer(800, 450);
+          zs.setInput({ aim: { angle: -Math.PI / 2 } });
+          const from = zs.getState().time;
+          zs.spawnEnemy(830, 450, { type: t, gait: 'marche', wave: 1 });
+          zs.step(1.5);
+          const cries = zs.getState().audio.log.filter((e) => e.sound === id && e.gameTime >= from).map((e) => e.rate);
+          zs.killAll();
+          return cries;
+        }, [type, sound]);
+        expect(rates.length, type).toBeGreaterThan(0);
+        expect(rates[0]).toBeCloseTo(extra ? audioCfg.zombieRate[type] : 1, 6);
+      }
+    });
+  }
 
   test('aucun pas de zombie pour l\'allure rampe ; la marche, elle, en fait', async ({ page }) => {
     await open(page, '&empty=1&nospawn=1', SIZE, { live: true });
@@ -406,22 +411,25 @@ test.describe('vagues du lot 2', () => {
     expect((await state(page)).waves.wave).toBe(200);
   });
 
-  test('HUD : « Début dans N s », puis « Vague N » et « N restants », avec 16 px de marge', async ({ page }) => {
+  // Lot 3l (direction B) : « Début dans 3 s » → « DÉBUT 3 s », « Vague 1 » → « VAGUE 01 » (libellé en Rubik Dirt, avant : Rubik Wet Paint), « 5 restants » → « RESTANTS 05 ».
+  test('HUD : « DÉBUT N s », puis « VAGUE 01 » et « RESTANTS 05 » dans la même boîte, avec 16 px de marge', async ({ page }) => {
     await open(page);
-    await expect(page.locator('#hud-next')).toHaveText('Début dans 3 s');
-    await expect(page.locator('#hud-wave')).toHaveText('Vague 1'); // permanent, même pendant l'attente
+    await expect(page.locator('#hud-next')).toHaveText('Début 3 s');
+    await expect(page.locator('#hud-wave-text')).toHaveText('01'); // permanent, même pendant l'attente (l'ancienne salle n'a pas de « / 40 »)
     await expect(page.locator('#hud-remaining')).toBeHidden();
-    await expect(page.locator('#hud-wave')).toHaveCSS('font-family', /Rubik Wet Paint/);
+    await expect(page.locator('#hud-wave .hud-label')).toHaveCSS('font-family', /Rubik Dirt/);
+    const slot = await page.locator('#hud-next').boundingBox();
     await step(page, 3.2);
-    await expect(page.locator('#hud-wave')).toHaveText('Vague 1');
-    await expect(page.locator('#hud-remaining')).toHaveText('5 restants');
+    await expect(page.locator('#hud-wave-text')).toHaveText('01');
+    await expect(page.locator('#hud-remaining-text')).toHaveText('05');
     await expect(page.locator('#hud-next')).toBeHidden();
+    expect(await page.locator('#hud-remaining').boundingBox()).toEqual(slot);
     const box = await page.locator('#hud').boundingBox();
     expect(box.x).toBeGreaterThanOrEqual(15.5);
     expect(box.y).toBeGreaterThanOrEqual(15.5);
     await page.evaluate(() => window.__zs.killAll());
     await step(page, 0.05);
-    await expect(page.locator('#hud-remaining')).toHaveText('4 restants');
+    await expect(page.locator('#hud-remaining-text')).toHaveText('04');
   });
 
   test('#hud-live annonce la vague, jamais le compte à rebours ni les restants', async ({ page }) => {
@@ -514,8 +522,8 @@ test.describe('vagues du lot 2', () => {
     expect(r.count).toBe(10);
     expect(r.types.sort()).toEqual([...TYPES].sort());
     expect(r.gaits.sort()).toEqual([...GAITS].sort());
-    expect(r.render.calls).toBeLessThanOrEqual(300);
-    expect(r.render.triangles).toBeLessThanOrEqual(30000);
+    expect(r.render.calls).toBeLessThanOrEqual(400); // lot 3m : limites de refonte relevées par le propriétaire (avant : 300)
+    expect(r.render.triangles).toBeLessThanOrEqual(45000); // lot 3m : limites de refonte relevées par le propriétaire (avant : 30000)
   });
 
   test('aucune requête externe, aucun stockage, aucun cookie, console propre pendant une vague', async ({ page, baseURL }) => {

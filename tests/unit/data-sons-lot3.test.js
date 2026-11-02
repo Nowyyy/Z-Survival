@@ -1,9 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { readFileSync } from 'node:fs';
 import { renderSound, soundBytes, variantCount } from '../../js/core/synth.js';
 import { attackTime, centroid, maxCorrelation, mean, peakOf, rmsOf, toDb } from './helpers/dsp.js';
+import { synthRecipes } from './helpers/sons-anciens.js';
 
-const { sounds } = JSON.parse(readFileSync('data/game/sounds.json', 'utf8'));
+// Lot 3i : recettes de synth.js (les recettes remplacées par l'atelier viennent de sounds-legacy.json ; l'atelier : sons-integres.test.js).
+const sounds = synthRecipes();
 const NEW_IDS = ['planche-arrachee', 'planche-posee', 'joueur-chute', 'joueur-releve'];
 const recipe = (id) => sounds.find((s) => s.id === id);
 const rendered = [];

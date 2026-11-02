@@ -21,28 +21,37 @@ test('affiche main et le dernier lot ; plus de menu déroulant d\'anciens lots (
   await page.goto('/dev');
   await expect(page).toHaveURL(/\/dev\/$/);
   await expect(page.getByRole('link', { name: /Branche main/ })).toHaveAttribute('href', '../');
-  const latest = page.getByRole('link', { name: /Dernier lot : Lot 1/ });
+  const latest = page.getByRole('link', { name: /Dernier lot : V0\.1/ }); // lot-1 = V0.1 (liste « versions » du journal, lot 4b)
   await expect(latest).toHaveAttribute('href', '../lots/lot-1/jeu.html');
   await expect(page.locator('select, #previous, #picker')).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Ouvrir' })).toHaveCount(0);
 });
 
-test('un ancien lot s\'ouvre depuis le journal (lien « Ouvrir ce lot »)', async ({ page }) => {
+// Lot 4b : nom affiché (champ « nom » de lots.json, ligne « nom: » de apercu.txt) à la place de « Lot 4b » ; l'adresse reste celle de la branche.
+test('un lot avec un nom affiché (V0.5) : le lien du dernier lot l\'affiche, l\'adresse reste lots/lot-4b/', async ({ page }) => {
+  await withLots(page, { lots: [{ name: 'lot-4', date: '2026-11-01T14:24:00Z', entry: 'jeu.html' }, { name: 'lot-4b', date: '2026-11-01T16:00:00Z', entry: 'jeu.html', nom: 'V0.5' }] }, { lots: [{ name: 'lot-4b', titre: 'Intégration des refontes', points: ['Essai'] }] });
+  await page.goto('/dev/');
+  const latest = page.getByRole('link', { name: /Dernier lot : V0\.5/ });
+  await expect(latest).toHaveAttribute('href', '../lots/lot-4b/jeu.html');
+});
+
+test('une version s\'ouvre depuis le journal (lien « Ouvrir ce lot ») ; un lot qui n\'est pas une version majeure n\'y est plus', async ({ page }) => {
   await withLots(page);
-  await page.route('**/lots/lot-0b/', (route) => route.fulfill({ contentType: 'text/html', body: '<title>lot-0b</title>' }));
+  await page.route('**/lots/lot-1/jeu.html', (route) => route.fulfill({ contentType: 'text/html', body: '<title>lot-1</title>' }));
   await page.goto('/dev/');
   await page.locator('#changelog > summary').click();
-  const entry = page.locator('.changelog-entry', { hasText: 'Lot 0b ·' });
+  await expect(page.locator('.changelog-entry', { hasText: 'Lot 0b ·' })).toHaveCount(0);
+  const entry = page.locator('.changelog-entry', { hasText: 'V0.1 ·' });
   await entry.locator('summary').click();
   await entry.getByRole('link', { name: 'Ouvrir ce lot' }).click();
-  await expect(page).toHaveURL(/\/lots\/lot-0b\/$/);
+  await expect(page).toHaveURL(/\/lots\/lot-1\/jeu\.html$/);
 });
 
 test('lots.json sans champ entry (ancien script) : la page d\'aperçu vient de apercu.txt', async ({ page }) => {
   await withLots(page, { lots: [{ name: 'lot-0' }, { name: 'lot-1' }] });
   await page.route('**/lots/lot-1/apercu.txt', (route) => route.fulfill({ contentType: 'text/plain', body: 'jeu.html\ntype: hifi\n' }));
   await page.goto('/dev/');
-  await expect(page.getByRole('link', { name: /Dernier lot : Lot 1/ })).toHaveAttribute('href', '../lots/lot-1/jeu.html');
+  await expect(page.getByRole('link', { name: /Dernier lot : V0\.1/ })).toHaveAttribute('href', '../lots/lot-1/jeu.html');
 });
 
 test('depuis la copie du menu dans un aperçu, les liens remontent à la racine du site', async ({ page }) => {
@@ -56,7 +65,7 @@ test('depuis la copie du menu dans un aperçu, les liens remontent à la racine 
   await page.route('**/lots.json', (route) => route.fulfill({ json: { lots: [{ name: 'lot-0' }, { name: 'lot-1' }] } }));
   await page.route('**/lots/lot-1/apercu.txt', (route) => route.fulfill({ contentType: 'text/plain', body: 'jeu.html' }));
   await page.goto('/lots/lot-1/dev/');
-  await expect(page.getByRole('link', { name: /Dernier lot : Lot 1/ })).toHaveAttribute('href', '../../../lots/lot-1/jeu.html');
+  await expect(page.getByRole('link', { name: /Dernier lot : V0\.1/ })).toHaveAttribute('href', '../../../lots/lot-1/jeu.html');
   await expect(page.getByRole('link', { name: /Branche main/ })).toHaveAttribute('href', '../../../');
 });
 
@@ -141,20 +150,24 @@ test('cibles tactiles d\'au moins 44 px', async ({ page }) => {
 });
 
 test.describe('journal des versions', () => {
-  test('liste les lots du plus récent au plus ancien, repliés, avec leurs points une fois ouverts', async ({ page }) => {
+  // Lot 4b (demande du propriétaire) : seules les versions majeures de la liste « versions » du journal, de la plus récente (V0.5, en cours, en haut) à V0.1.
+  test('liste les versions majeures de V0.5 (en haut) à V0.1, repliées, avec leurs points une fois ouvertes ; aucun autre lot', async ({ page }) => {
     await withLots(page);
     await page.goto('/dev/');
     await expect(page.getByRole('heading', { name: 'Journal des versions' })).toBeVisible();
     await page.locator('#changelog > summary').click();
     const summaries = page.locator('.changelog-entry summary');
-    expect(await summaries.count()).toBeGreaterThanOrEqual(9);
-    await expect(summaries.first()).toContainText('Lot 4');
-    await expect(summaries.last()).toContainText('Lot 0');
+    await expect(summaries).toHaveCount(5);
+    const texts = await summaries.allTextContents();
+    expect(texts.map((x) => x.split(' · ')[0])).toEqual(['V0.5', 'V0.4', 'V0.3', 'V0.2', 'V0.1']);
+    expect(texts[0]).toContain('Intégration des refontes (en cours)');
+    expect(texts[4]).toContain('Cœur du jeu');
+    for (const x of texts) expect(x).not.toMatch(/^Lot /);
     const first = page.locator('.changelog-entry').first();
     await expect(first.locator('.changelog-points')).toBeHidden();
     await summaries.first().click();
     await expect(first.locator('.changelog-points li').first()).toBeVisible();
-    await expect(first).toContainText('sauvegarde');
+    await expect(first).toContainText('Atelier de la carte');
   });
 
   test('le journal est replié par défaut (page courte), s\'ouvre au toucher et défile quand il est long', async ({ page }) => {
@@ -181,11 +194,11 @@ test.describe('journal des versions', () => {
     await withLots(page);
     await page.goto('/dev/');
     await page.locator('#changelog > summary').click();
-    const lot1 = page.locator('.changelog-entry', { hasText: 'Lot 1 · Cœur du jeu' });
+    const lot1 = page.locator('.changelog-entry', { hasText: 'V0.1 · Cœur du jeu' });
     await expect(lot1.locator('.changelog-date')).not.toHaveText('');
     await lot1.locator('summary').click();
     await expect(lot1.getByRole('link', { name: 'Ouvrir ce lot' })).toHaveAttribute('href', '../lots/lot-1/jeu.html');
-    const unpublished = page.locator('.changelog-entry', { hasText: 'Lot 4 ·' });
+    const unpublished = page.locator('.changelog-entry', { hasText: 'V0.5 ·' });
     await unpublished.locator('summary').click();
     await expect(unpublished.getByRole('link', { name: 'Ouvrir ce lot' })).toHaveCount(0);
   });

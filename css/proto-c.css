@@ -1,0 +1,165 @@
+/* Direction C « tactile d'abord » (lot 3k, proposition non intégrée) : gros chiffres, puces à fond plein (macro « fond » : plein par défaut), cibles de 52 px
+   (Pause et boutons des panneaux), tout en haut de l'écran, loin des zones des pouces, vie en barre épaisse. Pensée pour les petits écrans. Blocs de taille
+   fixe (em). Ni filter, ni mix-blend-mode, ni backdrop-filter. */
+
+.ui3k-dir-c {
+  --ui3k-pause-size: 52px;
+  --ui3k-target: 52px;
+}
+
+.ui3k-dir-c .p-block {
+  height: 2em;
+  padding: 0 0.55em;
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--hud-bg) calc(var(--ui3k-alpha) * 100%), transparent);
+  text-shadow: var(--ui3k-shadow);
+}
+
+.ui3k-dir-c .p-value {
+  font-size: 1.3em;
+  line-height: 1;
+}
+
+.ui3k-dir-c .p-life {
+  width: 12.6em;
+  height: 2.4em;
+}
+
+.ui3k-dir-c .p-life .p-icon {
+  width: 1.3em;
+  height: 1.3em;
+  color: var(--color-action-text);
+}
+
+/* Barre épaisse : 0,9 em, contour os ; la valeur est écrite en gros à côté. */
+.ui3k-dir-c .p-bar {
+  width: 4.4em;
+  height: 0.9em;
+  border: 2px solid var(--color-text);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+}
+
+.ui3k-dir-c .p-life-text {
+  width: 3.65em;
+  text-align: right;
+}
+
+.ui3k-dir-c .p-chutes {
+  width: 3.6em;
+}
+
+.ui3k-dir-c .p-floor {
+  width: 5.4em;
+}
+
+.ui3k-dir-c .p-floor .p-value,
+.ui3k-dir-c .p-remaining .p-value {
+  font-size: 1em;
+}
+
+.ui3k-dir-c .p-wave {
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.1em;
+  width: 7.6em;
+  height: 4.3em;
+}
+
+.ui3k-dir-c .p-wave .p-value {
+  font-size: 1.5em;
+}
+
+.ui3k-dir-c .p-wave .p-label {
+  order: -1;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-text-muted);
+}
+
+.ui3k-dir-c .p-tag {
+  color: var(--color-action-text);
+}
+
+.ui3k-dir-c .p-remaining {
+  justify-content: center;
+  width: 8.2em;
+}
+
+/* Colonne de gauche : la vie sur toute la largeur, puis chutes et étage côte à côte, puis l'argent : moins haut, loin des pouces. */
+.ui3k-dir-c .p-tl {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  width: 12.6em;
+}
+
+.ui3k-dir-c .p-money {
+  justify-content: flex-end;
+  width: 6.8em;
+  height: 2.4em;
+}
+
+.ui3k-dir-c .p-trial {
+  color: var(--color-warning);
+}
+
+.ui3k-dir-c .p-pause {
+  border-width: 3px;
+  border-color: var(--color-text);
+  border-radius: var(--radius-lg);
+}
+
+/* Panneaux : boutons de 52 px, texte plus grand. */
+.ui3k-dir-c .p-panel {
+  border: 3px solid var(--color-action);
+  border-radius: var(--radius-lg);
+}
+
+.ui3k-dir-c .p-btn {
+  font-size: 1.05em;
+}
+
+.ui3k-dir-c .p-down-title {
+  font-size: 1.3em;
+}
+
+.ui3k-dir-c .p-down-bar {
+  height: 0.8em;
+}
+
+/* Sticks : base plus grande, pastille de 60 px. */
+.ui3k-dir-c .p-stick {
+  width: 128px;
+  height: 128px;
+}
+
+.ui3k-dir-c .p-stick-knob {
+  width: 60px;
+  height: 60px;
+}
+
+/* Écrans hors partie : cartes aérées, pastilles de niveau plus grandes, cibles de 52 px. */
+.ui3k-dir-c .p-card {
+  padding: 0.55em 0.8em;
+  border-width: 2px;
+}
+
+.ui3k-dir-c .p-lv {
+  width: 0.7em;
+  height: 0.7em;
+}
+
+/* Priorité 2 : sous la colonne centrale, plus haute en C (vague sur trois lignes). */
+.ui3k-dir-c {
+  --ui3k-p2-top: 7.1em;
+}
+
+.ui3k-dir-c .p2-zone-title,
+.ui3k-dir-c .p2-zone-b .p2-zone-title {
+  font-size: 1.5em;
+}
+
+.ui3k-dir-c .p2-zone {
+  padding: 0.2em 1em;
+}

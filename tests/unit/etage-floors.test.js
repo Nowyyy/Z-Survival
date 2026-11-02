@@ -149,7 +149,7 @@ describe('couches de collisions par étage (layout.js)', () => {
   });
 
   it('les deux couches ne partagent ni murs, ni obstacles, ni fenêtres', () => {
-    expect(layouts.rdc.windows.map((w) => w.id)).toEqual(['F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8']);
+    expect(layouts.rdc.windows.map((w) => w.id)).toEqual(['F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F8']);
     expect(layouts.etage.windows.map((w) => w.id)).toEqual(['U1', 'U2', 'U3', 'U4', 'U5', 'U6', 'U7']);
     expect(layouts.etage.walls.some((w) => layouts.rdc.walls.some((r) => r.id === w.id && r.x === w.x && r.y === w.y && r.w === w.w && r.h === w.h))).toBe(false);
     expect(layouts.etage.furniture.length).toBeGreaterThan(0);

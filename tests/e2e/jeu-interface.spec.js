@@ -1,9 +1,10 @@
 import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { readFileSync } from 'node:fs';
-import { waitReady, salle } from './helpers.js';
+import { waitReady, salle, hudBoxes, screenShare } from './helpers.js';
 
-// Lot 3a-B : interface compacte (HUD E2-2 en puces, E2-11 flèches au bord). Tout passe par step() et les hooks de ?test=1 ;
+// Lot 3a-B : interface compacte (HUD E2-2 en puces, E2-11 flèches au bord). Lot 3l : HUD intégré (direction B) en blocs de taille fixe ; les mesures de place
+// portent sur les blocs (helpers.js : hudBoxes, screenShare), #hud étant devenu le conteneur des trois colonnes. Tout passe par step() et les hooks de ?test=1 ;
 // 667×375 de préférence, 1440×900 pour les marges. Les tests se désactivent seuls si WebGL manque.
 const SIZE = { width: 667, height: 375 };
 const BIG = { width: 1440, height: 900 };
@@ -33,19 +34,23 @@ const rect = (page, sel) => page.evaluate((s) => { const r = document.querySelec
 const apart = (a, b) => a.r <= b.l + 0.5 || b.r <= a.l + 0.5 || a.b <= b.t + 0.5 || b.b <= a.t + 0.5;
 
 test.describe('HUD compact E2-2', () => {
-  test('au repos : au plus 96 px de haut et 300 px de large, marges de 16 px, sans chevaucher Pause (667×375)', async ({ page }) => {
+  // Lot 3l : avant, #hud ≤ 96 × 300 px ; après, HUD et Pause ≤ 11 % de l'écran (maquette B : 10,1 %), colonne de gauche ≤ 9,15 em × 96 px, marges de 16 px.
+  test('au repos : HUD et Pause sur 11 % de l\'écran au plus, colonne de gauche ≤ 145 × 120 px, marges de 16 px, sans chevaucher Pause (667×375)', async ({ page }) => {
     await open(page);
     const s = await STATE(page);
-    expect(s.hud.height).toBeLessThanOrEqual(96);
-    expect(s.hud.width).toBeLessThanOrEqual(300);
+    expect(s.hud.height).toBeLessThanOrEqual(120); // lot 3l : quatre rangées à gauche en mode essai (?map=salle) : REC, VIE, chutes + étage, MODE ESSAI
+    const boxes = await hudBoxes(page);
+    expect(screenShare(boxes, SIZE.width, SIZE.height)).toBeLessThanOrEqual(0.11);
+    const left = await rect(page, '.hud-tl');
+    expect(left.w).toBeLessThanOrEqual(145);
+    expect(left.h).toBeLessThanOrEqual(120);
     const hud = await rect(page, '#hud');
-    const pause = await rect(page, '#btn-pause');
     expect(hud.l).toBeGreaterThanOrEqual(16 - 0.5);
     expect(hud.t).toBeGreaterThanOrEqual(16 - 0.5);
-    expect(apart(hud, pause)).toBe(true);
+    for (const [sel, b] of Object.entries(boxes)) if (sel !== '#btn-pause') expect(apart(b, boxes['#btn-pause']), sel).toBe(true);
   });
 
-  test('pendant une vague avec trois fenêtres en alerte : toujours 120 × 300 au plus (cinq lignes depuis le lot 4 ; avant : 96 × 300)', async ({ page }) => {
+  test('pendant une vague avec trois fenêtres en alerte : les blocs du HUD gardent leur place (lot 3l ; avant : #hud ≤ 96 × 300)', async ({ page }) => {
     await open(page, '&nospawn=0');
     await page.evaluate(() => {
       const zs = window.__zs;
@@ -56,24 +61,25 @@ test.describe('HUD compact E2-2', () => {
     });
     const s = await STATE(page);
     expect(s.hud.chips).toHaveLength(3);
-    expect(s.hud.height).toBeLessThanOrEqual(96);
-    expect(s.hud.width).toBeLessThanOrEqual(300);
-    await expect(page.locator('#hud-wave')).toHaveText('Vague 1');
+    expect(s.hud.height).toBeLessThanOrEqual(120); // lot 3l : avant 96 (quatre rangées en mode essai)
+    await expect(page.locator('#hud-wave-text')).toHaveText('01'); // l'ancienne salle n'a pas de fin de monde : pas de « / 40 »
     await expect(page.locator('#hud-remaining')).toBeVisible();
+    const before = await hudBoxes(page);
+    await page.evaluate(() => { window.__zs.setPlanks('fenetre-nord', 3); window.__zs.step(0.1); });
+    expect(await hudBoxes(page)).toEqual(before);
   });
 
-  test('« Vague N » garde la police de titre, de 16 à 26 px (16 depuis le lot 4 : bloc à part, plus petit) ; le reste la police de lecture', async ({ page }) => {
+  // Lot 3l (direction B) : avant, « Vague N » en Rubik Wet Paint de 16 à 26 px ; après, libellés en Rubik Dirt (majuscules), valeurs en Barlow, 15,75 px (macro M).
+  test('libellés VAGUE, RESTANTS, TUÉS, VIE, REC en Rubik Dirt majuscules ; valeurs en Barlow ; tout à 15,75 px', async ({ page }) => {
     await open(page, '&nospawn=0');
     await page.evaluate(() => window.__zs.step(3.5));
     const f = await page.evaluate(() => {
-      const css = (sel) => { const c = getComputedStyle(document.querySelector(sel)); return { family: c.fontFamily, size: Number.parseFloat(c.fontSize) }; };
-      return { wave: css('#hud-wave'), kills: css('#hud-kills'), remaining: css('#hud-remaining') };
+      const css = (el) => { const c = getComputedStyle(el); return { family: c.fontFamily, size: Number.parseFloat(c.fontSize), transform: c.textTransform }; };
+      return { labels: [...document.querySelectorAll('#hud .hud-label')].map(css), values: ['#hud-wave-text', '#hud-kills-text', '#hud-remaining-text', '#hud-life', '#hud-chrono-text'].map((s) => css(document.querySelector(s))) };
     });
-    expect(f.wave.family).toMatch(/Rubik Wet Paint/);
-    expect(f.wave.size).toBeGreaterThanOrEqual(16);
-    expect(f.wave.size).toBeLessThanOrEqual(26);
-    expect(f.kills.family).toMatch(/Barlow/);
-    expect(f.remaining.family).toMatch(/Barlow/);
+    expect(f.labels).toHaveLength(6); // REC, VIE, VAGUE, RESTANTS, DÉBUT, TUÉS
+    for (const l of f.labels) expect(l).toMatchObject({ family: expect.stringMatching(/Rubik Dirt/), size: 15.75, transform: 'uppercase' });
+    for (const v of f.values) expect(v).toMatchObject({ family: expect.stringMatching(/Barlow/), size: 15.75 });
   });
 
   test('la barre de vie est un progressbar avec « 100/100 » dedans, des valeurs justes et un libellé', async ({ page }) => {
@@ -111,7 +117,7 @@ test.describe('HUD compact E2-2', () => {
     await page.evaluate(() => { window.__zs.setPlanks('fenetre-ouest', 0); window.__zs.step(0.05); });
     const sizes = await page.evaluate(() => {
       const out = [];
-      for (const root of ['#hud', '#edges']) {
+      for (const root of ['#hud', '#btn-pause']) { // lot 3l : #edges retiré (E2-11) ; Pause ajouté
         for (const el of document.querySelectorAll(`${root}, ${root} *`)) {
           if (el.closest('svg') && el.tagName !== 'svg') continue;
           const own = [...el.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim() !== '');
@@ -138,26 +144,35 @@ test.describe('HUD compact E2-2', () => {
     expect(bad).toEqual([]);
   });
 
-  test('1440×900 : marges de 16 px, HUD sans chevaucher Pause', async ({ page }) => {
+  test('1440×900 : marges de 16 px, aucun bloc du HUD sur Pause', async ({ page }) => {
     await open(page, '', BIG);
     const hud = await rect(page, '#hud');
-    const pause = await rect(page, '#btn-pause');
     expect(hud.l).toBeGreaterThanOrEqual(15.5);
     expect(hud.t).toBeGreaterThanOrEqual(15.5);
-    expect(apart(hud, pause)).toBe(true);
+    expect(hud.r).toBeLessThanOrEqual(BIG.width - 15.5);
+    const boxes = await hudBoxes(page);
+    for (const [sel, b] of Object.entries(boxes)) if (sel !== '#btn-pause') expect(apart(b, boxes['#btn-pause']), sel).toBe(true);
+    expect(boxes['#btn-pause'].r).toBeLessThanOrEqual(BIG.width - 16 + 0.5);
   });
 });
 
-test.describe('HUD en un seul rectangle noir, sans état des fenêtres', () => {
-  test('un seul rectangle noir : le fond est sur #hud, la barre, les puces et les rangées n\'ont pas de fond ; plus de rangée « Fenêtres »', async ({ page }) => {
+// Lot 3l (direction B) : avant, un seul rectangle noir (#hud) ; après, un fond par bloc (zone pleine sous chaque texte), aucun sur le conteneur ni les colonnes.
+test.describe('HUD en blocs pleins, sans état des fenêtres', () => {
+  test('un fond par bloc (.hud-block), aucun sur #hud, les colonnes, les libellés et les valeurs ; aucun contour ; plus de rangée « Fenêtres »', async ({ page }) => {
     await open(page);
     await page.evaluate(() => { window.__zs.setPlanks('fenetre-nord', 0); window.__zs.step(0.05); });
     const r = await page.evaluate(() => {
-      const bg = (sel) => getComputedStyle(document.querySelector(sel)).backgroundColor;
-      return { hud: bg('#hud'), chips: ['#hud-kills', '#hud-chutes', '.hud-chips', '.hud-life-row'].map(bg), windows: document.querySelectorAll('#hud-windows, .hud-win').length, border: getComputedStyle(document.querySelector('#hud-kills')).borderTopWidth };
+      const bg = (el) => getComputedStyle(el).backgroundColor;
+      return {
+        blocks: [...document.querySelectorAll('#hud .hud-block')].filter((e) => !e.hidden).map(bg),
+        bare: ['#hud', '.hud-tl', '.hud-tc', '.hud-tr', '#hud-kills-text', '#hud-life'].map((s) => bg(document.querySelector(s))),
+        windows: document.querySelectorAll('#hud-windows, .hud-win').length,
+        border: getComputedStyle(document.querySelector('#hud-kills')).borderTopWidth,
+      };
     });
-    expect(r.hud).not.toBe('rgba(0, 0, 0, 0)');
-    for (const c of r.chips) expect(c).toBe('rgba(0, 0, 0, 0)');
+    expect(r.blocks.length).toBeGreaterThanOrEqual(6);
+    for (const c of r.blocks) expect(c).not.toBe('rgba(0, 0, 0, 0)');
+    for (const c of r.bare) expect(c).toBe('rgba(0, 0, 0, 0)');
     expect(r.windows).toBe(0);
     expect(r.border).toBe('0px');
   });
@@ -179,8 +194,7 @@ test.describe('HUD en un seul rectangle noir, sans état des fenêtres', () => {
     await attack(page, 'fenetre-nord');
     const s = await STATE(page);
     expect(s.hud.chips.map((c) => c.id)).toEqual(['fenetre-ouest', 'fenetre-est', 'fenetre-nord']);
-    expect(s.hud.height).toBeLessThanOrEqual(96);
-    expect(s.hud.width).toBeLessThanOrEqual(300);
+    expect(s.hud.height).toBeLessThanOrEqual(120); // lot 3l : avant 96 × 300 ; #hud est la bande du haut (conteneur des trois colonnes), quatre rangées en mode essai
   });
 });
 
@@ -207,15 +221,18 @@ test.describe('réparation bloquée et HUD en vague', () => {
     expect(seen.length).toBeLessThanOrEqual(3);
   });
 
-  test('pendant une vague (HUD à sa largeur maximale, 6 chutes), le contenu du HUD tient dans ses 300 px', async ({ page }) => {
+  test('pendant une vague (6 chutes), chaque bloc du HUD tient dans sa boîte fixe, sans toucher Pause (lot 3l ; avant : #hud ≤ 300 px)', async ({ page }) => {
     await open(page, '&nospawn=0&lvl=chutes:5');
     await page.evaluate(() => { const zs = window.__zs; zs.setPlanks('fenetre-nord', 2); zs.setPlayer(1800, 900); zs.step(3.5); });
-    const hud = await rect(page, '#hud');
-    const pause = await rect(page, '#btn-pause');
-    expect(apart(hud, pause)).toBe(true);
-    const fit = await page.evaluate(() => [...document.querySelectorAll('#hud .hud-life-row, #hud .hud-chips')].map((e) => [e.scrollWidth, e.clientWidth]));
-    for (const [sw, cw] of fit) expect(sw).toBeLessThanOrEqual(cw);
-    expect(hud.w).toBeLessThanOrEqual(300);
+    const boxes = await hudBoxes(page);
+    for (const [sel, b] of Object.entries(boxes)) if (sel !== '#btn-pause') expect(apart(b, boxes['#btn-pause']), sel).toBe(true);
+    const fit = await page.evaluate(() => [...document.querySelectorAll('#hud .hud-block')].filter((e) => !e.hidden && e.id !== 'hud-money').map((e) => [e.id, e.scrollWidth, e.clientWidth, e.scrollHeight, e.clientHeight]));
+    expect(fit.length).toBeGreaterThanOrEqual(6);
+    for (const [id, sw, cw, sh, ch] of fit) {
+      expect(sw, id).toBeLessThanOrEqual(cw);
+      expect(sh, id).toBeLessThanOrEqual(ch);
+    }
+    await expect(page.locator('#hud-chutes-text')).toHaveText('6');
   });
 });
 
@@ -295,9 +312,11 @@ test.describe('écran d\'accueil (jeu.html seulement)', () => {
     expect(html).not.toMatch(/rel="manifest"|serviceWorker/);
   });
 
-  test('les marges de sécurité sont respectées : le HUD et les flèches s\'appuient sur --safe-*', async () => {
-    const css = readFileSync('css/game.css', 'utf8');
-    expect(css).toMatch(/\.hud-left \{[^}]*var\(--game-margin\) \+ var\(--safe-top\)[^}]*var\(--edge-left\)/s);
+  test('les marges de sécurité sont respectées : le HUD et Pause s\'appuient sur --safe-* (lot 3l : .hud et .pause-button de game-ui.css ; avant : .hud-left)', async () => {
+    const css = readFileSync('css/game-ui.css', 'utf8');
+    expect(css).toMatch(/--edge-top: calc\(var\(--game-margin\) \+ var\(--safe-top\)\)/);
+    expect(css).toMatch(/\.hud \{[^}]*top: var\(--edge-top\);[^}]*left: var\(--edge-left\);[^}]*right: var\(--edge-right\)/s);
+    expect(css).toMatch(/\.pause-button \{[^}]*top: calc\(var\(--edge-top\)[^}]*right: calc\(var\(--edge-right\)/s);
     expect(readFileSync('js/game/game.js', 'utf8')).toMatch(/--safe-/);
   });
 });

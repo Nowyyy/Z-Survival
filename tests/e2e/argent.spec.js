@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { readFileSync } from 'node:fs';
 import { defaultSave, encodeSave } from '../../js/core/save.js';
-import { waitReady } from './helpers.js';
+import { waitReady, hudBoxes, screenShare, apart } from './helpers.js';
 
 // Lot 4-C : argent et sauvegarde dans le jeu. 667×375, step() et les hooks (aucune durée réelle attendue). Les adresses de gain n'ont AUCUN paramètre d'essai
 // (wave, lvl, map, planks, empty, nospawn, endless, floor, money) : sinon la sauvegarde est en lecture seule.
@@ -362,7 +362,7 @@ test.describe('échecs de stockage', () => {
     expect(s.save).toMatchObject({ status: 'failed', pending: 10, balance: 10 });
     expect(s.save.lastCommit).toMatchObject({ ok: false, error: 'QuotaExceededError' });
     await page.getByRole('button', { name: 'Pause' }).click();
-    await expect(page.locator('#pause-save')).toHaveText('Sauvegarde : échec, nouvelle tentative');
+    await expect(page.locator('#pause-save')).toHaveCount(0); // lot 3l (retour du propriétaire) : l'état de la sauvegarde n'est plus affiché dans la pause ; il est vérifié dans getState().save
     await page.getByRole('button', { name: 'Reprendre' }).click();
     await page.evaluate(() => { window.__fail = false; });
     await step(page, 2.5);
@@ -387,12 +387,13 @@ test.describe('échecs de stockage', () => {
     const s = await state(page);
     expect(s.save).toMatchObject({ status: 'unavailable', balance: 10, locked: true });
     await page.getByRole('button', { name: 'Pause' }).click();
-    await expect(page.locator('#pause-save')).toHaveText('Sauvegarde indisponible : le solde reste en mémoire');
+    await expect(page.locator('#pause-save')).toHaveCount(0); // lot 3l (retour du propriétaire) : l'état de la sauvegarde n'est plus affiché dans la pause ; il est vérifié dans getState().save
     expect(problems).toEqual([]);
   });
 
   for (const [label, raw] of [['illisible ({bad)', '{bad'], ['version future', '{"v":99,"money":5}']]) {
-    test(`sauvegarde ${label} : « locked », aucune écriture pendant toute une partie, pause et E2-7 le disent, lien vers la page`, async ({ page }) => {
+    // Lot 3l : le lien « Voir ma sauvegarde » quitte l'écran de fin (choix du propriétaire) ; « Revenir au menu principal » le remplace (sans action).
+    test(`sauvegarde ${label} : « locked », aucune écriture pendant toute une partie, E2-7 le dit (plus la pause : lot 3l)`, async ({ page }) => {
       await page.addInitScript(`${SPY}\n${seedStorage(raw)}`);
       await open(page);
       await page.evaluate(() => window.__zs.startWave(2));
@@ -401,14 +402,15 @@ test.describe('échecs de stockage', () => {
       await page.evaluate(() => window.__zs.skipWave());
       await step(page, 0.3);
       await page.getByRole('button', { name: 'Pause' }).click();
-      await expect(page.locator('#pause-save')).toHaveText('Sauvegarde illisible : rien n\'est enregistré (voir la page Sauvegarde)');
+      await expect(page.locator('#pause-save')).toHaveCount(0); // lot 3l (retour du propriétaire) : l'état de la sauvegarde n'est plus affiché dans la pause ; il est vérifié dans getState().save
       // La ligne la plus longue de la pause tient aussi à 667×375, sans défilement.
       expect(await page.evaluate(() => { const p = document.querySelector('#pause-panel .panel'); return p.scrollHeight > p.clientHeight || p.getBoundingClientRect().bottom > innerHeight; })).toBe(false);
       await page.getByRole('button', { name: 'Reprendre' }).click();
       await page.evaluate(() => { window.__zs.setChutes(0); window.__zs.downPlayer(); });
       await step(page, 0.3);
       await expect(page.locator('#end-save')).toHaveText('Sauvegarde illisible : rien n\'est enregistré (voir la page Sauvegarde)');
-      await expect(page.locator('#end-save-link')).toHaveAttribute('href', 'sauvegarde.html');
+      await expect(page.locator('#end-panel a')).toHaveCount(0);
+      await expect(page.locator('#btn-menu')).toHaveText('Revenir au menu principal');
       expect((await state(page)).save).toMatchObject({ status: 'locked', locked: true });
       expect(await writes(page)).toHaveLength(1); // le semis de l'init
       expect(await stored(page)).toBe(raw);
@@ -420,7 +422,7 @@ test.describe('mode essai', () => {
   test.skip(({ isMobile }) => isMobile, 'bureau');
   const REAL = { ...defaultSave(), rev: 2, savedAt: 1_700_000_000_000, money: 300, earned: 300, stats: { ...defaultSave().stats, degats: 2 } };
 
-  test('?wave=5 : les gains s\'affichent (solde de session) mais localStorage est inchangé ; pause et E2-7 disent « Mode essai »', async ({ page }) => {
+  test('?wave=5 : les gains s\'affichent (solde de session) mais localStorage est inchangé ; E2-7 dit « Mode essai » (la pause ne le dit plus : lot 3l)', async ({ page }) => {
     await page.addInitScript(`${SPY}\n${seedStorage(REAL)}`);
     await open(page, `${LOCAL}&wave=5`);
     const before = await stored(page);
@@ -429,7 +431,7 @@ test.describe('mode essai', () => {
     await page.evaluate(() => window.__zs.flushSave());
     expect((await state(page)).save.balance).toBe(310);
     await page.getByRole('button', { name: 'Pause' }).click();
-    await expect(page.locator('#pause-save')).toHaveText('Mode essai : rien n\'est enregistré');
+    await expect(page.locator('#pause-save')).toHaveCount(0); // lot 3l (retour du propriétaire) : l'état de la sauvegarde n'est plus affiché dans la pause ; il est vérifié dans getState().save (readonly)
     await expect(page.locator('#pause-balance')).toHaveText('Solde : 310');
     await page.getByRole('button', { name: 'Reprendre' }).click();
     await page.evaluate(() => { window.__zs.setChutes(0); window.__zs.downPlayer(); });
@@ -538,7 +540,7 @@ test.describe('par défaut (sans ?test=1)', () => {
     expect(stores).toEqual([0, 0, '', 0]);
     expect(await context.cookies()).toEqual([]);
     expect(external).toEqual([]);
-    await expect(page.locator('#pause-save')).toHaveText('Sauvegarde : enregistrée');
+    await expect(page.locator('#pause-save')).toHaveCount(0); // lot 3l (retour du propriétaire) : l'état de la sauvegarde n'est plus affiché dans la pause (page sans ?test=1 : pas de getState)
   });
 
   test('rien n\'est exposé sans ?test=1 (ni window.__zs, ni solde)', async ({ page }) => {
@@ -561,30 +563,36 @@ test.describe('interface', () => {
     await expect(page.locator('#hud-money svg')).toHaveAttribute('aria-hidden', 'true');
   });
 
-  test('haut de l\'écran : bloc d\'interface, argent à sa droite, « Vague 1 / 40 » avant le bouton Pause (icône) ; largeur du HUD indépendante du montant', async ({ page }) => {
+  // Lot 3l (direction B, retour du propriétaire) : avant, argent à droite du bloc d'interface et « Vague 1 / 40 » avant Pause ; après, « VAGUE 01 / 40 » centrée,
+  // restants, tués puis l'argent à gauche de Pause.
+  test('haut de l\'écran : « VAGUE 01 / 40 » centrée ; restants, tués et l\'argent à gauche de Pause (icône) ; boîtes indépendantes du montant', async ({ page }) => {
     await open(page);
     await step(page, 0.2);
-    await expect(page.locator('#hud-wave')).toHaveText('Vague 1 / 40');
+    await expect(page.locator('#hud-wave-text')).toHaveText('01 / 40');
     await expect(page.locator('#btn-pause')).toHaveAccessibleName('Pause');
     await expect(page.locator('#btn-pause')).toHaveText('');
     const rows = () => page.evaluate(() => {
-      const r = (sel) => document.querySelector(sel).getBoundingClientRect();
-      return { hud: r('#hud'), money: r('#hud-money'), wave: r('#hud-wave'), pause: r('#btn-pause') };
+      const r = (sel) => document.querySelector(sel).getBoundingClientRect().toJSON();
+      return { left: r('.hud-tl'), money: r('#hud-money'), wave: r('#hud-wave'), kills: r('#hud-kills'), pause: r('#btn-pause'), vw: innerWidth };
     });
     const a = await rows();
-    expect(a.money.left).toBeGreaterThanOrEqual(a.hud.right);
-    expect(a.wave.left).toBeGreaterThan(a.money.right);
-    expect(a.wave.right).toBeLessThanOrEqual(a.pause.left);
+    expect(Math.abs((a.wave.left + a.wave.right) / 2 - a.vw / 2)).toBeLessThanOrEqual(0.5);
+    expect(a.money.top).toBeGreaterThanOrEqual(a.kills.bottom);
+    expect(Math.abs(a.money.right - a.kills.right)).toBeLessThan(0.5);
+    expect(a.money.left).toBeGreaterThanOrEqual(a.wave.right);
+    expect(a.kills.right).toBeLessThanOrEqual(a.pause.left);
+    expect(a.money.top).toBeGreaterThanOrEqual(a.pause.bottom - 0.5);
     expect(a.pause.width).toBeGreaterThanOrEqual(44);
     expect(a.pause.height).toBeGreaterThanOrEqual(44);
     await page.evaluate(() => { window.__zs.giveMoney(9_999_999); window.__zs.step(0.1); });
     const b = await rows();
-    expect(b.hud.width).toBe(a.hud.width);
+    expect(b).toEqual(a);
   });
 
-  test('blocs de taille fixe : #hud, #hud-money et #hud-wave gardent leur rectangle quand le montant, la phase de vague et les chutes changent', async ({ page }) => {
+  // Lot 3l : la liste des blocs suivis s'allonge (chrono, vie, chutes, restants, tués, Pause en plus de #hud, #hud-money et #hud-wave).
+  test('blocs de taille fixe : #hud, #hud-money, #hud-wave et les autres blocs gardent leur rectangle quand le montant, la phase de vague et les chutes changent', async ({ page }) => {
     await open(page);
-    const size = () => page.evaluate(() => ['hud', 'hud-money', 'hud-wave'].map((id) => { const r = document.getElementById(id).getBoundingClientRect(); return [Math.round(r.width * 10), Math.round(r.height * 10)]; }));
+    const size = () => page.evaluate(() => ['hud', 'hud-money', 'hud-wave', 'hud-chrono', 'hud-bar', 'hud-chutes', 'hud-kills', 'btn-pause'].map((id) => { const r = document.getElementById(id).getBoundingClientRect(); return [Math.round(r.width * 10), Math.round(r.height * 10)]; }));
     const first = await size();
     await page.evaluate(() => { window.__zs.giveMoney(9_999_999); window.__zs.setChutes(6); window.__zs.step(0.3); });
     expect(await size()).toEqual(first);
@@ -595,7 +603,8 @@ test.describe('interface', () => {
     expect(await size()).toEqual(first);
   });
 
-  test('HUD ≤ 300 × 96 px à 667×375 dans le pire cas, sans chevauchement avec Pause et E2-10', async ({ page }) => {
+  // Lot 3l : avant, #hud ≤ 300 × 96 px ; après, HUD et Pause ≤ 12,5 % de l'écran (maquette B retouchée, même état, mesurée : 12,15 %), aucun chevauchement, rien sous la mi-hauteur.
+  test('HUD ≤ 12,5 % de l\'écran à 667×375 dans le pire cas (mode essai, étage, 9 999 999), sans chevauchement avec Pause, tout au-dessus de la mi-hauteur', async ({ page }) => {
     await open(page, `${LOCAL}&floor=1&wave=40`);
     const m = await page.evaluate(() => {
       const z = window.__zs;
@@ -608,14 +617,17 @@ test.describe('interface', () => {
       z.step(3.5);
       z.giveMoney(9_999_999);
       z.step(0.3);
-      const rect = (id) => document.getElementById(id).getBoundingClientRect().toJSON();
-      return { vh: innerHeight, hud: rect('hud'), pause: rect('btn-pause'), text: document.getElementById('hud').innerText };
+      return { vh: innerHeight, text: document.getElementById('hud').innerText };
     });
     expect(m.text).toContain('Étage');
-    expect(m.hud.width).toBeLessThanOrEqual(300);
-    expect(m.hud.height).toBeLessThanOrEqual(96);
-    expect(m.hud.right).toBeLessThanOrEqual(m.pause.left);
-    expect(m.hud.bottom).toBeLessThan(m.vh * 0.5); // E2-10 est au tiers bas (84 % de la hauteur) : jamais sous le HUD
+    expect(m.text).toContain('MODE ESSAI');
+    const boxes = await hudBoxes(page);
+    const { '#hud-gain': gain, ...blocks } = boxes; // « +N » passager (lot 4), hors de la maquette
+    expect(gain === undefined || gain.w > 0).toBe(true);
+    expect(screenShare(blocks, SIZE.width, SIZE.height)).toBeLessThanOrEqual(0.125);
+    const list = Object.entries(boxes).filter(([sel]) => sel !== '#hud-gain');
+    for (let i = 0; i < list.length; i += 1) for (let j = i + 1; j < list.length; j += 1) expect(apart(list[i][1], list[j][1]), `${list[i][0]} / ${list[j][0]}`).toBe(true);
+    for (const [sel, b] of list) expect(b.b, sel).toBeLessThan(m.vh * 0.5);
   });
 
   test('« +N » : un seul élément, agrégé, décoratif (aria-hidden), qui s\'efface ensuite', async ({ page }) => {
@@ -643,12 +655,12 @@ test.describe('interface', () => {
     await expect(page.locator('#hud-gain')).toBeHidden();
   });
 
-  test('pause : « Solde » et état de la sauvegarde, le panneau tient à 667×375, aucune cible sous 44 px', async ({ page }) => {
+  test('pause : « Solde » à côté de « PAUSE » (lot 3l : plus d\'état de la sauvegarde), le panneau tient à 667×375, aucune cible sous 44 px', async ({ page }) => {
     await open(page);
     await page.evaluate(() => window.__zs.giveMoney(1234));
     await page.getByRole('button', { name: 'Pause' }).click();
     await expect(page.locator('#pause-balance')).toHaveText(`Solde : 1${String.fromCharCode(0x202f)}234`);
-    await expect(page.locator('#pause-save')).toHaveText('Sauvegarde : enregistrée');
+    expect((await state(page)).save.status).toBe('saved'); // lot 3l (retour du propriétaire) : l'état de la sauvegarde n'est plus affiché dans la pause ; il est vérifié dans getState().save
     const m = await page.evaluate(() => {
       const panel = document.querySelector('#pause-panel .panel');
       const r = panel.getBoundingClientRect();
@@ -663,7 +675,8 @@ test.describe('interface', () => {
 
   for (const size of [SIZE]) {
     for (const variant of ['death', 'world']) {
-      test(`E2-7 (${variant}) à ${size.width}×${size.height} : toutes les lignes visibles, sans débordement, lien de 44 px`, async ({ page }) => {
+      // Lot 3l : « Voir ma sauvegarde » (#end-save-link) remplacé par « Revenir au menu principal » (#btn-menu), bouton de 44 px.
+      test(`E2-7 (${variant}) à ${size.width}×${size.height} : toutes les lignes visibles, sans débordement, boutons de 44 px`, async ({ page }) => {
         await open(page, LOCAL, { size });
         if (variant === 'world') {
           await page.evaluate(() => window.__zs.startWave(40));
@@ -675,12 +688,12 @@ test.describe('interface', () => {
           await step(page, 0.3);
         }
         await expect(page.locator('#end-panel')).toBeVisible();
-        const ids = ['end-title', 'end-kills', 'end-earned', 'end-balance', 'end-best', 'btn-replay', 'end-save-link', ...(variant === 'world' ? ['end-bonus'] : [])];
+        const ids = ['end-title', 'end-kills', 'end-earned', 'end-balance', 'end-best', 'btn-replay', 'btn-menu', ...(variant === 'world' ? ['end-bonus'] : [])];
         for (const id of ids) await expect(page.locator(`#${id}`), id).toBeVisible();
         const m = await page.evaluate(() => {
           const panel = document.querySelector('#end-panel .panel');
           const r = panel.getBoundingClientRect();
-          const link = document.getElementById('end-save-link').getBoundingClientRect();
+          const link = document.getElementById('btn-menu').getBoundingClientRect();
           const replay = document.getElementById('btn-replay').getBoundingClientRect();
           return { top: r.top, bottom: r.bottom, left: r.left, right: r.right, vw: innerWidth, vh: innerHeight, scroll: panel.scrollHeight > panel.clientHeight, link: link.height, replay: replay.height };
         });
@@ -766,27 +779,37 @@ test.describe('budget et performance', () => {
   test.skip(({ isMobile }) => isMobile, 'bureau');
   // Références mesurées avant le lot (partie C non commencée) : 10 zombies variés, ombres, joueur au départ / près d'une fenêtre / à l'étage.
   const REF = { R1: [198, 13800], U1: [207, 15346] };
+  // Branche lot-3g (main récupéré) : l'atelier de la carte ajoute du rendu (mobilier, portes, feux, extérieur, brume). Le lot 4 n'ajoute rien : sans le détail de
+  // l'atelier (?detail=0), la référence à quelques éléments près (+ 2 appels : nappes de brume ; + 1 : fenêtre ; triangles à 120 près) ; avec : les plafonds du projet.
+  const measure = (page, mode) => page.evaluate((m) => {
+    const zs = window.__zs;
+    if (m === 'window') {
+      const w = zs.getState().windows.find((q) => q.floor === 'rdc') ?? zs.getState().windows[0];
+      zs.setPlayer(w.repairSpot.x, w.repairSpot.y);
+    }
+    const p = zs.getState().player;
+    const fl = zs.getState().floor?.player ?? 'rdc';
+    zs.setInput({ aim: { angle: Math.PI } });
+    const T = ['marcheur', 'petit', 'voute', 'grand'];
+    const G = ['lent', 'marche', 'rampe', 'course'];
+    for (let i = 0; i < 10; i += 1) zs.spawnEnemy(p.x + 40 + (i % 5) * 30, p.y + (Math.floor(i / 5) - 0.5) * 60, { type: T[i % 4], gait: G[(i + Math.floor(i / 4)) % 4], wave: 10, floor: typeof fl === 'string' ? fl : 'rdc' });
+    zs.step(0.05);
+    zs.sampleScreen(0, 0, 8, 8);
+    const s = zs.getState();
+    return { calls: s.render.calls, triangles: s.render.triangles };
+  }, mode);
   for (const [name, extra, where] of [['R1', '&nospawn=1', 'start'], ['U1', '&wave=21&floor=1&nospawn=1', 'start']]) {
-    test(`${name} : appels de dessin et triangles identiques à la référence (écart 0)`, async ({ page }) => {
-      await open(page, `/jeu.html?test=1&seed=1&shadows=1${extra}`);
-      const r = await page.evaluate((mode) => {
-        const zs = window.__zs;
-        if (mode === 'window') {
-          const w = zs.getState().windows.find((q) => q.floor === 'rdc') ?? zs.getState().windows[0];
-          zs.setPlayer(w.repairSpot.x, w.repairSpot.y);
-        }
-        const p = zs.getState().player;
-        const fl = zs.getState().floor?.player ?? 'rdc';
-        zs.setInput({ aim: { angle: Math.PI } });
-        const T = ['marcheur', 'petit', 'voute', 'grand'];
-        const G = ['lent', 'marche', 'rampe', 'course'];
-        for (let i = 0; i < 10; i += 1) zs.spawnEnemy(p.x + 40 + (i % 5) * 30, p.y + (Math.floor(i / 5) - 0.5) * 60, { type: T[i % 4], gait: G[(i + Math.floor(i / 4)) % 4], wave: 10, floor: typeof fl === 'string' ? fl : 'rdc' });
-        zs.step(0.05);
-        zs.sampleScreen(0, 0, 8, 8);
-        const s = zs.getState();
-        return { calls: s.render.calls, triangles: s.render.triangles };
-      }, where);
-      expect([r.calls, r.triangles]).toEqual(REF[name]);
+    test(`${name} : sans le détail de l'atelier, la référence (à la brume près) ; avec, 30 000 triangles et 240 appels au plus`, async ({ page }) => {
+      await open(page, `/jeu.html?test=1&seed=1&shadows=1&perso=actuel&sang=0${extra}&detail=0`);
+      const off = await measure(page, where);
+      expect(off.calls).toBeGreaterThanOrEqual(REF[name][0] - 1);
+      expect(off.calls).toBeLessThanOrEqual(REF[name][0] + 3);
+      expect(Math.abs(off.triangles - REF[name][1])).toBeLessThanOrEqual(120);
+      await open(page, `/jeu.html?test=1&seed=1&shadows=1&perso=actuel&sang=0${extra}`);
+      const on = await measure(page, where);
+      console.log(`BUDGET lot 4 / 3g ${name} : detail=0 ${off.calls} / ${off.triangles} ; detail=1 ${on.calls} / ${on.triangles} (référence ${REF[name].join(' / ')})`);
+      expect(on.triangles).toBeLessThanOrEqual(30000);
+      expect(on.calls).toBeLessThanOrEqual(240);
     });
   }
 

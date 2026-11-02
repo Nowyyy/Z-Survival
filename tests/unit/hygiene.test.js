@@ -22,8 +22,9 @@ describe('hygiène du dépôt', () => {
     expect(big).toEqual([]);
   });
 
-  it('CLAUDE.md fait moins de 9 000 caractères', () => {
-    expect(readFileSync('CLAUDE.md', 'utf8').length).toBeLessThan(9000);
+  // Lot 4b (demande du propriétaire) : limite de taille de CLAUDE.md ignorée pour reporter les règles de tous les lots intégrés ; garde-fou d'emballement seulement.
+  it('CLAUDE.md fait moins de 12 000 caractères', () => {
+    expect(readFileSync('CLAUDE.md', 'utf8').length).toBeLessThan(12000);
   });
 
   it('.gitignore couvre les dossiers générés', () => {
