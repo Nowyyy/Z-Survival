@@ -51,7 +51,7 @@ L'atelier suit : `js/atelier-interface/actuel.js` (éléments masqués pour A, B
 - Taille du texte : `--hud-text-scale` (1 = S, 1,125 = M, 1,375 = L) ; tout le HUD, Pause, les panneaux et l'état à terre suivent (tailles en em).
 - Fond des blocs : `--hud-bg-alpha` (0,78 = léger ; 1 = plein). Contraste vérifié par `tests/unit/data-hud.test.js`.
 - Espacement : `--hud-gap` (4 px compacte, 10 px aérée).
-- Marges : règle de la maquette du lot 3k, choisie par le propriétaire au lot 3l (point ouvert § 6.1 de la passation tranché) : 16 px plus la zone de sécurité de chaque côté (`--edge-left`, `--edge-right` de `css/game.css`, `--edge-top` de `css/game-ui.css`). Avant (lot 4) : max(16 px, zone − 28 px) à gauche et à droite ; pour y revenir, remettre ces deux lignes et relancer les mesures.
+- Marges : 16 px à gauche et à droite, sans la zone de sécurité (retour du propriétaire sur iPhone : Safari ne donne pas toujours la zone au chargement, l'interface sautait de 16 à 75 px du bord) ; en haut, 16 px + zone (`--edge-left`, `--edge-right` de `css/game.css`, `--edge-top` de `css/game-ui.css`). Historique : 16 px + zone (maquette du lot 3k, premier choix au lot 3l), max(16 px, zone − 28 px) (lot 4). L'atelier signale « zone-sure » avec les îlots simulés : c'est attendu.
 
 ## Écrans hors lot
 Menu (lot 7), boutique (lot 5), réglages et leur stockage (lot 7), classement et compte (lots 7b, 7c) : maquettes dans l'atelier (`atelier-interface.html`, fausses données annoncées), exigences dans `Docs/ref/integration-interface.md`. « Revenir au menu principal » (`#btn-menu`) attend le menu ; l'accès à `sauvegarde.html` depuis le jeu reste à décider (il n'est plus sur l'écran de fin).

@@ -464,7 +464,8 @@ test.describe('annonces, réseau, stockage, accessibilité, CLS', () => {
     await expect(page.locator('#hud-chrono-text')).toHaveText('01:01');
   });
 
-  test('zones de sécurité simulées (îlot 47 px) : marges de la maquette (16 px + zone de chaque côté), aucun bloc hors de la zone sûre', async ({ page }) => {
+  // Retour du propriétaire sur iPhone : l'interface reste à 16 px des bords quelle que soit la zone de sécurité donnée par Safari (avant : 16 px + zone).
+  test('zones de sécurité simulées (îlot 47 px) : le HUD et Pause restent à 16 px des bords gauche et droit, le haut à 16 px + zone', async ({ page }) => {
     await open(page, '', { width: 844, height: 390 });
     const r = await page.evaluate(async () => {
       const a = await import('./js/atelier-interface/actuel.js');
@@ -473,9 +474,9 @@ test.describe('annonces, réseau, stockage, accessibilité, CLS', () => {
       const b = (sel) => document.querySelector(sel).getBoundingClientRect();
       return { hud: b('#hud').left, chrono: b('#hud-chrono').left, pause: innerWidth - b('#btn-pause').right, top: b('#hud').top };
     });
-    expect(r.hud).toBeCloseTo(63, 1); // 16 + 47
+    expect(r.hud).toBeCloseTo(16, 1);
     expect(r.top).toBeCloseTo(16, 1);
-    expect(r.pause).toBeCloseTo(63 + 15.75 * 0.35, 1);
+    expect(r.pause).toBeCloseTo(16 + 15.75 * 0.35, 1);
   });
 });
 

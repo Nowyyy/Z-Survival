@@ -48,9 +48,10 @@ body.game {
 /* Marges de sécurité : 16 px au moins des bords, plus les zones de sécurité lues par js/game/safe-area.js. */
 :root {
   --game-margin: 16px;
-  /* Lot 3l (choix du propriétaire : marges de la maquette du lot 3k) : 16 px plus la zone de sécurité de chaque côté (avant, lot 4 : max(16 px, zone − 28 px)). */
-  --edge-left: calc(var(--game-margin) + var(--safe-left));
-  --edge-right: calc(var(--game-margin) + var(--safe-right));
+  /* Lot 3l (retour du propriétaire sur iPhone : « tout au bord, tout le temps ») : 16 px à gauche et à droite, sans la zone de sécurité, que Safari ne donne pas
+     toujours au chargement (l'interface sautait de 16 à 75 px du bord d'une partie à l'autre). Avant : 16 px + zone (maquette du lot 3k), puis lot 4 : max(16 px, zone − 28 px). */
+  --edge-left: var(--game-margin);
+  --edge-right: var(--game-margin);
   --safe-top: 0px;
   --safe-right: 0px;
   --safe-bottom: 0px;
