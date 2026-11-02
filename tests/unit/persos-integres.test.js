@@ -300,10 +300,11 @@ describe('logique inchangée (données et vitesses)', () => {
       'data/game/enemies.json', 'data/game/gaits.json', 'data/game/zombie-variants.json', 'data/game/windows.json', 'data/game/waves.json', 'data/game/save.json', 'data/game/player.json', 'data/game/economy.json'];
     expect(git(`diff --name-only ${base} -- ${files.join(' ')}`)?.trim()).toBe('');
   });
-  it('fichiers interdits au lot inchangés (interface, carte, sons, textes, journal, workflow, seed)', () => {
+  // data/changelog.json : entrée lot-3m ajoutée à la demande du propriétaire (data-changelog exige une entrée par bilan de Docs/lots/).
+  it('fichiers interdits au lot inchangés (interface, carte, sons, textes, workflow, seed)', () => {
     const base = git('merge-base HEAD origin/lot-4b')?.trim();
     if (!base) return;
-    const files = ['jeu.html', 'index.html', 'css/game.css', 'js/game/hud.js', 'js/game/ui.js', 'js/game/world.js', 'js/game/windows-mesh.js', 'js/game/textures.js', 'CLAUDE.md', 'Docs/ref/conventions.md', 'Docs/seed.md', 'data/i18n/fr.json', 'data/changelog.json', 'tests/unit/data-changelog.test.js', 'tests/e2e/dev.spec.js', '.github'];
+    const files = ['jeu.html', 'index.html', 'css/game.css', 'js/game/hud.js', 'js/game/ui.js', 'js/game/world.js', 'js/game/windows-mesh.js', 'js/game/textures.js', 'CLAUDE.md', 'Docs/ref/conventions.md', 'Docs/seed.md', 'data/i18n/fr.json', 'tests/unit/data-changelog.test.js', 'tests/e2e/dev.spec.js', '.github'];
     expect(git(`diff --name-only ${base} -- ${files.join(' ')}`)?.trim()).toBe('');
   });
 });
