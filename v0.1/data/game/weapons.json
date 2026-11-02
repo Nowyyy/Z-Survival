@@ -1,0 +1,14 @@
+{
+  "_provisoire": "Valeurs provisoires à régler en test (lot 1).",
+  "pistol": {
+    "damage": 25,
+    "fireDelay": 0.4,
+    "laserRange": 700,
+    "bulletSpeed": 1100,
+    "bulletRadius": 4,
+    "bulletMaxDistance": 700,
+    "muzzleFlash": 0.08,
+    "maxBullets": 30,
+    "muzzleOffset": 26
+  }
+}

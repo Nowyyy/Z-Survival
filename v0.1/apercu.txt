@@ -1,0 +1,3 @@
+jeu.html
+type: hifi
+titre: Cœur du jeu
