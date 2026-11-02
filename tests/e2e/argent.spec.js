@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { readFileSync } from 'node:fs';
 import { defaultSave, encodeSave } from '../../js/core/save.js';
-import { waitReady } from './helpers.js';
+import { waitReady, hudBoxes, screenShare, apart } from './helpers.js';
 
 // Lot 4-C : argent et sauvegarde dans le jeu. 667×375, step() et les hooks (aucune durée réelle attendue). Les adresses de gain n'ont AUCUN paramètre d'essai
 // (wave, lvl, map, planks, empty, nospawn, endless, floor, money) : sinon la sauvegarde est en lecture seule.
@@ -392,7 +392,8 @@ test.describe('échecs de stockage', () => {
   });
 
   for (const [label, raw] of [['illisible ({bad)', '{bad'], ['version future', '{"v":99,"money":5}']]) {
-    test(`sauvegarde ${label} : « locked », aucune écriture pendant toute une partie, pause et E2-7 le disent, lien vers la page`, async ({ page }) => {
+    // Lot 3l : le lien « Voir ma sauvegarde » quitte l'écran de fin (choix du propriétaire) ; « Revenir au menu principal » le remplace (sans action).
+    test(`sauvegarde ${label} : « locked », aucune écriture pendant toute une partie, pause et E2-7 le disent`, async ({ page }) => {
       await page.addInitScript(`${SPY}\n${seedStorage(raw)}`);
       await open(page);
       await page.evaluate(() => window.__zs.startWave(2));
@@ -408,7 +409,8 @@ test.describe('échecs de stockage', () => {
       await page.evaluate(() => { window.__zs.setChutes(0); window.__zs.downPlayer(); });
       await step(page, 0.3);
       await expect(page.locator('#end-save')).toHaveText('Sauvegarde illisible : rien n\'est enregistré (voir la page Sauvegarde)');
-      await expect(page.locator('#end-save-link')).toHaveAttribute('href', 'sauvegarde.html');
+      await expect(page.locator('#end-panel a')).toHaveCount(0);
+      await expect(page.locator('#btn-menu')).toHaveText('Revenir au menu principal');
       expect((await state(page)).save).toMatchObject({ status: 'locked', locked: true });
       expect(await writes(page)).toHaveLength(1); // le semis de l'init
       expect(await stored(page)).toBe(raw);
@@ -561,30 +563,35 @@ test.describe('interface', () => {
     await expect(page.locator('#hud-money svg')).toHaveAttribute('aria-hidden', 'true');
   });
 
-  test('haut de l\'écran : bloc d\'interface, argent à sa droite, « Vague 1 / 40 » avant le bouton Pause (icône) ; largeur du HUD indépendante du montant', async ({ page }) => {
+  // Lot 3l (direction B) : avant, argent à droite du bloc d'interface et « Vague 1 / 40 » avant Pause ; après, « VAGUE 01 / 40 » centrée, l'argent juste dessous,
+  // restants et tués à gauche de Pause.
+  test('haut de l\'écran : « VAGUE 01 / 40 » centrée, l\'argent dessous, restants et tués à gauche de Pause (icône) ; boîtes indépendantes du montant', async ({ page }) => {
     await open(page);
     await step(page, 0.2);
-    await expect(page.locator('#hud-wave')).toHaveText('Vague 1 / 40');
+    await expect(page.locator('#hud-wave-text')).toHaveText('01 / 40');
     await expect(page.locator('#btn-pause')).toHaveAccessibleName('Pause');
     await expect(page.locator('#btn-pause')).toHaveText('');
     const rows = () => page.evaluate(() => {
-      const r = (sel) => document.querySelector(sel).getBoundingClientRect();
-      return { hud: r('#hud'), money: r('#hud-money'), wave: r('#hud-wave'), pause: r('#btn-pause') };
+      const r = (sel) => document.querySelector(sel).getBoundingClientRect().toJSON();
+      return { left: r('.hud-tl'), money: r('#hud-money'), wave: r('#hud-wave'), kills: r('#hud-kills'), pause: r('#btn-pause'), vw: innerWidth };
     });
     const a = await rows();
-    expect(a.money.left).toBeGreaterThanOrEqual(a.hud.right);
-    expect(a.wave.left).toBeGreaterThan(a.money.right);
-    expect(a.wave.right).toBeLessThanOrEqual(a.pause.left);
+    expect(Math.abs((a.wave.left + a.wave.right) / 2 - a.vw / 2)).toBeLessThanOrEqual(0.5);
+    expect(Math.abs((a.money.left + a.money.right) / 2 - a.vw / 2)).toBeLessThanOrEqual(0.5);
+    expect(a.money.top).toBeGreaterThanOrEqual(a.wave.bottom);
+    expect(a.money.left).toBeGreaterThanOrEqual(a.left.right);
+    expect(a.kills.right).toBeLessThanOrEqual(a.pause.left);
     expect(a.pause.width).toBeGreaterThanOrEqual(44);
     expect(a.pause.height).toBeGreaterThanOrEqual(44);
     await page.evaluate(() => { window.__zs.giveMoney(9_999_999); window.__zs.step(0.1); });
     const b = await rows();
-    expect(b.hud.width).toBe(a.hud.width);
+    expect(b).toEqual(a);
   });
 
-  test('blocs de taille fixe : #hud, #hud-money et #hud-wave gardent leur rectangle quand le montant, la phase de vague et les chutes changent', async ({ page }) => {
+  // Lot 3l : la liste des blocs suivis s'allonge (chrono, vie, chutes, restants, tués, Pause en plus de #hud, #hud-money et #hud-wave).
+  test('blocs de taille fixe : #hud, #hud-money, #hud-wave et les autres blocs gardent leur rectangle quand le montant, la phase de vague et les chutes changent', async ({ page }) => {
     await open(page);
-    const size = () => page.evaluate(() => ['hud', 'hud-money', 'hud-wave'].map((id) => { const r = document.getElementById(id).getBoundingClientRect(); return [Math.round(r.width * 10), Math.round(r.height * 10)]; }));
+    const size = () => page.evaluate(() => ['hud', 'hud-money', 'hud-wave', 'hud-chrono', 'hud-bar', 'hud-chutes', 'hud-kills', 'btn-pause'].map((id) => { const r = document.getElementById(id).getBoundingClientRect(); return [Math.round(r.width * 10), Math.round(r.height * 10)]; }));
     const first = await size();
     await page.evaluate(() => { window.__zs.giveMoney(9_999_999); window.__zs.setChutes(6); window.__zs.step(0.3); });
     expect(await size()).toEqual(first);
@@ -595,7 +602,8 @@ test.describe('interface', () => {
     expect(await size()).toEqual(first);
   });
 
-  test('HUD ≤ 300 × 96 px à 667×375 dans le pire cas, sans chevauchement avec Pause et E2-10', async ({ page }) => {
+  // Lot 3l : avant, #hud ≤ 300 × 96 px ; après, HUD et Pause ≤ 12,5 % de l'écran (maquette B retouchée, même état, mesurée : 12,15 %), aucun chevauchement, rien sous la mi-hauteur.
+  test('HUD ≤ 12,5 % de l\'écran à 667×375 dans le pire cas (mode essai, étage, 9 999 999), sans chevauchement avec Pause, tout au-dessus de la mi-hauteur', async ({ page }) => {
     await open(page, `${LOCAL}&floor=1&wave=40`);
     const m = await page.evaluate(() => {
       const z = window.__zs;
@@ -608,14 +616,17 @@ test.describe('interface', () => {
       z.step(3.5);
       z.giveMoney(9_999_999);
       z.step(0.3);
-      const rect = (id) => document.getElementById(id).getBoundingClientRect().toJSON();
-      return { vh: innerHeight, hud: rect('hud'), pause: rect('btn-pause'), text: document.getElementById('hud').innerText };
+      return { vh: innerHeight, text: document.getElementById('hud').innerText };
     });
     expect(m.text).toContain('Étage');
-    expect(m.hud.width).toBeLessThanOrEqual(300);
-    expect(m.hud.height).toBeLessThanOrEqual(96);
-    expect(m.hud.right).toBeLessThanOrEqual(m.pause.left);
-    expect(m.hud.bottom).toBeLessThan(m.vh * 0.5); // E2-10 est au tiers bas (84 % de la hauteur) : jamais sous le HUD
+    expect(m.text).toContain('MODE ESSAI');
+    const boxes = await hudBoxes(page);
+    const { '#hud-gain': gain, ...blocks } = boxes; // « +N » passager (lot 4), hors de la maquette
+    expect(gain === undefined || gain.w > 0).toBe(true);
+    expect(screenShare(blocks, SIZE.width, SIZE.height)).toBeLessThanOrEqual(0.125);
+    const list = Object.entries(boxes).filter(([sel]) => sel !== '#hud-gain');
+    for (let i = 0; i < list.length; i += 1) for (let j = i + 1; j < list.length; j += 1) expect(apart(list[i][1], list[j][1]), `${list[i][0]} / ${list[j][0]}`).toBe(true);
+    for (const [sel, b] of list) expect(b.b, sel).toBeLessThan(m.vh * 0.5);
   });
 
   test('« +N » : un seul élément, agrégé, décoratif (aria-hidden), qui s\'efface ensuite', async ({ page }) => {
@@ -663,7 +674,8 @@ test.describe('interface', () => {
 
   for (const size of [SIZE]) {
     for (const variant of ['death', 'world']) {
-      test(`E2-7 (${variant}) à ${size.width}×${size.height} : toutes les lignes visibles, sans débordement, lien de 44 px`, async ({ page }) => {
+      // Lot 3l : « Voir ma sauvegarde » (#end-save-link) remplacé par « Revenir au menu principal » (#btn-menu), bouton de 44 px.
+      test(`E2-7 (${variant}) à ${size.width}×${size.height} : toutes les lignes visibles, sans débordement, boutons de 44 px`, async ({ page }) => {
         await open(page, LOCAL, { size });
         if (variant === 'world') {
           await page.evaluate(() => window.__zs.startWave(40));
@@ -675,12 +687,12 @@ test.describe('interface', () => {
           await step(page, 0.3);
         }
         await expect(page.locator('#end-panel')).toBeVisible();
-        const ids = ['end-title', 'end-kills', 'end-earned', 'end-balance', 'end-best', 'btn-replay', 'end-save-link', ...(variant === 'world' ? ['end-bonus'] : [])];
+        const ids = ['end-title', 'end-kills', 'end-earned', 'end-balance', 'end-best', 'btn-replay', 'btn-menu', ...(variant === 'world' ? ['end-bonus'] : [])];
         for (const id of ids) await expect(page.locator(`#${id}`), id).toBeVisible();
         const m = await page.evaluate(() => {
           const panel = document.querySelector('#end-panel .panel');
           const r = panel.getBoundingClientRect();
-          const link = document.getElementById('end-save-link').getBoundingClientRect();
+          const link = document.getElementById('btn-menu').getBoundingClientRect();
           const replay = document.getElementById('btn-replay').getBoundingClientRect();
           return { top: r.top, bottom: r.bottom, left: r.left, right: r.right, vw: innerWidth, vh: innerHeight, scroll: panel.scrollHeight > panel.clientHeight, link: link.height, replay: replay.height };
         });

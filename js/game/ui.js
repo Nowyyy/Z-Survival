@@ -1,4 +1,5 @@
-// Panneaux HTML : pause (E2-6), fin provisoire (E2-7), message de rotation, région vocale, plein écran.
+// Panneaux HTML : pause (E2-6), fin provisoire (E2-7), message de rotation, région vocale, plein écran. Lot 3l : direction B de l'atelier (icônes du titre de fin,
+// pièce devant les montants, étoile du record, « Revenir au menu principal » sans action tant que le menu n'existe pas, volume en dernier).
 import { formatMoney } from '../core/economy.js';
 import { fmt, MONEY_TEXTS, SAVE_TEXTS, VHS_TEXTS } from './texts.js';
 
@@ -10,9 +11,9 @@ export function createUi(dict, handlers) {
     pausePanel: $('pause-panel'), endPanel: $('end-panel'), live: $('hud-live'), rotate: $('rotate'),
     pauseBtn: $('btn-pause'), resume: $('btn-resume'), fullscreen: $('btn-fullscreen'), sound: $('btn-sound'),
     vhs: $('btn-vhs'), restart: $('btn-restart'), replay: $('btn-replay'), endKills: $('end-kills'), endWave: $('end-wave'),
-    volumeRow: $('volume-row'), volume: $('volume'), volumeValue: $('volume-value'), endTitle: $('end-title'), pauseNext: $('pause-next'),
-    pauseBalance: $('pause-balance'), pauseSave: $('pause-save'), endEarned: $('end-earned'), endBonus: $('end-bonus'), endBalance: $('end-balance'), endBest: $('end-best'),
-    endRecord: $('end-record'), endSave: $('end-save'),
+    volumeRow: $('volume-row'), volume: $('volume'), volumeValue: $('volume-value'), endBox: $('end-box'), endTitle: $('end-title-text'), pauseNext: $('pause-next'),
+    pauseBalance: $('pause-balance-text'), pauseSave: $('pause-save'), endEarned: $('end-earned'), endEarnedText: $('end-earned-text'), endBonus: $('end-bonus'), endBonusText: $('end-bonus-text'),
+    endBalance: $('end-balance'), endBest: $('end-best'), endRecord: $('end-record'), endRecordText: $('end-record-text'), endSave: $('end-save'),
   };
   const rotateQuery = matchMedia(PORTRAIT_PHONE);
   const canFullscreen = Boolean(document.fullscreenEnabled && document.documentElement.requestFullscreen);
@@ -67,6 +68,7 @@ export function createUi(dict, handlers) {
     showEnd(kills, wave = 0, variant = 'death', info = null) {
       els.pausePanel.hidden = true;
       els.endTitle.textContent = dict[variant === 'world' ? 'game.end.world' : 'game.end.title'];
+      els.endBox.dataset.variant = variant === 'world' ? 'world' : 'death'; // icône du titre : coche ou crâne (décoratives)
       els.endKills.textContent = fmt(dict['game.end.kills'], { n: kills });
       els.endWave.textContent = wave > 0 ? fmt(dict['game.wave.reached'], { n: wave }) : '';
       els.endWave.hidden = !(wave > 0);
@@ -75,15 +77,15 @@ export function createUi(dict, handlers) {
       els.endBalance.hidden = !money;
       els.endBest.hidden = !money;
       if (money) {
-        els.endEarned.textContent = fmt(dict[MONEY_TEXTS.earned], { n: formatMoney(info.earned) });
+        els.endEarnedText.textContent = fmt(dict[MONEY_TEXTS.earned], { n: formatMoney(info.earned) });
         els.endBalance.textContent = fmt(dict[MONEY_TEXTS.balance], { n: formatMoney(info.balance) });
         els.endBest.textContent = fmt(dict[MONEY_TEXTS.best], { n: info.best });
       }
       const world = money && variant === 'world';
       els.endBonus.hidden = !world;
-      if (world) els.endBonus.textContent = fmt(dict[MONEY_TEXTS.worldBonus], { n: formatMoney(info.world) });
+      if (world) els.endBonusText.textContent = fmt(dict[MONEY_TEXTS.worldBonus], { n: formatMoney(info.world) });
       els.endRecord.hidden = !(money && info.record === true);
-      els.endRecord.textContent = dict[MONEY_TEXTS.record];
+      els.endRecordText.textContent = dict[MONEY_TEXTS.record];
       // Ligne d'état seulement quand l'argent n'est pas écrit : mode essai (texte propre à l'écran de fin), sauvegarde illisible, indisponible, échec.
       const status = money ? info.status : 'saved';
       const note = status === 'readonly' ? MONEY_TEXTS.trial : status === 'locked' || status === 'unavailable' || status === 'failed' ? SAVE_TEXTS[status] : null;

@@ -166,6 +166,7 @@ export function createGame(ctx) {
   window.addEventListener('pagehide', () => bank.flush('pagehide'));
 
   // Vue de test de la banque : getState().save (sans le journal) et getState().economy.
+  const trialMode = bank.summary().readOnly === true; // lot 3l : « Mode essai » dans le HUD (adresse d'essai : sauvegarde en lecture seule)
   const bankView = () => {
     const { economy, writes, mode, ...save } = bank.snapshot();
     return { save: { ...save, writes }, economy, mode };
@@ -805,27 +806,6 @@ export function createGame(ctx) {
     ctx.ui.setNextZone(wave);
   }
 
-  // E2-10 : état à terre (« À terre », « Tu te relèves dans N s », voile de bord) puis « Protégé N s » pendant la protection ; écrit seulement si le texte change.
-  const downEl = document.getElementById('down');
-  const downTitle = document.getElementById('down-title');
-  const downSub = document.getElementById('down-sub');
-  let downShown = { mode: null, sub: null };
-  function updateDownView() {
-    if (!downEl) return;
-    const grounded = sim.down.state === 'terre';
-    const guarded = sim.down.state === 'debout' && sim.down.grace > 0 && !sim.dead;
-    const mode = grounded ? 'terre' : guarded ? 'grace' : null;
-    const sub = grounded ? fmt(ctx.dict[DOWN_TEXTS.countdown], { n: Math.ceil(sim.down.timeLeft - 1e-6) }) : guarded ? fmt(ctx.dict[DOWN_TEXTS.grace], { n: Math.ceil(sim.down.grace - 1e-6) }) : '';
-    if (mode !== downShown.mode) {
-      downEl.hidden = mode === null;
-      downEl.dataset.mode = mode ?? '';
-      downTitle.hidden = mode !== 'terre';
-      if (mode === 'terre') downTitle.textContent = ctx.dict[DOWN_TEXTS.title];
-    }
-    if (sub !== downShown.sub) downSub.textContent = sub;
-    downShown = { mode, sub };
-  }
-
   // Fenêtres en alerte (js/core/hud-windows.js) : attaquées ou ouvertes, les plus urgentes d'abord ; elles guident les flèches E2-11 (plus de rangée dans le HUD).
   const hudLabels = Object.fromEntries(geoms.map((g) => [g.id, ctx.dict[WINDOW_INITIALS[g.id]] ?? '']));
   const hudWindows = () => geoms.filter((g) => g.floor === pf()).map((g) => ({ id: g.id, planks: sim.win.windows[g.id].planks, maxPlanks: sim.win.windows[g.id].maxPlanks, attacked: sim.repair[g.id]?.attacked === true }));
@@ -1038,9 +1018,9 @@ export function createGame(ctx) {
       flashSize: reduced ? 4 : 7,
       unitsPerPixel: size.unitsPerPixel,
     });
-    hud.update(sim.player, sim.kills, waveInfo(sim.waves), { chutes: sim.down.chutes, floor: multi ? pf() : null, maxWave: zoneCfg && !sim.waves.endless ? zoneCfg.wavesPerWorld : null, money: { balance: bank.balance(), gain: bank.gain() } });
+    hud.update(sim.player, sim.kills, waveInfo(sim.waves), { chutes: sim.down.chutes, floor: multi ? pf() : null, maxWave: zoneCfg && !sim.waves.endless ? zoneCfg.wavesPerWorld : null, money: { balance: bank.balance(), gain: bank.gain() }, time: sim.time, trial: trialMode });
     floorFade.set(sim.trView.veil);
-    updateDownView();
+    hud.updateDown(sim.down, sim.dead, cfg.down); // lot 3l : E2-10 dans la colonne centrale du HUD (js/game/hud.js)
     world.windowMeshes?.sync(sim.win); // pastille de la planche en cours de réparation : elle se remplit peu à peu
     updateEdgeArrows();
     updateLabels();

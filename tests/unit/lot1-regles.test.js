@@ -60,6 +60,7 @@ describe('mêmes règles qu\'au lot 1', () => {
       'sound-choice', 'sound-render'].map((n) => `js/core/${n}.js`); // lot 3g : relevé, écarts, visite, décisions, décor léger, aspect du mobilier ; lot 4 : économie, sauvegarde
     allowed.push('js/core/ui-mock.js'); // lot 3k : atelier de l'interface (nouveau fichier)
     allowed.push('js/core/ui-measure.js'); // lot 3k : atelier de l'interface (nouveau fichier)
+    allowed.push('js/core/hud-format.js'); // lot 3l : formats du HUD intégré (nouveau fichier, pur)
     expect(changed.filter((f) => !allowed.includes(f))).toEqual([]);
   });
 });

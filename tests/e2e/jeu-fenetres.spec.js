@@ -368,11 +368,13 @@ test.describe('interface : annonces des fenêtres', () => {
       await open(page, '', size);
       const r = await page.evaluate(() => {
         const b = (sel) => document.querySelector(sel).getBoundingClientRect();
-        return { line: b('#hud'), hud: b('#hud'), pause: b('#btn-pause') };
+        return { line: b('#hud'), hud: b('#hud'), left: b('.hud-tl'), right: b('.hud-tr'), pause: b('#btn-pause') };
       });
       expect(r.line.left).toBeGreaterThanOrEqual(16);
       expect(r.line.top).toBeGreaterThanOrEqual(16);
-      expect(r.hud.right).toBeLessThanOrEqual(r.pause.left);
+      // Lot 3l : #hud est la bande des trois colonnes ; la colonne de droite (restants, tués) s'arrête avant Pause (avant : #hud entier).
+      expect(r.left.right).toBeLessThanOrEqual(r.pause.left);
+      expect(r.right.right).toBeLessThanOrEqual(r.pause.left);
       expect(r.hud.bottom).toBeLessThan(size.height - 16);
     });
   }

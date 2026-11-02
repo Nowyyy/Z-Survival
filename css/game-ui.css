@@ -1,0 +1,567 @@
+/* Interface de jeu intégrée (lot 3l) : direction B « caméscope » de l'atelier (lot 3k) pour le HUD (E2-2), le bouton Pause (E2-5), la pause (E2-6), les fins
+   (E2-7) et l'état à terre (E2-10) ; direction A « sobre » pour les sticks (E2-3, E2-4). Choix : Docs/ref/interface-a-integrer.md ; détails :
+   Docs/ref/interface-integree.md. Couleurs : jetons de tokens.css seulement (bloc « Interface intégrée (lot 3l) » pour les réglages). Blocs de taille fixe
+   en em : rien ne bouge quand une valeur change. Ni filter, ni mix-blend-mode, ni backdrop-filter. Marges : 16 px plus la zone de sécurité (--edge-*, game.css ; règle de la maquette du lot 3k, choisie par le propriétaire). */
+
+:root {
+  --edge-top: calc(var(--game-margin) + var(--safe-top));
+}
+
+/* ---------- HUD (E2-2) : trois colonnes en haut de l'écran ---------- */
+.hud {
+  position: absolute;
+  top: var(--edge-top);
+  left: var(--edge-left);
+  right: var(--edge-right);
+  z-index: 2;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  font-family: var(--font-sans);
+  font-size: var(--hud-fs);
+  font-weight: var(--font-weight-bold);
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text);
+  pointer-events: none;
+}
+
+.hud p {
+  margin: 0;
+}
+
+.hud-col {
+  display: flex;
+  flex-direction: column;
+  gap: var(--hud-gap);
+}
+
+/* Colonne de gauche : REC, VIE et la ligne chutes + étage s'arrêtent au même bord droit (8,8 em), puis « Mode essai ». */
+.hud-tl {
+  flex-flow: row wrap;
+  align-content: flex-start;
+  box-sizing: border-box;
+  width: calc(8.8em + 0.35em);
+  padding: 0.35em 0 0 0.35em;
+}
+
+/* Colonne centrale : vague, argent, puis le texte « À terre » ; centrée sur l'écran (pas sur la bande entre les marges). */
+.hud-tc {
+  position: absolute;
+  top: 0;
+  left: calc(50% + (var(--edge-right) - var(--edge-left)) / 2);
+  align-items: center;
+  transform: translateX(-50%);
+}
+
+/* Colonne de droite : restants (ou début de manche) et tués, deux lignes de la hauteur du bouton Pause. */
+.hud-tr {
+  display: grid;
+  grid-template-rows: repeat(2, calc((var(--hud-pause-size) - var(--hud-gap)) / 2));
+  row-gap: var(--hud-gap);
+  justify-items: end;
+  padding-top: 0.35em;
+  margin-right: calc(var(--hud-pause-size) + var(--hud-gap) + 0.35em);
+}
+
+.hud-block {
+  box-sizing: border-box;
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 0.3em;
+  height: 1.6em;
+  padding: 0 0.35em;
+  overflow: hidden;
+  white-space: nowrap;
+  background: color-mix(in srgb, var(--hud-bg) calc(var(--hud-bg-alpha) * 100%), transparent);
+}
+
+.hud-label,
+.hud-tag,
+.hud-trial {
+  font-family: var(--font-label);
+  font-weight: var(--font-weight-normal);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-action-text);
+}
+
+.hud-value {
+  font-variant-numeric: tabular-nums;
+}
+
+.hud-icon {
+  flex: none;
+  width: 1.1em;
+  height: 1.1em;
+  fill: currentColor;
+}
+
+.hud-coin {
+  fill: none;
+  stroke: var(--color-money);
+  stroke-width: 1.5;
+  stroke-linecap: round;
+}
+
+.hud-chrono,
+.hud-life,
+.hud-trial {
+  width: 8.8em;
+}
+
+/* Point « REC » : 1 clignotement par seconde (au plus 2 : règle du lot), fixe sous prefers-reduced-motion ; forme et mot « REC » en plus de la couleur. */
+.hud-rec {
+  flex: none;
+  width: 0.7em;
+  height: 0.7em;
+  border-radius: 50%;
+  background: var(--color-action-text);
+  animation: hud-rec 1s steps(1, end) infinite;
+}
+
+@keyframes hud-rec {
+  50% {
+    opacity: 0.25;
+  }
+}
+
+.hud-life-text {
+  width: 3.9em;
+  text-align: right;
+}
+
+.hud-chutes {
+  width: 3em;
+}
+
+.hud-chutes-icons {
+  display: inline-flex;
+}
+
+.hud-chutes-icons svg {
+  width: 1.1em;
+  height: 1.1em;
+  fill: currentColor;
+}
+
+.hud-chutes-icons .hud-plus {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+}
+
+/* Étage : largeur fixe pour « RDC » comme pour « Étage ». */
+.hud-floor {
+  justify-content: center;
+  width: calc(8.8em - 3em - var(--hud-gap));
+}
+
+.hud-trial {
+  justify-content: center;
+  color: var(--color-warning);
+}
+
+/* Vague : « VAGUE 07 / 40 » et, en dessous, « RENFORCÉE » (place réservée). Sans vagues (visite libre) : bloc invisible, sa place reste. */
+.hud-wave {
+  flex-wrap: wrap;
+  align-content: center;
+  justify-content: center;
+  gap: 0 0.3em;
+  width: 8.6em;
+  height: 2.6em;
+  line-height: 1.15;
+}
+
+.hud-wave[data-idle="true"] {
+  visibility: hidden;
+}
+
+.hud-tag {
+  flex-basis: 100%;
+  text-align: center;
+}
+
+.hud-tag:empty {
+  visibility: hidden;
+}
+
+.hud-money {
+  position: relative;
+  justify-content: center;
+  width: 8.6em;
+  overflow: visible;
+}
+
+.hud-money .hud-value {
+  color: var(--color-money);
+}
+
+/* « +N » (lot 4, agrégé, décoratif) : collé à gauche de l'argent, dans l'espace libre entre la colonne de gauche et la colonne centrale ; sans animation. */
+.hud-gain {
+  position: absolute;
+  top: 0;
+  right: calc(100% + var(--hud-gap));
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  height: 100%;
+  padding: 0 0.35em;
+  background: color-mix(in srgb, var(--hud-bg) calc(var(--hud-bg-alpha) * 100%), transparent);
+  color: var(--color-money);
+}
+
+.hud-remaining,
+.hud-kills {
+  justify-content: flex-end;
+  width: 8.6em;
+  height: 100%;
+  line-height: 1.1;
+}
+
+#hud-remaining,
+#hud-next {
+  grid-area: 1 / 1;
+}
+
+#hud-kills {
+  grid-area: 2 / 1;
+}
+
+/* Coins du viseur (décoratifs) : deux équerres en haut seulement (en bas, elles tomberaient sous les pouces). */
+.hud-corner {
+  position: absolute;
+  top: 0;
+  box-sizing: border-box;
+  width: 1.8em;
+  height: 1.8em;
+  border: 0 solid var(--color-text);
+}
+
+.hud-corner-tl {
+  left: 0;
+  border-top-width: 2px;
+  border-left-width: 2px;
+}
+
+.hud-corner-tr {
+  right: 0;
+  border-top-width: 2px;
+  border-right-width: 2px;
+}
+
+/* ---------- Bouton Pause (E2-5) : carré, angles droits, aligné sur le haut des colonnes ---------- */
+.pause-button {
+  position: absolute;
+  top: calc(var(--edge-top) + var(--hud-fs) * 0.35);
+  right: calc(var(--edge-right) + var(--hud-fs) * 0.35);
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: var(--hud-pause-size);
+  height: var(--hud-pause-size);
+  padding: 0;
+  border: 2px solid var(--color-border);
+  border-radius: 0;
+  background: var(--color-surface);
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.pause-button:hover {
+  background: var(--color-surface-raised);
+}
+
+.pause-button svg {
+  width: 45%;
+  height: 45%;
+  fill: currentColor;
+}
+
+/* Invitation à activer le son (téléphone) : sous la colonne centrale (vague et argent), jamais sur eux. */
+.sound-hint {
+  position: fixed;
+  top: calc(var(--edge-top) + var(--hud-fs) * 4.2 + 2 * var(--hud-gap));
+  left: 50%;
+  z-index: 5;
+  transform: translateX(-50%);
+  max-width: 30vw;
+}
+
+/* ---------- État à terre (E2-10) : le voile reste en plein écran (game.css), le texte est dans la colonne centrale, sous l'argent ---------- */
+.down-body {
+  box-sizing: border-box;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: center;
+  gap: 0.25em 0.5em;
+  width: 19em;
+  max-width: calc(100vw - var(--edge-left) - var(--edge-right));
+  padding: 0.5em 1em;
+  background: var(--game-down-panel);
+  text-align: center;
+}
+
+.down-title {
+  display: flex;
+  align-items: center;
+  gap: 0.35em;
+  font-family: var(--font-label);
+  font-weight: var(--font-weight-normal);
+  font-size: 1.15em;
+  text-transform: uppercase;
+  color: var(--game-down-text);
+}
+
+.down-shield {
+  display: none;
+}
+
+.down-body[data-mode="grace"] .down-shield {
+  display: block;
+}
+
+.down-sub {
+  color: var(--game-down-sub);
+}
+
+.down-bar {
+  position: relative;
+  flex-basis: 100%;
+  width: 100%;
+  height: 0.4em;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+}
+
+.down-fill {
+  position: absolute;
+  inset: 0;
+  background: var(--color-action);
+  transform: scaleX(var(--down-p, 1));
+  transform-origin: left center;
+}
+
+/* ---------- Sticks (E2-3, E2-4), direction A : anneau fin, pastille ronde de 44 px ---------- */
+.stick {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.stick-base,
+.stick-knob {
+  position: absolute;
+  box-sizing: border-box;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.stick-base {
+  width: 112px;
+  height: 112px;
+  border: 2px solid var(--color-border);
+  background: color-mix(in srgb, var(--color-bg) 35%, transparent);
+}
+
+.stick-knob {
+  width: 44px;
+  height: 44px;
+  border: 3px solid var(--color-text);
+  background: var(--color-action);
+}
+
+.stick.is-idle {
+  opacity: 0.5;
+}
+
+#stick-right .stick-knob {
+  background: var(--color-surface-raised);
+}
+
+/* ---------- Panneaux : pause (E2-6) et fin (E2-7), direction B ---------- */
+.panel-wrap {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--edge-top) calc(var(--game-margin) + var(--safe-right)) calc(var(--game-margin) + var(--safe-bottom)) calc(var(--game-margin) + var(--safe-left));
+  background: var(--color-overlay);
+  font-family: var(--font-sans);
+  font-size: var(--hud-fs);
+}
+
+.panel {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6em;
+  width: min(100%, 26em);
+  max-height: 100%;
+  overflow: auto;
+  padding: 1em 1.2em;
+  border: 2px solid var(--color-text);
+  border-radius: 0;
+  background: var(--color-surface);
+  line-height: 1.2;
+}
+
+.panel p,
+.panel h2 {
+  margin: 0;
+}
+
+.panel-title {
+  display: flex;
+  align-items: center;
+  gap: 0.35em;
+  font-family: var(--font-label);
+  font-weight: var(--font-weight-normal);
+  font-size: 1.75em;
+  line-height: 1.1;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-action-text);
+}
+
+.panel-end[data-variant="death"] .end-icon-world,
+.panel-end[data-variant="world"] .end-icon-death {
+  display: none;
+}
+
+.panel-facts {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25em;
+}
+
+.panel-line {
+  display: flex;
+  align-items: center;
+  gap: 0.35em;
+}
+
+.panel-note {
+  color: var(--color-text-muted);
+}
+
+.end-record {
+  color: var(--color-money);
+  font-weight: var(--font-weight-bold);
+}
+
+.panel-actions {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.5em;
+}
+
+.panel .button {
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--hud-target);
+  padding: 0.3em 0.8em;
+  border: 2px solid var(--color-border);
+  border-radius: 0;
+  background: var(--color-surface-raised);
+  color: var(--color-text);
+  font: inherit;
+  font-weight: var(--font-weight-bold);
+  text-align: center;
+}
+
+.panel .button:hover:not(:disabled) {
+  background: var(--color-ground-light);
+}
+
+.panel .button:active:not(:disabled) {
+  background: var(--color-surface);
+}
+
+.panel .button-main {
+  border-color: var(--color-action);
+  background: var(--color-action);
+  color: var(--color-on-action);
+}
+
+/* Survol : rouge foncé (--color-action-hover, plus clair, ne donne que 3,7:1 avec le texte os ; --color-action-active : au moins 4,5:1). */
+.panel .button-main:hover:not(:disabled) {
+  background: var(--color-action-active);
+}
+
+.panel .button-main:active:not(:disabled) {
+  background: var(--color-action-active);
+}
+
+/* Curseur de volume : dernière ligne, sur toute la largeur, 44 px de haut (cible tactile) avec l'étiquette et la valeur. */
+.volume {
+  display: grid;
+  grid-template-columns: auto 1fr 3.5em;
+  align-items: center;
+  gap: 0.5em;
+  min-height: var(--hud-target);
+}
+
+.volume-range {
+  min-width: 0;
+  height: var(--hud-target);
+  margin: 0;
+  accent-color: var(--color-action);
+  cursor: pointer;
+}
+
+.volume-value {
+  text-align: right;
+  color: var(--color-text-muted);
+}
+
+/* Écran bas (téléphone en paysage) : boutons sur 3 colonnes (fin : 2), faits sur 2 colonnes, volume en dernier. */
+@media (max-height: 520px) {
+  .panel {
+    width: min(100%, 40em);
+    padding: 0.7em 1em;
+    gap: 0.45em;
+  }
+
+  .panel-title {
+    font-size: 1.35em;
+  }
+
+  .panel-facts {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    column-gap: 1em;
+  }
+
+  .panel-actions {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .panel-actions .volume {
+    grid-column: 1 / -1;
+  }
+
+  .panel-end .panel-actions {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hud-rec {
+    animation: none;
+  }
+}

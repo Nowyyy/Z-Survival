@@ -265,14 +265,14 @@ test.describe('statistiques : vie et régénération', () => {
     expect(s0.player.maxHp).toBe(160);
     expect(s0.player.health).toBe(160);
     await expect(page.locator('#hud-life')).toHaveText('160/160');
-    await expect(page.locator('#hud-fill')).toHaveCSS('transform', 'matrix(1, 0, 0, 1, 0, 0)');
+    await expect(page.locator('#hud-bar')).toHaveAttribute('aria-valuenow', '160'); // lot 3l : vie sans barre (#hud-fill retiré) ; la valeur reste exposée (progressbar)
+    await expect(page.locator('#hud-bar')).toHaveAttribute('aria-valuemax', '160');
     await page.evaluate(([x, y]) => { window.__zs.setInput({ aim: { angle: -Math.PI / 2 } }); window.__zs.spawnEnemy(x + 30, y); }, [s0.player.x, s0.player.y]);
     await step(page, 0.3);
     const hurt = (await state(page)).player.health;
     expect(hurt).toBeLessThan(160);
     await expect(page.locator('#hud-life')).toHaveText(new RegExp(`^${Math.ceil(hurt)}/160$`));
-    const scale = await page.locator('#hud-fill').evaluate((el) => new DOMMatrix(getComputedStyle(el).transform).a);
-    expect(scale).toBeCloseTo(Math.ceil(hurt) / 160, 2);
+    await expect(page.locator('#hud-bar')).toHaveAttribute('aria-valuenow', String(Math.ceil(hurt)));
     await page.evaluate(() => window.__zs.killAll());
     await step(page, 0.1);
     expect((await state(page)).player.health).toBe(160);

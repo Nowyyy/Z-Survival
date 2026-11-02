@@ -18,3 +18,39 @@ export const salle = (url) => {
   const i = url.indexOf('?');
   return i < 0 ? `${url}?map=salle` : `${url.slice(0, i + 1)}map=salle&${url.slice(i + 1)}`;
 };
+
+// Lot 3l : HUD intégré (direction B) en blocs de taille fixe dans trois colonnes. #hud est le conteneur commun (toute la bande du haut, entre les marges) :
+// les mesures de place se font sur les blocs visibles. HUD_BLOCKS : sélecteurs des blocs (dans l'ordre du HTML) ; hudBoxes : leurs boîtes et celle de Pause.
+export const HUD_BLOCKS = ['#hud-chrono', '#hud-bar', '#hud-chutes', '#hud-floor', '#hud-trial', '#hud-wave', '#hud-money', '#hud-gain', '#down-body', '#hud-remaining', '#hud-next', '#hud-kills'];
+export const hudBoxes = (page) => page.evaluate((sels) => {
+  const out = {};
+  for (const sel of [...sels, '#btn-pause']) {
+    const el = document.querySelector(sel);
+    if (!el || el.getClientRects().length === 0 || getComputedStyle(el).visibility === 'hidden') continue;
+    const r = el.getBoundingClientRect();
+    out[sel] = { l: r.left, t: r.top, r: r.right, b: r.bottom, w: r.width, h: r.height };
+  }
+  return out;
+}, HUD_BLOCKS);
+// Part de l'écran couverte par l'union des boîtes (rognées à la fenêtre), entre 0 et 1.
+export function screenShare(boxes, width, height) {
+  const list = Object.values(boxes).map((b) => ({ l: Math.max(0, b.l), t: Math.max(0, b.t), r: Math.min(width, b.r), b: Math.min(height, b.b) })).filter((b) => b.r > b.l && b.b > b.t);
+  const xs = [...new Set(list.flatMap((b) => [b.l, b.r]))].sort((a, c) => a - c);
+  let area = 0;
+  for (let i = 0; i + 1 < xs.length; i += 1) {
+    const spans = list.filter((b) => b.l <= xs[i] && b.r >= xs[i + 1]).map((b) => [b.t, b.b]).sort((a, c) => a[0] - c[0]);
+    let covered = 0;
+    let cur = null;
+    for (const [t, bt] of spans) {
+      if (!cur || t > cur[1]) {
+        if (cur) covered += cur[1] - cur[0];
+        cur = [t, bt];
+      } else cur[1] = Math.max(cur[1], bt);
+    }
+    if (cur) covered += cur[1] - cur[0];
+    area += covered * (xs[i + 1] - xs[i]);
+  }
+  return area / (width * height);
+}
+// Vrai si deux boîtes { l, t, r, b } ne se recouvrent pas (tolérance d'un demi-pixel).
+export const apart = (a, b) => a.r <= b.l + 0.5 || b.r <= a.l + 0.5 || a.b <= b.t + 0.5 || b.b <= a.t + 0.5;

@@ -199,7 +199,8 @@ test.describe('le vrai jeu dans le cadre (même origine)', () => {
     await expect(frame.locator('#hud')).toBeVisible();
     const actual = await measure(page);
     expect(actual.available).toBe(true);
-    expect(actual.measure.elements.map((e) => e.name)).toEqual(expect.arrayContaining(['hud', 'argent', 'vague', 'pause']));
+    // Lot 3l : « Actuel » montre l'interface intégrée (B) ; ses blocs portent les noms de B (avant : hud, argent, vague, pause).
+    expect(actual.measure.elements.map((e) => e.name)).toEqual(expect.arrayContaining(['chrono', 'vie', 'chutes', 'argent', 'vague', 'tues', 'pause']));
     for (const direction of DIRECTIONS) {
       await set(page, { direction });
       await expect(frame.locator('#hud')).toBeHidden();

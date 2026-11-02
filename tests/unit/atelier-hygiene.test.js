@@ -68,7 +68,8 @@ describe('hygiène du lot 3g : fichiers', () => {
   it('fichiers réservés aux autres lots inchangés (jeu, HUD, interface, CLAUDE.md, conventions, workflow, index, seed)', () => {
     // js/game/game.js : une ligne (sortie de l'escalier par le côté, retour du propriétaire) ; js/core/stair-walk.js : option sideExit (même retour).
     // main (lot 4) récupéré dans la branche : la comparaison se fait avec ce main (MAIN), pas avec la base du lot.
-    const changed = git(`diff --name-only ${MAIN} -- js/game/hud.js js/game/ui.js js/game/levels-source.js jeu.html css/game.css CLAUDE.md Docs/ref/conventions.md data/game/enemies.json .github index.html Docs/seed.md`);
+    // Lot 3l (interface intégrée, fusionnée dans lot-4b) : jeu.html, css/game.css, js/game/hud.js et js/game/ui.js sont modifiés par ce lot autorisé ; ils sortent de la liste.
+    const changed = git(`diff --name-only ${MAIN} -- js/game/levels-source.js CLAUDE.md Docs/ref/conventions.md data/game/enemies.json .github index.html Docs/seed.md`);
     if (changed === null) return;
     expect(changed).toEqual([]);
   });

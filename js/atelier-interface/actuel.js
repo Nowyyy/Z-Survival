@@ -16,26 +16,34 @@ export function actuelUrl(state, { vhs = true, extra = '' } = {}) {
   return parts.join('&');
 }
 
-// Éléments mesurés de l'interface actuelle, par écran.
+// Éléments mesurés de l'interface actuelle, par écran. Lot 3l : le jeu a l'interface intégrée (HUD B, sticks A) ; les noms sont ceux des blocs des
+// propositions (render.js : chrono, vie, chutes, etage, essai, vague, argent, restants, tues, pause, a-terre), pour comparer « Actuel » et B boîte par boîte.
 export function actuelItems(screen) {
   // E1 « actuel » : la page d'attente index.html (titre, état, bandeaux).
   if (screen === 'menu') return [{ name: 'titre', selector: '.title', role: 'hud' }, { name: 'statut', selector: '.status', role: 'hud' }, { name: 'badge', selector: '.crumb', role: 'hud' }, { name: 'pied', selector: '.foot .zone', role: 'hud' }];
   const hud = [
-    { name: 'hud', selector: '#hud', role: 'hud' },
+    { name: 'chrono', selector: '#hud-chrono', role: 'hud' },
+    { name: 'vie', selector: '#hud-bar', role: 'hud' },
+    { name: 'chutes', selector: '#hud-chutes', role: 'hud' },
+    { name: 'etage', selector: '#hud-floor', role: 'hud' },
+    { name: 'essai', selector: '#hud-trial', role: 'hud' },
+    { name: 'vague', selector: '#hud-wave', role: 'hud' },
     { name: 'argent', selector: '#hud-money', role: 'hud' },
     { name: 'gain', selector: '#hud-gain', role: 'hud', parent: 'argent' },
-    { name: 'vague', selector: '#hud-wave', role: 'hud' },
+    { name: 'restants', selector: '#hud-remaining', role: 'hud' },
+    { name: 'debut', selector: '#hud-next', role: 'hud' },
+    { name: 'tues', selector: '#hud-kills', role: 'hud' },
     { name: 'pause', selector: '#btn-pause', role: 'button', target: true },
     { name: 'son', selector: '#sound-hint', role: 'button', target: true },
   ];
   if (screen === 'pause') return [{ name: 'panneau', selector: '#pause-panel .panel', role: 'panel', noText: true }, { name: 'pause-texte', selector: '#pause-panel .panel', role: 'overlay' }, { name: 'bouton', selector: '#pause-panel button, #pause-panel input', role: 'button', target: true, all: true, parent: 'panneau', noText: true }];
   if (screen === 'fin-mort' || screen === 'fin-monde') return [{ name: 'panneau', selector: '#end-panel .panel', role: 'panel', noText: true }, { name: 'fin-texte', selector: '#end-panel .panel', role: 'overlay' }, { name: 'bouton', selector: '#end-panel .button', role: 'button', target: true, all: true, parent: 'panneau', noText: true }];
-  if (screen === 'a-terre') return [...hud, { name: 'a-terre', selector: '#down .down-body', role: 'hud' }];
+  if (screen === 'a-terre') return [...hud, { name: 'a-terre', selector: '#down-body', role: 'hud' }];
   if (screen === 'sticks') return [...hud, { name: 'stick-gauche', selector: '#stick-left .stick-base', role: 'stick' }, { name: 'stick-droit', selector: '#stick-right .stick-base', role: 'stick' }];
   return hud;
 }
 
-export const ACTUEL_HUD_NAMES = ['hud', 'argent', 'gain', 'vague', 'pause'];
+export const ACTUEL_HUD_NAMES = ['chrono', 'vie', 'chutes', 'etage', 'essai', 'vague', 'argent', 'gain', 'restants', 'debut', 'tues', 'pause', 'a-terre'];
 
 // Zones de sécurité simulées : le jeu lit env(safe-area-inset-*) par un élément sonde (js/game/safe-area.js) ; on impose le padding de la sonde
 // puis on relance sa lecture par un événement resize. Renvoie les variables publiées par le jeu.
@@ -53,7 +61,8 @@ export function injectSafeArea(doc, safe) {
 }
 
 // Masque l'interface du jeu (directions A, B, C) : règles display: none injectées de l'extérieur, le canvas, le voile d'étage et l'effet VHS restent.
-export const GAME_UI_SELECTORS = ['.hud-left', '#hud-wave', '#btn-pause', '#down', '#stick-left', '#stick-right', '#sound-hint', '#pause-panel', '#end-panel', '#wave-announce', '#labels', '#rotate'];
+// Lot 3l : le HUD intégré est un seul conteneur (#hud) ; le texte « À terre » (#down-body) est dedans, le voile (#down) à part.
+export const GAME_UI_SELECTORS = ['#hud', '#btn-pause', '#down', '#stick-left', '#stick-right', '#sound-hint', '#pause-panel', '#end-panel', '#wave-announce', '#labels', '#rotate'];
 export function hideGameInterface(doc) {
   if (doc.getElementById('ui3k-hide')) return;
   const style = doc.createElement('style');
