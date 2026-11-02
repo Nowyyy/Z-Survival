@@ -454,17 +454,19 @@ test.describe('zones : ?wave=N, fin de monde, Rejouer, ancienne salle', () => {
     expect(s.worldOver).toBe(false);
     expect(s.waves.worldEnd).toBe(false);
     await page.locator('#btn-pause').click();
-    await expect(page.locator('#pause-next')).toBeHidden();
+    await expect(page.locator('#pause-next')).toHaveCount(0); // lot 3l : plus de ligne « Prochaine zone » dans la pause (retour du propriétaire)
   });
 });
 
 test.describe('zones : panneau de pause, mouvement réduit, interruptions', () => {
-  test('pause : « Prochaine zone : manche 11 » aux manches 1 à 10, masquée dès la manche 11 ; le panneau tient à 667×375', async ({ page }) => {
+  // Lot 3l (retour du propriétaire) : la ligne « Prochaine zone » quitte la pause ; la donnée reste (getState().zones.next) et le panneau doit toujours tenir.
+  test('pause : prochaine zone (donnée) 11 aux manches 1 à 10, puis 21, 31, aucune ; plus de ligne dans la pause ; le panneau tient à 667×375', async ({ page }) => {
     await open(page, '&nospawn=1');
     for (const n of [1, 5, 10]) {
       await page.evaluate((w) => { window.__zs.startWave(w); window.__zs.step(0.05); }, n);
       await page.locator('#btn-pause').click();
-      await expect(page.locator('#pause-next')).toHaveText('Prochaine zone : manche 11');
+      await expect(page.locator('#pause-next')).toHaveCount(0);
+      expect((await STATE(page)).zones.next?.wave).toBe(11);
       const fit = await page.evaluate(() => {
         const r = document.querySelector('#pause-panel .panel').getBoundingClientRect();
         return { top: r.top, bottom: r.bottom, left: r.left, right: r.right, w: innerWidth, h: innerHeight, small: [...document.querySelectorAll('#pause-panel button')].filter((b) => !b.hidden && b.getBoundingClientRect().height < 44).length };
@@ -478,15 +480,15 @@ test.describe('zones : panneau de pause, mouvement réduit, interruptions', () =
     }
     await page.evaluate(() => { window.__zs.startWave(11); window.__zs.step(0.05); });
     await page.locator('#btn-pause').click();
-    await expect(page.locator('#pause-next')).toHaveText('Prochaine zone : manche 21'); // lot 3e : la porte 2 suit
+    expect((await STATE(page)).zones.next?.wave).toBe(21); // lot 3e : la porte 2 suit
     await page.locator('#btn-resume').click();
     await page.evaluate(() => { window.__zs.startWave(21); window.__zs.step(0.05); });
     await page.locator('#btn-pause').click();
-    await expect(page.locator('#pause-next')).toHaveText('Prochaine zone : manche 31'); // puis la porte 3
+    expect((await STATE(page)).zones.next?.wave).toBe(31); // puis la porte 3
     await page.locator('#btn-resume').click();
     await page.evaluate(() => { window.__zs.startWave(31); window.__zs.step(0.05); });
     await page.locator('#btn-pause').click();
-    await expect(page.locator('#pause-next')).toBeHidden();
+    expect((await STATE(page)).zones.next).toBeNull();
   });
 
   test('mouvement réduit : la porte disparaît sans mouvement, l\'annonce n\'a ni secousse ni échelle', async ({ page }) => {

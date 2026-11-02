@@ -54,10 +54,11 @@
   transform: translateX(-50%);
 }
 
-/* Colonne de droite : restants (ou début de manche) et tués, deux lignes de la hauteur du bouton Pause. */
+/* Colonne de droite : restants (ou début de manche) et tués (deux lignes de la hauteur du bouton Pause), puis l'argent (retour du propriétaire), même hauteur de ligne. */
 .hud-tr {
+  position: relative;
   display: grid;
-  grid-template-rows: repeat(2, calc((var(--hud-pause-size) - var(--hud-gap)) / 2));
+  grid-template-rows: repeat(3, calc((var(--hud-pause-size) - var(--hud-gap)) / 2));
   row-gap: var(--hud-gap);
   justify-items: end;
   padding-top: 0.35em;
@@ -189,24 +190,28 @@
 }
 
 .hud-money {
-  position: relative;
-  justify-content: center;
+  grid-area: 3 / 1;
+  justify-content: flex-end;
   width: 8.6em;
-  overflow: visible;
+  height: 100%;
+  line-height: 1.1;
 }
 
 .hud-money .hud-value {
   color: var(--color-money);
 }
 
-/* « +N » (lot 4, agrégé, décoratif) : collé à gauche de l'argent, dans l'espace libre entre la colonne de gauche et la colonne centrale ; sans animation. */
+/* « +N » (lot 4, agrégé, décoratif) : sous le bouton Pause, sur la ligne de l'argent (retour du propriétaire), au moins de la largeur de Pause ; sans animation. */
 .hud-gain {
   position: absolute;
+  grid-area: 3 / 1;
   top: 0;
-  right: calc(100% + var(--hud-gap));
+  left: calc(100% + var(--hud-gap));
   box-sizing: border-box;
   display: flex;
   align-items: center;
+  justify-content: center;
+  min-width: var(--hud-pause-size);
   height: 100%;
   padding: 0 0.35em;
   background: color-mix(in srgb, var(--hud-bg) calc(var(--hud-bg-alpha) * 100%), transparent);
@@ -282,17 +287,17 @@
   fill: currentColor;
 }
 
-/* Invitation à activer le son (téléphone) : sous la colonne centrale (vague et argent), jamais sur eux. */
+/* Invitation à activer le son (téléphone) : sous la vague (colonne centrale), jamais sur elle. */
 .sound-hint {
   position: fixed;
-  top: calc(var(--edge-top) + var(--hud-fs) * 4.2 + 2 * var(--hud-gap));
+  top: calc(var(--edge-top) + var(--hud-fs) * 2.6 + var(--hud-gap));
   left: 50%;
   z-index: 5;
   transform: translateX(-50%);
   max-width: 30vw;
 }
 
-/* ---------- État à terre (E2-10) : le voile reste en plein écran (game.css), le texte est dans la colonne centrale, sous l'argent ---------- */
+/* ---------- État à terre (E2-10) : le voile reste en plein écran (game.css), le texte est dans la colonne centrale, sous la vague ---------- */
 .down-body {
   box-sizing: border-box;
   display: flex;
@@ -301,7 +306,8 @@
   justify-content: center;
   gap: 0.25em 0.5em;
   width: 19em;
-  max-width: calc(100vw - var(--edge-left) - var(--edge-right));
+  /* Entre les colonnes : la colonne de droite (restants, tués, argent) descend jusqu'à la hauteur du texte ; il passe sur deux lignes sur les petits écrans. */
+  max-width: calc(100vw - 2 * (var(--edge-right) + var(--hud-pause-size) + 2 * var(--hud-gap) + 0.35em + 8.6em));
   padding: 0.5em 1em;
   background: var(--game-down-panel);
   text-align: center;
@@ -441,10 +447,30 @@
   display: none;
 }
 
+/* Pause : « PAUSE » et le solde sur la même ligne (retour du propriétaire). */
+.panel-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.35em 1em;
+}
+
+/* Fin : deux colonnes (vague, record, meilleure manche | tués, argent gagné, bonus, solde) ; la ligne d'état de la sauvegarde sur toute la largeur. */
 .panel-facts {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.25em 1em;
+}
+
+.facts-col {
   display: flex;
   flex-direction: column;
   gap: 0.25em;
+}
+
+.panel-facts > .panel-note {
+  grid-column: 1 / -1;
 }
 
 .panel-line {
@@ -462,10 +488,40 @@
   font-weight: var(--font-weight-bold);
 }
 
+/* Boutons sur deux colonnes : Reprendre, Recommencer, Quitter | Son, Effet VHS, Plein écran (retour du propriétaire) ; fin : Rejouer | menu. */
 .panel-actions {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: 1fr 1fr;
   gap: 0.5em;
+}
+
+#btn-resume {
+  grid-area: 1 / 1;
+}
+
+#btn-restart {
+  grid-area: 2 / 1;
+}
+
+#btn-quit {
+  grid-area: 3 / 1;
+}
+
+#btn-sound {
+  grid-area: 1 / 2;
+}
+
+#btn-vhs {
+  grid-area: 2 / 2;
+}
+
+#btn-fullscreen {
+  grid-area: 3 / 2;
+}
+
+.panel-pause,
+.panel-end {
+  width: min(100%, 32em);
 }
 
 .panel .button {
@@ -507,56 +563,20 @@
   background: var(--color-action-active);
 }
 
-/* Curseur de volume : dernière ligne, sur toute la largeur, 44 px de haut (cible tactile) avec l'étiquette et la valeur. */
-.volume {
-  display: grid;
-  grid-template-columns: auto 1fr 3.5em;
-  align-items: center;
-  gap: 0.5em;
-  min-height: var(--hud-target);
-}
-
-.volume-range {
-  min-width: 0;
-  height: var(--hud-target);
-  margin: 0;
-  accent-color: var(--color-action);
-  cursor: pointer;
-}
-
-.volume-value {
-  text-align: right;
-  color: var(--color-text-muted);
-}
-
-/* Écran bas (téléphone en paysage) : boutons sur 3 colonnes (fin : 2), faits sur 2 colonnes, volume en dernier. */
+/* Écran bas (téléphone en paysage) : panneaux plus larges et plus serrés. */
 @media (max-height: 520px) {
   .panel {
-    width: min(100%, 40em);
     padding: 0.7em 1em;
     gap: 0.45em;
   }
 
+  .panel-pause,
+  .panel-end {
+    width: min(100%, 40em);
+  }
+
   .panel-title {
     font-size: 1.35em;
-  }
-
-  .panel-facts {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    column-gap: 1em;
-  }
-
-  .panel-actions {
-    grid-template-columns: repeat(3, 1fr);
-  }
-
-  .panel-actions .volume {
-    grid-column: 1 / -1;
-  }
-
-  .panel-end .panel-actions {
-    grid-template-columns: 1fr 1fr;
   }
 }
 

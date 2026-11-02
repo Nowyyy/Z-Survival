@@ -267,6 +267,15 @@ if (game === null) {
     }));
   }
   if (testMode) installTestHook(ctx, game);
+  // Lot 3l (demande du propriétaire) : ?fin=monde montre tout de suite l'écran de victoire « Monde terminé » : la dernière manche du monde est lancée puis
+  // terminée d'office (vrais calculs : bonus, record). Seulement en mode essai (sauvegarde en lecture seule, par exemple avec ?wave=40) : rien n'est
+  // jamais écrit ; ignoré sinon, et sur une carte sans fin de monde (?map=salle).
+  if (query.get('fin') === 'monde' && saveMode.readOnly && Number.isInteger(zonesJson?.wavesPerWorld)) {
+    game.startWave(zonesJson.wavesPerWorld);
+    game.advance(3.2);
+    game.skipWave();
+    game.advance(0.3);
+  }
 }
 // Les sons « fond » (voix de zombies, ambiance) sont calculés pendant la partie, 4 ms par image au plus ; ils ne sont joués qu'une fois prêts.
 renderSounds(planSounds(soundsCfg.sounds, 'fond'), { sliceMs: BACKGROUND_SLICE_MS, wait: nextVisibleFrame, onItem: (item) => ctx.audio.addSounds([item]) }).then((done) => {

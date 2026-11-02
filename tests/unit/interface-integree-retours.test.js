@@ -41,11 +41,15 @@ describe('retours du propriétaire (1re retouche)', () => {
 });
 
 describe('retours du propriétaire (2e et 3e retouches)', () => {
-  it('restants en haut à droite au-dessus des tués, argent sous la vague (colonne centrale)', () => {
+  // Retour après l'intégration (avant : argent sous la vague, au centre) : argent à droite sous les tués, « +N » sous le bouton Pause.
+  it('restants en haut à droite au-dessus des tués, puis l\'argent ; la colonne centrale ne garde que la vague et l\'état à terre', () => {
     const tr = html.slice(html.indexOf('class="hud-col hud-tr"'));
     expect(tr.indexOf('id="hud-remaining"')).toBeLessThan(tr.indexOf('id="hud-kills"'));
+    expect(tr.indexOf('id="hud-kills"')).toBeLessThan(tr.indexOf('id="hud-money"'));
     const tc = html.slice(html.indexOf('class="hud-col hud-tc"'), html.indexOf('class="hud-col hud-tr"'));
-    expect(tc.indexOf('id="hud-wave"')).toBeLessThan(tc.indexOf('id="hud-money"'));
+    expect(tc).not.toContain('id="hud-money"');
+    expect(rule('.hud-money')).toMatch(/grid-area: 3 \/ 1;/);
+    expect(rule('.hud-gain')).toMatch(/left: calc\(100% \+ var\(--hud-gap\)\);[\s\S]*min-width: var\(--hud-pause-size\);/);
   });
 
   it('REC, VIE et la ligne chutes + étage s\'arrêtent au même bord droit (8,8 em)', () => {
@@ -54,8 +58,8 @@ describe('retours du propriétaire (2e et 3e retouches)', () => {
     expect(rule('.hud-tl')).toMatch(/width: calc\(8\.8em \+ 0\.35em\);[\s\S]*padding: 0\.35em 0 0 0\.35em;/);
   });
 
-  it('les deux lignes de droite tiennent dans la hauteur du bouton Pause', () => {
-    expect(rule('.hud-tr')).toMatch(/grid-template-rows: repeat\(2, calc\(\(var\(--hud-pause-size\) - var\(--hud-gap\)\) \/ 2\)\);\s*row-gap: var\(--hud-gap\);/);
+  it('les deux premières lignes de droite tiennent dans la hauteur du bouton Pause (l\'argent en troisième ligne, même hauteur)', () => {
+    expect(rule('.hud-tr')).toMatch(/grid-template-rows: repeat\(3, calc\(\(var\(--hud-pause-size\) - var\(--hud-gap\)\) \/ 2\)\);\s*row-gap: var\(--hud-gap\);/);
     expect(rule('.pause-button')).toMatch(/width: var\(--hud-pause-size\);\s*height: var\(--hud-pause-size\);/);
   });
 
@@ -72,11 +76,12 @@ describe('retours du propriétaire (2e et 3e retouches)', () => {
     expect(gameJs).not.toMatch(/getElementById\('btn-menu'\)|\$\('btn-menu'\)/);
   });
 
-  it('à terre : texte sous l\'argent, sans cadre blanc (aucun contour sur .down-body), angles droits', () => {
+  it('à terre : texte dans la colonne centrale sous la vague (l\'argent est parti à droite), sans cadre blanc, angles droits', () => {
     const body = rule('.down-body');
     expect(body).not.toMatch(/border(-width|-color)?:/);
     expect(body).not.toMatch(/border-radius/);
-    expect(html.indexOf('id="down-body"')).toBeGreaterThan(html.indexOf('id="hud-money"'));
+    expect(html.indexOf('id="down-body"')).toBeGreaterThan(html.indexOf('id="hud-wave"'));
+    expect(html.indexOf('id="down-body"')).toBeLessThan(html.indexOf('class="hud-col hud-tr"'));
   });
 
   it('« Mode essai » dans la colonne de gauche, sous chutes + étage', () => {

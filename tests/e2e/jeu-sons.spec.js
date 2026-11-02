@@ -115,35 +115,19 @@ test.describe('sons : démarrage et journal', () => {
 });
 
 test.describe('sons : volume, pause, voix', () => {
-  test('le curseur « Volume » se règle au clavier et change le volume', async ({ page }) => {
+  // Lot 3l (retour du propriétaire) : le curseur « Volume » quitte la pause (avant : deux tests, au clavier et au doigt) ; le volume reste à sa valeur (100) et le
+  // bouton « Son » coupe et rétablit toujours le son.
+  test('plus de curseur « Volume » dans la pause : le volume reste à 100 ; le bouton « Son » coupe et rétablit le son', async ({ page }) => {
     await open(page);
     await page.getByRole('button', { name: 'Pause' }).click();
-    const slider = page.getByRole('slider', { name: 'Volume' });
-    await expect(slider).toBeVisible();
+    await expect(page.getByRole('slider')).toHaveCount(0);
+    await expect(page.locator('#volume, #volume-row')).toHaveCount(0);
     expect((await audio(page)).volume).toBe(100);
-    await slider.focus();
-    await page.keyboard.press('ArrowLeft');
-    await expect.poll(async () => (await audio(page)).volume).toBe(90);
-    await page.keyboard.press('End');
-    await page.keyboard.press('ArrowLeft');
-    await page.keyboard.press('ArrowLeft');
-    await expect.poll(async () => (await audio(page)).volume).toBe(80);
-    await expect(slider).toHaveAttribute('aria-valuetext', '80 %');
-    await expect(page.locator('#volume-value')).toHaveText('80 %');
-  });
-
-  test('le curseur « Volume » se règle aussi au doigt', async ({ page }, testInfo) => {
-    test.skip(testInfo.project.name !== 'mobile', 'écran tactile');
-    await page.setViewportSize(SIZE);
-    await page.goto(URL());
-    await waitReady(page);
-    await page.getByRole('button', { name: 'Pause' }).click();
-    const slider = page.locator('#volume');
-    const box = await slider.boundingBox();
-    expect(box.height).toBeGreaterThanOrEqual(43.5);
-    await page.touchscreen.tap(box.x + box.width * 0.5, box.y + box.height / 2);
-    await expect.poll(async () => (await audio(page)).volume).toBeLessThan(70);
-    await expect.poll(async () => (await audio(page)).volume).toBeGreaterThan(30);
+    await page.locator('#btn-sound').click();
+    await expect.poll(async () => (await audio(page)).muted).toBe(true);
+    await expect(page.locator('#btn-sound')).toHaveText('Son : coupé');
+    await page.locator('#btn-sound').click();
+    await expect.poll(async () => (await audio(page)).muted).toBe(false);
   });
 
   test('la pause suspend le son : aucune entrée tant qu\'elle dure, reprise ensuite', async ({ page }) => {
@@ -237,7 +221,7 @@ test.describe('sons : chargement, confidentialité, robustesse', () => {
     expect((await audio(page)).unlocked).toBe(false);
     await page.getByRole('button', { name: 'Pause' }).click();
     await expect(page.locator('#btn-sound')).toBeHidden();
-    await expect(page.locator('#volume-row')).toBeHidden();
+    await expect(page.locator('#volume-row')).toHaveCount(0); // lot 3l : plus de curseur de volume
     expect(problems).toEqual([]);
   });
 
@@ -267,11 +251,12 @@ test.describe('sons : chargement, confidentialité, robustesse', () => {
   });
 
   for (const size of [SIZE, { width: 1440, height: 900 }]) {
-    test(`axe : aucune violation sur le panneau de pause avec le curseur (${size.width}×${size.height})`, async ({ page }) => {
+    // Lot 3l : le curseur de volume est retiré de la pause ; les boutons (dont « Quitter », désactivé) gardent 44 px.
+    test(`axe : aucune violation sur le panneau de pause (${size.width}×${size.height})`, async ({ page }) => {
       await open(page, size.width > 1000 ? '&dpr=1' : '', size);
       await page.getByRole('button', { name: 'Pause' }).click();
-      await expect(page.locator('#volume')).toBeVisible();
-      for (const box of await Promise.all((await page.locator('#pause-panel button:not([hidden]), #volume').all()).map((b) => b.boundingBox()))) {
+      await expect(page.locator('#btn-quit')).toBeDisabled();
+      for (const box of await Promise.all((await page.locator('#pause-panel button:not([hidden])').all()).map((b) => b.boundingBox()))) {
         expect(box.height).toBeGreaterThanOrEqual(43.5);
         expect(box.y + box.height).toBeLessThanOrEqual(size.height);
       }

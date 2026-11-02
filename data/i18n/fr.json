@@ -25,7 +25,6 @@
   "game.sound.off": "Son : coupé",
   "game.end.title": "Tu es mort",
   "game.end.kills": "Zombies tués : {n}",
-  "game.end.provisional": "Écran de fin provisoire.",
   "game.end.replay": "Rejouer",
   "game.rotate.title": "Tourne ton téléphone",
   "game.rotate.hint": "Le jeu se joue en mode paysage.",
@@ -333,5 +332,6 @@
   "game.hud.nextValue": "{n} s",
   "game.hud.killsShort": "Tués",
   "game.hud.trial": "Mode essai",
-  "game.end.menu": "Revenir au menu principal"
+  "game.end.menu": "Revenir au menu principal",
+  "game.pause.quit": "Quitter"
 }

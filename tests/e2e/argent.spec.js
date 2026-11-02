@@ -362,7 +362,7 @@ test.describe('échecs de stockage', () => {
     expect(s.save).toMatchObject({ status: 'failed', pending: 10, balance: 10 });
     expect(s.save.lastCommit).toMatchObject({ ok: false, error: 'QuotaExceededError' });
     await page.getByRole('button', { name: 'Pause' }).click();
-    await expect(page.locator('#pause-save')).toHaveText('Sauvegarde : échec, nouvelle tentative');
+    await expect(page.locator('#pause-save')).toHaveCount(0); // lot 3l (retour du propriétaire) : l'état de la sauvegarde n'est plus affiché dans la pause ; il est vérifié dans getState().save
     await page.getByRole('button', { name: 'Reprendre' }).click();
     await page.evaluate(() => { window.__fail = false; });
     await step(page, 2.5);
@@ -387,13 +387,13 @@ test.describe('échecs de stockage', () => {
     const s = await state(page);
     expect(s.save).toMatchObject({ status: 'unavailable', balance: 10, locked: true });
     await page.getByRole('button', { name: 'Pause' }).click();
-    await expect(page.locator('#pause-save')).toHaveText('Sauvegarde indisponible : le solde reste en mémoire');
+    await expect(page.locator('#pause-save')).toHaveCount(0); // lot 3l (retour du propriétaire) : l'état de la sauvegarde n'est plus affiché dans la pause ; il est vérifié dans getState().save
     expect(problems).toEqual([]);
   });
 
   for (const [label, raw] of [['illisible ({bad)', '{bad'], ['version future', '{"v":99,"money":5}']]) {
     // Lot 3l : le lien « Voir ma sauvegarde » quitte l'écran de fin (choix du propriétaire) ; « Revenir au menu principal » le remplace (sans action).
-    test(`sauvegarde ${label} : « locked », aucune écriture pendant toute une partie, pause et E2-7 le disent`, async ({ page }) => {
+    test(`sauvegarde ${label} : « locked », aucune écriture pendant toute une partie, E2-7 le dit (plus la pause : lot 3l)`, async ({ page }) => {
       await page.addInitScript(`${SPY}\n${seedStorage(raw)}`);
       await open(page);
       await page.evaluate(() => window.__zs.startWave(2));
@@ -402,7 +402,7 @@ test.describe('échecs de stockage', () => {
       await page.evaluate(() => window.__zs.skipWave());
       await step(page, 0.3);
       await page.getByRole('button', { name: 'Pause' }).click();
-      await expect(page.locator('#pause-save')).toHaveText('Sauvegarde illisible : rien n\'est enregistré (voir la page Sauvegarde)');
+      await expect(page.locator('#pause-save')).toHaveCount(0); // lot 3l (retour du propriétaire) : l'état de la sauvegarde n'est plus affiché dans la pause ; il est vérifié dans getState().save
       // La ligne la plus longue de la pause tient aussi à 667×375, sans défilement.
       expect(await page.evaluate(() => { const p = document.querySelector('#pause-panel .panel'); return p.scrollHeight > p.clientHeight || p.getBoundingClientRect().bottom > innerHeight; })).toBe(false);
       await page.getByRole('button', { name: 'Reprendre' }).click();
@@ -422,7 +422,7 @@ test.describe('mode essai', () => {
   test.skip(({ isMobile }) => isMobile, 'bureau');
   const REAL = { ...defaultSave(), rev: 2, savedAt: 1_700_000_000_000, money: 300, earned: 300, stats: { ...defaultSave().stats, degats: 2 } };
 
-  test('?wave=5 : les gains s\'affichent (solde de session) mais localStorage est inchangé ; pause et E2-7 disent « Mode essai »', async ({ page }) => {
+  test('?wave=5 : les gains s\'affichent (solde de session) mais localStorage est inchangé ; E2-7 dit « Mode essai » (la pause ne le dit plus : lot 3l)', async ({ page }) => {
     await page.addInitScript(`${SPY}\n${seedStorage(REAL)}`);
     await open(page, `${LOCAL}&wave=5`);
     const before = await stored(page);
@@ -431,7 +431,7 @@ test.describe('mode essai', () => {
     await page.evaluate(() => window.__zs.flushSave());
     expect((await state(page)).save.balance).toBe(310);
     await page.getByRole('button', { name: 'Pause' }).click();
-    await expect(page.locator('#pause-save')).toHaveText('Mode essai : rien n\'est enregistré');
+    await expect(page.locator('#pause-save')).toHaveCount(0); // lot 3l (retour du propriétaire) : l'état de la sauvegarde n'est plus affiché dans la pause ; il est vérifié dans getState().save (readonly)
     await expect(page.locator('#pause-balance')).toHaveText('Solde : 310');
     await page.getByRole('button', { name: 'Reprendre' }).click();
     await page.evaluate(() => { window.__zs.setChutes(0); window.__zs.downPlayer(); });
@@ -540,7 +540,7 @@ test.describe('par défaut (sans ?test=1)', () => {
     expect(stores).toEqual([0, 0, '', 0]);
     expect(await context.cookies()).toEqual([]);
     expect(external).toEqual([]);
-    await expect(page.locator('#pause-save')).toHaveText('Sauvegarde : enregistrée');
+    await expect(page.locator('#pause-save')).toHaveCount(0); // lot 3l (retour du propriétaire) : l'état de la sauvegarde n'est plus affiché dans la pause (page sans ?test=1 : pas de getState)
   });
 
   test('rien n\'est exposé sans ?test=1 (ni window.__zs, ni solde)', async ({ page }) => {
@@ -563,9 +563,9 @@ test.describe('interface', () => {
     await expect(page.locator('#hud-money svg')).toHaveAttribute('aria-hidden', 'true');
   });
 
-  // Lot 3l (direction B) : avant, argent à droite du bloc d'interface et « Vague 1 / 40 » avant Pause ; après, « VAGUE 01 / 40 » centrée, l'argent juste dessous,
-  // restants et tués à gauche de Pause.
-  test('haut de l\'écran : « VAGUE 01 / 40 » centrée, l\'argent dessous, restants et tués à gauche de Pause (icône) ; boîtes indépendantes du montant', async ({ page }) => {
+  // Lot 3l (direction B, retour du propriétaire) : avant, argent à droite du bloc d'interface et « Vague 1 / 40 » avant Pause ; après, « VAGUE 01 / 40 » centrée,
+  // restants, tués puis l'argent à gauche de Pause.
+  test('haut de l\'écran : « VAGUE 01 / 40 » centrée ; restants, tués et l\'argent à gauche de Pause (icône) ; boîtes indépendantes du montant', async ({ page }) => {
     await open(page);
     await step(page, 0.2);
     await expect(page.locator('#hud-wave-text')).toHaveText('01 / 40');
@@ -577,10 +577,11 @@ test.describe('interface', () => {
     });
     const a = await rows();
     expect(Math.abs((a.wave.left + a.wave.right) / 2 - a.vw / 2)).toBeLessThanOrEqual(0.5);
-    expect(Math.abs((a.money.left + a.money.right) / 2 - a.vw / 2)).toBeLessThanOrEqual(0.5);
-    expect(a.money.top).toBeGreaterThanOrEqual(a.wave.bottom);
-    expect(a.money.left).toBeGreaterThanOrEqual(a.left.right);
+    expect(a.money.top).toBeGreaterThanOrEqual(a.kills.bottom);
+    expect(Math.abs(a.money.right - a.kills.right)).toBeLessThan(0.5);
+    expect(a.money.left).toBeGreaterThanOrEqual(a.wave.right);
     expect(a.kills.right).toBeLessThanOrEqual(a.pause.left);
+    expect(a.money.top).toBeGreaterThanOrEqual(a.pause.bottom - 0.5);
     expect(a.pause.width).toBeGreaterThanOrEqual(44);
     expect(a.pause.height).toBeGreaterThanOrEqual(44);
     await page.evaluate(() => { window.__zs.giveMoney(9_999_999); window.__zs.step(0.1); });
@@ -654,12 +655,12 @@ test.describe('interface', () => {
     await expect(page.locator('#hud-gain')).toBeHidden();
   });
 
-  test('pause : « Solde » et état de la sauvegarde, le panneau tient à 667×375, aucune cible sous 44 px', async ({ page }) => {
+  test('pause : « Solde » à côté de « PAUSE » (lot 3l : plus d\'état de la sauvegarde), le panneau tient à 667×375, aucune cible sous 44 px', async ({ page }) => {
     await open(page);
     await page.evaluate(() => window.__zs.giveMoney(1234));
     await page.getByRole('button', { name: 'Pause' }).click();
     await expect(page.locator('#pause-balance')).toHaveText(`Solde : 1${String.fromCharCode(0x202f)}234`);
-    await expect(page.locator('#pause-save')).toHaveText('Sauvegarde : enregistrée');
+    expect((await state(page)).save.status).toBe('saved'); // lot 3l (retour du propriétaire) : l'état de la sauvegarde n'est plus affiché dans la pause ; il est vérifié dans getState().save
     const m = await page.evaluate(() => {
       const panel = document.querySelector('#pause-panel .panel');
       const r = panel.getBoundingClientRect();
