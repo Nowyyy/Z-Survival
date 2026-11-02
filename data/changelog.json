@@ -145,6 +145,11 @@
       "Comparaison côte à côte et texte « Mes choix » à copier ; après les premiers choix, le HUD caméscope est retouché (vie en texte, mots entiers, argent et tués alignés sur le bouton Pause).",
       "Rien n'est encore intégré au jeu : l'intégration se fera au lot 4b."
     ] },
+    { "name": "lot-3l", "titre": "Interface intégrée", "points": [
+      "Le HUD caméscope retenu dans l'atelier remplace l'ancien : REC et temps de jeu, vie, chutes, étage, vague, argent, restants et tués, en blocs de taille fixe.",
+      "Pause, écrans de fin et état à terre refaits : texte « À terre » sous l'argent avec la barre du compte à rebours, « Revenir au menu principal » (sans action pour l'instant).",
+      "Sticks sobres ; marges de 16 px plus la zone de sécurité."
+    ] },
     { "name": "lot-4b", "titre": "Intégration des refontes", "points": [
       "En cours : branche d'intégration des refontes, réunies ici avant d'entrer dans le jeu publié.",
       "Atelier de la carte (lot 3g) intégré : carte corrigée d'après le modèle 3D, mobilier redessiné, vraies portes et éboulis, murs jusqu'au plafond, mur percé autour du joueur caché, feux, extérieur plus vivant et brouillard en volutes.",

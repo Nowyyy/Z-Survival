@@ -429,3 +429,127 @@ test.describe('annonces, réseau, stockage, accessibilité, CLS', () => {
     expect(r.pause).toBeCloseTo(63 + 15.75 * 0.35, 1);
   });
 });
+
+// Lot 3l-C : retours du propriétaire mesurés dans le jeu, priorité 2 absente (aucune proposition retenue), compatibilité avec les refontes de lot-4b, atelier.
+test.describe('retours du propriétaire, mesurés (lot 3l-C)', () => {
+  for (const size of [SIZE, { width: 844, height: 390 }, { width: 1440, height: 900 }]) {
+    test(`REC, VIE et chutes + étage finissent au même bord droit ; restants et tués dans la hauteur de Pause ; argent centré sous la vague (${size.width}×${size.height})`, async ({ page }) => {
+      await open(page, '&wave=21&floor=1', size);
+      await step(page, 3.3);
+      const b = await hudBoxes(page);
+      expect(Math.abs(b['#hud-chrono'].r - b['#hud-bar'].r)).toBeLessThan(0.5);
+      expect(Math.abs(b['#hud-chrono'].r - b['#hud-floor'].r)).toBeLessThan(0.5);
+      expect(Math.abs(b['#hud-chutes'].t - b['#hud-floor'].t)).toBeLessThan(0.5);
+      expect(b['#hud-remaining'].t).toBeGreaterThanOrEqual(b['#btn-pause'].t - 0.5);
+      expect(b['#hud-kills'].b).toBeLessThanOrEqual(b['#btn-pause'].b + 0.5);
+      expect(b['#hud-remaining'].b).toBeLessThanOrEqual(b['#hud-kills'].t);
+      expect(b['#hud-money'].t).toBeGreaterThanOrEqual(b['#hud-wave'].b);
+      expect(Math.abs((b['#hud-money'].l + b['#hud-money'].r) / 2 - size.width / 2)).toBeLessThan(0.5);
+      expect(b['#hud-trial'].t).toBeGreaterThan(b['#hud-chutes'].b);
+    });
+  }
+
+  test('mots entiers (VAGUE, RESTANTS, TUÉS, VIE, REC) ; tués sans zéros devant ; vague et restants sur deux chiffres', async ({ page }) => {
+    await open(page);
+    await step(page, 3.3);
+    const words = await page.evaluate(() => [...document.querySelectorAll('#hud .hud-label')].filter((e) => e.getClientRects().length).map((e) => e.innerText));
+    expect(words).toEqual(['REC', 'VIE', 'VAGUE', 'RESTANTS', 'TUÉS']);
+    await page.evaluate(() => { window.__zs.killAll(); window.__zs.step(0.1); });
+    const kills = (await state(page)).kills;
+    await expect(page.locator('#hud-kills-text')).toHaveText(String(kills));
+    await expect(page.locator('#hud-wave-text')).toHaveText(/^\d{2} \/ 40$/);
+  });
+
+  test('à terre : texte juste sous l\'argent (4 px), barre rouge qui se vide avec les secondes ; protégé : bouclier et barre sur 2 s', async ({ page }) => {
+    await open(page);
+    await page.evaluate(() => { const zs = window.__zs; zs.step(3.3); zs.downPlayer(); zs.step(0.1); });
+    const b = await hudBoxes(page);
+    expect(b['#down-body'].t - b['#hud-money'].b).toBeCloseTo(4, 0);
+    const fill = () => page.locator('#down-fill').evaluate((el) => new DOMMatrix(getComputedStyle(el).transform).a);
+    expect(await fill()).toBeCloseTo(1, 3);
+    await step(page, 2);
+    expect(await fill()).toBeCloseTo(3 / 5, 3);
+    await step(page, 3.2);
+    await expect(page.locator('#down-title')).toHaveText('Protégé 2 s');
+    expect(await fill()).toBeCloseTo(1, 3);
+    await expect(page.locator('#down-fill')).toHaveCSS('background-color', 'rgb(216, 20, 20)');
+  });
+});
+
+test.describe('priorité 2 non retenue : rien ne s\'affiche en plus (lot 3l-C)', () => {
+  test('coups reçus, vie faible, début de partie : le HUD ne change que par ses valeurs (aucun élément, classe ni animation de plus)', async ({ page }) => {
+    await open(page, '&map=salle');
+    // Interface intégrée seulement (l'annonce de vague E2-8, hors du lot, apparaît et s'efface d'elle-même).
+    const UI = '#hud, #btn-pause, #down, #pause-panel, #end-panel, .stick';
+    const snapshot = () => page.evaluate((sel) => {
+      const nodes = [...document.querySelectorAll(sel)].flatMap((root) => [root, ...root.querySelectorAll('*')]);
+      return { count: nodes.length, classes: nodes.map((e) => e.getAttribute('class') ?? '').join('|'), anims: document.getAnimations().filter((x) => nodes.includes(x.effect?.target)).length };
+    }, UI);
+    const start = await snapshot();
+    await page.evaluate(() => {
+      const zs = window.__zs;
+      zs.step(3.3);
+      const p = zs.getState().player;
+      zs.setInput({ aim: { angle: Math.PI } });
+      zs.spawnEnemy(p.x + 34, p.y, { type: 'marcheur' });
+      for (let i = 0; i < 400 && zs.getState().player.health > 15; i += 1) zs.step(0.05);
+      zs.killAll();
+      zs.step(0.05);
+    });
+    expect((await state(page)).player.health).toBeLessThan(100);
+    const after = await snapshot();
+    expect(after.count).toBe(start.count);
+    expect(after.classes).toBe(start.classes);
+    expect(after.anims).toBe(start.anims);
+  });
+});
+
+test.describe('compatibilité avec les refontes de lot-4b (lot 3l-C)', () => {
+  test('lot 3g, visite libre (?nospawn=1) : ni compte à rebours ni annonce de manche pendant 12 s', async ({ page }) => {
+    await open(page, '&nospawn=1');
+    for (let i = 0; i < 6; i += 1) {
+      await step(page, 2);
+      const s = await state(page);
+      expect(s.splash.visible).toBe(false);
+      await expect(page.locator('#hud-next')).toBeHidden();
+      await expect(page.locator('#hud-wave')).toBeHidden();
+    }
+  });
+
+  test('lot 3i, sons : sans AudioContext, le HUD a les mêmes boîtes et les mêmes textes (aucune interface ne dépend d\'un son)', async ({ page, context }) => {
+    await open(page, '&map=salle');
+    await step(page, 3.3);
+    const ref = await hudBoxes(page);
+    const text = await page.locator('#hud').innerText();
+    const other = await context.newPage();
+    await other.addInitScript(() => { delete window.AudioContext; delete window.webkitAudioContext; });
+    await open(other, '&map=salle');
+    await step(other, 3.3);
+    expect(await hudBoxes(other)).toEqual(ref);
+    expect((await other.locator('#hud').innerText()).replace(/\d\d:\d\d/, '')).toBe(text.replace(/\d\d:\d\d/, ''));
+  });
+
+  test('lot 3j (sang, personnages v2) : absent de lot-4b au moment du lot 3l ; ?sang=1 ne change pas le HUD (paramètre ignoré)', async ({ page }) => {
+    await open(page, '&map=salle');
+    const ref = await hudBoxes(page);
+    await open(page, '&map=salle&sang=1&perso=B');
+    expect(await hudBoxes(page)).toEqual(ref);
+  });
+
+  test('atelier : « Actuel » charge le jeu intégré et en mesure les blocs de B ; A, B, C masquent toujours l\'interface du jeu', async ({ page }) => {
+    test.setTimeout(120_000);
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto('/atelier-interface.html?test=1');
+    await page.waitForFunction(() => window.__zsUi);
+    await page.evaluate(() => window.__zsUi.ready);
+    await page.evaluate(() => window.__zsUi.set({ size: '667x375', direction: 'actuel', screen: 'hud', stateId: 'combat' }));
+    test.skip((await page.evaluate(() => window.__zsUi.getState().frame?.status)) === 'error', 'WebGL indisponible');
+    const frame = page.frameLocator('#frame');
+    await expect(frame.locator('#hud-chrono')).toBeVisible({ timeout: 60_000 });
+    const m = await page.evaluate(() => window.__zsUi.measure());
+    expect(m.measure.elements.map((e) => e.name)).toEqual(expect.arrayContaining(['chrono', 'vie', 'argent', 'vague', 'tues', 'pause']));
+    await page.evaluate(() => window.__zsUi.set({ direction: 'B' }));
+    await expect(frame.locator('#hud')).toBeHidden();
+    await expect(frame.locator('#btn-pause')).toBeHidden();
+  });
+});
