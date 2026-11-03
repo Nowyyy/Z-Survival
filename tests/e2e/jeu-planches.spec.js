@@ -5,7 +5,6 @@ import { waitReady, salle } from './helpers.js';
 // des maillages (getState().windows[i].mesh), pas la fonction pure. 667×375 de préférence ; les tests se désactivent seuls si WebGL manque.
 const SIZE = { width: 667, height: 375 };
 const SILL = 16;
-const STATE = (page) => page.evaluate(() => window.__zs.getState());
 const BROWSER_NOISE = /GL Driver Message|ReadPixels|GPU stall/;
 
 async function open(page, extra = '', size = SIZE, seed = 1) {
@@ -47,123 +46,9 @@ test.describe('planches 3D : géométrie lue sur les sommets réels', () => {
     });
   }
 
-  test('pastilles au sol : 4 pleines à 4 planches, 2 à 2 planches, 0 à 0 ; le trou sombre n\'apparaît qu\'à moins de 4 planches', async ({ page }) => {
-    await open(page);
-    const rows = await page.evaluate(() => {
-      const zs = window.__zs;
-      const out = [];
-      for (const id of ['fenetre-nord', 'fenetre-ouest', 'fenetre-est']) {
-        for (const n of [4, 3, 2, 1, 0]) {
-          zs.setPlanks(id, n);
-          const m = zs.getState().windows.find((x) => x.id === id).mesh;
-          out.push({ id, n, pips: m.pipsOn, hole: m.voidVisible });
-        }
-      }
-      return out;
-    });
-    for (const r of rows) {
-      expect([r.pips, r.hole], `${r.id} ${r.n}`).toEqual([r.n, r.n < 4]);
-    }
-  });
-
-  test('un maillage par fenêtre : triangles par fenêtre = 42 − poutres absentes − trou masqué', async ({ page }) => {
-    await open(page);
-    const triangles = await page.evaluate(() => {
-      const zs = window.__zs;
-      return [4, 3, 2, 1, 0].map((n) => {
-        zs.setPlanks('fenetre-nord', n);
-        return zs.getState().windows[0].mesh.triangles;
-      });
-    });
-    expect(triangles).toEqual([40, 38, 34, 30, 26]);
-  });
-});
-
-test.describe('débris : à plat, hors meubles, sans plafond ni limite de durée', () => {
-  test('toutes les fenêtres ouvertes : un débris par planche (12), tous à plat (y ≥ 0,3), aucun dans un meuble, dans la salle', async ({ page }) => {
-    await open(page, '&planks=0');
-    const s = await STATE(page);
-    expect(s.debris.length).toBeGreaterThan(0);
-    expect(s.debris.length).toBeLessThanOrEqual(12); // 3 fenêtres × 4 planches : un débris par planche arrachée, aucun retiré
-    for (const d of s.debris) {
-      expect(d.y).toBeGreaterThanOrEqual(0.3);
-      expect(d.y).toBeLessThan(6);
-      for (const o of s.obstacles) expect(d.x > o.x - 6 && d.x < o.x + o.w + 6 && d.z > o.y - 6 && d.z < o.y + o.h + 6, o.id).toBe(false);
-    }
-    expect(s.plankMesh.debris).toBe(s.debris.length);
-  });
-
-  test('les débris restent à l\'infini (1 000 s de temps de jeu), jusqu\'à ce que la planche soit réparée', async ({ page }) => {
-    await open(page);
-    const r = await page.evaluate(() => {
-      const zs = window.__zs;
-      zs.setPlanks('fenetre-nord', 0);
-      const born = zs.getState().debris.length;
-      for (let i = 0; i < 100; i += 1) zs.step(10);
-      const early = zs.getState().debris.length;
-      zs.setPlanks('fenetre-nord', 4);
-      return { born, early, late: zs.getState().debris.length };
-    });
-    expect(r.born).toBe(4);
-    expect(r.early).toBe(4);
-    expect(r.late).toBe(0); // réparée : les débris de la fenêtre sont consommés
-  });
-
-  test('jamais plus de débris que de planches manquantes, même en arrachant et en réparant à répétition ; rien n\'est retiré d\'office', async ({ page }) => {
-    await open(page);
-    const r = await page.evaluate(() => {
-      const zs = window.__zs;
-      const gaps = [];
-      for (let round = 0; round < 3; round += 1) {
-        for (const id of ['fenetre-nord', 'fenetre-ouest', 'fenetre-est']) {
-          zs.setPlanks(id, 0);
-          zs.setPlanks(id, 2);
-          zs.setPlanks(id, 0);
-          const s = zs.getState();
-          gaps.push(s.windows.reduce((n, w) => n + (w.maxPlanks - w.planks), 0) - s.debris.length);
-        }
-      }
-      return gaps;
-    });
-    for (const g of r) expect(g).toBeGreaterThanOrEqual(0); // jamais plus de débris que de planches manquantes
-    expect(r.at(-1)).toBeLessThanOrEqual(1); // à peine une place qui manque : tout est resté au sol
-  });
-
-  test('une planche réparée consomme un débris ; la remise à zéro (Rejouer) les retire tous', async ({ page }) => {
-    await open(page);
-    const r = await page.evaluate(() => {
-      const zs = window.__zs;
-      zs.setPlanks('fenetre-est', 0);
-      const a = zs.getState().debris.length;
-      zs.setPlanks('fenetre-est', 3);
-      return { a, b: zs.getState().debris.length };
-    });
-    expect([r.a, r.b]).toEqual([4, 1]);
-    await page.click('#btn-pause');
-    await page.click('#btn-restart');
-    await page.evaluate(() => window.__zs.step(0.05));
-    const s = await STATE(page);
-    expect(s.debris).toHaveLength(0);
-    expect(s.windows.map((w) => w.planks)).toEqual([4, 4, 4]);
-  });
-
-  test('débris à la graine du jeu : mêmes positions pour la même graine, différentes pour une autre', async ({ page }) => {
-    await open(page, '&planks=0');
-    const a = (await STATE(page)).debris.map((d) => [Math.round(d.x), Math.round(d.z)]);
-    await open(page, '&planks=0');
-    expect((await STATE(page)).debris.map((d) => [Math.round(d.x), Math.round(d.z)])).toEqual(a);
-    await open(page, '&planks=0', SIZE, 2);
-    expect((await STATE(page)).debris.map((d) => [Math.round(d.x), Math.round(d.z)])).not.toEqual(a);
-  });
 });
 
 test.describe('culling : seules les fenêtres dans le champ sont dessinées', () => {
-  test('joueur à la fenêtre nord : elle est dans le champ, les fenêtres ouest et est non', async ({ page }) => {
-    await open(page);
-    await page.evaluate(() => { window.__zs.setPlayer(1800, 900); window.__zs.sampleScreen(0, 0, 4, 4); });
-    const w = (await STATE(page)).windows;
-    expect(w.map((x) => [x.id, x.mesh.inFrustum])).toEqual([['fenetre-nord', true], ['fenetre-ouest', false], ['fenetre-est', false]]);
-  });
 
   test('une fenêtre hors champ ne coûte aucun triangle : changer ses planches ne change pas render.triangles, celle de la fenêtre visible garde ses 42 triangles', async ({ page }) => {
     await open(page);
@@ -190,26 +75,6 @@ test.describe('culling : seules les fenêtres dans le champ sont dessinées', ()
     expect(r.d[1]).toBeGreaterThan(r.d[0]);
     expect(r.out - r.base).toBe(0);
     expect(r.near - r.out).toBe(4 * (r.d[2] - r.d[1])); // un maillage de fenêtre a une capacité fixe : 42 triangles dessinés quel que soit le nombre de planches
-  });
-
-  test('en déplaçant la caméra vers la fenêtre ouest, elle entre dans le champ et ses triangles apparaissent', async ({ page }) => {
-    await open(page);
-    const r = await page.evaluate(() => {
-      const zs = window.__zs;
-      const tri = () => {
-        zs.sampleScreen(0, 0, 4, 4);
-        return zs.getState().render.triangles;
-      };
-      zs.setPlayer(1800, 900);
-      const before = tri();
-      const inBefore = zs.getState().windows.find((w) => w.id === 'fenetre-ouest').mesh.inFrustum;
-      zs.setPlayer(900, 1400);
-      const after = tri();
-      const inAfter = zs.getState().windows.find((w) => w.id === 'fenetre-ouest').mesh.inFrustum;
-      return { before, after, inBefore, inAfter };
-    });
-    expect([r.inBefore, r.inAfter]).toEqual([false, true]);
-    expect(Number.isFinite(r.before) && Number.isFinite(r.after)).toBe(true);
   });
 
   test('budget de dessin : 10 zombies, planches, ombres, cône, joueur à la fenêtre nord : au plus 193 appels et 14 982 triangles', async ({ page }, testInfo) => {

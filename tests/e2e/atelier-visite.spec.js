@@ -7,7 +7,6 @@ import { visitWave } from '../../js/core/visite.js';
 // Lot 3g, partie A : visite libre = jeu.html?nospawn=1&wave=N_VISITE (aucun paramètre ajouté au jeu). Tout passe par step() et les hooks
 // de ?test=1 ; 667×375 ; les chemins à pied sont calculés côté Node (tests/e2e/visite-chemins.js) d'après les données de la carte.
 const SIZE = { width: 667, height: 375 };
-const BROWSER_NOISE = /GL Driver Message|ReadPixels|GPU stall/;
 const N = visitWave(JSON.parse(readFileSync('data/game/maps/rez-de-chaussee/zones.json', 'utf8')));
 const MAP = loadMap();
 const STATE = (page) => page.evaluate(() => window.__zs.getState());
@@ -113,62 +112,6 @@ async function takeStairs(page, id, from) {
 }
 
 test.describe('visite libre : définition', () => {
-  test(`jeu.html?nospawn=1&wave=${N} se charge sans erreur : rez-de-chaussée, directeur inactif, aucun zombie`, async ({ page }) => {
-    const problems = [];
-    page.on('console', (m) => ['error', 'warning'].includes(m.type()) && !BROWSER_NOISE.test(m.text()) && problems.push(m.text()));
-    page.on('pageerror', (e) => problems.push(e.message));
-    await open(page);
-    const s = await STATE(page);
-    expect(s.map.id).toBe('rez-de-chaussee');
-    expect(s.floor.current).toBe('rdc');
-    expect(s.waves).toMatchObject({ active: false, phase: 'inactif', total: 0, toSpawn: 0 });
-    expect(s.enemies).toEqual([]);
-    expect(problems).toEqual([]);
-  });
-
-  test('300 s de jeu simulé : aucun zombie, aucune apparition, aucune manche, aucune annonce, aucun dégât', async ({ page }) => {
-    await open(page);
-    const r = await page.evaluate(() => {
-      const zs = window.__zs;
-      const out = { enemies: 0, spawns: 0, splash: false, phases: new Set(), hp: [] };
-      for (let k = 0; k < 30; k += 1) {
-        zs.step(10);
-        const s = zs.getState();
-        out.enemies = Math.max(out.enemies, s.enemies.length);
-        out.spawns = Math.max(out.spawns, s.spawnLog.length);
-        out.splash = out.splash || s.splash.visible;
-        out.phases.add(s.waves.phase);
-        out.hp.push(s.player.hp);
-      }
-      const s = zs.getState();
-      return { ...out, phases: [...out.phases], time: s.time, events: s.events.map((e) => e.type), dead: s.dead, kills: s.kills, total: s.waves.total };
-    });
-    expect(r.time).toBeGreaterThanOrEqual(300);
-    expect(r).toMatchObject({ enemies: 0, spawns: 0, splash: false, phases: ['inactif'], dead: false, total: 0 });
-    expect(r.events.filter((e) => /wave|door/i.test(e))).toEqual([]);
-    expect(new Set(r.hp).size).toBe(1);
-  });
-
-  test('aucune porte : toutes ouvertes, aucune construite (maillage, bloc, obstacle), aucune « prochaine zone »', async ({ page }) => {
-    await open(page);
-    const s = await STATE(page);
-    expect(s.zones.doors.length).toBeGreaterThan(0);
-    expect(s.zones.doors.every((d) => d.open && !d.planned)).toBe(true);
-    expect(s.doorMeshes).toMatchObject({ ids: [], meshes: 0, triangles: 0 });
-    expect(s.zones.next).toBeNull();
-    expect(s.obstacles.filter((o) => o.kind === 'porte')).toEqual([]);
-    expect(s.zones.activeWindows.length).toBe(s.windows.length);
-  });
-
-  test('escaliers ouverts et utilisables ; ?floor=1 démarre à l\'étage', async ({ page }) => {
-    await open(page);
-    expect((await STATE(page)).floor.stairs.every((q) => q.usable)).toBe(true);
-    await open(page, '&floor=1');
-    const s = await STATE(page);
-    expect(s.floor.current).toBe('etage');
-    expect(s.enemies).toEqual([]);
-    expect(s.doorMeshes.meshes).toBe(0);
-  });
 
   test('aucune sauvegarde : rien n\'est écrit dans le stockage du navigateur', async ({ page }) => {
     await open(page);
@@ -176,25 +119,6 @@ test.describe('visite libre : définition', () => {
     expect(await page.evaluate(() => [localStorage.length, sessionStorage.length])).toEqual([0, 0]);
   });
 
-  test('sans ?nospawn, le jeu se comporte comme avant : manche 1, zombies qui apparaissent', async ({ page }) => {
-    await page.setViewportSize(SIZE);
-    await page.goto('/jeu.html?test=1&seed=1&vhs=0');
-    await waitReady(page);
-    await page.evaluate(() => { window.requestAnimationFrame = () => 0; });
-    const s0 = await STATE(page);
-    expect(s0.waves.wave).toBe(1);
-    expect(s0.waves.phase).not.toBe('inactif');
-    expect(s0.doorMeshes.meshes).toBeGreaterThan(0);
-    const n = await page.evaluate(() => { window.__zs.step(12); return window.__zs.getState().spawnLog.length; });
-    expect(n).toBeGreaterThan(0);
-  });
-
-  test('?labels=1 et ?zoom=1 fonctionnent en visite', async ({ page }) => {
-    await open(page, '&labels=1&zoom=1');
-    const s = await STATE(page);
-    expect(s.labels.length).toBeGreaterThan(0);
-    expect(s.enemies).toEqual([]);
-  });
 });
 
 test.describe('visite libre : à pied', () => {

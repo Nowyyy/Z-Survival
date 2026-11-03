@@ -108,7 +108,7 @@ test.describe('animation de vague : contenu, chronologie, position', () => {
     await expect(page.locator(FRAME)).toHaveClass(/is-fin/);
   });
 
-  test('durée de visibilité du début : 3,8 s de temps de jeu (75 pas de 0,05 s après le départ, plus l\'image de départ)', async ({ page }) => {
+  test('durée de visibilité du début : celle de splash.json (avance + maintien + sortie, 3,8 s aujourd\'hui), au pas de 0,05 s près', async ({ page }) => {
     await open(page);
     await wave(page, 4);
     const n = await page.evaluate(() => {
@@ -119,8 +119,10 @@ test.describe('animation de vague : contenu, chronologie, position', () => {
       }
       return count;
     });
-    expect((n * 0.05 + 0.05)).toBeGreaterThanOrEqual(3.75);
-    expect((n * 0.05 + 0.05)).toBeLessThanOrEqual(3.85);
+    // Lot 4e (V) : la durée attendue vient des données (leadTime + debut.holdAfter + debut.exit), plus de 3,8 en dur.
+    const sp = JSON.parse(readFileSync('data/game/splash.json', 'utf8'));
+    const attendu = sp.leadTime + sp.debut.holdAfter + sp.debut.exit;
+    expect(Math.abs((n * 0.05 + 0.05) - attendu)).toBeLessThanOrEqual(0.05 + 1e-9);
   });
 
   test('chronologie : entrée, tenue puis sortie ; culmine à l\'arrivée des zombies (3,0 s)', async ({ page }) => {

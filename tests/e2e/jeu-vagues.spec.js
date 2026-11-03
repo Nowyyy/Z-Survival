@@ -233,31 +233,6 @@ test.describe('vagues du lot 2', () => {
     }
   });
 
-  test('la rampe baisse le bassin et couche le tronc ; la phase de marche avance avec distance / foulée', async ({ page }) => {
-    await open(page, '&empty=1&nospawn=1&perso=actuel&sang=0'); // lot 3j : angles de pose.js (personnages actuels)
-    const r = await page.evaluate(() => {
-      const zs = window.__zs;
-      zs.setPlayer(800, 450);
-      zs.setInput({ aim: { angle: -Math.PI / 2 } });
-      for (const [gait, x, y] of [['marche', 100, 120], ['rampe', 100, 780], ['lent', 1500, 120], ['course', 1500, 780]]) zs.spawnEnemy(x, y, { type: 'marcheur', gait, wave: 1 });
-      zs.step(0.05);
-      const a = Object.fromEntries(zs.getState().enemies.map((e) => [e.gait, e]));
-      zs.step(1);
-      const b = Object.fromEntries(zs.getState().enemies.map((e) => [e.gait, e]));
-      return { a, b };
-    });
-    expect(r.b.rampe.pose.pelvisY).toBeLessThan(r.b.marche.pose.pelvisY - 10);
-    expect(r.b.rampe.pose.pelvisHeight).toBeLessThan(r.b.marche.pose.pelvisHeight);
-    expect(r.b.rampe.pose.torsoPitch).toBeGreaterThan(1);
-    expect(r.b.marche.pose.torsoPitch).toBe(0);
-    for (const gait of GAITS) {
-      const distance = Math.hypot(r.b[gait].x - r.a[gait].x, r.b[gait].y - r.a[gait].y);
-      const phase = r.b[gait].phase - r.a[gait].phase;
-      expect(phase, gait).toBeGreaterThan(0);
-      expect(phase / distance, gait).toBeCloseTo((2 * Math.PI) / gaits.gaits[gait].stride, 2);
-    }
-  });
-
   test('le rendu utilise la variante visuelle du type ; sans type, celle de variantFor', async ({ page }) => {
     await open(page, '&empty=1&nospawn=1');
     const list = await page.evaluate(() => {

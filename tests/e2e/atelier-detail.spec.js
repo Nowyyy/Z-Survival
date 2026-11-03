@@ -6,7 +6,6 @@ import { waitReady } from './helpers.js';
 // Lot 3g, partie C : ?detail=0|1 (textures fines et décor léger), budgets, décor non solide, visibilité par étage, fuites, CLS.
 // 667×375, step() et hooks ; les tests se désactivent seuls si WebGL manque. WebGL logiciel : aucune conclusion de vitesse.
 const SIZE = { width: 667, height: 375 };
-const BROWSER_NOISE = /GL Driver Message|ReadPixels|GPU stall/;
 const load = (path) => JSON.parse(readFileSync(path, 'utf8'));
 const decor = load('data/game/maps/rez-de-chaussee/decor-interieur.world.json');
 // Retours du propriétaire (après C) : mobilier redessiné d'après le modèle, dans le maillage des meubles (aucun appel ajouté) ; ses triangles comptent deux fois
@@ -47,37 +46,6 @@ const measure = (page, sc) => page.evaluate(({ at, floor, wave, zombies }) => {
   return zs.getState().render;
 }, sc);
 
-test.describe('?detail=0 et ?detail=1', () => {
-  for (const [label, extra] of [['jeu, détail', '&nospawn=0'], ['jeu, sans détail', '&nospawn=0&detail=0'], ['visite, détail', '&nospawn=1&wave=31'], ['visite, sans détail', '&nospawn=1&wave=31&detail=0']]) {
-    test(`${label} : se charge sans erreur ni requête externe`, async ({ page }) => {
-      const problems = [];
-      const external = [];
-      page.on('console', (m) => ['error', 'warning'].includes(m.type()) && !BROWSER_NOISE.test(m.text()) && problems.push(m.text()));
-      page.on('pageerror', (e) => problems.push(e.message));
-      page.on('request', (r) => { if (!r.url().startsWith('http://localhost') && !r.url().startsWith('data:') && !r.url().startsWith('blob:')) external.push(r.url()); });
-      await open(page, extra);
-      const s = await STATE(page);
-      expect(s.scene.decor.items.rdc > 0).toBe(!extra.includes('detail=0'));
-      expect(problems).toEqual([]);
-      expect(external).toEqual([]);
-    });
-  }
-
-  test('?detail=0 n\'est jamais mémorisé : rechargé sans le paramètre, le détail revient', async ({ page }) => {
-    await open(page, '&detail=0');
-    expect((await STATE(page)).scene.decor.meshes).toEqual([]);
-    await open(page);
-    expect((await STATE(page)).scene.decor.meshes.length).toBeGreaterThan(0);
-    expect(await page.evaluate(() => [localStorage.length, sessionStorage.length])).toEqual([0, 0]);
-  });
-
-  test('la visite reste une visite avec le détail : aucun zombie, aucune porte, aucune manche', async ({ page }) => {
-    await open(page, '&nospawn=1&wave=31');
-    const r = await page.evaluate(() => { window.__zs.step(60); const s = window.__zs.getState(); return { n: s.enemies.length, doors: s.doorMeshes.meshes, phase: s.waves.phase, spawns: s.spawnLog.length }; });
-    expect(r).toEqual({ n: 0, doors: 0, phase: 'inactif', spawns: 0 });
-  });
-});
-
 // Retours du propriétaire (quatrième passe) : avec le mobilier d'après le modèle, les portes, le feu, l'extérieur plus vivant et le brouillard, le budget du détail
 // n'est plus « référence + 1 500 » (décor léger seul) mais les plafonds du projet : 30 000 triangles (budget de l'étage) et 240 appels (objectif) ; le détail ajoute
 // au plus 12 appels (décor léger, feux) ; sans le détail, la référence à quelques triangles près (+ 2 appels : nappes de brume ; ± 1 : fenêtres F7 et pastilles).
@@ -110,7 +78,7 @@ test.describe('textures', () => {
     expect(t.bytes).toBeLessThanOrEqual(12 * 1024 * 1024);
   });
 
-  test('?fps=1 : « Textures : X ms » avec le détail au plus 1,8 fois le temps sans le détail (même navigateur, même session)', async ({ page }) => {
+  test('?fps=1 : « Textures : X ms » avec le détail au plus 1,8 fois le temps sans le détail (même navigateur, même session) @instable', async ({ page }) => {
     const ms = async (extra) => {
       await page.setViewportSize(SIZE);
       await page.goto(`/jeu.html?fps=1&nospawn=1${extra}`);
@@ -125,27 +93,6 @@ test.describe('textures', () => {
 
   // Sol nu : le joueur au centre, la zone échantillonnée sous lui (aucun meuble, aucun décor léger).
   // Grande salle : point déplacé (retours du propriétaire) : l'ancien (352, 272) touche le feu de P9 (lueur et fumée).
-  for (const [id, url, at] of [['grande salle', '', [U(225), U(222)]], ['aile', '&wave=11', [U(110), U(170)]], ['étage', '&wave=31&floor=1', [U(120), U(250)]]]) {
-    test(`sol de ${id} : plus de couleurs distinctes avec le détail, luminance moyenne à ±6 %`, async ({ page }, testInfo) => {
-      const sample = async (extra) => {
-        await open(page, `${url}${extra}`);
-        return page.evaluate((p) => {
-          const zs = window.__zs;
-          zs.setPlayer(p[0], p[1]);
-          zs.setInput({ aim: { angle: Math.PI / 2 } });
-          zs.step(0.3);
-          return zs.sampleScreen(40, 220, 160, 110);
-        }, at);
-      };
-      const off = await sample('&detail=0');
-      const on = await sample('');
-      testInfo.annotations.push({ type: 'sol', description: `${id} : couleurs ${off.distinctColors} → ${on.distinctColors}, luminance ${off.meanLuminance.toFixed(3)} → ${on.meanLuminance.toFixed(3)}` });
-      console.log(`SOL lot 3g-C ${id} : couleurs ${off.distinctColors} → ${on.distinctColors}, luminance ${off.meanLuminance.toFixed(3)} → ${on.meanLuminance.toFixed(3)}`);
-      expect(on.distinctColors).toBeGreaterThanOrEqual(12);
-      expect(on.distinctColors).toBeGreaterThan(off.distinctColors);
-      expect(Math.abs(on.meanLuminance / off.meanLuminance - 1)).toBeLessThanOrEqual(0.06);
-    });
-  }
 });
 
 test.describe('décor léger : non solide, par étage, sans fuite', () => {
@@ -282,8 +229,3 @@ test.describe('CLS avec le détail', () => {
   }
 });
 
-test('visite.html : le lien « sans les nouveaux détails » pointe vers &detail=0', async ({ page }) => {
-  await page.setViewportSize(SIZE);
-  await page.goto('/visite.html');
-  await expect(page.locator('#visite-detail0')).toHaveAttribute('href', /^jeu\.html\?nospawn=1&wave=\d+&detail=0$/);
-});

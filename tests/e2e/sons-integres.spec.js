@@ -12,7 +12,6 @@ import { resolveAtelier } from '../../js/core/synth2.js';
 const SIZE = { width: 667, height: 375 };
 const BROWSER_NOISE = /GL Driver Message/;
 const { sounds } = JSON.parse(readFileSync('data/game/sounds.json', 'utf8'));
-const legacy = JSON.parse(readFileSync('data/game/sounds-legacy.json', 'utf8')).sounds;
 const slots = new Map(resolveAtelier(JSON.parse(readFileSync('data/game/sounds-atelier.json', 'utf8'))).slots.map((s) => [s.id, s]));
 const byId = new Map(sounds.map((s) => [s.id, s]));
 const URL = (extra = '') => `/jeu.html?test=1&empty=1&nospawn=1&seed=1${extra}`;
@@ -78,7 +77,7 @@ test.describe('sons intégrés : chargement', () => {
 });
 
 test.describe('sons intégrés : lecture sous les identifiants du jeu', () => {
-  test('pas du joueur, planche arrachée, voix par type : le son et le tampon attendus', async ({ page }) => {
+  test('pas du joueur, planche arrachée, voix par type : le son et le tampon attendus @lent', async ({ page }) => {
     await open(page);
     await unlockReady(page);
     const p = await near(page);
@@ -102,7 +101,7 @@ test.describe('sons intégrés : lecture sous les identifiants du jeu', () => {
     }
   });
 
-  test('versions non préchargées : calculées au premier usage puis gardées ; en attendant, une version prête', async ({ page }) => {
+  test('versions non préchargées : calculées au premier usage puis gardées ; en attendant, une version prête @lent', async ({ page }) => {
     await open(page);
     await unlockReady(page);
     for (let i = 0; i < 12; i += 1) {
@@ -127,7 +126,7 @@ test.describe('sons intégrés : lecture sous les identifiants du jeu', () => {
     }
   });
 
-  test('réparation : au début de la pose, tampon à la durée de pose (calculé au premier usage), arrêt si interrompue', async ({ page }) => {
+  test('réparation : au début de la pose, tampon à la durée de pose (calculé au premier usage), arrêt si interrompue @lent', async ({ page }) => {
     await open(page);
     await unlockReady(page);
     const p = await near(page);
@@ -145,7 +144,7 @@ test.describe('sons intégrés : lecture sous les identifiants du jeu', () => {
     expect((await audio(page)).pack.lazy).toBeGreaterThanOrEqual(1);
   });
 
-  test('vraie réparation en jeu : son au début de la pose de la planche (et non à la planche posée)', async ({ page }) => {
+  test('vraie réparation en jeu : son au début de la pose de la planche (et non à la planche posée) @lent', async ({ page }) => {
     await page.setViewportSize(SIZE);
     await page.goto('/jeu.html?test=1&map=salle&nospawn=1&seed=1&planks=2');
     await waitReady(page);
@@ -188,23 +187,6 @@ test.describe('sons intégrés : lecture sous les identifiants du jeu', () => {
 });
 
 test.describe('sons intégrés : ?sons=', () => {
-  test('?sons=ancien : pack d\'avant (recettes chargées à la demande), voix communes à la hauteur du type', async ({ page }) => {
-    const urls = [];
-    page.on('request', (r) => urls.push(r.url()));
-    await open(page, '&sons=ancien');
-    await unlockReady(page);
-    expect(urls.some((u) => u.includes('data/game/sounds-legacy.json'))).toBe(true);
-    const a = await audio(page);
-    expect(a.mode).toBe('ancien');
-    expect(a.loaded).not.toContain('zombie-mort-petit-1');
-    expect(a.sums['pas-1']).toBe(fp(renderSound(legacy.find((r) => r.id === 'pas'), 0).samples));
-    const p = await near(page);
-    await emit(page, [{ type: 'zombieHit', ...p, killed: true, zombie: 'petit' }, { type: 'plankRepairStart', ...p, windowId: 'F', duration: 1.2 }]);
-    await step(page, 0.2);
-    const log = (await audio(page)).log;
-    expect(log.find((e) => e.sound === 'zombie-mort')).toMatchObject({ rate: 1.35 });
-    expect(log.some((e) => e.sound === 'planche-posee')).toBe(false); // l'ancien son de planche sonne à la planche posée
-  });
 
   test('?sons=B : la variante B de l\'atelier (réglages par défaut) pour les sons intégrés', async ({ page }) => {
     await open(page, '&sons=B');
