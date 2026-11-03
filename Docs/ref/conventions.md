@@ -336,3 +336,52 @@ Détail des évolutions, mesures et points ouverts : `Docs/lots/lot-4b.md`.
 - **Couleurs** : `--perso-*` et `--sang-*` (bloc du lot 3j de `tokens.css`) ; contraste ≥ 3:1 mesuré sur la couleur vue, escalier et sols tachés compris.
 - **Budget** : limites de refonte relevées par le propriétaire : 45 000 triangles et 400 appels par vue (avant : 30 000 et 300). Les tests qui vérifient une référence exacte de l'ancien rendu s'ouvrent avec `&perso=actuel&sang=0`.
 - **Atelier** : `atelier-personnages.html` (`?test=1` : `window.__zsPersos`), mini-arène (`arena.js`, `crowd.js`), « Mes choix ».
+
+## Règles détaillées déplacées de `CLAUDE.md` (consolidation du lot 4g, aucune règle supprimée)
+Texte intégral, mot pour mot, des lignes de `CLAUDE.md` raccourcies, fusionnées ou déplacées au lot 4g (les versions courtes de `CLAUDE.md` en sont le résumé fidèle). Tableau des décisions et comptage : `Docs/ref/claude-md-consolidation.md`. Deux lignes périmées (ancien `npm run assemble` vers `_site/lots/<lot>/`, anciens déclencheurs et job `e2e` de `pages.yml`) sont supprimées ; leur texte est en annexe de ce tableau.
+- `npm ci` : installe · `npm run lint` · `npm test` (Vitest) · `npm run test:e2e` (Playwright essentiel, ~4 min ; `test:e2e:full` : tout, ~40 min)
+- URL : `https://nowyyy.github.io/<dépôt>/` (cible : `Z-Survival`) ; racine = main, `/dev/` = menu, `/lots/lot-N/` = aperçu d'un lot. *(Lot 4g : « `/lots/lot-N/` = aperçu d'un lot » est périmé depuis le lot 4c ; `/lots/` n'est plus qu'une page de renvoi.)*
+- Droits minimaux, actions épinglées par SHA, ni `pull_request_target` ni secret. Source Pages : « GitHub Actions ». Chemins relatifs (site valable sous `/lots/…`). *(Lot 4g : « site valable sous `/lots/…` » est périmé depuis le lot 4c ; les chemins restent relatifs.)*
+- Une branche par lot : `lot-N`. Un commit par partie : « Lot N-X — titre ».
+- Jamais de force-push, jamais de fusion dans `main`, pas de Pull Request sans demande. Tags facultatifs.
+- Une branche de lot n'est jamais supprimée. Arbre propre au départ.
+- Une seule partie par session, puis arrêt.
+- Le workflow `.github/workflows/pages.yml` n'est modifiable que si le prompt du lot l'autorise.
+- Animations : pose-v2.js (pur ; styles A, B, C ; marches par cinématique inverse, glissement des pieds ≤ 15 %) ; pose.js seulement pour « actuel » ; géométries et matériaux partagés, jamais recréés par image.
+- Tests : ?test=1 expose window.__zs (getState, step, skipWave, setDoor, flushSave, giveMoney…) ; 667×375, step() et le journal, jamais une durée réelle ; Math.random interdit ; helpers e2e : map=salle ; Docs/ref/modele-rdc/ exclu des 5 Mo.
+- Personnages : v2 « os rigides » par défaut (character-v2.js ; data/game/persos-choix.json ; ?perso=choix|actuel|A|B|C|riche) ; ≤ 4 appels, ≤ 1 600 triangles (riche 2 600), ombre ≤ 64 ; 4 variantes (variants.js) ; vue ≤ 45 000 triangles et 400 appels ; 10 zombies au plus.
+- Ancien modèle (pose.js, character.js) importé seulement si un personnage est « actuel » ; characters-v2.json, poses-v2.json.
+- Sang : blood.js, blood.json, blood-fx.js ; ?sang=0|reduit|1 (défaut : la table de choix) ; ≤ 3 appels, ≤ 1 200 triangles, 2 cadavres, sans effet de jeu ; jamais de démembrement.
+- Morts : le corps tombe à l'opposé du tireur (deathFor) ; recul KICK 0,25 s ; laser, éclair et balles dessinés depuis le canon (muzzle()), logique inchangée ; fenêtres : enjamber suit climb.t.
+- Couleurs --perso-* et --sang-* (bloc du lot 3j de tokens.css) ; contraste ≥ 3:1 sur la couleur vue, escalier et sols tachés compris.
+- Atelier des personnages : atelier-personnages.html (?test=1 : window.__zsPersos), « Mes choix » (persos-variants.js) ; Docs/ref/personnages-integres.md.
+- Sons : synth.js (sounds.json, aucun fichier audio), audio.js, sound-director.js ; jamais de son dans js/core/ ; sons.html à retirer au lot 13.
+- Atelier des sons (lot 3h) : atelier-sons.html et atelier-choix.html (techniques, à retirer au lot 13), js/atelier-sons/, data/i18n/atelier-sons.json (français seul).
+- Synthèse 2 : js/core/synth2*.js, audio-analysis.js, atelier-check.js, scenes-sons.js (purs) ; niveau entendu relatif au tir, crête ≤ −3 dBFS, variantes distinctes (distance ≥ 0,035).
+- Sons de l'atelier (lot 3i) : sounds-choix.json → scripts/sons/integrer.mjs → sounds.json (engine atelier) ; anciens : sounds-legacy.json ; mélodie de début de manche et tirs : recettes inchangées.
+- ?sons=choix|ancien|A|B|C : jamais mémorisé, pas un mode essai ; ancien et atelier par import dynamique ; calcul dans sound-worker.js, 1 version au chargement, autres au premier usage.
+- Poids des sons : aucun plafond ; garde-fou provisoire 64 Mo. Boucles (audio.json loops) : une voix chacune, coupées à la pause et à la mort, relancées à « Rejouer ».
+- Zombies : 4 types × 4 allures (enemies.json, gaits.json), createEnemy ; vitesse ≤ 190 ; la rampe est visuelle, sans effet sur la hitbox.
+- Statistiques : player-stats.js (9 stats, niveaux 0 à 10) ; niveaux = ?lvl= > sauvegarde > zéros ; effectiveWeapon, effectivePlayer.
+- Fenêtres : windows.json, windows.js (4 planches, arrachage 2,2 s, réparation 1,8 s) ; les planches ne bloquent que les zombies (closedRects).
+- Siège : siege.js (approche, attente, arrache, escalade, dedans, libre) ; 2 emplacements, file de 6, 2 grimpeurs ; jamais d'entrée sans fenêtre ouverte ni active ; ?empty=1 : zombies libres.
+- Chutes : player-down.js ; 1 chute de base, à terre 5 s invulnérable, relevage à 50 % ; stats chutes (0 à 5), reparation (0 à 10).
+- Planches : plank-layout.js (pivot au bas) ; un maillage par fenêtre, 42 triangles au plus ; débris à plat, à l'infini.
+- HUD (lot 3l) : game-ui.css, hud.js, hud-format.js ; 3 colonnes de blocs fixes (em, 15,75 px) ; REC = temps de jeu ; sticks A ; marges 16 px, côtés sans zone (--edge-*) ; E2-9, E2-11 retirés ; #hud-live annonce.
+- jeu.html : apple-mobile-web-app-capable (essai sans barres de Safari) ; pas de manifeste.
+- Journal des versions : chaque lot ajoute une entrée à data/changelog.json et adapte data-changelog et dev.spec.
+- Journal de /dev : seulement les versions de data/changelog.json → versions (V0.x) ; un nouveau lot ajoute son entrée à lots, jamais à versions : le propriétaire dit quand.
+- Budget, annonce de vague, nuit, cartes, zones, portes, mobilier : `Docs/ref/conventions.md` (« consolidation du lot 3e »).
+- Contrôle : carte.html (à retirer au lot 13), ?labels=1 et ?zoom=1 comparent la carte au plan.
+- Étages : etage.json, zones.json (floors, stairs, blocks) ; floor (rdc, etage) sur zombies, fenêtres, balles, obstacles ; une couche de collisions par étage ; relevé : Docs/ref/etage.md.
+- Escaliers physiques : tube autour de `walk.path` (stair-walk.js, zones.json), hauteur = t × floorLift, aucun délai, zombies touchables dans l'escalier, bloc de porte mince ; détails dans `conventions.md` (consolidation du lot 4).
+- Visibilité : userData.floor ; setElevation (le monde descend, le joueur reste à y = 0) ; tout le rez-de-chaussée toujours dessiné ; garde-corps ; laser et balles dans effectsRoot.
+- Portes : 1 manche 10, 2 manche 20, 3 manche 30 ; ?wave=N ouvre celles dont openAfterWave < N ; ?floor=N ; budget étage 30 000 / 300 ; le lot 3d est reporté. *(Lot 4g : « budget étage 30 000 / 300 » est périmé ; 45 000 triangles et 400 appels par vue depuis le lot 4b.)*
+- Sauvegarde : js/core/save.js (schéma v1, migrations, commitDelta, code ZS1.<base64url>.<crc32>) pur ; js/save/ seul à toucher localStorage, clé unique zs.save.v1 ; écriture par différences ; illisible ou version future = verrouillée, jamais écrasée.
+- Mode essai : wave, lvl, planks, map, empty, nospawn, endless, floor, money = sauvegarde en lecture seule (aucune écriture, solde réel lu) ; ?test=1 = mémoire, ?test=1&store=local = vrai localStorage.
+- Argent : economy.js, economy.json, bounty ; 10 par kill (balle seulement, jamais killAll/skipWave), 1 par planche posée, bonus de manche, fin de monde ; tout est conservé à la mort ; jamais de calcul d'argent hors de economy.js.
+- Interface : argent sous les tués, « +N » sous Pause ; solde en pause et E2-7 ; fin : Rejouer, menu (sans action) ; sauvegarde.html sans lien (technique, remplacée au lot 7).
+- Atelier de l'interface (lot 3k) : atelier-interface.html, interface-retenue.html, js/atelier-interface/, ui-mock.js et ui-measure.js (purs) ; proto-a|b|c.css (jetons seulement) ; fausses données (ui-atelier.json) toujours annoncées « fictives » ; rien d'enregistré.
+- Atelier de la carte (lot 3g) : visite.html (jeu.html?nospawn=1&wave=31), ecarts.html, relevé par scripts/modele/ (modèle jamais versionné) ; décisions rejouables ecarts-decisions.json (plus de 60 unités : approved: true), puis npm run carte ; Docs/ref/affinage.md.
+- Décor léger : decor-interieur.json (non solide, 8 types, 1 500 triangles et 6 appels au plus, hors zones de dégagement) ; mobilier-aspect.js, portes-aspect.js, feux.json, mist.js ; textures fines (clé fine de textures.json) ; ?detail=0 = rendu d'avant le lot 3g ; ?murs=bas, ?percee=0.
+- Lot 4 : scripts/economie.mjs, code-sauvegarde.mjs ; détails : `conventions.md`.
