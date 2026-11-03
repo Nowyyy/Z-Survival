@@ -175,7 +175,7 @@ test.describe('sons intégrés : lecture sous les identifiants du jeu', () => {
     await open(page);
     await unlockReady(page);
     const a = await audio(page);
-    for (const id of ['tir', 'douille', 'vague-annonce', 'impact-zombie', 'impact-bois']) {
+    for (const id of ['tir', 'douille', 'vague-annonce', 'impact-bois']) { // lot 5a : impact-zombie est devenu l'impact sur la chair de l'atelier
       const r = byId.get(id);
       expect(isAtelier(r)).toBe(false);
       expect(a.sums[`${id}-1`], id).toBe(fp(renderSound(r, 0).samples));
@@ -228,7 +228,9 @@ test.describe('sons intégrés : page d\'écoute et hygiène', () => {
     await expect(page.locator('.sound[data-sound="zombie-mort-petit"]')).toHaveAttribute('data-atelier', 'voix-petit-mort');
     await expect(page.locator('.sound[data-sound="pas"] .sound-origin')).toContainText('pas-joueur-dur');
     await expect(page.locator('#pack')).toContainText('mémoire estimée');
-    await expect(page.locator('#pack')).not.toContainText(/8 ?Mo/);
+    await expect(page.locator('#pack')).not.toContainText(/(?<![\d.,])8 ?Mo/); // lot 5a : un poids comme « 15.78 Mo » ne compte pas (chiffre avant le 8)
+    await expect(page.locator('.sound[data-sound="impact-zombie"]')).toHaveAttribute('data-atelier', 'impact-chair'); // lot 5a
+    await expect(page.locator('.sound[data-sound="impact-zombie"] .sound-meta').first()).toContainText('pic');
     await expect(page.locator('a[href="atelier-sons.html"]')).toBeVisible();
     const total = sounds.reduce((n, s) => n + s.variants, 0);
     await expect(page.locator('button.variant')).toHaveCount(total);
@@ -247,5 +249,61 @@ test.describe('sons intégrés : page d\'écoute et hygiène', () => {
     const results = await new AxeBuilder({ page }).analyze();
     expect(results.violations.map((v) => v.id)).toEqual([]);
     expect(problems).toEqual([]);
+  });
+});
+
+// Lot 5a-B : l'impact d'une balle sur un zombie (ancien « cling ») est l'impact sur la chair de l'atelier (emplacement impact-chair, A par défaut),
+// sous le même identifiant ; une balle sur un mur garde l'ancien impact ; ?sons=ancien rejoue l'ancien son ; ?sons=B la variante B.
+test.describe('impact sur la chair (lot 5a)', () => {
+  const legacy = new Map(JSON.parse(readFileSync('data/game/sounds-legacy.json', 'utf8')).sounds.map((r) => [r.id, r]));
+  const shootAt = (page, angle, zombie) => page.evaluate(([a, z]) => {
+    const zs = window.__zs;
+    const p = zs.getState().player;
+    const id = z ? zs.spawnEnemy(p.x + 160, p.y) : null;
+    zs.setInput({ aim: { angle: a } });
+    zs.fire(a);
+    for (let i = 0; i < 20; i += 1) zs.step(0.05);
+    const s = zs.getState();
+    return { id, hp: id ? s.enemies.find((e) => e.id === id)?.health ?? 0 : null, log: s.audio.log };
+  }, [angle, zombie]);
+
+  test('une balle sur un zombie joue impact-zombie avec le tampon de l\'impact sur la chair (A) ; une balle sur un mur, l\'ancien impact de pierre', async ({ page }) => {
+    await open(page);
+    await unlockReady(page);
+    const entry = byId.get('impact-zombie');
+    expect(isAtelier(entry)).toBe(true);
+    expect(entry.atelier.slot.id).toBe('impact-chair');
+    const a = await audio(page);
+    expect(a.sums['impact-zombie-1']).toBe(fp(renderChoice(entry, { seed: 1 }).samples));
+    const hit = await shootAt(page, 0, true);
+    const e = hit.log.find((x) => x.sound === 'impact-zombie');
+    expect(e).toBeDefined();
+    expect(e.buffer).toBe(`impact-zombie-${e.variant + 1}`);
+    expect(hit.log.some((x) => x.sound === 'impact-pierre')).toBe(false);
+    expect(a.sums['impact-pierre-1']).toBe(fp(renderSound(byId.get('impact-pierre'), 0).samples));
+    // Mur : un pilier de la carte par défaut (?empty=1 n'a aucun obstacle de tir), comme tests/e2e/carte-jeu.spec.js.
+    const pillar = JSON.parse(readFileSync('data/game/maps/rez-de-chaussee/world.json', 'utf8')).pillars.find((q) => q.id === 'pilier-7');
+    await page.goto('/jeu.html?test=1&nospawn=1&seed=1');
+    await waitReady(page);
+    await unlockReady(page);
+    await page.evaluate(([x, y]) => window.__zs.setPlayer(x, y), [pillar.x - 150, pillar.y + pillar.h / 2]);
+    const wall = await shootAt(page, 0, false);
+    const w = wall.log.find((x) => x.sound.startsWith('impact-'));
+    expect(w.sound).toBe('impact-pierre');
+    expect(w.buffer).toBe(`impact-pierre-${w.variant + 1}`);
+    expect(wall.log.some((x) => x.sound === 'impact-zombie')).toBe(false);
+  });
+
+  test('?sons=ancien : la balle sur un zombie rejoue l\'ancien impact (recette de synth.js) ; ?sons=B : la variante B', async ({ page }) => {
+    await open(page, '&sons=ancien');
+    await unlockReady(page);
+    expect((await audio(page)).sums['impact-zombie-1']).toBe(fp(renderSound(legacy.get('impact-zombie'), 0).samples));
+    const hit = await shootAt(page, 0, true);
+    expect(hit.log.some((x) => x.sound === 'impact-zombie')).toBe(true);
+    await open(page, '&sons=B');
+    await unlockReady(page);
+    const entry = byId.get('impact-zombie');
+    expect((await audio(page)).sums['impact-zombie-1']).toBe(fp(renderChoice(entry, { seed: 1, mode: 'B', slots }).samples));
+    expect((await audio(page)).sums['impact-zombie-1']).not.toBe(fp(renderChoice(entry, { seed: 1 }).samples));
   });
 });

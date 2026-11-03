@@ -1,5 +1,5 @@
 {
-  "_provisoire": "Lot 3i : table des sons de l'atelier (lot 3h) intégrés au jeu, d'après Docs/ref/sons-a-integrer.md (source de vérité) et data/game/sounds-atelier-choix.txt (variante et réglages). Aucun son n'a été écouté par l'agent. seeds : nombre de versions (graines 1 à N, tirées sans répétition immédiate) ; 5 pour la priorité 1 sauf indication de la fiche (pas du joueur : 4, pas des zombies : 3) ; priorité 2 : nombre de versions prévu par l'atelier (integration.versions). gainDb : gain propre au son en plus du gain de catégorie d'audio.json (0 : niveau de l'atelier, « tel qu'entendu »). Les recettes résolues sont recopiées dans data/game/sounds.json par scripts/sons/integrer.mjs ; les recettes remplacées sont dans data/game/sounds-legacy.json (?sons=ancien). gainDb non nul : pas et pas-escalier (+1 dB), pour que le pas du joueur sur sol dur et dans l'escalier (C, −3 demi-tons, dont la crête plafonne le niveau à −21,5 dB du tir pour la version 1) reste à ±3 dB de sa cible de l'atelier (−18 dB) ; ce gain est porté par l'entrée du son (sounds.json) et non par audio.json, dont les gains s'appliqueraient aussi au pack d'avant (?sons=ancien). preload : versions calculées au chargement (1 par défaut, aux mêmes moments qu'avant : essentiel avant la partie, fond pendant) ; les autres au premier usage, dans le calculateur d'arrière-plan, gardées ensuite (cache sans éviction) ; priorité 2 (cœur, ambiances, porte) : 0, calculées à leur premier usage, pour tenir le temps de génération au chargement (≤ 1,8 × la référence).",
+  "_provisoire": "Lot 3i : table des sons de l'atelier (lot 3h) intégrés au jeu, d'après Docs/ref/sons-a-integrer.md (source de vérité) et data/game/sounds-atelier-choix.txt (variante et réglages). Aucun son n'a été écouté par l'agent. seeds : nombre de versions (graines 1 à N, tirées sans répétition immédiate) ; 5 pour la priorité 1 sauf indication de la fiche (pas du joueur : 4, pas des zombies : 3) ; priorité 2 : nombre de versions prévu par l'atelier (integration.versions). gainDb : gain propre au son en plus du gain de catégorie d'audio.json (0 : niveau de l'atelier, « tel qu'entendu »). Les recettes résolues sont recopiées dans data/game/sounds.json par scripts/sons/integrer.mjs ; les recettes remplacées sont dans data/game/sounds-legacy.json (?sons=ancien). gainDb non nul : pas et pas-escalier (+1 dB), pour que le pas du joueur sur sol dur et dans l'escalier (C, −3 demi-tons, dont la crête plafonne le niveau à −21,5 dB du tir pour la version 1) reste à ±3 dB de sa cible de l'atelier (−18 dB) ; ce gain est porté par l'entrée du son (sounds.json) et non par audio.json, dont les gains s'appliqueraient aussi au pack d'avant (?sons=ancien). preload : versions calculées au chargement (1 par défaut, aux mêmes moments qu'avant : essentiel avant la partie, fond pendant) ; les autres au premier usage, dans le calculateur d'arrière-plan, gardées ensuite (cache sans éviction) ; priorité 2 (cœur, ambiances, porte) : 0, calculées à leur premier usage, pour tenir le temps de génération au chargement (≤ 1,8 × la référence). Lot 5a : impact sur la chair (emplacement impact-chair, variante A, 5 graines, 1 préchargée comme avant) à la place de l'ancien impact-zombie, part « 5a ».",
   "source": "Docs/ref/sons-a-integrer.md",
   "preload": 1,
   "choix": [
@@ -704,6 +704,28 @@
       "event": "le bloc d'une porte s'enfonce à l'ouverture d'une zone (doorOpen), à la position de la porte",
       "source": "sons-a-integrer.md",
       "preload": 0
+    },
+    {
+      "id": "impact-zombie",
+      "slot": "impact-chair",
+      "variant": "A",
+      "macros": {
+        "hauteur": 0,
+        "matiere": 0,
+        "grain": 1,
+        "duree": 1,
+        "ampleur": 0.05
+      },
+      "seeds": 5,
+      "priority": 1,
+      "category": "impact",
+      "replaces": "impact-zombie",
+      "part": "5a",
+      "set": "essentiel",
+      "gainDb": 0,
+      "event": "une balle touche un zombie (zombieHit, blessure ou mort), à l'impact ; remplace l'ancien impact-zombie (« cling ») sous son identifiant : le directeur de sons ne change pas. Lot 5a : variante A par défaut, ?sons=A|B|C pour comparer, ?sons=ancien pour l'ancien",
+      "source": "lot 5a (demande du propriétaire, Docs/lots/lot-5a.md)",
+      "preload": 1
     }
   ],
   "nonIntegres": [

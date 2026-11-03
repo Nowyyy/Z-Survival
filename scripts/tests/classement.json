@@ -267,6 +267,7 @@
     { "fichier": "tests/unit/maps-fidelite.test.js", "categorie": "V", "valeur": "valeurs exactes", "recommandation": "garder (rapide)", "raison": "Fidélité au plan relevé." },
     { "fichier": "tests/unit/maps-hygiene.test.js", "categorie": "G", "valeur": "garde-fou", "recommandation": "garder", "raison": "Hygiène des cartes." },
     { "fichier": "tests/unit/maps-regles.test.js", "categorie": "G", "valeur": "garde-fou", "recommandation": "garder", "raison": "Règles de carte (couloirs, connexité)." },
+    { "fichier": "tests/unit/impact-chair.test.js", "categorie": "P", "valeur": "règle de jeu", "recommandation": "garder", "raison": "Lot 5a : impact sur la chair (trois variantes, cibles, absence de « cling » mesurée, intégration sous impact-zombie, recettes des tirs et des autres impacts inchangées, scène simulée)." },
     { "fichier": "tests/unit/epaves.test.js", "categorie": "P", "valeur": "règle de jeu", "recommandation": "garder", "raison": "Lot 5a : modèle de l'hélicoptère (triangles, sol, déterminisme) et emplacements des épaves (angle du L, couloirs, 160 du bâtiment)." },
     { "fichier": "tests/unit/package.test.js", "categorie": "G", "valeur": "garde-fou", "recommandation": "garder", "raison": "dependencies vide." },
     { "fichier": "tests/unit/persos-animations.test.js", "categorie": "P", "valeur": "règle de jeu", "recommandation": "garder", "raison": "Animations pose-v2 (glissement des pieds ≤ 15 %)." },

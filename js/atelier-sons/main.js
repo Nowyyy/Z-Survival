@@ -124,7 +124,7 @@ function measuresText(name, r, target, voiced = false) {
   return t('dev.atelier.measures', {
     name, duration: num(m.duration, 2), centroid: num(m.centroid), f0: voiced && m.f0 > 0 ? `${num(m.f0)} Hz` : t('dev.atelier.measures.f0none'), hf: num(100 * m.hf4k, 1),
     peak: num(m.peakDb, 1), rms: num(m.rmsDb, 1), level: num(m.levelRel, 1), target: level,
-  });
+  }) + (Number.isFinite(m.ringMs) ? t('dev.atelier.measures.ring', { ring: num(m.ringMs, 1), hz: m.ringMs > 0 ? num(m.ringHz) : '–' }) : ''); // lot 5a : « cling » mesuré
 }
 function verdict(r) {
   if (!r.check) return { text: t('dev.atelier.measures.reference'), out: [] };
@@ -143,7 +143,7 @@ function note(entry) {
   log.push(entry);
   if (log.length > 300) log.shift();
 }
-const summary = (m) => ({ duration: m.duration, centroid: m.centroid, f0: m.f0, hf4k: m.hf4k, peakDb: m.peakDb, rmsDb: m.rmsDb, levelRel: m.levelRel, hnr: m.hnr, attackMs: m.attackMs });
+const summary = (m) => ({ duration: m.duration, centroid: m.centroid, f0: m.f0, hf4k: m.hf4k, peakDb: m.peakDb, rmsDb: m.rmsDb, levelRel: m.levelRel, hnr: m.hnr, attackMs: m.attackMs, ...(Number.isFinite(m.ringMs) ? { ringMs: m.ringMs } : {}) }); // lot 5a : ringMs (« cling »)
 
 // ---------- lecture ----------
 // Doit être appelée dans le gestionnaire du geste, avant toute attente (déblocage de l'audio sur iPhone).

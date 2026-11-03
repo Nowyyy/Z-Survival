@@ -762,4 +762,37 @@ function kindFire(r, ctx) {
 }
 
 const KINDS_BASE = { step: kindStep, drag: kindDrag, voice: kindVoice, tear: kindTear, creak: kindCreak, fall: kindFall, hammer: kindHammer, repair: kindRepair, climb: kindClimb, breath: kindBreath, getup: kindGetup };
-export const KINDS = Object.freeze({ ...KINDS_BASE, wind: kindWind, hum: kindHum, heart: kindHeart, layers: kindLayers, sink: kindSink, chime: kindChime, break: kindBreak, register: kindRegister, fire: kindFire });
+// Lot 5a : balle qui entre dans la chair (zombie touché). Choc grave (coup sourd à chute de hauteur, 80 à 220 Hz), éclat de bruit très bref
+// filtré passe-bas (vers 1,5 kHz : la peau qui cède, sans clic aigu), « squelch » humide (bruit rose passe-bande modulé en amplitude par un
+// collé-glissé irrégulier qui ralentit), craquement facultatif (modes denses très amortis sous 1,2 kHz : un os) ; puis coupure raide des aigus.
+// Aucun mode ni résonance au-dessus de 2 kHz (le « cling » de l'ancien impact venait d'un clic aigu dans une réverbération à peignes).
+function kindFlesh(r, ctx) {
+  const n = ctx.n;
+  const layers = [];
+  const th = isObj(r.thump) ? r.thump : {};
+  layers.push({ buf: thump(ctx, { f: num(th.f, 120), decay: num(th.decay, 0.03) * ctx.tm, attack: num(th.attack, 0.002), drop: num(th.drop, 0.6), gain: num(th.gain, 1) }) });
+  if (isObj(r.second)) layers.push({ buf: thump(ctx, { f: num(r.second.f, 70), decay: num(r.second.decay, 0.04) * ctx.tm, attack: num(r.second.attack, 0.004), drop: num(r.second.drop, 0.8), gain: num(r.second.gain, 0.5) }), offset: at(ctx, r.second.at ?? 0.012) });
+  const sp = isObj(r.splat) ? r.splat : {};
+  const ns = Math.max(4, Math.round(num(sp.dur, 0.03) * ctx.tm * ctx.sr));
+  const lpSplat = clamp(num(sp.lp, 1500) * ctx.bright, 200, 2400);
+  const splat = lowpass1(lowpass1(noise(ns, 'white', ctx.seed + 3), lpSplat, ctx.sr), lpSplat, ctx.sr);
+  const envS = envAD(ns, ctx.sr, num(sp.attack, 0.0006), num(sp.decay, 0.008) * ctx.tm);
+  for (let i = 0; i < ns; i += 1) splat[i] *= envS[i] * num(sp.gain, 0.6) * ctx.grain;
+  layers.push({ buf: splat });
+  const sq = isObj(r.squelch) ? r.squelch : null;
+  if (sq) {
+    const m = Math.max(8, Math.round(num(sq.dur, 0.1) * ctx.tm * ctx.sr));
+    const wet = biquad(noise(m, 'pink', ctx.seed + 5), { type: 'bandpass', freq: clamp(num(sq.f, 600) * ctx.bright * ctx.pitch ** 0.5, 150, 1600), q: num(sq.q, 2) }, ctx.sr);
+    const am = bumps(stickSlip(m, { ...ctx, n: m }, sq.rate ?? [[0, 36], [1, 14]], { jitter: 0.35, irregular: 0.6, seed: ctx.seed + 6 }), ctx, 0.003, num(sq.blob, 0.012));
+    const envQ = envAD(m, ctx.sr, num(sq.attack, 0.006), num(sq.decay, 0.04) * ctx.tm);
+    for (let i = 0; i < m; i += 1) wet[i] *= (1 - num(sq.depth, 0.7) + num(sq.depth, 0.7) * am[i]) * envQ[i] * num(sq.gain, 0.4) * ctx.grain;
+    layers.push({ buf: wet, offset: at(ctx, sq.at ?? 0.006) });
+  }
+  if (isObj(r.crack) && num(r.crack.gain) > 0) {
+    const modes = denseModes({ count: 10, from: 220, to: 1100, decay: 0.006, tilt: -0.5, slope: -0.4, spread: 0.45, ...r.crack.dense }, ctx.pitch * ctx.vary, ctx.seed + 9);
+    layers.push({ buf: woodHit(ctx, modes, { gain: num(r.crack.gain), dur: 0.0015, lp: 1400, seed: ctx.seed + 8, len: 0.06 }), offset: at(ctx, r.crack.at ?? 0.003) });
+  }
+  return highpass1(lowpassSteep(mixLayers(n, layers), clamp(num(r.lp, 2200) * ctx.bright, 300, 3000), ctx.sr), 30, ctx.sr);
+}
+
+export const KINDS = Object.freeze({ ...KINDS_BASE, wind: kindWind, hum: kindHum, heart: kindHeart, layers: kindLayers, sink: kindSink, chime: kindChime, break: kindBreak, register: kindRegister, fire: kindFire, flesh: kindFlesh });

@@ -690,6 +690,7 @@
         "tests/unit/data-sons-lot3.test.js",
         "tests/unit/data-sons.test.js",
         "tests/unit/etage-hygiene.test.js",
+        "tests/unit/impact-chair.test.js",
         "tests/unit/sons-integres-ambiances.test.js"
       ],
       "e2e": ["tests/e2e/jeu-sons.spec.js"],

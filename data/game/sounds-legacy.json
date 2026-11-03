@@ -580,6 +580,111 @@
         "targetPeak": 0.85,
         "fadeOut": 0.06
       }
+    },
+    {
+      "id": "impact-zombie",
+      "category": "impact",
+      "set": "essentiel",
+      "sampleRate": 44100,
+      "duration": 0.4,
+      "variants": 3,
+      "seed": 31,
+      "loop": false,
+      "layers": [
+        {
+          "type": "osc",
+          "wave": "sine",
+          "freq": [
+            160,
+            60
+          ],
+          "sweepTime": 0.08,
+          "start": 0,
+          "dur": 0.2,
+          "attack": 0.001,
+          "decay": 0.04,
+          "gain": 0.7
+        },
+        {
+          "type": "noise",
+          "color": "brown",
+          "start": 0,
+          "dur": 0.18,
+          "attack": 0.001,
+          "decay": 0.05,
+          "gain": 0.6,
+          "filter": {
+            "type": "lowpass",
+            "freq": [
+              1100,
+              300
+            ],
+            "sweep": 0.12,
+            "q": 0.8
+          }
+        },
+        {
+          "type": "noise",
+          "color": "white",
+          "start": 0,
+          "dur": 0.03,
+          "attack": 0.0002,
+          "decay": 0.0025,
+          "gain": 2.2,
+          "filter": {
+            "type": "highpass",
+            "freq": 1500,
+            "q": 0.7
+          }
+        },
+        {
+          "type": "noise",
+          "color": "white",
+          "start": 0.022,
+          "startJitter": 0.008,
+          "dur": 0.015,
+          "attack": 0.0002,
+          "decay": 0.004,
+          "gain": 0.6,
+          "filter": {
+            "type": "bandpass",
+            "freq": 1500,
+            "q": 2
+          }
+        },
+        {
+          "type": "noise",
+          "color": "pink",
+          "start": 0.02,
+          "dur": 0.14,
+          "attack": 0.01,
+          "decay": 0.04,
+          "gain": 0.4,
+          "am": {
+            "rate": 55,
+            "depth": 0.6
+          },
+          "filter": {
+            "type": "bandpass",
+            "freq": [
+              650,
+              220
+            ],
+            "sweep": 0.14,
+            "q": 3
+          }
+        }
+      ],
+      "post": {
+        "reverb": {
+          "decay": 0.2,
+          "mix": 0.15,
+          "damping": 0.6
+        },
+        "saturation": 1.5,
+        "targetPeak": 0.8,
+        "fadeOut": 0.01
+      }
     }
   ]
 }
