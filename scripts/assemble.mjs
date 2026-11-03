@@ -75,6 +75,7 @@ export function siteTexts(mainDir) {
 }
 
 // Petite page statique (sans JavaScript) : message et lien de renvoi vers back (pas de rafraîchissement automatique : axe le refuse), styles du site (chemins relatifs).
+// Lot 4f : icône vide en data: ; sans <link rel="icon">, Chrome demande /favicon.ico (absent : 404 en console, vu en CI par publication.spec.js).
 export function simplePage({ title, message, back, backLabel, cssRoot }) {
   return `<!doctype html>
 <html lang="fr">
@@ -84,6 +85,7 @@ export function simplePage({ title, message, back, backLabel, cssRoot }) {
   <meta name="robots" content="noindex">
   <meta name="color-scheme" content="dark">
   <title>${escapeText(title)}</title>
+  <link rel="icon" href="data:,">
   <link rel="stylesheet" href="${escapeHtml(cssRoot)}css/tokens.css">
   <link rel="stylesheet" href="${escapeHtml(cssRoot)}css/base.css">
   <link rel="stylesheet" href="${escapeHtml(cssRoot)}css/accueil.css">

@@ -28,11 +28,14 @@ export function testVersions(real) {
 }
 
 // Archive fictive : une page d'entrée, une feuille de style et un module, tous en chemins relatifs, et build-info.json.
+// Lot 4f : icône vide en data: (comme l'icône intégrée des vraies pages) ; sans elle, le vrai Chrome de la CI demande /favicon.ico,
+// reçoit 404 et l'écrit en console (« Failed to load resource »), ce qui faisait échouer publication.spec.js:70 et :141 en CI seulement
+// (le Chromium « headless shell » local ne demande pas d'icône).
 export function fakeArchive(dir, version) {
   const root = join(dir, version.id);
   mkdirSync(join(root, 'css'), { recursive: true });
   mkdirSync(join(root, 'js'), { recursive: true });
-  writeFileSync(join(root, version.entry), `<!doctype html>\n<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex"><title>${version.label} (archive de test)</title><link rel="stylesheet" href="css/style.css"><script type="module" src="js/main.js"></script></head>\n<body><main><h1>${version.label}</h1><p>Archive de test (fictive).</p><p id="loaded"></p></main></body></html>\n`);
+  writeFileSync(join(root, version.entry), `<!doctype html>\n<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex"><title>${version.label} (archive de test)</title><link rel="icon" href="data:,"><link rel="stylesheet" href="css/style.css"><script type="module" src="js/main.js"></script></head>\n<body><main><h1>${version.label}</h1><p>Archive de test (fictive).</p><p id="loaded"></p></main></body></html>\n`);
   writeFileSync(join(root, 'css/style.css'), 'body { margin: 0; }\n');
   writeFileSync(join(root, 'js/main.js'), "document.getElementById('loaded').textContent = 'module chargé';\n");
   writeFileSync(join(root, 'build-info.json'), `${JSON.stringify({ channel: 'archive', version: version.label, branch: version.branch, sha: version.ref.slice(0, 7), ref: version.ref, date: `${version.date}T00:00:00Z` }, null, 2)}\n`);
