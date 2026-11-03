@@ -176,6 +176,11 @@
       "Versions V0.1 à V0.4 figées, servies dans /v0.1/ à /v0.4/ (branche archive, construites une fois depuis leur commit).",
       "Aperçus par lot retirés du site : /lots/ renvoie vers l'accueil.",
       "Journal des versions : lien « Ouvrir cette version » au lieu de « Ouvrir ce lot »."
+    ] },
+    { "name": "lot-4e", "titre": "Tests en paliers", "points": [
+      "Les tests sont rangés en quatre paliers (avant commit, à chaque push, avant publication, complet) et ne rejouent que les zones du jeu touchées par un changement.",
+      "Le palier complet est découpé en tranches équilibrées pour tenir en 10 minutes en CI (projection : 8 tranches, à confirmer par la première exécution).",
+      "Tests retirés sur décision du propriétaire : doublons, détails, ancien code et pages techniques ; garde-fous intacts. Aucun changement du jeu."
     ] }
   ]
 }

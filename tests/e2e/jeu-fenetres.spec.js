@@ -37,34 +37,12 @@ test.describe('planches au départ', () => {
     expect(s.windows.map((w) => [w.id, w.planks, w.maxPlanks, w.open])).toEqual([['fenetre-nord', 4, 4, false], ['fenetre-ouest', 4, 4, false], ['fenetre-est', 4, 4, false]]);
   });
 
-  test('?planks=0 donne des fenêtres ouvertes, ?planks=2 en donne 2', async ({ page }) => {
-    await open(page, '&planks=0');
-    expect((await state(page)).windows.map((w) => [w.planks, w.open])).toEqual([[0, true], [0, true], [0, true]]);
-    await open(page, '&planks=2');
-    expect((await state(page)).windows.map((w) => w.planks)).toEqual([2, 2, 2]);
-  });
-
-  test.describe('?planks= invalide : ignoré (4 planches)', () => {
-    for (const bad of ['9', '-1', 'x', '2.5', '']) {
-      test(`?planks=${bad}`, async ({ page }) => {
-        await open(page, `&planks=${bad}`);
-        expect((await state(page)).windows.map((w) => w.planks)).toEqual([4, 4, 4]);
-      });
-    }
-  });
-
   test('setPlanks règle une fenêtre ; une valeur invalide est refusée', async ({ page }) => {
     await open(page);
     expect(await page.evaluate(() => [window.__zs.setPlanks('fenetre-est', 1), window.__zs.setPlanks('fenetre-est', 7), window.__zs.setPlanks('inconnue', 1)])).toEqual([true, false, false]);
     expect((await win(page, 'fenetre-est')).planks).toBe(1);
   });
 
-  test('?planks= n\'expose rien sans ?test=1 et ne stocke rien', async ({ page }) => {
-    await page.setViewportSize(SIZE);
-    await page.goto(salle('/jeu.html?seed=1&nospawn=1&planks=2'));
-    expect(await page.locator('#hud-windows, .hud-win').count()).toBe(0); // lot 3a : plus d'état des fenêtres dans le HUD
-    expect(await page.evaluate(() => [typeof window.__zs, localStorage.length, sessionStorage.length, document.cookie])).toEqual(['undefined', 0, 0, '']);
-  });
 });
 
 test.describe('maillage des planches', () => {

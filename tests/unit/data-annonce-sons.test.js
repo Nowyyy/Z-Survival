@@ -127,15 +127,24 @@ describe('sons d\'annonce : montée, repère et extinction (annonce et annonce r
     expect(osc.filter((l) => l.start >= 3).map((l) => l.start)).toEqual([3, 3.25]);
   });
 
-  it('vague-renforcee : bourdon plus grave que celui de l\'annonce (41 Hz contre 55 Hz)', () => {
+  it('vague-renforcee : bourdon plus grave que celui de l\'annonce (41 Hz contre 55 Hz aujourd\'hui), tous deux graves (30 à 80 Hz)', () => {
+    // Lot 4e (V) : relation et plage plutôt que les valeurs exactes, qui changent à chaque réglage.
     const drone = (i) => recipes[i].layers.find((l) => l.type === 'osc' && l.wave === 'saw').freq;
-    expect([drone(0), drone(1)]).toEqual([55, 41]);
+    expect(drone(1)).toBeLessThan(drone(0));
+    for (const f of [drone(0), drone(1)]) {
+      expect(f).toBeGreaterThanOrEqual(30);
+      expect(f).toBeLessThanOrEqual(80);
+    }
   });
 
   it('vague-annonce : deux scies à 55 et 55,8 Hz (battement de 0,8 Hz), passe-bas de 180 à 420 Hz, souffle de 200 à 2 500 Hz entre 0 et 3 s', () => {
     const saws = recipes[0].layers.filter((l) => l.type === 'osc' && l.wave === 'saw');
-    expect(saws.map((l) => l.freq)).toEqual([55, 55.8]);
-    expect(saws[1].freq - saws[0].freq).toBeCloseTo(0.8, 9);
+    // Lot 4e (V) : deux scies graves (± 10 % autour de 55 Hz) et un battement lent (0,5 à 1,2 Hz) plutôt que 55 et 55,8 exacts.
+    expect(saws).toHaveLength(2);
+    for (const l of saws) expect(Math.abs(l.freq - 55) / 55).toBeLessThanOrEqual(0.1);
+    const battement = Math.abs(saws[1].freq - saws[0].freq);
+    expect(battement).toBeGreaterThanOrEqual(0.5);
+    expect(battement).toBeLessThanOrEqual(1.2);
     expect(saws[0].filter.freq).toEqual([180, 420]);
     const breath = recipes[0].layers.find((l) => l.type === 'noise');
     expect(breath).toMatchObject({ color: 'pink', start: 0, dur: 3, attack: 3, filter: { type: 'bandpass', freq: [200, 2500], sweep: 3 } });

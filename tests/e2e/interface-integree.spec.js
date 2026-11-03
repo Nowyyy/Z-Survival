@@ -145,17 +145,36 @@ test.describe('stabilité : aucune boîte ne bouge quand les valeurs parcourent 
 });
 
 test.describe('animations et mouvement réduit', () => {
-  test('un seul clignotement : le point REC, 1 par seconde (au plus 2), en steps (aucune transition)', async ({ page }) => {
+  // Lot 4e (regroupement) : trois tests ouvraient la même page (adresse et fenêtre par défaut) : un seul chargement, une étape par ancien test,
+  // mêmes assertions ; ordre : lecture des animations, puis manche et killAll, puis joueur à terre.
+  test('page par défaut : un seul clignotement (REC), mots entiers du HUD, aucun filter ni mélange sur l\'interface', async ({ page }) => {
     await open(page);
-    const anims = await page.evaluate(async () => {
-      const m = await import('./js/atelier-interface/measure-dom.js');
-      return m.animationsUnder(document.getElementById('hud'));
+    await test.step('un seul clignotement : le point REC, 1 par seconde (au plus 2), en steps (aucune transition)', async () => {
+      const anims = await page.evaluate(async () => {
+        const m = await import('./js/atelier-interface/measure-dom.js');
+        return m.animationsUnder(document.getElementById('hud'));
+      });
+      expect(anims).toHaveLength(1);
+      expect(anims[0]).toMatchObject({ name: 'hud-rec', running: true });
+      expect(anims[0].perSecond).toBeLessThanOrEqual(2);
+      expect(anims[0].perSecond).toBe(1);
+      await expect(page.locator('#hud-rec')).toHaveCSS('animation-timing-function', 'steps(1)');
     });
-    expect(anims).toHaveLength(1);
-    expect(anims[0]).toMatchObject({ name: 'hud-rec', running: true });
-    expect(anims[0].perSecond).toBeLessThanOrEqual(2);
-    expect(anims[0].perSecond).toBe(1);
-    await expect(page.locator('#hud-rec')).toHaveCSS('animation-timing-function', 'steps(1)');
+    await test.step('mots entiers (VAGUE, RESTANTS, TUÉS, VIE, REC) ; tués sans zéros devant ; vague et restants sur deux chiffres', async () => {
+      await step(page, 3.3);
+      const words = await page.evaluate(() => [...document.querySelectorAll('#hud .hud-label')].filter((e) => e.getClientRects().length).map((e) => e.innerText));
+      expect(words).toEqual(['REC', 'VIE', 'VAGUE', 'RESTANTS', 'TUÉS']);
+      await page.evaluate(() => { window.__zs.killAll(); window.__zs.step(0.1); });
+      const kills = (await state(page)).kills;
+      await expect(page.locator('#hud-kills-text')).toHaveText(String(kills));
+      await expect(page.locator('#hud-wave-text')).toHaveText(/^\d{2} \/ 40$/);
+    });
+    await test.step('aucun filter, mix-blend-mode ni backdrop-filter sur l\'interface (HUD, Pause, à terre, panneaux, sticks)', async () => {
+      await page.evaluate(() => { const zs = window.__zs; zs.downPlayer(); zs.step(0.2); });
+      const bad = await page.evaluate(() => [...document.querySelectorAll('#hud, #hud *, #btn-pause, #down, #down *, #pause-panel, #pause-panel *, #end-panel, #end-panel *, .stick, .stick *')]
+        .filter((el) => { const c = getComputedStyle(el); return c.filter !== 'none' || c.mixBlendMode !== 'normal' || (c.backdropFilter && c.backdropFilter !== 'none'); }).map((el) => el.id || el.className));
+      expect(bad).toEqual([]);
+    });
   });
 
   test('sous prefers-reduced-motion : aucune animation dans le HUD, l\'état à terre, la pause et les sticks ; le point REC est fixe', async ({ page }) => {
@@ -169,13 +188,6 @@ test.describe('animations et mouvement réduit', () => {
     await expect(page.locator('#hud-rec')).toHaveCSS('opacity', '1');
   });
 
-  test('aucun filter, mix-blend-mode ni backdrop-filter sur l\'interface (HUD, Pause, à terre, panneaux, sticks)', async ({ page }) => {
-    await open(page);
-    await page.evaluate(() => { const zs = window.__zs; zs.downPlayer(); zs.step(0.2); });
-    const bad = await page.evaluate(() => [...document.querySelectorAll('#hud, #hud *, #btn-pause, #down, #down *, #pause-panel, #pause-panel *, #end-panel, #end-panel *, .stick, .stick *')]
-      .filter((el) => { const c = getComputedStyle(el); return c.filter !== 'none' || c.mixBlendMode !== 'normal' || (c.backdropFilter && c.backdropFilter !== 'none'); }).map((el) => el.id || el.className));
-    expect(bad).toEqual([]);
-  });
 });
 
 test.describe('états du jeu', () => {
@@ -498,17 +510,6 @@ test.describe('retours du propriétaire, mesurés (lot 3l-C)', () => {
       expect(b['#hud-trial'].t).toBeGreaterThan(b['#hud-chutes'].b);
     });
   }
-
-  test('mots entiers (VAGUE, RESTANTS, TUÉS, VIE, REC) ; tués sans zéros devant ; vague et restants sur deux chiffres', async ({ page }) => {
-    await open(page);
-    await step(page, 3.3);
-    const words = await page.evaluate(() => [...document.querySelectorAll('#hud .hud-label')].filter((e) => e.getClientRects().length).map((e) => e.innerText));
-    expect(words).toEqual(['REC', 'VIE', 'VAGUE', 'RESTANTS', 'TUÉS']);
-    await page.evaluate(() => { window.__zs.killAll(); window.__zs.step(0.1); });
-    const kills = (await state(page)).kills;
-    await expect(page.locator('#hud-kills-text')).toHaveText(String(kills));
-    await expect(page.locator('#hud-wave-text')).toHaveText(/^\d{2} \/ 40$/);
-  });
 
   test('à terre : texte juste sous la vague (4 px), barre rouge qui se vide avec les secondes ; protégé : bouclier et barre sur 2 s', async ({ page }) => {
     await open(page);

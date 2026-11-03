@@ -12,7 +12,6 @@ import { resolveAtelier } from '../../js/core/synth2.js';
 const SIZE = { width: 667, height: 375 };
 const BROWSER_NOISE = /GL Driver Message/;
 const { sounds } = JSON.parse(readFileSync('data/game/sounds.json', 'utf8'));
-const legacy = JSON.parse(readFileSync('data/game/sounds-legacy.json', 'utf8')).sounds;
 const slots = new Map(resolveAtelier(JSON.parse(readFileSync('data/game/sounds-atelier.json', 'utf8'))).slots.map((s) => [s.id, s]));
 const byId = new Map(sounds.map((s) => [s.id, s]));
 const URL = (extra = '') => `/jeu.html?test=1&empty=1&nospawn=1&seed=1${extra}`;
@@ -188,23 +187,6 @@ test.describe('sons intégrés : lecture sous les identifiants du jeu', () => {
 });
 
 test.describe('sons intégrés : ?sons=', () => {
-  test('?sons=ancien : pack d\'avant (recettes chargées à la demande), voix communes à la hauteur du type @lent', async ({ page }) => {
-    const urls = [];
-    page.on('request', (r) => urls.push(r.url()));
-    await open(page, '&sons=ancien');
-    await unlockReady(page);
-    expect(urls.some((u) => u.includes('data/game/sounds-legacy.json'))).toBe(true);
-    const a = await audio(page);
-    expect(a.mode).toBe('ancien');
-    expect(a.loaded).not.toContain('zombie-mort-petit-1');
-    expect(a.sums['pas-1']).toBe(fp(renderSound(legacy.find((r) => r.id === 'pas'), 0).samples));
-    const p = await near(page);
-    await emit(page, [{ type: 'zombieHit', ...p, killed: true, zombie: 'petit' }, { type: 'plankRepairStart', ...p, windowId: 'F', duration: 1.2 }]);
-    await step(page, 0.2);
-    const log = (await audio(page)).log;
-    expect(log.find((e) => e.sound === 'zombie-mort')).toMatchObject({ rate: 1.35 });
-    expect(log.some((e) => e.sound === 'planche-posee')).toBe(false); // l'ancien son de planche sonne à la planche posée
-  });
 
   test('?sons=B : la variante B de l\'atelier (réglages par défaut) pour les sons intégrés', async ({ page }) => {
     await open(page, '&sons=B');

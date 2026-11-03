@@ -1,15 +1,9 @@
 import { test, expect } from '@playwright/test';
-import { readFileSync } from 'node:fs';
 import { waitReady } from './helpers.js';
 
 // Lot 3g, partie B : la carte corrigée d'après le modèle (ecarts-decisions.json) dans le jeu. 667×375, step() et hooks ; les tests se désactivent
 // seuls si WebGL manque.
 const SIZE = { width: 667, height: 375 };
-const load = (path) => JSON.parse(readFileSync(path, 'utf8'));
-const world = load('data/game/maps/rez-de-chaussee/world.json');
-const etageWorld = load('data/game/maps/rez-de-chaussee/etage.world.json');
-const STATE = (page) => page.evaluate(() => window.__zs.getState());
-const obstacle = (id) => world.obstacles.find((o) => o.id === id);
 // Références de rendu mesurées sur main au lancement du lot (scripts/modele/mesures-rendu.mjs) : appels et triangles, 10 zombies, ombres, cône.
 const REF = { R1: [200, 14442], R2: [201, 14582], R3: [199, 13898], U1: [207, 14788], U4: [212, 15588] };
 const U = (px) => px * 5 + 800;
@@ -30,97 +24,6 @@ async function open(page, extra = '') {
   await page.evaluate(() => window.__zs.step(0.05));
 }
 
-const push = (page, at, move, seconds = 2.5) => page.evaluate(([p, m, s]) => {
-  const zs = window.__zs;
-  zs.setPlayer(p[0], p[1]);
-  zs.setInput({ move: m });
-  zs.step(s);
-  zs.setInput({});
-  return zs.getState().player;
-}, [at, move, seconds]);
-
-test.describe('carte corrigée : collisions', () => {
-  test('le joueur est bloqué par la rangée d\'étagères du modèle de l\'aile (P1+P2+R-G39)', async ({ page }) => {
-    await open(page, '&wave=11');
-    const b = obstacle('P1+P2+R-G39');
-    expect(b).toBeTruthy();
-    const p = await push(page, [b.x + b.w + 60, b.y + b.h / 2], { x: -1, y: 0 });
-    expect(p.x).toBeGreaterThanOrEqual(b.x + b.w + 17);
-  });
-
-  test('le joueur est bloqué par l\'étagère du modèle P4 (mur sud de la poche)', async ({ page }) => {
-    await open(page, '&wave=11');
-    const b = obstacle('P4');
-    expect(b).toMatchObject({ kind: 'etagere' });
-    const p = await push(page, [b.x + b.w / 2, b.y - 60], { x: 0, y: 1 });
-    expect(p.y).toBeLessThanOrEqual(b.y - 17);
-  });
-
-  test('le joueur est bloqué par le bloc P3+R-G37 (étagère du modèle contre le mur ouest de la poche)', async ({ page }) => {
-    await open(page, '&wave=11');
-    const b = obstacle('P3+R-G37');
-    expect(b).toBeTruthy();
-    const p = await push(page, [b.x + b.w + 60, b.y + b.h / 2], { x: -1, y: 0 });
-    expect(p.x).toBeGreaterThanOrEqual(b.x + b.w + 17);
-  });
-
-  test('un zombie contourne le bloc P1+P2+R-G39 pour rejoindre le joueur', async ({ page }) => {
-    await open(page, '&wave=11');
-    const b = obstacle('P1+P2+R-G39');
-    const r = await page.evaluate(([bx, by, bw, bh]) => {
-      const zs = window.__zs;
-      zs.setPlayer(bx + bw + 120, by + bh + 80);
-      zs.setChutes(5);
-      const id = zs.spawnEnemy(bx + bw + 120, by - 120, { mode: 'dedans' });
-      let best = Infinity;
-      for (let i = 0; i < 400; i += 1) {
-        zs.step(0.05);
-        const s = zs.getState();
-        const z = s.enemies.find((e) => e.id === id);
-        if (!z) break;
-        best = Math.min(best, Math.hypot(z.x - s.player.x, z.y - s.player.y));
-      }
-      return best;
-    }, [b.x, b.y, b.w, b.h]);
-    expect(r).toBeLessThan(80);
-  });
-});
-
-test.describe('fenêtre déplacée (U5) : siège et réparation', () => {
-  test('U5 (x corrigé d\'après le modèle) : un zombie va à l\'emplacement, arrache les 4 planches, entre', async ({ page }) => {
-    await open(page, '&wave=31&floor=1');
-    const u5 = etageWorld.windows.find((w) => w.id === 'U5');
-    expect(u5.x).toBe(U(217));
-    const r = await page.evaluate(() => {
-      const zs = window.__zs;
-      zs.setChutes(5);
-      const zid = zs.spawnAtWindow('U5', 'marcheur');
-      let torn = false;
-      let entered = false;
-      for (let i = 0; i < 1800 && !entered; i += 1) {
-        zs.step(0.05);
-        const s = zs.getState();
-        if (s.windows.find((q) => q.id === 'U5').planks === 0) torn = true;
-        entered = s.enemies.find((e) => e.id === zid)?.mode === 'dedans';
-      }
-      return { torn, entered };
-    });
-    expect(r).toEqual({ torn: true, entered: true });
-  });
-
-  test('U5 : réparée depuis son point de réparation', async ({ page }) => {
-    await open(page, '&wave=31&floor=1');
-    const r = await page.evaluate(() => {
-      const zs = window.__zs;
-      zs.setPlanks('U5', 0);
-      const w = zs.getState().windows.find((q) => q.id === 'U5');
-      zs.setPlayer(w.repairSpot.x, w.repairSpot.y);
-      zs.step(6);
-      return zs.getState().windows.find((q) => q.id === 'U5').planks;
-    });
-    expect(r).toBeGreaterThanOrEqual(2);
-  });
-});
 
 test.describe('zones jouables sur la nouvelle géométrie', () => {
   for (const [wave, zones] of [[11, ['depart', 'aile']], [21, ['depart', 'aile', 'etage-gauche']], [31, ['depart', 'aile', 'etage-gauche', 'etage-droite']]]) {
@@ -173,13 +76,6 @@ test.describe('zones jouables sur la nouvelle géométrie', () => {
     expect(r.maxStill, JSON.stringify(r.where)).toBeLessThanOrEqual(2.05);
   });
 
-  test('?map=salle inchangé : 3 fenêtres, 14 meubles', async ({ page }) => {
-    await open(page, '&map=salle');
-    const s = await STATE(page);
-    expect(s.map.id).toBe('salle');
-    expect(s.windows.length).toBe(3);
-    expect(s.obstacles.length).toBe(14);
-  });
 });
 
 // Mesurés avec ?detail=0 : le budget de la partie B porte sur la géométrie corrigée ; le décor léger et les textures de la partie C ont leurs

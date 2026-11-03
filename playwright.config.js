@@ -11,6 +11,12 @@ const FULL = process.env.E2E_FULL === '1';
 const files = (names) => (FULL ? undefined : names.map((n) => `**/${n}.spec.js`));
 const ESSENTIAL = ['attente', 'dev', 'carte', 'sons-page', 'sauvegarde', 'argent', 'jeu-interface', 'atelier-retours', 'interface-integree', 'persos-integres', 'publication']; // lot 4c : publication par versions (site assemblé de test) ; lot 3g : retours du propriétaire (portes, mur percé, escaliers) ; lot 3l : interface intégrée ; lot 3m : personnages intégrés
 const PAGES = ['attente', 'dev', 'sauvegarde', 'sons-page'];
+// Lot 4e (décision D) : en mode complet, le projet mobile ne joue plus que les garde-fous et les tests P (liste « garde-fous » de
+// tests/selection.json : fichiers entiers, ou tests G et P d'autres fichiers par leur motif) ; les tests de règles ne tournent qu'en bureau.
+// grep de Playwright : « projet fichier describe titre » (fichier relatif à tests/e2e).
+const GARDES = JSON.parse(readFileSync('tests/selection.json', 'utf8'))['garde-fous'].filter((g) => g.fichier.startsWith('tests/e2e/'));
+const nomFichier = (f) => f.slice('tests/e2e/'.length).replace(/[.]/g, '\\.');
+const MOBILE_GREP = new RegExp(GARDES.map((g) => (g.motif ? `^mobile ${nomFichier(g.fichier)} .*(?:${g.motif})` : `^mobile ${nomFichier(g.fichier)} `)).join('|'), 'i');
 
 export default defineConfig({
   testDir: 'tests/e2e',
@@ -38,7 +44,7 @@ export default defineConfig({
     },
   ],
   projects: [
-    { name: 'mobile', testMatch: files(PAGES), testIgnore: ['**/fumee.spec.js'], use: { ...devices['Pixel 5'], channel, viewport: { width: 375, height: 812 } } },
+    { name: 'mobile', testMatch: files(PAGES), testIgnore: ['**/fumee.spec.js'], grep: FULL ? MOBILE_GREP : undefined, use: { ...devices['Pixel 5'], channel, viewport: { width: 375, height: 812 } } },
     { name: 'bureau', testMatch: files(ESSENTIAL), use: { channel, viewport: { width: 1440, height: 900 } } },
   ],
 });

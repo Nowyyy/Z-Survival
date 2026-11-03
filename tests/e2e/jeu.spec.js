@@ -81,37 +81,35 @@ test.describe('plein écran', () => {
 test.describe('déplacement', () => {
   test.skip(({ isMobile }) => isMobile, 'clavier');
 
-  test('W, A, S, D déplacent le joueur (touches physiques)', async ({ page }) => {
+  // Lot 4e (regroupement) : W A S D, flèches et event.code partageaient la même page (même adresse, 1440×900) : un seul chargement,
+  // une étape par ancien test, mêmes assertions ; chaque étape mesure un déplacement relatif (indépendant des étapes précédentes).
+  test('clavier : W, A, S, D (touches physiques), flèches, et lecture par event.code quelle que soit la disposition', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto(URL);
     await ready(page);
-    const start = (await state(page)).player;
-    for (const [code, axis, sign] of [['KeyD', 'x', 1], ['KeyA', 'x', -1], ['KeyS', 'y', 1], ['KeyW', 'y', -1]]) {
-      const before = (await state(page)).player[axis];
-      await page.keyboard.down(code);
-      await expect.poll(async () => ((await state(page)).player[axis] - before) * sign).toBeGreaterThan(8);
-      await page.keyboard.up(code);
-    }
-    expect(start.x).toBe(800);
-  });
-
-  test('les flèches fonctionnent aussi', async ({ page }) => {
-    await page.goto(URL);
-    await ready(page);
-    const before = (await state(page)).player.x;
-    await page.keyboard.down('ArrowRight');
-    await expect.poll(async () => (await state(page)).player.x - before).toBeGreaterThan(8);
-    await page.keyboard.up('ArrowRight');
-  });
-
-  test('les touches sont lues par event.code, quelle que soit la disposition du clavier', async ({ page }) => {
-    await page.goto(URL);
-    await ready(page);
-    const before = (await state(page)).player.x;
-    // Clavier AZERTY : la touche physique de « A » QWERTY produit la lettre « q » mais le code « KeyA ».
-    await page.evaluate(() => window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyA', key: 'q' })));
-    await expect.poll(async () => before - (await state(page)).player.x).toBeGreaterThan(8);
-    await page.evaluate(() => window.dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyA', key: 'q' })));
+    await test.step('W, A, S, D déplacent le joueur (touches physiques)', async () => {
+      const start = (await state(page)).player;
+      for (const [code, axis, sign] of [['KeyD', 'x', 1], ['KeyA', 'x', -1], ['KeyS', 'y', 1], ['KeyW', 'y', -1]]) {
+        const before = (await state(page)).player[axis];
+        await page.keyboard.down(code);
+        await expect.poll(async () => ((await state(page)).player[axis] - before) * sign).toBeGreaterThan(8);
+        await page.keyboard.up(code);
+      }
+      expect(start.x).toBe(800);
+    });
+    await test.step('les flèches fonctionnent aussi', async () => {
+      const before = (await state(page)).player.x;
+      await page.keyboard.down('ArrowRight');
+      await expect.poll(async () => (await state(page)).player.x - before).toBeGreaterThan(8);
+      await page.keyboard.up('ArrowRight');
+    });
+    await test.step('les touches sont lues par event.code, quelle que soit la disposition du clavier', async () => {
+      const before = (await state(page)).player.x;
+      // Clavier AZERTY : la touche physique de « A » QWERTY produit la lettre « q » mais le code « KeyA ».
+      await page.evaluate(() => window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyA', key: 'q' })));
+      await expect.poll(async () => before - (await state(page)).player.x).toBeGreaterThan(8);
+      await page.evaluate(() => window.dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyA', key: 'q' })));
+    });
   });
 
   test('le joueur reste dans la salle', async ({ page }) => {
@@ -140,7 +138,8 @@ test.describe('déplacement', () => {
 // Téléphone en portrait : le message de rotation remplace le jeu ; on teste donc en paysage.
 const landscape = (page, isMobile) => page.setViewportSize(isMobile ? { width: 667, height: 375 } : { width: 1440, height: 900 });
 
-test('aucune requête externe et console propre', async ({ page, baseURL, isMobile }) => {
+// Lot 4e (regroupement) : réseau, console et axe chargeaient la même page (même adresse, même fenêtre) : un seul chargement, deux étapes.
+test('aucune requête externe, console propre et axe sans violation', async ({ page, baseURL, isMobile }) => {
   await landscape(page, isMobile);
   const external = [];
   const problems = [];
@@ -153,17 +152,15 @@ test('aucune requête externe et console propre', async ({ page, baseURL, isMobi
   page.on('response', (r) => r.status() >= 400 && problems.push(`${r.status()} ${r.url()}`));
   await page.goto(URL);
   await ready(page);
-  await page.waitForLoadState('networkidle');
-  expect(external).toEqual([]);
-  expect(problems).toEqual([]);
-});
-
-test('axe : aucune violation', async ({ page, isMobile }) => {
-  await landscape(page, isMobile);
-  await page.goto(URL);
-  await ready(page);
-  const results = await new AxeBuilder({ page }).analyze();
-  expect(results.violations).toEqual([]);
+  await test.step('aucune requête externe et console propre', async () => {
+    await page.waitForLoadState('networkidle');
+    expect(external).toEqual([]);
+    expect(problems).toEqual([]);
+  });
+  await test.step('axe : aucune violation', async () => {
+    const results = await new AxeBuilder({ page }).analyze();
+    expect(results.violations).toEqual([]);
+  });
 });
 
 test('sans JavaScript, seul le message noscript est visible', async ({ baseURL }) => {

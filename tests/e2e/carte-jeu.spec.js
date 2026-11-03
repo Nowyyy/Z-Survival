@@ -47,23 +47,6 @@ test.describe('carte par défaut', () => {
     expect(s.world).toMatchObject({ width: 4040, height: 3460, empty: false });
   });
 
-  test('?map=salle charge l\'ancienne salle (3 fenêtres, 14 meubles) ; une valeur inconnue retombe sur la carte par défaut sans erreur', async ({ page }) => {
-    const problems = [];
-    page.on('console', (m) => ['error', 'warning'].includes(m.type()) && !BROWSER_NOISE.test(m.text()) && problems.push(m.text()));
-    page.on('pageerror', (e) => problems.push(e.message));
-    await open(page, '&map=salle');
-    let s = await STATE(page);
-    expect(s.map.id).toBe('salle');
-    expect(s.windows.length).toBe(3);
-    expect(s.obstacles.length).toBe(14);
-    expect(s.world).toMatchObject({ width: 3600, height: 2800 });
-    await open(page, '&map=nimporte');
-    s = await STATE(page);
-    expect(s.map.id).toBe('rez-de-chaussee');
-    expect(s.windows.filter((w) => w.id.startsWith('F')).length).toBe(7); // + U1 à U7 (lot 3e) ; lot 3g : F7 retirée
-    expect(problems).toEqual([]);
-  });
-
   test('?empty=1 garde la salle du lot 1m sans siège ; aucun appel réseau externe, aucun stockage, console propre', async ({ page, baseURL }) => {
     const problems = [];
     const external = [];
@@ -160,49 +143,6 @@ test.describe('déplacements, obstacles, tir', () => {
 });
 
 test.describe('siège sur les huit fenêtres', () => {
-  for (const id of IDS) {
-    test(`${id} : un zombie va à l'emplacement, arrache les 4 planches, escalade, entre ; personne dedans avant l'ouverture`, async ({ page }) => {
-      await open(page, '&wave=11');
-      const r = await page.evaluate((windowId) => {
-        const zs = window.__zs;
-        zs.setPlayer(1980, 2065);
-        const zid = zs.spawnAtWindow(windowId, 'marcheur');
-        let early = 0;
-        let torn = false;
-        let entered = null;
-        for (let i = 0; i < 1800 && entered === null; i += 1) {
-          zs.step(0.05);
-          const s = zs.getState();
-          const w = s.windows.find((q) => q.id === windowId);
-          const z = s.enemies.find((e) => e.id === zid);
-          if (w.planks > 0 && z && z.mode === 'dedans') early += 1;
-          if (w.planks === 0) torn = true;
-          if (z && z.mode === 'dedans') entered = i;
-        }
-        const s = zs.getState();
-        return { early, torn, entered, mode: s.enemies.find((e) => e.id === zid)?.mode, planks: s.windows.find((q) => q.id === windowId).planks, entry: s.enemies.find((e) => e.id === zid)?.entered };
-      }, id);
-      expect(r.early).toBe(0);
-      expect(r.torn).toBe(true);
-      expect(r.mode).toBe('dedans');
-      expect(r.planks).toBe(0);
-      expect(r.entered).not.toBeNull();
-    });
-  }
-
-  test('F3 (ouest de l\'aile) : le zombie atteint son emplacement et arrache', async ({ page }) => {
-    await open(page, '&wave=11');
-    const r = await page.evaluate(() => {
-      const zs = window.__zs;
-      zs.spawnAtWindow('F3', 'marcheur');
-      for (let i = 0; i < 1200; i += 1) {
-        zs.step(0.05);
-        if (zs.getState().enemies[0].mode === 'arrache') break;
-      }
-      return zs.getState().enemies[0].mode;
-    });
-    expect(r).toBe('arrache');
-  });
 
   test('un zombie entré par F1 rejoint le joueur dans la grande salle en passant par l\'ouverture ; un zombie de l\'aile aussi', async ({ page }) => {
     await open(page, '&wave=11');
@@ -234,23 +174,6 @@ test.describe('siège sur les huit fenêtres', () => {
     expect(r.contact2).not.toBeNull();
   });
 
-  test('réparation d\'une fenêtre à chaque coin de la carte (F1, F3, F6, F8) selon les règles du lot 3', async ({ page }) => {
-    await open(page, '&wave=11');
-    for (const id of ['F1', 'F3', 'F6', 'F8']) {
-      const r = await page.evaluate((windowId) => {
-        const zs = window.__zs;
-        const w0 = zs.getState().windows.find((q) => q.id === windowId);
-        zs.setPlanks(windowId, 1);
-        const g = zs.getState().windows.find((q) => q.id === windowId);
-        // Le joueur se place au point de réparation : 70 vers l'intérieur depuis le centre de la fenêtre.
-        const n = { F1: [0, -1], F3: [-1, 0], F6: [1, 0], F8: [0, 1] }[windowId];
-        zs.setPlayer(g.x - n[0] * 70, g.y - n[1] * 70);
-        zs.step(8);
-        return { before: 1, after: zs.getState().windows.find((q) => q.id === windowId).planks, max: w0.maxPlanks };
-      }, id);
-      expect(r.after, id).toBe(r.max);
-    }
-  });
 });
 
 test.describe('planches et débris sur les vraies fenêtres', () => {
@@ -280,20 +203,6 @@ test.describe('planches et débris sur les vraies fenêtres', () => {
 
   // Lot 3g (retours du propriétaire) : murs jusqu'au plafond : les carrés sont incrustés dans la face du mur au-dessus de la fenêtre (61 de haut), sur la face que voit la
   // caméra (F8 est au sud : face extérieure ; la face est vérifiée par atelier-retours.test.js) ; ?murs=bas : sur le dessus du mur, à sa hauteur (60), comme avant.
-  for (const [extra, side, y0, y1] of [['', 'exterieur', 61, 61.01], ['&murs=bas', 'dessus', 60, 61]]) {
-    test(`les quatre carrés de F8 (sud ; F7 retirée au lot 3g) sont visibles : ${side}, à ${y0} de haut${extra}`, async ({ page }) => {
-      await open(page, extra);
-      const rows = await page.evaluate(() => window.__zs.getState().windows.filter((w) => ['F8'].includes(w.id)).map((w) => ({ id: w.id, pips: w.mesh.pipsOn, y: w.mesh.pipY, tri: w.mesh.triangles })));
-      expect(rows).toHaveLength(1);
-      for (const r of rows) {
-        expect(r.pips).toBe(4);
-        expect(r.y).toBeGreaterThanOrEqual(y0);
-        expect(r.y).toBeLessThan(y1);
-        expect(r.tri).toBeGreaterThanOrEqual(38);
-        expect(r.tri).toBeLessThanOrEqual(42);
-      }
-    });
-  }
 
   test('débris : un maillage par fenêtre, 4 au plus par fenêtre, masqué quand sa fenêtre est hors champ', async ({ page }) => {
     await open(page);

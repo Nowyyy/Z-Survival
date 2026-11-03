@@ -92,15 +92,6 @@ test.describe('étage : départ, visibilité, étiquettes', () => {
     expect(up.length).toBeGreaterThan(3);
   });
 
-  test('?map=salle : aucun étage, aucune puce, aucun escalier, comportement du lot 3c', async ({ page }) => {
-    await open(page, '&wave=1&nospawn=1&map=salle');
-    const s = await STATE(page);
-    expect(s.floor.multi).toBe(false);
-    expect(s.floor.stairs).toEqual([]);
-    expect(s.scene.visible.etage).toBe(0);
-    await expect(page.locator('#hud-floor')).toBeHidden();
-    expect(await page.evaluate(() => window.__zs.setFloor(1))).toBe(false);
-  });
 });
 
 // Escalier physique (mise à jour du lot 3e) : on marche dans l'escalier, sa hauteur monte, l'étage logique change à mi-hauteur ; plus de fondu ni de téléportation.

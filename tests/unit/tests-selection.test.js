@@ -216,3 +216,19 @@ describe('workflows : tests.yml ajouté, pages.yml intact', () => {
     expect(tests).not.toContain('playwright install');
   });
 });
+
+describe('regroupements G et P (lot 4e-C) : aucune assertion perdue', () => {
+  it('chaque fichier e2e G ou P garde au moins les assertions de la référence d\'avant les regroupements (scripts/tests/compter.mjs)', async () => {
+    const { compter } = await import('../../scripts/tests/compter.mjs');
+    const ref = JSON.parse(readFileSync('scripts/tests/assertions-reference.json', 'utf8')).fichiers;
+    for (const [f, r] of Object.entries(ref)) {
+      expect(existsSync(f), f).toBe(true);
+      expect(compter(readFileSync(f, 'utf8')).assertions, f).toBeGreaterThanOrEqual(r.assertions);
+    }
+  });
+  it('compter : assertions, chargements (page.goto et chargeurs locaux), tests', async () => {
+    const { compter } = await import('../../scripts/tests/compter.mjs');
+    const src = "async function open(page) {\n  await page.goto('/a');\n}\ntest('a', async ({ page }) => {\n  await open(page);\n  expect(1).toBe(1);\n  await expect.poll(() => 1).toBe(1);\n});\ntest('b', async ({ page }) => {\n  await page.goto('/b');\n});\n";
+    expect(compter(src)).toEqual({ tests: 2, assertions: 2, chargements: 2 });
+  });
+});

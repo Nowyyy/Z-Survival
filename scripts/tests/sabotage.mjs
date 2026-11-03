@@ -137,6 +137,13 @@ async function main() {
             vus = e.echecs;
             r.echecs.push(...vus);
           }
+          // Palier publication : il joue aussi les tests « complet » des zones sélectionnées (pages techniques, règles gardées).
+          if (selectionnee && !vus.length && z.complet.length) {
+            const e = playwrightEchecs(arbre, z.complet);
+            r.e2eLances += z.complet.length;
+            vus = e.echecs.map((f) => `${f} (palier publication)`);
+            r.echecs.push(...vus);
+          }
           r.parZone[id] = selectionnee ? (vus.length ? vus.slice(0, 2) : []) : 'zone non sélectionnée';
         }
         r.detectee = Object.values(r.parZone).every((x) => Array.isArray(x) && x.length > 0);
