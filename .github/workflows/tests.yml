@@ -8,6 +8,9 @@ name: Tests
 #    (zones touchées depuis la base, projets de standardProjets = bureau, 8 tranches au plus, 0 si aucun test Playwright).
 #  - workflow_dispatch « publication » ou « complet », push de essai/complet-* : tranchesMax (16) tranches.
 #  - push d'une autre branche essai/** : rien (message dans le résumé).
+#  - une branche essai/** doit apporter au moins un commit absent du dépôt et un fichier hors documentation : avec paths-ignore,
+#    GitHub compare une branche nouvelle aux seuls commits qu'elle apporte ; une branche créée sur un commit déjà poussé ne lance rien
+#    (constaté au lot 4f : essai/complet-1, créée sur le commit de lot-4f, n'a déclenché aucune exécution).
 # Aucun déploiement ici. Les tests tournent sur le serveur de développement (scripts/serve.mjs) et le site de test construit à la volée
 # (scripts/site/e2e-site.mjs) : aucun site construit à partager. Aucun navigateur installé : Playwright pilote le Chrome du runner.
 on:
