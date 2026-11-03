@@ -941,9 +941,19 @@ test.describe('sons, budget, interface', () => {
   test('pause pendant le passage d\'un zombie dans l\'escalier : il ne bouge plus', async ({ page }) => {
     await open(page, '&wave=21&nospawn=1', SIZE, { freeze: false });
     await page.evaluate((b) => { window.__zs.spawnEnemy(b.x, b.y + 60, { floor: 'etage', mode: 'dedans' }); }, A_ETAGE);
-    await expect.poll(async () => (await STATE(page)).enemies.some((e) => e.mode === 'escalier'), { timeout: 20000 }).toBe(true);
+    // Lot 4f-A : le zombie est amené dans l'escalier par step() (temps de jeu), plus par une attente réelle de 20 s qui expirait sous charge
+    // (rendu plus lent, donc jeu plus lent) ; la boucle réelle tourne toujours (freeze: false) : c'est elle que la pause doit arrêter.
+    const pas = await page.evaluate(() => {
+      for (let i = 0; i < 1200; i += 1) { // 60 s de jeu au plus
+        if (window.__zs.getState().enemies.some((e) => e.mode === 'escalier')) return i;
+        window.__zs.step(0.05);
+      }
+      return -1;
+    });
+    expect(pas, 'le zombie atteint l\'escalier en 60 s de jeu au plus').toBeGreaterThanOrEqual(0);
     await page.click('#btn-pause');
     const a = await STATE(page);
+    expect(a.enemies.some((e) => e.mode === 'escalier'), 'la pause tombe pendant le passage dans l\'escalier').toBe(true);
     await page.waitForTimeout(600);
     const b = await STATE(page);
     expect(b.time).toBe(a.time);

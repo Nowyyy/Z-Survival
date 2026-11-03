@@ -1,11 +1,12 @@
 // Lot 4e-B — Sélection des tests à rejouer d'après les fichiers modifiés (table tests/selection.json, fonctions de lib/selection.mjs).
 //
-// Usage : node scripts/tests/selectionner.mjs [--base <ref>] [--files a,b,c] [--depuis-version] [--publication] [--tout] [--json <fichier>] [--court]
+// Usage : node scripts/tests/selectionner.mjs [--base <ref>] [--files a,b,c] [--depuis-version] [--publication] [--tout] [--sans-vitest] [--json <fichier>] [--court]
 //   --base <ref>        référence de comparaison (défaut : base du lot = merge-base de HEAD avec origin/dev, sinon origin/main)
 //   --files <liste>     fichiers modifiés donnés à la main (virgules ou espaces) au lieu de git
 //   --depuis-version    la base devient le ref de la version « actuelle » de versions.json lu sur origin/main
 //   --publication       applique la règle du complet périodique (tests/dernier-complet.json, completMaxVersions de tests/budget.json)
 //   --tout              rejeu total
+//   --sans-vitest       sans `vitest list --changed` (lot 4f : tranches de la CI, qui ne lancent que Playwright)
 // Sortie : JSON (zones rejouées et sautées avec la raison, mode, fichiers Vitest et Playwright) sur la sortie standard ou dans --json.
 import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
@@ -99,6 +100,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     depuisVersion: has('--depuis-version'),
     publication: has('--publication'),
     tout: has('--tout'),
+    vitest: has('--sans-vitest') ? false : undefined,
   });
   const json = `${JSON.stringify(r, null, 2)}\n`;
   if (val('--json')) writeFileSync(val('--json'), json);

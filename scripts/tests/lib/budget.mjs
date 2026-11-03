@@ -115,3 +115,63 @@ export function dureesDepuisMesure(tests, mesure) {
 
 // Ligne d'un fichier --test-list de Playwright : « [projet] › fichier relatif à tests/e2e › titres ».
 export const ligneTestList = (t) => `[${t.projet}] › ${t.fichier.replace(/^tests\/e2e\//, '')} › ${t.titre}`;
+
+// Lot 4f-A — Palier standard réparti en tranches (projets de standardProjets seulement, le bureau) :
+//   N_standard = clamp(1, tranchesMaxStandard, ceil(somme × facteurDesequilibre ÷ (facteurParallelisme × (standardCibleSecondes − installationSecondes))))
+//   aucun test Playwright → 0 tranche (seulement la tâche « unitaires »).
+export function nombreDeTranchesStandard(sommeSecondes, b, facteur = b.facteurParallelisme) {
+  const utile = Math.max(1, b.standardCibleSecondes - b.installationSecondes);
+  const brut = Math.ceil((sommeSecondes * b.facteurDesequilibre) / (facteur * utile));
+  return Math.min(b.tranchesMaxStandard, Math.max(1, brut));
+}
+
+/**
+ * Plan d'un palier : N minimal, N utilisé et projection avec N utilisé.
+ *  - complet, publication : N minimal = nombreDeTranches (hypothèse mesurée) ; N utilisé = tranchesMax dès que le nombre d'unités le permet.
+ *  - standard : N = nombreDeTranchesStandard (8 au plus) ; avertissement au-delà de standardCibleSecondes, erreur au-delà de standardMaxSecondes.
+ *  - aucune unité : 0 tranche.
+ * @param {object[]} tests [{projet, fichier, titre, ms}] (déjà filtrés : projets, étiquettes)
+ */
+export function planDuPalier(tests, b, palier, o = {}) {
+  const u = unites(tests, o.granularite ?? 'test');
+  const somme = u.reduce((s, x) => s + x.ms, 0) / 1000;
+  if (!u.length) return { palier, nMinimal: 0, nUtilise: 0, sommeSecondes: 0, projection: null, erreurs: [], avertissements: [] };
+  const erreurs = [];
+  const avertissements = [];
+  let nMinimal;
+  let nUtilise;
+  if (palier === 'standard') {
+    nMinimal = nombreDeTranchesStandard(somme, b);
+    nUtilise = Math.min(nMinimal, u.length);
+  } else {
+    nMinimal = nombreDeTranches(somme, b, b.facteurParallelisme);
+    nUtilise = Math.min(b.tranchesMax, u.length);
+  }
+  const p = projection(u, b, b.facteurParallelisme, nUtilise);
+  if (palier === 'standard') {
+    const brut = Math.ceil((somme * b.facteurDesequilibre) / (b.facteurParallelisme * Math.max(1, b.standardCibleSecondes - b.installationSecondes)));
+    if (brut > b.tranchesMaxStandard) avertissements.push(`${brut} tranches nécessaires pour tenir ${b.standardCibleSecondes} s ; limité à tranchesMaxStandard = ${b.tranchesMaxStandard}`);
+    if (p.totalSecondes > b.standardMaxSecondes) erreurs.push(`temps projeté ${p.totalSecondes} s > maximum du standard ${b.standardMaxSecondes} s`);
+    else if (p.totalSecondes > b.standardCibleSecondes) avertissements.push(`temps projeté ${p.totalSecondes} s > cible du standard ${b.standardCibleSecondes} s (maximum ${b.standardMaxSecondes} s)`);
+  } else {
+    if (nMinimal > b.tranchesMax) erreurs.push(`${nMinimal} tranches nécessaires pour tranchesMax = ${b.tranchesMax}`);
+    if (p.totalSecondes > b.completCibleSecondes) erreurs.push(`temps projeté ${p.totalSecondes} s > objectif ${b.completCibleSecondes} s avec ${nUtilise} tranches`);
+  }
+  return { palier, nMinimal, nUtilise, sommeSecondes: Math.round(somme), projection: p, erreurs, avertissements };
+}
+
+// Résumé compact de la projection (sortie « projection » de la tâche planifier, lue par bilan-duree).
+export function projectionCompacte(plan, b) {
+  const p = plan.projection;
+  return {
+    palier: plan.palier,
+    nMinimal: plan.nMinimal,
+    nUtilise: plan.nUtilise,
+    sommeSecondes: plan.sommeSecondes,
+    facteur: b.facteurParallelisme,
+    installationSecondes: b.installationSecondes,
+    trancheLaPlusLongueSecondes: p ? p.trancheLaPlusLongueSecondes : 0,
+    totalSecondes: p ? p.totalSecondes : 0,
+    tranches: p ? p.repartition.map((t) => ({ index: t.index, secondes: Math.round(t.ms / 1000 / b.facteurParallelisme), executions: t.unites.reduce((s, x) => s + x.tests.length, 0) })) : [],
+  };
+}

@@ -187,25 +187,39 @@ describe('workflows : tests.yml ajouté, pages.yml intact', () => {
     expect(sha(pages.slice(pages.indexOf('\n  deploy:\n')))).toBe('5ef684728d978d1d2051c1439ef72e78a0d491d88dfc6e71b4a7d9a0071e71da');
     expect([...pages.matchAll(/^ {2}([\w-]+):$/gm)].map((m) => m[1]).filter((j) => pages.indexOf(`\n  ${j}:`) > pages.indexOf('\njobs:'))).toEqual(['quick', 'e2e', 'deploy']);
   });
-  it('tests.yml : déclencheurs push (dev, lot-*), pull_request, workflow_dispatch avec un choix de palier ; documentation seule ignorée', () => {
-    expect(tests).toMatch(/push:\n\s+branches: \[dev, 'lot-\*'\]/);
+  it('tests.yml : déclencheurs push (dev, lot-*, essai/** depuis le lot 4f), pull_request, workflow_dispatch avec un choix de palier ; documentation seule ignorée', () => {
+    expect(tests).toMatch(/push:\n\s+branches: \[dev, 'lot-\*', 'essai\/\*\*'\]/);
     expect(tests).toContain('pull_request:');
     expect(tests).toMatch(/options: \[standard, publication, complet\]/);
     expect(tests).toContain("paths-ignore: ['Docs/**', '**/*.md']");
     expect(tests).not.toContain('pull_request_target');
   });
-  it('tests.yml : droits minimaux (contents: read ; actions: read seulement pour fusionner les rapports), aucun secret, aucun déploiement', () => {
+  it('tests.yml : droits minimaux (contents: read ; actions: read seulement pour les deux tâches qui téléchargent des artefacts), aucun secret, aucun déploiement', () => {
     expect(tests).toMatch(/^permissions:\n {2}contents: read$/m);
-    expect(tests).not.toMatch(/secrets\.|actions: write|contents: write|pages: write|id-token/);
-    expect((tests.match(/actions: read/g) ?? []).length).toBe(1);
+    expect(tests).not.toMatch(/secrets\.|actions: write|contents: write|pages: write|id-token|deploy-pages|upload-pages-artifact/);
+    expect((tests.match(/actions: read/g) ?? []).length).toBe(2);
+    const tache = (job) => tests.slice(tests.indexOf(`\n  ${job}:\n`) + job.length + 4).split(/\n {2}[\w-]+:\n/)[0];
+    for (const job of ['rapport', 'bilan-duree']) expect(tache(job), job).toContain('actions: read');
+    for (const job of ['planifier', 'unitaires', 'tranches']) expect(tache(job), job).not.toContain('actions: read');
   });
-  it('tests.yml : planifier (budget.mjs) → matrice dépendante, 14 tranches simultanées au plus, standard avec tout l\'historique', () => {
-    expect(tests).toMatch(/planifier:[\s\S]*budget\.mjs[\s\S]*--plan plan\.json --echec tranches/);
-    expect(tests).toMatch(/tranches:\n\s+needs: planifier/);
+  it('tests.yml (lot 4f) : planifier (ci-palier.mjs, sélection, budget.mjs) → tranches et unitaires → rapport et bilan-duree', () => {
+    expect([...tests.matchAll(/^ {2}([\w-]+):$/gm)].map((m) => m[1]).filter((j) => tests.indexOf(`\n  ${j}:`) > tests.indexOf('\njobs:'))).toEqual(['planifier', 'unitaires', 'tranches', 'rapport', 'bilan-duree']);
+    expect(tests).toMatch(/planifier:[\s\S]*ci-palier\.mjs[\s\S]*selectionner\.mjs[\s\S]*budget\.mjs --palier "\$PALIER" --selection selection\.json --plan plan\.json --echec tranches/);
+    expect(tests).toMatch(/tranches:\n\s+needs: planifier\n\s+if: needs\.planifier\.outputs\.palier != '' && needs\.planifier\.outputs\.n != '0'/);
     expect(tests).toContain('index: ${{ fromJSON(needs.planifier.outputs.matrice) }}');
-    expect(Number(/max-parallel: (\d+)/.exec(tests)[1])).toBeLessThanOrEqual(14);
-    expect(tests).toMatch(/standard:[\s\S]*?fetch-depth: 0[\s\S]*?palier\.mjs standard/);
-    expect(tests).toMatch(/cancel-in-progress: true/);
+    expect(Number(/max-parallel: (\d+)/.exec(tests)[1])).toBe(16);
+    expect(tests).toMatch(/unitaires:\n\s+needs: planifier/);
+    expect(tests).toMatch(/bilan-duree:\n\s+needs: \[planifier, unitaires, tranches\][\s\S]*?continue-on-error: true[\s\S]*?bilan-duree\.mjs/);
+    expect(tests).toMatch(/tranche\.mjs --plan plan\.json --index \$\{\{ matrix\.index \}\} --empreinte/);
+    expect(tests).toMatch(/name: duree-tranche-\$\{\{ needs\.planifier\.outputs\.palier \}\}-\$\{\{ matrix\.index \}\}/);
+    expect(tests).toMatch(/planifier:[\s\S]*?fetch-depth: 0/);
+  });
+  it('tests.yml (lot 4f) : annulation des exécutions plus anciennes pour le standard seulement (publication et complet : groupe propre à l\'exécution)', () => {
+    const c = /concurrency:\n {2}group: (.+)\n {2}cancel-in-progress: (.+)\n/.exec(tests);
+    expect(c).not.toBeNull();
+    expect(c[1]).toContain("== 'standard' && 'standard' || github.run_id");
+    expect(c[2]).toMatch(/^\$\{\{ .*== 'standard' \}\}$/);
+    expect(c[1]).toContain("startsWith(github.ref, 'refs/heads/essai/complet-') && 'complet'");
   });
   it('tests.yml : seulement des actions déjà employées par pages.yml, épinglées par commit complet ; aucun navigateur installé', () => {
     const uses = (s) => [...s.matchAll(/uses: (\S+)/g)].map((m) => m[1]);

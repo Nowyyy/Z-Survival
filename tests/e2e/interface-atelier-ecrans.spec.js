@@ -52,7 +52,9 @@ test.describe('priorité 2, côte à côte, choix', () => {
     await page.click('#btn-compare');
     await expect(page.locator('#btn-compare')).toHaveAttribute('aria-pressed', 'true');
     await expect(page.locator('#compare figure')).toHaveCount(4);
-    await expect(page.locator('#compare-rows tr')).toHaveCount(4);
+    // Lot 4f-A : le tableau n'est rempli qu'après le chargement des quatre vues (quatre jeux dans des iframes, en même temps) :
+    // plus de 5 s (délai par défaut d'expect) dès que deux workers tournent ; 45 s, sous le délai du test (60 s).
+    await expect(page.locator('#compare-rows tr')).toHaveCount(4, { timeout: 45000 });
     const rows = await page.evaluate(() => window.__zsUi.compare());
     expect(rows.map((r) => r.direction)).toEqual(['actuel', 'A', 'B', 'C']);
     const actual = rows[0];

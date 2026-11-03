@@ -2,7 +2,8 @@
 //
 // Usage : node scripts/tests/palier.mjs <palier> [--base <ref>] [--files a,b] [--tout] [--a-blanc] [--json <durées.json>] [-- <arguments Playwright>]
 //   avant-commit : lint + Vitest des zones touchées + garde-fous unitaires rapides (aucun Playwright)
-//   standard     : lint + Vitest (tous si leur durée mesurée < vitestToutSousSecondes, sinon les concernés) + fumée + Playwright des zones touchées
+//   standard     : lint + Vitest (tous si leur durée mesurée < vitestToutSousSecondes, sinon les concernés) + fumée + Playwright des zones touchées,
+//                  projets de standardProjets seulement (bureau, lot 4f)
 //   publication  : comme standard, mais depuis la version publiée (--depuis-version), Playwright des zones sélectionnées aux paliers standard
 //                  et complet ; complet périodique (tests/dernier-complet.json) ; liste « rejouées / sautées » en tête
 //   complet      : lint + tout Vitest + tout Playwright (E2E_FULL=1), @instable rejoués à part (retriesInstables)
@@ -82,7 +83,9 @@ if (palier === 'selection') {
   if (!doc) code ||= vitest(vitestTout() || s.mode === 'tout' ? null : s.vitest);
   if (!doc) {
     const e2e = s.mode === 'tout' ? (pub ? null : [...new Set([...table.fumee, ...table.zones.flatMap((z) => z.e2e)])]) : [...new Set([...s.fumee, ...s.e2e, ...(pub ? s.complet : [])])];
-    code ||= playwright(`playwright (${e2e === null ? 'tout' : `${e2e.length} fichiers`})`, e2e, ['--grep-invert', EXCLUS]);
+    // Lot 4f-A : le standard ne lance que les projets de standardProjets (bureau) ; le mobile ne tourne qu'aux paliers publication et complet.
+    const projets = pub ? [] : (budget.standardProjets ?? []).map((p) => `--project=${p}`);
+    code ||= playwright(`playwright (${e2e === null ? 'tout' : `${e2e.length} fichiers`}${projets.length ? `, ${budget.standardProjets.join(', ')}` : ''})`, e2e, ['--grep-invert', EXCLUS, ...projets]);
   }
 } else if (palier === 'complet') {
   code ||= lint();
@@ -97,7 +100,7 @@ if (palier === 'selection') {
   process.exit(2);
 }
 const total = Math.round((Date.now() - t0) / 1000);
-const objectif = { 'avant-commit': budget.avantCommitSecondes, standard: budget.standardSecondes, fumee: 180 }[palier];
+const objectif = { 'avant-commit': budget.avantCommitSecondes, standard: budget.standardCibleSecondes ?? budget.standardSecondes, fumee: 180 }[palier];
 if (etapes.length) {
   console.log(`\nPalier ${palier} : ${total} s${objectif ? ` (objectif ${objectif} s)` : ''} — ${etapes.map((e) => `${e.nom} ${e.secondes} s${e.code ? ' ÉCHEC' : ''}`).join(' ; ')}`);
 }

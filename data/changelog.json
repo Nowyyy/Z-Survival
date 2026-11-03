@@ -181,6 +181,10 @@
       "Les tests sont rangés en quatre paliers (avant commit, à chaque push, avant publication, complet) et ne rejouent que les zones du jeu touchées par un changement.",
       "Le palier complet est découpé en tranches équilibrées pour tenir en 10 minutes en CI (projection : 8 tranches, à confirmer par la première exécution).",
       "Tests retirés sur décision du propriétaire : doublons, détails, ancien code et pages techniques ; garde-fous intacts. Aucun changement du jeu."
+    ] },
+    { "name": "lot-4f", "titre": "Durée des tests mesurée en CI", "points": [
+      "Le palier complet tourne en 16 tranches et le palier de chaque push en 8 tranches au plus, sur ordinateur de bureau seulement ; chaque exécution mesure sa durée et dit si l'objectif de 10 minutes est tenu.",
+      "Deux tests corrigés (pause dans l'escalier, comparaison de l'atelier de l'interface) et mesure du temps de chargement du jeu par réglage. Aucun changement du jeu."
     ] }
   ]
 }

@@ -9,10 +9,14 @@
 // `playwright test --list` (E2E_FULL=1) : un test nouveau prend la médiane de son fichier. Le plan donne, par tranche, les lignes
 // d'un fichier --test-list de Playwright (répartition par test, gloutonne par durée). Sort en erreur si N > tranchesMax (hypothèse mesurée),
 // si le temps projeté dépasse completCibleSecondes, si une unité dépasse une tranche, ou si le complet gagne plus de ajoutMaxParLotSecondes.
+// Lot 4f-A : publication et complet utilisent tranchesMax (16) tranches dès que le nombre de tests le permet (N minimal et N utilisé rapportés) ;
+// standard : projets de standardProjets seulement (bureau), N = clamp(1, tranchesMaxStandard, …) (lib/budget.mjs → planDuPalier),
+// 0 tranche si la sélection ne contient aucun test Playwright. Le plan porte une empreinte (contrôle des tranches) et une projection compacte.
 import { execFileSync } from 'node:child_process';
 import { appendFileSync, existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
-import { dureesDepuisMesure, evaluer, ligneTestList, projection, unites } from './lib/budget.mjs';
+import { createHash } from 'node:crypto';
+import { dureesDepuisMesure, evaluer, ligneTestList, planDuPalier, projectionCompacte } from './lib/budget.mjs';
 import { playwrightTests, vitestParFichier } from './lib/rapports.mjs';
 
 const ROOT = resolve(import.meta.dirname, '..', '..');
@@ -84,40 +88,72 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   }
   const b = readJson('tests/budget.json');
   const mesure = readJson('tests/budget-mesure.json');
+  const table = readJson('tests/selection.json');
   const palier = val('--palier', 'complet');
+  const standard = palier === 'standard';
+  const projets = standard ? (b.standardProjets ?? []) : [];
+  const ecrirePlan = (plan) => {
+    if (val('--plan')) writeFileSync(val('--plan'), `${JSON.stringify(plan, null, 1)}\n`);
+    if (process.env.GITHUB_OUTPUT && val('--plan')) {
+      appendFileSync(process.env.GITHUB_OUTPUT, `matrice=${JSON.stringify(plan.matrice)}\nn=${plan.n}\nempreinte=${plan.empreinte}\nprojection=${JSON.stringify(plan.projection)}\n`);
+    }
+  };
+  // Aucun test Playwright : 0 tranche de navigateur, seulement la tâche « unitaires » (lint et Vitest).
+  const planVide = () => {
+    const msg = `Budget (${palier}) : aucun test Playwright sélectionné : 0 tranche de navigateur (seulement lint et Vitest).`;
+    console.log(msg);
+    if (process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY, `### ${msg}\n\n`);
+    ecrirePlan({ palier, n: 0, nMinimal: 0, ok: true, erreurs: [], matrice: [], empreinte: 'vide', projection: projectionCompacte({ palier, nMinimal: 0, nUtilise: 0, sommeSecondes: 0, projection: null }, b), tranches: [] });
+    process.exit(0);
+  };
   let fichiers = [];
   if (val('--selection')) {
     const s = JSON.parse(readFileSync(val('--selection'), 'utf8'));
-    fichiers = s.mode === 'tout' ? [] : [...s.e2e, ...(palier === 'standard' ? [] : s.complet), ...s.fumee];
-    if (s.mode !== 'tout' && !fichiers.length) {
-      console.log(`Budget (${palier}) : aucun test Playwright sélectionné.`);
-      if (val('--plan')) writeFileSync(val('--plan'), `${JSON.stringify({ palier, tranches: [], matrice: [] }, null, 2)}\n`);
-      process.exit(0);
-    }
+    // Palier standard en rejeu total : fumée et tests e2e de toutes les zones (comme palier.mjs), jamais les tests « complet ».
+    if (s.mode === 'tout') fichiers = standard ? [...new Set([...table.fumee, ...table.zones.flatMap((z) => z.e2e)])] : [];
+    else fichiers = [...new Set([...s.e2e, ...(standard ? [] : s.complet), ...s.fumee])];
+    if (s.mode !== 'tout' && !fichiers.length) planVide();
   }
-  const brut = val('--liste') ? playwrightTests(JSON.parse(readFileSync(val('--liste'), 'utf8'))) : listerTests(fichiers);
+  const brut = val('--liste') ? playwrightTests(JSON.parse(readFileSync(val('--liste'), 'utf8'))) : listerTests(fichiers, projets.map((p) => `--project=${p}`));
   let tests = brut; // en mode --list, tous les tests ont le statut « skipped » : on les garde tous
+  if (projets.length) tests = tests.filter((t) => projets.includes(t.projet));
   if (palier !== 'complet') tests = tests.filter((t) => !/@lent\b|@instable\b/.test(t.titre));
   const avecDurees = dureesDepuisMesure(tests, mesure.tests);
-  const ev = evaluer(avecDurees, b, { granularite: val('--granularite', 'test'), referenceSecondes: palier === 'complet' ? mesure.complet.cumulSecondes : undefined, etiquette: palier });
+  const granularite = val('--granularite', 'test');
+  const plan = planDuPalier(avecDurees, b, palier, { granularite });
+  if (plan.nUtilise === 0) planVide();
   const estimes = avecDurees.filter((t) => t.source !== 'mesure').length;
-  const entete = `Budget du palier ${palier} : ${avecDurees.length} exécutions Playwright (${estimes} sans mesure, durée estimée)`;
-  const corps = texte(ev, b);
+  const entete = `Budget du palier ${palier} : ${avecDurees.length} exécutions Playwright${projets.length ? ` (projets : ${projets.join(', ')})` : ''} (${estimes} sans mesure, durée estimée)`;
+  let corps;
+  let ev = null;
+  if (standard) {
+    const p = plan.projection;
+    corps = [
+      `- N minimal = ${plan.nMinimal}, N utilisé = ${plan.nUtilise} (tranchesMaxStandard ${b.tranchesMaxStandard}) ; cumul ${min(plan.sommeSecondes)} ; parallélisme ${String(b.facteurParallelisme).replace('.', ',')}`,
+      `- tranche la plus longue ${min(p.trancheLaPlusLongueSecondes)}, total ${min(p.totalSecondes)} (installation ${b.installationSecondes} s comprise) — cible ${min(b.standardCibleSecondes)}, maximum ${min(b.standardMaxSecondes)}`,
+      ...plan.erreurs.map((e) => `- ERREUR : ${e}`),
+      ...plan.avertissements.map((a) => `- avertissement : ${a}`),
+    ].join('\n');
+  } else {
+    ev = evaluer(avecDurees, b, { granularite, referenceSecondes: palier === 'complet' ? mesure.complet.cumulSecondes : undefined, etiquette: palier });
+    const p = plan.projection;
+    corps = `${texte(ev, b)}\n- plan : N minimal = ${plan.nMinimal}, N utilisé = ${plan.nUtilise} (tranchesMax ${b.tranchesMax}) : tranche la plus longue ${min(p.trancheLaPlusLongueSecondes)}, total ${min(p.totalSecondes)}`;
+  }
   console.log(`${entete}\n${corps}`);
   if (process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY, `### ${entete}\n\n${corps}\n\n`);
   if (val('--plan')) {
-    const n = Math.min(ev.mesuree.tranches, b.tranchesMax);
-    const rep = n === ev.mesuree.tranches ? ev.mesuree.repartition : projection(unites(avecDurees, val('--granularite', 'test')), b, b.facteurParallelisme, n).repartition;
-    const tranches = rep.map((t) => ({
+    const tranches = plan.projection.repartition.map((t) => ({
       index: t.index,
       secondesProjetees: Math.round(t.ms / 1000 / b.facteurParallelisme),
       lignes: t.unites.flatMap((u) => u.tests).filter((x) => !estInstable(x)).map(ligneTestList),
       instables: t.unites.flatMap((u) => u.tests).filter(estInstable).map(ligneTestList),
     }));
-    writeFileSync(val('--plan'), `${JSON.stringify({ palier, n, ok: ev.ok, erreurs: ev.erreurs, matrice: tranches.map((t) => t.index), tranches }, null, 1)}\n`);
-    if (process.env.GITHUB_OUTPUT) appendFileSync(process.env.GITHUB_OUTPUT, `matrice=${JSON.stringify(tranches.map((t) => t.index))}\n`);
+    const empreinte = createHash('sha256').update(JSON.stringify(tranches)).digest('hex').slice(0, 16);
+    const ok = standard ? plan.erreurs.length === 0 : ev.ok && plan.erreurs.length === 0;
+    ecrirePlan({ palier, n: plan.nUtilise, nMinimal: plan.nMinimal, ok, erreurs: [...(ev?.erreurs ?? []), ...plan.erreurs], matrice: tranches.map((t) => t.index), empreinte, projection: projectionCompacte(plan, b), tranches });
   }
-  // --echec tranches : n'échoue que si N > tranchesMax (tâche « planifier » de la CI) ; --non-bloquant : jamais.
-  const bloquant = val('--echec') === 'tranches' ? ev.mesuree.tranches > b.tranchesMax : !ev.ok;
+  // --echec tranches : n'échoue que si N minimal > tranchesMax (publication, complet : tâche « planifier » de la CI) ; jamais pour le standard
+  // (limité à tranchesMaxStandard, le dépassement est rapporté) ; --non-bloquant : jamais.
+  const bloquant = val('--echec') === 'tranches' ? !standard && plan.nMinimal > b.tranchesMax : standard ? plan.erreurs.length > 0 : !ev.ok;
   if (bloquant && !has('--non-bloquant')) process.exit(1);
 }
