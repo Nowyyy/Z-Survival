@@ -103,6 +103,9 @@
 .sw-apparition { background: var(--color-warning); }
 .sw-declencheur { background: var(--game-stairs-mark); }
 .sw-porte { background: var(--game-metal); }
+.sw-helicoptere { background: var(--game-wreck-hull); }
+.sw-voiture-feu { background: var(--game-fire-edge); }
+.sw-coin { background: var(--color-text); border-radius: 50%; }
 
 /* Dessin SVG : tout par classes, aucune couleur dans le script. */
 .monde { fill: var(--game-grass-a); }
@@ -133,3 +136,9 @@
 .cadre-etiquette { opacity: 0.55; }
 .echelle-trait,
 .echelle-bout { stroke: var(--color-text); stroke-width: 8; }
+/* Lot 5a : épaves (hélicoptère écrasé, voiture en flammes) et sommets rentrants du contour (angle du L plein). */
+.epave-helicoptere { fill: var(--game-wreck-hull); stroke: var(--color-bg); stroke-width: 4; }
+.epave-emprise { fill: none; stroke: var(--game-wreck-metal); stroke-width: 5; stroke-dasharray: 16 10; }
+.epave-voiture { fill: var(--game-fire-edge); stroke: var(--game-fire); stroke-width: 5; }
+.coin-rentrant { fill: none; stroke: var(--color-text); stroke-width: 6; }
+.coin-l { fill: var(--color-text); stroke: var(--color-bg); stroke-width: 4; }

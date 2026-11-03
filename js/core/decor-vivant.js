@@ -14,7 +14,7 @@ const okRect = (r) => r && [r.x, r.y, r.w, r.h].every(isNum) && r.w > 0 && r.h >
 const list = (a) => (Array.isArray(a) ? a : []);
 const r1 = (v) => Math.round(v * 10) / 10;
 
-// input : { size: { width, height }, footprint: [rects du bâtiment], decor: { ground, corridors, spawnPoints, lamps, solids } } ; opts : DEFAULTS.
+// input : { size: { width, height }, footprint: [rects du bâtiment], decor: { ground, corridors, spawnPoints, lamps, solids, keepOut } } ; opts : DEFAULTS.
 export function generateLivelyDecor(input, opts = {}) {
   const o = { ...DEFAULTS, ...opts };
   const W = num(input?.size?.width);
@@ -26,6 +26,7 @@ export function generateLivelyDecor(input, opts = {}) {
   const ground = list(decor.ground).filter(okRect);
   const solids = list(decor.solids).filter(okRect);
   const lamps = list(decor.lamps).filter((p) => p && isNum(p.x) && isNum(p.y));
+  const keepOut = list(decor.keepOut).filter(okRect); // lot 5a : emprises visuelles des épaves (hélicoptère, voiture en flammes)
   if (W <= 0 || H <= 0 || footprint.length === 0) return { deadTrees: [], fence: { posts: [], wires: [] }, poles: [], cables: [], puddles: [], tufts: [], rubble: [], barrels: [] };
   let rng = createRng(isNum(o.seed) ? o.seed : 1);
   const rand = () => {
@@ -36,7 +37,7 @@ export function generateLivelyDecor(input, opts = {}) {
   const between = (a, b) => a + rand() * (b - a);
   const fromRoom = (r) => Math.min(...footprint.map((f) => rectGap(r, f)));
   const clearOf = (r, m = o.fromCorridor) => !corridors.some((c) => rectGap(r, c) < m) && !spawns.some((p) => rectGap(r, { x: p.x, y: p.y, w: 1, h: 1 }) < o.fromSpawn)
-    && !solids.some((s) => rectGap(r, s) < 20);
+    && !solids.some((s) => rectGap(r, s) < 20) && !keepOut.some((k) => rectGap(r, k) < 30);
   const onGround = (r) => ground.some((g) => rectGap(r, g) === 0);
   const inside = (r, m) => r.x >= m && r.y >= m && r.x + r.w <= W - m && r.y + r.h <= H - m;
   const place = (count, make, accept) => {
@@ -115,7 +116,7 @@ export function generateLivelyDecor(input, opts = {}) {
     const x = r1(between(30, W - 30));
     const y = r1(between(30, H - 30));
     return { id: `herbes-${n}`, x, y, r: r1(between(8, 14)), hauteur: r1(between(16, 30)), rot: r1(between(0, 3)), box: { x: x - 14, y: y - 14, w: 28, h: 28 } };
-  }, (t, out) => inside(t.box, 20) && fromRoom(t.box) >= 70 && !onGround(t.box) && !spawns.some((p) => rectGap(t.box, { x: p.x, y: p.y, w: 1, h: 1 }) < 40) && apart(t.box, out, 30));
+  }, (t, out) => inside(t.box, 20) && fromRoom(t.box) >= 70 && !onGround(t.box) && !spawns.some((p) => rectGap(t.box, { x: p.x, y: p.y, w: 1, h: 1 }) < 40) && !keepOut.some((k) => rectGap(t.box, k) < 10) && apart(t.box, out, 30));
   const rubble = place(o.rubble, (n) => {
     const w = r1(between(40, 80));
     const h = r1(between(30, 60));

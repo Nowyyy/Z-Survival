@@ -9,6 +9,8 @@ import { waitReady, hudBoxes, screenShare, apart } from './helpers.js';
 const load = (name) => JSON.parse(readFileSync(`data/game/${name}.json`, 'utf8'));
 const params = { save: load('save'), economy: load('economy'), stats: load('player-stats') };
 const KEY = params.save.storageKey;
+// Lot 5a : triangles de l'hélicoptère écrasé (maillage du décor de l'atlas, dessiné aussi avec ?detail=0 : il est solide), ajoutés aux références.
+const EPAVES = JSON.parse(readFileSync('data/game/maps/rez-de-chaussee/decor.json', 'utf8')).wrecks?.helicopter?.triangles ?? 0;
 const SIZE = { width: 667, height: 375 };
 const BROWSER_NOISE = /GL Driver Message|ReadPixels|GPU stall/;
 const LOCAL = '/jeu.html?test=1&store=local&seed=1';
@@ -804,7 +806,7 @@ test.describe('budget et performance', () => {
       const off = await measure(page, where);
       expect(off.calls).toBeGreaterThanOrEqual(REF[name][0] - 1);
       expect(off.calls).toBeLessThanOrEqual(REF[name][0] + 3);
-      expect(Math.abs(off.triangles - REF[name][1])).toBeLessThanOrEqual(120);
+      expect(Math.abs(off.triangles - EPAVES - REF[name][1])).toBeLessThanOrEqual(120); // lot 5a : + les triangles de l'hélicoptère
       await open(page, `/jeu.html?test=1&seed=1&shadows=1&perso=actuel&sang=0${extra}`);
       const on = await measure(page, where);
       console.log(`BUDGET lot 4 / 3g ${name} : detail=0 ${off.calls} / ${off.triangles} ; detail=1 ${on.calls} / ${on.triangles} (référence ${REF[name].join(' / ')})`);

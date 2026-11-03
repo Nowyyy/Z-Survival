@@ -56,8 +56,10 @@ void main() {
   gl_FragColor = vec4(uColor * a, a);
 }`;
 
-// spec : { id, x, z (centre), y (dessus de la pile), w, d (emprise) } ; palette : chaînes « #rrggbb » (fire, fireEdge, smoke).
-export function createFire(spec, palette, { reduced = false, scale = 1 } = {}) {
+// spec : { id, x, z (centre), y (dessus de la pile), w, d (emprise), spots? } ; palette : chaînes « #rrggbb » (fire, fireEdge, smoke).
+// Lot 5a : spots = foyers d'un feu groupé ([{ x, z, y, w, d }], voiture en flammes : capot et habitacle) : les mêmes particules (64 flammes, 64 fumées) naissent
+// tour à tour sur chaque foyer ; glow: false retire la lueur au sol (un appel de dessin de moins). Sans spots, le feu est identique à celui du lot 3g.
+export function createFire(spec, palette, { reduced = false, scale = 1, glow: withGlow = true } = {}) {
   const k0 = Math.max(0.2, Math.min(2, Number(scale) || 1)); // taille du feu (bidon : plus petit)
   const group = new THREE.Group();
   group.name = `feu-${spec.id}`;
@@ -66,6 +68,8 @@ export function createFire(spec, palette, { reduced = false, scale = 1 } = {}) {
   const edge = new THREE.Color(palette.fireEdge);
   const smokeColor = new THREE.Color(palette.smoke);
   const spread = { x: Math.max(8, spec.w * 0.38), z: Math.max(8, spec.d * 0.38) };
+  const spots = Array.isArray(spec.spots) && spec.spots.length > 0 ? spec.spots.map((q) => ({ x: q.x, z: q.z, y: q.y, sx: Math.max(6, q.w * 0.38), sz: Math.max(6, q.d * 0.38) })) : null;
+  let turn = 0;
 
   const makePoints = (n, blending) => {
     const geometry = new THREE.BufferGeometry();
@@ -96,14 +100,23 @@ export function createFire(spec, palette, { reduced = false, scale = 1 } = {}) {
   const glow = new THREE.Mesh(new THREE.PlaneGeometry(glowSize, glowSize).rotateX(-Math.PI / 2), glowMaterial);
   glow.position.set(spec.x, 0.8, spec.z);
   glow.name = 'lueur';
-  group.add(glow);
+  if (withGlow) group.add(glow);
 
   // Particules : âge, durée, départ, vitesse et dérive ; une particule qui finit renaît (même suite, donc même feu à chaque partie).
   const born = (p, life) => {
     p.age = 0;
     p.life = life;
-    p.x = spec.x + (rnd() * 2 - 1) * spread.x;
-    p.z = spec.z + (rnd() * 2 - 1) * spread.z;
+    if (spots) {
+      const q = spots[turn % spots.length];
+      turn += 1;
+      p.base = q.y;
+      p.x = q.x + (rnd() * 2 - 1) * q.sx;
+      p.z = q.z + (rnd() * 2 - 1) * q.sz;
+    } else {
+      p.base = spec.y;
+      p.x = spec.x + (rnd() * 2 - 1) * spread.x;
+      p.z = spec.z + (rnd() * 2 - 1) * spread.z;
+    }
     p.vx = (rnd() * 2 - 1) * 6;
     p.vz = (rnd() * 2 - 1) * 6;
     p.phase = rnd() * Math.PI * 2;
@@ -122,7 +135,7 @@ export function createFire(spec, palette, { reduced = false, scale = 1 } = {}) {
     flameParts.forEach((p, i) => {
       const k = p.age / p.life;
       fp[i * 3] = p.x + p.vx * p.age + Math.sin(p.phase + p.age * 9) * 4 * k + WIND * 0.25 * p.age * k;
-      fp[i * 3 + 1] = spec.y + 2 + p.rise * p.age;
+      fp[i * 3 + 1] = p.base + 2 + p.rise * p.age;
       fp[i * 3 + 2] = p.z + p.vz * p.age;
       fs[i] = 52 * k0 * (1 - k * 0.7);
       tmp.copy(core).lerp(edge, Math.min(1, k * 1.4));
@@ -134,7 +147,7 @@ export function createFire(spec, palette, { reduced = false, scale = 1 } = {}) {
     smokeParts.forEach((p, i) => {
       const k = p.age / p.life;
       sp[i * 3] = p.x + p.vx * p.age * 1.6 + Math.sin(p.phase + p.age * 1.3) * 8 + WIND * p.age * (0.4 + k);
-      sp[i * 3 + 1] = spec.y + 24 + p.rise * p.age;
+      sp[i * 3 + 1] = p.base + 24 + p.rise * p.age;
       sp[i * 3 + 2] = p.z + p.vz * p.age * 1.6;
       ss[i] = (34 + 120 * k) * k0;
       sc.set([smokeColor.r, smokeColor.g, smokeColor.b, Math.sin(Math.PI * Math.min(1, k * 1.15)) * 0.38], i * 4);
@@ -165,7 +178,7 @@ export function createFire(spec, palette, { reduced = false, scale = 1 } = {}) {
       step(d);
       write();
     },
-    stats: () => ({ id: spec.id, flames: FLAMES, smoke: SMOKE, x: spec.x, z: spec.z, y: spec.y, time: glowTime }),
+    stats: () => ({ id: spec.id, flames: FLAMES, smoke: SMOKE, x: spec.x, z: spec.z, y: spec.y, time: glowTime, spots: spots ? spots.length : 1, glow: withGlow }),
     dispose() {
       for (const o of [flames, smoke, glow]) {
         o.geometry.dispose();

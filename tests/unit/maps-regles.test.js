@@ -130,9 +130,9 @@ describe('règles de la carte : extérieur et apparitions', () => {
     }
   });
 
-  it('aucun type de décor nouveau : les mêmes que le lot 1b', () => {
+  it('aucun type de décor nouveau : les mêmes que le lot 1b, plus l\'hélicoptère écrasé du lot 5a', () => {
     const kinds = new Set([...layout.decor.solids, ...layout.decor.bushes, ...layout.decor.lamps, ...layout.decor.fences].map((o) => o.kind));
-    for (const k of kinds) expect(['voiture', 'arbre', 'buisson', 'lampadaire', 'barriere']).toContain(k);
+    for (const k of kinds) expect(['voiture', 'arbre', 'buisson', 'lampadaire', 'barriere', 'helicoptere']).toContain(k); // lot 5a : hélicoptère écrasé (epaves.json)
     expect(decorCfg.ground.some((g) => g.kind === 'route')).toBe(true);
   });
 

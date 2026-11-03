@@ -3,7 +3,8 @@
 import { parseColor, toHex } from '../core/color.js';
 
 const NAMES = ['floor', 'wall', 'ground', 'player', 'zombie', 'laser', 'hit', 'bullet', 'muzzle', 'skin', 'trousers', 'boot', 'gun',
-  'zombie-clothes', 'zombie-trousers', 'sun', 'ambient', 'fog', 'void', 'stairs-mark', 'road', 'grass', 'car', 'tree', 'furniture', 'fire', 'fire-edge', 'smoke'];
+  'zombie-clothes', 'zombie-trousers', 'sun', 'ambient', 'fog', 'void', 'stairs-mark', 'road', 'grass', 'car', 'tree', 'furniture', 'fire', 'fire-edge', 'smoke',
+  'wreck-hull', 'wreck-soot', 'wreck-metal', 'wreck-glass', 'car-burnt', 'car-soot']; // lot 5a : épaves (couleurs de sommet)
 const camel = (name) => name.replace(/-(\w)/g, (_, c) => c.toUpperCase());
 
 // Renvoie { floor, wall, ground, player, zombieClothes, ... } en chaînes CSS ; lève une erreur si un jeton manque.

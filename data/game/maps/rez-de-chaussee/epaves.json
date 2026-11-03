@@ -1,0 +1,5 @@
+{
+  "_provisoire": "Lot 5a (demande du propriétaire) : épaves du décor extérieur, source de npm run carte (comme plan.json, en PIXELS du plan ; jamais de retouche à la main de decor.json). voitureEnFlammes : identifiant d'une voiture abandonnée du décor (graine de decor.json), dessinée calcinée et en flammes au sud du mur du bas, à la même place (même collision). helicoptere : coin = sommet rentrant du contour retenu comme angle du L (le plus au nord dont l'extérieur est dégagé, js/core/epaves.js, vérifié par npm run carte), x et y = centre du fuselage, cap = direction du nez en degrés (0 : est, 90 : sud). Les rectangles de collision sont calculés par npm run carte. Valeurs provisoires.",
+  "voitureEnFlammes": "voiture-4",
+  "helicoptere": { "coin": [138, 208], "x": 276, "y": 164, "cap": 8 }
+}

@@ -195,7 +195,7 @@ describe('cohérence des données sonores', () => {
   });
 
   it('les matières correspondent à des types d\'obstacle réels (salle et décor) et tous les types ont une matière', () => {
-    const realKinds = new Set([...world.obstacles.map((o) => o.kind), 'voiture', 'arbre']);
+    const realKinds = new Set([...world.obstacles.map((o) => o.kind), 'voiture', 'arbre', 'helicoptere']); // lot 5a : hélicoptère écrasé (decor.json de la carte)
     expect(new Set(Object.keys(materials.kinds))).toEqual(realKinds);
     for (const material of Object.values(materials.kinds)) expect(Object.keys(materials.sounds)).toContain(material);
     expect(Object.keys(materials.sounds)).toContain(materials.wallMaterial);

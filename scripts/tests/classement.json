@@ -54,7 +54,8 @@
     { "fichier": "tests/e2e/carte.spec.js", "projets": "bureau (rapide), mobile (complet)", "categorie": "T", "valeur": "page technique", "recommandation": "retirer sauf chargement et axe ; sortir de la suite rapide", "raison": "carte.html (contrôle, à retirer au lot 13) ; dans la suite rapide.",
       "groupes": [
         { "motif": "axe|se charge", "categorie": "G" },
-        { "motif": "map=salle|map= inconnu", "categorie": "L" } ] },
+        { "motif": "map=salle|map= inconnu", "categorie": "L" },
+        { "motif": "épaves", "categorie": "P" } ] },
     { "fichier": "tests/e2e/dev.spec.js", "projets": "bureau, mobile", "categorie": "G", "valeur": "garde-fou", "recommandation": "garder", "raison": "Page /dev/ publiée : journal, axe, 44 px ; mobile justifié." },
     { "fichier": "tests/e2e/etage-salle.spec.js", "projets": "bureau, mobile", "categorie": "R", "valeur": "doublon e2e", "recommandation": "regrouper, palier complet", "raison": "Séquence de la porte 3 et seconde salle : couvertes par etage-directeur, zones-directeur, etage-escaliers.", "mobile": "D",
       "groupes": [
@@ -266,6 +267,7 @@
     { "fichier": "tests/unit/maps-fidelite.test.js", "categorie": "V", "valeur": "valeurs exactes", "recommandation": "garder (rapide)", "raison": "Fidélité au plan relevé." },
     { "fichier": "tests/unit/maps-hygiene.test.js", "categorie": "G", "valeur": "garde-fou", "recommandation": "garder", "raison": "Hygiène des cartes." },
     { "fichier": "tests/unit/maps-regles.test.js", "categorie": "G", "valeur": "garde-fou", "recommandation": "garder", "raison": "Règles de carte (couloirs, connexité)." },
+    { "fichier": "tests/unit/epaves.test.js", "categorie": "P", "valeur": "règle de jeu", "recommandation": "garder", "raison": "Lot 5a : modèle de l'hélicoptère (triangles, sol, déterminisme) et emplacements des épaves (angle du L, couloirs, 160 du bâtiment)." },
     { "fichier": "tests/unit/package.test.js", "categorie": "G", "valeur": "garde-fou", "recommandation": "garder", "raison": "dependencies vide." },
     { "fichier": "tests/unit/persos-animations.test.js", "categorie": "P", "valeur": "règle de jeu", "recommandation": "garder", "raison": "Animations pose-v2 (glissement des pieds ≤ 15 %)." },
     { "fichier": "tests/unit/persos-donnees.test.js", "categorie": "G", "valeur": "garde-fou", "recommandation": "garder", "raison": "Données des personnages, pureté." },

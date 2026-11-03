@@ -53,7 +53,10 @@ const gapToFootprint = (r, world) => Math.min(...footprint(world).map((f) => rec
 const roomRect = (world) => ({ x: num(world?.room?.x), y: num(world?.room?.y), w: num(world?.room?.width), h: num(world?.room?.height) });
 
 // Génère le décor. cfg : decor.json ; world : world.json. Renvoie
-// { ground, cars, trees, bushes, lamps, fences, solids, spawnPoints, corridors }. Mêmes entrées, même décor.
+// { ground, cars, trees, bushes, lamps, fences, solids, spawnPoints, corridors, helicopter, keepOut }. Mêmes entrées, même décor.
+// Lot 5a : cfg.wrecks (npm run carte, d'après plan.json) : l'hélicoptère écrasé (rectangles de collision dans solids, kind « helicoptere », posés avant les
+// voitures et les arbres) et la voiture en flammes (une des voitures abandonnées, marquée burning : même place, même collision). keepOut : emprises visuelles
+// (hélicoptère pales comprises, voiture en flammes) que le petit décor évite.
 export function generateDecor(cfg, world) {
   const s = cfg?.scatter ?? {};
   const W = num(world?.size?.width);
@@ -71,6 +74,12 @@ export function generateDecor(cfg, world) {
 
   const solids = [];
   const decorative = [];
+  // Lot 5a : hélicoptère écrasé (rectangles validés par npm run carte).
+  const heli = cfg?.wrecks?.helicopter;
+  const heliRects = validRects(heli?.rects).map((r) => ({ id: r.id, kind: 'helicoptere', x: r.x, y: r.y, w: r.w, h: r.h, hauteur: num(heli?.height, 60) }));
+  solids.push(...heliRects);
+  const keepOut = heli && validRects([heli.visual]).length === 1 ? [{ id: 'helicoptere', ...heli.visual }] : [];
+  const nearWreck = (r, m) => keepOut.some((k) => rectGap(r, k) < m);
   const spacing = num(s.espaceSolides, 80);
   const fromRoom = num(s.distanceSalle, 120);
   const fromSpawn = num(s.distanceApparition, 70);
@@ -99,16 +108,21 @@ export function generateDecor(cfg, world) {
       return { id: `voiture-${n}`, kind: 'voiture', x: round(between(road.x + 40, road.x + road.w - 40 - w)), y: round(between(road.y + 10, road.y + road.h - 10 - h)), w, h, hauteur: num(s.voitures?.hauteur, 55) };
     }, solidOk)
     : [];
+  const burningId = typeof cfg?.wrecks?.burningCar === 'string' ? cfg.wrecks.burningCar : null;
+  for (const c of cars) if (c.id === burningId) {
+    c.burning = true;
+    keepOut.push({ id: c.id, x: c.x, y: c.y, w: c.w, h: c.h });
+  }
   solids.push(...cars);
 
   const trunk = num(s.arbres?.tronc, 32);
   const trees = place(num(s.arbres?.count), (n) => ({
     id: `arbre-${n}`, kind: 'arbre', x: round(between(40, W - 40 - trunk)), y: round(between(40, H - 40 - trunk)), w: trunk, h: trunk,
     hauteur: num(s.arbres?.hauteur, 50), couronne: num(s.arbres?.couronne, 46),
-  }), (r, out) => solidOk(r, out) && !onGround(r));
+  }), (r, out) => solidOk(r, out) && !onGround(r) && !nearWreck(r, 40));
   solids.push(...trees);
 
-  const decoOk = (r) => inside(r, 20) && gapToFootprint(r, world) >= 60 && !nearCorridor(r, 10);
+  const decoOk = (r) => inside(r, 20) && gapToFootprint(r, world) >= 60 && !nearCorridor(r, 10) && !nearWreck(r, 20);
   const bushes = place(num(s.buissons?.count), (n) => {
     const radius = round(between(num(s.buissons?.rayonMin, 12), num(s.buissons?.rayonMax, 22)));
     return { id: `buisson-${n}`, kind: 'buisson', x: round(between(30, W - 30)), y: round(between(30, H - 30)), r: radius, hauteur: num(s.buissons?.hauteur, 18) };
@@ -135,7 +149,8 @@ export function generateDecor(cfg, world) {
     return { id: `barriere-${n}`, kind: 'barriere', x: round(between(60, W - 60 - fenceLong)), y: round(between(60, H - 60 - fenceLong)), w: horizontal ? fenceLong : fenceThick, h: horizontal ? fenceThick : fenceLong, hauteur: num(s.barrieres?.hauteur, 26) };
   }, (f) => decoOk(f) && !onGround(f));
 
-  return { ground, cars, trees, bushes, lamps, fences, solids, spawnPoints, corridors };
+  const helicopter = heli && heliRects.length > 0 ? { id: 'helicoptere', x: num(heli.x), y: num(heli.y), heading: num(heli.heading), corner: heli.corner ? { ...heli.corner } : null, rects: heliRects.map((r) => ({ ...r })), visual: keepOut[0] ? { ...keepOut[0] } : null, height: num(heli.height) } : null;
+  return { ground, cars, trees, bushes, lamps, fences, solids, spawnPoints, corridors, helicopter, keepOut };
 }
 
 // Problèmes de cohérence d'un décor (liste de textes, vide si tout va bien) : tout reste dans le monde, aucun obstacle plein ni
