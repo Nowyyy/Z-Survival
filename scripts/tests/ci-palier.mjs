@@ -2,7 +2,7 @@
 // et, pour le palier standard, base de la sélection. Écrit dans GITHUB_OUTPUT : palier (vide = rien à lancer), base, args
 // (arguments de selectionner.mjs) ; un message dans le résumé du travail. Fonctions pures : lib/ci.mjs.
 //
-// Environnement : GITHUB_EVENT_NAME, GITHUB_REF, PALIER_DEMANDE (inputs.palier), AVANT (github.event.before),
+// Environnement : GITHUB_EVENT_NAME, GITHUB_REF, PALIER_DEMANDE (inputs.palier), CREE (github.event.created), AVANT (github.event.before),
 //                 BASE_REF (github.base_ref), BASE_SHA (github.event.pull_request.base.sha).
 // Usage local (à blanc) : GITHUB_EVENT_NAME=push GITHUB_REF=refs/heads/essai/standard-1 node scripts/tests/ci-palier.mjs
 import { execFileSync } from 'node:child_process';
@@ -19,7 +19,7 @@ const git = (...a) => {
   }
 };
 const env = process.env;
-const contexte = { evenement: env.GITHUB_EVENT_NAME ?? 'push', ref: env.GITHUB_REF ?? '', palierDemande: env.PALIER_DEMANDE || undefined };
+const contexte = { evenement: env.GITHUB_EVENT_NAME ?? 'push', ref: env.GITHUB_REF ?? '', palierDemande: env.PALIER_DEMANDE || undefined, cree: env.CREE === 'true' };
 const { palier, message } = palierDeLExecution(contexte);
 let base = '';
 let args = '';
