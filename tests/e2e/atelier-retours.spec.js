@@ -57,7 +57,7 @@ test.describe('mur percé autour du joueur caché', () => {
   });
 
   // Troisième passe : le joueur devant un mur (au nord du mur sud, assez loin pour être vu) : rien n'est tramé.
-  test('le joueur devant un mur, visible : même image avec et sans ?percee', async ({ page }) => {
+  test('le joueur devant un mur, visible : même image avec et sans ?percee @instable', async ({ page }) => {
     const sample = () => page.evaluate(() => {
       const zs = window.__zs;
       zs.setPlayer(2300, 2470);

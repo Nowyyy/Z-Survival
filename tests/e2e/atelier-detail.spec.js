@@ -110,7 +110,7 @@ test.describe('textures', () => {
     expect(t.bytes).toBeLessThanOrEqual(12 * 1024 * 1024);
   });
 
-  test('?fps=1 : « Textures : X ms » avec le détail au plus 1,8 fois le temps sans le détail (même navigateur, même session)', async ({ page }) => {
+  test('?fps=1 : « Textures : X ms » avec le détail au plus 1,8 fois le temps sans le détail (même navigateur, même session) @instable', async ({ page }) => {
     const ms = async (extra) => {
       await page.setViewportSize(SIZE);
       await page.goto(`/jeu.html?fps=1&nospawn=1${extra}`);

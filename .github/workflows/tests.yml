@@ -1,0 +1,177 @@
+name: Tests
+
+# Lot 4e — Paliers de tests (Docs/ref/tests-paliers.md). pages.yml (build, assemblage, déploiement) n'est pas modifié.
+#  - push de dev ou lot-*, pull_request : palier standard (lint, Vitest, fumée, Playwright des zones touchées depuis la base).
+#  - workflow_dispatch : palier au choix ; publication et complet sont découpés en tranches par scripts/tests/budget.mjs
+#    (tâche « planifier » → matrice dépendante), chaque tranche recalcule le même plan (déterministe pour un commit donné).
+# Les tests tournent sur le serveur de développement (scripts/serve.mjs) et le site de test construit à la volée (scripts/site/e2e-site.mjs) :
+# aucun site construit à partager entre tranches. Aucun navigateur installé : Playwright pilote le Chrome du runner (playwright.config.js).
+on:
+  push:
+    branches: [dev, 'lot-*']
+    paths-ignore: ['Docs/**', '**/*.md']
+  pull_request:
+    paths-ignore: ['Docs/**', '**/*.md']
+  workflow_dispatch:
+    inputs:
+      palier:
+        description: Palier de tests
+        type: choice
+        options: [standard, publication, complet]
+        default: standard
+
+permissions:
+  contents: read
+
+# Une nouvelle exécution sur la même branche (et le même palier) annule la précédente ; jamais d'annulation entre branches.
+concurrency:
+  group: tests-${{ github.ref }}-${{ inputs.palier || 'standard' }}
+  cancel-in-progress: true
+
+jobs:
+  standard:
+    if: github.event_name != 'workflow_dispatch' || inputs.palier == 'standard'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Palier standard (zones touchées depuis la base)
+        env:
+          CI: "true"
+          BASE_PR: ${{ github.event.pull_request.base.sha }}
+          AVANT: ${{ github.event.before }}
+        run: |
+          base="${BASE_PR:-$AVANT}"
+          if [ -z "$base" ] || [ "$base" = "0000000000000000000000000000000000000000" ] || ! git cat-file -e "$base^{commit}" 2>/dev/null; then
+            base="$(git merge-base HEAD origin/dev 2>/dev/null || git merge-base HEAD origin/main)"
+          fi
+          node scripts/tests/palier.mjs standard --base "$base"
+      - if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: test-results-standard
+          path: test-results
+          if-no-files-found: ignore
+          retention-days: 7
+
+  planifier:
+    if: github.event_name == 'workflow_dispatch' && inputs.palier != 'standard'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      matrice: ${{ steps.plan.outputs.matrice }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Sélection (rejouées / sautées)
+        run: node scripts/tests/selectionner.mjs ${{ inputs.palier == 'publication' && '--depuis-version --publication' || '--tout' }} --json selection.json | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Budget (non bloquant)
+        run: node scripts/tests/budget.mjs --palier ${{ inputs.palier }} --selection selection.json --non-bloquant
+      - name: Plan des tranches (échoue si plus de tranchesMax tranches)
+        id: plan
+        run: node scripts/tests/budget.mjs --palier ${{ inputs.palier }} --selection selection.json --plan plan.json --echec tranches
+
+  unitaires:
+    if: github.event_name == 'workflow_dispatch' && inputs.palier != 'standard'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npx vitest run --reporter=default --reporter=json --outputFile=vitest.json
+      - if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: vitest-rapport
+          path: vitest.json
+          if-no-files-found: ignore
+          retention-days: 7
+
+  tranches:
+    needs: planifier
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      # 14 au plus en même temps : le compte a 20 tâches simultanées, partagées avec pages.yml (quick, 4 tranches e2e, deploy)
+      # et le palier standard ; le déploiement n'attend jamais derrière les tranches.
+      max-parallel: 14
+      matrix:
+        index: ${{ fromJSON(needs.planifier.outputs.matrice) }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Plan (identique à celui de planifier)
+        run: |
+          node scripts/tests/selectionner.mjs ${{ inputs.palier == 'publication' && '--depuis-version --publication' || '--tout' }} --json selection.json > /dev/null
+          node scripts/tests/budget.mjs --palier ${{ inputs.palier }} --selection selection.json --plan plan.json --non-bloquant > /dev/null
+      - name: Tranche ${{ matrix.index }}
+        env:
+          CI: "true"
+          PLAYWRIGHT_BLOB_OUTPUT_DIR: blob-report
+        run: node scripts/tests/tranche.mjs --plan plan.json --index ${{ matrix.index }} -- --reporter=dot,blob
+      - if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: blob-${{ matrix.index }}
+          path: blob-report
+          if-no-files-found: ignore
+          retention-days: 7
+
+  rapport:
+    needs: [planifier, tranches]
+    if: always() && needs.planifier.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Rapports fusionnés et tranche la plus longue
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh run download "${{ github.run_id }}" --repo "${{ github.repository }}" --pattern 'blob-*' --dir blobs
+          mkdir -p tous
+          find blobs -name '*.zip' -exec cp {} tous/ \;
+          npx playwright merge-reports --reporter=json tous > rapport-complet.json
+          node -e "const fs=require('fs');const d=fs.readdirSync('blobs').flatMap(x=>{try{return [JSON.parse(fs.readFileSync('blobs/'+x+'/duree-tranche.json','utf8'))]}catch{return []}});const m=d.sort((a,b)=>b.secondes-a.secondes)[0];const s=JSON.parse(fs.readFileSync('rapport-complet.json','utf8')).stats;fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY,'Rapport fusionné : '+s.expected+' réussis, '+s.unexpected+' échecs, '+s.flaky+' instables, '+s.skipped+' ignorés ; '+d.length+' tranches ; la plus longue : '+(m?m.index+' ('+m.secondes+' s)':'inconnue')+'\n')"
+      - if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: rapport-${{ inputs.palier }}
+          path: rapport-complet.json
+          if-no-files-found: ignore
+          retention-days: 30

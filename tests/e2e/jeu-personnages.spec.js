@@ -75,7 +75,7 @@ test.describe('personnages du lot 1c-C', () => {
     expect(Math.abs(idle.pose.hipR)).toBeLessThan(0.02);
   });
 
-  test('les poses des zombies s\'appliquent : bras tendus, hanches qui balancent en marche', async ({ page }) => {
+  test('les poses des zombies s\'appliquent : bras tendus, hanches qui balancent en marche @instable', async ({ page }) => {
     await open(page, '&perso=actuel&sang=0'); // lot 3j : angles de pose.js, ceux des personnages actuels
     await page.evaluate(() => window.__zs.spawnEnemy(1800, 1500));
     await page.evaluate(() => window.__zs.step(1));

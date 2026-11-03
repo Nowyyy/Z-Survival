@@ -142,7 +142,7 @@ test.describe('priorité 2, côte à côte, choix', () => {
     }
   });
 
-  test('« Côte à côte » : Actuel, A, B, C à la même taille et dans le même état, tableau des mesures en texte avec « hors cible » en toutes lettres', async ({ page }) => {
+  test('« Côte à côte » : Actuel, A, B, C à la même taille et dans le même état, tableau des mesures en texte avec « hors cible » en toutes lettres @instable', async ({ page }) => {
     await open(page);
     await set(page, { size: '844x390', screen: 'hud', stateId: 'combat', direction: 'A' });
     await page.click('#btn-compare');

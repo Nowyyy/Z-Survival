@@ -37,7 +37,7 @@ const added = async (page, events, seconds = 0.3) => {
 };
 
 test.describe('sons nouveaux sur leur événement', () => {
-  test('chaque son nouveau se joue sur son événement, sous son identifiant, avec son tampon', async ({ page }) => {
+  test('chaque son nouveau se joue sur son événement, sous son identifiant, avec son tampon @lent', async ({ page }) => {
     await open(page, '/jeu.html?test=1&empty=1&nospawn=1&seed=1');
     await unlockReady(page);
     const p = await near(page);
@@ -59,7 +59,7 @@ test.describe('sons nouveaux sur leur événement', () => {
     }
   });
 
-  test('et pas ailleurs : pas d\'intérieur, vie haute, planche arrachée sans fenêtre ouverte, fin de manche du pack d\'avant', async ({ page }) => {
+  test('et pas ailleurs : pas d\'intérieur, vie haute, planche arrachée sans fenêtre ouverte, fin de manche du pack d\'avant @lent', async ({ page }) => {
     await open(page, '/jeu.html?test=1&empty=1&nospawn=1&seed=1');
     await unlockReady(page);
     const p = await near(page);
@@ -70,7 +70,7 @@ test.describe('sons nouveaux sur leur événement', () => {
     for (const id of ['pas-exterieur', 'pas-escalier', 'joueur-coeur', 'planche-craquement']) expect(ids).not.toContain(id);
   });
 
-  test('en jeu : la dernière planche arrachée fait craquer la fenêtre (une seule fois)', async ({ page }) => {
+  test('en jeu : la dernière planche arrachée fait craquer la fenêtre (une seule fois) @lent', async ({ page }) => {
     await open(page, salle('/jeu.html?test=1&nospawn=1&seed=1'));
     await unlockReady(page);
     await page.evaluate(() => window.__zs.setPlanks('fenetre-nord', 1));
@@ -88,7 +88,7 @@ test.describe('sons nouveaux sur leur événement', () => {
 });
 
 test.describe('boucles d\'ambiance', () => {
-  test('vent et feu : une seule voix chacune, aucune avant le geste, coupées à la pause puis reprises', async ({ page }) => {
+  test('vent et feu : une seule voix chacune, aucune avant le geste, coupées à la pause puis reprises @lent', async ({ page }) => {
     await open(page, '/jeu.html?test=1&nospawn=1&seed=1');
     await step(page, 0.5);
     expect((await audio(page)).loops).toEqual([]);
@@ -108,7 +108,7 @@ test.describe('boucles d\'ambiance', () => {
     await expect.poll(async () => (await audio(page)).loops.length).toBe(2);
   });
 
-  test('mort : boucles et battement de cœur arrêtés (et le restent) ; « Rejouer » les relance', async ({ page }) => {
+  test('mort : boucles et battement de cœur arrêtés (et le restent) ; « Rejouer » les relance @lent', async ({ page }) => {
     await open(page, '/jeu.html?test=1&nospawn=1&seed=1');
     await unlockReady(page);
     await emit(page, [{ type: 'playerVitals', health: 0.1, state: 'debout' }]);
@@ -126,7 +126,7 @@ test.describe('boucles d\'ambiance', () => {
     await expect.poll(async () => (await audio(page)).loops.length).toBe(2);
   });
 
-  test('?sons=ancien : aucune boucle nouvelle, aucun son nouveau', async ({ page }) => {
+  test('?sons=ancien : aucune boucle nouvelle, aucun son nouveau @lent', async ({ page }) => {
     await open(page, '/jeu.html?test=1&nospawn=1&seed=1&sons=ancien');
     await unlockReady(page);
     const p = await near(page);
@@ -137,7 +137,7 @@ test.describe('boucles d\'ambiance', () => {
 });
 
 test.describe('réparation à durée variable', () => {
-  test('0,4 / 0,8 / 1,2 / 1,8 s : un tampon par durée, calculé au premier usage, joué en phase avec la pose', async ({ page }) => {
+  test('0,4 / 0,8 / 1,2 / 1,8 s : un tampon par durée, calculé au premier usage, joué en phase avec la pose @lent', async ({ page }) => {
     await open(page, '/jeu.html?test=1&empty=1&nospawn=1&seed=1');
     await unlockReady(page);
     const p = await near(page);
@@ -151,7 +151,7 @@ test.describe('réparation à durée variable', () => {
     }
   });
 
-  test('en jeu avec ?lvl=reparation:6 : son au début de la pose, à la durée de pose du niveau (0,84 s)', async ({ page }) => {
+  test('en jeu avec ?lvl=reparation:6 : son au début de la pose, à la durée de pose du niveau (0,84 s) @lent', async ({ page }) => {
     await open(page, salle('/jeu.html?test=1&nospawn=1&seed=1&lvl=reparation:6'));
     await unlockReady(page);
     const s = await state(page);
@@ -190,7 +190,7 @@ test.describe('limite de voix et hygiène', () => {
     expect(problems).toEqual([]);
   });
 
-  test('sons nouveaux : priorité 1 calculée au chargement (une version), priorité 2 au premier usage puis gardée', async ({ page }) => {
+  test('sons nouveaux : priorité 1 calculée au chargement (une version), priorité 2 au premier usage puis gardée @lent', async ({ page }) => {
     await open(page, '/jeu.html?test=1&empty=1&nospawn=1&seed=1');
     await unlockReady(page);
     let a = await audio(page);

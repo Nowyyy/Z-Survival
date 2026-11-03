@@ -65,6 +65,7 @@
         { "motif": "budget|géométries et de textures|axe|requête|CLS|jamais plus de 10|HUD : colonne", "categorie": "G" },
         { "motif": "map=salle", "categorie": "L" },
         { "motif": "fps=1", "categorie": "F" } ] },
+    { "fichier": "tests/e2e/fumee.spec.js", "projets": "bureau", "categorie": "G", "valeur": "garde-fou", "recommandation": "garder", "raison": "Fumée du lot 4e : démarrage, HUD, une manche, sauvegarde en mémoire, axe des pages publiées, site construit." },
     { "fichier": "tests/e2e/interface-atelier-ecrans.spec.js", "projets": "bureau", "categorie": "T", "valeur": "page technique", "recommandation": "retirer sauf axe", "raison": "Écrans fictifs de l'atelier de l'interface (lot 3k).",
       "groupes": [
         { "motif": "Côte à côte", "categorie": "I", "note": "interface-atelier-ecrans:145, délai de 5 s sous charge" },
@@ -301,6 +302,8 @@
     { "fichier": "tests/unit/sons-integres.test.js", "categorie": "P", "valeur": "règle de jeu", "recommandation": "garder", "raison": "Sons intégrés." },
     { "fichier": "tests/unit/stair-walk.test.js", "categorie": "P", "valeur": "règle de jeu", "recommandation": "garder", "raison": "Escalier physique." },
     { "fichier": "tests/unit/structure.test.js", "categorie": "G", "valeur": "garde-fou", "recommandation": "garder", "raison": "Structure du dépôt." },
+    { "fichier": "tests/unit/tests-budget.test.js", "categorie": "P", "valeur": "protège l'outillage", "recommandation": "garder", "raison": "Budget de durée du lot 4e (formule de N, deux projections, tranches)." },
+    { "fichier": "tests/unit/tests-selection.test.js", "categorie": "P", "valeur": "protège l'outillage", "recommandation": "garder", "raison": "Sélection par zone, table, complet périodique, scripts du lot 4e." },
     { "fichier": "tests/unit/tests-audit.test.js", "categorie": "P", "valeur": "outillage des tests", "recommandation": "garder", "raison": "Fonctions de l'audit des tests et classement complet (lot 4e)." },
     { "fichier": "tests/unit/tokens.test.js", "categorie": "G", "valeur": "garde-fou", "recommandation": "garder", "raison": "Jetons de couleur, contrastes." },
     { "fichier": "tests/unit/vendor-three.test.js", "categorie": "G", "valeur": "garde-fou", "recommandation": "garder", "raison": "Three.js copié, jamais édité." },

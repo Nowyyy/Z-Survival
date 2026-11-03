@@ -84,7 +84,7 @@ test.describe('voix de zombies', () => {
     expect(run.seen.some((e) => e.sound === 'pas-zombie')).toBe(true);
   });
 
-  test('les voix « fond » ne sont jouées qu\'une fois leurs tampons prêts', async ({ page }) => {
+  test('les voix « fond » ne sont jouées qu\'une fois leurs tampons prêts @lent', async ({ page }) => {
     // Calcul de fond ralenti (une image toutes les 250 ms) : la partie démarre bien avant la fin des sons « fond ».
     await page.addInitScript(() => {
       const raf = window.requestAnimationFrame.bind(window);
@@ -126,7 +126,7 @@ test.describe('voix de zombies', () => {
     expect(behind[0].gain).toBeLessThan(front[0].gain);
   });
 
-  test('un cri d\'attaque part au contact, avec la hauteur de la variante', async ({ page }) => {
+  test('un cri d\'attaque part au contact, avec la hauteur de la variante @lent', async ({ page }) => {
     await open(page);
     await unlock(page);
     await expect.poll(async () => (await audio(page)).ready, { timeout: 100_000 }).toBe(true);
@@ -143,7 +143,7 @@ test.describe('voix de zombies', () => {
 });
 
 test.describe('ambiance', () => {
-  test('démarre après le premier geste et s\'arrête en pause', async ({ page }) => {
+  test('démarre après le premier geste et s\'arrête en pause @lent', async ({ page }) => {
     await open(page);
     await expect.poll(async () => (await audio(page)).ready, { timeout: 100_000 }).toBe(true);
     expect((await audio(page)).ambience).toBe(false); // rien avant le premier geste

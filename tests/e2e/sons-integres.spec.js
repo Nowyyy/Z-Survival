@@ -78,7 +78,7 @@ test.describe('sons intégrés : chargement', () => {
 });
 
 test.describe('sons intégrés : lecture sous les identifiants du jeu', () => {
-  test('pas du joueur, planche arrachée, voix par type : le son et le tampon attendus', async ({ page }) => {
+  test('pas du joueur, planche arrachée, voix par type : le son et le tampon attendus @lent', async ({ page }) => {
     await open(page);
     await unlockReady(page);
     const p = await near(page);
@@ -102,7 +102,7 @@ test.describe('sons intégrés : lecture sous les identifiants du jeu', () => {
     }
   });
 
-  test('versions non préchargées : calculées au premier usage puis gardées ; en attendant, une version prête', async ({ page }) => {
+  test('versions non préchargées : calculées au premier usage puis gardées ; en attendant, une version prête @lent', async ({ page }) => {
     await open(page);
     await unlockReady(page);
     for (let i = 0; i < 12; i += 1) {
@@ -127,7 +127,7 @@ test.describe('sons intégrés : lecture sous les identifiants du jeu', () => {
     }
   });
 
-  test('réparation : au début de la pose, tampon à la durée de pose (calculé au premier usage), arrêt si interrompue', async ({ page }) => {
+  test('réparation : au début de la pose, tampon à la durée de pose (calculé au premier usage), arrêt si interrompue @lent', async ({ page }) => {
     await open(page);
     await unlockReady(page);
     const p = await near(page);
@@ -145,7 +145,7 @@ test.describe('sons intégrés : lecture sous les identifiants du jeu', () => {
     expect((await audio(page)).pack.lazy).toBeGreaterThanOrEqual(1);
   });
 
-  test('vraie réparation en jeu : son au début de la pose de la planche (et non à la planche posée)', async ({ page }) => {
+  test('vraie réparation en jeu : son au début de la pose de la planche (et non à la planche posée) @lent', async ({ page }) => {
     await page.setViewportSize(SIZE);
     await page.goto('/jeu.html?test=1&map=salle&nospawn=1&seed=1&planks=2');
     await waitReady(page);
@@ -188,7 +188,7 @@ test.describe('sons intégrés : lecture sous les identifiants du jeu', () => {
 });
 
 test.describe('sons intégrés : ?sons=', () => {
-  test('?sons=ancien : pack d\'avant (recettes chargées à la demande), voix communes à la hauteur du type', async ({ page }) => {
+  test('?sons=ancien : pack d\'avant (recettes chargées à la demande), voix communes à la hauteur du type @lent', async ({ page }) => {
     const urls = [];
     page.on('request', (r) => urls.push(r.url()));
     await open(page, '&sons=ancien');

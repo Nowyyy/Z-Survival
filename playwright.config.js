@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { defineConfig, devices } from '@playwright/test';
 
 // En CI, on pilote le Chrome déjà installé sur le runner : aucune installation de navigateur.
@@ -15,7 +16,10 @@ export default defineConfig({
   testDir: 'tests/e2e',
   // Rendu logiciel (CI, WebGL sans GPU) : depuis les textures du lot 1c une image y dure parfois plusieurs secondes ; 60 s au lieu de 30 s.
   timeout: 60_000,
+  // Lot 4e : tests indépendants (aucun hook partagé, aucun état de module) : répartis un par un entre workers et tranches.
   fullyParallel: true,
+  // Lot 4e : en CI, workersCI de tests/budget.json (2) ; en local, la valeur par défaut de Playwright (inchangée).
+  workers: process.env.CI ? JSON.parse(readFileSync('tests/budget.json', 'utf8')).workersCI : undefined,
   // En CI (rendu logiciel, runner chargé), un test qui échoue est rejoué une fois : un échec isolé ne fait plus tomber toute la suite.
   retries: process.env.CI ? 1 : 0,
   reporter: 'list',
@@ -34,7 +38,7 @@ export default defineConfig({
     },
   ],
   projects: [
-    { name: 'mobile', testMatch: files(PAGES), use: { ...devices['Pixel 5'], channel, viewport: { width: 375, height: 812 } } },
+    { name: 'mobile', testMatch: files(PAGES), testIgnore: ['**/fumee.spec.js'], use: { ...devices['Pixel 5'], channel, viewport: { width: 375, height: 812 } } },
     { name: 'bureau', testMatch: files(ESSENTIAL), use: { channel, viewport: { width: 1440, height: 900 } } },
   ],
 });
