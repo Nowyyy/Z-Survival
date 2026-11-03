@@ -182,10 +182,10 @@ describe('workflows : tests.yml ajouté, pages.yml intact', () => {
   const tests = readFileSync('.github/workflows/tests.yml', 'utf8');
   const pages = readFileSync('.github/workflows/pages.yml', 'utf8');
   const sha = (s) => createHash('sha256').update(s).digest('hex');
-  it('pages.yml : en-tête (déclencheurs, permissions, concurrence) et tâche deploy identiques au lot 4c ; jobs quick, e2e, deploy (pas de job verify depuis le lot 2c)', () => {
+  it('pages.yml : en-tête (déclencheurs, permissions, concurrence) et tâche deploy identiques au lot 4c ; jobs quick, deploy (job e2e retiré au lot 4g, pas de job verify depuis le lot 2c)', () => {
     expect(sha(pages.slice(0, pages.indexOf('\njobs:')))).toBe('3ae852e908bb5144ec7fe30507a9596802ea78a290e8494ecde1281e59479450');
     expect(sha(pages.slice(pages.indexOf('\n  deploy:\n')))).toBe('5ef684728d978d1d2051c1439ef72e78a0d491d88dfc6e71b4a7d9a0071e71da');
-    expect([...pages.matchAll(/^ {2}([\w-]+):$/gm)].map((m) => m[1]).filter((j) => pages.indexOf(`\n  ${j}:`) > pages.indexOf('\njobs:'))).toEqual(['quick', 'e2e', 'deploy']);
+    expect([...pages.matchAll(/^ {2}([\w-]+):$/gm)].map((m) => m[1]).filter((j) => pages.indexOf(`\n  ${j}:`) > pages.indexOf('\njobs:'))).toEqual(['quick', 'deploy']);
   });
   it('tests.yml : déclencheurs push (dev, lot-*, essai/** depuis le lot 4f), pull_request, workflow_dispatch avec un choix de palier ; documentation seule ignorée', () => {
     expect(tests).toMatch(/push:\n\s+branches: \[dev, 'lot-\*', 'essai\/\*\*'\]/);
@@ -227,11 +227,13 @@ describe('workflows : tests.yml ajouté, pages.yml intact', () => {
     expect(tests).toMatch(/planifier:\n {4}if: github\.event_name != 'create' \|\| startsWith\(github\.ref, 'refs\/heads\/essai\/'\)/);
     expect(tests).toContain('CREE: ${{ github.event.created }}');
   });
-  it('tests.yml : seulement des actions déjà employées par pages.yml, épinglées par commit complet ; aucun navigateur installé', () => {
+  // Lot 4g : upload-artifact n'est plus dans pages.yml (job e2e retiré) ; il reste admis comme action déjà employée par pages.yml jusqu'au lot 4f.
+  it('tests.yml : seulement des actions déjà employées par pages.yml (jusqu\'au lot 4f), épinglées par commit complet ; aucun navigateur installé', () => {
     const uses = (s) => [...s.matchAll(/uses: (\S+)/g)].map((m) => m[1]);
+    const admises = [...uses(pages), 'actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02'];
     for (const u of uses(tests)) {
       expect(u, u).toMatch(/@[0-9a-f]{40}$/);
-      expect(uses(pages), u).toContain(u);
+      expect(admises, u).toContain(u);
     }
     expect(tests).not.toContain('playwright install');
   });

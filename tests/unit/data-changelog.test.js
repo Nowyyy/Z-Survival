@@ -29,12 +29,14 @@ describe('data/changelog.json', () => {
     for (const f of readdirSync('Docs/lots').filter((n) => n.endsWith('.md'))) expect(lots.map((e) => e.name), f).toContain(f.replace('.md', ''));
   });
 
-  it('le fichier est dans l\'ordre chronologique : lot-0 en premier, lot-4f en dernier (lot 4f : après lot-4e, lot-4c et lot-4b)', () => {
+  // Lot 4g : lot-4g ajouté en dernier ; avant : lot-4f en dernier.
+  it('le fichier est dans l\'ordre chronologique : lot-0 en premier, lot-4g en dernier (lot 4g : après lot-4f, lot-4e, lot-4c et lot-4b)', () => {
     expect(lots[0].name).toBe('lot-0');
-    expect(lots.at(-1).name).toBe('lot-4f');
-    expect(lots.at(-2).name).toBe('lot-4e');
-    expect(lots.at(-3).name).toBe('lot-4c');
-    expect(lots.at(-4).name).toBe('lot-4b');
+    expect(lots.at(-1).name).toBe('lot-4g');
+    expect(lots.at(-2).name).toBe('lot-4f');
+    expect(lots.at(-3).name).toBe('lot-4e');
+    expect(lots.at(-4).name).toBe('lot-4c');
+    expect(lots.at(-5).name).toBe('lot-4b');
   });
 
   // Lot 4b (demande du propriétaire) : versions majeures montrées par /dev, dans cet ordre ; chacune désigne un lot du journal.

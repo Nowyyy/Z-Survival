@@ -4,7 +4,7 @@ import { spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { AssembleError, assembleSite, buildInfo, dirStats, parseOptions, siteTexts, simplePage, utcDate } from '../../scripts/assemble.mjs';
+import { AssembleError, ICON_FILE, assembleSite, buildInfo, dirStats, parseOptions, siteIcon, siteTexts, simplePage, utcDate } from '../../scripts/assemble.mjs';
 import { buildStamp, channelOf, fill, formatDate, homeModel, readVersions, safePath, siteRoot } from '../../js/accueil/home.js';
 import { fakeArchive, testVersions } from '../../scripts/site/e2e-site.mjs';
 import { findNonRelative } from '../../scripts/versions/links.mjs';
@@ -180,6 +180,57 @@ describe('assembleur : cas particuliers', () => {
     expect(utcDate('2026-11-02T19:25:19+01:00')).toBe('2026-11-02T18:25:19Z');
     expect(utcDate('pas une date')).toBe('');
     expect(buildInfo({ channel: 'dev', version: 'V0.5', branch: 'dev', sha: 'not-a-sha', date: '' })).toEqual({ channel: 'dev', version: 'V0.5', branch: 'dev', sha: '', date: '' });
+  });
+});
+
+// Lot 4g : vraie icône (« Z » de scripts/icone.mjs) dans les pages de renvoi, à la place de l'icône vide en data: du lot 4f.
+describe('assembleur : icône des pages de renvoi (lot 4g)', () => {
+  const index = readFileSync('index.html', 'utf8');
+  const fromIndex = Buffer.from(/<link rel="icon"[^>]*href="data:image\/png;base64,([A-Za-z0-9+/=]+)"/.exec(index)[1], 'base64');
+  const iconHref = (html) => [...html.matchAll(/<link rel="icon"[^>]*href="([^"]*)"/g)].map((m) => m[1]);
+
+  it('siteIcon : le PNG 48 × 48 de index.html, octet pour octet ; null sans icône PNG', () => {
+    const png = siteIcon(index);
+    expect(png.equals(fromIndex)).toBe(true);
+    expect([png.readUInt32BE(16), png.readUInt32BE(20)]).toEqual([48, 48]);
+    expect(png.length).toBeLessThan(5_000);
+    expect(siteIcon('<link rel="icon" href="data:,">')).toBeNull();
+    expect(siteIcon('<link rel="icon" href="data:image/png;base64,AAAA">')).toBeNull();
+    expect(siteIcon(undefined)).toBeNull();
+  });
+
+  it('simplePage : icône PNG en chemin relatif si fournie, sinon icône vide en data: (une seule icône)', () => {
+    const base = { title: 't', message: 'm', back: '../', backLabel: 'b', cssRoot: '../' };
+    expect(iconHref(simplePage({ ...base, icon: '../icone.png' }))).toEqual(['../icone.png']);
+    expect(simplePage({ ...base, icon: '../icone.png' })).toContain('<link rel="icon" type="image/png" sizes="48x48" href="../icone.png">');
+    expect(iconHref(simplePage(base))).toEqual(['data:,']);
+  });
+
+  it('icone.png écrit à la racine ; lots/ et next/ (sans build) le référencent en ../icone.png, qui se résout sur ce fichier', () => {
+    const dir = out();
+    assembleSite({ mainDir: mainBuild({ extra: { 'index.html': index } }), versions: real, out: dir, main: MAIN });
+    expect(ICON_FILE).toBe('icone.png');
+    expect(readFileSync(join(dir, ICON_FILE)).equals(fromIndex)).toBe(true);
+    for (const page of ['lots/index.html', 'next/index.html']) {
+      const hrefs = iconHref(readFileSync(join(dir, page), 'utf8'));
+      expect(hrefs, page).toEqual(['../icone.png']);
+      expect(existsSync(join(dir, page, '..', hrefs[0])), page).toBe(true);
+      expect(readFileSync(join(dir, page), 'utf8'), page).not.toMatch(/(?:href|src)="(?:https?:)?\/\//);
+    }
+  });
+
+  it('avec un build de dev, next/ est ce build (son index.html garde son icône data:) ; lots/ référence toujours ../icone.png', () => {
+    const dir = out();
+    assembleSite({ mainDir: mainBuild({ extra: { 'index.html': index } }), devDir: mainBuild({ extra: { 'index.html': index } }), versions: real, out: dir, main: MAIN, dev: DEV });
+    expect(readFileSync(join(dir, 'next/index.html'), 'utf8')).toBe(index);
+    expect(iconHref(readFileSync(join(dir, 'lots/index.html'), 'utf8'))).toEqual(['../icone.png']);
+  });
+
+  it('build de main sans icône dans index.html : aucun icone.png, icône vide en data: (comportement du lot 4f)', () => {
+    const dir = out();
+    assembleSite({ mainDir: mainBuild(), versions: real, out: dir, main: MAIN });
+    expect(existsSync(join(dir, ICON_FILE))).toBe(false);
+    for (const page of ['lots/index.html', 'next/index.html']) expect(iconHref(readFileSync(join(dir, page), 'utf8')), page).toEqual(['data:,']);
   });
 });
 
@@ -365,14 +416,14 @@ describe('workflow (lot 4c)', () => {
     expect(wf).not.toMatch(/pull_request|schedule:|lot-\*|archive\]/);
   });
 
-  it('aucune action nouvelle : exactement les actions et versions de l\'ancien workflow', () => {
+  // Lot 4g : actions/upload-artifact ne servait qu'au job e2e retiré (rapport en cas d'échec) ; avant : six actions.
+  it('aucune action nouvelle : exactement les actions et versions de l\'ancien workflow, moins upload-artifact (job e2e retiré au lot 4g)', () => {
     const uses = new Set([...wf.matchAll(/uses:\s*(\S+)/g)].map((m) => m[1]));
     expect([...uses].sort()).toEqual([
       'actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683',
       'actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b',
       'actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e',
       'actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020',
-      'actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02',
       'actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa',
     ]);
   });
@@ -389,14 +440,13 @@ describe('workflow (lot 4c)', () => {
     expect(wf).toMatch(/concurrency:\n {2}group: pages\n {2}cancel-in-progress: false\n/);
   });
 
-  it('jobs : quick (lint + Vitest, 10 min) avant deploy ; e2e (4 tranches, 15 min) sur dev', () => {
-    const quick = wf.slice(wf.indexOf('  quick:'), wf.indexOf('  e2e:'));
+  // Lot 4g : job e2e (4 tranches, 15 min, sur dev) retiré, doublon du palier standard de tests.yml ; quick reste la barrière avant deploy.
+  it('jobs : quick (lint + Vitest, 10 min) avant deploy ; plus de job e2e (lot 4g)', () => {
+    const quick = wf.slice(wf.indexOf('  quick:'), wf.indexOf('  deploy:'));
     expect(quick).toContain('timeout-minutes: 10');
     for (const c of ['npm run lint', 'npm test']) expect(quick).toContain(c);
-    const e2e = wf.slice(wf.indexOf('  e2e:'), wf.indexOf('  deploy:'));
-    expect(e2e).toContain("if: github.ref == 'refs/heads/dev'");
-    expect(e2e).toContain('timeout-minutes: 15');
-    expect(e2e).toContain('npm run test:e2e -- --shard=${{ matrix.shard }}');
+    expect(wf).not.toMatch(/^ {2}e2e:$/m);
+    expect(wf).not.toMatch(/test:e2e|matrix\.shard/);
     const deploy = wf.slice(wf.indexOf('  deploy:'));
     expect(deploy).toContain('needs: quick');
     expect(deploy).toContain("if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev'");
