@@ -2,18 +2,78 @@
  "description": "Lot 4f-A — Durées mesurées en CI (GitHub Actions, ubuntu-latest, 2 workers, Chrome du runner) par la tâche bilan-duree de tests.yml. Valeurs relevées, à reporter par le propriétaire dans tests/budget.json (installationSecondes, facteurParallelisme, workersCI).",
  "executions": [
   {
-   "palier": "standard", "declencheur": "push de lot-4f (rejeu total, bureau seulement)", "execution": 41657745422, "commit": "e6f3578",
-   "totalSecondes": 400, "objectifSecondes": 600, "verdict": "OBJECTIF TENU", "projectionSecondes": 374,
-   "tranches": 3, "installationMoyenneSecondes": 12, "installationMaxSecondes": 17, "trancheLaPlusLongueSecondes": 370,
-   "parallelisme": 1.95, "workers": 2, "executionsPlaywright": 322, "reussies": 318, "echouees": 2, "ignorees": 2,
-   "unitairesSecondes": 91, "echecs": ["publication.spec.js:70 (bureau)", "publication.spec.js:141 (bureau)"]
+   "palier": "standard",
+   "declencheur": "push de lot-4f (rejeu total, bureau seulement)",
+   "execution": 41657745422,
+   "commit": "e6f3578",
+   "totalSecondes": 400,
+   "objectifSecondes": 600,
+   "verdict": "OBJECTIF TENU",
+   "projectionSecondes": 374,
+   "tranches": 3,
+   "installationMoyenneSecondes": 12,
+   "installationMaxSecondes": 17,
+   "trancheLaPlusLongueSecondes": 370,
+   "parallelisme": 1.95,
+   "workers": 2,
+   "executionsPlaywright": 322,
+   "reussies": 318,
+   "echouees": 2,
+   "ignorees": 2,
+   "unitairesSecondes": 91,
+   "echecs": [
+    "publication.spec.js:70 (bureau)",
+    "publication.spec.js:141 (bureau)"
+   ]
   },
   {
-   "palier": "complet", "declencheur": "push de essai/complet-2", "execution": 41660215349, "commit": "704dff1",
-   "totalSecondes": 352, "objectifSecondes": 600, "verdict": "OBJECTIF TENU", "projectionSecondes": 268,
-   "tranches": 16, "nMinimal": 8, "installationMoyenneSecondes": 19, "installationMaxSecondes": 35, "trancheLaPlusLongueSecondes": 324,
-   "parallelisme": 1.86, "workers": 2, "executionsPlaywright": 1237, "reussies": 964, "echouees": 7, "ignorees": 266,
-   "unitairesSecondes": 97, "echecs": ["publication.spec.js:70 et :141 (bureau et mobile, 404 en CI seulement)"]
+   "palier": "complet",
+   "declencheur": "push de essai/complet-2",
+   "execution": 41660215349,
+   "commit": "704dff1",
+   "totalSecondes": 352,
+   "objectifSecondes": 600,
+   "verdict": "OBJECTIF TENU",
+   "projectionSecondes": 268,
+   "tranches": 16,
+   "nMinimal": 8,
+   "installationMoyenneSecondes": 19,
+   "installationMaxSecondes": 35,
+   "trancheLaPlusLongueSecondes": 324,
+   "parallelisme": 1.86,
+   "workers": 2,
+   "executionsPlaywright": 1237,
+   "reussies": 964,
+   "echouees": 7,
+   "ignorees": 266,
+   "unitairesSecondes": 97,
+   "echecs": [
+    "publication.spec.js:70 et :141 (bureau et mobile, 404 en CI seulement)"
+   ]
+  },
+  {
+   "palier": "standard",
+   "declencheur": "push de essai/standard-1 (pire cas : rejeu total depuis origin/dev, bureau seulement)",
+   "execution": 41661802286,
+   "commit": "4414302",
+   "totalSecondes": 442,
+   "objectifSecondes": 600,
+   "verdict": "OBJECTIF TENU",
+   "projectionSecondes": 374,
+   "tranches": 3,
+   "installationMoyenneSecondes": 16,
+   "installationMaxSecondes": 24,
+   "trancheLaPlusLongueSecondes": 409,
+   "parallelisme": 1.92,
+   "workers": 2,
+   "executionsPlaywright": 322,
+   "reussies": 318,
+   "echouees": 2,
+   "ignorees": 2,
+   "unitairesSecondes": 95,
+   "echecs": [
+    "2 dans la tranche 3 (comme sur lot-4f : publication.spec.js:70 et :141)"
+   ]
   }
  ]
 }
