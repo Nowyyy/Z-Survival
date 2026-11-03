@@ -63,12 +63,14 @@ test.describe('carte par défaut', () => {
     expect(await page.evaluate(() => [localStorage.length, sessionStorage.length, document.cookie])).toEqual([0, 0, '']);
   });
 
-  test('axe : aucune violation (667×375 et 1440×900)', async ({ page }) => {
-    for (const size of [SIZE, BIG]) {
+  // Lot 4f : un test par taille (avant : les deux dans un seul test) ; en mobile (DPR 2,75, rendu logiciel), les deux chargements et les
+  // deux analyses dépassaient parfois le délai de 60 s en CI (37 s mesurées en local). Mêmes vérifications, chacune avec son délai.
+  for (const size of [SIZE, BIG]) {
+    test(`axe : aucune violation (${size.width}×${size.height})`, async ({ page }) => {
       await open(page, '', size);
       expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
-    }
-  });
+    });
+  }
 });
 
 test.describe('déplacements, obstacles, tir', () => {
