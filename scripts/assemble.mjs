@@ -4,6 +4,7 @@
 //  - v0.N/ = dossiers de la branche archive, copiés seulement s'ils existent (sinon la version est publiée « indisponible ») ;
 //  - versions.json copié à la racine (et dans next/) ; build-info.json à la racine et dans next/ ;
 //  - lots/index.html = page de renvoi vers la racine (les aperçus par lot sont retirés : aucun dossier lots/lot-*).
+//  - icone.png = icône du site (lot 4g), tirée de index.html du build de main, pour les pages de renvoi (lots/, next/ sans build).
 // Pur et déterministe (aucun réseau, aucune horloge : les dates viennent des entrées) ; échoue avec un message clair si la racine n'a pas
 // d'index.html, si la version actuelle est introuvable ou si le site dépasse le plafond (900 Mo par défaut, la limite publiée étant 1 Go).
 //
@@ -74,9 +75,22 @@ export function siteTexts(mainDir) {
   }
 }
 
+// Icône du site (lot 4g) : le « Z » 48 × 48 de scripts/icone.mjs, écrit en adresse data: PNG dans index.html. L'assembleur l'extrait de index.html du build de main
+// et l'écrit à la racine du site (ICON_FILE, environ 1 ko, jamais versionné) ; renvoie null si index.html n'a pas d'icône PNG lisible.
+export const ICON_FILE = 'icone.png';
+const PNG_SIGNATURE = '89504e470d0a1a0a';
+export function siteIcon(indexHtml) {
+  const match = /<link rel="icon"[^>]*href="data:image\/png;base64,([A-Za-z0-9+/=]+)"/.exec(String(indexHtml ?? ''));
+  if (!match) return null;
+  const png = Buffer.from(match[1], 'base64');
+  return png.length > 24 && png.subarray(0, 8).toString('hex') === PNG_SIGNATURE ? png : null;
+}
+
 // Petite page statique (sans JavaScript) : message et lien de renvoi vers back (pas de rafraîchissement automatique : axe le refuse), styles du site (chemins relatifs).
 // Lot 4f : icône vide en data: ; sans <link rel="icon">, Chrome demande /favicon.ico (absent : 404 en console, vu en CI par publication.spec.js).
-export function simplePage({ title, message, back, backLabel, cssRoot }) {
+// Lot 4g : icon = chemin relatif de la vraie icône (ex. ../icone.png) ; sans icon, l'icône vide en data: du lot 4f.
+export function simplePage({ title, message, back, backLabel, cssRoot, icon = null }) {
+  const iconLink = icon ? `<link rel="icon" type="image/png" sizes="48x48" href="${escapeHtml(icon)}">` : '<link rel="icon" href="data:,">';
   return `<!doctype html>
 <html lang="fr">
 <head>
@@ -85,7 +99,7 @@ export function simplePage({ title, message, back, backLabel, cssRoot }) {
   <meta name="robots" content="noindex">
   <meta name="color-scheme" content="dark">
   <title>${escapeText(title)}</title>
-  <link rel="icon" href="data:,">
+  ${iconLink}
   <link rel="stylesheet" href="${escapeHtml(cssRoot)}css/tokens.css">
   <link rel="stylesheet" href="${escapeHtml(cssRoot)}css/base.css">
   <link rel="stylesheet" href="${escapeHtml(cssRoot)}css/accueil.css">
@@ -125,6 +139,10 @@ export function assembleSite({ mainDir, devDir = null, archiveDir = null, versio
   rmSync(join(out, devPath), { recursive: true, force: true });
 
   const texts = siteTexts(mainDir);
+  // Icône des pages de renvoi (lot 4g) : icone.png à la racine, référencée en ../icone.png depuis lots/ et next/.
+  const icon = siteIcon(readFileSync(join(mainDir, 'index.html'), 'utf8'));
+  if (icon) writeFileSync(join(out, ICON_FILE), icon);
+  const pageIcon = icon ? `../${ICON_FILE}` : null;
   const label = labelOf(versions.latest);
   writeFileSync(join(out, 'build-info.json'), `${JSON.stringify(buildInfo({ channel: 'release', version: label, branch: main.branch ?? 'main', sha: main.sha, date: main.date }), null, 2)}\n`);
 
@@ -137,7 +155,7 @@ export function assembleSite({ mainDir, devDir = null, archiveDir = null, versio
     next = buildInfo({ channel: 'dev', version: label, branch: versions.dev.branch, sha: dev.sha, date: dev.date });
   } else {
     mkdirSync(nextDir, { recursive: true });
-    writeFileSync(join(nextDir, 'index.html'), simplePage({ title: texts['site.next.title'], message: texts['site.next.none'], back: '../', backLabel: texts['site.next.back'], cssRoot: '../' }));
+    writeFileSync(join(nextDir, 'index.html'), simplePage({ title: texts['site.next.title'], message: texts['site.next.none'], back: '../', backLabel: texts['site.next.back'], cssRoot: '../', icon: pageIcon }));
     next = { channel: 'dev', version: label, branch: versions.dev.branch, sha: '', date: '' };
   }
   writeFileSync(join(nextDir, 'build-info.json'), `${JSON.stringify(next, null, 2)}\n`);
@@ -168,7 +186,7 @@ export function assembleSite({ mainDir, devDir = null, archiveDir = null, versio
   for (const dir of [out, nextDir]) writeFileSync(join(dir, 'versions.json'), `${JSON.stringify(published, null, 2)}\n`);
 
   mkdirSync(join(out, 'lots'), { recursive: true });
-  writeFileSync(join(out, 'lots', 'index.html'), simplePage({ title: texts['site.lots.title'], message: texts['site.lots.retired'], back: '../', backLabel: texts['site.lots.back'], cssRoot: '../' }));
+  writeFileSync(join(out, 'lots', 'index.html'), simplePage({ title: texts['site.lots.title'], message: texts['site.lots.retired'], back: '../', backLabel: texts['site.lots.back'], cssRoot: '../', icon: pageIcon }));
 
   const stats = dirStats(out);
   if (stats.bytes > maxBytes) throw new AssembleError(`Site trop gros : ${(stats.bytes / 1024 / 1024).toFixed(1)} Mo pour un plafond de ${(maxBytes / 1024 / 1024).toFixed(0)} Mo (limite publiée : 1 Go)`);

@@ -175,6 +175,28 @@ for (const viewport of [{ width: 667, height: 375 }, { width: 1440, height: 900 
   });
 }
 
+// Lot 4g : vraie icône (« Z ») des pages de renvoi, servie en icone.png à la racine du site et référencée en ../icone.png (lots/, next/ sans build).
+test('icône des pages de renvoi : lots/ et next/ sans build → ../icone.png (200, PNG de la racine) ; aucune 404, aucune requête externe', async ({ page, request }) => {
+  const { problems, external } = watch(page);
+  const rootIcon = await request.get(`${BARE}icone.png`);
+  expect(rootIcon.status()).toBe(200);
+  expect(rootIcon.headers()['content-type']).toBe('image/png');
+  const png = await rootIcon.body();
+  expect(png.subarray(0, 8).toString('hex')).toBe('89504e470d0a1a0a');
+  expect((await (await request.get(`${FULL}icone.png`)).body()).equals(png)).toBe(true);
+  for (const url of [`${FULL}lots/`, `${BARE}lots/`, `${BARE}next/`]) {
+    await page.goto(url);
+    await page.waitForLoadState('networkidle');
+    const href = await page.locator('link[rel="icon"]').getAttribute('href');
+    expect(href, url).toBe('../icone.png');
+    const icon = await request.get(new URL(href, page.url()).href);
+    expect(icon.status(), url).toBe(200);
+    expect((await icon.body()).equals(png), url).toBe(true);
+  }
+  expect(external).toEqual([]);
+  expect(problems).toEqual([]);
+});
+
 test('sans JavaScript : message bilingue et liens statiques vers le jeu, next/ et dev/', async () => {
   const browser = await chromium.launch({ channel: process.env.CI ? 'chrome' : undefined, args: ['--blink-settings=scriptEnabled=false'] });
   const page = await browser.newPage({ locale: 'fr-FR', viewport: { width: 667, height: 375 } });
