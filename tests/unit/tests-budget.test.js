@@ -124,6 +124,16 @@ describe('lot 4f : palier choisi par l\'événement et le nom de la branche (lib
     expect(r.palier).toBe(attendu);
     expect(r.message.length).toBeGreaterThan(0);
   });
+  it('événement create : essai/complet-* → complet, essai/standard-* → standard, autre branche ou tag → rien ; le push qui crée une branche essai/** ne lance rien', () => {
+    expect(palierDeLExecution({ evenement: 'create', ref: 'refs/heads/essai/complet-3' }).palier).toBe('complet');
+    expect(palierDeLExecution({ evenement: 'create', ref: 'refs/heads/essai/standard-2' }).palier).toBe('standard');
+    expect(palierDeLExecution({ evenement: 'create', ref: 'refs/heads/lot-5' }).palier).toBeNull();
+    expect(palierDeLExecution({ evenement: 'create', ref: 'refs/tags/lot-4f' }).palier).toBeNull();
+    expect(palierDeLExecution({ evenement: 'push', ref: 'refs/heads/essai/complet-3', cree: true })).toMatchObject({ palier: null, message: expect.stringMatching(/événement create/) });
+    expect(palierDeLExecution({ evenement: 'push', ref: 'refs/heads/essai/complet-3', cree: false }).palier).toBe('complet');
+    expect(palierDeLExecution({ evenement: 'push', ref: 'refs/heads/lot-5', cree: true }).palier).toBe('standard');
+    expect(basesCandidates({ evenement: 'create', ref: 'refs/heads/essai/standard-2' })).toEqual(['origin/dev', 'origin/main']);
+  });
   it('une autre branche essai/** : aucun palier, avec un message', () => {
     expect(palierDeLExecution({ evenement: 'push', ref: 'refs/heads/essai/x' }).message).toMatch(/aucun palier.*essai\/complet-\* et essai\/standard-\*/);
   });

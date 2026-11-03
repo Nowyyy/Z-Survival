@@ -5,16 +5,16 @@ Mobile d'abord, français seul, sans dépendance d'exécution (Three.js : devDep
 Avant de modifier une page, lis `Docs/ref/conventions.md` (arborescence, pages, règles détaillées).
 
 ## Commandes
-- `npm ci` : installe · `npm run lint` · `npm test` (Vitest) · `npm run test:e2e` (Playwright essentiel, ~4 min ; `test:e2e:full` : tout, ~40 min)
+- `npm ci` · `npm run lint` · `npm test` (Vitest) · paliers `npm run test:avant-commit | standard | publication | complet` (aucun nombre minimal de tests ; `Docs/ref/tests-paliers.md`) · `test:e2e` : suite rapide de `pages.yml`
 - `npm run vendor:three` : copie Three.js vers `vendor/three/` · `npm run build` : copie les pages et dossiers publiés dans `_site/`
-- `npm run assemble` : site complet = main + `_site/lots/<lot>/` par branche `origin/lot-*` + `_site/lots.json`.
+- `npm run assemble` : site complet = main (racine) + dev (`next/`) + archives `v0.N/` (branche `archive`), d'après `versions.json`.
 - `npm run lighthouse` : mobile (index.html 90 / 95 / 95 ; jeu.html 45 / 95 / 95 ; CLS ≤ 0,1) ; échoue sous les seuils
 - Playwright : Chromium préinstallé (jamais `playwright install`, voir `Docs/ref/environnement.md`) ; en CI, Chrome du runner.
 
 ## Publication
-- URL : `https://nowyyy.github.io/<dépôt>/` (cible : `Z-Survival`) ; racine = main, `/dev/` = menu, `/lots/lot-N/` = aperçu d'un lot.
-- `.github/workflows/pages.yml` : lint + Vitest (job `quick`) sur PR et push de `main` ou `lot-*`, Playwright en 4 tranches (job `e2e`) sur PR ; `main` assemble et déploie.
-- Droits minimaux, actions épinglées par SHA, ni `pull_request_target` ni secret. Source Pages : « GitHub Actions ». Chemins relatifs (site valable sous `/lots/…`).
+- URL : `https://nowyyy.github.io/<dépôt>/` (cible : `Z-Survival`) ; racine = main, `/next/` = dev, `/v0.N/` = versions figées, `/dev/` = journal, `/lots/` = renvoi.
+- CI : `tests.yml` (paliers en tranches : standard à chaque push de `dev`, `lot-*` et PR, bureau seulement, ≤ 10 min ; complet par push de `essai/complet-*`, 16 tranches ; budget `tests/budget.json`) ; `pages.yml` (push de `main` et `dev` : `quick`, `e2e` sur `dev`, `deploy` après `quick`).
+- Droits minimaux, actions épinglées par SHA, ni `pull_request_target` ni secret. Source Pages : « GitHub Actions ». Chemins relatifs (site valable dans un sous-dossier).
 
 ## Git
 - Une branche par lot : `lot-N`. Un commit par partie : « Lot N-X — titre ».

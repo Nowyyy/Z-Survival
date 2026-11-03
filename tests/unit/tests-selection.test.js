@@ -220,6 +220,12 @@ describe('workflows : tests.yml ajouté, pages.yml intact', () => {
     expect(c[1]).toContain("== 'standard' && 'standard' || github.run_id");
     expect(c[2]).toMatch(/^\$\{\{ .*== 'standard' \}\}$/);
     expect(c[1]).toContain("startsWith(github.ref, 'refs/heads/essai/complet-') && 'complet'");
+    expect(c[1]).toContain('${{ github.event_name }}'); // push et create d'une même branche ne s'annulent pas
+  });
+  it('tests.yml (lot 4f) : événement create pour les branches essai/** seulement (planifier), sans filtre de chemins', () => {
+    expect(tests).toMatch(/\n {2}create:\n/);
+    expect(tests).toMatch(/planifier:\n {4}if: github\.event_name != 'create' \|\| startsWith\(github\.ref, 'refs\/heads\/essai\/'\)/);
+    expect(tests).toContain('CREE: ${{ github.event.created }}');
   });
   it('tests.yml : seulement des actions déjà employées par pages.yml, épinglées par commit complet ; aucun navigateur installé', () => {
     const uses = (s) => [...s.matchAll(/uses: (\S+)/g)].map((m) => m[1]);
