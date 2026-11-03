@@ -385,3 +385,7 @@ Texte intégral, mot pour mot, des lignes de `CLAUDE.md` raccourcies, fusionnée
 - Atelier de la carte (lot 3g) : visite.html (jeu.html?nospawn=1&wave=31), ecarts.html, relevé par scripts/modele/ (modèle jamais versionné) ; décisions rejouables ecarts-decisions.json (plus de 60 unités : approved: true), puis npm run carte ; Docs/ref/affinage.md.
 - Décor léger : decor-interieur.json (non solide, 8 types, 1 500 triangles et 6 appels au plus, hors zones de dégagement) ; mobilier-aspect.js, portes-aspect.js, feux.json, mist.js ; textures fines (clé fine de textures.json) ; ?detail=0 = rendu d'avant le lot 3g ; ?murs=bas, ?percee=0.
 - Lot 4 : scripts/economie.mjs, code-sauvegarde.mjs ; détails : `conventions.md`.
+
+Lignes de `CLAUDE.md` réécrites au lot 4f (`b25ca0b`, arrivées dans `dev` pendant le lot 4g) et remplacées à la fusion de `dev` dans `lot-4g` (texte intégral) :
+- `npm ci` · `npm run lint` · `npm test` (Vitest) · paliers `npm run test:avant-commit | standard | publication | complet` (aucun nombre minimal de tests ; `Docs/ref/tests-paliers.md`) · `test:e2e` : suite rapide de `pages.yml` *(Lot 4g : « suite rapide de `pages.yml` » est périmé, `pages.yml` ne lance plus `test:e2e`.)*
+- CI : `tests.yml` (paliers en tranches : standard à chaque push de `dev`, `lot-*` et PR, bureau seulement, ≤ 10 min ; complet par push de `essai/complet-*`, 16 tranches ; budget `tests/budget.json`) ; `pages.yml` (push de `main` et `dev` : `quick`, `e2e` sur `dev`, `deploy` après `quick`). *(Lot 4g : « `e2e` sur `dev` » est périmé, job retiré au lot 4g.)*

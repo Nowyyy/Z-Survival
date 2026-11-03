@@ -5,11 +5,18 @@ const ZERO = /^0+$/;
 /**
  * Palier lancé par une exécution de .github/workflows/tests.yml.
  * @param {{evenement: string, ref: string, palierDemande?: string}} o
- *   evenement : github.event_name ; ref : github.ref (refs/heads/…) ; palierDemande : inputs.palier (workflow_dispatch)
+ *   evenement : github.event_name ; ref : github.ref (refs/heads/…) ; palierDemande : inputs.palier (workflow_dispatch) ;
+ *   cree : github.event.created (push qui crée la branche)
  * @returns {{palier: 'standard'|'publication'|'complet'|null, message: string}}
  */
-export function palierDeLExecution({ evenement, ref = '', palierDemande }) {
+export function palierDeLExecution({ evenement, ref = '', palierDemande, cree = false }) {
   const branche = ref.replace(/^refs\/heads\//, '');
+  // Lot 4f : une branche essai/** est lancée par l'événement create (sans filtre de chemins) ; le push qui la crée ne lance rien.
+  if (evenement === 'create') {
+    if (!ref.startsWith('refs/heads/essai/')) return { palier: null, message: `création de ${ref} : aucun palier` };
+    return palierDeLExecution({ evenement: 'push', ref });
+  }
+  if (evenement === 'push' && cree && branche.startsWith('essai/')) return { palier: null, message: `création de ${branche} par un push : lancée par l'événement create (aucun doublon)` };
   if (evenement === 'workflow_dispatch') {
     const p = ['standard', 'publication', 'complet'].includes(palierDemande) ? palierDemande : 'standard';
     return { palier: p, message: `lancement manuel : palier ${p}` };
@@ -36,7 +43,7 @@ export function basesCandidates({ evenement, ref = '', avant = '', baseRef = '',
   const branche = ref.replace(/^refs\/heads\//, '');
   const valide = (s) => /^[0-9a-f]{7,40}$/.test(s) && !ZERO.test(s);
   if (evenement === 'pull_request') return [...(baseRef ? [`origin/${baseRef}`] : []), ...(valide(baseSha) ? [baseSha] : []), 'origin/main'];
-  if (evenement === 'push' && branche.startsWith('essai/')) return ['origin/dev', 'origin/main'];
+  if ((evenement === 'push' || evenement === 'create') && branche.startsWith('essai/')) return ['origin/dev', 'origin/main'];
   if (evenement === 'push') return [...(valide(avant) ? [avant] : []), 'origin/main'];
   return ['origin/dev', 'origin/main'];
 }
