@@ -38,6 +38,7 @@ Autres : `npm run test:fumee` (13 tests, projet bureau, 28 s mesurées), `npm ru
 
 ## Budget de 10 minutes en CI
 `N = ceil(somme_cumulée × facteurDesequilibre ÷ (facteurParallelisme × testsParTrancheSecondes))` ; répartition gloutonne par durée de test (le plus lourd d'abord) ; durée d'une tranche = somme ÷ facteurParallelisme ; temps total = `installationSecondes` + tranche la plus longue. Deux projections toujours : facteur mesuré (1,99 = 161,6 min cumulées ÷ 81,2 min réelles de l'annexe de la partie A ; le cadrage estimait 1,68 à partir d'une durée réelle de 96 min) et 1,0 (prudente).
+- **Lot 4f (mesuré en CI, `scripts/tests/mesures-ci.json`)** : `installationSecondes` = 30 (10 à 35 s mesurés par tranche), `facteurParallelisme` = 1,86 (le plus bas des parallélismes réels mesurés : 1,86 à 1,95), `workersCI` = 2 (confirmé par `actualWorkers`). Valeurs d'avant :
 - `installationSecondes` = 90 : démarrage du runner et checkout (~20 s, non mesurable ici), `setup-node` avec cache npm (~10 s), `npm ci` (9,3 s mesurés), serveurs de test (< 1 s mesuré), démarrage de Playwright et téléversement du rapport (~10 s), arrondi avec une marge.
 - `budget.mjs` échoue si N > `tranchesMax` (16) avec l'hypothèse mesurée, si le temps projeté dépasse `completCibleSecondes` (600), si un test seul dépasse une tranche, ou si un lot ajoute plus de `ajoutMaxParLotSecondes` (90 s) de calcul cumulé au complet.
 - **Règle** : un lot n'ajoute pas plus de 90 s de calcul au palier complet ; s'il le dépasse, il retire ou regroupe d'abord. **Aucun nombre minimal de tests.**
