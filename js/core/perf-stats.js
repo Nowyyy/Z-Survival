@@ -28,17 +28,23 @@ export function longFrames(intervals, median = percentile(intervals, 50)) {
   return { over15, over2 };
 }
 
-// Résumé d'une série d'intervalles entre images : nombre, médiane, p95, p99, maximum, images longues.
+// Résumé d'une série d'intervalles entre images : nombre, médiane, p95, p99, maximum, images longues, images par seconde obtenues (lot 5b-F :
+// nombre d'images / durée couverte, ce que le joueur voit vraiment, distinct de la cadence de la page).
 export function frameSummary(intervals) {
   const v = list(intervals);
   const median = percentile(v, 50);
-  return { count: v.length, median, p95: percentile(v, 95), p99: percentile(v, 99), max: v.length ? Math.max(...v) : 0, ...longFrames(v, median) };
+  const sum = v.reduce((a, b) => a + b, 0);
+  return { count: v.length, median, p95: percentile(v, 95), p99: percentile(v, 99), max: v.length ? Math.max(...v) : 0, ...longFrames(v, median), fps: sum > 0 ? (1000 * v.length) / sum : 0 };
 }
 
-// Fréquence de l'écran estimée d'après la médiane des intervalles entre images, arrondie à 30, 60, 90 ou 120 Hz (null sans mesure).
+// Cadence de la page (images que le navigateur propose : écran, ou plafond du navigateur comme les 60 images/s de Safari), arrondie à 30, 60,
+// 90 ou 120 Hz (null sans mesure). Lot 5b-F : d'après le 10e centile des intervalles, pas la médiane : quand le jeu n'arrive pas à suivre, la
+// médiane mesure sa lenteur (« 30 Hz » à l'Élevé sur un iPhone qui propose 60 images/s) ; les images les plus rapides gardent la cadence proposée.
+// Une page qui ne tient jamais la cadence (toutes les images au double) reste lue à la moitié : le rapport le dit avec les images obtenues.
 export const REFRESH_RATES = [30, 60, 90, 120];
+export const REFRESH_PERCENTILE = 10;
 export function refreshRate(intervals) {
-  const m = percentile(intervals, 50);
+  const m = percentile(intervals, REFRESH_PERCENTILE);
   if (!(m > 0)) return null;
   const hz = 1000 / m;
   return REFRESH_RATES.reduce((best, r) => (Math.abs(r - hz) < Math.abs(best - hz) ? r : best), REFRESH_RATES[0]);
@@ -119,6 +125,7 @@ export function createHistogram(binMs = 0.25, maxMs = 250) {
   const counts = new Uint32Array(n + 1);
   let total = 0;
   let max = 0;
+  let sum = 0;
   const at = (q) => {
     const target = Math.max(1, Math.ceil(q * total));
     let seen = 0;
@@ -133,6 +140,7 @@ export function createHistogram(binMs = 0.25, maxMs = 250) {
       if (!finite(v) || v < 0) return;
       counts[Math.min(n, Math.floor(v / bin))] += 1;
       total += 1;
+      sum += v;
       if (v > max) max = v;
     },
     summary() {
@@ -145,11 +153,12 @@ export function createHistogram(binMs = 0.25, maxMs = 250) {
         if (low > 1.5 * median) over15 += counts[i];
         if (low > 2 * median) over2 += counts[i];
       }
-      return { count: total, median, p95: at(0.95), p99: at(0.99), max, over15, over2 };
+      return { count: total, median, p95: at(0.95), p99: at(0.99), max, over15, over2, fps: sum > 0 ? (1000 * total) / sum : 0 };
     },
     clear() {
       counts.fill(0);
       total = 0;
+      sum = 0;
       max = 0;
     },
   };
@@ -203,13 +212,13 @@ export function paramsLine(search) {
 }
 
 const line = (label, parts) => `${label} : ${parts.filter((p) => p !== null && p !== '').join(' · ')}`;
-const series = (s, t) => [`${s.count} ${t.frames}`, `${t.median} ${fr(s.median)} ms`, `p95 ${fr(s.p95)}`, `p99 ${fr(s.p99)}`, `max ${fr(s.max)}`, `>1,5× ${s.over15}`, `>2× ${s.over2}`];
+const series = (s, t) => [`${s.count} ${t.frames} (${fr(s.fps, 0)} ${t.fps})`, `${t.median} ${fr(s.median)} ms`, `p95 ${fr(s.p95)}`, `p99 ${fr(s.p99)}`, `max ${fr(s.max)}`, `>1,5× ${s.over15}`, `>2× ${s.over2}`];
 
 // Texte compact du rapport (à coller dans une conversation). data : sortie de l'état du profileur ; t : libellés (fr.json, clés game.perf.report.*).
 export function formatReport(data, t = {}) {
   const d = data !== null && typeof data === 'object' ? data : {};
   const L = (k, fallback) => (typeof t[k] === 'string' ? t[k] : fallback);
-  const tt = { frames: L('frames', 'images'), median: L('median', 'médiane') };
+  const tt = { frames: L('frames', 'images'), median: L('median', 'médiane'), fps: L('fps', 'i/s obtenues') };
   const win = d.window ?? frameSummary([]);
   const all = d.session ?? frameSummary([]);
   // Lot 5b-E : moyennes par étape (Safari arrondit son horloge haute résolution à la milliseconde : les médianes n'y valent que 0 ou 1).

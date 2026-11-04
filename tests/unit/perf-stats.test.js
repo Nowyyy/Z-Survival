@@ -28,7 +28,9 @@ describe('percentiles et images longues', () => {
   it('résumé : médiane, p95, p99, maximum ; les valeurs invalides sont ignorées', () => {
     const s = frameSummary([16.7, 16.7, 16.6, 33.4, NaN, -5, 'a']);
     expect(s).toMatchObject({ count: 4, median: 16.7, max: 33.4, over15: 1, over2: 0 });
-    expect(frameSummary(null)).toEqual({ count: 0, median: 0, p95: 0, p99: 0, max: 0, over15: 0, over2: 0 });
+    expect(frameSummary(null)).toEqual({ count: 0, median: 0, p95: 0, p99: 0, max: 0, over15: 0, over2: 0, fps: 0 });
+    expect(frameSummary(Array(60).fill(1000 / 60)).fps).toBeCloseTo(60, 6);
+    expect(frameSummary([10, 30]).fps).toBeCloseTo(50, 6); // 2 images en 40 ms
   });
   it('fréquence d\'écran arrondie à 30, 60, 90 ou 120 Hz ; sans mesure : null', () => {
     expect(refreshRate(Array(20).fill(16.67))).toBe(60);
@@ -38,6 +40,19 @@ describe('percentiles et images longues', () => {
     expect(refreshRate([12.5, 12.5])).toBe(90); // 80 Hz : 90 est le plus proche
     expect(refreshRate([])).toBeNull();
     for (const h of HOSTILE) expect(() => refreshRate(h)).not.toThrow();
+  });
+  it('lot 5b-F : jeu trop lent pour la cadence proposée : la cadence reste celle de la page, les images obtenues disent la lenteur', () => {
+    // Élevé sur l'iPhone 16 Pro Max (Safari, 60 images/s proposées) : une partie des images à 16,7 ms, les autres sautent une ou deux cadences.
+    const elevé = [...Array(30).fill(16.7), ...Array(50).fill(33.3), ...Array(20).fill(50)];
+    expect(percentile(elevé, 50)).toBeCloseTo(33.3, 6); // l'ancienne estimation (médiane) donnait 30 Hz
+    expect(refreshRate(elevé)).toBe(60);
+    expect(frameSummary(elevé).fps).toBeCloseTo(100000 / (30 * 16.7 + 50 * 33.3 + 20 * 50), 6);
+    // Téléphone à 120 Hz qui n'en tient que la moitié la plupart du temps : 120 Hz proposés, environ 65 images/s obtenues.
+    const android = [...Array(15).fill(8.33), ...Array(85).fill(16.67)];
+    expect(refreshRate(android)).toBe(120);
+    expect(Math.round(frameSummary(android).fps)).toBe(65);
+    // Jamais une image à la cadence (toutes au double) : la page est lue à la moitié, faute d'autre indice ; les images obtenues le montrent.
+    expect(refreshRate(Array(50).fill(33.3))).toBe(30);
   });
 });
 
@@ -56,6 +71,7 @@ describe('histogramme de session', () => {
     expect(s.over2).toBe(5);
     h.add(900); // au-delà du dernier seuil : maximum gardé
     expect(h.summary().max).toBe(900);
+    expect(h.summary().fps).toBeCloseTo((1000 * 101) / (95 * 16.7 + 5 * 40 + 900), 6);
     h.clear();
     expect(h.summary().count).toBe(0);
   });
@@ -147,6 +163,7 @@ describe('système, paramètres et rapport', () => {
     expect(lines[0]).toBe('Z-Survival — rapport de fluidité v1');
     expect(lines[1]).toBe('Système : Android 14 · Chrome 130 · cadence de la page 60 Hz · DPR 2,00 · canvas 1334×750');
     expect(lines[3]).toContain('médiane 16,7 ms');
+    expect(lines[3]).toMatch(/^5 s : 3 images \(45 i\/s obtenues\) · /);
     expect(lines[5]).toBe('Travail/image (moyenne, ms) : sim 1,3 · rendu 4,0');
     expect(lines[6]).toBe('Rendu : 62 appels · 38479 triangles · 14 programmes · 200 géométries · 18 textures');
     expect(lines[8]).toBe('Premier usage (max image dans les 600 ms) : tir 45 ms · feu —');

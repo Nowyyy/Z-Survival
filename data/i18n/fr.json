@@ -113,6 +113,7 @@
   "game.perf.report.window": "5 s",
   "game.perf.report.session": "Session",
   "game.perf.report.frames": "images",
+  "game.perf.report.fps": "i/s obtenues",
   "game.perf.report.median": "médiane",
   "game.perf.report.work": "Travail/image (moyenne, ms)",
   "game.perf.report.render": "Rendu",
