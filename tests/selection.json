@@ -789,10 +789,19 @@
       ]
     },
     {
+      "id": "graphismes",
+      "description": "Fluidité et préréglages graphiques (lot 5b) : outil de mesure ?perf=1 (profileur, panneau, rapport), plafond ?cap=, script de comparaison.",
+      "sources": ["js/core/perf-stats.js", "js/game/profiler.js", "js/game/perf-panel.js", "js/game/frame-cap.js", "scripts/perf/**"],
+      "dependances": [],
+      "vitest": ["tests/unit/perf-stats.test.js"],
+      "e2e": ["tests/e2e/perf.spec.js"],
+      "complet": []
+    },
+    {
       "id": "jeu",
       "description": "Assemblage du jeu : jeu.html, boucle et état (game.js), démarrage, accès de test.",
       "sources": ["js/fps.js", "jeu.html", "js/game/main.js", "js/game/game.js", "js/game/boot.js", "js/game/testhook.js"],
-      "dependances": ["carte", "combat", "economie", "etages", "interface", "noyau", "personnages", "rendu", "siege", "sons", "textes", "vagues"],
+      "dependances": ["carte", "combat", "economie", "etages", "graphismes", "interface", "noyau", "personnages", "rendu", "siege", "sons", "textes", "vagues"],
       "vitest": [
         "tests/unit/data-ambiance.test.js",
         "tests/unit/icone.test.js",

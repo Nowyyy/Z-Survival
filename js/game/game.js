@@ -126,6 +126,8 @@ export function createGame(ctx) {
   const rig = createCamera(render.camera, cfg.camera, layout, params.tilt, params.zoom);
   const kit = createKit({ textures, variants: ctx.variants, hit: palette.hit });
   const pv = persos?.attach({ kit, world, render, palette, variants: ctx.variants, seed: ctx.seed }) ?? null; // lot 3j : kit.v2 et sang
+  const P = ctx.profiler ?? null; // lot 5b : profileur de ?perf=1 (absent par défaut : les appels « P?.… » ne font rien)
+  P?.attach({ renderer, scene: world.scene });
   const effects = createEffects(world.effectsRoot, palette, { gunHeight: render.gunHeight, bulletRadius: cfg.weapon.bulletRadius });
   const hud = createHud(ctx.dict);
   const floorFade = createFloorFade();
@@ -1022,6 +1024,7 @@ export function createGame(ctx) {
     }
 
     pv?.sync(pf(), waveInfo(sim.waves).wave); // lot 3j : instances du sang et palier d'usure
+    P?.mark('poses');
     effects.update({
       // Lot 3j (demande du propriétaire) : pas de laser pendant la réparation (la visée continue : un zombie visé arrête la réparation).
       laser: laser && !sim.dead && !Object.values(sim.repair).some((r) => r.repairing) ? laser : null,
@@ -1032,6 +1035,7 @@ export function createGame(ctx) {
       flashSize: reduced ? 4 : 7,
       unitsPerPixel: size.unitsPerPixel,
     });
+    P?.mark('effets');
     hud.update(sim.player, sim.kills, waveInfo(sim.waves), { chutes: sim.down.chutes, floor: multi ? pf() : null, maxWave: zoneCfg && !sim.waves.endless ? zoneCfg.wavesPerWorld : null, money: { balance: bank.balance(), gain: bank.gain() }, time: sim.time, trial: trialMode });
     floorFade.set(sim.trView.veil);
     hud.updateDown(sim.down, sim.dead, cfg.down); // lot 3l : E2-10 dans la colonne centrale du HUD (js/game/hud.js)
@@ -1041,6 +1045,7 @@ export function createGame(ctx) {
     updateNextZone();
     world.debris?.sync(sim.debris.items, reduced);
     splashView.apply(sim.splashView);
+    P?.mark('hud');
   }
 
   // La caméra suit le joueur (js/core/camera.js), la lumière et sa carte d'ombres suivent la caméra.
@@ -1070,18 +1075,24 @@ export function createGame(ctx) {
   let frameId = 0;
   function frame(now) {
     frameId = requestAnimationFrame(frame);
+    if (ctx.gate && !ctx.gate(now)) return; // lot 5b : ?cap=N (expérience, jamais par défaut) : image sautée, le temps écoulé s'accumule
     const dt = last === null ? 0 : clampDt((now - last) / 1000);
     last = now;
     ctx.vhs?.update(now / 1000); // horloge d'effet : secondes réelles, elle continue pendant la pause
     const paused = ctx.ui.isPaused();
+    P?.begin(now, paused);
     // En pause rien ne bouge : une dernière image suffit (ou après un redimensionnement), puis on n'affiche plus rien.
     if (paused && !stale) return;
     stale = !paused;
     if (!paused && !sim.dead && !sim.worldOver) step(dt);
+    P?.mark('sim');
     draw(paused ? 0 : dt);
     followCamera(paused ? 0 : dt);
+    P?.mark('monde');
     renderer.render(world.scene, rig.camera);
+    P?.mark('rendu');
     lastInfo = { calls: renderer.info.render.calls, triangles: renderer.info.render.triangles };
+    P?.end(sim);
   }
 
   // Test : image à jour tout de suite (positions, caméra), recopiée dans un canvas 2D pour en lire les pixels.
@@ -1420,6 +1431,7 @@ export function createGame(ctx) {
         ...(pv ? { persos: pv.state(lastInfo) } : {}), // lot 3j
         splash: splashView.readout(),
         vhs: ctx.vhs.readout(),
+        perf: ctx.perfState?.() ?? null, // lot 5b : mesures de ?perf=1 (null sans le paramètre)
       };
     },
   };

@@ -53,6 +53,8 @@ function floorParam(value) {
 const query = new URLSearchParams(location.search);
 const testMode = query.get('test') === '1';
 const fpsMode = query.get('fps') === '1';
+// Lot 5b : ?perf=1 (outil de mesure, panneau et profileur) et ?cap=N (expérience de plafond) : modules importés seulement avec le paramètre.
+const perfMode = query.get('perf') === '1';
 const seedParam = Number.parseInt(query.get('seed') ?? '', 10);
 
 // Carte (lot 3b) : ?map=salle charge l'ancienne salle (data/game/world.json et decor.json), sinon la carte par défaut (data/game/maps/<id>/) ; ?empty=1
@@ -197,6 +199,9 @@ const ctx = {
   audioMaterials: materialsCfg,
 };
 
+if (perfMode) ctx.profiler = (await import('./profiler.js')).createProfiler({ search: location.search, ua: navigator.userAgent });
+if (query.has('cap')) ctx.gate = (await import('./frame-cap.js')).gateFromParam(query.get('cap'));
+
 let game = null;
 ctx.ui = createUi(dict, {
   onRestart: () => game?.restart(),
@@ -265,6 +270,10 @@ if (game === null) {
       const windowsLine = `${fmt(dict[TEXTURE_TEXTS.fpsWindows], { ms: p.windowsMs.toFixed(1) })}\n${fmt(dict[TEXTURE_TEXTS.fpsEtage], { ms: (p.floorsMs ?? 0).toFixed(1) })}`;
       return `${textures}\n${windowsLine}\n${fmt(dict[TEXTURE_TEXTS.fpsSons], { essential: Math.round(a.essentialMs), background: Math.round(a.backgroundMs), voices: a.zombieVoices })}\n${fmt(dict[TEXTURE_TEXTS.fpsStats], { levels: stats.levels, angle: stats.angle })}`;
     }));
+  }
+  if (perfMode) {
+    ctx.perfState = () => ctx.profiler.state({ preset: ctx.graphicsLabel?.() ?? null, cap: ctx.gate?.state() ?? null });
+    ctx.perfPanel = (await import('./perf-panel.js')).createPerfPanel({ read: ctx.perfState, reset: () => ctx.profiler.reset(), dict });
   }
   if (testMode) installTestHook(ctx, game);
   // Lot 3l (demande du propriétaire) : ?fin=monde montre tout de suite l'écran de victoire « Monde terminé » : la dernière manche du monde est lancée puis
