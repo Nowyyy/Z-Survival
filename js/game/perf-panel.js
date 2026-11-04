@@ -18,6 +18,7 @@ export const REPORT_TEXTS = {
   window: 'game.perf.report.window',
   session: 'game.perf.report.session',
   frames: 'game.perf.report.frames',
+  fps: 'game.perf.report.fps',
   median: 'game.perf.report.median',
   work: 'game.perf.report.work',
   render: 'game.perf.report.render',
@@ -100,7 +101,7 @@ export function createPerfPanel({ read, reset, dict, root = document.body }) {
     const named = { ...s, hitches: (s.hitches ?? []).map((h) => ({ ...h, name: eventLabel(h.name) })) };
     report = formatReport(named, labels);
     const w = s.window ?? {};
-    toggle.textContent = `${t('short')} ${fr(w.median)} ms · p95 ${fr(w.p95)}${s.refresh ? ` · ${s.refresh} Hz` : ''}`;
+    toggle.textContent = `${t('short')} ${fr(w.fps, 0)} i/s${s.refresh ? ` / ${s.refresh} Hz` : ''} · p95 ${fr(w.p95)} ms`; // lot 5b-F : images obtenues / cadence de la page
     // Texte sélectionné par le repli de la copie : il n'est pas réécrit tant que la sélection y reste.
     const sel = getSelection();
     const selected = sel && !sel.isCollapsed && sel.rangeCount > 0 && text.contains(sel.getRangeAt(0).commonAncestorContainer);

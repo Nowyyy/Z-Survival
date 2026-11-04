@@ -1,5 +1,5 @@
 // ?cap=N (lot 5b) : EXPÉRIENCE de plafond d'images par seconde, jamais par défaut ni mémorisée ; importé seulement avec ce paramètre. La fréquence de
-// l'écran est d'abord estimée sur 30 images (médiane des intervalles de requestAnimationFrame) ; ensuite une image sur `every` est dessinée, every
+// l'écran est d'abord estimée sur 30 images (cadence de la page : 10e centile des intervalles de requestAnimationFrame, voir perf-stats.js) ; ensuite une image sur `every` est dessinée, every
 // étant l'entier le plus proche de fréquence / plafond. Avertissement : si le plafond ne divise pas la fréquence (60 sur un écran de 90 Hz), les
 // trames deviennent irrégulières (aligned: false, affiché dans le panneau de ?perf=1). La simulation reçoit le vrai temps écoulé : rien ne change au jeu.
 import { capPlan, parseCap, refreshRate } from '../core/perf-stats.js';
