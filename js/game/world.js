@@ -715,6 +715,8 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
   // Lot 3g (retour du propriétaire) : feux avec fumée sur des piles de caisses (render.feux : feux.json ; absent avec ?detail=0), posés au centre et sur le dessus
   // de la pièce (boîtes de mobilier.world.json). Trois appels de dessin par feu, dans le groupe de son étage.
   const fires = [];
+  const viewFrustum = new THREE.Frustum(); // lot 5b-C : champ de la caméra (feux hors champ)
+  const viewMatrix = new THREE.Matrix4();
   for (const fe of Array.isArray(render.feux) ? render.feux : []) {
     const boxes = render.mobilier?.[fe?.piece]?.boxes;
     if (!floors.includes(fe?.floor) || !Array.isArray(boxes) || boxes.length === 0) continue;
@@ -1044,8 +1046,13 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
     // n'est dessinée qu'à l'étage. Aucune reconstruction, aucun dispose.
     // Lot 3g : position du joueur pour le mur percé (à chaque image, avec la caméra) ; état pour les tests.
     // À chaque image (temps de jeu dt) : feux, et mur percé (position du joueur, caméra).
-    frame(dt, x, y, camera) {
-      for (const fire of fires) if (fire.group.visible) fire.update(dt); // lot 5b : un feu caché par le préréglage n'est pas mis à jour
+    frame(dt, x, y, camera, view = null) {
+      // Lot 5b : un feu caché par le préréglage n'est pas mis à jour ; 5b-C : hors du champ, ses tampons de particules ne sont pas réécrits.
+      if (view) {
+        view.updateMatrixWorld();
+        viewFrustum.setFromProjectionMatrix(viewMatrix.multiplyMatrices(view.projectionMatrix, view.matrixWorldInverse));
+      }
+      for (const fire of fires) if (fire.group.visible) fire.update(dt, view ? fire.inView(viewFrustum) : true);
       const still = render.reducedMotion === true;
       for (const m of mists) if (!still && m.visible) m.material.uniforms.uTime.value += Math.min(0.1, Math.max(0, Number(dt) || 0));
       seeThrough.update(x, y, camera, occluders, (b) => (b.floor === 'etage' ? lift : 0) - elevationNow);

@@ -142,7 +142,7 @@ async function run(base, sc, preset) {
     calls: loop.render.calls,
     triangles: loop.render.triangles,
     pixels: loop.pixels,
-    stages: loop.perf?.stages ?? null,
+    stages: loop.perf?.stagesMean ?? loop.perf?.stages ?? null, // moyenne par étape (?perf=1)
     graphics: loop.graphics,
     enemies: loop.enemies,
     topSites: [...sites.entries()].sort((a, b) => b[1] - a[1]).slice(0, 10).map(([k, v]) => [k, Math.round(v / 1024 / FRAMES * 10) / 10]),

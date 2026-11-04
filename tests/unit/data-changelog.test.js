@@ -29,15 +29,16 @@ describe('data/changelog.json', () => {
     for (const f of readdirSync('Docs/lots').filter((n) => n.endsWith('.md'))) expect(lots.map((e) => e.name), f).toContain(f.replace('.md', ''));
   });
 
-  // Lot 5a : lot-5a ajouté en dernier ; avant (lot 4g) : lot-4g en dernier.
-  it('le fichier est dans l\'ordre chronologique : lot-0 en premier, lot-5a en dernier (lot 5a : après lot-4g, lot-4f, lot-4e, lot-4c et lot-4b)', () => {
+  // Lot 5b : lot-5b ajouté en dernier ; avant (lot 5a) : lot-5a en dernier.
+  it('le fichier est dans l\'ordre chronologique : lot-0 en premier, lot-5b en dernier (lot 5b : après lot-5a, lot-4g, lot-4f, lot-4e, lot-4c et lot-4b)', () => {
     expect(lots[0].name).toBe('lot-0');
-    expect(lots.at(-1).name).toBe('lot-5a');
-    expect(lots.at(-2).name).toBe('lot-4g');
-    expect(lots.at(-3).name).toBe('lot-4f');
-    expect(lots.at(-4).name).toBe('lot-4e');
-    expect(lots.at(-5).name).toBe('lot-4c');
-    expect(lots.at(-6).name).toBe('lot-4b');
+    expect(lots.at(-1).name).toBe('lot-5b');
+    expect(lots.at(-2).name).toBe('lot-5a');
+    expect(lots.at(-3).name).toBe('lot-4g');
+    expect(lots.at(-4).name).toBe('lot-4f');
+    expect(lots.at(-5).name).toBe('lot-4e');
+    expect(lots.at(-6).name).toBe('lot-4c');
+    expect(lots.at(-7).name).toBe('lot-4b');
   });
 
   // Lot 4b (demande du propriétaire) : versions majeures montrées par /dev, dans cet ordre ; chacune désigne un lot du journal.

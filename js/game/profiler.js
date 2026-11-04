@@ -126,7 +126,12 @@ export function createProfiler({ now = () => performance.now(), search = '', ua 
     state(extra = {}) {
       const recent = log.since(lastNow, WINDOW_MS);
       const stages = {};
-      for (const k of [...STAGES, 'total']) stages[k] = percentile(Array.from(stageLog[k].subarray(0, stageSize)), 50);
+      const stagesMean = {};
+      for (const k of [...STAGES, 'total']) {
+        const v = stageLog[k].subarray(0, stageSize);
+        stages[k] = percentile(Array.from(v), 50);
+        stagesMean[k] = stageSize ? v.reduce((x, y) => x + y, 0) / stageSize : 0; // moyenne (la médiane est quantifiée à 0,1 ms)
+      }
       const mem = globalThis.performance?.memory?.usedJSHeapSize;
       const hitches = firstUseHitches([...firsts.entries()].map(([name, at]) => ({ name, at })), frames, HITCH_MS);
       return {
@@ -134,6 +139,7 @@ export function createProfiler({ now = () => performance.now(), search = '', ua 
         session: session.summary(),
         refresh: refreshRate(recent.interval),
         stages,
+        stagesMean,
         renderer: { ...info },
         longTasks: { ...longTasks },
         hitches,

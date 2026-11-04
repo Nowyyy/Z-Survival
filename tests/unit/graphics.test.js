@@ -242,3 +242,40 @@ describe('lisibilité à chaque préréglage : personnages A (Faible, Moyen) sur
     }
   });
 });
+
+describe('feux (lot 5b) : réglages des préréglages et feux hors champ (5b-C)', () => {
+  const palette = { fire: '#000001', fireEdge: '#000002', smoke: '#000003' };
+  const spec = { id: 'feu-test', x: 100, z: 100, y: 37, w: 120, d: 90, spots: [{ x: 80, z: 100, y: 30, w: 40, d: 40 }, { x: 130, z: 100, y: 40, w: 40, d: 40 }] };
+  const buffers = (f) => f.group.children.slice(0, 2).map((c) => ['position', 'aSize', 'aColor'].map((n) => [...c.geometry.attributes[n].array]));
+  it('hors du champ, les particules avancent sans réécrire les tampons ; de retour dans le champ, le feu est identique à celui toujours visible', async () => {
+    const { createFire } = await import('../../js/game/fire.js');
+    const seen = createFire(spec, palette);
+    const hidden = createFire(spec, palette);
+    for (let i = 0; i < 40; i += 1) seen.update(0.05, true);
+    const frozen = buffers(hidden);
+    for (let i = 0; i < 39; i += 1) hidden.update(0.05, false);
+    expect(buffers(hidden)).toEqual(frozen); // rien d'écrit hors du champ
+    hidden.update(0.05, true);
+    expect(buffers(hidden)).toEqual(buffers(seen));
+    expect(hidden.stats().time).toBeCloseTo(seen.stats().time, 9);
+    hidden.update(0, false);
+    hidden.update(0, true); // pause : rien ne bouge, rien à réécrire
+    expect(buffers(hidden)).toEqual(buffers(seen));
+  });
+  it('setOptions : valeurs par défaut sans effet ; part des particules, foyers, lueur, feu caché', async () => {
+    const { createFire } = await import('../../js/game/fire.js');
+    const a = createFire(spec, palette);
+    const b = createFire(spec, palette);
+    b.setOptions({});
+    for (let i = 0; i < 20; i += 1) {
+      a.update(0.05);
+      b.update(0.05);
+    }
+    expect(buffers(b)).toEqual(buffers(a));
+    expect(b.stats().drawn).toEqual({ flames: 64, smoke: 64, spots: 2, glow: true, visible: true });
+    b.setOptions({ particles: 0.5, spots: 1, glow: false, visible: false });
+    expect(b.stats().drawn).toEqual({ flames: 32, smoke: 32, spots: 1, glow: false, visible: false });
+    b.setOptions({ particles: 'x', spots: -2 });
+    expect(b.stats().drawn).toMatchObject({ flames: 64, smoke: 64, spots: 2 });
+  });
+});

@@ -1054,7 +1054,7 @@ export function createGame(ctx) {
   // La caméra suit le joueur (js/core/camera.js), la lumière et sa carte d'ombres suivent la caméra.
   function followCamera(dt) {
     rig.follow(dt, sim.player.x, sim.player.y);
-    world.frame?.(dt, sim.player.x, sim.player.y, rig.camera.position); // lot 3g (retours du propriétaire) : feux, mur percé autour du joueur caché
+    world.frame?.(dt, sim.player.x, sim.player.y, rig.camera.position, rig.camera); // lot 5b-C : caméra (feux hors champ) ; lot 3g (retours du propriétaire) : feux, mur percé autour du joueur caché
     // Carte d'ombres : demi-diagonale de la vue au sol, avec de la marge pour la perspective.
     world.followSun(rig.view.target.x, rig.view.target.y, Math.hypot(rig.view.ground.width / 2, (rig.view.ground.north + rig.view.ground.south) / 2) * 1.3);
   }
@@ -1189,6 +1189,7 @@ export function createGame(ctx) {
   applySize();
   draw(0);
   followCamera(0);
+  renderer.compile(world.scene, rig.camera); // lot 5b-C : programmes de toutes les matières (autre étage, feux hors champ, sang) compilés avant la première image
   if (!document.hidden) start();
 
   return {
