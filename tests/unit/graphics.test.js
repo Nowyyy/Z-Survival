@@ -3,7 +3,7 @@
 // valeurs inconnues, JSON invalide jamais écrasé, quota, stockage indisponible, mémoire sous ?test=1). Appareils fictifs, séries de temps simulées.
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { AUTO_DEFAULTS, autoDecision, bloodWithCorpses, CHOICES, deviceClass, ELEVE, explicitParams, medianOf, parseGfxParam, parseGraphics, PRESET_IDS, presetSearch, resolvePreset, settingsFor } from '../../js/core/graphics.js';
+import { AUTO_DEFAULTS, autoDecision, irregularShare, bloodWithCorpses, CHOICES, deviceClass, ELEVE, explicitParams, medianOf, parseGfxParam, parseGraphics, PRESET_IDS, presetSearch, resolvePreset, settingsFor } from '../../js/core/graphics.js';
 import { createDeviceSettings, DEVICE_KEY, parseDevice } from '../../js/save/device-settings.js';
 import { createFakeStorage, quotaError, securityError } from './helpers/fake-storage.js';
 import { buildSpec, createTextureData, meanColor } from '../../js/core/texgen.js';
@@ -57,7 +57,7 @@ describe('graphics.json', () => {
     expect(f.load).toEqual({ personnages: 'A', anticrenelage: false, texturesFines: false, decor: 'reduit' });
     expect(m.live).toMatchObject({ dprMax: 1.5, ombres: true, ombreTaille: 512, vhs: 'statique', brouillard: 'reduit', sang: 'reduit', cadavres: 1, feux: { voitureFoyers: 2, fumeeHelico: 0.5, particules: 1, lueur: true } });
     expect(m.load).toEqual({ personnages: 'A', anticrenelage: false, texturesFines: true, decor: 'complet' });
-    expect(RAW.auto).toEqual({ initial: { grossier: 'moyen', autre: 'eleve' }, seuilMs: 22, fenetreSecondes: 10, baisse: 'entre-manches', remonte: false });
+    expect(RAW.auto).toEqual({ initial: { grossier: 'moyen', autre: 'eleve' }, seuilMs: 22, fenetreSecondes: 10, irregulier: { part: 0.1, facteur: 1.5 }, baisse: 'entre-manches', remonte: false });
   });
   it('entrées hostiles : aucune exception, valeurs de l\'Élevé et Auto par défaut', () => {
     for (const h of HOSTILE) {
@@ -122,8 +122,8 @@ describe('priorités : ?gfx= > choix mémorisé > auto', () => {
 describe('Auto : séries de temps simulées', () => {
   const between = (ms, seconds = 12) => ({ medianMs: ms, activeSeconds: seconds, betweenWaves: true });
   it('descend d\'un cran au-delà de 22 ms, entre deux manches seulement, jamais sous Faible, jamais de remontée', () => {
-    expect(autoDecision(between(30), 'eleve', CFG.auto)).toEqual({ preset: 'moyen', changed: true, reason: 'baisse' });
-    expect(autoDecision(between(30), 'moyen', CFG.auto)).toEqual({ preset: 'faible', changed: true, reason: 'baisse' });
+    expect(autoDecision(between(30), 'eleve', CFG.auto)).toEqual({ preset: 'moyen', changed: true, reason: 'baisse', cause: 'lent' });
+    expect(autoDecision(between(30), 'moyen', CFG.auto)).toEqual({ preset: 'faible', changed: true, reason: 'baisse', cause: 'lent' });
     expect(autoDecision(between(80), 'faible', CFG.auto)).toEqual({ preset: 'faible', changed: false, reason: 'plancher' });
     expect(autoDecision(between(8), 'faible', CFG.auto)).toEqual({ preset: 'faible', changed: false, reason: 'fluide' });
     expect(autoDecision(between(22), 'eleve', CFG.auto).changed).toBe(false);
@@ -277,5 +277,32 @@ describe('feux (lot 5b) : réglages des préréglages et feux hors champ (5b-C)'
     expect(b.stats().drawn).toEqual({ flames: 32, smoke: 32, spots: 1, glow: false, visible: false });
     b.setOptions({ particles: 'x', spots: -2 });
     expect(b.stats().drawn).toMatchObject({ flames: 64, smoke: 64, spots: 2 });
+  });
+});
+
+describe('Auto, lot 5b-G : régularité des images (une médiane basse peut cacher des à-coups)', () => {
+  const between = (values) => ({ medianMs: medianOf(values), longShare: irregularShare(values, CFG.auto.irregulier.facteur), activeSeconds: 12, betweenWaves: true });
+  it('Pixel 7 à l\'Élevé (90 Hz) : médiane 11,1 ms mais un tiers d\'images longues : baisse ; à Moyen (0,5 %) : rien', () => {
+    const eleve = [...Array(66).fill(11.1), ...Array(25).fill(22.2), ...Array(9).fill(33.3)];
+    expect(medianOf(eleve)).toBeCloseTo(11.1, 6);
+    expect(irregularShare(eleve)).toBeCloseTo(0.34, 6);
+    expect(autoDecision(between(eleve), 'eleve', CFG.auto)).toEqual({ preset: 'moyen', changed: true, reason: 'baisse', cause: 'irregulier' });
+    const moyen = [...Array(995).fill(11.1), ...Array(5).fill(22.2)];
+    expect(autoDecision(between(moyen), 'moyen', CFG.auto)).toMatchObject({ changed: false, reason: 'fluide' });
+  });
+  it('iPhone à l\'Élevé (60 Hz, médiane 21 ms) : baisse ; lent et irrégulier : la lenteur est citée en premier', () => {
+    const eleve = [...Array(40).fill(16.7), ...Array(45).fill(25), ...Array(15).fill(33.4)];
+    expect(medianOf(eleve)).toBe(25);
+    expect(irregularShare(eleve)).toBeCloseTo(0.15, 6); // 25 ms reste sous 1,5 × 16,7 ms
+    expect(autoDecision(between(eleve), 'eleve', CFG.auto)).toMatchObject({ preset: 'moyen', changed: true, cause: 'lent' });
+    expect(autoDecision(between(Array(100).fill(40)), 'moyen', CFG.auto)).toMatchObject({ preset: 'faible', cause: 'lent' }); // lent mais régulier
+  });
+  it('part irrégulière : 10 % au plus permis, seuil et facteur lus dans graphics.json, entrées hostiles sans exception', () => {
+    const ten = [...Array(90).fill(16.7), ...Array(10).fill(40)];
+    expect(irregularShare(ten)).toBeCloseTo(0.1, 6);
+    expect(autoDecision(between(ten), 'eleve', CFG.auto).changed).toBe(false); // exactement 10 % : pas au-delà
+    expect(irregularShare([])).toBe(0);
+    for (const h of [null, 'x', [NaN, -1, 'a'], {}]) expect(() => irregularShare(h, h)).not.toThrow();
+    expect(parseGraphics({ auto: { irregulier: { part: 7, facteur: 'x' } } }).auto.irregulier).toEqual({ part: 0.1, facteur: 1.5 });
   });
 });

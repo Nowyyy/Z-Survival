@@ -167,7 +167,9 @@ export function createHistogram(binMs = 0.25, maxMs = 250) {
 // Système résumé (sans identifier l'appareil) : famille, version du système et navigateur d'après le user-agent.
 // Lot 5b-E : depuis iOS 26, Safari fige la version d'iOS du user-agent (18.x) ; sa propre version (Version/27.0) suit celle d'iOS : elle donne
 // alors le système (« iOS 27 »), la valeur figée restant dans uaOs. Les autres navigateurs d'iOS n'ont pas cette indication : version du user-agent.
-export function summarizeUA(ua) {
+// Lot 5b-G : Chrome sur Android annonce toujours « Android 10; K » (version et modèle masqués) ; hints = navigator.userAgentData.getHighEntropyValues
+// (['platformVersion']) quand le navigateur le permet : { platform, platformVersion } donne la vraie version (jamais le modèle, jamais demandé).
+export function summarizeUA(ua, hints = null) {
   const s = typeof ua === 'string' ? ua.slice(0, 400) : '';
   const v = (re) => (s.match(re)?.[1] ?? '').replace(/_/g, '.');
   let os = 'autre';
@@ -178,7 +180,20 @@ export function summarizeUA(ua) {
     os = safari >= 26 && Number(String(uaOs).split('.')[0]) < safari ? `iOS ${safari}` : `iOS ${uaOs ?? ''}`.trim();
     if (os === `iOS ${uaOs}`) uaOs = null; // version lue telle quelle : rien de figé à signaler
   }
-  else if (/Android/.test(s)) os = `Android ${v(/Android (\d+(?:\.\d+)?)/)}`.trim();
+  else if (/Android/.test(s)) {
+    const said = v(/Android (\d+(?:\.\d+)?)/);
+    const h = hints !== null && typeof hints === 'object' ? hints : {};
+    const real = h.platform === 'Android' && typeof h.platformVersion === 'string' ? h.platformVersion.match(/^(\d{1,3})(?:\.(\d{1,3}))?/) : null;
+    const masked = /Android 10; K\)/.test(s); // user-agent réduit de Chrome
+    if (real) {
+      const version = real[2] && real[2] !== '0' ? `${real[1]}.${real[2]}` : real[1];
+      os = `Android ${version}`;
+      if (said && said !== version) uaOs = said;
+    } else if (masked) {
+      os = 'Android';
+      uaOs = said;
+    } else os = `Android ${said}`.trim();
+  }
   else if (/Mac OS X/.test(s)) os = 'macOS';
   else if (/Windows/.test(s)) os = 'Windows';
   else if (/Linux|X11/.test(s)) os = 'Linux';
@@ -234,7 +249,7 @@ export function formatReport(data, t = {}) {
     line(L('work', 'Travail/image (moyenne, ms)'), Object.entries(stages).map(([k, v]) => `${k} ${fr(v)}`)),
     line(L('render', 'Rendu'), [`${info.calls ?? 0} ${L('calls', 'appels')}`, `${info.triangles ?? 0} ${L('triangles', 'triangles')}`, `${info.programs ?? 0} ${L('programs', 'programmes')}`, `${info.geometries ?? 0} ${L('geometries', 'géométries')}`, `${info.textures ?? 0} ${L('textures', 'textures')}`]),
     line(L('longtasks', 'Tâches longues'), [d.longTasks?.supported === false ? L('unsupported', 'non prises en charge') : `${d.longTasks?.count ?? 0} (max ${fr(d.longTasks?.max ?? 0, 0)} ms, ${fr(d.longTasks?.total ?? 0, 0)} ms)`]),
-    line(L('hitches', 'Premier usage (max image dans les 600 ms)'), (Array.isArray(d.hitches) && d.hitches.length ? d.hitches : []).map((h) => `${h.name} ${h.max === null ? '—' : `${fr(h.max, 0)} ms`}`).concat(Array.isArray(d.hitches) && d.hitches.length ? [] : [L('none', 'aucun')])),
+    line(L('hitches', 'Premier usage (max image dans les 600 ms)'), (Array.isArray(d.hitches) && d.hitches.length ? d.hitches : []).map((h) => `${h.name} ${h.max === null ? '—' : `${fr(h.max, 0)} ms`}${finite(h.since) ? ` ${L('at', 'à')} ${fr(h.since / 1000)} s` : ''}`).concat(Array.isArray(d.hitches) && d.hitches.length ? [] : [L('none', 'aucun')])),
     line(L('memory', 'Mémoire JS'), [finite(d.heapMB) ? `${fr(d.heapMB)} Mo` : L('unavailable', 'non disponible')]),
     line(L('cap', 'Plafond'), [d.cap?.value ? `${d.cap.value} (${L('every', '1 image sur')} ${d.cap.every}${d.cap.aligned === false ? ` ; ${L('misaligned', 'non aligné sur l\'écran : trames irrégulières')}` : ''})` : L('nocap', 'aucun')]),
   ];

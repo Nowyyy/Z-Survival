@@ -2,7 +2,7 @@
 // chargement (main.js, persos-loader.js, game.js) ; les réglages « live » (rapport de pixels, ombres, effet VHS, brume, feux et fumées, sang et cadavres)
 // le sont ici : au démarrage (Élevé : aucun changement) et, en Auto, quand il faut baisser d'un cran entre deux manches (temps d'image médian sur les
 // 10 dernières secondes de jeu actif au-delà de 22 ms). Un paramètre explicite de l'adresse n'est jamais remplacé. Aucune logique du jeu n'est touchée.
-import { autoDecision, medianOf, settingsFor } from '../core/graphics.js';
+import { autoDecision, irregularShare, medianOf, settingsFor } from '../core/graphics.js';
 
 const SAMPLES = 1200; // intervalles gardés (jeu actif)
 
@@ -85,9 +85,9 @@ export function createGraphicsController(boot, { vhs = null, announce = () => {}
         values.push(dt[k]);
         covered += dt[k];
       }
-      const stats = { medianMs: medianOf(values), activeSeconds: Math.min(activeMs, covered) / 1000, betweenWaves: true };
+      const stats = { medianMs: medianOf(values), longShare: irregularShare(values, cfg.auto.irregulier.facteur), activeSeconds: Math.min(activeMs, covered) / 1000, betweenWaves: true };
       const d = autoDecision(stats, current, cfg.auto);
-      lastDecision = { ...d, medianMs: stats.medianMs, activeSeconds: stats.activeSeconds, at: t };
+      lastDecision = { ...d, medianMs: stats.medianMs, longShare: stats.longShare, activeSeconds: stats.activeSeconds, at: t };
       if (d.changed) {
         current = d.preset;
         settings = settingsFor(cfg, current, explicit);

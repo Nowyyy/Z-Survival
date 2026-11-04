@@ -1,5 +1,6 @@
 {
   "_provisoire": "Lot 5b : préréglages graphiques PROVISOIRES, à régler avec les rapports de ?perf=1 des appareils du propriétaire (iPhone, Android). live : modifiable à chaud (Auto les baisse entre deux manches) ; load : appliqué au chargement (changer recharge la page). eleve = rendu actuel du jeu, épaves comprises (aucun changement). Un paramètre explicite de l'adresse (?perso, ?sang, ?usure, ?detail, ?vhs, ?shadows, ?dpr) l'emporte sur le préréglage.",
+  "_auto": "Auto (lot 5b-G) : baisse d'un cran entre deux manches si la médiane des images dépasse seuilMs OU si plus de irregulier.part des images dépassent irregulier.facteur × la cadence (10e centile des intervalles) sur les fenetreSecondes dernières secondes de jeu actif. Valeurs provisoires.",
   "_champs": "dprMax : plafond du rapport de pixels ; ombres, ombreTaille : carte d'ombres (côté en pixels) ; vhs : off, statique (une image, sans grain animé), anime ; brouillard : simple (scene.fog seul), reduit (mur de brume sans nappes basses), complet ; feux : voitureFoyers (foyers de la voiture en flammes), fumeeHelico (part des particules, 0 = coupée), particules (part des particules des autres feux), lueur (lueur au sol des autres feux) ; sang : reduit ou 1 ; cadavres : simultanés. personnages : A ou choix (table des choix : « riche ») ; anticrenelage ; texturesFines (option fine de textures.json) ; les textures gardent leur taille (512 au plus, comme aujourd'hui, pour les trois) ; decor : reduit (sans le décor léger intérieur) ou complet.",
   "schema": 1,
   "presets": {
@@ -16,5 +17,5 @@
       "load": { "personnages": "choix", "anticrenelage": true, "texturesFines": true, "decor": "complet" }
     }
   },
-  "auto": { "initial": { "grossier": "moyen", "autre": "eleve" }, "seuilMs": 22, "fenetreSecondes": 10, "baisse": "entre-manches", "remonte": false }
+  "auto": { "initial": { "grossier": "moyen", "autre": "eleve" }, "seuilMs": 22, "fenetreSecondes": 10, "irregulier": { "part": 0.1, "facteur": 1.5 }, "baisse": "entre-manches", "remonte": false }
 }

@@ -1190,6 +1190,8 @@ export function createGame(ctx) {
   draw(0);
   followCamera(0);
   renderer.compile(world.scene, rig.camera); // lot 5b-C : programmes de toutes les matières (autre étage, feux hors champ, sang) compilés avant la première image
+  renderer.render(world.scene, rig.camera); // lot 5b-G : premier rendu (textures, géométries, ombres) derrière l'écran de préparation
+  renderer.getContext().finish?.(); // lot 5b-G : attend la fin de ce rendu, pour que la première image du jeu n'en paie rien
   if (!document.hidden) start();
 
   return {

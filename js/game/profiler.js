@@ -25,6 +25,16 @@ export function createProfiler({ now = () => performance.now(), search = '', ua 
   let renderer = null;
   let info = { calls: 0, triangles: 0, programs: 0, geometries: 0, textures: 0 };
   const firsts = new Map(); // nom -> horodatage (ms, même horloge que requestAnimationFrame)
+  let startT = null; // lot 5b-G : première image de la partie (heure des premiers usages)
+  // Lot 5b-G : vraie version d'Android (Chrome la masque dans le user-agent) : seulement platformVersion, jamais le modèle.
+  let hints = null;
+  try {
+    globalThis.navigator?.userAgentData?.getHighEntropyValues?.(['platformVersion'])?.then((h) => {
+      hints = { platform: h?.platform, platformVersion: h?.platformVersion };
+    }).catch(() => {});
+  } catch {
+    hints = null;
+  }
   const frames = []; // { at, duration } des images qui suivent un premier usage (600 ms), pour les accrocs
   let lastNow = 0;
   const longTasks = { supported: false, count: 0, max: 0, total: 0 };
@@ -44,6 +54,7 @@ export function createProfiler({ now = () => performance.now(), search = '', ua 
   }
 
   const event = (name, at = lastNow) => {
+    if (startT === null) return; // lot 5b-G : rien avant la première image (le rendu de préparation, derrière l'écran de chargement, dessine déjà les feux)
     if (!firsts.has(name)) firsts.set(name, at);
   };
   const recentFirst = (t, d) => {
@@ -56,6 +67,7 @@ export function createProfiler({ now = () => performance.now(), search = '', ua 
     begin(t, paused = false) {
       if (typeof t !== 'number' || !Number.isFinite(t)) return;
       interval = lastT === null ? 0 : t - lastT;
+      startT ??= t;
       lastT = t;
       lastNow = t;
       if (paused) {
@@ -133,7 +145,7 @@ export function createProfiler({ now = () => performance.now(), search = '', ua 
         stagesMean[k] = stageSize ? v.reduce((x, y) => x + y, 0) / stageSize : 0; // moyenne (la médiane est quantifiée à 0,1 ms)
       }
       const mem = globalThis.performance?.memory?.usedJSHeapSize;
-      const hitches = firstUseHitches([...firsts.entries()].map(([name, at]) => ({ name, at })), frames, HITCH_MS);
+      const hitches = firstUseHitches([...firsts.entries()].map(([name, at]) => ({ name, at })), frames, HITCH_MS).map((h) => ({ ...h, since: startT === null ? null : h.at - startT }));
       return {
         window: frameSummary(recent.interval),
         session: session.summary(),
@@ -146,7 +158,7 @@ export function createProfiler({ now = () => performance.now(), search = '', ua 
         heapMB: typeof mem === 'number' ? mem / 1048576 : null,
         canvas: renderer ? { width: renderer.domElement.width, height: renderer.domElement.height } : { width: 0, height: 0 },
         dpr: renderer ? renderer.getPixelRatio() : null,
-        system: summarizeUA(ua),
+        system: summarizeUA(ua, hints),
         params: search,
         frames: log.size,
         ...extra,

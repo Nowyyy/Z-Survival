@@ -85,6 +85,8 @@ export function createPersos(params, data, model) {
         // d'animation et tenues de la table des choix.
         v2 = createV2Kit({ characters: data.characters, poses: data.poses, lookup, hit: palette.hit, choice: params.perso, styleOf: params.slots, ...choiceOptions(params, data.choices), zombieIds: variants.zombie.variants.map((v) => v.id), seed, wear, sill: render.sillHeight });
         kit.v2 = v2;
+        // Lot 5b-G : la première tenue de chaque zombie est préparée tout de suite (derrière l'écran de préparation), les autres pendant les temps libres.
+        for (let i = 0; i < variants.zombie.variants.length; i += 1) if (v2.handles('zombie', i)) v2.prewarm(i, 0);
         prewarm(v2, variants.zombie.variants.length, (i) => v2.handles('zombie', i));
       }
       const lift = (f) => (f === 'etage' && Number.isFinite(render.floorLift) ? render.floorLift : 0);
