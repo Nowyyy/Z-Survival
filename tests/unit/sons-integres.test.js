@@ -111,7 +111,10 @@ describe('anciens sons : déplacés, recettes conservées', () => {
 
   it.each(KEPT)('%s : recette gardée, identique à main (mélodie, coups de feu, impacts…)', (id) => {
     expect(isAtelier(byId.get(id))).toBe(false);
-    if (mainSounds) expect(byId.get(id)).toEqual(mainSounds.find((r) => r.id === id));
+    // Lot 5a-D : la douille porte un gain propre (−12 dB) ; sa recette ne change pas.
+    const { gainDb, ...recipe } = byId.get(id);
+    if (id !== 'douille') expect(gainDb).toBeUndefined();
+    if (mainSounds) expect(recipe).toEqual(mainSounds.find((r) => r.id === id));
   });
 });
 

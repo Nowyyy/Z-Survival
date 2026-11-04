@@ -267,7 +267,7 @@ test.describe('impact sur la chair (lot 5a)', () => {
     return { id, hp: id ? s.enemies.find((e) => e.id === id)?.health ?? 0 : null, log: s.audio.log };
   }, [angle, zombie]);
 
-  test('une balle sur un zombie joue impact-zombie avec le tampon de l\'impact sur la chair (A) ; une balle sur un mur, l\'ancien impact de pierre', async ({ page }) => {
+  test('une balle sur un zombie joue impact-zombie avec le tampon de l\'impact sur la chair (B par défaut, lot 5a-D) ; une balle sur un mur, l\'ancien impact de pierre', async ({ page }) => {
     await open(page);
     await unlockReady(page);
     const entry = byId.get('impact-zombie');
@@ -294,16 +294,16 @@ test.describe('impact sur la chair (lot 5a)', () => {
     expect(wall.log.some((x) => x.sound === 'impact-zombie')).toBe(false);
   });
 
-  test('?sons=ancien : la balle sur un zombie rejoue l\'ancien impact (recette de synth.js) ; ?sons=B : la variante B', async ({ page }) => {
+  test('?sons=ancien : la balle sur un zombie rejoue l\'ancien impact (recette de synth.js) ; ?sons=C : la variante C', async ({ page }) => {
     await open(page, '&sons=ancien');
     await unlockReady(page);
     expect((await audio(page)).sums['impact-zombie-1']).toBe(fp(renderSound(legacy.get('impact-zombie'), 0).samples));
     const hit = await shootAt(page, 0, true);
     expect(hit.log.some((x) => x.sound === 'impact-zombie')).toBe(true);
-    await open(page, '&sons=B');
+    await open(page, '&sons=C');
     await unlockReady(page);
     const entry = byId.get('impact-zombie');
-    expect((await audio(page)).sums['impact-zombie-1']).toBe(fp(renderChoice(entry, { seed: 1, mode: 'B', slots }).samples));
+    expect((await audio(page)).sums['impact-zombie-1']).toBe(fp(renderChoice(entry, { seed: 1, mode: 'C', slots }).samples));
     expect((await audio(page)).sums['impact-zombie-1']).not.toBe(fp(renderChoice(entry, { seed: 1 }).samples));
   });
 });

@@ -4,7 +4,7 @@ import { createHash } from 'node:crypto';
 import { renderSound } from '../../js/core/synth.js';
 import { renderVariant, resolveAtelier, nextVersion } from '../../js/core/synth2.js';
 import { measureSound, checkTargets } from '../../js/core/atelier-check.js';
-import { dbfs, edgeClicks, peak, ringingPartials, shortLevel, spectralDistance } from '../../js/core/audio-analysis.js';
+import { bandEnergyRatio, dbfs, edgeClicks, harmonicToNoise, peak, ringingPartials, shortLevel, spectralDistance } from '../../js/core/audio-analysis.js';
 import { distanceGain } from '../../js/core/audio-mix.js';
 import { createDirector, direct, soundTable } from '../../js/core/sound-director.js';
 import { isAtelier, renderSpec } from '../../js/core/sound-choice.js';
@@ -99,6 +99,15 @@ describe('impact sur la chair : trois variantes (A réaliste sourd, B horreur ma
     for (const v of VARIANTS) for (const x of buffers[v]) expect(Math.abs(levelRel(x, slot.sampleRate) - ref), v).toBeLessThanOrEqual(3);
   });
 
+  // Retour du propriétaire (lot 5a-D) : B « moins surface dure, on dirait un tambour ». Avant : sinus accordé qui descend (rapport harmonique-bruit 10,3 dB),
+  // 95 % de l'énergie sous 200 Hz. Après : corps de bruit sans hauteur, perforation, squelch et éclaboussures.
+  it('B : aucun choc accordé (rapport harmonique-bruit sous 0 dB, cinq versions), moins de 60 % de l\'énergie sous 200 Hz', () => {
+    for (const x of buffers.B) {
+      expect(harmonicToNoise(x, slot.sampleRate, 40, 400)).toBeLessThan(0);
+      expect(bandEnergyRatio(x, slot.sampleRate, 0, 200)).toBeLessThan(0.6);
+    }
+  });
+
   it('les trois variantes se distinguent (distance spectrale ≥ 0,035 entre deux variantes)', () => {
     for (const [a, b] of [['A', 'B'], ['A', 'C'], ['B', 'C']]) expect(spectralDistance(buffers[a][0], buffers[b][0], slot.sampleRate), `${a}-${b}`).toBeGreaterThanOrEqual(raw.distinctness.threshold);
   });
@@ -119,13 +128,14 @@ describe('impact sur la chair : trois variantes (A réaliste sourd, B horreur ma
 });
 
 describe('intégration sous l\'identifiant de l\'ancien son', () => {
-  it('sounds.json : impact-zombie = entrée de l\'atelier (impact-chair, variante A, 5 graines, 1 préchargée, ensemble essentiel), l\'ancienne recette dans sounds-legacy.json', () => {
+  // Retour du propriétaire (lot 5a-D) : B par défaut (refaite moins « tambour ») ; A et C restent comparables par ?sons=.
+  it('sounds.json : impact-zombie = entrée de l\'atelier (impact-chair, variante B, 5 graines, 1 préchargée, ensemble essentiel), l\'ancienne recette dans sounds-legacy.json', () => {
     expect(isAtelier(entry)).toBe(true);
     expect(entry).toMatchObject({ id: 'impact-zombie', category: 'impact', set: 'essentiel', variants: 5, preload: 1, loop: false });
     expect(entry.atelier.slot.id).toBe('impact-chair');
-    expect(entry.atelier.variant).toBe('A');
-    expect(choix.find((c) => c.id === 'impact-zombie')).toMatchObject({ slot: 'impact-chair', variant: 'A', replaces: 'impact-zombie', seeds: 5 });
-    expect(Buffer.from(renderChoice(entry, { seed: 2 }).samples.buffer).equals(Buffer.from(buffers.A[1].buffer))).toBe(true);
+    expect(entry.atelier.variant).toBe('B');
+    expect(choix.find((c) => c.id === 'impact-zombie')).toMatchObject({ slot: 'impact-chair', variant: 'B', replaces: 'impact-zombie', seeds: 5 });
+    expect(Buffer.from(renderChoice(entry, { seed: 2 }).samples.buffer).equals(Buffer.from(buffers.B[1].buffer))).toBe(true);
   });
 
   it.each(VARIANTS)('?sons=%s : la variante correspondante de l\'emplacement, réglages par défaut', (v) => {
@@ -134,9 +144,17 @@ describe('intégration sous l\'identifiant de l\'ancien son', () => {
     expect(Buffer.from(renderChoice(entry, { mode: v, slots: atelier.slots, seed: 1 }).samples.buffer).equals(Buffer.from(buffers[v][0].buffer))).toBe(true);
   });
 
-  it('coups de feu, douille et impacts sur les autres matières : recettes identiques à origin/dev (empreinte SHA-256)', () => {
+  // Lot 5a-D (retour du propriétaire) : la douille est baissée de 12 dB (gainDb de son entrée) ; sa recette, comme celles du tir et des autres impacts, ne change pas.
+  it('coups de feu, douille et impacts sur les autres matières : recettes identiques à origin/dev (empreinte SHA-256) ; douille baissée de 12 dB', () => {
     const ids = ['tir', 'douille', 'impact-bois', 'impact-metal', 'impact-pierre', 'impact-voiture'];
-    expect(createHash('sha256').update(JSON.stringify(ids.map((id) => sounds.find((s) => s.id === id)))).digest('hex')).toBe('13831a0cf148609689f1ad8079728c8c7ff1b4591c7394c4290c32abac9c0374');
+    const withoutGain = (r) => Object.fromEntries(Object.entries(r).filter(([k]) => k !== 'gainDb'));
+    expect(createHash('sha256').update(JSON.stringify(ids.map((id) => withoutGain(sounds.find((s) => s.id === id))))).digest('hex')).toBe('13831a0cf148609689f1ad8079728c8c7ff1b4591c7394c4290c32abac9c0374');
+    expect(sounds.find((s) => s.id === 'douille').gainDb).toBe(-12);
+    for (const id of ids.filter((i) => i !== 'douille')) expect(sounds.find((s) => s.id === id).gainDb, id).toBeUndefined();
+    const r = direct(createDirector(1), { time: 10, listener: { x: 0, y: 0 }, walls: [], paused: false, events: [{ type: 'shot', x: 0, y: 0 }] }, { audio, voice, materials, sounds: soundTable(sounds) });
+    const tir = r.requests.find((q) => q.sound === 'tir');
+    const douille = r.requests.find((q) => q.sound === 'douille');
+    expect(20 * Math.log10(douille.gain / tir.gain)).toBeCloseTo(-12, 1);
     // L'ancien impact-zombie, intact dans le pack d'avant : même empreinte que sa recette sur origin/dev.
     expect(createHash('sha256').update(JSON.stringify(old)).digest('hex')).toBe('50041fde578948bc38be81526d3bb5a0226a46d46f810c06c01b4ec394473254');
     expect(materials.sounds).toEqual({ bois: 'impact-bois', metal: 'impact-metal', pierre: 'impact-pierre', voiture: 'impact-voiture' });
@@ -179,11 +197,11 @@ describe('scène simulée : 8 zombies, 24 tirs (niveau moyen et écrêtage)', ()
   const afterHits = Object.fromEntries(VARIANTS.map((v) => [v, scene(buffers[v].map((x) => up(x, slot.sampleRate)), false)]));
 
   // Crête du mélange brut, avant le compresseur du jeu (audio.json) : elle dépassait déjà 1 avec l'ancien impact (tir et impact proche presque en même temps).
-  it.each(VARIANTS)('%s : niveau moyen de la scène (et des impacts seuls) à ±3 dB de la référence ; la crête du mélange ne dépasse pas celle d\'avant, sous 1 pour la variante par défaut (A)', (v) => {
+  it.each(VARIANTS)('%s : niveau moyen de la scène (et des impacts seuls) à ±3 dB de la référence ; la crête du mélange ne dépasse pas celle d\'avant, sous 1 pour la variante par défaut (B, lot 5a-D)', (v) => {
     console.log(`SCÈNE ${v} : ${after[v].db.toFixed(2)} dB (avant ${before.db.toFixed(2)}) ; impacts seuls ${afterHits[v].db.toFixed(2)} dB (avant ${beforeHits.db.toFixed(2)}) ; crête ${after[v].peak.toFixed(3)} (avant ${before.peak.toFixed(3)})`);
     expect(Math.abs(after[v].db - before.db)).toBeLessThanOrEqual(3);
     expect(Math.abs(afterHits[v].db - beforeHits.db)).toBeLessThanOrEqual(3);
     expect(after[v].peak).toBeLessThanOrEqual(before.peak);
-    if (v === 'A') expect(after[v].peak).toBeLessThan(1);
+    if (v === entry.atelier.variant) expect(after[v].peak).toBeLessThan(1);
   });
 });

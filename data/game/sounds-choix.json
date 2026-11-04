@@ -708,13 +708,13 @@
     {
       "id": "impact-zombie",
       "slot": "impact-chair",
-      "variant": "A",
+      "variant": "B",
       "macros": {
         "hauteur": 0,
         "matiere": 0,
         "grain": 1,
         "duree": 1,
-        "ampleur": 0.05
+        "ampleur": 0.1
       },
       "seeds": 5,
       "priority": 1,
@@ -723,7 +723,7 @@
       "part": "5a",
       "set": "essentiel",
       "gainDb": 0,
-      "event": "une balle touche un zombie (zombieHit, blessure ou mort), à l'impact ; remplace l'ancien impact-zombie (« cling ») sous son identifiant : le directeur de sons ne change pas. Lot 5a : variante A par défaut, ?sons=A|B|C pour comparer, ?sons=ancien pour l'ancien",
+      "event": "une balle touche un zombie (zombieHit, blessure ou mort), à l'impact ; remplace l'ancien impact-zombie (« cling ») sous son identifiant : le directeur de sons ne change pas. Lot 5a : variante B par défaut (choix du propriétaire, B refaite moins « tambour » : partie D), ?sons=A|B|C pour comparer, ?sons=ancien pour l'ancien",
       "source": "lot 5a (demande du propriétaire, Docs/lots/lot-5a.md)",
       "preload": 1
     }
