@@ -40,23 +40,29 @@
     "burningCar": { "id": "voiture-en-flammes", "x": 3299, "y": 2397, "w": 92, "h": 46, "hauteur": 55 },
     "helicopter": {
       "id": "helicoptere",
-      "x": 1640,
-      "y": 1725,
-      "heading": 188,
+      "x": 1650,
+      "y": 1705,
+      "heading": 150,
       "corner": { "x": 1490, "y": 1840 },
       "edge": 40,
       "rects": [
-        { "id": "helicoptere-1", "x": 1545, "y": 1660, "w": 148, "h": 106 },
-        { "id": "helicoptere-2", "x": 1675, "y": 1709, "w": 75, "h": 29 },
-        { "id": "helicoptere-3", "x": 1759, "y": 1708, "w": 64, "h": 56 }
+        { "id": "helicoptere-1", "x": 1559, "y": 1651, "w": 146, "h": 108 },
+        { "id": "helicoptere-2", "x": 1671, "y": 1638, "w": 72, "h": 51 },
+        { "id": "helicoptere-3", "x": 1738, "y": 1606, "w": 73, "h": 30 }
       ],
-      "visual": { "x": 1540, "y": 1632, "w": 283, "h": 160 },
+      "visual": { "x": 1559, "y": 1606, "w": 252, "h": 184 },
       "height": 63,
       "triangles": 310,
       "crater": { "rx": 170, "ry": 120 },
-      "trail": { "length": 480, "width": 60 },
-      "scar": { "x": 1493, "y": 1574, "w": 743, "h": 267 },
-      "scarTriangles": 271,
+      "trail": { "length": 380, "width": 60 },
+      "scars": [
+        { "x": 1488, "y": 1549, "w": 357, "h": 288 },
+        { "x": 1733, "y": 1563, "w": 123, "h": 117 },
+        { "x": 1815, "y": 1522, "w": 119, "h": 111 },
+        { "x": 1901, "y": 1483, "w": 111, "h": 96 },
+        { "x": 1988, "y": 1440, "w": 103, "h": 83 }
+      ],
+      "scarTriangles": 287,
       "smoke": true
     }
   }

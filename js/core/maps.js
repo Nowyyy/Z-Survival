@@ -9,7 +9,7 @@ import { isFloorId } from './floors.js';
 import { boundingRect, coveredBy, overlapArea, pointInPolygon, polygonArea, polygonRects, segmentRects, totalArea, unionRects } from './shape.js';
 import { isNum, num } from './vec.js';
 import { approachCorridors } from './decor.js';
-import { groundScarBox, helicopterFootprint, lCorner } from './epaves.js';
+import { groundScarBoxes, helicopterFootprint, lCorner } from './epaves.js';
 
 export const MAP_IDS = ['rez-de-chaussee', 'salle'];
 export const DEFAULT_MAP_ID = 'rez-de-chaussee';
@@ -671,8 +671,8 @@ function wrecksOf(e, { X, Y, world, spawnPoints, p, report }) {
   // Lot 5a-F : cratère et traînée (unités du jeu, plats), fumée légère ; leur emprise au sol (scar) écarte le petit décor.
   const crater = h.crater ? { rx: r6(h.crater.rx * p.scale), ry: r6(h.crater.ry * p.scale) } : null;
   const trail = h.trail ? { length: r6(h.trail.length * p.scale), width: r6(h.trail.width * p.scale) } : null;
-  const scar = crater || trail ? groundScarBox({ ...spec, crater, trail }, footprint) : null;
-  if (scar && (scar.x < 0 || scar.y < 0 || scar.x + scar.w > world.size.width || scar.y + scar.h > world.size.height)) bad('cratère ou traînée hors du monde');
-  out.helicopter = { ...spec, corner, edge, rects: fp.rects, visual: fp.visual, height: fp.height, triangles: fp.triangles, ...(crater ? { crater } : {}), ...(trail ? { trail } : {}), ...(scar ? { scar: { x: scar.x, y: scar.y, w: scar.w, h: scar.h }, scarTriangles: scar.triangles } : {}), ...(h.smoke ? { smoke: true } : {}) };
+  const scar = crater || trail ? groundScarBoxes({ ...spec, crater, trail }, footprint) : null;
+  for (const b of scar?.boxes ?? []) if (b.x < 0 || b.y < 0 || b.x + b.w > world.size.width || b.y + b.h > world.size.height) bad('cratère ou traînée hors du monde');
+  out.helicopter = { ...spec, corner, edge, rects: fp.rects, visual: fp.visual, height: fp.height, triangles: fp.triangles, ...(crater ? { crater } : {}), ...(trail ? { trail } : {}), ...(scar ? { scars: scar.boxes, scarTriangles: scar.triangles } : {}), ...(h.smoke ? { smoke: true } : {}) };
   return out;
 }

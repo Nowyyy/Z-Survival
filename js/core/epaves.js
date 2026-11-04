@@ -385,12 +385,19 @@ export function trailTriangles(spec, footprint = [], { segments = 12, margin = 2
   return out;
 }
 
-// Emprise au sol (unités du jeu) du cratère et de la traînée : { x, y, w, h } (petit décor retiré dessus), null sans cratère ni traînée.
-export function groundScarBox(spec, footprint = []) {
-  const tris = [...craterTriangles(spec, footprint), ...trailTriangles(spec, footprint)];
-  if (tris.length === 0) return null;
-  const b = boundsOf(tris);
-  const x0 = Math.floor(b.x0);
-  const y0 = Math.floor(b.z0);
-  return { x: x0, y: y0, w: Math.ceil(b.x1) - x0, h: Math.ceil(b.z1) - y0, triangles: tris.length };
+// Emprise au sol (unités du jeu) du cratère et de la traînée, en boîtes serrées (le cratère, puis la traînée par quarts : elle peut être en diagonale) : le petit
+// décor posé dessus est retiré. Renvoie { boxes: [{ x, y, w, h }], triangles } ; boxes vide sans cratère ni traînée.
+export function groundScarBoxes(spec, footprint = []) {
+  const crater = craterTriangles(spec, footprint);
+  const trail = trailTriangles(spec, footprint);
+  const boxOf = (tris) => {
+    const b = boundsOf(tris);
+    const x0 = Math.floor(b.x0);
+    const y0 = Math.floor(b.z0);
+    return { x: x0, y: y0, w: Math.ceil(b.x1) - x0, h: Math.ceil(b.z1) - y0 };
+  };
+  const boxes = crater.length > 0 ? [boxOf(crater)] : [];
+  const per = Math.ceil(trail.length / 4);
+  for (let i = 0; i < trail.length; i += per) boxes.push(boxOf(trail.slice(i, i + per)));
+  return { boxes, triangles: crater.length + trail.length };
 }

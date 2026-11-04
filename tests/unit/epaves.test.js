@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
-import { burntCarParts, carFireSpots, concaveCorners, CRASH, craterTriangles, groundScarBox, helicopterFootprint, helicopterModel, lCorner, placeHelicopter, trailTriangles } from '../../js/core/epaves.js';
+import { burntCarParts, carFireSpots, concaveCorners, CRASH, craterTriangles, groundScarBoxes, helicopterFootprint, helicopterModel, lCorner, placeHelicopter, trailTriangles } from '../../js/core/epaves.js';
 import { approachCorridors, decorProblems, generateDecor } from '../../js/core/decor.js';
 import { generateLivelyDecor } from '../../js/core/decor-vivant.js';
 import { planToWorld } from '../../js/core/maps.js';
@@ -197,12 +197,16 @@ describe('emplacements : règles de la carte avec les deux épaves', () => {
       expect(Math.min(...footprint.map((f) => rectGap({ x: cx, y: cz, w: 0, h: 0 }, f))), `${cx}, ${cz}`).toBeGreaterThanOrEqual(24);
       expect(['crater-burnt', 'crater-earth']).toContain(t.tint);
     }
-    // Nez vers le mur de l'aile (ouest), traînée vers l'est jusqu'au bout de son sillon.
-    expect(Math.cos(heli.heading * Math.PI / 180)).toBeLessThan(-0.9);
-    const far = Math.max(...trail.flatMap((t) => t.p.map((p) => p[0])));
-    expect(far).toBeGreaterThan(heli.x + heli.trail.length * 0.9);
-    expect(groundScarBox(heli, footprint)).toMatchObject(heli.scar);
-    expect(layout.decor.keepOut.some((k) => k.id === 'cratere')).toBe(true);
+    // Retour du propriétaire : arrivé du nord-est (flèche sur sa capture) ; nez vers l'angle du L (sud-ouest), traînée qui remonte vers le nord-est.
+    expect(Math.cos(heli.heading * Math.PI / 180)).toBeLessThan(-0.8);
+    expect(Math.sin(heli.heading * Math.PI / 180)).toBeGreaterThan(0.4);
+    const pts = trail.flatMap((t) => t.p);
+    const far = pts.reduce((a, p) => (p[0] - p[2] > a[0] - a[2] ? p : a));
+    expect(far[0] - heli.x).toBeGreaterThan(heli.trail.length * 0.75);
+    expect(heli.y - far[2]).toBeGreaterThan(heli.trail.length * 0.4);
+    const scars = groundScarBoxes(heli, footprint);
+    expect(scars.boxes).toEqual(heli.scars);
+    expect(layout.decor.keepOut.filter((k) => k.id.startsWith('cratere-')).length).toBe(heli.scars.length);
     expect(heli.smoke).toBe(true);
     const tokens = readFileSync('css/tokens.css', 'utf8');
     for (const t of ['crater-burnt', 'crater-earth', 'smoke-light']) expect(tokens).toMatch(new RegExp(`--game-${t}:\\s*#[0-9a-f]{6};`));
