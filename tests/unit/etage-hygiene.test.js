@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { execSync } from 'node:child_process';
 import { readFileSync, readdirSync } from 'node:fs';
+import { seedProblems } from './helpers/seed.js';
 // Lot 4c (publication par versions, seul lot autorisé à modifier le workflow) : workflow, accueil, ses textes et tests du journal modifiés ; ce garde-fou de branche
 // (comparaison à main ou à lot-4b) n'a plus de sens pour eux après l'entrée dans main : ils sortent de la liste.
 // Lot 4e : workflow de tests ajouté (.github/workflows/tests.yml, autorisé par le prompt du lot ; pages.yml intact).
@@ -56,9 +57,11 @@ describe('hygiène du lot 3e : fichiers et textes', () => {
     if (changed === null) return;
     expect(notLot4c(changed)).toEqual([]);
     // Lot 4 : Docs/seed.md appartient au propriétaire, qui l'a mis à jour dans main après la fusion du lot 3e (avant : comparé au commit BASE, donc en échec).
-    // Il est maintenant comparé à main : la branche ne le modifie jamais.
-    const seed = git('diff --name-only main -- Docs/seed.md');
+    // Il était ensuite comparé à main ; lot 5b : main a encore changé de version sans que la branche y touche (mise à jour du propriétaire sur dev),
+    // la règle vérifiée est maintenant : seuls ses commits le modifient (tests/unit/helpers/seed.js).
+    const seed = seedProblems();
     if (seed !== null) expect(seed).toEqual([]);
+
   });
 
   it('aucune clé de fr.json du lot 3e n\'est orpheline : chacune est écrite dans le code', () => {
