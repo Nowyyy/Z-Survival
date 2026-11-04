@@ -24,9 +24,11 @@ export function generateLivelyDecor(input, opts = {}) {
   const corridors = list(decor.corridors).filter(okRect);
   const spawns = list(decor.spawnPoints).filter((p) => p && isNum(p.x) && isNum(p.y));
   const ground = list(decor.ground).filter(okRect);
-  const solids = list(decor.solids).filter(okRect);
+  // Lot 5a : les épaves ne changent pas le tirage (même suite qu'avant) ; ce qui les touche est retiré à la fin.
+  const wrecks = [...list(decor.keepOut), ...list(decor.wreckSolids)].filter(okRect);
+  const isWreck = (s) => s.kind === 'helicoptere' || s.burning === true;
+  const solids = list(decor.solids).filter(okRect).filter((s) => !isWreck(s));
   const lamps = list(decor.lamps).filter((p) => p && isNum(p.x) && isNum(p.y));
-  const keepOut = list(decor.keepOut).filter(okRect); // lot 5a : emprises visuelles des épaves (hélicoptère, voiture en flammes)
   if (W <= 0 || H <= 0 || footprint.length === 0) return { deadTrees: [], fence: { posts: [], wires: [] }, poles: [], cables: [], puddles: [], tufts: [], rubble: [], barrels: [] };
   let rng = createRng(isNum(o.seed) ? o.seed : 1);
   const rand = () => {
@@ -37,7 +39,7 @@ export function generateLivelyDecor(input, opts = {}) {
   const between = (a, b) => a + rand() * (b - a);
   const fromRoom = (r) => Math.min(...footprint.map((f) => rectGap(r, f)));
   const clearOf = (r, m = o.fromCorridor) => !corridors.some((c) => rectGap(r, c) < m) && !spawns.some((p) => rectGap(r, { x: p.x, y: p.y, w: 1, h: 1 }) < o.fromSpawn)
-    && !solids.some((s) => rectGap(r, s) < 20) && !keepOut.some((k) => rectGap(r, k) < 30);
+    && !solids.some((s) => rectGap(r, s) < 20);
   const onGround = (r) => ground.some((g) => rectGap(r, g) === 0);
   const inside = (r, m) => r.x >= m && r.y >= m && r.x + r.w <= W - m && r.y + r.h <= H - m;
   const place = (count, make, accept) => {
@@ -116,7 +118,7 @@ export function generateLivelyDecor(input, opts = {}) {
     const x = r1(between(30, W - 30));
     const y = r1(between(30, H - 30));
     return { id: `herbes-${n}`, x, y, r: r1(between(8, 14)), hauteur: r1(between(16, 30)), rot: r1(between(0, 3)), box: { x: x - 14, y: y - 14, w: 28, h: 28 } };
-  }, (t, out) => inside(t.box, 20) && fromRoom(t.box) >= 70 && !onGround(t.box) && !spawns.some((p) => rectGap(t.box, { x: p.x, y: p.y, w: 1, h: 1 }) < 40) && !keepOut.some((k) => rectGap(t.box, k) < 10) && apart(t.box, out, 30));
+  }, (t, out) => inside(t.box, 20) && fromRoom(t.box) >= 70 && !onGround(t.box) && !spawns.some((p) => rectGap(t.box, { x: p.x, y: p.y, w: 1, h: 1 }) < 40) && apart(t.box, out, 30));
   const rubble = place(o.rubble, (n) => {
     const w = r1(between(40, 80));
     const h = r1(between(30, 60));
@@ -128,5 +130,17 @@ export function generateLivelyDecor(input, opts = {}) {
     return { id: `bidon-feu-${n}`, x, y, r: 11, hauteur: 30, box: { x: x - 12, y: y - 12, w: 24, h: 24 } };
   }, (b, out) => inside(b.box, 60) && fromRoom(b.box) >= 220 && fromRoom(b.box) <= 600 && clearOf(b.box, 40) && !onGround(b.box) && apart(b.box, out, 900));
 
-  return { deadTrees, fence: { posts, wires }, poles, cables, puddles, tufts, rubble, barrels };
+  if (wrecks.length === 0) return { deadTrees, fence: { posts, wires }, poles, cables, puddles, tufts, rubble, barrels };
+  const clear = (r, m) => !wrecks.some((k) => rectGap(r, k) < m);
+  const postBox = (p) => ({ x: p.x - 3, y: p.y - 3, w: 6, h: 6 });
+  const wireBox = (w) => ({ x: Math.min(w.x0, w.x1) - 1, y: Math.min(w.y0, w.y1) - 1, w: Math.abs(w.x1 - w.x0) + 2, h: Math.abs(w.y1 - w.y0) + 2 });
+  return {
+    deadTrees: deadTrees.filter((t) => clear(t.box, 30)),
+    fence: { posts: posts.filter((p) => clear(postBox(p), 10)), wires: wires.filter((w) => clear(wireBox(w), 10)) },
+    poles, cables,
+    puddles: puddles.filter((p) => clear(p, 0.5)),
+    tufts: tufts.filter((t) => clear(t.box, 10)),
+    rubble: rubble.filter((r) => clear(r, 20)),
+    barrels: barrels.filter((b) => clear(b.box, 40)),
+  };
 }

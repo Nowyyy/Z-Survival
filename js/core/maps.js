@@ -155,9 +155,11 @@ export function cleanPlan(plan) {
 export function cleanWrecks(e) {
   if (!isObject(e)) return null;
   const h = isObject(e.helicoptere) && isNum(e.helicoptere.x) && isNum(e.helicoptere.y) && isPoint(e.helicoptere.coin) ? e.helicoptere : null;
-  const car = typeof e.voitureEnFlammes === 'string' && e.voitureEnFlammes !== '' ? e.voitureEnFlammes : null;
+  // Voiture en flammes : identifiant d'une voiture du décor (marquée en flammes, même place), ou centre en pixels (voiture posée à part).
+  const car = typeof e.voitureEnFlammes === 'string' && e.voitureEnFlammes !== '' ? e.voitureEnFlammes
+    : isObject(e.voitureEnFlammes) && isNum(e.voitureEnFlammes.x) && isNum(e.voitureEnFlammes.y) ? { x: e.voitureEnFlammes.x, y: e.voitureEnFlammes.y } : null;
   if (!h && !car) return null;
-  return { burningCar: car, helicopter: h ? { corner: [h.coin[0], h.coin[1]], x: h.x, y: h.y, heading: num(h.cap) } : null };
+  return { burningCar: car, helicopter: h ? { corner: [h.coin[0], h.coin[1]], x: h.x, y: h.y, heading: num(h.cap), ...(isNum(h.bord) && h.bord >= 0 ? { edge: h.bord } : {}) } : null };
 }
 
 // Zone libre derrière une fenêtre : toute sa largeur, windowDepth de profondeur à partir de la face intérieure du mur.
@@ -629,29 +631,41 @@ export function planToWorld(plan, params, extras) {
 }
 
 // Lot 5a : épaves en unités du jeu, avec les règles du décor extérieur (rapportées comme violations : npm run carte échoue). L'hélicoptère : son coin doit être
-// l'angle du L (lCorner), son centre dans le quart extérieur de ce coin ; ses rectangles de collision à distanceSalle au moins du bâtiment, à 20 au moins des couloirs
-// d'approche (rez-de-chaussée), à distanceApparition au moins des points d'apparition ; son emprise visuelle (pales comprises) hors des couloirs.
+// l'angle du L (lCorner), son centre dans le quart extérieur de ce coin ; ses rectangles de collision et son emprise visuelle (pales comprises) à `bord` au moins du
+// bâtiment (pixels × échelle ; sans bord : distanceSalle), à 20 au moins des couloirs d'approche (rez-de-chaussée), à distanceApparition au moins des points
+// d'apparition ; son emprise visuelle hors des couloirs. Voiture en flammes posée à part : à distanceSalle du bâtiment, hors des couloirs, loin des apparitions.
 function wrecksOf(e, { X, Y, world, spawnPoints, p, report }) {
-  const out = { burningCar: e.burningCar };
+  const corridors = approachCorridors(world, p.approachWidth);
+  const footprint = polygonRects(world.contour);
+  const gapOf = (r) => Math.min(...footprint.map((f) => rectGap(r, f)));
+  const solidRules = (r, minGap, bad) => {
+    const gap = gapOf(r);
+    if (gap < minGap) bad(`${r.id} à ${Math.round(gap)} du bâtiment (moins de ${minGap})`);
+    for (const c of corridors) if (rectGap(r, c) < 20) bad(`${r.id} dans le couloir d'approche de ${c.id}`);
+    for (const s of spawnPoints) if (rectGap(r, { x: s.x, y: s.y, w: 1, h: 1 }) < p.decor.distanceApparition) bad(`${r.id} trop près de ${s.id}`);
+    if (r.x < 40 || r.y < 40 || r.x + r.w > world.size.width - 40 || r.y + r.h > world.size.height - 40) bad(`${r.id} hors du monde`);
+  };
+  let burningCar = e.burningCar;
+  if (isObject(e.burningCar)) {
+    const w = num(p.decor.scatter.voitures?.long, 92);
+    const h = num(p.decor.scatter.voitures?.court, 46);
+    burningCar = { id: 'voiture-en-flammes', x: r6(X(e.burningCar.x) - w / 2), y: r6(Y(e.burningCar.y) - h / 2), w, h, hauteur: num(p.decor.scatter.voitures?.hauteur, 55) };
+    solidRules(burningCar, p.decor.distanceSalle, (text) => report.violations.push(`voiture en flammes : ${text}`));
+  }
+  const out = { burningCar };
   if (!e.helicopter) return out;
   const h = e.helicopter;
   const corner = { x: X(h.corner[0]), y: Y(h.corner[1]) };
   const spec = { id: 'helicoptere', x: X(h.x), y: Y(h.y), heading: h.heading };
   const fp = helicopterFootprint(spec);
-  const corridors = approachCorridors(world, p.approachWidth);
-  const footprint = polygonRects(world.contour);
+  const edge = isNum(h.edge) ? r6(h.edge * p.scale) : p.decor.distanceSalle;
   const chosen = lCorner(world.contour, { blockers: corridors, footprint, size: world.size, clearance: p.decor.distanceSalle }).chosen;
   const bad = (text) => report.violations.push(`hélicoptère : ${text}`);
   if (!chosen || chosen.x !== corner.x || chosen.y !== corner.y) bad(`le coin (${corner.x}, ${corner.y}) n'est pas l'angle du L${chosen ? ` (${chosen.x}, ${chosen.y})` : ''}`);
   else if ((spec.x - corner.x) * chosen.out.x < 0 || (spec.y - corner.y) * chosen.out.y < 0) bad('centre hors du quart extérieur de l\'angle du L');
-  for (const r of fp.rects) {
-    const gap = Math.min(...footprint.map((f) => rectGap(r, f)));
-    if (gap < p.decor.distanceSalle) bad(`${r.id} à ${Math.round(gap)} du bâtiment (moins de ${p.decor.distanceSalle})`);
-    for (const c of corridors) if (rectGap(r, c) < 20) bad(`${r.id} dans le couloir d'approche de ${c.id}`);
-    for (const s of spawnPoints) if (rectGap(r, { x: s.x, y: s.y, w: 1, h: 1 }) < p.decor.distanceApparition) bad(`${r.id} trop près de ${s.id}`);
-    if (r.x < 40 || r.y < 40 || r.x + r.w > world.size.width - 40 || r.y + r.h > world.size.height - 40) bad(`${r.id} hors du monde`);
-  }
+  for (const r of fp.rects) solidRules(r, edge, bad);
+  if (fp.visual && gapOf(fp.visual) < edge) bad(`emprise visuelle à ${Math.round(gapOf(fp.visual))} du bâtiment (moins de ${edge})`);
   for (const c of corridors) if (fp.visual && rectGap(fp.visual, c) === 0) bad(`emprise visuelle dans le couloir d'approche de ${c.id}`);
-  out.helicopter = { ...spec, corner, rects: fp.rects, visual: fp.visual, height: fp.height, triangles: fp.triangles };
+  out.helicopter = { ...spec, corner, edge, rects: fp.rects, visual: fp.visual, height: fp.height, triangles: fp.triangles };
   return out;
 }

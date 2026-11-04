@@ -79,7 +79,7 @@ test.describe('épaves (lot 5a)', () => {
     await open(page);
     await expect(page.locator('rect.epave-helicoptere')).toHaveCount(heli.rects.length);
     await expect(page.locator('rect.epave-emprise')).toHaveCount(1);
-    await expect(page.locator('rect.epave-voiture')).toHaveAttribute('data-id', decor.wrecks.burningCar);
+    await expect(page.locator('rect.epave-voiture')).toHaveAttribute('data-id', decor.wrecks.burningCar.id);
     await expect(page.locator('circle.coin-l')).toHaveAttribute('data-id', `coin-${heli.corner.x}-${heli.corner.y}`);
     await expect(page.locator('circle.coin-rentrant')).toHaveCount(3);
   });
@@ -96,7 +96,7 @@ test.describe('épaves (lot 5a)', () => {
     expect(r.a.helicopter.triangles).toBe(heli.triangles);
     expect(r.a.helicopter.triangles).toBeLessThanOrEqual(700);
     expect(r.a.helicopter.rects).toEqual(heli.rects.map((q) => q.id));
-    expect(r.a.burningCar.id).toBe(decor.wrecks.burningCar);
+    expect(r.a.burningCar.id).toBe(decor.wrecks.burningCar.id);
     expect(r.a.fires).toHaveLength(1);
     expect(r.a.fires[0]).toMatchObject({ spots: 2, glow: false, flames: 64, smoke: 64 });
     expect(r.b.fires[0].time).toBeGreaterThan(r.a.fires[0].time + 0.9);
@@ -109,16 +109,16 @@ test.describe('épaves (lot 5a)', () => {
     const r = await page.evaluate(([px, py, zy]) => {
       const zs = window.__zs;
       zs.setPlayer(px, py);
-      zs.setInput({ aim: { angle: -Math.PI / 2 } });
+      zs.setInput({ aim: { angle: Math.PI / 2 } });
       const id = zs.spawnEnemy(px, zy);
       zs.step(0.1);
       const laser = zs.getState().laser;
-      zs.fire(-Math.PI / 2);
+      zs.fire(Math.PI / 2);
       zs.step(1);
       const s = zs.getState();
       const e = s.enemies.find((q) => q.id === id);
       return { hp: e.health, max: e.maxHp, bullets: s.bullets.length, laser, sounds: s.audio.log.map((l) => l.sound) };
-    }, [x, fuselage.y + fuselage.h + 110, fuselage.y - 130]);
+    }, [x, fuselage.y - 120, fuselage.y + fuselage.h + 28]); // retour du propriétaire : l'hélicoptère est contre le mur sud, on tire depuis le nord ; le zombie est derrière, contre le mur
     expect(r.laser.stoppedBy).toMatch(/^helicoptere-/);
     expect(r.bullets).toBe(0);
     expect(r.hp).toBe(r.max);

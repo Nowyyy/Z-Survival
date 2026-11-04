@@ -302,7 +302,7 @@ function addDecor(b, region, decor, outdoorSoil, tint) {
   const wheelW = 7;
   decor.cars.forEach((c, i) => {
     if (c.burning === true) {
-      addBurntCar(b.props, region, c, tint, i);
+      addBurntCar(b.scenery, region, c, tint, i);
       return;
     }
     const paint = CAR_PAINTS[i % CAR_PAINTS.length];
@@ -328,7 +328,8 @@ function addDecor(b, region, decor, outdoorSoil, tint) {
 }
 
 // Lot 5a : voiture calcinée (js/core/epaves.js : mêmes boîtes que les autres voitures, plus basses, teintes --game-car-burnt et --game-car-soot) et
-// jantes nues ; dans le maillage des voitures (avec ombre), aucun appel de dessin de plus.
+// jantes nues ; dans le maillage du décor de l'atlas (sans ombre portée, étendu à tout le monde) : aucun appel de dessin de plus, et la sphère englobante
+// des voitures (avec ombre) ne change pas quand la voiture est posée loin de la route (retour du propriétaire).
 function addBurntCar(props, region, car, tint, i) {
   const parts = burntCarParts(car);
   for (const [k, q] of parts.boxes.entries()) props.tinted(tint(q.tint), () => props.box(q, { rect: region(q.region), scale: region(q.region).scale, seed: i * 7 + k + 1 }));

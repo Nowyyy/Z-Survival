@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { readFileSync } from 'node:fs';
 import { waitReady } from './helpers.js';
 
 // Lot 3g, partie B : la carte corrigée d'après le modèle (ecarts-decisions.json) dans le jeu. 667×375, step() et hooks ; les tests se désactivent
@@ -6,6 +7,8 @@ import { waitReady } from './helpers.js';
 const SIZE = { width: 667, height: 375 };
 // Références de rendu mesurées sur main au lancement du lot (scripts/modele/mesures-rendu.mjs) : appels et triangles, 10 zombies, ombres, cône.
 const REF = { R1: [200, 14442], R2: [201, 14582], R3: [199, 13898], U1: [207, 14788], U4: [212, 15588] };
+// Lot 5a : triangles des épaves (hélicoptère écrasé et voiture calcinée, 3 boîtes de 10 triangles et 4 roues de 32), dessinés aussi avec ?detail=0 : ils sont solides.
+const EPAVES = (JSON.parse(readFileSync('data/game/maps/rez-de-chaussee/decor.json', 'utf8')).wrecks?.helicopter?.triangles ?? 0) + 158;
 const U = (px) => px * 5 + 800;
 const SCENES = {
   R1: { url: '&nospawn=1', at: [U(300), U(300)], floor: 'rdc', wave: 10 },
@@ -97,7 +100,7 @@ test.describe('budgets de rendu après la partie B (≤ référence + 300 triang
       }, sc);
       testInfo.annotations.push({ type: 'rendu', description: `${id} : ${r.calls} appels, ${r.triangles} triangles (référence ${REF[id].join(' / ')})` });
       console.log(`BUDGET lot 3g-B ${id} : ${r.calls} appels, ${r.triangles} triangles (référence ${REF[id][0]} / ${REF[id][1]})`);
-      expect(r.triangles).toBeLessThanOrEqual(REF[id][1] + 300);
+      expect(r.triangles).toBeLessThanOrEqual(REF[id][1] + 300 + EPAVES); // lot 5a : + les triangles des épaves
       expect(r.calls).toBeLessThanOrEqual(REF[id][0] + 6);
     });
   }

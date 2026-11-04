@@ -49,7 +49,7 @@ export function generateMapFiles(id = 'rez-de-chaussee') {
   const out = planToWorld(plan, params, { doors: zones.doors.filter((d) => !d.planned), epaves });
   if (!out.world) throw new Error(`plan invalide : ${out.report.errors.join(' ; ')}`);
   const result = { world: `${formatJson(out.world)}\n`, decor: `${formatJson(out.decor)}\n`, etage: null, report: out.report, etageReport: null, problems: [], decorInterieur: null, decorReport: null, mobilier: null, mobilierReport: null, wrecksReport: null };
-  // Lot 5a : décor extérieur généré (graine) avec ses épaves : règles du décor (decorProblems) et voiture en flammes (existe, au sud du mur du bas, à 160 du bâtiment).
+  // Lot 5a : décor extérieur généré (graine) avec ses épaves : règles du décor (decorProblems) et voiture en flammes (existe, à 160 du bâtiment au moins).
   if (out.decor.wrecks) result.wrecksReport = wrecksCheck(out.world, out.decor, params);
   let etageWorldOut = null;
   let etagePlanOut = null;
@@ -125,17 +125,14 @@ export function wrecksCheck(world, decorCfg, params) {
   const problems = decorProblems(decor, world);
   const fp = polygonRects(world.contour);
   const car = decor.cars.find((c) => c.burning === true) ?? null;
-  if (decorCfg.wrecks.burningCar && !car) problems.push(`voiture en flammes ${decorCfg.wrecks.burningCar} absente du décor`);
+  if (decorCfg.wrecks.burningCar && !car) problems.push('voiture en flammes absente du décor');
   if (car) {
-    const south = Math.max(...world.contour.map((q) => q[1]));
-    const wall = world.contour.filter((q) => q[1] === south).map((q) => q[0]);
-    if (car.y < south || car.x < Math.min(...wall) || car.x + car.w > Math.max(...wall)) problems.push(`${car.id} n'est pas au sud du mur du bas`);
     const gap = Math.min(...fp.map((f) => rectGap(car, f)));
     if (gap < params.decor.distanceSalle) problems.push(`${car.id} à ${Math.round(gap)} du bâtiment`);
   }
   const h = decor.helicopter;
   const gapH = h ? Math.min(...h.rects.flatMap((r) => fp.map((f) => rectGap(r, f)))) : null;
-  return { car: car ? { id: car.id, x: car.x, y: car.y, gap: Math.round(Math.min(...fp.map((f) => rectGap(car, f)))) } : null, helicopter: h ? { corner: h.corner, rects: h.rects.length, gap: Math.round(gapH), triangles: decorCfg.wrecks.helicopter?.triangles, height: h.height } : null, problems };
+  return { car: car ? { id: car.id, x: car.x, y: car.y, gap: Math.round(Math.min(...fp.map((f) => rectGap(car, f)))) } : null, helicopter: h ? { corner: h.corner, rects: h.rects.length, gap: Math.round(gapH), edge: decorCfg.wrecks.helicopter?.edge, triangles: decorCfg.wrecks.helicopter?.triangles, height: h.height } : null, problems };
 }
 
 const isMain = process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1];
@@ -175,7 +172,7 @@ if (isMain) {
   if (wrecksReport) {
     const { car, helicopter: h } = wrecksReport;
     if (car) console.log(`Épaves : voiture en flammes ${car.id} (${car.x}, ${car.y}), à ${car.gap} du bâtiment.`);
-    if (h) console.log(`Épaves : hélicoptère dans l'angle du L (${h.corner.x}, ${h.corner.y}), ${h.rects} rectangles de collision à ${h.gap} du bâtiment au moins, ${h.triangles} triangles, hauteur ${h.height}.`);
+    if (h) console.log(`Épaves : hélicoptère dans l'angle du L (${h.corner.x}, ${h.corner.y}), ${h.rects} rectangles de collision à ${h.gap} du bâtiment au moins (bord ${h.edge}), ${h.triangles} triangles, hauteur ${h.height}.`);
     for (const v of wrecksReport.problems) console.log(`PROBLÈME (décor) : ${v}`);
   }
   if (!report.valid || problems.length > 0 || (wrecksReport?.problems.length ?? 0) > 0) process.exit(1);

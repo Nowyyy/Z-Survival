@@ -106,35 +106,46 @@ describe('modèle de l\'hélicoptère (pur)', () => {
 });
 
 describe('emplacements : règles de la carte avec les deux épaves', () => {
-  it('l\'hélicoptère est dans le quart extérieur de l\'angle du L, ses collisions à 160 au moins du bâtiment, hors des couloirs d\'approche', () => {
+  // Retour du propriétaire (lot 5a) : l'hélicoptère « tout au bord », dans l'angle du L contre l'aile et la grande salle ; sa distance au bâtiment est le bord
+  // d'epaves.json (8 px = 40 unités) au lieu des 160 du décor solide. La voiture en flammes, posée à part à l'est du bâtiment, garde les 160.
+  it('l\'hélicoptère est dans le quart extérieur de l\'angle du L, tout au bord (à 40 à 80 du contour), hors des couloirs d\'approche', () => {
     expect(heli.x).toBeGreaterThan(heli.corner.x);
     expect(heli.y).toBeLessThan(heli.corner.y);
+    expect(heli.edge).toBe(epaves.helicoptere.bord * 5);
+    expect(heli.edge).toBe(40);
     const solids = layout.decor.solids.filter((s) => s.kind === 'helicoptere');
     expect(solids.map((s) => s.id)).toEqual(heli.rects.map((r) => r.id));
+    expect(Math.min(...solids.map(gapToBuilding))).toBeLessThanOrEqual(80);
     for (const s of solids) {
-      expect(gapToBuilding(s), s.id).toBeGreaterThanOrEqual(160);
+      expect(gapToBuilding(s), s.id).toBeGreaterThanOrEqual(heli.edge);
       for (const c of corridors) expect(rectGap(s, c), `${s.id} / ${c.id}`).toBeGreaterThanOrEqual(20);
       for (const p of layout.spawnPoints) expect(rectGap(s, { x: p.x, y: p.y, w: 1, h: 1 }), `${s.id} / ${p.id}`).toBeGreaterThanOrEqual(70);
     }
   });
 
-  it('emprise visuelle (pales comprises) hors des couloirs d\'approche du rez-de-chaussée et de l\'étage (U5 au-dessus de la grande salle)', () => {
-    for (const c of [...corridors, ...approachCorridors(etage, 160)]) expect(rectGap(heli.visual, c), c.id).toBeGreaterThan(0);
-    expect(gapToBuilding(heli.visual)).toBeGreaterThanOrEqual(60);
+  it('emprise visuelle (pales comprises) contre les deux murs de l\'angle (à 40 à 80), hors des couloirs du rez-de-chaussée ; sous le couloir de U5 (étage), 117 plus bas', () => {
+    for (const c of corridors) expect(rectGap(heli.visual, c), c.id).toBeGreaterThan(0);
+    expect(gapToBuilding(heli.visual)).toBeGreaterThanOrEqual(heli.edge);
+    expect(heli.visual.x - heli.corner.x).toBeLessThanOrEqual(80); // contre le mur est de l'aile
+    expect(heli.corner.y - (heli.visual.y + heli.visual.h)).toBeLessThanOrEqual(80); // contre le mur nord de la grande salle
+    // U5 est une fenêtre de l'étage : ses zombies marchent à la hauteur de l'étage (floorLift 180), au-dessus de l'hélicoptère (63 de haut).
+    expect(approachCorridors(etage, 160).filter((c) => rectGap(heli.visual, c) === 0).map((c) => c.id)).toEqual(['U5']);
+    expect(heli.height).toBeLessThan(180 - 100);
   });
 
-  it('la voiture en flammes est une des voitures abandonnées, à la même place, au sud du mur du bas, hors des couloirs, à 160 au moins du bâtiment', () => {
+  it('la voiture en flammes est posée à part, à l\'est du bâtiment près de l\'angle sud-est, hors des couloirs, à 160 au moins du bâtiment ; les quatre voitures de la route restent', () => {
     const plain = generateDecor({ ...decorCfg, wrecks: undefined }, world);
     const car = layout.decor.cars.find((c) => c.burning === true);
-    expect(car.id).toBe(epaves.voitureEnFlammes);
-    const before = plain.cars.find((c) => c.id === car.id);
-    expect({ x: car.x, y: car.y, w: car.w, h: car.h, hauteur: car.hauteur }).toEqual({ x: before.x, y: before.y, w: before.w, h: before.h, hauteur: before.hauteur });
+    expect(car.id).toBe('voiture-en-flammes');
+    expect({ x: car.x + car.w / 2, y: car.y + car.h / 2 }).toEqual({ x: (epaves.voitureEnFlammes.x - plan.bbox.x0) * 5 + 800, y: (epaves.voitureEnFlammes.y - plan.bbox.y0) * 5 + 800 });
+    expect([car.w, car.h, car.hauteur]).toEqual([92, 46, 55]);
     expect(layout.decor.solids.some((s) => s.id === car.id)).toBe(true);
+    expect(layout.decor.cars.filter((c) => !c.burning).map((c) => [c.id, c.x, c.y])).toEqual(plain.cars.map((c) => [c.id, c.x, c.y]));
+    const east = Math.max(...world.contour.map((q) => q[0]));
     const south = Math.max(...world.contour.map((q) => q[1]));
-    const wall = world.contour.filter((q) => q[1] === south).map((q) => q[0]);
-    expect(car.y).toBeGreaterThan(south);
-    expect(car.x).toBeGreaterThanOrEqual(Math.min(...wall));
-    expect(car.x + car.w).toBeLessThanOrEqual(Math.max(...wall));
+    expect(car.x).toBeGreaterThan(east);
+    expect(car.y + car.h).toBeLessThanOrEqual(south);
+    expect(south - (car.y + car.h)).toBeLessThan(200);
     expect(gapToBuilding(car)).toBeGreaterThanOrEqual(160);
     for (const c of corridors) expect(rectGap(car, c), c.id).toBeGreaterThanOrEqual(20);
     expect(layout.decor.cars.filter((c) => c.burning === true).length).toBe(1);
