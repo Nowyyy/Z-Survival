@@ -31,6 +31,7 @@ const EXTRA = opt('extra', '');
 const OUT = opt('out', join(tmpdir(), 'zs-perf'));
 const REF = opt('ref', null);
 const PERF = !flag('sans-perf');
+const HEAP = !flag('sans-tas'); // --sans-tas : sans échantillonnage des allocations (comparaison de temps la plus fine)
 
 // Position du joueur en unités du jeu (pixels du plan × 5 + 800) ; mêmes scénarios que scripts/modele/mesures-rendu.mjs.
 const U = (px) => px * 5 + 800;
@@ -91,7 +92,7 @@ async function run(base, sc, preset) {
   await cdp.send('HeapProfiler.collectGarbage');
   const metric = async () => Object.fromEntries((await cdp.send('Performance.getMetrics')).metrics.map((m) => [m.name, m.value]));
   const m0 = await metric();
-  await cdp.send('HeapProfiler.startSampling', { samplingInterval: 2048, includeObjectsCollectedByMajorGC: true, includeObjectsCollectedByMinorGC: true });
+  if (HEAP) await cdp.send('HeapProfiler.startSampling', { samplingInterval: 2048, includeObjectsCollectedByMajorGC: true, includeObjectsCollectedByMinorGC: true });
   const loop = await page.evaluate(async (frames) => {
     const work = [];
     const heap0 = performance.memory?.usedJSHeapSize ?? null;
@@ -110,7 +111,7 @@ async function run(base, sc, preset) {
     const canvas = document.querySelector('#game-canvas canvas');
     return { work, heapGrowth: heap0 !== null && heap1 !== null ? heap1 - heap0 : null, render: s.render, perf: s.perf, graphics: s.graphics ?? null, pixels: canvas ? canvas.width * canvas.height : null, enemies: s.enemies.length };
   }, FRAMES);
-  const profile = (await cdp.send('HeapProfiler.stopSampling')).profile;
+  const profile = HEAP ? (await cdp.send('HeapProfiler.stopSampling')).profile : { head: { selfSize: 0, children: [] } };
   const m1 = await metric();
   // Allocations échantillonnées : somme des tailles (objets ramassés compris), et principaux sites (fonction, fichier:ligne).
   const sites = new Map();
@@ -130,12 +131,13 @@ async function run(base, sc, preset) {
   const d = (k) => (m1[k] ?? 0) - (m0[k] ?? 0);
   return {
     frameMs: median(loop.work),
+    frameMean: loop.work.reduce((a, b) => a + b, 0) / loop.work.length, // moyenne exacte (la médiane est quantifiée à 0,1 ms par performance.now())
     frameP95: loop.work.slice().sort((a, b) => a - b)[Math.floor(loop.work.length * 0.95)],
     taskMs: (d('TaskDuration') * 1000) / FRAMES,
     scriptMs: (d('ScriptDuration') * 1000) / FRAMES,
     styleMs: (d('RecalcStyleDuration') * 1000) / FRAMES,
     layoutMs: (d('LayoutDuration') * 1000) / FRAMES,
-    allocKB: allocated / 1024 / FRAMES,
+    allocKB: HEAP ? allocated / 1024 / FRAMES : null,
     heapGrowthKB: loop.heapGrowth === null ? null : loop.heapGrowth / 1024 / FRAMES,
     calls: loop.render.calls,
     triangles: loop.render.triangles,
@@ -147,21 +149,33 @@ async function run(base, sc, preset) {
   };
 }
 
-const KEYS = ['frameMs', 'frameP95', 'taskMs', 'scriptMs', 'styleMs', 'layoutMs', 'allocKB', 'heapGrowthKB', 'calls', 'triangles', 'pixels'];
+const KEYS = ['frameMs', 'frameMean', 'frameP95', 'taskMs', 'scriptMs', 'styleMs', 'layoutMs', 'allocKB', 'heapGrowthKB', 'calls', 'triangles', 'pixels'];
 const results = {};
+// Passes alternées (référence, puis chaque préréglage, puis de nouveau la référence…) : l'ordre ne favorise aucune version.
 const targets = REF ? [['ref', REF, [null]], ['tete', BASE, PRESETS]] : [['tete', BASE, PRESETS]];
-for (const [label, base, presets] of targets) {
+const raw = new Map();
+for (let p = 0; p < PASSES; p += 1) {
+  for (const sc of SCENARIOS.filter((s) => SCEN.includes(s.id))) {
+    for (const [label, base, presets] of targets) {
+      for (const preset of presets) {
+        const key = `${label}/${sc.id}/${preset ?? 'defaut'}`;
+        if (!raw.has(key)) raw.set(key, []);
+        raw.get(key).push(await run(base, sc, preset));
+      }
+    }
+  }
+}
+for (const [label, , presets] of targets) {
   for (const sc of SCENARIOS.filter((s) => SCEN.includes(s.id))) {
     for (const preset of presets) {
-      const passes = [];
-      for (let p = 0; p < PASSES; p += 1) passes.push(await run(base, sc, preset));
+      const passes = raw.get(`${label}/${sc.id}/${preset ?? 'defaut'}`);
       const med = Object.fromEntries(KEYS.map((k) => [k, median(passes.map((x) => x[k]))]));
       med.stages = passes[0].stages ? Object.fromEntries(Object.keys(passes[0].stages).map((k) => [k, median(passes.map((x) => x.stages?.[k]))])) : null;
       med.topSites = passes[Math.floor(passes.length / 2)].topSites;
       med.graphics = passes[0].graphics?.preset ?? null;
       const key = `${label}/${sc.id}/${preset ?? 'defaut'}`;
       results[key] = med;
-      console.log(`${key} : image ${med.frameMs?.toFixed(2)} ms (p95 ${med.frameP95?.toFixed(2)}), tâche ${med.taskMs?.toFixed(2)} ms, script ${med.scriptMs?.toFixed(2)}, style ${med.styleMs?.toFixed(3)}, mise en page ${med.layoutMs?.toFixed(3)}, alloc ${med.allocKB?.toFixed(1)} Ko/image, tas +${med.heapGrowthKB?.toFixed(2)} Ko/image, ${med.calls} appels, ${med.triangles} triangles, ${med.pixels} pixels`);
+      console.log(`${key} : image ${med.frameMs?.toFixed(2)} ms (moyenne ${med.frameMean?.toFixed(3)}, p95 ${med.frameP95?.toFixed(2)}), tâche ${med.taskMs?.toFixed(2)} ms, script ${med.scriptMs?.toFixed(2)}, style ${med.styleMs?.toFixed(3)}, mise en page ${med.layoutMs?.toFixed(3)}, alloc ${med.allocKB?.toFixed(1)} Ko/image, tas +${med.heapGrowthKB?.toFixed(2)} Ko/image, ${med.calls} appels, ${med.triangles} triangles, ${med.pixels} pixels`);
     }
   }
 }
@@ -174,7 +188,7 @@ for (const sc of SCEN) {
   for (const preset of PRESETS) {
     const r = results[`tete/${sc}/${preset}`];
     if (!r || !base) continue;
-    rows.push(`| ${sc} | ${preset} | ${pct(r.triangles, base.triangles)} | ${pct(r.calls, base.calls)} | ${pct(r.pixels, base.pixels)} | ${pct(r.taskMs, base.taskMs)} | ${pct(r.frameMs, base.frameMs)} | ${pct(r.allocKB, base.allocKB)} | ${r.triangles} (marge ${45000 - r.triangles}) | ${r.calls} (marge ${400 - r.calls}) |`);
+    rows.push(`| ${sc} | ${preset} | ${pct(r.triangles, base.triangles)} | ${pct(r.calls, base.calls)} | ${pct(r.pixels, base.pixels)} | ${pct(r.taskMs, base.taskMs)} | ${pct(r.frameMean, base.frameMean)} | ${pct(r.allocKB, base.allocKB)} | ${r.triangles} (marge ${45000 - r.triangles}) | ${r.calls} (marge ${400 - r.calls}) |`);
   }
 }
 const table = ['| Scénario | Préréglage | Triangles | Appels | Pixels | Tâche | Image | Allocations | Triangles (marge sous 45 000) | Appels (marge sous 400) |', '|---|---|---|---|---|---|---|---|---|---|', ...rows].join('\n');

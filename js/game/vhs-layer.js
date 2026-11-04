@@ -29,11 +29,14 @@ function grainAddress(params, lookup) {
 const fixed = (n, digits = 4) => String(Math.round(n * 10 ** digits) / 10 ** digits);
 
 // params : data/game/vhs.json ; lookup : jeton -> [r, g, b] (palette.js) ; forced : valeur de parseVhsParam ; reducedMotion : prefers-reduced-motion.
-export function createVhs({ params, lookup, forced = null, reducedMotion = false, root = document }) {
+// Lot 5b : mode « statique » (préréglage Moyen) : une seule image de l'effet (horloge 0), sans grain animé, sans bande de suivi qui défile ni scintillement :
+// les variables CSS ne changent plus après la première image. « anime » : l'effet d'avant (défaut). « off » : coupé (comme ?vhs=0).
+export function createVhs({ params, lookup, forced = null, reducedMotion = false, root = document, mode = 'anime' }) {
   const template = root.getElementById('vhs').cloneNode(true);
   const anchor = root.getElementById('floor-fade') ?? root.getElementById('game-canvas'); // le voile de fondu (lot 3e) est entre le canvas et #vhs
   let current = root.getElementById('vhs');
-  let enabled = forced ?? params.enabled === true;
+  let enabled = forced ?? (mode === 'off' ? false : params.enabled === true);
+  let still = mode === 'statique' && forced !== true;
   let address = null;
   let override = null;
   let clock = 0;
@@ -90,7 +93,8 @@ export function createVhs({ params, lookup, forced = null, reducedMotion = false
     update(seconds) {
       clock = override ?? seconds;
       if (!api.on) return;
-      const f = vhsFrame(clock, params.seed, { enabled: true, reducedMotion: false, intensity: params.intensity, params });
+      if (still && last !== null) return; // lot 5b : effet statique, déjà posé
+      const f = vhsFrame(still ? 0 : clock, params.seed, { enabled: true, reducedMotion: false, intensity: params.intensity, params });
       last = f;
       setVar('--vhs-scan', fixed(f.scanOpacity));
       setVar('--vhs-edge', fixed(f.edgeOpacity));
@@ -105,6 +109,18 @@ export function createVhs({ params, lookup, forced = null, reducedMotion = false
       setVar('--vhs-track-shift', fixed(f.track.shiftPx, 2));
     },
 
+    // Lot 5b (préréglages, à chaud) : off, statique ou anime ; l'interrupteur de la pause reste libre ensuite.
+    setMode(next) {
+      still = next === 'statique';
+      if (!reducedMotion) enabled = next !== 'off';
+      last = null;
+      sync();
+      return enabled;
+    },
+    get mode() {
+      return !enabled ? 'off' : still ? 'statique' : 'anime';
+    },
+
     // Test (?test=1) : fige l'horloge d'effet à t secondes (null : reprend l'horloge réelle) et applique une image tout de suite.
     setClock(t) {
       override = typeof t === 'number' && Number.isFinite(t) ? t : null;
@@ -114,7 +130,7 @@ export function createVhs({ params, lookup, forced = null, reducedMotion = false
     // Pour getState().vhs (?test=1).
     readout() {
       return {
-        enabled, on: api.on, layers: current ? current.children.length : 0, reducedMotion, time: clock,
+        enabled, mode: api.mode, on: api.on, layers: current ? current.children.length : 0, reducedMotion, time: clock,
         grain: last ? { ...last.grain } : null, track: last ? { ...last.track } : null, flicker: last ? last.flicker : 0, opacity: last ? { scan: last.scanOpacity, edge: last.edgeOpacity, vignette: last.vignetteOpacity } : null,
       };
     },

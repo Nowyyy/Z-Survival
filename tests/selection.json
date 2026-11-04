@@ -5,7 +5,7 @@
     "pureté de js/core/",
     "dependencies vide",
     "aucune requête externe",
-    "aucun stockage hors zs.save.v1",
+    "aucun stockage hors zs.save.v1 et zs.device.v1 (lot 5b, décision du propriétaire : préférence graphique de l'appareil)",
     "sauvegarde : schéma, migrations, codec, verrouillage, mode essai, écritures",
     "contrastes, cibles de 44 px, marges, polices minimales, stabilité de l'interface",
     "budgets de dessin et fuites de géométrie",
@@ -627,7 +627,7 @@
         "data/game/blood.json",
         "scripts/personnages/**"
       ],
-      "dependances": ["carte", "noyau", "rendu"],
+      "dependances": ["carte", "graphismes", "noyau", "rendu"],
       "vitest": [
         "tests/unit/core-variants.test.js",
         "tests/unit/data-sons.test.js",
@@ -790,11 +790,11 @@
     },
     {
       "id": "graphismes",
-      "description": "Fluidité et préréglages graphiques (lot 5b) : outil de mesure ?perf=1 (profileur, panneau, rapport), plafond ?cap=, script de comparaison.",
-      "sources": ["js/core/perf-stats.js", "js/game/profiler.js", "js/game/perf-panel.js", "js/game/frame-cap.js", "scripts/perf/**"],
-      "dependances": [],
-      "vitest": ["tests/unit/perf-stats.test.js"],
-      "e2e": ["tests/e2e/perf.spec.js"],
+      "description": "Fluidité et préréglages graphiques (lot 5b) : outil de mesure ?perf=1 (profileur, panneau, rapport), plafond ?cap=, script de comparaison ; préréglages Faible, Moyen, Élevé, Auto (graphics.json, choix, application à chaud, préférence de l'appareil zs.device.v1).",
+      "sources": ["js/core/perf-stats.js", "js/game/profiler.js", "js/game/perf-panel.js", "js/game/frame-cap.js", "scripts/perf/**", "js/core/graphics.js", "js/game/graphics-boot.js", "js/game/graphics-apply.js", "data/game/graphics.json"],
+      "dependances": ["economie"],
+      "vitest": ["tests/unit/graphics.test.js", "tests/unit/perf-stats.test.js"],
+      "e2e": ["tests/e2e/graphismes.spec.js", "tests/e2e/perf.spec.js"],
       "complet": []
     },
     {

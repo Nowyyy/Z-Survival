@@ -12,6 +12,8 @@ import { createRepository } from '../save/index.js';
 import { createInput } from './input.js';
 import { createTokenLookup, readPalette } from './palette.js';
 import { createVhs, parseVhsParam } from './vhs-layer.js';
+import { graphicsBoot } from './graphics-boot.js';
+import { createGraphicsController } from './graphics-apply.js';
 import { installSafeArea } from './safe-area.js';
 import { planSounds, renderSounds, nextVisibleFrame, BACKGROUND_SLICE_MS } from './sound-loader.js';
 import { generateTextureData } from './textures.js';
@@ -70,7 +72,10 @@ const upperWorld = mapId === 'salle' ? null : await loadJson(`${mapDir}/etage.wo
 // Lot 3g : ?detail=0|1 (1 par défaut ; jamais mémorisé) : 0 = textures et décor d'avant le lot, pour comparer. Décor léger intérieur (non solide) :
 // decor-interieur.world.json de la carte (généré par npm run carte), passé au rendu par render.decorInterieur ; absent de l'ancienne salle.
 const detail = query.get('detail') !== '0';
-const decorInterieur = detail && mapId !== 'salle' ? await loadJson(`${mapDir}/decor-interieur.world.json`).catch(() => null) : null;
+// Lot 5b : préréglage graphique (?gfx= > préférence de l'appareil zs.device.v1 > auto) ; les paramètres explicites de l'adresse l'emportent.
+const gfx = await graphicsBoot(location.search);
+const gfxLoad = gfx.settings.load;
+const decorInterieur = detail && gfxLoad.decor !== 'reduit' && mapId !== 'salle' ? await loadJson(`${mapDir}/decor-interieur.world.json`).catch(() => null) : null;
 // Retours du propriétaire : mobilier dessiné d'après le modèle (mobilier.world.json, avec le détail) ; ?murs=bas : murs et piliers à l'ancienne hauteur (essai).
 const mobilier = detail && mapId !== 'salle' ? await loadJson(`${mapDir}/mobilier.world.json`).catch(() => null) : null;
 
@@ -123,13 +128,13 @@ render.detailDoors = detail; // vraies portes et éboulis (lot 3g, retours) ; ?d
 render.seeThrough = query.get('percee') === '0' ? null : (render.seeThrough ?? null); // mur percé autour du joueur caché (lot 3g, retours) ; ?percee=0 l'enlève
 render.feux = detail && mapId !== 'salle' ? ((await loadJson(`${mapDir}/feux.json`).catch(() => null))?.feux ?? []) : []; // feux sur des caisses (lot 3g, retours)
 render.reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
-const textureData = await generateTextureData(texturesCfg.textures, { lookup: createTokenLookup(), onProgress: (p) => loading.update(p * TEXTURE_SHARE), detail });
+const textureData = await generateTextureData(texturesCfg.textures, { lookup: createTokenLookup(), onProgress: (p) => loading.update(p * TEXTURE_SHARE), detail: detail && gfxLoad.texturesFines });
 const audio = createAudio({ config: { audio: audioCfg, materials: materialsCfg, voice: voiceCfg, sounds: soundsCfg.sounds }, test: testMode, seed: Number.isFinite(seedParam) ? seedParam : 1 });
 const essential = await renderSounds(planSounds(soundsCfg.sounds, 'essentiel'), { onProgress: (p) => loading.update(TEXTURE_SHARE + (1 - TEXTURE_SHARE) * p) });
 audio.addSounds(essential.items);
 audio.stats.essentialMs = essential.ms;
 // Effet VHS : le grain est généré (texgen.js) et converti en adresse data: une seule fois, derrière l'écran de préparation.
-const vhs = createVhs({ params: vhsCfg, lookup: createTokenLookup(), forced: parseVhsParam(query.get('vhs')), reducedMotion: matchMedia('(prefers-reduced-motion: reduce)').matches });
+const vhs = createVhs({ params: vhsCfg, lookup: createTokenLookup(), forced: parseVhsParam(query.get('vhs')), reducedMotion: matchMedia('(prefers-reduced-motion: reduce)').matches, mode: gfx.settings.live.vhs });
 await titleFont;
 loading.done();
 root.hidden = false;
@@ -181,8 +186,8 @@ const ctx = {
     labels: query.get('labels') === '1',
     // ?floor=N (lot 3e) : démarre à l'étage (1) ou au rez-de-chaussée (0) si l'escalier correspondant est ouvert au chargement ; sinon ignoré, jamais mémorisé.
     floor: floorParam(query.get('floor')),
-    maxRatio: ratioCap(query.get('dpr')),
-    shadows: query.get('shadows') !== '0',
+    maxRatio: Math.min(ratioCap(query.get('dpr')), gfx.settings.live.dprMax), // lot 5b : plafond du préréglage, sauf ?dpr= explicite (settingsFor)
+    shadows: gfx.settings.live.ombres, // lot 5b : préréglage, sauf ?shadows= explicite
   },
   seed: Number.isFinite(seedParam) ? seedParam : Date.now() % 2147483647,
   seedRun: 0,
@@ -199,6 +204,9 @@ const ctx = {
   audioMaterials: materialsCfg,
 };
 
+// Lot 5b : préréglages graphiques en jeu (réglages « live », Auto entre deux manches) ; sous ?test=1 le rechargement est simulé (getState().graphics).
+ctx.graphics = createGraphicsController(gfx, { vhs, dict, announce: (text) => ctx.ui?.setLive(text), reload: testMode ? null : () => location.reload() });
+ctx.graphicsLabel = () => ctx.graphics.label();
 if (perfMode) ctx.profiler = (await import('./profiler.js')).createProfiler({ search: location.search, ua: navigator.userAgent });
 if (query.has('cap')) ctx.gate = (await import('./frame-cap.js')).gateFromParam(query.get('cap'));
 
@@ -220,7 +228,9 @@ ctx.ui = createUi(dict, {
   onPausePanel: (open) => {
     ctx.audio.ui(open ? 'pause' : 'resume');
     if (open) game?.onPauseOpen();
+    if (open) ctx.ui.syncGraphics(ctx.graphics.state()); // lot 5b : « Auto (Moyen) », baisse éventuelle
   },
+  onGraphicsChoice: (choice) => ctx.graphics.choose(choice), // lot 5b : préférence écrite puis rechargement (confirmé dans la pause)
   onPauseChange: (paused) => {
     ctx.audio.setSuspended(paused);
     syncHint();
@@ -240,6 +250,7 @@ ctx.input = createInput(root, {
 });
 ctx.ui.syncSound(ctx.audio);
 ctx.ui.syncVhs(ctx.vhs);
+ctx.ui.syncGraphics(ctx.graphics.state());
 // Téléphone : tant que le contexte audio n'est pas en marche (aucun doigt relâché depuis le début, un stick tenu), une invitation à toucher
 // s'affiche après 1,5 s ; un toucher (relâché) suffit à activer le son.
 const soundHint = document.getElementById('sound-hint');

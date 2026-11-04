@@ -45,7 +45,8 @@ import { createThreeTextures } from './textures.js';
 import { buildWorld, createCamera } from './world.js';
 
 // Lot 3j : personnages v2 (« riche » par défaut) et sang (complet par défaut) ; ?perso=actuel&sang=0 : le jeu d'avant (rien de plus chargé).
-const persos = await import('./persos-loader.js').then((m) => m.loadPersos(location.search));
+const gfxBoot = await import('./graphics-boot.js').then((m) => m.graphicsBoot()).catch(() => null); // lot 5b : préréglage (variante, sang, cadavres)
+const persos = await import('./persos-loader.js').then((m) => m.loadPersos(gfxBoot?.persosSearch ?? location.search, { corpses: gfxBoot?.corpses ?? null }));
 const { computePose, createKit, createCharacter } = persos.model; // lot 3m : ancien modèle (pose.js, character.js) importé seulement si un personnage est « actuel »
 const RECOIL_TIME = 0.12;
 const HIT_FLASH_TIME = 0.1;
@@ -103,7 +104,8 @@ export function createGame(ctx) {
   let renderer;
   try {
     // ?test=1 : le tampon de dessin est conservé pour que sampleScreen puisse relire l'image.
-    renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance', preserveDrawingBuffer: params.test });
+    const antialias = ctx.graphics?.antialias ?? true; // lot 5b : préréglage (réglage « load »)
+    renderer = new THREE.WebGLRenderer({ antialias, powerPreference: 'high-performance', preserveDrawingBuffer: params.test });
   } catch {
     return null;
   }
@@ -128,6 +130,7 @@ export function createGame(ctx) {
   const pv = persos?.attach({ kit, world, render, palette, variants: ctx.variants, seed: ctx.seed }) ?? null; // lot 3j : kit.v2 et sang
   const P = ctx.profiler ?? null; // lot 5b : profileur de ?perf=1 (absent par défaut : les appels « P?.… » ne font rien)
   P?.attach({ renderer, scene: world.scene });
+  ctx.graphics?.attach({ renderer, world, pv, resize: applySize, params }); // lot 5b : réglages « live » du préréglage (Élevé : rien ne change)
   const effects = createEffects(world.effectsRoot, palette, { gunHeight: render.gunHeight, bulletRadius: cfg.weapon.bulletRadius });
   const hud = createHud(ctx.dict);
   const floorFade = createFloorFade();
@@ -1081,6 +1084,7 @@ export function createGame(ctx) {
     ctx.vhs?.update(now / 1000); // horloge d'effet : secondes réelles, elle continue pendant la pause
     const paused = ctx.ui.isPaused();
     P?.begin(now, paused);
+    ctx.graphics?.frame(now, !paused && !sim.dead && !sim.worldOver, sim.waves?.phase); // lot 5b : Auto (baisse entre deux manches)
     // En pause rien ne bouge : une dernière image suffit (ou après un redimensionnement), puis on n'affiche plus rien.
     if (paused && !stale) return;
     stale = !paused;
@@ -1432,6 +1436,7 @@ export function createGame(ctx) {
         splash: splashView.readout(),
         vhs: ctx.vhs.readout(),
         perf: ctx.perfState?.() ?? null, // lot 5b : mesures de ?perf=1 (null sans le paramètre)
+        graphics: ctx.graphics?.state() ?? null, // lot 5b : préréglage, réglages appliqués, origine du choix
       };
     },
   };

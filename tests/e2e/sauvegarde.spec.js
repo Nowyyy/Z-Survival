@@ -269,7 +269,9 @@ test('la sauvegarde réelle est lue au chargement (stockage local) et la page se
   await expect(state(page)).toContainText('Solde1234');
 });
 
-test('aucune autre clé que zs.save.v1 dans localStorage après toutes les actions ; aucun cookie, sessionStorage vide, aucun IndexedDB', async ({ page }) => {
+test('seules clés zs.save.v1 et zs.device.v1 (laissée intacte) dans localStorage après toutes les actions ; aucun cookie, sessionStorage vide, aucun IndexedDB', async ({ page }) => {
+  // Lot 5b (décision du propriétaire) : la préférence graphique de l'appareil (zs.device.v1) est la seule autre clé permise ; la page de sauvegarde ne la touche pas.
+  await page.addInitScript(() => localStorage.setItem('zs.device.v1', '{"v":1,"graphics":"moyen"}'));
   await open(page, '');
   await replaceWith(page, CODE);
   await expect(page.locator('#live')).toHaveText('Sauvegarde importée.');
@@ -277,8 +279,9 @@ test('aucune autre clé que zs.save.v1 dans localStorage après toutes les actio
   await page.locator('#clear-ack').check();
   await page.getByRole('button', { name: 'Effacer définitivement' }).click();
   await replaceWith(page, CODE);
-  const stores = await page.evaluate(async () => ({ keys: Object.keys(localStorage), session: sessionStorage.length, cookie: document.cookie, idb: (await indexedDB.databases()).length }));
-  expect(stores).toEqual({ keys: [KEY], session: 0, cookie: '', idb: 0 });
+  const stores = await page.evaluate(async () => ({ keys: Object.keys(localStorage).sort(), session: sessionStorage.length, cookie: document.cookie, idb: (await indexedDB.databases()).length }));
+  expect(stores).toEqual({ keys: ['zs.device.v1', KEY], session: 0, cookie: '', idb: 0 }); // ordre alphabétique
+  expect(await page.evaluate(() => localStorage.getItem('zs.device.v1'))).toBe('{"v":1,"graphics":"moyen"}');
   expect(JSON.parse(await page.evaluate((k) => localStorage.getItem(k), KEY)).money).toBe(1234);
 });
 
