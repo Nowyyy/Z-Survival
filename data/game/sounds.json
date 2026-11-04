@@ -1,5 +1,5 @@
 {
-  "_provisoire": "Recettes sonores du lot 1d : toutes les valeurs sont provisoires et jamais écoutées par l'agent qui les a écrites (à juger à l'oreille avec sons.html). Chaque recette est calculée par js/core/synth.js ; la variante v perturbe fréquences (±8 %), gains (±1,5 dB), départs et bruit selon seed + v. set : essentiel (calculé avant la partie) ou fond (calculé pendant la partie). Lot 3 : cinq sons (planche-arrachee, planche-posee, joueur-chute, joueur-releve ; quatre recettes, la chute en deux variantes) à 22 050 Hz, jamais écoutés par l'agent.",
+  "_provisoire": "Recettes sonores du lot 1d : toutes les valeurs sont provisoires et jamais écoutées par l'agent qui les a écrites (à juger à l'oreille avec sons.html). Chaque recette est calculée par js/core/synth.js ; la variante v perturbe fréquences (±8 %), gains (±1,5 dB), départs et bruit selon seed + v. set : essentiel (calculé avant la partie) ou fond (calculé pendant la partie). Lot 3 : cinq sons (planche-arrachee, planche-posee, joueur-chute, joueur-releve ; quatre recettes, la chute en deux variantes) à 22 050 Hz, jamais écoutés par l'agent. Lot 5a-D (retour du propriétaire) : douille baissée de 12 dB (gainDb, recette inchangée) pour que son tintement, qui tombe au moment où la balle touche un zombie, reste discret.",
   "sounds": [
     {
       "id": "tir",
@@ -126,6 +126,7 @@
       "variants": 2,
       "seed": 21,
       "loop": false,
+      "gainDb": -12,
       "layers": [
         {
           "type": "ring",
@@ -241,7 +242,7 @@
       "set": "essentiel",
       "engine": "atelier",
       "sampleRate": 22050,
-      "duration": 0.16,
+      "duration": 0.210023,
       "variants": 5,
       "preload": 1,
       "loop": false,
@@ -252,48 +253,73 @@
           "bufferLevelDb": -12.610000000000001,
           "variants": [
             {
-              "id": "A",
+              "id": "B",
               "recipe": {
                 "kind": "flesh",
-                "dur": 0.16,
-                "vary": 0.04,
+                "dur": 0.21,
+                "vary": 0.05,
                 "thump": {
-                  "f": 130,
+                  "gain": 0
+                },
+                "body": {
+                  "lp": 200,
+                  "dur": 0.08,
+                  "attack": 0.003,
                   "decay": 0.03,
-                  "attack": 0.0015,
-                  "drop": 0.7,
-                  "gain": 0.55
+                  "gain": 1
+                },
+                "puncture": {
+                  "from": 2200,
+                  "to": 800,
+                  "q": 1,
+                  "dur": 0.025,
+                  "decay": 0.007,
+                  "gain": 1.6
                 },
                 "splat": {
-                  "lp": 1500,
-                  "dur": 0.035,
-                  "decay": 0.009,
+                  "lp": 1300,
+                  "dur": 0.04,
+                  "decay": 0.012,
                   "gain": 2.2
                 },
                 "squelch": {
-                  "f": 560,
-                  "q": 1.6,
-                  "dur": 0.13,
-                  "at": 0.006,
-                  "attack": 0.006,
-                  "decay": 0.04,
+                  "f": 520,
+                  "q": 1.8,
+                  "dur": 0.19,
+                  "at": 0.01,
+                  "attack": 0.012,
+                  "decay": 0.07,
                   "rate": [
                     [
                       0,
-                      38
+                      34
+                    ],
+                    [
+                      0.5,
+                      22
                     ],
                     [
                       1,
-                      16
+                      10
                     ]
                   ],
-                  "depth": 0.7,
-                  "blob": 0.012,
-                  "gain": 2.2
+                  "depth": 0.9,
+                  "blob": 0.02,
+                  "gain": 3.4
                 },
-                "lp": 2200,
+                "spray": {
+                  "count": 6,
+                  "from": 0.035,
+                  "to": 0.17,
+                  "f": 950,
+                  "q": 2.2,
+                  "dur": 0.025,
+                  "decay": 0.007,
+                  "gain": 1.4
+                },
+                "lp": 2400,
                 "post": {
-                  "drive": 4
+                  "drive": 5
                 }
               },
               "macros": {
@@ -324,20 +350,20 @@
                 "ampleur": {
                   "min": 0,
                   "max": 0.6,
-                  "default": 0.05,
+                  "default": 0.1,
                   "unit": "mix"
                 }
               }
             }
           ]
         },
-        "variant": "A",
+        "variant": "B",
         "macros": {
           "hauteur": 0,
           "matiere": 0,
           "grain": 1,
           "duree": 1,
-          "ampleur": 0.05
+          "ampleur": 0.1
         }
       }
     },

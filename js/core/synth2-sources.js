@@ -770,7 +770,37 @@ function kindFlesh(r, ctx) {
   const n = ctx.n;
   const layers = [];
   const th = isObj(r.thump) ? r.thump : {};
-  layers.push({ buf: thump(ctx, { f: num(th.f, 120), decay: num(th.decay, 0.03) * ctx.tm, attack: num(th.attack, 0.002), drop: num(th.drop, 0.6), gain: num(th.gain, 1) }) });
+  if (num(th.gain, 1) > 0) layers.push({ buf: thump(ctx, { f: num(th.f, 120), decay: num(th.decay, 0.03) * ctx.tm, attack: num(th.attack, 0.002), drop: num(th.drop, 0.6), gain: num(th.gain, 1) }) });
+  // Retour du propriétaire (lot 5a-D) : corps sans hauteur (bruit brun passe-bas, pas de sinus accordé : un sinus qui descend sonne comme un tambour),
+  // perforation (bruit passe-bande bref qui descend : la balle qui entre) et éclaboussures (petites gouttes humides irrégulières après le choc).
+  if (isObj(r.body) && num(r.body.gain) > 0) {
+    const m = Math.max(8, Math.round(num(r.body.dur, 0.06) * ctx.tm * ctx.sr));
+    const lpB = clamp(num(r.body.lp, 220) * ctx.bright * ctx.pitch, 60, 800);
+    const x = lowpass1(lowpass1(noise(m, 'brown', ctx.seed + 11), lpB, ctx.sr), lpB, ctx.sr);
+    const env = envAD(m, ctx.sr, num(r.body.attack, 0.002), num(r.body.decay, 0.025) * ctx.tm);
+    let pk = 0;
+    for (let i = 0; i < m; i += 1) pk = Math.max(pk, Math.abs(x[i]));
+    for (let i = 0; i < m; i += 1) x[i] = (pk > 1e-12 ? x[i] / pk : 0) * env[i] * num(r.body.gain);
+    layers.push({ buf: x });
+  }
+  if (isObj(r.puncture) && num(r.puncture.gain) > 0) {
+    const m = Math.max(8, Math.round(num(r.puncture.dur, 0.02) * ctx.sr));
+    const f0 = clamp(num(r.puncture.from, 2200) * ctx.bright, 300, 3000);
+    const f1 = clamp(num(r.puncture.to, 900) * ctx.bright, 200, 3000);
+    const x = biquadSweep(noise(m, 'white', ctx.seed + 12), 'bandpass', [[0, f0], [1, f1]], num(r.puncture.q, 1), ctx.sr);
+    const env = envAD(m, ctx.sr, 0.0008, num(r.puncture.decay, 0.006));
+    for (let i = 0; i < m; i += 1) x[i] *= env[i] * num(r.puncture.gain) * ctx.grain;
+    layers.push({ buf: x });
+  }
+  if (isObj(r.spray) && num(r.spray.gain) > 0) {
+    const rnd = createRandom(ctx.seed + 13);
+    const count = clamp(Math.round(num(r.spray.count, 5)), 1, 16);
+    for (let k = 0; k < count; k += 1) {
+      const t = num(r.spray.from, 0.03) + rnd.next() * (num(r.spray.to, 0.15) - num(r.spray.from, 0.03));
+      const drop = band(ctx, { dur: num(r.spray.dur, 0.02), f: num(r.spray.f, 900) * (0.75 + 0.5 * rnd.next()), q: num(r.spray.q, 2), attack: 0.001, decay: num(r.spray.decay, 0.006), gain: num(r.spray.gain) * (0.5 + 0.5 * rnd.next()) * ctx.grain, color: 'pink', seed: ctx.seed + 20 + k });
+      layers.push({ buf: drop, offset: Math.round(t * ctx.tm * ctx.sr) });
+    }
+  }
   if (isObj(r.second)) layers.push({ buf: thump(ctx, { f: num(r.second.f, 70), decay: num(r.second.decay, 0.04) * ctx.tm, attack: num(r.second.attack, 0.004), drop: num(r.second.drop, 0.8), gain: num(r.second.gain, 0.5) }), offset: at(ctx, r.second.at ?? 0.012) });
   const sp = isObj(r.splat) ? r.splat : {};
   const ns = Math.max(4, Math.round(num(sp.dur, 0.03) * ctx.tm * ctx.sr));

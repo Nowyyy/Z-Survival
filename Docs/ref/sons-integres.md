@@ -37,7 +37,7 @@ Généré par `node scripts/sons/lister-integres.mjs` d'après `data/game/sounds
 | `ambiance-lointains` | `ambiance-lointains` | B (ampleur 0,20) | 2 | 670 320 | 3,80 | 567 | -24,0 / -24 | une fois par pause entre les manches, après « Vague N terminée » (waveEnd) ; non spatialisé |
 | `ambiance-feu` | `ambiance-feu` | B (ampleur 0,20) | 1 | 705 600 | 8,00 | 1 609 | -22,4 / -22 | boucle de 8 s au feu de décor le plus proche (feux.json), une seule voix |
 | `porte-enfoncee` | `porte-enfoncee` | A (ampleur 0,10) | 1 | 105 840 | 1,20 | 217 | -8,0 / -8 | le bloc d'une porte s'enfonce à l'ouverture d'une zone (doorOpen), à la position de la porte |
-| `impact-chair` | `impact-zombie` | A (ampleur 0,05) | 5 | 70 560 (211 680) | 0,16 (0,40) | 556 (5 097) | -10,0 / -10 (-10,3) | une balle touche un zombie (zombieHit, blessure ou mort), à l'impact ; remplace l'ancien impact-zombie (« cling ») sous son identifiant : le directeur de sons ne change pas. Lot 5a : variante A par défaut, ?sons=A|B|C pour comparer, ?sons=ancien pour l'ancien |
+| `impact-chair` | `impact-zombie` | B (ampleur 0,10) | 5 | 92 620 (211 680) | 0,21 (0,40) | 798 (5 097) | -10,0 / -10 (-10,3) | une balle touche un zombie (zombieHit, blessure ou mort), à l'impact ; remplace l'ancien impact-zombie (« cling ») sous son identifiant : le directeur de sons ne change pas. Lot 5a : variante B par défaut (choix du propriétaire, B refaite moins « tambour » : partie D), ?sons=A|B|C pour comparer, ?sons=ancien pour l'ancien |
 
 ## Non intégrés
 
@@ -50,4 +50,4 @@ Généré par `node scripts/sons/lister-integres.mjs` d'après `data/game/sounds
 - `joueur-essouffle` (`joueur-essouffle`) : choix « aucun » (pas de sprint).
 - `interface-piece` (`interface-piece`) : choix « aucun » (pas de pièce ramassée).
 
-Total des sons de l'atelier intégrés : 11 328 680 octets (10,80 Mo), mémoire décodée estimée identique (mono). Aucun plafond de poids (décision du propriétaire).
+Total des sons de l'atelier intégrés : 11 350 740 octets (10,82 Mo), mémoire décodée estimée identique (mono). Aucun plafond de poids (décision du propriétaire).
