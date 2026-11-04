@@ -69,11 +69,9 @@ describe('hygiène du lot 3h : pureté et fichiers', () => {
   it('les recettes de la mélodie, des annonces, du tir et des impacts sont identiques à celles de main', () => {
     if (!BASE) return;
     const before = JSON.parse(git(`show ${BASE}:data/game/sounds.json`)).sounds;
-    for (const id of ['vague-annonce', 'vague-renforcee', 'vague-fin', 'tir', 'douille', 'impact-bois', 'impact-metal', 'impact-pierre', 'impact-voiture']) {
-      const { gainDb, ...recipe } = sounds.find((s) => s.id === id); // lot 5a-D : la douille porte un gain propre (−12 dB), recette inchangée
-      const { gainDb: gainBefore, ...recipeBefore } = before.find((s) => s.id === id);
-      expect(recipe, id).toEqual(recipeBefore);
-      if (id !== 'douille') expect(gainDb, id).toBe(gainBefore);
+    // Lot 5a-E : la douille, refaite plus sourde et plus basse à la demande du propriétaire, sort de cette liste (tests/unit/impact-chair.test.js).
+    for (const id of ['vague-annonce', 'vague-renforcee', 'vague-fin', 'tir', 'impact-bois', 'impact-metal', 'impact-pierre', 'impact-voiture']) {
+      expect(sounds.find((s) => s.id === id), id).toEqual(before.find((s) => s.id === id));
     }
     // Lot 5a : l'ancien impact-zombie est remplacé par l'impact sur la chair de l'atelier ; sa recette est conservée telle quelle dans sounds-legacy.json (?sons=ancien).
     const legacy = JSON.parse(readFileSync('data/game/sounds-legacy.json', 'utf8')).sounds;

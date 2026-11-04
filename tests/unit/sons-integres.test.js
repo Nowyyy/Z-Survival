@@ -40,7 +40,7 @@ const REPLACED = ['pas', 'pas-zombie', 'zombie-gemissement', 'zombie-attaque', '
 // Lot 5a : l'impact sur un zombie (ancien « cling ») est remplacé à son tour par l'impact sur la chair de l'atelier (part « 5a », tests/unit/impact-chair.test.js).
 const REPLACED_5A = ['impact-zombie'];
 // Gardés tels quels (fiche) : mélodie, annonces, tir, douille, impacts, chute et relevage du joueur, joueur blessé et mort, trois voix, interface, ambiance.
-const KEPT = ['tir', 'douille', 'impact-bois', 'impact-metal', 'impact-pierre', 'impact-voiture', 'vague-annonce', 'vague-renforcee', 'vague-fin', 'joueur-chute', 'joueur-releve', 'joueur-blesse', 'joueur-mort', 'zombie-grognement', 'zombie-plainte', 'zombie-souffle', 'ui-pause', 'ui-reprise', 'ambiance'];
+const KEPT = ['tir', 'impact-bois', 'impact-metal', 'impact-pierre', 'impact-voiture', 'vague-annonce', 'vague-renforcee', 'vague-fin', 'joueur-chute', 'joueur-releve', 'joueur-blesse', 'joueur-mort', 'zombie-grognement', 'zombie-plainte', 'zombie-souffle', 'ui-pause', 'ui-reprise', 'ambiance'];
 // Référence « main » d'avant l'intégration des refontes (lot 4, c166e53) : depuis la fusion de lot-4b, main contient les sons de l'atelier.
 // Absente (clone superficiel de la CI) : comparaison sautée (main contient déjà ces sons, il ne peut plus servir de référence).
 const MAIN_AVANT = git('rev-parse --verify --quiet c166e53^{commit}') !== null ? 'c166e53' : null;
@@ -111,10 +111,9 @@ describe('anciens sons : déplacés, recettes conservées', () => {
 
   it.each(KEPT)('%s : recette gardée, identique à main (mélodie, coups de feu, impacts…)', (id) => {
     expect(isAtelier(byId.get(id))).toBe(false);
-    // Lot 5a-D : la douille porte un gain propre (−12 dB) ; sa recette ne change pas.
-    const { gainDb, ...recipe } = byId.get(id);
-    if (id !== 'douille') expect(gainDb).toBeUndefined();
-    if (mainSounds) expect(recipe).toEqual(mainSounds.find((r) => r.id === id));
+    // Lot 5a-E : la douille, refaite plus sourde et plus basse à la demande du propriétaire, sort de cette liste (tests/unit/impact-chair.test.js).
+    expect(byId.get(id).gainDb).toBeUndefined();
+    if (mainSounds) expect(byId.get(id)).toEqual(mainSounds.find((r) => r.id === id));
   });
 });
 
