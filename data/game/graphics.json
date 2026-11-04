@@ -1,0 +1,20 @@
+{
+  "_provisoire": "Lot 5b : préréglages graphiques PROVISOIRES, à régler avec les rapports de ?perf=1 des appareils du propriétaire (iPhone, Android). live : modifiable à chaud (Auto les baisse entre deux manches) ; load : appliqué au chargement (changer recharge la page). eleve = rendu actuel du jeu, épaves comprises (aucun changement). Un paramètre explicite de l'adresse (?perso, ?sang, ?usure, ?detail, ?vhs, ?shadows, ?dpr) l'emporte sur le préréglage.",
+  "_champs": "dprMax : plafond du rapport de pixels ; ombres, ombreTaille : carte d'ombres (côté en pixels) ; vhs : off, statique (une image, sans grain animé), anime ; brouillard : simple (scene.fog seul), reduit (mur de brume sans nappes basses), complet ; feux : voitureFoyers (foyers de la voiture en flammes), fumeeHelico (part des particules, 0 = coupée), particules (part des particules des autres feux), lueur (lueur au sol des autres feux) ; sang : reduit ou 1 ; cadavres : simultanés. personnages : A ou choix (table des choix : « riche ») ; anticrenelage ; texturesFines (option fine de textures.json) ; les textures gardent leur taille (512 au plus, comme aujourd'hui, pour les trois) ; decor : reduit (sans le décor léger intérieur) ou complet.",
+  "schema": 1,
+  "presets": {
+    "faible": {
+      "live": { "dprMax": 1, "ombres": false, "ombreTaille": 512, "vhs": "off", "brouillard": "simple", "feux": { "voitureFoyers": 1, "fumeeHelico": 0, "particules": 0.5, "lueur": false }, "sang": "reduit", "cadavres": 0 },
+      "load": { "personnages": "A", "anticrenelage": false, "texturesFines": false, "decor": "reduit" }
+    },
+    "moyen": {
+      "live": { "dprMax": 1.5, "ombres": true, "ombreTaille": 512, "vhs": "statique", "brouillard": "reduit", "feux": { "voitureFoyers": 2, "fumeeHelico": 0.5, "particules": 1, "lueur": true }, "sang": "reduit", "cadavres": 1 },
+      "load": { "personnages": "A", "anticrenelage": false, "texturesFines": true, "decor": "complet" }
+    },
+    "eleve": {
+      "live": { "dprMax": 2, "ombres": true, "ombreTaille": 1024, "vhs": "anime", "brouillard": "complet", "feux": { "voitureFoyers": 2, "fumeeHelico": 1, "particules": 1, "lueur": true }, "sang": "1", "cadavres": 2 },
+      "load": { "personnages": "choix", "anticrenelage": true, "texturesFines": true, "decor": "complet" }
+    }
+  },
+  "auto": { "initial": { "grossier": "moyen", "autre": "eleve" }, "seuilMs": 22, "fenetreSecondes": 10, "baisse": "entre-manches", "remonte": false }
+}

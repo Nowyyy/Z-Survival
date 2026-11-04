@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { execSync } from 'node:child_process';
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
+import { seedProblems } from './helpers/seed.js';
 import { circleOverlapsRect } from '../../js/core/collision.js';
 import { moveCircle } from '../../js/core/movement.js';
 import { DOWN_TEXTS, WINDOW_INITIALS, WINDOW_NAMES, WINDOW_TEXTS } from '../../js/game/texts.js';
@@ -115,8 +116,11 @@ describe('géométrie des fenêtres et du monde (world.json inchangé)', () => {
   });
 
   it('les fichiers que le lot ne doit pas toucher sont inchangés depuis main', () => {
-    const changed = git('diff --name-only main -- js/core/waves.js js/core/vhs.js js/core/spread.js js/core/camera.js data/game/gaits.json data/game/weapons.json data/game/decor.json data/game/vhs.json Docs/seed.md .github');
+    const changed = git('diff --name-only main -- js/core/waves.js js/core/vhs.js js/core/spread.js js/core/camera.js data/game/gaits.json data/game/weapons.json data/game/decor.json data/game/vhs.json .github');
     if (changed !== null) expect(notLot4c(changed)).toEqual([]);
+    // Lot 5b : Docs/seed.md n'est plus comparé à un commit figé (le propriétaire le met à jour) : seuls ses commits le modifient (tests/unit/helpers/seed.js).
+    const seed = seedProblems();
+    if (seed !== null) expect(seed).toEqual([]);
   });
 });
 

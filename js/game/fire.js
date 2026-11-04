@@ -73,6 +73,7 @@ export function createFire(spec, palette, { reduced = false, scale = 1, glow: wi
   const spread = { x: Math.max(8, spec.w * 0.38), z: Math.max(8, spec.d * 0.38) };
   const spots = Array.isArray(spec.spots) && spec.spots.length > 0 ? spec.spots.map((q) => ({ x: q.x, z: q.z, y: q.y, sx: Math.max(6, q.w * 0.38), sz: Math.max(6, q.d * 0.38) })) : null;
   let turn = 0;
+  let spotLimit = spots ? spots.length : 1; // lot 5b : foyers utilisés (préréglage Faible : un seul foyer pour la voiture)
 
   const makePoints = (n, blending) => {
     const geometry = new THREE.BufferGeometry();
@@ -111,7 +112,7 @@ export function createFire(spec, palette, { reduced = false, scale = 1, glow: wi
     p.age = 0;
     p.life = life;
     if (spots) {
-      const q = spots[turn % spots.length];
+      const q = spots[turn % Math.min(spots.length, spotLimit)];
       turn += 1;
       p.base = q.y;
       p.x = q.x + (rnd() * 2 - 1) * q.sx;
@@ -131,6 +132,8 @@ export function createFire(spec, palette, { reduced = false, scale = 1, glow: wi
   smokeParts.forEach((p) => { born(p, 4 + rnd() * 2.5); p.age = rnd() * p.life; p.rise = (24 + rnd() * 18) * k0 * smokeRise; });
   const tmp = new THREE.Color();
   let glowTime = 0;
+  let dirty = false; // lot 5b-C : particules avancées hors du champ, pas encore réécrites dans les tampons
+  const sphere = new THREE.Sphere();
 
   const write = () => {
     const fp = flames.geometry.attributes.position.array;
@@ -175,14 +178,38 @@ export function createFire(spec, palette, { reduced = false, scale = 1, glow: wi
 
   return {
     group,
-    // Avance de dt secondes de jeu (0 : rien ne bouge) ; mouvement réduit : immobile.
-    update(dt) {
+    // Avance de dt secondes de jeu (0 : rien ne bouge) ; mouvement réduit : immobile. Lot 5b-C : hors du champ (inView faux), les particules
+    // avancent quand même (même suite, même âge) mais leurs tampons ne sont réécrits qu'au retour dans le champ : le feu y est identique.
+    update(dt, inView = true) {
       const d = reduced ? 0 : Math.min(0.1, Math.max(0, Number(dt) || 0));
-      if (d === 0) return;
-      step(d);
-      write();
+      if (d > 0) step(d);
+      if (!inView) {
+        dirty = dirty || d > 0;
+        return;
+      }
+      if (d > 0 || dirty) write();
+      dirty = false;
     },
-    stats: () => ({ id: spec.id, flames: withFlames ? FLAMES : 0, smoke: SMOKE, x: spec.x, z: spec.z, y: spec.y, time: glowTime, spots: spots ? spots.length : 1, glow: withGlow }),
+    // Lot 5b-C : le feu peut-il être dessiné dans ce champ (sphère englobante fixe, groupes parents affichés) ?
+    inView(frustum) {
+      for (let o = group; o; o = o.parent) if (!o.visible) return false;
+      group.updateWorldMatrix(true, false);
+      sphere.copy(smoke.geometry.boundingSphere).applyMatrix4(group.matrixWorld);
+      return frustum.intersectsSphere(sphere);
+    },
+    stats: () => ({ id: spec.id, flames: withFlames ? FLAMES : 0, smoke: SMOKE, x: spec.x, z: spec.z, y: spec.y, time: glowTime, spots: spots ? spots.length : 1, glow: withGlow, drawn: { flames: withFlames ? Math.min(FLAMES, flames.geometry.drawRange.count) : 0, smoke: Math.min(SMOKE, smoke.geometry.drawRange.count), spots: spots ? Math.min(spots.length, spotLimit) : 1, glow: withGlow && glow.visible, visible: group.visible } }),
+    // Lot 5b (préréglages) : part des particules dessinées (0,1 à 1 : plage de dessin, aucune recréation), foyers utilisés, lueur, feu affiché ou non.
+    // Valeurs par défaut (1, tous les foyers, lueur, affiché) : rien ne change. Modifiable à chaud ; un feu caché n'est plus mis à jour (world.js).
+    setOptions({ particles = 1, spots: n = null, glow: g = true, visible = true } = {}) {
+      const k = Math.max(0.1, Math.min(1, Number(particles) || 1));
+      const nf = Math.round(FLAMES * k);
+      const ns = Math.round(SMOKE * k);
+      if (flames.geometry.drawRange.count !== (k === 1 ? Infinity : nf)) flames.geometry.setDrawRange(0, k === 1 ? Infinity : nf);
+      if (smoke.geometry.drawRange.count !== (k === 1 ? Infinity : ns)) smoke.geometry.setDrawRange(0, k === 1 ? Infinity : ns);
+      if (spots) spotLimit = Number.isInteger(n) && n >= 1 ? Math.min(spots.length, n) : spots.length;
+      if (glow.visible !== (g !== false)) glow.visible = g !== false;
+      if (group.visible !== (visible !== false)) group.visible = visible !== false;
+    },
     dispose() {
       for (const o of [flames, smoke, glow]) {
         o.geometry.dispose();

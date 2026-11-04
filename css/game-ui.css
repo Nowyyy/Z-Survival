@@ -585,3 +585,38 @@
     animation: none;
   }
 }
+
+/* Lot 5b : ligne « Graphismes » de la pause (Auto, Faible, Moyen, Élevé) : quatre boutons de 44 px, choix courant marqué par aria-pressed (bordure et
+   texte, pas la couleur seule) ; confirmation de rechargement par-dessus la pause (#gfx-confirm). */
+.panel-gfx {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35em;
+}
+
+.gfx-head {
+  justify-content: space-between;
+  gap: 1em;
+}
+
+.gfx-current {
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+.gfx-choices {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.5em;
+}
+
+.panel .gfx-choice[aria-pressed="true"] {
+  border-color: var(--color-text);
+  background: var(--color-ground-light);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+.gfx-confirm {
+  z-index: 11;
+}

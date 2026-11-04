@@ -715,6 +715,8 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
   // Lot 3g (retour du propriétaire) : feux avec fumée sur des piles de caisses (render.feux : feux.json ; absent avec ?detail=0), posés au centre et sur le dessus
   // de la pièce (boîtes de mobilier.world.json). Trois appels de dessin par feu, dans le groupe de son étage.
   const fires = [];
+  const viewFrustum = new THREE.Frustum(); // lot 5b-C : champ de la caméra (feux hors champ)
+  const viewMatrix = new THREE.Matrix4();
   for (const fe of Array.isArray(render.feux) ? render.feux : []) {
     const boxes = render.mobilier?.[fe?.piece]?.boxes;
     if (!floors.includes(fe?.floor) || !Array.isArray(boxes) || boxes.length === 0) continue;
@@ -725,6 +727,7 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
     const fire = createFire({ id: fe.id, x: (x0 + x1) / 2, z: (z0 + z1) / 2, y: Math.max(...boxes.map((b) => b.y1)), w: x1 - x0, d: z1 - z0 }, palette, { reduced: render.reducedMotion === true });
     fire.group.userData.floor = fe.floor;
     groups[fe.floor].add(fire.group);
+    fire.kind = 'decor'; // lot 5b : « autres feux » des préréglages
     fires.push(fire);
   }
 
@@ -751,6 +754,7 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
       const smoke = createFire({ id: 'fumee-helicoptere', x: h.x, z: h.y, y: 34, w: 90, d: 60 }, palette, { reduced: render.reducedMotion === true, glow: false, flames: false, smoke: { alpha: 0.16, color: palette.smokeLight, rise: 0.7 } });
       smoke.group.userData.floor = 'exterieur';
       groups.exterieur.add(smoke.group);
+      smoke.kind = 'helico'; // lot 5b
       fires.push(smoke);
       wrecks.helicopter.smoke = smoke.group.name;
     }
@@ -762,6 +766,7 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
     const fire = createFire({ id: `feu-${burning.id}`, x: burning.x + burning.w / 2, z: burning.y + burning.h / 2, y: Math.max(...spots.map((q) => q.y)), w: burning.w, d: burning.h, spots }, palette, { reduced: render.reducedMotion === true, glow: false });
     fire.group.userData.floor = 'exterieur';
     groups.exterieur.add(fire.group);
+    fire.kind = 'voiture'; // lot 5b
     fires.push(fire);
     wrecks.burningCar = { id: burning.id, fire: fire.group.name, spots: spots.map((q) => q.id) };
   }
@@ -774,6 +779,7 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
       const fire = createFire({ id: b.id, x: b.x, z: b.y, y: b.hauteur, w: b.r * 2, d: b.r * 2 }, palette, { reduced: render.reducedMotion === true, scale: 0.55 });
       fire.group.userData.floor = 'exterieur';
       groups.exterieur.add(fire.group);
+      fire.kind = 'decor'; // lot 5b
       fires.push(fire);
     }
   }
@@ -1040,13 +1046,43 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
     // n'est dessinée qu'à l'étage. Aucune reconstruction, aucun dispose.
     // Lot 3g : position du joueur pour le mur percé (à chaque image, avec la caméra) ; état pour les tests.
     // À chaque image (temps de jeu dt) : feux, et mur percé (position du joueur, caméra).
-    frame(dt, x, y, camera) {
-      for (const fire of fires) fire.update(dt);
+    frame(dt, x, y, camera, view = null) {
+      // Lot 5b : un feu caché par le préréglage n'est pas mis à jour ; 5b-C : hors du champ, ses tampons de particules ne sont pas réécrits.
+      if (view) {
+        view.updateMatrixWorld();
+        viewFrustum.setFromProjectionMatrix(viewMatrix.multiplyMatrices(view.projectionMatrix, view.matrixWorldInverse));
+      }
+      for (const fire of fires) if (fire.group.visible) fire.update(dt, view ? fire.inView(viewFrustum) : true);
       const still = render.reducedMotion === true;
-      for (const m of mists) if (!still) m.material.uniforms.uTime.value += Math.min(0.1, Math.max(0, Number(dt) || 0));
+      for (const m of mists) if (!still && m.visible) m.material.uniforms.uTime.value += Math.min(0.1, Math.max(0, Number(dt) || 0));
       seeThrough.update(x, y, camera, occluders, (b) => (b.floor === 'etage' ? lift : 0) - elevationNow);
     },
     fireStats: () => fires.map((f) => f.stats()),
+    // Lot 5b (préréglages graphiques, à chaud) : feux et fumées, brume, ombres. Valeurs de l'Élevé : rien ne change.
+    setFires(opts = {}) {
+      for (const f of fires) {
+        if (f.kind === 'voiture') f.setOptions({ spots: opts.voitureFoyers });
+        else if (f.kind === 'helico') f.setOptions({ particles: opts.fumeeHelico > 0 ? opts.fumeeHelico : 1, visible: opts.fumeeHelico !== 0 });
+        else f.setOptions({ particles: opts.particules, glow: opts.lueur });
+      }
+    },
+    // simple : seulement scene.fog (aucun plan de brume) ; reduit : le mur de brume sans les nappes basses ; complet : tout.
+    setMist(mode = 'complet') {
+      mists.forEach((m, i) => {
+        const on = mode === 'complet' || (mode === 'reduit' && i === 0);
+        if (m.visible !== on) m.visible = on;
+      });
+    },
+    setShadowMap(enabled, size) {
+      if (sun.castShadow !== (enabled !== false)) sun.castShadow = enabled !== false;
+      const n = Number.isInteger(size) && size >= 64 ? size : sun.shadow.mapSize.x;
+      if (sun.shadow.mapSize.x !== n) {
+        sun.shadow.mapSize.set(n, n);
+        sun.shadow.map?.dispose();
+        sun.shadow.map = null;
+      }
+    },
+    graphicsStats: () => ({ mists: mists.map((m) => m.visible), shadowMap: sun.shadow.mapSize.x, castShadow: sun.castShadow, fires: fires.map((f) => ({ kind: f.kind ?? 'decor', ...f.stats().drawn })) }),
     // Lot 5a : épaves dessinées (hélicoptère : triangles, rectangles de collision ; voiture en flammes : feu et foyers) ; feu actif = dans la liste des feux mis à jour.
     wreckStats: () => ({ ...wrecks, fires: fires.filter((f) => f.group.name === wrecks.burningCar?.fire).map((f) => f.stats()), heliSmoke: fires.filter((f) => f.group.name === wrecks.helicopter?.smoke).map((f) => f.stats()), propsTriangles: exProps ? exProps.geometry.attributes.position.count / 3 : 0, sceneryTriangles: exScenery ? exScenery.geometry.attributes.position.count / 3 : 0, exteriorVisible: groups.exterieur.visible }),
     seeThroughState: () => seeThrough.state(),

@@ -218,6 +218,9 @@ test.describe('conservation à la mort', () => {
     await open(page);
     await dieAfterKill(page, 4);
     const keys = await page.evaluate(() => Object.keys(localStorage));
+    // Lot 5b (décision du propriétaire) : seules clés permises zs.save.v1 et zs.device.v1 (préférence graphique de l'appareil, écrite seulement
+    // par la ligne « Graphismes » de la pause) ; rien n'y a été choisi ici : zs.save.v1 reste la seule clé.
+    expect(keys.filter((k) => ![KEY, 'zs.device.v1'].includes(k))).toEqual([]);
     expect(keys).toEqual([KEY]);
     const raw = await stored(page);
     expect(raw.length).toBeLessThan(1024);

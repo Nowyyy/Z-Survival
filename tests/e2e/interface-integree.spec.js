@@ -328,7 +328,8 @@ test.describe('états du jeu', () => {
     expect(r.vhs.t).toBeGreaterThan(r.sound.b);
     expect(Math.abs(r.vhs.t - r.restart.t)).toBeLessThan(0.5);
     expect(r.sound.l).toBeGreaterThan(r.resume.r);
-    expect([r.inputs, r.lines]).toEqual([0, 1]); // seule ligne : le solde
+    expect([r.inputs, r.lines]).toEqual([0, 2]); // lignes : le solde et, depuis le lot 5b, la tête de la ligne « Graphismes » (#gfx-row)
+    expect(await page.locator('#pause-panel p').nth(1).getAttribute('class')).toBe('panel-line gfx-head');
     await expect(page.locator('#btn-quit')).toBeDisabled();
     await expect(page.locator('#btn-quit')).toHaveText('Quitter');
     await page.keyboard.press('Tab');

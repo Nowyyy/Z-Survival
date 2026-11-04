@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { execSync } from 'node:child_process';
 import { readFileSync, readdirSync } from 'node:fs';
+import { seedProblems } from './helpers/seed.js';
 import { ERROR_CODES, STAT_KEYS, statMaxLevels } from '../../js/core/save.js';
 import { ALL_STAT_IDS } from '../../js/core/player-stats.js';
 import { errorKey } from '../../js/sauvegarde/logic.js';
@@ -200,7 +201,10 @@ describe('hygiène du lot 4 (partie A)', () => {
   });
 
   it('Docs/seed.md et le workflow sont inchangés (index.html : icône du site, demande du propriétaire)', () => {
-    const changed = git('diff --name-only main -- Docs/seed.md .github');
+    // Lot 5b : Docs/seed.md n'est plus comparé à un commit figé (le propriétaire le met à jour) : seuls ses commits le modifient (tests/unit/helpers/seed.js).
+    const seed = seedProblems();
+    if (seed !== null) expect(seed).toEqual([]);
+    const changed = git('diff --name-only main -- .github');
     if (changed === null) return;
     expect(notLot4c(changed)).toEqual([]);
   });

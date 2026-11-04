@@ -50,7 +50,7 @@ export function createPersos(params, data, model) {
   let dynamic = null;
   const facings = new Map(); // orientation dessinée de chaque zombie (identifiant -> radians), pour la chute de son cadavre
   const pools = new Map(); // cadavres réutilisés, par variante de zombie (aucune création à chaque mort)
-  const bodyStains = settings(data.blood, params.sang).bodyStains;
+  let bodyStains = settings(data.blood, params.sang).bodyStains;
   const wear = () => (params.usure === 'auto' ? wearTier(wave, data.characters.wearByWave) : params.usure);
 
   // Cadavre : personnage v2 de la variante choisie (pose de mort) ou personnage actuel posé « à terre » (il n'a pas d'animation de mort).
@@ -134,6 +134,17 @@ export function createPersos(params, data, model) {
       facings.clear();
       blood?.reset();
       lastHp = null;
+    },
+    // Lot 5b (préréglage Auto, entre deux manches) : niveau de sang et cadavres, à chaud ; sans effet si le sang n'a pas été chargé (?sang=0).
+    // corpses : nombre de cadavres du niveau (null : celui de blood.json). Les taches et cadavres en cours sont effacés (blood-fx.setLevel).
+    setBlood(level, corpses = null) {
+      if (!blood || !['reduit', '1'].includes(level)) return false;
+      const l = data.blood?.levels?.[level];
+      if (l && Number.isInteger(corpses) && corpses >= 0) l.corpses = corpses;
+      params.sang = level;
+      bodyStains = settings(data.blood, level).bodyStains;
+      blood.setLevel(level);
+      return true;
     },
     state(render) {
       let zombies = 0;

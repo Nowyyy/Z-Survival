@@ -69,6 +69,8 @@ describe('mêmes règles qu\'au lot 1', () => {
     allowed.push('js/core/arena.js'); // lot 3j : mini-arène (nouveau fichier)
     allowed.push('js/core/crowd.js'); // lot 3j : foule de la mini-arène (nouveau fichier)
     allowed.push('js/core/epaves.js'); // lot 5a : épaves du décor extérieur (nouveau fichier, pur)
+    allowed.push('js/core/perf-stats.js'); // lot 5b : mesure de fluidité de ?perf=1 (nouveau fichier, pur)
+    allowed.push('js/core/graphics.js'); // lot 5b : préréglages graphiques (nouveau fichier, pur)
     expect(changed.filter((f) => !allowed.includes(f))).toEqual([]);
   });
 });
