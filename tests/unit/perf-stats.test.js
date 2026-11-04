@@ -120,6 +120,14 @@ describe('système, paramètres et rapport', () => {
     expect(summarizeUA('Mozilla/5.0 (Linux; Android 13; SM-S911B) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/24.0 Chrome/117.0 Mobile Safari/537.36').browser).toBe('Samsung Internet 24');
     for (const h of HOSTILE) expect(() => summarizeUA(h)).not.toThrow();
     expect(summarizeUA(null)).toEqual({ os: 'autre', browser: 'autre', mobile: false });
+    // Lot 5b-E : depuis iOS 26, Safari fige iOS à 18.x dans le user-agent ; la version de Safari donne celle d'iOS (iPhone 16 Pro Max du propriétaire : iOS 27).
+    const ios27 = 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.0 Mobile/15E148 Safari/604.1';
+    expect(summarizeUA(ios27)).toEqual({ os: 'iOS 27', browser: 'Safari 27.0', mobile: true, uaOs: '18.7' });
+    expect(summarizeUA(ios27.replace('Version/27.0', 'Version/18.7'))).toEqual({ os: 'iOS 18.7', browser: 'Safari 18.7', mobile: true });
+    expect(summarizeUA('Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/141.0 Mobile/15E148 Safari/604.1').os).toBe('iOS 18.7');
+    const text = formatReport({ system: summarizeUA(ios27), refresh: 60, stages: { sim: 1, rendu: 0 }, stagesMean: { sim: 0.42, rendu: 1.37 } }).split('\n');
+    expect(text[1]).toBe('Système : iOS 27 (user-agent figé à 18.7) · Safari 27.0 · cadence de la page 60 Hz (Safari : 60 images/s par défaut, même sur un écran 120 Hz) · DPR — · canvas 0×0');
+    expect(text[5]).toBe('Travail/image (moyenne, ms) : sim 0,4 · rendu 1,4');
   });
   it('paramètres de l\'adresse nettoyés et bornés', () => {
     expect(paramsLine('?perf=1&gfx=moyen&cap=60')).toBe('perf=1&gfx=moyen&cap=60');
@@ -137,9 +145,9 @@ describe('système, paramètres et rapport', () => {
     const lines = text.split('\n');
     expect(lines).toHaveLength(11);
     expect(lines[0]).toBe('Z-Survival — rapport de fluidité v1');
-    expect(lines[1]).toBe('Système : Android 14 · Chrome 130 · écran 60 Hz · DPR 2,00 · canvas 1334×750');
+    expect(lines[1]).toBe('Système : Android 14 · Chrome 130 · cadence de la page 60 Hz · DPR 2,00 · canvas 1334×750');
     expect(lines[3]).toContain('médiane 16,7 ms');
-    expect(lines[5]).toBe('Travail/image (médiane, ms) : sim 1,3 · rendu 4,0');
+    expect(lines[5]).toBe('Travail/image (moyenne, ms) : sim 1,3 · rendu 4,0');
     expect(lines[6]).toBe('Rendu : 62 appels · 38479 triangles · 14 programmes · 200 géométries · 18 textures');
     expect(lines[8]).toBe('Premier usage (max image dans les 600 ms) : tir 45 ms · feu —');
     expect(lines[9]).toBe('Mémoire JS : 45,3 Mo');

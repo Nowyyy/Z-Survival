@@ -156,11 +156,19 @@ export function createHistogram(binMs = 0.25, maxMs = 250) {
 }
 
 // Système résumé (sans identifier l'appareil) : famille, version du système et navigateur d'après le user-agent.
+// Lot 5b-E : depuis iOS 26, Safari fige la version d'iOS du user-agent (18.x) ; sa propre version (Version/27.0) suit celle d'iOS : elle donne
+// alors le système (« iOS 27 »), la valeur figée restant dans uaOs. Les autres navigateurs d'iOS n'ont pas cette indication : version du user-agent.
 export function summarizeUA(ua) {
   const s = typeof ua === 'string' ? ua.slice(0, 400) : '';
   const v = (re) => (s.match(re)?.[1] ?? '').replace(/_/g, '.');
   let os = 'autre';
-  if (/iPhone|iPad|iPod/.test(s)) os = `iOS ${v(/OS (\d+[_.]\d+)/)}`.trim();
+  let uaOs = null;
+  if (/iPhone|iPad|iPod/.test(s)) {
+    uaOs = v(/OS (\d+[_.]\d+)/) || null;
+    const safari = /CriOS|FxiOS|EdgiOS/.test(s) ? 0 : Number(v(/Version\/(\d+)/)) || 0;
+    os = safari >= 26 && Number(String(uaOs).split('.')[0]) < safari ? `iOS ${safari}` : `iOS ${uaOs ?? ''}`.trim();
+    if (os === `iOS ${uaOs}`) uaOs = null; // version lue telle quelle : rien de figé à signaler
+  }
   else if (/Android/.test(s)) os = `Android ${v(/Android (\d+(?:\.\d+)?)/)}`.trim();
   else if (/Mac OS X/.test(s)) os = 'macOS';
   else if (/Windows/.test(s)) os = 'Windows';
@@ -173,7 +181,7 @@ export function summarizeUA(ua) {
   else if (/Edg\/(\d+)/.test(s)) browser = `Edge ${v(/Edg\/(\d+)/)}`;
   else if (/Chrome\/(\d+)/.test(s)) browser = `Chrome ${v(/Chrome\/(\d+)/)}`;
   else if (/Version\/(\d+(?:\.\d+)?).*Safari/.test(s)) browser = `Safari ${v(/Version\/(\d+(?:\.\d+)?)/)}`;
-  return { os, browser, mobile: /Mobile|Android|iPhone|iPad/.test(s) };
+  return { os, browser, mobile: /Mobile|Android|iPhone|iPad/.test(s), ...(uaOs ? { uaOs } : {}) };
 }
 
 // Nombre court à la française (virgule décimale) ; absent : « — ».
@@ -204,15 +212,17 @@ export function formatReport(data, t = {}) {
   const tt = { frames: L('frames', 'images'), median: L('median', 'médiane') };
   const win = d.window ?? frameSummary([]);
   const all = d.session ?? frameSummary([]);
-  const stages = d.stages && typeof d.stages === 'object' ? d.stages : {};
+  // Lot 5b-E : moyennes par étape (Safari arrondit son horloge haute résolution à la milliseconde : les médianes n'y valent que 0 ou 1).
+  const stages = d.stagesMean && typeof d.stagesMean === 'object' ? d.stagesMean : d.stages && typeof d.stages === 'object' ? d.stages : {};
+  const ios60 = d.refresh === 60 && /^iOS/.test(String(d.system?.os ?? ''));
   const info = d.renderer ?? {};
   const lines = [
     `${L('title', 'Z-Survival — rapport de fluidité')} v1`,
-    line(L('system', 'Système'), [d.system?.os ?? '—', d.system?.browser ?? '—', d.refresh ? `${L('screen', 'écran')} ${d.refresh} Hz` : `${L('screen', 'écran')} —`, `DPR ${fr(d.dpr, 2)}`, `canvas ${d.canvas?.width ?? 0}×${d.canvas?.height ?? 0}`]),
+    line(L('system', 'Système'), [d.system?.uaOs ? `${d.system.os} (${L('uaOs', 'user-agent figé à')} ${d.system.uaOs})` : d.system?.os ?? '—', d.system?.browser ?? '—', d.refresh ? `${L('screen', 'cadence de la page')} ${d.refresh} Hz${ios60 ? ` (${L('ios60', 'Safari : 60 images/s par défaut, même sur un écran 120 Hz')})` : ''}` : `${L('screen', 'cadence de la page')} —`, `DPR ${fr(d.dpr, 2)}`, `canvas ${d.canvas?.width ?? 0}×${d.canvas?.height ?? 0}`]),
     line(L('preset', 'Préréglage'), [d.preset ?? '—', d.params ? `${L('params', 'paramètres')} ${d.params}` : '']),
     line(L('window', '5 s'), series(win, tt)),
     line(L('session', 'Session'), series(all, tt)),
-    line(L('work', 'Travail/image (médiane, ms)'), Object.entries(stages).map(([k, v]) => `${k} ${fr(v)}`)),
+    line(L('work', 'Travail/image (moyenne, ms)'), Object.entries(stages).map(([k, v]) => `${k} ${fr(v)}`)),
     line(L('render', 'Rendu'), [`${info.calls ?? 0} ${L('calls', 'appels')}`, `${info.triangles ?? 0} ${L('triangles', 'triangles')}`, `${info.programs ?? 0} ${L('programs', 'programmes')}`, `${info.geometries ?? 0} ${L('geometries', 'géométries')}`, `${info.textures ?? 0} ${L('textures', 'textures')}`]),
     line(L('longtasks', 'Tâches longues'), [d.longTasks?.supported === false ? L('unsupported', 'non prises en charge') : `${d.longTasks?.count ?? 0} (max ${fr(d.longTasks?.max ?? 0, 0)} ms, ${fr(d.longTasks?.total ?? 0, 0)} ms)`]),
     line(L('hitches', 'Premier usage (max image dans les 600 ms)'), (Array.isArray(d.hitches) && d.hitches.length ? d.hitches : []).map((h) => `${h.name} ${h.max === null ? '—' : `${fr(h.max, 0)} ms`}`).concat(Array.isArray(d.hitches) && d.hitches.length ? [] : [L('none', 'aucun')])),

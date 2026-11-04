@@ -11,6 +11,8 @@ export const REPORT_TEXTS = {
   title: 'game.perf.report.title',
   system: 'game.perf.report.system',
   screen: 'game.perf.report.screen',
+  uaOs: 'game.perf.report.uaOs',
+  ios60: 'game.perf.report.ios60',
   preset: 'game.perf.report.preset',
   params: 'game.perf.report.params',
   window: 'game.perf.report.window',

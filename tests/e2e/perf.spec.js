@@ -62,7 +62,7 @@ test.describe('outil de mesure (?perf=1)', () => {
     await expect(toggle).toHaveAttribute('aria-expanded', 'true');
     await expect(page.locator('#perf-report')).toContainText('Z-Survival — rapport de fluidité v1');
     const report = await page.locator('#perf-report').textContent();
-    expect(report.split('\n').map((l) => l.split(' : ')[0])).toEqual(['Z-Survival — rapport de fluidité v1', 'Système', 'Préréglage', '5 s', 'Session', 'Travail/image (médiane, ms)', 'Rendu', 'Tâches longues', 'Premier usage (image la plus longue dans les 600 ms)', 'Mémoire JS', 'Plafond (essai)']);
+    expect(report.split('\n').map((l) => l.split(' : ')[0])).toEqual(['Z-Survival — rapport de fluidité v1', 'Système', 'Préréglage', '5 s', 'Session', 'Travail/image (moyenne, ms)', 'Rendu', 'Tâches longues', 'Premier usage (image la plus longue dans les 600 ms)', 'Mémoire JS', 'Plafond (essai)']);
     // Lisibilité : texte de 14 px au moins, cibles de 44 px, contraste 4,5:1 (axe), aucun chevauchement avec les blocs du HUD ni le bouton Pause.
     const boxes = await page.evaluate(() => [...document.querySelectorAll('#perf-panel button, #perf-report, #perf-panel p, #perf-body')].filter((e) => e.getClientRects().length).map((e) => {
       const r = e.getBoundingClientRect();

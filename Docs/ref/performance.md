@@ -77,3 +77,17 @@ Priorité : `?gfx=` > préférence de l'appareil (`zs.device.v1`, choisie dans l
 
 ## Lighthouse mobile de `jeu.html` (fin du lot 5b, 5 passes, médiane)
 Auto (Lighthouse émule un téléphone : Moyen) 44 (36, 43, 44, 45, 46) ; Auto `?vhs=0` 44 (35, 37, 44, 47, 47) ; Élevé forcé (`?gfx=eleve`) 45 (36, 42, 45, 46, 46) ; CLS 0,002. Référence `origin/dev` : 45 et 44. Le score est fait au chargement, que les préréglages ne changent pas : premier affichage simulé ≈ 12,3 s (environ 110 modules et fichiers de données avant l'écran de préparation), temps de script au démarrage (sons 2,3 s, `game.js` 2,4 s dont une tâche longue de 1,0 s, textures 1,9 s). Écart de 10 points entre passes : une passe seule ne permet aucune conclusion.
+
+## Premiers rapports de l'iPhone (lot 5b-E ; iPhone 16 Pro Max, iOS 27, Safari 27.0, écran 120 Hz)
+| Réglage | DPR, canvas | Session : médiane, p95, p99, max | Images > 1,5 × | Premier usage le plus long |
+|---|---|---|---|---|
+| Élevé | 2, 1 912 × 752 | 21,1 / 34,1 / 38,1 / 675 ms | 401 sur 4 077 (10 %) | feu 675 ms |
+| Moyen | 1,5, 1 434 × 564 | 17,1 / 18,1 / 27,1 / 129 ms | 59 sur 4 957 (1,2 %) | sang 55 ms |
+| Faible | 1, 956 × 386 | 17,1 / 18,1 / 23,1 / 156 ms | 44 sur 5 770 (0,8 %) | tir et sang 106 ms |
+
+- Moyen et Faible tiennent la cadence de la page (60 images/s) ; Élevé non (une image sur dix est longue). Le travail côté processeur est de 2 à 4 ms par image dans les trois cas : la limite est le rendu graphique (pixels : Élevé en dessine 1,8 fois plus que Moyen).
+- **Cadence de 60 Hz** : Safari donne par défaut 60 images/s aux pages, même sur un écran ProMotion de 120 Hz (réglage avancé de Safari « Prefer Page Rendering Updates near 60fps », dans les Feature Flags). Le rapport l'écrit maintenant « cadence de la page » et le signale sur iOS ; aucune page web ne peut lire la fréquence réelle de l'écran.
+- **iOS 27 lu « 18.7 »** : depuis iOS 26, Safari fige la version d'iOS du user-agent ; le rapport prend la version de Safari (27.0) comme version d'iOS et garde la valeur figée entre parenthèses (Chrome et Firefox sur iOS : version du user-agent seulement).
+- **Temps par étape à 0 ou 1 ms** : Safari arrondit `performance.now()` à la milliseconde ; le rapport donne désormais la moyenne par étape (plus la médiane).
+- **Feu à 675 ms à l'Élevé** : premier dessin des particules de feu ; la précompilation (`renderer.compile`) ne l'évite pas sur Safari, qui semble finir ses pipelines au premier dessin. À suivre avec les rapports Android et une nouvelle mesure (`premier-usage.mjs` ne le voit pas en rendu logiciel).
+- Le réglage fin des préréglages attend les rapports Android (aucune valeur changée ici).
