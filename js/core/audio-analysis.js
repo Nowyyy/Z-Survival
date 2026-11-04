@@ -602,3 +602,56 @@ export function describe(buf, sampleRate, { minHz = 50, maxHz = 400 } = {}) {
     edges: edgeClicks(x),
   };
 }
+
+// Lot 5a : partiels résonants (« cling » métallique). Spectres courts (fenêtre de Hann de `frame` échantillons, pas de `hop`) ; dans chaque trame, un pic
+// étroit au-dessus de minHz est retenu s'il domine la médiane des cases voisines (± 12) d'au moins prominenceDb et reste à moins de floorDb du maximum
+// de tout le son ; un pic suivi d'une trame à l'autre (à une case près) forme un partiel. Queue = durée pendant laquelle il est suivi, moins la
+// longueur de la fenêtre (un éclat de bruit très bref ne donne pas de queue). Renvoie [{ freq (Hz), tailMs, levelDb (sous le maximum) }], les plus
+// longues d'abord (au plus 8).
+export function ringingPartials(buf, sampleRate, { minHz = 2000, frame = 512, hop = 64, prominenceDb = 10, floorDb = 40 } = {}) {
+  const x = toSamples(buf);
+  const sr = rateOf(sampleRate);
+  const n = fftSize(frame);
+  if (x.length < n) return [];
+  const binHz = sr / n;
+  const lo = Math.max(2, Math.ceil((isNum(minHz) ? minHz : 2000) / binHz));
+  const hi = n / 2 - 13;
+  const frames = [];
+  let top = -Infinity;
+  for (let start = 0; start + n <= x.length && frames.length < 4096; start += hop) {
+    const { re, im } = fft(x, n, { start });
+    const db = new Float64Array(n / 2 + 1);
+    for (let k = 0; k <= n / 2; k += 1) {
+      db[k] = 10 * Math.log10(re[k] * re[k] + im[k] * im[k] + 1e-30);
+      if (k >= lo && db[k] > top) top = db[k];
+    }
+    frames.push(db);
+  }
+  const tracks = [];
+  let open = new Map();
+  frames.forEach((db, f) => {
+    const next = new Map();
+    for (let k = lo; k <= hi; k += 1) {
+      if (db[k] < top - floorDb || db[k] < db[k - 1] || db[k] < db[k + 1]) continue;
+      const around = [];
+      for (let j = k - 12; j <= k + 12; j += 1) if (Math.abs(j - k) > 1) around.push(db[j]);
+      around.sort((a, b) => a - b);
+      if (db[k] - around[Math.floor(around.length / 2)] < prominenceDb) continue;
+      const prev = open.get(k) ?? open.get(k - 1) ?? open.get(k + 1);
+      const t = prev ?? { bins: [], first: f, last: f, best: -Infinity };
+      if (prev) for (const j of [k - 1, k, k + 1]) open.delete(j);
+      else tracks.push(t);
+      t.bins.push(k);
+      t.last = f;
+      t.best = Math.max(t.best, db[k]);
+      next.set(k, t);
+    }
+    open = next;
+  });
+  return tracks
+    .map((t) => ({ freq: Math.round((t.bins.reduce((s, b) => s + b, 0) / t.bins.length) * binHz), tailMs: Math.max(0, ((t.last - t.first) * hop - n / 2) / sr) * 1000, levelDb: Math.round((t.best - top) * 10) / 10 }))
+    .filter((t) => t.tailMs > 0)
+    .sort((a, b) => b.tailMs - a.tailMs)
+    .slice(0, 8)
+    .map((t) => ({ ...t, tailMs: Math.round(t.tailMs * 10) / 10 }));
+}

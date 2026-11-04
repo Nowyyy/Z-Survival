@@ -22,7 +22,8 @@
     { "id": "planches", "label": "dev.atelier.group.planches" },
     { "id": "fenetre", "label": "dev.atelier.group.fenetre" },
     { "id": "joueur", "label": "dev.atelier.group.joueur" },
-    { "id": "propositions", "label": "dev.atelier.group.propositions" }
+    { "id": "propositions", "label": "dev.atelier.group.propositions" },
+    { "id": "impacts", "label": "dev.atelier.group.impacts" }
   ],
   "targets": {
     "pas-joueur-dur": {
@@ -317,6 +318,21 @@
       "loopSeam": 0.002,
       "source": "agent",
       "note": "demande du propriétaire (itération 2)"
+    },
+    "impact-chair": {
+      "duration": [
+        0.08,
+        0.22
+      ],
+      "centroid": [
+        300,
+        1200
+      ],
+      "hf4k": 0.05,
+      "ringMs": 30,
+      "level": -10,
+      "source": "prompt",
+      "note": "lot 5a (demande du propriétaire) : cibles de départ provisoires, de connaissance générale, non vérifiées : 80 à 220 ms, centroïde 300 à 1 200 Hz, moins de 5 % de l'énergie au-dessus de 4 kHz, aucun partiel résonant au-dessus de 2 kHz dont la queue dépasse 30 ms (ringMs, ringingPartials), crête ≤ −3 dBFS ; niveau = celui de l'ancien impact-zombie (−10,0 dB du tir, moyenne de ses trois variantes), ±3 dB"
     }
   },
   "presets": {
@@ -2144,6 +2160,154 @@
           },
           "lp": 9000,
           "post": { "drive": 4 }
+        }
+      }
+    },
+    "impact": {
+      "chair": {
+        "A": {
+          "kind": "flesh",
+          "dur": 0.16,
+          "vary": 0.04,
+          "thump": {
+            "f": 130,
+            "decay": 0.03,
+            "attack": 0.0015,
+            "drop": 0.7,
+            "gain": 0.55
+          },
+          "splat": {
+            "lp": 1500,
+            "dur": 0.035,
+            "decay": 0.009,
+            "gain": 2.2
+          },
+          "squelch": {
+            "f": 560,
+            "q": 1.6,
+            "dur": 0.13,
+            "at": 0.006,
+            "attack": 0.006,
+            "decay": 0.04,
+            "rate": [
+              [
+                0,
+                38
+              ],
+              [
+                1,
+                16
+              ]
+            ],
+            "depth": 0.7,
+            "blob": 0.012,
+            "gain": 2.2
+          },
+          "lp": 2200,
+          "post": {
+            "drive": 4
+          }
+        },
+        "B": {
+          "kind": "flesh",
+          "dur": 0.21,
+          "vary": 0.05,
+          "thump": {
+            "f": 105,
+            "decay": 0.04,
+            "attack": 0.002,
+            "drop": 0.65,
+            "gain": 0.6
+          },
+          "second": {
+            "f": 75,
+            "decay": 0.045,
+            "attack": 0.004,
+            "at": 0.02,
+            "gain": 0.3
+          },
+          "splat": {
+            "lp": 1300,
+            "dur": 0.04,
+            "decay": 0.011,
+            "gain": 2.2
+          },
+          "squelch": {
+            "f": 470,
+            "q": 2.2,
+            "dur": 0.19,
+            "at": 0.006,
+            "attack": 0.01,
+            "decay": 0.07,
+            "rate": [
+              [
+                0,
+                30
+              ],
+              [
+                0.6,
+                20
+              ],
+              [
+                1,
+                9
+              ]
+            ],
+            "depth": 0.85,
+            "blob": 0.018,
+            "gain": 3.2
+          },
+          "crack": {
+            "gain": 0.9,
+            "at": 0.003
+          },
+          "lp": 2000,
+          "post": {
+            "drive": 6
+          }
+        },
+        "C": {
+          "kind": "flesh",
+          "dur": 0.11,
+          "vary": 0.04,
+          "thump": {
+            "f": 190,
+            "decay": 0.016,
+            "attack": 0.001,
+            "drop": 0.75,
+            "gain": 0.5
+          },
+          "splat": {
+            "lp": 1800,
+            "dur": 0.025,
+            "decay": 0.006,
+            "gain": 2.6
+          },
+          "squelch": {
+            "f": 760,
+            "q": 1.4,
+            "dur": 0.07,
+            "at": 0.003,
+            "attack": 0.003,
+            "decay": 0.02,
+            "rate": [
+              [
+                0,
+                45
+              ],
+              [
+                1,
+                25
+              ]
+            ],
+            "depth": 0.6,
+            "blob": 0.008,
+            "gain": 1.6
+          },
+          "lp": 2600,
+          "post": {
+            "drive": 5
+          }
         }
       }
     }
@@ -4158,6 +4322,151 @@
         }
       ],
       "integration": { "ids": ["ambiance-feu"], "replaces": [], "versions": 1 }
+    },
+    {
+      "id": "impact-chair",
+      "group": "impacts",
+      "label": "dev.atelier.slot.impact-chair",
+      "category": "impact",
+      "gainDb": -1.94,
+      "current": "impact-zombie",
+      "currentNote": "dev.atelier.note.impact.chair",
+      "priority": 1,
+      "loop": false,
+      "variants": [
+        {
+          "id": "A",
+          "label": "dev.atelier.variante.impact.chair.A",
+          "recipe": {
+            "use": [
+              "impact.chair.A"
+            ]
+          },
+          "macros": {
+            "hauteur": {
+              "min": -6,
+              "max": 6,
+              "default": 0,
+              "unit": "demi-ton"
+            },
+            "matiere": {
+              "min": -1,
+              "max": 1,
+              "default": 0,
+              "unit": "octave"
+            },
+            "grain": {
+              "min": 0,
+              "max": 2,
+              "default": 1,
+              "unit": "x"
+            },
+            "duree": {
+              "min": 0.6,
+              "max": 1.6,
+              "default": 1,
+              "unit": "x"
+            },
+            "ampleur": {
+              "min": 0,
+              "max": 0.6,
+              "default": 0.05,
+              "unit": "mix"
+            }
+          }
+        },
+        {
+          "id": "B",
+          "label": "dev.atelier.variante.impact.chair.B",
+          "recipe": {
+            "use": [
+              "impact.chair.B"
+            ]
+          },
+          "macros": {
+            "hauteur": {
+              "min": -6,
+              "max": 6,
+              "default": 0,
+              "unit": "demi-ton"
+            },
+            "matiere": {
+              "min": -1,
+              "max": 1,
+              "default": 0,
+              "unit": "octave"
+            },
+            "grain": {
+              "min": 0,
+              "max": 2,
+              "default": 1,
+              "unit": "x"
+            },
+            "duree": {
+              "min": 0.6,
+              "max": 1.6,
+              "default": 1,
+              "unit": "x"
+            },
+            "ampleur": {
+              "min": 0,
+              "max": 0.6,
+              "default": 0.1,
+              "unit": "mix"
+            }
+          }
+        },
+        {
+          "id": "C",
+          "label": "dev.atelier.variante.impact.chair.C",
+          "recipe": {
+            "use": [
+              "impact.chair.C"
+            ]
+          },
+          "macros": {
+            "hauteur": {
+              "min": -6,
+              "max": 6,
+              "default": 0,
+              "unit": "demi-ton"
+            },
+            "matiere": {
+              "min": -1,
+              "max": 1,
+              "default": 0,
+              "unit": "octave"
+            },
+            "grain": {
+              "min": 0,
+              "max": 2,
+              "default": 1,
+              "unit": "x"
+            },
+            "duree": {
+              "min": 0.6,
+              "max": 1.6,
+              "default": 1,
+              "unit": "x"
+            },
+            "ampleur": {
+              "min": 0,
+              "max": 0.6,
+              "default": 0,
+              "unit": "mix"
+            }
+          }
+        }
+      ],
+      "integration": {
+        "ids": [
+          "impact-zombie"
+        ],
+        "replaces": [
+          "impact-zombie"
+        ],
+        "versions": 5
+      }
     }
   ],
   "references": [

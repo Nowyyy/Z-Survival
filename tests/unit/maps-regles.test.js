@@ -123,16 +123,18 @@ describe('règles de la carte : extérieur et apparitions', () => {
     expect(decorProblems(layout.decor, world)).toEqual([]);
   });
 
-  it('au plus autant de décors solides que l\'ancien decor.json (36), aucun à moins de 160 du bâtiment', () => {
+  // Lot 5a (retour du propriétaire) : l'hélicoptère écrasé est « tout au bord », à son bord d'epaves.json (40) ; tout autre décor solide reste à 160.
+  it('au plus autant de décors solides que l\'ancien decor.json (36), aucun à moins de 160 du bâtiment (hélicoptère : 40, décision du propriétaire)', () => {
     expect(layout.decor.solids.length).toBeLessThanOrEqual(36);
     for (const s of layout.decor.solids) {
-      for (const f of layout.floor) expect(rectGap(s, f), s.id).toBeGreaterThanOrEqual(160);
+      const min = s.kind === 'helicoptere' ? decorCfg.wrecks.helicopter.edge : 160;
+      for (const f of layout.floor) expect(rectGap(s, f), s.id).toBeGreaterThanOrEqual(min);
     }
   });
 
-  it('aucun type de décor nouveau : les mêmes que le lot 1b', () => {
+  it('aucun type de décor nouveau : les mêmes que le lot 1b, plus l\'hélicoptère écrasé du lot 5a', () => {
     const kinds = new Set([...layout.decor.solids, ...layout.decor.bushes, ...layout.decor.lamps, ...layout.decor.fences].map((o) => o.kind));
-    for (const k of kinds) expect(['voiture', 'arbre', 'buisson', 'lampadaire', 'barriere']).toContain(k);
+    for (const k of kinds) expect(['voiture', 'arbre', 'buisson', 'lampadaire', 'barriere', 'helicoptere']).toContain(k); // lot 5a : hélicoptère écrasé (epaves.json)
     expect(decorCfg.ground.some((g) => g.kind === 'route')).toBe(true);
   });
 

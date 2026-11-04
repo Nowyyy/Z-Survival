@@ -35,5 +35,24 @@
     "espaceSolides": 80,
     "distanceSalle": 160,
     "distanceApparition": 70
+  },
+  "wrecks": {
+    "burningCar": { "id": "voiture-en-flammes", "x": 3299, "y": 2397, "w": 92, "h": 46, "hauteur": 55 },
+    "helicopter": {
+      "id": "helicoptere",
+      "x": 1720,
+      "y": 1700,
+      "heading": 8,
+      "corner": { "x": 1490, "y": 1840 },
+      "edge": 40,
+      "rects": [
+        { "id": "helicoptere-1", "x": 1667, "y": 1659, "w": 148, "h": 106 },
+        { "id": "helicoptere-2", "x": 1610, "y": 1687, "w": 75, "h": 29 },
+        { "id": "helicoptere-3", "x": 1537, "y": 1661, "w": 64, "h": 56 }
+      ],
+      "visual": { "x": 1537, "y": 1633, "w": 283, "h": 160 },
+      "height": 63,
+      "triangles": 310
+    }
   }
 }

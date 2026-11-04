@@ -37,8 +37,10 @@ const byId = new Map(sounds.map((s) => [s.id, s]));
 const owner = parseChoices(readFileSync('data/game/sounds-atelier-choix.txt', 'utf8'), atelier.slots).choices;
 const B = choix.choix.filter((c) => c.part === 'B'); // partie C : sons-integres-ambiances.test.js
 const REPLACED = ['pas', 'pas-zombie', 'zombie-gemissement', 'zombie-attaque', 'zombie-blessure', 'zombie-mort', 'planche-arrachee', 'planche-posee'];
+// Lot 5a : l'impact sur un zombie (ancien « cling ») est remplacé à son tour par l'impact sur la chair de l'atelier (part « 5a », tests/unit/impact-chair.test.js).
+const REPLACED_5A = ['impact-zombie'];
 // Gardés tels quels (fiche) : mélodie, annonces, tir, douille, impacts, chute et relevage du joueur, joueur blessé et mort, trois voix, interface, ambiance.
-const KEPT = ['tir', 'douille', 'impact-zombie', 'impact-bois', 'impact-metal', 'impact-pierre', 'impact-voiture', 'vague-annonce', 'vague-renforcee', 'vague-fin', 'joueur-chute', 'joueur-releve', 'joueur-blesse', 'joueur-mort', 'zombie-grognement', 'zombie-plainte', 'zombie-souffle', 'ui-pause', 'ui-reprise', 'ambiance'];
+const KEPT = ['tir', 'douille', 'impact-bois', 'impact-metal', 'impact-pierre', 'impact-voiture', 'vague-annonce', 'vague-renforcee', 'vague-fin', 'joueur-chute', 'joueur-releve', 'joueur-blesse', 'joueur-mort', 'zombie-grognement', 'zombie-plainte', 'zombie-souffle', 'ui-pause', 'ui-reprise', 'ambiance'];
 // Référence « main » d'avant l'intégration des refontes (lot 4, c166e53) : depuis la fusion de lot-4b, main contient les sons de l'atelier.
 // Absente (clone superficiel de la CI) : comparaison sautée (main contient déjà ces sons, il ne peut plus servir de référence).
 const MAIN_AVANT = git('rev-parse --verify --quiet c166e53^{commit}') !== null ? 'c166e53' : null;
@@ -98,11 +100,11 @@ describe('table des choix (data/game/sounds-choix.json)', () => {
 });
 
 describe('anciens sons : déplacés, recettes conservées', () => {
-  it('sounds-legacy.json contient exactement les 8 recettes remplacées', () => {
-    expect(legacy.map((r) => r.id).sort()).toEqual([...REPLACED].sort());
+  it('sounds-legacy.json contient exactement les 8 recettes remplacées au lot 3i, plus l\'ancien impact sur zombie (lot 5a)', () => {
+    expect(legacy.map((r) => r.id).sort()).toEqual([...REPLACED, ...REPLACED_5A].sort());
   });
 
-  it.each(REPLACED)('%s : recette d\'avant identique à celle de main (comparaison d\'objet)', (id) => {
+  it.each([...REPLACED, ...REPLACED_5A])('%s : recette d\'avant identique à celle de main (comparaison d\'objet)', (id) => {
     if (!mainSounds) return;
     expect(legacy.find((r) => r.id === id)).toEqual(mainSounds.find((r) => r.id === id));
   });

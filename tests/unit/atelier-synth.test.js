@@ -32,6 +32,7 @@ const RECIPES = {
   // Itération 2 : bois qui cède, caisse enregistreuse, feu.
   break: { kind: 'break', dur: 0.8, groan: { dur: 0.3, dense: { from: 250, to: 1800, count: 8, decay: 0.012 } }, splinter: { at: 0.28, dur: 0.1, dense: { from: 300, to: 5000, count: 10, decay: 0.008 }, thump: { f: 85, gain: 0.4 } }, fall: { at: 0.45, dense: { from: 180, to: 3000, count: 8, decay: 0.015 }, noise: { gain: 0.5 }, bounces: { count: 2 } } },
   register: { kind: 'register', dur: 1.0, lever: { gain: 0.4, dense: { from: 1200, to: 7000, count: 8, decay: 0.006 }, thud: { f: 140, gain: 0.3 } }, bell: { at: 0.07, f: 2100, gain: 1.5 }, drawer: { at: 0.1, gain: 0.3 }, coins: { at: 0.25, count: 4, gain: 0.2 } },
+  flesh: { kind: 'flesh', dur: 0.16, thump: { f: 120, decay: 0.03 }, second: { f: 70, at: 0.02, gain: 0.3 }, splat: { lp: 1500, gain: 2 }, squelch: { f: 560, q: 1.6, dur: 0.12, gain: 2 }, crack: { gain: 0.8 }, lp: 2200, post: { drive: 4 } }, // lot 5a
   fire: { kind: 'fire', dur: 1.5, roar: { gain: 1.5 }, hiss: 0.1, crackle: { rate: 8, gain: 0.3 }, pop: { rate: 1, gain: 0.6 } },
   chime: { kind: 'chime', dur: 0.5, partials: [{ f: 2800, decay: 0.08 }], strikes: [{ at: 0.005, gain: 1 }, { at: 0.1, gain: 0.6 }], rattle: { at: 0.1, dur: 0.1, gain: 0.1 } },
 };

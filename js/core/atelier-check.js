@@ -1,7 +1,7 @@
 // Contrôle des cibles de l'atelier des sons (lot 3h), pur : mesures d'un tampon (audio-analysis.js) comparées à la cible de son
 // emplacement (data/game/sounds-atelier.json). Aucun dépassement n'est caché : chaque critère est rendu avec sa valeur et ses bornes.
 // Niveau relatif au tir (dB) = niveau court du tampon + gain de la catégorie du jeu (gainDb) − niveau court du tir (levelRef.dbfs).
-import { describe, earlyBand, onsets } from './audio-analysis.js';
+import { describe, earlyBand, onsets, ringingPartials } from './audio-analysis.js';
 import { isNum } from './vec.js';
 
 const isObj = (o) => o !== null && typeof o === 'object' && !Array.isArray(o);
@@ -15,7 +15,9 @@ export function measureSound(samples, sampleRate, slot = null, levelRef = null) 
   const refDb = isNum(levelRef?.dbfs) ? levelRef.dbfs : 0;
   const gain = isNum(slot?.gainDb) ? slot.gainDb : 0;
   const tip = earlyBand(samples, sampleRate, 2000, 5000, 0.04);
-  return { ...d, attackMs: d.attack * 1000, levelRel: d.levelDb + gain - refDb, tipEarly: tip.early, tipShare: tip.share, hits: onsets(samples, sampleRate, { threshold: 0.3, minGap: 0.15 }).length };
+  // Lot 5a : queue du plus long partiel résonant au-dessus de 2 kHz (« cling » métallique), mesurée seulement si la cible la demande (ringMs).
+  const ring = isNum(slot?.target?.ringMs) ? ringingPartials(samples, sampleRate, { minHz: 2000 }) : null;
+  return { ...d, attackMs: d.attack * 1000, levelRel: d.levelDb + gain - refDb, tipEarly: tip.early, tipShare: tip.share, hits: onsets(samples, sampleRate, { threshold: 0.3, minGap: 0.15 }).length, ...(ring ? { ringMs: ring[0]?.tailMs ?? 0, ringHz: ring[0]?.freq ?? 0 } : {}) };
 }
 
 // Critères d'une cible : [{ key, value, min, max, ok }] (min ou max null : borne absente) ; ok global.
@@ -43,6 +45,7 @@ export function checkTargets(m, target, tolerance = DEFAULT_LEVEL_TOLERANCE) {
     add('tipShare', m.tipShare, 0.03, null);
   }
   if (range(target.hits)) add('hits', m.hits, target.hits[0], target.hits[1]);
+  if (isNum(target.ringMs)) add('ringMs', m.ringMs, null, target.ringMs); // lot 5a : aucun partiel résonant au-dessus de 2 kHz plus long que ringMs
   add('peakDb', m.peakDb, null, -3 + 1e-6);
   return { ok: items.every((i) => i.ok), items };
 }

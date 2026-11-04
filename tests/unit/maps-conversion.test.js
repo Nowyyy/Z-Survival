@@ -4,7 +4,9 @@ import { formatJson, generateMapFiles } from '../../scripts/plan-vers-monde.mjs'
 import { readFileSync } from 'node:fs';
 import { deepFreeze, params, plan, px, WEIRD, world } from './helpers/carte.js';
 
-const out = planToWorld(plan, params);
+// Lot 5a : les épaves (epaves.json) entrent dans decor.json par npm run carte ; elles ne changent rien à world.json.
+const epaves = JSON.parse(readFileSync('data/game/maps/rez-de-chaussee/epaves.json', 'utf8'));
+const out = planToWorld(plan, params, { epaves });
 const bySide = (id) => world.windows.find((w) => w.id === id);
 
 describe('conversion plan -> monde : formule, origine, échelle', () => {

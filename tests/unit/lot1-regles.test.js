@@ -68,6 +68,7 @@ describe('mêmes règles qu\'au lot 1', () => {
     allowed.push('js/core/blood.js'); // lot 3j : sang (nouveau fichier)
     allowed.push('js/core/arena.js'); // lot 3j : mini-arène (nouveau fichier)
     allowed.push('js/core/crowd.js'); // lot 3j : foule de la mini-arène (nouveau fichier)
+    allowed.push('js/core/epaves.js'); // lot 5a : épaves du décor extérieur (nouveau fichier, pur)
     expect(changed.filter((f) => !allowed.includes(f))).toEqual([]);
   });
 });
