@@ -8,7 +8,7 @@ const SIZE = { width: 667, height: 375 };
 // Références de rendu mesurées sur main au lancement du lot (scripts/modele/mesures-rendu.mjs) : appels et triangles, 10 zombies, ombres, cône.
 const REF = { R1: [200, 14442], R2: [201, 14582], R3: [199, 13898], U1: [207, 14788], U4: [212, 15588] };
 // Lot 5a : triangles des épaves (hélicoptère écrasé et voiture calcinée, 3 boîtes de 10 triangles et 4 roues de 32), dessinés aussi avec ?detail=0 : ils sont solides.
-const EPAVES = (JSON.parse(readFileSync('data/game/maps/rez-de-chaussee/decor.json', 'utf8')).wrecks?.helicopter?.triangles ?? 0) + 158;
+const EPAVES = (JSON.parse(readFileSync('data/game/maps/rez-de-chaussee/decor.json', 'utf8')).wrecks?.helicopter?.triangles ?? 0) + 158 + (JSON.parse(readFileSync('data/game/maps/rez-de-chaussee/decor.json', 'utf8')).wrecks?.helicopter?.scarTriangles ?? 0); // lot 5a-F : + le cratère et la traînée (sol de terre)
 const U = (px) => px * 5 + 800;
 const SCENES = {
   R1: { url: '&nospawn=1', at: [U(300), U(300)], floor: 'rdc', wave: 10 },

@@ -24,6 +24,7 @@ const voice = read('data/game/zombie-voice.json');
 const materials = read('data/game/sound-materials.json');
 const choix = read('data/game/sounds-choix.json').choix;
 const entry = sounds.find((s) => s.id === 'impact-zombie');
+const douilleEntry = sounds.find((s) => s.id === 'douille');
 const old = legacy.find((s) => s.id === 'impact-zombie');
 const oldBuffers = Array.from({ length: old.variants }, (_, v) => renderSound(old, v));
 const VARIANTS = ['A', 'B', 'C'];
@@ -144,17 +145,27 @@ describe('intégration sous l\'identifiant de l\'ancien son', () => {
     expect(Buffer.from(renderChoice(entry, { mode: v, slots: atelier.slots, seed: 1 }).samples.buffer).equals(Buffer.from(buffers[v][0].buffer))).toBe(true);
   });
 
-  // Lot 5a-D (retour du propriétaire) : la douille est baissée de 12 dB (gainDb de son entrée) ; sa recette, comme celles du tir et des autres impacts, ne change pas.
-  it('coups de feu, douille et impacts sur les autres matières : recettes identiques à origin/dev (empreinte SHA-256) ; douille baissée de 12 dB', () => {
-    const ids = ['tir', 'douille', 'impact-bois', 'impact-metal', 'impact-pierre', 'impact-voiture'];
-    const withoutGain = (r) => Object.fromEntries(Object.entries(r).filter(([k]) => k !== 'gainDb'));
-    expect(createHash('sha256').update(JSON.stringify(ids.map((id) => withoutGain(sounds.find((s) => s.id === id))))).digest('hex')).toBe('13831a0cf148609689f1ad8079728c8c7ff1b4591c7394c4290c32abac9c0374');
-    expect(sounds.find((s) => s.id === 'douille').gainDb).toBe(-12);
-    for (const id of ids.filter((i) => i !== 'douille')) expect(sounds.find((s) => s.id === id).gainDb, id).toBeUndefined();
+  // Lot 5a-E (retour du propriétaire) : la douille est refaite plus sourde et baissée de 24 dB en tout ; le tir et les autres impacts ne changent pas.
+  it('coups de feu et impacts sur les autres matières : recettes identiques à origin/dev (empreinte SHA-256), sans gain propre', () => {
+    const ids = ['tir', 'impact-bois', 'impact-metal', 'impact-pierre', 'impact-voiture'];
+    expect(createHash('sha256').update(JSON.stringify(ids.map((id) => sounds.find((s) => s.id === id)))).digest('hex')).toBe('9846a153c4793dcd91547e808b9961057330bf5aad32f4e6500606e635df7f9a');
+    for (const id of ids) expect(sounds.find((s) => s.id === id).gainDb, id).toBeUndefined();
     const r = direct(createDirector(1), { time: 10, listener: { x: 0, y: 0 }, walls: [], paused: false, events: [{ type: 'shot', x: 0, y: 0 }] }, { audio, voice, materials, sounds: soundTable(sounds) });
     const tir = r.requests.find((q) => q.sound === 'tir');
     const douille = r.requests.find((q) => q.sound === 'douille');
-    expect(20 * Math.log10(douille.gain / tir.gain)).toBeCloseTo(-12, 1);
+    expect(20 * Math.log10(douille.gain / tir.gain)).toBeCloseTo(douilleEntry.gainDb, 1);
+  });
+
+  it('douille plus sourde : aucun partiel résonant au-dessus de 2 kHz plus long que 30 ms, rien au-dessus de 4 kHz ; 24 dB sous l\'ancienne en tout (±0,5 dB)', () => {
+    const OLD_DOUILLE_DB = -17.29; // niveau court moyen des deux variantes de l'ancienne recette (origin/dev avant le lot 5a-E)
+    let level = 0;
+    for (let v = 0; v < douilleEntry.variants; v += 1) {
+      const o = renderSound(douilleEntry, v);
+      expect(longestRing(o.samples, o.sampleRate).tailMs).toBeLessThanOrEqual(30);
+      expect(measureSound(o.samples, o.sampleRate).hf4k).toBeLessThan(0.05);
+      level += dbfs(shortLevel(o.samples, o.sampleRate)) / douilleEntry.variants;
+    }
+    expect(Math.abs(level + douilleEntry.gainDb - (OLD_DOUILLE_DB - 24))).toBeLessThanOrEqual(0.5);
     // L'ancien impact-zombie, intact dans le pack d'avant : même empreinte que sa recette sur origin/dev.
     expect(createHash('sha256').update(JSON.stringify(old)).digest('hex')).toBe('50041fde578948bc38be81526d3bb5a0226a46d46f810c06c01b4ec394473254');
     expect(materials.sounds).toEqual({ bois: 'impact-bois', metal: 'impact-metal', pierre: 'impact-pierre', voiture: 'impact-voiture' });
@@ -180,7 +191,7 @@ describe('scène simulée : 8 zombies, 24 tirs (niveau moyen et écrêtage)', ()
     for (let k = 0; k < 24; k += 1) {
       const t = 0.2 + k * 0.35;
       if (withShots) mix(shots[k % shots.length], t, audio.categoryGain.tir);
-      if (withShots) mix(casings[k % casings.length], t + 0.3, audio.categoryGain.tir);
+      if (withShots) mix(casings[k % casings.length], t + 0.3, audio.categoryGain.tir * 10 ** ((douille.gainDb ?? 0) / 20)); // gain propre de la douille, comme en jeu
       mix(impacts[k % impacts.length], t + 0.08, audio.categoryGain.impact * distanceGain(RINGS[k % 8], audio.referenceDistance, audio.maxDistance));
     }
     let e = 0;
@@ -197,11 +208,11 @@ describe('scène simulée : 8 zombies, 24 tirs (niveau moyen et écrêtage)', ()
   const afterHits = Object.fromEntries(VARIANTS.map((v) => [v, scene(buffers[v].map((x) => up(x, slot.sampleRate)), false)]));
 
   // Crête du mélange brut, avant le compresseur du jeu (audio.json) : elle dépassait déjà 1 avec l'ancien impact (tir et impact proche presque en même temps).
-  it.each(VARIANTS)('%s : niveau moyen de la scène (et des impacts seuls) à ±3 dB de la référence ; la crête du mélange ne dépasse pas celle d\'avant, sous 1 pour la variante par défaut (B, lot 5a-D)', (v) => {
+  it.each(VARIANTS)('%s : niveau moyen de la scène (et des impacts seuls) à ±3 dB de la référence ; aucun écrêtage (crête du mélange sous 1 ; lot 5a-E : la référence a baissé avec la douille)', (v) => {
     console.log(`SCÈNE ${v} : ${after[v].db.toFixed(2)} dB (avant ${before.db.toFixed(2)}) ; impacts seuls ${afterHits[v].db.toFixed(2)} dB (avant ${beforeHits.db.toFixed(2)}) ; crête ${after[v].peak.toFixed(3)} (avant ${before.peak.toFixed(3)})`);
     expect(Math.abs(after[v].db - before.db)).toBeLessThanOrEqual(3);
     expect(Math.abs(afterHits[v].db - beforeHits.db)).toBeLessThanOrEqual(3);
-    expect(after[v].peak).toBeLessThanOrEqual(before.peak);
-    if (v === entry.atelier.variant) expect(after[v].peak).toBeLessThan(1);
+    expect(after[v].peak).toBeLessThan(1);
+    expect(before.peak).toBeLessThan(1);
   });
 });

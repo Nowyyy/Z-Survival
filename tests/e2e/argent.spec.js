@@ -10,7 +10,7 @@ const load = (name) => JSON.parse(readFileSync(`data/game/${name}.json`, 'utf8')
 const params = { save: load('save'), economy: load('economy'), stats: load('player-stats') };
 const KEY = params.save.storageKey;
 // Lot 5a : triangles des épaves (hélicoptère écrasé et voiture calcinée, maillage du décor de l'atlas, dessinés aussi avec ?detail=0 : ils sont solides), ajoutés aux références.
-const EPAVES = (JSON.parse(readFileSync('data/game/maps/rez-de-chaussee/decor.json', 'utf8')).wrecks?.helicopter?.triangles ?? 0) + 158; // + la voiture calcinée posée à part (3 boîtes de 10 triangles, 4 roues de 32), dans le même maillage
+const EPAVES = (JSON.parse(readFileSync('data/game/maps/rez-de-chaussee/decor.json', 'utf8')).wrecks?.helicopter?.triangles ?? 0) + 158 + (JSON.parse(readFileSync('data/game/maps/rez-de-chaussee/decor.json', 'utf8')).wrecks?.helicopter?.scarTriangles ?? 0); // lot 5a-F : + le cratère et la traînée (sol de terre) // + la voiture calcinée posée à part (3 boîtes de 10 triangles, 4 roues de 32), dans le même maillage
 const SIZE = { width: 667, height: 375 };
 const BROWSER_NOISE = /GL Driver Message|ReadPixels|GPU stall/;
 const LOCAL = '/jeu.html?test=1&store=local&seed=1';

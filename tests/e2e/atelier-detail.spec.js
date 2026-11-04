@@ -12,7 +12,7 @@ const decor = load('data/game/maps/rez-de-chaussee/decor-interieur.world.json');
 // (passe d'ombre). Budget du détail : décor léger 1 500 + 2 × triangles du mobilier ; 30 000 au plus (budget de l'étage).
 const MOBILIER = 2 * load('data/game/maps/rez-de-chaussee/mobilier.world.json').triangles;
 // Lot 5a : triangles des épaves (hélicoptère écrasé et voiture calcinée, maillage du décor de l'atlas, dessinés aussi avec ?detail=0 : ils sont solides), ajoutés aux références.
-const EPAVES = (load('data/game/maps/rez-de-chaussee/decor.json').wrecks?.helicopter?.triangles ?? 0) + 158; // + la voiture calcinée posée à part (3 boîtes de 10 triangles, 4 roues de 32), dans le même maillage
+const EPAVES = (load('data/game/maps/rez-de-chaussee/decor.json').wrecks?.helicopter?.triangles ?? 0) + 158 + (JSON.parse(readFileSync('data/game/maps/rez-de-chaussee/decor.json', 'utf8')).wrecks?.helicopter?.scarTriangles ?? 0); // lot 5a-F : + le cratère et la traînée (sol de terre) // + la voiture calcinée posée à part (3 boîtes de 10 triangles, 4 roues de 32), dans le même maillage
 const STATE = (page) => page.evaluate(() => window.__zs.getState());
 const U = (px) => px * 5 + 800;
 // Références mesurées sur main au lancement du lot (scripts/modele/mesures-rendu.mjs) : [appels, triangles].

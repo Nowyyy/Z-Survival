@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
-import { burntCarParts, carFireSpots, concaveCorners, CRASH, helicopterFootprint, helicopterModel, lCorner, placeHelicopter } from '../../js/core/epaves.js';
+import { burntCarParts, carFireSpots, concaveCorners, CRASH, craterTriangles, groundScarBoxes, helicopterFootprint, helicopterModel, lCorner, placeHelicopter, trailTriangles } from '../../js/core/epaves.js';
 import { approachCorridors, decorProblems, generateDecor } from '../../js/core/decor.js';
 import { generateLivelyDecor } from '../../js/core/decor-vivant.js';
 import { planToWorld } from '../../js/core/maps.js';
@@ -176,6 +176,40 @@ describe('emplacements : règles de la carte avec les deux épaves', () => {
     const lv = generateLivelyDecor({ size: layout.size, footprint: layout.floor, decor: layout.decor });
     const boxes = [...lv.deadTrees.map((t) => t.box), ...lv.tufts.map((t) => t.box), ...lv.puddles, ...lv.rubble, ...lv.barrels.map((b) => b.box), ...lv.fence.posts.map((p) => ({ x: p.x - 3, y: p.y - 3, w: 6, h: 6 }))];
     for (const k of layout.decor.keepOut) for (const b of boxes) expect(rectGap(b, k)).toBeGreaterThan(0);
+  });
+
+  // Lot 5a-F (retour du propriétaire) : cratère de terre, traînée de glissade jusqu'au bâtiment, fumée légère ; nez contre le mur de l'aile.
+  it('cratère et traînée : plats (9 au plus), au sol, hors du bâtiment, déterministes ; la traînée part vers l\'arrière du cap (l\'hélicoptère a glissé jusqu\'au mur)', () => {
+    const crater = craterTriangles(heli, footprint);
+    const trail = trailTriangles(heli, footprint);
+    expect(crater.length).toBeGreaterThan(50);
+    expect(trail.length).toBeGreaterThan(30);
+    expect(crater.length + trail.length).toBe(heli.scarTriangles);
+    expect(JSON.stringify(craterTriangles(heli, footprint))).toBe(JSON.stringify(crater));
+    for (const t of [...crater, ...trail]) {
+      for (const p of t.p) {
+        expect(p[1]).toBeGreaterThanOrEqual(0);
+        expect(p[1]).toBeLessThanOrEqual(9); // bourrelet irrégulier : 6 × (0,55 à 1,45)
+      }
+      expect(t.n[1]).toBeGreaterThan(0);
+      const cx = (t.p[0][0] + t.p[1][0] + t.p[2][0]) / 3;
+      const cz = (t.p[0][2] + t.p[1][2] + t.p[2][2]) / 3;
+      expect(Math.min(...footprint.map((f) => rectGap({ x: cx, y: cz, w: 0, h: 0 }, f))), `${cx}, ${cz}`).toBeGreaterThanOrEqual(24);
+      expect(['crater-burnt', 'crater-earth']).toContain(t.tint);
+    }
+    // Retour du propriétaire : arrivé du nord-est (flèche sur sa capture) ; nez vers l'angle du L (sud-ouest), traînée qui remonte vers le nord-est.
+    expect(Math.cos(heli.heading * Math.PI / 180)).toBeLessThan(-0.8);
+    expect(Math.sin(heli.heading * Math.PI / 180)).toBeGreaterThan(0.4);
+    const pts = trail.flatMap((t) => t.p);
+    const far = pts.reduce((a, p) => (p[0] - p[2] > a[0] - a[2] ? p : a));
+    expect(far[0] - heli.x).toBeGreaterThan(heli.trail.length * 0.75);
+    expect(heli.y - far[2]).toBeGreaterThan(heli.trail.length * 0.4);
+    const scars = groundScarBoxes(heli, footprint);
+    expect(scars.boxes).toEqual(heli.scars);
+    expect(layout.decor.keepOut.filter((k) => k.id.startsWith('cratere-')).length).toBe(heli.scars.length);
+    expect(heli.smoke).toBe(true);
+    const tokens = readFileSync('css/tokens.css', 'utf8');
+    for (const t of ['crater-burnt', 'crater-earth', 'smoke-light']) expect(tokens).toMatch(new RegExp(`--game-${t}:\\s*#[0-9a-f]{6};`));
   });
 
   it('npm run carte refuse un hélicoptère mal placé : dans un couloir, trop près du bâtiment, ou dans un autre coin', () => {

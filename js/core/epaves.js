@@ -281,3 +281,123 @@ export function carFireSpots(car) {
     { id: 'habitacle', x: r1((cab.x0 + cab.x1) / 2), z: r1(cx), y: parts2.height, w: r1((cab.x1 - cab.x0) * 0.7), d: r1((cab.z1 - cab.z0) * 0.6) },
   ];
 }
+
+// --- Cratère et traînée (lot 5a-F, retour du propriétaire) ---------------------------------------------------------------------------------------
+
+// Nombre pseudo-aléatoire stable dans [0, 1[ (aucun hasard natif).
+function hash01(a, b) {
+  let h = (Math.imul(Math.trunc(a) | 0, 374761393) + Math.imul(Math.trunc(b) | 0, 668265263)) | 0;
+  h = Math.imul(h ^ (h >>> 15), 2246822519);
+  h = Math.imul(h ^ (h >>> 13), 3266489917);
+  return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
+}
+
+const inBuilding = (x, z, footprint, margin) => footprint.some((f) => x > f.x - margin && x < f.x + f.w + margin && z > f.y - margin && z < f.y + f.h + margin);
+
+// Triangle orienté vers le haut (normale calculée, retournée si elle pointe vers le bas) ; null s'il touche le bâtiment (centre à moins de margin).
+function groundTri(p, tint, footprint, margin) {
+  const cx = (p[0][0] + p[1][0] + p[2][0]) / 3;
+  const cz = (p[0][2] + p[1][2] + p[2][2]) / 3;
+  if (inBuilding(cx, cz, footprint, margin)) return null;
+  let n = unitV(crossV(sub(p[1], p[0]), sub(p[2], p[0])));
+  let q = p;
+  if (n[1] < 0) {
+    q = [p[0], p[2], p[1]];
+    n = n.map((v) => -v);
+  }
+  return { tint, p: q.map((v) => v.map((c) => Math.round(c * 100) / 100)), n: n.map((c) => Math.round(c * 10000) / 10000) };
+}
+
+// Cratère de terre autour de l'hélicoptère (scène : X = x du jeu, Z = y du jeu, Y = hauteur ; au sol, aucun sommet sous y = 0) : fond brûlé à plat, bourrelet de
+// terre rejetée irrégulier, bord qui retombe ; ellipse rx × ry orientée selon le cap ; les triangles qui touchent le bâtiment (contour + margin) sont retirés.
+// spec : { x, y, heading, crater: { rx, ry } } ; footprint : rectangles du bâtiment. Renvoie [{ tint, p, n }].
+export function craterTriangles(spec, footprint = [], { sectors = 28, margin = 24, floorY = 0.5 } = {}) {
+  const rx = num(spec?.crater?.rx);
+  const ry = num(spec?.crater?.ry);
+  if (rx <= 0 || ry <= 0) return [];
+  const a = num(spec?.heading) * DEG;
+  // Anneaux : rayon relatif, hauteur, teinte (fond brûlé, terre retournée).
+  const rings = [[0, floorY, 'crater-burnt'], [0.6, floorY, 'crater-burnt'], [0.82, 2.5, 'crater-earth'], [0.95, 6, 'crater-earth'], [1.12, floorY, 'crater-earth']];
+  const at = (k, j) => {
+    const [r, h] = rings[k];
+    const t = (j / sectors) * Math.PI * 2;
+    const wob = k === 0 ? 1 : 0.85 + 0.3 * hash01(j, k + 1);
+    const lx = Math.cos(t) * rx * r * wob;
+    const lz = Math.sin(t) * ry * r * wob;
+    const y = k === 3 ? h * (0.55 + 0.9 * hash01(j, 7)) : h;
+    return [num(spec.x) + lx * Math.cos(a) - lz * Math.sin(a), y, num(spec.y) + lx * Math.sin(a) + lz * Math.cos(a)];
+  };
+  const out = [];
+  for (let j = 0; j < sectors; j += 1) {
+    const j1 = (j + 1) % sectors;
+    for (let k = 0; k < rings.length - 1; k += 1) {
+      const tint = rings[k + 1][2];
+      const quad = [at(k, j), at(k + 1, j), at(k + 1, j1), at(k, j1)];
+      for (const tri of k === 0 ? [[quad[0], quad[1], quad[2]]] : [[quad[0], quad[1], quad[2]], [quad[0], quad[2], quad[3]]]) {
+        const t = groundTri(tri, tint, footprint, margin);
+        if (t) out.push(t);
+      }
+    }
+  }
+  return out;
+}
+
+// Traînée de glissade : sillon de terre labourée (à plat) bordé de deux bourrelets, de l'hélicoptère vers l'arrière de son cap (d'où il a glissé), qui s'élargit
+// en approchant. spec : { x, y, heading, trail: { length, width } }. Renvoie [{ tint, p, n }].
+export function trailTriangles(spec, footprint = [], { segments = 12, margin = 24, floorY = 0.6 } = {}) {
+  const len = num(spec?.trail?.length);
+  const wid = num(spec?.trail?.width);
+  if (len <= 0 || wid <= 0) return [];
+  const a = num(spec?.heading) * DEG;
+  const back = [-Math.cos(a), -Math.sin(a)]; // vers l'arrière du cap
+  const side = [-back[1], back[0]];
+  const startOff = num(spec?.crater?.rx) * 0.7; // le sillon sort du cratère
+  const pt = (u, s, y) => {
+    const d = startOff + u * len;
+    const w = wid * (1 - 0.55 * u) * (0.9 + 0.2 * hash01(Math.round(u * 100), 3));
+    return [num(spec.x) + back[0] * d + side[0] * s * w / 2, y, num(spec.y) + back[1] * d + side[1] * s * w / 2];
+  };
+  const out = [];
+  const add = (tri, tint) => {
+    const t = groundTri(tri, tint, footprint, margin);
+    if (t) out.push(t);
+  };
+  for (let i = 0; i < segments; i += 1) {
+    const u0 = i / segments;
+    const u1 = (i + 1) / segments;
+    const rim = (u) => 4 * (1 - 0.7 * u);
+    // Sillon (fond), puis bourrelets de chaque côté (pente intérieure et extérieure).
+    add([pt(u0, -0.8, floorY), pt(u1, -0.8, floorY), pt(u1, 0.8, floorY)], 'crater-burnt');
+    add([pt(u0, -0.8, floorY), pt(u1, 0.8, floorY), pt(u0, 0.8, floorY)], 'crater-burnt');
+    for (const s of [-1, 1]) {
+      const inner0 = pt(u0, 0.8 * s, floorY);
+      const inner1 = pt(u1, 0.8 * s, floorY);
+      const top0 = pt(u0, 1.05 * s, rim(u0));
+      const top1 = pt(u1, 1.05 * s, rim(u1));
+      const out0 = pt(u0, 1.4 * s, floorY);
+      const out1 = pt(u1, 1.4 * s, floorY);
+      add([inner0, inner1, top1], 'crater-earth');
+      add([inner0, top1, top0], 'crater-earth');
+      add([top0, top1, out1], 'crater-earth');
+      add([top0, out1, out0], 'crater-earth');
+    }
+  }
+  return out;
+}
+
+// Emprise au sol (unités du jeu) du cratère et de la traînée, en boîtes serrées (le cratère, puis la traînée par quarts : elle peut être en diagonale) : le petit
+// décor posé dessus est retiré. Renvoie { boxes: [{ x, y, w, h }], triangles } ; boxes vide sans cratère ni traînée.
+export function groundScarBoxes(spec, footprint = []) {
+  const crater = craterTriangles(spec, footprint);
+  const trail = trailTriangles(spec, footprint);
+  const boxOf = (tris) => {
+    const b = boundsOf(tris);
+    const x0 = Math.floor(b.x0);
+    const y0 = Math.floor(b.z0);
+    return { x: x0, y: y0, w: Math.ceil(b.x1) - x0, h: Math.ceil(b.z1) - y0 };
+  };
+  const boxes = crater.length > 0 ? [boxOf(crater)] : [];
+  const per = Math.ceil(trail.length / 4);
+  for (let i = 0; i < trail.length; i += per) boxes.push(boxOf(trail.slice(i, i + per)));
+  return { boxes, triangles: crater.length + trail.length };
+}

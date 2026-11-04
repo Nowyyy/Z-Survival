@@ -79,6 +79,7 @@ export function generateDecor(cfg, world) {
   const heli = cfg?.wrecks?.helicopter;
   const heliRects = validRects(heli?.rects).map((r) => ({ id: r.id, kind: 'helicoptere', x: r.x, y: r.y, w: r.w, h: r.h, hauteur: num(heli?.height, 60) }));
   const keepOut = heli && validRects([heli.visual]).length === 1 ? [{ id: 'helicoptere', ...heli.visual }] : [];
+  validRects(heli?.scars).forEach((b, i) => keepOut.push({ id: `cratere-${i + 1}`, x: b.x, y: b.y, w: b.w, h: b.h })); // lot 5a-F : cratère et traînée (plats)
   const placed = cfg?.wrecks?.burningCar;
   const fixedCar = placed && typeof placed === 'object' && validRects([placed]).length === 1
     ? { id: String(placed.id ?? 'voiture-en-flammes'), kind: 'voiture', x: placed.x, y: placed.y, w: placed.w, h: placed.h, hauteur: num(placed.hauteur, 55), burning: true } : null;
@@ -160,7 +161,8 @@ export function generateDecor(cfg, world) {
   const keptFences = fences.filter((f) => !nearWreck(f, 20));
   const finalSolids = [...cars, ...keptTrees, ...wreckSolids];
   if (fixedCar) cars.push(fixedCar); // en dernier : les autres voitures gardent leur peinture (rang)
-  const helicopter = heli && heliRects.length > 0 ? { id: 'helicoptere', x: num(heli.x), y: num(heli.y), heading: num(heli.heading), corner: heli.corner ? { ...heli.corner } : null, rects: heliRects.map((r) => ({ ...r })), visual: keepOut[0] ? { ...keepOut[0] } : null, height: num(heli.height) } : null;
+  const helicopter = heli && heliRects.length > 0 ? { id: 'helicoptere', x: num(heli.x), y: num(heli.y), heading: num(heli.heading), corner: heli.corner ? { ...heli.corner } : null, rects: heliRects.map((r) => ({ ...r })), visual: keepOut[0] ? { ...keepOut[0] } : null, height: num(heli.height),
+    ...(heli.crater ? { crater: { ...heli.crater } } : {}), ...(heli.trail ? { trail: { ...heli.trail } } : {}), ...(Array.isArray(heli.scars) ? { scars: heli.scars.map((b) => ({ ...b })) } : {}), smoke: heli.smoke === true } : null;
   return { ground, cars, trees: keptTrees, bushes: keptBushes, lamps, fences: keptFences, solids: finalSolids, spawnPoints, corridors, helicopter, keepOut, wreckSolids, removed: { trees: trees.length - keptTrees.length, bushes: bushes.length - keptBushes.length, fences: fences.length - keptFences.length } };
 }
 
