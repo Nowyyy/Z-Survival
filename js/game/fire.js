@@ -59,14 +59,17 @@ void main() {
 // spec : { id, x, z (centre), y (dessus de la pile), w, d (emprise), spots? } ; palette : chaînes « #rrggbb » (fire, fireEdge, smoke).
 // Lot 5a : spots = foyers d'un feu groupé ([{ x, z, y, w, d }], voiture en flammes : capot et habitacle) : les mêmes particules (64 flammes, 64 fumées) naissent
 // tour à tour sur chaque foyer ; glow: false retire la lueur au sol (un appel de dessin de moins). Sans spots, le feu est identique à celui du lot 3g.
-export function createFire(spec, palette, { reduced = false, scale = 1, glow: withGlow = true } = {}) {
+// Lot 5a-F : flames: false = fumée seule (un appel de dessin), smoke: { alpha, color, rise } = fumée plus légère et plus lente (épave refroidie).
+export function createFire(spec, palette, { reduced = false, scale = 1, glow: withGlow = true, flames: withFlames = true, smoke: smokeOpts = null } = {}) {
   const k0 = Math.max(0.2, Math.min(2, Number(scale) || 1)); // taille du feu (bidon : plus petit)
   const group = new THREE.Group();
   group.name = `feu-${spec.id}`;
   const rnd = sequence(spec.id);
   const core = new THREE.Color(palette.fire);
   const edge = new THREE.Color(palette.fireEdge);
-  const smokeColor = new THREE.Color(palette.smoke);
+  const smokeColor = new THREE.Color(smokeOpts?.color ?? palette.smoke);
+  const smokeAlpha = Number.isFinite(smokeOpts?.alpha) ? smokeOpts.alpha : 0.38;
+  const smokeRise = Number.isFinite(smokeOpts?.rise) ? smokeOpts.rise : 1;
   const spread = { x: Math.max(8, spec.w * 0.38), z: Math.max(8, spec.d * 0.38) };
   const spots = Array.isArray(spec.spots) && spec.spots.length > 0 ? spec.spots.map((q) => ({ x: q.x, z: q.z, y: q.y, sx: Math.max(6, q.w * 0.38), sz: Math.max(6, q.d * 0.38) })) : null;
   let turn = 0;
@@ -89,6 +92,7 @@ export function createFire(spec, palette, { reduced = false, scale = 1, glow: wi
   };
   const flames = makePoints(FLAMES, THREE.AdditiveBlending);
   flames.name = 'flammes';
+  if (!withFlames) group.remove(flames);
   const smoke = makePoints(SMOKE, THREE.CustomBlending);
   smoke.material.blendSrc = THREE.OneFactor;
   smoke.material.blendDst = THREE.OneMinusSrcAlphaFactor;
@@ -124,7 +128,7 @@ export function createFire(spec, palette, { reduced = false, scale = 1, glow: wi
   const flameParts = Array.from({ length: FLAMES }, () => ({}));
   const smokeParts = Array.from({ length: SMOKE }, () => ({}));
   flameParts.forEach((p) => { born(p, 0.55 + rnd() * 0.5); p.age = rnd() * p.life; p.rise = (70 + rnd() * 50) * k0; });
-  smokeParts.forEach((p) => { born(p, 4 + rnd() * 2.5); p.age = rnd() * p.life; p.rise = (24 + rnd() * 18) * k0; });
+  smokeParts.forEach((p) => { born(p, 4 + rnd() * 2.5); p.age = rnd() * p.life; p.rise = (24 + rnd() * 18) * k0 * smokeRise; });
   const tmp = new THREE.Color();
   let glowTime = 0;
 
@@ -150,7 +154,7 @@ export function createFire(spec, palette, { reduced = false, scale = 1, glow: wi
       sp[i * 3 + 1] = p.base + 24 + p.rise * p.age;
       sp[i * 3 + 2] = p.z + p.vz * p.age * 1.6;
       ss[i] = (34 + 120 * k) * k0;
-      sc.set([smokeColor.r, smokeColor.g, smokeColor.b, Math.sin(Math.PI * Math.min(1, k * 1.15)) * 0.38], i * 4);
+      sc.set([smokeColor.r, smokeColor.g, smokeColor.b, Math.sin(Math.PI * Math.min(1, k * 1.15)) * smokeAlpha], i * 4);
     });
     for (const pts of [flames, smoke]) for (const name of ['position', 'aSize', 'aColor']) pts.geometry.attributes[name].needsUpdate = true;
     glowMaterial.uniforms.uStrength.value = 0.3 + 0.06 * Math.sin(glowTime * 11) + 0.04 * Math.sin(glowTime * 23);
@@ -178,7 +182,7 @@ export function createFire(spec, palette, { reduced = false, scale = 1, glow: wi
       step(d);
       write();
     },
-    stats: () => ({ id: spec.id, flames: FLAMES, smoke: SMOKE, x: spec.x, z: spec.z, y: spec.y, time: glowTime, spots: spots ? spots.length : 1, glow: withGlow }),
+    stats: () => ({ id: spec.id, flames: withFlames ? FLAMES : 0, smoke: SMOKE, x: spec.x, z: spec.z, y: spec.y, time: glowTime, spots: spots ? spots.length : 1, glow: withGlow }),
     dispose() {
       for (const o of [flames, smoke, glow]) {
         o.geometry.dispose();

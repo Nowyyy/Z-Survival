@@ -101,6 +101,11 @@ test.describe('épaves (lot 5a)', () => {
     expect(r.a.fires[0]).toMatchObject({ spots: 2, glow: false, flames: 64, smoke: 64 });
     expect(r.b.fires[0].time).toBeGreaterThan(r.a.fires[0].time + 0.9);
     expect(r.a.exteriorVisible).toBe(true);
+    // Lot 5a-F : cratère et traînée (sol de terre) et fumée légère sans flammes au-dessus de l'hélicoptère, qui avance avec le temps de jeu.
+    expect(r.a.helicopter.scarTriangles).toBe(heli.scarTriangles);
+    expect(r.a.heliSmoke).toHaveLength(1);
+    expect(r.a.heliSmoke[0]).toMatchObject({ flames: 0, smoke: 64, glow: false });
+    expect(r.b.heliSmoke[0].time).toBeGreaterThan(r.a.heliSmoke[0].time + 0.9);
   });
 
   test('une balle tirée vers l\'hélicoptère s\'arrête sur lui sans dégâts ; le laser s\'y arrête aussi', async ({ page }) => {

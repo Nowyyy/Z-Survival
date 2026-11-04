@@ -9,7 +9,7 @@ import { isFloorId } from './floors.js';
 import { boundingRect, coveredBy, overlapArea, pointInPolygon, polygonArea, polygonRects, segmentRects, totalArea, unionRects } from './shape.js';
 import { isNum, num } from './vec.js';
 import { approachCorridors } from './decor.js';
-import { helicopterFootprint, lCorner } from './epaves.js';
+import { groundScarBox, helicopterFootprint, lCorner } from './epaves.js';
 
 export const MAP_IDS = ['rez-de-chaussee', 'salle'];
 export const DEFAULT_MAP_ID = 'rez-de-chaussee';
@@ -159,7 +159,9 @@ export function cleanWrecks(e) {
   const car = typeof e.voitureEnFlammes === 'string' && e.voitureEnFlammes !== '' ? e.voitureEnFlammes
     : isObject(e.voitureEnFlammes) && isNum(e.voitureEnFlammes.x) && isNum(e.voitureEnFlammes.y) ? { x: e.voitureEnFlammes.x, y: e.voitureEnFlammes.y } : null;
   if (!h && !car) return null;
-  return { burningCar: car, helicopter: h ? { corner: [h.coin[0], h.coin[1]], x: h.x, y: h.y, heading: num(h.cap), ...(isNum(h.bord) && h.bord >= 0 ? { edge: h.bord } : {}) } : null };
+  const crater = isObject(h?.cratere) && isNum(h.cratere.rx) && isNum(h.cratere.ry) ? { rx: h.cratere.rx, ry: h.cratere.ry } : null;
+  const trail = isObject(h?.trainee) && isNum(h.trainee.longueur) && isNum(h.trainee.largeur) ? { length: h.trainee.longueur, width: h.trainee.largeur } : null;
+  return { burningCar: car, helicopter: h ? { corner: [h.coin[0], h.coin[1]], x: h.x, y: h.y, heading: num(h.cap), ...(isNum(h.bord) && h.bord >= 0 ? { edge: h.bord } : {}), ...(crater ? { crater } : {}), ...(trail ? { trail } : {}), ...(h.fumee === true ? { smoke: true } : {}) } : null };
 }
 
 // Zone libre derrière une fenêtre : toute sa largeur, windowDepth de profondeur à partir de la face intérieure du mur.
@@ -666,6 +668,11 @@ function wrecksOf(e, { X, Y, world, spawnPoints, p, report }) {
   for (const r of fp.rects) solidRules(r, edge, bad);
   if (fp.visual && gapOf(fp.visual) < edge) bad(`emprise visuelle à ${Math.round(gapOf(fp.visual))} du bâtiment (moins de ${edge})`);
   for (const c of corridors) if (fp.visual && rectGap(fp.visual, c) === 0) bad(`emprise visuelle dans le couloir d'approche de ${c.id}`);
-  out.helicopter = { ...spec, corner, edge, rects: fp.rects, visual: fp.visual, height: fp.height, triangles: fp.triangles };
+  // Lot 5a-F : cratère et traînée (unités du jeu, plats), fumée légère ; leur emprise au sol (scar) écarte le petit décor.
+  const crater = h.crater ? { rx: r6(h.crater.rx * p.scale), ry: r6(h.crater.ry * p.scale) } : null;
+  const trail = h.trail ? { length: r6(h.trail.length * p.scale), width: r6(h.trail.width * p.scale) } : null;
+  const scar = crater || trail ? groundScarBox({ ...spec, crater, trail }, footprint) : null;
+  if (scar && (scar.x < 0 || scar.y < 0 || scar.x + scar.w > world.size.width || scar.y + scar.h > world.size.height)) bad('cratère ou traînée hors du monde');
+  out.helicopter = { ...spec, corner, edge, rects: fp.rects, visual: fp.visual, height: fp.height, triangles: fp.triangles, ...(crater ? { crater } : {}), ...(trail ? { trail } : {}), ...(scar ? { scar: { x: scar.x, y: scar.y, w: scar.w, h: scar.h }, scarTriangles: scar.triangles } : {}), ...(h.smoke ? { smoke: true } : {}) };
   return out;
 }

@@ -231,6 +231,9 @@
   --game-wreck-glass: #4a5658;      /* verrière brisée */
   --game-car-burnt: #7a5a48;        /* caisse de la voiture en flammes (rouille et suie) */
   --game-car-soot: #45403a;         /* habitacle sans vitres, toit affaissé et jantes de la voiture en flammes */
+  --game-crater-burnt: #4a3f36;     /* lot 5a-F : fond du cratère et sillon de glissade, terre brûlée (teinte de la texture de terre) */
+  --game-crater-earth: #9a8068;     /* lot 5a-F : terre retournée des bourrelets du cratère et de la traînée */
+  --game-smoke-light: #8a8580;      /* lot 5a-F : fumée légère au-dessus de l'hélicoptère, sans flammes */
 }
 
 /* Interface intégrée (lot 3l) */

@@ -12,7 +12,7 @@ import { itemQuads, CATALOGUE as DECOR_CATALOGUE } from '../core/decor-interieur
 import { furnitureParts } from '../core/furniture-model.js';
 import { doorBoxes, grilleBoxes, rubbleBoxes } from '../core/portes-aspect.js';
 import { generateLivelyDecor } from '../core/decor-vivant.js';
-import { burntCarParts, carFireSpots, placeHelicopter } from '../core/epaves.js';
+import { burntCarParts, carFireSpots, craterTriangles, placeHelicopter, trailTriangles } from '../core/epaves.js';
 import { plankSettings } from '../core/plank-layout.js';
 import { plankSheet } from '../core/texgen.js';
 import { createDebrisMeshes, createWindowMeshes } from './windows-mesh.js';
@@ -740,6 +740,21 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
   // lueur au sol : deux appels de dessin, aucune lumière ; absent avec ?detail=0, comme les autres feux). Créés une fois, dans le groupe extérieur.
   const wrecks = { helicopter: null, burningCar: null };
   if (layout.decor?.helicopter) wrecks.helicopter = { id: layout.decor.helicopter.id, triangles: addHelicopter(ex.scenery, region, layout.decor.helicopter, tintOf), rects: layout.decor.helicopter.rects.map((r) => r.id) };
+  // Lot 5a-F (retour du propriétaire) : cratère de terre et traînée de glissade (plats, non solides) dans le maillage du sol extérieur (texture de terre répétée,
+  // teintée par couleurs de sommet : aucun appel de plus), et fumée légère sans flammes au-dessus de l'épave (un appel de dessin, seulement dans le champ).
+  if (layout.decor?.helicopter) {
+    const h = layout.decor.helicopter;
+    const scars = [...craterTriangles(h, layout.floor ?? []), ...trailTriangles(h, layout.floor ?? [])];
+    for (const t of scars) ex.soil.tinted(tintOf(t.tint), () => ex.soil.triangles([{ p: t.p, n: t.n, uv: t.p.map((q) => [q[0] / outdoorSoil, q[2] / outdoorSoil]) }]));
+    wrecks.helicopter.scarTriangles = scars.length;
+    if (h.smoke && render.detailDoors !== false) {
+      const smoke = createFire({ id: 'fumee-helicoptere', x: h.x, z: h.y, y: 34, w: 90, d: 60 }, palette, { reduced: render.reducedMotion === true, glow: false, flames: false, smoke: { alpha: 0.16, color: palette.smokeLight, rise: 0.7 } });
+      smoke.group.userData.floor = 'exterieur';
+      groups.exterieur.add(smoke.group);
+      fires.push(smoke);
+      wrecks.helicopter.smoke = smoke.group.name;
+    }
+  }
   const burning = layout.decor?.cars?.find((c) => c.burning === true);
   if (burning) wrecks.burningCar = { id: burning.id, fire: null, spots: [] };
   if (burning && render.detailDoors !== false) {
@@ -768,7 +783,8 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
     return mesh;
   };
   const sceneryMaterials = [['soil', 'sol-exterieur'], ['grass', 'herbe'], ['road', 'route'], ['sidewalk', 'trottoir']];
-  for (const [name, id] of sceneryMaterials) tag(ex[name].mesh(groups.exterieur, mat(id), { receive: true }), 'exterieur');
+  // Lot 5a-F : le sol de terre lit les couleurs de sommet s'il porte le cratère (même texture, même maillage).
+  for (const [name, id] of sceneryMaterials) tag(ex[name].mesh(groups.exterieur, ex[name].colored ? new THREE.MeshLambertMaterial({ map: textures.texture(id), vertexColors: true }) : mat(id), { receive: true }), 'exterieur');
   // Lot 5a : si des épaves teintées sont dans un maillage du décor, sa matière lit les couleurs de sommet (même texture, même mur percé : aucun appel de plus).
   const tinted = ex.props.colored || ex.scenery.colored ? seeThrough.apply(new THREE.MeshLambertMaterial({ map: textures.texture(ATLAS), vertexColors: true })) : null;
   const exScenery = tag(ex.scenery.mesh(groups.exterieur, ex.scenery.colored ? tinted : atlasMaterial, { receive: true }), 'exterieur');
@@ -1032,7 +1048,7 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
     },
     fireStats: () => fires.map((f) => f.stats()),
     // Lot 5a : épaves dessinées (hélicoptère : triangles, rectangles de collision ; voiture en flammes : feu et foyers) ; feu actif = dans la liste des feux mis à jour.
-    wreckStats: () => ({ ...wrecks, fires: fires.filter((f) => f.group.name === wrecks.burningCar?.fire).map((f) => f.stats()), propsTriangles: exProps ? exProps.geometry.attributes.position.count / 3 : 0, sceneryTriangles: exScenery ? exScenery.geometry.attributes.position.count / 3 : 0, exteriorVisible: groups.exterieur.visible }),
+    wreckStats: () => ({ ...wrecks, fires: fires.filter((f) => f.group.name === wrecks.burningCar?.fire).map((f) => f.stats()), heliSmoke: fires.filter((f) => f.group.name === wrecks.helicopter?.smoke).map((f) => f.stats()), propsTriangles: exProps ? exProps.geometry.attributes.position.count / 3 : 0, sceneryTriangles: exScenery ? exScenery.geometry.attributes.position.count / 3 : 0, exteriorVisible: groups.exterieur.visible }),
     seeThroughState: () => seeThrough.state(),
     showFloor(floor) {
       this.setElevation(floor === 'etage' ? lift : 0, floor);
