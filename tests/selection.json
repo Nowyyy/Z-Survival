@@ -88,6 +88,7 @@
     { "fichier": "tests/unit/core-audio-mix.test.js", "categorie": "P", "raison": "Mixage des sons." },
     { "fichier": "tests/unit/core-camera.test.js", "categorie": "P", "raison": "Caméra (perspective, suivi)." },
     { "fichier": "tests/unit/core-collision.test.js", "categorie": "P", "raison": "Collisions." },
+    { "fichier": "tests/unit/oracle-texte.test.js", "categorie": "G", "raison": "Lot 5d : oracles figés (références verbatim d'origin/dev) intacts ; identiques aux sources tant qu'elles ne sont pas réécrites." },
     { "fichier": "tests/unit/core-color.test.js", "categorie": "G", "raison": "Calcul des contrastes." },
     { "fichier": "tests/unit/core-combat.test.js", "categorie": "P", "raison": "Tir automatique." },
     { "fichier": "tests/unit/core-edge-arrow.test.js", "categorie": "P", "raison": "Flèches de bord (module encore utilisé par game.js)." },
@@ -274,6 +275,7 @@
         "tests/unit/maps-regles.test.js",
         "tests/unit/persos-sang.test.js",
         "tests/unit/persos-variantes.test.js",
+        "tests/unit/oracle-texte.test.js",
         "tests/unit/sauvegarde-schema.test.js",
         "tests/unit/sons-integres-ambiances.test.js",
         "tests/unit/tokens.test.js",
@@ -637,6 +639,7 @@
         "tests/unit/persos-jeu.test.js",
         "tests/unit/persos-kit.test.js",
         "tests/unit/persos-sang.test.js",
+        "tests/unit/oracle-texte.test.js",
         "tests/unit/persos-variantes.test.js"
       ],
       "e2e": ["tests/e2e/persos-integres.spec.js"],

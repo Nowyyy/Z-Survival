@@ -192,6 +192,7 @@
     { "fichier": "tests/unit/core-audio-mix.test.js", "categorie": "P", "valeur": "règle de jeu", "recommandation": "garder", "raison": "Mixage des sons." },
     { "fichier": "tests/unit/core-camera.test.js", "categorie": "P", "valeur": "règle de jeu", "recommandation": "garder", "raison": "Caméra (perspective, suivi)." },
     { "fichier": "tests/unit/core-collision.test.js", "categorie": "P", "valeur": "règle de jeu", "recommandation": "garder", "raison": "Collisions." },
+    { "fichier": "tests/unit/oracle-texte.test.js", "categorie": "G", "valeur": "garde-fou", "recommandation": "garder", "raison": "Lot 5d : oracles figés des réécritures sans allocation, intacts et verbatim." },
     { "fichier": "tests/unit/core-color.test.js", "categorie": "G", "valeur": "garde-fou", "recommandation": "garder", "raison": "Calcul des contrastes." },
     { "fichier": "tests/unit/core-combat.test.js", "categorie": "P", "valeur": "règle de jeu", "recommandation": "garder", "raison": "Tir automatique." },
     { "fichier": "tests/unit/core-edge-arrow.test.js", "categorie": "P", "valeur": "règle de jeu", "recommandation": "garder", "raison": "Flèches de bord (module encore utilisé par game.js)." },

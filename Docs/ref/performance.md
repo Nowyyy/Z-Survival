@@ -123,3 +123,97 @@ Auto (Lighthouse émule un téléphone : Moyen) 44 (36, 43, 44, 45, 46) ; Auto `
 - **À faire** : réécrire ces fonctions sans objets ni tableaux temporaires (résultats écrits dans des objets réutilisés, boucles sans `map`/`filter` dans les chemins chauds), **sans changer aucun résultat**.
 - **Garanties exigées** : `getState()` logique identique avant et après sur 600 pas et plus (tests d'invariance existants, plus un test qui compare les sorties de chaque fonction réécrite à l'ancienne sur des milliers de cas tirés d'une graine) ; règles de carte et de siège inchangées (`maps-regles`, `zones-metriques`) ; mesure avant/après des allocations par image et des images longues (`mesurer.mjs`, `?perf=1` sur le Poco F7 Ultra, critère : images > 1,5 × la cadence).
 - **Pourquoi un lot à part** : `collision.js` et les poses sont la logique du jeu, interdite dans le lot 5b ; leur prompt doit l'autoriser explicitement.
+
+## Lot 5d — Allocations par image : collisions et poses sans allocation, résultats identiques
+**Base** : `origin/dev` d18023c (lots 5a et 5b). **Rendu logiciel** : les mesures de l'agent sont relatives ; la fluidité réelle d'un téléphone n'est pas mesurée par l'agent (rapports `?perf=1` du propriétaire).
+
+### Relevé de départ (étape 0)
+1. `isRect(r)` → booléen ; sans allocation propre, mais rappel du `filter` de `validRects` : l'échantillonneur du tas lui attribue le tableau filtré.
+2. `validRects(list)` → tableau neuf des rectangles valides ; refait à chaque appel de `firstOnSegment`, `clearSegment` (deux fois) et `moveWithCollision`.
+3. `segmentRect(x0, y0, x1, y1, r)` → `t` dans [0, 1] ou `null` ; trois tableaux par appel (`[x0, y0, x1, y1]`, `p`, `q`) ; appelée pour chaque obstacle.
+4. `firstOnSegment(x0, y0, x1, y1, obstacles)` → `{ t, obstacle }` (l'obstacle de la liste, par identité) ou `null` ; appelants : `castRay` (laser, 2 par image), `stepBullets` (chaque balle à chaque pas), `isMuffled` (sons).
+5. `clearSegment(a, b, obstacles, margin)` → booléen ; `validRects(obstacles).map(inflateRect)` : une copie complète de chaque obstacle par appel ; appelée par `lineOfSight` (`nav.js`) : poursuite directe et jusqu'à `lookahead − 1` = 4 fois par zombie et par pas dans `flowDirection`.
+6. `moveWithCollision(circle, delta, obstacles, bounds)` → `{ x, y }` neuf ; alloue la liste filtrée, l'objet des bornes, `{ x, y, r }` et le `{ x, y }` de `pushOut` ; appelants : `stepEnemies` (chaque zombie, chaque pas), `moveCircle` (joueur), `player-down.js` (chute, rare).
+7. Internes : `slide` (nombre ; une passe par obstacle valide au plus, 1 à 200 sous-pas), `pushOut` (`{ x, y }`).
+8. `distanceToRect`, `rectGap`, `circleOverlapsRect` (nombres, booléen, sans allocation) et `inflateRect` (objet neuf) : carte, décor, sortie latérale d'escalier ; hors des chemins chauds.
+9. `eulerMatrix(angles, order)` → tableau neuf de 9 nombres (matrice 3 × 3 par lignes) ; alloue `vec3` (`slice`, tableau), `rx`, `ry`, `rz` et deux `mul3`.
+10. `jointMatrices(joints, pose, scale)` → `{ [articulation]: { m: [9 nombres], t: [3 nombres] } }` neuf ; une douzaine de tableaux et trois objets par articulation ; appelée par `groundLift` (pose-v2) pour chaque pose hors des marches, pour les 11 personnages à chaque image, et à la création des personnages (`character-v2.js`).
+11. `poseAt`, `blendPoses`, `addPose`, `touche` → `{ angles: { articulation: [x, y, z] }, offsets: { … }, scales: { articulation: s } }` neuf : un tableau par articulation, chaînes `hip${s}`, tableaux de clés de `keyed`, `Set` et `map` de `blendPoses` ; appelées par `show()` de `character-v2.js` (11 personnages par image), avec `{ ...params(), ...extra }`.
+12. Dépendances à l'ordre : à `t` égal, `firstOnSegment` garde le premier obstacle de la liste ; `slide` et `pushOut` parcourent la liste dans l'ordre et leur résultat en dépend ; `jointMatrices` prend le parent calculé plus tôt dans la même liste ; `blendPoses` range les clés de A puis celles de B ; un tampon réutilisé ne doit rien garder de l'appel précédent.
+13. Nombres : JavaScript ordinaires partout (aucun `Float32Array`) ; `-0` possible (`side * 0` du côté droit, `-dx`), `NaN` possible avec des entrées extrêmes (sommes qui débordent) : la comparaison se fait par `Object.is`.
+14. Sites d'appel à modifier : `enemy-ai.js` (`moveWithCollision` de chaque zombie) et `character-v2.js` (`show()`, `cycle()`, paramètres d'animation) ; `nav.js`, `projectile.js`, `ray.js`, `movement.js` n'ont rien à changer si `clearSegment` et `firstOnSegment` cessent d'allouer quand rien n'est touché.
+
+### Classement des allocations (partie A, `origin/dev`, `scripts/perf/mesurer.mjs`, 5 passes, médiane ; R1, R2, U1, U4 en Moyen et Élevé)
+Synthèse : `node scripts/perf/synthese-allocations.mjs mesures.json` (moyenne des 8 configurations : 997,5 Ko par image ; part = part du total).
+
+**Fichiers autorisés du lot 5d**
+
+| Rang | Site (fonction, fichier:ligne) | Ko par image | Part |
+|---|---|---|---|
+| 1 | firstOnSegment js/core/collision.js:51 | 142,4 | 14,3 % |
+| 2 | isRect js/core/collision.js:5 (rappel du `filter` de `validRects`) | 115,0 | 11,5 % |
+| 3 | (anonyme) js/core/collision.js:63 (`map(inflateRect)` de `clearSegment`) | 101,8 | 10,2 % |
+| 4 | pushOut js/core/collision.js:98 | 53,2 | 5,3 % |
+| 5 | slide js/core/collision.js:70 | 51,2 | 5,1 % |
+| 6 | jointMatrices js/core/character-parts.js:320 | 48,2 | 4,8 % |
+| 7 | eulerMatrix js/core/character-parts.js:33 | 46,3 | 4,6 % |
+| 9 | groundLift js/core/pose-v2.js:249 | 24,1 | 2,4 % |
+| 10 | segmentRect js/core/collision.js:29 | 23,7 | 2,4 % |
+| 12 | mergeParts js/core/character-parts.js:388 (création d'une tenue, mise en cache : hors de l'image courante) | 17,2 | 1,7 % |
+| 14 | mul3 js/core/character-parts.js:17 | 11,5 | 1,2 % |
+
+**Autres** (non modifiés, sauf `show` : site d'appel des poses)
+
+| Rang | Site | Ko par image | Part |
+|---|---|---|---|
+| 8 | next (natif) : itérateurs (`for … of` sur des `Map`, dont les os de `character-v2.js`) | 35,3 | 3,5 % |
+| 11 | filter (natif) : surtout `validRects` | 23,4 | 2,3 % |
+| 13 | show js/game/character-v2.js:327 (site d'appel des poses) | 13,1 | 1,3 % |
+| 15 | hypot (natif) | 6,2 | 0,6 % |
+
+Par fichier (Ko par image, R1 Moyen) : `collision.js` 720,7, `character-parts.js` 144,3, natif 119,6, `pose-v2.js` 75,3, `three.module.js` 24,3, `character-v2.js` 24,2, `fire.js` 16,6, `enemy-ai.js` 12,2, `game.js` 10,4.
+
+| Configuration | Total | collision.js | Poses (pose-v2, character-parts, character-v2) | Autres | Croissance du tas |
+|---|---|---|---|---|---|
+| R1 Moyen | 1 208 | 721 | 244 | 244 | 11,4 |
+| R1 Élevé | 1 252 | 721 | 273 | 258 | 17,7 |
+| R2 Moyen | 1 061 | 579 | 245 | 238 | 8,0 |
+| R2 Élevé | 1 095 | 576 | 269 | 251 | 15,4 |
+| U1 Moyen | 903 | 428 | 247 | 229 | 8,9 |
+| U1 Élevé | 947 | 426 | 275 | 246 | 16,9 |
+| U4 Moyen | 743 | 254 | 256 | 234 | 8,1 |
+| U4 Élevé | 770 | 252 | 284 | 234 | 18,9 |
+
+(Croissance du tas et allocations : Ko par image.)
+
+### Ramasse-miettes (partie A, `origin/dev`, `mesurer.mjs --gc`, 5 passes, médiane ; 600 images = 10 s de jeu simulé)
+Tracé Chromium par le protocole DevTools (`Tracing.start`, catégories `devtools.timeline`, `v8`, `disabled-by-default-v8.gc`, `blink.user_timing`), fil principal de la page, entre deux marques posées autour des 600 images, sans échantillonnage du tas. **Noms relevés dans le tracé** (Chromium de Playwright 1.63) : `MinorGC` et `MajorGC` (événements complets « X » de `devtools.timeline`, un par ramasse-miettes), enveloppes de `V8.GC_SCAVENGER` et `V8.GC_MARK_COMPACTOR` (non recomptés) ; `V8.GCIncrementalMarking` (marquage incrémental) et ceux du fil du travailleur des sons sont exclus. Repli contrôlé : les chutes du tas entre deux images (`performance.memory`) suivent le nombre de `MinorGC`.
+
+| Configuration | Mineurs par seconde | Durée médiane / max (ms) | Cumul sur 10 s (ms) | Majeurs par seconde (durée) | Croissance du tas (Ko/image) |
+|---|---|---|---|---|---|
+| R1 Moyen | 19,5 | 0,47 / 3,27 | 104,3 | 0 | 9,7 |
+| R1 Élevé | 14,9 | 0,52 / 6,87 | 108,4 | 0,1 (4,5 ms) | 16,5 |
+| R2 Moyen | 18,1 | 0,46 / 4,32 | 99,1 | 0 | 13,7 |
+| R2 Élevé | 14,0 | 0,55 / 4,36 | 97,5 | 0,1 (4,0 ms) | 17,3 |
+| U1 Moyen | 16,4 | 0,49 / 3,95 | 97,0 | 0 | 9,0 |
+| U1 Élevé | 12,9 | 0,52 / 5,90 | 89,5 | 0,1 (5,7 ms) | 18,2 |
+| U4 Moyen | 13,9 | 0,52 / 3,99 | 84,9 | 0 | 8,4 |
+| U4 Élevé | 11,1 | 0,58 / 3,35 | 77,2 | 0,1 (3,9 ms) | 15,3 |
+
+Lecture (rendu logiciel, valeurs relatives) : un ramasse-miettes mineur toutes les 50 à 90 ms de jeu, environ 1 % du temps ; le plus long atteint 3 à 7 ms, soit une bonne partie d'une image de 8,3 ms à 120 Hz. C'est compatible avec l'hypothèse (des images qui sautent une cadence à intervalle irrégulier), sans la démontrer : seule la mesure sur le téléphone le peut.
+
+### Harnais de comparaison du jeu (`scripts/perf/trace-logique.mjs`)
+Six scénarios, 600 pas de `step(0.05)` (onglet « caché » : seule la simulation avance, une image dessinée après chaque pas), actions déterministes (`setInput`, planches, escalier, chute et « Rejouer », niveaux de dégâts au maximum pour avoir des tués), empreinte SHA-256 de `getState()` logique à chaque pas (nombres exacts : `String(n)`, `-0`, `NaN`, `Infinity`). `--compare A B` donne le premier pas différent ; `--os` relève en plus la matrice monde de chaque os aux pas 100, 300 et 600. **Déterminisme** : deux exécutions d'`origin/dev` identiques à chaque pas, dans les six scénarios.
+
+| Scénario | Pas | Contenu (pas 600) | Empreinte finale (`origin/dev`) |
+|---|---|---|---|
+| 1. R1 manche 5 (siège, tirs, réparation) | 600 | 2 tués, 8 zombies, réparation, toutes les planches de 0 à 4 | 7e5fed6a1bcf6457 |
+| 2. `?wave=21&floor=1`, escaliers | 600 | 6 passages d'escalier, zombies dans l'escalier, mort au pas 543 | 3cab05cf38810eb6 |
+| 3. `?wave=31&floor=1`, deux étages | 600 | 7 passages d'escalier, 10 zombies | 4b78adcd92477b6f |
+| 4. Mort puis « Rejouer » | 600 | chute sans chute restante (pas 61), « Rejouer » au pas 150 | dde468cb9e7f2fe7 |
+| 5. `?map=salle` | 600 | 1 tué, réparation | 42056a4014538ada |
+| 6. R2 près d'une fenêtre, `?gfx=faible` | 600 | 4 tués, 108 pas de réparation | 8a17408c5401a78a |
+
+### Références et générateurs de cas
+- Oracles : `tests/unit/helpers/oracle/{collision,pose-v2,character-parts}.oracle.js`, copies verbatim d'`origin/dev` d18023c (deux lignes d'en-tête, « référence figée, ne jamais modifier »), avec deux relais d'import (`vec.js`, `character-parts.js` → l'oracle figé). `tests/unit/oracle-texte.test.js` vérifie l'en-tête et, tant qu'une source n'est pas réécrite, l'identité de texte ; sa ligne est retirée quand la source est réécrite (B : `collision.js` ; C : les poses), le test d'identité prenant le relais.
+- Cas : `tests/unit/helpers/cas-collision.js` (graine fixe, `rng.js` : segments et rectangles tirés, cas limites, vraies cartes des deux étages, rayons des personnages) et `tests/unit/helpers/cas-poses.js` (160 variantes concrètes des 5 personnages × 3 styles × tenues, toutes les animations, phases limites et tirées, paramètres).
