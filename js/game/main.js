@@ -265,6 +265,8 @@ for (const type of ['pointerdown', 'pointerup', 'click', 'touchend', 'keydown'])
 game = createGame(ctx);
 // Lot 5b-G : l'écran de préparation reste affiché pendant la création du jeu (monde, programmes, premier rendu complet, zombies préparés) :
 // le joueur ne voit pas la première image lente ; la boucle d'images ne démarre qu'à l'image suivante, une fois l'écran retiré.
+// Lot 5b-G2 : garder aussi le premier « commit » du navigateur sous l'écran (deux images d'attente) a été essayé puis retiré : Lighthouse tombait
+// de 55 à 30 (temps de blocage 1,3 à 1,6 s), sous le seuil de 45 ; ce commit reste dans la première seconde de la partie (compte à rebours « DÉBUT »).
 loading.done();
 root.hidden = false;
 if (game === null) {

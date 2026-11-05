@@ -37,7 +37,8 @@ export function createProfiler({ now = () => performance.now(), search = '', ua 
   }
   const frames = []; // { at, duration } des images qui suivent un premier usage (600 ms), pour les accrocs
   let lastNow = 0;
-  const longTasks = { supported: false, count: 0, max: 0, total: 0 };
+  const longTasks = { supported: false, count: 0, max: 0, total: 0, maxStart: null }; // maxStart : début de la plus longue (même horloge que les images)
+  let firstFrame = null; // lot 5b-G2 : travail de la première image par étape, et intervalle jusqu'à la deuxième
   try {
     if (observe && Array.isArray(observe.supportedEntryTypes) && observe.supportedEntryTypes.includes('longtask')) {
       longTasks.supported = true;
@@ -45,6 +46,7 @@ export function createProfiler({ now = () => performance.now(), search = '', ua 
         for (const e of l.getEntries()) {
           longTasks.count += 1;
           longTasks.total += e.duration;
+          if (e.duration > longTasks.max) longTasks.maxStart = e.startTime;
           longTasks.max = Math.max(longTasks.max, e.duration);
         }
       }).observe({ type: 'longtask', buffered: true });
@@ -92,6 +94,8 @@ export function createProfiler({ now = () => performance.now(), search = '', ua 
       if (!inFrame) return;
       inFrame = false;
       const total = now() - t0;
+      if (firstFrame === null) firstFrame = { at: lastT, stages: { ...cur }, total, next: null };
+      else if (firstFrame.next === null && interval > 0) firstFrame.next = interval;
       if (interval > 0) {
         log.push(lastT, interval, total);
         session.add(interval);
@@ -153,7 +157,8 @@ export function createProfiler({ now = () => performance.now(), search = '', ua 
         stages,
         stagesMean,
         renderer: { ...info },
-        longTasks: { ...longTasks },
+        longTasks: { ...longTasks, maxSince: longTasks.maxStart === null || startT === null ? null : longTasks.maxStart - startT },
+        firstFrame: firstFrame ? { ...firstFrame, stages: { ...firstFrame.stages } } : null,
         hitches,
         heapMB: typeof mem === 'number' ? mem / 1048576 : null,
         canvas: renderer ? { width: renderer.domElement.width, height: renderer.domElement.height } : { width: 0, height: 0 },

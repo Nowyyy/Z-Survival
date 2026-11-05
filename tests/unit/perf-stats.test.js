@@ -167,20 +167,25 @@ describe('système, paramètres et rapport', () => {
       hitches: [{ name: 'tir', max: 45.4, since: 12345 }, { name: 'feu', max: null }], heapMB: 45.25, cap: { value: 60, every: 2, aligned: false },
     });
     const lines = text.split('\n');
-    expect(lines).toHaveLength(11);
+    expect(lines).toHaveLength(12);
     expect(lines[0]).toBe('Z-Survival — rapport de fluidité v1');
     expect(lines[1]).toBe('Système : Android 14 · Chrome 130 · cadence de la page 60 Hz · DPR 2,00 · canvas 1334×750');
     expect(lines[3]).toContain('médiane 16,7 ms');
     expect(lines[3]).toMatch(/^5 s : 3 images \(45 i\/s obtenues\) · /);
     expect(lines[5]).toBe('Travail/image (moyenne, ms) : sim 1,3 · rendu 4,0');
     expect(lines[6]).toBe('Rendu : 62 appels · 38479 triangles · 14 programmes · 200 géométries · 18 textures');
-    expect(lines[8]).toBe('Premier usage (max image dans les 600 ms) : tir 45 ms à 12,3 s · feu —');
-    expect(lines[9]).toBe('Mémoire JS : 45,3 Mo');
-    expect(lines[10]).toContain('non aligné');
+    expect(lines[7]).toBe('Première image : —');
+    expect(lines[9]).toBe('Premier usage (max image dans les 600 ms) : tir 45 ms à 12,3 s · feu —');
+    expect(lines[10]).toBe('Mémoire JS : 45,3 Mo');
+    expect(lines[11]).toContain('non aligné');
     for (const h of HOSTILE) expect(() => formatReport(h)).not.toThrow();
     const empty = formatReport({ longTasks: { supported: false } }).split('\n');
-    expect(empty[7]).toBe('Tâches longues : non prises en charge');
-    expect(empty[9]).toBe('Mémoire JS : non disponible');
+    expect(empty[8]).toBe('Tâches longues : non prises en charge');
+    expect(empty[10]).toBe('Mémoire JS : non disponible');
+    // Lot 5b-G2 : première image détaillée et plus longue tâche longue datée depuis la première image.
+    const first = formatReport({ firstFrame: { total: 25.4, stages: { sim: 11, rendu: 12.9 }, next: 966.6 }, longTasks: { supported: true, count: 2, max: 978, total: 1200, maxSince: 586 } }).split('\n');
+    expect(first[7]).toBe('Première image : travail 25,4 ms · sim 11,0 · rendu 12,9 · image suivante après 967 ms');
+    expect(first[8]).toBe('Tâches longues : 2 (max 978 ms à 0,6 s, 1200 ms)');
     expect(fr(1.25)).toBe('1,3');
     expect(fr(undefined)).toBe('—');
   });
