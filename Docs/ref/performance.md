@@ -2,6 +2,17 @@
 
 **Rendu logiciel.** Les tests et le script de comparaison tournent sous Chromium sans processeur graphique (SwiftShader) : les valeurs absolues ne représentent aucun téléphone ; **seules les comparaisons relatives** (préréglage contre préréglage, avant contre après un levier) ont un sens. La fluidité réelle sur iPhone et Android n'est pas mesurée par l'agent : elle le sera par les rapports de `?perf=1` du propriétaire.
 
+## Synthèse (fin du lot 5b, après les rapports de trois téléphones)
+| Téléphone | Cadence | Élevé | Moyen | Faible |
+|---|---|---|---|---|
+| iPhone 16 Pro Max (iOS 27, Safari 27) | 60 Hz (plafond de Safari) | ≈ 40 i/s, 10 % d'images longues | 60 i/s, régulier | 60 i/s, régulier |
+| Pixel 7 (Android, Chrome 149) | 90 Hz | 59 i/s, 34 % d'images longues | 89 i/s, régulier | 89 i/s, régulier |
+| Poco F7 Ultra (Android 16, Chrome 156) | 120 Hz | 113 i/s, 6 % | 114 i/s, 5 % | 112 i/s, 7 % |
+
+- **Verdict** : Moyen (le réglage d'Auto sur un téléphone) est fluide sur les trois ; Élevé ne l'est que sur le Poco. Le processeur ne travaille que 2 à 4 ms par image partout : la limite est le rendu graphique (pixels), d'où l'efficacité du rapport de pixels des préréglages. Aucune valeur de préréglage n'a été changée après les mesures.
+- **Reste à comprendre ou à faire** : (1) l'accroc de 300 à 450 ms de la première image (premier « commit » du navigateur, attente du travail graphique ; le cacher sous l'écran de préparation fait tomber Lighthouse sous 45 : piste `compileAsync`) ; (2) les 5 à 7 % d'images qui sautent une cadence à 120 Hz même en Faible, probablement le ramasse-miettes (1,3 Mo alloués par image, moitié dans `collision.js`) : **lot à part décidé** (dernière section) ; (3) Auto n'a encore été vu sur aucun téléphone faible ; (4) Faible garde 49 à 50 % des triangles de l'Élevé (cible 45 %, personnages A).
+- **Limites** : les mesures de l'agent sont en rendu logiciel (valeurs relatives seulement) ; trois téléphones haut de gamme ou milieu-haut de gamme seulement ; les seuils d'Auto (22 ms, 10 %, 1,5 ×) sont provisoires.
+
 ## Relevé de départ (étape 0, `origin/dev` bee1944)
 1. Boucle (`js/game/game.js`, `frame`) : horloge VHS (`ctx.vhs.update`, 11 variables CSS), simulation `step(dt)` (vagues, IA, siège, balles, collisions, flux, argent, sons), `draw` (poses des 11 personnages, sang, effets, HUD, fenêtres, débris, flèches, étiquettes, annonce), `followCamera` (caméra, feux, brume, mur percé, carte d'ombres), `renderer.render`.
 2. Poses : `pose-v2.js` et `character-parts.js` pour chaque personnage visible ou non (les zombies de l'autre étage sont posés aussi, puis cachés).
@@ -75,7 +86,7 @@ Priorité : `?gfx=` > préférence de l'appareil (`zs.device.v1`, choisie dans l
 
 **Rendu Élevé après les leviers** (`scripts/perf/vues.mjs`, six vues dont la voiture en flammes et l'hélicoptère) : luminance moyenne et couleurs distinctes identiques à `origin/dev` (écart 0,00 % et 0,0 %).
 
-## Lighthouse mobile de `jeu.html` (fin du lot 5b, 5 passes, médiane)
+## Lighthouse mobile de `jeu.html` (fin de la partie C, 5 passes, médiane ; depuis la partie G : 55, voir plus bas)
 Auto (Lighthouse émule un téléphone : Moyen) 44 (36, 43, 44, 45, 46) ; Auto `?vhs=0` 44 (35, 37, 44, 47, 47) ; Élevé forcé (`?gfx=eleve`) 45 (36, 42, 45, 46, 46) ; CLS 0,002. Référence `origin/dev` : 45 et 44. Le score est fait au chargement, que les préréglages ne changent pas : premier affichage simulé ≈ 12,3 s (environ 110 modules et fichiers de données avant l'écran de préparation), temps de script au démarrage (sons 2,3 s, `game.js` 2,4 s dont une tâche longue de 1,0 s, textures 1,9 s). Écart de 10 points entre passes : une passe seule ne permet aucune conclusion.
 
 ## Premiers rapports de l'iPhone (lot 5b-E ; iPhone 16 Pro Max, iOS 27, Safari 27.0, écran 120 Hz)
@@ -101,7 +112,7 @@ Auto (Lighthouse émule un téléphone : Moyen) 44 (36, 43, 44, 45, 46) ; Auto `
 - **Préparation au démarrage** : l'écran de préparation reste affiché pendant la création du jeu, un premier rendu complet est fait derrière lui (`renderer.render` puis `gl.finish`), et la première tenue de chaque zombie est préparée tout de suite (les autres pendant les temps libres). L'atlas du sang reste calculé à la première tache (décision du lot 3m, testée). Mesure (`scripts/perf/demarrage.mjs`, 5 passes, rendu logiciel) : jeu prêt 3 839 → 3 745 ms (98 %), image la plus longue des 4 premières secondes 833 → 717 ms (86 %), premier feu 833 → 717 ms (86 %) : gardé.
 - **Lighthouse** `jeu.html` (Auto, 5 passes) : 38, 55, 55, 55, 55 (médiane **55**, avant 44). Le temps de blocage (TBT) tombe à 0 dans 4 passes sur 5 ; le premier affichage ne change pas (≈ 12,3 s simulées) et le jeu n'est pas prêt plus tôt (98 %) : le gain vient surtout de la fenêtre de mesure de Lighthouse (le travail lourd a lieu sous l'écran de préparation), pas d'un jeu plus rapide.
 
-## Retours du Poco F7 Ultra et lot 5b-G2
+## Retours du Poco F7 Ultra et lot 5b-H
 - **Poco F7 Ultra** (Android 16, Chrome 156, 120 Hz) : Élevé 113 i/s obtenues, Moyen 114, Faible 112 ; 4,8 à 6,9 % d'images qui sautent une cadence (16,6 ms au lieu de 8,3), **même en Faible**, avec 1,8 à 2,5 ms de travail du processeur par image : ni le dessin ni le calcul du jeu n'en sont la cause (voir la section suivante).
 - **Accroc du démarrage** (« feu … à 0,0 s » sur les trois téléphones) : une trace Chrome montre une tâche de près d'une seconde juste après la première image, presque entièrement le premier « commit » du navigateur, qui attend le travail graphique de cette image (programmes et rendu ; 650 ms à l'Élevé, 360 ms à Faible en rendu logiciel, sans différence avec ou sans VHS). **Essai retiré** : afficher la page de jeu sous l'écran de préparation et attendre deux images avant de le retirer faisait passer l'image la plus longue des 4 premières secondes de 733 à 200 ms (`demarrage.mjs`, 5 passes), mais Lighthouse tombait de 55 à 30 (temps de blocage 1,3 à 1,6 s), sous le seuil obligatoire de 45. Ce commit reste donc dans la première seconde de la partie, pendant le compte à rebours « DÉBUT » (aucun zombie). Piste : compiler les programmes en parallèle pendant le chargement (`compileAsync`, extension `KHR_parallel_shader_compile` de Chrome ; absente de Safari), ce qui demande de créer le rendu plus tôt.
 - **Rapport** : nouvelle ligne « Première image » (travail par étape, intervalle jusqu'à l'image suivante) ; la plus longue tâche longue est datée depuis la première image (négatif : avant le début de la partie, sous l'écran de préparation).

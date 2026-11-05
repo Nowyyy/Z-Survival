@@ -38,7 +38,7 @@ export function createProfiler({ now = () => performance.now(), search = '', ua 
   const frames = []; // { at, duration } des images qui suivent un premier usage (600 ms), pour les accrocs
   let lastNow = 0;
   const longTasks = { supported: false, count: 0, max: 0, total: 0, maxStart: null }; // maxStart : début de la plus longue (même horloge que les images)
-  let firstFrame = null; // lot 5b-G2 : travail de la première image par étape, et intervalle jusqu'à la deuxième
+  let firstFrame = null; // lot 5b-H : travail de la première image par étape, et intervalle jusqu'à la deuxième
   try {
     if (observe && Array.isArray(observe.supportedEntryTypes) && observe.supportedEntryTypes.includes('longtask')) {
       longTasks.supported = true;

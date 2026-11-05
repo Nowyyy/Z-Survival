@@ -182,7 +182,7 @@ describe('système, paramètres et rapport', () => {
     const empty = formatReport({ longTasks: { supported: false } }).split('\n');
     expect(empty[8]).toBe('Tâches longues : non prises en charge');
     expect(empty[10]).toBe('Mémoire JS : non disponible');
-    // Lot 5b-G2 : première image détaillée et plus longue tâche longue datée depuis la première image.
+    // Lot 5b-H : première image détaillée et plus longue tâche longue datée depuis la première image.
     const first = formatReport({ firstFrame: { total: 25.4, stages: { sim: 11, rendu: 12.9 }, next: 966.6 }, longTasks: { supported: true, count: 2, max: 978, total: 1200, maxSince: 586 } }).split('\n');
     expect(first[7]).toBe('Première image : travail 25,4 ms · sim 11,0 · rendu 12,9 · image suivante après 967 ms');
     expect(first[8]).toBe('Tâches longues : 2 (max 978 ms à 0,6 s, 1200 ms)');

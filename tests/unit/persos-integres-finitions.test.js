@@ -61,7 +61,7 @@ describe('leviers de chargement', () => {
     expect(read('js/game/persos-runtime.js')).not.toMatch(/^import .*blood-fx/m);
     expect(read('js/game/persos-loader.js')).toMatch(/fx \? import\('\.\/blood-fx\.js'\) : null/);
   });
-  // Lot 5b-G2 (décision du propriétaire) : l'atlas n'est plus calculé à la première tache (accroc au premier sang sur les trois téléphones mesurés)
+  // Lot 5b-H (décision du propriétaire) : l'atlas n'est plus calculé à la première tache (accroc au premier sang sur les trois téléphones mesurés)
   // mais à la création du sang, derrière l'écran de préparation ; jamais pendant un moment libre ni par minuteur ; une seule fois.
   it('atlas des taches : calculé une fois à la création du sang (derrière l\'écran de préparation), jamais au premier moment libre', () => {
     const src = read('js/game/blood-fx.js');
