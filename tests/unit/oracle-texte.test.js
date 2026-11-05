@@ -6,7 +6,8 @@ import { readFileSync } from 'node:fs';
 // collision.js ; C : pose-v2.js et character-parts.js), sa ligne est retirée d'ici et remplacée par son test d'identité (Object.is sur des
 // milliers de cas) : l'oracle, lui, ne change jamais.
 const BASE = 'd18023c5657406d6c5a531c40844ebb133b91489';
-const NON_REECRITS = ['collision', 'pose-v2', 'character-parts'];
+// Lot 5d-B : collision.js réécrit, remplacé par tests/unit/collision-identite.test.js.
+const NON_REECRITS = ['pose-v2', 'character-parts'];
 const read = (p) => readFileSync(p, 'utf8');
 
 describe('oracles figés du lot 5d', () => {

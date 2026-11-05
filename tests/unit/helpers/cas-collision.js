@@ -166,6 +166,15 @@ export function casMove(n = 4000, seed = 54) {
     out.push([{ x: -r - 1, y: 50, r }, { x: 500, y: 0 }, [box], { minX: -1000, maxX: 1000 }]);
   }
   out.push([null, null, null, null], [{ x: NaN, y: 1, r: 2 }, { x: 1 }, [], {}], [{ x: 1, y: 1, r: -3 }, { x: Infinity, y: 1 }, [box], undefined]);
+  // Contact à quelques ulp près (poussée hors d'un obstacle : seuil r - 1e-9) : cercle juste au bord de chaque côté, sans mouvement ou presque.
+  for (const r of RADII.filter((v) => v > 0)) {
+    for (const eps of [5e-4, 1e-6, 1e-8, 2e-9, 1e-9, 5e-10, 0, -1e-9, -5e-4]) {
+      const q = { x: 40, y: 60, w: 30, h: 25 };
+      for (const [cx, cy] of [[q.x - r + eps, q.y + 10], [q.x + q.w + r - eps, q.y + 10], [q.x + 10, q.y - r + eps], [q.x + 10, q.y + q.h + r - eps], [q.x - r * Math.SQRT1_2 + eps, q.y - r * Math.SQRT1_2 + eps]]) {
+        out.push([{ x: cx, y: cy, r }, { x: 0, y: 0 }, [q], undefined], [{ x: cx, y: cy, r }, { x: 1e-7, y: -1e-7 }, [{ x: 500, y: 500, w: 5, h: 5 }, q], undefined]);
+      }
+    }
+  }
   while (out.length < n) {
     const list = randomList(rnd);
     const valid = Array.isArray(list) ? list.filter((q) => q && Number.isFinite(q.x) && Number.isFinite(q.y) && Number.isFinite(q.w) && Number.isFinite(q.h)) : [];
