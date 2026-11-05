@@ -239,3 +239,63 @@ Six scénarios, 600 pas de `step(0.05)` (onglet « caché » : seule la simulati
 | U4 Élevé | 770 → 556 (−28 %) | 252 → 34 (−87 %) | 284 → 283 | 234 → 239 |
 
   **Cible de `collision.js` (−90 % ou plus) : non atteinte de peu** (−86 à −91 %, moyenne −89 %) : ce qui reste est la lecture des champs des obstacles (boîtes de V8). Ramasse-miettes (Moyen, tracé) : mineurs par seconde R1 19,5 → 10,7, R2 18,1 → 10,6, U1 16,4 → 10,4, U4 13,9 → 10,5 ; durée médiane inchangée (≈ 0,5 ms) ; plus long 3,3 / 4,3 / 4,0 / 4,0 → 1,4 / 2,9 / 1,6 / 3,4 ms ; cumul sur 10 s 104 / 99 / 97 / 85 → 63 / 62 / 61 / 63 ms. Étape `sim` du profileur (`--ref … --ref-memes-reglages --sans-tas`, passes alternées `origin/dev` / B, Moyen, 5 passes, médiane des moyennes par image) : R1 1,029 → 0,397 ms (−61 %), U4 0,535 → 0,311 ms (−42 %) : **plus rapide, critère « +2 % au plus » tenu**.
+
+### Partie C — Poses sans allocation
+- **`character-parts.js`** : `eulerMatrixInto(out, angles, order)` (9 termes écrits dans `out`) ; `jointMatricesInto(out, joints, pose, scale)` (une entrée `{ m: [9], t: [3] }` par articulation, créée au premier appel puis réécrite ; un `out` par squelette) ; `jointMatricesOverInto` (interne aux poses : décalage du bassin remplacé sans copier la pose, pour le contact au sol). Produits de matrices déroulés terme à terme, termes nuls et unités compris, sans nombre passé en argument (V8 en ferait des boîtes) ; le parent est celui calculé plus tôt dans le même appel, comme avant. `eulerMatrix` et `jointMatrices` renvoient comme avant des objets neufs (mêmes nombres, mêmes clés).
+- **`pose-v2.js`** : `poseAtInto(out, work, rig, anim, phase, params, data)`, `blendPosesInto(out, a, b, t)`, `addPoseInto(out, base, add, w)`, `toucheInto(out, rig, phase, params, data)`, `copyPoseInto(out, src)` (copie exacte, pour la pose précédente d'un fondu), `createPose()`, `createPoseWork()`. Toutes les animations écrivent dans la pose donnée (tableaux réutilisés, gardés sous une clé symbole invisible de `Object.keys`), les poses intermédiaires (attaque, morts, réparation, relevage, enjamber) dans l'espace de travail ; noms d'articulations en table figée (plus de chaînes construites), pieds, cinématique inverse et prises en variables, `cycleSeconds` sans objet. Dans une pose « Into », une articulation absente vaut `undefined` : c'est exactement ce qu'applique `setAngles` à une articulation absente (rotation nulle, décalage nul, échelle 1) et ce que lisent les variantes `Into`. Sans tampon, chaque fonction renvoie comme avant une pose neuve identique (clés, ordre, nombres) à l'ancienne. Même type numérique (nombres JavaScript ordinaires).
+- **Site d'appel** : `js/game/character-v2.js` (34 lignes ajoutées, 14 retirées) : chaque personnage crée à sa construction ses poses (`cur`, `prev`, `blend`, `hurt`, `add`), son espace de travail et ses paramètres d'animation (objet réutilisé, comme `{ ...macros, ...extra }` : clé absente = `undefined`) ; `show()` enchaîne `poseAtInto`, `blendPosesInto` depuis une copie exacte de la pose précédente (prise au changement d'animation, comme l'ancien code gardait l'objet), `addPoseInto` du touché ; les `extra` (`{ twist, recoil }`, `{ repairTime }`, `{ sill }`) sont trois objets du personnage réécrits avant l'appel. Ce qui est appliqué aux os (`setAngles`, échelles) ne change pas.
+- **Preuves** : `tests/unit/poses-identite.test.js` : 19 460 cas `poseAt` (160 variantes concrètes des 5 personnages, styles A, B, C, toutes les animations, phases limites et tirées, paramètres), 1 500 `blendPoses`, 1 000 `addPose`, 1 500 `jointMatrices`, 3 000 `eulerMatrix`, `touche`, `groundLift`, `cycleSeconds`, `armIK`, `strikesPerPlank` ; variantes `Into` avec un seul tampon et un seul espace de travail pour tous les cas, dans les deux ordres ; chaîne du jeu (pose, fondu, touché, copie de la pose précédente) sur 3 000 pas ; contrôle statique des corps. Harnais : six empreintes identiques à chaque pas ; matrices monde de tous les os (38 à 209) identiques aux pas 100, 300 et 600 des six scénarios. Banc d'essai Node (octets par pose, ancien → nouveau) : zombie en attente 42 119 → 890, marche 8 168 → 534, attaque 53 388 → 3 072 ; joueur au repos 43 652 → 920, en marche 10 449 → 848.
+
+### Mesures finales (`origin/dev` → C ; 5 passes, médiane ; rendu logiciel : valeurs relatives)
+**Allocations** (Ko par image ; « poses par image » = `pose-v2.js` + `character-parts.js` hors `mergeParts`, construction d'une tenue à l'apparition ; « poses (tous) » = ces deux fichiers et `character-v2.js`) :
+
+| Configuration | Total | `collision.js` | Poses par image | Poses (tous) | Autres | Croissance du tas |
+|---|---|---|---|---|---|---|
+| R1 Moyen | 1 208 → 324 (−73 %) | 721 → 72 (−90 %) | 220 → 32 (−86 %) | 244 → 64 (−74 %) | 244 → 189 | 11,4 → 8,9 |
+| R1 Élevé | 1 252 → 369 (−71 %) | 721 → 72 (−90 %) | 219 → 40 (−82 %) | 273 → 92 (−66 %) | 258 → 205 | 17,7 → 18,2 |
+| R2 Moyen | 1 061 → 316 (−70 %) | 579 → 67 (−88 %) | 221 → 31 (−86 %) | 245 → 62 (−75 %) | 238 → 187 | 8,0 → 7,0 |
+| R2 Élevé | 1 095 → 357 (−67 %) | 576 → 67 (−88 %) | 217 → 39 (−82 %) | 269 → 91 (−66 %) | 251 → 200 | 15,4 → 15,8 |
+| U1 Moyen | 903 → 287 (−68 %) | 428 → 38 (−91 %) | 213 → 30 (−86 %) | 247 → 62 (−75 %) | 229 → 188 | 8,9 → 8,3 |
+| U1 Élevé | 947 → 331 (−65 %) | 426 → 38 (−91 %) | 220 → 38 (−83 %) | 275 → 90 (−67 %) | 246 → 203 | 16,9 → 15,2 |
+| U4 Moyen | 743 → 292 (−61 %) | 254 → 34 (−87 %) | 222 → 33 (−85 %) | 256 → 66 (−74 %) | 234 → 192 | 8,1 → 9,3 |
+| U4 Élevé | 770 → 332 (−57 %) | 252 → 34 (−87 %) | 233 → 39 (−83 %) | 284 → 92 (−68 %) | 234 → 206 | 18,9 → 14,3 |
+
+La croissance du tas entre le début et la fin des 600 images (ce qui survit, faible et bruité) ne bouge pas : les objets supprimés mouraient tous jeunes.
+
+**Ramasse-miettes** (tracé, `MinorGC` et `MajorGC` du fil principal, 10 s de jeu simulé) :
+
+| Configuration | Mineurs par seconde | Durée médiane (ms) | Plus long (ms) | Cumul sur 10 s (ms) | Majeurs |
+|---|---|---|---|---|---|
+| R1 Moyen | 19,5 → 7,7 | 0,47 → 0,52 | 3,27 → 2,48 | 104,3 → 47,8 | 0 → 0 |
+| R1 Élevé | 14,9 → 6,1 | 0,52 → 0,61 | 6,87 → 5,30 | 108,4 → 55,2 | 0,1/s → 0,1/s (4,5 → 5,9 ms) |
+| R2 Moyen | 18,1 → 7,8 | 0,46 → 0,53 | 4,32 → 3,34 | 99,1 → 48,8 | 0 → 0 |
+| R2 Élevé | 14,0 → 5,1 | 0,55 → 0,66 | 4,36 → 2,87 | 97,5 → 41,0 | 0,1/s → 0,1/s (4,0 → 4,3 ms) |
+| U1 Moyen | 16,4 → 7,1 | 0,49 → 0,54 | 3,95 → 3,02 | 97,0 → 44,1 | 0 → 0 |
+| U1 Élevé | 12,9 → 5,2 | 0,52 → 0,61 | 5,90 → 5,00 | 89,5 → 48,8 | 0,1/s → 0,1/s (5,7 → 4,5 ms) |
+| U4 Moyen | 13,9 → 7,0 | 0,52 → 0,51 | 3,99 → 3,96 | 84,9 → 43,9 | 0 → 0 |
+| U4 Élevé | 11,1 → 4,9 | 0,58 → 0,64 | 3,35 → 2,78 | 77,2 → 37,1 | 0,1/s → 0,1/s (3,9 → 4,0 ms) |
+
+**Étapes du profileur** (ms par image, moyenne ; `mesurer.mjs --ref … --ref-memes-reglages --sans-tas`, passes alternées `origin/dev` / C, 5 passes, médiane) :
+
+| Configuration | `sim` | `poses` | `total` |
+|---|---|---|---|
+| R1 Moyen | 1,095 → 0,414 (−62 %) | 0,477 → 0,339 (−29 %) | 2,721 → 1,857 (−32 %) |
+| R2 Moyen | 0,893 → 0,402 (−55 %) | 0,469 → 0,347 (−26 %) | 2,432 → 1,803 (−26 %) |
+| U1 Moyen | 0,746 → 0,355 (−52 %) | 0,457 → 0,351 (−23 %) | 2,208 → 1,770 (−20 %) |
+| U4 Moyen | 0,522 → 0,325 (−38 %) | 0,476 → 0,354 (−26 %) | 2,045 → 1,748 (−15 %) |
+| R1 Élevé | 1,035 → 0,434 (−58 %) | 0,491 → 0,400 (−19 %) | 2,694 → 1,955 (−27 %) |
+| R2 Élevé | 0,896 → 0,418 (−53 %) | 0,505 → 0,384 (−24 %) | 2,514 → 2,020 (−20 %) |
+| U1 Élevé | 0,744 → 0,394 (−47 %) | 0,492 → 0,384 (−22 %) | 2,321 → 1,883 (−19 %) |
+| U4 Élevé | 0,553 → 0,328 (−41 %) | 0,516 → 0,381 (−26 %) | 2,175 → 1,818 (−16 %) |
+
+**Rendu** : `scripts/perf/vues.mjs` (six vues, Élevé) : luminance moyenne et couleurs distinctes identiques à `origin/dev` (écart 0,00 % et 0,0 %) ; `scripts/perf/budget-instant.mjs` (R1, R2, U1, U4 × Élevé, Moyen, Faible, écran ×2) : appels, triangles et pixels identiques dans les 12 configurations.
+
+**Cibles (rapportées, jamais modifiées)** : total −50 % : tenue (−57 à −73 %) ; `collision.js` −90 % : non tenue de peu (−87 à −91 %, moyenne −89 %) ; poses −80 % : tenue pour le code des poses par image (−82 à −86 %), non tenue en comptant `mergeParts` et les itérations de `character-v2.js` non modifiées (−66 à −75 %) ; `sim` et `poses` à +2 % au plus : tenu (plus rapides partout : `sim` −38 à −62 %, `poses` −19 à −29 %).
+
+### Conclusion sur l'hypothèse du ramasse-miettes
+Le jeu jette 2,3 à 3,7 fois moins de mémoire par image ; il y a 2,3 à 2,7 fois moins de ramasse-miettes mineurs (≈ 5 à 8 par seconde au lieu de 11 à 19,5) et leur temps cumulé baisse de 45 à 62 %. Chacun dure toujours ≈ 0,5 ms (médiane) et le plus long reste de 2,5 à 5 ms : il y a **moins** de pauses, pas de pauses plus **courtes** ; les ramasse-miettes majeurs (0,1 par seconde en Élevé, 4 à 6 ms) ne changent pas. Si les 4,8 à 6,9 % d'images sautées du Poco F7 Ultra viennent des ramasse-miettes mineurs, leur part devrait baisser d'environ la moitié ; si elle ne bouge pas, la cause est ailleurs (rendu graphique, compositeur, majeurs). Rendu logiciel : seule la mesure sur le téléphone (`?perf=1`, « images > 1,5 × ») peut trancher. En prime, le calcul est plus rapide : `sim` −38 à −62 %, `poses` −19 à −29 %, image (côté processeur) −15 à −32 %.
+
+### Sites restants (C, moyenne des 8 configurations : 326 Ko par image)
+Fichiers du lot : `slide` 21,9 Ko (6,7 %), `mergeParts` 21,0 (6,4 %, construction d'une tenue), `clearSegment` 16,1 (4,9 %), `pushOutInto` 10,8 (3,3 %), `blendOne` 6,3 (1,9 %) — lectures des champs d'obstacles et de poses que V8 met en boîte. Autres (Idées, non modifiés) : itérateurs `next` natifs 21,8 (6,7 %), `show` 12,2 (3,8 %) et `setAngles` 7,8 (2,4 %) de `character-v2.js` (`for … of` sur des `Map`), `filter` natif 11,8 (3,6 %), `enemy-ai.js` 7,6 (2,3 %), Three.js `setValueM4` 7,4 (2,3 %) et `getParameters` 6,3 (1,9 %), `perf-stats.js` 5,6 (1,7 %, `?perf=1`), `fire.js` 8,6 (2,6 %).
+
+**Lighthouse mobile de `jeu.html`** (5 passes, à titre d'information) : C 55, 55, 52, 55, 55 (médiane 55) ; `origin/dev` 55, 55, 55, 55, 55 (médiane 55) ; CLS 0,002 : aucune chute.

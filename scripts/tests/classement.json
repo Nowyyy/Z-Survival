@@ -274,6 +274,7 @@
     { "fichier": "tests/unit/impact-chair.test.js", "categorie": "P", "valeur": "règle de jeu", "recommandation": "garder", "raison": "Lot 5a : impact sur la chair (trois variantes, cibles, absence de « cling » mesurée, intégration sous impact-zombie, recettes des tirs et des autres impacts inchangées, scène simulée)." },
     { "fichier": "tests/unit/epaves.test.js", "categorie": "P", "valeur": "règle de jeu", "recommandation": "garder", "raison": "Lot 5a : modèle de l'hélicoptère (triangles, sol, déterminisme) et emplacements des épaves (angle du L, couloirs, 160 du bâtiment)." },
     { "fichier": "tests/unit/package.test.js", "categorie": "G", "valeur": "garde-fou", "recommandation": "garder", "raison": "dependencies vide." },
+    { "fichier": "tests/unit/poses-identite.test.js", "categorie": "G", "valeur": "garde-fou", "recommandation": "garder", "raison": "Lot 5d : identité au bit près des poses réécrites contre les oracles figés." },
     { "fichier": "tests/unit/persos-animations.test.js", "categorie": "P", "valeur": "règle de jeu", "recommandation": "garder", "raison": "Animations pose-v2 (glissement des pieds ≤ 15 %)." },
     { "fichier": "tests/unit/persos-donnees.test.js", "categorie": "G", "valeur": "garde-fou", "recommandation": "garder", "raison": "Données des personnages, pureté." },
     { "fichier": "tests/unit/persos-integres-finitions.test.js", "categorie": "P", "valeur": "règle de jeu", "recommandation": "garder", "raison": "Chargement allégé, retours du propriétaire." },
