@@ -26,14 +26,74 @@ export const applyAffine = (a, v) => {
 };
 // a puis b : composée b ∘ a (un point passe d'abord par a).
 export const compose = (outer, inner) => ({ m: mul3(outer.m, inner.m), t: applyAffine(outer, inner.t) });
-const rx = (x) => [1, 0, 0, 0, Math.cos(x), -Math.sin(x), 0, Math.sin(x), Math.cos(x)];
-const ry = (y) => [Math.cos(y), 0, Math.sin(y), 0, 1, 0, -Math.sin(y), 0, Math.cos(y)];
-const rz = (z) => [Math.cos(z), -Math.sin(z), 0, Math.sin(z), Math.cos(z), 0, 0, 0, 1];
+// Lot 5d : vec3 sans tableau : vrai si v donne ses trois premiers termes (même test que vec3 : tableau d'au moins 3 termes dont les présents,
+// comme les voit every sur slice, sont des nombres finis ; un trou passe le test et vaut undefined, comme dans vec3).
+const isVec3 = (v) => Array.isArray(v) && v.length >= 3 && (!(0 in v) || isNum(v[0])) && (!(1 in v) || isNum(v[1])) && (!(2 in v) || isNum(v[2]));
+// Rotation d'Euler écrite dans o (9 termes) : mêmes produits que l'ancien eulerMatrix (Ry · Rx puis · Rz, ou Rx · Ry puis · Rz),
+// déroulés terme à terme, termes nuls et unités compris (o[r * 3 + c] = a[r * 3] * b[c] + a[r * 3 + 1] * b[3 + c] + a[r * 3 + 2] * b[6 + c]).
+// Sans allocation ni nombre passé en argument (V8 en ferait des boîtes).
+function eulerTo(o, ok, angles, order) {
+  const x = ok ? angles[0] : 0;
+  const y = ok ? angles[1] : 0;
+  const z = ok ? angles[2] : 0;
+  const cx = Math.cos(x);
+  const sx = Math.sin(x);
+  const nsx = -sx;
+  const cy = Math.cos(y);
+  const sy = Math.sin(y);
+  const nsy = -sy;
+  const cz = Math.cos(z);
+  const sz = Math.sin(z);
+  const nsz = -sz;
+  if (order === 'YXZ') {
+    const p0 = cy * 1 + 0 * 0 + sy * 0;
+    const p1 = cy * 0 + 0 * cx + sy * sx;
+    const p2 = cy * 0 + 0 * nsx + sy * cx;
+    const p3 = 0 * 1 + 1 * 0 + 0 * 0;
+    const p4 = 0 * 0 + 1 * cx + 0 * sx;
+    const p5 = 0 * 0 + 1 * nsx + 0 * cx;
+    const p6 = nsy * 1 + 0 * 0 + cy * 0;
+    const p7 = nsy * 0 + 0 * cx + cy * sx;
+    const p8 = nsy * 0 + 0 * nsx + cy * cx;
+    o[0] = p0 * cz + p1 * sz + p2 * 0;
+    o[1] = p0 * nsz + p1 * cz + p2 * 0;
+    o[2] = p0 * 0 + p1 * 0 + p2 * 1;
+    o[3] = p3 * cz + p4 * sz + p5 * 0;
+    o[4] = p3 * nsz + p4 * cz + p5 * 0;
+    o[5] = p3 * 0 + p4 * 0 + p5 * 1;
+    o[6] = p6 * cz + p7 * sz + p8 * 0;
+    o[7] = p6 * nsz + p7 * cz + p8 * 0;
+    o[8] = p6 * 0 + p7 * 0 + p8 * 1;
+  } else {
+    const p0 = 1 * cy + 0 * 0 + 0 * nsy;
+    const p1 = 1 * 0 + 0 * 1 + 0 * 0;
+    const p2 = 1 * sy + 0 * 0 + 0 * cy;
+    const p3 = 0 * cy + cx * 0 + nsx * nsy;
+    const p4 = 0 * 0 + cx * 1 + nsx * 0;
+    const p5 = 0 * sy + cx * 0 + nsx * cy;
+    const p6 = 0 * cy + sx * 0 + cx * nsy;
+    const p7 = 0 * 0 + sx * 1 + cx * 0;
+    const p8 = 0 * sy + sx * 0 + cx * cy;
+    o[0] = p0 * cz + p1 * sz + p2 * 0;
+    o[1] = p0 * nsz + p1 * cz + p2 * 0;
+    o[2] = p0 * 0 + p1 * 0 + p2 * 1;
+    o[3] = p3 * cz + p4 * sz + p5 * 0;
+    o[4] = p3 * nsz + p4 * cz + p5 * 0;
+    o[5] = p3 * 0 + p4 * 0 + p5 * 1;
+    o[6] = p6 * cz + p7 * sz + p8 * 0;
+    o[7] = p6 * nsz + p7 * cz + p8 * 0;
+    o[8] = p6 * 0 + p7 * 0 + p8 * 1;
+  }
+  return o;
+}
 // Rotation d'Euler (ordre de Three.js : 'XYZ' = Rx·Ry·Rz, 'YXZ' = Ry·Rx·Rz), mêmes formules que Matrix4.makeRotationFromEuler.
+// Lot 5d : eulerMatrixInto(out, angles, order) écrit les 9 termes dans out (tableau de l'appelant, valable jusqu'au prochain appel avec le
+// même out) et le renvoie, sans allocation ; eulerMatrix renvoie un tableau neuf (mêmes nombres).
+export function eulerMatrixInto(out, angles, order = 'XYZ') {
+  return eulerTo(out, isVec3(angles), angles, order);
+}
 export function eulerMatrix(angles, order = 'XYZ') {
-  const [x, y, z] = vec3(angles);
-  if (order === 'YXZ') return mul3(mul3(ry(y), rx(x)), rz(z));
-  return mul3(mul3(rx(x), ry(y)), rz(z));
+  return eulerMatrixInto(new Array(9), angles, order);
 }
 export const affine = (m, t = [0, 0, 0]) => ({ m: [...m], t: vec3(t) });
 const scaleM = (s) => [s[0], 0, 0, 0, s[1], 0, 0, 0, s[2]];
@@ -317,20 +377,101 @@ export function jointsOf(variant, skeletons) {
 // Matrices monde (repère du personnage, échelle comprise) de chaque articulation pour des angles { joint: [x, y, z] } (Euler 'YXZ',
 // comme les groupes de js/game/character.js), des translations en plus { joint: [dx, dy, dz] } et des échelles { joint: s } (0 : la
 // pièce et ses enfants disparaissent, comme l'arme pendant la réparation).
-export function jointMatrices(joints, pose = {}, scale = 1) {
-  const angles = obj(obj(pose).angles);
-  const offsets = obj(obj(pose).offsets);
-  const scales = obj(obj(pose).scales);
-  const k = isNum(scale) && scale > 0 ? scale : 1;
-  const out = {};
-  for (const j of joints) {
-    const parent = j.parent && out[j.parent] ? out[j.parent] : { m: scaleM([k, k, k]), t: [0, 0, 0] };
-    const extra = vec3(offsets[j.id]);
+// Lot 5d : jointMatricesInto(out, joints, pose, scale) écrit les matrices dans out (objet de l'appelant, une entrée { m: [9], t: [3] } par
+// articulation, créée au premier appel puis réécrite à chaque appel ; un out par squelette, jamais partagé) et le renvoie, sans allocation
+// une fois les entrées créées. Mêmes opérations, dans le même ordre, que l'ancien code (compose(parent, local), local = euler · échelle) ;
+// le parent est celui calculé plus tôt dans le même appel (articulation de même identifiant placée avant), sinon la racine (échelle k).
+// Le résultat n'est valable que jusqu'au prochain appel avec le même out. jointMatrices renvoie un objet neuf (mêmes nombres).
+// override (interne, groundLift) : décalage remplacé pour une articulation, sans toucher à la pose.
+function earlier(joints, i, id) {
+  for (let q = 0; q < i; q += 1) {
+    const other = joints[q].id;
+    if (other === id || ((typeof other !== 'string' || typeof id !== 'string') && String(other) === String(id))) return true;
+  }
+  return false;
+}
+function matricesTo(out, joints, angles, offsets, scales, k, overId, ox, oy, oz) {
+  for (let i = 0; i < joints.length; i += 1) {
+    const j = joints[i];
+    const p = j.parent && earlier(joints, i, j.parent) ? out[j.parent] : null;
+    // Parent lu avant toute écriture (il peut être l'entrée écrite ici) ; racine : matrice d'échelle k, translation nulle.
+    const p0 = p ? p.m[0] : k;
+    const p1 = p ? p.m[1] : 0;
+    const p2 = p ? p.m[2] : 0;
+    const p3 = p ? p.m[3] : 0;
+    const p4 = p ? p.m[4] : k;
+    const p5 = p ? p.m[5] : 0;
+    const p6 = p ? p.m[6] : 0;
+    const p7 = p ? p.m[7] : 0;
+    const p8 = p ? p.m[8] : k;
+    const q0 = p ? p.t[0] : 0;
+    const q1 = p ? p.t[1] : 0;
+    const q2 = p ? p.t[2] : 0;
+    const over = overId !== null && j.id === overId;
+    const off = offsets[j.id];
+    const okExtra = over || isVec3(off);
+    const ex = over ? ox : okExtra ? off[0] : 0;
+    const ey = over ? oy : okExtra ? off[1] : 0;
+    const ez = over ? oz : okExtra ? off[2] : 0;
     const s = isNum(scales[j.id]) && scales[j.id] >= 0 ? scales[j.id] : 1;
-    const local = { m: mul3(eulerMatrix(angles[j.id], 'YXZ'), scaleM([s, s, s])), t: [j.offset[0] + extra[0], j.offset[1] + extra[1], j.offset[2] + extra[2]] };
-    out[j.id] = compose(parent, local);
+    const l0 = j.offset[0] + ex;
+    const l1 = j.offset[1] + ey;
+    const l2 = j.offset[2] + ez;
+    let e = out[j.id];
+    if (!e) {
+      e = { m: new Array(9), t: new Array(3) };
+      out[j.id] = e;
+    }
+    const m = e.m;
+    const a = angles[j.id];
+    eulerTo(m, isVec3(a), a, 'YXZ');
+    const e0 = m[0];
+    const e1 = m[1];
+    const e2 = m[2];
+    const e3 = m[3];
+    const e4 = m[4];
+    const e5 = m[5];
+    const e6 = m[6];
+    const e7 = m[7];
+    const e8 = m[8];
+    // Local : euler · échelle (diagonale s), puis composée parent · local ; produits déroulés, termes nuls compris (mêmes opérations que mul3).
+    const m0 = e0 * s + e1 * 0 + e2 * 0;
+    const m1 = e0 * 0 + e1 * s + e2 * 0;
+    const m2 = e0 * 0 + e1 * 0 + e2 * s;
+    const m3 = e3 * s + e4 * 0 + e5 * 0;
+    const m4 = e3 * 0 + e4 * s + e5 * 0;
+    const m5 = e3 * 0 + e4 * 0 + e5 * s;
+    const m6 = e6 * s + e7 * 0 + e8 * 0;
+    const m7 = e6 * 0 + e7 * s + e8 * 0;
+    const m8 = e6 * 0 + e7 * 0 + e8 * s;
+    const t = e.t;
+    t[0] = p0 * l0 + p1 * l1 + p2 * l2 + q0;
+    t[1] = p3 * l0 + p4 * l1 + p5 * l2 + q1;
+    t[2] = p6 * l0 + p7 * l1 + p8 * l2 + q2;
+    m[0] = p0 * m0 + p1 * m3 + p2 * m6;
+    m[1] = p0 * m1 + p1 * m4 + p2 * m7;
+    m[2] = p0 * m2 + p1 * m5 + p2 * m8;
+    m[3] = p3 * m0 + p4 * m3 + p5 * m6;
+    m[4] = p3 * m1 + p4 * m4 + p5 * m7;
+    m[5] = p3 * m2 + p4 * m5 + p5 * m8;
+    m[6] = p6 * m0 + p7 * m3 + p8 * m6;
+    m[7] = p6 * m1 + p7 * m4 + p8 * m7;
+    m[8] = p6 * m2 + p7 * m5 + p8 * m8;
   }
   return out;
+}
+export function jointMatricesInto(out, joints, pose = {}, scale = 1) {
+  const k = isNum(scale) && scale > 0 ? scale : 1;
+  return matricesTo(out, joints, obj(obj(pose).angles), obj(obj(pose).offsets), obj(obj(pose).scales), k, null, 0, 0, 0);
+}
+// Lot 5d (interne, pose-v2.js) : matrices avec le décalage de l'articulation overId remplacé par (ox, oy, oz) ; même calcul que jointMatrices
+// sur une pose dont offsets[overId] vaudrait [ox, oy, oz] (nombres finis).
+export function jointMatricesOverInto(out, joints, pose, scale, overId, ox, oy, oz) {
+  const k = isNum(scale) && scale > 0 ? scale : 1;
+  return matricesTo(out, joints, obj(obj(pose).angles), obj(obj(pose).offsets), obj(obj(pose).scales), k, overId, ox, oy, oz);
+}
+export function jointMatrices(joints, pose = {}, scale = 1) {
+  return jointMatricesInto({}, joints, pose, scale);
 }
 
 // Cinématique directe : boîtes (min, max) de chaque pièce posée et matrices des articulations. pose : { angles, offsets } ; options :
