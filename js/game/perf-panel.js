@@ -30,6 +30,7 @@ export const REPORT_TEXTS = {
   longtasks: 'game.perf.report.longtasks',
   unsupported: 'game.perf.report.unsupported',
   hitches: 'game.perf.report.hitches',
+  at: 'game.perf.report.at',
   none: 'game.perf.report.none',
   memory: 'game.perf.report.memory',
   unavailable: 'game.perf.report.unavailable',

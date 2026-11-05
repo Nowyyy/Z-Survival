@@ -137,6 +137,14 @@ describe('système, paramètres et rapport', () => {
     for (const h of HOSTILE) expect(() => summarizeUA(h)).not.toThrow();
     expect(summarizeUA(null)).toEqual({ os: 'autre', browser: 'autre', mobile: false });
     // Lot 5b-E : depuis iOS 26, Safari fige iOS à 18.x dans le user-agent ; la version de Safari donne celle d'iOS (iPhone 16 Pro Max du propriétaire : iOS 27).
+    // Lot 5b-G : Chrome sur Android masque la version (« Android 10; K ») ; la vraie vient de userAgentData (platformVersion, jamais le modèle).
+    const pixel = 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Mobile Safari/537.36';
+    expect(summarizeUA(pixel, { platform: 'Android', platformVersion: '16.0.0' })).toEqual({ os: 'Android 16', browser: 'Chrome 149', mobile: true, uaOs: '10' });
+    expect(summarizeUA(pixel, { platform: 'Android', platformVersion: '14.1.0' }).os).toBe('Android 14.1');
+    expect(summarizeUA(pixel)).toEqual({ os: 'Android', browser: 'Chrome 149', mobile: true, uaOs: '10' });
+    expect(summarizeUA(pixel, { platform: 'Android', platformVersion: '10.0.0' })).toEqual({ os: 'Android 10', browser: 'Chrome 149', mobile: true });
+    for (const h of [null, 'x', 42, { platform: 'Android', platformVersion: 12 }]) expect(summarizeUA(pixel, h).os).toBe('Android');
+    expect(formatReport({ system: summarizeUA(pixel) }).split('\n')[1]).toMatch(/^Système : Android \(user-agent figé à 10\) · Chrome 149 · /);
     const ios27 = 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.0 Mobile/15E148 Safari/604.1';
     expect(summarizeUA(ios27)).toEqual({ os: 'iOS 27', browser: 'Safari 27.0', mobile: true, uaOs: '18.7' });
     expect(summarizeUA(ios27.replace('Version/27.0', 'Version/18.7'))).toEqual({ os: 'iOS 18.7', browser: 'Safari 18.7', mobile: true });
@@ -156,7 +164,7 @@ describe('système, paramètres et rapport', () => {
       window: frameSummary([16.7, 16.7, 33.4]), session: frameSummary([16.7]), refresh: 60, dpr: 2, canvas: { width: 1334, height: 750 },
       system: { os: 'Android 14', browser: 'Chrome 130' }, preset: 'moyen (auto)', params: 'perf=1', stages: { sim: 1.25, rendu: 4 },
       renderer: { calls: 62, triangles: 38479, programs: 14, geometries: 200, textures: 18 }, longTasks: { supported: true, count: 2, max: 87, total: 140 },
-      hitches: [{ name: 'tir', max: 45.4 }, { name: 'feu', max: null }], heapMB: 45.25, cap: { value: 60, every: 2, aligned: false },
+      hitches: [{ name: 'tir', max: 45.4, since: 12345 }, { name: 'feu', max: null }], heapMB: 45.25, cap: { value: 60, every: 2, aligned: false },
     });
     const lines = text.split('\n');
     expect(lines).toHaveLength(11);
@@ -166,7 +174,7 @@ describe('système, paramètres et rapport', () => {
     expect(lines[3]).toMatch(/^5 s : 3 images \(45 i\/s obtenues\) · /);
     expect(lines[5]).toBe('Travail/image (moyenne, ms) : sim 1,3 · rendu 4,0');
     expect(lines[6]).toBe('Rendu : 62 appels · 38479 triangles · 14 programmes · 200 géométries · 18 textures');
-    expect(lines[8]).toBe('Premier usage (max image dans les 600 ms) : tir 45 ms · feu —');
+    expect(lines[8]).toBe('Premier usage (max image dans les 600 ms) : tir 45 ms à 12,3 s · feu —');
     expect(lines[9]).toBe('Mémoire JS : 45,3 Mo');
     expect(lines[10]).toContain('non aligné');
     for (const h of HOSTILE) expect(() => formatReport(h)).not.toThrow();
@@ -220,6 +228,24 @@ describe('profileur (horloge simulée)', () => {
     p.reset();
     expect(p.state().session.count).toBe(0);
     expect(p.state().hitches).toHaveLength(5); // les premiers usages restent
+  });
+  it('lot 5b-G : un premier usage d\'avant la première image (rendu de préparation) est ignoré ; l\'heure est comptée depuis la première image', () => {
+    let t = 0;
+    const p = createProfiler({ now: () => t, observe: null });
+    p.event('feu', 5);
+    p.begin(1000);
+    p.end({});
+    p.begin(1016.7);
+    p.event('feu');
+    p.end({});
+    for (let i = 0; i < 5; i += 1) {
+      p.begin(1033.4 + i * 16.7);
+      t += 1;
+      p.end({});
+    }
+    const h = p.state().hitches.find((x) => x.name === 'feu');
+    expect(h.at).toBeCloseTo(1016.7, 6);
+    expect(h.since).toBeCloseTo(16.7, 6);
   });
   it('appels hors image et entrées hostiles : sans exception ni effet', () => {
     const p = createProfiler({ now: () => 0, observe: null });

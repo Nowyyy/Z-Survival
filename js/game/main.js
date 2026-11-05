@@ -136,8 +136,6 @@ audio.stats.essentialMs = essential.ms;
 // Effet VHS : le grain est généré (texgen.js) et converti en adresse data: une seule fois, derrière l'écran de préparation.
 const vhs = createVhs({ params: vhsCfg, lookup: createTokenLookup(), forced: parseVhsParam(query.get('vhs')), reducedMotion: matchMedia('(prefers-reduced-motion: reduce)').matches, mode: gfx.settings.live.vhs });
 await titleFont;
-loading.done();
-root.hidden = false;
 
 // ?empty=1 (seulement avec ?test=1) : la salle du lot 1m sans meuble ni décor, mêmes coordonnées qu'au lot 1m.
 const zones = zonesJson ? zonesToWorld(parseZones(zonesJson), world.transform) : null;
@@ -265,6 +263,10 @@ soundHint.addEventListener('click', () => ctx.audio.unlock());
 for (const type of ['pointerdown', 'pointerup', 'click', 'touchend', 'keydown']) window.addEventListener(type, () => ctx.audio.unlock(), { capture: true });
 
 game = createGame(ctx);
+// Lot 5b-G : l'écran de préparation reste affiché pendant la création du jeu (monde, programmes, premier rendu complet, zombies préparés) :
+// le joueur ne voit pas la première image lente ; la boucle d'images ne démarre qu'à l'image suivante, une fois l'écran retiré.
+loading.done();
+root.hidden = false;
 if (game === null) {
   // WebGL indisponible : un message à la place du jeu.
   root.hidden = true;

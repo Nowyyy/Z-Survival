@@ -124,6 +124,7 @@
   "game.perf.report.textures": "textures",
   "game.perf.report.longtasks": "Tâches longues",
   "game.perf.report.unsupported": "non prises en charge",
+  "game.perf.report.at": "à",
   "game.perf.report.hitches": "Premier usage (image la plus longue dans les 600 ms)",
   "game.perf.report.none": "aucun",
   "game.perf.report.memory": "Mémoire JS",

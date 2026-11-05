@@ -16,7 +16,7 @@ export const ELEVE = Object.freeze({
   live: Object.freeze({ dprMax: 2, ombres: true, ombreTaille: 1024, vhs: 'anime', brouillard: 'complet', feux: Object.freeze({ voitureFoyers: 2, fumeeHelico: 1, particules: 1, lueur: true }), sang: '1', cadavres: 2 }),
   load: Object.freeze({ personnages: 'choix', anticrenelage: true, texturesFines: true, decor: 'complet' }),
 });
-export const AUTO_DEFAULTS = Object.freeze({ initial: Object.freeze({ grossier: 'moyen', autre: 'eleve' }), seuilMs: 22, fenetreSecondes: 10, baisse: 'entre-manches', remonte: false });
+export const AUTO_DEFAULTS = Object.freeze({ initial: Object.freeze({ grossier: 'moyen', autre: 'eleve' }), seuilMs: 22, fenetreSecondes: 10, irregulier: Object.freeze({ part: 0.1, facteur: 1.5 }), baisse: 'entre-manches', remonte: false });
 
 const obj = (v) => (v !== null && typeof v === 'object' && !Array.isArray(v) ? v : {});
 const num = (v, lo, hi, fallback) => (typeof v === 'number' && Number.isFinite(v) && v >= lo && v <= hi ? v : fallback);
@@ -64,6 +64,7 @@ export function parseGraphics(json) {
       initial: { grossier: pick(initial.grossier, PRESET_IDS, AUTO_DEFAULTS.initial.grossier), autre: pick(initial.autre, PRESET_IDS, AUTO_DEFAULTS.initial.autre) },
       seuilMs: num(a.seuilMs, 4, 200, AUTO_DEFAULTS.seuilMs),
       fenetreSecondes: num(a.fenetreSecondes, 1, 120, AUTO_DEFAULTS.fenetreSecondes),
+      irregulier: { part: num(obj(a.irregulier).part, 0.01, 1, AUTO_DEFAULTS.irregulier.part), facteur: num(obj(a.irregulier).facteur, 1.1, 4, AUTO_DEFAULTS.irregulier.facteur) },
       baisse: 'entre-manches',
       remonte: false,
     },
@@ -102,7 +103,17 @@ export function medianOf(values) {
   return v.length % 2 ? v[m] : (v[m - 1] + v[m]) / 2;
 }
 
-// Décision d'Auto. frameStats : { medianMs, activeSeconds, betweenWaves } (temps d'image médian sur la fenêtre de jeu actif, durée de jeu actif mesurée,
+// Lot 5b-G : part des images irrégulières d'une série d'intervalles : celles au-delà de `facteur` × la cadence (10e centile des intervalles, comme la
+// cadence de la page du rapport de ?perf=1). Une médiane basse peut cacher des à-coups (Pixel 7 à l'Élevé : médiane 11,1 ms, un tiers d'images longues).
+export function irregularShare(values, facteur = AUTO_DEFAULTS.irregulier.facteur) {
+  const v = Array.isArray(values) ? values.filter((n) => typeof n === 'number' && Number.isFinite(n) && n > 0).sort((a, b) => a - b) : [];
+  if (!v.length) return 0;
+  const cadence = v[Math.max(0, Math.ceil(0.1 * v.length) - 1)];
+  const f = typeof facteur === 'number' && Number.isFinite(facteur) && facteur > 1 ? facteur : AUTO_DEFAULTS.irregulier.facteur;
+  return v.filter((d) => d > f * cadence).length / v.length;
+}
+
+// Décision d'Auto. frameStats : { medianMs, activeSeconds, betweenWaves, longShare (lot 5b-G : part des images irrégulières) } (temps d'image médian sur la fenêtre de jeu actif, durée de jeu actif mesurée,
 // vrai seulement entre deux manches) ; current : préréglage en cours ; params : section auto. Renvoie { preset, changed, reason } : un cran plus bas
 // au plus, jamais sous Faible, jamais plus haut ; rien en pleine manche ni sans fenêtre complète.
 export function autoDecision(frameStats, current, params) {
@@ -114,10 +125,13 @@ export function autoDecision(frameStats, current, params) {
   const seconds = typeof s.activeSeconds === 'number' && Number.isFinite(s.activeSeconds) ? s.activeSeconds : 0;
   if (seconds < num(p.fenetreSecondes, 1, 120, AUTO_DEFAULTS.fenetreSecondes)) return keep('mesure-courte');
   const m = typeof s.medianMs === 'number' && Number.isFinite(s.medianMs) ? s.medianMs : null;
-  if (m === null || m <= num(p.seuilMs, 4, 200, AUTO_DEFAULTS.seuilMs)) return keep('fluide');
+  const share = typeof s.longShare === 'number' && Number.isFinite(s.longShare) ? s.longShare : 0;
+  const slow = m !== null && m > num(p.seuilMs, 4, 200, AUTO_DEFAULTS.seuilMs);
+  const jerky = share > num(obj(p.irregulier).part, 0.01, 1, AUTO_DEFAULTS.irregulier.part);
+  if (!slow && !jerky) return keep('fluide');
   const i = PRESET_IDS.indexOf(cur);
   if (i <= 0) return keep('plancher');
-  return { preset: PRESET_IDS[i - 1], changed: true, reason: 'baisse' };
+  return { preset: PRESET_IDS[i - 1], changed: true, reason: 'baisse', cause: slow ? 'lent' : 'irregulier' };
 }
 
 // Paramètres explicites de l'adresse qui l'emportent sur le préréglage (valeurs reconnues seulement, comme les lecteurs existants de main.js et
