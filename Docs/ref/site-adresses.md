@@ -27,7 +27,7 @@ Plan écrit en partie A (base `origin/dev` `775f1d1`), avant tout changement du 
 | `/jeu.html` | jeu du build de `main` | 404 (plus rien à la racine que `index.html`) |
 | `/Recette/` | — (404) | accueil du build de `main` + `site-info.json`, `versions.json`, `build-info.json` |
 | `/Recette/jeu.html` | — | jeu du build de `main` (« Jouer ») |
-| `/recette/` (minuscules) | — | 404 (GitHub Pages distingue la casse ; aucune redirection) |
+| `/recette/` (minuscules) | — | 404 (GitHub Pages distingue la casse ; aucune redirection) — **lot 5h** : statut 404, puis redirection vers `/Recette/` par `404.html` (ci-dessous) |
 | `/dev/` | journal des versions | build de `dev` ; son `index.html` est remplacé par une redirection vers `../Recette/` |
 | `/dev/jeu.html` | — (404) | jeu du build de `dev` (« Dernier build de développement ») ; sans `dev` : absent, `dev/index.html` = « Aucun build de développement pour l'instant » |
 | `/next/` | build de `dev` | redirection vers `../dev/jeu.html` |
@@ -93,4 +93,21 @@ Annuler la fusion de `lot-5g` dans `dev` (`git revert -m 1 <hash de la fusion>` 
 7. `pages.yml` : `deploy` a `needs: quick` ; `quick` (`npm ci`, `npm run lint`, `npm test`) tourne sur le commit poussé (`main` ou `dev`) : **un test Vitest qui échoue sur `dev` bloque le déploiement** (rien n'est modifié).
 8. `scripts/site/serve.mjs` : `resolveRequest` → `path.resolve`, puis `stat` / `readFile` : la casse est **celle du système de fichiers** (sensible sous Linux, insensible sous Windows et macOS par défaut).
 9. Chemin inconnu (ou hors du préfixe `--base`) : réponse 404 `text/plain` « Not found » ; aucune page `404.html` servie.
-10. Conséquence : appliquer les noms dans l'assembleur avant `buildSiteInfo` (sur des copies de `versions.json` et du journal) suffit pour les titres, les textes, `version` et `afficher` ; **l'étiquette (`nom` d'une version) n'apparaîtrait pas sans modifier `js/accueil/home.js`** (interdit par le prompt du lot) : arrêt après la partie A, voir le bilan.
+10. Conséquence : appliquer les noms dans l'assembleur avant `buildSiteInfo` (sur des copies de `versions.json` et du journal) suffit pour les titres, les textes, `version` et `afficher` ; **l'étiquette (`nom` d'une version) n'apparaîtrait pas sans modifier `js/accueil/home.js`** : arrêt après la partie A ; le propriétaire a ensuite autorisé ce seul changement (étiquette lue dans `site-info.json` si valide, sinon `V<id>`) et celui de `validateSiteInfo`.
+
+## Redirection `/recette/` → `/Recette/` (lot 5h)
+
+- **Comment** : GitHub Pages distingue la casse et sert `404.html` de la racine du site publié (`/Z-Survival/404.html`) pour toute adresse inconnue, avec le statut 404. L'assembleur écrit cette page (autonome : style et script en ligne, icône `data:`, `noindex`, `lang="fr"`, aucun lien ni ressource). Son script applique `corrigerCasse` (`scripts/site/casse.mjs`, recopiée telle quelle par `toString`) à `location.pathname` : le **premier** segment qui vaut `recette` en minuscules sans être exactement `Recette` devient `Recette`, puis `location.replace(chemin + location.search + location.hash)` (requête et fragment gardés, aucune entrée d'historique). Sinon : aucune redirection, texte « Page introuvable. » et `<noscript>`.
+- **Aucune boucle** : chaque correction retire un segment fautif ; sur `/Recette/…`, rien n'est corrigé (`/Recette/inconnu` reste une 404).
+- **Pourquoi pas de dossier `recette/`** : sur Windows et macOS (systèmes de fichiers insensibles à la casse), `recette/` et `Recette/` seraient le même dossier (copie, extraction, `git checkout`). L'assembleur **échoue** si deux chemins du site ne diffèrent que par la casse (`cheminsEnCollision`).
+- **Serveur local** (`scripts/site/serve.mjs`) : imite GitHub Pages — chaque segment est comparé au contenu réel de son dossier (sensible à la casse sur tout système) ; adresse inconnue : 404 avec `404.html` de la racine servie (sinon du dossier de premier niveau : sites de test `full/`, `bare/`, `many/`, `noms/`).
+- **Limites** : la redirection exige JavaScript ; toute adresse inconnue reçoit la page 404 (statut 404) ; non vérifié sur le site publié.
+
+## Fichier des noms `noms-versions-et-lots.txt` (lot 5h)
+
+- **Où** : à la racine du dépôt ; `npm run build` le copie dans la sortie (publié sous `/Recette/` et `/dev/` : textes publics). Analyseur pur : `scripts/site/noms.mjs`.
+- **Format** : commentaires `#`, lignes vides, un bloc par version (`[v0.6]`) ou par lot (`[lot-5a]`, minuscules) ; `clé: valeur` (premier deux-points) ; clés `nom` (60 au plus ; version : étiquette, lot : titre), `description` (une ligne, 200 au plus), et pour un lot seulement `version` (`^v\d+\.\d+$`, remplace celle du journal) et `afficher` (`oui` ou `non`). CRLF, BOM et espaces acceptés.
+- **Priorité** : le fichier l'emporte dans `site-info.json` : version → `label` ← `nom`, `title` ← `description` ; lot → `title` ← `nom`, `text` ← `description`, `version` ← `version`, `afficher: non` → absent des évolutions. Absent du fichier = texte d'origine ; dates, `ref`, `status`, `entry` et ordre jamais changés ; `Recette/versions.json` reste celui de `main`.
+- **Branche lue** : le fichier du **build de `dev`**, sinon de `main`, sinon aucun. Une modification sur `dev` apparaît sur `/Recette/` **après le déploiement de `dev`** (CI `quick` puis `deploy`, quelques minutes).
+- **Erreurs** : l'assembleur n'échoue jamais à cause du fichier (ligne fautive ignorée, nombre d'erreurs et messages dans son journal, identifiant inconnu ignoré avec un avertissement). Mais `tests/unit/noms.test.js` analyse le fichier commité et **échoue à la moindre erreur** (numéro de ligne et message en français) ; comme `quick` précède `deploy` dans `pages.yml`, **une faute de frappe sur `dev` bloque le déploiement** jusqu'à sa correction (accepté par le propriétaire). Corriger : lire le message du test (onglet Actions, job `quick`, étape `npm test`), modifier la ligne indiquée, valider.
+- **Contrôles du contenu initial** (textes de V0.1 à V0.5, un bloc par lot, `afficher: oui`) : seulement tant que le fichier est celui livré au lot 5h (empreinte SHA-256) ; ensuite, les textes du propriétaire ne sont jamais imposés par un test.

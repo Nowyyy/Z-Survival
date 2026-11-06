@@ -72,8 +72,9 @@ describe('assembleur : organisation complète (main, dev, archives)', () => {
   const result = assemble({ mainDir: main, devDir: dev, archiveDir: archiveDir(), dev: DEV });
   const dir = result.out;
 
-  it('premier niveau : index.html, Recette/, dev/, next/, lots/ et les archives v0.1 à v0.4, rien d\'autre', () => {
-    expect(readdirSync(dir).sort()).toEqual(['Recette', 'dev', 'index.html', 'lots', 'next', 'v0.1', 'v0.2', 'v0.3', 'v0.4']);
+  it('premier niveau : index.html, 404.html, Recette/, dev/, next/, lots/ et les archives v0.1 à v0.4, rien d\'autre', () => {
+    // Lot 5h : 404.html ajouté (avant : Recette, dev, index.html, lots, next, v0.1 à v0.4).
+    expect(readdirSync(dir).sort()).toEqual(['404.html', 'Recette', 'dev', 'index.html', 'lots', 'next', 'v0.1', 'v0.2', 'v0.3', 'v0.4']);
     expect(existsSync(join(dir, 'jeu.html'))).toBe(false);
     expect(existsSync(join(dir, 'versions.json'))).toBe(false);
     expect(existsSync(join(dir, 'icone.png'))).toBe(false);

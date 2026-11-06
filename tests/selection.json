@@ -176,6 +176,7 @@
     { "fichier": "tests/unit/persos-kit.test.js", "categorie": "P", "raison": "Kit des personnages." },
     { "fichier": "tests/unit/persos-sang.test.js", "categorie": "G", "raison": "Sang : plafonds, déterminisme, budget." },
     { "fichier": "tests/unit/persos-variantes.test.js", "categorie": "P", "raison": "Variantes des personnages." },
+    { "fichier": "tests/unit/casse.test.js", "categorie": "G", "raison": "Redirection /recette/ → /Recette/ (404.html), aucune paire de chemins qui ne diffère que par la casse, serveur local sensible à la casse (lot 5h)." },
     { "fichier": "tests/unit/noms.test.js", "categorie": "G", "raison": "Fichier des noms (lot 5h) : analyseur, priorité, fichier commité sans aucune erreur." },
     { "fichier": "tests/unit/publication.test.js", "categorie": "G", "raison": "Assembleur, workflow, publication." },
     { "fichier": "tests/unit/sauvegarde-depots.test.js", "categorie": "G", "raison": "Dépôts de sauvegarde." },
@@ -854,6 +855,7 @@
       ],
       "dependances": ["textes", "accueil"],
       "vitest": [
+        "tests/unit/casse.test.js",
         "tests/unit/data-changelog.test.js",
         "tests/unit/lots.test.js",
         "tests/unit/maps-hygiene.test.js",

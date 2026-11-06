@@ -191,6 +191,7 @@
     { "fichier": "tests/unit/core-audio-mix.test.js", "categorie": "P", "valeur": "règle de jeu", "recommandation": "garder", "raison": "Mixage des sons." },
     { "fichier": "tests/unit/core-camera.test.js", "categorie": "P", "valeur": "règle de jeu", "recommandation": "garder", "raison": "Caméra (perspective, suivi)." },
     { "fichier": "tests/unit/core-collision.test.js", "categorie": "P", "valeur": "règle de jeu", "recommandation": "garder", "raison": "Collisions." },
+    { "fichier": "tests/unit/casse.test.js", "categorie": "G", "valeur": "garde-fou", "recommandation": "garder", "raison": "Redirection /recette/ → /Recette/ (404.html), aucune paire de chemins qui ne diffère que par la casse, serveur local sensible à la casse (lot 5h)." },
     { "fichier": "tests/unit/collision-identite.test.js", "categorie": "G", "valeur": "garde-fou", "recommandation": "garder", "raison": "Lot 5d : identité au bit près de collision.js réécrit contre l'oracle figé." },
     { "fichier": "tests/unit/oracle-texte.test.js", "categorie": "G", "valeur": "garde-fou", "recommandation": "garder", "raison": "Lot 5d : oracles figés des réécritures sans allocation, intacts et verbatim." },
     { "fichier": "tests/unit/core-color.test.js", "categorie": "G", "valeur": "garde-fou", "recommandation": "garder", "raison": "Calcul des contrastes." },

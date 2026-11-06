@@ -211,11 +211,68 @@ for (const viewport of VIEWPORTS.slice(0, 2)) {
   });
 }
 
-test('adresses absentes : /recette/ (minuscules), /jeu.html et /versions.json à la racine, lots/lot-*, lots.json, dev/jeu.html sans build : 404', async ({ request }) => {
+// Lot 5h : remplace « adresses absentes : /recette/ (minuscules) … : 404 » du lot 5g. Le statut reste 404 (GitHub Pages et serve.mjs servent 404.html),
+// mais la page corrige la casse : la redirection est vérifiée par les tests « /recette/ … finit sur /Recette/ » ci-dessous.
+test('adresses absentes : /jeu.html et /versions.json à la racine, lots/lot-*, lots.json, dev/jeu.html sans build : 404 ; /recette/ : 404 + page qui corrige la casse', async ({ request }) => {
   for (const path of ['recette/', 'recette/jeu.html', 'jeu.html', 'versions.json', 'build-info.json', 'icone.png', 'lots/lot-4b/', 'lots/lot-1/jeu.html', 'lots.json', 'Recette/dev/', 'Recette/next/']) {
     expect((await request.get(`${FULL}${path}`)).status(), path).toBe(404);
   }
   expect((await request.get(`${BARE}dev/jeu.html`)).status()).toBe(404);
+  for (const path of ['recette/', 'recette/jeu.html']) expect(await (await request.get(`${FULL}${path}`)).text(), path).toContain('function corrigerCasse(chemin)');
+  expect(await (await request.get(`${FULL}404.html`)).text()).toContain('<p>Page introuvable.</p>');
+});
+
+// Lot 5h : redirection de la casse (404.html à la racine de chaque site de test, comme sur GitHub Pages ; serve.mjs sensible à la casse).
+// La réponse 404 du document fautif est attendue (c'est elle qui porte la correction) : elle est retirée des problèmes, rien d'autre.
+const sans404 = (problems, url) => problems.filter((p) => p !== `404 ${url}` && !(p.startsWith('Failed to load resource: the server responded with a status of 404')));
+
+test('/recette/ (minuscules) et /RECETTE/ finissent sur /Recette/ avec l\'accueil ; console propre, aucune requête externe', async ({ page }) => {
+  const { problems, external } = watch(page);
+  for (const path of ['recette/', 'RECETTE/']) {
+    await page.goto(`${FULL}${path}`);
+    await expect(page, path).toHaveURL(`${FULL}Recette/`);
+    await expect(page.locator('#version'), path).toHaveText('Recette · Version V0.5');
+  }
+  await page.waitForLoadState('networkidle');
+  expect(external).toEqual([]);
+  expect(sans404(sans404(problems, `${FULL}recette/`), `${FULL}RECETTE/`)).toEqual([]);
+});
+
+test('/recette/jeu.html?x=1#b finit sur /Recette/jeu.html?x=1#b (requête et fragment conservés), et le jeu se charge', async ({ page }) => {
+  const { external } = watch(page);
+  await page.goto(`${FULL}recette/jeu.html?x=1#b`);
+  await page.waitForURL(`${FULL}Recette/jeu.html?x=1#b`);
+  await expect(page).toHaveURL(`${FULL}Recette/jeu.html?x=1#b`);
+  await expect(page.locator('canvas').first()).toBeAttached();
+  expect(external).toEqual([]);
+});
+
+test('/Recette/inconnu : statut 404, « Page introuvable. » (16 px au moins) sans redirection ni boucle, axe sans violation, aucune requête externe', async ({ page }) => {
+  const { problems, external } = watch(page);
+  const navigations = [];
+  page.on('framenavigated', (frame) => frame === page.mainFrame() && navigations.push(frame.url()));
+  const url = `${FULL}Recette/inconnu`;
+  const response = await page.goto(url);
+  expect(response.status()).toBe(404);
+  await expect(page.getByText('Page introuvable.')).toBeVisible();
+  await expect(page.locator('html')).toHaveAttribute('lang', 'fr');
+  await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', 'noindex');
+  expect(await page.getByText('Page introuvable.').evaluate((el) => parseFloat(getComputedStyle(el).fontSize))).toBeGreaterThanOrEqual(16);
+  await page.waitForLoadState('networkidle');
+  await expect(page).toHaveURL(url);
+  expect(navigations).toEqual([url]);
+  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+  expect(external).toEqual([]);
+  expect(sans404(problems, url)).toEqual([]);
+});
+
+test('/Recette/ répond 200 ; /dev/jeu.html et /v0.N/ inchangés (200, sans redirection)', async ({ request }) => {
+  for (const path of ['Recette/', 'Recette/jeu.html', 'dev/jeu.html', 'v0.2/jeu.html', 'v0.4/jeu.html']) {
+    const r = await request.get(`${FULL}${path}`, { maxRedirects: 0 });
+    expect(r.status(), path).toBe(200);
+    expect(await r.text(), path).not.toContain('corrigerCasse');
+  }
+  expect(await (await request.get(`${FULL}v0.2/jeu.html`)).text()).toContain('Archive de test (fictive).');
 });
 
 test('Recette/ sert versions.json, build-info.json (release) et site-info.json ; dev/ sert build-info.json (dev) ; archives : build-info.json', async ({ request }) => {
