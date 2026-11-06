@@ -8,7 +8,7 @@
 //                      le plus proche par chemin à l'autre), franchissement des escaliers.
 // Un zombie sans champ floor est au rez-de-chaussée ; avec une seule couche (?map=salle) tout se passe comme avant le lot 3e.
 import { stepEnemies } from './enemy-ai.js';
-import { DEFAULT_FLOOR, floorOf, isFloorId, onFloor, withFloor } from './floors.js';
+import { DEFAULT_FLOOR, isFloorId, onFloor, withFloor } from './floors.js';
 import { closedDoors, windowsWithGaps } from './layout.js';
 import { buildPortalField, buildWindowField, createFlowState, createGrid, stepFlow } from './nav.js';
 import { stepSiege } from './siege.js';
@@ -104,8 +104,6 @@ export function stepPlayerFlow(world, state, dt, player) {
 // Le joueur change d'étage : le champ de flux du joueur repart de zéro.
 export const setPlayerFloor = (world, state, floor) => ({ ...state, playerFloor: world.floors.includes(floor) ? floor : state.playerFloor, flow: createFlowState() });
 
-// Obstacles des zombies d'un étage (pour les tests et le jeu : déplacements, tirs, laser en prennent d'autres).
-export const zombieSolidsOn = (world, state, floor) => solidsFor(world, state, world.floors.includes(floor) ? floor : DEFAULT_FLOOR);
 
 // input : { enemies (tous étages), player ({ x, y, r }), dt, active (identifiants des fenêtres actives), canRepair (le joueur peut réparer), repairTime, repairRadius }.
 // Renvoie { state, enemies, events, tearing, repairBlocked, repair } ; events : { type, floor, ... } (plank-torn, plank-repaired, window-open, window-closed, climb, enter,
@@ -177,6 +175,3 @@ export const stairsOf = (world, state) => stairState(world.stairs, state.openDoo
 
 // Zombies du joueur : ceux de son étage qui ne franchissent pas un escalier (cibles du laser, des balles, du contact).
 export const targetsOf = (list, floor) => onFloor(list, floor).filter((e) => e.mode !== 'escalier');
-
-// Étage d'un zombie (rez-de-chaussée par défaut).
-export const floorOfEnemy = (e) => floorOf(e);

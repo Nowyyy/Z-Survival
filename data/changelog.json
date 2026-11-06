@@ -198,6 +198,10 @@
       "Nouveau réglage « Graphismes » dans la pause : Auto, Faible, Moyen ou Élevé (Élevé = le rendu d'avant). Changer de réglage recharge la page après confirmation ; le choix est gardé sur l'appareil. En Auto, un téléphone part en Moyen et le jeu baisse d'un cran entre deux manches si les images sont trop lentes. Les réglages sont provisoires, à affiner avec les mesures des appareils.",
       "?perf=1 affiche un panneau de mesure (images, accrocs, temps par étape) avec « Copier le rapport » ; ?gfx= force un réglage sans le mémoriser ; ?cap= essaie un plafond d'images. La logique du jeu ne change pas."
     ] },
+    { "name": "lot-5c", "titre": "Nettoyage du code et des fichiers", "points": [
+      "Code jamais appelé, réglage d'essai ?murs=bas, trois scripts ponctuels et un document de fusion périmé retirés après preuve de non-usage ; références périmées de la documentation corrigées.",
+      "Aucun changement de jeu ni d'image : parties rejouées pas à pas, appels, triangles et vues identiques avant et après."
+    ] },
     { "name": "lot-5d", "titre": "Fluidité : moins de mémoire jetée à chaque image", "points": [
       "Les collisions (déplacements des zombies, ligne de vue, balles, laser) et les poses des personnages sont calculées sans créer d'objets temporaires à chaque image : le jeu jette beaucoup moins de mémoire, ce qui doit réduire les petites pauses du navigateur (effet sur les téléphones à vérifier avec ?perf=1).",
       "Aucun changement de jeu ni d'image : les résultats sont identiques au bit près (vérifiés sur des milliers de cas et sur six parties rejouées pas à pas)."

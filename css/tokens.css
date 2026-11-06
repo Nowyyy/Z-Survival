@@ -54,7 +54,6 @@
   --space-5: 1.5rem;
   --space-6: 2rem;
   --space-7: 3rem;
-  --space-8: 4rem;
 
   /* Rayons */
   --radius-sm: 4px;
@@ -64,7 +63,6 @@
 
   /* Durées */
   --duration-fast: 120ms;
-  --duration-normal: 240ms;
   --duration-slow: 1600ms;
 
   /* Cible tactile minimale */

@@ -204,7 +204,7 @@ test.describe('planches et débris sur les vraies fenêtres', () => {
   });
 
   // Lot 3g (retours du propriétaire) : murs jusqu'au plafond : les carrés sont incrustés dans la face du mur au-dessus de la fenêtre (61 de haut), sur la face que voit la
-  // caméra (F8 est au sud : face extérieure ; la face est vérifiée par atelier-retours.test.js) ; ?murs=bas : sur le dessus du mur, à sa hauteur (60), comme avant.
+  // caméra (F8 est au sud : face extérieure ; la face est vérifiée par atelier-retours.test.js).
 
   test('débris : un maillage par fenêtre, 4 au plus par fenêtre, masqué quand sa fenêtre est hors champ', async ({ page }) => {
     await open(page);

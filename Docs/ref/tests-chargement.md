@@ -19,7 +19,7 @@ Mesure locale (4 cœurs, Chromium préinstallé, rendu logiciel), `node scripts/
 | fps1 | `fps=1` | 3 431 | 3 819 (3 733–3 942, 70) | 3 995 | 261 (bruit) |
 | nospawn1 | `nospawn=1` | 3 627 | 4 079 (3 763–4 151, 197) | 4 100 | 156 |
 | empty1 | `empty=1` | 3 171 | 3 395 (3 076–3 515, 40) | 3 432 | 824 |
-| mursBas | `murs=bas` | 3 315 | 3 719 (3 653–3 800, 54) | 3 851 | 405 |
+| mursBas (retirée au lot 5c) | `murs=bas` | 3 315 | 3 719 (3 653–3 800, 54) | 3 851 | 405 |
 | rapide | `vhs=0&shadows=0&dpr=1&sang=0&nospawn=1` | 3 336 | 3 699 (3 498–3 796, 121) | 3 725 | 531 |
 | rapideDetail0 | rapide + `detail=0` | 2 878 | 3 219 (2 908–3 264, 126) | 3 235 | **1 021 (−24 %)** |
 | rendu (2ᵉ série) | `vhs=0&shadows=0&dpr=1` | 3 157 | 3 549 (3 416–3 786, 200) | 3 625 | 246 (défaut de la série : 3 871) |
@@ -38,7 +38,7 @@ Mesure locale (4 cœurs, Chromium préinstallé, rendu logiciel), `node scripts/
 ## Lecture
 - **Meilleure combinaison** : `vhs=0&shadows=0&dpr=1&sang=0&nospawn=1&detail=0` (−1,0 s en bureau, −2,0 s en mobile), mais elle change ce qui est testé (sang, apparitions, décor d'avant le lot 3g) : réservée aux tests qui n'en dépendent pas.
 - **Combinaison sûre** : `vhs=0&shadows=0&dpr=1` (« rendu ») ne touche que le rendu : −0,25 s en bureau (dans le bruit), **−1,9 s en mobile** (le DPR de 2,75 et les ombres dominent). Le mobile ne joue que les garde-fous (paliers publication et complet), d'où un gain réel limité.
-- `detail=0`, `perso=actuel`, `empty=1`, `murs=bas`, `nospawn=1` changent le jeu montré ou sa logique : jamais pour un garde-fou ni pour un test du rendu.
+- `detail=0`, `perso=actuel`, `empty=1`, `nospawn=1` changent le jeu montré ou sa logique : jamais pour un garde-fou ni pour un test du rendu.
 
 ## Fichiers de test qui pourraient utiliser `vhs=0&shadows=0&dpr=1` sans risque (non modifiés)
 Critère : le fichier ouvre `jeu.html` et ne porte ni sur le VHS, ni sur les ombres, ni sur le DPR, ni sur les budgets de dessin (appels, triangles, mesurés ombres actives), ni sur les couleurs lues à l'écran (relevé par `grep` des mots `vhs|shadow|ombre|dpr|pixelRatio|triangles|calls|budget|screenshot|getImageData|readPixels|contraste`).
