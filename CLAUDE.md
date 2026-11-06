@@ -38,7 +38,7 @@ Avant de modifier une page, lis `Docs/ref/conventions.md` (arborescence, pages, 
 - Animations : pose-v2.js (pur ; glissement des pieds ≤ 15 %) ; géométries et matériaux partagés, jamais recréés par image.
 - Entrées : event.code (jamais event.key) ; tir automatique quand le laser touche.
 - Tir : balle dans un cône (spread.js) ; dégâts figés à la création, appliqués à l'impact ; le laser (ray.js) vise sans dégâts ; à travers les fenêtres ; portée 700, laser 300.
-- Tests : ?test=1 expose window.__zs (getState, step, skipWave…) ; 667×375, step() et le journal, jamais une durée réelle ; Math.random interdit ; helpers e2e : map=salle ; Docs/ref/modele-rdc/ exclu des 5 Mo.
+- Tests : ?test=1 expose window.__zs (getState, step, skipWave…) ; 667×375, step() et le journal, jamais une durée réelle ; Math.random interdit ; helpers e2e : map=salle.
 - Monde : decor.json (extérieur, apparitions hors de la vue) ; collision.js, nav.js ; meubles et portes fermées bloquent tout ; hauteurs : murs 60, meubles ≤ 70, voitures 55.
 - Textures : texgen.js (pur) d'après textures.json, aucune image ; contraste ≥ 3:1 personnages / sol, laser et balle ≥ 4,5:1.
 - Personnages : v2 ; ≤ 4 appels, ≤ 1 600 triangles (riche 2 600) ; vue ≤ 45 000 triangles et 400 appels ; ancien modèle importé seulement si « actuel ».
@@ -46,7 +46,7 @@ Avant de modifier une page, lis `Docs/ref/conventions.md` (arborescence, pages, 
 - Morts : le corps tombe à l'opposé du tireur (deathFor) ; laser, éclair et balles dessinés depuis le canon (muzzle()), logique inchangée.
 - Tir et réparation : jamais en même temps (viser un zombie interrompt la réparation, la planche garde sa progression) ; pas de laser pendant la réparation.
 - Couleurs --perso-* et --sang-* ; contraste ≥ 3:1 sur la couleur vue, escalier et sols tachés compris.
-- Sons : synth.js (sounds.json, aucun fichier audio) ; jamais de son dans js/core/ ; sons.html à retirer au lot 13.
+- Sons : synth.js et synth2.js (sounds.json, aucun fichier audio) ; jamais de son dans js/core/ ; sons.html à retirer au lot 13.
 - ?sons=choix|ancien|A|B|C : jamais mémorisé, pas un mode essai. Poids des sons : aucun plafond (garde-fou 64 Mo).
 - Chargement : textures et sons essentiels derrière l'écran de préparation ; aucun son avant le premier geste.
 - Vagues : waves.js + wave-director.js d'après waves.json (vie BO3 ×30 au plus) ; 10 zombies simultanés au plus.
