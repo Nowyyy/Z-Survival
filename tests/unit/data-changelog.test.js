@@ -29,11 +29,12 @@ describe('data/changelog.json', () => {
     for (const f of readdirSync('Docs/lots').filter((n) => n.endsWith('.md'))) expect(lots.map((e) => e.name), f).toContain(f.replace('.md', ''));
   });
 
-  // Lot 5d : lot-5d ajouté en dernier (lot-5c, mené en parallèle, peut le précéder) ; avant (lot 5b) : lot-5b en dernier.
-  it('le fichier est dans l\'ordre chronologique : lot-0 en premier, lot-5d en dernier (lot 5d : après lot-5b, lot-5a, lot-4g, lot-4f, lot-4e, lot-4c et lot-4b)', () => {
+  // Lot 5e : lot-5e ajouté en dernier, après lot-5d et lot-5c ; avant (lot 5d) : lot-5d en dernier (lot-5c, mené en parallèle, pouvait le précéder).
+  it('le fichier est dans l\'ordre chronologique : lot-0 en premier, lot-5e en dernier (lot 5e : après lot-5d, lot-5c, lot-5b, lot-5a, lot-4g, lot-4f, lot-4e, lot-4c et lot-4b)', () => {
     expect(lots[0].name).toBe('lot-0');
-    expect(lots.at(-1).name).toBe('lot-5d');
-    const before = lots.slice(0, -1).filter((e) => e.name !== 'lot-5c');
+    expect(lots.at(-1).name).toBe('lot-5e');
+    expect(lots.at(-2).name).toBe('lot-5d');
+    const before = lots.slice(0, -2).filter((e) => e.name !== 'lot-5c');
     expect(before.at(-1).name).toBe('lot-5b');
     expect(before.at(-2).name).toBe('lot-5a');
     expect(before.at(-3).name).toBe('lot-4g');
