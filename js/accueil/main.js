@@ -63,7 +63,6 @@ function render({ t, lang }) {
       nextLink.href = model.devSection.nextHref;
       nextLink.querySelector('.meta').textContent = fill(t('home.nextMeta'), { sha: next.sha, date: formatDate(next.date, lang) });
     }
-    $('journal-link').href = model.devSection.journal;
   }
 
   const previous = $('previous-section');

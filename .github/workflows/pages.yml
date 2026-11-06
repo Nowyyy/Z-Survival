@@ -1,7 +1,7 @@
 name: Pages
 
-# Lot 4c : publication par versions. Racine = main (version actuelle), next/ = dev (dernier build de développement), v0.N/ = branche archive
-# (versions figées), lots/ = page de renvoi. Seuls main et dev déclenchent ce workflow (plus aucun aperçu par lot, rien sur archive).
+# Lot 4c : publication par versions ; lot 5g : racine = page « en construction », Recette/ = main, dev/ = dev (dernier build de développement),
+# v0.N/ = branche archive (versions figées), next/ et lots/ = redirections. Seuls main et dev déclenchent ce workflow (rien sur archive).
 on:
   push:
     branches: [main, dev]
@@ -77,10 +77,10 @@ jobs:
         if: steps.refs.outputs.dev == 'true'
         working-directory: dev
         run: npm ci && npm run build
-      # L'assembleur et versions.json sont ceux de main (la version publiée décide de la publication).
+      # Lot 5g : l'assembleur est celui de la branche qui déclenche (un push de dev publie l'organisation de dev) ; versions.json est celui de main.
       - name: Assemblage du site
         run: >-
-          node main/scripts/assemble.mjs --main main/_site --versions main/versions.json --out _site
+          node ${{ github.ref == 'refs/heads/dev' && 'dev' || 'main' }}/scripts/assemble.mjs --main main/_site --versions main/versions.json --out _site
           ${{ steps.refs.outputs.dev == 'true' && '--dev dev/_site' || '' }}
           ${{ steps.refs.outputs.archive == 'true' && '--archive archive' || '' }}
       - uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b # v5.0.0

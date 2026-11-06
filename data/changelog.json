@@ -1,13 +1,5 @@
 {
-  "_note": "Journal des versions affiché par la page /dev (liste des lots). Une entrée par lot, dans l'ordre chronologique (la plus récente en dernier) ; la page les affiche du plus récent au plus ancien. À compléter à chaque lot.",
-  "_versions": "Versions majeures montrées par /dev (demande du propriétaire), dans l'ordre chronologique ici et affichées de la plus récente (en haut) à la plus ancienne : version, lot du journal, encore en cours ou non. Les autres lots restent dans « lots » (historique) mais ne sont plus affichés. Un nouveau lot n'est ajouté à cette liste que sur indication du propriétaire (Docs/lots/lot-4b.md).",
-  "versions": [
-    { "version": "V0.1", "lot": "lot-1" },
-    { "version": "V0.2", "lot": "lot-1d" },
-    { "version": "V0.3", "lot": "lot-2c" },
-    { "version": "V0.4", "lot": "lot-3e" },
-    { "version": "V0.5", "lot": "lot-4b", "enCours": true }
-  ],
+  "_note": "Journal des lots (data/changelog.json → lots), une entrée par bilan de Docs/lots/, dans l'ordre chronologique (la plus récente en dernier). Lot 5g : le journal des versions (/dev/) et la liste « versions » sont supprimés ; l'accueil (/Recette/) montre les entrées dont « version » (version cible, v0.N) n'est pas encore publiée dans versions.json. Chaque lot ajoute son entrée avec « version » (version cible) et « date » (AAAA-MM-JJ, jour du bilan).",
   "lots": [
     { "name": "lot-0", "titre": "Socle, jetons et publication", "points": [
       "Outillage (ESLint, Vitest, Playwright, Lighthouse) et publication automatique sur GitHub Pages.",
@@ -190,25 +182,29 @@
       "La publication ne relance plus les tests de bout en bout, déjà faits à chaque push par le palier standard : elle vérifie le lint et les tests unitaires, puis déploie.",
       "Les pages de renvoi du site (aperçus retirés, build de développement absent) affichent l'icône « Z » du site. Règles de travail consolidées. Aucun changement du jeu."
     ] },
-    { "name": "lot-5a", "titre": "Épaves en flammes et nouvel impact sur les zombies", "points": [
+    { "name": "lot-5a", "version": "v0.6", "date": "2026-11-04", "titre": "Épaves en flammes et nouvel impact sur les zombies", "points": [
       "Dehors : une voiture calcinée brûle à l'est du bâtiment (flammes et fumée) et un hélicoptère écrasé, à moitié enfoui dans un cratère au bout de sa traînée de glissade, fume encore dans l'angle du L au nord, contre les murs ; tous deux bloquent les déplacements et les balles.",
       "Une balle qui touche un zombie fait un bruit de chair perforée (proposition B) au lieu du « cling » scintillant, et la douille du pistolet est plus discrète ; ?sons=A, B ou C compare les trois propositions, ?sons=ancien rejoue l'ancien son. La logique du jeu ne change pas."
     ] },
-    { "name": "lot-5b", "titre": "Fluidité : outil de mesure et préréglages graphiques", "points": [
+    { "name": "lot-5b", "version": "v0.6", "date": "2026-11-05", "titre": "Fluidité : outil de mesure et préréglages graphiques", "points": [
       "Nouveau réglage « Graphismes » dans la pause : Auto, Faible, Moyen ou Élevé (Élevé = le rendu d'avant). Changer de réglage recharge la page après confirmation ; le choix est gardé sur l'appareil. En Auto, un téléphone part en Moyen et le jeu baisse d'un cran entre deux manches si les images sont trop lentes. Les réglages sont provisoires, à affiner avec les mesures des appareils.",
       "?perf=1 affiche un panneau de mesure (images, accrocs, temps par étape) avec « Copier le rapport » ; ?gfx= force un réglage sans le mémoriser ; ?cap= essaie un plafond d'images. La logique du jeu ne change pas."
     ] },
-    { "name": "lot-5c", "titre": "Nettoyage du code et des fichiers", "points": [
+    { "name": "lot-5c", "version": "v0.6", "date": "2026-11-06", "titre": "Nettoyage du code et des fichiers", "points": [
       "Code jamais appelé, réglage d'essai ?murs=bas, trois scripts ponctuels et un document de fusion périmé retirés après preuve de non-usage ; références périmées de la documentation corrigées.",
       "Aucun changement de jeu ni d'image : parties rejouées pas à pas, appels, triangles et vues identiques avant et après."
     ] },
-    { "name": "lot-5d", "titre": "Fluidité : moins de mémoire jetée à chaque image", "points": [
+    { "name": "lot-5d", "version": "v0.6", "date": "2026-11-06", "titre": "Fluidité : moins de mémoire jetée à chaque image", "points": [
       "Les collisions (déplacements des zombies, ligne de vue, balles, laser) et les poses des personnages sont calculées sans créer d'objets temporaires à chaque image : le jeu jette beaucoup moins de mémoire, ce qui doit réduire les petites pauses du navigateur (effet sur les téléphones à vérifier avec ?perf=1).",
       "Aucun changement de jeu ni d'image : les résultats sont identiques au bit près (vérifiés sur des milliers de cas et sur six parties rejouées pas à pas)."
     ] },
-    { "name": "lot-5e", "titre": "Nettoyage : ancien modèle de personnages et ancien pack de sons retirés", "points": [
+    { "name": "lot-5e", "version": "v0.6", "date": "2026-11-06", "titre": "Nettoyage : ancien modèle de personnages et ancien pack de sons retirés", "points": [
       "Les personnages d'avant les refontes (?perso=actuel) et le pack de sons d'avant (?sons=ancien) sont retirés : ces adresses donnent maintenant le jeu par défaut, sans erreur. Si la table des personnages manque, chaque personnage prend la variante A.",
       "Aucun changement de jeu, d'image ni de son : parties rejouées pas à pas, rendu, vues et empreinte de chaque son identiques avant et après ; les tests qui mesuraient avec l'ancien modèle ou l'ancien pack sont remesurés sur ce que le jeu livre."
+    ] },
+    { "name": "lot-5g", "version": "v0.6", "date": "2026-11-06", "titre": "Nouvelle organisation du site et accueil refait", "points": [
+      "Le site change d'adresses : la racine affiche « en construction », l'accueil et le jeu de la Recette sont sous /Recette/, le dernier build de développement sous /dev/jeu.html ; /next/ et /lots/ renvoient aux nouvelles adresses, les versions précédentes (/v0.N/) ne changent pas.",
+      "L'accueil est refait : « Jouer », le dernier build de développement, les évolutions en cours de développement (à gauche) et toutes les versions précédentes (à droite, dans une liste qui défile) ; le journal des versions est retiré. Aucun changement du jeu."
     ] }
   ]
 }

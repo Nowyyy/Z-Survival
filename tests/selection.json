@@ -34,7 +34,6 @@
     { "fichier": "tests/e2e/attente.spec.js", "categorie": "G", "raison": "Accueil publié : jetons, axe, requêtes externes, <noscript>, mouvement réduit ; mobile justifié (page mobile d'abord)." },
     { "fichier": "tests/e2e/carte-jeu.spec.js", "categorie": "G", "motif": "bloqué|budget|axe|réseau|stockage|caméra : jamais hors", "raison": "tests G d'un fichier R" },
     { "fichier": "tests/e2e/carte.spec.js", "categorie": "G", "motif": "axe|se charge", "raison": "tests G d'un fichier T" },
-    { "fichier": "tests/e2e/dev.spec.js", "categorie": "G", "raison": "Page /dev/ publiée : journal, axe, 44 px ; mobile justifié." },
     { "fichier": "tests/e2e/etage-salle.spec.js", "categorie": "G", "motif": "budget|requête|aucune limite|jamais plus|rez-de-chaussée avec les deux escaliers", "raison": "tests G d'un fichier R" },
     { "fichier": "tests/e2e/etage.spec.js", "categorie": "G", "motif": "budget|géométries et de textures|axe|requête|CLS|jamais plus de 10|HUD : colonne", "raison": "tests G d'un fichier R" },
     { "fichier": "tests/e2e/interface-atelier-ecrans.spec.js", "categorie": "G", "motif": "axe", "raison": "tests G d'un fichier T" },
@@ -68,7 +67,7 @@
     { "fichier": "tests/e2e/persos-jeu.spec.js", "categorie": "G", "motif": "invariance|budget|fuite|axe|console propre|sans \\?test=1", "raison": "tests G d'un fichier F" },
     { "fichier": "tests/e2e/persos-jeu.spec.js", "categorie": "P", "motif": "tir ou réparation|aucun laser pendant la réparation", "raison": "tests P d'un fichier F" },
     { "fichier": "tests/e2e/persos-sang.spec.js", "categorie": "G", "motif": "axe|budget|≤ 3 appels", "raison": "tests G d'un fichier T" },
-    { "fichier": "tests/e2e/publication.spec.js", "categorie": "G", "raison": "Site assemblé (racine, next/, archives, lots/) : construction et publication du site, axe." },
+    { "fichier": "tests/e2e/publication.spec.js", "categorie": "G", "raison": "Site assemblé (racine en construction, Recette/, dev/, redirections next/ et lots/, archives) : construction et publication du site, accueil, axe ; reprend les garde-fous de l'ancien dev.spec (lot 5g)." },
     { "fichier": "tests/e2e/sauvegarde.spec.js", "categorie": "G", "raison": "sauvegarde.html : codec, verrouillage, effacement, une seule clé ; mobile justifié." },
     { "fichier": "tests/e2e/sons-integres-ambiances.spec.js", "categorie": "G", "motif": "maxVoices", "raison": "tests G d'un fichier R" },
     { "fichier": "tests/e2e/sons-integres.spec.js", "categorie": "G", "motif": "aucun son avant le geste|axe|mode essai|identiques au rendu de Node", "raison": "tests G d'un fichier R" },
@@ -822,8 +821,8 @@
     },
     {
       "id": "accueil",
-      "description": "Accueil et /dev/ : index.html, journal des versions, aperçus des lots, icône.",
-      "sources": ["index.html", "js/accueil/**", "js/lots.js", "js/main.js", "css/accueil.css", "dev/**", "data/changelog.json", "apercu.txt", "scripts/icone.mjs"],
+      "description": "Accueil de la Recette : index.html, js/accueil/, site-info.json (arbre source), journal des lots (data/changelog.json), icône.",
+      "sources": ["index.html", "js/accueil/**", "js/lots.js", "js/main.js", "css/accueil.css", "site-info.json", "data/changelog.json", "apercu.txt", "scripts/icone.mjs"],
       "dependances": ["textes"],
       "vitest": [
         "tests/unit/data-ambiance.test.js",
@@ -836,7 +835,7 @@
         "tests/unit/versions-archiver.test.js",
         "tests/unit/versions-schema.test.js"
       ],
-      "e2e": ["tests/e2e/dev.spec.js", "tests/e2e/publication.spec.js"],
+      "e2e": ["tests/e2e/publication.spec.js"],
       "complet": []
     },
     {
@@ -851,7 +850,7 @@
         "versions.json",
         "build-info.json"
       ],
-      "dependances": ["textes"],
+      "dependances": ["textes", "accueil"],
       "vitest": [
         "tests/unit/data-changelog.test.js",
         "tests/unit/lots.test.js",

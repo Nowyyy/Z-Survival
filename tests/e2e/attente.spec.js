@@ -76,7 +76,8 @@ test('sans JavaScript, seuls le message noscript et ses liens sont visibles', as
   await page.goto(baseURL);
   await expect(page.locator('#app')).toBeHidden();
   const text = (await page.evaluate(() => document.body.innerText)).trim();
-  expect(text.split('\n').map((l) => l.trim()).filter(Boolean)).toEqual(['Ce jeu a besoin de JavaScript. / This game needs JavaScript.', 'Jouer / Play', 'Dernier build de développement / Latest development build', 'Journal des versions / Version history']);
+  // Lot 5g : plus de lien « Journal des versions / Version history » (journal supprimé).
+  expect(text.split('\n').map((l) => l.trim()).filter(Boolean)).toEqual(['Ce jeu a besoin de JavaScript. / This game needs JavaScript.', 'Jouer / Play', 'Dernier build de développement / Latest development build']);
   await browser.close();
 });
 

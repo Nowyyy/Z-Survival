@@ -65,7 +65,7 @@ export function homeModel({ versions = null, info = null, nextInfo = null } = {}
     version: current?.label ?? '',
     play: current?.entry ?? 'jeu.html',
     banner: channel === 'dev' ? buildStamp(info) ?? { sha: '', date: '' } : null,
-    devSection: channel === 'dev' ? null : { next: channel === 'release' ? buildStamp(nextInfo) : null, nextHref: `${root}${devPath}`, journal: `${root}dev/` },
+    devSection: channel === 'dev' ? null : { next: channel === 'release' ? buildStamp(nextInfo) : null, nextHref: `${root}${devPath}` },
     previous,
     devPath,
   };

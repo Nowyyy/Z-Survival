@@ -1,7 +1,9 @@
-// Site assemblé de test pour Playwright (lot 4c, tests/e2e/publication.spec.js), servi sur http://localhost:4174/ (PORT_SITE pour changer).
-// Construit depuis l'arbre de travail courant (copie dans un dossier temporaire, puis scripts/build.mjs) — jamais dans _site/ du dépôt —, puis assemble deux sites :
-//  - full/ : racine (build courant), next/ (le même build, canal dev), archives FICTIVES v0.2 à v0.4 (pages de test), v0.1 indisponible (jeu de versions de test) ;
-//  - bare/ : racine seule (ni dev, ni archive) : « Aucun build de développement pour l'instant », versions publiées « indisponibles ».
+// Site assemblé de test pour Playwright (lot 4c ; lot 5g : nouvelle organisation), tests/e2e/publication.spec.js, servi sur http://localhost:4174/ (PORT_SITE pour changer).
+// Construit depuis l'arbre de travail courant (copie dans un dossier temporaire, puis scripts/build.mjs) — jamais dans _site/ du dépôt —, puis assemble trois sites :
+//  - full/ : racine « en construction », Recette/ (build courant), dev/ (le même build, canal dev : ses entrées de journal en version non publiée
+//    sont les « évolutions »), archives FICTIVES v0.2 à v0.4 (pages de test), v0.1 indisponible (jeu de versions de test) ;
+//  - bare/ : Recette/ seule (ni dev, ni archive) : « Aucun build de développement pour l'instant », versions publiées « indisponibles » ;
+//  - many/ : 13 versions FICTIVES (v0.1 à v0.12 archivées, v0.13 Recette) pour la liste qui défile ; v0.6 y est publiée : aucune évolution.
 // Chaque site vit dans un sous-dossier, comme le site publié sous /Z-Survival/. Les données de version sont fictives et annoncées comme telles.
 import { spawnSync } from 'node:child_process';
 import { cpSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
@@ -14,6 +16,7 @@ import { startServer } from './serve.mjs';
 const SKIP = new Set(['.git', 'node_modules', '_site', '.lots', 'Docs', 'tests', 'test-results', 'playwright-report', 'lighthouse-report', 'blob-report', 'coverage']);
 export const DEV_SHA = 'abcdef1234567890abcdef1234567890abcdef12';
 export const DEV_DATE = '2026-11-02T12:00:00Z';
+export const GENERE = '2026-11-06T12:00:00Z';
 
 // Jeu de versions de test (dérivé de versions.json : mêmes identifiants ; V0.1 indisponible pour tester ce cas).
 export function testVersions(real) {
@@ -25,6 +28,15 @@ export function testVersions(real) {
     }
   }
   return data;
+}
+
+// Jeu de 13 versions fictives (v0.1 à v0.12 archivées, v0.13 actuelle), valide pour scripts/versions/schema.mjs.
+export function manyVersions(count = 13) {
+  const versions = Array.from({ length: count }, (_, i) => ({
+    id: `v0.${i + 1}`, label: `V0.${i + 1}`, title: `Version de test ${i + 1} (fictive)`, date: `2026-10-${String(i + 1).padStart(2, '0')}`,
+    branch: `lot-${i + 1}`, ref: String(i + 1).padStart(2, '0').repeat(20), entry: 'jeu.html', status: i + 1 === count ? 'actuelle' : 'archive', note: '',
+  }));
+  return { schema: 1, latest: `v0.${count}`, versions, dev: { branch: 'dev', path: 'next/' } };
 }
 
 // Archive fictive : une page d'entrée, une feuille de style et un module, tous en chemins relatifs, et build-info.json.
@@ -55,8 +67,13 @@ export function buildTestSites(repo, www) {
     for (const v of versions.versions.filter((x) => x.status === 'archive')) fakeArchive(archive, v);
     rmSync(www, { recursive: true, force: true });
     const main = { branch: 'main', sha: 'fedcba9876543210fedcba9876543210fedcba98', date: '2026-11-02T10:00:00Z' };
-    assembleSite({ mainDir, devDir: mainDir, archiveDir: archive, versions, out: join(www, 'full'), main, dev: { sha: DEV_SHA, date: DEV_DATE } });
-    assembleSite({ mainDir, versions, out: join(www, 'bare'), main });
+    const dev = { sha: DEV_SHA, date: DEV_DATE };
+    assembleSite({ mainDir, devDir: mainDir, archiveDir: archive, versions, out: join(www, 'full'), main, dev, genere: GENERE });
+    assembleSite({ mainDir, versions, out: join(www, 'bare'), main, genere: GENERE });
+    const many = manyVersions();
+    const manyArchive = join(tmp, 'archive-many');
+    for (const v of many.versions.filter((x) => x.status === 'archive')) fakeArchive(manyArchive, v);
+    assembleSite({ mainDir, devDir: mainDir, archiveDir: manyArchive, versions: many, out: join(www, 'many'), main, dev, genere: GENERE });
   } finally {
     rmSync(tmp, { recursive: true, force: true });
   }
