@@ -54,7 +54,6 @@
   --space-5: 1.5rem;
   --space-6: 2rem;
   --space-7: 3rem;
-  --space-8: 4rem;
 
   /* Rayons */
   --radius-sm: 4px;
@@ -64,7 +63,6 @@
 
   /* Durées */
   --duration-fast: 120ms;
-  --duration-normal: 240ms;
   --duration-slow: 1600ms;
 
   /* Cible tactile minimale */
@@ -223,6 +221,19 @@
   --sang-reduit: #2e0a0a;           /* niveau « réduit » : teinte plus sombre */
 }
 
+/* Décor en flammes (lot 5a) : couleurs de sommet des épaves, multipliées à la texture de l'atlas de props (aucune texture nouvelle). Provisoires. */
+:root {
+  --game-wreck-hull: #8c8c78;       /* coque calcinée de l'hélicoptère (olive brûlé) */
+  --game-wreck-soot: #5a5650;       /* nez, moteur et dérive noircis par la suie */
+  --game-wreck-metal: #b0aba0;      /* pales, patins et jambes (métal éraflé) */
+  --game-wreck-glass: #4a5658;      /* verrière brisée */
+  --game-car-burnt: #7a5a48;        /* caisse de la voiture en flammes (rouille et suie) */
+  --game-car-soot: #45403a;         /* habitacle sans vitres, toit affaissé et jantes de la voiture en flammes */
+  --game-crater-burnt: #4a3f36;     /* lot 5a-F : fond du cratère et sillon de glissade, terre brûlée (teinte de la texture de terre) */
+  --game-crater-earth: #9a8068;     /* lot 5a-F : terre retournée des bourrelets du cratère et de la traînée */
+  --game-smoke-light: #8a8580;      /* lot 5a-F : fumée légère au-dessus de l'hélicoptère, sans flammes */
+}
+
 /* Interface intégrée (lot 3l) */
 :root {
   --hud-text-scale: 1.125;          /* macro « texte M » de la direction B, figée : 14 px × 1,125 = 15,75 px (HUD, panneaux, état à terre) */
@@ -231,3 +242,4 @@
   --hud-pause-size: max(44px, calc(2 * var(--hud-row) + var(--hud-gap))); /* côté du bouton Pause : deux lignes de droite et l'espace, 44 px au moins */
   --hud-target: 44px;               /* cible tactile des boutons et du curseur de volume des panneaux */
 }
+

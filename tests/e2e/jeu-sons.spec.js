@@ -95,9 +95,14 @@ test.describe('sons : démarrage et journal', () => {
     await unlock(page);
     await page.keyboard.press('KeyM');
     await expect.poll(async () => (await audio(page)).muted).toBe(true);
+    const avant = (await logOf(page)).length; // relevé une fois la coupure faite (une boucle lancée juste avant reste hors du compte)
     await page.evaluate(() => window.__zs.fire(0));
     await step(page, 0.1);
-    let log = await logOf(page);
+    // Lot 4e (échec hérité corrigé) : depuis le lot 3i, le journal note aussi le début et l'arrêt des boucles d'ambiance (loop: true,
+    // sans champ muted) ; la coupure les arrête. Après M : aucune boucle (re)lancée, et chaque lecture est marquée muted.
+    const apres = (await logOf(page)).slice(avant);
+    expect(apres.filter((e) => e.loop && e.start)).toEqual([]);
+    let log = apres.filter((e) => !e.loop);
     expect(log.length).toBeGreaterThan(0);
     expect(log.every((e) => e.muted === true)).toBe(true);
     expect((await audio(page)).activeVoices).toBe(0);

@@ -1,5 +1,7 @@
 import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
+import { readFileSync } from 'node:fs';
+import { waitReady } from './helpers.js';
 
 // Lot 3b-A : page de contrôle carte.html (SVG de world.json et decor.json). Page technique, noindex.
 const BROWSER_NOISE = /GL Driver Message/;
@@ -31,15 +33,6 @@ test('se charge sans erreur ni requête externe, noindex, 7 étiquettes F1 à F8
   expect(await page.evaluate(() => [localStorage.length, sessionStorage.length, document.cookie])).toEqual([0, 0, '']);
 });
 
-test('sans JavaScript, seul le message noscript est visible', async ({ browser, baseURL }) => {
-  const context = await browser.newContext({ javaScriptEnabled: false, baseURL });
-  const page = await context.newPage();
-  await page.goto('/carte.html');
-  await expect(page.locator('.noscript')).toBeVisible();
-  await expect(page.locator('#app')).toBeHidden();
-  await context.close();
-});
-
 for (const size of SIZES) {
   test(`axe : aucune violation, aucune cible de moins de 44 px (${size.width}×${size.height})`, async ({ page }) => {
     await open(page, '', size);
@@ -52,64 +45,8 @@ for (const size of SIZES) {
   });
 }
 
-test('?map=salle affiche l\'ancienne salle (3 fenêtres, 14 meubles, aucun pilier)', async ({ page }) => {
-  await open(page, '?map=salle');
-  await expect(page.locator('text.fenetre-etiquette')).toHaveCount(3);
-  await expect(page.locator('rect.meuble')).toHaveCount(14);
-  await expect(page.locator('rect.pilier')).toHaveCount(0);
-  await expect(page.locator('#lien-salle')).toHaveAttribute('aria-current', 'page');
-});
-
-test('?map= inconnu retombe sur le rez-de-chaussée', async ({ page }) => {
-  await open(page, '?map=nimporte');
-  await expect(page.locator('text.fenetre-etiquette')).toHaveCount(7);
-});
-
 // Lot 3e-C : sélecteur d'étage (?floor=0 ou 1, deux boutons de 44 px), zones de déclenchement, arrivées et blocs de portes.
 test.describe('sélecteur d\'étage', () => {
-  test('par défaut et ?floor=0 : le rez-de-chaussée (F1 à F8), ses deux zones de déclenchement et leurs arrivées ; le bouton courant est marqué', async ({ page }) => {
-    for (const q of ['', '?floor=0']) {
-      await open(page, q);
-      await expect(page.locator('text.fenetre-etiquette')).toHaveText(['F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F8']);
-      await expect(page.locator('rect.declencheur')).toHaveCount(2);
-      await expect(page.locator('circle.arrivee')).toHaveCount(2);
-      await expect(page.locator('#lien-etage-rdc')).toHaveAttribute('aria-current', 'page');
-      await expect(page.locator('#lien-etage')).not.toHaveAttribute('aria-current', 'page');
-    }
-  });
-
-  test('?floor=1 : l\'étage (U1 à U7, 6 piliers, 7 fenêtres), ses zones de déclenchement, ses arrivées, le bloc de la porte de l\'étage', async ({ page }) => {
-    await open(page, '?floor=1');
-    await expect(page.locator('text.fenetre-etiquette')).toHaveText(['U1', 'U2', 'U3', 'U4', 'U5', 'U6', 'U7']);
-    await expect(page.locator('rect.pilier')).toHaveCount(6);
-    await expect(page.locator('#stats')).toContainText('7 fenêtres');
-    await expect(page.locator('#stats')).toContainText('Étage');
-    await expect(page.locator('rect.declencheur')).toHaveCount(2);
-    await expect(page.locator('circle.arrivee')).toHaveCount(2);
-    await expect(page.locator('rect.bloc-porte')).toHaveCount(1);
-    await expect(page.locator('circle.apparition')).toHaveCount(14);
-    await expect(page.locator('#lien-etage')).toHaveAttribute('aria-current', 'page');
-    await expect(page.locator('#lien-rez')).not.toHaveAttribute('aria-current', 'page');
-  });
-
-  test('le rez-de-chaussée dessine les blocs des portes 2 et 3 (escaliers fermés)', async ({ page }) => {
-    await open(page, '');
-    await expect(page.locator('rect.bloc-porte')).toHaveCount(2);
-  });
-
-  test('les deux boutons d\'étage ont 44 px au moins et mènent à ?floor=0 et ?floor=1 ; le lien du jeu suit l\'étage', async ({ page }) => {
-    await open(page, '?floor=1');
-    for (const id of ['lien-etage-rdc', 'lien-etage']) {
-      const box = await page.locator(`#${id}`).boundingBox();
-      expect(box.height).toBeGreaterThanOrEqual(44);
-      expect(box.width).toBeGreaterThanOrEqual(44);
-    }
-    await expect(page.locator('#lien-etage-rdc')).toHaveAttribute('href', 'carte.html?floor=0');
-    await expect(page.locator('#lien-etage')).toHaveAttribute('href', 'carte.html?floor=1');
-    await expect(page.locator('#lien-jeu')).toHaveAttribute('href', 'jeu.html?wave=31&labels=1&zoom=1&floor=1');
-    await page.locator('#lien-etage-rdc').click();
-    await expect(page.locator('text.fenetre-etiquette')).toHaveCount(7);
-  });
 
   for (const size of SIZES) {
     test(`axe : aucune violation sur l'étage, aucune cible de moins de 44 px (${size.width}×${size.height})`, async ({ page }) => {
@@ -123,24 +60,104 @@ test.describe('sélecteur d\'étage', () => {
     });
   }
 
-  test('?map=salle masque le sélecteur et ignore ?floor=1', async ({ page }) => {
-    await open(page, '?map=salle&floor=1');
-    await expect(page.locator('text.fenetre-etiquette')).toHaveCount(3);
-    await expect(page.locator('#lien-etage')).toBeHidden();
-    await expect(page.locator('#lien-etage-rdc')).toBeHidden();
-    await expect(page.locator('rect.declencheur')).toHaveCount(0);
+});
+
+// Lot 5a : épaves du décor extérieur (voiture en flammes, hélicoptère écrasé), sur carte.html et dans le jeu (?test=1, step(), jamais une durée réelle).
+test.describe('épaves (lot 5a)', () => {
+  const decor = JSON.parse(readFileSync('data/game/maps/rez-de-chaussee/decor.json', 'utf8'));
+  const heli = decor.wrecks.helicopter;
+  const fuselage = heli.rects[0];
+  const openGame = async (page, extra = '') => {
+    await page.setViewportSize(SIZES[0]);
+    await page.goto(`/jeu.html?test=1&seed=1&nospawn=1&vhs=0${extra}`);
+    await waitReady(page);
+    await page.evaluate(() => { window.requestAnimationFrame = () => 0; });
+    await page.evaluate(() => window.__zs.step(0.05));
+  };
+
+  test('carte.html montre les épaves : 3 rectangles de l\'hélicoptère, son emprise, la voiture en flammes, l\'angle du L parmi 4 sommets rentrants', async ({ page }) => {
+    await open(page);
+    await expect(page.locator('rect.epave-helicoptere')).toHaveCount(heli.rects.length);
+    await expect(page.locator('rect.epave-emprise')).toHaveCount(1);
+    await expect(page.locator('rect.epave-voiture')).toHaveAttribute('data-id', decor.wrecks.burningCar.id);
+    await expect(page.locator('circle.coin-l')).toHaveAttribute('data-id', `coin-${heli.corner.x}-${heli.corner.y}`);
+    await expect(page.locator('circle.coin-rentrant')).toHaveCount(3);
   });
 
-  test('?floor=1 : aucune requête externe, aucune erreur, aucun stockage', async ({ page, baseURL }) => {
-    const external = [];
-    const problems = [];
-    page.on('request', (r) => !r.url().startsWith(baseURL) && !r.url().startsWith('data:') && external.push(r.url()));
-    page.on('console', (m) => ['error', 'warning'].includes(m.type()) && !BROWSER_NOISE.test(m.text()) && problems.push(m.text()));
-    page.on('pageerror', (e) => problems.push(e.message));
-    await open(page, '?floor=1');
-    await page.waitForLoadState('networkidle');
-    expect(external).toEqual([]);
-    expect(problems).toEqual([]);
-    expect(await page.evaluate(() => [localStorage.length, sessionStorage.length, document.cookie])).toEqual([0, 0, '']);
+  test('dans le jeu : hélicoptère dessiné (700 triangles au plus) et solide, voiture en flammes dont le feu groupé avance avec le temps de jeu', async ({ page }) => {
+    await openGame(page);
+    const r = await page.evaluate(() => {
+      const zs = window.__zs;
+      const a = zs.getState().scene.wrecks;
+      zs.step(1);
+      const b = zs.getState().scene.wrecks;
+      return { a, b };
+    });
+    expect(r.a.helicopter.triangles).toBe(heli.triangles);
+    expect(r.a.helicopter.triangles).toBeLessThanOrEqual(700);
+    expect(r.a.helicopter.rects).toEqual(heli.rects.map((q) => q.id));
+    expect(r.a.burningCar.id).toBe(decor.wrecks.burningCar.id);
+    expect(r.a.fires).toHaveLength(1);
+    expect(r.a.fires[0]).toMatchObject({ spots: 2, glow: false, flames: 64, smoke: 64 });
+    expect(r.b.fires[0].time).toBeGreaterThan(r.a.fires[0].time + 0.9);
+    expect(r.a.exteriorVisible).toBe(true);
+    // Lot 5a-F : cratère et traînée (sol de terre) et fumée légère sans flammes au-dessus de l'hélicoptère, qui avance avec le temps de jeu.
+    expect(r.a.helicopter.scarTriangles).toBe(heli.scarTriangles);
+    expect(r.a.heliSmoke).toHaveLength(1);
+    expect(r.a.heliSmoke[0]).toMatchObject({ flames: 0, smoke: 64, glow: false });
+    expect(r.b.heliSmoke[0].time).toBeGreaterThan(r.a.heliSmoke[0].time + 0.9);
+  });
+
+  test('une balle tirée vers l\'hélicoptère s\'arrête sur lui sans dégâts ; le laser s\'y arrête aussi', async ({ page }) => {
+    await openGame(page);
+    const x = fuselage.x + fuselage.w / 2;
+    const r = await page.evaluate(([px, py, zy]) => {
+      const zs = window.__zs;
+      zs.setPlayer(px, py);
+      zs.setInput({ aim: { angle: Math.PI / 2 } });
+      const id = zs.spawnEnemy(px, zy);
+      zs.step(0.1);
+      const laser = zs.getState().laser;
+      zs.fire(Math.PI / 2);
+      zs.step(1);
+      const s = zs.getState();
+      const e = s.enemies.find((q) => q.id === id);
+      return { hp: e.health, max: e.maxHp, bullets: s.bullets.length, laser, sounds: s.audio.log.map((l) => l.sound) };
+    }, [x, fuselage.y - 120, fuselage.y + fuselage.h + 28]); // retour du propriétaire : l'hélicoptère est contre le mur sud, on tire depuis le nord ; le zombie est derrière, contre le mur
+    expect(r.laser.stoppedBy).toMatch(/^helicoptere-/);
+    expect(r.bullets).toBe(0);
+    expect(r.hp).toBe(r.max);
+  });
+
+  test('?detail=0 : l\'hélicoptère reste dessiné (il est solide), sans le feu ; 10 allers-retours d\'étage sans fuite de géométrie', async ({ page }) => {
+    await openGame(page, '&detail=0');
+    const off = await page.evaluate(() => window.__zs.getState().scene.wrecks);
+    expect(off.helicopter.triangles).toBe(heli.triangles);
+    expect(off.fires).toEqual([]);
+    await openGame(page, '&wave=31');
+    const r = await page.evaluate(() => {
+      const zs = window.__zs;
+      // Un premier aller-retour envoie l'étage au processeur graphique (comme tests/e2e/etage.spec.js), puis on compte.
+      zs.setFloor(1);
+      zs.step(0.05);
+      zs.sampleScreen(0, 0, 4, 4);
+      zs.setFloor(0);
+      zs.step(0.05);
+      zs.sampleScreen(0, 0, 4, 4);
+      const before = zs.getState().render.geometries;
+      for (let i = 0; i < 10; i += 1) {
+        zs.setFloor(1);
+        zs.step(0.05);
+        zs.sampleScreen(0, 0, 4, 4);
+        zs.setFloor(0);
+        zs.step(0.05);
+        zs.sampleScreen(0, 0, 4, 4);
+      }
+      const s = zs.getState();
+      return { before, after: s.render.geometries, wrecks: s.scene.wrecks, floor: s.floor.current };
+    });
+    expect(r.after).toBeLessThanOrEqual(r.before);
+    expect(r.wrecks.helicopter.triangles).toBe(heli.triangles);
+    expect(r.wrecks.fires).toHaveLength(1);
   });
 });

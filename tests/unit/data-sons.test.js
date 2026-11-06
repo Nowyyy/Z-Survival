@@ -3,10 +3,12 @@ import { execSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 import { renderSound, soundBytes, variantCount } from '../../js/core/synth.js';
 import { attackTime, centroid, maxCorrelation, mean, medianPitch, peakOf, rmsOf, toDb } from './helpers/dsp.js';
-import { synthRecipes } from './helpers/sons-anciens.js';
+import { synthRecipes } from './helpers/sons-synth.js';
 
-// Lot 3i : recettes de synth.js (les recettes remplacées par l'atelier viennent de sounds-legacy.json ; l'atelier : sons-integres.test.js).
+// Lot 3i : recettes de synth.js ; lot 5e : celles du pack par défaut seulement (le pack d'avant, sounds-legacy.json, est retiré) ; l'atelier :
+// sons-integres.test.js. La cohérence du jeu (sons attendus, nombre de tampons) se lit sur sounds.json entier (table).
 const sounds = synthRecipes();
+const table = JSON.parse(readFileSync('data/game/sounds.json', 'utf8')).sounds;
 const audio = JSON.parse(readFileSync('data/game/audio.json', 'utf8'));
 const materials = JSON.parse(readFileSync('data/game/sound-materials.json', 'utf8'));
 const world = JSON.parse(readFileSync('data/game/world.json', 'utf8'));
@@ -50,9 +52,10 @@ const NO_PITCH = new Set(['zombie-souffle', ...NOT_VOICE_LIKE]); // souffle rauq
 describe('mesures de chaque son (tous les sons, toutes les variantes)', () => {
   it('chaque son a au moins une variante et les nombres de variantes de la spécification', () => {
     const n = (id) => variantCount(sounds.find((s) => s.id === id));
-    expect([n('tir'), n('douille'), n('impact-zombie'), n('impact-bois'), n('impact-metal'), n('impact-pierre'), n('impact-voiture'), n('pas'), n('pas-zombie')]).toEqual([3, 2, 3, 2, 2, 2, 2, 4, 2]);
+    // Lot 5e : impact-zombie, pas et pas-zombie sont des sons de l'atelier (graines : sons-integres.test.js), hors de cette liste.
+    expect([n('tir'), n('douille'), n('impact-bois'), n('impact-metal'), n('impact-pierre'), n('impact-voiture')]).toEqual([3, 2, 2, 2, 2, 2]);
     expect(n('joueur-blesse')).toBe(3);
-    for (const id of ['zombie-gemissement', 'zombie-grognement', 'zombie-plainte', 'zombie-souffle', 'zombie-blessure', 'zombie-mort', 'zombie-attaque']) expect(n(id), id).toBeGreaterThanOrEqual(2);
+    for (const id of ['zombie-grognement', 'zombie-plainte', 'zombie-souffle']) expect(n(id), id).toBeGreaterThanOrEqual(2); // lot 5e : voix communes de synth.js
     expect(sounds.find((s) => s.id === 'ambiance').sampleRate).toBe(22050);
   });
 
@@ -139,8 +142,8 @@ describe('cohérence des données sonores', () => {
   const EVENT_SOUNDS = ['tir', 'douille', 'impact-zombie', 'impact-bois', 'impact-metal', 'impact-pierre', 'impact-voiture', 'pas', 'pas-zombie', 'zombie-gemissement', 'zombie-grognement', 'zombie-plainte', 'zombie-souffle', 'zombie-blessure', 'zombie-mort', 'zombie-attaque', 'joueur-blesse', 'joueur-mort', 'ui-pause', 'ui-reprise', 'ambiance', 'vague-annonce', 'vague-renforcee', 'vague-fin', 'planche-arrachee', 'planche-posee', 'joueur-chute', 'joueur-releve'];
   const CATEGORIES = ['tir', 'impact', 'voix', 'pas', 'joueur', 'interface', 'ambiance', 'annonce', 'fenetre'];
 
-  it('au moins 40 tampons, dont des sons essentiels et des sons de fond', () => {
-    expect(rendered.length).toBeGreaterThanOrEqual(40);
+  it('au moins 40 tampons dans le pack par défaut (recettes de synth.js et graines de l\'atelier), dont des sons essentiels et des sons de fond', () => {
+    expect(table.reduce((n, r) => n + (r.engine === 'atelier' ? r.variants : variantCount(r)), 0)).toBeGreaterThanOrEqual(40);
     expect(new Set(sounds.map((s) => s.set))).toEqual(new Set(['essentiel', 'fond']));
   });
 
@@ -160,8 +163,8 @@ describe('cohérence des données sonores', () => {
     expect(all).toBeLessThanOrEqual(4000);
   });
 
-  it('chaque son attendu par le jeu existe, une seule fois', () => {
-    const ids = sounds.map((s) => s.id);
+  it('chaque son attendu par le jeu existe, une seule fois (pack par défaut : sounds.json entier)', () => {
+    const ids = table.map((s) => s.id);
     for (const id of EVENT_SOUNDS) expect(ids.filter((x) => x === id), id).toHaveLength(1);
     expect(new Set(ids).size).toBe(ids.length);
   });
@@ -181,9 +184,10 @@ describe('cohérence des données sonores', () => {
     }
   });
 
-  it('les sons de fond sont les voix de zombies (sauf blessure et mort, jouées à l\'impact), l\'ambiance, deux sons d\'annonce (lot 2c) et le relevage du joueur (lot 3)', () => {
+  it('recettes de synth.js : les sons de fond sont les voix communes des zombies, l\'ambiance, deux sons d\'annonce (lot 2c) et le relevage du joueur (lot 3)', () => {
     const fond = sounds.filter((s) => s.set === 'fond').map((s) => s.id).sort();
-    expect(fond).toEqual(['ambiance', 'joueur-releve', 'vague-fin', 'vague-renforcee', 'zombie-attaque', 'zombie-gemissement', 'zombie-grognement', 'zombie-plainte', 'zombie-souffle']);
+    // Lot 5e : zombie-attaque et zombie-gemissement sont des sons de l'atelier (ensemble « fond » vérifié par sons-integres.test.js).
+    expect(fond).toEqual(['ambiance', 'joueur-releve', 'vague-fin', 'vague-renforcee', 'zombie-grognement', 'zombie-plainte', 'zombie-souffle']);
   });
 
   it('les voix de zombies ont une fondamentale de base proche de 110 Hz', () => {
@@ -195,7 +199,7 @@ describe('cohérence des données sonores', () => {
   });
 
   it('les matières correspondent à des types d\'obstacle réels (salle et décor) et tous les types ont une matière', () => {
-    const realKinds = new Set([...world.obstacles.map((o) => o.kind), 'voiture', 'arbre']);
+    const realKinds = new Set([...world.obstacles.map((o) => o.kind), 'voiture', 'arbre', 'helicoptere']); // lot 5a : hélicoptère écrasé (decor.json de la carte)
     expect(new Set(Object.keys(materials.kinds))).toEqual(realKinds);
     for (const material of Object.values(materials.kinds)) expect(Object.keys(materials.sounds)).toContain(material);
     expect(Object.keys(materials.sounds)).toContain(materials.wallMaterial);

@@ -68,6 +68,9 @@ describe('mêmes règles qu\'au lot 1', () => {
     allowed.push('js/core/blood.js'); // lot 3j : sang (nouveau fichier)
     allowed.push('js/core/arena.js'); // lot 3j : mini-arène (nouveau fichier)
     allowed.push('js/core/crowd.js'); // lot 3j : foule de la mini-arène (nouveau fichier)
+    allowed.push('js/core/epaves.js'); // lot 5a : épaves du décor extérieur (nouveau fichier, pur)
+    allowed.push('js/core/perf-stats.js'); // lot 5b : mesure de fluidité de ?perf=1 (nouveau fichier, pur)
+    allowed.push('js/core/graphics.js'); // lot 5b : préréglages graphiques (nouveau fichier, pur)
     expect(changed.filter((f) => !allowed.includes(f))).toEqual([]);
   });
 });
@@ -76,7 +79,7 @@ describe('retrait de Phaser', () => {
   const walk = (dir) => readdirSync(dir, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? walk(`${dir}/${e.name}`) : [`${dir}/${e.name}`]));
 
   it('aucun fichier de js/, css/, data/, scripts/, jeu.html, index.html ni de la documentation de référence ne mentionne Phaser', () => {
-    const files = [...walk('js'), ...walk('css'), ...walk('data'), ...walk('scripts'), ...walk('dev'), ...walk('Docs/ref'), 'jeu.html', 'index.html', 'CLAUDE.md', 'package.json', 'eslint.config.js', 'playwright.config.js', 'apercu.txt'];
+    const files = [...walk('js'), ...walk('css'), ...walk('data'), ...walk('scripts'), ...walk('Docs/ref'), 'jeu.html', 'index.html', 'CLAUDE.md', 'package.json', 'eslint.config.js', 'playwright.config.js', 'apercu.txt'];
     for (const f of files) expect(readFileSync(f, 'utf8'), f).not.toMatch(/phaser/i);
   });
 

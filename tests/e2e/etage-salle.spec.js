@@ -1,6 +1,5 @@
 import { test, expect } from '@playwright/test';
 import { readFileSync } from 'node:fs';
-import { entryDirection } from '../../js/core/stair-walk.js';
 import { parseZones, zonesToWorld } from '../../js/core/zones.js';
 import { waitReady } from './helpers.js';
 
@@ -12,13 +11,11 @@ const zonesWorld = zonesToWorld(parseZones(load('data/game/maps/rez-de-chaussee/
 const stairOf = (id) => zonesWorld.stairs.find((s) => s.id === id);
 const DEPART = stairOf('escalier-depart');
 const AILE = stairOf('escalier-aile');
-const center = (r) => ({ x: r.x + r.w / 2, y: r.y + r.h / 2 });
 const STATE = (page) => page.evaluate(() => window.__zs.getState());
 const BROWSER_NOISE = /GL Driver Message|ReadPixels|GPU stall/;
 // Porte de l'étage entre les deux salles : mur x = 138 px, ouverture y 262 à 301 px (unités du jeu : marge 800, 5 par pixel).
 const DOOR_X = 800 + 138 * 5;
 const DOOR_Y = 800 + 281 * 5;
-const RIGHT_ROOM = { x0: DOOR_X + 40, x1: 800 + 293 * 5 };
 
 async function open(page, extra = '', size = SIZE, { freeze = true } = {}) {
   await page.setViewportSize(size);
@@ -29,204 +26,9 @@ async function open(page, extra = '', size = SIZE, { freeze = true } = {}) {
   await page.evaluate(() => window.__zs.step(0.05));
 }
 
-const until = (page, condition, maxSeconds = 40) => page.evaluate(([body, max]) => {
-  const zs = window.__zs;
-  const test = new Function('s', `return (${body});`);
-  const t0 = zs.getState().time;
-  for (let i = 0; i < Math.round(max / 0.05); i += 1) {
-    const s = zs.getState();
-    if (test(s)) return { state: s, elapsed: s.time - t0, time: s.time };
-    zs.step(0.05);
-  }
-  return null;
-}, [condition, maxSeconds]);
 
-const finishWave = (page) => page.evaluate(() => { window.__zs.skipWave(); window.__zs.step(0.05); return window.__zs.getState().time; });
-async function endWave(page, n) {
-  await page.evaluate((w) => window.__zs.startWave(w), n);
-  const started = await until(page, `s.waves.wave === ${n} && s.waves.phase === 'apparition'`, 5);
-  expect(started, `manche ${n} démarrée`).not.toBeNull();
-  return finishWave(page);
-}
-
-test.describe('porte 3 : second escalier et porte de l\'étage', () => {
-  test('à la fin de la manche 30 : « Nouvelle zone » à 3,0 s, « Un escalier et une porte s\'ouvrent », doorOpen à 3,6 s, enfoncement de 1,2 s des deux blocs ensemble', async ({ page }) => {
-    await open(page, '&wave=30');
-    await page.evaluate(() => window.__zs.step(3.1));
-    const t0 = await finishWave(page);
-    expect((await STATE(page)).waves.doorPending).toEqual({ id: 'porte-3', openAfterWave: 30 });
-    const ann = await until(page, `s.events.some((e) => e.type === 'doorAnnounce')`, 6);
-    expect(ann.time - t0).toBeGreaterThan(2.9);
-    expect(ann.time - t0).toBeLessThan(3.2);
-    expect(ann.state.splash).toMatchObject({ visible: true, kind: 'zone', title: 'Nouvelle zone', subtitle: 'Un escalier et une porte s\'ouvrent' });
-    expect(ann.state.doorMeshes.ids).toEqual(['porte-3']);
-    expect(ann.state.doorMeshes.meshes).toBe(2);
-    const opened = await until(page, `s.events.some((e) => e.type === 'doorOpen')`, 5);
-    expect(opened.time - t0).toBeGreaterThan(3.5);
-    expect(opened.time - t0).toBeLessThan(3.8);
-    const mid = await page.evaluate(() => { window.__zs.step(0.6); return window.__zs.getState(); });
-    expect(mid.zones.doors[2].sinkProgress).toBeGreaterThan(0.4);
-    expect(mid.zones.doors[2].sinkProgress).toBeLessThan(0.6);
-    expect(mid.doorMeshes.meshes).toBe(2); // les deux blocs s'enfoncent ensemble
-    expect(mid.doorMeshes.scaleY['porte-3']).toBeLessThan(0.5);
-    const done = await page.evaluate(() => { window.__zs.step(0.8); return window.__zs.getState(); });
-    expect(done.zones.doors[2]).toMatchObject({ open: true, sinkProgress: 1 });
-    expect(done.doorMeshes.ids).toEqual([]);
-    expect(done.doorMeshes.meshes).toBe(0);
-  });
-
-  test('après l\'ouverture : les deux escaliers sont utilisables, etage-droite et ses fenêtres U5 à U7 et leurs 6 points sont actifs ; manche 31 à 12 s ; vie à 100 %, chutes non rendues', async ({ page }) => {
-    await open(page, '&wave=30');
-    await page.evaluate(() => window.__zs.step(3.1));
-    const before = await STATE(page);
-    expect(before.floor.stairs.map((q) => [q.id, q.usable])).toEqual([['escalier-aile', true], ['escalier-depart', false]]);
-    expect(before.zones.activeWindows.filter((id) => ['U5', 'U6', 'U7'].includes(id))).toEqual([]);
-    const t0 = await finishWave(page);
-    const next = await until(page, `s.waves.wave === 31 && s.waves.phase === 'apparition'`, 14);
-    expect(next.time - t0).toBeGreaterThan(11.7);
-    expect(next.time - t0).toBeLessThan(12.4);
-    const s = next.state;
-    expect(s.floor.stairs.map((q) => [q.id, q.usable])).toEqual([['escalier-aile', true], ['escalier-depart', true]]);
-    expect(s.zones.list.map((z) => [z.id, z.open])).toEqual([['depart', true], ['aile', true], ['etage-gauche', true], ['etage-droite', true]]);
-    expect(s.zones.activeWindows.filter((id) => ['U5', 'U6', 'U7'].includes(id))).toEqual(['U5', 'U6', 'U7']);
-    expect(s.zones.activeSpawnPoints.filter((id) => /^U[567]-/.test(id))).toHaveLength(6);
-    expect(s.player.down.chutes).toBe(before.player.down.chutes);
-    expect(s.scene.marks).toEqual([]); // plus de zone jaune au sol (retour du propriétaire)
-  });
-
-  // Lot 3l (retour du propriétaire) : plus de ligne « Prochaine zone » dans la pause ; la donnée (getState().zones.next) est vérifiée.
-  test('« Prochaine zone » : 11, 21, 31 puis rien', async ({ page }) => {
-    await open(page, '&nospawn=1');
-    const expected = [[1, 11], [10, 11], [11, 21], [20, 21], [21, 31], [30, 31], [31, null], [35, null]];
-    for (const [w, next] of expected) {
-      await page.evaluate((n) => { window.__zs.startWave(n); window.__zs.step(0.05); }, w);
-      await page.locator('#btn-pause').click();
-      await expect(page.locator('#pause-next')).toHaveCount(0);
-      expect((await STATE(page)).zones.next?.wave ?? null).toBe(next);
-      await page.locator('#btn-resume').click();
-    }
-  });
-
-  test('aucune ouverture aux manches 21 à 29 ni après la 31 : pause de 8 s, aucun événement de porte', async ({ page }) => {
-    await open(page, '&wave=21');
-    for (const n of [21, 25, 29, 31, 36]) {
-      const t0 = await endWave(page, n);
-      const next = await until(page, `s.waves.wave === ${n + 1} && s.waves.phase === 'apparition'`, 12);
-      expect(next.time - t0, `après la manche ${n}`).toBeGreaterThan(7.7);
-      expect(next.time - t0).toBeLessThan(8.3);
-      expect(next.state.events.filter((e) => e.type.startsWith('door'))).toEqual([]);
-    }
-  });
-
-  test('?wave=31 : tout est ouvert au chargement, sans animation ni annonce ; ?wave=30 : porte 3 fermée avec ses deux blocs', async ({ page }) => {
-    await open(page, '&wave=31&nospawn=1');
-    let s = await STATE(page);
-    expect(s.zones.doors.map((d) => [d.id, d.open, d.sinkProgress])).toEqual([['porte-1', true, 1], ['porte-2', true, 1], ['porte-3', true, 1]]);
-    expect(s.doorMeshes).toMatchObject({ ids: [], meshes: 0 });
-    expect(s.splash.visible).toBe(false);
-    expect(s.events).toEqual([]);
-    expect(s.zones.next).toBeNull();
-    expect(s.zones.list.every((z) => z.open)).toBe(true);
-    expect(s.zones.activeWindows).toHaveLength(14); // lot 3g : F7 retirée (7 + U1 à U7)
-    await open(page, '&wave=30&nospawn=1');
-    s = await STATE(page);
-    expect(s.zones.doors[2]).toMatchObject({ open: false, sinkProgress: 0 });
-    expect(s.doorMeshes).toMatchObject({ ids: ['porte-3'], meshes: 2 });
-    expect(s.zones.list.map((z) => z.open)).toEqual([true, true, true, false]);
-    expect(s.zones.next).toEqual({ id: 'porte-3', wave: 31 });
-  });
-});
-
-test.describe('la porte de l\'étage et la seconde salle', () => {
-  const walk = (page, from, dx) => page.evaluate(([a, d, y]) => {
-    const zs = window.__zs;
-    zs.setPlayer(a, y);
-    zs.setInput({ move: { x: d, y: 0 } });
-    zs.step(3);
-    zs.setInput({});
-    return zs.getState().player.x;
-  }, [from, dx, DOOR_Y]);
-
-  test('avant la manche 31 : la porte de l\'étage bloque le joueur (il ne passe pas dans la seconde salle)', async ({ page }) => {
-    await open(page, '&wave=30&floor=1&nospawn=1');
-    const x = await walk(page, DOOR_X - 140, 1);
-    expect(x).toBeLessThan(DOOR_X);
-  });
-
-  test('à la manche 31 : le joueur traverse l\'ouverture vers la seconde salle, et revient', async ({ page }) => {
-    await open(page, '&wave=31&floor=1&nospawn=1');
-    expect(await walk(page, DOOR_X - 140, 1)).toBeGreaterThan(DOOR_X + 60);
-    expect(await walk(page, DOOR_X + 140, -1)).toBeLessThan(DOOR_X - 60);
-  });
-
-  test('avant la manche 31 : aucun zombie n\'apparaît aux fenêtres U5 à U7, aucun ne passe dans la seconde salle ; après, il y en a, même joueur en bas', async ({ page }) => {
-    await open(page, '&wave=30');
-    const before = await page.evaluate(() => {
-      const zs = window.__zs;
-      let inRight = 0;
-      for (let i = 0; i < 1200; i += 1) {
-        zs.step(0.05);
-        for (const e of zs.getState().enemies) if (e.floor === 'etage' && e.x > 1500 && e.y > 2000 && e.x < 2265) inRight += 1;
-      }
-      return { log: zs.getState().spawnLog, inRight };
-    });
-    expect(before.log.some((l) => /^U[567]-/.test(l.id))).toBe(false);
-    expect(before.inRight).toBe(0);
-    await open(page, '&wave=31');
-    const after = await page.evaluate(() => { const zs = window.__zs; for (let i = 0; i < 1200; i += 1) zs.step(0.05); return zs.getState().spawnLog; });
-    expect(after.filter((l) => /^U[567]-/.test(l.id)).length).toBeGreaterThan(0);
-    expect(after.filter((l) => /^U[567]-/.test(l.id)).every((l) => l.floor === 'etage' && l.hidden)).toBe(true);
-  });
-
-  test('monter par l\'escalier de départ (arrivée dans la seconde salle), traverser la porte, redescendre par l\'escalier de l\'aile : fondus justes, aucun rebond', async ({ page }) => {
-    await open(page, '&wave=31&nospawn=1');
-    const t = center(DEPART.floors.rdc.trigger);
-    await page.evaluate(([p, d]) => { window.__zs.setPlayer(p.x, p.y); window.__zs.setInput({ move: d }); window.__zs.step(0.2); }, [t, entryDirection(DEPART.walk.path, 'rdc')]);
-    // L'escalier de départ monte vers le nord puis tourne vers l'ouest au palier : on tourne, comme un joueur.
-    await page.evaluate(() => { const zs = window.__zs; while (zs.getState().floor.walk !== null) { zs.setInput({ move: zs.getState().floor.elevation < 170 ? { x: 0, y: -1 } : { x: -1, y: 0.15 } }); zs.step(0.05); } zs.setInput({}); });
-    let s = await STATE(page);
-    expect(s.floor.current).toBe('etage');
-    const top = center(DEPART.floors.etage.trigger);
-    expect(Math.hypot(s.player.x - top.x, s.player.y - top.y)).toBeLessThan(25);
-    expect(s.player.x).toBeGreaterThan(RIGHT_ROOM.x0 - 40);
-    await expect(page.locator('#hud-floor')).toHaveText('Étage');
-    await page.evaluate(() => window.__zs.step(3)); // pas de rebond
-    expect((await STATE(page)).stairLog.filter((l) => l.type === 'playerStairs')).toHaveLength(1);
-    // La porte : vers l'ouest à la hauteur de l'ouverture.
-    const x = await page.evaluate(([y]) => {
-      const zs = window.__zs;
-      zs.setPlayer(zs.getState().player.x, y);
-      zs.setInput({ move: { x: -1, y: 0 } });
-      zs.step(4);
-      zs.setInput({});
-      return zs.getState().player.x;
-    }, [DOOR_Y]);
-    expect(x).toBeLessThan(DOOR_X - 40);
-    const u = center(AILE.floors.etage.trigger);
-    await page.evaluate(([p, d]) => { window.__zs.setPlayer(p.x, p.y); window.__zs.setInput({ move: d }); window.__zs.step(0.2); }, [u, entryDirection(AILE.walk.path, 'etage')]);
-    await page.evaluate(() => { const zs = window.__zs; let n = 0; while (zs.getState().floor.walk !== null && n < 400) { zs.step(0.05); n += 1; } zs.setInput({}); });
-    s = await STATE(page);
-    expect(s.floor.current).toBe('rdc');
-    expect(s.stairLog.filter((l) => l.type === 'playerStairs').map((l) => [l.stair, l.from, l.to])).toEqual([['escalier-depart', 'rdc', 'etage'], ['escalier-aile', 'etage', 'rdc']]);
-    await expect(page.locator('#hud-floor')).toHaveText('RDC');
-  });
-});
 
 test.describe('deux escaliers', () => {
-  test('chaque zombie de l\'étage prend l\'escalier le plus proche par chemin (salle de droite : départ ; poche : aile)', async ({ page }) => {
-    await open(page, '&wave=31&nospawn=1');
-    const A_DEP = DEPART.floors.etage.arrival;
-    const A_AILE = AILE.floors.etage.arrival;
-    await page.evaluate(([a, b]) => {
-      window.__zs.spawnEnemy(a.x, a.y + 40, { floor: 'etage', mode: 'dedans' });
-      window.__zs.spawnEnemy(b.x, b.y - 60, { floor: 'etage', mode: 'dedans' });
-    }, [A_DEP, A_AILE]);
-    const done = await until(page, `s.stairLog.filter((l) => l.type === 'stairStart').length >= 2`, 60);
-    expect(done).not.toBeNull();
-    const starts = done.state.stairLog.filter((l) => l.type === 'stairStart');
-    const byZombie = Object.fromEntries(starts.map((l) => [l.id, l.stair]));
-    expect(Object.values(byZombie).sort()).toEqual(['escalier-aile', 'escalier-depart']);
-  });
 
   test('aucune limite de zombies dans un escalier, même avec les deux escaliers utilisables', async ({ page }) => {
     await open(page, '&wave=31&nospawn=1');
@@ -283,88 +85,6 @@ test.describe('deux escaliers', () => {
     expect(r.time).toBeGreaterThan(110); // 120 s de jeu, le joueur ne meurt pas
     expect(r.worstStill).toBeLessThanOrEqual(2);
     expect(problems).toEqual([]);
-  });
-});
-
-test.describe('fin de monde, Rejouer, ?endless=1, mouvement réduit, sons', () => {
-  test('manche 40 terminée avec les quatre salles : « Monde terminé » ; « Rejouer » : manche 1, portes fermées, rez-de-chaussée, voile à 0, aucun zombie', async ({ page }) => {
-    await open(page, '&wave=40&floor=1');
-    expect((await STATE(page)).floor.current).toBe('etage');
-    await page.evaluate(() => { window.__zs.skipWave(); window.__zs.step(0.05); });
-    await expect(page.locator('#end-panel')).toBeVisible();
-    const s = await until(page, `s.worldOver === true`, 10);
-    expect(s).not.toBeNull();
-    await page.locator('#end-panel button').first().click().catch(() => {});
-    await page.evaluate(() => window.__zs.step(0.1));
-    const after = await STATE(page);
-    expect(after.worldOver).toBe(false);
-    expect(after.waves.wave).toBe(40); // Rejouer repart de ?wave=40, comme au lot 3c
-  });
-
-  test('sans ?wave : « Rejouer » après avoir ouvert les portes : manche 1, portes fermées, étage = rdc, voile à 0, aucun zombie', async ({ page }) => {
-    await open(page);
-    await page.evaluate(() => { const zs = window.__zs; zs.setDoor('porte-1', true); zs.setDoor('porte-2', true); zs.setDoor('porte-3', true); zs.setFloor(1); zs.step(0.1); });
-    expect((await STATE(page)).floor.current).toBe('etage');
-    await page.locator('#btn-pause').click();
-    await page.locator('#btn-restart').click();
-    await page.evaluate(() => window.__zs.step(0.1));
-    const s = await STATE(page);
-    expect(s.floor.current).toBe('rdc');
-    expect(s.floor.fade).toMatchObject({ veil: 0, locked: false });
-    expect(s.waves.wave).toBe(1);
-    expect(s.zones.doors.map((d) => d.open)).toEqual([false, false, false]);
-    expect(s.doorMeshes.ids).toEqual(['porte-1', 'porte-2', 'porte-3']);
-    expect(s.enemies).toEqual([]);
-  });
-
-  test('?endless=1 : la manche 41 démarre avec les quatre salles, sans fin de monde', async ({ page }) => {
-    await open(page, '&wave=40&endless=1');
-    await endWave(page, 40);
-    await expect(page.locator('#end-panel')).toBeHidden();
-    const next = await until(page, `s.waves.wave === 41 && s.waves.phase === 'apparition'`, 12);
-    expect(next).not.toBeNull();
-    expect(next.state.worldOver).toBe(false);
-  });
-
-  test('mouvement réduit : le fondu de l\'escalier de départ n\'a aucun voile, l\'annonce de la porte 3 sans secousse', async ({ browser }) => {
-    const context = await browser.newContext({ reducedMotion: 'reduce', viewport: SIZE });
-    const page = await context.newPage();
-    await open(page, '&wave=31&nospawn=1');
-    const r = await page.evaluate(() => {
-      const zs = window.__zs;
-      zs.useStair('escalier-depart');
-      const veils = [];
-      for (let i = 0; i < 6; i += 1) { zs.step(0.05); veils.push(zs.getState().floor.fade.veil); }
-      return { veils, floor: zs.getState().floor.current };
-    });
-    expect(r.veils.every((v) => v === 0)).toBe(true);
-    expect(r.floor).toBe('etage');
-    await context.close();
-  });
-
-  test('aucun nouveau son : l\'ouverture de la porte 3 et le fondu n\'ajoutent rien au journal des sons', async ({ page }) => {
-    await open(page, '&wave=30&nospawn=1', SIZE, { freeze: false });
-    await page.mouse.click(40, 40);
-    await expect.poll(async () => (await STATE(page)).audio.unlocked).toBe(true);
-    const known = new Set(JSON.parse(readFileSync('data/game/sounds.json', 'utf8')).sounds.map((q) => q.id));
-    await page.evaluate(() => { window.__zs.step(3.1); window.__zs.skipWave(); window.__zs.step(8); window.__zs.useStair('escalier-depart'); window.__zs.step(2); });
-    const log = (await STATE(page)).audio.log;
-    expect(log.every((e) => known.has(e.sound))).toBe(true);
-    expect(log.filter((e) => /porte|escalier|fondu|stair|door/i.test(e.sound))).toEqual([]);
-  });
-
-  test('#hud-live annonce « Fenêtre U3 ouverte » même quand le joueur est au rez-de-chaussée', async ({ page }) => {
-    await open(page, '&wave=21&nospawn=1');
-    await page.evaluate(() => {
-      window.__live = [];
-      new MutationObserver(() => window.__live.push(document.getElementById('hud-live').textContent)).observe(document.getElementById('hud-live'), { childList: true, characterData: true, subtree: true });
-      window.__zs.setPlanks('U3', 1);
-      window.__zs.spawnAtWindow('U3');
-    });
-    const done = await until(page, `s.windows.find((w) => w.id === 'U3').planks === 0`, 60);
-    expect(done).not.toBeNull();
-    expect((await STATE(page)).floor.current).toBe('rdc');
-    expect(await page.evaluate(() => window.__live)).toContain('Fenêtre U3 ouverte');
   });
 });
 

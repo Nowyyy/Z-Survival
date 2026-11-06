@@ -6,11 +6,12 @@
 import * as THREE from 'three';
 import { expandParts, jointMatrices, jointsOf, mergeParts } from '../core/character-parts.js';
 import { createRng, nextFloat } from '../core/rng.js';
-import { DEATHS, addPose, blendPoses, cycleSeconds, poseAt, rigOf, touche } from '../core/pose-v2.js';
+import { DEATHS, addPoseInto, blendPosesInto, copyPoseInto, createPose, createPoseWork, cycleSeconds, poseAtInto, rigOf, toucheInto } from '../core/pose-v2.js';
 import { partRgb, pickOutfit, resolveVariant, wearTier } from '../core/persos-variants.js';
 import { PALETTE_REGION, createPersoTexture, persoRegionRect, persoSpec, regionFactor } from '../core/texgen-persos.js';
 
 const KICK_TIME = 0.25; // durée du recul du pistolet du joueur (secondes de jeu)
+const NO_PARAMS = Object.freeze({});
 
 // Sphère englobante fixe (repère du personnage) : couvre toutes les poses, chute au sol comprise ; sert au culling hors champ.
 const BOUNDS = new THREE.Sphere(new THREE.Vector3(0, 28, 0), 62);
@@ -152,7 +153,7 @@ const torn = (i, seed) => {
 
 // options : { characters, poses (données), lookup (jeton -> [r, g, b]), hit (couleur du flash), choice ('A' | 'B' | 'C' | 'riche'),
 // zombieIds (ordre des variantes de zombie-variants.json), seed, wear () => palier (0 à 3), macros: { slot: { taille, ... } },
-// styleOf: { slot: 'A' | ... | 'actuel' } (variante de chaque personnage ; actuel : ancien modèle, voir handles), outfitOf: { slot: indice }
+// styleOf: { slot: 'A' | ... } (variante de chaque personnage), outfitOf: { slot: indice }
 // (atelier : tenue imposée) ; lot 3m (table des choix) : styleAnim: { slot: 'A' | 'B' | 'C' } (style d'animation), outfitsOf: { slot:
 // 'toutes' | [identifiants de tenues] } (tenues tirées), animMacros: { slot: { amplitude, rythme, lourdeur } }.
 export function createV2Kit(options) {
@@ -323,23 +324,36 @@ export function createV2Kit(options) {
         applyMaterials();
       });
     }
-    const params = () => ({ ...(options.animMacros?.[slotId] ?? {}) });
-    function show(anim, phase, extra = {}, time = state.time) {
+    // Lot 5d : poses écrites dans les tampons de ce personnage (créés une fois, réécrits à chaque image, jamais partagés) ; paramètres
+    // d'animation (macros puis extra, comme { ...macros, ...extra }) réécrits dans un objet réutilisé (clé absente = undefined).
+    const buf = { cur: createPose(), prev: createPose(), blend: createPose(), hurt: createPose(), add: createPose(), work: createPoseWork(), params: {} };
+    const xMove = { twist: 0, recoil: 0 };
+    const xRepair = { repairTime: 0 };
+    const xSill = { sill: 0 };
+    const macros = () => options.animMacros?.[slotId] ?? NO_PARAMS;
+    const params = (extra = NO_PARAMS) => {
+      const p = buf.params;
+      for (const key in p) p[key] = undefined;
+      for (const key in macros()) p[key] = macros()[key];
+      for (const key in extra) p[key] = extra[key];
+      return p;
+    };
+    function show(anim, phase, extra = NO_PARAMS, time = state.time) {
       if (anim !== state.anim) {
-        state.prevPose = state.pose;
+        state.prevPose = state.pose ? copyPoseInto(buf.prev, state.pose) : null;
         state.since = time;
         state.anim = anim;
       }
-      let pose = poseAt(gait, anim, phase, { ...params(), ...extra }, poses);
+      let pose = poseAtInto(buf.cur, buf.work, gait, anim, phase, params(extra), poses);
       const blend = Number(poses.durations?.blend) || 0.15;
-      if (state.prevPose && time - state.since < blend && !DEATHS.includes(anim)) pose = blendPoses(state.prevPose, pose, (time - state.since) / blend);
-      if (time - state.hurtAt < (Number(poses.durations?.touche) || 0.25)) pose = addPose(pose, touche(gait, (time - state.hurtAt) / (Number(poses.durations?.touche) || 0.25), params(), poses));
+      if (state.prevPose && time - state.since < blend && !DEATHS.includes(anim)) pose = blendPosesInto(buf.blend, state.prevPose, pose, (time - state.since) / blend);
+      if (time - state.hurtAt < (Number(poses.durations?.touche) || 0.25)) pose = addPoseInto(buf.add, pose, toucheInto(buf.hurt, gait, (time - state.hurtAt) / (Number(poses.durations?.touche) || 0.25), macros(), poses));
       state.pose = pose;
       state.phase = phase;
       rig.setAngles(pose);
       for (const [id, bone] of rig.bones) bone.scale.setScalar(pose.scales?.[id] ?? 1);
     }
-    const cycle = (anim, extra) => cycleSeconds(gait, anim, { ...params(), ...extra }, poses) ?? 1;
+    const cycle = (anim, extra) => cycleSeconds(gait, anim, params(extra), poses) ?? 1;
     // Bout du canon (avant de la glissière, repère de l'articulation « prop ») : le laser, l'éclair et les balles en partent à l'image.
     const slide = current.shared.parts.find((p) => p.id === 'gunSlide');
     const tip = slide ? new THREE.Vector3(slide.offset?.[0] ?? 0, slide.offset?.[1] ?? 0, (slide.offset?.[2] ?? 0) + (slide.dims?.d ?? 0) / 2) : null;
@@ -410,16 +424,20 @@ export function createV2Kit(options) {
           const relev = Number(poses.durations?.relevage) || 0.8;
           if (down) show('terre', time / cycle('terre'));
           else if (time - state.upAt < relev) show('relevage', (time - state.upAt) / relev);
-          else if (e.repairing) show('reparation', time / cycle('reparation', { repairTime: e.repairTime }), { repairTime: e.repairTime });
-          else {
+          else if (e.repairing) {
+            xRepair.repairTime = e.repairTime;
+            show('reparation', time / cycle('reparation', xRepair), xRepair);
+          } else {
             const twist = Number.isFinite(input.aim) && Number.isFinite(input.facing) ? wrap(input.aim - input.facing) : 0;
             // Recul visible : le jeu ne le garde que 0,12 s (RECOIL_TIME) ; ici, chaque nouveau coup de feu le relance pour KICK_TIME.
             const fired = num(input.recoil);
             if (fired > state.lastRecoil + 0.3) state.shotAt = time;
             state.lastRecoil = fired;
             const recoil = Math.max(0, 1 - (time - state.shotAt) / KICK_TIME);
-            if (num(input.amount) > 0.12) show('marche', num(input.phase) / TAU, { twist, recoil });
-            else show('repos', time / cycle('repos'), { twist, recoil });
+            xMove.twist = twist;
+            xMove.recoil = recoil;
+            if (num(input.amount) > 0.12) show('marche', num(input.phase) / TAU, xMove);
+            else show('repos', time / cycle('repos'), xMove);
           }
           return;
         }
@@ -431,8 +449,10 @@ export function createV2Kit(options) {
         const attack = Number(poses.durations?.attaque) || 1;
         if (input.state === 'arracher') show('arracher', num(input.phase) / TAU);
         // Passage de la fenêtre : « enjamber », piloté par la progression (climb.t) ; avant le passage, il marche jusqu'au bord extérieur.
-        else if (input.state === 'escalade' && num(e.climb?.t) > 0) show('enjamber', num(e.climb.t), { sill: options.sill });
-        else if (input.state === 'escalade') show(GAIT_ANIM[e.gait] ?? 'marche', num(input.phase) / TAU);
+        else if (input.state === 'escalade' && num(e.climb?.t) > 0) {
+          xSill.sill = options.sill;
+          show('enjamber', num(e.climb.t), xSill);
+        } else if (input.state === 'escalade') show(GAIT_ANIM[e.gait] ?? 'marche', num(input.phase) / TAU);
         else if (e.mode === 'escalier') show(e.gait === 'rampe' ? 'rampe' : 'escalier', num(input.phase) / TAU);
         else if (time - state.attackAt < attack && e.gait !== 'rampe') show('attaque', (time - state.attackAt) / attack);
         else if (e.mode === 'attente' || num(input.amount, 0.7) < 0.2) show(e.gait === 'rampe' ? 'rampe' : 'attente', e.gait === 'rampe' ? num(input.phase) / TAU : time / cycle('attente'));
@@ -455,16 +475,14 @@ export function createV2Kit(options) {
       geometryFor(k, k.allowed[Math.max(0, Math.min(outfits - 1, outfit))], wearNow());
       return outfits;
     },
-    // Lot 3m : ce personnage est-il un personnage v2 ? (variante « actuel » de la table ou de l'adresse : l'ancien modèle le construit).
-    handles(kind, variantIndex = 0) {
-      const slotId = kind === 'player' ? 'joueur' : SLOT_OF_TYPE[zombieIds[variantIndex % zombieIds.length]] ?? 'marcheur';
-      return (options.styleOf?.[slotId] ?? options.choice) !== 'actuel';
+    // Lot 3m : ce personnage est-il un personnage v2 ? Lot 5e : toujours (l'ancien modèle est retiré).
+    handles() {
+      return true;
     },
     // Lot 3m : réglages appliqués à chaque personnage (variante, style d'animation, tenues retenues, macros), sans rien construire.
     choices() {
       return Object.fromEntries(characters.slots.map((s) => {
         const choice = options.styleOf?.[s.id] ?? options.choice ?? 'A';
-        if (choice === 'actuel') return [s.id, { variante: 'actuel' }];
         const { variant } = variantOf(s.id, choice);
         const res = resolveVariant(variant, { macros: options.macros?.[s.id], wearTiers: characters.wearTiers });
         return [s.id, { variante: variant.id, style: variant.style, tenues: allowedOutfits(s.id, variant).map((i) => variant.outfits?.[i]?.id ?? String(i)), macros: res.macroValues, animation: { ...(options.animMacros?.[s.id] ?? {}) } }];

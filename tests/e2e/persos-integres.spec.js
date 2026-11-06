@@ -3,7 +3,7 @@ import AxeBuilder from '@axe-core/playwright';
 import { readFileSync } from 'node:fs';
 import { parseZones, zonesToWorld } from '../../js/core/zones.js';
 
-// Lot 3m : les personnages choisis (data/game/persos-choix.json) sont le défaut du jeu ; ?perso=actuel garde l'ancien modèle pour comparer.
+// Lot 3m : les personnages choisis (data/game/persos-choix.json) sont le défaut du jeu ; lot 5e : l'ancien modèle (?perso=actuel) est retiré.
 // 667 × 375, step() et hooks de ?test=1 ; suite rapide (fin de la liste ESSENTIAL de playwright.config.js).
 const SIZE = { width: 667, height: 375 };
 const S = (page) => page.evaluate(() => window.__zs.getState());
@@ -11,7 +11,7 @@ const load = (p) => JSON.parse(readFileSync(p, 'utf8'));
 const CHOIX = load('data/game/persos-choix.json');
 const SLOTS = ['joueur', 'marcheur', 'petit', 'voute', 'grand'];
 const EXPECTED = Object.fromEntries(SLOTS.map((s) => [s, CHOIX.persos[s].variante]));
-const OLD = ['/js/core/pose.js', '/js/game/character.js'];
+const OLD = ['/js/core/pose.js', '/js/game/character.js']; // lot 5e : fichiers supprimés, jamais demandés
 const zw = zonesToWorld(parseZones(load('data/game/maps/rez-de-chaussee/zones.json')), load('data/game/maps/rez-de-chaussee/world.json').transform);
 const DEPART = zw.stairs.find((s) => s.id === 'escalier-depart');
 const T = ['marcheur', 'petit', 'voute', 'grand'];
@@ -56,39 +56,85 @@ const sixHundredSteps = (page) => page.evaluate(() => {
 test.describe('personnages intégrés (choix par défaut)', () => {
   test.skip(({ isMobile }) => isMobile, 'bureau (la fenêtre est réglée par chaque test)');
 
-  test('par défaut : les 5 personnages sont ceux de la table des choix (variante, style, tenues)', async ({ page }) => {
-    await open(page, '&nospawn=1');
-    await spawnTen(page);
-    await page.evaluate(() => window.__zs.step(0.3));
-    const s = await S(page);
-    expect(s.persos).toMatchObject({ perso: 'choix', sang: CHOIX.sang, slots: EXPECTED, architecture: 'rigid' });
-    for (const id of SLOTS) expect(s.persos.choix[id]).toMatchObject({ variante: CHOIX.persos[id].variante, style: CHOIX.persos[id].style });
-    expect(s.pose).toMatchObject({ choice: EXPECTED.joueur, slot: 'joueur' });
-    for (const e of s.enemies) expect(e.pose.choice).toBe(EXPECTED[e.pose.slot]);
-    expect(new Set(s.enemies.map((e) => e.pose.slot))).toEqual(new Set(T));
-  });
-
-  test('par défaut : ni pose.js ni character.js ne sont demandés ; la table des choix l\'est', async ({ page }, testInfo) => {
+  // Lot 4e (regroupement) : cinq tests ouvraient la même page (?nospawn=1, 667×375) et faisaient apparaître les mêmes 10 zombies :
+  // un seul chargement, une étape par ancien test, mêmes assertions, dans un ordre où chaque étape garde ses conditions (lecture d'abord,
+  // tirs et sang ensuite ; la console est vérifiée à la fin, sur toute la séquence).
+  test('par défaut (?nospawn=1, 10 zombies) : table des choix, fichiers demandés, axe, HUD au-dessus du sang, console propre', async ({ page }, testInfo) => {
     const files = [];
+    const errors = [];
     page.on('request', (r) => files.push(new URL(r.url()).pathname));
+    page.on('pageerror', (e) => errors.push(e.message));
+    page.on('console', (m) => (m.type() === 'error' || (m.type() === 'warning' && !/GL Driver|GPU stall|ReadPixels/.test(m.text()))) && errors.push(m.text()));
     await open(page, '&nospawn=1');
     await spawnTen(page);
-    await page.evaluate(() => window.__zs.step(1));
-    for (const f of OLD) expect(files).not.toContain(f);
-    expect(files).toContain('/data/game/persos-choix.json');
-    expect(files).toContain('/js/game/character-v2.js');
-    testInfo.annotations.push({ type: 'réseau', description: `${new Set(files.filter((f) => /\.js$/.test(f))).size} fichiers JavaScript` });
+    await test.step('par défaut : les 5 personnages sont ceux de la table des choix (variante, style, tenues)', async () => {
+      await page.evaluate(() => window.__zs.step(0.3));
+      const s = await S(page);
+      expect(s.persos).toMatchObject({ perso: 'choix', sang: CHOIX.sang, slots: EXPECTED, architecture: 'rigid' });
+      for (const id of SLOTS) expect(s.persos.choix[id]).toMatchObject({ variante: CHOIX.persos[id].variante, style: CHOIX.persos[id].style });
+      expect(s.pose).toMatchObject({ choice: EXPECTED.joueur, slot: 'joueur' });
+      for (const e of s.enemies) expect(e.pose.choice).toBe(EXPECTED[e.pose.slot]);
+      expect(new Set(s.enemies.map((e) => e.pose.slot))).toEqual(new Set(T));
+    });
+    await test.step('par défaut : ni pose.js ni character.js ne sont demandés ; la table des choix l\'est', async () => {
+      await page.evaluate(() => window.__zs.step(0.7));
+      for (const f of OLD) expect(files).not.toContain(f);
+      expect(files).toContain('/data/game/persos-choix.json');
+      expect(files).toContain('/js/game/character-v2.js');
+      testInfo.annotations.push({ type: 'réseau', description: `${new Set(files.filter((f) => /\.js$/.test(f))).size} fichiers JavaScript` });
+    });
+    await test.step('axe : aucune violation par défaut', async () => {
+      const r = await new AxeBuilder({ page }).analyze();
+      expect(r.violations.map((v) => `${v.id} : ${v.nodes.length}`)).toEqual([]);
+    });
+    await test.step('HUD lisible par-dessus les personnages et le sang : chaque bloc visible est au-dessus du canevas', async () => {
+      const r = await page.evaluate(() => {
+        const zs = window.__zs;
+        zs.setLevels({ degats: 10 });
+        zs.step(3); // tirs, sang et cadavres sous le HUD
+        const canvasHost = document.getElementById('game-canvas');
+        const blocks = [...document.querySelectorAll('#hud .hud-block')].filter((b) => !b.hidden && b.getBoundingClientRect().width > 0);
+        // Le HUD laisse passer les touchers (pointer-events: none) : elementFromPoint l'ignorerait. Pour lire l'ordre des couches, il est
+        // rendu « touchable » le temps de la mesure (feuille de style ajoutée puis retirée ; rien d'autre ne change).
+        const probe = document.createElement('style');
+        probe.textContent = '#hud, #hud * { pointer-events: auto !important; }';
+        document.head.append(probe);
+        const covered = blocks.filter((b) => {
+          const box = b.getBoundingClientRect();
+          const top = document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2);
+          return !top || canvasHost.contains(top) || !document.getElementById('hud').contains(top); // au-dessus : le HUD (le bloc ou sa colonne)
+        }).map((b) => b.id);
+        probe.remove();
+        return { blocks: blocks.length, covered, domInCanvas: [...canvasHost.querySelectorAll('*')].map((n) => n.tagName), blood: zs.getState().persos.blood.taches };
+      });
+      expect(r.blocks).toBeGreaterThan(2);
+      expect(r.covered).toEqual([]);
+      expect(r.domInCanvas).toEqual(['CANVAS']); // personnages, sang et cadavres sont dessinés dans le canevas, jamais en HTML
+    });
+    await test.step('console propre (hors messages du pilote GL) par défaut', async () => {
+      await page.evaluate(() => window.__zs.step(1));
+      expect(errors).toEqual([]);
+    });
   });
 
-  test('?perso=actuel : l\'ancien modèle (pièces articulées), importé à la demande', async ({ page }) => {
+  test('?perso=actuel (lot 5e : ancien modèle retiré) : valeur inconnue, personnages par défaut (os rigides), aucun module ancien demandé', async ({ page }) => {
     const files = [];
     page.on('request', (r) => files.push(new URL(r.url()).pathname));
     await open(page, '&nospawn=1&perso=actuel');
     await spawnTen(page);
     const s = await S(page);
-    expect(s.persos).toMatchObject({ perso: 'actuel', architecture: 'articulated', characters: { joueur: 'actuel' } });
-    expect(s.enemies[0].pose).toHaveProperty('hipL');
-    for (const f of OLD) expect(files).toContain(f);
+    expect(s.persos).toMatchObject({ perso: 'choix', architecture: 'rigid', slots: EXPECTED });
+    expect(s.enemies[0].pose.choice).toBe(EXPECTED[s.enemies[0].pose.slot]);
+    for (const f of OLD) expect(files).not.toContain(f);
+  });
+
+  test('repli (lot 5e) : table des choix absente (404) : les 5 personnages en variante A, sans erreur', async ({ page }) => {
+    const errors = [];
+    page.on('pageerror', (e) => errors.push(e.message));
+    await page.route('**/data/game/persos-choix.json', (route) => route.fulfill({ status: 404, body: '' }));
+    await open(page, '&nospawn=1');
+    expect((await S(page)).persos.slots).toEqual(Object.fromEntries(SLOTS.map((id) => [id, 'A'])));
+    expect(errors).toEqual([]);
   });
 
   for (const v of ['A', 'B', 'C', 'riche']) {
@@ -223,7 +269,7 @@ test.describe('personnages intégrés (choix par défaut)', () => {
     expect(seen).toEqual(['marche:escalier', 'rampe:rampe']);
   });
 
-  for (const q of ['&perso=actuel', '&perso=A', '&perso=B', '&perso=C', '&perso=riche', '&sang=0', '&sang=reduit', '&sang=1']) {
+  for (const q of ['&perso=A', '&perso=B', '&perso=C', '&perso=riche', '&sang=0', '&sang=reduit', '&sang=1']) { // lot 5e : « &perso=actuel » retiré (ancien modèle)
     test(`invariance : « ${q} » donne le même état logique que le défaut (graine 5, 600 pas)`, async ({ page }) => {
       await openFrozen(page, '&seed=5&wave=3');
       await sixHundredSteps(page);
@@ -366,50 +412,6 @@ test.describe('personnages intégrés (choix par défaut)', () => {
     expect(s.persos.characters.zombies).toBe(10);
   });
 
-  test('HUD lisible par-dessus les personnages et le sang : chaque bloc visible est au-dessus du canevas', async ({ page }) => {
-    await open(page, '&nospawn=1');
-    await spawnTen(page);
-    const r = await page.evaluate(() => {
-      const zs = window.__zs;
-      zs.setLevels({ degats: 10 });
-      zs.step(3); // tirs, sang et cadavres sous le HUD
-      const canvasHost = document.getElementById('game-canvas');
-      const blocks = [...document.querySelectorAll('#hud .hud-block')].filter((b) => !b.hidden && b.getBoundingClientRect().width > 0);
-      // Le HUD laisse passer les touchers (pointer-events: none) : elementFromPoint l'ignorerait. Pour lire l'ordre des couches, il est
-      // rendu « touchable » le temps de la mesure (feuille de style ajoutée puis retirée ; rien d'autre ne change).
-      const probe = document.createElement('style');
-      probe.textContent = '#hud, #hud * { pointer-events: auto !important; }';
-      document.head.append(probe);
-      const covered = blocks.filter((b) => {
-        const box = b.getBoundingClientRect();
-        const top = document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2);
-        return !top || canvasHost.contains(top) || !document.getElementById('hud').contains(top); // au-dessus : le HUD (le bloc ou sa colonne)
-      }).map((b) => b.id);
-      probe.remove();
-      return { blocks: blocks.length, covered, domInCanvas: [...canvasHost.querySelectorAll('*')].map((n) => n.tagName), blood: zs.getState().persos.blood.taches };
-    });
-    expect(r.blocks).toBeGreaterThan(2);
-    expect(r.covered).toEqual([]);
-    expect(r.domInCanvas).toEqual(['CANVAS']); // personnages, sang et cadavres sont dessinés dans le canevas, jamais en HTML
-  });
-
-  test('console propre (hors messages du pilote GL) par défaut', async ({ page }) => {
-    const errors = [];
-    page.on('pageerror', (e) => errors.push(e.message));
-    page.on('console', (m) => (m.type() === 'error' || (m.type() === 'warning' && !/GL Driver|GPU stall|ReadPixels/.test(m.text()))) && errors.push(m.text()));
-    await open(page, '&nospawn=1');
-    await spawnTen(page);
-    await page.evaluate(() => window.__zs.step(5));
-    expect(errors).toEqual([]);
-  });
-
-  test('axe : aucune violation par défaut', async ({ page }) => {
-    await open(page, '&nospawn=1');
-    await spawnTen(page);
-    await page.evaluate(() => window.__zs.step(1));
-    const r = await new AxeBuilder({ page }).analyze();
-    expect(r.violations.map((v) => `${v.id} : ${v.nodes.length}`)).toEqual([]);
-  });
 });
 
 // Lot 3m-C : leviers de chargement (le sang ne coûte rien tant qu'il ne sert pas) et compatibilité avec les autres refontes de lot-4b.
@@ -435,12 +437,12 @@ test.describe('personnages intégrés : chargement et compatibilité', () => {
     expect(s.kills).toBeGreaterThan(0);
   });
 
-  test('?perso=actuel&sang=0 : ni la table des choix, ni le sang, ni les modules v2 ne sont demandés', async ({ page }) => {
+  test('?perso=actuel&sang=0 (lot 5e : comme ?sang=0) : table des choix et modules v2 demandés, ni le sang ni l\'ancien modèle', async ({ page }) => {
     const files = [];
     page.on('request', (r) => files.push(new URL(r.url()).pathname));
     await open(page, '&nospawn=1&perso=actuel&sang=0');
-    for (const f of ['/data/game/persos-choix.json', '/js/game/blood-fx.js', '/js/game/character-v2.js', '/js/game/persos-runtime.js']) expect(files).not.toContain(f);
-    for (const f of OLD) expect(files).toContain(f);
+    for (const f of ['/data/game/persos-choix.json', '/js/game/character-v2.js', '/js/game/persos-runtime.js']) expect(files).toContain(f);
+    for (const f of ['/js/game/blood-fx.js', ...OLD]) expect(files).not.toContain(f);
   });
 
   test('sang au premier usage : aucune tache ni particule avant le premier impact, puis des taches', async ({ page }) => {

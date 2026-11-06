@@ -62,6 +62,6 @@ describe('après le retrait des aperçus par lot (lot 4c)', () => {
     const src = readFileSync('scripts/assemble.mjs', 'utf8');
     expect(src).not.toMatch(/writeFileSync\([^)]*lots\.json/);
     expect(src).not.toContain('js/lots.js');
-    expect(src).toContain("rmSync(join(out, 'lots.json')");
+    expect(src).toMatch(/const FOREIGN = \[[^\]]*'lots', 'lots\.json'/); // lot 5g : retirés de chaque build copié (avant : rmSync(join(out, 'lots.json')))
   });
 });

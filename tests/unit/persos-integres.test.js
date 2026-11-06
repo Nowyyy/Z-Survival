@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import * as THREE from 'three';
 import { execSync } from 'node:child_process';
-import { readFileSync, readdirSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { DEFAULTS, PERSO_VALUES, SANG_VALUES, SLOTS, USURE_VALUES, VARIANTES, needsChoices, readPersosParams, slotVariants } from '../../js/game/persos-params.js';
 import { choiceOptions, createPersos } from '../../js/game/persos-runtime.js';
 import { createV2Kit } from '../../js/game/character-v2.js';
@@ -13,7 +13,7 @@ import { characters, load, poses } from '../../scripts/personnages/lib.mjs';
 const LOT_4C = ['.github/workflows/pages.yml', 'index.html', 'data/i18n/fr.json', 'tests/unit/data-changelog.test.js', 'tests/e2e/dev.spec.js'];
 const notLot4c = (files) => (files ?? []).filter((f) => !LOT_4C.includes(f));
 
-// Lot 3m : les personnages choisis (data/game/persos-choix.json) deviennent le défaut du jeu ; l'ancien modèle reste derrière ?perso=actuel.
+// Lot 3m : les personnages choisis (data/game/persos-choix.json) deviennent le défaut du jeu ; lot 5e : l'ancien modèle (?perso=actuel) est retiré.
 const choix = JSON.parse(readFileSync('data/game/persos-choix.json', 'utf8'));
 const raw = readFileSync('data/game/persos-choix.json', 'utf8');
 const slotOf = (id) => characters.slots.find((s) => s.id === id);
@@ -37,15 +37,14 @@ describe('table des choix (data/game/persos-choix.json)', () => {
     expect(Object.keys(choix.persos).sort()).toEqual([...SLOTS].sort());
     for (const s of SLOTS) expect(raw.match(new RegExp(`"${s}"\\s*:`, 'g'))).toHaveLength(1);
   });
-  it.each(SLOTS)('%s : variante connue, présente dans characters-v2.json (ou actuel)', (s) => {
+  it.each(SLOTS)('%s : variante connue, présente dans characters-v2.json (lot 5e : « actuel » n\'est plus permis)', (s) => {
     const c = choix.persos[s];
     expect(VARIANTES).toContain(c.variante);
-    if (c.variante !== 'actuel') expect(variantOf(s, c.variante)).toBeTruthy();
+    expect(variantOf(s, c.variante)).toBeTruthy();
     expect(c.source).toBe('passation-personnages-4b.md');
   });
   it.each(SLOTS)('%s : macros connues, dans les bornes de la variante', (s) => {
     const c = choix.persos[s];
-    if (c.variante === 'actuel') return;
     const defs = variantOf(s, c.variante).macros;
     for (const [k, v] of Object.entries(c.macros ?? {})) {
       expect(MACRO_IDS).toContain(k);
@@ -64,7 +63,7 @@ describe('table des choix (data/game/persos-choix.json)', () => {
   it.each(SLOTS)('%s : style A, B ou C (style des données de la variante, le fichier ne le précise pas)', (s) => {
     const c = choix.persos[s];
     expect(['A', 'B', 'C']).toContain(c.style);
-    if (c.variante !== 'actuel') expect(c.style).toBe(variantOf(s, c.variante).style);
+    expect(c.style).toBe(variantOf(s, c.variante).style);
   });
   it.each(SLOTS)('%s : tenues « toutes » ou liste de tenues existantes, sans doublon', (s) => {
     const c = choix.persos[s];
@@ -86,11 +85,12 @@ describe('table des choix (data/game/persos-choix.json)', () => {
     expect(choix.usure).toBe('auto');
     expect(USURE_VALUES).toContain(String(choix.usure));
   });
-  it('un personnage « actuel » est accepté (ancien modèle) ; absent ou inconnu : actuel', () => {
+  // Lot 5e : l'ancien modèle est retiré ; « actuel », une variante inconnue ou absente : variante A (repli du chargeur).
+  it('« actuel » (ancien modèle retiré), absent ou inconnu : A', () => {
     const t = { persos: { joueur: { variante: 'actuel' }, marcheur: { variante: 'B' }, petit: { variante: 'Z' } } };
-    expect(slotVariants('choix', t)).toEqual({ joueur: 'actuel', marcheur: 'B', petit: 'actuel', voute: 'actuel', grand: 'actuel' });
+    expect(slotVariants('choix', t)).toEqual({ joueur: 'A', marcheur: 'B', petit: 'A', voute: 'A', grand: 'A' });
     const p = readPersosParams('', t);
-    expect(p).toMatchObject({ v2: true, actuel: true, active: true });
+    expect(p).toMatchObject({ v2: true, active: true });
   });
 });
 
@@ -98,19 +98,19 @@ describe('paramètres : ?perso=choix par défaut', () => {
   it('défaut : choix, sang et usure de la table, les 5 personnages en « riche »', () => {
     expect(DEFAULTS.perso).toBe('choix');
     const p = readPersosParams('', choix);
-    expect(p).toMatchObject({ perso: 'choix', sang: '1', usure: 'auto', v2: true, actuel: false, active: true });
+    expect(p).toMatchObject({ perso: 'choix', sang: '1', usure: 'auto', v2: true, active: true });
     expect(p.slots).toEqual({ joueur: 'riche', marcheur: 'riche', petit: 'riche', voute: 'riche', grand: 'riche' });
   });
-  it('sans table (illisible ou absente) : tous en ancien modèle, sang 0', () => {
-    expect(readPersosParams('', null)).toMatchObject({ perso: 'choix', sang: '0', v2: false, actuel: true, active: false });
+  it('sans table (illisible ou absente) : tous en variante A (lot 5e, repli), sang 0', () => {
+    expect(readPersosParams('', null)).toMatchObject({ perso: 'choix', sang: '0', v2: true, active: true, slots: { joueur: 'A', marcheur: 'A', petit: 'A', voute: 'A', grand: 'A' } });
   });
   it.each(PERSO_VALUES)('?perso=%s reconnu', (v) => expect(readPersosParams(`?perso=${v}`, choix).perso).toBe(v));
   it.each(['A', 'B', 'C', 'riche'])('?perso=%s force la variante pour les 5 personnages', (v) => {
     expect(new Set(Object.values(readPersosParams(`?perso=${v}`, choix).slots))).toEqual(new Set([v]));
   });
-  it('?perso=actuel : tout l\'ancien modèle ; sang de la table, sauf ?sang=', () => {
-    expect(readPersosParams('?perso=actuel', choix)).toMatchObject({ v2: false, actuel: true, sang: '1', active: true });
-    expect(readPersosParams('?perso=actuel&sang=0', choix)).toMatchObject({ active: false });
+  it('?perso=actuel (lot 5e : ancien modèle retiré) : valeur inconnue, défaut (choix) ; ?perso=actuel&sang=0 = ?sang=0', () => {
+    expect(readPersosParams('?perso=actuel', choix)).toMatchObject({ perso: 'choix', v2: true, sang: '1', active: true });
+    expect(readPersosParams('?perso=actuel&sang=0', choix)).toMatchObject(readPersosParams('?sang=0', choix));
   });
   it.each(SANG_VALUES)('?sang=%s l\'emporte sur la table', (v) => expect(readPersosParams(`?sang=${v}`, choix).sang).toBe(v));
   it.each(USURE_VALUES)('?usure=%s', (v) => expect(readPersosParams(`?usure=${v}`, choix).usure).toBe(v === 'auto' ? 'auto' : Number(v)));
@@ -120,13 +120,13 @@ describe('paramètres : ?perso=choix par défaut', () => {
   it('entrées hostiles : non-chaîne, très longue, table hostile : défauts sans exception', () => {
     for (const s of [null, undefined, 42, {}, `?perso=${'A'.repeat(100000)}`, '?perso=%E0%A4%A', '?perso=<script>']) expect(() => readPersosParams(s, choix)).not.toThrow();
     for (const t of [null, 42, 'x', [], { persos: 3 }, { persos: { joueur: null } }, { sang: {}, usure: [] }]) expect(() => readPersosParams('', t)).not.toThrow();
-    expect(readPersosParams('', { persos: { joueur: { variante: '__proto__' } }, sang: 'tout' })).toMatchObject({ sang: '0', actuel: true });
+    expect(readPersosParams('', { persos: { joueur: { variante: '__proto__' } }, sang: 'tout' })).toMatchObject({ sang: '0', slots: { joueur: 'A' } });
   });
-  it('la table n\'est demandée que si elle sert (?perso=actuel&sang=0 : jamais)', () => {
+  it('la table n\'est demandée que si elle sert (lot 5e : ?perso=actuel est inconnu, la table sert)', () => {
     expect(needsChoices('')).toBe(true);
     expect(needsChoices('?perso=B')).toBe(true);
     expect(needsChoices('?perso=B&sang=1&usure=2')).toBe(false);
-    expect(needsChoices('?perso=actuel&sang=0')).toBe(false);
+    expect(needsChoices('?perso=actuel&sang=0')).toBe(true);
     expect(needsChoices('?perso=choix&sang=0&usure=0')).toBe(true);
   });
   it('?perso=, ?sang= et ?usure= ne sont jamais des paramètres d\'essai (readOnlyParams de save.json)', () => {
@@ -138,7 +138,7 @@ describe('paramètres : ?perso=choix par défaut', () => {
   });
 });
 
-describe('chargeur : l\'ancien modèle n\'est importé que s\'il sert', () => {
+describe('chargeur : l\'ancien modèle est retiré (lot 5e)', () => {
   const loader = readFileSync('js/game/persos-loader.js', 'utf8');
   const game = readFileSync('js/game/game.js', 'utf8');
   it('game.js n\'importe plus pose.js ni character.js : le modèle vient du chargeur', () => {
@@ -146,9 +146,9 @@ describe('chargeur : l\'ancien modèle n\'est importé que s\'il sert', () => {
     expect(game).not.toMatch(/^import .*\.\/character\.js'/m);
     expect(game).toContain('const { computePose, createKit, createCharacter } = persos.model;');
   });
-  it('persos-loader.js : pose.js et character.js importés dynamiquement, seulement si un personnage est « actuel »', () => {
+  it('persos-loader.js : ni pose.js ni character.js, pas même par import dynamique (lot 5e : fichiers supprimés)', () => {
     expect(loader).not.toMatch(/^import .*(pose|character)\.js/m);
-    expect(loader).toMatch(/params\.actuel \? await Promise\.all\(\[import\('\.\.\/core\/pose\.js'\), import\('\.\/character\.js'\)\]\)/);
+    expect(loader).not.toMatch(/import\('[^']*(core\/pose|\/character)\.js'\)/);
     expect(loader.split('\n').filter((l) => l.trim()).length).toBeLessThanOrEqual(30);
   });
   it('aucun autre module chargé par défaut n\'importe pose.js ni character.js de façon statique', () => {
@@ -162,52 +162,43 @@ describe('chargeur : modules réellement importés (Node)', () => {
   afterEach(() => {
     vi.unstubAllGlobals();
     vi.resetModules();
-    vi.doUnmock('../../js/core/pose.js');
   });
   const serve = (calls) => vi.fn((path) => {
     calls.push(path);
     return Promise.resolve({ ok: true, json: () => Promise.resolve(JSON.parse(readFileSync(path, 'utf8'))) });
   });
-  it('défaut complet v2 : pose.js n\'est jamais évalué ; la table des choix est lue', async () => {
-    const evaluated = vi.fn();
-    vi.doMock('../../js/core/pose.js', async (orig) => {
-      evaluated();
-      return orig();
-    });
+  it('défaut complet v2 : aucun module de l\'ancien modèle (lot 5e : supprimés) ; la table des choix est lue', async () => {
     const calls = [];
     vi.stubGlobal('fetch', serve(calls));
     const { loadPersos } = await import('../../js/game/persos-loader.js');
     const p = await loadPersos('');
-    expect(evaluated).not.toHaveBeenCalled();
+    expect(existsSync('js/core/pose.js') || existsSync('js/game/character.js')).toBe(false);
     expect(calls).toContain('data/game/persos-choix.json');
     expect(p.params.slots.joueur).toBe('riche');
     expect(p.model.computePose({ state: 'marche' })).toEqual({});
   });
-  it('?perso=actuel : l\'ancien modèle est importé (pose.js évalué, computePose réel)', async () => {
-    const evaluated = vi.fn();
-    vi.doMock('../../js/core/pose.js', async (orig) => {
-      evaluated();
-      return orig();
-    });
+  it('?perso=actuel (lot 5e : valeur inconnue) : défaut choix, modèle v2 (aucune pose de l\'ancien modèle), chargeur actif', async () => {
     vi.stubGlobal('fetch', serve([]));
     const { loadPersos } = await import('../../js/game/persos-loader.js');
     const p = await loadPersos('?perso=actuel&sang=0');
-    expect(evaluated).toHaveBeenCalled();
-    expect(Object.keys(p.model.computePose({ state: 'marche', phase: 1 })).length).toBeGreaterThan(5);
-    expect(p.attach()).toBeNull();
+    expect(p.params.perso).toBe('choix');
+    expect(p.model.computePose({ state: 'marche', phase: 1 })).toEqual({});
+    expect(p.params.active).toBe(true);
   });
-  it('?perso=actuel&sang=0 : aucune requête (ni table, ni données v2)', async () => {
+  it('?perso=actuel&sang=0 (lot 5e) : comme ?sang=0, la table et les données v2 sont lues', async () => {
     const calls = [];
     vi.stubGlobal('fetch', serve(calls));
     const { loadPersos } = await import('../../js/game/persos-loader.js');
     await loadPersos('?perso=actuel&sang=0');
-    expect(calls).toEqual([]);
+    expect(calls).toEqual(expect.arrayContaining(['data/game/persos-choix.json', 'data/game/characters-v2.json', 'data/game/poses-v2.json']));
   });
-  it('table illisible : repli sans erreur sur l\'ancien modèle', async () => {
-    vi.stubGlobal('fetch', vi.fn(() => Promise.resolve({ ok: false, status: 404 })));
+  it('table illisible : repli sans erreur sur la variante A (lot 5e)', async () => {
+    const calls = [];
+    const ok = serve(calls);
+    vi.stubGlobal('fetch', vi.fn((path) => (path === 'data/game/persos-choix.json' ? Promise.resolve({ ok: false, status: 404 }) : ok(path))));
     const { loadPersos } = await import('../../js/game/persos-loader.js');
     const p = await loadPersos('');
-    expect(p.params).toMatchObject({ actuel: true, v2: false, sang: '0' });
+    expect(p.params).toMatchObject({ v2: true, sang: '0', slots: { joueur: 'A', marcheur: 'A', petit: 'A', voute: 'A', grand: 'A' } });
   });
 });
 
@@ -238,15 +229,15 @@ describe('aiguillage par personnage (character-v2.js, persos-runtime.js)', () =>
     expect(c.joueur.tenues).toEqual(['sable']);
     expect(v2.textureCount()).toBe(0);
   });
-  it('un personnage « actuel » de la table n\'est pas construit en v2 (handles faux)', () => {
+  it('« actuel » dans la table (lot 5e : inconnu) : personnage v2 de la variante A (handles vrai)', () => {
     const t = { ...choix, persos: { ...choix.persos, petit: { ...choix.persos.petit, variante: 'actuel' } } };
     const params = readPersosParams('', t);
     stubs();
     const v2 = createV2Kit({ characters, poses, lookup: () => [200, 180, 160], choice: params.perso, styleOf: params.slots, ...choiceOptions(params, t), zombieIds: variants.zombie.variants.map((v) => v.id), seed: 3 });
     const petit = variants.zombie.variants.findIndex((v) => v.id === 'petit');
-    expect(v2.handles('zombie', petit)).toBe(false);
+    expect(v2.handles('zombie', petit)).toBe(true);
     expect(v2.handles('zombie', (petit + 1) % 4)).toBe(true);
-    expect(v2.choices().petit).toEqual({ variante: 'actuel' });
+    expect(v2.choices().petit).toMatchObject({ variante: 'A' });
   });
   it('style d\'animation de la table : il remplace celui de la variante', () => {
     const t = { ...choix, persos: { ...choix.persos, grand: { ...choix.persos.grand, style: 'C' } } };
@@ -300,7 +291,7 @@ describe('logique inchangée (données et vitesses)', () => {
   it('fichiers de règles et données de logique inchangés par le lot (git diff avec origin/lot-4b)', () => {
     const base = git('merge-base HEAD origin/lot-4b')?.trim();
     if (!base) return;
-    const files = ['js/core/waves.js', 'js/core/projectile.js', 'js/core/ray.js', 'js/core/player-stats.js', 'js/core/siege.js', 'js/core/save.js', 'js/core/economy.js', 'js/core/pose.js', 'js/core/enemy-factory.js',
+    const files = ['js/core/waves.js', 'js/core/projectile.js', 'js/core/ray.js', 'js/core/player-stats.js', 'js/core/siege.js', 'js/core/save.js', 'js/core/economy.js', 'js/core/enemy-factory.js',
       'data/game/enemies.json', 'data/game/gaits.json', 'data/game/zombie-variants.json', 'data/game/windows.json', 'data/game/waves.json', 'data/game/save.json', 'data/game/player.json', 'data/game/economy.json'];
     expect(git(`diff --name-only ${base} -- ${files.join(' ')}`)?.trim()).toBe('');
   });
@@ -325,9 +316,9 @@ describe('rampants dans les escaliers', () => {
 
 describe('projection du budget avec la table des choix', () => {
   const choiceOf = choicesOf(choix);
-  it('choicesOf lit la variante de chaque personnage (inconnue : actuel)', () => {
+  it('choicesOf lit la variante de chaque personnage (inconnue : A, comme le jeu depuis le lot 5e)', () => {
     expect(choiceOf('grand')).toBe('riche');
-    expect(choicesOf({ persos: { grand: { variante: 'X' } } })('grand')).toBe('actuel');
+    expect(choicesOf({ persos: { grand: { variante: 'X' } } })('grand')).toBe('A');
   });
   it.each(['R1', 'R2', 'U1', 'U4'])('%s projeté (défaut, sang de la table) : sous 45 000 triangles et 400 appels', (id) => {
     const p = project(choiceOf, choix.sang)[id];
@@ -337,7 +328,6 @@ describe('projection du budget avec la table des choix', () => {
   it('limites de refonte : 45 000 triangles et 400 appels (décision du propriétaire)', () => expect(LIMITS.refonte).toEqual({ calls: 400, triangles: 45000 }));
   it.each(SLOTS)('%s : coût par personnage dans son budget (1 600 triangles, riche 2 600 ; 4 appels + ombre)', (s) => {
     const v = choiceOf(s);
-    if (v === 'actuel') return;
     const c = characterCost(s, v);
     expect(c.triangles).toBeLessThanOrEqual(v === 'riche' ? characters.budget.richTriangles + 2 * characters.budget.shadowTriangles : characters.budget.triangles + 2 * characters.budget.shadowTriangles);
     expect(c.calls).toBeLessThanOrEqual(characters.budget.calls + characters.budget.shadowCalls);

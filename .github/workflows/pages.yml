@@ -1,7 +1,7 @@
 name: Pages
 
-# Lot 4c : publication par versions. Racine = main (version actuelle), next/ = dev (dernier build de développement), v0.N/ = branche archive
-# (versions figées), lots/ = page de renvoi. Seuls main et dev déclenchent ce workflow (plus aucun aperçu par lot, rien sur archive).
+# Lot 4c : publication par versions ; lot 5g : racine = page « en construction », Recette/ = main, dev/ = dev (dernier build de développement),
+# v0.N/ = branche archive (versions figées), next/ et lots/ = redirections. Seuls main et dev déclenchent ce workflow (rien sur archive).
 on:
   push:
     branches: [main, dev]
@@ -30,35 +30,6 @@ jobs:
       - run: npm ci
       - run: npm run lint
       - run: npm test
-
-  # Tests de bout en bout (rendu logiciel), 4 tranches en parallèle : sur la branche de développement (push ou lancement manuel sur dev).
-  # Avant le lot 4c : sur Pull Request (déclencheur retiré) ; commandes inchangées, rejeu unique par playwright.config.js.
-  e2e:
-    if: github.ref == 'refs/heads/dev'
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    strategy:
-      fail-fast: false
-      matrix:
-        shard: ['1/4', '2/4', '3/4', '4/4']
-    steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
-        with:
-          node-version: 22
-          cache: npm
-      - run: npm ci
-      - run: npm run test:e2e -- --shard=${{ matrix.shard }}
-        env:
-          CI: "true"
-      # En cas d'échec, le rapport des tests est conservé pour comprendre sans relancer.
-      - if: failure()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
-        with:
-          name: test-results-${{ strategy.job-index }}
-          path: test-results
-          if-no-files-found: ignore
-          retention-days: 7
 
   # Déploiement du site complet depuis main ou dev : les deux branches sont toujours reconstruites ensemble (la courante à son commit, l'autre à sa tête).
   deploy:
@@ -106,10 +77,10 @@ jobs:
         if: steps.refs.outputs.dev == 'true'
         working-directory: dev
         run: npm ci && npm run build
-      # L'assembleur et versions.json sont ceux de main (la version publiée décide de la publication).
+      # Lot 5g : l'assembleur est celui de la branche qui déclenche (un push de dev publie l'organisation de dev) ; versions.json est celui de main.
       - name: Assemblage du site
         run: >-
-          node main/scripts/assemble.mjs --main main/_site --versions main/versions.json --out _site
+          node ${{ github.ref == 'refs/heads/dev' && 'dev' || 'main' }}/scripts/assemble.mjs --main main/_site --versions main/versions.json --out _site
           ${{ steps.refs.outputs.dev == 'true' && '--dev dev/_site' || '' }}
           ${{ steps.refs.outputs.archive == 'true' && '--archive archive' || '' }}
       - uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b # v5.0.0

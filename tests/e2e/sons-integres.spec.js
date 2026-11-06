@@ -12,7 +12,6 @@ import { resolveAtelier } from '../../js/core/synth2.js';
 const SIZE = { width: 667, height: 375 };
 const BROWSER_NOISE = /GL Driver Message/;
 const { sounds } = JSON.parse(readFileSync('data/game/sounds.json', 'utf8'));
-const legacy = JSON.parse(readFileSync('data/game/sounds-legacy.json', 'utf8')).sounds;
 const slots = new Map(resolveAtelier(JSON.parse(readFileSync('data/game/sounds-atelier.json', 'utf8'))).slots.map((s) => [s.id, s]));
 const byId = new Map(sounds.map((s) => [s.id, s]));
 const URL = (extra = '') => `/jeu.html?test=1&empty=1&nospawn=1&seed=1${extra}`;
@@ -78,7 +77,7 @@ test.describe('sons intégrés : chargement', () => {
 });
 
 test.describe('sons intégrés : lecture sous les identifiants du jeu', () => {
-  test('pas du joueur, planche arrachée, voix par type : le son et le tampon attendus', async ({ page }) => {
+  test('pas du joueur, planche arrachée, voix par type : le son et le tampon attendus @lent', async ({ page }) => {
     await open(page);
     await unlockReady(page);
     const p = await near(page);
@@ -102,7 +101,7 @@ test.describe('sons intégrés : lecture sous les identifiants du jeu', () => {
     }
   });
 
-  test('versions non préchargées : calculées au premier usage puis gardées ; en attendant, une version prête', async ({ page }) => {
+  test('versions non préchargées : calculées au premier usage puis gardées ; en attendant, une version prête @lent', async ({ page }) => {
     await open(page);
     await unlockReady(page);
     for (let i = 0; i < 12; i += 1) {
@@ -127,7 +126,7 @@ test.describe('sons intégrés : lecture sous les identifiants du jeu', () => {
     }
   });
 
-  test('réparation : au début de la pose, tampon à la durée de pose (calculé au premier usage), arrêt si interrompue', async ({ page }) => {
+  test('réparation : au début de la pose, tampon à la durée de pose (calculé au premier usage), arrêt si interrompue @lent', async ({ page }) => {
     await open(page);
     await unlockReady(page);
     const p = await near(page);
@@ -145,7 +144,7 @@ test.describe('sons intégrés : lecture sous les identifiants du jeu', () => {
     expect((await audio(page)).pack.lazy).toBeGreaterThanOrEqual(1);
   });
 
-  test('vraie réparation en jeu : son au début de la pose de la planche (et non à la planche posée)', async ({ page }) => {
+  test('vraie réparation en jeu : son au début de la pose de la planche (et non à la planche posée) @lent', async ({ page }) => {
     await page.setViewportSize(SIZE);
     await page.goto('/jeu.html?test=1&map=salle&nospawn=1&seed=1&planks=2');
     await waitReady(page);
@@ -176,7 +175,7 @@ test.describe('sons intégrés : lecture sous les identifiants du jeu', () => {
     await open(page);
     await unlockReady(page);
     const a = await audio(page);
-    for (const id of ['tir', 'douille', 'vague-annonce', 'impact-zombie', 'impact-bois']) {
+    for (const id of ['tir', 'douille', 'vague-annonce', 'impact-bois']) { // lot 5a : impact-zombie est devenu l'impact sur la chair de l'atelier
       const r = byId.get(id);
       expect(isAtelier(r)).toBe(false);
       expect(a.sums[`${id}-1`], id).toBe(fp(renderSound(r, 0).samples));
@@ -188,23 +187,6 @@ test.describe('sons intégrés : lecture sous les identifiants du jeu', () => {
 });
 
 test.describe('sons intégrés : ?sons=', () => {
-  test('?sons=ancien : pack d\'avant (recettes chargées à la demande), voix communes à la hauteur du type', async ({ page }) => {
-    const urls = [];
-    page.on('request', (r) => urls.push(r.url()));
-    await open(page, '&sons=ancien');
-    await unlockReady(page);
-    expect(urls.some((u) => u.includes('data/game/sounds-legacy.json'))).toBe(true);
-    const a = await audio(page);
-    expect(a.mode).toBe('ancien');
-    expect(a.loaded).not.toContain('zombie-mort-petit-1');
-    expect(a.sums['pas-1']).toBe(fp(renderSound(legacy.find((r) => r.id === 'pas'), 0).samples));
-    const p = await near(page);
-    await emit(page, [{ type: 'zombieHit', ...p, killed: true, zombie: 'petit' }, { type: 'plankRepairStart', ...p, windowId: 'F', duration: 1.2 }]);
-    await step(page, 0.2);
-    const log = (await audio(page)).log;
-    expect(log.find((e) => e.sound === 'zombie-mort')).toMatchObject({ rate: 1.35 });
-    expect(log.some((e) => e.sound === 'planche-posee')).toBe(false); // l'ancien son de planche sonne à la planche posée
-  });
 
   test('?sons=B : la variante B de l\'atelier (réglages par défaut) pour les sons intégrés', async ({ page }) => {
     await open(page, '&sons=B');
@@ -228,7 +210,7 @@ test.describe('sons intégrés : ?sons=', () => {
 
   test('?sons= ne déclenche pas le mode essai et n\'écrit rien de nouveau', async ({ page }) => {
     await page.setViewportSize(SIZE);
-    await page.goto('/jeu.html?test=1&store=local&seed=1&sons=ancien');
+    await page.goto('/jeu.html?test=1&store=local&seed=1&sons=B'); // lot 5e : ?sons=ancien retiré, essai avec ?sons=B
     await waitReady(page);
     const s = (await page.evaluate(() => window.__zs.getState())).save;
     expect(s).toMatchObject({ readOnly: false, reasons: [] });
@@ -246,7 +228,9 @@ test.describe('sons intégrés : page d\'écoute et hygiène', () => {
     await expect(page.locator('.sound[data-sound="zombie-mort-petit"]')).toHaveAttribute('data-atelier', 'voix-petit-mort');
     await expect(page.locator('.sound[data-sound="pas"] .sound-origin')).toContainText('pas-joueur-dur');
     await expect(page.locator('#pack')).toContainText('mémoire estimée');
-    await expect(page.locator('#pack')).not.toContainText(/8 ?Mo/);
+    await expect(page.locator('#pack')).not.toContainText(/(?<![\d.,])8 ?Mo/); // lot 5a : un poids comme « 15.78 Mo » ne compte pas (chiffre avant le 8)
+    await expect(page.locator('.sound[data-sound="impact-zombie"]')).toHaveAttribute('data-atelier', 'impact-chair'); // lot 5a
+    await expect(page.locator('.sound[data-sound="impact-zombie"] .sound-meta').first()).toContainText('pic');
     await expect(page.locator('a[href="atelier-sons.html"]')).toBeVisible();
     const total = sounds.reduce((n, s) => n + s.variants, 0);
     await expect(page.locator('button.variant')).toHaveCount(total);
@@ -265,5 +249,60 @@ test.describe('sons intégrés : page d\'écoute et hygiène', () => {
     const results = await new AxeBuilder({ page }).analyze();
     expect(results.violations.map((v) => v.id)).toEqual([]);
     expect(problems).toEqual([]);
+  });
+});
+
+// Lot 5a-B : l'impact d'une balle sur un zombie (ancien « cling ») est l'impact sur la chair de l'atelier (emplacement impact-chair, A par défaut),
+// sous le même identifiant ; une balle sur un mur garde l'ancien impact ; ?sons=B la variante B (lot 5e : ?sons=ancien, pack d'avant retiré, est inconnu).
+test.describe('impact sur la chair (lot 5a)', () => {
+  const shootAt = (page, angle, zombie) => page.evaluate(([a, z]) => {
+    const zs = window.__zs;
+    const p = zs.getState().player;
+    const id = z ? zs.spawnEnemy(p.x + 160, p.y) : null;
+    zs.setInput({ aim: { angle: a } });
+    zs.fire(a);
+    for (let i = 0; i < 20; i += 1) zs.step(0.05);
+    const s = zs.getState();
+    return { id, hp: id ? s.enemies.find((e) => e.id === id)?.health ?? 0 : null, log: s.audio.log };
+  }, [angle, zombie]);
+
+  test('une balle sur un zombie joue impact-zombie avec le tampon de l\'impact sur la chair (B par défaut, lot 5a-D) ; une balle sur un mur, l\'ancien impact de pierre', async ({ page }) => {
+    await open(page);
+    await unlockReady(page);
+    const entry = byId.get('impact-zombie');
+    expect(isAtelier(entry)).toBe(true);
+    expect(entry.atelier.slot.id).toBe('impact-chair');
+    const a = await audio(page);
+    expect(a.sums['impact-zombie-1']).toBe(fp(renderChoice(entry, { seed: 1 }).samples));
+    const hit = await shootAt(page, 0, true);
+    const e = hit.log.find((x) => x.sound === 'impact-zombie');
+    expect(e).toBeDefined();
+    expect(e.buffer).toBe(`impact-zombie-${e.variant + 1}`);
+    expect(hit.log.some((x) => x.sound === 'impact-pierre')).toBe(false);
+    expect(a.sums['impact-pierre-1']).toBe(fp(renderSound(byId.get('impact-pierre'), 0).samples));
+    // Mur : un pilier de la carte par défaut (?empty=1 n'a aucun obstacle de tir), comme tests/e2e/carte-jeu.spec.js.
+    const pillar = JSON.parse(readFileSync('data/game/maps/rez-de-chaussee/world.json', 'utf8')).pillars.find((q) => q.id === 'pilier-7');
+    await page.goto('/jeu.html?test=1&nospawn=1&seed=1');
+    await waitReady(page);
+    await unlockReady(page);
+    await page.evaluate(([x, y]) => window.__zs.setPlayer(x, y), [pillar.x - 150, pillar.y + pillar.h / 2]);
+    const wall = await shootAt(page, 0, false);
+    const w = wall.log.find((x) => x.sound.startsWith('impact-'));
+    expect(w.sound).toBe('impact-pierre');
+    expect(w.buffer).toBe(`impact-pierre-${w.variant + 1}`);
+    expect(wall.log.some((x) => x.sound === 'impact-zombie')).toBe(false);
+  });
+
+  test('?sons=ancien (lot 5e : pack d\'avant retiré, valeur inconnue) : l\'impact sur la chair par défaut ; ?sons=C : la variante C', async ({ page }) => {
+    await open(page, '&sons=ancien');
+    await unlockReady(page);
+    expect((await audio(page)).sums['impact-zombie-1']).toBe(fp(renderChoice(byId.get('impact-zombie'), { seed: 1 }).samples));
+    const hit = await shootAt(page, 0, true);
+    expect(hit.log.some((x) => x.sound === 'impact-zombie')).toBe(true);
+    await open(page, '&sons=C');
+    await unlockReady(page);
+    const entry = byId.get('impact-zombie');
+    expect((await audio(page)).sums['impact-zombie-1']).toBe(fp(renderChoice(entry, { seed: 1, mode: 'C', slots }).samples));
+    expect((await audio(page)).sums['impact-zombie-1']).not.toBe(fp(renderChoice(entry, { seed: 1 }).samples));
   });
 });

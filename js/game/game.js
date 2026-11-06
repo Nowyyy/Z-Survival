@@ -44,16 +44,17 @@ import { DOWN_TEXTS, FLOOR_TEXTS, fmt, MONEY_TEXTS, SPLASH_TEXTS, WINDOW_INITIAL
 import { createThreeTextures } from './textures.js';
 import { buildWorld, createCamera } from './world.js';
 
-// Lot 3j : personnages v2 (« riche » par défaut) et sang (complet par défaut) ; ?perso=actuel&sang=0 : le jeu d'avant (rien de plus chargé).
-const persos = await import('./persos-loader.js').then((m) => m.loadPersos(location.search));
-const { computePose, createKit, createCharacter } = persos.model; // lot 3m : ancien modèle (pose.js, character.js) importé seulement si un personnage est « actuel »
+// Lot 3j : personnages v2 (« riche » par défaut) et sang (complet par défaut) ; lot 5e : l'ancien modèle (?perso=actuel) est retiré.
+const gfxBoot = await import('./graphics-boot.js').then((m) => m.graphicsBoot()).catch(() => null); // lot 5b : préréglage (variante, sang, cadavres)
+const persos = await import('./persos-loader.js').then((m) => m.loadPersos(gfxBoot?.persosSearch ?? location.search, { corpses: gfxBoot?.corpses ?? null }));
+const { computePose, createKit, createCharacter } = persos.model; // modèle v2 du chargeur (persos-loader.js) : chaque personnage est construit par kit.v2
 const RECOIL_TIME = 0.12;
 const HIT_FLASH_TIME = 0.1;
 const FIRE_POSE_TIME = 0.3;
 const STEP = 0.05; // pas de la simulation avancée à la demande (hook de test step)
 const STAIR_CRAWL_LIFT = 14; // unités dont un zombie rampant est relevé dans un escalier
 const TAU = Math.PI * 2;
-// Pose de chaque allure (pose.js : « zombie » reste l'équivalent de « marche »).
+// Pose de chaque allure (états de pose d'avant le lot 3j : « zombie » reste l'équivalent de « marche »).
 const GAIT_POSE = { lent: 'lent', marche: 'zombie', rampe: 'rampe', course: 'course' };
 // Surcharge temporaire de waves.json (hook de test) : les sections objet sont fusionnées, le reste est remplacé.
 const mergeParams = (base, patch) => Object.fromEntries(Object.entries({ ...base, ...patch }).map(([k, v]) => [k, v && typeof v === 'object' && !Array.isArray(v) && patch?.[k] && typeof patch[k] === 'object' && !Array.isArray(patch[k]) ? { ...base[k], ...patch[k] } : v]));
@@ -103,7 +104,8 @@ export function createGame(ctx) {
   let renderer;
   try {
     // ?test=1 : le tampon de dessin est conservé pour que sampleScreen puisse relire l'image.
-    renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance', preserveDrawingBuffer: params.test });
+    const antialias = ctx.graphics?.antialias ?? true; // lot 5b : préréglage (réglage « load »)
+    renderer = new THREE.WebGLRenderer({ antialias, powerPreference: 'high-performance', preserveDrawingBuffer: params.test });
   } catch {
     return null;
   }
@@ -126,6 +128,9 @@ export function createGame(ctx) {
   const rig = createCamera(render.camera, cfg.camera, layout, params.tilt, params.zoom);
   const kit = createKit({ textures, variants: ctx.variants, hit: palette.hit });
   const pv = persos?.attach({ kit, world, render, palette, variants: ctx.variants, seed: ctx.seed }) ?? null; // lot 3j : kit.v2 et sang
+  const P = ctx.profiler ?? null; // lot 5b : profileur de ?perf=1 (absent par défaut : les appels « P?.… » ne font rien)
+  P?.attach({ renderer, scene: world.scene });
+  ctx.graphics?.attach({ renderer, world, pv, resize: applySize, params }); // lot 5b : réglages « live » du préréglage (Élevé : rien ne change)
   const effects = createEffects(world.effectsRoot, palette, { gunHeight: render.gunHeight, bulletRadius: cfg.weapon.bulletRadius });
   const hud = createHud(ctx.dict);
   const floorFade = createFloorFade();
@@ -1022,6 +1027,7 @@ export function createGame(ctx) {
     }
 
     pv?.sync(pf(), waveInfo(sim.waves).wave); // lot 3j : instances du sang et palier d'usure
+    P?.mark('poses');
     effects.update({
       // Lot 3j (demande du propriétaire) : pas de laser pendant la réparation (la visée continue : un zombie visé arrête la réparation).
       laser: laser && !sim.dead && !Object.values(sim.repair).some((r) => r.repairing) ? laser : null,
@@ -1032,6 +1038,7 @@ export function createGame(ctx) {
       flashSize: reduced ? 4 : 7,
       unitsPerPixel: size.unitsPerPixel,
     });
+    P?.mark('effets');
     hud.update(sim.player, sim.kills, waveInfo(sim.waves), { chutes: sim.down.chutes, floor: multi ? pf() : null, maxWave: zoneCfg && !sim.waves.endless ? zoneCfg.wavesPerWorld : null, money: { balance: bank.balance(), gain: bank.gain() }, time: sim.time, trial: trialMode });
     floorFade.set(sim.trView.veil);
     hud.updateDown(sim.down, sim.dead, cfg.down); // lot 3l : E2-10 dans la colonne centrale du HUD (js/game/hud.js)
@@ -1041,12 +1048,13 @@ export function createGame(ctx) {
     updateNextZone();
     world.debris?.sync(sim.debris.items, reduced);
     splashView.apply(sim.splashView);
+    P?.mark('hud');
   }
 
   // La caméra suit le joueur (js/core/camera.js), la lumière et sa carte d'ombres suivent la caméra.
   function followCamera(dt) {
     rig.follow(dt, sim.player.x, sim.player.y);
-    world.frame?.(dt, sim.player.x, sim.player.y, rig.camera.position); // lot 3g (retours du propriétaire) : feux, mur percé autour du joueur caché
+    world.frame?.(dt, sim.player.x, sim.player.y, rig.camera.position, rig.camera); // lot 5b-C : caméra (feux hors champ) ; lot 3g (retours du propriétaire) : feux, mur percé autour du joueur caché
     // Carte d'ombres : demi-diagonale de la vue au sol, avec de la marge pour la perspective.
     world.followSun(rig.view.target.x, rig.view.target.y, Math.hypot(rig.view.ground.width / 2, (rig.view.ground.north + rig.view.ground.south) / 2) * 1.3);
   }
@@ -1070,18 +1078,25 @@ export function createGame(ctx) {
   let frameId = 0;
   function frame(now) {
     frameId = requestAnimationFrame(frame);
+    if (ctx.gate && !ctx.gate(now)) return; // lot 5b : ?cap=N (expérience, jamais par défaut) : image sautée, le temps écoulé s'accumule
     const dt = last === null ? 0 : clampDt((now - last) / 1000);
     last = now;
     ctx.vhs?.update(now / 1000); // horloge d'effet : secondes réelles, elle continue pendant la pause
     const paused = ctx.ui.isPaused();
+    P?.begin(now, paused);
+    ctx.graphics?.frame(now, !paused && !sim.dead && !sim.worldOver, sim.waves?.phase); // lot 5b : Auto (baisse entre deux manches)
     // En pause rien ne bouge : une dernière image suffit (ou après un redimensionnement), puis on n'affiche plus rien.
     if (paused && !stale) return;
     stale = !paused;
     if (!paused && !sim.dead && !sim.worldOver) step(dt);
+    P?.mark('sim');
     draw(paused ? 0 : dt);
     followCamera(paused ? 0 : dt);
+    P?.mark('monde');
     renderer.render(world.scene, rig.camera);
+    P?.mark('rendu');
     lastInfo = { calls: renderer.info.render.calls, triangles: renderer.info.render.triangles };
+    P?.end(sim);
   }
 
   // Test : image à jour tout de suite (positions, caméra), recopiée dans un canvas 2D pour en lire les pixels.
@@ -1174,6 +1189,9 @@ export function createGame(ctx) {
   applySize();
   draw(0);
   followCamera(0);
+  renderer.compile(world.scene, rig.camera); // lot 5b-C : programmes de toutes les matières (autre étage, feux hors champ, sang) compilés avant la première image
+  renderer.render(world.scene, rig.camera); // lot 5b-G : premier rendu (textures, géométries, ombres) derrière l'écran de préparation
+  renderer.getContext().finish?.(); // lot 5b-G : attend la fin de ce rendu, pour que la première image du jeu n'en paie rien
   if (!document.hidden) start();
 
   return {
@@ -1420,6 +1438,8 @@ export function createGame(ctx) {
         ...(pv ? { persos: pv.state(lastInfo) } : {}), // lot 3j
         splash: splashView.readout(),
         vhs: ctx.vhs.readout(),
+        perf: ctx.perfState?.() ?? null, // lot 5b : mesures de ?perf=1 (null sans le paramètre)
+        graphics: ctx.graphics?.state() ?? null, // lot 5b : préréglage, réglages appliqués, origine du choix
       };
     },
   };

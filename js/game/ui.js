@@ -13,7 +13,14 @@ export function createUi(dict, handlers) {
     vhs: $('btn-vhs'), restart: $('btn-restart'), replay: $('btn-replay'), endKills: $('end-kills'), endWave: $('end-wave'),
     endBox: $('end-box'), endTitle: $('end-title-text'), pauseBalance: $('pause-balance-text'), endEarned: $('end-earned'), endEarnedText: $('end-earned-text'), endBonus: $('end-bonus'), endBonusText: $('end-bonus-text'),
     endBalance: $('end-balance'), endBest: $('end-best'), endRecord: $('end-record'), endRecordText: $('end-record-text'), endSave: $('end-save'),
+    gfxCurrent: $('gfx-current'), gfxChoices: [...document.querySelectorAll('#gfx-row .gfx-choice')], gfxConfirm: $('gfx-confirm'), gfxConfirmText: $('gfx-confirm-text'),
+    gfxOk: $('gfx-confirm-ok'), gfxCancel: $('gfx-confirm-cancel'),
   };
+  // Lot 5b : clés des textes de la ligne « Graphismes » (fr.json).
+  const GFX = { auto: 'game.gfx.auto', faible: 'game.gfx.faible', moyen: 'game.gfx.moyen', eleve: 'game.gfx.eleve' };
+  const GFX_ERRORS = { verrouille: 'game.gfx.error.verrouille', echec: 'game.gfx.error.echec', indisponible: 'game.gfx.error.indisponible' };
+  let gfxPending = null;
+  let gfxOpener = null;
   const rotateQuery = matchMedia(PORTRAIT_PHONE);
   const canFullscreen = Boolean(document.fullscreenEnabled && document.documentElement.requestFullscreen);
   let hasAudio = false;
@@ -46,6 +53,10 @@ export function createUi(dict, handlers) {
     },
 
     togglePause() {
+      if (gfxPending !== null) {
+        ui.closeGraphicsConfirm();
+        return;
+      }
       if (els.pausePanel.hidden) ui.openPause();
       else ui.closePause();
     },
@@ -108,6 +119,44 @@ export function createUi(dict, handlers) {
       els.sound.textContent = dict[audio.muted ? 'game.sound.off' : 'game.sound.on'];
     },
   };
+
+  // Lot 5b : ligne « Graphismes » de la pause : choix de l'appareil (aria-pressed) et préréglage actif (« Auto (Moyen) », « Auto (Moyen, baissé) »).
+  ui.syncGraphics = (state) => {
+    if (!state || !els.gfxCurrent) return;
+    const name = (id) => dict[GFX[id]] ?? id;
+    const key = state.auto ? (state.downgraded ? 'game.gfx.current.lowered' : 'game.gfx.current.auto') : state.origin === 'parametre' ? 'game.gfx.current.url' : null;
+    els.gfxCurrent.textContent = key ? fmt(dict[key], { preset: name(state.preset) }) : name(state.preset);
+    for (const b of els.gfxChoices) b.setAttribute('aria-pressed', String(b.dataset.gfx === state.choice));
+  };
+  ui.closeGraphicsConfirm = () => {
+    gfxPending = null;
+    els.gfxConfirm.hidden = true;
+    els.gfxOk.hidden = false;
+    gfxOpener?.focus();
+  };
+  for (const b of els.gfxChoices) {
+    b.addEventListener('click', () => {
+      gfxPending = b.dataset.gfx;
+      gfxOpener = b;
+      els.gfxConfirmText.textContent = fmt(dict['game.gfx.confirm.text'], { choice: dict[GFX[gfxPending]] ?? gfxPending });
+      els.gfxOk.hidden = false;
+      els.gfxConfirm.hidden = false;
+      els.gfxCancel.focus();
+    });
+  }
+  els.gfxCancel?.addEventListener('click', () => ui.closeGraphicsConfirm());
+  els.gfxOk?.addEventListener('click', () => {
+    if (gfxPending === null) return;
+    const result = handlers.onGraphicsChoice?.(gfxPending);
+    const error = result && !result.ok ? GFX_ERRORS[result.status] ?? null : null;
+    if (error) {
+      els.gfxConfirmText.textContent = dict[error];
+      els.gfxOk.hidden = true;
+      els.gfxCancel.focus();
+      return;
+    }
+    ui.closeGraphicsConfirm();
+  });
 
   ui.syncVhs = (vhs) => {
     const reduced = Boolean(vhs?.reducedMotion);

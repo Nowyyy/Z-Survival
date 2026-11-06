@@ -1,24 +1,21 @@
-// Atelier des personnages (lot 3j) : page technique. Compare les personnages actuels du jeu (js/game/character.js et js/core/pose.js,
-// inchangés) et les variantes v2 (js/game/character-v2.js, js/core/pose-v2.js) dans le rendu du jeu (lumière, brume, ombres de render.json),
+// Atelier des personnages (lot 3j) : page technique. Compare les variantes v2 (js/game/character-v2.js, js/core/pose-v2.js ; lot 5e :
+// l'ancien modèle « actuel » est retiré du jeu et de la page) dans le rendu du jeu (lumière, brume, ombres de render.json),
 // à l'échelle du jeu à 667 × 375, ×2 et ×4 ; mesures, curseurs et « Mes choix » (texte à copier, rien n'est enregistré).
 // ?test=1 expose window.__zsPersos (état, réglages, pas de temps simulé) ; sans ?test=1, rien n'est exposé.
 import * as THREE from 'three';
 import { translate } from '../i18n.js';
-import { createCharacter, createKit } from '../game/character.js';
 import { createV2Kit } from '../game/character-v2.js';
 import { createTokenLookup, readPalette } from '../game/palette.js';
 import { createThreeTextures, generateTextureData } from '../game/textures.js';
-import { computePose } from '../core/pose.js';
 import { PLAYER_ANIMS, ZOMBIE_ANIMS, cycleSeconds, rigOf } from '../core/pose-v2.js';
 import { ANIM_MACROS, MACRO_IDS, formatChoices, wearTier } from '../core/persos-variants.js';
-import { buildSpec, createTextureData, meanColor, regionRect } from '../core/texgen.js';
+import { buildSpec, createTextureData, meanColor } from '../core/texgen.js';
 import { ARENA_STEP, createArena, stepArena } from '../core/arena.js';
 import { LEVELS, woundTier } from '../core/blood.js';
 import { createBloodFx } from '../game/blood-fx.js';
 import { createMeasures, gameView } from './measures.js';
 import { VIEWS, createStage, viewCamera } from './scene.js';
 
-const TAU = Math.PI * 2;
 const query = new URLSearchParams(location.search);
 const testMode = query.get('test') === '1';
 const $ = (id) => document.getElementById(id);
@@ -42,14 +39,12 @@ status.textContent = t('dev.persos.loading');
 const lookup = createTokenLookup();
 const palette = readPalette();
 const SLOTS = characters.slots.map((s) => s.id);
-const VARIANTS = ['actuel', 'A', 'B', 'C', 'riche'];
+const VARIANTS = ['A', 'B', 'C', 'riche'];
 const FLOOR_IDS = { carrelage: 'sol-salle', herbe: 'herbe', route: 'route', escalier: 'mur', tache: 'sol-tache' };
 const GAIT_OF = { marcheLente: 'lent', marche: 'marche', rampe: 'rampe', course: 'course', escalier: 'marche', attente: 'marche' };
-const V1_STATE = { attente: 'zombie', marcheLente: 'lent', marche: 'zombie', rampe: 'rampe', course: 'course', arracher: 'arracher', escalade: 'escalade', attaque: 'zombie', touche: 'zombie', mortAvant: 'zombie', mortArriere: 'zombie', effondrement: 'zombie', escalier: 'zombie', repos: 'arret', tir: 'tir', terre: 'terre', relevage: 'arret', reparation: 'arret' };
-const V1_EXACT = new Set(['marcheLente', 'marche', 'rampe', 'course', 'arracher', 'escalade', 'repos', 'tir', 'terre', 'attente']);
 const SPEEDS = [0.25, 0.5, 1, 2];
 
-// --- Textures : sols du jeu, sol taché (taches générées), atlas des personnages actuels -------------------------------------------------
+// --- Textures : sols du jeu, sol taché (taches générées) --------------------------------------------------------------------------------
 const entries = texturesJson.textures.filter((e) => ['sol-salle', 'herbe', 'route', 'mur', 'atlas-persos', 'sol-exterieur', 'trottoir'].includes(e.id));
 const generated = await generateTextureData(entries, { lookup, wait: () => Promise.resolve(), sliceMs: 1e9 });
 const salle = generated.items.find((i) => i.entry.id === 'sol-salle');
@@ -69,23 +64,6 @@ for (let y = 0; y < salle.height; y += 1) {
 generated.items.push({ entry: { ...salle.entry, id: 'sol-tache' }, width: salle.width, height: salle.height, data: stainedData });
 const floorMean = (id) => meanColor(createTextureData(buildSpec(texturesJson.textures.find((e) => e.id === id), lookup)));
 const floorMeans = { carrelage: floorMean('sol-salle'), herbe: floorMean('herbe'), terre: floorMean('sol-exterieur'), route: floorMean('route'), trottoir: floorMean('trottoir'), escalier: floorMean('mur') };
-const atlasItem = generated.items.find((i) => i.entry.id === 'atlas-persos');
-const atlasMeans = {};
-for (const r of atlasItem.entry.params.regions) {
-  const rect = regionRect(atlasItem.width, r);
-  const sum = [0, 0, 0];
-  let k = 0;
-  for (let y = Math.round(rect.v0 * atlasItem.height); y < Math.round(rect.v1 * atlasItem.height); y += 1) {
-    for (let x = Math.round(rect.u0 * atlasItem.width); x < Math.round(rect.u1 * atlasItem.width); x += 1) {
-      const i = (y * atlasItem.width + x) * 4;
-      sum[0] += atlasItem.data[i];
-      sum[1] += atlasItem.data[i + 1];
-      sum[2] += atlasItem.data[i + 2];
-      k += 1;
-    }
-  }
-  atlasMeans[r.id] = sum.map((s) => s / Math.max(1, k));
-}
 const camera = gameView(world, render, cameraJson);
 
 // --- État des réglages -------------------------------------------------------------------------------------------------------------------
@@ -118,17 +96,15 @@ if (!webgl) $('webgl-error').hidden = false;
 const threeTextures = createThreeTextures(generated, mainRenderer);
 const floorTextures = Object.fromEntries(Object.entries(FLOOR_IDS).map(([k, id]) => [k, { texture: threeTextures.texture(id), repeat: threeTextures.repeat(id) }]));
 
-// Kits : actuel (character.js) et v2, un par variante (styles et macros de l'atelier).
-const v1Kit = createKit({ textures: threeTextures, variants: variantsJson, hit: palette.hit });
+// Kit v2, un par variante (styles et macros de l'atelier).
 const v2Opts = { characters, poses, lookup, hit: palette.hit, zombieIds: variantsJson.zombie.variants.map((v) => v.id), seed: 7, wear, macros: state.macros, animMacros: state.macros };
 let v2Kit = createV2Kit(v2Opts);
 const zombieIndex = (slot) => variantsJson.zombie.variants.findIndex((v) => v.id === slot);
-const measures = createMeasures({ characters, poses, enemies, player, lookup, floors: floorMeans, blood, atlasMeans, factors: (slot) => v2Kit.slotKit(slot, 'A').factors, camera });
+const measures = createMeasures({ characters, poses, enemies, player, lookup, floors: floorMeans, blood, factors: (slot) => v2Kit.slotKit(slot, 'A').factors, camera });
 
 function makeChar(slot, variant) {
   const kind = slot === 'joueur' ? 'player' : 'zombie';
-  if (variant === 'actuel') return { c: createCharacter(v1Kit, kind, Math.max(0, zombieIndex(slot))), v1: true };
-  return { c: v2Kit.create(kind, Math.max(0, zombieIndex(slot)), { choice: variant, outfit: Math.min(state.tenue, (measures.slotOf(slot).variants.find((x) => x.id === variant)?.outfits.length ?? 1) - 1), wear: wear() }), v1: false };
+  return { c: v2Kit.create(kind, Math.max(0, zombieIndex(slot)), { choice: variant, outfit: Math.min(state.tenue, (measures.slotOf(slot).variants.find((x) => x.id === variant)?.outfits.length ?? 1) - 1), wear: wear() }) };
 }
 
 const mainStage = createStage({ render, palette, floors: floorTextures });
@@ -137,7 +113,7 @@ const mainCam = new THREE.PerspectiveCamera();
 const gridCam = new THREE.PerspectiveCamera();
 let mainChar = null;
 let gridChars = [];
-const COLUMNS = ['actuel', 'A', 'B', 'C'];
+const COLUMNS = ['A', 'B', 'C'];
 const SCALES = [1, 2, 4];
 
 function rebuild() {
@@ -167,14 +143,6 @@ function phaseOf(slot, anim, time, variant) {
 
 function animate(ch, slot, variant) {
   const anim = state.anim;
-  if (ch.v1) {
-    const kind = slot === 'joueur' ? 'player' : 'zombie';
-    const st = V1_STATE[anim] ?? 'arret';
-    const ph = anim === 'attente' ? 0 : phaseOf(slot, V1_EXACT.has(anim) ? anim : 'marche', state.time) * TAU;
-    ch.c.setPose(computePose({ phase: ph, state: kind === 'player' && st === 'zombie' ? 'arret' : st, time: state.time, seed: 1, amount: anim === 'attente' || anim === 'repos' ? 0.15 : kind === 'player' && anim === 'marche' ? 1 : 0.7, recoil: anim === 'tir' ? 1 - (state.time % 0.3) / 0.3 : 0 }));
-    ch.c.setFlash(anim === 'touche' && state.time % 0.75 < 0.1);
-    return;
-  }
   const res = v2Kit.resolved(slot, variant, ch.c.outfit, ch.c.wear);
   const extra = slot === 'joueur' ? { twist: 0, repairTime: windows.repairTime } : {};
   ch.c.setAnim(anim, phaseOf(slot, anim, state.time, res), extra, state.time);
@@ -236,7 +204,7 @@ function draw() {
 let current = null;
 function updateMeasures() {
   const slot = state.perso;
-  const m = state.variante === 'actuel' ? measures.current(slot) : measures.v2(slot, state.variante, { outfit: state.tenue, wear: wear(), macros: state.macros[slot], animMacros: state.macros[slot] });
+  const m = measures.v2(slot, state.variante, { outfit: state.tenue, wear: wear(), macros: state.macros[slot], animMacros: state.macros[slot] });
   m.gap = measures.gap(slot, state.variante, m);
   current = m;
   const list = $('measures');
@@ -265,7 +233,6 @@ function updateMeasures() {
   const target = state.variante === 'C' ? 20 : 12;
   if (m.gap !== null) add(t('dev.persos.m.silhouette', { area: n2(m.sil.area), aspect: n2(m.sil.aspect), gap: n2(100 * m.gap), target }), 100 * m.gap < target);
   else add(t('dev.persos.m.silhouette', { area: n2(m.sil.area), aspect: n2(m.sil.aspect), gap: '–', target }));
-  if (state.variante === 'actuel' && !V1_EXACT.has(state.anim)) add(t('dev.persos.m.none'));
   if (m.violations.length === 0) add(t('dev.persos.m.ok'));
   for (const v of m.violations) add(t('dev.persos.m.violation', { code: v.code, detail: v.detail }), true);
 }
@@ -285,7 +252,7 @@ function syncControls() {
   fill($('ctl-perso'), SLOTS.map((s) => [s, t(`dev.persos.slot.${s}`)]), state.perso);
   fill($('ctl-variante'), VARIANTS.map((v) => [v, t(`dev.persos.variant.${v}`)]), state.variante);
   const variant = measures.slotOf(state.perso).variants.find((v) => v.id === state.variante);
-  const outfits = state.variante === 'actuel' ? [{ label: t('dev.persos.variant.actuel') }] : variant.outfits;
+  const outfits = variant.outfits;
   state.tenue = Math.min(state.tenue, outfits.length - 1);
   fill($('ctl-tenue'), outfits.map((o, i) => [i, t('dev.persos.tenue.n', { n: i + 1, label: o.label })]), state.tenue);
   fill($('ctl-usure'), [['auto', t('dev.persos.usure.auto')], ...[0, 1, 2, 3].map((i) => [i, t('dev.persos.usure.palier', { n: i })])], state.usure);
@@ -305,7 +272,7 @@ function syncControls() {
 function buildMacros() {
   const box = $('macros');
   box.textContent = '';
-  const ids = state.variante === 'actuel' ? [] : [...MACRO_IDS, ...ANIM_MACROS];
+  const ids = [...MACRO_IDS, ...ANIM_MACROS];
   for (const id of ids) {
     const field = document.createElement('div');
     field.className = 'persos-field persos-field-range';
@@ -371,7 +338,7 @@ $('btn-play').addEventListener('click', () => {
 });
 $('btn-pick').addEventListener('click', () => {
   const m = state.macros[state.perso];
-  state.picks.set(state.perso, { perso: state.perso, variante: state.variante, ...(state.variante === 'actuel' ? {} : { taille: m.taille, carrure: m.carrure, usure: m.usure, teinte: m.teinte, posture: m.posture, tenue: state.tenue + 1, style: state.variante === 'riche' ? 'A' : state.variante, amplitude: m.amplitude, rythme: m.rythme, lourdeur: m.lourdeur }) });
+  state.picks.set(state.perso, { perso: state.perso, variante: state.variante, taille: m.taille, carrure: m.carrure, usure: m.usure, teinte: m.teinte, posture: m.posture, tenue: state.tenue + 1, style: state.variante === 'riche' ? 'A' : state.variante, amplitude: m.amplitude, rythme: m.rythme, lourdeur: m.lourdeur });
   updateChoices();
 });
 $('btn-copy').addEventListener('click', async () => {
@@ -385,12 +352,9 @@ $('btn-copy').addEventListener('click', async () => {
 });
 
 // --- Sang (section 5) : sur le personnage de la vue principale --------------------------------------------------------------------------
-// Cadavre : le personnage choisi (actuel : posé « à terre », il n'a pas d'animation de mort), en pose de mort jusqu'au bout.
+// Cadavre : le personnage choisi, en pose de mort jusqu'au bout.
 function corpseOf(slot, variant) {
-  const ch = makeChar(slot, variant);
-  if (!ch.v1) return ch.c;
-  ch.c.setPose(computePose({ state: 'terre', time: 0 }));
-  return { root: ch.c.root, setAnim() {} };
+  return makeChar(slot, variant).c;
 }
 const makeBlood = (scene, seed, slot = () => state.perso) => createBloodFx({ parent: scene, cfg: bloodCfg, level: state.sang, lookup, seed, corpse: (type) => corpseOf(SLOTS.includes(type) ? type : slot(), state.variante) });
 let mainBlood = makeBlood(mainStage.scene, 3);
@@ -416,7 +380,7 @@ function shootMain(mortal) {
     mainBlood.hit({ x: 0, y: 0, dir: mainDir() });
     mainHp = Math.max(0.05, mainHp - 0.25);
   }
-  if (!mainChar.v1) mainChar.c.setWound(settingsBodyStains() ? woundTier(mainHp, bloodCfg.wounds) : 0);
+  mainChar.c.setWound(settingsBodyStains() ? woundTier(mainHp, bloodCfg.wounds) : 0);
 }
 const settingsBodyStains = () => bloodCfg.levels[state.sang]?.bodyStains === true;
 function bloodText(fx, renderer) {
@@ -465,7 +429,7 @@ function arenaRun(seconds) {
       if (e.type === 'hit') {
         arena.blood.hit({ x: e.x, y: e.y, dir: e.dir });
         const ch = arena.chars.get(e.id);
-        if (ch && !ch.v1) ch.c.setWound(settingsBodyStains() ? woundTier(e.hpFraction, bloodCfg.wounds) : 0);
+        if (ch) ch.c.setWound(settingsBodyStains() ? woundTier(e.hpFraction, bloodCfg.wounds) : 0);
       }
       if (e.type === 'kill') {
         arena.blood.kill({ x: e.x, y: e.y, dir: e.dir, type: e.zombie, facing: e.facing });
@@ -486,14 +450,12 @@ function arenaDraw() {
     ch.c.root.position.set(z.x, 0, z.y);
     ch.c.root.rotation.y = Math.PI / 2 - z.facing;
     const anim = z.attacking ? 'attaque' : { lent: 'marcheLente', marche: 'marche', rampe: 'rampe', course: 'course' }[z.gait];
-    if (ch.v1) ch.c.setPose(computePose({ phase: (z.distance * TAU) / gaits.gaits[z.gait].stride, state: V1_STATE[anim], time: tm, seed: z.id, amount: 0.7 }));
-    else ch.c.setAnim(anim, z.attacking ? tm % 1 : z.distance / gaits.gaits[z.gait].stride, {}, tm);
+    ch.c.setAnim(anim, z.attacking ? tm % 1 : z.distance / gaits.gaits[z.gait].stride, {}, tm);
   }
   const pl = arena.player;
   pl.c.root.rotation.y = Math.PI / 2 - arena.state.aim;
   const recoil = Math.max(0, 1 - (tm - arena.lastShot) / 0.12);
-  if (pl.v1) pl.c.setPose(computePose({ state: 'tir', time: tm, recoil, aim: arena.state.aim, facing: arena.state.aim }));
-  else pl.c.setAnim('repos', tm / 3, { twist: 0, recoil }, tm);
+  pl.c.setAnim('repos', tm / 3, { twist: 0, recoil }, tm);
   arena.blood.sync('rdc');
   const c = $('canvas-arena');
   const w = Math.max(1, c.clientWidth);
@@ -524,7 +486,7 @@ $('ctl-sang').addEventListener('change', () => {
   mainBlood.setLevel(state.sang);
   arena.blood?.setLevel(state.sang);
   mainHp = 1;
-  if (mainChar && !mainChar.v1) mainChar.c.setWound(0);
+  if (mainChar) mainChar.c.setWound(0);
   mainChar.c.root.visible = true;
   updateChoices();
   draw();
@@ -541,7 +503,7 @@ function tick(dt) {
   mainBlood.update(dt * state.vitesse);
   if (!mainChar.c.root.visible && mainBlood.stats().corpses === 0) {
     mainChar.c.root.visible = true;
-    if (!mainChar.v1) mainChar.c.setWound(0);
+    mainChar.c.setWound(0);
   }
 }
 
@@ -580,7 +542,7 @@ if (testMode) {
       ready: true, webgl, perso: state.perso, variante: state.variante, tenue: state.tenue, usure: state.usure, wear: wear(), manche: state.manche, anim: state.anim, sol: state.sol, vue: state.vue,
       orbite: state.orbite, vitesse: state.vitesse, playing: state.playing, time: state.time, macros: structuredClone(state.macros[state.perso]),
       measures: current ? { triangles: current.stats.triangles, pieces: current.stats.pieces, calls: current.calls, architecture: current.architecture, minContrast: current.minContrast, area: current.sil.area, aspect: current.sil.aspect, reach: current.reach, gap: current.gap, violations: current.violations.map((v) => v.code) } : null,
-      main: mainChar ? { ...mainChar.c.readPose?.(), v1: mainChar.v1 } : null,
+      main: mainChar ? { ...mainChar.c.readPose?.() } : null,
       grid: { columns: COLUMNS, scales: SCALES, cells: gridInfo.map((g) => ({ ...g })) },
       camera: lastInfo.view ? { ...lastInfo.view, gameDistance: camera.distance, gameUnitsPerPixel: (2 * camera.distance * Math.tan((camera.fov * Math.PI) / 360)) / camera.height } : null,
       render: { main: { ...lastInfo.main }, grid: { ...lastInfo.grid } },

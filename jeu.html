@@ -142,6 +142,26 @@
         <button id="btn-quit" class="button button-quiet" type="button" data-i18n="game.pause.quit" disabled></button>
         <button id="btn-fullscreen" class="button button-quiet" type="button" data-i18n="game.pause.fullscreen" hidden></button>
       </div>
+      <!-- Lot 5b : ligne « Graphismes » (Auto, Faible, Moyen, Élevé) ; changer recharge la page après confirmation (#gfx-confirm). -->
+      <div id="gfx-row" class="panel-gfx" role="group" aria-labelledby="gfx-label">
+        <p class="panel-line gfx-head"><span id="gfx-label" data-i18n="game.gfx.label"></span><span id="gfx-current" class="gfx-current"></span></p>
+        <div class="gfx-choices">
+          <button id="gfx-auto" class="button button-quiet gfx-choice" type="button" data-gfx="auto" aria-pressed="false" data-i18n="game.gfx.auto"></button>
+          <button id="gfx-faible" class="button button-quiet gfx-choice" type="button" data-gfx="faible" aria-pressed="false" data-i18n="game.gfx.faible"></button>
+          <button id="gfx-moyen" class="button button-quiet gfx-choice" type="button" data-gfx="moyen" aria-pressed="false" data-i18n="game.gfx.moyen"></button>
+          <button id="gfx-eleve" class="button button-quiet gfx-choice" type="button" data-gfx="eleve" aria-pressed="false" data-i18n="game.gfx.eleve"></button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div id="gfx-confirm" class="panel-wrap gfx-confirm" role="alertdialog" aria-modal="true" aria-labelledby="gfx-confirm-title" aria-describedby="gfx-confirm-text" hidden>
+    <div class="panel panel-pause">
+      <h2 id="gfx-confirm-title" class="panel-title" data-i18n="game.gfx.confirm.title"></h2>
+      <p id="gfx-confirm-text" class="panel-line"></p>
+      <div class="panel-actions gfx-confirm-actions">
+        <button id="gfx-confirm-ok" class="button button-main" type="button" data-i18n="game.gfx.confirm.ok"></button>
+        <button id="gfx-confirm-cancel" class="button button-quiet" type="button" data-i18n="game.gfx.confirm.cancel"></button>
+      </div>
     </div>
   </div>
   <div id="end-panel" class="panel-wrap" data-block="E2-7" role="alertdialog" aria-modal="true" aria-labelledby="end-title" hidden>

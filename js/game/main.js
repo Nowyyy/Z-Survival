@@ -12,6 +12,8 @@ import { createRepository } from '../save/index.js';
 import { createInput } from './input.js';
 import { createTokenLookup, readPalette } from './palette.js';
 import { createVhs, parseVhsParam } from './vhs-layer.js';
+import { graphicsBoot } from './graphics-boot.js';
+import { createGraphicsController } from './graphics-apply.js';
 import { installSafeArea } from './safe-area.js';
 import { planSounds, renderSounds, nextVisibleFrame, BACKGROUND_SLICE_MS } from './sound-loader.js';
 import { generateTextureData } from './textures.js';
@@ -53,6 +55,8 @@ function floorParam(value) {
 const query = new URLSearchParams(location.search);
 const testMode = query.get('test') === '1';
 const fpsMode = query.get('fps') === '1';
+// Lot 5b : ?perf=1 (outil de mesure, panneau et profileur) et ?cap=N (expérience de plafond) : modules importés seulement avec le paramètre.
+const perfMode = query.get('perf') === '1';
 const seedParam = Number.parseInt(query.get('seed') ?? '', 10);
 
 // Carte (lot 3b) : ?map=salle charge l'ancienne salle (data/game/world.json et decor.json), sinon la carte par défaut (data/game/maps/<id>/) ; ?empty=1
@@ -68,8 +72,11 @@ const upperWorld = mapId === 'salle' ? null : await loadJson(`${mapDir}/etage.wo
 // Lot 3g : ?detail=0|1 (1 par défaut ; jamais mémorisé) : 0 = textures et décor d'avant le lot, pour comparer. Décor léger intérieur (non solide) :
 // decor-interieur.world.json de la carte (généré par npm run carte), passé au rendu par render.decorInterieur ; absent de l'ancienne salle.
 const detail = query.get('detail') !== '0';
-const decorInterieur = detail && mapId !== 'salle' ? await loadJson(`${mapDir}/decor-interieur.world.json`).catch(() => null) : null;
-// Retours du propriétaire : mobilier dessiné d'après le modèle (mobilier.world.json, avec le détail) ; ?murs=bas : murs et piliers à l'ancienne hauteur (essai).
+// Lot 5b : préréglage graphique (?gfx= > préférence de l'appareil zs.device.v1 > auto) ; les paramètres explicites de l'adresse l'emportent.
+const gfx = await graphicsBoot(location.search);
+const gfxLoad = gfx.settings.load;
+const decorInterieur = detail && gfxLoad.decor !== 'reduit' && mapId !== 'salle' ? await loadJson(`${mapDir}/decor-interieur.world.json`).catch(() => null) : null;
+// Retours du propriétaire : mobilier dessiné d'après le modèle (mobilier.world.json, avec le détail).
 const mobilier = detail && mapId !== 'salle' ? await loadJson(`${mapDir}/mobilier.world.json`).catch(() => null) : null;
 
 const [dict, world, decor, camera, nav, player, weapons, enemies, render, texturesCfg, variants, soundsCfg, audioCfg, materialsCfg, voiceCfg, wavesCfg, gaitsCfg, statsCfg, splashCfg, vhsCfg, windowsCfg, downCfg, stairsCfg, economyCfg, saveCfg] = await Promise.all([
@@ -116,21 +123,19 @@ const loading = createLoading(dict);
 const titleFont = document.fonts?.load ? Promise.race([document.fonts.load('1em "Rubik Wet Paint"'), new Promise((resolve) => setTimeout(resolve, 2000))]).catch(() => {}) : Promise.resolve();
 render.decorInterieur = decorInterieur?.items ?? []; // lot 3g
 render.mobilier = mobilier?.pieces ?? null;
-render.ceilingWalls = mapId !== 'salle' && render.ceilingWalls === true && query.get('murs') !== 'bas';
+render.ceilingWalls = mapId !== 'salle' && render.ceilingWalls === true;
 render.detailDoors = detail; // vraies portes et éboulis (lot 3g, retours) ; ?detail=0 : anciens blocs
 render.seeThrough = query.get('percee') === '0' ? null : (render.seeThrough ?? null); // mur percé autour du joueur caché (lot 3g, retours) ; ?percee=0 l'enlève
 render.feux = detail && mapId !== 'salle' ? ((await loadJson(`${mapDir}/feux.json`).catch(() => null))?.feux ?? []) : []; // feux sur des caisses (lot 3g, retours)
 render.reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
-const textureData = await generateTextureData(texturesCfg.textures, { lookup: createTokenLookup(), onProgress: (p) => loading.update(p * TEXTURE_SHARE), detail });
+const textureData = await generateTextureData(texturesCfg.textures, { lookup: createTokenLookup(), onProgress: (p) => loading.update(p * TEXTURE_SHARE), detail: detail && gfxLoad.texturesFines });
 const audio = createAudio({ config: { audio: audioCfg, materials: materialsCfg, voice: voiceCfg, sounds: soundsCfg.sounds }, test: testMode, seed: Number.isFinite(seedParam) ? seedParam : 1 });
 const essential = await renderSounds(planSounds(soundsCfg.sounds, 'essentiel'), { onProgress: (p) => loading.update(TEXTURE_SHARE + (1 - TEXTURE_SHARE) * p) });
 audio.addSounds(essential.items);
 audio.stats.essentialMs = essential.ms;
 // Effet VHS : le grain est généré (texgen.js) et converti en adresse data: une seule fois, derrière l'écran de préparation.
-const vhs = createVhs({ params: vhsCfg, lookup: createTokenLookup(), forced: parseVhsParam(query.get('vhs')), reducedMotion: matchMedia('(prefers-reduced-motion: reduce)').matches });
+const vhs = createVhs({ params: vhsCfg, lookup: createTokenLookup(), forced: parseVhsParam(query.get('vhs')), reducedMotion: matchMedia('(prefers-reduced-motion: reduce)').matches, mode: gfx.settings.live.vhs });
 await titleFont;
-loading.done();
-root.hidden = false;
 
 // ?empty=1 (seulement avec ?test=1) : la salle du lot 1m sans meuble ni décor, mêmes coordonnées qu'au lot 1m.
 const zones = zonesJson ? zonesToWorld(parseZones(zonesJson), world.transform) : null;
@@ -179,8 +184,8 @@ const ctx = {
     labels: query.get('labels') === '1',
     // ?floor=N (lot 3e) : démarre à l'étage (1) ou au rez-de-chaussée (0) si l'escalier correspondant est ouvert au chargement ; sinon ignoré, jamais mémorisé.
     floor: floorParam(query.get('floor')),
-    maxRatio: ratioCap(query.get('dpr')),
-    shadows: query.get('shadows') !== '0',
+    maxRatio: Math.min(ratioCap(query.get('dpr')), gfx.settings.live.dprMax), // lot 5b : plafond du préréglage, sauf ?dpr= explicite (settingsFor)
+    shadows: gfx.settings.live.ombres, // lot 5b : préréglage, sauf ?shadows= explicite
   },
   seed: Number.isFinite(seedParam) ? seedParam : Date.now() % 2147483647,
   seedRun: 0,
@@ -196,6 +201,12 @@ const ctx = {
   audioCfg,
   audioMaterials: materialsCfg,
 };
+
+// Lot 5b : préréglages graphiques en jeu (réglages « live », Auto entre deux manches) ; sous ?test=1 le rechargement est simulé (getState().graphics).
+ctx.graphics = createGraphicsController(gfx, { vhs, dict, announce: (text) => ctx.ui?.setLive(text), reload: testMode ? null : () => location.reload() });
+ctx.graphicsLabel = () => ctx.graphics.label();
+if (perfMode) ctx.profiler = (await import('./profiler.js')).createProfiler({ search: location.search, ua: navigator.userAgent });
+if (query.has('cap')) ctx.gate = (await import('./frame-cap.js')).gateFromParam(query.get('cap'));
 
 let game = null;
 ctx.ui = createUi(dict, {
@@ -215,7 +226,9 @@ ctx.ui = createUi(dict, {
   onPausePanel: (open) => {
     ctx.audio.ui(open ? 'pause' : 'resume');
     if (open) game?.onPauseOpen();
+    if (open) ctx.ui.syncGraphics(ctx.graphics.state()); // lot 5b : « Auto (Moyen) », baisse éventuelle
   },
+  onGraphicsChoice: (choice) => ctx.graphics.choose(choice), // lot 5b : préférence écrite puis rechargement (confirmé dans la pause)
   onPauseChange: (paused) => {
     ctx.audio.setSuspended(paused);
     syncHint();
@@ -235,6 +248,7 @@ ctx.input = createInput(root, {
 });
 ctx.ui.syncSound(ctx.audio);
 ctx.ui.syncVhs(ctx.vhs);
+ctx.ui.syncGraphics(ctx.graphics.state());
 // Téléphone : tant que le contexte audio n'est pas en marche (aucun doigt relâché depuis le début, un stick tenu), une invitation à toucher
 // s'affiche après 1,5 s ; un toucher (relâché) suffit à activer le son.
 const soundHint = document.getElementById('sound-hint');
@@ -249,6 +263,12 @@ soundHint.addEventListener('click', () => ctx.audio.unlock());
 for (const type of ['pointerdown', 'pointerup', 'click', 'touchend', 'keydown']) window.addEventListener(type, () => ctx.audio.unlock(), { capture: true });
 
 game = createGame(ctx);
+// Lot 5b-G : l'écran de préparation reste affiché pendant la création du jeu (monde, programmes, premier rendu complet, zombies préparés) :
+// le joueur ne voit pas la première image lente ; la boucle d'images ne démarre qu'à l'image suivante, une fois l'écran retiré.
+// Lot 5b-H : garder aussi le premier « commit » du navigateur sous l'écran (deux images d'attente) a été essayé puis retiré : Lighthouse tombait
+// de 55 à 30 (temps de blocage 1,3 à 1,6 s), sous le seuil de 45 ; ce commit reste dans la première seconde de la partie (compte à rebours « DÉBUT »).
+loading.done();
+root.hidden = false;
 if (game === null) {
   // WebGL indisponible : un message à la place du jeu.
   root.hidden = true;
@@ -265,6 +285,10 @@ if (game === null) {
       const windowsLine = `${fmt(dict[TEXTURE_TEXTS.fpsWindows], { ms: p.windowsMs.toFixed(1) })}\n${fmt(dict[TEXTURE_TEXTS.fpsEtage], { ms: (p.floorsMs ?? 0).toFixed(1) })}`;
       return `${textures}\n${windowsLine}\n${fmt(dict[TEXTURE_TEXTS.fpsSons], { essential: Math.round(a.essentialMs), background: Math.round(a.backgroundMs), voices: a.zombieVoices })}\n${fmt(dict[TEXTURE_TEXTS.fpsStats], { levels: stats.levels, angle: stats.angle })}`;
     }));
+  }
+  if (perfMode) {
+    ctx.perfState = () => ctx.profiler.state({ preset: ctx.graphicsLabel?.() ?? null, cap: ctx.gate?.state() ?? null });
+    ctx.perfPanel = (await import('./perf-panel.js')).createPerfPanel({ read: ctx.perfState, reset: () => ctx.profiler.reset(), dict });
   }
   if (testMode) installTestHook(ctx, game);
   // Lot 3l (demande du propriétaire) : ?fin=monde montre tout de suite l'écran de victoire « Monde terminé » : la dernière manche du monde est lancée puis

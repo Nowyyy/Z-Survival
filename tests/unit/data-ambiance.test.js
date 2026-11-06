@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { execSync } from 'node:child_process';
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
+import { seedProblems } from './helpers/seed.js';
 import { contrast, luminance, mix, parseColor } from '../../js/core/color.js';
 import { renderSound, soundBytes, variantCount } from '../../js/core/synth.js';
 import { KEYS } from '../../js/core/wave-splash.js';
@@ -228,9 +229,12 @@ describe('hygiène du lot 2c', () => {
   });
 
   it('le workflow, index.html et Docs/seed.md sont inchangés depuis main', () => {
+    // Lot 5b : Docs/seed.md n'est plus comparé à un commit figé (le propriétaire le met à jour) : seuls ses commits le modifient (tests/unit/helpers/seed.js).
+    const seed = seedProblems();
+    if (seed !== null) expect(seed).toEqual([]);
     let changed;
     try {
-      changed = execSync('git diff --name-only main -- .github/workflows/pages.yml Docs/seed.md', { encoding: 'utf8' }).split('\n').filter(Boolean);
+      changed = execSync('git diff --name-only main -- .github/workflows/pages.yml', { encoding: 'utf8' }).split('\n').filter(Boolean);
     } catch {
       return;
     }

@@ -14,7 +14,7 @@ const okRect = (r) => r && [r.x, r.y, r.w, r.h].every(isNum) && r.w > 0 && r.h >
 const list = (a) => (Array.isArray(a) ? a : []);
 const r1 = (v) => Math.round(v * 10) / 10;
 
-// input : { size: { width, height }, footprint: [rects du bâtiment], decor: { ground, corridors, spawnPoints, lamps, solids } } ; opts : DEFAULTS.
+// input : { size: { width, height }, footprint: [rects du bâtiment], decor: { ground, corridors, spawnPoints, lamps, solids, keepOut } } ; opts : DEFAULTS.
 export function generateLivelyDecor(input, opts = {}) {
   const o = { ...DEFAULTS, ...opts };
   const W = num(input?.size?.width);
@@ -24,7 +24,10 @@ export function generateLivelyDecor(input, opts = {}) {
   const corridors = list(decor.corridors).filter(okRect);
   const spawns = list(decor.spawnPoints).filter((p) => p && isNum(p.x) && isNum(p.y));
   const ground = list(decor.ground).filter(okRect);
-  const solids = list(decor.solids).filter(okRect);
+  // Lot 5a : les épaves ne changent pas le tirage (même suite qu'avant) ; ce qui les touche est retiré à la fin.
+  const wrecks = [...list(decor.keepOut), ...list(decor.wreckSolids)].filter(okRect);
+  const isWreck = (s) => s.kind === 'helicoptere' || s.burning === true;
+  const solids = list(decor.solids).filter(okRect).filter((s) => !isWreck(s));
   const lamps = list(decor.lamps).filter((p) => p && isNum(p.x) && isNum(p.y));
   if (W <= 0 || H <= 0 || footprint.length === 0) return { deadTrees: [], fence: { posts: [], wires: [] }, poles: [], cables: [], puddles: [], tufts: [], rubble: [], barrels: [] };
   let rng = createRng(isNum(o.seed) ? o.seed : 1);
@@ -127,5 +130,17 @@ export function generateLivelyDecor(input, opts = {}) {
     return { id: `bidon-feu-${n}`, x, y, r: 11, hauteur: 30, box: { x: x - 12, y: y - 12, w: 24, h: 24 } };
   }, (b, out) => inside(b.box, 60) && fromRoom(b.box) >= 220 && fromRoom(b.box) <= 600 && clearOf(b.box, 40) && !onGround(b.box) && apart(b.box, out, 900));
 
-  return { deadTrees, fence: { posts, wires }, poles, cables, puddles, tufts, rubble, barrels };
+  if (wrecks.length === 0) return { deadTrees, fence: { posts, wires }, poles, cables, puddles, tufts, rubble, barrels };
+  const clear = (r, m) => !wrecks.some((k) => rectGap(r, k) < m);
+  const postBox = (p) => ({ x: p.x - 3, y: p.y - 3, w: 6, h: 6 });
+  const wireBox = (w) => ({ x: Math.min(w.x0, w.x1) - 1, y: Math.min(w.y0, w.y1) - 1, w: Math.abs(w.x1 - w.x0) + 2, h: Math.abs(w.y1 - w.y0) + 2 });
+  return {
+    deadTrees: deadTrees.filter((t) => clear(t.box, 30)),
+    fence: { posts: posts.filter((p) => clear(postBox(p), 10)), wires: wires.filter((w) => clear(wireBox(w), 10)) },
+    poles, cables,
+    puddles: puddles.filter((p) => clear(p, 0.5)),
+    tufts: tufts.filter((t) => clear(t.box, 10)),
+    rubble: rubble.filter((r) => clear(r, 20)),
+    barrels: barrels.filter((b) => clear(b.box, 40)),
+  };
 }

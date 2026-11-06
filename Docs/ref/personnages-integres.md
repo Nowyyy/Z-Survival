@@ -17,20 +17,22 @@ Source des choix : `Docs/ref/passation-personnages-4b.md` (lot 3j, § 2 et 3), d
 
 ## Paramètres d'adresse (jamais mémorisés, jamais en mode essai)
 
-- `?perso=choix` (défaut) : la table, personnage par personnage ; `?perso=actuel` : tout l'ancien modèle (comparaison) ; `?perso=A|B|C|riche` : une variante pour les cinq.
+- `?perso=choix` (défaut) : la table, personnage par personnage ; `?perso=A|B|C|riche` : une variante pour les cinq ; `?perso=actuel` (ancien modèle) : retiré au lot 5e, valeur inconnue.
 - `?sang=0|reduit|1` : défaut = `sang` de la table (`0` si la table est absente ou illisible).
 - `?usure=auto|0|1|2|3` : défaut = `usure` de la table (`auto` : palier de la manche).
 - Valeur inconnue : défaut, sans erreur. Absents de `readOnlyParams` (`data/game/save.json`) : `?test=1&store=local&perso=B` écrit la sauvegarde.
 
 ## Changer un défaut
 
-Modifier la ligne du personnage dans `data/game/persos-choix.json` : `variante` (`A`, `B`, `C`, `riche` ou `actuel`), `macros` (bornes de la variante, −2 à 2), `animation`, `style` (`A`, `B`, `C`), `tenues` (`"toutes"` ou liste d'identifiants de `characters-v2.json`) ; `sang` et `usure` en bas du fichier. `tests/unit/persos-integres.test.js` vérifie chaque valeur. Budget projeté : `node scripts/personnages/projection.mjs data/game/persos-choix.json`. Une variante inconnue ou absente donne l'ancien modèle.
+Modifier la ligne du personnage dans `data/game/persos-choix.json` : `variante` (`A`, `B`, `C` ou `riche` ; lot 5e : `actuel` retiré, une variante absente ou inconnue donne `A`), `macros` (bornes de la variante, −2 à 2), `animation`, `style` (`A`, `B`, `C`), `tenues` (`"toutes"` ou liste d'identifiants de `characters-v2.json`) ; `sang` et `usure` en bas du fichier. `tests/unit/persos-integres.test.js` vérifie chaque valeur. Budget projeté : `node scripts/personnages/projection.mjs data/game/persos-choix.json`. Une variante inconnue ou absente donne l'ancien modèle.
 
 ## Chargement
 
-`js/game/game.js` importe `persos-loader.js`, qui lit la table en même temps que le module v2 (`persos-runtime.js`, `character-v2.js`, `blood-fx.js`) et ses données. **L'ancien modèle (`js/core/pose.js`, `js/game/character.js`) n'est importé que si un personnage est `actuel`** (adresse ou table) ; sinon le chargeur fournit un modèle v2 seul (`computePose` neutre, `createKit` réduit aux variantes, `createCharacter` = `kit.v2.create`). Aiguillage par personnage : `kit.v2.handles(kind, variant)` (`character-v2.js`), utilisé par `character.js` quand l'ancien modèle est chargé. `js/game/skeleton.js` reste chargé : `STRIDE` y règle le rythme des pas du jeu.
+`js/game/game.js` importe `persos-loader.js`, qui lit la table en même temps que le module v2 (`persos-runtime.js`, `character-v2.js`, `blood-fx.js`) et ses données. **Lot 5e : l'ancien modèle (`js/core/pose.js`, `js/game/character.js`) est retiré ; chaque personnage est construit par le kit v2 (table absente ou variante inconnue : `A`).** Avant : il n'était importé que si un personnage était `actuel` (adresse ou table) ; sinon le chargeur fournit un modèle v2 seul (`computePose` neutre, `createKit` réduit aux variantes, `createCharacter` = `kit.v2.create`). Aiguillage par personnage : `kit.v2.handles(kind, variant)` (`character-v2.js`), utilisé par `character.js` quand l'ancien modèle est chargé. `js/game/skeleton.js` reste chargé : `STRIDE` y règle le rythme des pas du jeu.
 
 ## Code ancien supprimable après validation
+
+*Lot 5e : supprimé (`js/core/pose.js`, `js/game/character.js`, `?perso=actuel`) ; `fromV1`, `skeleton.js` (`STRIDE`) et la région `atlas-persos` sont gardés (tests, oracles du lot 5d, projections).* Liste d'origine :
 
 `js/core/pose.js` ; dans `js/game/character.js` : `buildGeometries`, `merge`, `createKit`, `createCharacter` actuel ; `js/game/skeleton.js` sauf `STRIDE` ; `fromV1` de `js/core/pose-v2.js` ; région `atlas-persos` de `data/game/textures.json` et ses jetons `--game-cloth-*`, `--game-zombie-skin-*`, `--game-jacket`, `--game-denim*`, `--game-pants-dark` (si plus aucun usage) ; régions d'atlas de `zombie-variants.json` (garder identifiants et ordre). Puis : `computePose` de `game.js`, branche « actuel » du chargeur et tests ouverts avec `&perso=actuel&sang=0` (liste : `Docs/ref/fusion-3j.md` et `Docs/lots/lot-3m.md`).
 

@@ -12,6 +12,7 @@ import { itemQuads, CATALOGUE as DECOR_CATALOGUE } from '../core/decor-interieur
 import { furnitureParts } from '../core/furniture-model.js';
 import { doorBoxes, grilleBoxes, rubbleBoxes } from '../core/portes-aspect.js';
 import { generateLivelyDecor } from '../core/decor-vivant.js';
+import { burntCarParts, carFireSpots, craterTriangles, placeHelicopter, trailTriangles } from '../core/epaves.js';
 import { plankSettings } from '../core/plank-layout.js';
 import { plankSheet } from '../core/texgen.js';
 import { createDebrisMeshes, createWindowMeshes } from './windows-mesh.js';
@@ -55,6 +56,10 @@ class Builder {
     this.positions = [];
     this.normals = [];
     this.uvs = [];
+    // Lot 5a : couleur de sommet (blanc = texture inchangée) ; l'attribut n'est ajouté au maillage que si une teinte a servi (colored).
+    this.colors = [];
+    this.tint = [1, 1, 1];
+    this.colored = false;
     this.matrix = new THREE.Matrix4();
     this.quaternion = new THREE.Quaternion();
     this.euler = new THREE.Euler();
@@ -74,6 +79,27 @@ class Builder {
       this.positions.push(...p[i]);
       this.normals.push(...n);
       this.uvs.push(...uv[i]);
+      this.colors.push(...this.tint);
+    }
+  }
+
+  // Lot 5a : dessine fn() avec la teinte rgb ([r, g, b] linéaires, multipliés à la texture), puis revient au blanc.
+  tinted(rgb, fn) {
+    this.tint = rgb;
+    this.colored = true;
+    fn();
+    this.tint = [1, 1, 1];
+  }
+
+  // Lot 5a : triangles déjà placés { p: [[x, y, z] × 3], n, uv: [[u, v] × 3] } (épaves : sommets de js/core/epaves.js).
+  triangles(list) {
+    for (const t of list) {
+      for (let i = 0; i < 3; i += 1) {
+        this.positions.push(...t.p[i]);
+        this.normals.push(...t.n);
+        this.uvs.push(...t.uv[i]);
+        this.colors.push(...this.tint);
+      }
     }
   }
 
@@ -130,6 +156,7 @@ class Builder {
       const uv = g.attributes.uv.array;
       const { rect } = it;
       for (let i = 0; i < uv.length; i += 2) this.uvs.push(rect.u0 + uv[i] * (rect.u1 - rect.u0), rect.v0 + uv[i + 1] * (rect.v1 - rect.v0));
+      for (let i = 0; i < uv.length; i += 2) this.colors.push(...this.tint);
       g.dispose();
     }
     if (source !== geometry) source.dispose();
@@ -142,6 +169,7 @@ class Builder {
     geometry.setAttribute('position', new THREE.Float32BufferAttribute(this.positions, 3));
     geometry.setAttribute('normal', new THREE.Float32BufferAttribute(this.normals, 3));
     geometry.setAttribute('uv', new THREE.Float32BufferAttribute(this.uvs, 2));
+    if (this.colored) geometry.setAttribute('color', new THREE.Float32BufferAttribute(this.colors, 3));
     geometry.computeBoundingSphere();
     const mesh = new THREE.Mesh(geometry, material);
     mesh.castShadow = cast;
@@ -258,8 +286,8 @@ export function cutGrilles(walls, grilles, thick, open) {
 }
 
 // Décor extérieur (graine fixe, voir js/core/decor.js) : `b` = constructeurs par matière, `region(id, scale?)` = fenêtre d'atlas.
-// Voitures : les seuls éléments du décor qui projettent une ombre (comme les meubles), donc dans b.props.
-function addDecor(b, region, decor, outdoorSoil) {
+// Voitures : les seuls éléments du décor qui projettent une ombre (comme les meubles), donc dans b.props. Lot 5a : tint(jeton) = couleur de sommet (épaves).
+function addDecor(b, region, decor, outdoorSoil, tint) {
   // Bandes de sol : route (lignes centrées sur la bande), trottoir (dalles alignées sur la bande), sentiers de terre.
   for (const g of decor.ground) {
     if (g.kind === 'route') b.road.slab(g.x, g.y, g.x + g.w, g.y + g.h, ROAD_Y, b.repeat.road, 0, g.y);
@@ -273,6 +301,10 @@ function addDecor(b, region, decor, outdoorSoil) {
   const wheelR = 8;
   const wheelW = 7;
   decor.cars.forEach((c, i) => {
+    if (c.burning === true) {
+      addBurntCar(b.scenery, region, c, tint, i);
+      return;
+    }
     const paint = CAR_PAINTS[i % CAR_PAINTS.length];
     const map = (id, seed) => ({ rect: region(id), scale: region(id).scale, seed });
     b.props.box(rectBox({ x: c.x, y: c.y, w: c.w, h: c.h }, 8, bodyTop), map(paint, i * 7 + 1));
@@ -293,6 +325,41 @@ function addDecor(b, region, decor, outdoorSoil) {
   b.scenery.geometry(unitCylinder, decor.lamps.map((l) => ({ x: l.x, y: l.hauteur / 2, z: l.y, sx: 2.5, sy: l.hauteur, sz: 2.5, rect: region('tole') })));
   b.scenery.geometry(crown, decor.lamps.map((l) => ({ x: l.x, y: l.hauteur + 4, z: l.y, sx: 8, sy: 6, sz: 8, rect: region('lampe') })));
   decor.fences.forEach((f, i) => b.scenery.box(rectBox(f, 0, f.hauteur), { rect: region('barriere'), scale: region('barriere').scale, seed: i + 300 }));
+}
+
+// Lot 5a : voiture calcinée (js/core/epaves.js : mêmes boîtes que les autres voitures, plus basses, teintes --game-car-burnt et --game-car-soot) et
+// jantes nues ; dans le maillage du décor de l'atlas (sans ombre portée, étendu à tout le monde) : aucun appel de dessin de plus, et la sphère englobante
+// des voitures (avec ombre) ne change pas quand la voiture est posée loin de la route (retour du propriétaire).
+function addBurntCar(props, region, car, tint, i) {
+  const parts = burntCarParts(car);
+  for (const [k, q] of parts.boxes.entries()) props.tinted(tint(q.tint), () => props.box(q, { rect: region(q.region), scale: region(q.region).scale, seed: i * 7 + k + 1 }));
+  props.tinted(tint('car-soot'), () => props.geometry(wheelAlongZ, parts.wheels.map((w) => ({ x: w.x, y: w.y, z: w.z, sx: w.r, sy: w.r, sz: w.w, rect: region('pneu') }))));
+}
+
+// Lot 5a : hélicoptère écrasé (js/core/epaves.js : triangles coupés au plan du sol), dans le maillage du décor de l'atlas (arbres, lampadaires : sans ombre portée,
+// étendu à tout le monde, donc dessiné partout comme avant) : aucun appel de dessin de plus, et la sphère englobante des voitures ne change pas.
+// Coordonnées de texture : projection sur le plan le plus proche de la face, ramenée dans la région d'atlas de la pièce (aucune texture nouvelle).
+function addHelicopter(props, region, heli, tint) {
+  const placed = placeHelicopter(heli);
+  const byPart = new Map();
+  for (const t of placed.triangles) {
+    if (!byPart.has(t.part)) byPart.set(t.part, []);
+    byPart.get(t.part).push(t);
+  }
+  for (const list of byPart.values()) {
+    const r = region(list[0].region);
+    const lo = [Infinity, Infinity, Infinity];
+    for (const t of list) for (const p of t.p) for (let k = 0; k < 3; k += 1) lo[k] = Math.min(lo[k], p[k]);
+    const span = Math.max(1, r.scale);
+    const uv = (p, n) => {
+      const ax = Math.abs(n[0]) >= Math.abs(n[1]) && Math.abs(n[0]) >= Math.abs(n[2]) ? [2, 1] : Math.abs(n[1]) >= Math.abs(n[2]) ? [0, 2] : [0, 1];
+      const a = Math.min(1, (p[ax[0]] - lo[ax[0]]) / span);
+      const c = Math.min(1, (p[ax[1]] - lo[ax[1]]) / span);
+      return [r.u0 + a * (r.u1 - r.u0), r.v0 + c * (r.v1 - r.v0)];
+    };
+    props.tinted(tint(list[0].tint), () => props.triangles(list.map((t) => ({ p: t.p, n: t.n, uv: t.p.map((p) => uv(p, t.n)) }))));
+  }
+  return placed.count;
 }
 
 // Lot 3g (retour du propriétaire) : décor extérieur non solide de js/core/decor-vivant.js. Arbres morts (écorce), barbelés (poteaux de bois sombre, fils de tôle),
@@ -532,7 +599,7 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
 
   // Portes et blocs (lots 3c et 3e) : liste de zones.json (voir plus bas).
   const doorList = Array.isArray(layouts?.doors) ? layouts.doors.map((d) => ({ id: d.id, blocks: floors.flatMap((f) => (d.blocks?.[f] ?? []).map((b) => ({ floor: f, ...b }))) })) : (Array.isArray(layout.doors) ? layout.doors : []).map((d) => ({ id: d.id, blocks: (d.blocks ?? [{ id: d.id, wall: true, rect: d.rect }]).map((b) => ({ floor: 'rdc', ...b })) }));
-  // Lot 3g (retours du propriétaire) : murs et piliers jusqu'à floorLift - 1, au rez-de-chaussée et à l'étage (essai, render.ceilingWalls ; ?murs=bas l'annule).
+  // Lot 3g (retours du propriétaire) : murs et piliers jusqu'à floorLift - 1, au rez-de-chaussée et à l'étage (essai, render.ceilingWalls).
   const tallWalls = render.ceilingWalls === true && lift > num(render.wallHeight);
   // Dessin d'une porte dans un mur : un peu plus mince que le mur (1 de moins de chaque côté), 0,5 de jeu aux bouts (le débord de 4 des collisions n'est pas dessiné).
   const wallDoorRect = (r, thickness) => {
@@ -551,8 +618,8 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
     const floorRects = f === 'etage' ? holes.reduce((rects, h) => h.rects.reduce(subtractHole, rects), l.floor) : l.floor;
     for (const fl of floorRects) fb.floor.slab(fl.x, fl.y, fl.x + fl.w, fl.y + fl.h, 0, textures.repeat('sol-salle'), l.room.x, l.room.y);
     // Murs (allège, linteau et barreaux des fenêtres compris) : enduit sur les côtés, dessus de la couleur --game-wall sans texture.
-    // Lot 3g (essai demandé par le propriétaire) : render.ceilingWalls monte les murs et les piliers jusqu'à floorLift - 1 (rez-de-chaussée, puis l'étage aussi à la troisième passe des retours) ;
-    // ?murs=bas revient à la hauteur d'avant. Le dessin seulement : collisions, tirs et fenêtres inchangés.
+    // Lot 3g (essai demandé par le propriétaire) : render.ceilingWalls monte les murs et les piliers jusqu'à floorLift - 1 (rez-de-chaussée, puis l'étage aussi à la troisième passe des retours).
+    // Le dessin seulement : collisions, tirs et fenêtres inchangés.
     const tall = tallWalls; // troisième passe des retours : l'étage aussi, pour que ce soit uniforme
     const wallRender = tall ? { ...render, wallHeight: lift - 1 } : render;
     const built = l.segmented ? segmentedWallBoxes(l, wallRender) : wallBoxes(l.room, l.windows, l.windowSize, wallRender);
@@ -648,6 +715,8 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
   // Lot 3g (retour du propriétaire) : feux avec fumée sur des piles de caisses (render.feux : feux.json ; absent avec ?detail=0), posés au centre et sur le dessus
   // de la pièce (boîtes de mobilier.world.json). Trois appels de dessin par feu, dans le groupe de son étage.
   const fires = [];
+  const viewFrustum = new THREE.Frustum(); // lot 5b-C : champ de la caméra (feux hors champ)
+  const viewMatrix = new THREE.Matrix4();
   for (const fe of Array.isArray(render.feux) ? render.feux : []) {
     const boxes = render.mobilier?.[fe?.piece]?.boxes;
     if (!floors.includes(fe?.floor) || !Array.isArray(boxes) || boxes.length === 0) continue;
@@ -658,10 +727,49 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
     const fire = createFire({ id: fe.id, x: (x0 + x1) / 2, z: (z0 + z1) / 2, y: Math.max(...boxes.map((b) => b.y1)), w: x1 - x0, d: z1 - z0 }, palette, { reduced: render.reducedMotion === true });
     fire.group.userData.floor = fe.floor;
     groups[fe.floor].add(fire.group);
+    fire.kind = 'decor'; // lot 5b : « autres feux » des préréglages
     fires.push(fire);
   }
 
-  if (layout.decor) addDecor(ex, region, layout.decor, outdoorSoil);
+  // Lot 5a : teintes des épaves (jetons --game-* du bloc « Décor en flammes (lot 5a) » de tokens.css, lus par palette.js), en couleurs linéaires.
+  const tintOf = (token) => {
+    const value = palette[token.replace(/-(\w)/g, (_, ch) => ch.toUpperCase())];
+    if (!value) return [1, 1, 1];
+    const c = new THREE.Color(value);
+    return [c.r, c.g, c.b];
+  };
+  if (layout.decor) addDecor(ex, region, layout.decor, outdoorSoil, tintOf);
+  // Lot 5a : hélicoptère écrasé (maillage du décor de l'atlas) et feu groupé de la voiture en flammes (deux foyers, capot et habitacle ; flammes et fumée, sans
+  // lueur au sol : deux appels de dessin, aucune lumière ; absent avec ?detail=0, comme les autres feux). Créés une fois, dans le groupe extérieur.
+  const wrecks = { helicopter: null, burningCar: null };
+  if (layout.decor?.helicopter) wrecks.helicopter = { id: layout.decor.helicopter.id, triangles: addHelicopter(ex.scenery, region, layout.decor.helicopter, tintOf), rects: layout.decor.helicopter.rects.map((r) => r.id) };
+  // Lot 5a-F (retour du propriétaire) : cratère de terre et traînée de glissade (plats, non solides) dans le maillage du sol extérieur (texture de terre répétée,
+  // teintée par couleurs de sommet : aucun appel de plus), et fumée légère sans flammes au-dessus de l'épave (un appel de dessin, seulement dans le champ).
+  if (layout.decor?.helicopter) {
+    const h = layout.decor.helicopter;
+    const scars = [...craterTriangles(h, layout.floor ?? []), ...trailTriangles(h, layout.floor ?? [])];
+    for (const t of scars) ex.soil.tinted(tintOf(t.tint), () => ex.soil.triangles([{ p: t.p, n: t.n, uv: t.p.map((q) => [q[0] / outdoorSoil, q[2] / outdoorSoil]) }]));
+    wrecks.helicopter.scarTriangles = scars.length;
+    if (h.smoke && render.detailDoors !== false) {
+      const smoke = createFire({ id: 'fumee-helicoptere', x: h.x, z: h.y, y: 34, w: 90, d: 60 }, palette, { reduced: render.reducedMotion === true, glow: false, flames: false, smoke: { alpha: 0.16, color: palette.smokeLight, rise: 0.7 } });
+      smoke.group.userData.floor = 'exterieur';
+      groups.exterieur.add(smoke.group);
+      smoke.kind = 'helico'; // lot 5b
+      fires.push(smoke);
+      wrecks.helicopter.smoke = smoke.group.name;
+    }
+  }
+  const burning = layout.decor?.cars?.find((c) => c.burning === true);
+  if (burning) wrecks.burningCar = { id: burning.id, fire: null, spots: [] };
+  if (burning && render.detailDoors !== false) {
+    const spots = carFireSpots(burning);
+    const fire = createFire({ id: `feu-${burning.id}`, x: burning.x + burning.w / 2, z: burning.y + burning.h / 2, y: Math.max(...spots.map((q) => q.y)), w: burning.w, d: burning.h, spots }, palette, { reduced: render.reducedMotion === true, glow: false });
+    fire.group.userData.floor = 'exterieur';
+    groups.exterieur.add(fire.group);
+    fire.kind = 'voiture'; // lot 5b
+    fires.push(fire);
+    wrecks.burningCar = { id: burning.id, fire: fire.group.name, spots: spots.map((q) => q.id) };
+  }
   // Lot 3g (retour du propriétaire) : extérieur plus vivant (js/core/decor-vivant.js : non solide, provisoire) dans les maillages du décor extérieur (aucun appel de
   // plus), sauf les bidons en feu (feu de fire.js, plus petit). Absent avec ?detail=0.
   const lively = layout.decor && layout.segmented && render.detailDoors !== false ? generateLivelyDecor({ size, footprint: layout.floor, decor: layout.decor }) : null;
@@ -671,6 +779,7 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
       const fire = createFire({ id: b.id, x: b.x, z: b.y, y: b.hauteur, w: b.r * 2, d: b.r * 2 }, palette, { reduced: render.reducedMotion === true, scale: 0.55 });
       fire.group.userData.floor = 'exterieur';
       groups.exterieur.add(fire.group);
+      fire.kind = 'decor'; // lot 5b
       fires.push(fire);
     }
   }
@@ -680,9 +789,12 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
     return mesh;
   };
   const sceneryMaterials = [['soil', 'sol-exterieur'], ['grass', 'herbe'], ['road', 'route'], ['sidewalk', 'trottoir']];
-  for (const [name, id] of sceneryMaterials) tag(ex[name].mesh(groups.exterieur, mat(id), { receive: true }), 'exterieur');
-  tag(ex.scenery.mesh(groups.exterieur, atlasMaterial, { receive: true }), 'exterieur');
-  tag(ex.props.mesh(groups.exterieur, atlasMaterial, { cast: true, receive: true }), 'exterieur');
+  // Lot 5a-F : le sol de terre lit les couleurs de sommet s'il porte le cratère (même texture, même maillage).
+  for (const [name, id] of sceneryMaterials) tag(ex[name].mesh(groups.exterieur, ex[name].colored ? new THREE.MeshLambertMaterial({ map: textures.texture(id), vertexColors: true }) : mat(id), { receive: true }), 'exterieur');
+  // Lot 5a : si des épaves teintées sont dans un maillage du décor, sa matière lit les couleurs de sommet (même texture, même mur percé : aucun appel de plus).
+  const tinted = ex.props.colored || ex.scenery.colored ? seeThrough.apply(new THREE.MeshLambertMaterial({ map: textures.texture(ATLAS), vertexColors: true })) : null;
+  const exScenery = tag(ex.scenery.mesh(groups.exterieur, ex.scenery.colored ? tinted : atlasMaterial, { receive: true }), 'exterieur');
+  const exProps = tag(ex.props.mesh(groups.exterieur, ex.props.colored ? tinted : atlasMaterial, { cast: true, receive: true }), 'exterieur');
   const floorMat = mat('sol-salle');
   const wallMat = seeThrough.apply(mat('mur'));
   for (const f of floors) {
@@ -934,13 +1046,45 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
     // n'est dessinée qu'à l'étage. Aucune reconstruction, aucun dispose.
     // Lot 3g : position du joueur pour le mur percé (à chaque image, avec la caméra) ; état pour les tests.
     // À chaque image (temps de jeu dt) : feux, et mur percé (position du joueur, caméra).
-    frame(dt, x, y, camera) {
-      for (const fire of fires) fire.update(dt);
+    frame(dt, x, y, camera, view = null) {
+      // Lot 5b : un feu caché par le préréglage n'est pas mis à jour ; 5b-C : hors du champ, ses tampons de particules ne sont pas réécrits.
+      if (view) {
+        view.updateMatrixWorld();
+        viewFrustum.setFromProjectionMatrix(viewMatrix.multiplyMatrices(view.projectionMatrix, view.matrixWorldInverse));
+      }
+      for (const fire of fires) if (fire.group.visible) fire.update(dt, view ? fire.inView(viewFrustum) : true);
       const still = render.reducedMotion === true;
-      for (const m of mists) if (!still) m.material.uniforms.uTime.value += Math.min(0.1, Math.max(0, Number(dt) || 0));
+      for (const m of mists) if (!still && m.visible) m.material.uniforms.uTime.value += Math.min(0.1, Math.max(0, Number(dt) || 0));
       seeThrough.update(x, y, camera, occluders, (b) => (b.floor === 'etage' ? lift : 0) - elevationNow);
     },
     fireStats: () => fires.map((f) => f.stats()),
+    // Lot 5b (préréglages graphiques, à chaud) : feux et fumées, brume, ombres. Valeurs de l'Élevé : rien ne change.
+    setFires(opts = {}) {
+      for (const f of fires) {
+        if (f.kind === 'voiture') f.setOptions({ spots: opts.voitureFoyers });
+        else if (f.kind === 'helico') f.setOptions({ particles: opts.fumeeHelico > 0 ? opts.fumeeHelico : 1, visible: opts.fumeeHelico !== 0 });
+        else f.setOptions({ particles: opts.particules, glow: opts.lueur });
+      }
+    },
+    // simple : seulement scene.fog (aucun plan de brume) ; reduit : le mur de brume sans les nappes basses ; complet : tout.
+    setMist(mode = 'complet') {
+      mists.forEach((m, i) => {
+        const on = mode === 'complet' || (mode === 'reduit' && i === 0);
+        if (m.visible !== on) m.visible = on;
+      });
+    },
+    setShadowMap(enabled, size) {
+      if (sun.castShadow !== (enabled !== false)) sun.castShadow = enabled !== false;
+      const n = Number.isInteger(size) && size >= 64 ? size : sun.shadow.mapSize.x;
+      if (sun.shadow.mapSize.x !== n) {
+        sun.shadow.mapSize.set(n, n);
+        sun.shadow.map?.dispose();
+        sun.shadow.map = null;
+      }
+    },
+    graphicsStats: () => ({ mists: mists.map((m) => m.visible), shadowMap: sun.shadow.mapSize.x, castShadow: sun.castShadow, fires: fires.map((f) => ({ kind: f.kind ?? 'decor', ...f.stats().drawn })) }),
+    // Lot 5a : épaves dessinées (hélicoptère : triangles, rectangles de collision ; voiture en flammes : feu et foyers) ; feu actif = dans la liste des feux mis à jour.
+    wreckStats: () => ({ ...wrecks, fires: fires.filter((f) => f.group.name === wrecks.burningCar?.fire).map((f) => f.stats()), heliSmoke: fires.filter((f) => f.group.name === wrecks.helicopter?.smoke).map((f) => f.stats()), propsTriangles: exProps ? exProps.geometry.attributes.position.count / 3 : 0, sceneryTriangles: exScenery ? exScenery.geometry.attributes.position.count / 3 : 0, exteriorVisible: groups.exterieur.visible }),
     seeThroughState: () => seeThrough.state(),
     showFloor(floor) {
       this.setElevation(floor === 'etage' ? lift : 0, floor);
@@ -985,7 +1129,7 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
       scene.traverse((m) => {
         if (m.isMesh && m.name === 'decor-leger') decorMeshes.push({ floor: m.userData.floor, group: m.parent?.name, drawn: m.visible && m.parent?.visible === true, triangles: m.geometry.attributes.position.count / 3 });
       });
-      return { exteriorY: groups.exterieur.position.y, elevation: elevationNow, visible: Object.fromEntries(Object.entries(groups).map(([k, g]) => [k, visibleOf(g)])), slab: slab ? slab.visible && groups.etage.visible : false, fence: groups.etage.children.filter((m) => m.name === 'garde-corps').length, marks: [...marks].filter(([, m]) => m.visible && m.parent?.visible).map(([k]) => k), decor: { meshes: decorMeshes, items: decorCount } };
+      return { wrecks: this.wreckStats(), exteriorY: groups.exterieur.position.y, elevation: elevationNow, visible: Object.fromEntries(Object.entries(groups).map(([k, g]) => [k, visibleOf(g)])), slab: slab ? slab.visible && groups.etage.visible : false, fence: groups.etage.children.filter((m) => m.name === 'garde-corps').length, marks: [...marks].filter(([, m]) => m.visible && m.parent?.visible).map(([k]) => k), decor: { meshes: decorMeshes, items: decorCount } };
     },
     setFog(distance) {
       scene.fog.near = distance * render.fog.near;

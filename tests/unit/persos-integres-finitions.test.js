@@ -61,13 +61,15 @@ describe('leviers de chargement', () => {
     expect(read('js/game/persos-runtime.js')).not.toMatch(/^import .*blood-fx/m);
     expect(read('js/game/persos-loader.js')).toMatch(/fx \? import\('\.\/blood-fx\.js'\) : null/);
   });
-  it('atlas des taches : calculé à la première tache seulement (levier 1 : plus de calcul au premier moment libre)', () => {
+  // Lot 5b-H (décision du propriétaire) : l'atlas n'est plus calculé à la première tache (accroc au premier sang sur les trois téléphones mesurés)
+  // mais à la création du sang, derrière l'écran de préparation ; jamais pendant un moment libre ni par minuteur ; une seule fois.
+  it('atlas des taches : calculé une fois à la création du sang (derrière l\'écran de préparation), jamais au premier moment libre', () => {
     const src = read('js/game/blood-fx.js');
-    expect(src).toMatch(/const ensureAtlas = \(\) => \{/);
-    expect(src).toMatch(/function addDecals\(list\) \{\n\s+ensureAtlas\(\);/);
+    expect(src).toMatch(/const ensureAtlas = \(\) => \{\n\s+if \(atlasReady\) return;/);
     const head = src.slice(src.indexOf('const ensureAtlas'), src.indexOf('function addDecals'));
-    expect(head.match(/ensureAtlas\b/g)).toHaveLength(1); // la déclaration seule : ni requestIdleCallback, ni setTimeout, ni appel direct
-    expect(src).not.toMatch(/requestIdleCallback\(ensureAtlas/);
+    expect(head.match(/ensureAtlas\(\);/g)).toHaveLength(1); // un appel direct à la création
+    expect(src).toMatch(/function addDecals\(list\) \{\n\s+ensureAtlas\(\);/); // garde idempotente
+    expect(src).not.toMatch(/requestIdleCallback\(ensureAtlas|setTimeout\(ensureAtlas/);
   });
   it('matières de blessure : seule la tuile 0 est créée avec le personnage, les autres au premier palier de blessure (levier 1)', () => {
     vi.stubGlobal('getComputedStyle', () => ({ getPropertyValue: () => '#c8b4a0' }));

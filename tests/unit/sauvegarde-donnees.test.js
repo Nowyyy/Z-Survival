@@ -1,13 +1,15 @@
 import { describe, it, expect } from 'vitest';
 import { execSync } from 'node:child_process';
 import { readFileSync, readdirSync } from 'node:fs';
+import { seedProblems } from './helpers/seed.js';
 import { ERROR_CODES, STAT_KEYS, statMaxLevels } from '../../js/core/save.js';
 import { ALL_STAT_IDS } from '../../js/core/player-stats.js';
 import { errorKey } from '../../js/sauvegarde/logic.js';
 import { TYPES } from '../../js/core/waves.js';
 // Lot 4c (publication par versions, seul lot autorisé à modifier le workflow) : workflow, accueil, ses textes et tests du journal modifiés ; ce garde-fou de branche
 // (comparaison à main ou à lot-4b) n'a plus de sens pour eux après l'entrée dans main : ils sortent de la liste.
-const LOT_4C = ['.github/workflows/pages.yml', 'index.html', 'data/i18n/fr.json', 'tests/unit/data-changelog.test.js', 'tests/e2e/dev.spec.js'];
+// Lot 4e : workflow de tests ajouté (.github/workflows/tests.yml, autorisé par le prompt du lot ; pages.yml intact).
+const LOT_4C = ['.github/workflows/pages.yml', '.github/workflows/tests.yml', 'index.html', 'data/i18n/fr.json', 'tests/unit/data-changelog.test.js', 'tests/e2e/dev.spec.js'];
 const notLot4c = (files) => (files ?? []).filter((f) => !LOT_4C.includes(f));
 
 const load = (name) => JSON.parse(readFileSync(`data/game/${name}.json`, 'utf8'));
@@ -192,14 +194,17 @@ describe('hygiène du lot 4 (partie A)', () => {
   it('les règles de tir, de vague, de siège, de chute, d\'étage et de caméra sont inchangées', () => {
     // Lot 3i : data/game/sounds.json change (sons de l'atelier intégrés, décision du propriétaire) ; ses recettes gardées (tir, mélodie, impacts…) sont
     // comparées à main, objet par objet, dans sons-integres.test.js.
-    const changed = git('diff --name-only main -- js/core/waves.js js/core/wave-director.js js/core/projectile.js js/core/ray.js js/core/spread.js js/core/player-stats.js js/core/player-down.js js/core/siege.js js/core/stair-walk.js js/core/camera.js js/core/synth.js js/core/pose.js data/game/waves.json data/game/gaits.json data/game/weapons.json data/game/player-stats.json data/game/player-down.json data/game/windows.json data/game/textures.json');
+    const changed = git('diff --name-only main -- js/core/waves.js js/core/wave-director.js js/core/projectile.js js/core/ray.js js/core/spread.js js/core/player-stats.js js/core/player-down.js js/core/siege.js js/core/stair-walk.js js/core/camera.js js/core/synth.js data/game/waves.json data/game/gaits.json data/game/weapons.json data/game/player-stats.json data/game/player-down.json data/game/windows.json data/game/textures.json');
     if (changed === null) return;
     // Branche lot-3g : sortie d'escalier par le côté et entrée sans saut (stair-walk.js), textures plus fines (textures.json) : changements de l'atelier (lot 3g).
     expect(changed.filter((f) => !['js/core/stair-walk.js', 'data/game/textures.json'].includes(f))).toEqual([]);
   });
 
   it('Docs/seed.md et le workflow sont inchangés (index.html : icône du site, demande du propriétaire)', () => {
-    const changed = git('diff --name-only main -- Docs/seed.md .github');
+    // Lot 5b : Docs/seed.md n'est plus comparé à un commit figé (le propriétaire le met à jour) : seuls ses commits le modifient (tests/unit/helpers/seed.js).
+    const seed = seedProblems();
+    if (seed !== null) expect(seed).toEqual([]);
+    const changed = git('diff --name-only main -- .github');
     if (changed === null) return;
     expect(notLot4c(changed)).toEqual([]);
   });

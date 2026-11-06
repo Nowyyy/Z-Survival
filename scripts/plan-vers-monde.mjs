@@ -1,5 +1,5 @@
 // Plan -> monde (lot 3b) : lit data/game/maps/<id>/plan.json (pixels du plan) et data/game/maps/params.json, appelle planToWorld (js/core/maps.js)
-// et écrit world.json et decor.json de la carte, dans le même dossier. Usage : npm run carte [-- <id>] ; avec --verifie, n'écrit rien et échoue si
+// et écrit world.json et decor.json de la carte, dans le même dossier (lot 5a : avec les épaves de epaves.json, si le fichier existe). Usage : npm run carte [-- <id>] ; avec --verifie, n'écrit rien et échoue si
 // les fichiers versionnés diffèrent de la sortie. Les deux fichiers générés ne s'éditent jamais à la main.
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -8,6 +8,9 @@ import { compareFloor } from '../js/core/ecarts.js';
 import { floorProblems } from '../js/core/floor-rules.js';
 import { boxTriangles, lookOf, pieceBoxes } from '../js/core/mobilier-aspect.js';
 import { planToWorld } from '../js/core/maps.js';
+import { decorProblems, generateDecor } from '../js/core/decor.js';
+import { polygonRects } from '../js/core/shape.js';
+import { rectGap } from '../js/core/collision.js';
 import { parseZones, zonesToWorld } from '../js/core/zones.js';
 
 const ROOT = new URL('../data/game/maps/', import.meta.url);
@@ -40,9 +43,14 @@ export function generateMapFiles(id = 'rez-de-chaussee') {
   const plan = JSON.parse(readFileSync(new URL(`${id}/plan.json`, ROOT), 'utf8'));
   const params = JSON.parse(readFileSync(new URL('params.json', ROOT), 'utf8'));
   const zones = parseZones(JSON.parse(readFileSync(new URL(`${id}/zones.json`, ROOT), 'utf8')));
-  const out = planToWorld(plan, params, { doors: zones.doors.filter((d) => !d.planned) });
+  // Lot 5a : épaves du décor extérieur (epaves.json, pixels du plan), facultatives.
+  const epavesUrl = new URL(`${id}/epaves.json`, ROOT);
+  const epaves = existsSync(epavesUrl) ? JSON.parse(readFileSync(epavesUrl, 'utf8')) : null;
+  const out = planToWorld(plan, params, { doors: zones.doors.filter((d) => !d.planned), epaves });
   if (!out.world) throw new Error(`plan invalide : ${out.report.errors.join(' ; ')}`);
-  const result = { world: `${formatJson(out.world)}\n`, decor: `${formatJson(out.decor)}\n`, etage: null, report: out.report, etageReport: null, problems: [], decorInterieur: null, decorReport: null, mobilier: null, mobilierReport: null };
+  const result = { world: `${formatJson(out.world)}\n`, decor: `${formatJson(out.decor)}\n`, etage: null, report: out.report, etageReport: null, problems: [], decorInterieur: null, decorReport: null, mobilier: null, mobilierReport: null, wrecksReport: null };
+  // Lot 5a : décor extérieur généré (graine) avec ses épaves : règles du décor (decorProblems) et voiture en flammes (existe, à 160 du bâtiment au moins).
+  if (out.decor.wrecks) result.wrecksReport = wrecksCheck(out.world, out.decor, params);
   let etageWorldOut = null;
   let etagePlanOut = null;
   const etageUrl = new URL(`${id}/etage.json`, ROOT);
@@ -111,12 +119,28 @@ export function generateMapFiles(id = 'rez-de-chaussee') {
   return result;
 }
 
+// Lot 5a : contrôle des épaves sur le décor généré. Renvoie { car, helicopter, problems }.
+export function wrecksCheck(world, decorCfg, params) {
+  const decor = generateDecor(decorCfg, world);
+  const problems = decorProblems(decor, world);
+  const fp = polygonRects(world.contour);
+  const car = decor.cars.find((c) => c.burning === true) ?? null;
+  if (decorCfg.wrecks.burningCar && !car) problems.push('voiture en flammes absente du décor');
+  if (car) {
+    const gap = Math.min(...fp.map((f) => rectGap(car, f)));
+    if (gap < params.decor.distanceSalle) problems.push(`${car.id} à ${Math.round(gap)} du bâtiment`);
+  }
+  const h = decor.helicopter;
+  const gapH = h ? Math.min(...h.rects.flatMap((r) => fp.map((f) => rectGap(r, f)))) : null;
+  return { car: car ? { id: car.id, x: car.x, y: car.y, gap: Math.round(Math.min(...fp.map((f) => rectGap(car, f)))) } : null, helicopter: h ? { corner: h.corner, rects: h.rects.length, gap: Math.round(gapH), edge: decorCfg.wrecks.helicopter?.edge, triangles: decorCfg.wrecks.helicopter?.triangles, height: h.height } : null, problems };
+}
+
 const isMain = process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1];
 if (isMain) {
   const args = process.argv.slice(2);
   const check = args.includes('--verifie');
   const id = args.find((a) => !a.startsWith('--')) ?? 'rez-de-chaussee';
-  const { world, decor, etage, report, etageReport, problems, decorInterieur, decorReport, mobilier, mobilierReport } = generateMapFiles(id);
+  const { world, decor, etage, report, etageReport, problems, decorInterieur, decorReport, mobilier, mobilierReport, wrecksReport } = generateMapFiles(id);
   const files = [['world.json', world], ['decor.json', decor], ...(etage === null ? [] : [['etage.world.json', etage]]), ...(decorInterieur === null ? [] : [['decor-interieur.world.json', decorInterieur]]), ...(mobilier ? [['mobilier.world.json', mobilier]] : [])].map(([name, text]) => [name, text, new URL(`${id}/${name}`, ROOT)]);
   if (check) {
     const stale = files.filter(([, text, url]) => !existsSync(url) || readFileSync(url, 'utf8') !== text).map(([name]) => name);
@@ -145,5 +169,11 @@ if (isMain) {
     for (const w of decorReport.warnings) console.log(`Décor léger : ${w}`);
     for (const r of decorReport.removed) console.log(`Décor léger : retiré ${r.id} (${r.reasons.join(', ')})`);
   }
-  if (!report.valid || problems.length > 0) process.exit(1);
+  if (wrecksReport) {
+    const { car, helicopter: h } = wrecksReport;
+    if (car) console.log(`Épaves : voiture en flammes ${car.id} (${car.x}, ${car.y}), à ${car.gap} du bâtiment.`);
+    if (h) console.log(`Épaves : hélicoptère dans l'angle du L (${h.corner.x}, ${h.corner.y}), ${h.rects} rectangles de collision à ${h.gap} du bâtiment au moins (bord ${h.edge}), ${h.triangles} triangles, hauteur ${h.height}.`);
+    for (const v of wrecksReport.problems) console.log(`PROBLÈME (décor) : ${v}`);
+  }
+  if (!report.valid || problems.length > 0 || (wrecksReport?.problems.length ?? 0) > 0) process.exit(1);
 }

@@ -3,11 +3,11 @@ import * as THREE from 'three';
 import { execSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { PERSO_VALUES, SANG_VALUES, USURE_VALUES, readPersosParams } from '../../js/game/persos-params.js';
-import { loadPersos } from '../../js/game/persos-loader.js';
+import { loadPersos, v2Model } from '../../js/game/persos-loader.js';
 import { createPersos } from '../../js/game/persos-runtime.js';
 import * as bloodFx from '../../js/game/blood-fx.js';
-import { createCharacter, createKit } from '../../js/game/character.js';
-import { computePose } from '../../js/core/pose.js';
+// Lot 5e : l'ancien modèle (character.js, pose.js) est retiré ; le modèle du chargeur (v2Model) construit chaque personnage par kit.v2.
+const { createKit, createCharacter } = v2Model;
 import { CROWD, LIMITS, REFERENCE, characterCost, crowdCost, project } from '../../scripts/personnages/projection.mjs';
 import { characters, load, poses } from '../../scripts/personnages/lib.mjs';
 
@@ -28,8 +28,8 @@ describe('persos-params.js : lecture des paramètres', () => {
   // Lot 3m : le défaut est la table des choix (?perso=choix ; data/game/persos-choix.json : « riche » pour les 5, sang complet).
   const choix = load('persos-choix');
   it('défauts (choix du propriétaire, lot 3m : table des choix) : variantes riche, sang complet, usure auto ; actif', () => expect(readPersosParams('', choix)).toMatchObject({ perso: 'choix', sang: '1', usure: 'auto', active: true, slots: { joueur: 'riche', marcheur: 'riche', petit: 'riche', voute: 'riche', grand: 'riche' } }));
-  it('?perso=actuel&sang=0 : le jeu d\'avant le lot 3j, inactif ; réduit et 0 restent disponibles pour le menu d\'options', () => {
-    expect(readPersosParams('?perso=actuel&sang=0')).toMatchObject({ perso: 'actuel', sang: '0', usure: 'auto', active: false });
+  it('?perso=actuel&sang=0 (lot 5e : valeur inconnue, plus de jeu d\'avant le lot 3j) : défaut, actif ; réduit et 0 restent disponibles pour le menu d\'options', () => {
+    expect(readPersosParams('?perso=actuel&sang=0')).toMatchObject({ perso: 'choix', sang: '0', usure: 'auto', active: true });
     expect(readPersosParams('?sang=reduit').sang).toBe('reduit');
     expect(readPersosParams('?sang=0', choix).active).toBe(true); // lot 3m : personnages v2 de la table, sang coupé
   });
@@ -46,10 +46,10 @@ describe('persos-params.js : lecture des paramètres', () => {
     for (const s of [null, undefined, 42, {}, `?perso=${'A'.repeat(100000)}`]) expect(() => readPersosParams(s)).not.toThrow();
     expect(readPersosParams(null).perso).toBe('choix');
   });
-  it('actif dès qu\'il y a des personnages v2 ou du sang ; ?perso=actuel&sang=0 ne charge rien, même avec ?usure=', () => {
+  it('toujours actif (lot 5e : tous les personnages sont des personnages v2), même avec ?perso=actuel&sang=0&usure=', () => {
     expect(readPersosParams('?perso=B').active).toBe(true);
     expect(readPersosParams('?perso=actuel&sang=reduit').active).toBe(true);
-    expect(readPersosParams('?perso=actuel&sang=0&usure=2').active).toBe(false);
+    expect(readPersosParams('?perso=actuel&sang=0&usure=2').active).toBe(true);
   });
   it('les paramètres cosmétiques ne sont pas des paramètres d\'essai de la sauvegarde (readOnlyParams de save.json)', () => {
     const ro = JSON.stringify(load('save'));
@@ -57,11 +57,13 @@ describe('persos-params.js : lecture des paramètres', () => {
   });
 });
 
-describe('chargeur : chargé par défaut, rien avec ?perso=actuel&sang=0', () => {
+describe('chargeur : chargé par défaut (lot 5e : aussi avec ?perso=actuel&sang=0, valeur inconnue)', () => {
   const game = readFileSync('js/game/game.js', 'utf8');
   const loader = readFileSync('js/game/persos-loader.js', 'utf8');
   it('game.js charge toujours le chargeur (import dynamique en tête de module)', () => {
-    expect(game).toContain("const persos = await import('./persos-loader.js').then((m) => m.loadPersos(location.search));");
+    // Lot 5b : l'adresse passée au chargeur porte le préréglage graphique (variante, sang, cadavres) ; sans préréglage lisible : location.search.
+    expect(game).toContain("const persos = await import('./persos-loader.js').then((m) => m.loadPersos(gfxBoot?.persosSearch ?? location.search, { corpses: gfxBoot?.corpses ?? null }));");
+    expect(game).toContain("const gfxBoot = await import('./graphics-boot.js').then((m) => m.graphicsBoot()).catch(() => null);");
     expect(game).not.toMatch(/^import .*persos-/m);
   });
   it('persos-loader.js : 30 lignes au plus, modules du lot importés dynamiquement seulement', () => {
@@ -69,17 +71,16 @@ describe('chargeur : chargé par défaut, rien avec ?perso=actuel&sang=0', () =>
     expect(loader).toContain("import('./persos-runtime.js')");
     expect(loader).not.toMatch(/^import .*persos-runtime/m);
   });
-  it('?perso=actuel&sang=0 : aucune requête, aucun module du lot chargé (lot 3m : seul l\'ancien modèle, attach inactif)', async () => {
-    const fetchSpy = vi.fn(() => Promise.reject(new Error('aucune requête attendue')));
+  it('?perso=actuel&sang=0 (lot 5e) : le chargeur lit la table et les données v2, comme ?sang=0 (plus de jeu d\'avant le lot 3j)', async () => {
+    const fetchSpy = vi.fn((path) => Promise.resolve({ ok: true, json: () => Promise.resolve(JSON.parse(readFileSync(path, 'utf8'))) }));
     vi.stubGlobal('fetch', fetchSpy);
-    expect((await loadPersos('?perso=actuel&sang=0')).attach()).toBeNull();
-    expect((await loadPersos('?perso=actuel&sang=0&usure=3')).attach()).toBeNull();
-    expect(fetchSpy).not.toHaveBeenCalled();
+    expect((await loadPersos('?perso=actuel&sang=0')).params.active).toBe(true);
+    expect((await loadPersos('?perso=actuel&sang=0&usure=3')).params.active).toBe(true);
+    expect(fetchSpy).toHaveBeenCalledWith('data/game/persos-choix.json');
     vi.unstubAllGlobals();
   });
-  it('character.js aiguille createCharacter vers kit.v2 quand il prend ce personnage (lot 3m : par personnage, handles)', () => {
-    const src = readFileSync('js/game/character.js', 'utf8');
-    expect(src).toMatch(/if \(kit\.v2\?\.handles\(kind, variant\)\) return kit\.v2\.create\(kind, variant\);/);
+  it('le modèle du chargeur construit chaque personnage par kit.v2 (lot 5e : l\'aiguillage de character.js, supprimé, n\'existe plus)', () => {
+    expect(loader).toMatch(/createCharacter: \(kit, kind, variant\) => kit\.v2\.create\(kind, variant\)/);
   });
 });
 
@@ -98,7 +99,9 @@ describe('fichiers du jeu modifiés : liste fermée, 40 lignes au plus chacun', 
   });
   it('données de logique inchangées (ennemis, allures, armes, joueur, vagues, fenêtres, statistiques, économie, sauvegarde)', () => {
     // Lot 3m-A : dans lot-4b, comparées à la base de la branche d'intégration (le lot 4 a changé economy.json, enemies.json, save.json depuis main).
-    const base = git('merge-base HEAD origin/lot-4b')?.trim() || 'main';
+    // Lot 4e : origin/lot-4b n'existe plus et la branche locale « main » peut être périmée : base = celle de la branche avec origin/main
+    // (à jour après git fetch), sinon origin/dev, sinon main ; sans historique (CI superficielle), rien à comparer.
+    const base = git('merge-base HEAD origin/main')?.trim() || git('merge-base HEAD origin/dev')?.trim() || 'main';
     const changed = git(`diff --name-only ${base} -- data/game/enemies.json data/game/gaits.json data/game/weapons.json data/game/player.json data/game/waves.json data/game/windows.json data/game/player-stats.json data/game/economy.json data/game/save.json data/game/player-down.json data/game/stairs.json`);
     if (changed === null) return;
     expect(changed.trim()).toBe('');
@@ -113,7 +116,7 @@ describe('persos-runtime.js : accroches (sans rendu)', () => {
     vi.stubGlobal('document', { documentElement: {} });
     const kit = createKit({ textures: stub, variants, hit: '#ffffff' });
     const world = { dynamic: new THREE.Group() };
-    const pv = createPersos(readPersosParams(`?perso=${perso}&sang=${sang}`), { characters, poses, blood: load('blood'), bloodFx }, { computePose, createKit, createCharacter }); // lot 3m-C : blood-fx fourni par le chargeur
+    const pv = createPersos(readPersosParams(`?perso=${perso}&sang=${sang}`), { characters, poses, blood: load('blood'), bloodFx }); // lot 3m-C : blood-fx fourni par le chargeur
     pv.attach({ kit, world, render: load('render'), palette: { hit: '#ffffff' }, variants, seed: 3 });
     return { kit, world, pv };
   };
@@ -127,10 +130,10 @@ describe('persos-runtime.js : accroches (sans rendu)', () => {
     for (let i = 0; i < 4; i += 1) expect(createCharacter(kit, 'zombie', i).slot).toBe(variants.zombie.variants[i].id);
     after();
   });
-  it('?perso=actuel&sang=1 : personnages actuels, sang actif', () => {
+  it('?perso=actuel&sang=1 (lot 5e : valeur inconnue) : personnages v2 (repli A sans table), sang actif', () => {
     const { kit, pv } = setup('actuel', '1');
-    expect(createCharacter(kit, 'player').v2).toBeUndefined();
-    expect(pv.state({}).architecture).toBe('articulated');
+    expect(createCharacter(kit, 'player').v2).toBe(true);
+    expect(pv.state({}).architecture).toBe('rigid');
     after();
   });
   it('impacts : un tir non mortel donne des particules, une mort une flaque et un cadavre', () => {

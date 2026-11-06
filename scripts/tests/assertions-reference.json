@@ -1,0 +1,65 @@
+{
+ "description": "Lot 4e-C : décompte de référence (avant regroupements) des fichiers e2e G et P (scripts/tests/compter.mjs).",
+ "fichiers": {
+  "tests/e2e/argent.spec.js": {
+   "tests": 48,
+   "assertions": 214,
+   "chargements": 51
+  },
+  "tests/e2e/attente.spec.js": {
+   "tests": 8,
+   "assertions": 21,
+   "chargements": 7
+  },
+  "tests/e2e/fumee.spec.js": {
+   "tests": 9,
+   "assertions": 19,
+   "chargements": 8
+  },
+  "tests/e2e/interface-integree.spec.js": {
+   "tests": 34,
+   "assertions": 154,
+   "chargements": 39
+  },
+  "tests/e2e/jeu-interface.spec.js": {
+   "tests": 22,
+   "assertions": 73,
+   "chargements": 19
+  },
+  "tests/e2e/jeu-pause.spec.js": {
+   "tests": 13,
+   "assertions": 43,
+   "chargements": 12
+  },
+  "tests/e2e/jeu-rendu.spec.js": {
+   "tests": 13,
+   "assertions": 32,
+   "chargements": 14
+  },
+  "tests/e2e/jeu-sons.spec.js": {
+   "tests": 15,
+   "assertions": 66,
+   "chargements": 15
+  },
+  "tests/e2e/jeu.spec.js": {
+   "tests": 15,
+   "assertions": 26,
+   "chargements": 15
+  },
+  "tests/e2e/persos-integres.spec.js": {
+   "tests": 28,
+   "assertions": 62,
+   "chargements": 30
+  },
+  "tests/e2e/publication.spec.js": {
+   "tests": 21,
+   "assertions": 116,
+   "chargements": 21
+  },
+  "tests/e2e/sauvegarde.spec.js": {
+   "tests": 23,
+   "assertions": 102,
+   "chargements": 24
+  }
+ }
+}

@@ -1,5 +1,7 @@
 # Plan d'intégration des personnages v2 et du sang (lot 3j → lot 4b)
 
+*Lot 5e : le retrait de l'ancien modèle prévu ici est fait (`pose.js`, `character.js`, `?perso=actuel`) ; plan gardé comme historique.*
+
 Ce plan prépare le passage des variantes au jeu par défaut. **Mise à jour après la livraison (demande du propriétaire)** : le jeu par défaut utilise déjà les variantes « riche » et le sang complet (`?perso=actuel&sang=0` : le jeu d'avant) ; les sections 1 et 2 ci-dessous restent valables pour remplacer « riche » par les choix définitifs. Les choix viennent du texte « Mes choix » de `atelier-personnages.html` (format : `Docs/ref/atelier-personnages.md`) ; `node scripts/personnages/projection.mjs mes-choix.txt` imprime leur budget.
 
 ## 1. Variante par défaut de chaque personnage

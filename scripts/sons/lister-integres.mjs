@@ -1,9 +1,9 @@
 // Tableau des sons intégrés au jeu (lot 3i), relu par le propriétaire : emplacement de l'atelier -> identifiant du jeu -> variante -> octets ->
-// événement, avec les mesures avant / après (durée, centre de gravité spectral, niveau relatif au tir tel qu'entendu en jeu). Mesures seules :
+// événement, avec les mesures (durée, centre de gravité spectral, niveau relatif au tir tel qu'entendu en jeu ; lot 5e : les colonnes « avant »,
+// mesurées sur le pack d'avant retiré, ne sont plus calculées ; elles restent dans l'historique de Docs/ref/sons-integres.md). Mesures seules :
 // aucun son n'est écouté. Écrit Docs/ref/sons-integres.md (à relancer après une modification de data/game/sounds-choix.json).
 // Usage : node scripts/sons/lister-integres.mjs [--sortie=-] (« - » : sortie standard seulement).
 import { readFileSync, writeFileSync } from 'node:fs';
-import { renderSound, variantCount } from '../../js/core/synth.js';
 import { resolveAtelier } from '../../js/core/synth2.js';
 import { measureSound } from '../../js/core/atelier-check.js';
 import { isAtelier, packStats, seedCount } from '../../js/core/sound-choice.js';
@@ -16,25 +16,16 @@ const int = (n) => String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
 export function listIntegrated() {
   const choix = read('data/game/sounds-choix.json');
   const { sounds } = read('data/game/sounds.json');
-  const legacy = new Map(read('data/game/sounds-legacy.json').sounds.map((r) => [r.id, r]));
-  const audio = read('data/game/audio.json');
   const atelier = resolveAtelier(read('data/game/sounds-atelier.json'));
   const slots = new Map(atelier.slots.map((s) => [s.id, s]));
   const byId = new Map(sounds.map((s) => [s.id, s]));
-  const gainDb = (cat) => 20 * Math.log10(audio.categoryGain[cat] ?? 1);
   const rows = [];
   for (const c of choix.choix) {
     const e = byId.get(c.id);
     const slot = slots.get(c.slot);
     const items = Array.from({ length: seedCount(e) }, (_, k) => renderChoice(e, { seed: k + 1 }));
     const m = measureSound(items[0].samples, items[0].sampleRate, slot, atelier.levelRef);
-    const old = c.replaces ? legacy.get(c.replaces) : null;
-    let before = null;
-    if (old) {
-      const olds = Array.from({ length: variantCount(old) }, (_, v) => renderSound(old, v));
-      const mo = measureSound(olds[0].samples, olds[0].sampleRate, { gainDb: gainDb(old.category) }, atelier.levelRef);
-      before = { bytes: packStats(olds).bytes, buffers: olds.length, duration: mo.duration, centroid: mo.centroid, levelRel: mo.levelRel };
-    }
+    const before = null; // lot 5e : pack d'avant retiré
     rows.push({ id: c.id, slot: c.slot, variant: c.variant, macros: c.macros, seeds: seedCount(e), bytes: packStats(items).bytes, duration: m.duration, centroid: m.centroid, levelRel: m.levelRel + (c.gainDb ?? 0), target: slot.target?.level ?? null, event: c.event, before, part: c.part });
   }
   const atelierEntries = sounds.filter(isAtelier);
@@ -46,7 +37,7 @@ export function toMarkdown({ rows, nonIntegres }) {
   const lines = [
     '# Sons intégrés au jeu (lot 3i)',
     '',
-    'Généré par `node scripts/sons/lister-integres.mjs` d\'après `data/game/sounds-choix.json` (source : `Docs/ref/sons-a-integrer.md`). **Aucun son n\'a été écouté par l\'agent** : mesures seules (Node, Float32 mono, 22 050 Hz pour l\'atelier). Octets : toutes les versions (graines), 4 octets par échantillon ; « avant » : recette remplacée (`data/game/sounds-legacy.json`, `?sons=ancien`). Niveau : dB relatifs au tir tel qu\'entendu en jeu (niveau court + gain de catégorie − niveau court du tir), version 1 ; les voix d\'avant étaient lues à la hauteur du type (non comptée ici).',
+    'Généré par `node scripts/sons/lister-integres.mjs` d\'après `data/game/sounds-choix.json` (source : `Docs/ref/sons-a-integrer.md`). **Aucun son n\'a été écouté par l\'agent** : mesures seules (Node, Float32 mono, 22 050 Hz pour l\'atelier). Octets : toutes les versions (graines), 4 octets par échantillon. Lot 5e : le pack d\'avant (`sounds-legacy.json`, `?sons=ancien`) est retiré ; les valeurs « avant » des recettes remplacées ne sont plus calculées (voir l\'historique de ce fichier et `Docs/ref/sons-actuels.md`). Niveau : dB relatifs au tir tel qu\'entendu en jeu (niveau court + gain de catégorie − niveau court du tir), version 1 ; les voix d\'avant étaient lues à la hauteur du type (non comptée ici).',
     '',
     '| Emplacement | Identifiant du jeu | Variante (réglages) | Versions | Octets (avant) | Durée s (avant) | Centroïde Hz (avant) | Niveau dB / cible (avant) | Événement |',
     '|---|---|---|---|---|---|---|---|---|',

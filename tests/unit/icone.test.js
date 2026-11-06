@@ -2,7 +2,8 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 
 // Icône du site (lot 4, demande du propriétaire) : « Z » en lettres de sang, écrite en adresses data: PNG dans les pages (aucun fichier image) par scripts/icone.mjs.
-const PAGES = ['index.html', 'dev/index.html', 'jeu.html'];
+// Lot 5g : dev/index.html (journal des versions) supprimé ; les pages produites par l'assembleur recopient l'icône de index.html (publication.test.js).
+const PAGES = ['index.html', 'jeu.html'];
 const link = (html, rel) => new RegExp(`<link rel="${rel}"[^>]*href="data:image/png;base64,([A-Za-z0-9+/=]+)"`).exec(html)?.[1];
 const dims = (b64) => {
   const png = Buffer.from(b64, 'base64');

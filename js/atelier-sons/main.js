@@ -39,12 +39,12 @@ const num = (x, d = 0) => {
 
 const query = new URLSearchParams(location.search);
 const testMode = query.get('test') === '1';
-const [dict, atelierRaw, gameSounds, audioCfg, legacySounds] = await Promise.all([
-  loadJson('data/i18n/atelier-sons.json'), loadJson('data/game/sounds-atelier.json'), loadJson('data/game/sounds.json'), loadJson('data/game/audio.json'), loadJson('data/game/sounds-legacy.json'),
+const [dict, atelierRaw, gameSounds, audioCfg] = await Promise.all([
+  loadJson('data/i18n/atelier-sons.json'), loadJson('data/game/sounds-atelier.json'), loadJson('data/game/sounds.json'), loadJson('data/game/audio.json'),
 ]);
-// Lot 3i : les sons « actuels » comparés par l'atelier sont ceux d'avant l'intégration (recettes de js/core/synth.js, data/game/sounds-legacy.json).
-const legacyById = new Map(legacySounds.sounds.map((r) => [r.id, r]));
-const soundsCfg = { sounds: gameSounds.sounds.flatMap((r) => (r.engine === 'atelier' ? (legacyById.has(r.id) ? [legacyById.get(r.id)] : []) : [r])) };
+// Lot 3i : les sons « actuels » comparés par l'atelier sont les recettes de js/core/synth.js du jeu ; lot 5e : le pack d'avant (sounds-legacy.json)
+// est retiré, un son remplacé par l'atelier n'a donc plus de version « actuelle » à comparer.
+const soundsCfg = { sounds: gameSounds.sounds.filter((r) => r.engine !== 'atelier') };
 const t = (key, params) => fmt(translate(dict, key), params);
 for (const node of document.querySelectorAll('[data-i18n]')) node.textContent = t(node.dataset.i18n);
 
@@ -124,7 +124,7 @@ function measuresText(name, r, target, voiced = false) {
   return t('dev.atelier.measures', {
     name, duration: num(m.duration, 2), centroid: num(m.centroid), f0: voiced && m.f0 > 0 ? `${num(m.f0)} Hz` : t('dev.atelier.measures.f0none'), hf: num(100 * m.hf4k, 1),
     peak: num(m.peakDb, 1), rms: num(m.rmsDb, 1), level: num(m.levelRel, 1), target: level,
-  });
+  }) + (Number.isFinite(m.ringMs) ? t('dev.atelier.measures.ring', { ring: num(m.ringMs, 1), hz: m.ringMs > 0 ? num(m.ringHz) : '–' }) : ''); // lot 5a : « cling » mesuré
 }
 function verdict(r) {
   if (!r.check) return { text: t('dev.atelier.measures.reference'), out: [] };
@@ -143,7 +143,7 @@ function note(entry) {
   log.push(entry);
   if (log.length > 300) log.shift();
 }
-const summary = (m) => ({ duration: m.duration, centroid: m.centroid, f0: m.f0, hf4k: m.hf4k, peakDb: m.peakDb, rmsDb: m.rmsDb, levelRel: m.levelRel, hnr: m.hnr, attackMs: m.attackMs });
+const summary = (m) => ({ duration: m.duration, centroid: m.centroid, f0: m.f0, hf4k: m.hf4k, peakDb: m.peakDb, rmsDb: m.rmsDb, levelRel: m.levelRel, hnr: m.hnr, attackMs: m.attackMs, ...(Number.isFinite(m.ringMs) ? { ringMs: m.ringMs } : {}) }); // lot 5a : ringMs (« cling »)
 
 // ---------- lecture ----------
 // Doit être appelée dans le gestionnaire du geste, avant toute attente (déblocage de l'audio sur iPhone).

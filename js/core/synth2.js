@@ -8,7 +8,7 @@
 // resolveAtelier(données) : fusionne les préréglages (champ use) et les facteurs (champ scale) en recettes complètes.
 import { arr, clamp, createRandom, dbToGain, fadeEdges, hashSeed, loopCrossfade, num, removeDc, shortReverb, softClip, toFloat32 } from './synth2-dsp.js';
 import { KINDS, repairSequence } from './synth2-sources.js';
-import { dbfs, shortLevel } from './audio-analysis.js';
+import { shortLevel } from './audio-analysis.js';
 import { isNum } from './vec.js';
 
 export { repairSequence };
@@ -19,7 +19,6 @@ export const FORMAT = Object.freeze({ sampleRate: 22050, channels: 1, type: 'Flo
 export const MAX_SECONDS = 15;
 export const CEILING = 0.98;
 export const PEAK_DB = -3;
-export const EDGE = 0.002;
 export const MACRO_IDS = Object.freeze(['hauteur', 'matiere', 'grain', 'duree', 'ampleur']);
 export const DEFAULT_MACROS = Object.freeze({
   hauteur: Object.freeze({ min: -6, max: 6, default: 0, unit: 'demi-ton' }),
@@ -299,6 +298,3 @@ export function nextVersion(state, key, count = VERSIONS) {
   last[k] = version;
   return { state: { rng: seed, last }, version };
 }
-
-// Niveau court (dBFS) d'un tampon : RMS de la fenêtre de 100 ms la plus forte.
-export const levelDbOf = (samples, sampleRate) => dbfs(shortLevel(samples, sampleRate));

@@ -8,6 +8,8 @@ import { distanceToRect, isRect, rectGap, validRects } from './collision.js';
 import { isFloorId } from './floors.js';
 import { boundingRect, coveredBy, overlapArea, pointInPolygon, polygonArea, polygonRects, segmentRects, totalArea, unionRects } from './shape.js';
 import { isNum, num } from './vec.js';
+import { approachCorridors } from './decor.js';
+import { groundScarBoxes, helicopterFootprint, lCorner } from './epaves.js';
 
 export const MAP_IDS = ['rez-de-chaussee', 'salle'];
 export const DEFAULT_MAP_ID = 'rez-de-chaussee';
@@ -147,6 +149,19 @@ export function cleanPlan(plan) {
     start: isPoint(plan.start) ? [plan.start[0], plan.start[1]] : null,
     furniture: list(plan.furniture, (f) => isObject(f) && box(f)).map((f, i) => ({ id: typeof f.id === 'string' ? f.id : `M${i + 1}`, x0: f.x0, y0: f.y0, x1: f.x1, y1: f.y1, kind: typeof f.kind === 'string' ? f.kind : 'caisse', ...(f.provisional === true ? { provisional: true } : {}), ...(f.source === 'modele' ? { source: 'modele' } : {}) })),
   };
+}
+
+// Lot 5a : épaves (data/game/maps/<id>/epaves.json : voiture en flammes, hélicoptère écrasé), pixels du plan ; null si absentes.
+export function cleanWrecks(e) {
+  if (!isObject(e)) return null;
+  const h = isObject(e.helicoptere) && isNum(e.helicoptere.x) && isNum(e.helicoptere.y) && isPoint(e.helicoptere.coin) ? e.helicoptere : null;
+  // Voiture en flammes : identifiant d'une voiture du décor (marquée en flammes, même place), ou centre en pixels (voiture posée à part).
+  const car = typeof e.voitureEnFlammes === 'string' && e.voitureEnFlammes !== '' ? e.voitureEnFlammes
+    : isObject(e.voitureEnFlammes) && isNum(e.voitureEnFlammes.x) && isNum(e.voitureEnFlammes.y) ? { x: e.voitureEnFlammes.x, y: e.voitureEnFlammes.y } : null;
+  if (!h && !car) return null;
+  const crater = isObject(h?.cratere) && isNum(h.cratere.rx) && isNum(h.cratere.ry) ? { rx: h.cratere.rx, ry: h.cratere.ry } : null;
+  const trail = isObject(h?.trainee) && isNum(h.trainee.longueur) && isNum(h.trainee.largeur) ? { length: h.trainee.longueur, width: h.trainee.largeur } : null;
+  return { burningCar: car, helicopter: h ? { corner: [h.coin[0], h.coin[1]], x: h.x, y: h.y, heading: num(h.cap), ...(isNum(h.bord) && h.bord >= 0 ? { edge: h.bord } : {}), ...(crater ? { crater } : {}), ...(trail ? { trail } : {}), ...(h.fumee === true ? { smoke: true } : {}) } : null };
 }
 
 // Zone libre derrière une fenêtre : toute sa largeur, windowDepth de profondeur à partir de la face intérieure du mur.
@@ -312,7 +327,7 @@ const sortedParts = (list) => [...new Set(list)].sort((a, b) => a.localeCompare(
 const shape = (it) => ({ id: it.id, x: it.rect.x, y: it.rect.y, w: it.rect.w, h: it.rect.h, hauteur: it.hauteur, kind: it.kind, ...(it.parts.length > 1 ? { parts: [...it.parts] } : {}), ...(it.outside ? { outside: true } : {}), ...(it.provisional ? { provisional: true } : {}), ...(it.source ? { source: it.source } : {}) });
 
 // Convertit un plan en monde. Renvoie { world, decor, report } ; world et decor sont null si le plan est invalide (report.valid faux).
-// extras (lot 3c, facultatif) : { doors: [{ id, opening: { x1, y1, x2, y2 } (pixels du plan) }] } ; une pièce de complément (marquée provisional ou
+// extras (lot 3c, facultatif) : { doors: [{ id, opening: { x1, y1, x2, y2 } (pixels du plan) }], epaves (lot 5a : epaves.json) } ; une pièce de complément (marquée provisional ou
 // source « modele ») reste à doorClearance au moins de chaque ouverture de porte et à repairClearance au moins du point de réparation d'une fenêtre.
 // report : { valid, errors, shifts, merged, retired, snapped, clipped, violations, areas, size }.
 export function planToWorld(plan, params, extras) {
@@ -601,6 +616,8 @@ export function planToWorld(plan, params, extras) {
     });
   });
   if (ramp) ground.push({ id: ramp.id, kind: 'trottoir', x: ramp.x, y: ramp.y, w: ramp.w, h: ramp.h });
+  const epaves = cleanWrecks(extras?.epaves);
+  const wrecks = epaves ? wrecksOf(epaves, { X, Y, world, spawnPoints, p, report }) : null;
   const decor = {
     _provisoire: 'Décor extérieur généré par npm run carte (même schéma que data/game/decor.json) : sol, points d\'apparition (2 par fenêtre, à 450 et 650 du mur) et nombres d\'objets provisoires ; graine fixe. Ne jamais éditer à la main : changer plan.json ou params.json puis relancer la commande.',
     seed: p.decor.seed,
@@ -608,7 +625,54 @@ export function planToWorld(plan, params, extras) {
     ground,
     spawnPoints,
     scatter: { ...p.decor.scatter, distanceSalle: p.decor.distanceSalle, distanceApparition: p.decor.distanceApparition },
+    ...(wrecks ? { wrecks } : {}),
   };
+  report.valid = report.violations.length === 0;
   report.areas.polygon = Math.round(polygonArea(contour));
   return { world, decor, report };
+}
+
+// Lot 5a : épaves en unités du jeu, avec les règles du décor extérieur (rapportées comme violations : npm run carte échoue). L'hélicoptère : son coin doit être
+// l'angle du L (lCorner), son centre dans le quart extérieur de ce coin ; ses rectangles de collision et son emprise visuelle (pales comprises) à `bord` au moins du
+// bâtiment (pixels × échelle ; sans bord : distanceSalle), à 20 au moins des couloirs d'approche (rez-de-chaussée), à distanceApparition au moins des points
+// d'apparition ; son emprise visuelle hors des couloirs. Voiture en flammes posée à part : à distanceSalle du bâtiment, hors des couloirs, loin des apparitions.
+function wrecksOf(e, { X, Y, world, spawnPoints, p, report }) {
+  const corridors = approachCorridors(world, p.approachWidth);
+  const footprint = polygonRects(world.contour);
+  const gapOf = (r) => Math.min(...footprint.map((f) => rectGap(r, f)));
+  const solidRules = (r, minGap, bad) => {
+    const gap = gapOf(r);
+    if (gap < minGap) bad(`${r.id} à ${Math.round(gap)} du bâtiment (moins de ${minGap})`);
+    for (const c of corridors) if (rectGap(r, c) < 20) bad(`${r.id} dans le couloir d'approche de ${c.id}`);
+    for (const s of spawnPoints) if (rectGap(r, { x: s.x, y: s.y, w: 1, h: 1 }) < p.decor.distanceApparition) bad(`${r.id} trop près de ${s.id}`);
+    if (r.x < 40 || r.y < 40 || r.x + r.w > world.size.width - 40 || r.y + r.h > world.size.height - 40) bad(`${r.id} hors du monde`);
+  };
+  let burningCar = e.burningCar;
+  if (isObject(e.burningCar)) {
+    const w = num(p.decor.scatter.voitures?.long, 92);
+    const h = num(p.decor.scatter.voitures?.court, 46);
+    burningCar = { id: 'voiture-en-flammes', x: r6(X(e.burningCar.x) - w / 2), y: r6(Y(e.burningCar.y) - h / 2), w, h, hauteur: num(p.decor.scatter.voitures?.hauteur, 55) };
+    solidRules(burningCar, p.decor.distanceSalle, (text) => report.violations.push(`voiture en flammes : ${text}`));
+  }
+  const out = { burningCar };
+  if (!e.helicopter) return out;
+  const h = e.helicopter;
+  const corner = { x: X(h.corner[0]), y: Y(h.corner[1]) };
+  const spec = { id: 'helicoptere', x: X(h.x), y: Y(h.y), heading: h.heading };
+  const fp = helicopterFootprint(spec);
+  const edge = isNum(h.edge) ? r6(h.edge * p.scale) : p.decor.distanceSalle;
+  const chosen = lCorner(world.contour, { blockers: corridors, footprint, size: world.size, clearance: p.decor.distanceSalle }).chosen;
+  const bad = (text) => report.violations.push(`hélicoptère : ${text}`);
+  if (!chosen || chosen.x !== corner.x || chosen.y !== corner.y) bad(`le coin (${corner.x}, ${corner.y}) n'est pas l'angle du L${chosen ? ` (${chosen.x}, ${chosen.y})` : ''}`);
+  else if ((spec.x - corner.x) * chosen.out.x < 0 || (spec.y - corner.y) * chosen.out.y < 0) bad('centre hors du quart extérieur de l\'angle du L');
+  for (const r of fp.rects) solidRules(r, edge, bad);
+  if (fp.visual && gapOf(fp.visual) < edge) bad(`emprise visuelle à ${Math.round(gapOf(fp.visual))} du bâtiment (moins de ${edge})`);
+  for (const c of corridors) if (fp.visual && rectGap(fp.visual, c) === 0) bad(`emprise visuelle dans le couloir d'approche de ${c.id}`);
+  // Lot 5a-F : cratère et traînée (unités du jeu, plats), fumée légère ; leur emprise au sol (scar) écarte le petit décor.
+  const crater = h.crater ? { rx: r6(h.crater.rx * p.scale), ry: r6(h.crater.ry * p.scale) } : null;
+  const trail = h.trail ? { length: r6(h.trail.length * p.scale), width: r6(h.trail.width * p.scale) } : null;
+  const scar = crater || trail ? groundScarBoxes({ ...spec, crater, trail }, footprint) : null;
+  for (const b of scar?.boxes ?? []) if (b.x < 0 || b.y < 0 || b.x + b.w > world.size.width || b.y + b.h > world.size.height) bad('cratère ou traînée hors du monde');
+  out.helicopter = { ...spec, corner, edge, rects: fp.rects, visual: fp.visual, height: fp.height, triangles: fp.triangles, ...(crater ? { crater } : {}), ...(trail ? { trail } : {}), ...(scar ? { scars: scar.boxes, scarTriangles: scar.triangles } : {}), ...(h.smoke ? { smoke: true } : {}) };
+  return out;
 }

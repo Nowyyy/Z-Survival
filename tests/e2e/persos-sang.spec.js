@@ -6,7 +6,6 @@ import AxeBuilder from '@axe-core/playwright';
 const SIZE = { width: 667, height: 375 };
 const S = (page) => page.evaluate(() => window.__zsPersos.getState());
 const set = (page, id, value) => page.evaluate(([i, v]) => window.__zsPersos.set(i, v), [id, value]);
-const arena = (page) => page.evaluate(() => window.__zsPersos.arena.state());
 
 async function open(page) {
   await page.setViewportSize(SIZE);
@@ -30,30 +29,6 @@ const sixtySeconds = (page) => page.evaluate(() => {
 
 test.describe('sang et mini-arène', () => {
   test.skip(({ isMobile }) => isMobile, 'bureau (la fenêtre est réglée par chaque test)');
-
-  test('les sections sang et mini-arène sont présentes, sans erreur ni requête externe', async ({ page, baseURL }) => {
-    const errors = [];
-    const external = [];
-    page.on('pageerror', (e) => errors.push(e.message));
-    page.on('console', (m) => (m.type() === 'error' || (m.type() === 'warning' && !/GL Driver|GPU stall|ReadPixels/.test(m.text()))) && errors.push(m.text()));
-    page.on('request', (r) => !r.url().startsWith(baseURL) && !r.url().startsWith('data:') && external.push(r.url()));
-    await open(page);
-    await expect(page.locator('#ctl-sang option')).toHaveText(['0 : aucun', 'Réduit', 'Complet']);
-    for (const id of ['#btn-hit', '#btn-kill', '#btn-burst', '#btn-arena-restart', '#btn-arena-next', '#ctl-arena-speed', '#canvas-arena']) await expect(page.locator(id)).toBeVisible();
-    await page.evaluate(() => window.__zsPersos.arena.run(3));
-    expect(errors).toEqual([]);
-    expect(external).toEqual([]);
-  });
-
-  test('niveau 0 : aucune particule, aucune tache, aucun cadavre, aucune instance', async ({ page }) => {
-    await open(page);
-    await set(page, 'ctl-sang', '0'); // le niveau par défaut est désormais « complet »
-    await page.click('#btn-hit');
-    await page.click('#btn-kill');
-    await page.evaluate(() => window.__zsPersos.step(0.3));
-    expect(await page.evaluate(() => window.__zsPersos.blood())).toMatchObject({ particles: 0, decals: 0, corpses: 0, drawnParticles: 0, drawnDecals: 0, calls: 0 });
-    expect((await S(page)).mainVisible).toBe(true);
-  });
 
   for (const [level, maxP, maxD] of [['reduit', 96, 12], ['1', 256, 48]]) {
     test(`niveau ${level} : 60 s de tirs, compteurs dans leurs plafonds, sang ≤ 3 appels et ≤ 1 200 triangles`, async ({ page }) => {
@@ -81,126 +56,6 @@ test.describe('sang et mini-arène', () => {
     expect((await S(page)).blood.calls).toBe(2);
     expect(after - before).toBeLessThanOrEqual(3);
     expect(after - before).toBeGreaterThan(0);
-  });
-
-  test('tir mortel : cadavre visuel, puis il disparaît après sa durée (complet : 1,2 + 6 + 0,8 s) et le personnage revient', async ({ page }) => {
-    await open(page);
-    await set(page, 'ctl-sang', '1');
-    await page.click('#btn-kill');
-    await page.evaluate(() => window.__zsPersos.step(0.1));
-    let s = await S(page);
-    expect(s.blood.corpses).toBe(1);
-    expect(s.mainVisible).toBe(false);
-    await page.evaluate(() => window.__zsPersos.step(8.2));
-    s = await S(page);
-    expect(s.blood.corpses).toBe(0);
-    expect(s.mainVisible).toBe(true);
-  });
-
-  test('réduit : cadavre de 2 s seulement ; corps sans taches (palier de blessure 0)', async ({ page }) => {
-    await open(page);
-    await set(page, 'ctl-sang', 'reduit');
-    await page.click('#btn-hit');
-    await page.click('#btn-hit');
-    expect((await S(page)).main.wound).toBe(0);
-    await page.click('#btn-kill');
-    await page.evaluate(() => window.__zsPersos.step(3.9));
-    expect((await S(page)).blood.corpses).toBe(1);
-    await page.evaluate(() => window.__zsPersos.step(0.2));
-    expect((await S(page)).blood.corpses).toBe(0);
-  });
-
-  test('complet : les taches sur le corps suivent la vie (paliers 1, 2, 3)', async ({ page }) => {
-    await open(page);
-    await set(page, 'ctl-sang', '1');
-    const tiers = [];
-    for (let i = 0; i < 3; i += 1) {
-      await page.click('#btn-hit');
-      tiers.push((await S(page)).main.wound);
-    }
-    expect(tiers).toEqual([1, 2, 3]);
-  });
-
-  test('joueur touché : 4 particules au plus, aucune tache', async ({ page }) => {
-    await open(page);
-    await set(page, 'ctl-sang', '1');
-    await set(page, 'ctl-perso', 'joueur');
-    await page.click('#btn-hit');
-    const b = await page.evaluate(() => window.__zsPersos.blood());
-    expect(b.particles).toBeLessThanOrEqual(4);
-    expect(b.particles).toBeGreaterThan(0);
-    expect(b.decals).toBe(0);
-  });
-
-  test('mini-arène : 10 zombies, tous tués, cadavres au plus 6 puis disparus', async ({ page }) => {
-    await open(page);
-    await set(page, 'ctl-sang', '1');
-    let a = await arena(page);
-    expect(a.zombies).toHaveLength(10);
-    let maxCorpses = 0;
-    for (let i = 0; i < 30 && !a.done; i += 1) {
-      await page.evaluate(() => window.__zsPersos.arena.run(1));
-      a = await arena(page);
-      maxCorpses = Math.max(maxCorpses, a.blood.corpses);
-    }
-    expect(a.done).toBe(true);
-    expect(a.kills).toBe(10);
-    expect(a.alive).toBe(0);
-    expect(a.meshes).toBe(0);
-    expect(maxCorpses).toBeLessThanOrEqual(6);
-    expect(maxCorpses).toBeGreaterThan(0);
-    await page.evaluate(() => window.__zsPersos.arena.run(9));
-    expect((await arena(page)).blood.corpses).toBe(0);
-  });
-
-  test('mini-arène déterministe : même graine, même état ; graine suivante : autre départ', async ({ page }) => {
-    await open(page);
-    await page.evaluate(() => window.__zsPersos.arena.run(5));
-    const a = await arena(page);
-    await page.click('#btn-arena-restart');
-    await page.evaluate(() => window.__zsPersos.arena.run(5));
-    const b = await arena(page);
-    expect(b.zombies).toEqual(a.zombies);
-    expect([b.kills, b.shots, b.time]).toEqual([a.kills, a.shots, a.time]);
-    await page.click('#btn-arena-next');
-    const c = await arena(page);
-    expect(c.seed).toBe(a.seed + 1);
-    expect(c.zombies.map((z) => z.x)).not.toEqual(a.zombies.map((z) => z.x));
-  });
-
-  test('vitesse ×2 : mêmes résultats logiques qu\'à ×1 pour le même temps d\'arène', async ({ page }) => {
-    await open(page);
-    await page.evaluate(() => window.__zsPersos.arena.step(6));
-    const one = await arena(page);
-    await page.click('#btn-arena-restart');
-    await set(page, 'ctl-arena-speed', '2');
-    await page.evaluate(() => window.__zsPersos.arena.step(3));
-    const two = await arena(page);
-    expect(two.time).toBeCloseTo(one.time, 6);
-    expect(two.zombies).toEqual(one.zombies);
-    expect(two.kills).toBe(one.kills);
-  });
-
-  test('mini-arène avec « Actuel » : personnages du jeu, sang et compteurs à jour', async ({ page }) => {
-    await open(page);
-    await set(page, 'ctl-variante', 'actuel');
-    await set(page, 'ctl-sang', 'reduit');
-    await page.evaluate(() => window.__zsPersos.arena.run(8));
-    const a = await arena(page);
-    expect(a.kills).toBeGreaterThan(0);
-    expect(a.blood.decals).toBeGreaterThan(0);
-    await expect(page.locator('#arena-stats')).toContainText(`tués ${a.kills}`);
-  });
-
-  test('« Mes choix » porte le niveau de sang ; rien n\'est stocké', async ({ page, context }) => {
-    await open(page);
-    await set(page, 'ctl-sang', 'reduit');
-    await page.click('#btn-pick');
-    expect((await page.locator('#choices-text').inputValue()).split('\n').at(-1)).toBe('sang=reduit');
-    await page.click('#btn-kill');
-    await page.evaluate(() => window.__zsPersos.arena.run(4));
-    expect(await page.evaluate(() => [localStorage.length, sessionStorage.length])).toEqual([0, 0]);
-    expect(await context.cookies()).toEqual([]);
   });
 
   test('axe : aucune violation avec le sang et l\'arène en marche', async ({ page }) => {

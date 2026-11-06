@@ -2,6 +2,7 @@
 // points d'apparition, échelle de 500 unités et cadre de 100 px de plan en filigrane. Pur : renvoie une chaîne, déterministe, texte échappé, aucune
 // couleur (tout passe par des classes de css/carte.css), n'écrit rien dans ses arguments, ne lève aucune exception sur des entrées inattendues.
 import { buildLayout } from './layout.js';
+import { concaveCorners } from './epaves.js';
 import { isNum, num } from './vec.js';
 
 const isObject = (o) => o !== null && typeof o === 'object' && !Array.isArray(o);
@@ -64,6 +65,16 @@ export function mapToSvg(world, decor, options = {}) {
   parts.push(`<g class="portes">${rects(overlays.blocks).map((o) => rectTag(o, 'bloc-porte', ` data-id="${escapeXml(o.id ?? '')}"`)).join('')}</g>`);
   parts.push(`<g class="declencheurs">${rects(overlays.triggers).map((o) => `${rectTag(o, 'declencheur', ` data-id="${escapeXml(o.id ?? '')}"`)}${textTag(o.x + o.w / 2, o.y + o.h / 2 + unit * 0.4, 'declencheur-etiquette', o.label ?? '', unit * 1.1)}`).join('')}</g>`);
   parts.push(`<g class="arrivees">${(Array.isArray(overlays.arrivals) ? overlays.arrivals : []).filter((a) => isObject(a) && isNum(a.x) && isNum(a.y)).map((a) => `<circle class="arrivee" cx="${n(a.x)}" cy="${n(a.y)}" r="${n(unit * 0.6)}" data-id="${escapeXml(a.id ?? '')}"/>`).join('')}</g>`);
+
+  // Lot 5a : épaves du décor extérieur. Sommets rentrants du contour (candidats de l'angle du L ; celui de l'hélicoptère est plein), emprise visuelle de
+  // l'hélicoptère (pales comprises, en pointillés), ses rectangles de collision, la voiture en flammes.
+  const heli = layout.decor?.helicopter;
+  const burning = (layout.decor?.cars ?? []).filter((c) => c.burning === true);
+  if (heli || burning.length > 0) {
+    const corners = Array.isArray(world.contour) ? concaveCorners(world.contour) : [];
+    const chosen = (c) => heli?.corner && c.x === heli.corner.x && c.y === heli.corner.y;
+    parts.push(`<g class="epaves">${corners.map((c) => `<circle class="${chosen(c) ? 'coin-l' : 'coin-rentrant'}" cx="${n(c.x)}" cy="${n(c.y)}" r="${n(unit * 0.7)}" data-id="coin-${n(c.x)}-${n(c.y)}"/>`).join('')}${heli?.visual ? rectTag(heli.visual, 'epave-emprise', ' data-id="helicoptere-emprise"') : ''}${(heli?.rects ?? []).map((r) => rectTag(r, 'epave-helicoptere', ` data-id="${escapeXml(r.id)}"`)).join('')}${burning.map((c) => rectTag(c, 'epave-voiture', ` data-id="${escapeXml(c.id)}"`)).join('')}</g>`);
+  }
 
   // Départ du joueur et zone libre.
   const zone = num(world.startZone, 0);

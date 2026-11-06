@@ -164,12 +164,6 @@ export function states(config) {
   return out;
 }
 
-// État simulé d'un état nommé (id inconnu : valeurs par défaut).
-export function stateById(id, config) {
-  const found = states(config).find((s) => s.id === id);
-  return mockState(found ? found.params : {}, config);
-}
-
 // Valeurs à parcourir pour vérifier qu'aucune boîte ne bouge (bornes, passages de chiffres, formes courtes « k » et « M »).
 export function sweepValues(field, config) {
   const cfg = mockConfig(config);

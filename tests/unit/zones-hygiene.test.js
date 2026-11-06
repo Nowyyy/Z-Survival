@@ -1,9 +1,11 @@
 import { describe, it, expect } from 'vitest';
 import { execSync } from 'node:child_process';
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
+import { seedProblems } from './helpers/seed.js';
 // Lot 4c (publication par versions, seul lot autorisé à modifier le workflow) : workflow, accueil, ses textes et tests du journal modifiés ; ce garde-fou de branche
 // (comparaison à main ou à lot-4b) n'a plus de sens pour eux après l'entrée dans main : ils sortent de la liste.
-const LOT_4C = ['.github/workflows/pages.yml', 'index.html', 'data/i18n/fr.json', 'tests/unit/data-changelog.test.js', 'tests/e2e/dev.spec.js'];
+// Lot 4e : workflow de tests ajouté (.github/workflows/tests.yml, autorisé par le prompt du lot ; pages.yml intact).
+const LOT_4C = ['.github/workflows/pages.yml', '.github/workflows/tests.yml', 'index.html', 'data/i18n/fr.json', 'tests/unit/data-changelog.test.js', 'tests/e2e/dev.spec.js'];
 const notLot4c = (files) => (files ?? []).filter((f) => !LOT_4C.includes(f));
 
 const git = (args) => {
@@ -55,7 +57,10 @@ describe('hygiène du lot 3c : pureté et fichiers', () => {
   });
 
   it('le workflow, Docs/seed.md et les bilans existants sont inchangés (index.html : icône du site ajoutée au lot 4)', () => {
-    const changed = git('diff --name-only main -- .github Docs/seed.md Docs/lots/lot-1.md Docs/lots/lot-2.md Docs/lots/lot-2b.md Docs/lots/lot-2c.md Docs/lots/lot-3.md Docs/lots/lot-3a.md Docs/lots/lot-3b.md');
+    // Lot 5b : Docs/seed.md n'est plus comparé à un commit figé (le propriétaire le met à jour) : seuls ses commits le modifient (tests/unit/helpers/seed.js).
+    const seed = seedProblems();
+    if (seed !== null) expect(seed).toEqual([]);
+    const changed = git('diff --name-only main -- .github Docs/lots/lot-1.md Docs/lots/lot-2.md Docs/lots/lot-2b.md Docs/lots/lot-2c.md Docs/lots/lot-3.md Docs/lots/lot-3a.md Docs/lots/lot-3b.md');
     if (changed !== null) expect(notLot4c(changed)).toEqual([]);
   });
 

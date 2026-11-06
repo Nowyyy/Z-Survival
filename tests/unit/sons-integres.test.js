@@ -10,7 +10,7 @@ import { createDirector, direct, soundTable, voiceFor } from '../../js/core/soun
 import { DEFAULT_MODE, SOUND_MODES, bufferName, checkChoices, durationRange, isAtelier, packStats, parseSoundMode, renderSpec, seedCount } from '../../js/core/sound-choice.js';
 import { renderChoice } from '../../js/core/sound-render.js';
 import { integrate } from '../../scripts/sons/integrer.mjs';
-import { planSounds, resolveJobs } from '../../js/game/sound-loader.js';
+import { planSounds } from '../../js/game/sound-loader.js';
 // Lot 4c (publication par versions, seul lot autorisé à modifier le workflow) : workflow, accueil, ses textes et tests du journal modifiés ; ce garde-fou de branche
 // (comparaison à main ou à lot-4b) n'a plus de sens pour eux après l'entrée dans main : ils sortent de la liste.
 const LOT_4C = ['.github/workflows/pages.yml', 'index.html', 'data/i18n/fr.json', 'tests/unit/data-changelog.test.js', 'tests/e2e/dev.spec.js', 'package.json']; // package.json : scripts site, archive, serve:site (dépendances inchangées, voir publication.test.js)
@@ -30,7 +30,6 @@ const atelierRaw = read('data/game/sounds-atelier.json');
 const atelier = resolveAtelier(atelierRaw);
 const slots = new Map(atelier.slots.map((s) => [s.id, s]));
 const { sounds } = read('data/game/sounds.json');
-const legacy = read('data/game/sounds-legacy.json').sounds;
 const audio = read('data/game/audio.json');
 const voice = read('data/game/zombie-voice.json');
 const byId = new Map(sounds.map((s) => [s.id, s]));
@@ -38,7 +37,7 @@ const owner = parseChoices(readFileSync('data/game/sounds-atelier-choix.txt', 'u
 const B = choix.choix.filter((c) => c.part === 'B'); // partie C : sons-integres-ambiances.test.js
 const REPLACED = ['pas', 'pas-zombie', 'zombie-gemissement', 'zombie-attaque', 'zombie-blessure', 'zombie-mort', 'planche-arrachee', 'planche-posee'];
 // Gardés tels quels (fiche) : mélodie, annonces, tir, douille, impacts, chute et relevage du joueur, joueur blessé et mort, trois voix, interface, ambiance.
-const KEPT = ['tir', 'douille', 'impact-zombie', 'impact-bois', 'impact-metal', 'impact-pierre', 'impact-voiture', 'vague-annonce', 'vague-renforcee', 'vague-fin', 'joueur-chute', 'joueur-releve', 'joueur-blesse', 'joueur-mort', 'zombie-grognement', 'zombie-plainte', 'zombie-souffle', 'ui-pause', 'ui-reprise', 'ambiance'];
+const KEPT = ['tir', 'impact-bois', 'impact-metal', 'impact-pierre', 'impact-voiture', 'vague-annonce', 'vague-renforcee', 'vague-fin', 'joueur-chute', 'joueur-releve', 'joueur-blesse', 'joueur-mort', 'zombie-grognement', 'zombie-plainte', 'zombie-souffle', 'ui-pause', 'ui-reprise', 'ambiance'];
 // Référence « main » d'avant l'intégration des refontes (lot 4, c166e53) : depuis la fusion de lot-4b, main contient les sons de l'atelier.
 // Absente (clone superficiel de la CI) : comparaison sautée (main contient déjà ces sons, il ne peut plus servir de référence).
 const MAIN_AVANT = git('rev-parse --verify --quiet c166e53^{commit}') !== null ? 'c166e53' : null;
@@ -80,10 +79,10 @@ describe('table des choix (data/game/sounds-choix.json)', () => {
     for (const [slot, c] of Object.entries(owner)) if (c.variant === 'actuel' || c.variant === 'aucun') expect(listed.has(slot), slot).toBe(true);
   });
 
-  it('sounds.json et sounds-legacy.json sont à jour par rapport à la table (scripts/sons/integrer.mjs idempotent)', () => {
-    const out = integrate({ sounds: read('data/game/sounds.json'), legacy: read('data/game/sounds-legacy.json'), choix, atelierRaw });
+  // Lot 5e : sounds-legacy.json (pack d'avant) retiré ; integrer.mjs n'écrit plus que sounds.json (l'assertion sur out.legacy part avec lui).
+  it('sounds.json est à jour par rapport à la table (scripts/sons/integrer.mjs idempotent)', () => {
+    const out = integrate({ sounds: read('data/game/sounds.json'), choix, atelierRaw });
     expect(out.sounds.sounds).toEqual(sounds);
-    expect(out.legacy.sounds).toEqual(legacy);
   });
 
   it('chaque entrée de l\'atelier porte la recette résolue de sa variante (identique à resolveAtelier)', () => {
@@ -97,18 +96,12 @@ describe('table des choix (data/game/sounds-choix.json)', () => {
   });
 });
 
-describe('anciens sons : déplacés, recettes conservées', () => {
-  it('sounds-legacy.json contient exactement les 8 recettes remplacées', () => {
-    expect(legacy.map((r) => r.id).sort()).toEqual([...REPLACED].sort());
-  });
-
-  it.each(REPLACED)('%s : recette d\'avant identique à celle de main (comparaison d\'objet)', (id) => {
-    if (!mainSounds) return;
-    expect(legacy.find((r) => r.id === id)).toEqual(mainSounds.find((r) => r.id === id));
-  });
-
+describe('anciens sons : recettes gardées', () => {
+  // Lot 5e : « sounds-legacy.json contient exactement les recettes remplacées » et « recette d'avant identique à main » retirés avec le pack d'avant.
   it.each(KEPT)('%s : recette gardée, identique à main (mélodie, coups de feu, impacts…)', (id) => {
     expect(isAtelier(byId.get(id))).toBe(false);
+    // Lot 5a-E : la douille, refaite plus sourde et plus basse à la demande du propriétaire, sort de cette liste (tests/unit/impact-chair.test.js).
+    expect(byId.get(id).gainDb).toBeUndefined();
     if (mainSounds) expect(byId.get(id)).toEqual(mainSounds.find((r) => r.id === id));
   });
 });
@@ -188,14 +181,12 @@ describe('tirage sans répétition immédiate', () => {
 
 describe('directeur de sons : accueil des nouveaux tampons', () => {
   const table = soundTable(sounds);
-  const oldTable = soundTable([...sounds.filter((s) => !isAtelier(s)), ...legacy]);
   const cfg = (t) => ({ audio, voice, materials: { sounds: {} }, sounds: t });
   const frame = (events, time = 1) => ({ time, listener: { x: 0, y: 0 }, walls: [], paused: false, events });
 
-  it('voix par type : identifiant du type, hauteur 1 ; pack d\'avant : son commun à la hauteur du type', () => {
+  it('voix par type : identifiant du type, hauteur 1 ; voix commune (grognement) à la hauteur du type (lot 5e : cas du pack d\'avant retiré)', () => {
     expect(voiceFor(table, 'zombie-mort', 'petit', audio.zombieRate)).toEqual({ sound: 'zombie-mort-petit', rate: 1 });
     expect(voiceFor(table, 'zombie-mort', 'marcheur', audio.zombieRate)).toEqual({ sound: 'zombie-mort', rate: 1 });
-    expect(voiceFor(oldTable, 'zombie-mort', 'petit', audio.zombieRate)).toEqual({ sound: 'zombie-mort', rate: audio.zombieRate.petit });
     expect(voiceFor(table, 'zombie-grognement', 'grand', audio.zombieRate)).toEqual({ sound: 'zombie-grognement', rate: audio.zombieRate.grand });
   });
 
@@ -216,11 +207,7 @@ describe('directeur de sons : accueil des nouveaux tampons', () => {
     expect(direct(createDirector(1), frame([{ type: 'plankRepairStop', windowId: 'F1' }]), cfg(table)).stops).toEqual([{ sound: 'planche-posee', key: 'F1' }]);
   });
 
-  it('pack d\'avant : la planche posée sonne à la fin de la pose, jamais au début', () => {
-    expect(direct(createDirector(1), frame([{ type: 'plankRepairStart', x: 10, y: 0, windowId: 'F1', duration: 1.2, progress: 0 }]), cfg(oldTable)).requests).toEqual([]);
-    expect(direct(createDirector(1), frame([{ type: 'plankRepaired', x: 10, y: 0, windowId: 'F1' }]), cfg(oldTable)).requests.map((r) => r.sound)).toEqual(['planche-posee']);
-    expect(direct(createDirector(1), frame([{ type: 'plankRepairStop', windowId: 'F1' }]), cfg(oldTable)).stops).toEqual([]);
-  });
+  // Lot 5e : « pack d'avant : la planche posée sonne à la fin de la pose » retiré avec le pack d'avant.
 
   it('autre étage : réparation étouffée (× floorGain, passe-bas floorLowpass)', () => {
     const f = { ...frame([{ type: 'plankRepairStart', x: 10, y: 0, windowId: 'F1', duration: 1.8, progress: 0, floor: 'etage' }]), floor: 'rdc' };
@@ -240,7 +227,7 @@ describe('?sons= : mode des sons', () => {
   it.each(SOUND_MODES)('« %s » est reconnu', (m) => {
     expect(parseSoundMode(`?sons=${m}`)).toBe(m);
   });
-  it.each(['', '?sons=', '?sons=a', '?sons=D', '?sons=CHOIX', '?sons=ancien2', '?sons=%3Cscript%3E', '?sons=ancien&sons=B', '?sons=__proto__', '?sons=constructor', '?autre=1'])('« %s » : défaut, sans erreur', (q) => {
+  it.each(['', '?sons=', '?sons=a', '?sons=D', '?sons=CHOIX', '?sons=ancien', '?sons=ancien2', '?sons=%3Cscript%3E', '?sons=ancien&sons=B', '?sons=__proto__', '?sons=constructor', '?autre=1'])('« %s » : défaut, sans erreur', (q) => {
     expect(parseSoundMode(q)).toBe(DEFAULT_MODE);
   });
   it('accepte un URLSearchParams et un objet hostile sans lever', () => {
@@ -263,21 +250,17 @@ describe('?sons= : mode des sons', () => {
   });
 });
 
-describe('chargeur : aucun octet du pack ancien par défaut', () => {
-  it('sound-loader.js et audio.js n\'importent le pack ancien et l\'atelier que dynamiquement', () => {
+describe('chargeur : aucun octet du pack ancien (lot 5e : retiré)', () => {
+  it('sound-loader.js et audio.js n\'importent l\'atelier que dynamiquement ; le pack ancien n\'existe plus', () => {
     for (const f of ['js/game/sound-loader.js', 'js/game/audio.js', 'js/game/main.js']) {
       const src = readFileSync(f, 'utf8');
       expect(src, f).not.toMatch(/^import[^;]*sound-legacy/m);
       expect(src, f).not.toMatch(/^import[^;]*sound-atelier'/m);
       expect(src, f).not.toMatch(/^import[^;]*sounds-legacy\.json/m);
     }
-    expect(readFileSync('js/game/sound-loader.js', 'utf8')).toMatch(/import\('\.\/sound-legacy\.js'\)/);
+    expect(existsSync('js/game/sound-legacy.js') || existsSync('data/game/sounds-legacy.json')).toBe(false);
   });
-  it('mode choix : les tâches restent les mêmes (aucun chargement du pack ancien)', async () => {
-    const jobs = planSounds(sounds, 'essentiel');
-    expect(await resolveJobs(jobs, 'choix')).toBe(jobs);
-    expect(await resolveJobs(jobs, 'B')).toBe(jobs);
-  });
+  // Lot 5e : « mode choix : les tâches restent les mêmes (resolveJobs) » retiré avec resolveJobs (aiguillage du pack ancien).
   it('planSounds : les versions préchargées de chaque son de l\'atelier, nommées id-k', () => {
     const jobs = planSounds(sounds);
     for (const c of B) {

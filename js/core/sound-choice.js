@@ -4,7 +4,7 @@
 // Ce module n'importe pas synth2.js : le fil principal du jeu ne charge pas le moteur de l'atelier (seul le calculateur d'arrière-plan le fait).
 import { isNum } from './vec.js';
 
-export const SOUND_MODES = Object.freeze(['choix', 'ancien', 'A', 'B', 'C']);
+export const SOUND_MODES = Object.freeze(['choix', 'A', 'B', 'C']); // lot 5e : « ancien » (pack d'avant) retiré
 export const DEFAULT_MODE = 'choix';
 export const ATELIER_ENGINE = 'atelier';
 

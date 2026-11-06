@@ -1,15 +1,14 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { buildLayout } from '../../js/core/layout.js';
-import { createDirector, direct, materialFor, soundTable } from '../../js/core/sound-director.js';
-import { synthRecipes } from './helpers/sons-anciens.js';
+import { createDirector, direct, materialFor, soundTable, voiceFor } from '../../js/core/sound-director.js';
 
 const read = (f) => JSON.parse(readFileSync(`data/game/${f}.json`, 'utf8'));
 const audio = read('audio');
 const materials = read('sound-materials');
-// Lot 3i : table du pack d'avant (?sons=ancien) ; la voix par type, la réparation au début de la pose et le gain du pas de l'atelier sont
-// vérifiés dans sons-integres.test.js.
-const cfg = { audio, materials, voice: read('zombie-voice'), sounds: soundTable(synthRecipes()) };
+// Lot 5e : table du pack par défaut (data/game/sounds.json entier ; avant : table du pack d'avant, ?sons=ancien, retiré) ; la voix par type,
+// la réparation au début de la pose et le gain du pas de l'atelier sont vérifiés aussi dans sons-integres.test.js.
+const cfg = { audio, materials, voice: read('zombie-voice'), sounds: soundTable(read('sounds').sounds) };
 const layout = buildLayout(read('world'), read('decor'), {});
 const LISTENER = { x: 800, y: 600 };
 const frame = (events, extra = {}) => ({ time: 10, listener: LISTENER, walls: [], paused: false, events, ...extra });
@@ -76,12 +75,14 @@ describe('sound-director.js : impacts', () => {
   it('un zombie tué : choc et mort, pas de blessure', () => {
     expect(names(hit({ killed: true }))).toEqual(['impact-zombie', 'zombie-mort']);
   });
-  it('la hauteur de la voix suit la variante du zombie (table de audio.json)', () => {
+  // Lot 5e (pack par défaut) : la blessure a une voix par type, lue à la hauteur 1 (sons-integres.test.js) ; la hauteur suit encore la variante
+  // pour les voix communes de synth.js (grognement, plainte, souffle) : vérifié sur zombie-grognement.
+  it('la hauteur d\'une voix commune suit la variante du zombie (table de audio.json)', () => {
     for (const [name, rate] of Object.entries(audio.zombieRate)) {
-      const voice = hit({ zombie: name }).requests.find((q) => q.sound === 'zombie-blessure');
-      expect(voice.rate).toBe(rate);
+      const voice = voiceFor(cfg.sounds, 'zombie-grognement', name, audio.zombieRate);
+      expect(voice).toEqual({ sound: 'zombie-grognement', rate });
     }
-    expect(hit({ zombie: 'inconnu' }).requests[1].rate).toBe(1);
+    expect(voiceFor(cfg.sounds, 'zombie-grognement', 'inconnu', audio.zombieRate).rate).toBe(1);
   });
   it('une balle sur un obstacle joue la matière de son type', () => {
     const expected = { table: 'impact-bois', comptoir: 'impact-bois', caisse: 'impact-bois', armoire: 'impact-bois', etagere: 'impact-metal', colonne: 'impact-pierre', voiture: 'impact-voiture', arbre: 'impact-bois' };
@@ -136,7 +137,7 @@ describe('sound-director.js : joueur, pas, interface et pause', () => {
     expect(names(run([{ type: 'playerDeath' }]))).toEqual(['joueur-mort']);
     const step = run([{ type: 'playerStep', volume: 0.6, foot: 'droit' }]).requests[0];
     expect(step.sound).toBe('pas');
-    expect(step.gain).toBeCloseTo(0.6, 6);
+    expect(step.gain).toBeCloseTo(0.6 * 10 ** ((read('sounds').sounds.find((r) => r.id === 'pas').gainDb ?? 0) / 20), 6); // lot 5e : gain propre du pas de l'atelier (+1 dB)
     expect(step.pan).toBeGreaterThan(0);
   });
   it('pause et reprise : sons d\'interface', () => {
@@ -270,11 +271,11 @@ describe('sound-director.js : voix, pas et cris des zombies (lot 1d-C)', () => {
   it('aucun pas de zombie à l\'arrêt', () => {
     expect(play(30, horde(3, () => 200)).filter((q) => q.sound === 'pas-zombie')).toEqual([]);
   });
-  it('cri d\'attaque au contact avec la hauteur de la variante ; limité à 3 voix de zombie simultanées', () => {
+  it('cri d\'attaque au contact avec la voix du type (lot 5e : pack par défaut, hauteur 1) ; limité à 3 voix de zombie simultanées', () => {
     const attack = (zombie) => run([{ type: 'zombieAttack', x: LISTENER.x + 30, y: LISTENER.y, zombie }]).requests;
     const petit = attack('petit');
-    expect(names({ requests: petit })).toEqual(['zombie-attaque']);
-    expect(petit[0].rate).toBe(audio.zombieRate.petit);
+    expect(names({ requests: petit })).toEqual(['zombie-attaque-petit']);
+    expect(petit[0].rate).toBe(1);
     let s = createDirector(1);
     s = direct(s, frame([{ type: 'zombieHit', x: 900, y: 600, killed: true, zombie: 'marcheur' }], { time: 5 }), cfg).state;
     s = direct(s, frame([{ type: 'zombieHit', x: 950, y: 600, killed: true, zombie: 'grand' }], { time: 5.2 }), cfg).state;

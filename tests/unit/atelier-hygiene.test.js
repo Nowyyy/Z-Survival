@@ -2,9 +2,11 @@
 import { describe, it, expect } from 'vitest';
 import { execSync } from 'node:child_process';
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
+import { seedProblems } from './helpers/seed.js';
 // Lot 4c (publication par versions, seul lot autorisé à modifier le workflow) : workflow, accueil, ses textes et tests du journal modifiés ; ce garde-fou de branche
 // (comparaison à main ou à lot-4b) n'a plus de sens pour eux après l'entrée dans main : ils sortent de la liste.
-const LOT_4C = ['.github/workflows/pages.yml', 'index.html', 'data/i18n/fr.json', 'tests/unit/data-changelog.test.js', 'tests/e2e/dev.spec.js'];
+// Lot 4e : workflow de tests ajouté (.github/workflows/tests.yml, autorisé par le prompt du lot ; pages.yml intact).
+const LOT_4C = ['.github/workflows/pages.yml', '.github/workflows/tests.yml', 'index.html', 'data/i18n/fr.json', 'tests/unit/data-changelog.test.js', 'tests/e2e/dev.spec.js'];
 const notLot4c = (files) => (files ?? []).filter((f) => !LOT_4C.includes(f));
 
 const git = (args) => {
@@ -60,8 +62,9 @@ describe('hygiène du lot 3g : fichiers', () => {
 
   // Lot 3i : data/game/sounds.json retiré de la liste (sons de l'atelier intégrés, décision du propriétaire) ; ses recettes gardées sont comparées à main
   // dans sons-integres.test.js.
+  // Lot 5e : js/core/pose.js sort de la liste (ancien modèle supprimé, fichier absent).
   it('règles de jeu inchangées depuis la base (tir, vagues, stats, chutes, siège, caméra, sons, sauvegarde, ancienne salle)', () => {
-    const files = ['js/core/waves.js', 'js/core/wave-director.js', 'js/core/projectile.js', 'js/core/ray.js', 'js/core/spread.js', 'js/core/player-stats.js', 'js/core/player-down.js', 'js/core/siege.js', 'js/core/camera.js', 'js/core/synth.js', 'js/core/pose.js',
+    const files = ['js/core/waves.js', 'js/core/wave-director.js', 'js/core/projectile.js', 'js/core/ray.js', 'js/core/spread.js', 'js/core/player-stats.js', 'js/core/player-down.js', 'js/core/siege.js', 'js/core/camera.js', 'js/core/synth.js',
       'data/game/waves.json', 'data/game/gaits.json', 'data/game/weapons.json', 'data/game/player-stats.json', 'data/game/player-down.json', 'data/game/windows.json', 'data/game/world.json', 'data/game/decor.json'];
     const changed = git(`diff --name-only ${BASE} -- ${files.join(' ')}`);
     if (changed === null) return;
@@ -74,7 +77,10 @@ describe('hygiène du lot 3g : fichiers', () => {
     // main (lot 4) récupéré dans la branche : la comparaison se fait avec ce main (MAIN), pas avec la base du lot.
     // Lot 3l (interface intégrée, fusionnée dans lot-4b) : jeu.html, css/game.css, js/game/hud.js et js/game/ui.js sont modifiés par ce lot autorisé ; ils sortent de la liste.
     // Lot 4b (demande du propriétaire) : CLAUDE.md et conventions.md reçoivent les règles de tous les lots intégrés ; ils sortent de la liste.
-    const changed = git(`diff --name-only ${MAIN} -- js/game/levels-source.js data/game/enemies.json .github index.html Docs/seed.md`);
+    // Lot 5b : Docs/seed.md n'est plus comparé à un commit figé (le propriétaire le met à jour) : seuls ses commits le modifient (tests/unit/helpers/seed.js).
+    const seed = seedProblems();
+    if (seed !== null) expect(seed).toEqual([]);
+    const changed = git(`diff --name-only ${MAIN} -- js/game/levels-source.js data/game/enemies.json .github index.html`);
     if (changed === null) return;
     expect(notLot4c(changed)).toEqual([]);
   });

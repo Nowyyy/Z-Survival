@@ -1,0 +1,10 @@
+{
+  "schema": 1,
+  "source": true,
+  "_note": "Arbre source du dépôt (non publié tel quel) : l'assembleur (scripts/assemble.mjs) écrit le vrai site-info.json dans Recette/ du site assemblé. Ce fichier évite une requête en échec quand le dépôt est servi en local (tests, Lighthouse) ; l'accueil l'affiche comme « arbre source », sans version ni évolution.",
+  "genere": "",
+  "recette": null,
+  "dev": { "present": false, "sha": "", "date": "", "entry": "../dev/jeu.html" },
+  "evolutions": [],
+  "precedentes": []
+}

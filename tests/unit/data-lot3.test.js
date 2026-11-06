@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { execSync } from 'node:child_process';
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
+import { seedProblems } from './helpers/seed.js';
 import { circleOverlapsRect } from '../../js/core/collision.js';
 import { moveCircle } from '../../js/core/movement.js';
 import { DOWN_TEXTS, WINDOW_INITIALS, WINDOW_NAMES, WINDOW_TEXTS } from '../../js/game/texts.js';
@@ -8,7 +9,8 @@ import { layout, load } from './helpers/monde.js';
 import { geoms } from './helpers/sim-siege.js';
 // Lot 4c (publication par versions, seul lot autorisé à modifier le workflow) : workflow, accueil, ses textes et tests du journal modifiés ; ce garde-fou de branche
 // (comparaison à main ou à lot-4b) n'a plus de sens pour eux après l'entrée dans main : ils sortent de la liste.
-const LOT_4C = ['.github/workflows/pages.yml', 'index.html', 'data/i18n/fr.json', 'tests/unit/data-changelog.test.js', 'tests/e2e/dev.spec.js'];
+// Lot 4e : workflow de tests ajouté (.github/workflows/tests.yml, autorisé par le prompt du lot ; pages.yml intact).
+const LOT_4C = ['.github/workflows/pages.yml', '.github/workflows/tests.yml', 'index.html', 'data/i18n/fr.json', 'tests/unit/data-changelog.test.js', 'tests/e2e/dev.spec.js'];
 const notLot4c = (files) => (files ?? []).filter((f) => !LOT_4C.includes(f));
 
 const windows = load('windows');
@@ -114,8 +116,11 @@ describe('géométrie des fenêtres et du monde (world.json inchangé)', () => {
   });
 
   it('les fichiers que le lot ne doit pas toucher sont inchangés depuis main', () => {
-    const changed = git('diff --name-only main -- js/core/waves.js js/core/vhs.js js/core/spread.js js/core/camera.js data/game/gaits.json data/game/weapons.json data/game/decor.json data/game/vhs.json Docs/seed.md .github');
+    const changed = git('diff --name-only main -- js/core/waves.js js/core/vhs.js js/core/spread.js js/core/camera.js data/game/gaits.json data/game/weapons.json data/game/decor.json data/game/vhs.json .github');
     if (changed !== null) expect(notLot4c(changed)).toEqual([]);
+    // Lot 5b : Docs/seed.md n'est plus comparé à un commit figé (le propriétaire le met à jour) : seuls ses commits le modifient (tests/unit/helpers/seed.js).
+    const seed = seedProblems();
+    if (seed !== null) expect(seed).toEqual([]);
   });
 });
 

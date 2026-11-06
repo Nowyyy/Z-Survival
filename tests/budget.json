@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "avantCommitSecondes": 120,
+  "standardSecondes": 480,
+  "standardCibleSecondes": 480,
+  "standardMaxSecondes": 600,
+  "completCibleSecondes": 600,
+  "installationSecondes": 30,
+  "testsParTrancheSecondes": 480,
+  "tranchesMax": 16,
+  "tranchesMaxStandard": 8,
+  "facteurDesequilibre": 1.25,
+  "facteurParallelisme": 1.86,
+  "workersCI": 2,
+  "retriesComplet": 0,
+  "retriesInstables": 2,
+  "ajoutMaxParLotSecondes": 90,
+  "vitestToutSousSecondes": 180,
+  "completMaxVersions": 3,
+  "standardProjets": [
+    "bureau"
+  ]
+}

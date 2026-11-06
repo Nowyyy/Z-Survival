@@ -1,4 +1,4 @@
-// Lot 4c-A : schéma de versions.json (scripts/versions/schema.mjs) et cohérence avec data/changelog.json → versions.
+// Lot 4c-A : schéma de versions.json (scripts/versions/schema.mjs) et cohérence avec data/changelog.json → versions (lot 5g : liste supprimée, voir OLD_VERSIONS).
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
@@ -8,6 +8,14 @@ import {
 
 const real = JSON.parse(readFileSync('versions.json', 'utf8'));
 const changelog = JSON.parse(readFileSync('data/changelog.json', 'utf8'));
+// Lot 5g : la liste « versions » de data/changelog.json est supprimée (journal des versions retiré) ; checkChangelogConsistency (scripts/versions/,
+// inchangé) est encore vérifiée sur cette liste figée, celle du journal avant le lot 5g.
+const OLD_VERSIONS = [{ version: 'V0.1', lot: 'lot-1' }, { version: 'V0.2', lot: 'lot-1d' }, { version: 'V0.3', lot: 'lot-2c' }, { version: 'V0.4', lot: 'lot-3e' }, { version: 'V0.5', lot: 'lot-4b', enCours: true }];
+const oldChangelog = { ...changelog, versions: OLD_VERSIONS };
+// Lot 5f : V0.6 publiée (actuelle, branche dev), V0.5 archivée. La liste figée d'avant le lot 5g décrit V0.1 à V0.5 (V0.5 en cours) : elle est comparée
+// à versions.json tel qu'il était avant la publication de V0.6 (même fichier sans V0.6, V0.5 actuelle et latest).
+const avantV06 = { ...real, latest: 'v0.5', versions: real.versions.filter((v) => v.id !== 'v0.6').map((v) => (v.id === 'v0.5' ? { ...v, status: 'actuelle' } : v)) };
+const FUSION_4B = 'e6cf00e0392250d1125e4c14c11a91837fca29db'; // fusion de lot-4b dans main (Pull Request #20), ancien ref de V0.5
 const clone = () => structuredClone(real);
 const errorsOf = (data) => validateVersions(data).errors.join('\n');
 
@@ -16,18 +24,30 @@ describe('versions.json du dépôt', () => {
     expect(validateVersions(real)).toEqual({ ok: true, errors: [] });
   });
 
-  it('liste V0.1 à V0.5 dans l\'ordre, V0.5 actuelle et latest', () => {
-    expect(real.versions.map((v) => [v.id, v.branch])).toEqual([['v0.1', 'lot-1'], ['v0.2', 'lot-1d'], ['v0.3', 'lot-2c'], ['v0.4', 'lot-3e'], ['v0.5', 'lot-4b']]);
-    expect(real.latest).toBe('v0.5');
-    expect(real.versions.filter((v) => v.status === 'actuelle').map((v) => v.id)).toEqual(['v0.5']);
+  // Lot 5f : avant « V0.1 à V0.5, V0.5 actuelle et latest » ; après : V0.6 ajoutée (branche dev), actuelle et latest, V0.5 archive.
+  it('liste V0.1 à V0.6 dans l\'ordre, V0.6 actuelle et latest, V0.1 à V0.5 archivées', () => {
+    expect(real.versions.map((v) => [v.id, v.branch])).toEqual([['v0.1', 'lot-1'], ['v0.2', 'lot-1d'], ['v0.3', 'lot-2c'], ['v0.4', 'lot-3e'], ['v0.5', 'lot-4b'], ['v0.6', 'dev']]);
+    expect(real.latest).toBe('v0.6');
+    expect(real.versions.filter((v) => v.status === 'actuelle').map((v) => v.id)).toEqual(['v0.6']);
+    expect(real.versions.filter((v) => v.status === 'archive').map((v) => v.id)).toEqual(['v0.1', 'v0.2', 'v0.3', 'v0.4', 'v0.5']);
+    expect(validateVersions(avantV06)).toEqual({ ok: true, errors: [] });
   });
 
-  it('est cohérent avec data/changelog.json (versions), dans les deux sens', () => {
-    expect(checkChangelogConsistency(real, changelog)).toEqual({ ok: true, errors: [] });
-    expect(real.versions.map((v) => v.label)).toEqual(changelog.versions.map((v) => v.version));
+  // Lot 5g : avant, cohérence avec changelog.versions dans les deux sens ; après : la liste n'existe plus, chaque version désigne un lot du journal
+  // et la liste figée d'avant reste cohérente avec versions.json.
+  // Lot 5f : V0.6 vient de la branche dev (pas d'un lot) ; avant : chaque version (V0.1 à V0.5) désignait un lot. V0.1 à V0.5 le font toujours.
+  it('chaque version désigne un lot du journal (data/changelog.json → lots), sauf V0.6 (branche dev) ; plus de liste « versions » ; liste d\'avant le lot 5g toujours cohérente', () => {
+    expect(changelog.versions).toBeUndefined();
+    for (const v of real.versions.filter((x) => x.id !== 'v0.6')) expect(changelog.lots.map((e) => e.name), v.id).toContain(v.branch);
+    expect(real.versions.find((v) => v.id === 'v0.6').branch).toBe(real.dev.branch);
+    expect(checkChangelogConsistency(avantV06, oldChangelog)).toEqual({ ok: true, errors: [] });
+    expect(avantV06.versions.map((v) => v.label)).toEqual(OLD_VERSIONS.map((v) => v.version));
+    expect(real.versions.map((v) => v.label)).toEqual([...OLD_VERSIONS.map((v) => v.version), 'V0.6']);
   });
 
-  it('gèle des hash qui existent dans le dépôt et désignent la bonne branche (V0.1 à V0.4 : tête de la branche ; V0.5 : fusion de lot-4b dans main)', () => {
+  // Lot 5f : avant « V0.5 : fusion de lot-4b dans main (2 parents) » ; après : V0.5 = tête de main archivée (descend de cette fusion, qui a 2 parents),
+  // V0.6 = fusion dans dev (2 parents) qui descend de V0.5.
+  it('gèle des hash qui existent dans le dépôt et désignent la bonne branche (V0.1 à V0.4 : tête de la branche ; V0.5 : tête de main issue de la fusion de lot-4b ; V0.6 : fusion dans dev)', () => {
     let history = true;
     try {
       execFileSync('git', ['cat-file', '-e', `${real.versions[0].ref}^{commit}`], { stdio: 'ignore' });
@@ -38,8 +58,12 @@ describe('versions.json du dépôt', () => {
     for (const v of real.versions) {
       execFileSync('git', ['cat-file', '-e', `${v.ref}^{commit}`]);
       const parents = execFileSync('git', ['log', '-1', '--format=%P', v.ref], { encoding: 'utf8' }).trim().split(' ');
-      if (v.id === 'v0.5') expect(parents).toHaveLength(2);
+      if (v.id === 'v0.6') expect(parents).toHaveLength(2);
     }
+    const ref = (id) => real.versions.find((v) => v.id === id).ref;
+    expect(execFileSync('git', ['log', '-1', '--format=%P', FUSION_4B], { encoding: 'utf8' }).trim().split(' ')).toHaveLength(2);
+    execFileSync('git', ['merge-base', '--is-ancestor', FUSION_4B, ref('v0.5')]);
+    execFileSync('git', ['merge-base', '--is-ancestor', ref('v0.5'), ref('v0.6')]);
   });
 
   it('dev : branche dev servie à next/', () => {
@@ -118,7 +142,7 @@ describe('validateVersions : cohérence', () => {
 
   it('zéro ou deux versions actuelles refusées', () => {
     const none = clone();
-    none.versions[4].status = 'archive';
+    none.versions[none.versions.findIndex((v) => v.status === 'actuelle')].status = 'archive'; // lot 5f : avant versions[4] (V0.5), aujourd'hui V0.6
     expect(errorsOf(none)).toContain('exactement une version « actuelle » (trouvé 0)');
     const two = clone();
     two.versions[3].status = 'actuelle';
@@ -211,22 +235,24 @@ describe('aides', () => {
   });
 
   it('versionPath : racine pour l\'actuelle, v0.N/ pour une archive, null si indisponible', () => {
-    expect(versionPath(real.versions[4])).toBe('');
+    expect(versionPath(real.versions.find((v) => v.id === real.latest))).toBe(''); // lot 5f : avant versions[4] (V0.5), aujourd'hui V0.6
     expect(versionPath(real.versions[0])).toBe('v0.1/');
+    expect(versionPath(real.versions.find((v) => v.id === 'v0.5'))).toBe('v0.5/');
     expect(versionPath({ ...real.versions[0], status: 'indisponible' })).toBeNull();
     expect(versionPath(null)).toBeNull();
     expect(versionPath({ id: '../x', status: 'archive' })).toBeNull();
   });
 
+  // Lot 5f : comparé à versions.json d'avant V0.6 (avantV06), comme la liste figée ; avant : versions.json réel.
   it('cohérence avec le journal : écarts détectés dans les deux sens', () => {
-    const extra = { ...changelog, versions: [...changelog.versions, { version: 'V0.6', lot: 'lot-5' }] };
-    expect(checkChangelogConsistency(real, extra).errors).toContain('V0.6 : absente de versions.json');
-    const fewer = { ...changelog, versions: changelog.versions.slice(1) };
-    expect(checkChangelogConsistency(real, fewer).errors).toContain('v0.1 : absente de changelog.versions');
-    const moved = { ...changelog, versions: changelog.versions.map((v) => (v.version === 'V0.2' ? { ...v, lot: 'lot-1c' } : v)) };
-    expect(checkChangelogConsistency(real, moved).errors.join()).toContain('v0.2 : branche lot-1d ≠ lot lot-1c');
-    const otherCurrent = { ...changelog, versions: changelog.versions.map((v) => ({ ...v, enCours: v.version === 'V0.4' })) };
-    expect(checkChangelogConsistency(real, otherCurrent).ok).toBe(false);
+    const extra = { ...changelog, versions: [...OLD_VERSIONS, { version: 'V0.6', lot: 'lot-5' }] };
+    expect(checkChangelogConsistency(avantV06, extra).errors).toContain('V0.6 : absente de versions.json');
+    const fewer = { ...changelog, versions: OLD_VERSIONS.slice(1) };
+    expect(checkChangelogConsistency(avantV06, fewer).errors).toContain('v0.1 : absente de changelog.versions');
+    const moved = { ...changelog, versions: OLD_VERSIONS.map((v) => (v.version === 'V0.2' ? { ...v, lot: 'lot-1c' } : v)) };
+    expect(checkChangelogConsistency(avantV06, moved).errors.join()).toContain('v0.2 : branche lot-1d ≠ lot lot-1c');
+    const otherCurrent = { ...changelog, versions: OLD_VERSIONS.map((v) => ({ ...v, enCours: v.version === 'V0.4' })) };
+    expect(checkChangelogConsistency(avantV06, otherCurrent).ok).toBe(false);
     expect(checkChangelogConsistency(null, null)).toEqual({ ok: true, errors: [] });
   });
 });

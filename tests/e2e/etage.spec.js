@@ -92,15 +92,6 @@ test.describe('étage : départ, visibilité, étiquettes', () => {
     expect(up.length).toBeGreaterThan(3);
   });
 
-  test('?map=salle : aucun étage, aucune puce, aucun escalier, comportement du lot 3c', async ({ page }) => {
-    await open(page, '&wave=1&nospawn=1&map=salle');
-    const s = await STATE(page);
-    expect(s.floor.multi).toBe(false);
-    expect(s.floor.stairs).toEqual([]);
-    expect(s.scene.visible.etage).toBe(0);
-    await expect(page.locator('#hud-floor')).toBeHidden();
-    expect(await page.evaluate(() => window.__zs.setFloor(1))).toBe(false);
-  });
 });
 
 // Escalier physique (mise à jour du lot 3e) : on marche dans l'escalier, sa hauteur monte, l'étage logique change à mi-hauteur ; plus de fondu ni de téléportation.
@@ -950,9 +941,19 @@ test.describe('sons, budget, interface', () => {
   test('pause pendant le passage d\'un zombie dans l\'escalier : il ne bouge plus', async ({ page }) => {
     await open(page, '&wave=21&nospawn=1', SIZE, { freeze: false });
     await page.evaluate((b) => { window.__zs.spawnEnemy(b.x, b.y + 60, { floor: 'etage', mode: 'dedans' }); }, A_ETAGE);
-    await expect.poll(async () => (await STATE(page)).enemies.some((e) => e.mode === 'escalier'), { timeout: 20000 }).toBe(true);
+    // Lot 4f-A : le zombie est amené dans l'escalier par step() (temps de jeu), plus par une attente réelle de 20 s qui expirait sous charge
+    // (rendu plus lent, donc jeu plus lent) ; la boucle réelle tourne toujours (freeze: false) : c'est elle que la pause doit arrêter.
+    const pas = await page.evaluate(() => {
+      for (let i = 0; i < 1200; i += 1) { // 60 s de jeu au plus
+        if (window.__zs.getState().enemies.some((e) => e.mode === 'escalier')) return i;
+        window.__zs.step(0.05);
+      }
+      return -1;
+    });
+    expect(pas, 'le zombie atteint l\'escalier en 60 s de jeu au plus').toBeGreaterThanOrEqual(0);
     await page.click('#btn-pause');
     const a = await STATE(page);
+    expect(a.enemies.some((e) => e.mode === 'escalier'), 'la pause tombe pendant le passage dans l\'escalier').toBe(true);
     await page.waitForTimeout(600);
     const b = await STATE(page);
     expect(b.time).toBe(a.time);

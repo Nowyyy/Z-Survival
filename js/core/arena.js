@@ -55,16 +55,3 @@ export function stepArena(state, dt, cfg) {
   const done = zombies.every((z) => !z.alive);
   return { state: { ...state, time: state.time + t, steps: state.steps + 1, cooldown, kills, shots, hits, aim, done, zombies }, events };
 }
-
-// Avance de `seconds` par pas fixes de ARENA_STEP ; renvoie { state, events } (tous les événements, dans l'ordre).
-export function runArena(state, seconds, cfg) {
-  let s = state;
-  const events = [];
-  const n = Math.max(0, Math.round(num(seconds) / ARENA_STEP));
-  for (let i = 0; i < n && !s.done; i += 1) {
-    const r = stepArena(s, ARENA_STEP, cfg);
-    s = r.state;
-    events.push(...r.events.map((e) => ({ ...e, time: s.time })));
-  }
-  return { state: s, events };
-}

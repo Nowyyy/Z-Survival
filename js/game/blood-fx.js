@@ -45,6 +45,9 @@ export function createBloodFx(options) {
     tex.image.data.set(decalAtlas(atlasSize, cfg.texture?.seed ?? 31).data);
     tex.needsUpdate = true;
   };
+  // Lot 5b-H (décision du propriétaire) : calculé dès la création, derrière l'écran de préparation (quelques dizaines de ms de chargement en plus),
+  // au lieu de la première tache (accroc de 25 à 63 ms mesuré au premier sang sur l'iPhone, le Pixel 7 et le Poco F7 Ultra).
+  ensureAtlas();
   tex.magFilter = THREE.LinearFilter;
   tex.minFilter = THREE.LinearMipmapLinearFilter;
   tex.generateMipmaps = true;
