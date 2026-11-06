@@ -1,5 +1,5 @@
 // Zombies : poursuite en ligne droite, séparation simple ; avec un monde (obstacles, champ de flux) ils contournent les meubles.
-import { moveWithCollision } from './collision.js';
+import { moveWithCollisionInto } from './collision.js';
 import { flowDirection, lineOfSight } from './nav.js';
 import { clampDt, isNum, normalize, num } from './vec.js';
 
@@ -149,7 +149,7 @@ export function stepEnemies(enemies, player, dt, def, world = null) {
     vy += push.y * Math.min(1, Math.hypot(pushX, pushY) / Math.max(1, r));
     const v = Math.hypot(vx, vy) > 1 ? normalize({ x: vx, y: vy }) : { x: vx, y: vy };
     if (!world) return { ...enemy, x: x + v.x * speed * step, y: y + v.y * speed * step };
-    const moved = moveWithCollision({ x, y, r }, { x: v.x * speed * step, y: v.y * speed * step }, world.obstacles, world.bounds);
-    return { ...enemy, ...track, x: moved.x, y: moved.y };
+    // Lot 5d : le nouvel objet du zombie sert de tampon de sortie (x, y écrits par moveWithCollisionInto : mêmes clés, mêmes nombres).
+    return moveWithCollisionInto({ ...enemy, ...track, x: 0, y: 0 }, { x, y, r }, { x: v.x * speed * step, y: v.y * speed * step }, world.obstacles, world.bounds);
   });
 }
