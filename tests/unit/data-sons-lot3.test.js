@@ -1,11 +1,16 @@
 import { describe, it, expect } from 'vitest';
 import { renderSound, soundBytes, variantCount } from '../../js/core/synth.js';
-import { attackTime, centroid, maxCorrelation, mean, peakOf, rmsOf, toDb } from './helpers/dsp.js';
-import { synthRecipes } from './helpers/sons-anciens.js';
+import { centroid, maxCorrelation, mean, peakOf, rmsOf, toDb } from './helpers/dsp.js';
+import { synthRecipes } from './helpers/sons-synth.js';
+import { attackTime, onsets, spectralCentroid } from '../../js/core/audio-analysis.js';
+import { renderChoice } from '../../js/core/sound-render.js';
+import { readFileSync } from 'node:fs';
 
-// Lot 3i : recettes de synth.js (les recettes remplacées par l'atelier viennent de sounds-legacy.json ; l'atelier : sons-integres.test.js).
+// Lot 3i : recettes de synth.js ; lot 5e : celles du pack par défaut seulement (le pack d'avant, sounds-legacy.json, est retiré). Les planches
+// (planche-arrachee, planche-posee) sont des sons de l'atelier depuis le lot 3i : leurs anciennes recettes sortent de ces mesures, et leurs
+// propriétés sont vérifiées sur les sons livrés (dernière section, bornes de tests/unit/helpers/references-sons.json).
 const sounds = synthRecipes();
-const NEW_IDS = ['planche-arrachee', 'planche-posee', 'joueur-chute', 'joueur-releve'];
+const NEW_IDS = ['joueur-chute', 'joueur-releve'];
 const recipe = (id) => sounds.find((s) => s.id === id);
 const rendered = [];
 const timing = {};
@@ -27,27 +32,9 @@ const each = (ids = NEW_IDS) => rendered.filter((r) => ids.includes(r.id)).map((
 const RMS_WINDOW = [-30, -10];
 const DURATION = { 'planche-arrachee': [0.4, 0.6], 'planche-posee': [0.35, 0.55], 'joueur-chute': [1.0, 1.5], 'joueur-releve': [0.6, 1.0] };
 
-// Pics de l'enveloppe (fenêtres de 5 ms) au-dessus de ratio × le maximum, deux pics à moins de minGap secondes étant fondus en un seul.
-function separatedPeaks(samples, rate, minGap = 0.08, ratio = 0.4) {
-  const w = Math.round(rate * 0.005);
-  const env = [];
-  for (let i = 0; i + w <= samples.length; i += w) env.push(rmsOf(samples, i, i + w));
-  const top = Math.max(...env);
-  const found = [];
-  for (let i = 0; i < env.length; i += 1) {
-    if (env[i] < ratio * top || (i > 0 && env[i] < env[i - 1]) || (i < env.length - 1 && env[i] <= env[i + 1])) continue;
-    const t = (i * w) / rate;
-    const last = found.at(-1);
-    if (last && t - last.t < minGap) {
-      if (env[i] > last.e) found[found.length - 1] = { t, e: env[i] };
-    } else found.push({ t, e: env[i] });
-  }
-  return found.map((p) => p.t);
-}
-
 describe('sons du lot 3 : présence et recettes', () => {
-  it('les quatre recettes existent, avec les variantes, ensembles et catégories de la spécification', () => {
-    const spec = { 'planche-arrachee': ['fenetre', 'essentiel', 3], 'planche-posee': ['fenetre', 'essentiel', 3], 'joueur-chute': ['joueur', 'essentiel', 2], 'joueur-releve': ['joueur', 'fond', 2] };
+  it('les recettes de synth.js du lot 3 existent, avec les variantes, ensembles et catégories de la spécification', () => {
+    const spec = { 'joueur-chute': ['joueur', 'essentiel', 2], 'joueur-releve': ['joueur', 'fond', 2] }; // lot 5e : planches = sons de l'atelier
     for (const [id, [category, set, variants]] of Object.entries(spec)) {
       expect([recipe(id).category, recipe(id).set, variantCount(recipe(id))], id).toEqual([category, set, variants]);
     }
@@ -106,32 +93,9 @@ describe('sons du lot 3 : mesures de chaque variante', () => {
 });
 
 describe('sons du lot 3 : mesures propres à chaque son', () => {
-  it.each(each(['planche-arrachee']))('%s : attaque (90 % du pic) en moins de 6 ms', (_n, { result }) => {
-    expect(attackTime(result.samples, result.sampleRate)).toBeLessThan(0.006);
-  });
-
-  it.each(each(['planche-arrachee']))('%s : centre de gravité entre 300 et 3 000 Hz', (_n, { result }) => {
-    const size = 2 ** Math.floor(Math.log2(result.samples.length));
-    const c = centroid(result.samples, result.sampleRate, 0, Math.min(size, 16384));
-    expect(c).toBeGreaterThanOrEqual(300);
-    expect(c).toBeLessThanOrEqual(3000);
-  });
-
-  it.each(each(['planche-posee']))('%s : 2 à 3 coups de marteau séparés d\'au moins 80 ms', (_n, { result }) => {
-    const peaks = separatedPeaks(result.samples, result.sampleRate);
-    expect(peaks.length).toBeGreaterThanOrEqual(2);
-    expect(peaks.length).toBeLessThanOrEqual(3);
-    for (let i = 1; i < peaks.length; i += 1) expect(peaks[i] - peaks[i - 1]).toBeGreaterThanOrEqual(0.08);
-  });
-
-  it.each(each(['planche-posee']))('%s : les coups sont espacés de 110 à 150 ms (tolérance de la gigue)', (_n, { result }) => {
-    const peaks = separatedPeaks(result.samples, result.sampleRate);
-    for (let i = 1; i < peaks.length; i += 1) {
-      expect(peaks[i] - peaks[i - 1]).toBeGreaterThanOrEqual(0.1);
-      expect(peaks[i] - peaks[i - 1]).toBeLessThanOrEqual(0.18);
-    }
-  });
-
+  // Lot 5e (décision du propriétaire) : retirés avec l'ancien pack, propres aux anciennes recettes synth.js des planches (8 assertions) :
+  // planche arrachée « attaque en moins de 6 ms » et « centre de gravité 300 à 3 000 Hz » ; planche posée « 2 à 3 coups séparés d'au moins
+  // 80 ms » et « coups espacés de 110 à 150 ms ». Remplacés par les mesures des planches livrées (section suivante).
   it.each(each(['joueur-chute']))('%s : pic dans les 80 premières millisecondes, durée de 1,0 à 1,5 s', (_n, { result }) => {
     const first = peakOf(result.samples.subarray(0, Math.round(result.sampleRate * 0.08)));
     expect(first).toBeGreaterThanOrEqual(0.95 * result.peak);
@@ -151,5 +115,32 @@ describe('sons du lot 3 : mesures propres à chaque son', () => {
     const late = rmsOf(result.samples, Math.round(rate * 0.3), Math.round(rate * 0.5));
     expect(late).toBeGreaterThan(early * 2); // « bruit rose montant »
     expect(peakOf(result.samples.subarray(Math.round(rate * 0.52)))).toBeGreaterThan(0.5 * result.peak); // le pas lourd
+  });
+});
+
+// Lot 5e (condition du propriétaire) : planches du pack par défaut (moteur de l'atelier, toutes les graines), bornes mesurées par
+// js/core/audio-analysis.js et élargies de 15 % de la largeur de la plage au plus (tests/unit/helpers/references-sons.json). Le nombre de coups
+// de la planche posée est déjà vérifié par sons-integres-ambiances.test.js (« réparation à durée variable ») : non dupliqué.
+describe('planches livrées (atelier) : attaque, coups et centre de gravité', () => {
+  const table = JSON.parse(readFileSync('data/game/sounds.json', 'utf8')).sounds;
+  const seeds = (id) => Array.from({ length: table.find((s) => s.id === id).variants }, (_, k) => [`${id}-${k + 1}`, renderChoice(table.find((s) => s.id === id), { seed: k + 1 })]);
+  const P = JSON.parse(readFileSync('tests/unit/helpers/references-sons.json', 'utf8')).planches;
+  it.each(seeds('planche-arrachee'))('%s : attaque (90 % du pic) et centre de gravité dans les bornes mesurées', (_n, r) => {
+    const a = attackTime(r.samples, r.sampleRate) * 1000;
+    expect(a).toBeGreaterThanOrEqual(P['planche-arrachee'].attaqueMs.bornes[0]);
+    expect(a).toBeLessThanOrEqual(P['planche-arrachee'].attaqueMs.bornes[1]);
+    const c = spectralCentroid(r.samples, r.sampleRate);
+    expect(c).toBeGreaterThanOrEqual(P['planche-arrachee'].centreDeGraviteHz.bornes[0]);
+    expect(c).toBeLessThanOrEqual(P['planche-arrachee'].centreDeGraviteHz.bornes[1]);
+  });
+  it.each(seeds('planche-posee'))('%s : espacement des coups de marteau et centre de gravité dans les bornes mesurées', (_n, r) => {
+    const o = onsets(r.samples, r.sampleRate, { threshold: 0.3, minGap: 0.15 });
+    for (let i = 1; i < o.length; i += 1) {
+      expect((o[i] - o[i - 1]) * 1000).toBeGreaterThanOrEqual(P['planche-posee'].ecartEntreCoupsMs.bornes[0]);
+      expect((o[i] - o[i - 1]) * 1000).toBeLessThanOrEqual(P['planche-posee'].ecartEntreCoupsMs.bornes[1]);
+    }
+    const c = spectralCentroid(r.samples, r.sampleRate);
+    expect(c).toBeGreaterThanOrEqual(P['planche-posee'].centreDeGraviteHz.bornes[0]);
+    expect(c).toBeLessThanOrEqual(P['planche-posee'].centreDeGraviteHz.bornes[1]);
   });
 });

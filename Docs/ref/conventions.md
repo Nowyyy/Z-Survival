@@ -317,8 +317,8 @@ Détail des évolutions, mesures et points ouverts : `Docs/lots/lot-4b.md`.
 
 ### Sons (lots 3h et 3i)
 - Atelier : `atelier-sons.html`, `atelier-choix.html` (techniques) ; synthèse 2 (`synth2*.js`, `audio-analysis.js`, `atelier-check.js`, `scenes-sons.js`, purs) ; niveau entendu relatif au tir (−4,55 dBFS court), crête ≤ −3 dBFS, variantes distinctes (distance ≥ 0,035) ; détails : `Docs/ref/atelier-sons.md`.
-- Intégration : `sounds-choix.json` → `scripts/sons/integrer.mjs` → `sounds.json` (une entrée « atelier » par son, sous l'identifiant du jeu) ; anciennes recettes dans `sounds-legacy.json` ; calcul dans `js/game/sound-worker.js` (synth2 ne se découpe pas en tranches) ; 1 version par son au chargement, les autres au premier usage.
-- `?sons=choix|ancien|A|B|C` : jamais mémorisé, pas un mode essai ; ancien et atelier par import dynamique.
+- Intégration : `sounds-choix.json` → `scripts/sons/integrer.mjs` → `sounds.json` (une entrée « atelier » par son, sous l'identifiant du jeu) ; anciennes recettes dans `sounds-legacy.json` (lot 5e : pack d'avant retiré, fichier supprimé) ; calcul dans `js/game/sound-worker.js` (synth2 ne se découpe pas en tranches) ; 1 version par son au chargement, les autres au premier usage.
+- `?sons=choix|A|B|C` : jamais mémorisé, pas un mode essai ; atelier (A, B, C) par import dynamique ; lot 5e : `?sons=ancien` (pack d'avant) retiré, valeur inconnue.
 - Répartition : `synth.js` garde la mélodie de début de manche, les annonces, les tirs, les impacts, la chute et le relevage du joueur, l'interface et l'ancienne ambiance ; `synth2.js` fait les pas (selon la surface et l'allure), les voix par type de zombie, les planches, la réparation (au début de la pose, à la durée de pose, arrêtée si interrompue), le craquement, l'escalade, le cœur, le vent, le feu, les grincements, les gémissements lointains, la porte.
 - Poids : aucun plafond (limite de 8 Mo levée par le propriétaire) ; garde-fou provisoire 64 Mo (`sons-integres.test.js`). Boucles (`audio.json` → `loops`) : une voix chacune, coupées à la pause et à la mort, relancées à « Rejouer ».
 
@@ -358,8 +358,8 @@ Texte intégral, mot pour mot, des lignes de `CLAUDE.md` raccourcies, fusionnée
 - Sons : synth.js (sounds.json, aucun fichier audio), audio.js, sound-director.js ; jamais de son dans js/core/ ; sons.html à retirer au lot 13.
 - Atelier des sons (lot 3h) : atelier-sons.html et atelier-choix.html (techniques, à retirer au lot 13), js/atelier-sons/, data/i18n/atelier-sons.json (français seul).
 - Synthèse 2 : js/core/synth2*.js, audio-analysis.js, atelier-check.js, scenes-sons.js (purs) ; niveau entendu relatif au tir, crête ≤ −3 dBFS, variantes distinctes (distance ≥ 0,035).
-- Sons de l'atelier (lot 3i) : sounds-choix.json → scripts/sons/integrer.mjs → sounds.json (engine atelier) ; anciens : sounds-legacy.json ; mélodie de début de manche et tirs : recettes inchangées.
-- ?sons=choix|ancien|A|B|C : jamais mémorisé, pas un mode essai ; ancien et atelier par import dynamique ; calcul dans sound-worker.js, 1 version au chargement, autres au premier usage.
+- Sons de l'atelier (lot 3i) : sounds-choix.json → scripts/sons/integrer.mjs → sounds.json (engine atelier) ; anciens : sounds-legacy.json ; mélodie de début de manche et tirs : recettes inchangées. *(Lot 5e : pack d'avant retiré : `sounds-legacy.json`, `sound-legacy.js` et `?sons=ancien` n'existent plus.)*
+- ?sons=choix|ancien|A|B|C : jamais mémorisé, pas un mode essai ; ancien et atelier par import dynamique ; calcul dans sound-worker.js, 1 version au chargement, autres au premier usage. *(Lot 5e : pack d'avant retiré : `sounds-legacy.json`, `sound-legacy.js` et `?sons=ancien` n'existent plus.)*
 - Poids des sons : aucun plafond ; garde-fou provisoire 64 Mo. Boucles (audio.json loops) : une voix chacune, coupées à la pause et à la mort, relancées à « Rejouer ».
 - Zombies : 4 types × 4 allures (enemies.json, gaits.json), createEnemy ; vitesse ≤ 190 ; la rampe est visuelle, sans effet sur la hitbox.
 - Statistiques : player-stats.js (9 stats, niveaux 0 à 10) ; niveaux = ?lvl= > sauvegarde > zéros ; effectiveWeapon, effectivePlayer.

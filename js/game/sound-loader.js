@@ -3,7 +3,6 @@
 // Lot 3i : les sons de l'atelier intégrés au jeu (entrées « atelier » de data/game/sounds.json, js/core/synth2.js) sont calculés dans un
 // calculateur d'arrière-plan (sound-worker.js) au même moment (essentiel avant la partie, fond pendant) : un rendu de synth2 n'est pas
 // découpable en blocs, le fil principal ne fait donc que les recevoir. Sans Worker, repli sur le fil principal, un tampon par image.
-// ?sons=ancien : les recettes remplacées (data/game/sounds-legacy.json) sont chargées par import dynamique et calculées à la place ;
 // ?sons=A|B|C : la variante A, B ou C de l'atelier (data/game/sounds-atelier.json, import dynamique) pour chaque son de l'atelier.
 import { finishRender, startRender, renderStep, variantCount } from '../core/synth.js';
 import { isAtelier, parseSoundMode, renderSpec, seedCount } from '../core/sound-choice.js';
@@ -46,37 +45,12 @@ export function planSounds(recipes, set) {
   return jobs;
 }
 
-// ---------- pack ancien et variantes de l'atelier (import dynamique, jamais par défaut) ----------
+// ---------- variantes de l'atelier (import dynamique, jamais par défaut) ----------
 
-let legacyPromise = null;
-export function loadLegacy() {
-  legacyPromise ??= import('./sound-legacy.js').then((m) => m.loadLegacySounds());
-  return legacyPromise;
-}
 let slotsPromise = null;
 export function loadAtelierSlots() {
   slotsPromise ??= import('./sound-atelier.js').then((m) => m.loadAtelierSlots());
   return slotsPromise;
-}
-
-// Tâches effectives selon le mode : ?sons=ancien remplace chaque son de l'atelier par toutes les variantes de sa recette d'avant (un son
-// nouveau, sans recette d'avant, n'existe pas dans le pack ancien) ; les autres modes gardent les tâches.
-export async function resolveJobs(jobs, mode = soundMode()) {
-  if (mode !== 'ancien' || !jobs.some((j) => isAtelier(j.recipe))) return jobs;
-  const legacy = new Map((await loadLegacy()).map((r) => [r.id, r]));
-  const out = [];
-  const done = new Set();
-  for (const job of jobs) {
-    if (!isAtelier(job.recipe)) {
-      out.push(job);
-      continue;
-    }
-    const old = legacy.get(job.recipe.id);
-    if (!old || done.has(old.id)) continue;
-    done.add(old.id);
-    for (let v = 0; v < variantCount(old); v += 1) out.push({ name: `${old.id}-${v + 1}`, recipe: old, variant: v });
-  }
-  return out;
 }
 
 // ---------- calculateur d'arrière-plan ----------
@@ -132,8 +106,7 @@ export async function renderAtelier(recipe, { version = 1, durationSec = null, m
 
 // Calcule les tampons de `jobs`. onProgress(0..1) après chaque bloc ; onItem(item) quand un tampon est terminé.
 // Renvoie { items: [{ name, id, variant, category, sampleRate, samples }], count, bytes, ms (temps de calcul seul) }.
-export async function renderSounds(jobsIn, { sliceMs = ESSENTIAL_SLICE_MS, onProgress = () => {}, onItem = () => {}, now = () => performance.now(), wait = nextFrame, mode = soundMode() } = {}) {
-  const jobs = await resolveJobs(jobsIn, mode);
+export async function renderSounds(jobs, { sliceMs = ESSENTIAL_SLICE_MS, onProgress = () => {}, onItem = () => {}, now = () => performance.now(), wait = nextFrame, mode = soundMode() } = {}) {
   const weightOf = (j) => (j.recipe.duration ?? 0) * (j.recipe.sampleRate ?? 44100);
   const total = jobs.reduce((sum, j) => sum + weightOf(j), 0) || 1;
   let doneSamples = 0;

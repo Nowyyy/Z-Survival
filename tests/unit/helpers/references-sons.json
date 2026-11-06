@@ -1,0 +1,68 @@
+{
+ "description": "Lot 5e : valeurs de référence figées des tests de sons. L'ancienne recette (pack d'avant, data/game/sounds-legacy.json) est retirée et ne peut plus servir à les régénérer ; les planches sont mesurées sur le pack livré.",
+ "depart": {
+  "branche": "lot-5c",
+  "hash": "92e4556",
+  "date": "2026-11-06"
+ },
+ "impactZombieAncien": {
+  "methode": "tests/unit/impact-chair.test.js d'avant le lot 5e, sur la recette impact-zombie de data/game/sounds-legacy.json au hash de départ (moteur js/core/synth.js, toutes les variantes) : niveau court (audio-analysis.js shortLevel, dbfs) + gain de catégorie « impact » − niveau du tir de l'atelier (levelRef), moyenne des variantes ; scène de 24 tirs (tir, douille, impact à 8 distances, gains d'audio.json, 44 100 Hz), énergie moyenne en dB, avec et sans les tirs.",
+  "niveauRelatifAuTirDb": -9.979100807234081,
+  "sceneDb": -9.737043618533548,
+  "sceneImpactsSeulsDb": -29.459437614170625
+ },
+ "planches": {
+  "methode": "js/core/audio-analysis.js sur toutes les graines (1 à 5) du pack par défaut (renderChoice, js/core/sound-render.js, durée par défaut) : attackTime (90 % du pic), spectralCentroid (tampon entier), onsets (seuil 0,3, écart minimal 0,15 s, comme sons-integres-ambiances.test.js) ; bornes = plage mesurée élargie de 15 % de sa largeur de chaque côté (décision du propriétaire : au plus 15 %). Le nombre de coups de la planche posée est déjà vérifié par sons-integres-ambiances.test.js (« réparation à durée variable »).",
+  "planche-arrachee": {
+   "attaqueMs": {
+    "mesure": [
+     266.3945578231293,
+     316.281179138322
+    ],
+    "bornes": [
+     258.91156462585036,
+     323.7641723356009
+    ]
+   },
+   "centreDeGraviteHz": {
+    "mesure": [
+     1529.6151074410245,
+     1695.3848146404152
+    ],
+    "bornes": [
+     1504.7496513611159,
+     1720.250270720324
+    ]
+   }
+  },
+  "planche-posee": {
+   "ecartEntreCoupsMs": {
+    "mesure": [
+     349.20634920634916,
+     453.9682539682539
+    ],
+    "bornes": [
+     333.49206349206344,
+     469.68253968253964
+    ]
+   },
+   "centreDeGraviteHz": {
+    "mesure": [
+     945.784283472285,
+     1056.3601488888355
+    ],
+    "bornes": [
+     929.1979036598024,
+     1072.9465287013181
+    ]
+   },
+   "coupsMesures": [
+    5,
+    5,
+    5,
+    5,
+    5
+   ]
+  }
+ }
+}

@@ -248,9 +248,9 @@ test.describe('vagues du lot 2', () => {
     expect(variants).toContain(variants[list[4].variant]);
   });
 
-  // Lot 3i : par défaut, chaque type a sa propre voix (zombie-attaque-petit…), lue à la hauteur 1 ; avec ?sons=ancien (pack d'avant), la voix commune
-  // est lue à la hauteur du type (audio.json, zombieRate), comme avant le lot.
-  for (const [mode, extra] of [['pack d\'avant', '&sons=ancien'], ['sons de l\'atelier', '']]) {
+  // Lot 3i : par défaut, chaque type a sa propre voix (zombie-attaque-petit…), lue à la hauteur 1. Lot 5e : le cas « pack d'avant » (?sons=ancien,
+  // voix commune à la hauteur du type) est retiré avec ce pack.
+  for (const [mode, extra] of [['sons de l\'atelier', '']]) {
     test(`la hauteur de la voix suit le type (journal des sons, ${mode})`, async ({ page }) => {
       await open(page, `&empty=1&nospawn=1${extra}`, SIZE, { live: true });
       await page.mouse.click(40, 40);

@@ -1,6 +1,6 @@
 # Atelier des sons (lot 3h)
 
-Page technique `atelier-sons.html` : comparer les sons actuels du jeu et de nouvelles variantes synthétisées, les régler, noter ses choix. **Rien n'est intégré au jeu** (lot 3i). **Aucun son n'a été écouté par l'agent** : ce document donne des recettes et des mesures ; le jugement d'oreille appartient au propriétaire.
+Page technique `atelier-sons.html` : comparer les sons actuels du jeu et de nouvelles variantes synthétisées, les régler, noter ses choix. **Rien n'est intégré au jeu** (lot 3i). **Aucun son n'a été écouté par l'agent** : ce document donne des recettes et des mesures ; le jugement d'oreille appartient au propriétaire. *(Lot 5e : le pack d'avant est retiré ; « Actuel » ne montre plus que les sons encore calculés par `synth.js`, un son remplacé par l'atelier n'a plus de version « actuelle ».)*
 
 ## Fichiers
 - `js/core/audio-analysis.js` (mesures), `js/core/synth2.js`, `synth2-dsp.js`, `synth2-sources.js` (synthèse), `js/core/atelier-check.js` (cibles), `atelier-choices.js` (« Mes choix »), `sound-cache.js` (cache de 24 Mo), `wave-svg.js` (oscillogramme) : purs, déterministes, sans Web Audio ni horloge.

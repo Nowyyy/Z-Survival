@@ -39,12 +39,12 @@ const num = (x, d = 0) => {
 
 const query = new URLSearchParams(location.search);
 const testMode = query.get('test') === '1';
-const [dict, atelierRaw, gameSounds, audioCfg, legacySounds] = await Promise.all([
-  loadJson('data/i18n/atelier-sons.json'), loadJson('data/game/sounds-atelier.json'), loadJson('data/game/sounds.json'), loadJson('data/game/audio.json'), loadJson('data/game/sounds-legacy.json'),
+const [dict, atelierRaw, gameSounds, audioCfg] = await Promise.all([
+  loadJson('data/i18n/atelier-sons.json'), loadJson('data/game/sounds-atelier.json'), loadJson('data/game/sounds.json'), loadJson('data/game/audio.json'),
 ]);
-// Lot 3i : les sons « actuels » comparés par l'atelier sont ceux d'avant l'intégration (recettes de js/core/synth.js, data/game/sounds-legacy.json).
-const legacyById = new Map(legacySounds.sounds.map((r) => [r.id, r]));
-const soundsCfg = { sounds: gameSounds.sounds.flatMap((r) => (r.engine === 'atelier' ? (legacyById.has(r.id) ? [legacyById.get(r.id)] : []) : [r])) };
+// Lot 3i : les sons « actuels » comparés par l'atelier sont les recettes de js/core/synth.js du jeu ; lot 5e : le pack d'avant (sounds-legacy.json)
+// est retiré, un son remplacé par l'atelier n'a donc plus de version « actuelle » à comparer.
+const soundsCfg = { sounds: gameSounds.sounds.filter((r) => r.engine !== 'atelier') };
 const t = (key, params) => fmt(translate(dict, key), params);
 for (const node of document.querySelectorAll('[data-i18n]')) node.textContent = t(node.dataset.i18n);
 

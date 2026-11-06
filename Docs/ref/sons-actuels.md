@@ -1,5 +1,7 @@
 # Sons actuels : inventaire mesuré (lot 3h)
 
+*Retiré du jeu au lot 5e : les recettes remplacées par l'atelier (pack d'avant, `data/game/sounds-legacy.json`, `?sons=ancien`) n'existent plus ; document gardé comme état des lieux historique.*
+
 Mesures faites en Node par `node scripts/sons/inventaire.mjs` (rendu de `data/game/sounds.json` avec `js/core/synth.js`, lecture seule) et `js/core/audio-analysis.js`. **Aucun son n'a été écouté par l'agent** : ce document donne des chiffres, pas un jugement d'oreille. Valeurs moyennes sur les variantes de chaque son.
 
 **Format des tampons du jeu** : Float32 (4 octets par échantillon), mono, fréquence propre à chaque recette (44 100 Hz : tir, douille, impacts, pas du joueur, interface ; 22 050 Hz : voix, pas des zombies, planches, joueur, ambiance, annonces). **Référence** (sur `main`, cette machine) : 28 recettes, **65 tampons**, **6 894 612 octets (6,58 Mo, limite 8 Mo)**, rendu de tous les sons en Node **1 333 à 1 468 ms** (dont essentiels 786 à 839 ms ; quatre mesures sur machine au repos ; 1 881 à 1 987 ms quand la suite Playwright tournait en même temps ; le lot 3 mesurait 1 329 ms et 811 ms).

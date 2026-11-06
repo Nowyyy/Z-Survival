@@ -75,9 +75,9 @@ export function project({ atelierRaw, sounds, choices = {}, variant = 'A', p1Onl
 const mb = (b) => (b / 1048576).toFixed(2);
 if (import.meta.url === `file://${process.argv[1]}`) {
   const atelierRaw = JSON.parse(readFileSync('data/game/sounds-atelier.json', 'utf8'));
-  // Lot 3i : la référence reste le pack d'avant l'intégration (recettes remplacées remises depuis sounds-legacy.json).
-  const legacy = new Map(JSON.parse(readFileSync('data/game/sounds-legacy.json', 'utf8')).sounds.map((r) => [r.id, r]));
-  const sounds = JSON.parse(readFileSync('data/game/sounds.json', 'utf8')).sounds.flatMap((r) => (r.engine === 'atelier' ? (legacy.has(r.id) ? [legacy.get(r.id)] : []) : [r]));
+  // Lot 3i : la référence était le pack d'avant l'intégration ; lot 5e : ce pack (sounds-legacy.json) est retiré, la référence est donc
+  // l'ensemble des recettes js/core/synth.js du jeu (les sons déjà remplacés par l'atelier n'y figurent plus).
+  const sounds = JSON.parse(readFileSync('data/game/sounds.json', 'utf8')).sounds.filter((r) => r.engine !== 'atelier');
   const file = arg('choix');
   const choices = file ? parseChoices(readFileSync(file, 'utf8'), resolveAtelier(atelierRaw).slots) : { choices: {}, errors: [] };
   for (const e of choices.errors) console.log(`ligne ${e.line} ignorée (${e.reason}) : ${e.text}`);

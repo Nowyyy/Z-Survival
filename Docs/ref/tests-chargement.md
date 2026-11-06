@@ -13,7 +13,7 @@ Mesure locale (4 cœurs, Chromium préinstallé, rendu logiciel), `node scripts/
 | shadows0 | `shadows=0` | 3 453 | 3 695 (3 592–3 734, 116) | 3 714 | **542** |
 | dpr1 | `dpr=1` | 3 517 | 4 002 (3 739–4 150, 20) | 4 014 | 242 (bruit : DPR déjà 1) |
 | sang0 | `sang=0` | 3 416 | 3 916 (3 723–4 107, 195) | 4 024 | 232 |
-| sonsAncien | `sons=ancien` | 3 523 | 3 914 (3 808–4 321, 206) | 4 179 | 77 |
+| sonsAncien (retirée au lot 5e) | `sons=ancien` | 3 523 | 3 914 (3 808–4 321, 206) | 4 179 | 77 |
 | persoActuel (retirée au lot 5e) | `perso=actuel` | 3 366 | 3 653 (3 185–3 845, 205) | 3 655 | 601 |
 | detail0 | `detail=0` | 2 856 | 3 345 (3 089–3 394, 165) | 3 391 | **865** |
 | fps1 | `fps=1` | 3 431 | 3 819 (3 733–3 942, 70) | 3 995 | 261 (bruit) |

@@ -15,7 +15,7 @@
   "dev.sons.etiquette.zombie-mort-voute": "Voûté : mort",
   "dev.sons.etiquette.zombie-mort-grand": "Grand : mort",
   "dev.sons.etiquette.planche-posee.atelier": "Réparation : raclement puis coups de marteau (durée = temps de pose)",
-  "dev.sons.etiquette.impact-zombie.atelier": "Balle dans un zombie : impact sur la chair (atelier, lot 5a ; ?sons=ancien : l'ancien « cling »)",
+  "dev.sons.etiquette.impact-zombie.atelier": "Balle dans un zombie : impact sur la chair (atelier, lot 5a ; il remplace l'ancien « cling »)",
   "dev.sons.etiquette.pas-exterieur": "Pas du joueur dehors (terre, herbe)",
   "dev.sons.etiquette.pas-escalier": "Pas du joueur dans un escalier",
   "dev.sons.etiquette.pas-zombie-lent": "Pas d'un zombie lent",

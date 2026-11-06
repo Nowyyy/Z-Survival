@@ -210,7 +210,7 @@ test.describe('sons intégrés : ?sons=', () => {
 
   test('?sons= ne déclenche pas le mode essai et n\'écrit rien de nouveau', async ({ page }) => {
     await page.setViewportSize(SIZE);
-    await page.goto('/jeu.html?test=1&store=local&seed=1&sons=ancien');
+    await page.goto('/jeu.html?test=1&store=local&seed=1&sons=B'); // lot 5e : ?sons=ancien retiré, essai avec ?sons=B
     await waitReady(page);
     const s = (await page.evaluate(() => window.__zs.getState())).save;
     expect(s).toMatchObject({ readOnly: false, reasons: [] });
@@ -253,9 +253,8 @@ test.describe('sons intégrés : page d\'écoute et hygiène', () => {
 });
 
 // Lot 5a-B : l'impact d'une balle sur un zombie (ancien « cling ») est l'impact sur la chair de l'atelier (emplacement impact-chair, A par défaut),
-// sous le même identifiant ; une balle sur un mur garde l'ancien impact ; ?sons=ancien rejoue l'ancien son ; ?sons=B la variante B.
+// sous le même identifiant ; une balle sur un mur garde l'ancien impact ; ?sons=B la variante B (lot 5e : ?sons=ancien, pack d'avant retiré, est inconnu).
 test.describe('impact sur la chair (lot 5a)', () => {
-  const legacy = new Map(JSON.parse(readFileSync('data/game/sounds-legacy.json', 'utf8')).sounds.map((r) => [r.id, r]));
   const shootAt = (page, angle, zombie) => page.evaluate(([a, z]) => {
     const zs = window.__zs;
     const p = zs.getState().player;
@@ -294,10 +293,10 @@ test.describe('impact sur la chair (lot 5a)', () => {
     expect(wall.log.some((x) => x.sound === 'impact-zombie')).toBe(false);
   });
 
-  test('?sons=ancien : la balle sur un zombie rejoue l\'ancien impact (recette de synth.js) ; ?sons=C : la variante C', async ({ page }) => {
+  test('?sons=ancien (lot 5e : pack d\'avant retiré, valeur inconnue) : l\'impact sur la chair par défaut ; ?sons=C : la variante C', async ({ page }) => {
     await open(page, '&sons=ancien');
     await unlockReady(page);
-    expect((await audio(page)).sums['impact-zombie-1']).toBe(fp(renderSound(legacy.get('impact-zombie'), 0).samples));
+    expect((await audio(page)).sums['impact-zombie-1']).toBe(fp(renderChoice(byId.get('impact-zombie'), { seed: 1 }).samples));
     const hit = await shootAt(page, 0, true);
     expect(hit.log.some((x) => x.sound === 'impact-zombie')).toBe(true);
     await open(page, '&sons=C');

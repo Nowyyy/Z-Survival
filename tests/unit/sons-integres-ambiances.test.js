@@ -7,7 +7,6 @@ import { createDirector, direct, soundTable } from '../../js/core/sound-director
 import { bufferName, isAtelier } from '../../js/core/sound-choice.js';
 import { renderChoice } from '../../js/core/sound-render.js';
 import { createRng, nextFloat } from '../../js/core/rng.js';
-import { synthRecipes } from './helpers/sons-anciens.js';
 
 // Lot 3i-C : sons nouveaux de la fiche (Docs/ref/sons-a-integrer.md) branchés sur un événement du jeu, boucles d'ambiance, réparation à durée
 // variable. Mesures et journal seulement : aucun son n'est écouté.
@@ -21,13 +20,11 @@ const byId = new Map(sounds.map((s) => [s.id, s]));
 const audio = read('data/game/audio.json');
 const voice = read('data/game/zombie-voice.json');
 const table = soundTable(sounds);
-const oldTable = soundTable(synthRecipes());
 const cfg = (t = table) => ({ audio, voice, materials: { sounds: {} }, sounds: t });
 const L = { x: 1000, y: 1000 };
 const frame = (events, extra = {}) => ({ time: 10, listener: L, walls: [], paused: false, events, ...extra });
 const run = (events, extra = {}, t = table, state = createDirector(1)) => direct(state, frame(events, extra), cfg(t));
 const names = (r) => r.requests.map((q) => q.sound);
-const NEW_IDS = C.map((c) => c.id);
 const rendered = new Map(C.map((c) => [c.id, renderChoice(byId.get(c.id), { seed: 1 })]));
 
 describe('sons nouveaux : table et rendu', () => {
@@ -68,9 +65,7 @@ describe('sons nouveaux : table et rendu', () => {
     expect(Math.abs(s.energyRatio - 1)).toBeLessThanOrEqual(0.1);
   });
 
-  it('pack d\'avant (?sons=ancien) : aucun des sons nouveaux', () => {
-    for (const id of NEW_IDS) expect(oldTable[id], id).toBeUndefined();
-  });
+  // Lot 5e : « pack d'avant (?sons=ancien) : aucun des sons nouveaux » retiré avec le pack d'avant.
 });
 
 describe('sons nouveaux : chacun sur son événement, et pas ailleurs', () => {
@@ -78,9 +73,7 @@ describe('sons nouveaux : chacun sur son événement, et pas ailleurs', () => {
     expect(names(run([{ type: 'playerStep', foot: 'gauche', volume: 1, surface }]))).toEqual([sound]);
   });
 
-  it('pack d\'avant : le pas d\'intérieur partout (dehors, escalier)', () => {
-    for (const surface of ['exterieur', 'escalier']) expect(names(run([{ type: 'playerStep', foot: 'droit', volume: 1, surface }], {}, oldTable))).toEqual(['pas']);
-  });
+  // Lot 5e : « pack d'avant : le pas d'intérieur partout (dehors, escalier) » retiré avec le pack d'avant.
 
   it('la dernière planche cède : craquement qui traverse l\'ouverture (jamais étouffé), en plus de l\'arrachage', () => {
     const walls = [{ x: 1040, y: 900, w: 20, h: 200 }];
@@ -126,7 +119,6 @@ describe('sons nouveaux : chacun sur son événement, et pas ailleurs', () => {
     expect(names(r)).toEqual(['vague-fin', 'ambiance-lointains']);
     expect(r.requests[1].delay).toBeCloseTo(table['vague-fin'].duration, 6);
     expect(r.requests[1].pan).toBe(0);
-    expect(names(run([{ type: 'waveEnd', variant: 1 }], {}, oldTable))).toEqual(['vague-fin']);
   });
 
   it('aucun son nouveau pendant la pause', () => {
@@ -165,18 +157,7 @@ describe('pas des zombies selon l\'allure, frottement des rampants', () => {
     // Les zombies 1 et 2 sont les plus proches (180 et 200) : les sons viennent de leur cercle.
     for (const q of r) expect(q.gain).toBeGreaterThan(0.5);
   });
-  it('pack d\'avant : pas traînant commun pour toutes les allures, rampants muets', () => {
-    let s = createDirector(2);
-    const out = [];
-    for (let i = 0; i <= 300; i += 1) {
-      const t = i / 30;
-      const zombies = ['lent', 'course', 'rampe'].map((gait, k) => ({ id: k + 1, x: L.x + Math.cos(t + k) * 200, y: L.y + Math.sin(t + k) * 200, variant: 'marcheur', gait, stride: 50 }));
-      const r = direct(s, frame([], { time: t, zombies }), cfg(oldTable));
-      s = r.state;
-      out.push(...r.requests);
-    }
-    expect(new Set(out.filter((q) => q.category === 'pas').map((q) => q.sound))).toEqual(new Set(['pas-zombie']));
-  });
+  // Lot 5e : « pack d'avant : pas traînant commun pour toutes les allures, rampants muets » retiré avec le pack d'avant.
 });
 
 describe('grincements du bâtiment', () => {
