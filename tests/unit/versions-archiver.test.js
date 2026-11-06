@@ -281,13 +281,15 @@ describe('archiver : versions.json', () => {
 
   it('markUnavailable nettoie les caractères de contrôle et refuse la version actuelle ou inconnue', () => {
     expect(markUnavailable(real, 'v0.2', 'a\nb').versions[1].note).toBe('a b');
-    expect(() => markUnavailable(real, 'v0.5', 'x')).toThrow(/actuelle/);
+    expect(() => markUnavailable(real, 'v0.6', 'x')).toThrow(/actuelle/); // lot 5f : avant v0.5, aujourd'hui archivée (V0.6 actuelle)
+    expect(markUnavailable(real, 'v0.5', 'x').versions[4].status).toBe('indisponible');
     expect(() => markUnavailable(real, 'v9.9', 'x')).toThrow(/inconnue/);
   });
 
   it('versionsToArchive : seulement les versions « archive » (l\'actuelle est à la racine)', () => {
-    expect(versionsToArchive(real).map((v) => v.id)).toEqual(['v0.1', 'v0.2', 'v0.3', 'v0.4']);
-    expect(versionsToArchive(markUnavailable(real, 'v0.3', 'x')).map((v) => v.id)).toEqual(['v0.1', 'v0.2', 'v0.4']);
+    // Lot 5f : V0.5 archivée (avant : v0.1 à v0.4) ; l'actuelle (V0.6) reste exclue.
+    expect(versionsToArchive(real).map((v) => v.id)).toEqual(['v0.1', 'v0.2', 'v0.3', 'v0.4', 'v0.5']);
+    expect(versionsToArchive(markUnavailable(real, 'v0.3', 'x')).map((v) => v.id)).toEqual(['v0.1', 'v0.2', 'v0.4', 'v0.5']);
     expect(() => versionsToArchive({ schema: 1 })).toThrow(/invalide/);
   });
 });
@@ -371,7 +373,7 @@ describe('vérificateur', () => {
   });
 
   it('selectVersions : versions « archive » de versions.json, éventuellement filtrées', () => {
-    expect(selectVersions(real).map((v) => v.id)).toEqual(['v0.1', 'v0.2', 'v0.3', 'v0.4']);
+    expect(selectVersions(real).map((v) => v.id)).toEqual(['v0.1', 'v0.2', 'v0.3', 'v0.4', 'v0.5']); // lot 5f : V0.5 archivée (avant : v0.1 à v0.4)
     expect(selectVersions(real, ['v0.2']).map((v) => v.id)).toEqual(['v0.2']);
     expect(() => selectVersions({})).toThrow(/invalide/);
   });

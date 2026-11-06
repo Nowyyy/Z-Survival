@@ -84,3 +84,9 @@ version: v0.6
 nom: Noms des versions dans un fichier simple
 description: Les noms et descriptions des versions et des évolutions se changent dans un simple fichier texte ; l'adresse /recette/ en minuscules mène à la Recette.
 afficher: oui
+
+[lot-5f]
+version: v0.6
+nom: Publication de la V0.6
+description: La V0.6 devient la version Recette ; la V0.5 rejoint les versions précédentes, toujours jouables.
+afficher: oui

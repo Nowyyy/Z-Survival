@@ -178,10 +178,11 @@ describe(`fichier commité ${NOMS_FICHIER}`, () => {
     expect(texte).toContain('# Pour corriger une faute : modifie la ligne, valide ; la Recette est mise à jour après le déploiement de `dev`.');
   });
   it.skipIf(!initial)('fichier initial : V0.1 à V0.5 : étiquette et description exactement celles affichées avant le lot 5h (V<id>, titre de versions.json borné à 120)', () => {
-    for (const ver of versions.versions) {
+    // Lot 5f : V0.6 ajoutée à versions.json (titre recopié du bloc [v0.6], borné à 120 ; le bloc est vérifié par le test suivant) ; avant : versions.json = V0.1 à V0.5 exactement.
+    for (const ver of versions.versions.filter((x) => x.id !== 'v0.6')) {
       expect(bloc(noms, ver.id), ver.id).toEqual({ id: ver.id, type: 'version', ligne: expect.any(Number), nom: `V${ver.id.slice(1)}`, description: cleanText(ver.title, MAX_TITLE) });
     }
-    expect(versions.versions.map((x) => x.id)).toEqual(['v0.1', 'v0.2', 'v0.3', 'v0.4', 'v0.5']);
+    expect(versions.versions.map((x) => x.id)).toEqual(['v0.1', 'v0.2', 'v0.3', 'v0.4', 'v0.5', 'v0.6']);
   });
   it.skipIf(!initial)('fichier initial : v0.6 en brouillon ; un bloc par lot portant « version », dans l\'ordre du journal, sans identifiant de lot dans les textes', () => {
     expect(bloc(noms, 'v0.6')).toMatchObject({ nom: 'V0.6', description: expect.any(String) });
