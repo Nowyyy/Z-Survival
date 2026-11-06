@@ -284,7 +284,9 @@ test('/recette/jeu.html?x=1#b finit sur /Recette/jeu.html?x=1#b (requête et fra
   await page.goto(`${FULL}recette/jeu.html?x=1#b`);
   await page.waitForURL(`${FULL}Recette/jeu.html?x=1#b`);
   await expect(page).toHaveURL(`${FULL}Recette/jeu.html?x=1#b`);
-  await expect(page.locator('canvas').first()).toBeAttached();
+  // Lot 5f : délai de 30 s, comme « Jouer » et next/ plus bas (écran de préparation, rendu logiciel sous charge) ; avant : 5 s par défaut,
+  // dépassés au palier complet (essai/complet-7, tranche 13, après les tests de budget 3D).
+  await expect(page.locator('canvas').first()).toBeAttached({ timeout: 30_000 });
   expect(external).toEqual([]);
 });
 
