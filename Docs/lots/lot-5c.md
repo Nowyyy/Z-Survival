@@ -1,0 +1,31 @@
+# Lot 5c — Nettoyage du code et des fichiers (parties A, A2 et B)
+
+- **Base** : audit A sur `origin/dev` `d18023c` (commit 4b17f62) ; fusion de `origin/dev` `20fa5c5` (lot 5d) par `c3a4379` (aucun conflit) ; A2 `a8929f3`, B1 `b80a40a`, B2 `4f3b219`, B3 `dce1948`, B4 `596f668`, bilan B5. Audit : `Docs/ref/nettoyage-audit.md` et annexe ; décisions : `Docs/ref/nettoyage-decisions.md` (`STATUT: VALIDE`, bloc du prompt). **Aucun comportement du jeu ne change.**
+- **Décisions appliquées** : N1, N2 (`?murs=bas` seul), N4 (3 scripts), N5 approuvés ; N3, N6, N7 refusés ; exceptions respectées (`?percee=0`, `?detail=`, `?vhs=`, `?shadows=`, `?dpr=`, `?sons=A|B|C`, `planche-textures.mjs`, `stats-joueur.mjs` gardés ; ancien modèle et ancien pack : partie C).
+- **Supprimé — N1** (B1, 14 fichiers, +21 / −58 lignes, −1 067 o) : 11 exports morts (`runArena`, `activeCount`, `NATURES`, `ACTIONS`, `zombieSolidsOn`, `floorOfEnemy`, `gapToAll`, `EDGE`, `levelDbOf`, `stateById`, `screenPoint`) ; aides devenues orphelines signalées par ESLint (imports `floorOf`, `rectGap`, `dbfs`, vecteur `probe` de `picking.js`) ; jetons `--space-8`, `--duration-normal` ; `tests/e2e/.gitkeep`. **Retirés puis restaurés** : `MODES` (`siege.js`) et `LAYER_TYPES` (`synth.js`) : 5 garde-fous d'hygiène veulent ces fichiers inchangés (`git diff` vide) ; `affine` non retiré (`poses-identite.test.js:113` compare les exports à l'oracle figé).
+- **N2** (B2, 9 fichiers, +14 / −15, −227 o) : condition `?murs=bas` de `js/game/main.js`, commentaires (`main.js`, `world.js`, `render.json`, `carte-jeu.spec.js`), combinaison `mursBas` de `scripts/tests/chargement.mjs`, mentions de `Docs/ref/` ; `?murs=bas` et `?murs=xyz` : défaut (31 appels, 15 925 triangles), sans erreur.
+- **N4** (B3, −344 lignes, −16 848 o) : `scripts/modele/captures.mjs`, `scripts/plan-monde.mjs` (et sa source dans `tests/selection.json`), `scripts/sons/scene.mjs`. **N5** (B4, −2 873 o) : `Docs/ref/fusion-3g.md` ; corrections ci-dessous.
+- **Tests retirés** : aucun (aucun test ne visait les éléments supprimés). Assertions des fichiers G et P : inchangées.
+- **Gardé** : pages techniques (lot 13), `?percee=0`, `?detail=0`, `?empty=1`, ancienne salle, 160 exports utilisés dans leur seul fichier, 242 utilisés par des tests, `fonts/README.txt` (licences).
+- **Douteux restants** : `MODES`, `LAYER_TYPES`, `affine` (ci-dessus) ; `?perso=actuel` et `?sons=ancien` (partie C) ; 19 sélecteurs, 4 jetons `--game-repair-*`, 212 clés de texte visés par des préfixes construits ; `interface-actuelle.md`, `personnages-actuels.md`, `sons-actuels.md`.
+- **Outil** (`scripts/nettoyage/auditer.mjs`) : réservations du 5d levées, oracles « jamais candidats », accès calculés aux exports et fichiers « voulus inchangés » par un test désormais relevés, deux plantages sur ses propres documents corrigés.
+
+| Mesure | Avant (fusion `c3a4379`) | Après (B4) |
+|---|---|---|
+| Fichiers suivis | 633 (+1 décisions en A2) | 629, bilan non compté |
+| Lignes js / css / scripts / tests / Docs | 29 544 / 4 888 / 8 157 / 42 968 / 5 304 | 29 493 / 4 886 / 7 842 / 42 967 / 5 308 |
+| `npm run build` | 263 fichiers, 5 328 665 o | 263 fichiers (mêmes chemins), 5 326 013 o |
+| Site assemblé | 929 fichiers, 21 588 359 o | 929 (mêmes chemins), 21 585 707 o |
+| JavaScript chargé par `jeu.html` | 113 URL | 113, même liste, 0 erreur |
+| `npm test` | 132 fichiers, 6 871 tests, 66 s | 132, 6 871, 67 s |
+| `npm run test:standard` (rejeu total) | 1 021 s (333 réussis) | 1 013 s (333 réussis, 2 ignorés), vert |
+| Lighthouse mobile `jeu.html` (5 passes) | 55, 38, 55, 55, 55 : médiane 55 | 55, 55, 40, 55, 55 : médiane 55 ; CLS 0,0016 |
+
+- **Preuves de jeu inchangé** (après B1, B2, B3) : six empreintes de `trace-logique.mjs` identiques à chaque pas (600 pas ; finales `7e5fed6a`, `3cab05cf`, `4b78adcd`, `dde468cb`, `42056a40`, `8a17408c`) ; appels et triangles de R1, R2, U1, U4 × Élevé, Moyen, Faible identiques (`budget-instant.mjs`) ; six vues : luminance et couleurs à 0,00 % ; B4 : documentation seule. Site assemblé servi (`serve.mjs`, `/Z-Survival/`) : `jeu.html`, `index.html`, `dev/`, `sauvegarde.html`, `next/jeu.html` sans erreur de console ni ressource manquante. `git grep` des noms supprimés : plus rien hors notes historiques et bilans ; aucune clé de texte orpheline (`data-i18n`) ; `.github/` ne cite aucun fichier supprimé.
+- **Références corrigées** : `conventions.md:102, 121, 142, 144, 145, 214, 219, 221, 283, 351` (note *(Lot 5c : …)* en fin de ligne, texte d'origine intact), `:76` (`activeCount`), `:316`, `:386` (`?murs=bas`) ; `atelier-interface.md:17`, `affinage.md:62,69`, `performance.md:21`, `tests-chargement.md:22,41` ; `CLAUDE.md` : « Docs/ref/modele-rdc/ exclu des 5 Mo » retiré, « Sons : synth.js et synth2.js » (8 371 → 8 346 caractères).
+- **CI standard et complet** : à lire après le push de ce bilan (`gh run list --branch lot-5c`), puis palier complet par `essai/complet-5` : résultats dans le message de livraison et dans le commit suivant.
+- **Points ouverts** : CI réelle lue par `gh` seulement ; `MODES` et `LAYER_TYPES` resteront tant que les garde-fous d'hygiène des lots 3b à 4 figent `siege.js` et `synth.js`.
+- **Idées** : un helper commun aux tests « fichiers inchangés » (listes recopiées dans 6 fichiers) ; regrouper les 10 copies de `fmt()` (N6, refusé ici) ; retirer `MODES`/`LAYER_TYPES` le jour où ces listes seront revues.
+- **Entrée du journal** : `data/changelog.json` → `lots` : « lot-5c — Nettoyage du code et des fichiers » (avant `lot-5d`, le test d'ordre l'accepte).
+- **Lignes à ajouter** (CLAUDE.md : 8 346 / 8 400, à condenser d'abord) : 1. « - Nettoyage : scripts/nettoyage/auditer.mjs (lecture seule) ; preuve rejouée avant chaque suppression ; fichier voulu inchangé par un test d'hygiène ou export lu par accès calculé : jamais candidat. » (203 caractères) ; 2. « - Notes de péremption : une ligne des consolidations de conventions.md reste mot pour mot, la correction s'ajoute en fin de ligne *(Lot N : …)*. » (147). **Seed à réécrire (V0.6)** : `Docs/seed.md:59` (« `?murs=bas` pour comparer »), `:92` (`?murs=bas` dans les paramètres), `:131` (`?murs=bas` dans la liste du nettoyage).
+- **À faire par moi** : fusionner `lot-5c` dans `dev` ; vérifier `/next/` ; attendre la CI de `dev` avant `lot-5e` ; supprimer les branches `essai/…` si je le souhaite.
