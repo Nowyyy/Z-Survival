@@ -599,7 +599,7 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
 
   // Portes et blocs (lots 3c et 3e) : liste de zones.json (voir plus bas).
   const doorList = Array.isArray(layouts?.doors) ? layouts.doors.map((d) => ({ id: d.id, blocks: floors.flatMap((f) => (d.blocks?.[f] ?? []).map((b) => ({ floor: f, ...b }))) })) : (Array.isArray(layout.doors) ? layout.doors : []).map((d) => ({ id: d.id, blocks: (d.blocks ?? [{ id: d.id, wall: true, rect: d.rect }]).map((b) => ({ floor: 'rdc', ...b })) }));
-  // Lot 3g (retours du propriétaire) : murs et piliers jusqu'à floorLift - 1, au rez-de-chaussée et à l'étage (essai, render.ceilingWalls ; ?murs=bas l'annule).
+  // Lot 3g (retours du propriétaire) : murs et piliers jusqu'à floorLift - 1, au rez-de-chaussée et à l'étage (essai, render.ceilingWalls).
   const tallWalls = render.ceilingWalls === true && lift > num(render.wallHeight);
   // Dessin d'une porte dans un mur : un peu plus mince que le mur (1 de moins de chaque côté), 0,5 de jeu aux bouts (le débord de 4 des collisions n'est pas dessiné).
   const wallDoorRect = (r, thickness) => {
@@ -618,8 +618,8 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
     const floorRects = f === 'etage' ? holes.reduce((rects, h) => h.rects.reduce(subtractHole, rects), l.floor) : l.floor;
     for (const fl of floorRects) fb.floor.slab(fl.x, fl.y, fl.x + fl.w, fl.y + fl.h, 0, textures.repeat('sol-salle'), l.room.x, l.room.y);
     // Murs (allège, linteau et barreaux des fenêtres compris) : enduit sur les côtés, dessus de la couleur --game-wall sans texture.
-    // Lot 3g (essai demandé par le propriétaire) : render.ceilingWalls monte les murs et les piliers jusqu'à floorLift - 1 (rez-de-chaussée, puis l'étage aussi à la troisième passe des retours) ;
-    // ?murs=bas revient à la hauteur d'avant. Le dessin seulement : collisions, tirs et fenêtres inchangés.
+    // Lot 3g (essai demandé par le propriétaire) : render.ceilingWalls monte les murs et les piliers jusqu'à floorLift - 1 (rez-de-chaussée, puis l'étage aussi à la troisième passe des retours).
+    // Le dessin seulement : collisions, tirs et fenêtres inchangés.
     const tall = tallWalls; // troisième passe des retours : l'étage aussi, pour que ce soit uniforme
     const wallRender = tall ? { ...render, wallHeight: lift - 1 } : render;
     const built = l.segmented ? segmentedWallBoxes(l, wallRender) : wallBoxes(l.room, l.windows, l.windowSize, wallRender);

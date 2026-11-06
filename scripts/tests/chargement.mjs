@@ -31,7 +31,6 @@ export const COMBOS = {
   fps1: '&fps=1',
   nospawn1: '&nospawn=1',
   empty1: '&empty=1',
-  mursBas: '&murs=bas',
   rendu: '&vhs=0&shadows=0&dpr=1', // rendu seulement : ni la logique, ni le sang, ni le décor
   rapide: '&vhs=0&shadows=0&dpr=1&sang=0&nospawn=1',
   rapideDetail0: '&vhs=0&shadows=0&dpr=1&sang=0&nospawn=1&detail=0',

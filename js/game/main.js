@@ -76,7 +76,7 @@ const detail = query.get('detail') !== '0';
 const gfx = await graphicsBoot(location.search);
 const gfxLoad = gfx.settings.load;
 const decorInterieur = detail && gfxLoad.decor !== 'reduit' && mapId !== 'salle' ? await loadJson(`${mapDir}/decor-interieur.world.json`).catch(() => null) : null;
-// Retours du propriétaire : mobilier dessiné d'après le modèle (mobilier.world.json, avec le détail) ; ?murs=bas : murs et piliers à l'ancienne hauteur (essai).
+// Retours du propriétaire : mobilier dessiné d'après le modèle (mobilier.world.json, avec le détail).
 const mobilier = detail && mapId !== 'salle' ? await loadJson(`${mapDir}/mobilier.world.json`).catch(() => null) : null;
 
 const [dict, world, decor, camera, nav, player, weapons, enemies, render, texturesCfg, variants, soundsCfg, audioCfg, materialsCfg, voiceCfg, wavesCfg, gaitsCfg, statsCfg, splashCfg, vhsCfg, windowsCfg, downCfg, stairsCfg, economyCfg, saveCfg] = await Promise.all([
@@ -123,7 +123,7 @@ const loading = createLoading(dict);
 const titleFont = document.fonts?.load ? Promise.race([document.fonts.load('1em "Rubik Wet Paint"'), new Promise((resolve) => setTimeout(resolve, 2000))]).catch(() => {}) : Promise.resolve();
 render.decorInterieur = decorInterieur?.items ?? []; // lot 3g
 render.mobilier = mobilier?.pieces ?? null;
-render.ceilingWalls = mapId !== 'salle' && render.ceilingWalls === true && query.get('murs') !== 'bas';
+render.ceilingWalls = mapId !== 'salle' && render.ceilingWalls === true;
 render.detailDoors = detail; // vraies portes et éboulis (lot 3g, retours) ; ?detail=0 : anciens blocs
 render.seeThrough = query.get('percee') === '0' ? null : (render.seeThrough ?? null); // mur percé autour du joueur caché (lot 3g, retours) ; ?percee=0 l'enlève
 render.feux = detail && mapId !== 'salle' ? ((await loadJson(`${mapDir}/feux.json`).catch(() => null))?.feux ?? []) : []; // feux sur des caisses (lot 3g, retours)
