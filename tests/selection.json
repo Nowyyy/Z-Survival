@@ -336,7 +336,6 @@
         "data/game/world.json",
         "data/game/decor.json",
         "data/game/nav.json",
-        "scripts/plan-monde.mjs",
         "scripts/plan-carte.mjs",
         "js/game/see-through.js",
         "js/core/plank-layout.js"
