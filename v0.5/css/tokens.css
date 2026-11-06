@@ -1,0 +1,233 @@
+/* Jetons de design : seule source des couleurs du projet. Thème « sang noir ». */
+:root {
+  color-scheme: dark;
+
+  /* Couleurs par rôle */
+  --color-bg: #050505;              /* fond de page, noir profond */
+  --color-surface: #131313;         /* cartes, panneaux */
+  --color-surface-raised: #222224;  /* éléments surélevés, brume */
+  --color-border: #6a6a6e;          /* contours, séparateurs */
+  --color-text: #f4f1ec;            /* texte principal (os) */
+  --color-text-muted: #b8b4ae;      /* texte secondaire */
+  --color-action: #d81414;          /* rouge sang : zones, cadre, grands titres */
+  --color-on-action: #f4f1ec;       /* texte posé sur le rouge sang */
+  --color-action-text: #ff4a3d;     /* rouge lisible en petit texte sur fond sombre */
+  --color-danger: #ff4a3d;          /* danger */
+  --color-success: #7ed48b;         /* réussite */
+  --color-warning: #f2c94c;         /* avertissement */
+  --color-money: #ffd60a;           /* argent, jaune */
+  --color-focus: #9fd3ff;           /* anneau de focus */
+
+  /* Teintes dérivées */
+  --color-action-deep: #7a0a0a;     /* rouge profond : gouttes sombres, bordures de pièce */
+  --color-action-hover: #ef2a2a;
+  --color-action-active: #a80f0f;
+  --color-action-glow: rgb(216 20 20 / 55%);
+  --color-danger-surface: #3a1c19;
+  --color-success-surface: #17301c;
+  --color-warning-surface: #36300f;
+  --color-ground: #1c1c1e;          /* fond autour de l'écran */
+  --color-ground-light: #3d3d40;
+  --color-overlay: rgb(0 0 0 / 60%);
+
+  /* Polices */
+  --font-sans: "Barlow", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-display: "Rubik Wet Paint", Impact, "Arial Black", sans-serif;
+  --font-label: "Rubik Dirt", Impact, "Arial Black", sans-serif;
+  --font-weight-normal: 400;
+  --font-weight-bold: 700;
+
+  /* Échelle de tailles */
+  --text-sm: 0.875rem;
+  --text-md: 1rem;
+  --text-lg: 1.25rem;
+  --text-xl: 1.75rem;
+  --text-2xl: clamp(2.75rem, 9vw, 5rem);
+  --text-label: clamp(1.4rem, 4vw, 2rem);
+  --line-height: 1.5;
+
+  /* Espacements */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-7: 3rem;
+  --space-8: 4rem;
+
+  /* Rayons */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 16px;
+  --radius-screen: 28px;
+
+  /* Durées */
+  --duration-fast: 120ms;
+  --duration-normal: 240ms;
+  --duration-slow: 1600ms;
+
+  /* Cible tactile minimale */
+  --touch-target: 44px;
+
+  /* Jeu : couleurs de la scène 3D (lues par js/game/palette.js). Provisoires, à valider. */
+  --game-floor: #2a2a2e;            /* sol de la salle */
+  --game-wall: #464a50;             /* murs : rouge brun sombre */
+  --game-ground: #131a24;           /* décor extérieur, fond de caméra */
+  --game-player: #f4f1ec;           /* joueur : os */
+  --game-zombie: #6f9a5e;           /* zombie : vert terne (réussite assombrie) */
+  --game-laser: #ff8c7c;            /* laser de visée */
+  --game-hit: #fff3c4;              /* flash d'un zombie touché, étincelle */
+  --game-bullet: #ffe8a3;           /* balle et traînée */
+  --game-muzzle: #ffb347;           /* flash de bouche */
+  --game-skin: #e8c9a8;             /* peau du joueur (le haut du joueur est --game-player) */
+  --game-trousers: #262b34;         /* pantalon et cheveux du joueur */
+  --game-boot: #101012;             /* chaussures du joueur */
+  --game-gun: #8a8a86;              /* pistolet, barreaux des fenêtres */
+  --game-zombie-clothes: #6a6650;   /* haillons des zombies (la peau est --game-zombie) */
+  --game-zombie-trousers: #4a483c;  /* pantalon, chaussures et cheveux des zombies */
+  --game-fog: #3c4655;              /* brume de nuit : fond de caméra et couleur du brouillard (lot 3b) */
+  --game-void: #2b323d;             /* dalle sombre sous l'étage (lot 3e) : remplace le rez-de-chaussée caché, teinte proche de --game-fog mais plus sombre */
+  --game-stairs-mark: #c9b34c;      /* zone de déclenchement d'un escalier utilisable, marquée au sol (lot 3e) : jaune terne, au moins 1,5:1 sur le sol */
+  --game-sun: #cfd5e0;              /* lumière directionnelle */
+  --game-ambient: #8e95a2;          /* lumière ambiante */
+  --game-road: #2c2c31;             /* route (le trottoir et le sentier en sont des variantes) */
+  --game-grass: #20282a;            /* herbe sombre du décor extérieur */
+  --game-car: #6b2b2b;              /* voitures abandonnées (rouge sale, provisoire) */
+  --game-tree: #34433e;             /* feuillage des arbres et des buissons */
+  --game-furniture: #7a6448;        /* meubles (leurs variantes par type sont calculées dans le rendu) */
+  --game-fire: #ffd27a;             /* lot 3g (retour du propriétaire) : cœur des flammes du feu de caisses (provisoire) */
+  --game-fire-edge: #e2582a;        /* lot 3g : bord des flammes et lueur au sol (provisoire) */
+  --game-smoke: #2e2b2a;            /* lot 3g : fumée du feu (provisoire) */
+
+  /* Jeu, lot 1c : couleurs des textures générées en code (passées aux générateurs par js/game/palette.js). Provisoires, à valider. */
+  --game-tile-a: #4d5156;           /* carrelage de la salle, teinte claire */
+  --game-tile-b: #36393d;           /* carrelage de la salle, teinte sombre */
+  --game-grout: #17191b;            /* joints du carrelage et du trottoir */
+  --game-wall-base: #5e6268;        /* enduit des murs */
+  --game-wall-dirt: #383c42;        /* salissures et coulures des murs */
+  --game-wood: #8f7352;             /* bois clair : tables, comptoirs, caisses */
+  --game-wood-dark: #58432d;        /* bois sombre : veines, armoires, étagères */
+  --game-metal: #7d8187;            /* tôle, barreaux, lampadaires */
+  --game-asphalt: #262629;          /* route */
+  --game-line: #d8c35a;             /* lignes de la route */
+  --game-sidewalk: #38383c;         /* dalles du trottoir */
+  --game-grass-a: #20282a;          /* herbe, teinte sombre */
+  --game-grass-b: #2f383a;          /* herbe, teinte claire */
+  --game-soil: #2d2822;             /* terre du sol extérieur et des sentiers */
+  --game-gravel: #47484a;           /* gravier */
+  --game-bark: #54402f;             /* écorce */
+  --game-leaf: #3c4d47;             /* feuillage (arbres, buissons) */
+  --game-glass: #5d8097;            /* vitres des voitures */
+  --game-paint-1: #a23a36;          /* peinture de voiture, rouge */
+  --game-paint-2: #3f6389;          /* peinture de voiture, bleu */
+  --game-paint-3: #a8943f;          /* peinture de voiture, jaune sale */
+  --game-rust: #82492a;             /* rouille */
+  --game-vein: #5d7f78;             /* veines de la peau (jamais de rouge : pas de sang avant le lot 8) */
+  --game-zombie-skin: #98b387;      /* peau des zombies, pâle et verdâtre */
+  --game-zombie-skin-2: #b3b8a2;    /* peau des zombies, grise et pâle */
+  --game-zombie-skin-3: #7f9a6e;    /* peau des zombies, verte plus foncée */
+  --game-zombie-skin-4: #b5ae80;    /* peau des zombies, jaunâtre */
+  --game-cloth-1: #b9b49a;          /* tenue de zombie 1 (toile claire) */
+  --game-cloth-2: #a7b4bf;          /* tenue de zombie 2 (bleu-gris) */
+  --game-cloth-3: #c2a98a;          /* tenue de zombie 3 (beige) */
+  --game-cloth-4: #aab59a;          /* tenue de zombie 4 (vert pâle) */
+  --game-denim: #3a5584;            /* jean du joueur */
+  --game-denim-worn: #657b99;       /* jean délavé des zombies */
+  --game-pants-dark: #6c6a5e;       /* pantalon de toile des zombies */
+  --game-jacket: #cdb98f;           /* veste du joueur */
+  --game-hair: #3b2a20;             /* cheveux du joueur */
+
+  /* Jeu, lot 2c : animation de changement de vague. Provisoires, à valider (contrastes contrôlés par tests/unit/data-ambiance.test.js). */
+  --game-splash-title: #d81414;     /* titre de début de vague : rouge sang, grand texte seulement (3:1 sur le voile) */
+  --game-splash-sub: #ff4a3d;       /* sous-titre « Vague renforcée » : rouge lisible en texte courant (4,5:1) */
+  --game-splash-end: #f4f1ec;       /* texte de fin de vague : os */
+  --game-splash-end-sub: #b8b4ae;   /* sous-titre « Vie restaurée » : os atténué (4,5:1) */
+  --game-splash-veil: #050505;      /* voile sombre radial derrière le titre (lisibilité sur tout fond) */
+  --game-splash-veil-alpha: 0.85;   /* opacité du voile au centre (nombre, pas une couleur) */
+  --game-splash-split-red: #ff2a2a; /* ombre de texte rouge du décalage de couleur */
+  --game-splash-split-cyan: #2ae0ff;/* ombre de texte cyan du décalage de couleur */
+  --game-splash-tear: #f4f1ec;      /* bande de déchirure qui traverse le titre */
+
+  /* Jeu, lot 2c : effet VHS (surcouche HTML/CSS #vhs). Provisoires, à valider. */
+  --game-vhs-scan: #050505;         /* lignes de balayage (noir du thème) */
+  --game-vhs-vignette: #050505;     /* vignette sombre des bords */
+  --game-vhs-edge-red: #ff2a2a;     /* bord gauche : faux décalage de couleur rouge */
+  --game-vhs-edge-cyan: #2ae0ff;    /* bord droit : faux décalage de couleur cyan */
+  --game-vhs-track: #f4f1ec;        /* bande de suivi, légèrement plus claire (os) */
+  --game-vhs-grain-light: #f4f1ec;  /* grain, pixels clairs (os) */
+  --game-vhs-grain-dark: #050505;   /* grain, pixels sombres */
+
+  /* Jeu, lot 3 : état à terre (E2-10) et indicateur de réparation (E2-9). Provisoires, à valider (contrastes contrôlés par tests). */
+  --game-down-veil: #5a0b0b;        /* voile de bord à terre : rouge sang sombre (dégradé radial, sans filtre) */
+  --game-down-veil-alpha: 0.75;     /* opacité du voile sur les bords (nombre, pas une couleur) */
+  --game-down-panel: #050505;       /* fond du texte « À terre » (zone pleine : le texte n'est jamais posé sur le jeu) */
+  --game-down-text: #f4f1ec;        /* « À terre » : os */
+  --game-down-sub: #d9d5ce;         /* « Tu te relèves dans N s » et « Protégé N s » : os atténué (4,5:1) */
+  --game-repair-panel: #050505;     /* fond du libellé de réparation */
+  --game-repair-ring: #f4f1ec;      /* anneau de progression de la planche en cours */
+  --game-repair-track: #8a857d;     /* piste de l'anneau (3:1 sur le fond du jeu) */
+  --game-repair-text: #f4f1ec;      /* « Réparation » et « Fenêtre occupée » */
+
+  /* Jeu, lot 3a : planches, cadre, trou et pastilles des fenêtres (texture « planche »). Provisoires, à valider (contrastes contrôlés par tests/unit/data-planches.test.js). */
+  --game-plank: #e6d3a6;            /* planches : bois brut clair (3:1 sur le sol, 2,5:1 sur le mur, 1,8:1 sur les meubles) */
+  --game-plank-dark: #9a7d52;       /* planches : veines, nœuds et fissure */
+  --game-nail: #2b2520;             /* planches : têtes de clou */
+  --game-frame: #3a2c20;            /* cadre plat autour de l'ouverture d'une fenêtre */
+  --game-window-void: #0b0b0d;      /* trou sombre dans le mur d'une fenêtre ouverte, et intérieur vide d'une pastille */
+  --game-pip-on: #efe6d2;           /* pastille au sol : planche présente (carré plein clair, 3:1 sur le sol) */
+  --game-pip-off: #928270;          /* pastille au sol : cadre du carré (planche présente ou non) */
+
+  /* Jeu, lot 3a : HUD compact en puces (E2-2), indicateur de réparation (E2-9) et flèches au bord (E2-11). Provisoires, à valider (contrastes contrôlés par tests/unit/data-hud.test.js). */
+  --hud-bg: #050505;                /* fond des puces et de la barre de vie (noir du thème) */
+  --hud-bg-alpha: 0.78;             /* opacité du fond (nombre, pas une couleur) : le texte reste à 4,5:1 sur le pire sol du jeu */
+  --hud-border: #6a6a6e;            /* contour des puces et de la barre */
+  --hud-radius: 6px;                /* rayon des puces */
+  --hud-gap: 4px;                   /* espace entre les rangées et entre les puces (demi-pas de la grille de 8 px, pour tenir dans 96 px) */
+}
+
+/* Personnages et sang (lot 3j) : couleurs provisoires des personnages v2 (?perso=) et du sang (?sang=) ; contrastes contrôlés par tests/unit/persos-*.test.js. */
+:root {
+  --perso-peau-cendre: #d3dbc4;     /* peau gris-vert pâle (zombies A) */
+  --perso-peau-verte: #c6d6a8;      /* peau verdâtre */
+  --perso-peau-grise: #cfd2c8;      /* peau grise */
+  --perso-peau-jaune: #ddd6b0;      /* peau jaunie */
+  --perso-peau-tendue: #dfe7c9;     /* peau tendue, très pâle (zombies B) */
+  --perso-peau-joueur: #e8c9a8;     /* peau du joueur */
+  --perso-tissu-os: #e6dccb;        /* chemise blanc cassé */
+  --perso-tissu-sable: #d3c6a5;     /* toile sable */
+  --perso-tissu-ciel: #c4d4dd;      /* chemise bleu pâle */
+  --perso-tissu-kaki: #ccd2bc;      /* veste kaki délavée */
+  --perso-tissu-rose: #ebd0cb;      /* pull rose fané */
+  --perso-tissu-gris: #d2d2cd;      /* sweat gris */
+  --perso-tissu-bleu: #c0cdd8;      /* blouse bleue */
+  --perso-tissu-olive: #c8d2b6;     /* parka olive délavée */
+  --perso-pantalon-jean: #b3c3d8;   /* jean délavé */
+  --perso-pantalon-toile: #cfc7ad;  /* pantalon de toile */
+  --perso-pantalon-gris: #c0c0ba;   /* pantalon gris */
+  --perso-sombre: #4a4d45;          /* chaussures, ceintures, volumes sombres du dos */
+  --perso-cuir: #b39270;            /* cuir, sangles */
+  --perso-metal: #ccd1d6;           /* pistolet du joueur, chaînes, boucles */
+  --perso-casque: #f2c94c;          /* casque de chantier */
+  --perso-orange: #f2b45c;          /* gilet et brassard orange */
+  --perso-sac: #cdb48a;             /* sac en toile */
+  --perso-crasse: #d2cbba;          /* salissure de l'usure (mélangée aux tissus) */
+  --perso-dechirure: #a29d92;       /* déchirures (faces assombries) */
+  --perso-joueur-veste: #e0d4ae;    /* joueur A : veste tactique sable */
+  --perso-joueur-sweat: #d4d8dc;    /* joueur B : sweat à capuche gris clair */
+  --perso-joueur-vif: #8fdbe0;      /* joueur C : couleur dominante turquoise, contrastée avec tous les sols */
+  --perso-lampe: #fff1b8;           /* lampe frontale du joueur B (teinte émissive faible) */
+  --perso-yeux: #d8e070;            /* lueur des yeux (proposition de priorité 2, jamais seule porteuse d'information) */
+  --sang-frais: #7a0a0a;            /* sang frais : rouge profond du site */
+  --sang-sec: #4a1010;              /* sang séché (taches qui vieillissent) */
+  --sang-reduit: #2e0a0a;           /* niveau « réduit » : teinte plus sombre */
+}
+
+/* Interface intégrée (lot 3l) */
+:root {
+  --hud-text-scale: 1.125;          /* macro « texte M » de la direction B, figée : 14 px × 1,125 = 15,75 px (HUD, panneaux, état à terre) */
+  --hud-fs: calc(14px * var(--hud-text-scale)); /* taille de base de l'interface de jeu : toutes les tailles des blocs en découlent (em) */
+  --hud-row: calc(var(--hud-fs) * 1.3); /* hauteur d'une ligne de la colonne de droite (restants, tués) avant partage de Pause */
+  --hud-pause-size: max(44px, calc(2 * var(--hud-row) + var(--hud-gap))); /* côté du bouton Pause : deux lignes de droite et l'espace, 44 px au moins */
+  --hud-target: 44px;               /* cible tactile des boutons et du curseur de volume des panneaux */
+}

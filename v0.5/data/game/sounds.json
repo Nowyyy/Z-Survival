@@ -1,0 +1,6878 @@
+{
+  "_provisoire": "Recettes sonores du lot 1d : toutes les valeurs sont provisoires et jamais écoutées par l'agent qui les a écrites (à juger à l'oreille avec sons.html). Chaque recette est calculée par js/core/synth.js ; la variante v perturbe fréquences (±8 %), gains (±1,5 dB), départs et bruit selon seed + v. set : essentiel (calculé avant la partie) ou fond (calculé pendant la partie). Lot 3 : cinq sons (planche-arrachee, planche-posee, joueur-chute, joueur-releve ; quatre recettes, la chute en deux variantes) à 22 050 Hz, jamais écoutés par l'agent.",
+  "sounds": [
+    {
+      "id": "tir",
+      "category": "tir",
+      "set": "essentiel",
+      "sampleRate": 44100,
+      "duration": 0.75,
+      "variants": 3,
+      "seed": 15,
+      "loop": false,
+      "layers": [
+        {
+          "type": "noise",
+          "color": "white",
+          "start": 0,
+          "dur": 0.03,
+          "attack": 0.0002,
+          "decay": 0.003,
+          "gain": 7,
+          "filter": {
+            "type": "highpass",
+            "freq": 2000,
+            "q": 0.7
+          }
+        },
+        {
+          "type": "osc",
+          "wave": "sine",
+          "freq": [
+            190,
+            38
+          ],
+          "sweepTime": 0.14,
+          "start": 0,
+          "dur": 0.3,
+          "attack": 0.002,
+          "decay": 0.09,
+          "gain": 1.1
+        },
+        {
+          "type": "noise",
+          "color": "brown",
+          "start": 0,
+          "dur": 0.25,
+          "attack": 0.001,
+          "decay": 0.08,
+          "gain": 1.1,
+          "filter": {
+            "type": "lowpass",
+            "freq": [
+              900,
+              250
+            ],
+            "sweep": 0.2,
+            "q": 0.7
+          }
+        },
+        {
+          "type": "noise",
+          "color": "pink",
+          "start": 0,
+          "dur": 0.22,
+          "attack": 0.0006,
+          "decay": 0.06,
+          "gain": 1.1,
+          "filter": {
+            "type": "bandpass",
+            "freq": [
+              2600,
+              700
+            ],
+            "sweep": 0.2,
+            "q": 0.8
+          }
+        },
+        {
+          "type": "noise",
+          "color": "white",
+          "start": 0.06,
+          "startJitter": 0.012,
+          "dur": 0.02,
+          "attack": 0.0004,
+          "decay": 0.004,
+          "gain": 0.3,
+          "filter": {
+            "type": "bandpass",
+            "freq": 3200,
+            "q": 3
+          }
+        },
+        {
+          "type": "noise",
+          "color": "white",
+          "start": 0,
+          "dur": 0.012,
+          "attack": 0.0001,
+          "decay": 0.0015,
+          "gain": 6,
+          "filter": {
+            "type": "highpass",
+            "freq": 1200,
+            "q": 0.7
+          }
+        }
+      ],
+      "post": {
+        "reverb": {
+          "decay": 0.45,
+          "mix": 0.3,
+          "damping": 0.45
+        },
+        "saturation": 1.8,
+        "targetPeak": 0.9,
+        "fadeOut": 0.01,
+        "saturationOut": 1.6
+      }
+    },
+    {
+      "id": "douille",
+      "category": "tir",
+      "set": "essentiel",
+      "sampleRate": 44100,
+      "duration": 0.55,
+      "variants": 2,
+      "seed": 21,
+      "loop": false,
+      "layers": [
+        {
+          "type": "ring",
+          "start": 0,
+          "dur": 0.2,
+          "partials": [
+            {
+              "freq": 4200,
+              "gain": 1,
+              "decay": 0.045
+            },
+            {
+              "freq": 5650,
+              "gain": 0.7,
+              "decay": 0.035
+            },
+            {
+              "freq": 7300,
+              "gain": 0.5,
+              "decay": 0.028
+            },
+            {
+              "freq": 9100,
+              "gain": 0.3,
+              "decay": 0.02
+            }
+          ]
+        },
+        {
+          "type": "ring",
+          "start": 0.085,
+          "startJitter": 0.01,
+          "dur": 0.2,
+          "partials": [
+            {
+              "freq": 4600,
+              "gain": 0.55,
+              "decay": 0.035
+            },
+            {
+              "freq": 6100,
+              "gain": 0.4,
+              "decay": 0.03
+            },
+            {
+              "freq": 7900,
+              "gain": 0.25,
+              "decay": 0.022
+            }
+          ]
+        },
+        {
+          "type": "ring",
+          "start": 0.17,
+          "startJitter": 0.015,
+          "dur": 0.2,
+          "partials": [
+            {
+              "freq": 4900,
+              "gain": 0.3,
+              "decay": 0.03
+            },
+            {
+              "freq": 6500,
+              "gain": 0.2,
+              "decay": 0.025
+            }
+          ]
+        },
+        {
+          "type": "noise",
+          "color": "white",
+          "start": 0,
+          "dur": 0.01,
+          "attack": 0.0002,
+          "decay": 0.002,
+          "gain": 0.4,
+          "filter": {
+            "type": "highpass",
+            "freq": 5000,
+            "q": 0.7
+          }
+        },
+        {
+          "type": "noise",
+          "color": "white",
+          "start": 0.085,
+          "dur": 0.008,
+          "attack": 0.0002,
+          "decay": 0.0015,
+          "gain": 0.2,
+          "filter": {
+            "type": "highpass",
+            "freq": 5000,
+            "q": 0.7
+          }
+        }
+      ],
+      "post": {
+        "reverb": {
+          "decay": 0.28,
+          "mix": 0.25,
+          "damping": 0.3
+        },
+        "saturation": 0,
+        "targetPeak": 0.6,
+        "fadeOut": 0.008
+      }
+    },
+    {
+      "id": "impact-zombie",
+      "category": "impact",
+      "set": "essentiel",
+      "sampleRate": 44100,
+      "duration": 0.4,
+      "variants": 3,
+      "seed": 31,
+      "loop": false,
+      "layers": [
+        {
+          "type": "osc",
+          "wave": "sine",
+          "freq": [
+            160,
+            60
+          ],
+          "sweepTime": 0.08,
+          "start": 0,
+          "dur": 0.2,
+          "attack": 0.001,
+          "decay": 0.04,
+          "gain": 0.7
+        },
+        {
+          "type": "noise",
+          "color": "brown",
+          "start": 0,
+          "dur": 0.18,
+          "attack": 0.001,
+          "decay": 0.05,
+          "gain": 0.6,
+          "filter": {
+            "type": "lowpass",
+            "freq": [
+              1100,
+              300
+            ],
+            "sweep": 0.12,
+            "q": 0.8
+          }
+        },
+        {
+          "type": "noise",
+          "color": "white",
+          "start": 0,
+          "dur": 0.03,
+          "attack": 0.0002,
+          "decay": 0.0025,
+          "gain": 2.2,
+          "filter": {
+            "type": "highpass",
+            "freq": 1500,
+            "q": 0.7
+          }
+        },
+        {
+          "type": "noise",
+          "color": "white",
+          "start": 0.022,
+          "startJitter": 0.008,
+          "dur": 0.015,
+          "attack": 0.0002,
+          "decay": 0.004,
+          "gain": 0.6,
+          "filter": {
+            "type": "bandpass",
+            "freq": 1500,
+            "q": 2
+          }
+        },
+        {
+          "type": "noise",
+          "color": "pink",
+          "start": 0.02,
+          "dur": 0.14,
+          "attack": 0.01,
+          "decay": 0.04,
+          "gain": 0.4,
+          "am": {
+            "rate": 55,
+            "depth": 0.6
+          },
+          "filter": {
+            "type": "bandpass",
+            "freq": [
+              650,
+              220
+            ],
+            "sweep": 0.14,
+            "q": 3
+          }
+        }
+      ],
+      "post": {
+        "reverb": {
+          "decay": 0.2,
+          "mix": 0.15,
+          "damping": 0.6
+        },
+        "saturation": 1.5,
+        "targetPeak": 0.8,
+        "fadeOut": 0.01
+      }
+    },
+    {
+      "id": "impact-bois",
+      "category": "impact",
+      "set": "essentiel",
+      "sampleRate": 44100,
+      "duration": 0.4,
+      "variants": 2,
+      "seed": 41,
+      "loop": false,
+      "layers": [
+        {
+          "type": "osc",
+          "wave": "sine",
+          "freq": [
+            320,
+            140
+          ],
+          "sweepTime": 0.05,
+          "start": 0,
+          "dur": 0.15,
+          "attack": 0.0008,
+          "decay": 0.025,
+          "gain": 0.9
+        },
+        {
+          "type": "noise",
+          "color": "white",
+          "start": 0,
+          "dur": 0.02,
+          "attack": 0.0002,
+          "decay": 0.004,
+          "gain": 0.9,
+          "filter": {
+            "type": "bandpass",
+            "freq": 1400,
+            "q": 1.5
+          }
+        },
+        {
+          "type": "ring",
+          "start": 0,
+          "dur": 0.3,
+          "partials": [
+            {
+              "freq": 410,
+              "gain": 0.6,
+              "decay": 0.06
+            },
+            {
+              "freq": 780,
+              "gain": 0.5,
+              "decay": 0.045
+            },
+            {
+              "freq": 1130,
+              "gain": 0.35,
+              "decay": 0.035
+            },
+            {
+              "freq": 1720,
+              "gain": 0.2,
+              "decay": 0.025
+            }
+          ]
+        }
+      ],
+      "post": {
+        "reverb": {
+          "decay": 0.22,
+          "mix": 0.2,
+          "damping": 0.5
+        },
+        "saturation": 0.8,
+        "targetPeak": 0.8,
+        "fadeOut": 0.01
+      }
+    },
+    {
+      "id": "impact-metal",
+      "category": "impact",
+      "set": "essentiel",
+      "sampleRate": 44100,
+      "duration": 0.7,
+      "variants": 2,
+      "seed": 51,
+      "loop": false,
+      "layers": [
+        {
+          "type": "noise",
+          "color": "white",
+          "start": 0,
+          "dur": 0.015,
+          "attack": 0.0001,
+          "decay": 0.003,
+          "gain": 2.5,
+          "filter": {
+            "type": "highpass",
+            "freq": 3000,
+            "q": 0.7
+          }
+        },
+        {
+          "type": "ring",
+          "start": 0,
+          "dur": 0.6,
+          "partials": [
+            {
+              "freq": 1180,
+              "gain": 0.4,
+              "decay": 0.22
+            },
+            {
+              "freq": 2410,
+              "gain": 0.3,
+              "decay": 0.17
+            },
+            {
+              "freq": 3730,
+              "gain": 0.225,
+              "decay": 0.12
+            },
+            {
+              "freq": 5210,
+              "gain": 0.15,
+              "decay": 0.08
+            },
+            {
+              "freq": 780,
+              "gain": 0.2,
+              "decay": 0.25
+            }
+          ]
+        },
+        {
+          "type": "osc",
+          "wave": "sine",
+          "freq": [
+            260,
+            140
+          ],
+          "sweepTime": 0.04,
+          "start": 0,
+          "dur": 0.1,
+          "attack": 0.001,
+          "decay": 0.02,
+          "gain": 0.25
+        }
+      ],
+      "post": {
+        "reverb": {
+          "decay": 0.35,
+          "mix": 0.25,
+          "damping": 0.3
+        },
+        "saturation": 1,
+        "targetPeak": 0.75,
+        "fadeOut": 0.02,
+        "targetRms": 0.095
+      }
+    },
+    {
+      "id": "impact-pierre",
+      "category": "impact",
+      "set": "essentiel",
+      "sampleRate": 44100,
+      "duration": 0.45,
+      "variants": 2,
+      "seed": 61,
+      "loop": false,
+      "layers": [
+        {
+          "type": "noise",
+          "color": "white",
+          "start": 0,
+          "dur": 0.025,
+          "attack": 0.0001,
+          "decay": 0.005,
+          "gain": 1,
+          "filter": {
+            "type": "highpass",
+            "freq": 2200,
+            "q": 0.7
+          }
+        },
+        {
+          "type": "noise",
+          "color": "pink",
+          "start": 0,
+          "dur": 0.1,
+          "attack": 0.0005,
+          "decay": 0.02,
+          "gain": 0.7,
+          "filter": {
+            "type": "bandpass",
+            "freq": 1800,
+            "q": 1
+          }
+        },
+        {
+          "type": "osc",
+          "wave": "sine",
+          "freq": [
+            180,
+            90
+          ],
+          "sweepTime": 0.05,
+          "start": 0,
+          "dur": 0.12,
+          "attack": 0.001,
+          "decay": 0.02,
+          "gain": 0.5
+        },
+        {
+          "type": "ring",
+          "start": 0,
+          "dur": 0.25,
+          "partials": [
+            {
+              "freq": 2050,
+              "gain": 0.25,
+              "decay": 0.05
+            },
+            {
+              "freq": 3330,
+              "gain": 0.15,
+              "decay": 0.035
+            }
+          ]
+        }
+      ],
+      "post": {
+        "reverb": {
+          "decay": 0.32,
+          "mix": 0.3,
+          "damping": 0.4
+        },
+        "saturation": 0.6,
+        "targetPeak": 0.8,
+        "fadeOut": 0.015
+      }
+    },
+    {
+      "id": "impact-voiture",
+      "category": "impact",
+      "set": "essentiel",
+      "sampleRate": 44100,
+      "duration": 0.7,
+      "variants": 2,
+      "seed": 71,
+      "loop": false,
+      "layers": [
+        {
+          "type": "noise",
+          "color": "white",
+          "start": 0,
+          "dur": 0.02,
+          "attack": 0.0001,
+          "decay": 0.004,
+          "gain": 2.5,
+          "filter": {
+            "type": "highpass",
+            "freq": 2600,
+            "q": 0.7
+          }
+        },
+        {
+          "type": "osc",
+          "wave": "sine",
+          "freq": [
+            210,
+            95
+          ],
+          "sweepTime": 0.06,
+          "start": 0,
+          "dur": 0.2,
+          "attack": 0.001,
+          "decay": 0.04,
+          "gain": 0.5
+        },
+        {
+          "type": "ring",
+          "start": 0,
+          "dur": 0.55,
+          "partials": [
+            {
+              "freq": 240,
+              "gain": 0.4,
+              "decay": 0.14
+            },
+            {
+              "freq": 610,
+              "gain": 0.3,
+              "decay": 0.12
+            },
+            {
+              "freq": 1350,
+              "gain": 0.225,
+              "decay": 0.09
+            },
+            {
+              "freq": 2600,
+              "gain": 0.15,
+              "decay": 0.06
+            }
+          ]
+        },
+        {
+          "type": "noise",
+          "color": "pink",
+          "start": 0.005,
+          "dur": 0.2,
+          "attack": 0.002,
+          "decay": 0.06,
+          "gain": 0.35,
+          "filter": {
+            "type": "bandpass",
+            "freq": 900,
+            "q": 1.2
+          }
+        }
+      ],
+      "post": {
+        "reverb": {
+          "decay": 0.4,
+          "mix": 0.3,
+          "damping": 0.45
+        },
+        "saturation": 1,
+        "targetPeak": 0.8,
+        "fadeOut": 0.02,
+        "targetRms": 0.095
+      }
+    },
+    {
+      "id": "pas",
+      "category": "pas",
+      "set": "essentiel",
+      "engine": "atelier",
+      "sampleRate": 22050,
+      "duration": 0.1,
+      "variants": 4,
+      "preload": 1,
+      "loop": false,
+      "gainDb": 1,
+      "atelier": {
+        "slot": {
+          "id": "pas-joueur-dur",
+          "sampleRate": 22050,
+          "bufferLevelDb": -13.430000000000001,
+          "variants": [
+            {
+              "id": "C",
+              "recipe": {
+                "kind": "step",
+                "dur": 0.1,
+                "vary": 0.06,
+                "heel": {
+                  "f": 110,
+                  "decay": 0.014,
+                  "attack": 0.0005,
+                  "drop": 0.75,
+                  "gain": 0.8,
+                  "burst": 0.0004,
+                  "burstLp": 10000
+                },
+                "dense": {
+                  "from": 1200,
+                  "to": 7000,
+                  "count": 12,
+                  "decay": 0.003,
+                  "tilt": -0.6,
+                  "slope": -0.2,
+                  "spread": 0.45
+                },
+                "modeGain": 1,
+                "click": {
+                  "f": 3000,
+                  "q": 0.8,
+                  "decay": 0.002,
+                  "gain": 0.45
+                },
+                "toe": {
+                  "at": 0.045,
+                  "gain": 0.35
+                },
+                "grit": {
+                  "at": 0.002,
+                  "rate": 1000,
+                  "f": 4500,
+                  "q": 0.9,
+                  "dur": 0.02,
+                  "gain": 0.48,
+                  "grainDecay": 0.0005
+                },
+                "lp": 10000,
+                "hp": 80,
+                "post": {
+                  "drive": 8
+                }
+              },
+              "macros": {
+                "hauteur": {
+                  "min": -6,
+                  "max": 6,
+                  "default": 0,
+                  "unit": "demi-ton"
+                },
+                "matiere": {
+                  "min": -1,
+                  "max": 1,
+                  "default": 0,
+                  "unit": "octave"
+                },
+                "grain": {
+                  "min": 0,
+                  "max": 2,
+                  "default": 1,
+                  "unit": "x"
+                },
+                "duree": {
+                  "min": 0.6,
+                  "max": 1.6,
+                  "default": 1,
+                  "unit": "x"
+                },
+                "ampleur": {
+                  "min": 0,
+                  "max": 0.6,
+                  "default": 0,
+                  "unit": "mix"
+                }
+              }
+            }
+          ]
+        },
+        "variant": "C",
+        "macros": {
+          "hauteur": -3,
+          "matiere": 0,
+          "grain": 1,
+          "duree": 1,
+          "ampleur": 0
+        }
+      }
+    },
+    {
+      "id": "pas-zombie",
+      "category": "pas",
+      "set": "essentiel",
+      "engine": "atelier",
+      "sampleRate": 22050,
+      "duration": 0.2,
+      "variants": 3,
+      "preload": 1,
+      "loop": false,
+      "atelier": {
+        "slot": {
+          "id": "pas-zombie-marche",
+          "sampleRate": 22050,
+          "bufferLevelDb": -11.430000000000001,
+          "variants": [
+            {
+              "id": "A",
+              "recipe": {
+                "kind": "step",
+                "dur": 0.2,
+                "vary": 0.06,
+                "heel": {
+                  "f": 75,
+                  "decay": 0.02,
+                  "attack": 0.002,
+                  "drop": 0.6,
+                  "gain": 0.6,
+                  "burst": 0.0007,
+                  "burstLp": 7000
+                },
+                "dense": {
+                  "from": 600,
+                  "to": 4500,
+                  "count": 12,
+                  "decay": 0.005,
+                  "tilt": -0.6,
+                  "slope": -0.2,
+                  "spread": 0.45
+                },
+                "modeGain": 1,
+                "click": {
+                  "f": 1800,
+                  "q": 0.7,
+                  "decay": 0.003,
+                  "gain": 0.35
+                },
+                "toe": {
+                  "at": 0.08,
+                  "gain": 0.35
+                },
+                "grit": {
+                  "at": 0.004,
+                  "rate": 500,
+                  "f": 3500,
+                  "q": 0.8,
+                  "dur": 0.08,
+                  "gain": 0.48,
+                  "grainDecay": 0.0008
+                },
+                "scuff": {
+                  "at": 0.05,
+                  "f": 2500,
+                  "q": 0.6,
+                  "dur": 0.12,
+                  "attack": 0.02,
+                  "decay": 0.04,
+                  "gain": 0.45
+                },
+                "lp": 8000,
+                "hp": 40,
+                "post": {
+                  "drive": 5
+                }
+              },
+              "macros": {
+                "hauteur": {
+                  "min": -6,
+                  "max": 6,
+                  "default": 0,
+                  "unit": "demi-ton"
+                },
+                "matiere": {
+                  "min": -1,
+                  "max": 1,
+                  "default": 0,
+                  "unit": "octave"
+                },
+                "grain": {
+                  "min": 0,
+                  "max": 2,
+                  "default": 1,
+                  "unit": "x"
+                },
+                "duree": {
+                  "min": 0.6,
+                  "max": 1.6,
+                  "default": 1,
+                  "unit": "x"
+                },
+                "ampleur": {
+                  "min": 0,
+                  "max": 0.6,
+                  "default": 0.1,
+                  "unit": "mix"
+                }
+              }
+            }
+          ]
+        },
+        "variant": "A",
+        "macros": {
+          "hauteur": 0,
+          "matiere": 0,
+          "grain": 1,
+          "duree": 1,
+          "ampleur": 0.1
+        }
+      }
+    },
+    {
+      "id": "zombie-gemissement",
+      "category": "voix",
+      "set": "fond",
+      "engine": "atelier",
+      "sampleRate": 22050,
+      "duration": 1.275011,
+      "variants": 5,
+      "preload": 1,
+      "loop": false,
+      "fixedRate": true,
+      "atelier": {
+        "slot": {
+          "id": "voix-marcheur-errance",
+          "sampleRate": 22050,
+          "bufferLevelDb": -11.450000000000001,
+          "variants": [
+            {
+              "id": "C",
+              "recipe": {
+                "kind": "voice",
+                "vary": 0.03,
+                "jitter": 0.025,
+                "shimmer": 0.1,
+                "oq": 0.6,
+                "sq": 2.5,
+                "wander": 0.03,
+                "breathPulse": 0.6,
+                "drift": 0.04,
+                "driftRate": 0.4,
+                "hp": 180,
+                "tilt": 1500,
+                "drive": 1.875,
+                "dur": 1.275,
+                "contour": [
+                  [
+                    0,
+                    0.92
+                  ],
+                  [
+                    0.25,
+                    1.06
+                  ],
+                  [
+                    0.6,
+                    1
+                  ],
+                  [
+                    1,
+                    0.82
+                  ]
+                ],
+                "vowels": [
+                  "o",
+                  "a",
+                  "o",
+                  "u"
+                ],
+                "env": [
+                  [
+                    0,
+                    0
+                  ],
+                  [
+                    0.12,
+                    0.9
+                  ],
+                  [
+                    0.4,
+                    1
+                  ],
+                  [
+                    0.75,
+                    0.8
+                  ],
+                  [
+                    1,
+                    0
+                  ]
+                ],
+                "breath": 0.108,
+                "sub": 0.16000000000000003,
+                "rough": {
+                  "rate": 32,
+                  "depth": 0.144
+                },
+                "f0": 92,
+                "formantScale": 0.92,
+                "presence": {
+                  "f": 1100,
+                  "q": 0.9,
+                  "gain": 7
+                }
+              },
+              "macros": {
+                "hauteur": {
+                  "min": -6,
+                  "max": 6,
+                  "default": 0,
+                  "unit": "demi-ton"
+                },
+                "matiere": {
+                  "min": -1,
+                  "max": 1,
+                  "default": 0,
+                  "unit": "octave"
+                },
+                "grain": {
+                  "min": 0,
+                  "max": 2,
+                  "default": 1,
+                  "unit": "x"
+                },
+                "duree": {
+                  "min": 0.6,
+                  "max": 1.6,
+                  "default": 1,
+                  "unit": "x"
+                },
+                "ampleur": {
+                  "min": 0,
+                  "max": 0.6,
+                  "default": 0,
+                  "unit": "mix"
+                }
+              }
+            }
+          ]
+        },
+        "variant": "C",
+        "macros": {
+          "hauteur": 0,
+          "matiere": 0,
+          "grain": 1,
+          "duree": 1,
+          "ampleur": 0
+        }
+      }
+    },
+    {
+      "id": "zombie-gemissement-petit",
+      "category": "voix",
+      "set": "fond",
+      "engine": "atelier",
+      "sampleRate": 22050,
+      "duration": 0.918005,
+      "variants": 5,
+      "preload": 1,
+      "loop": false,
+      "fixedRate": true,
+      "atelier": {
+        "slot": {
+          "id": "voix-petit-errance",
+          "sampleRate": 22050,
+          "bufferLevelDb": -11.450000000000001,
+          "variants": [
+            {
+              "id": "C",
+              "recipe": {
+                "kind": "voice",
+                "vary": 0.03,
+                "jitter": 0.02,
+                "shimmer": 0.1,
+                "oq": 0.6,
+                "sq": 2.5,
+                "wander": 0.03,
+                "breathPulse": 0.6,
+                "drift": 0.04,
+                "driftRate": 0.4,
+                "hp": 180,
+                "tilt": 1500,
+                "drive": 1.40625,
+                "dur": 0.9179999999999999,
+                "contour": [
+                  [
+                    0,
+                    0.92
+                  ],
+                  [
+                    0.25,
+                    1.06
+                  ],
+                  [
+                    0.6,
+                    1
+                  ],
+                  [
+                    1,
+                    0.82
+                  ]
+                ],
+                "vowels": [
+                  "o",
+                  "a",
+                  "o",
+                  "u"
+                ],
+                "env": [
+                  [
+                    0,
+                    0
+                  ],
+                  [
+                    0.12,
+                    0.9
+                  ],
+                  [
+                    0.4,
+                    1
+                  ],
+                  [
+                    0.75,
+                    0.8
+                  ],
+                  [
+                    1,
+                    0
+                  ]
+                ],
+                "breath": 0.09179999999999999,
+                "sub": 0.16000000000000003,
+                "rough": {
+                  "rate": 45,
+                  "depth": 0.072
+                },
+                "f0": 140,
+                "formantScale": 1.12,
+                "presence": {
+                  "f": 1100,
+                  "q": 0.9,
+                  "gain": 7
+                }
+              },
+              "macros": {
+                "hauteur": {
+                  "min": -6,
+                  "max": 6,
+                  "default": 0,
+                  "unit": "demi-ton"
+                },
+                "matiere": {
+                  "min": -1,
+                  "max": 1,
+                  "default": 0,
+                  "unit": "octave"
+                },
+                "grain": {
+                  "min": 0,
+                  "max": 2,
+                  "default": 1,
+                  "unit": "x"
+                },
+                "duree": {
+                  "min": 0.6,
+                  "max": 1.6,
+                  "default": 1,
+                  "unit": "x"
+                },
+                "ampleur": {
+                  "min": 0,
+                  "max": 0.6,
+                  "default": 0,
+                  "unit": "mix"
+                }
+              }
+            }
+          ]
+        },
+        "variant": "C",
+        "macros": {
+          "hauteur": 0,
+          "matiere": 0,
+          "grain": 1,
+          "duree": 1,
+          "ampleur": 0
+        }
+      }
+    },
+    {
+      "id": "zombie-gemissement-voute",
+      "category": "voix",
+      "set": "fond",
+      "engine": "atelier",
+      "sampleRate": 22050,
+      "duration": 1.275011,
+      "variants": 5,
+      "preload": 1,
+      "loop": false,
+      "fixedRate": true,
+      "atelier": {
+        "slot": {
+          "id": "voix-voute-errance",
+          "sampleRate": 22050,
+          "bufferLevelDb": -11.450000000000001,
+          "variants": [
+            {
+              "id": "C",
+              "recipe": {
+                "kind": "voice",
+                "vary": 0.03,
+                "jitter": 0.025,
+                "shimmer": 0.1,
+                "oq": 0.6,
+                "sq": 2.5,
+                "wander": 0.03,
+                "breathPulse": 0.6,
+                "drift": 0.04,
+                "driftRate": 0.4,
+                "hp": 180,
+                "tilt": 1200,
+                "drive": 1.875,
+                "dur": 1.275,
+                "contour": [
+                  [
+                    0,
+                    0.92
+                  ],
+                  [
+                    0.25,
+                    1.06
+                  ],
+                  [
+                    0.6,
+                    1
+                  ],
+                  [
+                    1,
+                    0.82
+                  ]
+                ],
+                "vowels": [
+                  "o",
+                  "a",
+                  "o",
+                  "u"
+                ],
+                "env": [
+                  [
+                    0,
+                    0
+                  ],
+                  [
+                    0.12,
+                    0.9
+                  ],
+                  [
+                    0.4,
+                    1
+                  ],
+                  [
+                    0.75,
+                    0.8
+                  ],
+                  [
+                    1,
+                    0
+                  ]
+                ],
+                "breath": 0.108,
+                "sub": 0.16000000000000003,
+                "rough": {
+                  "rate": 32,
+                  "depth": 0.144
+                },
+                "f0": 104,
+                "formantScale": 0.97,
+                "hiss": {
+                  "f": 3200,
+                  "q": 1.6,
+                  "gain": 0.08
+                },
+                "presence": {
+                  "f": 1100,
+                  "q": 0.9,
+                  "gain": 7
+                }
+              },
+              "macros": {
+                "hauteur": {
+                  "min": -6,
+                  "max": 6,
+                  "default": 0,
+                  "unit": "demi-ton"
+                },
+                "matiere": {
+                  "min": -1,
+                  "max": 1,
+                  "default": 0,
+                  "unit": "octave"
+                },
+                "grain": {
+                  "min": 0,
+                  "max": 2,
+                  "default": 1,
+                  "unit": "x"
+                },
+                "duree": {
+                  "min": 0.6,
+                  "max": 1.6,
+                  "default": 1,
+                  "unit": "x"
+                },
+                "ampleur": {
+                  "min": 0,
+                  "max": 0.6,
+                  "default": 0,
+                  "unit": "mix"
+                }
+              }
+            }
+          ]
+        },
+        "variant": "C",
+        "macros": {
+          "hauteur": 0,
+          "matiere": 0,
+          "grain": 1,
+          "duree": 1,
+          "ampleur": 0
+        }
+      }
+    },
+    {
+      "id": "zombie-gemissement-grand",
+      "category": "voix",
+      "set": "fond",
+      "engine": "atelier",
+      "sampleRate": 22050,
+      "duration": 1.275011,
+      "variants": 5,
+      "preload": 1,
+      "loop": false,
+      "fixedRate": true,
+      "atelier": {
+        "slot": {
+          "id": "voix-grand-errance",
+          "sampleRate": 22050,
+          "bufferLevelDb": -9.450000000000001,
+          "variants": [
+            {
+              "id": "C",
+              "recipe": {
+                "kind": "voice",
+                "vary": 0.03,
+                "jitter": 0.025,
+                "shimmer": 0.1,
+                "oq": 0.6,
+                "sq": 2.5,
+                "wander": 0.03,
+                "breathPulse": 0.6,
+                "drift": 0.04,
+                "driftRate": 0.4,
+                "hp": 180,
+                "tilt": 825.0000000000001,
+                "drive": 2.8125,
+                "dur": 1.275,
+                "contour": [
+                  [
+                    0,
+                    0.92
+                  ],
+                  [
+                    0.25,
+                    1.06
+                  ],
+                  [
+                    0.6,
+                    1
+                  ],
+                  [
+                    1,
+                    0.82
+                  ]
+                ],
+                "vowels": [
+                  "o",
+                  "a",
+                  "o",
+                  "u"
+                ],
+                "env": [
+                  [
+                    0,
+                    0
+                  ],
+                  [
+                    0.12,
+                    0.9
+                  ],
+                  [
+                    0.4,
+                    1
+                  ],
+                  [
+                    0.75,
+                    0.8
+                  ],
+                  [
+                    1,
+                    0
+                  ]
+                ],
+                "breath": 0.108,
+                "sub": 0.16000000000000003,
+                "rough": {
+                  "rate": 32,
+                  "depth": 0.144
+                },
+                "f0": 66,
+                "formantScale": 0.8,
+                "bw": 1.1,
+                "presence": {
+                  "f": 1100,
+                  "q": 0.9,
+                  "gain": 7
+                }
+              },
+              "macros": {
+                "hauteur": {
+                  "min": -6,
+                  "max": 6,
+                  "default": 0,
+                  "unit": "demi-ton"
+                },
+                "matiere": {
+                  "min": -1,
+                  "max": 1,
+                  "default": 0,
+                  "unit": "octave"
+                },
+                "grain": {
+                  "min": 0,
+                  "max": 2,
+                  "default": 1,
+                  "unit": "x"
+                },
+                "duree": {
+                  "min": 0.6,
+                  "max": 1.6,
+                  "default": 1,
+                  "unit": "x"
+                },
+                "ampleur": {
+                  "min": 0,
+                  "max": 0.6,
+                  "default": 0,
+                  "unit": "mix"
+                }
+              }
+            }
+          ]
+        },
+        "variant": "C",
+        "macros": {
+          "hauteur": 0,
+          "matiere": 0,
+          "grain": 1,
+          "duree": 1,
+          "ampleur": 0
+        }
+      }
+    },
+    {
+      "id": "zombie-grognement",
+      "category": "voix",
+      "set": "fond",
+      "sampleRate": 22050,
+      "duration": 0.65,
+      "variants": 3,
+      "seed": 111,
+      "loop": false,
+      "layers": [
+        {
+          "type": "voice",
+          "f0": 90,
+          "contour": [
+            [
+              0,
+              1
+            ],
+            [
+              0.5,
+              0.88
+            ],
+            [
+              1,
+              0.72
+            ]
+          ],
+          "vowels": [
+            "a",
+            "o"
+          ],
+          "transition": [
+            0.1,
+            0.8
+          ],
+          "roughness": {
+            "rate": 38,
+            "depth": 0.6
+          },
+          "jitter": 0.04,
+          "breath": 0.2,
+          "attack": 0.04,
+          "release": 0.2,
+          "gain": 1
+        }
+      ],
+      "post": {
+        "reverb": {
+          "decay": 0.25,
+          "mix": 0.12,
+          "damping": 0.6
+        },
+        "saturation": 1.6,
+        "targetPeak": 0.75,
+        "fadeOut": 0.02
+      }
+    },
+    {
+      "id": "zombie-plainte",
+      "category": "voix",
+      "set": "fond",
+      "sampleRate": 22050,
+      "duration": 2.2,
+      "variants": 2,
+      "seed": 121,
+      "loop": false,
+      "layers": [
+        {
+          "type": "voice",
+          "f0": 125,
+          "contour": [
+            [
+              0,
+              0.8
+            ],
+            [
+              0.3,
+              1.15
+            ],
+            [
+              0.6,
+              1.2
+            ],
+            [
+              1,
+              0.75
+            ]
+          ],
+          "vowels": [
+            "u",
+            "e"
+          ],
+          "transition": [
+            0.3,
+            0.8
+          ],
+          "tremor": {
+            "rate": 6,
+            "depth": 0.05
+          },
+          "jitter": 0.03,
+          "breath": 0.1,
+          "attack": 0.3,
+          "release": 0.7,
+          "gain": 1
+        }
+      ],
+      "post": {
+        "reverb": {
+          "decay": 0.4,
+          "mix": 0.2,
+          "damping": 0.6
+        },
+        "saturation": 1,
+        "targetPeak": 0.7,
+        "fadeOut": 0.03
+      }
+    },
+    {
+      "id": "zombie-souffle",
+      "category": "voix",
+      "set": "fond",
+      "sampleRate": 22050,
+      "duration": 0.9,
+      "variants": 2,
+      "seed": 131,
+      "loop": false,
+      "layers": [
+        {
+          "type": "voice",
+          "f0": 100,
+          "contour": [
+            [
+              0,
+              1
+            ],
+            [
+              1,
+              0.8
+            ]
+          ],
+          "vowels": [
+            "eu",
+            "a"
+          ],
+          "voiced": 0.4,
+          "breath": 1,
+          "roughness": {
+            "rate": 30,
+            "depth": 0.5
+          },
+          "jitter": 0.05,
+          "attack": 0.12,
+          "release": 0.4,
+          "gain": 1
+        }
+      ],
+      "post": {
+        "reverb": {
+          "decay": 0.25,
+          "mix": 0.15,
+          "damping": 0.6
+        },
+        "saturation": 0.8,
+        "targetPeak": 0.6,
+        "fadeOut": 0.02
+      }
+    },
+    {
+      "id": "zombie-blessure",
+      "category": "voix",
+      "set": "essentiel",
+      "engine": "atelier",
+      "sampleRate": 22050,
+      "duration": 0.383991,
+      "variants": 5,
+      "preload": 1,
+      "loop": false,
+      "fixedRate": true,
+      "atelier": {
+        "slot": {
+          "id": "voix-marcheur-touche",
+          "sampleRate": 22050,
+          "bufferLevelDb": -11.450000000000001,
+          "variants": [
+            {
+              "id": "B",
+              "recipe": {
+                "kind": "voice",
+                "vary": 0.03,
+                "jitter": 0.025,
+                "shimmer": 0.1,
+                "oq": 0.6,
+                "sq": 2.5,
+                "wander": 0.03,
+                "breathPulse": 0.6,
+                "drift": 0.04,
+                "driftRate": 0.4,
+                "hp": 70,
+                "tilt": 1100,
+                "drive": 3.2199999999999998,
+                "dur": 0.384,
+                "contour": [
+                  [
+                    0,
+                    1.34
+                  ],
+                  [
+                    0.25,
+                    1.24
+                  ],
+                  [
+                    1,
+                    1.05
+                  ]
+                ],
+                "vowels": [
+                  "ae",
+                  "eu"
+                ],
+                "env": [
+                  [
+                    0,
+                    0
+                  ],
+                  [
+                    0.05,
+                    1
+                  ],
+                  [
+                    0.5,
+                    0.6
+                  ],
+                  [
+                    1,
+                    0
+                  ]
+                ],
+                "breath": 0.126,
+                "sub": 0.11499999999999999,
+                "rough": {
+                  "rate": 40,
+                  "depth": 0.165
+                },
+                "f0": 85.56,
+                "formantScale": 0.92,
+                "bw": 1.3,
+                "double": {
+                  "detune": 0.008,
+                  "delay": 0.011,
+                  "gain": 0.35
+                },
+                "ingressive": {
+                  "dur": 0.25,
+                  "gain": 0.35,
+                  "vowels": [
+                    "h",
+                    "u"
+                  ]
+                }
+              },
+              "macros": {
+                "hauteur": {
+                  "min": -6,
+                  "max": 6,
+                  "default": 0,
+                  "unit": "demi-ton"
+                },
+                "matiere": {
+                  "min": -1,
+                  "max": 1,
+                  "default": 0,
+                  "unit": "octave"
+                },
+                "grain": {
+                  "min": 0,
+                  "max": 2,
+                  "default": 1,
+                  "unit": "x"
+                },
+                "duree": {
+                  "min": 0.6,
+                  "max": 1.6,
+                  "default": 1,
+                  "unit": "x"
+                },
+                "ampleur": {
+                  "min": 0,
+                  "max": 0.6,
+                  "default": 0.3,
+                  "unit": "mix"
+                }
+              }
+            }
+          ]
+        },
+        "variant": "B",
+        "macros": {
+          "hauteur": -5,
+          "matiere": 0,
+          "grain": 1,
+          "duree": 1,
+          "ampleur": 0.3
+        }
+      }
+    },
+    {
+      "id": "zombie-blessure-petit",
+      "category": "voix",
+      "set": "essentiel",
+      "engine": "atelier",
+      "sampleRate": 22050,
+      "duration": 0.172789,
+      "variants": 5,
+      "preload": 1,
+      "loop": false,
+      "fixedRate": true,
+      "atelier": {
+        "slot": {
+          "id": "voix-petit-touche",
+          "sampleRate": 22050,
+          "bufferLevelDb": -11.450000000000001,
+          "variants": [
+            {
+              "id": "C",
+              "recipe": {
+                "kind": "voice",
+                "vary": 0.03,
+                "jitter": 0.02,
+                "shimmer": 0.1,
+                "oq": 0.6,
+                "sq": 2.5,
+                "wander": 0.03,
+                "breathPulse": 0.6,
+                "drift": 0.04,
+                "driftRate": 0.4,
+                "hp": 180,
+                "tilt": 1500,
+                "drive": 1.5749999999999997,
+                "dur": 0.1728,
+                "contour": [
+                  [
+                    0,
+                    1.34
+                  ],
+                  [
+                    0.25,
+                    1.24
+                  ],
+                  [
+                    1,
+                    1.05
+                  ]
+                ],
+                "vowels": [
+                  "ae",
+                  "eu"
+                ],
+                "env": [
+                  [
+                    0,
+                    0
+                  ],
+                  [
+                    0.05,
+                    1
+                  ],
+                  [
+                    0.5,
+                    0.6
+                  ],
+                  [
+                    1,
+                    0
+                  ]
+                ],
+                "breath": 0.09179999999999999,
+                "sub": 0.08000000000000002,
+                "rough": {
+                  "rate": 45,
+                  "depth": 0.06
+                },
+                "f0": 140,
+                "formantScale": 1.12,
+                "presence": {
+                  "f": 1100,
+                  "q": 0.9,
+                  "gain": 7
+                }
+              },
+              "macros": {
+                "hauteur": {
+                  "min": -6,
+                  "max": 6,
+                  "default": 0,
+                  "unit": "demi-ton"
+                },
+                "matiere": {
+                  "min": -1,
+                  "max": 1,
+                  "default": 0,
+                  "unit": "octave"
+                },
+                "grain": {
+                  "min": 0,
+                  "max": 2,
+                  "default": 1,
+                  "unit": "x"
+                },
+                "duree": {
+                  "min": 0.6,
+                  "max": 1.6,
+                  "default": 1,
+                  "unit": "x"
+                },
+                "ampleur": {
+                  "min": 0,
+                  "max": 0.6,
+                  "default": 0,
+                  "unit": "mix"
+                }
+              }
+            }
+          ]
+        },
+        "variant": "C",
+        "macros": {
+          "hauteur": 0,
+          "matiere": 0,
+          "grain": 1,
+          "duree": 1,
+          "ampleur": 0
+        }
+      }
+    },
+    {
+      "id": "zombie-blessure-voute",
+      "category": "voix",
+      "set": "essentiel",
+      "engine": "atelier",
+      "sampleRate": 22050,
+      "duration": 0.24,
+      "variants": 5,
+      "preload": 1,
+      "loop": false,
+      "fixedRate": true,
+      "atelier": {
+        "slot": {
+          "id": "voix-voute-touche",
+          "sampleRate": 22050,
+          "bufferLevelDb": -11.450000000000001,
+          "variants": [
+            {
+              "id": "C",
+              "recipe": {
+                "kind": "voice",
+                "vary": 0.03,
+                "jitter": 0.025,
+                "shimmer": 0.1,
+                "oq": 0.6,
+                "sq": 2.5,
+                "wander": 0.03,
+                "breathPulse": 0.6,
+                "drift": 0.04,
+                "driftRate": 0.4,
+                "hp": 180,
+                "tilt": 1200,
+                "drive": 2.0999999999999996,
+                "dur": 0.24,
+                "contour": [
+                  [
+                    0,
+                    1.34
+                  ],
+                  [
+                    0.25,
+                    1.24
+                  ],
+                  [
+                    1,
+                    1.05
+                  ]
+                ],
+                "vowels": [
+                  "ae",
+                  "eu"
+                ],
+                "env": [
+                  [
+                    0,
+                    0
+                  ],
+                  [
+                    0.05,
+                    1
+                  ],
+                  [
+                    0.5,
+                    0.6
+                  ],
+                  [
+                    1,
+                    0
+                  ]
+                ],
+                "breath": 0.108,
+                "sub": 0.08000000000000002,
+                "rough": {
+                  "rate": 40,
+                  "depth": 0.12
+                },
+                "f0": 104,
+                "formantScale": 0.97,
+                "hiss": {
+                  "f": 3200,
+                  "q": 1.6,
+                  "gain": 0.08
+                },
+                "presence": {
+                  "f": 1100,
+                  "q": 0.9,
+                  "gain": 7
+                }
+              },
+              "macros": {
+                "hauteur": {
+                  "min": -6,
+                  "max": 6,
+                  "default": 0,
+                  "unit": "demi-ton"
+                },
+                "matiere": {
+                  "min": -1,
+                  "max": 1,
+                  "default": 0,
+                  "unit": "octave"
+                },
+                "grain": {
+                  "min": 0,
+                  "max": 2,
+                  "default": 1,
+                  "unit": "x"
+                },
+                "duree": {
+                  "min": 0.6,
+                  "max": 1.6,
+                  "default": 1,
+                  "unit": "x"
+                },
+                "ampleur": {
+                  "min": 0,
+                  "max": 0.6,
+                  "default": 0,
+                  "unit": "mix"
+                }
+              }
+            }
+          ]
+        },
+        "variant": "C",
+        "macros": {
+          "hauteur": 0,
+          "matiere": 0,
+          "grain": 1,
+          "duree": 1,
+          "ampleur": 0
+        }
+      }
+    },
+    {
+      "id": "zombie-blessure-grand",
+      "category": "voix",
+      "set": "essentiel",
+      "engine": "atelier",
+      "sampleRate": 22050,
+      "duration": 0.24,
+      "variants": 5,
+      "preload": 1,
+      "loop": false,
+      "fixedRate": true,
+      "atelier": {
+        "slot": {
+          "id": "voix-grand-touche",
+          "sampleRate": 22050,
+          "bufferLevelDb": -9.450000000000001,
+          "variants": [
+            {
+              "id": "C",
+              "recipe": {
+                "kind": "voice",
+                "vary": 0.03,
+                "jitter": 0.025,
+                "shimmer": 0.1,
+                "oq": 0.6,
+                "sq": 2.5,
+                "wander": 0.03,
+                "breathPulse": 0.6,
+                "drift": 0.04,
+                "driftRate": 0.4,
+                "hp": 180,
+                "tilt": 825.0000000000001,
+                "drive": 3.1499999999999995,
+                "dur": 0.24,
+                "contour": [
+                  [
+                    0,
+                    1.34
+                  ],
+                  [
+                    0.25,
+                    1.24
+                  ],
+                  [
+                    1,
+                    1.05
+                  ]
+                ],
+                "vowels": [
+                  "ae",
+                  "eu"
+                ],
+                "env": [
+                  [
+                    0,
+                    0
+                  ],
+                  [
+                    0.05,
+                    1
+                  ],
+                  [
+                    0.5,
+                    0.6
+                  ],
+                  [
+                    1,
+                    0
+                  ]
+                ],
+                "breath": 0.108,
+                "sub": 0.08000000000000002,
+                "rough": {
+                  "rate": 40,
+                  "depth": 0.12
+                },
+                "f0": 66,
+                "formantScale": 0.8,
+                "bw": 1.1,
+                "presence": {
+                  "f": 1100,
+                  "q": 0.9,
+                  "gain": 7
+                }
+              },
+              "macros": {
+                "hauteur": {
+                  "min": -6,
+                  "max": 6,
+                  "default": 0,
+                  "unit": "demi-ton"
+                },
+                "matiere": {
+                  "min": -1,
+                  "max": 1,
+                  "default": 0,
+                  "unit": "octave"
+                },
+                "grain": {
+                  "min": 0,
+                  "max": 2,
+                  "default": 1,
+                  "unit": "x"
+                },
+                "duree": {
+                  "min": 0.6,
+                  "max": 1.6,
+                  "default": 1,
+                  "unit": "x"
+                },
+                "ampleur": {
+                  "min": 0,
+                  "max": 0.6,
+                  "default": 0,
+                  "unit": "mix"
+                }
+              }
+            }
+          ]
+        },
+        "variant": "C",
+        "macros": {
+          "hauteur": 0,
+          "matiere": 0,
+          "grain": 1,
+          "duree": 1,
+          "ampleur": 0
+        }
+      }
+    },
+    {
+      "id": "zombie-mort",
+      "category": "voix",
+      "set": "essentiel",
+      "engine": "atelier",
+      "sampleRate": 22050,
+      "duration": 1.124989,
+      "variants": 5,
+      "preload": 1,
+      "loop": false,
+      "fixedRate": true,
+      "atelier": {
+        "slot": {
+          "id": "voix-marcheur-mort",
+          "sampleRate": 22050,
+          "bufferLevelDb": -11.450000000000001,
+          "variants": [
+            {
+              "id": "C",
+              "recipe": {
+                "kind": "voice",
+                "vary": 0.03,
+                "jitter": 0.022,
+                "shimmer": 0.1,
+                "oq": 0.6,
+                "sq": 2.5,
+                "wander": 0.03,
+                "breathPulse": 0.6,
+                "drift": 0.04,
+                "driftRate": 0.4,
+                "hp": 180,
+                "tilt": 1500,
+                "drive": 1.875,
+                "dur": 1.125,
+                "contour": [
+                  [
+                    0,
+                    1.1
+                  ],
+                  [
+                    0.3,
+                    1
+                  ],
+                  [
+                    0.8,
+                    0.76
+                  ],
+                  [
+                    1,
+                    0.62
+                  ]
+                ],
+                "vowels": [
+                  "a",
+                  "o",
+                  "u"
+                ],
+                "env": [
+                  [
+                    0,
+                    0
+                  ],
+                  [
+                    0.06,
+                    1
+                  ],
+                  [
+                    0.5,
+                    0.8
+                  ],
+                  [
+                    0.85,
+                    0.35
+                  ],
+                  [
+                    1,
+                    0
+                  ]
+                ],
+                "breath": 0.099,
+                "sub": 0.17600000000000002,
+                "rough": {
+                  "rate": 26,
+                  "depth": 0.12
+                },
+                "rattle": {
+                  "from": 0.55,
+                  "rate": 16,
+                  "gain": 0.1,
+                  "f": 800
+                },
+                "f0": 92,
+                "formantScale": 0.92,
+                "presence": {
+                  "f": 1100,
+                  "q": 0.9,
+                  "gain": 7
+                }
+              },
+              "macros": {
+                "hauteur": {
+                  "min": -6,
+                  "max": 6,
+                  "default": 0,
+                  "unit": "demi-ton"
+                },
+                "matiere": {
+                  "min": -1,
+                  "max": 1,
+                  "default": 0,
+                  "unit": "octave"
+                },
+                "grain": {
+                  "min": 0,
+                  "max": 2,
+                  "default": 1,
+                  "unit": "x"
+                },
+                "duree": {
+                  "min": 0.6,
+                  "max": 1.6,
+                  "default": 1,
+                  "unit": "x"
+                },
+                "ampleur": {
+                  "min": 0,
+                  "max": 0.6,
+                  "default": 0,
+                  "unit": "mix"
+                }
+              }
+            }
+          ]
+        },
+        "variant": "C",
+        "macros": {
+          "hauteur": 0,
+          "matiere": 0,
+          "grain": 1,
+          "duree": 1,
+          "ampleur": 0
+        }
+      }
+    },
+    {
+      "id": "zombie-mort-petit",
+      "category": "voix",
+      "set": "essentiel",
+      "engine": "atelier",
+      "sampleRate": 22050,
+      "duration": 0.810023,
+      "variants": 5,
+      "preload": 1,
+      "loop": false,
+      "fixedRate": true,
+      "atelier": {
+        "slot": {
+          "id": "voix-petit-mort",
+          "sampleRate": 22050,
+          "bufferLevelDb": -11.450000000000001,
+          "variants": [
+            {
+              "id": "C",
+              "recipe": {
+                "kind": "voice",
+                "vary": 0.03,
+                "jitter": 0.02,
+                "shimmer": 0.1,
+                "oq": 0.6,
+                "sq": 2.5,
+                "wander": 0.03,
+                "breathPulse": 0.6,
+                "drift": 0.04,
+                "driftRate": 0.4,
+                "hp": 180,
+                "tilt": 1500,
+                "drive": 1.40625,
+                "dur": 0.81,
+                "contour": [
+                  [
+                    0,
+                    1.1
+                  ],
+                  [
+                    0.3,
+                    1
+                  ],
+                  [
+                    0.8,
+                    0.76
+                  ],
+                  [
+                    1,
+                    0.62
+                  ]
+                ],
+                "vowels": [
+                  "a",
+                  "o",
+                  "u"
+                ],
+                "env": [
+                  [
+                    0,
+                    0
+                  ],
+                  [
+                    0.06,
+                    1
+                  ],
+                  [
+                    0.5,
+                    0.8
+                  ],
+                  [
+                    0.85,
+                    0.35
+                  ],
+                  [
+                    1,
+                    0
+                  ]
+                ],
+                "breath": 0.08415,
+                "sub": 0.17600000000000002,
+                "rough": {
+                  "rate": 45,
+                  "depth": 0.06
+                },
+                "rattle": {
+                  "from": 0.55,
+                  "rate": 16,
+                  "gain": 0.1,
+                  "f": 800
+                },
+                "f0": 140,
+                "formantScale": 1.12,
+                "presence": {
+                  "f": 1100,
+                  "q": 0.9,
+                  "gain": 7
+                }
+              },
+              "macros": {
+                "hauteur": {
+                  "min": -6,
+                  "max": 6,
+                  "default": 0,
+                  "unit": "demi-ton"
+                },
+                "matiere": {
+                  "min": -1,
+                  "max": 1,
+                  "default": 0,
+                  "unit": "octave"
+                },
+                "grain": {
+                  "min": 0,
+                  "max": 2,
+                  "default": 1,
+                  "unit": "x"
+                },
+                "duree": {
+                  "min": 0.6,
+                  "max": 1.6,
+                  "default": 1,
+                  "unit": "x"
+                },
+                "ampleur": {
+                  "min": 0,
+                  "max": 0.6,
+                  "default": 0,
+                  "unit": "mix"
+                }
+              }
+            }
+          ]
+        },
+        "variant": "C",
+        "macros": {
+          "hauteur": 3,
+          "matiere": 0,
+          "grain": 1,
+          "duree": 1,
+          "ampleur": 0
+        }
+      }
+    },
+    {
+      "id": "zombie-mort-voute",
+      "category": "voix",
+      "set": "essentiel",
+      "engine": "atelier",
+      "sampleRate": 22050,
+      "duration": 1.124989,
+      "variants": 5,
+      "preload": 1,
+      "loop": false,
+      "fixedRate": true,
+      "atelier": {
+        "slot": {
+          "id": "voix-voute-mort",
+          "sampleRate": 22050,
+          "bufferLevelDb": -11.450000000000001,
+          "variants": [
+            {
+              "id": "C",
+              "recipe": {
+                "kind": "voice",
+                "vary": 0.03,
+                "jitter": 0.022,
+                "shimmer": 0.1,
+                "oq": 0.6,
+                "sq": 2.5,
+                "wander": 0.03,
+                "breathPulse": 0.6,
+                "drift": 0.04,
+                "driftRate": 0.4,
+                "hp": 180,
+                "tilt": 1200,
+                "drive": 1.875,
+                "dur": 1.125,
+                "contour": [
+                  [
+                    0,
+                    1.1
+                  ],
+                  [
+                    0.3,
+                    1
+                  ],
+                  [
+                    0.8,
+                    0.76
+                  ],
+                  [
+                    1,
+                    0.62
+                  ]
+                ],
+                "vowels": [
+                  "a",
+                  "o",
+                  "u"
+                ],
+                "env": [
+                  [
+                    0,
+                    0
+                  ],
+                  [
+                    0.06,
+                    1
+                  ],
+                  [
+                    0.5,
+                    0.8
+                  ],
+                  [
+                    0.85,
+                    0.35
+                  ],
+                  [
+                    1,
+                    0
+                  ]
+                ],
+                "breath": 0.099,
+                "sub": 0.17600000000000002,
+                "rough": {
+                  "rate": 26,
+                  "depth": 0.12
+                },
+                "rattle": {
+                  "from": 0.55,
+                  "rate": 16,
+                  "gain": 0.1,
+                  "f": 800
+                },
+                "f0": 104,
+                "formantScale": 0.97,
+                "hiss": {
+                  "f": 3200,
+                  "q": 1.6,
+                  "gain": 0.08
+                },
+                "presence": {
+                  "f": 1100,
+                  "q": 0.9,
+                  "gain": 7
+                }
+              },
+              "macros": {
+                "hauteur": {
+                  "min": -6,
+                  "max": 6,
+                  "default": 0,
+                  "unit": "demi-ton"
+                },
+                "matiere": {
+                  "min": -1,
+                  "max": 1,
+                  "default": 0,
+                  "unit": "octave"
+                },
+                "grain": {
+                  "min": 0,
+                  "max": 2,
+                  "default": 1,
+                  "unit": "x"
+                },
+                "duree": {
+                  "min": 0.6,
+                  "max": 1.6,
+                  "default": 1,
+                  "unit": "x"
+                },
+                "ampleur": {
+                  "min": 0,
+                  "max": 0.6,
+                  "default": 0,
+                  "unit": "mix"
+                }
+              }
+            }
+          ]
+        },
+        "variant": "C",
+        "macros": {
+          "hauteur": 0,
+          "matiere": 0,
+          "grain": 1,
+          "duree": 1,
+          "ampleur": 0
+        }
+      }
+    },
+    {
+      "id": "zombie-mort-grand",
+      "category": "voix",
+      "set": "essentiel",
+      "engine": "atelier",
+      "sampleRate": 22050,
+      "duration": 1.124989,
+      "variants": 5,
+      "preload": 1,
+      "loop": false,
+      "fixedRate": true,
+      "atelier": {
+        "slot": {
+          "id": "voix-grand-mort",
+          "sampleRate": 22050,
+          "bufferLevelDb": -9.450000000000001,
+          "variants": [
+            {
+              "id": "C",
+              "recipe": {
+                "kind": "voice",
+                "vary": 0.03,
+                "jitter": 0.022,
+                "shimmer": 0.1,
+                "oq": 0.6,
+                "sq": 2.5,
+                "wander": 0.03,
+                "breathPulse": 0.6,
+                "drift": 0.04,
+                "driftRate": 0.4,
+                "hp": 180,
+                "tilt": 825.0000000000001,
+                "drive": 2.8125,
+                "dur": 1.125,
+                "contour": [
+                  [
+                    0,
+                    1.1
+                  ],
+                  [
+                    0.3,
+                    1
+                  ],
+                  [
+                    0.8,
+                    0.76
+                  ],
+                  [
+                    1,
+                    0.62
+                  ]
+                ],
+                "vowels": [
+                  "a",
+                  "o",
+                  "u"
+                ],
+                "env": [
+                  [
+                    0,
+                    0
+                  ],
+                  [
+                    0.06,
+                    1
+                  ],
+                  [
+                    0.5,
+                    0.8
+                  ],
+                  [
+                    0.85,
+                    0.35
+                  ],
+                  [
+                    1,
+                    0
+                  ]
+                ],
+                "breath": 0.099,
+                "sub": 0.17600000000000002,
+                "rough": {
+                  "rate": 26,
+                  "depth": 0.12
+                },
+                "rattle": {
+                  "from": 0.55,
+                  "rate": 16,
+                  "gain": 0.1,
+                  "f": 800
+                },
+                "f0": 66,
+                "formantScale": 0.8,
+                "bw": 1.1,
+                "presence": {
+                  "f": 1100,
+                  "q": 0.9,
+                  "gain": 7
+                }
+              },
+              "macros": {
+                "hauteur": {
+                  "min": -6,
+                  "max": 6,
+                  "default": 0,
+                  "unit": "demi-ton"
+                },
+                "matiere": {
+                  "min": -1,
+                  "max": 1,
+                  "default": 0,
+                  "unit": "octave"
+                },
+                "grain": {
+                  "min": 0,
+                  "max": 2,
+                  "default": 1,
+                  "unit": "x"
+                },
+                "duree": {
+                  "min": 0.6,
+                  "max": 1.6,
+                  "default": 1,
+                  "unit": "x"
+                },
+                "ampleur": {
+                  "min": 0,
+                  "max": 0.6,
+                  "default": 0,
+                  "unit": "mix"
+                }
+              }
+            }
+          ]
+        },
+        "variant": "C",
+        "macros": {
+          "hauteur": 0,
+          "matiere": 0,
+          "grain": 1,
+          "duree": 1,
+          "ampleur": 0
+        }
+      }
+    },
+    {
+      "id": "zombie-attaque",
+      "category": "voix",
+      "set": "fond",
+      "engine": "atelier",
+      "sampleRate": 22050,
+      "duration": 0.393741,
+      "variants": 5,
+      "preload": 1,
+      "loop": false,
+      "fixedRate": true,
+      "atelier": {
+        "slot": {
+          "id": "voix-marcheur-attaque",
+          "sampleRate": 22050,
+          "bufferLevelDb": -9.450000000000001,
+          "variants": [
+            {
+              "id": "C",
+              "recipe": {
+                "kind": "voice",
+                "vary": 0.03,
+                "jitter": 0.02,
+                "shimmer": 0.1,
+                "oq": 0.6,
+                "sq": 2.5,
+                "wander": 0.03,
+                "breathPulse": 0.6,
+                "drift": 0.04,
+                "driftRate": 0.4,
+                "hp": 180,
+                "tilt": 1500,
+                "drive": 2.4000000000000004,
+                "dur": 0.5625,
+                "contour": [
+                  [
+                    0,
+                    1
+                  ],
+                  [
+                    0.15,
+                    1.28
+                  ],
+                  [
+                    0.6,
+                    1.18
+                  ],
+                  [
+                    1,
+                    0.95
+                  ]
+                ],
+                "vowels": [
+                  "ae",
+                  "a",
+                  "a"
+                ],
+                "env": [
+                  [
+                    0,
+                    0
+                  ],
+                  [
+                    0.06,
+                    1
+                  ],
+                  [
+                    0.6,
+                    0.9
+                  ],
+                  [
+                    1,
+                    0
+                  ]
+                ],
+                "breath": 0.081,
+                "sub": 0.2,
+                "rough": {
+                  "rate": 48,
+                  "depth": 0.11200000000000002
+                },
+                "f0": 92,
+                "formantScale": 0.92,
+                "presence": {
+                  "f": 1100,
+                  "q": 0.9,
+                  "gain": 7
+                }
+              },
+              "macros": {
+                "hauteur": {
+                  "min": -6,
+                  "max": 6,
+                  "default": 0,
+                  "unit": "demi-ton"
+                },
+                "matiere": {
+                  "min": -1,
+                  "max": 1,
+                  "default": 0,
+                  "unit": "octave"
+                },
+                "grain": {
+                  "min": 0,
+                  "max": 2,
+                  "default": 1,
+                  "unit": "x"
+                },
+                "duree": {
+                  "min": 0.6,
+                  "max": 1.6,
+                  "default": 1,
+                  "unit": "x"
+                },
+                "ampleur": {
+                  "min": 0,
+                  "max": 0.6,
+                  "default": 0,
+                  "unit": "mix"
+                }
+              }
+            }
+          ]
+        },
+        "variant": "C",
+        "macros": {
+          "hauteur": -6,
+          "matiere": 0,
+          "grain": 1,
+          "duree": 0.7,
+          "ampleur": 0
+        }
+      }
+    },
+    {
+      "id": "zombie-attaque-petit",
+      "category": "voix",
+      "set": "fond",
+      "engine": "atelier",
+      "sampleRate": 22050,
+      "duration": 0.404989,
+      "variants": 5,
+      "preload": 1,
+      "loop": false,
+      "fixedRate": true,
+      "atelier": {
+        "slot": {
+          "id": "voix-petit-attaque",
+          "sampleRate": 22050,
+          "bufferLevelDb": -9.450000000000001,
+          "variants": [
+            {
+              "id": "C",
+              "recipe": {
+                "kind": "voice",
+                "vary": 0.03,
+                "jitter": 0.02,
+                "shimmer": 0.1,
+                "oq": 0.6,
+                "sq": 2.5,
+                "wander": 0.03,
+                "breathPulse": 0.6,
+                "drift": 0.04,
+                "driftRate": 0.4,
+                "hp": 180,
+                "tilt": 1500,
+                "drive": 1.8000000000000003,
+                "dur": 0.405,
+                "contour": [
+                  [
+                    0,
+                    1
+                  ],
+                  [
+                    0.15,
+                    1.28
+                  ],
+                  [
+                    0.6,
+                    1.18
+                  ],
+                  [
+                    1,
+                    0.95
+                  ]
+                ],
+                "vowels": [
+                  "ae",
+                  "a",
+                  "a"
+                ],
+                "env": [
+                  [
+                    0,
+                    0
+                  ],
+                  [
+                    0.06,
+                    1
+                  ],
+                  [
+                    0.6,
+                    0.9
+                  ],
+                  [
+                    1,
+                    0
+                  ]
+                ],
+                "breath": 0.06885,
+                "sub": 0.2,
+                "rough": {
+                  "rate": 45,
+                  "depth": 0.05600000000000001
+                },
+                "f0": 140,
+                "formantScale": 1.12,
+                "presence": {
+                  "f": 1100,
+                  "q": 0.9,
+                  "gain": 7
+                }
+              },
+              "macros": {
+                "hauteur": {
+                  "min": -6,
+                  "max": 6,
+                  "default": 0,
+                  "unit": "demi-ton"
+                },
+                "matiere": {
+                  "min": -1,
+                  "max": 1,
+                  "default": 0,
+                  "unit": "octave"
+                },
+                "grain": {
+                  "min": 0,
+                  "max": 2,
+                  "default": 1,
+                  "unit": "x"
+                },
+                "duree": {
+                  "min": 0.6,
+                  "max": 1.6,
+                  "default": 1,
+                  "unit": "x"
+                },
+                "ampleur": {
+                  "min": 0,
+                  "max": 0.6,
+                  "default": 0,
+                  "unit": "mix"
+                }
+              }
+            }
+          ]
+        },
+        "variant": "C",
+        "macros": {
+          "hauteur": 0,
+          "matiere": 0,
+          "grain": 1,
+          "duree": 1,
+          "ampleur": 0
+        }
+      }
+    },
+    {
+      "id": "zombie-attaque-voute",
+      "category": "voix",
+      "set": "fond",
+      "engine": "atelier",
+      "sampleRate": 22050,
+      "duration": 0.562494,
+      "variants": 5,
+      "preload": 1,
+      "loop": false,
+      "fixedRate": true,
+      "atelier": {
+        "slot": {
+          "id": "voix-voute-attaque",
+          "sampleRate": 22050,
+          "bufferLevelDb": -9.450000000000001,
+          "variants": [
+            {
+              "id": "C",
+              "recipe": {
+                "kind": "voice",
+                "vary": 0.03,
+                "jitter": 0.02,
+                "shimmer": 0.1,
+                "oq": 0.6,
+                "sq": 2.5,
+                "wander": 0.03,
+                "breathPulse": 0.6,
+                "drift": 0.04,
+                "driftRate": 0.4,
+                "hp": 180,
+                "tilt": 1200,
+                "drive": 2.4000000000000004,
+                "dur": 0.5625,
+                "contour": [
+                  [
+                    0,
+                    1
+                  ],
+                  [
+                    0.15,
+                    1.28
+                  ],
+                  [
+                    0.6,
+                    1.18
+                  ],
+                  [
+                    1,
+                    0.95
+                  ]
+                ],
+                "vowels": [
+                  "ae",
+                  "a",
+                  "a"
+                ],
+                "env": [
+                  [
+                    0,
+                    0
+                  ],
+                  [
+                    0.06,
+                    1
+                  ],
+                  [
+                    0.6,
+                    0.9
+                  ],
+                  [
+                    1,
+                    0
+                  ]
+                ],
+                "breath": 0.081,
+                "sub": 0.2,
+                "rough": {
+                  "rate": 48,
+                  "depth": 0.11200000000000002
+                },
+                "f0": 104,
+                "formantScale": 0.97,
+                "hiss": {
+                  "f": 3200,
+                  "q": 1.6,
+                  "gain": 0.08
+                },
+                "presence": {
+                  "f": 1100,
+                  "q": 0.9,
+                  "gain": 7
+                }
+              },
+              "macros": {
+                "hauteur": {
+                  "min": -6,
+                  "max": 6,
+                  "default": 0,
+                  "unit": "demi-ton"
+                },
+                "matiere": {
+                  "min": -1,
+                  "max": 1,
+                  "default": 0,
+                  "unit": "octave"
+                },
+                "grain": {
+                  "min": 0,
+                  "max": 2,
+                  "default": 1,
+                  "unit": "x"
+                },
+                "duree": {
+                  "min": 0.6,
+                  "max": 1.6,
+                  "default": 1,
+                  "unit": "x"
+                },
+                "ampleur": {
+                  "min": 0,
+                  "max": 0.6,
+                  "default": 0,
+                  "unit": "mix"
+                }
+              }
+            }
+          ]
+        },
+        "variant": "C",
+        "macros": {
+          "hauteur": 0,
+          "matiere": 0,
+          "grain": 1,
+          "duree": 1,
+          "ampleur": 0
+        }
+      }
+    },
+    {
+      "id": "zombie-attaque-grand",
+      "category": "voix",
+      "set": "fond",
+      "engine": "atelier",
+      "sampleRate": 22050,
+      "duration": 0.562494,
+      "variants": 5,
+      "preload": 1,
+      "loop": false,
+      "fixedRate": true,
+      "atelier": {
+        "slot": {
+          "id": "voix-grand-attaque",
+          "sampleRate": 22050,
+          "bufferLevelDb": -7.450000000000001,
+          "variants": [
+            {
+              "id": "C",
+              "recipe": {
+                "kind": "voice",
+                "vary": 0.03,
+                "jitter": 0.02,
+                "shimmer": 0.1,
+                "oq": 0.6,
+                "sq": 2.5,
+                "wander": 0.03,
+                "breathPulse": 0.6,
+                "drift": 0.04,
+                "driftRate": 0.4,
+                "hp": 180,
+                "tilt": 825.0000000000001,
+                "drive": 3.6000000000000005,
+                "dur": 0.5625,
+                "contour": [
+                  [
+                    0,
+                    1
+                  ],
+                  [
+                    0.15,
+                    1.28
+                  ],
+                  [
+                    0.6,
+                    1.18
+                  ],
+                  [
+                    1,
+                    0.95
+                  ]
+                ],
+                "vowels": [
+                  "ae",
+                  "a",
+                  "a"
+                ],
+                "env": [
+                  [
+                    0,
+                    0
+                  ],
+                  [
+                    0.06,
+                    1
+                  ],
+                  [
+                    0.6,
+                    0.9
+                  ],
+                  [
+                    1,
+                    0
+                  ]
+                ],
+                "breath": 0.081,
+                "sub": 0.2,
+                "rough": {
+                  "rate": 48,
+                  "depth": 0.11200000000000002
+                },
+                "f0": 66,
+                "formantScale": 0.8,
+                "bw": 1.1,
+                "presence": {
+                  "f": 1100,
+                  "q": 0.9,
+                  "gain": 7
+                }
+              },
+              "macros": {
+                "hauteur": {
+                  "min": -6,
+                  "max": 6,
+                  "default": 0,
+                  "unit": "demi-ton"
+                },
+                "matiere": {
+                  "min": -1,
+                  "max": 1,
+                  "default": 0,
+                  "unit": "octave"
+                },
+                "grain": {
+                  "min": 0,
+                  "max": 2,
+                  "default": 1,
+                  "unit": "x"
+                },
+                "duree": {
+                  "min": 0.6,
+                  "max": 1.6,
+                  "default": 1,
+                  "unit": "x"
+                },
+                "ampleur": {
+                  "min": 0,
+                  "max": 0.6,
+                  "default": 0,
+                  "unit": "mix"
+                }
+              }
+            }
+          ]
+        },
+        "variant": "C",
+        "macros": {
+          "hauteur": 0,
+          "matiere": 0,
+          "grain": 1,
+          "duree": 1,
+          "ampleur": 0
+        }
+      }
+    },
+    {
+      "id": "joueur-blesse",
+      "category": "joueur",
+      "set": "essentiel",
+      "sampleRate": 22050,
+      "duration": 0.22,
+      "variants": 3,
+      "seed": 171,
+      "loop": false,
+      "layers": [
+        {
+          "type": "voice",
+          "f0": 170,
+          "contour": [
+            [
+              0,
+              1.25
+            ],
+            [
+              0.35,
+              0.95
+            ],
+            [
+              1,
+              0.7
+            ]
+          ],
+          "vowels": [
+            "o",
+            "eu"
+          ],
+          "transition": [
+            0,
+            0.8
+          ],
+          "jitter": 0.02,
+          "breath": 0.1,
+          "attack": 0.004,
+          "release": 0.09,
+          "gain": 1
+        },
+        {
+          "type": "noise",
+          "color": "white",
+          "start": 0,
+          "dur": 0.015,
+          "attack": 0.0002,
+          "decay": 0.004,
+          "gain": 0.5,
+          "filter": {
+            "type": "bandpass",
+            "freq": 1200,
+            "q": 1.5
+          }
+        }
+      ],
+      "post": {
+        "reverb": {
+          "decay": 0.15,
+          "mix": 0.08,
+          "damping": 0.6
+        },
+        "saturation": 1.8,
+        "targetPeak": 0.85,
+        "fadeOut": 0.02
+      }
+    },
+    {
+      "id": "joueur-mort",
+      "category": "joueur",
+      "set": "essentiel",
+      "sampleRate": 22050,
+      "duration": 1.3,
+      "variants": 2,
+      "seed": 181,
+      "loop": false,
+      "layers": [
+        {
+          "type": "osc",
+          "wave": "saw",
+          "freq": [
+            110,
+            52
+          ],
+          "sweepTime": 1.1,
+          "start": 0,
+          "dur": 1.2,
+          "attack": 0.01,
+          "decay": 0.5,
+          "gain": 0.6,
+          "filter": {
+            "type": "lowpass",
+            "freq": [
+              1800,
+              200
+            ],
+            "sweep": 1,
+            "q": 0.8
+          }
+        },
+        {
+          "type": "osc",
+          "wave": "saw",
+          "freq": [
+            117,
+            55
+          ],
+          "sweepTime": 1.1,
+          "start": 0,
+          "dur": 1.2,
+          "attack": 0.01,
+          "decay": 0.5,
+          "gain": 0.5,
+          "filter": {
+            "type": "lowpass",
+            "freq": [
+              1800,
+              200
+            ],
+            "sweep": 1,
+            "q": 0.8
+          }
+        },
+        {
+          "type": "voice",
+          "f0": 140,
+          "contour": [
+            [
+              0,
+              1.1
+            ],
+            [
+              1,
+              0.5
+            ]
+          ],
+          "vowels": [
+            "o",
+            "u"
+          ],
+          "breath": 0.1,
+          "attack": 0.02,
+          "release": 0.5,
+          "gain": 0.7
+        },
+        {
+          "type": "noise",
+          "color": "brown",
+          "start": 0,
+          "dur": 0.2,
+          "attack": 0.002,
+          "decay": 0.05,
+          "gain": 0.8,
+          "filter": {
+            "type": "lowpass",
+            "freq": 300,
+            "q": 0.7
+          }
+        }
+      ],
+      "post": {
+        "reverb": {
+          "decay": 0.6,
+          "mix": 0.3,
+          "damping": 0.6
+        },
+        "saturation": 1,
+        "targetPeak": 0.8,
+        "fadeOut": 0.03
+      }
+    },
+    {
+      "id": "ui-pause",
+      "category": "interface",
+      "set": "essentiel",
+      "sampleRate": 44100,
+      "duration": 0.3,
+      "variants": 1,
+      "seed": 191,
+      "loop": false,
+      "layers": [
+        {
+          "type": "osc",
+          "wave": "triangle",
+          "freq": [
+            440,
+            330
+          ],
+          "sweepTime": 0.08,
+          "start": 0,
+          "dur": 0.12,
+          "attack": 0.004,
+          "decay": 0.04,
+          "gain": 0.8
+        },
+        {
+          "type": "osc",
+          "wave": "triangle",
+          "freq": [
+            330,
+            247
+          ],
+          "sweepTime": 0.08,
+          "start": 0.07,
+          "dur": 0.2,
+          "attack": 0.004,
+          "decay": 0.06,
+          "gain": 0.8
+        }
+      ],
+      "post": {
+        "reverb": {
+          "decay": 0.2,
+          "mix": 0.12,
+          "damping": 0.5
+        },
+        "saturation": 0,
+        "targetPeak": 0.5,
+        "fadeOut": 0.02
+      }
+    },
+    {
+      "id": "ui-reprise",
+      "category": "interface",
+      "set": "essentiel",
+      "sampleRate": 44100,
+      "duration": 0.3,
+      "variants": 1,
+      "seed": 201,
+      "loop": false,
+      "layers": [
+        {
+          "type": "osc",
+          "wave": "triangle",
+          "freq": [
+            247,
+            330
+          ],
+          "sweepTime": 0.08,
+          "start": 0,
+          "dur": 0.12,
+          "attack": 0.004,
+          "decay": 0.04,
+          "gain": 0.8
+        },
+        {
+          "type": "osc",
+          "wave": "triangle",
+          "freq": [
+            330,
+            440
+          ],
+          "sweepTime": 0.08,
+          "start": 0.07,
+          "dur": 0.2,
+          "attack": 0.004,
+          "decay": 0.06,
+          "gain": 0.8
+        }
+      ],
+      "post": {
+        "reverb": {
+          "decay": 0.2,
+          "mix": 0.12,
+          "damping": 0.5
+        },
+        "saturation": 0,
+        "targetPeak": 0.5,
+        "fadeOut": 0.02
+      }
+    },
+    {
+      "id": "ambiance",
+      "category": "ambiance",
+      "set": "fond",
+      "sampleRate": 22050,
+      "duration": 4,
+      "variants": 1,
+      "seed": 211,
+      "loop": true,
+      "loopOverlap": 0.5,
+      "layers": [
+        {
+          "type": "noise",
+          "color": "brown",
+          "gain": 1,
+          "filter": {
+            "type": "lowpass",
+            "freq": 280,
+            "q": 0.7
+          }
+        },
+        {
+          "type": "noise",
+          "color": "pink",
+          "gain": 0.5,
+          "am": {
+            "rate": 0.25,
+            "depth": 0.5
+          },
+          "filter": {
+            "type": "bandpass",
+            "freq": 650,
+            "q": 0.8
+          }
+        },
+        {
+          "type": "osc",
+          "wave": "sine",
+          "freq": 55,
+          "gain": 0.12,
+          "freqVar": 0
+        }
+      ],
+      "post": {
+        "reverb": {
+          "decay": 0.5,
+          "mix": 0.1,
+          "damping": 0.7
+        },
+        "targetPeak": 0.35
+      }
+    },
+    {
+      "id": "vague-annonce",
+      "category": "annonce",
+      "set": "essentiel",
+      "sampleRate": 22050,
+      "duration": 3.8,
+      "variants": 3,
+      "seed": 311,
+      "loop": false,
+      "markers": {
+        "sting": 3
+      },
+      "layers": [
+        {
+          "type": "osc",
+          "wave": "saw",
+          "freq": 55,
+          "start": 0,
+          "dur": 3.8,
+          "attack": 2,
+          "release": 0.8,
+          "gain": 0.3,
+          "freqVar": 0,
+          "filter": {
+            "type": "lowpass",
+            "freq": [
+              180,
+              420
+            ],
+            "sweep": 3,
+            "q": 0.9
+          },
+          "byVariant": [
+            {
+              "freqMul": 1
+            },
+            {
+              "freqMul": 1.025
+            },
+            {
+              "freqMul": 0.975
+            }
+          ]
+        },
+        {
+          "type": "osc",
+          "wave": "saw",
+          "freq": 55.8,
+          "start": 0,
+          "dur": 3.8,
+          "attack": 2,
+          "release": 0.8,
+          "gain": 0.3,
+          "freqVar": 0,
+          "filter": {
+            "type": "lowpass",
+            "freq": [
+              180,
+              420
+            ],
+            "sweep": 3,
+            "q": 0.9
+          },
+          "byVariant": [
+            {
+              "freqMul": 1
+            },
+            {
+              "freqMul": 1.025
+            },
+            {
+              "freqMul": 0.975
+            }
+          ]
+        },
+        {
+          "type": "ring",
+          "start": 0.5,
+          "dur": 1.5,
+          "attack": 0.002,
+          "detune": 0.0087,
+          "freqVar": 0,
+          "gain": 0.4,
+          "partials": [
+            {
+              "freq": 220,
+              "gain": 1,
+              "decay": 0.5
+            },
+            {
+              "freq": 607.2,
+              "gain": 0.5,
+              "decay": 0.34
+            },
+            {
+              "freq": 1188,
+              "gain": 0.28,
+              "decay": 0.2
+            },
+            {
+              "freq": 1958,
+              "gain": 0.14,
+              "decay": 0.12
+            }
+          ],
+          "byVariant": [
+            {
+              "freqMul": 1,
+              "startAdd": 0.04
+            },
+            {
+              "freqMul": 0.9439,
+              "startAdd": 0.065
+            },
+            {
+              "freqMul": 1.5874,
+              "startAdd": 0.09
+            }
+          ]
+        },
+        {
+          "type": "ring",
+          "start": 1.1,
+          "dur": 1.5,
+          "attack": 0.002,
+          "detune": 0.0087,
+          "freqVar": 0,
+          "gain": 0.4,
+          "partials": [
+            {
+              "freq": 220,
+              "gain": 1,
+              "decay": 0.5
+            },
+            {
+              "freq": 607.2,
+              "gain": 0.5,
+              "decay": 0.34
+            },
+            {
+              "freq": 1188,
+              "gain": 0.28,
+              "decay": 0.2
+            },
+            {
+              "freq": 1958,
+              "gain": 0.14,
+              "decay": 0.12
+            }
+          ],
+          "byVariant": [
+            {
+              "freqMul": 1.0595,
+              "startAdd": 0.04
+            },
+            {
+              "freqMul": 0.8909,
+              "startAdd": 0.065
+            },
+            {
+              "freqMul": 1.4983,
+              "startAdd": 0.09
+            }
+          ]
+        },
+        {
+          "type": "ring",
+          "start": 1.7,
+          "dur": 1.5,
+          "attack": 0.002,
+          "detune": 0.0087,
+          "freqVar": 0,
+          "gain": 0.4,
+          "partials": [
+            {
+              "freq": 220,
+              "gain": 1,
+              "decay": 0.5
+            },
+            {
+              "freq": 607.2,
+              "gain": 0.5,
+              "decay": 0.34
+            },
+            {
+              "freq": 1188,
+              "gain": 0.28,
+              "decay": 0.2
+            },
+            {
+              "freq": 1958,
+              "gain": 0.14,
+              "decay": 0.12
+            }
+          ],
+          "byVariant": [
+            {
+              "freqMul": 1.4983,
+              "startAdd": 0.04
+            },
+            {
+              "freqMul": 1.2599,
+              "startAdd": 0.065
+            },
+            {
+              "freqMul": 1.0595,
+              "startAdd": 0.09
+            }
+          ]
+        },
+        {
+          "type": "ring",
+          "start": 2.3,
+          "dur": 1.5,
+          "attack": 0.002,
+          "detune": 0.0087,
+          "freqVar": 0,
+          "gain": 0.4,
+          "partials": [
+            {
+              "freq": 220,
+              "gain": 1,
+              "decay": 0.5
+            },
+            {
+              "freq": 607.2,
+              "gain": 0.5,
+              "decay": 0.34
+            },
+            {
+              "freq": 1188,
+              "gain": 0.28,
+              "decay": 0.2
+            },
+            {
+              "freq": 1958,
+              "gain": 0.14,
+              "decay": 0.12
+            }
+          ],
+          "byVariant": [
+            {
+              "freqMul": 1.4142,
+              "startAdd": 0.04
+            },
+            {
+              "freqMul": 1.3348,
+              "startAdd": 0.065
+            },
+            {
+              "freqMul": 1.1225,
+              "startAdd": 0.09
+            }
+          ]
+        },
+        {
+          "type": "noise",
+          "color": "pink",
+          "start": 0,
+          "dur": 3,
+          "attack": 3,
+          "release": 0.05,
+          "gain": 0.8,
+          "filter": {
+            "type": "bandpass",
+            "freq": [
+              200,
+              2500
+            ],
+            "sweep": 3,
+            "q": 1.2
+          }
+        },
+        {
+          "type": "osc",
+          "wave": "sine",
+          "freq": [
+            55,
+            45
+          ],
+          "sweepTime": 0.6,
+          "start": 3,
+          "dur": 0.9,
+          "attack": 0.003,
+          "decay": 0.28,
+          "release": 0.1,
+          "gain": 4.5,
+          "freqVar": 0
+        },
+        {
+          "type": "noise",
+          "color": "white",
+          "start": 3,
+          "dur": 0.15,
+          "attack": 0.001,
+          "decay": 0.035,
+          "gain": 0.8,
+          "filter": {
+            "type": "highpass",
+            "freq": 3000,
+            "q": 0.7
+          }
+        }
+      ],
+      "post": {
+        "reverb": {
+          "decay": 1.3,
+          "mix": 0.25,
+          "damping": 0.45
+        },
+        "saturation": 0.5,
+        "targetPeak": 0.8,
+        "fadeOut": 0.5
+      }
+    },
+    {
+      "id": "vague-renforcee",
+      "category": "annonce",
+      "set": "fond",
+      "sampleRate": 22050,
+      "duration": 4.2,
+      "variants": 2,
+      "seed": 331,
+      "loop": false,
+      "markers": {
+        "sting": 3
+      },
+      "layers": [
+        {
+          "type": "osc",
+          "wave": "saw",
+          "freq": 41,
+          "start": 0,
+          "dur": 4.2,
+          "attack": 2.2,
+          "release": 1,
+          "gain": 0.18,
+          "freqVar": 0,
+          "filter": {
+            "type": "lowpass",
+            "freq": [
+              150,
+              360
+            ],
+            "sweep": 3,
+            "q": 1
+          },
+          "byVariant": [
+            {
+              "freqMul": 1
+            },
+            {
+              "freqMul": 1.03
+            }
+          ]
+        },
+        {
+          "type": "osc",
+          "wave": "saw",
+          "freq": 41.6,
+          "start": 0,
+          "dur": 4.2,
+          "attack": 2.2,
+          "release": 1,
+          "gain": 0.18,
+          "freqVar": 0,
+          "filter": {
+            "type": "lowpass",
+            "freq": [
+              150,
+              360
+            ],
+            "sweep": 3,
+            "q": 1
+          },
+          "byVariant": [
+            {
+              "freqMul": 1
+            },
+            {
+              "freqMul": 1.03
+            }
+          ]
+        },
+        {
+          "type": "osc",
+          "wave": "sine",
+          "freq": [
+            62,
+            38
+          ],
+          "sweepTime": 0.12,
+          "start": 0.3,
+          "dur": 0.35,
+          "attack": 0.012,
+          "decay": 0.07,
+          "release": 0.05,
+          "gain": 0.63,
+          "freqVar": 0
+        },
+        {
+          "type": "osc",
+          "wave": "sine",
+          "freq": [
+            62,
+            38
+          ],
+          "sweepTime": 0.12,
+          "start": 0.58,
+          "dur": 0.35,
+          "attack": 0.012,
+          "decay": 0.07,
+          "release": 0.05,
+          "gain": 0.45,
+          "freqVar": 0
+        },
+        {
+          "type": "osc",
+          "wave": "sine",
+          "freq": [
+            62,
+            38
+          ],
+          "sweepTime": 0.12,
+          "start": 1.2,
+          "dur": 0.35,
+          "attack": 0.012,
+          "decay": 0.07,
+          "release": 0.05,
+          "gain": 0.9,
+          "freqVar": 0
+        },
+        {
+          "type": "osc",
+          "wave": "sine",
+          "freq": [
+            62,
+            38
+          ],
+          "sweepTime": 0.12,
+          "start": 1.48,
+          "dur": 0.35,
+          "attack": 0.012,
+          "decay": 0.07,
+          "release": 0.05,
+          "gain": 0.63,
+          "freqVar": 0
+        },
+        {
+          "type": "osc",
+          "wave": "sine",
+          "freq": [
+            62,
+            38
+          ],
+          "sweepTime": 0.12,
+          "start": 2.1,
+          "dur": 0.35,
+          "attack": 0.012,
+          "decay": 0.07,
+          "release": 0.05,
+          "gain": 1.26,
+          "freqVar": 0
+        },
+        {
+          "type": "osc",
+          "wave": "sine",
+          "freq": [
+            62,
+            38
+          ],
+          "sweepTime": 0.12,
+          "start": 2.38,
+          "dur": 0.35,
+          "attack": 0.012,
+          "decay": 0.07,
+          "release": 0.05,
+          "gain": 0.9,
+          "freqVar": 0
+        },
+        {
+          "type": "ring",
+          "start": 0.6,
+          "dur": 1.5,
+          "attack": 0.002,
+          "detune": 0.0087,
+          "freqVar": 0,
+          "gain": 0.8,
+          "partials": [
+            {
+              "freq": 110,
+              "gain": 1,
+              "decay": 0.6
+            },
+            {
+              "freq": 303.6,
+              "gain": 0.5,
+              "decay": 0.408
+            },
+            {
+              "freq": 594,
+              "gain": 0.28,
+              "decay": 0.24
+            },
+            {
+              "freq": 979,
+              "gain": 0.14,
+              "decay": 0.144
+            }
+          ],
+          "byVariant": [
+            {
+              "freqMul": 1,
+              "startAdd": 0.05
+            },
+            {
+              "freqMul": 1.0595,
+              "startAdd": 0.08
+            }
+          ]
+        },
+        {
+          "type": "ring",
+          "start": 1.4,
+          "dur": 1.5,
+          "attack": 0.002,
+          "detune": 0.0087,
+          "freqVar": 0,
+          "gain": 0.8,
+          "partials": [
+            {
+              "freq": 110,
+              "gain": 1,
+              "decay": 0.6
+            },
+            {
+              "freq": 303.6,
+              "gain": 0.5,
+              "decay": 0.408
+            },
+            {
+              "freq": 594,
+              "gain": 0.28,
+              "decay": 0.24
+            },
+            {
+              "freq": 979,
+              "gain": 0.14,
+              "decay": 0.144
+            }
+          ],
+          "byVariant": [
+            {
+              "freqMul": 1.4142,
+              "startAdd": 0.05
+            },
+            {
+              "freqMul": 1.1225,
+              "startAdd": 0.08
+            }
+          ]
+        },
+        {
+          "type": "ring",
+          "start": 2.2,
+          "dur": 1.5,
+          "attack": 0.002,
+          "detune": 0.0087,
+          "freqVar": 0,
+          "gain": 0.8,
+          "partials": [
+            {
+              "freq": 110,
+              "gain": 1,
+              "decay": 0.6
+            },
+            {
+              "freq": 303.6,
+              "gain": 0.5,
+              "decay": 0.408
+            },
+            {
+              "freq": 594,
+              "gain": 0.28,
+              "decay": 0.24
+            },
+            {
+              "freq": 979,
+              "gain": 0.14,
+              "decay": 0.144
+            }
+          ],
+          "byVariant": [
+            {
+              "freqMul": 1.0595,
+              "startAdd": 0.05
+            },
+            {
+              "freqMul": 1.4983,
+              "startAdd": 0.08
+            }
+          ]
+        },
+        {
+          "type": "noise",
+          "color": "pink",
+          "start": 0,
+          "dur": 3,
+          "attack": 3,
+          "release": 0.05,
+          "gain": 1.2800000000000002,
+          "filter": {
+            "type": "bandpass",
+            "freq": [
+              150,
+              1800
+            ],
+            "sweep": 3,
+            "q": 1.2
+          }
+        },
+        {
+          "type": "osc",
+          "wave": "sine",
+          "freq": [
+            55,
+            45
+          ],
+          "sweepTime": 0.6,
+          "start": 3,
+          "dur": 1,
+          "attack": 0.003,
+          "decay": 0.3,
+          "release": 0.1,
+          "gain": 8.91,
+          "freqVar": 0
+        },
+        {
+          "type": "osc",
+          "wave": "sine",
+          "freq": [
+            52,
+            44
+          ],
+          "sweepTime": 0.6,
+          "start": 3.25,
+          "dur": 0.95,
+          "attack": 0.003,
+          "decay": 0.3,
+          "release": 0.1,
+          "gain": 7.29,
+          "freqVar": 0
+        },
+        {
+          "type": "noise",
+          "color": "white",
+          "start": 3,
+          "dur": 0.15,
+          "attack": 0.001,
+          "decay": 0.035,
+          "gain": 0.8,
+          "filter": {
+            "type": "highpass",
+            "freq": 2500,
+            "q": 0.7
+          }
+        },
+        {
+          "type": "noise",
+          "color": "white",
+          "start": 3.25,
+          "dur": 0.12,
+          "attack": 0.001,
+          "decay": 0.03,
+          "gain": 0.48,
+          "filter": {
+            "type": "highpass",
+            "freq": 2500,
+            "q": 0.7
+          }
+        }
+      ],
+      "post": {
+        "reverb": {
+          "decay": 1.4,
+          "mix": 0.28,
+          "damping": 0.5
+        },
+        "saturation": 1,
+        "targetPeak": 0.8,
+        "targetRms": 0.2,
+        "fadeOut": 0.6
+      }
+    },
+    {
+      "id": "vague-fin",
+      "category": "annonce",
+      "set": "fond",
+      "sampleRate": 22050,
+      "duration": 1.4,
+      "variants": 2,
+      "seed": 351,
+      "loop": false,
+      "layers": [
+        {
+          "type": "ring",
+          "start": 0,
+          "dur": 1.3,
+          "attack": 0.03,
+          "detune": 0.004,
+          "freqVar": 0,
+          "gain": 1,
+          "partials": [
+            {
+              "freq": 261.63,
+              "gain": 1,
+              "decay": 0.45
+            },
+            {
+              "freq": 523.26,
+              "gain": 0.35,
+              "decay": 0.3
+            },
+            {
+              "freq": 784.89,
+              "gain": 0.15,
+              "decay": 0.2
+            }
+          ],
+          "byVariant": [
+            {
+              "freqMul": 1
+            },
+            {
+              "freqMul": 1.1225
+            }
+          ]
+        },
+        {
+          "type": "ring",
+          "start": 0.045,
+          "dur": 1.3,
+          "attack": 0.03,
+          "detune": 0.004,
+          "freqVar": 0,
+          "gain": 0.8,
+          "partials": [
+            {
+              "freq": 392,
+              "gain": 1,
+              "decay": 0.45
+            },
+            {
+              "freq": 784,
+              "gain": 0.35,
+              "decay": 0.3
+            },
+            {
+              "freq": 1176,
+              "gain": 0.15,
+              "decay": 0.2
+            }
+          ],
+          "byVariant": [
+            {
+              "freqMul": 1
+            },
+            {
+              "freqMul": 1.1225
+            }
+          ]
+        },
+        {
+          "type": "ring",
+          "start": 0.09,
+          "dur": 1.3,
+          "attack": 0.03,
+          "detune": 0.004,
+          "freqVar": 0,
+          "gain": 0.6,
+          "partials": [
+            {
+              "freq": 523.25,
+              "gain": 1,
+              "decay": 0.45
+            },
+            {
+              "freq": 1046.5,
+              "gain": 0.35,
+              "decay": 0.3
+            },
+            {
+              "freq": 1569.75,
+              "gain": 0.15,
+              "decay": 0.2
+            }
+          ],
+          "byVariant": [
+            {
+              "freqMul": 1
+            },
+            {
+              "freqMul": 1.1225
+            }
+          ]
+        },
+        {
+          "type": "ring",
+          "start": 0.09,
+          "dur": 1,
+          "attack": 0.03,
+          "detune": 0.004,
+          "freqVar": 0,
+          "gain": 0.12,
+          "partials": [
+            {
+              "freq": 1440,
+              "gain": 1,
+              "decay": 0.12
+            }
+          ],
+          "byVariant": [
+            {
+              "freqMul": 1
+            },
+            {
+              "freqMul": 1.1225
+            }
+          ]
+        }
+      ],
+      "post": {
+        "reverb": {
+          "decay": 0.5,
+          "mix": 0.15,
+          "damping": 0.6
+        },
+        "saturation": 0,
+        "targetPeak": 0.55,
+        "fadeOut": 0.2
+      }
+    },
+    {
+      "id": "planche-arrachee",
+      "category": "fenetre",
+      "set": "essentiel",
+      "engine": "atelier",
+      "sampleRate": 22050,
+      "duration": 0.950023,
+      "variants": 5,
+      "preload": 1,
+      "loop": false,
+      "atelier": {
+        "slot": {
+          "id": "planche-arrachage",
+          "sampleRate": 22050,
+          "bufferLevelDb": -13.450000000000001,
+          "variants": [
+            {
+              "id": "A",
+              "recipe": {
+                "kind": "break",
+                "dur": 0.95,
+                "vary": 0.05,
+                "groan": {
+                  "at": 0,
+                  "dur": 0.32,
+                  "rate": [
+                    [
+                      0,
+                      15
+                    ],
+                    [
+                      0.7,
+                      35
+                    ],
+                    [
+                      1,
+                      60
+                    ]
+                  ],
+                  "dense": {
+                    "from": 250,
+                    "to": 1800,
+                    "count": 10,
+                    "decay": 0.012,
+                    "tilt": -0.5
+                  },
+                  "gain": 0.6
+                },
+                "splinter": {
+                  "at": 0.28,
+                  "dur": 0.12,
+                  "rate": [
+                    [
+                      0,
+                      80
+                    ],
+                    [
+                      1,
+                      600
+                    ]
+                  ],
+                  "dense": {
+                    "from": 300,
+                    "to": 5000,
+                    "count": 16,
+                    "decay": 0.008,
+                    "tilt": -0.5
+                  },
+                  "noise": 2,
+                  "noiseF": 2500,
+                  "snap": 1.5,
+                  "gain": 1,
+                  "thump": {
+                    "f": 85,
+                    "decay": 0.03,
+                    "attack": 0.002,
+                    "gain": 0.4
+                  }
+                },
+                "fall": {
+                  "at": 0.5,
+                  "gain": 0.8,
+                  "dense": {
+                    "from": 180,
+                    "to": 3000,
+                    "count": 12,
+                    "decay": 0.015,
+                    "tilt": -0.5
+                  },
+                  "noise": {
+                    "gain": 0.6,
+                    "f": 1200,
+                    "q": 0.6,
+                    "decay": 0.006
+                  },
+                  "bounces": {
+                    "first": 0,
+                    "interval": 0.12,
+                    "restitution": 0.5,
+                    "count": 3,
+                    "secondEnd": 0.015,
+                    "lp": 5000
+                  },
+                  "slap": {
+                    "f": 80,
+                    "decay": 0.025,
+                    "attack": 0.002,
+                    "gain": 0.5
+                  },
+                  "slide": {
+                    "dur": 0.1,
+                    "f": 1500,
+                    "q": 0.6,
+                    "attack": 0.01,
+                    "decay": 0.03,
+                    "gain": 0.1
+                  }
+                },
+                "lp": 7000,
+                "post": {
+                  "drive": 1.5
+                }
+              },
+              "macros": {
+                "hauteur": {
+                  "min": -6,
+                  "max": 6,
+                  "default": 0,
+                  "unit": "demi-ton"
+                },
+                "matiere": {
+                  "min": -1,
+                  "max": 1,
+                  "default": 0,
+                  "unit": "octave"
+                },
+                "grain": {
+                  "min": 0,
+                  "max": 2,
+                  "default": 1,
+                  "unit": "x"
+                },
+                "duree": {
+                  "min": 0.6,
+                  "max": 1.6,
+                  "default": 1,
+                  "unit": "x"
+                },
+                "ampleur": {
+                  "min": 0,
+                  "max": 0.6,
+                  "default": 0.1,
+                  "unit": "mix"
+                }
+              }
+            }
+          ]
+        },
+        "variant": "A",
+        "macros": {
+          "hauteur": 0,
+          "matiere": 0,
+          "grain": 1,
+          "duree": 1,
+          "ampleur": 0.1
+        }
+      }
+    },
+    {
+      "id": "planche-posee",
+      "category": "fenetre",
+      "set": "essentiel",
+      "engine": "atelier",
+      "sampleRate": 22050,
+      "duration": 1.8,
+      "variants": 5,
+      "preload": 1,
+      "loop": false,
+      "trigger": "repairStart",
+      "atelier": {
+        "slot": {
+          "id": "reparation",
+          "sampleRate": 22050,
+          "bufferLevelDb": -13.450000000000001,
+          "variants": [
+            {
+              "id": "C",
+              "recipe": {
+                "kind": "repair",
+                "dur": 1.8,
+                "vary": 0.04,
+                "hit": {
+                  "len": 0.16,
+                  "thud": {
+                    "f": 90,
+                    "decay": 0.018,
+                    "attack": 0.001,
+                    "drop": 0.75,
+                    "gain": 0.8
+                  },
+                  "body": {
+                    "dense": {
+                      "from": 195,
+                      "to": 2850,
+                      "count": 12,
+                      "decay": 0.012,
+                      "tilt": -0.5,
+                      "slope": -0.4
+                    },
+                    "gain": 1,
+                    "lp": 2800,
+                    "burst": 0.001,
+                    "noise": {
+                      "gain": 0.8,
+                      "f": 1100,
+                      "q": 0.6,
+                      "decay": 0.005
+                    }
+                  },
+                  "nail": {
+                    "gain": 0.8,
+                    "partials": [
+                      {
+                        "f": 2100,
+                        "gain": 1,
+                        "decay": 0.005
+                      },
+                      {
+                        "f": 3150,
+                        "gain": 0.6,
+                        "decay": 0.003
+                      }
+                    ]
+                  },
+                  "click": {
+                    "f": 1600,
+                    "q": 0.8,
+                    "decay": 0.0018,
+                    "gain": 0.35
+                  },
+                  "dryDecay": 0.55,
+                  "dryPitch": 1.06
+                },
+                "scrape": {
+                  "f": 800,
+                  "q": 0.9,
+                  "gain": 0.25,
+                  "rate": 14
+                },
+                "ringRise": 0.02,
+                "lp": 5500,
+                "post": {
+                  "drive": 6
+                }
+              },
+              "macros": {
+                "hauteur": {
+                  "min": -6,
+                  "max": 6,
+                  "default": 0,
+                  "unit": "demi-ton"
+                },
+                "matiere": {
+                  "min": -1,
+                  "max": 1,
+                  "default": 0,
+                  "unit": "octave"
+                },
+                "grain": {
+                  "min": 0,
+                  "max": 2,
+                  "default": 1,
+                  "unit": "x"
+                },
+                "duree": {
+                  "min": 0.4,
+                  "max": 1.8,
+                  "default": 1.8,
+                  "unit": "s"
+                },
+                "ampleur": {
+                  "min": 0,
+                  "max": 0.6,
+                  "default": 0,
+                  "unit": "mix"
+                }
+              }
+            }
+          ]
+        },
+        "variant": "C",
+        "macros": {
+          "hauteur": 0,
+          "matiere": 0,
+          "grain": 1,
+          "duree": 1.8,
+          "ampleur": 0
+        }
+      }
+    },
+    {
+      "id": "joueur-chute",
+      "category": "joueur",
+      "set": "essentiel",
+      "sampleRate": 22050,
+      "duration": 1.3,
+      "variants": 2,
+      "seed": 71,
+      "loop": false,
+      "layers": [
+        {
+          "type": "osc",
+          "wave": "sine",
+          "freq": [
+            90,
+            45
+          ],
+          "sweepTime": 0.25,
+          "start": 0,
+          "dur": 0.6,
+          "attack": 0.004,
+          "decay": 0.14,
+          "gain": 1.4
+        },
+        {
+          "type": "noise",
+          "color": "brown",
+          "start": 0,
+          "dur": 0.25,
+          "attack": 0.002,
+          "decay": 0.05,
+          "gain": 2,
+          "filter": {
+            "type": "lowpass",
+            "freq": 350,
+            "q": 0.7
+          }
+        },
+        {
+          "type": "noise",
+          "color": "pink",
+          "start": 0.08,
+          "dur": 0.8,
+          "attack": 0.02,
+          "decay": 0.25,
+          "gain": 0.5,
+          "filter": {
+            "type": "bandpass",
+            "freq": [
+              1100,
+              500
+            ],
+            "q": 0.9,
+            "sweep": 0.7
+          }
+        },
+        {
+          "type": "osc",
+          "wave": "sine",
+          "freq": 3300,
+          "start": 0.35,
+          "dur": 0.95,
+          "attack": 0.35,
+          "decay": 0.6,
+          "gain": 0.03
+        }
+      ],
+      "post": {
+        "reverb": {
+          "decay": 0.35,
+          "mix": 0.25,
+          "damping": 0.5
+        },
+        "saturation": 0.5,
+        "targetPeak": 0.85,
+        "fadeOut": 0.12
+      }
+    },
+    {
+      "id": "joueur-releve",
+      "category": "joueur",
+      "set": "fond",
+      "sampleRate": 22050,
+      "duration": 0.8,
+      "variants": 2,
+      "seed": 73,
+      "loop": false,
+      "layers": [
+        {
+          "type": "noise",
+          "color": "pink",
+          "start": 0,
+          "dur": 0.55,
+          "attack": 0.4,
+          "decay": 0.3,
+          "gain": 1.5,
+          "filter": {
+            "type": "bandpass",
+            "freq": [
+              500,
+              1500
+            ],
+            "q": 0.7,
+            "sweep": 0.5
+          }
+        },
+        {
+          "type": "noise",
+          "color": "brown",
+          "start": 0.55,
+          "dur": 0.2,
+          "attack": 0.002,
+          "decay": 0.04,
+          "gain": 0.9,
+          "filter": {
+            "type": "lowpass",
+            "freq": 450,
+            "q": 0.7
+          }
+        },
+        {
+          "type": "osc",
+          "wave": "sine",
+          "freq": [
+            130,
+            60
+          ],
+          "sweepTime": 0.08,
+          "start": 0.55,
+          "dur": 0.2,
+          "attack": 0.002,
+          "decay": 0.05,
+          "gain": 0.6
+        }
+      ],
+      "post": {
+        "reverb": {
+          "decay": 0.25,
+          "mix": 0.2,
+          "damping": 0.5
+        },
+        "saturation": 0.4,
+        "targetPeak": 0.8,
+        "fadeOut": 0.08
+      }
+    },
+    {
+      "id": "pas-exterieur",
+      "category": "pas",
+      "set": "fond",
+      "engine": "atelier",
+      "sampleRate": 22050,
+      "duration": 0.16,
+      "variants": 5,
+      "preload": 1,
+      "loop": false,
+      "atelier": {
+        "slot": {
+          "id": "pas-joueur-exterieur",
+          "sampleRate": 22050,
+          "bufferLevelDb": -15.430000000000001,
+          "variants": [
+            {
+              "id": "A",
+              "recipe": {
+                "kind": "step",
+                "dur": 0.16,
+                "vary": 0.06,
+                "heel": {
+                  "f": 90,
+                  "decay": 0.014,
+                  "attack": 0.022,
+                  "drop": 0.7,
+                  "gain": 0.45,
+                  "burst": 0.003,
+                  "burstLp": 1200
+                },
+                "modes": [
+                  {
+                    "f": 130,
+                    "gain": 1,
+                    "decay": 0.012
+                  },
+                  {
+                    "f": 230,
+                    "gain": 0.8,
+                    "decay": 0.01
+                  },
+                  {
+                    "f": 360,
+                    "gain": 0.5,
+                    "decay": 0.008
+                  }
+                ],
+                "modeGain": 1,
+                "toe": {
+                  "at": 0.07,
+                  "gain": 0.35
+                },
+                "grit": {
+                  "at": 0.004,
+                  "rate": 320,
+                  "f": 1250,
+                  "q": 1,
+                  "dur": 0.09,
+                  "gain": 0.55,
+                  "grainDecay": 0.0015
+                },
+                "scuff": {
+                  "at": 0.03,
+                  "f": 1050,
+                  "q": 0.6,
+                  "dur": 0.09,
+                  "attack": 0.02,
+                  "decay": 0.03,
+                  "gain": 0.3
+                },
+                "lp": 2200,
+                "hp": 35,
+                "post": {
+                  "drive": 1.4
+                }
+              },
+              "macros": {
+                "hauteur": {
+                  "min": -6,
+                  "max": 6,
+                  "default": 0,
+                  "unit": "demi-ton"
+                },
+                "matiere": {
+                  "min": -1,
+                  "max": 1,
+                  "default": 0,
+                  "unit": "octave"
+                },
+                "grain": {
+                  "min": 0,
+                  "max": 2,
+                  "default": 1,
+                  "unit": "x"
+                },
+                "duree": {
+                  "min": 0.6,
+                  "max": 1.6,
+                  "default": 1,
+                  "unit": "x"
+                },
+                "ampleur": {
+                  "min": 0,
+                  "max": 0.6,
+                  "default": 0.1,
+                  "unit": "mix"
+                }
+              }
+            }
+          ]
+        },
+        "variant": "A",
+        "macros": {
+          "hauteur": 0,
+          "matiere": 0,
+          "grain": 1,
+          "duree": 1,
+          "ampleur": 0.1
+        }
+      }
+    },
+    {
+      "id": "pas-escalier",
+      "category": "pas",
+      "set": "fond",
+      "engine": "atelier",
+      "sampleRate": 22050,
+      "duration": 0.1,
+      "variants": 5,
+      "preload": 1,
+      "loop": false,
+      "gainDb": 1,
+      "atelier": {
+        "slot": {
+          "id": "pas-joueur-escalier",
+          "sampleRate": 22050,
+          "bufferLevelDb": -13.430000000000001,
+          "variants": [
+            {
+              "id": "C",
+              "recipe": {
+                "kind": "step",
+                "dur": 0.1,
+                "vary": 0.06,
+                "heel": {
+                  "f": 115,
+                  "decay": 0.012,
+                  "attack": 0.0005,
+                  "drop": 0.75,
+                  "gain": 0.65,
+                  "burst": 0.0004,
+                  "burstLp": 10000
+                },
+                "dense": {
+                  "from": 1100,
+                  "to": 7000,
+                  "count": 12,
+                  "decay": 0.003,
+                  "tilt": -0.6,
+                  "slope": -0.2,
+                  "spread": 0.45
+                },
+                "modeGain": 1,
+                "click": {
+                  "f": 2900,
+                  "q": 0.8,
+                  "decay": 0.002,
+                  "gain": 0.45
+                },
+                "toe": {
+                  "at": 0.033,
+                  "gain": 0.3
+                },
+                "grit": {
+                  "at": 0.002,
+                  "rate": 1000,
+                  "f": 4300,
+                  "q": 0.9,
+                  "dur": 0.02,
+                  "gain": 0.48,
+                  "grainDecay": 0.0005
+                },
+                "lp": 10000,
+                "hp": 80,
+                "post": {
+                  "drive": 8
+                }
+              },
+              "macros": {
+                "hauteur": {
+                  "min": -6,
+                  "max": 6,
+                  "default": 0,
+                  "unit": "demi-ton"
+                },
+                "matiere": {
+                  "min": -1,
+                  "max": 1,
+                  "default": 0,
+                  "unit": "octave"
+                },
+                "grain": {
+                  "min": 0,
+                  "max": 2,
+                  "default": 1,
+                  "unit": "x"
+                },
+                "duree": {
+                  "min": 0.6,
+                  "max": 1.6,
+                  "default": 1,
+                  "unit": "x"
+                },
+                "ampleur": {
+                  "min": 0,
+                  "max": 0.6,
+                  "default": 0,
+                  "unit": "mix"
+                }
+              }
+            }
+          ]
+        },
+        "variant": "C",
+        "macros": {
+          "hauteur": -3,
+          "matiere": 0,
+          "grain": 1,
+          "duree": 1,
+          "ampleur": 0
+        }
+      }
+    },
+    {
+      "id": "pas-zombie-lent",
+      "category": "pas",
+      "set": "fond",
+      "engine": "atelier",
+      "sampleRate": 22050,
+      "duration": 0.3,
+      "variants": 5,
+      "preload": 1,
+      "loop": false,
+      "atelier": {
+        "slot": {
+          "id": "pas-zombie-lent",
+          "sampleRate": 22050,
+          "bufferLevelDb": -11.430000000000001,
+          "variants": [
+            {
+              "id": "A",
+              "recipe": {
+                "kind": "step",
+                "dur": 0.3,
+                "vary": 0.06,
+                "heel": {
+                  "f": 75,
+                  "decay": 0.032,
+                  "attack": 0.003,
+                  "drop": 0.6,
+                  "gain": 0.6,
+                  "burst": 0.0007,
+                  "burstLp": 7000
+                },
+                "dense": {
+                  "from": 600,
+                  "to": 4500,
+                  "count": 12,
+                  "decay": 0.005,
+                  "tilt": -0.6,
+                  "slope": -0.2,
+                  "spread": 0.45
+                },
+                "modeGain": 1,
+                "click": {
+                  "f": 1800,
+                  "q": 0.7,
+                  "decay": 0.003,
+                  "gain": 0.35
+                },
+                "toe": {
+                  "at": 0.14,
+                  "gain": 0.3
+                },
+                "grit": {
+                  "at": 0.004,
+                  "rate": 500,
+                  "f": 3500,
+                  "q": 0.8,
+                  "dur": 0.08,
+                  "gain": 0.48,
+                  "grainDecay": 0.0008
+                },
+                "scuff": {
+                  "at": 0.05,
+                  "f": 2500,
+                  "q": 0.6,
+                  "dur": 0.22,
+                  "attack": 0.02,
+                  "decay": 0.09,
+                  "gain": 0.65
+                },
+                "lp": 8000,
+                "hp": 40,
+                "post": {
+                  "drive": 6
+                }
+              },
+              "macros": {
+                "hauteur": {
+                  "min": -6,
+                  "max": 6,
+                  "default": 0,
+                  "unit": "demi-ton"
+                },
+                "matiere": {
+                  "min": -1,
+                  "max": 1,
+                  "default": 0,
+                  "unit": "octave"
+                },
+                "grain": {
+                  "min": 0,
+                  "max": 2,
+                  "default": 1,
+                  "unit": "x"
+                },
+                "duree": {
+                  "min": 0.6,
+                  "max": 1.6,
+                  "default": 1,
+                  "unit": "x"
+                },
+                "ampleur": {
+                  "min": 0,
+                  "max": 0.6,
+                  "default": 0.1,
+                  "unit": "mix"
+                }
+              }
+            }
+          ]
+        },
+        "variant": "A",
+        "macros": {
+          "hauteur": 0,
+          "matiere": 0,
+          "grain": 1,
+          "duree": 1,
+          "ampleur": 0.1
+        }
+      }
+    },
+    {
+      "id": "pas-zombie-course",
+      "category": "pas",
+      "set": "fond",
+      "engine": "atelier",
+      "sampleRate": 22050,
+      "duration": 0.150023,
+      "variants": 5,
+      "preload": 1,
+      "loop": false,
+      "atelier": {
+        "slot": {
+          "id": "pas-zombie-course",
+          "sampleRate": 22050,
+          "bufferLevelDb": -11.430000000000001,
+          "variants": [
+            {
+              "id": "A",
+              "recipe": {
+                "kind": "step",
+                "dur": 0.15,
+                "vary": 0.06,
+                "heel": {
+                  "f": 88,
+                  "decay": 0.014,
+                  "attack": 0.002,
+                  "drop": 0.6,
+                  "gain": 0.75,
+                  "burst": 0.0007,
+                  "burstLp": 7000
+                },
+                "dense": {
+                  "from": 600,
+                  "to": 4500,
+                  "count": 12,
+                  "decay": 0.005,
+                  "tilt": -0.6,
+                  "slope": -0.2,
+                  "spread": 0.45
+                },
+                "modeGain": 1,
+                "click": {
+                  "f": 1800,
+                  "q": 0.7,
+                  "decay": 0.003,
+                  "gain": 0.45
+                },
+                "toe": {
+                  "at": 0.035,
+                  "gain": 0.55
+                },
+                "grit": {
+                  "at": 0.004,
+                  "rate": 500,
+                  "f": 3500,
+                  "q": 0.8,
+                  "dur": 0.08,
+                  "gain": 0.48,
+                  "grainDecay": 0.0008
+                },
+                "scuff": {
+                  "at": 0.03,
+                  "f": 2500,
+                  "q": 0.6,
+                  "dur": 0.05,
+                  "attack": 0.02,
+                  "decay": 0.02,
+                  "gain": 0.2
+                },
+                "lp": 8000,
+                "hp": 40,
+                "post": {
+                  "drive": 5
+                }
+              },
+              "macros": {
+                "hauteur": {
+                  "min": -6,
+                  "max": 6,
+                  "default": 0,
+                  "unit": "demi-ton"
+                },
+                "matiere": {
+                  "min": -1,
+                  "max": 1,
+                  "default": 0,
+                  "unit": "octave"
+                },
+                "grain": {
+                  "min": 0,
+                  "max": 2,
+                  "default": 1,
+                  "unit": "x"
+                },
+                "duree": {
+                  "min": 0.6,
+                  "max": 1.6,
+                  "default": 1,
+                  "unit": "x"
+                },
+                "ampleur": {
+                  "min": 0,
+                  "max": 0.6,
+                  "default": 0.1,
+                  "unit": "mix"
+                }
+              }
+            }
+          ]
+        },
+        "variant": "A",
+        "macros": {
+          "hauteur": 0,
+          "matiere": 0,
+          "grain": 1,
+          "duree": 1,
+          "ampleur": 0.1
+        }
+      }
+    },
+    {
+      "id": "zombie-rampe",
+      "category": "pas",
+      "set": "fond",
+      "engine": "atelier",
+      "sampleRate": 22050,
+      "duration": 1,
+      "variants": 5,
+      "preload": 1,
+      "loop": false,
+      "atelier": {
+        "slot": {
+          "id": "zombie-rampe",
+          "sampleRate": 22050,
+          "bufferLevelDb": -13.430000000000001,
+          "variants": [
+            {
+              "id": "B",
+              "recipe": {
+                "kind": "drag",
+                "dur": 1,
+                "vary": 0.05,
+                "friction": {
+                  "f": [
+                    220,
+                    320
+                  ],
+                  "q": 0.8,
+                  "gain": 1.2,
+                  "rate": 7,
+                  "jitter": 0.45,
+                  "irregular": 0.6,
+                  "rise": 0.04,
+                  "fall": 0.09
+                },
+                "cloth": {
+                  "f": 1300,
+                  "q": 0.8,
+                  "gain": 0.35,
+                  "am": 2.5
+                },
+                "knock": {
+                  "at": 0.03,
+                  "f": 80,
+                  "decay": 0.04,
+                  "attack": 0.006,
+                  "drop": 0.9,
+                  "gain": 0.6
+                },
+                "env": [
+                  [
+                    0,
+                    0
+                  ],
+                  [
+                    0.12,
+                    1
+                  ],
+                  [
+                    0.8,
+                    0.9
+                  ],
+                  [
+                    1,
+                    0
+                  ]
+                ],
+                "lp": 2000,
+                "hp": 70,
+                "post": {
+                  "drive": 1.4
+                }
+              },
+              "macros": {
+                "hauteur": {
+                  "min": -6,
+                  "max": 6,
+                  "default": 0,
+                  "unit": "demi-ton"
+                },
+                "matiere": {
+                  "min": -1,
+                  "max": 1,
+                  "default": 0,
+                  "unit": "octave"
+                },
+                "grain": {
+                  "min": 0,
+                  "max": 2,
+                  "default": 1,
+                  "unit": "x"
+                },
+                "duree": {
+                  "min": 0.6,
+                  "max": 1.6,
+                  "default": 1,
+                  "unit": "x"
+                },
+                "ampleur": {
+                  "min": 0,
+                  "max": 0.6,
+                  "default": 0.3,
+                  "unit": "mix"
+                }
+              }
+            }
+          ]
+        },
+        "variant": "B",
+        "macros": {
+          "hauteur": 0,
+          "matiere": 0,
+          "grain": 1,
+          "duree": 1,
+          "ampleur": 0.3
+        }
+      }
+    },
+    {
+      "id": "planche-craquement",
+      "category": "fenetre",
+      "set": "fond",
+      "engine": "atelier",
+      "sampleRate": 22050,
+      "duration": 0.850023,
+      "variants": 5,
+      "preload": 1,
+      "loop": false,
+      "atelier": {
+        "slot": {
+          "id": "planche-craquement",
+          "sampleRate": 22050,
+          "bufferLevelDb": -15.450000000000001,
+          "variants": [
+            {
+              "id": "A",
+              "recipe": {
+                "kind": "break",
+                "dur": 0.85,
+                "vary": 0.05,
+                "groan": {
+                  "at": 0,
+                  "dur": 0.6,
+                  "rate": [
+                    [
+                      0,
+                      18
+                    ],
+                    [
+                      0.5,
+                      40
+                    ],
+                    [
+                      0.85,
+                      75
+                    ],
+                    [
+                      1,
+                      55
+                    ]
+                  ],
+                  "jitter": 0.35,
+                  "irregular": 0.6,
+                  "modes": [
+                    {
+                      "f": 470,
+                      "gain": 1,
+                      "decay": 0.016
+                    },
+                    {
+                      "f": 860,
+                      "gain": 0.8,
+                      "decay": 0.013
+                    },
+                    {
+                      "f": 1420,
+                      "gain": 0.5,
+                      "decay": 0.009
+                    }
+                  ],
+                  "gain": 1,
+                  "env": [
+                    [
+                      0,
+                      0
+                    ],
+                    [
+                      0.2,
+                      0.6
+                    ],
+                    [
+                      0.85,
+                      1
+                    ],
+                    [
+                      1,
+                      0.4
+                    ]
+                  ]
+                },
+                "splinter": {
+                  "at": 0.6,
+                  "dur": 0.1,
+                  "rate": [
+                    [
+                      0,
+                      100
+                    ],
+                    [
+                      1,
+                      700
+                    ]
+                  ],
+                  "dense": {
+                    "from": 400,
+                    "to": 6000,
+                    "count": 18,
+                    "decay": 0.005,
+                    "tilt": -0.6
+                  },
+                  "noise": 2.5,
+                  "noiseF": 2800,
+                  "noiseDecay": 0.003,
+                  "snap": 1.3,
+                  "gain": 0.9
+                },
+                "lp": 8000,
+                "post": {
+                  "drive": 1.6
+                }
+              },
+              "macros": {
+                "hauteur": {
+                  "min": -6,
+                  "max": 6,
+                  "default": 0,
+                  "unit": "demi-ton"
+                },
+                "matiere": {
+                  "min": -1,
+                  "max": 1,
+                  "default": 0,
+                  "unit": "octave"
+                },
+                "grain": {
+                  "min": 0,
+                  "max": 2,
+                  "default": 1,
+                  "unit": "x"
+                },
+                "duree": {
+                  "min": 0.6,
+                  "max": 1.6,
+                  "default": 1,
+                  "unit": "x"
+                },
+                "ampleur": {
+                  "min": 0,
+                  "max": 0.6,
+                  "default": 0.1,
+                  "unit": "mix"
+                }
+              }
+            }
+          ]
+        },
+        "variant": "A",
+        "macros": {
+          "hauteur": 0,
+          "matiere": 0,
+          "grain": 1,
+          "duree": 1,
+          "ampleur": 0.1
+        }
+      }
+    },
+    {
+      "id": "zombie-escalade",
+      "category": "fenetre",
+      "set": "fond",
+      "engine": "atelier",
+      "sampleRate": 22050,
+      "duration": 1.050023,
+      "variants": 5,
+      "preload": 1,
+      "loop": false,
+      "atelier": {
+        "slot": {
+          "id": "escalade",
+          "sampleRate": 22050,
+          "bufferLevelDb": -15.450000000000001,
+          "variants": [
+            {
+              "id": "C",
+              "recipe": {
+                "kind": "layers",
+                "dur": 1.05,
+                "vary": 0.04,
+                "post": {
+                  "drive": 3
+                },
+                "parts": [
+                  {
+                    "kind": "fall",
+                    "at": 0.015,
+                    "dur": 0.22,
+                    "gain": 0.9,
+                    "dense": {
+                      "from": 300,
+                      "to": 3600,
+                      "count": 12,
+                      "decay": 0.012,
+                      "tilt": -0.5
+                    },
+                    "noise": {
+                      "gain": 0.8,
+                      "f": 1300,
+                      "q": 0.6,
+                      "decay": 0.005
+                    },
+                    "bounces": {
+                      "first": 0.002,
+                      "count": 1,
+                      "lp": 5000
+                    },
+                    "slap": {
+                      "f": 110,
+                      "decay": 0.015,
+                      "attack": 0.001,
+                      "gain": 0.3
+                    },
+                    "lp": 7000
+                  },
+                  {
+                    "kind": "drag",
+                    "at": 0.15,
+                    "dur": 0.35,
+                    "gain": 0.6,
+                    "friction": {
+                      "f": [
+                        2300,
+                        3600
+                      ],
+                      "q": 0.7,
+                      "gain": 1,
+                      "rate": 15,
+                      "jitter": 0.5,
+                      "irregular": 0.6,
+                      "rise": 0.012,
+                      "fall": 0.04
+                    },
+                    "cloth": {
+                      "f": 2600,
+                      "q": 0.8,
+                      "gain": 0.35,
+                      "am": 6
+                    },
+                    "env": [
+                      [
+                        0,
+                        0
+                      ],
+                      [
+                        0.15,
+                        1
+                      ],
+                      [
+                        0.8,
+                        0.8
+                      ],
+                      [
+                        1,
+                        0
+                      ]
+                    ],
+                    "lp": 6000,
+                    "hp": 120
+                  },
+                  {
+                    "kind": "step",
+                    "dur": 0.1,
+                    "vary": 0.06,
+                    "heel": {
+                      "f": 110,
+                      "decay": 0.014,
+                      "attack": 0.0005,
+                      "drop": 0.75,
+                      "gain": 0.8,
+                      "burst": 0.0004,
+                      "burstLp": 10000
+                    },
+                    "dense": {
+                      "from": 1200,
+                      "to": 7000,
+                      "count": 12,
+                      "decay": 0.003,
+                      "tilt": -0.6,
+                      "slope": -0.2,
+                      "spread": 0.45
+                    },
+                    "modeGain": 1,
+                    "click": {
+                      "f": 3000,
+                      "q": 0.8,
+                      "decay": 0.002,
+                      "gain": 0.45
+                    },
+                    "toe": {
+                      "at": 0.045,
+                      "gain": 0.35
+                    },
+                    "grit": {
+                      "at": 0.002,
+                      "rate": 1000,
+                      "f": 4500,
+                      "q": 0.9,
+                      "dur": 0.02,
+                      "gain": 0.48,
+                      "grainDecay": 0.0005
+                    },
+                    "lp": 10000,
+                    "hp": 80,
+                    "post": {
+                      "drive": 8
+                    },
+                    "at": 0.4,
+                    "gain": 0.4
+                  },
+                  {
+                    "kind": "step",
+                    "dur": 0.15,
+                    "vary": 0.06,
+                    "heel": {
+                      "f": 88,
+                      "decay": 0.014,
+                      "attack": 0.002,
+                      "drop": 0.6,
+                      "gain": 0.75,
+                      "burst": 0.0007,
+                      "burstLp": 7000
+                    },
+                    "dense": {
+                      "from": 600,
+                      "to": 4500,
+                      "count": 12,
+                      "decay": 0.005,
+                      "tilt": -0.6,
+                      "slope": -0.2,
+                      "spread": 0.45
+                    },
+                    "modeGain": 1,
+                    "click": {
+                      "f": 1800,
+                      "q": 0.7,
+                      "decay": 0.003,
+                      "gain": 0.45
+                    },
+                    "toe": {
+                      "at": 0.035,
+                      "gain": 0.55
+                    },
+                    "grit": {
+                      "at": 0.004,
+                      "rate": 500,
+                      "f": 3500,
+                      "q": 0.8,
+                      "dur": 0.08,
+                      "gain": 0.48,
+                      "grainDecay": 0.0008
+                    },
+                    "scuff": {
+                      "at": 0.03,
+                      "f": 2500,
+                      "q": 0.6,
+                      "dur": 0.05,
+                      "attack": 0.02,
+                      "decay": 0.02,
+                      "gain": 0.2
+                    },
+                    "lp": 8000,
+                    "hp": 40,
+                    "post": {
+                      "drive": 5
+                    },
+                    "at": 0.78,
+                    "gain": 1
+                  }
+                ]
+              },
+              "macros": {
+                "hauteur": {
+                  "min": -6,
+                  "max": 6,
+                  "default": 0,
+                  "unit": "demi-ton"
+                },
+                "matiere": {
+                  "min": -1,
+                  "max": 1,
+                  "default": 0,
+                  "unit": "octave"
+                },
+                "grain": {
+                  "min": 0,
+                  "max": 2,
+                  "default": 1,
+                  "unit": "x"
+                },
+                "duree": {
+                  "min": 0.6,
+                  "max": 1.6,
+                  "default": 1,
+                  "unit": "x"
+                },
+                "ampleur": {
+                  "min": 0,
+                  "max": 0.6,
+                  "default": 0,
+                  "unit": "mix"
+                }
+              }
+            }
+          ]
+        },
+        "variant": "C",
+        "macros": {
+          "hauteur": 0,
+          "matiere": 0,
+          "grain": 1,
+          "duree": 1,
+          "ampleur": 0
+        }
+      }
+    },
+    {
+      "id": "joueur-coeur",
+      "category": "joueur",
+      "set": "fond",
+      "engine": "atelier",
+      "sampleRate": 22050,
+      "duration": 1.6,
+      "variants": 1,
+      "preload": 0,
+      "loop": false,
+      "atelier": {
+        "slot": {
+          "id": "joueur-coeur",
+          "sampleRate": 22050,
+          "bufferLevelDb": -17.63,
+          "variants": [
+            {
+              "id": "B",
+              "recipe": {
+                "kind": "heart",
+                "dur": 1.6,
+                "vary": 0.02,
+                "bpm": 112,
+                "f": 48,
+                "decay": 0.07,
+                "gap": 0.14,
+                "second": 0.75,
+                "lp": 260
+              },
+              "macros": {
+                "hauteur": {
+                  "min": -6,
+                  "max": 6,
+                  "default": 0,
+                  "unit": "demi-ton"
+                },
+                "matiere": {
+                  "min": -1,
+                  "max": 1,
+                  "default": 0,
+                  "unit": "octave"
+                },
+                "grain": {
+                  "min": 0,
+                  "max": 2,
+                  "default": 1,
+                  "unit": "x"
+                },
+                "duree": {
+                  "min": 0.6,
+                  "max": 1.6,
+                  "default": 1,
+                  "unit": "x"
+                },
+                "ampleur": {
+                  "min": 0,
+                  "max": 0.6,
+                  "default": 0.2,
+                  "unit": "mix"
+                }
+              }
+            }
+          ]
+        },
+        "variant": "B",
+        "macros": {
+          "hauteur": 0,
+          "matiere": 0,
+          "grain": 1,
+          "duree": 1,
+          "ampleur": 0.2
+        }
+      }
+    },
+    {
+      "id": "ambiance-vent",
+      "category": "ambiance",
+      "set": "fond",
+      "engine": "atelier",
+      "sampleRate": 22050,
+      "duration": 10,
+      "variants": 1,
+      "preload": 0,
+      "loop": true,
+      "atelier": {
+        "slot": {
+          "id": "ambiance-vent",
+          "sampleRate": 22050,
+          "bufferLevelDb": -12.07,
+          "variants": [
+            {
+              "id": "A",
+              "recipe": {
+                "kind": "wind",
+                "dur": 10,
+                "loop": true,
+                "loopOverlap": 1,
+                "vary": 0,
+                "gustStep": 1.8,
+                "bandLow": 220,
+                "bandSpan": 420,
+                "q": 0.7,
+                "whistles": [
+                  {
+                    "f": 720,
+                    "q": 12,
+                    "gain": 0.25,
+                    "threshold": 0.55
+                  }
+                ],
+                "lp": 2600
+              },
+              "macros": {
+                "hauteur": {
+                  "min": -6,
+                  "max": 6,
+                  "default": 0,
+                  "unit": "demi-ton"
+                },
+                "matiere": {
+                  "min": -1,
+                  "max": 1,
+                  "default": 0,
+                  "unit": "octave"
+                },
+                "grain": {
+                  "min": 0,
+                  "max": 2,
+                  "default": 1,
+                  "unit": "x"
+                },
+                "duree": {
+                  "min": 0.6,
+                  "max": 1.6,
+                  "default": 1,
+                  "unit": "x"
+                },
+                "ampleur": {
+                  "min": 0,
+                  "max": 0.6,
+                  "default": 0.1,
+                  "unit": "mix"
+                }
+              }
+            }
+          ]
+        },
+        "variant": "A",
+        "macros": {
+          "hauteur": 0,
+          "matiere": 0,
+          "grain": 1,
+          "duree": 1,
+          "ampleur": 0.1
+        }
+      }
+    },
+    {
+      "id": "ambiance-grincements",
+      "category": "ambiance",
+      "set": "fond",
+      "engine": "atelier",
+      "sampleRate": 22050,
+      "duration": 3.5,
+      "variants": 2,
+      "preload": 0,
+      "loop": false,
+      "atelier": {
+        "slot": {
+          "id": "ambiance-grincements",
+          "sampleRate": 22050,
+          "bufferLevelDb": -10.07,
+          "variants": [
+            {
+              "id": "B",
+              "recipe": {
+                "kind": "layers",
+                "dur": 3.5,
+                "vary": 0.04,
+                "post": {
+                  "drive": 2
+                },
+                "parts": [
+                  {
+                    "kind": "creak",
+                    "at": 0.1,
+                    "dur": 1.4,
+                    "gain": 1,
+                    "modes": [
+                      {
+                        "f": 170,
+                        "gain": 1,
+                        "decay": 0.03
+                      },
+                      {
+                        "f": 314.5,
+                        "gain": 0.7,
+                        "decay": 0.022
+                      },
+                      {
+                        "f": 527,
+                        "gain": 0.4,
+                        "decay": 0.014
+                      }
+                    ],
+                    "creak": {
+                      "dur": 1.3,
+                      "rate": [
+                        [
+                          0,
+                          8
+                        ],
+                        [
+                          0.6,
+                          20
+                        ],
+                        [
+                          1,
+                          12
+                        ]
+                      ],
+                      "jitter": 0.4,
+                      "gain": 1,
+                      "irregular": 0.6
+                    },
+                    "lp": 3000
+                  },
+                  {
+                    "kind": "creak",
+                    "at": 1.8,
+                    "dur": 1.2,
+                    "gain": 0.8,
+                    "modes": [
+                      {
+                        "f": 210,
+                        "gain": 1,
+                        "decay": 0.03
+                      },
+                      {
+                        "f": 388.5,
+                        "gain": 0.7,
+                        "decay": 0.022
+                      },
+                      {
+                        "f": 651,
+                        "gain": 0.4,
+                        "decay": 0.014
+                      }
+                    ],
+                    "creak": {
+                      "dur": 1.08,
+                      "rate": [
+                        [
+                          0,
+                          12
+                        ],
+                        [
+                          0.5,
+                          30
+                        ],
+                        [
+                          1,
+                          18
+                        ]
+                      ],
+                      "jitter": 0.35,
+                      "gain": 1,
+                      "irregular": 0.6,
+                      "env": [
+                        [
+                          0,
+                          0
+                        ],
+                        [
+                          0.3,
+                          0.8
+                        ],
+                        [
+                          0.7,
+                          1
+                        ],
+                        [
+                          1,
+                          0
+                        ]
+                      ]
+                    },
+                    "lp": 3000
+                  },
+                  {
+                    "kind": "fall",
+                    "at": 2.9,
+                    "dur": 0.5,
+                    "gain": 0.35,
+                    "modes": [
+                      {
+                        "f": 140,
+                        "gain": 1,
+                        "decay": 0.08
+                      },
+                      {
+                        "f": 390,
+                        "gain": 0.6,
+                        "decay": 0.05
+                      }
+                    ],
+                    "bounces": {
+                      "count": 2,
+                      "interval": 0.1,
+                      "restitution": 0.5
+                    },
+                    "lp": 2000
+                  }
+                ]
+              },
+              "macros": {
+                "hauteur": {
+                  "min": -6,
+                  "max": 6,
+                  "default": 0,
+                  "unit": "demi-ton"
+                },
+                "matiere": {
+                  "min": -1,
+                  "max": 1,
+                  "default": 0,
+                  "unit": "octave"
+                },
+                "grain": {
+                  "min": 0,
+                  "max": 2,
+                  "default": 1,
+                  "unit": "x"
+                },
+                "duree": {
+                  "min": 0.6,
+                  "max": 1.6,
+                  "default": 1,
+                  "unit": "x"
+                },
+                "ampleur": {
+                  "min": 0,
+                  "max": 0.6,
+                  "default": 0.2,
+                  "unit": "mix"
+                }
+              }
+            }
+          ]
+        },
+        "variant": "B",
+        "macros": {
+          "hauteur": 0,
+          "matiere": 0,
+          "grain": 1,
+          "duree": 1,
+          "ampleur": 0.2
+        }
+      }
+    },
+    {
+      "id": "ambiance-lointains",
+      "category": "ambiance",
+      "set": "fond",
+      "engine": "atelier",
+      "sampleRate": 22050,
+      "duration": 3.8,
+      "variants": 2,
+      "preload": 0,
+      "loop": false,
+      "atelier": {
+        "slot": {
+          "id": "ambiance-lointains",
+          "sampleRate": 22050,
+          "bufferLevelDb": -12.07,
+          "variants": [
+            {
+              "id": "B",
+              "recipe": {
+                "kind": "layers",
+                "dur": 3.8,
+                "vary": 0.03,
+                "parts": [
+                  {
+                    "kind": "voice",
+                    "vary": 0.03,
+                    "jitter": 0.025,
+                    "shimmer": 0.1,
+                    "oq": 0.6,
+                    "sq": 2.5,
+                    "wander": 0.03,
+                    "breathPulse": 0.6,
+                    "drift": 0.04,
+                    "driftRate": 0.4,
+                    "hp": 180,
+                    "tilt": 1500,
+                    "drive": 1.875,
+                    "dur": 1.275,
+                    "contour": [
+                      [
+                        0,
+                        0.92
+                      ],
+                      [
+                        0.25,
+                        1.06
+                      ],
+                      [
+                        0.6,
+                        1
+                      ],
+                      [
+                        1,
+                        0.82
+                      ]
+                    ],
+                    "vowels": [
+                      "o",
+                      "a",
+                      "o",
+                      "u"
+                    ],
+                    "env": [
+                      [
+                        0,
+                        0
+                      ],
+                      [
+                        0.12,
+                        0.9
+                      ],
+                      [
+                        0.4,
+                        1
+                      ],
+                      [
+                        0.75,
+                        0.8
+                      ],
+                      [
+                        1,
+                        0
+                      ]
+                    ],
+                    "breath": 0.108,
+                    "sub": 0.16000000000000003,
+                    "rough": {
+                      "rate": 32,
+                      "depth": 0.144
+                    },
+                    "f0": 92,
+                    "formantScale": 0.92,
+                    "presence": {
+                      "f": 1100,
+                      "q": 0.9,
+                      "gain": 7
+                    },
+                    "at": 0.1,
+                    "gain": 1,
+                    "lp": 900
+                  },
+                  {
+                    "kind": "voice",
+                    "vary": 0.03,
+                    "jitter": 0.02,
+                    "shimmer": 0.1,
+                    "oq": 0.6,
+                    "sq": 2.5,
+                    "wander": 0.03,
+                    "breathPulse": 0.6,
+                    "drift": 0.04,
+                    "driftRate": 0.4,
+                    "hp": 180,
+                    "tilt": 1500,
+                    "drive": 1.40625,
+                    "dur": 0.9179999999999999,
+                    "contour": [
+                      [
+                        0,
+                        0.92
+                      ],
+                      [
+                        0.25,
+                        1.06
+                      ],
+                      [
+                        0.6,
+                        1
+                      ],
+                      [
+                        1,
+                        0.82
+                      ]
+                    ],
+                    "vowels": [
+                      "o",
+                      "a",
+                      "o",
+                      "u"
+                    ],
+                    "env": [
+                      [
+                        0,
+                        0
+                      ],
+                      [
+                        0.12,
+                        0.9
+                      ],
+                      [
+                        0.4,
+                        1
+                      ],
+                      [
+                        0.75,
+                        0.8
+                      ],
+                      [
+                        1,
+                        0
+                      ]
+                    ],
+                    "breath": 0.09179999999999999,
+                    "sub": 0.16000000000000003,
+                    "rough": {
+                      "rate": 45,
+                      "depth": 0.072
+                    },
+                    "f0": 140,
+                    "formantScale": 1.12,
+                    "presence": {
+                      "f": 1100,
+                      "q": 0.9,
+                      "gain": 7
+                    },
+                    "at": 0.9,
+                    "gain": 0.6,
+                    "lp": 900
+                  },
+                  {
+                    "kind": "voice",
+                    "vary": 0.03,
+                    "jitter": 0.025,
+                    "shimmer": 0.1,
+                    "oq": 0.6,
+                    "sq": 2.5,
+                    "wander": 0.03,
+                    "breathPulse": 0.6,
+                    "drift": 0.04,
+                    "driftRate": 0.4,
+                    "hp": 180,
+                    "tilt": 1200,
+                    "drive": 1.875,
+                    "dur": 1.275,
+                    "contour": [
+                      [
+                        0,
+                        0.92
+                      ],
+                      [
+                        0.25,
+                        1.06
+                      ],
+                      [
+                        0.6,
+                        1
+                      ],
+                      [
+                        1,
+                        0.82
+                      ]
+                    ],
+                    "vowels": [
+                      "o",
+                      "a",
+                      "o",
+                      "u"
+                    ],
+                    "env": [
+                      [
+                        0,
+                        0
+                      ],
+                      [
+                        0.12,
+                        0.9
+                      ],
+                      [
+                        0.4,
+                        1
+                      ],
+                      [
+                        0.75,
+                        0.8
+                      ],
+                      [
+                        1,
+                        0
+                      ]
+                    ],
+                    "breath": 0.108,
+                    "sub": 0.16000000000000003,
+                    "rough": {
+                      "rate": 32,
+                      "depth": 0.144
+                    },
+                    "f0": 104,
+                    "formantScale": 0.97,
+                    "hiss": {
+                      "f": 3200,
+                      "q": 1.6,
+                      "gain": 0.08
+                    },
+                    "presence": {
+                      "f": 1100,
+                      "q": 0.9,
+                      "gain": 7
+                    },
+                    "at": 1.6,
+                    "gain": 0.75,
+                    "lp": 850
+                  },
+                  {
+                    "kind": "voice",
+                    "vary": 0.03,
+                    "jitter": 0.025,
+                    "shimmer": 0.1,
+                    "oq": 0.6,
+                    "sq": 2.5,
+                    "wander": 0.03,
+                    "breathPulse": 0.6,
+                    "drift": 0.04,
+                    "driftRate": 0.4,
+                    "hp": 180,
+                    "tilt": 825.0000000000001,
+                    "drive": 2.8125,
+                    "dur": 1.275,
+                    "contour": [
+                      [
+                        0,
+                        0.92
+                      ],
+                      [
+                        0.25,
+                        1.06
+                      ],
+                      [
+                        0.6,
+                        1
+                      ],
+                      [
+                        1,
+                        0.82
+                      ]
+                    ],
+                    "vowels": [
+                      "o",
+                      "a",
+                      "o",
+                      "u"
+                    ],
+                    "env": [
+                      [
+                        0,
+                        0
+                      ],
+                      [
+                        0.12,
+                        0.9
+                      ],
+                      [
+                        0.4,
+                        1
+                      ],
+                      [
+                        0.75,
+                        0.8
+                      ],
+                      [
+                        1,
+                        0
+                      ]
+                    ],
+                    "breath": 0.108,
+                    "sub": 0.16000000000000003,
+                    "rough": {
+                      "rate": 32,
+                      "depth": 0.144
+                    },
+                    "f0": 66,
+                    "formantScale": 0.8,
+                    "bw": 1.1,
+                    "presence": {
+                      "f": 1100,
+                      "q": 0.9,
+                      "gain": 7
+                    },
+                    "at": 2.4,
+                    "gain": 1,
+                    "lp": 800
+                  }
+                ]
+              },
+              "macros": {
+                "hauteur": {
+                  "min": -6,
+                  "max": 6,
+                  "default": 0,
+                  "unit": "demi-ton"
+                },
+                "matiere": {
+                  "min": -1,
+                  "max": 1,
+                  "default": 0,
+                  "unit": "octave"
+                },
+                "grain": {
+                  "min": 0,
+                  "max": 2,
+                  "default": 1,
+                  "unit": "x"
+                },
+                "duree": {
+                  "min": 0.6,
+                  "max": 1.6,
+                  "default": 1,
+                  "unit": "x"
+                },
+                "ampleur": {
+                  "min": 0,
+                  "max": 0.6,
+                  "default": 0.2,
+                  "unit": "mix"
+                }
+              }
+            }
+          ]
+        },
+        "variant": "B",
+        "macros": {
+          "hauteur": 0,
+          "matiere": 0,
+          "grain": 1,
+          "duree": 1,
+          "ampleur": 0.2
+        }
+      }
+    },
+    {
+      "id": "ambiance-feu",
+      "category": "ambiance",
+      "set": "fond",
+      "engine": "atelier",
+      "sampleRate": 22050,
+      "duration": 8,
+      "variants": 1,
+      "preload": 0,
+      "loop": true,
+      "atelier": {
+        "slot": {
+          "id": "ambiance-feu",
+          "sampleRate": 22050,
+          "bufferLevelDb": -10.07,
+          "variants": [
+            {
+              "id": "B",
+              "recipe": {
+                "kind": "fire",
+                "dur": 8,
+                "loop": true,
+                "loopOverlap": 0.5,
+                "vary": 0,
+                "flickerStep": 0.18,
+                "roar": {
+                  "lp": 450,
+                  "f": 650,
+                  "gain": 1.9,
+                  "flicker": 0.6
+                },
+                "hiss": 0.15,
+                "crackle": {
+                  "rate": 14,
+                  "gain": 0.35,
+                  "dense": {
+                    "from": 1300,
+                    "to": 7000,
+                    "count": 10,
+                    "decay": 0.003,
+                    "tilt": -0.5
+                  },
+                  "noise": 1.5,
+                  "noiseF": 3200
+                },
+                "pop": {
+                  "rate": 1.2,
+                  "gain": 0.6,
+                  "dense": {
+                    "from": 450,
+                    "to": 3800,
+                    "count": 12,
+                    "decay": 0.009,
+                    "tilt": -0.5
+                  },
+                  "noise": 1,
+                  "noiseF": 1800
+                },
+                "lp": 9000,
+                "post": {
+                  "drive": 4
+                }
+              },
+              "macros": {
+                "hauteur": {
+                  "min": -6,
+                  "max": 6,
+                  "default": 0,
+                  "unit": "demi-ton"
+                },
+                "matiere": {
+                  "min": -1,
+                  "max": 1,
+                  "default": 0,
+                  "unit": "octave"
+                },
+                "grain": {
+                  "min": 0,
+                  "max": 2,
+                  "default": 1,
+                  "unit": "x"
+                },
+                "duree": {
+                  "min": 0.6,
+                  "max": 1.6,
+                  "default": 1,
+                  "unit": "x"
+                },
+                "ampleur": {
+                  "min": 0,
+                  "max": 0.6,
+                  "default": 0.2,
+                  "unit": "mix"
+                }
+              }
+            }
+          ]
+        },
+        "variant": "B",
+        "macros": {
+          "hauteur": 0,
+          "matiere": 0,
+          "grain": 1,
+          "duree": 1,
+          "ampleur": 0.2
+        }
+      }
+    },
+    {
+      "id": "porte-enfoncee",
+      "category": "impact",
+      "set": "fond",
+      "engine": "atelier",
+      "sampleRate": 22050,
+      "duration": 1.2,
+      "variants": 1,
+      "preload": 0,
+      "loop": false,
+      "atelier": {
+        "slot": {
+          "id": "porte-enfoncee",
+          "sampleRate": 22050,
+          "bufferLevelDb": -10.610000000000001,
+          "variants": [
+            {
+              "id": "A",
+              "recipe": {
+                "kind": "sink",
+                "dur": 1.2,
+                "vary": 0.03,
+                "rumbleLp": 160,
+                "rumble": 1,
+                "grind": 0.45,
+                "grindRate": [
+                  [
+                    0,
+                    12
+                  ],
+                  [
+                    1,
+                    26
+                  ]
+                ],
+                "modes": [
+                  {
+                    "f": 120,
+                    "gain": 1,
+                    "decay": 0.05
+                  },
+                  {
+                    "f": 260,
+                    "gain": 0.7,
+                    "decay": 0.035
+                  },
+                  {
+                    "f": 410,
+                    "gain": 0.4,
+                    "decay": 0.025
+                  }
+                ],
+                "thud": {
+                  "at": 1.05,
+                  "f": 60,
+                  "decay": 0.05,
+                  "attack": 0.004,
+                  "gain": 0.9
+                },
+                "lp": 2000,
+                "post": {
+                  "drive": 2
+                }
+              },
+              "macros": {
+                "hauteur": {
+                  "min": -6,
+                  "max": 6,
+                  "default": 0,
+                  "unit": "demi-ton"
+                },
+                "matiere": {
+                  "min": -1,
+                  "max": 1,
+                  "default": 0,
+                  "unit": "octave"
+                },
+                "grain": {
+                  "min": 0,
+                  "max": 2,
+                  "default": 1,
+                  "unit": "x"
+                },
+                "duree": {
+                  "min": 0.6,
+                  "max": 1.6,
+                  "default": 1,
+                  "unit": "x"
+                },
+                "ampleur": {
+                  "min": 0,
+                  "max": 0.6,
+                  "default": 0.1,
+                  "unit": "mix"
+                }
+              }
+            }
+          ]
+        },
+        "variant": "A",
+        "macros": {
+          "hauteur": 0,
+          "matiere": 0,
+          "grain": 1,
+          "duree": 1,
+          "ampleur": 0.1
+        }
+      }
+    }
+  ]
+}

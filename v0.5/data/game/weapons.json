@@ -1,0 +1,15 @@
+{
+  "_provisoire": "Valeurs provisoires à régler en test (lot 1). Lot 2b : fireRange de base à 700 (1600 avant) ; la distance maximale de la balle est la portée de tir effective plus la marge de player-stats.json (js/core/player-stats.js).",
+  "pistol": {
+    "damage": 25,
+    "fireDelay": 0.4,
+    "laserRange": 300,
+    "bulletSpeed": 1100,
+    "bulletRadius": 4,
+    "fireRange": 700,
+    "muzzleFlash": 0.08,
+    "maxBullets": 30,
+    "muzzleOffset": 26,
+    "aimTolerance": 24
+  }
+}

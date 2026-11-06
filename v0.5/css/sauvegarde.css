@@ -1,0 +1,187 @@
+/* Page technique de la sauvegarde (lot 4) : mêmes jetons que le reste du site, aucun habillage de jeu. Marges de sécurité sur les côtés. */
+body.save-page {
+  padding-left: max(var(--space-4), env(safe-area-inset-left));
+  padding-right: max(var(--space-4), env(safe-area-inset-right));
+  padding-top: max(var(--space-4), env(safe-area-inset-top));
+  padding-bottom: max(var(--space-5), env(safe-area-inset-bottom));
+}
+
+.save {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  max-width: 48rem;
+  margin: 0 auto;
+}
+
+.save-title {
+  font-family: var(--font-sans);
+  font-size: var(--text-xl);
+  font-weight: var(--font-weight-bold);
+  line-height: 1.2;
+  color: var(--color-action-text);
+}
+
+.save-heading {
+  margin: 0;
+  font-size: var(--text-lg);
+  font-weight: var(--font-weight-bold);
+}
+
+.save-subheading {
+  margin: 0;
+  font-size: var(--text-md);
+  font-weight: var(--font-weight-bold);
+}
+
+.save-intro,
+.save-meta {
+  color: var(--color-text-muted);
+}
+
+.save-live {
+  min-height: 1.5em;
+  color: var(--color-success);
+}
+
+.save-live:empty {
+  display: none;
+}
+
+/* Le survol global du bouton (--color-action-hover) tombe à 3,7:1 avec le texte : sur cette page il s'assombrit au lieu de s'éclaircir (4,5:1 au moins). */
+.save-page .button:hover:not(:disabled) {
+  background: var(--color-action-active);
+}
+
+.save-page .button-quiet {
+  border: 2px solid var(--color-border);
+  background: transparent;
+  color: var(--color-text);
+}
+
+.save-page .button-quiet:hover:not(:disabled) {
+  background: var(--color-surface-raised);
+}
+
+.save-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+}
+
+.save-section-alert {
+  border-color: var(--color-warning);
+  background: var(--color-warning-surface);
+}
+
+.save-warning {
+  padding: var(--space-3) var(--space-4);
+  border-left: 6px solid var(--color-warning);
+  background: var(--color-warning-surface);
+}
+
+.save-facts {
+  display: grid;
+  grid-template-columns: minmax(0, auto) minmax(0, 1fr);
+  gap: var(--space-2) var(--space-4);
+  margin: 0;
+}
+
+.save-facts dt {
+  font-weight: var(--font-weight-bold);
+}
+
+.save-facts dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.save-label {
+  font-weight: var(--font-weight-bold);
+}
+
+.save-code {
+  width: 100%;
+  min-height: var(--touch-target);
+  padding: var(--space-3);
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  font-size: var(--text-sm);
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+  resize: vertical;
+}
+
+.save-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.save-error {
+  padding: var(--space-3);
+  border-left: 6px solid var(--color-danger);
+  background: var(--color-danger-surface);
+}
+
+.save-preview,
+.save-confirm {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.save-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-md);
+}
+
+.save-table th,
+.save-table td {
+  padding: var(--space-2);
+  border-bottom: 1px solid var(--color-border);
+  text-align: left;
+}
+
+.save-table td.changed {
+  font-weight: var(--font-weight-bold);
+  color: var(--color-money);
+}
+
+.save-check {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: var(--touch-target);
+  cursor: pointer;
+}
+
+.save-check input {
+  flex: none;
+  width: 1.5rem;
+  height: 1.5rem;
+  margin: 0;
+  accent-color: var(--color-action);
+}
+
+.save-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--touch-target);
+  color: var(--color-text);
+}
+
+@media (max-width: 480px) {
+  .save-facts {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

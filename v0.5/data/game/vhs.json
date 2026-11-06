@@ -1,0 +1,12 @@
+{
+  "_provisoire": "Effet VHS (lot 2c) : tous les réglages sont provisoires, jamais jugés à l'œil par l'agent (à valider). enabled : actif par défaut (basculable dans la pause, ?vhs=0 | ?vhs=1). opacity : valeur de chaque couche ; caps : plafonds durs (jamais dépassés, même à intensity 1) ; intensity (0 à 1) multiplie les opacités. Temps : horloge d'effet (secondes réelles, continue pendant la pause).",
+  "enabled": true,
+  "intensity": 1,
+  "seed": 8113,
+  "opacity": { "scan": 0.12, "grain": 0.08, "edge": 0.08, "vignette": 0.3, "track": 0.1 },
+  "caps": { "scan": 0.14, "grain": 0.09, "edge": 0.1, "vignette": 0.35, "track": 0.12, "flicker": 0.03 },
+  "scanPeriod": 3,
+  "grain": { "size": 128, "rate": 10, "levels": 4 },
+  "flicker": { "amplitude": 0.03, "rate": 8 },
+  "track": { "minGap": 6, "maxGap": 14, "minDuration": 0.15, "maxDuration": 0.4, "height": 0.07, "shiftPx": 4 }
+}

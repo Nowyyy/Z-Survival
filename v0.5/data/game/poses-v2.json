@@ -1,0 +1,1148 @@
+{
+ "_provisoire": "Squelettes et animations des personnages du lot 3j (valeurs provisoires, purement visuelles). Angles en radians, Euler 'YXZ' de Three.js par articulation (x : flexion, positif = vers l'arrière pour les hanches et les épaules, vers l'avant pour la colonne et la tête ; y : torsion ; z : écart latéral). v1 : squelette actuel de js/game/character.js (pose.js) ; v2 : squelette du lot 3j (colonne en deux segments, cou, chevilles). range : plage articulaire [min, max] par axe ; rest : pose de repos (tous les angles nuls).",
+ "version": 1,
+ "skeletons": {
+  "v1": {
+   "label": "Squelette actuel (lot 1c)",
+   "joints": [
+    {
+     "id": "pelvis",
+     "parent": null,
+     "offset": [
+      0,
+      27,
+      0
+     ]
+    },
+    {
+     "id": "torso",
+     "parent": "pelvis",
+     "offset": [
+      0,
+      4,
+      0
+     ]
+    },
+    {
+     "id": "head",
+     "parent": "torso",
+     "offset": [
+      0,
+      19,
+      0
+     ]
+    },
+    {
+     "id": "shoulderL",
+     "parent": "torso",
+     "offset": [
+      11.5,
+      17,
+      0
+     ]
+    },
+    {
+     "id": "elbowL",
+     "parent": "shoulderL",
+     "offset": [
+      0,
+      -10,
+      0
+     ]
+    },
+    {
+     "id": "wristL",
+     "parent": "elbowL",
+     "offset": [
+      0,
+      -9,
+      0
+     ]
+    },
+    {
+     "id": "shoulderR",
+     "parent": "torso",
+     "offset": [
+      -11.5,
+      17,
+      0
+     ]
+    },
+    {
+     "id": "elbowR",
+     "parent": "shoulderR",
+     "offset": [
+      0,
+      -10,
+      0
+     ]
+    },
+    {
+     "id": "wristR",
+     "parent": "elbowR",
+     "offset": [
+      0,
+      -9,
+      0
+     ]
+    },
+    {
+     "id": "hipL",
+     "parent": "pelvis",
+     "offset": [
+      5.5,
+      0,
+      0
+     ]
+    },
+    {
+     "id": "kneeL",
+     "parent": "hipL",
+     "offset": [
+      0,
+      -12,
+      0
+     ]
+    },
+    {
+     "id": "ankleL",
+     "parent": "kneeL",
+     "offset": [
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "id": "hipR",
+     "parent": "pelvis",
+     "offset": [
+      -5.5,
+      0,
+      0
+     ]
+    },
+    {
+     "id": "kneeR",
+     "parent": "hipR",
+     "offset": [
+      0,
+      -12,
+      0
+     ]
+    },
+    {
+     "id": "ankleR",
+     "parent": "kneeR",
+     "offset": [
+      0,
+      0,
+      0
+     ]
+    }
+   ]
+  },
+  "v2": {
+   "label": "Squelette v2 (lot 3j)",
+   "joints": [
+    {
+     "id": "pelvis",
+     "parent": null,
+     "offset": [
+      0,
+      27,
+      0
+     ],
+     "range": {
+      "x": [
+       -1.7,
+       1.7
+      ],
+      "y": [
+       -1.8,
+       1.8
+      ],
+      "z": [
+       -1.7,
+       1.7
+      ]
+     }
+    },
+    {
+     "id": "spine",
+     "parent": "pelvis",
+     "offset": [
+      0,
+      4,
+      0
+     ],
+     "range": {
+      "x": [
+       -0.5,
+       1.6
+      ],
+      "y": [
+       -1.8,
+       1.8
+      ],
+      "z": [
+       -0.5,
+       0.5
+      ]
+     }
+    },
+    {
+     "id": "chest",
+     "parent": "spine",
+     "offset": [
+      0,
+      9,
+      0
+     ],
+     "range": {
+      "x": [
+       -0.5,
+       1
+      ],
+      "y": [
+       -0.9,
+       0.9
+      ],
+      "z": [
+       -0.5,
+       0.5
+      ]
+     }
+    },
+    {
+     "id": "neck",
+     "parent": "chest",
+     "offset": [
+      0,
+      10,
+      0
+     ],
+     "range": {
+      "x": [
+       -0.95,
+       0.9
+      ],
+      "y": [
+       -0.9,
+       0.9
+      ],
+      "z": [
+       -0.5,
+       0.5
+      ]
+     }
+    },
+    {
+     "id": "head",
+     "parent": "neck",
+     "offset": [
+      0,
+      1.5,
+      0
+     ],
+     "range": {
+      "x": [
+       -0.7,
+       0.9
+      ],
+      "y": [
+       -0.9,
+       0.9
+      ],
+      "z": [
+       -0.5,
+       0.5
+      ]
+     }
+    },
+    {
+     "id": "shoulderL",
+     "parent": "chest",
+     "offset": [
+      11.5,
+      8,
+      0
+     ],
+     "range": {
+      "x": [
+       -3.1,
+       1.3
+      ],
+      "y": [
+       -1,
+       1
+      ],
+      "z": [
+       -1.4,
+       1.4
+      ]
+     }
+    },
+    {
+     "id": "shoulderR",
+     "parent": "chest",
+     "offset": [
+      -11.5,
+      8,
+      0
+     ],
+     "range": {
+      "x": [
+       -3.1,
+       1.3
+      ],
+      "y": [
+       -1,
+       1
+      ],
+      "z": [
+       -1.4,
+       1.4
+      ]
+     }
+    },
+    {
+     "id": "elbowL",
+     "parent": "shoulderL",
+     "offset": [
+      0,
+      -10,
+      0
+     ],
+     "range": {
+      "x": [
+       -2.5,
+       0.05
+      ],
+      "y": [
+       -1,
+       1
+      ],
+      "z": [
+       -0.3,
+       0.3
+      ]
+     }
+    },
+    {
+     "id": "elbowR",
+     "parent": "shoulderR",
+     "offset": [
+      0,
+      -10,
+      0
+     ],
+     "range": {
+      "x": [
+       -2.5,
+       0.05
+      ],
+      "y": [
+       -1,
+       1
+      ],
+      "z": [
+       -0.3,
+       0.3
+      ]
+     }
+    },
+    {
+     "id": "wristL",
+     "parent": "elbowL",
+     "offset": [
+      0,
+      -9,
+      0
+     ],
+     "range": {
+      "x": [
+       -1,
+       1
+      ],
+      "y": [
+       -1,
+       1
+      ],
+      "z": [
+       -0.6,
+       0.6
+      ]
+     }
+    },
+    {
+     "id": "wristR",
+     "parent": "elbowR",
+     "offset": [
+      0,
+      -9,
+      0
+     ],
+     "range": {
+      "x": [
+       -1,
+       1
+      ],
+      "y": [
+       -1,
+       1
+      ],
+      "z": [
+       -0.6,
+       0.6
+      ]
+     }
+    },
+    {
+     "id": "hipL",
+     "parent": "pelvis",
+     "offset": [
+      5.5,
+      0,
+      0
+     ],
+     "range": {
+      "x": [
+       -2,
+       1
+      ],
+      "y": [
+       -0.7,
+       0.7
+      ],
+      "z": [
+       -0.7,
+       0.7
+      ]
+     }
+    },
+    {
+     "id": "hipR",
+     "parent": "pelvis",
+     "offset": [
+      -5.5,
+      0,
+      0
+     ],
+     "range": {
+      "x": [
+       -2,
+       1
+      ],
+      "y": [
+       -0.7,
+       0.7
+      ],
+      "z": [
+       -0.7,
+       0.7
+      ]
+     }
+    },
+    {
+     "id": "kneeL",
+     "parent": "hipL",
+     "offset": [
+      0,
+      -12,
+      0
+     ],
+     "range": {
+      "x": [
+       -0.05,
+       2.5
+      ],
+      "y": [
+       -0.2,
+       0.2
+      ],
+      "z": [
+       -0.2,
+       0.2
+      ]
+     }
+    },
+    {
+     "id": "kneeR",
+     "parent": "hipR",
+     "offset": [
+      0,
+      -12,
+      0
+     ],
+     "range": {
+      "x": [
+       -0.05,
+       2.5
+      ],
+      "y": [
+       -0.2,
+       0.2
+      ],
+      "z": [
+       -0.2,
+       0.2
+      ]
+     }
+    },
+    {
+     "id": "ankleL",
+     "parent": "kneeL",
+     "offset": [
+      0,
+      -11.5,
+      0
+     ],
+     "range": {
+      "x": [
+       -1.15,
+       1.15
+      ],
+      "y": [
+       -0.4,
+       0.4
+      ],
+      "z": [
+       -0.4,
+       0.4
+      ]
+     }
+    },
+    {
+     "id": "ankleR",
+     "parent": "kneeR",
+     "offset": [
+      0,
+      -11.5,
+      0
+     ],
+     "range": {
+      "x": [
+       -1.15,
+       1.15
+      ],
+      "y": [
+       -0.4,
+       0.4
+      ],
+      "z": [
+       -0.4,
+       0.4
+      ]
+     }
+    },
+    {
+     "id": "prop",
+     "parent": "chest",
+     "offset": [
+      -1.5,
+      -4,
+      13
+     ],
+     "range": {
+      "x": [
+       -1,
+       1
+      ],
+      "y": [
+       -1,
+       1
+      ],
+      "z": [
+       -1,
+       1
+      ]
+     }
+    },
+    {
+     "id": "tool",
+     "parent": "wristR",
+     "offset": [
+      0,
+      -2,
+      0
+     ],
+     "range": {
+      "x": [
+       -1,
+       1
+      ],
+      "y": [
+       -1,
+       1
+      ],
+      "z": [
+       -1,
+       1
+      ]
+     }
+    }
+   ]
+  }
+ },
+ "rest": {
+  "angles": {},
+  "offsets": {}
+ },
+ "contacts": [
+  {
+   "joint": "ankleL",
+   "offset": [
+    0,
+    -1.7,
+    6.2
+   ],
+   "radius": 1.9
+  },
+  {
+   "joint": "ankleL",
+   "offset": [
+    0,
+    -1.7,
+    -2.2
+   ],
+   "radius": 1.9
+  },
+  {
+   "joint": "ankleL",
+   "offset": [
+    0,
+    -1.5,
+    1.9
+   ],
+   "radius": 2
+  },
+  {
+   "joint": "kneeL",
+   "offset": [
+    0,
+    0,
+    0
+   ],
+   "radius": 3.1
+  },
+  {
+   "joint": "kneeL",
+   "offset": [
+    0,
+    -6,
+    0
+   ],
+   "radius": 2.8
+  },
+  {
+   "joint": "hipL",
+   "offset": [
+    0,
+    -6,
+    0
+   ],
+   "radius": 3.4
+  },
+  {
+   "joint": "wristL",
+   "offset": [
+    0,
+    -1.6,
+    0.3
+   ],
+   "radius": 2.6
+  },
+  {
+   "joint": "elbowL",
+   "offset": [
+    0,
+    0,
+    0
+   ],
+   "radius": 2.4
+  },
+  {
+   "joint": "elbowL",
+   "offset": [
+    0,
+    -5,
+    0
+   ],
+   "radius": 2.2
+  },
+  {
+   "joint": "shoulderL",
+   "offset": [
+    0,
+    -5,
+    0
+   ],
+   "radius": 2.6
+  },
+  {
+   "joint": "ankleR",
+   "offset": [
+    0,
+    -1.7,
+    6.2
+   ],
+   "radius": 1.9
+  },
+  {
+   "joint": "ankleR",
+   "offset": [
+    0,
+    -1.7,
+    -2.2
+   ],
+   "radius": 1.9
+  },
+  {
+   "joint": "ankleR",
+   "offset": [
+    0,
+    -1.5,
+    1.9
+   ],
+   "radius": 2
+  },
+  {
+   "joint": "kneeR",
+   "offset": [
+    0,
+    0,
+    0
+   ],
+   "radius": 3.1
+  },
+  {
+   "joint": "kneeR",
+   "offset": [
+    0,
+    -6,
+    0
+   ],
+   "radius": 2.8
+  },
+  {
+   "joint": "hipR",
+   "offset": [
+    0,
+    -6,
+    0
+   ],
+   "radius": 3.4
+  },
+  {
+   "joint": "wristR",
+   "offset": [
+    0,
+    -1.6,
+    0.3
+   ],
+   "radius": 2.6
+  },
+  {
+   "joint": "elbowR",
+   "offset": [
+    0,
+    0,
+    0
+   ],
+   "radius": 2.4
+  },
+  {
+   "joint": "elbowR",
+   "offset": [
+    0,
+    -5,
+    0
+   ],
+   "radius": 2.2
+  },
+  {
+   "joint": "shoulderR",
+   "offset": [
+    0,
+    -5,
+    0
+   ],
+   "radius": 2.6
+  },
+  {
+   "joint": "head",
+   "offset": [
+    0,
+    4.6,
+    0.2
+   ],
+   "radius": 5.2
+  },
+  {
+   "joint": "neck",
+   "offset": [
+    0,
+    1.2,
+    0
+   ],
+   "radius": 2.4
+  },
+  {
+   "joint": "chest",
+   "offset": [
+    0,
+    4.5,
+    0
+   ],
+   "radius": 5.6
+  },
+  {
+   "joint": "chest",
+   "offset": [
+    6,
+    5,
+    0
+   ],
+   "radius": 4
+  },
+  {
+   "joint": "chest",
+   "offset": [
+    -6,
+    5,
+    0
+   ],
+   "radius": 4
+  },
+  {
+   "joint": "spine",
+   "offset": [
+    0,
+    4.6,
+    0
+   ],
+   "radius": 5.2
+  },
+  {
+   "joint": "pelvis",
+   "offset": [
+    0,
+    0.5,
+    0
+   ],
+   "radius": 3.9
+  },
+  {
+   "joint": "pelvis",
+   "offset": [
+    6,
+    0.5,
+    0
+   ],
+   "radius": 3.9
+  },
+  {
+   "joint": "pelvis",
+   "offset": [
+    -6,
+    0.5,
+    0
+   ],
+   "radius": 3.9
+  }
+ ],
+ "strides": {
+  "marcheLente": 38,
+  "marche": 52,
+  "rampe": 40,
+  "course": 78,
+  "escalier": 52,
+  "joueur": 69.8132
+ },
+ "durations": {
+  "mort": 1.2,
+  "touche": 0.25,
+  "attaque": 1,
+  "relevage": 0.8,
+  "blend": 0.15,
+  "tir": 0.3,
+  "enjamber": 1.2
+ },
+ "repair": {
+  "strike": 0.45,
+  "min": 0.4,
+  "max": 1.8
+ },
+ "macros": {
+  "amplitude": {
+   "label": "Amplitude",
+   "min": -2,
+   "max": 2,
+   "default": 0,
+   "step": 0.15
+  },
+  "rythme": {
+   "label": "Rythme",
+   "min": -2,
+   "max": 2,
+   "default": 0,
+   "step": 0.1
+  },
+  "lourdeur": {
+   "label": "Lourdeur",
+   "min": -2,
+   "max": 2,
+   "default": 0,
+   "step": 1
+  }
+ },
+ "styles": {
+  "A": {
+   "label": "mesuré",
+   "walk": {
+    "duty": 0.56,
+    "lift": 3.4,
+    "crouch": 0.5,
+    "pitch": 0.12,
+    "head": 0.3,
+    "twist": 0.08,
+    "jerk": 0,
+    "armL": [
+     0.7,
+     0.1,
+     0.6
+    ],
+    "armR": [
+     0.4,
+     0.1,
+     0.35
+    ],
+    "inward": 0.35,
+    "out": 0.08
+   },
+   "run": {
+    "duty": 0.4,
+    "lift": 5.5,
+    "crouch": 1.5,
+    "pitch": 0.3,
+    "head": 0.15,
+    "twist": 0.12,
+    "jerk": 0,
+    "armL": [
+     0.6,
+     0.22,
+     0.7
+    ],
+    "armR": [
+     0.5,
+     0.22,
+     0.7
+    ],
+    "inward": 0.4,
+    "out": 0.05
+   },
+   "idle": {
+    "freq": 0.55,
+    "sway": 0.07,
+    "arms": [
+     0.7,
+     0.5
+    ],
+    "head": 0.35,
+    "knee": 0.12
+   },
+   "crawl": {
+    "reach": 1,
+    "legs": 1,
+    "head": -0.3
+   },
+   "tear": {
+    "pull": 0.55,
+    "pitch": 0.3
+   },
+   "climb": {
+    "freq": 0.8,
+    "step": 1
+   },
+   "attack": {
+    "windup": 1.5,
+    "strike": 0.45,
+    "lunge": 0.5
+   },
+   "hurt": {
+    "amount": 1
+   },
+   "player": {
+    "duty": 0.42,
+    "lift": 4.5,
+    "crouch": 1.2,
+    "pitch": 0.08
+   }
+  },
+  "B": {
+   "label": "lourd et saccadé",
+   "walk": {
+    "duty": 0.6,
+    "lift": 2.2,
+    "crouch": 1.6,
+    "pitch": 0.3,
+    "head": 0.15,
+    "twist": 0.18,
+    "jerk": 0.45,
+    "armL": [
+     0.25,
+     0.32,
+     0.25
+    ],
+    "armR": [
+     0.3,
+     0.32,
+     0.3
+    ],
+    "inward": 0.05,
+    "out": 0.22
+   },
+   "run": {
+    "duty": 0.42,
+    "lift": 4,
+    "crouch": 2.3,
+    "pitch": 0.45,
+    "head": 0.05,
+    "twist": 0.22,
+    "jerk": 0.4,
+    "armL": [
+     0.3,
+     0.3,
+     0.3
+    ],
+    "armR": [
+     0.25,
+     0.3,
+     0.35
+    ],
+    "inward": 0.1,
+    "out": 0.15
+   },
+   "idle": {
+    "freq": 0.4,
+    "sway": 0.12,
+    "arms": [
+     0.25,
+     0.3
+    ],
+    "head": 0.5,
+    "knee": 0.3
+   },
+   "crawl": {
+    "reach": 1.1,
+    "legs": 0.8,
+    "head": -0.15
+   },
+   "tear": {
+    "pull": 0.7,
+    "pitch": 0.45
+   },
+   "climb": {
+    "freq": 0.6,
+    "step": 0.8
+   },
+   "attack": {
+    "windup": 1.1,
+    "strike": 0.3,
+    "lunge": 0.5
+   },
+   "hurt": {
+    "amount": 0.8
+   },
+   "player": {
+    "duty": 0.41,
+    "lift": 3.6,
+    "crouch": 2.4,
+    "pitch": 0.14
+   }
+  },
+  "C": {
+   "label": "amplitudes nettes",
+   "walk": {
+    "duty": 0.55,
+    "lift": 4.2,
+    "crouch": 0.8,
+    "pitch": 0.16,
+    "head": 0.4,
+    "twist": 0.1,
+    "jerk": 0,
+    "armL": [
+     0.95,
+     0.06,
+     0.25
+    ],
+    "armR": [
+     0.95,
+     0.06,
+     0.25
+    ],
+    "inward": 0.55,
+    "out": 0
+   },
+   "run": {
+    "duty": 0.38,
+    "lift": 6.5,
+    "crouch": 1.8,
+    "pitch": 0.32,
+    "head": 0.2,
+    "twist": 0.14,
+    "jerk": 0,
+    "armL": [
+     0.7,
+     0.15,
+     0.6
+    ],
+    "armR": [
+     0.7,
+     0.15,
+     0.6
+    ],
+    "inward": 0.55,
+    "out": 0
+   },
+   "idle": {
+    "freq": 0.7,
+    "sway": 0.05,
+    "arms": [
+     0.85,
+     0.25
+    ],
+    "head": 0.4,
+    "knee": 0.08
+   },
+   "crawl": {
+    "reach": 1.15,
+    "legs": 1.1,
+    "head": -0.4
+   },
+   "tear": {
+    "pull": 0.6,
+    "pitch": 0.35
+   },
+   "climb": {
+    "freq": 0.9,
+    "step": 1.1
+   },
+   "attack": {
+    "windup": 1.7,
+    "strike": 0.5,
+    "lunge": 0.5
+   },
+   "hurt": {
+    "amount": 1.2
+   },
+   "player": {
+    "duty": 0.4,
+    "lift": 5.2,
+    "crouch": 1,
+    "pitch": 0.06
+   }
+  }
+ }
+}
