@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { CYCLIC, DEATHS, LOCOMOTION, PLAYER_ANIMS, ZOMBIE_ANIMS, addPose, armIK, blendPoses, cycleSeconds, fromV1, poseAt, rigOf, strikesPerPlank, touche } from '../../js/core/pose-v2.js';
-import { computePose } from '../../js/core/pose.js';
+import { CYCLIC, DEATHS, LOCOMOTION, PLAYER_ANIMS, ZOMBIE_ANIMS, addPose, armIK, blendPoses, cycleSeconds, poseAt, rigOf, strikesPerPlank, touche } from '../../js/core/pose-v2.js';
 import { jointMatrices, jointsOf } from '../../js/core/character-parts.js';
 import { ANIMS_OF, animChecks, characters, footSlide, load, poses, resolve, skeletons, v2Rig } from '../../scripts/personnages/lib.mjs';
 
@@ -111,9 +110,21 @@ describe('fondu, touché, réparation, durées', () => {
   it('rampe : bassin plus bas et tronc presque horizontal (comme aujourd\'hui)', () => {
     const p = poseAt(rig, 'rampe', 0.3, {}, poses);
     const m = jointMatrices(rig.joints, p, 1);
-    const v1 = fromV1(computePose({ state: 'rampe', phase: 0.3 * 2 * Math.PI, amount: 0.7 })).offsets.pelvis[1] + 27; // bassin du rampant actuel
+    // Lot 5e : bassin du rampant de l'ancien modèle, figé (fromV1(computePose({ state: 'rampe', phase: 0,3 × 2π, amount: 0,7 })).offsets.pelvis[1] + 27,
+    // mesuré sur lot-5c 92e4556 avant le retrait de js/core/pose.js) ; même tolérance qu'avant.
+    const v1 = 9.081126047579787;
     expect(Math.abs(m.pelvis.t[1] - v1)).toBeLessThan(4);
     expect(p.angles.spine[0] + p.angles.chest[0] + p.angles.pelvis[0]).toBeGreaterThan(1.1);
+  });
+  // Lot 5e (condition du propriétaire) : remplace le test e2e « bras tendus, hanches qui balancent » de l'ancien modèle (angles de pose.js) :
+  // en v2, une épaule levée vers l'avant a un angle x négatif ; chaque zombie qui marche, dans chaque variante, garde les bras en avant
+  // (moyenne sur le cycle sous −0,3 rad de chaque côté) et balance les hanches (écart d'au moins 0,3 rad sur le cycle).
+  it.each(variants.filter(([sid]) => sid !== 'joueur').map(([sid, vid, , v]) => [sid, vid, v]))('%s %s : zombie qui marche, bras en avant et hanches qui balancent', (_sid, _vid, v) => {
+    const r = v2Rig(resolve(v));
+    const phases = Array.from({ length: 8 }, (_, k) => poseAt(r, 'marche', k / 8, {}, poses).angles);
+    const mean = (j) => phases.reduce((acc, a) => acc + a[j][0], 0) / phases.length;
+    expect(Math.max(mean('shoulderL'), mean('shoulderR'))).toBeLessThan(-0.3);
+    expect(Math.max(...phases.map((a) => a.hipL[0])) - Math.min(...phases.map((a) => a.hipL[0]))).toBeGreaterThan(0.3);
   });
   it('armIK : la main atteint la cible accessible', () => {
     const t = [-9, -6, 14];

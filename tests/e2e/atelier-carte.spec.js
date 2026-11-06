@@ -5,8 +5,10 @@ import { waitReady } from './helpers.js';
 // Lot 3g, partie B : la carte corrigée d'après le modèle (ecarts-decisions.json) dans le jeu. 667×375, step() et hooks ; les tests se désactivent
 // seuls si WebGL manque.
 const SIZE = { width: 667, height: 375 };
-// Références de rendu mesurées sur main au lancement du lot (scripts/modele/mesures-rendu.mjs) : appels et triangles, 10 zombies, ombres, cône.
-const REF = { R1: [200, 14442], R2: [201, 14582], R3: [199, 13898], U1: [207, 14788], U4: [212, 15588] };
+// Références de rendu (appels et triangles, 10 zombies, ombres, cône) ; jusqu'au lot 5e : mesurées sur main au lancement du lot 3g avec l'ancien modèle.
+// Lot 5e : références remesurées avec la variante A (&perso=A&sang=0 ; l'ancien modèle, référence d'avant, est retiré), sur lot-5c 92e4556,
+// par scripts/nettoyage/inventaire-ancien.mjs --remesure (mêmes scènes et gestes, épaves retirées) ; mêmes tolérances qu'avant.
+const REF = { R1: [58, 14044], R2: [58, 14142], R3: [56, 13458], U1: [64, 14358], U4: [68, 15116] };
 // Lot 5a : triangles des épaves (hélicoptère écrasé et voiture calcinée, 3 boîtes de 10 triangles et 4 roues de 32), dessinés aussi avec ?detail=0 : ils sont solides.
 const EPAVES = (JSON.parse(readFileSync('data/game/maps/rez-de-chaussee/decor.json', 'utf8')).wrecks?.helicopter?.triangles ?? 0) + 158 + (JSON.parse(readFileSync('data/game/maps/rez-de-chaussee/decor.json', 'utf8')).wrecks?.helicopter?.scarTriangles ?? 0); // lot 5a-F : + le cratère et la traînée (sol de terre)
 const U = (px) => px * 5 + 800;
@@ -86,7 +88,7 @@ test.describe('zones jouables sur la nouvelle géométrie', () => {
 test.describe('budgets de rendu après la partie B (≤ référence + 300 triangles, sans le détail de la partie C)', () => {
   for (const [id, sc] of Object.entries(SCENES)) {
     test(`${id} : appels et triangles`, async ({ page }, testInfo) => {
-      await open(page, `${sc.url}&shadows=1&detail=0&perso=actuel&sang=0`); // lot 3m : référence mesurée avec l'ancien modèle des personnages
+      await open(page, `${sc.url}&shadows=1&detail=0&perso=A&sang=0`); // lot 5e : référence mesurée avec la variante A
       const r = await page.evaluate(({ at, floor, wave }) => {
         const zs = window.__zs;
         zs.setPlayer(at[0], at[1]);

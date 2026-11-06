@@ -8,7 +8,7 @@ export const CHOICES = ['auto', ...PRESET_IDS];
 export const VHS_MODES = ['off', 'statique', 'anime'];
 export const FOG_MODES = ['simple', 'reduit', 'complet'];
 export const SANG_LEVELS = ['0', 'reduit', '1'];
-export const PERSO_LOADS = ['choix', 'actuel', 'A', 'B', 'C', 'riche'];
+export const PERSO_LOADS = ['choix', 'A', 'B', 'C', 'riche'];
 export const DECOR_MODES = ['reduit', 'complet'];
 
 // Valeurs de l'Élevé = rendu actuel du jeu (render.json, blood.json, vhs.json, persos-choix.json, ?dpr par défaut) : repli de toute valeur invalide.

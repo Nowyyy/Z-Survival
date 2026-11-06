@@ -26,7 +26,6 @@ export const COMBOS = {
   dpr1: '&dpr=1',
   sang0: '&sang=0',
   sonsAncien: '&sons=ancien',
-  persoActuel: '&perso=actuel',
   detail0: '&detail=0',
   fps1: '&fps=1',
   nospawn1: '&nospawn=1',

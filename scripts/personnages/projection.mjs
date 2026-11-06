@@ -44,10 +44,10 @@ export function project(choiceOf, level = '1') {
   return Object.fromEntries(Object.entries(REFERENCE).map(([k, r]) => [k, { calls: r.calls - actual.calls + chosen.calls + blood.calls + nCorpses * corpse.calls, triangles: r.triangles - actual.triangles + chosen.triangles + blood.triangles + nCorpses * corpse.triangles }]));
 }
 
-// Lot 3m : variante de chaque personnage d'après la table des choix (variante absente ou inconnue : actuel, comme en jeu).
+// Lot 3m : variante de chaque personnage d'après la table des choix (lot 5e : variante absente ou inconnue : A, comme en jeu).
 export function choicesOf(table) {
   const persos = table?.persos ?? {};
-  return (id) => (['A', 'B', 'C', 'riche', 'actuel'].includes(persos[id]?.variante) ? persos[id].variante : 'actuel');
+  return (id) => (['A', 'B', 'C', 'riche'].includes(persos[id]?.variante) ? persos[id].variante : 'A');
 }
 
 const main = () => {
@@ -60,7 +60,7 @@ const main = () => {
   } else if (file) {
     const parsed = parseChoices(readFileSync(file, 'utf8'));
     const by = Object.fromEntries(parsed.persos.map((p) => [p.perso, String(p.variante ?? 'A')]));
-    rows.push([`choix (${file})`, (id) => by[id] ?? 'actuel', String(parsed.extra.sang ?? '1')]);
+    rows.push([`choix (${file})`, (id) => by[id] ?? 'A', String(parsed.extra.sang ?? '1')]);
   } else {
     for (const v of ['actuel', 'A', 'B', 'C', 'riche']) rows.push([v, () => v, v === 'actuel' ? '0' : '1']);
   }

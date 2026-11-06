@@ -39,16 +39,8 @@ test.describe('personnages du lot 1c-C', () => {
     expect(s.render.triangles).toBeLessThanOrEqual(45_000); // lot 3j : variantes « riche » par défaut, plafond de triangles relevé à la limite de refonte (choix du propriétaire)
   });
 
-  test('les poses des zombies s\'appliquent : bras tendus, hanches qui balancent en marche @instable', async ({ page }) => {
-    await open(page, '&perso=actuel&sang=0'); // lot 3j : angles de pose.js, ceux des personnages actuels
-    await page.evaluate(() => window.__zs.spawnEnemy(1800, 1500));
-    await page.evaluate(() => window.__zs.step(1));
-    const z = (await state(page)).enemies[0];
-    expect(z.pose).not.toBeNull();
-    expect(z.pose.shoulderL).toBeGreaterThan(1.0);
-    expect(z.pose.shoulderR).toBeGreaterThan(1.0);
-    expect(Math.abs(z.pose.hipL) + Math.abs(z.pose.hipR)).toBeGreaterThan(0.01);
-  });
+  // Lot 5e : « les poses des zombies s'appliquent : bras tendus, hanches qui balancent » (angles de js/core/pose.js, ?perso=actuel) retiré avec
+  // l'ancien modèle ; l'équivalent v2 (bras en avant, hanches qui balancent en marche, chaque variante) est dans tests/unit/persos-animations.test.js.
 
   for (const [name, extra] of [['zoom par défaut', ''], ['?zoom=1.5', '&zoom=1.5']]) {
     test(`le joueur est visible et distinct du sol à 667×375 (${name})`, async ({ page }) => {

@@ -9,8 +9,6 @@ const SIZE = { width: 667, height: 375 };
 const BIG = { width: 1440, height: 900 };
 const load = (path) => JSON.parse(readFileSync(path, 'utf8'));
 const world = load('data/game/maps/rez-de-chaussee/world.json');
-// Lot 3g (retours du propriétaire) : triangles du mobilier d'après le modèle, comptés deux fois (passe d'ombre).
-const MOBILIER = 2 * load('data/game/maps/rez-de-chaussee/mobilier.world.json').triangles;
 const IDS = ['F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F8'];
 const BROWSER_NOISE = /GL Driver Message|ReadPixels|GPU stall/;
 const STATE = (page) => page.evaluate(() => window.__zs.getState());
@@ -400,8 +398,10 @@ test.describe('vagues, interface, caméra, budget', () => {
     }
   });
 
-  test('budget : 10 zombies variés, planches, ombres, cône : au plus la référence (191 appels, 14 904 triangles) + 3 et + 100', async ({ page }, testInfo) => {
-    await open(page, '&shadows=1&perso=actuel&sang=0');
+  // Lot 5e : référence remesurée avec la variante A (53 appels, 19 951 triangles, mobilier et épaves compris, lot-5c 92e4556), mêmes marges (+ 3, + 100) ;
+  // avant : ancien modèle des personnages (191 appels, 14 904 triangles mesurés sur main, + porte, meubles, brume, mobilier).
+  test('budget : 10 zombies variés, planches, ombres, cône : au plus la référence (53 appels, 19 951 triangles, variante A) + 3 et + 100', async ({ page }, testInfo) => {
+    await open(page, '&shadows=1&perso=A&sang=0');
     const r = await page.evaluate(() => {
       const zs = window.__zs;
       const first = zs.getState().windowPositions[0];
@@ -416,9 +416,8 @@ test.describe('vagues, interface, caméra, budget', () => {
       return zs.getState().render;
     });
     testInfo.annotations.push({ type: 'rendu', description: `${r.calls} appels, ${r.triangles} triangles` });
-    console.log(`BUDGET lot 3b : ${r.calls} appels de dessin, ${r.triangles} triangles (référence main : 191 et 14 904)`);
-    expect(r.calls).toBeLessThanOrEqual(194 + 2 + 2); // lot 3c : référence 194 mesurée sur main, + 2 (porte, meubles modélisés) ; lot 3g : + 2 (nappes de brume basses)
-    // Lot 3g (retours du propriétaire) : mobilier d'après le modèle, ses triangles deux fois (passe d'ombre) ; 30 000 au plus.
-    expect(r.triangles).toBeLessThanOrEqual(Math.min(14904 + 100 + MOBILIER, 30000));
+    console.log(`BUDGET lot 3b : ${r.calls} appels de dessin, ${r.triangles} triangles (référence lot 5e, variante A : 53 et 19 951)`);
+    expect(r.calls).toBeLessThanOrEqual(53 + 3);
+    expect(r.triangles).toBeLessThanOrEqual(19951 + 100);
   });
 });

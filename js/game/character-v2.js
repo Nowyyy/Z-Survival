@@ -153,7 +153,7 @@ const torn = (i, seed) => {
 
 // options : { characters, poses (données), lookup (jeton -> [r, g, b]), hit (couleur du flash), choice ('A' | 'B' | 'C' | 'riche'),
 // zombieIds (ordre des variantes de zombie-variants.json), seed, wear () => palier (0 à 3), macros: { slot: { taille, ... } },
-// styleOf: { slot: 'A' | ... | 'actuel' } (variante de chaque personnage ; actuel : ancien modèle, voir handles), outfitOf: { slot: indice }
+// styleOf: { slot: 'A' | ... } (variante de chaque personnage), outfitOf: { slot: indice }
 // (atelier : tenue imposée) ; lot 3m (table des choix) : styleAnim: { slot: 'A' | 'B' | 'C' } (style d'animation), outfitsOf: { slot:
 // 'toutes' | [identifiants de tenues] } (tenues tirées), animMacros: { slot: { amplitude, rythme, lourdeur } }.
 export function createV2Kit(options) {
@@ -475,16 +475,14 @@ export function createV2Kit(options) {
       geometryFor(k, k.allowed[Math.max(0, Math.min(outfits - 1, outfit))], wearNow());
       return outfits;
     },
-    // Lot 3m : ce personnage est-il un personnage v2 ? (variante « actuel » de la table ou de l'adresse : l'ancien modèle le construit).
-    handles(kind, variantIndex = 0) {
-      const slotId = kind === 'player' ? 'joueur' : SLOT_OF_TYPE[zombieIds[variantIndex % zombieIds.length]] ?? 'marcheur';
-      return (options.styleOf?.[slotId] ?? options.choice) !== 'actuel';
+    // Lot 3m : ce personnage est-il un personnage v2 ? Lot 5e : toujours (l'ancien modèle est retiré).
+    handles() {
+      return true;
     },
     // Lot 3m : réglages appliqués à chaque personnage (variante, style d'animation, tenues retenues, macros), sans rien construire.
     choices() {
       return Object.fromEntries(characters.slots.map((s) => {
         const choice = options.styleOf?.[s.id] ?? options.choice ?? 'A';
-        if (choice === 'actuel') return [s.id, { variante: 'actuel' }];
         const { variant } = variantOf(s.id, choice);
         const res = resolveVariant(variant, { macros: options.macros?.[s.id], wearTiers: characters.wearTiers });
         return [s.id, { variante: variant.id, style: variant.style, tenues: allowedOutfits(s.id, variant).map((i) => variant.outfits?.[i]?.id ?? String(i)), macros: res.macroValues, animation: { ...(options.animMacros?.[s.id] ?? {}) } }];

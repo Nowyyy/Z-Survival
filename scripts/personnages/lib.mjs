@@ -5,8 +5,6 @@ import { contrast, luminance, mix, parseColor } from '../../js/core/color.js';
 import { gameCamera, silhouetteMetrics } from '../../js/core/character-parts.js';
 import { buildSpec, createTextureData, meanColor, regionRect } from '../../js/core/texgen.js';
 import { fitDistance } from '../../js/core/viewport.js';
-import { computePose } from '../../js/core/pose.js';
-import { fromV1 } from '../../js/core/pose-v2.js';
 
 export const readJson = (path) => JSON.parse(readFileSync(path, 'utf8'));
 export const load = (name) => readJson(`data/game/${name}.json`);
@@ -81,19 +79,7 @@ export function currentColor(slot, means = atlasRegionMeans()) {
   return (part) => (means[slot.current.regions[part.region]] ?? [128, 128, 128]).map((c) => c / 255);
 }
 
-// Pose actuelle du jeu (computePose) d'un personnage actuel, traduite en angles du squelette v1.
-export function currentPose(slot, input) {
-  const c = slot.current;
-  const state = input?.state ?? (c.kind === 'player' ? 'arret' : 'zombie');
-  return fromV1(computePose({ seed: 1, time: 0.4, amount: c.kind === 'player' ? 0 : 0.7, ...input, state }), { lean: c.lean, headTilt: c.headTilt, armLift: c.armLift });
-}
-
-// Silhouette et contrastes d'un personnage actuel dans une pose du jeu.
-export function currentMetrics(slot, input, { camera = gameView(), means = atlasRegionMeans(), floors = floorMeans() } = {}) {
-  const sil = silhouetteMetrics(slot.current, currentPose(slot, input), camera, { skeletons, color: currentColor(slot, means) });
-  const rgb = sil.color.map((c) => c * 255);
-  return { ...sil, rgb, luminance: luminance(rgb), contrasts: Object.fromEntries(Object.entries(floors).map(([k, f]) => [k, contrast(rgb, f)])) };
-}
+// Lot 5e : currentPose et currentMetrics (pose de l'ancien modèle, js/core/pose.js) retirés avec l'ancien modèle.
 
 // --- Variantes v2 (lot 3j-B) ------------------------------------------------------------------------------------------------------------
 import { characterStats, checkVariant, boundsOf as kitBounds, fkPose as kitFk } from '../../js/core/character-parts.js';

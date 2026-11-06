@@ -612,13 +612,11 @@
       "sources": [
         "js/core/character-parts.js",
         "js/core/pose-v2.js",
-        "js/core/pose.js",
         "js/core/persos-variants.js",
         "js/core/texgen-persos.js",
         "js/core/blood.js",
         "js/core/variants.js",
         "js/game/character-v2.js",
-        "js/game/character.js",
         "js/game/persos-loader.js",
         "js/game/persos-params.js",
         "js/game/persos-runtime.js",

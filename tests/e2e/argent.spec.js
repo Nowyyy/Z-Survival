@@ -783,7 +783,9 @@ test.describe('interface', () => {
 test.describe('budget et performance', () => {
   test.skip(({ isMobile }) => isMobile, 'bureau');
   // Références mesurées avant le lot (partie C non commencée) : 10 zombies variés, ombres, joueur au départ / près d'une fenêtre / à l'étage.
-  const REF = { R1: [198, 13800], U1: [207, 15346] };
+  // Lot 5e : références remesurées avec la variante A (&perso=A&sang=0, lot-5c 92e4556, épaves retirées ; avant : ancien modèle, retiré) ; plafonds
+  // 27 300 triangles et 84 appels (au plus 25 805 et 72 mesurés, arrondis au millier et à la dizaine, + 5 % ; décision du propriétaire).
+  const REF = { R1: [55, 13360], U1: [64, 14916] };
   // Branche lot-3g (main récupéré) : l'atelier de la carte ajoute du rendu (mobilier, portes, feux, extérieur, brume). Le lot 4 n'ajoute rien : sans le détail de
   // l'atelier (?detail=0), la référence à quelques éléments près (+ 2 appels : nappes de brume ; + 1 : fenêtre ; triangles à 120 près) ; avec : les plafonds du projet.
   const measure = (page, mode) => page.evaluate((m) => {
@@ -804,17 +806,17 @@ test.describe('budget et performance', () => {
     return { calls: s.render.calls, triangles: s.render.triangles };
   }, mode);
   for (const [name, extra, where] of [['R1', '&nospawn=1', 'start'], ['U1', '&wave=21&floor=1&nospawn=1', 'start']]) {
-    test(`${name} : sans le détail de l'atelier, la référence (à la brume près) ; avec, 30 000 triangles et 240 appels au plus`, async ({ page }) => {
-      await open(page, `/jeu.html?test=1&seed=1&shadows=1&perso=actuel&sang=0${extra}&detail=0`);
+    test(`${name} : sans le détail de l'atelier, la référence (à la brume près) ; avec, 27 300 triangles et 84 appels au plus`, async ({ page }) => {
+      await open(page, `/jeu.html?test=1&seed=1&shadows=1&perso=A&sang=0${extra}&detail=0`);
       const off = await measure(page, where);
       expect(off.calls).toBeGreaterThanOrEqual(REF[name][0] - 1);
       expect(off.calls).toBeLessThanOrEqual(REF[name][0] + 3);
       expect(Math.abs(off.triangles - EPAVES - REF[name][1])).toBeLessThanOrEqual(120); // lot 5a : + les triangles des épaves
-      await open(page, `/jeu.html?test=1&seed=1&shadows=1&perso=actuel&sang=0${extra}`);
+      await open(page, `/jeu.html?test=1&seed=1&shadows=1&perso=A&sang=0${extra}`);
       const on = await measure(page, where);
       console.log(`BUDGET lot 4 / 3g ${name} : detail=0 ${off.calls} / ${off.triangles} ; detail=1 ${on.calls} / ${on.triangles} (référence ${REF[name].join(' / ')})`);
-      expect(on.triangles).toBeLessThanOrEqual(30000);
-      expect(on.calls).toBeLessThanOrEqual(240);
+      expect(on.triangles).toBeLessThanOrEqual(27300);
+      expect(on.calls).toBeLessThanOrEqual(84);
     });
   }
 
