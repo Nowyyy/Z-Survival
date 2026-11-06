@@ -7,14 +7,15 @@ Avant de modifier une page, lis `Docs/ref/conventions.md` (arborescence, pages, 
 ## Commandes
 - `npm ci` : installe · `npm run lint` · `npm test` (Vitest) · `npm run test:e2e` (Playwright essentiel ; `test:e2e:full` : tout)
 - `npm run vendor:three` : copie Three.js vers `vendor/three/` · `npm run build` : copie les pages et dossiers publiés dans `_site/`
-- `npm run assemble` : site complet = main (racine) + dev (`next/`) + archives `v0.N/` (branche `archive`), d'après `versions.json`.
+- `npm run assemble` : site complet (organisation : « Publication ») d'après `versions.json` de main ; `scripts/site/site-info.mjs` écrit `Recette/site-info.json`.
+- Aperçu local du menu avant publication : `npm run site -- --main HEAD --dev HEAD --assembleur dev`, puis `npm run serve:site` (`http://localhost:4180/Z-Survival/Recette/`) ; retouches rapides : `node scripts/site/e2e-site.mjs` (`http://localhost:4174/full|many|bare/Recette/`).
 - `npm run lighthouse` : mobile (index.html 90 / 95 / 95 ; jeu.html 45 / 95 / 95 ; CLS ≤ 0,1) ; échoue sous les seuils
 - Playwright : Chromium préinstallé (jamais `playwright install`, voir `Docs/ref/environnement.md`) ; en CI, Chrome du runner.
 - Tests : paliers `npm run test:avant-commit | standard | publication | complet | selection` ; `tests/selection.json` ; aucun nombre minimal de tests ; `Docs/ref/tests-paliers.md`.
 
 ## Publication
-- URL : `https://nowyyy.github.io/<dépôt>/` (cible : `Z-Survival`) ; racine = main, `/next/` = dev, `/v0.N/` = versions figées, `/dev/` = journal, `/lots/` = renvoi.
-- CI : `tests.yml` (paliers en tranches : standard à chaque push de `dev`, `lot-*` et PR, ≤ 10 min ; complet par push de `essai/complet-*` ; budget `tests/budget.json`) ; `pages.yml` (push de `main` et `dev`) : `quick` puis `deploy`, modifiable seulement si le prompt du lot l'autorise.
+- URL : `https://nowyyy.github.io/<dépôt>/` (cible : `Z-Survival`) ; `/` = « en construction » (sans lien) ; `/Recette/` = main (accueil, `jeu.html`) ; `/dev/` = dev (`index.html` → `../Recette/`, jeu : `/dev/jeu.html`) ; `/v0.N/` = versions figées ; `/next/` → `../dev/jeu.html` ; `/lots/` → `../Recette/` ; `/recette/` (minuscules) : 404 (lot 5g, `Docs/ref/site-adresses.md`).
+- CI : `tests.yml` (paliers en tranches : standard à chaque push de `dev`, `lot-*` et PR, ≤ 10 min ; complet par push de `essai/complet-*` ; budget `tests/budget.json`) ; `pages.yml` (push de `main` et `dev`) : `quick` puis `deploy` (assembleur de la branche qui déclenche), modifiable seulement si le prompt du lot l'autorise ; jamais de déclenchement manuel sur `main` avant une publication.
 - Droits minimaux, actions épinglées par SHA, ni `pull_request_target` ni secret. Source Pages : « GitHub Actions ». Chemins relatifs (site valable dans un sous-dossier).
 
 ## Git
@@ -58,14 +59,15 @@ Avant de modifier une page, lis `Docs/ref/conventions.md` (arborescence, pages, 
 - Planches : plank-layout.js (pivot au bas) ; un maillage par fenêtre, 42 triangles au plus.
 - HUD : game-ui.css, hud.js, hud-format.js ; marges 16 px, côtés sans zone (--edge-*).
 - jeu.html : apple-mobile-web-app-capable (essai) ; pas de manifeste.
-- Journal : chaque lot ajoute son entrée à data/changelog.json → lots, jamais à versions (V0.x, montrées par /dev) : le propriétaire dit quand.
+- Journal : chaque lot ajoute son entrée à data/changelog.json → lots avec version: "<cible>" (v0.N) et date ; plus de liste versions ni de page /dev/.
+- Accueil (/Recette/) : lit site-info.json (écrit par l'assembleur) ; évolutions = lots de dev dont la version n'est pas publiée ; textContent seulement, jamais innerHTML.
 - Effet VHS : #vhs (vhs.js, horloge réelle) ; interdits : mix-blend-mode, filter, backdrop-filter, post-traitement 3D ; ?vhs=0|1 ; coupé en mouvement réduit.
 - Étages : etage.json, zones.json ; floor (rdc, etage) sur zombies, fenêtres, balles, obstacles ; une couche de collisions par étage ; relevé : Docs/ref/etage.md.
 - Escaliers : tube autour de `walk.path` (stair-walk.js), hauteur = t × floorLift, aucun délai, zombies touchables dans l'escalier.
 - Fondu : #floor-fade seulement en mouvement réduit ; aucun matériau transparent ; useStair = marche auto.
 - Visibilité : userData.floor ; setElevation (le monde descend, le joueur reste à y = 0) ; laser et balles dans effectsRoot.
 - Portes : 1 manche 10, 2 manche 20, 3 manche 30 ; ?wave=N ouvre celles dont openAfterWave < N ; ?floor=N.
-- Sauvegarde : js/core/save.js pur ; js/save/ seul à toucher localStorage (zs.save.v1) ; illisible ou version future = verrouillée, jamais écrasée.
+- Sauvegarde : js/core/save.js pur ; js/save/ seul à toucher localStorage (zs.save.v1, partagée par /Recette/, /dev/ et les archives qui en ont une : même domaine) ; illisible ou version future = verrouillée, jamais écrasée.
 - Mode essai (wave, lvl, planks, map, empty, nospawn, endless, floor, money) : sauvegarde en lecture seule ; ?test=1 = mémoire (&store=local : vrai localStorage).
 - Argent : economy.js, economy.json ; 10 par kill (balle seulement), 1 par planche posée ; tout est conservé à la mort ; jamais de calcul d'argent hors de economy.js.
 - Interface : argent sous les tués, « +N » sous Pause ; solde en pause et E2-7 ; fin : Rejouer, menu (sans action) ; sauvegarde.html sans lien (technique).
