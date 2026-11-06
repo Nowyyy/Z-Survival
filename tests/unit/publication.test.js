@@ -10,7 +10,7 @@ import {
   AssembleError, SITE_TEXT_DEFAULTS, assembleSite, buildInfo, constructionPage, dirStats, messagePage, parseOptions, redirectPage, siteIcon, siteTexts, utcDate,
 } from '../../scripts/assemble.mjs';
 import { MAX_EVOLUTIONS, buildSiteInfo, cleanText, readEvolutions, readPrevious, validateSiteInfo } from '../../scripts/site/site-info.mjs';
-import { buildStamp, channelOf, fill, formatDate, homeModel, readVersions, safePath, siteRoot } from '../../js/accueil/home.js';
+import { DEV_HREF, MAX_PREVIOUS, fill, formatDate, homeModel, previousHref, readPrevious as readPreviousHome, safePath, text as textHome } from '../../js/accueil/home.js';
 import { fakeArchive, manyVersions, testVersions } from '../../scripts/site/e2e-site.mjs';
 import { findNonRelative } from '../../scripts/versions/links.mjs';
 
@@ -407,119 +407,157 @@ describe('site-info.json (scripts/site/site-info.mjs)', () => {
   });
 });
 
-describe('accueil (js/accueil/home.js)', () => {
-  const release = { channel: 'release', sha: 'fedcba9', date: '2026-11-02T10:00:00Z' };
-  const nextInfo = { channel: 'dev', sha: 'abcdef1', date: '2026-11-02T12:00:00Z' };
+describe('accueil (js/accueil/home.js) : modèle d\'après site-info.json', () => {
+  const info = buildSiteInfo({ versions: testVersions(real), dev: { present: true, sha: 'abcdef1', date: '2026-11-02T12:00:00Z' }, changelog: CHANGELOG, genere: GENERE });
 
-  it('racine publiée : « V0.5 », Jouer vers jeu.html, build de développement (lot 5g : plus de journal), versions précédentes de V0.4 à V0.1', () => {
-    const model = homeModel({ versions: real, info: release, nextInfo });
-    expect(model).toMatchObject({ channel: 'release', channelKey: 'recette', root: '', version: 'V0.5', play: 'jeu.html', banner: null });
-    expect(model.devSection).toEqual({ next: { sha: 'abcdef1', date: '2026-11-02T12:00:00.000Z' }, nextHref: 'next/' });
-    expect(model.previous.map((v) => [v.label, v.href])).toEqual([['V0.4', 'v0.4/jeu.html'], ['V0.3', 'v0.3/jeu.html'], ['V0.2', 'v0.2/jeu.html'], ['V0.1', 'v0.1/jeu.html']]);
+  it('normal : « V0.5 », Jouer vers jeu.html, dernier build vers ../dev/jeu.html (hash, date), évolutions (récente en haut), versions précédentes V0.4 → V0.1', () => {
+    const model = homeModel(info);
+    expect(model).toMatchObject({ state: 'ok', version: 'V0.5', play: 'jeu.html', dev: { present: true, href: '../dev/jeu.html', sha: 'abcdef1', date: '2026-11-02T12:00:00Z' } });
+    expect(model.evolutions.map((e) => e.title)).toEqual(['Deuxième lot de la V0.6', 'Premier lot de la V0.6']);
+    expect(model.evolutions[0]).toEqual({ title: 'Deuxième lot de la V0.6', text: 'Premier point du lot 5b.', version: 'v0.6' });
+    expect(model.previous.map((v) => [v.label, v.href])).toEqual([['V0.4', '../v0.4/jeu.html'], ['V0.3', '../v0.3/jeu.html'], ['V0.2', '../v0.2/jeu.html'], ['V0.1', null]]);
+    expect(DEV_HREF).toBe('../dev/jeu.html');
   });
 
   it('version indisponible : aucun lien, sa raison', () => {
-    const model = homeModel({ versions: testVersions(real), info: release, nextInfo });
-    expect(model.previous.at(-1)).toMatchObject({ label: 'V0.1', status: 'indisponible', href: null, note: 'Version de test indisponible (jeu de versions fictif).' });
+    expect(homeModel(info).previous.at(-1)).toEqual({ id: 'v0.1', label: 'V0.1', title: real.versions[0].title, href: null, note: 'Version de test indisponible (jeu de versions fictif).' });
   });
 
-  it('pas de build de développement (next/build-info.json sans hash ou absent) : next = null', () => {
-    expect(homeModel({ versions: real, info: release, nextInfo: { channel: 'dev', sha: '', date: '' } }).devSection.next).toBeNull();
-    expect(homeModel({ versions: real, info: release, nextInfo: null }).devSection.next).toBeNull();
+  it('dev absent : lien remplacé par « Aucun build… » (present false), aucune évolution même si le fichier en contient', () => {
+    const model = homeModel({ ...info, dev: { present: false, sha: '', date: '', entry: '../dev/jeu.html' } });
+    expect(model.dev).toEqual({ present: false, href: '../dev/jeu.html', sha: '', date: '' });
+    expect(model.evolutions).toEqual([]);
   });
 
-  it('dans next/ (channel dev) : bandeau avec hash et date, section Développement masquée, liens remontés à la racine', () => {
-    const model = homeModel({ versions: real, info: nextInfo });
-    expect(model).toMatchObject({ channel: 'dev', channelKey: 'dev', root: '../', devSection: null, banner: { sha: 'abcdef1' } });
-    expect(model.previous[0].href).toBe('../v0.4/jeu.html');
+  it('sans évolutions : liste vide (la page dit « Aucune évolution depuis la version Recette. »)', () => {
+    expect(homeModel({ ...info, evolutions: [] }).evolutions).toEqual([]);
+  });
+
+  it('une centaine de versions : toutes listées (de la plus récente à la plus ancienne), aucune perdue ; au-delà de 200, bornées', () => {
+    const hundred = manyVersions(101);
+    const model = homeModel(buildSiteInfo({ versions: hundred, dev: {}, genere: GENERE }));
+    expect(model.version).toBe('V0.101');
+    expect(model.previous).toHaveLength(100);
+    expect(model.previous[0].label).toBe('V0.100');
+    expect(model.previous.at(-1).label).toBe('V0.1');
+    expect(readPreviousHome(Array(300).fill({ id: 'v0.1', status: 'indisponible' }))).toHaveLength(MAX_PREVIOUS);
+  });
+
+  it('titres et textes hostiles : gardés comme texte (jamais du HTML), nettoyés et bornés ; liens hostiles refusés ; entrées invalides ignorées', () => {
+    const hostile = structuredClone(info);
+    hostile.evolutions = [
+      { title: '<img src=x onerror=alert(1)>', text: '<script>alert(1)</script>\u0000x', version: 'v0.6' }, { title: '', text: 'sans titre', version: 'v0.6' },
+      { title: 'Sans version', text: 'x', version: '6' }, null, 'x', { title: 'T'.repeat(400), text: 'p'.repeat(4000), version: 'v0.6' },
+    ];
+    hostile.precedentes = [
+      { id: 'v0.4', label: 'V0.4', title: '<b>gras</b>', status: 'archive', entry: 'javascript:alert(1)', note: '' },
+      { id: 'v0.3', label: 'V0.3', title: 'x', status: 'archive', entry: '../v0.2/jeu.html', note: '' },
+      { id: 'v0.2', label: 'V0.2', title: 'x', status: 'archive', entry: '../v0.2/../../evil.html', note: '' },
+      { id: 'v0.1', label: 'V0.1', title: 'x', status: 'archive', entry: '//evil.example/x', note: '' },
+      { id: '../evil', status: 'archive', entry: '../evil/x.html' }, null,
+    ];
+    hostile.recette = { ...hostile.recette, entry: 'https://evil.example/' };
+    hostile.dev = { ...hostile.dev, sha: '<b>', entry: 'https://evil.example/' };
+    const model = homeModel(hostile);
     expect(model.play).toBe('jeu.html');
+    expect(model.dev).toMatchObject({ href: '../dev/jeu.html', sha: '' });
+    expect(model.evolutions.map((e) => e.title)).toEqual(['<img src=x onerror=alert(1)>', 'T'.repeat(120)]);
+    expect(model.evolutions[0].text).toBe('<script>alert(1)</script> x');
+    expect([...model.evolutions[1].text]).toHaveLength(300);
+    expect(model.previous.map((v) => [v.label, v.title, v.href])).toEqual([['V0.4', '<b>gras</b>', null], ['V0.3', 'x', null], ['V0.2', 'x', null], ['V0.1', 'x', null]]);
+    for (const link of [model.play, model.dev.href, ...model.previous.map((v) => v.href)].filter(Boolean)) expect(link, link).not.toMatch(/^\/|^[a-z]+:|\/\//i);
   });
 
-  it('arbre source (build-info « source » ou absent) : comme la racine, sans build de développement sondé', () => {
-    for (const info of [null, { channel: 'source' }, { channel: 'x' }]) {
-      const model = homeModel({ versions: real, info, nextInfo });
-      expect(model.channel).toBe('source');
-      expect(model.devSection.next).toBeNull();
-      expect(siteRoot(info)).toBe('');
+  it('fichier absent ou invalide : état « error », liens statiques (jeu.html, ../dev/jeu.html), aucune liste ; arbre source : état « source »', () => {
+    for (const bad of [null, undefined, 'x', 42, [], {}, { schema: 2, recette: info.recette }, { schema: 1, recette: null }, { schema: 1, recette: { id: '../x' } }]) {
+      expect(homeModel(bad), JSON.stringify(bad)).toEqual({ state: 'error', version: '', play: 'jeu.html', dev: { present: true, href: '../dev/jeu.html', sha: '', date: '' }, evolutions: [], previous: [] });
     }
-    expect(channelOf({ channel: 'archive' })).toBe('archive');
+    expect(homeModel(readJson('site-info.json')).state).toBe('source');
   });
 
-  it('versions.json absent : pas de version affichée, aucune version précédente, Jouer reste jeu.html', () => {
-    expect(homeModel({ versions: null, info: release })).toMatchObject({ version: '', previous: [], play: 'jeu.html' });
-  });
-
-  it('entrées hostiles : rien d\'absolu ni de schéma dans les liens, textes nettoyés, entrées invalides ignorées', () => {
-    const hostile = structuredClone(real);
-    hostile.versions[3].entry = 'javascript:alert(1)';
-    hostile.versions[2].entry = '//evil.example/x';
-    hostile.versions[1].entry = '../../x.html';
-    hostile.versions[0].id = '../../evil';
-    hostile.versions.push({ id: 'v9.9', status: 'archive', entry: '/abs.html', title: 'x\u0000y' }, null, 'x', { id: 'v0.9', status: 'publiée' });
-    hostile.dev = { path: 'https://evil.example/' };
-    const model = homeModel({ versions: hostile, info: release, nextInfo });
-    const links = [model.play, model.devSection.nextHref, ...model.previous.map((v) => v.href)].filter(Boolean);
-    for (const link of links) {
-      expect(link, link).not.toMatch(/^\/|^[a-z]+:|\/\/|\.\./i);
-    }
-    expect(model.previous.map((v) => v.label)).toEqual(['V9.9', 'V0.4', 'V0.3', 'V0.2']);
-    expect(model.previous.every((v) => v.href === null)).toBe(true);
-    expect(readVersions(hostile).find((v) => v.id === 'v9.9').title).toBe('x y');
-    expect(model.devSection.nextHref).toBe('next/');
-  });
-
-  it('safePath, buildStamp, fill, formatDate', () => {
+  it('text, safePath, previousHref, fill, formatDate', () => {
+    expect(textHome('  a\u0007 b\n c ', 3)).toBe('a b');
     expect(safePath('jeu.html')).toBe('jeu.html');
-    expect(safePath('next/', { dir: true })).toBe('next/');
-    for (const bad of ['/x', '../x', 'a//b', 'a\\b', 'x?y', '.hidden', '', null]) expect(safePath(bad), String(bad)).toBeNull();
-    expect(buildStamp({ sha: 'ABCDEF1' })).toBeNull();
-    expect(buildStamp({ sha: 'abcdef1234', date: 'x' })).toEqual({ sha: 'abcdef1', date: '' });
+    for (const bad of ['/x', '../x', 'a//b', 'a\\b', 'x?y', '.hidden', 'dir/', '', null]) expect(safePath(bad), String(bad)).toBeNull();
+    expect(previousHref('v0.2', '../v0.2/jeu.html')).toBe('../v0.2/jeu.html');
+    expect(previousHref('v0.2', '../v0.3/jeu.html')).toBeNull();
     expect(fill('Version {version} {x}', { version: 'V0.5' })).toBe('Version V0.5 {x}');
     expect(formatDate('2026-11-02T23:30:00Z')).toBe('2 nov. 2026');
     expect(formatDate('')).toBe('');
   });
 });
 
-describe('accueil : page et textes', () => {
-  const html = readFileSync('index.html', 'utf8');
+describe('accueil : page, rendu et textes', () => {
+  const html = read('index.html');
+  const main = read('js/accueil/main.js');
   const fr = readJson('data/i18n/fr.json');
+  const en = readJson('data/i18n/en.json');
 
-  it('index.html charge l\'accueil, garde noindex, icône et polices, aucune adresse absolue', () => {
+  it('index.html charge l\'accueil, précharge site-info.json (une seule donnée), garde noindex, icône et polices, aucune adresse absolue', () => {
     expect(html).toContain('<script type="module" src="js/accueil/main.js"></script>');
     expect(html).toContain('<link rel="stylesheet" href="css/accueil.css">');
+    expect(html).toContain('<link rel="preload" href="site-info.json" as="fetch" crossorigin>');
+    expect(html).not.toMatch(/build-info\.json|versions\.json/);
     expect(html).toContain('name="robots" content="noindex"');
     expect(html).toMatch(/<link rel="icon" type="image\/png" sizes="48x48" href="data:image\/png;base64,/);
-    expect(html).toContain('<link rel="apple-touch-icon"');
     expect(findNonRelative(html, 'html')).toEqual([]);
   });
 
-  it('<noscript> : message bilingue et liens statiques vers le jeu et next/ (lot 5g : plus de lien vers le journal dev/)', () => {
-    const noscript = html.slice(html.indexOf('<noscript>'), html.indexOf('</noscript>'));
-    expect(noscript).toContain('Ce jeu a besoin de JavaScript. / This game needs JavaScript.');
-    for (const href of ['jeu.html', 'next/']) expect(noscript).toContain(`href="${href}"`);
-    expect(noscript).not.toContain('href="dev/"');
+  it('main.js : une seule lecture (site-info.json), contenu inséré par textContent, jamais innerHTML ni insertAdjacentHTML ; aucun stockage', () => {
+    expect([...main.matchAll(/fetchJson\('([^']+)'\)/g)].map((m) => m[1])).toEqual(['site-info.json']);
+    for (const file of ['js/accueil/main.js', 'js/accueil/home.js', 'index.html']) {
+      expect(read(file), file).not.toMatch(/innerHTML|outerHTML|insertAdjacentHTML|document\.write|localStorage|sessionStorage|document\.cookie/);
+    }
+    expect(main).toContain('textContent');
   });
 
-  it('textes de l\'accueil et des pages produites dans fr.json', () => {
+  it('structure : « Jouer », « Dernier build de développement » vers ../dev/jeu.html, évolutions (gauche) et versions précédentes (droite) dans des régions focusables nommées ; aucun journal', () => {
+    expect(html).toMatch(/<a class="button play" id="play" href="jeu.html"/);
+    expect(html).toMatch(/<a class="item home-dev" id="dev-link" href="\.\.\/dev\/jeu\.html">/);
+    for (const [id, title] of [['evolutions-region', 'evolutions-title'], ['previous-region', 'previous-title']]) {
+      expect(html).toMatch(new RegExp(`id="${id}" role="region" tabindex="0" aria-labelledby="${title}"`));
+    }
+    const columns = html.split('<div class="home-col">');
+    expect(columns).toHaveLength(3);
+    expect(columns[1]).toContain('evolutions-region');
+    expect(columns[2]).toContain('previous-region');
+    expect(html).not.toMatch(/journal|dev\/"|next\//i);
+  });
+
+  it('<noscript> : message bilingue et liens statiques vers jeu.html et ../dev/jeu.html (avant le lot 5g : jeu.html, next/, dev/)', () => {
+    const noscript = html.slice(html.indexOf('<noscript>'), html.indexOf('</noscript>'));
+    expect(noscript).toContain('Ce jeu a besoin de JavaScript. / This game needs JavaScript.');
+    expect([...noscript.matchAll(/href="([^"]+)"/g)].map((m) => m[1])).toEqual(['jeu.html', '../dev/jeu.html']);
+  });
+
+  it('textes de l\'accueil et des pages produites dans fr.json (et en.json) ; plus de clé du journal ni du bandeau de next/', () => {
     expect(fr['home.version']).toBe('{channel} · Version {version}');
-    expect([fr['home.channel.recette'], fr['home.channel.dev']]).toEqual(['Recette', 'Développement']); // main = Recette, dev = Développement (demande du propriétaire)
+    expect(fr['home.channel.recette']).toBe('Recette'); // main = Recette (demande du propriétaire)
     expect(fr['home.play']).toBe('Jouer');
     expect(fr['home.next']).toBe('Dernier build de développement');
     expect(fr['home.nextNone']).toBe('Aucun build de développement pour l\'instant');
-    expect(fr['home.journal']).toBeUndefined(); // lot 5g : journal des versions supprimé (avant : « Journal des versions »)
+    expect(fr['home.evolutionsTitle']).toBe('Évolutions en cours de développement');
+    expect(fr['home.evolutionsNone']).toBe('Aucune évolution depuis la version Recette.');
     expect(fr['home.previousTitle']).toBe('Versions précédentes');
-    expect(fr['home.devBanner']).toBe('Build de développement — {sha} — {date}');
+    for (const gone of ['home.journal', 'home.devBanner', 'home.channel.dev', 'site.lots.retired', 'site.next.none']) expect([fr[gone], en[gone]], gone).toEqual([undefined, undefined]);
     expect(fr['site.construction.text']).toBe('Z-Survival est en construction.'); // lot 5g (avant : site.lots.retired, page de renvoi des aperçus)
+    const homeKeys = (dict) => Object.keys(dict).filter((k) => /^(home|site)\./.test(k)).sort();
+    expect(homeKeys(en)).toEqual(homeKeys(fr));
+    for (const key of homeKeys(fr)) expect(main.includes(`'${key}'`) || html.includes(`"${key}"`) || read('scripts/assemble.mjs').includes(`'${key}'`), key).toBe(true);
   });
 
-  it('css/accueil.css : variables de tokens.css seulement, cibles de 44 px', () => {
-    const css = readFileSync('css/accueil.css', 'utf8');
+  it('css/accueil.css : variables de tokens.css seulement, cibles de 44 px, deux colonnes dès 640 px, zones qui défilent de hauteur limitée', () => {
+    const css = read('css/accueil.css');
     expect(css).not.toMatch(/#[0-9a-fA-F]{3,8}\b|\brgba?\(|\bhsla?\(/);
     expect(css).toMatch(/min-height: var\(--touch-target\)/);
+    expect(css).toMatch(/@media \(min-width: 640px\) \{\n {2}\.home-grid \{\n {4}grid-template-columns: minmax\(0, 1fr\) minmax\(0, 1fr\);/);
+    expect(css).toMatch(/\.home-scroll \{\n {2}overflow-y: auto;/);
+    expect(css).toMatch(/\.home-scroll-previous \{\n {2}max-height: /);
   });
 
-  it('build-info.json du dépôt : canal « source » (remplacé dans le site publié)', () => {
+  it('build-info.json et site-info.json du dépôt : canal « source » (remplacés dans le site publié)', () => {
     expect(readJson('build-info.json').channel).toBe('source');
+    expect(readJson('site-info.json').source).toBe(true);
   });
 });
 

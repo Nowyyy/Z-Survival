@@ -3,7 +3,7 @@
 // bare/ = Recette/ seule (ni dev, ni archive) ; many/ = 13 versions fictives (12 précédentes). Chaque site vit dans un sous-dossier (comme /Z-Survival/).
 // Dans la suite rapide (ESSENTIAL de playwright.config.js), à 667×375, 1440×900 et 375×812. Le lot 5g reprend ici les garde-fous de l'ancien dev.spec
 // (journal des versions supprimé) : axe, cibles de 44 px, console propre, aucune requête externe, aucun débordement, page en français.
-import { test, expect } from '@playwright/test';
+import { test, expect, chromium } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 
 const SITE = 'http://127.0.0.1:4174';
@@ -58,19 +58,105 @@ for (const viewport of VIEWPORTS) {
       expect(problems).toEqual([]);
     });
 
-    test('next/ mène à dev/jeu.html (qui se charge), lots/ et dev/ à Recette/ ; aucune erreur, aucune requête externe', async ({ page }) => {
-      const { problems, external } = watch(page);
-      await page.goto(`${FULL}next/`);
-      await expect(page).toHaveURL(`${FULL}dev/jeu.html`);
-      // Le jeu affiche d'abord son écran de préparation (textures et sons) : jusqu'à 30 s en rendu logiciel sous charge.
-      await expect(page.locator('canvas').first()).toBeAttached({ timeout: 30_000 });
-      await page.waitForLoadState('networkidle');
-      expect(external).toEqual([]);
-      expect(problems).toEqual([]);
+    // Le chargement du jeu par next/ est vérifié une fois, hors de cette boucle (« next/ mène à dev/jeu.html »).
+    test('lots/ et dev/ mènent à Recette/', async ({ page }) => {
       for (const path of ['lots/', 'dev/']) {
         await page.goto(`${FULL}${path}`);
         await expect(page, path).toHaveURL(`${FULL}Recette/`);
       }
+    });
+
+    test('Recette/ : étiquette « Recette · Version V0.5 », titre, « Jouer » vers jeu.html, qui se charge', async ({ page }) => {
+      await page.goto(`${FULL}Recette/`);
+      await expect(page.locator('#version')).toHaveText('Recette · Version V0.5');
+      await expect(page.getByRole('heading', { level: 1 })).toHaveText('Z-Survival');
+      await expect(page.locator('#site-notice')).toBeHidden();
+      const play = page.getByRole('link', { name: 'Jouer' });
+      await expect(play).toBeInViewport();
+      await expect(play).toHaveAttribute('href', 'jeu.html');
+      // Adresse résolue ; le chargement du jeu par ce lien est vérifié une fois, hors de la boucle (« Jouer » se charge).
+      expect(await play.evaluate((a) => a.href)).toBe(`${FULL}Recette/jeu.html`);
+    });
+
+    test('« Dernier build de développement » (hash court et date) mène à dev/jeu.html, qui se charge ; aucun lien « Journal »', async ({ page }) => {
+      await page.goto(`${FULL}Recette/`);
+      await expect(page.getByRole('heading', { name: 'Développement', exact: true })).toBeVisible();
+      const dev = page.getByRole('link', { name: /Dernier build de développement/ });
+      await expect(dev).toHaveAttribute('href', '../dev/jeu.html');
+      await expect(dev).toContainText('abcdef1 · 2 nov. 2026');
+      await expect(page.getByRole('link', { name: /journal/i })).toHaveCount(0);
+      await expect(page.locator('main')).not.toContainText(/journal des versions/i);
+      expect(await dev.evaluate((a) => a.href)).toBe(`${FULL}dev/jeu.html`);
+    });
+
+    test('évolutions (gauche) et versions précédentes (droite) : régions focusables nommées ; V0.4 → V0.2 en liens, V0.1 indisponible non cliquable', async ({ page }) => {
+      await page.goto(`${FULL}Recette/`);
+      const evolutions = page.getByRole('region', { name: 'Évolutions en cours de développement' });
+      const previous = page.getByRole('region', { name: 'Versions précédentes' });
+      for (const region of [evolutions, previous]) await expect(region).toHaveAttribute('tabindex', '0');
+      await expect(evolutions.locator('.evolution-title').first()).toHaveText('Nouvelle organisation du site et accueil refait');
+      const links = previous.locator('a');
+      expect(await links.evaluateAll((els) => els.map((e) => e.getAttribute('href')))).toEqual(['../v0.4/jeu.html', '../v0.3/jeu.html', '../v0.2/jeu.html']);
+      const off = previous.locator('.is-off');
+      await expect(off).toHaveCount(1);
+      await expect(off).toContainText('V0.1 : indisponible');
+      await expect(off).toContainText('Version de test indisponible');
+      expect(await off.evaluate((el) => el.tagName)).toBe('P');
+      const [left, right] = await Promise.all([evolutions.boundingBox(), previous.boundingBox()]);
+      if (viewport.width >= 640) expect(right.x).toBeGreaterThan(left.x + left.width - 1);
+      else expect(right.y).toBeGreaterThan(left.y + left.height - 1);
+      await links.first().click();
+      await expect(page).toHaveURL(`${FULL}v0.4/jeu.html`);
+      await expect(page.locator('#loaded')).toHaveText('module chargé');
+    });
+
+    test('12 versions précédentes (many/) : la liste défile dans sa zone, la page ne s\'allonge pas ; « Aucune évolution depuis la version Recette. »', async ({ page }) => {
+      await page.goto(`${FULL}Recette/`);
+      await expect(page.locator('#previous-list li')).toHaveCount(4);
+      const fullHeight = await page.evaluate(() => document.documentElement.scrollHeight);
+      await page.goto(`${MANY}Recette/`);
+      await expect(page.locator('#previous-list li')).toHaveCount(12);
+      const region = page.getByRole('region', { name: 'Versions précédentes' });
+      const [scroll, client] = await region.evaluate((el) => [el.scrollHeight, el.clientHeight]);
+      expect(scroll).toBeGreaterThan(client);
+      expect(await page.evaluate(() => document.documentElement.scrollHeight)).toBeLessThanOrEqual(fullHeight);
+      expect(await page.evaluate(() => document.documentElement.scrollHeight)).toBeLessThanOrEqual(viewport.height === 375 ? 375 * 1.5 : Math.max(viewport.height, 960));
+      await expect(page.locator('#evolutions-none')).toHaveText('Aucune évolution depuis la version Recette.');
+      await region.focus();
+      await page.keyboard.press('End');
+      await expect.poll(() => region.evaluate((el) => el.scrollTop)).toBeGreaterThan(0);
+    });
+
+    test('Recette/ : axe sans violation (full, bare, many), cibles de 44 px, console propre, aucune requête externe ni stockage, aucun débordement', async ({ page, context }) => {
+      const { problems, external } = watch(page);
+      for (const url of [`${FULL}Recette/`, `${BARE}Recette/`, `${MANY}Recette/`]) {
+        await page.goto(url);
+        await page.waitForLoadState('networkidle');
+        await expect(page.locator('#app'), url).toBeVisible();
+        expect((await new AxeBuilder({ page }).analyze()).violations, url).toEqual([]);
+        for (const [label, h] of await linkHeights(page)) expect(h, `${url} ${label}`).toBeGreaterThanOrEqual(44);
+        expect(await overflow(page), url).toBeLessThanOrEqual(0);
+        expect(await page.evaluate(() => [localStorage.length, sessionStorage.length]), url).toEqual([0, 0]);
+        const sizes = await page.locator('#app :is(p, li, a, span, h2)').evaluateAll((els) => els.filter((e) => e.offsetParent && e.textContent.trim()).map((e) => parseFloat(getComputedStyle(e).fontSize)));
+        expect(Math.min(...sizes), url).toBeGreaterThanOrEqual(14);
+      }
+      expect(await context.cookies()).toEqual([]);
+      expect(external).toEqual([]);
+      expect(problems).toEqual([]);
+    });
+
+    test('Recette/ : CLS ≤ 0,1 (polices comprises)', async ({ page }) => {
+      await page.addInitScript(() => {
+        window.__cls = 0;
+        new PerformanceObserver((list) => {
+          for (const e of list.getEntries()) if (!e.hadRecentInput) window.__cls += e.value;
+        }).observe({ type: 'layout-shift', buffered: true });
+      });
+      await page.goto(`${FULL}Recette/`);
+      await page.waitForLoadState('networkidle');
+      await expect(page.locator('#app')).toBeVisible();
+      await expect.poll(() => page.evaluate(() => document.fonts.status)).toBe('loaded');
+      expect(await page.evaluate(() => window.__cls)).toBeLessThanOrEqual(0.1);
     });
 
     test('pages de redirection et page « sans build » : lien visible de 44 px, axe sans violation, noindex, aucun débordement', async ({ page }) => {
@@ -127,13 +213,29 @@ test('archives v0.2 à v0.4 : chaque entrée se charge sans ressource manquante,
   expect(await context.cookies()).toEqual([]);
 });
 
-test('Recette/jeu.html (« Jouer ») se charge sans erreur ni requête externe', async ({ page }) => {
+// Le jeu affiche d'abord son écran de préparation (textures et sons) : jusqu'à 30 s en rendu logiciel sous charge.
+test('« Jouer » de Recette/ ouvre Recette/jeu.html, qui se charge sans erreur ni requête externe', async ({ page }) => {
   const { problems, external } = watch(page);
-  await page.goto(`${FULL}Recette/jeu.html`);
+  await page.goto(`${FULL}Recette/`);
+  await page.getByRole('link', { name: 'Jouer' }).click();
+  await expect(page).toHaveURL(`${FULL}Recette/jeu.html`);
   await expect(page.locator('canvas').first()).toBeAttached({ timeout: 30_000 });
   await page.waitForLoadState('networkidle');
   expect(external).toEqual([]);
   expect(problems).toEqual([]);
+});
+
+test('next/ mène à dev/jeu.html, et « Dernier build de développement » aussi : le jeu de dev se charge sans erreur ni requête externe', async ({ page }) => {
+  const { problems, external } = watch(page);
+  await page.goto(`${FULL}next/`);
+  await expect(page).toHaveURL(`${FULL}dev/jeu.html`);
+  await expect(page.locator('canvas').first()).toBeAttached({ timeout: 30_000 });
+  await page.waitForLoadState('networkidle');
+  expect(external).toEqual([]);
+  expect(problems).toEqual([]);
+  await page.goto(`${FULL}Recette/`);
+  await page.getByRole('link', { name: /Dernier build de développement/ }).click();
+  await expect(page).toHaveURL(`${FULL}dev/jeu.html`);
 });
 
 test('racine : page autonome — une seule requête (le document), icône en ligne, ni feuille de style, ni script, ni image ; titre « Z-Survival · en construction »', async ({ page }) => {
@@ -175,4 +277,63 @@ test('many/ : 12 versions précédentes publiées (v0.12 à v0.1), chaque archiv
   expect(info.precedentes.map((p) => p.entry)).toEqual(Array.from({ length: 12 }, (_, i) => `../v0.${12 - i}/jeu.html`));
   expect(info.evolutions).toEqual([]);
   for (const p of info.precedentes) expect((await request.get(new URL(p.entry, `${MANY}Recette/`).href)).status(), p.id).toBe(200);
+});
+
+test('sans build de développement (bare/) : « Aucun build de développement pour l\'instant » en texte non cliquable', async ({ page }) => {
+  await page.goto(`${BARE}Recette/`);
+  await expect(page.locator('#dev-none')).toHaveText('Aucun build de développement pour l\'instant');
+  await expect(page.locator('#dev-none')).toBeVisible();
+  await expect(page.getByRole('link', { name: /Dernier build de développement/ })).toBeHidden();
+  await expect(page.locator('#evolutions-none')).toBeVisible();
+});
+
+test('site-info.json invalide : message sobre, liens statiques (jeu.html, ../dev/jeu.html), listes masquées, console vide ; absent : aucune erreur de page', async ({ page }) => {
+  const { problems, external } = watch(page);
+  await page.route(`${FULL}Recette/site-info.json`, (route) => route.fulfill({ status: 200, contentType: 'application/json', body: '{ invalide' }));
+  await page.goto(`${FULL}Recette/`);
+  await expect(page.locator('#site-notice')).toHaveText('Informations du site indisponibles : les liens directs restent utilisables.');
+  await expect(page.locator('#version')).toHaveText('Recette · version inconnue');
+  await expect(page.getByRole('link', { name: 'Jouer' })).toHaveAttribute('href', 'jeu.html');
+  await expect(page.getByRole('link', { name: 'Dernier build de développement' })).toHaveAttribute('href', '../dev/jeu.html');
+  await expect(page.locator('#evolutions-section')).toBeHidden();
+  await expect(page.locator('#previous-section')).toBeHidden();
+  await page.waitForLoadState('networkidle');
+  expect(problems).toEqual([]);
+  expect(external).toEqual([]);
+  // Fichier absent (404) : seule la requête en échec est signalée par le navigateur ; aucune erreur de script.
+  const errors = [];
+  page.on('pageerror', (e) => errors.push(e.message));
+  await page.unrouteAll();
+  await page.route(`${FULL}Recette/site-info.json`, (route) => route.fulfill({ status: 404, body: '' }));
+  await page.goto(`${FULL}Recette/`);
+  await expect(page.locator('#site-notice')).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
+test('clavier : Tab atteint « Jouer », le dernier build, la région des évolutions et celle des versions précédentes, avec un focus visible', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto(`${FULL}Recette/`);
+  await expect(page.locator('#app')).toBeVisible();
+  const reached = [];
+  for (let i = 0; i < 6; i += 1) {
+    await page.keyboard.press('Tab');
+    reached.push(await page.evaluate(() => [document.activeElement.id, getComputedStyle(document.activeElement).outlineStyle]));
+  }
+  const ids = reached.map(([id]) => id);
+  for (const id of ['play', 'dev-link', 'evolutions-region', 'previous-region']) expect(ids, id).toContain(id);
+  for (const [id, outline] of reached.filter(([id]) => id)) expect(outline, id).not.toBe('none');
+});
+
+test('sans JavaScript : message bilingue et liens statiques vers jeu.html et ../dev/jeu.html, de 44 px', async () => {
+  const browser = await chromium.launch({ channel: process.env.CI ? 'chrome' : undefined, args: ['--blink-settings=scriptEnabled=false'] });
+  const page = await browser.newPage({ locale: 'fr-FR', viewport: { width: 667, height: 375 } });
+  await page.goto(`${FULL}Recette/`);
+  await expect(page.locator('#app')).toBeHidden();
+  // Le moteur de texte de Playwright ignore <noscript> : lecture directe du rendu (innerText) et des liens.
+  const text = (await page.evaluate(() => document.body.innerText)).trim();
+  expect(text.split('\n').map((l) => l.trim()).filter(Boolean)).toEqual(['Ce jeu a besoin de JavaScript. / This game needs JavaScript.', 'Jouer / Play', 'Dernier build de développement / Latest development build']);
+  const links = await page.evaluate(() => [...document.querySelectorAll('a')].filter((a) => a.offsetParent).map((a) => [a.getAttribute('href'), Math.round(a.getBoundingClientRect().height)]));
+  expect(links.map(([href]) => href)).toEqual(['jeu.html', '../dev/jeu.html']);
+  for (const [href, height] of links) expect(height, href).toBeGreaterThanOrEqual(44);
+  await browser.close();
 });

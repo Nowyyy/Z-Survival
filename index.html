@@ -14,8 +14,7 @@
   <link rel="modulepreload" href="js/splat.js">
   <link rel="modulepreload" href="js/page.js">
   <link rel="modulepreload" href="js/accueil/home.js">
-  <link rel="preload" href="build-info.json" as="fetch" crossorigin>
-  <link rel="preload" href="versions.json" as="fetch" crossorigin>
+  <link rel="preload" href="site-info.json" as="fetch" crossorigin>
   <link rel="preload" href="data/i18n/fr.json" as="fetch" crossorigin>
   <link rel="stylesheet" href="css/tokens.css">
   <link rel="stylesheet" href="css/base.css">
@@ -28,7 +27,7 @@
       <p>Ce jeu a besoin de JavaScript. / This game needs JavaScript.</p>
       <ul class="noscript-links">
         <li><a href="jeu.html">Jouer / Play</a></li>
-        <li><a href="next/">Dernier build de développement / Latest development build</a></li>
+        <li><a href="../dev/jeu.html">Dernier build de développement / Latest development build</a></li>
       </ul>
     </div>
   </noscript>
@@ -47,28 +46,38 @@
     <div class="top">
       <p class="crumb zone corner" id="version"></p>
     </div>
-    <div class="center">
-      <h1 class="title" data-i18n="app.title"></h1>
-      <p class="dev-banner" id="dev-banner" role="status" hidden></p>
-      <p><a class="button play" id="play" href="jeu.html" data-i18n="home.play"></a></p>
-      <section class="home-section" id="dev-section" aria-labelledby="dev-title">
-        <h2 class="home-heading" id="dev-title" data-i18n="home.devTitle"></h2>
-        <ul class="menu">
-          <li>
-            <a class="item" id="next-link" href="next/" hidden>
-              <span class="brush" aria-hidden="true"></span>
-              <svg class="claw" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 3l4 18M10 3l4 18M16 3l4 18" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" fill="none"/></svg>
-              <span class="item-label" data-i18n="home.next"></span>
-              <span class="meta"></span>
-            </a>
-            <p class="home-note" id="next-none" data-i18n="home.nextNone"></p>
-          </li>
-        </ul>
-      </section>
-      <section class="home-section" id="previous-section" aria-labelledby="previous-title" hidden>
-        <h2 class="home-heading" id="previous-title" data-i18n="home.previousTitle"></h2>
-        <ul class="menu" id="previous-list"></ul>
-      </section>
+    <div class="home-grid">
+      <div class="home-col">
+        <h1 class="title" data-i18n="app.title"></h1>
+        <p class="home-play"><a class="button play" id="play" href="jeu.html" data-i18n="home.play"></a></p>
+        <p class="home-note" id="site-notice" role="status" hidden></p>
+        <section class="home-section" id="dev-section" aria-labelledby="dev-title">
+          <h2 class="home-heading" id="dev-title" data-i18n="home.devTitle"></h2>
+          <a class="item home-dev" id="dev-link" href="../dev/jeu.html">
+            <span class="brush" aria-hidden="true"></span>
+            <svg class="claw" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 3l4 18M10 3l4 18M16 3l4 18" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" fill="none"/></svg>
+            <span class="item-label" data-i18n="home.next"></span>
+            <span class="meta" hidden></span>
+          </a>
+          <p class="home-note" id="dev-none" data-i18n="home.nextNone" hidden></p>
+        </section>
+        <section class="home-section" id="evolutions-section">
+          <h2 class="home-heading" id="evolutions-title" data-i18n="home.evolutionsTitle"></h2>
+          <div class="home-scroll home-scroll-evolutions" id="evolutions-region" role="region" tabindex="0" aria-labelledby="evolutions-title">
+            <ul class="home-list" id="evolutions-list"></ul>
+            <p class="home-note" id="evolutions-none" data-i18n="home.evolutionsNone" hidden></p>
+          </div>
+        </section>
+      </div>
+      <div class="home-col">
+        <section class="home-section" id="previous-section">
+          <h2 class="home-heading" id="previous-title" data-i18n="home.previousTitle"></h2>
+          <div class="home-scroll home-scroll-previous" id="previous-region" role="region" tabindex="0" aria-labelledby="previous-title">
+            <ul class="menu home-list" id="previous-list"></ul>
+            <p class="home-note" id="previous-none" data-i18n="home.previousNone" hidden></p>
+          </div>
+        </section>
+      </div>
     </div>
     <div class="foot">
       <p class="zone" data-i18n="app.provisional"></p>

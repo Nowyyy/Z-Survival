@@ -52,9 +52,9 @@
    "chargements": 30
   },
   "tests/e2e/publication.spec.js": {
-   "tests": 14,
-   "assertions": 63,
-   "chargements": 17
+   "tests": 21,
+   "assertions": 116,
+   "chargements": 21
   },
   "tests/e2e/sauvegarde.spec.js": {
    "tests": 23,

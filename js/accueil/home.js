@@ -1,73 +1,63 @@
-// Accueil du site (lot 4c) : logique pure, sans DOM, réseau ni horloge. Construit le modèle de la page d'après versions.json et build-info.json.
-// Contextes : « release » (racine du site), « dev » (next/ : bandeau, section Développement masquée, racine du site = ../),
-// « source » ou inconnu (arbre du dépôt servi en local) : comme la racine, sans build de développement.
-// Libellés affichés : main (racine, « release », et l'arbre source) = « Recette » ; dev (next/) = « Développement ». La production viendra avec un serveur.
+// Accueil de la Recette (lot 4c ; refait au lot 5g) : logique pure, sans DOM, réseau ni horloge. Construit le modèle de la page d'après site-info.json
+// (écrit par l'assembleur dans Recette/ : scripts/site/site-info.mjs). Les données sont revérifiées ici : un champ invalide est ignoré, jamais affiché
+// tel quel ; les textes sont insérés par textContent (main.js), jamais comme du HTML ; les adresses sont toutes relatives et construites ici.
+// États : « ok » (site assemblé), « source » (site-info.json de l'arbre du dépôt servi en local), « error » (fichier absent ou invalide) ;
+// dans les deux derniers cas, la page garde ses liens statiques : « Jouer » (jeu.html) et « Dernier build de développement » (../dev/jeu.html).
+export const DEV_HREF = '../dev/jeu.html';
+export const MAX_EVOLUTIONS = 20;
+export const MAX_PREVIOUS = 200;
 const ID_RE = /^v(0|[1-9]\d{0,2})\.(0|[1-9]\d{0,2})$/;
-const SHA_RE = /^[0-9a-f]{7,40}$/;
-const STATUSES = ['actuelle', 'archive', 'indisponible'];
+const VERSION_RE = /^v\d+\.\d+$/;
+const SHA_RE = /^[0-9a-f]{7}$/;
 const isObject = (value) => value !== null && typeof value === 'object' && !Array.isArray(value);
-const text = (value, max = 300) => (typeof value === 'string' ? [...value].map((c) => (c.charCodeAt(0) < 32 || c.charCodeAt(0) === 127 ? ' ' : c)).join('').trim().slice(0, max) : '');
 
-// Chemin relatif sûr (même règle que scripts/versions/schema.mjs) : lettres, chiffres, « . _ - / », sans « .. », « // », « / » initial ni schéma.
-export function safePath(path, { dir = false } = {}) {
+// Texte d'une donnée : chaîne seulement, caractères de contrôle remplacés, espaces resserrées, borné.
+export function text(value, max = 300) {
+  if (typeof value !== 'string') return '';
+  const flat = [...value].map((c) => (c.charCodeAt(0) < 32 || c.charCodeAt(0) === 127 ? ' ' : c)).join('').replace(/\s+/g, ' ').trim();
+  return [...flat].slice(0, max).join('');
+}
+
+// Chemin relatif sûr : lettres, chiffres, « . _ - / », sans « .. », « // », « / » initial ni schéma.
+export function safePath(path) {
   if (typeof path !== 'string' || path.length === 0 || path.length > 200 || !/^[A-Za-z0-9._/-]+$/.test(path)) return null;
-  if (path.startsWith('/') || path.startsWith('.') || path.includes('//') || path.split('/').some((part) => part === '..' || part === '.')) return null;
-  if (path.endsWith('/') !== dir) return null;
+  if (path.startsWith('/') || path.startsWith('.') || path.includes('//') || path.endsWith('/') || path.split('/').some((part) => part === '..' || part === '.')) return null;
   return path;
 }
 
-export function labelOf(id) {
-  return typeof id === 'string' && ID_RE.test(id) ? `V${id.slice(1)}` : '';
+// Entrée d'une version précédente : exactement « ../v0.N/<chemin sûr> » pour son propre identifiant.
+export function previousHref(id, entry) {
+  const prefix = `../${id}/`;
+  return typeof entry === 'string' && entry.startsWith(prefix) && safePath(entry.slice(prefix.length)) ? entry : null;
 }
 
-// Canal du dossier courant, lu dans son build-info.json.
-export function channelOf(info) {
-  return isObject(info) && ['release', 'dev', 'archive'].includes(info.channel) ? info.channel : 'source';
+export function readEvolutions(list) {
+  return (Array.isArray(list) ? list : []).filter(isObject).map((e) => ({ title: text(e.title, 120), text: text(e.text, 300), version: VERSION_RE.test(e.version ?? '') ? e.version : '' }))
+    .filter((e) => e.title && e.text && e.version).slice(0, MAX_EVOLUTIONS);
 }
 
-// Racine du site depuis le dossier courant : next/ est un sous-dossier de la racine.
-export function siteRoot(info) {
-  return channelOf(info) === 'dev' ? '../' : '';
+export function readPrevious(list) {
+  return (Array.isArray(list) ? list : []).filter((p) => isObject(p) && ID_RE.test(p.id ?? '')).slice(0, MAX_PREVIOUS).map((p) => {
+    const href = p.status === 'archive' ? previousHref(p.id, p.entry) : null;
+    return { id: p.id, label: `V${p.id.slice(1)}`, title: text(p.title, 120), href, note: href ? '' : text(p.note, 300) };
+  });
 }
 
-// Hash court et date d'un build-info.json, ou null s'il ne décrit pas un vrai build.
-export function buildStamp(info) {
-  if (!isObject(info) || !SHA_RE.test(info.sha ?? '')) return null;
-  const time = typeof info.date === 'string' ? Date.parse(info.date) : NaN;
-  return { sha: info.sha.slice(0, 7), date: Number.isFinite(time) ? new Date(time).toISOString() : '' };
-}
-
-// Versions lisibles de versions.json (les entrées invalides sont ignorées, jamais affichées).
-export function readVersions(data) {
-  const list = isObject(data) && Array.isArray(data.versions) ? data.versions : [];
-  return list.filter((v) => isObject(v) && ID_RE.test(v.id ?? '') && STATUSES.includes(v.status)).map((v) => ({
-    id: v.id, label: labelOf(v.id), title: text(v.title, 120), date: text(v.date, 10), status: v.status, entry: safePath(v.entry), note: text(v.note),
-  }));
-}
-
-// Modèle de la page. Les adresses sont toutes relatives au dossier courant.
-export function homeModel({ versions = null, info = null, nextInfo = null } = {}) {
-  const channel = channelOf(info);
-  const root = siteRoot(info);
-  const list = readVersions(versions);
-  const latestId = isObject(versions) && typeof versions.latest === 'string' ? versions.latest : '';
-  const current = list.find((v) => v.id === latestId && v.status === 'actuelle') ?? null;
-  const devPath = safePath(versions?.dev?.path, { dir: true }) ?? 'next/';
-  const previous = list.filter((v) => v.status !== 'actuelle').reverse().map((v) => ({
-    id: v.id, label: v.label, title: v.title, date: v.date, status: v.status === 'archive' && v.entry ? 'archive' : 'indisponible',
-    href: v.status === 'archive' && v.entry ? `${root}${v.id}/${v.entry}` : null,
-    note: v.status === 'archive' && v.entry ? '' : v.note,
-  }));
+// Modèle de la page.
+export function homeModel(info) {
+  const base = { play: 'jeu.html', dev: { present: true, href: DEV_HREF, sha: '', date: '' }, evolutions: [], previous: [], version: '' };
+  if (isObject(info) && info.schema === 1 && info.source === true) return { ...base, state: 'source' };
+  const recette = isObject(info) && info.schema === 1 && isObject(info.recette) && ID_RE.test(info.recette.id ?? '') ? info.recette : null;
+  if (!recette) return { ...base, state: 'error' };
+  const dev = isObject(info.dev) ? info.dev : {};
+  const present = dev.present === true;
   return {
-    channel,
-    channelKey: channel === 'dev' ? 'dev' : 'recette',
-    root,
-    version: current?.label ?? '',
-    play: current?.entry ?? 'jeu.html',
-    banner: channel === 'dev' ? buildStamp(info) ?? { sha: '', date: '' } : null,
-    devSection: channel === 'dev' ? null : { next: channel === 'release' ? buildStamp(nextInfo) : null, nextHref: `${root}${devPath}` },
-    previous,
-    devPath,
+    state: 'ok',
+    version: `V${recette.id.slice(1)}`,
+    play: safePath(recette.entry) ?? 'jeu.html',
+    dev: { present, href: DEV_HREF, sha: present && SHA_RE.test(dev.sha ?? '') ? dev.sha : '', date: present ? text(dev.date, 30) : '' },
+    evolutions: present ? readEvolutions(info.evolutions) : [],
+    previous: readPrevious(info.precedentes),
   };
 }
 

@@ -1,5 +1,6 @@
-// Accueil du site (lot 4c) : version actuelle, « Jouer », build de développement, journal et versions précédentes.
-// Lit build-info.json et versions.json (dossier courant) et next/build-info.json (racine publiée seulement). Requêtes de même origine seulement.
+// Accueil de la Recette (lot 4c ; refait au lot 5g) : étiquette de la version, « Jouer », dernier build de développement, évolutions en cours de
+// développement (colonne de gauche) et versions précédentes (colonne de droite). Une seule lecture : site-info.json, dans le dossier courant
+// (Recette/ du site assemblé). Contenu inséré par textContent seulement ; aucune requête externe, aucun stockage.
 import { startPage } from '../page.js';
 import { fill, formatDate, homeModel } from './home.js';
 
@@ -12,64 +13,60 @@ async function fetchJson(url) {
   }
 }
 
-// build-info.json et versions.json sont dans le dossier courant (racine, next/ ou dépôt) : lus en parallèle, préchargés par index.html.
-const [info, versions] = await Promise.all([fetchJson('build-info.json'), fetchJson('versions.json')]);
-const probe = homeModel({ versions, info });
-// Le build de développement n'est sondé qu'à la racine publiée (next/build-info.json y existe toujours, même sans build : hash vide).
-const nextInfo = probe.channel === 'release' ? await fetchJson(`${probe.devPath}build-info.json`) : null;
-const model = homeModel({ versions, info, nextInfo });
-
+const model = homeModel(await fetchJson('site-info.json'));
 const $ = (id) => document.getElementById(id);
 
-function item(label, meta, href) {
+function node(tag, className, content) {
+  const el = document.createElement(tag);
+  if (className) el.className = className;
+  if (content) el.textContent = content;
+  return el;
+}
+
+// Version précédente : lien vers son entrée (../v0.N/…), ou texte non cliquable avec sa raison si elle est indisponible.
+function previousItem(v, t) {
   const li = document.createElement('li');
-  const node = document.createElement(href ? 'a' : 'p');
-  node.className = href ? 'item' : 'item is-off';
-  if (href) node.href = href;
-  const brush = document.createElement('span');
-  brush.className = 'brush';
+  const item = node(v.href ? 'a' : 'p', v.href ? 'item' : 'item is-off');
+  if (v.href) item.href = v.href;
+  const brush = node('span', 'brush');
   brush.setAttribute('aria-hidden', 'true');
-  const name = document.createElement('span');
-  name.className = 'item-label';
-  name.textContent = label;
-  node.append(brush, name);
-  if (meta) {
-    const small = document.createElement('span');
-    small.className = 'meta';
-    small.textContent = meta;
-    node.append(small);
-  }
-  li.append(node);
+  item.append(brush, node('span', 'item-label', v.href ? v.label : fill(t('home.unavailable'), { version: v.label })));
+  const meta = v.href ? v.title : [v.title, v.note || t('home.unavailableNote')].filter(Boolean).join(' — ');
+  if (meta) item.append(node('span', 'meta', meta));
+  li.append(item);
+  return li;
+}
+
+function evolutionItem(e) {
+  const li = node('li', 'evolution');
+  li.append(node('p', 'evolution-title', e.title), node('p', 'evolution-text', e.text));
   return li;
 }
 
 function render({ t, lang }) {
-  $('version').textContent = model.version ? fill(t('home.version'), { channel: t(`home.channel.${model.channelKey}`), version: model.version }) : t('home.versionUnknown');
+  $('version').textContent = model.state === 'ok' ? fill(t('home.version'), { channel: t('home.channel.recette'), version: model.version })
+    : t(model.state === 'source' ? 'home.versionSource' : 'home.versionUnknown');
   $('play').href = model.play;
 
-  const banner = $('dev-banner');
-  banner.hidden = !model.banner;
-  if (model.banner) banner.textContent = fill(t('home.devBanner'), { sha: model.banner.sha || '—', date: formatDate(model.banner.date, lang) || '—' });
+  const notice = $('site-notice');
+  notice.hidden = model.state === 'ok';
+  if (model.state !== 'ok') notice.textContent = t(model.state === 'source' ? 'home.siteSource' : 'home.siteError');
 
-  const devSection = $('dev-section');
-  devSection.hidden = !model.devSection;
-  if (model.devSection) {
-    const nextLink = $('next-link');
-    const nextNone = $('next-none');
-    const next = model.devSection.next;
-    nextLink.hidden = !next;
-    nextNone.hidden = Boolean(next);
-    if (next) {
-      nextLink.href = model.devSection.nextHref;
-      nextLink.querySelector('.meta').textContent = fill(t('home.nextMeta'), { sha: next.sha, date: formatDate(next.date, lang) });
-    }
-  }
+  // Développement : lien vers ../dev/jeu.html (hash court et date si connus) ; sans build de dev, texte non cliquable.
+  const devLink = $('dev-link');
+  devLink.hidden = !model.dev.present;
+  $('dev-none').hidden = model.dev.present;
+  devLink.href = model.dev.href;
+  const meta = model.dev.sha ? fill(t('home.nextMeta'), { sha: model.dev.sha, date: formatDate(model.dev.date, lang) || '—' }) : '';
+  devLink.querySelector('.meta').textContent = meta;
+  devLink.querySelector('.meta').hidden = !meta;
 
-  const previous = $('previous-section');
-  previous.hidden = model.previous.length === 0;
-  $('previous-list').replaceChildren(...model.previous.map((v) => (v.href
-    ? item(v.label, v.title, v.href)
-    : item(fill(t('home.unavailable'), { version: v.label }), v.note || t('home.unavailableNote'), null))));
+  // Listes : seulement pour un site assemblé (sinon, les liens statiques suffisent).
+  for (const id of ['evolutions-section', 'previous-section']) $(id).hidden = model.state !== 'ok';
+  $('evolutions-list').replaceChildren(...model.evolutions.map(evolutionItem));
+  $('evolutions-none').hidden = model.evolutions.length > 0;
+  $('previous-list').replaceChildren(...model.previous.map((v) => previousItem(v, t)));
+  $('previous-none').hidden = model.previous.length > 0;
 }
 
 // Accueil : français seulement (la langue se réglera dans le jeu).
