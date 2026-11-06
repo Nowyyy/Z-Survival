@@ -27,6 +27,9 @@
   "site.dev.title": "Z-Survival · development build",
   "site.dev.none": "No development build yet",
   "site.dev.back": "Back to the staging home page",
+  "site.notFound.title": "Z-Survival · page not found",
+  "site.notFound.text": "Page not found.",
+  "site.notFound.noscript": "Without JavaScript, an address written /recette/ in lowercase is not corrected: write /Recette/ with a capital R.",
   "lang.toggle": "Français",
   "lang.toggleLabel": "Passer en français"
 }

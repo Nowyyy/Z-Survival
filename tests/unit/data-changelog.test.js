@@ -34,13 +34,14 @@ describe('data/changelog.json', () => {
     for (const f of readdirSync('Docs/lots').filter((n) => n.endsWith('.md'))) expect(lots.map((e) => e.name), f).toContain(f.replace('.md', ''));
   });
 
-  // Lot 5g : lot-5g ajouté en dernier, après lot-5e ; avant (lot 5e) : lot-5e en dernier, après lot-5d.
-  it('le fichier est dans l\'ordre chronologique : lot-0 en premier, lot-5g en dernier (lot 5g : après lot-5e, lot-5d, lot-5c, lot-5b, lot-5a, lot-4g, lot-4f, lot-4e, lot-4c et lot-4b)', () => {
+  // Lot 5h : lot-5h ajouté en dernier, après lot-5g ; avant (lot 5g) : lot-5g en dernier, après lot-5e (lot 5e : lot-5e en dernier, après lot-5d).
+  it('le fichier est dans l\'ordre chronologique : lot-0 en premier, lot-5h en dernier (lot 5h : après lot-5g, lot-5e, lot-5d, lot-5c, lot-5b, lot-5a, lot-4g, lot-4f, lot-4e, lot-4c et lot-4b)', () => {
     expect(lots[0].name).toBe('lot-0');
-    expect(lots.at(-1).name).toBe('lot-5g');
-    expect(lots.at(-2).name).toBe('lot-5e');
-    expect(lots.at(-3).name).toBe('lot-5d');
-    const before = lots.slice(0, -3).filter((e) => e.name !== 'lot-5c');
+    expect(lots.at(-1).name).toBe('lot-5h');
+    expect(lots.at(-2).name).toBe('lot-5g');
+    expect(lots.at(-3).name).toBe('lot-5e');
+    expect(lots.at(-4).name).toBe('lot-5d');
+    const before = lots.slice(0, -4).filter((e) => e.name !== 'lot-5c');
     expect(before.at(-1).name).toBe('lot-5b');
     expect(before.at(-2).name).toBe('lot-5a');
     expect(before.at(-3).name).toBe('lot-4g');
@@ -57,10 +58,10 @@ describe('data/changelog.json', () => {
     expect(readFileSync('apercu.txt', 'utf8').match(/^nom:/gm)).toHaveLength(1);
   });
 
-  it('champ « version » : de la forme v0.N quand il est présent ; présent (v0.6) sur les lots 5a à 5g ; absent des lots plus anciens', () => {
+  it('champ « version » : de la forme v0.N quand il est présent ; présent (v0.6) sur les lots 5a à 5h ; absent des lots plus anciens', () => {
     for (const e of lots.filter((x) => 'version' in x)) expect(e.version, e.name).toMatch(VERSION_RE);
     const fives = lots.filter((e) => /^lot-5[a-z]$/.test(e.name));
-    expect(fives.map((e) => e.name)).toEqual(['lot-5a', 'lot-5b', 'lot-5c', 'lot-5d', 'lot-5e', 'lot-5g']);
+    expect(fives.map((e) => e.name)).toEqual(['lot-5a', 'lot-5b', 'lot-5c', 'lot-5d', 'lot-5e', 'lot-5g', 'lot-5h']);
     for (const e of fives) expect(e.version, e.name).toBe('v0.6');
     expect(lots.filter((e) => !/^lot-5/.test(e.name) && 'version' in e)).toEqual([]);
   });
@@ -73,7 +74,7 @@ describe('data/changelog.json', () => {
 
   it('les évolutions de l\'accueil sont les lots de la version cible pas encore publiée (v0.6), du plus récent au plus ancien', () => {
     expect(published).not.toContain('v0.6');
-    expect(readEvolutions(changelog, published).map((e) => e.id)).toEqual(['lot-5g', 'lot-5e', 'lot-5d', 'lot-5c', 'lot-5b', 'lot-5a']);
+    expect(readEvolutions(changelog, published).map((e) => e.id)).toEqual(['lot-5h', 'lot-5g', 'lot-5e', 'lot-5d', 'lot-5c', 'lot-5b', 'lot-5a']);
   });
 
   it('le fichier est publié par le build (data/) ; plus aucune clé de texte du journal (dev.changelog*)', () => {

@@ -11,6 +11,15 @@ const VERSION_RE = /^v\d+\.\d+$/;
 const SHA_RE = /^[0-9a-f]{7}$/;
 const isObject = (value) => value !== null && typeof value === 'object' && !Array.isArray(value);
 
+// Étiquette d'une version (lot 5h) : sans les espaces des extrémités, de 1 à 60 caractères, aucun caractère de contrôle ; sinon null (repli sur « V<id> »).
+// Même règle que scripts/site/site-info.mjs (validLabel).
+export function validLabel(value) {
+  if (typeof value !== 'string') return null;
+  const label = value.trim();
+  const length = [...label].length;
+  return length >= 1 && length <= 60 && ![...label].some((c) => c.charCodeAt(0) < 32 || (c.charCodeAt(0) >= 127 && c.charCodeAt(0) <= 159)) ? label : null;
+}
+
 // Texte d'une donnée : chaîne seulement, caractères de contrôle remplacés, espaces resserrées, borné.
 export function text(value, max = 300) {
   if (typeof value !== 'string') return '';
@@ -39,7 +48,7 @@ export function readEvolutions(list) {
 export function readPrevious(list) {
   return (Array.isArray(list) ? list : []).filter((p) => isObject(p) && ID_RE.test(p.id ?? '')).slice(0, MAX_PREVIOUS).map((p) => {
     const href = p.status === 'archive' ? previousHref(p.id, p.entry) : null;
-    return { id: p.id, label: `V${p.id.slice(1)}`, title: text(p.title, 120), href, note: href ? '' : text(p.note, 300) };
+    return { id: p.id, label: validLabel(p.label) ?? `V${p.id.slice(1)}`, title: text(p.title, 120), href, note: href ? '' : text(p.note, 300) };
   });
 }
 
@@ -53,7 +62,7 @@ export function homeModel(info) {
   const present = dev.present === true;
   return {
     state: 'ok',
-    version: `V${recette.id.slice(1)}`,
+    version: validLabel(recette.label) ?? `V${recette.id.slice(1)}`,
     play: safePath(recette.entry) ?? 'jeu.html',
     dev: { present, href: DEV_HREF, sha: present && SHA_RE.test(dev.sha ?? '') ? dev.sha : '', date: present ? text(dev.date, 30) : '' },
     evolutions: present ? readEvolutions(info.evolutions) : [],

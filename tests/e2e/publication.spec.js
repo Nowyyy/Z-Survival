@@ -1,6 +1,7 @@
 // Lot 4c : publication par versions ; lot 5g : nouvelle organisation, sur le site assemblé de test (scripts/site/e2e-site.mjs, http://127.0.0.1:4174/) :
 // full/ = racine « en construction » + Recette/ (build courant) + dev/ (le même build, canal dev) + archives fictives v0.2 à v0.4 + v0.1 indisponible ;
-// bare/ = Recette/ seule (ni dev, ni archive) ; many/ = 13 versions fictives (12 précédentes). Chaque site vit dans un sous-dossier (comme /Z-Survival/).
+// bare/ = Recette/ seule (ni dev, ni archive) ; many/ = 13 versions fictives (12 précédentes) ; noms/ (lot 5h) = full/ avec un fichier des noms fictif
+// dans le build de dev (NOMS_TEST). Chaque site vit dans un sous-dossier (comme /Z-Survival/).
 // Dans la suite rapide (ESSENTIAL de playwright.config.js), à 667×375, 1440×900 et 375×812. Le lot 5g reprend ici les garde-fous de l'ancien dev.spec
 // (journal des versions supprimé) : axe, cibles de 44 px, console propre, aucune requête externe, aucun débordement, page en français.
 import { test, expect, chromium } from '@playwright/test';
@@ -10,6 +11,7 @@ const SITE = 'http://127.0.0.1:4174';
 const FULL = `${SITE}/full/`;
 const BARE = `${SITE}/bare/`;
 const MANY = `${SITE}/many/`;
+const NOMS = `${SITE}/noms/`;
 const VIEWPORTS = [{ width: 667, height: 375 }, { width: 1440, height: 900 }, { width: 375, height: 812 }];
 
 // Problèmes d'une page : erreurs et avertissements de console, erreurs de page, requêtes en échec ou ≥ 400, requêtes externes.
@@ -94,7 +96,9 @@ for (const viewport of VIEWPORTS) {
       const evolutions = page.getByRole('region', { name: 'Évolutions en cours de développement' });
       const previous = page.getByRole('region', { name: 'Versions précédentes' });
       for (const region of [evolutions, previous]) await expect(region).toHaveAttribute('tabindex', '0');
-      await expect(evolutions.locator('.evolution-title').first()).toHaveText('Nouvelle organisation du site et accueil refait');
+      // Lot 5h : le premier titre est lu dans site-info.json (avant : « Nouvelle organisation du site et accueil refait », titre du dernier lot au lot 5g).
+      const info = await (await page.request.get(`${FULL}Recette/site-info.json`)).json();
+      await expect(evolutions.locator('.evolution-title').first()).toHaveText(info.evolutions[0].title);
       const links = previous.locator('a');
       expect(await links.evaluateAll((els) => els.map((e) => e.getAttribute('href')))).toEqual(['../v0.4/jeu.html', '../v0.3/jeu.html', '../v0.2/jeu.html']);
       const off = previous.locator('.is-off');
@@ -179,11 +183,96 @@ for (const viewport of VIEWPORTS) {
   });
 }
 
-test('adresses absentes : /recette/ (minuscules), /jeu.html et /versions.json à la racine, lots/lot-*, lots.json, dev/jeu.html sans build : 404', async ({ request }) => {
+// Lot 5h : fichier des noms appliqué par l'assembleur (site noms/, fichier fictif NOMS_TEST de scripts/site/e2e-site.mjs).
+for (const viewport of VIEWPORTS.slice(0, 2)) {
+  test.describe(`fichier des noms ${viewport.width}×${viewport.height}`, () => {
+    test.use({ viewport });
+    test('noms/ : étiquette « Recette · Version V0.5 (nom de test) », V0.4 et évolution renommées, lot masqué absent, console propre, axe sans violation', async ({ page }) => {
+      const { problems, external } = watch(page);
+      const full = await (await page.request.get(`${FULL}Recette/site-info.json`)).json();
+      await page.goto(`${NOMS}Recette/`);
+      await expect(page.locator('#version')).toHaveText('Recette · Version V0.5 (nom de test)');
+      const evolutions = page.getByRole('region', { name: 'Évolutions en cours de développement' });
+      await expect(evolutions.locator('.evolution-title').first()).toHaveText('Évolution renommée (test)');
+      await expect(evolutions.locator('.evolution-text').first()).toHaveText('Texte de test de l\'évolution, venu du fichier des noms (fictif).');
+      await expect(evolutions.locator('.evolution')).toHaveCount(full.evolutions.length - 1);
+      await expect(evolutions).not.toContainText(full.evolutions.find((e) => e.id === 'lot-5g').title);
+      const previous = page.getByRole('region', { name: 'Versions précédentes' }).locator('a');
+      await expect(previous.first().locator('.item-label')).toHaveText('Quatrième version (test)');
+      await expect(previous.first().locator('.meta')).toHaveText('Description de test de la V0.4 : fictive');
+      await expect(previous.first()).toHaveAttribute('href', '../v0.4/jeu.html');
+      await expect(previous.nth(1).locator('.item-label')).toHaveText('V0.3');
+      await page.waitForLoadState('networkidle');
+      expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+      expect(await overflow(page)).toBeLessThanOrEqual(0);
+      expect(external).toEqual([]);
+      expect(problems).toEqual([]);
+    });
+  });
+}
+
+// Lot 5h : remplace « adresses absentes : /recette/ (minuscules) … : 404 » du lot 5g. Le statut reste 404 (GitHub Pages et serve.mjs servent 404.html),
+// mais la page corrige la casse : la redirection est vérifiée par les tests « /recette/ … finit sur /Recette/ » ci-dessous.
+test('adresses absentes : /jeu.html et /versions.json à la racine, lots/lot-*, lots.json, dev/jeu.html sans build : 404 ; /recette/ : 404 + page qui corrige la casse', async ({ request }) => {
   for (const path of ['recette/', 'recette/jeu.html', 'jeu.html', 'versions.json', 'build-info.json', 'icone.png', 'lots/lot-4b/', 'lots/lot-1/jeu.html', 'lots.json', 'Recette/dev/', 'Recette/next/']) {
     expect((await request.get(`${FULL}${path}`)).status(), path).toBe(404);
   }
   expect((await request.get(`${BARE}dev/jeu.html`)).status()).toBe(404);
+  for (const path of ['recette/', 'recette/jeu.html']) expect(await (await request.get(`${FULL}${path}`)).text(), path).toContain('function corrigerCasse(chemin)');
+  expect(await (await request.get(`${FULL}404.html`)).text()).toContain('<p>Page introuvable.</p>');
+});
+
+// Lot 5h : redirection de la casse (404.html à la racine de chaque site de test, comme sur GitHub Pages ; serve.mjs sensible à la casse).
+// La réponse 404 du document fautif est attendue (c'est elle qui porte la correction) : elle est retirée des problèmes, rien d'autre.
+const sans404 = (problems, url) => problems.filter((p) => p !== `404 ${url}` && !(p.startsWith('Failed to load resource: the server responded with a status of 404')));
+
+test('/recette/ (minuscules) et /RECETTE/ finissent sur /Recette/ avec l\'accueil ; console propre, aucune requête externe', async ({ page }) => {
+  const { problems, external } = watch(page);
+  for (const path of ['recette/', 'RECETTE/']) {
+    await page.goto(`${FULL}${path}`);
+    await expect(page, path).toHaveURL(`${FULL}Recette/`);
+    await expect(page.locator('#version'), path).toHaveText('Recette · Version V0.5');
+  }
+  await page.waitForLoadState('networkidle');
+  expect(external).toEqual([]);
+  expect(sans404(sans404(problems, `${FULL}recette/`), `${FULL}RECETTE/`)).toEqual([]);
+});
+
+test('/recette/jeu.html?x=1#b finit sur /Recette/jeu.html?x=1#b (requête et fragment conservés), et le jeu se charge', async ({ page }) => {
+  const { external } = watch(page);
+  await page.goto(`${FULL}recette/jeu.html?x=1#b`);
+  await page.waitForURL(`${FULL}Recette/jeu.html?x=1#b`);
+  await expect(page).toHaveURL(`${FULL}Recette/jeu.html?x=1#b`);
+  await expect(page.locator('canvas').first()).toBeAttached();
+  expect(external).toEqual([]);
+});
+
+test('/Recette/inconnu : statut 404, « Page introuvable. » (16 px au moins) sans redirection ni boucle, axe sans violation, aucune requête externe', async ({ page }) => {
+  const { problems, external } = watch(page);
+  const navigations = [];
+  page.on('framenavigated', (frame) => frame === page.mainFrame() && navigations.push(frame.url()));
+  const url = `${FULL}Recette/inconnu`;
+  const response = await page.goto(url);
+  expect(response.status()).toBe(404);
+  await expect(page.getByText('Page introuvable.')).toBeVisible();
+  await expect(page.locator('html')).toHaveAttribute('lang', 'fr');
+  await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', 'noindex');
+  expect(await page.getByText('Page introuvable.').evaluate((el) => parseFloat(getComputedStyle(el).fontSize))).toBeGreaterThanOrEqual(16);
+  await page.waitForLoadState('networkidle');
+  await expect(page).toHaveURL(url);
+  expect(navigations).toEqual([url]);
+  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+  expect(external).toEqual([]);
+  expect(sans404(problems, url)).toEqual([]);
+});
+
+test('/Recette/ répond 200 ; /dev/jeu.html et /v0.N/ inchangés (200, sans redirection)', async ({ request }) => {
+  for (const path of ['Recette/', 'Recette/jeu.html', 'dev/jeu.html', 'v0.2/jeu.html', 'v0.4/jeu.html']) {
+    const r = await request.get(`${FULL}${path}`, { maxRedirects: 0 });
+    expect(r.status(), path).toBe(200);
+    expect(await r.text(), path).not.toContain('corrigerCasse');
+  }
+  expect(await (await request.get(`${FULL}v0.2/jeu.html`)).text()).toContain('Archive de test (fictive).');
 });
 
 test('Recette/ sert versions.json, build-info.json (release) et site-info.json ; dev/ sert build-info.json (dev) ; archives : build-info.json', async ({ request }) => {

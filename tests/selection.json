@@ -176,6 +176,8 @@
     { "fichier": "tests/unit/persos-kit.test.js", "categorie": "P", "raison": "Kit des personnages." },
     { "fichier": "tests/unit/persos-sang.test.js", "categorie": "G", "raison": "Sang : plafonds, déterminisme, budget." },
     { "fichier": "tests/unit/persos-variantes.test.js", "categorie": "P", "raison": "Variantes des personnages." },
+    { "fichier": "tests/unit/casse.test.js", "categorie": "G", "raison": "Redirection /recette/ → /Recette/ (404.html), aucune paire de chemins qui ne diffère que par la casse, serveur local sensible à la casse (lot 5h)." },
+    { "fichier": "tests/unit/noms.test.js", "categorie": "G", "raison": "Fichier des noms (lot 5h) : analyseur, priorité, fichier commité sans aucune erreur." },
     { "fichier": "tests/unit/publication.test.js", "categorie": "G", "raison": "Assembleur, workflow, publication." },
     { "fichier": "tests/unit/sauvegarde-depots.test.js", "categorie": "G", "raison": "Dépôts de sauvegarde." },
     { "fichier": "tests/unit/sauvegarde-donnees.test.js", "categorie": "G", "raison": "Données de sauvegarde." },
@@ -821,8 +823,8 @@
     },
     {
       "id": "accueil",
-      "description": "Accueil de la Recette : index.html, js/accueil/, site-info.json (arbre source), journal des lots (data/changelog.json), icône.",
-      "sources": ["index.html", "js/accueil/**", "js/lots.js", "js/main.js", "css/accueil.css", "site-info.json", "data/changelog.json", "apercu.txt", "scripts/icone.mjs"],
+      "description": "Accueil de la Recette : index.html, js/accueil/, site-info.json (arbre source), journal des lots (data/changelog.json), fichier des noms (noms-versions-et-lots.txt, lot 5h), icône.",
+      "sources": ["index.html", "js/accueil/**", "js/lots.js", "js/main.js", "css/accueil.css", "site-info.json", "data/changelog.json", "apercu.txt", "scripts/icone.mjs", "noms-versions-et-lots.txt"],
       "dependances": ["textes"],
       "vitest": [
         "tests/unit/data-ambiance.test.js",
@@ -831,6 +833,7 @@
         "tests/unit/icone.test.js",
         "tests/unit/lot1-regles.test.js",
         "tests/unit/lots.test.js",
+        "tests/unit/noms.test.js",
         "tests/unit/persos-jeu.test.js",
         "tests/unit/versions-archiver.test.js",
         "tests/unit/versions-schema.test.js"
@@ -852,9 +855,11 @@
       ],
       "dependances": ["textes", "accueil"],
       "vitest": [
+        "tests/unit/casse.test.js",
         "tests/unit/data-changelog.test.js",
         "tests/unit/lots.test.js",
         "tests/unit/maps-hygiene.test.js",
+        "tests/unit/noms.test.js",
         "tests/unit/persos-jeu.test.js",
         "tests/unit/versions-archiver.test.js",
         "tests/unit/versions-schema.test.js"

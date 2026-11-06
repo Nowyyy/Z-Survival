@@ -5,6 +5,11 @@
 //    ni jeu.html) : dev/index.html = « Aucun build de développement pour l'instant » ;
 //  - next/index.html = redirection vers ../dev/jeu.html (vers ../dev/ sans build de dev) ; lots/index.html = redirection vers ../Recette/ (aucun lots/lot-*) ;
 //  - v0.N/ = dossiers de la branche archive, copiés tels quels s'ils existent (sinon la version est publiée « indisponible »).
+// Lot 5h : noms-versions-et-lots.txt (scripts/site/noms.mjs) du build de dev, sinon de main, l'emporte sur les textes de versions.json et du journal
+// dans site-info.json (jamais dans Recette/versions.json) ; une ligne fautive ou un identifiant inconnu est ignoré et signalé, sans jamais faire échouer.
+// Lot 5h : 404.html à la racine (page autonome, servie par GitHub Pages pour toute adresse inconnue) : son script en ligne (corrigerCasse de
+// scripts/site/casse.mjs) renvoie /recette/… (toute casse sauf « Recette ») vers /Recette/… en gardant la requête et le fragment ; sinon « Page introuvable. ».
+// Aucun dossier recette/ ; l'assemblage échoue si deux chemins du site ne diffèrent que par la casse.
 // Les pages produites sont autonomes (style en ligne, couleurs du système, icône en data:), en chemins relatifs, noindex ; les redirections ont
 // un <meta http-equiv="refresh"> immédiat et un lien visible. Pur et déterministe (aucun réseau ; aucune horloge : les dates viennent des entrées,
 // « genere » de site-info.json est injectée) ; échoue avec un message clair si le build de main n'a pas d'index.html ou de jeu.html, si la version
@@ -20,6 +25,8 @@ import { cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, 
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
+import { cheminsEnCollision, corrigerCasse } from './site/casse.mjs';
+import { NOMS_FICHIER, appliquerNoms, formatErreur, parseNoms } from './site/noms.mjs';
 import { buildSiteInfo, validateSiteInfo } from './site/site-info.mjs';
 import { labelOf, validateVersions } from './versions/schema.mjs';
 
@@ -70,6 +77,9 @@ export const SITE_TEXT_DEFAULTS = Object.freeze({
   'site.dev.title': 'Z-Survival · build de développement',
   'site.dev.none': 'Aucun build de développement pour l\'instant',
   'site.dev.back': 'Revenir à l\'accueil de la Recette',
+  'site.notFound.title': 'Z-Survival · page introuvable',
+  'site.notFound.text': 'Page introuvable.',
+  'site.notFound.noscript': 'Sans JavaScript, une adresse écrite /recette/ en minuscules n\'est pas corrigée : écris /Recette/ avec un R majuscule.',
 });
 export function siteTexts(mainDir) {
   try {
@@ -98,8 +108,9 @@ const PAGE_STYLE = ':root{color-scheme:dark}body{margin:0;min-height:100vh;displ
   + 'h1{font-size:2rem;margin:0 0 .5em}p{margin:.5em 0}a{color:LinkText;display:inline-flex;align-items:center;min-height:44px;padding:0 8px}'
   + 'a:focus-visible{outline:3px solid CanvasText;outline-offset:2px}';
 
-function page({ title, body, icon = null, refresh = null }) {
+function page({ title, body, icon = null, refresh = null, script = null }) {
   const meta = refresh ? `\n  <meta http-equiv="refresh" content="0; url=${escapeHtml(refresh)}">` : '';
+  const inline = script ? `\n  <script>${script}</script>` : '';
   return `<!doctype html>
 <html lang="fr">
 <head>
@@ -109,7 +120,7 @@ function page({ title, body, icon = null, refresh = null }) {
   <meta name="color-scheme" content="dark">${meta}
   <title>${escapeText(title)}</title>
   <link rel="icon" href="${escapeHtml(iconHref(icon))}">
-  <style>${PAGE_STYLE}</style>
+  <style>${PAGE_STYLE}</style>${inline}
 </head>
 <body>
   <main>
@@ -130,6 +141,30 @@ export function redirectPage({ target, label, texts = SITE_TEXT_DEFAULTS, icon =
   return page({ title: texts['site.redirect.title'], icon, refresh: target, body: `    <h1>Z-Survival</h1>\n    <p><a href="${escapeHtml(target)}">${escapeText(label)}</a></p>` });
 }
 
+// Page 404 (racine du site publié, servie à toute profondeur : aucun lien ni chemin relatif). Le script corrige la casse de « recette »
+// (corrigerCasse, recopiée telle quelle) et remplace l'adresse (location.replace : pas d'entrée d'historique) ; sinon, la page reste « Page introuvable. ».
+export const NOT_FOUND_SCRIPT = `(function () { const corrigerCasse = ${corrigerCasse.toString()};
+  const cible = corrigerCasse(location.pathname);
+  if (cible !== null) location.replace(cible + location.search + location.hash); })();`;
+export function notFoundPage({ texts = SITE_TEXT_DEFAULTS, icon = null } = {}) {
+  return page({ title: texts['site.notFound.title'], icon, script: NOT_FOUND_SCRIPT,
+    body: `    <h1>Z-Survival</h1>\n    <p>${escapeText(texts['site.notFound.text'])}</p>\n    <noscript><p>${escapeText(texts['site.notFound.noscript'])}</p></noscript>` });
+}
+
+// Chemins relatifs de tous les fichiers et dossiers d'un dossier (séparateur « / »).
+export function listPaths(dir) {
+  const out = [];
+  const walk = (current, prefix) => {
+    for (const name of readdirSync(current)) {
+      const rel = prefix ? `${prefix}/${name}` : name;
+      out.push(rel);
+      if (statSync(join(current, name)).isDirectory()) walk(join(current, name), rel);
+    }
+  };
+  if (existsSync(dir)) walk(dir, '');
+  return out;
+}
+
 // Message simple avec un lien de retour (dev/ sans build de développement).
 export function messagePage({ title, message, back, backLabel, icon = null }) {
   return page({ title, icon, body: `    <h1>Z-Survival</h1>\n    <p>${escapeText(message)}</p>\n    <p><a href="${escapeHtml(back)}">${escapeText(backLabel)}</a></p>` });
@@ -145,6 +180,20 @@ const readJsonFile = (path) => {
     return null;
   }
 };
+
+// Fichier des noms (lot 5h) : noms-versions-et-lots.txt du build de dev, sinon de celui de main, sinon aucun. Jamais d'exception :
+// renvoie { source: 'dev' | 'main' | null, noms: résultat de parseNoms }.
+export function readNomsFile({ devDir = null, mainDir = null } = {}) {
+  for (const [source, dir] of [['dev', devDir], ['main', mainDir]]) {
+    if (!dir) continue;
+    try {
+      return { source, noms: parseNoms(readFileSync(join(dir, NOMS_FICHIER))) };
+    } catch {
+      // absent ou illisible : source suivante
+    }
+  }
+  return { source: null, noms: { blocs: [], erreurs: [] } };
+}
 
 // Assemble le site. Entrées : dossiers (build de main, build de dev facultatif, contenu de la branche archive facultatif), objet versions.json (de main),
 // métadonnées { branch, sha, date } de main et de dev, date de génération (genere). Renvoie un rapport { out, bytes, files, versions, dev, siteInfo, published } ;
@@ -170,8 +219,9 @@ export function assembleSite({ mainDir, devDir = null, archiveDir = null, versio
   const label = labelOf(versions.latest);
   const json = (path, data) => writeFileSync(path, `${JSON.stringify(data, null, 2)}\n`);
 
-  // Racine : la page « en construction » seule.
+  // Racine : la page « en construction » et la page 404 (lot 5h : correction de /recette/).
   writeFileSync(join(out, 'index.html'), constructionPage({ texts, icon }));
+  writeFileSync(join(out, '404.html'), notFoundPage({ texts, icon }));
 
   // Recette/ : build de main.
   const recetteDir = join(out, 'Recette');
@@ -225,19 +275,36 @@ export function assembleSite({ mainDir, devDir = null, archiveDir = null, versio
   json(join(recetteDir, 'versions.json'), published);
 
   // site-info.json : ce que l'accueil de la Recette affiche (évolutions lues dans le journal du build de dev).
-  const siteInfo = buildSiteInfo({
-    versions: published,
-    dev: { present: devBuilt, sha: devInfo.sha, date: devInfo.date },
-    changelog: devBuilt ? readJsonFile(join(devDir, 'data/changelog.json')) : null,
-    genere: utcDate(genere ?? ''),
-  });
+  // Lot 5h : le fichier des noms l'emporte sur les textes de versions.json et du journal (copies : Recette/versions.json reste tel quel) ;
+  // une ligne fautive est ignorée, un identifiant inconnu aussi ; le fichier ne fait jamais échouer l'assemblage (repli sans les noms).
+  const changelog = devBuilt ? readJsonFile(join(devDir, 'data/changelog.json')) : null;
+  const nomsFile = readNomsFile({ devDir: devBuilt ? devDir : null, mainDir });
+  const applied = appliquerNoms({ versions: published, changelog }, nomsFile.noms);
+  const siteInput = { dev: { present: devBuilt, sha: devInfo.sha, date: devInfo.date }, genere: utcDate(genere ?? '') };
+  let siteInfo = buildSiteInfo({ ...siteInput, versions: applied.versions ?? published, changelog: applied.changelog });
+  const nomsReport = {
+    source: nomsFile.source,
+    blocs: nomsFile.noms.blocs.length,
+    erreurs: nomsFile.noms.erreurs.map(formatErreur),
+    // Sans journal de dev, les lots et les versions cibles ne peuvent pas être vérifiés : aucun avertissement.
+    inconnus: changelog ? applied.inconnus : [],
+    applique: true,
+  };
+  if (!validateSiteInfo(siteInfo).ok) {
+    siteInfo = buildSiteInfo({ ...siteInput, versions: published, changelog });
+    nomsReport.applique = false;
+  }
   const siteCheck = validateSiteInfo(siteInfo);
   if (!siteCheck.ok) throw new AssembleError(`site-info.json invalide : ${siteCheck.errors.join(' ; ')}`);
   json(join(recetteDir, 'site-info.json'), siteInfo);
 
+  // Garde-fou (lot 5h) : aucune paire de chemins qui ne diffère que par la casse (GitHub Pages la distingue, Windows et macOS non).
+  const collisions = cheminsEnCollision(listPaths(out));
+  if (collisions.length) throw new AssembleError(`Chemins qui ne diffèrent que par la casse : ${collisions.map(([a, b]) => `${a} / ${b}`).join(' ; ')}`);
+
   const stats = dirStats(out);
   if (stats.bytes > maxBytes) throw new AssembleError(`Site trop gros : ${(stats.bytes / 1024 / 1024).toFixed(1)} Mo pour un plafond de ${(maxBytes / 1024 / 1024).toFixed(0)} Mo (limite publiée : 1 Go)`);
-  return { out, ...stats, versions: report, dev: { ...devInfo, built: devBuilt, missing: devMissing }, siteInfo, published };
+  return { out, ...stats, versions: report, dev: { ...devInfo, built: devBuilt, missing: devMissing }, siteInfo, published, noms: nomsReport };
 }
 
 // Lecture des options (arguments, puis variables d'environnement).
@@ -296,6 +363,10 @@ async function main() {
     console.log(`  dev/ : ${result.dev.built ? `dev ${result.dev.sha} (${result.dev.date})` : `aucun build de développement${missing}`}`);
     console.log(`  Recette/site-info.json : ${result.siteInfo.evolutions.length} évolutions, ${result.siteInfo.precedentes.length} versions précédentes`);
     console.log(`  versions : ${lines.join(' · ')}`);
+    const noms = result.noms;
+    console.log(`  ${NOMS_FICHIER} : ${noms.source ? `build de ${noms.source}, ${noms.blocs} blocs, ${noms.erreurs.length} erreur${noms.erreurs.length > 1 ? 's' : ''} (lignes ignorées)` : 'absent (textes d\'origine)'}${noms.applique ? '' : ' ; NON appliqué (site-info.json invalide avec les noms)'}`);
+    for (const message of noms.erreurs) console.warn(`  Avertissement : ${message}`);
+    for (const id of noms.inconnus) console.warn(`  Avertissement : ${NOMS_FICHIER} : identifiant inconnu « ${id} » (ni version de versions.json, ni version cible, ni lot du journal) : bloc ignoré.`);
   } finally {
     if (tmp) rmSync(tmp, { recursive: true, force: true });
   }
