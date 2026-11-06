@@ -27,9 +27,15 @@ test('la page est en français, sans bouton de langue, même avec un navigateur 
   await page.goto(baseURL);
   await expect(page.locator('html')).toHaveAttribute('lang', 'fr');
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Z-Survival');
-  // Lot 4c : l'accueil remplace la page d'attente (avant : « En construction. Reviens bientôt ! ») ; servi depuis le dépôt (build-info.json « source »).
-  await expect(page.locator('#version')).toHaveText('Recette · Version V0.5');
+  // Lot 4c : l'accueil remplace la page d'attente (avant : « En construction. Reviens bientôt ! »). Lot 5g : servi depuis le dépôt, il lit site-info.json
+  // « source » (avant : build-info.json « source », « Recette · Version V0.5 ») : étiquette « arbre source », liens statiques, aucune liste.
+  await expect(page.locator('#version')).toHaveText('Recette · arbre source');
+  await expect(page.locator('#site-notice')).toHaveText('Arbre source du dépôt : la version, les évolutions et les versions précédentes s\'affichent dans le site assemblé.');
   await expect(page.getByRole('link', { name: 'Jouer' })).toHaveAttribute('href', 'jeu.html');
+  await expect(page.getByRole('link', { name: 'Dernier build de développement' })).toHaveAttribute('href', '../dev/jeu.html');
+  await expect(page.locator('#evolutions-section, #previous-section')).toHaveCount(2);
+  await expect(page.locator('#evolutions-section')).toBeHidden();
+  await expect(page.locator('#previous-section')).toBeHidden();
   await expect(page.locator('[data-lang-toggle]')).toHaveCount(0);
   await expect(page.getByRole('button')).toHaveCount(0);
   await context.close();
@@ -68,7 +74,7 @@ test('axe : aucune violation', async ({ page }) => {
   expect(results.violations).toEqual([]);
 });
 
-// Lot 4c : le <noscript> porte aussi des liens statiques vers le jeu, next/ et dev/ (avant : le message seul).
+// Lot 4c : le <noscript> porte aussi des liens statiques (lot 5g : jeu.html et ../dev/jeu.html ; avant : jeu.html, next/ et dev/).
 test('sans JavaScript, seuls le message noscript et ses liens sont visibles', async ({ baseURL }) => {
   // Le réglage de Blink désactive vraiment les scripts : <noscript> est alors rendu comme dans un vrai navigateur.
   const browser = await chromium.launch({ channel: process.env.CI ? 'chrome' : undefined, args: ['--blink-settings=scriptEnabled=false'] });
@@ -76,7 +82,8 @@ test('sans JavaScript, seuls le message noscript et ses liens sont visibles', as
   await page.goto(baseURL);
   await expect(page.locator('#app')).toBeHidden();
   const text = (await page.evaluate(() => document.body.innerText)).trim();
-  expect(text.split('\n').map((l) => l.trim()).filter(Boolean)).toEqual(['Ce jeu a besoin de JavaScript. / This game needs JavaScript.', 'Jouer / Play', 'Dernier build de développement / Latest development build', 'Journal des versions / Version history']);
+  // Lot 5g : plus de lien « Journal des versions / Version history » (journal supprimé).
+  expect(text.split('\n').map((l) => l.trim()).filter(Boolean)).toEqual(['Ce jeu a besoin de JavaScript. / This game needs JavaScript.', 'Jouer / Play', 'Dernier build de développement / Latest development build']);
   await browser.close();
 });
 

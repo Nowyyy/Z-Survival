@@ -2,8 +2,8 @@ import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { waitReady } from './helpers.js';
 
-// Lot 4e — Fumée (npm run test:fumee) : 12 tests, projet bureau seulement, 3 minutes au plus. Le jeu démarre en 667×375 sans erreur,
-// canvas et HUD visibles, une manche simulée par step(), sauvegarde en mémoire, aucune requête hors du site ; accueil, /dev/ et
+// Lot 4e — Fumée (npm run test:fumee) : 10 tests (12 avant le lot 5g), projet bureau seulement, 3 minutes au plus. Le jeu démarre en 667×375 sans erreur,
+// canvas et HUD visibles, une manche simulée par step(), sauvegarde en mémoire, aucune requête hors du site ; accueil et
 // sauvegarde.html se chargent sans violation d'axe ; le site construit (scripts/build.mjs, serveur de test du port 4174) répond.
 const SIZE = { width: 667, height: 375 };
 const NOISE = /GL Driver Message|ReadPixels|GPU stall/;
@@ -84,7 +84,8 @@ test.describe('fumée : le jeu', () => {
 });
 
 test.describe('fumée : les pages publiées', () => {
-  for (const [nom, url] of [['index.html', '/index.html'], ['dev/', '/dev/'], ['sauvegarde.html', '/sauvegarde.html?test=1']]) {
+  // Lot 5g : /dev/ (journal des versions) supprimé ; les pages du site assemblé (racine, Recette/, dev/, redirections) sont dans publication.spec.js.
+  for (const [nom, url] of [['index.html', '/index.html'], ['sauvegarde.html', '/sauvegarde.html?test=1']]) {
     test(`${nom} se charge sans erreur ni requête externe`, async ({ page }) => {
       const o = await ouvrir(page, url);
       await expect(page.locator('main, body').first()).toBeVisible();
@@ -100,8 +101,9 @@ test.describe('fumée : les pages publiées', () => {
     });
   }
 
-  test('le site construit répond : accueil, jeu et build-info.json (scripts/build.mjs, site de test)', async ({ request }) => {
-    for (const p of ['full/', 'full/jeu.html', 'full/build-info.json']) {
+  // Lot 5g : accueil, jeu et données sous Recette/ (avant : à la racine du site) ; la racine est la page « en construction ».
+  test('le site construit répond : racine, accueil, jeu, build-info.json et site-info.json (scripts/build.mjs, site de test)', async ({ request }) => {
+    for (const p of ['full/', 'full/Recette/', 'full/Recette/jeu.html', 'full/Recette/build-info.json', 'full/Recette/site-info.json', 'full/dev/jeu.html']) {
       const r = await request.get(`http://127.0.0.1:4174/${p}`);
       expect(r.status(), p).toBe(200);
     }

@@ -1,8 +1,9 @@
-// Copie les dossiers du site dans _site/ (jamais Docs/, tests/ ni node_modules).
+// Copie les dossiers du site dans _site/ (jamais Docs/, tests/ ni node_modules). Lot 5g : plus de dossier dev/ (journal des versions supprimé ;
+// dev/ est, dans le site assemblé, le build de la branche dev).
 import { cpSync, existsSync, mkdirSync, rmSync } from 'node:fs';
 
 const OUT = '_site';
-const ENTRIES = ['index.html', 'jeu.html', 'sons.html', 'atelier-sons.html', 'atelier-choix.html', 'carte.html', 'visite.html', 'ecarts.html', 'sauvegarde.html', 'apercu.txt', 'dev', 'css', 'js', 'data', 'fonts', 'vendor'];
+const ENTRIES = ['index.html', 'jeu.html', 'sons.html', 'atelier-sons.html', 'atelier-choix.html', 'carte.html', 'visite.html', 'ecarts.html', 'sauvegarde.html', 'apercu.txt', 'css', 'js', 'data', 'fonts', 'vendor'];
 ENTRIES.push('atelier-personnages.html'); // lot 3j : atelier des personnages (ligne séparée, fusion sans conflit avec les autres lots)
 
 rmSync(OUT, { recursive: true, force: true });

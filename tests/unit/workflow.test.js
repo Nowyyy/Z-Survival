@@ -33,9 +33,11 @@ describe('workflow GitHub Pages', () => {
     expect(wf).not.toMatch(/^ {2}e2e:$/m);
   });
 
-  // Lot 4c : le site (racine, next/, v0.N/, lots/) est assemblé par scripts/assemble.mjs de main ; avant : npm run assemble et tout l'historique (fetch-depth: 0).
-  it('publie le site assemblé (racine, next/, archives) par l\'assembleur de main', () => {
-    expect(wf).toContain('node main/scripts/assemble.mjs');
+  // Lot 4c : le site est assemblé par scripts/assemble.mjs ; avant : npm run assemble et tout l'historique (fetch-depth: 0).
+  // Lot 5g : l'assembleur est celui de la branche qui déclenche (dev pour un push de dev, main sinon) ; avant : toujours main/scripts/assemble.mjs.
+  it('publie le site assemblé (racine, Recette/, dev/, archives) par l\'assembleur de la branche qui déclenche, avec versions.json de main', () => {
+    expect(wf).toContain("node ${{ github.ref == 'refs/heads/dev' && 'dev' || 'main' }}/scripts/assemble.mjs --main main/_site --versions main/versions.json --out _site");
+    expect(wf).not.toContain('node main/scripts/assemble.mjs');
     expect(wf).not.toMatch(/fetch-depth: 0/);
   });
 
@@ -61,10 +63,28 @@ describe('workflow GitHub Pages', () => {
 // Lot 4g : pages.yml = celui de origin/dev au début du lot (ccde5f3, fusion du lot 4f) sans le job e2e (ses deux lignes de commentaire, la tâche et la ligne vide
 // qui la suit). Déclencheurs, permissions, concurrence, quick et deploy (build, assemblage, téléversement, déploiement) sont donc inchangés, octet pour octet.
 // Sauté si le commit de référence est absent (clone superficiel) ; la CI de tests.yml récupère tout l'historique (fetch-depth: 0).
+// Lot 5g : en plus, exactement trois lignes changent (LOT_5G : l'en-tête qui décrit les adresses et l'appel de l'assembleur avec son commentaire) ;
+// la comparaison applique ces remplacements à l'ancien fichier, puis exige l'égalité octet pour octet comme avant.
 const BASE_4G = 'ccde5f39b77c7085c9d58351af233cc5d9df487c';
+const LOT_5G = [
+  ['# Lot 4c : publication par versions. Racine = main (version actuelle), next/ = dev (dernier build de développement), v0.N/ = branche archive\n# (versions figées), lots/ = page de renvoi. Seuls main et dev déclenchent ce workflow (plus aucun aperçu par lot, rien sur archive).',
+    '# Lot 4c : publication par versions ; lot 5g : racine = page « en construction », Recette/ = main, dev/ = dev (dernier build de développement),\n# v0.N/ = branche archive (versions figées), next/ et lots/ = redirections. Seuls main et dev déclenchent ce workflow (rien sur archive).'],
+  ['      # L\'assembleur et versions.json sont ceux de main (la version publiée décide de la publication).',
+    '      # Lot 5g : l\'assembleur est celui de la branche qui déclenche (un push de dev publie l\'organisation de dev) ; versions.json est celui de main.'],
+  ['          node main/scripts/assemble.mjs --main main/_site',
+    "          node ${{ github.ref == 'refs/heads/dev' && 'dev' || 'main' }}/scripts/assemble.mjs --main main/_site"],
+];
 const before = spawnSync('git', ['show', `${BASE_4G}:.github/workflows/pages.yml`], { encoding: 'utf8' });
-describe.skipIf(before.status !== 0)('pages.yml : seul le job e2e est retiré (comparaison à origin/dev, ccde5f3)', () => {
-  const old = before.stdout;
+describe.skipIf(before.status !== 0)('pages.yml : seul le job e2e est retiré (comparaison à origin/dev, ccde5f3), puis les lignes de chemin du lot 5g', () => {
+  const old = LOT_5G.reduce((text, [from, to]) => text.replace(from, () => to), before.stdout);
+
+  it('lot 5g : chaque ligne remplacée existait une seule fois à la base, et n\'existe plus', () => {
+    for (const [from, to] of LOT_5G) {
+      expect(before.stdout.split(from), from).toHaveLength(2);
+      expect(wf, from).not.toContain(from);
+      expect(wf.split(to), to).toHaveLength(2);
+    }
+  });
   const start = old.indexOf('  # Tests de bout en bout (rendu logiciel)');
   const end = old.indexOf('  # Déploiement du site complet');
   const part = (text, from, to) => text.slice(text.indexOf(from), to ? text.indexOf(to) : undefined);

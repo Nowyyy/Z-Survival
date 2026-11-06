@@ -11,11 +11,6 @@
    "assertions": 21,
    "chargements": 7
   },
-  "tests/e2e/dev.spec.js": {
-   "tests": 17,
-   "assertions": 53,
-   "chargements": 33
-  },
   "tests/e2e/fumee.spec.js": {
    "tests": 9,
    "assertions": 19,
@@ -57,9 +52,9 @@
    "chargements": 30
   },
   "tests/e2e/publication.spec.js": {
-   "tests": 14,
-   "assertions": 63,
-   "chargements": 17
+   "tests": 21,
+   "assertions": 116,
+   "chargements": 21
   },
   "tests/e2e/sauvegarde.spec.js": {
    "tests": 23,

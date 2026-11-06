@@ -1,5 +1,7 @@
 # Publication par versions (lot 4c)
 
+> **Lot 5g — organisation actuelle** (détails, risques et retour arrière : `Docs/ref/site-adresses.md`) : `/` = page « en construction » (autonome, sans lien) ; `/Recette/` = build de `main` (accueil, `jeu.html`, `site-info.json`, `versions.json`, `build-info.json`) ; `/dev/` = build de `dev` (`/dev/jeu.html` ; son `index.html` renvoie à `../Recette/`) ; `/next/` → `../dev/jeu.html` ; `/lots/` → `../Recette/` ; `/v0.N/` inchangés. Le journal des versions (`dev/index.html`, `dev/dev.js`) et la liste `versions` de `data/changelog.json` sont supprimés ; l'accueil lit `site-info.json` (évolutions = lots de `dev` dont `version` n'est pas encore publiée). `pages.yml` appelle l'assembleur **de la branche qui déclenche** (avant : toujours celui de `main`). Les sections ci-dessous décrivent le lot 4c ; les passages sur la racine = version, `/next/` = build de développement, le journal `/dev/` et `changelog.json → versions` sont périmés.
+
 **Noms affichés (demande du propriétaire)** : `main` = **Recette** (racine du site, canal technique `release`), `dev` = **Développement** (`/next/`, canal `dev`). Les branches gardent leurs noms ; la **Production** viendra plus tard, avec un serveur.
 
 Écrit en partie A (inventaire, plan), complété en partie C (réalisation, workflow avant/après, procédures). Correspondance des versions : `Docs/ref/versions-correspondance.md` ; contrôle des archives : `Docs/ref/verification-versions.md`.
@@ -97,7 +99,7 @@ Corrections par rapport au prompt :
 Structure par versions inchangée (liste `versions`, historique `lots`, repli, ordre V0.5 → V0.1). Les liens « Ouvrir cette version » viennent de `versions.json` : `../` pour l'actuelle, `../v0.N/<entrée>` pour une archive (l'`index.html` des anciennes versions est leur page d'attente « En construction »), aucun pour une version indisponible ; dates de `versions.json`. Plus de lien « Dernier lot », plus de `lots.json` ; aucun identifiant de lot affiché. Depuis `next/dev/`, les liens remontent à la racine (`build-info.json` du dossier parent : canal `dev`).
 
 ### Exécution locale
-- `npm run site` (`scripts/site/local.mjs`) : la séquence du job `deploy` avec des worktrees (main = `HEAD`, dev = `origin/dev` ou `--dev <ref>`, archive = `origin/archive`), `npm ci`, `npm run build`, assembleur de main → `_site/` ; puis `npm run serve:site` (`http://localhost:4180/Z-Survival/`, préfixe simulé : un lien absolu y échoue).
+- `npm run site` (`scripts/site/local.mjs`) : la séquence du job `deploy` avec des worktrees (main = `HEAD`, dev = `origin/dev` ou `--dev <ref>`, archive = `origin/archive`), `npm ci`, `npm run build`, assembleur de main (lot 5g : `--assembleur dev` pour celui de dev, comme un push de `dev`) → `_site/` ; puis `npm run serve:site` (`http://localhost:4180/Z-Survival/`, accueil sous `…/Recette/` depuis le lot 5g ; préfixe simulé : un lien absolu y échoue).
 - Exécution à blanc du lot (main = dev = `HEAD`, archive = `origin/archive` `6d8c1bc`) : 13,5 s, `_site/` de 20,2 Mo et 906 fichiers ; racine, `next/`, `dev/`, `lots/`, `v0.1/` à `v0.4/`, `jeu.html` et `next/jeu.html` chargés dans Chromium sous `/Z-Survival/` sans erreur de console ni ressource manquante ; `lots/lot-4b/` : 404.
 - Tests de bout en bout : `scripts/site/e2e-site.mjs` assemble un site de test (archives fictives, V0.1 indisponible) servi sur le port 4174 (`playwright.config.js`).
 
@@ -120,11 +122,11 @@ Validation : relecture ; `python3 -c "import yaml; yaml.safe_load(open('.github/
 1. Vérifier `dev` : tests (`npm run lint`, `npm test`, `npm run test:e2e`, le job `e2e` du push sur `dev`), puis l'aperçu `https://nowyyy.github.io/Z-Survival/next/`.
 2. Archiver la version qui va être remplacée : `git fetch origin`, puis `node scripts/versions/archiver.mjs --id v0.5 --ref <hash du main actuel>` (`git rev-parse origin/main`) ; contrôle : `node scripts/versions/verifier.mjs`.
 3. Pull Request `dev` → `main` avec « Create a merge commit », nommée « V0.6 ».
-4. Mettre à jour `versions.json` (`latest: "v0.6"`, nouvelle entrée `actuelle` avec le hash de la fusion, V0.5 en `archive` avec le hash archivé) et la liste `versions` de `data/changelog.json` (V0.6, sans `enCours` sur V0.5) ; adapter `data-changelog`, `dev.spec`, `versions-schema`.
-5. Déclencher le workflow (onglet Actions → Pages → Run workflow sur `main`) et vérifier le site publié (racine, `/v0.5/`, `/dev/`).
+4. Mettre à jour `versions.json` (`latest: "v0.6"`, nouvelle entrée `actuelle` avec le hash de la fusion, V0.5 en `archive` avec le hash archivé) ; adapter `versions-schema` (lot 5g : la liste `versions` de `data/changelog.json` et `dev.spec` n'existent plus ; les lots de `version: "v0.6"` quittent alors les « évolutions » de l'accueil).
+5. Déclencher le workflow (onglet Actions → Pages → Run workflow sur `main`) et vérifier le site publié (`/Recette/`, `/v0.5/`, `/dev/jeu.html` ; lot 5g).
 
 ## Build de développement
-Une branche de correctif est fusionnée dans `dev` (Pull Request vers `dev`) ; le push sur `dev` lance `quick`, `e2e` et `deploy` : `https://nowyyy.github.io/Z-Survival/next/` montre le bandeau « Build de développement — <hash> — <date> ». La racine n'est pas touchée (elle est reconstruite depuis la tête de `main`).
+Une branche de correctif est fusionnée dans `dev` (Pull Request vers `dev`) ; le push sur `dev` lance `quick`, `e2e` et `deploy` : `https://nowyyy.github.io/Z-Survival/next/` montre le bandeau « Build de développement — <hash> — <date> ». La racine n'est pas touchée (elle est reconstruite depuis la tête de `main`). **Lot 5g** : le build de développement est `…/dev/jeu.html` (`/next/` y renvoie) ; l'accueil `…/Recette/` en donne le hash et la date ; plus de bandeau.
 
 ## Retour arrière
 - Avant fusion : rien à faire (le site en ligne ne change pas tant que `lot-4c` n'est pas dans `main`).

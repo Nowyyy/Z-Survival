@@ -79,7 +79,7 @@ describe('retrait de Phaser', () => {
   const walk = (dir) => readdirSync(dir, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? walk(`${dir}/${e.name}`) : [`${dir}/${e.name}`]));
 
   it('aucun fichier de js/, css/, data/, scripts/, jeu.html, index.html ni de la documentation de référence ne mentionne Phaser', () => {
-    const files = [...walk('js'), ...walk('css'), ...walk('data'), ...walk('scripts'), ...walk('dev'), ...walk('Docs/ref'), 'jeu.html', 'index.html', 'CLAUDE.md', 'package.json', 'eslint.config.js', 'playwright.config.js', 'apercu.txt'];
+    const files = [...walk('js'), ...walk('css'), ...walk('data'), ...walk('scripts'), ...walk('Docs/ref'), 'jeu.html', 'index.html', 'CLAUDE.md', 'package.json', 'eslint.config.js', 'playwright.config.js', 'apercu.txt'];
     for (const f of files) expect(readFileSync(f, 'utf8'), f).not.toMatch(/phaser/i);
   });
 

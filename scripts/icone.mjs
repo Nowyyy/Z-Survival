@@ -1,7 +1,7 @@
 // Génère l'icône du site (« Z » en lettres de sang sur fond noir, police Rubik Wet Paint du dépôt, couleurs lues dans css/tokens.css) et l'écrit en adresses data: PNG dans
 // les pages (<link rel="icon"> et <link rel="apple-touch-icon">) : aucun fichier image n'est ajouté au dépôt.
 // Usage : node scripts/icone.mjs            imprime la taille des deux images ;
-//         node scripts/icone.mjs --ecrire   met à jour index.html, dev/index.html et jeu.html ;
+//         node scripts/icone.mjs --ecrire   met à jour index.html et jeu.html (lot 5g : dev/index.html, le journal, est supprimé) ;
 //         node scripts/icone.mjs --png      écrit icone-180.png dans le dossier courant (pour la regarder ; à ne pas versionner).
 import { readFileSync, writeFileSync } from 'node:fs';
 import { chromium } from '@playwright/test';
@@ -34,7 +34,7 @@ console.log(`apple-touch-icon 180×180 : ${out[180].length} octets ; icône 48×
 if (process.argv.includes('--png')) writeFileSync('icone-180.png', out[180]);
 if (process.argv.includes('--ecrire')) {
   const block = `<link rel="icon" type="image/png" sizes="48x48" href="${uri(48)}">\n  <link rel="apple-touch-icon" sizes="180x180" href="${uri(180)}">`;
-  for (const file of ['index.html', 'dev/index.html', 'jeu.html']) {
+  for (const file of ['index.html', 'jeu.html']) {
     let text = readFileSync(file, 'utf8');
     const before = text;
     text = text.replace(/<link rel="icon"[^>]*>(\n {2}<link rel="apple-touch-icon"[^>]*>)?/, () => block);

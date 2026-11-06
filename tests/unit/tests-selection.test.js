@@ -182,9 +182,11 @@ describe('workflows : tests.yml ajouté, pages.yml intact', () => {
   const tests = readFileSync('.github/workflows/tests.yml', 'utf8');
   const pages = readFileSync('.github/workflows/pages.yml', 'utf8');
   const sha = (s) => createHash('sha256').update(s).digest('hex');
-  it('pages.yml : en-tête (déclencheurs, permissions, concurrence) et tâche deploy identiques au lot 4c ; jobs quick, deploy (job e2e retiré au lot 4g, pas de job verify depuis le lot 2c)', () => {
-    expect(sha(pages.slice(0, pages.indexOf('\njobs:')))).toBe('3ae852e908bb5144ec7fe30507a9596802ea78a290e8494ecde1281e59479450');
-    expect(sha(pages.slice(pages.indexOf('\n  deploy:\n')))).toBe('5ef684728d978d1d2051c1439ef72e78a0d491d88dfc6e71b4a7d9a0071e71da');
+  // Lot 5g : empreintes recalculées après les trois lignes de chemin (commentaire d'en-tête, appel de l'assembleur et son commentaire ; détail et
+  // comparaison ligne à ligne dans workflow.test.js, LOT_5G) ; avant : 3ae852e9… (en-tête) et 5ef68472… (deploy).
+  it('pages.yml : en-tête (déclencheurs, permissions, concurrence) et tâche deploy identiques au lot 4c (sauf les lignes de chemin du lot 5g) ; jobs quick, deploy (job e2e retiré au lot 4g, pas de job verify depuis le lot 2c)', () => {
+    expect(sha(pages.slice(0, pages.indexOf('\njobs:')))).toBe('af32c7d4d82e660e39090f12af2e26ee75a0a1bd8469491590bb474f4bbecca4');
+    expect(sha(pages.slice(pages.indexOf('\n  deploy:\n')))).toBe('a3c9e01b09bb5fe273a8022ca056d600e093bc5fc75069187090316dea5374f4');
     expect([...pages.matchAll(/^ {2}([\w-]+):$/gm)].map((m) => m[1]).filter((j) => pages.indexOf(`\n  ${j}:`) > pages.indexOf('\njobs:'))).toEqual(['quick', 'deploy']);
   });
   it('tests.yml : déclencheurs push (dev, lot-*, essai/** depuis le lot 4f), pull_request, workflow_dispatch avec un choix de palier ; documentation seule ignorée', () => {

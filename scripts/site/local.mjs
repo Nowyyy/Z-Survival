@@ -1,8 +1,9 @@
-// Exécution à blanc locale du déploiement (lot 4c) : la même séquence que le job deploy du workflow, les checkouts remplacés par des worktrees.
-//   node scripts/site/local.mjs [--main <ref>] [--dev <ref> | --no-dev] [--archive <ref> | --no-archive] [--out _site] [--no-install]
-// Par défaut : main = HEAD, dev = origin/dev s'il existe, archive = origin/archive (sinon archive locale) s'il existe.
-// Étapes : worktrees détachés dans un dossier temporaire ; npm ci + npm run build dans main et dev ; assembleur de main (main/scripts/assemble.mjs)
-// avec main/versions.json ; sortie dans _site/ du dépôt ; worktrees retirés. Servir ensuite : npm run serve:site (http://localhost:4180/Z-Survival/).
+// Exécution à blanc locale du déploiement (lot 4c ; lot 5g : --assembleur) : la même séquence que le job deploy du workflow, les checkouts remplacés par des worktrees.
+//   node scripts/site/local.mjs [--main <ref>] [--dev <ref> | --no-dev] [--archive <ref> | --no-archive] [--assembleur main|dev] [--out _site] [--no-install]
+// Par défaut : main = HEAD, dev = origin/dev s'il existe, archive = origin/archive (sinon archive locale) s'il existe, assembleur de main.
+// Étapes : worktrees détachés dans un dossier temporaire ; npm ci + npm run build dans main et dev ; assembleur de main (main/scripts/assemble.mjs) ou,
+// avec --assembleur dev, celui de dev (comme le workflow d'un push de dev, lot 5g), toujours avec main/versions.json ; sortie dans _site/ du dépôt ;
+// worktrees retirés. Servir ensuite : npm run serve:site (http://localhost:4180/Z-Survival/ ; accueil : …/Recette/).
 import { spawnSync } from 'node:child_process';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -40,9 +41,11 @@ try {
     if (!flag('--no-install')) run('npm', ['ci', '--no-audit', '--no-fund'], join(tmp, name));
     run('npm', ['run', 'build', '--silent'], join(tmp, name));
   }
-  run('node', [join(tmp, 'main/scripts/assemble.mjs'), '--main', join(tmp, 'main/_site'), '--versions', join(tmp, 'main/versions.json'), '--out', out,
+  const assembler = value('--assembleur') ?? 'main';
+  if (!['main', 'dev'].includes(assembler) || !refs[assembler]) throw new Error(`--assembleur : main ou dev (branche présente) attendu`);
+  run('node', [join(tmp, `${assembler}/scripts/assemble.mjs`), '--main', join(tmp, 'main/_site'), '--versions', join(tmp, 'main/versions.json'), '--out', out,
     ...(refs.dev ? ['--dev', join(tmp, 'dev/_site')] : []), ...(refs.archive ? ['--archive', join(tmp, 'archive')] : [])], repo);
-  console.log(`Exécution à blanc terminée en ${((Date.now() - started) / 1000).toFixed(1)} s : main ${refs.main}, dev ${refs.dev ?? 'absente'}, archive ${refs.archive ?? 'absente'} → ${out}`);
+  console.log(`Exécution à blanc terminée en ${((Date.now() - started) / 1000).toFixed(1)} s : main ${refs.main}, dev ${refs.dev ?? 'absente'}, archive ${refs.archive ?? 'absente'}, assembleur de ${assembler} → ${out}`);
 } finally {
   for (const dir of added) spawnSync('git', ['worktree', 'remove', '--force', dir], { cwd: repo, stdio: 'ignore' });
   spawnSync('git', ['worktree', 'prune'], { cwd: repo, stdio: 'ignore' });
