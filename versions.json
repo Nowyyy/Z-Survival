@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "latest": "v0.5",
+  "latest": "v0.6",
   "versions": [
     {
       "id": "v0.1",
@@ -52,10 +52,21 @@
       "title": "Argent et sauvegarde, refontes (carte, sons, interface, personnages, sang)",
       "date": "2026-11-02",
       "branch": "lot-4b",
-      "ref": "e6cf00e0392250d1125e4c14c11a91837fca29db",
+      "ref": "e23d92b7cfa46e92693b6695d2e8ad15ecc28344",
+      "entry": "jeu.html",
+      "status": "archive",
+      "note": "Hash : tête de main archivée au lot 5f (e23d92b) ; même jeu que la fusion de lot-4b (e6cf00e, Pull Request #20), avec l'accueil du lot 4c et le seed."
+    },
+    {
+      "id": "v0.6",
+      "label": "V0.6",
+      "title": "Voiture en flammes et hélicoptère écrasé, nouvel impact sur les zombies, réglage des graphismes, travail sur la fluidité",
+      "date": "2026-11-06",
+      "branch": "dev",
+      "ref": "cef11b3158b0e62156aef2fb8187d44d9e8508e6",
       "entry": "jeu.html",
       "status": "actuelle",
-      "note": "Hash : commit de fusion de lot-4b dans main (Pull Request #20)."
+      "note": "Épaves en flammes, nouvel impact sur les zombies, préréglages graphiques, code nettoyé et allégé, ancien modèle et anciens sons retirés, nouvelles adresses du site, accueil refait et fichier des noms."
     }
   ],
   "dev": {

@@ -209,6 +209,10 @@
     { "name": "lot-5h", "version": "v0.6", "date": "2026-11-06", "titre": "Fichier des noms et redirection de /recette/", "points": [
       "Les noms et descriptions des versions et des lots affichés sur l'accueil se modifient dans un fichier texte à la racine du dépôt (noms-versions-et-lots.txt), qui l'emporte sur versions.json et le journal ; un contrôle signale chaque faute avec son numéro de ligne.",
       "L'adresse /recette/ en minuscules (et toute autre casse) mène maintenant à /Recette/, en gardant la suite de l'adresse. Aucun changement du jeu."
+    ] },
+    { "name": "lot-5f", "version": "v0.6", "date": "2026-11-06", "titre": "Publication de V0.6", "points": [
+      "V0.6 devient la version Recette ; V0.5 est archivée et reste jouable à son adresse, comme V0.1 à V0.4, dans la liste des versions précédentes de l'accueil.",
+      "Documentation et règles de travail mises à jour pour la nouvelle organisation du site. Aucun changement du jeu."
     ] }
   ]
 }

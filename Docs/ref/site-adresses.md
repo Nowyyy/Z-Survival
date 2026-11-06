@@ -1,5 +1,7 @@
 # Adresses du site (lot 5g)
 
+> **Lot 5f (publication de V0.6)** : l'état transitoire du risque (b) ci-dessous (ancien accueil sous `/Recette/`, liens en 404) prend fin quand `dev` (avec `lot-5f`) est fusionné dans `main` ; `/Recette/` affiche alors « Recette · Version V0.6 » et les versions précédentes V0.5 à V0.1 ; `/v0.5/` s'ajoute aux archives (son `index.html`, ancien accueil du lot 4c, demande `versions.json` : 404 en console, attendu ; entrée `v0.5/jeu.html` propre). Vérifié en local seulement (« Contrôle local de la publication » en fin de document).
+
 Plan écrit en partie A (base `origin/dev` `775f1d1`), avant tout changement du site. Les noms de branches, de fichiers et le contenu du journal sont des données.
 
 ## Ce que fait le site aujourd'hui (relevé)
@@ -111,3 +113,10 @@ Annuler la fusion de `lot-5g` dans `dev` (`git revert -m 1 <hash de la fusion>` 
 - **Branche lue** : le fichier du **build de `dev`**, sinon de `main`, sinon aucun. Une modification sur `dev` apparaît sur `/Recette/` **après le déploiement de `dev`** (CI `quick` puis `deploy`, quelques minutes).
 - **Erreurs** : l'assembleur n'échoue jamais à cause du fichier (ligne fautive ignorée, nombre d'erreurs et messages dans son journal, identifiant inconnu ignoré avec un avertissement). Mais `tests/unit/noms.test.js` analyse le fichier commité et **échoue à la moindre erreur** (numéro de ligne et message en français) ; comme `quick` précède `deploy` dans `pages.yml`, **une faute de frappe sur `dev` bloque le déploiement** jusqu'à sa correction (accepté par le propriétaire). Corriger : lire le message du test (onglet Actions, job `quick`, étape `npm test`), modifier la ligne indiquée, valider.
 - **Contrôles du contenu initial** (textes de V0.1 à V0.5, un bloc par lot, `afficher: oui`) : seulement tant que le fichier est celui livré au lot 5h (empreinte SHA-256) ; ensuite, les textes du propriétaire ne sont jamais imposés par un test.
+
+## Contrôle local de la publication (lot 5f)
+Site assemblé par `node scripts/site/local.mjs --main HEAD --dev HEAD --archive origin/archive --assembleur dev` (branche `lot-5f`, commit 5f-B ; archive `92631da`) : 1 174 fichiers, 25,4 Mo ; `Recette/site-info.json` : 0 évolution, 5 versions précédentes ; servi par `scripts/site/serve.mjs` sous `/Z-Survival/`, Chromium 667×375 :
+- `/` : « Z-Survival est en construction. », aucun lien ; `/Recette/` : « Recette · Version V0.6 », « Jouer » → `jeu.html`, « Aucune évolution depuis la version Recette. », versions précédentes V0.5 → V0.1 ; `/Recette/jeu.html` et `/dev/jeu.html` : jeu chargé (canvas), aucune erreur ;
+- `/next/` → `/dev/jeu.html` ; `/lots/` et `/dev/` → `/Recette/` ; `/recette/` et `/RECETTE/jeu.html?x=1#b` → `/Recette/…` (après la 404 attendue de la page qui corrige la casse) ;
+- `/v0.5/jeu.html` à `/v0.1/jeu.html` : chargés sans ressource manquante ni erreur ; `/v0.5/` : une 404 (`versions.json`), voir le bandeau ;
+- **non vérifié** : le site publié, le déploiement réel, l'esthétique.

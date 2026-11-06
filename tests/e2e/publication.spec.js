@@ -1,17 +1,32 @@
 // Lot 4c : publication par versions ; lot 5g : nouvelle organisation, sur le site assemblé de test (scripts/site/e2e-site.mjs, http://127.0.0.1:4174/) :
-// full/ = racine « en construction » + Recette/ (build courant) + dev/ (le même build, canal dev) + archives fictives v0.2 à v0.4 + v0.1 indisponible ;
+// full/ = racine « en construction » + Recette/ (build courant) + dev/ (le même build, canal dev) + archives fictives v0.2 à v0.5 + v0.1 indisponible ;
+// lot 5f : V0.6 publiée (Recette V0.6, versions précédentes V0.5 → V0.1, aucune évolution : les lots du journal sont tous en v0.6) ;
 // bare/ = Recette/ seule (ni dev, ni archive) ; many/ = 13 versions fictives (12 précédentes) ; noms/ (lot 5h) = full/ avec un fichier des noms fictif
 // dans le build de dev (NOMS_TEST). Chaque site vit dans un sous-dossier (comme /Z-Survival/).
 // Dans la suite rapide (ESSENTIAL de playwright.config.js), à 667×375, 1440×900 et 375×812. Le lot 5g reprend ici les garde-fous de l'ancien dev.spec
 // (journal des versions supprimé) : axe, cibles de 44 px, console propre, aucune requête externe, aucun débordement, page en français.
 import { test, expect, chromium } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
+import { readFileSync } from 'node:fs';
+import { readEvolutions } from '../../scripts/site/site-info.mjs';
 
 const SITE = 'http://127.0.0.1:4174';
 const FULL = `${SITE}/full/`;
 const BARE = `${SITE}/bare/`;
 const MANY = `${SITE}/many/`;
 const NOMS = `${SITE}/noms/`;
+// Lot 5f : avec V0.6 publiée, le site de test (fait d'après le dépôt par scripts/site/e2e-site.mjs, non modifiable) n'a plus d'évolution. Pour garder
+// la vérification de leur rendu, des évolutions FICTIVES (le journal du dépôt rattaché à une version v0.7 non publiée) sont servies à la place de
+// la liste vide de site-info.json (le reste du fichier est celui de l'assembleur).
+const PUBLIEES = JSON.parse(readFileSync('versions.json', 'utf8')).versions.map((v) => v.id);
+const JOURNAL = JSON.parse(readFileSync('data/changelog.json', 'utf8'));
+const EVOLUTIONS_FICTIVES = readEvolutions({ ...JOURNAL, lots: JOURNAL.lots.map((l) => (typeof l.version === 'string' ? { ...l, version: 'v0.7' } : l)) }, PUBLIEES);
+async function avecEvolutionsFictives(page, base) {
+  await page.route(`${base}Recette/site-info.json`, async (route) => {
+    const response = await route.fetch();
+    route.fulfill({ response, json: { ...(await response.json()), evolutions: EVOLUTIONS_FICTIVES } });
+  });
+}
 const VIEWPORTS = [{ width: 667, height: 375 }, { width: 1440, height: 900 }, { width: 375, height: 812 }];
 
 // Problèmes d'une page : erreurs et avertissements de console, erreurs de page, requêtes en échec ou ≥ 400, requêtes externes.
@@ -68,9 +83,10 @@ for (const viewport of VIEWPORTS) {
       }
     });
 
-    test('Recette/ : étiquette « Recette · Version V0.5 », titre, « Jouer » vers jeu.html, qui se charge', async ({ page }) => {
+    // Lot 5f : V0.6 (avant : « Recette · Version V0.5 »).
+    test('Recette/ : étiquette « Recette · Version V0.6 », titre, « Jouer » vers jeu.html, qui se charge', async ({ page }) => {
       await page.goto(`${FULL}Recette/`);
-      await expect(page.locator('#version')).toHaveText('Recette · Version V0.5');
+      await expect(page.locator('#version')).toHaveText('Recette · Version V0.6');
       await expect(page.getByRole('heading', { level: 1 })).toHaveText('Z-Survival');
       await expect(page.locator('#site-notice')).toBeHidden();
       const play = page.getByRole('link', { name: 'Jouer' });
@@ -91,16 +107,19 @@ for (const viewport of VIEWPORTS) {
       expect(await dev.evaluate((a) => a.href)).toBe(`${FULL}dev/jeu.html`);
     });
 
-    test('évolutions (gauche) et versions précédentes (droite) : régions focusables nommées ; V0.4 → V0.2 en liens, V0.1 indisponible non cliquable', async ({ page }) => {
+    // Lot 5f : V0.5 → V0.2 en liens (avant : V0.4 → V0.2) ; site-info.json de full/ sans évolution : « Aucune évolution depuis la version Recette. »
+    // (avant : premier titre lu dans site-info.json, vérifié maintenant par le test suivant sur des évolutions fictives).
+    test('évolutions (gauche) et versions précédentes (droite) : régions focusables nommées ; aucune évolution (V0.6 publiée) ; V0.5 → V0.2 en liens, V0.1 indisponible non cliquable', async ({ page }) => {
       await page.goto(`${FULL}Recette/`);
       const evolutions = page.getByRole('region', { name: 'Évolutions en cours de développement' });
       const previous = page.getByRole('region', { name: 'Versions précédentes' });
       for (const region of [evolutions, previous]) await expect(region).toHaveAttribute('tabindex', '0');
-      // Lot 5h : le premier titre est lu dans site-info.json (avant : « Nouvelle organisation du site et accueil refait », titre du dernier lot au lot 5g).
       const info = await (await page.request.get(`${FULL}Recette/site-info.json`)).json();
-      await expect(evolutions.locator('.evolution-title').first()).toHaveText(info.evolutions[0].title);
+      expect(info.evolutions).toEqual([]);
+      await expect(page.locator('#evolutions-none')).toHaveText('Aucune évolution depuis la version Recette.');
+      await expect(evolutions.locator('.evolution')).toHaveCount(0);
       const links = previous.locator('a');
-      expect(await links.evaluateAll((els) => els.map((e) => e.getAttribute('href')))).toEqual(['../v0.4/jeu.html', '../v0.3/jeu.html', '../v0.2/jeu.html']);
+      expect(await links.evaluateAll((els) => els.map((e) => e.getAttribute('href')))).toEqual(['../v0.5/jeu.html', '../v0.4/jeu.html', '../v0.3/jeu.html', '../v0.2/jeu.html']);
       const off = previous.locator('.is-off');
       await expect(off).toHaveCount(1);
       await expect(off).toContainText('V0.1 : indisponible');
@@ -110,13 +129,27 @@ for (const viewport of VIEWPORTS) {
       if (viewport.width >= 640) expect(right.x).toBeGreaterThan(left.x + left.width - 1);
       else expect(right.y).toBeGreaterThan(left.y + left.height - 1);
       await links.first().click();
-      await expect(page).toHaveURL(`${FULL}v0.4/jeu.html`);
+      await expect(page).toHaveURL(`${FULL}v0.5/jeu.html`);
       await expect(page.locator('#loaded')).toHaveText('module chargé');
+    });
+
+    // Lot 5f : rendu des évolutions (avant : sur les vraies évolutions de full/, lots en v0.6 non publiée), sur des évolutions fictives servies à la place.
+    test('évolutions fictives (version v0.7 non publiée) : titres et textes dans l\'ordre de site-info.json, la plus récente en haut ; « Aucune évolution » masqué', async ({ page }) => {
+      expect(EVOLUTIONS_FICTIVES.length).toBeGreaterThan(1);
+      await avecEvolutionsFictives(page, FULL);
+      await page.goto(`${FULL}Recette/`);
+      const evolutions = page.getByRole('region', { name: 'Évolutions en cours de développement' });
+      await expect(evolutions.locator('.evolution')).toHaveCount(EVOLUTIONS_FICTIVES.length);
+      await expect(evolutions.locator('.evolution-title').first()).toHaveText(EVOLUTIONS_FICTIVES[0].title);
+      await expect(evolutions.locator('.evolution-text').first()).toHaveText(EVOLUTIONS_FICTIVES[0].text);
+      await expect(evolutions.locator('.evolution-title')).toHaveText(EVOLUTIONS_FICTIVES.map((e) => e.title));
+      await expect(page.locator('#evolutions-none')).toBeHidden();
+      expect(await overflow(page)).toBeLessThanOrEqual(0);
     });
 
     test('12 versions précédentes (many/) : la liste défile dans sa zone, la page ne s\'allonge pas ; « Aucune évolution depuis la version Recette. »', async ({ page }) => {
       await page.goto(`${FULL}Recette/`);
-      await expect(page.locator('#previous-list li')).toHaveCount(4);
+      await expect(page.locator('#previous-list li')).toHaveCount(5); // lot 5f : V0.5 → V0.1 (avant : 4, V0.4 → V0.1)
       const fullHeight = await page.evaluate(() => document.documentElement.scrollHeight);
       await page.goto(`${MANY}Recette/`);
       await expect(page.locator('#previous-list li')).toHaveCount(12);
@@ -187,21 +220,29 @@ for (const viewport of VIEWPORTS) {
 for (const viewport of VIEWPORTS.slice(0, 2)) {
   test.describe(`fichier des noms ${viewport.width}×${viewport.height}`, () => {
     test.use({ viewport });
-    test('noms/ : étiquette « Recette · Version V0.5 (nom de test) », V0.4 et évolution renommées, lot masqué absent, console propre, axe sans violation', async ({ page }) => {
+    // Lot 5f : V0.6 publiée. Le fichier fictif (NOMS_TEST) renomme [v0.5] et [v0.4], devenues des versions précédentes, et les lots 5h et 5g, qui ne
+    // sont plus des évolutions. Avant : étiquette « Recette · Version V0.5 (nom de test) », V0.4 en tête des précédentes, évolution 5h renommée,
+    // lot 5g absent (4 assertions sur les évolutions). Après : Recette V0.6 non renommée (absente du fichier), V0.5 et V0.4 renommées dans les
+    // précédentes, aucune évolution (site-info.json de noms/ : liste vide, lots renommés ou masqués absents) ; le renommage et le masquage d'un lot
+    // restent vérifiés par publication.test.js (« le fichier l'emporte… afficher: non retire le lot »).
+    test('noms/ : Recette V0.6 (absente du fichier) ; V0.5 et V0.4 renommées dans les versions précédentes ; aucune évolution ; console propre, axe sans violation', async ({ page }) => {
       const { problems, external } = watch(page);
-      const full = await (await page.request.get(`${FULL}Recette/site-info.json`)).json();
+      const noms = await (await page.request.get(`${NOMS}Recette/site-info.json`)).json();
+      expect(noms.evolutions).toEqual([]);
+      expect(noms.precedentes.slice(0, 2).map((p) => [p.id, p.label, p.title])).toEqual([['v0.5', 'V0.5 (nom de test)', 'Description de test de la Recette (fictive)'], ['v0.4', 'Quatrième version (test)', 'Description de test de la V0.4 : fictive']]);
       await page.goto(`${NOMS}Recette/`);
-      await expect(page.locator('#version')).toHaveText('Recette · Version V0.5 (nom de test)');
+      await expect(page.locator('#version')).toHaveText('Recette · Version V0.6');
       const evolutions = page.getByRole('region', { name: 'Évolutions en cours de développement' });
-      await expect(evolutions.locator('.evolution-title').first()).toHaveText('Évolution renommée (test)');
-      await expect(evolutions.locator('.evolution-text').first()).toHaveText('Texte de test de l\'évolution, venu du fichier des noms (fictif).');
-      await expect(evolutions.locator('.evolution')).toHaveCount(full.evolutions.length - 1);
-      await expect(evolutions).not.toContainText(full.evolutions.find((e) => e.id === 'lot-5g').title);
+      await expect(evolutions.locator('.evolution')).toHaveCount(0);
+      await expect(page.locator('#evolutions-none')).toHaveText('Aucune évolution depuis la version Recette.');
       const previous = page.getByRole('region', { name: 'Versions précédentes' }).locator('a');
-      await expect(previous.first().locator('.item-label')).toHaveText('Quatrième version (test)');
-      await expect(previous.first().locator('.meta')).toHaveText('Description de test de la V0.4 : fictive');
-      await expect(previous.first()).toHaveAttribute('href', '../v0.4/jeu.html');
-      await expect(previous.nth(1).locator('.item-label')).toHaveText('V0.3');
+      await expect(previous.first().locator('.item-label')).toHaveText('V0.5 (nom de test)');
+      await expect(previous.first().locator('.meta')).toHaveText('Description de test de la Recette (fictive)');
+      await expect(previous.first()).toHaveAttribute('href', '../v0.5/jeu.html');
+      await expect(previous.nth(1).locator('.item-label')).toHaveText('Quatrième version (test)');
+      await expect(previous.nth(1).locator('.meta')).toHaveText('Description de test de la V0.4 : fictive');
+      await expect(previous.nth(1)).toHaveAttribute('href', '../v0.4/jeu.html');
+      await expect(previous.nth(2).locator('.item-label')).toHaveText('V0.3');
       await page.waitForLoadState('networkidle');
       expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
       expect(await overflow(page)).toBeLessThanOrEqual(0);
@@ -231,7 +272,7 @@ test('/recette/ (minuscules) et /RECETTE/ finissent sur /Recette/ avec l\'accuei
   for (const path of ['recette/', 'RECETTE/']) {
     await page.goto(`${FULL}${path}`);
     await expect(page, path).toHaveURL(`${FULL}Recette/`);
-    await expect(page.locator('#version'), path).toHaveText('Recette · Version V0.5');
+    await expect(page.locator('#version'), path).toHaveText('Recette · Version V0.6'); // lot 5f : avant V0.5
   }
   await page.waitForLoadState('networkidle');
   expect(external).toEqual([]);
@@ -243,7 +284,9 @@ test('/recette/jeu.html?x=1#b finit sur /Recette/jeu.html?x=1#b (requête et fra
   await page.goto(`${FULL}recette/jeu.html?x=1#b`);
   await page.waitForURL(`${FULL}Recette/jeu.html?x=1#b`);
   await expect(page).toHaveURL(`${FULL}Recette/jeu.html?x=1#b`);
-  await expect(page.locator('canvas').first()).toBeAttached();
+  // Lot 5f : délai de 30 s, comme « Jouer » et next/ plus bas (écran de préparation, rendu logiciel sous charge) ; avant : 5 s par défaut,
+  // dépassés au palier complet (essai/complet-7, tranche 13, après les tests de budget 3D).
+  await expect(page.locator('canvas').first()).toBeAttached({ timeout: 30_000 });
   expect(external).toEqual([]);
 });
 
@@ -275,21 +318,23 @@ test('/Recette/ répond 200 ; /dev/jeu.html et /v0.N/ inchangés (200, sans redi
   expect(await (await request.get(`${FULL}v0.2/jeu.html`)).text()).toContain('Archive de test (fictive).');
 });
 
+// Lot 5f : V0.6 (avant : latest v0.5, V0.5, précédentes V0.4 → V0.1, au moins une évolution) ; après : aucune évolution, V0.5 archive.
 test('Recette/ sert versions.json, build-info.json (release) et site-info.json ; dev/ sert build-info.json (dev) ; archives : build-info.json', async ({ request }) => {
-  expect((await (await request.get(`${FULL}Recette/versions.json`)).json()).latest).toBe('v0.5');
-  expect(await (await request.get(`${FULL}Recette/build-info.json`)).json()).toMatchObject({ channel: 'release', version: 'V0.5', branch: 'main' });
+  expect((await (await request.get(`${FULL}Recette/versions.json`)).json()).latest).toBe('v0.6');
+  expect(await (await request.get(`${FULL}Recette/build-info.json`)).json()).toMatchObject({ channel: 'release', version: 'V0.6', branch: 'main' });
   const info = await (await request.get(`${FULL}Recette/site-info.json`)).json();
-  expect(info).toMatchObject({ schema: 1, recette: { label: 'V0.5', entry: 'jeu.html' }, dev: { present: true, sha: 'abcdef1', entry: '../dev/jeu.html' } });
-  expect(info.precedentes.map((p) => p.label)).toEqual(['V0.4', 'V0.3', 'V0.2', 'V0.1']);
-  expect(info.evolutions.length).toBeGreaterThan(0);
+  expect(info).toMatchObject({ schema: 1, recette: { label: 'V0.6', entry: 'jeu.html' }, dev: { present: true, sha: 'abcdef1', entry: '../dev/jeu.html' } });
+  expect(info.precedentes.map((p) => p.label)).toEqual(['V0.5', 'V0.4', 'V0.3', 'V0.2', 'V0.1']);
+  expect(info.evolutions).toEqual([]);
   expect(await (await request.get(`${FULL}dev/build-info.json`)).json()).toMatchObject({ channel: 'dev', sha: 'abcdef1' });
   expect(await (await request.get(`${FULL}v0.4/build-info.json`)).json()).toMatchObject({ channel: 'archive', version: 'V0.4' });
+  expect(await (await request.get(`${FULL}v0.5/build-info.json`)).json()).toMatchObject({ channel: 'archive', version: 'V0.5' });
   expect((await (await request.get(`${BARE}Recette/site-info.json`)).json()).dev).toEqual({ present: false, sha: '', date: '', entry: '../dev/jeu.html' });
   expect((await (await request.get(`${MANY}Recette/site-info.json`)).json()).precedentes).toHaveLength(12);
 });
 
-test('archives v0.2 à v0.4 : chaque entrée se charge sans ressource manquante, sans requête externe ni stockage', async ({ page, context }) => {
-  for (const id of ['v0.4', 'v0.3', 'v0.2']) {
+test('archives v0.2 à v0.5 : chaque entrée se charge sans ressource manquante, sans requête externe ni stockage', async ({ page, context }) => {
+  for (const id of ['v0.5', 'v0.4', 'v0.3', 'v0.2']) { // lot 5f : v0.5 ajoutée
     const { problems, external } = watch(page);
     await page.goto(`${FULL}${id}/jeu.html`);
     await expect(page.locator('#loaded'), id).toHaveText('module chargé');
@@ -352,12 +397,12 @@ test('redirections : rafraîchissement immédiat (0 s) vers une adresse relative
 
 test('bare/ (sans dev ni archive) : dev/ dit « Aucun build de développement pour l\'instant », next/ y mène, versions précédentes indisponibles', async ({ page, request }) => {
   const info = await (await request.get(`${BARE}Recette/site-info.json`)).json();
-  expect(info.precedentes.map((p) => p.status)).toEqual(['indisponible', 'indisponible', 'indisponible', 'indisponible']);
+  expect(info.precedentes.map((p) => p.status)).toEqual(['indisponible', 'indisponible', 'indisponible', 'indisponible', 'indisponible']); // lot 5f : V0.5 à V0.1 (avant : 4)
   expect(info.evolutions).toEqual([]);
   await page.goto(`${BARE}next/`);
   await expect(page).toHaveURL(`${BARE}dev/`);
   await expect(page.getByText('Aucun build de développement pour l\'instant')).toBeVisible();
-  for (const id of ['v0.1', 'v0.2', 'v0.3', 'v0.4']) expect((await request.get(`${BARE}${id}/jeu.html`)).status(), id).toBe(404);
+  for (const id of ['v0.1', 'v0.2', 'v0.3', 'v0.4', 'v0.5']) expect((await request.get(`${BARE}${id}/jeu.html`)).status(), id).toBe(404);
 });
 
 test('many/ : 12 versions précédentes publiées (v0.12 à v0.1), chaque archive répond ; Recette V0.13 ; aucune évolution (v0.6 publiée)', async ({ request }) => {
