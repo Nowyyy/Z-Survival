@@ -10,8 +10,6 @@ const list = (a) => (Array.isArray(a) ? a : []);
 const round = (v, d = 1) => Math.round(num(v) * 10 ** d) / 10 ** d;
 const ri = (v) => Math.round(num(v));
 
-export const NATURES = Object.freeze(['mur', 'ouverture', 'fenetre', 'pilier', 'escalier', 'meuble', 'objet']);
-export const ACTIONS = Object.freeze(['corriger', 'remplacer', 'ajouter', 'retirer', 'garder']);
 // Écart maximal d'une fenêtre par rapport à sa position d'origine (règle du lot 3b : 10 px = 50 unités).
 export const WINDOW_MAX_SHIFT = 50;
 // Une ouverture (porte) qui s'écarte du modèle de plus de 25 unités est seulement signalée.

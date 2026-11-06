@@ -1,6 +1,6 @@
 // Géométrie de rectangles (lot 3b) : union disjointe, soustraction, polygone rectiligne, segments de mur. Pur : n'utilise que ses arguments,
 // renvoie de nouveaux objets, ne lève aucune exception sur des entrées inattendues. Rectangles { x, y, w, h } (coin nord-ouest).
-import { isRect, rectGap, validRects } from './collision.js';
+import { isRect, validRects } from './collision.js';
 import { isNum, num } from './vec.js';
 
 const EPS = 1e-9;
@@ -109,13 +109,6 @@ export function coveredBy(rect, rects) {
     }
   }
   return true;
-}
-
-// Distance du rectangle à l'ensemble de rectangles (0 s'il en touche un) ; Infinity si l'ensemble est vide.
-export function gapToAll(rect, list) {
-  let best = Infinity;
-  for (const o of validRects(list)) best = Math.min(best, rectGap(rect, o));
-  return best;
 }
 
 // Segments de mur { x1, y1, x2, y2 } (horizontaux ou verticaux) -> rectangles d'épaisseur `thickness` centrés sur les lignes. Une extrémité est

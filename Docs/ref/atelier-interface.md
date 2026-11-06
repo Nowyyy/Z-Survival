@@ -14,7 +14,7 @@ Texte ≥ 14 px ; contraste ≥ 4,5:1 (grand texte : 24 px, ou 18,66 px gras, �
 Propositions : variables `--ui3k-safe-*` posées sur la scène (préréglage de taille ou choix « Zone de sécurité »). Actuel : le padding de la sonde `.safe-probe` du jeu est imposé par une feuille injectée puis un `resize` fait relire les valeurs par `js/game/safe-area.js` (le jeu publie lui-même `--safe-*`). Valeurs : 812×375 encoche 44 / 21, 844×390 îlot 47 / 21 (gabarits publics d'Apple, non vérifiés sur un téléphone).
 
 ## Formats
-- **État** : `mockState(params, config)` → `{ hp, maxHp, hpRatio, chutes, money, moneyText, moneyCompact, wave, maxWave, reinforced, floor, multiFloor, remaining, kills, chrono, chronoText, save, trial, down {mode, seconds}, paused, end, earned, bestWave, record, nextZone, warnings }` ; `worstCase()`, `states()`, `stateById()`.
+- **État** : `mockState(params, config)` → `{ hp, maxHp, hpRatio, chutes, money, moneyText, moneyCompact, wave, maxWave, reinforced, floor, multiFloor, remaining, kills, chrono, chronoText, save, trial, down {mode, seconds}, paused, end, earned, bestWave, record, nextZone, warnings }` ; `worstCase()`, `states()`.
 - **Mes choix** : une ligne par écran `ecran=hud;direction=B;argent=haut-droite;texte=M;densite=compacte;fond=leger;contour=fin` (« actuel » sans macros), puis `priorite2=retour-degats:B`. Lecture : `parseChoices` (`js/atelier-interface/choices.js`), tolérante (avertissements, jamais d'exception).
 - **Tests** : `?test=1` expose `window.__zsUi` (`ready`, `getState`, `set`, `setParam`, `measure`, `stability`, `compare`, `keepChoice`, `keepP2`, `choicesText`, `parseChoices`, `config`) ; rien sans `?test=1`.
 

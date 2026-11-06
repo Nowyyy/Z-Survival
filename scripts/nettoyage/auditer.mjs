@@ -73,7 +73,22 @@ const JAMAIS = [
   'package.json', 'package-lock.json', 'CLAUDE.md', 'README.md', 'Docs/ref/conventions.md', '.gitignore', 'eslint.config.js',
   'playwright.config.js', 'vitest.config.js', 'build-info.json', 'apercu.txt', 'vendor/**', 'jeu.html', 'index.html', 'dev/**',
 ];
+// Lot 5c-B1 : fichiers qu'un test d'hygiène veut inchangés (bloc it(…) dont le titre dit « inchangé(e)s » et qui lance `git diff --name-only`) :
+// y retirer même un export mort casse ce test (js/core/siege.js et synth.js, « règles de jeu inchangées »). Un tel fichier n'est jamais proposé.
+const PROTEGES = new Map();
+for (const [f, src] of TEXT) {
+  if (!/^tests\/.*\.(test|spec)\.js$/.test(f) || !src.includes('diff --name-only')) continue;
+  const blocs = src.split(/\n\s*(?=it\(|test\()/);
+  for (const b of blocs) {
+    if (!/^(?:it|test)\(\s*['"`][^'"`]*inchang/.test(b.trimStart()) || !b.includes('diff --name-only')) continue;
+    for (const m of b.matchAll(/(?:js|data|css)\/[\w./-]+\.(?:js|json|css)/g)) {
+      if (!PROTEGES.has(m[0])) PROTEGES.set(m[0], new Set());
+      PROTEGES.get(m[0]).add(f);
+    }
+  }
+}
 function interdit(f) {
+  if (PROTEGES.has(f)) return `fichier voulu inchangé par ${[...PROTEGES.get(f)].join(', ')}`;
   if (LOT_5D.includes(f)) return 'réservé au lot 5d';
   if (LOT_5D_TESTS.includes(f)) return 'test d\'un fichier du lot 5d';
   if (GARDE_FOUS.has(f)) return 'fichier de test garde-fou (tests/selection.json)';

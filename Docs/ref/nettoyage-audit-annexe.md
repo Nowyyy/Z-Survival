@@ -108,6 +108,7 @@ Références à des fichiers absents (aucune ne vient de ce lot) : `atelier-inte
 | 212 clés de texte (`atelier.*`, `ui3k.*`, `dev.persos.*`, `dev.sons.etiquette.*`, `home.channel.*`…) | visées par des préfixes construits ; le garde-fou `data-i18n` contrôle déjà les orphelines |
 | `fonts/README.txt` | sans lecteur, mais il dit quelle licence OFL couvre quelle police |
 | `Docs/ref/interface-actuelle.md`, `personnages-actuels.md`, `sons-actuels.md` | décrivent l'état d'avant les refontes, cités par des documents gardés |
+| `MODES` (`siege.js:13`), `LAYER_TYPES` (`synth.js:17`) | B1 : exports morts, mais leurs fichiers sont voulus inchangés par des garde-fous d'hygiène (`atelier-hygiene`, `sauvegarde-donnees` pour `siege.js` ; `maps-hygiene`, `zones-hygiene`, `etage-hygiene`, `atelier-hygiene`, `sauvegarde-donnees` pour `synth.js` : `git diff --name-only` vide) ; retirés puis restaurés en B1, l'outil les classe désormais « fichier voulu inchangé » |
 | `affine` (`character-parts.js:98`) | A : fichier du lot 5d. A2 : jamais importé, mais `poses-identite.test.js:113` (garde-fou du 5d) vérifie que tout export de l'oracle figé `character-parts.oracle.js` (qui définit son propre `affine`) existe dans `character-parts.js` : le retirer casse ce test, et l'oracle est intouchable |
 | `js/game/sound-atelier.js`, `data/game/sounds-atelier.json` (`?sons=A|B|C`) | lus par l'atelier et par les tests de sons : à revoir avec les pages au lot 13 |
 
