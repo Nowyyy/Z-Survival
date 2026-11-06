@@ -81,3 +81,16 @@ Chaque entrée de `lots` des lots 5a à 5g porte `version: "v0.6"` (version cibl
 
 ## Retour arrière
 Annuler la fusion de `lot-5g` dans `dev` (`git revert -m 1 <hash de la fusion>` dans une branche, fusionnée dans `dev`) : au déploiement suivant de `dev`, `pages.yml` reprend l'assembleur de `main` et le site revient à l'ancienne organisation (racine = `main`, `next/` = `dev`, journal `/dev/`).
+
+## Lot 5h — relevé (partie A, base `origin/dev` `05b5c5a`)
+
+1. `assembleSite` (`scripts/assemble.mjs`) appelle `buildSiteInfo` (`scripts/site/site-info.mjs`) après la copie des archives, puis `validateSiteInfo`, et écrit `Recette/site-info.json`.
+2. `recette` : version `latest` du `versions.json` de `main` : `id`, `label` **recalculé** (`V<id>`), `title` (← `title`, borné à 120), `date`, `ref`, `entry`.
+3. `precedentes` : les autres versions, la plus récente en haut : `id`, `label` **recalculé** (`V<id>`), `title`, `note`, `entry` (`../v0.N/<entrée>` ou `null`), `status`.
+4. `evolutions` : lots du `data/changelog.json` **du build de `dev`** dont `version` n'est pas publiée : `id` ← `name`, `title` ← `titre`, `text` ← `points[0]` (bornés 120 / 300), `date`, `version`.
+5. Le champ `label` de `versions.json` n'est lu nulle part : `validateSiteInfo` exige `label === "V<id>"`, et l'accueil (`js/accueil/home.js`) recalcule lui aussi `V<id>` pour « Recette · Version … » et pour chaque version précédente ; `recette.title` n'est pas affiché.
+6. `npm run build` (`scripts/build.mjs`) copie dans `_site/` une liste fixe : les pages HTML nommées, `apercu.txt`, `css/`, `js/`, `data/` (en entier), `fonts/`, `vendor/` ; un autre fichier de la racine n'est pas copié.
+7. `pages.yml` : `deploy` a `needs: quick` ; `quick` (`npm ci`, `npm run lint`, `npm test`) tourne sur le commit poussé (`main` ou `dev`) : **un test Vitest qui échoue sur `dev` bloque le déploiement** (rien n'est modifié).
+8. `scripts/site/serve.mjs` : `resolveRequest` → `path.resolve`, puis `stat` / `readFile` : la casse est **celle du système de fichiers** (sensible sous Linux, insensible sous Windows et macOS par défaut).
+9. Chemin inconnu (ou hors du préfixe `--base`) : réponse 404 `text/plain` « Not found » ; aucune page `404.html` servie.
+10. Conséquence : appliquer les noms dans l'assembleur avant `buildSiteInfo` (sur des copies de `versions.json` et du journal) suffit pour les titres, les textes, `version` et `afficher` ; **l'étiquette (`nom` d'une version) n'apparaîtrait pas sans modifier `js/accueil/home.js`** (interdit par le prompt du lot) : arrêt après la partie A, voir le bilan.

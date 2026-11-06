@@ -283,6 +283,7 @@
     { "fichier": "tests/unit/persos-jeu.test.js", "categorie": "G", "valeur": "garde-fou", "recommandation": "garder ; corriger la comparaison à origin/lot-4b", "raison": "Invariance des données de logique ; un cas dépend des références Git locales (échoue si origin/lot-4b manque et main est en retard).",
       "groupes": [ { "motif": "données de logique inchangées", "categorie": "I", "note": "dépend de origin/lot-4b et de la branche locale main" } ] },
     { "fichier": "tests/unit/persos-kit.test.js", "categorie": "P", "valeur": "règle de jeu", "recommandation": "garder", "raison": "Kit des personnages." },
+    { "fichier": "tests/unit/noms.test.js", "categorie": "G", "valeur": "garde-fou", "recommandation": "garder", "raison": "Fichier des noms (lot 5h) : analyseur, priorité, fichier commité sans aucune erreur." },
     { "fichier": "tests/unit/persos-sang.test.js", "categorie": "G", "valeur": "garde-fou", "recommandation": "garder", "raison": "Sang : plafonds, déterminisme, budget." },
     { "fichier": "tests/unit/persos-variantes.test.js", "categorie": "P", "valeur": "règle de jeu", "recommandation": "garder", "raison": "Variantes des personnages." },
     { "fichier": "tests/unit/publication.test.js", "categorie": "G", "valeur": "garde-fou", "recommandation": "garder", "raison": "Assembleur, workflow, publication." },

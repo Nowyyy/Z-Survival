@@ -205,6 +205,10 @@
     { "name": "lot-5g", "version": "v0.6", "date": "2026-11-06", "titre": "Nouvelle organisation du site et accueil refait", "points": [
       "Le site change d'adresses : la racine affiche « en construction », l'accueil et le jeu de la Recette sont sous /Recette/, le dernier build de développement sous /dev/jeu.html ; /next/ et /lots/ renvoient aux nouvelles adresses, les versions précédentes (/v0.N/) ne changent pas.",
       "L'accueil est refait : « Jouer », le dernier build de développement, les évolutions en cours de développement (à gauche) et toutes les versions précédentes (à droite, dans une liste qui défile) ; le journal des versions est retiré. Aucun changement du jeu."
+    ] },
+    { "name": "lot-5h", "version": "v0.6", "date": "2026-11-06", "titre": "Fichier des noms des versions et des lots", "points": [
+      "En cours : un fichier texte à la racine du dépôt (noms-versions-et-lots.txt) contient le nom et la description de chaque version et de chaque lot, et un contrôle signale chaque faute avec son numéro de ligne ; le site ne le lit pas encore.",
+      "Aucun changement du jeu."
     ] }
   ]
 }
