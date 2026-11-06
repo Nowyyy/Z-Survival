@@ -62,11 +62,12 @@ const glob = (pattern) => new RegExp(`^${pattern.replace(/[.+^$()|[\]\\]/g, '\\$
 const matchAny = (f, patterns) => patterns.some((p) => glob(p).test(f));
 const selection = JSON.parse(TEXT.get('tests/selection.json'));
 const GARDE_FOUS = new Set(selection['garde-fous'].map((g) => g.fichier));
-const LOT_5D = ['js/core/collision.js', 'js/core/pose-v2.js', 'js/core/character-parts.js'];
-const LOT_5D_TESTS = FILES.filter((f) => f.startsWith('tests/') && LOT_5D.some((m) => (TEXT.get(f) ?? '').includes(basename(m)) && (TEXT.get(f) ?? '').includes('import')) && /\b(collision|pose-v2|character-parts)\b/.test(TEXT.get(f) ?? ''));
+// Lot 5c-A2 : le lot 5d est fusionné dans dev ; ses trois fichiers ne sont plus réservés (liste vide), ses oracles figés sont « jamais candidats ».
+const LOT_5D = [];
+const LOT_5D_TESTS = FILES.filter((f) => f.startsWith('tests/') && LOT_5D.length && LOT_5D.some((m) => (TEXT.get(f) ?? '').includes(basename(m)) && (TEXT.get(f) ?? '').includes('import')) && /\b(collision|pose-v2|character-parts)\b/.test(TEXT.get(f) ?? ''));
 const JAMAIS = [
   'Docs/lots/**', 'Docs/seed.md', 'data/changelog.json', 'tests/budget*.json', 'tests/dernier-complet.json', 'tests/selection.json',
-  'scripts/tests/**', 'scripts/versions/**', 'scripts/site/**', 'scripts/assemble.mjs', 'scripts/perf/**', 'scripts/nettoyage/**',
+  'scripts/tests/**', 'tests/unit/helpers/oracle/**', 'scripts/versions/**', 'scripts/site/**', 'scripts/assemble.mjs', 'scripts/perf/**', 'scripts/nettoyage/**',
   'js/save/**', 'js/core/save.js', 'sauvegarde.html', 'js/sauvegarde/**', 'css/sauvegarde.css', 'data/game/world.json', 'data/game/decor.json',
   'data/game/graphics.json', 'js/core/graphics.js', 'js/game/graphics-apply.js', 'js/game/graphics-boot.js', '.github/**', 'versions.json',
   'package.json', 'package-lock.json', 'CLAUDE.md', 'README.md', 'Docs/ref/conventions.md', '.gitignore', 'eslint.config.js',
@@ -240,6 +241,19 @@ function etendue(src, n) {
 // ---------------------------------------------------------------- exports (N1 : exports morts)
 const exportsMorts = [];
 const exportsTestsSeuls = [];
+// Lot 5c-A2 : accès calculé aux exports d'un module (import * as X, puis Object.keys(X), Object.entries(X), k in X ou X[k]) : tous les exports
+// du module sont alors lus sans être nommés (exemple : tests/unit/poses-identite.test.js compare les clés de character-parts.js à son oracle).
+const NS_ITERE = new Map();
+for (const [f, src] of TEXT) {
+  if (!/\.m?js$/.test(f)) continue;
+  for (const m of src.matchAll(/import\s+\*\s+as\s+([A-Za-z_$][\w$]*)\s+from\s+['"](\.{1,2}\/[^'"]+)['"]/g)) {
+    const x = m[1].replace(/\$/g, '\\$');
+    if (!new RegExp(`Object\\.(?:keys|entries|values)\\(${x}\\)|\\bin ${x}\\b|(?<![\\w$.])${x}\\[`).test(src)) continue;
+    const cible = posix.normalize(posix.join(posix.dirname(f), m[2]));
+    if (!NS_ITERE.has(cible)) NS_ITERE.set(cible, []);
+    NS_ITERE.get(cible).push(f);
+  }
+}
 for (const f of FILES.filter((x) => /^(js|scripts)\/.*\.m?js$/.test(x) && TEXT.has(x))) {
   const src = TEXT.get(f);
   const names = new Set();
@@ -256,7 +270,7 @@ for (const f of FILES.filter((x) => /^(js|scripts)\/.*\.m?js$/.test(x) && TEXT.h
     const tests = others.filter((x) => zoneOf(x) === 'tests');
     const docs = others.filter((x) => zoneOf(x) === 'doc');
     // Accès dynamique à un module (m[name], Object.keys(mod)…) : signalé par la présence d'un import(…) dont on lit des clés calculées.
-    const row = { fichier: f, export: n, interne: inside, code, tests, docs, interdit: interdit(f), ...etendue(src, n) };
+    const row = { fichier: f, export: n, interne: inside, code, tests, docs, interdit: interdit(f) ?? (NS_ITERE.has(f) ? `exports lus par accès calculé (${NS_ITERE.get(f).join(', ')})` : null), ...etendue(src, n) };
     if (!code.length && !tests.length) exportsMorts.push(row);
     else if (!code.length && tests.length) exportsTestsSeuls.push(row);
   }
@@ -425,7 +439,7 @@ for (const f of FILES.filter((x) => x.startsWith('scripts/') && /\.(mjs|py|js)$/
   const name = basename(f);
   const pkg = TEXT.get('package.json').includes(f) || TEXT.get('package.json').includes(name);
   const ci = FILES.filter((x) => x.startsWith('.github/') && TEXT.get(x).includes(name));
-  const docs = DOC_ACTIVE.filter((x) => TEXT.get(x).includes(name));
+  const docs = DOC_ACTIVE.filter((x) => (TEXT.get(x) ?? '').includes(name));
   const bilans = FILES.filter((x) => x.startsWith('Docs/lots/') && TEXT.get(x).includes(name));
   const imp = where(IMPORTERS.get(f), [f]);
   const autres = where(TOK.get(name), [f]).filter((x) => zoneOf(x) !== 'doc' && !x.startsWith('.github/') && x !== 'package.json');
@@ -435,7 +449,7 @@ for (const f of FILES.filter((x) => x.startsWith('scripts/') && /\.(mjs|py|js)$/
 // ---------------------------------------------------------------- documentation (N5)
 const docsN5 = [];
 const existing = new Set(FILES);
-for (const f of FILES.filter((x) => x.startsWith('Docs/ref/') && x.endsWith('.md'))) {
+for (const f of FILES.filter((x) => x.startsWith('Docs/ref/') && x.endsWith('.md') && TEXT.has(x))) {
   const src = TEXT.get(f);
   const cited = new Set();
   for (const m of src.matchAll(/`([\w./-]+\.(?:m?js|json|css|html|md|py|txt))`/g)) cited.add(m[1]);

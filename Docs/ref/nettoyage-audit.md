@@ -1,6 +1,26 @@
-# Audit de nettoyage (lot 5c-A)
+# Audit de nettoyage (lots 5c-A et 5c-A2)
 
-Base `origin/dev` = `d18023c` (lots 5a et 5b fusionnés), branche `lot-5c`, 5 novembre 2026, conteneur à 4 cœurs. Outil : `node scripts/nettoyage/auditer.mjs [--json <chemin hors dépôt>] [--court]` (Node natif, aucune dépendance, n'écrit rien dans le dépôt). Tableaux complets et preuves : `Docs/ref/nettoyage-audit-annexe.md`. **Rien n'est supprimé en partie A ; aucun comportement du jeu ne change.** Décisions : `Docs/ref/nettoyage-decisions.modele.md`.
+Audit A : base `origin/dev` = `d18023c` (lots 5a et 5b), 5 novembre 2026. **Audit rafraîchi (A2)** : `origin/dev` = `20fa5c5` (lot 5d fusionné) intégré à `lot-5c` par le commit de fusion `c3a4379`, 6 novembre 2026, conteneur à 4 cœurs. Outil : `node scripts/nettoyage/auditer.mjs [--json <chemin hors dépôt>] [--court]` (Node natif, aucune dépendance, n'écrit rien dans le dépôt). Tableaux complets et preuves : `Docs/ref/nettoyage-audit-annexe.md`. Décisions du propriétaire : `Docs/ref/nettoyage-decisions.md` (`STATUT: VALIDE`). **Rien n'est supprimé en partie A ; aucun comportement du jeu ne change.**
+
+## Rafraîchissement A2 (état fusionné `c3a4379`, avant toute suppression)
+| Mesure | Valeur (A2) | Écart avec A |
+|---|---|---|
+| Fichiers suivis | 633 (js 164, css 16, data 55, scripts 77, tests 208, Docs 73, dev 2, fonts 8, vendor 5, 12 pages et `jeu.html`…) | +17 (lot 5d : oracles, harnais, tests d'identité, bilan) |
+| Lignes | js 29 544 · css 4 888 · data 37 772 · scripts 8 157 · tests 42 968 · Docs 5 304 · pages 1 026 | js +585, scripts +923, tests +2 185 |
+| `npm run build` | `_site/` : 263 fichiers, 5 328 665 o | +27 222 o |
+| Site assemblé (`scripts/site/local.mjs --no-install`) | 929 fichiers, 21 588 359 o ; racine 267 fichiers, 5 332 295 o ; `next/` 265, 5 330 609 o | `next/` = `dev` 5d |
+| JavaScript chargé par `jeu.html?test=1&seed=1` | 113 URL `.js`, aucune ressource en erreur ; ni `pose.js`, ni `character.js`, ni `sound-legacy.js` | = |
+| `npm test` | 132 fichiers, 6 871 tests (6 861 réussis, 10 ignorés), 66 s | +3 fichiers, +30 tests |
+| `npm run test:standard` | 1 021 s : lint 7,5 s, Vitest 63,2 s, Playwright 948,9 s (333 tests réussis ; fumée et 14 fichiers : rejeu total, `tests/selection.json` modifié par la partie A) | — |
+| Appels / triangles (`budget-instant.mjs`) | eleve R1 62/38 479, R2 61/38 577, U1 67/39 635, U4 77/40 397 ; moyen 60/23 867, 59/23 965, 65/25 023, 75/25 785 ; faible 42/19 253, 42/19 351, 46/19 619, 54/20 377 | identiques |
+| Six vues (`vues.mjs`) | R1 0,2195/419 · R2 0,2263/393 · U1 0,2144/224 · U4 0,2215/365 · voiture 0,2000/210 · hélico 0,2228/138 | identiques |
+| Empreintes `trace-logique.mjs` (600 pas, finale / chaîne, 16 premiers caractères) | 1 `7e5fed6a1bcf6457`/`42afea80daaa3bbe` · 2 `3cab05cf38810eb6`/`00b7b38f31552fb3` · 3 `4b78adcd92477b6f`/`e5af31ead2954076` · 4 `dde468cb9e7f2fe7`/`f87dc57dd273be87` · 5 `42056a4014538ada`/`dc4e72e69f078252` · 6 `8a17408c5401a78a`/`c9e42519963901cd` | nouvelle référence (harnais du 5d) |
+| Même harnais avec `--os` (exécution séparée) | 1 `7e5fed6a…` · 2 `3cab05cf…` · 3 `327e7ca1ff2fee1a` · 4 `dde468cb…` · 5 `42056a40…` · 6 `8a17408c…` ; os 38 à 209 par point | référence des matrices d'os |
+| Lighthouse mobile `jeu.html` (5 passes) | 55, 38, 55, 55, 55 : **médiane 55** ; CLS 0,0016 | information seulement |
+
+**Candidats après le lot 5d** : N1 inchangé (13 exports, 2 jetons, `tests/e2e/.gitkeep`). **`affine`** (`character-parts.js:98`) n'est plus réservé, mais reste **douteux** : `tests/unit/poses-identite.test.js:113` (garde-fou du 5d) exige que chaque export de l'oracle figé `tests/unit/helpers/oracle/character-parts.oracle.js` (intouchable) existe dans `character-parts.js` (accès calculé par `Object.keys` et `in`) ; le retirer casserait ce test : **non appliqué**. Les trois fichiers du 5d (`collision.js`, `pose-v2.js`, `character-parts.js`) n'ont aucun autre export mort. L'outil relève désormais ces accès calculés (`import * as X` puis `Object.keys(X)`, `k in X`, `X[k]`) : `atelier-analyse`, `collision-identite`, `lots`, `poses-identite` ; aucun des 13 exports de N1 n'est concerné. N2, N4, N5 : inchangés ; seuls les éléments approuvés par les décisions sont appliqués en partie B (N4 : 3 scripts sur 5 ; `planche-textures.mjs` et `stats-joueur.mjs` gardés). Aucun candidat nouveau. Phrases périmées (N5) : voir l'annexe F (numéros de ligne de l'état fusionné). Corrections de l'outil : liste des fichiers du 5d vidée (oracles « jamais candidats »), documents de l'audit ignorés sans plantage.
+
+## Audit A (base `d18023c`, conservé pour comparaison)
 
 ## Étape 0 — refontes, compatibilité, graphe
 1. Moteur 2D d'origine → Three.js (lot 1m) : le moteur 2D est parti ; il reste la salle du lot 1m (`world.json`, `decor.json`, `?map=salle`, `?empty=1`) : jamais candidate.
@@ -53,7 +73,7 @@ Base `origin/dev` = `d18023c` (lots 5a et 5b fusionnés), branche `lot-5c`, 5 no
 - **`?sons=ancien`, `sound-legacy.js`, `sounds-legacy.json`** (700 l., 14 948 o) : garde-fous `sons-integres.test.js` (l. 33, 85-110, 247-278 : import dynamique exigé), `sons-integres-ambiances.test.js:71`, `atelier-sons-hygiene.test.js:76`, `data-sons*.test.js` (assistant `sons-anciens.js`) ; `atelier-sons.html` compare à ces recettes ; `scripts/sons/integrer.mjs` écrit le fichier. Même la seule partie « jeu » (≈ 45 l.) touche un garde-fou.
 - **`?percee=0`** : garde-fou `atelier-retours.spec.js:26` (« aucun matériau transparent ») le prend pour référence.
 - **Pages techniques** : `measure-dom.js` et `actuel.js` de l'atelier de l'interface servent aux garde-fous d'interface du jeu (`graphismes.spec.js`, contrastes, 44 px).
-- 19 sélecteurs CSS, 4 jetons `--game-repair-*`, 212 clés de texte sans usage littéral : tous visés par un préfixe dynamique ; `fonts/README.txt` (licences OFL des polices) ; `Docs/ref/interface-actuelle.md`, `personnages-actuels.md`, `sons-actuels.md`, `fusion-3j.md`, `fusion-3k.md` (cités par d'autres documents ou par des garde-fous) ; `affine` de `character-parts.js` (mort, mais lot 5d).
+- 19 sélecteurs CSS, 4 jetons `--game-repair-*`, 212 clés de texte sans usage littéral : tous visés par un préfixe dynamique ; `fonts/README.txt` (licences OFL des polices) ; `Docs/ref/interface-actuelle.md`, `personnages-actuels.md`, `sons-actuels.md`, `fusion-3j.md`, `fusion-3k.md` (cités par d'autres documents ou par des garde-fous) ; `affine` de `character-parts.js` (mort dans le code, mais lu par `poses-identite.test.js:113` qui compare les exports à l'oracle figé : A2).
 - Hors candidature : 231 exports utilisés seulement par des tests, 153 exports utilisés seulement dans leur fichier (code vivant).
 
 ## Recommandation
