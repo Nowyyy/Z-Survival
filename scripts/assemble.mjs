@@ -5,6 +5,8 @@
 //    ni jeu.html) : dev/index.html = « Aucun build de développement pour l'instant » ;
 //  - next/index.html = redirection vers ../dev/jeu.html (vers ../dev/ sans build de dev) ; lots/index.html = redirection vers ../Recette/ (aucun lots/lot-*) ;
 //  - v0.N/ = dossiers de la branche archive, copiés tels quels s'ils existent (sinon la version est publiée « indisponible »).
+// Lot 5h : noms-versions-et-lots.txt (scripts/site/noms.mjs) du build de dev, sinon de main, l'emporte sur les textes de versions.json et du journal
+// dans site-info.json (jamais dans Recette/versions.json) ; une ligne fautive ou un identifiant inconnu est ignoré et signalé, sans jamais faire échouer.
 // Les pages produites sont autonomes (style en ligne, couleurs du système, icône en data:), en chemins relatifs, noindex ; les redirections ont
 // un <meta http-equiv="refresh"> immédiat et un lien visible. Pur et déterministe (aucun réseau ; aucune horloge : les dates viennent des entrées,
 // « genere » de site-info.json est injectée) ; échoue avec un message clair si le build de main n'a pas d'index.html ou de jeu.html, si la version
@@ -20,6 +22,7 @@ import { cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, 
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
+import { NOMS_FICHIER, appliquerNoms, formatErreur, parseNoms } from './site/noms.mjs';
 import { buildSiteInfo, validateSiteInfo } from './site/site-info.mjs';
 import { labelOf, validateVersions } from './versions/schema.mjs';
 
@@ -146,6 +149,20 @@ const readJsonFile = (path) => {
   }
 };
 
+// Fichier des noms (lot 5h) : noms-versions-et-lots.txt du build de dev, sinon de celui de main, sinon aucun. Jamais d'exception :
+// renvoie { source: 'dev' | 'main' | null, noms: résultat de parseNoms }.
+export function readNomsFile({ devDir = null, mainDir = null } = {}) {
+  for (const [source, dir] of [['dev', devDir], ['main', mainDir]]) {
+    if (!dir) continue;
+    try {
+      return { source, noms: parseNoms(readFileSync(join(dir, NOMS_FICHIER))) };
+    } catch {
+      // absent ou illisible : source suivante
+    }
+  }
+  return { source: null, noms: { blocs: [], erreurs: [] } };
+}
+
 // Assemble le site. Entrées : dossiers (build de main, build de dev facultatif, contenu de la branche archive facultatif), objet versions.json (de main),
 // métadonnées { branch, sha, date } de main et de dev, date de génération (genere). Renvoie un rapport { out, bytes, files, versions, dev, siteInfo, published } ;
 // lève AssembleError en cas de problème.
@@ -225,19 +242,32 @@ export function assembleSite({ mainDir, devDir = null, archiveDir = null, versio
   json(join(recetteDir, 'versions.json'), published);
 
   // site-info.json : ce que l'accueil de la Recette affiche (évolutions lues dans le journal du build de dev).
-  const siteInfo = buildSiteInfo({
-    versions: published,
-    dev: { present: devBuilt, sha: devInfo.sha, date: devInfo.date },
-    changelog: devBuilt ? readJsonFile(join(devDir, 'data/changelog.json')) : null,
-    genere: utcDate(genere ?? ''),
-  });
+  // Lot 5h : le fichier des noms l'emporte sur les textes de versions.json et du journal (copies : Recette/versions.json reste tel quel) ;
+  // une ligne fautive est ignorée, un identifiant inconnu aussi ; le fichier ne fait jamais échouer l'assemblage (repli sans les noms).
+  const changelog = devBuilt ? readJsonFile(join(devDir, 'data/changelog.json')) : null;
+  const nomsFile = readNomsFile({ devDir: devBuilt ? devDir : null, mainDir });
+  const applied = appliquerNoms({ versions: published, changelog }, nomsFile.noms);
+  const siteInput = { dev: { present: devBuilt, sha: devInfo.sha, date: devInfo.date }, genere: utcDate(genere ?? '') };
+  let siteInfo = buildSiteInfo({ ...siteInput, versions: applied.versions ?? published, changelog: applied.changelog });
+  const nomsReport = {
+    source: nomsFile.source,
+    blocs: nomsFile.noms.blocs.length,
+    erreurs: nomsFile.noms.erreurs.map(formatErreur),
+    // Sans journal de dev, les lots et les versions cibles ne peuvent pas être vérifiés : aucun avertissement.
+    inconnus: changelog ? applied.inconnus : [],
+    applique: true,
+  };
+  if (!validateSiteInfo(siteInfo).ok) {
+    siteInfo = buildSiteInfo({ ...siteInput, versions: published, changelog });
+    nomsReport.applique = false;
+  }
   const siteCheck = validateSiteInfo(siteInfo);
   if (!siteCheck.ok) throw new AssembleError(`site-info.json invalide : ${siteCheck.errors.join(' ; ')}`);
   json(join(recetteDir, 'site-info.json'), siteInfo);
 
   const stats = dirStats(out);
   if (stats.bytes > maxBytes) throw new AssembleError(`Site trop gros : ${(stats.bytes / 1024 / 1024).toFixed(1)} Mo pour un plafond de ${(maxBytes / 1024 / 1024).toFixed(0)} Mo (limite publiée : 1 Go)`);
-  return { out, ...stats, versions: report, dev: { ...devInfo, built: devBuilt, missing: devMissing }, siteInfo, published };
+  return { out, ...stats, versions: report, dev: { ...devInfo, built: devBuilt, missing: devMissing }, siteInfo, published, noms: nomsReport };
 }
 
 // Lecture des options (arguments, puis variables d'environnement).
@@ -296,6 +326,10 @@ async function main() {
     console.log(`  dev/ : ${result.dev.built ? `dev ${result.dev.sha} (${result.dev.date})` : `aucun build de développement${missing}`}`);
     console.log(`  Recette/site-info.json : ${result.siteInfo.evolutions.length} évolutions, ${result.siteInfo.precedentes.length} versions précédentes`);
     console.log(`  versions : ${lines.join(' · ')}`);
+    const noms = result.noms;
+    console.log(`  ${NOMS_FICHIER} : ${noms.source ? `build de ${noms.source}, ${noms.blocs} blocs, ${noms.erreurs.length} erreur${noms.erreurs.length > 1 ? 's' : ''} (lignes ignorées)` : 'absent (textes d\'origine)'}${noms.applique ? '' : ' ; NON appliqué (site-info.json invalide avec les noms)'}`);
+    for (const message of noms.erreurs) console.warn(`  Avertissement : ${message}`);
+    for (const id of noms.inconnus) console.warn(`  Avertissement : ${NOMS_FICHIER} : identifiant inconnu « ${id} » (ni version de versions.json, ni version cible, ni lot du journal) : bloc ignoré.`);
   } finally {
     if (tmp) rmSync(tmp, { recursive: true, force: true });
   }

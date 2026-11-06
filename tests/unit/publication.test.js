@@ -9,8 +9,9 @@ import { join } from 'node:path';
 import {
   AssembleError, SITE_TEXT_DEFAULTS, assembleSite, buildInfo, constructionPage, dirStats, messagePage, parseOptions, redirectPage, siteIcon, siteTexts, utcDate,
 } from '../../scripts/assemble.mjs';
-import { MAX_EVOLUTIONS, buildSiteInfo, cleanText, readEvolutions, readPrevious, validateSiteInfo } from '../../scripts/site/site-info.mjs';
-import { DEV_HREF, MAX_PREVIOUS, fill, formatDate, homeModel, previousHref, readPrevious as readPreviousHome, safePath, text as textHome } from '../../js/accueil/home.js';
+import { MAX_EVOLUTIONS, buildSiteInfo, cleanText, readEvolutions, readPrevious, validLabel, validateSiteInfo } from '../../scripts/site/site-info.mjs';
+import { DEV_HREF, MAX_PREVIOUS, fill, formatDate, homeModel, previousHref, readPrevious as readPreviousHome, safePath, text as textHome, validLabel as validLabelHome } from '../../js/accueil/home.js';
+import { NOMS_FICHIER } from '../../scripts/site/noms.mjs';
 import { fakeArchive, manyVersions, testVersions } from '../../scripts/site/e2e-site.mjs';
 import { findNonRelative } from '../../scripts/versions/links.mjs';
 
@@ -708,5 +709,151 @@ describe.skipIf(!ON_5G)('hygiène du lot 5g (comparaison à la base 775f1d1)', (
       expect(read(file), file).not.toMatch(/(?:href|src)=["'](?:https?:)?\/\//);
       if (file.endsWith('.html')) expect(findNonRelative(read(file), 'html'), file).toEqual([]);
     }
+  });
+});
+
+// Lot 5h : étiquettes des versions (nom du fichier des noms, sinon label de versions.json) et fichier des noms appliqué par l'assembleur.
+describe('étiquettes des versions (lot 5h) : même règle dans site-info.mjs et home.js, repli sur V<id>', () => {
+  const NOM60 = 'é'.repeat(60);
+  const cas = [['V0.5 bêta', 'V0.5 bêta'], ['  V0.5  ', 'V0.5'], [NOM60, NOM60], ['<b>V0.5</b>', '<b>V0.5</b>'], ['', null], ['   ', null], [`${NOM60}a`, null],
+    ['a\u0007b', null], ['a\u0085b', null], ['a\nb', null], [undefined, null], [42, null], [null, null]];
+  it.each(cas)('validLabel(%j) → %j (site-info.mjs et home.js)', (value, expected) => {
+    expect(validLabel(value)).toBe(expected);
+    expect(validLabelHome(value)).toBe(expected);
+  });
+  const withLabels = (recette, previous) => {
+    const v = structuredClone(real);
+    for (const x of v.versions) {
+      if (x.id === 'v0.5') x.label = recette;
+      if (x.id === 'v0.4') x.label = previous;
+      if (recette === undefined && x.id === 'v0.5') delete x.label;
+      if (previous === undefined && x.id === 'v0.4') delete x.label;
+    }
+    return buildSiteInfo({ versions: v, dev: { present: false }, genere: GENERE });
+  };
+  it('buildSiteInfo : étiquette valide gardée (sans espaces aux extrémités), sinon V<id> ; absence de label : V<id> ; validateSiteInfo accepte le résultat', () => {
+    for (const [value, expected] of cas) {
+      const info = withLabels(value, value);
+      expect(info.recette.label, String(value)).toBe(expected ?? 'V0.5');
+      expect(info.precedentes[0].label, String(value)).toBe(expected ?? 'V0.4');
+      expect(validateSiteInfo(info), String(value)).toEqual({ ok: true, errors: [] });
+    }
+    const sans = withLabels(undefined, undefined);
+    expect([sans.recette.label, sans.precedentes[0].label]).toEqual(['V0.5', 'V0.4']);
+  });
+  it('validateSiteInfo : toute étiquette qui respecte la règle (HTML compris, comme texte) ; refuse vide, espaces seules, 61 caractères, contrôle, absence', () => {
+    const info = withLabels('V0.5', 'V0.4');
+    for (const ok of ['V0.5 bêta', NOM60, '<img src=x onerror=alert(1)>']) {
+      expect(validateSiteInfo({ ...info, recette: { ...info.recette, label: ok } }).ok, ok).toBe(true);
+      expect(validateSiteInfo({ ...info, precedentes: [{ ...info.precedentes[0], label: ok }] }).ok, ok).toBe(true);
+    }
+    for (const bad of ['', '   ', `${NOM60}a`, 'a\u0007b', 'a\u009fb', undefined, 7]) {
+      expect(validateSiteInfo({ ...info, recette: { ...info.recette, label: bad } }).errors, String(bad)).toContain('recette : id ou label invalide');
+      expect(validateSiteInfo({ ...info, precedentes: [{ ...info.precedentes[0], label: bad }] }).errors, String(bad)).toContain('precedentes[0] invalide');
+    }
+  });
+  it('homeModel : étiquette de la Recette et des versions précédentes lue dans site-info.json si valide, sinon V<id> (défaut inchangé)', () => {
+    const info = buildSiteInfo({ versions: real, dev: { present: false }, genere: GENERE });
+    expect(homeModel(info).version).toBe('V0.5');
+    expect(homeModel(info).previous.map((p) => p.label)).toEqual(['V0.4', 'V0.3', 'V0.2', 'V0.1']);
+    for (const [value, expected] of cas) {
+      const model = homeModel({ ...info, recette: { ...info.recette, label: value }, precedentes: [{ ...info.precedentes[0], label: value }] });
+      expect(model.version, String(value)).toBe(expected ?? 'V0.5');
+      expect(model.previous[0].label, String(value)).toBe(expected ?? 'V0.4');
+    }
+    const sansLabel = { ...info.recette };
+    delete sansLabel.label;
+    expect(homeModel({ ...info, recette: sansLabel }).version).toBe('V0.5');
+  });
+  it('main.js insère l\'étiquette par textContent (fill de home.version), jamais par innerHTML', () => {
+    const main = read('js/accueil/main.js');
+    expect(main).toContain("$('version').textContent = model.state === 'ok' ? fill(t('home.version'), { channel: t('home.channel.recette'), version: model.version })");
+    expect(main).not.toMatch(/innerHTML|insertAdjacentHTML|outerHTML/);
+  });
+});
+
+describe('assembleur : fichier des noms (lot 5h)', () => {
+  const FICHIER = [
+    '# Fichier de test (fictif)',
+    '[v0.5]', 'nom: V0.5 Recette de test', 'description: Description de test de la Recette',
+    '[v0.4]', 'nom: Quatrième (test)', 'description: Fenêtres : texte de test, avec deux-points',
+    '[lot-5a]', 'nom: Voiture en flammes (test)', 'description: Description de test du lot 5a.',
+    '[lot-5b]', 'afficher: non',
+  ].join('\n');
+  const withNoms = (text, options = {}) => build({ ...options, extra: { ...(options.extra ?? {}), [NOMS_FICHIER]: text } });
+  const main = build();
+  const devNoms = withNoms(FICHIER);
+  const archive = archiveDir();
+  const result = assemble({ mainDir: main, devDir: devNoms, archiveDir: archive, dev: DEV });
+  const info = readJson(join(result.out, 'Recette/site-info.json'));
+  const plain = assemble({ mainDir: main, devDir: build(), archiveDir: archive, dev: DEV });
+
+  it('le fichier l\'emporte : étiquette et titre de la Recette, d\'une version précédente, titre et texte d\'un lot ; afficher: non retire le lot', () => {
+    expect(info.recette).toMatchObject({ id: 'v0.5', label: 'V0.5 Recette de test', title: 'Description de test de la Recette', ref: real.versions[4].ref, entry: 'jeu.html', date: '2026-11-02' });
+    expect(info.precedentes[0]).toEqual({ id: 'v0.4', label: 'Quatrième (test)', title: 'Fenêtres : texte de test, avec deux-points', note: '', entry: '../v0.4/jeu.html', status: 'archive' });
+    expect(info.precedentes.slice(1)).toEqual(plain.siteInfo.precedentes.slice(1));
+    expect(info.evolutions).toEqual([{ id: 'lot-5a', title: 'Voiture en flammes (test)', text: 'Description de test du lot 5a.', date: '2026-11-04', version: 'v0.6' }]);
+    expect(validateSiteInfo(info)).toEqual({ ok: true, errors: [] });
+    expect(result.noms).toEqual({ source: 'dev', blocs: 4, erreurs: [], inconnus: [], applique: true });
+  });
+  it('dates, ref, status, entry et ordre inchangés ; Recette/versions.json identique à celui d\'un site sans fichier des noms', () => {
+    expect(read(join(result.out, 'Recette/versions.json'))).toBe(read(join(plain.out, 'Recette/versions.json')));
+    expect(info.precedentes.map((p) => [p.id, p.entry, p.status])).toEqual(plain.siteInfo.precedentes.map((p) => [p.id, p.entry, p.status]));
+    expect(existsSync(join(result.out, 'Recette', NOMS_FICHIER))).toBe(false); // build de main sans fichier
+    expect(read(join(result.out, 'dev', NOMS_FICHIER))).toBe(FICHIER); // publié avec le build de dev (textes publics)
+  });
+  it('« version » : un lot rattaché à une version publiée sort des évolutions, un lot rattaché à une version non publiée y entre', () => {
+    const dev = withNoms('[lot-5a]\nversion: v0.5\n[lot-4c]\nversion: v0.7\n[lot-4b]\nversion: v0.6\n');
+    const r = assemble({ mainDir: main, devDir: dev, dev: DEV });
+    expect(r.siteInfo.evolutions.map((e) => [e.id, e.version])).toEqual([['lot-5b', 'v0.6'], ['lot-4c', 'v0.7'], ['lot-4b', 'v0.6']]);
+    expect(plain.siteInfo.evolutions.map((e) => e.id)).toEqual(['lot-5b', 'lot-5a']);
+  });
+  it('identifiant inconnu : ignoré, signalé ; version cible d\'un lot (v0.6) connue', () => {
+    const r = assemble({ mainDir: main, devDir: withNoms('[v0.9]\nnom: V0.9\n[lot-9z]\nnom: Inconnu\n[v0.6]\nnom: V0.6\n'), dev: DEV });
+    expect(r.noms.inconnus).toEqual(['v0.9', 'lot-9z']);
+    expect(r.siteInfo).toEqual({ ...plain.siteInfo, precedentes: r.siteInfo.precedentes });
+    expect(r.siteInfo.precedentes.map((p) => p.label)).toEqual(['V0.4', 'V0.3', 'V0.2', 'V0.1']);
+  });
+  it('fichier absent partout : textes d\'origine, source null ; fichier invalide en partie : lignes fautives ignorées (numéro de ligne), le reste appliqué', () => {
+    expect(plain.noms).toEqual({ source: null, blocs: 0, erreurs: [], inconnus: [], applique: true });
+    const r = assemble({ mainDir: main, devDir: withNoms('[lot-5a]\nnom: Bon titre\ntitre: clé inconnue\nafficher: bof\n[lot 5b]\nnom: ignoré\n'), dev: DEV });
+    expect(r.noms.erreurs).toHaveLength(3);
+    expect(r.noms.erreurs[0]).toMatch(new RegExp(`^${NOMS_FICHIER.replace(/\./g, '\\.')}, ligne 3 : Clé inconnue`));
+    expect(r.noms.erreurs[1]).toMatch(/ligne 4 : « afficher » vaut « bof »/);
+    expect(r.noms.erreurs[2]).toMatch(/ligne 5 : Identifiant de bloc invalide/);
+    expect(r.siteInfo.evolutions.map((e) => [e.id, e.title])).toEqual([['lot-5b', 'Deuxième lot de la V0.6'], ['lot-5a', 'Bon titre']]);
+  });
+  it('dev absent ou sans fichier : fichier du build de main ; ni l\'un ni l\'autre : aucun changement', () => {
+    const mainNoms = withNoms('[v0.5]\nnom: V0.5 (de main)\n[lot-5a]\nnom: Ignoré sans journal de dev\n');
+    const sansDev = assemble({ mainDir: mainNoms });
+    expect(sansDev.noms).toEqual({ source: 'main', blocs: 2, erreurs: [], inconnus: [], applique: true });
+    expect(sansDev.siteInfo.recette.label).toBe('V0.5 (de main)');
+    expect(sansDev.siteInfo.evolutions).toEqual([]);
+    const devSansFichier = assemble({ mainDir: mainNoms, devDir: build(), dev: DEV });
+    expect(devSansFichier.noms.source).toBe('main');
+    expect(devSansFichier.siteInfo.evolutions[1]).toMatchObject({ id: 'lot-5a', title: 'Ignoré sans journal de dev' });
+    const devAvecFichier = assemble({ mainDir: mainNoms, devDir: devNoms, dev: DEV });
+    expect(devAvecFichier.siteInfo.recette.label).toBe('V0.5 Recette de test');
+  });
+  it('jamais bloqué par le fichier : octets hostiles, UTF-8 invalide, HTML et __proto__ ; aucun HTML interprété (texte gardé tel quel dans le JSON)', () => {
+    let seed = 3;
+    const noise = Buffer.from(Array.from({ length: 4000 }, () => (seed = (seed * 1103515245 + 12345) % 2 ** 31) & 0xff));
+    const hostile = Buffer.concat([Buffer.from('[lot-5a]\nnom: <script>alert(1)</script>\ndescription: <img src=x onerror=alert(1)>\n[__proto__]\nnom: x\n'), noise]);
+    const r = assemble({ mainDir: main, devDir: build({ extra: { [NOMS_FICHIER]: hostile } }), dev: DEV });
+    expect(r.noms.erreurs.length).toBeGreaterThan(0);
+    expect(validateSiteInfo(r.siteInfo)).toEqual({ ok: true, errors: [] });
+    const lot = r.siteInfo.evolutions.find((e) => e.id === 'lot-5a');
+    expect(lot).toMatchObject({ title: '<script>alert(1)</script>', text: '<img src=x onerror=alert(1)>' });
+    expect(read(join(r.out, 'Recette/site-info.json'))).toContain('"title": "<script>alert(1)</script>"');
+    expect({}.nom).toBeUndefined();
+  });
+  it('déterministe : deux assemblages avec le même fichier donnent les mêmes octets', () => {
+    const again = assemble({ mainDir: main, devDir: devNoms, archiveDir: archive, dev: DEV });
+    const files = walk(result.out).sort();
+    expect(walk(again.out).sort()).toEqual(files);
+    for (const f of files) expect(readFileSync(join(again.out, f)).equals(readFileSync(join(result.out, f))), f).toBe(true);
+  });
+  it('npm run build copie le fichier des noms dans la sortie (ENTRIES)', () => {
+    expect(read('scripts/build.mjs')).toContain("ENTRIES.push('noms-versions-et-lots.txt');");
   });
 });

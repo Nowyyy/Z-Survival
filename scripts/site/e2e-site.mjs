@@ -3,7 +3,9 @@
 //  - full/ : racine « en construction », Recette/ (build courant), dev/ (le même build, canal dev : ses entrées de journal en version non publiée
 //    sont les « évolutions »), archives FICTIVES v0.2 à v0.4 (pages de test), v0.1 indisponible (jeu de versions de test) ;
 //  - bare/ : Recette/ seule (ni dev, ni archive) : « Aucun build de développement pour l'instant », versions publiées « indisponibles » ;
-//  - many/ : 13 versions FICTIVES (v0.1 à v0.12 archivées, v0.13 Recette) pour la liste qui défile ; v0.6 y est publiée : aucune évolution.
+//  - many/ : 13 versions FICTIVES (v0.1 à v0.12 archivées, v0.13 Recette) pour la liste qui défile ; v0.6 y est publiée : aucune évolution ;
+//  - noms/ (lot 5h) : comme full/, mais le build de dev porte un fichier des noms FICTIF (NOMS_TEST) qui renomme la Recette, la V0.4 et le lot 5h,
+//    et masque le lot 5g. full/, bare/ et many/ sont assemblés sans fichier des noms (textes d'origine), pour ne pas dépendre des textes du propriétaire.
 // Chaque site vit dans un sous-dossier, comme le site publié sous /Z-Survival/. Les données de version sont fictives et annoncées comme telles.
 import { spawnSync } from 'node:child_process';
 import { cpSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
@@ -11,12 +13,22 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { assembleSite } from '../assemble.mjs';
+import { NOMS_FICHIER } from './noms.mjs';
 import { startServer } from './serve.mjs';
 
 const SKIP = new Set(['.git', 'node_modules', '_site', '.lots', 'Docs', 'tests', 'test-results', 'playwright-report', 'lighthouse-report', 'blob-report', 'coverage']);
 export const DEV_SHA = 'abcdef1234567890abcdef1234567890abcdef12';
 export const DEV_DATE = '2026-11-02T12:00:00Z';
 export const GENERE = '2026-11-06T12:00:00Z';
+// Fichier des noms de test (fictif) du site noms/.
+export const NOMS_TEST = [
+  '# Fichier des noms de test (fictif) : site noms/ de scripts/site/e2e-site.mjs.',
+  '[v0.5]', 'nom: V0.5 (nom de test)', 'description: Description de test de la Recette (fictive)',
+  '[v0.4]', 'nom: Quatrième version (test)', 'description: Description de test de la V0.4 : fictive',
+  '[lot-5h]', 'nom: Évolution renommée (test)', 'description: Texte de test de l\'évolution, venu du fichier des noms (fictif).',
+  '[lot-5g]', 'afficher: non',
+  '',
+].join('\n');
 
 // Jeu de versions de test (dérivé de versions.json : mêmes identifiants ; V0.1 indisponible pour tester ce cas).
 export function testVersions(real) {
@@ -62,6 +74,10 @@ export function buildTestSites(repo, www) {
     const build = spawnSync('node', ['scripts/build.mjs'], { cwd: src, encoding: 'utf8' });
     if (build.status !== 0) throw new Error(`build : ${build.stderr}`);
     const mainDir = join(src, '_site');
+    rmSync(join(mainDir, NOMS_FICHIER), { force: true });
+    const nomsDev = join(tmp, 'dev-noms');
+    cpSync(mainDir, nomsDev, { recursive: true });
+    writeFileSync(join(nomsDev, NOMS_FICHIER), NOMS_TEST);
     const versions = testVersions(JSON.parse(readFileSync(join(repo, 'versions.json'), 'utf8')));
     const archive = join(tmp, 'archive');
     for (const v of versions.versions.filter((x) => x.status === 'archive')) fakeArchive(archive, v);
@@ -70,6 +86,7 @@ export function buildTestSites(repo, www) {
     const dev = { sha: DEV_SHA, date: DEV_DATE };
     assembleSite({ mainDir, devDir: mainDir, archiveDir: archive, versions, out: join(www, 'full'), main, dev, genere: GENERE });
     assembleSite({ mainDir, versions, out: join(www, 'bare'), main, genere: GENERE });
+    assembleSite({ mainDir, devDir: nomsDev, archiveDir: archive, versions, out: join(www, 'noms'), main, dev, genere: GENERE });
     const many = manyVersions();
     const manyArchive = join(tmp, 'archive-many');
     for (const v of many.versions.filter((x) => x.status === 'archive')) fakeArchive(manyArchive, v);

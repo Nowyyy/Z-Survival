@@ -82,5 +82,5 @@ afficher: oui
 [lot-5h]
 version: v0.6
 nom: Noms des versions dans un fichier simple
-description: Les noms et descriptions des versions et des évolutions se changent dans un fichier texte (pas encore lu par le site).
+description: Les noms et descriptions des versions et des évolutions se changent dans un simple fichier texte ; l'adresse /recette/ en minuscules mène à la Recette.
 afficher: oui

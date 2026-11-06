@@ -9,6 +9,7 @@ ENTRIES.push('atelier-personnages.html'); // lot 3j : atelier des personnages (l
 rmSync(OUT, { recursive: true, force: true });
 mkdirSync(OUT);
 ENTRIES.push('atelier-interface.html', 'interface-retenue.html'); // lot 3k : atelier de l'interface et interface retenue (ligne à part, voir Docs/ref/fusion-3k.md)
+ENTRIES.push('noms-versions-et-lots.txt'); // lot 5h : fichier des noms (lu par l'assembleur dans le build de dev, sinon de main ; textes publics)
 for (const entry of ENTRIES) {
   if (existsSync(entry)) cpSync(entry, `${OUT}/${entry}`, { recursive: true });
 }

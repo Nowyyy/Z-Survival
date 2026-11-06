@@ -24,6 +24,18 @@ const ENTRY_RE = /^[A-Za-z0-9._-]+(?:\/[A-Za-z0-9._-]+)*$/;
 const STATUSES = ['archive', 'indisponible'];
 
 const isObject = (value) => value !== null && typeof value === 'object' && !Array.isArray(value);
+export const MAX_LABEL = 60;
+
+// Étiquette d'une version (lot 5h : « nom » du fichier des noms, sinon label de versions.json) : chaîne qui, sans les espaces des extrémités,
+// a de 1 à 60 caractères et aucun caractère de contrôle ; renvoie l'étiquette sans ces espaces, ou null (l'appelant garde alors « V<id> »).
+// Même règle que js/accueil/home.js (validLabel).
+export function validLabel(value) {
+  if (typeof value !== 'string') return null;
+  const label = value.trim();
+  const length = [...label].length;
+  return length >= 1 && length <= MAX_LABEL && ![...label].some((c) => c.charCodeAt(0) < 32 || (c.charCodeAt(0) >= 127 && c.charCodeAt(0) <= 159)) ? label : null;
+}
+const labelFor = (v) => validLabel(v.label) ?? `V${v.id.slice(1)}`;
 
 // Texte d'une donnée : chaîne seulement, caractères de contrôle remplacés par une espace, espaces resserrées, borné (sans couper un caractère).
 export function cleanText(value, max = MAX_TEXT) {
@@ -72,7 +84,7 @@ export function readPrevious(versions, recetteId) {
     const available = v.status === 'archive' && safeEntry(v.entry);
     return {
       id: v.id,
-      label: `V${v.id.slice(1)}`,
+      label: labelFor(v),
       title: cleanText(v.title, MAX_TITLE),
       note: available ? '' : cleanText(v.note, MAX_TEXT) || 'Version non construite.',
       entry: available ? `../${v.id}/${v.entry}` : null,
@@ -90,7 +102,7 @@ export function buildSiteInfo({ versions, dev = {}, changelog = null, genere }) 
     schema: SITE_INFO_SCHEMA,
     genere,
     recette: current
-      ? { id: current.id, label: `V${current.id.slice(1)}`, title: cleanText(current.title, MAX_TITLE), date: validDay(current.date) ? current.date : '', ref: typeof current.ref === 'string' ? current.ref : '', entry: current.entry }
+      ? { id: current.id, label: labelFor(current), title: cleanText(current.title, MAX_TITLE), date: validDay(current.date) ? current.date : '', ref: typeof current.ref === 'string' ? current.ref : '', entry: current.entry }
       : null,
     dev: { present, sha: present && SHA_RE.test(dev.sha ?? '') ? dev.sha : '', date: present && UTC_RE.test(dev.date ?? '') ? dev.date : '', entry: DEV_ENTRY },
     evolutions: present ? readEvolutions(changelog, ids) : [],
@@ -108,7 +120,7 @@ export function validateSiteInfo(info) {
   const r = info.recette;
   if (!isObject(r)) errors.push('recette : objet attendu');
   else {
-    if (!ID_RE.test(r.id ?? '') || r.label !== `V${String(r.id).slice(1)}`) errors.push('recette : id ou label invalide');
+    if (!ID_RE.test(r.id ?? '') || validLabel(r.label) === null) errors.push('recette : id ou label invalide');
     if (!text(r.title, MAX_TITLE) || !r.title) errors.push('recette : title invalide');
     if (!safeEntry(r.entry)) errors.push('recette : entry invalide');
     if (r.date !== '' && !validDay(r.date)) errors.push('recette : date invalide');
@@ -127,7 +139,7 @@ export function validateSiteInfo(info) {
   if (!Array.isArray(info.precedentes)) errors.push('precedentes : liste attendue');
   else info.precedentes.forEach((p, i) => {
     const okEntry = p?.status === 'archive' ? typeof p.entry === 'string' && p.entry.startsWith(`../${p.id}/`) && safeEntry(p.entry.slice(3)) : p?.entry === null;
-    if (!isObject(p) || !ID_RE.test(p.id ?? '') || p.label !== `V${String(p.id).slice(1)}` || !STATUSES.includes(p.status) || !okEntry || !text(p.title, MAX_TITLE) || !text(p.note, MAX_TEXT)) errors.push(`precedentes[${i}] invalide`);
+    if (!isObject(p) || !ID_RE.test(p.id ?? '') || validLabel(p.label) === null || !STATUSES.includes(p.status) || !okEntry || !text(p.title, MAX_TITLE) || !text(p.note, MAX_TEXT)) errors.push(`precedentes[${i}] invalide`);
   });
   return { ok: errors.length === 0, errors };
 }

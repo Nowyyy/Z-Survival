@@ -188,7 +188,7 @@ export function parseNoms(input) {
       fail(ligne, `Valeur vide pour « ${key} » (bloc ${current.id}) : écris un texte après le deux-points, ou supprime la ligne ; ligne ignorée.`);
       return;
     }
-    if ([...value].some((c) => c.charCodeAt(0) < 32 || c.charCodeAt(0) === 127)) {
+    if ([...value].some((c) => c.charCodeAt(0) < 32 || (c.charCodeAt(0) >= 127 && c.charCodeAt(0) <= 159))) {
       fail(ligne, `Caractère de contrôle dans « ${key} » (bloc ${current.id}) : texte simple sur une ligne attendu ; ligne ignorée.`);
       return;
     }

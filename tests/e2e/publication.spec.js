@@ -1,6 +1,7 @@
 // Lot 4c : publication par versions ; lot 5g : nouvelle organisation, sur le site assemblé de test (scripts/site/e2e-site.mjs, http://127.0.0.1:4174/) :
 // full/ = racine « en construction » + Recette/ (build courant) + dev/ (le même build, canal dev) + archives fictives v0.2 à v0.4 + v0.1 indisponible ;
-// bare/ = Recette/ seule (ni dev, ni archive) ; many/ = 13 versions fictives (12 précédentes). Chaque site vit dans un sous-dossier (comme /Z-Survival/).
+// bare/ = Recette/ seule (ni dev, ni archive) ; many/ = 13 versions fictives (12 précédentes) ; noms/ (lot 5h) = full/ avec un fichier des noms fictif
+// dans le build de dev (NOMS_TEST). Chaque site vit dans un sous-dossier (comme /Z-Survival/).
 // Dans la suite rapide (ESSENTIAL de playwright.config.js), à 667×375, 1440×900 et 375×812. Le lot 5g reprend ici les garde-fous de l'ancien dev.spec
 // (journal des versions supprimé) : axe, cibles de 44 px, console propre, aucune requête externe, aucun débordement, page en français.
 import { test, expect, chromium } from '@playwright/test';
@@ -10,6 +11,7 @@ const SITE = 'http://127.0.0.1:4174';
 const FULL = `${SITE}/full/`;
 const BARE = `${SITE}/bare/`;
 const MANY = `${SITE}/many/`;
+const NOMS = `${SITE}/noms/`;
 const VIEWPORTS = [{ width: 667, height: 375 }, { width: 1440, height: 900 }, { width: 375, height: 812 }];
 
 // Problèmes d'une page : erreurs et avertissements de console, erreurs de page, requêtes en échec ou ≥ 400, requêtes externes.
@@ -94,7 +96,9 @@ for (const viewport of VIEWPORTS) {
       const evolutions = page.getByRole('region', { name: 'Évolutions en cours de développement' });
       const previous = page.getByRole('region', { name: 'Versions précédentes' });
       for (const region of [evolutions, previous]) await expect(region).toHaveAttribute('tabindex', '0');
-      await expect(evolutions.locator('.evolution-title').first()).toHaveText('Nouvelle organisation du site et accueil refait');
+      // Lot 5h : le premier titre est lu dans site-info.json (avant : « Nouvelle organisation du site et accueil refait », titre du dernier lot au lot 5g).
+      const info = await (await page.request.get(`${FULL}Recette/site-info.json`)).json();
+      await expect(evolutions.locator('.evolution-title').first()).toHaveText(info.evolutions[0].title);
       const links = previous.locator('a');
       expect(await links.evaluateAll((els) => els.map((e) => e.getAttribute('href')))).toEqual(['../v0.4/jeu.html', '../v0.3/jeu.html', '../v0.2/jeu.html']);
       const off = previous.locator('.is-off');
@@ -175,6 +179,34 @@ for (const viewport of VIEWPORTS) {
       await expect(page.getByRole('link', { name: 'Revenir à l\'accueil de la Recette' })).toHaveAttribute('href', '../Recette/');
       for (const [label, h] of await linkHeights(page)) expect(h, label).toBeGreaterThanOrEqual(44);
       expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+    });
+  });
+}
+
+// Lot 5h : fichier des noms appliqué par l'assembleur (site noms/, fichier fictif NOMS_TEST de scripts/site/e2e-site.mjs).
+for (const viewport of VIEWPORTS.slice(0, 2)) {
+  test.describe(`fichier des noms ${viewport.width}×${viewport.height}`, () => {
+    test.use({ viewport });
+    test('noms/ : étiquette « Recette · Version V0.5 (nom de test) », V0.4 et évolution renommées, lot masqué absent, console propre, axe sans violation', async ({ page }) => {
+      const { problems, external } = watch(page);
+      const full = await (await page.request.get(`${FULL}Recette/site-info.json`)).json();
+      await page.goto(`${NOMS}Recette/`);
+      await expect(page.locator('#version')).toHaveText('Recette · Version V0.5 (nom de test)');
+      const evolutions = page.getByRole('region', { name: 'Évolutions en cours de développement' });
+      await expect(evolutions.locator('.evolution-title').first()).toHaveText('Évolution renommée (test)');
+      await expect(evolutions.locator('.evolution-text').first()).toHaveText('Texte de test de l\'évolution, venu du fichier des noms (fictif).');
+      await expect(evolutions.locator('.evolution')).toHaveCount(full.evolutions.length - 1);
+      await expect(evolutions).not.toContainText(full.evolutions.find((e) => e.id === 'lot-5g').title);
+      const previous = page.getByRole('region', { name: 'Versions précédentes' }).locator('a');
+      await expect(previous.first().locator('.item-label')).toHaveText('Quatrième version (test)');
+      await expect(previous.first().locator('.meta')).toHaveText('Description de test de la V0.4 : fictive');
+      await expect(previous.first()).toHaveAttribute('href', '../v0.4/jeu.html');
+      await expect(previous.nth(1).locator('.item-label')).toHaveText('V0.3');
+      await page.waitForLoadState('networkidle');
+      expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+      expect(await overflow(page)).toBeLessThanOrEqual(0);
+      expect(external).toEqual([]);
+      expect(problems).toEqual([]);
     });
   });
 }
