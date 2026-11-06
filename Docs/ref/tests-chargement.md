@@ -13,8 +13,8 @@ Mesure locale (4 cœurs, Chromium préinstallé, rendu logiciel), `node scripts/
 | shadows0 | `shadows=0` | 3 453 | 3 695 (3 592–3 734, 116) | 3 714 | **542** |
 | dpr1 | `dpr=1` | 3 517 | 4 002 (3 739–4 150, 20) | 4 014 | 242 (bruit : DPR déjà 1) |
 | sang0 | `sang=0` | 3 416 | 3 916 (3 723–4 107, 195) | 4 024 | 232 |
-| sonsAncien | `sons=ancien` | 3 523 | 3 914 (3 808–4 321, 206) | 4 179 | 77 |
-| persoActuel | `perso=actuel` | 3 366 | 3 653 (3 185–3 845, 205) | 3 655 | 601 |
+| sonsAncien (retirée au lot 5e) | `sons=ancien` | 3 523 | 3 914 (3 808–4 321, 206) | 4 179 | 77 |
+| persoActuel (retirée au lot 5e) | `perso=actuel` | 3 366 | 3 653 (3 185–3 845, 205) | 3 655 | 601 |
 | detail0 | `detail=0` | 2 856 | 3 345 (3 089–3 394, 165) | 3 391 | **865** |
 | fps1 | `fps=1` | 3 431 | 3 819 (3 733–3 942, 70) | 3 995 | 261 (bruit) |
 | nospawn1 | `nospawn=1` | 3 627 | 4 079 (3 763–4 151, 197) | 4 100 | 156 |
@@ -38,7 +38,7 @@ Mesure locale (4 cœurs, Chromium préinstallé, rendu logiciel), `node scripts/
 ## Lecture
 - **Meilleure combinaison** : `vhs=0&shadows=0&dpr=1&sang=0&nospawn=1&detail=0` (−1,0 s en bureau, −2,0 s en mobile), mais elle change ce qui est testé (sang, apparitions, décor d'avant le lot 3g) : réservée aux tests qui n'en dépendent pas.
 - **Combinaison sûre** : `vhs=0&shadows=0&dpr=1` (« rendu ») ne touche que le rendu : −0,25 s en bureau (dans le bruit), **−1,9 s en mobile** (le DPR de 2,75 et les ombres dominent). Le mobile ne joue que les garde-fous (paliers publication et complet), d'où un gain réel limité.
-- `detail=0`, `perso=actuel`, `empty=1`, `nospawn=1` changent le jeu montré ou sa logique : jamais pour un garde-fou ni pour un test du rendu.
+- `detail=0`, `empty=1`, `nospawn=1` changent le jeu montré ou sa logique : jamais pour un garde-fou ni pour un test du rendu.
 
 ## Fichiers de test qui pourraient utiliser `vhs=0&shadows=0&dpr=1` sans risque (non modifiés)
 Critère : le fichier ouvre `jeu.html` et ne porte ni sur le VHS, ni sur les ombres, ni sur le DPR, ni sur les budgets de dessin (appels, triangles, mesurés ombres actives), ni sur les couleurs lues à l'écran (relevé par `grep` des mots `vhs|shadow|ombre|dpr|pixelRatio|triangles|calls|budget|screenshot|getImageData|readPixels|contraste`).

@@ -205,6 +205,10 @@
     { "name": "lot-5d", "titre": "Fluidité : moins de mémoire jetée à chaque image", "points": [
       "Les collisions (déplacements des zombies, ligne de vue, balles, laser) et les poses des personnages sont calculées sans créer d'objets temporaires à chaque image : le jeu jette beaucoup moins de mémoire, ce qui doit réduire les petites pauses du navigateur (effet sur les téléphones à vérifier avec ?perf=1).",
       "Aucun changement de jeu ni d'image : les résultats sont identiques au bit près (vérifiés sur des milliers de cas et sur six parties rejouées pas à pas)."
+    ] },
+    { "name": "lot-5e", "titre": "Nettoyage : ancien modèle de personnages et ancien pack de sons retirés", "points": [
+      "Les personnages d'avant les refontes (?perso=actuel) et le pack de sons d'avant (?sons=ancien) sont retirés : ces adresses donnent maintenant le jeu par défaut, sans erreur. Si la table des personnages manque, chaque personnage prend la variante A.",
+      "Aucun changement de jeu, d'image ni de son : parties rejouées pas à pas, rendu, vues et empreinte de chaque son identiques avant et après ; les tests qui mesuraient avec l'ancien modèle ou l'ancien pack sont remesurés sur ce que le jeu livre."
     ] }
   ]
 }

@@ -2,8 +2,7 @@
 // données passées en argument (la page les charge par fetch, les tests par lecture de fichier).
 import { boundsOf, characterStats, checkVariant, distinctness, fkPose, gameCamera, silhouetteMetrics } from '../core/character-parts.js';
 import { contrast, luminance, mix } from '../core/color.js';
-import { computePose } from '../core/pose.js';
-import { fromV1, poseAt, rigOf } from '../core/pose-v2.js';
+import { poseAt, rigOf } from '../core/pose-v2.js';
 import { partRgb, resolveVariant } from '../core/persos-variants.js';
 import { PALETTE_REGION } from '../core/texgen-persos.js';
 import { fitDistance } from '../core/viewport.js';
@@ -18,7 +17,7 @@ export function gameView(world, render, camera, width = 667, height = 375) {
   return gameCamera({ fov: render.camera.fov, tilt: render.camera.tilt, distance, width, height });
 }
 
-// ctx : { characters, poses, enemies, player, lookup, floors ({ nom: [r, g, b] }), blood ([r, g, b]), atlasMeans ({ région: [r, g, b] }),
+// ctx : { characters, poses, enemies, player, lookup, floors ({ nom: [r, g, b] }), blood ([r, g, b]),
 // factors (slot) -> { type de région: facteur }, camera }.
 export function createMeasures(ctx) {
   const { characters, poses, lookup } = ctx;
@@ -54,19 +53,6 @@ export function createMeasures(ctx) {
     return finish(slot, { stats, violations, sil, reach, height: stats.rest.height, budget: rich ? b.richTriangles : b.triangles, architecture: 'rigid', anim, phase });
   }
 
-  function current(slotId) {
-    const slot = slotOf(slotId);
-    const c = slot.current;
-    const stats = characterStats(c, { architecture: 'articulated', skeletons });
-    const walk = c.kind === 'player' ? { state: 'marche', amount: 1, phase: 1.2 } : { state: 'zombie', phase: 1.2, amount: 0.7 };
-    const pose = fromV1(computePose({ seed: 1, time: 0.4, ...walk }), { lean: c.lean, headTilt: c.headTilt, armLift: c.armLift });
-    const color = (part) => (ctx.atlasMeans[c.regions[part.region]] ?? [128, 128, 128]).map((x) => x / 255);
-    const sil = silhouetteMetrics(c, pose, ctx.camera, { skeletons, color });
-    const reach = boundsOf(fkPose(c, pose, { skeletons }).boxes).reach;
-    const violations = reach > 1.3 * radiusOf(slot.id) ? [{ code: 'emprise', detail: `marche : ${reach.toFixed(2)} > ${(1.3 * radiusOf(slot.id)).toFixed(2)}` }] : [];
-    return finish(slot, { stats, violations, sil, reach, height: stats.rest.height, budget: 700, architecture: 'articulated' });
-  }
-
   function finish(slot, m) {
     const rgb = m.sil.color.map((x) => x * 255);
     const contrasts = Object.fromEntries(Object.entries(floors).map(([k, f]) => [k, contrast(rgb, f)]));
@@ -89,12 +75,12 @@ export function createMeasures(ctx) {
     };
   }
 
-  // Écart minimal de silhouette avec les autres types de zombies de la même intention (Actuel : leurs versions actuelles).
+  // Écart minimal de silhouette avec les autres types de zombies de la même variante.
   function gap(slotId, variantId, mine) {
     if (!ZOMBIE_SLOTS.includes(slotId)) return null;
-    const others = ZOMBIE_SLOTS.filter((z) => z !== slotId).map((z) => (variantId === 'actuel' ? current(z) : v2(z, variantId)));
+    const others = ZOMBIE_SLOTS.filter((z) => z !== slotId).map((z) => v2(z, variantId));
     return Math.min(...others.map((o) => distinctness(mine.sil, o.sil).max));
   }
 
-  return { v2, current, gap, floors, radiusOf, slotOf };
+  return { v2, gap, floors, radiusOf, slotOf };
 }

@@ -5,26 +5,18 @@
 import { distanceGain, dropCategory } from '../core/audio-mix.js';
 import { createDirector, direct, soundTable } from '../core/sound-director.js';
 import { bufferName, isAtelier, packStats } from '../core/sound-choice.js';
-import { loadLegacy, renderAtelier, soundMode } from './sound-loader.js';
+import { renderAtelier, soundMode } from './sound-loader.js';
 
 const LOG_MAX = 200;
 
 // config : { audio, materials, voice, sounds } (data/game/audio.json, sound-materials.json, zombie-voice.json, liste de sounds.json) ; test : tient le journal.
 // autoAmbience : l'ambiance démarre toute seule (le jeu) ou seulement à la demande (page d'écoute).
-// Lot 3i : mode des sons (?sons=choix|ancien|A|B|C, défaut choix) ; avec ?sons=ancien, la table des sons est celle d'avant le lot (recettes
-// remplacées chargées par import dynamique, sons nouveaux absents). Versions (graines) d'un son de l'atelier non encore calculées : calculées au
+// Lot 3i : mode des sons (?sons=choix|A|B|C, défaut choix ; lot 5e : ?sons=ancien, le pack d'avant, est retiré : valeur inconnue). Versions (graines) d'un son de l'atelier non encore calculées : calculées au
 // premier usage, gardées ensuite (cache sans éviction) ; en attendant, une version déjà prête du même son est jouée.
 export function createAudio({ config, test = false, seed = 1, autoAmbience = true, mode = soundMode() } = {}) {
   const Context = typeof window === 'undefined' ? undefined : (window.AudioContext ?? window.webkitAudioContext);
   const recipes = new Map((Array.isArray(config.sounds) ? config.sounds : []).map((r) => [r.id, r]));
-  const legacyMode = mode === 'ancien';
-  const cfg = { audio: config.audio, materials: config.materials, voice: config.voice, sounds: soundTable(legacyMode ? config.sounds.filter((r) => !isAtelier(r)) : config.sounds) };
-  if (legacyMode) {
-    loadLegacy().then((list) => {
-      for (const r of list) recipes.set(r.id, r);
-      cfg.sounds = soundTable([...config.sounds.filter((r) => !isAtelier(r)), ...list]);
-    }).catch(() => {});
-  }
+  const cfg = { audio: config.audio, materials: config.materials, voice: config.voice, sounds: soundTable(config.sounds) };
   // ?test=1 : empreinte de chaque tampon (somme pondérée des échantillons), comparée en test au rendu de Node.
   const sums = new Map();
   const fingerprint = (name, samples) => {
@@ -78,7 +70,7 @@ export function createAudio({ config, test = false, seed = 1, autoAmbience = tru
   function startLoop(name, def) {
     const buffer = buffers.get(`${def.sound}-1`);
     // Boucle calculée au premier usage : demandée ici, lancée à une image suivante quand son tampon est prêt.
-    if (!buffer && !legacyMode && isAtelier(recipes.get(def.sound))) ensure(`${def.sound}-1`, recipes.get(def.sound), { sound: def.sound, variant: 0 });
+    if (!buffer && isAtelier(recipes.get(def.sound))) ensure(`${def.sound}-1`, recipes.get(def.sound), { sound: def.sound, variant: 0 });
     if (!ctx || !buffer || loopVoices.has(name)) return;
     const source = ctx.createBufferSource();
     source.buffer = buffer;
@@ -174,10 +166,10 @@ export function createAudio({ config, test = false, seed = 1, autoAmbience = tru
       return false;
     }
     const recipe = recipes.get(r.sound);
-    let name = bufferName(r.sound, r.variant + 1, r.durationSec ?? null, legacyMode ? null : recipe);
+    let name = bufferName(r.sound, r.variant + 1, r.durationSec ?? null, recipe);
     let buffer = buffers.get(name);
     let playedVariant = r.variant;
-    if (!buffer && ctx && !suspended && !legacyMode && isAtelier(recipe)) {
+    if (!buffer && ctx && !suspended && isAtelier(recipe)) {
       // Version pas encore calculée : une version prête du même son (à la même durée pour la réparation) la remplace cette fois-ci, autre
       // que la précédente si possible ; la version demandée (`asked` au journal) est calculée en arrière-plan pour la prochaine fois.
       const ready = [];

@@ -1,10 +1,10 @@
 import { describe, it, expect } from 'vitest';
 import { renderSound, soundBytes, variantCount } from '../../js/core/synth.js';
 import { centroid, maxCorrelation, mean, peakOf, rmsOf, toDb } from './helpers/dsp.js';
-import { synthRecipes } from './helpers/sons-anciens.js';
+import { synthRecipes } from './helpers/sons-synth.js';
 
 // Sons d'annonce du lot 2c : vague-annonce, vague-renforcee, vague-fin (catégorie « annonce »). Mesures comme au lot 1d, plus celles du repère.
-// Lot 3i : recettes de synth.js (les recettes remplacées par l'atelier viennent de sounds-legacy.json ; l'atelier : sons-integres.test.js).
+// Lot 3i : recettes de synth.js du pack par défaut (lot 5e : pack d'avant, sounds-legacy.json, retiré) ; l'atelier : sons-integres.test.js.
 const sounds = synthRecipes();
 const IDS = ['vague-annonce', 'vague-renforcee', 'vague-fin'];
 const recipes = IDS.map((id) => sounds.find((s) => s.id === id));

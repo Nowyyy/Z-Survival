@@ -15,8 +15,13 @@ const MOBILIER = 2 * load('data/game/maps/rez-de-chaussee/mobilier.world.json').
 const EPAVES = (load('data/game/maps/rez-de-chaussee/decor.json').wrecks?.helicopter?.triangles ?? 0) + 158 + (JSON.parse(readFileSync('data/game/maps/rez-de-chaussee/decor.json', 'utf8')).wrecks?.helicopter?.scarTriangles ?? 0); // lot 5a-F : + le cratère et la traînée (sol de terre) // + la voiture calcinée posée à part (3 boîtes de 10 triangles, 4 roues de 32), dans le même maillage
 const STATE = (page) => page.evaluate(() => window.__zs.getState());
 const U = (px) => px * 5 + 800;
-// Références mesurées sur main au lancement du lot (scripts/modele/mesures-rendu.mjs) : [appels, triangles].
-const REF = { R1: [200, 14442], R2: [201, 14582], R3: [199, 13898], U1: [207, 14788], U4: [212, 15588], V1: [39, 5552], V2: [47, 5908] };
+// [appels, triangles] ; jusqu'au lot 5e : mesurées sur main au lancement du lot 3g avec l'ancien modèle (scripts/modele/mesures-rendu.mjs).
+// Lot 5e : références remesurées avec la variante A (&perso=A&sang=0 ; l'ancien modèle, référence d'avant, est retiré), sur lot-5c 92e4556,
+// par scripts/nettoyage/inventaire-ancien.mjs --remesure (mêmes scènes et gestes, épaves retirées) ; mêmes tolérances qu'avant.
+const REF = { R1: [58, 14044], R2: [58, 14142], R3: [56, 13458], U1: [64, 14358], U4: [68, 15116], V1: [27, 5562], V2: [34, 5886] };
+// Lot 5e (décision du propriétaire : une référence par projet, mesurée, jamais une tolérance élargie) : le projet mobile dessine 2 appels et 4 triangles
+// de moins que le bureau dans chaque scène (constaté en CI complète au lot 5c, U4 : 210 contre 212 avec l'ancien modèle) ; mesuré sur la tête du lot 5e.
+const REF_MOBILE = { R1: [56, 14040], R2: [56, 14138], R3: [54, 13454], U1: [62, 14354], U4: [66, 15112], V1: [25, 5558], V2: [32, 5882] };
 const SCENES = {
   R1: { url: '&nospawn=1', at: [U(300), U(300)], floor: 'rdc', wave: 10, zombies: 10 },
   R2: { url: '&nospawn=1', at: [U(311), U(335)], floor: 'rdc', wave: 10, zombies: 10 },
@@ -49,25 +54,27 @@ const measure = (page, sc) => page.evaluate(({ at, floor, wave, zombies }) => {
 }, sc);
 
 // Retours du propriétaire (quatrième passe) : avec le mobilier d'après le modèle, les portes, le feu, l'extérieur plus vivant et le brouillard, le budget du détail
-// n'est plus « référence + 1 500 » (décor léger seul) mais les plafonds du projet : 30 000 triangles (budget de l'étage) et 240 appels (objectif) ; le détail ajoute
+// n'est plus « référence + 1 500 » (décor léger seul) mais un plafond : 30 000 triangles et 240 appels avec l'ancien modèle ; lot 5e (variante A, décision du
+// propriétaire) : 27 300 triangles et 84 appels (au plus 25 789 et 77 mesurés, arrondis au millier et à la dizaine, + 5 %) ; le détail ajoute
 // au plus 12 appels (décor léger, feux) ; sans le détail, la référence à quelques triangles près (+ 2 appels : nappes de brume ; ± 1 : fenêtres F7 et pastilles).
-test.describe('budgets de rendu avec le détail (30 000 triangles et 240 appels au plus ; + 12 appels au plus avec le détail)', () => {
+test.describe('budgets de rendu avec le détail (27 300 triangles et 84 appels au plus ; + 12 appels au plus avec le détail)', () => {
   for (const [id, sc] of Object.entries(SCENES)) {
     test(`${id}`, async ({ page }, testInfo) => {
-      await open(page, `${sc.url}&shadows=1&detail=0&perso=actuel&sang=0`); // lot 3m : référence mesurée avec l'ancien modèle des personnages
+      const ref = (testInfo.project.name === 'mobile' ? REF_MOBILE : REF)[id];
+      await open(page, `${sc.url}&shadows=1&detail=0&perso=A&sang=0`); // lot 5e : référence mesurée avec la variante A
       const off = await measure(page, sc);
-      await open(page, `${sc.url}&shadows=1&perso=actuel&sang=0`); // lot 3m : même modèle que la mesure sans le détail
+      await open(page, `${sc.url}&shadows=1&perso=A&sang=0`); // même variante que la mesure sans le détail
       const on = await measure(page, sc);
-      const note = `${id} : detail=0 ${off.calls} appels / ${off.triangles} triangles ; detail=1 ${on.calls} / ${on.triangles} (référence ${REF[id].join(' / ')})`;
+      const note = `${id} : detail=0 ${off.calls} appels / ${off.triangles} triangles ; detail=1 ${on.calls} / ${on.triangles} (référence ${ref.join(' / ')})`;
       testInfo.annotations.push({ type: 'rendu', description: note });
       console.log(`BUDGET lot 3g-C ${note}`);
-      expect(on.triangles).toBeLessThanOrEqual(30000);
-      expect(on.calls).toBeLessThanOrEqual(240);
+      expect(on.triangles).toBeLessThanOrEqual(27300);
+      expect(on.calls).toBeLessThanOrEqual(84);
       expect(on.calls - off.calls).toBeLessThanOrEqual(12);
       expect(on.triangles - off.triangles).toBeLessThanOrEqual(1500 + MOBILIER + 4000);
-      expect(Math.abs(off.triangles - EPAVES - REF[id][1])).toBeLessThanOrEqual(80); // lot 5a : + les triangles des épaves
-      expect(off.calls).toBeLessThanOrEqual(REF[id][0] + 3);
-      expect(off.calls).toBeGreaterThanOrEqual(REF[id][0] - 1);
+      expect(Math.abs(off.triangles - EPAVES - ref[1])).toBeLessThanOrEqual(80); // lot 5a : + les triangles des épaves
+      expect(off.calls).toBeLessThanOrEqual(ref[0] + 3);
+      expect(off.calls).toBeGreaterThanOrEqual(ref[0] - 1);
     });
   }
 });

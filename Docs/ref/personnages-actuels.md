@@ -1,5 +1,7 @@
 # Personnages actuels : état des lieux mesuré (lot 3j-A)
 
+*Retiré du jeu au lot 5e : l'ancien modèle (`js/core/pose.js`, `js/game/character.js`, `?perso=actuel`) et le script `scripts/personnages/inventaire.mjs` qui produisait ces mesures n'existent plus ; document gardé comme état des lieux historique.*
+
 Mesures de `node scripts/personnages/inventaire.mjs` (Node, sans rendu). Caméra du jeu à 667 × 375 : distance 704,5, inclinaison 75°, champ 40°, 1,37 unité par pixel au sol. Silhouette : rasterisation des triangles posés (pose de marche du jeu), moyenne sur 4 orientations ; « lum. vue » : luminance de la couleur moyenne visible (régions d'atlas, sans éclairage) ; contraste avec la couleur moyenne de chaque sol (même méthode que `tests/unit/personnages.test.js`, le béton d'escalier utilise la texture des murs).
 
 | Personnage | Pièces | Triangles | Appels (pièces + ombres) | Emprise / 1,3 r | Hauteur | Aire (px) | Aspect | Lum. vue | Carrelage | Herbe | Terre | Route | Trottoir | Escalier |

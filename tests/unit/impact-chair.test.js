@@ -9,7 +9,6 @@ import { distanceGain } from '../../js/core/audio-mix.js';
 import { createDirector, direct, soundTable } from '../../js/core/sound-director.js';
 import { isAtelier, renderSpec } from '../../js/core/sound-choice.js';
 import { renderChoice } from '../../js/core/sound-render.js';
-import { synthRecipes } from './helpers/sons-anciens.js';
 
 // Lot 5a-B : l'impact d'une balle sur un zombie. L'ancien son (impact-zombie, moteur synth.js) est remplacé par l'impact sur la chair de l'atelier
 // (emplacement impact-chair, variantes A, B, C), sous le même identifiant. Mesures seulement : aucun son n'est écouté par l'agent.
@@ -18,15 +17,14 @@ const raw = read('data/game/sounds-atelier.json');
 const atelier = resolveAtelier(raw);
 const slot = atelier.slots.find((s) => s.id === 'impact-chair');
 const { sounds } = read('data/game/sounds.json');
-const legacy = read('data/game/sounds-legacy.json').sounds;
+// Lot 5e : le pack d'avant (sounds-legacy.json) est retiré ; les niveaux de l'ancien impact-zombie sont figés (mesure sur lot-5c 92e4556).
+const REF_ANCIEN = read('tests/unit/helpers/references-sons.json').impactZombieAncien;
 const audio = read('data/game/audio.json');
 const voice = read('data/game/zombie-voice.json');
 const materials = read('data/game/sound-materials.json');
 const choix = read('data/game/sounds-choix.json').choix;
 const entry = sounds.find((s) => s.id === 'impact-zombie');
 const douilleEntry = sounds.find((s) => s.id === 'douille');
-const old = legacy.find((s) => s.id === 'impact-zombie');
-const oldBuffers = Array.from({ length: old.variants }, (_, v) => renderSound(old, v));
 const VARIANTS = ['A', 'B', 'C'];
 const SEEDS = [1, 2, 3, 4, 5];
 const render = (v, seed) => renderVariant(slot, v, {}, seed);
@@ -42,16 +40,7 @@ describe('le son joué quand une balle touche un zombie', () => {
     expect(r.requests.filter((q) => q.sound.startsWith('impact-'))).toHaveLength(1);
   });
 
-  it('l\'ancien son (pack d\'avant, ?sons=ancien) « scintille » : un partiel étroit au-dessus de 2 kHz dure plus de 25 ms dans chaque variante, à cause de la réverbération à peignes', () => {
-    for (const o of oldBuffers) expect(longestRing(o.samples, o.sampleRate).tailMs).toBeGreaterThan(25);
-    // Sans la réverbération, le même son n'a plus aucun partiel résonant au-dessus de 2 kHz : le « cling » est le clic aigu qui fait sonner les peignes.
-    const dry = { ...old, post: { ...old.post, reverb: undefined } };
-    for (let v = 0; v < old.variants; v += 1) {
-      const o = renderSound(dry, v);
-      expect(longestRing(o.samples, o.sampleRate).tailMs).toBe(0);
-    }
-    expect(synthRecipes().find((r) => r.id === 'impact-zombie')).toEqual(old);
-  });
+  // Lot 5e : « l'ancien son (pack d'avant) « scintille » » retiré avec le pack d'avant (3 assertions sur l'ancienne recette).
 });
 
 describe('impact sur la chair : trois variantes (A réaliste sourd, B horreur marquée, C sec et proche), cinq graines', () => {
@@ -94,8 +83,8 @@ describe('impact sur la chair : trois variantes (A réaliste sourd, B horreur ma
     }
   });
 
-  it('niveau relatif au tir calé sur l\'ancien impact à ±3 dB (version par version, variante par variante)', () => {
-    const ref = oldBuffers.reduce((s, o) => s + levelRel(o.samples, o.sampleRate), 0) / oldBuffers.length;
+  it('niveau relatif au tir calé sur l\'ancien impact à ±3 dB (version par version, variante par variante ; lot 5e : niveau de l\'ancien figé)', () => {
+    const ref = REF_ANCIEN.niveauRelatifAuTirDb;
     expect(Math.abs(slot.target.level - ref)).toBeLessThan(0.5);
     for (const v of VARIANTS) for (const x of buffers[v]) expect(Math.abs(levelRel(x, slot.sampleRate) - ref), v).toBeLessThanOrEqual(3);
   });
@@ -130,7 +119,7 @@ describe('impact sur la chair : trois variantes (A réaliste sourd, B horreur ma
 
 describe('intégration sous l\'identifiant de l\'ancien son', () => {
   // Retour du propriétaire (lot 5a-D) : B par défaut (refaite moins « tambour ») ; A et C restent comparables par ?sons=.
-  it('sounds.json : impact-zombie = entrée de l\'atelier (impact-chair, variante B, 5 graines, 1 préchargée, ensemble essentiel), l\'ancienne recette dans sounds-legacy.json', () => {
+  it('sounds.json : impact-zombie = entrée de l\'atelier (impact-chair, variante B, 5 graines, 1 préchargée, ensemble essentiel ; lot 5e : l\'ancienne recette, pack d\'avant, est retirée)', () => {
     expect(isAtelier(entry)).toBe(true);
     expect(entry).toMatchObject({ id: 'impact-zombie', category: 'impact', set: 'essentiel', variants: 5, preload: 1, loop: false });
     expect(entry.atelier.slot.id).toBe('impact-chair');
@@ -166,8 +155,7 @@ describe('intégration sous l\'identifiant de l\'ancien son', () => {
       level += dbfs(shortLevel(o.samples, o.sampleRate)) / douilleEntry.variants;
     }
     expect(Math.abs(level + douilleEntry.gainDb - (OLD_DOUILLE_DB - 24))).toBeLessThanOrEqual(0.5);
-    // L'ancien impact-zombie, intact dans le pack d'avant : même empreinte que sa recette sur origin/dev.
-    expect(createHash('sha256').update(JSON.stringify(old)).digest('hex')).toBe('50041fde578948bc38be81526d3bb5a0226a46d46f810c06c01b4ec394473254');
+    // Lot 5e : « l'ancien impact-zombie, intact dans le pack d'avant : même empreinte » retiré avec le pack d'avant (1 assertion).
     expect(materials.sounds).toEqual({ bois: 'impact-bois', metal: 'impact-metal', pierre: 'impact-pierre', voiture: 'impact-voiture' });
   });
 });
@@ -202,17 +190,18 @@ describe('scène simulée : 8 zombies, 24 tirs (niveau moyen et écrêtage)', ()
     }
     return { db: 10 * Math.log10(e / out.length), peak: p };
   };
-  const before = scene(oldBuffers.map((o) => o.samples));
+  // Lot 5e : scène avec l'ancien impact figée (énergie moyenne mesurée sur lot-5c 92e4556, tests/unit/helpers/references-sons.json).
+  const before = { db: REF_ANCIEN.sceneDb };
   const after = Object.fromEntries(VARIANTS.map((v) => [v, scene(buffers[v].map((x) => up(x, slot.sampleRate)))]));
-  const beforeHits = scene(oldBuffers.map((o) => o.samples), false);
+  const beforeHits = { db: REF_ANCIEN.sceneImpactsSeulsDb };
   const afterHits = Object.fromEntries(VARIANTS.map((v) => [v, scene(buffers[v].map((x) => up(x, slot.sampleRate)), false)]));
 
   // Crête du mélange brut, avant le compresseur du jeu (audio.json) : elle dépassait déjà 1 avec l'ancien impact (tir et impact proche presque en même temps).
   it.each(VARIANTS)('%s : niveau moyen de la scène (et des impacts seuls) à ±3 dB de la référence ; aucun écrêtage (crête du mélange sous 1 ; lot 5a-E : la référence a baissé avec la douille)', (v) => {
-    console.log(`SCÈNE ${v} : ${after[v].db.toFixed(2)} dB (avant ${before.db.toFixed(2)}) ; impacts seuls ${afterHits[v].db.toFixed(2)} dB (avant ${beforeHits.db.toFixed(2)}) ; crête ${after[v].peak.toFixed(3)} (avant ${before.peak.toFixed(3)})`);
+    console.log(`SCÈNE ${v} : ${after[v].db.toFixed(2)} dB (avant ${before.db.toFixed(2)}) ; impacts seuls ${afterHits[v].db.toFixed(2)} dB (avant ${beforeHits.db.toFixed(2)}) ; crête ${after[v].peak.toFixed(3)}`);
     expect(Math.abs(after[v].db - before.db)).toBeLessThanOrEqual(3);
     expect(Math.abs(afterHits[v].db - beforeHits.db)).toBeLessThanOrEqual(3);
     expect(after[v].peak).toBeLessThan(1);
-    expect(before.peak).toBeLessThan(1);
+    // Lot 5e : « crête du mélange avec l'ancien impact sous 1 » retirée avec le pack d'avant (1 assertion).
   });
 });

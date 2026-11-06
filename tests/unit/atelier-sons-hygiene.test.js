@@ -73,11 +73,10 @@ describe('hygiène du lot 3h : pureté et fichiers', () => {
     for (const id of ['vague-annonce', 'vague-renforcee', 'vague-fin', 'tir', 'impact-bois', 'impact-metal', 'impact-pierre', 'impact-voiture']) {
       expect(sounds.find((s) => s.id === id), id).toEqual(before.find((s) => s.id === id));
     }
-    // Lot 5a : l'ancien impact-zombie est remplacé par l'impact sur la chair de l'atelier ; sa recette est conservée telle quelle dans sounds-legacy.json (?sons=ancien).
-    const legacy = JSON.parse(readFileSync('data/game/sounds-legacy.json', 'utf8')).sounds;
+    // Lot 5a : l'ancien impact-zombie est remplacé par l'impact sur la chair de l'atelier. Lot 5e : le pack d'avant (sounds-legacy.json) est retiré,
+    // la branche « recette d'avant conservée dans sounds-legacy.json » part avec lui (1 assertion) ; main contient déjà le lot 5a.
     const old = before.find((s) => s.id === 'impact-zombie');
-    if (old?.engine === 'atelier') expect(sounds.find((s) => s.id === 'impact-zombie')).toEqual(old); // main contient déjà le lot 5a
-    else expect(legacy.find((s) => s.id === 'impact-zombie')).toEqual(old);
+    if (old?.engine === 'atelier') expect(sounds.find((s) => s.id === 'impact-zombie')).toEqual(old);
   });
 
   it('aucune dépendance nouvelle (dependencies et devDependencies inchangées)', () => {

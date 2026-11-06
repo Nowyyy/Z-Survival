@@ -217,10 +217,11 @@ test.describe('portée du tir, laser qui s\'estompe, ombres lointaines', () => {
       await expect.poll(async () => (await state(page)).render.calls).toBeGreaterThan(base);
       return (await state(page)).render.calls - base;
     };
-    const withShadows = await added('&zoom=1&perso=actuel&sang=0'); // lot 3j : 5 pièces d'ombre des personnages actuels (v2 : un proxy)
-    const without = await added('&zoom=1&shadows=0&perso=actuel&sang=0');
+    // Lot 5e : variante A (l'ancien modèle, 5 pièces d'ombre, est retiré) : un personnage v2 projette son ombre par un proxy (un appel de plus).
+    const withShadows = await added('&zoom=1&perso=A&sang=0');
+    const without = await added('&zoom=1&shadows=0&perso=A&sang=0');
     // Lot 1c : seules les pièces principales (bassin, tronc, tête, deux cuisses : 5) projettent une ombre ; elles sont dessinées une seconde
     // fois dans la passe d'ombres, même pour un zombie à l'autre bout de la salle (avant le lot 1c : chaque pièce, donc au moins 1,8 fois plus).
-    expect(withShadows).toBeGreaterThanOrEqual(without + 5);
+    expect(withShadows).toBeGreaterThanOrEqual(without + 1); // lot 5e : proxy d'ombre v2 (mesuré : 3 contre 2 ; ancien modèle : 16 contre 11)
   });
 });

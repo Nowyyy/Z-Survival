@@ -44,17 +44,17 @@ import { DOWN_TEXTS, FLOOR_TEXTS, fmt, MONEY_TEXTS, SPLASH_TEXTS, WINDOW_INITIAL
 import { createThreeTextures } from './textures.js';
 import { buildWorld, createCamera } from './world.js';
 
-// Lot 3j : personnages v2 (« riche » par défaut) et sang (complet par défaut) ; ?perso=actuel&sang=0 : le jeu d'avant (rien de plus chargé).
+// Lot 3j : personnages v2 (« riche » par défaut) et sang (complet par défaut) ; lot 5e : l'ancien modèle (?perso=actuel) est retiré.
 const gfxBoot = await import('./graphics-boot.js').then((m) => m.graphicsBoot()).catch(() => null); // lot 5b : préréglage (variante, sang, cadavres)
 const persos = await import('./persos-loader.js').then((m) => m.loadPersos(gfxBoot?.persosSearch ?? location.search, { corpses: gfxBoot?.corpses ?? null }));
-const { computePose, createKit, createCharacter } = persos.model; // lot 3m : ancien modèle (pose.js, character.js) importé seulement si un personnage est « actuel »
+const { computePose, createKit, createCharacter } = persos.model; // modèle v2 du chargeur (persos-loader.js) : chaque personnage est construit par kit.v2
 const RECOIL_TIME = 0.12;
 const HIT_FLASH_TIME = 0.1;
 const FIRE_POSE_TIME = 0.3;
 const STEP = 0.05; // pas de la simulation avancée à la demande (hook de test step)
 const STAIR_CRAWL_LIFT = 14; // unités dont un zombie rampant est relevé dans un escalier
 const TAU = Math.PI * 2;
-// Pose de chaque allure (pose.js : « zombie » reste l'équivalent de « marche »).
+// Pose de chaque allure (états de pose d'avant le lot 3j : « zombie » reste l'équivalent de « marche »).
 const GAIT_POSE = { lent: 'lent', marche: 'zombie', rampe: 'rampe', course: 'course' };
 // Surcharge temporaire de waves.json (hook de test) : les sections objet sont fusionnées, le reste est remplacé.
 const mergeParams = (base, patch) => Object.fromEntries(Object.entries({ ...base, ...patch }).map(([k, v]) => [k, v && typeof v === 'object' && !Array.isArray(v) && patch?.[k] && typeof patch[k] === 'object' && !Array.isArray(patch[k]) ? { ...base[k], ...patch[k] } : v]));

@@ -88,8 +88,9 @@ for (const width of [360, 768, 1440]) {
   });
 }
 
-// Lot 5a-B : l'impact sur la chair (emplacement impact-chair) dans la page, avec ses mesures ; « Actuel » = l'ancien impact (« cling » mesuré).
-test('impact-chair : trois variantes dans la cible, sans partiel résonant au-dessus de 2 kHz ; « Actuel » (ancien impact) mesuré avec son « cling »', async ({ page }) => {
+// Lot 5a-B : l'impact sur la chair (emplacement impact-chair) dans la page, avec ses mesures. Lot 5e : « Actuel » (l'ancien impact, pack d'avant) est
+// retiré avec ce pack : ses 3 assertions (lecture, « cling » mesuré, message) partent avec lui.
+test('impact-chair : trois variantes dans la cible, sans partiel résonant au-dessus de 2 kHz', async ({ page }) => {
   await open(page);
   await unlock(page);
   await expect(slotCard(page, 'impact-chair').locator('button[data-variant]')).toHaveCount(3);
@@ -98,9 +99,4 @@ test('impact-chair : trois variantes dans la cible, sans partiel résonant au-de
     expect(e.measures.ringMs, v).toBeLessThanOrEqual(30);
     expect(e.measures.duration, v).toBeLessThanOrEqual(0.22);
   }
-  const before = (await logOf(page)).length;
-  await slotCard(page, 'impact-chair').locator('button[data-action="current"]').click();
-  await expect.poll(async () => (await logOf(page)).length, { timeout: 30_000 }).toBe(before + 1);
-  expect((await logOf(page)).at(-1).measures.ringMs).toBeGreaterThan(25);
-  await expect(slotCard(page, 'impact-chair')).toContainText('partiel résonant au-dessus de 2 kHz');
 });

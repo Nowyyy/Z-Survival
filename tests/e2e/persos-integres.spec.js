@@ -3,7 +3,7 @@ import AxeBuilder from '@axe-core/playwright';
 import { readFileSync } from 'node:fs';
 import { parseZones, zonesToWorld } from '../../js/core/zones.js';
 
-// Lot 3m : les personnages choisis (data/game/persos-choix.json) sont le défaut du jeu ; ?perso=actuel garde l'ancien modèle pour comparer.
+// Lot 3m : les personnages choisis (data/game/persos-choix.json) sont le défaut du jeu ; lot 5e : l'ancien modèle (?perso=actuel) est retiré.
 // 667 × 375, step() et hooks de ?test=1 ; suite rapide (fin de la liste ESSENTIAL de playwright.config.js).
 const SIZE = { width: 667, height: 375 };
 const S = (page) => page.evaluate(() => window.__zs.getState());
@@ -11,7 +11,7 @@ const load = (p) => JSON.parse(readFileSync(p, 'utf8'));
 const CHOIX = load('data/game/persos-choix.json');
 const SLOTS = ['joueur', 'marcheur', 'petit', 'voute', 'grand'];
 const EXPECTED = Object.fromEntries(SLOTS.map((s) => [s, CHOIX.persos[s].variante]));
-const OLD = ['/js/core/pose.js', '/js/game/character.js'];
+const OLD = ['/js/core/pose.js', '/js/game/character.js']; // lot 5e : fichiers supprimés, jamais demandés
 const zw = zonesToWorld(parseZones(load('data/game/maps/rez-de-chaussee/zones.json')), load('data/game/maps/rez-de-chaussee/world.json').transform);
 const DEPART = zw.stairs.find((s) => s.id === 'escalier-depart');
 const T = ['marcheur', 'petit', 'voute', 'grand'];
@@ -117,15 +117,24 @@ test.describe('personnages intégrés (choix par défaut)', () => {
     });
   });
 
-  test('?perso=actuel : l\'ancien modèle (pièces articulées), importé à la demande', async ({ page }) => {
+  test('?perso=actuel (lot 5e : ancien modèle retiré) : valeur inconnue, personnages par défaut (os rigides), aucun module ancien demandé', async ({ page }) => {
     const files = [];
     page.on('request', (r) => files.push(new URL(r.url()).pathname));
     await open(page, '&nospawn=1&perso=actuel');
     await spawnTen(page);
     const s = await S(page);
-    expect(s.persos).toMatchObject({ perso: 'actuel', architecture: 'articulated', characters: { joueur: 'actuel' } });
-    expect(s.enemies[0].pose).toHaveProperty('hipL');
-    for (const f of OLD) expect(files).toContain(f);
+    expect(s.persos).toMatchObject({ perso: 'choix', architecture: 'rigid', slots: EXPECTED });
+    expect(s.enemies[0].pose.choice).toBe(EXPECTED[s.enemies[0].pose.slot]);
+    for (const f of OLD) expect(files).not.toContain(f);
+  });
+
+  test('repli (lot 5e) : table des choix absente (404) : les 5 personnages en variante A, sans erreur', async ({ page }) => {
+    const errors = [];
+    page.on('pageerror', (e) => errors.push(e.message));
+    await page.route('**/data/game/persos-choix.json', (route) => route.fulfill({ status: 404, body: '' }));
+    await open(page, '&nospawn=1');
+    expect((await S(page)).persos.slots).toEqual(Object.fromEntries(SLOTS.map((id) => [id, 'A'])));
+    expect(errors).toEqual([]);
   });
 
   for (const v of ['A', 'B', 'C', 'riche']) {
@@ -260,7 +269,7 @@ test.describe('personnages intégrés (choix par défaut)', () => {
     expect(seen).toEqual(['marche:escalier', 'rampe:rampe']);
   });
 
-  for (const q of ['&perso=actuel', '&perso=A', '&perso=B', '&perso=C', '&perso=riche', '&sang=0', '&sang=reduit', '&sang=1']) {
+  for (const q of ['&perso=A', '&perso=B', '&perso=C', '&perso=riche', '&sang=0', '&sang=reduit', '&sang=1']) { // lot 5e : « &perso=actuel » retiré (ancien modèle)
     test(`invariance : « ${q} » donne le même état logique que le défaut (graine 5, 600 pas)`, async ({ page }) => {
       await openFrozen(page, '&seed=5&wave=3');
       await sixHundredSteps(page);
@@ -428,12 +437,12 @@ test.describe('personnages intégrés : chargement et compatibilité', () => {
     expect(s.kills).toBeGreaterThan(0);
   });
 
-  test('?perso=actuel&sang=0 : ni la table des choix, ni le sang, ni les modules v2 ne sont demandés', async ({ page }) => {
+  test('?perso=actuel&sang=0 (lot 5e : comme ?sang=0) : table des choix et modules v2 demandés, ni le sang ni l\'ancien modèle', async ({ page }) => {
     const files = [];
     page.on('request', (r) => files.push(new URL(r.url()).pathname));
     await open(page, '&nospawn=1&perso=actuel&sang=0');
-    for (const f of ['/data/game/persos-choix.json', '/js/game/blood-fx.js', '/js/game/character-v2.js', '/js/game/persos-runtime.js']) expect(files).not.toContain(f);
-    for (const f of OLD) expect(files).toContain(f);
+    for (const f of ['/data/game/persos-choix.json', '/js/game/character-v2.js', '/js/game/persos-runtime.js']) expect(files).toContain(f);
+    for (const f of ['/js/game/blood-fx.js', ...OLD]) expect(files).not.toContain(f);
   });
 
   test('sang au premier usage : aucune tache ni particule avant le premier impact, puis des taches', async ({ page }) => {

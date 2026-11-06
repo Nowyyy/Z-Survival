@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync, readdirSync } from 'node:fs';
 import { KINDS, regionRect } from '../../js/core/texgen.js';
-import { LIMITS, computePose } from '../../js/core/pose.js';
 import { TEXTURE_TEXTS } from '../../js/game/texts.js';
 import { texturesJson, tokens, tokenCss } from './helpers/textures.js';
 
@@ -115,13 +114,5 @@ describe('hygiène du lot 1c', () => {
     expect(files.filter((f) => /\.(png|jpe?g|gif|webp|avif|svg|glb|gltf|obj|mp3|ogg|wav)$/i.test(f))).toEqual([]);
   });
 
-  it('les noms d\'articulations de pose.js existent tous dans le squelette', () => {
-    const sk = readFileSync('js/game/skeleton.js', 'utf8');
-    const joints = new Set(Object.keys(computePose({ state: 'zombie' })).filter((k) => k !== 'bob' && k !== 'recoil'));
-    expect([...joints].sort()).toEqual(Object.keys(LIMITS).filter((k) => k !== 'bob' && k !== 'recoil').sort());
-    // Chaque articulation de pose a ses segments dans le squelette : hanche, genou, épaule, coude, tronc, tête.
-    for (const name of ['THIGH', 'SHIN', 'UPPER', 'FORE', 'HIP_X', 'SHOULDER_X']) expect(sk).toContain(`export const ${name}`);
-    const character = readFileSync('js/game/character.js', 'utf8');
-    for (const j of ['hip', 'knee', 'shoulder', 'elbow']) expect(character).toContain(`${j}`);
-  });
+  // Lot 5e : « les noms d'articulations de pose.js existent tous dans le squelette » retiré avec l'ancien modèle (pose.js, character.js supprimés).
 });

@@ -63,9 +63,10 @@ test.describe('essai en jeu des personnages v2 et du sang', () => {
     });
   });
 
-  for (const q of ['', '&perso=A', '&perso=B', '&perso=C', '&perso=riche&sang=0', '&perso=actuel&sang=reduit', '&perso=actuel&sang=1', '&perso=B&sang=reduit']) {
-    test(`invariance : « ${q || 'par défaut'} » donne le même état logique que le jeu d'avant le lot (?perso=actuel&sang=0, graine 5, 600 pas)`, async ({ page }) => {
-      await openFrozen(page, '&seed=5&wave=3&perso=actuel&sang=0');
+  // Lot 5e : référence &perso=A&sang=0 (l'ancien modèle, référence d'avant, est retiré) ; « &perso=actuel&sang=… » remplacés par « &perso=riche&sang=… ».
+  for (const q of ['', '&perso=A', '&perso=B', '&perso=C', '&perso=riche&sang=0', '&perso=riche&sang=reduit', '&perso=riche&sang=1', '&perso=B&sang=reduit']) {
+    test(`invariance : « ${q || 'par défaut'} » donne le même état logique que la variante A sans sang (?perso=A&sang=0, graine 5, 600 pas)`, async ({ page }) => {
+      await openFrozen(page, '&seed=5&wave=3&perso=A&sang=0');
       await sixHundredSteps(page);
       const base = await logic(page);
       await openFrozen(page, `&seed=5&wave=3${q}`);
@@ -143,7 +144,7 @@ test.describe('essai en jeu des personnages v2 et du sang', () => {
 // zombie interrompt la réparation (la planche garde sa progression), qui reprend sans cible. Salle de test, boucle d'images arrêtée.
 test.describe('tir ou réparation, jamais les deux', () => {
   const N = windowGeometries(windowsWithGaps(buildLayout(load('data/game/world.json'), load('data/game/decor.json'), {})), load('data/game/windows.json')).find((g) => g.id === 'fenetre-nord');
-  for (const perso of ['riche', 'actuel']) {
+  for (const perso of ['riche', 'A']) { // lot 5e : « actuel » (ancien modèle retiré) remplacé par A
     test(`viser un zombie arrête la réparation, elle reprend sans cible (${perso})`, async ({ page }) => {
       await page.setViewportSize(SIZE);
       await page.goto(salle(`/jeu.html?test=1&seed=1&nospawn=1&perso=${perso}`));
