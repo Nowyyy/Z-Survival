@@ -4,6 +4,8 @@
 
 > **Lot 5h** (détails : `Docs/ref/site-adresses.md`) : `404.html` à la racine du site renvoie `/recette/…` vers `/Recette/…` (aucun dossier `recette/`) ; les noms et descriptions affichés sur l'accueil se modifient dans `noms-versions-et-lots.txt` (racine du dépôt, lu dans le build de `dev`, sinon de `main`), qui l'emporte sur `versions.json` et `data/changelog.json` dans `site-info.json`.
 
+> **Lot 5f — première publication par cette procédure (V0.6)** : corrections de la section « Procédure de publication » ci-dessous (étapes 4 et 5, marquées *Lot 5f*) et écarts constatés en fin de document (« Publication de V0.6 : ce que le lot 5f a appris »).
+
 **Noms affichés (demande du propriétaire)** : `main` = **Recette** (racine du site, canal technique `release`), `dev` = **Développement** (`/next/`, canal `dev`). Les branches gardent leurs noms ; la **Production** viendra plus tard, avec un serveur.
 
 Écrit en partie A (inventaire, plan), complété en partie C (réalisation, workflow avant/après, procédures). Correspondance des versions : `Docs/ref/versions-correspondance.md` ; contrôle des archives : `Docs/ref/verification-versions.md`.
@@ -124,8 +126,8 @@ Validation : relecture ; `python3 -c "import yaml; yaml.safe_load(open('.github/
 1. Vérifier `dev` : tests (`npm run lint`, `npm test`, `npm run test:e2e`, le job `e2e` du push sur `dev`), puis l'aperçu `https://nowyyy.github.io/Z-Survival/next/`.
 2. Archiver la version qui va être remplacée : `git fetch origin`, puis `node scripts/versions/archiver.mjs --id v0.5 --ref <hash du main actuel>` (`git rev-parse origin/main`) ; contrôle : `node scripts/versions/verifier.mjs`.
 3. Pull Request `dev` → `main` avec « Create a merge commit », nommée « V0.6 ».
-4. Mettre à jour `versions.json` (`latest: "v0.6"`, nouvelle entrée `actuelle` avec le hash de la fusion, V0.5 en `archive` avec le hash archivé) ; adapter `versions-schema` (lot 5g : la liste `versions` de `data/changelog.json` et `dev.spec` n'existent plus ; les lots de `version: "v0.6"` quittent alors les « évolutions » de l'accueil).
-5. Déclencher le workflow (onglet Actions → Pages → Run workflow sur `main`) et vérifier le site publié (`/Recette/`, `/v0.5/`, `/dev/jeu.html` ; lot 5g).
+4. Mettre à jour `versions.json` (`latest: "v0.6"`, nouvelle entrée `actuelle` avec le hash de la fusion, V0.5 en `archive` avec le hash archivé) ; adapter `versions-schema` (lot 5g : la liste `versions` de `data/changelog.json` et `dev.spec` n'existent plus ; les lots de `version: "v0.6"` quittent alors les « évolutions » de l'accueil). *(Lot 5f : fait **avant** la Pull Request, dans le lot de publication fusionné dans `dev` : la fusion vers `main` n'existe pas encore ; `ref` de la nouvelle version = tête de `dev` sans le lot de publication, `branch: "dev"` ; `ref` de V0.5 = le hash archivé, tête de `main`.)*
+5. Déclencher le workflow (onglet Actions → Pages → Run workflow sur `main`) et vérifier le site publié (`/Recette/`, `/v0.5/`, `/dev/jeu.html` ; lot 5g). *(Lot 5f : périmé ; la fusion dans `main` lance `pages.yml` par son push ; **aucun déclenchement manuel** : attendre l'exécution sur `main`, puis vérifier le site.)*
 
 ## Build de développement
 Une branche de correctif est fusionnée dans `dev` (Pull Request vers `dev`) ; le push sur `dev` lance `quick`, `e2e` et `deploy` : `https://nowyyy.github.io/Z-Survival/next/` montre le bandeau « Build de développement — <hash> — <date> ». La racine n'est pas touchée (elle est reconstruite depuis la tête de `main`). **Lot 5g** : le build de développement est `…/dev/jeu.html` (`/next/` y renvoie) ; l'accueil `…/Recette/` en donne le hash et la date ; plus de bandeau.
@@ -141,3 +143,12 @@ Faite **par le propriétaire, jamais par un agent**, après la vérification de 
 - Settings → Pages : source « GitHub Actions ».
 - Settings → Environments → `github-pages` → Deployment branches : `main` et `dev` seulement (sans `dev`, le déploiement depuis `dev` est refusé ; sans restriction, le vieux workflow d'une branche de version pourrait publier).
 - Après la fusion de `lot-4c` : créer `dev` depuis `main`, puis lancer le workflow à la main.
+
+## Publication de V0.6 : ce que le lot 5f a appris
+- **Ordre réel** : (1) archivage de V0.5 depuis la tête de `main` (`e23d92b`, essai `--dry-run` puis archivage : `archive` `92631da`) ; (2) `versions.json`, bloc `[lot-5f]` du fichier des noms et entrée `lot-5f` du journal dans `lot-5f`, fusionné dans `dev` par le propriétaire ; (3) Pull Request `dev` → `main` « V0.6 » ; (4) `pages.yml` sur `main`, sans déclenchement manuel.
+- **Choix de `ref`** : V0.6 = `cef11b3` (tête de `dev` au départ du lot, fusion de la Pull Request #41) ; son contenu ne diffère de ce qui sera publié que par `versions.json`, le fichier des noms, le journal, la documentation et le seed. Le prompt disait « `git rev-parse HEAD` avant toute modification de la partie B » (alors `9ebdc6b`, commit 5f-A, documentation seule) et « dernier commit de `dev` sans ce lot » : la seconde définition a été suivie. V0.5 = `e23d92b` (tête de `main` archivée), qui remplace `e6cf00e` (fusion de `lot-4b`) : le vérificateur compare le `ref` de `build-info.json` de l'archive à celui de `versions.json`. Même jeu ; `e23d92b` ajoute l'accueil du lot 4c et le seed.
+- **`main` doit être un ancêtre de `dev`** avant de commencer : le propriétaire avait poussé le seed 0.24 directement sur `main` ; résolu par un commit identique sur `dev` puis la Pull Request `main` → `dev` (#41). Sinon, la Pull Request « V0.6 » aurait eu un conflit sur `Docs/seed.md`.
+- **Index des anciennes versions** : `v0.5/` (`index.html`) est l'ancien accueil du lot 4c ; il lit `versions.json` dans son dossier, que l'archiveur n'écrit pas : une 404 en console sur cette page seulement ; l'entrée `v0.5/jeu.html` est propre (`verification-versions.md`). Accepté par le propriétaire ; l'archiveur n'est pas modifié.
+- **Titre borné** : le schéma borne `title` à 120 caractères ; la description du bloc `[v0.6]` en compte 142. `title` = ses 120 premiers caractères (le fichier des noms n'est pas modifié ; `site-info.json` applique la même borne).
+- **Site de test** (`scripts/site/e2e-site.mjs`) : fait d'après `versions.json` et le journal du dépôt, il n'a plus d'évolution une fois la version publiée ; `publication.spec.js` sert des évolutions fictives pour vérifier leur rendu.
+- **`CLAUDE.md`** : 8 994 caractères au départ (au-delà de la limite de 8 400 depuis le lot 5g), 8 140 après la consolidation (`Docs/ref/claude-md-v06.md`).
