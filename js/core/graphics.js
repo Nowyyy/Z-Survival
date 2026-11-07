@@ -11,10 +11,12 @@ export const FOG_MODES = ['simple', 'reduit', 'complet'];
 export const SANG_LEVELS = ['0', 'reduit', '1'];
 export const PERSO_LOADS = ['choix', 'A', 'B', 'C', 'riche'];
 export const DECOR_MODES = ['reduit', 'complet'];
+export const LAMP_MODES = ['off', 'decor', 'eclairage']; // lot 5k : lampes à huile (aucune, décor, éclairage dynamique)
+export const LIGHT_COUNTS = [2, 4, 6]; // lot 5k : lumières ponctuelles simultanées (eclairage)
 
-// Valeurs de l'Élevé = rendu actuel du jeu (render.json, blood.json, vhs.json, persos-choix.json, ?dpr par défaut) : repli de toute valeur invalide.
+// Valeurs de l'Élevé = rendu actuel du jeu (lot 5k : lampes « off », le rendu d'avant les lampes, même si le préréglage Élevé choisit l'éclairage) (render.json, blood.json, vhs.json, persos-choix.json, ?dpr par défaut) : repli de toute valeur invalide.
 export const ELEVE = Object.freeze({
-  live: Object.freeze({ dprMax: 2, ombres: true, ombreTaille: 1024, vhs: 'anime', brouillard: 'complet', feux: Object.freeze({ voitureFoyers: 2, fumeeHelico: 1, particules: 1, lueur: true }), sang: '1', cadavres: 2 }),
+  live: Object.freeze({ dprMax: 2, ombres: true, ombreTaille: 1024, vhs: 'anime', brouillard: 'complet', feux: Object.freeze({ voitureFoyers: 2, fumeeHelico: 1, particules: 1, lueur: true }), sang: '1', cadavres: 2, lampes: 'off', lumieres: 4 }),
   load: Object.freeze({ personnages: 'choix', anticrenelage: true, texturesFines: true, decor: 'complet' }),
 });
 export const AUTO_DEFAULTS = Object.freeze({ initial: Object.freeze({ grossier: 'moyen', autre: 'eleve' }), seuilMs: 22, fenetreSecondes: 10, irregulier: Object.freeze({ part: 0.1, facteur: 1.5 }), baisse: 'entre-manches', remonte: false });
@@ -39,6 +41,8 @@ function parseLive(raw) {
     feux: { voitureFoyers: int(f.voitureFoyers, 1, 8, d.feux.voitureFoyers), fumeeHelico: num(f.fumeeHelico, 0, 1, d.feux.fumeeHelico), particules: num(f.particules, 0.1, 1, d.feux.particules), lueur: bool(f.lueur, d.feux.lueur) },
     sang: pick(r.sang, SANG_LEVELS, d.sang),
     cadavres: int(r.cadavres, 0, 6, d.cadavres),
+    lampes: pick(r.lampes, LAMP_MODES, d.lampes),
+    lumieres: pick(r.lumieres, LIGHT_COUNTS, d.lumieres),
   };
 }
 function parseLoad(raw) {
@@ -55,7 +59,7 @@ function parseLoad(raw) {
 // Lot 5j : options de l'écran Options. Clés de réglage qu'une valeur d'option peut fixer (chemins dans la partie live ou load des réglages).
 export const OPTION_GROUPS = ['live', 'load'];
 export const SETTING_KEYS = Object.freeze({
-  live: Object.freeze(['dprMax', 'ombres', 'ombreTaille', 'vhs', 'brouillard', 'feux.voitureFoyers', 'feux.fumeeHelico', 'feux.particules', 'feux.lueur', 'sang', 'cadavres']),
+  live: Object.freeze(['dprMax', 'ombres', 'ombreTaille', 'vhs', 'brouillard', 'feux.voitureFoyers', 'feux.fumeeHelico', 'feux.particules', 'feux.lueur', 'sang', 'cadavres', 'lampes', 'lumieres']),
   load: Object.freeze(['personnages', 'anticrenelage', 'texturesFines', 'decor']),
 });
 export const ORIGINS = ['preset', 'perso', 'adresse'];
@@ -264,7 +268,7 @@ export function autoDecision(frameStats, current, params) {
 }
 
 // Paramètres explicites de l'adresse qui l'emportent sur le préréglage (valeurs reconnues seulement, comme les lecteurs existants de main.js et
-// persos-params.js) : { perso, sang, usure, detail, vhs, shadows, dpr } (null = absent ou invalide).
+// persos-params.js) : { perso, sang, usure, detail, vhs, shadows, dpr, lum } (null = absent ou invalide ; lum : lot 5k, ?lum=off|decor|eclairage).
 export function explicitParams(search) {
   let q;
   try {
@@ -282,6 +286,7 @@ export function explicitParams(search) {
     vhs: get('vhs', (v) => v === '0' || v === '1'),
     shadows: get('shadows', (v) => v === '0' || v === '1'),
     dpr: q.has('dpr') && Number.isFinite(dpr) && dpr >= 0.5 && dpr <= 2 ? dpr : null,
+    lum: get('lum', (v) => LAMP_MODES.includes(v)),
   };
 }
 
@@ -317,6 +322,10 @@ export function applyExplicit(base, explicit = {}) {
   if (typeof e.dpr === 'number') {
     live.dprMax = e.dpr;
     overridden.push('dprMax');
+  }
+  if (typeof e.lum === 'string' && LAMP_MODES.includes(e.lum)) {
+    live.lampes = e.lum;
+    overridden.push('lampes');
   }
   return { live, load, overridden };
 }

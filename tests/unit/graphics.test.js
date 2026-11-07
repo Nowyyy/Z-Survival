@@ -27,13 +27,22 @@ const AVANT_7130DC7 = {
   eleve: { live: { dprMax: 2, ombres: true, ombreTaille: 1024, vhs: 'anime', brouillard: 'complet', feux: { voitureFoyers: 2, fumeeHelico: 1, particules: 1, lueur: true }, sang: '1', cadavres: 2 }, load: { personnages: 'choix', anticrenelage: true, texturesFines: true, decor: 'complet' } },
 };
 
+// Lot 5k : deux réglages « live » de plus (lampes, lumieres) ; les autres réglages restent ceux de AVANT_7130DC7. ELEVE (repli, rendu d'avant) garde
+// les lampes « off » : le préréglage Élevé choisit l'éclairage (décision du lot 5k), le rendu d'avant reste celui de « off ».
+const LOT_5K = { faible: { lampes: 'off', lumieres: 2 }, moyen: { lampes: 'decor', lumieres: 2 }, eleve: { lampes: 'eclairage', lumieres: 4 } };
+const sans5k = (live) => {
+  const { lampes, lumieres, ...rest } = live;
+  return { rest, lamps: { lampes, lumieres } };
+};
+
 describe('graphics.json', () => {
   it('schéma 2, trois préréglages, chaque valeur reconnue telle quelle (aucune n\'est ramenée à un défaut)', () => {
     expect(RAW.schema).toBe(2);
     expect(Object.keys(RAW.presets).sort()).toEqual(['eleve', 'faible', 'moyen']);
     for (const id of PRESET_IDS) {
       expect(CFG.vectors[id]).toEqual(RAW.presets[id]); // chaque valeur du vecteur est une valeur permise de son option
-      expect(CFG.presets[id].live).toEqual(AVANT_7130DC7[id].live);
+      expect(sans5k(CFG.presets[id].live).rest).toEqual(AVANT_7130DC7[id].live);
+      expect(sans5k(CFG.presets[id].live).lamps).toEqual(LOT_5K[id]);
       expect(CFG.presets[id].load).toEqual(AVANT_7130DC7[id].load);
     }
     expect(CFG.auto).toEqual(RAW.auto);
@@ -45,7 +54,9 @@ describe('graphics.json', () => {
     const vhs = load('data/game/vhs.json');
     const choix = load('data/game/persos-choix.json');
     const e = CFG.presets.eleve;
-    expect(e).toEqual({ live: { ...ELEVE.live, feux: { ...ELEVE.live.feux } }, load: { ...ELEVE.load } });
+    expect({ live: sans5k(e.live).rest, load: e.load }).toEqual({ live: sans5k({ ...ELEVE.live, feux: { ...ELEVE.live.feux } }).rest, load: { ...ELEVE.load } });
+    expect(ELEVE.live).toMatchObject({ lampes: 'off', lumieres: 4 }); // lot 5k : repli = rendu d'avant les lampes
+    expect(e.live).toMatchObject({ lampes: 'eclairage', lumieres: 4 }); // lot 5k : Élevé choisit l'éclairage
     expect(e.live.ombreTaille).toBe(render.light.shadowMap);
     expect(e.live.ombres).toBe(true);
     expect(e.live.brouillard).toBe('complet');
@@ -104,15 +115,23 @@ describe('priorités : ?gfx= > choix mémorisé > auto', () => {
     expect(resolvePreset(null, null, DESKTOP, CFG).preset).toBe('eleve');
     expect(resolvePreset(null, null, null, null).preset).toBe('eleve');
   });
-  it('paramètres explicites de l\'adresse par-dessus le préréglage (perso, sang, detail, vhs, shadows, dpr)', () => {
+  it('paramètres explicites de l\'adresse par-dessus le préréglage (perso, sang, detail, vhs, shadows, dpr, lum)', () => {
     const e = explicitParams('?perso=riche&sang=1&detail=1&vhs=1&shadows=1&dpr=1.25&usure=2');
-    expect(e).toEqual({ perso: 'riche', sang: '1', usure: '2', detail: '1', vhs: '1', shadows: '1', dpr: 1.25 });
+    expect(e).toEqual({ perso: 'riche', sang: '1', usure: '2', detail: '1', vhs: '1', shadows: '1', dpr: 1.25, lum: null });
+    // Lot 5k : ?lum=off|decor|eclairage impose l'option « Lampes et lumières » (réglage lampes), jamais le nombre de lumières.
+    for (const v of ['off', 'decor', 'eclairage']) {
+      const l = settingsFor(CFG, 'moyen', explicitParams(`?lum=${v}`));
+      expect(l.live.lampes).toBe(v);
+      expect(l.overridden).toEqual(['lampes']);
+      expect(l.live.lumieres).toBe(CFG.presets.moyen.live.lumieres);
+    }
+    expect(explicitParams('?lum=oui').lum).toBeNull();
     const s = settingsFor(CFG, 'faible', e);
     expect(s.load).toMatchObject({ personnages: 'riche', texturesFines: true, decor: 'complet' });
     expect(s.live).toMatchObject({ sang: '1', cadavres: null, vhs: 'anime', ombres: true, dprMax: 1.25 });
     expect(s.overridden.sort()).toEqual(['cadavres', 'decor', 'dprMax', 'ombres', 'personnages', 'sang', 'texturesFines', 'vhs']);
     expect(settingsFor(CFG, 'eleve', explicitParams('?detail=0&vhs=0&shadows=0')).live).toMatchObject({ vhs: 'off', ombres: false });
-    expect(explicitParams('?perso=x&sang=2&detail=oui&vhs=&shadows=2&dpr=9')).toEqual({ perso: null, sang: null, usure: null, detail: null, vhs: null, shadows: null, dpr: null });
+    expect(explicitParams('?perso=x&sang=2&detail=oui&vhs=&shadows=2&dpr=9')).toEqual({ perso: null, sang: null, usure: null, detail: null, vhs: null, shadows: null, dpr: null, lum: null });
     for (const h of HOSTILE) expect(() => settingsFor(CFG, h, explicitParams(h))).not.toThrow();
     expect(presetSearch('?perso=B&sang=0', settingsFor(CFG, 'faible', {}))).toBe('?perso=B&sang=0');
     expect(presetSearch('', settingsFor(CFG, 'moyen', {}))).toBe('?perso=A&sang=reduit');

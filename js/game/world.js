@@ -1015,6 +1015,29 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
   for (const door of doorList) if (closedDoors === null || closedDoors.includes(door.id)) addDoor(door);
   const meshesOf = (id) => [...doorMeshes.values()].filter((m) => m.userData.door === id);
 
+  // Lot 5k : lampes à huile (décor) et lumières dynamiques, options « Lampes et lumières » et « Lumières simultanées » (à chaud). Modules importés
+  // seulement hors de « off » (préchargés par graphics-boot.js au chargement, sinon au premier changement) : avec « off », rien n'est créé ni demandé.
+  const lampKit = { mode: 'off', count: 4, data: null, tried: false, decor: null, compiles: 0, error: null, pending: 0 };
+  let lampChain = Promise.resolve();
+  let lastView = null;
+  const applyLamps = (mode, count, renderer) => {
+    lampKit.mode = mode;
+    lampKit.count = count;
+    let created = false;
+    if (mode !== 'off' && !lampKit.decor && lampKit.data) {
+      lampKit.decor = lampKit.data.module.createLampMeshes({ groups, lamps: lampKit.data.lamps, palette, floors });
+      created = true;
+    }
+    lampKit.decor?.setVisible(mode !== 'off');
+    // Préchauffage (changement à chaud seulement : au chargement, game.js compile toute la scène avant la première image).
+    if (created && renderer && lastView) {
+      renderer.compile(scene, lastView);
+      lampKit.compiles += 1;
+    }
+  };
+
+  const lampStats = () => ({ mode: lampKit.mode, count: lampKit.count, ready: lampKit.pending === 0, lamps: lampKit.data?.lamps.length ?? 0, meshes: lampKit.decor?.stats() ?? [], compiles: lampKit.compiles, error: lampKit.error });
+
   let elevationNow = 0;
   return {
     scene,
@@ -1049,6 +1072,7 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
     frame(dt, x, y, camera, view = null) {
       // Lot 5b : un feu caché par le préréglage n'est pas mis à jour ; 5b-C : hors du champ, ses tampons de particules ne sont pas réécrits.
       if (view) {
+        lastView = view;
         view.updateMatrixWorld();
         viewFrustum.setFromProjectionMatrix(viewMatrix.multiplyMatrices(view.projectionMatrix, view.matrixWorldInverse));
       }
@@ -1082,7 +1106,37 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
         sun.shadow.map = null;
       }
     },
-    graphicsStats: () => ({ mists: mists.map((m) => m.visible), shadowMap: sun.shadow.mapSize.x, castShadow: sun.castShadow, fires: fires.map((f) => ({ kind: f.kind ?? 'decor', ...f.stats().drawn })) }),
+    graphicsStats: () => ({ mists: mists.map((m) => m.visible), shadowMap: sun.shadow.mapSize.x, castShadow: sun.castShadow, fires: fires.map((f) => ({ kind: f.kind ?? 'decor', ...f.stats().drawn })), lamps: lampStats() }),
+    // Lot 5k : état des lampes (mode appliqué, prêt, maillages, préchauffages, erreur).
+    lampStats,
+    // Lot 5k : mode off | decor | eclairage, nombre de lumières ; preload : sortie de preloadLamps (graphics-boot.js). Synchrone si rien n'est à
+    // charger, sinon dans l'ordre des appels. Renvoie une promesse résolue une fois appliqué.
+    setLamps(mode, count, { renderer = null, preload = null } = {}) {
+      const m = ['off', 'decor', 'eclairage'].includes(mode) ? mode : 'off';
+      const n = [2, 4, 6].includes(count) ? count : lampKit.count;
+      if (preload && !lampKit.data) {
+        lampKit.data = preload;
+        lampKit.tried = true;
+      }
+      const load = m !== 'off' && !lampKit.tried;
+      if (!load && lampKit.pending === 0) {
+        applyLamps(m, n, renderer);
+        return Promise.resolve();
+      }
+      lampKit.pending += 1;
+      lampChain = lampChain.then(async () => {
+        if (m !== 'off' && !lampKit.tried) {
+          lampKit.tried = true;
+          lampKit.data = await import('./lamps.js').then((mod) => mod.preloadLamps(m, layout.id));
+        }
+        applyLamps(m, n, renderer);
+      }).catch((e) => {
+        lampKit.error = String(e?.message ?? e);
+      }).finally(() => {
+        lampKit.pending -= 1;
+      });
+      return lampChain;
+    },
     // Lot 5a : épaves dessinées (hélicoptère : triangles, rectangles de collision ; voiture en flammes : feu et foyers) ; feu actif = dans la liste des feux mis à jour.
     wreckStats: () => ({ ...wrecks, fires: fires.filter((f) => f.group.name === wrecks.burningCar?.fire).map((f) => f.stats()), heliSmoke: fires.filter((f) => f.group.name === wrecks.helicopter?.smoke).map((f) => f.stats()), propsTriangles: exProps ? exProps.geometry.attributes.position.count / 3 : 0, sceneryTriangles: exScenery ? exScenery.geometry.attributes.position.count / 3 : 0, exteriorVisible: groups.exterieur.visible }),
     seeThroughState: () => seeThrough.state(),

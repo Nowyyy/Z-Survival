@@ -476,7 +476,7 @@ test.describe('préréglages graphiques', () => {
     await context.close();
   });
 
-  test('par défaut : modules des préréglages chargés, aucun module de ?perf ni l\'écran Options (importé à la première ouverture, une fois) ; aucune requête externe ; CLS ≤ 0,1', async ({ page, baseURL }) => {
+  test('par défaut (lampes « off ») : modules des préréglages chargés, aucun module de ?perf ni l\'écran Options (importé à la première ouverture, une fois) ; aucune requête externe ; CLS ≤ 0,1', async ({ page, baseURL }) => {
     const files = [];
     const external = [];
     page.on('request', (r) => {
@@ -487,10 +487,13 @@ test.describe('préréglages graphiques', () => {
       window.__cls = 0;
       new PerformanceObserver((l) => { for (const e of l.getEntries()) if (!e.hadRecentInput) window.__cls += e.value; }).observe({ type: 'layout-shift', buffered: true });
     });
-    await open(page, '&nospawn=1', { freeze: false });
+    // Lot 5k : sur un ordinateur, Auto choisit l'Élevé, dont l'éclairage charge les modules des lampes et des lumières (tests/e2e/lampes.spec.js) ;
+    // avec les lampes « off » (?lum=off, rien d'autre ne change), le compte d'avant le lot 5k.
+    await open(page, '&nospawn=1&lum=off', { freeze: false });
     for (const f of ['/data/game/graphics.json', '/js/core/graphics.js', '/js/game/graphics-boot.js', '/js/game/graphics-apply.js', '/js/save/device-settings.js']) expect(files).toContain(f);
     for (const f of ['/js/game/profiler.js', '/js/game/perf-panel.js', '/js/game/frame-cap.js', '/js/core/perf-stats.js']) expect(files).not.toContain(f);
-    expect(new Set(files.filter((f) => f.endsWith('.js'))).size).toBe(113); // 109 avant le lot 5b + 4 modules des préréglages (lot 5j : inchangé)
+    expect(new Set(files.filter((f) => f.endsWith('.js'))).size).toBe(113); // 109 avant le lot 5b + 4 modules des préréglages (lot 5j : inchangé ; lot 5k : lampes « off », inchangé)
+    for (const f of ['/js/game/lamps.js', '/js/core/lamps.js', '/js/game/lights.js']) expect(files).not.toContain(f); // lot 5k
     expect(files).not.toContain('/js/game/options-menu.js'); // lot 5j : rien de chargé tant que l'écran reste fermé
     expect(external).toEqual([]);
     expect(await page.evaluate(() => window.__cls)).toBeLessThanOrEqual(0.1);
