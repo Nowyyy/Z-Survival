@@ -217,6 +217,10 @@
     { "name": "lot-5i", "version": "v0.6", "date": "2026-11-07", "titre": "Accueil retouché", "points": [
       "L'accueil occupe toute la hauteur de l'écran ; le bandeau dit « Recette », le bouton « Jouer - V0.6 », et la colonne de droite montre toutes les versions, en tête la version actuelle avec sa description complète.",
       "La description de la version Recette n'est plus coupée à 120 caractères. Aucun changement du jeu."
+    ] },
+    { "name": "lot-5j", "version": "v0.7", "date": "2026-11-07", "titre": "Menu Options dans la pause", "points": [
+      "La pause a un bouton « Options » : préréglages Auto, Faible, Moyen, Élevé et Perso, puis un réglage séparé pour chaque élément graphique (image, carte, personnages).",
+      "Changer un réglage à la main passe sur Perso, gardé à part ; certains réglages s'appliquent au rechargement, proposé par un bouton. Le jeu lui-même ne change pas."
     ] }
   ]
 }
