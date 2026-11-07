@@ -21,7 +21,7 @@ const HOSTILE = [null, undefined, 42, 'texte', [], {}, { choice: 'ultra', custom
 // Lot 5k : deux options de plus (section « Lumières ») : lampes (off, decor, eclairage) et lumieres (2, 4, 6) ; les 11 valeurs d'avant sont inchangées.
 const VECTEURS = {
   faible: { resolution: 'basse', anticrenelage: 'non', ombres: 'aucune', vhs: 'off', carte: 'reduit', textures: 'simples', brume: 'simple', feux: 'reduits', personnages: 'simples', sang: 'reduit', cadavres: '0', lampes: 'off', lumieres: '2' },
-  moyen: { resolution: 'moyenne', anticrenelage: 'non', ombres: 'basses', vhs: 'statique', carte: 'complet', textures: 'fines', brume: 'reduite', feux: 'moyens', personnages: 'simples', sang: 'reduit', cadavres: '1', lampes: 'decor', lumieres: '2' },
+  moyen: { resolution: 'moyenne', anticrenelage: 'non', ombres: 'basses', vhs: 'statique', carte: 'complet', textures: 'fines', brume: 'reduite', feux: 'moyens', personnages: 'simples', sang: 'reduit', cadavres: '1', lampes: 'off', lumieres: '2' }, // lot 5k : Moyen sans lampes (mesure : tâche +5,7 % à U4 avec decor)
   eleve: { resolution: 'haute', anticrenelage: 'oui', ombres: 'hautes', vhs: 'anime', carte: 'complet', textures: 'fines', brume: 'complete', feux: 'complets', personnages: 'riches', sang: 'complet', cadavres: '2', lampes: 'eclairage', lumieres: '4' },
 };
 // Groupes du lot 5b (graphics.json d'origin/dev : parties live et load de chaque préréglage), plus les deux réglages « live » du lot 5k.
