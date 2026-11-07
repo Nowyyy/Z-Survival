@@ -11,7 +11,7 @@ export function createUi(dict, handlers) {
   const $ = (id) => document.getElementById(id);
   const els = {
     pausePanel: $('pause-panel'), endPanel: $('end-panel'), live: $('hud-live'), rotate: $('rotate'),
-    pauseBtn: $('btn-pause'), resume: $('btn-resume'), pauseClose: $('btn-pause-close'), fullscreen: $('btn-fullscreen'), sound: $('btn-sound'),
+    pauseBtn: $('btn-pause'), resume: $('btn-resume'), fullscreen: $('btn-fullscreen'), sound: $('btn-sound'),
     options: $('btn-options'), restart: $('btn-restart'), replay: $('btn-replay'), endKills: $('end-kills'), endWave: $('end-wave'),
     endBox: $('end-box'), endTitle: $('end-title-text'), pauseBalance: $('pause-balance-text'), endEarned: $('end-earned'), endEarnedText: $('end-earned-text'), endBonus: $('end-bonus'), endBonusText: $('end-bonus-text'),
     endBalance: $('end-balance'), endBest: $('end-best'), endRecord: $('end-record'), endRecordText: $('end-record-text'), endSave: $('end-save'),
@@ -111,12 +111,14 @@ export function createUi(dict, handlers) {
       else document.documentElement.requestFullscreen({ navigationUI: 'hide' }).catch(() => {});
     },
 
-    // Libellé du bouton Son selon l'état courant ; masqué sans moteur audio utilisable. Lot 3l (retour du propriétaire) : plus de curseur de volume.
+    // Bouton Son selon l'état courant ; masqué sans moteur audio utilisable. Lot 3l (retour du propriétaire) : plus de curseur de volume. Lot 5j-F : icône
+    // en haut à droite de la pause (haut-parleur ; barré d'une croix quand le son est coupé : data-muted) ; l'état est dans le nom accessible.
     syncSound(audio) {
       hasAudio = Boolean(audio?.supported);
       els.sound.hidden = !hasAudio;
       if (!hasAudio) return;
-      els.sound.textContent = dict[audio.muted ? 'game.sound.off' : 'game.sound.on'];
+      els.sound.dataset.muted = String(Boolean(audio.muted));
+      els.sound.setAttribute('aria-label', dict[audio.muted ? 'game.sound.off' : 'game.sound.on']);
     },
   };
 
@@ -156,7 +158,6 @@ export function createUi(dict, handlers) {
   els.fullscreen.hidden = !canFullscreen;
   els.pauseBtn.addEventListener('click', () => ui.openPause());
   els.resume.addEventListener('click', () => ui.closePause());
-  els.pauseClose.addEventListener('click', () => ui.closePause()); // lot 5j-E : croix en haut à droite, comme Reprendre
   els.fullscreen.addEventListener('click', () => ui.toggleFullscreen());
   els.sound.addEventListener('click', () => {
     if (hasAudio) handlers.onToggleSound();

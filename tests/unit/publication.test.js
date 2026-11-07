@@ -1030,10 +1030,16 @@ describe('accueil retouché (lot 5i) : carte de la version actuelle, « Jouer - 
     expect(keys.filter((k) => !main.includes(`'${k}'`) && !html.includes(`"${k}"`))).toEqual([]);
   });
 
-  it('styles : pleine hauteur dès 640 × 520 (zones étirées), carte aux jetons de l\'accueil (tokens.css, bloc isolé), description de 19 px, bouton qui passe à la ligne', () => {
+  // Lot 5j-F (retours du propriétaire) : pleine hauteur dès 640 px de large, quelle que soit la hauteur (avant : dès 640 × 520) ; en paysage bas, plus de
+  // hauteurs fixes pour les zones qui défilent ; plus de pied « contenu provisoire » sur l'accueil (la clé reste lue par l'atelier de l'interface).
+  it('styles : pleine hauteur dès 640 px de large (zones étirées, paysage compris), carte aux jetons de l\'accueil (tokens.css, bloc isolé), description de 19 px, bouton qui passe à la ligne', () => {
     const css = read('css/accueil.css');
     const tokens = read('css/tokens.css');
-    expect(css).toMatch(/@media \(min-width: 640px\) and \(min-height: 520px\) \{\n {2}\.home-grid \{\n {4}grid-template-rows: minmax\(0, 1fr\);/);
+    expect(css).toMatch(/@media \(min-width: 640px\) \{\n {2}\.home-grid \{\n {4}grid-template-rows: minmax\(0, 1fr\);/);
+    expect(css).not.toContain('(min-height: 520px)');
+    const low = css.slice(css.indexOf('@media (min-width: 640px) and (max-height: 500px)'));
+    expect(low.slice(0, low.indexOf('\n}\n'))).not.toMatch(/max-height: (6|15)rem/);
+    expect(read('index.html')).not.toMatch(/app\.provisional|class="foot"/);
     expect(css).toMatch(/\.home-scroll-versions \{\n {4}flex: 1 1 0;\n {4}min-height: 6rem;\n {4}max-height: none;/);
     expect(css).toMatch(/\.home-current \{[^}]*border: 2px solid var\(--home-current-border\);[^}]*background: var\(--home-current-surface\);/);
     expect(css).toMatch(/\.home-current-text \{[^}]*font-size: 1\.1875rem;/);

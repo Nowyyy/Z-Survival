@@ -130,9 +130,15 @@ test.describe('sons : volume, pause, voix', () => {
     expect((await audio(page)).volume).toBe(100);
     await page.locator('#btn-sound').click();
     await expect.poll(async () => (await audio(page)).muted).toBe(true);
-    await expect(page.locator('#btn-sound')).toHaveText('Son : coupé');
+    // Lot 5j-F : icône (avant : texte « Son : coupé ») : nom accessible et haut-parleur barré d'une croix.
+    await expect(page.locator('#btn-sound')).toHaveAttribute('aria-label', 'Son : coupé');
+    await expect(page.locator('#btn-sound')).toHaveAttribute('data-muted', 'true');
+    await expect(page.locator('#btn-sound .sound-off')).toBeVisible();
+    await expect(page.locator('#btn-sound .sound-waves')).toBeHidden();
     await page.locator('#btn-sound').click();
     await expect.poll(async () => (await audio(page)).muted).toBe(false);
+    await expect(page.locator('#btn-sound .sound-off')).toBeHidden();
+    await expect(page.locator('#btn-sound .sound-waves')).toBeVisible();
   });
 
   test('la pause suspend le son : aucune entrée tant qu\'elle dure, reprise ensuite', async ({ page }) => {

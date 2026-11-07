@@ -320,7 +320,7 @@ test.describe('préréglages graphiques', () => {
   });
 
   // Lot 5j : 667 × 375 (téléphone en paysage), 375 × 812 et 1440 × 900 : panneau dans la fenêtre, en-tête visible, région qui défile, 44 px, 14 px, focus piégé,
-  // Échap et la croix (lot 5j-E, à la place de « Retour ») reviennent à la pause avec le focus sur « Options » ; la croix de la pause la ferme comme Reprendre.
+  // Échap et la croix (lot 5j-E, à la place de « Retour ») reviennent à la pause avec le focus sur « Options » ; l'icône du son est en haut à droite de la pause (lot 5j-F).
   for (const size of [SIZE, { width: 375, height: 812 }, { width: 1440, height: 900 }]) {
     test(`Options à ${size.width}×${size.height} : tout atteignable (défilement interne, en-tête fixe), 44 px, 14 px, clavier, Échap et croix de fermeture`, async ({ page }) => {
       test.setTimeout(120_000);
@@ -396,12 +396,13 @@ test.describe('préréglages graphiques', () => {
       await close.click();
       await expect(page.locator('#pause-panel')).toBeVisible();
       await expect(page.locator('#btn-options')).toBeFocused();
-      // Croix de la pause : en haut à droite, à droite du solde, ferme la pause comme Reprendre.
-      const [xb, bb, pp] = [await box('#btn-pause-close'), await box('#pause-balance'), await box('#pause-panel .panel')];
+      // Lot 5j-F : plus de croix dans la pause (avant, lot 5j-E : « Fermer la pause ») ; l'icône du son est en haut à droite, à droite du solde.
+      await expect(page.getByRole('button', { name: 'Fermer la pause' })).toHaveCount(0);
+      const [xb, bb, pp] = [await box('#btn-sound'), await box('#pause-balance'), await box('#pause-panel .panel')];
       expect(xb.l).toBeGreaterThan(bb.r);
       expect(pp.r - xb.r).toBeLessThan(40);
       expect(Math.round(xb.b - xb.t)).toBe(44);
-      await page.getByRole('button', { name: 'Fermer la pause' }).click();
+      await page.locator('#btn-resume').click();
       await expect(page.locator('#pause-panel')).toBeHidden();
       expect((await S(page)).paused).toBe(false);
       await page.locator('#btn-pause').click();

@@ -35,8 +35,8 @@ export function createOptionsMenu({ dict, graphics, vhs = null, onClose = () => 
   const top = el('div', ['panel-head']);
   const title = el('h2', ['panel-title'], { id: 'options-title' });
   title.textContent = t('game.options.title');
-  // Lot 5j-E (retour du propriétaire) : croix de fermeture en haut à droite (icône décorative, nom accessible « Fermer les options »), même bouton que la pause.
-  const back = el('button', ['button', 'button-quiet', 'panel-close'], { type: 'button', id: 'options-close', 'aria-label': t('game.options.close') });
+  // Lot 5j-E (retour du propriétaire) : croix de fermeture en haut à droite (icône décorative, nom accessible « Fermer les options »), même forme que l'icône de son de la pause.
+  const back = el('button', ['button', 'button-quiet', 'panel-icon'], { type: 'button', id: 'options-close', 'aria-label': t('game.options.close') });
   const cross = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
   cross.setAttribute('viewBox', '0 0 16 16');
   cross.setAttribute('aria-hidden', 'true');
