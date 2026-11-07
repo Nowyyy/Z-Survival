@@ -114,8 +114,16 @@ export function lampsToWorld(source, worlds, opts = {}) {
       portee = Math.min(portee, lift + lh - 2);
     }
     if (!(portee > 0)) { problems.push(`${it.id} : portée nulle (trop près de l'autre étage)`); continue; }
-    lamps.push({ id: it.id, floor: it.floor, support: it.support, on: face.on, orientation: it.orientation, x: r2(face.x), y: r2(face.y), n: { x: nx, y: ny }, hauteur: it.hauteur,
-      light: { x: r2(lx), y: r2(ly), h: lh }, portee: Math.floor(portee), ...(face.pillar ? { pillar: face.pillar } : {}), source: { x: it.x, y: it.y } });
+    const out = { id: it.id, floor: it.floor, support: it.support, on: face.on, orientation: it.orientation, x: r2(face.x), y: r2(face.y), n: { x: nx, y: ny }, hauteur: it.hauteur,
+      light: { x: r2(lx), y: r2(ly), h: lh }, portee: Math.floor(portee), ...(face.pillar ? { pillar: face.pillar } : {}), source: { x: it.x, y: it.y } };
+    // Lampe du rez-de-chaussée entièrement sous le sol (ou les murs) de l'étage, loin des trous : cachée par l'étage, jamais dessinée quand il est affiché.
+    if (it.floor === 'rdc' && worlds?.etage) {
+      const sp = lampSphere(out);
+      const pts = [[sp.x - sp.r, sp.z], [sp.x + sp.r, sp.z], [sp.x, sp.z - sp.r], [sp.x, sp.z + sp.r]];
+      const under = (x, y) => [[0, 0], [t / 2, 0], [-t / 2, 0], [0, t / 2], [0, -t / 2]].some(([dx, dy]) => pointInPolygon(x + dx, y + dy, worlds.etage.contour));
+      out.couverte = pts.every(([x, y]) => under(x, y)) && holes.every((h) => rectDistance(h, sp.x, sp.z) > sp.r);
+    }
+    lamps.push(out);
   }
   return { lamps, problems, warnings };
 }
@@ -155,7 +163,13 @@ function box(out, frame, b, faces, color) {
   if (faces.includes('s0')) quad(P(f0, s0, y0), P(f0, s0, y1), P(f1, s0, y1), P(f1, s0, y0), N(0, -1, 0));
 }
 
-// Triangles d'une lampe du monde (sortie de lampsToWorld). L'ordre des sommets est fixe : même lampe, mêmes triangles.
+// Sphère englobante d'une lampe (centre en unités du monde, y au-dessus du sol de son étage ; rayon) : choix des lampes à dessiner (champ de la caméra).
+export function lampSphere(lamp) {
+  const r = lamp.pillar ? Math.hypot(lamp.pillar.w, lamp.pillar.h) / 2 + 4 : 0;
+  return { x: lamp.x + lamp.n.x * 10, y: lamp.hauteur + 2, z: lamp.y + lamp.n.y * 10, r: Math.max(r + 10, 24) };
+}
+
+// Triangles d'une lampe du monde (sortie de lampsToWorld). L'ordre des sommets est fixe : même lampe, mêmes triangles. Sphère englobante : lampSphere.
 export function lampTriangles(lamp) {
   const nx = lamp.n.x;
   const ny = lamp.n.y;
@@ -172,10 +186,11 @@ export function lampTriangles(lamp) {
     world.dir = (dx, dz, dy) => [dx, dy, dz];
     box(out, world, { f0: p.x - 1.5, f1: p.x + p.w + 1.5, s0: p.y - 1.5, s1: p.y + p.h + 1.5, y0: -2, y1: 2 }, ['y1', 'f0', 'f1', 's0', 's1'], LAMP_COLORS.metal);
   } else {
-    box(out, frame, { f0: PLATE.f0, f1: PLATE.f1, s0: -PLATE.s, s1: PLATE.s, y0: PLATE.y0, y1: PLATE.y1 }, ['y1', 'y0', 'f1', 's0', 's1'], LAMP_COLORS.metal);
+    box(out, frame, { f0: PLATE.f0, f1: PLATE.f1, s0: -PLATE.s, s1: PLATE.s, y0: PLATE.y0, y1: PLATE.y1 }, ['y1', 'f1', 's0', 's1'], LAMP_COLORS.metal);
   }
-  box(out, frame, { f0: ARM.f0, f1: ARM.f1, s0: -ARM.s, s1: ARM.s, y0: ARM.y0, y1: ARM.y1 }, ['y1', 'y0', 'f1', 's0', 's1'], LAMP_COLORS.metal);
-  box(out, frame, { f0: RES.f0, f1: RES.f1, s0: -RES.s, s1: RES.s, y0: RES.y0, y1: RES.y1 }, ['y1', 'y0', 'f0', 'f1', 's0', 's1'], LAMP_COLORS.reservoir);
+  // Dessous des pièces omis : la caméra est toujours au-dessus des lampes (budget de triangles).
+  box(out, frame, { f0: ARM.f0, f1: ARM.f1, s0: -ARM.s, s1: ARM.s, y0: ARM.y0, y1: ARM.y1 }, ['y1', 'f1', 's0', 's1'], LAMP_COLORS.metal);
+  box(out, frame, { f0: RES.f0, f1: RES.f1, s0: -RES.s, s1: RES.s, y0: RES.y0, y1: RES.y1 }, ['y1', 'f0', 'f1', 's0', 's1'], LAMP_COLORS.reservoir);
   // Flamme : quatre sommets de base (milieu), une pointe en haut, une en bas ; huit triangles émissifs ; normales vers l'extérieur (inutile pour
   // une matière émissive, gardées pour la cohérence).
   const mid = (FLAME.y0 + FLAME.y1) * 0.42;
@@ -194,4 +209,97 @@ export function lampTriangles(lamp) {
     out.push({ p: oriented([b, bottom, a], down), n: down, color: LAMP_COLORS.flame, glow: 1 });
   }
   return out;
+}
+
+// ---- Lumières dynamiques (option « Éclairage », partie C) ----
+// data/game/lumieres.json : valeurs vérifiées ; toute valeur invalide prend le défaut (provisoire). Vacillement borné : amplitude ≤ 0,15 (part de
+// l'intensité), fréquences ≤ 1,4 Hz (moins de 3 changements de sens par seconde) ; fondu en secondes (entrée et sortie d'une lampe).
+export const LIGHT_DEFAULTS = Object.freeze({ ambiance: 0.45, plancherAmbiance: 0.3, intensite: 180, distance: 120, decroissance: 1, fondu: 0.6, max: 4, distanceActivation: 700, vacillement: Object.freeze({ amplitude: 0.1, frequences: Object.freeze([0.6, 1.1]) }) });
+export const FLICKER_MAX = Object.freeze({ amplitude: 0.15, frequence: 1.4 });
+const inRange = (v, lo, hi, d) => (isNum(v) && v >= lo && v <= hi ? v : d);
+
+export function parseLightConfig(json) {
+  const j = json !== null && typeof json === 'object' && !Array.isArray(json) ? json : {};
+  const d = LIGHT_DEFAULTS;
+  const v = j.vacillement !== null && typeof j.vacillement === 'object' ? j.vacillement : {};
+  const freqs = Array.isArray(v.frequences) ? v.frequences.slice(0, 4).filter((f) => isNum(f) && f > 0 && f <= FLICKER_MAX.frequence) : [];
+  return {
+    ambiance: inRange(j.ambiance, 0, 1, d.ambiance),
+    plancherAmbiance: inRange(j.plancherAmbiance, 0.05, 1, d.plancherAmbiance),
+    intensite: inRange(j.intensite, 0, 100000, d.intensite),
+    distance: inRange(j.distance, 10, 1000, d.distance),
+    decroissance: inRange(j.decroissance, 0, 4, d.decroissance),
+    fondu: inRange(j.fondu, 0.05, 5, d.fondu),
+    max: [2, 4, 6].includes(j.max) ? j.max : d.max,
+    distanceActivation: inRange(j.distanceActivation, 50, 5000, d.distanceActivation),
+    vacillement: { amplitude: inRange(v.amplitude, 0, FLICKER_MAX.amplitude, d.vacillement.amplitude), frequences: freqs.length ? freqs : [...d.vacillement.frequences] },
+  };
+}
+
+// Facteurs des lumières existantes en « Éclairage » : ambiante × max(ambiance, plancher) (jamais le noir complet), directionnelle × ambiance.
+export function baseFactors(cfg) {
+  const c = cfg ?? LIGHT_DEFAULTS;
+  return { ambient: Math.max(c.ambiance, c.plancherAmbiance), sun: c.ambiance };
+}
+
+// Vacillement : facteur d'intensité dans [1 − amplitude, 1], somme de sinus lents (temps de jeu t en secondes, phase propre à la lampe) ;
+// mouvement réduit : 1 (lumière constante).
+export function flicker(t, phase, cfg, reduced = false) {
+  const v = (cfg ?? LIGHT_DEFAULTS).vacillement;
+  if (reduced || !(v.amplitude > 0)) return 1;
+  const f = v.frequences;
+  let s = 0;
+  for (let i = 0; i < f.length; i += 1) s += Math.sin(2 * Math.PI * f[i] * t + phase * (i + 1.7));
+  return 1 - v.amplitude * (0.5 + (0.5 * s) / f.length);
+}
+
+// Phase d'une lampe (stable, d'après son identifiant).
+export function lampPhase(id) {
+  let h = 2166136261;
+  for (const ch of String(id)) h = Math.imul(h ^ ch.charCodeAt(0), 16777619);
+  return ((h >>> 0) % 6283) / 1000;
+}
+
+// Lampes à éclairer : celles de la liste (étage affiché) visibles (visible[i] : sa lumière touche le champ de la caméra), à moins de
+// distanceActivation du joueur, les `count` plus proches ; à distance égale, l'identifiant. Écrit les identifiants dans out (tableau réutilisé).
+export function selectLamps(out, lamps, visible, px, py, count, maxDistance) {
+  out.length = 0;
+  for (let i = 0; i < lamps.length; i += 1) {
+    if (!visible[i]) continue;
+    const d = Math.hypot(lamps[i].light.x - px, lamps[i].light.y - py);
+    if (d > maxDistance) continue;
+    let k = out.length;
+    out.push(null);
+    while (k > 0) {
+      const o = out[k - 1];
+      if (o.d < d || (o.d === d && o.id < lamps[i].id)) break;
+      out[k] = o;
+      k -= 1;
+    }
+    out[k] = { id: lamps[i].id, d };
+  }
+  if (out.length > count) out.length = count;
+  for (let i = 0; i < out.length; i += 1) out[i] = out[i].id;
+  return out;
+}
+
+// Emplacements des lumières (tableau fixe { id, w }, w de 0 à 1) : une lampe choisie garde son emplacement ; une lampe qui n'est plus choisie
+// s'éteint en `fondu` secondes, puis libère l'emplacement ; une nouvelle lampe prend un emplacement libre et s'allume en `fondu` secondes. Aucun
+// saut : w change d'au plus dt / fondu par appel. Modifie et renvoie slots.
+export function stepSlots(slots, wanted, dt, fondu) {
+  const rate = Math.max(0, Number(dt) || 0) / Math.max(1e-6, fondu);
+  for (const s of slots) {
+    const on = s.id !== null && wanted.includes(s.id);
+    s.w = on ? Math.min(1, s.w + rate) : Math.max(0, s.w - rate);
+    if (!on && s.w === 0) s.id = null;
+  }
+  for (const id of wanted) {
+    if (slots.some((s) => s.id === id)) continue;
+    const free = slots.find((s) => s.id === null);
+    if (free) {
+      free.id = id;
+      free.w = Math.min(1, rate);
+    }
+  }
+  return slots;
 }

@@ -725,6 +725,8 @@
         "js/game/fire.js",
         "js/game/mist.js",
         "js/game/lamps.js",
+        "js/game/lights.js",
+        "data/game/lumieres.json",
         "data/game/textures.json",
         "data/game/render.json",
         "data/game/camera.json",

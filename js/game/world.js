@@ -561,7 +561,8 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
   const partlyUncovered = (r) => etageFloorRects !== null && [[r.x, r.y], [r.x + r.w, r.y], [r.x, r.y + r.h], [r.x + r.w, r.y + r.h]].filter(([x, z]) => !etageFloorRects.some((q) => inRect(q, x, z))).length >= 2;
   const exposedAt = (x, z) => etageFloorRects !== null && (!etageFloorRects.some((r) => inRect(r, x, z)) || holes.some((h) => h.rects.some((r) => x >= r.x0 && x <= r.x1 && z >= r.y0 && z <= r.y1)));
 
-  scene.add(new THREE.AmbientLight(palette.ambient, render.light.ambient));
+  const ambientLight = new THREE.AmbientLight(palette.ambient, render.light.ambient);
+  scene.add(ambientLight);
   const sun = new THREE.DirectionalLight(palette.sun, render.light.sun);
   const half = render.light.shadowHalfSize;
   sun.castShadow = true;
@@ -1017,9 +1018,10 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
 
   // Lot 5k : lampes à huile (décor) et lumières dynamiques, options « Lampes et lumières » et « Lumières simultanées » (à chaud). Modules importés
   // seulement hors de « off » (préchargés par graphics-boot.js au chargement, sinon au premier changement) : avec « off », rien n'est créé ni demandé.
-  const lampKit = { mode: 'off', count: 4, data: null, tried: false, decor: null, compiles: 0, error: null, pending: 0 };
+  const lampKit = { mode: 'off', count: 4, data: null, tried: false, lightsTried: false, decor: null, lights: null, compiles: 0, error: null, pending: 0 };
   let lampChain = Promise.resolve();
   let lastView = null;
+  let floorNow = 'rdc';
   const applyLamps = (mode, count, renderer) => {
     lampKit.mode = mode;
     lampKit.count = count;
@@ -1029,6 +1031,15 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
       created = true;
     }
     lampKit.decor?.setVisible(mode !== 'off');
+    // Éclairage : lumières en nombre fixe (programmes recompilés une fois à chaque changement de mode ou de nombre, jamais en partie).
+    if (mode === 'eclairage' && !lampKit.lights && lampKit.data?.lights) {
+      lampKit.lights = lampKit.data.lights.createLights({ scene, ambient: ambientLight, sun, lamps: lampKit.data.lamps, json: lampKit.data.lumieres, palette, count, lift, reduced: render.reducedMotion === true });
+      created = true;
+    } else if (mode !== 'eclairage' && lampKit.lights) {
+      lampKit.lights.dispose();
+      lampKit.lights = null;
+      created = true;
+    } else if (lampKit.lights?.setCount(count)) created = true;
     // Préchauffage (changement à chaud seulement : au chargement, game.js compile toute la scène avant la première image).
     if (created && renderer && lastView) {
       renderer.compile(scene, lastView);
@@ -1036,7 +1047,7 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
     }
   };
 
-  const lampStats = () => ({ mode: lampKit.mode, count: lampKit.count, ready: lampKit.pending === 0, lamps: lampKit.data?.lamps.length ?? 0, meshes: lampKit.decor?.stats() ?? [], compiles: lampKit.compiles, error: lampKit.error });
+  const lampStats = () => ({ mode: lampKit.mode, count: lampKit.count, ready: lampKit.pending === 0, lamps: lampKit.data?.lamps.length ?? 0, meshes: lampKit.decor?.stats() ?? [], lights: lampKit.lights?.stats() ?? null, compiles: lampKit.compiles, error: lampKit.error });
 
   let elevationNow = 0;
   return {
@@ -1080,6 +1091,8 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
       const still = render.reducedMotion === true;
       for (const m of mists) if (!still && m.visible) m.material.uniforms.uTime.value += Math.min(0.1, Math.max(0, Number(dt) || 0));
       seeThrough.update(x, y, camera, occluders, (b) => (b.floor === 'etage' ? lift : 0) - elevationNow);
+      lampKit.decor?.cull(view ? viewFrustum : null, groups.etage.visible); // lot 5k : seules les lampes dans le champ sont dessinées
+      lampKit.lights?.frame(dt, x, y, floorNow, elevationNow, view ? viewFrustum : null); // lot 5k : lumières des lampes (Éclairage)
     },
     fireStats: () => fires.map((f) => f.stats()),
     // Lot 5b (préréglages graphiques, à chaud) : feux et fumées, brume, ombres. Valeurs de l'Élevé : rien ne change.
@@ -1118,7 +1131,7 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
         lampKit.data = preload;
         lampKit.tried = true;
       }
-      const load = m !== 'off' && !lampKit.tried;
+      const load = (m !== 'off' && !lampKit.tried) || (m === 'eclairage' && lampKit.data !== null && !lampKit.data.lights && !lampKit.lightsTried);
       if (!load && lampKit.pending === 0) {
         applyLamps(m, n, renderer);
         return Promise.resolve();
@@ -1128,6 +1141,10 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
         if (m !== 'off' && !lampKit.tried) {
           lampKit.tried = true;
           lampKit.data = await import('./lamps.js').then((mod) => mod.preloadLamps(m, layout.id));
+        }
+        if (m === 'eclairage' && lampKit.data && !lampKit.data.lights && !lampKit.lightsTried) {
+          lampKit.lightsTried = true;
+          Object.assign(lampKit.data, await import('./lamps.js').then((mod) => mod.preloadLights()));
         }
         applyLamps(m, n, renderer);
       }).catch((e) => {
@@ -1156,6 +1173,7 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
       groups.rdc.visible = true; // rien du rez-de-chaussée ne disparaît à l'étage (le sol de l'étage, opaque, cache seulement ce qui est dessous)
       dynamic.position.y = (floor === 'etage' ? lift : 0) - e;
       elevationNow = e;
+      floorNow = floor === 'etage' ? 'etage' : 'rdc';
     },
     dynamic,
     effectsRoot,

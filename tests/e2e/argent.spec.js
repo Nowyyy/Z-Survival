@@ -807,12 +807,13 @@ test.describe('budget et performance', () => {
   }, mode);
   for (const [name, extra, where] of [['R1', '&nospawn=1', 'start'], ['U1', '&wave=21&floor=1&nospawn=1', 'start']]) {
     test(`${name} : sans le détail de l'atelier, la référence (à la brume près) ; avec, 27 300 triangles et 84 appels au plus`, async ({ page }) => {
-      await open(page, `/jeu.html?test=1&seed=1&shadows=1&perso=A&sang=0${extra}&detail=0`);
+      // Lot 5k : références d'avant les lampes : lampes « off » (le préréglage Élevé d'un ordinateur les allume ; budget avec les lampes : lampes.spec.js).
+      await open(page, `/jeu.html?test=1&seed=1&shadows=1&perso=A&sang=0${extra}&detail=0&lum=off`);
       const off = await measure(page, where);
       expect(off.calls).toBeGreaterThanOrEqual(REF[name][0] - 1);
       expect(off.calls).toBeLessThanOrEqual(REF[name][0] + 3);
       expect(Math.abs(off.triangles - EPAVES - REF[name][1])).toBeLessThanOrEqual(120); // lot 5a : + les triangles des épaves
-      await open(page, `/jeu.html?test=1&seed=1&shadows=1&perso=A&sang=0${extra}`);
+      await open(page, `/jeu.html?test=1&seed=1&shadows=1&perso=A&sang=0${extra}&lum=off`);
       const on = await measure(page, where);
       console.log(`BUDGET lot 4 / 3g ${name} : detail=0 ${off.calls} / ${off.triangles} ; detail=1 ${on.calls} / ${on.triangles} (référence ${REF[name].join(' / ')})`);
       expect(on.triangles).toBeLessThanOrEqual(27300);

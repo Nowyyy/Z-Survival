@@ -3,7 +3,7 @@
 // jamais atteint), lampes absentes des données de collision (ni obstacle, ni mur : balles, laser et zombies passent), jetons --game-lamp-*.
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { FLAME_TOP, LAMP_COLORS, lampsToWorld, lampTriangles, MAX_TRIANGLES, ORIENTATIONS, parseLampSource } from '../../js/core/lamps.js';
+import { baseFactors, FLAME_TOP, FLICKER_MAX, flicker, LAMP_COLORS, lampPhase, lampsToWorld, lampTriangles, LIGHT_DEFAULTS, MAX_TRIANGLES, ORIENTATIONS, parseLampSource, parseLightConfig, selectLamps, stepSlots } from '../../js/core/lamps.js';
 import { firstOnSegment } from '../../js/core/collision.js';
 import { generateMapFiles } from '../../scripts/plan-vers-monde.mjs';
 
@@ -14,6 +14,7 @@ const DERIVED = load(`${DIR}/lampes.world.json`);
 const RDC = load(`${DIR}/world.json`);
 const ETAGE = load(`${DIR}/etage.world.json`);
 const RENDER = load('data/game/render.json');
+const LUMIERES = load('data/game/lumieres.json');
 const PARAMS = load('data/game/maps/params.json');
 const LAMPS = DERIVED.lampes;
 const dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
@@ -135,6 +136,17 @@ describe('portée sûre : l\'autre étage n\'est jamais atteint', () => {
   });
 });
 
+describe('lampes couvertes par l\'étage', () => {
+  it('une lampe du rez-de-chaussée sous le sol de l\'étage est marquée « couverte » (jamais dessinée quand l\'étage est affiché) ; les autres non', () => {
+    const rdc = LAMPS.filter((l) => l.floor === 'rdc');
+    expect(rdc.every((l) => typeof l.couverte === 'boolean')).toBe(true);
+    expect(LAMPS.filter((l) => l.floor === 'etage').every((l) => !('couverte' in l))).toBe(true);
+    // L'aile est du rez-de-chaussée (au-delà de x 2 265) n'a pas d'étage au-dessus : ses lampes restent visibles d'en haut.
+    for (const l of rdc) if (l.x > 2290) expect(l.couverte, l.id).toBe(false);
+    expect(rdc.filter((l) => l.couverte).length).toBeGreaterThan(0);
+  });
+});
+
 describe('non solide', () => {
   it('aucune lampe dans les obstacles, les murs, les ouvertures ou les zones : balles, laser et zombies passent', () => {
     const ids = new Set(LAMPS.map((l) => l.id));
@@ -150,5 +162,110 @@ describe('non solide', () => {
       const [sx, sy] = [-l.n.y * 20, l.n.x * 20];
       expect(firstOnSegment(cx - sx, cy - sy, cx + sx, cy + sy, support), l.id).toBeNull();
     }
+  });
+});
+
+// ---- Lot 5k-C : lumières dynamiques (logique pure) ----
+describe('lumieres.json et lumière de base', () => {
+  it('valeurs reconnues telles quelles (aucune ramenée au défaut), provisoires ; plancher : l\'ambiante ne descend jamais sous plancherAmbiance', () => {
+    const c = parseLightConfig(LUMIERES);
+    for (const k of ['ambiance', 'plancherAmbiance', 'intensite', 'distance', 'decroissance', 'fondu', 'max', 'distanceActivation']) expect(c[k], k).toBe(LUMIERES[k]);
+    expect(c.vacillement).toEqual(LUMIERES.vacillement);
+    expect(LUMIERES._provisoire).toMatch(/PROVISOIRES/);
+    expect(baseFactors(c)).toEqual({ ambient: Math.max(c.ambiance, c.plancherAmbiance), sun: c.ambiance });
+    expect(baseFactors({ ...c, ambiance: 0 }).ambient).toBe(c.plancherAmbiance);
+    expect(c.plancherAmbiance).toBeGreaterThan(0);
+  });
+  it('entrées hostiles : défauts, aucune exception ; vacillement borné (amplitude ≤ 0,15, fréquences ≤ 1,4 Hz)', () => {
+    for (const h of [null, 42, 'x', [], {}, { vacillement: 3 }]) expect(parseLightConfig(h)).toEqual(parseLightConfig(null));
+    expect(parseLightConfig(null)).toMatchObject({ ambiance: LIGHT_DEFAULTS.ambiance, max: 4 });
+    const wild = parseLightConfig({ ambiance: 3, plancherAmbiance: 0, max: 5, vacillement: { amplitude: 0.9, frequences: [12, 0.5, -1] } });
+    expect(wild.ambiance).toBe(LIGHT_DEFAULTS.ambiance);
+    expect(wild.plancherAmbiance).toBe(LIGHT_DEFAULTS.plancherAmbiance); // jamais 0 : pas de noir complet
+    expect(wild.max).toBe(4);
+    expect(wild.vacillement.amplitude).toBe(LIGHT_DEFAULTS.vacillement.amplitude);
+    expect(wild.vacillement.frequences).toEqual([0.5]);
+    expect(FLICKER_MAX).toEqual({ amplitude: 0.15, frequence: 1.4 });
+  });
+});
+
+describe('vacillement', () => {
+  // Série simulée à 60 images par seconde pendant 20 s : changements de sens (extremums) par seconde et amplitude relative.
+  const series = (cfg, phase, reduced = false) => Array.from({ length: 1200 }, (_, i) => flicker(i / 60, phase, cfg, reduced));
+  const extremaPerSecond = (v) => {
+    let n = 0;
+    for (let i = 1; i < v.length - 1; i += 1) if ((v[i] - v[i - 1]) * (v[i + 1] - v[i]) < 0) n += 1;
+    return n / (v.length / 60);
+  };
+  it('lent et faible : au plus 3 variations par seconde, amplitude ≤ 15 % de l\'intensité, aucun saut entre deux images', () => {
+    const configs = [parseLightConfig(LUMIERES), parseLightConfig({ vacillement: { amplitude: 0.15, frequences: [1.4, 1.37] } })];
+    for (const cfg of configs) {
+      for (const id of LAMPS.map((l) => l.id)) {
+        const v = series(cfg, lampPhase(id));
+        expect(extremaPerSecond(v), id).toBeLessThanOrEqual(3);
+        expect((Math.max(...v) - Math.min(...v)) / Math.max(...v), id).toBeLessThanOrEqual(0.15 + 1e-12);
+        expect(Math.min(...v)).toBeGreaterThanOrEqual(1 - cfg.vacillement.amplitude - 1e-12);
+        expect(Math.max(...v)).toBeLessThanOrEqual(1);
+        for (let i = 1; i < v.length; i += 1) expect(Math.abs(v[i] - v[i - 1])).toBeLessThan(0.02); // aucun scintillement brusque
+      }
+    }
+  });
+  it('prefers-reduced-motion : lumière constante', () => {
+    const v = series(parseLightConfig(LUMIERES), 1.3, true);
+    expect(new Set(v)).toEqual(new Set([1]));
+  });
+});
+
+describe('choix des lampes éclairées et fondu', () => {
+  const rdc = LAMPS.filter((l) => l.floor === 'rdc');
+  it('les N plus proches du joueur parmi les lampes visibles de l\'étage affiché, à moins de distanceActivation ; à égalité, l\'identifiant', () => {
+    const out = [];
+    const all = rdc.map(() => true);
+    const p = { x: 2740, y: 2100 };
+    const byDist = [...rdc].sort((a, b) => Math.hypot(a.light.x - p.x, a.light.y - p.y) - Math.hypot(b.light.x - p.x, b.light.y - p.y));
+    for (const n of [2, 4, 6]) expect(selectLamps(out, rdc, all, p.x, p.y, n, 1e9)).toEqual(byDist.slice(0, n).map((l) => l.id));
+    // Invisibles (hors du champ) : jamais choisies.
+    const hidden = rdc.map((l) => l.id !== byDist[0].id);
+    expect(selectLamps(out, rdc, hidden, p.x, p.y, 4, 1e9)).not.toContain(byDist[0].id);
+    // distanceActivation.
+    expect(selectLamps(out, rdc, all, p.x, p.y, 6, 1)).toEqual([]);
+    // Égalité : ordre des identifiants, quel que soit l'ordre de la liste.
+    const twins = [{ id: 'b', light: { x: 10, y: 0 } }, { id: 'a', light: { x: -10, y: 0 } }, { id: 'c', light: { x: 0, y: 10 } }];
+    expect(selectLamps(out, twins, [true, true, true], 0, 0, 2, 1e9)).toEqual(['a', 'b']);
+    expect(selectLamps(out, [...twins].reverse(), [true, true, true], 0, 0, 2, 1e9)).toEqual(['a', 'b']);
+    // Le tableau de sortie est réutilisé (aucune allocation de tableau par image).
+    expect(selectLamps(out, rdc, all, p.x, p.y, 2, 1e9)).toBe(out);
+  });
+  it('fondu : une lampe garde son emplacement, sort en fondu puis cède sa place, la nouvelle entre en fondu ; jamais de saut d\'intensité', () => {
+    const fondu = 0.6;
+    const dt = 1 / 60;
+    const slots = [{ id: null, w: 0 }, { id: null, w: 0 }];
+    const trace = [];
+    const run = (wanted, n) => {
+      for (let i = 0; i < n; i += 1) {
+        // Intensité de chaque lampe (absente = 0) avant et après : variation ≤ dt / fondu pour chacune (entrée, sortie, changement d'emplacement).
+        const level = () => Object.fromEntries(slots.filter((q) => q.id !== null).map((q) => [q.id, q.w]));
+        const before = level();
+        stepSlots(slots, wanted, dt, fondu);
+        const after = level();
+        for (const id of new Set([...Object.keys(before), ...Object.keys(after)])) expect(Math.abs((after[id] ?? 0) - (before[id] ?? 0)), id).toBeLessThanOrEqual(dt / fondu + 1e-12);
+        expect(new Set(slots.filter((q) => q.id !== null).map((q) => q.id)).size).toBe(slots.filter((q) => q.id !== null).length); // une lampe, un emplacement
+        trace.push(slots.map((s) => `${s.id}:${s.w.toFixed(3)}`).join(' '));
+      }
+    };
+    run(['a', 'b'], 60);
+    expect(slots).toEqual([{ id: 'a', w: 1 }, { id: 'b', w: 1 }]);
+    run(['b', 'c'], 20); // a sort, c attend une place
+    expect(slots[0].id).toBe('a');
+    expect(slots[0].w).toBeCloseTo(1 - 20 / 36, 6);
+    expect(slots[1]).toEqual({ id: 'b', w: 1 }); // b garde son emplacement (ordre stable)
+    run(['b', 'c'], 60);
+    expect(slots).toEqual([{ id: 'c', w: expect.any(Number) }, { id: 'b', w: 1 }]);
+    expect(slots[0].w).toBeGreaterThan(0);
+    run(['b', 'c'], 60);
+    expect(slots[0]).toEqual({ id: 'c', w: 1 });
+    run([], 40);
+    expect(slots).toEqual([{ id: null, w: 0 }, { id: null, w: 0 }]);
+    expect(trace.length).toBe(240);
   });
 });
