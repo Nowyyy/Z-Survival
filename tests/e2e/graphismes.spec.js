@@ -2,10 +2,14 @@ import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { readFileSync } from 'node:fs';
 import { backgroundsFrom, evaluate, tokensFromCss } from '../../js/core/ui-measure.js';
+import { parseGraphics } from '../../js/core/graphics.js';
 
 // Lot 5b-B : préréglages graphiques (Faible, Moyen, Élevé, Auto). Ce qu'un joueur voit ou fait : la partie est la même à chaque préréglage
 // (getState() logique identique après 600 pas), chaque préréglage applique ses réglages, l'interface et les planches restent lisibles, la ligne
 // « Graphismes » de la pause demande confirmation, écrit zs.device.v1 et recharge (simulé sous ?test=1) ; ?gfx= n'écrit rien. 667 × 375, step().
+// Lot 5j : la ligne « Graphismes » et la bascule « Effet VHS » quittent la pause pour l'écran Options (E2-12, js/game/options-menu.js importé à la première
+// ouverture) : préréglages Auto, Faible, Moyen, Élevé, Perso ; une option modifiée passe à Perso ; « live » à chaud, « load » en attente avec la barre
+// « Recharger maintenant » ; zs.device.v1 schéma 2 ; invariance de la logique pour 12 vecteurs tirés d'une graine.
 const SIZE = { width: 667, height: 375 };
 const PRESETS = ['faible', 'moyen', 'eleve', 'auto'];
 const DEVICE = 'zs.device.v1';
@@ -13,6 +17,24 @@ const SAVE = 'zs.save.v1';
 const NOISE = /GL Driver|GPU stall|ReadPixels/;
 const cfg = JSON.parse(readFileSync('data/game/ui-atelier.json', 'utf8'));
 const backgrounds = backgroundsFrom(tokensFromCss(readFileSync('css/tokens.css', 'utf8')), cfg.worstBackgrounds);
+const GFX = parseGraphics(JSON.parse(readFileSync('data/game/graphics.json', 'utf8')));
+const VECTORS = GFX.vectors;
+// Lot 5j : Pause → Options (écran construit et importé au premier clic).
+async function openOptions(page) {
+  await page.locator('#btn-pause').click();
+  await page.locator('#btn-options').click();
+  await expect(page.locator('#options-panel')).toBeVisible();
+}
+const opt = (page, id, value) => page.locator(`[data-option="${id}"] [data-value="${value}"]`);
+const preset = (page, id) => page.locator(`#options-preset-${id}`);
+// Générateur pseudo-aléatoire à graine (LCG) : tirage reproductible des vecteurs d'options (aucun Math.random).
+function lcg(seed) {
+  let x = seed >>> 0;
+  return () => {
+    x = (Math.imul(x, 1664525) + 1013904223) >>> 0;
+    return x / 2 ** 32;
+  };
+}
 
 async function open(page, query, { freeze = true, hidden = false } = {}) {
   await page.setViewportSize(SIZE);
@@ -147,45 +169,80 @@ test.describe('préréglages graphiques', () => {
     });
   }
 
-  test('pause : ligne « Graphismes » (44 px, choix marqué), confirmation « Cette partie sera perdue », zs.device.v1 écrit, rechargement demandé ; Annuler n\'écrit rien ; axe', async ({ page }) => {
+  // Lot 5j : remplace « pause : ligne « Graphismes » (44 px, choix marqué), confirmation, zs.device.v1 écrit, rechargement demandé ; Annuler n'écrit rien ; axe ».
+  test('Options : préréglages appliquant leur vecteur, option « live » → Perso à chaud, option « load » en attente (barre, aucun rechargement), Perso restauré, zs.device.v1 v2 ; axe', async ({ page }) => {
+    test.setTimeout(120_000);
     const errors = watch(page);
     await open(page, '&nospawn=1&store=local');
     await page.evaluate(() => localStorage.clear());
-    await page.locator('#btn-pause').click();
-    const row = page.locator('#gfx-row');
-    await expect(row).toBeVisible();
-    await expect(page.locator('#gfx-current')).toHaveText('Auto (Élevé)');
-    await expect(page.locator('#gfx-auto')).toHaveAttribute('aria-pressed', 'true');
-    const boxes = await page.evaluate(() => [...document.querySelectorAll('#gfx-row .gfx-choice')].map((b) => { const r = b.getBoundingClientRect(); return { w: r.width, h: r.height, b: r.bottom, text: b.textContent }; }));
-    expect(boxes.map((b) => b.text)).toEqual(['Auto', 'Faible', 'Moyen', 'Élevé']);
-    for (const b of boxes) {
-      expect(Math.min(b.w, b.h)).toBeGreaterThanOrEqual(44);
-      expect(b.b).toBeLessThanOrEqual(SIZE.height);
+    await page.evaluate(() => { window.__marker = 1; }); // disparaît si la page se recharge
+    await openOptions(page);
+    await expect(page.locator('#options-panel')).toHaveAttribute('data-block', 'E2-12');
+    await expect(page.locator('#options-panel')).toHaveAttribute('role', 'dialog');
+    await expect(page.locator('#options-current')).toHaveText('Auto (Élevé)');
+    await expect(preset(page, 'auto')).toHaveAttribute('aria-pressed', 'true');
+    await expect(preset(page, 'auto')).toBeFocused();
+    expect(await page.locator('.options-choice').allTextContents()).toEqual(['Auto', 'Faible', 'Moyen', 'Élevé', 'Perso']);
+    expect((await S(page)).graphics).toMatchObject({ choice: 'auto', preset: 'eleve', vector: VECTORS.eleve, pending: [] });
+    await expect(page.locator('#options-reload')).toBeHidden();
+    // Chaque préréglage applique son vecteur : options « live » tout de suite (brume, rapport de pixels…), « load » en attente.
+    for (const p of ['faible', 'moyen', 'eleve']) {
+      await preset(page, p).click();
+      const g = (await S(page)).graphics;
+      expect(g).toMatchObject({ choice: p, preset: p, vector: VECTORS[p], reloadRequested: null });
+      expect(g.live).toEqual(GFX.presets[p].live);
+      expect(g.world.mists).toEqual({ faible: [false, false, false], moyen: [true, false, false], eleve: [true, true, true] }[p]);
+      expect(g.vhs).toBe(GFX.presets[p].live.vhs);
+      expect(g.pending).toEqual({ faible: ['anticrenelage', 'carte', 'textures', 'personnages'], moyen: ['anticrenelage', 'personnages'], eleve: [] }[p]);
+      await expect(preset(page, p)).toHaveAttribute('aria-pressed', 'true');
+      for (const o of GFX.options) await expect(opt(page, o.id, VECTORS[p][o.id])).toHaveAttribute('aria-pressed', 'true');
+      await expect(page.locator('#options-reload')).toBeVisible({ visible: p !== 'eleve' });
+      expect(JSON.parse(await page.evaluate((k) => localStorage.getItem(k), DEVICE))).toEqual({ v: 2, graphics: p, custom: null });
     }
-    const before = await page.evaluate(() => [...document.querySelectorAll('#pause-panel button')].map((b) => b.getBoundingClientRect().top));
-    await page.locator('#gfx-faible').click();
-    await expect(page.locator('#gfx-confirm')).toBeVisible();
-    await expect(page.locator('#gfx-confirm-text')).toContainText('Cette partie sera perdue');
-    await expect(page.locator('#gfx-confirm-text')).toContainText('Faible');
+    // Depuis Moyen, une option « live » : Perso tout de suite, effet appliqué sans rechargement, les autres options inchangées.
+    await preset(page, 'moyen').click();
+    await opt(page, 'brume', 'complete').click();
+    let g = (await S(page)).graphics;
+    expect(g).toMatchObject({ choice: 'perso', vector: { ...VECTORS.moyen, brume: 'complete' }, origins: { brume: 'perso' } });
+    expect(g.world.mists).toEqual([true, true, true]);
+    await expect(preset(page, 'perso')).toHaveAttribute('aria-pressed', 'true');
+    await expect(opt(page, 'brume', 'complete')).toHaveAttribute('aria-pressed', 'true');
+    // Une option « load » : enregistrée, marquée « s'appliquera au rechargement », barre visible, aucun rechargement.
+    await opt(page, 'textures', 'simples').click();
+    g = (await S(page)).graphics;
+    expect(g.pending).toEqual(['anticrenelage', 'textures', 'personnages']);
+    await expect(page.locator('[data-option="textures"] .options-note')).toHaveText('S\'appliquera au rechargement');
+    await expect(page.locator('[data-option="textures"] .options-mark')).toHaveText('recharge');
+    await expect(page.locator('[data-option="brume"] .options-mark')).toHaveCount(0);
+    await expect(page.locator('#options-reload')).toBeVisible();
+    const mine = { ...VECTORS.moyen, brume: 'complete', textures: 'simples' };
+    expect(JSON.parse(await page.evaluate((k) => localStorage.getItem(k), DEVICE))).toEqual({ v: 2, graphics: 'perso', custom: mine });
+    // Retour à un préréglage puis à Perso : la configuration est restaurée.
+    await preset(page, 'eleve').click();
+    expect((await S(page)).graphics.vector).toEqual(VECTORS.eleve);
+    await preset(page, 'perso').click();
+    expect((await S(page)).graphics).toMatchObject({ choice: 'perso', vector: mine, custom: mine });
+    // « Recharger maintenant » : confirmation « Cette partie sera perdue » ; Annuler ne recharge pas ; Recharger le demande (simulé sous ?test=1).
+    await page.locator('#options-reload-now').click();
+    await expect(page.locator('#options-confirm-text')).toHaveText('Recharger la page ? Cette partie sera perdue.');
+    await expect(page.locator('#options-confirm-cancel')).toBeFocused();
     const axe = await new AxeBuilder({ page }).analyze();
     expect(axe.violations.map((v) => `${v.id} : ${v.nodes.length}`)).toEqual([]);
-    await page.locator('#gfx-confirm-cancel').click();
-    await expect(page.locator('#gfx-confirm')).toBeHidden();
-    expect(await page.evaluate((k) => localStorage.getItem(k), DEVICE)).toBeNull();
+    await page.locator('#options-confirm-cancel').click();
+    await expect(page.locator('#options-confirm')).toBeHidden();
     expect((await S(page)).graphics.reloadRequested).toBeNull();
-    await page.locator('#gfx-moyen').click();
-    await page.locator('#gfx-confirm-ok').click();
-    expect(JSON.parse(await page.evaluate((k) => localStorage.getItem(k), DEVICE))).toEqual({ v: 1, graphics: 'moyen' });
-    expect((await S(page)).graphics.reloadRequested).toBe('moyen');
+    await page.locator('#options-reload-now').click();
+    await page.locator('#options-confirm-ok').click();
+    expect((await S(page)).graphics.reloadRequested).toBe('perso');
+    expect(await page.evaluate(() => window.__marker)).toBe(1); // jamais de rechargement réel sous ?test=1
     const keys = await page.evaluate(() => Object.keys(localStorage).sort());
     expect(keys.filter((k) => ![SAVE, DEVICE].includes(k))).toEqual([]);
-    expect(keys).toContain(DEVICE);
-    // Aucun décalage : les boutons de la pause n'ont pas bougé.
-    expect(await page.evaluate(() => [...document.querySelectorAll('#pause-panel button')].map((b) => b.getBoundingClientRect().top))).toEqual(before);
     expect(errors).toEqual([]);
   });
 
-  test('préférence mémorisée lue au chargement ; ?gfx= l\'emporte et n\'écrit rien ; illisible : auto, jamais écrasée ; ?test=1 sans store=local : mémoire', async ({ page }) => {
+  // Lot 5j : remplace « préférence mémorisée lue au chargement ; ?gfx= l'emporte et n'écrit rien ; illisible : auto, jamais écrasée ; ?test=1 sans store=local : mémoire ».
+  test('préférence (Perso compris) retrouvée après rechargement ; schéma 1 migré ; ?gfx= l\'emporte, n\'écrit rien, tout grisé ; illisible : jamais écrasée ; ?test=1 sans store=local : mémoire', async ({ page }) => {
+    test.setTimeout(120_000);
     await page.addInitScript(([k]) => {
       if (!sessionStorage.getItem('__seeded')) {
         localStorage.setItem(k, JSON.stringify({ v: 1, graphics: 'faible' }));
@@ -193,28 +250,161 @@ test.describe('préréglages graphiques', () => {
       }
     }, [DEVICE]);
     await open(page, '&nospawn=1&store=local', { freeze: false });
-    expect((await S(page)).graphics).toMatchObject({ choice: 'faible', preset: 'faible', origin: 'memorise' });
-    await open(page, '&nospawn=1&store=local&gfx=eleve', { freeze: false });
-    expect((await S(page)).graphics).toMatchObject({ choice: 'eleve', origin: 'parametre' });
-    expect(JSON.parse(await page.evaluate((k) => localStorage.getItem(k), DEVICE))).toEqual({ v: 1, graphics: 'faible' });
+    expect((await S(page)).graphics).toMatchObject({ choice: 'faible', preset: 'faible', origin: 'memorise', storage: { status: 'ok', migrated: true } });
+    expect(JSON.parse(await page.evaluate((k) => localStorage.getItem(k), DEVICE))).toEqual({ v: 1, graphics: 'faible' }); // rien d'écrit à la lecture
+    await openOptions(page);
+    await opt(page, 'ombres', 'hautes').click();
+    const mine = { ...VECTORS.faible, ombres: 'hautes' };
+    expect(JSON.parse(await page.evaluate((k) => localStorage.getItem(k), DEVICE))).toEqual({ v: 2, graphics: 'perso', custom: mine });
+    await page.reload();
+    await page.waitForFunction(() => (window.__zs?.getState()?.time ?? 0) > 0.05, null, { timeout: 90_000 });
+    expect((await S(page)).graphics).toMatchObject({ choice: 'perso', preset: 'perso', origin: 'memorise', vector: mine, custom: mine, pending: [], shadows: true });
+    expect(Object.values((await S(page)).graphics.origins).every((o) => o === 'perso')).toBe(true);
+    // ?gfx=moyen : l'emporte, n'écrit rien ; l'écran Options est verrouillé (tout grisé, mention).
+    await open(page, '&nospawn=1&store=local&gfx=moyen');
+    expect((await S(page)).graphics).toMatchObject({ choice: 'moyen', origin: 'parametre', locked: true });
+    await openOptions(page);
+    await expect(page.locator('#options-current')).toHaveText('Moyen (adresse)');
+    for (const p of ['auto', 'faible', 'moyen', 'eleve', 'perso']) await expect(preset(page, p)).toBeDisabled();
+    await expect(opt(page, 'brume', 'complete')).toBeDisabled();
+    await expect(page.locator('#options-status')).toHaveText('Préréglage imposé par l\'adresse (?gfx=) : rien n\'est modifiable ni enregistré.');
+    expect(JSON.parse(await page.evaluate((k) => localStorage.getItem(k), DEVICE))).toEqual({ v: 2, graphics: 'perso', custom: mine });
+    // ?gfx=perso : le Perso enregistré.
+    await open(page, '&nospawn=1&store=local&gfx=perso');
+    expect((await S(page)).graphics).toMatchObject({ choice: 'perso', vector: mine, locked: true });
+    // Illisible : Auto, jamais écrasée ; le réglage vaut pour la page (message).
     await page.evaluate((k) => localStorage.setItem(k, '{illisible'), DEVICE);
     await open(page, '&nospawn=1&store=local');
     expect((await S(page)).graphics).toMatchObject({ choice: 'auto', storage: { status: 'corrompu' } });
-    await page.locator('#btn-pause').click();
-    await page.locator('#gfx-eleve').click();
-    await page.locator('#gfx-confirm-ok').click();
-    await expect(page.locator('#gfx-confirm-text')).toHaveText('Préférence illisible sur cet appareil : elle n\'est pas remplacée.');
-    await expect(page.locator('#gfx-confirm-ok')).toBeHidden();
+    await openOptions(page);
+    await preset(page, 'faible').click();
+    await expect(page.locator('#options-status')).toHaveText('Préférence illisible sur cet appareil : elle n\'est pas remplacée.');
     expect(await page.evaluate((k) => localStorage.getItem(k), DEVICE)).toBe('{illisible');
-    expect((await S(page)).graphics.reloadRequested).toBeNull();
+    expect((await S(page)).graphics).toMatchObject({ choice: 'faible', reloadRequested: null });
     // ?test=1 sans ?store=local : préférence en mémoire, rien dans le stockage.
     await page.evaluate(() => localStorage.clear());
-    await open(page, '&nospawn=1&gfx=moyen');
-    await page.locator('#btn-pause').click();
-    await page.locator('#gfx-faible').click();
-    await page.locator('#gfx-confirm-ok').click();
-    expect((await S(page)).graphics).toMatchObject({ reloadRequested: 'faible', storage: { mode: 'memory' } });
+    await open(page, '&nospawn=1');
+    await openOptions(page);
+    await opt(page, 'sang', 'reduit').click();
+    expect((await S(page)).graphics).toMatchObject({ choice: 'perso', storage: { mode: 'memory' }, reloadRequested: null });
     expect(await page.evaluate(() => localStorage.length)).toBe(0);
+  });
+
+  test('option imposée par l\'adresse : grisée, « Imposé par l\'adresse », non modifiable ; les autres restent libres', async ({ page }) => {
+    await open(page, '&nospawn=1&shadows=0&dpr=1.25');
+    await openOptions(page);
+    const g = (await S(page)).graphics;
+    expect(g.imposed.sort()).toEqual(['ombres', 'resolution']);
+    expect(g.vector).toMatchObject({ ombres: 'aucune', resolution: null });
+    await expect(opt(page, 'ombres', 'hautes')).toBeDisabled();
+    await expect(opt(page, 'resolution', 'haute')).toBeDisabled();
+    await expect(page.locator('[data-option="ombres"] .options-note')).toHaveText('Imposé par l\'adresse');
+    await expect(page.locator('[data-option="resolution"] .options-note')).toHaveText('Imposé par l\'adresse : valeur de l\'adresse');
+    await expect(opt(page, 'ombres', 'aucune')).toHaveAttribute('aria-pressed', 'true');
+    await opt(page, 'brume', 'simple').click();
+    expect((await S(page)).graphics).toMatchObject({ choice: 'perso', vector: { brume: 'simple', ombres: 'aucune' }, custom: { ombres: 'hautes' }, shadows: false });
+  });
+
+  // Lot 5j : 667 × 375 (téléphone en paysage), 375 × 812 et 1440 × 900 : panneau dans la fenêtre, en-tête visible, région qui défile, 44 px, 14 px, focus piégé,
+  // Échap et « Retour » reviennent à la pause avec le focus sur « Options » ; la pause (Reprendre) fonctionne comme avant.
+  for (const size of [SIZE, { width: 375, height: 812 }, { width: 1440, height: 900 }]) {
+    test(`Options à ${size.width}×${size.height} : tout atteignable (défilement interne, en-tête fixe), 44 px, 14 px, clavier, Échap et Retour`, async ({ page }) => {
+      test.setTimeout(120_000);
+      await open(page, '&nospawn=1');
+      await page.setViewportSize(size);
+      await openOptions(page);
+      const box = (sel) => page.locator(sel).evaluate((e) => { const r = e.getBoundingClientRect(); return { t: r.top, b: r.bottom, l: r.left, r: r.right }; });
+      const panel = await box('.panel-options');
+      expect(panel.t).toBeGreaterThanOrEqual(0);
+      expect(panel.b).toBeLessThanOrEqual(size.height);
+      expect(panel.l).toBeGreaterThanOrEqual(0);
+      expect(panel.r).toBeLessThanOrEqual(size.width);
+      expect(await page.evaluate(() => [document.documentElement.scrollWidth > innerWidth, document.documentElement.scrollHeight > innerHeight])).toEqual([false, false]);
+      const region = page.locator('#options-scroll');
+      await expect(region).toHaveAttribute('role', 'region');
+      await expect(region).toHaveAttribute('aria-label', 'Réglages graphiques');
+      await expect(region).toHaveAttribute('tabindex', '0');
+      const head = await box('.options-head');
+      // Chaque valeur de chaque option : amenée dans la région, entièrement visible dedans, l'en-tête n'a pas bougé ; 44 px.
+      const rows = await page.locator('.options-value').count();
+      expect(rows).toBe(GFX.options.reduce((n, o) => n + o.valeurs.length, 0));
+      const reach = await page.evaluate(() => {
+        const reg = document.getElementById('options-scroll');
+        const r = reg.getBoundingClientRect();
+        return [...reg.querySelectorAll('.options-value')].map((b) => {
+          b.scrollIntoView({ block: 'nearest' });
+          const q = b.getBoundingClientRect();
+          return { ok: q.top >= r.top - 0.5 && q.bottom <= r.bottom + 0.5, h: q.height, w: q.width };
+        });
+      });
+      for (const x of reach) {
+        expect(x.ok).toBe(true);
+        expect(Math.min(x.h, x.w)).toBeGreaterThanOrEqual(44);
+      }
+      expect(await box('.options-head')).toEqual(head);
+      if (size.height <= 400) expect(await region.evaluate((e) => e.scrollHeight > e.clientHeight)).toBe(true);
+      // Toutes les cibles du panneau : 44 px ; tout le texte visible : 14 px au moins.
+      const m = await page.evaluate(() => {
+        const p = document.getElementById('options-panel');
+        const buttons = [...p.querySelectorAll('button')].filter((b) => b.getClientRects().length).map((b) => { const r = b.getBoundingClientRect(); return Math.min(r.width, r.height); });
+        const fonts = [...p.querySelectorAll('*')].filter((e) => e.getClientRects().length && [...e.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim())).map((e) => parseFloat(getComputedStyle(e).fontSize));
+        return { buttons, fonts, filters: [...p.querySelectorAll('*')].map((e) => [getComputedStyle(e).filter, getComputedStyle(e).backdropFilter || 'none']).filter(([f, b]) => f !== 'none' || b !== 'none').length };
+      });
+      for (const b of m.buttons) expect(b).toBeGreaterThanOrEqual(44);
+      expect(Math.min(...m.fonts)).toBeGreaterThanOrEqual(14);
+      expect(m.filters).toBe(0);
+      // Clavier : Tab tourne dans le panneau (dernier → premier), Maj+Tab aussi (premier → dernier).
+      await page.locator('#options-back').focus();
+      const seen = new Set();
+      for (let i = 0; i < 40; i += 1) {
+        await page.keyboard.press('Tab');
+        seen.add(await page.evaluate(() => (document.activeElement.closest('#options-panel') ? document.activeElement.id || document.activeElement.dataset.value || document.activeElement.className : 'DEHORS')));
+      }
+      expect(seen.has('DEHORS')).toBe(false);
+      await preset(page, 'auto').focus();
+      await page.keyboard.press('Shift+Tab');
+      await page.keyboard.press('Shift+Tab');
+      expect(await page.evaluate(() => Boolean(document.activeElement.closest('#options-panel')))).toBe(true);
+      // Échap : retour à la pause, focus sur « Options » ; la partie reste en pause pendant l'écran Options.
+      expect((await S(page)).paused).toBe(true);
+      await page.keyboard.press('Escape');
+      await expect(page.locator('#options-panel')).toBeHidden();
+      await expect(page.locator('#pause-panel')).toBeVisible();
+      await expect(page.locator('#btn-options')).toBeFocused();
+      await page.locator('#btn-options').click();
+      await page.locator('#options-back').click();
+      await expect(page.locator('#pause-panel')).toBeVisible();
+      await expect(page.locator('#btn-options')).toBeFocused();
+      await page.locator('#btn-resume').click();
+      await expect(page.locator('#pause-panel')).toBeHidden();
+      expect((await S(page)).paused).toBe(false);
+    });
+  }
+
+  test('invariance : 12 vecteurs d\'options tirés d\'une graine (Perso enregistré), 600 pas : getState() logique identique', async ({ page }) => {
+    test.setTimeout(300_000);
+    const rand = lcg(5);
+    const vectors = Array.from({ length: 12 }, () => Object.fromEntries(GFX.options.map((o) => [o.id, o.valeurs[Math.floor(rand() * o.valeurs.length)].id])));
+    expect(new Set(vectors.map((v) => JSON.stringify(v))).size).toBe(12);
+    await page.goto('/data/game/graphics.json'); // même origine : le stockage est prêt avant le premier chargement du jeu
+    const runs = [];
+    for (const v of vectors) {
+      await page.evaluate(([k, custom]) => localStorage.setItem(k, JSON.stringify({ v: 2, graphics: 'perso', custom })), [DEVICE, v]);
+      await open(page, '&wave=3&store=local', { hidden: true });
+      expect((await S(page)).graphics).toMatchObject({ choice: 'perso', vector: v });
+      await page.evaluate(() => {
+        const zs = window.__zs;
+        zs.setInput({ aim: { angle: 0.4 }, move: { x: 0.3, y: -0.2 } });
+        for (let i = 0; i < 300; i += 1) zs.step(0.05);
+        zs.setInput({ aim: { angle: 2.2 } });
+        for (let i = 0; i < 300; i += 1) zs.step(0.05);
+        zs.setInput({});
+      });
+      runs.push(await logic(page));
+    }
+    expect(runs[0].time).toBeGreaterThan(29);
+    expect(runs[0].enemies.length + runs[0].kills).toBeGreaterThan(0);
+    for (let i = 1; i < runs.length; i += 1) expect(runs[i], `vecteur ${i}`).toEqual(runs[0]);
   });
 
   test('Auto : baisse d\'un cran entre deux manches (annoncée une fois dans #hud-live et dans la pause), jamais en pleine manche, jamais sous Faible, jamais de remontée', async ({ browser }) => {
@@ -244,13 +434,16 @@ test.describe('préréglages graphiques', () => {
     expect(g).toMatchObject({ preset: 'faible', pixelRatio: 1, shadows: false, vhs: 'off' });
     g = await feed([...slow(400, 60), { ms: 60, phase: 'attente' }]);
     expect(g).toMatchObject({ preset: 'faible', lastDecision: { reason: 'plancher' } });
-    await page.locator('#btn-pause').click();
-    await expect(page.locator('#gfx-current')).toHaveText('Auto (Faible, baissé)');
-    await expect(page.locator('#gfx-auto')).toHaveAttribute('aria-pressed', 'true');
+    await openOptions(page); // lot 5j : avant, #gfx-current et #gfx-auto de la pause ; après, l'écran Options
+    await expect(page.locator('#options-current')).toHaveText('Auto (Faible, baissé)');
+    await expect(preset(page, 'auto')).toHaveAttribute('aria-pressed', 'true');
+    await expect(opt(page, 'brume', 'simple')).toHaveAttribute('aria-pressed', 'true'); // vecteur de Faible pour les options « live »
+    await expect(opt(page, 'personnages', 'riches')).toHaveAttribute('aria-pressed', 'true'); // « load » : celles du chargement (Élevé)
+    await expect(page.locator('#options-reload')).toBeHidden();
     await context.close();
   });
 
-  test('par défaut : modules des préréglages chargés, aucun module de ?perf ; aucune requête externe ; CLS ≤ 0,1', async ({ page, baseURL }) => {
+  test('par défaut : modules des préréglages chargés, aucun module de ?perf ni l\'écran Options (importé à la première ouverture, une fois) ; aucune requête externe ; CLS ≤ 0,1', async ({ page, baseURL }) => {
     const files = [];
     const external = [];
     page.on('request', (r) => {
@@ -264,8 +457,15 @@ test.describe('préréglages graphiques', () => {
     await open(page, '&nospawn=1', { freeze: false });
     for (const f of ['/data/game/graphics.json', '/js/core/graphics.js', '/js/game/graphics-boot.js', '/js/game/graphics-apply.js', '/js/save/device-settings.js']) expect(files).toContain(f);
     for (const f of ['/js/game/profiler.js', '/js/game/perf-panel.js', '/js/game/frame-cap.js', '/js/core/perf-stats.js']) expect(files).not.toContain(f);
-    expect(new Set(files.filter((f) => f.endsWith('.js'))).size).toBe(113); // 109 avant le lot 5b + 4 modules des préréglages
+    expect(new Set(files.filter((f) => f.endsWith('.js'))).size).toBe(113); // 109 avant le lot 5b + 4 modules des préréglages (lot 5j : inchangé)
+    expect(files).not.toContain('/js/game/options-menu.js'); // lot 5j : rien de chargé tant que l'écran reste fermé
     expect(external).toEqual([]);
     expect(await page.evaluate(() => window.__cls)).toBeLessThanOrEqual(0.1);
+    await openOptions(page);
+    await page.locator('#options-back').click();
+    await page.locator('#btn-options').click();
+    expect(files.filter((f) => f === '/js/game/options-menu.js')).toHaveLength(1);
+    expect(new Set(files.filter((f) => f.endsWith('.js'))).size).toBe(114);
+    expect(external).toEqual([]);
   });
 });

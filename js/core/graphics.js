@@ -73,11 +73,16 @@ function setPath(o, path, value) {
 }
 const scalar = (v) => typeof v === 'boolean' || typeof v === 'string' || (typeof v === 'number' && Number.isFinite(v));
 
-// Liste des options (graphics.json → options) : identifiants uniques, section connue, groupe live ou load, valeurs dont les réglages sont des clés
-// connues du groupe ; une option invalide est ignorée (jamais d'exception).
+// Liste des options (graphics.json → sections et options) : sections { id, texte } ; identifiants uniques, section connue, groupe live ou load, valeurs
+// dont les réglages sont des clés connues du groupe ; une option ou une section invalide est ignorée (jamais d'exception).
 export function parseOptions(json) {
   const j = obj(json);
-  const sections = Array.isArray(j.sections) ? [...new Set(j.sections.filter((s) => typeof s === 'string' && ID_RE.test(s)))] : [];
+  const sectionTexts = {};
+  for (const raw of Array.isArray(j.sections) ? j.sections.slice(0, MAX_OPTIONS) : []) {
+    const sec = obj(raw);
+    if (typeof sec.id === 'string' && ID_RE.test(sec.id) && !(sec.id in sectionTexts) && typeof sec.texte === 'string' && KEY_RE.test(sec.texte)) sectionTexts[sec.id] = sec.texte;
+  }
+  const sections = Object.keys(sectionTexts);
   const list = Array.isArray(j.options) ? j.options.slice(0, MAX_OPTIONS) : [];
   const seen = new Set();
   const options = [];
@@ -100,7 +105,8 @@ export function parseOptions(json) {
     seen.add(o.id);
     options.push(Object.freeze({ id: o.id, section: o.section, group: o.group, texte: o.texte, valeurs: Object.freeze(valeurs) }));
   }
-  return { sections: sections.filter((s) => options.some((o) => o.section === s)), options };
+  const used = sections.filter((s) => options.some((o) => o.section === s));
+  return { sections: used, sectionTexts: Object.fromEntries(used.map((s) => [s, sectionTexts[s]])), options };
 }
 
 // Réglages du rendu ({ live, load }, mêmes champs et mêmes vérifications que le lot 5b) d'un vecteur d'options ; valeur absente ou inconnue : le
@@ -168,7 +174,7 @@ export function parseGraphics(json) {
   const presets = obj(j.presets);
   const a = obj(j.auto);
   const initial = obj(a.initial);
-  const { sections, options } = parseOptions(j);
+  const { sections, sectionTexts, options } = parseOptions(j);
   const base = { options };
   const vectors = Object.fromEntries(PRESET_IDS.map((id) => [id, sanitizeVector(base, presets[id], null)]));
   // Valeur absente d'un préréglage : celle qui correspond au repli de l'Élevé (ELEVE), sinon la dernière de la liste.
@@ -179,6 +185,7 @@ export function parseGraphics(json) {
     schema: j.schema === 2 ? 2 : null,
     defaut: 'auto',
     sections,
+    sectionTexts,
     options,
     vectors,
     presets: Object.fromEntries(PRESET_IDS.map((id) => [id, vectorSettings(base, vectors[id])])),

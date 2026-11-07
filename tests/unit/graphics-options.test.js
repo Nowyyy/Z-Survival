@@ -46,6 +46,17 @@ describe('options : données (schéma 2)', () => {
     const covered = new Set(CFG.options.flatMap((o) => o.valeurs.flatMap((v) => Object.keys(v.reglages))));
     expect([...covered].sort()).toEqual([...SETTING_KEYS.live, ...SETTING_KEYS.load].sort());
   });
+  it('textes : chaque libellé (sections, options, valeurs) est une clé de fr.json, en français seulement (game.*), aucune absente de en.json par erreur', () => {
+    const fr = JSON.parse(readFileSync('data/i18n/fr.json', 'utf8'));
+    const en = JSON.parse(readFileSync('data/i18n/en.json', 'utf8'));
+    const keys = [...Object.values(CFG.sectionTexts), ...CFG.options.flatMap((o) => [o.texte, ...o.valeurs.map((v) => v.texte)])];
+    expect(Object.keys(CFG.sectionTexts)).toEqual(CFG.sections);
+    for (const k of keys) {
+      expect(fr[k], k).toBeTruthy();
+      expect(k).toMatch(/^game\./);
+      expect(en[k], k).toBeUndefined(); // le jeu est en français seulement (tests/unit/data-i18n.test.js)
+    }
+  });
   it('vecteurs des préréglages : identiques, option par option, à la copie figée ; réglages identiques à settingsFor (lot 5b)', () => {
     for (const id of PRESET_IDS) {
       for (const o of ids) expect(RAW.presets[id][o], `${id}.${o}`).toBe(VECTEURS[id][o]);
@@ -56,9 +67,10 @@ describe('options : données (schéma 2)', () => {
     }
   });
   it('entrées hostiles : options invalides ignorées, aucune exception, réglages de l\'Élevé', () => {
-    const bad = { ...RAW, sections: ['image', 'x y', 3], options: [...RAW.options.slice(0, 2), { id: 'Bad id', section: 'image', group: 'live', texte: 'game.x', valeurs: [] }, { id: 'pirate', section: 'image', group: 'live', texte: 'game.x', valeurs: [{ id: 'a', texte: 'game.a', reglages: { 'feux.__proto__': 1 } }, { id: 'b', texte: 'game.b', reglages: { autre: 1 } }] }, { ...RAW.options[0] }] };
+    const bad = { ...RAW, sections: [RAW.sections[0], { id: 'x y', texte: 'game.x' }, 3, 'carte', { id: 'image', texte: 'game.double' }], options: [...RAW.options.slice(0, 2), { id: 'Bad id', section: 'image', group: 'live', texte: 'game.x', valeurs: [] }, { id: 'pirate', section: 'image', group: 'live', texte: 'game.x', valeurs: [{ id: 'a', texte: 'game.a', reglages: { 'feux.__proto__': 1 } }, { id: 'b', texte: 'game.b', reglages: { autre: 1 } }] }, { ...RAW.options[0] }] };
     const c = parseGraphics(bad);
     expect(c.options.map((o) => o.id)).toEqual(['resolution', 'anticrenelage']);
+    expect(c.sectionTexts).toEqual({ image: 'game.options.section.image' });
     for (const h of [null, 42, 'x', [], { options: 'x' }, { options: [null, 1, 'a', {}] }]) {
       const p = parseGraphics(h);
       expect(p.options).toEqual([]);

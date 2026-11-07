@@ -147,7 +147,7 @@ export function createGraphicsController(boot, { vhs = null, announce = () => {}
       return reloadRequested;
     },
     // Données de l'écran Options : sections, options (identifiants, groupes, valeurs, clés de texte) et état.
-    options: () => ({ sections: [...cfg.sections], options: cfg.options, state: api.state() }),
+    options: () => ({ sections: [...cfg.sections], sectionTexts: { ...cfg.sectionTexts }, options: cfg.options, state: api.state() }),
     label: () => (st.choice === 'auto' ? `auto (${eff.preset})` : st.choice),
     state() {
       return {

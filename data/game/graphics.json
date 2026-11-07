@@ -1,11 +1,11 @@
 {
   "_provisoire": "Lot 5b : préréglages graphiques PROVISOIRES, à régler avec les rapports de ?perf=1 des appareils du propriétaire (iPhone, Android). Lot 5j : chaque préréglage est un vecteur complet d'options (une valeur par option) ; les valeurs de Faible, Moyen et Élevé sont exactement celles du lot 5b. eleve = rendu actuel du jeu, épaves comprises. Un paramètre explicite de l'adresse (?perso, ?sang, ?usure, ?detail, ?vhs, ?shadows, ?dpr) l'emporte sur le préréglage et sur Perso.",
   "_auto": "Auto (lot 5b-G) : baisse d'un cran entre deux manches si la médiane des images dépasse seuilMs OU si plus de irregulier.part des images dépassent irregulier.facteur × la cadence (10e centile des intervalles) sur les fenetreSecondes dernières secondes de jeu actif. Valeurs provisoires.",
-  "_options": "Lot 5j : options de l'écran Options (pause). id : identifiant (lettres et chiffres) ; section : une des sections ; group : live (appliquée à chaud) ou load (appliquée au rechargement) ; texte : clé de fr.json du libellé ; valeurs : id (valeur enregistrée), texte (clé du libellé), reglages (réglages du rendu fixés par cette valeur, chemins de la partie live ou load, voir _champs). Ajouter une option : Docs/ref/options-graphiques.md.",
+  "_options": "Lot 5j : options de l'écran Options (pause). id : identifiant (lettres et chiffres) ; section : une des sections (sections : id et texte, clé de fr.json du titre) ; group : live (appliquée à chaud) ou load (appliquée au rechargement) ; texte : clé de fr.json du libellé ; valeurs : id (valeur enregistrée), texte (clé du libellé), reglages (réglages du rendu fixés par cette valeur, chemins de la partie live ou load, voir _champs). Ajouter une option : Docs/ref/options-graphiques.md.",
   "_champs": "live : dprMax (plafond du rapport de pixels), ombres et ombreTaille (carte d'ombres, côté en pixels), vhs (off, statique, anime), brouillard (simple : scene.fog seul ; reduit : mur de brume sans nappes basses ; complet), feux.voitureFoyers (foyers de la voiture en flammes), feux.fumeeHelico (part des particules, 0 = coupée), feux.particules (part des particules des autres feux), feux.lueur (lueur au sol des autres feux), sang (reduit ou 1), cadavres (simultanés). load : personnages (A ou choix : table des choix, « riche »), anticrenelage, texturesFines (option fine de textures.json ; les textures gardent leur taille, 512 au plus), decor (reduit : sans le décor léger intérieur ; complet).",
   "schema": 2,
   "defaut": "auto",
-  "sections": ["image", "carte", "personnages"],
+  "sections": [{ "id": "image", "texte": "game.options.section.image" }, { "id": "carte", "texte": "game.options.section.carte" }, { "id": "personnages", "texte": "game.options.section.personnages" }],
   "options": [
     { "id": "resolution", "section": "image", "group": "live", "texte": "game.options.resolution", "valeurs": [
       { "id": "basse", "texte": "game.options.v.basse", "reglages": { "dprMax": 1 } },
@@ -32,7 +32,7 @@
     ] },
     { "id": "textures", "section": "carte", "group": "load", "texte": "game.options.textures", "valeurs": [
       { "id": "simples", "texte": "game.options.v.simple", "reglages": { "texturesFines": false } },
-      { "id": "fines", "texte": "game.options.v.fin", "reglages": { "texturesFines": true } }
+      { "id": "fines", "texte": "game.options.v.riche", "reglages": { "texturesFines": true } }
     ] },
     { "id": "brume", "section": "carte", "group": "live", "texte": "game.options.brume", "valeurs": [
       { "id": "simple", "texte": "game.options.v.simple", "reglages": { "brouillard": "simple" } },
