@@ -90,3 +90,9 @@ version: v0.6
 nom: Publication de la V0.6
 description: La V0.6 devient la version Recette ; la V0.5 rejoint les versions précédentes, toujours jouables.
 afficher: oui
+
+[lot-5i]
+version: v0.6
+nom: Accueil retouché
+description: L'accueil occupe toute la hauteur de l'écran ; la colonne de droite montre toutes les versions, en tête la version actuelle avec sa description complète.
+afficher: oui

@@ -1,4 +1,4 @@
-// Accueil de la Recette (lot 4c ; refait au lot 5g) : logique pure, sans DOM, réseau ni horloge. Construit le modèle de la page d'après site-info.json
+// Accueil de la Recette (lot 4c ; refait au lot 5g ; retouché au lot 5i : carte de la version actuelle, « Jouer - <étiquette> ») : logique pure, sans DOM, réseau ni horloge. Construit le modèle de la page d'après site-info.json
 // (écrit par l'assembleur dans Recette/ : scripts/site/site-info.mjs). Les données sont revérifiées ici : un champ invalide est ignoré, jamais affiché
 // tel quel ; les textes sont insérés par textContent (main.js), jamais comme du HTML ; les adresses sont toutes relatives et construites ici.
 // États : « ok » (site assemblé), « source » (site-info.json de l'arbre du dépôt servi en local), « error » (fichier absent ou invalide) ;
@@ -6,6 +6,10 @@
 export const DEV_HREF = '../dev/jeu.html';
 export const MAX_EVOLUTIONS = 20;
 export const MAX_PREVIOUS = 200;
+// Lot 5i : description d'une version jusqu'à 200 caractères (borne de « description » du fichier des noms ; avant : 120, comme versions.json).
+export const MAX_DESCRIPTION = 200;
+// Lot 5i : étiquette du bouton « Jouer - <étiquette> » : celle de la Recette si elle fait 20 caractères au plus, sinon « V<id> ».
+export const MAX_PLAY_LABEL = 20;
 const ID_RE = /^v(0|[1-9]\d{0,2})\.(0|[1-9]\d{0,2})$/;
 const VERSION_RE = /^v\d+\.\d+$/;
 const SHA_RE = /^[0-9a-f]{7}$/;
@@ -48,13 +52,19 @@ export function readEvolutions(list) {
 export function readPrevious(list) {
   return (Array.isArray(list) ? list : []).filter((p) => isObject(p) && ID_RE.test(p.id ?? '')).slice(0, MAX_PREVIOUS).map((p) => {
     const href = p.status === 'archive' ? previousHref(p.id, p.entry) : null;
-    return { id: p.id, label: validLabel(p.label) ?? `V${p.id.slice(1)}`, title: text(p.title, 120), href, note: href ? '' : text(p.note, 300) };
+    return { id: p.id, label: validLabel(p.label) ?? `V${p.id.slice(1)}`, title: text(p.title, MAX_DESCRIPTION), href, note: href ? '' : text(p.note, 300) };
   });
 }
 
-// Modèle de la page.
+// Étiquette du bouton « Jouer » (lot 5i) : étiquette valide de 20 caractères au plus, sinon « V<id> ».
+export function playLabel(label, id) {
+  const valid = validLabel(label);
+  return valid && [...valid].length <= MAX_PLAY_LABEL ? valid : `V${id.slice(1)}`;
+}
+
+// Modèle de la page. current : carte de la version Recette (étiquette et description complète, '' si absente) ; playLabel : étiquette du bouton.
 export function homeModel(info) {
-  const base = { play: 'jeu.html', dev: { present: true, href: DEV_HREF, sha: '', date: '' }, evolutions: [], previous: [], version: '' };
+  const base = { play: 'jeu.html', dev: { present: true, href: DEV_HREF, sha: '', date: '' }, evolutions: [], previous: [], version: '', playLabel: '', current: null };
   if (isObject(info) && info.schema === 1 && info.source === true) return { ...base, state: 'source' };
   const recette = isObject(info) && info.schema === 1 && isObject(info.recette) && ID_RE.test(info.recette.id ?? '') ? info.recette : null;
   if (!recette) return { ...base, state: 'error' };
@@ -63,6 +73,8 @@ export function homeModel(info) {
   return {
     state: 'ok',
     version: validLabel(recette.label) ?? `V${recette.id.slice(1)}`,
+    playLabel: playLabel(recette.label, recette.id),
+    current: { label: validLabel(recette.label) ?? `V${recette.id.slice(1)}`, title: text(recette.title, MAX_DESCRIPTION) },
     play: safePath(recette.entry) ?? 'jeu.html',
     dev: { present, href: DEV_HREF, sha: present && SHA_RE.test(dev.sha ?? '') ? dev.sha : '', date: present ? text(dev.date, 30) : '' },
     evolutions: present ? readEvolutions(info.evolutions) : [],

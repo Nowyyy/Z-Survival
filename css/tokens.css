@@ -68,6 +68,10 @@
   /* Cible tactile minimale */
   --touch-target: 44px;
 
+  /* Accueil de la Recette (lot 5i) : carte de la version actuelle, en tête de « Toutes les versions » (css/accueil.css). */
+  --home-current-border: #d81414;   /* bordure de 2 px : rouge sang (même valeur que --color-action) */
+  --home-current-surface: #2a0f0f;  /* fond légèrement teinté de rouge ; texte os (--color-text) au-dessus : contraste ≥ 4,5:1 */
+
   /* Jeu : couleurs de la scène 3D (lues par js/game/palette.js). Provisoires, à valider. */
   --game-floor: #2a2a2e;            /* sol de la salle */
   --game-wall: #464a50;             /* murs : rouge brun sombre */
