@@ -280,7 +280,8 @@ describe('structure de jeu.html', () => {
   // ordre du HTML = lecture.
   it('pause : « PAUSE », le solde et l\'icône du son en tête ; boutons Reprendre, Recommencer, Options, Quitter (désactivé), Plein écran ; ni volume, ni prochaine zone, ni sauvegarde', () => {
     // Lot 5j-F : Son est l'icône de la tête, après le solde (avant : entre Reprendre et Recommencer).
-    const order = ['pause-title', 'pause-balance', 'btn-sound', 'btn-resume', 'btn-restart', 'btn-options', 'btn-quit', 'btn-fullscreen'].map((id) => at(`id="${id}"`));
+    // Lot 5j-G : Plein écran est l'icône à gauche du son, dans la tête (avant : dernier bouton de la grille).
+    const order = ['pause-title', 'pause-balance', 'btn-fullscreen', 'btn-sound', 'btn-resume', 'btn-restart', 'btn-options', 'btn-quit'].map((id) => at(`id="${id}"`));
     expect(order.every((p, i) => p > 0 && (i === 0 || p > order[i - 1]))).toBe(true);
     expect(html).toMatch(/<button id="btn-quit" class="button button-quiet" type="button" data-i18n="game\.pause\.quit" disabled><\/button>/);
     const pause = html.slice(at('id="pause-panel"'), at('id="end-panel"'));

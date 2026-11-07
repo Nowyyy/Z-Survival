@@ -156,6 +156,14 @@ export function createUi(dict, handlers) {
   ui.syncVhs = () => {};
   els.options.addEventListener('click', () => ui.openOptions());
   els.fullscreen.hidden = !canFullscreen;
+  // Lot 5j-G : icône de plein écran (coins vers l'extérieur ; vers l'intérieur et nom « Quitter le plein écran » quand la page est en plein écran).
+  const syncFullscreen = () => {
+    const on = Boolean(document.fullscreenElement);
+    els.fullscreen.dataset.active = String(on);
+    els.fullscreen.setAttribute('aria-label', dict[on ? 'game.pause.fullscreenExit' : 'game.pause.fullscreen']);
+  };
+  document.addEventListener('fullscreenchange', syncFullscreen);
+  syncFullscreen();
   els.pauseBtn.addEventListener('click', () => ui.openPause());
   els.resume.addEventListener('click', () => ui.closePause());
   els.fullscreen.addEventListener('click', () => ui.toggleFullscreen());

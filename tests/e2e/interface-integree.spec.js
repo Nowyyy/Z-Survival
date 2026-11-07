@@ -312,23 +312,36 @@ test.describe('états du jeu', () => {
   // à droite ; ni prochaine zone, ni état de la sauvegarde, ni volume ; depuis le lot 5j, plus de ligne « Graphismes » (#gfx-row) : elle est dans l'écran Options.
   // Lot 5j-F (retour du propriétaire) : Son devient une icône en haut à droite, après le solde (avant : bouton « Son : activé » en tête de la colonne de droite) ;
   // colonne de droite : Options puis Plein écran ; Tab depuis Reprendre va à Recommencer (avant : à Son).
-  test('pause : solde puis icône du son à côté de « PAUSE » ; Reprendre, Recommencer, Quitter (désactivé) | Options, Plein écran ; focus sur Reprendre ; rien d\'autre', async ({ page }) => {
+  // Lot 5j-G (retour du propriétaire) : 2 × 2 boutons, Quitter sous Options (avant : sous Recommencer) ; Plein écran devient une icône à gauche du son
+  // (avant : dernier bouton de la colonne de droite), masquée quand le navigateur ne le permet pas.
+  test('pause : solde puis icône du son à côté de « PAUSE » ; Reprendre, Recommencer | Options, Quitter (désactivé) ; focus sur Reprendre ; rien d\'autre', async ({ page }) => {
     await open(page);
     await page.locator('#btn-pause').click();
     await expect(page.locator('#btn-resume')).toBeFocused();
     const r = await page.evaluate(() => {
       const b = (id) => { const e = document.getElementById(id); if (!e || !e.getClientRects().length) return null; const q = e.getBoundingClientRect(); return { l: q.left, t: q.top, r: q.right, b: q.bottom }; };
-      return { title: b('pause-title'), balance: b('pause-balance'), resume: b('btn-resume'), restart: b('btn-restart'), quit: b('btn-quit'), sound: b('btn-sound'), vhs: b('btn-options'), inputs: document.querySelectorAll('#pause-panel input').length, lines: document.querySelectorAll('#pause-panel p').length };
+      return { title: b('pause-title'), balance: b('pause-balance'), resume: b('btn-resume'), restart: b('btn-restart'), quit: b('btn-quit'), sound: b('btn-sound'), full: b('btn-fullscreen'), vhs: b('btn-options'), inputs: document.querySelectorAll('#pause-panel input').length, lines: document.querySelectorAll('#pause-panel p').length };
     });
     expect(r.balance.l).toBeGreaterThan(r.title.r);
     expect(r.balance.t).toBeLessThan(r.title.b);
-    for (const [a, b] of [['resume', 'restart'], ['restart', 'quit']]) {
+    for (const [a, b] of [['resume', 'restart'], ['vhs', 'quit']]) {
       expect(Math.abs(r[a].l - r[b].l)).toBeLessThan(0.5);
       expect(r[b].t).toBeGreaterThan(r[a].b);
     }
+    expect(Math.abs(r.quit.t - r.restart.t)).toBeLessThan(0.5); // Quitter sur la ligne de Recommencer, à droite
+    expect(r.quit.l).toBeGreaterThan(r.restart.r);
     expect(r.sound.l).toBeGreaterThan(r.balance.r); // icône du son à droite du solde, sur la ligne du titre
     expect(r.sound.b).toBeLessThan(r.resume.t);
     expect(Math.round(r.sound.r - r.sound.l)).toBe(44);
+    if (r.full) { // icône de plein écran (si l'API existe) : entre le solde et le son, même ligne, 44 px
+      expect(r.full.l).toBeGreaterThan(r.balance.r);
+      expect(r.full.r).toBeLessThan(r.sound.l);
+      expect(Math.abs(r.full.t - r.sound.t)).toBeLessThan(0.5);
+      expect(Math.round(r.full.r - r.full.l)).toBe(44);
+      await expect(page.locator('#btn-fullscreen')).toHaveAttribute('aria-label', 'Plein écran');
+      await expect(page.locator('#btn-fullscreen')).toHaveText('');
+    }
+    expect(await page.locator('#pause-panel .panel-actions > button:not([hidden])').count()).toBe(4); // 2 × 2, plus de troisième ligne
     expect(Math.abs(r.vhs.t - r.resume.t)).toBeLessThan(0.5); // Options en tête de la colonne de droite
     expect(r.vhs.l).toBeGreaterThan(r.resume.r);
     await expect(page.locator('#btn-sound')).toHaveAttribute('aria-label', 'Son : activé');

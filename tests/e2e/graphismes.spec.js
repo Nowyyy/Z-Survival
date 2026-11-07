@@ -399,8 +399,10 @@ test.describe('préréglages graphiques', () => {
       // Lot 5j-F : plus de croix dans la pause (avant, lot 5j-E : « Fermer la pause ») ; l'icône du son est en haut à droite, à droite du solde.
       await expect(page.getByRole('button', { name: 'Fermer la pause' })).toHaveCount(0);
       const [xb, bb, pp] = [await box('#btn-sound'), await box('#pause-balance'), await box('#pause-panel .panel')];
-      expect(xb.l).toBeGreaterThan(bb.r);
+      if (size.width > 480) expect(xb.l).toBeGreaterThan(bb.r); // à droite du solde ; écran étroit (lot 5j-G) : le solde passe sous la ligne du titre
+      else expect(bb.t).toBeGreaterThanOrEqual(xb.b - 0.5);
       expect(pp.r - xb.r).toBeLessThan(40);
+      expect(xb.t - pp.t).toBeLessThan(40); // en haut à droite du panneau
       expect(Math.round(xb.b - xb.t)).toBe(44);
       await page.locator('#btn-resume').click();
       await expect(page.locator('#pause-panel')).toBeHidden();
