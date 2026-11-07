@@ -389,8 +389,8 @@ test.describe('animation de vague et effet VHS : mouvement réduit', () => {
     expect((await state(page)).vhs).toMatchObject({ enabled: true, on: false, layers: 0, reducedMotion: true });
     const row = await vhsOption(page);
     for (const id of ['off', 'statique', 'anime']) await expect(vhsValue(row, id)).toBeDisabled();
-    await expect(row.locator('.options-label')).toHaveText('Effet VHS');
-    await expect(row.locator('.options-note')).toHaveText('Désactivé (mouvement réduit)');
+    await expect(row.locator('#options-label-vhs')).toHaveText('Effet VHS'); // lot 5j-D : le libellé seul (la marque est dans la même ligne)
+    await expect(row.locator('.options-mark')).toHaveText('coupé (mouvement réduit)'); // lot 5j-D : marque dans la ligne (avant : note .options-note)
   });
 
   test('?vhs=1 ne force pas l\'effet sous mouvement réduit', async ({ page }) => {
@@ -471,7 +471,7 @@ test.describe('effet VHS', () => {
     const row = await vhsOption(page);
     await expect(vhsValue(row, 'off')).toHaveAttribute('aria-pressed', 'true');
     await expect(vhsValue(row, 'anime')).toBeDisabled();
-    await expect(row.locator('.options-note')).toHaveText('Imposé par l\'adresse');
+    await expect(row.locator('.options-mark')).toHaveText('imposé par l\'adresse'); // lot 5j-D : marque dans la ligne (avant : note .options-note)
     expect((await state(page)).vhs).toMatchObject({ enabled: false, on: false, layers: 0 });
   });
 
@@ -634,7 +634,7 @@ test.describe('panneau de pause avec l\'interrupteur, accessibilité, budget, co
     const row = await vhsOption(page); // lot 5j : avant, deux clics sur #btn-vhs ; après, l'option « Effet VHS » de l'écran Options, puis Retour
     await vhsValue(row, 'off').click();
     await vhsValue(row, 'anime').click();
-    await page.locator('#options-back').click();
+    await page.locator('#options-close').click();
     await page.getByRole('button', { name: 'Reprendre' }).click();
     expect(external).toEqual([]);
     expect(problems).toEqual([]);

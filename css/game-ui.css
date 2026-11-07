@@ -624,9 +624,16 @@
 }
 
 .options-choices {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 0.4em;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35em;
+}
+
+/* Lot 5j-E (retour du propriétaire) : boutons de l'écran Options moins larges (marges intérieures réduites, largeur du texte) ; hauteur 44 px gardée
+   (cible tactile minimale de l'interface). */
+.panel-options .options-choice,
+.panel-options .options-value {
+  padding: 0.2em 0.6em;
 }
 
 .options-scroll {
@@ -683,17 +690,43 @@
   padding: 0 0.35em;
   border: 1px solid var(--color-border);
   color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+/* Lot 5j-D : valeur en attente du rechargement : marque jaune (texte « au rechargement » : jamais la couleur seule). */
+.options-mark[data-state="pending"] {
+  border-color: var(--color-money);
+  color: var(--color-money);
+}
+
+/* Lot 5j-E (retour du propriétaire) : croix de fermeture en haut à droite (pause et Options), carré de 44 px, contour clair (os), icône seule
+   (nom accessible : aria-label). */
+.panel .panel-close {
+  flex: none;
+  width: var(--hud-target);
+  min-width: var(--hud-target);
+  padding: 0;
+  border-color: var(--color-text);
+}
+
+.panel-close svg {
+  width: 1.2em;
+  height: 1.2em;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.2;
+  stroke-linecap: square;
+}
+
+/* Pause : titre à gauche ; solde puis croix à droite. */
+.panel-pause .panel-head > .panel-line {
+  margin-left: auto;
 }
 
 .options-values {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.4em;
-}
-
-.options-note {
-  flex: 1 1 100%;
-  color: var(--color-text-muted);
+  gap: 0.35em;
 }
 
 .panel .options-choice[aria-pressed="true"],
@@ -741,12 +774,5 @@
 
   .options-choices {
     flex: 1 1 auto;
-  }
-}
-
-/* Écran étroit (375 px) : préréglages sur deux rangées si besoin. */
-@media (max-width: 420px) {
-  .options-choices {
-    grid-template-columns: repeat(3, 1fr);
   }
 }

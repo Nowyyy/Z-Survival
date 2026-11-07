@@ -1,7 +1,7 @@
 {
   "_provisoire": "Lot 5b : préréglages graphiques PROVISOIRES, à régler avec les rapports de ?perf=1 des appareils du propriétaire (iPhone, Android). Lot 5j : chaque préréglage est un vecteur complet d'options (une valeur par option) ; les valeurs de Faible, Moyen et Élevé sont exactement celles du lot 5b. eleve = rendu actuel du jeu, épaves comprises. Un paramètre explicite de l'adresse (?perso, ?sang, ?usure, ?detail, ?vhs, ?shadows, ?dpr) l'emporte sur le préréglage et sur Perso.",
   "_auto": "Auto (lot 5b-G) : baisse d'un cran entre deux manches si la médiane des images dépasse seuilMs OU si plus de irregulier.part des images dépassent irregulier.facteur × la cadence (10e centile des intervalles) sur les fenetreSecondes dernières secondes de jeu actif. Valeurs provisoires.",
-  "_options": "Lot 5j : options de l'écran Options (pause). id : identifiant (lettres et chiffres) ; section : une des sections (sections : id et texte, clé de fr.json du titre) ; group : live (appliquée à chaud) ou load (appliquée au rechargement) ; texte : clé de fr.json du libellé ; valeurs : id (valeur enregistrée), texte (clé du libellé), reglages (réglages du rendu fixés par cette valeur, chemins de la partie live ou load, voir _champs). Ajouter une option : Docs/ref/options-graphiques.md.",
+  "_options": "Lot 5j : options de l'écran Options (pause). id : identifiant (lettres et chiffres) ; section : une des sections (sections : id et texte, clé de fr.json du titre) ; group : live (appliquée à chaud) ou load (appliquée au rechargement) ; texte : clé de fr.json du libellé ; valeurs : id (valeur enregistrée), texte (clé du libellé), reglages (réglages du rendu fixés par cette valeur, chemins de la partie live ou load, voir _champs). Ajouter une option : Docs/ref/options-graphiques.md. Lot 5j-D (retour du propriétaire) : feux et fumée de l'hélicoptère en une seule option « Feux et fumées » (trois niveaux, mêmes réglages que les préréglages).",
   "_champs": "live : dprMax (plafond du rapport de pixels), ombres et ombreTaille (carte d'ombres, côté en pixels), vhs (off, statique, anime), brouillard (simple : scene.fog seul ; reduit : mur de brume sans nappes basses ; complet), feux.voitureFoyers (foyers de la voiture en flammes), feux.fumeeHelico (part des particules, 0 = coupée), feux.particules (part des particules des autres feux), feux.lueur (lueur au sol des autres feux), sang (reduit ou 1), cadavres (simultanés). load : personnages (A ou choix : table des choix, « riche »), anticrenelage, texturesFines (option fine de textures.json ; les textures gardent leur taille, 512 au plus), decor (reduit : sans le décor léger intérieur ; complet).",
   "schema": 2,
   "defaut": "auto",
@@ -40,13 +40,9 @@
       { "id": "complete", "texte": "game.options.v.complete", "reglages": { "brouillard": "complet" } }
     ] },
     { "id": "feux", "section": "carte", "group": "live", "texte": "game.options.feux", "valeurs": [
-      { "id": "reduits", "texte": "game.options.v.reduit", "reglages": { "feux.voitureFoyers": 1, "feux.particules": 0.5, "feux.lueur": false } },
-      { "id": "complets", "texte": "game.options.v.complet", "reglages": { "feux.voitureFoyers": 2, "feux.particules": 1, "feux.lueur": true } }
-    ] },
-    { "id": "fumee", "section": "carte", "group": "live", "texte": "game.options.fumee", "valeurs": [
-      { "id": "coupee", "texte": "game.options.v.coupee", "reglages": { "feux.fumeeHelico": 0 } },
-      { "id": "moitie", "texte": "game.options.v.moitie", "reglages": { "feux.fumeeHelico": 0.5 } },
-      { "id": "complete", "texte": "game.options.v.complete", "reglages": { "feux.fumeeHelico": 1 } }
+      { "id": "reduits", "texte": "game.options.v.reduits", "reglages": { "feux.voitureFoyers": 1, "feux.particules": 0.5, "feux.lueur": false, "feux.fumeeHelico": 0 } },
+      { "id": "moyens", "texte": "game.options.v.moyens", "reglages": { "feux.voitureFoyers": 2, "feux.particules": 1, "feux.lueur": true, "feux.fumeeHelico": 0.5 } },
+      { "id": "complets", "texte": "game.options.v.complets", "reglages": { "feux.voitureFoyers": 2, "feux.particules": 1, "feux.lueur": true, "feux.fumeeHelico": 1 } }
     ] },
     { "id": "personnages", "section": "personnages", "group": "load", "texte": "game.options.personnages", "valeurs": [
       { "id": "simples", "texte": "game.options.v.simple", "reglages": { "personnages": "A" } },
@@ -63,9 +59,9 @@
     ] }
   ],
   "presets": {
-    "faible": { "resolution": "basse", "anticrenelage": "non", "ombres": "aucune", "vhs": "off", "carte": "reduit", "textures": "simples", "brume": "simple", "feux": "reduits", "fumee": "coupee", "personnages": "simples", "sang": "reduit", "cadavres": "0" },
-    "moyen": { "resolution": "moyenne", "anticrenelage": "non", "ombres": "basses", "vhs": "statique", "carte": "complet", "textures": "fines", "brume": "reduite", "feux": "complets", "fumee": "moitie", "personnages": "simples", "sang": "reduit", "cadavres": "1" },
-    "eleve": { "resolution": "haute", "anticrenelage": "oui", "ombres": "hautes", "vhs": "anime", "carte": "complet", "textures": "fines", "brume": "complete", "feux": "complets", "fumee": "complete", "personnages": "riches", "sang": "complet", "cadavres": "2" }
+    "faible": { "resolution": "basse", "anticrenelage": "non", "ombres": "aucune", "vhs": "off", "carte": "reduit", "textures": "simples", "brume": "simple", "feux": "reduits", "personnages": "simples", "sang": "reduit", "cadavres": "0" },
+    "moyen": { "resolution": "moyenne", "anticrenelage": "non", "ombres": "basses", "vhs": "statique", "carte": "complet", "textures": "fines", "brume": "reduite", "feux": "moyens", "personnages": "simples", "sang": "reduit", "cadavres": "1" },
+    "eleve": { "resolution": "haute", "anticrenelage": "oui", "ombres": "hautes", "vhs": "anime", "carte": "complet", "textures": "fines", "brume": "complete", "feux": "complets", "personnages": "riches", "sang": "complet", "cadavres": "2" }
   },
   "auto": { "initial": { "grossier": "moyen", "autre": "eleve" }, "seuilMs": 22, "fenetreSecondes": 10, "irregulier": { "part": 0.1, "facteur": 1.5 }, "baisse": "entre-manches", "remonte": false }
 }
