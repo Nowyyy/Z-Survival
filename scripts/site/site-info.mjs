@@ -12,6 +12,9 @@
 export const SITE_INFO_SCHEMA = 1;
 export const MAX_EVOLUTIONS = 20;
 export const MAX_TITLE = 120;
+// Lot 5i : titre d'une version (recette, precedentes) jusqu'à 200 caractères : la « description » du fichier des noms (scripts/site/noms.mjs,
+// MAX_DESCRIPTION) n'est plus tronquée (avant : 120, comme le title de versions.json). Les évolutions gardent MAX_TITLE (120).
+export const MAX_VERSION_TITLE = 200;
 export const MAX_TEXT = 300;
 export const DEV_ENTRY = '../dev/jeu.html';
 export const VERSION_RE = /^v\d+\.\d+$/;
@@ -85,7 +88,7 @@ export function readPrevious(versions, recetteId) {
     return {
       id: v.id,
       label: labelFor(v),
-      title: cleanText(v.title, MAX_TITLE),
+      title: cleanText(v.title, MAX_VERSION_TITLE),
       note: available ? '' : cleanText(v.note, MAX_TEXT) || 'Version non construite.',
       entry: available ? `../${v.id}/${v.entry}` : null,
       status: available ? 'archive' : 'indisponible',
@@ -102,7 +105,7 @@ export function buildSiteInfo({ versions, dev = {}, changelog = null, genere }) 
     schema: SITE_INFO_SCHEMA,
     genere,
     recette: current
-      ? { id: current.id, label: labelFor(current), title: cleanText(current.title, MAX_TITLE), date: validDay(current.date) ? current.date : '', ref: typeof current.ref === 'string' ? current.ref : '', entry: current.entry }
+      ? { id: current.id, label: labelFor(current), title: cleanText(current.title, MAX_VERSION_TITLE), date: validDay(current.date) ? current.date : '', ref: typeof current.ref === 'string' ? current.ref : '', entry: current.entry }
       : null,
     dev: { present, sha: present && SHA_RE.test(dev.sha ?? '') ? dev.sha : '', date: present && UTC_RE.test(dev.date ?? '') ? dev.date : '', entry: DEV_ENTRY },
     evolutions: present ? readEvolutions(changelog, ids) : [],
@@ -121,7 +124,7 @@ export function validateSiteInfo(info) {
   if (!isObject(r)) errors.push('recette : objet attendu');
   else {
     if (!ID_RE.test(r.id ?? '') || validLabel(r.label) === null) errors.push('recette : id ou label invalide');
-    if (!text(r.title, MAX_TITLE) || !r.title) errors.push('recette : title invalide');
+    if (!text(r.title, MAX_VERSION_TITLE) || !r.title) errors.push('recette : title invalide');
     if (!safeEntry(r.entry)) errors.push('recette : entry invalide');
     if (r.date !== '' && !validDay(r.date)) errors.push('recette : date invalide');
     if (!/^[0-9a-f]{40}$/.test(r.ref ?? '')) errors.push('recette : ref invalide');
@@ -139,7 +142,7 @@ export function validateSiteInfo(info) {
   if (!Array.isArray(info.precedentes)) errors.push('precedentes : liste attendue');
   else info.precedentes.forEach((p, i) => {
     const okEntry = p?.status === 'archive' ? typeof p.entry === 'string' && p.entry.startsWith(`../${p.id}/`) && safeEntry(p.entry.slice(3)) : p?.entry === null;
-    if (!isObject(p) || !ID_RE.test(p.id ?? '') || validLabel(p.label) === null || !STATUSES.includes(p.status) || !okEntry || !text(p.title, MAX_TITLE) || !text(p.note, MAX_TEXT)) errors.push(`precedentes[${i}] invalide`);
+    if (!isObject(p) || !ID_RE.test(p.id ?? '') || validLabel(p.label) === null || !STATUSES.includes(p.status) || !okEntry || !text(p.title, MAX_VERSION_TITLE) || !text(p.note, MAX_TEXT)) errors.push(`precedentes[${i}] invalide`);
   });
   return { ok: errors.length === 0, errors };
 }

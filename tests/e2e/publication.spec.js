@@ -9,6 +9,7 @@ import { test, expect, chromium } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { readFileSync } from 'node:fs';
 import { readEvolutions } from '../../scripts/site/site-info.mjs';
+import { DESCRIPTION_RECETTE_TEST } from '../../scripts/site/e2e-site.mjs';
 
 const SITE = 'http://127.0.0.1:4174';
 const FULL = `${SITE}/full/`;
@@ -28,6 +29,7 @@ async function avecEvolutionsFictives(page, base) {
   });
 }
 const VIEWPORTS = [{ width: 667, height: 375 }, { width: 1440, height: 900 }, { width: 375, height: 812 }];
+const VERSION_RECETTE = JSON.parse(readFileSync('versions.json', 'utf8')).versions.find((v) => v.status === 'actuelle');
 
 // Problèmes d'une page : erreurs et avertissements de console, erreurs de page, requêtes en échec ou ≥ 400, requêtes externes.
 // Les messages de performance du pilote graphique (« [.WebGL-…] GL Driver Message … GPU stall », rendu logiciel) ne sont pas des erreurs de la page.
@@ -54,6 +56,55 @@ async function openWithoutRefresh(page, url) {
 
 const overflow = (page) => page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
 const linkHeights = (page) => page.locator('a').evaluateAll((els) => els.filter((e) => e.offsetParent).map((e) => [e.textContent.trim(), e.getBoundingClientRect().height]));
+const pageScroll = (page) => page.evaluate(() => [document.documentElement.scrollHeight, innerHeight]);
+
+// Lot 5i : accueil retouché (option B), vérifié sur full/Recette/ déjà ouvert, aux quatre tailles (boucle ci-dessous à 667×375, 1440×900 et 375×812 ;
+// test à part à 1200×1300). Reprend les 5 assertions du test retiré « Recette/ : étiquette « Recette · Version V0.6 », titre, « Jouer » vers jeu.html »
+// (bandeau, titre, avis masqué, « Jouer » visible, href et adresse résolue). Renvoie la région « Toutes les versions ».
+async function verifierAccueilRetouche(page, viewport) {
+  await expect(page.locator('#version')).toHaveText('Recette');
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Z-Survival');
+  await expect(page.locator('#site-notice')).toBeHidden();
+  const play = page.getByRole('link', { name: 'Jouer - V0.6' });
+  await expect(play).toHaveText('Jouer - V0.6');
+  await expect(play).toBeInViewport();
+  await expect(play).toHaveAttribute('href', 'jeu.html');
+  expect(await play.evaluate((a) => a.href)).toBe(`${FULL}Recette/jeu.html`);
+  const playBox = await play.boundingBox();
+  expect(playBox.height).toBeGreaterThanOrEqual(44);
+  expect(playBox.x + playBox.width).toBeLessThanOrEqual(viewport.width);
+
+  const versions = page.getByRole('region', { name: 'Toutes les versions' });
+  await expect(page.getByRole('heading', { name: 'Toutes les versions', exact: true })).toBeVisible();
+  await expect(versions).toHaveAttribute('tabindex', '0');
+  await expect(page.getByRole('region', { name: 'Évolutions en cours de développement' })).toHaveAttribute('tabindex', '0');
+  const card = versions.locator('#current-card');
+  await expect(card.locator('.home-current-badge')).toHaveText('Version actuelle');
+  await expect(card.locator('#current-name')).toHaveText('V0.6');
+  await expect(card.locator('#current-text')).toHaveText(VERSION_RECETTE.title);
+  await expect(card.locator('a')).toHaveCount(0);
+  expect(await card.evaluate((el) => el.closest('a'))).toBeNull();
+  const subtitle = versions.getByRole('heading', { name: 'Versions précédentes', exact: true });
+  await expect(subtitle).toHaveText('Versions précédentes');
+  await expect(versions.locator('#previous-list .item-label')).toHaveText(['V0.5', 'V0.4', 'V0.3', 'V0.2', 'V0.1 : indisponible']);
+  const [cardBox, subtitleBox, listBox] = await Promise.all([card.boundingBox(), subtitle.boundingBox(), versions.locator('#previous-list').boundingBox()]);
+  expect(subtitleBox.y).toBeGreaterThanOrEqual(cardBox.y + cardBox.height - 1);
+  expect(listBox.y).toBeGreaterThanOrEqual(subtitleBox.y + subtitleBox.height - 1);
+  await versions.focus();
+  await expect(versions).toBeFocused();
+  if (viewport.width >= 640 && viewport.height >= 900) {
+    // Pleine hauteur : la page entière ne défile pas (1440×900, 1200×1300).
+    const [scroll, inner] = await pageScroll(page);
+    expect(scroll).toBeLessThanOrEqual(inner + 1);
+  }
+  if (viewport.width < 640) {
+    // Une colonne : la région des versions est sous celle des évolutions.
+    const [evolutionsBox, versionsBox] = await Promise.all([page.locator('#evolutions-region').boundingBox(), versions.boundingBox()]);
+    expect(versionsBox.y).toBeGreaterThan(evolutionsBox.y + evolutionsBox.height - 1);
+  }
+  expect(await overflow(page)).toBeLessThanOrEqual(0);
+  return versions;
+}
 
 for (const viewport of VIEWPORTS) {
   test.describe(`site publié ${viewport.width}×${viewport.height}`, () => {
@@ -83,19 +134,6 @@ for (const viewport of VIEWPORTS) {
       }
     });
 
-    // Lot 5f : V0.6 (avant : « Recette · Version V0.5 »).
-    test('Recette/ : étiquette « Recette · Version V0.6 », titre, « Jouer » vers jeu.html, qui se charge', async ({ page }) => {
-      await page.goto(`${FULL}Recette/`);
-      await expect(page.locator('#version')).toHaveText('Recette · Version V0.6');
-      await expect(page.getByRole('heading', { level: 1 })).toHaveText('Z-Survival');
-      await expect(page.locator('#site-notice')).toBeHidden();
-      const play = page.getByRole('link', { name: 'Jouer' });
-      await expect(play).toBeInViewport();
-      await expect(play).toHaveAttribute('href', 'jeu.html');
-      // Adresse résolue ; le chargement du jeu par ce lien est vérifié une fois, hors de la boucle (« Jouer » se charge).
-      expect(await play.evaluate((a) => a.href)).toBe(`${FULL}Recette/jeu.html`);
-    });
-
     test('« Dernier build de développement » (hash court et date) mène à dev/jeu.html, qui se charge ; aucun lien « Journal »', async ({ page }) => {
       await page.goto(`${FULL}Recette/`);
       await expect(page.getByRole('heading', { name: 'Développement', exact: true })).toBeVisible();
@@ -109,10 +147,11 @@ for (const viewport of VIEWPORTS) {
 
     // Lot 5f : V0.5 → V0.2 en liens (avant : V0.4 → V0.2) ; site-info.json de full/ sans évolution : « Aucune évolution depuis la version Recette. »
     // (avant : premier titre lu dans site-info.json, vérifié maintenant par le test suivant sur des évolutions fictives).
-    test('évolutions (gauche) et versions précédentes (droite) : régions focusables nommées ; aucune évolution (V0.6 publiée) ; V0.5 → V0.2 en liens, V0.1 indisponible non cliquable', async ({ page }) => {
+    // Lot 5i : la région de droite s'appelle « Toutes les versions » (avant : « Versions précédentes ») ; la carte de la version actuelle n'a pas de lien.
+    test('bandeau « Recette », « Jouer - V0.6 », carte de la version actuelle sans lien puis « Versions précédentes » ; évolutions (gauche) et toutes les versions (droite) : régions focusables nommées ; aucune évolution (V0.6 publiée) ; V0.5 → V0.2 en liens, V0.1 indisponible non cliquable', async ({ page }) => {
       await page.goto(`${FULL}Recette/`);
       const evolutions = page.getByRole('region', { name: 'Évolutions en cours de développement' });
-      const previous = page.getByRole('region', { name: 'Versions précédentes' });
+      const previous = await verifierAccueilRetouche(page, viewport);
       for (const region of [evolutions, previous]) await expect(region).toHaveAttribute('tabindex', '0');
       const info = await (await page.request.get(`${FULL}Recette/site-info.json`)).json();
       expect(info.evolutions).toEqual([]);
@@ -153,13 +192,18 @@ for (const viewport of VIEWPORTS) {
       const fullHeight = await page.evaluate(() => document.documentElement.scrollHeight);
       await page.goto(`${MANY}Recette/`);
       await expect(page.locator('#previous-list li')).toHaveCount(12);
-      const region = page.getByRole('region', { name: 'Versions précédentes' });
+      const region = page.getByRole('region', { name: 'Toutes les versions' }); // lot 5i : avant « Versions précédentes »
       const [scroll, client] = await region.evaluate((el) => [el.scrollHeight, el.clientHeight]);
       expect(scroll).toBeGreaterThan(client);
       expect(await page.evaluate(() => document.documentElement.scrollHeight)).toBeLessThanOrEqual(fullHeight);
       expect(await page.evaluate(() => document.documentElement.scrollHeight)).toBeLessThanOrEqual(viewport.height === 375 ? 375 * 1.5 : Math.max(viewport.height, 960));
       await expect(page.locator('#evolutions-none')).toHaveText('Aucune évolution depuis la version Recette.');
+      if (viewport.width >= 640 && viewport.height >= 900) { // lot 5i : pleine hauteur, la page entière ne défile pas
+        const [pageHeight, inner] = await pageScroll(page);
+        expect(pageHeight).toBeLessThanOrEqual(inner + 1);
+      }
       await region.focus();
+      await expect(region).toBeFocused(); // lot 5i
       await page.keyboard.press('End');
       await expect.poll(() => region.evaluate((el) => el.scrollTop)).toBeGreaterThan(0);
     });
@@ -216,6 +260,37 @@ for (const viewport of VIEWPORTS) {
   });
 }
 
+// Lot 5i : 1200×1300 (grand écran haut) : accueil retouché, pleine hauteur (régions étirées jusqu'au pied), axe et cibles de 44 px ; many/ : la page ne
+// défile pas, la région reste focusable (ses 12 versions précédentes y tiennent : rien à faire défiler).
+test.describe('accueil retouché 1200×1300', () => {
+  test.use({ viewport: { width: 1200, height: 1300 } });
+
+  test('full/ : bandeau, « Jouer - V0.6 », carte, versions précédentes ; régions des versions et des évolutions à moins de 160 px du bas ; page sans défilement ; axe, 44 px', async ({ page }) => {
+    const { problems, external } = watch(page);
+    await page.goto(`${FULL}Recette/`);
+    await verifierAccueilRetouche(page, { width: 1200, height: 1300 });
+    for (const id of ['versions-region', 'evolutions-region']) {
+      await expect.poll(() => page.locator(`#${id}`).evaluate((el) => innerHeight - el.getBoundingClientRect().bottom), id).toBeLessThan(160);
+    }
+    await page.waitForLoadState('networkidle');
+    expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+    for (const [label, h] of await linkHeights(page)) expect(h, label).toBeGreaterThanOrEqual(44);
+    expect(external).toEqual([]);
+    expect(problems).toEqual([]);
+  });
+
+  test('many/ : 13 versions, page sans défilement, région « Toutes les versions » focusable', async ({ page }) => {
+    await page.goto(`${MANY}Recette/`);
+    await expect(page.locator('#previous-list li')).toHaveCount(12);
+    await expect(page.locator('#current-name')).toHaveText('V0.13');
+    const [pageHeight, inner] = await pageScroll(page);
+    expect(pageHeight).toBeLessThanOrEqual(inner + 1);
+    const region = page.getByRole('region', { name: 'Toutes les versions' });
+    await region.focus();
+    await expect(region).toBeFocused();
+  });
+});
+
 // Lot 5h : fichier des noms appliqué par l'assembleur (site noms/, fichier fictif NOMS_TEST de scripts/site/e2e-site.mjs).
 for (const viewport of VIEWPORTS.slice(0, 2)) {
   test.describe(`fichier des noms ${viewport.width}×${viewport.height}`, () => {
@@ -225,17 +300,22 @@ for (const viewport of VIEWPORTS.slice(0, 2)) {
     // lot 5g absent (4 assertions sur les évolutions). Après : Recette V0.6 non renommée (absente du fichier), V0.5 et V0.4 renommées dans les
     // précédentes, aucune évolution (site-info.json de noms/ : liste vide, lots renommés ou masqués absents) ; le renommage et le masquage d'un lot
     // restent vérifiés par publication.test.js (« le fichier l'emporte… afficher: non retire le lot »).
-    test('noms/ : Recette V0.6 (absente du fichier) ; V0.5 et V0.4 renommées dans les versions précédentes ; aucune évolution ; console propre, axe sans violation', async ({ page }) => {
+    // Lot 5i : le fichier fictif donne à la Recette (V0.6) une description de 200 caractères, sans nom : la carte l'affiche en entier, nom V0.6 inchangé.
+    test('noms/ : Recette V0.6 (nom absent du fichier), description de 200 caractères en entier sur la carte ; V0.5 et V0.4 renommées dans les versions précédentes ; aucune évolution ; console propre, axe sans violation', async ({ page }) => {
       const { problems, external } = watch(page);
       const noms = await (await page.request.get(`${NOMS}Recette/site-info.json`)).json();
       expect(noms.evolutions).toEqual([]);
       expect(noms.precedentes.slice(0, 2).map((p) => [p.id, p.label, p.title])).toEqual([['v0.5', 'V0.5 (nom de test)', 'Description de test de la Recette (fictive)'], ['v0.4', 'Quatrième version (test)', 'Description de test de la V0.4 : fictive']]);
+      expect(noms.recette).toMatchObject({ label: 'V0.6', title: DESCRIPTION_RECETTE_TEST });
       await page.goto(`${NOMS}Recette/`);
-      await expect(page.locator('#version')).toHaveText('Recette · Version V0.6');
+      await expect(page.locator('#version')).toHaveText('Recette'); // lot 5i : avant « Recette · Version V0.6 »
+      await expect(page.locator('#play')).toHaveText('Jouer - V0.6');
+      await expect(page.locator('#current-name')).toHaveText('V0.6');
+      await expect(page.locator('#current-text')).toHaveText(DESCRIPTION_RECETTE_TEST);
       const evolutions = page.getByRole('region', { name: 'Évolutions en cours de développement' });
       await expect(evolutions.locator('.evolution')).toHaveCount(0);
       await expect(page.locator('#evolutions-none')).toHaveText('Aucune évolution depuis la version Recette.');
-      const previous = page.getByRole('region', { name: 'Versions précédentes' }).locator('a');
+      const previous = page.getByRole('region', { name: 'Toutes les versions' }).locator('a'); // lot 5i : avant « Versions précédentes »
       await expect(previous.first().locator('.item-label')).toHaveText('V0.5 (nom de test)');
       await expect(previous.first().locator('.meta')).toHaveText('Description de test de la Recette (fictive)');
       await expect(previous.first()).toHaveAttribute('href', '../v0.5/jeu.html');
@@ -272,7 +352,8 @@ test('/recette/ (minuscules) et /RECETTE/ finissent sur /Recette/ avec l\'accuei
   for (const path of ['recette/', 'RECETTE/']) {
     await page.goto(`${FULL}${path}`);
     await expect(page, path).toHaveURL(`${FULL}Recette/`);
-    await expect(page.locator('#version'), path).toHaveText('Recette · Version V0.6'); // lot 5f : avant V0.5
+    await expect(page.locator('#version'), path).toHaveText('Recette'); // lot 5i : avant « Recette · Version V0.6 » (lot 5f : avant V0.5)
+    await expect(page.locator('#play'), path).toHaveText('Jouer - V0.6');
   }
   await page.waitForLoadState('networkidle');
   expect(external).toEqual([]);
@@ -426,11 +507,12 @@ test('site-info.json invalide : message sobre, liens statiques (jeu.html, ../dev
   await page.route(`${FULL}Recette/site-info.json`, (route) => route.fulfill({ status: 200, contentType: 'application/json', body: '{ invalide' }));
   await page.goto(`${FULL}Recette/`);
   await expect(page.locator('#site-notice')).toHaveText('Informations du site indisponibles : les liens directs restent utilisables.');
-  await expect(page.locator('#version')).toHaveText('Recette · version inconnue');
-  await expect(page.getByRole('link', { name: 'Jouer' })).toHaveAttribute('href', 'jeu.html');
+  // Lot 5i : bandeau « Recette » seul (avant : « Recette · version inconnue ») ; sans version connue, le bouton dit « Jouer » ; #versions-section (avant : #previous-section).
+  await expect(page.locator('#version')).toHaveText('Recette');
+  await expect(page.getByRole('link', { name: 'Jouer', exact: true })).toHaveAttribute('href', 'jeu.html');
   await expect(page.getByRole('link', { name: 'Dernier build de développement' })).toHaveAttribute('href', '../dev/jeu.html');
   await expect(page.locator('#evolutions-section')).toBeHidden();
-  await expect(page.locator('#previous-section')).toBeHidden();
+  await expect(page.locator('#versions-section')).toBeHidden();
   await page.waitForLoadState('networkidle');
   expect(problems).toEqual([]);
   expect(external).toEqual([]);
@@ -444,7 +526,7 @@ test('site-info.json invalide : message sobre, liens statiques (jeu.html, ../dev
   expect(errors).toEqual([]);
 });
 
-test('clavier : Tab atteint « Jouer », le dernier build, la région des évolutions et celle des versions précédentes, avec un focus visible', async ({ page }) => {
+test('clavier : Tab atteint « Jouer », le dernier build, la région des évolutions et celle de toutes les versions, avec un focus visible', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto(`${FULL}Recette/`);
   await expect(page.locator('#app')).toBeVisible();
@@ -454,7 +536,7 @@ test('clavier : Tab atteint « Jouer », le dernier build, la région des évolu
     reached.push(await page.evaluate(() => [document.activeElement.id, getComputedStyle(document.activeElement).outlineStyle]));
   }
   const ids = reached.map(([id]) => id);
-  for (const id of ['play', 'dev-link', 'evolutions-region', 'previous-region']) expect(ids, id).toContain(id);
+  for (const id of ['play', 'dev-link', 'evolutions-region', 'versions-region']) expect(ids, id).toContain(id); // lot 5i : avant previous-region
   for (const [id, outline] of reached.filter(([id]) => id)) expect(outline, id).not.toBe('none');
 });
 
