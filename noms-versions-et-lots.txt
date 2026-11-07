@@ -17,23 +17,23 @@
 
 [v0.1]
 nom: V0.1
-description: Cœur du jeu en Phaser (remplacé ensuite par Three.js)
+description: Première version du jeu en en Phaser, avec les fonctionnalités de base.
 
 [v0.2]
 nom: V0.2
-description: Jeu en Three.js : monde, textures, personnages, sons
+description: Switch en Three.js : monde, textures, personnages, sons
 
 [v0.3]
 nom: V0.3
-description: Vagues, allures et types de zombies, cône de tir, statistiques, animation de manche, effet VHS
+description: Ajouts des vagues, des différents types de zombies, du cône de tir, des statistiques, des animation de manche, de l'effet VHS.
 
 [v0.4]
 nom: V0.4
-description: Fenêtres à planches, carte à deux étages, escaliers, portes qui s'ouvrent par manche
+description: Ajout des fenêtres à planches, de la première carte du jeu avec système d'étage et de pièces qui se déverrouillent
 
 [v0.5]
 nom: V0.5
-description: Argent et sauvegarde, refontes (carte, sons, interface, personnages, sang)
+description: Ajout d'une V1 du système d'argent et de sauvegarde, refonte entière (carte, sons, interface, personnages, sang)
 
 # --- Version en préparation (brouillon) ---
 
