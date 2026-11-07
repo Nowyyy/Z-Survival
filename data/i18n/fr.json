@@ -38,6 +38,7 @@
   "game.pause.title": "Pause",
   "game.pause.resume": "Reprendre",
   "game.pause.fullscreen": "Plein écran",
+  "game.pause.fullscreenExit": "Quitter le plein écran",
   "game.pause.restart": "Recommencer",
   "game.pause.options": "Options",
   "game.sound.on": "Son : activé",

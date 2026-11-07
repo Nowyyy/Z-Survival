@@ -488,7 +488,7 @@
   font-weight: var(--font-weight-bold);
 }
 
-/* Boutons sur deux colonnes : Reprendre, Recommencer, Quitter | Son, Options (lot 5j, à la place d'Effet VHS), Plein écran (retour du propriétaire) ; fin : Rejouer | menu. */
+/* Boutons sur deux colonnes : Reprendre, Recommencer | Options, Quitter (lot 5j-G ; Plein écran et Son : icônes de la tête) ; fin : Rejouer | menu. */
 .panel-actions {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -503,15 +503,13 @@
   grid-area: 2 / 1;
 }
 
-#btn-quit {
-  grid-area: 3 / 1;
-}
-
 #btn-options {
   grid-area: 1 / 2;
 }
 
-#btn-fullscreen {
+/* Lot 5j-G (retour du propriétaire) : Quitter sous Options : 2 × 2 boutons (Reprendre, Options | Recommencer, Quitter) ; Plein écran est une icône
+   de la tête, à gauche de celle du son. */
+#btn-quit {
   grid-area: 2 / 2;
 }
 
@@ -729,9 +727,36 @@
   display: none;
 }
 
+/* Plein écran : coins vers l'extérieur ; vers l'intérieur une fois en plein écran (lot 5j-G). */
+.panel-fullscreen[data-active="true"] .fs-enter,
+.panel-fullscreen[data-active="false"] .fs-exit {
+  display: none;
+}
+
+.panel-head > .panel-icon:not([hidden]) + .panel-icon {
+  margin-left: -0.5em;
+}
+
 /* Pause : titre à gauche ; solde puis icône du son à droite. */
 .panel-pause .panel-head > .panel-line {
   margin-left: auto;
+}
+
+/* Écran étroit (lot 5j-G) : les icônes restent en haut à droite, sur la ligne du titre ; le solde passe sur la ligne suivante. */
+@media (max-width: 480px) {
+  .panel-pause .panel-head > .panel-line {
+    order: 1;
+    flex-basis: 100%;
+    margin-left: 0;
+  }
+
+  .panel-pause .panel-head > .panel-icon:not([hidden]) {
+    margin-left: auto;
+  }
+
+  .panel-pause .panel-head > .panel-icon:not([hidden]) + .panel-icon {
+    margin-left: -0.5em;
+  }
 }
 
 .options-values {
