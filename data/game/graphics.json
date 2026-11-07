@@ -1,21 +1,71 @@
 {
-  "_provisoire": "Lot 5b : préréglages graphiques PROVISOIRES, à régler avec les rapports de ?perf=1 des appareils du propriétaire (iPhone, Android). live : modifiable à chaud (Auto les baisse entre deux manches) ; load : appliqué au chargement (changer recharge la page). eleve = rendu actuel du jeu, épaves comprises (aucun changement). Un paramètre explicite de l'adresse (?perso, ?sang, ?usure, ?detail, ?vhs, ?shadows, ?dpr) l'emporte sur le préréglage.",
+  "_provisoire": "Lot 5b : préréglages graphiques PROVISOIRES, à régler avec les rapports de ?perf=1 des appareils du propriétaire (iPhone, Android). Lot 5j : chaque préréglage est un vecteur complet d'options (une valeur par option) ; les valeurs de Faible, Moyen et Élevé sont exactement celles du lot 5b. eleve = rendu actuel du jeu, épaves comprises. Un paramètre explicite de l'adresse (?perso, ?sang, ?usure, ?detail, ?vhs, ?shadows, ?dpr) l'emporte sur le préréglage et sur Perso.",
   "_auto": "Auto (lot 5b-G) : baisse d'un cran entre deux manches si la médiane des images dépasse seuilMs OU si plus de irregulier.part des images dépassent irregulier.facteur × la cadence (10e centile des intervalles) sur les fenetreSecondes dernières secondes de jeu actif. Valeurs provisoires.",
-  "_champs": "dprMax : plafond du rapport de pixels ; ombres, ombreTaille : carte d'ombres (côté en pixels) ; vhs : off, statique (une image, sans grain animé), anime ; brouillard : simple (scene.fog seul), reduit (mur de brume sans nappes basses), complet ; feux : voitureFoyers (foyers de la voiture en flammes), fumeeHelico (part des particules, 0 = coupée), particules (part des particules des autres feux), lueur (lueur au sol des autres feux) ; sang : reduit ou 1 ; cadavres : simultanés. personnages : A ou choix (table des choix : « riche ») ; anticrenelage ; texturesFines (option fine de textures.json) ; les textures gardent leur taille (512 au plus, comme aujourd'hui, pour les trois) ; decor : reduit (sans le décor léger intérieur) ou complet.",
-  "schema": 1,
+  "_options": "Lot 5j : options de l'écran Options (pause). id : identifiant (lettres et chiffres) ; section : une des sections ; group : live (appliquée à chaud) ou load (appliquée au rechargement) ; texte : clé de fr.json du libellé ; valeurs : id (valeur enregistrée), texte (clé du libellé), reglages (réglages du rendu fixés par cette valeur, chemins de la partie live ou load, voir _champs). Ajouter une option : Docs/ref/options-graphiques.md.",
+  "_champs": "live : dprMax (plafond du rapport de pixels), ombres et ombreTaille (carte d'ombres, côté en pixels), vhs (off, statique, anime), brouillard (simple : scene.fog seul ; reduit : mur de brume sans nappes basses ; complet), feux.voitureFoyers (foyers de la voiture en flammes), feux.fumeeHelico (part des particules, 0 = coupée), feux.particules (part des particules des autres feux), feux.lueur (lueur au sol des autres feux), sang (reduit ou 1), cadavres (simultanés). load : personnages (A ou choix : table des choix, « riche »), anticrenelage, texturesFines (option fine de textures.json ; les textures gardent leur taille, 512 au plus), decor (reduit : sans le décor léger intérieur ; complet).",
+  "schema": 2,
+  "defaut": "auto",
+  "sections": ["image", "carte", "personnages"],
+  "options": [
+    { "id": "resolution", "section": "image", "group": "live", "texte": "game.options.resolution", "valeurs": [
+      { "id": "basse", "texte": "game.options.v.basse", "reglages": { "dprMax": 1 } },
+      { "id": "moyenne", "texte": "game.options.v.moyenne", "reglages": { "dprMax": 1.5 } },
+      { "id": "haute", "texte": "game.options.v.haute", "reglages": { "dprMax": 2 } }
+    ] },
+    { "id": "anticrenelage", "section": "image", "group": "load", "texte": "game.options.anticrenelage", "valeurs": [
+      { "id": "non", "texte": "game.options.v.coupe", "reglages": { "anticrenelage": false } },
+      { "id": "oui", "texte": "game.options.v.active", "reglages": { "anticrenelage": true } }
+    ] },
+    { "id": "ombres", "section": "image", "group": "live", "texte": "game.options.ombres", "valeurs": [
+      { "id": "aucune", "texte": "game.options.v.aucune", "reglages": { "ombres": false, "ombreTaille": 512 } },
+      { "id": "basses", "texte": "game.options.v.basse", "reglages": { "ombres": true, "ombreTaille": 512 } },
+      { "id": "hautes", "texte": "game.options.v.haute", "reglages": { "ombres": true, "ombreTaille": 1024 } }
+    ] },
+    { "id": "vhs", "section": "image", "group": "live", "texte": "game.vhs.label", "valeurs": [
+      { "id": "off", "texte": "game.options.v.coupe", "reglages": { "vhs": "off" } },
+      { "id": "statique", "texte": "game.options.v.statique", "reglages": { "vhs": "statique" } },
+      { "id": "anime", "texte": "game.options.v.anime", "reglages": { "vhs": "anime" } }
+    ] },
+    { "id": "carte", "section": "carte", "group": "load", "texte": "game.options.carte", "valeurs": [
+      { "id": "reduit", "texte": "game.options.v.reduit", "reglages": { "decor": "reduit" } },
+      { "id": "complet", "texte": "game.options.v.complet", "reglages": { "decor": "complet" } }
+    ] },
+    { "id": "textures", "section": "carte", "group": "load", "texte": "game.options.textures", "valeurs": [
+      { "id": "simples", "texte": "game.options.v.simple", "reglages": { "texturesFines": false } },
+      { "id": "fines", "texte": "game.options.v.fin", "reglages": { "texturesFines": true } }
+    ] },
+    { "id": "brume", "section": "carte", "group": "live", "texte": "game.options.brume", "valeurs": [
+      { "id": "simple", "texte": "game.options.v.simple", "reglages": { "brouillard": "simple" } },
+      { "id": "reduite", "texte": "game.options.v.reduite", "reglages": { "brouillard": "reduit" } },
+      { "id": "complete", "texte": "game.options.v.complete", "reglages": { "brouillard": "complet" } }
+    ] },
+    { "id": "feux", "section": "carte", "group": "live", "texte": "game.options.feux", "valeurs": [
+      { "id": "reduits", "texte": "game.options.v.reduit", "reglages": { "feux.voitureFoyers": 1, "feux.particules": 0.5, "feux.lueur": false } },
+      { "id": "complets", "texte": "game.options.v.complet", "reglages": { "feux.voitureFoyers": 2, "feux.particules": 1, "feux.lueur": true } }
+    ] },
+    { "id": "fumee", "section": "carte", "group": "live", "texte": "game.options.fumee", "valeurs": [
+      { "id": "coupee", "texte": "game.options.v.coupee", "reglages": { "feux.fumeeHelico": 0 } },
+      { "id": "moitie", "texte": "game.options.v.moitie", "reglages": { "feux.fumeeHelico": 0.5 } },
+      { "id": "complete", "texte": "game.options.v.complete", "reglages": { "feux.fumeeHelico": 1 } }
+    ] },
+    { "id": "personnages", "section": "personnages", "group": "load", "texte": "game.options.personnages", "valeurs": [
+      { "id": "simples", "texte": "game.options.v.simple", "reglages": { "personnages": "A" } },
+      { "id": "riches", "texte": "game.options.v.riche", "reglages": { "personnages": "choix" } }
+    ] },
+    { "id": "sang", "section": "personnages", "group": "live", "texte": "game.options.sang", "valeurs": [
+      { "id": "reduit", "texte": "game.options.v.reduit", "reglages": { "sang": "reduit" } },
+      { "id": "complet", "texte": "game.options.v.complet", "reglages": { "sang": "1" } }
+    ] },
+    { "id": "cadavres", "section": "personnages", "group": "live", "texte": "game.options.cadavres", "valeurs": [
+      { "id": "0", "texte": "game.options.v.aucun", "reglages": { "cadavres": 0 } },
+      { "id": "1", "texte": "game.options.v.un", "reglages": { "cadavres": 1 } },
+      { "id": "2", "texte": "game.options.v.deux", "reglages": { "cadavres": 2 } }
+    ] }
+  ],
   "presets": {
-    "faible": {
-      "live": { "dprMax": 1, "ombres": false, "ombreTaille": 512, "vhs": "off", "brouillard": "simple", "feux": { "voitureFoyers": 1, "fumeeHelico": 0, "particules": 0.5, "lueur": false }, "sang": "reduit", "cadavres": 0 },
-      "load": { "personnages": "A", "anticrenelage": false, "texturesFines": false, "decor": "reduit" }
-    },
-    "moyen": {
-      "live": { "dprMax": 1.5, "ombres": true, "ombreTaille": 512, "vhs": "statique", "brouillard": "reduit", "feux": { "voitureFoyers": 2, "fumeeHelico": 0.5, "particules": 1, "lueur": true }, "sang": "reduit", "cadavres": 1 },
-      "load": { "personnages": "A", "anticrenelage": false, "texturesFines": true, "decor": "complet" }
-    },
-    "eleve": {
-      "live": { "dprMax": 2, "ombres": true, "ombreTaille": 1024, "vhs": "anime", "brouillard": "complet", "feux": { "voitureFoyers": 2, "fumeeHelico": 1, "particules": 1, "lueur": true }, "sang": "1", "cadavres": 2 },
-      "load": { "personnages": "choix", "anticrenelage": true, "texturesFines": true, "decor": "complet" }
-    }
+    "faible": { "resolution": "basse", "anticrenelage": "non", "ombres": "aucune", "vhs": "off", "carte": "reduit", "textures": "simples", "brume": "simple", "feux": "reduits", "fumee": "coupee", "personnages": "simples", "sang": "reduit", "cadavres": "0" },
+    "moyen": { "resolution": "moyenne", "anticrenelage": "non", "ombres": "basses", "vhs": "statique", "carte": "complet", "textures": "fines", "brume": "reduite", "feux": "complets", "fumee": "moitie", "personnages": "simples", "sang": "reduit", "cadavres": "1" },
+    "eleve": { "resolution": "haute", "anticrenelage": "oui", "ombres": "hautes", "vhs": "anime", "carte": "complet", "textures": "fines", "brume": "complete", "feux": "complets", "fumee": "complete", "personnages": "riches", "sang": "complet", "cadavres": "2" }
   },
   "auto": { "initial": { "grossier": "moyen", "autre": "eleve" }, "seuilMs": 22, "fenetreSecondes": 10, "irregulier": { "part": 0.1, "facteur": 1.5 }, "baisse": "entre-manches", "remonte": false }
 }

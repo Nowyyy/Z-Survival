@@ -793,10 +793,10 @@
     },
     {
       "id": "graphismes",
-      "description": "Fluidité et préréglages graphiques (lot 5b) : outil de mesure ?perf=1 (profileur, panneau, rapport), plafond ?cap=, script de comparaison ; préréglages Faible, Moyen, Élevé, Auto (graphics.json, choix, application à chaud, préférence de l'appareil zs.device.v1).",
-      "sources": ["js/core/perf-stats.js", "js/game/profiler.js", "js/game/perf-panel.js", "js/game/frame-cap.js", "scripts/perf/**", "js/core/graphics.js", "js/game/graphics-boot.js", "js/game/graphics-apply.js", "data/game/graphics.json"],
+      "description": "Fluidité et préréglages graphiques (lot 5b) : outil de mesure ?perf=1 (profileur, panneau, rapport), plafond ?cap=, script de comparaison ; préréglages Faible, Moyen, Élevé, Auto (graphics.json, choix, application à chaud, préférence de l'appareil zs.device.v1) ; lot 5j : options séparées, Perso, écran Options de la pause (options-menu.js), zs.device.v1 schéma 2.",
+      "sources": ["js/core/perf-stats.js", "js/game/profiler.js", "js/game/perf-panel.js", "js/game/frame-cap.js", "scripts/perf/**", "js/core/graphics.js", "js/game/graphics-boot.js", "js/game/graphics-apply.js", "data/game/graphics.json", "js/save/device-settings.js"],
       "dependances": ["economie"],
-      "vitest": ["tests/unit/graphics.test.js", "tests/unit/perf-stats.test.js"],
+      "vitest": ["tests/unit/graphics.test.js", "tests/unit/graphics-options.test.js", "tests/unit/perf-stats.test.js"],
       "e2e": ["tests/e2e/graphismes.spec.js", "tests/e2e/perf.spec.js"],
       "complet": []
     },
