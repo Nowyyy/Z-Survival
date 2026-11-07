@@ -29,7 +29,8 @@ const AVANT_7130DC7 = {
 
 // Lot 5k : deux réglages « live » de plus (lampes, lumieres) ; les autres réglages restent ceux de AVANT_7130DC7. ELEVE (repli, rendu d'avant) garde
 // les lampes « off » : le préréglage Élevé choisit l'éclairage (décision du lot 5k), le rendu d'avant reste celui de « off ».
-const LOT_5K = { faible: { lampes: 'off', lumieres: 2 }, moyen: { lampes: 'off', lumieres: 2 }, // decor mesuré au-delà de +2 % de tâche (U4 : +5,7 %) : off eleve: { lampes: 'eclairage', lumieres: 4 } };
+// Moyen : off (decor mesuré au-delà de +2 % de tâche, U4 : +5,7 %).
+const LOT_5K = { faible: { lampes: 'off', lumieres: 2 }, moyen: { lampes: 'off', lumieres: 2 }, eleve: { lampes: 'eclairage', lumieres: 4 } };
 const sans5k = (live) => {
   const { lampes, lumieres, ...rest } = live;
   return { rest, lamps: { lampes, lumieres } };
