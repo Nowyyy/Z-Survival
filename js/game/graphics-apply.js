@@ -1,8 +1,10 @@
-// Préréglages graphiques en jeu (lot 5b). Les réglages « load » (variante des personnages, anticrénelage, textures fines, décor léger) sont appliqués au
-// chargement (main.js, persos-loader.js, game.js) ; les réglages « live » (rapport de pixels, ombres, effet VHS, brume, feux et fumées, sang et cadavres)
-// le sont ici : au démarrage (Élevé : aucun changement) et, en Auto, quand il faut baisser d'un cran entre deux manches (temps d'image médian sur les
-// 10 dernières secondes de jeu actif au-delà de 22 ms). Un paramètre explicite de l'adresse n'est jamais remplacé. Aucune logique du jeu n'est touchée.
-import { autoDecision, irregularShare, medianOf, settingsFor } from '../core/graphics.js';
+// Préréglages graphiques en jeu (lot 5b ; options au lot 5j). Les réglages « load » (variante des personnages, anticrénelage, textures fines, décor
+// léger) sont appliqués au chargement (main.js, persos-loader.js, game.js) ; les réglages « live » (rapport de pixels, ombres, effet VHS, brume, feux et
+// fumées, sang et cadavres) le sont ici : au démarrage (Élevé : aucun changement), en Auto quand il faut baisser d'un cran entre deux manches (temps
+// d'image médian sur les 10 dernières secondes de jeu actif au-delà de 22 ms) et, depuis le lot 5j, à chaque changement de l'écran Options (préréglage
+// ou option seule : passage à Perso). Une option « load » changée est enregistrée et attend le rechargement (pending) ; rien ne recharge sans le
+// bouton « Recharger maintenant ». Un paramètre explicite de l'adresse n'est jamais remplacé. Aucune logique du jeu n'est touchée.
+import { autoDecision, choosePreset, effectiveOptions, irregularShare, medianOf, optionsState, pendingReload, setOption } from '../core/graphics.js';
 
 const SAMPLES = 1200; // intervalles gardés (jeu actif)
 
@@ -10,8 +12,15 @@ const SAMPLES = 1200; // intervalles gardés (jeu actif)
 export function createGraphicsController(boot, { vhs = null, announce = () => {}, reload = null, dict = {} } = {}) {
   const { cfg, store, resolved } = boot;
   const explicit = boot.explicit ?? {};
-  let current = resolved.preset;
+  const device = boot.device ?? {};
+  // Lot 5j : état de l'écran Options ; ?gfx= dans l'adresse : verrouillé (rien n'est modifiable ni écrit).
+  let st = optionsState({ choice: resolved.choice, custom: boot.stored?.custom ?? null, url: explicit, device, locked: resolved.origin === 'parametre' }, cfg);
+  let eff = boot.effective ?? effectiveOptions(st.choice, st.custom, explicit, device, cfg);
+  const running = { ...eff.vector }; // valeurs du chargement : les options « load » du jeu en cours
   let settings = boot.settings;
+  let applied = { sang: settings.live.sang, cadavres: settings.live.cadavres };
+  let origin = resolved.origin;
+  let lastWrite = null;
   let refs = null;
   const at = new Float64Array(SAMPLES);
   const dt = new Float32Array(SAMPLES);
@@ -39,7 +48,11 @@ export function createGraphicsController(boot, { vhs = null, announce = () => {}
     world.setFires?.(live.feux);
     world.setMist?.(live.brouillard);
     if (!keep('vhs') && vhs && vhs.mode !== live.vhs && hot) vhs.setMode(live.vhs);
-    if (!keep('sang') && hot) pv?.setBlood?.(live.sang, live.cadavres);
+    // Sang et cadavres : seulement s'ils changent (setBlood efface les taches et cadavres en cours).
+    if (!keep('sang') && hot && (applied.sang !== live.sang || applied.cadavres !== live.cadavres)) {
+      pv?.setBlood?.(live.sang, live.cadavres);
+      applied = { sang: live.sang, cadavres: live.cadavres };
+    }
     if (!keep('dprMax') && params.maxRatio !== live.dprMax) {
       params.maxRatio = live.dprMax;
       if (hot) refs.resize();
@@ -47,6 +60,28 @@ export function createGraphicsController(boot, { vhs = null, announce = () => {}
   }
 
   const label = (id) => dict[`game.gfx.${id}`] ?? id;
+  // Vecteur effectif recalculé ; les réglages « load » restent ceux du chargement.
+  function recompute() {
+    eff = effectiveOptions(st.choice, st.custom, explicit, device, cfg, st.current);
+    settings = { ...eff.settings, load: boot.settings.load };
+  }
+  // Lot 5j : nouvel état choisi dans l'écran Options : écrit (préréglage et Perso), puis options « live » appliquées à chaud.
+  function commit(next) {
+    if (next === st) return { ok: false, status: st.locked ? 'adresse' : 'refuse', pending: pendingReload(eff, running, cfg) };
+    const wasAuto = st.choice === 'auto';
+    st = next;
+    origin = 'options';
+    if (st.choice === 'auto' && !wasAuto) {
+      head = 0;
+      size = 0;
+      activeMs = 0;
+      lastT = null;
+    }
+    recompute();
+    applyLive(settings.live, { hot: true });
+    lastWrite = store.write(st.choice, st.custom);
+    return { ok: true, status: lastWrite.status, saved: lastWrite.ok && lastWrite.persisted, pending: pendingReload(eff, running, cfg) };
+  }
 
   const api = {
     get antialias() {
@@ -59,7 +94,7 @@ export function createGraphicsController(boot, { vhs = null, announce = () => {}
     },
     // À chaque image (game.js) : intervalles de jeu actif ; décision d'Auto à l'entrée d'une attente entre deux manches.
     frame(t, active, phase) {
-      if (resolved.choice !== 'auto') return;
+      if (st.choice !== 'auto') return;
       if (lastT !== null && active && phase !== 'attente') {
         const d = t - lastT;
         if (d > 0 && d < 1000) {
@@ -86,37 +121,43 @@ export function createGraphicsController(boot, { vhs = null, announce = () => {}
         covered += dt[k];
       }
       const stats = { medianMs: medianOf(values), longShare: irregularShare(values, cfg.auto.irregulier.facteur), activeSeconds: Math.min(activeMs, covered) / 1000, betweenWaves: true };
-      const d = autoDecision(stats, current, cfg.auto);
+      const d = autoDecision(stats, eff.preset, cfg.auto);
       lastDecision = { ...d, medianMs: stats.medianMs, longShare: stats.longShare, activeSeconds: stats.activeSeconds, at: t };
       if (d.changed) {
-        current = d.preset;
-        settings = settingsFor(cfg, current, explicit);
-        settings = { ...settings, load: boot.settings.load }; // les réglages « load » restent ceux du chargement
+        st = { ...st, current: d.preset };
+        recompute(); // les réglages « load » restent ceux du chargement
         applyLive(settings.live, { hot: true });
-        downgraded = current;
-        announce((dict['game.gfx.lowered'] ?? '{preset}').replace('{preset}', label(current)));
+        downgraded = d.preset;
+        announce((dict['game.gfx.lowered'] ?? '{preset}').replace('{preset}', label(d.preset)));
         head = 0;
         size = 0;
         activeMs = 0;
       }
       return lastDecision;
     },
-    // Choix dans la pause (après confirmation) : préférence de l'appareil écrite, puis rechargement (simulé sous ?test=1).
-    choose(choice) {
-      const result = store.write(choice);
-      // Stockage indisponible : le choix serait perdu au rechargement ; on ne recharge pas, la pause le dit.
-      if (!result.ok || result.status === 'indisponible') return { ...result, ok: false, status: result.ok ? 'indisponible' : result.status };
-      reloadRequested = choice;
+    // Lot 5j (écran Options) : un préréglage (Auto, Faible, Moyen, Élevé, Perso) ou une option seule (passage à Perso). Renvoie { ok, status, saved, pending }.
+    choosePreset: (name) => commit(choosePreset(st, name, cfg)),
+    setOption: (id, value) => commit(setOption(st, id, value, cfg)),
+    // Ancien choix de la ligne « Graphismes » (lot 5b) : un préréglage, sans rechargement automatique.
+    choose: (choice) => commit(choosePreset(st, choice, cfg)),
+    // « Recharger maintenant » (après confirmation dans l'écran Options) : rechargement réel, simulé sous ?test=1 (reloadRequested).
+    reloadNow() {
+      reloadRequested = st.choice;
       if (reload) reload();
-      return result;
+      return reloadRequested;
     },
-    label: () => (resolved.choice === 'auto' ? `auto (${current})` : current),
+    // Données de l'écran Options : sections, options (identifiants, groupes, valeurs, clés de texte) et état.
+    options: () => ({ sections: [...cfg.sections], sectionTexts: { ...cfg.sectionTexts }, options: cfg.options, state: api.state() }),
+    label: () => (st.choice === 'auto' ? `auto (${eff.preset})` : st.choice),
     state() {
       return {
-        choice: resolved.choice, preset: current, initial: resolved.preset, origin: resolved.origin, device: resolved.device, auto: resolved.choice === 'auto',
-        downgraded, lastDecision, live: { ...settings.live, feux: { ...settings.live.feux } }, load: { ...settings.load }, overridden: [...settings.overridden],
+        choice: st.choice, preset: eff.preset, initial: resolved.preset, origin, device: resolved.device, auto: st.choice === 'auto',
+        downgraded: st.choice === 'auto' && st.current ? downgraded : null, lastDecision, live: { ...settings.live, feux: { ...settings.live.feux } }, load: { ...settings.load }, overridden: [...settings.overridden],
         storage: store.state(), reloadRequested, world: refs?.world.graphicsStats?.() ?? null, antialias: refs ? refs.renderer.getContextAttributes?.()?.antialias ?? null : null,
         pixelRatio: refs ? refs.renderer.getPixelRatio() : null, shadows: refs ? refs.renderer.shadowMap.enabled : null, vhs: vhs ? vhs.mode : null,
+        // Lot 5j : vecteur effectif, origine de chaque valeur, valeurs du chargement, options en attente de rechargement, Perso enregistré.
+        vector: { ...eff.vector }, origins: { ...eff.origins }, imposed: [...eff.imposed], running: { ...running }, pending: pendingReload(eff, running, cfg),
+        custom: st.custom ? { ...st.custom } : null, locked: st.locked, write: lastWrite,
       };
     },
   };

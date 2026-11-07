@@ -198,7 +198,7 @@ describe('feuilles de style de l\'interface (css/game-ui.css, css/game.css, css/
 describe('identifiants de jeu.html (table de Docs/ref/interface-integree.md)', () => {
   const KEPT = ['hud', 'hud-bar', 'hud-life', 'hud-chutes', 'hud-chutes-icons', 'hud-chutes-text', 'hud-floor', 'hud-wave', 'hud-money', 'hud-money-text', 'hud-gain', 'hud-remaining', 'hud-next', 'hud-kills',
     'down', 'down-title', 'down-sub', 'btn-pause', 'stick-left', 'stick-right', 'sound-hint', 'hud-live', 'pause-panel', 'pause-title', 'pause-balance',
-    'btn-resume', 'btn-fullscreen', 'btn-sound', 'btn-vhs', 'btn-restart', 'end-panel', 'end-title', 'end-kills', 'end-wave', 'end-earned', 'end-bonus',
+    'btn-resume', 'btn-fullscreen', 'btn-sound', 'btn-restart', 'end-panel', 'end-title', 'end-kills', 'end-wave', 'end-earned', 'end-bonus',
     'end-balance', 'end-best', 'end-record', 'end-save', 'btn-replay', 'wave-announce', 'labels', 'rotate'];
   const ADDED = ['hud-chrono', 'hud-rec', 'hud-chrono-text', 'hud-floor-text', 'hud-trial', 'hud-wave-text', 'hud-reinforced', 'hud-remaining-text', 'hud-next-text', 'hud-kills-text',
     'down-body', 'down-title-text', 'down-fill', 'pause-balance-text', 'end-box', 'end-title-text', 'end-earned-text', 'end-bonus-text', 'end-record-text', 'btn-menu', 'btn-quit'];
@@ -207,6 +207,16 @@ describe('identifiants de jeu.html (table de Docs/ref/interface-integree.md)', (
   const doc = existsSync('Docs/ref/interface-integree.md') ? readFileSync('Docs/ref/interface-integree.md', 'utf8') : '';
 
   it.each(KEPT)('conservé : #%s', (id) => expect(ids.has(id)).toBe(true));
+
+  // Lot 5j : #btn-vhs (avant : conservé) et la ligne « Graphismes » du lot 5b (#gfx-row, #gfx-confirm…) quittent la pause : leurs réglages sont dans l'écran
+  // Options (E2-12, construit par js/game/options-menu.js) ; #btn-options prend la place de #btn-vhs (sous Son).
+  it('lot 5j : #btn-options à la place de #btn-vhs ; #btn-vhs, #gfx-row et #gfx-confirm absents de jeu.html et du code du jeu', () => {
+    expect(ids.has('btn-options')).toBe(true);
+    for (const id of ['btn-vhs', 'gfx-row', 'gfx-current', 'gfx-confirm', 'gfx-confirm-ok', 'gfx-confirm-cancel']) {
+      expect(ids.has(id), id).toBe(false);
+      expect(gameJs, id).not.toContain(`'${id}'`);
+    }
+  });
 
   it('ajoutés : présents dans jeu.html et dans la table', () => {
     for (const id of ADDED) {
@@ -266,9 +276,10 @@ describe('structure de jeu.html', () => {
     expect(html).not.toMatch(/<img|\.png|\.jpe?g|\.webp|\.svg"/);
   });
 
-  // Retours du propriétaire : solde à côté de « PAUSE » ; deux colonnes Reprendre, Recommencer, Quitter (désactivé) | Son, Effet VHS, Plein écran ; ordre du HTML = lecture.
-  it('pause : « PAUSE » et le solde en tête ; boutons Reprendre, Son, Recommencer, Effet VHS, Quitter (désactivé), Plein écran ; ni volume, ni prochaine zone, ni sauvegarde', () => {
-    const order = ['pause-title', 'pause-balance', 'btn-resume', 'btn-sound', 'btn-restart', 'btn-vhs', 'btn-quit', 'btn-fullscreen'].map((id) => at(`id="${id}"`));
+  // Retours du propriétaire : solde à côté de « PAUSE » ; deux colonnes Reprendre, Recommencer, Quitter (désactivé) | Son, Options (lot 5j, avant : Effet VHS), Plein écran ;
+  // ordre du HTML = lecture.
+  it('pause : « PAUSE » et le solde en tête ; boutons Reprendre, Son, Recommencer, Options, Quitter (désactivé), Plein écran ; ni volume, ni prochaine zone, ni sauvegarde', () => {
+    const order = ['pause-title', 'pause-balance', 'btn-resume', 'btn-sound', 'btn-restart', 'btn-options', 'btn-quit', 'btn-fullscreen'].map((id) => at(`id="${id}"`));
     expect(order.every((p, i) => p > 0 && (i === 0 || p > order[i - 1]))).toBe(true);
     expect(html).toMatch(/<button id="btn-quit" class="button button-quiet" type="button" data-i18n="game\.pause\.quit" disabled><\/button>/);
     const pause = html.slice(at('id="pause-panel"'), at('id="end-panel"'));

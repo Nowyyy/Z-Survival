@@ -34,6 +34,14 @@ async function unlock(page) {
 // Attend les sons de fond (vague-renforcee, vague-fin) : calculés pendant la partie, par tranches de 4 ms par image.
 const backgroundReady = (page) => expect.poll(async () => (await audio(page)).ready, { timeout: 45_000 }).toBe(true);
 const wave = (page, n) => page.evaluate((w) => window.__zs.startWave(w), n);
+// Lot 5j : la bascule « Effet VHS » de la pause (#btn-vhs) est devenue l'option « Effet VHS » de l'écran Options (Coupé, Statique, Animé) : Pause → Options.
+async function vhsOption(page) {
+  await page.getByRole('button', { name: 'Pause' }).click();
+  await page.locator('#btn-options').click();
+  await expect(page.locator('#options-panel')).toBeVisible();
+  return page.locator('[data-option="vhs"]');
+}
+const vhsValue = (row, id) => row.locator(`[data-value="${id}"]`);
 // Rectangle (en pixels CSS) du titre et du sous-titre visibles de l'animation.
 const box = (page) => page.evaluate(() => {
   const rects = ['wave-announce-title', 'wave-announce-sub'].map((id) => document.getElementById(id)).filter((el) => !el.hidden).map((el) => el.getBoundingClientRect());
@@ -374,14 +382,15 @@ test.describe('animation de vague et effet VHS : mouvement réduit', () => {
     expect(visible * 0.05).toBeLessThanOrEqual(3.8);
   });
 
-  test('#vhs absent, effet désactivé, interrupteur désactivé avec son libellé', async ({ page }) => {
+  // Lot 5j : avant, l'interrupteur #btn-vhs désactivé « Effet VHS : désactivé (mouvement réduit) » ; après, l'option « Effet VHS » de l'écran Options grisée avec sa mention.
+  test('#vhs absent, effet désactivé, option « Effet VHS » désactivée avec sa mention', async ({ page }) => {
     await open(page);
     expect(await page.locator('#vhs').count()).toBe(0);
     expect((await state(page)).vhs).toMatchObject({ enabled: true, on: false, layers: 0, reducedMotion: true });
-    await page.getByRole('button', { name: 'Pause' }).click();
-    const toggle = page.locator('#btn-vhs');
-    await expect(toggle).toBeDisabled();
-    await expect(toggle).toHaveText('Effet VHS : désactivé (mouvement réduit)');
+    const row = await vhsOption(page);
+    for (const id of ['off', 'statique', 'anime']) await expect(vhsValue(row, id)).toBeDisabled();
+    await expect(row.locator('.options-label')).toHaveText('Effet VHS');
+    await expect(row.locator('.options-note')).toHaveText('Désactivé (mouvement réduit)');
   });
 
   test('?vhs=1 ne force pas l\'effet sous mouvement réduit', async ({ page }) => {
@@ -430,33 +439,40 @@ test.describe('effet VHS', () => {
     expect((await state(page)).vhs).toMatchObject({ enabled: true, on: true, layers: 3 });
   });
 
-  test('l\'interrupteur de la pause active et coupe l\'effet (aria-pressed, libellé, 44 px)', async ({ page }) => {
+  // Lot 5j : avant, l'interrupteur #btn-vhs (activé / coupé) ; après, l'option « Effet VHS » (Coupé, Statique, Animé), appliquée à chaud, mêmes vérifications.
+  test('l\'option « Effet VHS » de l\'écran Options active et coupe l\'effet (aria-pressed, libellé, 44 px)', async ({ page }) => {
     await open(page);
-    await page.getByRole('button', { name: 'Pause' }).click();
-    const toggle = page.locator('#btn-vhs');
-    await expect(toggle).toHaveAttribute('aria-pressed', 'true');
-    await expect(toggle).toHaveText('Effet VHS : activé');
-    const b = await toggle.boundingBox();
+    const row = await vhsOption(page);
+    const mode = (await state(page)).vhs.mode; // Animé (bureau : Élevé) ou Statique (téléphone : Moyen)
+    expect(['anime', 'statique']).toContain(mode);
+    const on = vhsValue(row, mode);
+    const off = vhsValue(row, 'off');
+    await expect(on).toHaveAttribute('aria-pressed', 'true');
+    await expect(on).toHaveText(mode === 'anime' ? 'Animé' : 'Statique');
+    const b = await off.boundingBox();
     expect(b.height).toBeGreaterThanOrEqual(43.5);
-    await toggle.click();
-    await expect(toggle).toHaveAttribute('aria-pressed', 'false');
-    await expect(toggle).toHaveText('Effet VHS : coupé');
+    await off.click();
+    await expect(off).toHaveAttribute('aria-pressed', 'true');
+    await expect(off).toHaveText('Coupé');
     expect(await page.locator('#vhs').count()).toBe(0);
     expect((await state(page)).vhs).toMatchObject({ enabled: false, on: false, layers: 0 });
-    await toggle.click();
-    await expect(toggle).toHaveAttribute('aria-pressed', 'true');
+    await on.click();
+    await expect(on).toHaveAttribute('aria-pressed', 'true');
     expect(await page.locator('#vhs').count()).toBe(1);
     expect((await state(page)).vhs).toMatchObject({ enabled: true, on: true, layers: 3 });
-    await page.keyboard.press('Space'); // accessible au clavier : le bouton garde le focus et se bascule
-    await expect(toggle).toHaveAttribute('aria-pressed', 'false');
+    await off.focus();
+    await page.keyboard.press('Space'); // accessible au clavier : la valeur prend le focus et se choisit
+    await expect(off).toHaveAttribute('aria-pressed', 'true');
   });
 
-  test('avec ?vhs=0 l\'interrupteur remet l\'effet', async ({ page }) => {
+  // Lot 5j (décision du propriétaire) : avant, avec ?vhs=0 l'interrupteur remettait l'effet ; après, l'option imposée par l'adresse est grisée avec sa mention.
+  test('avec ?vhs=0 l\'option « Effet VHS » est grisée (imposée par l\'adresse), Coupé marqué, l\'effet reste coupé', async ({ page }) => {
     await open(page, '&vhs=0');
-    await page.getByRole('button', { name: 'Pause' }).click();
-    await expect(page.locator('#btn-vhs')).toHaveAttribute('aria-pressed', 'false');
-    await page.locator('#btn-vhs').click();
-    expect((await state(page)).vhs).toMatchObject({ enabled: true, on: true, layers: 3 });
+    const row = await vhsOption(page);
+    await expect(vhsValue(row, 'off')).toHaveAttribute('aria-pressed', 'true');
+    await expect(vhsValue(row, 'anime')).toBeDisabled();
+    await expect(row.locator('.options-note')).toHaveText('Imposé par l\'adresse');
+    expect((await state(page)).vhs).toMatchObject({ enabled: false, on: false, layers: 0 });
   });
 
   test('le grain saute au pas de 10 par seconde (horloge d\'effet réglée) et change de position', async ({ page }) => {
@@ -529,9 +545,9 @@ test.describe('effet VHS', () => {
     const url = await page.locator('#vhs').evaluate((el) => el.style.getPropertyValue('--vhs-grain-url'));
     expect(url).toMatch(/^url\("data:image\/png;base64,/);
     expect(url.length).toBeLessThan(110 * 1024); // 80 ko d'octets bruts au plus, en base64
-    await page.getByRole('button', { name: 'Pause' }).click();
-    await page.locator('#btn-vhs').click();
-    await page.locator('#btn-vhs').click();
+    const row = await vhsOption(page); // lot 5j : avant, deux clics sur #btn-vhs ; après, Coupé puis Animé (préférence en mémoire sous ?test=1)
+    await vhsValue(row, 'off').click();
+    await vhsValue(row, 'anime').click();
     expect(external).toEqual([]);
     expect(await page.evaluate(() => [localStorage.length, sessionStorage.length, document.cookie])).toEqual([0, 0, '']);
     expect(await page.context().cookies()).toEqual([]);
@@ -569,7 +585,7 @@ test.describe('panneau de pause avec l\'interrupteur, accessibilité, budget, co
       const sizes = await page.evaluate(() => [...document.querySelectorAll('#pause-panel button:not([hidden]), #pause-panel input:not([hidden])')].map((el) => { const r = el.getBoundingClientRect(); return { id: el.id, h: r.height, w: r.width }; }));
       expect(sizes.length).toBeGreaterThanOrEqual(5);
       for (const s of sizes) expect(s.h, s.id).toBeGreaterThanOrEqual(43.5);
-      expect(sizes.map((s) => s.id)).toContain('btn-vhs');
+      expect(sizes.map((s) => s.id)).toContain('btn-options'); // lot 5j : avant, btn-vhs
       expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
     });
   }
@@ -615,9 +631,10 @@ test.describe('panneau de pause avec l\'interrupteur, accessibilité, budget, co
     await step(page, 4);
     await page.evaluate(() => window.__zs.killAll());
     await step(page, 3);
-    await page.getByRole('button', { name: 'Pause' }).click();
-    await page.locator('#btn-vhs').click();
-    await page.locator('#btn-vhs').click();
+    const row = await vhsOption(page); // lot 5j : avant, deux clics sur #btn-vhs ; après, l'option « Effet VHS » de l'écran Options, puis Retour
+    await vhsValue(row, 'off').click();
+    await vhsValue(row, 'anime').click();
+    await page.locator('#options-back').click();
     await page.getByRole('button', { name: 'Reprendre' }).click();
     expect(external).toEqual([]);
     expect(problems).toEqual([]);

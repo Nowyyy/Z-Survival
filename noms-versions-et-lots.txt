@@ -96,3 +96,9 @@ version: v0.6
 nom: Accueil retouché
 description: L'accueil occupe toute la hauteur de l'écran ; la colonne de droite montre toutes les versions, en tête la version actuelle avec sa description complète.
 afficher: oui
+
+[lot-5j]
+version: v0.7
+nom: Menu Options dans la pause
+description: Préréglages Auto, Faible, Moyen, Élevé et Perso, et un réglage séparé pour chaque élément graphique ; changer un réglage passe sur Perso.
+afficher: oui

@@ -17,6 +17,9 @@ const scripts = ['js/main.js', 'js/page.js', ...readdirSync('js/accueil').map((f
 // Lot 3l : l'atelier de l'interface (lot 3k, toujours publié) lit des clés game.* de fr.json pour ses propositions A et C (« Vague N / 40 », « N restants »,
 // « Voir ma sauvegarde ») que le jeu intégré (B) n'affiche plus : ses modules comptent comme consommateurs.
 scripts.push(...readdirSync('js/atelier-interface').map((f) => readFileSync(`js/atelier-interface/${f}`, 'utf8')));
+// Lot 5j : les libellés des options (écran Options du jeu) sont nommés dans data/game/graphics.json et lus par js/game/options-menu.js ; chaque clé y est
+// écrite entre guillemets : le fichier compte comme consommateur (avant : seuls les scripts et les pages).
+const graphicsJson = readFileSync('data/game/graphics.json', 'utf8');
 // Une clé est utilisée si elle apparaît entre apostrophes ou si son préfixe est construit dynamiquement (`préfixe.${…}`).
 const dynamicUse = (k) => scripts.some((js) => js.includes(`${k.slice(0, k.lastIndexOf('.') + 1)}\${`));
 const usedKeys = new Set([...pages, gamePage].flatMap((p) => [...p.matchAll(/data-(?:i18n|title-key|i18n-label)="([^"]+)"/g)].map((m) => m[1])));
@@ -42,7 +45,7 @@ describe('dictionnaires fr / en', () => {
 
   it('n\'ont aucune clé orpheline (toutes sont utilisées par la page ou main.js)', () => {
     for (const k of Object.keys(fr)) {
-      expect(usedKeys.has(k) || scripts.some((js) => js.includes(`'${k}'`)) || dynamicUse(k), k).toBe(true);
+      expect(usedKeys.has(k) || scripts.some((js) => js.includes(`'${k}'`)) || dynamicUse(k) || graphicsJson.includes(`"${k}"`), k).toBe(true);
     }
   });
 

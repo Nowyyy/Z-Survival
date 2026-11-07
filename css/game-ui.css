@@ -488,7 +488,7 @@
   font-weight: var(--font-weight-bold);
 }
 
-/* Boutons sur deux colonnes : Reprendre, Recommencer, Quitter | Son, Effet VHS, Plein écran (retour du propriétaire) ; fin : Rejouer | menu. */
+/* Boutons sur deux colonnes : Reprendre, Recommencer, Quitter | Son, Options (lot 5j, à la place d'Effet VHS), Plein écran (retour du propriétaire) ; fin : Rejouer | menu. */
 .panel-actions {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -511,7 +511,7 @@
   grid-area: 1 / 2;
 }
 
-#btn-vhs {
+#btn-options {
   grid-area: 2 / 2;
 }
 
@@ -586,37 +586,167 @@
   }
 }
 
-/* Lot 5b : ligne « Graphismes » de la pause (Auto, Faible, Moyen, Élevé) : quatre boutons de 44 px, choix courant marqué par aria-pressed (bordure et
-   texte, pas la couleur seule) ; confirmation de rechargement par-dessus la pause (#gfx-confirm). */
-.panel-gfx {
-  display: flex;
-  flex-direction: column;
-  gap: 0.35em;
+/* Lot 5j : écran Options (E2-12, construit par js/game/options-menu.js), par-dessus la pause : en-tête fixe (titre, « Retour », préréglages), région qui
+   défile à l'intérieur du panneau (sections et lignes), pied (état, barre « Recharger maintenant »). Choix marqué par aria-pressed : bordure claire et
+   soulignement (pas la couleur seule) ; marque « recharge » en texte encadré ; aucun filter, aucune transition. */
+.options-wrap {
+  z-index: 11;
 }
 
-.gfx-head {
+.panel-options {
+  width: min(100%, 40em);
+  overflow: hidden;
+  gap: 0.5em;
+}
+
+.options-head,
+.options-foot {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  gap: 0.4em;
+}
+
+.options-presets {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3em;
+}
+
+.options-presets-line {
   justify-content: space-between;
   gap: 1em;
 }
 
-.gfx-current {
+.options-current {
   color: var(--color-text-muted);
   white-space: nowrap;
 }
 
-.gfx-choices {
+.options-choices {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 0.5em;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 0.4em;
 }
 
-.panel .gfx-choice[aria-pressed="true"] {
+.options-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 0.4em 0.4em 0.6em;
+  border-top: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.options-scroll:focus-visible {
+  outline-offset: -3px;
+}
+
+.options-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45em;
+}
+
+.options-section + .options-section {
+  margin-top: 0.7em;
+}
+
+.panel .options-section-title {
+  margin: 0;
+  font-family: var(--font-label);
+  font-weight: var(--font-weight-normal);
+  font-size: 1.1em;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-action-text);
+}
+
+.options-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.3em 0.8em;
+}
+
+.options-label {
+  display: flex;
+  flex: 1 1 9em;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.2em 0.5em;
+}
+
+.options-mark {
+  padding: 0 0.35em;
+  border: 1px solid var(--color-border);
+  color: var(--color-text-muted);
+}
+
+.options-values {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4em;
+}
+
+.options-note {
+  flex: 1 1 100%;
+  color: var(--color-text-muted);
+}
+
+.panel .options-choice[aria-pressed="true"],
+.panel .options-value[aria-pressed="true"] {
   border-color: var(--color-text);
   background: var(--color-ground-light);
   text-decoration: underline;
   text-underline-offset: 0.2em;
 }
 
-.gfx-confirm {
-  z-index: 11;
+.options-reload {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4em 0.8em;
+}
+
+.options-reload-text {
+  flex: 1 1 12em;
+}
+
+/* Écran bas (téléphone en paysage) : panneau plus large, en-tête et lignes plus serrés. */
+@media (max-height: 520px) {
+  .panel-options {
+    width: min(100%, 44em);
+    gap: 0.35em;
+  }
+
+  .options-head {
+    gap: 0.3em;
+  }
+
+  .options-presets {
+    flex-direction: row;
+    align-items: center;
+    gap: 0.6em;
+  }
+
+  .options-presets-line {
+    flex: none;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0;
+  }
+
+  .options-choices {
+    flex: 1 1 auto;
+  }
+}
+
+/* Écran étroit (375 px) : préréglages sur deux rangées si besoin. */
+@media (max-width: 420px) {
+  .options-choices {
+    grid-template-columns: repeat(3, 1fr);
+  }
 }

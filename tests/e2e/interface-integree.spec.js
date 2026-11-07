@@ -308,15 +308,15 @@ test.describe('états du jeu', () => {
     await expect(page.locator('#end-box .end-icon-world')).toBeHidden();
   });
 
-  // Retours du propriétaire : solde à côté de « PAUSE » ; Reprendre, Recommencer, Quitter (désactivé) à gauche ; Son, Effet VHS (sous Son), Plein écran à droite ;
-  // ni prochaine zone, ni état de la sauvegarde, ni volume.
-  test('pause : solde à côté de « PAUSE » ; Reprendre, Recommencer, Quitter (désactivé) | Son, Effet VHS, Plein écran ; focus sur Reprendre ; rien d\'autre', async ({ page }) => {
+  // Retours du propriétaire : solde à côté de « PAUSE » ; Reprendre, Recommencer, Quitter (désactivé) à gauche ; Son, Options (lot 5j, avant : Effet VHS ; sous Son), Plein écran
+  // à droite ; ni prochaine zone, ni état de la sauvegarde, ni volume ; depuis le lot 5j, plus de ligne « Graphismes » (#gfx-row) : elle est dans l'écran Options.
+  test('pause : solde à côté de « PAUSE » ; Reprendre, Recommencer, Quitter (désactivé) | Son, Options, Plein écran ; focus sur Reprendre ; rien d\'autre', async ({ page }) => {
     await open(page);
     await page.locator('#btn-pause').click();
     await expect(page.locator('#btn-resume')).toBeFocused();
     const r = await page.evaluate(() => {
       const b = (id) => { const e = document.getElementById(id); if (!e || !e.getClientRects().length) return null; const q = e.getBoundingClientRect(); return { l: q.left, t: q.top, r: q.right, b: q.bottom }; };
-      return { title: b('pause-title'), balance: b('pause-balance'), resume: b('btn-resume'), restart: b('btn-restart'), quit: b('btn-quit'), sound: b('btn-sound'), vhs: b('btn-vhs'), inputs: document.querySelectorAll('#pause-panel input').length, lines: document.querySelectorAll('#pause-panel p').length };
+      return { title: b('pause-title'), balance: b('pause-balance'), resume: b('btn-resume'), restart: b('btn-restart'), quit: b('btn-quit'), sound: b('btn-sound'), vhs: b('btn-options'), inputs: document.querySelectorAll('#pause-panel input').length, lines: document.querySelectorAll('#pause-panel p').length };
     });
     expect(r.balance.l).toBeGreaterThan(r.title.r);
     expect(r.balance.t).toBeLessThan(r.title.b);
@@ -328,8 +328,9 @@ test.describe('états du jeu', () => {
     expect(r.vhs.t).toBeGreaterThan(r.sound.b);
     expect(Math.abs(r.vhs.t - r.restart.t)).toBeLessThan(0.5);
     expect(r.sound.l).toBeGreaterThan(r.resume.r);
-    expect([r.inputs, r.lines]).toEqual([0, 2]); // lignes : le solde et, depuis le lot 5b, la tête de la ligne « Graphismes » (#gfx-row)
-    expect(await page.locator('#pause-panel p').nth(1).getAttribute('class')).toBe('panel-line gfx-head');
+    expect([r.inputs, r.lines]).toEqual([0, 1]); // lignes : le solde seul (lot 5b à 5i : aussi la tête de la ligne « Graphismes », retirée au lot 5j)
+    expect(await page.locator('#pause-panel p').nth(0).getAttribute('id')).toBe('pause-balance');
+    await expect(page.locator('#btn-options')).toHaveText('Options');
     await expect(page.locator('#btn-quit')).toBeDisabled();
     await expect(page.locator('#btn-quit')).toHaveText('Quitter');
     await page.keyboard.press('Tab');

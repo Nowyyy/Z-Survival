@@ -131,6 +131,7 @@ export function createGame(ctx) {
   const P = ctx.profiler ?? null; // lot 5b : profileur de ?perf=1 (absent par défaut : les appels « P?.… » ne font rien)
   P?.attach({ renderer, scene: world.scene });
   ctx.graphics?.attach({ renderer, world, pv, resize: applySize, params }); // lot 5b : réglages « live » du préréglage (Élevé : rien ne change)
+  if (ctx.graphics) ctx.ui?.bindOptions?.({ graphics: ctx.graphics, vhs: ctx.vhs }); // lot 5j : écran Options de la pause (importé à la première ouverture)
   const effects = createEffects(world.effectsRoot, palette, { gunHeight: render.gunHeight, bulletRadius: cfg.weapon.bulletRadius });
   const hud = createHud(ctx.dict);
   const floorFade = createFloorFade();
