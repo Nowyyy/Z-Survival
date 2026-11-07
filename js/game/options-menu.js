@@ -1,7 +1,8 @@
 // Écran Options de la pause (lot 5j, bloc E2-12) : chargé par import dynamique à la première ouverture (aucun coût tant qu'il reste fermé). Panneau du
 // même style que la pause (direction B) : en tête, le titre, « Retour » et les préréglages (Auto, Faible, Moyen, Élevé, Perso ; en Auto : « Auto (Moyen) ») ;
 // puis une région qui défile à l'intérieur du panneau (sections Image, Carte, Personnages : une ligne par option, ses valeurs en boutons exclusifs,
-// marque « recharge » pour les options appliquées au chargement) ; en pied, la barre « Recharger maintenant » (confirmation « Cette partie sera
+// marque d'état dans la ligne du libellé : « recharge » pour les options appliquées au chargement, « au rechargement » quand une valeur attend le
+// rechargement, « imposé par l'adresse », « coupé (mouvement réduit) » ; lot 5j-D : jamais de ligne ajoutée, la mise en page ne bouge pas) ; en pied, la barre « Recharger maintenant » (confirmation « Cette partie sera
 // perdue ») tant qu'une option « load » diffère du jeu en cours. Une option imposée par l'adresse est grisée (« Imposé par l'adresse ») ; ?gfx= verrouille
 // tout. Choix marqué par aria-pressed, un soulignement et une bordure (jamais la couleur seule). Focus piégé dans le panneau ; Échap (input.js →
 // ui.togglePause) et « Retour » reviennent à la pause. Le DOM est construit une fois ; les changements ne mettent à jour que des attributs et des textes.
@@ -34,8 +35,19 @@ export function createOptionsMenu({ dict, graphics, vhs = null, onClose = () => 
   const top = el('div', ['panel-head']);
   const title = el('h2', ['panel-title'], { id: 'options-title' });
   title.textContent = t('game.options.title');
+  // Lot 5j-D (retour du propriétaire) : « Retour » avec une flèche (décorative) et un contour clair.
   const back = el('button', ['button', 'button-quiet', 'options-back'], { type: 'button', id: 'options-back' });
-  back.textContent = t('game.options.back');
+  const arrow = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  arrow.setAttribute('viewBox', '0 0 16 16');
+  arrow.setAttribute('aria-hidden', 'true');
+  arrow.setAttribute('focusable', 'false');
+  arrow.classList.add('options-back-icon');
+  const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  path.setAttribute('d', 'M10 3 5 8l5 5');
+  arrow.append(path);
+  const backText = el('span');
+  backText.textContent = t('game.options.back');
+  back.append(arrow, backText);
   top.append(title, back);
   const presetGroup = el('div', ['options-presets'], { role: 'group', 'aria-labelledby': 'options-presets-label' });
   const presetLine = el('p', ['panel-line', 'options-presets-line']);
@@ -67,12 +79,9 @@ export function createOptionsMenu({ dict, graphics, vhs = null, onClose = () => 
       const label = el('p', ['options-label']);
       const name = el('span', [], { id: `options-label-${o.id}` });
       name.textContent = t(o.texte);
-      label.append(name);
-      if (o.group === 'load') {
-        const mark = el('span', ['options-mark']);
-        mark.textContent = t('game.options.reload.mark');
-        label.append(mark);
-      }
+      const mark = el('span', ['options-mark'], { id: `options-mark-${o.id}` });
+      mark.hidden = true;
+      label.append(name, mark);
       const values = el('div', ['options-values']);
       const buttons = o.valeurs.map((v) => {
         const b = el('button', ['button', 'button-quiet', 'options-value'], { type: 'button', 'aria-pressed': 'false', 'data-value': v.id });
@@ -81,11 +90,9 @@ export function createOptionsMenu({ dict, graphics, vhs = null, onClose = () => 
         values.append(b);
         return b;
       });
-      const note = el('p', ['options-note'], { id: `options-note-${o.id}` });
-      note.hidden = true;
-      row.append(label, values, note);
+      row.append(label, values);
       sec.append(row);
-      rows.set(o.id, { row, buttons, note, option: o });
+      rows.set(o.id, { row, buttons, mark, option: o });
     }
     scroll.append(sec);
   }
@@ -169,12 +176,14 @@ export function createOptionsMenu({ dict, graphics, vhs = null, onClose = () => 
         b.disabled = s.locked || imposed || motion;
       }
       const pending = s.pending.includes(id);
-      const text = imposed ? (value === null ? `${t('game.options.imposed')} : ${t('game.options.value.adresse')}` : t('game.options.imposed')) : motion ? t('game.options.reduced') : pending ? t('game.options.reload.pending') : '';
-      r.note.textContent = text;
-      r.note.hidden = text === '';
+      const state = imposed ? 'imposed' : motion ? 'motion' : pending ? 'pending' : r.option.group === 'load' ? 'load' : '';
+      const text = { imposed: value === null ? `${t('game.options.imposed')} (${t('game.options.value.adresse')})` : t('game.options.imposed'), motion: t('game.options.reduced'), pending: t('game.options.reload.pending'), load: t('game.options.reload.mark'), '': '' }[state];
+      r.mark.textContent = text;
+      r.mark.hidden = text === '';
+      r.mark.dataset.state = state;
       r.row.classList.toggle('is-imposed', imposed || motion || s.locked);
       r.row.classList.toggle('is-pending', pending);
-      if (text) r.row.setAttribute('aria-describedby', r.note.id);
+      if (text) r.row.setAttribute('aria-describedby', r.mark.id);
       else r.row.removeAttribute('aria-describedby');
     }
     status.textContent = s.locked ? t('game.options.locked') : message;

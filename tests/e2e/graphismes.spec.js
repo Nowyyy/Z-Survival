@@ -199,6 +199,13 @@ test.describe('préréglages graphiques', () => {
       await expect(page.locator('#options-reload')).toBeVisible({ visible: p !== 'eleve' });
       expect(JSON.parse(await page.evaluate((k) => localStorage.getItem(k), DEVICE))).toEqual({ v: 2, graphics: p, custom: null });
     }
+    // Lot 5j-D : « Feux et fumées » (une seule option) : Complets depuis Moyen → la fumée de l'hélicoptère entière, à chaud ; puis retour à Moyens.
+    await preset(page, 'moyen').click();
+    await expect(page.locator('[data-option="feux"] .options-label > span').first()).toHaveText('Feux et fumées');
+    await opt(page, 'feux', 'complets').click();
+    expect((await S(page)).graphics.world.fires.find((f) => f.kind === 'helico').smoke).toBe(64);
+    await opt(page, 'feux', 'moyens').click();
+    expect((await S(page)).graphics.world.fires.find((f) => f.kind === 'helico').smoke).toBe(32);
     // Depuis Moyen, une option « live » : Perso tout de suite, effet appliqué sans rechargement, les autres options inchangées.
     await preset(page, 'moyen').click();
     await opt(page, 'brume', 'complete').click();
@@ -207,13 +214,20 @@ test.describe('préréglages graphiques', () => {
     expect(g.world.mists).toEqual([true, true, true]);
     await expect(preset(page, 'perso')).toHaveAttribute('aria-pressed', 'true');
     await expect(opt(page, 'brume', 'complete')).toHaveAttribute('aria-pressed', 'true');
-    // Une option « load » : enregistrée, marquée « s'appliquera au rechargement », barre visible, aucun rechargement.
+    // Une option « load » : enregistrée, marquée « au rechargement », barre visible, aucun rechargement.
+    // Lot 5j-D (retour du propriétaire) : la marque remplace « recharge » dans la ligne du libellé : aucune ligne ne bouge (avant : une ligne de note ajoutée).
+    await expect(page.locator('[data-option="textures"] .options-mark')).toHaveText('recharge');
+    const rowsAt = () => page.evaluate(() => [...document.querySelectorAll('.options-row')].map((r) => [r.offsetTop, r.offsetHeight]));
+    const before = await rowsAt();
     await opt(page, 'textures', 'simples').click();
+    expect(await rowsAt()).toEqual(before);
     g = (await S(page)).graphics;
     expect(g.pending).toEqual(['anticrenelage', 'textures', 'personnages']);
-    await expect(page.locator('[data-option="textures"] .options-note')).toHaveText('S\'appliquera au rechargement');
-    await expect(page.locator('[data-option="textures"] .options-mark')).toHaveText('recharge');
-    await expect(page.locator('[data-option="brume"] .options-mark')).toHaveCount(0);
+    await expect(page.locator('[data-option="textures"] .options-mark')).toHaveText('au rechargement');
+    await expect(page.locator('[data-option="textures"] .options-mark')).toHaveAttribute('data-state', 'pending');
+    await expect(page.locator('[data-option="carte"] .options-mark')).toHaveText('recharge');
+    await expect(page.locator('[data-option="brume"] .options-mark')).toBeHidden(); // option « live » : aucune marque
+    await expect(page.locator('.options-note')).toHaveCount(0);
     await expect(page.locator('#options-reload')).toBeVisible();
     const mine = { ...VECTORS.moyen, brume: 'complete', textures: 'simples' };
     expect(JSON.parse(await page.evaluate((k) => localStorage.getItem(k), DEVICE))).toEqual({ v: 2, graphics: 'perso', custom: mine });
@@ -290,7 +304,7 @@ test.describe('préréglages graphiques', () => {
     expect(await page.evaluate(() => localStorage.length)).toBe(0);
   });
 
-  test('option imposée par l\'adresse : grisée, « Imposé par l\'adresse », non modifiable ; les autres restent libres', async ({ page }) => {
+  test('option imposée par l\'adresse : grisée, « imposé par l\'adresse », non modifiable ; les autres restent libres', async ({ page }) => {
     await open(page, '&nospawn=1&shadows=0&dpr=1.25');
     await openOptions(page);
     const g = (await S(page)).graphics;
@@ -298,8 +312,8 @@ test.describe('préréglages graphiques', () => {
     expect(g.vector).toMatchObject({ ombres: 'aucune', resolution: null });
     await expect(opt(page, 'ombres', 'hautes')).toBeDisabled();
     await expect(opt(page, 'resolution', 'haute')).toBeDisabled();
-    await expect(page.locator('[data-option="ombres"] .options-note')).toHaveText('Imposé par l\'adresse');
-    await expect(page.locator('[data-option="resolution"] .options-note')).toHaveText('Imposé par l\'adresse : valeur de l\'adresse');
+    await expect(page.locator('[data-option="ombres"] .options-mark')).toHaveText('imposé par l\'adresse'); // lot 5j-D : marque (avant : note .options-note)
+    await expect(page.locator('[data-option="resolution"] .options-mark')).toHaveText('imposé par l\'adresse (valeur hors liste)');
     await expect(opt(page, 'ombres', 'aucune')).toHaveAttribute('aria-pressed', 'true');
     await opt(page, 'brume', 'simple').click();
     expect((await S(page)).graphics).toMatchObject({ choice: 'perso', vector: { brume: 'simple', ombres: 'aucune' }, custom: { ombres: 'hautes' }, shadows: false });

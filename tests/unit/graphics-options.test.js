@@ -16,10 +16,12 @@ const PHONE = { coarse: true, ua: 'Mozilla/5.0 (Linux; Android 14; K) Mobile' };
 const DESKTOP = { coarse: false, ua: 'Mozilla/5.0 (X11; Linux x86_64)' };
 const HOSTILE = [null, undefined, 42, 'texte', [], {}, { choice: 'ultra', custom: [], url: 7 }, { custom: { resolution: 9, __proto__: { x: 1 } } }];
 // Copie figée des vecteurs (origin/dev 7130dc7 → schéma 2) : une valeur par option, lue des valeurs du lot 5b (tests/unit/graphics.test.js, AVANT_7130DC7).
+// Lot 5j-D (retour du propriétaire) : « Feux » et « Fumée de l'hélicoptère » regroupés en « Feux et fumées » (réduits, moyens, complets) : 11 options ;
+// les réglages de chaque préréglage restent identiques à AVANT_7130DC7 (vérifié par vectorSettings ci-dessous et par graphics.test.js).
 const VECTEURS = {
-  faible: { resolution: 'basse', anticrenelage: 'non', ombres: 'aucune', vhs: 'off', carte: 'reduit', textures: 'simples', brume: 'simple', feux: 'reduits', fumee: 'coupee', personnages: 'simples', sang: 'reduit', cadavres: '0' },
-  moyen: { resolution: 'moyenne', anticrenelage: 'non', ombres: 'basses', vhs: 'statique', carte: 'complet', textures: 'fines', brume: 'reduite', feux: 'complets', fumee: 'moitie', personnages: 'simples', sang: 'reduit', cadavres: '1' },
-  eleve: { resolution: 'haute', anticrenelage: 'oui', ombres: 'hautes', vhs: 'anime', carte: 'complet', textures: 'fines', brume: 'complete', feux: 'complets', fumee: 'complete', personnages: 'riches', sang: 'complet', cadavres: '2' },
+  faible: { resolution: 'basse', anticrenelage: 'non', ombres: 'aucune', vhs: 'off', carte: 'reduit', textures: 'simples', brume: 'simple', feux: 'reduits', personnages: 'simples', sang: 'reduit', cadavres: '0' },
+  moyen: { resolution: 'moyenne', anticrenelage: 'non', ombres: 'basses', vhs: 'statique', carte: 'complet', textures: 'fines', brume: 'reduite', feux: 'moyens', personnages: 'simples', sang: 'reduit', cadavres: '1' },
+  eleve: { resolution: 'haute', anticrenelage: 'oui', ombres: 'hautes', vhs: 'anime', carte: 'complet', textures: 'fines', brume: 'complete', feux: 'complets', personnages: 'riches', sang: 'complet', cadavres: '2' },
 };
 // Groupes du lot 5b (graphics.json d'origin/dev : parties live et load de chaque préréglage).
 const LIVE_5B = ['dprMax', 'ombres', 'ombreTaille', 'vhs', 'brouillard', 'feux', 'sang', 'cadavres'];
@@ -30,9 +32,10 @@ const base = (choice, extra = {}) => optionsState({ choice, custom: null, url: '
 const eff = (s) => effectiveOptions(s.choice, s.custom, s.url, s.device, CFG, s.current);
 
 describe('options : données (schéma 2)', () => {
-  it('12 options en 3 sections (Image, Carte, Personnages), groupes du lot 5b, identifiants uniques, au moins deux valeurs chacune', () => {
+  it('11 options en 3 sections (Image, Carte, Personnages), groupes du lot 5b, identifiants uniques, au moins deux valeurs chacune ; feux et fumées regroupés', () => {
     expect(CFG.sections).toEqual(['image', 'carte', 'personnages']);
-    expect(ids).toEqual(['resolution', 'anticrenelage', 'ombres', 'vhs', 'carte', 'textures', 'brume', 'feux', 'fumee', 'personnages', 'sang', 'cadavres']);
+    expect(ids).toEqual(['resolution', 'anticrenelage', 'ombres', 'vhs', 'carte', 'textures', 'brume', 'feux', 'personnages', 'sang', 'cadavres']); // lot 5j-D : sans « fumee »
+    expect(CFG.options.find((o) => o.id === 'feux').valeurs.map((v) => Object.keys(v.reglages).sort())).toEqual(Array(3).fill(['feux.fumeeHelico', 'feux.lueur', 'feux.particules', 'feux.voitureFoyers']));
     expect(CFG.options.length).toBe(RAW.options.length); // aucune option ignorée à la lecture
     expect(new Set(ids).size).toBe(ids.length);
     for (const o of CFG.options) {
