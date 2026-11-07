@@ -310,7 +310,9 @@ test.describe('états du jeu', () => {
 
   // Retours du propriétaire : solde à côté de « PAUSE » ; Reprendre, Recommencer, Quitter (désactivé) à gauche ; Son, Options (lot 5j, avant : Effet VHS ; sous Son), Plein écran
   // à droite ; ni prochaine zone, ni état de la sauvegarde, ni volume ; depuis le lot 5j, plus de ligne « Graphismes » (#gfx-row) : elle est dans l'écran Options.
-  test('pause : solde à côté de « PAUSE » ; Reprendre, Recommencer, Quitter (désactivé) | Son, Options, Plein écran ; focus sur Reprendre ; rien d\'autre', async ({ page }) => {
+  // Lot 5j-F (retour du propriétaire) : Son devient une icône en haut à droite, après le solde (avant : bouton « Son : activé » en tête de la colonne de droite) ;
+  // colonne de droite : Options puis Plein écran ; Tab depuis Reprendre va à Recommencer (avant : à Son).
+  test('pause : solde puis icône du son à côté de « PAUSE » ; Reprendre, Recommencer, Quitter (désactivé) | Options, Plein écran ; focus sur Reprendre ; rien d\'autre', async ({ page }) => {
     await open(page);
     await page.locator('#btn-pause').click();
     await expect(page.locator('#btn-resume')).toBeFocused();
@@ -324,17 +326,23 @@ test.describe('états du jeu', () => {
       expect(Math.abs(r[a].l - r[b].l)).toBeLessThan(0.5);
       expect(r[b].t).toBeGreaterThan(r[a].b);
     }
-    expect(Math.abs(r.sound.l - r.vhs.l)).toBeLessThan(0.5);
-    expect(r.vhs.t).toBeGreaterThan(r.sound.b);
-    expect(Math.abs(r.vhs.t - r.restart.t)).toBeLessThan(0.5);
-    expect(r.sound.l).toBeGreaterThan(r.resume.r);
+    expect(r.sound.l).toBeGreaterThan(r.balance.r); // icône du son à droite du solde, sur la ligne du titre
+    expect(r.sound.b).toBeLessThan(r.resume.t);
+    expect(Math.round(r.sound.r - r.sound.l)).toBe(44);
+    expect(Math.abs(r.vhs.t - r.resume.t)).toBeLessThan(0.5); // Options en tête de la colonne de droite
+    expect(r.vhs.l).toBeGreaterThan(r.resume.r);
+    await expect(page.locator('#btn-sound')).toHaveAttribute('aria-label', 'Son : activé');
+    await expect(page.locator('#btn-sound')).toHaveAttribute('data-muted', 'false');
     expect([r.inputs, r.lines]).toEqual([0, 1]); // lignes : le solde seul (lot 5b à 5i : aussi la tête de la ligne « Graphismes », retirée au lot 5j)
     expect(await page.locator('#pause-panel p').nth(0).getAttribute('id')).toBe('pause-balance');
     await expect(page.locator('#btn-options')).toHaveText('Options');
     await expect(page.locator('#btn-quit')).toBeDisabled();
     await expect(page.locator('#btn-quit')).toHaveText('Quitter');
     await page.keyboard.press('Tab');
-    await expect(page.locator('#btn-sound')).toBeFocused();
+    await expect(page.locator('#btn-restart')).toBeFocused();
+    await page.keyboard.press('Shift+Tab');
+    await page.keyboard.press('Shift+Tab');
+    await expect(page.locator('#btn-sound')).toBeFocused(); // l'icône reste atteignable au clavier
   });
 
   test('?wave=40&fin=monde : écran de victoire « Monde terminé » tout de suite (bonus de fin de monde, mode essai), aucune écriture ; ignoré hors mode essai', async ({ page }) => {

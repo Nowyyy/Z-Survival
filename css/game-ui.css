@@ -507,16 +507,12 @@
   grid-area: 3 / 1;
 }
 
-#btn-sound {
+#btn-options {
   grid-area: 1 / 2;
 }
 
-#btn-options {
-  grid-area: 2 / 2;
-}
-
 #btn-fullscreen {
-  grid-area: 3 / 2;
+  grid-area: 2 / 2;
 }
 
 .panel-pause,
@@ -524,7 +520,11 @@
   width: min(100%, 32em);
 }
 
+/* Lot 5j-F : un appui long sur un bouton ne sélectionne pas son texte (retour du propriétaire, iPhone). */
 .panel .button {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
   box-sizing: border-box;
   display: inline-flex;
   align-items: center;
@@ -699,9 +699,9 @@
   color: var(--color-money);
 }
 
-/* Lot 5j-E (retour du propriétaire) : croix de fermeture en haut à droite (pause et Options), carré de 44 px, contour clair (os), icône seule
-   (nom accessible : aria-label). */
-.panel .panel-close {
+/* Lot 5j-E et 5j-F (retours du propriétaire) : boutons-icônes en haut à droite (croix des Options, son de la pause), carré de 44 px, contour clair
+   (os), icône seule (nom accessible : aria-label). */
+.panel .panel-icon {
   flex: none;
   width: var(--hud-target);
   min-width: var(--hud-target);
@@ -709,7 +709,7 @@
   border-color: var(--color-text);
 }
 
-.panel-close svg {
+.panel-icon svg {
   width: 1.2em;
   height: 1.2em;
   fill: none;
@@ -718,7 +718,18 @@
   stroke-linecap: square;
 }
 
-/* Pause : titre à gauche ; solde puis croix à droite. */
+/* Son : haut-parleur plein ; ondes quand le son est actif, croix quand il est coupé (la forme change, jamais la couleur seule). */
+.panel-sound .sound-body {
+  fill: currentColor;
+  stroke: none;
+}
+
+.panel-sound[data-muted="true"] .sound-waves,
+.panel-sound[data-muted="false"] .sound-off {
+  display: none;
+}
+
+/* Pause : titre à gauche ; solde puis icône du son à droite. */
 .panel-pause .panel-head > .panel-line {
   margin-left: auto;
 }
