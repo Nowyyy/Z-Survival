@@ -128,6 +128,7 @@
   <p id="game-error" class="game-error" role="alert" hidden></p>
   <!-- Pause (E2-6) et fin (E2-7), lot 3l, direction B : cadre angulaire, titre en Rubik Dirt ; boutons de 44 px, angles droits. Retours du propriétaire : solde à côté
        de « PAUSE », ni « Prochaine zone », ni état de la sauvegarde, ni volume ; « Quitter » désactivé ; fin sur deux colonnes, sans la note « provisoire ».
+       Lot 5j-E : croix de fermeture en haut à droite (#btn-pause-close, comme Reprendre).
        Lot 5j : « Options » (sous Son) ouvre l'écran Options (E2-12, construit par js/game/options-menu.js à la première ouverture) ; « Graphismes » et
        « Effet VHS » y sont passés. -->
   <div id="pause-panel" class="panel-wrap" data-block="E2-6" role="dialog" aria-modal="true" aria-labelledby="pause-title" hidden>
@@ -135,6 +136,7 @@
       <div class="panel-head">
         <h2 id="pause-title" class="panel-title" data-i18n="game.pause.title"></h2>
         <p id="pause-balance" class="panel-line"><span id="pause-balance-text"></span><svg class="hud-icon hud-coin" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><circle cx="8" cy="8" r="6.5"/><path d="M8 4.2v7.6M5.6 6.2h3.7a1.2 1.2 0 0 1 0 2.4H6.7a1.2 1.2 0 0 0 0 2.4h3.7"/></svg></p>
+        <button id="btn-pause-close" class="button button-quiet panel-close" type="button" data-i18n-label="game.pause.close"><svg viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M3.5 3.5l9 9M12.5 3.5l-9 9"/></svg></button>
       </div>
       <div class="panel-actions">
         <button id="btn-resume" class="button button-main" type="button" data-i18n="game.pause.resume"></button>

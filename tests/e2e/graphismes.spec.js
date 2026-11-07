@@ -320,9 +320,9 @@ test.describe('préréglages graphiques', () => {
   });
 
   // Lot 5j : 667 × 375 (téléphone en paysage), 375 × 812 et 1440 × 900 : panneau dans la fenêtre, en-tête visible, région qui défile, 44 px, 14 px, focus piégé,
-  // Échap et « Retour » reviennent à la pause avec le focus sur « Options » ; la pause (Reprendre) fonctionne comme avant.
+  // Échap et la croix (lot 5j-E, à la place de « Retour ») reviennent à la pause avec le focus sur « Options » ; la croix de la pause la ferme comme Reprendre.
   for (const size of [SIZE, { width: 375, height: 812 }, { width: 1440, height: 900 }]) {
-    test(`Options à ${size.width}×${size.height} : tout atteignable (défilement interne, en-tête fixe), 44 px, 14 px, clavier, Échap et Retour`, async ({ page }) => {
+    test(`Options à ${size.width}×${size.height} : tout atteignable (défilement interne, en-tête fixe), 44 px, 14 px, clavier, Échap et croix de fermeture`, async ({ page }) => {
       test.setTimeout(120_000);
       await open(page, '&nospawn=1');
       await page.setViewportSize(size);
@@ -368,7 +368,7 @@ test.describe('préréglages graphiques', () => {
       expect(Math.min(...m.fonts)).toBeGreaterThanOrEqual(14);
       expect(m.filters).toBe(0);
       // Clavier : Tab tourne dans le panneau (dernier → premier), Maj+Tab aussi (premier → dernier).
-      await page.locator('#options-back').focus();
+      await page.locator('#options-close').focus();
       const seen = new Set();
       for (let i = 0; i < 40; i += 1) {
         await page.keyboard.press('Tab');
@@ -386,9 +386,25 @@ test.describe('préréglages graphiques', () => {
       await expect(page.locator('#pause-panel')).toBeVisible();
       await expect(page.locator('#btn-options')).toBeFocused();
       await page.locator('#btn-options').click();
-      await page.locator('#options-back').click();
+      // Croix des Options : en haut à droite du panneau, carré de 44 px, nom accessible.
+      const close = page.getByRole('button', { name: 'Fermer les options' });
+      const [cb, pb] = [await box('#options-close'), await box('.panel-options')];
+      expect(Math.round(cb.r - cb.l)).toBe(44);
+      expect(Math.round(cb.b - cb.t)).toBe(44);
+      expect(pb.r - cb.r).toBeLessThan(40);
+      expect(cb.t - pb.t).toBeLessThan(40);
+      await close.click();
       await expect(page.locator('#pause-panel')).toBeVisible();
       await expect(page.locator('#btn-options')).toBeFocused();
+      // Croix de la pause : en haut à droite, à droite du solde, ferme la pause comme Reprendre.
+      const [xb, bb, pp] = [await box('#btn-pause-close'), await box('#pause-balance'), await box('#pause-panel .panel')];
+      expect(xb.l).toBeGreaterThan(bb.r);
+      expect(pp.r - xb.r).toBeLessThan(40);
+      expect(Math.round(xb.b - xb.t)).toBe(44);
+      await page.getByRole('button', { name: 'Fermer la pause' }).click();
+      await expect(page.locator('#pause-panel')).toBeHidden();
+      expect((await S(page)).paused).toBe(false);
+      await page.locator('#btn-pause').click();
       await page.locator('#btn-resume').click();
       await expect(page.locator('#pause-panel')).toBeHidden();
       expect((await S(page)).paused).toBe(false);
@@ -476,7 +492,7 @@ test.describe('préréglages graphiques', () => {
     expect(external).toEqual([]);
     expect(await page.evaluate(() => window.__cls)).toBeLessThanOrEqual(0.1);
     await openOptions(page);
-    await page.locator('#options-back').click();
+    await page.locator('#options-close').click();
     await page.locator('#btn-options').click();
     expect(files.filter((f) => f === '/js/game/options-menu.js')).toHaveLength(1);
     expect(new Set(files.filter((f) => f.endsWith('.js'))).size).toBe(114);

@@ -634,7 +634,7 @@ test.describe('panneau de pause avec l\'interrupteur, accessibilité, budget, co
     const row = await vhsOption(page); // lot 5j : avant, deux clics sur #btn-vhs ; après, l'option « Effet VHS » de l'écran Options, puis Retour
     await vhsValue(row, 'off').click();
     await vhsValue(row, 'anime').click();
-    await page.locator('#options-back').click();
+    await page.locator('#options-close').click();
     await page.getByRole('button', { name: 'Reprendre' }).click();
     expect(external).toEqual([]);
     expect(problems).toEqual([]);

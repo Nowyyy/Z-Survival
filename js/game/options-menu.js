@@ -1,11 +1,11 @@
 // Écran Options de la pause (lot 5j, bloc E2-12) : chargé par import dynamique à la première ouverture (aucun coût tant qu'il reste fermé). Panneau du
-// même style que la pause (direction B) : en tête, le titre, « Retour » et les préréglages (Auto, Faible, Moyen, Élevé, Perso ; en Auto : « Auto (Moyen) ») ;
+// même style que la pause (direction B) : en tête, le titre, la croix de fermeture en haut à droite (lot 5j-E, à la place de « Retour ») et les préréglages (Auto, Faible, Moyen, Élevé, Perso ; en Auto : « Auto (Moyen) ») ;
 // puis une région qui défile à l'intérieur du panneau (sections Image, Carte, Personnages : une ligne par option, ses valeurs en boutons exclusifs,
 // marque d'état dans la ligne du libellé : « recharge » pour les options appliquées au chargement, « au rechargement » quand une valeur attend le
 // rechargement, « imposé par l'adresse », « coupé (mouvement réduit) » ; lot 5j-D : jamais de ligne ajoutée, la mise en page ne bouge pas) ; en pied, la barre « Recharger maintenant » (confirmation « Cette partie sera
 // perdue ») tant qu'une option « load » diffère du jeu en cours. Une option imposée par l'adresse est grisée (« Imposé par l'adresse ») ; ?gfx= verrouille
 // tout. Choix marqué par aria-pressed, un soulignement et une bordure (jamais la couleur seule). Focus piégé dans le panneau ; Échap (input.js →
-// ui.togglePause) et « Retour » reviennent à la pause. Le DOM est construit une fois ; les changements ne mettent à jour que des attributs et des textes.
+// ui.togglePause) et la croix reviennent à la pause. Le DOM est construit une fois ; les changements ne mettent à jour que des attributs et des textes.
 import { fmt } from './texts.js';
 
 const PRESETS = ['auto', 'faible', 'moyen', 'eleve', 'perso'];
@@ -35,19 +35,16 @@ export function createOptionsMenu({ dict, graphics, vhs = null, onClose = () => 
   const top = el('div', ['panel-head']);
   const title = el('h2', ['panel-title'], { id: 'options-title' });
   title.textContent = t('game.options.title');
-  // Lot 5j-D (retour du propriétaire) : « Retour » avec une flèche (décorative) et un contour clair.
-  const back = el('button', ['button', 'button-quiet', 'options-back'], { type: 'button', id: 'options-back' });
-  const arrow = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-  arrow.setAttribute('viewBox', '0 0 16 16');
-  arrow.setAttribute('aria-hidden', 'true');
-  arrow.setAttribute('focusable', 'false');
-  arrow.classList.add('options-back-icon');
+  // Lot 5j-E (retour du propriétaire) : croix de fermeture en haut à droite (icône décorative, nom accessible « Fermer les options »), même bouton que la pause.
+  const back = el('button', ['button', 'button-quiet', 'panel-close'], { type: 'button', id: 'options-close', 'aria-label': t('game.options.close') });
+  const cross = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  cross.setAttribute('viewBox', '0 0 16 16');
+  cross.setAttribute('aria-hidden', 'true');
+  cross.setAttribute('focusable', 'false');
   const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-  path.setAttribute('d', 'M10 3 5 8l5 5');
-  arrow.append(path);
-  const backText = el('span');
-  backText.textContent = t('game.options.back');
-  back.append(arrow, backText);
+  path.setAttribute('d', 'M3.5 3.5l9 9M12.5 3.5l-9 9');
+  cross.append(path);
+  back.append(cross);
   top.append(title, back);
   const presetGroup = el('div', ['options-presets'], { role: 'group', 'aria-labelledby': 'options-presets-label' });
   const presetLine = el('p', ['panel-line', 'options-presets-line']);

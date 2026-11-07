@@ -26,6 +26,9 @@
 
 Feux et fumées (retour du propriétaire, lot 5j-D) : une seule option « Feux et fumées » à trois niveaux, qui reprennent exactement les réglages de Faible, Moyen et Élevé (foyers de la voiture, particules et lueur des autres feux, fumée de l'hélicoptère). Avant (lot 5j) : deux options, `feux` et `fumee` ; une configuration Perso enregistrée avec `fumee` la perd (identifiant inconnu ignoré), `feux` « reduits » ou « complets » reste valable.
 
+## Écran
+En tête : titre, **croix de fermeture** en haut à droite (« Fermer les options », 44 × 44 px ; lot 5j-E, à la place de « Retour ») et préréglages ; région qui défile (sections et lignes) ; pied : barre « Recharger maintenant ». Boutons des préréglages et des valeurs à la largeur de leur texte (marges intérieures réduites au lot 5j-E), hauteur 44 px (cible tactile minimale). La pause a la même croix en haut à droite, à droite du solde (« Fermer la pause », comme Reprendre).
+
 ## Règles
 - **Préréglage** : Faible, Moyen, Élevé fixent toutes les options (leur vecteur). **Auto** (défaut) : Moyen sur téléphone ou pointeur grossier, Élevé sinon ; baisse d'un cran entre deux manches (inchangé) : seules les options « live » baissent, les « load » restent celles du chargement.
 - **Perso** : modifier une option depuis tout autre choix (Auto compris) passe sur Perso ; les autres options gardent leur valeur du moment. Le vecteur Perso est gardé à part : revenir sur Perso après un autre préréglage le restaure ; première fois sans configuration : les valeurs du moment.
