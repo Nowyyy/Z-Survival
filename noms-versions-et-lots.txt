@@ -39,7 +39,7 @@ description: Ajout d'une V1 du système d'argent et de sauvegarde, refonte enti�
 
 [v0.6]
 nom: V0.6
-description: Voiture en flammes et hélicoptère écrasé, nouvel impact sur les zombies, réglage des graphismes, travail sur la fluidité et nettoyage du code.
+description: Ajout de décor hors de la map , modification de certains sons, optimisation des performances, niveau de graphismes faible - élevé et nettoyage du code.
 
 # --- Lots de la version en préparation ---
 
