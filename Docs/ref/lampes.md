@@ -1,67 +1,49 @@
-# Lampes à huile et lumières dynamiques (lot 5k) — plan
+# Lampes à huile et lumières dynamiques (lot 5k)
 
-État : **plan (partie A)**. Rien du jeu n'est encore changé. Valeurs provisoires, à régler par le propriétaire.
+Option « Lampes et lumières » (`off`, `decor`, `eclairage`) et « Lumières simultanées » (2, 4, 6) de l'écran Options (`Docs/ref/options-graphiques.md`), `?lum=off|decor|eclairage` (jamais mémorisé). **La logique du jeu ne change pas** : les lampes ne sont ni des obstacles, ni des cibles, ni des murs. Positions, couleurs et intensités **provisoires**, à régler par le propriétaire. Mesures et décisions : `Docs/lots/lot-5k.md`.
 
-## Relevé (étape 0, `origin/dev` 080a7fe)
-1. Lumières : une `AmbientLight` (`--game-ambient`, intensité 2,3) et une `DirectionalLight` (`--game-sun`, 3,5) qui suit la cible de la caméra (`followSun`), avec une carte d'ombres de 512 ou 1 024 (option « Ombres ») ; aucune lumière hémisphérique ni ponctuelle (`render.json` → `light`).
-2. Matières qui reçoivent la lumière : `MeshLambertMaterial` partout pour le décor (sols, murs, atlas de props, planches, garde-corps, sol extérieur, épaves) et pour les personnages (`character-v2.js`, matières de blessure comprises).
-3. Mur percé (`see-through.js`) : Lambert modifié par `onBeforeCompile` (tramage par `discard`, clé de programme `mur-perce`) : il reçoit les lumières comme les autres Lambert ; le `discard` n'enlève que des pixels.
-4. Sans éclairage : `MeshBasicMaterial` (jupe sombre sous l'étage, laser, balles, flash, lampe frontale du joueur, taches et particules de sang), `ShaderMaterial` (flammes et fumées de `fire.js`, brume de `mist.js`).
-5. Three.js 0.186.1 (paquet installé) : lumières physiques (unités : candela, `decay` 2 par défaut) ; atténuation `pow2(saturate(1 - (d / distance)^4)) / max(d^decay, 0.01)` : **zéro exact au-delà de `distance`** ; Lambert calculé au pixel.
-6. Le nombre de lumières de chaque type est un `#define` du programme (`NUM_POINT_LIGHTS`) : changer le nombre de lumières visibles recompile **tous** les programmes Lambert ; une lumière cachée (`visible = false`) sort de la liste (`traverseVisible`) et compte comme un changement.
-7. Une lumière n'a pas de masque par objet : `WebGLRenderer` teste seulement `light.layers` contre la caméra ; une lumière éclaire tout ce qui est à sa portée, à travers les murs (aucune ombre).
-8. Coût : une lumière ponctuelle ajoute une boucle par pixel de chaque matière Lambert (pas d'appel de dessin) ; avec ombre, une passe de six faces : **exclu**.
-9. Étage affiché : `world.setElevation(e, floor)` (game.js) ; le monde descend de `e` (groupes `exterieur`, `rdc`, `rdcShell`, `rdcExposed` à `-e`, `etage` à `180 - e`) ; l'étage n'est visible que si `e > 0,01` ; le rez-de-chaussée reste dessiné (le sol de l'étage le cache).
-10. Hauteur d'étage `floorLift` 180 ; murs et piliers jusqu'à 179 (`ceilingWalls`) ; l'étage couvre moins que le rez-de-chaussée (aile est du rez-de-chaussée au-delà de x 2 265 vue d'en haut, trous des deux escaliers).
-11. Décors légers : `Builder` fusionne par matière (un maillage par matière et par étage) ; décor léger intérieur (`decor-interieur.world.json`) dans un maillage par étage (`decor-leger`, atlas) ; épaves et cratère par couleurs de sommet dans les maillages extérieurs.
-12. Feux (`fire.js`, `feux.json`) : trois appels par feu, sans lumière (la « lueur » est un plan additif) ; mis à jour seulement dans le champ.
-13. Sources de carte : `plan.json`, `etage.json`, `zones.json`, `decor-interieur.json`, `epaves.json`, `releve.json` (pixels) ; `npm run carte` écrit les dérivés (`*.world.json`, `decor.json`) et vérifie les règles.
-14. `carte.html` : SVG de `world.json` ou `etage.world.json` (`js/core/map-svg.js`, `js/carte/main.js`), surcouches (blocs, déclencheurs).
-15. Options (lot 5j) : `graphics.json` (sections, options, vecteurs), `js/core/graphics.js` (réglages `live` / `load`, `ELEVE` = rendu actuel, repli), `graphics-apply.js` (`applyLive` à chaud), `options-menu.js` (lit la liste : rien à ajouter à l'écran).
-16. Sans nouvel appel : les supports peuvent rejoindre un maillage existant **au chargement** seulement ; une option `live` impose des maillages créés à part (voir « Choix technique »).
+## Fichiers
+- Sources (le propriétaire les modifie) : `data/game/maps/rez-de-chaussee/lampes.json` (positions, pixels du plan), `data/game/lumieres.json` (lumière), `css/tokens.css` (bloc « Lampes à huile (lot 5k) » : `--game-lamp-metal`, `-reservoir`, `-flame`, `-core`, `-light`).
+- Dérivé (jamais à la main) : `lampes.world.json`, écrit par `npm run carte` (unités, collé au support, `portee`, `couverte`).
+- Code : `js/core/lamps.js` (pur : sources, modèle de 34 à 36 triangles, portée sûre, choix des lampes, fondu, vacillement), `js/game/lamps.js` (maillages, importé hors de `off`), `js/game/lights.js` (lumières, importé en `eclairage`), `js/game/world.js` (`setLamps`), `js/game/graphics-boot.js` (préchargement), `js/game/graphics-apply.js` (option à chaud), `js/carte/main.js` (affichage sur `carte.html`).
 
-## Emplacements proposés (pixels du plan ; unités = pixels × 5 + 800)
-| id | étage | support | position (px) | orientation | justification |
-|---|---|---|---|---|---|
-| lampe-r1 | rdc | pilier (pilier-1) | 92, 85 | s | nord de l'aile, loin de F1 |
-| lampe-r2 | rdc | mur (mur-2, face ouest) | 134, 196 | o | bas de l'aile, F2 à 345 unités |
-| lampe-r3 | rdc | pilier (pilier-4) | 92, 255 | s | pièce de l'escalier de l'aile |
-| lampe-r4 | rdc | pilier (pilier-10) | 198, 228 | s | entrée de la grande salle |
-| lampe-r5 | rdc | pilier (pilier-8) | 198, 313 | e | centre-ouest de la grande salle |
-| lampe-r6 | rdc | mur (mur-interieur-3, face est) | 295, 256 | e | près de l'escalier courbe |
-| lampe-r7 | rdc | mur (mur-5, face sud) | 388, 232 | s | entre deux comptoirs, F4 à 310 unités |
-| lampe-r8 | rdc | mur (mur-6, face ouest) | 462, 280 | o | zone de départ |
-| lampe-r9 | rdc | mur (mur-7, face nord) | 396, 348 | n | sud-est, entre F6 et F5 |
-| lampe-u1 | étage | pilier (pilier-1) | 83, 83 | s | nord de l'aile |
-| lampe-u2 | étage | mur (mur-2, face ouest) | 134, 170 | o | milieu de l'aile |
-| lampe-u3 | étage | pilier (pilier-4) | 83, 253 | e | pièce de l'escalier de l'aile, 170 du trou |
-| lampe-u4 | étage | mur (mur-7, face nord) | 100, 332 | n | sud de la même pièce |
-| lampe-u5 | étage | mur (mur-3, face sud) | 176, 230 | s | nord de la salle de l'étage |
-| lampe-u6 | étage | pilier (pilier-6) | 198, 312 | s | sud de la salle de l'étage |
-| lampe-u7 | étage | pilier (pilier-5) | 231, 264 | o | est de la salle, loin du trou |
+## Déplacer, ajouter ou retirer une lampe
+1. Ouvrir `carte.html` (rez-de-chaussée, puis « Étage ») : chaque lampe est un point jaune, un trait (son sens) et un cercle en pointillés (portée de sa lumière). Unités = pixels × 5 + 800 (le cadre « 100 px du plan » aide à lire les pixels).
+2. Dans `lampes.json`, une ligne par lampe : `id` (minuscules, chiffres, tirets), `floor` (`rdc` ou `etage`), `support` (`pilier` : le point doit être dans le pilier, ou à 20 unités ; `mur` : la face de mur la plus proche, à 40 unités au plus, **dans le sens opposé à l'orientation**), `x`, `y` (pixels), `orientation` (`n`, `s`, `e`, `o` : vers où la lampe regarde ; une lampe sur la face sud d'un mur regarde au sud), `hauteur` (20 à 120 ; 48 par défaut, au-dessus des zombies).
+3. `npm run carte` : la commande échoue (et dit pourquoi) si une lampe n'a pas de support, sort du bâtiment ou tombe sur une fenêtre ; elle donne le nombre de lampes et de triangles. Rien d'autre ne change (mondes, décor, règles de la carte).
+4. `npm test` (tests/unit/lamps.test.js : 8 à 10 lampes au rez-de-chaussée, 6 à 8 à l'étage, piliers et murs aux deux étages, à plus de 150 unités des fenêtres : à adapter si le propriétaire décide d'autres nombres).
 
-- **Zones laissées sombres** : milieu de l'aile (fenêtres F2, F3), sud-ouest de la pièce de l'escalier (pilier-5), sud-ouest de la grande salle (F8, F6, piliers 7 et 9), est de la salle (F5 près du bord) ; à l'étage, abords des fenêtres U1, U2, U3, U4, U6, U7 et des deux trous.
-- **Hors couloirs d'approche** (prudence visuelle) : aucune lampe à moins de 150 unités d'une fenêtre, pour ne pas mettre une flamme vive dans l'axe où les zombies surgissent.
+## Positions (lot 5k)
+| id | étage | support | source (px) | sens | face (unités) | portée sûre | couverte |
+|---|---|---|---|---|---|---|---|
+| lampe-r1 | rdc | pilier-1 | 92, 85 | s | 1260, 1242,5 | 120 | oui |
+| lampe-r2 | rdc | mur-2 | 134, 196 | o | 1470, 1780 | 120 | oui |
+| lampe-r3 | rdc | pilier-4 | 92, 255 | s | 1260, 2092,5 | 120 | oui |
+| lampe-r4 | rdc | pilier-10 | 198, 228 | s | 1790, 1957,5 | 120 | oui |
+| lampe-r5 | rdc | pilier-8 | 198, 313 | e | 1807,5, 2365 | 120 | oui |
+| lampe-r6 | rdc | mur-interieur-3 | 295, 256 | e | 2275, 2080 | 120 | non |
+| lampe-r7 | rdc | mur-5 | 388, 232 | s | 2740, 1960 | 120 | non |
+| lampe-r8 | rdc | mur-6 | 462, 280 | o | 3110, 2200 | 120 | non |
+| lampe-r9 | rdc | mur-7 | 396, 348 | n | 2780, 2540 | 120 | non |
+| lampe-u1 | étage | pilier-1 | 83, 83 | s | 1215, 1232,5 | 236 | — |
+| lampe-u2 | étage | mur-2 | 134, 170 | o | 1470, 1650 | 191 | — |
+| lampe-u3 | étage | pilier-4 | 83, 253 | e | 1232,5, 2065 | 187 | — |
+| lampe-u4 | étage | mur-7 | 100, 332 | n | 1300, 2460 | 225 | — |
+| lampe-u5 | étage | mur-interieur-2 | 142, 256 | e | 1510, 2080 | 189 | — |
+| lampe-u6 | étage | pilier-6 | 198, 312 | s | 1790, 2377,5 | 195 | — |
+| lampe-u7 | étage | pilier-5 | 231, 264 | o | 1937,5, 2120 | 131 | — |
 
-## Schéma de données
-- Source `data/game/maps/rez-de-chaussee/lampes.json` (pixels, édité par le propriétaire) : `{ "lampes": [ { "id", "floor": "rdc" | "etage", "support": "pilier" | "mur", "x", "y", "orientation": "n" | "s" | "e" | "o", "hauteur" } ] }`. `orientation` : direction vers laquelle la lampe regarde (normale qui sort du support).
-- `npm run carte` écrit `lampes.world.json` (dérivé, jamais édité) : unités du jeu, position collée sur la face du pilier ou du mur le plus proche dans le sens opposé à l'orientation, normale, `portee` (distance de lumière maximale sûre, voir « Risques »), support retrouvé ; une lampe sans support à moins de 40 unités, hors carte ou sur une fenêtre est signalée comme problème (la commande échoue).
-- `data/game/lumieres.json` : `ambiance`, `plancherAmbiance`, `intensite`, `distance`, `decroissance`, `hauteurLumiere`, `decalage`, `fondu` (secondes), `vacillement` (`amplitude` ≤ 0,15, `frequences` < 1,5 Hz), `max` par défaut, `distanceActivation`. Couleurs : jetons `--game-lamp-*` (bloc isolé de `tokens.css`, lus par `palette.js`).
+Zones laissées sombres : milieu de l'aile (F2, F3), sud-ouest de la pièce de l'escalier de l'aile, sud-ouest de la grande salle (F8, F6), est de la salle (F5) ; à l'étage, abords des fenêtres et des deux trous d'escalier. Aucune lampe à moins de 150 unités d'une fenêtre (prudence visuelle : pas de flamme vive là où surgissent les zombies). Changement par rapport au plan de la partie A : `lampe-u5` déplacée (mur-interieur-2 au lieu de mur-3 : à 133 unités de U5, et portée réduite à 88 par le rez-de-chaussée visible juste derrière).
+
+## Régler la lumière (`data/game/lumieres.json`, mode Éclairage seulement)
+- `ambiance` (0 à 1) : facteur de la lune et de la lumière ambiante. Plus bas = zones plus sombres. `plancherAmbiance` (0,05 à 1) : la lumière ambiante ne descend jamais sous ce facteur (jamais le noir complet). Effet : ambiante × max(ambiance, plancher), lune × ambiance.
+- `intensite` (candela, lumières physiques de Three.js), `distance` (portée, jamais au-delà de la portée sûre de chaque lampe, 120 au rez-de-chaussée), `decroissance` (1 : douce ; 2 : physique, plus courte), `fondu` (secondes d'entrée et de sortie d'une lampe), `vacillement` (`amplitude` ≤ 0,15 et `frequences` ≤ 1,4 Hz, bornées par le code), `distanceActivation` (au-delà, une lampe n'est jamais choisie), `max` (repli du nombre de lumières).
+- Couleurs : jetons `--game-lamp-*` de `css/tokens.css` (`--game-lamp-light` : couleur de la lumière).
+- Après un changement : `npm test` (valeurs lues telles quelles), regarder sur `…/dev/jeu.html?lum=eclairage`, et rejouer la mesure de lisibilité (`Docs/lots/lot-5k.md`).
 
 ## Choix technique
-- **Lampes (décor)** : modèle pur `js/core/lamps.js` (support, réservoir, flamme ; ≤ 60 triangles ; déterministe) ; rendu `js/game/lamps.js` (import dynamique si l'option n'est pas `off`) : **un maillage par étage** (rez-de-chaussée dans `groups.rdc`, étage dans `groups.etage`) avec **une seule matière** Lambert à couleurs de sommet dont la flamme est émissive (attribut de sommet lu par `onBeforeCompile`) : +1 appel au rez-de-chaussée, +2 à l'étage ; sans ombre ; créés une fois (à la première activation), cachés avec `off`. Pas de fusion dans les maillages existants : l'option est `live`, et refaire un maillage existant à chaud coûterait une reconstruction.
-- **Lumières** (`eclairage`) : `js/game/lights.js` (import dynamique) : **N `PointLight` toujours visibles** (N = « Lumières simultanées »), `castShadow = false`, dans la scène (pas dans un groupe d'étage, pour qu'elles ne sortent jamais de la liste) ; à chaque image : lampes de l'étage affiché dont la sphère de lumière touche le champ de la caméra, triées par distance au joueur, les N plus proches ; chaque emplacement garde sa lampe tant qu'elle reste choisie ; une lampe qui sort s'éteint en `fondu`, la nouvelle s'allume ensuite en `fondu` (aucun saut d'intensité). Intensité nulle = lumière présente : **aucun changement de programme en partie**.
-- **Changement d'option** (nombre ou mode) : programmes Lambert recompilés une fois ; préchauffage `renderer.compile(scene, camera)` aussitôt (un accroc unique possible, signalé).
-- **Base** : en `eclairage` seulement, `ambient × max(ambiance, plancherAmbiance)` et `soleil × ambiance` ; rien ne change sinon.
-- **Vacillement** : somme de deux sinus lents (temps de jeu, aucune horloge réelle), amplitude ≤ 15 %, < 3 variations par seconde ; constant sous `prefers-reduced-motion`.
-
-## Risques
-- **Matières sans éclairage** : taches et particules de sang (Basic) resteraient claires dans le noir : en `eclairage`, leur couleur est multipliée par le facteur de l'ambiance (inchangée sinon) ; laser, balles, flash, lampe frontale, flammes et brume restent émissifs ; la jupe sombre est déjà sombre.
-- **Mur percé** : Lambert, reçoit la lumière sans traitement ; ses pixels tramés restent tramés.
-- **Étage superposé** : une lumière n'a pas de masque par objet. Garantie par la distance : la lumière d'une lampe est **nulle au-delà de sa portée** (Three.js). (1) Seules les lampes de l'étage affiché reçoivent une lumière ; (2) une lampe du rez-de-chaussée a une portée < `180 − hauteur` : elle n'atteint jamais l'étage (sol, murs, garde-corps), même pendant la montée de l'escalier ; (3) une lampe de l'étage a une portée inférieure à sa distance au rez-de-chaussée visible d'en haut (trous des escaliers, parties du rez-de-chaussée hors du sol de l'étage, sommets des murs à 179) : `portee` calculée par `npm run carte`, prise au minimum avec `distance` au rendu ; test de luminance d'une zone du rez-de-chaussée vue par le trou d'un escalier, avec et sans les lampes de l'étage.
-- **Lumière à travers les murs** : aucune ombre ; la lumière est décalée de `decalage` vers l'intérieur de la pièce (l'autre côté du mur reçoit moins de 20 % de la face éclairée). Idée : ombre des lampes.
-- **Coût par pixel** : réservé à l'Élevé (déjà saccadé sur iPhone et Pixel 7) ; Moyen garde `decor` seulement si la mesure le permet.
-
-## Plan de mesure
-- Références `origin/dev` (relevées) : appels, triangles, pixels, programmes de R1, R2, U1, U4 × Faible, Moyen, Élevé (Élevé R1 62 / 38 479 / 1 000 500 / 18 programmes ; Faible 16 programmes) ; six empreintes de `trace-logique.mjs` ; six vues (`vues.mjs`) ; 113 fichiers JavaScript ; Lighthouse mobile de `jeu.html` (5 passes) ; tâche par préréglage (`mesurer.mjs`, 5 passes).
-- Après : mêmes relevés avec `?lum=off` (identiques), `decor` (+≤ 2 appels, ≤ +1 500 triangles, tâche ≤ +2 % à Moyen, passes alternées avec `origin/dev`), `eclairage` × 2, 4, 6 (tâche en % de l'Élevé sans lumière) ; lisibilité (luminance du sol dans la zone la plus sombre, part sous 8 %, rapport personnage / sol) ; captures 667×375 et 1440×900.
+- **Décor** : un maillage par étage (rez-de-chaussée dans le groupe `rdc`, étage dans `etage`), une matière Lambert à couleurs de sommet dont la flamme est émissive (attribut `aGlow`, `onBeforeCompile`) : +1 appel au rez-de-chaussée, +2 au plus à l'étage ; sans ombre ; créés une fois ; **seules les lampes dans le champ sont dessinées** (indices réécrits quand la liste change ; maillage caché s'il n'y en a aucune), et une lampe du rez-de-chaussée « couverte » par le sol de l'étage n'est pas dessinée quand l'étage est affiché (le pire cas du budget, U4 avec le sang à pleine charge, était à 159 triangles de la limite de 45 000).
+- **Lumières** : N `PointLight` toujours présentes (intensité nulle si inutilisées : le nombre de lumières, donc les programmes, ne change jamais en partie), sans ombre, dans la scène ; à chaque image, les lampes de l'étage affiché dont la sphère de lumière touche le champ, les N plus proches du joueur ; une lampe garde son emplacement ; entrée et sortie en `fondu` ; vacillement en temps de jeu, coupé sous `prefers-reduced-motion`. Changement de mode ou de nombre : programmes recompilés une fois, préchauffés aussitôt (`renderer.compile`).
+- **Étage superposé** : la lumière de Three.js est nulle au-delà de sa portée. Une lampe du rez-de-chaussée a une portée < 180 − hauteur de sa lumière (jamais l'étage, même pendant la montée) ; une lampe de l'étage a une portée inférieure à sa distance aux trous des escaliers et aux parties du rez-de-chaussée visibles d'en haut (calcul de `npm run carte`) ; au changement d'étage, les lumières de l'autre étage s'éteignent aussitôt. Test : pixels du rez-de-chaussée vus par le trou de l'escalier identiques avec et sans les lampes de l'étage (`?test=1&lampgain=0`).
+- **Matières sans éclairage** : taches et particules de sang (Basic) assombries du facteur de l'ambiante en Éclairage ; laser, balles, flash, lampe frontale, flammes, fumées et brume restent émissifs ; la jupe sombre sous l'étage reste sombre. Mur percé : Lambert, éclairé normalement.
+- **Lumière à travers les murs** : aucune ombre ; la lumière est placée 16 unités devant le support, l'autre côté d'un mur en reçoit nettement moins. Idée : ombre des lampes.

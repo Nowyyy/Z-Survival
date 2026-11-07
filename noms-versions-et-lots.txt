@@ -102,3 +102,9 @@ version: v0.7
 nom: Menu Options dans la pause
 description: Préréglages Auto, Faible, Moyen, Élevé et Perso, et un réglage séparé pour chaque élément graphique ; changer un réglage passe sur Perso.
 afficher: oui
+
+[lot-5k]
+version: v0.7
+nom: Lampes à huile et lumières (essai)
+description: Des lampes à huile sur des piliers et des murs, avec des coins plus sombres ; l'éclairage dynamique est réservé au préréglage Élevé.
+afficher: oui
