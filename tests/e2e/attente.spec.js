@@ -29,13 +29,15 @@ test('la page est en français, sans bouton de langue, même avec un navigateur 
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Z-Survival');
   // Lot 4c : l'accueil remplace la page d'attente (avant : « En construction. Reviens bientôt ! »). Lot 5g : servi depuis le dépôt, il lit site-info.json
   // « source » (avant : build-info.json « source », « Recette · Version V0.5 ») : étiquette « arbre source », liens statiques, aucune liste.
-  await expect(page.locator('#version')).toHaveText('Recette · arbre source');
+  // Lot 5i : le bandeau dit « Recette » seulement (avant : « Recette · arbre source ») ; sans version connue, le bouton dit « Jouer » seul.
+  await expect(page.locator('#version')).toHaveText('Recette');
   await expect(page.locator('#site-notice')).toHaveText('Arbre source du dépôt : la version, les évolutions et les versions précédentes s\'affichent dans le site assemblé.');
-  await expect(page.getByRole('link', { name: 'Jouer' })).toHaveAttribute('href', 'jeu.html');
+  await expect(page.getByRole('link', { name: 'Jouer', exact: true })).toHaveAttribute('href', 'jeu.html');
   await expect(page.getByRole('link', { name: 'Dernier build de développement' })).toHaveAttribute('href', '../dev/jeu.html');
-  await expect(page.locator('#evolutions-section, #previous-section')).toHaveCount(2);
+  // Lot 5i : #versions-section (« Toutes les versions », avant : #previous-section).
+  await expect(page.locator('#evolutions-section, #versions-section')).toHaveCount(2);
   await expect(page.locator('#evolutions-section')).toBeHidden();
-  await expect(page.locator('#previous-section')).toBeHidden();
+  await expect(page.locator('#versions-section')).toBeHidden();
   await expect(page.locator('[data-lang-toggle]')).toHaveCount(0);
   await expect(page.getByRole('button')).toHaveCount(0);
   await context.close();

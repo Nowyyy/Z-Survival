@@ -4,8 +4,8 @@
 //    sont les « évolutions »), archives FICTIVES v0.2 à v0.4 (pages de test), v0.1 indisponible (jeu de versions de test) ;
 //  - bare/ : Recette/ seule (ni dev, ni archive) : « Aucun build de développement pour l'instant », versions publiées « indisponibles » ;
 //  - many/ : 13 versions FICTIVES (v0.1 à v0.12 archivées, v0.13 Recette) pour la liste qui défile ; v0.6 y est publiée : aucune évolution ;
-//  - noms/ (lot 5h) : comme full/, mais le build de dev porte un fichier des noms FICTIF (NOMS_TEST) qui renomme la Recette, la V0.4 et le lot 5h,
-//    et masque le lot 5g. full/, bare/ et many/ sont assemblés sans fichier des noms (textes d'origine), pour ne pas dépendre des textes du propriétaire.
+//  - noms/ (lot 5h) : comme full/, mais le build de dev porte un fichier des noms FICTIF (NOMS_TEST) qui renomme la V0.5, la V0.4 et le lot 5h,
+//    masque le lot 5g et (lot 5i) donne à la Recette V0.6 une description de 200 caractères (sans changer son nom). full/, bare/ et many/ sont assemblés sans fichier des noms (textes d'origine), pour ne pas dépendre des textes du propriétaire.
 // Chaque site vit dans un sous-dossier, comme le site publié sous /Z-Survival/. Les données de version sont fictives et annoncées comme telles.
 import { spawnSync } from 'node:child_process';
 import { cpSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
@@ -20,9 +20,12 @@ const SKIP = new Set(['.git', 'node_modules', '_site', '.lots', 'Docs', 'tests',
 export const DEV_SHA = 'abcdef1234567890abcdef1234567890abcdef12';
 export const DEV_DATE = '2026-11-02T12:00:00Z';
 export const GENERE = '2026-11-06T12:00:00Z';
+// Lot 5i : description FICTIVE de la Recette (V0.6) de 200 caractères, la borne du fichier des noms : la carte « Version actuelle » doit l'afficher en entier.
+export const DESCRIPTION_RECETTE_TEST = 'Description de test de la V0.6 (fictive) : deux cents caractères pour vérifier que la carte de la version actuelle l\'affiche en entier, sans la couper à cent vingt caractères comme avant ce lot ; fin.';
 // Fichier des noms de test (fictif) du site noms/.
 export const NOMS_TEST = [
   '# Fichier des noms de test (fictif) : site noms/ de scripts/site/e2e-site.mjs.',
+  '[v0.6]', `description: ${DESCRIPTION_RECETTE_TEST}`,
   '[v0.5]', 'nom: V0.5 (nom de test)', 'description: Description de test de la Recette (fictive)',
   '[v0.4]', 'nom: Quatrième version (test)', 'description: Description de test de la V0.4 : fictive',
   '[lot-5h]', 'nom: Évolution renommée (test)', 'description: Texte de test de l\'évolution, venu du fichier des noms (fictif).',

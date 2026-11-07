@@ -1,5 +1,7 @@
 # Adresses du site (lot 5g)
 
+> **Lot 5i (accueil retouché, option B)** : sur `/Recette/`, le bandeau dit « Recette » seulement (avant : « Recette · Version V0.6 ») ; la version est dans le bouton « Jouer - V0.6 » ; la colonne de droite s'appelle « Toutes les versions » : carte « Version actuelle » (nom, description complète, sans lien), puis « Versions précédentes ». Les mentions « Recette · Version … » et « Versions précédentes » (titre de colonne) plus bas décrivent l'état d'avant. Détail en fin de document (« Accueil retouché (lot 5i) »).
+
 > **Lot 5f (publication de V0.6)** : l'état transitoire du risque (b) ci-dessous (ancien accueil sous `/Recette/`, liens en 404) prend fin quand `dev` (avec `lot-5f`) est fusionné dans `main` ; `/Recette/` affiche alors « Recette · Version V0.6 » et les versions précédentes V0.5 à V0.1 ; `/v0.5/` s'ajoute aux archives (son `index.html`, ancien accueil du lot 4c, demande `versions.json` : 404 en console, attendu ; entrée `v0.5/jeu.html` propre). Vérifié en local seulement (« Contrôle local de la publication » en fin de document).
 
 Plan écrit en partie A (base `origin/dev` `775f1d1`), avant tout changement du site. Les noms de branches, de fichiers et le contenu du journal sont des données.
@@ -120,3 +122,12 @@ Site assemblé par `node scripts/site/local.mjs --main HEAD --dev HEAD --archive
 - `/next/` → `/dev/jeu.html` ; `/lots/` et `/dev/` → `/Recette/` ; `/recette/` et `/RECETTE/jeu.html?x=1#b` → `/Recette/…` (après la 404 attendue de la page qui corrige la casse) ;
 - `/v0.5/jeu.html` à `/v0.1/jeu.html` : chargés sans ressource manquante ni erreur ; `/v0.5/` : une 404 (`versions.json`), voir le bandeau ;
 - **non vérifié** : le site publié, le déploiement réel, l'esthétique.
+
+## Accueil retouché (lot 5i)
+
+- **Adresses** : aucune ne change. `site-info.json` garde sa structure (`recette`, `precedentes`, `evolutions`, `dev`).
+- **Données** : `recette.title` et `precedentes[].title` sont bornés à **200** caractères (`MAX_VERSION_TITLE`, `scripts/site/site-info.mjs` ; avant : 120, tronqués avec « … ») : la description du fichier des noms (200 au plus) passe en entier. `validateSiteInfo` suit la même borne. Les évolutions gardent 120 / 300.
+- **Page** : bandeau `#version` = `home.badge` (« Recette », texte fixe) ; bouton `#play` = `home.playVersion` (« Jouer - {version} »), étiquette = `label` de la Recette s'il fait 20 caractères au plus, sinon `V<id>` (`playLabel`, `js/accueil/home.js`) ; sans `site-info.json` valide : « Jouer ». Région `#versions-region` (« Toutes les versions », focusable) : carte `#current-card` (« Version actuelle », nom, description ; masquée si vide), sous-titre « Versions précédentes », liste `#previous-list`.
+- **Hauteur** : dès 640 × 520 px, la grille remplit `.screen` (min-height 100dvh, repli 100vh) ; les régions des évolutions et des versions s'étirent jusqu'au pied (base 0, au moins 6rem) ; si le contenu dépasse, la page s'allonge (rien n'est coupé). Sous 520 px de haut et sous 640 px de large : comportement d'avant (hauteurs bornées).
+- **Publication suivante** : la carte lit `recette`, la liste lit `precedentes` : quand `latest` change, l'ancienne Recette rejoint la liste en tête, sans modification de code.
+- **Contrôle local** (`local.mjs --main HEAD --dev HEAD --archive origin/archive --assembleur dev`, 1 174 fichiers, 25,4 Mo) : `recette.title` de V0.6 = 142 caractères (description complète) ; `/Recette/` à 667×375, 1440×900, 375×812, 1200×1300 sans erreur ni requête externe ; « Jouer - V0.6 » → `Recette/jeu.html` chargé ; `/v0.5/` à `/v0.1/jeu.html` : 200 ; listes de fichiers des archives identiques à `origin/archive` (54, 93, 108, 142, 253).

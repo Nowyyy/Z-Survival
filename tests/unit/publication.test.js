@@ -9,10 +9,12 @@ import { join } from 'node:path';
 import {
   AssembleError, SITE_TEXT_DEFAULTS, assembleSite, buildInfo, constructionPage, dirStats, messagePage, parseOptions, redirectPage, siteIcon, siteTexts, utcDate,
 } from '../../scripts/assemble.mjs';
-import { MAX_EVOLUTIONS, buildSiteInfo, cleanText, readEvolutions, readPrevious, validLabel, validateSiteInfo } from '../../scripts/site/site-info.mjs';
-import { DEV_HREF, MAX_PREVIOUS, fill, formatDate, homeModel, previousHref, readPrevious as readPreviousHome, safePath, text as textHome, validLabel as validLabelHome } from '../../js/accueil/home.js';
-import { NOMS_FICHIER } from '../../scripts/site/noms.mjs';
-import { fakeArchive, manyVersions, testVersions } from '../../scripts/site/e2e-site.mjs';
+import { MAX_EVOLUTIONS, MAX_VERSION_TITLE, buildSiteInfo, cleanText, readEvolutions, readPrevious, validLabel, validateSiteInfo } from '../../scripts/site/site-info.mjs';
+import {
+  DEV_HREF, MAX_DESCRIPTION, MAX_PLAY_LABEL, MAX_PREVIOUS, fill, formatDate, homeModel, playLabel, previousHref, readPrevious as readPreviousHome, safePath, text as textHome, validLabel as validLabelHome,
+} from '../../js/accueil/home.js';
+import { MAX_DESCRIPTION as MAX_DESCRIPTION_NOMS, NOMS_FICHIER, parseNoms } from '../../scripts/site/noms.mjs';
+import { DESCRIPTION_RECETTE_TEST, NOMS_TEST, fakeArchive, manyVersions, testVersions } from '../../scripts/site/e2e-site.mjs';
 import { findNonRelative } from '../../scripts/versions/links.mjs';
 
 const ROOT = mkdtempSync(join(tmpdir(), 'zs-test-publication-'));
@@ -476,7 +478,8 @@ describe('accueil (js/accueil/home.js) : modèle d\'après site-info.json', () =
 
   it('fichier absent ou invalide : état « error », liens statiques (jeu.html, ../dev/jeu.html), aucune liste ; arbre source : état « source »', () => {
     for (const bad of [null, undefined, 'x', 42, [], {}, { schema: 2, recette: info.recette }, { schema: 1, recette: null }, { schema: 1, recette: { id: '../x' } }]) {
-      expect(homeModel(bad), JSON.stringify(bad)).toEqual({ state: 'error', version: '', play: 'jeu.html', dev: { present: true, href: '../dev/jeu.html', sha: '', date: '' }, evolutions: [], previous: [] });
+      // Lot 5i : + playLabel '' (le bouton dit « Jouer » seul) et current null (pas de carte).
+      expect(homeModel(bad), JSON.stringify(bad)).toEqual({ state: 'error', version: '', play: 'jeu.html', dev: { present: true, href: '../dev/jeu.html', sha: '', date: '' }, evolutions: [], previous: [], playLabel: '', current: null });
     }
     expect(homeModel(readJson('site-info.json')).state).toBe('source');
   });
@@ -520,13 +523,14 @@ describe('accueil : page, rendu et textes', () => {
   it('structure : « Jouer », « Dernier build de développement » vers ../dev/jeu.html, évolutions (gauche) et versions précédentes (droite) dans des régions focusables nommées ; aucun journal', () => {
     expect(html).toMatch(/<a class="button play" id="play" href="jeu.html"/);
     expect(html).toMatch(/<a class="item home-dev" id="dev-link" href="\.\.\/dev\/jeu\.html">/);
-    for (const [id, title] of [['evolutions-region', 'evolutions-title'], ['previous-region', 'previous-title']]) {
+    // Lot 5i : région « Toutes les versions » (versions-region, avant : previous-region « Versions précédentes ») ; colonnes home-col-main et home-col-versions.
+    for (const [id, title] of [['evolutions-region', 'evolutions-title'], ['versions-region', 'versions-title']]) {
       expect(html).toMatch(new RegExp(`id="${id}" role="region" tabindex="0" aria-labelledby="${title}"`));
     }
-    const columns = html.split('<div class="home-col">');
+    const columns = html.split(/<div class="home-col home-col-(?:main|versions)">/);
     expect(columns).toHaveLength(3);
     expect(columns[1]).toContain('evolutions-region');
-    expect(columns[2]).toContain('previous-region');
+    expect(columns[2]).toContain('versions-region');
     expect(html).not.toMatch(/journal|dev\/"|next\//i);
   });
 
@@ -537,15 +541,16 @@ describe('accueil : page, rendu et textes', () => {
   });
 
   it('textes de l\'accueil et des pages produites dans fr.json (et en.json) ; plus de clé du journal ni du bandeau de next/', () => {
-    expect(fr['home.version']).toBe('{channel} · Version {version}');
-    expect(fr['home.channel.recette']).toBe('Recette'); // main = Recette (demande du propriétaire)
+    // Lot 5i : bandeau « Recette » seul (avant : home.version « {channel} · Version {version} » et home.channel.recette « Recette ») ; la version est dans le bouton.
+    expect(fr['home.playVersion']).toBe('Jouer - {version}');
+    expect(fr['home.badge']).toBe('Recette'); // main = Recette (demande du propriétaire)
     expect(fr['home.play']).toBe('Jouer');
     expect(fr['home.next']).toBe('Dernier build de développement');
     expect(fr['home.nextNone']).toBe('Aucun build de développement pour l\'instant');
     expect(fr['home.evolutionsTitle']).toBe('Évolutions en cours de développement');
     expect(fr['home.evolutionsNone']).toBe('Aucune évolution depuis la version Recette.');
     expect(fr['home.previousTitle']).toBe('Versions précédentes');
-    for (const gone of ['home.journal', 'home.devBanner', 'home.channel.dev', 'site.lots.retired', 'site.next.none']) expect([fr[gone], en[gone]], gone).toEqual([undefined, undefined]);
+    for (const gone of ['home.journal', 'home.devBanner', 'home.channel.dev', 'site.lots.retired', 'site.next.none', 'home.version', 'home.channel.recette', 'home.versionUnknown', 'home.versionSource']) expect([fr[gone], en[gone]], gone).toEqual([undefined, undefined]);
     expect(fr['site.construction.text']).toBe('Z-Survival est en construction.'); // lot 5g (avant : site.lots.retired, page de renvoi des aperçus)
     const homeKeys = (dict) => Object.keys(dict).filter((k) => /^(home|site)\./.test(k)).sort();
     expect(homeKeys(en)).toEqual(homeKeys(fr));
@@ -558,7 +563,7 @@ describe('accueil : page, rendu et textes', () => {
     expect(css).toMatch(/min-height: var\(--touch-target\)/);
     expect(css).toMatch(/@media \(min-width: 640px\) \{\n {2}\.home-grid \{\n {4}grid-template-columns: minmax\(0, 1fr\) minmax\(0, 1fr\);/);
     expect(css).toMatch(/\.home-scroll \{\n {2}overflow-y: auto;/);
-    expect(css).toMatch(/\.home-scroll-previous \{\n {2}max-height: /);
+    expect(css).toMatch(/\.home-scroll-versions \{\n {2}max-height: /); // lot 5i : avant .home-scroll-previous
   });
 
   it('build-info.json et site-info.json du dépôt : canal « source » (remplacés dans le site publié)', () => {
@@ -770,9 +775,10 @@ describe('étiquettes des versions (lot 5h) : même règle dans site-info.mjs et
     delete sansLabel.label;
     expect(homeModel({ ...info, recette: sansLabel }).version).toBe('V0.5');
   });
-  it('main.js insère l\'étiquette par textContent (fill de home.version), jamais par innerHTML', () => {
+  // Lot 5i : l'étiquette est dans le bouton (fill de home.playVersion) ; avant : bandeau (fill de home.version).
+  it('main.js insère l\'étiquette par textContent (fill de home.playVersion), jamais par innerHTML', () => {
     const main = read('js/accueil/main.js');
-    expect(main).toContain("$('version').textContent = model.state === 'ok' ? fill(t('home.version'), { channel: t('home.channel.recette'), version: model.version })");
+    expect(main).toContain("$('play').textContent = model.state === 'ok' ? fill(t('home.playVersion'), { version: model.playLabel }) : t('home.play');");
     expect(main).not.toMatch(/innerHTML|insertAdjacentHTML|outerHTML/);
   });
 });
@@ -870,7 +876,7 @@ describe('site-info.json de la publication de V0.6 (lot 5f)', () => {
   const siteDe = (changelog) => assemble({ versions: actuel, mainDir: build(), devDir: build({ changelog }), archiveDir: archiveDir(['v0.1', 'v0.2', 'v0.3', 'v0.4', 'v0.5'], actuel), dev: DEV });
 
   it('recette = V0.6, versions précédentes V0.5 → V0.1 (archives), évolutions vides : les lots en v0.6 disparaissent ; site-info.json valide', () => {
-    expect(journal.lots.filter((l) => l.version === 'v0.6').map((l) => l.name)).toEqual(['lot-5a', 'lot-5b', 'lot-5c', 'lot-5d', 'lot-5e', 'lot-5g', 'lot-5h', 'lot-5f']);
+    expect(journal.lots.filter((l) => l.version === 'v0.6').map((l) => l.name)).toEqual(['lot-5a', 'lot-5b', 'lot-5c', 'lot-5d', 'lot-5e', 'lot-5g', 'lot-5h', 'lot-5f', 'lot-5i']); // lot 5i ajouté
     const { out: dir, siteInfo } = siteDe(journal);
     const v06 = actuel.versions.find((v) => v.id === 'v0.6');
     expect(siteInfo.recette).toEqual({ id: 'v0.6', label: 'V0.6', title: v06.title, date: '2026-11-06', ref: v06.ref, entry: 'jeu.html' });
@@ -893,5 +899,143 @@ describe('site-info.json de la publication de V0.6 (lot 5f)', () => {
     expect(siteInfo.recette.id).toBe('v0.6');
     expect(siteInfo.precedentes.map((p) => p.id)).toEqual(['v0.5', 'v0.4', 'v0.3', 'v0.2', 'v0.1']);
     expect(validateSiteInfo(siteInfo)).toEqual({ ok: true, errors: [] });
+  });
+});
+
+// Lot 5i : accueil retouché (option B) : bandeau « Recette », bouton « Jouer - <étiquette> », colonne « Toutes les versions » (carte de la version
+// actuelle avec sa description complète, sans lien, puis versions précédentes), pleine hauteur. Le rendu dans le navigateur (textContent, tailles,
+// hauteur) est vérifié par tests/e2e/publication.spec.js ; ici : modèle (home.js), site-info.json (assembleur), page, textes et styles.
+describe('accueil retouché (lot 5i) : carte de la version actuelle, « Jouer - <étiquette> », description complète', () => {
+  const D200 = 'd'.repeat(199) + 'é';
+  const html = read('index.html');
+  const main = read('js/accueil/main.js');
+  const fr = readJson('data/i18n/fr.json');
+  const en = readJson('data/i18n/en.json');
+  const info = buildSiteInfo({ versions: real, dev: { present: false }, genere: GENERE });
+
+  it('bornes : description de version 200 caractères (comme le fichier des noms), étiquette du bouton 20 caractères', () => {
+    expect([MAX_DESCRIPTION, MAX_VERSION_TITLE, MAX_DESCRIPTION_NOMS]).toEqual([200, 200, 200]);
+    expect(MAX_PLAY_LABEL).toBe(20);
+  });
+
+  const etiquettes = [['V0.6', 'V0.6'], ['  V0.6 bêta  ', 'V0.6 bêta'], ['é'.repeat(20), 'é'.repeat(20)], ['é'.repeat(21), 'V0.6'], ['', 'V0.6'], ['   ', 'V0.6'],
+    ['a\u0007b', 'V0.6'], ['a\nb', 'V0.6'], ['a\u0085b', 'V0.6'], [undefined, 'V0.6'], [42, 'V0.6'], ['<b>V0.6</b>', '<b>V0.6</b>'], ['<img src=x onerror=alert(1)>', 'V0.6']];
+  it.each(etiquettes)('playLabel(%j, "v0.6") → %j (20 caractères au plus, sinon V<id> ; HTML gardé comme texte)', (value, expected) => {
+    expect(playLabel(value, 'v0.6')).toBe(expected);
+  });
+
+  it('homeModel : étiquette du bouton (≤ 20 caractères, sinon V<id>) ; la carte garde l\'étiquette complète (jusqu\'à 60)', () => {
+    expect(homeModel(info)).toMatchObject({ playLabel: 'V0.5', current: { label: 'V0.5', title: real.versions.find((v) => v.id === 'v0.5').title } });
+    const long = homeModel({ ...info, recette: { ...info.recette, label: 'V0.5 — un nom de 21 c' } });
+    expect([...'V0.5 — un nom de 21 c']).toHaveLength(21);
+    expect([long.playLabel, long.current.label, long.version]).toEqual(['V0.5', 'V0.5 — un nom de 21 c', 'V0.5 — un nom de 21 c']);
+    const vingt = homeModel({ ...info, recette: { ...info.recette, label: 'V0.5 — nom de 20 car' } });
+    expect([...'V0.5 — nom de 20 car']).toHaveLength(20);
+    expect(vingt.playLabel).toBe('V0.5 — nom de 20 car');
+    for (const bad of ['', '   ', 'a\u0007b', null]) expect(homeModel({ ...info, recette: { ...info.recette, label: bad } }).playLabel, String(bad)).toBe('V0.5');
+    expect(fill(fr['home.playVersion'], { version: 'V0.6' })).toBe('Jouer - V0.6');
+  });
+
+  it('carte : description complète de 200 caractères (jamais tronquée), vide ou absente → \'\' (badge et nom seulement), HTML gardé comme texte, contrôles retirés', () => {
+    expect(homeModel({ ...info, recette: { ...info.recette, title: D200 } }).current.title).toBe(D200);
+    expect([...homeModel({ ...info, recette: { ...info.recette, title: `${D200}xyz` } }).current.title]).toHaveLength(200);
+    expect(homeModel({ ...info, recette: { ...info.recette, title: '' } }).current).toEqual({ label: 'V0.5', title: '' });
+    const sans = { ...info.recette };
+    delete sans.title;
+    expect(homeModel({ ...info, recette: sans }).current).toEqual({ label: 'V0.5', title: '' });
+    expect(homeModel({ ...info, recette: { ...info.recette, title: 42 } }).current.title).toBe('');
+    expect(homeModel({ ...info, recette: { ...info.recette, title: '<img src=x onerror=alert(1)>\u0000<b>x</b>' } }).current.title).toBe('<img src=x onerror=alert(1)> <b>x</b>');
+    expect(homeModel({ ...info, recette: { ...info.recette, title: D200 } }).state).toBe('ok');
+  });
+
+  it('versions précédentes : ordre (la plus récente en haut), indisponible sans lien avec sa raison, description de 200 caractères gardée, cent versions', () => {
+    const model = homeModel(buildSiteInfo({ versions: testVersions(real), dev: {}, genere: GENERE }));
+    expect(model.previous.map((v) => [v.label, v.href])).toEqual([['V0.4', '../v0.4/jeu.html'], ['V0.3', '../v0.3/jeu.html'], ['V0.2', '../v0.2/jeu.html'], ['V0.1', null]]);
+    expect(model.previous.at(-1).note).toBe('Version de test indisponible (jeu de versions fictif).');
+    const longue = structuredClone(real);
+    longue.versions.find((v) => v.id === 'v0.4').title = D200;
+    const siteInfo = buildSiteInfo({ versions: longue, dev: {}, genere: GENERE });
+    expect(siteInfo.precedentes[0].title).toBe(D200);
+    expect(homeModel(siteInfo).previous[0].title).toBe(D200);
+    expect(validateSiteInfo(siteInfo)).toEqual({ ok: true, errors: [] });
+    const hundred = homeModel(buildSiteInfo({ versions: manyVersions(101), dev: {}, genere: GENERE }));
+    expect(hundred.previous.map((v) => v.label)).toEqual(Array.from({ length: 100 }, (_, i) => `V0.${100 - i}`));
+    expect(hundred.current.label).toBe('V0.101');
+  });
+
+  it('la version Recette change (publication suivante, sans modification de code) : la carte suit recette, l\'ancienne rejoint les versions précédentes en tête', () => {
+    const v07 = { ...actuel.versions.find((v) => v.id === 'v0.6'), id: 'v0.7', label: 'V0.7', title: 'Version suivante (fictive).', ref: 'c'.repeat(40) };
+    const suivante = { ...actuel, latest: 'v0.7', versions: [...actuel.versions.map((v) => (v.id === 'v0.6' ? { ...v, status: 'archive' } : v)), v07] };
+    const avant = homeModel(buildSiteInfo({ versions: actuel, dev: {}, genere: GENERE }));
+    const apres = homeModel(buildSiteInfo({ versions: suivante, dev: {}, genere: GENERE }));
+    expect([avant.current.label, avant.playLabel, avant.previous[0].label]).toEqual(['V0.6', 'V0.6', 'V0.5']);
+    expect([apres.current, apres.playLabel]).toEqual([{ label: 'V0.7', title: 'Version suivante (fictive).' }, 'V0.7']);
+    expect(apres.previous.map((v) => v.label)).toEqual(['V0.6', 'V0.5', 'V0.4', 'V0.3', 'V0.2', 'V0.1']);
+    expect(apres.previous[0]).toMatchObject({ title: actuel.versions.find((v) => v.id === 'v0.6').title, href: '../v0.6/jeu.html' });
+  });
+
+  it('site-info.json : recette.title = description complète du fichier des noms (200 caractères, avant : tronquée à 120) ; validateSiteInfo l\'accepte, refuse 201', () => {
+    const fichier = ['[v0.5]', `description: ${D200}`, '[v0.4]', `description: ${D200}`].join('\n');
+    const result = assemble({ mainDir: build(), devDir: build({ extra: { [NOMS_FICHIER]: fichier } }), archiveDir: archiveDir(), dev: DEV });
+    const siteInfo = readJson(join(result.out, 'Recette/site-info.json'));
+    expect(siteInfo.recette.title).toBe(D200);
+    expect(siteInfo.precedentes[0].title).toBe(D200);
+    expect(result.noms.applique).toBe(true);
+    expect(validateSiteInfo(siteInfo)).toEqual({ ok: true, errors: [] });
+    expect(validateSiteInfo({ ...siteInfo, recette: { ...siteInfo.recette, title: `${D200}x` } }).errors).toContain('recette : title invalide');
+    expect(validateSiteInfo({ ...siteInfo, precedentes: [{ ...siteInfo.precedentes[0], title: `${D200}x` }] }).errors).toContain('precedentes[0] invalide');
+    expect(Object.keys(siteInfo).sort()).toEqual(['dev', 'evolutions', 'genere', 'precedentes', 'recette', 'schema']); // structure inchangée
+    expect(Object.keys(siteInfo.recette).sort()).toEqual(['date', 'entry', 'id', 'label', 'ref', 'title']);
+  });
+
+  it('fichier des noms du dépôt : recette.title de V0.6 = sa description complète (bloc [v0.6]), quelle que soit sa longueur (≤ 200)', () => {
+    const texte = readFileSync(NOMS_FICHIER, 'utf8');
+    const bloc = parseNoms(texte).blocs.find((b) => b.id === actuel.latest);
+    const result = assemble({ versions: actuel, mainDir: build(), devDir: build({ extra: { [NOMS_FICHIER]: texte } }), archiveDir: archiveDir(['v0.1', 'v0.2', 'v0.3', 'v0.4', 'v0.5'], actuel), dev: DEV });
+    const attendu = typeof bloc?.description === 'string' ? cleanText(bloc.description, MAX_VERSION_TITLE) : cleanText(actuel.versions.find((v) => v.id === actuel.latest).title, MAX_VERSION_TITLE);
+    expect(result.siteInfo.recette.title).toBe(attendu);
+    expect(result.siteInfo.recette.title.endsWith('…')).toBe(false);
+    expect(validateSiteInfo(result.siteInfo)).toEqual({ ok: true, errors: [] });
+  });
+
+  it('site de test noms/ : description fictive de 200 caractères pour la Recette (V0.6), sans changer son nom', () => {
+    expect([...DESCRIPTION_RECETTE_TEST]).toHaveLength(200);
+    const bloc = parseNoms(NOMS_TEST).blocs.find((b) => b.id === 'v0.6');
+    expect(bloc).toMatchObject({ description: DESCRIPTION_RECETTE_TEST });
+    expect(bloc.nom).toBeUndefined();
+  });
+
+  it('page : bandeau « Recette » (home.badge), « Toutes les versions », carte sans lien (badge, nom, description), « Versions précédentes » en sous-titre dans la même région', () => {
+    expect(html).toContain('<p class="crumb zone corner" id="version" data-i18n="home.badge"></p>');
+    const region = html.slice(html.indexOf('id="versions-region"'), html.indexOf('</section>', html.indexOf('id="versions-region"')));
+    const card = region.slice(region.indexOf('id="current-card"'), region.indexOf('</div>', region.indexOf('id="current-card"')));
+    expect(card).toContain('data-i18n="home.currentBadge"');
+    expect(card).toContain('id="current-name"');
+    expect(card).toContain('id="current-text"');
+    expect(card).not.toMatch(/<a\b|href=/);
+    expect(region.indexOf('id="current-card"')).toBeLessThan(region.indexOf('id="previous-title"'));
+    expect(region.indexOf('id="previous-title"')).toBeLessThan(region.indexOf('id="previous-list"'));
+    expect(main).toContain("$('current-text').hidden = !model.current?.title;");
+    expect(main).not.toMatch(/innerHTML|outerHTML|insertAdjacentHTML|\$\('version'\)/);
+  });
+
+  it('textes : home.badge, home.playVersion, home.versionsTitle, home.currentBadge (français et anglais), aucune clé orpheline', () => {
+    expect([fr['home.badge'], fr['home.playVersion'], fr['home.versionsTitle'], fr['home.currentBadge'], fr['home.previousTitle']]).toEqual(['Recette', 'Jouer - {version}', 'Toutes les versions', 'Version actuelle', 'Versions précédentes']);
+    for (const key of ['home.badge', 'home.playVersion', 'home.versionsTitle', 'home.currentBadge']) expect(typeof en[key], key).toBe('string');
+    const keys = Object.keys(fr).filter((k) => k.startsWith('home.'));
+    expect(keys.filter((k) => !main.includes(`'${k}'`) && !html.includes(`"${k}"`))).toEqual([]);
+  });
+
+  it('styles : pleine hauteur dès 640 × 520 (zones étirées), carte aux jetons de l\'accueil (tokens.css, bloc isolé), description de 19 px, bouton qui passe à la ligne', () => {
+    const css = read('css/accueil.css');
+    const tokens = read('css/tokens.css');
+    expect(css).toMatch(/@media \(min-width: 640px\) and \(min-height: 520px\) \{\n {2}\.home-grid \{\n {4}grid-template-rows: minmax\(0, 1fr\);/);
+    expect(css).toMatch(/\.home-scroll-versions \{\n {4}flex: 1 1 0;\n {4}min-height: 6rem;\n {4}max-height: none;/);
+    expect(css).toMatch(/\.home-current \{[^}]*border: 2px solid var\(--home-current-border\);[^}]*background: var\(--home-current-surface\);/);
+    expect(css).toMatch(/\.home-current-text \{[^}]*font-size: 1\.1875rem;/);
+    expect(css).toMatch(/\.button\.play \{[^}]*max-width: 100%;/);
+    expect(css).toContain('@media (min-width: 640px) and (max-height: 500px)'); // comportement d'avant gardé sous 520 px de haut
+    expect(tokens).toMatch(/\/\* Accueil de la Recette \(lot 5i\)[^\n]*\*\/\n {2}--home-current-border: #[0-9a-f]{6};[^\n]*\n {2}--home-current-surface: #[0-9a-f]{6};/);
+    expect(read('css/base.css')).toMatch(/min-height: calc\(100vh - 2 \* var\(--space-3\)\);\n {2}min-height: calc\(100dvh - 2 \* var\(--space-3\)\);/);
   });
 });

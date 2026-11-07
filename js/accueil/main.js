@@ -1,5 +1,6 @@
-// Accueil de la Recette (lot 4c ; refait au lot 5g) : étiquette de la version, « Jouer », dernier build de développement, évolutions en cours de
-// développement (colonne de gauche) et versions précédentes (colonne de droite). Une seule lecture : site-info.json, dans le dossier courant
+// Accueil de la Recette (lot 4c ; refait au lot 5g ; retouché au lot 5i) : bandeau « Recette », « Jouer - <étiquette> », dernier build de développement,
+// évolutions en cours de développement (colonne de gauche) et « Toutes les versions » (colonne de droite : carte de la version actuelle, sans lien,
+// puis versions précédentes). Une seule lecture : site-info.json, dans le dossier courant
 // (Recette/ du site assemblé). Contenu inséré par textContent seulement ; aucune requête externe, aucun stockage.
 import { startPage } from '../page.js';
 import { fill, formatDate, homeModel } from './home.js';
@@ -44,8 +45,8 @@ function evolutionItem(e) {
 }
 
 function render({ t, lang }) {
-  $('version').textContent = model.state === 'ok' ? fill(t('home.version'), { channel: t('home.channel.recette'), version: model.version })
-    : t(model.state === 'source' ? 'home.versionSource' : 'home.versionUnknown');
+  // Lot 5i : le bandeau dit « Recette » seulement (data-i18n="home.badge") ; la version est dans le bouton (« Jouer - V0.6 »), sans version connue : « Jouer ».
+  $('play').textContent = model.state === 'ok' ? fill(t('home.playVersion'), { version: model.playLabel }) : t('home.play');
   $('play').href = model.play;
 
   const notice = $('site-notice');
@@ -62,7 +63,11 @@ function render({ t, lang }) {
   devLink.querySelector('.meta').hidden = !meta;
 
   // Listes : seulement pour un site assemblé (sinon, les liens statiques suffisent).
-  for (const id of ['evolutions-section', 'previous-section']) $(id).hidden = model.state !== 'ok';
+  for (const id of ['evolutions-section', 'versions-section']) $(id).hidden = model.state !== 'ok';
+  // Carte de la version actuelle (lot 5i) : étiquette et description complète ; sans description, seulement le badge et le nom ; aucun lien.
+  $('current-name').textContent = model.current?.label ?? '';
+  $('current-text').textContent = model.current?.title ?? '';
+  $('current-text').hidden = !model.current?.title;
   $('evolutions-list').replaceChildren(...model.evolutions.map(evolutionItem));
   $('evolutions-none').hidden = model.evolutions.length > 0;
   $('previous-list').replaceChildren(...model.previous.map((v) => previousItem(v, t)));

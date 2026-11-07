@@ -1,9 +1,12 @@
-/* Accueil de la Recette (lot 4c ; refait au lot 5g) : « Jouer », développement et évolutions à gauche, versions précédentes à droite.
+/* Accueil de la Recette (lot 4c ; refait au lot 5g ; retouché au lot 5i) : « Jouer - <étiquette> », développement et évolutions à gauche,
+   « Toutes les versions » à droite (carte de la version actuelle, puis versions précédentes).
    Couleurs : variables de tokens.css seulement. Deux colonnes à partir de 640 px, une en dessous ; les listes défilent dans des zones de hauteur
-   limitée (la page ne s'allonge pas avec le nombre de versions). */
+   limitée (la page ne s'allonge pas avec le nombre de versions). Lot 5i : à partir de 640 px de large et 520 px de haut, l'interface occupe toute
+   la hauteur de la fenêtre (min-height de .screen, 100dvh avec repli 100vh, dans base.css) : la liste des évolutions et la région des versions
+   s'étirent jusqu'au pied, la page entière ne défile pas ; sous 520 px de haut, le comportement d'avant est gardé. */
 
 .home {
-  grid-template-rows: auto 1fr auto;
+  grid-template-rows: auto minmax(0, 1fr) auto;
 }
 
 .home-grid {
@@ -29,13 +32,16 @@
   margin: 0;
 }
 
-/* Bouton « Jouer » : lien en forme de bouton rouge plein (texte sur rouge uni). */
+/* Bouton « Jouer - <étiquette> » : lien en forme de bouton rouge plein (texte sur rouge uni) ; passe à la ligne plutôt que de déborder (375 px). */
 .button.play {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  max-width: 100%;
   min-height: 56px;
   min-width: 10rem;
+  text-align: center;
+  overflow-wrap: anywhere;
   padding: var(--space-2) var(--space-6);
   font-size: var(--text-lg);
   letter-spacing: 0.06em;
@@ -108,8 +114,64 @@
   max-height: 11rem;
 }
 
-.home-scroll-previous {
-  max-height: 14rem;
+.home-scroll-versions {
+  max-height: 19rem;
+}
+
+/* Carte de la version actuelle (lot 5i) : bordure rouge de 2 px, fond légèrement teinté (jetons de l'accueil dans tokens.css), « Version actuelle »
+   écrit en lettres (jamais la couleur seule), nom en grand, description complète ; aucun lien (« Jouer » joue déjà cette version). */
+.home-current {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-1);
+  margin: var(--space-2) 0 var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border: 2px solid var(--home-current-border);
+  border-radius: var(--radius-md);
+  background: var(--home-current-surface);
+}
+
+.home-current-badge {
+  margin: 0;
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-sm);
+  background: var(--color-action);
+  color: var(--color-on-action);
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.home-current-name {
+  margin: 0;
+  max-width: 100%;
+  font-family: var(--font-sans);
+  font-size: var(--text-xl);
+  font-weight: var(--font-weight-bold);
+  line-height: 1.15;
+  color: var(--color-text);
+  overflow-wrap: anywhere;
+}
+
+.home-current-text {
+  margin: 0;
+  max-width: 100%;
+  font-size: 1.1875rem;
+  line-height: 1.4;
+  color: var(--color-text);
+  overflow-wrap: anywhere;
+}
+
+.home-subheading {
+  margin: 0 0 var(--space-1);
+  font-family: var(--font-sans);
+  font-size: var(--text-md);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
 }
 
 .home-list {
@@ -158,7 +220,7 @@
   font-weight: var(--font-weight-bold);
 }
 
-/* Deux colonnes dès 640 px : la colonne de droite (versions précédentes) occupe toute la hauteur disponible. */
+/* Deux colonnes dès 640 px. */
 @media (min-width: 640px) {
   .home-grid {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
@@ -166,8 +228,33 @@
     align-items: start;
   }
 
-  .home-scroll-previous {
+  .home-scroll-versions {
     max-height: 22rem;
+  }
+}
+
+/* Pleine hauteur (lot 5i), dès 640 px de large et 520 px de haut : la grille remplit la ligne centrale de .screen (min-height 100dvh, repli 100vh) ;
+   chaque colonne s'étire jusqu'au pied ; les zones qui défilent prennent la place restante (base 0, au moins 6rem) au lieu d'une hauteur fixe.
+   Si le contenu dépasse la fenêtre, la page s'allonge (jamais de contenu coupé). */
+@media (min-width: 640px) and (min-height: 520px) {
+  .home-grid {
+    grid-template-rows: minmax(0, 1fr);
+    align-content: stretch;
+    align-items: stretch;
+    padding-block: var(--space-5) var(--space-3);
+  }
+
+  .home-section-evolutions,
+  .home-section-versions {
+    flex: 1 1 0;
+    min-height: 0;
+  }
+
+  .home-scroll-evolutions,
+  .home-scroll-versions {
+    flex: 1 1 0;
+    min-height: 6rem;
+    max-height: none;
   }
 }
 
@@ -202,7 +289,7 @@
     max-height: 6rem;
   }
 
-  .home-scroll-previous {
+  .home-scroll-versions {
     max-height: 15rem;
   }
 }
