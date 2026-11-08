@@ -135,6 +135,9 @@ describe('menu de débogage : textes, style et chargement (lot 5l)', () => {
     expect(src).not.toMatch(/#[0-9a-fA-F]{3,8}\b|rgba?\(|hsla?\(/);
     expect(src).not.toMatch(/^import /m);
     for (const c of ['panel-options', 'options-scroll', 'options-row', 'options-value', 'options-reload']) expect(src).toContain(`'${c}'`);
+    // Lot 5l-E (retours du propriétaire) : Mesure avant Partie ; encadré du mode essai dans la ligne du titre de Partie.
+    expect(src).toContain("for (const [id, key] of [['mesure', 'game.debug.section.mesure'], ['partie', 'game.debug.section.partie']]) {");
+    expect(src).toContain("sections.partie.querySelector('.debug-section-head').append(note);");
     expect(src).not.toMatch(/innerHTML|outerHTML|insertAdjacentHTML|localStorage|sessionStorage|fetch\(/);
   });
 

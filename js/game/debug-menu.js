@@ -1,6 +1,6 @@
 // Menu de débogage de la pause (lot 5l, bloc E2-13) : chargé par import dynamique au premier clic sur l'icône « Débogage » (aucun fichier de plus au
 // démarrage). L'icône n'existe que sur les canaux de débogage (source, dev, release ; Docs/ref/debug.md). Panneau du style de l'écran Options : en tête
-// le titre et la croix de fermeture ; une région qui défile (sections Partie et Mesure) ; en pied l'adresse obtenue, « Appliquer et recharger » et
+// le titre et la croix de fermeture ; une région qui défile (sections Mesure, la plus utile, puis Partie ; retours du propriétaire, lot 5l-E) ; en pied l'adresse obtenue, « Appliquer et recharger » et
 // « Revenir au jeu normal », chacun après confirmation (« Cette partie sera perdue »). Les valeurs sont lues dans l'adresse actuelle ; l'adresse construite
 // (jeu.html?…) ne garde que les valeurs non standard et conserve les paramètres que le panneau ne gère pas (v=, test=, gfx=…). Les réglages de Partie
 // sont tous dans readOnlyParams (data/game/save.json) : la partie rechargée est en mode essai, la sauvegarde n'est pas modifiée ; perf et cap n'y sont
@@ -164,17 +164,21 @@ export function createDebugMenu({ dict, search = '', planksMax = PLANKS_MAX, nav
 
   const scroll = el('div', ['options-scroll'], { role: 'region', tabindex: '0', 'aria-label': t('game.debug.scroll'), id: 'debug-scroll' });
   const sections = {};
-  for (const [id, key] of [['partie', 'game.debug.section.partie'], ['mesure', 'game.debug.section.mesure']]) {
+  // Retours du propriétaire (lot 5l-E) : Mesure en premier (le plus utile) ; l'encadré du mode essai sur la ligne du titre « Partie » (une ligne de gagnée).
+  for (const [id, key] of [['mesure', 'game.debug.section.mesure'], ['partie', 'game.debug.section.partie']]) {
     const sec = el('section', ['options-section'], { 'aria-labelledby': `debug-section-${id}` });
+    const headLine = el('div', ['debug-section-head']);
     const h = el('h3', ['options-section-title'], { id: `debug-section-${id}` });
     h.textContent = t(key);
-    sec.append(h);
+    headLine.append(h);
+    sec.append(headLine);
     scroll.append(sec);
     sections[id] = sec;
   }
   const note = el('p', ['debug-note'], { id: 'debug-note' });
   note.textContent = t('game.debug.trial');
-  sections.partie.append(note);
+  sections.partie.querySelector('.debug-section-head').append(note);
+  sections.partie.setAttribute('aria-describedby', note.id);
 
   const syncers = [];
   const row = (section, id, labelKey, control, hintKey = null) => {

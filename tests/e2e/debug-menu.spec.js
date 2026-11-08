@@ -72,13 +72,22 @@ test.describe('667×375 (canal source)', () => {
     await expect(page.locator('#pause-panel')).toBeHidden();
     expect(files.filter((f) => f === '/js/game/debug-menu.js')).toHaveLength(1);
     await expect(page.locator('#debug-close')).toBeFocused();
+    // Retours du propriétaire (lot 5l-E) : Mesure en premier, visible dès l'ouverture ; encadré du mode essai sur la ligne du titre « Partie ».
+    expect(await page.evaluate(() => [...document.querySelectorAll('#debug-scroll h3')].map((h) => h.textContent))).toEqual(['Mesure', 'Partie']);
+    for (const id of ['#debug-perf-true', '#debug-cap-60']) await expect(page.locator(id), id).toBeInViewport({ ratio: 1 });
+    const line = await page.evaluate(() => {
+      const r = (id) => document.getElementById(id).getBoundingClientRect();
+      const [h, n] = [r('debug-section-partie'), r('debug-note')];
+      return { sameLine: n.top < h.bottom && n.bottom > h.top, right: n.left >= h.right };
+    });
+    expect(line).toEqual({ sameLine: true, right: true });
     // Défilement interne : la région défile, l'en-tête et le pied restent dans la fenêtre ; la dernière ligne est atteignable.
     const scroll = page.locator('#debug-scroll');
     await expect(scroll).toHaveAttribute('role', 'region');
     await expect(scroll).toHaveAttribute('aria-label', 'Réglages de débogage');
     expect(await scroll.evaluate((n) => n.scrollHeight > n.clientHeight + 40)).toBe(true);
     await scroll.evaluate((n) => { n.scrollTop = n.scrollHeight; });
-    for (const id of ['#debug-title', '#debug-close', '#debug-cap-60', '#debug-apply', '#debug-normal']) await expect(page.locator(id), id).toBeInViewport({ ratio: 1 });
+    for (const id of ['#debug-title', '#debug-close', '#debug-fin-true', '#debug-apply', '#debug-normal']) await expect(page.locator(id), id).toBeInViewport({ ratio: 1 });
     const page2 = await page.evaluate(() => [document.documentElement.scrollWidth - innerWidth, document.documentElement.scrollHeight - innerHeight]);
     expect(page2).toEqual([0, 0]);
     expect(await sizes(page)).toEqual({ small: [], tiny: [] });
@@ -186,7 +195,7 @@ for (const viewport of [{ width: 1440, height: 900 }, { width: 375, height: 812 
     await waitGame(page);
     await openDebug(page);
     await page.locator('#debug-scroll').evaluate((n) => { n.scrollTop = n.scrollHeight; });
-    for (const id of ['#debug-title', '#debug-cap-60', '#debug-apply']) await expect(page.locator(id), id).toBeInViewport({ ratio: 1 });
+    for (const id of ['#debug-title', '#debug-fin-true', '#debug-apply']) await expect(page.locator(id), id).toBeInViewport({ ratio: 1 });
     expect(await sizes(page)).toEqual({ small: [], tiny: [] });
     await page.locator('#debug-scroll').evaluate((n) => { n.scrollTop = 0; });
     await type(page, '#debug-wave', '12');
