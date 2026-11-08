@@ -80,9 +80,11 @@ jobs:
           PALIER: ${{ steps.palier.outputs.palier }}
         run: node scripts/tests/budget.mjs --palier "$PALIER" --selection selection.json --plan plan.json --echec tranches
 
+  # Lot 5n (W1-a) : sautée sur un push de dev, où quick (pages.yml) fait déjà le lint et tout Vitest avant le déploiement ;
+  # bilan-duree n'a alors aucune durée de Vitest. Toujours lancée sur push lot-*, pull_request, essai/** et lancement manuel.
   unitaires:
     needs: planifier
-    if: needs.planifier.outputs.palier != ''
+    if: needs.planifier.outputs.palier != '' && !(github.event_name == 'push' && github.ref == 'refs/heads/dev')
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:

@@ -216,6 +216,17 @@ describe('workflows : tests.yml ajouté, pages.yml intact', () => {
     expect(tests).toMatch(/name: duree-tranche-\$\{\{ needs\.planifier\.outputs\.palier \}\}-\$\{\{ matrix\.index \}\}/);
     expect(tests).toMatch(/planifier:[\s\S]*?fetch-depth: 0/);
   });
+  // Lot 5n (W1-a) : sur un push de dev, quick (pages.yml) fait déjà le lint et tout Vitest, et bloque le déploiement : unitaires est sautée ;
+  // rapport ne l'attend pas, bilan-duree s'exécute quand même (always()) ; ailleurs (lot-*, pull_request, essai/**, manuel) elle tourne.
+  it('tests.yml (lot 5n, W1-a) : unitaires sautée sur un push de dev seulement ; quick garde lint et tout Vitest ; rapport et bilan-duree sans elle', () => {
+    expect(tests).toContain("\n  unitaires:\n    needs: planifier\n    if: needs.planifier.outputs.palier != '' && !(github.event_name == 'push' && github.ref == 'refs/heads/dev')\n");
+    expect(tests).toContain("\n  rapport:\n    needs: [planifier, tranches]\n    if: always() && needs.planifier.result == 'success' && needs.planifier.outputs.palier != '' && needs.planifier.outputs.n != '0'\n");
+    expect(tests).toContain("\n  bilan-duree:\n    needs: [planifier, unitaires, tranches]\n    if: always() && needs.planifier.result == 'success' && needs.planifier.outputs.palier != ''\n");
+    const quick = pages.slice(pages.indexOf('\n  quick:\n'), pages.indexOf('\n  deploy:\n'));
+    expect(quick).toContain('      - run: npm run lint\n      - run: npm test\n');
+    expect(JSON.parse(readFileSync('package.json', 'utf8')).scripts.test).toBe('vitest run');
+    expect(pages).toMatch(/\n {2}deploy:\n[\s\S]*?\n {4}needs: quick\n/);
+  });
   it('tests.yml (lot 4f) : annulation des exécutions plus anciennes pour le standard seulement (publication et complet : groupe propre à l\'exécution)', () => {
     const c = /concurrency:\n {2}group: (.+)\n {2}cancel-in-progress: (.+)\n/.exec(tests);
     expect(c).not.toBeNull();
