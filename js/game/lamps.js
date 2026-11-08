@@ -17,7 +17,7 @@ async function json(path) {
 export async function preloadLamps(mode, mapId) {
   if (mode === 'off' || !mapId || mapId === 'salle') return null;
   const doc = await json(`data/game/maps/${mapId}/lampes.world.json`).catch(() => null);
-  const out = { mapId, lamps: Array.isArray(doc?.lampes) ? doc.lampes : [], module: { createLampMeshes }, lights: null, lumieres: null };
+  const out = { mapId, lamps: Array.isArray(doc?.lampes) ? doc.lampes : [], fires: Array.isArray(doc?.feux) ? doc.feux : [], module: { createLampMeshes }, lights: null, lumieres: null };
   if (mode === 'eclairage') Object.assign(out, await preloadLights());
   return out;
 }

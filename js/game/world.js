@@ -1018,13 +1018,39 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
 
   // Lot 5k : lampes à huile (décor) et lumières dynamiques, options « Lampes et lumières » et « Lumières simultanées » (à chaud). Modules importés
   // seulement hors de « off » (préchargés par graphics-boot.js au chargement, sinon au premier changement) : avec « off », rien n'est créé ni demandé.
-  const lampKit = { mode: 'off', count: 4, data: null, tried: false, lightsTried: false, decor: null, lights: null, compiles: 0, error: null, pending: 0 };
+  // Lot 5k-G : la lune ne projette pas d'ombre en éclairage dynamique (ses ombres contredisaient celles des lampes) ; rendue à la sortie.
+  let sunShadow = sun.castShadow;
+  // Les grands maillages fusionnés du décor (meubles, piliers, décor extérieur) ne projettent pas d'ombre pour les lampes : chacun coûterait six
+  // passes de carte cubique (budget de triangles) ; les volumes d'ombre simplifiés de lights.js les remplacent. Rendus à la sortie de l'éclairage.
+  const decorCasters = [];
+  for (const g of Object.values(groups)) g.traverse((m) => { if (m.isMesh && m.castShadow) decorCasters.push(m); });
+  const applySunShadow = () => {
+    const want = sunShadow && !lampKit.lights;
+    if (sun.castShadow !== want) sun.castShadow = want;
+    for (const m of decorCasters) if (m.castShadow !== !lampKit.lights) m.castShadow = !lampKit.lights;
+  };
+  const lampKit = { mode: 'off', count: 4, shadows: 0, data: null, tried: false, lightsTried: false, decor: null, lights: null, compiles: 0, error: null, pending: 0 };
   let lampChain = Promise.resolve();
   let lastView = null;
   let floorNow = 'rdc';
-  const applyLamps = (mode, count, renderer) => {
+  // Lot 5k-G : feux comme sources de lumière : intérieurs (lampes.world.json → feux, portée sûre de npm run carte, seulement s'ils sont dessinés) et
+  // extérieurs avec flammes (voiture en flammes, bidons ; portée sous l'étage), jamais la fumée seule de l'hélicoptère.
+  const fireSources = () => {
+    const drawn = new Set(fires.map((f) => f.stats().id));
+    const list = (lampKit.data?.fires ?? []).filter((f) => drawn.has(f.id));
+    for (const f of fires) {
+      if (f.group.userData.floor !== 'exterieur') continue;
+      const st = f.stats();
+      if (!st.flames) continue;
+      const h = st.y + 14;
+      list.push({ id: `feu:${st.id}`, floor: 'exterieur', kind: 'feu', light: { x: st.x, y: st.z, h }, portee: Math.floor(lift - h - 2) });
+    }
+    return list;
+  };
+  const applyLamps = (mode, count, shadows, renderer) => {
     lampKit.mode = mode;
     lampKit.count = count;
+    lampKit.shadows = shadows;
     let created = false;
     if (mode !== 'off' && !lampKit.decor && lampKit.data) {
       lampKit.decor = lampKit.data.module.createLampMeshes({ groups, lamps: lampKit.data.lamps, palette, floors });
@@ -1033,13 +1059,14 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
     lampKit.decor?.setVisible(mode !== 'off');
     // Éclairage : lumières en nombre fixe (programmes recompilés une fois à chaque changement de mode ou de nombre, jamais en partie).
     if (mode === 'eclairage' && !lampKit.lights && lampKit.data?.lights) {
-      lampKit.lights = lampKit.data.lights.createLights({ scene, ambient: ambientLight, sun, lamps: lampKit.data.lamps, json: lampKit.data.lumieres, palette, count, lift, reduced: render.reducedMotion === true });
+      lampKit.lights = lampKit.data.lights.createLights({ scene, ambient: ambientLight, sun, lamps: lampKit.data.lamps, fires: fireSources(), json: lampKit.data.lumieres, palette, count, shadows, lift, reduced: render.reducedMotion === true, occluders, groups });
       created = true;
     } else if (mode !== 'eclairage' && lampKit.lights) {
       lampKit.lights.dispose();
       lampKit.lights = null;
       created = true;
-    } else if (lampKit.lights?.setCount(count)) created = true;
+    } else if (lampKit.lights?.setCount(count, shadows)) created = true;
+    applySunShadow();
     // Préchauffage (changement à chaud seulement : au chargement, game.js compile toute la scène avant la première image).
     if (created && renderer && lastView) {
       renderer.compile(scene, lastView);
@@ -1047,7 +1074,7 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
     }
   };
 
-  const lampStats = () => ({ mode: lampKit.mode, count: lampKit.count, ready: lampKit.pending === 0, lamps: lampKit.data?.lamps.length ?? 0, meshes: lampKit.decor?.stats() ?? [], lights: lampKit.lights?.stats() ?? null, compiles: lampKit.compiles, error: lampKit.error });
+  const lampStats = () => ({ mode: lampKit.mode, count: lampKit.count, shadows: lampKit.shadows, ready: lampKit.pending === 0, lamps: lampKit.data?.lamps.length ?? 0, meshes: lampKit.decor?.stats() ?? [], lights: lampKit.lights?.stats() ?? null, compiles: lampKit.compiles, error: lampKit.error });
 
   let elevationNow = 0;
   return {
@@ -1111,7 +1138,8 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
       });
     },
     setShadowMap(enabled, size) {
-      if (sun.castShadow !== (enabled !== false)) sun.castShadow = enabled !== false;
+      sunShadow = enabled !== false;
+      applySunShadow();
       const n = Number.isInteger(size) && size >= 64 ? size : sun.shadow.mapSize.x;
       if (sun.shadow.mapSize.x !== n) {
         sun.shadow.mapSize.set(n, n);
@@ -1124,16 +1152,17 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
     lampStats,
     // Lot 5k : mode off | decor | eclairage, nombre de lumières ; preload : sortie de preloadLamps (graphics-boot.js). Synchrone si rien n'est à
     // charger, sinon dans l'ordre des appels. Renvoie une promesse résolue une fois appliqué.
-    setLamps(mode, count, { renderer = null, preload = null } = {}) {
+    setLamps(mode, count, { renderer = null, preload = null, shadows = null } = {}) {
       const m = ['off', 'decor', 'eclairage'].includes(mode) ? mode : 'off';
       const n = [2, 4, 6].includes(count) ? count : lampKit.count;
+      const sh = [0, 1, 2].includes(shadows) ? shadows : lampKit.shadows;
       if (preload && !lampKit.data) {
         lampKit.data = preload;
         lampKit.tried = true;
       }
       const load = (m !== 'off' && !lampKit.tried) || (m === 'eclairage' && lampKit.data !== null && !lampKit.data.lights && !lampKit.lightsTried);
       if (!load && lampKit.pending === 0) {
-        applyLamps(m, n, renderer);
+        applyLamps(m, n, sh, renderer);
         return Promise.resolve();
       }
       lampKit.pending += 1;
@@ -1146,7 +1175,7 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
           lampKit.lightsTried = true;
           Object.assign(lampKit.data, await import('./lamps.js').then((mod) => mod.preloadLights()));
         }
-        applyLamps(m, n, renderer);
+        applyLamps(m, n, sh, renderer);
       }).catch((e) => {
         lampKit.error = String(e?.message ?? e);
       }).finally(() => {
@@ -1208,7 +1237,8 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
       scene.fog.far = distance * render.fog.far;
     },
     setShadows(on) {
-      sun.castShadow = Boolean(on);
+      sunShadow = Boolean(on);
+      applySunShadow();
     },
     // La lumière suit la cible de la caméra et sa carte d'ombres (1024) couvre la zone visible : plus la vue est proche, plus l'ombre est fine.
     followSun(x, z, halfSize) {

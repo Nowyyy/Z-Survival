@@ -1,5 +1,5 @@
 {
-  "_provisoire": "Lampes à huile générées par npm run carte (scripts/plan-vers-monde.mjs) d'après lampes.json : ne jamais éditer à la main. Unités du jeu ; non solides (aucune collision, aucun effet sur le chemin, les balles, le laser ni les règles). x, y : face du support ; light : position de la lumière ; portee : distance de lumière la plus grande qui n'atteint jamais l'autre étage. Valeurs provisoires.",
+  "_provisoire": "Lampes à huile générées par npm run carte (scripts/plan-vers-monde.mjs) d'après lampes.json : ne jamais éditer à la main. Unités du jeu ; non solides (aucune collision, aucun effet sur le chemin, les balles, le laser ni les règles). x, y : face du support ; light : position de la lumière ; portee : distance de lumière la plus grande qui n'atteint jamais l'autre étage. feux : feux intérieurs (feux.json) comme sources de lumière (lot 5k-G). Valeurs provisoires.",
   "triangles": 560,
   "lampes": [
     {
@@ -242,6 +242,22 @@
       "portee": 131,
       "pillar": { "x": 1937.5, "y": 2102.5, "w": 35, "h": 35 },
       "source": { "x": 231, "y": 264 }
+    }
+  ],
+  "feux": [
+    {
+      "id": "feu-P9",
+      "floor": "rdc",
+      "kind": "feu",
+      "light": { "x": 2409.86, "y": 2234.6, "h": 51.33 },
+      "portee": 126
+    },
+    {
+      "id": "feu-Q2",
+      "floor": "etage",
+      "kind": "feu",
+      "light": { "x": 1659.36, "y": 2430.27, "h": 53.95 },
+      "portee": 159
     }
   ]
 }

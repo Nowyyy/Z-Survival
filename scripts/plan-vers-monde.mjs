@@ -9,7 +9,7 @@ import { floorProblems } from '../js/core/floor-rules.js';
 import { boxTriangles, lookOf, pieceBoxes } from '../js/core/mobilier-aspect.js';
 import { planToWorld } from '../js/core/maps.js';
 import { decorProblems, generateDecor } from '../js/core/decor.js';
-import { lampsToWorld, lampTriangles } from '../js/core/lamps.js';
+import { firesToWorld, lampsToWorld, lampTriangles } from '../js/core/lamps.js';
 import { polygonRects } from '../js/core/shape.js';
 import { rectGap } from '../js/core/collision.js';
 import { parseZones, zonesToWorld } from '../js/core/zones.js';
@@ -126,7 +126,11 @@ export function generateMapFiles(id = 'rez-de-chaussee') {
     const render = JSON.parse(readFileSync(new URL('../render.json', ROOT), 'utf8'));
     const conv = lampsToWorld(JSON.parse(readFileSync(lampesUrl, 'utf8')), { rdc: out.world, etage: etageWorldOut }, { wallThickness: params.wallThickness, windowSize: params.windowSize, floorLift: render.floorLift });
     const triangles = conv.lamps.reduce((n, l) => n + lampTriangles(l).length, 0);
-    const doc = { _provisoire: 'Lampes à huile générées par npm run carte (scripts/plan-vers-monde.mjs) d\'après lampes.json : ne jamais éditer à la main. Unités du jeu ; non solides (aucune collision, aucun effet sur le chemin, les balles, le laser ni les règles). x, y : face du support ; light : position de la lumière ; portee : distance de lumière la plus grande qui n\'atteint jamais l\'autre étage. Valeurs provisoires.', triangles, lampes: conv.lamps };
+    // Lot 5k-G : feux intérieurs (feux.json sur les pièces de mobilier.world.json) comme sources de lumière, avec leur portée sûre.
+    const feuxUrl = new URL(`${id}/feux.json`, ROOT);
+    const pieces = result.mobilier ? JSON.parse(result.mobilier).pieces : {};
+    const feux = existsSync(feuxUrl) ? firesToWorld(JSON.parse(readFileSync(feuxUrl, 'utf8')).feux, pieces, { rdc: out.world, etage: etageWorldOut }, { wallThickness: params.wallThickness, floorLift: render.floorLift }) : [];
+    const doc = { _provisoire: 'Lampes à huile générées par npm run carte (scripts/plan-vers-monde.mjs) d\'après lampes.json : ne jamais éditer à la main. Unités du jeu ; non solides (aucune collision, aucun effet sur le chemin, les balles, le laser ni les règles). x, y : face du support ; light : position de la lumière ; portee : distance de lumière la plus grande qui n\'atteint jamais l\'autre étage. feux : feux intérieurs (feux.json) comme sources de lumière (lot 5k-G). Valeurs provisoires.', triangles, lampes: conv.lamps, feux };
     result.lampes = `${formatJson(doc)}\n`;
     result.lampesReport = { count: conv.lamps.length, triangles, problems: conv.problems, warnings: conv.warnings };
     result.problems.push(...conv.problems.map((v) => `lampes : ${v}`));

@@ -193,14 +193,15 @@ test.describe('lampes à huile', () => {
       expect(r.programs).toBe(first.programs); // aucune recompilation en partie
       expect(r.count).toBe(4);
     }
-    const lamps = JSON.parse(readFileSync('data/game/maps/rez-de-chaussee/lampes.world.json', 'utf8')).lampes;
-    const floorOf = Object.fromEntries(lamps.map((l) => [l.id, l.floor]));
+    const doc = JSON.parse(readFileSync('data/game/maps/rez-de-chaussee/lampes.world.json', 'utf8'));
+    // Lot 5k-G : les feux sont aussi des sources (intérieurs : lampes.world.json → feux ; extérieurs : identifiants « feu:… », toujours permis).
+    const floorOf = Object.fromEntries([...doc.lampes, ...doc.feux].map((l) => [l.id, l.floor]));
     const shown = (await S(page)).floor;
     const ids = seen.flatMap((r) => r.ids).filter(Boolean);
     expect(ids.length).toBeGreaterThan(0);
     // Toutes les lampes éclairées sont de l'étage affiché (ici l'étage : la partie démarre à l'étage, le joueur y reste).
     expect(JSON.stringify(shown)).toMatch(/etage/);
-    for (const id of ids) expect(floorOf[id], id).toBe('etage');
+    for (const id of ids) expect(id.startsWith('feu:') ? 'exterieur' : floorOf[id], id).toMatch(/^(etage|exterieur)$/);
     expect(errors).toEqual([]);
   });
 

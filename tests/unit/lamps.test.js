@@ -3,7 +3,7 @@
 // jamais atteint), lampes absentes des données de collision (ni obstacle, ni mur : balles, laser et zombies passent), jetons --game-lamp-*.
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { baseFactors, FLAME_TOP, FLICKER_MAX, flicker, LAMP_COLORS, lampPhase, lampsToWorld, lampTriangles, LIGHT_DEFAULTS, MAX_TRIANGLES, ORIENTATIONS, parseLampSource, parseLightConfig, selectLamps, stepSlots } from '../../js/core/lamps.js';
+import { baseFactors, firesToWorld, FLAME_TOP, FLICKER_MAX, flicker, LAMP_COLORS, lampPhase, lampsToWorld, lampTriangles, LIGHT_DEFAULTS, MAX_TRIANGLES, ORIENTATIONS, parseLampSource, parseLightConfig, selectLamps, stepSlots } from '../../js/core/lamps.js';
 import { firstOnSegment } from '../../js/core/collision.js';
 import { generateMapFiles } from '../../scripts/plan-vers-monde.mjs';
 
@@ -136,6 +136,32 @@ describe('portée sûre : l\'autre étage n\'est jamais atteint', () => {
   });
 });
 
+describe('feux comme sources de lumière (lot 5k-G)', () => {
+  it('feux intérieurs de feux.json : dans lampes.world.json, au-dessus de leur pièce, portée sûre (jamais l\'autre étage)', () => {
+    const feux = load(`${DIR}/feux.json`).feux;
+    const pieces = load(`${DIR}/mobilier.world.json`).pieces;
+    const out = firesToWorld(feux, pieces, { rdc: RDC, etage: ETAGE }, { wallThickness: PARAMS.wallThickness, floorLift: RENDER.floorLift });
+    expect(out).toEqual(DERIVED.feux);
+    expect(out.map((f) => f.id)).toEqual(feux.map((f) => f.id));
+    for (const f of out) {
+      const top = Math.max(...pieces[feux.find((q) => q.id === f.id).piece].boxes.map((b) => b.y1));
+      expect(f.light.h, f.id).toBeGreaterThan(top);
+      expect(f.portee, f.id).toBeGreaterThan(0);
+      if (f.floor === 'rdc') expect(f.portee + f.light.h, f.id).toBeLessThan(RENDER.floorLift);
+      else for (const st of ETAGE.stairs) {
+        const dx = Math.max(st.x - f.light.x, 0, f.light.x - (st.x + st.w));
+        const dy = Math.max(st.y - f.light.y, 0, f.light.y - (st.y + st.h));
+        expect(f.portee, `${f.id} ${st.id}`).toBeLessThan(Math.hypot(dx, dy, f.light.h));
+      }
+    }
+    // Vacillement des feux : borné comme celui des lampes.
+    const c = parseLightConfig(LUMIERES);
+    expect(c.feux.vacillement.amplitude).toBeLessThanOrEqual(0.15);
+    for (const fq of c.feux.vacillement.frequences) expect(fq).toBeLessThanOrEqual(1.4);
+    expect(parseLightConfig({ feux: { vacillement: { amplitude: 0.5, frequences: [9] } } }).feux.vacillement).toEqual(LIGHT_DEFAULTS.feux.vacillement);
+  });
+});
+
 describe('lampes couvertes par l\'étage', () => {
   it('une lampe du rez-de-chaussée sous le sol de l\'étage est marquée « couverte » (jamais dessinée quand l\'étage est affiché) ; les autres non', () => {
     const rdc = LAMPS.filter((l) => l.floor === 'rdc');
@@ -171,8 +197,12 @@ describe('lumieres.json et lumière de base', () => {
     const c = parseLightConfig(LUMIERES);
     for (const k of ['ambiance', 'plancherAmbiance', 'intensite', 'distance', 'decroissance', 'fondu', 'max', 'distanceActivation']) expect(c[k], k).toBe(LUMIERES[k]);
     expect(c.vacillement).toEqual(LUMIERES.vacillement);
+    // Lot 5k-G : lune (et ses ombres) séparée, ombres des lumières, feux comme sources.
+    expect(c.lune).toBe(LUMIERES.lune);
+    expect(c.ombres).toEqual(LUMIERES.ombres);
+    expect(c.feux).toEqual(LUMIERES.feux);
     expect(LUMIERES._provisoire).toMatch(/PROVISOIRES/);
-    expect(baseFactors(c)).toEqual({ ambient: Math.max(c.ambiance, c.plancherAmbiance), sun: c.ambiance });
+    expect(baseFactors(c)).toEqual({ ambient: Math.max(c.ambiance, c.plancherAmbiance), sun: c.lune });
     expect(baseFactors({ ...c, ambiance: 0 }).ambient).toBe(c.plancherAmbiance);
     expect(c.plancherAmbiance).toBeGreaterThan(0);
   });
@@ -198,7 +228,7 @@ describe('vacillement', () => {
     return n / (v.length / 60);
   };
   it('lent et faible : au plus 3 variations par seconde, amplitude ≤ 15 % de l\'intensité, aucun saut entre deux images', () => {
-    const configs = [parseLightConfig(LUMIERES), parseLightConfig({ vacillement: { amplitude: 0.15, frequences: [1.4, 1.37] } })];
+    const configs = [parseLightConfig(LUMIERES), parseLightConfig({ vacillement: { amplitude: 0.15, frequences: [1.4, 1.37] } }), { vacillement: parseLightConfig(LUMIERES).feux.vacillement }]; // 5k-G : feux
     for (const cfg of configs) {
       for (const id of LAMPS.map((l) => l.id)) {
         const v = series(cfg, lampPhase(id));
