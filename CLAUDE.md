@@ -21,7 +21,7 @@ Avant de modifier une page, lis `Docs/ref/conventions.md` (arborescence, pages, 
 - Noms affichés : noms-versions-et-lots.txt (lu dans le build de dev, sinon de main) l'emporte sur versions.json et changelog.json ; les agents n'y modifient jamais les textes du propriétaire (un lot ajoute au plus son bloc) ; une faute fait échouer noms.test et bloque le déploiement de dev.
 
 ## Git
-- Une branche par lot : `lot-N`, supprimée au nettoyage de fin de version (gardées : sources de V0.1 à V0.4, lots de la version en cours). Un commit par partie : « Lot N-X — titre ». Arbre propre au départ.
+- Une branche par lot : `lot-N`, supprimée au nettoyage de fin de version (gardés : lots de la version en cours ; repères : étiquettes `v0.N`). Un commit par partie : « Lot N-X — titre ». Arbre propre au départ.
 - Push de `lot-N` seulement, puis comparer `git rev-parse HEAD` et `git ls-remote origin lot-N`.
 - Jamais de force-push, jamais de fusion dans `main`, pas de Pull Request sans demande. Tags facultatifs. Une seule partie par session, puis arrêt.
 
