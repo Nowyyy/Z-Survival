@@ -108,3 +108,9 @@ version: v0.7
 nom: Lampes à huile et lumières (essai)
 description: Des lampes à huile toujours présentes sur des piliers et des murs ; leur lumière dynamique, qui laisse des coins plus sombres, est réservée au préréglage Élevé.
 afficher: oui
+
+[lot-5l]
+version: v0.7
+nom: Menu de débogage dans la pause
+description: Une icône à côté du son ouvre un panneau de réglages d'essai (manche, argent, niveaux, mesure) ; seulement sur le développement et la Recette.
+afficher: oui

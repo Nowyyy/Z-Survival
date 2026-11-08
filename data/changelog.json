@@ -225,6 +225,10 @@
     { "name": "lot-5k", "version": "v0.7", "date": "2026-11-07", "titre": "Lampes à huile et lumières (essai)", "points": [
       "Des petites lampes à huile sur des piliers et des murs, aux deux étages, toujours présentes sur la carte ; deux réglages dans les Options : « Lumière des lampes » (coupée ou dynamique) et « Lumières simultanées » (2, 4 ou 6).",
       "La lumière dynamique est réservée au préréglage Élevé : coins plus sombres, ombres portées par les lampes et lumière des feux ; le jeu lui-même ne change pas. Positions et intensités provisoires, à régler."
+    ] },
+    { "name": "lot-5l", "version": "v0.7", "date": "2026-11-08", "titre": "Menu de débogage dans la pause (développement et Recette)", "points": [
+      "Une petite icône « Débogage » à côté du son, dans la pause, ouvre un panneau : manche, argent, niveaux des statistiques, planches, étage, carte, sans zombies, manches sans fin, fin du monde, panneau de mesure et plafond d'images ; « Appliquer et recharger » lance une partie d'essai (sauvegarde non modifiée).",
+      "Ce menu et les réglages d'adresse n'existent que sur le développement et la Recette, ni sur les archives ni, plus tard, en production ; les réglages graphiques déjà présents dans Options ne passent plus par l'adresse."
     ] }
   ]
 }

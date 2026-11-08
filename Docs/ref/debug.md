@@ -1,6 +1,6 @@
 # Menu de débogage et paramètres d'adresse par canal (lot 5l)
 
-État : **plan** (partie A, base `origin/dev` `45f5e14`). Ce document est complété aux parties B à D. Les noms de branches, de fichiers et de commits sont des données.
+État : **livré** (lot 5l, parties A à D, base `origin/dev` `45f5e14`). Relevé et plan écrits en partie A, avant tout changement ; complétés ensuite. Les noms de branches, de fichiers et de commits sont des données.
 
 ## Relevé (code de `origin/dev`, avant tout changement)
 1. `js/game/main.js` lit l'adresse une fois (`query`, l. 55) : `test` (56), `fps` (57), `perf` (59), `seed` (60, sans condition), `empty` (64, avec `test`), `detail` (74), `percee` (128), `vhs` (137, `parseVhsParam`), `nospawn`, `wave`, `endless`, `planks`, `tilt`, `zoom`, `labels`, `floor`, `dpr` (177 à 187), `cap` (209), `fin` (297).
@@ -40,9 +40,11 @@ Balise : `<meta name="zs-canal" content="source">` dans `jeu.html`, forme exacte
 
 `readOnlyParams` (`data/game/save.json`) : inchangé ; `gfx`, `perf`, `cap` n'y sont jamais. Un paramètre refusé est retiré de l'adresse **lue par le jeu** (l'adresse affichée ne change pas) : il n'a aucun effet et ne déclenche pas le mode essai.
 
-## Règle de lecture (partie B)
-- Module pur dans `js/core/graphics.js` (déjà chargé, aucun fichier de plus) : `CANAUX_DEBUG`, `lireCanal`, `acces(canal, params)` (pour chaque paramètre : pris en compte ou non), `filtrerAdresse(search, canal)` (adresse sans les paramètres refusés ; chaîne identique quand rien n'est retiré, donc sur `source`).
-- `js/game/graphics-boot.js` lit la balise et donne `pageSearch()` (adresse filtrée, calculée une fois) ; `graphicsBoot()`, `main.js` (tous ses lecteurs, sauvegarde, niveaux, carte, sons, profileur) et `lights.js` (`lampgain`) lisent cette adresse.
+## Règle de lecture
+- Module pur dans `js/core/graphics.js` (déjà chargé, aucun fichier de plus) : `CANAUX`, `CANAUX_DEBUG`, `PARAMS_G`, `PARAMS_T`, `PARAMS_TEST`, `lireCanal`, `groupeParam`, `acces(canal, params)` (`{ canal, debug, test, params }` : pour chaque paramètre connu et chaque nom présent, pris en compte ou non), `filtrerAdresse(search, canal)` (adresse sans les paramètres refusés ; chaîne identique quand rien n'est retiré, donc toujours sur `source`).
+- `js/game/graphics-boot.js` lit la balise (`pageCanal()`) et donne `pageSearch()` (adresse filtrée, calculée une fois) ; `graphicsBoot()` (préréglage, `explicitParams`, `zs.device.v1` en mémoire sous `?test=1`), `main.js` (tous ses lecteurs : `test`, `seed`, `empty`, carte, détail, VHS, sauvegarde et mode essai, niveaux, sons, profileur, `cap`, `fin`…) et `game.js` (repli du chargeur des personnages : adresse vide) lisent cette adresse.
+- `js/game/lights.js` (`lampgain`, sous `?test=1`) : zone « rendu », qui ne peut pas importer `graphics-boot.js` (zone « graphismes », qui dépend d'elle) ; il vérifie lui-même la balise avec la même liste (`DEBUG_CANAUX`, comparée à `CANAUX_DEBUG` par `tests/unit/debug-canal.test.js`).
+- Seule lecture de l'adresse réelle : le menu de débogage (préremplissage, paramètres conservés), qui n'existe que sur un canal de débogage.
 
 ## Risques
 - **Canal absent** : la Recette publiée avant la fusion de ce lot dans `main` n'a pas de balise ; son code ne la lit pas (aucun effet). Après publication, une page sans balise est traitée comme la production (tout refusé).
@@ -62,4 +64,16 @@ Balise : `<meta name="zs-canal" content="source">` dans `jeu.html`, forme exacte
 1. L'ajouter à `PARAMS_G`, `PARAMS_T` ou `PARAMS_TEST` (`js/core/graphics.js`) ; un paramètre absent des trois listes passe sans filtre (réservé aux noms lus par aucun code).
 2. Le lire dans l'adresse filtrée (`pageSearch()` ou le `search` de `main.js`), jamais dans `location.search`.
 3. Tests : la table canal × paramètre de `tests/unit/debug-canal.test.js` couvre automatiquement les listes ; ajouter le cas au test Playwright si l'effet est visible.
-4. Ligne du panneau : voir la partie C (`js/game/debug-menu.js`).
+4. Si c'est un réglage de Partie ou de Mesure : ajouter une ligne au panneau (ci-dessous).
+
+## Menu de débogage (E2-13)
+- **Icône** `#btn-debug` (insecte au trait, 44 × 44 px, nom accessible « Débogage ») dans la tête de la pause, **juste à gauche de l'icône du son** (le son reste en haut à droite et dernier élément de la tête : ordre de tabulation et tests de la pause inchangés) ; cachée par défaut, montrée par `ui.bindDebug` quand le canal est dans `CANAUX_DEBUG` (sous `?test=1` autorisé aussi, qui implique un tel canal).
+- **Module** `js/game/debug-menu.js`, sans import, chargé par `import()` au premier clic (`ui.js`) ; aucun fichier de plus au démarrage (113 fichiers JavaScript, inchangé).
+- **Panneau** (classes de l'écran Options) : en-tête (titre « Débogage », croix « Fermer le débogage ») ; région qui défile (`role="region"`, « Réglages de débogage ») ; pied (adresse obtenue, « Appliquer et recharger », « Revenir au jeu normal », confirmation « Recharger la page ? Cette partie sera perdue. »).
+- **Partie** : manche (1 à 200), argent (0 à 9 999 999 ; vide : solde de la sauvegarde), « Tous au niveau » (0 à 10, recopié sur chaque ligne), une ligne par statistique (dégâts, portée, précision, cadence, vitesse, vie, régénération, chutes 0 à 5, réparation), planches posées (0 à 4, `windows.json`), étage, carte, sans zombies, manches sans fin, fin du monde (marque « avec une autre valeur de Partie » : `?fin=monde` n'agit qu'en mode essai) ; encadré « Mode essai : ta sauvegarde n'est pas modifiée. ». **Mesure** : panneau de mesure (`perf`), plafond (`cap` : aucun, 30, 45, 60).
+- **Adresse** : `adresseDebug(search, valeurs)` retire les paramètres gérés (`GERES`), garde les autres dans leur ordre, ajoute les seules valeurs non standard ; `?lvl=` : `all:N` puis les statistiques qui en diffèrent, ou la liste des statistiques non nulles (`degats:3,precision:5`). Préremplissage : `lireDebug(location.search)` avec les règles de lecture du jeu.
+- **Clavier** : focus piégé ; Échap ferme la confirmation puis le panneau ; focus rendu à l'icône ; dans un champ, P, F et M ne commandent pas la partie.
+- **Ajouter une ligne** : un compteur (`counter`) ou des boutons exclusifs (`choice`) dans `createDebugMenu`, la valeur standard dans `defaults`, la lecture dans `lireDebug`, l'écriture dans `paramsDebug`, le nom dans `GERES`, les textes `game.debug.*` (français seulement, écrits en entier) ; le paramètre doit être du groupe T.
+
+## Pages techniques
+`carte.html` et `visite.html` ouvrent le jeu avec `?zoom=1&labels=1&wave=…&floor=1&nospawn=1&map=salle` (groupe T) : ces liens marchent sur `source`, `dev` et `Recette` ; ils cesseront en production (canal refusé). Pages à retirer au lot 13.
