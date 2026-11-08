@@ -38,10 +38,11 @@ const pixels = (page, x, y, w, h) => page.evaluate(({ x, y, w, h }) => {
   return out;
 }, { x, y, w, h });
 // Références relevées sur origin/dev 080a7fe (avant le lot 5k ; scripts/perf/budget-instant.mjs, mêmes gestes, ?perf=1 pour renderer.info.programs).
+// Lot 5k-J (retour du propriétaire) : U1 a 12 triangles de moins qu'origin/dev (garde-corps retiré contre le mur ouest de l'étage, fenceParts).
 const ORIGINE = {
-  eleve: { R1: [62, 38479, 18], U1: [67, 39635, 18] },
-  moyen: { R1: [60, 23867, 18], U1: [65, 25023, 18] },
-  faible: { R1: [42, 19253, 16], U1: [46, 19619, 16] },
+  eleve: { R1: [62, 38479, 18], U1: [67, 39623, 18] },
+  moyen: { R1: [60, 23867, 18], U1: [65, 25011, 18] },
+  faible: { R1: [42, 19253, 16], U1: [46, 19607, 16] },
 };
 const SCENES = {
   R1: { url: '&nospawn=1', at: [U(300), U(300)], floor: 'rdc', wave: 10 },

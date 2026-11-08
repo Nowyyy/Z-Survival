@@ -14,7 +14,7 @@ import { doorBoxes, grilleBoxes, rubbleBoxes } from '../../js/core/portes-aspect
 import { DEFAULTS, hiddenFrom, segmentHitsBox, seeThroughLevel, seeThroughSettings } from '../../js/core/see-through.js';
 import { plankSettings } from '../../js/core/plank-layout.js';
 import { plankSheet } from '../../js/core/texgen.js';
-import { cutGrilles } from '../../js/game/world.js';
+import { cutGrilles, fenceParts } from '../../js/game/world.js';
 import { createWindowMeshes } from '../../js/game/windows-mesh.js';
 import { generateLivelyDecor } from '../../js/core/decor-vivant.js';
 import { mistLayers } from '../../js/game/mist.js';
@@ -514,5 +514,28 @@ describe('linteau au-dessus des portes', () => {
     expect(w).toMatch(/const DOOR_TALL = 120;/);
     expect(w).toMatch(/if \(bl\.floor !== f \|\| !bl\.wall \|\| !bl\.rect\) continue;/);
     expect(w).toMatch(/y: \(DOOR_TALL \+ lift - 1\) \/ 2, sy: lift - 1 - DOOR_TALL/);
+  });
+});
+
+// Lot 5k, retour du propriétaire : le garde-corps de l'escalier de l'aile longeait le mur ouest de l'étage (bord du trou x = 920, face du mur) ; ses barreaux,
+// dans le mur, scintillaient sur sa face. Plus de garde-corps contre un mur plein, ailleurs inchangé.
+describe('garde-corps contre un mur', () => {
+  const wall = { x0: 880, x1: 920, z0: 1820, z1: 2500 }; // mur ouest de l'étage (x = 900, épaisseur 40)
+
+  it('un côté entièrement dans le mur disparaît ; un côté qui le traverse est coupé à sa face', () => {
+    expect(fenceParts({ x0: 915, x1: 920, z0: 2030, z1: 2290 }, [wall])).toEqual([]);
+    expect(fenceParts({ x0: 915, x1: 1065, z0: 2025, z1: 2030 }, [wall])).toEqual([{ x0: 920, x1: 1065, z0: 2025, z1: 2030 }]);
+  });
+
+  it('loin d\'un mur, ou à côté sans en être couvert, rien ne change', () => {
+    const side = { x0: 2245, x1: 2250, z0: 1950, z1: 2250 };
+    expect(fenceParts(side, [wall])).toEqual([side]);
+    expect(fenceParts({ x0: 920, x1: 925, z0: 2030, z1: 2290 }, [wall])).toEqual([{ x0: 920, x1: 925, z0: 2030, z1: 2290 }]);
+    expect(fenceParts({ x0: 915, x1: 920, z0: 2030, z1: 2290 }, [])).toEqual([{ x0: 915, x1: 920, z0: 2030, z1: 2290 }]);
+  });
+
+  it('un mur qui ne couvre qu\'une partie de la longueur laisse les deux bouts', () => {
+    const short = { x0: 880, x1: 920, z0: 2100, z1: 2200 };
+    expect(fenceParts({ x0: 915, x1: 920, z0: 2030, z1: 2290 }, [short])).toEqual([{ x0: 915, x1: 920, z0: 2030, z1: 2100 }, { x0: 915, x1: 920, z0: 2200, z1: 2290 }]);
   });
 });
