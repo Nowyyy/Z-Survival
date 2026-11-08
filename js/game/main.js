@@ -239,6 +239,7 @@ ctx.ui = createUi(dict, {
   onGraphicsChoice: (choice) => ctx.graphics.choose(choice), // lot 5b : préférence écrite puis rechargement (confirmé dans la pause)
   onPauseChange: (paused) => {
     ctx.audio.setSuspended(paused);
+    ctx.perfPanel?.setPaused(paused); // retour du propriétaire (lot 5k) : panneau de mesure inerte pendant la pause
     syncHint();
   },
   onRotateChange: () => ctx.input.releaseAll(),
@@ -299,6 +300,7 @@ if (game === null) {
   if (perfMode) {
     ctx.perfState = () => ctx.profiler.state({ preset: ctx.graphicsLabel?.() ?? null, cap: ctx.gate?.state() ?? null });
     ctx.perfPanel = (await import('./perf-panel.js')).createPerfPanel({ read: ctx.perfState, reset: () => ctx.profiler.reset(), dict });
+    ctx.perfPanel.setPaused(ctx.ui.isPaused());
   }
   if (testMode) installTestHook(ctx, game);
   // Lot 3l (demande du propriétaire) : ?fin=monde montre tout de suite l'écran de victoire « Monde terminé » : la dernière manche du monde est lancée puis

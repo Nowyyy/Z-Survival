@@ -56,7 +56,9 @@ export function createPerfPanel({ read, reset, dict, root = document.body }) {
   const box = document.createElement('section');
   box.id = 'perf-panel';
   box.setAttribute('aria-label', t('title'));
-  box.style.cssText = 'position:fixed;left:calc(var(--game-margin, 16px) + var(--safe-left, 0px));bottom:calc(var(--game-margin, 16px) + var(--safe-bottom, 0px));z-index:40;'
+  // Retour du propriétaire (lot 5k) : sous les panneaux de la pause et de fin (.panel-wrap, z-index 10) et sous les Options (11), au-dessus du HUD ;
+  // inerte (ni clic ni focus) tant que la pause est ouverte (setPaused).
+  box.style.cssText = 'position:fixed;left:calc(var(--game-margin, 16px) + var(--safe-left, 0px));bottom:calc(var(--game-margin, 16px) + var(--safe-bottom, 0px));z-index:9;'
     + 'max-width:min(62vw, 34em);display:flex;flex-direction:column-reverse;gap:6px;align-items:flex-start;font:400 14px/1.3 var(--font-sans);color:var(--color-text)';
   const toggle = document.createElement('button');
   toggle.type = 'button';
@@ -145,6 +147,10 @@ export function createPerfPanel({ read, reset, dict, root = document.body }) {
   render();
   const timer = setInterval(render, REFRESH_MS);
   return {
+    // Pause ouverte : le panneau reste visible sous la pause mais ne reçoit ni clic ni focus.
+    setPaused(paused) {
+      box.inert = paused === true;
+    },
     report: () => {
       render();
       return report;
