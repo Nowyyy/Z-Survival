@@ -3,6 +3,7 @@ import { execSync } from 'node:child_process';
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { PART_KINDS, expandParts } from '../../js/core/character-parts.js';
 import { characters, load, poses, texturesJson } from '../../scripts/personnages/lib.mjs';
+import { bilansChangesDepuis } from '../../scripts/docs/bilans.mjs';
 
 // Lot 3j : données des personnages (characters-v2.json, poses-v2.json) et hygiène du lot (fichiers interdits, assets, pureté).
 // Garde-fous du lot 3j contre main : actifs seulement sur la branche du lot (première ligne d'apercu.txt = atelier-personnages.html) ;
@@ -92,8 +93,10 @@ describe('hygiène du lot 3j', () => {
     if (changed === null) return;
     expect(changed).toEqual([]);
   });
+  // Lot 5m : chaque bilan de main est retrouvé avec le même texte, séparé ou regroupé (scripts/docs/bilans.mjs), avant et après la publication
+  // du regroupement ; avant : `git diff --name-only --diff-filter=MD main -- Docs/lots` vide (un bilan regroupé y apparaîtrait supprimé).
   it('bilans des lots précédents inchangés', () => {
-    const changed = git('diff --name-only --diff-filter=MD main -- Docs/lots');
+    const changed = bilansChangesDepuis('main');
     if (changed === null) return;
     expect(changed).toEqual([]);
   });

@@ -67,7 +67,7 @@ Chaque entrée de `lots` des lots 5a à 5g porte `version: "v0.6"` (version cibl
 
 ## Fichiers
 - **Modifiés** : `scripts/assemble.mjs`, `scripts/site/e2e-site.mjs` (site de test : `dev`, évolutions, 12 versions), `scripts/site/local.mjs` (si besoin), `index.html`, `css/accueil.css`, `js/accueil/home.js`, `js/accueil/main.js`, `data/changelog.json` (liste `versions` retirée, `version` sur 5a à 5g, entrée `lot-5g`), `data/i18n/fr.json` (`home.*`, `site.*`), `data/i18n/en.json` (mêmes clés : `data-i18n` exige la parité, règle durable de `CLAUDE.md`), `scripts/build.mjs` (plus de `dev/`), `css/tokens.css` (bloc de l'accueil seulement, si besoin), `Docs/ref/publication-versions.md`, `Docs/ref/verification-versions.md` (faits périmés).
-- **Ajoutés** : `scripts/site/site-info.mjs` (construction et validation de `site-info.json`, pur), `site-info.json` (arbre source), `Docs/ref/site-adresses.md`, `Docs/lots/lot-5g.md`.
+- **Ajoutés** : `scripts/site/site-info.mjs` (construction et validation de `site-info.json`, pur), `site-info.json` (arbre source), `Docs/ref/site-adresses.md`, `Docs/lots/versions/v0.6.md#lot-5g`.
 - **Supprimés** : `dev/index.html`, `dev/dev.js`, `tests/e2e/dev.spec.js`.
 
 ## Tests à adapter

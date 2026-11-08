@@ -230,6 +230,10 @@
     { "name": "lot-5l", "version": "v0.7", "date": "2026-11-08", "titre": "Menu de débogage dans la pause (développement et Recette)", "points": [
       "Une petite icône « Débogage » à côté du son, dans la pause, ouvre un panneau : manche, argent, niveaux des statistiques, planches, étage, carte, sans zombies, manches sans fin, fin du monde, panneau de mesure et plafond d'images ; « Appliquer et recharger » lance une partie d'essai (sauvegarde non modifiée).",
       "Ce menu et les réglages d'adresse n'existent que sur le développement et la Recette, ni sur les archives ni, plus tard, en production ; les réglages graphiques déjà présents dans Options ne passent plus par l'adresse."
+    ] },
+    { "name": "lot-5m", "version": "v0.7", "date": "2026-11-08", "titre": "Nettoyage des branches et de la documentation", "points": [
+      "Les bilans des lots des versions V0.1 à V0.6 sont réunis en un fichier par version, en texte intégral et sans aucune modification ; ceux de la V0.7 restent séparés.",
+      "Quatre documents terminés et sans aucune référence sont retirés ; la branche d'un lot est désormais supprimée au nettoyage de fin de version. Aucun changement dans le jeu."
     ] }
   ]
 }
