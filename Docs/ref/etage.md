@@ -54,7 +54,7 @@ Triées par x croissant puis y. Position = centre sur la ligne du mur. `planX` =
 Blocs : porte 2 : rez-de-chaussée 24, 238 → 52, 257 ; porte 3 : rez-de-chaussée 260, 269 → 287, 285 et la porte de l'étage (segment x = 138, y 262 à 301).
 
 ## Corriger l'étage
-Voir la section du bilan `Docs/lots/lot-3e.md` : modifier `etage.json`, `zones.json` ou `plan.json` (escaliers), `npm run carte`, `node scripts/zones-metriques.mjs --etages`, `carte.html` et `jeu.html?labels=1&wave=31&zoom=1&floor=1`.
+Voir la section du bilan `Docs/lots/versions/v0.4.md#lot-3e` : modifier `etage.json`, `zones.json` ou `plan.json` (escaliers), `npm run carte`, `node scripts/zones-metriques.mjs --etages`, `carte.html` et `jeu.html?labels=1&wave=31&zoom=1&floor=1`.
 
 ## Escaliers physiques (mise à jour du lot 3e)
 - `zones.json` `walk` : `path` (points `[x, y, t]` du pied au haut, en pixels) et `width`. **Escalier de l'aile** : droit, du sud au nord à l'étage (de (38, 247) à (35, 309)), largeur 24. **Escalier de départ** : arrondi, quart de tour de rayon 19 centré en (254,5, 270) (de (273,5, 270) vers le nord, puis l'ouest, jusqu'à (254,5, 251)), puis un palier de 14 px vers la zone de l'étage (241, 247) ; largeur 16 ; hauteur de 0 à 1 le long de l'arc (180 unités sur 180 de longueur).

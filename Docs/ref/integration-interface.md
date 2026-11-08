@@ -1,6 +1,6 @@
 # Plan d'intégration de l'interface (pour le lot 4b)
 
-Ce plan part des propositions de `atelier-interface.html` (lot 3k). Rien n'est intégré au lot 3k. Le propriétaire choisit, par écran, une direction et ses macros (« Mes choix »). `node scripts/interface/projection.mjs '<Mes choix>'` imprime pour ce choix le nombre d'éléments, de règles CSS et de tests concernés. Mesures de référence : `Docs/ref/interface-actuelle.md` (actuel) et `Docs/lots/lot-3k.md` (directions).
+Ce plan part des propositions de `atelier-interface.html` (lot 3k). Rien n'est intégré au lot 3k. Le propriétaire choisit, par écran, une direction et ses macros (« Mes choix »). `node scripts/interface/projection.mjs '<Mes choix>'` imprime pour ce choix le nombre d'éléments, de règles CSS et de tests concernés. Mesures de référence : `Docs/ref/interface-actuelle.md` (actuel) et `Docs/lots/versions/v0.5.md#lot-3k` (directions).
 
 ## Correspondance des blocs `E2-n` (identifiants conservés, E2-9 et E2-11 jamais réutilisés)
 | Bloc | Aujourd'hui (`jeu.html`) | Proposition (A, B, C) | Changement de DOM |

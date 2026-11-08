@@ -5,7 +5,7 @@ Ce fichier suffit pour reprendre le travail sans relire la conversation du lot 3
 ## 1. Où regarder
 - Branche `lot-3k` (dernier commit utile : `a5e4adb`, poussé ; `origin/main` de départ : `c166e53`, lot 4 fusionné).
 - **Maquette de référence** : `interface-retenue.html` (aperçu de la branche : `https://nowyyy.github.io/Z-Survival/lots/lot-3k/interface-retenue.html`). Elle ne montre que les choix, sur le vrai jeu en fond, écran par écran ou « Tous les écrans d'un coup », aux 7 tailles. Ajouter `?test=1` expose `window.__zsUi` (`set`, `measure`, `rows`, `stability`).
-- Atelier complet (toutes les directions, mesures, côte à côte) : `atelier-interface.html`. Mesures de l'interface d'avant : `Docs/ref/interface-actuelle.md`. Plan d'intégration détaillé : `Docs/ref/integration-interface.md`. Manifeste de fusion : `Docs/ref/fusion-3k.md`. Méthode de l'atelier : `Docs/ref/atelier-interface.md`. Bilan : `Docs/lots/lot-3k.md`.
+- Atelier complet (toutes les directions, mesures, côte à côte) : `atelier-interface.html`. Mesures de l'interface d'avant : `Docs/ref/interface-actuelle.md`. Plan d'intégration détaillé : `Docs/ref/integration-interface.md`. Manifeste de fusion : `Docs/ref/fusion-3k.md`. Méthode de l'atelier : `Docs/ref/atelier-interface.md`. Bilan : `Docs/lots/versions/v0.5.md#lot-3k`.
 - Attention (publication) : un déploiement de `main` a une fois « réussi » sans être servi par GitHub Pages ; si la page publiée paraît ancienne, relancer le workflow `pages.yml` sur `main` et recharger sans cache (les fichiers sont gardés 10 min).
 
 ## 2. Décisions du propriétaire (état final, dans l'ordre)
