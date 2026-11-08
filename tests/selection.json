@@ -779,12 +779,14 @@
         "js/game/loading.js",
         "css/game.css",
         "css/game-ui.css",
-        "js/game/options-menu.js"
+        "js/game/options-menu.js",
+        "js/game/debug-menu.js"
       ],
       "dependances": ["combat", "economie", "textes"],
-      "vitest": ["tests/unit/data-ambiance.test.js", "tests/unit/data-hud.test.js", "tests/unit/lot1-regles.test.js", "tests/unit/zones-rendu.test.js"],
+      "vitest": ["tests/unit/data-ambiance.test.js", "tests/unit/data-hud.test.js", "tests/unit/lot1-regles.test.js", "tests/unit/zones-rendu.test.js", "tests/unit/debug-menu.test.js"],
       "e2e": [
         "tests/e2e/argent.spec.js",
+        "tests/e2e/debug-menu.spec.js",
         "tests/e2e/attente.spec.js",
         "tests/e2e/graphismes.spec.js",
         "tests/e2e/interface-integree.spec.js",

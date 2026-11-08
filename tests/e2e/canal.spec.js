@@ -52,6 +52,7 @@ async function observe(page) {
     };
   });
   await page.locator('#btn-pause').click();
+  base.debug = await page.locator('#btn-debug').isVisible(); // lot 5l-C : icône « Débogage » de la pause
   await page.locator('#btn-options').click();
   await expect(page.locator('#options-panel')).toBeVisible();
   const options = await page.evaluate(() => ({
@@ -72,6 +73,7 @@ for (const canal of ['dev', 'release']) {
     const s = await observe(page);
     expect(s.canal).toBe(canal);
     expect(s.hook).toBe('undefined');
+    expect(s.debug).toBe(true);
     // Groupe G sans effet : rapport de pixels du préréglage (Élevé d'Auto : 2), aucune option imposée, ombres du préréglage, détail chargé.
     expect(s.ratio).toBe(2);
     expect(s.imposed).toEqual([]);
@@ -99,7 +101,7 @@ test('canal dev avec ?test=1 : window.__zs, groupe G pris en compte (getState().
 });
 
 for (const canal of ['archive', 'prod']) {
-  test(`canal ${canal} : ?test=1 ignoré (aucun window.__zs), groupes G et T sans effet, aucun badge ni panneau de mesure ; console propre`, async ({ page }) => {
+  test(`canal ${canal} : ?test=1 ignoré (aucun window.__zs), groupes G et T sans effet, aucun badge ni panneau de mesure, aucune icône de débogage ; console propre`, async ({ page }) => {
     test.setTimeout(120_000);
     const { problems, external, files } = watch(page, SITE);
     await page.goto(`${URLS[canal]}?test=1&seed=3&nospawn=1&wave=5&perf=1&gfx=faible&${G}&v=2`);
@@ -109,7 +111,8 @@ for (const canal of ['archive', 'prod']) {
     expect(s.hook).toBe('undefined');
     expect(s.ratio).toBe(2);
     expect([s.imposed, s.locked, s.ombres]).toEqual([[], '', 'hautes']);
-    expect([s.perf, s.trial, s.waveIdle]).toEqual([false, false, 'false']);
+    expect([s.perf, s.trial, s.waveIdle, s.debug]).toEqual([false, false, 'false', false]);
+    expect(files.some((f) => f.endsWith('/js/game/debug-menu.js'))).toBe(false);
     expect(s.waveText.split('/')[0].trim()).toBe('01');
     expect(files.some((f) => f.endsWith('/js/game/profiler.js') || f.endsWith('/js/game/frame-cap.js'))).toBe(false);
     expect(external).toEqual([]);

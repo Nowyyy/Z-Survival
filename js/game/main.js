@@ -14,6 +14,7 @@ import { createTokenLookup, readPalette } from './palette.js';
 import { createVhs, parseVhsParam } from './vhs-layer.js';
 import { graphicsBoot, pageCanal, pageSearch } from './graphics-boot.js';
 import { parseSoundMode } from '../core/sound-choice.js';
+import { CANAUX_DEBUG } from '../core/graphics.js';
 import { createGraphicsController } from './graphics-apply.js';
 import { installSafeArea } from './safe-area.js';
 import { planSounds, renderSounds, nextVisibleFrame, BACKGROUND_SLICE_MS } from './sound-loader.js';
@@ -254,6 +255,8 @@ ctx.input = createInput(root, {
   },
 });
 ctx.ui.syncSound(ctx.audio);
+// Lot 5l : icône « Débogage » de la pause sur les canaux de débogage seulement ; le menu lit l'adresse réelle (préremplissage, paramètres conservés).
+ctx.ui.bindDebug({ allowed: CANAUX_DEBUG.includes(canal), search: location.search, planksMax: windowsCfg.planks });
 ctx.ui.syncVhs(ctx.vhs);
 ctx.ui.syncGraphics(ctx.graphics.state());
 // Téléphone : tant que le contexte audio n'est pas en marche (aucun doigt relâché depuis le début, un stick tenu), une invitation à toucher
