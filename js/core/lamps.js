@@ -244,7 +244,10 @@ export function lampTriangles(lamp) {
 // data/game/lumieres.json : valeurs vérifiées ; toute valeur invalide prend le défaut (provisoire). Vacillement borné : amplitude ≤ 0,15 (part de
 // l'intensité), fréquences ≤ 1,4 Hz (moins de 3 changements de sens par seconde) ; fondu en secondes (entrée et sortie d'une lampe).
 export const LIGHT_DEFAULTS = Object.freeze({ ambiance: 0.45, plancherAmbiance: 0.3, lune: 0.45, intensite: 180, distance: 120, decroissance: 1, fondu: 0.6, max: 4, distanceActivation: 700,
-  vacillement: Object.freeze({ amplitude: 0.1, periode: Object.freeze([1.2, 3.5]) }),
+  // Lot 5k-I (retour du propriétaire : la lumière ne doit pas rester éteinte longtemps ; la durée allumée varie) : léger bruit lent, et de brèves
+  // baisses (coupures) : allumée de allumee[0] à allumee[1] secondes (tiré par source et par coupure), baisse de duree[0] à duree[1] secondes,
+  // profondeur (part de l'intensité retirée au plus bas, 60 à 100 % de profondeur selon la coupure), jamais d'un coup (descente et remontée douces).
+  vacillement: Object.freeze({ amplitude: 0.04, periode: Object.freeze([1.2, 3.5]), coupures: Object.freeze({ allumee: Object.freeze([2, 7]), duree: Object.freeze([0.12, 0.35]), profondeur: 0.7 }) }),
   // Lot 5k-G : ombres des lumières (carte d'ombres cubique, côté en pixels ; biais) et feux comme sources (intensité, portée, vacillement).
   ombres: Object.freeze({ taille: 256, biais: -0.004 }),
   feux: Object.freeze({ intensite: 600, distance: 110, vacillement: Object.freeze({ amplitude: 0.15, periode: Object.freeze([0.6, 1.6]) }) }),
@@ -255,7 +258,15 @@ export const LIGHT_DEFAULTS = Object.freeze({ ambiance: 0.45, plancherAmbiance: 
 export const SHADOW_SIZES = [128, 256, 512];
 // Lot 5k-H : vacillement en bruit lent (valeur tirée à chaque période, transition douce) : un changement de sens par période au plus ; période
 // d'au moins 0,5 s (2 changements par seconde au plus, sous la limite de 3), amplitude de 15 % au plus.
-export const FLICKER_MAX = Object.freeze({ amplitude: 0.15, periodeMin: 0.5, periodeMax: 10 });
+// Lot 5k-I : coupures (décision du propriétaire) : profondeur de 0,9 au plus (jamais le noir complet), durée d'au moins 0,1 s (descente et
+// remontée d'au moins 0,05 s chacune), au moins 1 s allumée entre deux coupures : 3 changements par seconde au plus restent tenus.
+export const FLICKER_MAX = Object.freeze({ amplitude: 0.15, periodeMin: 0.5, periodeMax: 10, profondeurMax: 0.9, dureeMin: 0.1, dureeMax: 1.5, allumeeMin: 1 });
+const rangeOf = (raw, lo, hi, d) => (Array.isArray(raw) && raw.length === 2 && raw.every(isNum) && raw[0] >= lo && raw[1] >= raw[0] && raw[1] <= hi ? [raw[0], raw[1]] : [...d]);
+const cutsOf = (raw, d) => {
+  if (!d) return null;
+  const r = raw !== null && typeof raw === 'object' && !Array.isArray(raw) ? raw : {};
+  return { allumee: rangeOf(r.allumee, FLICKER_MAX.allumeeMin, 120, d.allumee), duree: rangeOf(r.duree, FLICKER_MAX.dureeMin, FLICKER_MAX.dureeMax, d.duree), profondeur: inRange(r.profondeur, 0, FLICKER_MAX.profondeurMax, d.profondeur) };
+};
 const periodOf = (raw, d) => {
   const p = Array.isArray(raw) && raw.length === 2 && raw.every(isNum) ? raw : null;
   return p && p[0] >= FLICKER_MAX.periodeMin && p[1] >= p[0] && p[1] <= FLICKER_MAX.periodeMax ? [p[0], p[1]] : [...d];
@@ -285,7 +296,7 @@ export function parseLightConfig(json) {
     fondu: inRange(j.fondu, 0.05, 5, d.fondu),
     max: [2, 4, 6].includes(j.max) ? j.max : d.max,
     distanceActivation: inRange(j.distanceActivation, 50, 5000, d.distanceActivation),
-    vacillement: { amplitude: inRange(v.amplitude, 0, FLICKER_MAX.amplitude, d.vacillement.amplitude), periode: periodOf(v.periode, d.vacillement.periode) },
+    vacillement: { amplitude: inRange(v.amplitude, 0, FLICKER_MAX.amplitude, d.vacillement.amplitude), periode: periodOf(v.periode, d.vacillement.periode), coupures: cutsOf(v.coupures, d.vacillement.coupures) },
     fenetres: { intensite: inRange(j.fenetres?.intensite, 0, 4, d.fenetres.intensite), etirement: inRange(j.fenetres?.etirement, 0.5, 6, d.fenetres.etirement) },
     selection: { maintien: inRange(j.selection?.maintien, 0.3, 1, d.selection.maintien) },
   };
@@ -306,16 +317,36 @@ const frac = (x) => x - Math.floor(x);
 const noise = (phase, n) => frac(Math.sin(n * 127.1 + phase * 311.7) * 43758.5453);
 export function flicker(t, phase, cfg, reduced = false) {
   const v = (cfg ?? LIGHT_DEFAULTS).vacillement;
-  if (reduced || !(v.amplitude > 0)) return 1;
-  const [p0, p1] = v.periode;
-  const period = p0 + (p1 - p0) * noise(phase, 0.5);
-  const amp = v.amplitude * (0.6 + 0.4 * noise(phase, 1.5));
-  const x = t / period + phase;
-  const k = Math.floor(x);
-  const f = x - k;
-  const s = f * f * (3 - 2 * f);
-  const a = noise(phase, k);
-  return 1 - amp * (a + (noise(phase, k + 1) - a) * s);
+  if (reduced) return 1;
+  let level = 1;
+  if (v.amplitude > 0) {
+    const [p0, p1] = v.periode;
+    const period = p0 + (p1 - p0) * noise(phase, 0.5);
+    const amp = v.amplitude * (0.6 + 0.4 * noise(phase, 1.5));
+    const x = t / period + phase;
+    const k = Math.floor(x);
+    const f = x - k;
+    const s = f * f * (3 - 2 * f);
+    const a = noise(phase, k);
+    level = 1 - amp * (a + (noise(phase, k + 1) - a) * s);
+  }
+  // Coupures (lot 5k-I) : une par tranche de durée fixe propre à la source ; dans chaque tranche, une coupure de durée et de profondeur tirées,
+  // placée au hasard dans la tranche, à 0,5 s au moins de ses bords : la durée allumée entre deux coupures varie ; la coupure suit sin² (douce).
+  const c = v.coupures;
+  if (c && c.profondeur > 0) {
+    const span = c.allumee[0] + (c.allumee[1] - c.allumee[0]) * noise(phase, 2.5) + c.duree[1];
+    const x = t + phase * span;
+    const k = Math.floor(x / span);
+    const u = x - k * span;
+    const d = c.duree[0] + (c.duree[1] - c.duree[0]) * noise(phase, k + 0.25);
+    const lead = FLICKER_MAX.allumeeMin / 2; // au moins 1 s de lumière entre deux coupures, la place de la coupure varie dans le reste
+    const start = lead + (span - d - 2 * lead) * noise(phase, k + 0.75);
+    if (u >= start && u <= start + d) {
+      const g = Math.sin((Math.PI * (u - start)) / d) ** 2;
+      level *= 1 - c.profondeur * (0.6 + 0.4 * noise(phase, k + 0.5)) * g;
+    }
+  }
+  return level;
 }
 
 // Phase d'une lampe (stable, d'après son identifiant).
@@ -369,6 +400,39 @@ export function moonPatch(win, moon, opening) {
   const sy = n[0];
   const at = (s, h) => ({ x: r2(cx + sx * s + tx * h), y: r2(cy + sy * s + tz * h) });
   return [at(-half, opening.sill), at(half, opening.sill), at(half, opening.lintel), at(-half, opening.lintel)];
+}
+
+// Lot 5k-I (retour du propriétaire : « on dirait un bloc blanc », « le rayon ne part pas de la fenêtre ») : rayon de lune doux, en grille : du
+// pied du mur (face intérieure, sous la fenêtre) jusqu'à la projection du haut de l'ouverture ; poids 0 sur les bords et au bout, plus fort à la
+// projection du bas de l'ouverture. Renvoie null (côté sans lune) ou { points: [{ x, y, w }], triangles: [[i, j, k]] } (grille de cols × rows).
+export function moonBeam(win, moon, opening, cols = 5) {
+  const q = moonPatch(win, moon, opening);
+  if (!q) return null;
+  const n = INWARD[win.side];
+  const half = opening.width / 2;
+  const cx = win.x + n[0] * (opening.thickness / 2);
+  const cy = win.y + n[1] * (opening.thickness / 2);
+  const sx = -n[1];
+  const sy = n[0];
+  const tx = -moon.x / moon.y;
+  const tz = -moon.z / moon.y;
+  const rows = [[0, 0.35], [opening.sill, 1], [(opening.sill + opening.lintel) / 2, 0.6], [opening.lintel, 0]];
+  const colW = Array.from({ length: cols }, (_, i) => Math.sin((Math.PI * i) / (cols - 1)) ** 1.5);
+  const points = [];
+  for (const [h, rw] of rows) {
+    for (let i = 0; i < cols; i += 1) {
+      const sv = -half + (2 * half * i) / (cols - 1);
+      points.push({ x: r2(cx + sx * sv + tx * h), y: r2(cy + sy * sv + tz * h), w: Math.round(rw * colW[i] * 1000) / 1000 });
+    }
+  }
+  const triangles = [];
+  for (let r = 0; r < rows.length - 1; r += 1) {
+    for (let i = 0; i < cols - 1; i += 1) {
+      const a = r * cols + i;
+      triangles.push([a, a + 1, a + cols + 1], [a, a + cols + 1, a + cols]);
+    }
+  }
+  return { points, triangles };
 }
 
 // Emplacements des lumières (tableau fixe { id, w }, w de 0 à 1) : une lampe choisie garde son emplacement ; une lampe qui n'est plus choisie

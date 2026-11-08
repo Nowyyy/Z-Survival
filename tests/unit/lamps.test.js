@@ -3,7 +3,7 @@
 // jamais atteint), lampes absentes des données de collision (ni obstacle, ni mur : balles, laser et zombies passent), jetons --game-lamp-*.
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { baseFactors, firesToWorld, FLAME_TOP, moonPatch, FLICKER_MAX, flicker, LAMP_COLORS, lampPhase, lampsToWorld, lampTriangles, LIGHT_DEFAULTS, MAX_TRIANGLES, ORIENTATIONS, parseLampSource, parseLightConfig, selectLamps, stepSlots } from '../../js/core/lamps.js';
+import { baseFactors, firesToWorld, FLAME_TOP, moonBeam, moonPatch, FLICKER_MAX, flicker, LAMP_COLORS, lampPhase, lampsToWorld, lampTriangles, LIGHT_DEFAULTS, MAX_TRIANGLES, ORIENTATIONS, parseLampSource, parseLightConfig, selectLamps, stepSlots } from '../../js/core/lamps.js';
 import { firstOnSegment } from '../../js/core/collision.js';
 import { generateMapFiles } from '../../scripts/plan-vers-monde.mjs';
 
@@ -218,7 +218,9 @@ describe('lumieres.json et lumière de base', () => {
     expect(wild.fenetres).toEqual(LIGHT_DEFAULTS.fenetres);
     expect(wild.selection).toEqual(LIGHT_DEFAULTS.selection);
     expect(parseLightConfig({ vacillement: { amplitude: 0.1, periode: [2, 1] } }).vacillement.periode).toEqual(LIGHT_DEFAULTS.vacillement.periode); // bornes inversées
-    expect(FLICKER_MAX).toEqual({ amplitude: 0.15, periodeMin: 0.5, periodeMax: 10 });
+    expect(FLICKER_MAX).toEqual({ amplitude: 0.15, periodeMin: 0.5, periodeMax: 10, profondeurMax: 0.9, dureeMin: 0.1, dureeMax: 1.5, allumeeMin: 1 });
+    // Lot 5k-I : coupures hostiles ramenées aux défauts (profondeur ≤ 0,9, durée ≥ 0,1 s, allumée ≥ 1 s).
+    expect(parseLightConfig({ vacillement: { amplitude: 0.1, periode: [1, 2], coupures: { allumee: [0.2, 1], duree: [0.01, 0.02], profondeur: 1 } } }).vacillement.coupures).toEqual(LIGHT_DEFAULTS.vacillement.coupures);
   });
 });
 
@@ -230,8 +232,10 @@ describe('vacillement', () => {
     for (let i = 1; i < v.length - 1; i += 1) if ((v[i] - v[i - 1]) * (v[i + 1] - v[i]) < 0) n += 1;
     return n / (v.length / 60);
   };
-  it('lent et faible : au plus 3 variations par seconde, amplitude ≤ 15 % de l\'intensité, aucun saut entre deux images', () => {
-    const configs = [parseLightConfig(LUMIERES), parseLightConfig({ vacillement: { amplitude: 0.15, periode: [0.5, 0.5] } }), { vacillement: parseLightConfig(LUMIERES).feux.vacillement }]; // 5k-G : feux ; 5k-H : période la plus courte permise
+  it('partie continue lente et faible : au plus 3 variations par seconde, amplitude ≤ 15 % de l\'intensité, aucun saut entre deux images', () => {
+    // Lot 5k-I : la partie continue seule (sans coupures) garde les bornes d'origine ; les coupures sont vérifiées dans le test suivant.
+    const plain = (c) => ({ vacillement: { ...c.vacillement, coupures: null } });
+    const configs = [plain(parseLightConfig(LUMIERES)), plain(parseLightConfig({ vacillement: { amplitude: 0.15, periode: [0.5, 0.5] } })), { vacillement: parseLightConfig(LUMIERES).feux.vacillement }]; // 5k-G : feux ; 5k-H : période la plus courte permise
     for (const cfg of configs) {
       for (const id of LAMPS.map((l) => l.id)) {
         const v = series(cfg, lampPhase(id));
@@ -241,6 +245,31 @@ describe('vacillement', () => {
         expect(Math.max(...v)).toBeLessThanOrEqual(1);
         for (let i = 1; i < v.length; i += 1) expect(Math.abs(v[i] - v[i - 1])).toBeLessThan(0.02); // aucun scintillement brusque
       }
+    }
+  });
+  it('lot 5k-I : coupures brèves et rares (retour du propriétaire) : allumée longtemps (durée variable), coupure courte et douce, jamais le noir, au plus 3 changements par seconde', () => {
+    const cfg = parseLightConfig(LUMIERES);
+    const c = cfg.vacillement.coupures;
+    expect(c.profondeur).toBeLessThanOrEqual(FLICKER_MAX.profondeurMax);
+    for (const id of LAMPS.map((l) => l.id)) {
+      const v = Array.from({ length: 3600 }, (_, i) => flicker(i / 60, lampPhase(id), cfg)); // 60 s
+      expect(extremaPerSecond(v), id).toBeLessThanOrEqual(3);
+      expect(Math.min(...v), id).toBeGreaterThanOrEqual(1 - cfg.vacillement.amplitude - FLICKER_MAX.profondeurMax); // jamais éteinte tout à fait
+      const dips = [];
+      let start = null;
+      for (let i = 0; i < v.length; i += 1) {
+        if (v[i] < 0.85 && start === null) start = i;
+        if (v[i] >= 0.85 && start !== null) {
+          dips.push([start, i - start]);
+          start = null;
+        }
+      }
+      expect(dips.length, id).toBeGreaterThanOrEqual(5); // la lumière se coupe bien de temps en temps
+      for (const [, n] of dips) expect(n / 60, id).toBeLessThanOrEqual(c.duree[1]); // coupure courte
+      const gaps = dips.slice(1).map((d, k) => (d[0] - dips[k][0]) / 60);
+      expect(Math.min(...gaps), id).toBeGreaterThanOrEqual(FLICKER_MAX.allumeeMin); // allumée au moins 1 s entre deux coupures
+      expect(Math.max(...gaps) - Math.min(...gaps), id).toBeGreaterThan(1); // durée allumée variable
+      for (let i = 1; i < v.length; i += 1) expect(Math.abs(v[i] - v[i - 1]), id).toBeLessThan(0.35); // jamais d'un coup : sur plusieurs images
     }
   });
   it('lot 5k-H : jamais toutes ensemble : chaque source a son rythme (moments des changements de sens et amplitudes différents d\'une source à l\'autre)', () => {
@@ -312,6 +341,27 @@ describe('rayons de lune par les fenêtres (lot 5k-H)', () => {
     expect(lit.sort()).toEqual(['F3', 'F5', 'F6', 'F8', 'U1', 'U2', 'U6', 'U7']); // murs ouest et sud
     expect(moonPatch({ x: 0, y: 0, side: 'nord' }, { x: 0, y: -1, z: 0 }, OPENING)).toBeNull(); // lune sous l'horizon
     expect(moonPatch({ x: 0, y: 0, side: 'haut' }, MOON, OPENING)).toBeNull();
+  });
+});
+
+describe('rayon de lune doux (lot 5k-I)', () => {
+  it('part du pied du mur sous la fenêtre, s\'éteint sur les bords et au bout ; aucun rayon du côté sans lune', () => {
+    const MOON = RENDER.light.sunOffset;
+    const OPENING = { width: RDC.windowSize, sill: RENDER.sillHeight, lintel: RENDER.lintelBottom, thickness: RDC.wallThickness };
+    const w = RDC.windows.find((q) => q.id === 'F3'); // mur ouest
+    const b = moonBeam(w, MOON, OPENING);
+    expect(b.points).toHaveLength(20); // 5 colonnes × 4 rangées
+    expect(b.triangles).toHaveLength(24);
+    const depth = (p) => p.x - w.x; // F3 : face intérieure vers l'est
+    for (const p of b.points.slice(0, 5)) expect(depth(p)).toBeCloseTo(OPENING.thickness / 2, 6); // première rangée : au pied du mur
+    for (const p of b.points.slice(15)) expect(p.w).toBe(0); // bout du rayon : éteint
+    for (const r of [0, 1, 2, 3]) {
+      expect(b.points[r * 5].w).toBe(0); // bords : éteints
+      expect(b.points[r * 5 + 4].w).toBe(0);
+    }
+    expect(Math.max(...b.points.map((p) => p.w))).toBe(1);
+    expect(b.points[7].w).toBe(1); // le plus clair : milieu, à la projection du bas de l'ouverture
+    expect(moonBeam(RDC.windows.find((q) => q.side === 'nord'), MOON, OPENING)).toBeNull();
   });
 });
 

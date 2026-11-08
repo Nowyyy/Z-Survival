@@ -7,7 +7,7 @@
 // seulement quand elles éclairent) ; la lune (et ses ombres) est réduite par `lune`, l'ambiante par max(ambiance, plancher). Les taches de sang
 // (matière sans éclairage) suivent l'ambiante. Tout est rendu tel quel à la sortie (dispose). Rien ici ne touche la logique du jeu.
 import * as THREE from 'three';
-import { baseFactors, flicker, lampPhase, moonPatch, parseLightConfig, selectLamps, stepSlots } from '../core/lamps.js';
+import { baseFactors, flicker, lampPhase, moonBeam, parseLightConfig, selectLamps, stepSlots } from '../core/lamps.js';
 
 const BLOOD = ['sang-particules', 'sang-taches'];
 // Sous ?test=1 seulement : ?lampgain=0..1 multiplie l'intensité des sources (mesure de l'étage superposé : avec et sans elles, base identique).
@@ -78,7 +78,12 @@ export function createLights({ scene, ambient, sun, lamps, fires = [], json, pal
       if (near.length === 0) continue;
       const pos = [];
       const quad = (a, b, c, d) => pos.push(...a, ...b, ...c, ...a, ...c, ...d);
-      for (const b of near) {
+      for (const b0 of near) {
+        // Lot 5k-I (retour du propriétaire : le dessus des meubles bas restait sombre) : les meubles bas (moins de 100 de haut ; leur boîte de
+        // collision dépasse souvent leur dessin) ne portent pas d'ombre de lampe ; murs et piliers : volume en retrait de 2 unités.
+        if (b0.y1 - b0.y0 < 100) continue;
+        const inset = Math.min(2, (b0.x1 - b0.x0) / 4, (b0.z1 - b0.z0) / 4);
+        const b = { x0: b0.x0 + inset, x1: b0.x1 - inset, z0: b0.z0 + inset, z1: b0.z1 - inset, y0: b0.y0, y1: b0.y1 - 2 };
         const P = (x, y, z) => [x ? b.x1 : b.x0, y ? b.y1 : b.y0, z ? b.z1 : b.z0];
         quad(P(0, 1, 0), P(0, 1, 1), P(1, 1, 1), P(1, 1, 0)); // dessus
         quad(P(0, 0, 0), P(1, 0, 0), P(1, 1, 0), P(0, 1, 0));
@@ -112,13 +117,14 @@ export function createLights({ scene, ambient, sun, lamps, fires = [], json, pal
       const pos = [];
       const col = [];
       for (const w of windows.filter((q) => q.floor === floor)) {
-        const q = moonPatch(w, scaled, opening);
-        if (!q) continue;
-        const near = moonColor.clone().multiplyScalar(cfg.fenetres.intensite);
-        const c = [[near.r, near.g, near.b], [near.r, near.g, near.b], [0, 0, 0], [0, 0, 0]];
-        for (const k of [0, 1, 2, 0, 2, 3]) {
-          pos.push(q[k].x, 0.6, q[k].y);
-          col.push(...c[k]);
+        const beam = moonBeam(w, scaled, opening);
+        if (!beam) continue;
+        for (const tri of beam.triangles) {
+          for (const k of tri) {
+            const p = beam.points[k];
+            pos.push(p.x, 0.6, p.y);
+            col.push(moonColor.r * cfg.fenetres.intensite * p.w, moonColor.g * cfg.fenetres.intensite * p.w, moonColor.b * cfg.fenetres.intensite * p.w);
+          }
         }
       }
       if (pos.length === 0) continue;
