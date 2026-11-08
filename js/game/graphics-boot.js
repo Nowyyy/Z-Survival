@@ -2,7 +2,9 @@
 // et main.js). data/game/graphics.json, préférence de l'appareil (zs.device.v1 : préréglage et configuration Perso, js/save/device-settings.js), ?gfx=,
 // classe d'appareil (pointeur grossier, user-agent : sans identifier l'appareil) et paramètres explicites de l'adresse (ils l'emportent).
 // Le vecteur effectif des options donne les réglages du chargement. Rien n'est écrit ici ; ?gfx= n'est jamais mémorisé (?gfx=perso : Perso enregistré).
-import { effectiveOptions, explicitParams, parseGraphics, presetSearch, resolvePreset } from '../core/graphics.js';
+// Lot 5l : canal de la page (balise <meta name="zs-canal"> de jeu.html, sans requête) et adresse filtrée (paramètres refusés pour ce canal retirés,
+// Docs/ref/debug.md) : tout lecteur de l'adresse du jeu lit pageSearch(), jamais location.search.
+import { effectiveOptions, explicitParams, filtrerAdresse, lireCanal, parseGraphics, presetSearch, resolvePreset } from '../core/graphics.js';
 import { browserStorage, createDeviceSettings } from '../save/device-settings.js';
 import { resolveMapId } from '../core/maps.js';
 
@@ -28,7 +30,23 @@ async function boot(search) {
   return { cfg, store, stored, resolved, explicit, device, effective, settings, persosSearch: presetSearch(search, settings), corpses, lamps, mapId };
 }
 
-export function graphicsBoot(search = globalThis.location?.search ?? '') {
+// Canal de la page : source, dev, release, archive, prod, ou null (balise absente ou valeur inconnue : traité comme la production).
+export function pageCanal(doc = globalThis.document) {
+  try {
+    return lireCanal(doc?.querySelector?.('meta[name="zs-canal"]')?.getAttribute('content') ?? null);
+  } catch {
+    return null;
+  }
+}
+
+// Adresse de la page lue par le jeu (calculée une fois) : celle de la barre d'adresse sans les paramètres refusés pour le canal ; identique sur source.
+let filtered = null;
+export function pageSearch() {
+  filtered ??= filtrerAdresse(String(globalThis.location?.search ?? ''), pageCanal());
+  return filtered;
+}
+
+export function graphicsBoot(search = pageSearch()) {
   ready ??= boot(String(search).slice(0, 2000));
   return ready;
 }

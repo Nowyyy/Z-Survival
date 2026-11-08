@@ -12,7 +12,8 @@ import { createRepository } from '../save/index.js';
 import { createInput } from './input.js';
 import { createTokenLookup, readPalette } from './palette.js';
 import { createVhs, parseVhsParam } from './vhs-layer.js';
-import { graphicsBoot } from './graphics-boot.js';
+import { graphicsBoot, pageCanal, pageSearch } from './graphics-boot.js';
+import { parseSoundMode } from '../core/sound-choice.js';
 import { createGraphicsController } from './graphics-apply.js';
 import { installSafeArea } from './safe-area.js';
 import { planSounds, renderSounds, nextVisibleFrame, BACKGROUND_SLICE_MS } from './sound-loader.js';
@@ -52,7 +53,11 @@ function floorParam(value) {
   return value === '1' ? 'etage' : value === '0' ? 'rdc' : null;
 }
 
-const query = new URLSearchParams(location.search);
+// Lot 5l : adresse filtrée par canal (balise zs-canal de jeu.html, Docs/ref/debug.md) : un paramètre refusé n'a aucun effet et ne déclenche pas le mode
+// essai ; sur le canal source (dépôt, tests), l'adresse est lue telle quelle. Tous les lecteurs ci-dessous lisent `search`, jamais location.search.
+const canal = pageCanal();
+const search = pageSearch();
+const query = new URLSearchParams(search);
 const testMode = query.get('test') === '1';
 const fpsMode = query.get('fps') === '1';
 // Lot 5b : ?perf=1 (outil de mesure, panneau et profileur) et ?cap=N (expérience de plafond) : modules importés seulement avec le paramètre.
@@ -62,7 +67,7 @@ const seedParam = Number.parseInt(query.get('seed') ?? '', 10);
 // Carte (lot 3b) : ?map=salle charge l'ancienne salle (data/game/world.json et decor.json), sinon la carte par défaut (data/game/maps/<id>/) ; ?empty=1
 // (avec ?test=1) garde la salle du lot 1m, donc les anciens fichiers.
 const emptyMode = testMode && query.get('empty') === '1';
-const mapId = emptyMode ? 'salle' : resolveMapId(location.search);
+const mapId = emptyMode ? 'salle' : resolveMapId(search);
 const mapDir = mapId === 'salle' ? 'data/game' : `data/game/maps/${mapId}`;
 
 // Zones et portes (lot 3c) : zones.json de la carte (pixels du plan), absent de l'ancienne salle (?map=salle, ?empty=1) qui garde une seule zone.
@@ -73,7 +78,7 @@ const upperWorld = mapId === 'salle' ? null : await loadJson(`${mapDir}/etage.wo
 // decor-interieur.world.json de la carte (généré par npm run carte), passé au rendu par render.decorInterieur ; absent de l'ancienne salle.
 const detail = query.get('detail') !== '0';
 // Lot 5b : préréglage graphique (?gfx= > préférence de l'appareil zs.device.v1 > auto) ; les paramètres explicites de l'adresse l'emportent.
-const gfx = await graphicsBoot(location.search);
+const gfx = await graphicsBoot(search);
 const gfxLoad = gfx.settings.load;
 const decorInterieur = detail && gfxLoad.decor !== 'reduit' && mapId !== 'salle' ? await loadJson(`${mapDir}/decor-interieur.world.json`).catch(() => null) : null;
 // Retours du propriétaire : mobilier dessiné d'après le modèle (mobilier.world.json, avec le détail).
@@ -129,8 +134,9 @@ render.seeThrough = query.get('percee') === '0' ? null : (render.seeThrough ?? n
 render.feux = detail && mapId !== 'salle' ? ((await loadJson(`${mapDir}/feux.json`).catch(() => null))?.feux ?? []) : []; // feux sur des caisses (lot 3g, retours)
 render.reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const textureData = await generateTextureData(texturesCfg.textures, { lookup: createTokenLookup(), onProgress: (p) => loading.update(p * TEXTURE_SHARE), detail: detail && gfxLoad.texturesFines });
-const audio = createAudio({ config: { audio: audioCfg, materials: materialsCfg, voice: voiceCfg, sounds: soundsCfg.sounds }, test: testMode, seed: Number.isFinite(seedParam) ? seedParam : 1 });
-const essential = await renderSounds(planSounds(soundsCfg.sounds, 'essentiel'), { onProgress: (p) => loading.update(TEXTURE_SHARE + (1 - TEXTURE_SHARE) * p) });
+const soundMode = parseSoundMode(search); // ?sons= (groupe T)
+const audio = createAudio({ config: { audio: audioCfg, materials: materialsCfg, voice: voiceCfg, sounds: soundsCfg.sounds }, test: testMode, seed: Number.isFinite(seedParam) ? seedParam : 1, mode: soundMode });
+const essential = await renderSounds(planSounds(soundsCfg.sounds, 'essentiel'), { onProgress: (p) => loading.update(TEXTURE_SHARE + (1 - TEXTURE_SHARE) * p), mode: soundMode });
 audio.addSounds(essential.items);
 audio.stats.essentialMs = essential.ms;
 // Effet VHS : le grain est généré (texgen.js) et converti en adresse data: une seule fois, derrière l'écran de préparation.
@@ -154,7 +160,7 @@ const storage = (() => {
 })();
 const saveParams = { save: saveCfg, economy: economyCfg, stats: statsCfg };
 const { repository, mode: saveMode } = createRepository({
-  search: location.search,
+  search,
   storage,
   params: saveParams,
   listen: (handler) => {
@@ -189,7 +195,7 @@ const ctx = {
   },
   seed: Number.isFinite(seedParam) ? seedParam : Date.now() % 2147483647,
   seedRun: 0,
-  levels: readLevels(location.search, statsCfg, loadedSave.status === 'ok' ? loadedSave.save : null),
+  levels: readLevels(search, statsCfg, loadedSave.status === 'ok' ? loadedSave.save : null),
   repository,
   mode: saveMode,
   economy: makeEconomy(economyCfg, enemies),
@@ -200,12 +206,13 @@ const ctx = {
   audio,
   audioCfg,
   audioMaterials: materialsCfg,
+  canal, // lot 5l : canal de la page (null : refusé) ; l'icône de débogage de la pause n'existe que sur les canaux de débogage
 };
 
 // Lot 5b : préréglages graphiques en jeu (réglages « live », Auto entre deux manches) ; sous ?test=1 le rechargement est simulé (getState().graphics).
 ctx.graphics = createGraphicsController(gfx, { vhs, dict, announce: (text) => ctx.ui?.setLive(text), reload: testMode ? null : () => location.reload() });
 ctx.graphicsLabel = () => ctx.graphics.label();
-if (perfMode) ctx.profiler = (await import('./profiler.js')).createProfiler({ search: location.search, ua: navigator.userAgent });
+if (perfMode) ctx.profiler = (await import('./profiler.js')).createProfiler({ search, ua: navigator.userAgent });
 if (query.has('cap')) ctx.gate = (await import('./frame-cap.js')).gateFromParam(query.get('cap'));
 
 let game = null;
@@ -302,7 +309,7 @@ if (game === null) {
   }
 }
 // Les sons « fond » (voix de zombies, ambiance) sont calculés pendant la partie, 4 ms par image au plus ; ils ne sont joués qu'une fois prêts.
-renderSounds(planSounds(soundsCfg.sounds, 'fond'), { sliceMs: BACKGROUND_SLICE_MS, wait: nextVisibleFrame, onItem: (item) => ctx.audio.addSounds([item]) }).then((done) => {
+renderSounds(planSounds(soundsCfg.sounds, 'fond'), { sliceMs: BACKGROUND_SLICE_MS, wait: nextVisibleFrame, onItem: (item) => ctx.audio.addSounds([item]), mode: soundMode }).then((done) => {
   ctx.audio.stats.backgroundMs = done.ms;
   ctx.audio.stats.ready = true;
 }).catch(() => {});
