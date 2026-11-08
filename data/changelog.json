@@ -224,7 +224,8 @@
     ] },
     { "name": "lot-5k", "version": "v0.7", "date": "2026-11-07", "titre": "Lampes à huile et lumières (essai)", "points": [
       "Des petites lampes à huile sur des piliers et des murs, aux deux étages, toujours présentes sur la carte ; deux réglages dans les Options : « Lumière des lampes » (coupée ou dynamique) et « Lumières simultanées » (2, 4 ou 6).",
-      "La lumière dynamique est réservée au préréglage Élevé : coins plus sombres, ombres portées par les lampes et lumière des feux ; le jeu lui-même ne change pas. Positions et intensités provisoires, à régler."
+      "La lumière dynamique est réservée au préréglage Élevé : coins plus sombres, ombres portées par les lampes et lumière des feux ; le jeu lui-même ne change pas. Positions et intensités provisoires, à régler.",
+      "En lumière dynamique, la lune entre par les fenêtres exposées : sa tache au sol faiblit à chaque planche clouée et revient doucement quand une planche est arrachée."
     ] },
     { "name": "lot-5l", "version": "v0.7", "date": "2026-11-08", "titre": "Menu de débogage dans la pause (développement et Recette)", "points": [
       "Une petite icône « Débogage » à côté du son, dans la pause, ouvre un panneau : manche, argent, niveaux des statistiques, planches, étage, carte, sans zombies, manches sans fin, fin du monde, panneau de mesure et plafond d'images ; « Appliquer et recharger » lance une partie d'essai (sauvegarde non modifiée).",

@@ -155,7 +155,7 @@ export function createGraphicsController(boot, { vhs = null, announce = () => {}
       return {
         choice: st.choice, preset: eff.preset, initial: resolved.preset, origin, device: resolved.device, auto: st.choice === 'auto',
         downgraded: st.choice === 'auto' && st.current ? downgraded : null, lastDecision, live: { ...settings.live, feux: { ...settings.live.feux } }, load: { ...settings.load }, overridden: [...settings.overridden],
-        storage: store.state(), reloadRequested, world: refs?.world.graphicsStats?.() ?? null, antialias: refs ? refs.renderer.getContextAttributes?.()?.antialias ?? null : null,
+        storage: store.state(), reloadRequested, world: refs?.world.graphicsStats?.() ?? null, lune: refs?.world.moonState?.() ?? [], antialias: refs ? refs.renderer.getContextAttributes?.()?.antialias ?? null : null,
         pixelRatio: refs ? refs.renderer.getPixelRatio() : null, shadows: refs ? refs.renderer.shadowMap.enabled : null, vhs: vhs ? vhs.mode : null,
         // Lot 5j : vecteur effectif, origine de chaque valeur, valeurs du chargement, options en attente de rechargement, Perso enregistré.
         vector: { ...eff.vector }, origins: { ...eff.origins }, imposed: [...eff.imposed], running: { ...running }, pending: pendingReload(eff, running, cfg),

@@ -443,6 +443,23 @@ function distanceToRise(rise, x, y) {
   return best;
 }
 
+// Garde-corps (retour du propriétaire, lot 5k) : un côté { x0, x1, z0, z1 } du garde-corps, privé des parties qu'un mur plein de l'étage (walls : emprises
+// { x0, x1, z0, z1 }) couvre sur toute son épaisseur ; l'escalier de l'aile longe le mur ouest : ses barreaux, dans le mur, scintillaient sur sa face.
+// Renvoie les morceaux restants (plus de 0,5 unité de long et d'épaisseur).
+export function fenceParts(side, walls) {
+  const { x0, x1, z0, z1 } = side;
+  if (x1 - x0 <= 0.5 || z1 - z0 <= 0.5) return [];
+  const alongX = x1 - x0 >= z1 - z0;
+  let parts = [alongX ? [x0, x1] : [z0, z1]];
+  for (const w of walls) {
+    const [c0, c1, w0, w1] = alongX ? [z0, z1, w.z0, w.z1] : [x0, x1, w.x0, w.x1];
+    if (c0 < w0 - 0.5 || c1 > w1 + 0.5) continue;
+    const [a0, a1] = alongX ? [w.x0, w.x1] : [w.z0, w.z1];
+    parts = parts.flatMap(([u, v]) => [[u, Math.min(v, a0)], [Math.max(u, a1), v]].filter(([m, n]) => n - m > 0.5));
+  }
+  return parts.map(([u, v]) => (alongX ? { x0: u, x1: v, z0, z1 } : { x0, x1, z0: u, z1: v }));
+}
+
 // Trou dans le sol de l'étage : un seul rectangle pour une montée droite parallèle à un axe ; sinon des bandes horizontales de `strip` unités, toutes à l'intérieur de la
 // largeur (le sol déborde un peu sur la rampe, jamais l'inverse). Rectangles { x0, y0, x1, y1 }.
 export function holeRects(rise, strip = 15) {
@@ -611,6 +628,7 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
   const grillesOf = (f) => (Array.isArray(render.decorInterieur) ? render.decorInterieur : []).filter((it) => it?.kind === 'grille' && it.floor === f && it.a && it.b && it.n);
   // Mur percé (lot 3g, retours) : boîtes qui peuvent cacher le joueur (murs, piliers, meubles), par étage, pour le test de la caméra à chaque image.
   const occluders = [];
+  const etageWalls = []; // murs pleins de l'étage (emprises { x0, x1, z0, z1 }) : le garde-corps n'est pas dessiné contre eux
   const wallRepeat = textures.repeat('mur');
   for (const f of floors) {
     const l = layoutOf(f);
@@ -647,6 +665,10 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
     }));
     for (const w of walls) {
       occluders.push({ ...extents(w), floor: f });
+      if (f === 'etage') {
+        const e = extents(w);
+        if (e.y0 <= 0.5 && e.y1 >= FENCE_HEIGHT) etageWalls.push(e);
+      }
       fb.wall.box(extents(w), { repeat: wallRepeat }, 'cotes');
       fb.wall.box(extents(w), { fixed: [0.31, 0.62] }, 'dessus'); // dessus : un seul texel du mur, donc sans texture
     }
@@ -873,7 +895,10 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
       if (d.y < 0) exits.push({ t: (r.y0 - a.y) / d.y, side: 'y0' });
       const exit = exits.filter((q) => q.t >= -1e-6).sort((m, n) => m.t - n.t)[0] ?? null;
       const gapAt = exit ? { side: exit.side, c: exit.side[0] === 'x' ? a.y + d.y * Math.max(0, exit.t) : a.x + d.x * Math.max(0, exit.t), half: rise.width / 2 + 8 } : null;
-      const box = (x0, x1, z0, z1) => { if (x1 - x0 > 0.5 && z1 - z0 > 0.5) fence.box({ x0, x1, y0: 0, y1: FENCE_HEIGHT, z0, z1 }, { repeat }, 'plan'); };
+      // Retour du propriétaire (lot 5k) : pas de garde-corps contre un mur de l'étage (fenceParts).
+      const box = (x0, x1, z0, z1) => {
+        for (const q of fenceParts({ x0, x1, z0, z1 }, etageWalls)) fence.box({ ...q, y0: 0, y1: FENCE_HEIGHT }, { repeat }, 'plan');
+      };
       const run = (side, from, to, put) => {
         const hole = gapAt?.side === side ? [gapAt.c - gapAt.half, gapAt.c + gapAt.half] : null;
         if (hole === null) put(from, to);
@@ -934,6 +959,7 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
   // la matière « planche » (texture de 128 px, hors atlas), sans ombre ; un maillage n'est dessiné que s'il est dans le champ de la caméra. Lot 3e : ceux d'un étage vivent
   // dans le groupe de cet étage.
   let windowMeshes = null;
+  let lastWindows = null; // lot 5k-C3 : dernier état des fenêtres reçu par le dessin des planches (lumière de lune)
   let debris = null;
   if (windowGeoms.length > 0 && windowsCfg) {
     const settings = plankSettings(windowsCfg, render);
@@ -953,7 +979,12 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
     const dm = parts.map(({ scene, geoms: gs }) => createDebrisMeshes({ scene, material, settings, sheet, ids: gs.map((g) => g.id) }));
     windowMeshes = {
       meshes: wm.flatMap((w) => w.meshes),
-      sync: (state) => wm.forEach((w) => w.sync(state)),
+      // Lot 5k-C3 : le même état sert à la lumière de lune de chaque fenêtre (lights.js, lecture seule).
+      sync: (state) => {
+        lastWindows = state;
+        wm.forEach((w) => w.sync(state));
+        lampKit.lights?.syncPlanks(state);
+      },
       nailed: () => wm.reduce((n, w) => n + w.nailed(), 0),
       stats: (camera) => wm.flatMap((w) => w.stats(camera)),
     };
@@ -1059,7 +1090,7 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
     lampKit.decor?.setVisible(mode !== 'off');
     // Éclairage : lumières en nombre fixe (programmes recompilés une fois à chaque changement de mode ou de nombre, jamais en partie).
     if (mode === 'eclairage' && !lampKit.lights && lampKit.data?.lights) {
-      lampKit.lights = lampKit.data.lights.createLights({ scene, ambient: ambientLight, sun, lamps: lampKit.data.lamps, fires: fireSources(), json: lampKit.data.lumieres, palette, count, shadows, lift, reduced: render.reducedMotion === true, occluders, groups, windows: floors.flatMap((f) => (layoutOf(f).windows ?? []).map((w) => ({ ...w, floor: f }))), moon: render.light.sunOffset, opening: { width: num(layout.windowSize, 72), sill: num(render.sillHeight, 16), lintel: num(render.lintelBottom, 44), thickness: num(layout.wallThickness, 40) } });
+      lampKit.lights = lampKit.data.lights.createLights({ scene, ambient: ambientLight, sun, lamps: lampKit.data.lamps, fires: fireSources(), json: lampKit.data.lumieres, palette, count, shadows, lift, reduced: render.reducedMotion === true, occluders, groups, windows: floors.flatMap((f) => (layoutOf(f).windows ?? []).map((w) => ({ ...w, floor: f }))), moon: render.light.sunOffset, opening: { width: num(layout.windowSize, 72), sill: num(render.sillHeight, 16), lintel: num(render.lintelBottom, 44), thickness: num(layout.wallThickness, 40) }, planks: lastWindows });
       created = true;
     } else if (mode !== 'eclairage' && lampKit.lights) {
       lampKit.lights.dispose();
@@ -1147,6 +1178,8 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
         sun.shadow.map = null;
       }
     },
+    moonState: () => lampKit.lights?.moonState() ?? [], // lot 5k-C3 (tests) : getState().graphics.lune
+    moonPatches: () => lampKit.lights?.moonPatches() ?? [],
     graphicsStats: () => ({ mists: mists.map((m) => m.visible), shadowMap: sun.shadow.mapSize.x, castShadow: sun.castShadow, fires: fires.map((f) => ({ kind: f.kind ?? 'decor', ...f.stats().drawn })), lamps: lampStats() }),
     // Lot 5k : état des lampes (mode appliqué, prêt, maillages, préchauffages, erreur).
     lampStats,

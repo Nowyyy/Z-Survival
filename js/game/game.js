@@ -1119,11 +1119,13 @@ export function createGame(ctx) {
     const pixels = c2d.getImageData(0, 0, sw, sh).data;
     const seen = new Set();
     let lum = 0;
+    let maxChannel = 0; // lot 5k-C3 : canal le plus haut de la zone (0 à 255)
     for (let i = 0; i < pixels.length; i += 4) {
       seen.add(((pixels[i] >> 4) << 8) | ((pixels[i + 1] >> 4) << 4) | (pixels[i + 2] >> 4));
       lum += 0.2126 * pixels[i] + 0.7152 * pixels[i + 1] + 0.0722 * pixels[i + 2];
+      maxChannel = Math.max(maxChannel, pixels[i], pixels[i + 1], pixels[i + 2]);
     }
-    return { distinctColors: seen.size, meanLuminance: lum / (pixels.length / 4) / 255 };
+    return { distinctColors: seen.size, meanLuminance: lum / (pixels.length / 4) / 255, maxChannel };
   }
 
   // Zones et portes pour les tests (getState().zones). L'ancienne salle n'a qu'une zone, aucune porte, aucune fin de monde.
@@ -1441,6 +1443,7 @@ export function createGame(ctx) {
         vhs: ctx.vhs.readout(),
         perf: ctx.perfState?.() ?? null, // lot 5b : mesures de ?perf=1 (null sans le paramètre)
         graphics: ctx.graphics?.state() ?? null, // lot 5b : préréglage, réglages appliqués, origine du choix
+        moonPatches: (world.moonPatches?.() ?? []).map((q) => ({ ...q, screen: screenAt(q.x, 0.6, q.y) })), // lot 5k-C3 : taches de lune à l'écran (rendu, hors logique)
       };
     },
   };
