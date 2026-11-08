@@ -291,9 +291,13 @@ test.describe('lampes à huile', () => {
     const files = [];
     page.on('request', (r) => r.url().startsWith(baseURL) && files.push(new URL(r.url()).pathname));
     // Préférence Faible enregistrée (zs.device.v1) : lampes « off » au chargement, aucun module des lampes demandé.
-    await page.goto('/data/game/graphics.json');
-    await page.evaluate(() => localStorage.setItem('zs.device.v1', JSON.stringify({ v: 2, graphics: 'faible', custom: null })));
-    errors.length = 0; // la page de graphics.json a pu demander /favicon.ico (absent, sans lien avec le jeu)
+    // Écrite avant le premier chargement du jeu (script d'initialisation, une seule fois par onglet) : aucune autre page visitée, donc aucune
+    // requête parasite (le Chrome de la CI demandait /favicon.ico pour la page de graphics.json, 404 relevé après la remise à zéro des erreurs).
+    await page.addInitScript(() => {
+      if (sessionStorage.getItem('lampes-init')) return;
+      localStorage.setItem('zs.device.v1', JSON.stringify({ v: 2, graphics: 'faible', custom: null }));
+      sessionStorage.setItem('lampes-init', '1');
+    });
     await open(page, '&nospawn=1&store=local');
     expect(files).not.toContain('/js/game/lamps.js');
     await page.evaluate(() => window.__zs.step(0.05));
