@@ -175,3 +175,24 @@ export function projectionCompacte(plan, b) {
     tranches: p ? p.repartition.map((t) => ({ index: t.index, secondes: Math.round(t.ms / 1000 / b.facteurParallelisme), executions: t.unites.reduce((s, x) => s + x.tests.length, 0) })) : [],
   };
 }
+
+// Lot 5n (T4) — Compléter la mesure de référence sans la refaire : les tests d'un rapport Playwright (mesure locale des seuls tests sans
+// durée, jamais le palier complet) remplacent ou ajoutent leur entrée (clé projet | fichier | titre sans étiquette) ; tout le reste de la mesure
+// (autres tests, étapes, cumul de référence du complet) est inchangé. Un test ignoré à l'exécution garde « ignore: true ».
+// Renvoie { mesure, remplaces, ajoutes } (nouvel objet, l'entrée n'est pas modifiée).
+export function completerMesure(mesure, mesures, { date = null, commit = null, note = '' } = {}) {
+  const cle = (t) => `${t.projet}|${t.fichier}|${sansEtiquette(t.titre)}`;
+  const nouveaux = new Map();
+  for (const t of mesures) nouveaux.set(cle(t), { projet: t.projet, fichier: t.fichier, titre: t.titre, ms: Math.round(t.ms ?? 0), ...(t.statut === 'skipped' ? { ignore: true } : {}) });
+  let remplaces = 0;
+  const tests = (mesure.tests ?? []).map((m) => {
+    const n = nouveaux.get(cle(m));
+    if (!n) return m;
+    nouveaux.delete(cle(m));
+    remplaces += 1;
+    return n;
+  });
+  const ajoutes = [...nouveaux.values()];
+  const complements = [...(mesure.complements ?? []), { date, commit, remplaces, ajoutes: ajoutes.length, note }];
+  return { mesure: { ...mesure, complements, tests: [...tests, ...ajoutes] }, remplaces, ajoutes: ajoutes.length };
+}

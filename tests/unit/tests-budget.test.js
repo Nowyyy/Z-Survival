@@ -1,7 +1,7 @@
 // Lot 4e-B : budget de durée (scripts/tests/lib/budget.mjs) sur des rapports fictifs, réglages de tests/budget.json.
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
-import { dureesDepuisMesure, evaluer, ligneTestList, nombreDeTranches, repartir, sansEtiquette, unites } from '../../scripts/tests/lib/budget.mjs';
+import { completerMesure, dureesDepuisMesure, evaluer, ligneTestList, nombreDeTranches, repartir, sansEtiquette, unites } from '../../scripts/tests/lib/budget.mjs';
 
 const B = { completCibleSecondes: 600, installationSecondes: 90, testsParTrancheSecondes: 480, tranchesMax: 16, facteurDesequilibre: 1.25, facteurParallelisme: 2, ajoutMaxParLotSecondes: 90 };
 const fictifs = (n, ms, fichier = 'tests/e2e/a.spec.js') => Array.from({ length: n }, (_, i) => ({ projet: 'bureau', fichier, titre: `t${i}`, ms }));
@@ -63,6 +63,43 @@ describe('budget du palier complet', () => {
 });
 
 // Lot 4f-A : complet à tranchesMax tranches, standard réparti (bureau seulement), choix du palier par la branche, bilan des durées.
+describe('lot 5n : mesure complétée (completerMesure), sans refaire le complet', () => {
+  const mesure = {
+    schema: 1, complet: { cumulSecondes: 100 }, etapes: { lint: { secondes: 7 } },
+    tests: [
+      { projet: 'bureau', fichier: 'tests/e2e/a.spec.js', titre: 'g › un', ms: 1000 },
+      { projet: 'bureau', fichier: 'tests/e2e/a.spec.js', titre: 'g › deux @instable', ms: 2000 },
+      { projet: 'mobile', fichier: 'tests/e2e/a.spec.js', titre: 'g › un', ms: 3000 },
+    ],
+  };
+  const gel = JSON.stringify(mesure);
+  it('remplace les durées des tests mesurés (clé sans étiquette), ajoute les nouveaux, garde le reste ; l\'entrée n\'est pas modifiée', () => {
+    const r = completerMesure(mesure, [
+      { projet: 'bureau', fichier: 'tests/e2e/a.spec.js', titre: 'g › deux', ms: 2500.4, statut: 'expected' },
+      { projet: 'bureau', fichier: 'tests/e2e/b.spec.js', titre: 'nouveau', ms: 4000, statut: 'unexpected' },
+      { projet: 'mobile', fichier: 'tests/e2e/b.spec.js', titre: 'ignoré', ms: 3, statut: 'skipped' },
+    ], { date: '2026-11-08', commit: 'abc1234', note: 'T4' });
+    expect(r.remplaces).toBe(1);
+    expect(r.ajoutes).toBe(2);
+    expect(r.mesure.tests).toEqual([
+      mesure.tests[0],
+      { projet: 'bureau', fichier: 'tests/e2e/a.spec.js', titre: 'g › deux', ms: 2500 },
+      mesure.tests[2],
+      { projet: 'bureau', fichier: 'tests/e2e/b.spec.js', titre: 'nouveau', ms: 4000 },
+      { projet: 'mobile', fichier: 'tests/e2e/b.spec.js', titre: 'ignoré', ms: 3, ignore: true },
+    ]);
+    expect(r.mesure.complet).toEqual({ cumulSecondes: 100 });
+    expect(r.mesure.etapes).toEqual(mesure.etapes);
+    expect(r.mesure.complements).toEqual([{ date: '2026-11-08', commit: 'abc1234', remplaces: 1, ajoutes: 2, note: 'T4' }]);
+    expect(JSON.stringify(mesure)).toBe(gel);
+  });
+  it('les durées complétées sont lues comme mesurées par dureesDepuisMesure', () => {
+    const { mesure: m } = completerMesure(mesure, [{ projet: 'bureau', fichier: 'tests/e2e/b.spec.js', titre: 'nouveau', ms: 4000 }]);
+    expect(dureesDepuisMesure([{ projet: 'bureau', fichier: 'tests/e2e/b.spec.js', titre: 'nouveau' }], m.tests)[0]).toMatchObject({ ms: 4000, source: 'mesure' });
+    expect(completerMesure(m, []).mesure.complements).toHaveLength(2);
+  });
+});
+
 describe('lot 4f : plan des paliers (planDuPalier)', async () => {
   const { nombreDeTranchesStandard, planDuPalier, projectionCompacte } = await import('../../scripts/tests/lib/budget.mjs');
   const BS = { ...B, standardCibleSecondes: 480, standardMaxSecondes: 600, tranchesMaxStandard: 8 };
