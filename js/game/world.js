@@ -1059,7 +1059,7 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
     lampKit.decor?.setVisible(mode !== 'off');
     // Éclairage : lumières en nombre fixe (programmes recompilés une fois à chaque changement de mode ou de nombre, jamais en partie).
     if (mode === 'eclairage' && !lampKit.lights && lampKit.data?.lights) {
-      lampKit.lights = lampKit.data.lights.createLights({ scene, ambient: ambientLight, sun, lamps: lampKit.data.lamps, fires: fireSources(), json: lampKit.data.lumieres, palette, count, shadows, lift, reduced: render.reducedMotion === true, occluders, groups });
+      lampKit.lights = lampKit.data.lights.createLights({ scene, ambient: ambientLight, sun, lamps: lampKit.data.lamps, fires: fireSources(), json: lampKit.data.lumieres, palette, count, shadows, lift, reduced: render.reducedMotion === true, occluders, groups, windows: floors.flatMap((f) => (layoutOf(f).windows ?? []).map((w) => ({ ...w, floor: f }))), moon: render.light.sunOffset, opening: { width: num(layout.windowSize, 72), sill: num(render.sillHeight, 16), lintel: num(render.lintelBottom, 44), thickness: num(layout.wallThickness, 40) } });
       created = true;
     } else if (mode !== 'eclairage' && lampKit.lights) {
       lampKit.lights.dispose();
@@ -1119,7 +1119,7 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
       for (const m of mists) if (!still && m.visible) m.material.uniforms.uTime.value += Math.min(0.1, Math.max(0, Number(dt) || 0));
       seeThrough.update(x, y, camera, occluders, (b) => (b.floor === 'etage' ? lift : 0) - elevationNow);
       lampKit.decor?.cull(view ? viewFrustum : null, groups.etage.visible); // lot 5k : seules les lampes dans le champ sont dessinées
-      lampKit.lights?.frame(dt, x, y, floorNow, elevationNow, view ? viewFrustum : null); // lot 5k : lumières des lampes (Éclairage)
+      lampKit.lights?.frame(dt, x, y, floorNow, elevationNow, view ? viewFrustum : null, groups.etage.visible); // lot 5k : lumières des lampes (Éclairage)
     },
     fireStats: () => fires.map((f) => f.stats()),
     // Lot 5b (préréglages graphiques, à chaud) : feux et fumées, brume, ombres. Valeurs de l'Élevé : rien ne change.

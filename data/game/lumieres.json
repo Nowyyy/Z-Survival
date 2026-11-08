@@ -1,15 +1,15 @@
 {
-  "_provisoire": "Lot 5k : lumières des lampes à huile (option « Lampes et lumières » : Éclairage). Valeurs PROVISOIRES, à régler par le propriétaire (Docs/ref/lampes.md). ambiance : facteur de la lumière ambiante en Éclairage seulement ; plancherAmbiance : facteur minimal de la lumière ambiante (jamais le noir complet) ; lune (lot 5k-G) : facteur de la lune et de ses ombres en Éclairage (bas : les ombres viennent des lampes) ; intensite : intensité d'une lampe (candela, lumières physiques de Three.js) ; distance : portée de la lumière (unités ; jamais au-delà de la portée sûre de chaque lampe, lampes.world.json) ; decroissance : décroissance avec la distance (decay de Three.js) ; fondu : secondes pour qu'une lampe s'allume ou s'éteigne quand elle entre dans le lot ou en sort ; vacillement : amplitude (part de l'intensité, 0,15 au plus) et fréquences (Hz, 1,4 au plus : moins de 3 changements par seconde), coupé avec prefers-reduced-motion ; max : nombre de lumières par défaut (l'option « Lumières simultanées » le fixe) ; distanceActivation : distance au joueur au-delà de laquelle une lampe n'est jamais choisie. Couleur : jeton --game-lamp-light (css/tokens.css). Lot 5k-G : ombres (taille : côté de la carte d'ombres cubique, 128, 256 ou 512 ; biais) des lumières à ombre (option « Ombres des lumières ») ; feux : intensité, portée et vacillement des feux (caisses, voiture, bidons) comme sources de lumière, couleur --game-fire-edge.",
+  "_provisoire": "Lot 5k : lumières des lampes à huile (option « Lampes et lumières » : Éclairage). Valeurs PROVISOIRES, à régler par le propriétaire (Docs/ref/lampes.md). ambiance : facteur de la lumière ambiante en Éclairage seulement ; plancherAmbiance : facteur minimal de la lumière ambiante (jamais le noir complet) ; lune (lot 5k-G) : facteur de la lune et de ses ombres en Éclairage (bas : les ombres viennent des lampes) ; intensite : intensité d'une lampe (candela, lumières physiques de Three.js) ; distance : portée de la lumière (unités ; lot 5k-H : libre quand l'autre étage n'est pas dessiné, sinon jamais au-delà de la portée sûre de chaque lampe, lampes.world.json) ; decroissance : décroissance avec la distance (decay de Three.js) ; fondu : secondes pour qu'une lampe s'allume ou s'éteigne quand elle entre dans le lot ou en sort ; vacillement : amplitude (part de l'intensité, 0,15 au plus) et période (secondes, au moins 0,5 : 2 changements par seconde au plus ; lot 5k-H : bruit lent propre à chaque source, période et amplitude tirées par source dans ces bornes), coupé avec prefers-reduced-motion ; max : nombre de lumières par défaut (l'option « Lumières simultanées » le fixe) ; distanceActivation : distance au joueur au-delà de laquelle une lampe n'est jamais choisie. Couleur : jeton --game-lamp-light (css/tokens.css). Lot 5k-G : ombres (taille : côté de la carte d'ombres cubique, 128, 256 ou 512 ; biais) des lumières à ombre (option « Ombres des lumières ») ; feux : intensité, portée et vacillement des feux (caisses, voiture, bidons) comme sources de lumière, couleur --game-fire-edge. Lot 5k-H : fenetres (rayons de lune par les fenêtres du côté de la lune : intensite de la tache au sol, etirement de sa longueur) ; selection.maintien (0,3 à 1 : une source déjà éclairée n'est remplacée que par une source plus proche que maintien × sa distance).",
   "ambiance": 0.3,
   "plancherAmbiance": 0.2,
   "lune": 0.15,
   "intensite": 650,
-  "distance": 120,
+  "distance": 240,
   "decroissance": 1,
-  "fondu": 0.6,
+  "fondu": 0.8,
   "vacillement": {
-    "amplitude": 0.1,
-    "frequences": [0.6, 1.1]
+    "amplitude": 0.12,
+    "periode": [1.2, 3.5]
   },
   "max": 4,
   "distanceActivation": 700,
@@ -19,10 +19,17 @@
   },
   "feux": {
     "intensite": 900,
-    "distance": 110,
+    "distance": 280,
     "vacillement": {
       "amplitude": 0.15,
-      "frequences": [0.9, 1.3]
+      "periode": [0.6, 1.6]
     }
+  },
+  "fenetres": {
+    "intensite": 0.2,
+    "etirement": 2.2
+  },
+  "selection": {
+    "maintien": 0.75
   }
 }

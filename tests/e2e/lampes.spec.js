@@ -285,6 +285,13 @@ test.describe('lampes à huile', () => {
     });
     expect(series.reduced).toBe(true);
     expect(new Set(series.out).size).toBe(1);
+    // Lot 5k-H : au rez-de-chaussée, étage caché : portée libre (lampes 240, feux 280, lumieres.json) ; rayons de lune par les fenêtres ouest et sud.
+    const l = await page.evaluate(() => window.__zs.getState().graphics.world.lamps.lights);
+    const cfg = JSON.parse(readFileSync('data/game/lumieres.json', 'utf8'));
+    l.slots.forEach((q, i) => {
+      if (q.id !== null) expect(l.distances[i], q.id).toBe(q.id.startsWith('feu') ? cfg.feux.distance : cfg.distance);
+    });
+    expect(l.moon).toEqual([['rdc', 8], ['etage', 8]]); // quatre fenêtres par étage, deux triangles chacune
     await context.close();
   });
 

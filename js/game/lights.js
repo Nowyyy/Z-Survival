@@ -7,7 +7,7 @@
 // seulement quand elles éclairent) ; la lune (et ses ombres) est réduite par `lune`, l'ambiante par max(ambiance, plancher). Les taches de sang
 // (matière sans éclairage) suivent l'ambiante. Tout est rendu tel quel à la sortie (dispose). Rien ici ne touche la logique du jeu.
 import * as THREE from 'three';
-import { baseFactors, flicker, lampPhase, parseLightConfig, selectLamps, stepSlots } from '../core/lamps.js';
+import { baseFactors, flicker, lampPhase, moonPatch, parseLightConfig, selectLamps, stepSlots } from '../core/lamps.js';
 
 const BLOOD = ['sang-particules', 'sang-taches'];
 // Sous ?test=1 seulement : ?lampgain=0..1 multiplie l'intensité des sources (mesure de l'étage superposé : avec et sans elles, base identique).
@@ -30,7 +30,8 @@ const testGain = () => {
 // scene, ambient, sun : de world.js ; lamps : lampes.world.json (lampes) ; fires : feux sources ({ id, floor : rdc | etage | exterieur, light, portee }) ;
 // json : lumieres.json ; palette : readPalette() ; count : lumières (2, 4, 6) ; shadows : celles qui projettent des ombres (0, 1, 2) ; lift : hauteur d'étage.
 // occluders : boîtes des murs, piliers et meubles par étage ({ x0, x1, y0, y1, z0, z1, floor }, repère de l'étage) ; groups : groupes du monde.
-export function createLights({ scene, ambient, sun, lamps, fires = [], json, palette, count = 4, shadows = 0, lift = 180, reduced = false, gain = testGain(), occluders = [], groups = null }) {
+// Lot 5k-H : windows ({ x, y, side, floor }), moon (render.json → light.sunOffset), opening ({ width, sill, lintel, thickness }) : rayons de lune.
+export function createLights({ scene, ambient, sun, lamps, fires = [], json, palette, count = 4, shadows = 0, lift = 180, reduced = false, gain = testGain(), occluders = [], groups = null, windows = [], moon = null, opening = null }) {
   const cfg = parseLightConfig(json);
   const lampColor = new THREE.Color(palette.lampLight ?? palette.fire);
   const fireColor = new THREE.Color(palette.fireEdge ?? palette.fire);
@@ -57,7 +58,12 @@ export function createLights({ scene, ambient, sun, lamps, fires = [], json, pal
   };
   const byId = new Map(sources.map((s) => {
     const fire = s.kind === 'feu';
-    return [s.id, { src: s, fire, reach: Math.min(fire ? cfg.feux.distance : cfg.distance, s.portee), phase: lampPhase(s.id), intensity: fire ? cfg.feux.intensite : cfg.intensite }];
+    // Lot 5k-H (retour du propriétaire : rayon trop petit) : portée libre (`distance` des données) quand l'autre étage n'est pas dessiné ; portée
+    // sûre (min avec `portee`) quand il l'est (à l'étage, ou dans l'escalier). Une source de l'étage garde toujours sa portée sûre (le
+    // rez-de-chaussée se voit d'en haut par les trous et hors du sol de l'étage).
+    const free = fire ? cfg.feux.distance : cfg.distance;
+    const safe = Math.min(free, s.portee);
+    return [s.id, { src: s, fire, safe, free: s.floor === 'etage' ? safe : free, reach: safe, phase: lampPhase(s.id), intensity: fire ? cfg.feux.intensite : cfg.intensite }];
   }));
   // Volumes d'ombre (lot 5k-G) : pour chaque source intérieure, les boîtes des murs, piliers et meubles à sa portée, fusionnées dans un maillage
   // invisible (ni couleur ni profondeur) qui ne projette que les ombres des lumières : montré seulement quand sa source a une lumière à ombre. Les
@@ -68,7 +74,7 @@ export function createLights({ scene, ambient, sun, lamps, fires = [], json, pal
     for (const [id, e] of byId) {
       const src = e.src;
       if (!groups[src.floor] || src.floor === 'exterieur') continue;
-      const near = occluders.filter((b) => b.floor === src.floor && Math.hypot(Math.max(b.x0 - src.light.x, 0, src.light.x - b.x1), Math.max(b.z0 - src.light.y, 0, src.light.y - b.z1)) <= e.reach);
+      const near = occluders.filter((b) => b.floor === src.floor && Math.hypot(Math.max(b.x0 - src.light.x, 0, src.light.x - b.x1), Math.max(b.z0 - src.light.y, 0, src.light.y - b.z1)) <= e.free);
       if (near.length === 0) continue;
       const pos = [];
       const quad = (a, b, c, d) => pos.push(...a, ...b, ...c, ...a, ...c, ...d);
@@ -93,9 +99,45 @@ export function createLights({ scene, ambient, sun, lamps, fires = [], json, pal
       proxies.set(id, mesh);
     }
   }
+  // Lot 5k-H (retour du propriétaire) : la lune continue d'éclairer par les fenêtres du côté où ses rayons tapent : taches de lumière lunaire au sol
+  // (projection de chaque ouverture le long des rayons, allongée par fenetres.etirement), additives, plus claires près de la fenêtre ; un maillage
+  // par étage, sans ombre, créé une fois ; la lune elle-même reste faible (`lune`) et ne projette pas d'ombre.
+  const patches = [];
+  if (groups && moon && opening && cfg.fenetres.intensite > 0) {
+    const moonColor = new THREE.Color(palette.sun ?? palette.ambient);
+    const stretch = cfg.fenetres.etirement;
+    const scaled = { x: moon.x * stretch, y: moon.y, z: moon.z * stretch };
+    for (const floor of ['rdc', 'etage']) {
+      if (!groups[floor]) continue;
+      const pos = [];
+      const col = [];
+      for (const w of windows.filter((q) => q.floor === floor)) {
+        const q = moonPatch(w, scaled, opening);
+        if (!q) continue;
+        const near = moonColor.clone().multiplyScalar(cfg.fenetres.intensite);
+        const c = [[near.r, near.g, near.b], [near.r, near.g, near.b], [0, 0, 0], [0, 0, 0]];
+        for (const k of [0, 1, 2, 0, 2, 3]) {
+          pos.push(q[k].x, 0.6, q[k].y);
+          col.push(...c[k]);
+        }
+      }
+      if (pos.length === 0) continue;
+      const geometry = new THREE.BufferGeometry();
+      geometry.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+      geometry.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
+      geometry.computeBoundingSphere();
+      const mesh = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({ vertexColors: true, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1 }));
+      mesh.name = `lune-fenetres-${floor}`;
+      mesh.userData.floor = floor;
+      mesh.renderOrder = -1;
+      groups[floor].add(mesh);
+      patches.push(mesh);
+    }
+  }
   const visible = [];
   const wanted = [];
   const wantedShadow = [];
+  const current = [];
   const wantedPlain = [];
   const sphere = new THREE.Sphere();
   let lights = [];
@@ -145,7 +187,9 @@ export function createLights({ scene, ambient, sun, lamps, fires = [], json, pal
       return true;
     },
     // À chaque image : dt (temps de jeu), joueur (x, y), étage affiché, hauteur du monde (setElevation), champ de la caméra (Frustum ou null).
-    frame(dt, px, py, floor, elevation, frustum) {
+    // upper : l'étage est dessiné (world.js : groups.etage.visible) ; sinon les sources du rez-de-chaussée et de l'extérieur ont leur portée libre.
+    frame(dt, px, py, floor, elevation, frustum, upper = true) {
+      for (const e of byId.values()) e.reach = upper ? e.safe : e.free;
       const step = Math.min(0.1, Math.max(0, Number(dt) || 0));
       time += step;
       // Changement d'étage : les lumières de l'autre étage s'éteignent aussitôt (jamais de lumière d'un étage sur l'autre ; l'extérieur reste).
@@ -169,7 +213,9 @@ export function createLights({ scene, ambient, sun, lamps, fires = [], json, pal
       }
       // Les plus proches d'abord : les premières vont aux lumières à ombre, les suivantes aux autres (chaque réserve garde ses emplacements et
       // son fondu ; une source qui change de réserve s'éteint dans l'une pendant qu'elle s'allume dans l'autre).
-      selectLamps(wanted, list, visible, px, py, lights.length, cfg.distanceActivation);
+      current.length = 0;
+      for (const sl of slots) if (sl.id !== null && sl.w > 0) current.push(sl.id);
+      selectLamps(wanted, list, visible, px, py, lights.length, cfg.distanceActivation, current, cfg.selection.maintien);
       wantedShadow.length = 0;
       wantedPlain.length = 0;
       for (let i = 0; i < wanted.length; i += 1) (i < nShadow ? wantedShadow : wantedPlain).push(wanted[i]);
@@ -197,7 +243,7 @@ export function createLights({ scene, ambient, sun, lamps, fires = [], json, pal
         p.intensity = e.intensity * gain * s.w * flicker(time, e.phase, e.fire ? fireCfg : cfg, reduced);
       }
     },
-    stats: () => ({ count: lights.length, shadows: nShadow, slots: slots.map((s) => ({ id: s.id, w: Math.round(s.w * 1000) / 1000 })), intensities: lights.map((p) => Math.round(p.intensity * 1000) / 1000), positions: lights.map((p) => [p.position.x, p.position.y, p.position.z]), distances: lights.map((p) => p.distance), castShadow: lights.map((p) => p.castShadow), proxies: [...proxies].filter(([, m]) => m.visible).map(([id, m]) => [id, m.geometry.attributes.position.count / 3]), sources: { lampes: lamps.length, feux: fires.map((s) => s.id) }, ambient: ambient.intensity, sun: sun.intensity, base: { ...base }, factors: { ...f }, time: Math.round(time * 1000) / 1000, reduced }),
+    stats: () => ({ moon: patches.map((m) => [m.userData.floor, m.geometry.attributes.position.count / 3]), count: lights.length, shadows: nShadow, slots: slots.map((s) => ({ id: s.id, w: Math.round(s.w * 1000) / 1000 })), intensities: lights.map((p) => Math.round(p.intensity * 1000) / 1000), positions: lights.map((p) => [p.position.x, p.position.y, p.position.z]), distances: lights.map((p) => p.distance), castShadow: lights.map((p) => p.castShadow), proxies: [...proxies].filter(([, m]) => m.visible).map(([id, m]) => [id, m.geometry.attributes.position.count / 3]), sources: { lampes: lamps.length, feux: fires.map((s) => s.id) }, ambient: ambient.intensity, sun: sun.intensity, base: { ...base }, factors: { ...f }, time: Math.round(time * 1000) / 1000, reduced }),
     dispose() {
       scene.remove(group);
       for (const m of proxies.values()) {
@@ -205,6 +251,12 @@ export function createLights({ scene, ambient, sun, lamps, fires = [], json, pal
         m.geometry.dispose();
       }
       proxies.clear();
+      for (const m of patches) {
+        m.parent?.remove(m);
+        m.geometry.dispose();
+        m.material.dispose();
+      }
+      patches.length = 0;
       proxyMaterial.dispose();
       for (const l of lights) l.dispose?.();
       lights = [];
