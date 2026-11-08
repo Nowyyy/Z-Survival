@@ -247,7 +247,7 @@ export const LIGHT_DEFAULTS = Object.freeze({ ambiance: 0.45, plancherAmbiance: 
   // Lot 5k-I (retour du propriétaire : la lumière ne doit pas rester éteinte longtemps ; la durée allumée varie) : léger bruit lent, et de brèves
   // baisses (coupures) : allumée de allumee[0] à allumee[1] secondes (tiré par source et par coupure), baisse de duree[0] à duree[1] secondes,
   // profondeur (part de l'intensité retirée au plus bas, 60 à 100 % de profondeur selon la coupure), jamais d'un coup (descente et remontée douces).
-  vacillement: Object.freeze({ amplitude: 0.04, periode: Object.freeze([1.2, 3.5]), coupures: Object.freeze({ allumee: Object.freeze([2, 7]), duree: Object.freeze([0.12, 0.35]), profondeur: 0.7 }) }),
+  vacillement: Object.freeze({ amplitude: 0.04, periode: Object.freeze([1.2, 3.5]), coupures: Object.freeze({ allumee: Object.freeze([15, 60]), duree: Object.freeze([0.12, 0.35]), profondeur: 0.7 }) }),
   // Lot 5k-G : ombres des lumières (carte d'ombres cubique, côté en pixels ; biais) et feux comme sources (intensité, portée, vacillement).
   ombres: Object.freeze({ taille: 256, biais: -0.004 }),
   feux: Object.freeze({ intensite: 600, distance: 110, vacillement: Object.freeze({ amplitude: 0.15, periode: Object.freeze([0.6, 1.6]) }) }),
@@ -315,6 +315,23 @@ export function baseFactors(cfg) {
 // sens par période au plus. Temps de jeu t en secondes ; mouvement réduit : 1 (lumière constante).
 const frac = (x) => x - Math.floor(x);
 const noise = (phase, n) => frac(Math.sin(n * 127.1 + phase * 311.7) * 43758.5453);
+const cutMemo = new Map();
+// Coupure en cours à l'instant t (ou null) : { k, start, d }.
+function cutAt(t, phase, c) {
+  const key = `${phase}|${c.allumee}|${c.duree}`;
+  let m = cutMemo.get(key);
+  if (!m || t < m.start) m = { k: 0, start: c.allumee[0] * noise(phase, 3.5) + 0.5 };
+  for (;;) {
+    const d = c.duree[0] + (c.duree[1] - c.duree[0]) * noise(phase, m.k + 0.25);
+    if (t < m.start + d) {
+      if (cutMemo.size > 256) cutMemo.clear();
+      cutMemo.set(key, m);
+      return t >= m.start ? { k: m.k, start: m.start, d } : null;
+    }
+    const gap = c.allumee[0] + (c.allumee[1] - c.allumee[0]) * noise(phase, m.k + 0.75);
+    m = { k: m.k + 1, start: m.start + d + gap };
+  }
+}
 export function flicker(t, phase, cfg, reduced = false) {
   const v = (cfg ?? LIGHT_DEFAULTS).vacillement;
   if (reduced) return 1;
@@ -330,20 +347,15 @@ export function flicker(t, phase, cfg, reduced = false) {
     const a = noise(phase, k);
     level = 1 - amp * (a + (noise(phase, k + 1) - a) * s);
   }
-  // Coupures (lot 5k-I) : une par tranche de durée fixe propre à la source ; dans chaque tranche, une coupure de durée et de profondeur tirées,
-  // placée au hasard dans la tranche, à 0,5 s au moins de ses bords : la durée allumée entre deux coupures varie ; la coupure suit sin² (douce).
+  // Coupures (lot 5k-I, retour du propriétaire : allumée 15 s à 1 min) : suite de coupures propre à la source ; la k-ième commence allumee[0] à
+  // allumee[1] secondes (tiré pour k) après la fin de la précédente, dure duree[0] à duree[1] secondes et suit sin² (douce). Le calcul avance depuis
+  // la dernière coupure trouvée (mémoire par source, sans effet sur le résultat : même t, même valeur, dans n'importe quel ordre d'appel).
   const c = v.coupures;
   if (c && c.profondeur > 0) {
-    const span = c.allumee[0] + (c.allumee[1] - c.allumee[0]) * noise(phase, 2.5) + c.duree[1];
-    const x = t + phase * span;
-    const k = Math.floor(x / span);
-    const u = x - k * span;
-    const d = c.duree[0] + (c.duree[1] - c.duree[0]) * noise(phase, k + 0.25);
-    const lead = FLICKER_MAX.allumeeMin / 2; // au moins 1 s de lumière entre deux coupures, la place de la coupure varie dans le reste
-    const start = lead + (span - d - 2 * lead) * noise(phase, k + 0.75);
-    if (u >= start && u <= start + d) {
-      const g = Math.sin((Math.PI * (u - start)) / d) ** 2;
-      level *= 1 - c.profondeur * (0.6 + 0.4 * noise(phase, k + 0.5)) * g;
+    const cut = cutAt(t, phase, c);
+    if (cut) {
+      const g = Math.sin((Math.PI * (t - cut.start)) / cut.d) ** 2;
+      level *= 1 - c.profondeur * (0.6 + 0.4 * noise(phase, cut.k + 0.5)) * g;
     }
   }
   return level;

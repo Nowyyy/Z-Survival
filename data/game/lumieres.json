@@ -11,7 +11,7 @@
     "amplitude": 0.04,
     "periode": [1.2, 3.5],
     "coupures": {
-      "allumee": [2, 7],
+      "allumee": [15, 60],
       "duree": [0.12, 0.35],
       "profondeur": 0.7
     }

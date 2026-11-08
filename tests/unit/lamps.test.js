@@ -252,7 +252,7 @@ describe('vacillement', () => {
     const c = cfg.vacillement.coupures;
     expect(c.profondeur).toBeLessThanOrEqual(FLICKER_MAX.profondeurMax);
     for (const id of LAMPS.map((l) => l.id)) {
-      const v = Array.from({ length: 3600 }, (_, i) => flicker(i / 60, lampPhase(id), cfg)); // 60 s
+      const v = Array.from({ length: 60 * 600 }, (_, i) => flicker(i / 60, lampPhase(id), cfg)); // 10 min (lot 5k-I : allumée 15 s à 1 min)
       expect(extremaPerSecond(v), id).toBeLessThanOrEqual(3);
       expect(Math.min(...v), id).toBeGreaterThanOrEqual(1 - cfg.vacillement.amplitude - FLICKER_MAX.profondeurMax); // jamais éteinte tout à fait
       const dips = [];
@@ -264,11 +264,15 @@ describe('vacillement', () => {
           start = null;
         }
       }
-      expect(dips.length, id).toBeGreaterThanOrEqual(5); // la lumière se coupe bien de temps en temps
+      expect(dips.length, id).toBeGreaterThanOrEqual(600 / (c.allumee[1] + c.duree[1]) - 1); // la lumière se coupe bien de temps en temps
+      expect(dips.length, id).toBeLessThanOrEqual(600 / c.allumee[0] + 1); // mais rarement : au plus une coupure par allumee[0] secondes
       for (const [, n] of dips) expect(n / 60, id).toBeLessThanOrEqual(c.duree[1]); // coupure courte
       const gaps = dips.slice(1).map((d, k) => (d[0] - dips[k][0]) / 60);
-      expect(Math.min(...gaps), id).toBeGreaterThanOrEqual(FLICKER_MAX.allumeeMin); // allumée au moins 1 s entre deux coupures
-      expect(Math.max(...gaps) - Math.min(...gaps), id).toBeGreaterThan(1); // durée allumée variable
+      expect(Math.min(...gaps), id).toBeGreaterThanOrEqual(c.allumee[0]); // allumée au moins allumee[0] s (15) entre deux coupures
+      expect(Math.max(...gaps), id).toBeLessThanOrEqual(c.allumee[1] + c.duree[1] + 0.05); // et au plus allumee[1] s (60)
+      expect(Math.max(...gaps) - Math.min(...gaps), id).toBeGreaterThan(10); // durée allumée variable
+      // Même valeur quel que soit l'ordre des appels (mémoire interne sans effet) : relecture à rebours.
+      for (const i of [35999, 20000, 3, 18000]) expect(flicker(i / 60, lampPhase(id), cfg)).toBe(v[i]);
       for (let i = 1; i < v.length; i += 1) expect(Math.abs(v[i] - v[i - 1]), id).toBeLessThan(0.35); // jamais d'un coup : sur plusieurs images
     }
   });
