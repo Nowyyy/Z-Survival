@@ -196,3 +196,17 @@ export function completerMesure(mesure, mesures, { date = null, commit = null, n
   const complements = [...(mesure.complements ?? []), { date, commit, remplaces, ajoutes: ajoutes.length, note }];
   return { mesure: { ...mesure, complements, tests: [...tests, ...ajoutes] }, remplaces, ajoutes: ajoutes.length };
 }
+
+// Lot 5n (T6) — Remise explicite de la référence du complet (décision du propriétaire) : complet.cumulSecondes devient le cumul projeté
+// avec les durées mesurées d'aujourd'hui ; l'ancienne référence est gardée dans complet.referencesPrecedentes. Ce n'est pas un allègement :
+// l'ajout maximal par lot (ajoutMaxParLotSecondes de tests/budget.json) se compte désormais depuis cette référence.
+export function remettreReference(mesure, cumulSecondes, { date = null, commit = null, raison = '' } = {}) {
+  const avant = mesure.complet ?? {};
+  const ancienne = { cumulSecondes: avant.cumulSecondes ?? null, date: mesure.referenceDate ?? mesure.date ?? null, commit: mesure.referenceCommit ?? mesure.commit ?? null };
+  return {
+    ...mesure,
+    referenceDate: date,
+    referenceCommit: commit,
+    complet: { ...avant, cumulSecondes: Math.round(cumulSecondes), referencesPrecedentes: [...(avant.referencesPrecedentes ?? []), ancienne], raisonReference: raison },
+  };
+}

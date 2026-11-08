@@ -1,7 +1,7 @@
 // Lot 4e-B : budget de durée (scripts/tests/lib/budget.mjs) sur des rapports fictifs, réglages de tests/budget.json.
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
-import { completerMesure, dureesDepuisMesure, evaluer, ligneTestList, nombreDeTranches, repartir, sansEtiquette, unites } from '../../scripts/tests/lib/budget.mjs';
+import { completerMesure, dureesDepuisMesure, remettreReference, evaluer, ligneTestList, nombreDeTranches, repartir, sansEtiquette, unites } from '../../scripts/tests/lib/budget.mjs';
 
 const B = { completCibleSecondes: 600, installationSecondes: 90, testsParTrancheSecondes: 480, tranchesMax: 16, facteurDesequilibre: 1.25, facteurParallelisme: 2, ajoutMaxParLotSecondes: 90 };
 const fictifs = (n, ms, fichier = 'tests/e2e/a.spec.js') => Array.from({ length: n }, (_, i) => ({ projet: 'bureau', fichier, titre: `t${i}`, ms }));
@@ -97,6 +97,25 @@ describe('lot 5n : mesure complétée (completerMesure), sans refaire le complet
     const { mesure: m } = completerMesure(mesure, [{ projet: 'bureau', fichier: 'tests/e2e/b.spec.js', titre: 'nouveau', ms: 4000 }]);
     expect(dureesDepuisMesure([{ projet: 'bureau', fichier: 'tests/e2e/b.spec.js', titre: 'nouveau' }], m.tests)[0]).toMatchObject({ ms: 4000, source: 'mesure' });
     expect(completerMesure(m, []).mesure.complements).toHaveLength(2);
+  });
+});
+
+describe('lot 5n : référence du complet remise à la mesure (remettreReference, décision du propriétaire)', () => {
+  it('nouvelle référence, ancienne gardée avec sa date et son commit, raison écrite ; le reste inchangé, l\'entrée non modifiée', () => {
+    const m = { schema: 1, date: '2026-11-03', commit: '67d58d0', complet: { cumulSecondes: 5605, executions: 958 }, tests: [{ projet: 'bureau', fichier: 'f', titre: 't', ms: 1 }] };
+    const gel = JSON.stringify(m);
+    const r = remettreReference(m, 6318.4, { date: '2026-11-08', commit: 'abc1234', raison: 'T6' });
+    expect(r.complet).toEqual({ cumulSecondes: 6318, executions: 958, referencesPrecedentes: [{ cumulSecondes: 5605, date: '2026-11-03', commit: '67d58d0' }], raisonReference: 'T6' });
+    expect(r).toMatchObject({ referenceDate: '2026-11-08', referenceCommit: 'abc1234', tests: m.tests, date: '2026-11-03' });
+    expect(JSON.stringify(m)).toBe(gel);
+    expect(remettreReference(r, 6400, { date: '2026-12-01', commit: 'def5678' }).complet.referencesPrecedentes).toEqual([{ cumulSecondes: 5605, date: '2026-11-03', commit: '67d58d0' }, { cumulSecondes: 6318, date: '2026-11-08', commit: 'abc1234' }]);
+  });
+  it('l\'écart du complet se compte depuis la nouvelle référence ; ajoutMaxParLotSecondes reste 90 s', () => {
+    const b = JSON.parse(readFileSync('tests/budget.json', 'utf8'));
+    expect(b.ajoutMaxParLotSecondes).toBe(90);
+    const t = [{ projet: 'bureau', fichier: 'f', titre: 't', ms: 6_400_000 }];
+    expect(evaluer(t, b, { referenceSecondes: 6318 }).ajoutSecondes).toBe(82);
+    expect(evaluer(t, b, { referenceSecondes: 5605 }).erreurs.join(' ')).toMatch(/ajout de 795 s/);
   });
 });
 

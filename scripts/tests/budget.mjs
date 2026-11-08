@@ -6,6 +6,7 @@
 //   node scripts/tests/budget.mjs --ecrire-mesure <dossier des rapports de mesurer.mjs>   (réécrit tests/budget-mesure.json)
 //   node scripts/tests/budget.mjs --liste-sans-mesure <fichier>   (lot 5n : lignes --test-list des tests du complet sans durée mesurée)
 //   node scripts/tests/budget.mjs --completer-mesure <rapport JSON de playwright> [--note <texte>]   (lot 5n : ajoute ces durées à tests/budget-mesure.json)
+//   node scripts/tests/budget.mjs --remettre-reference --raison <texte>   (lot 5n, T6 : référence du complet = cumul projeté d'aujourd'hui ; décision du propriétaire seulement)
 //
 // Durées : tests/budget-mesure.json (mesure de référence, par test). Réglages : tests/budget.json. La liste des tests vient de
 // `playwright test --list` (E2E_FULL=1) : un test nouveau prend la médiane de son fichier. Le plan donne, par tranche, les lignes
@@ -18,7 +19,7 @@ import { execFileSync } from 'node:child_process';
 import { appendFileSync, existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { createHash } from 'node:crypto';
-import { completerMesure, dureesDepuisMesure, evaluer, ligneTestList, planDuPalier, projectionCompacte } from './lib/budget.mjs';
+import { completerMesure, dureesDepuisMesure, remettreReference, evaluer, ligneTestList, planDuPalier, projectionCompacte } from './lib/budget.mjs';
 import { playwrightTests, vitestParFichier } from './lib/rapports.mjs';
 
 const ROOT = resolve(import.meta.dirname, '..', '..');
@@ -95,6 +96,17 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     const sans = dureesDepuisMesure(listerTests(), readJson('tests/budget-mesure.json').tests).filter((t) => t.source !== 'mesure');
     writeFileSync(resolve(val('--liste-sans-mesure')), `${sans.map(ligneTestList).join('\n')}\n`);
     console.log(`${sans.length} tests sans durée mesurée → ${val('--liste-sans-mesure')}`);
+    process.exit(0);
+  }
+  if (has('--remettre-reference')) {
+    if (!val('--raison')) throw new Error('--remettre-reference exige --raison (décision du propriétaire)');
+    const m = readJson('tests/budget-mesure.json');
+    const tests = dureesDepuisMesure(listerTests(), m.tests);
+    const cumul = tests.reduce((s, t) => s + t.ms, 0) / 1000;
+    const commit = execFileSync('git', ['rev-parse', '--short', 'HEAD'], { cwd: ROOT, encoding: 'utf8' }).trim();
+    const r = remettreReference(m, cumul, { date: new Date().toISOString().slice(0, 10), commit, raison: val('--raison') });
+    ecrireJsonMesure(r);
+    console.log(`référence du complet : ${m.complet.cumulSecondes} s → ${r.complet.cumulSecondes} s (${tests.length} exécutions, ${tests.filter((t) => t.source !== 'mesure').length} sans mesure)`);
     process.exit(0);
   }
   if (has('--completer-mesure')) {
