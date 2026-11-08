@@ -11,12 +11,12 @@ export const FOG_MODES = ['simple', 'reduit', 'complet'];
 export const SANG_LEVELS = ['0', 'reduit', '1'];
 export const PERSO_LOADS = ['choix', 'A', 'B', 'C', 'riche'];
 export const DECOR_MODES = ['reduit', 'complet'];
-export const LAMP_MODES = ['off', 'decor', 'eclairage']; // lot 5k : lampes à huile (aucune, décor, éclairage dynamique)
+export const LAMP_MODES = ['off', 'decor', 'eclairage']; // lot 5k : lampes à huile (off : sans lampes, ?test=1 seulement ; decor : lampes sans lumière ; eclairage : lumière dynamique)
 export const LIGHT_COUNTS = [2, 4, 6]; // lot 5k : lumières ponctuelles simultanées (eclairage)
 
-// Valeurs de l'Élevé = rendu actuel du jeu (lot 5k : lampes « off », le rendu d'avant les lampes, même si le préréglage Élevé choisit l'éclairage) (render.json, blood.json, vhs.json, persos-choix.json, ?dpr par défaut) : repli de toute valeur invalide.
+// Valeurs de l'Élevé = rendu actuel du jeu (lot 5k : lampes « decor », toujours sur la carte, sans lumière dynamique ; l'Élevé choisit l'éclairage) (render.json, blood.json, vhs.json, persos-choix.json, ?dpr par défaut) : repli de toute valeur invalide.
 export const ELEVE = Object.freeze({
-  live: Object.freeze({ dprMax: 2, ombres: true, ombreTaille: 1024, vhs: 'anime', brouillard: 'complet', feux: Object.freeze({ voitureFoyers: 2, fumeeHelico: 1, particules: 1, lueur: true }), sang: '1', cadavres: 2, lampes: 'off', lumieres: 4 }),
+  live: Object.freeze({ dprMax: 2, ombres: true, ombreTaille: 1024, vhs: 'anime', brouillard: 'complet', feux: Object.freeze({ voitureFoyers: 2, fumeeHelico: 1, particules: 1, lueur: true }), sang: '1', cadavres: 2, lampes: 'decor', lumieres: 4 }),
   load: Object.freeze({ personnages: 'choix', anticrenelage: true, texturesFines: true, decor: 'complet' }),
 });
 export const AUTO_DEFAULTS = Object.freeze({ initial: Object.freeze({ grossier: 'moyen', autre: 'eleve' }), seuilMs: 22, fenetreSecondes: 10, irregulier: Object.freeze({ part: 0.1, facteur: 1.5 }), baisse: 'entre-manches', remonte: false });
@@ -268,7 +268,8 @@ export function autoDecision(frameStats, current, params) {
 }
 
 // Paramètres explicites de l'adresse qui l'emportent sur le préréglage (valeurs reconnues seulement, comme les lecteurs existants de main.js et
-// persos-params.js) : { perso, sang, usure, detail, vhs, shadows, dpr, lum } (null = absent ou invalide ; lum : lot 5k, ?lum=off|decor|eclairage).
+// persos-params.js) : { perso, sang, usure, detail, vhs, shadows, dpr, lum } (null = absent ou invalide ; lum : lot 5k, ?lum=decor|eclairage, et
+// ?lum=off sous ?test=1 seulement : rendu d'avant les lampes, pour les références des tests ; les lampes sont toujours sur la carte du jeu).
 export function explicitParams(search) {
   let q;
   try {
@@ -286,7 +287,7 @@ export function explicitParams(search) {
     vhs: get('vhs', (v) => v === '0' || v === '1'),
     shadows: get('shadows', (v) => v === '0' || v === '1'),
     dpr: q.has('dpr') && Number.isFinite(dpr) && dpr >= 0.5 && dpr <= 2 ? dpr : null,
-    lum: get('lum', (v) => LAMP_MODES.includes(v)),
+    lum: get('lum', (v) => v === 'decor' || v === 'eclairage' || (v === 'off' && q.get('test') === '1')),
   };
 }
 

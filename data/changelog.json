@@ -223,8 +223,8 @@
       "Changer un réglage à la main passe sur Perso, gardé à part ; certains réglages s'appliquent au rechargement, proposé par un bouton. Le jeu lui-même ne change pas."
     ] },
     { "name": "lot-5k", "version": "v0.7", "date": "2026-11-07", "titre": "Lampes à huile et lumières (essai)", "points": [
-      "Des petites lampes à huile sur des piliers et des murs, aux deux étages, laissent des coins plus sombres ; deux réglages dans les Options : « Lampes et lumières » (aucune, décor, éclairage) et « Lumières simultanées » (2, 4 ou 6).",
-      "L'éclairage est réservé au préréglage Élevé ; le jeu lui-même ne change pas. Positions et intensités provisoires, à régler."
+      "Des petites lampes à huile sur des piliers et des murs, aux deux étages, toujours présentes sur la carte ; deux réglages dans les Options : « Lumière des lampes » (coupée ou dynamique) et « Lumières simultanées » (2, 4 ou 6).",
+      "La lumière dynamique, qui laisse des coins plus sombres, est réservée au préréglage Élevé ; le jeu lui-même ne change pas. Positions et intensités provisoires, à régler."
     ] }
   ]
 }

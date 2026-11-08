@@ -27,10 +27,9 @@ const AVANT_7130DC7 = {
   eleve: { live: { dprMax: 2, ombres: true, ombreTaille: 1024, vhs: 'anime', brouillard: 'complet', feux: { voitureFoyers: 2, fumeeHelico: 1, particules: 1, lueur: true }, sang: '1', cadavres: 2 }, load: { personnages: 'choix', anticrenelage: true, texturesFines: true, decor: 'complet' } },
 };
 
-// Lot 5k : deux réglages « live » de plus (lampes, lumieres) ; les autres réglages restent ceux de AVANT_7130DC7. ELEVE (repli, rendu d'avant) garde
-// les lampes « off » : le préréglage Élevé choisit l'éclairage (décision du lot 5k), le rendu d'avant reste celui de « off ».
-// Moyen : off (decor mesuré au-delà de +2 % de tâche, U4 : +5,7 %).
-const LOT_5K = { faible: { lampes: 'off', lumieres: 2 }, moyen: { lampes: 'off', lumieres: 2 }, eleve: { lampes: 'eclairage', lumieres: 4 } };
+// Lot 5k : deux réglages « live » de plus (lampes, lumieres) ; les autres réglages restent ceux de AVANT_7130DC7. Lot 5k-F (décision du propriétaire) :
+// les lampes sont toujours sur la carte ; ELEVE (repli) et Faible, Moyen : « decor » (sans lumière dynamique) ; Élevé : « eclairage ».
+const LOT_5K = { faible: { lampes: 'decor', lumieres: 2 }, moyen: { lampes: 'decor', lumieres: 2 }, eleve: { lampes: 'eclairage', lumieres: 4 } };
 const sans5k = (live) => {
   const { lampes, lumieres, ...rest } = live;
   return { rest, lamps: { lampes, lumieres } };
@@ -56,7 +55,7 @@ describe('graphics.json', () => {
     const choix = load('data/game/persos-choix.json');
     const e = CFG.presets.eleve;
     expect({ live: sans5k(e.live).rest, load: e.load }).toEqual({ live: sans5k({ ...ELEVE.live, feux: { ...ELEVE.live.feux } }).rest, load: { ...ELEVE.load } });
-    expect(ELEVE.live).toMatchObject({ lampes: 'off', lumieres: 4 }); // lot 5k : repli = rendu d'avant les lampes
+    expect(ELEVE.live).toMatchObject({ lampes: 'decor', lumieres: 4 }); // lot 5k-F : repli = lampes présentes, sans lumière dynamique
     expect(e.live).toMatchObject({ lampes: 'eclairage', lumieres: 4 }); // lot 5k : Élevé choisit l'éclairage
     expect(e.live.ombreTaille).toBe(render.light.shadowMap);
     expect(e.live.ombres).toBe(true);
@@ -119,14 +118,17 @@ describe('priorités : ?gfx= > choix mémorisé > auto', () => {
   it('paramètres explicites de l\'adresse par-dessus le préréglage (perso, sang, detail, vhs, shadows, dpr, lum)', () => {
     const e = explicitParams('?perso=riche&sang=1&detail=1&vhs=1&shadows=1&dpr=1.25&usure=2');
     expect(e).toEqual({ perso: 'riche', sang: '1', usure: '2', detail: '1', vhs: '1', shadows: '1', dpr: 1.25, lum: null });
-    // Lot 5k : ?lum=off|decor|eclairage impose l'option « Lampes et lumières » (réglage lampes), jamais le nombre de lumières.
+    // Lot 5k : ?lum=decor|eclairage impose l'option « Lumière des lampes » (réglage lampes), jamais le nombre de lumières ; lot 5k-F : ?lum=off (sans
+    // lampes, rendu d'avant le lot) seulement sous ?test=1, pour les références des tests.
     for (const v of ['off', 'decor', 'eclairage']) {
-      const l = settingsFor(CFG, 'moyen', explicitParams(`?lum=${v}`));
+      const l = settingsFor(CFG, 'moyen', explicitParams(`?test=1&lum=${v}`));
       expect(l.live.lampes).toBe(v);
       expect(l.overridden).toEqual(['lampes']);
       expect(l.live.lumieres).toBe(CFG.presets.moyen.live.lumieres);
     }
     expect(explicitParams('?lum=oui').lum).toBeNull();
+    expect(explicitParams('?lum=off').lum).toBeNull(); // hors ?test=1 : les lampes restent sur la carte
+    expect(explicitParams('?lum=decor').lum).toBe('decor');
     const s = settingsFor(CFG, 'faible', e);
     expect(s.load).toMatchObject({ personnages: 'riche', texturesFines: true, decor: 'complet' });
     expect(s.live).toMatchObject({ sang: '1', cadavres: null, vhs: 'anime', ombres: true, dprMax: 1.25 });

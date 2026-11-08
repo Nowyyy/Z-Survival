@@ -1,11 +1,11 @@
 # Lampes à huile et lumières dynamiques (lot 5k)
 
-Option « Lampes et lumières » (`off`, `decor`, `eclairage`) et « Lumières simultanées » (2, 4, 6) de l'écran Options (`Docs/ref/options-graphiques.md`), `?lum=off|decor|eclairage` (jamais mémorisé). **La logique du jeu ne change pas** : les lampes ne sont ni des obstacles, ni des cibles, ni des murs. Positions, couleurs et intensités **provisoires**, à régler par le propriétaire. Mesures et décisions : `Docs/lots/lot-5k.md`.
+**Les lampes sont toujours sur la carte**, à tous les préréglages (décision du propriétaire, lot 5k-F) ; seule leur lumière dépend des graphismes : option « Lumière des lampes » (`decor` : Coupée ; `eclairage` : Dynamique) et « Lumières simultanées » (2, 4, 6) de l'écran Options (`Docs/ref/options-graphiques.md`) ; `?lum=decor|eclairage` (jamais mémorisé) ; `?lum=off` (sans lampes) sous `?test=1` seulement, pour les références des tests. **La logique du jeu ne change pas** : les lampes ne sont ni des obstacles, ni des cibles, ni des murs. Positions, couleurs et intensités **provisoires**, à régler par le propriétaire. Mesures et décisions : `Docs/lots/lot-5k.md`.
 
 ## Fichiers
 - Sources (le propriétaire les modifie) : `data/game/maps/rez-de-chaussee/lampes.json` (positions, pixels du plan), `data/game/lumieres.json` (lumière), `css/tokens.css` (bloc « Lampes à huile (lot 5k) » : `--game-lamp-metal`, `-reservoir`, `-flame`, `-core`, `-light`).
 - Dérivé (jamais à la main) : `lampes.world.json`, écrit par `npm run carte` (unités, collé au support, `portee`, `couverte`).
-- Code : `js/core/lamps.js` (pur : sources, modèle de 34 à 36 triangles, portée sûre, choix des lampes, fondu, vacillement), `js/game/lamps.js` (maillages, importé hors de `off`), `js/game/lights.js` (lumières, importé en `eclairage`), `js/game/world.js` (`setLamps`), `js/game/graphics-boot.js` (préchargement), `js/game/graphics-apply.js` (option à chaud), `js/carte/main.js` (affichage sur `carte.html`).
+- Code : `js/core/lamps.js` (pur : sources, modèle de 34 à 36 triangles, portée sûre, choix des lampes, fondu, vacillement), `js/game/lamps.js` (maillages, chargé au démarrage), `js/game/lights.js` (lumières, importé en `eclairage`), `js/game/world.js` (`setLamps`), `js/game/graphics-boot.js` (préchargement), `js/game/graphics-apply.js` (option à chaud), `js/carte/main.js` (affichage sur `carte.html`).
 
 ## Déplacer, ajouter ou retirer une lampe
 1. Ouvrir `carte.html` (rez-de-chaussée, puis « Étage ») : chaque lampe est un point jaune, un trait (son sens) et un cercle en pointillés (portée de sa lumière). Unités = pixels × 5 + 800 (le cadre « 100 px du plan » aide à lire les pixels).

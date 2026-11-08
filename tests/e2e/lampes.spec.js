@@ -3,7 +3,8 @@ import AxeBuilder from '@axe-core/playwright';
 import { readFileSync } from 'node:fs';
 import { backgroundsFrom, evaluate, tokensFromCss } from '../../js/core/ui-measure.js';
 
-// Lot 5k : lampes à huile et lumières dynamiques (options « Lampes et lumières » et « Lumières simultanées » de l'écran Options, ?lum=).
+// Lot 5k : lampes à huile et lumières dynamiques (options « Lumière des lampes » et « Lumières simultanées » de l'écran Options, ?lum=). Lot 5k-F
+// (décision du propriétaire) : les lampes sont toujours sur la carte ; ?lum=off (rendu d'avant les lampes) n'existe que sous ?test=1, pour comparer.
 // Ce que prouve ce fichier : avec « off », le rendu est celui d'origin/dev (appels, triangles, programmes de shaders) et aucun fichier de plus
 // n'est chargé ; « decor » ajoute 2 appels au plus et 1 500 triangles au plus ; la logique du jeu (getState()) est la même dans chaque mode ;
 // l'option se change à chaud dans l'écran Options (passage à Perso) ; ?lum= l'impose (ligne grisée). 667 × 375, step() seulement.
@@ -286,11 +287,11 @@ test.describe('lampes à huile', () => {
     await context.close();
   });
 
-  test('écran Options : section Lumières, « Décor » à chaud depuis « off » (passage à Perso, module importé une fois, préchauffage), ?lum= grise la ligne', async ({ page, baseURL }) => {
+  test('écran Options (lot 5k-F) : lampes toujours présentes à Faible ; « Dynamique » à chaud (passage à Perso, lights.js importé une fois, préchauffage), « Coupée » rend la lumière de base, les lampes restent ; ?lum= grise la ligne', async ({ page, baseURL }) => {
     const errors = watch(page);
     const files = [];
     page.on('request', (r) => r.url().startsWith(baseURL) && files.push(new URL(r.url()).pathname));
-    // Préférence Faible enregistrée (zs.device.v1) : lampes « off » au chargement, aucun module des lampes demandé.
+    // Préférence Faible enregistrée (zs.device.v1) : lampes sur la carte dès le chargement, sans lumière dynamique (lights.js jamais demandé).
     // Écrite avant le premier chargement du jeu (script d'initialisation, une seule fois par onglet) : aucune autre page visitée, donc aucune
     // requête parasite (le Chrome de la CI demandait /favicon.ico pour la page de graphics.json, 404 relevé après la remise à zéro des erreurs).
     await page.addInitScript(() => {
@@ -299,33 +300,43 @@ test.describe('lampes à huile', () => {
       sessionStorage.setItem('lampes-init', '1');
     });
     await open(page, '&nospawn=1&store=local');
-    expect(files).not.toContain('/js/game/lamps.js');
+    for (const f of ['/js/game/lamps.js', '/js/core/lamps.js', '/data/game/maps/rez-de-chaussee/lampes.world.json']) expect(files).toContain(f);
+    for (const f of ['/js/game/lights.js', '/data/game/lumieres.json']) expect(files).not.toContain(f);
     await page.evaluate(() => window.__zs.step(0.05));
+    let g = (await S(page)).graphics;
+    expect(g.world.lamps).toMatchObject({ mode: 'decor', lamps: 16, lights: null, error: null });
+    expect(g.world.lamps.meshes).toHaveLength(2);
+    expect(g.world.lamps.meshes.every((m) => m.on)).toBe(true);
     await page.locator('#btn-pause').click();
     await page.locator('#btn-options').click();
     await expect(page.locator('#options-panel')).toBeVisible();
-    await expect(page.locator('[data-option="lampes"] [data-value="off"]')).toHaveAttribute('aria-pressed', 'true');
-    expect((await S(page)).graphics.world.lamps.mode).toBe('off');
-    // « Décor » à la main : Perso, module importé à chaud, lampes créées et précompilées une fois.
-    await page.locator('[data-option="lampes"] [data-value="decor"]').click();
-    await page.waitForFunction(() => window.__zs.getState().graphics.world.lamps.ready && window.__zs.getState().graphics.world.lamps.mode === 'decor');
-    const g = (await S(page)).graphics;
+    await expect(page.locator('[data-option="lampes"] [data-value="off"]')).toHaveCount(0); // plus de valeur « sans lampes » dans l'écran
+    await expect(page.locator('[data-option="lampes"] [data-value="decor"]')).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.locator('[data-option="lampes"] [data-value="decor"]')).toHaveText('Coupée');
+    // « Dynamique » à la main : Perso, module des lumières importé à chaud, 2 lumières (Faible), précompilées une fois.
+    const compiles = g.world.lamps.compiles;
+    await page.locator('[data-option="lampes"] [data-value="eclairage"]').click();
+    await page.waitForFunction(() => window.__zs.getState().graphics.world.lamps.ready && window.__zs.getState().graphics.world.lamps.lights?.count === 2);
+    g = (await S(page)).graphics;
     expect(g.choice).toBe('perso');
-    expect(g.vector.lampes).toBe('decor');
-    expect(g.world.lamps).toMatchObject({ mode: 'decor', lamps: 16, error: null });
-    expect(g.world.lamps.meshes).toHaveLength(2);
-    expect(files.filter((f) => f === '/js/game/lamps.js')).toHaveLength(1);
-    expect(g.world.lamps.compiles).toBeLessThanOrEqual(1); // préchauffage au changement (une fois, si une image a déjà été dessinée)
-    // Retour à « Aucune » : maillages cachés, rien de rechargé.
-    await page.locator('[data-option="lampes"] [data-value="off"]').click();
-    await page.waitForFunction(() => window.__zs.getState().graphics.world.lamps.mode === 'off');
-    expect((await S(page)).graphics.world.lamps.meshes.every((m) => !m.visible)).toBe(true);
+    expect(g.vector.lampes).toBe('eclairage');
+    expect(g.world.lamps.mode).toBe('eclairage');
+    expect(files.filter((f) => f === '/js/game/lights.js')).toHaveLength(1);
+    expect(g.world.lamps.compiles).toBe(compiles + 1); // préchauffage au changement
+    const base = g.world.lamps.lights.base;
+    // « Coupée » : lumières retirées, lumière de base rendue, les lampes restent visibles.
+    await page.locator('[data-option="lampes"] [data-value="decor"]').click();
+    await page.waitForFunction(() => window.__zs.getState().graphics.world.lamps.mode === 'decor');
+    g = (await S(page)).graphics;
+    expect(g.world.lamps.lights).toBeNull();
+    expect(g.world.lamps.meshes.every((m) => m.on)).toBe(true);
+    expect(base).toEqual({ ambient: 2.3, sun: 3.5 }); // intensités de render.json (rendues à la sortie de l'éclairage)
     expect(errors).toEqual([]);
     // ?lum= impose l'option : ligne grisée « imposé par l'adresse », jamais enregistrée dans Perso.
-    await open(page, '&nospawn=1&lum=decor');
+    await open(page, '&nospawn=1&lum=eclairage');
     await page.locator('#btn-pause').click();
     await page.locator('#btn-options').click();
-    await expect(page.locator('[data-option="lampes"] [data-value="decor"]')).toBeDisabled();
+    await expect(page.locator('[data-option="lampes"] [data-value="eclairage"]')).toBeDisabled();
     await expect(page.locator('[data-option="lampes"]')).toContainText('imposé par l\'adresse');
     expect((await S(page)).graphics.imposed).toEqual(['lampes']);
   });
