@@ -29,10 +29,10 @@ const AVANT_7130DC7 = {
 
 // Lot 5k : deux réglages « live » de plus (lampes, lumieres) ; les autres réglages restent ceux de AVANT_7130DC7. Lot 5k-F (décision du propriétaire) :
 // les lampes sont toujours sur la carte ; ELEVE (repli) et Faible, Moyen : « decor » (sans lumière dynamique) ; Élevé : « eclairage ».
-const LOT_5K = { faible: { lampes: 'decor', lumieres: 2 }, moyen: { lampes: 'decor', lumieres: 2 }, eleve: { lampes: 'eclairage', lumieres: 4 } };
+const LOT_5K = { faible: { lampes: 'decor', lumieres: 2, ombresLampes: 0 }, moyen: { lampes: 'decor', lumieres: 2, ombresLampes: 0 }, eleve: { lampes: 'eclairage', lumieres: 4, ombresLampes: 1 } }; // 5k-G : ombresLampes
 const sans5k = (live) => {
-  const { lampes, lumieres, ...rest } = live;
-  return { rest, lamps: { lampes, lumieres } };
+  const { lampes, lumieres, ombresLampes, ...rest } = live;
+  return { rest, lamps: { lampes, lumieres, ombresLampes } };
 };
 
 describe('graphics.json', () => {
@@ -55,8 +55,8 @@ describe('graphics.json', () => {
     const choix = load('data/game/persos-choix.json');
     const e = CFG.presets.eleve;
     expect({ live: sans5k(e.live).rest, load: e.load }).toEqual({ live: sans5k({ ...ELEVE.live, feux: { ...ELEVE.live.feux } }).rest, load: { ...ELEVE.load } });
-    expect(ELEVE.live).toMatchObject({ lampes: 'decor', lumieres: 4 }); // lot 5k-F : repli = lampes présentes, sans lumière dynamique
-    expect(e.live).toMatchObject({ lampes: 'eclairage', lumieres: 4 }); // lot 5k : Élevé choisit l'éclairage
+    expect(ELEVE.live).toMatchObject({ lampes: 'decor', lumieres: 4, ombresLampes: 0 }); // lot 5k-F : repli = lampes présentes, sans lumière dynamique
+    expect(e.live).toMatchObject({ lampes: 'eclairage', lumieres: 4, ombresLampes: 1 }); // lot 5k : Élevé choisit l'éclairage
     expect(e.live.ombreTaille).toBe(render.light.shadowMap);
     expect(e.live.ombres).toBe(true);
     expect(e.live.brouillard).toBe('complet');

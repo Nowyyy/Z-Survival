@@ -13,10 +13,11 @@ export const PERSO_LOADS = ['choix', 'A', 'B', 'C', 'riche'];
 export const DECOR_MODES = ['reduit', 'complet'];
 export const LAMP_MODES = ['off', 'decor', 'eclairage']; // lot 5k : lampes à huile (off : sans lampes, ?test=1 seulement ; decor : lampes sans lumière ; eclairage : lumière dynamique)
 export const LIGHT_COUNTS = [2, 4, 6]; // lot 5k : lumières ponctuelles simultanées (eclairage)
+export const LIGHT_SHADOWS = [0, 1, 2]; // lot 5k-G : lumières qui projettent des ombres (les plus proches du joueur), en eclairage
 
 // Valeurs de l'Élevé = rendu actuel du jeu (lot 5k : lampes « decor », toujours sur la carte, sans lumière dynamique ; l'Élevé choisit l'éclairage) (render.json, blood.json, vhs.json, persos-choix.json, ?dpr par défaut) : repli de toute valeur invalide.
 export const ELEVE = Object.freeze({
-  live: Object.freeze({ dprMax: 2, ombres: true, ombreTaille: 1024, vhs: 'anime', brouillard: 'complet', feux: Object.freeze({ voitureFoyers: 2, fumeeHelico: 1, particules: 1, lueur: true }), sang: '1', cadavres: 2, lampes: 'decor', lumieres: 4 }),
+  live: Object.freeze({ dprMax: 2, ombres: true, ombreTaille: 1024, vhs: 'anime', brouillard: 'complet', feux: Object.freeze({ voitureFoyers: 2, fumeeHelico: 1, particules: 1, lueur: true }), sang: '1', cadavres: 2, lampes: 'decor', lumieres: 4, ombresLampes: 0 }),
   load: Object.freeze({ personnages: 'choix', anticrenelage: true, texturesFines: true, decor: 'complet' }),
 });
 export const AUTO_DEFAULTS = Object.freeze({ initial: Object.freeze({ grossier: 'moyen', autre: 'eleve' }), seuilMs: 22, fenetreSecondes: 10, irregulier: Object.freeze({ part: 0.1, facteur: 1.5 }), baisse: 'entre-manches', remonte: false });
@@ -43,6 +44,7 @@ function parseLive(raw) {
     cadavres: int(r.cadavres, 0, 6, d.cadavres),
     lampes: pick(r.lampes, LAMP_MODES, d.lampes),
     lumieres: pick(r.lumieres, LIGHT_COUNTS, d.lumieres),
+    ombresLampes: pick(r.ombresLampes, LIGHT_SHADOWS, d.ombresLampes),
   };
 }
 function parseLoad(raw) {
@@ -59,7 +61,7 @@ function parseLoad(raw) {
 // Lot 5j : options de l'écran Options. Clés de réglage qu'une valeur d'option peut fixer (chemins dans la partie live ou load des réglages).
 export const OPTION_GROUPS = ['live', 'load'];
 export const SETTING_KEYS = Object.freeze({
-  live: Object.freeze(['dprMax', 'ombres', 'ombreTaille', 'vhs', 'brouillard', 'feux.voitureFoyers', 'feux.fumeeHelico', 'feux.particules', 'feux.lueur', 'sang', 'cadavres', 'lampes', 'lumieres']),
+  live: Object.freeze(['dprMax', 'ombres', 'ombreTaille', 'vhs', 'brouillard', 'feux.voitureFoyers', 'feux.fumeeHelico', 'feux.particules', 'feux.lueur', 'sang', 'cadavres', 'lampes', 'lumieres', 'ombresLampes']),
   load: Object.freeze(['personnages', 'anticrenelage', 'texturesFines', 'decor']),
 });
 export const ORIGINS = ['preset', 'perso', 'adresse'];

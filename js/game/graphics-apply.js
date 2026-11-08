@@ -54,7 +54,7 @@ export function createGraphicsController(boot, { vhs = null, announce = () => {}
       applied = { sang: live.sang, cadavres: live.cadavres };
     }
     // Lot 5k : lampes à huile et lumières (préchargées par graphics-boot.js si le chargement les demandait ; sinon importées ici, à chaud).
-    world.setLamps?.(live.lampes, live.lumieres, { renderer, preload: boot.lamps ?? null });
+    world.setLamps?.(live.lampes, live.lumieres, { renderer, preload: boot.lamps ?? null, shadows: live.ombresLampes });
     if (!keep('dprMax') && params.maxRatio !== live.dprMax) {
       params.maxRatio = live.dprMax;
       if (hot) refs.resize();

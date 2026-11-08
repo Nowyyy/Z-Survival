@@ -111,7 +111,9 @@ test.describe('préréglages graphiques', () => {
       expect(s.graphics).toMatchObject({ choice: gfx, preset: gfx, origin: 'parametre', auto: false, pixelRatio: e.pixelRatio, shadows: e.shadows, vhs: e.vhs, overridden: [] });
       if (s.graphics.antialias !== null) expect(s.graphics.antialias).toBe(e.antialias);
       expect(s.graphics.world.mists).toEqual(e.mists);
-      expect(s.graphics.world.castShadow).toBe(e.shadows);
+      // Lot 5k-G : en éclairage dynamique (Élevé), la lune ne projette plus d'ombre (ce sont les lampes qui en projettent) ; la carte d'ombres reste active.
+      expect(s.graphics.world.castShadow).toBe(e.shadows && s.graphics.live.lampes !== 'eclairage');
+      if (s.graphics.live.lampes === 'eclairage') expect(s.graphics.world.lamps.lights.castShadow.filter(Boolean)).toHaveLength(s.graphics.live.ombresLampes);
       expect(s.graphics.world.shadowMap).toBe(gfx === 'eleve' ? 1024 : 512);
       expect(s.vhs.mode).toBe(e.vhs);
       expect(s.persos).toMatchObject({ perso: e.perso, sang: e.sang });

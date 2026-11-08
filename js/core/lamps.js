@@ -75,6 +75,42 @@ function exposedPoints(poly, cover, m, step = 10) {
   return out;
 }
 
+// Portée sûre d'une lumière (floor, x, y en unités, h : hauteur de la lumière) : la plus grande distance qui n'atteint jamais l'autre étage.
+// Rez-de-chaussée : sous le sol de l'étage (floorLift − h − 2). Étage : trous des escaliers (les marches montent jusqu'au sol de l'étage), parties du
+// rez-de-chaussée visibles d'en haut (sommets des murs à floorLift − 1), sol du rez-de-chaussée. Extérieur (lot 5k-G : feux de la voiture et des
+// bidons) : comme le rez-de-chaussée (l'étage est au-dessus). Lot 5k-G : partagée par les lampes et les feux.
+export function reachCalculator(worlds, opts = {}) {
+  const t = isNum(opts.wallThickness) ? opts.wallThickness : 40;
+  const lift = isNum(opts.floorLift) ? opts.floorLift : 180;
+  const exposed = worlds?.etage ? exposedPoints(worlds.rdc?.contour, worlds.etage.contour, t / 2) : [];
+  const holes = (worlds?.etage?.stairs ?? []).map((s) => ({ x: s.x - 10, y: s.y - 10, w: s.w + 20, h: s.h + 20 }));
+  return (floor, lx, ly, lh) => {
+    if (floor !== 'etage') return lift - lh - 2;
+    let portee = Infinity;
+    for (const r of holes) portee = Math.min(portee, Math.hypot(rectDistance(r, lx, ly), lh));
+    for (const [px, py] of exposed) portee = Math.min(portee, Math.hypot(px - lx, py - ly, lh + 1));
+    return Math.min(portee, lift + lh - 2);
+  };
+}
+
+// Lot 5k-G : feux intérieurs (feux.json, posés sur une pièce de mobilier.world.json) comme sources de lumière : centre et dessus de la pièce,
+// lumière à `flamme` au-dessus, portée sûre. pieces : { [id]: { boxes } } ; renvoie [{ id, floor, kind: 'feu', light, portee }].
+export function firesToWorld(feux, pieces, worlds, opts = {}) {
+  const reach = reachCalculator(worlds, opts);
+  const flame = isNum(opts.flammeFeu) ? opts.flammeFeu : 14;
+  const out = [];
+  for (const fe of Array.isArray(feux) ? feux : []) {
+    const boxes = pieces?.[fe?.piece]?.boxes;
+    if (!FLOORS.includes(fe?.floor) || !Array.isArray(boxes) || boxes.length === 0) continue;
+    const x = (Math.min(...boxes.map((b) => b.x0)) + Math.max(...boxes.map((b) => b.x1))) / 2;
+    const y = (Math.min(...boxes.map((b) => b.z0)) + Math.max(...boxes.map((b) => b.z1))) / 2;
+    const h = Math.max(...boxes.map((b) => b.y1)) + flame;
+    const portee = Math.floor(reach(fe.floor, x, y, h));
+    if (portee > 0) out.push({ id: String(fe.id), floor: fe.floor, kind: 'feu', light: { x: r2(x), y: r2(y), h: r2(h) }, portee });
+  }
+  return out;
+}
+
 // Sources (pixels) → lampes du monde (unités). worlds : { rdc, etage } (world.json, etage.world.json) ; opts : { wallThickness, floorLift,
 // windowSize, decalage (lumière décalée vers la pièce), flamme (hauteur de la lumière au-dessus de la lampe) }. Renvoie { lamps, problems, warnings } ;
 // portee = distance de lumière la plus grande qui n'atteint jamais l'autre étage (rez-de-chaussée : sous le sol de l'étage ; étage : trous des
@@ -82,7 +118,6 @@ function exposedPoints(poly, cover, m, step = 10) {
 export function lampsToWorld(source, worlds, opts = {}) {
   const { items, warnings } = parseLampSource(source);
   const t = isNum(opts.wallThickness) ? opts.wallThickness : 40;
-  const lift = isNum(opts.floorLift) ? opts.floorLift : 180;
   const win = isNum(opts.windowSize) ? opts.windowSize : 72;
   const dec = isNum(opts.decalage) ? opts.decalage : 16;
   const flame = isNum(opts.flamme) ? opts.flamme : 10;
@@ -91,8 +126,8 @@ export function lampsToWorld(source, worlds, opts = {}) {
   const Y = (py) => (py - (tr.y0 ?? 0)) * tr.scale + tr.margin;
   const lamps = [];
   const problems = [];
-  const exposed = worlds?.etage ? exposedPoints(worlds.rdc?.contour, worlds.etage.contour, t / 2) : [];
   const holes = (worlds?.etage?.stairs ?? []).map((s) => ({ x: s.x - 10, y: s.y - 10, w: s.w + 20, h: s.h + 20 }));
+  const reach = reachCalculator(worlds, opts);
   for (const it of items) {
     const world = worlds?.[it.floor];
     if (!world) { problems.push(`${it.id} : étage ${it.floor} absent`); continue; }
@@ -106,13 +141,7 @@ export function lampsToWorld(source, worlds, opts = {}) {
     const lx = face.x + nx * dec;
     const ly = face.y + ny * dec;
     const lh = it.hauteur + flame;
-    let portee = it.floor === 'rdc' ? lift - lh - 2 : Infinity;
-    if (it.floor === 'etage') {
-      // Trou d'escalier : les marches du rez-de-chaussée montent jusqu'au niveau du sol de l'étage.
-      for (const r of holes) portee = Math.min(portee, Math.hypot(rectDistance(r, lx, ly), lh));
-      for (const [px, py] of exposed) portee = Math.min(portee, Math.hypot(px - lx, py - ly, lh + 1));
-      portee = Math.min(portee, lift + lh - 2);
-    }
+    const portee = reach(it.floor, lx, ly, lh);
     if (!(portee > 0)) { problems.push(`${it.id} : portée nulle (trop près de l'autre étage)`); continue; }
     const out = { id: it.id, floor: it.floor, support: it.support, on: face.on, orientation: it.orientation, x: r2(face.x), y: r2(face.y), n: { x: nx, y: ny }, hauteur: it.hauteur,
       light: { x: r2(lx), y: r2(ly), h: lh }, portee: Math.floor(portee), ...(face.pillar ? { pillar: face.pillar } : {}), source: { x: it.x, y: it.y } };
@@ -214,7 +243,12 @@ export function lampTriangles(lamp) {
 // ---- Lumières dynamiques (option « Éclairage », partie C) ----
 // data/game/lumieres.json : valeurs vérifiées ; toute valeur invalide prend le défaut (provisoire). Vacillement borné : amplitude ≤ 0,15 (part de
 // l'intensité), fréquences ≤ 1,4 Hz (moins de 3 changements de sens par seconde) ; fondu en secondes (entrée et sortie d'une lampe).
-export const LIGHT_DEFAULTS = Object.freeze({ ambiance: 0.45, plancherAmbiance: 0.3, intensite: 180, distance: 120, decroissance: 1, fondu: 0.6, max: 4, distanceActivation: 700, vacillement: Object.freeze({ amplitude: 0.1, frequences: Object.freeze([0.6, 1.1]) }) });
+export const LIGHT_DEFAULTS = Object.freeze({ ambiance: 0.45, plancherAmbiance: 0.3, lune: 0.45, intensite: 180, distance: 120, decroissance: 1, fondu: 0.6, max: 4, distanceActivation: 700,
+  vacillement: Object.freeze({ amplitude: 0.1, frequences: Object.freeze([0.6, 1.1]) }),
+  // Lot 5k-G : ombres des lumières (carte d'ombres cubique, côté en pixels ; biais) et feux comme sources (intensité, portée, vacillement).
+  ombres: Object.freeze({ taille: 256, biais: -0.004 }),
+  feux: Object.freeze({ intensite: 600, distance: 110, vacillement: Object.freeze({ amplitude: 0.15, frequences: Object.freeze([0.9, 1.3]) }) }) });
+export const SHADOW_SIZES = [128, 256, 512];
 export const FLICKER_MAX = Object.freeze({ amplitude: 0.15, frequence: 1.4 });
 const inRange = (v, lo, hi, d) => (isNum(v) && v >= lo && v <= hi ? v : d);
 
@@ -223,7 +257,18 @@ export function parseLightConfig(json) {
   const d = LIGHT_DEFAULTS;
   const v = j.vacillement !== null && typeof j.vacillement === 'object' ? j.vacillement : {};
   const freqs = Array.isArray(v.frequences) ? v.frequences.slice(0, 4).filter((f) => isNum(f) && f > 0 && f <= FLICKER_MAX.frequence) : [];
+  const o = j.ombres !== null && typeof j.ombres === 'object' ? j.ombres : {};
+  const fx = j.feux !== null && typeof j.feux === 'object' ? j.feux : {};
+  const fv = fx.vacillement !== null && typeof fx.vacillement === 'object' ? fx.vacillement : {};
+  const ffreqs = Array.isArray(fv.frequences) ? fv.frequences.slice(0, 4).filter((f) => isNum(f) && f > 0 && f <= FLICKER_MAX.frequence) : [];
   return {
+    lune: inRange(j.lune, 0, 1, d.lune),
+    ombres: { taille: SHADOW_SIZES.includes(o.taille) ? o.taille : d.ombres.taille, biais: inRange(o.biais, -0.05, 0.05, d.ombres.biais) },
+    feux: {
+      intensite: inRange(fx.intensite, 0, 100000, d.feux.intensite),
+      distance: inRange(fx.distance, 10, 1000, d.feux.distance),
+      vacillement: { amplitude: inRange(fv.amplitude, 0, FLICKER_MAX.amplitude, d.feux.vacillement.amplitude), frequences: ffreqs.length ? ffreqs : [...d.feux.vacillement.frequences] },
+    },
     ambiance: inRange(j.ambiance, 0, 1, d.ambiance),
     plancherAmbiance: inRange(j.plancherAmbiance, 0.05, 1, d.plancherAmbiance),
     intensite: inRange(j.intensite, 0, 100000, d.intensite),
@@ -236,10 +281,11 @@ export function parseLightConfig(json) {
   };
 }
 
-// Facteurs des lumières existantes en « Éclairage » : ambiante × max(ambiance, plancher) (jamais le noir complet), directionnelle × ambiance.
+// Facteurs des lumières existantes en « Éclairage » : ambiante × max(ambiance, plancher) (jamais le noir complet), lune (lumière directionnelle et ses
+// ombres) × lune (lot 5k-G : séparé, pour que les ombres de la lune ne contredisent pas celles des lampes).
 export function baseFactors(cfg) {
   const c = cfg ?? LIGHT_DEFAULTS;
-  return { ambient: Math.max(c.ambiance, c.plancherAmbiance), sun: c.ambiance };
+  return { ambient: Math.max(c.ambiance, c.plancherAmbiance), sun: isNum(c.lune) ? c.lune : c.ambiance };
 }
 
 // Vacillement : facteur d'intensité dans [1 − amplitude, 1], somme de sinus lents (temps de jeu t en secondes, phase propre à la lampe) ;
