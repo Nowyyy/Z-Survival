@@ -114,3 +114,9 @@ version: v0.7
 nom: Menu de débogage dans la pause
 description: Une icône à côté du son ouvre un panneau de réglages d'essai (manche, argent, niveaux, mesure) ; seulement sur le développement et la Recette.
 afficher: oui
+
+[lot-5m]
+version: v0.7
+nom: Nettoyage des branches et de la documentation
+description: Les bilans des versions V0.1 à V0.6 sont réunis en un fichier par version, sans rien perdre ; quelques documents terminés sont retirés. Le jeu ne change pas.
+afficher: oui

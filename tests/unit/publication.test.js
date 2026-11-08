@@ -881,8 +881,8 @@ describe('site-info.json de la publication de V0.6 (lot 5f)', () => {
   const journal = JSON.parse(readFileSync('data/changelog.json', 'utf8'));
   const siteDe = (changelog) => assemble({ versions: actuel, mainDir: build(), devDir: build({ changelog }), archiveDir: archiveDir(['v0.1', 'v0.2', 'v0.3', 'v0.4', 'v0.5'], actuel), dev: DEV });
 
-  // Lot 5l : lot-5l, lot-5k puis lot-5j ; lot 5k : lot-5k puis lot-5j (v0.7, non publiée) ; lot 5j : lot-5j seul (avant : évolutions vides).
-  it('recette = V0.6, versions précédentes V0.5 → V0.1 (archives), les lots en v0.6 disparaissent des évolutions (lot-5l, lot-5k et lot-5j, v0.7) ; site-info.json valide', () => {
+  // Lot 5m : lot-5m, lot-5l, lot-5k puis lot-5j ; lot 5l : lot-5l, lot-5k puis lot-5j ; lot 5k : lot-5k puis lot-5j (v0.7, non publiée) ; lot 5j : lot-5j seul (avant : évolutions vides).
+  it('recette = V0.6, versions précédentes V0.5 → V0.1 (archives), les lots en v0.6 disparaissent des évolutions (lot-5m, lot-5l, lot-5k et lot-5j, v0.7) ; site-info.json valide', () => {
     expect(journal.lots.filter((l) => l.version === 'v0.6').map((l) => l.name)).toEqual(['lot-5a', 'lot-5b', 'lot-5c', 'lot-5d', 'lot-5e', 'lot-5g', 'lot-5h', 'lot-5f', 'lot-5i']); // lot 5i ajouté
     const { out: dir, siteInfo } = siteDe(journal);
     const v06 = actuel.versions.find((v) => v.id === 'v0.6');
@@ -890,7 +890,7 @@ describe('site-info.json de la publication de V0.6 (lot 5f)', () => {
     expect(siteInfo.precedentes.map((p) => [p.label, p.entry, p.status])).toEqual([
       ['V0.5', '../v0.5/jeu.html', 'archive'], ['V0.4', '../v0.4/jeu.html', 'archive'], ['V0.3', '../v0.3/jeu.html', 'archive'], ['V0.2', '../v0.2/jeu.html', 'archive'], ['V0.1', '../v0.1/jeu.html', 'archive'],
     ]);
-    expect(siteInfo.evolutions.map((e) => [e.id, e.version])).toEqual([['lot-5l', 'v0.7'], ['lot-5k', 'v0.7'], ['lot-5j', 'v0.7']]);
+    expect(siteInfo.evolutions.map((e) => [e.id, e.version])).toEqual([['lot-5m', 'v0.7'], ['lot-5l', 'v0.7'], ['lot-5k', 'v0.7'], ['lot-5j', 'v0.7']]);
     expect(siteInfo.evolutions.filter((e) => e.version === 'v0.6')).toEqual([]);
     expect(siteInfo.dev).toEqual({ present: true, sha: 'bbbbbbb', date: '2026-11-03T08:00:00Z', entry: '../dev/jeu.html' });
     expect(readJson(join(dir, 'Recette/site-info.json'))).toEqual(siteInfo);
@@ -900,12 +900,12 @@ describe('site-info.json de la publication de V0.6 (lot 5f)', () => {
     expect(readdirSync(dir).filter((name) => /^v0\.\d+$/.test(name)).sort()).toEqual(['v0.1', 'v0.2', 'v0.3', 'v0.4', 'v0.5']);
   });
 
-  // Lot 5l : avant lot-5l, lot-5k et lot-5j ; lot 5k : le lot fictif apparaît en tête, avant lot-5k et lot-5j (v0.7 aussi) ; lot 5j : avant lot-5j ; avant : seul.
-  it('le même jeu avec un lot ajouté de version v0.7 (non publiée) : il apparaît en tête des évolutions, avant lot-5l, lot-5k et lot-5j', () => {
+  // Lot 5m : avant lot-5m, lot-5l, lot-5k et lot-5j ; lot 5l : avant lot-5l, lot-5k et lot-5j ; lot 5k : le lot fictif apparaît en tête, avant lot-5k et lot-5j (v0.7 aussi) ; lot 5j : avant lot-5j ; avant : seul.
+  it('le même jeu avec un lot ajouté de version v0.7 (non publiée) : il apparaît en tête des évolutions, avant lot-5m, lot-5l, lot-5k et lot-5j', () => {
     const lot = { name: 'lot-6a', version: 'v0.7', date: '2026-11-07', titre: 'Premier lot de la V0.7 (fictif)', points: ['Premier point du lot de test.', 'Second point, jamais affiché.'] };
     const { siteInfo } = siteDe({ ...journal, lots: [...journal.lots, lot] });
     expect(siteInfo.evolutions[0]).toEqual({ id: 'lot-6a', title: 'Premier lot de la V0.7 (fictif)', text: 'Premier point du lot de test.', date: '2026-11-07', version: 'v0.7' });
-    expect(siteInfo.evolutions.map((e) => e.id)).toEqual(['lot-6a', 'lot-5l', 'lot-5k', 'lot-5j']);
+    expect(siteInfo.evolutions.map((e) => e.id)).toEqual(['lot-6a', 'lot-5m', 'lot-5l', 'lot-5k', 'lot-5j']);
     expect(siteInfo.recette.id).toBe('v0.6');
     expect(siteInfo.precedentes.map((p) => p.id)).toEqual(['v0.5', 'v0.4', 'v0.3', 'v0.2', 'v0.1']);
     expect(validateSiteInfo(siteInfo)).toEqual({ ok: true, errors: [] });
