@@ -244,30 +244,38 @@ export function lampTriangles(lamp) {
 // data/game/lumieres.json : valeurs vérifiées ; toute valeur invalide prend le défaut (provisoire). Vacillement borné : amplitude ≤ 0,15 (part de
 // l'intensité), fréquences ≤ 1,4 Hz (moins de 3 changements de sens par seconde) ; fondu en secondes (entrée et sortie d'une lampe).
 export const LIGHT_DEFAULTS = Object.freeze({ ambiance: 0.45, plancherAmbiance: 0.3, lune: 0.45, intensite: 180, distance: 120, decroissance: 1, fondu: 0.6, max: 4, distanceActivation: 700,
-  vacillement: Object.freeze({ amplitude: 0.1, frequences: Object.freeze([0.6, 1.1]) }),
+  vacillement: Object.freeze({ amplitude: 0.1, periode: Object.freeze([1.2, 3.5]) }),
   // Lot 5k-G : ombres des lumières (carte d'ombres cubique, côté en pixels ; biais) et feux comme sources (intensité, portée, vacillement).
   ombres: Object.freeze({ taille: 256, biais: -0.004 }),
-  feux: Object.freeze({ intensite: 600, distance: 110, vacillement: Object.freeze({ amplitude: 0.15, frequences: Object.freeze([0.9, 1.3]) }) }) });
+  feux: Object.freeze({ intensite: 600, distance: 110, vacillement: Object.freeze({ amplitude: 0.15, periode: Object.freeze([0.6, 1.6]) }) }),
+  // Lot 5k-H : rayons de lune par les fenêtres du côté de la lune (taches de lumière au sol, en Éclairage) ; selection : préférence pour les
+  // sources déjà allumées (une source éclairée n'est remplacée que par une source nettement plus proche : moins d'allumages et d'extinctions).
+  fenetres: Object.freeze({ intensite: 0.35, etirement: 2.2 }),
+  selection: Object.freeze({ maintien: 0.75 }) });
 export const SHADOW_SIZES = [128, 256, 512];
-export const FLICKER_MAX = Object.freeze({ amplitude: 0.15, frequence: 1.4 });
+// Lot 5k-H : vacillement en bruit lent (valeur tirée à chaque période, transition douce) : un changement de sens par période au plus ; période
+// d'au moins 0,5 s (2 changements par seconde au plus, sous la limite de 3), amplitude de 15 % au plus.
+export const FLICKER_MAX = Object.freeze({ amplitude: 0.15, periodeMin: 0.5, periodeMax: 10 });
+const periodOf = (raw, d) => {
+  const p = Array.isArray(raw) && raw.length === 2 && raw.every(isNum) ? raw : null;
+  return p && p[0] >= FLICKER_MAX.periodeMin && p[1] >= p[0] && p[1] <= FLICKER_MAX.periodeMax ? [p[0], p[1]] : [...d];
+};
 const inRange = (v, lo, hi, d) => (isNum(v) && v >= lo && v <= hi ? v : d);
 
 export function parseLightConfig(json) {
   const j = json !== null && typeof json === 'object' && !Array.isArray(json) ? json : {};
   const d = LIGHT_DEFAULTS;
   const v = j.vacillement !== null && typeof j.vacillement === 'object' ? j.vacillement : {};
-  const freqs = Array.isArray(v.frequences) ? v.frequences.slice(0, 4).filter((f) => isNum(f) && f > 0 && f <= FLICKER_MAX.frequence) : [];
   const o = j.ombres !== null && typeof j.ombres === 'object' ? j.ombres : {};
   const fx = j.feux !== null && typeof j.feux === 'object' ? j.feux : {};
   const fv = fx.vacillement !== null && typeof fx.vacillement === 'object' ? fx.vacillement : {};
-  const ffreqs = Array.isArray(fv.frequences) ? fv.frequences.slice(0, 4).filter((f) => isNum(f) && f > 0 && f <= FLICKER_MAX.frequence) : [];
   return {
     lune: inRange(j.lune, 0, 1, d.lune),
     ombres: { taille: SHADOW_SIZES.includes(o.taille) ? o.taille : d.ombres.taille, biais: inRange(o.biais, -0.05, 0.05, d.ombres.biais) },
     feux: {
       intensite: inRange(fx.intensite, 0, 100000, d.feux.intensite),
       distance: inRange(fx.distance, 10, 1000, d.feux.distance),
-      vacillement: { amplitude: inRange(fv.amplitude, 0, FLICKER_MAX.amplitude, d.feux.vacillement.amplitude), frequences: ffreqs.length ? ffreqs : [...d.feux.vacillement.frequences] },
+      vacillement: { amplitude: inRange(fv.amplitude, 0, FLICKER_MAX.amplitude, d.feux.vacillement.amplitude), periode: periodOf(fv.periode, d.feux.vacillement.periode) },
     },
     ambiance: inRange(j.ambiance, 0, 1, d.ambiance),
     plancherAmbiance: inRange(j.plancherAmbiance, 0.05, 1, d.plancherAmbiance),
@@ -277,7 +285,9 @@ export function parseLightConfig(json) {
     fondu: inRange(j.fondu, 0.05, 5, d.fondu),
     max: [2, 4, 6].includes(j.max) ? j.max : d.max,
     distanceActivation: inRange(j.distanceActivation, 50, 5000, d.distanceActivation),
-    vacillement: { amplitude: inRange(v.amplitude, 0, FLICKER_MAX.amplitude, d.vacillement.amplitude), frequences: freqs.length ? freqs : [...d.vacillement.frequences] },
+    vacillement: { amplitude: inRange(v.amplitude, 0, FLICKER_MAX.amplitude, d.vacillement.amplitude), periode: periodOf(v.periode, d.vacillement.periode) },
+    fenetres: { intensite: inRange(j.fenetres?.intensite, 0, 4, d.fenetres.intensite), etirement: inRange(j.fenetres?.etirement, 0.5, 6, d.fenetres.etirement) },
+    selection: { maintien: inRange(j.selection?.maintien, 0.3, 1, d.selection.maintien) },
   };
 }
 
@@ -288,15 +298,24 @@ export function baseFactors(cfg) {
   return { ambient: Math.max(c.ambiance, c.plancherAmbiance), sun: isNum(c.lune) ? c.lune : c.ambiance };
 }
 
-// Vacillement : facteur d'intensité dans [1 − amplitude, 1], somme de sinus lents (temps de jeu t en secondes, phase propre à la lampe) ;
-// mouvement réduit : 1 (lumière constante).
+// Vacillement (lot 5k-H, retour du propriétaire : moins régulier, jamais toutes les lampes ensemble) : facteur d'intensité dans [1 − amplitude, 1].
+// Bruit lent propre à chaque source : une valeur tirée (sans hasard : d'après la phase de la source) à chaque période, transition douce entre deux
+// valeurs (aucun saut) ; la période (dans `periode`) et l'amplitude (60 à 100 % de `amplitude`) dépendent aussi de la source. Un seul changement de
+// sens par période au plus. Temps de jeu t en secondes ; mouvement réduit : 1 (lumière constante).
+const frac = (x) => x - Math.floor(x);
+const noise = (phase, n) => frac(Math.sin(n * 127.1 + phase * 311.7) * 43758.5453);
 export function flicker(t, phase, cfg, reduced = false) {
   const v = (cfg ?? LIGHT_DEFAULTS).vacillement;
   if (reduced || !(v.amplitude > 0)) return 1;
-  const f = v.frequences;
-  let s = 0;
-  for (let i = 0; i < f.length; i += 1) s += Math.sin(2 * Math.PI * f[i] * t + phase * (i + 1.7));
-  return 1 - v.amplitude * (0.5 + (0.5 * s) / f.length);
+  const [p0, p1] = v.periode;
+  const period = p0 + (p1 - p0) * noise(phase, 0.5);
+  const amp = v.amplitude * (0.6 + 0.4 * noise(phase, 1.5));
+  const x = t / period + phase;
+  const k = Math.floor(x);
+  const f = x - k;
+  const s = f * f * (3 - 2 * f);
+  const a = noise(phase, k);
+  return 1 - amp * (a + (noise(phase, k + 1) - a) * s);
 }
 
 // Phase d'une lampe (stable, d'après son identifiant).
@@ -307,13 +326,16 @@ export function lampPhase(id) {
 }
 
 // Lampes à éclairer : celles de la liste (étage affiché) visibles (visible[i] : sa lumière touche le champ de la caméra), à moins de
-// distanceActivation du joueur, les `count` plus proches ; à distance égale, l'identifiant. Écrit les identifiants dans out (tableau réutilisé).
-export function selectLamps(out, lamps, visible, px, py, count, maxDistance) {
+// distanceActivation du joueur, les `count` plus proches ; à distance égale, l'identifiant. Lot 5k-H : current (identifiants déjà éclairés) et
+// maintien (0,3 à 1) : la distance d'une source déjà éclairée compte pour maintien × sa distance (elle n'est remplacée que par une source nettement
+// plus proche). Écrit les identifiants dans out (tableau réutilisé).
+export function selectLamps(out, lamps, visible, px, py, count, maxDistance, current = null, maintien = 1) {
   out.length = 0;
   for (let i = 0; i < lamps.length; i += 1) {
     if (!visible[i]) continue;
-    const d = Math.hypot(lamps[i].light.x - px, lamps[i].light.y - py);
-    if (d > maxDistance) continue;
+    const raw = Math.hypot(lamps[i].light.x - px, lamps[i].light.y - py);
+    if (raw > maxDistance) continue;
+    const d = current && current.includes(lamps[i].id) ? raw * maintien : raw;
     let k = out.length;
     out.push(null);
     while (k > 0) {
@@ -327,6 +349,26 @@ export function selectLamps(out, lamps, visible, px, py, count, maxDistance) {
   if (out.length > count) out.length = count;
   for (let i = 0; i < out.length; i += 1) out[i] = out[i].id;
   return out;
+}
+
+// Lot 5k-H : rayons de lune par une fenêtre. win : { x, y (centre sur l'axe du mur), side : nord | sud | est | ouest } ; moon : position de la lune
+// relative à sa cible (render.json → light.sunOffset ; la lumière va dans le sens opposé) ; opening : { width, sill, lintel, thickness }. Renvoie
+// null si la lune n'entre pas par ce côté, sinon les quatre coins au sol { x, y } (projection de l'ouverture le long des rayons, depuis la face
+// intérieure du mur) : bas de l'ouverture d'abord (bord le plus clair), puis le haut.
+const INWARD = { nord: [0, 1], sud: [0, -1], ouest: [1, 0], est: [-1, 0] };
+export function moonPatch(win, moon, opening) {
+  const n = INWARD[win?.side];
+  if (!n || !isNum(moon?.y) || moon.y <= 0) return null;
+  const tx = -moon.x / moon.y; // déplacement au sol par unité de hauteur (sens des rayons)
+  const tz = -moon.z / moon.y;
+  if (n[0] * tx + n[1] * tz <= 0.05) return null; // la lune n'éclaire pas ce côté
+  const half = opening.width / 2;
+  const cx = win.x + n[0] * (opening.thickness / 2);
+  const cy = win.y + n[1] * (opening.thickness / 2);
+  const sx = -n[1];
+  const sy = n[0];
+  const at = (s, h) => ({ x: r2(cx + sx * s + tx * h), y: r2(cy + sy * s + tz * h) });
+  return [at(-half, opening.sill), at(half, opening.sill), at(half, opening.lintel), at(-half, opening.lintel)];
 }
 
 // Emplacements des lumières (tableau fixe { id, w }, w de 0 à 1) : une lampe choisie garde son emplacement ; une lampe qui n'est plus choisie

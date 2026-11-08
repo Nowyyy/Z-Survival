@@ -3,7 +3,7 @@
 // jamais atteint), lampes absentes des données de collision (ni obstacle, ni mur : balles, laser et zombies passent), jetons --game-lamp-*.
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { baseFactors, firesToWorld, FLAME_TOP, FLICKER_MAX, flicker, LAMP_COLORS, lampPhase, lampsToWorld, lampTriangles, LIGHT_DEFAULTS, MAX_TRIANGLES, ORIENTATIONS, parseLampSource, parseLightConfig, selectLamps, stepSlots } from '../../js/core/lamps.js';
+import { baseFactors, firesToWorld, FLAME_TOP, moonPatch, FLICKER_MAX, flicker, LAMP_COLORS, lampPhase, lampsToWorld, lampTriangles, LIGHT_DEFAULTS, MAX_TRIANGLES, ORIENTATIONS, parseLampSource, parseLightConfig, selectLamps, stepSlots } from '../../js/core/lamps.js';
 import { firstOnSegment } from '../../js/core/collision.js';
 import { generateMapFiles } from '../../scripts/plan-vers-monde.mjs';
 
@@ -157,8 +157,8 @@ describe('feux comme sources de lumière (lot 5k-G)', () => {
     // Vacillement des feux : borné comme celui des lampes.
     const c = parseLightConfig(LUMIERES);
     expect(c.feux.vacillement.amplitude).toBeLessThanOrEqual(0.15);
-    for (const fq of c.feux.vacillement.frequences) expect(fq).toBeLessThanOrEqual(1.4);
-    expect(parseLightConfig({ feux: { vacillement: { amplitude: 0.5, frequences: [9] } } }).feux.vacillement).toEqual(LIGHT_DEFAULTS.feux.vacillement);
+    expect(c.feux.vacillement.periode[0]).toBeGreaterThanOrEqual(0.5); // lot 5k-H : période d'au moins 0,5 s
+    expect(parseLightConfig({ feux: { vacillement: { amplitude: 0.5, periode: [0.1, 0.2] } } }).feux.vacillement).toEqual(LIGHT_DEFAULTS.feux.vacillement);
   });
 });
 
@@ -206,16 +206,19 @@ describe('lumieres.json et lumière de base', () => {
     expect(baseFactors({ ...c, ambiance: 0 }).ambient).toBe(c.plancherAmbiance);
     expect(c.plancherAmbiance).toBeGreaterThan(0);
   });
-  it('entrées hostiles : défauts, aucune exception ; vacillement borné (amplitude ≤ 0,15, fréquences ≤ 1,4 Hz)', () => {
+  it('entrées hostiles : défauts, aucune exception ; vacillement borné (amplitude ≤ 0,15, période ≥ 0,5 s)', () => {
     for (const h of [null, 42, 'x', [], {}, { vacillement: 3 }]) expect(parseLightConfig(h)).toEqual(parseLightConfig(null));
     expect(parseLightConfig(null)).toMatchObject({ ambiance: LIGHT_DEFAULTS.ambiance, max: 4 });
-    const wild = parseLightConfig({ ambiance: 3, plancherAmbiance: 0, max: 5, vacillement: { amplitude: 0.9, frequences: [12, 0.5, -1] } });
+    const wild = parseLightConfig({ ambiance: 3, plancherAmbiance: 0, max: 5, vacillement: { amplitude: 0.9, periode: [0.2, 1] }, fenetres: { intensite: -1 }, selection: { maintien: 2 } });
     expect(wild.ambiance).toBe(LIGHT_DEFAULTS.ambiance);
     expect(wild.plancherAmbiance).toBe(LIGHT_DEFAULTS.plancherAmbiance); // jamais 0 : pas de noir complet
     expect(wild.max).toBe(4);
     expect(wild.vacillement.amplitude).toBe(LIGHT_DEFAULTS.vacillement.amplitude);
-    expect(wild.vacillement.frequences).toEqual([0.5]);
-    expect(FLICKER_MAX).toEqual({ amplitude: 0.15, frequence: 1.4 });
+    expect(wild.vacillement.periode).toEqual(LIGHT_DEFAULTS.vacillement.periode); // période trop courte : défaut
+    expect(wild.fenetres).toEqual(LIGHT_DEFAULTS.fenetres);
+    expect(wild.selection).toEqual(LIGHT_DEFAULTS.selection);
+    expect(parseLightConfig({ vacillement: { amplitude: 0.1, periode: [2, 1] } }).vacillement.periode).toEqual(LIGHT_DEFAULTS.vacillement.periode); // bornes inversées
+    expect(FLICKER_MAX).toEqual({ amplitude: 0.15, periodeMin: 0.5, periodeMax: 10 });
   });
 });
 
@@ -228,7 +231,7 @@ describe('vacillement', () => {
     return n / (v.length / 60);
   };
   it('lent et faible : au plus 3 variations par seconde, amplitude ≤ 15 % de l\'intensité, aucun saut entre deux images', () => {
-    const configs = [parseLightConfig(LUMIERES), parseLightConfig({ vacillement: { amplitude: 0.15, frequences: [1.4, 1.37] } }), { vacillement: parseLightConfig(LUMIERES).feux.vacillement }]; // 5k-G : feux
+    const configs = [parseLightConfig(LUMIERES), parseLightConfig({ vacillement: { amplitude: 0.15, periode: [0.5, 0.5] } }), { vacillement: parseLightConfig(LUMIERES).feux.vacillement }]; // 5k-G : feux ; 5k-H : période la plus courte permise
     for (const cfg of configs) {
       for (const id of LAMPS.map((l) => l.id)) {
         const v = series(cfg, lampPhase(id));
@@ -240,9 +243,75 @@ describe('vacillement', () => {
       }
     }
   });
+  it('lot 5k-H : jamais toutes ensemble : chaque source a son rythme (moments des changements de sens et amplitudes différents d\'une source à l\'autre)', () => {
+    const cfg = parseLightConfig(LUMIERES);
+    const ids = [...LAMPS.map((l) => l.id), ...DERIVED.feux.map((f) => f.id)];
+    const firstTurn = ids.map((id) => {
+      const v = series(cfg, lampPhase(id));
+      for (let i = 1; i < v.length - 1; i += 1) if ((v[i] - v[i - 1]) * (v[i + 1] - v[i]) < 0) return i;
+      return -1;
+    });
+    expect(new Set(firstTurn).size).toBeGreaterThanOrEqual(ids.length - 2); // presque toutes à des instants différents
+    // Corrélation des séries deux à deux (lampes avec leur réglage, feux avec le leur) : faible en moyenne, jamais identiques.
+    const S = ids.map((id) => series(id.startsWith('feu') ? { vacillement: cfg.feux.vacillement } : cfg, lampPhase(id)));
+    const corr = (a, b) => {
+      const ma = a.reduce((x, y) => x + y) / a.length;
+      const mb = b.reduce((x, y) => x + y) / b.length;
+      let n = 0;
+      let da = 0;
+      let db = 0;
+      for (let i = 0; i < a.length; i += 1) {
+        n += (a[i] - ma) * (b[i] - mb);
+        da += (a[i] - ma) ** 2;
+        db += (b[i] - mb) ** 2;
+      }
+      return n / Math.sqrt(da * db);
+    };
+    let max = 0;
+    let sum = 0;
+    let pairs = 0;
+    for (let i = 0; i < S.length; i += 1) for (let j = i + 1; j < S.length; j += 1) {
+      const r = Math.abs(corr(S[i], S[j]));
+      max = Math.max(max, r);
+      sum += r;
+      pairs += 1;
+    }
+    expect(max).toBeLessThan(0.9);
+    expect(sum / pairs).toBeLessThan(0.4);
+    // Plus lent qu'au lot 5k-G (1,1 Hz) : en moyenne moins d'un changement de sens par seconde.
+    const mean = ids.reduce((n, id) => n + extremaPerSecond(series(cfg, lampPhase(id))), 0) / ids.length;
+    expect(mean).toBeLessThan(1);
+  });
   it('prefers-reduced-motion : lumière constante', () => {
     const v = series(parseLightConfig(LUMIERES), 1.3, true);
     expect(new Set(v)).toEqual(new Set([1]));
+  });
+});
+
+describe('rayons de lune par les fenêtres (lot 5k-H)', () => {
+  const MOON = RENDER.light.sunOffset;
+  const OPENING = { width: RDC.windowSize, sill: RENDER.sillHeight, lintel: RENDER.lintelBottom, thickness: RDC.wallThickness };
+  it('seulement par les fenêtres du côté de la lune (lumière venue de l\'ouest et du sud), tache au sol dans le bâtiment, bord clair contre le mur', () => {
+    const lit = [];
+    for (const [w, world] of [...RDC.windows.map((q) => [q, RDC]), ...ETAGE.windows.map((q) => [q, ETAGE])]) {
+      const q = moonPatch(w, MOON, OPENING);
+      const travel = { x: -MOON.x, z: -MOON.z };
+      const inward = { nord: [0, 1], sud: [0, -1], ouest: [1, 0], est: [-1, 0] }[w.side];
+      if (inward[0] * travel.x + inward[1] * travel.z <= 0) {
+        expect(q, w.id).toBeNull();
+        continue;
+      }
+      lit.push(w.id);
+      expect(q).toHaveLength(4);
+      for (const p of q) expect(Math.abs(p.x - w.x) + Math.abs(p.y - w.y)).toBeLessThan(OPENING.width + 100);
+      const depth = (p) => (p.x - w.x) * inward[0] + (p.y - w.y) * inward[1];
+      expect(depth(q[0])).toBeGreaterThan(OPENING.thickness / 2); // dans la pièce, au-delà de la face du mur
+      expect(depth(q[3])).toBeGreaterThan(depth(q[0])); // le haut de l'ouverture se projette plus loin
+      expect(world.contour.length).toBeGreaterThan(2);
+    }
+    expect(lit.sort()).toEqual(['F3', 'F5', 'F6', 'F8', 'U1', 'U2', 'U6', 'U7']); // murs ouest et sud
+    expect(moonPatch({ x: 0, y: 0, side: 'nord' }, { x: 0, y: -1, z: 0 }, OPENING)).toBeNull(); // lune sous l'horizon
+    expect(moonPatch({ x: 0, y: 0, side: 'haut' }, MOON, OPENING)).toBeNull();
   });
 });
 
@@ -263,6 +332,12 @@ describe('choix des lampes éclairées et fondu', () => {
     const twins = [{ id: 'b', light: { x: 10, y: 0 } }, { id: 'a', light: { x: -10, y: 0 } }, { id: 'c', light: { x: 0, y: 10 } }];
     expect(selectLamps(out, twins, [true, true, true], 0, 0, 2, 1e9)).toEqual(['a', 'b']);
     expect(selectLamps(out, [...twins].reverse(), [true, true, true], 0, 0, 2, 1e9)).toEqual(['a', 'b']);
+    // Lot 5k-H : maintien. Une source déjà éclairée reste choisie tant qu'aucune autre n'est nettement plus proche (moins d'allumages et d'extinctions).
+    const pair = [{ id: 'a', light: { x: 100, y: 0 } }, { id: 'b', light: { x: 90, y: 0 } }];
+    expect(selectLamps(out, pair, [true, true], 0, 0, 1, 1e9)).toEqual(['b']);
+    expect(selectLamps(out, pair, [true, true], 0, 0, 1, 1e9, ['a'], 0.75)).toEqual(['a']); // 100 × 0,75 < 90 : a reste
+    const far = [{ id: 'a', light: { x: 100, y: 0 } }, { id: 'b', light: { x: 60, y: 0 } }];
+    expect(selectLamps(out, far, [true, true], 0, 0, 1, 1e9, ['a'], 0.75)).toEqual(['b']); // b nettement plus proche : a cède
     // Le tableau de sortie est réutilisé (aucune allocation de tableau par image).
     expect(selectLamps(out, rdc, all, p.x, p.y, 2, 1e9)).toBe(out);
   });
