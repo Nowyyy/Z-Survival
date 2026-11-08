@@ -153,9 +153,10 @@ describe('lot 4f : plan des paliers (planDuPalier)', async () => {
     const c = projectionCompacte(planDuPalier(fictifs(4, 10000), BS, 'standard'), BS);
     expect(c).toMatchObject({ palier: 'standard', nUtilise: 1, facteur: 2, installationSecondes: 90, totalSecondes: 110, tranches: [{ index: 1, secondes: 20, executions: 4 }] });
   });
-  it('tests/budget.json : réglages du standard (cible 480 s, maximum 600 s, 8 tranches, bureau seulement, d\'après les projets de playwright.config)', () => {
+  // Lot 5n (décision T4, conditionnelle) : rejeu total sur la CI de la branche en 7 min 48 s (> 7 min 30 s) : cible 480 → 400 s (une tranche de plus).
+  it('tests/budget.json : réglages du standard (cible 400 s depuis le lot 5n, maximum 600 s, 8 tranches, bureau seulement, d\'après les projets de playwright.config)', () => {
     const b = JSON.parse(readFileSync('tests/budget.json', 'utf8'));
-    expect(b).toMatchObject({ standardCibleSecondes: 480, standardMaxSecondes: 600, tranchesMaxStandard: 8, standardProjets: ['bureau'] });
+    expect(b).toMatchObject({ standardCibleSecondes: 400, standardMaxSecondes: 600, tranchesMaxStandard: 8, standardProjets: ['bureau'] });
     const config = readFileSync('playwright.config.js', 'utf8');
     for (const p of b.standardProjets) expect(config).toContain(`name: '${p}'`);
   });
