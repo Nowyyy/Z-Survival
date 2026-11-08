@@ -817,9 +817,17 @@
    panneau de l'écran Options (en-tête fixe, région qui défile, pied) ; compteurs −/+ et saisie numérique de 44 px ; encadré du mode essai (bordure jaune
    et texte : jamais la couleur seule) ; adresse obtenue en pied. Aucune couleur en dur, aucune transition. */
 .debug-note {
-  padding: 0.35em 0.6em;
+  padding: 0.1em 0.5em;
   border: 2px solid var(--color-money);
   color: var(--color-text);
+}
+
+/* Lot 5l-E (retour du propriétaire) : titre de section et encadré du mode essai sur une même ligne (passe à la ligne si la place manque). */
+.debug-section-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3em 0.8em;
 }
 
 .debug-counter {
