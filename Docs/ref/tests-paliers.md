@@ -31,7 +31,7 @@ Autres : `npm run test:fumee` (13 tests, projet bureau, 28 s mesurées), `npm ru
 ## Sélection et dépendances entre zones
 `tests/selection.json` : 17 zones (noyau, textes, carte, siège, vagues, étages, combat, économie, personnages, sons, rendu, interface, jeu, accueil, publication, pages techniques, outillage). Chaque zone a ses `sources` (motifs), ses `dependances` (zones dont ses sources lisent des fichiers), ses tests `vitest`, `e2e` (palier standard) et `complet` (palier complet seulement).
 - Fichiers modifiés = `git diff --name-only <base>...HEAD` plus les changements non commités. Zones touchées → **fermeture inverse** (toute zone qui dépend d'une zone touchée, directement ou non, est rejouée, avec la raison « dépend de … »). Les autres sont listées « sautées » avec la raison.
-- Documentation seule (`Docs/**`, `*.md`, sauf `Docs/ref/tests-*.md`) : rien. Fichier qu'aucune zone ne revendique : tout (`defaut`). Rejeu total forcé : `package.json`, verrou, configurations Vitest et Playwright, `tests/selection.json`, `tests/budget.json`, `.github/workflows/**`, `.nvmrc`, `css/tokens.css`, aides de tests (`tests/e2e/helpers.js`, `tests/unit/helpers/**`), `scripts/serve.mjs`.
+- Documentation seule (`Docs/**`, `*.md`, sauf `Docs/ref/tests-*.md`) : rien. Fichier qu'aucune zone ne revendique : tout (`defaut`). Rejeu total forcé : `package.json`, verrou, configurations Vitest et Playwright, `tests/selection.json` (lot 5n : sauf un changement limité à ses zones), `tests/budget.json`, `.github/workflows/**`, `.nvmrc`, `css/tokens.css`, aides de tests Playwright (`tests/e2e/helpers.js`), `scripts/serve.mjs` ; lot 5n : les aides de Vitest (`tests/unit/helpers/**`) rejouent tout Vitest seulement.
 - Vitest : union de la table, des tests `toujours` (hygiène, pureté, structure, contrôle de la table…) et de `vitest list --changed <base>` (graphe d'imports) ; jamais l'un sans l'autre.
 - Les dépendances sont déduites du code (imports, `new URL`, données lues) ; un test vérifie que toute lecture d'un fichier d'une autre zone est déclarée et qu'il n'y a aucun cycle. Pour casser les cycles, quelques fichiers sont rangés dans la zone qui les importe (par exemple `floor-rules.js` et `plan-vers-monde.mjs` dans « étages », `ecarts.js` dans « carte »).
 - `--depuis-version` : la base devient le `ref` de la version `actuelle` de `versions.json` lu sur `origin/main` (version absente ou commit introuvable : tout, avec la raison).
@@ -126,6 +126,31 @@ Défauts trouvés et corrigés pendant le contrôle : (1) **X2** non détectée 
 | `56cb762` | logique (sang) | personnages, jeu, pages techniques | 173 (80 mobiles), 759 s, ≈ 381 s + installation | 93, 662 s, 2 tranches, 256 s |
 | `343ad05` | documentation seule | aucune | 0 | 0 (aucune tranche) |
 | rejeu total | `tests.yml`, `package.json`… | toutes | 631 (309 mobiles), 2 223 s, ≈ 1 117 s + installation ; **mesuré en CI au lot 4e : 1 452 s de Playwright, 1 535 s de palier** | 322, 1 696 s, 3 tranches, 374 s |
+
+## Lot 5n — allègement des tests déclenchés sur `dev` et `main`
+Audit : `Docs/ref/tests-allegement-audit.md` ; décisions du propriétaire : `Docs/ref/tests-allegement-decisions.md` ; bilan : `Docs/lots/lot-5n.md`.
+
+**Déclencheurs après le lot 5n** (`pages.yml` inchangé) :
+| Événement | `pages.yml` | `tests.yml` |
+|---|---|---|
+| push `dev` (code) | `quick` (lint, tout Vitest) → `deploy` | standard : `planifier` → tranches Playwright → `rapport`, `bilan-duree` ; **`unitaires` sautée** (W1-a : `quick` la fait déjà ; `bilan-duree` n'a pas de durée Vitest sur `dev`) |
+| push `dev` (documentation seule) | `quick` → `deploy` | rien (`paths-ignore`) |
+| push `main` | `quick` → `deploy` | rien |
+| push `lot-*` | — | standard complet (`unitaires` comprise) ; **premier push d'une branche : base `origin/dev`** (W2-c ; repli `origin/main` si `origin/dev` est absent ; avant : `origin/main`, en retard d'une version) |
+| Pull Request vers `main` | — | standard (seul Playwright avant un push sur `main`) |
+| Pull Request vers `dev` | — | **rien** (W2-a) |
+| création `essai/complet-*` / `essai/standard-*` | — | complet (16 tranches) / standard |
+| lancement manuel | `quick` → `deploy` | palier au choix |
+
+**Règle (W2-a)** : une branche de travail se nomme `lot-*` pour être testée avant sa fusion (son push lance le standard ; l'arbre fusionné est testé par le push de `dev`). Une Pull Request d'une autre branche vers `dev` n'a plus de test avant fusion. La Pull Request `main` → `dev` (retour de `main` après une publication) n'est pas testée : son contenu l'a déjà été.
+
+**Sélection (T5)** : un changement de `tests/selection.json` limité aux entrées `zones[*]` touche ces zones (fermeture inverse comprise) ; toute autre clé (`garde-fous`, `rejeu-total`, `rejeu-vitest`, `toujours`, `fumee`, `documentation`, `defaut`, `schema`) ou une zone retirée impose « tout » ; la table de la base est lue à la merge-base (`selectionner.mjs`). Les aides de Vitest (`tests/unit/helpers/**`, clé `rejeu-vitest`) rejouent tout Vitest, sans rejeu total de Playwright (aucun fichier `tests/e2e/` ne les lit : vérifié par `tests-selection.test.js`). `css/tokens.css`, `tests/e2e/helpers.js`, workflows et configurations gardent « tout ».
+
+**Durées (T4, T6)** : `node scripts/tests/budget.mjs --liste-sans-mesure <fichier>` liste les tests du complet sans durée mesurée ; on les mesure seuls (`E2E_FULL=1 npx playwright test --test-list <fichier> --workers=2 --retries=0 --reporter=json > rapport.json`, jamais le palier complet en local), puis `--completer-mesure rapport.json --note …` les ajoute à `tests/budget-mesure.json` (le reste inchangé, trace dans `complements`). `--remettre-reference --raison …` remplace la référence du complet (`complet.cumulSecondes`) par le cumul projeté d'aujourd'hui, l'ancienne gardée dans `referencesPrecedentes` : **décision du propriétaire seulement, ce n'est pas un allègement**. Lot 5n : 208 exécutions mesurées ; standard en rejeu total 3 → 4 tranches ; référence 5 605 s (lot 4e) → 6 320 s ; `ajoutMaxParLotSecondes` reste 90.
+
+**Seuils du propriétaire** (médiane des 50 dernières exécutions) : standard sur `dev` ≤ 7 min ; rejeu total ≤ 10 min ; `quick` ≤ 4 min ; complet ≤ 10 min ; instabilité ≤ 1 échec au hasard sur 50 ; ajout de durée de `tests/budget.json` respecté. Durées médianes avant / après : voir le bilan du lot 5n.
+
+**Procédure de fin de version** : d'abord cette passe d'allègement (audit, décisions, application ; ne changer quelque chose que si un seuil est dépassé ou si un doublon est trouvé), ensuite le nettoyage des branches et de la documentation, puis la publication (`Docs/ref/publication-versions.md`).
 
 ## Comment ajouter une zone ou un test
 - **Un test** : dans le fichier de la zone qu'il protège ; la logique en Vitest (`tests/unit/`), seulement ce qu'un joueur voit ou fait en Playwright. Ajouter le fichier à la zone dans `tests/selection.json` : `vitest`, ou `e2e` (palier standard : garde-fous et pages) ou `complet` (règles, détails). `npm test` vérifie la table (fichier classé, sources couvertes, dépendances réelles déclarées, aucun cycle) et `npm run test:budget` l'ajout au complet (90 s cumulées au plus par lot).
