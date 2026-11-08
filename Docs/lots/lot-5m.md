@@ -27,4 +27,4 @@
 - **Entrée du journal** : `data/changelog.json` → `lots` : « lot-5m — Nettoyage des branches et de la documentation » (`version: "v0.7"`, 2026-11-08) ; bloc `[lot-5m]` ajouté à `noms-versions-et-lots.txt`.
 - **Lignes à ajouter** (`CLAUDE.md` : 8 306 caractères) : 1. « - Bilans : V0.N publiée → `scripts/docs/regrouper.mjs` (Docs/lots/versions/v0.N.md, texte intégral) ; tests via scripts/docs/bilans.mjs. » ; 2. aucune.
 - **Seed à réécrire (propriétaire)** : aucun chemin cité par le seed n'a bougé (`affinage.md`, `etage.md`, `conventions.md`, `publication-versions.md`, `site-adresses.md`) ; `Docs/seed.md:124` (« sources de V0.1 à V0.5, jamais supprimées ») reste vrai ; seule la règle générale des branches de lot change (`CLAUDE.md`), à reprendre dans le seed si tu le souhaites.
-- **À faire par moi** : (1) fusionner `lot-5m` dans `dev` (« Create a merge commit »), attendre la CI ; (2) répondre à la partie C (phrase de confirmation).
+- **À faire par moi** : (1) fusionner `lot-5m` dans `dev` (« Create a merge commit »), attendre la CI ; (2) supprimer les 23 branches dans l'interface GitHub (page « Branches », corbeille), liste dans `Docs/ref/branches-audit.md`.
