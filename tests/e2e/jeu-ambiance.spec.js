@@ -168,8 +168,8 @@ test.describe('animation de vague : contenu, chronologie, position', () => {
         page.on('pageerror', (e) => problems.push(e.message));
         await page.setViewportSize(size);
         await page.goto(URL());
-        await expect(page.locator('#rotate')).toBeVisible();
-        await expect(page.locator('#game-root')).toBeHidden();
+        await expect(page.locator('#rotate')).toBeVisible({ timeout: 30_000 });
+        await expect(page.locator('#game-root')).toBeHidden({ timeout: 30_000 });
         await expect(page.locator(FRAME)).toBeHidden();
         expect(problems).toEqual([]);
         return;

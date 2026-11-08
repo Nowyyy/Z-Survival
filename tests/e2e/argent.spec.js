@@ -345,7 +345,11 @@ test.describe('multi-onglets', () => {
     expect(await shoot(other, 'marcheur')).toBe(1);
     expect((await page.evaluate(() => window.__zs.flushSave())).ok).toBe(true);
     expect((await other.evaluate(() => window.__zs.flushSave())).ok).toBe(true);
-    expect((await storedJson(page)).money).toBe(20);
+    // Lot 5n (T3) : l'écriture d'un onglet n'est pas visible tout de suite dans l'autre (Chrome : 2 à 3 lectures sur 300 périmées juste après
+    // l'écriture, mesuré) : la valeur écrite est lue dans l'onglet qui vient d'écrire (une écriture perdue y donne 10), puis attendue dans
+    // l'autre. Avant : lue tout de suite dans l'autre onglet (10 au lieu de 20 quand la lecture était périmée).
+    expect((await storedJson(other)).money).toBe(20);
+    await expect.poll(async () => (await storedJson(page))?.money).toBe(20);
     await expect.poll(() => balance(page)).toBe(20);
     expect(await balance(other)).toBe(20);
   });
