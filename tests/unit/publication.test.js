@@ -3,11 +3,12 @@
 // site-info.json (scripts/site/site-info.mjs) ; le journal /dev (dev/index.html, dev/dev.js) et ses tests sont supprimés.
 import { describe, it, expect, afterAll } from 'vitest';
 import { spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
-  AssembleError, SITE_TEXT_DEFAULTS, assembleSite, buildInfo, constructionPage, dirStats, messagePage, parseOptions, redirectPage, siteIcon, siteTexts, utcDate,
+  AssembleError, CANAUX_PUBLIES, CANAL_META_RE, SITE_TEXT_DEFAULTS, assembleSite, buildInfo, constructionPage, dirStats, ecrireCanal, ecrireCanalFichier, messagePage, parseOptions, redirectPage, siteIcon,
+  siteTexts, utcDate,
 } from '../../scripts/assemble.mjs';
 import { MAX_EVOLUTIONS, MAX_VERSION_TITLE, buildSiteInfo, cleanText, readEvolutions, readPrevious, validLabel, validateSiteInfo } from '../../scripts/site/site-info.mjs';
 import {
@@ -875,8 +876,8 @@ describe('site-info.json de la publication de V0.6 (lot 5f)', () => {
   const journal = JSON.parse(readFileSync('data/changelog.json', 'utf8'));
   const siteDe = (changelog) => assemble({ versions: actuel, mainDir: build(), devDir: build({ changelog }), archiveDir: archiveDir(['v0.1', 'v0.2', 'v0.3', 'v0.4', 'v0.5'], actuel), dev: DEV });
 
-  // Lot 5k : lot-5k puis lot-5j (v0.7, non publiée) ; lot 5j : lot-5j seul (avant : évolutions vides).
-  it('recette = V0.6, versions précédentes V0.5 → V0.1 (archives), les lots en v0.6 disparaissent des évolutions (lot-5k et lot-5j, v0.7) ; site-info.json valide', () => {
+  // Lot 5l : lot-5l, lot-5k puis lot-5j ; lot 5k : lot-5k puis lot-5j (v0.7, non publiée) ; lot 5j : lot-5j seul (avant : évolutions vides).
+  it('recette = V0.6, versions précédentes V0.5 → V0.1 (archives), les lots en v0.6 disparaissent des évolutions (lot-5l, lot-5k et lot-5j, v0.7) ; site-info.json valide', () => {
     expect(journal.lots.filter((l) => l.version === 'v0.6').map((l) => l.name)).toEqual(['lot-5a', 'lot-5b', 'lot-5c', 'lot-5d', 'lot-5e', 'lot-5g', 'lot-5h', 'lot-5f', 'lot-5i']); // lot 5i ajouté
     const { out: dir, siteInfo } = siteDe(journal);
     const v06 = actuel.versions.find((v) => v.id === 'v0.6');
@@ -884,7 +885,7 @@ describe('site-info.json de la publication de V0.6 (lot 5f)', () => {
     expect(siteInfo.precedentes.map((p) => [p.label, p.entry, p.status])).toEqual([
       ['V0.5', '../v0.5/jeu.html', 'archive'], ['V0.4', '../v0.4/jeu.html', 'archive'], ['V0.3', '../v0.3/jeu.html', 'archive'], ['V0.2', '../v0.2/jeu.html', 'archive'], ['V0.1', '../v0.1/jeu.html', 'archive'],
     ]);
-    expect(siteInfo.evolutions.map((e) => [e.id, e.version])).toEqual([['lot-5k', 'v0.7'], ['lot-5j', 'v0.7']]);
+    expect(siteInfo.evolutions.map((e) => [e.id, e.version])).toEqual([['lot-5l', 'v0.7'], ['lot-5k', 'v0.7'], ['lot-5j', 'v0.7']]);
     expect(siteInfo.evolutions.filter((e) => e.version === 'v0.6')).toEqual([]);
     expect(siteInfo.dev).toEqual({ present: true, sha: 'bbbbbbb', date: '2026-11-03T08:00:00Z', entry: '../dev/jeu.html' });
     expect(readJson(join(dir, 'Recette/site-info.json'))).toEqual(siteInfo);
@@ -894,12 +895,12 @@ describe('site-info.json de la publication de V0.6 (lot 5f)', () => {
     expect(readdirSync(dir).filter((name) => /^v0\.\d+$/.test(name)).sort()).toEqual(['v0.1', 'v0.2', 'v0.3', 'v0.4', 'v0.5']);
   });
 
-  // Lot 5k : le lot fictif apparaît en tête, avant lot-5k et lot-5j (v0.7 aussi) ; lot 5j : avant lot-5j ; avant : seul.
-  it('le même jeu avec un lot ajouté de version v0.7 (non publiée) : il apparaît en tête des évolutions, avant lot-5k et lot-5j', () => {
+  // Lot 5l : avant lot-5l, lot-5k et lot-5j ; lot 5k : le lot fictif apparaît en tête, avant lot-5k et lot-5j (v0.7 aussi) ; lot 5j : avant lot-5j ; avant : seul.
+  it('le même jeu avec un lot ajouté de version v0.7 (non publiée) : il apparaît en tête des évolutions, avant lot-5l, lot-5k et lot-5j', () => {
     const lot = { name: 'lot-6a', version: 'v0.7', date: '2026-11-07', titre: 'Premier lot de la V0.7 (fictif)', points: ['Premier point du lot de test.', 'Second point, jamais affiché.'] };
     const { siteInfo } = siteDe({ ...journal, lots: [...journal.lots, lot] });
     expect(siteInfo.evolutions[0]).toEqual({ id: 'lot-6a', title: 'Premier lot de la V0.7 (fictif)', text: 'Premier point du lot de test.', date: '2026-11-07', version: 'v0.7' });
-    expect(siteInfo.evolutions.map((e) => e.id)).toEqual(['lot-6a', 'lot-5k', 'lot-5j']);
+    expect(siteInfo.evolutions.map((e) => e.id)).toEqual(['lot-6a', 'lot-5l', 'lot-5k', 'lot-5j']);
     expect(siteInfo.recette.id).toBe('v0.6');
     expect(siteInfo.precedentes.map((p) => p.id)).toEqual(['v0.5', 'v0.4', 'v0.3', 'v0.2', 'v0.1']);
     expect(validateSiteInfo(siteInfo)).toEqual({ ok: true, errors: [] });
@@ -1047,5 +1048,101 @@ describe('accueil retouché (lot 5i) : carte de la version actuelle, « Jouer - 
     expect(css).toContain('@media (min-width: 640px) and (max-height: 500px)'); // comportement d'avant gardé sous 520 px de haut
     expect(tokens).toMatch(/\/\* Accueil de la Recette \(lot 5i\)[^\n]*\*\/\n {2}--home-current-border: #[0-9a-f]{6};[^\n]*\n {2}--home-current-surface: #[0-9a-f]{6};/);
     expect(read('css/base.css')).toMatch(/min-height: calc\(100vh - 2 \* var\(--space-3\)\);\n {2}min-height: calc\(100dvh - 2 \* var\(--space-3\)\);/);
+  });
+});
+
+// Lot 5l : balise de canal de jeu.html (<meta name="zs-canal" content="source">) réécrite par l'assembleur dans les copies publiées : release (Recette/),
+// dev (dev/), archive (v0.N/, seulement si elle existe) ; jamais d'échec si elle manque (versions déjà archivées).
+describe('assembleur : balise de canal de jeu.html (lot 5l)', () => {
+  const META = (canal) => `<meta name="zs-canal" content="${canal}">`;
+  const page = (canal, title = 'jeu') => `<!doctype html><html lang="fr"><head><meta charset="utf-8">\n  ${META(canal)}\n<title>${title}</title></head><body></body></html>`;
+  // Archive « réelle » : une version archivée après ce lot (sa page porte la balise du dépôt : source).
+  const archiveWithMeta = (ids) => {
+    const dir = archiveDir(ids);
+    for (const id of ids) writeFileSync(join(dir, id, 'jeu.html'), page('source', `archive ${id}`));
+    return dir;
+  };
+  const canalOf = (html) => [...html.matchAll(/<meta name="zs-canal" content="([^"]*)">/g)].map((m) => m[1]);
+
+  it('jeu.html du dépôt : une seule balise, de la forme exacte reconnue par l\'assembleur, canal « source »', () => {
+    const html = read('jeu.html');
+    expect(html.match(CANAL_META_RE)).toEqual([META('source')]);
+    expect(canalOf(html)).toEqual(['source']);
+  });
+
+  it('chaque dossier publié a son canal : Recette/ release, dev/ dev, v0.N/ archive ; le reste de la page est identique octet pour octet', () => {
+    const main = build({ extra: { 'jeu.html': page('source', 'main') } });
+    const dev = build({ extra: { 'jeu.html': page('source', 'dev') } });
+    const arch = archiveWithMeta(['v0.3', 'v0.4']);
+    const result = assemble({ mainDir: main, devDir: dev, archiveDir: arch, dev: DEV });
+    const dir = result.out;
+    expect(read(join(dir, 'Recette/jeu.html'))).toBe(page('release', 'main'));
+    expect(read(join(dir, 'dev/jeu.html'))).toBe(page('dev', 'dev'));
+    expect(read(join(dir, 'v0.4/jeu.html'))).toBe(page('archive', 'archive v0.4'));
+    expect(read(join(dir, 'v0.3/jeu.html'))).toBe(page('archive', 'archive v0.3'));
+    expect(result.canaux).toEqual({ 'Recette/': true, 'dev/': true, 'v0.3/': true, 'v0.4/': true });
+    // Sources jamais modifiées.
+    expect(read(join(main, 'jeu.html'))).toBe(page('source', 'main'));
+    expect(read(join(arch, 'v0.4/jeu.html'))).toBe(page('source', 'archive v0.4'));
+  });
+
+  it('version déjà archivée, sans balise : v0.N/ identique octet pour octet (aucune écriture, aucune erreur) ; idem pour une Recette sans balise', () => {
+    const arch = archiveDir(['v0.1', 'v0.2']);
+    const result = assemble({ mainDir: build(), archiveDir: arch });
+    for (const id of ['v0.1', 'v0.2']) {
+      expect(walk(join(result.out, id)).sort()).toEqual(walk(join(arch, id)).sort());
+      for (const f of walk(join(arch, id))) expect(readFileSync(join(result.out, id, f)).equals(readFileSync(join(arch, id, f))), `${id}/${f}`).toBe(true);
+    }
+    expect(read(join(result.out, 'Recette/jeu.html'))).not.toContain('zs-canal');
+    expect(result.canaux).toEqual({ 'Recette/': false, 'v0.1/': false, 'v0.2/': false });
+  });
+
+  it('v0.N/ : seule la balise change (autres fichiers et autres octets de la page identiques)', () => {
+    const arch = archiveWithMeta(['v0.2']);
+    const { out: dir } = assemble({ mainDir: build(), archiveDir: arch });
+    for (const f of walk(join(arch, 'v0.2')).filter((x) => x !== 'jeu.html')) expect(readFileSync(join(dir, 'v0.2', f)).equals(readFileSync(join(arch, 'v0.2', f))), f).toBe(true);
+    expect(read(join(dir, 'v0.2/jeu.html')).replace(META('archive'), META('source'))).toBe(read(join(arch, 'v0.2/jeu.html')));
+  });
+
+  it('ecrireCanal : toutes les occurrences, canaux connus seulement ; entrées hostiles inchangées', () => {
+    expect(CANAUX_PUBLIES).toEqual(['release', 'dev', 'archive', 'prod']);
+    expect(ecrireCanal(`${META('source')}x${META('dev')}`, 'prod')).toBe(`${META('prod')}x${META('prod')}`);
+    for (const bad of ['source', 'Release', '', 'dev"><script>', null, 3]) expect(ecrireCanal(page('source'), bad), String(bad)).toBe(page('source'));
+    for (const html of [null, undefined, 42, {}]) expect(ecrireCanal(html, 'dev')).toBe(html);
+    // Formes non reconnues (attributs dans un autre ordre, guillemets simples, valeur hors [a-z]) : inchangées.
+    for (const other of ['<meta content="source" name="zs-canal">', "<meta name='zs-canal' content='source'>", '<meta name="zs-canal" content="sou rce">', '<meta name="zs-canal" content="x"/>']) {
+      expect(ecrireCanal(other, 'release')).toBe(other);
+    }
+  });
+
+  it('fichiers hostiles : absent, dossier, lien symbolique, binaire, trop gros, sans balise : jamais d\'exception ; rien d\'écrit sauf la balise', () => {
+    n += 1;
+    const dir = join(ROOT, `hostile-${n}`);
+    mkdirSync(join(dir, 'dossier.html'), { recursive: true });
+    expect(ecrireCanalFichier(join(dir, 'absent.html'), 'dev')).toBe(false);
+    expect(ecrireCanalFichier(join(dir, 'dossier.html'), 'dev')).toBe(false);
+    const outside = join(dir, 'hors-du-site.html');
+    writeFileSync(outside, page('source'));
+    symlinkSync(outside, join(dir, 'lien.html'));
+    expect(ecrireCanalFichier(join(dir, 'lien.html'), 'dev')).toBe(false);
+    expect(read(outside)).toBe(page('source'));
+    // Octets qui ne sont pas de l'UTF-8 valide autour de la balise : seuls les octets de la valeur changent.
+    const bytes = Buffer.concat([Buffer.from([0xff, 0xfe, 0x00, 0xc3]), Buffer.from(META('source')), Buffer.from([0x80, 0x00, 0xe9])]);
+    writeFileSync(join(dir, 'binaire.html'), bytes);
+    expect(ecrireCanalFichier(join(dir, 'binaire.html'), 'release')).toBe(true);
+    expect(readFileSync(join(dir, 'binaire.html')).equals(Buffer.concat([Buffer.from([0xff, 0xfe, 0x00, 0xc3]), Buffer.from(META('release')), Buffer.from([0x80, 0x00, 0xe9])]))).toBe(true);
+    const big = `${META('source')}${'x'.repeat(4 * 1024 * 1024)}`;
+    writeFileSync(join(dir, 'gros.html'), big);
+    expect(ecrireCanalFichier(join(dir, 'gros.html'), 'dev')).toBe(false);
+    expect(read(join(dir, 'gros.html')).startsWith(META('source'))).toBe(true);
+    writeFileSync(join(dir, 'sans.html'), '<!doctype html><title>x</title>');
+    expect(ecrireCanalFichier(join(dir, 'sans.html'), 'dev')).toBe(false);
+    expect(ecrireCanalFichier(join(dir, 'sans.html'), 'inconnu')).toBe(false);
+  });
+
+  it('dev/ sans build : aucune page de jeu, aucun canal écrit ; l\'assemblage n\'échoue jamais pour une balise', () => {
+    const result = assemble({ mainDir: build({ extra: { 'jeu.html': page('source') } }) });
+    expect(result.canaux).toEqual({ 'Recette/': true });
+    expect(existsSync(join(result.out, 'dev/jeu.html'))).toBe(false);
   });
 });

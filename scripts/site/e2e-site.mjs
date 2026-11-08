@@ -6,13 +6,15 @@
 //  - many/ : 13 versions FICTIVES (v0.1 à v0.12 archivées, v0.13 Recette) pour la liste qui défile ; v0.6 y est publiée : aucune évolution ;
 //  - noms/ (lot 5h) : comme full/, mais le build de dev porte un fichier des noms FICTIF (NOMS_TEST) qui renomme la V0.5, la V0.4 et le lot 5h,
 //    masque le lot 5g et (lot 5i) donne à la Recette V0.6 une description de 200 caractères (sans changer son nom). full/, bare/ et many/ sont assemblés sans fichier des noms (textes d'origine), pour ne pas dépendre des textes du propriétaire.
+//  - canaux/ (lot 5l) : Recette/ (canal release), v0.5/ = une copie du build courant archivée (canal archive, écrit par l'assembleur) et prod/ = une copie
+//    de Recette/ avec le canal prod (écrit par ecrireCanalFichier, comme le fera un assembleur de production) ; le canal dev est celui de full/dev/.
 // Chaque site vit dans un sous-dossier, comme le site publié sous /Z-Survival/. Les données de version sont fictives et annoncées comme telles.
 import { spawnSync } from 'node:child_process';
 import { cpSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { assembleSite } from '../assemble.mjs';
+import { assembleSite, ecrireCanalFichier } from '../assemble.mjs';
 import { NOMS_FICHIER } from './noms.mjs';
 import { startServer } from './serve.mjs';
 
@@ -94,6 +96,13 @@ export function buildTestSites(repo, www) {
     const manyArchive = join(tmp, 'archive-many');
     for (const v of many.versions.filter((x) => x.status === 'archive')) fakeArchive(manyArchive, v);
     assembleSite({ mainDir, devDir: mainDir, archiveDir: manyArchive, versions: many, out: join(www, 'many'), main, dev, genere: GENERE });
+    // Lot 5l : canaux archive et prod (le build courant, sa balise zs-canal réécrite) ; ni dev ni autres archives.
+    const canauxArchive = join(tmp, 'archive-canaux');
+    cpSync(mainDir, join(canauxArchive, 'v0.5'), { recursive: true });
+    const canaux = join(www, 'canaux');
+    assembleSite({ mainDir, archiveDir: canauxArchive, versions, out: canaux, main, genere: GENERE });
+    cpSync(join(canaux, 'Recette'), join(canaux, 'prod'), { recursive: true });
+    if (!ecrireCanalFichier(join(canaux, 'prod', 'jeu.html'), 'prod')) throw new Error('canaux/prod : balise zs-canal absente');
   } finally {
     rmSync(tmp, { recursive: true, force: true });
   }

@@ -451,3 +451,65 @@ export function bloodWithCorpses(blood, level, n) {
   if (!Number.isInteger(n) || n < 0 || !SANG_LEVELS.includes(level) || !levels[level]) return blood;
   return { ...b, levels: { ...levels, [level]: { ...levels[level], corpses: n } } };
 }
+
+// ---------------------------------------------------------------------------------------------------------------------------------------------
+// Lot 5l : paramètres d'adresse par canal (Docs/ref/debug.md). Le canal vient de la balise <meta name="zs-canal" content="…"> de jeu.html (source dans
+// le dépôt ; l'assembleur écrit release, dev ou archive dans les copies publiées ; prod viendra d'un assembleur de production), lue par graphics-boot.js
+// sans requête. Groupe G (doublons d'Options et réglages graphiques sans menu) : pris en compte sous ?test=1 (autorisé) ou sur source ; groupe T (outils) :
+// sur les canaux de débogage ; test, store, seed, empty : sur les canaux de débogage. Canal absent, inconnu, archive ou prod : tout est refusé.
+// Un nom absent des trois listes (?v=, inconnu) n'est lu par aucun code : il passe tel quel.
+export const CANAUX = Object.freeze(['source', 'dev', 'release', 'archive', 'prod']);
+export const CANAUX_DEBUG = Object.freeze(['source', 'dev', 'release']);
+export const PARAMS_G = Object.freeze(['gfx', 'lum', 'lampgain', 'shadows', 'vhs', 'dpr', 'detail', 'perso', 'sang', 'usure', 'percee']);
+export const PARAMS_T = Object.freeze(['wave', 'lvl', 'money', 'planks', 'floor', 'map', 'nospawn', 'endless', 'fin', 'perf', 'cap', 'fps', 'zoom', 'tilt', 'labels', 'sons']);
+export const PARAMS_TEST = Object.freeze(['test', 'store', 'seed', 'empty']);
+
+// Canal reconnu (valeur exacte) ou null (absent, vide, inconnu, autre type).
+export function lireCanal(value) {
+  return typeof value === 'string' && CANAUX.includes(value) ? value : null;
+}
+
+// Groupe d'un paramètre : 'G', 'T', 'test' ou 'autre'.
+export function groupeParam(name) {
+  if (PARAMS_G.includes(name)) return 'G';
+  if (PARAMS_T.includes(name)) return 'T';
+  return PARAMS_TEST.includes(name) ? 'test' : 'autre';
+}
+
+const searchOf = (params) => {
+  try {
+    if (params instanceof URLSearchParams) return params;
+    return new URLSearchParams(typeof params === 'string' ? params : '');
+  } catch {
+    return new URLSearchParams('');
+  }
+};
+
+// { canal, debug, test, params } : debug = canal de débogage (icône de la pause) ; test = ?test=1 pris en compte ; params : pour chaque paramètre connu
+// et chaque nom présent dans l'adresse, vrai s'il est pris en compte (objet sans prototype : un nom hostile comme __proto__ reste une simple clé).
+export function acces(canal, params) {
+  const c = lireCanal(canal);
+  const q = searchOf(params);
+  const debug = c !== null && CANAUX_DEBUG.includes(c);
+  const test = debug && q.get('test') === '1';
+  const permis = (name) => {
+    const g = groupeParam(name);
+    if (g === 'G') return test || c === 'source';
+    return g === 'autre' ? true : debug;
+  };
+  const out = Object.create(null);
+  for (const name of [...PARAMS_G, ...PARAMS_T, ...PARAMS_TEST, ...q.keys()]) out[name] = permis(name);
+  return { canal: c, debug, test, params: out };
+}
+
+// Adresse (chaîne de requête) sans les paramètres refusés pour ce canal. Rien de refusé (toujours le cas sur source) : la chaîne d'origine, identique.
+export function filtrerAdresse(search, canal) {
+  const s = typeof search === 'string' ? search : '';
+  const q = searchOf(s);
+  const a = acces(canal, q);
+  const refused = [...new Set(q.keys())].filter((k) => !a.params[k]);
+  if (refused.length === 0) return s;
+  for (const k of refused) q.delete(k);
+  const out = q.toString();
+  return out ? `?${out}` : '';
+}

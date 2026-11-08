@@ -46,7 +46,7 @@ import { buildWorld, createCamera } from './world.js';
 
 // Lot 3j : personnages v2 (« riche » par défaut) et sang (complet par défaut) ; lot 5e : l'ancien modèle (?perso=actuel) est retiré.
 const gfxBoot = await import('./graphics-boot.js').then((m) => m.graphicsBoot()).catch(() => null); // lot 5b : préréglage (variante, sang, cadavres)
-const persos = await import('./persos-loader.js').then((m) => m.loadPersos(gfxBoot?.persosSearch ?? location.search, { corpses: gfxBoot?.corpses ?? null }));
+const persos = await import('./persos-loader.js').then((m) => m.loadPersos(gfxBoot?.persosSearch ?? '', { corpses: gfxBoot?.corpses ?? null })); // lot 5l : jamais location.search (canal)
 const { computePose, createKit, createCharacter } = persos.model; // modèle v2 du chargeur (persos-loader.js) : chaque personnage est construit par kit.v2
 const RECOIL_TIME = 0.12;
 const HIT_FLASH_TIME = 0.1;

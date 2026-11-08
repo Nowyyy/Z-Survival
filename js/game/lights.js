@@ -11,10 +11,20 @@ import { baseFactors, flicker, lampPhase, parseLightConfig, selectLamps, stepSlo
 
 const BLOOD = ['sang-particules', 'sang-taches'];
 // Sous ?test=1 seulement : ?lampgain=0..1 multiplie l'intensité des sources (mesure de l'étage superposé : avec et sans elles, base identique).
+// Lot 5l : ?test=1 n'est pris en compte que sur les canaux de débogage (balise zs-canal de jeu.html ; même liste que CANAUX_DEBUG de js/core/graphics.js,
+// vérifié par tests/unit/debug-canal.test.js : ce module de la zone « rendu » n'importe pas graphics-boot.js, zone « graphismes », qui dépend de lui).
+const DEBUG_CANAUX = ['source', 'dev', 'release'];
+const debugCanal = () => {
+  try {
+    return DEBUG_CANAUX.includes(globalThis.document?.querySelector?.('meta[name="zs-canal"]')?.getAttribute('content'));
+  } catch {
+    return false;
+  }
+};
 const testGain = () => {
   const q = new URLSearchParams(globalThis.location?.search ?? '');
   const g = Number(q.get('lampgain'));
-  return q.get('test') === '1' && q.has('lampgain') && g >= 0 && g <= 1 ? g : 1;
+  return q.get('test') === '1' && debugCanal() && q.has('lampgain') && g >= 0 && g <= 1 ? g : 1;
 };
 
 // scene, ambient, sun : de world.js ; lamps : lampes.world.json (lampes) ; fires : feux sources ({ id, floor : rdc | etage | exterieur, light, portee }) ;

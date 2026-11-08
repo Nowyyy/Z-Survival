@@ -2,6 +2,7 @@
 // pièce devant les montants, étoile du record, « Revenir au menu principal » et « Quitter » sans action tant que le menu n'existe pas).
 // Lot 5j : bouton « Options » de la pause (écran E2-12, js/game/options-menu.js importé à la première ouverture) ; « Graphismes » et « Effet VHS » quittent
 // la pause (ils sont dans l'écran Options). Pendant l'écran Options, la partie reste en pause.
+// Lot 5l : icône « Débogage » de la pause (canaux de débogage seulement) ; menu E2-13 (js/game/debug-menu.js importé au premier clic) ; la partie reste en pause.
 import { formatMoney } from '../core/economy.js';
 import { fmt, MONEY_TEXTS, SAVE_TEXTS } from './texts.js';
 
@@ -12,7 +13,7 @@ export function createUi(dict, handlers) {
   const els = {
     pausePanel: $('pause-panel'), endPanel: $('end-panel'), live: $('hud-live'), rotate: $('rotate'),
     pauseBtn: $('btn-pause'), resume: $('btn-resume'), fullscreen: $('btn-fullscreen'), sound: $('btn-sound'),
-    options: $('btn-options'), restart: $('btn-restart'), replay: $('btn-replay'), endKills: $('end-kills'), endWave: $('end-wave'),
+    options: $('btn-options'), debug: $('btn-debug'), restart: $('btn-restart'), replay: $('btn-replay'), endKills: $('end-kills'), endWave: $('end-wave'),
     endBox: $('end-box'), endTitle: $('end-title-text'), pauseBalance: $('pause-balance-text'), endEarned: $('end-earned'), endEarnedText: $('end-earned-text'), endBonus: $('end-bonus'), endBonusText: $('end-bonus-text'),
     endBalance: $('end-balance'), endBest: $('end-best'), endRecord: $('end-record'), endRecordText: $('end-record-text'), endSave: $('end-save'),
   };
@@ -20,12 +21,16 @@ export function createUi(dict, handlers) {
   let binding = null;
   let menu = null;
   let optionsOpen = false;
+  // Lot 5l : menu de débogage (créé au premier clic) ; debugBinding : { search, planksMax } donné par main.js sur un canal de débogage, sinon null.
+  let debugBinding = null;
+  let debugMenu = null;
+  let debugOpen = false;
   const rotateQuery = matchMedia(PORTRAIT_PHONE);
   const canFullscreen = Boolean(document.fullscreenEnabled && document.documentElement.requestFullscreen);
   let hasAudio = false;
 
   const ui = {
-    isPaused: () => !els.pausePanel.hidden || optionsOpen || rotateQuery.matches || document.hidden,
+    isPaused: () => !els.pausePanel.hidden || optionsOpen || debugOpen || rotateQuery.matches || document.hidden,
     isEnded: () => !els.endPanel.hidden,
 
     // Lot 3l (retour du propriétaire) : « Prochaine zone » n'est plus affichée dans la pause ; game.js l'appelle toujours, sans effet.
@@ -36,7 +41,7 @@ export function createUi(dict, handlers) {
     },
 
     openPause() {
-      if (ui.isEnded() || optionsOpen) return;
+      if (ui.isEnded() || optionsOpen || debugOpen) return;
       els.pausePanel.hidden = false;
       els.resume.focus();
       handlers.onPausePanel?.(true);
@@ -55,6 +60,11 @@ export function createUi(dict, handlers) {
       // Lot 5j : Échap dans l'écran Options : ferme la confirmation du rechargement, sinon revient à la pause.
       if (optionsOpen) {
         if (!menu?.escape()) ui.closeOptions();
+        return;
+      }
+      // Lot 5l : de même pour le menu de débogage (confirmation d'abord).
+      if (debugOpen) {
+        if (!debugMenu?.escape()) ui.closeDebug();
         return;
       }
       if (els.pausePanel.hidden) ui.openPause();
@@ -155,6 +165,34 @@ export function createUi(dict, handlers) {
   };
   ui.syncVhs = () => {};
   els.options.addEventListener('click', () => ui.openOptions());
+  // Lot 5l : menu de débogage. allowed : canal de débogage (sinon l'icône reste cachée et le module n'est jamais chargé) ; search : adresse actuelle.
+  ui.bindDebug = ({ allowed = false, search = '', planksMax } = {}) => {
+    debugBinding = allowed ? { search, planksMax } : null;
+    els.debug.hidden = !allowed;
+  };
+  ui.isDebugOpen = () => debugOpen;
+  ui.openDebug = async () => {
+    if (!debugBinding || debugOpen || optionsOpen || els.pausePanel.hidden) return;
+    debugOpen = true;
+    els.pausePanel.hidden = true; // la partie reste en pause (debugOpen)
+    try {
+      debugMenu ??= (await import('./debug-menu.js')).createDebugMenu({ dict, search: debugBinding.search, planksMax: debugBinding.planksMax, onClose: () => ui.closeDebug() });
+    } catch {
+      debugOpen = false;
+      els.pausePanel.hidden = false;
+      els.debug.focus();
+      return;
+    }
+    if (debugOpen) debugMenu.open();
+  };
+  ui.closeDebug = () => {
+    if (!debugOpen) return;
+    debugMenu?.close();
+    debugOpen = false;
+    els.pausePanel.hidden = false;
+    els.debug.focus();
+  };
+  els.debug.addEventListener('click', () => ui.openDebug());
   els.fullscreen.hidden = !canFullscreen;
   // Lot 5j-G : icône de plein écran (coins vers l'extérieur ; vers l'intérieur et nom « Quitter le plein écran » quand la page est en plein écran).
   const syncFullscreen = () => {
