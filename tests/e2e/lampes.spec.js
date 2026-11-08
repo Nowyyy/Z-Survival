@@ -291,7 +291,7 @@ test.describe('lampes à huile', () => {
     l.slots.forEach((q, i) => {
       if (q.id !== null) expect(l.distances[i], q.id).toBe(q.id.startsWith('feu') ? cfg.feux.distance : cfg.distance);
     });
-    expect(l.moon).toEqual([['rdc', 8], ['etage', 8]]); // quatre fenêtres par étage, deux triangles chacune
+    expect(l.moon).toEqual([['rdc', 96], ['etage', 96]]); // quatre fenêtres par étage, 24 triangles chacune (rayon doux en grille, lot 5k-I)
     await context.close();
   });
 
