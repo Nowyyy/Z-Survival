@@ -239,8 +239,10 @@
     ".github/workflows/**",
     "css/tokens.css",
     "tests/e2e/helpers.js",
-    "tests/unit/helpers/**",
     "scripts/serve.mjs"
+  ],
+  "rejeu-vitest": [
+    "tests/unit/helpers/**"
   ],
   "documentation": {
     "inclus": ["Docs/**", "**/*.md"],
