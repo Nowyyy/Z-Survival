@@ -7,7 +7,7 @@
 // seulement quand elles éclairent) ; la lune (et ses ombres) est réduite par `lune`, l'ambiante par max(ambiance, plancher). Les taches de sang
 // (matière sans éclairage) suivent l'ambiante. Tout est rendu tel quel à la sortie (dispose). Rien ici ne touche la logique du jeu.
 import * as THREE from 'three';
-import { baseFactors, flicker, lampPhase, moonBeam, parseLightConfig, selectLamps, stepSlots } from '../core/lamps.js';
+import { baseFactors, createMoonLevel, flicker, lampPhase, moonBeam, moonSettled, niveauLune, parseLightConfig, selectLamps, stepMoonLevel, stepSlots } from '../core/lamps.js';
 
 const BLOOD = ['sang-particules', 'sang-taches'];
 // Sous ?test=1 seulement : ?lampgain=0..1 multiplie l'intensité des sources (mesure de l'étage superposé : avec et sans elles, base identique).
@@ -31,7 +31,8 @@ const testGain = () => {
 // json : lumieres.json ; palette : readPalette() ; count : lumières (2, 4, 6) ; shadows : celles qui projettent des ombres (0, 1, 2) ; lift : hauteur d'étage.
 // occluders : boîtes des murs, piliers et meubles par étage ({ x0, x1, y0, y1, z0, z1, floor }, repère de l'étage) ; groups : groupes du monde.
 // Lot 5k-H : windows ({ x, y, side, floor }), moon (render.json → light.sunOffset), opening ({ width, sill, lintel, thickness }) : rayons de lune.
-export function createLights({ scene, ambient, sun, lamps, fires = [], json, palette, count = 4, shadows = 0, lift = 180, reduced = false, gain = testGain(), occluders = [], groups = null, windows = [], moon = null, opening = null }) {
+// Lot 5k-C3 : planks : dernier état des fenêtres reçu par le dessin des planches (windows-mesh.js, sync), lu seulement ; ensuite syncPlanks.
+export function createLights({ scene, ambient, sun, lamps, fires = [], json, palette, count = 4, shadows = 0, lift = 180, reduced = false, gain = testGain(), occluders = [], groups = null, windows = [], moon = null, opening = null, planks = null }) {
   const cfg = parseLightConfig(json);
   const lampColor = new THREE.Color(palette.lampLight ?? palette.fire);
   const fireColor = new THREE.Color(palette.fireEdge ?? palette.fire);
@@ -107,7 +108,16 @@ export function createLights({ scene, ambient, sun, lamps, fires = [], json, pal
   // Lot 5k-H (retour du propriétaire) : la lune continue d'éclairer par les fenêtres du côté où ses rayons tapent : taches de lumière lunaire au sol
   // (projection de chaque ouverture le long des rayons, allongée par fenetres.etirement), additives, plus claires près de la fenêtre ; un maillage
   // par étage, sans ombre, créé une fois ; la lune elle-même reste faible (`lune`) et ne projette pas d'ombre.
+  // Lot 5k-C3 (complément du propriétaire) : la lumière de lune de chaque fenêtre baisse avec ses planches posées (niveauLune, js/core/lamps.js),
+  // avec un fondu en temps de jeu (stepMoonLevel). Couleur de chaque sommet = couleur pleine × niveau de sa fenêtre : le mélange additif de
+  // Three.js 0.186.1 (sans alpha prémultiplié) fait src.rgb × src.a + dst, donc multiplier la couleur équivaut à une opacité par sommet, sans
+  // attribut à 4 composantes (USE_COLOR_ALPHA : un programme de plus) ; tampons créés une fois, réécrits seulement pendant un fondu. Seul le
+  // maillage de l'étage affiché est dessiné (celui de l'autre étage est caché : rien de plus qu'avant ; Three.js dessine une matière transparente
+  // double face en deux passes, comme avant ce lot).
   const patches = [];
+  const moonEntries = [];
+  const lp = cfg.lunePlanches;
+  let moonMoving = false;
   if (groups && moon && opening && cfg.fenetres.intensite > 0) {
     const moonColor = new THREE.Color(palette.sun ?? palette.ambient);
     const stretch = cfg.fenetres.etirement;
@@ -116,9 +126,16 @@ export function createLights({ scene, ambient, sun, lamps, fires = [], json, pal
       if (!groups[floor]) continue;
       const pos = [];
       const col = [];
+      const mine = [];
       for (const w of windows.filter((q) => q.floor === floor)) {
+        const entry = { id: w.id, floor, mesh: null, start: col.length, end: col.length, st: createMoonLevel(1), planks: -1, max: null, target: 1, base: null, colors: null, attr: null, cx: null, cy: null };
+        mine.push(entry);
         const beam = moonBeam(w, scaled, opening);
         if (!beam) continue;
+        // Centre de la tache (moyenne pondérée par la lumière) : mesures à l'écran des tests.
+        const wsum = beam.points.reduce((n, q) => n + q.w, 0) || 1;
+        entry.cx = beam.points.reduce((n, q) => n + q.x * q.w, 0) / wsum;
+        entry.cy = beam.points.reduce((n, q) => n + q.y * q.w, 0) / wsum;
         for (const tri of beam.triangles) {
           for (const k of tri) {
             const p = beam.points[k];
@@ -126,7 +143,9 @@ export function createLights({ scene, ambient, sun, lamps, fires = [], json, pal
             col.push(moonColor.r * cfg.fenetres.intensite * p.w, moonColor.g * cfg.fenetres.intensite * p.w, moonColor.b * cfg.fenetres.intensite * p.w);
           }
         }
+        entry.end = col.length;
       }
+      moonEntries.push(...mine);
       if (pos.length === 0) continue;
       const geometry = new THREE.BufferGeometry();
       geometry.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
@@ -138,8 +157,47 @@ export function createLights({ scene, ambient, sun, lamps, fires = [], json, pal
       mesh.renderOrder = -1;
       groups[floor].add(mesh);
       patches.push(mesh);
+      const base = Float32Array.from(col);
+      for (const e of mine) {
+        e.mesh = mesh;
+        e.base = base;
+        e.attr = geometry.attributes.color;
+        e.colors = e.attr.array;
+      }
     }
   }
+  // Couleurs d'une fenêtre au niveau courant (aucune allocation).
+  const paintMoon = (e) => {
+    if (e.end === e.start || !e.colors) return;
+    const lv = e.st.niveau;
+    for (let k = e.start; k < e.end; k += 1) e.colors[k] = e.base[k] * lv;
+    e.attr.needsUpdate = true;
+  };
+  // État des fenêtres ({ windows: { id: { planks, maxPlanks } } }) : celui que reçoit le dessin des planches ; seules les planches posées comptent.
+  // Première lecture d'une fenêtre : niveau pris d'un coup ; ensuite, fondu. Aucune allocation ; rien n'est écrit dans l'état.
+  const syncPlanks = (state) => {
+    const ws = state?.windows;
+    if (!ws) return;
+    for (let i = 0; i < moonEntries.length; i += 1) {
+      const e = moonEntries[i];
+      const w = ws[e.id];
+      if (!w) continue;
+      const n = Math.max(0, Math.floor(Number(w.planks) || 0));
+      const max = Number(w.maxPlanks);
+      if (n === e.planks && max === e.max) continue;
+      const first = e.planks < 0;
+      e.planks = n;
+      e.max = max;
+      e.target = niveauLune(n, max, lp.minimum);
+      if (first) {
+        e.st.niveau = e.target;
+        e.st.depart = e.target;
+        e.st.cible = e.target;
+        e.st.t = 0;
+        paintMoon(e);
+      } else moonMoving = true;
+    }
+  };
   const visible = [];
   const wanted = [];
   const wantedShadow = [];
@@ -172,6 +230,7 @@ export function createLights({ scene, ambient, sun, lamps, fires = [], json, pal
     slots = lights.map(() => ({ id: null, w: 0 }));
   };
   build([2, 4, 6].includes(count) ? count : cfg.max, [0, 1, 2].includes(shadows) ? shadows : 0);
+  syncPlanks(planks);
   const groupY = (floor, elevation) => (floor === 'etage' ? lift : 0) - elevation;
   const shadowSlots = () => slots.slice(0, nShadow);
   const plainSlots = () => slots.slice(nShadow);
@@ -208,6 +267,18 @@ export function createLights({ scene, ambient, sun, lamps, fires = [], json, pal
           }
         }
         floorNow = floor;
+        for (let i = 0; i < patches.length; i += 1) patches[i].visible = patches[i].userData.floor === floor; // lot 5k-C3 : la lune de l'étage affiché seulement
+      }
+      // Lot 5k-C3 : fondu des niveaux de lune (seulement pendant un fondu ; à l'état stable, aucun travail).
+      if (moonMoving) {
+        let moving = false;
+        for (let i = 0; i < moonEntries.length; i += 1) {
+          const e = moonEntries[i];
+          if (moonSettled(e.st, e.target)) continue;
+          if (stepMoonLevel(e.st, e.target, step, lp.fondu)) paintMoon(e);
+          if (!moonSettled(e.st, e.target)) moving = true;
+        }
+        moonMoving = moving;
       }
       const list = candidates[floor] ?? [];
       visible.length = list.length;
@@ -249,7 +320,12 @@ export function createLights({ scene, ambient, sun, lamps, fires = [], json, pal
         p.intensity = e.intensity * gain * s.w * flicker(time, e.phase, e.fire ? fireCfg : cfg, reduced);
       }
     },
-    stats: () => ({ moon: patches.map((m) => [m.userData.floor, m.geometry.attributes.position.count / 3]), count: lights.length, shadows: nShadow, slots: slots.map((s) => ({ id: s.id, w: Math.round(s.w * 1000) / 1000 })), intensities: lights.map((p) => Math.round(p.intensity * 1000) / 1000), positions: lights.map((p) => [p.position.x, p.position.y, p.position.z]), distances: lights.map((p) => p.distance), castShadow: lights.map((p) => p.castShadow), proxies: [...proxies].filter(([, m]) => m.visible).map(([id, m]) => [id, m.geometry.attributes.position.count / 3]), sources: { lampes: lamps.length, feux: fires.map((s) => s.id) }, ambient: ambient.intensity, sun: sun.intensity, base: { ...base }, factors: { ...f }, time: Math.round(time * 1000) / 1000, reduced }),
+    syncPlanks,
+    // Lot 5k-C3 (tests) : taches de lune de l'étage affiché : fenêtre, centre au sol (repère du jeu).
+    moonPatches: () => moonEntries.filter((e) => e.floor === floorNow && e.end > e.start).map((e) => ({ fenetre: e.id, x: e.cx, y: e.cy })),
+    // Lot 5k-C3 (tests) : fenêtres de l'étage affiché : planches posées lues et niveau de lune (part de la pleine lumière).
+    moonState: () => moonEntries.filter((e) => e.floor === floorNow).map((e) => ({ fenetre: e.id, plancheesPosees: e.planks < 0 ? null : e.planks, niveau: Math.round(e.st.niveau * 10000) / 10000 })),
+    stats: () => ({ moon: patches.map((m) => [m.userData.floor, m.geometry.attributes.position.count / 3]), moonDrawn: patches.filter((m) => m.visible).map((m) => m.userData.floor), moonMoving, count: lights.length, shadows: nShadow, slots: slots.map((s) => ({ id: s.id, w: Math.round(s.w * 1000) / 1000 })), intensities: lights.map((p) => Math.round(p.intensity * 1000) / 1000), positions: lights.map((p) => [p.position.x, p.position.y, p.position.z]), distances: lights.map((p) => p.distance), castShadow: lights.map((p) => p.castShadow), proxies: [...proxies].filter(([, m]) => m.visible).map(([id, m]) => [id, m.geometry.attributes.position.count / 3]), sources: { lampes: lamps.length, feux: fires.map((s) => s.id) }, ambient: ambient.intensity, sun: sun.intensity, base: { ...base }, factors: { ...f }, time: Math.round(time * 1000) / 1000, reduced }),
     dispose() {
       scene.remove(group);
       for (const m of proxies.values()) {

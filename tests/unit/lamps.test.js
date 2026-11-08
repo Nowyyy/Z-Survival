@@ -3,7 +3,7 @@
 // jamais atteint), lampes absentes des données de collision (ni obstacle, ni mur : balles, laser et zombies passent), jetons --game-lamp-*.
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { baseFactors, firesToWorld, FLAME_TOP, moonBeam, moonPatch, FLICKER_MAX, flicker, LAMP_COLORS, lampPhase, lampsToWorld, lampTriangles, LIGHT_DEFAULTS, MAX_TRIANGLES, ORIENTATIONS, parseLampSource, parseLightConfig, selectLamps, stepSlots } from '../../js/core/lamps.js';
+import { baseFactors, createMoonLevel, MOON_FLIP_GAP, MOON_PLANKS_BOUNDS, moonSettled, niveauLune, stepMoonLevel, firesToWorld, FLAME_TOP, moonBeam, moonPatch, FLICKER_MAX, flicker, LAMP_COLORS, lampPhase, lampsToWorld, lampTriangles, LIGHT_DEFAULTS, MAX_TRIANGLES, ORIENTATIONS, parseLampSource, parseLightConfig, selectLamps, stepSlots } from '../../js/core/lamps.js';
 import { firstOnSegment } from '../../js/core/collision.js';
 import { generateMapFiles } from '../../scripts/plan-vers-monde.mjs';
 
@@ -198,7 +198,9 @@ describe('lumieres.json et lumière de base', () => {
     for (const k of ['ambiance', 'plancherAmbiance', 'intensite', 'distance', 'decroissance', 'fondu', 'max', 'distanceActivation']) expect(c[k], k).toBe(LUMIERES[k]);
     expect(c.vacillement).toEqual(LUMIERES.vacillement);
     // Lot 5k-G : lune (et ses ombres) séparée, ombres des lumières, feux comme sources.
-    expect(c.lune).toBe(LUMIERES.lune);
+    expect(c.lune).toBe(LUMIERES.lune.intensite); // lot 5k-C3 : lune = { intensite, planches }
+    expect(c.lunePlanches).toEqual(LUMIERES.lune.planches);
+    expect(parseLightConfig({ lune: 0.3 }).lune).toBe(0.3); // forme d'avant (un nombre) encore lue
     expect(c.ombres).toEqual(LUMIERES.ombres);
     expect(c.feux).toEqual(LUMIERES.feux);
     expect(LUMIERES._provisoire).toMatch(/PROVISOIRES/);
@@ -426,5 +428,127 @@ describe('choix des lampes éclairées et fondu', () => {
     run([], 40);
     expect(slots).toEqual([{ id: null, w: 0 }, { id: null, w: 0 }]);
     expect(trace.length).toBe(240);
+  });
+});
+
+// Lot 5k-C3 (complément du propriétaire) : lumière de lune de chaque fenêtre selon ses planches posées.
+describe('lune selon les planches (lot 5k-C3)', () => {
+  const { minimum, fondu } = parseLightConfig(LUMIERES).lunePlanches;
+  const MAX = load('data/game/windows.json').planks; // la donnée du jeu, jamais 4 en dur
+
+  it('lumieres.json : lune.planches dans ses bornes (minimum de 0 à 1, fondu de 0,05 à 3 s) ; hors bornes : défaut à la lecture', () => {
+    const p = LUMIERES.lune.planches;
+    expect(p.minimum).toBeGreaterThanOrEqual(MOON_PLANKS_BOUNDS.minimum[0]);
+    expect(p.minimum).toBeLessThanOrEqual(MOON_PLANKS_BOUNDS.minimum[1]);
+    expect(p.fondu).toBeGreaterThanOrEqual(MOON_PLANKS_BOUNDS.fondu[0]);
+    expect(p.fondu).toBeLessThanOrEqual(MOON_PLANKS_BOUNDS.fondu[1]);
+    expect(parseLightConfig(LUMIERES).lunePlanches).toEqual({ minimum: p.minimum, fondu: p.fondu });
+    for (const bad of [{ minimum: -0.1, fondu: 0.04 }, { minimum: 1.2, fondu: 3.5 }, { minimum: 'x', fondu: null }]) {
+      expect(parseLightConfig({ lune: { intensite: 0.15, planches: bad } }).lunePlanches).toEqual(LIGHT_DEFAULTS.lunePlanches);
+    }
+    expect(parseLightConfig({ lune: { planches: 3 } }).lunePlanches).toEqual(LIGHT_DEFAULTS.lunePlanches);
+  });
+
+  it('niveauLune : 0 planche → 1, max → minimum, linéaire et strictement décroissante ; bornes ; max ou minimum hors bornes sans exception', () => {
+    expect(MAX).toBe(4);
+    expect(niveauLune(0, MAX, minimum)).toBe(1);
+    expect(niveauLune(MAX, MAX, minimum)).toBeCloseTo(minimum, 12);
+    for (let p = 1; p <= MAX; p += 1) expect(niveauLune(p, MAX, minimum)).toBeLessThan(niveauLune(p - 1, MAX, minimum));
+    expect(niveauLune(2, 4, 0.2)).toBeCloseTo(0.6, 12);
+    expect(niveauLune(2.7, 4, 0.2)).toBeCloseTo(0.6, 12); // planches posées seulement (entier)
+    expect(niveauLune(-3, 4, 0.2)).toBe(1);
+    expect(niveauLune(9, 4, 0.2)).toBeCloseTo(0.2, 12);
+    for (const m of [0, NaN, -1, 'x', undefined, null, Infinity]) expect(() => niveauLune(2, m, 0.2)).not.toThrow();
+    for (const m of [0, NaN, -1, 'x', undefined, null, Infinity]) expect(niveauLune(2, m, 0.2)).toBe(1);
+    expect(niveauLune(4, 4, -1)).toBe(0);
+    expect(niveauLune(4, 4, 3)).toBe(1);
+    expect(niveauLune(4, 4, NaN)).toBeCloseTo(LIGHT_DEFAULTS.lunePlanches.minimum, 12);
+    for (const v of [niveauLune('x', 4, 0.2), niveauLune(2, 4, 'y')]) expect(Number.isFinite(v)).toBe(true);
+  });
+
+  it('fondu : la cible est atteinte en `fondu` s ± 1 image à 30, 60 et 120 images par seconde, sans dépassement ; pause : rien ne change', () => {
+    for (const fps of [30, 60, 120]) {
+      const dt = 1 / fps;
+      const st = createMoonLevel(1);
+      const target = niveauLune(MAX, MAX, minimum);
+      let n = 0;
+      let prev = st.niveau;
+      while (!moonSettled(st, target) && n < 1000) {
+        stepMoonLevel(st, target, dt, fondu);
+        n += 1;
+        expect(st.niveau).toBeLessThanOrEqual(prev); // monotone : aucun dépassement
+        expect(st.niveau).toBeGreaterThanOrEqual(target);
+        prev = st.niveau;
+      }
+      expect(Math.abs(n * dt - fondu), `${fps} i/s`).toBeLessThanOrEqual(dt + 1e-9);
+      const frozen = createMoonLevel(1);
+      for (let i = 0; i < 100; i += 1) expect(stepMoonLevel(frozen, 0.2, 0, fondu)).toBe(false);
+      expect(frozen).toEqual(createMoonLevel(1));
+    }
+  });
+
+  it('un changement en plein fondu repart du niveau courant, sans saut (pente au plus 1,5 × écart / fondu)', () => {
+    const dt = 1 / 60;
+    const st = createMoonLevel(1);
+    const levels = [];
+    for (let i = 0; i < 20; i += 1) { stepMoonLevel(st, 0.2, dt, fondu); levels.push(st.niveau); }
+    for (let i = 0; i < 30; i += 1) { stepMoonLevel(st, 0.6, dt, fondu); levels.push(st.niveau); } // même sens : repart de la valeur courante
+    for (let i = 0; i < 80; i += 1) { stepMoonLevel(st, 1, dt, fondu); levels.push(st.niveau); } // autre sens
+    const slope = (1.5 * 0.8 * dt) / fondu + 1e-9;
+    for (let i = 1; i < levels.length; i += 1) expect(Math.abs(levels[i] - levels[i - 1]), `pas ${i}`).toBeLessThanOrEqual(slope);
+    expect(st.niveau).toBe(1);
+  });
+
+  // Changements de sens dans toute fenêtre glissante d'une seconde.
+  const maxFlipsPerSecond = (levels, dt) => {
+    const flips = [];
+    let dir = 0;
+    for (let i = 1; i < levels.length; i += 1) {
+      const d = Math.sign(levels[i] - levels[i - 1]);
+      if (d !== 0 && dir !== 0 && d !== dir) flips.push(i * dt);
+      if (d !== 0) dir = d;
+    }
+    return flips.reduce((m, t) => Math.max(m, flips.filter((u) => u >= t && u < t + 1).length), 0);
+  };
+
+  it('600 pas à la cadence du jeu (arrachage 2,2 s par planche pendant que le joueur répare 1,8 s par planche) : au plus 3 changements de sens par seconde', () => {
+    const dt = 0.05;
+    const st = createMoonLevel(1);
+    let planks = 2;
+    let tear = 0;
+    let repair = 0;
+    const levels = [st.niveau];
+    for (let i = 0; i < 600; i += 1) {
+      tear += dt;
+      repair += dt;
+      if (tear >= 2.2) { tear -= 2.2; planks = Math.max(0, planks - 1); }
+      if (repair >= 1.8) { repair -= 1.8; planks = Math.min(MAX, planks + 1); }
+      stepMoonLevel(st, niveauLune(planks, MAX, minimum), dt, fondu);
+      levels.push(st.niveau);
+    }
+    expect(maxFlipsPerSecond(levels, dt)).toBeLessThanOrEqual(3);
+    expect(new Set(levels.map((v) => v.toFixed(3))).size).toBeGreaterThan(10); // le niveau suit bien les planches
+  });
+
+  it('cible hostile (alterne à chaque image, 120 images par seconde) : au plus 3 changements de sens par seconde, jamais hors de [minimum, 1]', () => {
+    const dt = 1 / 120;
+    const st = createMoonLevel(1);
+    const levels = [st.niveau];
+    for (let i = 0; i < 1200; i += 1) {
+      stepMoonLevel(st, i % 2 === 0 ? minimum : 1, dt, fondu);
+      levels.push(st.niveau);
+      expect(st.niveau).toBeGreaterThanOrEqual(minimum);
+      expect(st.niveau).toBeLessThanOrEqual(1);
+    }
+    expect(maxFlipsPerSecond(levels, dt)).toBeLessThanOrEqual(3);
+    expect(MOON_FLIP_GAP).toBeGreaterThan(1 / 3);
+  });
+
+  it('fenêtres indépendantes : faire varier une fenêtre ne touche pas l\'état d\'une autre', () => {
+    const a = createMoonLevel(1);
+    const b = createMoonLevel(1);
+    for (let i = 0; i < 30; i += 1) { stepMoonLevel(a, minimum, 0.05, fondu); stepMoonLevel(b, 1, 0.05, fondu); }
+    expect(a.niveau).toBeCloseTo(minimum, 12);
+    expect(b).toEqual(createMoonLevel(1));
   });
 });

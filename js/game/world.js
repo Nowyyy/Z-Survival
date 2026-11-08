@@ -959,6 +959,7 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
   // la matière « planche » (texture de 128 px, hors atlas), sans ombre ; un maillage n'est dessiné que s'il est dans le champ de la caméra. Lot 3e : ceux d'un étage vivent
   // dans le groupe de cet étage.
   let windowMeshes = null;
+  let lastWindows = null; // lot 5k-C3 : dernier état des fenêtres reçu par le dessin des planches (lumière de lune)
   let debris = null;
   if (windowGeoms.length > 0 && windowsCfg) {
     const settings = plankSettings(windowsCfg, render);
@@ -978,7 +979,12 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
     const dm = parts.map(({ scene, geoms: gs }) => createDebrisMeshes({ scene, material, settings, sheet, ids: gs.map((g) => g.id) }));
     windowMeshes = {
       meshes: wm.flatMap((w) => w.meshes),
-      sync: (state) => wm.forEach((w) => w.sync(state)),
+      // Lot 5k-C3 : le même état sert à la lumière de lune de chaque fenêtre (lights.js, lecture seule).
+      sync: (state) => {
+        lastWindows = state;
+        wm.forEach((w) => w.sync(state));
+        lampKit.lights?.syncPlanks(state);
+      },
       nailed: () => wm.reduce((n, w) => n + w.nailed(), 0),
       stats: (camera) => wm.flatMap((w) => w.stats(camera)),
     };
@@ -1084,7 +1090,7 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
     lampKit.decor?.setVisible(mode !== 'off');
     // Éclairage : lumières en nombre fixe (programmes recompilés une fois à chaque changement de mode ou de nombre, jamais en partie).
     if (mode === 'eclairage' && !lampKit.lights && lampKit.data?.lights) {
-      lampKit.lights = lampKit.data.lights.createLights({ scene, ambient: ambientLight, sun, lamps: lampKit.data.lamps, fires: fireSources(), json: lampKit.data.lumieres, palette, count, shadows, lift, reduced: render.reducedMotion === true, occluders, groups, windows: floors.flatMap((f) => (layoutOf(f).windows ?? []).map((w) => ({ ...w, floor: f }))), moon: render.light.sunOffset, opening: { width: num(layout.windowSize, 72), sill: num(render.sillHeight, 16), lintel: num(render.lintelBottom, 44), thickness: num(layout.wallThickness, 40) } });
+      lampKit.lights = lampKit.data.lights.createLights({ scene, ambient: ambientLight, sun, lamps: lampKit.data.lamps, fires: fireSources(), json: lampKit.data.lumieres, palette, count, shadows, lift, reduced: render.reducedMotion === true, occluders, groups, windows: floors.flatMap((f) => (layoutOf(f).windows ?? []).map((w) => ({ ...w, floor: f }))), moon: render.light.sunOffset, opening: { width: num(layout.windowSize, 72), sill: num(render.sillHeight, 16), lintel: num(render.lintelBottom, 44), thickness: num(layout.wallThickness, 40) }, planks: lastWindows });
       created = true;
     } else if (mode !== 'eclairage' && lampKit.lights) {
       lampKit.lights.dispose();
@@ -1172,6 +1178,8 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
         sun.shadow.map = null;
       }
     },
+    moonState: () => lampKit.lights?.moonState() ?? [], // lot 5k-C3 (tests) : getState().graphics.lune
+    moonPatches: () => lampKit.lights?.moonPatches() ?? [],
     graphicsStats: () => ({ mists: mists.map((m) => m.visible), shadowMap: sun.shadow.mapSize.x, castShadow: sun.castShadow, fires: fires.map((f) => ({ kind: f.kind ?? 'decor', ...f.stats().drawn })), lamps: lampStats() }),
     // Lot 5k : état des lampes (mode appliqué, prêt, maillages, préchauffages, erreur).
     lampStats,

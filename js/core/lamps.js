@@ -254,8 +254,14 @@ export const LIGHT_DEFAULTS = Object.freeze({ ambiance: 0.45, plancherAmbiance: 
   // Lot 5k-H : rayons de lune par les fenêtres du côté de la lune (taches de lumière au sol, en Éclairage) ; selection : préférence pour les
   // sources déjà allumées (une source éclairée n'est remplacée que par une source nettement plus proche : moins d'allumages et d'extinctions).
   fenetres: Object.freeze({ intensite: 0.35, etirement: 2.2 }),
+  // Lot 5k-C3 (complément du propriétaire) : lumière de lune d'une fenêtre selon ses planches posées : à toutes les planches, `minimum` de la pleine
+  // lumière ; changement en `fondu` secondes de temps de jeu (lumieres.json → lune.planches).
+  lunePlanches: Object.freeze({ minimum: 0.2, fondu: 0.6 }),
   selection: Object.freeze({ maintien: 0.75 }) });
 export const SHADOW_SIZES = [128, 256, 512];
+// Lot 5k-C3 : bornes de lune.planches (lumieres.json) : minimum de 0 à 1, fondu de 0,05 à 3 secondes ; hors bornes : refusé par le test de données,
+// remplacé par le défaut à la lecture.
+export const MOON_PLANKS_BOUNDS = Object.freeze({ minimum: Object.freeze([0, 1]), fondu: Object.freeze([0.05, 3]) });
 // Lot 5k-H : vacillement en bruit lent (valeur tirée à chaque période, transition douce) : un changement de sens par période au plus ; période
 // d'au moins 0,5 s (2 changements par seconde au plus, sous la limite de 3), amplitude de 15 % au plus.
 // Lot 5k-I : coupures (décision du propriétaire) : profondeur de 0,9 au plus (jamais le noir complet), durée d'au moins 0,1 s (descente et
@@ -280,8 +286,13 @@ export function parseLightConfig(json) {
   const o = j.ombres !== null && typeof j.ombres === 'object' ? j.ombres : {};
   const fx = j.feux !== null && typeof j.feux === 'object' ? j.feux : {};
   const fv = fx.vacillement !== null && typeof fx.vacillement === 'object' ? fx.vacillement : {};
+  // Lot 5k-C3 : lune = { intensite, planches: { minimum, fondu } } (un nombre seul, forme d'avant, reste lu comme l'intensité).
+  const lj = j.lune !== null && typeof j.lune === 'object' && !Array.isArray(j.lune) ? j.lune : null;
+  const lp = lj?.planches !== null && typeof lj?.planches === 'object' ? lj.planches : {};
+  const [mb, fb] = [MOON_PLANKS_BOUNDS.minimum, MOON_PLANKS_BOUNDS.fondu];
   return {
-    lune: inRange(j.lune, 0, 1, d.lune),
+    lune: inRange(lj ? lj.intensite : j.lune, 0, 1, d.lune),
+    lunePlanches: { minimum: inRange(lp.minimum, mb[0], mb[1], d.lunePlanches.minimum), fondu: inRange(lp.fondu, fb[0], fb[1], d.lunePlanches.fondu) },
     ombres: { taille: SHADOW_SIZES.includes(o.taille) ? o.taille : d.ombres.taille, biais: inRange(o.biais, -0.05, 0.05, d.ombres.biais) },
     feux: {
       intensite: inRange(fx.intensite, 0, 100000, d.feux.intensite),
@@ -445,6 +456,49 @@ export function moonBeam(win, moon, opening, cols = 5) {
     }
   }
   return { points, triangles };
+}
+
+// Lot 5k-C3 (complément du propriétaire) : niveau de la lumière de lune d'une fenêtre (part de la pleine lumière) selon ses planches posées (nombre
+// entier ; le remplissage d'une réparation ne compte pas) : linéaire, 0 planche → 1, max planches → minimum. max invalide (moins de 1) : 1 (pleine
+// lumière) ; minimum hors de [0, 1] : ramené dans [0, 1] ; planches hors de [0, max] : ramenées dans [0, max] ; jamais d'exception.
+export function niveauLune(planches, max, minimum) {
+  if (!isNum(max) || max < 1) return 1;
+  const m = isNum(minimum) ? Math.min(1, Math.max(0, minimum)) : LIGHT_DEFAULTS.lunePlanches.minimum;
+  const n = Math.floor(max);
+  const p = isNum(planches) ? Math.min(n, Math.max(0, Math.floor(planches))) : 0;
+  return m + (1 - m) * (1 - p / n);
+}
+
+// Lot 5k-C3 : fondu du niveau de lune d'une fenêtre. État { niveau, depart, cible, t, sens, depuisInversion } (createMoonLevel), modifié sur place
+// (aucune allocation). Chaque nouvelle cible repart du niveau courant (aucun saut) et l'atteint en `fondu` secondes de temps de jeu (courbe lisse
+// sans dépassement : smoothstep) ; dt nul (pause) : rien ne change. Un changement de sens (cible de l'autre côté du niveau, par rapport au
+// dernier mouvement) n'est pris qu'après MOON_FLIP_GAP secondes depuis le précédent : 3 changements de sens par seconde au plus ; la cible reste en
+// attente en attendant (l'appelant rappelle tant que moonSettled est faux). Renvoie vrai si le niveau a changé.
+export const MOON_FLIP_GAP = 0.35;
+export function createMoonLevel(niveau = 1) {
+  return { niveau, depart: niveau, cible: niveau, t: 0, sens: 0, depuisInversion: Infinity };
+}
+export const moonSettled = (st, cible) => st.niveau === cible && st.cible === cible;
+export function stepMoonLevel(st, cible, dt, fondu) {
+  if (!(isNum(dt) && dt > 0)) return false;
+  st.depuisInversion += dt;
+  if (isNum(cible) && cible !== st.cible) {
+    const sens = Math.sign(cible - st.niveau);
+    const inverse = sens !== 0 && st.sens !== 0 && sens !== st.sens;
+    if (!inverse || st.depuisInversion >= MOON_FLIP_GAP) {
+      if (inverse) st.depuisInversion = 0;
+      if (sens !== 0) st.sens = sens;
+      st.depart = st.niveau;
+      st.cible = cible;
+      st.t = 0;
+    }
+  }
+  if (st.niveau === st.cible) return false;
+  const f = isNum(fondu) && fondu > 0 ? fondu : LIGHT_DEFAULTS.lunePlanches.fondu;
+  st.t = Math.min(f, st.t + dt);
+  const k = st.t / f;
+  st.niveau = st.t >= f ? st.cible : st.depart + (st.cible - st.depart) * k * k * (3 - 2 * k);
+  return true;
 }
 
 // Emplacements des lumières (tableau fixe { id, w }, w de 0 à 1) : une lampe choisie garde son emplacement ; une lampe qui n'est plus choisie
