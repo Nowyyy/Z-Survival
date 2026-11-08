@@ -137,11 +137,15 @@ describe('lot 4f : palier choisi par l\'événement et le nom de la branche (lib
   it('une autre branche essai/** : aucun palier, avec un message', () => {
     expect(palierDeLExecution({ evenement: 'push', ref: 'refs/heads/essai/x' }).message).toMatch(/aucun palier.*essai\/complet-\* et essai\/standard-\*/);
   });
-  it('base de la sélection : commit précédent s\'il est valide, sinon origin/main ; branche de base d\'une PR ; origin/dev pour essai/standard-*', () => {
+  it('base de la sélection : commit précédent s\'il est valide, sinon origin/main (premier push d\'une branche lot-* : origin/dev, lot 5n) ; branche de base d\'une PR ; origin/dev pour essai/standard-*', () => {
     const avant = 'a'.repeat(40);
     expect(basesCandidates({ evenement: 'push', ref: 'refs/heads/dev', avant })).toEqual([avant, 'origin/main']);
-    expect(basesCandidates({ evenement: 'push', ref: 'refs/heads/lot-4f', avant: '0'.repeat(40) })).toEqual(['origin/main']);
-    expect(basesCandidates({ evenement: 'push', ref: 'refs/heads/lot-4f', avant: '' })).toEqual(['origin/main']);
+    // Lot 5n (W2-c) : premier push d'une branche lot-* (avant nul ou absent) : origin/dev, repli sur origin/main (avant : ['origin/main']).
+    expect(basesCandidates({ evenement: 'push', ref: 'refs/heads/lot-4f', avant: '0'.repeat(40) })).toEqual(['origin/dev', 'origin/main']);
+    expect(basesCandidates({ evenement: 'push', ref: 'refs/heads/lot-4f', avant: '' })).toEqual(['origin/dev', 'origin/main']);
+    expect(basesCandidates({ evenement: 'push', ref: 'refs/heads/lot-5n', avant })).toEqual([avant, 'origin/main']);
+    expect(basesCandidates({ evenement: 'push', ref: 'refs/heads/dev', avant: '0'.repeat(40) })).toEqual(['origin/main']);
+    expect(basesCandidates({ evenement: 'push', ref: 'refs/heads/lot-5n/x', avant: '' })).toEqual(['origin/main']);
     expect(basesCandidates({ evenement: 'pull_request', ref: 'refs/pull/3/merge', baseRef: 'dev', baseSha: avant })).toEqual(['origin/dev', avant, 'origin/main']);
     expect(basesCandidates({ evenement: 'push', ref: 'refs/heads/essai/standard-1', avant })).toEqual(['origin/dev', 'origin/main']);
     expect(basesCandidates({ evenement: 'workflow_dispatch', ref: 'refs/heads/main' })).toEqual(['origin/dev', 'origin/main']);

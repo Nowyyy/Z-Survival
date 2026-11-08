@@ -192,6 +192,9 @@ describe('workflows : tests.yml ajouté, pages.yml intact', () => {
   it('tests.yml : déclencheurs push (dev, lot-*, essai/** depuis le lot 4f), pull_request, workflow_dispatch avec un choix de palier ; documentation seule ignorée', () => {
     expect(tests).toMatch(/push:\n\s+branches: \[dev, 'lot-\*', 'essai\/\*\*'\]/);
     expect(tests).toContain('pull_request:');
+    // Lot 5n (W2-a) : Pull Requests vers main seulement, toujours sans la documentation seule.
+    expect(tests).toContain("\n  pull_request:\n    branches: [main]\n    paths-ignore: ['Docs/**', '**/*.md']\n");
+    expect((tests.match(/\n {2}pull_request:\n/g) ?? []).length).toBe(1);
     expect(tests).toMatch(/options: \[standard, publication, complet\]/);
     expect(tests).toContain("paths-ignore: ['Docs/**', '**/*.md']");
     expect(tests).not.toContain('pull_request_target');

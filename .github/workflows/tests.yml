@@ -4,7 +4,7 @@ name: Tests
 # Lot 4f-A — Tous les paliers suivent le même chemin : « planifier » (palier, base, sélection, plan de budget.mjs) → matrice de
 # « tranches » (Playwright par --test-list, équilibrée par durée) en parallèle avec « unitaires » (lint, Vitest) → « rapport »
 # (rapports fusionnés) et « bilan-duree » (horodatages agrégés, comparaison avec la projection, verdict ; non bloquant).
-#  - push de dev ou lot-*, pull_request, workflow_dispatch « standard », push de essai/standard-* : palier standard
+#  - push de dev ou lot-*, pull_request vers main (lot 5n), workflow_dispatch « standard », push de essai/standard-* : palier standard
 #    (zones touchées depuis la base, projets de standardProjets = bureau, 8 tranches au plus, 0 si aucun test Playwright).
 #  - workflow_dispatch « publication » ou « complet », push de essai/complet-* : tranchesMax (16) tranches.
 #  - push d'une autre branche essai/** : rien (message dans le résumé).
@@ -17,7 +17,10 @@ on:
   push:
     branches: [dev, 'lot-*', 'essai/**']
     paths-ignore: ['Docs/**', '**/*.md']
+  # Lot 5n (W2-a) : Pull Requests vers main seulement (dev → main). Une branche de travail se nomme lot-* : son push est testé avant la fusion,
+  # et l'arbre fusionné l'est par le push de dev ; une Pull Request d'une autre branche vers dev n'a plus de test avant fusion.
   pull_request:
+    branches: [main]
     paths-ignore: ['Docs/**', '**/*.md']
   # Création d'une branche (ou d'un tag) : seules les branches essai/** vont plus loin que la condition de planifier.
   create:

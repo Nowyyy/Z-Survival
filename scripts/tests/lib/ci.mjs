@@ -36,7 +36,8 @@ export function palierDeLExecution({ evenement, ref = '', palierDemande, cree = 
 
 /**
  * Références candidates pour la base de la sélection du palier standard, dans l'ordre (la première qui existe gagne ;
- * ci-palier.mjs vérifie chacune avec git). Pour un push : le commit précédent (github.event.before) s'il est valide, sinon origin/main ;
+ * ci-palier.mjs vérifie chacune avec git). Pour un push : le commit précédent (github.event.before) s'il est valide, sinon origin/main
+ * (premier push d'une branche lot-* : origin/dev, puis origin/main, lot 5n) ;
  * pour une pull request : la branche de base (origin/<base_ref>, puis son commit) ; pour essai/standard-* : origin/dev, sinon origin/main.
  */
 export function basesCandidates({ evenement, ref = '', avant = '', baseRef = '', baseSha = '' }) {
@@ -44,6 +45,9 @@ export function basesCandidates({ evenement, ref = '', avant = '', baseRef = '',
   const valide = (s) => /^[0-9a-f]{7,40}$/.test(s) && !ZERO.test(s);
   if (evenement === 'pull_request') return [...(baseRef ? [`origin/${baseRef}`] : []), ...(valide(baseSha) ? [baseSha] : []), 'origin/main'];
   if ((evenement === 'push' || evenement === 'create') && branche.startsWith('essai/')) return ['origin/dev', 'origin/main'];
+  // Lot 5n (W2-c) : premier push d'une branche lot-* (avant nul) : son point de départ sur dev (selectionner.mjs prend la merge-base,
+  // comme en local), et non main, qui a une version de retard ; repli sur origin/main si origin/dev est absent.
+  if (evenement === 'push' && !valide(avant) && /^lot-[^/]+$/.test(branche)) return ['origin/dev', 'origin/main'];
   if (evenement === 'push') return [...(valide(avant) ? [avant] : []), 'origin/main'];
   return ['origin/dev', 'origin/main'];
 }
