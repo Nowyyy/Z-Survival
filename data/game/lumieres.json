@@ -1,0 +1,12 @@
+{
+  "_provisoire": "Lot 5k : lumières des lampes à huile (option « Lampes et lumières » : Éclairage). Valeurs PROVISOIRES, à régler par le propriétaire (Docs/ref/lampes.md). ambiance : facteur de la lumière de base (lune et ambiante) en Éclairage seulement ; plancherAmbiance : facteur minimal de la lumière ambiante (jamais le noir complet) ; intensite : intensité d'une lampe (candela, lumières physiques de Three.js) ; distance : portée de la lumière (unités ; jamais au-delà de la portée sûre de chaque lampe, lampes.world.json) ; decroissance : décroissance avec la distance (decay de Three.js) ; fondu : secondes pour qu'une lampe s'allume ou s'éteigne quand elle entre dans le lot ou en sort ; vacillement : amplitude (part de l'intensité, 0,15 au plus) et fréquences (Hz, 1,4 au plus : moins de 3 changements par seconde), coupé avec prefers-reduced-motion ; max : nombre de lumières par défaut (l'option « Lumières simultanées » le fixe) ; distanceActivation : distance au joueur au-delà de laquelle une lampe n'est jamais choisie. Couleur : jeton --game-lamp-light (css/tokens.css).",
+  "ambiance": 0.45,
+  "plancherAmbiance": 0.3,
+  "intensite": 450,
+  "distance": 120,
+  "decroissance": 1,
+  "fondu": 0.6,
+  "vacillement": { "amplitude": 0.1, "frequences": [0.6, 1.1] },
+  "max": 4,
+  "distanceActivation": 700
+}

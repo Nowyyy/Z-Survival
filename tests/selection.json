@@ -325,6 +325,7 @@
         "js/core/decor-interieur.js",
         "js/core/decor-vivant.js",
         "js/core/epaves.js",
+        "js/core/lamps.js",
         "js/core/furniture-model.js",
         "js/core/movement.js",
         "js/core/nav.js",
@@ -709,7 +710,7 @@
     },
     {
       "id": "rendu",
-      "description": "Rendu et textures : monde en 3D, caméra, vue, textures générées, feux, brume, effets, VHS, palette.",
+      "description": "Rendu et textures : monde en 3D, caméra, vue, textures générées, feux, brume, effets, VHS, palette ; lot 5k : lampes à huile et lumières dynamiques.",
       "sources": [
         "scripts/diagnostic-planches.mjs",
         "js/core/texgen.js",
@@ -723,6 +724,9 @@
         "js/game/effects.js",
         "js/game/fire.js",
         "js/game/mist.js",
+        "js/game/lamps.js",
+        "js/game/lights.js",
+        "data/game/lumieres.json",
         "data/game/textures.json",
         "data/game/render.json",
         "data/game/camera.json",
@@ -748,11 +752,12 @@
         "tests/unit/etage-hygiene.test.js",
         "tests/unit/game-carte-mesh.test.js",
         "tests/unit/game-windows-mesh.test.js",
+        "tests/unit/lamps.test.js",
         "tests/unit/maps-regles.test.js",
         "tests/unit/persos-jeu.test.js",
         "tests/unit/zones-rendu.test.js"
       ],
-      "e2e": ["tests/e2e/jeu-rendu.spec.js"],
+      "e2e": ["tests/e2e/jeu-rendu.spec.js", "tests/e2e/lampes.spec.js"],
       "complet": [
         "tests/e2e/atelier-detail.spec.js",
         "tests/e2e/atelier-retours.spec.js",
@@ -797,7 +802,7 @@
       "id": "graphismes",
       "description": "Fluidité et préréglages graphiques (lot 5b) : outil de mesure ?perf=1 (profileur, panneau, rapport), plafond ?cap=, script de comparaison ; préréglages Faible, Moyen, Élevé, Auto (graphics.json, choix, application à chaud, préférence de l'appareil zs.device.v1) ; lot 5j : options séparées, Perso, écran Options de la pause (options-menu.js : zone interface, qui rejoue graphismes.spec.js), zs.device.v1 schéma 2.",
       "sources": ["js/core/perf-stats.js", "js/game/profiler.js", "js/game/perf-panel.js", "js/game/frame-cap.js", "scripts/perf/**", "js/core/graphics.js", "js/game/graphics-boot.js", "js/game/graphics-apply.js", "data/game/graphics.json", "js/save/device-settings.js"],
-      "dependances": ["economie"],
+      "dependances": ["economie", "rendu"],
       "vitest": ["tests/unit/graphics.test.js", "tests/unit/graphics-options.test.js", "tests/unit/perf-stats.test.js"],
       "e2e": ["tests/e2e/graphismes.spec.js", "tests/e2e/perf.spec.js"],
       "complet": []

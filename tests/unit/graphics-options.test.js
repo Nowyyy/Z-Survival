@@ -18,13 +18,14 @@ const HOSTILE = [null, undefined, 42, 'texte', [], {}, { choice: 'ultra', custom
 // Copie figée des vecteurs (origin/dev 7130dc7 → schéma 2) : une valeur par option, lue des valeurs du lot 5b (tests/unit/graphics.test.js, AVANT_7130DC7).
 // Lot 5j-D (retour du propriétaire) : « Feux » et « Fumée de l'hélicoptère » regroupés en « Feux et fumées » (réduits, moyens, complets) : 11 options ;
 // les réglages de chaque préréglage restent identiques à AVANT_7130DC7 (vérifié par vectorSettings ci-dessous et par graphics.test.js).
+// Lot 5k : deux options de plus (section « Lumières ») : lampes (off, decor, eclairage) et lumieres (2, 4, 6) ; les 11 valeurs d'avant sont inchangées.
 const VECTEURS = {
-  faible: { resolution: 'basse', anticrenelage: 'non', ombres: 'aucune', vhs: 'off', carte: 'reduit', textures: 'simples', brume: 'simple', feux: 'reduits', personnages: 'simples', sang: 'reduit', cadavres: '0' },
-  moyen: { resolution: 'moyenne', anticrenelage: 'non', ombres: 'basses', vhs: 'statique', carte: 'complet', textures: 'fines', brume: 'reduite', feux: 'moyens', personnages: 'simples', sang: 'reduit', cadavres: '1' },
-  eleve: { resolution: 'haute', anticrenelage: 'oui', ombres: 'hautes', vhs: 'anime', carte: 'complet', textures: 'fines', brume: 'complete', feux: 'complets', personnages: 'riches', sang: 'complet', cadavres: '2' },
+  faible: { resolution: 'basse', anticrenelage: 'non', ombres: 'aucune', vhs: 'off', carte: 'reduit', textures: 'simples', brume: 'simple', feux: 'reduits', personnages: 'simples', sang: 'reduit', cadavres: '0', lampes: 'off', lumieres: '2' },
+  moyen: { resolution: 'moyenne', anticrenelage: 'non', ombres: 'basses', vhs: 'statique', carte: 'complet', textures: 'fines', brume: 'reduite', feux: 'moyens', personnages: 'simples', sang: 'reduit', cadavres: '1', lampes: 'off', lumieres: '2' }, // lot 5k : Moyen sans lampes (mesure : tâche +5,7 % à U4 avec decor)
+  eleve: { resolution: 'haute', anticrenelage: 'oui', ombres: 'hautes', vhs: 'anime', carte: 'complet', textures: 'fines', brume: 'complete', feux: 'complets', personnages: 'riches', sang: 'complet', cadavres: '2', lampes: 'eclairage', lumieres: '4' },
 };
-// Groupes du lot 5b (graphics.json d'origin/dev : parties live et load de chaque préréglage).
-const LIVE_5B = ['dprMax', 'ombres', 'ombreTaille', 'vhs', 'brouillard', 'feux', 'sang', 'cadavres'];
+// Groupes du lot 5b (graphics.json d'origin/dev : parties live et load de chaque préréglage), plus les deux réglages « live » du lot 5k.
+const LIVE_5B = ['dprMax', 'ombres', 'ombreTaille', 'vhs', 'brouillard', 'feux', 'sang', 'cadavres', 'lampes', 'lumieres'];
 const LOAD_5B = ['personnages', 'anticrenelage', 'texturesFines', 'decor'];
 const ids = CFG.options.map((o) => o.id);
 const other = (o, v) => o.valeurs.map((x) => x.id).find((x) => x !== v);
@@ -32,9 +33,14 @@ const base = (choice, extra = {}) => optionsState({ choice, custom: null, url: '
 const eff = (s) => effectiveOptions(s.choice, s.custom, s.url, s.device, CFG, s.current);
 
 describe('options : données (schéma 2)', () => {
-  it('11 options en 3 sections (Image, Carte, Personnages), groupes du lot 5b, identifiants uniques, au moins deux valeurs chacune ; feux et fumées regroupés', () => {
-    expect(CFG.sections).toEqual(['image', 'carte', 'personnages']);
-    expect(ids).toEqual(['resolution', 'anticrenelage', 'ombres', 'vhs', 'carte', 'textures', 'brume', 'feux', 'personnages', 'sang', 'cadavres']); // lot 5j-D : sans « fumee »
+  it('13 options en 4 sections (Image, Carte, Personnages, Lumières au lot 5k), groupes du lot 5b, identifiants uniques, au moins deux valeurs chacune ; feux et fumées regroupés', () => {
+    expect(CFG.sections).toEqual(['image', 'carte', 'personnages', 'lumieres']);
+    expect(ids).toEqual(['resolution', 'anticrenelage', 'ombres', 'vhs', 'carte', 'textures', 'brume', 'feux', 'personnages', 'sang', 'cadavres', 'lampes', 'lumieres']); // lot 5j-D : sans « fumee » ; lot 5k : lampes, lumieres
+    // Lot 5k : les deux options « live » de la section Lumières, leurs valeurs et leurs réglages.
+    expect(CFG.options.filter((o) => o.section === 'lumieres').map((o) => [o.id, o.group, o.valeurs.map((v) => v.id), o.valeurs.map((v) => v.reglages)])).toEqual([
+      ['lampes', 'live', ['off', 'decor', 'eclairage'], [{ lampes: 'off' }, { lampes: 'decor' }, { lampes: 'eclairage' }]],
+      ['lumieres', 'live', ['2', '4', '6'], [{ lumieres: 2 }, { lumieres: 4 }, { lumieres: 6 }]],
+    ]);
     expect(CFG.options.find((o) => o.id === 'feux').valeurs.map((v) => Object.keys(v.reglages).sort())).toEqual(Array(3).fill(['feux.fumeeHelico', 'feux.lueur', 'feux.particules', 'feux.voitureFoyers']));
     expect(CFG.options.length).toBe(RAW.options.length); // aucune option ignorée à la lecture
     expect(new Set(ids).size).toBe(ids.length);

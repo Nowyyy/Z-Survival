@@ -4,6 +4,7 @@
 // Le vecteur effectif des options donne les réglages du chargement. Rien n'est écrit ici ; ?gfx= n'est jamais mémorisé (?gfx=perso : Perso enregistré).
 import { effectiveOptions, explicitParams, parseGraphics, presetSearch, resolvePreset } from '../core/graphics.js';
 import { browserStorage, createDeviceSettings } from '../save/device-settings.js';
+import { resolveMapId } from '../core/maps.js';
 
 let ready = null;
 
@@ -19,7 +20,12 @@ async function boot(search) {
   const settings = effective.settings; // { preset, live, load, overridden } : pour Faible, Moyen, Élevé et Auto, exactement les réglages du lot 5b
   // Chargeur des personnages (game.js) : adresse avec la variante et le sang du préréglage, cadavres du préréglage (sauf ?sang= explicite).
   const corpses = settings.overridden.includes('cadavres') ? null : settings.live.cadavres;
-  return { cfg, store, stored, resolved, explicit, device, effective, settings, persosSearch: presetSearch(search, settings), corpses };
+  // Lot 5k : lampes (et lumières) préchargées avant la création du jeu, seulement hors de « off » (avec « off », aucun fichier de plus) ; elles sont
+  // alors dans la scène dès la première image et précompilées avec le reste.
+  const q = new URLSearchParams(search);
+  const mapId = q.get('test') === '1' && q.get('empty') === '1' ? 'salle' : resolveMapId(search);
+  const lamps = settings.live.lampes !== 'off' ? await import('./lamps.js').then((m) => m.preloadLamps(settings.live.lampes, mapId)).catch(() => null) : null;
+  return { cfg, store, stored, resolved, explicit, device, effective, settings, persosSearch: presetSearch(search, settings), corpses, lamps, mapId };
 }
 
 export function graphicsBoot(search = globalThis.location?.search ?? '') {
