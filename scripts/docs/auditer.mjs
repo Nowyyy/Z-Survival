@@ -15,6 +15,7 @@ import { spawnSync } from 'node:child_process';
 import { readFileSync, writeFileSync, statSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, posix, resolve, relative } from 'node:path';
+import { bilansDuDossier, cheminSepare } from './bilans.mjs';
 
 const argv = process.argv.slice(2);
 const opt = (n, d) => (argv.includes(n) ? argv[argv.indexOf(n) + 1] : d);
@@ -61,6 +62,19 @@ for (const c of CIBLES) {
 }
 // Un nom de fichier porté aussi par un fichier hors cibles est ambigu : ses mentions nues comptent quand même (prudence).
 const AMBIGUS = new Set(FILES.filter((f) => !CIBLES.includes(f) && PAR_NOM.has(posix.basename(f))).map((f) => posix.basename(f)));
+// Lot 5m-B : bilans regroupés par version (Docs/lots/versions/v0.N.md, scripts/docs/bilans.mjs). Leur ancien chemin (Docs/lots/lot-N.md)
+// et leur ancien nom de fichier se résolvent vers le fichier groupé ; cités hors des bilans, ils sont listés (« anciens chemins »).
+const BILANS = (() => {
+  try {
+    return [...bilansDuDossier(ROOT).values()];
+  } catch (e) {
+    console.error(`Bilans illisibles : ${e.message}`);
+    return [];
+  }
+})();
+const ALIAS = new Map(BILANS.filter((b) => b.groupe).map((b) => [cheminSepare(b.lot), b.groupe]));
+for (const [ancien, g] of ALIAS) if (!PAR_NOM.has(posix.basename(ancien))) PAR_NOM.set(posix.basename(ancien), [g]);
+const anciensChemins = [];
 
 // ---------------------------------------------------------------- type d'un fichier qui référence
 function typeDe(f) {
@@ -114,10 +128,18 @@ for (const [src, texte] of TEXT) {
         continue;
       }
       if (!token.includes('/')) {
-        for (const c of vise) if (c !== src) refs.get(c).push({ lieu, de: src, type: typeDe(src), sorte: AMBIGUS.has(nom) ? 'nom (ambigu)' : 'nom' });
+        const ancien = ALIAS.has(`Docs/lots/${nom}`) && vise.length === 1 && vise[0] === ALIAS.get(`Docs/lots/${nom}`);
+        for (const c of vise) if (c !== src) refs.get(c).push({ lieu, de: src, type: typeDe(src), sorte: ancien ? 'ancien nom (regroupé)' : AMBIGUS.has(nom) ? 'nom (ambigu)' : 'nom' });
+        if (ancien && typeDe(src) !== 'bilan') anciensChemins.push({ lieu, chemin: token, groupe: vise[0], annote: /\*\(Lot 5m/.test(ligne) });
         continue;
       }
       const r = resoudre(src, token) ?? resoudre(src, token.replace(/^(\.\.\/)+/, ''));
+      const alias = r ? null : [token.replace(/^\.\//, ''), posix.normalize(posix.join(posix.dirname(src), token))].map((x) => ALIAS.get(x)).find(Boolean);
+      if (alias) {
+        if (alias !== src) refs.get(alias).push({ lieu, de: src, type: typeDe(src), sorte: 'ancien chemin (regroupé)' });
+        if (typeDe(src) !== 'bilan') anciensChemins.push({ lieu, chemin: token, groupe: alias, annote: /\*\(Lot 5m/.test(ligne) });
+        continue;
+      }
       if (r && refs.has(r)) {
         if (r !== src) refs.get(r).push({ lieu, de: src, type: typeDe(src), sorte: 'chemin' });
       } else if (!r) {
@@ -230,21 +252,23 @@ const parJournal = new Map();
     if (BORNES[e.name]) courante = ordre[ordre.indexOf(BORNES[e.name]) + 1];
   }
 }
+// Bilans séparés et regroupés ; la preuve git cherche l'ancien chemin séparé dans le commit gelé de chaque version.
 const parGit = new Map();
-for (const c of CIBLES.filter((x) => x.startsWith('Docs/lots/'))) {
-  const v = versions.find((x) => run('cat-file', '-e', `${x.ref}:${c}`).status === 0);
-  parGit.set(c, v ? v.id : null);
+for (const b of BILANS) {
+  const v = versions.find((x) => run('cat-file', '-e', `${x.ref}:${cheminSepare(b.lot)}`).status === 0);
+  parGit.set(b.lot, v ? v.id : null);
 }
-const rattachement = CIBLES.filter((c) => /^Docs\/lots\/lot-[^/]+\.md$/.test(c)).map((c) => {
-  const lot = posix.basename(c, '.md');
+const rattachement = BILANS.map((b) => {
+  const lot = b.lot;
+  const c = b.fichier;
   const j = parJournal.get(lot) ?? { version: null, regle: 'absent du journal' };
-  const g = parGit.get(c);
+  const g = parGit.get(lot);
   const doutes = [];
   if (!parJournal.has(lot)) doutes.push('absent de data/changelog.json');
   if (g && j.version && g !== j.version) doutes.push(`journal : ${j.version} ; présent pour la première fois dans le commit gelé de ${g}`);
   if (!g && j.version && versions.some((v) => v.id === j.version)) doutes.push(`absent du commit gelé de ${j.version} (publié après, par main)`);
   if (j.regle.startsWith('ordre') && j.version === 'v0.6') doutes.push('après la borne de V0.5, sans champ « version » : V0.6 par déduction');
-  return { fichier: c, lot, journal: j.version, regle: j.regle, git: g, doutes };
+  return { fichier: c, lot, groupe: b.groupe, journal: j.version, regle: j.regle, git: g, doutes };
 });
 
 // ---------------------------------------------------------------- catégories
@@ -258,6 +282,7 @@ const R_REGLES = [
 ];
 function categorieDe(c) {
   if (!c.endsWith('.md')) return 'autre';
+  if (c.startsWith('Docs/lots/versions/')) return 'groupe';
   if (c.startsWith('Docs/lots/')) {
     const r = rattachement.find((x) => x.fichier === c);
     if (r && r.journal && r.journal !== 'v0.7' && PUBLIEES.has(r.journal)) return 'L1';
@@ -344,7 +369,7 @@ for (const e of inventaire.filter((x) => R_CAT.has(x.categorie))) {
   else e.statut = e.dures.length || e.motifs.length ? 'douteux' : 'douteux (document qui reste)';
   if (e.historique.length) e.raisons.push(`historique : ${[...new Set(e.historique.map((x) => x.de.replace('Docs/lots/', '')))].join(', ')}`);
 }
-for (const e of inventaire.filter((x) => x.categorie === 'autre' || x.categorie === 'V0.7')) e.statut = 'garder';
+for (const e of inventaire.filter((x) => ['autre', 'V0.7', 'groupe'].includes(x.categorie))) e.statut = 'garder';
 
 // ---------------------------------------------------------------- rapport
 const out = [];
@@ -359,7 +384,7 @@ p('## Catégories');
 p();
 p('| Catégorie | Documents | Lignes | Octets | Candidats | Douteux | Douteux (historique seulement) | Références entrantes |');
 p('|---|---|---|---|---|---|---|---|');
-for (const k of ['L1', 'R1', 'R2', 'R3', 'R4', 'R5', 'V0.7', 'autre']) {
+for (const k of ['L1', 'R1', 'R2', 'R3', 'R4', 'R5', 'V0.7', 'groupe', 'autre']) {
   const xs = inventaire.filter((e) => e.categorie === k);
   const t = total(xs);
   p(`| ${k} | ${t.n} | ${fmt(t.lignes)} | ${fmt(t.octets)} | ${xs.filter((e) => e.statut === 'candidat').length} | ${xs.filter((e) => e.statut === 'douteux' || e.statut === 'douteux (document qui reste)').length} | ${xs.filter((e) => e.statut === 'douteux (historique seulement)').length} | ${xs.reduce((s, e) => s + e.references.length, 0)} |`);
@@ -404,9 +429,9 @@ for (const m of motifs) p(`| \`${m.lieu}\` | \`${m.motif}\` | ${m.forme} | ${m.l
 p();
 p('## Rattachement des bilans aux versions');
 p();
-p('| Bilan | Journal | Règle | Preuve git (1re version gelée qui le contient) | Doutes |');
-p('|---|---|---|---|---|');
-for (const r of rattachement) p(`| ${r.lot} | ${r.journal ?? '—'} | ${r.regle} | ${r.git ?? '—'} | ${r.doutes.join(' ; ') || '—'} |`);
+p('| Bilan | Fichier | Journal | Règle | Preuve git (1re version gelée qui le contient) | Doutes |');
+p('|---|---|---|---|---|---|');
+for (const r of rattachement) p(`| ${r.lot} | \`${r.fichier}\` | ${r.journal ?? '—'} | ${r.regle} | ${r.git ?? '—'} | ${r.doutes.join(' ; ') || '—'} |`);
 p();
 p('## Liens et chemins de documents cassés');
 p();
@@ -414,6 +439,8 @@ p(`- Liens Markdown relatifs dans Docs/ et CLAUDE.md : ${nLiens} relevé(s), ${l
 for (const l of liensCasses) p(`  - \`${l.lieu}\` → \`${l.lien}\``);
 p(`- Chemins \`Docs/…\` cités introuvables dans Docs/ et CLAUDE.md : ${citesDocsIntrouvables.length}.`);
 for (const l of citesDocsIntrouvables) p(`  - \`${l.lieu}\` → \`${l.chemin}\``);
+p(`- Anciens chemins de bilans regroupés encore cités hors des bilans : ${anciensChemins.length} (dont annotés *(Lot 5m : …)* : ${anciensChemins.filter((x) => x.annote).length}).`);
+for (const l of anciensChemins) p(`  - \`${l.lieu}\` → \`${l.chemin}\` (dans \`${l.groupe}\`)${l.annote ? ' — annoté' : ''}`);
 p();
 p('## Indices de péremption (R6) et de doublon');
 p();
@@ -422,5 +449,5 @@ p('|---|---|---|---|---|');
 for (const e of inventaire.filter((x) => x.fichier.startsWith('Docs/ref/') && x.fichier !== 'Docs/ref/conventions.md')) p(`| \`${e.fichier}\` | ${e.categorie} | ${e.cites} | ${e.introuvables.length}${e.introuvables.length ? ` (${e.introuvables.slice(0, 6).map((x) => `\`${x}\``).join(', ')}${e.introuvables.length > 6 ? ', …' : ''})` : ''} | ${e.doublonConventions} % |`);
 p();
 process.stdout.write(`${out.join('\n')}\n`);
-writeFileSync(JSON_OUT, `${JSON.stringify({ racine: ROOT, inventaire, motifs, rattachement, liensCasses, citesDocsIntrouvables }, null, 1)}\n`);
+writeFileSync(JSON_OUT, `${JSON.stringify({ racine: ROOT, inventaire, motifs, rattachement, liensCasses, citesDocsIntrouvables, anciensChemins }, null, 1)}\n`);
 console.error(`Détail JSON : ${JSON_OUT}`);

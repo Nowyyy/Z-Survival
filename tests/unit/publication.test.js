@@ -17,6 +17,7 @@ import {
 import { MAX_DESCRIPTION as MAX_DESCRIPTION_NOMS, NOMS_FICHIER, parseNoms } from '../../scripts/site/noms.mjs';
 import { DESCRIPTION_RECETTE_TEST, NOMS_TEST, fakeArchive, manyVersions, testVersions } from '../../scripts/site/e2e-site.mjs';
 import { findNonRelative } from '../../scripts/versions/links.mjs';
+import { bilansChangesDepuis } from '../../scripts/docs/bilans.mjs';
 
 const ROOT = mkdtempSync(join(tmpdir(), 'zs-test-publication-'));
 afterAll(() => rmSync(ROOT, { recursive: true, force: true }));
@@ -669,8 +670,10 @@ describe.skipIf(!ON_LOT)('hygiène du lot 4c (comparaison à la base e6cf00e)', 
   });
 
   it('CLAUDE.md, conventions.md, seed, bilans existants inchangés ; seul pages.yml change dans .github', () => {
-    const bilans = readdirSync('Docs/lots').filter((f) => f.endsWith('.md') && f !== 'lot-4c.md').map((f) => `Docs/lots/${f}`);
-    expect(changedSinceBase('CLAUDE.md', 'Docs/ref/conventions.md', 'Docs/seed.md', ...bilans)).toEqual([]);
+    // Lot 5m : bilans comparés à la base par leur texte, séparés ou regroupés (scripts/docs/bilans.mjs) ; avant : chemins des bilans séparés
+    // (readdirSync('Docs/lots') sans lot-4c.md) ajoutés à la même liste (une assertion).
+    expect(changedSinceBase('CLAUDE.md', 'Docs/ref/conventions.md', 'Docs/seed.md')).toEqual([]);
+    expect((bilansChangesDepuis(BASE) ?? []).filter((lot) => lot !== 'lot-4c')).toEqual([]);
     expect(changedSinceBase('.github')).toEqual(['.github/workflows/pages.yml']);
   });
 
@@ -700,8 +703,10 @@ describe.skipIf(!ON_5G)('hygiène du lot 5g (comparaison à la base 775f1d1)', (
   });
 
   it('seed, CLAUDE.md, conventions.md, versions.json, dernier-complet.json, scripts/versions/ et bilans existants inchangés ; seul pages.yml change dans .github', () => {
-    const bilans = readdirSync('Docs/lots').filter((f) => f.endsWith('.md') && f !== 'lot-5g.md').map((f) => `Docs/lots/${f}`);
-    expect(changedSince5g('Docs/seed.md', 'CLAUDE.md', 'Docs/ref/conventions.md', 'versions.json', 'tests/dernier-complet.json', 'scripts/versions', ...bilans)).toEqual([]);
+    // Lot 5m : bilans comparés à la base par leur texte, séparés ou regroupés (scripts/docs/bilans.mjs) ; avant : chemins des bilans séparés
+    // (readdirSync('Docs/lots') sans lot-5g.md) ajoutés à la même liste (une assertion).
+    expect(changedSince5g('Docs/seed.md', 'CLAUDE.md', 'Docs/ref/conventions.md', 'versions.json', 'tests/dernier-complet.json', 'scripts/versions')).toEqual([]);
+    expect((bilansChangesDepuis(BASE_5G) ?? []).filter((lot) => lot !== 'lot-5g')).toEqual([]);
     expect(changedSince5g('.github')).toEqual(['.github/workflows/pages.yml']);
   });
 

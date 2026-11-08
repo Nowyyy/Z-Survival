@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { existsSync, readFileSync, readdirSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { parseLot } from '../../js/lots.js';
 import { readEvolutions, VERSION_RE } from '../../scripts/site/site-info.mjs';
+import { bilansDuDossier } from '../../scripts/docs/bilans.mjs';
 
 // Lot 5g : le journal des versions (/dev/) et la liste « versions » sont supprimés ; « lots » reste (une entrée par bilan) et chaque lot depuis le 5a
 // porte « version » (version cible) : l'accueil de la Recette montre les lots dont la version n'est pas encore publiée (scripts/site/site-info.mjs).
@@ -30,8 +31,10 @@ describe('data/changelog.json', () => {
     expect(names).toContain('lot-3k'); // lot 3k fusionné dans lot-4b
   });
 
-  it('chaque bilan de Docs/lots/ a son entrée', () => {
-    for (const f of readdirSync('Docs/lots').filter((n) => n.endsWith('.md'))) expect(lots.map((e) => e.name), f).toContain(f.replace('.md', ''));
+  // Lot 5m : bilans séparés (Docs/lots/lot-N.md) ou regroupés par version (Docs/lots/versions/v0.N.md), lus par scripts/docs/bilans.mjs ;
+  // avant : readdirSync('Docs/lots') (bilans séparés seulement). Même assertion par bilan.
+  it('chaque bilan de Docs/lots/ (séparé ou regroupé) a son entrée', () => {
+    for (const lot of bilansDuDossier().keys()) expect(lots.map((e) => e.name), lot).toContain(lot);
   });
 
   // Lot 5l : lot-5l ajouté en dernier, après lot-5k (avant : lot-5k en dernier ; les rangs suivants décalés d'un cran). Lot 5k : lot-5k ajouté en dernier, après lot-5j (avant : lot-5j en dernier). Lot 5j : lot-5j ajouté en dernier, après lot-5i (avant : lot-5i en dernier). Lot 5i : lot-5i ajouté en dernier, après lot-5f ; avant (lot 5f) : lot-5f en dernier, après lot-5h (publié après les lots 5g et 5h) ;

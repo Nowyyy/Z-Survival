@@ -1,7 +1,8 @@
 // Lot 3l-C : retours du propriétaire appliqués dans le CSS et les données (Docs/ref/passation-interface-4b.md, § 2), priorité 2 non retenue (rien d'implémenté),
 // compatibilité avec les autres refontes de lot-4b (visite libre du lot 3g, sons du lot 3i ; lot 3j absent de lot-4b).
 import { describe, it, expect } from 'vitest';
-import { existsSync, readFileSync, readdirSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
+import { texteDuBilan } from '../../scripts/docs/bilans.mjs';
 
 const uiCss = readFileSync('css/game-ui.css', 'utf8');
 const html = readFileSync('jeu.html', 'utf8');
@@ -119,7 +120,7 @@ describe('compatibilité avec les refontes de lot-4b', () => {
 
   // Lot 3j fusionné dans lot-4b (lot 3m-A) : la vérification annoncée est faite en e2e (interface-integree.spec.js, &sang=1&perso=B).
   it('lot 3j (sang, personnages v2) : présent dans lot-4b depuis sa fusion ; vérifié en e2e avec le sang et les personnages v2', () => {
-    expect(existsSync('Docs/lots/lot-3j.md')).toBe(true);
+    expect(texteDuBilan('lot-3j')).not.toBeNull(); // lot 5m : bilan séparé ou regroupé (avant : existsSync('Docs/lots/lot-3j.md'))
     expect(readFileSync('tests/e2e/interface-integree.spec.js', 'utf8')).toContain('&sang=1&perso=B');
   });
 

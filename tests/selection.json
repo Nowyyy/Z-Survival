@@ -955,10 +955,10 @@
     },
     {
       "id": "outillage-tests",
-      "description": "Outillage des tests : mesure, sélection, budget, sabotage, audit de la documentation (lot 5m ; cite des chemins comme données : graphe: false, aucune dépendance relevée).",
+      "description": "Outillage des tests : mesure, sélection, budget, sabotage, audit et regroupement des bilans (lot 5m : scripts/docs/bilans.mjs est lu par les tests des bilans, rejoués ici ; cite des chemins comme données : graphe: false, aucune dépendance relevée).",
       "sources": ["scripts/tests/**", "scripts/nettoyage/**", "scripts/docs/**", "scripts/lighthouse.mjs", "Docs/ref/tests-*.md", "tests/budget-mesure.json", "tests/dernier-complet.json"],
       "dependances": [],
-      "vitest": ["tests/unit/tests-audit.test.js", "tests/unit/tests-budget.test.js"],
+      "vitest": ["tests/unit/tests-audit.test.js", "tests/unit/tests-budget.test.js", "tests/unit/docs-regrouper.test.js", "tests/unit/data-changelog.test.js", "tests/unit/zones-hygiene.test.js", "tests/unit/persos-donnees.test.js", "tests/unit/interface-integree-retours.test.js", "tests/unit/persos-integres-finitions.test.js", "tests/unit/publication.test.js"],
       "e2e": [],
       "complet": [],
       "graphe": false
