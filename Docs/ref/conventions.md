@@ -440,3 +440,8 @@ Texte intégral, mot pour mot, des lignes de `CLAUDE.md` déplacées ou réécri
 - Mesure : `mesurer.mjs --gc` (MinorGC, MajorGC) et `--ref-memes-reglages` ; `synthese-allocations.mjs`.
 - Repli des personnages (lot 5e) : table absente ou variante inconnue → variante A ; `?perso=` et `?sons=` n'acceptent plus les valeurs de l'ancien modèle et de l'ancien pack (retirés au lot 5e).
 - Références de rendu des tests : variante A (`&perso=A&sang=0`), une par projet si le mobile diffère.
+
+## Règles détaillées déplacées de `CLAUDE.md` (lot 5m, aucune règle supprimée)
+Texte intégral, mot pour mot, des lignes de `CLAUDE.md` réécrite ou déplacée au lot 5m (décision du propriétaire, `Docs/ref/nettoyage-docs-decisions.md` ; longueur de `CLAUDE.md` non augmentée).
+- Une branche par lot : `lot-N`, jamais supprimée. Un commit par partie : « Lot N-X — titre ». Arbre propre au départ. *(Lot 5m : réécrite dans `CLAUDE.md` : la branche d'un lot est supprimée au nettoyage de fin de version, sources de V0.1 à V0.4 et lots de la version en cours gardés.)*
+- ?sons=choix|A|B|C : jamais mémorisé, pas un mode essai. Poids des sons : aucun plafond (garde-fou 64 Mo).

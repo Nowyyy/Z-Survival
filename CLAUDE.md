@@ -21,7 +21,7 @@ Avant de modifier une page, lis `Docs/ref/conventions.md` (arborescence, pages, 
 - Noms affichés : noms-versions-et-lots.txt (lu dans le build de dev, sinon de main) l'emporte sur versions.json et changelog.json ; les agents n'y modifient jamais les textes du propriétaire (un lot ajoute au plus son bloc) ; une faute fait échouer noms.test et bloque le déploiement de dev.
 
 ## Git
-- Une branche par lot : `lot-N`, jamais supprimée. Un commit par partie : « Lot N-X — titre ». Arbre propre au départ.
+- Une branche par lot : `lot-N`, supprimée au nettoyage de fin de version (gardées : sources de V0.1 à V0.4, lots de la version en cours). Un commit par partie : « Lot N-X — titre ». Arbre propre au départ.
 - Push de `lot-N` seulement, puis comparer `git rev-parse HEAD` et `git ls-remote origin lot-N`.
 - Jamais de force-push, jamais de fusion dans `main`, pas de Pull Request sans demande. Tags facultatifs. Une seule partie par session, puis arrêt.
 
@@ -50,7 +50,6 @@ Avant de modifier une page, lis `Docs/ref/conventions.md` (arborescence, pages, 
 - Tir et réparation : jamais en même temps (viser un zombie interrompt la réparation, la planche garde sa progression) ; pas de laser pendant la réparation.
 - Couleurs --perso-* et --sang-* ; contraste ≥ 3:1 sur la couleur vue, escalier et sols tachés compris.
 - Sons : synth.js et synth2.js (sounds.json, aucun fichier audio) ; jamais de son dans js/core/ ; sons.html à retirer au lot 13.
-- ?sons=choix|A|B|C : jamais mémorisé, pas un mode essai. Poids des sons : aucun plafond (garde-fou 64 Mo).
 - Chargement : textures et sons essentiels derrière l'écran de préparation ; aucun son avant le premier geste.
 - Zombies : 4 types × 4 allures (enemies.json, gaits.json) ; vitesse ≤ 190 ; la rampe est visuelle, sans effet sur la hitbox.
 - Fenêtres : windows.js (4 planches, arrachage 2,2 s, réparation 1,8 s) ; les planches ne bloquent que les zombies (closedRects).
