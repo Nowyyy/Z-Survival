@@ -128,7 +128,7 @@ Défauts trouvés et corrigés pendant le contrôle : (1) **X2** non détectée 
 | rejeu total | `tests.yml`, `package.json`… | toutes | 631 (309 mobiles), 2 223 s, ≈ 1 117 s + installation ; **mesuré en CI au lot 4e : 1 452 s de Playwright, 1 535 s de palier** | 322, 1 696 s, 3 tranches, 374 s |
 
 ## Lot 5n — allègement des tests déclenchés sur `dev` et `main`
-Audit : `Docs/ref/tests-allegement-audit.md` ; décisions du propriétaire : `Docs/ref/tests-allegement-decisions.md` ; bilan : `Docs/lots/lot-5n.md`.
+Audit : `Docs/ref/tests-allegement-audit.md` ; décisions du propriétaire : `Docs/ref/tests-allegement-decisions.md` ; bilan : `Docs/lots/versions/v0.7.md#lot-5n` (lot 5p : regroupé ; avant : `Docs/lots/lot-5n.md`).
 
 **Déclencheurs après le lot 5n** (`pages.yml` inchangé) :
 | Événement | `pages.yml` | `tests.yml` |

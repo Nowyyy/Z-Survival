@@ -32,7 +32,7 @@ Le résumé met d'abord les ATTENTION et les NON VÉRIFIABLE, puis « **PRÊT À
 | # | Contrôle | OK si | Sinon |
 |---|---|---|---|
 | 0 | références `origin/*` à jour | `git ls-remote --heads origin` = références locales | ATTENTION : `git fetch origin --prune` puis relancer |
-| 1 | dev | `origin/dev` existe ; bilan `Docs/lots/lot-5o.md` ou le dernier présent | KO sans `origin/dev` |
+| 1 | dev | `origin/dev` existe ; bilan `Docs/lots/lot-5o.md` ou le dernier présent (lot 5p : `lot-5o.md` est regroupé dans `Docs/lots/versions/v0.7.md` ; le contrôle cite alors le dernier bilan séparé, `lot-5p.md`) | KO sans `origin/dev` |
 | 2 | CI de dev | les exécutions `Tests` et `Pages` du hash de `origin/dev` sont réussies, aucune en cours | KO (absente, en cours, échouée) |
 | 3 | main ancêtre de dev | `git merge-base --is-ancestor origin/main origin/dev` | KO avec le geste : Pull Request `main` → `dev`, « Create a merge commit », sans « Resolve conflicts » |
 | 4 | Pull Requests ouvertes | aucune vers `main` ou `dev` | ATTENTION avec la liste |

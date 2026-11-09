@@ -446,3 +446,41 @@ Texte intégral, mot pour mot, des lignes de `CLAUDE.md` réécrite ou déplacé
 - Une branche par lot : `lot-N`, jamais supprimée. Un commit par partie : « Lot N-X — titre ». Arbre propre au départ. *(Lot 5m : réécrite dans `CLAUDE.md` : la branche d'un lot est supprimée au nettoyage de fin de version, sources de V0.1 à V0.4 et lots de la version en cours gardés.)*
 - ?sons=choix|A|B|C : jamais mémorisé, pas un mode essai. Poids des sons : aucun plafond (garde-fou 64 Mo).
 - Une branche par lot : `lot-N`, supprimée au nettoyage de fin de version (gardées : sources de V0.1 à V0.4, lots de la version en cours). Un commit par partie : « Lot N-X — titre ». Arbre propre au départ. *(Lot 5m, après la partie C : sources supprimées par le propriétaire, remplacées par les étiquettes `v0.1` à `v0.6` ; ligne réécrite dans `CLAUDE.md`.)*
+
+## Règles détaillées déplacées de `CLAUDE.md` (consolidation du lot 5p, V0.7, aucune règle supprimée)
+Texte intégral, mot pour mot, des lignes de `CLAUDE.md` déplacées ou réécrites au lot 5p (8 312 → 8 230 octets, 8 125 → 8 049 caractères). Tableau des décisions : `Docs/ref/claude-md-v07.md`.
+- `npm run assemble` : site complet d'après `versions.json` de main (`scripts/site/site-info.mjs` → `Recette/site-info.json`) ; aperçu local : `npm run site -- --main HEAD --dev HEAD --assembleur dev`, puis `npm run serve:site` (`conventions.md`, lot 5f).
+- URL : `https://nowyyy.github.io/Z-Survival/` ; `/` = « en construction » (sans lien) ; `/Recette/` = main (accueil, `jeu.html`) ; `/dev/jeu.html` = dev (`/dev/` → `../Recette/`) ; `/next/` → `../dev/jeu.html` ; `/lots/` → `../Recette/` ; `/v0.N/` = archives ; `/recette/` (toute casse) → `/Recette/` par `404.html`, jamais de dossier `recette/` (`Docs/ref/site-adresses.md`).
+- CI : `tests.yml` (paliers en tranches : standard à chaque push de `dev`, `lot-*` et PR, ≤ 10 min ; complet par push de `essai/complet-*` ; budget `tests/budget.json`) ; `pages.yml` (push de `main` et `dev`) : `quick` puis `deploy` (assembleur de la branche qui déclenche), modifiable seulement si le prompt du lot l'autorise ; jamais de déclenchement manuel sur `main` avant une publication.
+- Accueil (/Recette/) : site-info.json (assembleur) ; évolutions = lots de dev dont la version n'est pas publiée ; étiquette = label de site-info.json si valide (1 à 60), sinon V<id> ; textContent seulement.
+- Noms affichés : noms-versions-et-lots.txt (lu dans le build de dev, sinon de main) l'emporte sur versions.json et changelog.json ; les agents n'y modifient jamais les textes du propriétaire (un lot ajoute au plus son bloc) ; une faute fait échouer noms.test et bloque le déploiement de dev.
+- Morts : le corps tombe à l'opposé du tireur (deathFor) ; laser, éclair et balles dessinés depuis le canon (muzzle()), logique inchangée.
+- Couleurs --perso-* et --sang-* ; contraste ≥ 3:1 sur la couleur vue, escalier et sols tachés compris.
+- V0.6 (lots 5a à 5e) : épaves, ?perf=1, préréglages (?gfx= > zs.device.v1 > auto ; jamais d'effet sur la logique), allocations (identité au bit près, oracle), repli en variante A : `conventions.md` (lot 5f).
+- Une branche par lot : `lot-N`, supprimée au nettoyage de fin de version (gardés : lots de la version en cours ; repères : étiquettes `v0.N`). Un commit par partie : « Lot N-X — titre ». Arbre propre au départ.
+- Sauvegarde : js/core/save.js pur ; js/save/ seul à toucher localStorage (zs.save.v1, partagée par /Recette/, /dev/ et les archives qui en ont une : même domaine) ; illisible ou version future = verrouillée, jamais écrasée.
+- Détails, ateliers techniques (à retirer au lot 13), budget, nuit, cartes, zones, mobilier, lot 4 : `conventions.md` (lots 3e et 4g) ; vagues, stats, chutes, planches, HUD, escaliers, fondu, visibilité, portes, interface, décor : lot 5f.
+
+## Lignes des bilans des lots 5j à 5o (V0.7)
+Lignes des sections « Lignes à ajouter » des bilans (`Docs/lots/versions/v0.7.md`), texte du bilan ; une version courte est dans `CLAUDE.md` quand le tableau de `Docs/ref/claude-md-v07.md` le dit.
+- Options (lot 5j) : écran E2-12 de la pause (options-menu.js, import dynamique) ; options et vecteurs dans graphics.json ; manuel → Perso ; live à chaud, load au rechargement ; Docs/ref/options-graphiques.md.
+- zs.device.v1 schéma 2 : { v: 2, graphics, custom } ; ?gfx= verrouille et n'écrit rien.
+- Ajouter une option graphique : Docs/ref/options-graphiques.md (données, texte fr seulement, applyLive ou chargement, tests).
+- Honnêteté : l'accueil de la Recette n'a plus la mention « contenu provisoire » (décision du propriétaire, lot 5j) ; la règle « tout contenu fictif ou provisoire est marqué comme tel » de `CLAUDE.md` reste entière.
+- Pause : icônes son et plein écran en haut à droite, 2 × 2 boutons (lot 5j) ; lot 5l : icône « Débogage » juste à gauche du son.
+- Lampes (lot 5k) : lampes.json → npm run carte ; lampes toujours sur la carte ; options lampes (decor|eclairage) et lumieres (2|4|6), live ; ?lum= (off : ?test=1 seulement) ; Docs/ref/lampes.md.
+- Éclairage : N PointLight fixes sans ombre, portée < autre étage ; ?test=1&lum=off = rendu d'avant ; budget du pire cas U4 : 53 triangles de marge. *(Lot 5p : « sans ombre » et « 53 triangles de marge » sont périmés depuis le lot 5k-G : option « Ombres des lumières » (0, 1 ou 2 ; Élevé : 1) à volumes simplifiés, lune sans ombre en Dynamique ; budget à jour dans `Docs/ref/lampes.md`, section « Ombres et feux ».)*
+- Lumières réglées par `data/game/lumieres.json` et les jetons `--game-lamp-*`.
+- Une lampe n'est jamais un obstacle.
+- Tests à références de rendu : `?lum=off` (avec `?test=1`).
+- Lune (lot 5k-C3) : tache de chaque fenêtre selon ses planches posées (lumieres.json → lune.planches : minimum, fondu) ; lecture seule de l'état des fenêtres ; aucun programme de shader de plus.
+- Canal (lot 5l) : <meta name="zs-canal"> de jeu.html (source ; l'assembleur écrit release, dev, archive) ; paramètres d'adresse lus par pageSearch() (graphics-boot.js), jamais location.search ; groupes G, T et test : Docs/ref/debug.md.
+- Débogage (lot 5l) : icône de la pause et menu E2-13 (debug-menu.js, import au premier clic) sur source, dev et release seulement ; ?test=1 ignoré ailleurs.
+- Nouveau paramètre d'adresse : le ranger dans PARAMS_G, PARAMS_T ou PARAMS_TEST (js/core/graphics.js) ; une option graphique rejoint le groupe G.
+- Bilans : V0.N publiée → `scripts/docs/regrouper.mjs` (Docs/lots/versions/v0.N.md, texte intégral) ; tests via scripts/docs/bilans.mjs.
+- Fin de version : allègement des tests, puis nettoyage, puis publication (`publication-versions.md`, étape 0).
+- Tests (lot 5n) : standard à chaque push de `dev` (sans `unitaires`), `lot-*` et PR vers `main` (Pull Requests vers `dev` : aucune exécution de `tests.yml`).
+- Sauvegarde entre onglets (lot 5o) : relevés `BroadcastChannel`, chaque onglet réécrit ses gains absents (`save-merge.js`) ; `w` facultatif à plusieurs onglets.
+- Publication (lot 5o) : avant la PR dev → main : `npm run publication:controle` = PRÊT À PUBLIER ; après : `-- --apres` (`Docs/ref/controle-publication.md`).
+- Preuves des deux onglets hors CI : `scripts/tests/preuve-onglets.mjs`, `octets-sauvegarde.mjs`, `compat-onglets.mjs`.
+- Branches (lot 5p) : les sessions d'agent ne suppriment aucune branche distante (refusé, HTTP 403) ; le propriétaire supprime `essai/*` et les `lot-*` fusionnées après la publication.
