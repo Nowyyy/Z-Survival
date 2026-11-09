@@ -180,6 +180,7 @@
     { "fichier": "tests/unit/noms.test.js", "categorie": "G", "raison": "Fichier des noms (lot 5h) : analyseur, priorité, fichier commité sans aucune erreur." },
     { "fichier": "tests/unit/publication.test.js", "categorie": "G", "raison": "Assembleur, workflow, publication." },
     { "fichier": "tests/unit/sauvegarde-depots.test.js", "categorie": "G", "raison": "Dépôts de sauvegarde." },
+    { "fichier": "tests/unit/sauvegarde-onglets.test.js", "categorie": "G", "raison": "Lot 5o : défaut des deux onglets (simulateur à graine fixe, fusion entre onglets, octets identiques pour un seul onglet)." },
     { "fichier": "tests/unit/sauvegarde-donnees.test.js", "categorie": "G", "raison": "Données de sauvegarde." },
     { "fichier": "tests/unit/sauvegarde-page.test.js", "categorie": "G", "raison": "Page de sauvegarde." },
     { "fichier": "tests/unit/sauvegarde-schema.test.js", "categorie": "G", "raison": "Schéma, migrations, codec." },
@@ -588,6 +589,7 @@
         "js/core/economy.js",
         "js/core/money-gain.js",
         "js/core/save.js",
+        "js/core/save-merge.js",
         "js/save/**",
         "js/game/bank.js",
         "js/game/levels-source.js",
@@ -597,13 +599,18 @@
         "js/sauvegarde/**",
         "css/sauvegarde.css",
         "scripts/economie.mjs",
-        "scripts/code-sauvegarde.mjs"
+        "scripts/code-sauvegarde.mjs",
+        "scripts/tests/preuve-onglets.mjs",
+        "scripts/tests/onglets.config.mjs",
+        "scripts/tests/octets-sauvegarde.mjs",
+        "scripts/tests/compat-onglets.mjs"
       ],
       "dependances": ["combat", "noyau", "textes", "vagues"],
       "vitest": [
         "tests/unit/bank.test.js",
         "tests/unit/economie.test.js",
         "tests/unit/sauvegarde-depots.test.js",
+        "tests/unit/sauvegarde-onglets.test.js",
         "tests/unit/sauvegarde-page.test.js",
         "tests/unit/sauvegarde-schema.test.js"
       ],

@@ -169,6 +169,10 @@ const { repository, mode: saveMode } = createRepository({
     return () => window.removeEventListener('storage', handler);
   },
   persist: () => navigator.storage?.persist?.(),
+  // Lot 5o : canal entre onglets (défaut des deux onglets) ; save-merge.js n'est chargé que si un autre onglet se manifeste. Sans BroadcastChannel : null.
+  channel: () => (typeof BroadcastChannel === 'function' ? new BroadcastChannel(saveCfg.storageKey) : null),
+  merge: () => import('../core/save-merge.js'),
+  now: () => Date.now(),
 });
 const loadedSave = repository.load();
 

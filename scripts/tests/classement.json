@@ -297,6 +297,7 @@
     { "fichier": "tests/unit/persos-variantes.test.js", "categorie": "P", "valeur": "règle de jeu", "recommandation": "garder", "raison": "Variantes des personnages." },
     { "fichier": "tests/unit/publication.test.js", "categorie": "G", "valeur": "garde-fou", "recommandation": "garder", "raison": "Assembleur, workflow, publication." },
     { "fichier": "tests/unit/sauvegarde-depots.test.js", "categorie": "G", "valeur": "garde-fou", "recommandation": "garder", "raison": "Dépôts de sauvegarde." },
+    { "fichier": "tests/unit/sauvegarde-onglets.test.js", "categorie": "G", "valeur": "garde-fou", "recommandation": "garder", "raison": "Lot 5o : défaut des deux onglets (simulateur, fusion entre onglets, octets identiques pour un seul onglet)." },
     { "fichier": "tests/unit/sauvegarde-donnees.test.js", "categorie": "G", "valeur": "garde-fou", "recommandation": "garder", "raison": "Données de sauvegarde." },
     { "fichier": "tests/unit/sauvegarde-page.test.js", "categorie": "G", "valeur": "garde-fou", "recommandation": "garder", "raison": "Page de sauvegarde." },
     { "fichier": "tests/unit/sauvegarde-schema.test.js", "categorie": "G", "valeur": "garde-fou", "recommandation": "garder", "raison": "Schéma, migrations, codec." },

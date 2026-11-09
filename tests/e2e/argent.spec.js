@@ -353,6 +353,19 @@ test.describe('multi-onglets', () => {
     await expect.poll(() => balance(page)).toBe(20);
     expect(await balance(other)).toBe(20);
   });
+
+  // Lot 5o : trois onglets valident en même temps (défaut des deux onglets : une lecture périmée perdait un gain). Gains de test (giveMoney),
+  // écritures lancées ensemble ; chaque onglet doit finir par lire 30 (ni perte ni double comptage). Répété 100 fois par scripts/tests/preuve-onglets.mjs.
+  test('trois onglets valident en même temps : aucun gain perdu ni compté deux fois', async ({ context, page }) => {
+    const pages = [page, await context.newPage(), await context.newPage()];
+    await Promise.all(pages.map((p) => open(p)));
+    for (const p of pages) await p.evaluate(() => window.__zs.giveMoney(10));
+    const results = await Promise.all(pages.map((p) => p.evaluate(() => window.__zs.flushSave())));
+    expect(results.map((r) => r.ok)).toEqual([true, true, true]);
+    for (const p of pages) await expect.poll(async () => (await storedJson(p))?.money).toBe(30);
+    for (const p of pages) await expect.poll(() => balance(p)).toBe(30);
+    await expect.poll(async () => (await storedJson(page))?.earned).toBe(30);
+  });
 });
 
 test.describe('échecs de stockage', () => {
