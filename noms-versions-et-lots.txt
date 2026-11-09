@@ -132,3 +132,15 @@ version: v0.7
 nom: Sauvegarde sûre avec plusieurs onglets
 description: Plusieurs onglets du jeu ouverts en même temps ne perdent plus aucun gain ; un contrôle dit si la version est prête à être publiée. Les règles du jeu ne changent pas.
 afficher: oui
+
+# --- V0.7 (texte du propriétaire) ---
+
+[v0.7]
+nom: V0.7
+description: Rework du système de lumière. Menu option et menu de débug pour ne pas surcharger le menu pause. Bugfix sur la map. Optimisation de code.
+
+[lot-5p]
+version: v0.7
+nom: Publication de la V0.7
+description: La V0.6 rejoint les anciennes versions et la V0.7 devient la version Recette ; la documentation est mise à jour. Le jeu ne change pas.
+afficher: oui
