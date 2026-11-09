@@ -22,6 +22,8 @@ const versionsData = (latest = 'v0.7', extra = {}) => ({
 const NOMS = '[v0.6]\nnom: V0.6\ndescription: Six.\n\n[v0.7]\nnom: V0.7\ndescription: Sept.\n';
 const changelog = (version = 'v0.7') => ({ lots: [{ name: 'lot-5o', titre: 'Deux onglets', points: ['Correctif.'], date: '2026-11-09', version }] });
 const r = (fn, data) => fn(data);
+// Lot 5q : tests.yml réel (déclencheurs et paths-ignore lus par le contrôle).
+const TESTS_YML = readFileSync('.github/workflows/tests.yml', 'utf8');
 
 describe('contrôles --avant : OK, KO, ATTENTION, NON VÉRIFIABLE', () => {
   it('fraîcheur des références', () => {
@@ -38,14 +40,17 @@ describe('contrôles --avant : OK, KO, ATTENTION, NON VÉRIFIABLE', () => {
     expect(r(C.dev, { devSha: 'abc', bilans: { erreur: 'x' } }).resultat).toBe(C.NV);
   });
 
+  // Lot 5q : Tests suit la règle de la lignée (voir « CI de dev : dernier commit testé ») ; la tête testée reste OK, comme avant. Avant : runs sans
+  // lignée ni tests.yml (Tests et Pages sur le hash de la tête seulement) ; mêmes six assertions, données complétées (commits, workflow).
   it('CI de dev : Tests et Pages réussis, aucune en cours', () => {
-    const ok = [{ name: 'Tests', status: 'completed', conclusion: 'success', id: 2 }, { name: 'Pages', status: 'completed', conclusion: 'success', id: 3 }];
-    expect(r(C.ciDev, { devSha: 'abc', runs: ok }).resultat).toBe(C.OK);
-    expect(r(C.ciDev, { devSha: 'abc', runs: [ok[0]] })).toMatchObject({ resultat: C.KO, detail: expect.stringContaining('Pages : aucune exécution') });
-    expect(r(C.ciDev, { devSha: 'abc', runs: [...ok, { name: 'Tests', status: 'in_progress', id: 4 }] }).detail).toContain('en cours');
-    expect(r(C.ciDev, { devSha: 'abc', runs: [ok[1], { ...ok[0], conclusion: 'failure' }] }).resultat).toBe(C.KO);
-    expect(r(C.ciDev, { devSha: 'abc', runs: [ok[1], { ...ok[0], conclusion: 'failure', id: 1 }, ok[0]] }).resultat).toBe(C.OK); // relancé : la dernière compte
-    expect(r(C.ciDev, { devSha: 'abc', runs: { erreur: 'gh refusé' } }).resultat).toBe(C.NV);
+    const ok = [{ name: 'Tests', status: 'completed', conclusion: 'success', id: 2, event: 'push' }, { name: 'Pages', status: 'completed', conclusion: 'success', id: 3, event: 'push' }];
+    const base = { devSha: 'abc1234', commits: ['abc1234'], workflow: TESTS_YML };
+    expect(r(C.ciDev, { ...base, runs: ok }).resultat).toBe(C.OK);
+    expect(r(C.ciDev, { ...base, runs: [ok[0]] })).toMatchObject({ resultat: C.KO, detail: expect.stringContaining('Pages : aucune exécution') });
+    expect(r(C.ciDev, { ...base, runs: [...ok, { name: 'Tests', status: 'in_progress', id: 4, event: 'push' }] }).detail).toContain('en cours');
+    expect(r(C.ciDev, { ...base, runs: [ok[1], { ...ok[0], conclusion: 'failure' }] }).resultat).toBe(C.KO);
+    expect(r(C.ciDev, { ...base, runs: [ok[1], { ...ok[0], conclusion: 'failure', id: 1 }, ok[0]] }).resultat).toBe(C.OK); // relancé : la dernière compte
+    expect(r(C.ciDev, { ...base, runs: { erreur: 'gh refusé' } }).resultat).toBe(C.NV);
   });
 
   it('main ancêtre de dev', () => {

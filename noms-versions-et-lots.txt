@@ -144,3 +144,9 @@ version: v0.7
 nom: Publication de la V0.7
 description: La V0.6 rejoint les anciennes versions et la V0.7 devient la version Recette ; la documentation est mise à jour. Le jeu ne change pas.
 afficher: oui
+
+[lot-5q]
+version: v0.8
+nom: Début de la V0.8 : contrôle de publication et tests
+description: Le contrôle de publication accepte un dernier changement de documentation seule ; quelques tests sont corrigés ou retirés. Le jeu ne change pas.
+afficher: non

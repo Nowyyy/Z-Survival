@@ -880,6 +880,7 @@
         "tests/unit/maps-hygiene.test.js",
         "tests/unit/noms.test.js",
         "tests/unit/persos-jeu.test.js",
+        "tests/unit/publication-ci-tests.test.js",
         "tests/unit/publication-controle.test.js",
         "tests/unit/versions-archiver.test.js",
         "tests/unit/versions-schema.test.js"
