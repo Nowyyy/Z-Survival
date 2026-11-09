@@ -345,9 +345,26 @@ test.describe('multi-onglets', () => {
     expect(await shoot(other, 'marcheur')).toBe(1);
     expect((await page.evaluate(() => window.__zs.flushSave())).ok).toBe(true);
     expect((await other.evaluate(() => window.__zs.flushSave())).ok).toBe(true);
-    expect((await storedJson(page)).money).toBe(20);
+    // Lot 5n (T3) : l'écriture d'un onglet n'est pas visible tout de suite dans l'autre (Chrome : 2 à 3 lectures sur 300 périmées juste après
+    // l'écriture, mesuré) : la valeur écrite est lue dans l'onglet qui vient d'écrire (une écriture perdue y donne 10), puis attendue dans
+    // l'autre. Avant : lue tout de suite dans l'autre onglet (10 au lieu de 20 quand la lecture était périmée).
+    await expect.poll(async () => (await storedJson(other))?.money, { timeout: 5_000 }).toBe(20); // lot 5p : attendue (avant : lue tout de suite ; sous charge, 10 pendant quelques ms, puis 20)
+    await expect.poll(async () => (await storedJson(page))?.money).toBe(20);
     await expect.poll(() => balance(page)).toBe(20);
     expect(await balance(other)).toBe(20);
+  });
+
+  // Lot 5o : trois onglets valident en même temps (défaut des deux onglets : une lecture périmée perdait un gain). Gains de test (giveMoney),
+  // écritures lancées ensemble ; chaque onglet doit finir par lire 30 (ni perte ni double comptage). Répété 100 fois par scripts/tests/preuve-onglets.mjs.
+  test('trois onglets valident en même temps : aucun gain perdu ni compté deux fois', async ({ context, page }) => {
+    const pages = [page, await context.newPage(), await context.newPage()];
+    await Promise.all(pages.map((p) => open(p)));
+    for (const p of pages) await p.evaluate(() => window.__zs.giveMoney(10));
+    const results = await Promise.all(pages.map((p) => p.evaluate(() => window.__zs.flushSave())));
+    expect(results.map((r) => r.ok)).toEqual([true, true, true]);
+    for (const p of pages) await expect.poll(async () => (await storedJson(p))?.money).toBe(30);
+    for (const p of pages) await expect.poll(() => balance(p)).toBe(30);
+    await expect.poll(async () => (await storedJson(page))?.earned).toBe(30);
   });
 });
 
@@ -807,12 +824,13 @@ test.describe('budget et performance', () => {
   }, mode);
   for (const [name, extra, where] of [['R1', '&nospawn=1', 'start'], ['U1', '&wave=21&floor=1&nospawn=1', 'start']]) {
     test(`${name} : sans le détail de l'atelier, la référence (à la brume près) ; avec, 27 300 triangles et 84 appels au plus`, async ({ page }) => {
-      await open(page, `/jeu.html?test=1&seed=1&shadows=1&perso=A&sang=0${extra}&detail=0`);
+      // Lot 5k : références d'avant les lampes : lampes « off » (le préréglage Élevé d'un ordinateur les allume ; budget avec les lampes : lampes.spec.js).
+      await open(page, `/jeu.html?test=1&seed=1&shadows=1&perso=A&sang=0${extra}&detail=0&lum=off`);
       const off = await measure(page, where);
       expect(off.calls).toBeGreaterThanOrEqual(REF[name][0] - 1);
       expect(off.calls).toBeLessThanOrEqual(REF[name][0] + 3);
       expect(Math.abs(off.triangles - EPAVES - REF[name][1])).toBeLessThanOrEqual(120); // lot 5a : + les triangles des épaves
-      await open(page, `/jeu.html?test=1&seed=1&shadows=1&perso=A&sang=0${extra}`);
+      await open(page, `/jeu.html?test=1&seed=1&shadows=1&perso=A&sang=0${extra}&lum=off`);
       const on = await measure(page, where);
       console.log(`BUDGET lot 4 / 3g ${name} : detail=0 ${off.calls} / ${off.triangles} ; detail=1 ${on.calls} / ${on.triangles} (référence ${REF[name].join(' / ')})`);
       expect(on.triangles).toBeLessThanOrEqual(27300);

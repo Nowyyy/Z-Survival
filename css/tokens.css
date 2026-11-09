@@ -238,6 +238,15 @@
   --game-smoke-light: #8a8580;      /* lot 5a-F : fumée légère au-dessus de l'hélicoptère, sans flammes */
 }
 
+/* Lampes à huile (lot 5k) : couleurs de sommet des lampes (aucune texture nouvelle) et couleur des lumières dynamiques (option « Éclairage »). Provisoires. */
+:root {
+  --game-lamp-metal: #3b3631;       /* patte, collier et bras (fer noirci) */
+  --game-lamp-reservoir: #9a7b3e;   /* réservoir (laiton terni) */
+  --game-lamp-flame: #f08a2c;       /* bas de la flamme (émissif) */
+  --game-lamp-core: #ffe7a6;        /* pointe de la flamme (émissive) */
+  --game-lamp-light: #ffc27a;       /* lumière ponctuelle d'une lampe (chaude) */
+}
+
 /* Interface intégrée (lot 3l) */
 :root {
   --hud-text-scale: 1.125;          /* macro « texte M » de la direction B, figée : 14 px × 1,125 = 15,75 px (HUD, panneaux, état à terre) */

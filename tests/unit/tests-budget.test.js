@@ -1,7 +1,7 @@
 // Lot 4e-B : budget de durée (scripts/tests/lib/budget.mjs) sur des rapports fictifs, réglages de tests/budget.json.
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
-import { dureesDepuisMesure, evaluer, ligneTestList, nombreDeTranches, repartir, sansEtiquette, unites } from '../../scripts/tests/lib/budget.mjs';
+import { completerMesure, dureesDepuisMesure, remettreReference, evaluer, ligneTestList, nombreDeTranches, repartir, sansEtiquette, unites } from '../../scripts/tests/lib/budget.mjs';
 
 const B = { completCibleSecondes: 600, installationSecondes: 90, testsParTrancheSecondes: 480, tranchesMax: 16, facteurDesequilibre: 1.25, facteurParallelisme: 2, ajoutMaxParLotSecondes: 90 };
 const fictifs = (n, ms, fichier = 'tests/e2e/a.spec.js') => Array.from({ length: n }, (_, i) => ({ projet: 'bureau', fichier, titre: `t${i}`, ms }));
@@ -63,6 +63,62 @@ describe('budget du palier complet', () => {
 });
 
 // Lot 4f-A : complet à tranchesMax tranches, standard réparti (bureau seulement), choix du palier par la branche, bilan des durées.
+describe('lot 5n : mesure complétée (completerMesure), sans refaire le complet', () => {
+  const mesure = {
+    schema: 1, complet: { cumulSecondes: 100 }, etapes: { lint: { secondes: 7 } },
+    tests: [
+      { projet: 'bureau', fichier: 'tests/e2e/a.spec.js', titre: 'g › un', ms: 1000 },
+      { projet: 'bureau', fichier: 'tests/e2e/a.spec.js', titre: 'g › deux @instable', ms: 2000 },
+      { projet: 'mobile', fichier: 'tests/e2e/a.spec.js', titre: 'g › un', ms: 3000 },
+    ],
+  };
+  const gel = JSON.stringify(mesure);
+  it('remplace les durées des tests mesurés (clé sans étiquette), ajoute les nouveaux, garde le reste ; l\'entrée n\'est pas modifiée', () => {
+    const r = completerMesure(mesure, [
+      { projet: 'bureau', fichier: 'tests/e2e/a.spec.js', titre: 'g › deux', ms: 2500.4, statut: 'expected' },
+      { projet: 'bureau', fichier: 'tests/e2e/b.spec.js', titre: 'nouveau', ms: 4000, statut: 'unexpected' },
+      { projet: 'mobile', fichier: 'tests/e2e/b.spec.js', titre: 'ignoré', ms: 3, statut: 'skipped' },
+    ], { date: '2026-11-08', commit: 'abc1234', note: 'T4' });
+    expect(r.remplaces).toBe(1);
+    expect(r.ajoutes).toBe(2);
+    expect(r.mesure.tests).toEqual([
+      mesure.tests[0],
+      { projet: 'bureau', fichier: 'tests/e2e/a.spec.js', titre: 'g › deux', ms: 2500 },
+      mesure.tests[2],
+      { projet: 'bureau', fichier: 'tests/e2e/b.spec.js', titre: 'nouveau', ms: 4000 },
+      { projet: 'mobile', fichier: 'tests/e2e/b.spec.js', titre: 'ignoré', ms: 3, ignore: true },
+    ]);
+    expect(r.mesure.complet).toEqual({ cumulSecondes: 100 });
+    expect(r.mesure.etapes).toEqual(mesure.etapes);
+    expect(r.mesure.complements).toEqual([{ date: '2026-11-08', commit: 'abc1234', remplaces: 1, ajoutes: 2, note: 'T4' }]);
+    expect(JSON.stringify(mesure)).toBe(gel);
+  });
+  it('les durées complétées sont lues comme mesurées par dureesDepuisMesure', () => {
+    const { mesure: m } = completerMesure(mesure, [{ projet: 'bureau', fichier: 'tests/e2e/b.spec.js', titre: 'nouveau', ms: 4000 }]);
+    expect(dureesDepuisMesure([{ projet: 'bureau', fichier: 'tests/e2e/b.spec.js', titre: 'nouveau' }], m.tests)[0]).toMatchObject({ ms: 4000, source: 'mesure' });
+    expect(completerMesure(m, []).mesure.complements).toHaveLength(2);
+  });
+});
+
+describe('lot 5n : référence du complet remise à la mesure (remettreReference, décision du propriétaire)', () => {
+  it('nouvelle référence, ancienne gardée avec sa date et son commit, raison écrite ; le reste inchangé, l\'entrée non modifiée', () => {
+    const m = { schema: 1, date: '2026-11-03', commit: '67d58d0', complet: { cumulSecondes: 5605, executions: 958 }, tests: [{ projet: 'bureau', fichier: 'f', titre: 't', ms: 1 }] };
+    const gel = JSON.stringify(m);
+    const r = remettreReference(m, 6318.4, { date: '2026-11-08', commit: 'abc1234', raison: 'T6' });
+    expect(r.complet).toEqual({ cumulSecondes: 6318, executions: 958, referencesPrecedentes: [{ cumulSecondes: 5605, date: '2026-11-03', commit: '67d58d0' }], raisonReference: 'T6' });
+    expect(r).toMatchObject({ referenceDate: '2026-11-08', referenceCommit: 'abc1234', tests: m.tests, date: '2026-11-03' });
+    expect(JSON.stringify(m)).toBe(gel);
+    expect(remettreReference(r, 6400, { date: '2026-12-01', commit: 'def5678' }).complet.referencesPrecedentes).toEqual([{ cumulSecondes: 5605, date: '2026-11-03', commit: '67d58d0' }, { cumulSecondes: 6318, date: '2026-11-08', commit: 'abc1234' }]);
+  });
+  it('l\'écart du complet se compte depuis la nouvelle référence ; ajoutMaxParLotSecondes reste 90 s', () => {
+    const b = JSON.parse(readFileSync('tests/budget.json', 'utf8'));
+    expect(b.ajoutMaxParLotSecondes).toBe(90);
+    const t = [{ projet: 'bureau', fichier: 'f', titre: 't', ms: 6_400_000 }];
+    expect(evaluer(t, b, { referenceSecondes: 6318 }).ajoutSecondes).toBe(82);
+    expect(evaluer(t, b, { referenceSecondes: 5605 }).erreurs.join(' ')).toMatch(/ajout de 795 s/);
+  });
+});
+
 describe('lot 4f : plan des paliers (planDuPalier)', async () => {
   const { nombreDeTranchesStandard, planDuPalier, projectionCompacte } = await import('../../scripts/tests/lib/budget.mjs');
   const BS = { ...B, standardCibleSecondes: 480, standardMaxSecondes: 600, tranchesMaxStandard: 8 };
@@ -97,9 +153,10 @@ describe('lot 4f : plan des paliers (planDuPalier)', async () => {
     const c = projectionCompacte(planDuPalier(fictifs(4, 10000), BS, 'standard'), BS);
     expect(c).toMatchObject({ palier: 'standard', nUtilise: 1, facteur: 2, installationSecondes: 90, totalSecondes: 110, tranches: [{ index: 1, secondes: 20, executions: 4 }] });
   });
-  it('tests/budget.json : réglages du standard (cible 480 s, maximum 600 s, 8 tranches, bureau seulement, d\'après les projets de playwright.config)', () => {
+  // Lot 5n (décision T4, conditionnelle) : rejeu total sur la CI de la branche en 7 min 48 s (> 7 min 30 s) : cible 480 → 400 s (une tranche de plus).
+  it('tests/budget.json : réglages du standard (cible 400 s depuis le lot 5n, maximum 600 s, 8 tranches, bureau seulement, d\'après les projets de playwright.config)', () => {
     const b = JSON.parse(readFileSync('tests/budget.json', 'utf8'));
-    expect(b).toMatchObject({ standardCibleSecondes: 480, standardMaxSecondes: 600, tranchesMaxStandard: 8, standardProjets: ['bureau'] });
+    expect(b).toMatchObject({ standardCibleSecondes: 400, standardMaxSecondes: 600, tranchesMaxStandard: 8, standardProjets: ['bureau'] });
     const config = readFileSync('playwright.config.js', 'utf8');
     for (const p of b.standardProjets) expect(config).toContain(`name: '${p}'`);
   });
@@ -137,11 +194,15 @@ describe('lot 4f : palier choisi par l\'événement et le nom de la branche (lib
   it('une autre branche essai/** : aucun palier, avec un message', () => {
     expect(palierDeLExecution({ evenement: 'push', ref: 'refs/heads/essai/x' }).message).toMatch(/aucun palier.*essai\/complet-\* et essai\/standard-\*/);
   });
-  it('base de la sélection : commit précédent s\'il est valide, sinon origin/main ; branche de base d\'une PR ; origin/dev pour essai/standard-*', () => {
+  it('base de la sélection : commit précédent s\'il est valide, sinon origin/main (premier push d\'une branche lot-* : origin/dev, lot 5n) ; branche de base d\'une PR ; origin/dev pour essai/standard-*', () => {
     const avant = 'a'.repeat(40);
     expect(basesCandidates({ evenement: 'push', ref: 'refs/heads/dev', avant })).toEqual([avant, 'origin/main']);
-    expect(basesCandidates({ evenement: 'push', ref: 'refs/heads/lot-4f', avant: '0'.repeat(40) })).toEqual(['origin/main']);
-    expect(basesCandidates({ evenement: 'push', ref: 'refs/heads/lot-4f', avant: '' })).toEqual(['origin/main']);
+    // Lot 5n (W2-c) : premier push d'une branche lot-* (avant nul ou absent) : origin/dev, repli sur origin/main (avant : ['origin/main']).
+    expect(basesCandidates({ evenement: 'push', ref: 'refs/heads/lot-4f', avant: '0'.repeat(40) })).toEqual(['origin/dev', 'origin/main']);
+    expect(basesCandidates({ evenement: 'push', ref: 'refs/heads/lot-4f', avant: '' })).toEqual(['origin/dev', 'origin/main']);
+    expect(basesCandidates({ evenement: 'push', ref: 'refs/heads/lot-5n', avant })).toEqual([avant, 'origin/main']);
+    expect(basesCandidates({ evenement: 'push', ref: 'refs/heads/dev', avant: '0'.repeat(40) })).toEqual(['origin/main']);
+    expect(basesCandidates({ evenement: 'push', ref: 'refs/heads/lot-5n/x', avant: '' })).toEqual(['origin/main']);
     expect(basesCandidates({ evenement: 'pull_request', ref: 'refs/pull/3/merge', baseRef: 'dev', baseSha: avant })).toEqual(['origin/dev', avant, 'origin/main']);
     expect(basesCandidates({ evenement: 'push', ref: 'refs/heads/essai/standard-1', avant })).toEqual(['origin/dev', 'origin/main']);
     expect(basesCandidates({ evenement: 'workflow_dispatch', ref: 'refs/heads/main' })).toEqual(['origin/dev', 'origin/main']);

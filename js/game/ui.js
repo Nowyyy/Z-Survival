@@ -1,7 +1,10 @@
 // Panneaux HTML : pause (E2-6), fin provisoire (E2-7), message de rotation, région vocale, plein écran. Lot 3l : direction B de l'atelier (icônes du titre de fin,
 // pièce devant les montants, étoile du record, « Revenir au menu principal » et « Quitter » sans action tant que le menu n'existe pas).
+// Lot 5j : bouton « Options » de la pause (écran E2-12, js/game/options-menu.js importé à la première ouverture) ; « Graphismes » et « Effet VHS » quittent
+// la pause (ils sont dans l'écran Options). Pendant l'écran Options, la partie reste en pause.
+// Lot 5l : icône « Débogage » de la pause (canaux de débogage seulement) ; menu E2-13 (js/game/debug-menu.js importé au premier clic) ; la partie reste en pause.
 import { formatMoney } from '../core/economy.js';
-import { fmt, MONEY_TEXTS, SAVE_TEXTS, VHS_TEXTS } from './texts.js';
+import { fmt, MONEY_TEXTS, SAVE_TEXTS } from './texts.js';
 
 const PORTRAIT_PHONE = '(orientation: portrait) and (pointer: coarse) and (max-width: 600px)';
 
@@ -10,23 +13,24 @@ export function createUi(dict, handlers) {
   const els = {
     pausePanel: $('pause-panel'), endPanel: $('end-panel'), live: $('hud-live'), rotate: $('rotate'),
     pauseBtn: $('btn-pause'), resume: $('btn-resume'), fullscreen: $('btn-fullscreen'), sound: $('btn-sound'),
-    vhs: $('btn-vhs'), restart: $('btn-restart'), replay: $('btn-replay'), endKills: $('end-kills'), endWave: $('end-wave'),
+    options: $('btn-options'), debug: $('btn-debug'), restart: $('btn-restart'), replay: $('btn-replay'), endKills: $('end-kills'), endWave: $('end-wave'),
     endBox: $('end-box'), endTitle: $('end-title-text'), pauseBalance: $('pause-balance-text'), endEarned: $('end-earned'), endEarnedText: $('end-earned-text'), endBonus: $('end-bonus'), endBonusText: $('end-bonus-text'),
     endBalance: $('end-balance'), endBest: $('end-best'), endRecord: $('end-record'), endRecordText: $('end-record-text'), endSave: $('end-save'),
-    gfxCurrent: $('gfx-current'), gfxChoices: [...document.querySelectorAll('#gfx-row .gfx-choice')], gfxConfirm: $('gfx-confirm'), gfxConfirmText: $('gfx-confirm-text'),
-    gfxOk: $('gfx-confirm-ok'), gfxCancel: $('gfx-confirm-cancel'),
   };
-  // Lot 5b : clés des textes de la ligne « Graphismes » (fr.json).
-  const GFX = { auto: 'game.gfx.auto', faible: 'game.gfx.faible', moyen: 'game.gfx.moyen', eleve: 'game.gfx.eleve' };
-  const GFX_ERRORS = { verrouille: 'game.gfx.error.verrouille', echec: 'game.gfx.error.echec', indisponible: 'game.gfx.error.indisponible' };
-  let gfxPending = null;
-  let gfxOpener = null;
+  // Lot 5j : écran Options (créé à la première ouverture) ; binding : contrôleur graphique et couche VHS, donnés par game.js (bindOptions).
+  let binding = null;
+  let menu = null;
+  let optionsOpen = false;
+  // Lot 5l : menu de débogage (créé au premier clic) ; debugBinding : { search, planksMax } donné par main.js sur un canal de débogage, sinon null.
+  let debugBinding = null;
+  let debugMenu = null;
+  let debugOpen = false;
   const rotateQuery = matchMedia(PORTRAIT_PHONE);
   const canFullscreen = Boolean(document.fullscreenEnabled && document.documentElement.requestFullscreen);
   let hasAudio = false;
 
   const ui = {
-    isPaused: () => !els.pausePanel.hidden || rotateQuery.matches || document.hidden,
+    isPaused: () => !els.pausePanel.hidden || optionsOpen || debugOpen || rotateQuery.matches || document.hidden,
     isEnded: () => !els.endPanel.hidden,
 
     // Lot 3l (retour du propriétaire) : « Prochaine zone » n'est plus affichée dans la pause ; game.js l'appelle toujours, sans effet.
@@ -37,7 +41,7 @@ export function createUi(dict, handlers) {
     },
 
     openPause() {
-      if (ui.isEnded()) return;
+      if (ui.isEnded() || optionsOpen || debugOpen) return;
       els.pausePanel.hidden = false;
       els.resume.focus();
       handlers.onPausePanel?.(true);
@@ -53,8 +57,14 @@ export function createUi(dict, handlers) {
     },
 
     togglePause() {
-      if (gfxPending !== null) {
-        ui.closeGraphicsConfirm();
+      // Lot 5j : Échap dans l'écran Options : ferme la confirmation du rechargement, sinon revient à la pause.
+      if (optionsOpen) {
+        if (!menu?.escape()) ui.closeOptions();
+        return;
+      }
+      // Lot 5l : de même pour le menu de débogage (confirmation d'abord).
+      if (debugOpen) {
+        if (!debugMenu?.escape()) ui.closeDebug();
         return;
       }
       if (els.pausePanel.hidden) ui.openPause();
@@ -111,62 +121,87 @@ export function createUi(dict, handlers) {
       else document.documentElement.requestFullscreen({ navigationUI: 'hide' }).catch(() => {});
     },
 
-    // Libellé du bouton Son selon l'état courant ; masqué sans moteur audio utilisable. Lot 3l (retour du propriétaire) : plus de curseur de volume.
+    // Bouton Son selon l'état courant ; masqué sans moteur audio utilisable. Lot 3l (retour du propriétaire) : plus de curseur de volume. Lot 5j-F : icône
+    // en haut à droite de la pause (haut-parleur ; barré d'une croix quand le son est coupé : data-muted) ; l'état est dans le nom accessible.
     syncSound(audio) {
       hasAudio = Boolean(audio?.supported);
       els.sound.hidden = !hasAudio;
       if (!hasAudio) return;
-      els.sound.textContent = dict[audio.muted ? 'game.sound.off' : 'game.sound.on'];
+      els.sound.dataset.muted = String(Boolean(audio.muted));
+      els.sound.setAttribute('aria-label', dict[audio.muted ? 'game.sound.off' : 'game.sound.on']);
     },
   };
 
-  // Lot 5b : ligne « Graphismes » de la pause : choix de l'appareil (aria-pressed) et préréglage actif (« Auto (Moyen) », « Auto (Moyen, baissé) »).
-  ui.syncGraphics = (state) => {
-    if (!state || !els.gfxCurrent) return;
-    const name = (id) => dict[GFX[id]] ?? id;
-    const key = state.auto ? (state.downgraded ? 'game.gfx.current.lowered' : 'game.gfx.current.auto') : state.origin === 'parametre' ? 'game.gfx.current.url' : null;
-    els.gfxCurrent.textContent = key ? fmt(dict[key], { preset: name(state.preset) }) : name(state.preset);
-    for (const b of els.gfxChoices) b.setAttribute('aria-pressed', String(b.dataset.gfx === state.choice));
+  // Lot 5j : écran Options. game.js donne le contrôleur graphique et la couche VHS ; le module n'est importé qu'au premier clic sur « Options ».
+  ui.bindOptions = ({ graphics, vhs = null } = {}) => {
+    binding = graphics ? { graphics, vhs } : null;
   };
-  ui.closeGraphicsConfirm = () => {
-    gfxPending = null;
-    els.gfxConfirm.hidden = true;
-    els.gfxOk.hidden = false;
-    gfxOpener?.focus();
-  };
-  for (const b of els.gfxChoices) {
-    b.addEventListener('click', () => {
-      gfxPending = b.dataset.gfx;
-      gfxOpener = b;
-      els.gfxConfirmText.textContent = fmt(dict['game.gfx.confirm.text'], { choice: dict[GFX[gfxPending]] ?? gfxPending });
-      els.gfxOk.hidden = false;
-      els.gfxConfirm.hidden = false;
-      els.gfxCancel.focus();
-    });
-  }
-  els.gfxCancel?.addEventListener('click', () => ui.closeGraphicsConfirm());
-  els.gfxOk?.addEventListener('click', () => {
-    if (gfxPending === null) return;
-    const result = handlers.onGraphicsChoice?.(gfxPending);
-    const error = result && !result.ok ? GFX_ERRORS[result.status] ?? null : null;
-    if (error) {
-      els.gfxConfirmText.textContent = dict[error];
-      els.gfxOk.hidden = true;
-      els.gfxCancel.focus();
+  ui.isOptionsOpen = () => optionsOpen;
+  ui.openOptions = async () => {
+    if (!binding || optionsOpen || els.pausePanel.hidden) return;
+    optionsOpen = true;
+    els.pausePanel.hidden = true; // la partie reste en pause (optionsOpen)
+    try {
+      menu ??= (await import('./options-menu.js')).createOptionsMenu({ dict, graphics: binding.graphics, vhs: binding.vhs, onClose: () => ui.closeOptions() });
+    } catch {
+      optionsOpen = false;
+      els.pausePanel.hidden = false;
+      els.options.focus();
       return;
     }
-    ui.closeGraphicsConfirm();
-  });
-
-  ui.syncVhs = (vhs) => {
-    const reduced = Boolean(vhs?.reducedMotion);
-    const enabled = Boolean(vhs?.enabled) && !reduced;
-    els.vhs.disabled = reduced;
-    els.vhs.setAttribute('aria-pressed', String(enabled));
-    els.vhs.textContent = dict[reduced ? VHS_TEXTS.reduced : enabled ? VHS_TEXTS.on : VHS_TEXTS.off];
+    if (optionsOpen) menu.open();
   };
-  els.vhs.addEventListener('click', () => handlers.onToggleVhs?.());
+  ui.closeOptions = () => {
+    if (!optionsOpen) return;
+    menu?.close();
+    optionsOpen = false;
+    els.pausePanel.hidden = false;
+    els.options.focus();
+  };
+  // Lot 5b : main.js appelle encore syncGraphics et syncVhs (ligne « Graphismes » et bascule VHS de la pause, retirées au lot 5j) : l'écran Options
+  // lit l'état lui-même à chaque ouverture ; seul un écran ouvert est mis à jour.
+  ui.syncGraphics = () => {
+    if (optionsOpen) menu?.sync();
+  };
+  ui.syncVhs = () => {};
+  els.options.addEventListener('click', () => ui.openOptions());
+  // Lot 5l : menu de débogage. allowed : canal de débogage (sinon l'icône reste cachée et le module n'est jamais chargé) ; search : adresse actuelle.
+  ui.bindDebug = ({ allowed = false, search = '', planksMax } = {}) => {
+    debugBinding = allowed ? { search, planksMax } : null;
+    els.debug.hidden = !allowed;
+  };
+  ui.isDebugOpen = () => debugOpen;
+  ui.openDebug = async () => {
+    if (!debugBinding || debugOpen || optionsOpen || els.pausePanel.hidden) return;
+    debugOpen = true;
+    els.pausePanel.hidden = true; // la partie reste en pause (debugOpen)
+    try {
+      debugMenu ??= (await import('./debug-menu.js')).createDebugMenu({ dict, search: debugBinding.search, planksMax: debugBinding.planksMax, onClose: () => ui.closeDebug() });
+    } catch {
+      debugOpen = false;
+      els.pausePanel.hidden = false;
+      els.debug.focus();
+      return;
+    }
+    if (debugOpen) debugMenu.open();
+  };
+  ui.closeDebug = () => {
+    if (!debugOpen) return;
+    debugMenu?.close();
+    debugOpen = false;
+    els.pausePanel.hidden = false;
+    els.debug.focus();
+  };
+  els.debug.addEventListener('click', () => ui.openDebug());
   els.fullscreen.hidden = !canFullscreen;
+  // Lot 5j-G : icône de plein écran (coins vers l'extérieur ; vers l'intérieur et nom « Quitter le plein écran » quand la page est en plein écran).
+  const syncFullscreen = () => {
+    const on = Boolean(document.fullscreenElement);
+    els.fullscreen.dataset.active = String(on);
+    els.fullscreen.setAttribute('aria-label', dict[on ? 'game.pause.fullscreenExit' : 'game.pause.fullscreen']);
+  };
+  document.addEventListener('fullscreenchange', syncFullscreen);
+  syncFullscreen();
   els.pauseBtn.addEventListener('click', () => ui.openPause());
   els.resume.addEventListener('click', () => ui.closePause());
   els.fullscreen.addEventListener('click', () => ui.toggleFullscreen());

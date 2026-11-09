@@ -488,7 +488,7 @@
   font-weight: var(--font-weight-bold);
 }
 
-/* Boutons sur deux colonnes : Reprendre, Recommencer, Quitter | Son, Effet VHS, Plein écran (retour du propriétaire) ; fin : Rejouer | menu. */
+/* Boutons sur deux colonnes : Reprendre, Recommencer | Options, Quitter (lot 5j-G ; Plein écran et Son : icônes de la tête) ; fin : Rejouer | menu. */
 .panel-actions {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -503,20 +503,14 @@
   grid-area: 2 / 1;
 }
 
-#btn-quit {
-  grid-area: 3 / 1;
-}
-
-#btn-sound {
+#btn-options {
   grid-area: 1 / 2;
 }
 
-#btn-vhs {
+/* Lot 5j-G (retour du propriétaire) : Quitter sous Options : 2 × 2 boutons (Reprendre, Options | Recommencer, Quitter) ; Plein écran est une icône
+   de la tête, à gauche de celle du son. */
+#btn-quit {
   grid-area: 2 / 2;
-}
-
-#btn-fullscreen {
-  grid-area: 3 / 2;
 }
 
 .panel-pause,
@@ -524,7 +518,11 @@
   width: min(100%, 32em);
 }
 
+/* Lot 5j-F : un appui long sur un bouton ne sélectionne pas son texte (retour du propriétaire, iPhone). */
 .panel .button {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
   box-sizing: border-box;
   display: inline-flex;
   align-items: center;
@@ -586,37 +584,283 @@
   }
 }
 
-/* Lot 5b : ligne « Graphismes » de la pause (Auto, Faible, Moyen, Élevé) : quatre boutons de 44 px, choix courant marqué par aria-pressed (bordure et
-   texte, pas la couleur seule) ; confirmation de rechargement par-dessus la pause (#gfx-confirm). */
-.panel-gfx {
-  display: flex;
-  flex-direction: column;
-  gap: 0.35em;
+/* Lot 5j : écran Options (E2-12, construit par js/game/options-menu.js), par-dessus la pause : en-tête fixe (titre, « Retour », préréglages), région qui
+   défile à l'intérieur du panneau (sections et lignes), pied (état, barre « Recharger maintenant »). Choix marqué par aria-pressed : bordure claire et
+   soulignement (pas la couleur seule) ; marque « recharge » en texte encadré ; aucun filter, aucune transition. */
+.options-wrap {
+  z-index: 11;
 }
 
-.gfx-head {
+.panel-options {
+  width: min(100%, 40em);
+  overflow: hidden;
+  gap: 0.5em;
+}
+
+.options-head,
+.options-foot {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  gap: 0.4em;
+}
+
+.options-presets {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3em;
+}
+
+.options-presets-line {
   justify-content: space-between;
   gap: 1em;
 }
 
-.gfx-current {
+.options-current {
   color: var(--color-text-muted);
   white-space: nowrap;
 }
 
-.gfx-choices {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 0.5em;
+.options-choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35em;
 }
 
-.panel .gfx-choice[aria-pressed="true"] {
+/* Lot 5j-E (retour du propriétaire) : boutons de l'écran Options moins larges (marges intérieures réduites, largeur du texte) ; hauteur 44 px gardée
+   (cible tactile minimale de l'interface). */
+.panel-options .options-choice,
+.panel-options .options-value {
+  padding: 0.2em 0.6em;
+}
+
+.options-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 0.4em 0.4em 0.6em;
+  border-top: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.options-scroll:focus-visible {
+  outline-offset: -3px;
+}
+
+.options-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45em;
+}
+
+.options-section + .options-section {
+  margin-top: 0.7em;
+}
+
+.panel .options-section-title {
+  margin: 0;
+  font-family: var(--font-label);
+  font-weight: var(--font-weight-normal);
+  font-size: 1.1em;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-action-text);
+}
+
+.options-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.3em 0.8em;
+}
+
+.options-label {
+  display: flex;
+  flex: 1 1 9em;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.2em 0.5em;
+}
+
+.options-mark {
+  padding: 0 0.35em;
+  border: 1px solid var(--color-border);
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+/* Lot 5j-D : valeur en attente du rechargement : marque jaune (texte « au rechargement » : jamais la couleur seule). */
+.options-mark[data-state="pending"] {
+  border-color: var(--color-money);
+  color: var(--color-money);
+}
+
+/* Lot 5j-E et 5j-F (retours du propriétaire) : boutons-icônes en haut à droite (croix des Options, son de la pause), carré de 44 px, contour clair
+   (os), icône seule (nom accessible : aria-label). */
+.panel .panel-icon {
+  flex: none;
+  width: var(--hud-target);
+  min-width: var(--hud-target);
+  padding: 0;
+  border-color: var(--color-text);
+}
+
+.panel-icon svg {
+  width: 1.2em;
+  height: 1.2em;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.2;
+  stroke-linecap: square;
+}
+
+/* Son : haut-parleur plein ; ondes quand le son est actif, croix quand il est coupé (la forme change, jamais la couleur seule). */
+.panel-sound .sound-body {
+  fill: currentColor;
+  stroke: none;
+}
+
+.panel-sound[data-muted="true"] .sound-waves,
+.panel-sound[data-muted="false"] .sound-off {
+  display: none;
+}
+
+/* Plein écran : coins vers l'extérieur ; vers l'intérieur une fois en plein écran (lot 5j-G). */
+.panel-fullscreen[data-active="true"] .fs-enter,
+.panel-fullscreen[data-active="false"] .fs-exit {
+  display: none;
+}
+
+.panel-head > .panel-icon:not([hidden]) + .panel-icon {
+  margin-left: -0.5em;
+}
+
+/* Pause : titre à gauche ; solde puis icône du son à droite. */
+.panel-pause .panel-head > .panel-line {
+  margin-left: auto;
+}
+
+/* Écran étroit (lot 5j-G) : les icônes restent en haut à droite, sur la ligne du titre ; le solde passe sur la ligne suivante. */
+@media (max-width: 480px) {
+  .panel-pause .panel-head > .panel-line {
+    order: 1;
+    flex-basis: 100%;
+    margin-left: 0;
+  }
+
+  .panel-pause .panel-head > .panel-icon:not([hidden]) {
+    margin-left: auto;
+  }
+
+  .panel-pause .panel-head > .panel-icon:not([hidden]) + .panel-icon {
+    margin-left: -0.5em;
+  }
+}
+
+.options-values {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35em;
+}
+
+.panel .options-choice[aria-pressed="true"],
+.panel .options-value[aria-pressed="true"] {
   border-color: var(--color-text);
   background: var(--color-ground-light);
   text-decoration: underline;
   text-underline-offset: 0.2em;
 }
 
-.gfx-confirm {
-  z-index: 11;
+.options-reload {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4em 0.8em;
+}
+
+.options-reload-text {
+  flex: 1 1 12em;
+}
+
+/* Écran bas (téléphone en paysage) : panneau plus large, en-tête et lignes plus serrés. */
+@media (max-height: 520px) {
+  .panel-options {
+    width: min(100%, 44em);
+    gap: 0.35em;
+  }
+
+  .options-head {
+    gap: 0.3em;
+  }
+
+  .options-presets {
+    flex-direction: row;
+    align-items: center;
+    gap: 0.6em;
+  }
+
+  .options-presets-line {
+    flex: none;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0;
+  }
+
+  .options-choices {
+    flex: 1 1 auto;
+  }
+}
+
+/* Lot 5l : icône « Débogage » de la pause (insecte au trait, même forme que le son) et menu de débogage (E2-13, construit par js/game/debug-menu.js) :
+   panneau de l'écran Options (en-tête fixe, région qui défile, pied) ; compteurs −/+ et saisie numérique de 44 px ; encadré du mode essai (bordure jaune
+   et texte : jamais la couleur seule) ; adresse obtenue en pied. Aucune couleur en dur, aucune transition. */
+.debug-note {
+  padding: 0.1em 0.5em;
+  border: 2px solid var(--color-money);
+  color: var(--color-text);
+}
+
+/* Lot 5l-E (retour du propriétaire) : titre de section et encadré du mode essai sur une même ligne (passe à la ligne si la place manque). */
+.debug-section-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3em 0.8em;
+}
+
+.debug-counter {
+  display: flex;
+  align-items: center;
+  gap: 0.35em;
+}
+
+.panel .debug-step {
+  width: var(--hud-target);
+  min-width: var(--hud-target);
+  padding: 0;
+  font-size: 1.2em;
+}
+
+.debug-input {
+  box-sizing: border-box;
+  width: 5.5em;
+  min-height: var(--hud-target);
+  padding: 0 0.4em;
+  border: 2px solid var(--color-border);
+  border-radius: 0;
+  background: var(--color-surface-raised);
+  color: var(--color-text);
+  font: inherit;
+  font-weight: var(--font-weight-bold);
+  text-align: center;
+}
+
+.debug-counter[data-counter="money"] .debug-input {
+  width: 7.5em;
+}
+
+.debug-url {
+  overflow-wrap: anywhere;
 }

@@ -7,6 +7,7 @@ import { createV2Kit } from '../../js/game/character-v2.js';
 import { deathFor } from '../../js/core/blood.js';
 import { KICK, ZOMBIE_ANIMS } from '../../js/core/pose-v2.js';
 import { characters, load, poses } from '../../scripts/personnages/lib.mjs';
+import { texteDuBilan } from '../../scripts/docs/bilans.mjs';
 
 // Lot 3m-C : leviers de chargement (le sang ne coûte rien tant qu'il ne sert pas), retours du propriétaire (passation du lot 3j) présents
 // dans le jeu par défaut, compatibilité avec les autres refontes de lot-4b (interface au-dessus du canevas, visite libre, sons).
@@ -140,7 +141,7 @@ describe('compatibilité avec les autres refontes de lot-4b', () => {
   it('sons (lot 3i) : aucun son ajouté par le lot ; manques sonores listés dans le bilan', () => {
     const ids = load('sounds').sounds.map((s) => s.id);
     for (const id of ['chute-corps', 'marteau', 'impact-chair']) expect(ids).not.toContain(id);
-    const bilan = read('Docs/lots/lot-3m.md');
+    const bilan = texteDuBilan('lot-3m'); // lot 5m : bilan séparé ou regroupé (avant : read('Docs/lots/lot-3m.md'))
     expect(bilan).toMatch(/Manques sonores/);
     for (const w of ['chute du corps', 'marteau', 'chair']) expect(bilan).toContain(w);
   });

@@ -2,7 +2,7 @@
 //
 // Usage : node scripts/tests/selectionner.mjs [--base <ref>] [--files a,b,c] [--depuis-version] [--publication] [--tout] [--sans-vitest] [--json <fichier>] [--court]
 //   --base <ref>        référence de comparaison (défaut : base du lot = merge-base de HEAD avec origin/dev, sinon origin/main)
-//   --files <liste>     fichiers modifiés donnés à la main (virgules ou espaces) au lieu de git
+//   --files <liste>     fichiers modifiés donnés à la main (virgules ou espaces) au lieu de git (avec --base : table de la base lue à ce ref)
 //   --depuis-version    la base devient le ref de la version « actuelle » de versions.json lu sur origin/main
 //   --publication       applique la règle du complet périodique (tests/dernier-complet.json, completMaxVersions de tests/budget.json)
 //   --tout              rejeu total
@@ -75,8 +75,19 @@ export function calculer(options = {}) {
       vitestChanged = [];
     }
   }
+  // Lot 5n (T5) : table de la base (merge-base, comme la différence « base...HEAD ») ; sans elle, un changement de la table rejoue tout.
+  let tableAvant = null;
+  if (fichiers.includes('tests/selection.json')) {
+    const ref = options.files ? base : (git('merge-base', base, 'HEAD') ?? base);
+    const brut = git('show', `${ref}:tests/selection.json`);
+    try {
+      tableAvant = brut ? JSON.parse(brut) : null;
+    } catch {
+      tableAvant = null;
+    }
+  }
   const short = /^[0-9a-f]{40}$/.test(base) ? base.slice(0, 12) : base;
-  const res = selectionner({ fichiers, table, base: short, forcerTout, vitestChanged });
+  const res = selectionner({ fichiers, table, base: short, forcerTout, vitestChanged, tableAvant });
   res.version = version;
   res.vitestChanged = vitestChanged;
   return res;

@@ -2,7 +2,7 @@
 
 Ce fichier suffit pour fusionner `lot-3j` dans la branche d'intégration `lot-4b` sans relire la conversation du lot. Il liste **tout ce que le lot a fait** (livraison puis retours du propriétaire), les fichiers touchés, la résolution exacte de chaque conflit (vérifiée par une fusion à blanc dans `lot-4b`), les tests à surveiller et les règles à reporter dans `CLAUDE.md` et `conventions.md`.
 
-Documents liés : bilan `Docs/lots/lot-3j.md` ; manifeste `Docs/ref/fusion-3j.md` ; méthode et données `Docs/ref/atelier-personnages.md` ; plan d'intégration `Docs/ref/integration-personnages.md` ; état des lieux d'avant `Docs/ref/personnages-actuels.md`.
+Documents liés : bilan `Docs/lots/versions/v0.5.md#lot-3j` ; manifeste `Docs/ref/fusion-3j.md` ; méthode et données `Docs/ref/atelier-personnages.md` ; plan d'intégration `Docs/ref/integration-personnages.md` ; état des lieux d'avant `Docs/ref/personnages-actuels.md`.
 
 ## 1. Où regarder
 
@@ -50,7 +50,7 @@ Inchangés : toute la logique du jeu (positions, vies, dégâts, argent, vagues 
 - Données : `data/game/characters-v2.json`, `poses-v2.json`, `blood.json`.
 - Scripts (lecture seule, sortie standard) : `scripts/personnages/{lib,inventaire,architecture,variantes,animations,projection,mesure-rendu}.mjs`.
 - Tests : `tests/unit/persos-{kit,actuels,donnees,animations,variantes,page,sang,arene,jeu}.test.js`, `tests/e2e/persos-{atelier,sang,jeu}.spec.js`.
-- Docs : `Docs/lots/lot-3j.md`, `Docs/ref/{atelier-personnages,integration-personnages,personnages-actuels,fusion-3j}.md`, ce fichier.
+- Docs : `Docs/lots/versions/v0.5.md#lot-3j`, `Docs/ref/{atelier-personnages,integration-personnages,personnages-actuels,fusion-3j}.md`, ce fichier.
 
 ### Partagés modifiés (diff avec `main`)
 | Fichier | Lignes | Modification |
@@ -104,7 +104,7 @@ Playwright sur l'arbre fusionné : suite rapide 249/249 ; `persos-jeu`, `persos-
 3. Résoudre les 6 conflits du § 5, **puis** `git checkout origin/lot-4b -- apercu.txt` (même si git ne le signale pas).
 4. Adapter le garde-fou du 3i (§ 5).
 5. Vérifier : `node -e "JSON.parse(require('fs').readFileSync('data/changelog.json','utf8'))"`, `npm run lint`, `npm test`, `npm run test:e2e`, puis `E2E_FULL=1 npx playwright test tests/e2e/persos-*.spec.js tests/e2e/argent.spec.js tests/e2e/carte-jeu.spec.js`.
-6. Lighthouse (`LH_ONLY=jeu npm run lighthouse`, plusieurs passages : la mesure varie de ± 6) : sur `lot-3j`, `jeu.html` donnait 41 à 54 sur 6 passages (médiane 47,5, seuil 45 ; référence `?perso=actuel&sang=0` : 49 à 59), puis 47 après les retours. À remesurer avec le 3g, le 3i et l'interface du 3k. Ce qui a déjà été allégé : `lot-3j.md`, « Après la livraison » ; pistes restantes si la médiane passe sous 45 : compiler les shaders des personnages v2 et du sang hors du démarrage (`renderer.compileAsync`), construire la texture du joueur en tâche de fond pendant le chargement.
+6. Lighthouse (`LH_ONLY=jeu npm run lighthouse`, plusieurs passages : la mesure varie de ± 6) : sur `lot-3j`, `jeu.html` donnait 41 à 54 sur 6 passages (médiane 47,5, seuil 45 ; référence `?perso=actuel&sang=0` : 49 à 59), puis 47 après les retours. À remesurer avec le 3g, le 3i et l'interface du 3k. Ce qui a déjà été allégé : `Docs/lots/versions/v0.5.md#lot-3j`, « Après la livraison » ; pistes restantes si la médiane passe sous 45 : compiler les shaders des personnages v2 et du sang hors du démarrage (`renderer.compileAsync`), construire la texture du joueur en tâche de fond pendant le chargement.
 7. Commit « Lot 4b — Fusion lot-3j (personnages et sang) », push de `lot-4b` seulement, comparer `git rev-parse HEAD` et `git ls-remote origin lot-4b`.
 8. Ouvrir l'aperçu `…/lots/lot-4b/jeu.html` : zombies v2, sang, recul, laser depuis le canon, passage des fenêtres ; `…/lots/lot-4b/atelier-personnages.html` (la page est copiée par `npm run build`).
 

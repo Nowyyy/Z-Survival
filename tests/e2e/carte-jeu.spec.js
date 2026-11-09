@@ -65,6 +65,8 @@ test.describe('carte par défaut', () => {
   // deux analyses dépassaient parfois le délai de 60 s en CI (37 s mesurées en local). Mêmes vérifications, chacune avec son délai.
   for (const size of [SIZE, BIG]) {
     test(`axe : aucune violation (${size.width}×${size.height})`, async ({ page }) => {
+      // Lot 5n (T3) : délai du test 60 s → 120 s (en mobile, chargement et analyse dépassaient parfois 60 s en CI) ; assertion inchangée.
+      test.setTimeout(120_000);
       await open(page, '', size);
       expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
     });

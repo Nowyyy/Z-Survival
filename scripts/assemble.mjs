@@ -10,6 +10,9 @@
 // Lot 5h : 404.html à la racine (page autonome, servie par GitHub Pages pour toute adresse inconnue) : son script en ligne (corrigerCasse de
 // scripts/site/casse.mjs) renvoie /recette/… (toute casse sauf « Recette ») vers /Recette/… en gardant la requête et le fragment ; sinon « Page introuvable. ».
 // Aucun dossier recette/ ; l'assemblage échoue si deux chemins du site ne diffèrent que par la casse.
+// Lot 5l : canal de la page de jeu. jeu.html porte <meta name="zs-canal" content="source"> ; l'assembleur écrit « release » dans Recette/jeu.html,
+// « dev » dans dev/jeu.html et « archive » dans v0.N/jeu.html (seulement si la balise existe : les versions déjà archivées n'en ont pas et restent
+// identiques octet pour octet ; jamais d'échec). Le jeu lit la balise sans requête (menu de débogage et paramètres réservés, Docs/ref/debug.md).
 // Les pages produites sont autonomes (style en ligne, couleurs du système, icône en data:), en chemins relatifs, noindex ; les redirections ont
 // un <meta http-equiv="refresh"> immédiat et un lien visible. Pur et déterministe (aucun réseau ; aucune horloge : les dates viennent des entrées,
 // « genere » de site-info.json est injectée) ; échoue avec un message clair si le build de main n'a pas d'index.html ou de jeu.html, si la version
@@ -21,7 +24,7 @@
 //   Variables : SITE_MAIN, SITE_DEV, SITE_ARCHIVE, SITE_VERSIONS, SITE_OUT, SITE_MAX_MB, MAIN_SHA, MAIN_DATE, DEV_SHA, DEV_DATE, SITE_GENERE.
 //   Sans --main : le build de l'arbre courant (npm run build) sert de Recette ; le hash et la date viennent alors de git. Sans --genere : l'heure courante.
 import { execFileSync, spawnSync } from 'node:child_process';
-import { cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, lstatSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -34,6 +37,35 @@ export const DEFAULT_MAX_BYTES = 900 * 1024 * 1024;
 export class AssembleError extends Error {}
 
 const SHA_RE = /^[0-9a-f]{7,40}$/;
+
+// Lot 5l : balise de canal de jeu.html. Valeurs écrites par l'assembleur (un futur assembleur de production écrira « prod »). Une balise écrite
+// autrement que <meta name="zs-canal" content="…"> n'est pas reconnue (le test de jeu.html vérifie la forme exacte de la source).
+export const CANAUX_PUBLIES = Object.freeze(['release', 'dev', 'archive', 'prod']);
+export const CANAL_META_RE = /<meta name="zs-canal" content="[a-z]{0,16}">/g;
+export const CANAL_MAX_OCTETS = 4 * 1024 * 1024;
+
+// Texte de la page avec la balise de canal réécrite (toutes ses occurrences) ; canal inconnu ou entrée qui n'est pas une chaîne : inchangée.
+export function ecrireCanal(html, canal) {
+  if (typeof html !== 'string' || !CANAUX_PUBLIES.includes(canal)) return html;
+  return html.replace(CANAL_META_RE, `<meta name="zs-canal" content="${canal}">`);
+}
+
+// Réécrit la balise de canal d'un fichier publié. Jamais d'exception : absent, dossier, lien symbolique (jamais suivi : il pourrait viser hors du site),
+// fichier de plus de 4 Mo ou sans balise : rien n'est écrit (octets inchangés). Lecture et écriture octet pour octet (latin1) : un fichier qui n'est
+// pas de l'UTF-8 valide garde ses octets. Renvoie vrai si le fichier a été réécrit.
+export function ecrireCanalFichier(path, canal) {
+  try {
+    const info = lstatSync(path);
+    if (!info.isFile() || info.size > CANAL_MAX_OCTETS) return false;
+    const before = readFileSync(path, 'latin1');
+    const after = ecrireCanal(before, canal);
+    if (after === before) return false;
+    writeFileSync(path, after, 'latin1');
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 // Date ISO normalisée en UTC (seconde près), ou '' si invalide.
 export function utcDate(value) {
@@ -228,6 +260,7 @@ export function assembleSite({ mainDir, devDir = null, archiveDir = null, versio
   cpSync(mainDir, recetteDir, { recursive: true });
   for (const name of [...FOREIGN, ...versionDirs]) rmSync(join(recetteDir, name), { recursive: true, force: true });
   json(join(recetteDir, 'build-info.json'), buildInfo({ channel: 'release', version: label, branch: main.branch ?? 'main', sha: main.sha, date: main.date }));
+  const canaux = { 'Recette/': ecrireCanalFichier(join(recetteDir, 'jeu.html'), 'release') };
 
   // dev/ : build de dev (son accueil renvoie à la Recette), sinon un message.
   const devOut = join(out, 'dev');
@@ -236,6 +269,7 @@ export function assembleSite({ mainDir, devDir = null, archiveDir = null, versio
     cpSync(devDir, devOut, { recursive: true });
     for (const name of [...FOREIGN, ...versionDirs]) rmSync(join(devOut, name), { recursive: true, force: true });
     writeFileSync(join(devOut, 'index.html'), redirectPage({ target: '../Recette/', label: texts['site.redirect.recette'], texts, icon }));
+    canaux['dev/'] = ecrireCanalFichier(join(devOut, 'jeu.html'), 'dev');
     devInfo = buildInfo({ channel: 'dev', version: label, branch: versions.dev?.branch ?? 'dev', sha: dev.sha, date: dev.date });
     json(join(devOut, 'build-info.json'), devInfo);
   } else {
@@ -265,6 +299,7 @@ export function assembleSite({ mainDir, devDir = null, archiveDir = null, versio
     const source = archiveDir ? join(archiveDir, v.id) : null;
     if (source && existsSync(join(source, v.entry))) {
       cpSync(source, join(out, v.id), { recursive: true });
+      canaux[`${v.id}/`] = ecrireCanalFichier(join(out, v.id, 'jeu.html'), 'archive');
       report.push({ id: v.id, status: 'archive', path: `${v.id}/` });
     } else {
       v.status = 'indisponible';
@@ -304,7 +339,7 @@ export function assembleSite({ mainDir, devDir = null, archiveDir = null, versio
 
   const stats = dirStats(out);
   if (stats.bytes > maxBytes) throw new AssembleError(`Site trop gros : ${(stats.bytes / 1024 / 1024).toFixed(1)} Mo pour un plafond de ${(maxBytes / 1024 / 1024).toFixed(0)} Mo (limite publiée : 1 Go)`);
-  return { out, ...stats, versions: report, dev: { ...devInfo, built: devBuilt, missing: devMissing }, siteInfo, published, noms: nomsReport };
+  return { out, ...stats, versions: report, dev: { ...devInfo, built: devBuilt, missing: devMissing }, siteInfo, published, noms: nomsReport, canaux };
 }
 
 // Lecture des options (arguments, puis variables d'environnement).
@@ -363,6 +398,7 @@ async function main() {
     console.log(`  dev/ : ${result.dev.built ? `dev ${result.dev.sha} (${result.dev.date})` : `aucun build de développement${missing}`}`);
     console.log(`  Recette/site-info.json : ${result.siteInfo.evolutions.length} évolutions, ${result.siteInfo.precedentes.length} versions précédentes`);
     console.log(`  versions : ${lines.join(' · ')}`);
+    console.log(`  balise de canal réécrite : ${Object.entries(result.canaux).map(([dir, done]) => `${dir} ${done ? 'oui' : 'non (absente)'}`).join(' · ')}`);
     const noms = result.noms;
     console.log(`  ${NOMS_FICHIER} : ${noms.source ? `build de ${noms.source}, ${noms.blocs} blocs, ${noms.erreurs.length} erreur${noms.erreurs.length > 1 ? 's' : ''} (lignes ignorées)` : 'absent (textes d\'origine)'}${noms.applique ? '' : ' ; NON appliqué (site-info.json invalide avec les noms)'}`);
     for (const message of noms.erreurs) console.warn(`  Avertissement : ${message}`);

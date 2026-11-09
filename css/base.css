@@ -231,13 +231,6 @@ p {
   transform: rotate(-1.2deg);
 }
 
-.item .claw {
-  display: none;
-  width: 1.2em;
-  height: 1.2em;
-  flex: none;
-}
-
 .item.is-on,
 .item:hover,
 .item:focus-visible {
@@ -248,12 +241,6 @@ p {
 .item:hover .brush,
 .item:focus-visible .brush {
   opacity: 1;
-}
-
-.item.is-on .claw,
-.item:hover .claw,
-.item:focus-visible .claw {
-  display: block;
 }
 
 .foot {

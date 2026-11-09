@@ -62,7 +62,8 @@ describe('chargeur : chargé par défaut (lot 5e : aussi avec ?perso=actuel&sang
   const loader = readFileSync('js/game/persos-loader.js', 'utf8');
   it('game.js charge toujours le chargeur (import dynamique en tête de module)', () => {
     // Lot 5b : l'adresse passée au chargeur porte le préréglage graphique (variante, sang, cadavres) ; sans préréglage lisible : location.search.
-    expect(game).toContain("const persos = await import('./persos-loader.js').then((m) => m.loadPersos(gfxBoot?.persosSearch ?? location.search, { corpses: gfxBoot?.corpses ?? null }));");
+    // Lot 5l : sans préréglage lisible, une adresse vide (jamais location.search, qui n'est pas filtrée par canal) ; avant : « ?? location.search ».
+    expect(game).toContain("const persos = await import('./persos-loader.js').then((m) => m.loadPersos(gfxBoot?.persosSearch ?? '', { corpses: gfxBoot?.corpses ?? null }));");
     expect(game).toContain("const gfxBoot = await import('./graphics-boot.js').then((m) => m.graphicsBoot()).catch(() => null);");
     expect(game).not.toMatch(/^import .*persos-/m);
   });

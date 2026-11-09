@@ -106,6 +106,7 @@
 .sw-helicoptere { background: var(--game-wreck-hull); }
 .sw-voiture-feu { background: var(--game-fire-edge); }
 .sw-coin { background: var(--color-text); border-radius: 50%; }
+.sw-lampe { background: var(--game-lamp-core); border-radius: 50%; }
 
 /* Dessin SVG : tout par classes, aucune couleur dans le script. */
 .monde { fill: var(--game-grass-a); }
@@ -124,6 +125,10 @@
 .declencheur { fill: var(--game-stairs-mark); opacity: 0.55; stroke: var(--game-stairs-mark); stroke-width: 4; }
 .declencheur-etiquette { fill: var(--color-text); font-family: var(--font-sans); font-weight: var(--font-weight-bold); paint-order: stroke; stroke: var(--color-bg); stroke-width: 6px; text-anchor: middle; }
 .arrivee { fill: none; stroke: var(--color-text); stroke-width: 6; }
+/* Lot 5k : lampes à huile (point), leur sens et la portée de leur lumière (pointillés). */
+.lampe { fill: var(--game-lamp-core); stroke: var(--color-bg); stroke-width: 4; }
+.lampe-sens { stroke: var(--game-lamp-core); stroke-width: 5; }
+.lampe-portee { fill: none; stroke: var(--game-lamp-light); stroke-width: 4; stroke-dasharray: 14 10; opacity: 0.8; }
 .bloc { fill: none; stroke: var(--color-warning); stroke-width: 5; stroke-dasharray: 18 10; }
 .depart-zone { fill: var(--color-success); opacity: 0.18; stroke: var(--color-success); stroke-width: 4; }
 .depart-point { fill: var(--color-success); }

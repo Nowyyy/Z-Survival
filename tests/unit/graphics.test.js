@@ -5,6 +5,7 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { AUTO_DEFAULTS, autoDecision, irregularShare, bloodWithCorpses, CHOICES, deviceClass, ELEVE, explicitParams, medianOf, parseGfxParam, parseGraphics, PRESET_IDS, presetSearch, resolvePreset, settingsFor } from '../../js/core/graphics.js';
 import { createDeviceSettings, DEVICE_KEY, parseDevice } from '../../js/save/device-settings.js';
+// Lot 5j : tests des options (vecteurs, Perso, priorités, stockage v2) : tests/unit/graphics-options.test.js.
 import { createFakeStorage, quotaError, securityError } from './helpers/fake-storage.js';
 import { buildSpec, createTextureData, meanColor } from '../../js/core/texgen.js';
 import { FLOORS, characters, floorsWithStains, gameView, lookup, variantMetrics } from '../../scripts/personnages/lib.mjs';
@@ -18,13 +19,31 @@ const ANDROID = { coarse: true, ua: 'Mozilla/5.0 (Linux; Android 14; K) AppleWeb
 const DESKTOP = { coarse: false, ua: 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/153.0 Safari/537.36' };
 const TABLET_FINE = { coarse: false, ua: 'Mozilla/5.0 (iPad; CPU OS 17_0 like Mac OS X)' };
 
+// Lot 5j : graphics.json passe au schéma 2 (options et vecteurs) ; les réglages de chaque préréglage (cfg.presets, forme du lot 5b) sont comparés à la
+// copie figée des valeurs d'avant (origin/dev 7130dc7) : avant, RAW.presets[id].live/load ; après, vectorSettings(RAW.presets[id]) = la même copie.
+const AVANT_7130DC7 = {
+  faible: { live: { dprMax: 1, ombres: false, ombreTaille: 512, vhs: 'off', brouillard: 'simple', feux: { voitureFoyers: 1, fumeeHelico: 0, particules: 0.5, lueur: false }, sang: 'reduit', cadavres: 0 }, load: { personnages: 'A', anticrenelage: false, texturesFines: false, decor: 'reduit' } },
+  moyen: { live: { dprMax: 1.5, ombres: true, ombreTaille: 512, vhs: 'statique', brouillard: 'reduit', feux: { voitureFoyers: 2, fumeeHelico: 0.5, particules: 1, lueur: true }, sang: 'reduit', cadavres: 1 }, load: { personnages: 'A', anticrenelage: false, texturesFines: true, decor: 'complet' } },
+  eleve: { live: { dprMax: 2, ombres: true, ombreTaille: 1024, vhs: 'anime', brouillard: 'complet', feux: { voitureFoyers: 2, fumeeHelico: 1, particules: 1, lueur: true }, sang: '1', cadavres: 2 }, load: { personnages: 'choix', anticrenelage: true, texturesFines: true, decor: 'complet' } },
+};
+
+// Lot 5k : deux réglages « live » de plus (lampes, lumieres) ; les autres réglages restent ceux de AVANT_7130DC7. Lot 5k-F (décision du propriétaire) :
+// les lampes sont toujours sur la carte ; ELEVE (repli) et Faible, Moyen : « decor » (sans lumière dynamique) ; Élevé : « eclairage ».
+const LOT_5K = { faible: { lampes: 'decor', lumieres: 2, ombresLampes: 0 }, moyen: { lampes: 'decor', lumieres: 2, ombresLampes: 0 }, eleve: { lampes: 'eclairage', lumieres: 4, ombresLampes: 1 } }; // 5k-G : ombresLampes
+const sans5k = (live) => {
+  const { lampes, lumieres, ombresLampes, ...rest } = live;
+  return { rest, lamps: { lampes, lumieres, ombresLampes } };
+};
+
 describe('graphics.json', () => {
-  it('schéma 1, trois préréglages, chaque valeur reconnue telle quelle (aucune n\'est ramenée à un défaut)', () => {
-    expect(RAW.schema).toBe(1);
+  it('schéma 2, trois préréglages, chaque valeur reconnue telle quelle (aucune n\'est ramenée à un défaut)', () => {
+    expect(RAW.schema).toBe(2);
     expect(Object.keys(RAW.presets).sort()).toEqual(['eleve', 'faible', 'moyen']);
     for (const id of PRESET_IDS) {
-      expect(CFG.presets[id].live).toEqual(RAW.presets[id].live);
-      expect(CFG.presets[id].load).toEqual(RAW.presets[id].load);
+      expect(CFG.vectors[id]).toEqual(RAW.presets[id]); // chaque valeur du vecteur est une valeur permise de son option
+      expect(sans5k(CFG.presets[id].live).rest).toEqual(AVANT_7130DC7[id].live);
+      expect(sans5k(CFG.presets[id].live).lamps).toEqual(LOT_5K[id]);
+      expect(CFG.presets[id].load).toEqual(AVANT_7130DC7[id].load);
     }
     expect(CFG.auto).toEqual(RAW.auto);
     expect(RAW._provisoire).toMatch(/PROVISOIRES/);
@@ -34,8 +53,10 @@ describe('graphics.json', () => {
     const blood = load('data/game/blood.json');
     const vhs = load('data/game/vhs.json');
     const choix = load('data/game/persos-choix.json');
-    const e = RAW.presets.eleve;
-    expect(e).toEqual({ live: { ...ELEVE.live, feux: { ...ELEVE.live.feux } }, load: { ...ELEVE.load } });
+    const e = CFG.presets.eleve;
+    expect({ live: sans5k(e.live).rest, load: e.load }).toEqual({ live: sans5k({ ...ELEVE.live, feux: { ...ELEVE.live.feux } }).rest, load: { ...ELEVE.load } });
+    expect(ELEVE.live).toMatchObject({ lampes: 'decor', lumieres: 4, ombresLampes: 0 }); // lot 5k-F : repli = lampes présentes, sans lumière dynamique
+    expect(e.live).toMatchObject({ lampes: 'eclairage', lumieres: 4, ombresLampes: 1 }); // lot 5k : Élevé choisit l'éclairage
     expect(e.live.ombreTaille).toBe(render.light.shadowMap);
     expect(e.live.ombres).toBe(true);
     expect(e.live.brouillard).toBe('complet');
@@ -50,8 +71,8 @@ describe('graphics.json', () => {
     expect(presetSearch('?test=1', settingsFor(CFG, 'eleve', {}))).toBe(`?test=1&sang=${choix.sang}`);
   });
   it('Faible et Moyen : valeurs de départ proposées (provisoires)', () => {
-    const f = RAW.presets.faible;
-    const m = RAW.presets.moyen;
+    const f = CFG.presets.faible;
+    const m = CFG.presets.moyen;
     expect(f.live).toMatchObject({ dprMax: 1, ombres: false, vhs: 'off', brouillard: 'simple', sang: 'reduit', cadavres: 0, feux: { voitureFoyers: 1, fumeeHelico: 0, lueur: false } });
     expect(f.live.feux.particules).toBeLessThan(1);
     expect(f.load).toEqual({ personnages: 'A', anticrenelage: false, texturesFines: false, decor: 'reduit' });
@@ -94,15 +115,26 @@ describe('priorités : ?gfx= > choix mémorisé > auto', () => {
     expect(resolvePreset(null, null, DESKTOP, CFG).preset).toBe('eleve');
     expect(resolvePreset(null, null, null, null).preset).toBe('eleve');
   });
-  it('paramètres explicites de l\'adresse par-dessus le préréglage (perso, sang, detail, vhs, shadows, dpr)', () => {
+  it('paramètres explicites de l\'adresse par-dessus le préréglage (perso, sang, detail, vhs, shadows, dpr, lum)', () => {
     const e = explicitParams('?perso=riche&sang=1&detail=1&vhs=1&shadows=1&dpr=1.25&usure=2');
-    expect(e).toEqual({ perso: 'riche', sang: '1', usure: '2', detail: '1', vhs: '1', shadows: '1', dpr: 1.25 });
+    expect(e).toEqual({ perso: 'riche', sang: '1', usure: '2', detail: '1', vhs: '1', shadows: '1', dpr: 1.25, lum: null });
+    // Lot 5k : ?lum=decor|eclairage impose l'option « Lumière des lampes » (réglage lampes), jamais le nombre de lumières ; lot 5k-F : ?lum=off (sans
+    // lampes, rendu d'avant le lot) seulement sous ?test=1, pour les références des tests.
+    for (const v of ['off', 'decor', 'eclairage']) {
+      const l = settingsFor(CFG, 'moyen', explicitParams(`?test=1&lum=${v}`));
+      expect(l.live.lampes).toBe(v);
+      expect(l.overridden).toEqual(['lampes']);
+      expect(l.live.lumieres).toBe(CFG.presets.moyen.live.lumieres);
+    }
+    expect(explicitParams('?lum=oui').lum).toBeNull();
+    expect(explicitParams('?lum=off').lum).toBeNull(); // hors ?test=1 : les lampes restent sur la carte
+    expect(explicitParams('?lum=decor').lum).toBe('decor');
     const s = settingsFor(CFG, 'faible', e);
     expect(s.load).toMatchObject({ personnages: 'riche', texturesFines: true, decor: 'complet' });
     expect(s.live).toMatchObject({ sang: '1', cadavres: null, vhs: 'anime', ombres: true, dprMax: 1.25 });
     expect(s.overridden.sort()).toEqual(['cadavres', 'decor', 'dprMax', 'ombres', 'personnages', 'sang', 'texturesFines', 'vhs']);
     expect(settingsFor(CFG, 'eleve', explicitParams('?detail=0&vhs=0&shadows=0')).live).toMatchObject({ vhs: 'off', ombres: false });
-    expect(explicitParams('?perso=x&sang=2&detail=oui&vhs=&shadows=2&dpr=9')).toEqual({ perso: null, sang: null, usure: null, detail: null, vhs: null, shadows: null, dpr: null });
+    expect(explicitParams('?perso=x&sang=2&detail=oui&vhs=&shadows=2&dpr=9')).toEqual({ perso: null, sang: null, usure: null, detail: null, vhs: null, shadows: null, dpr: null, lum: null });
     for (const h of HOSTILE) expect(() => settingsFor(CFG, h, explicitParams(h))).not.toThrow();
     expect(presetSearch('?perso=B&sang=0', settingsFor(CFG, 'faible', {}))).toBe('?perso=B&sang=0');
     expect(presetSearch('', settingsFor(CFG, 'moyen', {}))).toBe('?perso=A&sang=reduit');
@@ -157,17 +189,17 @@ describe('préférence d\'appareil (zs.device.v1)', () => {
     expect(DEVICE_KEY).toBe('zs.device.v1');
     const storage = createFakeStorage();
     const d = createDeviceSettings({ search: '?wave=5', storage });
-    expect(d.read()).toEqual({ status: 'absent', graphics: 'auto' });
+    expect(d.read()).toEqual({ status: 'absent', graphics: 'auto', custom: null });
     expect(d.write('moyen')).toEqual({ ok: true, status: 'ok', persisted: true });
     expect([...storage.data.keys()]).toEqual(['zs.device.v1']);
-    expect(JSON.parse(storage.data.get(DEVICE_KEY))).toEqual({ v: 1, graphics: 'moyen' });
-    expect(createDeviceSettings({ search: '', storage }).read()).toEqual({ status: 'ok', graphics: 'moyen' });
+    expect(JSON.parse(storage.data.get(DEVICE_KEY))).toEqual({ v: 2, graphics: 'moyen', custom: null }); // lot 5j : schéma 2 (avant : { v: 1, graphics })
+    expect(createDeviceSettings({ search: '', storage }).read()).toEqual({ status: 'ok', graphics: 'moyen', custom: null });
   });
   it('valeur inconnue : auto (et réécrite au prochain choix) ; JSON invalide ou version future : auto, jamais écrasé', () => {
-    expect(parseDevice('{"v":1,"graphics":"ultra"}')).toEqual({ status: 'ok', graphics: 'auto' });
+    expect(parseDevice('{"v":1,"graphics":"ultra"}')).toEqual({ status: 'ok', graphics: 'auto', custom: null, from: 1 });
     for (const raw of ['{bad', '[]', '"x"', '{"graphics":"faible"}', '{"v":0,"graphics":"faible"}', 'null', 'x'.repeat(5000)]) expect(parseDevice(raw).status, raw).toBe('corrompu');
-    expect(parseDevice('{"v":2,"graphics":"faible"}')).toEqual({ status: 'future', graphics: 'auto' });
-    for (const raw of ['{bad', '{"v":2,"graphics":"faible"}']) {
+    expect(parseDevice('{"v":3,"graphics":"faible"}')).toEqual({ status: 'future', graphics: 'auto', custom: null }); // lot 5j : v 2 est le schéma courant, v 3 est futur
+    for (const raw of ['{bad', '{"v":3,"graphics":"faible"}']) {
       const storage = createFakeStorage({ [DEVICE_KEY]: raw });
       const d = createDeviceSettings({ search: '', storage });
       expect(d.read().graphics).toBe('auto');
@@ -186,20 +218,20 @@ describe('préférence d\'appareil (zs.device.v1)', () => {
     const blocked = createFakeStorage();
     blocked.failGet = securityError();
     const d = createDeviceSettings({ search: '', storage: blocked });
-    expect(d.read()).toEqual({ graphics: 'auto', status: 'indisponible' });
+    expect(d.read()).toEqual({ graphics: 'auto', custom: null, status: 'indisponible' });
     expect(d.write('moyen')).toEqual({ ok: true, status: 'indisponible', persisted: false });
     expect(d.state().mode).toBe('unavailable');
     expect(blocked.calls.setItem).toBe(0);
     const none = createDeviceSettings({ search: '', storage: null });
     expect(none.write('faible')).toMatchObject({ status: 'indisponible', persisted: false });
-    expect(none.read()).toEqual({ graphics: 'faible', status: 'indisponible' });
+    expect(none.read()).toEqual({ graphics: 'faible', custom: null, status: 'indisponible' });
   });
   it('?test=1 sans ?store=local : mémoire, aucun appel au stockage ; ?test=1&store=local : le vrai stockage', () => {
     const storage = createFakeStorage();
     const mem = createDeviceSettings({ search: '?test=1&gfx=faible', storage });
     expect(mem.mode).toBe('memory');
     expect(mem.write('faible')).toEqual({ ok: true, status: 'memoire', persisted: false });
-    expect(mem.read()).toEqual({ graphics: 'faible', status: 'memoire' });
+    expect(mem.read()).toEqual({ graphics: 'faible', custom: null, status: 'memoire' });
     expect(storage.calls.getItem + storage.calls.setItem).toBe(0);
     const local = createDeviceSettings({ search: '?test=1&store=local', storage });
     expect(local.write('eleve').persisted).toBe(true);

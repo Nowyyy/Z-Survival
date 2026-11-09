@@ -17,6 +17,6 @@ retours: (4) « Mode essai » dans la colonne de gauche sous chutes + étage (d�
 ```
 
 Écrans sans choix (conservés, non intégrés) : menu (« plus tard »), boutique, réglages, classement. Priorité 2 : aucune proposition retenue (« non choisis, rester dans l'atelier »).
-Points ouverts de la passation (§ 6) et ce que le lot 3l en a fait : voir `Docs/ref/interface-integree.md` et `Docs/lots/lot-3l.md`.
+Points ouverts de la passation (§ 6) et ce que le lot 3l en a fait : voir `Docs/ref/interface-integree.md` et `Docs/lots/versions/v0.5.md#lot-3l`.
 
 Décisions du propriétaire pendant le lot 3l (points ouverts du § 6 de la passation) : marges de la maquette du lot 3k (16 px plus la zone de sécurité), puis, après essai sur iPhone, **16 px à gauche et à droite sans la zone de sécurité** (« tout au bord, tout le temps ») ; le reste des propositions de l'agent est accepté : « DÉBUT 3 s » dans la boîte des restants, « +N » à gauche de l'argent, « Mode essai » à gauche, lien vers `sauvegarde.html` retiré de l'écran de fin sans autre accès pour l'instant.

@@ -39,7 +39,7 @@ description: Ajout d'une V1 du système d'argent et de sauvegarde, refonte enti�
 
 [v0.6]
 nom: V0.6
-description: Voiture en flammes et hélicoptère écrasé, nouvel impact sur les zombies, réglage des graphismes, travail sur la fluidité et nettoyage du code.
+description: Ajout de décor hors de la map , modification de certains sons, optimisation des performances, niveau de graphismes faible - élevé et nettoyage du code.
 
 # --- Lots de la version en préparation ---
 
@@ -95,4 +95,52 @@ afficher: oui
 version: v0.6
 nom: Accueil retouché
 description: L'accueil occupe toute la hauteur de l'écran ; la colonne de droite montre toutes les versions, en tête la version actuelle avec sa description complète.
+afficher: oui
+
+[lot-5j]
+version: v0.7
+nom: Menu Options dans la pause
+description: Préréglages Auto, Faible, Moyen, Élevé et Perso, et un réglage séparé pour chaque élément graphique ; changer un réglage passe sur Perso.
+afficher: oui
+
+[lot-5k]
+version: v0.7
+nom: Lampes à huile et lumières (essai)
+description: Des lampes à huile toujours présentes sur des piliers et des murs ; leur lumière dynamique, qui laisse des coins plus sombres, est réservée au préréglage Élevé.
+afficher: oui
+
+[lot-5l]
+version: v0.7
+nom: Menu de débogage dans la pause
+description: Une icône à côté du son ouvre un panneau de réglages d'essai (manche, argent, niveaux, mesure) ; seulement sur le développement et la Recette.
+afficher: oui
+
+[lot-5m]
+version: v0.7
+nom: Nettoyage des branches et de la documentation
+description: Les bilans des versions V0.1 à V0.6 sont réunis en un fichier par version, sans rien perdre ; quelques documents terminés sont retirés. Le jeu ne change pas.
+afficher: oui
+
+[lot-5n]
+version: v0.7
+nom: Tests de publication allégés
+description: Les tests lancés à chaque mise à jour ne font plus deux fois le même travail et sont mieux répartis ; aucun test retiré. Le jeu ne change pas.
+afficher: oui
+
+[lot-5o]
+version: v0.7
+nom: Sauvegarde sûre avec plusieurs onglets
+description: Plusieurs onglets du jeu ouverts en même temps ne perdent plus aucun gain ; un contrôle dit si la version est prête à être publiée. Les règles du jeu ne changent pas.
+afficher: oui
+
+# --- V0.7 (texte du propriétaire) ---
+
+[v0.7]
+nom: V0.7
+description: Rework du système de lumière. Menu option et menu de débug pour ne pas surcharger le menu pause. Bugfix sur la map. Optimisation de code.
+
+[lot-5p]
+version: v0.7
+nom: Publication de la V0.7
+description: La V0.6 rejoint les anciennes versions et la V0.7 devient la version Recette ; la documentation est mise à jour. Le jeu ne change pas.
 afficher: oui

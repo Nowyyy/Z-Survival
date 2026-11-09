@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { existsSync, readFileSync, readdirSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { parseLot } from '../../js/lots.js';
 import { readEvolutions, VERSION_RE } from '../../scripts/site/site-info.mjs';
+import { bilansDuDossier } from '../../scripts/docs/bilans.mjs';
 
 // Lot 5g : le journal des versions (/dev/) et la liste « versions » sont supprimés ; « lots » reste (une entrée par bilan) et chaque lot depuis le 5a
 // porte « version » (version cible) : l'accueil de la Recette montre les lots dont la version n'est pas encore publiée (scripts/site/site-info.mjs).
@@ -30,21 +31,30 @@ describe('data/changelog.json', () => {
     expect(names).toContain('lot-3k'); // lot 3k fusionné dans lot-4b
   });
 
-  it('chaque bilan de Docs/lots/ a son entrée', () => {
-    for (const f of readdirSync('Docs/lots').filter((n) => n.endsWith('.md'))) expect(lots.map((e) => e.name), f).toContain(f.replace('.md', ''));
+  // Lot 5m : bilans séparés (Docs/lots/lot-N.md) ou regroupés par version (Docs/lots/versions/v0.N.md), lus par scripts/docs/bilans.mjs ;
+  // avant : readdirSync('Docs/lots') (bilans séparés seulement). Même assertion par bilan.
+  it('chaque bilan de Docs/lots/ (séparé ou regroupé) a son entrée', () => {
+    for (const lot of bilansDuDossier().keys()) expect(lots.map((e) => e.name), lot).toContain(lot);
   });
 
-  // Lot 5i : lot-5i ajouté en dernier, après lot-5f ; avant (lot 5f) : lot-5f en dernier, après lot-5h (publié après les lots 5g et 5h) ;
+  // Lot 5p : lot-5p ajouté en dernier, après lot-5o (avant : lot-5o en dernier ; les rangs suivants décalés d'un cran). Lot 5o : lot-5o ajouté en dernier, après lot-5n (avant : lot-5n en dernier ; les rangs suivants décalés d'un cran). Lot 5n : lot-5n ajouté en dernier, après lot-5m (avant : lot-5m en dernier ; les rangs suivants décalés d'un cran). Lot 5m : lot-5m ajouté en dernier, après lot-5l (avant : lot-5l en dernier ; les rangs suivants décalés d'un cran). Lot 5l : lot-5l ajouté en dernier, après lot-5k (avant : lot-5k en dernier ; les rangs suivants décalés d'un cran). Lot 5k : lot-5k ajouté en dernier, après lot-5j (avant : lot-5j en dernier). Lot 5j : lot-5j ajouté en dernier, après lot-5i (avant : lot-5i en dernier). Lot 5i : lot-5i ajouté en dernier, après lot-5f ; avant (lot 5f) : lot-5f en dernier, après lot-5h (publié après les lots 5g et 5h) ;
   // (lot 5h : lot-5h en dernier, après lot-5g ; lot 5g : lot-5g en dernier, après lot-5e ; lot 5e : lot-5e en dernier, après lot-5d).
-  it('le fichier est dans l\'ordre chronologique : lot-0 en premier, lot-5i en dernier (lot 5i : après lot-5f, lot-5h, lot-5g, lot-5e, lot-5d, lot-5c, lot-5b, lot-5a, lot-4g, lot-4f, lot-4e, lot-4c et lot-4b)', () => {
+  it('le fichier est dans l\'ordre chronologique : lot-0 en premier, lot-5p en dernier (lot 5p : après lot-5o, lot-5n, lot-5m, lot-5l, lot-5k, lot-5j, lot-5i, lot-5f, lot-5h, lot-5g, lot-5e, lot-5d, lot-5c, lot-5b, lot-5a, lot-4g, lot-4f, lot-4e, lot-4c et lot-4b)', () => {
     expect(lots[0].name).toBe('lot-0');
-    expect(lots.at(-1).name).toBe('lot-5i');
-    expect(lots.at(-2).name).toBe('lot-5f');
-    expect(lots.at(-3).name).toBe('lot-5h');
-    expect(lots.at(-4).name).toBe('lot-5g');
-    expect(lots.at(-5).name).toBe('lot-5e');
-    expect(lots.at(-6).name).toBe('lot-5d');
-    const before = lots.slice(0, -6).filter((e) => e.name !== 'lot-5c');
+    expect(lots.at(-1).name).toBe('lot-5p');
+    expect(lots.at(-2).name).toBe('lot-5o');
+    expect(lots.at(-3).name).toBe('lot-5n');
+    expect(lots.at(-4).name).toBe('lot-5m');
+    expect(lots.at(-5).name).toBe('lot-5l');
+    expect(lots.at(-6).name).toBe('lot-5k');
+    expect(lots.at(-7).name).toBe('lot-5j');
+    expect(lots.at(-8).name).toBe('lot-5i');
+    expect(lots.at(-9).name).toBe('lot-5f');
+    expect(lots.at(-10).name).toBe('lot-5h');
+    expect(lots.at(-11).name).toBe('lot-5g');
+    expect(lots.at(-12).name).toBe('lot-5e');
+    expect(lots.at(-13).name).toBe('lot-5d');
+    const before = lots.slice(0, -13).filter((e) => e.name !== 'lot-5c');
     expect(before.at(-1).name).toBe('lot-5b');
     expect(before.at(-2).name).toBe('lot-5a');
     expect(before.at(-3).name).toBe('lot-4g');
@@ -61,12 +71,12 @@ describe('data/changelog.json', () => {
     expect(readFileSync('apercu.txt', 'utf8').match(/^nom:/gm)).toHaveLength(1);
   });
 
-  // Lot 5i : lot-5i ajouté (v0.6) ; lot 5f : lot-5f ajouté (v0.6) ; avant : lots 5a à 5h sans 5f.
-  it('champ « version » : de la forme v0.N quand il est présent ; présent (v0.6) sur les lots 5a à 5h ; absent des lots plus anciens', () => {
+  // Lot 5p : lot-5p ajouté (v0.7) ; lot 5o : lot-5o ajouté (v0.7) ; lot 5n : lot-5n ajouté (v0.7) ; lot 5m : lot-5m ajouté (v0.7) ; lot 5l : lot-5l ajouté (v0.7) ; lot 5k : lot-5k ajouté (v0.7) ; lot 5j : lot-5j ajouté (v0.7, première évolution de la version suivante) ; lot 5i : lot-5i ajouté (v0.6) ; lot 5f : lot-5f ajouté (v0.6) ; avant : lots 5a à 5h sans 5f.
+  it('champ « version » : de la forme v0.N quand il est présent ; présent (v0.6) sur les lots 5a à 5i, v0.7 sur lot-5j, lot-5k, lot-5l, lot-5m, lot-5n, lot-5o et lot-5p ; absent des lots plus anciens', () => {
     for (const e of lots.filter((x) => 'version' in x)) expect(e.version, e.name).toMatch(VERSION_RE);
     const fives = lots.filter((e) => /^lot-5[a-z]$/.test(e.name));
-    expect(fives.map((e) => e.name)).toEqual(['lot-5a', 'lot-5b', 'lot-5c', 'lot-5d', 'lot-5e', 'lot-5g', 'lot-5h', 'lot-5f', 'lot-5i']);
-    for (const e of fives) expect(e.version, e.name).toBe('v0.6');
+    expect(fives.map((e) => e.name)).toEqual(['lot-5a', 'lot-5b', 'lot-5c', 'lot-5d', 'lot-5e', 'lot-5g', 'lot-5h', 'lot-5f', 'lot-5i', 'lot-5j', 'lot-5k', 'lot-5l', 'lot-5m', 'lot-5n', 'lot-5o', 'lot-5p']);
+    for (const e of fives) expect(e.version, e.name).toBe(['lot-5j', 'lot-5k', 'lot-5l', 'lot-5m', 'lot-5n', 'lot-5o', 'lot-5p'].includes(e.name) ? 'v0.7' : 'v0.6');
     expect(lots.filter((e) => !/^lot-5/.test(e.name) && 'version' in e)).toEqual([]);
   });
 
@@ -78,13 +88,21 @@ describe('data/changelog.json', () => {
 
   // Lot 5f : V0.6 publiée, donc aucune évolution ; avant : v0.6 non publiée et les lots 5h → 5a en évolutions. Ce cas est gardé (versions publiées
   // sans v0.6), et un lot d'une version suivante (v0.7) y entre.
-  it('les évolutions de l\'accueil sont les lots de la version cible pas encore publiée, du plus récent au plus ancien ; v0.6 publiée : aucune', () => {
+  // Lot 5o : lot-5o, lot-5n, lot-5m, lot-5l, lot-5k puis lot-5j ; lot 5n : lot-5n, lot-5m, lot-5l, lot-5k puis lot-5j ; lot 5m : lot-5m, lot-5l, lot-5k puis lot-5j ; lot 5l : lot-5l, lot-5k puis lot-5j ; lot 5k : lot-5k puis lot-5j (v0.7, non publiée) ; lot 5j : lot-5j seul (avant : aucune).
+  // Lot 5p : V0.7 publiée, donc aucune évolution ; avant (v0.6 publiée, v0.7 non) : lot-5o, lot-5n, lot-5m, lot-5l, lot-5k puis lot-5j. Ce cas est gardé
+  // (versions publiées sans v0.7 : lot-5p en tête), le cas « sans v0.6 » aussi, et un lot d'une version suivante (v0.8, avant : v0.7) y entre.
+  it('les évolutions de l\'accueil sont les lots de la version cible pas encore publiée, du plus récent au plus ancien ; v0.7 publiée : aucune ; sans v0.7 : lot-5p, lot-5o, lot-5n, lot-5m, lot-5l, lot-5k puis lot-5j (v0.7)', () => {
     expect(published).toContain('v0.6');
+    expect(published).toContain('v0.7');
     expect(readEvolutions(changelog, published)).toEqual([]);
-    const avantV06 = published.filter((id) => id !== 'v0.6');
-    expect(readEvolutions(changelog, avantV06).map((e) => e.id)).toEqual(['lot-5i', 'lot-5f', 'lot-5h', 'lot-5g', 'lot-5e', 'lot-5d', 'lot-5c', 'lot-5b', 'lot-5a']);
-    const suivant = { ...changelog, lots: [...changelog.lots, { name: 'lot-6a', version: 'v0.7', date: '2026-11-07', titre: 'Lot de la version suivante', points: ['Premier point.'] }] };
-    expect(readEvolutions(suivant, published).map((e) => [e.id, e.version])).toEqual([['lot-6a', 'v0.7']]);
+    const avantV07 = published.filter((id) => id !== 'v0.7');
+    expect(readEvolutions(changelog, avantV07).map((e) => [e.id, e.version])).toEqual([['lot-5p', 'v0.7'], ['lot-5o', 'v0.7'], ['lot-5n', 'v0.7'], ['lot-5m', 'v0.7'], ['lot-5l', 'v0.7'], ['lot-5k', 'v0.7'], ['lot-5j', 'v0.7']]);
+    const avantV06 = published.filter((id) => id !== 'v0.6' && id !== 'v0.7');
+    expect(readEvolutions(changelog, avantV06).map((e) => e.id)).toEqual(['lot-5p', 'lot-5o', 'lot-5n', 'lot-5m', 'lot-5l', 'lot-5k', 'lot-5j', 'lot-5i', 'lot-5f', 'lot-5h', 'lot-5g', 'lot-5e', 'lot-5d', 'lot-5c', 'lot-5b', 'lot-5a']);
+    const suivant = { ...changelog, lots: [...changelog.lots, { name: 'lot-6a', version: 'v0.8', date: '2026-11-10', titre: 'Lot de la version suivante', points: ['Premier point.'] }] };
+    expect(readEvolutions(suivant, published).map((e) => [e.id, e.version])).toEqual([['lot-6a', 'v0.8']]);
+    const suivantSansV07 = { ...changelog, lots: [...changelog.lots, { name: 'lot-6a', version: 'v0.7', date: '2026-11-10', titre: 'Lot de la version suivante', points: ['Premier point.'] }] };
+    expect(readEvolutions(suivantSansV07, avantV07).map((e) => [e.id, e.version])).toEqual([['lot-6a', 'v0.7'], ['lot-5p', 'v0.7'], ['lot-5o', 'v0.7'], ['lot-5n', 'v0.7'], ['lot-5m', 'v0.7'], ['lot-5l', 'v0.7'], ['lot-5k', 'v0.7'], ['lot-5j', 'v0.7']]);
   });
 
   it('le fichier est publié par le build (data/) ; plus aucune clé de texte du journal (dev.changelog*)', () => {

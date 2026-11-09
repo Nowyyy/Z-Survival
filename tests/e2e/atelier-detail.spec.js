@@ -61,9 +61,11 @@ test.describe('budgets de rendu avec le détail (27 300 triangles et 84 appels a
   for (const [id, sc] of Object.entries(SCENES)) {
     test(`${id}`, async ({ page }, testInfo) => {
       const ref = (testInfo.project.name === 'mobile' ? REF_MOBILE : REF)[id];
-      await open(page, `${sc.url}&shadows=1&detail=0&perso=A&sang=0`); // lot 5e : référence mesurée avec la variante A
+      // Lot 5n : &lum=off (rendu d'avant les lampes, ?test=1 seulement, comme argent.spec au lot 5k) : les références datent d'avant les lampes
+      // du lot 5k (avec lampes : jusqu'à 1 304 triangles d'écart, remesuré en CI) ; le budget de la vue avec lampes reste vérifié par persos-integres et lampes.
+      await open(page, `${sc.url}&shadows=1&detail=0&perso=A&sang=0&lum=off`); // lot 5e : référence mesurée avec la variante A
       const off = await measure(page, sc);
-      await open(page, `${sc.url}&shadows=1&perso=A&sang=0`); // même variante que la mesure sans le détail
+      await open(page, `${sc.url}&shadows=1&perso=A&sang=0&lum=off`); // même variante que la mesure sans le détail
       const on = await measure(page, sc);
       const note = `${id} : detail=0 ${off.calls} appels / ${off.triangles} triangles ; detail=1 ${on.calls} / ${on.triangles} (référence ${ref.join(' / ')})`;
       testInfo.annotations.push({ type: 'rendu', description: note });

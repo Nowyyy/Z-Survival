@@ -58,6 +58,25 @@ try {
   const name = t(id === 'salle' ? 'dev.carte.map.salle' : upper ? 'dev.carte.name.etage' : 'dev.carte.map.rez');
   const svg = mapToSvg(world, drawn, { overlays, labels: { title: t('dev.carte.svg.title', { name }), desc: t('dev.carte.svg.desc'), scale: t('dev.carte.scale'), frame: t('dev.carte.frame'), start: t('dev.carte.start') } });
   $('figure').innerHTML = svg;
+  // Lot 5k : lampes à huile de l'étage dessiné (lampes.world.json, généré par npm run carte) : point, sens de la lampe, portée de sa lumière (pointillés).
+  if (id !== 'salle') {
+    const doc = await loadJson(`data/game/maps/${id}/lampes.world.json`).catch(() => null);
+    const reach = (await loadJson('data/game/lumieres.json').catch(() => null))?.distance ?? 120;
+    const root = $('figure').querySelector('svg');
+    const NS = 'http://www.w3.org/2000/svg';
+    const el = (name, attrs) => {
+      const e = document.createElementNS(NS, name);
+      for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, String(v));
+      return e;
+    };
+    const g = el('g', { class: 'lampes' });
+    for (const l of (Array.isArray(doc?.lampes) ? doc.lampes : []).filter((q) => q.floor === (upper ? 'etage' : 'rdc'))) {
+      g.append(el('circle', { class: 'lampe-portee', cx: l.light.x, cy: l.light.y, r: Math.min(reach, l.portee), 'data-id': l.id }));
+      g.append(el('line', { class: 'lampe-sens', x1: l.x, y1: l.y, x2: l.light.x + l.n.x * 14, y2: l.light.y + l.n.y * 14 }));
+      g.append(el('circle', { class: 'lampe', cx: l.light.x, cy: l.light.y, r: 13, 'data-id': l.id }));
+    }
+    root?.append(g);
+  }
   const pillars = Array.isArray(world.pillars) ? world.pillars.length : 0;
   $('stats').textContent = t('dev.carte.stats', { name, w: world.size.width, h: world.size.height, windows: world.windows.length, pillars, obstacles: world.obstacles.length });
 } catch {

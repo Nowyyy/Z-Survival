@@ -217,6 +217,35 @@
     { "name": "lot-5i", "version": "v0.6", "date": "2026-11-07", "titre": "Accueil retouché", "points": [
       "L'accueil occupe toute la hauteur de l'écran ; le bandeau dit « Recette », le bouton « Jouer - V0.6 », et la colonne de droite montre toutes les versions, en tête la version actuelle avec sa description complète.",
       "La description de la version Recette n'est plus coupée à 120 caractères. Aucun changement du jeu."
+    ] },
+    { "name": "lot-5j", "version": "v0.7", "date": "2026-11-07", "titre": "Menu Options dans la pause", "points": [
+      "La pause a un bouton « Options » : préréglages Auto, Faible, Moyen, Élevé et Perso, puis un réglage séparé pour chaque élément graphique (image, carte, personnages).",
+      "Changer un réglage à la main passe sur Perso, gardé à part ; certains réglages s'appliquent au rechargement, proposé par un bouton. Le jeu lui-même ne change pas."
+    ] },
+    { "name": "lot-5k", "version": "v0.7", "date": "2026-11-07", "titre": "Lampes à huile et lumières (essai)", "points": [
+      "Des petites lampes à huile sur des piliers et des murs, aux deux étages, toujours présentes sur la carte ; deux réglages dans les Options : « Lumière des lampes » (coupée ou dynamique) et « Lumières simultanées » (2, 4 ou 6).",
+      "La lumière dynamique est réservée au préréglage Élevé : coins plus sombres, ombres portées par les lampes et lumière des feux ; le jeu lui-même ne change pas. Positions et intensités provisoires, à régler.",
+      "En lumière dynamique, la lune entre par les fenêtres exposées : sa tache au sol faiblit à chaque planche clouée et revient doucement quand une planche est arrachée."
+    ] },
+    { "name": "lot-5l", "version": "v0.7", "date": "2026-11-08", "titre": "Menu de débogage dans la pause (développement et Recette)", "points": [
+      "Une petite icône « Débogage » à côté du son, dans la pause, ouvre un panneau : manche, argent, niveaux des statistiques, planches, étage, carte, sans zombies, manches sans fin, fin du monde, panneau de mesure et plafond d'images ; « Appliquer et recharger » lance une partie d'essai (sauvegarde non modifiée).",
+      "Ce menu et les réglages d'adresse n'existent que sur le développement et la Recette, ni sur les archives ni, plus tard, en production ; les réglages graphiques déjà présents dans Options ne passent plus par l'adresse."
+    ] },
+    { "name": "lot-5m", "version": "v0.7", "date": "2026-11-08", "titre": "Nettoyage des branches et de la documentation", "points": [
+      "Les bilans des lots des versions V0.1 à V0.6 sont réunis en un fichier par version, en texte intégral et sans aucune modification ; ceux de la V0.7 restent séparés.",
+      "Quatre documents terminés et sans aucune référence sont retirés ; la branche d'un lot est désormais supprimée au nettoyage de fin de version. Aucun changement dans le jeu."
+    ] },
+    { "name": "lot-5n", "version": "v0.7", "date": "2026-11-08", "titre": "Tests de publication allégés", "points": [
+      "Les tests lancés à chaque mise à jour du développement ne font plus deux fois le même travail, et le palier standard est réparti en quatre tranches équilibrées au lieu de trois.",
+      "Quelques délais d'attente trop courts sont allongés et un test à deux onglets est fiabilisé ; aucun test retiré, aucun changement dans le jeu."
+    ] },
+    { "name": "lot-5o", "version": "v0.7", "date": "2026-11-09", "titre": "Sauvegarde sûre avec plusieurs onglets", "points": [
+      "Quand plusieurs onglets du jeu enregistrent presque en même temps, plus aucun gain n'est perdu : chaque onglet réécrit, une seule fois, ce qui manquerait. Seul, un onglet enregistre exactement comme avant.",
+      "Un contrôle en lecture seule dit si la version est prête à être publiée, puis si elle a bien été publiée. Les règles du jeu et de l'argent ne changent pas."
+    ] },
+    { "name": "lot-5p", "version": "v0.7", "date": "2026-11-09", "titre": "Publication de la V0.7", "points": [
+      "La V0.6 rejoint les anciennes versions et la V0.7 devient la version Recette ; les bilans des lots de la V0.7 sont réunis en un seul fichier et la documentation est mise à jour.",
+      "Le jeu ne change pas."
     ] }
   ]
 }

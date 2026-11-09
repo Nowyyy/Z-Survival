@@ -85,6 +85,33 @@ test.describe('outil de mesure (?perf=1)', () => {
     expect(seen.errors).toEqual([]);
   });
 
+  // Retour du propriétaire (lot 5k) : le panneau de mesure passait au-dessus du menu pause.
+  test('?perf=1 : pause ouverte, le panneau reste sous le menu pause et n\'est ni cliquable ni atteignable au clavier ; pause fermée, il l\'est de nouveau', async ({ page }) => {
+    await open(page, '&nospawn=1&perf=1');
+    await expect(page.locator('#perf-toggle')).toBeVisible();
+    await page.locator('#btn-pause').click();
+    await expect(page.locator('#pause-panel')).toBeVisible();
+    const under = await page.evaluate(() => {
+      const t = document.getElementById('perf-toggle').getBoundingClientRect();
+      const hit = document.elementFromPoint(t.left + t.width / 2, t.top + t.height / 2);
+      const z = (el) => Number(getComputedStyle(el).zIndex) || 0;
+      return { inert: document.getElementById('perf-panel').inert, covered: !document.getElementById('perf-panel').contains(hit), perfZ: z(document.getElementById('perf-panel')), pauseZ: z(document.getElementById('pause-panel').closest('.panel-wrap')) };
+    });
+    expect(under.inert).toBe(true);
+    expect(under.covered).toBe(true);
+    expect(under.perfZ).toBeLessThan(under.pauseZ);
+    // Tabulation dans la pause : le focus ne va jamais dans le panneau de mesure.
+    for (let i = 0; i < 12; i += 1) {
+      await page.keyboard.press('Tab');
+      expect(await page.evaluate(() => document.getElementById('perf-panel').contains(document.activeElement))).toBe(false);
+    }
+    await page.keyboard.press('Escape');
+    await expect(page.locator('#pause-panel')).toBeHidden();
+    expect(await page.evaluate(() => document.getElementById('perf-panel').inert)).toBe(false);
+    await page.locator('#perf-toggle').click();
+    await expect(page.locator('#perf-body')).toBeVisible();
+  });
+
   test('« Copier le rapport » : presse-papiers, sinon texte sélectionné ; « Remettre à zéro » vide les mesures', async ({ page, context, baseURL }) => {
     await context.grantPermissions(['clipboard-read', 'clipboard-write'], { origin: baseURL });
     await open(page, '&perf=1&nospawn=1');

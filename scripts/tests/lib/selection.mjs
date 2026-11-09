@@ -1,7 +1,8 @@
 // Lot 4e-B — Sélection des tests par zone (fonctions pures : aucune lecture de fichier, aucun appel à git).
 // Fichiers modifiés → zones touchées → fermeture inverse (une zone touchée rejoue toutes celles qui en dépendent, directement ou non)
 // → fichiers Vitest et Playwright. Tout fichier qu'aucune zone ne revendique rejoue tout ; la documentation seule ne rejoue rien ;
-// les fichiers de « rejeu-total » (paquets, configurations, table, budget, workflows, jetons de couleur…) rejouent tout.
+// les fichiers de « rejeu-total » (paquets, configurations, table, budget, workflows, jetons de couleur…) rejouent tout ; lot 5n : un changement de la
+// table limité à ses zones touche ces zones, et les aides de Vitest (« rejeu-vitest ») rejouent tout Vitest sans rejeu total de Playwright.
 import { correspond } from './glob.mjs';
 
 export const estTest = (f) => /^tests\/(?:unit\/[^/]+\.test\.js|e2e\/[^/]+\.spec\.js)$/.test(f);
@@ -52,6 +53,21 @@ export function fermetureInverse(touchees, table) {
 
 const uniq = (a) => [...new Set(a)].sort();
 
+// Lot 5n (T5) — Changement de la table elle-même (tests/selection.json) : comparaison de la table de la base et de celle d'aujourd'hui.
+// Renvoie null sans table de la base (rejeu total) ; sinon { zones : zones ajoutées ou dont l'entrée a changé, autres : clés hors zones changées
+// et zones retirées }. Seul un changement limité aux entrées zones[*] évite le rejeu total.
+export const TABLE = 'tests/selection.json';
+export function changementsDeTable(avant, apres) {
+  if (!avant || typeof avant !== 'object' || !Array.isArray(avant.zones) || !Array.isArray(apres?.zones)) return null;
+  const autres = [];
+  for (const k of uniq([...Object.keys(avant), ...Object.keys(apres)])) if (k !== 'zones' && JSON.stringify(avant[k]) !== JSON.stringify(apres[k])) autres.push(k);
+  const a = new Map(avant.zones.map((z) => [z.id, JSON.stringify(z)]));
+  const b = new Map(apres.zones.map((z) => [z.id, JSON.stringify(z)]));
+  for (const id of a.keys()) if (!b.has(id)) autres.push(`zones (zone retirée : ${id})`);
+  const zones = [...b.keys()].filter((id) => a.get(id) !== b.get(id));
+  return { zones, autres };
+}
+
 /**
  * @param {object} o
  * @param {string[]} o.fichiers fichiers modifiés (relatifs à la racine)
@@ -59,13 +75,18 @@ const uniq = (a) => [...new Set(a)].sort();
  * @param {string} [o.base] référence de comparaison (pour les raisons)
  * @param {string|null} [o.forcerTout] raison d'un rejeu total imposé (--tout, complet périodique, version introuvable)
  * @param {string[]} [o.vitestChanged] fichiers rendus par `vitest list --changed <base>` (graphe d'imports de Vitest)
+ * @param {object|null} [o.tableAvant] tests/selection.json de la base (lot 5n) : un changement limité aux entrées zones[*] touche ces zones
  */
-export function selectionner({ fichiers, table, base = 'base', forcerTout = null, vitestChanged = [] }) {
+export function selectionner({ fichiers, table, base = 'base', forcerTout = null, vitestChanged = [], tableAvant = null }) {
   const toutesZones = table.zones.map((z) => z.id);
-  const res = { base, mode: 'zones', raison: '', fichiers: uniq(fichiers), documentation: [], declencheurs: [], inconnus: [], testsModifies: [], touchees: {}, rejouees: [], sautees: [], vitest: [], e2e: [], complet: [], fumee: [...(table.fumee ?? [])] };
+  const res = { base, mode: 'zones', raison: '', fichiers: uniq(fichiers), documentation: [], declencheurs: [], inconnus: [], testsModifies: [], vitestTout: [], touchees: {}, rejouees: [], sautees: [], vitest: [], e2e: [], complet: [], fumee: [...(table.fumee ?? [])] };
+  const table5n = res.fichiers.includes(TABLE) ? changementsDeTable(tableAvant, table) : null;
   for (const f of res.fichiers) {
     if (estDocumentation(f, table)) res.documentation.push(f);
+    else if (f === TABLE && table5n && !table5n.autres.length) for (const z of table5n.zones) (res.touchees[z] ??= []).push(TABLE);
     else if (declencheRejeuTotal(f, table)) res.declencheurs.push(f);
+    // Lot 5n (T5) : aides des tests Vitest (« rejeu-vitest ») : tout Vitest, aucun rejeu total de Playwright (aucun fichier e2e ne les lit).
+    else if (correspond(f, table['rejeu-vitest'] ?? [])) res.vitestTout.push(f);
     else if (estTest(f)) res.testsModifies.push(f);
     else {
       const zs = zonesDe(f, table);
@@ -103,6 +124,10 @@ export function selectionner({ fichiers, table, base = 'base', forcerTout = null
     if (!res.fichiers.length) res.raison = 'aucun fichier modifié';
     else if (res.documentation.length === res.fichiers.length) res.raison = 'documentation seule : rien à rejouer';
     else res.raison = `${res.rejouees.length} zone(s) rejouée(s) sur ${toutesZones.length}`;
+    if (res.vitestTout.length) {
+      res.raison += ` ; tout Vitest (aide Vitest modifiée : ${res.vitestTout.slice(0, 2).join(', ')}${res.vitestTout.length > 2 ? '…' : ''})`;
+      for (const z of table.zones) res.vitest.push(...z.vitest);
+    }
     // Les tests modifiés eux-mêmes, les « toujours » (si quelque chose d'autre que la documentation change) et le graphe de Vitest.
     const horsDoc = res.fichiers.length > res.documentation.length;
     for (const t of res.testsModifies) (t.startsWith('tests/unit/') ? res.vitest : res.e2e).push(t);
@@ -154,7 +179,7 @@ export function controlerTable(table, { fichiersTests, fichiersSources, existe, 
   const listes = new Set([...(table.toujours ?? []), ...(table.fumee ?? []), ...table.zones.flatMap((z) => [...z.vitest, ...z.e2e, ...z.complet])]);
   for (const t of fichiersTests) if (!listes.has(t)) erreurs.push(`test sans zone : ${t}`);
   for (const f of fichiersSources) {
-    if (!zonesDe(f, table).length && !declencheRejeuTotal(f, table)) erreurs.push(`source sans zone ni rejeu total : ${f}`);
+    if (!zonesDe(f, table).length && !declencheRejeuTotal(f, table) && !correspond(f, table['rejeu-vitest'] ?? [])) erreurs.push(`source sans zone ni rejeu total : ${f}`);
   }
   const fermee = (a, b) => {
     const vus = new Set();

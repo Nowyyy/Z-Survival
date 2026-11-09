@@ -3,10 +3,12 @@
    Couleurs : variables de tokens.css seulement. Deux colonnes à partir de 640 px, une en dessous ; les listes défilent dans des zones de hauteur
    limitée (la page ne s'allonge pas avec le nombre de versions). Lot 5i : à partir de 640 px de large et 520 px de haut, l'interface occupe toute
    la hauteur de la fenêtre (min-height de .screen, 100dvh avec repli 100vh, dans base.css) : la liste des évolutions et la région des versions
-   s'étirent jusqu'au pied, la page entière ne défile pas ; sous 520 px de haut, le comportement d'avant est gardé. */
+   s'étirent jusqu'au pied, la page entière ne défile pas ; sous 520 px de haut, le comportement d'avant est gardé.
+   Lot 5j-F (retours du propriétaire) : plus de pied « Jeu en développement : contenu provisoire » (la Recette est provisoire par nature) ; la pleine
+   hauteur vaut aussi en paysage sur téléphone (dès 640 px de large, quelle que soit la hauteur) : les zones qui défilent descendent jusqu'en bas. */
 
 .home {
-  grid-template-rows: auto minmax(0, 1fr) auto;
+  grid-template-rows: auto minmax(0, 1fr);
 }
 
 .home-grid {
@@ -233,10 +235,10 @@
   }
 }
 
-/* Pleine hauteur (lot 5i), dès 640 px de large et 520 px de haut : la grille remplit la ligne centrale de .screen (min-height 100dvh, repli 100vh) ;
-   chaque colonne s'étire jusqu'au pied ; les zones qui défilent prennent la place restante (base 0, au moins 6rem) au lieu d'une hauteur fixe.
-   Si le contenu dépasse la fenêtre, la page s'allonge (jamais de contenu coupé). */
-@media (min-width: 640px) and (min-height: 520px) {
+/* Pleine hauteur (lot 5i), dès 640 px de large (lot 5j-F : quelle que soit la hauteur ; avant, dès 520 px de haut) : la grille remplit la ligne
+   centrale de .screen (min-height 100dvh, repli 100vh) ; chaque colonne s'étire jusqu'en bas ; les zones qui défilent prennent la place restante
+   (base 0, au moins 6rem) au lieu d'une hauteur fixe. Si le contenu dépasse la fenêtre, la page s'allonge (jamais de contenu coupé). */
+@media (min-width: 640px) {
   .home-grid {
     grid-template-rows: minmax(0, 1fr);
     align-content: stretch;
@@ -258,10 +260,32 @@
   }
 }
 
-/* Écran bas (téléphone en paysage, 375 px de haut) : titre et marges resserrés, « Jouer » visible sans défiler. */
+/* Écran bas (téléphone en paysage, 375 à 500 px de haut) : titre et marges resserrés, « Jouer » visible sans défiler. Lot 5j-F (retours du propriétaire) :
+   toute la hauteur est utilisée : marges de la page réduites (accueil.css n'est chargé que par l'accueil), badge « Recette » posé par-dessus la grille
+   (même case : il ne pousse plus le contenu ; la colonne de gauche commence sous lui, celle des versions tout en haut), titre et « Jouer » sur une
+   ligne dès 900 px de large ; les deux zones qui défilent descendent jusqu'en bas (avant : hauteurs fixes de 6rem et 15rem) ; si la colonne de
+   gauche ne tient pas (667 × 375), la page s'allonge un peu au lieu de couper. */
 @media (min-width: 640px) and (max-height: 500px) {
+  body {
+    padding: var(--space-2);
+  }
+
   .home {
-    padding-block: var(--space-3);
+    grid-template-rows: minmax(min-content, 1fr);
+    min-height: calc(100vh - 2 * var(--space-2));
+    min-height: calc(100dvh - 2 * var(--space-2));
+    padding: var(--space-3) var(--space-5);
+  }
+
+  .home > .top,
+  .home > .home-grid {
+    grid-area: 1 / 1;
+  }
+
+  .home > .top {
+    z-index: 1;
+    align-self: start;
+    justify-self: start;
   }
 
   .home .title {
@@ -269,8 +293,13 @@
   }
 
   .home-grid {
-    padding-block: var(--space-7) var(--space-2);
-    gap: var(--space-4);
+    grid-template-rows: minmax(min-content, 1fr);
+    padding-block: 0;
+    gap: var(--space-5);
+  }
+
+  .home-col-main {
+    padding-top: 4.5rem;
   }
 
   .home .home-dev {
@@ -283,14 +312,37 @@
 
   .button.play {
     min-height: var(--touch-target);
+    justify-self: start;
   }
 
-  .home-scroll-evolutions {
-    max-height: 6rem;
-  }
-
+  .home-scroll-evolutions,
   .home-scroll-versions {
-    max-height: 15rem;
+    min-height: 4rem;
+  }
+
+  .home-section-evolutions,
+  .home-section-versions {
+    min-height: auto;
+  }
+}
+
+/* Paysage assez large (900 px et plus, 500 px de haut au plus) : titre et « Jouer » sur une même ligne, sous le badge. */
+@media (min-width: 900px) and (max-height: 500px) {
+  .home-col-main {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-rows: auto auto minmax(0, 1fr);
+    align-items: center;
+    gap: var(--space-2) var(--space-4);
+  }
+
+  .home-col-main > .home-section,
+  .home-col-main > .home-note {
+    grid-column: 1 / -1;
+  }
+
+  .home-col-main > .home-section-evolutions {
+    align-self: stretch;
   }
 }
 

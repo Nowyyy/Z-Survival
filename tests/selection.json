@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "description": "Lot 4e — table de sélection des tests par zone (scripts/tests/selectionner.mjs). Une zone rejoue ses tests quand une de ses sources ou une zone dont elle dépend change ; tout fichier modifié qu'aucune zone ne revendique rejoue tout ; la documentation seule ne rejoue rien. Les noms de fichiers sont des données.",
+  "description": "Lot 4e — table de sélection des tests par zone (scripts/tests/selectionner.mjs). Une zone rejoue ses tests quand une de ses sources ou une zone dont elle dépend change ; tout fichier modifié qu'aucune zone ne revendique rejoue tout ; la documentation seule ne rejoue rien. Lot 5n : un changement de cette table limité à ses entrées zones[*] ne rejoue que ces zones et celles qui en dépendent (toute autre clé : tout) ; « rejeu-vitest » (aides de Vitest) rejoue tout Vitest, sans rejeu total de Playwright. Les noms de fichiers sont des données.",
   "sujets-garde-fous": [
     "pureté de js/core/",
     "dependencies vide",
@@ -180,6 +180,7 @@
     { "fichier": "tests/unit/noms.test.js", "categorie": "G", "raison": "Fichier des noms (lot 5h) : analyseur, priorité, fichier commité sans aucune erreur." },
     { "fichier": "tests/unit/publication.test.js", "categorie": "G", "raison": "Assembleur, workflow, publication." },
     { "fichier": "tests/unit/sauvegarde-depots.test.js", "categorie": "G", "raison": "Dépôts de sauvegarde." },
+    { "fichier": "tests/unit/sauvegarde-onglets.test.js", "categorie": "G", "raison": "Lot 5o : défaut des deux onglets (simulateur à graine fixe, fusion entre onglets, octets identiques pour un seul onglet)." },
     { "fichier": "tests/unit/sauvegarde-donnees.test.js", "categorie": "G", "raison": "Données de sauvegarde." },
     { "fichier": "tests/unit/sauvegarde-page.test.js", "categorie": "G", "raison": "Page de sauvegarde." },
     { "fichier": "tests/unit/sauvegarde-schema.test.js", "categorie": "G", "raison": "Schéma, migrations, codec." },
@@ -239,8 +240,10 @@
     ".github/workflows/**",
     "css/tokens.css",
     "tests/e2e/helpers.js",
-    "tests/unit/helpers/**",
     "scripts/serve.mjs"
+  ],
+  "rejeu-vitest": [
+    "tests/unit/helpers/**"
   ],
   "documentation": {
     "inclus": ["Docs/**", "**/*.md"],
@@ -325,6 +328,7 @@
         "js/core/decor-interieur.js",
         "js/core/decor-vivant.js",
         "js/core/epaves.js",
+        "js/core/lamps.js",
         "js/core/furniture-model.js",
         "js/core/movement.js",
         "js/core/nav.js",
@@ -585,6 +589,7 @@
         "js/core/economy.js",
         "js/core/money-gain.js",
         "js/core/save.js",
+        "js/core/save-merge.js",
         "js/save/**",
         "js/game/bank.js",
         "js/game/levels-source.js",
@@ -594,13 +599,18 @@
         "js/sauvegarde/**",
         "css/sauvegarde.css",
         "scripts/economie.mjs",
-        "scripts/code-sauvegarde.mjs"
+        "scripts/code-sauvegarde.mjs",
+        "scripts/tests/preuve-onglets.mjs",
+        "scripts/tests/onglets.config.mjs",
+        "scripts/tests/octets-sauvegarde.mjs",
+        "scripts/tests/compat-onglets.mjs"
       ],
       "dependances": ["combat", "noyau", "textes", "vagues"],
       "vitest": [
         "tests/unit/bank.test.js",
         "tests/unit/economie.test.js",
         "tests/unit/sauvegarde-depots.test.js",
+        "tests/unit/sauvegarde-onglets.test.js",
         "tests/unit/sauvegarde-page.test.js",
         "tests/unit/sauvegarde-schema.test.js"
       ],
@@ -709,7 +719,7 @@
     },
     {
       "id": "rendu",
-      "description": "Rendu et textures : monde en 3D, caméra, vue, textures générées, feux, brume, effets, VHS, palette.",
+      "description": "Rendu et textures : monde en 3D, caméra, vue, textures générées, feux, brume, effets, VHS, palette ; lot 5k : lampes à huile et lumières dynamiques.",
       "sources": [
         "scripts/diagnostic-planches.mjs",
         "js/core/texgen.js",
@@ -723,6 +733,9 @@
         "js/game/effects.js",
         "js/game/fire.js",
         "js/game/mist.js",
+        "js/game/lamps.js",
+        "js/game/lights.js",
+        "data/game/lumieres.json",
         "data/game/textures.json",
         "data/game/render.json",
         "data/game/camera.json",
@@ -748,11 +761,12 @@
         "tests/unit/etage-hygiene.test.js",
         "tests/unit/game-carte-mesh.test.js",
         "tests/unit/game-windows-mesh.test.js",
+        "tests/unit/lamps.test.js",
         "tests/unit/maps-regles.test.js",
         "tests/unit/persos-jeu.test.js",
         "tests/unit/zones-rendu.test.js"
       ],
-      "e2e": ["tests/e2e/jeu-rendu.spec.js"],
+      "e2e": ["tests/e2e/jeu-rendu.spec.js", "tests/e2e/lampes.spec.js"],
       "complet": [
         "tests/e2e/atelier-detail.spec.js",
         "tests/e2e/atelier-retours.spec.js",
@@ -773,13 +787,17 @@
         "js/game/safe-area.js",
         "js/game/loading.js",
         "css/game.css",
-        "css/game-ui.css"
+        "css/game-ui.css",
+        "js/game/options-menu.js",
+        "js/game/debug-menu.js"
       ],
       "dependances": ["combat", "economie", "textes"],
-      "vitest": ["tests/unit/data-ambiance.test.js", "tests/unit/data-hud.test.js", "tests/unit/lot1-regles.test.js", "tests/unit/zones-rendu.test.js"],
+      "vitest": ["tests/unit/data-ambiance.test.js", "tests/unit/data-hud.test.js", "tests/unit/lot1-regles.test.js", "tests/unit/zones-rendu.test.js", "tests/unit/debug-menu.test.js"],
       "e2e": [
         "tests/e2e/argent.spec.js",
+        "tests/e2e/debug-menu.spec.js",
         "tests/e2e/attente.spec.js",
+        "tests/e2e/graphismes.spec.js",
         "tests/e2e/interface-integree.spec.js",
         "tests/e2e/jeu-interface.spec.js",
         "tests/e2e/jeu-pause.spec.js"
@@ -793,11 +811,11 @@
     },
     {
       "id": "graphismes",
-      "description": "Fluidité et préréglages graphiques (lot 5b) : outil de mesure ?perf=1 (profileur, panneau, rapport), plafond ?cap=, script de comparaison ; préréglages Faible, Moyen, Élevé, Auto (graphics.json, choix, application à chaud, préférence de l'appareil zs.device.v1).",
-      "sources": ["js/core/perf-stats.js", "js/game/profiler.js", "js/game/perf-panel.js", "js/game/frame-cap.js", "scripts/perf/**", "js/core/graphics.js", "js/game/graphics-boot.js", "js/game/graphics-apply.js", "data/game/graphics.json"],
-      "dependances": ["economie"],
-      "vitest": ["tests/unit/graphics.test.js", "tests/unit/perf-stats.test.js"],
-      "e2e": ["tests/e2e/graphismes.spec.js", "tests/e2e/perf.spec.js"],
+      "description": "Fluidité et préréglages graphiques (lot 5b) : outil de mesure ?perf=1 (profileur, panneau, rapport), plafond ?cap=, script de comparaison ; préréglages Faible, Moyen, Élevé, Auto (graphics.json, choix, application à chaud, préférence de l'appareil zs.device.v1) ; lot 5j : options séparées, Perso, écran Options de la pause (options-menu.js : zone interface, qui rejoue graphismes.spec.js), zs.device.v1 schéma 2.",
+      "sources": ["js/core/perf-stats.js", "js/game/profiler.js", "js/game/perf-panel.js", "js/game/frame-cap.js", "scripts/perf/**", "js/core/graphics.js", "js/game/graphics-boot.js", "js/game/graphics-apply.js", "data/game/graphics.json", "js/save/device-settings.js"],
+      "dependances": ["economie", "rendu"],
+      "vitest": ["tests/unit/graphics.test.js", "tests/unit/graphics-options.test.js", "tests/unit/perf-stats.test.js", "tests/unit/debug-canal.test.js"],
+      "e2e": ["tests/e2e/graphismes.spec.js", "tests/e2e/perf.spec.js", "tests/e2e/canal.spec.js"],
       "complet": []
     },
     {
@@ -849,6 +867,7 @@
         "scripts/assemble.mjs",
         "scripts/site/**",
         "scripts/versions/**",
+        "scripts/publication/**",
         "scripts/vendor-three.mjs",
         "versions.json",
         "build-info.json"
@@ -861,10 +880,11 @@
         "tests/unit/maps-hygiene.test.js",
         "tests/unit/noms.test.js",
         "tests/unit/persos-jeu.test.js",
+        "tests/unit/publication-controle.test.js",
         "tests/unit/versions-archiver.test.js",
         "tests/unit/versions-schema.test.js"
       ],
-      "e2e": ["tests/e2e/publication.spec.js"],
+      "e2e": ["tests/e2e/publication.spec.js", "tests/e2e/canal.spec.js"],
       "complet": []
     },
     {
@@ -946,10 +966,10 @@
     },
     {
       "id": "outillage-tests",
-      "description": "Outillage des tests : mesure, sélection, budget, sabotage (cite des chemins comme données : graphe: false, aucune dépendance relevée).",
-      "sources": ["scripts/tests/**", "scripts/nettoyage/**", "scripts/lighthouse.mjs", "Docs/ref/tests-*.md", "tests/budget-mesure.json", "tests/dernier-complet.json"],
+      "description": "Outillage des tests : mesure, sélection, budget, sabotage, audit et regroupement des bilans (lot 5m : scripts/docs/bilans.mjs est lu par les tests des bilans, rejoués ici ; cite des chemins comme données : graphe: false, aucune dépendance relevée).",
+      "sources": ["scripts/tests/**", "scripts/nettoyage/**", "scripts/docs/**", "scripts/lighthouse.mjs", "Docs/ref/tests-*.md", "tests/budget-mesure.json", "tests/dernier-complet.json"],
       "dependances": [],
-      "vitest": ["tests/unit/tests-audit.test.js", "tests/unit/tests-budget.test.js"],
+      "vitest": ["tests/unit/tests-audit.test.js", "tests/unit/tests-budget.test.js", "tests/unit/docs-regrouper.test.js", "tests/unit/data-changelog.test.js", "tests/unit/zones-hygiene.test.js", "tests/unit/persos-donnees.test.js", "tests/unit/interface-integree-retours.test.js", "tests/unit/persos-integres-finitions.test.js", "tests/unit/publication.test.js"],
       "e2e": [],
       "complet": [],
       "graphe": false

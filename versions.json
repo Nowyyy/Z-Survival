@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "latest": "v0.6",
+  "latest": "v0.7",
   "versions": [
     {
       "id": "v0.1",
@@ -63,10 +63,21 @@
       "title": "Voiture en flammes et hélicoptère écrasé, nouvel impact sur les zombies, réglage des graphismes, travail sur la fluidité",
       "date": "2026-11-06",
       "branch": "dev",
-      "ref": "cef11b3158b0e62156aef2fb8187d44d9e8508e6",
+      "ref": "6e3ae1ad602ff7612e6ad0901e823902fd20d9e0",
+      "entry": "jeu.html",
+      "status": "archive",
+      "note": "Hash : tête de main archivée au lot 5p (6e3ae1a) ; même jeu que cef11b3 (tête de dev au lot 5f), avec l'accueil retouché du lot 5i, le fichier des noms et le seed."
+    },
+    {
+      "id": "v0.7",
+      "label": "V0.7",
+      "title": "Rework du système de lumière. Menu option et menu de débug pour ne pas surcharger le menu pause. Bugfix sur la map. Opt…",
+      "date": "2026-11-09",
+      "branch": "dev",
+      "ref": "3740ffd05fdb4e0a97680862711a392e4568a2f3",
       "entry": "jeu.html",
       "status": "actuelle",
-      "note": "Épaves en flammes, nouvel impact sur les zombies, préréglages graphiques, code nettoyé et allégé, ancien modèle et anciens sons retirés, nouvelles adresses du site, accueil refait et fichier des noms."
+      "note": "Menu Options et réglages graphiques séparés, lampes à huile et lumières dynamiques, menu de débogage, sauvegarde sûre avec plusieurs onglets, nettoyage et tests allégés, contrôle de publication."
     }
   ],
   "dev": {

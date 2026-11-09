@@ -443,6 +443,23 @@ function distanceToRise(rise, x, y) {
   return best;
 }
 
+// Garde-corps (retour du propriétaire, lot 5k) : un côté { x0, x1, z0, z1 } du garde-corps, privé des parties qu'un mur plein de l'étage (walls : emprises
+// { x0, x1, z0, z1 }) couvre sur toute son épaisseur ; l'escalier de l'aile longe le mur ouest : ses barreaux, dans le mur, scintillaient sur sa face.
+// Renvoie les morceaux restants (plus de 0,5 unité de long et d'épaisseur).
+export function fenceParts(side, walls) {
+  const { x0, x1, z0, z1 } = side;
+  if (x1 - x0 <= 0.5 || z1 - z0 <= 0.5) return [];
+  const alongX = x1 - x0 >= z1 - z0;
+  let parts = [alongX ? [x0, x1] : [z0, z1]];
+  for (const w of walls) {
+    const [c0, c1, w0, w1] = alongX ? [z0, z1, w.z0, w.z1] : [x0, x1, w.x0, w.x1];
+    if (c0 < w0 - 0.5 || c1 > w1 + 0.5) continue;
+    const [a0, a1] = alongX ? [w.x0, w.x1] : [w.z0, w.z1];
+    parts = parts.flatMap(([u, v]) => [[u, Math.min(v, a0)], [Math.max(u, a1), v]].filter(([m, n]) => n - m > 0.5));
+  }
+  return parts.map(([u, v]) => (alongX ? { x0: u, x1: v, z0, z1 } : { x0, x1, z0: u, z1: v }));
+}
+
 // Trou dans le sol de l'étage : un seul rectangle pour une montée droite parallèle à un axe ; sinon des bandes horizontales de `strip` unités, toutes à l'intérieur de la
 // largeur (le sol déborde un peu sur la rampe, jamais l'inverse). Rectangles { x0, y0, x1, y1 }.
 export function holeRects(rise, strip = 15) {
@@ -561,7 +578,8 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
   const partlyUncovered = (r) => etageFloorRects !== null && [[r.x, r.y], [r.x + r.w, r.y], [r.x, r.y + r.h], [r.x + r.w, r.y + r.h]].filter(([x, z]) => !etageFloorRects.some((q) => inRect(q, x, z))).length >= 2;
   const exposedAt = (x, z) => etageFloorRects !== null && (!etageFloorRects.some((r) => inRect(r, x, z)) || holes.some((h) => h.rects.some((r) => x >= r.x0 && x <= r.x1 && z >= r.y0 && z <= r.y1)));
 
-  scene.add(new THREE.AmbientLight(palette.ambient, render.light.ambient));
+  const ambientLight = new THREE.AmbientLight(palette.ambient, render.light.ambient);
+  scene.add(ambientLight);
   const sun = new THREE.DirectionalLight(palette.sun, render.light.sun);
   const half = render.light.shadowHalfSize;
   sun.castShadow = true;
@@ -610,6 +628,7 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
   const grillesOf = (f) => (Array.isArray(render.decorInterieur) ? render.decorInterieur : []).filter((it) => it?.kind === 'grille' && it.floor === f && it.a && it.b && it.n);
   // Mur percé (lot 3g, retours) : boîtes qui peuvent cacher le joueur (murs, piliers, meubles), par étage, pour le test de la caméra à chaque image.
   const occluders = [];
+  const etageWalls = []; // murs pleins de l'étage (emprises { x0, x1, z0, z1 }) : le garde-corps n'est pas dessiné contre eux
   const wallRepeat = textures.repeat('mur');
   for (const f of floors) {
     const l = layoutOf(f);
@@ -646,6 +665,10 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
     }));
     for (const w of walls) {
       occluders.push({ ...extents(w), floor: f });
+      if (f === 'etage') {
+        const e = extents(w);
+        if (e.y0 <= 0.5 && e.y1 >= FENCE_HEIGHT) etageWalls.push(e);
+      }
       fb.wall.box(extents(w), { repeat: wallRepeat }, 'cotes');
       fb.wall.box(extents(w), { fixed: [0.31, 0.62] }, 'dessus'); // dessus : un seul texel du mur, donc sans texture
     }
@@ -872,7 +895,10 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
       if (d.y < 0) exits.push({ t: (r.y0 - a.y) / d.y, side: 'y0' });
       const exit = exits.filter((q) => q.t >= -1e-6).sort((m, n) => m.t - n.t)[0] ?? null;
       const gapAt = exit ? { side: exit.side, c: exit.side[0] === 'x' ? a.y + d.y * Math.max(0, exit.t) : a.x + d.x * Math.max(0, exit.t), half: rise.width / 2 + 8 } : null;
-      const box = (x0, x1, z0, z1) => { if (x1 - x0 > 0.5 && z1 - z0 > 0.5) fence.box({ x0, x1, y0: 0, y1: FENCE_HEIGHT, z0, z1 }, { repeat }, 'plan'); };
+      // Retour du propriétaire (lot 5k) : pas de garde-corps contre un mur de l'étage (fenceParts).
+      const box = (x0, x1, z0, z1) => {
+        for (const q of fenceParts({ x0, x1, z0, z1 }, etageWalls)) fence.box({ ...q, y0: 0, y1: FENCE_HEIGHT }, { repeat }, 'plan');
+      };
       const run = (side, from, to, put) => {
         const hole = gapAt?.side === side ? [gapAt.c - gapAt.half, gapAt.c + gapAt.half] : null;
         if (hole === null) put(from, to);
@@ -933,6 +959,7 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
   // la matière « planche » (texture de 128 px, hors atlas), sans ombre ; un maillage n'est dessiné que s'il est dans le champ de la caméra. Lot 3e : ceux d'un étage vivent
   // dans le groupe de cet étage.
   let windowMeshes = null;
+  let lastWindows = null; // lot 5k-C3 : dernier état des fenêtres reçu par le dessin des planches (lumière de lune)
   let debris = null;
   if (windowGeoms.length > 0 && windowsCfg) {
     const settings = plankSettings(windowsCfg, render);
@@ -952,7 +979,12 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
     const dm = parts.map(({ scene, geoms: gs }) => createDebrisMeshes({ scene, material, settings, sheet, ids: gs.map((g) => g.id) }));
     windowMeshes = {
       meshes: wm.flatMap((w) => w.meshes),
-      sync: (state) => wm.forEach((w) => w.sync(state)),
+      // Lot 5k-C3 : le même état sert à la lumière de lune de chaque fenêtre (lights.js, lecture seule).
+      sync: (state) => {
+        lastWindows = state;
+        wm.forEach((w) => w.sync(state));
+        lampKit.lights?.syncPlanks(state);
+      },
       nailed: () => wm.reduce((n, w) => n + w.nailed(), 0),
       stats: (camera) => wm.flatMap((w) => w.stats(camera)),
     };
@@ -1015,6 +1047,66 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
   for (const door of doorList) if (closedDoors === null || closedDoors.includes(door.id)) addDoor(door);
   const meshesOf = (id) => [...doorMeshes.values()].filter((m) => m.userData.door === id);
 
+  // Lot 5k : lampes à huile (décor) et lumières dynamiques, options « Lampes et lumières » et « Lumières simultanées » (à chaud). Modules importés
+  // seulement hors de « off » (préchargés par graphics-boot.js au chargement, sinon au premier changement) : avec « off », rien n'est créé ni demandé.
+  // Lot 5k-G : la lune ne projette pas d'ombre en éclairage dynamique (ses ombres contredisaient celles des lampes) ; rendue à la sortie.
+  let sunShadow = sun.castShadow;
+  // Les grands maillages fusionnés du décor (meubles, piliers, décor extérieur) ne projettent pas d'ombre pour les lampes : chacun coûterait six
+  // passes de carte cubique (budget de triangles) ; les volumes d'ombre simplifiés de lights.js les remplacent. Rendus à la sortie de l'éclairage.
+  const decorCasters = [];
+  for (const g of Object.values(groups)) g.traverse((m) => { if (m.isMesh && m.castShadow) decorCasters.push(m); });
+  const applySunShadow = () => {
+    const want = sunShadow && !lampKit.lights;
+    if (sun.castShadow !== want) sun.castShadow = want;
+    for (const m of decorCasters) if (m.castShadow !== !lampKit.lights) m.castShadow = !lampKit.lights;
+  };
+  const lampKit = { mode: 'off', count: 4, shadows: 0, data: null, tried: false, lightsTried: false, decor: null, lights: null, compiles: 0, error: null, pending: 0 };
+  let lampChain = Promise.resolve();
+  let lastView = null;
+  let floorNow = 'rdc';
+  // Lot 5k-G : feux comme sources de lumière : intérieurs (lampes.world.json → feux, portée sûre de npm run carte, seulement s'ils sont dessinés) et
+  // extérieurs avec flammes (voiture en flammes, bidons ; portée sous l'étage), jamais la fumée seule de l'hélicoptère.
+  const fireSources = () => {
+    const drawn = new Set(fires.map((f) => f.stats().id));
+    const list = (lampKit.data?.fires ?? []).filter((f) => drawn.has(f.id));
+    for (const f of fires) {
+      if (f.group.userData.floor !== 'exterieur') continue;
+      const st = f.stats();
+      if (!st.flames) continue;
+      const h = st.y + 14;
+      list.push({ id: `feu:${st.id}`, floor: 'exterieur', kind: 'feu', light: { x: st.x, y: st.z, h }, portee: Math.floor(lift - h - 2) });
+    }
+    return list;
+  };
+  const applyLamps = (mode, count, shadows, renderer) => {
+    lampKit.mode = mode;
+    lampKit.count = count;
+    lampKit.shadows = shadows;
+    let created = false;
+    if (mode !== 'off' && !lampKit.decor && lampKit.data) {
+      lampKit.decor = lampKit.data.module.createLampMeshes({ groups, lamps: lampKit.data.lamps, palette, floors });
+      created = true;
+    }
+    lampKit.decor?.setVisible(mode !== 'off');
+    // Éclairage : lumières en nombre fixe (programmes recompilés une fois à chaque changement de mode ou de nombre, jamais en partie).
+    if (mode === 'eclairage' && !lampKit.lights && lampKit.data?.lights) {
+      lampKit.lights = lampKit.data.lights.createLights({ scene, ambient: ambientLight, sun, lamps: lampKit.data.lamps, fires: fireSources(), json: lampKit.data.lumieres, palette, count, shadows, lift, reduced: render.reducedMotion === true, occluders, groups, windows: floors.flatMap((f) => (layoutOf(f).windows ?? []).map((w) => ({ ...w, floor: f }))), moon: render.light.sunOffset, opening: { width: num(layout.windowSize, 72), sill: num(render.sillHeight, 16), lintel: num(render.lintelBottom, 44), thickness: num(layout.wallThickness, 40) }, planks: lastWindows });
+      created = true;
+    } else if (mode !== 'eclairage' && lampKit.lights) {
+      lampKit.lights.dispose();
+      lampKit.lights = null;
+      created = true;
+    } else if (lampKit.lights?.setCount(count, shadows)) created = true;
+    applySunShadow();
+    // Préchauffage (changement à chaud seulement : au chargement, game.js compile toute la scène avant la première image).
+    if (created && renderer && lastView) {
+      renderer.compile(scene, lastView);
+      lampKit.compiles += 1;
+    }
+  };
+
+  const lampStats = () => ({ mode: lampKit.mode, count: lampKit.count, shadows: lampKit.shadows, ready: lampKit.pending === 0, lamps: lampKit.data?.lamps.length ?? 0, meshes: lampKit.decor?.stats() ?? [], lights: lampKit.lights?.stats() ?? null, compiles: lampKit.compiles, error: lampKit.error });
+
   let elevationNow = 0;
   return {
     scene,
@@ -1049,6 +1141,7 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
     frame(dt, x, y, camera, view = null) {
       // Lot 5b : un feu caché par le préréglage n'est pas mis à jour ; 5b-C : hors du champ, ses tampons de particules ne sont pas réécrits.
       if (view) {
+        lastView = view;
         view.updateMatrixWorld();
         viewFrustum.setFromProjectionMatrix(viewMatrix.multiplyMatrices(view.projectionMatrix, view.matrixWorldInverse));
       }
@@ -1056,6 +1149,8 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
       const still = render.reducedMotion === true;
       for (const m of mists) if (!still && m.visible) m.material.uniforms.uTime.value += Math.min(0.1, Math.max(0, Number(dt) || 0));
       seeThrough.update(x, y, camera, occluders, (b) => (b.floor === 'etage' ? lift : 0) - elevationNow);
+      lampKit.decor?.cull(view ? viewFrustum : null, groups.etage.visible); // lot 5k : seules les lampes dans le champ sont dessinées
+      lampKit.lights?.frame(dt, x, y, floorNow, elevationNow, view ? viewFrustum : null, groups.etage.visible); // lot 5k : lumières des lampes (Éclairage)
     },
     fireStats: () => fires.map((f) => f.stats()),
     // Lot 5b (préréglages graphiques, à chaud) : feux et fumées, brume, ombres. Valeurs de l'Élevé : rien ne change.
@@ -1074,7 +1169,8 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
       });
     },
     setShadowMap(enabled, size) {
-      if (sun.castShadow !== (enabled !== false)) sun.castShadow = enabled !== false;
+      sunShadow = enabled !== false;
+      applySunShadow();
       const n = Number.isInteger(size) && size >= 64 ? size : sun.shadow.mapSize.x;
       if (sun.shadow.mapSize.x !== n) {
         sun.shadow.mapSize.set(n, n);
@@ -1082,7 +1178,44 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
         sun.shadow.map = null;
       }
     },
-    graphicsStats: () => ({ mists: mists.map((m) => m.visible), shadowMap: sun.shadow.mapSize.x, castShadow: sun.castShadow, fires: fires.map((f) => ({ kind: f.kind ?? 'decor', ...f.stats().drawn })) }),
+    moonState: () => lampKit.lights?.moonState() ?? [], // lot 5k-C3 (tests) : getState().graphics.lune
+    moonPatches: () => lampKit.lights?.moonPatches() ?? [],
+    graphicsStats: () => ({ mists: mists.map((m) => m.visible), shadowMap: sun.shadow.mapSize.x, castShadow: sun.castShadow, fires: fires.map((f) => ({ kind: f.kind ?? 'decor', ...f.stats().drawn })), lamps: lampStats() }),
+    // Lot 5k : état des lampes (mode appliqué, prêt, maillages, préchauffages, erreur).
+    lampStats,
+    // Lot 5k : mode off | decor | eclairage, nombre de lumières ; preload : sortie de preloadLamps (graphics-boot.js). Synchrone si rien n'est à
+    // charger, sinon dans l'ordre des appels. Renvoie une promesse résolue une fois appliqué.
+    setLamps(mode, count, { renderer = null, preload = null, shadows = null } = {}) {
+      const m = ['off', 'decor', 'eclairage'].includes(mode) ? mode : 'off';
+      const n = [2, 4, 6].includes(count) ? count : lampKit.count;
+      const sh = [0, 1, 2].includes(shadows) ? shadows : lampKit.shadows;
+      if (preload && !lampKit.data) {
+        lampKit.data = preload;
+        lampKit.tried = true;
+      }
+      const load = (m !== 'off' && !lampKit.tried) || (m === 'eclairage' && lampKit.data !== null && !lampKit.data.lights && !lampKit.lightsTried);
+      if (!load && lampKit.pending === 0) {
+        applyLamps(m, n, sh, renderer);
+        return Promise.resolve();
+      }
+      lampKit.pending += 1;
+      lampChain = lampChain.then(async () => {
+        if (m !== 'off' && !lampKit.tried) {
+          lampKit.tried = true;
+          lampKit.data = await import('./lamps.js').then((mod) => mod.preloadLamps(m, layout.id));
+        }
+        if (m === 'eclairage' && lampKit.data && !lampKit.data.lights && !lampKit.lightsTried) {
+          lampKit.lightsTried = true;
+          Object.assign(lampKit.data, await import('./lamps.js').then((mod) => mod.preloadLights()));
+        }
+        applyLamps(m, n, sh, renderer);
+      }).catch((e) => {
+        lampKit.error = String(e?.message ?? e);
+      }).finally(() => {
+        lampKit.pending -= 1;
+      });
+      return lampChain;
+    },
     // Lot 5a : épaves dessinées (hélicoptère : triangles, rectangles de collision ; voiture en flammes : feu et foyers) ; feu actif = dans la liste des feux mis à jour.
     wreckStats: () => ({ ...wrecks, fires: fires.filter((f) => f.group.name === wrecks.burningCar?.fire).map((f) => f.stats()), heliSmoke: fires.filter((f) => f.group.name === wrecks.helicopter?.smoke).map((f) => f.stats()), propsTriangles: exProps ? exProps.geometry.attributes.position.count / 3 : 0, sceneryTriangles: exScenery ? exScenery.geometry.attributes.position.count / 3 : 0, exteriorVisible: groups.exterieur.visible }),
     seeThroughState: () => seeThrough.state(),
@@ -1102,6 +1235,7 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
       groups.rdc.visible = true; // rien du rez-de-chaussée ne disparaît à l'étage (le sol de l'étage, opaque, cache seulement ce qui est dessous)
       dynamic.position.y = (floor === 'etage' ? lift : 0) - e;
       elevationNow = e;
+      floorNow = floor === 'etage' ? 'etage' : 'rdc';
     },
     dynamic,
     effectsRoot,
@@ -1136,7 +1270,8 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
       scene.fog.far = distance * render.fog.far;
     },
     setShadows(on) {
-      sun.castShadow = Boolean(on);
+      sunShadow = Boolean(on);
+      applySunShadow();
     },
     // La lumière suit la cible de la caméra et sa carte d'ombres (1024) couvre la zone visible : plus la vue est proche, plus l'ombre est fine.
     followSun(x, z, halfSize) {

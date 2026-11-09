@@ -9,6 +9,7 @@ import { floorProblems } from '../js/core/floor-rules.js';
 import { boxTriangles, lookOf, pieceBoxes } from '../js/core/mobilier-aspect.js';
 import { planToWorld } from '../js/core/maps.js';
 import { decorProblems, generateDecor } from '../js/core/decor.js';
+import { firesToWorld, lampsToWorld, lampTriangles } from '../js/core/lamps.js';
 import { polygonRects } from '../js/core/shape.js';
 import { rectGap } from '../js/core/collision.js';
 import { parseZones, zonesToWorld } from '../js/core/zones.js';
@@ -116,6 +117,24 @@ export function generateMapFiles(id = 'rez-de-chaussee') {
     result.mobilier = `${formatJson({ _provisoire: 'Aspect du mobilier généré par npm run carte (scripts/plan-vers-monde.mjs) d\'après plan.json, etage.json et releve.json (objets du modèle associés à chaque pièce) : ne jamais éditer à la main. Dessin seulement (unités du jeu ; y = hauteur, z = y du jeu) : les collisions gardent les rectangles de world.json. Valeurs provisoires.', triangles, pieces })}\n`;
     result.mobilierReport = { count: Object.keys(pieces).length, triangles };
   }
+  // Lot 5k : lampes à huile (décor non solide) d'après lampes.json (pixels) : collées à leur pilier ou à leur mur, portée sûre de la lumière (jamais
+  // l'autre étage). Écrit lampes.world.json (jamais édité à la main) ; une lampe sans support, hors du bâtiment ou sur une fenêtre est un problème.
+  result.lampes = null;
+  result.lampesReport = null;
+  const lampesUrl = new URL(`${id}/lampes.json`, ROOT);
+  if (existsSync(lampesUrl)) {
+    const render = JSON.parse(readFileSync(new URL('../render.json', ROOT), 'utf8'));
+    const conv = lampsToWorld(JSON.parse(readFileSync(lampesUrl, 'utf8')), { rdc: out.world, etage: etageWorldOut }, { wallThickness: params.wallThickness, windowSize: params.windowSize, floorLift: render.floorLift });
+    const triangles = conv.lamps.reduce((n, l) => n + lampTriangles(l).length, 0);
+    // Lot 5k-G : feux intérieurs (feux.json sur les pièces de mobilier.world.json) comme sources de lumière, avec leur portée sûre.
+    const feuxUrl = new URL(`${id}/feux.json`, ROOT);
+    const pieces = result.mobilier ? JSON.parse(result.mobilier).pieces : {};
+    const feux = existsSync(feuxUrl) ? firesToWorld(JSON.parse(readFileSync(feuxUrl, 'utf8')).feux, pieces, { rdc: out.world, etage: etageWorldOut }, { wallThickness: params.wallThickness, floorLift: render.floorLift }) : [];
+    const doc = { _provisoire: 'Lampes à huile générées par npm run carte (scripts/plan-vers-monde.mjs) d\'après lampes.json : ne jamais éditer à la main. Unités du jeu ; non solides (aucune collision, aucun effet sur le chemin, les balles, le laser ni les règles). x, y : face du support ; light : position de la lumière ; portee : distance de lumière la plus grande qui n\'atteint jamais l\'autre étage. feux : feux intérieurs (feux.json) comme sources de lumière (lot 5k-G). Valeurs provisoires.', triangles, lampes: conv.lamps, feux };
+    result.lampes = `${formatJson(doc)}\n`;
+    result.lampesReport = { count: conv.lamps.length, triangles, problems: conv.problems, warnings: conv.warnings };
+    result.problems.push(...conv.problems.map((v) => `lampes : ${v}`));
+  }
   return result;
 }
 
@@ -140,8 +159,8 @@ if (isMain) {
   const args = process.argv.slice(2);
   const check = args.includes('--verifie');
   const id = args.find((a) => !a.startsWith('--')) ?? 'rez-de-chaussee';
-  const { world, decor, etage, report, etageReport, problems, decorInterieur, decorReport, mobilier, mobilierReport, wrecksReport } = generateMapFiles(id);
-  const files = [['world.json', world], ['decor.json', decor], ...(etage === null ? [] : [['etage.world.json', etage]]), ...(decorInterieur === null ? [] : [['decor-interieur.world.json', decorInterieur]]), ...(mobilier ? [['mobilier.world.json', mobilier]] : [])].map(([name, text]) => [name, text, new URL(`${id}/${name}`, ROOT)]);
+  const { world, decor, etage, report, etageReport, problems, decorInterieur, decorReport, mobilier, mobilierReport, wrecksReport, lampes, lampesReport } = generateMapFiles(id);
+  const files = [['world.json', world], ['decor.json', decor], ...(etage === null ? [] : [['etage.world.json', etage]]), ...(decorInterieur === null ? [] : [['decor-interieur.world.json', decorInterieur]]), ...(mobilier ? [['mobilier.world.json', mobilier]] : []), ...(lampes ? [['lampes.world.json', lampes]] : [])].map(([name, text]) => [name, text, new URL(`${id}/${name}`, ROOT)]);
   if (check) {
     const stale = files.filter(([, text, url]) => !existsSync(url) || readFileSync(url, 'utf8') !== text).map(([name]) => name);
     if (stale.length > 0) {
@@ -168,6 +187,10 @@ if (isMain) {
     console.log(`Décor léger : ${decorReport.count} éléments, ${decorReport.triangles} triangles.`);
     for (const w of decorReport.warnings) console.log(`Décor léger : ${w}`);
     for (const r of decorReport.removed) console.log(`Décor léger : retiré ${r.id} (${r.reasons.join(', ')})`);
+  }
+  if (lampesReport) {
+    console.log(`Lampes : ${lampesReport.count} lampes, ${lampesReport.triangles} triangles.`);
+    for (const w of lampesReport.warnings) console.log(`Lampes : ${w}`);
   }
   if (wrecksReport) {
     const { car, helicopter: h } = wrecksReport;
