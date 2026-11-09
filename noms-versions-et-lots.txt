@@ -133,11 +133,11 @@ nom: Sauvegarde sûre avec plusieurs onglets
 description: Plusieurs onglets du jeu ouverts en même temps ne perdent plus aucun gain ; un contrôle dit si la version est prête à être publiée. Les règles du jeu ne changent pas.
 afficher: oui
 
-# --- V0.7 : brouillon écrit au lot de publication, à relire par le propriétaire avant la fusion ---
+# --- V0.7 (texte du propriétaire) ---
 
 [v0.7]
 nom: V0.7
-description: Menu Options et réglages graphiques séparés, lampes à huile et lumières, menu de débogage, sauvegarde sûre avec plusieurs onglets, nettoyage de la documentation et tests allégés.
+description: Rework du système de lumière. Menu option et menu de débug pour ne pas surcharger le menu pause. Bugfix sur la map. Optimisation de code.
 
 [lot-5p]
 version: v0.7

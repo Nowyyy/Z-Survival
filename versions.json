@@ -71,7 +71,7 @@
     {
       "id": "v0.7",
       "label": "V0.7",
-      "title": "Menu Options et réglages graphiques séparés, lampes à huile et lumières, menu de débogage, sauvegarde sûre avec plusieu…",
+      "title": "Rework du système de lumière. Menu option et menu de débug pour ne pas surcharger le menu pause. Bugfix sur la map. Opt…",
       "date": "2026-11-09",
       "branch": "dev",
       "ref": "3740ffd05fdb4e0a97680862711a392e4568a2f3",
