@@ -95,7 +95,7 @@
   position: relative;
   display: inline-flex;
   align-items: flex-end;
-  margin: 0 0 calc(18 * var(--u));
+  margin: 0 0 calc(46 * var(--u)); /* place des coulures sous le Z (jusqu'à 40 px de la référence), au-dessus de la barre */
   font-family: var(--font-display);
   font-weight: var(--font-weight-normal);
   font-size: calc(72 * var(--u));
@@ -401,16 +401,262 @@
   }
 }
 
+
 /* ---------------------------------------------------------------------------------------------------------------------------------------------- */
-/* E8 — menu principal (sous les panneaux .panel-wrap, z-index 10, et sous le message de rotation, 20). */
+/* E8 — menu principal (sous les panneaux .panel-wrap, z-index 10 : l'écran Options s'ouvre par-dessus ; sous le message de rotation, 20). */
 .e8 {
+  --e8-entete: max(48px, calc(50 * var(--u)));
+  --e8-onglets: max(50px, calc(62 * var(--u)));
+  --e8-gauche: max(var(--menu-marge), env(safe-area-inset-left, 0px));
+  --e8-droite: max(var(--menu-marge), env(safe-area-inset-right, 0px));
   position: fixed;
   inset: 0;
   z-index: 8;
+  display: grid;
+  grid-template-rows: var(--e8-entete) minmax(0, 1fr) var(--e8-onglets);
   overflow: hidden;
   background: var(--menu-nuit);
   color: var(--menu-texte);
   font-family: var(--font-sans);
+  animation: e8-apparition 0.3s ease-out both;
+}
+
+:where(.e8) button {
+  font: inherit;
+}
+
+.e8-icone {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentcolor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* E8-1 : en-tête noir ; Connexion à gauche ; solde puis bouton à trois barres à droite (contenus dans le bandeau). */
+.e8-entete {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: calc(12 * var(--u));
+  padding: 0 var(--e8-droite) 0 var(--e8-gauche);
+  background: var(--menu-entete);
+}
+
+.e8-connexion,
+.e8-barres,
+.e8-croix {
+  min-width: var(--menu-cible);
+  min-height: var(--menu-cible);
+  border: 1px solid var(--menu-bois-clair);
+  border-radius: 0;
+  background: transparent;
+  color: var(--menu-texte);
+  cursor: pointer;
+}
+
+.e8-connexion {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 calc(12 * var(--u));
+  font-weight: var(--font-weight-bold);
+  font-size: max(14px, calc(15 * var(--u)));
+}
+
+.e8-droite {
+  display: flex;
+  align-items: center;
+  gap: calc(14 * var(--u));
+}
+
+.e8-solde {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  color: var(--color-money);
+  font-weight: var(--font-weight-bold);
+  font-size: max(15px, calc(18 * var(--u)));
+  font-variant-numeric: tabular-nums;
+}
+
+.e8-barres {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: var(--menu-cible);
+  height: var(--menu-cible);
+  padding: 0;
+}
+
+.e8-barres .e8-icone {
+  width: 24px;
+  height: 24px;
+}
+
+.e8-connexion:hover,
+.e8-barres:hover,
+.e8-croix:hover {
+  border-color: var(--menu-texte-doux);
+}
+
+.menu-point {
+  display: inline-block;
+  flex: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--menu-point);
+}
+
+.e8-point-barres {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+}
+
+/* Menu à trois barres : juste sous le bouton, aligné à droite. */
+.e8-liste {
+  position: absolute;
+  top: 100%;
+  right: var(--e8-droite);
+  min-width: max(220px, calc(240 * var(--u)));
+  padding: 4px 0;
+  background: var(--menu-panneau);
+  border: 1px solid var(--color-border);
+  box-shadow: 0 6px 0 var(--menu-ombre);
+}
+
+.e8-liste-groupe {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.e8-entree {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: var(--menu-cible);
+  padding: 0 14px;
+  border: 0;
+  background: transparent;
+  color: var(--menu-texte);
+  font-size: 16px;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.e8-entree:hover:not(:disabled) {
+  background: var(--color-surface-raised);
+}
+
+.e8-entree:disabled {
+  color: var(--menu-texte-doux);
+  cursor: default;
+}
+
+.e8-note {
+  margin-left: auto;
+  padding-left: 12px;
+  font-size: 13px;
+  font-style: italic;
+  color: var(--menu-texte-doux);
+}
+
+.e8-externe {
+  width: 16px;
+  height: 16px;
+}
+
+.e8-separateur {
+  margin: 4px 0;
+  border: 0;
+  border-top: 1px solid var(--color-border);
+}
+
+/* Contenu de l'onglet : chaque écran commence par le bandeau de titre, au même endroit (bord gauche du contenu, sous l'en-tête). */
+.e8-contenu {
+  position: relative;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.e8-ecran {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: calc(26 * var(--u));
+  padding: calc(12 * var(--u)) var(--e8-droite) 0 var(--e8-gauche);
+}
+
+/* Bandeau de titre : zone rouge pleine (le texte n'est jamais sur les coulures), petit libellé au-dessus du titre, trois coulures dessous. */
+.menu-bandeau {
+  position: relative;
+  z-index: 1;
+  flex: none;
+  padding: calc(4 * var(--u)) calc(16 * var(--u)) calc(6 * var(--u));
+  background: var(--menu-rouge);
+  box-shadow: 0 calc(4 * var(--u)) 0 var(--menu-ombre);
+}
+
+.menu-bandeau-libelle {
+  margin: 0;
+  font-family: var(--font-label);
+  font-size: max(11px, calc(12 * var(--u)));
+  letter-spacing: 0.04em;
+  color: var(--menu-texte);
+}
+
+.menu-bandeau-titre {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: var(--font-weight-normal);
+  font-size: max(17px, calc(20 * var(--u)));
+  line-height: 1.15;
+  color: var(--menu-texte);
+}
+
+.menu-bandeau-coulures {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  width: 100%;
+  height: 0;
+}
+
+.menu-bandeau-coulure {
+  position: absolute;
+  top: 0;
+  width: calc(5 * var(--u));
+  min-width: 3px;
+  border-radius: 0 0 4px 4px;
+  background: var(--menu-rouge);
+}
+
+.menu-bandeau-coulure-1 {
+  left: 14%;
+  height: calc(12 * var(--u));
+}
+
+.menu-bandeau-coulure-2 {
+  left: 47%;
+  height: calc(18 * var(--u));
+}
+
+.menu-bandeau-coulure-3 {
+  left: 82%;
+  height: calc(8 * var(--u));
 }
 
 /* Bouton peint : zone rouge pleine, bordure sombre, ombre portée basse. */
@@ -436,4 +682,248 @@
 .menu-peint:active {
   transform: translateY(calc(3 * var(--u)));
   box-shadow: 0 calc(3 * var(--u)) 0 var(--menu-ombre);
+}
+
+/* Bouton planche (boutons secondaires) et ruban jaune et noir (verrouillé) : composants communs pour les écrans des lots suivants. */
+.menu-planche {
+  min-width: var(--menu-cible);
+  min-height: var(--menu-cible);
+  padding: calc(6 * var(--u)) calc(18 * var(--u));
+  border: 2px solid var(--menu-bois-sombre);
+  border-radius: 0;
+  background: var(--menu-bois) linear-gradient(to bottom, var(--menu-bois-clair) 0 2px, transparent 2px);
+  box-shadow: 0 calc(4 * var(--u)) 0 var(--menu-ombre);
+  color: var(--menu-texte);
+  cursor: pointer;
+}
+
+.menu-ruban {
+  background-image: repeating-linear-gradient(-45deg, var(--menu-ruban-jaune) 0 7px, var(--menu-ruban-noir) 7px 14px);
+  background-repeat: no-repeat;
+  background-size: 100% 7px;
+}
+
+/* Onglet Jouer : fond de nuit simple, bouton peint « JOUER » centré en bas. */
+.e8-jouer-decor {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, var(--menu-ciel-haut), var(--menu-ciel-bas) 75%, var(--menu-nuit));
+}
+
+.e8-decor {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.e8-jouer-bouton {
+  position: absolute;
+  right: 0;
+  bottom: calc(30 * var(--u));
+  left: 0;
+  width: max-content;
+  margin: 0 auto;
+  padding: calc(8 * var(--u)) calc(60 * var(--u));
+  font-size: max(26px, calc(40 * var(--u)));
+  letter-spacing: 0.04em;
+}
+
+.e8-texte {
+  max-width: 62ch;
+  margin: 0;
+  font-size: max(14px, calc(16 * var(--u)));
+  color: var(--menu-texte-doux);
+}
+
+/* E8-2 : barre d'onglets en planches clouées ; Jouer au centre (colonne plus large, rouge) ; onglet actif : texte plus clair et trait rouge. */
+.e8-onglets {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1.5fr 1fr 1fr;
+  padding: 0 calc(var(--e8-droite) - var(--menu-marge)) 0 calc(var(--e8-gauche) - var(--menu-marge));
+  background-color: var(--menu-bois);
+  background-image:
+    linear-gradient(to bottom, var(--menu-bois-clair) 0 2px, transparent 2px),
+    repeating-linear-gradient(to bottom, transparent 0 calc(14 * var(--u)), var(--menu-bois-sombre) calc(14 * var(--u)) calc(14 * var(--u) + 1px));
+  border-top: 2px solid var(--menu-bois-sombre);
+}
+
+.e8-onglet {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-width: var(--menu-cible);
+  min-height: var(--menu-cible);
+  padding: 0 4px calc(6 * var(--u));
+  border: 0;
+  border-right: 2px solid var(--menu-bois-sombre);
+  border-radius: 0;
+  background:
+    radial-gradient(circle, var(--menu-clou) 0 2px, transparent 2.5px) 5px 5px / 6px 6px no-repeat,
+    radial-gradient(circle, var(--menu-clou) 0 2px, transparent 2.5px) calc(100% - 5px) 5px / 6px 6px no-repeat;
+  color: var(--menu-texte-doux);
+  font-family: var(--font-label);
+  font-size: max(12px, calc(14 * var(--u)));
+  cursor: pointer;
+}
+
+.e8-onglet:first-child {
+  border-left: 2px solid var(--menu-bois-sombre);
+}
+
+.e8-onglet-nom {
+  line-height: 1.1;
+}
+
+.e8-onglet[aria-current="page"] {
+  color: var(--menu-texte);
+}
+
+.e8-onglet[aria-current="page"]::after {
+  content: "";
+  position: absolute;
+  right: 22%;
+  bottom: calc(5 * var(--u));
+  left: 22%;
+  height: 3px;
+  background: var(--menu-rouge-trait);
+}
+
+.e8-onglet-jouer {
+  background-color: var(--menu-rouge);
+  color: var(--menu-texte);
+  font-family: var(--font-display);
+  font-size: max(18px, calc(24 * var(--u)));
+  letter-spacing: 0.06em;
+}
+
+.e8-onglet-jouer[aria-current="page"]::after {
+  background: var(--menu-bord);
+}
+
+.e8-onglet-event {
+  cursor: not-allowed;
+}
+
+.e8-cadenas {
+  width: 22px;
+  height: 22px;
+}
+
+/* Écrans superposés (Information, Connexion) : le panneau couvre la zone de contenu ; même bandeau, même place ; croix en haut à droite. */
+.e8-voile {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  background: var(--menu-voile);
+}
+
+.e8-panneau {
+  position: absolute;
+  top: var(--e8-entete);
+  right: 0;
+  bottom: var(--e8-onglets);
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  gap: calc(16 * var(--u));
+  padding: calc(12 * var(--u)) var(--e8-droite) calc(10 * var(--u)) var(--e8-gauche);
+  background: var(--menu-panneau);
+  animation: e8-panneau 0.2s ease-out both;
+}
+
+.e8-panneau-tete {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.e8-croix {
+  display: grid;
+  place-items: center;
+  width: var(--menu-cible);
+  height: var(--menu-cible);
+  padding: 0;
+}
+
+.e8-croix svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentcolor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+}
+
+.e8-panneau-corps {
+  flex: 1;
+  min-height: 0;
+  max-width: 70ch;
+  overflow: auto;
+  padding-top: calc(10 * var(--u));
+}
+
+.e8-infos {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.e8-info + .e8-info {
+  margin-top: 14px;
+}
+
+.e8-info-titre {
+  margin: 0;
+  font-size: max(16px, calc(17 * var(--u)));
+}
+
+.e8-info-date {
+  margin: 0 0 4px;
+  font-size: 13px;
+  color: var(--menu-texte-doux);
+}
+
+.e8-info-texte {
+  margin: 0;
+  font-size: max(14px, calc(15 * var(--u)));
+}
+
+@keyframes e8-apparition {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes e8-panneau {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .e8,
+  .e8 * {
+    animation: none !important;
+  }
+
+  .menu-peint:active {
+    transform: none;
+  }
 }

@@ -73,6 +73,7 @@ describe('mêmes règles qu\'au lot 1', () => {
     allowed.push('js/core/graphics.js'); // lot 5b : préréglages graphiques (nouveau fichier, pur)
     allowed.push('js/core/lamps.js'); // lot 5k : lampes à huile et choix des lumières (nouveau fichier, pur)
     allowed.push('js/core/save-merge.js'); // lot 5o : fusion de la sauvegarde entre onglets (nouveau fichier, pur, chargé seulement avec un second onglet)
+    allowed.push('js/core/menu-etat.js'); // lot 8a : état du menu principal (nouveau fichier, pur, chargé seulement en mode menu)
     expect(changed.filter((f) => !allowed.includes(f))).toEqual([]);
   });
 });

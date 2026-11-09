@@ -21,6 +21,11 @@
    "assertions": 154,
    "chargements": 39
   },
+  "tests/e2e/menu.spec.js": {
+   "tests": 8,
+   "assertions": 109,
+   "chargements": 9
+  },
   "tests/e2e/jeu-interface.spec.js": {
    "tests": 22,
    "assertions": 73,

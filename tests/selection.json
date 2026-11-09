@@ -825,7 +825,7 @@
       "sources": ["js/menu/**", "js/core/menu-etat.js", "css/menu.css", "data/menu/**"],
       "dependances": ["economie", "graphismes", "interface", "publication", "textes"],
       "vitest": ["tests/unit/menu-etat.test.js"],
-      "e2e": [],
+      "e2e": ["tests/e2e/menu.spec.js"],
       "complet": []
     },
     {
