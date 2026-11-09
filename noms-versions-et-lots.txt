@@ -126,3 +126,9 @@ version: v0.7
 nom: Tests de publication allégés
 description: Les tests lancés à chaque mise à jour ne font plus deux fois le même travail et sont mieux répartis ; aucun test retiré. Le jeu ne change pas.
 afficher: oui
+
+[lot-5o]
+version: v0.7
+nom: Sauvegarde sûre avec plusieurs onglets
+description: Plusieurs onglets du jeu ouverts en même temps ne perdent plus aucun gain ; un contrôle dit si la version est prête à être publiée. Les règles du jeu ne changent pas.
+afficher: oui
