@@ -553,6 +553,7 @@ test.describe('par défaut (sans ?test=1)', () => {
       Storage.prototype.getItem = function (k) { if (k === '${KEY}') window.__reads += 1; return get.call(this, k); };`);
     await page.setViewportSize(SIZE);
     await page.goto('/jeu.html?seed=1');
+    await page.locator('#menu-jouer').click({ timeout: 60_000 }); // lot 8a : sans ?test=1 ni paramètre de Partie, le jeu s'ouvre sur le menu
     await expect(page.locator('#game-root')).toBeVisible({ timeout: 60_000 });
     await page.getByRole('button', { name: 'Pause' }).click();
     await expect(page.locator('#pause-panel')).toBeVisible();

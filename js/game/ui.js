@@ -3,6 +3,8 @@
 // Lot 5j : bouton « Options » de la pause (écran E2-12, js/game/options-menu.js importé à la première ouverture) ; « Graphismes » et « Effet VHS » quittent
 // la pause (ils sont dans l'écran Options). Pendant l'écran Options, la partie reste en pause.
 // Lot 5l : icône « Débogage » de la pause (canaux de débogage seulement) ; menu E2-13 (js/game/debug-menu.js importé au premier clic) ; la partie reste en pause.
+// Lot 8a : « Quitter » actif (confirmation construite au premier appui, à la place des boutons de la pause) et « Revenir au menu principal » actif : tous
+// deux appellent main.js (onQuit, onMenu : retour au menu par rechargement). setMenu(true) : pendant le menu principal, la pause ne s'ouvre pas.
 import { formatMoney } from '../core/economy.js';
 import { fmt, MONEY_TEXTS, SAVE_TEXTS } from './texts.js';
 
@@ -13,7 +15,7 @@ export function createUi(dict, handlers) {
   const els = {
     pausePanel: $('pause-panel'), endPanel: $('end-panel'), live: $('hud-live'), rotate: $('rotate'),
     pauseBtn: $('btn-pause'), resume: $('btn-resume'), fullscreen: $('btn-fullscreen'), sound: $('btn-sound'),
-    options: $('btn-options'), debug: $('btn-debug'), restart: $('btn-restart'), replay: $('btn-replay'), endKills: $('end-kills'), endWave: $('end-wave'),
+    options: $('btn-options'), debug: $('btn-debug'), restart: $('btn-restart'), replay: $('btn-replay'), quit: $('btn-quit'), menuBtn: $('btn-menu'), endKills: $('end-kills'), endWave: $('end-wave'),
     endBox: $('end-box'), endTitle: $('end-title-text'), pauseBalance: $('pause-balance-text'), endEarned: $('end-earned'), endEarnedText: $('end-earned-text'), endBonus: $('end-bonus'), endBonusText: $('end-bonus-text'),
     endBalance: $('end-balance'), endBest: $('end-best'), endRecord: $('end-record'), endRecordText: $('end-record-text'), endSave: $('end-save'),
   };
@@ -28,6 +30,8 @@ export function createUi(dict, handlers) {
   const rotateQuery = matchMedia(PORTRAIT_PHONE);
   const canFullscreen = Boolean(document.fullscreenEnabled && document.documentElement.requestFullscreen);
   let hasAudio = false;
+  let menuActive = false; // lot 8a : menu principal affiché (partie en attente de « JOUER »)
+  let quitBox = null; // lot 8a : confirmation de « Quitter » (créée au premier appui)
 
   const ui = {
     isPaused: () => !els.pausePanel.hidden || optionsOpen || debugOpen || rotateQuery.matches || document.hidden,
@@ -41,7 +45,7 @@ export function createUi(dict, handlers) {
     },
 
     openPause() {
-      if (ui.isEnded() || optionsOpen || debugOpen) return;
+      if (menuActive || ui.isEnded() || optionsOpen || debugOpen) return;
       els.pausePanel.hidden = false;
       els.resume.focus();
       handlers.onPausePanel?.(true);
@@ -49,6 +53,7 @@ export function createUi(dict, handlers) {
     },
 
     closePause() {
+      ui.closeQuit(false);
       els.pausePanel.hidden = true;
       els.pauseBtn.blur();
       document.activeElement?.blur?.();
@@ -65,6 +70,11 @@ export function createUi(dict, handlers) {
       // Lot 5l : de même pour le menu de débogage (confirmation d'abord).
       if (debugOpen) {
         if (!debugMenu?.escape()) ui.closeDebug();
+        return;
+      }
+      // Lot 8a : Échap dans la confirmation de « Quitter » : retour aux boutons de la pause.
+      if (quitBox && !quitBox.hidden) {
+        ui.closeQuit(true);
         return;
       }
       if (els.pausePanel.hidden) ui.openPause();
@@ -193,6 +203,51 @@ export function createUi(dict, handlers) {
     els.debug.focus();
   };
   els.debug.addEventListener('click', () => ui.openDebug());
+  // Lot 8a : menu principal et retour au menu.
+  ui.setMenu = (active) => {
+    menuActive = active === true;
+  };
+  ui.isMenu = () => menuActive;
+  const actions = els.pausePanel.querySelector('.panel-actions');
+  ui.openQuit = () => {
+    if (els.pausePanel.hidden) return;
+    if (!quitBox) {
+      quitBox = document.createElement('div');
+      quitBox.id = 'quit-confirm';
+      quitBox.setAttribute('role', 'alertdialog');
+      quitBox.setAttribute('aria-labelledby', 'quit-confirm-text');
+      const text = document.createElement('p');
+      text.id = 'quit-confirm-text';
+      text.className = 'panel-line';
+      text.textContent = dict['game.pause.quitConfirm'];
+      const row = document.createElement('div');
+      row.className = 'panel-actions';
+      const make = (id, cls, key) => {
+        const b = document.createElement('button');
+        b.id = id;
+        b.type = 'button';
+        b.className = `button ${cls}`;
+        b.textContent = dict[key];
+        row.append(b);
+        return b;
+      };
+      make('btn-quit-ok', 'button-main', 'game.pause.quitOk').addEventListener('click', () => handlers.onQuit?.());
+      make('btn-quit-cancel', 'button-quiet', 'game.pause.quitCancel').addEventListener('click', () => ui.closeQuit(true));
+      quitBox.append(text, row);
+      actions.after(quitBox);
+    }
+    actions.hidden = true;
+    quitBox.hidden = false;
+    document.getElementById('btn-quit-cancel').focus();
+  };
+  ui.closeQuit = (focus) => {
+    if (!quitBox || quitBox.hidden) return;
+    quitBox.hidden = true;
+    actions.hidden = false;
+    if (focus) els.quit.focus();
+  };
+  els.quit.addEventListener('click', () => ui.openQuit());
+  els.menuBtn.addEventListener('click', () => handlers.onMenu?.());
   els.fullscreen.hidden = !canFullscreen;
   // Lot 5j-G : icône de plein écran (coins vers l'extérieur ; vers l'intérieur et nom « Quitter le plein écran » quand la page est en plein écran).
   const syncFullscreen = () => {

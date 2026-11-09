@@ -105,6 +105,7 @@ for (const canal of ['archive', 'prod']) {
     test.setTimeout(120_000);
     const { problems, external, files } = watch(page, SITE);
     await page.goto(`${URLS[canal]}?test=1&seed=3&nospawn=1&wave=5&perf=1&gfx=faible&${G}&v=2`);
+    await page.locator('#menu-jouer').click({ timeout: 60_000 }); // lot 8a : paramètres refusés, adresse vide pour le jeu : le menu s'ouvre
     await waitGame(page);
     const s = await observe(page);
     expect(s.canal).toBe(canal);

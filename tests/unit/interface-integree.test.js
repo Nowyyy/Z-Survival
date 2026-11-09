@@ -278,21 +278,23 @@ describe('structure de jeu.html', () => {
 
   // Retours du propriétaire : solde à côté de « PAUSE » ; deux colonnes Reprendre, Recommencer, Quitter (désactivé) | Son, Options (lot 5j, avant : Effet VHS), Plein écran ;
   // ordre du HTML = lecture.
-  it('pause : « PAUSE », le solde et l\'icône du son en tête ; boutons Reprendre, Recommencer, Options, Quitter (désactivé), Plein écran ; ni volume, ni prochaine zone, ni sauvegarde', () => {
+  // Lot 8a : « Quitter » actif (avant : désactivé) ; sa confirmation est construite par ui.js au premier appui.
+  it('pause : « PAUSE », le solde et l\'icône du son en tête ; boutons Reprendre, Recommencer, Options, Quitter (actif), Plein écran ; ni volume, ni prochaine zone, ni sauvegarde', () => {
     // Lot 5j-F : Son est l'icône de la tête, après le solde (avant : entre Reprendre et Recommencer).
     // Lot 5j-G : Plein écran est l'icône à gauche du son, dans la tête (avant : dernier bouton de la grille).
     const order = ['pause-title', 'pause-balance', 'btn-fullscreen', 'btn-sound', 'btn-resume', 'btn-restart', 'btn-options', 'btn-quit'].map((id) => at(`id="${id}"`));
     expect(order.every((p, i) => p > 0 && (i === 0 || p > order[i - 1]))).toBe(true);
-    expect(html).toMatch(/<button id="btn-quit" class="button button-quiet" type="button" data-i18n="game\.pause\.quit" disabled><\/button>/);
+    expect(html).toMatch(/<button id="btn-quit" class="button button-quiet" type="button" data-i18n="game\.pause\.quit"><\/button>/);
     const pause = html.slice(at('id="pause-panel"'), at('id="end-panel"'));
     expect(pause).not.toMatch(/volume|pause-next|pause-save/);
   });
 
-  it('fin : « Rejouer » puis « Revenir au menu principal » (bouton sans lien ni action), plus de lien « Voir ma sauvegarde »', () => {
+  // Lot 8a : « Revenir au menu principal » ramène au menu (avant : sans action) ; toujours un bouton, sans lien.
+  it('fin : « Rejouer » puis « Revenir au menu principal » (bouton sans lien, retour au menu), plus de lien « Voir ma sauvegarde »', () => {
     const end = html.slice(at('id="end-panel"'), at('id="rotate"'));
     expect(end).toMatch(/id="btn-replay"[\s\S]*<button id="btn-menu" class="button button-quiet" type="button" data-i18n="game\.end\.menu"><\/button>/);
     expect(end).not.toMatch(/<a\s|sauvegarde\.html/);
-    expect(readFileSync('js/game/ui.js', 'utf8')).not.toMatch(/btn-menu|menu\.addEventListener/);
+    expect(readFileSync('js/game/ui.js', 'utf8')).toMatch(/els\.menuBtn\.addEventListener\('click', \(\) => handlers\.onMenu\?\.\(\)\)/);
   });
 
   // Retours du propriétaire : « Nouveau record » à la place d'« Argent gagné » (colonne de gauche), « Argent gagné » entre « Zombies tués » et « Solde » ; note
@@ -313,7 +315,7 @@ describe('structure de jeu.html', () => {
     expect(cols[1].slice(0, 4)).toEqual(['end-kills', 'end-earned', 'end-bonus', 'end-balance']);
     expect(end).not.toContain('game.end.provisional');
     expect(fr['game.end.provisional']).toBeUndefined();
-    expect(readFileSync('js/game/ui.js', 'utf8')).not.toMatch(/btn-quit/);
+    expect(readFileSync('js/game/ui.js', 'utf8')).toMatch(/els\.quit\.addEventListener\('click', \(\) => ui\.openQuit\(\)\)/); // lot 8a (avant : aucun écouteur)
   });
 
   it('?fin=monde (aperçu de la victoire) : seulement en mode essai et sur une carte avec fin de monde ; la dernière manche est terminée par les vrais calculs', () => {

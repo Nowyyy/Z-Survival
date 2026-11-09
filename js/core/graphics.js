@@ -456,13 +456,15 @@ export function bloodWithCorpses(blood, level, n) {
 // Lot 5l : paramètres d'adresse par canal (Docs/ref/debug.md). Le canal vient de la balise <meta name="zs-canal" content="…"> de jeu.html (source dans
 // le dépôt ; l'assembleur écrit release, dev ou archive dans les copies publiées ; prod viendra d'un assembleur de production), lue par graphics-boot.js
 // sans requête. Groupe G (doublons d'Options et réglages graphiques sans menu) : pris en compte sous ?test=1 (autorisé) ou sur source ; groupe T (outils) :
-// sur les canaux de débogage ; test, store, seed, empty : sur les canaux de débogage. Canal absent, inconnu, archive ou prod : tout est refusé.
+// sur les canaux de débogage ; test, store, seed, empty, menu (lot 8a) : sur les canaux de débogage. Canal absent, inconnu, archive ou prod : tout est refusé.
 // Un nom absent des trois listes (?v=, inconnu) n'est lu par aucun code : il passe tel quel.
 export const CANAUX = Object.freeze(['source', 'dev', 'release', 'archive', 'prod']);
 export const CANAUX_DEBUG = Object.freeze(['source', 'dev', 'release']);
 export const PARAMS_G = Object.freeze(['gfx', 'lum', 'lampgain', 'shadows', 'vhs', 'dpr', 'detail', 'perso', 'sang', 'usure', 'percee']);
 export const PARAMS_T = Object.freeze(['wave', 'lvl', 'money', 'planks', 'floor', 'map', 'nospawn', 'endless', 'fin', 'perf', 'cap', 'fps', 'zoom', 'tilt', 'labels', 'sons']);
-export const PARAMS_TEST = Object.freeze(['test', 'store', 'seed', 'empty']);
+export const PARAMS_TEST = Object.freeze(['test', 'store', 'seed', 'empty', 'menu']);
+// Lot 8a : paramètres de « Partie » (Docs/ref/menu-principal.md) : l'un d'eux, avec une valeur, démarre la partie directement (sans menu).
+export const PARAMS_PARTIE = Object.freeze(['wave', 'lvl', 'money', 'planks', 'floor', 'map', 'nospawn', 'endless', 'fin', 'empty']);
 
 // Canal reconnu (valeur exacte) ou null (absent, vide, inconnu, autre type).
 export function lireCanal(value) {
@@ -500,6 +502,15 @@ export function acces(canal, params) {
   const out = Object.create(null);
   for (const name of [...PARAMS_G, ...PARAMS_T, ...PARAMS_TEST, ...q.keys()]) out[name] = permis(name);
   return { canal: c, debug, test, params: out };
+}
+
+// Lot 8a : démarrage de jeu.html, d'après l'adresse autorisée (acces) : « partie » (directe, comme avant le menu) sous ?test=1 pris en compte, sauf
+// ?menu=1, ou avec un paramètre de « Partie » pris en compte et non vide ; « menu » sinon (écran de chargement E7 puis menu principal E8).
+export function choixDemarrage(canal, params) {
+  const q = searchOf(params);
+  const a = acces(canal, q);
+  if (a.test) return a.params.menu && q.get('menu') === '1' ? 'menu' : 'partie';
+  return PARAMS_PARTIE.some((n) => a.params[n] && (q.get(n) ?? '') !== '') ? 'partie' : 'menu';
 }
 
 // Adresse (chaîne de requête) sans les paramètres refusés pour ce canal. Rien de refusé (toujours le cas sur source) : la chaîne d'origine, identique.

@@ -22,8 +22,10 @@ import { generateTextureData } from './textures.js';
 import { installTestHook } from './testhook.js';
 import { createUi } from './ui.js';
 import { applyTexts, fmt, loadDict, TEXTURE_TEXTS } from './texts.js';
+import { menuPret, menuProgres, menuRetour, modeMenu } from '../menu/demarrage.js';
 
 const DEFAULT_RATIO_CAP = 2;
+menuProgres('modules', 1); // lot 8a : modules et Three.js évalués (écran de chargement E7 du mode menu ; sans effet en partie directe)
 
 async function loadJson(path) {
   const response = await fetch(path);
@@ -113,6 +115,7 @@ const [dict, world, decor, camera, nav, player, weapons, enemies, render, textur
   loadJson('data/game/economy.json'),
   loadJson('data/game/save.json'),
 ]);
+menuProgres('donnees', 1);
 
 applyTexts(dict);
 installSafeArea();
@@ -134,10 +137,16 @@ render.detailDoors = detail; // vraies portes et éboulis (lot 3g, retours) ; ?d
 render.seeThrough = query.get('percee') === '0' ? null : (render.seeThrough ?? null); // mur percé autour du joueur caché (lot 3g, retours) ; ?percee=0 l'enlève
 render.feux = detail && mapId !== 'salle' ? ((await loadJson(`${mapDir}/feux.json`).catch(() => null))?.feux ?? []) : []; // feux sur des caisses (lot 3g, retours)
 render.reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
-const textureData = await generateTextureData(texturesCfg.textures, { lookup: createTokenLookup(), onProgress: (p) => loading.update(p * TEXTURE_SHARE), detail: detail && gfxLoad.texturesFines });
+const textureData = await generateTextureData(texturesCfg.textures, { lookup: createTokenLookup(), onProgress: (p) => {
+  loading.update(p * TEXTURE_SHARE);
+  menuProgres('textures', p);
+}, detail: detail && gfxLoad.texturesFines });
 const soundMode = parseSoundMode(search); // ?sons= (groupe T)
 const audio = createAudio({ config: { audio: audioCfg, materials: materialsCfg, voice: voiceCfg, sounds: soundsCfg.sounds }, test: testMode, seed: Number.isFinite(seedParam) ? seedParam : 1, mode: soundMode });
-const essential = await renderSounds(planSounds(soundsCfg.sounds, 'essentiel'), { onProgress: (p) => loading.update(TEXTURE_SHARE + (1 - TEXTURE_SHARE) * p), mode: soundMode });
+const essential = await renderSounds(planSounds(soundsCfg.sounds, 'essentiel'), { onProgress: (p) => {
+  loading.update(TEXTURE_SHARE + (1 - TEXTURE_SHARE) * p);
+  menuProgres('sons', p);
+}, mode: soundMode });
 audio.addSounds(essential.items);
 audio.stats.essentialMs = essential.ms;
 // Effet VHS : le grain est généré (texgen.js) et converti en adresse data: une seule fois, derrière l'écran de préparation.
@@ -212,6 +221,7 @@ const ctx = {
   audioCfg,
   audioMaterials: materialsCfg,
   canal, // lot 5l : canal de la page (null : refusé) ; l'icône de débogage de la pause n'existe que sur les canaux de débogage
+  hold: modeMenu, // lot 8a : en mode menu, la boucle d'images attend « JOUER » (game.begin)
 };
 
 // Lot 5b : préréglages graphiques en jeu (réglages « live », Auto entre deux manches) ; sous ?test=1 le rechargement est simulé (getState().graphics).
@@ -247,9 +257,16 @@ ctx.ui = createUi(dict, {
     syncHint();
   },
   onRotateChange: () => ctx.input.releaseAll(),
+  // Lot 8a : « Quitter » confirmé (argent écrit par bank.runEnd, comme à la mort) et « Revenir au menu principal » : rechargement vers le menu.
+  onQuit: () => {
+    game?.quit();
+    menuRetour();
+  },
+  onMenu: () => menuRetour(),
 });
+ctx.ui.setMenu(modeMenu); // lot 8a : pendant le menu, ni pause ni commande de partie
 ctx.input = createInput(root, {
-  isBlocked: () => ctx.ui.isPaused(),
+  isBlocked: () => ctx.ui.isPaused() || ctx.ui.isMenu(),
   onCommand: (name) => {
     if (name === 'pause') ctx.ui.togglePause();
     else if (name === 'fullscreen') ctx.ui.toggleFullscreen();
@@ -283,10 +300,11 @@ game = createGame(ctx);
 // Lot 5b-H : garder aussi le premier « commit » du navigateur sous l'écran (deux images d'attente) a été essayé puis retiré : Lighthouse tombait
 // de 55 à 30 (temps de blocage 1,3 à 1,6 s), sous le seuil de 45 ; ce commit reste dans la première seconde de la partie (compte à rebours « DÉBUT »).
 loading.done();
-root.hidden = false;
+root.hidden = modeMenu; // lot 8a : en mode menu, la partie reste cachée jusqu'à « JOUER »
 if (game === null) {
   // WebGL indisponible : un message à la place du jeu.
   root.hidden = true;
+  document.getElementById('e7')?.remove(); // lot 8a : mode menu, le message remplace l'écran de chargement
   const error = document.getElementById('game-error');
   error.textContent = dict['game.error.webgl'];
   error.hidden = false;
@@ -316,6 +334,17 @@ if (game === null) {
     game.skipWave();
     game.advance(0.3);
   }
+}
+// Lot 8a : jeu prêt en mode menu (créé, boucle arrêtée) : l'écran de chargement laisse place au menu ; « JOUER » montre la partie et lance la boucle.
+if (game !== null) {
+  menuPret({
+    dict, repository, graphics: ctx.graphics, vhs,
+    jouer: () => {
+      root.hidden = false;
+      ctx.ui.setMenu(false);
+      game.begin();
+    },
+  });
 }
 // Les sons « fond » (voix de zombies, ambiance) sont calculés pendant la partie, 4 ms par image au plus ; ils ne sont joués qu'une fois prêts.
 renderSounds(planSounds(soundsCfg.sounds, 'fond'), { sliceMs: BACKGROUND_SLICE_MS, wait: nextVisibleFrame, onItem: (item) => ctx.audio.addSounds([item]), mode: soundMode }).then((done) => {
