@@ -158,7 +158,9 @@ test.describe('zones : mobilier de complément, budget, interface', () => {
   });
 
   test('après l\'ouverture, la géométrie de la porte est libérée (nombre de géométries non supérieur à avant)', async ({ page }) => {
-    await open(page, '&wave=10');
+    // Lot 5n : &lum=off. En lumière dynamique (lot 5k), un objet déjà présent est envoyé au GPU une seule fois pendant l'attente (ombre d'une lampe :
+    // 30 → 31, puis stable sur 60 s à position fixe ; sans les lampes, constant) : il masquait la libération de la porte, qui se fait dans tous les préréglages.
+    await open(page, '&wave=10&lum=off');
     const geometries = async () => {
       await page.evaluate(() => window.__zs.sampleScreen(0, 0, 4, 4));
       return (await STATE(page)).render.geometries;
