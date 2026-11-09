@@ -867,6 +867,7 @@
         "scripts/assemble.mjs",
         "scripts/site/**",
         "scripts/versions/**",
+        "scripts/publication/**",
         "scripts/vendor-three.mjs",
         "versions.json",
         "build-info.json"
@@ -879,6 +880,7 @@
         "tests/unit/maps-hygiene.test.js",
         "tests/unit/noms.test.js",
         "tests/unit/persos-jeu.test.js",
+        "tests/unit/publication-controle.test.js",
         "tests/unit/versions-archiver.test.js",
         "tests/unit/versions-schema.test.js"
       ],

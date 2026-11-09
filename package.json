@@ -23,7 +23,8 @@
     "archive": "node scripts/versions/archiver.mjs",
     "serve:site": "node scripts/site/serve.mjs --root _site --base /Z-Survival/",
     "vendor:three": "node scripts/vendor-three.mjs",
-    "carte": "node scripts/plan-vers-monde.mjs"
+    "carte": "node scripts/plan-vers-monde.mjs",
+    "publication:controle": "node scripts/publication/controler.mjs"
   },
   "devDependencies": {
     "@axe-core/playwright": "4.14.0",
