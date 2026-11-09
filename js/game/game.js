@@ -1184,9 +1184,7 @@ export function createGame(ctx) {
     cancelAnimationFrame(frameId);
     frameId = 0;
   }
-  // Lot 8a : en mode menu (ctx.hold), la boucle ne démarre qu'à « JOUER » (begin), ni à la création ni au retour de l'onglet.
-  let held = ctx.hold === true;
-  document.addEventListener('visibilitychange', () => (document.hidden ? stop() : held ? null : start()));
+  document.addEventListener('visibilitychange', () => (document.hidden ? stop() : start()));
   window.addEventListener('resize', applySize);
 
   applyLevels(ctx.levels?.levels, ctx.levels?.warnings);
@@ -1197,7 +1195,7 @@ export function createGame(ctx) {
   renderer.compile(world.scene, rig.camera); // lot 5b-C : programmes de toutes les matières (autre étage, feux hors champ, sang) compilés avant la première image
   renderer.render(world.scene, rig.camera); // lot 5b-G : premier rendu (textures, géométries, ombres) derrière l'écran de préparation
   renderer.getContext().finish?.(); // lot 5b-G : attend la fin de ce rendu, pour que la première image du jeu n'en paie rien
-  if (!document.hidden && !held) start();
+  if (!document.hidden) start();
 
   return {
     get sim() {
@@ -1363,11 +1361,6 @@ export function createGame(ctx) {
     onPauseOpen() {
       bank.flush('pause');
       ctx.ui.setPauseInfo(bank.summary());
-    },
-    // Lot 8a : « JOUER » du menu : la boucle d'images démarre (la partie commence à la première image, comme en partie directe).
-    begin() {
-      held = false;
-      if (!document.hidden) start();
     },
     // Lot 8a : « Quitter » confirmé : la partie en cours s'arrête ici ; son argent et ses records sont écrits par le même chemin qu'à la mort
     // (bank.runEnd : écriture immédiate) ; rien de plus si elle est déjà finie (mort, monde terminé).

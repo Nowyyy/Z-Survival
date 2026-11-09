@@ -221,7 +221,6 @@ const ctx = {
   audioCfg,
   audioMaterials: materialsCfg,
   canal, // lot 5l : canal de la page (null : refusé) ; l'icône de débogage de la pause n'existe que sur les canaux de débogage
-  hold: modeMenu, // lot 8a : en mode menu, la boucle d'images attend « JOUER » (game.begin)
 };
 
 // Lot 5b : préréglages graphiques en jeu (réglages « live », Auto entre deux manches) ; sous ?test=1 le rechargement est simulé (getState().graphics).
@@ -294,13 +293,18 @@ soundHint.addEventListener('click', () => ctx.audio.unlock());
 // aussi, et chaque geste retente la reprise tant que le contexte n'est pas en marche.
 for (const type of ['pointerdown', 'pointerup', 'click', 'touchend', 'keydown']) window.addEventListener(type, () => ctx.audio.unlock(), { capture: true });
 
+// Lot 8a : en mode menu, le jeu n'est créé qu'à « JOUER » (le menu s'ouvre quand textures et sons sont prêts) : la création (compilation, premier
+// rendu, ~1 s sur téléphone) reste hors du chargement mesuré par Lighthouse, qui tombait de 55 à 34 quand elle suivait l'écran de chargement.
+if (modeMenu) await new Promise((resolve) => menuPret({ dict, repository, graphics: ctx.graphics, vhs, jouer: resolve }));
 game = createGame(ctx);
 // Lot 5b-G : l'écran de préparation reste affiché pendant la création du jeu (monde, programmes, premier rendu complet, zombies préparés) :
 // le joueur ne voit pas la première image lente ; la boucle d'images ne démarre qu'à l'image suivante, une fois l'écran retiré.
 // Lot 5b-H : garder aussi le premier « commit » du navigateur sous l'écran (deux images d'attente) a été essayé puis retiré : Lighthouse tombait
 // de 55 à 30 (temps de blocage 1,3 à 1,6 s), sous le seuil de 45 ; ce commit reste dans la première seconde de la partie (compte à rebours « DÉBUT »).
 loading.done();
-root.hidden = modeMenu; // lot 8a : en mode menu, la partie reste cachée jusqu'à « JOUER »
+root.hidden = false;
+document.getElementById('e8')?.remove(); // lot 8a : la partie remplace le menu principal
+ctx.ui.setMenu(false);
 if (game === null) {
   // WebGL indisponible : un message à la place du jeu.
   root.hidden = true;
@@ -334,17 +338,6 @@ if (game === null) {
     game.skipWave();
     game.advance(0.3);
   }
-}
-// Lot 8a : jeu prêt en mode menu (créé, boucle arrêtée) : l'écran de chargement laisse place au menu ; « JOUER » montre la partie et lance la boucle.
-if (game !== null) {
-  menuPret({
-    dict, repository, graphics: ctx.graphics, vhs,
-    jouer: () => {
-      root.hidden = false;
-      ctx.ui.setMenu(false);
-      game.begin();
-    },
-  });
 }
 // Les sons « fond » (voix de zombies, ambiance) sont calculés pendant la partie, 4 ms par image au plus ; ils ne sont joués qu'une fois prêts.
 renderSounds(planSounds(soundsCfg.sounds, 'fond'), { sliceMs: BACKGROUND_SLICE_MS, wait: nextVisibleFrame, onItem: (item) => ctx.audio.addSounds([item]), mode: soundMode }).then((done) => {

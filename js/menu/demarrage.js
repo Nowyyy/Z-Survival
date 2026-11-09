@@ -19,10 +19,11 @@ export function menuProgres(etape, fraction) {
   else attente.push([etape, fraction]);
 }
 
-// Jeu prêt (créé, boucle d'images arrêtée) : api = { dict, repository, graphics, vhs, jouer() } (main.js). L'écran de chargement termine sa chute,
-// puis laisse la place au menu.
+// Chargement fini (textures et sons prêts) : api = { dict, repository, graphics, vhs, jouer() } (main.js ; jouer() laisse main.js créer la partie).
+// L'écran de chargement termine sa chute, puis laisse la place au menu.
 export function menuPret(api) {
   if (!modeMenu) return;
+  document.getElementById('loading')?.setAttribute('hidden', ''); // écran de préparation d'avant (sous E7) : il ne doit pas couvrir le menu
   pret = api;
   if (echec) api.jouer(); // écran de chargement indisponible : la partie démarre comme avant le menu
   else ecran?.pret(api);

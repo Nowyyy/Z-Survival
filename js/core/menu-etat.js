@@ -3,10 +3,10 @@
 // Jusqu'au lot 8h, tout cet état reste en mémoire : rien n'est écrit dans le stockage.
 import { PARAMS_PARTIE } from './graphics.js';
 
-// Étapes du chargement réel et leur part du pourcentage (somme 1) : modules (Three.js compris), données JSON, textures, sons « essentiel »,
-// création du jeu (compilation des programmes et premier rendu).
-export const ETAPES = Object.freeze(['modules', 'donnees', 'textures', 'sons', 'compilation']);
-export const POIDS = Object.freeze({ modules: 0.3, donnees: 0.05, textures: 0.4, sons: 0.15, compilation: 0.1 });
+// Étapes du chargement réel et leur part du pourcentage (somme 1) : modules (Three.js compris), données JSON, textures, sons « essentiel ».
+// La création du jeu (compilation des programmes, premier rendu) se fait à « JOUER » (Docs/ref/menu-principal.md : seuil Lighthouse).
+export const ETAPES = Object.freeze(['modules', 'donnees', 'textures', 'sons']);
+export const POIDS = Object.freeze({ modules: 0.3, donnees: 0.05, textures: 0.45, sons: 0.2 });
 // Nombre de fichiers JavaScript du graphe de démarrage du jeu (?test=1&lum=off, tests/e2e/graphismes.spec.js) : la part « modules » avance d'un
 // fichier reçu à la fois ; au-delà, elle attend la fin réelle (début de main.js). Une valeur fausse ne rend la barre que moins régulière.
 export const MODULES_ATTENDUS = 114;

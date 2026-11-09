@@ -35,7 +35,7 @@ Balise : `<meta name="zs-canal" content="source">` dans `jeu.html`, forme exacte
 |---|---|---|
 | G (doublons d'Options, réglages graphiques sans menu) | `gfx`, `lum`, `lampgain`, `shadows`, `vhs`, `dpr`, `detail`, `perso`, `sang`, `usure`, `percee` | `test=1` pris en compte, ou canal `source` |
 | T (outils techniques) | `wave`, `lvl`, `money`, `planks`, `floor`, `map`, `nospawn`, `endless`, `fin`, `perf`, `cap`, `fps`, `zoom`, `tilt`, `labels`, `sons` | canal dans `CANAUX_DEBUG` (avec ou sans `test=1`) |
-| Test | `test`, `store`, `seed`, `empty` | canal dans `CANAUX_DEBUG` |
+| Test | `test`, `store`, `seed`, `empty`, `menu` (lot 8a) | canal dans `CANAUX_DEBUG` |
 | Autres (`v`, tout nom inconnu) | lus par aucun code | inchangés |
 
 `readOnlyParams` (`data/game/save.json`) : inchangé ; `gfx`, `perf`, `cap` n'y sont jamais. Un paramètre refusé est retiré de l'adresse **lue par le jeu** (l'adresse affichée ne change pas) : il n'a aucun effet et ne déclenche pas le mode essai.
@@ -59,6 +59,11 @@ Balise : `<meta name="zs-canal" content="source">` dans `jeu.html`, forme exacte
 
 ## Règle pour le lot 5k
 `lum` et `lampgain` appartiennent au **groupe G** (ils existent sur la base : ils y sont dès ce lot). Toute nouvelle option graphique lue dans l'adresse rejoint le groupe G.
+
+## Paramètre `menu` et démarrage (lot 8a)
+- `jeu.html` s'ouvre sur l'écran de chargement puis le menu principal (`Docs/ref/menu-principal.md`), sauf **partie directe** : `?test=1` pris en compte, ou un paramètre de « Partie » (`PARAMS_PARTIE` : `wave`, `lvl`, `money`, `planks`, `floor`, `map`, `nospawn`, `endless`, `fin`, `empty`) pris en compte et non vide. Règle : `choixDemarrage(canal, adresse)` (`js/core/graphics.js`), lue par `js/menu/demarrage.js`.
+- `?menu=1` (groupe test) : sous `?test=1` (canaux de débogage), force le menu (tests du menu ; `window.__zsMenu.etat()` : progression, chute, onglet, menu à trois barres). Sans `?test=1`, sans effet (le menu s'ouvre déjà sans paramètre de Partie). Refusé sur archive, prod et canal absent. `readOnlyParams` inchangé.
+- Le menu de débogage garde `menu` dans l'adresse (paramètre non géré).
 
 ## Comment ajouter un paramètre
 1. L'ajouter à `PARAMS_G`, `PARAMS_T` ou `PARAMS_TEST` (`js/core/graphics.js`) ; un paramètre absent des trois listes passe sans filtre (réservé aux noms lus par aucun code).

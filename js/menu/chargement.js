@@ -193,10 +193,10 @@ export function creerChargement({ root = document.body, search = globalThis.loca
   afficher();
   return {
     progres,
-    // Jeu prêt : la compilation est faite ; le menu s'ouvre à la fin de la chute.
+    // Chargement fini (textures et sons prêts ; la partie sera créée à « JOUER ») : le menu s'ouvre à la fin de la chute.
     pret(a) {
       api = a;
-      progres('compilation', 1);
+      passer();
     },
     etat: () => ({ pourcentage: pourcentage(etat), pret: etat.pret, chuteFinie, journal: [...journal], visible: box.isConnected, menu: menu?.etat?.() ?? null }),
   };

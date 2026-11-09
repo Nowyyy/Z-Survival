@@ -246,11 +246,14 @@ export function creerMenu({ dict, repository, graphics, vhs = null, jouer, root 
     barres.focus();
   }
 
+  // « JOUER » : « Préparation… » s'affiche (deux images), puis main.js crée la partie (compilation, premier rendu) et retire le menu.
   btJouer.addEventListener('click', () => {
+    if (btJouer.disabled) return;
     document.removeEventListener('keydown', clavier, true);
     document.removeEventListener('pointerdown', dehors, true);
-    box.remove();
-    jouer();
+    btJouer.disabled = true;
+    btJouer.textContent = t('game.menu.jouer.preparation');
+    requestAnimationFrame(() => requestAnimationFrame(() => jouer()));
   });
 
   // Échap : Options (confirmation d'abord), puis l'écran ouvert, puis le menu à trois barres. Un appui ailleurs ferme le menu à trois barres.

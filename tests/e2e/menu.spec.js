@@ -55,7 +55,7 @@ test.describe('écran de chargement (E7)', () => {
     expect(e.journal.every((n, i) => i === 0 || n > e.journal[i - 1])).toBe(true);
     expect(e.journal.filter((n) => n >= 100)).toEqual([100]);
     expect([e.pret, e.chuteFinie, e.visible]).toEqual([true, true, false]);
-    expect(await page.evaluate(() => window.__zs.getState().time)).toBe(0); // la partie attend « JOUER »
+    expect(await page.evaluate(() => typeof window.__zs)).toBe('undefined'); // la partie n'est créée qu'à « JOUER »
     expect(o.problemes).toEqual([]);
     expect(o.externes).toEqual([]);
   });
@@ -184,7 +184,7 @@ test.describe('menu principal (E8)', () => {
     await page.keyboard.press('Escape');
     await expect(page.locator('#options-panel')).toBeHidden();
     await expect(page.locator('#pause-panel')).toBeHidden(); // Échap n'ouvre jamais la pause pendant le menu
-    expect(await page.evaluate(() => window.__zs.getState().time)).toBe(0);
+    expect(await page.evaluate(() => typeof window.__zs)).toBe('undefined'); // aucune partie pendant le menu
   });
 });
 
@@ -217,9 +217,9 @@ test.describe('partie et retour au menu', () => {
     // JOUER : la partie démarre sans rechargement, manche 1.
     const url = page.url();
     await page.locator('#menu-jouer').click();
-    await expect(page.locator('#game-root')).toBeVisible();
+    await expect(page.locator('#game-root')).toBeVisible({ timeout: 60_000 });
     await expect(page.locator('#e8')).toHaveCount(0);
-    await page.waitForFunction(() => window.__zs.getState().time > 0.05);
+    await page.waitForFunction(() => (window.__zs?.getState()?.time ?? 0) > 0.05);
     expect(page.url()).toBe(url);
     expect(await page.evaluate(() => window.__zs.getState().waves.wave)).toBe(1);
     // Quitter : gain de la partie, confirmation (Annuler d'abord), puis retour au menu ; le solde de la sauvegarde contient le gain.
@@ -238,7 +238,7 @@ test.describe('partie et retour au menu', () => {
     expect(quitte.money).toBe(1284);
     // Même gain, mort puis « Revenir au menu principal » : même solde, même chemin (bank.runEnd).
     await page.locator('#menu-jouer').click();
-    await page.waitForFunction(() => window.__zs.getState().time > 0.05);
+    await page.waitForFunction(() => (window.__zs?.getState()?.time ?? 0) > 0.05, null, { timeout: 60_000 });
     await page.evaluate(() => { const zs = window.__zs; zs.giveMoney(50); zs.setChutes(0); zs.downPlayer(); zs.step(0.3); });
     await expect(page.locator('#end-panel')).toBeVisible();
     await Promise.all([page.waitForURL(/[?&]menu=1/), page.locator('#btn-menu').click()]);
@@ -258,7 +258,7 @@ test.describe('partie et retour au menu', () => {
     expect(await page.evaluate(() => [typeof window.__zs, typeof window.__zsMenu])).toEqual(['undefined', 'undefined']);
     await expect(page.locator('#game-root')).toBeHidden();
     await page.locator('#menu-jouer').click();
-    await expect(page.locator('#game-root')).toBeVisible();
+    await expect(page.locator('#game-root')).toBeVisible({ timeout: 60_000 });
     await expect(page.locator('#hud-chrono-text')).not.toHaveText('', { timeout: 30_000 });
     expect(o.externes).toEqual([]);
     expect(o.problemes).toEqual([]);

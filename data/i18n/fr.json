@@ -535,6 +535,7 @@
   "game.pause.quitOk": "Quitter la partie",
   "game.pause.quitCancel": "Annuler",
   "game.menu.jouer.bouton": "JOUER",
+  "game.menu.jouer.preparation": "Préparation…",
   "game.menu.connexion": "Connexion",
   "game.menu.solde": "Solde : {n}",
   "game.menu.ouvrir": "Menu",

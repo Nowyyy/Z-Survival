@@ -73,8 +73,8 @@ function lcg(seed) {
 }
 
 describe('progression du chargement (lot 8a)', () => {
-  it('étapes et poids : somme 1, toutes pondérées', () => {
-    expect(ETAPES).toEqual(['modules', 'donnees', 'textures', 'sons', 'compilation']);
+  it('étapes et poids : somme 1, toutes pondérées (création du jeu hors chargement : à « JOUER »)', () => {
+    expect(ETAPES).toEqual(['modules', 'donnees', 'textures', 'sons']); // la création du jeu se fait à « JOUER »
     expect(Object.values(POIDS).reduce((a, b) => a + b, 0)).toBeCloseTo(1, 10);
     for (const e of ETAPES) expect(POIDS[e]).toBeGreaterThan(0);
     expect(MODULES_ATTENDUS).toBeGreaterThan(100);
@@ -109,8 +109,8 @@ describe('progression du chargement (lot 8a)', () => {
     expect(a.fractions.sons).toBe(0);
     let c = creerProgression();
     for (const x of ETAPES.slice(0, -1)) c = avancer(c, x, 1);
-    expect([pourcentage(c), c.pret]).toEqual([90, false]);
-    c = avancer(c, 'compilation', 0.999);
+    expect([pourcentage(c), c.pret]).toEqual([80, false]);
+    c = avancer(c, 'sons', 0.999);
     expect(pourcentage(c)).toBe(99);
   });
 });
