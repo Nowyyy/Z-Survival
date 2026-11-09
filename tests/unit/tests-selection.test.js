@@ -6,7 +6,7 @@ import { join } from 'node:path';
 import { createHash } from 'node:crypto';
 import { correspond, globVersRegex } from '../../scripts/tests/lib/glob.mjs';
 import { aretesEntreZones, referencesDe } from '../../scripts/tests/lib/graphe.mjs';
-import { completPeriodique, controlerTable, cyclesDe, fermetureInverse, refDeVersionActuelle, selectionner } from '../../scripts/tests/lib/selection.mjs';
+import { changementsDeTable, completPeriodique, controlerTable, cyclesDe, fermetureInverse, refDeVersionActuelle, selectionner } from '../../scripts/tests/lib/selection.mjs';
 import { verdictComplet } from '../../scripts/tests/lib/complet.mjs';
 
 const T = (zones, extra = {}) => ({
@@ -69,6 +69,72 @@ describe('sélection par zone', () => {
     const r = selectionner({ fichiers: [f, 'js/core/waves.js'], table: simple });
     expect(r.mode).toBe('tout');
     expect(r.raison).toContain(f);
+  });
+  // Lot 5n (T5) : la table elle-même. Sans table de la base (cas ci-dessus), elle rejoue tout ; avec elle, un changement limité aux entrées
+  // zones[*] touche ces zones (fermeture inverse comprise) ; toute autre clé, ou une zone retirée, garde le rejeu total.
+  const avecZone = (table, id, change) => ({ ...table, zones: table.zones.map((z) => (z.id === id ? { ...z, ...change } : z)) });
+  it('table : une entrée de zone changée (tests listés) touche cette zone et celles qui en dépendent, sans rejeu total', () => {
+    const apres = avecZone(simple, 'vagues', { vitest: ['tests/unit/vagues.test.js', 'tests/unit/vagues-2.test.js'] });
+    const r = selectionner({ fichiers: ['tests/selection.json'], table: apres, tableAvant: simple });
+    expect(r.mode).toBe('zones');
+    expect(ids(r)).toEqual(['vagues', 'economie', 'interface']);
+    expect(r.rejouees[0].raison).toBe('source modifiée : tests/selection.json');
+    expect(r.vitest).toContain('tests/unit/vagues-2.test.js');
+    expect(r.declencheurs).toEqual([]);
+  });
+  it('table : sources ou dépendances d\'une zone changées, zone ajoutée : ces zones et leur fermeture ; deux zones à la fois', () => {
+    expect(ids(selectionner({ fichiers: ['tests/selection.json'], table: avecZone(simple, 'sons', { sources: ['js/game/audio.js', 'js/game/audio2.js'] }), tableAvant: simple }))).toEqual(['sons']);
+    expect(ids(selectionner({ fichiers: ['tests/selection.json'], table: avecZone(simple, 'interface', { dependances: ['economie', 'sons'] }), tableAvant: simple }))).toEqual(['interface']);
+    const ajout = { ...simple, zones: [...simple.zones, Z('carte', ['js/core/maps.js'], ['noyau'])] };
+    expect(ids(selectionner({ fichiers: ['tests/selection.json'], table: ajout, tableAvant: simple }))).toEqual(['carte']);
+    const deux = avecZone(avecZone(simple, 'sons', { e2e: ['tests/e2e/sons.spec.js'] }), 'noyau', { vitest: ['tests/unit/vec.test.js'] });
+    expect(ids(selectionner({ fichiers: ['tests/selection.json', 'js/game/hud.js'], table: deux, tableAvant: simple })).sort()).toEqual(['economie', 'interface', 'noyau', 'sons', 'vagues']);
+  });
+  it.each([
+    ['garde-fous', { 'garde-fous': [{ fichier: 'tests/e2e/fumee.spec.js', categorie: 'G' }] }],
+    ['rejeu-total', { 'rejeu-total': ['package.json'] }],
+    ['rejeu-vitest', { 'rejeu-vitest': ['tests/unit/aides/**'] }],
+    ['toujours', { toujours: ['tests/unit/hygiene.test.js', 'tests/unit/x.test.js'] }],
+    ['fumee', { fumee: [] }],
+    ['documentation', { documentation: { inclus: ['Docs/**'], exclus: [] } }],
+    ['defaut', { defaut: 'rien' }],
+    ['schema', { schema: 2 }],
+  ])('table : clé %s changée → rejeu total, avec la raison', (cle, change) => {
+    const r = selectionner({ fichiers: ['tests/selection.json'], table: { ...avecZone(simple, 'sons', { vitest: ['tests/unit/s.test.js'] }), ...change }, tableAvant: simple });
+    expect(r.mode).toBe('tout');
+    expect(r.raison).toContain('tests/selection.json');
+    expect(changementsDeTable(simple, { ...simple, ...change }).autres).toEqual([cle]);
+  });
+  it('table : zone retirée → rejeu total ; table de la base illisible ou absente → rejeu total ; changementsDeTable', () => {
+    const retrait = { ...simple, zones: simple.zones.filter((z) => z.id !== 'sons') };
+    expect(selectionner({ fichiers: ['tests/selection.json'], table: retrait, tableAvant: simple }).mode).toBe('tout');
+    expect(changementsDeTable(simple, retrait)).toEqual({ zones: [], autres: ['zones (zone retirée : sons)'] });
+    for (const avant of [null, {}, { zones: 'x' }]) expect(selectionner({ fichiers: ['tests/selection.json'], table: simple, tableAvant: avant }).mode).toBe('tout');
+    expect(changementsDeTable(simple, simple)).toEqual({ zones: [], autres: [] });
+    expect(selectionner({ fichiers: ['tests/selection.json'], table: simple, tableAvant: simple })).toMatchObject({ mode: 'zones', rejouees: [] });
+  });
+  it('aides de Vitest (rejeu-vitest) : tout Vitest et les « toujours », aucun Playwright de zone ni rejeu total ; avec du code, les zones touchées en plus', () => {
+    const t = { ...simple, 'rejeu-vitest': ['tests/unit/helpers/**'] };
+    const r = selectionner({ fichiers: ['tests/unit/helpers/sim.js'], table: t });
+    expect(r.mode).toBe('zones');
+    expect(r.rejouees).toEqual([]);
+    expect(r.vitestTout).toEqual(['tests/unit/helpers/sim.js']);
+    expect(r.raison).toMatch(/tout Vitest \(aide Vitest modifiée : tests\/unit\/helpers\/sim\.js\)/);
+    expect(r.vitest).toEqual([...simple.zones.map((z) => z.vitest[0]), 'tests/unit/hygiene.test.js'].sort());
+    expect(r.e2e).toEqual([]);
+    expect(r.fumee).toEqual(['tests/e2e/fumee.spec.js']);
+    const r2 = selectionner({ fichiers: ['tests/unit/helpers/sim.js', 'js/core/economy.js'], table: t });
+    expect(ids(r2)).toEqual(['economie', 'interface']);
+    expect(r2.e2e).toEqual(['tests/e2e/argent.spec.js']);
+    expect(r2.vitest).toContain('tests/unit/sons.test.js');
+  });
+  it('table réelle : tests/unit/helpers/** dans rejeu-vitest et plus dans rejeu-total ; aucun fichier Playwright ne lit une aide de Vitest', () => {
+    const table = JSON.parse(readFileSync('tests/selection.json', 'utf8'));
+    expect(table['rejeu-vitest']).toEqual(['tests/unit/helpers/**']);
+    expect(table['rejeu-total']).not.toContain('tests/unit/helpers/**');
+    for (const f of ['package.json', 'css/tokens.css', 'tests/e2e/helpers.js', '.github/workflows/**', 'tests/selection.json', 'playwright.config.*', 'vitest.config.*']) expect(table['rejeu-total'], f).toContain(f);
+    for (const f of readdirSync('tests/e2e')) if (/\.js$/.test(f)) expect(readFileSync(join('tests/e2e', f), 'utf8'), f).not.toMatch(/unit\/helpers/);
+    expect(table.toujours).toContain('tests/unit/tests-selection.test.js');
   });
   it('rejeu total imposé (--tout, complet périodique) : raison affichée', () => {
     expect(selectionner({ fichiers: [], table: simple, forcerTout: 'option --tout' })).toMatchObject({ mode: 'tout', raison: 'option --tout' });
@@ -192,6 +258,9 @@ describe('workflows : tests.yml ajouté, pages.yml intact', () => {
   it('tests.yml : déclencheurs push (dev, lot-*, essai/** depuis le lot 4f), pull_request, workflow_dispatch avec un choix de palier ; documentation seule ignorée', () => {
     expect(tests).toMatch(/push:\n\s+branches: \[dev, 'lot-\*', 'essai\/\*\*'\]/);
     expect(tests).toContain('pull_request:');
+    // Lot 5n (W2-a) : Pull Requests vers main seulement, toujours sans la documentation seule.
+    expect(tests).toContain("\n  pull_request:\n    branches: [main]\n    paths-ignore: ['Docs/**', '**/*.md']\n");
+    expect((tests.match(/\n {2}pull_request:\n/g) ?? []).length).toBe(1);
     expect(tests).toMatch(/options: \[standard, publication, complet\]/);
     expect(tests).toContain("paths-ignore: ['Docs/**', '**/*.md']");
     expect(tests).not.toContain('pull_request_target');
@@ -215,6 +284,17 @@ describe('workflows : tests.yml ajouté, pages.yml intact', () => {
     expect(tests).toMatch(/tranche\.mjs --plan plan\.json --index \$\{\{ matrix\.index \}\} --empreinte/);
     expect(tests).toMatch(/name: duree-tranche-\$\{\{ needs\.planifier\.outputs\.palier \}\}-\$\{\{ matrix\.index \}\}/);
     expect(tests).toMatch(/planifier:[\s\S]*?fetch-depth: 0/);
+  });
+  // Lot 5n (W1-a) : sur un push de dev, quick (pages.yml) fait déjà le lint et tout Vitest, et bloque le déploiement : unitaires est sautée ;
+  // rapport ne l'attend pas, bilan-duree s'exécute quand même (always()) ; ailleurs (lot-*, pull_request, essai/**, manuel) elle tourne.
+  it('tests.yml (lot 5n, W1-a) : unitaires sautée sur un push de dev seulement ; quick garde lint et tout Vitest ; rapport et bilan-duree sans elle', () => {
+    expect(tests).toContain("\n  unitaires:\n    needs: planifier\n    if: needs.planifier.outputs.palier != '' && !(github.event_name == 'push' && github.ref == 'refs/heads/dev')\n");
+    expect(tests).toContain("\n  rapport:\n    needs: [planifier, tranches]\n    if: always() && needs.planifier.result == 'success' && needs.planifier.outputs.palier != '' && needs.planifier.outputs.n != '0'\n");
+    expect(tests).toContain("\n  bilan-duree:\n    needs: [planifier, unitaires, tranches]\n    if: always() && needs.planifier.result == 'success' && needs.planifier.outputs.palier != ''\n");
+    const quick = pages.slice(pages.indexOf('\n  quick:\n'), pages.indexOf('\n  deploy:\n'));
+    expect(quick).toContain('      - run: npm run lint\n      - run: npm test\n');
+    expect(JSON.parse(readFileSync('package.json', 'utf8')).scripts.test).toBe('vitest run');
+    expect(pages).toMatch(/\n {2}deploy:\n[\s\S]*?\n {4}needs: quick\n/);
   });
   it('tests.yml (lot 4f) : annulation des exécutions plus anciennes pour le standard seulement (publication et complet : groupe propre à l\'exécution)', () => {
     const c = /concurrency:\n {2}group: (.+)\n {2}cancel-in-progress: (.+)\n/.exec(tests);

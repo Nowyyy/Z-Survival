@@ -2,7 +2,7 @@
   "schema": 1,
   "avantCommitSecondes": 120,
   "standardSecondes": 480,
-  "standardCibleSecondes": 480,
+  "standardCibleSecondes": 400,
   "standardMaxSecondes": 600,
   "completCibleSecondes": 600,
   "installationSecondes": 30,

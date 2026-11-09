@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "description": "Lot 4e — table de sélection des tests par zone (scripts/tests/selectionner.mjs). Une zone rejoue ses tests quand une de ses sources ou une zone dont elle dépend change ; tout fichier modifié qu'aucune zone ne revendique rejoue tout ; la documentation seule ne rejoue rien. Les noms de fichiers sont des données.",
+  "description": "Lot 4e — table de sélection des tests par zone (scripts/tests/selectionner.mjs). Une zone rejoue ses tests quand une de ses sources ou une zone dont elle dépend change ; tout fichier modifié qu'aucune zone ne revendique rejoue tout ; la documentation seule ne rejoue rien. Lot 5n : un changement de cette table limité à ses entrées zones[*] ne rejoue que ces zones et celles qui en dépendent (toute autre clé : tout) ; « rejeu-vitest » (aides de Vitest) rejoue tout Vitest, sans rejeu total de Playwright. Les noms de fichiers sont des données.",
   "sujets-garde-fous": [
     "pureté de js/core/",
     "dependencies vide",
@@ -239,8 +239,10 @@
     ".github/workflows/**",
     "css/tokens.css",
     "tests/e2e/helpers.js",
-    "tests/unit/helpers/**",
     "scripts/serve.mjs"
+  ],
+  "rejeu-vitest": [
+    "tests/unit/helpers/**"
   ],
   "documentation": {
     "inclus": ["Docs/**", "**/*.md"],

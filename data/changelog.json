@@ -234,6 +234,10 @@
     { "name": "lot-5m", "version": "v0.7", "date": "2026-11-08", "titre": "Nettoyage des branches et de la documentation", "points": [
       "Les bilans des lots des versions V0.1 à V0.6 sont réunis en un fichier par version, en texte intégral et sans aucune modification ; ceux de la V0.7 restent séparés.",
       "Quatre documents terminés et sans aucune référence sont retirés ; la branche d'un lot est désormais supprimée au nettoyage de fin de version. Aucun changement dans le jeu."
+    ] },
+    { "name": "lot-5n", "version": "v0.7", "date": "2026-11-08", "titre": "Tests de publication allégés", "points": [
+      "Les tests lancés à chaque mise à jour du développement ne font plus deux fois le même travail, et le palier standard est réparti en quatre tranches équilibrées au lieu de trois.",
+      "Quelques délais d'attente trop courts sont allongés et un test à deux onglets est fiabilisé ; aucun test retiré, aucun changement dans le jeu."
     ] }
   ]
 }

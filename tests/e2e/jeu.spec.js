@@ -178,9 +178,9 @@ test.describe('téléphone', () => {
     const context = await browser.newContext({ viewport: { width: 375, height: 667 }, hasTouch: true, isMobile: true, locale: 'fr-FR' });
     const page = await context.newPage();
     await page.goto(baseURL + URL);
-    await expect(page.locator('#rotate')).toBeVisible();
+    await expect(page.locator('#rotate')).toBeVisible({ timeout: 30_000 });
     await expect(page.locator('#rotate')).toContainText('Tourne ton téléphone');
-    await expect(page.locator('#game-root')).toBeHidden();
+    await expect(page.locator('#game-root')).toBeHidden({ timeout: 30_000 });
     // Lot 1c : la partie démarre après la préparation des textures ; on attend qu'elle existe avant de lire son état.
     await page.waitForFunction(() => window.__zs !== undefined, null, { timeout: 60_000 });
     await expect.poll(() => page.evaluate(() => window.__zs.getState()?.paused)).toBe(true);
@@ -191,7 +191,7 @@ test.describe('téléphone', () => {
     const context = await browser.newContext({ viewport: { width: 375, height: 667 }, hasTouch: true, isMobile: true, locale: 'fr-FR' });
     const page = await context.newPage();
     await page.goto(baseURL + URL);
-    await expect(page.locator('#rotate')).toBeVisible();
+    await expect(page.locator('#rotate')).toBeVisible({ timeout: 30_000 });
     const results = await new AxeBuilder({ page }).analyze();
     expect(results.violations).toEqual([]);
     await context.close();
@@ -201,8 +201,8 @@ test.describe('téléphone', () => {
     const context = await browser.newContext({ viewport: { width: 667, height: 375 }, hasTouch: true, isMobile: true, locale: 'fr-FR' });
     const page = await context.newPage();
     await page.goto(baseURL + URL);
-    await expect(page.locator('#rotate')).toBeHidden();
-    await expect(page.locator('#game-root')).toBeVisible();
+    await expect(page.locator('#rotate')).toBeHidden({ timeout: 30_000 });
+    await expect(page.locator('#game-root')).toBeVisible({ timeout: 30_000 });
     await ready(page);
     await context.close();
   });

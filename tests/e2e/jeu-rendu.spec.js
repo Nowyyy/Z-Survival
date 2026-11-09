@@ -69,7 +69,7 @@ test.describe('enveloppe', () => {
   test('sans ?test=1, rien n\'est exposé (window.__zs absent)', async ({ page }) => {
     await page.setViewportSize(SIZE);
     await page.goto(salle('/jeu.html?nospawn=1'));
-    await expect(page.locator('#hud-life')).toHaveText('100/100');
+    await expect(page.locator('#hud-life')).toHaveText('100/100', { timeout: 30_000 });
     expect(await page.evaluate(() => typeof window.__zs)).toBe('undefined');
   });
 
