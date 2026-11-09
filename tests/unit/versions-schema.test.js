@@ -14,7 +14,8 @@ const OLD_VERSIONS = [{ version: 'V0.1', lot: 'lot-1' }, { version: 'V0.2', lot:
 const oldChangelog = { ...changelog, versions: OLD_VERSIONS };
 // Lot 5f : V0.6 publiée (actuelle, branche dev), V0.5 archivée. La liste figée d'avant le lot 5g décrit V0.1 à V0.5 (V0.5 en cours) : elle est comparée
 // à versions.json tel qu'il était avant la publication de V0.6 (même fichier sans V0.6, V0.5 actuelle et latest).
-const avantV06 = { ...real, latest: 'v0.5', versions: real.versions.filter((v) => v.id !== 'v0.6').map((v) => (v.id === 'v0.5' ? { ...v, status: 'actuelle' } : v)) };
+// Lot 5p : V0.7 publiée ; avantV06 retire aussi V0.7 (avant : V0.6 seulement).
+const avantV06 = { ...real, latest: 'v0.5', versions: real.versions.filter((v) => !['v0.6', 'v0.7'].includes(v.id)).map((v) => (v.id === 'v0.5' ? { ...v, status: 'actuelle' } : v)) };
 const FUSION_4B = 'e6cf00e0392250d1125e4c14c11a91837fca29db'; // fusion de lot-4b dans main (Pull Request #20), ancien ref de V0.5
 const clone = () => structuredClone(real);
 const errorsOf = (data) => validateVersions(data).errors.join('\n');
@@ -25,29 +26,35 @@ describe('versions.json du dépôt', () => {
   });
 
   // Lot 5f : avant « V0.1 à V0.5, V0.5 actuelle et latest » ; après : V0.6 ajoutée (branche dev), actuelle et latest, V0.5 archive.
-  it('liste V0.1 à V0.6 dans l\'ordre, V0.6 actuelle et latest, V0.1 à V0.5 archivées', () => {
-    expect(real.versions.map((v) => [v.id, v.branch])).toEqual([['v0.1', 'lot-1'], ['v0.2', 'lot-1d'], ['v0.3', 'lot-2c'], ['v0.4', 'lot-3e'], ['v0.5', 'lot-4b'], ['v0.6', 'dev']]);
-    expect(real.latest).toBe('v0.6');
-    expect(real.versions.filter((v) => v.status === 'actuelle').map((v) => v.id)).toEqual(['v0.6']);
-    expect(real.versions.filter((v) => v.status === 'archive').map((v) => v.id)).toEqual(['v0.1', 'v0.2', 'v0.3', 'v0.4', 'v0.5']);
+  // Lot 5p : avant « V0.1 à V0.6, V0.6 actuelle et latest, V0.1 à V0.5 archivées » ; après : V0.7 ajoutée (branche dev), actuelle et latest, V0.6 archive.
+  it('liste V0.1 à V0.7 dans l\'ordre, V0.7 actuelle et latest, V0.1 à V0.6 archivées', () => {
+    expect(real.versions.map((v) => [v.id, v.branch])).toEqual([['v0.1', 'lot-1'], ['v0.2', 'lot-1d'], ['v0.3', 'lot-2c'], ['v0.4', 'lot-3e'], ['v0.5', 'lot-4b'], ['v0.6', 'dev'], ['v0.7', 'dev']]);
+    expect(real.latest).toBe('v0.7');
+    expect(real.versions.filter((v) => v.status === 'actuelle').map((v) => v.id)).toEqual(['v0.7']);
+    expect(real.versions.filter((v) => v.status === 'archive').map((v) => v.id)).toEqual(['v0.1', 'v0.2', 'v0.3', 'v0.4', 'v0.5', 'v0.6']);
     expect(validateVersions(avantV06)).toEqual({ ok: true, errors: [] });
   });
 
   // Lot 5g : avant, cohérence avec changelog.versions dans les deux sens ; après : la liste n'existe plus, chaque version désigne un lot du journal
   // et la liste figée d'avant reste cohérente avec versions.json.
   // Lot 5f : V0.6 vient de la branche dev (pas d'un lot) ; avant : chaque version (V0.1 à V0.5) désignait un lot. V0.1 à V0.5 le font toujours.
-  it('chaque version désigne un lot du journal (data/changelog.json → lots), sauf V0.6 (branche dev) ; plus de liste « versions » ; liste d\'avant le lot 5g toujours cohérente', () => {
+  // Lot 5p : V0.7 vient aussi de la branche dev (avant : V0.6 seulement).
+  it('chaque version désigne un lot du journal (data/changelog.json → lots), sauf V0.6 et V0.7 (branche dev) ; plus de liste « versions » ; liste d\'avant le lot 5g toujours cohérente', () => {
     expect(changelog.versions).toBeUndefined();
-    for (const v of real.versions.filter((x) => x.id !== 'v0.6')) expect(changelog.lots.map((e) => e.name), v.id).toContain(v.branch);
+    for (const v of real.versions.filter((x) => !['v0.6', 'v0.7'].includes(x.id))) expect(changelog.lots.map((e) => e.name), v.id).toContain(v.branch);
     expect(real.versions.find((v) => v.id === 'v0.6').branch).toBe(real.dev.branch);
+    expect(real.versions.find((v) => v.id === 'v0.7').branch).toBe(real.dev.branch);
     expect(checkChangelogConsistency(avantV06, oldChangelog)).toEqual({ ok: true, errors: [] });
     expect(avantV06.versions.map((v) => v.label)).toEqual(OLD_VERSIONS.map((v) => v.version));
-    expect(real.versions.map((v) => v.label)).toEqual([...OLD_VERSIONS.map((v) => v.version), 'V0.6']);
+    expect(real.versions.map((v) => v.label)).toEqual([...OLD_VERSIONS.map((v) => v.version), 'V0.6', 'V0.7']);
   });
 
   // Lot 5f : avant « V0.5 : fusion de lot-4b dans main (2 parents) » ; après : V0.5 = tête de main archivée (descend de cette fusion, qui a 2 parents),
   // V0.6 = fusion dans dev (2 parents) qui descend de V0.5.
-  it('gèle des hash qui existent dans le dépôt et désignent la bonne branche (V0.1 à V0.4 : tête de la branche ; V0.5 : tête de main issue de la fusion de lot-4b ; V0.6 : fusion dans dev)', () => {
+  // Lot 5p : V0.6 = tête de main archivée (fusion de la Pull Request #46, 2 parents ; avant : cef11b3, fusion dans dev, 2 parents), qui descend de cef11b3 ;
+  // V0.7 = fusion dans dev (2 parents) qui descend de V0.6.
+  const CEF_V06 = 'cef11b3158b0e62156aef2fb8187d44d9e8508e6'; // ancien ref de V0.6 (lot 5f)
+  it('gèle des hash qui existent dans le dépôt et désignent la bonne branche (V0.1 à V0.4 : tête de la branche ; V0.5 : tête de main issue de la fusion de lot-4b ; V0.6 : tête de main ; V0.7 : fusion dans dev)', () => {
     let history = true;
     try {
       execFileSync('git', ['cat-file', '-e', `${real.versions[0].ref}^{commit}`], { stdio: 'ignore' });
@@ -58,12 +65,14 @@ describe('versions.json du dépôt', () => {
     for (const v of real.versions) {
       execFileSync('git', ['cat-file', '-e', `${v.ref}^{commit}`]);
       const parents = execFileSync('git', ['log', '-1', '--format=%P', v.ref], { encoding: 'utf8' }).trim().split(' ');
-      if (v.id === 'v0.6') expect(parents).toHaveLength(2);
+      if (v.id === 'v0.6' || v.id === 'v0.7') expect(parents, v.id).toHaveLength(2);
     }
     const ref = (id) => real.versions.find((v) => v.id === id).ref;
     expect(execFileSync('git', ['log', '-1', '--format=%P', FUSION_4B], { encoding: 'utf8' }).trim().split(' ')).toHaveLength(2);
     execFileSync('git', ['merge-base', '--is-ancestor', FUSION_4B, ref('v0.5')]);
     execFileSync('git', ['merge-base', '--is-ancestor', ref('v0.5'), ref('v0.6')]);
+    execFileSync('git', ['merge-base', '--is-ancestor', CEF_V06, ref('v0.6')]);
+    execFileSync('git', ['merge-base', '--is-ancestor', ref('v0.6'), ref('v0.7')]);
   });
 
   it('dev : branche dev servie à next/', () => {

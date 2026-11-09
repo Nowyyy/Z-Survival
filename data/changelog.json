@@ -242,6 +242,10 @@
     { "name": "lot-5o", "version": "v0.7", "date": "2026-11-09", "titre": "Sauvegarde sûre avec plusieurs onglets", "points": [
       "Quand plusieurs onglets du jeu enregistrent presque en même temps, plus aucun gain n'est perdu : chaque onglet réécrit, une seule fois, ce qui manquerait. Seul, un onglet enregistre exactement comme avant.",
       "Un contrôle en lecture seule dit si la version est prête à être publiée, puis si elle a bien été publiée. Les règles du jeu et de l'argent ne changent pas."
+    ] },
+    { "name": "lot-5p", "version": "v0.7", "date": "2026-11-09", "titre": "Publication de la V0.7", "points": [
+      "La V0.6 rejoint les anciennes versions et la V0.7 devient la version Recette ; les bilans des lots de la V0.7 sont réunis en un seul fichier et la documentation est mise à jour.",
+      "Le jeu ne change pas."
     ] }
   ]
 }
