@@ -1,9 +1,7 @@
 // Lot 5h-A : fichier des noms (noms-versions-et-lots.txt) et son analyseur pur (scripts/site/noms.mjs).
-import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { appliquerNoms, formatErreur, MAX_DESCRIPTION, MAX_NOM, NOMS_FICHIER, parseNoms } from '../../scripts/site/noms.mjs';
-import { cleanText, MAX_TITLE } from '../../scripts/site/site-info.mjs';
 
 const versions = JSON.parse(readFileSync('versions.json', 'utf8'));
 const changelog = JSON.parse(readFileSync('data/changelog.json', 'utf8'));
@@ -157,41 +155,17 @@ describe('appliquerNoms : le fichier l\'emporte, dates, ref, status, entry et or
 });
 
 // Contrôles permanents (à chaque push, et dans « quick » de pages.yml : une faute de frappe bloque le déploiement de dev, décision du propriétaire) :
-// aucune erreur, identifiants connus, aucun bloc pour un lot ancien. Contrôles du contenu initial (lot 5h) : seulement tant que le fichier est celui
-// livré au lot 5h (empreinte SHA-256 ci-dessous) ; dès que le propriétaire le modifie, ils sont sautés (ses textes ne sont jamais imposés par un test).
-const INITIAL_SHA256 = '1aa831f864273af229dc0bb04cc5bbce9d9bd50ab6cbb28ceabaa75ed411719f';
+// aucune erreur, identifiants connus, aucun bloc pour un lot ancien. Lot 5q : les trois contrôles du contenu initial (lot 5h : en-tête en 5 lignes
+// avec l'exemple et la marche à suivre ; V0.1 à V0.5 comme avant le lot 5h ; v0.6 en brouillon et un bloc par lot dans l'ordre du journal), actifs
+// seulement tant que le fichier gardait l'empreinte SHA-256 livrée au lot 5h (1aa831f8…), sautés depuis la première modification du propriétaire,
+// sont retirés : jamais réactivables, et ses textes ne sont jamais imposés par un test.
 
 describe(`fichier commité ${NOMS_FICHIER}`, () => {
   const octets = readFileSync(NOMS_FICHIER);
   const noms = parseNoms(octets);
-  const lotsAvecVersion = changelog.lots.filter((l) => typeof l.version === 'string');
-  const initial = createHash('sha256').update(octets).digest('hex') === INITIAL_SHA256;
 
   it('aucune erreur (sinon : numéro de ligne et message)', () => {
     expect(noms.erreurs.map(formatErreur), `Fautes dans ${NOMS_FICHIER} :\n${noms.erreurs.map(formatErreur).join('\n')}`).toEqual([]);
-  });
-  it.skipIf(!initial)('fichier initial : en-tête : format en 5 lignes, exemple et marche à suivre pour corriger une faute', () => {
-    const texte = octets.toString('utf8');
-    const entete = texte.slice(0, texte.indexOf('\n[')).split('\n');
-    expect(entete.slice(0, 5).every((l) => l.startsWith('# ') && l.length > 20)).toBe(true);
-    expect(texte).toContain('# Exemple :');
-    expect(texte).toContain('# Pour corriger une faute : modifie la ligne, valide ; la Recette est mise à jour après le déploiement de `dev`.');
-  });
-  it.skipIf(!initial)('fichier initial : V0.1 à V0.5 : étiquette et description exactement celles affichées avant le lot 5h (V<id>, titre de versions.json borné à 120)', () => {
-    // Lot 5f : V0.6 ajoutée à versions.json (titre recopié du bloc [v0.6], borné à 120 ; le bloc est vérifié par le test suivant) ; avant : versions.json = V0.1 à V0.5 exactement.
-    for (const ver of versions.versions.filter((x) => x.id !== 'v0.6')) {
-      expect(bloc(noms, ver.id), ver.id).toEqual({ id: ver.id, type: 'version', ligne: expect.any(Number), nom: `V${ver.id.slice(1)}`, description: cleanText(ver.title, MAX_TITLE) });
-    }
-    expect(versions.versions.map((x) => x.id)).toEqual(['v0.1', 'v0.2', 'v0.3', 'v0.4', 'v0.5', 'v0.6']);
-  });
-  it.skipIf(!initial)('fichier initial : v0.6 en brouillon ; un bloc par lot portant « version », dans l\'ordre du journal, sans identifiant de lot dans les textes', () => {
-    expect(bloc(noms, 'v0.6')).toMatchObject({ nom: 'V0.6', description: expect.any(String) });
-    const lots = noms.blocs.filter((b) => b.type === 'lot');
-    expect(lots.map((b) => b.id)).toEqual(lotsAvecVersion.map((l) => l.name));
-    for (const b of lots) {
-      expect(b, b.id).toMatchObject({ version: lotsAvecVersion.find((l) => l.name === b.id).version, afficher: true, nom: expect.any(String), description: expect.any(String) });
-      expect(`${b.nom} ${b.description}`, b.id).not.toMatch(/lot-?\d|\.json|\.mjs|\.js\b/i);
-    }
   });
   it('chaque identifiant est connu ; aucun bloc pour un lot sans « version » dans le journal', () => {
     expect(appliquerNoms({ versions, changelog }, noms).inconnus).toEqual([]);

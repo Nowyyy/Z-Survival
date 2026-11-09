@@ -1,4 +1,4 @@
-# Contrôle de publication (lot 5o)
+# Contrôle de publication (lot 5o ; CI de dev : lot 5q)
 
 `scripts/publication/controler.mjs` vérifie, **en lecture seule**, qu'un état est prêt à être publié (avant la fusion `dev` → `main`) et qu'il a bien été publié (après). Il ne pousse rien, ne récupère rien (`git fetch` reste à faire soi-même), n'écrit rien dans le dépôt et n'appelle l'API de GitHub qu'en `GET`.
 
@@ -33,7 +33,7 @@ Le résumé met d'abord les ATTENTION et les NON VÉRIFIABLE, puis « **PRÊT À
 |---|---|---|---|
 | 0 | références `origin/*` à jour | `git ls-remote --heads origin` = références locales | ATTENTION : `git fetch origin --prune` puis relancer |
 | 1 | dev | `origin/dev` existe ; bilan `Docs/lots/lot-5o.md` ou le dernier présent (lot 5p : `lot-5o.md` est regroupé dans `Docs/lots/versions/v0.7.md` ; le contrôle cite alors le dernier bilan séparé, `lot-5p.md`) | KO sans `origin/dev` |
-| 2 | CI de dev | les exécutions `Tests` et `Pages` du hash de `origin/dev` sont réussies, aucune en cours | KO (absente, en cours, échouée) |
+| 2 | CI de dev | **Pages** : exécution réussie sur le hash de `origin/dev`, aucune en cours ; **Tests** (lot 5q) : le dernier commit testé avec succès de la lignée de `dev` est la tête, ou seuls des fichiers ignorés par `tests.yml` ont changé depuis (voir « CI de dev : dernier commit testé ») | KO (Pages absente, en cours ou échouée ; Tests : fichier non ignoré changé, dernière exécution en échec, aucun commit testé dans les 50 derniers) ; NON VÉRIFIABLE (Tests en cours, `tests.yml` illisible) |
 | 3 | main ancêtre de dev | `git merge-base --is-ancestor origin/main origin/dev` | KO avec le geste : Pull Request `main` → `dev`, « Create a merge commit », sans « Resolve conflicts » |
 | 4 | Pull Requests ouvertes | aucune vers `main` ou `dev` | ATTENTION avec la liste |
 | 5 | `versions.json` (de `dev`) | schéma valide ; `latest` « actuelle », son `ref` ancêtre de `origin/dev` ; la version remplacée (`latest` de `main`) est « archive » et son `ref` = `v0.N/build-info.json` de `origin/archive` | KO (version non préparée, non archivée, ref différent) |
@@ -46,6 +46,27 @@ Le résumé met d'abord les ATTENTION et les NON VÉRIFIABLE, puis « **PRÊT À
 | 12 | workflows | `.github` identique entre `main` et `dev` | ATTENTION : `pages.yml` utilise l'assembleur de la branche qui déclenche, le déploiement de `main` changera |
 | 13 | branches | toutes les `lot-*` dans `dev` | ATTENTION avec leurs hash ; nombre de branches `essai/*` (information) |
 | 14 | dépendances | `dependencies` vide | KO |
+
+## CI de dev : dernier commit testé (lot 5q)
+
+`tests.yml` ne tourne pas sur un push qui ne touche que des chemins de son `paths-ignore` (`Docs/**`, `**/*.md`), ni sur un push dont le diff est vide (retour de `main` dans `dev` : fusion `35f3d09`, Pages seul). Exiger une exécution Tests sur le hash exact de la tête rendait donc « KO » à tort après le commit du seed (`36db387`) ou après ce retour. Règle :
+
+1. **Lignée** : `git log --first-parent --format=%H -n 50 origin/dev` (tête d'abord) ; exécutions : celles du hash de la tête (`actions/runs?head_sha=…`) et celles de Tests sur `dev` (`actions/workflows/tests.yml/runs?branch=dev`).
+2. **Référence** : le commit le plus récent de la lignée qui a une exécution Tests **conclue** sur ce hash même (événement `push` ou lancement manuel ; une Pull Request teste un commit de fusion, pas ce hash). Annulée, sautée ou périmée : ne conclut rien, on remonte. Plusieurs exécutions : la plus récente compte.
+3. **Chemins ignorés** : lus dans `.github/workflows/tests.yml` de `origin/dev` (`on:` → `push:` → `paths-ignore:`, liste entre crochets ou à tirets), jamais recopiés ; correspondance comme GitHub (`*` sans `/`, `**` tout, `**/` zéro ou plusieurs dossiers). Fonctions pures : `scripts/publication/chemins-ignores.mjs`.
+4. **Fichiers** : `git diff --name-only --no-renames -z <référence> origin/dev` (noms bruts : espaces, accents, caractères de contrôle).
+
+| Situation | Résultat | Message |
+|---|---|---|
+| tête testée avec succès | OK | « dernier commit testé : <hash> (tête de dev, <exécution>) » |
+| depuis la référence, rien ou seulement des chemins ignorés | OK | « dernier commit testé : <hash> (<exécution>) ; depuis : <fichiers>, ignorés par les tests » ou « depuis : aucun fichier » |
+| au moins un fichier non ignoré | KO | « fichiers non ignorés par tests.yml : <liste> » |
+| dernière exécution conclue en échec | KO | « <conclusion> sur <hash> » (jamais de saut vers un succès plus ancien) |
+| aucun commit testé avec succès dans les 50 derniers | KO | « aucun commit testé avec succès dans les 50 derniers » |
+| Tests en cours sur la tête (ou sur la référence) | NON VÉRIFIABLE | « en cours … : relancer le contrôle à la fin » |
+| `tests.yml` absent, de forme non gérée, sans `paths-ignore`, motif non géré (`?`, `+`, `[`, `{`, `!`) | NON VÉRIFIABLE | « chemins ignorés illisibles (<raison>) » ; jamais OK |
+
+Tests : `tests/unit/publication-ci-tests.test.js` (données fictives, aucun réseau).
 
 ## Contrôles `--apres`
 
@@ -68,4 +89,4 @@ Le résumé met d'abord les ATTENTION et les NON VÉRIFIABLE, puis « **PRÊT À
 
 ## Sécurité du script
 
-Toutes les commandes passent par une seule fonction (`executer`), filtrée par la liste blanche de `scripts/publication/acces.mjs` : `git` en lecture (`rev-parse`, `merge-base --is-ancestor`, `show`, `cat-file`, `log`, `diff` sans `--output`, `ls-remote --heads`, `for-each-ref`, `ls-tree`, `remote get-url`), `gh api --method GET repos/…` sans champ ni en-tête, `curl` en GET vers `https://nowyyy.github.io/Z-Survival/` sans fichier de sortie, `node scripts/site/local.mjs --out <hors du dépôt>`. La seule écriture est le fichier `--json`, dont le chemin doit être hors du dépôt. Les décisions sont des fonctions pures (`scripts/publication/controles.mjs`), testées sans réseau par `tests/unit/publication-controle.test.js`, avec la liste blanche.
+Toutes les commandes passent par une seule fonction (`executer`), filtrée par la liste blanche de `scripts/publication/acces.mjs` : `git` en lecture (`rev-parse`, `merge-base --is-ancestor`, `show`, `cat-file`, `log` (lot 5q : `--first-parent`), `diff` sans `--output`, `ls-remote --heads`, `for-each-ref`, `ls-tree`, `remote get-url`), `gh api --method GET repos/…` sans champ ni en-tête, `curl` en GET vers `https://nowyyy.github.io/Z-Survival/` sans fichier de sortie, `node scripts/site/local.mjs --out <hors du dépôt>`. La seule écriture est le fichier `--json`, dont le chemin doit être hors du dépôt. Les décisions sont des fonctions pures (`scripts/publication/controles.mjs`, `scripts/publication/chemins-ignores.mjs`), testées sans réseau par `tests/unit/publication-controle.test.js` (avec la liste blanche) et `tests/unit/publication-ci-tests.test.js`.

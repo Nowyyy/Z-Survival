@@ -165,7 +165,9 @@ for (const viewport of VIEWPORTS) {
       expect(info.evolutions.map((e) => e.id)).toEqual(EVOLUTIONS_REELLES);
       expect(info.evolutions.filter((e) => e.version === 'v0.6')).toEqual([]);
       expect(info.evolutions.filter((e) => e.version === 'v0.7')).toEqual([]); // lot 5p
-      expect(EVOLUTIONS_REELLES).toEqual([]); // lot 5p : V0.7 publiée, plus aucun lot d'une version non publiée
+      // Lot 5q : seuls des lots de la V0.8 non publiée (full/ est assemblé sans fichier des noms : lot-5q, masqué sur la Recette, y figure) ;
+      // avant (lot 5p) : EVOLUTIONS_REELLES vide exigé, V0.7 publiée et aucun lot d'une version suivante.
+      expect(info.evolutions.filter((e) => e.version !== 'v0.8')).toEqual([]);
       await expect(page.locator('#evolutions-none')).toBeVisible({ visible: EVOLUTIONS_REELLES.length === 0 });
       await expect(page.locator('#evolutions-none')).toHaveText('Aucune évolution depuis la version Recette.'); // lot 5p
       await expect(evolutions.locator('.evolution')).toHaveCount(EVOLUTIONS_REELLES.length);
@@ -441,7 +443,7 @@ test('Recette/ sert versions.json, build-info.json (release) et site-info.json ;
   expect(info).toMatchObject({ schema: 1, recette: { label: 'V0.7', entry: 'jeu.html' }, dev: { present: true, sha: 'abcdef1', entry: '../dev/jeu.html' } });
   expect(info.precedentes.map((p) => p.label)).toEqual(['V0.6', 'V0.5', 'V0.4', 'V0.3', 'V0.2', 'V0.1']);
   expect(info.evolutions.map((e) => e.id)).toEqual(EVOLUTIONS_REELLES); // lot 5j : avant, [] (aucun lot d'une version non publiée) ; lot 5p : [] de nouveau
-  expect(info.evolutions).toEqual([]); // lot 5p
+  expect(info.evolutions.filter((e) => e.version !== 'v0.8')).toEqual([]); // lot 5q : seuls des lots de la V0.8 (full/ sans fichier des noms) ; lot 5p : liste vide exigée
   expect(await (await request.get(`${FULL}dev/build-info.json`)).json()).toMatchObject({ channel: 'dev', sha: 'abcdef1' });
   expect(await (await request.get(`${FULL}v0.4/build-info.json`)).json()).toMatchObject({ channel: 'archive', version: 'V0.4' });
   expect(await (await request.get(`${FULL}v0.5/build-info.json`)).json()).toMatchObject({ channel: 'archive', version: 'V0.5' });

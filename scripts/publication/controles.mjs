@@ -5,6 +5,7 @@
 import { parseNoms, appliquerNoms, MAX_NOM, MAX_DESCRIPTION } from '../site/noms.mjs';
 import { buildSiteInfo } from '../site/site-info.mjs';
 import { validateVersions } from '../versions/schema.mjs';
+import { estIgnore, lirePathsIgnore } from './chemins-ignores.mjs';
 
 export const OK = 'OK';
 export const KO = 'KO';
@@ -15,7 +16,6 @@ const GRAVITE = { [OK]: 0, [ATTENTION]: 1, [NV]: 2, [KO]: 3 };
 export const LIMITE_CLAUDE = 8400;
 export const MARGE_CLAUDE = 150;
 export const MARGE_CLAUDE_MIN = 100;
-export const WORKFLOWS_DEV = ['Tests', 'Pages'];
 export const GESTE_MAIN_DANS_DEV = 'Pull Request main → dev, « Create a merge commit », sans « Resolve conflicts », CI verte';
 
 const isObject = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
@@ -76,17 +76,78 @@ export const dev = controle('avant-1', 'dev', ({ devSha, bilans }) => {
   return { resultat: OK, texte: `origin/dev ${court(devSha)} ; bilan : Docs/lots/${cible}` };
 });
 
-// runs : exécutions GitHub Actions du hash (REST), [{ name, status, conclusion, event, id }].
-export const ciDev = controle('avant-2', 'CI de dev', ({ devSha, runs }) => {
-  if (illisible(runs) || !Array.isArray(runs)) return { resultat: NV, texte: `exécutions illisibles (${raison(runs)})` };
-  const constats = WORKFLOWS_DEV.map((nom) => {
-    const du = runs.filter((r) => isObject(r) && r.name === nom);
-    if (du.length === 0) return { resultat: KO, texte: `${nom} : aucune exécution sur ${court(devSha)}` };
+// Lot 5q — Tests : le commit de référence est le plus récent de la première lignée de parents de dev (tête d'abord, LIGNEE_MAX au plus) qui a une
+// exécution Tests conclue sur ce commit lui-même (push ou lancement manuel ; une Pull Request teste un commit de fusion, pas ce hash). Les exécutions
+// annulées, sautées ou périmées ne concluent rien et sont passées. Exécution en cours rencontrée avant : { enCours } ; dernière conclue en échec :
+// { echec } ; réussie : { sha, rang, run } ; rien dans la fenêtre : { aucun, n } ; données illisibles : { erreur }.
+export const LIGNEE_MAX = 50;
+export const EVENEMENTS_TESTS = Object.freeze(['push', 'workflow_dispatch']);
+const SANS_CONCLUSION = ['cancelled', 'skipped', 'stale'];
+const plusRecent = (a, b) => ((Number(b.id) || 0) > (Number(a.id) || 0) ? b : a);
+export function referenceTests(commits, runs) {
+  if (!Array.isArray(commits) || commits.length === 0 || !commits.every((c) => typeof c === 'string' && /^[0-9a-f]{7,64}$/.test(c))) return { erreur: 'lignée de dev illisible' };
+  if (!Array.isArray(runs)) return { erreur: 'exécutions illisibles' };
+  const tests = runs.filter((r) => isObject(r) && r.name === 'Tests' && EVENEMENTS_TESTS.includes(r.event));
+  const fenetre = commits.slice(0, LIGNEE_MAX);
+  for (const [rang, sha] of fenetre.entries()) {
+    const du = tests.filter((r) => r.head_sha === sha);
     const enCours = du.filter((r) => r.status !== 'completed');
-    if (enCours.length) return { resultat: KO, texte: `${nom} : en cours (${enCours.map((r) => r.id).join(', ')}) : relancer le contrôle à la fin` };
-    const dernier = du.reduce((a, b) => ((Number(b.id) || 0) > (Number(a.id) || 0) ? b : a));
-    return dernier.conclusion === 'success' ? { resultat: OK, texte: `${nom} : réussi (${dernier.id})` } : { resultat: KO, texte: `${nom} : ${dernier.conclusion ?? 'sans conclusion'} (${dernier.id})` };
-  });
+    if (enCours.length) return { enCours: { sha, rang, ids: enCours.map((r) => r.id) } };
+    const conclues = du.filter((r) => !SANS_CONCLUSION.includes(r.conclusion));
+    if (conclues.length === 0) continue;
+    const dernier = conclues.reduce(plusRecent);
+    return dernier.conclusion === 'success' ? { sha, rang, run: dernier } : { echec: { sha, rang, run: dernier } };
+  }
+  return { aucun: true, n: fenetre.length };
+}
+
+// Constat Tests (lot 5q). runs : exécutions du hash de la tête (toutes) ; historique : exécutions Tests de la branche dev (REST) ; commits : lignée
+// --first-parent de dev, tête d'abord ; workflow : texte de .github/workflows/tests.yml de dev ; fichiers : { depuis, liste } = git diff --name-only
+// entre la référence et la tête. OK si la tête est testée, ou si tout ce qui a changé depuis la référence est ignoré par tests.yml.
+function constatTests({ devSha, runs, historique, commits, workflow, fichiers }) {
+  if (typeof devSha !== 'string') return { resultat: NV, texte: 'Tests : hash de dev inconnu' };
+  const tete = runs.filter(isObject).map((r) => ({ ...r, head_sha: r.head_sha ?? devSha }));
+  const enCoursTete = tete.filter((r) => r.name === 'Tests' && r.head_sha === devSha && r.status !== 'completed');
+  if (enCoursTete.length) return { resultat: NV, texte: `Tests : en cours sur la tête ${court(devSha)} (${enCoursTete.map((r) => r.id).join(', ')}) : relancer le contrôle à la fin` };
+  if (illisible(commits) || !Array.isArray(commits)) return { resultat: NV, texte: `Tests : lignée de dev illisible (${raison(commits)})` };
+  if (commits[0] !== devSha) return { resultat: NV, texte: `Tests : la lignée lue ne commence pas par la tête ${court(devSha)}` };
+  const motifs = lirePathsIgnore(workflow);
+  if (illisible(workflow) || motifs.erreur) return { resultat: NV, texte: `Tests : chemins ignorés illisibles (${illisible(workflow) ? raison(workflow) : motifs.erreur})` };
+  const historiqueLu = Array.isArray(historique);
+  const vus = new Set(tete.map((r) => r.id));
+  const tous = [...tete, ...(historiqueLu ? historique.filter((r) => isObject(r) && !vus.has(r.id)) : [])];
+  const ref = referenceTests(commits, tous);
+  if (ref.erreur) return { resultat: NV, texte: `Tests : ${ref.erreur}` };
+  if (ref.enCours) return { resultat: NV, texte: `Tests : en cours sur ${court(ref.enCours.sha)} (${ref.enCours.ids.join(', ')}), dernier commit avec une exécution : relancer le contrôle à la fin` };
+  if (ref.echec) return { resultat: KO, texte: `Tests : ${ref.echec.run.conclusion ?? 'sans conclusion'} sur ${court(ref.echec.sha)} (${ref.echec.run.id}), dernier commit testé de la lignée de dev` };
+  if (ref.aucun) {
+    if (!historiqueLu) return { resultat: NV, texte: `Tests : exécutions de dev illisibles (${raison(historique)})` };
+    return { resultat: KO, texte: `Tests : aucun commit testé avec succès dans les ${ref.n} derniers de la lignée de dev` };
+  }
+  if (ref.sha === devSha) return { resultat: OK, texte: `Tests : dernier commit testé : ${court(ref.sha)} (tête de dev, ${ref.run.id})` };
+  if (illisible(fichiers) || !isObject(fichiers) || fichiers.depuis !== ref.sha || !Array.isArray(fichiers.liste) || !fichiers.liste.every((f) => typeof f === 'string')) {
+    return { resultat: NV, texte: `Tests : fichiers modifiés depuis ${court(ref.sha)} illisibles (${raison(fichiers)})` };
+  }
+  const nonIgnores = fichiers.liste.filter((f) => !estIgnore(f, motifs.motifs));
+  if (nonIgnores.length) return { resultat: KO, texte: `Tests : dernier commit testé : ${court(ref.sha)} ; depuis, fichiers non ignorés par tests.yml : ${liste(nonIgnores)}` };
+  const depuis = fichiers.liste.length ? `${liste(fichiers.liste)}, ignorés par les tests` : 'aucun fichier';
+  return { resultat: OK, texte: `Tests : dernier commit testé : ${court(ref.sha)} (${ref.run.id}) ; depuis : ${depuis}` };
+}
+
+// Pages (pages.yml, sans filtre de chemins) : exécution réussie sur le hash même de la tête, aucune en cours (règle du lot 5o, inchangée).
+function constatPages(devSha, runs) {
+  const du = runs.filter((r) => isObject(r) && r.name === 'Pages');
+  if (du.length === 0) return { resultat: KO, texte: `Pages : aucune exécution sur ${court(devSha)}` };
+  const enCours = du.filter((r) => r.status !== 'completed');
+  if (enCours.length) return { resultat: KO, texte: `Pages : en cours (${enCours.map((r) => r.id).join(', ')}) : relancer le contrôle à la fin` };
+  const dernier = du.reduce(plusRecent);
+  return dernier.conclusion === 'success' ? { resultat: OK, texte: `Pages : réussi (${dernier.id})` } : { resultat: KO, texte: `Pages : ${dernier.conclusion ?? 'sans conclusion'} (${dernier.id})` };
+}
+
+// runs : exécutions GitHub Actions du hash de la tête (REST), [{ name, status, conclusion, event, id, head_sha? }] ; le reste : voir constatTests.
+export const ciDev = controle('avant-2', 'CI de dev', ({ devSha, runs, historique, commits, workflow, fichiers }) => {
+  if (illisible(runs) || !Array.isArray(runs)) return { resultat: NV, texte: `exécutions illisibles (${raison(runs)})` };
+  const constats = [constatTests({ devSha, runs, historique, commits, workflow, fichiers }), constatPages(devSha, runs)];
   const p = pire(constats);
   return { resultat: p.resultat, texte: p.resultat === OK ? `${court(devSha)} : ${constats.map((c) => c.texte).join(' ; ')}` : p.texte };
 });

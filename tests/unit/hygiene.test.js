@@ -22,9 +22,16 @@ describe('hygiène du dépôt', () => {
     expect(big).toEqual([]);
   });
 
-  // Lot 4b (demande du propriétaire) : limite de taille de CLAUDE.md ignorée pour reporter les règles de tous les lots intégrés ; garde-fou d'emballement seulement.
-  it('CLAUDE.md fait moins de 12 000 caractères', () => {
-    expect(readFileSync('CLAUDE.md', 'utf8').length).toBeLessThan(12000);
+  // Lot 5q : borne réelle de CLAUDE.md, 8 400 caractères ET 8 400 octets (UTF-8), comme le contrôle de publication (lot 5o) ; avant (lot 4b) :
+  // moins de 12 000 caractères, garde-fou d'emballement seulement. Le message donne les deux mesures et la marge.
+  it('CLAUDE.md fait au plus 8 400 caractères et 8 400 octets', () => {
+    const LIMITE = 8400;
+    const texte = readFileSync('CLAUDE.md', 'utf8');
+    const caracteres = texte.length;
+    const octets = Buffer.byteLength(texte, 'utf8');
+    const mesure = `CLAUDE.md : ${caracteres} caractères (marge ${LIMITE - caracteres}), ${octets} octets (marge ${LIMITE - octets}), limite ${LIMITE}`;
+    expect(caracteres, mesure).toBeLessThanOrEqual(LIMITE);
+    expect(octets, mesure).toBeLessThanOrEqual(LIMITE);
   });
 
   it('.gitignore couvre les dossiers générés', () => {

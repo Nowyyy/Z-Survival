@@ -19,9 +19,10 @@ const U = (px) => px * 5 + 800;
 // Lot 5e : références remesurées avec la variante A (&perso=A&sang=0 ; l'ancien modèle, référence d'avant, est retiré), sur lot-5c 92e4556,
 // par scripts/nettoyage/inventaire-ancien.mjs --remesure (mêmes scènes et gestes, épaves retirées) ; mêmes tolérances qu'avant.
 const REF = { R1: [58, 14044], R2: [58, 14142], R3: [56, 13458], U1: [64, 14358], U4: [68, 15116], V1: [27, 5562], V2: [34, 5886] };
-// Lot 5e (décision du propriétaire : une référence par projet, mesurée, jamais une tolérance élargie) : le projet mobile dessine 2 appels et 4 triangles
-// de moins que le bureau dans chaque scène (constaté en CI complète au lot 5c, U4 : 210 contre 212 avec l'ancien modèle) ; mesuré sur la tête du lot 5e.
-const REF_MOBILE = { R1: [56, 14040], R2: [56, 14138], R3: [54, 13454], U1: [62, 14354], U4: [66, 15112], V1: [25, 5558], V2: [32, 5882] };
+// Lot 5q : une seule référence (celle du bureau) et &gfx=eleve aux deux mesures. Cause de l'écart mobile (U4 : un appel sous le minimum, une fois
+// en palier complet) : le préréglage Auto (Moyen en mobile, pointeur grossier ; Élevé en bureau) ; avec le même préréglage, les deux projets
+// donnent les mêmes appels et triangles. Avant (lot 5e) : REF_MOBILE = { R1: [56, 14040], R2: [56, 14138], R3: [54, 13454], U1: [62, 14354],
+// U4: [66, 15112], V1: [25, 5558], V2: [32, 5882] } (2 appels et 4 triangles de moins que le bureau dans chaque scène), choisie selon le projet.
 const SCENES = {
   R1: { url: '&nospawn=1', at: [U(300), U(300)], floor: 'rdc', wave: 10, zombies: 10 },
   R2: { url: '&nospawn=1', at: [U(311), U(335)], floor: 'rdc', wave: 10, zombies: 10 },
@@ -60,12 +61,12 @@ const measure = (page, sc) => page.evaluate(({ at, floor, wave, zombies }) => {
 test.describe('budgets de rendu avec le détail (27 300 triangles et 84 appels au plus ; + 12 appels au plus avec le détail)', () => {
   for (const [id, sc] of Object.entries(SCENES)) {
     test(`${id}`, async ({ page }, testInfo) => {
-      const ref = (testInfo.project.name === 'mobile' ? REF_MOBILE : REF)[id];
+      const ref = REF[id]; // lot 5q : une référence pour les deux projets (même préréglage, &gfx=eleve)
       // Lot 5n : &lum=off (rendu d'avant les lampes, ?test=1 seulement, comme argent.spec au lot 5k) : les références datent d'avant les lampes
       // du lot 5k (avec lampes : jusqu'à 1 304 triangles d'écart, remesuré en CI) ; le budget de la vue avec lampes reste vérifié par persos-integres et lampes.
-      await open(page, `${sc.url}&shadows=1&detail=0&perso=A&sang=0&lum=off`); // lot 5e : référence mesurée avec la variante A
+      await open(page, `${sc.url}&shadows=1&detail=0&perso=A&sang=0&lum=off&gfx=eleve`); // lot 5e : référence mesurée avec la variante A ; lot 5q : Élevé imposé
       const off = await measure(page, sc);
-      await open(page, `${sc.url}&shadows=1&perso=A&sang=0&lum=off`); // même variante que la mesure sans le détail
+      await open(page, `${sc.url}&shadows=1&perso=A&sang=0&lum=off&gfx=eleve`); // même variante et même préréglage que la mesure sans le détail
       const on = await measure(page, sc);
       const note = `${id} : detail=0 ${off.calls} appels / ${off.triangles} triangles ; detail=1 ${on.calls} / ${on.triangles} (référence ${ref.join(' / ')})`;
       testInfo.annotations.push({ type: 'rendu', description: note });

@@ -246,6 +246,10 @@
     { "name": "lot-5p", "version": "v0.7", "date": "2026-11-09", "titre": "Publication de la V0.7", "points": [
       "La V0.6 rejoint les anciennes versions et la V0.7 devient la version Recette ; les bilans des lots de la V0.7 sont réunis en un seul fichier et la documentation est mise à jour.",
       "Le jeu ne change pas."
+    ] },
+    { "name": "lot-5q", "version": "v0.8", "date": "2026-11-09", "titre": "Début de la V0.8 : contrôle de publication et tests", "points": [
+      "Le contrôle de publication n'est plus bloqué par un dernier commit qui ne change que de la documentation (par exemple le seed) ou par le retour de la version publiée dans le développement.",
+      "Quelques tests sont corrigés ou retirés (tests sautés depuis longtemps) ; le jeu ne change pas."
     ] }
   ]
 }
