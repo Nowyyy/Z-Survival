@@ -305,3 +305,10 @@ export function parseMoneyParam(search, params) {
     return null;
   }
 }
+
+// ---------------------------------------------------------------------------------------------------------------------------------------------
+// Lot 5o : relevé d'une écriture, annoncé aux autres onglets du jeu par le canal entre onglets (jamais stocké) ; lu par save-merge.js (chargé seulement
+// quand un autre onglet se manifeste). base : texte lu juste avant d'écrire (null : clé absente) ; value : texte écrit ; by : identifiant de l'onglet.
+export const RECORD_KIND = 'zs-ecriture';
+export const RECORD_VERSION = 1;
+export const makeRecord = (by, base, value) => ({ kind: RECORD_KIND, v: RECORD_VERSION, by, base, value });
