@@ -1,0 +1,773 @@
+{
+  "_provisoire": "Lot 3i : table des sons de l'atelier (lot 3h) intégrés au jeu, d'après Docs/ref/sons-a-integrer.md (source de vérité) et data/game/sounds-atelier-choix.txt (variante et réglages). Aucun son n'a été écouté par l'agent. seeds : nombre de versions (graines 1 à N, tirées sans répétition immédiate) ; 5 pour la priorité 1 sauf indication de la fiche (pas du joueur : 4, pas des zombies : 3) ; priorité 2 : nombre de versions prévu par l'atelier (integration.versions). gainDb : gain propre au son en plus du gain de catégorie d'audio.json (0 : niveau de l'atelier, « tel qu'entendu »). Les recettes résolues sont recopiées dans data/game/sounds.json par scripts/sons/integrer.mjs ; les recettes remplacées sont dans data/game/sounds-legacy.json (?sons=ancien). gainDb non nul : pas et pas-escalier (+1 dB), pour que le pas du joueur sur sol dur et dans l'escalier (C, −3 demi-tons, dont la crête plafonne le niveau à −21,5 dB du tir pour la version 1) reste à ±3 dB de sa cible de l'atelier (−18 dB) ; ce gain est porté par l'entrée du son (sounds.json) et non par audio.json, dont les gains s'appliqueraient aussi au pack d'avant (?sons=ancien). preload : versions calculées au chargement (1 par défaut, aux mêmes moments qu'avant : essentiel avant la partie, fond pendant) ; les autres au premier usage, dans le calculateur d'arrière-plan, gardées ensuite (cache sans éviction) ; priorité 2 (cœur, ambiances, porte) : 0, calculées à leur premier usage, pour tenir le temps de génération au chargement (≤ 1,8 × la référence). Lot 5a : impact sur la chair (emplacement impact-chair, variante A, 5 graines, 1 préchargée comme avant) à la place de l'ancien impact-zombie, part « 5a ».",
+  "source": "Docs/ref/sons-a-integrer.md",
+  "preload": 1,
+  "choix": [
+    {
+      "id": "pas",
+      "slot": "pas-joueur-dur",
+      "variant": "C",
+      "macros": {
+        "hauteur": -3,
+        "matiere": 0,
+        "grain": 1,
+        "duree": 1,
+        "ampleur": 0
+      },
+      "seeds": 4,
+      "priority": 1,
+      "category": "pas",
+      "replaces": "pas",
+      "part": "B",
+      "set": "essentiel",
+      "gainDb": 1,
+      "event": "playerStep sur sol dur (intérieur), non spatialisé ; « 4 versions » (fiche)",
+      "source": "sons-a-integrer.md"
+    },
+    {
+      "id": "pas-zombie",
+      "slot": "pas-zombie-marche",
+      "variant": "A",
+      "macros": {
+        "hauteur": 0,
+        "matiere": 0,
+        "grain": 1,
+        "duree": 1,
+        "ampleur": 0.1
+      },
+      "seeds": 3,
+      "priority": 1,
+      "category": "pas",
+      "replaces": "pas-zombie",
+      "part": "B",
+      "set": "essentiel",
+      "gainDb": 0,
+      "event": "pas d'un zombie à l'allure « marche » (3 plus proches, à moins de 450) ; « 3 versions » (fiche)",
+      "source": "sons-a-integrer.md"
+    },
+    {
+      "id": "zombie-gemissement",
+      "slot": "voix-marcheur-errance",
+      "variant": "C",
+      "macros": {
+        "hauteur": 0,
+        "matiere": 0,
+        "grain": 1,
+        "duree": 1,
+        "ampleur": 0
+      },
+      "seeds": 5,
+      "priority": 1,
+      "category": "voix",
+      "replaces": "zombie-gemissement",
+      "part": "B",
+      "set": "fond",
+      "gainDb": 0,
+      "event": "voix d'errance du marcheur (zombie-voice.js, type gemissement), lue à la hauteur 1",
+      "source": "sons-a-integrer.md"
+    },
+    {
+      "id": "zombie-gemissement-petit",
+      "slot": "voix-petit-errance",
+      "variant": "C",
+      "macros": {
+        "hauteur": 0,
+        "matiere": 0,
+        "grain": 1,
+        "duree": 1,
+        "ampleur": 0
+      },
+      "seeds": 5,
+      "priority": 1,
+      "category": "voix",
+      "replaces": null,
+      "part": "B",
+      "set": "fond",
+      "gainDb": 0,
+      "event": "voix d'errance du petit, lue à la hauteur 1",
+      "source": "sons-a-integrer.md"
+    },
+    {
+      "id": "zombie-gemissement-voute",
+      "slot": "voix-voute-errance",
+      "variant": "C",
+      "macros": {
+        "hauteur": 0,
+        "matiere": 0,
+        "grain": 1,
+        "duree": 1,
+        "ampleur": 0
+      },
+      "seeds": 5,
+      "priority": 1,
+      "category": "voix",
+      "replaces": null,
+      "part": "B",
+      "set": "fond",
+      "gainDb": 0,
+      "event": "voix d'errance du voûté, lue à la hauteur 1",
+      "source": "sons-a-integrer.md"
+    },
+    {
+      "id": "zombie-gemissement-grand",
+      "slot": "voix-grand-errance",
+      "variant": "C",
+      "macros": {
+        "hauteur": 0,
+        "matiere": 0,
+        "grain": 1,
+        "duree": 1,
+        "ampleur": 0
+      },
+      "seeds": 5,
+      "priority": 1,
+      "category": "voix",
+      "replaces": null,
+      "part": "B",
+      "set": "fond",
+      "gainDb": 0,
+      "event": "voix d'errance du grand, lue à la hauteur 1",
+      "source": "sons-a-integrer.md"
+    },
+    {
+      "id": "zombie-attaque",
+      "slot": "voix-marcheur-attaque",
+      "variant": "C",
+      "macros": {
+        "hauteur": -6,
+        "matiere": 0,
+        "grain": 1,
+        "duree": 0.7,
+        "ampleur": 0
+      },
+      "seeds": 5,
+      "priority": 1,
+      "category": "voix",
+      "replaces": "zombie-attaque",
+      "part": "B",
+      "set": "fond",
+      "gainDb": 0,
+      "event": "cri d'attaque du marcheur au contact (zombieAttack)",
+      "source": "sons-a-integrer.md",
+      "outOfTarget": {
+        "duration": "durée × 0,7 choisie par le propriétaire (sounds-atelier-choix.txt) : 0,39 s mesurées pour une cible de 0,4 à 1,1 s ; réglage gardé tel quel"
+      }
+    },
+    {
+      "id": "zombie-attaque-petit",
+      "slot": "voix-petit-attaque",
+      "variant": "C",
+      "macros": {
+        "hauteur": 0,
+        "matiere": 0,
+        "grain": 1,
+        "duree": 1,
+        "ampleur": 0
+      },
+      "seeds": 5,
+      "priority": 1,
+      "category": "voix",
+      "replaces": null,
+      "part": "B",
+      "set": "fond",
+      "gainDb": 0,
+      "event": "cri d'attaque du petit (zombieAttack)",
+      "source": "sons-a-integrer.md"
+    },
+    {
+      "id": "zombie-attaque-voute",
+      "slot": "voix-voute-attaque",
+      "variant": "C",
+      "macros": {
+        "hauteur": 0,
+        "matiere": 0,
+        "grain": 1,
+        "duree": 1,
+        "ampleur": 0
+      },
+      "seeds": 5,
+      "priority": 1,
+      "category": "voix",
+      "replaces": null,
+      "part": "B",
+      "set": "fond",
+      "gainDb": 0,
+      "event": "cri d'attaque du voûté (zombieAttack)",
+      "source": "sons-a-integrer.md"
+    },
+    {
+      "id": "zombie-attaque-grand",
+      "slot": "voix-grand-attaque",
+      "variant": "C",
+      "macros": {
+        "hauteur": 0,
+        "matiere": 0,
+        "grain": 1,
+        "duree": 1,
+        "ampleur": 0
+      },
+      "seeds": 5,
+      "priority": 1,
+      "category": "voix",
+      "replaces": null,
+      "part": "B",
+      "set": "fond",
+      "gainDb": 0,
+      "event": "cri d'attaque du grand (zombieAttack)",
+      "source": "sons-a-integrer.md"
+    },
+    {
+      "id": "zombie-blessure",
+      "slot": "voix-marcheur-touche",
+      "variant": "B",
+      "macros": {
+        "hauteur": -5,
+        "matiere": 0,
+        "grain": 1,
+        "duree": 1,
+        "ampleur": 0.3
+      },
+      "seeds": 5,
+      "priority": 1,
+      "category": "voix",
+      "replaces": "zombie-blessure",
+      "part": "B",
+      "set": "essentiel",
+      "gainDb": 0,
+      "event": "marcheur touché sans mourir (zombieHit, killed: false), à l'impact",
+      "source": "sons-a-integrer.md"
+    },
+    {
+      "id": "zombie-blessure-petit",
+      "slot": "voix-petit-touche",
+      "variant": "C",
+      "macros": {
+        "hauteur": 0,
+        "matiere": 0,
+        "grain": 1,
+        "duree": 1,
+        "ampleur": 0
+      },
+      "seeds": 5,
+      "priority": 1,
+      "category": "voix",
+      "replaces": null,
+      "part": "B",
+      "set": "essentiel",
+      "gainDb": 0,
+      "event": "petit touché sans mourir (zombieHit)",
+      "source": "sons-a-integrer.md"
+    },
+    {
+      "id": "zombie-blessure-voute",
+      "slot": "voix-voute-touche",
+      "variant": "C",
+      "macros": {
+        "hauteur": 0,
+        "matiere": 0,
+        "grain": 1,
+        "duree": 1,
+        "ampleur": 0
+      },
+      "seeds": 5,
+      "priority": 1,
+      "category": "voix",
+      "replaces": null,
+      "part": "B",
+      "set": "essentiel",
+      "gainDb": 0,
+      "event": "voûté touché sans mourir (zombieHit)",
+      "source": "sons-a-integrer.md"
+    },
+    {
+      "id": "zombie-blessure-grand",
+      "slot": "voix-grand-touche",
+      "variant": "C",
+      "macros": {
+        "hauteur": 0,
+        "matiere": 0,
+        "grain": 1,
+        "duree": 1,
+        "ampleur": 0
+      },
+      "seeds": 5,
+      "priority": 1,
+      "category": "voix",
+      "replaces": null,
+      "part": "B",
+      "set": "essentiel",
+      "gainDb": 0,
+      "event": "grand touché sans mourir (zombieHit)",
+      "source": "sons-a-integrer.md"
+    },
+    {
+      "id": "zombie-mort",
+      "slot": "voix-marcheur-mort",
+      "variant": "C",
+      "macros": {
+        "hauteur": 0,
+        "matiere": 0,
+        "grain": 1,
+        "duree": 1,
+        "ampleur": 0
+      },
+      "seeds": 5,
+      "priority": 1,
+      "category": "voix",
+      "replaces": "zombie-mort",
+      "part": "B",
+      "set": "essentiel",
+      "gainDb": 0,
+      "event": "mort du marcheur (zombieHit, killed: true)",
+      "source": "sons-a-integrer.md"
+    },
+    {
+      "id": "zombie-mort-petit",
+      "slot": "voix-petit-mort",
+      "variant": "C",
+      "macros": {
+        "hauteur": 3,
+        "matiere": 0,
+        "grain": 1,
+        "duree": 1,
+        "ampleur": 0
+      },
+      "seeds": 5,
+      "priority": 1,
+      "category": "voix",
+      "replaces": null,
+      "part": "B",
+      "set": "essentiel",
+      "gainDb": 0,
+      "event": "mort du petit (zombieHit, killed: true)",
+      "source": "sons-a-integrer.md"
+    },
+    {
+      "id": "zombie-mort-voute",
+      "slot": "voix-voute-mort",
+      "variant": "C",
+      "macros": {
+        "hauteur": 0,
+        "matiere": 0,
+        "grain": 1,
+        "duree": 1,
+        "ampleur": 0
+      },
+      "seeds": 5,
+      "priority": 1,
+      "category": "voix",
+      "replaces": null,
+      "part": "B",
+      "set": "essentiel",
+      "gainDb": 0,
+      "event": "mort du voûté (zombieHit, killed: true)",
+      "source": "sons-a-integrer.md"
+    },
+    {
+      "id": "zombie-mort-grand",
+      "slot": "voix-grand-mort",
+      "variant": "C",
+      "macros": {
+        "hauteur": 0,
+        "matiere": 0,
+        "grain": 1,
+        "duree": 1,
+        "ampleur": 0
+      },
+      "seeds": 5,
+      "priority": 1,
+      "category": "voix",
+      "replaces": null,
+      "part": "B",
+      "set": "essentiel",
+      "gainDb": 0,
+      "event": "mort du grand (zombieHit, killed: true)",
+      "source": "sons-a-integrer.md"
+    },
+    {
+      "id": "planche-arrachee",
+      "slot": "planche-arrachage",
+      "variant": "A",
+      "macros": {
+        "hauteur": 0,
+        "matiere": 0,
+        "grain": 1,
+        "duree": 1,
+        "ampleur": 0.1
+      },
+      "seeds": 5,
+      "priority": 1,
+      "category": "fenetre",
+      "replaces": "planche-arrachee",
+      "part": "B",
+      "set": "essentiel",
+      "gainDb": 0,
+      "event": "un zombie arrache une planche (plankTorn), traverse l'ouverture, 120 ms par fenêtre",
+      "source": "sons-a-integrer.md"
+    },
+    {
+      "id": "planche-posee",
+      "slot": "reparation",
+      "variant": "C",
+      "macros": {
+        "hauteur": 0,
+        "matiere": 0,
+        "grain": 1,
+        "duree": 1.8,
+        "ampleur": 0
+      },
+      "seeds": 5,
+      "priority": 1,
+      "category": "fenetre",
+      "replaces": "planche-posee",
+      "part": "B",
+      "set": "essentiel",
+      "gainDb": 0,
+      "event": "début de la pose d'une planche (plankRepairStart), durée = temps de pose (statistique reparation), arrêt si la pose est interrompue",
+      "source": "sons-a-integrer.md"
+    },
+    {
+      "id": "pas-exterieur",
+      "slot": "pas-joueur-exterieur",
+      "variant": "A",
+      "macros": {
+        "hauteur": 0,
+        "matiere": 0,
+        "grain": 1,
+        "duree": 1,
+        "ampleur": 0.1
+      },
+      "seeds": 5,
+      "priority": 1,
+      "category": "pas",
+      "replaces": null,
+      "part": "C",
+      "set": "fond",
+      "gainDb": 0,
+      "event": "playerStep dehors (hors des pièces de l'étage du joueur)",
+      "source": "sons-a-integrer.md"
+    },
+    {
+      "id": "pas-escalier",
+      "slot": "pas-joueur-escalier",
+      "variant": "C",
+      "macros": {
+        "hauteur": -3,
+        "matiere": 0,
+        "grain": 1,
+        "duree": 1,
+        "ampleur": 0
+      },
+      "seeds": 5,
+      "priority": 1,
+      "category": "pas",
+      "replaces": null,
+      "part": "C",
+      "set": "fond",
+      "gainDb": 1,
+      "event": "playerStep dans un escalier (marche de stair-walk.js)",
+      "source": "sons-a-integrer.md"
+    },
+    {
+      "id": "pas-zombie-lent",
+      "slot": "pas-zombie-lent",
+      "variant": "A",
+      "macros": {
+        "hauteur": 0,
+        "matiere": 0,
+        "grain": 1,
+        "duree": 1,
+        "ampleur": 0.1
+      },
+      "seeds": 5,
+      "priority": 1,
+      "category": "pas",
+      "replaces": null,
+      "part": "C",
+      "set": "fond",
+      "gainDb": 0,
+      "event": "pas d'un zombie à l'allure « lent » (même logique que pas-zombie)",
+      "source": "sons-a-integrer.md"
+    },
+    {
+      "id": "pas-zombie-course",
+      "slot": "pas-zombie-course",
+      "variant": "A",
+      "macros": {
+        "hauteur": 0,
+        "matiere": 0,
+        "grain": 1,
+        "duree": 1,
+        "ampleur": 0.1
+      },
+      "seeds": 5,
+      "priority": 1,
+      "category": "pas",
+      "replaces": null,
+      "part": "C",
+      "set": "fond",
+      "gainDb": 0,
+      "event": "pas d'un zombie à l'allure « course » (délai minimal 0,06 s)",
+      "source": "sons-a-integrer.md"
+    },
+    {
+      "id": "zombie-rampe",
+      "slot": "zombie-rampe",
+      "variant": "B",
+      "macros": {
+        "hauteur": 0,
+        "matiere": 0,
+        "grain": 1,
+        "duree": 1,
+        "ampleur": 0.3
+      },
+      "seeds": 5,
+      "priority": 1,
+      "category": "pas",
+      "replaces": null,
+      "part": "C",
+      "set": "fond",
+      "gainDb": 0,
+      "event": "frottement d'un zombie rampant : un par cycle de foulée, 2 plus proches au plus",
+      "source": "sons-a-integrer.md"
+    },
+    {
+      "id": "planche-craquement",
+      "slot": "planche-craquement",
+      "variant": "A",
+      "macros": {
+        "hauteur": 0,
+        "matiere": 0,
+        "grain": 1,
+        "duree": 1,
+        "ampleur": 0.1
+      },
+      "seeds": 5,
+      "priority": 1,
+      "category": "fenetre",
+      "replaces": null,
+      "part": "C",
+      "set": "fond",
+      "gainDb": 0,
+      "event": "la dernière planche d'une fenêtre cède (plankTorn qui ouvre la fenêtre), traverse l'ouverture",
+      "source": "sons-a-integrer.md"
+    },
+    {
+      "id": "zombie-escalade",
+      "slot": "escalade",
+      "variant": "C",
+      "macros": {
+        "hauteur": 0,
+        "matiere": 0,
+        "grain": 1,
+        "duree": 1,
+        "ampleur": 0
+      },
+      "seeds": 5,
+      "priority": 1,
+      "category": "fenetre",
+      "replaces": null,
+      "part": "C",
+      "set": "fond",
+      "gainDb": 0,
+      "event": "un zombie commence à franchir la fenêtre (mode escalade de siege.js), à la position de la fenêtre",
+      "source": "sons-a-integrer.md"
+    },
+    {
+      "id": "joueur-coeur",
+      "slot": "joueur-coeur",
+      "variant": "B",
+      "macros": {
+        "hauteur": 0,
+        "matiere": 0,
+        "grain": 1,
+        "duree": 1,
+        "ampleur": 0.2
+      },
+      "seeds": 1,
+      "priority": 2,
+      "category": "joueur",
+      "replaces": null,
+      "part": "C",
+      "set": "fond",
+      "gainDb": 0,
+      "event": "vie ≤ 25 % (exemple de la fiche), relancé toutes les 1,6 s, arrêté à terre et à la mort ; non spatialisé",
+      "source": "sons-a-integrer.md",
+      "preload": 0
+    },
+    {
+      "id": "ambiance-vent",
+      "slot": "ambiance-vent",
+      "variant": "A",
+      "macros": {
+        "hauteur": 0,
+        "matiere": 0,
+        "grain": 1,
+        "duree": 1,
+        "ampleur": 0.1
+      },
+      "seeds": 1,
+      "priority": 2,
+      "category": "ambiance",
+      "replaces": null,
+      "part": "C",
+      "set": "fond",
+      "gainDb": 0,
+      "event": "boucle de 10 s, fond constant faible (option de la fiche), une seule voix, arrêtée à la pause, à la mort et à « Rejouer »",
+      "source": "sons-a-integrer.md",
+      "preload": 0
+    },
+    {
+      "id": "ambiance-grincements",
+      "slot": "ambiance-grincements",
+      "variant": "B",
+      "macros": {
+        "hauteur": 0,
+        "matiere": 0,
+        "grain": 1,
+        "duree": 1,
+        "ampleur": 0.2
+      },
+      "seeds": 2,
+      "priority": 2,
+      "category": "ambiance",
+      "replaces": null,
+      "part": "C",
+      "set": "fond",
+      "gainDb": 0,
+      "event": "au hasard toutes les 20 à 60 s, position au hasard dans le bâtiment (murs de l'étage du joueur)",
+      "source": "sons-a-integrer.md",
+      "preload": 0
+    },
+    {
+      "id": "ambiance-lointains",
+      "slot": "ambiance-lointains",
+      "variant": "B",
+      "macros": {
+        "hauteur": 0,
+        "matiere": 0,
+        "grain": 1,
+        "duree": 1,
+        "ampleur": 0.2
+      },
+      "seeds": 2,
+      "priority": 2,
+      "category": "ambiance",
+      "replaces": null,
+      "part": "C",
+      "set": "fond",
+      "gainDb": 0,
+      "event": "une fois par pause entre les manches, après « Vague N terminée » (waveEnd) ; non spatialisé",
+      "source": "sons-a-integrer.md",
+      "preload": 0
+    },
+    {
+      "id": "ambiance-feu",
+      "slot": "ambiance-feu",
+      "variant": "B",
+      "macros": {
+        "hauteur": 0,
+        "matiere": 0,
+        "grain": 1,
+        "duree": 1,
+        "ampleur": 0.2
+      },
+      "seeds": 1,
+      "priority": 2,
+      "category": "ambiance",
+      "replaces": null,
+      "part": "C",
+      "set": "fond",
+      "gainDb": 0,
+      "event": "boucle de 8 s au feu de décor le plus proche (feux.json), une seule voix",
+      "source": "sons-a-integrer.md",
+      "preload": 0
+    },
+    {
+      "id": "porte-enfoncee",
+      "slot": "porte-enfoncee",
+      "variant": "A",
+      "macros": {
+        "hauteur": 0,
+        "matiere": 0,
+        "grain": 1,
+        "duree": 1,
+        "ampleur": 0.1
+      },
+      "seeds": 1,
+      "priority": 2,
+      "category": "impact",
+      "replaces": null,
+      "part": "C",
+      "set": "fond",
+      "gainDb": 0,
+      "event": "le bloc d'une porte s'enfonce à l'ouverture d'une zone (doorOpen), à la position de la porte",
+      "source": "sons-a-integrer.md",
+      "preload": 0
+    },
+    {
+      "id": "impact-zombie",
+      "slot": "impact-chair",
+      "variant": "B",
+      "macros": {
+        "hauteur": 0,
+        "matiere": 0,
+        "grain": 1,
+        "duree": 1,
+        "ampleur": 0.1
+      },
+      "seeds": 5,
+      "priority": 1,
+      "category": "impact",
+      "replaces": "impact-zombie",
+      "part": "5a",
+      "set": "essentiel",
+      "gainDb": 0,
+      "event": "une balle touche un zombie (zombieHit, blessure ou mort), à l'impact ; remplace l'ancien impact-zombie (« cling ») sous son identifiant : le directeur de sons ne change pas. Lot 5a : variante B par défaut (choix du propriétaire, B refaite moins « tambour » : partie D), ?sons=A|B|C pour comparer, ?sons=ancien pour l'ancien",
+      "source": "lot 5a (demande du propriétaire, Docs/lots/lot-5a.md)",
+      "preload": 1
+    }
+  ],
+  "nonIntegres": [
+    {
+      "slot": "reparation-coup",
+      "id": "planche-coup",
+      "reason": "facultatif selon la fiche : seulement si la réparation est jouée coup par coup ; la réparation est jouée d'un seul tampon à la durée de pose"
+    },
+    {
+      "slot": "planche-chute",
+      "id": "planche-chute",
+      "reason": "aucun événement « planche qui tombe sans arrachage » dans le jeu (pas de débris projeté ni de porte qui bouscule une planche)"
+    },
+    {
+      "slot": "interface-achat",
+      "id": "interface-achat",
+      "reason": "la boutique (lot 5) n'existe pas encore : aucun événement d'achat"
+    },
+    {
+      "slot": "joueur-souffle-terre",
+      "id": "joueur-chute",
+      "reason": "choix « actuel » : le son du jeu reste"
+    },
+    {
+      "slot": "joueur-relevage",
+      "id": "joueur-releve",
+      "reason": "choix « actuel » : le son du jeu reste"
+    },
+    {
+      "slot": "ambiance-neon",
+      "id": "ambiance-neon",
+      "reason": "choix « aucun » (pas de néon dans le jeu)"
+    },
+    {
+      "slot": "joueur-essouffle",
+      "id": "joueur-essouffle",
+      "reason": "choix « aucun » (pas de sprint)"
+    },
+    {
+      "slot": "interface-piece",
+      "id": "interface-piece",
+      "reason": "choix « aucun » (pas de pièce ramassée)"
+    }
+  ]
+}

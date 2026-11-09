@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <meta name="color-scheme" content="dark">
+  <title>Z-Survival</title>
+  <link rel="icon" type="image/png" sizes="48x48" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAwCAIAAADYYG7QAAADM0lEQVR4nOyZz2sTURDH5+2PZrNZS8WiWBAqCgqi9uJdEAX/BhUUvCiooEfxINiLYA9iS0HBCj0ICh7EU4vFi14qQkUFi2Jb1FJKf5jdbvbHe+O4JRJakszu5tBDPqeEPN5+M/Nm5vsSwzRN2EposMVoC2pGW1Az2oKa0RbUDIO5zgY4pOuQla9SrvJWcgU9KZUOGtzFm5kIw6u+z1nJfUanEJCDnRr3bHAFIeSD/X3aVdYMbsrMfGdIIDfn3Aj9VgpyMC0lc6VgOsYeIZ45TqemuUp1CBElreVNFE1JuUfTLhcKu+p3qZ9SnnXdRWAh+BZ2txDXLIsK+KLrqmoG92oatajt9at6QcoznjfPTpmus/uvCzAexw7AVDV93UIM2XZP/R3WEC953ndM0TREZpO/A2DEcXrrq5GJmnfs07NOxmlQBBgulXobRvem76dVA9n6kIF4z7Ybj7ZB338VRZBhc0iJhTjkOMcaqnlYqQyHIWQinSDqb/223VjN8yC4HwSQlRQp0xHvFIunOjoarHkdhv08m1EPdpUhDtj2yYZqPsbxBdcN8g0ZbspuF4uN1XhKjQTBkU3ZpBTs17Q/AC95Z5wVIdrxxbZtkI/z5fJ7xkBkRagTWoDFS2V2m5wWpltoO8ZmsFKm5avkFE9iRmhWqeV8jtFD/MbbgeWHPIAyYp+uU6WsKEUO0BFCrwnbklLF6tsQsfajslLkikbDcCKOgQG3U/dp2j5dP26a80r5iIYQ5wqF/59e97yBUmn99dMg+CIlRf6GZT0KgvEoIvXLiL94No1b9p+lPGGajyuVA7o+rRQZ6tOm2Z0417dRNBbHFBjy2rNSjgbBTPLsD1IWhKAxO5Mm3dwqC4VYQjxqGLT3pJQ0Cu76/qpSn6QcS2bCej5ura3NVCNBh2ZOSg/TXXrTWdgHtk0DazLxgdS+r1gWpY8CRnOqC2AFWkC6Tt0lxI+a+FM6KgB+EoOWqIG0jXGwUlmsCsKkoMjJu5j3l4ha0kXon2mvljQFJkCk8vFaKijFvWwDdFdcUMoWYk6pMrSMXLPssGHQnX8xXxPfgMjzb5CGqFox5mrJ5Ydarob4CwAA///lYl4CAAAABklEQVQDAEsyXksYrm1uAAAAAElFTkSuQmCC">
+  <link rel="apple-touch-icon" sizes="180x180" href="data:image/png;base64,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">
+  <link rel="preload" href="fonts/barlow-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="fonts/rubik-wet-paint-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="modulepreload" href="js/i18n.js">
+  <link rel="modulepreload" href="js/splat.js">
+  <link rel="modulepreload" href="js/page.js">
+  <link rel="modulepreload" href="js/accueil/home.js">
+  <link rel="preload" href="site-info.json" as="fetch" crossorigin>
+  <link rel="preload" href="data/i18n/fr.json" as="fetch" crossorigin>
+  <link rel="stylesheet" href="css/tokens.css">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/accueil.css">
+  <script type="module" src="js/accueil/main.js"></script>
+</head>
+<body>
+  <noscript>
+    <div class="noscript">
+      <p>Ce jeu a besoin de JavaScript. / This game needs JavaScript.</p>
+      <ul class="noscript-links">
+        <li><a href="jeu.html">Jouer / Play</a></li>
+        <li><a href="../dev/jeu.html">Dernier build de développement / Latest development build</a></li>
+      </ul>
+    </div>
+  </noscript>
+  <svg class="defs" aria-hidden="true" focusable="false">
+    <filter id="brush" x="-5%" y="-30%" width="110%" height="160%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.035 0.4" numOctaves="3" seed="4" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="16" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+    <filter id="torn" x="-20%" y="-40%" width="140%" height="180%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.05" numOctaves="3" seed="9" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="26" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+  </svg>
+  <main id="app" class="screen home" hidden>
+    <canvas id="splat" class="splat" aria-hidden="true"></canvas>
+    <div class="top">
+      <p class="crumb zone corner" id="version" data-i18n="home.badge"></p>
+    </div>
+    <div class="home-grid">
+      <div class="home-col home-col-main">
+        <h1 class="title" data-i18n="app.title"></h1>
+        <p class="home-play"><a class="button play" id="play" href="jeu.html" data-i18n="home.play"></a></p>
+        <p class="home-note" id="site-notice" role="status" hidden></p>
+        <section class="home-section" id="dev-section" aria-labelledby="dev-title">
+          <h2 class="home-heading" id="dev-title" data-i18n="home.devTitle"></h2>
+          <a class="item home-dev" id="dev-link" href="../dev/jeu.html">
+            <span class="brush" aria-hidden="true"></span>
+            <svg class="claw" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 3l4 18M10 3l4 18M16 3l4 18" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" fill="none"/></svg>
+            <span class="item-label" data-i18n="home.next"></span>
+            <span class="meta" hidden></span>
+          </a>
+          <p class="home-note" id="dev-none" data-i18n="home.nextNone" hidden></p>
+        </section>
+        <section class="home-section home-section-evolutions" id="evolutions-section">
+          <h2 class="home-heading" id="evolutions-title" data-i18n="home.evolutionsTitle"></h2>
+          <div class="home-scroll home-scroll-evolutions" id="evolutions-region" role="region" tabindex="0" aria-labelledby="evolutions-title">
+            <ul class="home-list" id="evolutions-list"></ul>
+            <p class="home-note" id="evolutions-none" data-i18n="home.evolutionsNone" hidden></p>
+          </div>
+        </section>
+      </div>
+      <div class="home-col home-col-versions">
+        <section class="home-section home-section-versions" id="versions-section">
+          <h2 class="home-heading" id="versions-title" data-i18n="home.versionsTitle"></h2>
+          <div class="home-scroll home-scroll-versions" id="versions-region" role="region" tabindex="0" aria-labelledby="versions-title">
+            <div class="home-current" id="current-card">
+              <p class="home-current-badge" data-i18n="home.currentBadge"></p>
+              <h3 class="home-current-name" id="current-name"></h3>
+              <p class="home-current-text" id="current-text" hidden></p>
+            </div>
+            <h3 class="home-subheading" id="previous-title" data-i18n="home.previousTitle"></h3>
+            <ul class="menu home-list" id="previous-list" aria-labelledby="previous-title"></ul>
+            <p class="home-note" id="previous-none" data-i18n="home.previousNone" hidden></p>
+          </div>
+        </section>
+      </div>
+    </div>
+    <div class="foot">
+      <p class="zone" data-i18n="app.provisional"></p>
+    </div>
+  </main>
+</body>
+</html>

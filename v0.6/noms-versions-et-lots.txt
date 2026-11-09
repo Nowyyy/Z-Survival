@@ -1,0 +1,98 @@
+# Noms et descriptions des versions et des lots affichés sur l'accueil de la Recette.
+# Un bloc par version ou par lot : l'identifiant entre crochets ([v0.6] = version, [lot-5a] = lot), puis une ligne par information « clé: valeur ».
+# Clés : nom (60 caractères au plus ; version : l'étiquette, par exemple V0.4 ; lot : le titre), description (une ligne, 200 caractères au plus).
+# Pour un lot seulement : version (version de rattachement, par exemple v0.6) et afficher (oui ou non ; non = absent des évolutions en cours).
+# Ce fichier l'emporte sur versions.json et data/changelog.json ; une ligne absente garde le texte d'origine ; les lignes en # sont des commentaires.
+#
+# Exemple :
+#   [lot-5a]
+#   version: v0.6
+#   nom: Voiture en flammes et hélicoptère écrasé
+#   description: Phrase courte qui décrit l'évolution.
+#   afficher: oui
+#
+# Pour corriger une faute : modifie la ligne, valide ; la Recette est mise à jour après le déploiement de `dev`.
+
+# --- Versions publiées (textes affichés aujourd'hui) ---
+
+[v0.1]
+nom: V0.1
+description: Première version du jeu en en Phaser, avec les fonctionnalités de base.
+
+[v0.2]
+nom: V0.2
+description: Switch en Three.js : monde, textures, personnages, sons
+
+[v0.3]
+nom: V0.3
+description: Ajouts des vagues, des différents types de zombies, du cône de tir, des statistiques, des animation de manche, de l'effet VHS.
+
+[v0.4]
+nom: V0.4
+description: Ajout des fenêtres à planches, de la première carte du jeu avec système d'étage et de pièces qui se déverrouillent
+
+[v0.5]
+nom: V0.5
+description: Ajout d'une V1 du système d'argent et de sauvegarde, refonte entière (carte, sons, interface, personnages, sang)
+
+# --- Version en préparation (brouillon) ---
+
+[v0.6]
+nom: V0.6
+description: Voiture en flammes et hélicoptère écrasé, nouvel impact sur les zombies, réglage des graphismes, travail sur la fluidité et nettoyage du code.
+
+# --- Lots de la version en préparation ---
+
+[lot-5a]
+version: v0.6
+nom: Voiture en flammes et hélicoptère écrasé
+description: Dehors, une voiture brûle et un hélicoptère écrasé fume au bout de sa glissade ; les zombies touchés ont un nouveau son d'impact.
+afficher: oui
+
+[lot-5b]
+version: v0.6
+nom: Réglage des graphismes
+description: Nouveau réglage « Graphismes » dans la pause (Auto, Faible, Moyen, Élevé) pour que le jeu tourne mieux sur les téléphones ; réglages provisoires.
+afficher: oui
+
+[lot-5c]
+version: v0.6
+nom: Nettoyage du code
+description: Du code et des fichiers qui ne servaient plus sont retirés ; le jeu ne change pas.
+afficher: oui
+
+[lot-5d]
+version: v0.6
+nom: Jeu plus léger pour le navigateur
+description: Les collisions et les mouvements des personnages gaspillent beaucoup moins de mémoire, pour réduire les petites pauses (effet sur téléphone à vérifier).
+afficher: oui
+
+[lot-5e]
+version: v0.6
+nom: Anciens personnages et anciens sons retirés
+description: Les personnages et les sons d'avant les refontes sont retirés ; leurs anciennes adresses ouvrent maintenant le jeu normal.
+afficher: oui
+
+[lot-5g]
+version: v0.6
+nom: Nouvelles adresses du site et accueil refait
+description: L'accueil et le jeu sont sous /Recette/, la version en développement sous /dev/ ; l'accueil montre les évolutions en cours et les versions précédentes.
+afficher: oui
+
+[lot-5h]
+version: v0.6
+nom: Noms des versions dans un fichier simple
+description: Les noms et descriptions des versions et des évolutions se changent dans un simple fichier texte ; l'adresse /recette/ en minuscules mène à la Recette.
+afficher: oui
+
+[lot-5f]
+version: v0.6
+nom: Publication de la V0.6
+description: La V0.6 devient la version Recette ; la V0.5 rejoint les versions précédentes, toujours jouables.
+afficher: oui
+
+[lot-5i]
+version: v0.6
+nom: Accueil retouché
+description: L'accueil occupe toute la hauteur de l'écran ; la colonne de droite montre toutes les versions, en tête la version actuelle avec sa description complète.
+afficher: oui

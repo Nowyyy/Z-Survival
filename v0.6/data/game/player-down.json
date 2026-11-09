@@ -1,0 +1,10 @@
+{
+  "_provisoire": "Lot 3 : chutes du joueur, valeurs provisoires (équilibrage non jugé par l'agent). Lu par js/core/player-down.js. chutesBase : chutes au niveau 0 de la statistique « chutes » (même valeur que extra.chutes.base de player-stats.json).",
+  "downDuration": 5,
+  "standUpHealFraction": 0.5,
+  "graceTime": 2,
+  "knockbackRadius": 220,
+  "fallDistance": 160,
+  "standUpDistance": 200,
+  "chutesBase": 1
+}

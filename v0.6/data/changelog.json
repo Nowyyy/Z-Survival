@@ -1,0 +1,222 @@
+{
+  "_note": "Journal des lots (data/changelog.json → lots), une entrée par bilan de Docs/lots/, dans l'ordre chronologique (la plus récente en dernier). Lot 5g : le journal des versions (/dev/) et la liste « versions » sont supprimés ; l'accueil (/Recette/) montre les entrées dont « version » (version cible, v0.N) n'est pas encore publiée dans versions.json. Chaque lot ajoute son entrée avec « version » (version cible) et « date » (AAAA-MM-JJ, jour du bilan).",
+  "lots": [
+    { "name": "lot-0", "titre": "Socle, jetons et publication", "points": [
+      "Outillage (ESLint, Vitest, Playwright, Lighthouse) et publication automatique sur GitHub Pages.",
+      "Jetons de design et style « sang noir » : noir, rouge sang, os, jaune pour l'argent.",
+      "Page d'attente de Z-Survival."
+    ] },
+    { "name": "lot-0b", "titre": "Aperçus par branche et page /dev", "points": [
+      "Chaque branche de lot a son aperçu sur /lots/lot-N/.",
+      "Page /dev : accès à main, au dernier lot et aux anciens lots."
+    ] },
+    { "name": "lot-0c", "titre": "CI sans installation de navigateur", "points": [
+      "Les tests de bout en bout utilisent le Chrome déjà présent sur le serveur d'intégration.",
+      "Menu /dev en français seulement."
+    ] },
+    { "name": "lot-0d", "titre": "Accueil en français seulement", "points": [
+      "Le bouton de bascule de langue est retiré pour l'instant (structure prête pour l'anglais)."
+    ] },
+    { "name": "lot-0t", "titre": "Test jetable : Three.js contre l'ancien moteur", "points": [
+      "Comparaison de Three.js et de l'ancien moteur de rendu. Branche jetable, jamais fusionnée dans main."
+    ] },
+    { "name": "lot-1", "titre": "Cœur du jeu", "points": [
+      "Déplacement au clavier ou aux sticks tactiles, visée à la souris ou au stick.",
+      "Laser de visée et tir automatique à balle visible : les dégâts arrivent à l'impact.",
+      "Zombies qui poursuivent le joueur, barre de vie, son synthétisé, pause et écran de fin provisoire."
+    ] },
+    { "name": "lot-1m", "titre": "Nouveau moteur de rendu : Three.js", "points": [
+      "Rendu en 3D, vue de dessus inclinée à 75°, caméra qui suit le joueur en douceur (?zoom=, ?tilt=).",
+      "Personnages articulés avec poses, pistolet en main, flash de bouche, étincelle d'impact.",
+      "Le canvas couvre toute la fenêtre ; message de rotation sur téléphone en portrait."
+    ] },
+    { "name": "lot-1b", "titre": "Monde plus grand, meubles, chemin des zombies", "points": [
+      "Salle de 2000 × 1200 avec 14 meubles qui bloquent joueur, zombies, laser et balles.",
+      "Les zombies contournent les meubles (champ de flux) et entrent par les fenêtres ; ils apparaissent hors de la vue.",
+      "Décor extérieur : route, trottoir, voitures, arbres, buissons, lampadaires, barrières.",
+      "Marge de visée et tir à travers les fenêtres."
+    ] },
+    { "name": "lot-1c", "titre": "Textures générées en code et personnages finaux", "points": [
+      "Sol carrelé et usé, murs, meubles en bois et métal, route, trottoir, herbe, voitures et arbres texturés : tout est calculé par du code, aucune image.",
+      "Écran de préparation pendant le calcul des textures.",
+      "Nouveaux personnages (membres arrondis, mains, bottes, arme en main) et quatre variantes de zombies.",
+      "Caméra rapprochée : zoom par défaut 2,5 (même échelle qu'au lot 1m)."
+    ] },
+    { "name": "lot-1d", "titre": "Sons synthétisés en code, voix de zombies et page d'écoute", "points": [
+      "Nouveaux sons calculés par du code (aucun fichier audio) : tirs en couches avec résonance de pièce, douilles, impacts selon la matière touchée, pas, cris du joueur blessé.",
+      "Le son d'un tir part avec la balle, la blessure d'un zombie à l'impact ; les zombies derrière un mur sont étouffés.",
+      "Curseur « Volume » dans le panneau de pause ; la pause suspend le son.",
+      "Les sons sont préparés pendant l'écran de chargement, les voix de zombies et l'ambiance ensuite.",
+      "Tirs plus percutants, cri du joueur blessé court, zombies qui grognent plus souvent en marchant."
+    ] },
+    { "name": "lot-2", "titre": "Vagues, allures et difficulté croissante", "points": [
+      "Des vagues numérotées à difficulté croissante : plus de zombies, plus résistants, plus rapides et plus durs au contact (courbe inspirée de Black Ops 3, vie plafonnée).",
+      "Quatre allures (marche lente, marche, rampe, course) et quatre types de zombies (marcheur, petit, voûté, grand) mélangés selon la vague ; 10 zombies au plus à la fois.",
+      "« Vague N » et « Restants » dans le HUD, annonce en début et fin de vague, compte à rebours de 3 s puis de 8 s entre les vagues.",
+      "La vie du joueur est remise à 100 % à la fin de chaque vague ; l'écran de mort indique la vague atteinte.",
+      "?wave=N démarre à la vague N pour les essais (de 1 à 200) ; ?nospawn=1 coupe les vagues."
+    ] },
+    { "name": "lot-2b", "titre": "Cône de tir, précision et statistiques du joueur", "points": [
+      "Chaque balle part dans un cône autour de la visée : 4° à l'arrêt, jusqu'à 12° en courant ; deux lignes ténues montrent l'ouverture du cône.",
+      "Sept statistiques à niveaux de 0 à 10 : dégâts, portée, précision, cadence, vitesse, vie maximale et régénération par zombie tué.",
+      "Chaque zombie tué rend de la vie (1 point au niveau 0) ; la vie maximale effective sert à la barre, au HUD et au soin de fin de vague.",
+      "Portée de tir de base ramenée à 700 ; les dégâts d'une balle sont figés au départ du tir.",
+      "?lvl=degats:3,precision:5 ou ?lvl=all:5 règle les niveaux pour les essais (l'achat viendra avec l'argent et la boutique) ; rien n'est stocké."
+    ] },
+    { "name": "lot-2c", "titre": "Ambiance : animation de vague, mélodie angoissante et effet VHS", "points": [
+      "Chaque vague s'annonce par une grande animation au centre de l'écran, qui démarre 3 secondes avant l'arrivée des zombies ; la fin de vague a la sienne, plus discrète.",
+      "Une mélodie angoissante, calculée par du code (aucun fichier audio), accompagne l'annonce ; la vague renforcée a sa variante, la fin de vague un son plus doux.",
+      "Un effet VHS (grain, lignes de balayage, bords rouge et cyan, bande de suivi) recouvre le jeu : il se coupe dans le menu pause, ou avec ?vhs=0 ; ?vhs=1 le force.",
+      "L'animation s'affiche sans mouvement et l'effet VHS est coupé si ton appareil demande de réduire les animations."
+    ] },
+    { "name": "lot-3", "titre": "Fenêtres à planches, siège par les zombies, réparation et chutes", "points": [
+      "Chaque fenêtre porte 4 planches : les zombies viennent à leur fenêtre, en arrachent les planches depuis 2 emplacements (les autres font la queue), puis escaladent et entrent.",
+      "Le joueur répare les planches automatiquement en restant près de la fenêtre, sauf tant qu'un zombie l'occupe ; un indicateur et une ligne « Fenêtres » du HUD montrent l'état.",
+      "À 0 de vie, le joueur tombe, reste à terre 5 secondes (invulnérable, zombies repoussés) puis se relève à 50 % de vie ; sans chute restante, c'est la fin de partie.",
+      "Deux statistiques de plus : chutes (1 à 6) et réparation (1,8 s à 0,5 s par planche), réglées par ?lvl=chutes:2,reparation:5.",
+      "?planks=2 règle le nombre de planches de départ ; quatre nouveaux sons synthétisés (planche arrachée, planche clouée, chute, relevage)."
+    ] },
+    { "name": "lot-3a", "titre": "Planches lisibles, fenêtres sans clipping, interface compacte", "points": [
+      "Les planches ont leur propre bois clair (clous, fissures), un cadre autour de l'ouverture, un trou sombre dans le mur et quatre pastilles au sol qui comptent les planches vues de dessus.",
+      "Les planches ne traversent plus ni le sol ni le mur ; une planche arrachée gît à plat sur le sol et y reste jusqu'à la réparation, sans limite de nombre.",
+      "Chaque fenêtre est un seul maillage, dessiné seulement quand elle est à l'écran : le coût de dessin ne dépasse plus celui du lot 3.",
+      "Le HUD tient en puces dans 96 × 300 pixels : barre de vie avec 100/100, vague, restants, tués, chutes ; seules les fenêtres attaquées ou ouvertes ont une puce.",
+      "L'indicateur de réparation tient sur une ligne, et des flèches au bord de l'écran montrent les deux fenêtres en alerte les plus urgentes hors du champ.",
+      "Essai « Sur l'écran d'accueil » : jeu.html se lance sans les barres du navigateur (à vérifier sur iPhone)."
+    ] },
+    { "name": "lot-3b", "titre": "Première carte : le rez-de-chaussée d'un bâtiment", "points": [
+      "Le jeu se joue maintenant dans le rez-de-chaussée d'un bâtiment reproduit d'après un plan : une longue aile, une grande salle, une alcôve au nord, des piliers et des escaliers pleins, sans aucune porte.",
+      "Huit fenêtres F1 à F8, avec leurs planches, leurs débris et leurs flèches étiquetées ; les zombies naissent dehors, hors de la vue, par deux points par fenêtre (une rampe mène à F3).",
+      "La carte est calculée par un script à partir d'un seul fichier en pixels du plan (npm run carte) : corriger un chiffre suffit.",
+      "Nouvelle page de contrôle carte.html (le plan en SVG, fenêtres numérotées, échelle) et ?labels=1 pour voir F1 à F8 dans le jeu ; ?zoom=1 montre tout le bâtiment.",
+      "?map=salle ramène l'ancienne salle de 2000 × 1200 et ses trois fenêtres."
+    ] },
+  { "name": "lot-3c", "titre": "Zones, première porte et mobilier du rez-de-chaussée", "points": [
+      "Au départ, seule la salle de départ (grande salle et poche, fenêtres F4 à F8) est active : l'aile de gauche est fermée par une porte et ses fenêtres F1 à F3 sont inertes.",
+      "À la fin de la manche 10, la porte 1 s'ouvre toute seule, sans achat : annonce « Nouvelle zone », porte qui s'enfonce, puis l'aile et ses trois fenêtres entrent dans la partie dès la manche 11 (planches non remises à neuf, chutes non rendues).",
+      "Le monde dure 40 manches ; la manche 40 terminée, un écran provisoire « Monde terminé » s'affiche (?endless=1 pour continuer sans fin).",
+      "Treize meubles provisoires (armoires, tables, comptoirs, caisses) complètent le rez-de-chaussée et cassent les longues lignes de tir de la grande salle.",
+      "Le panneau de pause indique « Prochaine zone : manche 11 » ; ?wave=11 ouvre l'aile dès le chargement, ?wave=10 la garde fermée."
+    ] },
+  { "name": "lot-3h", "titre": "Atelier des sons", "points": [
+    "Page technique atelier-sons.html pour comparer les sons actuels et trois nouvelles variantes (réaliste, horreur, sec) de chaque pas, voix de zombie, son de planche, d'escalade et du joueur.",
+    "Propositions (vent, grincements, cœur, porte, achat, feu qui crépite…), quatre scènes de 30 s, curseurs de réglage et « Mes choix » à copier.",
+    "Rien ne change dans le jeu : l'intégration des sons choisis viendra au lot 3i."
+  ] },
+  { "name": "lot-3e", "titre": "Étage, escaliers et portes 2 et 3", "points": [
+      "Le bâtiment a un étage, reproduit d'après le modèle 3D : une aile et une poche à gauche, une salle à droite, sept fenêtres U1 à U7. Une puce « RDC » / « Étage » indique où l'on est.",
+      "Deux escaliers relient les étages : on les monte et on les descend en marchant (marches, hauteur qui change, déplacement libre dans la largeur), sans téléportation, sans délai ; depuis l'étage on voit tout le rez-de-chaussée par un trou entouré d'un garde-corps.",
+      "Les zombies vivent sur les deux étages et marchent librement dans les escaliers, sans limite de nombre : on peut les toucher et ils frappent. Les bruits de l'autre étage sont étouffés.",
+      "Porte 2 (manche 20 terminée) : l'escalier de l'aile s'ouvre, avec la zone de gauche de l'étage. Porte 3 (manche 30 terminée) : le second escalier et la salle de droite.",
+      "?floor=1 démarre à l'étage, ?labels=1 numérote les fenêtres de l'étage affiché, carte.html propose un sélecteur d'étage."
+    ] },
+    { "name": "lot-3g", "titre": "Atelier de la carte", "points": [
+      "Visite libre de la carte sans zombie ni porte, sur les deux étages (page visite.html), pour s'y promener avec les contrôles du jeu.",
+      "Le modèle 3D est relevé et comparé à la carte : la page ecarts.html montre les écarts ; les corrections sont des décisions rejouables (ecarts-decisions.json).",
+      "Mobilier corrigé d'après le modèle : deux étagères ajoutées, deux pièces provisoires remplacées par les étagères du modèle, quelques meubles recalés.",
+      "Décor léger non solide : plinthes, tuyaux, appliques, affiches, tapis, taches, sacs de sable et bidons.",
+      "Textures plus fines (joints irréguliers, éclats, fissures, coulures, taches) ; ?detail=0 montre l'ancien rendu pour comparer."
+    ] },
+    { "name": "lot-3j", "titre": "Atelier des personnages", "points": [
+      "Page atelier-personnages.html : les personnages actuels et trois nouvelles variantes (A « déchu réaliste », B « horreur marquée », C « lisible d'abord ») côte à côte, à l'échelle du jeu, ×2 et ×4, avec mesures, curseurs et « Mes choix » à copier.",
+      "Silhouettes distinctes par type (petit, marcheur, voûté, grand), lisibles sur tous les sols, escalier et sols tachés compris ; 6 tenues par zombie et 4 paliers d'usure selon la manche.",
+      "Nouvelles animations : attaque, touché, trois morts, réparation, relevage ; marches sans glissement des pieds.",
+      "Sang à trois niveaux (aucun, réduit, complet) : particules, taches au sol, taches sur les corps, cadavres qui s'enfoncent ; mini-arène pour l'essayer.",
+      "Dans le jeu : variantes « riche » et sang complet par défaut ; ?sang=reduit ou ?sang=0 (futur menu d'options), ?perso=actuel&sang=0 pour l'ancien rendu.",
+      "Joueur : pistolet tenu bras tendus, recul à chaque tir, laser et balles qui partent du canon ; pas de laser ni de tir pendant la réparation.",
+      "Zombies : ils enjambent les fenêtres (appui, corps couché, retombée) et tombent à l'opposé du tireur (en arrière s'ils sont touchés de face)."
+    ] },
+    { "name": "lot-4", "titre": "Argent et sauvegarde locale", "points": [
+      "Chaque zombie tué par une balle rapporte 10, chaque planche de fenêtre posée 1 (montants fixes, qui évolueront avec les améliorations), chaque manche terminée un bonus, la fin du monde un gros bonus : tout est conservé à la mort.",
+      "Le solde et les niveaux des statistiques sont enregistrés sur l'appareil (clé unique, écriture par différences, jamais écrasée si elle est illisible) et survivent au rechargement.",
+      "Les adresses d'essai (?wave=, ?lvl=, ?map=, ?money=…) lisent ta vraie sauvegarde mais n'écrivent jamais : la pause et l'écran de fin le disent.",
+      "La page sauvegarde.html permet d'exporter la sauvegarde par un code, de l'importer (avec aperçu et confirmation), de la réparer ou de l'effacer : utile car Safari efface les données d'un site après 7 jours d'usage sans visite.",
+      "L'interface est plus compacte : blocs de taille fixe (vie, argent, « Vague 1 / 40 »), bouton Pause en icône, une seule silhouette pour les chutes ; le solde et l'état de la sauvegarde sont dans la pause, l'argent gagné et les records sur l'écran de fin.",
+      "Menu /dev : plus de liste déroulante, le journal des versions est replié ; icône « Z » pour l'écran d'accueil ; tests de bout en bout ramenés à 4 minutes."
+        ] },
+    { "name": "lot-3i", "titre": "Sons intégrés", "points": [
+      "Les sons choisis dans l'atelier remplacent les pas, les voix (une par type de zombie), les planches et la réparation, qui suit la durée de pose.",
+      "Sons nouveaux : pas dehors et dans l'escalier, allures des zombies, craquement, escalade, cœur, vent, feu, grincements, porte.",
+      "?sons=ancien pour réentendre les anciens, ?sons=A, B ou C pour une variante."
+    ] },
+    { "name": "lot-3k", "titre": "Atelier de l'interface", "points": [
+      "Nouvelle page technique atelier-interface.html : l'interface actuelle du jeu et trois directions de refonte (sobre, caméscope, tactile), sur 7 tailles d'écran et dans de nombreux états, avec le vrai jeu en fond.",
+      "Chaque vue est mesurée : place occupée à l'écran, taille des textes, contrastes, cibles tactiles, zones de sécurité et zones des pouces ; tout écart est écrit en toutes lettres.",
+      "Menu, boutique, réglages et classement en maquettes, avec de fausses données annoncées comme telles ; cinq propositions de priorité 2 (retour de dégâts, vie faible, aide de démarrage, curseur de visée, nouvelle zone).",
+      "Comparaison côte à côte et texte « Mes choix » à copier ; après les premiers choix, le HUD caméscope est retouché (vie en texte, mots entiers, argent et tués alignés sur le bouton Pause).",
+      "Rien n'est encore intégré au jeu : l'intégration se fera au lot 4b."
+    ] },
+    { "name": "lot-3l", "titre": "Interface intégrée", "points": [
+      "Le HUD caméscope retenu dans l'atelier remplace l'ancien : REC et temps de jeu, vie, chutes, étage, vague, argent, restants et tués, en blocs de taille fixe.",
+      "Pause, écrans de fin et état à terre refaits : texte « À terre » sous l'argent avec la barre du compte à rebours, « Revenir au menu principal » (sans action pour l'instant).",
+      "Sticks sobres ; marges de 16 px plus la zone de sécurité."
+    ] },
+    { "name": "lot-3m", "titre": "Personnages intégrés", "points": [
+      "Les nouveaux personnages (variante « riche ») et le sang complet sont maintenant le jeu par défaut, d'après une table de choix modifiable.",
+      "?perso=actuel montre l'ancien modèle pour comparer ; ?sang=reduit ou ?sang=0 réduisent ou coupent le sang (futur menu d'options).",
+      "Deux corps au sol à la fois au plus, pour tenir le budget d'affichage.",
+      "L'ancien modèle n'est plus chargé quand il ne sert pas ; le sang n'est préparé qu'à la première tache."
+    ] },
+    { "name": "lot-4b", "titre": "Intégration des refontes", "points": [
+      "En cours : branche d'intégration des refontes, réunies ici avant d'entrer dans le jeu publié.",
+      "Atelier de la carte (lot 3g) intégré : carte corrigée d'après le modèle 3D, mobilier redessiné, vraies portes et éboulis, murs jusqu'au plafond, mur percé autour du joueur caché, feux, extérieur plus vivant et brouillard en volutes.",
+      "Argent et sauvegarde locale (lot 4) compris.",
+      "Menu /dev : seules les versions majeures (V0.1 à V0.5) restent dans le journal."
+    ] },
+    { "name": "lot-4c", "titre": "Publication par versions", "points": [
+      "Le site affiche à sa racine la dernière version publiée (V0.5) : bouton « Jouer », accès au dernier build de développement (/next/) et aux versions précédentes.",
+      "Versions V0.1 à V0.4 figées, servies dans /v0.1/ à /v0.4/ (branche archive, construites une fois depuis leur commit).",
+      "Aperçus par lot retirés du site : /lots/ renvoie vers l'accueil.",
+      "Journal des versions : lien « Ouvrir cette version » au lieu de « Ouvrir ce lot »."
+    ] },
+    { "name": "lot-4e", "titre": "Tests en paliers", "points": [
+      "Les tests sont rangés en quatre paliers (avant commit, à chaque push, avant publication, complet) et ne rejouent que les zones du jeu touchées par un changement.",
+      "Le palier complet est découpé en tranches équilibrées pour tenir en 10 minutes en CI (projection : 8 tranches, à confirmer par la première exécution).",
+      "Tests retirés sur décision du propriétaire : doublons, détails, ancien code et pages techniques ; garde-fous intacts. Aucun changement du jeu."
+    ] },
+    { "name": "lot-4f", "titre": "Durée des tests mesurée en CI", "points": [
+      "Le palier complet tourne en 16 tranches et le palier de chaque push en 8 tranches au plus, sur ordinateur de bureau seulement ; chaque exécution mesure sa durée et dit si l'objectif de 10 minutes est tenu.",
+      "Deux tests corrigés (pause dans l'escalier, comparaison de l'atelier de l'interface) et mesure du temps de chargement du jeu par réglage. Aucun changement du jeu."
+    ] },
+    { "name": "lot-4g", "titre": "Nettoyage de la CI de publication", "points": [
+      "La publication ne relance plus les tests de bout en bout, déjà faits à chaque push par le palier standard : elle vérifie le lint et les tests unitaires, puis déploie.",
+      "Les pages de renvoi du site (aperçus retirés, build de développement absent) affichent l'icône « Z » du site. Règles de travail consolidées. Aucun changement du jeu."
+    ] },
+    { "name": "lot-5a", "version": "v0.6", "date": "2026-11-04", "titre": "Épaves en flammes et nouvel impact sur les zombies", "points": [
+      "Dehors : une voiture calcinée brûle à l'est du bâtiment (flammes et fumée) et un hélicoptère écrasé, à moitié enfoui dans un cratère au bout de sa traînée de glissade, fume encore dans l'angle du L au nord, contre les murs ; tous deux bloquent les déplacements et les balles.",
+      "Une balle qui touche un zombie fait un bruit de chair perforée (proposition B) au lieu du « cling » scintillant, et la douille du pistolet est plus discrète ; ?sons=A, B ou C compare les trois propositions, ?sons=ancien rejoue l'ancien son. La logique du jeu ne change pas."
+    ] },
+    { "name": "lot-5b", "version": "v0.6", "date": "2026-11-05", "titre": "Fluidité : outil de mesure et préréglages graphiques", "points": [
+      "Nouveau réglage « Graphismes » dans la pause : Auto, Faible, Moyen ou Élevé (Élevé = le rendu d'avant). Changer de réglage recharge la page après confirmation ; le choix est gardé sur l'appareil. En Auto, un téléphone part en Moyen et le jeu baisse d'un cran entre deux manches si les images sont trop lentes. Les réglages sont provisoires, à affiner avec les mesures des appareils.",
+      "?perf=1 affiche un panneau de mesure (images, accrocs, temps par étape) avec « Copier le rapport » ; ?gfx= force un réglage sans le mémoriser ; ?cap= essaie un plafond d'images. La logique du jeu ne change pas."
+    ] },
+    { "name": "lot-5c", "version": "v0.6", "date": "2026-11-06", "titre": "Nettoyage du code et des fichiers", "points": [
+      "Code jamais appelé, réglage d'essai ?murs=bas, trois scripts ponctuels et un document de fusion périmé retirés après preuve de non-usage ; références périmées de la documentation corrigées.",
+      "Aucun changement de jeu ni d'image : parties rejouées pas à pas, appels, triangles et vues identiques avant et après."
+    ] },
+    { "name": "lot-5d", "version": "v0.6", "date": "2026-11-06", "titre": "Fluidité : moins de mémoire jetée à chaque image", "points": [
+      "Les collisions (déplacements des zombies, ligne de vue, balles, laser) et les poses des personnages sont calculées sans créer d'objets temporaires à chaque image : le jeu jette beaucoup moins de mémoire, ce qui doit réduire les petites pauses du navigateur (effet sur les téléphones à vérifier avec ?perf=1).",
+      "Aucun changement de jeu ni d'image : les résultats sont identiques au bit près (vérifiés sur des milliers de cas et sur six parties rejouées pas à pas)."
+    ] },
+    { "name": "lot-5e", "version": "v0.6", "date": "2026-11-06", "titre": "Nettoyage : ancien modèle de personnages et ancien pack de sons retirés", "points": [
+      "Les personnages d'avant les refontes (?perso=actuel) et le pack de sons d'avant (?sons=ancien) sont retirés : ces adresses donnent maintenant le jeu par défaut, sans erreur. Si la table des personnages manque, chaque personnage prend la variante A.",
+      "Aucun changement de jeu, d'image ni de son : parties rejouées pas à pas, rendu, vues et empreinte de chaque son identiques avant et après ; les tests qui mesuraient avec l'ancien modèle ou l'ancien pack sont remesurés sur ce que le jeu livre."
+    ] },
+    { "name": "lot-5g", "version": "v0.6", "date": "2026-11-06", "titre": "Nouvelle organisation du site et accueil refait", "points": [
+      "Le site change d'adresses : la racine affiche « en construction », l'accueil et le jeu de la Recette sont sous /Recette/, le dernier build de développement sous /dev/jeu.html ; /next/ et /lots/ renvoient aux nouvelles adresses, les versions précédentes (/v0.N/) ne changent pas.",
+      "L'accueil est refait : « Jouer », le dernier build de développement, les évolutions en cours de développement (à gauche) et toutes les versions précédentes (à droite, dans une liste qui défile) ; le journal des versions est retiré. Aucun changement du jeu."
+    ] },
+    { "name": "lot-5h", "version": "v0.6", "date": "2026-11-06", "titre": "Fichier des noms et redirection de /recette/", "points": [
+      "Les noms et descriptions des versions et des lots affichés sur l'accueil se modifient dans un fichier texte à la racine du dépôt (noms-versions-et-lots.txt), qui l'emporte sur versions.json et le journal ; un contrôle signale chaque faute avec son numéro de ligne.",
+      "L'adresse /recette/ en minuscules (et toute autre casse) mène maintenant à /Recette/, en gardant la suite de l'adresse. Aucun changement du jeu."
+    ] },
+    { "name": "lot-5f", "version": "v0.6", "date": "2026-11-06", "titre": "Publication de V0.6", "points": [
+      "V0.6 devient la version Recette ; V0.5 est archivée et reste jouable à son adresse, comme V0.1 à V0.4, dans la liste des versions précédentes de l'accueil.",
+      "Documentation et règles de travail mises à jour pour la nouvelle organisation du site. Aucun changement du jeu."
+    ] },
+    { "name": "lot-5i", "version": "v0.6", "date": "2026-11-07", "titre": "Accueil retouché", "points": [
+      "L'accueil occupe toute la hauteur de l'écran ; le bandeau dit « Recette », le bouton « Jouer - V0.6 », et la colonne de droite montre toutes les versions, en tête la version actuelle avec sa description complète.",
+      "La description de la version Recette n'est plus coupée à 120 caractères. Aucun changement du jeu."
+    ] }
+  ]
+}
