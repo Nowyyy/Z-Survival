@@ -36,6 +36,7 @@
     { "fichier": "tests/e2e/carte.spec.js", "categorie": "G", "motif": "axe|se charge", "raison": "tests G d'un fichier T" },
     { "fichier": "tests/e2e/etage-salle.spec.js", "categorie": "G", "motif": "budget|requête|aucune limite|jamais plus|rez-de-chaussée avec les deux escaliers", "raison": "tests G d'un fichier R" },
     { "fichier": "tests/e2e/etage.spec.js", "categorie": "G", "motif": "budget|géométries et de textures|axe|requête|CLS|jamais plus de 10|HUD : colonne", "raison": "tests G d'un fichier R" },
+    { "fichier": "tests/e2e/graphismes.spec.js", "categorie": "G", "motif": "invariance", "raison": "Lot 5q : options graphiques sans effet sur la logique (préréglages et 12 vecteurs Perso, getState() logique identique) ; sans équivalent ailleurs." },
     { "fichier": "tests/e2e/interface-atelier-ecrans.spec.js", "categorie": "G", "motif": "axe", "raison": "tests G d'un fichier T" },
     { "fichier": "tests/e2e/interface-atelier.spec.js", "categorie": "G", "motif": "axe|cibles|CLS|se charge", "raison": "tests G d'un fichier T" },
     { "fichier": "tests/e2e/interface-integree.spec.js", "categorie": "G", "raison": "Interface du jeu : cibles, marges, 14 px, stabilité, axe, CLS aux 7 tailles ; dans la suite rapide." },

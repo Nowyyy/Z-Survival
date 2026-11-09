@@ -2,7 +2,6 @@
 // Lot 5g : nouvelle organisation (racine « en construction », Recette/ = main, dev/ = dev, redirections next/ et lots/, archives v0.N/ inchangées),
 // site-info.json (scripts/site/site-info.mjs) ; le journal /dev (dev/index.html, dev/dev.js) et ses tests sont supprimés.
 import { describe, it, expect, afterAll } from 'vitest';
-import { spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -17,7 +16,6 @@ import {
 import { MAX_DESCRIPTION as MAX_DESCRIPTION_NOMS, NOMS_FICHIER, parseNoms } from '../../scripts/site/noms.mjs';
 import { DESCRIPTION_RECETTE_TEST, NOMS_TEST, fakeArchive, manyVersions, testVersions } from '../../scripts/site/e2e-site.mjs';
 import { findNonRelative } from '../../scripts/versions/links.mjs';
-import { bilansChangesDepuis } from '../../scripts/docs/bilans.mjs';
 
 const ROOT = mkdtempSync(join(tmpdir(), 'zs-test-publication-'));
 afterAll(() => rmSync(ROOT, { recursive: true, force: true }));
@@ -656,81 +654,13 @@ describe('package.json et Playwright', () => {
   });
 });
 
-// Garde-fous du lot (comparaison à la base de lot-4c, e6cf00e) : actifs seulement tant que tous les commits depuis la base sont ceux du lot 4c
-// (sur main après la fusion, ou dans un clone superficiel, ils n'ont plus de sens et sont sautés).
-const BASE = 'e6cf00e0392250d1125e4c14c11a91837fca29db';
-const git = (...args) => spawnSync('git', args, { encoding: 'utf8' });
-const subjects = git('log', '--format=%s', `${BASE}..HEAD`);
-const ON_LOT = subjects.status === 0 && subjects.stdout.trim().split('\n').filter(Boolean).every((s) => s.startsWith('Lot 4c'));
-const changedSinceBase = (...paths) => {
-  const committed = git('diff', '--name-only', BASE, '--', ...paths).stdout.trim().split('\n').filter(Boolean);
-  const untracked = git('ls-files', '--others', '--exclude-standard', '--', ...paths).stdout.trim().split('\n').filter(Boolean);
-  return [...committed, ...untracked];
-};
-
-describe.skipIf(!ON_LOT)('hygiène du lot 4c (comparaison à la base e6cf00e)', () => {
-  it('fichiers du jeu inchangés : jeu.html, js/game, js/core, data/game, css/game.css, css/game-ui.css, pages techniques', () => {
-    expect(changedSinceBase('jeu.html', 'js/game', 'js/core', 'data/game', 'css/game.css', 'css/game-ui.css', 'sauvegarde.html', 'sons.html', 'carte.html', 'visite.html', 'atelier-sons.html', 'atelier-choix.html', 'atelier-interface.html', 'atelier-personnages.html', 'ecarts.html', 'interface-retenue.html')).toEqual([]);
-  });
-
-  it('CLAUDE.md, conventions.md, seed, bilans existants inchangés ; seul pages.yml change dans .github', () => {
-    // Lot 5m : bilans comparés à la base par leur texte, séparés ou regroupés (scripts/docs/bilans.mjs) ; avant : chemins des bilans séparés
-    // (readdirSync('Docs/lots') sans lot-4c.md) ajoutés à la même liste (une assertion).
-    expect(changedSinceBase('CLAUDE.md', 'Docs/ref/conventions.md', 'Docs/seed.md')).toEqual([]);
-    expect((bilansChangesDepuis(BASE) ?? []).filter((lot) => lot !== 'lot-4c')).toEqual([]);
-    expect(changedSinceBase('.github')).toEqual(['.github/workflows/pages.yml']);
-  });
-
-  it('apercu.txt inchangé (première ligne comprise) ; package-lock.json inchangé', () => {
-    expect(changedSinceBase('apercu.txt', 'package-lock.json')).toEqual([]);
-  });
-
-  it('aucun fichier de plus de 5 Mo ajouté', () => {
-    const added = git('diff', '--name-only', '--diff-filter=A', BASE).stdout.trim().split('\n').filter(Boolean);
-    for (const file of [...added, ...changedSinceBase('.')]) if (existsSync(file)) expect(statSync(file).size, file).toBeLessThanOrEqual(5 * 1024 * 1024);
-  });
-});
-
-// Garde-fous du lot 5g (comparaison à la base origin/dev 775f1d1) : actifs seulement tant que tous les commits depuis la base sont ceux du lot 5g.
-const BASE_5G = '775f1d15a6a092bc73aab982d55431447240db53';
-const subjects5g = git('log', '--format=%s', `${BASE_5G}..HEAD`);
-const ON_5G = subjects5g.status === 0 && subjects5g.stdout.trim().split('\n').filter(Boolean).every((s) => s.startsWith('Lot 5g'));
-const changedSince5g = (...paths) => {
-  const committed = git('diff', '--name-only', BASE_5G, '--', ...paths).stdout.trim().split('\n').filter(Boolean);
-  const untracked = git('ls-files', '--others', '--exclude-standard', '--', ...paths).stdout.trim().split('\n').filter(Boolean);
-  return [...committed, ...untracked];
-};
-
-describe.skipIf(!ON_5G)('hygiène du lot 5g (comparaison à la base 775f1d1)', () => {
-  it('jeu inchangé : jeu.html, js/game, js/core, data/game, css/game*.css', () => {
-    expect(changedSince5g('jeu.html', 'js/game', 'js/core', 'data/game', 'css/game.css', 'css/game-ui.css')).toEqual([]);
-  });
-
-  it('seed, CLAUDE.md, conventions.md, versions.json, dernier-complet.json, scripts/versions/ et bilans existants inchangés ; seul pages.yml change dans .github', () => {
-    // Lot 5m : bilans comparés à la base par leur texte, séparés ou regroupés (scripts/docs/bilans.mjs) ; avant : chemins des bilans séparés
-    // (readdirSync('Docs/lots') sans lot-5g.md) ajoutés à la même liste (une assertion).
-    expect(changedSince5g('Docs/seed.md', 'CLAUDE.md', 'Docs/ref/conventions.md', 'versions.json', 'tests/dernier-complet.json', 'scripts/versions')).toEqual([]);
-    expect((bilansChangesDepuis(BASE_5G) ?? []).filter((lot) => lot !== 'lot-5g')).toEqual([]);
-    expect(changedSince5g('.github')).toEqual(['.github/workflows/pages.yml']);
-  });
-
-  it('aucune dépendance : package.json et package-lock.json inchangés', () => {
-    expect(changedSince5g('package.json', 'package-lock.json')).toEqual([]);
-  });
-
-  it('aucun fichier de plus de 5 Mo ajouté ou modifié', () => {
-    for (const file of changedSince5g('.')) if (existsSync(file)) expect(statSync(file).size, file).toBeLessThanOrEqual(5 * 1024 * 1024);
-  });
-
-  it('journal supprimé : dev/, tests/e2e/dev.spec.js ; aucun lien absolu ni adresse externe dans les fichiers du site modifiés', () => {
-    expect(existsSync('dev')).toBe(false);
-    expect(existsSync('tests/e2e/dev.spec.js')).toBe(false);
-    for (const file of changedSince5g('index.html', 'js/accueil', 'css/accueil.css', 'scripts/assemble.mjs', 'scripts/site').filter(existsSync)) {
-      expect(read(file), file).not.toMatch(/(?:href|src)=["'](?:https?:)?\/\//);
-      if (file.endsWith('.html')) expect(findNonRelative(read(file), 'html'), file).toEqual([]);
-    }
-  });
-});
+// Lot 5q : retirés, sautés depuis la fusion de leur lot (actifs seulement tant que tous les commits depuis la base étaient ceux du lot ; jamais
+// réactivables) : « hygiène du lot 4c » (base e6cf00e : jeu inchangé ; CLAUDE.md, conventions, seed, bilans inchangés et seul pages.yml dans .github ;
+// apercu.txt et package-lock.json inchangés ; aucun fichier de plus de 5 Mo ajouté) et « hygiène du lot 5g » (base 775f1d1 : jeu inchangé ; seed,
+// CLAUDE.md, conventions, versions.json, dernier-complet, scripts/versions, bilans inchangés et seul pages.yml dans .github ; package.json et
+// package-lock.json inchangés ; aucun fichier de plus de 5 Mo ; journal dev/ et dev.spec.js supprimés, aucun lien absolu dans les fichiers du site
+// modifiés). Les règles durables restent vérifiées ailleurs : fichiers de 5 Mo et dépendances (hygiene.test.js, contrôle de publication 14),
+// chemins relatifs des pages produites (« pages produites : chemins relatifs seulement » ci-dessus), jeu inchangé par lot (contrôle final du prompt).
 
 // Lot 5h : étiquettes des versions (nom du fichier des noms, sinon label de versions.json) et fichier des noms appliqué par l'assembleur.
 describe('étiquettes des versions (lot 5h) : même règle dans site-info.mjs et home.js, repli sur V<id>', () => {
