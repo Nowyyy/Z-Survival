@@ -264,6 +264,8 @@
   --menu-rouge-clair: #c4130f;      /* bouton peint survolé */
   --menu-rouge-trait: #ff4a3d;      /* trait de l'onglet actif, sur le bois */
   --menu-coulure: #7d0b0a;          /* coulures sous les bandeaux et sous le Z */
+  --menu-coulure-sombre: #4a0505;   /* coulures du Z : bord dans l'ombre */
+  --menu-coulure-reflet: #c42a22;   /* coulures du Z : reflet humide */
   --menu-z: #d81414;                /* lettre Z du titre */
   --menu-z-contour: #1a0303;        /* contour sombre du Z */
   --menu-bord: #160404;             /* bordure sombre des boutons peints */

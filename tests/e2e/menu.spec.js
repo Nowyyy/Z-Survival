@@ -44,7 +44,10 @@ test.describe('écran de chargement (E7)', () => {
     await page.goto('/jeu.html?test=1&menu=1&seed=1');
     await page.locator('#e7').waitFor({ state: 'attached' });
     // Retour du propriétaire : la chute part dès l'apparition de l'écran, sans attendre la progression (ni la police).
-    expect(await page.evaluate(() => [document.getElementById('e7').classList.contains('e7-joue'), window.__zsMenu.etat().pourcentage < 100])).toEqual([true, true]);
+    expect(await page.evaluate(() => {
+      const chute = document.getElementById('e7-z').getAnimations().find((x) => x.animationName === 'e7-chute');
+      return [document.getElementById('e7').classList.contains('e7-joue'), Boolean(chute) && chute.currentTime < 1000];
+    })).toEqual([true, true]);
     await expect(page.locator('#e7-titre')).toHaveText('Z-Survival');
     await expect(page.locator('#e7-titre')).toHaveAccessibleName('Z-Survival');
     await expect(page.locator('#e7-barre')).toHaveAttribute('role', 'progressbar');
@@ -170,6 +173,25 @@ test.describe('menu principal (E8)', () => {
     expect(o.problemes).toEqual([]);
   });
 
+  test('Information : sauts de ligne du texte des nouveautés (« \\n » dans la chaîne, ou liste de lignes), en texte brut', async ({ page }) => {
+    const infos = { infos: [
+      { id: 'a', date: '2026-11-10', titre: 'Chaîne', texte: 'Ligne 1\nLigne 2\n\nLigne 4 <b>brut</b>' },
+      { id: 'b', date: '2026-11-10', titre: 'Liste', texte: ['Un', '', 'Trois'] },
+    ] };
+    await page.route('**/data/menu/infos.json', (r) => r.fulfill({ contentType: 'application/json', body: JSON.stringify(infos) }));
+    await ouvrirMenu(page);
+    await page.locator('#menu-trois-barres').click();
+    await page.locator('#menu-information').click();
+    const textes = page.locator('.e8-info-texte');
+    await expect(textes).toHaveCount(2);
+    expect(await textes.evaluateAll((els) => els.map((e) => [getComputedStyle(e).whiteSpace, e.innerText, e.children.length]))).toEqual([
+      ['pre-line', 'Ligne 1\nLigne 2\n\nLigne 4 <b>brut</b>', 0],
+      ['pre-line', 'Un\n\nTrois', 0],
+    ]);
+    const h = await textes.first().evaluate((e) => e.getBoundingClientRect().height / parseFloat(getComputedStyle(e).lineHeight || '20'));
+    expect(h).toBeGreaterThanOrEqual(3.5); // quatre lignes affichées (dont une vide)
+  });
+
   test('Connexion : écran provisoire « Connexion : bientôt » ; Options : l\'écran Options existant (E2-12) hors partie, fermé par la croix et Échap', async ({ page }) => {
     await ouvrirMenu(page);
     await page.locator('#menu-connexion').click();
@@ -266,8 +288,10 @@ test.describe('partie et retour au menu', () => {
     expect(await page.evaluate(() => [typeof window.__zs, typeof window.__zsMenu])).toEqual(['undefined', 'undefined']);
     await expect(page.locator('#game-root')).toBeHidden();
     await page.locator('#menu-jouer').click();
-    // Lot 8a (retour du propriétaire) : le jeu ne se charge qu'à « JOUER », sous l'écran de chargement (Z posé, « Chargement de la partie… »).
-    await expect(page.locator('#e7.e7-phase-jeu.e7-pose')).toBeVisible();
+    // Lot 8a (retours du propriétaire) : le jeu ne se charge qu'à « JOUER », sous l'écran de chargement ; la chute du Z s'y rejoue, et la partie
+    // n'est créée qu'après la chute (elle ne tourne jamais cachée).
+    await expect(page.locator('#e7.e7-phase-jeu.e7-joue')).toBeVisible();
+    expect(await page.evaluate(() => ({ animee: document.getElementById('e7-z').getAnimations().map((x) => x.animationName), partie: typeof window.__zs }))).toEqual({ animee: ['e7-chute'], partie: 'undefined' });
     await expect(page.locator('#e7-texte')).toHaveText('Chargement de la partie…');
     await expect(page.locator('#game-root')).toBeVisible({ timeout: 60_000 });
     await expect(page.locator('#e7')).toHaveCount(0, { timeout: 60_000 });

@@ -172,49 +172,83 @@
   --e7-loin: 1.6;
 }
 
-/* Coulures : trois traînées rouges qui s'allongent sous le Z (après la chute). */
+/* Coulures du Z (SVG, vue 60 × 60) : trois gouttes détaillées qui partent du bas de la lettre, une goutte qui se détache. Le conteneur compense
+   l'inclinaison du Z (13°) : les gouttes pendent à la verticale. Chaque goutte descend depuis le haut de la vue (hors vue au départ, donc cachée). */
 .e7-coulures {
   position: absolute;
-  left: 0.12em;
-  top: 92%;
-  width: 0.62em;
-  height: 0;
-}
-
-.e7-coulure {
-  position: absolute;
-  top: 0;
-  width: calc(5 * var(--u));
-  border-radius: 0 0 calc(4 * var(--u)) calc(4 * var(--u));
-  background: var(--menu-coulure);
+  left: 0.04em;
+  top: 74%;
+  width: 0.72em;
+  height: 0.8em;
+  transform: rotate(-13deg);
   transform-origin: 50% 0;
 }
 
+.e7-coulures-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.e7-coulure-corps {
+  fill: var(--menu-rouge);
+}
+
+.e7-coulure-ombre {
+  fill: none;
+  stroke: var(--menu-coulure-sombre);
+  stroke-width: 1.1;
+  stroke-linecap: round;
+}
+
+.e7-coulure-reflet {
+  fill: none;
+  stroke: var(--menu-coulure-reflet);
+  stroke-width: 0.7;
+  stroke-linecap: round;
+  opacity: 0.8;
+}
+
+.e7-coulure-brillant {
+  fill: var(--menu-coulure-reflet);
+}
+
+.e7-goutte {
+  fill: var(--menu-rouge);
+  opacity: 0;
+}
+
 .e7-coulure-1 {
-  left: 12%;
-  height: calc(26 * var(--u));
+  --e7-l: 36;
 }
 
 .e7-coulure-2 {
-  left: 48%;
-  height: calc(40 * var(--u));
+  --e7-l: 54;
 }
 
 .e7-coulure-3 {
-  left: 80%;
-  height: calc(18 * var(--u));
+  --e7-l: 26;
+}
+
+.e7:not(.e7-pose) .e7-coulure {
+  transform: translateY(calc(var(--e7-l) * -1px));
 }
 
 .e7-joue .e7-coulure-1 {
-  animation: e7-coulure 0.9s ease-in 1.55s both;
+  animation: e7-coulure 1s cubic-bezier(0.55, 0, 0.8, 0.6) 1.6s both;
 }
 
 .e7-joue .e7-coulure-2 {
-  animation: e7-coulure 1.1s ease-in 1.7s both;
+  animation: e7-coulure 1.25s cubic-bezier(0.55, 0, 0.8, 0.6) 1.7s both;
 }
 
 .e7-joue .e7-coulure-3 {
-  animation: e7-coulure 0.8s ease-in 1.85s both;
+  animation: e7-coulure 0.85s cubic-bezier(0.55, 0, 0.8, 0.6) 1.85s both;
+}
+
+.e7-joue .e7-goutte {
+  animation: e7-goutte 0.55s ease-in 2.95s both;
 }
 
 .e7-barre {
@@ -366,11 +400,32 @@
 
 @keyframes e7-coulure {
   from {
-    transform: scaleY(0);
+    transform: translateY(calc(var(--e7-l) * -1px));
   }
 
   to {
-    transform: scaleY(1);
+    transform: translateY(0);
+  }
+}
+
+@keyframes e7-goutte {
+  0% {
+    opacity: 0;
+    transform: translateY(0);
+  }
+
+  8% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  80% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0;
+    transform: translateY(14px);
   }
 }
 
@@ -893,6 +948,7 @@
 .e8-info-texte {
   margin: 0;
   font-size: max(14px, calc(15 * var(--u)));
+  white-space: pre-line; /* sauts de ligne de data/menu/infos.json (« \n » ; « \n\n » : ligne vide) */
 }
 
 @keyframes e8-apparition {

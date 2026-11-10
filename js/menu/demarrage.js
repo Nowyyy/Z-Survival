@@ -3,7 +3,7 @@
 // - Partie directe (?test=1 sans menu=1, ou un paramètre de « Partie ») : js/game/main.js est importé tout de suite (avant le lot 8a, c'était une
 //   balise de jeu.html) ; le jeu démarre exactement comme avant.
 // - Menu : seul le menu se charge (feuille css/menu.css, écran de chargement E7 « menu », puis menu E8) ; au clic sur « JOUER », l'écran de
-//   chargement revient (phase « jeu ») et main.js est importé : Three.js, données, textures, sons et création du jeu se chargent à ce moment-là,
+//   chargement revient (phase « jeu », chute du Z rejouée) et main.js est importé : Three.js, données, textures, sons et création du jeu se chargent à ce moment-là,
 //   avec leur progression réelle (menuProgres, appelé par main.js ; sans effet en partie directe).
 import { choixDemarrage } from '../core/graphics.js';
 import { graphicsReboot, pageCanal, pageSearch } from '../game/graphics-boot.js';
@@ -18,6 +18,11 @@ export function menuProgres(etape, fraction) {
   if (!modeMenu) return;
   if (ecran) ecran.progres(etape, fraction);
   else attente.push([etape, fraction]);
+}
+
+// Fin de la chute du Z de l'écran de chargement en cours (main.js, mode menu : la partie n'est créée qu'ensuite, pour ne pas tourner cachée).
+export function menuChute() {
+  return ecran?.chute ?? Promise.resolve();
 }
 
 // Retour au menu (« Quitter » confirmé, « Revenir au menu principal ») : rechargement de jeu.html sans les paramètres de « Partie » (menu=1 sous

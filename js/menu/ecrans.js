@@ -53,8 +53,11 @@ export function ecranInformation({ dict, infos = [], onClose, root }) {
     titre.textContent = typeof i?.titre === 'string' ? i.titre : '';
     const date = el('p', ['e8-info-date']);
     date.textContent = typeof i?.date === 'string' ? i.date : '';
+    // Texte : une chaîne (« \n » = saut de ligne, « \n\n » = ligne vide, affichés par white-space: pre-line) ou une liste de lignes ;
+    // toujours en texte brut (textContent), jamais en HTML.
     const texte = el('p', ['e8-info-texte']);
-    texte.textContent = typeof i?.texte === 'string' ? i.texte : '';
+    const lignes = Array.isArray(i?.texte) ? i.texte.filter((l) => typeof l === 'string') : null;
+    texte.textContent = lignes ? lignes.join('\n') : typeof i?.texte === 'string' ? i.texte : '';
     item.append(titre, date, texte);
     liste.append(item);
   }
