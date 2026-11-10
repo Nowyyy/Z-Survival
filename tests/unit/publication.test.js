@@ -505,6 +505,9 @@ describe('accueil : page, rendu et textes', () => {
   const main = read('js/accueil/main.js');
   const fr = readJson('data/i18n/fr.json');
   const en = readJson('data/i18n/en.json');
+  // Lot 8b : textes propres à l'accueil séparés (accueil.fr.json, accueil.en.json) ; fr.json et en.json gardent ceux des pages produites (site.*).
+  const afr = readJson('data/i18n/accueil.fr.json');
+  const aen = readJson('data/i18n/accueil.en.json');
 
   it('index.html charge l\'accueil, précharge site-info.json (une seule donnée), garde noindex, icône et polices, aucune adresse absolue', () => {
     expect(html).toContain('<script type="module" src="js/accueil/main.js"></script>');
@@ -544,21 +547,23 @@ describe('accueil : page, rendu et textes', () => {
     expect([...noscript.matchAll(/href="([^"]+)"/g)].map((m) => m[1])).toEqual(['jeu.html', '../dev/jeu.html']);
   });
 
-  it('textes de l\'accueil et des pages produites dans fr.json (et en.json) ; plus de clé du journal ni du bandeau de next/', () => {
+  it('textes de l\'accueil dans accueil.fr.json (et accueil.en.json), ceux des pages produites dans fr.json (et en.json) ; plus de clé du journal ni du bandeau de next/', () => {
     // Lot 5i : bandeau « Recette » seul (avant : home.version « {channel} · Version {version} » et home.channel.recette « Recette ») ; la version est dans le bouton.
-    expect(fr['home.playVersion']).toBe('Jouer - {version}');
-    expect(fr['home.badge']).toBe('Recette'); // main = Recette (demande du propriétaire)
-    expect(fr['home.play']).toBe('Jouer');
-    expect(fr['home.next']).toBe('Dernier build de développement');
-    expect(fr['home.nextNone']).toBe('Aucun build de développement pour l\'instant');
-    expect(fr['home.evolutionsTitle']).toBe('Évolutions en cours de développement');
-    expect(fr['home.evolutionsNone']).toBe('Aucune évolution depuis la version Recette.');
-    expect(fr['home.previousTitle']).toBe('Versions précédentes');
-    for (const gone of ['home.journal', 'home.devBanner', 'home.channel.dev', 'site.lots.retired', 'site.next.none', 'home.version', 'home.channel.recette', 'home.versionUnknown', 'home.versionSource']) expect([fr[gone], en[gone]], gone).toEqual([undefined, undefined]);
+    // Lot 8b : clés home.* lues dans accueil.fr.json (avant : fr.json).
+    expect(afr['home.playVersion']).toBe('Jouer - {version}');
+    expect(afr['home.badge']).toBe('Recette'); // main = Recette (demande du propriétaire)
+    expect(afr['home.play']).toBe('Jouer');
+    expect(afr['home.next']).toBe('Dernier build de développement');
+    expect(afr['home.nextNone']).toBe('Aucun build de développement pour l\'instant');
+    expect(afr['home.evolutionsTitle']).toBe('Évolutions en cours de développement');
+    expect(afr['home.evolutionsNone']).toBe('Aucune évolution depuis la version Recette.');
+    expect(afr['home.previousTitle']).toBe('Versions précédentes');
+    for (const gone of ['home.journal', 'home.devBanner', 'home.channel.dev', 'site.lots.retired', 'site.next.none', 'home.version', 'home.channel.recette', 'home.versionUnknown', 'home.versionSource']) expect([fr[gone], en[gone], afr[gone], aen[gone]], gone).toEqual([undefined, undefined, undefined, undefined]);
     expect(fr['site.construction.text']).toBe('Z-Survival est en construction.'); // lot 5g (avant : site.lots.retired, page de renvoi des aperçus)
     const homeKeys = (dict) => Object.keys(dict).filter((k) => /^(home|site)\./.test(k)).sort();
-    expect(homeKeys(en)).toEqual(homeKeys(fr));
-    for (const key of homeKeys(fr)) expect(main.includes(`'${key}'`) || html.includes(`"${key}"`) || read('scripts/assemble.mjs').includes(`'${key}'`), key).toBe(true);
+    expect([homeKeys(aen), homeKeys(en)]).toEqual([homeKeys(afr), homeKeys(fr)]);
+    expect([Object.keys(afr).filter((k) => k.startsWith('site.')), Object.keys(fr).filter((k) => k.startsWith('home.'))]).toEqual([[], []]); // lot 8b : séparés
+    for (const key of homeKeys({ ...fr, ...afr })) expect(main.includes(`'${key}'`) || html.includes(`"${key}"`) || read('scripts/assemble.mjs').includes(`'${key}'`), key).toBe(true);
   });
 
   it('css/accueil.css : variables de tokens.css seulement, cibles de 44 px, deux colonnes dès 640 px, zones qui défilent de hauteur limitée', () => {
@@ -925,8 +930,8 @@ describe('accueil retouché (lot 5i) : carte de la version actuelle, « Jouer - 
   const D200 = 'd'.repeat(199) + 'é';
   const html = read('index.html');
   const main = read('js/accueil/main.js');
-  const fr = readJson('data/i18n/fr.json');
-  const en = readJson('data/i18n/en.json');
+  const fr = readJson('data/i18n/accueil.fr.json'); // lot 8b : textes de l'accueil séparés (avant : fr.json et en.json)
+  const en = readJson('data/i18n/accueil.en.json');
   const info = buildSiteInfo({ versions: real, dev: { present: false }, genere: GENERE });
 
   it('bornes : description de version 200 caractères (comme le fichier des noms), étiquette du bouton 20 caractères', () => {

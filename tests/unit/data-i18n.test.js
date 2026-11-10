@@ -4,6 +4,10 @@ import { existsSync, readFileSync, readdirSync } from 'node:fs';
 const load = (lang) => JSON.parse(readFileSync(`data/i18n/${lang}.json`, 'utf8'));
 const fr = load('fr');
 const en = load('en');
+// Lot 8b : textes propres à l'accueil (index.html, js/page.js, js/accueil/) séparés de ceux du jeu et du menu : accueil.fr.json, accueil.en.json.
+const afr = load('accueil.fr');
+const aen = load('accueil.en');
+const accueilSources = [readFileSync('index.html', 'utf8'), readFileSync('js/page.js', 'utf8'), ...readdirSync('js/accueil').map((f) => readFileSync(`js/accueil/${f}`, 'utf8'))];
 // Sources qui consomment des clés : les pages HTML et les scripts du site.
 // Lot 5g : dev/index.html et dev/dev.js (journal des versions) supprimés.
 const pages = ['index.html', 'sons.html', 'carte.html', 'visite.html', 'ecarts.html', 'sauvegarde.html'].map((f) => readFileSync(f, 'utf8'));
@@ -24,7 +28,9 @@ scripts.push(...readdirSync('js/menu').map((f) => readFileSync(`js/menu/${f}`, '
 const graphicsJson = readFileSync('data/game/graphics.json', 'utf8');
 // Une clé est utilisée si elle apparaît entre apostrophes ou si son préfixe est construit dynamiquement (`préfixe.${…}`).
 const dynamicUse = (k) => scripts.some((js) => js.includes(`${k.slice(0, k.lastIndexOf('.') + 1)}\${`));
-const usedKeys = new Set([...pages, gamePage].flatMap((p) => [...p.matchAll(/data-(?:i18n|title-key|i18n-label)="([^"]+)"/g)].map((m) => m[1])));
+const keysOf = (list) => new Set(list.flatMap((p) => [...p.matchAll(/data-(?:i18n|title-key|i18n-label)="([^"]+)"/g)].map((m) => m[1])));
+const usedKeys = keysOf([...pages.slice(1), gamePage]); // lot 8b : pages autres que l'accueil (fr.json)
+const homeKeys = keysOf([html]); // lot 8b : accueil (accueil.fr.json)
 
 describe('dictionnaires fr / en', () => {
   // Le menu /dev et le jeu sont en français seulement : leurs clés « dev.* » et « game.* » n'existent que dans fr.json.
@@ -33,6 +39,7 @@ describe('dictionnaires fr / en', () => {
 
   it('ont exactement les mêmes clés (hors menu /dev et jeu, français seulement)', () => {
     expect(shared(en)).toEqual(shared(fr));
+    expect(Object.keys(aen).sort()).toEqual(Object.keys(afr).sort()); // lot 8b : textes de l'accueil, les deux langues
   });
 
   it('n\'ont aucune clé « dev.* » ni « game.* » en anglais', () => {
@@ -40,7 +47,7 @@ describe('dictionnaires fr / en', () => {
   });
 
   it('n\'ont aucune valeur vide', () => {
-    for (const dict of [fr, en]) {
+    for (const dict of [fr, en, afr, aen]) {
       for (const [k, v] of Object.entries(dict)) expect(v.trim(), k).not.toBe('');
     }
   });
@@ -49,14 +56,49 @@ describe('dictionnaires fr / en', () => {
     for (const k of Object.keys(fr)) {
       expect(usedKeys.has(k) || scripts.some((js) => js.includes(`'${k}'`)) || dynamicUse(k) || graphicsJson.includes(`"${k}"`), k).toBe(true);
     }
+    // Lot 8b : chaque clé de l'accueil est lue par l'accueil (page, js/page.js, js/accueil/).
+    for (const k of Object.keys(afr)) expect(homeKeys.has(k) || accueilSources.some((js) => js.includes(`'${k}'`)), k).toBe(true);
   });
 
   it('couvrent toutes les clés demandées par la page', () => {
     for (const k of usedKeys) expect(fr[k], k).toBeDefined();
+    for (const k of homeKeys) expect(afr[k], k).toBeDefined(); // lot 8b : l'accueil dans ses propres fichiers
   });
 
   it('traduisent réellement (le texte anglais diffère du français)', () => {
-    expect(en['home.play']).not.toBe(fr['home.play']); // lot 4c : app.status (« En construction ») retiré avec la page d'attente
+    expect(aen['home.play']).not.toBe(afr['home.play']); // lot 4c : app.status (« En construction ») retiré avec la page d'attente ; lot 8b : accueil.*.json
+  });
+});
+
+// Lot 8b : l'accueil ne charge que ses propres textes ; aucune clé dans deux fichiers de textes ; aucune clé du jeu, du menu ni des ateliers chez lui.
+describe('textes séparés (lot 8b)', () => {
+  const fichiers = readdirSync('data/i18n').filter((f) => f.endsWith('.json'));
+  const parLangue = (lang) => fichiers.filter((f) => (lang === 'en' ? /(^|\.)en\.json$/.test(f) : !/(^|\.)en\.json$/.test(f)));
+
+  it('aucune clé en double entre deux fichiers de textes d\'une même langue', () => {
+    for (const lang of ['fr', 'en']) {
+      const vu = new Map();
+      for (const f of parLangue(lang)) {
+        for (const k of Object.keys(JSON.parse(readFileSync(`data/i18n/${f}`, 'utf8')))) {
+          expect(vu.get(k), `${k} : ${f}`).toBeUndefined();
+          vu.set(k, f);
+        }
+      }
+    }
+  });
+
+  it('l\'accueil ne contient ni ne charge aucune clé du jeu, du menu ni des ateliers : seulement accueil.<langue>.json', () => {
+    expect([...Object.keys(afr), ...Object.keys(aen)].filter((k) => !/^(meta|app|home|lang)\./.test(k))).toEqual([]);
+    const lus = accueilSources.flatMap((src) => [...src.matchAll(/data\/i18n\/([^"'`\s,)]+)/g)].map((m) => m[1]));
+    expect(lus.length).toBeGreaterThan(0);
+    for (const chemin of lus) expect(chemin, chemin).toMatch(/^accueil\.(?:fr|\$\{lang\})\.json$/);
+    expect(Object.keys(fr).filter((k) => /^(meta|home|lang)\./.test(k) || k === 'app.title')).toEqual([]);
+  });
+
+  it('les textes du jeu et du menu restent dans fr.json (chargé par jeu.html et js/game/texts.js)', () => {
+    expect(gamePage).toContain('<link rel="preload" href="data/i18n/fr.json" as="fetch" crossorigin>');
+    expect(readFileSync('js/game/texts.js', 'utf8')).toContain("fetch('data/i18n/fr.json')");
+    expect(Object.keys(fr).filter((k) => k.startsWith('game.menu.')).length).toBeGreaterThan(0);
   });
 });
 
