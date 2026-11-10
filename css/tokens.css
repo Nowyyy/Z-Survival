@@ -394,6 +394,15 @@
   --menu-e9-violet-bord: #1c1028;   /* son bord */
   --menu-e9-violet-texte: #f2e8ff;  /* son texte */
   --menu-e9-bois-texte: #fff4e2;    /* texte des boutons planche du Personnage */
+  --menu-e9-panneau: #181513;       /* panneaux de détail, cases des grilles */
+  --menu-e9-panneau-bord: #3a2c1f;  /* bord des panneaux */
+  --menu-e9-case-choisie: #26201a;  /* case choisie (bordée de --menu-e9-or) */
+  --menu-e9-effet: #7ed48b;         /* effet d'un objet (« Vie +1,4 ») */
+  --menu-e9-fleche: #c08cff;        /* flèche de la fusion */
+  --menu-e9-compatibles: #161311;   /* panneau des objets compatibles */
+  --menu-e9-violet-inactif: #2a1e36; /* « Fusionner » désactivé */
+  --menu-e9-violet-inactif-bord: #3a2a4a; /* son bord */
+  --menu-e9-violet-inactif-texte: #b8a8c8; /* son texte */
   /* Raretés (lots suivants : inventaire, boutique, tirage) */
   --rarete-commun: #a3a3a8;         /* gris */
   --rarete-peu-commun: #5cc46a;     /* vert */

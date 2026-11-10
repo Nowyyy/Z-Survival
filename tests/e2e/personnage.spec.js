@@ -212,3 +212,341 @@ test.describe('écran Personnage (E9-1)', () => {
     await expect(page.locator('#menu-perso-silhouette .e9-silhouette')).toBeVisible();
   });
 });
+
+// --- Sous-menus (partie D) ----------------------------------------------------------------------------------------------------------------
+const etatSous = (page, nom) => page.evaluate((n) => window.__zsMenu.etat().menu.personnage.sous[n], nom);
+
+test.describe('sous-menus Inventaire, Fusion, Personnages (E9-2 à E9-4)', () => {
+  for (const size of SIZES) {
+    test(`${size.width}×${size.height} : trois écrans pleins (onglets masqués, en-tête gardé), bandeau et « ‹ Équipement » ; rien hors de l'écran ni superposé ; 44 px ; axe ; console propre`, async ({ page, baseURL }) => {
+      const o = surveiller(page, baseURL);
+      await espionStockage(page);
+      await ouvrirPersonnage(page, size);
+      const ecrans = [
+        ['#menu-perso-inventaire', 'inventaire', 'Inventaire', ['#menu-inventaire-filtres', '#menu-inventaire-grille', '.e9-pagination', '#menu-inventaire-detail']],
+        ['#menu-perso-fusion', 'fusion', 'Fusion', ['#menu-fusion-regle', '#menu-fusion-atelier', '#menu-fusion-compatibles']],
+        ['#menu-perso-silhouette', 'personnages', 'Personnages', ['#menu-personnages-grille', '#menu-personnages-fiche']],
+      ];
+      for (const [ouvreur, nom, titre, blocs] of ecrans) {
+        await page.locator(ouvreur).click();
+        const sec = `#menu-ecran-${nom}`;
+        await expect(page.locator(sec)).toBeVisible();
+        await expect(page.locator('.e8-onglets')).toBeHidden();
+        await expect(page.locator('#menu-ecran-personnage')).toBeHidden();
+        await expect(page.locator('#e8')).toHaveAttribute('data-ecran', nom);
+        await expect(page.locator(`${sec} .menu-bandeau-libelle`)).toHaveText('Équipement');
+        await expect(page.getByRole('heading', { name: titre, exact: true })).toBeVisible();
+        await expect(page.locator(`#menu-${nom}-retour`)).toHaveAccessibleName('Retour à l\'équipement');
+        await expect(page.locator(`#menu-${nom}-retour`)).toHaveText('Équipement');
+        const ids = ['.e8-entete', `${sec} .e9-tete`, ...blocs];
+        const b = {};
+        for (const s of ids) b[s] = await boite(page, s);
+        for (const s of ids) expect([b[s].l >= 0, b[s].t >= 0, b[s].r <= size.width + 0.5, b[s].b <= size.height + 0.5], `${nom} ${s}`).toEqual([true, true, true, true]);
+        for (let i = 0; i < ids.length; i += 1) for (let j = i + 1; j < ids.length; j += 1) expect(chevauche(b[ids[i]], b[ids[j]]), `${nom} : ${ids[i]} / ${ids[j]}`).toBe(false);
+        for (const r of await page.locator(`${sec} button`).evaluateAll((ns) => ns.filter((n) => n.offsetParent).map((n) => [n.id || n.className, n.getBoundingClientRect().toJSON()]))) expect([r[1].width >= 44, r[1].height >= 44], `${nom} ${r[0]}`).toEqual([true, true]);
+        // Rien de coupé : panneaux et grilles sans défilement à ces tailles (inventaire de départ), sauf la grille des objets compatibles, qui défile
+        // quand tous les fusionnables sont listés (aucun objet placé) ; ses cases restent atteignables au clavier.
+        const coupe = await page.locator(sec).evaluate((n) => [...n.querySelectorAll('.e9-panneau, .e9-grille')].filter((x) => x.id !== 'menu-fusion-grille' && x.scrollHeight > x.clientHeight + 1).map((x) => x.id || x.className));
+        expect(coupe, nom).toEqual([]);
+        if (nom === 'fusion') expect(await page.locator('#menu-fusion-grille').evaluate((n) => getComputedStyle(n).overflowY)).toBe('auto');
+        const axe = await new AxeBuilder({ page }).include('#e8').analyze();
+        expect(axe.violations.map((v) => `${nom} ${v.id} : ${v.nodes.map((n) => n.target.join(' ')).join(', ')}`)).toEqual([]);
+        await page.keyboard.press('Escape'); // retour à l'écran Personnage
+        await expect(page.locator(sec)).toBeHidden();
+        await expect(page.locator('#menu-ecran-personnage')).toBeVisible();
+        await expect(page.locator('.e8-onglets')).toBeVisible();
+        await expect(page.locator(ouvreur)).toBeFocused();
+      }
+      expect(await page.evaluate(() => window.__ecritures)).toEqual([]);
+      expect(o.problemes).toEqual([]);
+      expect(o.externes).toEqual([]);
+    });
+  }
+
+  test('Inventaire : filtre venu d\'un emplacement, filtres, pagination, objet choisi, Équiper puis Retirer, Améliorer jusqu\'au maximum (prix affiché, argent non prélevé), « Fusionner cet objet »', async ({ page, baseURL }) => {
+    const o = surveiller(page, baseURL);
+    await espionStockage(page);
+    await ouvrirPersonnage(page);
+    // Emplacement Gants (vide) → Inventaire filtré sur les gants (filtre ajouté, pressé).
+    await page.locator('#menu-perso-gants').click();
+    await expect(page.locator('#menu-ecran-inventaire')).toBeVisible();
+    let s = await etatSous(page, 'inventaire');
+    expect([s.filtre, s.filtres, s.visibles]).toEqual(['gants', ['tout', 'arme', 'tenue', 'accessoire', 'gants'], ['o11', 'o10']]);
+    await expect(page.locator('#menu-inventaire-filtre-gants')).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.locator('#menu-inventaire-filtre-tout')).toHaveAttribute('aria-pressed', 'false');
+    await expect(page.locator('#menu-inventaire-grille')).toHaveAccessibleName('Objets possédés');
+    await expect(page.locator('#menu-objet-o11')).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.locator('#menu-inventaire-nom')).toHaveText('Gants');
+    await expect(page.locator('#menu-inventaire-ligne')).toHaveText('Gants · Rare · niv. 2');
+    await expect(page.locator('#menu-inventaire-effet')).toHaveText('Cadence +3,3');
+    await expect(page.locator('#menu-inventaire-exemplaires')).toHaveText('Exemplaires identiques : 1 sur 3 pour une fusion');
+    // Équiper : l'emplacement Gants est rempli, annonce ; puis Retirer.
+    await page.locator('#menu-inventaire-equiper').click();
+    await expect(page.locator('#menu-inventaire-annonce')).toHaveText('Gants équipé.');
+    await expect(page.locator('#menu-inventaire-equiper')).toHaveText('Retirer');
+    await expect(page.locator('#menu-objet-o11 .e9-case-niveau')).toHaveText('niv. 2 · Porté');
+    expect((await etatPerso(page)).emplacements.gants.uid).toBe('o11');
+    expect((await etatPerso(page)).stats.cadence).toBe(ATTENDU.cadence + 3);
+    await page.locator('#menu-inventaire-equiper').click();
+    await expect(page.locator('#menu-inventaire-annonce')).toHaveText('Gants retiré.');
+    expect((await etatPerso(page)).emplacements.gants).toBeNull();
+    await page.locator('#menu-inventaire-equiper').click();
+    // Filtres de base : Armes, Tout (16 objets, 2 pages de 12, triés par rareté décroissante).
+    await page.locator('#menu-inventaire-filtre-arme').click();
+    s = await etatSous(page, 'inventaire');
+    expect([s.filtre, s.visibles]).toEqual(['arme', ['o16', 'o1']]);
+    await page.locator('#menu-inventaire-filtre-tout').click();
+    s = await etatSous(page, 'inventaire');
+    expect([s.page, s.pages, s.visibles.length, s.visibles[0]]).toEqual([1, 2, 16, 'o16']);
+    await expect(page.locator('#menu-inventaire-grille li')).toHaveCount(12);
+    await expect(page.locator('#menu-inventaire-page')).toHaveText('Page 1 / 2 · trié par rareté');
+    await expect(page.locator('#menu-inventaire-avant')).toHaveAttribute('aria-disabled', 'true');
+    await page.locator('#menu-inventaire-apres').click();
+    await expect(page.locator('#menu-inventaire-page')).toHaveText('Page 2 / 2 · trié par rareté');
+    await expect(page.locator('#menu-inventaire-grille li')).toHaveCount(4);
+    await expect(page.locator('#menu-inventaire-apres')).toHaveAttribute('aria-disabled', 'true');
+    await page.locator('#menu-inventaire-apres').click({ force: true }); // désactivé : rien
+    await expect(page.locator('#menu-inventaire-page')).toHaveText('Page 2 / 2 · trié par rareté');
+    await page.locator('#menu-inventaire-avant').click();
+    // Améliorer un Gilet commun (niv. 1, maximum 5) jusqu'au maximum : prix affiché, solde inchangé, puis désactivé avec sa raison.
+    await page.locator('#menu-objet-o5').click();
+    await expect(page.locator('#menu-inventaire-ameliorer')).toHaveText('Améliorer · 40');
+    for (let n = 2; n <= 5; n += 1) {
+      await page.locator('#menu-inventaire-ameliorer').click();
+      await expect(page.locator('#menu-inventaire-annonce')).toHaveText(`Gilet amélioré : niveau ${n}.`);
+    }
+    await expect(page.locator('#menu-inventaire-ameliorer')).toHaveText('Niveau maximal');
+    await expect(page.locator('#menu-inventaire-ameliorer')).toHaveAttribute('aria-disabled', 'true');
+    await expect(page.locator('#menu-inventaire-ameliorer')).toHaveAccessibleDescription('Niveau maximal atteint (5).');
+    await page.locator('#menu-inventaire-ameliorer').click({ force: true });
+    expect((await etatPerso(page)).objets.find((x) => x.uid === 'o5').niveau).toBe(5);
+    await expect(page.locator('#menu-solde-texte')).toHaveText('0'); // argent jamais prélevé
+    // Légendaire : « Fusionner cet objet » désactivé (raison écrite).
+    await page.locator('#menu-objet-o16').click();
+    await expect(page.locator('#menu-inventaire-fusionner')).toHaveAttribute('aria-disabled', 'true');
+    await expect(page.locator('#menu-inventaire-fusionner')).toHaveAccessibleDescription('Rareté maximale : cet objet ne se fusionne plus.');
+    await page.locator('#menu-inventaire-fusionner').click({ force: true });
+    await expect(page.locator('#menu-ecran-inventaire')).toBeVisible();
+    // « Fusionner cet objet » : Fusion s'ouvre avec l'objet placé.
+    await page.locator('#menu-objet-o5').click();
+    await page.locator('#menu-inventaire-fusionner').click();
+    await expect(page.locator('#menu-ecran-fusion')).toBeVisible();
+    expect((await etatSous(page, 'fusion')).places).toEqual(['o5', null, null]);
+    expect(await page.evaluate(() => window.__ecritures)).toEqual([]);
+    expect(o.problemes).toEqual([]);
+  });
+
+  test('Fusion : placer trois objets (compatibles filtrés), manque, Remplir automatiquement, Fusionner (résultat annoncé, inventaire et équipement mis à jour) ; légendaire non fusionnable ; coût affiché non prélevé', async ({ page, baseURL }) => {
+    const o = surveiller(page, baseURL);
+    await espionStockage(page);
+    await ouvrirPersonnage(page);
+    await page.locator('#menu-perso-fusion').click();
+    await expect(page.locator('#menu-fusion-regle')).toHaveText('3 objets identiques de même rareté donnent 1 objet de la rareté supérieure.');
+    await expect(page.locator('#menu-fusion-message')).toHaveText('Place trois objets identiques de même rareté.');
+    await expect(page.locator('#menu-fusion-rarete')).toHaveText('Tous les objets fusionnables');
+    await expect(page.locator('#menu-fusion-objet-o16')).toHaveCount(0); // légendaire absent des compatibles
+    await expect(page.locator('#menu-fusion-fusionner')).toHaveAttribute('aria-disabled', 'true');
+    // Un Gilet commun placé : compatibles = Gilets communs ; « Il manque 2 … ».
+    await page.locator('#menu-fusion-objet-o5').click();
+    await expect(page.locator('#menu-fusion-rarete')).toHaveText('Rareté : Commun');
+    expect(await page.locator('#menu-fusion-grille button').evaluateAll((ns) => ns.map((n) => n.dataset.uid).sort())).toEqual(['o2', 'o5', 'o6']);
+    await expect(page.locator('#menu-fusion-objet-o5')).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.locator('#menu-fusion-objet-o5 .e9-case-niveau')).toHaveText('Placé');
+    await expect(page.locator('#menu-fusion-message')).toHaveText('Il manque 2 exemplaires de Gilet commun. Coût : 100');
+    await expect(page.locator('#menu-fusion-resultat')).toHaveAttribute('data-rarete', 'peu-commun');
+    await expect(page.locator('#menu-fusion-resultat')).toContainText('Peu commun');
+    await page.locator('#menu-fusion-objet-o6').click();
+    await expect(page.locator('#menu-fusion-message')).toHaveText('Il manque 1 Gilet commun. Coût : 100');
+    await expect(page.locator('#menu-fusion-fusionner')).toHaveAccessibleDescription('Il manque 1 Gilet commun. Coût : 100');
+    await page.locator('#menu-fusion-fusionner').click({ force: true }); // désactivé : rien
+    expect((await etatSous(page, 'fusion')).places).toEqual(['o5', 'o6', null]);
+    // Retirer un objet placé, puis Remplir automatiquement (le Gilet porté en dernier recours).
+    await page.locator('#menu-fusion-place-2').click();
+    expect((await etatSous(page, 'fusion')).places).toEqual(['o5', null, null]);
+    await page.locator('#menu-fusion-auto').click();
+    expect((await etatSous(page, 'fusion')).places).toEqual(['o5', 'o6', 'o2']);
+    await expect(page.locator('#menu-fusion-message')).toHaveText('Fusion possible. Coût : 100');
+    await expect(page.locator('#menu-fusion-resultat')).toHaveClass(/is-pret/);
+    expect(await nomsAnims(page, '#menu-ecran-fusion')).toEqual(['e9-etincelle', 'e9-lueur']);
+    await page.locator('#menu-fusion-fusionner').click();
+    await expect(page.locator('#menu-fusion-annonce')).toHaveText('Fusion réussie : Gilet Peu commun, niveau 3 (porté).');
+    const e = await etatPerso(page);
+    expect(e.objets.length).toBe(14);
+    expect(e.objets.filter((x) => ['o2', 'o5', 'o6'].includes(x.uid))).toEqual([]);
+    expect(e.emplacements.tenue).toEqual({ uid: 'f1', id: 'gilet', rarete: 'peu-commun', niveau: 3, niveauMax: 10 });
+    expect((await etatSous(page, 'fusion')).places).toEqual([null, null, null]);
+    await expect(page.locator('#menu-solde-texte')).toHaveText('0');
+    // Retour à l'écran Personnage : la tenue portée est le Gilet peu commun.
+    await page.locator('#menu-fusion-retour').click();
+    await expect(page.locator('#menu-perso-tenue .e9-emplacement-ligne')).toHaveText('Tenue · Peu commun');
+    await expect(page.locator('#menu-perso-tenue .e9-emplacement-nom')).toHaveText('Gilet · niv. 3');
+    expect(await page.evaluate(() => window.__ecritures)).toEqual([]);
+    expect(o.problemes).toEqual([]);
+  });
+
+  test('Personnages : choisir le deuxième (écran Personnage et statistiques mis à jour), verrouillé ni choisissable ni améliorable, améliorer (prix affiché, argent non prélevé) ; animations e9-* en pause hors de l\'écran', async ({ page, baseURL }) => {
+    const o = surveiller(page, baseURL);
+    await espionStockage(page);
+    await ouvrirPersonnage(page);
+    await page.locator('#menu-perso-capacite').click();
+    await expect(page.locator('#menu-ecran-personnages')).toBeVisible();
+    await expect(page.locator('#menu-personnages-grille')).toHaveAccessibleName('Liste des personnages');
+    await expect(page.locator('#menu-personnages-grille .e9-case-niveau')).toHaveText(['Choisi · niv. 1', 'niv. 1', 'Verrouillé', 'Verrouillé', 'Verrouillé', 'Verrouillé']);
+    await expect(page.locator('#menu-perso-carte-personnage-3 .e9-cadenas')).toHaveCount(1);
+    await expect(page.locator('#menu-personnages-choisir')).toHaveText('Choisi');
+    await expect(page.locator('#menu-personnages-choisir')).toHaveAttribute('aria-disabled', 'true');
+    await expect(page.locator('#menu-personnages-niveau')).toHaveText('Niveau 1 · prochain niveau : 2');
+    await expect(page.locator('#menu-personnages-barre')).toHaveAttribute('aria-valuenow', '1');
+    expect(await nomsAnims(page, '#menu-ecran-personnages')).toEqual(['e9-bandana', 'e9-respire', 'e9-tete', 'e9-viser']);
+    expect(await etats(page, '#menu-ecran-personnages')).toEqual(['running']);
+    // Verrouillé : sélectionnable pour sa fiche, ni choisissable ni améliorable.
+    await page.locator('#menu-perso-carte-personnage-3').click();
+    await expect(page.locator('#menu-perso-carte-personnage-3')).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.locator('#menu-personnages-choisir')).toHaveAttribute('aria-disabled', 'true');
+    await expect(page.locator('#menu-personnages-ameliorer')).toHaveAttribute('aria-disabled', 'true');
+    await expect(page.locator('#menu-personnages-choisir')).toHaveAccessibleDescription('Personnage verrouillé : ni choisissable ni améliorable.');
+    await page.locator('#menu-personnages-choisir').click({ force: true });
+    await page.locator('#menu-personnages-ameliorer').click({ force: true });
+    expect(await etatSous(page, 'personnages')).toMatchObject({ selection: 'personnage-3', choisi: false, verrouille: true, niveau: 1 });
+    expect((await etatPerso(page)).choisi).toBe('survivant');
+    // Le deuxième : choisir, puis améliorer deux fois (300 affiché, solde inchangé).
+    await page.locator('#menu-perso-carte-personnage-2').click();
+    await expect(page.locator('#menu-personnages-stats-titre')).toHaveText('Statistiques s\'il est choisi');
+    await expect(page.locator('#menu-personnages-stats li').nth(3)).toHaveText(`Vitesse : ${ATTENDU.vitesse + 1}`);
+    await page.locator('#menu-personnages-choisir').click();
+    await expect(page.locator('#menu-personnages-annonce')).toHaveText('[Personnage 2] choisi.');
+    await expect(page.locator('#menu-personnages-choisir')).toHaveText('Choisi');
+    await expect(page.locator('#menu-personnages-stats-titre')).toHaveText('Statistiques effectives');
+    await expect(page.locator('#menu-personnages-ameliorer')).toHaveText('Améliorer · 300');
+    await page.locator('#menu-personnages-ameliorer').click();
+    await page.locator('#menu-personnages-ameliorer').click();
+    await expect(page.locator('#menu-personnages-annonce')).toHaveText('[Personnage 2] amélioré : niveau 3.');
+    await expect(page.locator('#menu-personnages-niveau')).toHaveText('Niveau 3 · prochain niveau : 4');
+    await expect(page.locator('#menu-solde-texte')).toHaveText('0');
+    // Écran Personnage : nom, niveau, capacité et statistiques du personnage choisi (vitesse 2,25 + 1 + 0,5 × 2 = 4,25 → 4).
+    await page.locator('#menu-personnages-retour').click();
+    await expect(page.locator('.e9-capacite-nom')).toHaveText('[Personnage 2]');
+    await expect(page.locator('.e9-capacite-niveau')).toHaveText('niv. 3');
+    await expect(page.locator('.e9-capacite-titre')).toHaveText('Capacité : Pas léger (exemple)');
+    await expect(page.locator('#menu-perso-stats-liste li').nth(3)).toHaveText('Vitesse : 4');
+    expect(await etats(page, '#menu-ecran-personnage')).toEqual(['running']);
+    expect(await etats(page, '#menu-ecran-personnages')).toEqual([]); // sous-menu masqué : aucune animation
+    expect(await page.evaluate(() => window.__ecritures)).toEqual([]);
+    expect(o.problemes).toEqual([]);
+  });
+});
+
+// --- « JOUER » : niveaux effectifs transmis à la partie (option de démarrage), rien d'écrit -----------------------------------------------
+const KEY = 'zs.save.v1';
+const SAVE_STATS = { degats: 2, portee: 1, precision: 0, cadence: 3, vitesse: 9, vie: 1, regen: 0, chutes: 1, reparation: 0 };
+async function poserSauvegarde(page) {
+  await page.addInitScript(([k, stats]) => {
+    if (sessionStorage.getItem('zs.test.pose')) return;
+    sessionStorage.setItem('zs.test.pose', '1');
+    localStorage.setItem(k, JSON.stringify({ v: 1, rev: 1, savedAt: 0, money: 500, earned: 500, stats, records: { bestWave: 3, bestKills: 0, runs: 1, worldsCompleted: 0 } }));
+  }, [KEY, SAVE_STATS]);
+}
+const niveauxPartie = (page) => page.evaluate(() => { const s = window.__zs.getState(); return { source: s.stats.source, niveaux: { ...s.stats.levels, ...s.stats.extraLevels } }; });
+async function retirerTout(page) {
+  for (const e of ['arme', 'tenue', 'bottes', 'accessoire1']) {
+    await page.locator(`#menu-perso-${e}`).click();
+    await page.locator('#menu-inventaire-equiper').click(); // l'objet porté de cet emplacement est choisi : « Retirer »
+    await expect(page.locator('#menu-inventaire-annonce')).toContainText('retiré');
+    await page.keyboard.press('Escape');
+  }
+  expect(Object.values((await etatPerso(page)).emplacements)).toEqual([null, null, null, null, null, null]);
+}
+async function jouer(page) {
+  await page.locator('#menu-onglet-jouer').click();
+  await page.locator('#menu-jouer').click();
+  await page.waitForFunction(() => (window.__zs?.getState()?.time ?? 0) > 0.05, null, { timeout: 90_000 });
+}
+
+test.describe('« JOUER » : niveaux de la partie', () => {
+  test('avec l\'équipement modifié et le deuxième personnage : la partie reçoit exactement les niveaux de la fonction pure (bornés), source « menu » ; argent et sauvegarde inchangés, aucun objet ni niveau écrit', async ({ page }) => {
+    test.setTimeout(150_000);
+    await poserSauvegarde(page);
+    await espionStockage(page);
+    await ouvrirPersonnage(page, REF, '&store=local');
+    const avant = await page.evaluate((k) => localStorage.getItem(k), KEY);
+    await page.locator('#menu-perso-gants').click();
+    await page.locator('#menu-inventaire-equiper').click(); // Gants rares (cadence 3,3)
+    await page.keyboard.press('Escape');
+    await page.locator('#menu-perso-silhouette').click();
+    await page.locator('#menu-perso-carte-personnage-2').click();
+    await page.locator('#menu-personnages-choisir').click(); // vitesse +1
+    await page.keyboard.press('Escape');
+    // Fonction pure, mêmes gestes : base = niveaux de la sauvegarde.
+    const { equiper, choisirPersonnage } = await import('../../js/core/equipement.js');
+    let etat = creerEtatEquipement(cat, depart);
+    etat = choisirPersonnage(equiper(etat, cat, 'o11', 'gants'), cat, 'personnage-2');
+    const attendu = statistiquesEffectives(SAVE_STATS, etat, cat, PARAMS).niveaux;
+    expect(attendu).toEqual({ degats: 5, portee: 1, precision: 0, cadence: 6, vitesse: 10, vie: 6, regen: 0, chutes: 1, reparation: 0 }); // vitesse 9 + 2,25 + 1 → 10 (maximum)
+    expect((await etatPerso(page)).stats).toEqual(attendu);
+    expect(await page.evaluate(() => window.__ecritures)).toEqual([]);
+    await jouer(page);
+    const p = await niveauxPartie(page);
+    expect(p.source).toBe('menu');
+    expect(p.niveaux).toEqual(attendu);
+    const s = await page.evaluate(() => { const st = window.__zs.getState(); return [st.mode, st.save.kind, st.save.readOnly]; });
+    expect(s).toEqual(['histoire', 'local', false]);
+    // Rien de nouveau dans la sauvegarde : mêmes niveaux, même argent, aucun champ d'objet ni de personnage.
+    await page.evaluate(() => window.__zs.flushSave());
+    const apres = JSON.parse(await page.evaluate((k) => localStorage.getItem(k), KEY));
+    expect(apres.stats).toEqual(JSON.parse(avant).stats);
+    expect(apres.money).toBe(500);
+    expect(Object.keys(apres).sort()).toEqual(Object.keys(JSON.parse(avant)).sort());
+    expect(await page.evaluate(() => Object.keys(localStorage).sort())).toEqual([KEY]);
+    await page.evaluate(() => localStorage.clear());
+  });
+
+  test('sans objet porté et avec le Survivant : niveaux identiques à ceux de la sauvegarde (?store=local)', async ({ page }) => {
+    test.setTimeout(150_000);
+    await poserSauvegarde(page);
+    await ouvrirPersonnage(page, REF, '&store=local');
+    await retirerTout(page);
+    expect((await etatPerso(page)).stats).toEqual(SAVE_STATS);
+    await jouer(page);
+    const p = await niveauxPartie(page);
+    expect([p.source, p.niveaux]).toEqual(['menu', SAVE_STATS]);
+    await page.evaluate(() => localStorage.clear());
+  });
+
+  test('sans objet porté et avec le Survivant : même logique pas à pas qu\'une partie directe de même graine (300 pas ; la source seule diffère)', async ({ browser }) => {
+    test.setTimeout(200_000);
+    async function partie(viaMenu) {
+      const context = await browser.newContext({ viewport: { width: 667, height: 375 } });
+      const page = await context.newPage();
+      // Onglet « caché » : la boucle d'images ne tourne pas, seul step() fait avancer la partie (méthode de trace-logique.mjs).
+      await page.addInitScript(() => Object.defineProperty(Document.prototype, 'hidden', { get: () => true, configurable: true }));
+      if (viaMenu) {
+        await ouvrirPersonnage(page, { width: 667, height: 375 });
+        await retirerTout(page);
+        await page.locator('#menu-onglet-jouer').click();
+        await page.locator('#menu-jouer').click();
+      } else {
+        await page.goto('/jeu.html?test=1&seed=1'); // même graine que le menu (ouvrirMenu)
+      }
+      await page.waitForFunction(() => window.__zs, null, { timeout: 90_000 });
+      const r = await page.evaluate(() => {
+        const zs = window.__zs;
+        const cles = ['time', 'dead', 'worldOver', 'player', 'economy', 'kills', 'waves', 'floor', 'aim', 'shots', 'enemies', 'bullets', 'windows', 'debris', 'laser', 'laserEnd', 'camera', 'stairLog', 'events', 'spawnLog', 'pose', 'stats'];
+        const logique = () => { const s = zs.getState(); return JSON.stringify(cles.map((k) => (k === 'stats' ? { ...s.stats, source: '' } : s[k]))); };
+        const pas = [];
+        for (let i = 0; i < 300; i += 1) {
+          zs.setInput({ aim: { angle: (i * 0.05) % (Math.PI * 2) } });
+          zs.step(0.05);
+          pas.push(logique());
+        }
+        return { pas, source: zs.getState().stats.source };
+      });
+      await context.close();
+      return r;
+    }
+    const menu = await partie(true);
+    const directe = await partie(false);
+    expect([menu.source, directe.source]).toEqual(['menu', 'default']);
+    const ecart = menu.pas.findIndex((p, i) => p !== directe.pas[i]);
+    expect(ecart, `premier écart au pas ${ecart}`).toBe(-1);
+  });
+});

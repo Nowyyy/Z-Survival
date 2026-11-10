@@ -115,6 +115,30 @@ export function listeStats(t, niveaux, { id, classe = 'e9-stats' } = {}) {
   return ul;
 }
 
+// En-tête d'un sous-menu (écran plein) : bandeau « Équipement » / titre, puis « ‹ Équipement » (planche, comme « ‹ Menu » des Options du lot 8c).
+export function teteSous(t, bandeau, titre, id, retour) {
+  const tete = el('div', ['e5-tete', 'e9-tete']);
+  const b = el('button', ['menu-planche', 'e5-retour'], { type: 'button', id: `${id}-retour`, 'aria-label': t('game.menu.perso.retour.aria') });
+  b.append(icone24('chevron', 'e5-chevron'), Object.assign(el('span'), { textContent: t('game.menu.perso.retour') }));
+  b.addEventListener('click', () => retour());
+  tete.append(bandeau(t('game.menu.perso.titre'), titre, `${id}-titre`), b);
+  return { tete, bouton: b };
+}
+
+// Zone d'annonce (aria-live) d'un sous-menu : résultat d'une action (équipé, amélioré, fusionné, choisi).
+export function annonce(id) {
+  const n = el('p', ['sr-only'], { id, 'aria-live': 'polite', role: 'status' });
+  return { element: n, dire: (texte) => { n.textContent = ''; n.textContent = texte; } };
+}
+
+// Bouton désactivé lisible (aria-disabled, raison décrite par un élément) : il reste atteignable au clavier, son action est ignorée.
+export function poserActif(bouton, actif, raisonId = null) {
+  bouton.setAttribute('aria-disabled', String(!actif));
+  if (!actif && raisonId) bouton.setAttribute('aria-describedby', raisonId);
+  else bouton.removeAttribute('aria-describedby');
+}
+export const estActif = (bouton) => bouton.getAttribute('aria-disabled') !== 'true';
+
 const SOUS = { inventaire: () => import('./inventaire.js'), fusion: () => import('./fusion.js'), personnages: () => import('./personnages.js') };
 export const SOUS_ECRANS = Object.freeze(Object.keys(SOUS));
 
@@ -167,7 +191,7 @@ export async function ecranPersonnage({ t, bandeau, niveaux = null, statsCfg = n
       suite.textContent = t('game.menu.perso.emplacement.suite');
       textes.append(ligne, nom, suite);
       b.append(fond, textes);
-      b.addEventListener('click', () => ouvrir('inventaire', { filtre: typeEmplacement(e), depuis: b }));
+      b.addEventListener('click', () => ouvrir('inventaire', { filtre: typeEmplacement(e), emplacement: e, depuis: b }));
       li.append(b);
       ul.append(li);
       boutons.set(e, { b, ligne, nom });

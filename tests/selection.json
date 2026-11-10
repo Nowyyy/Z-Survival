@@ -825,7 +825,7 @@
     {
       "id": "menu",
       "description": "Menu principal (lots 8a, 8b et 8d) : démarrage de jeu.html (menu ou partie directe), écran de chargement E7, menu E8 (en-tête, onglets, écrans Information et Connexion ; lot 8d : Personnage, Inventaire, Fusion, Personnages), états purs js/core/menu-etat.js et js/core/equipement.js, données data/menu/, css/menu.css.",
-      "sources": ["js/menu/chargement.js", "js/menu/menu.js", "js/menu/ecrans.js", "js/menu/jouer.js", "js/menu/infini.js", "js/menu/equipement-etat.js", "js/menu/personnage.js", "js/core/menu-etat.js", "js/core/equipement.js", "css/menu.css", "data/menu/**"],
+      "sources": ["js/menu/chargement.js", "js/menu/menu.js", "js/menu/ecrans.js", "js/menu/jouer.js", "js/menu/infini.js", "js/menu/equipement-etat.js", "js/menu/personnage.js", "js/menu/inventaire.js", "js/menu/fusion.js", "js/menu/personnages.js", "js/core/menu-etat.js", "js/core/equipement.js", "css/menu.css", "data/menu/**"],
       "dependances": ["economie", "graphismes", "interface", "publication", "sons", "textes"],
       "vitest": ["tests/unit/menu-etat.test.js", "tests/unit/menu-mondes.test.js", "tests/unit/equipement.test.js"],
       "e2e": ["tests/e2e/menu.spec.js", "tests/e2e/menu-onglets.spec.js", "tests/e2e/options-menu.spec.js", "tests/e2e/personnage.spec.js"],
