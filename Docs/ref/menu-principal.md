@@ -1,6 +1,6 @@
 # Menu principal (lot 8a, V0.8)
 
-État : **livré** (lot 8a, parties A à D, base `origin/dev` `80372e2`). Relevé et décisions écrits en partie A, avant tout changement du jeu ; le reste décrit le code livré. Les noms de branches, de fichiers et de commits sont des données.
+État : **livré** (lot 8a, parties A à I, base `origin/dev` `80372e2` ; fusionné dans `dev` par les PR #68 à #71). Relevé écrit en partie A, avant tout changement du jeu (il décrit l'état d'avant le lot) ; le reste décrit le code livré, retours du propriétaire compris. Les noms de branches, de fichiers et de commits sont des données.
 
 ## Relevé (code de `origin/dev`)
 1. `jeu.html` : `boot.js` (textes, « Chargement 0 % », message de rotation, avant l'évaluation de Three.js) puis `main.js` (graphe complet : Three.js, `game.js`, 113 fichiers JavaScript avec `?test=1&lum=off`, 116 par défaut en bureau où Auto = Élevé charge les lampes).
@@ -22,16 +22,17 @@
 
 ## Décisions de structure
 - **(a) Le menu vit dans `jeu.html`**, avant la partie : même adresse d'entrée (raccourcis d'écran d'accueil inchangés), un seul chargement du jeu.
-- **(b) Au démarrage, seul le menu se charge ; le jeu se charge à « JOUER », sans recharger la page** (retour du propriétaire après la première livraison). `jeu.html` n'a plus de balise `main.js` ni de préchargement de Three.js : `js/menu/demarrage.js` importe `js/game/main.js` tout de suite en partie directe (même chemin qu'avant), ou au clic sur « JOUER » en mode menu ; l'écran de chargement revient alors (phase « jeu », Z déjà posé, « Chargement de la partie… ») avec la progression réelle du jeu (modules dont Three.js, données, textures, sons, création du jeu avec compilation et premier rendu), puis la partie apparaît (« DÉBUT 3 s », manche 1). Historique : plan A (tout le jeu chargé sous E7, boucle retenue) → Lighthouse 34 ; création à « JOUER » seulement → 55 ; menu seul au démarrage → **78**. Pendant le menu, aucune partie n'existe (ni `window.__zs`, ni pause).
-- **(c) Retour au menu par un rechargement de `jeu.html`.** La partie ne peut pas être libérée proprement (relevé 5) ; un arrêt partiel laisserait des écouteurs, un contexte WebGL et un contexte audio vivants (fuites, doubles sons). Avant de recharger, l'argent suit le chemin de la mort : `game.quit()` appelle `bank.runEnd({ kills, reason: 'quit' })` (même fonction, même écriture immédiate) ; à la fin de partie, `runEnd` a déjà été appelé. L'adresse du retour retire les paramètres de « Partie » (le menu s'ouvrirait sinon sur une partie directe) et garde les autres ; sous `?test=1`, elle ajoute `menu=1`. Coût : le chargement (E7) est rejoué au retour ; dit dans le bilan.
+- **(b) Au démarrage, seul le menu se charge ; le jeu se charge à « JOUER », sans recharger la page** (retour du propriétaire après la première livraison). `jeu.html` n'a plus de balise `main.js` ni de préchargement de Three.js : `js/menu/demarrage.js` importe `js/game/main.js` tout de suite en partie directe (même chemin qu'avant), ou au clic sur « JOUER » en mode menu ; l'écran de chargement revient alors (phase « jeu », chute du Z rejouée, « Chargement de la partie… ») avec la progression réelle du jeu (modules dont Three.js, données, textures, sons, création du jeu avec compilation et premier rendu, faite après la fin de la chute), puis la partie apparaît (« DÉBUT 3 s », manche 1). Historique : plan A (tout le jeu chargé sous E7, boucle retenue) → Lighthouse 34 ; création à « JOUER » seulement → 55 ; menu seul au démarrage → **79** (médiane, 5 passes). Pendant le menu, aucune partie n'existe (ni `window.__zs`, ni pause).
+- **(c) Retour au menu par un rechargement de `jeu.html`.** La partie ne peut pas être libérée proprement (relevé 5) ; un arrêt partiel laisserait des écouteurs, un contexte WebGL et un contexte audio vivants (fuites, doubles sons). Avant de recharger, l'argent suit le chemin de la mort : `game.quit()` appelle `bank.runEnd({ kills, reason: 'quit' })` (même fonction, même écriture immédiate) ; à la fin de partie, `runEnd` a déjà été appelé. L'adresse du retour retire les paramètres de « Partie » (le menu s'ouvrirait sinon sur une partie directe) et garde les autres ; sous `?test=1`, elle ajoute `menu=1`. Coût : au retour, la page se recharge et l'écran de chargement du menu (chute du Z comprise) est rejoué ; seul le menu se charge, c'est rapide.
 
 ## Écrans et navigation
 ```
-jeu.html ──(menu)──► E7 chargement ──100 % et chute finie──► E8 menu
+jeu.html ──(menu)──► E7 « menu » (menu seul) ──100 % et chute finie──► E8 menu
           └(partie directe : ?test=1 sans menu=1, ou un paramètre de Partie)──► #loading puis partie (comme avant)
 E8 : en-tête (Connexion → E8-8 « Connexion : bientôt » ; solde ; ≡ → Options E2-12 · Information E8-7 · Discord · Déconnexion grisée)
-     onglets Boutique · Personnage · JOUER · Infini · Event (verrouillé) ; Jouer : « JOUER » → partie (sans rechargement)
-partie : pause « Quitter » → confirmation → rechargement → E7 → E8 ; fin « Revenir au menu principal » → rechargement → E7 → E8
+     onglets Boutique · Personnage · JOUER · Infini · Event (verrouillé)
+     « JOUER » → E7 « jeu » (chargement du jeu, sans rechargement de la page) ──chute finie, partie créée──► partie
+partie : pause « Quitter » → confirmation → rechargement → E7 « menu » → E8 ; fin « Revenir au menu principal » → idem
 ```
 
 ## Règle de démarrage (`choixDemarrage`, `js/core/graphics.js`, pur)
@@ -45,7 +46,8 @@ partie : pause « Quitter » → confirmation → rechargement → E7 → E8 ; f
 |---|---|---|
 | `js/menu/demarrage.js` (zone « jeu » des tests) | toujours (balise de `jeu.html`, avant `boot.js`) | `modeMenu` ; partie directe : précharge Three.js et importe `main.js` ; menu : `css/menu.css`, écran de chargement phase « menu », puis à « JOUER » phase « jeu », `graphicsReboot()` et `main.js` ; `menuProgres(etape, f)` (appelé par `main.js`), `menuRetour()` ; sous `?test=1` : `window.__zsMenu.etat()` |
 | `js/core/menu-etat.js` | mode menu | pur : phases et poids (`PHASES`), `avancer`, `pourcentage`, `choisirAstuce`, `texteVersion`, `ONGLETS`, `creerEtatMenu` et ses transitions, `nouveauteNonLue`, `lienExterne`, `adresseRetour` |
-| `js/menu/chargement.js` | mode menu, au démarrage | E7 en deux phases (menu : chute du Z, modules du menu, données, polices ; jeu : Z posé, progression de `main.js`) ; `decorNuit` partagé avec l'onglet Jouer |
+| `js/menu/chargement.js` | mode menu, au démarrage | E7 en deux phases, chute du Z dans les deux (menu : modules du menu, données, polices ; jeu : progression de `main.js`, `chute` attendue par `main.js`) ; `decorNuit` partagé avec l'onglet Jouer |
+| `js/logo.js` (zone « textes ») | écran de chargement ; accueil de la Recette (`index.html`, préchargé) | logo partagé : `couluresSvg()` (trois gouttes, une goutte qui se détache), `poserLogo(titre, texte)` (titre fixe de l'accueil, nom accessible gardé) ; styles « Logo » de `css/base.css` |
 | `js/menu/menu.js` | mode menu, au démarrage | `preparerMenu()` (textes, nouveautés, liens, solde par `createRepository().load()`, sans écriture) ; E8 : en-tête, trois barres, onglets, onglet Jouer ; `bandeau()`, `el()`, `icone()` |
 | `js/menu/ecrans.js` | à la demande | Information, Connexion, onglets « Bientôt » |
 | `js/game/options-menu.js`, `graphics-apply.js` | à la demande (Options du menu) | écran Options existant avec un contrôleur créé sur `graphicsBoot()` (sur un ordinateur, Auto = Élevé précharge alors les lampes, donc Three.js) ; `graphicsReboot()` fait relire `zs.device.v1` au jeu |
@@ -55,6 +57,10 @@ partie : pause « Quitter » → confirmation → rechargement → E7 → E8 ; f
 - Données : `data/menu/astuces.json`, `infos.json`, `liens.json` (adresse Discord vide : « bientôt »). Nouveautés (`infos.json`) : `id`, `date`, `titre`, `texte` ; dans `texte`, « \n » = saut de ligne, « \n\n » = ligne vide, ou une liste de lignes ; toujours affiché en texte brut (`white-space: pre-line`).
 - Version : `build-info.json` lu seulement sur source, dev et release (là où il est écrit) ; « Arbre source », « Développement · <hash> », « Version V0.N ».
 - `main.js` : `menuProgres` aux cinq étapes, `onQuit` et `onMenu` ; `game.js` : `quit()` seulement (`bank.runEnd({ reason: 'quit' })`) ; `ui.js` : confirmation de « Quitter » construite au premier appui, écouteur de « Revenir au menu principal » ; `graphics-boot.js` : `graphicsReboot()`.
+
+## Accueil de la Recette et icône (retours du propriétaire)
+- `index.html` : le titre (`app.title`) devient le logo fixe par `poserLogo` (`js/accueil/main.js`) ; `css/accueil.css` lui donne une marge haute (le Z ne touche pas les taches du bandeau) et basse (coulures).
+- Icône d'onglet (48 px) et d'écran d'accueil (180 px) : Z incliné de 13° (`node scripts/icone.mjs --ecrire`, adresses data: PNG dans `index.html` et `jeu.html` ; l'assembleur la recopie dans les pages produites).
 
 ## Jetons et composants communs (`css/tokens.css`, bloc « Menu principal » ; `css/menu.css`)
 - Jetons `--menu-*` (fond de nuit, ciel, lune, brume, bois, clou, ruban jaune et noir, bandeau rouge, coulures) et `--rarete-*` (commun gris, peu commun vert, rare bleu, épique violet, légendaire doré) ; le JavaScript n'écrit aucune couleur.
@@ -73,8 +79,8 @@ partie : pause « Quitter » → confirmation → rechargement → E7 → E8 ; f
 Onglet actif, menu à trois barres ouvert, écran ouvert, nouveautés lues : `etatMenu` (mémoire). Le solde est lu une fois par `repository.load()` (lecture seule). Aucune clé ni aucun champ nouveau dans `zs.save.v1` ni `zs.device.v1` (vérifié par `menu.spec.js` : clés et contenu identiques avant et après une visite du menu, aucun `setItem`). Le retour au menu recharge la page : l'état « lu » des nouveautés est alors perdu (point jaune de nouveau visible) jusqu'au lot 8h.
 
 ## Risques
-- Lighthouse mesure désormais le seul menu (78) : rien du jeu ne doit revenir au démarrage du mode menu (`menu.spec.js` le vérifie).
+- Lighthouse mesure désormais le seul menu (`jeu.html` : 79) : rien du jeu ne doit revenir au démarrage du mode menu (`menu.spec.js` le vérifie). Accueil `index.html` : **89, sous le seuil de 90** (référence `80372e2` : 89, 89, 90 ; écart dû aux fichiers partagés agrandis par le lot, textes et jetons, pas au logo).
 - Options du menu : sur un ordinateur, la première ouverture charge le module des lampes (Three.js) par `graphicsBoot()` ; rien de plus n'est écrit que la préférence existante `zs.device.v1`.
-- Retour au menu : chargement rejoué (quelques secondes sur téléphone).
+- Retour au menu : rechargement de la page (menu seul, rapide) ; l'état « lu » des nouveautés est perdu jusqu'au lot 8h.
 - Mode menu : un geste sur le menu débloque l'audio (prévu : aucun son avant le premier geste) ; aucun son n'est joué dans le menu.
-- Tests sans `?test=1` qui attendaient la partie (relevé 11) : une étape « JOUER » ajoutée, paramètres inchangés.
+- Tests sans `?test=1` qui attendaient la partie (relevé 11, plus trois tests « le jeu se charge » de `publication.spec`) : une étape « JOUER » ajoutée, paramètres inchangés ; en portrait (projet mobile), « Tourne ton téléphone » couvre le menu : le bouton est déclenché directement (`dispatchEvent`).

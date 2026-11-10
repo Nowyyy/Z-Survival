@@ -61,9 +61,9 @@ Balise : `<meta name="zs-canal" content="source">` dans `jeu.html`, forme exacte
 `lum` et `lampgain` appartiennent au **groupe G** (ils existent sur la base : ils y sont dès ce lot). Toute nouvelle option graphique lue dans l'adresse rejoint le groupe G.
 
 ## Paramètre `menu` et démarrage (lot 8a)
-- `jeu.html` s'ouvre sur l'écran de chargement puis le menu principal (`Docs/ref/menu-principal.md`), sauf **partie directe** : `?test=1` pris en compte, ou un paramètre de « Partie » (`PARAMS_PARTIE` : `wave`, `lvl`, `money`, `planks`, `floor`, `map`, `nospawn`, `endless`, `fin`, `empty`) pris en compte et non vide. Règle : `choixDemarrage(canal, adresse)` (`js/core/graphics.js`), lue par `js/menu/demarrage.js`.
+- `jeu.html` s'ouvre sur l'écran de chargement puis le menu principal, seul le menu étant chargé (le jeu se charge au clic sur « JOUER » ; `Docs/ref/menu-principal.md`), sauf **partie directe** : `?test=1` pris en compte, ou un paramètre de « Partie » (`PARAMS_PARTIE` : `wave`, `lvl`, `money`, `planks`, `floor`, `map`, `nospawn`, `endless`, `fin`, `empty`) pris en compte et non vide. Règle : `choixDemarrage(canal, adresse)` (`js/core/graphics.js`), lue par `js/menu/demarrage.js`.
 - `?menu=1` (groupe test) : sous `?test=1` (canaux de débogage), force le menu (tests du menu ; `window.__zsMenu.etat()` : progression, chute, onglet, menu à trois barres). Sans `?test=1`, sans effet (le menu s'ouvre déjà sans paramètre de Partie). Refusé sur archive, prod et canal absent. `readOnlyParams` inchangé.
-- Le menu de débogage garde `menu` dans l'adresse (paramètre non géré).
+- Le menu de débogage garde `menu` dans l'adresse (paramètre non géré). Il n'existe qu'en partie (pause) : pendant le menu, aucune partie n'est créée.
 
 ## Comment ajouter un paramètre
 1. L'ajouter à `PARAMS_G`, `PARAMS_T` ou `PARAMS_TEST` (`js/core/graphics.js`) ; un paramètre absent des trois listes passe sans filtre (réservé aux noms lus par aucun code).
@@ -73,7 +73,7 @@ Balise : `<meta name="zs-canal" content="source">` dans `jeu.html`, forme exacte
 
 ## Menu de débogage (E2-13)
 - **Icône** `#btn-debug` (insecte au trait, 44 × 44 px, nom accessible « Débogage ») dans la tête de la pause, **juste à gauche de l'icône du son** (le son reste en haut à droite et dernier élément de la tête : ordre de tabulation et tests de la pause inchangés) ; cachée par défaut, montrée par `ui.bindDebug` quand le canal est dans `CANAUX_DEBUG` (sous `?test=1` autorisé aussi, qui implique un tel canal).
-- **Module** `js/game/debug-menu.js`, sans import, chargé par `import()` au premier clic (`ui.js`) ; aucun fichier de plus au démarrage (113 fichiers JavaScript, inchangé).
+- **Module** `js/game/debug-menu.js`, sans import, chargé par `import()` au premier clic (`ui.js`) ; aucun fichier de plus au démarrage (113 fichiers JavaScript au lot 5l ; 114 depuis le lot 8a, qui ajoute `js/menu/demarrage.js`).
 - **Panneau** (classes de l'écran Options) : en-tête (titre « Débogage », croix « Fermer le débogage ») ; région qui défile (`role="region"`, « Réglages de débogage ») ; pied (adresse obtenue, « Appliquer et recharger », « Revenir au jeu normal », confirmation « Recharger la page ? Cette partie sera perdue. »).
 - **Ordre** (retours du propriétaire, lot 5l-E) : section **Mesure** en premier (la plus utile, visible dès l'ouverture), puis **Partie** ; l'encadré du mode essai est sur la ligne du titre « Partie » (une ligne de gagnée).
 - **Partie** : manche (1 à 200), argent (0 à 9 999 999 ; vide : solde de la sauvegarde), « Tous au niveau » (0 à 10, recopié sur chaque ligne), une ligne par statistique (dégâts, portée, précision, cadence, vitesse, vie, régénération, chutes 0 à 5, réparation), planches posées (0 à 4, `windows.json`), étage, carte, sans zombies, manches sans fin, fin du monde (marque « avec une autre valeur de Partie » : `?fin=monde` n'agit qu'en mode essai) ; encadré « Mode essai : ta sauvegarde n'est pas modifiée. » à droite du titre. **Mesure** : panneau de mesure (`perf`), plafond (`cap` : aucun, 30, 45, 60).
