@@ -166,7 +166,10 @@ export function createGame(ctx) {
   // Argent et sauvegarde (lot 4) : js/game/bank.js relie les événements de la partie à l'économie (js/core/economy.js) et au dépôt de sauvegarde (js/save/).
   // Son horloge est le temps de jeu cumulé (millisecondes, jamais remis à zéro par « Rejouer »), la date enregistrée est l'horloge murale.
   let bankMs = 0;
-  const bank = createBank({ repository: ctx.repository, mode: ctx.mode, economy: ctx.economy, save: ctx.saveCfg, clock: () => bankMs, wall: () => Date.now(), reducedMotion: reduced });
+  // Lot 8b : mode infini (option du menu) : argent écrit comme d'habitude, mais ni meilleure manche ni meilleur nombre de tués : le record du mode
+  // infini n'est pas encore gardé (lot 8h) et ne remplace pas celui de l'histoire (commitDelta garde le maximum : 0 ne change rien).
+  const depot = ctx.modePartie === 'infini' ? { ...ctx.repository, commit: (delta, at) => ctx.repository.commit({ ...delta, bestWave: 0, bestKills: 0 }, at) } : ctx.repository;
+  const bank = createBank({ repository: depot, mode: ctx.mode, economy: ctx.economy, save: ctx.saveCfg, clock: () => bankMs, wall: () => Date.now(), reducedMotion: reduced });
   // Mise à l'abri de la sauvegarde quand la page est cachée ou fermée (en plus de l'écriture à l'ouverture de la pause).
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) bank.flush('hidden');
@@ -1420,6 +1423,7 @@ export function createGame(ctx) {
         laserEnd: laser ? { x: laser.ray.end.x, y: laser.ray.end.y } : null,
         laser: laser ? { length: laser.ray.length, hit: laser.ray.hit?.id ?? null, stoppedBy: laser.ray.stoppedBy?.id ?? null, range: laser.cone.length, cone: { leftAngle: sim.aim.angle - laser.cone.half, rightAngle: sim.aim.angle + laser.cone.half } } : null,
         world: { width: layout.size.width, height: layout.size.height, empty: layout.empty },
+        mode: ctx.modePartie ?? 'histoire', // lot 8b : mode de la partie (histoire ; infini : « Jouer » de l'onglet Infini du menu)
         map: { id: layout.id, size: { width: layout.size.width, height: layout.size.height }, windowIds: geoms.map((g) => g.id), pillars: layout.pillars.map((o) => ({ id: o.id, x: o.x, y: o.y, w: o.w, h: o.h })), start: { ...layout.start } },
         labels: labelState.map((l) => ({ ...l })),
         obstacles: layout.furniture.map((o) => ({ id: o.id, kind: o.kind, x: o.x, y: o.y, w: o.w, h: o.h, hauteur: o.hauteur, screen: screenAt(o.x + o.w / 2, o.hauteur, o.y + o.h / 2) })),

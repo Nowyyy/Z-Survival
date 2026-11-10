@@ -283,6 +283,68 @@
   --menu-poussiere: rgb(200 190 175 / 55%); /* poussière soulevée par le Z */
   --menu-barre-fond: #2a1414;       /* fond de la barre de chargement */
   --menu-point: #ffd60a;            /* point jaune « nouveauté non lue » */
+  /* Lot 8b : scène de l'onglet Jouer (maquette Main.html) */
+  --menu-scene-ciel-haut: #04060b;  /* ciel de nuit, haut */
+  --menu-scene-ciel-bas: #131a26;   /* ciel de nuit, horizon */
+  --menu-scene-lune: #d9dde6;       /* lune pâle */
+  --menu-scene-halo: #c9d3e4;       /* halo de la lune (opacité dans menu.css) */
+  --menu-scene-lointain: #0b0e14;   /* arbres et gravats au loin */
+  --menu-scene-sol: #0a0908;        /* sol */
+  --menu-scene-aile: #1d1c1a;       /* aile à deux étages */
+  --menu-scene-salle: #181715;      /* grande salle basse */
+  --menu-scene-toit: #2a2823;       /* bord de toit de l'aile */
+  --menu-scene-toit-salle: #24221d; /* bord de toit de la salle */
+  --menu-scene-etage: #2c2a25;      /* séparation d'étage */
+  --menu-scene-fenetre-noire: #0b0a09; /* fenêtre noire, porte */
+  --menu-scene-lampe: #ffb347;      /* fenêtre éclairée et lueur chaude de lampe autour (opacité dans menu.css) */
+  --menu-scene-planche: #7a5432;    /* planches en croix */
+  --menu-scene-route: #231a12;      /* route de terre */
+  --menu-scene-route-trait: #3a2c1f; /* pointillés de la route */
+  --menu-scene-voiture: #141210;    /* carcasse de la voiture */
+  --menu-scene-feu: #ff6a1a;        /* halo orangé du feu (opacité dans menu.css) */
+  --menu-scene-flamme: #ff7a1a;     /* flammes */
+  --menu-scene-flamme-coeur: #ffd166; /* cœur des flammes */
+  --menu-scene-fumee: #3a3a3a;      /* fumée */
+  --menu-scene-brume: rgb(154 164 180 / 7%); /* nappes de brume basses */
+  --menu-scene-vignette: #000000;   /* vignette sombre des bords (opacité dans menu.css) */
+  --menu-zombie: #040303;           /* silhouettes des zombies */
+  --menu-zombie-yeux: #ff2a1f;      /* yeux rouges ; repère du record */
+  --menu-sang: #7a0b0a;             /* flaque de sang */
+  --menu-sang-clair: #9a1210;       /* flaque de sang, reflet */
+  --menu-tir: rgb(255 209 102 / 50%); /* éclair du tir */
+  --menu-tir-coeur: #fff2a8;        /* cœur de l'éclair, traînée de balle */
+  --menu-panneau-piquet: #4a3826;   /* piquet des panneaux de la route */
+  --menu-panneau-atteint: #8f1010;  /* panneau atteint par le record (texte blanc) */
+  --menu-panneau-atteint-texte: #ffffff;
+  --menu-panneau-bois: #3a2c1f;     /* panneau pas encore atteint (texte clair) */
+  --menu-panneau-bois-texte: #cfc6b8;
+  --menu-record: #ffd60a;           /* « Record : manche N / 40 » (jaune), bord de la carte du monde suivant */
+  --menu-texte-ombre: #000000;      /* ombre portée du texte posé sur la scène */
+  --menu-bouton-rond: rgb(5 5 5 / 70%); /* fond de la flèche « Monde précédent », de la carte du monde suivant */
+  --menu-bouton-rond-bord: #3a3434; /* bord de la flèche désactivée */
+  --menu-desactive: #5a5550;        /* flèche désactivée */
+  /* Lot 8b : onglet Infini (maquette Infini.html) */
+  --menu-infini-ciel-haut: #0a0405; /* ciel rouge sombre, haut */
+  --menu-infini-ciel-bas: #22090a;  /* ciel rouge sombre, horizon */
+  --menu-infini-halo: #ff3b2a;      /* halo de la lune rouge (opacité dans menu.css) */
+  --menu-infini-lune: #a8231a;      /* grande lune rouge */
+  --menu-infini-sol: #070304;       /* sol */
+  --menu-infini-horde: #050203;     /* horde sur l'horizon */
+  --menu-carte-fond: #0f0c0c;       /* fond des cartes de monde */
+  --menu-carte-bord: #3a3434;       /* bord d'une carte */
+  --menu-carte-choisie: #d81414;    /* bordure rouge épaisse de la carte choisie */
+  --menu-carte-libelle: #a9a49c;    /* « Monde N · Choisie », compte des mondes */
+  --menu-mini-ciel: #0f1520;        /* ciel de la miniature d'un monde jouable */
+  --menu-mini-verrou: #141211;      /* fond de la miniature d'un monde verrouillé */
+  --menu-mini-cadenas: #cfc6b8;     /* cadenas de la miniature */
+  --menu-fleche-fond: rgb(5 5 5 / 85%); /* flèche « Cartes suivantes » */
+  --menu-classement-fond: rgb(8 5 5 / 86%); /* panneau Classement */
+  --menu-classement-bord: #4a1a18;  /* bord du panneau Classement */
+  --menu-classement-ligne: #161212; /* fond d'une ligne du classement */
+  --menu-classement-rang: #cfc6b8;  /* rang */
+  --menu-classement-toi: #2a0d0d;   /* fond de la ligne « Toi » */
+  --menu-classement-toi-texte: #ff6a5d; /* « Toi » */
+  --menu-exemple: #9fd3ff;          /* « exemple, arrive avec le compte » */
   /* Raretés (lots suivants : inventaire, boutique, tirage) */
   --rarete-commun: #a3a3a8;         /* gris */
   --rarete-peu-commun: #5cc46a;     /* vert */

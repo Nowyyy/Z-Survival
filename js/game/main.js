@@ -22,7 +22,7 @@ import { generateTextureData } from './textures.js';
 import { installTestHook } from './testhook.js';
 import { createUi } from './ui.js';
 import { applyTexts, fmt, loadDict, TEXTURE_TEXTS } from './texts.js';
-import { menuChute, menuProgres, menuRetour, modeMenu } from '../menu/demarrage.js';
+import { menuChute, menuProgres, menuRetour, modeMenu, optionPartie } from '../menu/demarrage.js';
 
 const DEFAULT_RATIO_CAP = 2;
 menuProgres('modules', 1); // lot 8a : modules et Three.js évalués (écran de chargement du jeu après « JOUER » ; sans effet en partie directe)
@@ -197,7 +197,8 @@ const ctx = {
     nospawn: query.get('nospawn') === '1',
     wave: waveParam(query.get('wave')),
     // ?endless=1 (lot 3c) : les manches continuent après la manche 40, sans fin de monde ; fonctionne sans ?test=1, n'expose rien et n'est jamais mémorisé.
-    endless: query.get('endless') === '1',
+    // Lot 8b : le mode infini du menu (option de démarrage, sans paramètre d'adresse, donc sans lecture seule) fait exactement la même chose.
+    endless: query.get('endless') === '1' || optionPartie().mode === 'infini',
     planks: planksParam(query.get('planks'), windowsCfg.planks),
     tilt: parseTilt(query.get('tilt'), render.camera.tilt),
     zoom: parseZoom(query.get('zoom'), layout.zoom ?? camera.zoom),
@@ -221,6 +222,7 @@ const ctx = {
   audioCfg,
   audioMaterials: materialsCfg,
   canal, // lot 5l : canal de la page (null : refusé) ; l'icône de débogage de la pause n'existe que sur les canaux de débogage
+  modePartie: optionPartie().mode, // lot 8b : option de démarrage posée par le menu (histoire, ou infini sans paramètre d'adresse) ; partie directe : histoire
 };
 
 // Lot 5b : préréglages graphiques en jeu (réglages « live », Auto entre deux manches) ; sous ?test=1 le rechargement est simulé (getState().graphics).

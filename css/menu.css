@@ -725,30 +725,649 @@
   background-size: 100% 7px;
 }
 
-/* Onglet Jouer : fond de nuit simple, bouton peint « JOUER » centré en bas. */
-.e8-jouer-decor {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(to bottom, var(--menu-ciel-haut), var(--menu-ciel-bas) 75%, var(--menu-nuit));
+/* Lot 8b : onglet Jouer (E8-3, maquette Main.html) : scène SVG décorative plein écran (js/menu/jouer.js), éléments en texte par-dessus. */
+.e8-jouer {
+  background: var(--menu-scene-ciel-haut); /* prolonge le ciel au-dessus de la scène (ancrée en bas, jamais coupée) */
 }
 
-.e8-decor {
+.e8-jouer-scene {
   position: absolute;
   inset: 0;
+}
+
+.e8-jouer-svg {
+  display: block;
   width: 100%;
   height: 100%;
 }
 
+.e8-jouer > :not(.e8-jouer-scene) {
+  z-index: 1;
+}
+
+.e8-jouer-infos {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: calc(2 * var(--u));
+  margin: calc(-12 * var(--u)) 0 0 calc(2 * var(--u));
+}
+
+.e8-jouer-record,
+.e8-jouer-portes {
+  margin: 0;
+  text-shadow: 0 1px 2px var(--menu-texte-ombre);
+}
+
+.e8-jouer-record {
+  font-size: max(13px, calc(15 * var(--u)));
+  font-weight: var(--font-weight-bold);
+  color: var(--menu-record);
+}
+
+.e8-jouer-portes {
+  font-size: max(12px, calc(13 * var(--u)));
+  color: var(--menu-texte-doux);
+}
+
+.e8-jouer-precedent {
+  position: absolute;
+  top: 50%;
+  left: var(--e8-gauche);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: max(var(--menu-cible), calc(48 * var(--u)));
+  height: max(var(--menu-cible), calc(48 * var(--u)));
+  padding: 0;
+  border: 2px solid var(--menu-bouton-rond-bord);
+  border-radius: 50%;
+  background: var(--menu-bouton-rond);
+  color: var(--menu-desactive);
+  transform: translateY(-50%);
+}
+
+.e8-jouer-fleche {
+  width: max(18px, calc(22 * var(--u)));
+  height: max(18px, calc(22 * var(--u)));
+  fill: none;
+  stroke: currentcolor;
+  stroke-width: 3;
+}
+
+.e8-jouer-suivant {
+  position: absolute;
+  top: calc(20 * var(--u));
+  right: var(--e8-droite);
+  display: flex;
+  align-items: center;
+  gap: calc(10 * var(--u));
+  box-sizing: border-box;
+  width: max(124px, calc(150 * var(--u)));
+  margin: 0;
+  padding: calc(8 * var(--u)) calc(10 * var(--u));
+  border: 2px solid var(--menu-record);
+  border-radius: calc(6 * var(--u));
+  background: var(--menu-bouton-rond);
+}
+
+.e8-jouer-fleche-suivant {
+  color: var(--menu-record);
+  stroke-width: 2.4;
+}
+
+.e8-jouer-suivant-textes {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.15;
+}
+
+.e8-jouer-suivant-nom {
+  font-family: var(--font-label);
+  font-size: max(12px, calc(13 * var(--u)));
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--menu-record);
+}
+
+.e8-jouer-suivant-etat {
+  font-size: max(12px, calc(12 * var(--u)));
+  color: var(--menu-texte-doux);
+}
+
+.e8-jouer-suivant-ruban {
+  position: absolute;
+  top: calc(100% + 2px);
+  right: -2px;
+  left: -2px;
+  height: max(6px, calc(8 * var(--u)));
+  background-size: 100% 100%;
+}
+
 .e8-jouer-bouton {
   position: absolute;
-  right: 0;
-  bottom: calc(30 * var(--u));
-  left: 0;
-  width: max-content;
-  margin: 0 auto;
-  padding: calc(8 * var(--u)) calc(60 * var(--u));
-  font-size: max(26px, calc(40 * var(--u)));
-  letter-spacing: 0.04em;
+  right: max(var(--e8-droite), calc(26 * var(--u)));
+  bottom: calc(28 * var(--u));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: calc(12 * var(--u));
+  box-sizing: border-box;
+  width: max(150px, calc(232 * var(--u)));
+  height: max(var(--menu-cible), calc(60 * var(--u)));
+  padding: 0;
+  font-size: max(22px, calc(30 * var(--u)));
+  line-height: 1;
+}
+
+.e8-jouer-icone-bouton {
+  width: max(16px, calc(22 * var(--u)));
+  height: max(16px, calc(22 * var(--u)));
+  fill: currentcolor;
+}
+
+/* Scène : couleurs (jetons --menu-scene-*, --menu-zombie, --menu-sang, --menu-tir, --menu-panneau-*). */
+.e8-jouer-ciel-haut { stop-color: var(--menu-scene-ciel-haut); }
+.e8-jouer-ciel-bas { stop-color: var(--menu-scene-ciel-bas); }
+.e8-jouer-halo-centre { stop-color: var(--menu-scene-halo); stop-opacity: 0.35; }
+.e8-jouer-halo-bord { stop-color: var(--menu-scene-halo); stop-opacity: 0; }
+.e8-jouer-lampe-centre { stop-color: var(--menu-scene-lampe); stop-opacity: 0.55; }
+.e8-jouer-lampe-bord { stop-color: var(--menu-scene-lampe); stop-opacity: 0; }
+.e8-jouer-feu-centre { stop-color: var(--menu-scene-feu); stop-opacity: 0.6; }
+.e8-jouer-feu-bord { stop-color: var(--menu-scene-feu); stop-opacity: 0; }
+.e8-jouer-vignette-centre { stop-color: var(--menu-scene-vignette); stop-opacity: 0; }
+.e8-jouer-vignette-bord { stop-color: var(--menu-scene-vignette); stop-opacity: 0.85; }
+.e8-jouer-lune { fill: var(--menu-scene-lune); }
+.e8-jouer-lointain { fill: var(--menu-scene-lointain); }
+.e8-jouer-sol { fill: var(--menu-scene-sol); }
+.e8-jouer-aile { fill: var(--menu-scene-aile); }
+.e8-jouer-salle { fill: var(--menu-scene-salle); }
+.e8-jouer-toit { fill: var(--menu-scene-toit); }
+.e8-jouer-toit-salle { fill: var(--menu-scene-toit-salle); }
+.e8-jouer-etage { fill: var(--menu-scene-etage); }
+.e8-jouer-fenetre-noire { fill: var(--menu-scene-fenetre-noire); }
+.e8-jouer-fenetre-eclairee { fill: var(--menu-scene-lampe); opacity: 0.7; }
+.e8-jouer-fenetre-vive { opacity: 0.8; }
+.e8-jouer-lampe { fill: url("#e8-jouer-lampe"); }
+.e8-jouer-planches { fill: none; stroke: var(--menu-scene-planche); stroke-width: 5; }
+.e8-jouer-route { fill: none; stroke: var(--menu-scene-route); stroke-width: 30; stroke-linecap: round; }
+.e8-jouer-route-trait { fill: none; stroke: var(--menu-scene-route-trait); stroke-width: 2; stroke-dasharray: 10 12; }
+.e8-jouer-voiture { fill: var(--menu-scene-voiture); }
+.e8-jouer-flamme { fill: var(--menu-scene-flamme); }
+.e8-jouer-flamme-coeur { fill: var(--menu-scene-flamme-coeur); }
+.e8-jouer-fumee { fill: var(--menu-scene-fumee); opacity: 0.3; }
+.e8-jouer-zombie { fill: var(--menu-zombie); }
+.e8-jouer-yeux { fill: var(--menu-zombie-yeux); }
+.e8-jouer-sang-fond { fill: var(--menu-sang); }
+.e8-jouer-sang-clair { fill: var(--menu-sang-clair); }
+.e8-jouer-trainee { stroke: var(--menu-tir-coeur); stroke-width: 2; }
+.e8-jouer-eclair { fill: var(--menu-tir); }
+.e8-jouer-eclair-coeur { fill: var(--menu-tir-coeur); }
+.e8-jouer-piquet { fill: var(--menu-panneau-piquet); }
+.e8-jouer-panneau-texte { font-family: var(--font-sans); font-size: 12px; font-weight: var(--font-weight-bold); text-anchor: middle; }
+.e8-jouer-panneau-atteint .e8-jouer-planche { fill: var(--menu-panneau-atteint); }
+.e8-jouer-panneau-atteint .e8-jouer-panneau-texte { fill: var(--menu-panneau-atteint-texte); }
+.e8-jouer-panneau-bois .e8-jouer-planche { fill: var(--menu-panneau-bois); }
+.e8-jouer-panneau-bois .e8-jouer-panneau-texte { fill: var(--menu-panneau-bois-texte); }
+.e8-jouer-repere-point { fill: var(--menu-zombie-yeux); }
+.e8-jouer-repere-cercle { fill: none; stroke: var(--menu-zombie-yeux); stroke-width: 2; opacity: 0.5; }
+.e8-jouer-brume { fill: var(--menu-scene-brume); }
+
+/* Scène : animations (maquette : mêmes durées et décalages). Sang et tirs invisibles hors de leur instant ; tout est en pause hors de l'écran. */
+.e8-jouer-tir,
+.e8-jouer-sang,
+.e8-jouer-rodeur-g,
+.e8-jouer-rodeur-d {
+  opacity: 0;
+}
+
+.e8-jouer-corps,
+.e8-jouer-sang,
+.e8-jouer-flammes {
+  transform-box: fill-box;
+}
+
+.e8-jouer-corps,
+.e8-jouer-flammes {
+  transform-origin: 50% 100%;
+}
+
+.e8-jouer-sang {
+  transform-origin: 50% 50%;
+}
+
+.e8-jouer-lueur-1 { animation: e8-jouer-lueur 3.2s ease-in-out infinite; }
+.e8-jouer-lueur-2 { animation: e8-jouer-lueur 4.1s ease-in-out infinite; }
+.e8-jouer-lueur-3 { animation: e8-jouer-lueur 3.6s ease-in-out infinite; }
+.e8-jouer-feu { animation: e8-jouer-lueur 0.9s ease-in-out infinite; }
+.e8-jouer-flammes { animation: e8-jouer-flamme 0.45s ease-in-out infinite alternate; }
+.e8-jouer-fumee-1 { animation: e8-jouer-fumee 4s linear infinite; }
+.e8-jouer-fumee-2 { animation: e8-jouer-fumee 4s linear -2s infinite; }
+.e8-jouer-rodeur-g { animation: e8-jouer-rodeur-g 14s linear infinite; }
+.e8-jouer-rodeur-d { animation: e8-jouer-rodeur-d 12s linear -6s infinite; }
+.e8-jouer-marche-a { animation: e8-jouer-marche-a 8s linear infinite; }
+.e8-jouer-corps-a { animation: e8-jouer-meurt-a 8s linear infinite; }
+.e8-jouer-tir-a { animation: e8-jouer-tir-a 8s linear infinite; }
+.e8-jouer-sang-a { animation: e8-jouer-sang-a 8s linear infinite; }
+.e8-jouer-marche-b { animation: e8-jouer-marche-b 10s linear -3s infinite; }
+.e8-jouer-corps-b { animation: e8-jouer-meurt-b 10s linear -3s infinite; }
+.e8-jouer-tir-b { animation: e8-jouer-tir-b 10s linear -3s infinite; }
+.e8-jouer-sang-b { animation: e8-jouer-sang-b 10s linear -3s infinite; }
+
+.e8-jouer-scene[data-anim="off"] * {
+  animation-play-state: paused;
+}
+
+@keyframes e8-jouer-lueur {
+  0%, 100% { opacity: 1; }
+  45% { opacity: 0.75; }
+  60% { opacity: 0.95; }
+}
+
+@keyframes e8-jouer-flamme {
+  0% { transform: scaleY(1) skewX(0deg); }
+  50% { transform: scaleY(1.18) skewX(3deg); }
+  100% { transform: scaleY(0.92) skewX(-2deg); }
+}
+
+@keyframes e8-jouer-fumee {
+  0% { opacity: 0.3; transform: translate(0, 0); }
+  100% { opacity: 0; transform: translate(18px, -26px); }
+}
+
+@keyframes e8-jouer-rodeur-g {
+  0% { opacity: 0; transform: translateX(0); }
+  12% { opacity: 0.85; }
+  85% { opacity: 0.85; transform: translateX(150px); }
+  100% { opacity: 0; transform: translateX(176px); }
+}
+
+@keyframes e8-jouer-rodeur-d {
+  0% { opacity: 0; transform: translateX(0); }
+  12% { opacity: 0.85; }
+  85% { opacity: 0.85; transform: translateX(-110px); }
+  100% { opacity: 0; transform: translateX(-130px); }
+}
+
+/* Zombie de gauche (8 s) : marche en se dandinant jusqu'à l'aile, tir de la fenêtre éclairée de l'étage (67 %), recul, il se tasse sur place, sang. */
+@keyframes e8-jouer-marche-a {
+  0% { transform: translateX(0); }
+  68%, 100% { transform: translateX(188px); }
+}
+
+@keyframes e8-jouer-meurt-a {
+  0% { opacity: 0; transform: translateY(0) rotate(0deg); }
+  4% { opacity: 1; }
+  8%, 24%, 40%, 56% { transform: translateY(-2px) rotate(2deg); }
+  16%, 32%, 48%, 64% { transform: translateY(0) rotate(-2deg); }
+  68% { opacity: 1; transform: translateY(0) rotate(0deg); }
+  70% { transform: translateX(-4px) rotate(-14deg); }
+  74%, 90% { opacity: 1; transform: translateX(-4px) rotate(-8deg) scale(1.15, 0.22); }
+  97%, 100% { opacity: 0; transform: translateX(-4px) rotate(-8deg) scale(1.15, 0.22); }
+}
+
+@keyframes e8-jouer-tir-a {
+  0%, 66.5% { opacity: 0; }
+  67%, 68.5% { opacity: 1; }
+  69.5%, 100% { opacity: 0; }
+}
+
+@keyframes e8-jouer-sang-a {
+  0%, 68.9% { opacity: 0; transform: scale(0.3); }
+  70% { opacity: 1; transform: scale(0.6); }
+  78%, 92% { opacity: 1; transform: scale(1); }
+  98%, 100% { opacity: 0; transform: scale(1); }
+}
+
+/* Zombie de droite (10 s, décalé de −3 s) : entre à 40 %, abattu depuis la fenêtre éclairée du rez-de-chaussée (63 %), avant la voiture. */
+@keyframes e8-jouer-marche-b {
+  0%, 40% { transform: translateX(0); }
+  64%, 100% { transform: translateX(-88px); }
+}
+
+@keyframes e8-jouer-meurt-b {
+  0%, 38% { opacity: 0; transform: translateY(0) rotate(0deg); }
+  42% { opacity: 1; }
+  46%, 54% { transform: translateY(-2px) rotate(-2deg); }
+  50%, 58% { transform: translateY(0) rotate(2deg); }
+  64% { opacity: 1; transform: translateY(0) rotate(0deg); }
+  66% { transform: translateX(4px) rotate(14deg); }
+  70%, 90% { opacity: 1; transform: translateX(4px) rotate(8deg) scale(1.15, 0.22); }
+  97%, 100% { opacity: 0; transform: translateX(4px) rotate(8deg) scale(1.15, 0.22); }
+}
+
+@keyframes e8-jouer-tir-b {
+  0%, 62.5% { opacity: 0; }
+  63%, 64.5% { opacity: 1; }
+  65.5%, 100% { opacity: 0; }
+}
+
+@keyframes e8-jouer-sang-b {
+  0%, 64.9% { opacity: 0; transform: scale(0.3); }
+  66% { opacity: 1; transform: scale(0.6); }
+  74%, 92% { opacity: 1; transform: scale(1); }
+  98%, 100% { opacity: 0; transform: scale(1); }
+}
+
+/* Lot 8b : onglet Infini (E8-4, maquette Infini.html) : décor SVG décoratif, rangée de cartes qui défile, panneau Classement à droite. */
+.e8-infini {
+  --e8-infini-panneau: max(190px, calc(232 * var(--u)));
+  --e8-infini-gauche: calc(100% - var(--e8-infini-panneau) - 20 * var(--u)); /* largeur de la colonne de gauche (bandeau, cartes, Jouer) */
+  gap: calc(4 * var(--u));
+  background: var(--menu-infini-ciel-haut);
+}
+
+.e8-infini-scene {
+  position: absolute;
+  inset: 0;
+}
+
+.e8-infini-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.e8-infini > :not(.e8-infini-scene) {
+  z-index: 1;
+}
+
+.e8-infini-choix {
+  position: relative;
+  max-width: var(--e8-infini-gauche);
+  margin: calc(4 * var(--u)) 0 0;
+  font-size: max(12px, calc(13 * var(--u)));
+}
+
+.e8-infini-choix-titre {
+  font-family: var(--font-label);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--menu-texte);
+}
+
+.e8-infini-choix-compte {
+  color: var(--menu-carte-libelle);
+}
+
+.e8-infini-zone {
+  position: relative;
+  flex: none;
+  width: var(--e8-infini-gauche);
+}
+
+.e8-infini-rangee {
+  display: flex;
+  gap: calc(14 * var(--u));
+  margin: 0;
+  padding: 0 0 calc(8 * var(--u));
+  overflow: auto hidden;
+  overscroll-behavior-x: contain;
+  list-style: none;
+  scroll-snap-type: x mandatory;
+  scrollbar-color: var(--menu-carte-bord) transparent;
+  scrollbar-width: thin;
+}
+
+.e8-infini-item {
+  flex: none;
+  scroll-snap-align: start;
+}
+
+.e8-infini-carte {
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  width: max(132px, calc(184 * var(--u)));
+  min-height: calc(150 * var(--u));
+  padding: 0 0 calc(6 * var(--u));
+  overflow: hidden;
+  border: 3px solid var(--menu-carte-bord);
+  border-radius: calc(4 * var(--u));
+  background: var(--menu-carte-fond);
+  color: var(--menu-texte);
+  line-height: 1.2;
+  text-align: left;
+  cursor: pointer;
+}
+
+.e8-infini-carte-choisie {
+  border-color: var(--menu-carte-choisie);
+}
+
+.e8-infini-carte-verrouillee {
+  cursor: not-allowed;
+}
+
+.e8-infini-mini {
+  display: block;
+  flex: none;
+  width: 100%;
+  height: calc(84 * var(--u));
+}
+
+.e8-infini-mini-verrou {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: var(--menu-mini-verrou);
+}
+
+.e8-infini-mini-ruban {
+  position: absolute;
+  top: calc(34 * var(--u));
+  left: -10%;
+  width: 120%;
+  height: calc(14 * var(--u));
+  background: repeating-linear-gradient(135deg, var(--menu-ruban-jaune) 0 8px, var(--menu-ruban-noir) 8px 16px);
+  transform: rotate(-12deg);
+}
+
+.e8-infini-cadenas {
+  position: relative;
+  width: max(20px, calc(26 * var(--u)));
+  height: max(20px, calc(26 * var(--u)));
+  fill: none;
+  stroke: var(--menu-mini-cadenas);
+  stroke-width: 2;
+}
+
+.e8-infini-mini-ciel { fill: var(--menu-mini-ciel); }
+.e8-infini-mini-lampe { fill: var(--menu-scene-lampe); opacity: 0.7; }
+.e8-infini-mini-vive { opacity: 1; }
+
+.e8-infini-carte-libelle {
+  padding: calc(6 * var(--u)) calc(10 * var(--u)) 0;
+  font-size: max(10px, calc(11 * var(--u)));
+  font-weight: var(--font-weight-bold);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--menu-carte-libelle);
+}
+
+.e8-infini-carte-nom {
+  padding: 0 calc(10 * var(--u));
+  font-size: max(13px, calc(15 * var(--u)));
+  font-weight: var(--font-weight-bold);
+}
+
+.e8-infini-carte-detail {
+  padding: 0 calc(10 * var(--u));
+  font-size: max(11px, calc(12 * var(--u)));
+  color: var(--menu-record);
+}
+
+.e8-infini-suivantes {
+  position: absolute;
+  top: calc(50 * var(--u));
+  right: calc(-12 * var(--u));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: max(var(--menu-cible), calc(44 * var(--u)));
+  height: max(var(--menu-cible), calc(44 * var(--u)));
+  padding: 0;
+  border: 2px solid var(--menu-rouge-clair);
+  border-radius: 50%;
+  background: var(--menu-fleche-fond);
+  color: var(--menu-texte);
+  cursor: pointer;
+}
+
+.e8-infini-fleche {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentcolor;
+  stroke-width: 3;
+}
+
+.e8-infini-bouton {
+  position: relative;
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  gap: calc(14 * var(--u));
+  box-sizing: border-box;
+  width: var(--e8-infini-gauche);
+  height: max(var(--menu-cible), calc(54 * var(--u)));
+  padding: 0;
+  font-size: max(22px, calc(30 * var(--u)));
+  line-height: 1;
+}
+
+.e8-infini-classement {
+  position: absolute;
+  top: calc(12 * var(--u));
+  right: var(--e8-droite);
+  bottom: calc(24 * var(--u));
+  display: flex;
+  flex-direction: column;
+  gap: calc(5 * var(--u));
+  box-sizing: border-box;
+  width: var(--e8-infini-panneau);
+  padding: calc(10 * var(--u)) calc(12 * var(--u));
+  border: 1px solid var(--menu-classement-bord);
+  background: var(--menu-classement-fond);
+}
+
+.e8-infini-classement-titre {
+  margin: 0;
+  font-family: var(--font-label);
+  font-size: max(14px, calc(16 * var(--u)));
+  font-weight: var(--font-weight-normal);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.e8-infini-classement-carte {
+  margin: 0;
+  font-size: max(11px, calc(12 * var(--u)));
+  color: var(--menu-texte-doux);
+}
+
+.e8-infini-exemple {
+  color: var(--menu-exemple);
+}
+
+.e8-infini-lignes {
+  display: flex;
+  flex-direction: column;
+  gap: calc(5 * var(--u));
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.e8-infini-ligne,
+.e8-infini-toi {
+  display: flex;
+  align-items: center;
+  gap: calc(8 * var(--u));
+  padding: 0 calc(8 * var(--u));
+}
+
+.e8-infini-ligne {
+  min-height: max(22px, calc(28 * var(--u)));
+  background: var(--menu-classement-ligne);
+}
+
+.e8-infini-rang {
+  min-width: max(14px, calc(18 * var(--u)));
+  font-size: max(12px, calc(14 * var(--u)));
+  font-weight: var(--font-weight-bold);
+  color: var(--menu-classement-rang);
+}
+
+.e8-infini-pseudo {
+  flex: 1;
+  font-size: max(12px, calc(14 * var(--u)));
+  color: var(--menu-texte-doux);
+}
+
+.e8-infini-manche {
+  font-size: max(11px, calc(13 * var(--u)));
+  font-weight: var(--font-weight-bold);
+}
+
+.e8-infini-toi {
+  min-height: max(28px, calc(34 * var(--u)));
+  margin: auto 0 0;
+  border: 1px solid var(--menu-rouge-clair);
+  background: var(--menu-classement-toi);
+  font-size: max(12px, calc(13 * var(--u)));
+}
+
+.e8-infini-toi-nom {
+  font-size: max(12px, calc(14 * var(--u)));
+  font-weight: var(--font-weight-bold);
+  color: var(--menu-classement-toi-texte);
+}
+
+.e8-infini-toi-rang {
+  flex: 1;
+}
+
+.e8-infini-toi-manche {
+  font-weight: var(--font-weight-bold);
+  color: var(--menu-record);
+}
+
+/* Décor : couleurs, halo qui pulse lentement, horde qui avance sur l'horizon (apparaît et s'efface en fondu à chaque passage). */
+.e8-infini-ciel-haut { stop-color: var(--menu-infini-ciel-haut); }
+.e8-infini-ciel-bas { stop-color: var(--menu-infini-ciel-bas); }
+.e8-infini-halo-centre { stop-color: var(--menu-infini-halo); stop-opacity: 0.35; }
+.e8-infini-halo-bord { stop-color: var(--menu-infini-halo); stop-opacity: 0; }
+.e8-infini-lune { fill: var(--menu-infini-lune); opacity: 0.8; }
+.e8-infini-sol { fill: var(--menu-infini-sol); }
+.e8-infini-z { fill: var(--menu-infini-horde); }
+
+.e8-infini-halo {
+  transform-box: fill-box;
+  transform-origin: 50% 50%;
+  animation: e8-infini-halo 6s ease-in-out infinite;
+}
+
+.e8-infini-horde {
+  animation: e8-infini-horde 30s linear infinite;
+}
+
+.e8-infini-scene[data-anim="off"] * {
+  animation-play-state: paused;
+}
+
+@keyframes e8-infini-halo {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.65; transform: scale(1.06); }
+}
+
+@keyframes e8-infini-horde {
+  0% { opacity: 0; transform: translateX(0); }
+  8%, 92% { opacity: 1; }
+  100% { opacity: 0; transform: translateX(-80px); }
 }
 
 .e8-texte {
@@ -944,6 +1563,13 @@
   .e8,
   .e8 * {
     animation: none !important;
+  }
+
+  /* Lot 8b : scène fixe, zombies absents ; flammes et lueurs constantes. */
+  .e8-jouer-zombie-proche,
+  .e8-jouer-rodeur-g,
+  .e8-jouer-rodeur-d {
+    display: none;
   }
 
   .menu-peint:active {

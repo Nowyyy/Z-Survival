@@ -3,10 +3,11 @@
 // Déconnexion grisée) ; contenu de l'onglet ; barre d'onglets E8-2 (Boutique · Personnage · JOUER · Infini · Event verrouillé). « JOUER » fait
 // charger le jeu sans recharger la page (jouer() : écran de chargement du jeu, puis main.js). État en mémoire seulement (js/core/menu-etat.js) : rien
 // n'est écrit dans le stockage jusqu'au lot 8h. preparerMenu() lit ce que le menu affiche (textes, nouveautés, liens, solde), sans rien du jeu.
-// Écrans à la demande : js/menu/ecrans.js (Information, Connexion, onglets « Bientôt »), js/game/options-menu.js (Options, E2-12).
+// Écrans à la demande : js/menu/ecrans.js (Information, Connexion, onglets « Bientôt »), js/menu/infini.js (lot 8b : onglet Infini), js/game/options-menu.js (Options, E2-12).
+// Lot 8b : onglet Jouer (js/menu/jouer.js, chargé avec le menu) ; option de démarrage (histoire ou infini) passée à jouer().
 import { formatMoney } from '../core/economy.js';
-import { basculerMenu, choisirOnglet, creerEtatMenu, fermerEcran, fermerMenu, lienExterne, nouveauteNonLue, ONGLETS, ouvrirEcran } from '../core/menu-etat.js';
-import { decorNuit } from './chargement.js';
+import { basculerMenu, choisirOnglet, creerEtatMenu, fermerEcran, fermerMenu, lienExterne, lireMondes, lireOptionDemarrage, lireRecord, nouveauteNonLue, ONGLETS, ouvrirEcran, premierJouable } from '../core/menu-etat.js';
+import { ecranJouer } from './jouer.js';
 import { fmt, loadDict } from '../game/texts.js';
 import { graphicsBoot, pageSearch } from '../game/graphics-boot.js';
 import { createRepository } from '../save/index.js';
@@ -64,20 +65,22 @@ export function bandeau(libelle, titre, id) {
 
 const json = (path) => fetch(path).then((r) => (r.ok ? r.json() : null)).catch(() => null);
 
-// Chargement du menu (phase « menu » de l'écran de chargement) : textes, nouveautés, liens, et le solde lu dans la sauvegarde existante par son API
-// (createRepository, lecture seule : load(), sans canal entre onglets ni écriture). onProgress(f) : part des fichiers reçus (0 à 1).
+// Chargement du menu (phase « menu » de l'écran de chargement) : textes, nouveautés, liens, mondes (lot 8b), et le solde et le record (lot 8b :
+// records.bestWave, champ existant) lus dans la sauvegarde existante par son API (createRepository, lecture seule : load(), sans canal entre onglets
+// ni écriture). onProgress(f) : part des fichiers reçus (0 à 1).
 export async function preparerMenu({ search = pageSearch(), onProgress = () => {} } = {}) {
   let recus = 0;
   const suivre = (p) => p.then((v) => {
     recus += 1;
-    onProgress(recus / 6);
+    onProgress(recus / 7);
     return v;
   });
-  const [dict, infos, liens, save, economy, stats] = await Promise.all([
+  const [dict, infos, liens, save, economy, stats, mondes] = await Promise.all([
     suivre(loadDict()), suivre(json('data/menu/infos.json')), suivre(json('data/menu/liens.json')),
-    suivre(json('data/game/save.json')), suivre(json('data/game/economy.json')), suivre(json('data/game/player-stats.json')),
+    suivre(json('data/game/save.json')), suivre(json('data/game/economy.json')), suivre(json('data/game/player-stats.json')), suivre(json('data/menu/mondes.json')),
   ]);
   let solde = 0;
+  let record = null;
   try {
     const storage = (() => {
       try {
@@ -89,13 +92,14 @@ export async function preparerMenu({ search = pageSearch(), onProgress = () => {
     const { repository } = createRepository({ search, storage, params: { save, economy, stats } });
     const lu = repository.load();
     if (lu && lu.save && Number.isFinite(lu.save.money)) solde = lu.save.money;
+    record = lireRecord(lu?.save?.records?.bestWave);
   } catch {
-    // sauvegarde illisible ou stockage bloqué : solde 0 affiché, rien n'est écrit
+    // sauvegarde illisible ou stockage bloqué : solde 0 et record « — » affichés, rien n'est écrit
   }
-  return { dict, infos: Array.isArray(infos?.infos) ? infos.infos : [], liens: liens ?? {}, solde };
+  return { dict, infos: Array.isArray(infos?.infos) ? infos.infos : [], liens: liens ?? {}, solde, record, mondes: lireMondes(mondes) };
 }
 
-export function creerMenu({ dict, infos = [], liens = {}, solde: montant = 0, jouer, root = document.body }) {
+export function creerMenu({ dict, infos = [], liens = {}, solde: montant = 0, record = null, mondes = lireMondes(null), jouer, root = document.body }) {
   const t = (k) => dict[k] ?? '';
   let etat = creerEtatMenu();
   const lien = lienExterne(liens?.discord);
@@ -171,12 +175,10 @@ export function creerMenu({ dict, infos = [], liens = {}, solde: montant = 0, jo
 
   // --- Contenu et onglets E8-2 ----------------------------------------------------------------------------------------------------------------
   const contenu = el('main', ['e8-contenu'], { id: 'menu-contenu', 'aria-label': t('game.menu.aria') });
-  const jouerSection = el('section', ['e8-ecran', 'e8-jouer'], { id: 'menu-ecran-jouer', 'aria-labelledby': 'menu-titre-jouer' });
-  const decor = el('div', ['e8-jouer-decor'], { 'aria-hidden': 'true' });
-  decor.append(decorNuit('e8-decor'));
-  const btJouer = el('button', ['menu-peint', 'e8-jouer-bouton'], { type: 'button', id: 'menu-jouer' });
-  btJouer.textContent = t('game.menu.jouer.bouton');
-  jouerSection.append(decor, bandeau(t('game.menu.jouer.libelle'), t('game.menu.jouer.titre'), 'menu-titre-jouer'), btJouer);
+  // Lot 8b : onglet Jouer (js/menu/jouer.js) : scène animée du monde choisi (le premier jouable), record et portes (lecture seule), « JOUER ».
+  const monde = premierJouable(mondes);
+  const { section: jouerSection, scene: jouerScene, bouton: btJouer } = ecranJouer({ t, monde, mondes, record, bandeau });
+  const scenes = new Map([['jouer', jouerScene]]); // onglet → scène animée (en pause hors de l'écran)
   ecransOnglets.set('jouer', jouerSection);
   contenu.append(jouerSection);
 
@@ -211,6 +213,7 @@ export function creerMenu({ dict, infos = [], liens = {}, solde: montant = 0, jo
       else b.removeAttribute('aria-current');
     }
     for (const [id, s] of ecransOnglets) s.hidden = id !== etat.onglet;
+    animer();
     liste.hidden = !etat.menuOuvert;
     barres.setAttribute('aria-expanded', String(etat.menuOuvert));
     const nonLue = nouveauteNonLue(infos, etat.lues);
@@ -219,15 +222,33 @@ export function creerMenu({ dict, infos = [], liens = {}, solde: montant = 0, jo
     barres.setAttribute('aria-label', t(nonLue ? 'game.menu.ouvrir.nouveau' : 'game.menu.ouvrir'));
   }
 
+  // Lot 8b : animations de la scène de l'onglet affiché seulement, et jamais quand la page est cachée (data-anim : off = en pause).
+  function animer() {
+    for (const [id, scene] of scenes) scene.dataset.anim = id === etat.onglet && !document.hidden ? 'on' : 'off';
+  }
+  document.addEventListener('visibilitychange', animer);
+
   const ecrans = () => import('./ecrans.js');
 
+  let infini = null; // lot 8b : écran Infini (js/menu/infini.js, chargé au premier affichage) : { section, scene, etat() }
   async function changerOnglet(id) {
     etat = choisirOnglet(etat, id);
     if (!ecransOnglets.has(etat.onglet)) {
-      const m = await ecrans();
-      const s = m.ecranBientot({ dict, id: etat.onglet, titre: t(ONGLET_TEXTES[etat.onglet]) });
-      ecransOnglets.set(etat.onglet, s);
-      contenu.append(s);
+      const onglet = etat.onglet;
+      let s;
+      if (onglet === 'infini') {
+        const m = await import('./infini.js');
+        infini = await m.ecranInfini({ t, mondes, bandeau, jouer: lancer });
+        s = infini.section;
+        scenes.set('infini', infini.scene);
+      } else {
+        const m = await ecrans();
+        s = m.ecranBientot({ dict, id: onglet, titre: t(ONGLET_TEXTES[onglet]) });
+      }
+      if (!ecransOnglets.has(onglet)) {
+        ecransOnglets.set(onglet, s);
+        contenu.append(s);
+      }
     }
     synchroniser();
   }
@@ -285,12 +306,16 @@ export function creerMenu({ dict, infos = [], liens = {}, solde: montant = 0, jo
     barres.focus();
   }
 
-  // « JOUER » : le menu laisse la place à l'écran de chargement du jeu (chargement.js, demarrage.js).
-  btJouer.addEventListener('click', () => {
+  // « JOUER » : le menu laisse la place à l'écran de chargement du jeu (chargement.js, demarrage.js). Lot 8b : option de démarrage (mode histoire
+  // depuis l'onglet Jouer, mode infini depuis l'onglet Infini), validée (lireOptionDemarrage), sans paramètre d'adresse.
+  function lancer(option) {
     document.removeEventListener('keydown', clavier, true);
     document.removeEventListener('pointerdown', dehors, true);
-    jouer();
-  });
+    document.removeEventListener('visibilitychange', animer);
+    for (const scene of scenes.values()) scene.dataset.anim = 'off';
+    jouer(lireOptionDemarrage(option, mondes));
+  }
+  btJouer.addEventListener('click', () => lancer({ mode: 'histoire', monde: monde.id }));
 
   // Échap : Options (confirmation d'abord), puis l'écran ouvert, puis le menu à trois barres. Un appui ailleurs ferme le menu à trois barres.
   function clavier(e) {
@@ -311,6 +336,6 @@ export function creerMenu({ dict, infos = [], liens = {}, solde: montant = 0, jo
   synchroniser();
   return {
     element: box,
-    etat: () => ({ onglet: etat.onglet, menuOuvert: etat.menuOuvert, ecran: etat.ecran, nonLue: nouveauteNonLue(infos, etat.lues), solde: montant, discord: lien.actif }),
+    etat: () => ({ onglet: etat.onglet, menuOuvert: etat.menuOuvert, ecran: etat.ecran, nonLue: nouveauteNonLue(infos, etat.lues), solde: montant, discord: lien.actif, record, monde: monde.id, infini: infini?.etat() ?? null }),
   };
 }

@@ -1,4 +1,5 @@
-// Socle commun des pages : choix de la langue, textes, éclaboussures. Utilisé par index.html et dev/.
+// Socle commun des pages : choix de la langue, textes, éclaboussures. Utilisé par index.html (accueil de la Recette).
+// Lot 8b : textes propres à l'accueil (data/i18n/accueil.fr.json, accueil.en.json) ; ceux du jeu et du menu restent dans fr.json, jamais chargés ici.
 import { drawSplat } from './splat.js';
 import { DEFAULT_LANG, otherLanguage, pickLanguage, translate } from './i18n.js';
 
@@ -22,7 +23,7 @@ function writeStored(lang) {
 
 async function loadDict(base, lang) {
   try {
-    const response = await fetch(`${base}data/i18n/${lang}.json`);
+    const response = await fetch(`${base}data/i18n/accueil.${lang}.json`);
     return response.ok ? await response.json() : {};
   } catch {
     return {};
