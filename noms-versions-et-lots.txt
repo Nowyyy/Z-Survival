@@ -162,3 +162,9 @@ version: v0.8
 nom: Onglets Jouer et Infini, mode infini
 description: L'onglet Jouer montre le bâtiment de nuit animé, avec ton record sur la route. Nouvel onglet Infini : choix de la carte et partie sans fin au-delà de la manche 40.
 afficher: oui
+
+[lot-8c]
+version: v0.8
+nom: Page Options du menu, son et volume
+description: Le menu principal a sa page Options, avec le son et le volume. En partie, les réglages qui demandent un redémarrage sont verrouillés ; les préréglages restent modifiables.
+afficher: oui

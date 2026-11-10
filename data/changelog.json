@@ -262,6 +262,12 @@
       "Nouvel onglet Infini : choix de la carte (les mondes 2 à 6 arrivent plus tard), classement d'exemple, et bouton Jouer qui lance une vraie partie sans fin, au-delà de la manche 40.",
       "En mode infini, l'argent gagné est conservé comme d'habitude ; le record de ce mode sera gardé dans une prochaine mise à jour. Les règles du jeu ne changent pas.",
       "L'accueil de la Recette charge moins de textes et s'affiche un peu plus vite."
+    ] },
+    { "name": "lot-8c", "version": "v0.8", "date": "2026-11-10", "titre": "Page Options du menu, son et volume", "points": [
+      "Le menu principal a sa propre page Options : préréglages, réglages graphiques et nouvelle section Son (son activé ou coupé, volume de 0 à 100 %), tout modifiable avant de lancer la partie.",
+      "Chaque réglage indique s'il s'applique tout de suite ou au lancement de la partie ; ouvrir les Options du menu ne charge plus le jeu en arrière-plan.",
+      "En partie, les réglages qui demandent un redémarrage sont verrouillés (modifiables depuis le menu principal) ; changer de préréglage reste possible et les valeurs en attente s'affichent jusqu'au retour au menu. La barre « Recharger maintenant » disparaît.",
+      "Les règles du jeu ne changent pas ; le rendu d'un préréglage donné non plus."
     ] }
   ]
 }
