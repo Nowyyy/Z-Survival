@@ -197,7 +197,8 @@ const ctx = {
     nospawn: query.get('nospawn') === '1',
     wave: waveParam(query.get('wave')),
     // ?endless=1 (lot 3c) : les manches continuent après la manche 40, sans fin de monde ; fonctionne sans ?test=1, n'expose rien et n'est jamais mémorisé.
-    endless: query.get('endless') === '1',
+    // Lot 8b : le mode infini du menu (option de démarrage, sans paramètre d'adresse, donc sans lecture seule) fait exactement la même chose.
+    endless: query.get('endless') === '1' || optionPartie().mode === 'infini',
     planks: planksParam(query.get('planks'), windowsCfg.planks),
     tilt: parseTilt(query.get('tilt'), render.camera.tilt),
     zoom: parseZoom(query.get('zoom'), layout.zoom ?? camera.zoom),

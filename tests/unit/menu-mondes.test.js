@@ -1,8 +1,13 @@
 // Lot 8b : mondes du menu (data/menu/mondes.json), onglet Jouer (panneaux atteints, portes ouvertes, repère du record), monde suivant
-// (js/core/menu-etat.js, pur). Docs/ref/menu-principal.md.
+// (js/core/menu-etat.js, pur) ; onglet Infini (carrousel, classement d'exemple), option de démarrage, mode infini = ?endless=1 sans lecture seule.
+// Docs/ref/menu-principal.md.
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
-import { MONDE_DEFAUT, etatJouer, lireMondes, lireRecord, mondeSuivant, premierJouable } from '../../js/core/menu-etat.js';
+import { MODES, MONDE_DEFAUT, choisirCarte, creerCarrousel, etatJouer, lireClassement, lireMondes, lireOptionDemarrage, lireRecord, mondeSuivant, premierJouable } from '../../js/core/menu-etat.js';
+import { createDirector, info, stepDirector } from '../../js/core/wave-director.js';
+import { parseZones } from '../../js/core/zones.js';
+import { readOnlyMode } from '../../js/core/save.js';
+import { createRepository } from '../../js/save/index.js';
 
 const read = (f) => readFileSync(f, 'utf8');
 const fichier = JSON.parse(read('data/menu/mondes.json'));
@@ -118,5 +123,113 @@ describe('onglet Jouer : code et textes (js/menu/jouer.js)', () => {
     }
     expect(css).toMatch(/\.e8-jouer-tir-a \{ animation: e8-jouer-tir-a 8s/);
     expect(css).toMatch(/\.e8-jouer-tir-b \{ animation: e8-jouer-tir-b 10s/);
+  });
+});
+
+// --- Partie C : onglet Infini, option de démarrage, mode infini réel ------------------------------------------------------------------------------
+
+describe('carrousel de l\'onglet Infini (choisirCarte)', () => {
+  it('carte choisie au départ : le premier monde jouable ; un monde verrouillé ou inconnu ne se choisit pas', () => {
+    const c = creerCarrousel(mondes);
+    expect(c).toEqual({ choisi: 'batiment' });
+    for (const id of ['monde-2', 'monde-6', 'inconnu', '', null, undefined, 42, '__proto__']) expect(choisirCarte(c, mondes, id), String(id)).toBe(c);
+    expect(choisirCarte(c, mondes, 'batiment')).toEqual({ choisi: 'batiment' });
+    expect(creerCarrousel(null)).toEqual({ choisi: 'batiment' });
+  });
+
+  it('plusieurs mondes jouables : la sélection suit le clic ; état d\'origine non modifié', () => {
+    const deux = lireMondes({ mondes: [{ id: 'a', numero: 1, jouable: true }, { id: 'b', numero: 2, jouable: true }, { id: 'c', numero: 3 }] });
+    const c = creerCarrousel(deux);
+    const d = choisirCarte(c, deux, 'b');
+    expect([c.choisi, d.choisi, choisirCarte(d, deux, 'c').choisi]).toEqual(['a', 'b', 'b']);
+  });
+
+  it('classement d\'exemple : 5 lignes au plus, rangs 1 à 5, entrées invalides ignorées ; fichier marqué « exemple »', () => {
+    const fichierC = JSON.parse(read('data/menu/classement.json'));
+    expect(fichierC.exemple).toBe(true);
+    expect(fichierC._note).toMatch(/EXEMPLE/);
+    expect(lireClassement(fichierC).map((l) => [l.rang, l.pseudo])).toEqual([1, 2, 3, 4, 5].map((r) => [r, '[pseudo]']));
+    expect(lireClassement({ lignes: [null, { pseudo: ' x ', manche: 3 }, { pseudo: '', manche: 2 }, { pseudo: 'y', manche: 0 }, { pseudo: 'z', manche: '9' }] })).toEqual([{ rang: 1, pseudo: 'x', manche: 3 }]);
+    for (const bad of [null, {}, { lignes: 'x' }, []]) expect(lireClassement(bad)).toEqual([]);
+  });
+});
+
+describe('option de démarrage (lireOptionDemarrage)', () => {
+  it('histoire et infini sur le bâtiment ; monde inconnu ou verrouillé → histoire sur le monde 1', () => {
+    expect(MODES).toEqual(['histoire', 'infini']);
+    expect(lireOptionDemarrage({ mode: 'histoire', monde: 'batiment' }, mondes)).toEqual({ mode: 'histoire', monde: 'batiment' });
+    expect(lireOptionDemarrage({ mode: 'infini', monde: 'batiment' }, mondes)).toEqual({ mode: 'infini', monde: 'batiment' });
+    for (const monde of ['monde-2', 'inconnu', '']) expect(lireOptionDemarrage({ mode: 'infini', monde }, mondes), monde).toEqual({ mode: 'histoire', monde: 'batiment' });
+  });
+
+  it('entrée hostile : histoire sur le monde 1, sans exception ni champ en plus', () => {
+    const hostile = [null, undefined, 'infini', 42, [], ['infini', 'batiment'], { mode: 'INFINI', monde: 'batiment' }, { mode: 'infini' }, { monde: 'batiment' },
+      { mode: ['infini'], monde: 'batiment' }, { mode: 'infini', monde: { id: 'batiment' } }, JSON.parse('{"__proto__": {"mode": "infini"}, "monde": "batiment"}'),
+      Object.create({ mode: 'infini', monde: 'batiment' }), { mode: 'infini', monde: 'batiment', extra: 'x', toString: () => 'y' }];
+    for (const h of hostile.slice(0, -1)) expect(lireOptionDemarrage(h, mondes)).toEqual({ mode: 'histoire', monde: 'batiment' });
+    expect(Object.keys(lireOptionDemarrage(hostile.at(-1), mondes))).toEqual(['mode', 'monde']);
+    expect(lireOptionDemarrage({ mode: 'infini', monde: 'batiment' }, null)).toEqual({ mode: 'histoire', monde: 'batiment' });
+  });
+
+  it('le jeu lit l\'option sans paramètre d\'adresse : main.js (endless = ?endless=1 ou mode infini), demarrage.js (deux champs connus), game.js (records filtrés)', () => {
+    const main = read('js/game/main.js');
+    expect(main).toContain("endless: query.get('endless') === '1' || optionPartie().mode === 'infini',");
+    expect(main).toContain('modePartie: optionPartie().mode,');
+    const dem = read('js/menu/demarrage.js');
+    expect(dem).toContain("if (option?.mode === 'infini' && typeof option.monde === 'string') partie = Object.freeze({ mode: 'infini', monde: option.monde });");
+    expect(dem).toContain("let partie = Object.freeze({ mode: 'histoire', monde: 'batiment' });");
+    expect(read('js/game/game.js')).toContain("const depot = ctx.modePartie === 'infini' ? { ...ctx.repository, commit: (delta, at) => ctx.repository.commit({ ...delta, bestWave: 0, bestKills: 0 }, at) } : ctx.repository;");
+    expect(read('js/menu/menu.js')).toContain('jouer(lireOptionDemarrage(option, mondes));');
+  });
+});
+
+describe('mode infini réel = logique de ?endless=1, sans lecture seule', () => {
+  const params = JSON.parse(read('data/game/waves.json'));
+  const zonesJson = JSON.parse(read('data/game/maps/rez-de-chaussee/zones.json'));
+  const zones = parseZones(zonesJson);
+  const decor = JSON.parse(read('data/game/maps/rez-de-chaussee/decor.json'));
+  const points = decor.spawnPoints.slice(0, 10);
+  // Paramètre endless comme main.js le calcule : ?endless=1 dans l'adresse, ou option « infini » du menu (adresse vide).
+  const endlessDe = (search, option) => new URLSearchParams(search).get('endless') === '1' || option.mode === 'infini';
+  const directeur = (search, option, seed) => createDirector(params, { seed, wave: 1, doors: zones.doors.map((d) => ({ id: d.id, openAfterWave: d.openAfterWave, planned: d.planned === true })), wavesPerWorld: zones.wavesPerWorld, endless: endlessDe(search, option) });
+  // Trace : chaque pas (aucun zombie vivant : chaque manche se termine dès que tout est apparu), jusqu'à la manche 45 ; état et événements sérialisés.
+  function trace(d0) {
+    let d = d0;
+    const pas = [];
+    for (let i = 0; i < 400000 && !(info(d).wave === 45 && info(d).phase === 'apparition'); i += 1) {
+      const out = stepDirector(d, { dt: 0.05, alive: 0, view: null, points });
+      d = out.state;
+      if (out.events.length || out.requests.length || i % 500 === 0) pas.push(JSON.stringify([i, info(d), out.events, out.requests]));
+      if (info(d).worldEnd) break;
+    }
+    return { pas, fin: info(d) };
+  }
+
+  for (const seed of [1, 7]) {
+    it(`graine ${seed} : trace identique (option « infini » / ?endless=1) jusqu'à la manche 45, aucune fin de monde ; l'histoire s'arrête à 40`, () => {
+      const infini = trace(directeur('', lireOptionDemarrage({ mode: 'infini', monde: 'batiment' }, mondes), seed));
+      const endless = trace(directeur('?endless=1', { mode: 'histoire' }, seed));
+      expect(infini.pas.length).toBeGreaterThan(100);
+      expect(infini.pas).toEqual(endless.pas);
+      expect([infini.fin.wave, infini.fin.worldEnd]).toEqual([45, false]);
+      const histoire = trace(directeur('', lireOptionDemarrage({ mode: 'histoire', monde: 'batiment' }, mondes), seed));
+      expect([histoire.fin.wave, histoire.fin.worldEnd]).toEqual([40, true]);
+      expect(histoire.pas.slice(0, 50)).toEqual(infini.pas.slice(0, 50)); // mêmes premières manches
+    });
+  }
+
+  it('sauvegarde : ?endless=1 la met en lecture seule (mode essai) ; le mode infini (adresse sans paramètre) non', () => {
+    const save = JSON.parse(read('data/game/save.json'));
+    const economy = JSON.parse(read('data/game/economy.json'));
+    const stats = JSON.parse(read('data/game/player-stats.json'));
+    expect(readOnlyMode('?endless=1', { save })).toEqual({ readOnly: true, reasons: ['endless'] });
+    expect(readOnlyMode('', { save })).toEqual({ readOnly: false, reasons: [] });
+    expect(readOnlyMode('?test=1&menu=1&store=local&seed=3', { save })).toEqual({ readOnly: false, reasons: [] });
+    const stockage = new Map();
+    const storage = { getItem: (k) => (stockage.has(k) ? stockage.get(k) : null), setItem: (k, v) => stockage.set(k, String(v)), removeItem: (k) => stockage.delete(k), key: () => null, length: 0 };
+    const { repository, mode } = createRepository({ search: '', storage, params: { save, economy, stats } });
+    expect([mode.kind, mode.readOnly]).toEqual(['local', false]);
+    expect(repository.commit({ money: 30 }, 1).ok).toBe(true);
+    expect(JSON.parse(stockage.get(save.storageKey)).money).toBe(30);
   });
 });

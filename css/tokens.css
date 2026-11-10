@@ -323,6 +323,28 @@
   --menu-bouton-rond: rgb(5 5 5 / 70%); /* fond de la flèche « Monde précédent », de la carte du monde suivant */
   --menu-bouton-rond-bord: #3a3434; /* bord de la flèche désactivée */
   --menu-desactive: #5a5550;        /* flèche désactivée */
+  /* Lot 8b : onglet Infini (maquette Infini.html) */
+  --menu-infini-ciel-haut: #0a0405; /* ciel rouge sombre, haut */
+  --menu-infini-ciel-bas: #22090a;  /* ciel rouge sombre, horizon */
+  --menu-infini-halo: #ff3b2a;      /* halo de la lune rouge (opacité dans menu.css) */
+  --menu-infini-lune: #a8231a;      /* grande lune rouge */
+  --menu-infini-sol: #070304;       /* sol */
+  --menu-infini-horde: #050203;     /* horde sur l'horizon */
+  --menu-carte-fond: #0f0c0c;       /* fond des cartes de monde */
+  --menu-carte-bord: #3a3434;       /* bord d'une carte */
+  --menu-carte-choisie: #d81414;    /* bordure rouge épaisse de la carte choisie */
+  --menu-carte-libelle: #a9a49c;    /* « Monde N · Choisie », compte des mondes */
+  --menu-mini-ciel: #0f1520;        /* ciel de la miniature d'un monde jouable */
+  --menu-mini-verrou: #141211;      /* fond de la miniature d'un monde verrouillé */
+  --menu-mini-cadenas: #cfc6b8;     /* cadenas de la miniature */
+  --menu-fleche-fond: rgb(5 5 5 / 85%); /* flèche « Cartes suivantes » */
+  --menu-classement-fond: rgb(8 5 5 / 86%); /* panneau Classement */
+  --menu-classement-bord: #4a1a18;  /* bord du panneau Classement */
+  --menu-classement-ligne: #161212; /* fond d'une ligne du classement */
+  --menu-classement-rang: #cfc6b8;  /* rang */
+  --menu-classement-toi: #2a0d0d;   /* fond de la ligne « Toi » */
+  --menu-classement-toi-texte: #ff6a5d; /* « Toi » */
+  --menu-exemple: #9fd3ff;          /* « exemple, arrive avec le compte » */
   /* Raretés (lots suivants : inventaire, boutique, tirage) */
   --rarete-commun: #a3a3a8;         /* gris */
   --rarete-peu-commun: #5cc46a;     /* vert */

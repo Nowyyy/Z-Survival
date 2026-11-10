@@ -3,7 +3,8 @@
 // Déconnexion grisée) ; contenu de l'onglet ; barre d'onglets E8-2 (Boutique · Personnage · JOUER · Infini · Event verrouillé). « JOUER » fait
 // charger le jeu sans recharger la page (jouer() : écran de chargement du jeu, puis main.js). État en mémoire seulement (js/core/menu-etat.js) : rien
 // n'est écrit dans le stockage jusqu'au lot 8h. preparerMenu() lit ce que le menu affiche (textes, nouveautés, liens, solde), sans rien du jeu.
-// Écrans à la demande : js/menu/ecrans.js (Information, Connexion, onglets « Bientôt »), js/game/options-menu.js (Options, E2-12).
+// Écrans à la demande : js/menu/ecrans.js (Information, Connexion, onglets « Bientôt »), js/menu/infini.js (lot 8b : onglet Infini), js/game/options-menu.js (Options, E2-12).
+// Lot 8b : onglet Jouer (js/menu/jouer.js, chargé avec le menu) ; option de démarrage (histoire ou infini) passée à jouer().
 import { formatMoney } from '../core/economy.js';
 import { basculerMenu, choisirOnglet, creerEtatMenu, fermerEcran, fermerMenu, lienExterne, lireMondes, lireOptionDemarrage, lireRecord, nouveauteNonLue, ONGLETS, ouvrirEcran, premierJouable } from '../core/menu-etat.js';
 import { ecranJouer } from './jouer.js';
@@ -229,13 +230,25 @@ export function creerMenu({ dict, infos = [], liens = {}, solde: montant = 0, re
 
   const ecrans = () => import('./ecrans.js');
 
+  let infini = null; // lot 8b : écran Infini (js/menu/infini.js, chargé au premier affichage) : { section, scene, etat() }
   async function changerOnglet(id) {
     etat = choisirOnglet(etat, id);
     if (!ecransOnglets.has(etat.onglet)) {
-      const m = await ecrans();
-      const s = m.ecranBientot({ dict, id: etat.onglet, titre: t(ONGLET_TEXTES[etat.onglet]) });
-      ecransOnglets.set(etat.onglet, s);
-      contenu.append(s);
+      const onglet = etat.onglet;
+      let s;
+      if (onglet === 'infini') {
+        const m = await import('./infini.js');
+        infini = await m.ecranInfini({ t, mondes, bandeau, jouer: lancer });
+        s = infini.section;
+        scenes.set('infini', infini.scene);
+      } else {
+        const m = await ecrans();
+        s = m.ecranBientot({ dict, id: onglet, titre: t(ONGLET_TEXTES[onglet]) });
+      }
+      if (!ecransOnglets.has(onglet)) {
+        ecransOnglets.set(onglet, s);
+        contenu.append(s);
+      }
     }
     synchroniser();
   }
@@ -323,6 +336,6 @@ export function creerMenu({ dict, infos = [], liens = {}, solde: montant = 0, re
   synchroniser();
   return {
     element: box,
-    etat: () => ({ onglet: etat.onglet, menuOuvert: etat.menuOuvert, ecran: etat.ecran, nonLue: nouveauteNonLue(infos, etat.lues), solde: montant, discord: lien.actif, record, monde: monde.id }),
+    etat: () => ({ onglet: etat.onglet, menuOuvert: etat.menuOuvert, ecran: etat.ecran, nonLue: nouveauteNonLue(infos, etat.lues), solde: montant, discord: lien.actif, record, monde: monde.id, infini: infini?.etat() ?? null }),
   };
 }

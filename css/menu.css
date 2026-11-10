@@ -1049,6 +1049,327 @@
   98%, 100% { opacity: 0; transform: scale(1); }
 }
 
+/* Lot 8b : onglet Infini (E8-4, maquette Infini.html) : décor SVG décoratif, rangée de cartes qui défile, panneau Classement à droite. */
+.e8-infini {
+  --e8-infini-panneau: max(190px, calc(232 * var(--u)));
+  --e8-infini-gauche: calc(100% - var(--e8-infini-panneau) - 20 * var(--u)); /* largeur de la colonne de gauche (bandeau, cartes, Jouer) */
+  gap: calc(4 * var(--u));
+  background: var(--menu-infini-ciel-haut);
+}
+
+.e8-infini-scene {
+  position: absolute;
+  inset: 0;
+}
+
+.e8-infini-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.e8-infini > :not(.e8-infini-scene) {
+  z-index: 1;
+}
+
+.e8-infini-choix {
+  position: relative;
+  max-width: var(--e8-infini-gauche);
+  margin: calc(4 * var(--u)) 0 0;
+  font-size: max(12px, calc(13 * var(--u)));
+}
+
+.e8-infini-choix-titre {
+  font-family: var(--font-label);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--menu-texte);
+}
+
+.e8-infini-choix-compte {
+  color: var(--menu-carte-libelle);
+}
+
+.e8-infini-zone {
+  position: relative;
+  flex: none;
+  width: var(--e8-infini-gauche);
+}
+
+.e8-infini-rangee {
+  display: flex;
+  gap: calc(14 * var(--u));
+  margin: 0;
+  padding: 0 0 calc(8 * var(--u));
+  overflow: auto hidden;
+  overscroll-behavior-x: contain;
+  list-style: none;
+  scroll-snap-type: x mandatory;
+  scrollbar-color: var(--menu-carte-bord) transparent;
+  scrollbar-width: thin;
+}
+
+.e8-infini-item {
+  flex: none;
+  scroll-snap-align: start;
+}
+
+.e8-infini-carte {
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  width: max(132px, calc(184 * var(--u)));
+  min-height: calc(150 * var(--u));
+  padding: 0 0 calc(6 * var(--u));
+  overflow: hidden;
+  border: 3px solid var(--menu-carte-bord);
+  border-radius: calc(4 * var(--u));
+  background: var(--menu-carte-fond);
+  color: var(--menu-texte);
+  line-height: 1.2;
+  text-align: left;
+  cursor: pointer;
+}
+
+.e8-infini-carte-choisie {
+  border-color: var(--menu-carte-choisie);
+}
+
+.e8-infini-carte-verrouillee {
+  cursor: not-allowed;
+}
+
+.e8-infini-mini {
+  display: block;
+  flex: none;
+  width: 100%;
+  height: calc(84 * var(--u));
+}
+
+.e8-infini-mini-verrou {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: var(--menu-mini-verrou);
+}
+
+.e8-infini-mini-ruban {
+  position: absolute;
+  top: calc(34 * var(--u));
+  left: -10%;
+  width: 120%;
+  height: calc(14 * var(--u));
+  background: repeating-linear-gradient(135deg, var(--menu-ruban-jaune) 0 8px, var(--menu-ruban-noir) 8px 16px);
+  transform: rotate(-12deg);
+}
+
+.e8-infini-cadenas {
+  position: relative;
+  width: max(20px, calc(26 * var(--u)));
+  height: max(20px, calc(26 * var(--u)));
+  fill: none;
+  stroke: var(--menu-mini-cadenas);
+  stroke-width: 2;
+}
+
+.e8-infini-mini-ciel { fill: var(--menu-mini-ciel); }
+.e8-infini-mini-lampe { fill: var(--menu-scene-lampe); opacity: 0.7; }
+.e8-infini-mini-vive { opacity: 1; }
+
+.e8-infini-carte-libelle {
+  padding: calc(6 * var(--u)) calc(10 * var(--u)) 0;
+  font-size: max(10px, calc(11 * var(--u)));
+  font-weight: var(--font-weight-bold);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--menu-carte-libelle);
+}
+
+.e8-infini-carte-nom {
+  padding: 0 calc(10 * var(--u));
+  font-size: max(13px, calc(15 * var(--u)));
+  font-weight: var(--font-weight-bold);
+}
+
+.e8-infini-carte-detail {
+  padding: 0 calc(10 * var(--u));
+  font-size: max(11px, calc(12 * var(--u)));
+  color: var(--menu-record);
+}
+
+.e8-infini-suivantes {
+  position: absolute;
+  top: calc(50 * var(--u));
+  right: calc(-12 * var(--u));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: max(var(--menu-cible), calc(44 * var(--u)));
+  height: max(var(--menu-cible), calc(44 * var(--u)));
+  padding: 0;
+  border: 2px solid var(--menu-rouge-clair);
+  border-radius: 50%;
+  background: var(--menu-fleche-fond);
+  color: var(--menu-texte);
+  cursor: pointer;
+}
+
+.e8-infini-fleche {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentcolor;
+  stroke-width: 3;
+}
+
+.e8-infini-bouton {
+  position: relative;
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  gap: calc(14 * var(--u));
+  box-sizing: border-box;
+  width: var(--e8-infini-gauche);
+  height: max(var(--menu-cible), calc(54 * var(--u)));
+  padding: 0;
+  font-size: max(22px, calc(30 * var(--u)));
+  line-height: 1;
+}
+
+.e8-infini-classement {
+  position: absolute;
+  top: calc(12 * var(--u));
+  right: var(--e8-droite);
+  bottom: calc(24 * var(--u));
+  display: flex;
+  flex-direction: column;
+  gap: calc(5 * var(--u));
+  box-sizing: border-box;
+  width: var(--e8-infini-panneau);
+  padding: calc(10 * var(--u)) calc(12 * var(--u));
+  border: 1px solid var(--menu-classement-bord);
+  background: var(--menu-classement-fond);
+}
+
+.e8-infini-classement-titre {
+  margin: 0;
+  font-family: var(--font-label);
+  font-size: max(14px, calc(16 * var(--u)));
+  font-weight: var(--font-weight-normal);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.e8-infini-classement-carte {
+  margin: 0;
+  font-size: max(11px, calc(12 * var(--u)));
+  color: var(--menu-texte-doux);
+}
+
+.e8-infini-exemple {
+  color: var(--menu-exemple);
+}
+
+.e8-infini-lignes {
+  display: flex;
+  flex-direction: column;
+  gap: calc(5 * var(--u));
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.e8-infini-ligne,
+.e8-infini-toi {
+  display: flex;
+  align-items: center;
+  gap: calc(8 * var(--u));
+  padding: 0 calc(8 * var(--u));
+}
+
+.e8-infini-ligne {
+  min-height: max(22px, calc(28 * var(--u)));
+  background: var(--menu-classement-ligne);
+}
+
+.e8-infini-rang {
+  min-width: max(14px, calc(18 * var(--u)));
+  font-size: max(12px, calc(14 * var(--u)));
+  font-weight: var(--font-weight-bold);
+  color: var(--menu-classement-rang);
+}
+
+.e8-infini-pseudo {
+  flex: 1;
+  font-size: max(12px, calc(14 * var(--u)));
+  color: var(--menu-texte-doux);
+}
+
+.e8-infini-manche {
+  font-size: max(11px, calc(13 * var(--u)));
+  font-weight: var(--font-weight-bold);
+}
+
+.e8-infini-toi {
+  min-height: max(28px, calc(34 * var(--u)));
+  margin: auto 0 0;
+  border: 1px solid var(--menu-rouge-clair);
+  background: var(--menu-classement-toi);
+  font-size: max(12px, calc(13 * var(--u)));
+}
+
+.e8-infini-toi-nom {
+  font-size: max(12px, calc(14 * var(--u)));
+  font-weight: var(--font-weight-bold);
+  color: var(--menu-classement-toi-texte);
+}
+
+.e8-infini-toi-rang {
+  flex: 1;
+}
+
+.e8-infini-toi-manche {
+  font-weight: var(--font-weight-bold);
+  color: var(--menu-record);
+}
+
+/* Décor : couleurs, halo qui pulse lentement, horde qui avance sur l'horizon (apparaît et s'efface en fondu à chaque passage). */
+.e8-infini-ciel-haut { stop-color: var(--menu-infini-ciel-haut); }
+.e8-infini-ciel-bas { stop-color: var(--menu-infini-ciel-bas); }
+.e8-infini-halo-centre { stop-color: var(--menu-infini-halo); stop-opacity: 0.35; }
+.e8-infini-halo-bord { stop-color: var(--menu-infini-halo); stop-opacity: 0; }
+.e8-infini-lune { fill: var(--menu-infini-lune); opacity: 0.8; }
+.e8-infini-sol { fill: var(--menu-infini-sol); }
+.e8-infini-z { fill: var(--menu-infini-horde); }
+
+.e8-infini-halo {
+  transform-box: fill-box;
+  transform-origin: 50% 50%;
+  animation: e8-infini-halo 6s ease-in-out infinite;
+}
+
+.e8-infini-horde {
+  animation: e8-infini-horde 30s linear infinite;
+}
+
+.e8-infini-scene[data-anim="off"] * {
+  animation-play-state: paused;
+}
+
+@keyframes e8-infini-halo {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.65; transform: scale(1.06); }
+}
+
+@keyframes e8-infini-horde {
+  0% { opacity: 0; transform: translateX(0); }
+  8%, 92% { opacity: 1; }
+  100% { opacity: 0; transform: translateX(-80px); }
+}
+
 .e8-texte {
   max-width: 62ch;
   margin: 0;
