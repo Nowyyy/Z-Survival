@@ -513,6 +513,14 @@
   grid-area: 2 / 2;
 }
 
+/* Confirmation de « Quitter » (lot 8a, construite par ui.js à la place des boutons) : la question au-dessus des deux boutons, séparée d'eux
+   (retour du propriétaire : le texte touchait presque les boutons). */
+.quit-confirm {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9em;
+}
+
 .panel-pause,
 .panel-end {
   width: min(100%, 32em);

@@ -64,3 +64,4 @@ Clé `zs.device.v1` (aucune autre clé) : `{ "v": 2, "graphics": "auto" | "faibl
 ## Lot 8c (livré)
 - Plan de la partie A réalisé ; relevé, chargement et preuves : `Docs/ref/menu-principal.md`, section « Lot 8c », et `Docs/lots/lot-8c.md`. Réglages « au lancement » = groupe `load` de `graphics.json` (`anticrenelage`, `carte`, `textures`, `personnages`) : aucune donnée changée, aucune valeur de préréglage changée.
 - Tests : `tests/unit/options-8c.test.js` (fonctions pures, contrôleur dans les deux contextes) ; `tests/e2e/options-menu.spec.js` (page du menu et Options en partie, bureau et mobile) ; `graphismes.spec.js` : le test de la barre « Recharger maintenant » est devenu celui du verrouillage.
+- Retours du propriétaire après fusion : la ligne « En cours : X · au retour au menu : Y » est retirée (section « En partie » ci-dessus) ; plein écran dans l'en-tête du menu et écart de la confirmation de « Quitter » : `Docs/ref/menu-principal.md`.
