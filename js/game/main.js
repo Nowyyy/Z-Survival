@@ -22,10 +22,10 @@ import { generateTextureData } from './textures.js';
 import { installTestHook } from './testhook.js';
 import { createUi } from './ui.js';
 import { applyTexts, fmt, loadDict, TEXTURE_TEXTS } from './texts.js';
-import { menuPret, menuProgres, menuRetour, modeMenu } from '../menu/demarrage.js';
+import { menuProgres, menuRetour } from '../menu/demarrage.js';
 
 const DEFAULT_RATIO_CAP = 2;
-menuProgres('modules', 1); // lot 8a : modules et Three.js évalués (écran de chargement E7 du mode menu ; sans effet en partie directe)
+menuProgres('modules', 1); // lot 8a : modules et Three.js évalués (écran de chargement du jeu après « JOUER » ; sans effet en partie directe)
 
 async function loadJson(path) {
   const response = await fetch(path);
@@ -263,9 +263,8 @@ ctx.ui = createUi(dict, {
   },
   onMenu: () => menuRetour(),
 });
-ctx.ui.setMenu(modeMenu); // lot 8a : pendant le menu, ni pause ni commande de partie
 ctx.input = createInput(root, {
-  isBlocked: () => ctx.ui.isPaused() || ctx.ui.isMenu(),
+  isBlocked: () => ctx.ui.isPaused(),
   onCommand: (name) => {
     if (name === 'pause') ctx.ui.togglePause();
     else if (name === 'fullscreen') ctx.ui.toggleFullscreen();
@@ -293,9 +292,6 @@ soundHint.addEventListener('click', () => ctx.audio.unlock());
 // aussi, et chaque geste retente la reprise tant que le contexte n'est pas en marche.
 for (const type of ['pointerdown', 'pointerup', 'click', 'touchend', 'keydown']) window.addEventListener(type, () => ctx.audio.unlock(), { capture: true });
 
-// Lot 8a : en mode menu, le jeu n'est créé qu'à « JOUER » (le menu s'ouvre quand textures et sons sont prêts) : la création (compilation, premier
-// rendu, ~1 s sur téléphone) reste hors du chargement mesuré par Lighthouse, qui tombait de 55 à 34 quand elle suivait l'écran de chargement.
-if (modeMenu) await new Promise((resolve) => menuPret({ dict, repository, graphics: ctx.graphics, vhs, jouer: resolve }));
 game = createGame(ctx);
 // Lot 5b-G : l'écran de préparation reste affiché pendant la création du jeu (monde, programmes, premier rendu complet, zombies préparés) :
 // le joueur ne voit pas la première image lente ; la boucle d'images ne démarre qu'à l'image suivante, une fois l'écran retiré.
@@ -303,8 +299,7 @@ game = createGame(ctx);
 // de 55 à 30 (temps de blocage 1,3 à 1,6 s), sous le seuil de 45 ; ce commit reste dans la première seconde de la partie (compte à rebours « DÉBUT »).
 loading.done();
 root.hidden = false;
-document.getElementById('e8')?.remove(); // lot 8a : la partie remplace le menu principal
-ctx.ui.setMenu(false);
+menuProgres('compilation', 1); // lot 8a : partie créée ; en mode menu, l'écran de chargement du jeu laisse voir la partie
 if (game === null) {
   // WebGL indisponible : un message à la place du jeu.
   root.hidden = true;

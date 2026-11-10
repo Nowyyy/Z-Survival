@@ -252,7 +252,7 @@
       "Quelques tests sont corrigés ou retirés (tests sautés depuis longtemps) ; le jeu ne change pas."
     ] },
     { "name": "lot-8a", "version": "v0.8", "date": "2026-11-09", "titre": "Écran de chargement et menu principal", "points": [
-      "Le jeu s'ouvre sur un écran de chargement (titre animé, vraie progression, astuce, version) puis sur un menu principal en paysage.",
+      "Le jeu s'ouvre sur un écran de chargement (titre animé, vraie progression, astuce, version) puis sur un menu principal en paysage ; la partie ne se charge qu'au clic sur Jouer.",
       "Menu : connexion (bientôt), solde, menu à trois barres (Options, Information, Discord bientôt), onglets Boutique, Personnage, Jouer, Infini et Event (verrouillé) ; Boutique, Personnage et Infini arrivent plus tard.",
       "« Quitter » (avec confirmation) et « Revenir au menu principal » ramènent au menu ; l'argent gagné est conservé comme à la mort. Les règles du jeu ne changent pas."
     ] }

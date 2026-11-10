@@ -1,32 +1,23 @@
 // Lot 8a : démarrage de jeu.html (Docs/ref/menu-principal.md). Balise de jeu.html avant boot.js : décide « menu » ou « partie directe » d'après
-// l'adresse autorisée (choixDemarrage de js/core/graphics.js, sur pageSearch()). Partie directe (?test=1 sans menu=1, ou un paramètre de « Partie ») :
-// rien d'autre, le jeu démarre exactement comme avant. Menu : feuille css/menu.css, écran de chargement E7 (js/menu/chargement.js, importé ici),
-// progression réelle relayée par main.js (menuProgres), puis menu E8 quand le jeu est prêt (menuPret). Seul fichier ajouté en partie directe.
+// l'adresse autorisée (choixDemarrage de js/core/graphics.js, sur pageSearch()).
+// - Partie directe (?test=1 sans menu=1, ou un paramètre de « Partie ») : js/game/main.js est importé tout de suite (avant le lot 8a, c'était une
+//   balise de jeu.html) ; le jeu démarre exactement comme avant.
+// - Menu : seul le menu se charge (feuille css/menu.css, écran de chargement E7 « menu », puis menu E8) ; au clic sur « JOUER », l'écran de
+//   chargement revient (phase « jeu ») et main.js est importé : Three.js, données, textures, sons et création du jeu se chargent à ce moment-là,
+//   avec leur progression réelle (menuProgres, appelé par main.js ; sans effet en partie directe).
 import { choixDemarrage } from '../core/graphics.js';
-import { pageCanal, pageSearch } from '../game/graphics-boot.js';
+import { graphicsReboot, pageCanal, pageSearch } from '../game/graphics-boot.js';
 
 export const modeMenu = choixDemarrage(pageCanal(), pageSearch()) === 'menu';
 
-// Avant l'arrivée de l'écran de chargement (import en cours), les avancées sont gardées puis rejouées dans l'ordre.
+// Avancées arrivées avant l'écran de chargement (import en cours) : gardées puis rejouées dans l'ordre.
 const attente = [];
 let ecran = null;
-let pret = null;
-let echec = false;
 
 export function menuProgres(etape, fraction) {
   if (!modeMenu) return;
   if (ecran) ecran.progres(etape, fraction);
   else attente.push([etape, fraction]);
-}
-
-// Chargement fini (textures et sons prêts) : api = { dict, repository, graphics, vhs, jouer() } (main.js ; jouer() laisse main.js créer la partie).
-// L'écran de chargement termine sa chute, puis laisse la place au menu.
-export function menuPret(api) {
-  if (!modeMenu) return;
-  document.getElementById('loading')?.setAttribute('hidden', ''); // écran de préparation d'avant (sous E7) : il ne doit pas couvrir le menu
-  pret = api;
-  if (echec) api.jouer(); // écran de chargement indisponible : la partie démarre comme avant le menu
-  else ecran?.pret(api);
 }
 
 // Retour au menu (« Quitter » confirmé, « Revenir au menu principal ») : rechargement de jeu.html sans les paramètres de « Partie » (menu=1 sous
@@ -38,9 +29,22 @@ export async function menuRetour(loc = globalThis.location) {
   else loc.replace(`${loc.pathname}${search}${loc.hash}`);
 }
 
-if (modeMenu) {
+// Chargement du jeu : Three.js préchargé (avant le lot 8a : balises modulepreload de jeu.html), puis le graphe de main.js.
+function lancerJeu() {
+  for (const href of ['vendor/three/three.module.js', 'vendor/three/three.core.js']) {
+    const link = document.createElement('link');
+    link.rel = 'modulepreload';
+    link.href = href;
+    document.head.append(link);
+  }
+  return import('../game/main.js');
+}
+
+if (!modeMenu) {
+  lancerJeu();
+} else {
   document.documentElement.classList.add('zs-mode-menu');
-  // Tests (?test=1&menu=1) : état de l'écran de chargement et du menu (pourcentages affichés, onglet, menu à trois barres…), lecture seule.
+  // Tests (?test=1&menu=1) : état de l'écran de chargement en cours et du menu (phase, pourcentages affichés, onglet…), lecture seule.
   if (new URLSearchParams(pageSearch()).get('test') === '1') window.__zsMenu = { etat: () => ecran?.etat() ?? null };
   const css = document.createElement('link');
   css.rel = 'stylesheet';
@@ -52,12 +56,17 @@ if (modeMenu) {
   document.head.append(css);
   import('./chargement.js').then(async (m) => {
     await feuille;
-    ecran = m.creerChargement();
-    for (const [e, f] of attente.splice(0)) ecran.progres(e, f);
-    if (pret) ecran.pret(pret);
+    // « JOUER » : écran de chargement du jeu (Z posé), réglages graphiques relus (l'écran Options du menu a pu les changer), puis le jeu.
+    const jouer = () => {
+      ecran = m.creerChargement({ phase: 'jeu' });
+      for (const [e, f] of attente.splice(0)) ecran.progres(e, f);
+      graphicsReboot();
+      lancerJeu();
+    };
+    ecran = m.creerChargement({ phase: 'menu', jouer });
   }).catch(() => {
-    echec = true; // écran de chargement indisponible : l'écran de préparation d'avant reste visible, puis la partie démarre
+    // Écran de chargement indisponible : la partie démarre comme avant le menu (écran de préparation #loading).
     document.documentElement.classList.remove('zs-mode-menu');
-    pret?.jouer();
+    lancerJeu();
   });
 }

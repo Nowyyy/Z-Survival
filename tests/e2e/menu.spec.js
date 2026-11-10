@@ -36,8 +36,10 @@ const boite = (page, sel) => page.locator(sel).evaluate((n) => {
 });
 
 test.describe('écran de chargement (E7)', () => {
-  test('titre « Z-Survival », progression réelle monotone jusqu\'à 100, astuce, version ; chute du Z jouée une fois ; puis le menu ; console propre', async ({ page, baseURL }) => {
+  test('titre « Z-Survival », progression réelle monotone jusqu\'à 100, astuce, version ; chute du Z jouée une fois ; puis le menu, sans rien du jeu (ni main.js, ni Three.js) ; console propre', async ({ page, baseURL }) => {
     const o = surveiller(page, baseURL);
+    const fichiers = [];
+    page.on('request', (r) => r.url().startsWith(baseURL) && fichiers.push(new URL(r.url()).pathname));
     await page.setViewportSize(REF);
     await page.goto('/jeu.html?test=1&menu=1&seed=1');
     await expect(page.locator('#e7-titre')).toHaveText('Z-Survival');
@@ -54,8 +56,9 @@ test.describe('écran de chargement (E7)', () => {
     expect(e.journal.at(-1)).toBe(100);
     expect(e.journal.every((n, i) => i === 0 || n > e.journal[i - 1])).toBe(true);
     expect(e.journal.filter((n) => n >= 100)).toEqual([100]);
-    expect([e.pret, e.chuteFinie, e.visible]).toEqual([true, true, false]);
+    expect([e.phase, e.pret, e.chuteFinie, e.visible]).toEqual(['menu', true, true, false]);
     expect(await page.evaluate(() => typeof window.__zs)).toBe('undefined'); // la partie n'est créée qu'à « JOUER »
+    expect(fichiers.filter((f) => /\/js\/game\/main\.js$|\/vendor\/three\/|\/data\/game\/(textures|sounds|world)\.json$|\/maps\//.test(f))).toEqual([]); // seul le menu s'est chargé
     expect(o.problemes).toEqual([]);
     expect(o.externes).toEqual([]);
   });
@@ -221,6 +224,8 @@ test.describe('partie et retour au menu', () => {
     await expect(page.locator('#e8')).toHaveCount(0);
     await page.waitForFunction(() => (window.__zs?.getState()?.time ?? 0) > 0.05);
     expect(page.url()).toBe(url);
+    const jeu = await etatMenu(page); // écran de chargement de la partie : progression jusqu'à 100, puis retiré
+    expect([jeu.phase, jeu.journal.at(-1), jeu.visible, jeu.journal.every((n, i) => i === 0 || n > jeu.journal[i - 1])]).toEqual(['jeu', 100, false, true]);
     expect(await page.evaluate(() => window.__zs.getState().waves.wave)).toBe(1);
     // Quitter : gain de la partie, confirmation (Annuler d'abord), puis retour au menu ; le solde de la sauvegarde contient le gain.
     await page.evaluate(() => window.__zs.giveMoney(50));
@@ -258,7 +263,11 @@ test.describe('partie et retour au menu', () => {
     expect(await page.evaluate(() => [typeof window.__zs, typeof window.__zsMenu])).toEqual(['undefined', 'undefined']);
     await expect(page.locator('#game-root')).toBeHidden();
     await page.locator('#menu-jouer').click();
+    // Lot 8a (retour du propriétaire) : le jeu ne se charge qu'à « JOUER », sous l'écran de chargement (Z posé, « Chargement de la partie… »).
+    await expect(page.locator('#e7.e7-phase-jeu.e7-pose')).toBeVisible();
+    await expect(page.locator('#e7-texte')).toHaveText('Chargement de la partie…');
     await expect(page.locator('#game-root')).toBeVisible({ timeout: 60_000 });
+    await expect(page.locator('#e7')).toHaveCount(0, { timeout: 60_000 });
     await expect(page.locator('#hud-chrono-text')).not.toHaveText('', { timeout: 30_000 });
     expect(o.externes).toEqual([]);
     expect(o.problemes).toEqual([]);

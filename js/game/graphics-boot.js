@@ -50,3 +50,9 @@ export function graphicsBoot(search = pageSearch()) {
   ready ??= boot(String(search).slice(0, 2000));
   return ready;
 }
+
+// Lot 8a : l'écran Options du menu principal a pu changer la préférence de l'appareil avant le chargement du jeu (« JOUER ») : la résolution suivante
+// relit zs.device.v1 (sans effet en partie directe, où rien n'est résolu avant main.js).
+export function graphicsReboot() {
+  ready = null;
+}
