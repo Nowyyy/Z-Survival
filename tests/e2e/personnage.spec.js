@@ -550,3 +550,38 @@ test.describe('« JOUER » : niveaux de la partie', () => {
     expect(ecart, `premier écart au pas ${ecart}`).toBe(-1);
   });
 });
+
+// Retour du propriétaire après la fusion : sur un téléphone à encoche en paysage, la zone sûre élargit les marges latérales (--e8-gauche, --e8-droite :
+// environ 50 px au lieu de 16) ; la partie gauche des sous-menus passait sous le panneau de droite. Encoche simulée : marges de 50 px, 762 × 351.
+test.describe('téléphone à encoche (762 × 351, marges latérales de 50 px)', () => {
+  test('écran Personnage et trois sous-menus : rien hors de l\'écran ni superposé, rien sous la barre d\'onglets ; mots entiers dans les cases', async ({ page, baseURL }) => {
+    const o = surveiller(page, baseURL);
+    const size = { width: 762, height: 351 };
+    await ouvrirMenu(page, size);
+    await page.addStyleTag({ content: '#e8 { --e8-gauche: 50px !important; --e8-droite: 50px !important; }' });
+    await page.locator('#menu-onglet-personnage').click();
+    await expect(page.locator('#menu-ecran-personnage')).toBeVisible();
+    const verifier = async (nom, ids, bas) => {
+      const b = {};
+      for (const s of ids) b[s] = await boite(page, s);
+      for (const s of ids) expect([b[s].l >= 50 - 0.5, b[s].t >= 0, b[s].r <= size.width - 50 + 0.5, b[s].b <= bas + 0.5], `${nom} ${s}`).toEqual([true, true, true, true]);
+      for (let i = 0; i < ids.length; i += 1) for (let j = i + 1; j < ids.length; j += 1) expect(chevauche(b[ids[i]], b[ids[j]]), `${nom} : ${ids[i]} / ${ids[j]}`).toBe(false);
+    };
+    const onglets = await boite(page, '.e8-onglets');
+    await verifier('personnage', ['#menu-ecran-personnage .menu-bandeau', '#menu-perso-silhouette', '#menu-perso-gauche', '#menu-perso-droite', '#menu-perso-capacite'], onglets.t);
+    for (const [ouvreur, nom, blocs] of [
+      ['#menu-perso-inventaire', 'inventaire', ['#menu-inventaire-filtres', '#menu-inventaire-grille', '.e9-pagination', '#menu-inventaire-detail']],
+      ['#menu-perso-fusion', 'fusion', ['#menu-fusion-regle', '#menu-fusion-atelier', '#menu-fusion-compatibles']],
+      ['#menu-perso-silhouette', 'personnages', ['#menu-personnages-grille', '#menu-personnages-fiche']],
+    ]) {
+      await page.locator(ouvreur).click();
+      await expect(page.locator(`#menu-ecran-${nom}`)).toBeVisible();
+      await verifier(nom, [`#menu-ecran-${nom} .e9-tete`, ...blocs], size.height);
+      // Aucun nom d'objet coupé au milieu d'un mot (un seul mot par nom dans les données : une seule ligne).
+      const coupes = await page.locator(`#menu-ecran-${nom} .e9-case-nom`).evaluateAll((ns) => ns.filter((n) => n.offsetParent && n.getClientRects().length && n.getBoundingClientRect().height > parseFloat(getComputedStyle(n).lineHeight) * 1.5 && !/\s/.test(n.textContent)).map((n) => n.textContent));
+      expect(coupes, nom).toEqual([]);
+      await page.keyboard.press('Escape');
+    }
+    expect(o.problemes).toEqual([]);
+  });
+});

@@ -1924,7 +1924,11 @@
    personnages.js. Tailles en calc(N * var(--u)) (N = pixels de la maquette 932 × 430 ; ordonnées comptées depuis le bas de l'en-tête, y 50),
    cibles de 44 px au moins ; rareté, porté, choisi, verrouillé toujours écrits (jamais la couleur seule). Animations e9-*, en pause hors de l'écran
    (data-anim, classe e9-anime), coupées sous prefers-reduced-motion (règle .e8 * plus haut). */
+/* Encoche (téléphone en paysage) : les marges latérales (--e8-gauche, --e8-droite : 16 px ou la zone sûre) dépassent les 16 px prévus ; l'unité se
+   règle alors sur la largeur restante, pour que colonnes et panneaux ne se chevauchent pas (retour du propriétaire après la fusion). Sans encoche :
+   même valeur que --u de :root. Plancher 0,6 px (au lieu de 0,7) pour les téléphones étroits à encoche. */
 .e9 {
+  --u: clamp(0.6px, min(calc((100vw - var(--e8-gauche) - var(--e8-droite) + 32px) / 932), calc(100vh / 430)), 1.3px);
   --e5-bouton-h: max(var(--menu-cible), calc(40 * var(--u))); /* « ‹ Équipement » et filtres : composants de la page Options (lot 8c) */
   --e9-col: calc(220 * var(--u));
   --e9-case-h: max(var(--menu-cible), calc(52 * var(--u)));
@@ -1950,6 +1954,11 @@
   stroke-width: 1.8;
   stroke-linejoin: round;
   stroke-linecap: round;
+}
+
+/* Écran Personnage : l'unité tient aussi compte de la hauteur réelle du contenu (en-tête et onglets ont 48 et 50 px au moins). */
+.e9.e9-perso {
+  --u: clamp(0.6px, min(calc((100vw - var(--e8-gauche) - var(--e8-droite) + 32px) / 932), calc((100vh - 98px) / 318)), 1.3px);
 }
 
 /* Fond : gris presque noir, sol plus sombre à partir de y 262 (bord de 2 px). */
@@ -2337,9 +2346,10 @@
   min-height: 0;
 }
 
-.e9-inventaire .e9-sous-gauche { width: calc(520 * var(--u)); }
-.e9-fusion .e9-sous-gauche { width: calc(420 * var(--u)); }
-.e9-personnages .e9-sous-gauche { width: calc(438 * var(--u)); }
+/* Colonne de gauche : largeur de la maquette, jamais plus que la place laissée par le panneau de droite (largeur + écart de 20). */
+.e9-inventaire .e9-sous-gauche { width: min(calc(520 * var(--u)), calc(100% - 348 * var(--u))); }
+.e9-fusion .e9-sous-gauche { width: min(calc(420 * var(--u)), calc(100% - 448 * var(--u))); }
+.e9-personnages .e9-sous-gauche { width: min(calc(438 * var(--u)), calc(100% - 430 * var(--u))); }
 
 .e9-tete {
   margin-bottom: calc(8 * var(--u));
@@ -2379,7 +2389,7 @@
 .e9-compatibles {
   top: calc(58 * var(--u));
   width: calc(428 * var(--u));
-  height: max(calc(248 * var(--u)), 196px);
+  height: max(calc(248 * var(--u)), min(calc(100% - 70 * var(--u)), 250px)); /* deux rangées visibles sur téléphone (écran plein, sans onglets) */
   padding: calc(12 * var(--u));
   border: 1px solid var(--menu-options-filet);
   background: var(--menu-e9-compatibles);
@@ -2462,7 +2472,7 @@
   width: 100%;
   min-width: 0;
   min-height: max(var(--menu-cible), calc(64 * var(--u)));
-  padding: calc(4 * var(--u));
+  padding: calc(4 * var(--u)) 2px;
   border: 2px solid var(--e9-rarete, var(--menu-options-bouton-bord));
   border-radius: 4px;
   background: var(--menu-e9-panneau);
@@ -2479,20 +2489,21 @@
   background: var(--menu-e9-case-choisie);
 }
 
+/* Cases étroites (téléphones) : texte jusqu'à 10 px plutôt qu'un mot coupé en deux. */
 .e9-case-nom {
   max-width: 100%;
   overflow-wrap: anywhere;
-  font-size: var(--e9-moyen);
+  font-size: max(10px, calc(13 * var(--u)));
   font-weight: var(--font-weight-bold);
 }
 
 .e9-case-rarete {
-  font-size: var(--e9-petit);
+  font-size: max(10px, calc(11 * var(--u)));
   color: var(--menu-e9-texte-doux);
 }
 
 .e9-case-niveau {
-  font-size: var(--e9-petit);
+  font-size: max(10px, calc(11 * var(--u)));
   color: var(--menu-options-note);
 }
 
@@ -2872,4 +2883,25 @@
 
 .e9-fiche .e9-stats {
   font-size: var(--e9-moyen);
+}
+
+/* Écrans peu hauts (téléphone en paysage, moins de 370 px) : écran Personnage resserré, quatre statistiques (celles de la maquette) au lieu de six. */
+@media (max-height: 370px) {
+  .e9-perso .e9-colonne {
+    top: calc(70 * var(--u));
+    gap: calc(6 * var(--u));
+  }
+
+  .e9-perso .e9-emplacements {
+    gap: calc(6 * var(--u));
+  }
+
+  .e9-perso .e9-stat[data-stat='portee'],
+  .e9-perso .e9-stat[data-stat='precision'] {
+    display: none;
+  }
+
+  .e9-capacite {
+    top: calc(246 * var(--u));
+  }
 }
