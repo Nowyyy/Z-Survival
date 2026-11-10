@@ -22,8 +22,6 @@
   <link rel="preload" href="fonts/barlow-latin-700-normal.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="data/i18n/fr.json" as="fetch" crossorigin>
   <link rel="modulepreload" href="js/game/texts.js">
-  <link rel="modulepreload" href="vendor/three/three.module.js">
-  <link rel="modulepreload" href="vendor/three/three.core.js">
   <link rel="stylesheet" href="css/tokens.css">
   <link rel="stylesheet" href="css/base.css">
   <link rel="stylesheet" href="css/game.css">
@@ -49,10 +47,10 @@
       });
     })();
   </script>
-  <!-- Lot 8a : démarrage (menu principal ou partie directe, Docs/ref/menu-principal.md) ; avant boot.js pour que l'écran de chargement E7 paraisse au plus tôt. -->
+  <!-- Lot 8a : démarrage (Docs/ref/menu-principal.md) : en partie directe, ce module importe js/game/main.js (avant : balise ici) et précharge
+       Three.js (avant : balises modulepreload ici) ; en mode menu, seul le menu se charge, le jeu seulement après « JOUER ». Avant boot.js. -->
   <script type="module" src="js/menu/demarrage.js"></script>
   <script type="module" src="js/game/boot.js"></script>
-  <script type="module" src="js/game/main.js"></script>
 </head>
 <body class="game">
   <noscript>

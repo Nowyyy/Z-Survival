@@ -1,12 +1,15 @@
 // Lot 8a : menu principal E8 (Docs/ref/menu-principal.md), affiché quand le chargement (E7) est fini. En-tête E8-1 : « Connexion » (écran
 // provisoire), solde (lecture seule de la sauvegarde existante), bouton à trois barres (Options, Information et son point jaune, Discord,
-// Déconnexion grisée) ; contenu de l'onglet ; barre d'onglets E8-2 (Boutique · Personnage · JOUER · Infini · Event verrouillé). « JOUER » lance la
-// partie sans recharger la page (api.jouer). État en mémoire seulement (js/core/menu-etat.js) : rien n'est écrit dans le stockage jusqu'au lot 8h.
+// Déconnexion grisée) ; contenu de l'onglet ; barre d'onglets E8-2 (Boutique · Personnage · JOUER · Infini · Event verrouillé). « JOUER » fait
+// charger le jeu sans recharger la page (jouer() : écran de chargement du jeu, puis main.js). État en mémoire seulement (js/core/menu-etat.js) : rien
+// n'est écrit dans le stockage jusqu'au lot 8h. preparerMenu() lit ce que le menu affiche (textes, nouveautés, liens, solde), sans rien du jeu.
 // Écrans à la demande : js/menu/ecrans.js (Information, Connexion, onglets « Bientôt »), js/game/options-menu.js (Options, E2-12).
 import { formatMoney } from '../core/economy.js';
 import { basculerMenu, choisirOnglet, creerEtatMenu, fermerEcran, fermerMenu, lienExterne, nouveauteNonLue, ONGLETS, ouvrirEcran } from '../core/menu-etat.js';
 import { decorNuit } from './chargement.js';
-import { fmt } from '../game/texts.js';
+import { fmt, loadDict } from '../game/texts.js';
+import { graphicsBoot, pageSearch } from '../game/graphics-boot.js';
+import { createRepository } from '../save/index.js';
 
 const SVG = 'http://www.w3.org/2000/svg';
 // Icônes au trait (16 × 16), décoratives.
@@ -59,11 +62,43 @@ export function bandeau(libelle, titre, id) {
   return b;
 }
 
-export function creerMenu({ dict, repository, graphics, vhs = null, jouer, root = document.body, donnees = null }) {
+const json = (path) => fetch(path).then((r) => (r.ok ? r.json() : null)).catch(() => null);
+
+// Chargement du menu (phase « menu » de l'écran de chargement) : textes, nouveautés, liens, et le solde lu dans la sauvegarde existante par son API
+// (createRepository, lecture seule : load(), sans canal entre onglets ni écriture). onProgress(f) : part des fichiers reçus (0 à 1).
+export async function preparerMenu({ search = pageSearch(), onProgress = () => {} } = {}) {
+  let recus = 0;
+  const suivre = (p) => p.then((v) => {
+    recus += 1;
+    onProgress(recus / 6);
+    return v;
+  });
+  const [dict, infos, liens, save, economy, stats] = await Promise.all([
+    suivre(loadDict()), suivre(json('data/menu/infos.json')), suivre(json('data/menu/liens.json')),
+    suivre(json('data/game/save.json')), suivre(json('data/game/economy.json')), suivre(json('data/game/player-stats.json')),
+  ]);
+  let solde = 0;
+  try {
+    const storage = (() => {
+      try {
+        return window.localStorage;
+      } catch {
+        return null;
+      }
+    })();
+    const { repository } = createRepository({ search, storage, params: { save, economy, stats } });
+    const lu = repository.load();
+    if (lu && lu.save && Number.isFinite(lu.save.money)) solde = lu.save.money;
+  } catch {
+    // sauvegarde illisible ou stockage bloqué : solde 0 affiché, rien n'est écrit
+  }
+  return { dict, infos: Array.isArray(infos?.infos) ? infos.infos : [], liens: liens ?? {}, solde };
+}
+
+export function creerMenu({ dict, infos = [], liens = {}, solde: montant = 0, jouer, root = document.body }) {
   const t = (k) => dict[k] ?? '';
   let etat = creerEtatMenu();
-  let infos = [];
-  let lien = lienExterne('');
+  const lien = lienExterne(liens?.discord);
   let options = null; // écran Options (créé à la première ouverture)
   let dialogue = null; // écran Information ou Connexion ouvert : { close, escape, element }
   let retourFocus = null;
@@ -80,8 +115,6 @@ export function creerMenu({ dict, repository, graphics, vhs = null, jouer, root 
   const droite = el('div', ['e8-droite']);
   const solde = el('p', ['e8-solde'], { id: 'menu-solde' });
   const soldeTexte = el('span', ['e8-solde-texte'], { id: 'menu-solde-texte', 'aria-hidden': 'true' });
-  const lu = repository?.load?.();
-  const montant = lu && lu.save && Number.isFinite(lu.save.money) ? lu.save.money : 0;
   soldeTexte.textContent = formatMoney(montant);
   const soldeNom = el('span', ['sr-only']);
   soldeNom.textContent = fmt(t('game.menu.solde'), { n: formatMoney(montant) });
@@ -233,7 +266,13 @@ export function creerMenu({ dict, repository, graphics, vhs = null, jouer, root 
     etat = ouvrirEcran(etat, 'options');
     synchroniser();
     try {
-      options ??= (await import('../game/options-menu.js')).createOptionsMenu({ dict, graphics, vhs, onClose: () => fermerOptions() });
+      // Écran Options existant (E2-12) : réglages graphiques résolus à la première ouverture (graphics-boot.js) ; le jeu les relit à « JOUER ».
+      if (!options) {
+        const [{ createOptionsMenu }, { createGraphicsController }, gfx] = await Promise.all([import('../game/options-menu.js'), import('../game/graphics-apply.js'), graphicsBoot()]);
+        const test = new URLSearchParams(pageSearch()).get('test') === '1';
+        const graphics = createGraphicsController(gfx, { dict, reload: test ? null : () => location.reload() });
+        options = createOptionsMenu({ dict, graphics, vhs: null, onClose: () => fermerOptions() });
+      }
       options.open();
     } catch {
       fermerOptions();
@@ -246,14 +285,11 @@ export function creerMenu({ dict, repository, graphics, vhs = null, jouer, root 
     barres.focus();
   }
 
-  // « JOUER » : « Préparation… » s'affiche (deux images), puis main.js crée la partie (compilation, premier rendu) et retire le menu.
+  // « JOUER » : le menu laisse la place à l'écran de chargement du jeu (chargement.js, demarrage.js).
   btJouer.addEventListener('click', () => {
-    if (btJouer.disabled) return;
     document.removeEventListener('keydown', clavier, true);
     document.removeEventListener('pointerdown', dehors, true);
-    btJouer.disabled = true;
-    btJouer.textContent = t('game.menu.jouer.preparation');
-    requestAnimationFrame(() => requestAnimationFrame(() => jouer()));
+    jouer();
   });
 
   // Échap : Options (confirmation d'abord), puis l'écran ouvert, puis le menu à trois barres. Un appui ailleurs ferme le menu à trois barres.
@@ -272,19 +308,9 @@ export function creerMenu({ dict, repository, graphics, vhs = null, jouer, root 
   document.addEventListener('keydown', clavier, true);
   document.addEventListener('pointerdown', dehors, true);
 
-  // Données du menu (nouveautés et liens) : lues une fois ; le point jaune paraît dès qu'elles sont là.
-  const json = (path) => fetch(path).then((r) => (r.ok ? r.json() : null)).catch(() => null);
-  const pretes = Promise.all([donnees?.infos ?? json('data/menu/infos.json'), donnees?.liens ?? json('data/menu/liens.json')]).then(([i, l]) => {
-    infos = Array.isArray(i?.infos) ? i.infos : [];
-    lien = lienExterne(l?.discord);
-    poserDiscord();
-    synchroniser();
-  });
-
   synchroniser();
   return {
     element: box,
-    pretes,
     etat: () => ({ onglet: etat.onglet, menuOuvert: etat.menuOuvert, ecran: etat.ecran, nonLue: nouveauteNonLue(infos, etat.lues), solde: montant, discord: lien.actif }),
   };
 }

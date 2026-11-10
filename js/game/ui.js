@@ -4,7 +4,7 @@
 // la pause (ils sont dans l'écran Options). Pendant l'écran Options, la partie reste en pause.
 // Lot 5l : icône « Débogage » de la pause (canaux de débogage seulement) ; menu E2-13 (js/game/debug-menu.js importé au premier clic) ; la partie reste en pause.
 // Lot 8a : « Quitter » actif (confirmation construite au premier appui, à la place des boutons de la pause) et « Revenir au menu principal » actif : tous
-// deux appellent main.js (onQuit, onMenu : retour au menu par rechargement). setMenu(true) : pendant le menu principal, la pause ne s'ouvre pas.
+// deux appellent main.js (onQuit, onMenu : retour au menu par rechargement).
 import { formatMoney } from '../core/economy.js';
 import { fmt, MONEY_TEXTS, SAVE_TEXTS } from './texts.js';
 
@@ -30,7 +30,6 @@ export function createUi(dict, handlers) {
   const rotateQuery = matchMedia(PORTRAIT_PHONE);
   const canFullscreen = Boolean(document.fullscreenEnabled && document.documentElement.requestFullscreen);
   let hasAudio = false;
-  let menuActive = false; // lot 8a : menu principal affiché (partie en attente de « JOUER »)
   let quitBox = null; // lot 8a : confirmation de « Quitter » (créée au premier appui)
 
   const ui = {
@@ -45,7 +44,7 @@ export function createUi(dict, handlers) {
     },
 
     openPause() {
-      if (menuActive || ui.isEnded() || optionsOpen || debugOpen) return;
+      if (ui.isEnded() || optionsOpen || debugOpen) return;
       els.pausePanel.hidden = false;
       els.resume.focus();
       handlers.onPausePanel?.(true);
@@ -203,11 +202,7 @@ export function createUi(dict, handlers) {
     els.debug.focus();
   };
   els.debug.addEventListener('click', () => ui.openDebug());
-  // Lot 8a : menu principal et retour au menu.
-  ui.setMenu = (active) => {
-    menuActive = active === true;
-  };
-  ui.isMenu = () => menuActive;
+  // Lot 8a : retour au menu (« Quitter » confirmé, « Revenir au menu principal »).
   const actions = els.pausePanel.querySelector('.panel-actions');
   ui.openQuit = () => {
     if (els.pausePanel.hidden) return;

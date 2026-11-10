@@ -3,29 +3,35 @@
 // Jusqu'au lot 8h, tout cet état reste en mémoire : rien n'est écrit dans le stockage.
 import { PARAMS_PARTIE } from './graphics.js';
 
-// Étapes du chargement réel et leur part du pourcentage (somme 1) : modules (Three.js compris), données JSON, textures, sons « essentiel ».
-// La création du jeu (compilation des programmes, premier rendu) se fait à « JOUER » (Docs/ref/menu-principal.md : seuil Lighthouse).
-export const ETAPES = Object.freeze(['modules', 'donnees', 'textures', 'sons']);
-export const POIDS = Object.freeze({ modules: 0.3, donnees: 0.05, textures: 0.45, sons: 0.2 });
-// Nombre de fichiers JavaScript du graphe de démarrage du jeu (?test=1&lum=off, tests/e2e/graphismes.spec.js) : la part « modules » avance d'un
-// fichier reçu à la fois ; au-delà, elle attend la fin réelle (début de main.js). Une valeur fausse ne rend la barre que moins régulière.
+// Deux chargements réels, chacun sous l'écran E7 : « menu » au démarrage (seul le menu se charge : ses modules, ses données et le solde, ses polices)
+// puis « jeu » au clic sur « JOUER » (modules du jeu dont Three.js, données JSON, textures, sons « essentiel », création du jeu : compilation et
+// premier rendu). Étapes et part du pourcentage (somme 1 par phase).
+export const PHASES = Object.freeze({
+  menu: Object.freeze({ modules: 0.4, donnees: 0.4, polices: 0.2 }),
+  jeu: Object.freeze({ modules: 0.3, donnees: 0.05, textures: 0.4, sons: 0.15, compilation: 0.1 }),
+});
+// Fichiers JavaScript du jeu chargés à « JOUER » (graphe de js/game/main.js, ?test=1&lum=off : 114 au démarrage d'une partie directe, moins ceux du
+// menu déjà chargés) : la part « modules » avance d'un fichier reçu à la fois ; au-delà, elle attend la fin réelle (début de main.js).
 export const MODULES_ATTENDUS = 114;
 
 const clamp01 = (n) => (Number.isFinite(n) ? Math.min(1, Math.max(0, n)) : 0);
+const etapesDe = (phase) => Object.keys(PHASES[phase] ?? PHASES.jeu);
 
-export function creerProgression() {
-  return { fractions: Object.fromEntries(ETAPES.map((e) => [e, 0])), valeur: 0, pret: false };
+export function creerProgression(phase = 'jeu') {
+  const p = PHASES[phase] ? phase : 'jeu';
+  return { phase: p, fractions: Object.fromEntries(etapesDe(p).map((e) => [e, 0])), valeur: 0, pret: false };
 }
 
 // Nouvel état (l'ancien n'est pas modifié) : la fraction d'une étape ne recule jamais ; la valeur ne recule jamais et reste sous 1 tant qu'une étape
-// n'est pas finie (100 % = jeu prêt). Étape inconnue : état inchangé.
+// n'est pas finie (100 % = phase terminée). Étape inconnue de la phase : état inchangé.
 export function avancer(etat, etape, fraction) {
-  if (!ETAPES.includes(etape)) return etat;
+  const etapes = etapesDe(etat.phase);
+  if (!etapes.includes(etape)) return etat;
   const fractions = { ...etat.fractions, [etape]: Math.max(etat.fractions[etape], clamp01(fraction)) };
-  const pret = ETAPES.every((e) => fractions[e] >= 1);
-  const somme = ETAPES.reduce((s, e) => s + POIDS[e] * fractions[e], 0);
+  const pret = etapes.every((e) => fractions[e] >= 1);
+  const somme = etapes.reduce((s, e) => s + PHASES[etat.phase][e] * fractions[e], 0);
   const valeur = pret ? 1 : Math.min(0.99, Math.max(etat.valeur, somme));
-  return { fractions, valeur, pret };
+  return { ...etat, fractions, valeur, pret };
 }
 
 export const pourcentage = (etat) => (etat.pret ? 100 : Math.min(99, Math.floor(etat.valeur * 100)));

@@ -1,8 +1,12 @@
-// Lot 8a : écran de chargement E7 (mode menu ; Docs/ref/menu-principal.md). Décor de nuit dessiné en code (ciel, lune, bâtiment et deux fenêtres
-// éclairées, brume lente), titre « Z-Survival » : « -Survival » affiché, puis le Z tombe une seule fois (chute, rebond, bascule à droite, ~13°),
-// secousse, tiret écrasé, quatre nuages de poussière, trois coulures ; barre et pourcentage réels (js/core/menu-etat.js), astuce de
-// data/menu/astuces.json, version de build-info.json. Sous prefers-reduced-motion : Z posé, sans chute ni secousse. Animations « e7-* » (css/menu.css).
-// Quand le jeu est prêt et la chute finie : menu E8 (js/menu/menu.js), puis cet écran est retiré.
+// Lot 8a : écran de chargement E7 (mode menu ; Docs/ref/menu-principal.md), en deux phases.
+// - « menu » (démarrage) : seul le menu se charge (modules du menu, textes, nouveautés, liens, solde de la sauvegarde, polices). Décor de nuit dessiné
+//   en code (ciel, lune, bâtiment et deux fenêtres éclairées, brume lente), titre « Z-Survival » : « -Survival » affiché, puis le Z tombe une seule
+//   fois (chute, rebond, bascule à droite, ~13°), secousse, tiret écrasé, quatre nuages de poussière, trois coulures. Quand tout est prêt et la chute
+//   finie : menu E8 (js/menu/menu.js), puis cet écran est retiré.
+// - « jeu » (après « JOUER ») : le même écran, Z déjà posé ; le jeu se charge (modules dont Three.js, données, textures, sons, création du jeu :
+//   progression envoyée par main.js) ; à 100 % (partie créée), l'écran est retiré et la partie apparaît.
+// Les deux : barre et pourcentage réels (js/core/menu-etat.js), astuce (data/menu/astuces.json), version (build-info.json). Sous
+// prefers-reduced-motion : Z posé, sans chute ni secousse. Animations « e7-* » (css/menu.css).
 import { avancer, choisirAstuce, creerProgression, MODULES_ATTENDUS, pourcentage, texteVersion } from '../core/menu-etat.js';
 import { fmt, loadDict } from '../game/texts.js';
 import { CANAUX_DEBUG } from '../core/graphics.js';
@@ -10,6 +14,7 @@ import { pageCanal } from '../game/graphics-boot.js';
 
 const SVG = 'http://www.w3.org/2000/svg';
 const FIN_CHUTE_MS = 4000; // filet de sécurité si la fin d'animation n'arrive pas (onglet caché) : la chute dure 2,8 s
+const POLICES_MS = 3000; // attente maximale des polices du menu
 
 function el(tag, classes = [], attrs = {}) {
   const n = document.createElement(tag);
@@ -37,24 +42,28 @@ export function decorNuit(classe = 'e7-decor') {
   return svg;
 }
 
-function graine(search) {
+function graine(search, phase) {
   const q = new URLSearchParams(search);
-  if (q.get('test') === '1') return Number.parseInt(q.get('seed') ?? '1', 10) || 1; // tests : astuce fixe
-  return Date.now() % 2147483647;
+  const base = q.get('test') === '1' ? Number.parseInt(q.get('seed') ?? '1', 10) || 1 : Date.now() % 2147483647; // tests : astuce fixe
+  return phase === 'jeu' ? base + 1 : base; // une autre astuce pendant le chargement du jeu
 }
 
-export function creerChargement({ root = document.body, search = globalThis.location?.search ?? '' } = {}) {
+const json = (path) => fetch(path).then((r) => (r.ok ? r.json() : null)).catch(() => null);
+
+// phase : 'menu' ou 'jeu' ; jouer() : appelé par « JOUER » du menu (demarrage.js charge alors le jeu).
+export function creerChargement({ phase = 'menu', jouer = () => {}, root = document.body, search = globalThis.location?.search ?? '' } = {}) {
   const reduit = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  let etat = creerProgression();
-  const journal = []; // pourcentages affichés, dans l'ordre (tests : getMenu().chargement)
-  let api = null;
+  const pose = reduit || phase === 'jeu';
+  let etat = creerProgression(phase);
+  const journal = []; // pourcentages affichés, dans l'ordre (tests : __zsMenu.etat().journal)
+  let donnees = null; // phase menu : { dict, infos, liens, solde }
   let menu = null;
-  let chuteFinie = reduit;
+  let chuteFinie = pose;
   let sortie = false;
   let dict = {};
   const t = (k) => dict[k] ?? '';
 
-  const box = el('div', ['e7'], { 'data-block': 'E7', id: 'e7' });
+  const box = el('div', ['e7', `e7-phase-${phase}`], { 'data-block': 'E7', id: 'e7' });
   const scene = el('div', ['e7-scene'], { 'aria-hidden': 'true' });
   scene.append(decorNuit(), el('div', ['e7-brume', 'e7-brume-1']), el('div', ['e7-brume', 'e7-brume-2']));
   const centre = el('div', ['e7-centre']);
@@ -86,6 +95,7 @@ export function creerChargement({ root = document.body, search = globalThis.loca
   const version = el('p', ['e7-version'], { id: 'e7-version' });
   const annonce = el('p', ['sr-only'], { 'aria-live': 'polite', id: 'e7-annonce' });
   box.append(scene, centre, version, annonce, el('div', ['menu-grain'], { 'aria-hidden': 'true' }));
+  if (pose) box.classList.add('e7-pose');
   root.append(box);
   document.getElementById('boot')?.remove();
 
@@ -103,38 +113,28 @@ export function creerChargement({ root = document.body, search = globalThis.loca
     }
   }
 
-  // Textes (dictionnaire partagé avec boot.js et main.js), astuce et version : posés dès qu'ils arrivent.
-  loadDict().then((d) => {
+  afficher(); // 0 %
+  // Textes (dictionnaire partagé avec boot.js, le menu et main.js), astuce et version : posés dès qu'ils arrivent.
+  const textes = loadDict().catch(() => ({}));
+  textes.then((d) => {
     dict = d;
     titre.setAttribute('aria-label', 'Z-Survival');
-    barre.setAttribute('aria-label', t('game.menu.chargement.aria'));
-    etatTexte.textContent = t('game.menu.chargement.texte');
+    barre.setAttribute('aria-label', t(phase === 'jeu' ? 'game.menu.chargement.jeu' : 'game.menu.chargement.aria'));
+    etatTexte.textContent = t(phase === 'jeu' ? 'game.menu.chargement.texteJeu' : 'game.menu.chargement.texte');
     afficher();
-  }).catch(() => {});
-  const json = (path) => fetch(path).then((r) => (r.ok ? r.json() : null)).catch(() => null);
-  Promise.all([json('data/menu/astuces.json'), loadDict().catch(() => ({}))]).then(([data]) => {
-    const texte = choisirAstuce(data?.astuces, graine(search));
+  });
+  Promise.all([json('data/menu/astuces.json'), textes]).then(([data]) => {
+    const texte = choisirAstuce(data?.astuces, graine(search, phase));
     if (!texte) return;
     astuce.replaceChildren(Object.assign(el('span', ['e7-astuce-libelle']), { textContent: t('game.menu.astuce') }), document.createTextNode(` ${texte}`));
     astuce.hidden = false;
   });
   // build-info.json n'est écrit avec certitude que sur source (dépôt), dev et release (assembleur) : ailleurs, aucune requête (ni erreur 404).
   const info = CANAUX_DEBUG.includes(pageCanal()) ? json('build-info.json') : Promise.resolve(null);
-  Promise.all([info, loadDict().catch(() => ({}))]).then(([build]) => {
+  Promise.all([info, textes]).then(([build]) => {
     const v = texteVersion(build);
     if (v && dict[v.cle]) version.textContent = fmt(dict[v.cle], v.params);
   });
-
-  // Modules : un fichier JavaScript reçu à la fois (entrées de minutage des ressources), jusqu'à MODULES_ATTENDUS ; main.js termine l'étape.
-  try {
-    const vus = new Set();
-    new PerformanceObserver((list) => {
-      for (const e of list.getEntries()) if (/\.js(\?|$)/.test(e.name)) vus.add(e.name);
-      progres('modules', vus.size / MODULES_ATTENDUS);
-    }).observe({ type: 'resource', buffered: true });
-  } catch {
-    // minutage des ressources indisponible : l'étape avance seulement quand main.js commence
-  }
 
   // Erreur pendant le chargement : message de l'écran de préparation (game.loading.error) et détail, au lieu de rester bloqué.
   const surErreur = (detail) => {
@@ -146,32 +146,84 @@ export function creerChargement({ root = document.body, search = globalThis.loca
   const onRejet = (e) => surErreur(e.reason?.message ?? e.reason);
   window.addEventListener('error', onError, true);
   window.addEventListener('unhandledrejection', onRejet);
+  const retirer = () => {
+    window.removeEventListener('error', onError, true);
+    window.removeEventListener('unhandledrejection', onRejet);
+  };
 
-  // Chute du Z : lancée une fois la police du titre prête (au plus 1,5 s d'attente), une seule fois ; fin à la dernière coulure.
-  const menuModule = import('./menu.js');
+  function progres(etape, fraction) {
+    etat = avancer(etat, etape, fraction);
+    afficher();
+    passer();
+  }
+
+  // Phase « jeu » : fichiers JavaScript du jeu reçus depuis « JOUER » (entrées de minutage des ressources) ; main.js termine l'étape « modules ».
+  if (phase === 'jeu') {
+    try {
+      const debut = performance.now();
+      const deja = performance.getEntriesByType('resource').filter((e) => /\.js(\?|$)/.test(e.name)).length;
+      const vus = new Set();
+      new PerformanceObserver((list) => {
+        for (const e of list.getEntries()) if (e.startTime >= debut && /\.js(\?|$)/.test(e.name)) vus.add(e.name);
+        progres('modules', vus.size / Math.max(1, MODULES_ATTENDUS - deja));
+      }).observe({ type: 'resource' });
+    } catch {
+      // minutage des ressources indisponible : l'étape avance seulement quand main.js commence
+    }
+  }
+
+  // Phase « menu » : modules du menu, données (textes, nouveautés, liens, solde), polices ; chute du Z (une fois, après la police du titre).
+  const menuModule = phase === 'menu' ? import('./menu.js') : null;
+  if (phase === 'menu') {
+    progres('modules', 0.5); // l'écran de chargement et l'état du menu sont là ; le module du menu suit
+    menuModule.then((m) => {
+      progres('modules', 1);
+      return m.preparerMenu({ onProgress: (f) => progres('donnees', f) });
+    }).then((d) => {
+      donnees = d;
+      progres('donnees', 1);
+    }).catch((e) => surErreur(e?.message ?? e));
+    const polices = document.fonts?.load
+      ? Promise.all(['1em "Rubik Wet Paint"', '1em "Barlow"', '700 1em "Barlow"', '1em "Rubik Dirt"'].map((f) => document.fonts.load(f).catch(() => {})))
+      : Promise.resolve();
+    Promise.race([polices, new Promise((r) => setTimeout(r, POLICES_MS))]).then(() => progres('polices', 1));
+  }
   const finChute = () => {
     if (chuteFinie) return;
     chuteFinie = true;
     passer();
   };
-  if (!reduit) {
+  if (!pose) {
     const police = document.fonts?.load ? document.fonts.load('1em "Rubik Wet Paint"').catch(() => {}) : Promise.resolve();
     Promise.race([police, new Promise((r) => setTimeout(r, 1500))]).then(() => {
       box.classList.add('e7-joue');
       setTimeout(finChute, FIN_CHUTE_MS);
     });
     coulures.lastElementChild.addEventListener('animationend', finChute, { once: true });
-  } else {
-    box.classList.add('e7-pose');
   }
 
+  // Fin : phase « menu », menu E8 (chargement fini et chute finie) ; phase « jeu », la partie est créée (main.js) : l'écran est retiré.
   function passer() {
-    if (sortie || !chuteFinie || !api || !etat.pret) return;
+    if (sortie || !chuteFinie || !etat.pret) return;
+    if (phase === 'jeu') {
+      sortie = true;
+      retirer();
+      box.remove();
+      return;
+    }
+    if (!donnees) return;
     sortie = true;
     menuModule.then((m) => {
-      menu = m.creerMenu({ ...api, root });
-      window.removeEventListener('error', onError, true);
-      window.removeEventListener('unhandledrejection', onRejet);
+      document.getElementById('loading')?.setAttribute('hidden', ''); // écran de préparation d'avant : il ne doit jamais couvrir le menu
+      menu = m.creerMenu({
+        ...donnees,
+        root,
+        jouer: () => {
+          menu.element.remove();
+          jouer();
+        },
+      });
+      retirer();
       if (reduit) box.remove();
       else {
         box.classList.add('e7-sortie');
@@ -184,20 +236,9 @@ export function creerChargement({ root = document.body, search = globalThis.loca
     });
   }
 
-  function progres(etape, fraction) {
-    etat = avancer(etat, etape, fraction);
-    afficher();
-    passer();
-  }
-
   afficher();
   return {
     progres,
-    // Chargement fini (textures et sons prêts ; la partie sera créée à « JOUER ») : le menu s'ouvre à la fin de la chute.
-    pret(a) {
-      api = a;
-      passer();
-    },
-    etat: () => ({ pourcentage: pourcentage(etat), pret: etat.pret, chuteFinie, journal: [...journal], visible: box.isConnected, menu: menu?.etat?.() ?? null }),
+    etat: () => ({ phase, pourcentage: pourcentage(etat), pret: etat.pret, chuteFinie, journal: [...journal], visible: box.isConnected, menu: menu?.element.isConnected ? menu.etat() : null }),
   };
 }

@@ -4,7 +4,7 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync, readdirSync } from 'node:fs';
 import { CANAUX_DEBUG, PARAMS_PARTIE, PARAMS_TEST, acces, choixDemarrage } from '../../js/core/graphics.js';
 import {
-  ECRANS, ETAPES, MODULES_ATTENDUS, ONGLETS, POIDS, adresseRetour, avancer, basculerMenu, choisirAstuce, choisirOnglet, creerEtatMenu, creerProgression,
+  ECRANS, MODULES_ATTENDUS, ONGLETS, PHASES, adresseRetour, avancer, basculerMenu, choisirAstuce, choisirOnglet, creerEtatMenu, creerProgression,
   fermerEcran, fermerMenu, lienExterne, nouveauteNonLue, ouvrirEcran, pourcentage, texteVersion,
 } from '../../js/core/menu-etat.js';
 
@@ -73,45 +73,55 @@ function lcg(seed) {
 }
 
 describe('progression du chargement (lot 8a)', () => {
-  it('étapes et poids : somme 1, toutes pondérées (création du jeu hors chargement : à « JOUER »)', () => {
-    expect(ETAPES).toEqual(['modules', 'donnees', 'textures', 'sons']); // la création du jeu se fait à « JOUER »
-    expect(Object.values(POIDS).reduce((a, b) => a + b, 0)).toBeCloseTo(1, 10);
-    for (const e of ETAPES) expect(POIDS[e]).toBeGreaterThan(0);
+  it('deux phases : menu (modules, données, polices) puis jeu (modules, données, textures, sons, création) ; poids de somme 1, tous positifs', () => {
+    expect(Object.keys(PHASES)).toEqual(['menu', 'jeu']);
+    expect(Object.keys(PHASES.menu)).toEqual(['modules', 'donnees', 'polices']);
+    expect(Object.keys(PHASES.jeu)).toEqual(['modules', 'donnees', 'textures', 'sons', 'compilation']);
+    for (const p of Object.values(PHASES)) {
+      expect(Object.values(p).reduce((a, b) => a + b, 0)).toBeCloseTo(1, 10);
+      for (const w of Object.values(p)) expect(w).toBeGreaterThan(0);
+    }
     expect(MODULES_ATTENDUS).toBeGreaterThan(100);
+    expect(creerProgression('inconnue').phase).toBe('jeu');
   });
 
-  it('monotone, de 0 à 100, jamais au-delà ; 100 seulement quand toutes les étapes sont finies (500 séquences)', () => {
-    for (let seed = 1; seed <= 500; seed += 1) {
-      const r = lcg(seed);
-      let e = creerProgression();
-      let last = pourcentage(e);
-      expect(last).toBe(0);
-      for (let i = 0; i < 60; i += 1) {
-        const etape = r() < 0.1 ? 'inconnue' : ETAPES[Math.floor(r() * ETAPES.length)];
-        const f = r() < 0.05 ? [Number.NaN, -1, 7, Infinity, undefined][Math.floor(r() * 5)] : r() * 1.2;
-        e = avancer(e, etape, f);
-        const n = pourcentage(e);
-        expect(n).toBeGreaterThanOrEqual(last);
-        expect(n).toBeLessThanOrEqual(100);
-        expect(n === 100).toBe(ETAPES.every((x) => e.fractions[x] >= 1));
-        last = n;
+  it('monotone, de 0 à 100, jamais au-delà ; 100 seulement quand toutes les étapes de la phase sont finies (2 × 300 séquences)', () => {
+    for (const phase of ['menu', 'jeu']) {
+      const etapes = Object.keys(PHASES[phase]);
+      for (let seed = 1; seed <= 300; seed += 1) {
+        const r = lcg(seed);
+        let e = creerProgression(phase);
+        let last = pourcentage(e);
+        expect(last).toBe(0);
+        for (let i = 0; i < 60; i += 1) {
+          const etape = r() < 0.1 ? 'inconnue' : r() < 0.05 ? 'textures' : etapes[Math.floor(r() * etapes.length)];
+          const f = r() < 0.05 ? [Number.NaN, -1, 7, Infinity, undefined][Math.floor(r() * 5)] : r() * 1.2;
+          e = avancer(e, etape, f);
+          const n = pourcentage(e);
+          expect(n).toBeGreaterThanOrEqual(last);
+          expect(n).toBeLessThanOrEqual(100);
+          expect(n === 100).toBe(etapes.every((x) => e.fractions[x] >= 1));
+          last = n;
+        }
+        for (const x of etapes) e = avancer(e, x, 1);
+        expect([pourcentage(e), e.pret]).toEqual([100, true]);
       }
-      for (const x of ETAPES) e = avancer(e, x, 1);
-      expect([pourcentage(e), e.pret]).toEqual([100, true]);
     }
   });
 
-  it('une étape qui recule ne fait pas reculer la barre ; l\'ancien état n\'est pas modifié ; 99 au plus avant la fin', () => {
-    const a = avancer(avancer(creerProgression(), 'textures', 0.8), 'modules', 1);
+  it('une étape qui recule ne fait pas reculer la barre ; l\'ancien état n\'est pas modifié ; 99 au plus avant la fin ; étape d\'une autre phase ignorée', () => {
+    const a = avancer(avancer(creerProgression('jeu'), 'textures', 0.8), 'modules', 1);
     const b = avancer(a, 'textures', 0.2);
     expect(b.fractions.textures).toBe(0.8);
     expect(pourcentage(b)).toBe(pourcentage(a));
     expect(a.fractions.sons).toBe(0);
-    let c = creerProgression();
-    for (const x of ETAPES.slice(0, -1)) c = avancer(c, x, 1);
-    expect([pourcentage(c), c.pret]).toEqual([80, false]);
-    c = avancer(c, 'sons', 0.999);
+    let c = creerProgression('jeu');
+    for (const x of ['modules', 'donnees', 'textures', 'sons']) c = avancer(c, x, 1);
+    expect([pourcentage(c), c.pret]).toEqual([90, false]);
+    c = avancer(c, 'compilation', 0.999);
     expect(pourcentage(c)).toBe(99);
+    const m = creerProgression('menu');
+    expect(avancer(m, 'textures', 1)).toBe(m);
   });
 });
 
@@ -200,12 +210,13 @@ describe('hygiène du menu (lot 8a)', () => {
   const css = read('css/menu.css');
   const strip = (s) => s.replace(/\/\*[\s\S]*?\*\//g, '');
 
-  it('jeu.html : js/menu/demarrage.js chargé avant boot.js et main.js ; aucune autre balise de js/menu', () => {
+  it('jeu.html : js/menu/demarrage.js chargé avant boot.js ; main.js et Three.js importés par demarrage.js (plus de balise) ; aucune autre balise de js/menu', () => {
     const html = read('jeu.html');
     const at = (s) => html.indexOf(s);
     expect(at('<script type="module" src="js/menu/demarrage.js"></script>')).toBeGreaterThan(0);
     expect(at('src="js/menu/demarrage.js"')).toBeLessThan(at('src="js/game/boot.js"'));
-    expect(at('src="js/game/boot.js"')).toBeLessThan(at('src="js/game/main.js"'));
+    expect(html).not.toMatch(/<script[^>]*src="js\/game\/main\.js"|rel="modulepreload" href="vendor\/three/); // jeu chargé par demarrage.js
+    expect(read('js/menu/demarrage.js')).toMatch(/import\('\.\.\/game\/main\.js'\)/);
     expect(html.match(/js\/menu\//g)).toHaveLength(1);
     expect(html).not.toMatch(/css\/menu\.css/); // feuille chargée par demarrage.js en mode menu seulement
   });
