@@ -168,3 +168,9 @@ version: v0.8
 nom: Page Options du menu, son et volume
 description: Le menu principal a sa page Options, avec le son et le volume. En partie, les réglages qui demandent un redémarrage sont verrouillés ; les préréglages restent modifiables.
 afficher: oui
+
+[lot-8d]
+version: v0.8
+nom: Personnage, équipement et fusion
+description: Nouvel onglet Personnage : équipement porté, inventaire, fusion de trois objets identiques et choix du personnage. La partie reçoit les statistiques de l'équipement ; rien n'est encore gardé.
+afficher: oui

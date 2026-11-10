@@ -270,6 +270,15 @@
       "Nouveau bouton plein écran dans l'en-tête du menu principal (Android et navigateurs qui le permettent ; absent sur iPhone, comme dans la pause) : la partie lancée ensuite reste en plein écran.",
       "Dans la pause, la question « Quitter la partie ? » ne touche plus les boutons.",
       "Les règles du jeu ne changent pas ; le rendu d'un préréglage donné non plus."
+    ] },
+    { "name": "lot-8d", "version": "v0.8", "date": "2026-11-10", "titre": "Personnage : équipement, inventaire, fusion", "points": [
+      "Nouvel onglet Personnage : le survivant animé sous un projecteur, ses six emplacements d'équipement (arme, tenue, gants, bottes, deux accessoires), sa capacité et ses statistiques effectives.",
+      "Inventaire (filtres, pages, détail d'un objet) : équiper, retirer, améliorer un objet jusqu'à son niveau maximal.",
+      "Fusion : trois objets identiques de même rareté donnent un objet de la rareté supérieure (remplissage automatique possible).",
+      "Personnages : choisir un personnage débloqué et l'améliorer ; les verrouillés attendent les lots suivants.",
+      "« JOUER » transmet à la partie les statistiques calculées avec l'équipement porté et le personnage choisi ; sans objet porté et avec le Survivant, ce sont exactement celles de la sauvegarde.",
+      "Essai : objets, prix, personnages et capacités sont des exemples ; rien n'est encore gardé (retour au menu = état de départ) et aucun prix n'est prélevé avant la sauvegarde v2.",
+      "Les règles du jeu ne changent pas ; une partie lancée directement (adresses de test) est identique."
     ] }
   ]
 }

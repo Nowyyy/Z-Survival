@@ -284,125 +284,119 @@
   --menu-barre-fond: #2a1414;       /* fond de la barre de chargement */
   --menu-point: #ffd60a;            /* point jaune « nouveauté non lue » */
   /* Lot 8b : scène de l'onglet Jouer (maquette Main.html) */
-  --menu-scene-ciel-haut: #04060b;  /* ciel de nuit, haut */
-  --menu-scene-ciel-bas: #131a26;   /* ciel de nuit, horizon */
-  --menu-scene-lune: #d9dde6;       /* lune pâle */
-  --menu-scene-halo: #c9d3e4;       /* halo de la lune (opacité dans menu.css) */
-  --menu-scene-lointain: #0b0e14;   /* arbres et gravats au loin */
-  --menu-scene-sol: #0a0908;        /* sol */
-  --menu-scene-aile: #1d1c1a;       /* aile à deux étages */
-  --menu-scene-salle: #181715;      /* grande salle basse */
-  --menu-scene-toit: #2a2823;       /* bord de toit de l'aile */
-  --menu-scene-toit-salle: #24221d; /* bord de toit de la salle */
-  --menu-scene-etage: #2c2a25;      /* séparation d'étage */
-  --menu-scene-fenetre-noire: #0b0a09; /* fenêtre noire, porte */
-  --menu-scene-lampe: #ffb347;      /* fenêtre éclairée et lueur chaude de lampe autour (opacité dans menu.css) */
-  --menu-scene-planche: #7a5432;    /* planches en croix */
-  --menu-scene-route: #231a12;      /* route de terre */
-  --menu-scene-route-trait: #3a2c1f; /* pointillés de la route */
-  --menu-scene-voiture: #141210;    /* carcasse de la voiture */
-  --menu-scene-feu: #ff6a1a;        /* halo orangé du feu (opacité dans menu.css) */
-  --menu-scene-flamme: #ff7a1a;     /* flammes */
-  --menu-scene-flamme-coeur: #ffd166; /* cœur des flammes */
-  --menu-scene-fumee: #3a3a3a;      /* fumée */
-  --menu-scene-brume: rgb(154 164 180 / 7%); /* nappes de brume basses */
-  --menu-scene-vignette: #000000;   /* vignette sombre des bords (opacité dans menu.css) */
-  --menu-zombie: #040303;           /* silhouettes des zombies */
-  --menu-zombie-yeux: #ff2a1f;      /* yeux rouges ; repère du record */
-  --menu-sang: #7a0b0a;             /* flaque de sang */
-  --menu-sang-clair: #9a1210;       /* flaque de sang, reflet */
-  --menu-tir: rgb(255 209 102 / 50%); /* éclair du tir */
-  --menu-tir-coeur: #fff2a8;        /* cœur de l'éclair, traînée de balle */
-  --menu-panneau-piquet: #4a3826;   /* piquet des panneaux de la route */
-  --menu-panneau-atteint: #8f1010;  /* panneau atteint par le record (texte blanc) */
+  --menu-scene-ciel-haut: #04060b;
+  --menu-scene-ciel-bas: #131a26;
+  --menu-scene-lune: #d9dde6;
+  --menu-scene-halo: #c9d3e4;
+  --menu-scene-lointain: #0b0e14;
+  --menu-scene-sol: #0a0908;
+  --menu-scene-aile: #1d1c1a;
+  --menu-scene-salle: #181715;
+  --menu-scene-toit: #2a2823;
+  --menu-scene-toit-salle: #24221d;
+  --menu-scene-etage: #2c2a25;
+  --menu-scene-fenetre-noire: #0b0a09;
+  --menu-scene-lampe: #ffb347;
+  --menu-scene-planche: #7a5432;
+  --menu-scene-route: #231a12;
+  --menu-scene-route-trait: #3a2c1f;
+  --menu-scene-voiture: #141210;
+  --menu-scene-feu: #ff6a1a;
+  --menu-scene-flamme: #ff7a1a;
+  --menu-scene-flamme-coeur: #ffd166;
+  --menu-scene-fumee: #3a3a3a;
+  --menu-scene-brume: rgb(154 164 180 / 7%);
+  --menu-scene-vignette: #000000;
+  --menu-zombie: #040303;
+  --menu-zombie-yeux: #ff2a1f;
+  --menu-sang: #7a0b0a;
+  --menu-sang-clair: #9a1210;
+  --menu-tir: rgb(255 209 102 / 50%);
+  --menu-tir-coeur: #fff2a8;
+  --menu-panneau-piquet: #4a3826;
+  --menu-panneau-atteint: #8f1010;
   --menu-panneau-atteint-texte: #ffffff;
-  --menu-panneau-bois: #3a2c1f;     /* panneau pas encore atteint (texte clair) */
+  --menu-panneau-bois: #3a2c1f;
   --menu-panneau-bois-texte: #cfc6b8;
-  --menu-record: #ffd60a;           /* « Record : manche N / 40 » (jaune), bord de la carte du monde suivant */
-  --menu-texte-ombre: #000000;      /* ombre portée du texte posé sur la scène */
-  --menu-bouton-rond: rgb(5 5 5 / 70%); /* fond de la flèche « Monde précédent », de la carte du monde suivant */
-  --menu-bouton-rond-bord: #3a3434; /* bord de la flèche désactivée */
-  --menu-desactive: #5a5550;        /* flèche désactivée */
+  --menu-record: #ffd60a;
+  --menu-texte-ombre: #000000;
+  --menu-bouton-rond: rgb(5 5 5 / 70%);
+  --menu-bouton-rond-bord: #3a3434;
+  --menu-desactive: #5a5550;
   /* Lot 8b : onglet Infini (maquette Infini.html) */
-  --menu-infini-ciel-haut: #0a0405; /* ciel rouge sombre, haut */
-  --menu-infini-ciel-bas: #22090a;  /* ciel rouge sombre, horizon */
-  --menu-infini-halo: #ff3b2a;      /* halo de la lune rouge (opacité dans menu.css) */
-  --menu-infini-lune: #a8231a;      /* grande lune rouge */
-  --menu-infini-sol: #070304;       /* sol */
-  --menu-infini-horde: #050203;     /* horde sur l'horizon */
-  --menu-carte-fond: #0f0c0c;       /* fond des cartes de monde */
-  --menu-carte-bord: #3a3434;       /* bord d'une carte */
-  --menu-carte-choisie: #d81414;    /* bordure rouge épaisse de la carte choisie */
-  --menu-carte-libelle: #a9a49c;    /* « Monde N · Choisie », compte des mondes */
-  --menu-mini-ciel: #0f1520;        /* ciel de la miniature d'un monde jouable */
-  --menu-mini-verrou: #141211;      /* fond de la miniature d'un monde verrouillé */
-  --menu-mini-cadenas: #cfc6b8;     /* cadenas de la miniature */
-  --menu-fleche-fond: rgb(5 5 5 / 85%); /* flèche « Cartes suivantes » */
-  --menu-classement-fond: rgb(8 5 5 / 86%); /* panneau Classement */
-  --menu-classement-bord: #4a1a18;  /* bord du panneau Classement */
-  --menu-classement-ligne: #161212; /* fond d'une ligne du classement */
-  --menu-classement-rang: #cfc6b8;  /* rang */
-  --menu-classement-toi: #2a0d0d;   /* fond de la ligne « Toi » */
-  --menu-classement-toi-texte: #ff6a5d; /* « Toi » */
-  --menu-exemple: #9fd3ff;          /* « exemple, arrive avec le compte » */
+  --menu-infini-ciel-haut: #0a0405;
+  --menu-infini-ciel-bas: #22090a;
+  --menu-infini-halo: #ff3b2a;
+  --menu-infini-lune: #a8231a;
+  --menu-infini-sol: #070304;
+  --menu-infini-horde: #050203;
+  --menu-carte-fond: #0f0c0c;
+  --menu-carte-bord: #3a3434;
+  --menu-carte-choisie: #d81414;
+  --menu-carte-libelle: #a9a49c;
+  --menu-mini-ciel: #0f1520;
+  --menu-mini-verrou: #141211;
+  --menu-mini-cadenas: #cfc6b8;
+  --menu-fleche-fond: rgb(5 5 5 / 85%);
+  --menu-classement-fond: rgb(8 5 5 / 86%);
+  --menu-classement-bord: #4a1a18;
+  --menu-classement-ligne: #161212;
+  --menu-classement-rang: #cfc6b8;
+  --menu-classement-toi: #2a0d0d;
+  --menu-classement-toi-texte: #ff6a5d;
+  --menu-exemple: #9fd3ff;
   /* Lot 8c : page Options du menu (E5) et Options de la partie (E2-12) (maquettes Options.html, OptionsJeu.html) */
-  --menu-options-fond: #121110;     /* fond de la page Options */
-  --menu-options-trait: #1b1916;    /* filets du fond */
-  --menu-options-bouton: #1a1614;   /* bouton de valeur non choisi */
-  --menu-options-bouton-bord: #3a3434; /* bord d'un bouton non choisi */
-  --menu-options-bouton-texte: #cfc6b8; /* texte d'un bouton non choisi */
-  --menu-options-note: #a9a49c;     /* notes, petit texte, pied */
-  --menu-options-filet: #2f2a25;    /* filet sous les préréglages */
-  --menu-options-ligne: #1f1c19;    /* filet entre deux lignes */
-  --menu-options-verrou: #c9a94a;   /* cadenas, « Modifiable depuis le menu principal », valeur en attente */
-  --menu-options-nom-inactif: #8a857e; /* nom d'un réglage verrouillé */
-  --menu-options-inactif: #141210;  /* bouton désactivé */
-  --menu-options-inactif-bord: #2a2725; /* bord d'un bouton désactivé */
-  --menu-options-inactif-texte: #9a948b; /* texte d'un bouton désactivé (4,5:1 au moins : la maquette, #7a756e, n'y arrive pas) */
-  --menu-options-inactif-choisi: #2f2b28; /* bouton désactivé choisi */
-  --menu-options-inactif-choisi-bord: #5a5550; /* son bord */
-  --menu-options-panneau: rgb(12 10 9 / 96%); /* panneau des Options en partie */
-  --menu-options-panneau-bord: #4a1a18; /* bord de ce panneau */
-  --menu-options-voile: rgb(0 0 0 / 72%); /* partie voilée sous le panneau */
-  /* Lot 8d : Personnage (maquettes Personnage.html, Inventaire.html, Fusion.html, Personnages.html) */
-  --menu-perso-survivant: #4d4b3b;  /* teinte du Survivant (veste) */
-  --menu-perso-2: #3e4a52;          /* teinte de [Personnage 2] */
-  --menu-perso-inconnu: #2a2725;    /* silhouette d'un personnage verrouillé */
-  --menu-perso-assombri: #000000;   /* mêlé à la teinte pour les bras (12 %) */
-  --menu-perso-jambes: #2c2f26;     /* pantalon */
-  --menu-perso-sangle: #2c2a22;     /* bretelles, cheveux */
-  --menu-perso-poche: #3a3828;      /* poche de poitrine */
-  --menu-perso-sang: #8f1010;       /* bandana, tache de sang */
-  --menu-perso-arme: #141414;       /* pistolet */
-  --menu-perso-peau: #b89a7a;       /* visage */
-  --menu-perso-bottes: #1a1612;     /* bottes */
-  --menu-perso-ombre: #050404;      /* ombre au sol */
-  --menu-e9-sol: #0b0a09;           /* sol sous le personnage, fond des icônes d'emplacement */
-  --menu-e9-sol-trait: #1f1c19;     /* bord du sol */
-  --menu-e9-projecteur: #ffe2b0;    /* cône du projecteur (opacité dans menu.css) */
-  --menu-e9-lumiere: #ffcf8a;       /* halo au sol (opacité dans menu.css) */
-  --menu-e9-lampe: #2a2621;         /* lampe du projecteur */
-  --menu-e9-case: #1c1a17;          /* emplacement rempli */
-  --menu-e9-case-vide: #100e0d;     /* emplacement vide */
-  --menu-e9-stats-fond: rgb(5 5 5 / 60%); /* boîte des statistiques */
-  --menu-e9-stats-bord: #4a3e33;    /* son bord en tirets, bord de l'étiquette */
-  --menu-e9-texte-doux: #d9d4cb;    /* statistiques, effet, texte secondaire */
-  --menu-e9-etiquette: rgb(5 5 5 / 70%); /* « Touche-le pour changer » */
-  --menu-e9-capacite: rgb(12 10 9 / 92%); /* encart de capacité */
-  --menu-e9-or: #ffd60a;            /* bord de l'encart de capacité, « Capacité : », objet choisi, personnage choisi */
-  --menu-e9-violet: #3a2350;        /* bouton Fusion */
-  --menu-e9-violet-bord: #1c1028;   /* son bord */
-  --menu-e9-violet-texte: #f2e8ff;  /* son texte */
-  --menu-e9-bois-texte: #fff4e2;    /* texte des boutons planche du Personnage */
-  --menu-e9-panneau: #181513;       /* panneaux de détail, cases des grilles */
-  --menu-e9-panneau-bord: #3a2c1f;  /* bord des panneaux */
-  --menu-e9-case-choisie: #26201a;  /* case choisie (bordée de --menu-e9-or) */
-  --menu-e9-effet: #7ed48b;         /* effet d'un objet (« Vie +1,4 ») */
-  --menu-e9-fleche: #c08cff;        /* flèche de la fusion */
-  --menu-e9-compatibles: #161311;   /* panneau des objets compatibles */
-  --menu-e9-violet-inactif: #2a1e36; /* « Fusionner » désactivé */
-  --menu-e9-violet-inactif-bord: #3a2a4a; /* son bord */
-  --menu-e9-violet-inactif-texte: #b8a8c8; /* son texte */
+  --menu-options-fond: #121110;
+  --menu-options-trait: #1b1916;
+  --menu-options-bouton: #1a1614;
+  --menu-options-bouton-bord: #3a3434;
+  --menu-options-bouton-texte: #cfc6b8;
+  --menu-options-note: #a9a49c;
+  --menu-options-filet: #2f2a25;
+  --menu-options-ligne: #1f1c19;
+  --menu-options-verrou: #c9a94a;
+  --menu-options-nom-inactif: #8a857e;
+  --menu-options-inactif: #141210;
+  --menu-options-inactif-bord: #2a2725;
+  --menu-options-inactif-texte: #9a948b;
+  --menu-options-inactif-choisi: #2f2b28;
+  --menu-options-inactif-choisi-bord: #5a5550;
+  --menu-options-panneau: rgb(12 10 9 / 96%);
+  --menu-options-panneau-bord: #4a1a18;
+  --menu-options-voile: rgb(0 0 0 / 72%);
+  /* Lot 8d : Personnage (E9-1 à E9-4) ; réemploie --menu-scene-fenetre-noire (sol), --menu-record (or), --menu-options-ligne, --menu-scene-route-trait, --menu-panneau-atteint (sang) */
+  --menu-perso-survivant: #4d4b3b;
+  --menu-perso-2: #3e4a52;
+  --menu-perso-inconnu: #2a2725;    /* verrouillé */
+  --menu-perso-assombri: #000000;   /* bras */
+  --menu-perso-jambes: #2c2f26;
+  --menu-perso-sangle: #2c2a22;
+  --menu-perso-poche: #3a3828;
+  --menu-perso-arme: #141414;
+  --menu-perso-peau: #b89a7a;
+  --menu-perso-bottes: #1a1612;
+  --menu-perso-ombre: #050404;
+  --menu-e9-projecteur: #ffe2b0;
+  --menu-e9-lumiere: #ffcf8a;
+  --menu-e9-lampe: #2a2621;
+  --menu-e9-case: #1c1a17;
+  --menu-e9-case-vide: #100e0d;
+  --menu-e9-voile: rgb(5 5 5 / 60%); /* statistiques, étiquette */
+  --menu-e9-stats-bord: #4a3e33;
+  --menu-e9-texte-doux: #d9d4cb;
+  --menu-e9-capacite: rgb(12 10 9 / 92%);
+  --menu-e9-violet: #3a2350;
+  --menu-e9-violet-bord: #1c1028;
+  --menu-e9-violet-texte: #f2e8ff;
+  --menu-e9-bois-texte: #fff4e2;
+  --menu-e9-panneau: #181513;
+  --menu-e9-case-choisie: #26201a;
+  --menu-e9-effet: #7ed48b;
+  --menu-e9-fleche: #c08cff;
+  --menu-e9-compatibles: #161311;
+  --menu-e9-violet-inactif: #2a1e36;
+  --menu-e9-violet-inactif-bord: #3a2a4a;
+  --menu-e9-violet-inactif-texte: #b8a8c8;
   /* Raretés (lots suivants : inventaire, boutique, tirage) */
   --rarete-commun: #a3a3a8;         /* gris */
   --rarete-peu-commun: #5cc46a;     /* vert */

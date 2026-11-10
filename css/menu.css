@@ -1955,8 +1955,8 @@
 /* Fond : gris presque noir, sol plus sombre à partir de y 262 (bord de 2 px). */
 .e8-ecran.e9-perso {
   background:
-    linear-gradient(var(--menu-e9-sol-trait), var(--menu-e9-sol-trait)) 0 calc(211 * var(--u)) / 100% 2px no-repeat,
-    linear-gradient(var(--menu-e9-sol), var(--menu-e9-sol)) 0 calc(212 * var(--u)) / 100% 100% no-repeat,
+    linear-gradient(var(--menu-options-ligne), var(--menu-options-ligne)) 0 calc(211 * var(--u)) / 100% 2px no-repeat,
+    linear-gradient(var(--menu-scene-fenetre-noire), var(--menu-scene-fenetre-noire)) 0 calc(212 * var(--u)) / 100% 100% no-repeat,
     var(--menu-options-fond);
 }
 
@@ -2039,7 +2039,7 @@
   white-space: nowrap;
   border: 1px solid var(--menu-e9-stats-bord);
   border-radius: calc(10 * var(--u));
-  background: var(--menu-e9-etiquette);
+  background: var(--menu-e9-voile);
   font-size: var(--e9-petit);
   line-height: 1.2;
   color: var(--menu-texte);
@@ -2067,11 +2067,11 @@
 }
 
 .e9-sil-poche { fill: var(--menu-perso-poche); }
-.e9-sil-sang { fill: var(--menu-perso-sang); opacity: 0.8; }
+.e9-sil-sang { fill: var(--menu-panneau-atteint); opacity: 0.8; }
 .e9-sil-arme { fill: var(--menu-perso-arme); }
 .e9-sil-peau { fill: var(--menu-perso-peau); }
 .e9-sil-cheveux { fill: var(--menu-perso-sangle); }
-.e9-sil-bandana { fill: var(--menu-perso-sang); }
+.e9-sil-bandana { fill: var(--menu-panneau-atteint); }
 .e9-sil-jambes { fill: var(--menu-perso-jambes); }
 .e9-sil-bottes { fill: var(--menu-perso-bottes); }
 .e9-sil-ombre { fill: var(--menu-perso-ombre); }
@@ -2170,7 +2170,7 @@
   min-width: 30px;
   min-height: 30px;
   border-radius: 3px;
-  background: var(--menu-e9-sol);
+  background: var(--menu-scene-fenetre-noire);
 }
 
 .e9-emplacement-textes {
@@ -2204,7 +2204,7 @@
 .e9-stats-boite {
   padding: calc(4 * var(--u)) calc(10 * var(--u));
   border: 1px dashed var(--menu-e9-stats-bord);
-  background: var(--menu-e9-stats-fond);
+  background: var(--menu-e9-voile);
 }
 
 .e9-stats {
@@ -2270,7 +2270,7 @@
   width: calc(240 * var(--u));
   min-height: max(var(--menu-cible), calc(56 * var(--u)));
   padding: calc(4 * var(--u)) calc(10 * var(--u));
-  border: 2px solid var(--menu-e9-or);
+  border: 2px solid var(--menu-record);
   border-radius: 4px;
   background: var(--menu-e9-capacite);
   line-height: 1.25;
@@ -2299,7 +2299,7 @@
 .e9-capacite-titre {
   font-size: var(--e9-texte);
   font-weight: var(--font-weight-bold);
-  color: var(--menu-e9-or);
+  color: var(--menu-record);
 }
 
 .e9-capacite-effet {
@@ -2350,7 +2350,7 @@
   display: flex;
   flex-direction: column;
   gap: calc(8 * var(--u));
-  border: 3px solid var(--menu-e9-panneau-bord);
+  border: 3px solid var(--menu-scene-route-trait);
   background: var(--menu-e9-panneau);
 }
 
@@ -2475,7 +2475,7 @@
 }
 
 .e9-case[aria-pressed='true'] {
-  border: 3px solid var(--menu-e9-or);
+  border: 3px solid var(--menu-record);
   background: var(--menu-e9-case-choisie);
 }
 
@@ -2514,7 +2514,7 @@
   min-height: 36px;
   border: 2px solid var(--e9-rarete, var(--menu-options-bouton-bord));
   border-radius: 4px;
-  background: var(--menu-e9-sol);
+  background: var(--menu-scene-fenetre-noire);
 }
 
 .e9 .e9-icone-grande {
@@ -2602,9 +2602,9 @@
 }
 
 .e9 .e9-choisir.is-choisi {
-  border: 2px solid var(--menu-e9-or);
+  border: 2px solid var(--menu-record);
   background: var(--menu-options-bouton);
-  color: var(--menu-e9-or);
+  color: var(--menu-record);
 }
 
 .e9-detail-fusion,
@@ -2652,7 +2652,7 @@
   padding: 2px;
   border: 2px solid var(--e9-rarete, var(--menu-options-bouton-bord));
   border-radius: 4px;
-  background: var(--menu-e9-sol);
+  background: var(--menu-scene-fenetre-noire);
   line-height: 1.1;
   text-align: center;
 }
@@ -2692,7 +2692,7 @@
   padding: 2px;
   border: 3px solid var(--e9-rarete, var(--menu-desactive));
   border-radius: 4px;
-  background: var(--menu-e9-sol);
+  background: var(--menu-scene-fenetre-noire);
   font-size: max(13px, calc(15 * var(--u)));
   font-weight: var(--font-weight-bold);
   line-height: 1.1;
@@ -2713,7 +2713,7 @@
 .e9-resultat-obtenu {
   font-size: var(--e9-petit);
   text-transform: uppercase;
-  color: var(--menu-e9-or);
+  color: var(--menu-record);
 }
 
 .e9-resultat-vide {
@@ -2767,7 +2767,7 @@
 }
 
 .e9-case-perso.is-choisi {
-  border-color: var(--menu-e9-or);
+  border-color: var(--menu-record);
 }
 
 .e9-case-perso.is-verrou {
@@ -2834,27 +2834,27 @@
 .e9-barre {
   height: max(6px, calc(8 * var(--u)));
   border: 1px solid var(--menu-options-bouton-bord);
-  background: var(--menu-e9-sol);
+  background: var(--menu-scene-fenetre-noire);
 }
 
 .e9-barre-rempli {
   display: block;
   height: 100%;
-  background: var(--menu-e9-or);
+  background: var(--menu-record);
 }
 
 .e9-fiche-capacite {
   padding: calc(8 * var(--u)) calc(10 * var(--u));
-  border: 2px solid var(--menu-e9-or);
+  border: 2px solid var(--menu-record);
   border-radius: 4px;
-  background: var(--menu-e9-stats-fond);
+  background: var(--menu-e9-voile);
 }
 
 .e9-fiche-capacite-titre {
   margin: 0;
   font-size: var(--e9-moyen);
   font-weight: var(--font-weight-bold);
-  color: var(--menu-e9-or);
+  color: var(--menu-record);
 }
 
 .e9-fiche-capacite-texte {
