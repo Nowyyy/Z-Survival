@@ -247,7 +247,7 @@
   --game-lamp-light: #ffc27a;       /* lumière ponctuelle d'une lampe (chaude) */
 }
 
-/* Menu principal (lot 8a, E7 et E8) : bloc isolé, lu seulement par css/menu.css ; aucune couleur dans le JavaScript du menu. Docs/ref/menu-principal.md. */
+/* Menu principal (lot 8a, E7 et E8) : bloc isolé, lu par css/menu.css et par le logo partagé de base.css (accueil) ; aucune couleur dans le JavaScript. Docs/ref/menu-principal.md. */
 :root {
   --menu-nuit: #06070c;             /* fond du menu et de l'écran de chargement */
   --menu-ciel-haut: #0a0e1c;        /* ciel, haut */

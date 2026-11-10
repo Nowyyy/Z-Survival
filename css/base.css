@@ -165,6 +165,71 @@ p {
   white-space: nowrap;
 }
 
+/* Logo « Z-Survival » (lot 8a, js/logo.js) : Z rouge incliné à contour sombre, coulures de sang qui sortent de dessous la lettre (z-index négatif dans
+   le contexte d'empilement du Z, transformé), « -Survival » couleur os. Accueil de la Recette : fixe ; écran de chargement du jeu : animé (css/menu.css). */
+.logo {
+  display: inline-flex;
+  align-items: flex-end;
+  color: var(--color-text);
+  text-shadow: none;
+}
+
+.logo-z {
+  position: relative;
+  display: inline-block;
+  color: var(--color-action);
+  -webkit-text-stroke: 0.035em var(--menu-z-contour);
+  paint-order: stroke fill;
+  transform: translate(0.1em, 0) rotate(13deg);
+  transform-origin: 88% 96%;
+}
+
+.logo-coulures {
+  position: absolute;
+  z-index: -1;
+  left: 0.04em;
+  top: 70%;
+  width: 0.72em;
+  height: 0.84em;
+  transform: rotate(-13deg);
+  transform-origin: 50% 0;
+}
+
+.logo-coulures-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.logo-coulure-corps,
+.logo-goutte {
+  fill: var(--menu-rouge);
+}
+
+.logo-coulure-ombre {
+  fill: none;
+  stroke: var(--menu-coulure-sombre);
+  stroke-width: 1.1;
+  stroke-linecap: round;
+}
+
+.logo-coulure-reflet {
+  fill: none;
+  stroke: var(--menu-coulure-reflet);
+  stroke-width: 0.7;
+  stroke-linecap: round;
+  opacity: 0.8;
+}
+
+.logo-coulure-brillant {
+  fill: var(--menu-coulure-reflet);
+}
+
+.logo-goutte {
+  opacity: 0;
+}
+
 .status {
   font-size: var(--text-lg);
 }

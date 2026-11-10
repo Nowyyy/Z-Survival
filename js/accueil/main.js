@@ -4,6 +4,7 @@
 // (Recette/ du site assemblé). Contenu inséré par textContent seulement ; aucune requête externe, aucun stockage.
 import { startPage } from '../page.js';
 import { fill, formatDate, homeModel } from './home.js';
+import { poserLogo } from '../logo.js';
 
 async function fetchJson(url) {
   try {
@@ -45,6 +46,8 @@ function evolutionItem(e) {
 }
 
 function render({ t, lang }) {
+  // Lot 8a (demande du propriétaire) : le titre devient le logo du jeu (Z incliné et coulures, sans animation) ; « Z-Survival » reste le nom accessible.
+  poserLogo(document.querySelector('.home .title'), t('app.title'));
   // Lot 5i : le bandeau dit « Recette » seulement (data-i18n="home.badge") ; la version est dans le bouton (« Jouer - V0.6 »), sans version connue : « Jouer ».
   $('play').textContent = model.state === 'ok' ? fill(t('home.playVersion'), { version: model.playLabel }) : t('home.play');
   $('play').href = model.play;

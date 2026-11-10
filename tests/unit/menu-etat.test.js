@@ -249,6 +249,18 @@ describe('hygiène du menu (lot 8a)', () => {
     expect(JSON.parse(read('data/menu/infos.json'))._note).toMatch(/\\n/);
   });
 
+  it('logo partagé (js/logo.js) : coulures sous le Z (z-index négatif), écran de chargement et accueil de la Recette ; icône d\'onglet au Z incliné', () => {
+    const base = strip(read('css/base.css'));
+    expect(base).toMatch(/\.logo-coulures \{[^}]*z-index: -1;/);
+    expect(base).toMatch(/\.logo-z \{[^}]*transform: translate\(0\.1em, 0\) rotate\(13deg\);/);
+    expect(strip(css)).toMatch(/\.e7-coulures \{[^}]*z-index: -1;/);
+    expect(read('js/menu/chargement.js')).toMatch(/import \{ couluresSvg \} from '\.\.\/logo\.js';/);
+    expect(read('js/accueil/main.js')).toMatch(/poserLogo\(document\.querySelector\('\.home \.title'\), t\('app\.title'\)\)/);
+    const logo = read('js/logo.js');
+    expect(logo).not.toMatch(/innerHTML|#[0-9a-fA-F]{3,8}\b/);
+    expect(read('scripts/icone.mjs')).toMatch(/transform: rotate\(13deg\)/);
+  });
+
   it('textes game.menu.* : en français seulement, chacun écrit en entier dans js/menu ou js/core/menu-etat.js ; chaque clé lue existe', () => {
     const fr = JSON.parse(read('data/i18n/fr.json'));
     const en = JSON.parse(read('data/i18n/en.json'));

@@ -172,82 +172,49 @@
   --e7-loin: 1.6;
 }
 
-/* Coulures du Z (SVG, vue 60 × 60) : trois gouttes détaillées qui partent du bas de la lettre, une goutte qui se détache. Le conteneur compense
-   l'inclinaison du Z (13°) : les gouttes pendent à la verticale. Chaque goutte descend depuis le haut de la vue (hors vue au départ, donc cachée). */
+/* Coulures du Z (dessin partagé : js/logo.js ; styles fixes dans base.css, « Logo ») : elles sortent de dessous le Z (z-index négatif dans le
+   contexte d'empilement du Z, qui est transformé) ; le conteneur compense l'inclinaison du Z (13°) : les gouttes pendent à la verticale. Chaque goutte
+   descend depuis le haut de la vue (hors vue au départ, donc cachée), puis une goutte se détache de la plus longue. */
 .e7-coulures {
   position: absolute;
+  z-index: -1;
   left: 0.04em;
-  top: 74%;
+  top: 70%;
   width: 0.72em;
-  height: 0.8em;
+  height: 0.84em;
   transform: rotate(-13deg);
   transform-origin: 50% 0;
 }
 
-.e7-coulures-svg {
-  display: block;
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-}
-
-.e7-coulure-corps {
-  fill: var(--menu-rouge);
-}
-
-.e7-coulure-ombre {
-  fill: none;
-  stroke: var(--menu-coulure-sombre);
-  stroke-width: 1.1;
-  stroke-linecap: round;
-}
-
-.e7-coulure-reflet {
-  fill: none;
-  stroke: var(--menu-coulure-reflet);
-  stroke-width: 0.7;
-  stroke-linecap: round;
-  opacity: 0.8;
-}
-
-.e7-coulure-brillant {
-  fill: var(--menu-coulure-reflet);
-}
-
-.e7-goutte {
-  fill: var(--menu-rouge);
-  opacity: 0;
-}
-
-.e7-coulure-1 {
+.e7 .logo-coulure-1 {
   --e7-l: 36;
 }
 
-.e7-coulure-2 {
+.e7 .logo-coulure-2 {
   --e7-l: 54;
 }
 
-.e7-coulure-3 {
+.e7 .logo-coulure-3 {
   --e7-l: 26;
 }
 
-.e7:not(.e7-pose) .e7-coulure {
+.e7:not(.e7-pose) .logo-coulure {
   transform: translateY(calc(var(--e7-l) * -1px));
 }
 
-.e7-joue .e7-coulure-1 {
+.e7-joue .logo-coulure-1 {
   animation: e7-coulure 1s cubic-bezier(0.55, 0, 0.8, 0.6) 1.6s both;
 }
 
-.e7-joue .e7-coulure-2 {
+.e7-joue .logo-coulure-2 {
   animation: e7-coulure 1.25s cubic-bezier(0.55, 0, 0.8, 0.6) 1.7s both;
 }
 
-.e7-joue .e7-coulure-3 {
+.e7-joue .logo-coulure-3 {
   animation: e7-coulure 0.85s cubic-bezier(0.55, 0, 0.8, 0.6) 1.85s both;
 }
 
-.e7-joue .e7-goutte {
+.e7-joue .logo-goutte {
   animation: e7-goutte 0.55s ease-in 2.95s both;
 }
 

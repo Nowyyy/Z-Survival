@@ -299,7 +299,7 @@
     {
       "id": "textes",
       "description": "Textes et socle commun des pages : i18n, page.js, base.css, polices, taches de sang décoratives.",
-      "sources": ["js/i18n.js", "js/page.js", "data/i18n/fr.json", "data/i18n/en.json", "css/base.css", "fonts/**", "js/splat.js"],
+      "sources": ["js/i18n.js", "js/page.js", "data/i18n/fr.json", "data/i18n/en.json", "css/base.css", "fonts/**", "js/splat.js", "js/logo.js"],
       "dependances": [],
       "vitest": [
         "tests/unit/core-hud-windows.test.js",
