@@ -49,6 +49,8 @@
       });
     })();
   </script>
+  <!-- Lot 8a : démarrage (menu principal ou partie directe, Docs/ref/menu-principal.md) ; avant boot.js pour que l'écran de chargement E7 paraisse au plus tôt. -->
+  <script type="module" src="js/menu/demarrage.js"></script>
   <script type="module" src="js/game/boot.js"></script>
   <script type="module" src="js/game/main.js"></script>
 </head>
@@ -137,7 +139,8 @@
        Lot 5j : « Options » (sous Son) ouvre l'écran Options (E2-12, construit par js/game/options-menu.js à la première ouverture) ; « Graphismes » et
        « Effet VHS » y sont passés.
        Lot 5l : icône « Débogage » (#btn-debug, insecte) juste à gauche de celle du son (le son reste en haut à droite, dernier élément de la tête), même forme (44 × 44 px), visible seulement sur les canaux de débogage
-       (source, dev, release : balise zs-canal) ; elle ouvre le menu de débogage (E2-13, construit par js/game/debug-menu.js au premier clic). -->
+       (source, dev, release : balise zs-canal) ; elle ouvre le menu de débogage (E2-13, construit par js/game/debug-menu.js au premier clic).
+       Lot 8a : « Quitter » actif (confirmation construite par js/game/ui.js) et « Revenir au menu principal » actif : retour au menu principal. -->
   <div id="pause-panel" class="panel-wrap" data-block="E2-6" role="dialog" aria-modal="true" aria-labelledby="pause-title" hidden>
     <div class="panel panel-pause">
       <div class="panel-head">
@@ -151,7 +154,7 @@
         <button id="btn-resume" class="button button-main" type="button" data-i18n="game.pause.resume"></button>
         <button id="btn-restart" class="button button-quiet" type="button" data-i18n="game.pause.restart"></button>
         <button id="btn-options" class="button button-quiet" type="button" data-i18n="game.pause.options"></button>
-        <button id="btn-quit" class="button button-quiet" type="button" data-i18n="game.pause.quit" disabled></button>
+        <button id="btn-quit" class="button button-quiet" type="button" data-i18n="game.pause.quit"></button>
       </div>
     </div>
   </div>

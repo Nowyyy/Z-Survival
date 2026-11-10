@@ -494,7 +494,7 @@ test.describe('préréglages graphiques', () => {
     await open(page, '&nospawn=1&lum=off', { freeze: false });
     for (const f of ['/data/game/graphics.json', '/js/core/graphics.js', '/js/game/graphics-boot.js', '/js/game/graphics-apply.js', '/js/save/device-settings.js']) expect(files).toContain(f);
     for (const f of ['/js/game/profiler.js', '/js/game/perf-panel.js', '/js/game/frame-cap.js', '/js/core/perf-stats.js']) expect(files).not.toContain(f);
-    expect(new Set(files.filter((f) => f.endsWith('.js'))).size).toBe(113); // 109 avant le lot 5b + 4 modules des préréglages (lot 5j : inchangé ; lot 5k : lampes « off », inchangé)
+    expect(new Set(files.filter((f) => f.endsWith('.js'))).size).toBe(114); // 109 avant le lot 5b + 4 modules des préréglages (lot 5j : inchangé ; lot 5k : lampes « off », inchangé) ; lot 8a : + js/menu/demarrage.js (choix du démarrage)
     for (const f of ['/js/game/lamps.js', '/js/core/lamps.js', '/js/game/lights.js']) expect(files).not.toContain(f); // lot 5k
     expect(files).not.toContain('/js/game/options-menu.js'); // lot 5j : rien de chargé tant que l'écran reste fermé
     expect(external).toEqual([]);
@@ -503,7 +503,7 @@ test.describe('préréglages graphiques', () => {
     await page.locator('#options-close').click();
     await page.locator('#btn-options').click();
     expect(files.filter((f) => f === '/js/game/options-menu.js')).toHaveLength(1);
-    expect(new Set(files.filter((f) => f.endsWith('.js'))).size).toBe(114);
+    expect(new Set(files.filter((f) => f.endsWith('.js'))).size).toBe(115); // lot 8a : 114 + options-menu.js (avant : 113 + 1)
     expect(external).toEqual([]);
   });
 });

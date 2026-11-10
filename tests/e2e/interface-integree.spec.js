@@ -293,22 +293,22 @@ test.describe('états du jeu', () => {
     expect(r.top).toBeGreaterThan(r.hud);
   });
 
-  test('« Revenir au menu principal » : bouton de 44 px sans action (aucune navigation, l\'écran de fin reste) ; plus de lien vers la sauvegarde', async ({ page }) => {
+  // Lot 8a : « Revenir au menu principal » ramène au menu (rechargement, menu=1 sous ?test=1) ; avant : sans action, l'écran de fin restait.
+  test('« Revenir au menu principal » : bouton de 44 px qui ramène au menu principal ; plus de lien vers la sauvegarde', async ({ page }) => {
     await open(page);
     await page.evaluate(() => { const zs = window.__zs; zs.setChutes(0); zs.downPlayer(); zs.step(0.3); });
     await expect(page.locator('#end-panel')).toBeVisible();
     await expect(page.locator('#end-panel a')).toHaveCount(0);
-    const url = page.url();
-    await page.locator('#btn-menu').click();
-    expect(page.url()).toBe(url);
-    await expect(page.locator('#end-panel')).toBeVisible();
     expect((await page.locator('#btn-menu').boundingBox()).height).toBeGreaterThanOrEqual(44);
     await expect(page.locator('#end-title')).toHaveText('Tu es mort');
     await expect(page.locator('#end-box .end-icon-death')).toBeVisible();
     await expect(page.locator('#end-box .end-icon-world')).toBeHidden();
+    await Promise.all([page.waitForURL(/[?&]menu=1/), page.locator('#btn-menu').click()]);
+    expect(new URL(page.url()).searchParams.get('menu')).toBe('1');
+    await expect(page.locator('#menu-jouer')).toBeVisible({ timeout: 60_000 });
   });
 
-  // Retours du propriétaire : solde à côté de « PAUSE » ; Reprendre, Recommencer, Quitter (désactivé) à gauche ; Son, Options (lot 5j, avant : Effet VHS ; sous Son), Plein écran
+  // Retours du propriétaire : solde à côté de « PAUSE » ; Reprendre, Recommencer, Quitter (actif depuis le lot 8a ; avant : désactivé) à gauche ; Son, Options (lot 5j, avant : Effet VHS ; sous Son), Plein écran
   // à droite ; ni prochaine zone, ni état de la sauvegarde, ni volume ; depuis le lot 5j, plus de ligne « Graphismes » (#gfx-row) : elle est dans l'écran Options.
   // Lot 5j-F (retour du propriétaire) : Son devient une icône en haut à droite, après le solde (avant : bouton « Son : activé » en tête de la colonne de droite) ;
   // colonne de droite : Options puis Plein écran ; Tab depuis Reprendre va à Recommencer (avant : à Son).
@@ -349,7 +349,7 @@ test.describe('états du jeu', () => {
     expect([r.inputs, r.lines]).toEqual([0, 1]); // lignes : le solde seul (lot 5b à 5i : aussi la tête de la ligne « Graphismes », retirée au lot 5j)
     expect(await page.locator('#pause-panel p').nth(0).getAttribute('id')).toBe('pause-balance');
     await expect(page.locator('#btn-options')).toHaveText('Options');
-    await expect(page.locator('#btn-quit')).toBeDisabled();
+    await expect(page.locator('#btn-quit')).toBeEnabled(); // lot 8a (avant : désactivé)
     await expect(page.locator('#btn-quit')).toHaveText('Quitter');
     await page.keyboard.press('Tab');
     await expect(page.locator('#btn-restart')).toBeFocused();
@@ -445,7 +445,8 @@ test.describe('annonces, réseau, stockage, accessibilité, CLS', () => {
     await page.locator('#btn-pause').click();
     await page.locator('#btn-resume').click();
     await page.evaluate(() => { const zs = window.__zs; zs.setChutes(0); zs.downPlayer(); zs.step(0.3); });
-    await page.locator('#btn-menu').click();
+    await Promise.all([page.waitForURL(/[?&]menu=1/), page.locator('#btn-menu').click()]); // lot 8a : retour au menu (rechargement)
+    await page.locator('#menu-jouer').waitFor({ timeout: 60_000 });
     expect(external).toEqual([]);
     expect(problems).toEqual([]);
     expect(await page.evaluate(() => [localStorage.length, sessionStorage.length, document.cookie])).toEqual([0, 0, '']);

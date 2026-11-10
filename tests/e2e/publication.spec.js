@@ -396,10 +396,12 @@ test('/recette/ (minuscules) et /RECETTE/ finissent sur /Recette/ avec l\'accuei
 });
 
 test('/recette/jeu.html?x=1#b finit sur /Recette/jeu.html?x=1#b (requête et fragment conservés), et le jeu se charge', async ({ page }) => {
+  test.setTimeout(120_000); // lot 8a : chargement, menu, puis création de la partie
   const { external } = watch(page);
   await page.goto(`${FULL}recette/jeu.html?x=1#b`);
   await page.waitForURL(`${FULL}Recette/jeu.html?x=1#b`);
   await expect(page).toHaveURL(`${FULL}Recette/jeu.html?x=1#b`);
+  await page.locator('#menu-jouer').click({ timeout: 45_000 }); // lot 8a : sans paramètre de Partie, le jeu s'ouvre sur le menu ; la partie (canvas) naît à « JOUER »
   // Lot 5f : délai de 30 s, comme « Jouer » et next/ plus bas (écran de préparation, rendu logiciel sous charge) ; avant : 5 s par défaut,
   // dépassés au palier complet (essai/complet-7, tranche 13, après les tests de budget 3D).
   await expect(page.locator('canvas').first()).toBeAttached({ timeout: 30_000 });
@@ -468,10 +470,12 @@ test('archives v0.2 à v0.6 : chaque entrée se charge sans ressource manquante,
 
 // Le jeu affiche d'abord son écran de préparation (textures et sons) : jusqu'à 30 s en rendu logiciel sous charge.
 test('« Jouer » de Recette/ ouvre Recette/jeu.html, qui se charge sans erreur ni requête externe', async ({ page }) => {
+  test.setTimeout(120_000); // lot 8a : chargement, menu, puis création de la partie
   const { problems, external } = watch(page);
   await page.goto(`${FULL}Recette/`);
   await page.getByRole('link', { name: 'Jouer' }).click();
   await expect(page).toHaveURL(`${FULL}Recette/jeu.html`);
+  await page.locator('#menu-jouer').click({ timeout: 45_000 }); // lot 8a : menu d'abord, la partie (canvas) naît à « JOUER »
   await expect(page.locator('canvas').first()).toBeAttached({ timeout: 30_000 });
   await page.waitForLoadState('networkidle');
   expect(external).toEqual([]);
@@ -479,9 +483,11 @@ test('« Jouer » de Recette/ ouvre Recette/jeu.html, qui se charge sans erreur 
 });
 
 test('next/ mène à dev/jeu.html, et « Dernier build de développement » aussi : le jeu de dev se charge sans erreur ni requête externe', async ({ page }) => {
+  test.setTimeout(120_000); // lot 8a : chargement, menu, puis création de la partie
   const { problems, external } = watch(page);
   await page.goto(`${FULL}next/`);
   await expect(page).toHaveURL(`${FULL}dev/jeu.html`);
+  await page.locator('#menu-jouer').click({ timeout: 45_000 }); // lot 8a : menu d'abord, la partie (canvas) naît à « JOUER »
   await expect(page.locator('canvas').first()).toBeAttached({ timeout: 30_000 });
   await page.waitForLoadState('networkidle');
   expect(external).toEqual([]);

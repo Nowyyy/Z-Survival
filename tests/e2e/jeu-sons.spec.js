@@ -262,11 +262,11 @@ test.describe('sons : chargement, confidentialité, robustesse', () => {
   });
 
   for (const size of [SIZE, { width: 1440, height: 900 }]) {
-    // Lot 3l : le curseur de volume est retiré de la pause ; les boutons (dont « Quitter », désactivé) gardent 44 px.
+    // Lot 3l : le curseur de volume est retiré de la pause ; les boutons (dont « Quitter », actif depuis le lot 8a) gardent 44 px.
     test(`axe : aucune violation sur le panneau de pause (${size.width}×${size.height})`, async ({ page }) => {
       await open(page, size.width > 1000 ? '&dpr=1' : '', size);
       await page.getByRole('button', { name: 'Pause' }).click();
-      await expect(page.locator('#btn-quit')).toBeDisabled();
+      await expect(page.locator('#btn-quit')).toBeEnabled(); // lot 8a (avant : désactivé)
       for (const box of await Promise.all((await page.locator('#pause-panel button:not([hidden])').all()).map((b) => b.boundingBox()))) {
         expect(box.height).toBeGreaterThanOrEqual(43.5);
         expect(box.y + box.height).toBeLessThanOrEqual(size.height);

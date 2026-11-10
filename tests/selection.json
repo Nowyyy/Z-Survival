@@ -820,10 +820,19 @@
       "complet": []
     },
     {
+      "id": "menu",
+      "description": "Menu principal (lot 8a) : démarrage de jeu.html (menu ou partie directe), écran de chargement E7, menu E8 (en-tête, onglets, écrans Information et Connexion), état pur js/core/menu-etat.js, données data/menu/, css/menu.css.",
+      "sources": ["js/menu/**", "js/core/menu-etat.js", "css/menu.css", "data/menu/**"],
+      "dependances": ["economie", "graphismes", "interface", "publication", "textes"],
+      "vitest": ["tests/unit/menu-etat.test.js"],
+      "e2e": ["tests/e2e/menu.spec.js"],
+      "complet": []
+    },
+    {
       "id": "jeu",
       "description": "Assemblage du jeu : jeu.html, boucle et état (game.js), démarrage, accès de test.",
       "sources": ["js/fps.js", "jeu.html", "js/game/main.js", "js/game/game.js", "js/game/boot.js", "js/game/testhook.js"],
-      "dependances": ["carte", "combat", "economie", "etages", "graphismes", "interface", "noyau", "personnages", "rendu", "siege", "sons", "textes", "vagues"],
+      "dependances": ["carte", "combat", "economie", "etages", "graphismes", "interface", "menu", "noyau", "personnages", "rendu", "siege", "sons", "textes", "vagues"],
       "vitest": [
         "tests/unit/data-ambiance.test.js",
         "tests/unit/icone.test.js",

@@ -192,6 +192,7 @@ for (const viewport of [{ width: 1440, height: 900 }, { width: 375, height: 812 
     await page.setViewportSize(viewport);
     const { problems, external } = watch(page);
     await page.goto(`${DEV}?v=4`);
+    await page.locator('#menu-jouer').click({ timeout: 60_000 }); // lot 8a : sans paramètre de Partie, le jeu s'ouvre sur le menu
     await waitGame(page);
     await openDebug(page);
     await page.locator('#debug-scroll').evaluate((n) => { n.scrollTop = n.scrollHeight; });

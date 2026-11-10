@@ -17,6 +17,8 @@ const scripts = ['js/main.js', 'js/page.js', ...readdirSync('js/accueil').map((f
 // Lot 3l : l'atelier de l'interface (lot 3k, toujours publié) lit des clés game.* de fr.json pour ses propositions A et C (« Vague N / 40 », « N restants »,
 // « Voir ma sauvegarde ») que le jeu intégré (B) n'affiche plus : ses modules comptent comme consommateurs.
 scripts.push(...readdirSync('js/atelier-interface').map((f) => readFileSync(`js/atelier-interface/${f}`, 'utf8')));
+// Lot 8a : le menu principal (js/menu/, état pur js/core/menu-etat.js) consomme les clés game.menu.* (écrites en entier).
+scripts.push(...readdirSync('js/menu').map((f) => readFileSync(`js/menu/${f}`, 'utf8')), readFileSync('js/core/menu-etat.js', 'utf8'));
 // Lot 5j : les libellés des options (écran Options du jeu) sont nommés dans data/game/graphics.json et lus par js/game/options-menu.js ; chaque clé y est
 // écrite entre guillemets : le fichier compte comme consommateur (avant : seuls les scripts et les pages).
 const graphicsJson = readFileSync('data/game/graphics.json', 'utf8');

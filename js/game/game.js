@@ -1362,6 +1362,11 @@ export function createGame(ctx) {
       bank.flush('pause');
       ctx.ui.setPauseInfo(bank.summary());
     },
+    // Lot 8a : « Quitter » confirmé : la partie en cours s'arrête ici ; son argent et ses records sont écrits par le même chemin qu'à la mort
+    // (bank.runEnd : écriture immédiate) ; rien de plus si elle est déjà finie (mort, monde terminé).
+    quit() {
+      if (!sim.dead && !sim.worldOver) bank.runEnd({ kills: sim.kills, reason: 'quit' });
+    },
     // Remet une partie propre (Rejouer, Recommencer).
     restart() {
       // Lot 4 : la partie en cours (ni morte, ni terminée) s'arrête ici : ses records et son argent sont écrits avant la remise à zéro.
