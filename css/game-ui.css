@@ -611,25 +611,8 @@
   gap: 0.3em;
 }
 
-.options-presets-line {
-  justify-content: space-between;
-  gap: 1em;
-}
-
-.options-current {
-  color: var(--color-text-muted);
-  white-space: nowrap;
-}
-
-.options-choices {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.35em;
-}
-
 /* Lot 5j-E (retour du propriétaire) : boutons de l'écran Options moins larges (marges intérieures réduites, largeur du texte) ; hauteur 44 px gardée
    (cible tactile minimale de l'interface). */
-.panel-options .options-choice,
 .panel-options .options-value {
   padding: 0.2em 0.6em;
 }
@@ -765,7 +748,6 @@
   gap: 0.35em;
 }
 
-.panel .options-choice[aria-pressed="true"],
 .panel .options-value[aria-pressed="true"] {
   border-color: var(--color-text);
   background: var(--color-ground-light);
@@ -799,17 +781,6 @@
     flex-direction: row;
     align-items: center;
     gap: 0.6em;
-  }
-
-  .options-presets-line {
-    flex: none;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0;
-  }
-
-  .options-choices {
-    flex: 1 1 auto;
   }
 }
 

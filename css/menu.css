@@ -1764,7 +1764,8 @@
   font-weight: var(--font-weight-bold);
 }
 
-.e5-note {
+.e5-note,
+.e5-attente {
   display: flex;
   align-items: center;
   gap: calc(4 * var(--u));
@@ -1786,7 +1787,8 @@
   color: var(--menu-options-nom-inactif);
 }
 
-.e5-ligne.is-verrou .e5-note {
+.e5-ligne.is-verrou .e5-note,
+.e5-attente {
   color: var(--menu-options-verrou);
 }
 
@@ -1878,7 +1880,7 @@
 .e5-panneau {
   box-sizing: border-box;
   width: min(calc(852 * var(--u)), 100%);
-  height: min(calc(398 * var(--u)), 100%);
+  height: min(100%, max(calc(398 * var(--u)), calc(100vh - 32px))); /* 398 / 430 de la maquette ; plus haut s'il reste de la place */
   padding: calc(14 * var(--u)) calc(20 * var(--u)) calc(12 * var(--u));
   border: 2px solid var(--menu-options-panneau-bord);
   border-radius: 6px;
@@ -1896,4 +1898,16 @@
 
 .e5-panneau .e5-presets {
   margin-top: calc(10 * var(--u));
+}
+
+/* Partie : texte de 14 px au moins dans le panneau (règle de lisibilité du jeu, contrôlée depuis le lot 5j ; la maquette descend à 12 px). */
+.e5-panneau .e5-note,
+.e5-panneau .e5-attente,
+.e5-panneau .e5-petit,
+.e5-panneau .e5-preset,
+.e5-panneau .e5-valeur,
+.e5-panneau .e5-retour,
+.e5-panneau .e5-section-titre,
+.e5-panneau .e5-volume-valeur {
+  font-size: max(14px, calc(14 * var(--u)));
 }

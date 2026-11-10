@@ -100,3 +100,40 @@ describe('lot 8c : contrôleur, contexte « menu »', () => {
     expect([...storage.data.keys()]).toEqual([DEVICE_KEY]); // aucune autre clé
   });
 });
+
+describe('lot 8c : contrôleur, contexte « partie »', () => {
+  it('réglage au lancement refusé à la main (rien d\'écrit) ; option « tout de suite » permise (Perso) ; plus de rechargement', () => {
+    const storage = createFakeStorage();
+    const g = createGraphicsController(fauxBoot(DESKTOP, storage)); // défaut : partie
+    expect(g.state()).toMatchObject({ contexte: 'partie', lockedOptions: LOAD });
+    for (const id of LOAD) {
+      const o = CFG.options.find((x) => x.id === id);
+      for (const v of o.valeurs) expect(g.setOption(id, v.id), `${id}=${v.id}`).toMatchObject({ ok: false, status: 'verrouille-partie' });
+    }
+    expect(storage.calls.setItem).toBe(0);
+    expect(g.setOption('brume', 'simple')).toMatchObject({ ok: true });
+    expect(g.state()).toMatchObject({ choice: 'perso', vector: { brume: 'simple' } });
+    expect(g.reloadNow).toBeUndefined();
+    expect(g.state()).not.toHaveProperty('reloadRequested');
+  });
+
+  it('valeurs en attente selon le préréglage choisi en partie ; aucune valeur en cours changée pour un réglage verrouillé tant que la partie dure', () => {
+    for (const [device, initial] of [[DESKTOP, 'eleve'], [PHONE, 'moyen']]) {
+      const storage = createFakeStorage();
+      const g = createGraphicsController(fauxBoot(device, storage));
+      const running = g.state().running;
+      const load = g.state().load;
+      expect(Object.fromEntries(LOAD.map((id) => [id, running[id]]))).toEqual(Object.fromEntries(LOAD.map((id) => [id, CFG.vectors[initial][id]])));
+      for (const p of ['faible', 'moyen', 'eleve', 'perso', 'auto', 'faible']) {
+        expect(g.choosePreset(p).ok || g.state().choice === p).toBe(true);
+        const s = g.state();
+        expect(s.running, `${initial} → ${p}`).toEqual(running); // valeurs du chargement : jamais changées
+        expect(s.load, `${initial} → ${p}`).toEqual(load); // réglages « load » du rendu en cours : jamais changés
+        const voulu = s.vector;
+        expect(s.waiting).toEqual(LOAD.filter((id) => voulu[id] !== running[id]).map((id) => ({ id, enCours: running[id], retour: voulu[id] })));
+        expect(s.pending).toEqual(s.waiting.map((w) => w.id));
+        expect(JSON.parse(storage.data.get(DEVICE_KEY))).toMatchObject({ v: 2, graphics: p }); // enregistré pour le prochain chargement
+      }
+    }
+  });
+});

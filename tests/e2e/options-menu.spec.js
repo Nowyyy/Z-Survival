@@ -226,3 +226,174 @@ test.describe('page Options du menu (E5)', () => {
     expect(o.externes).toEqual([]);
   });
 });
+
+// Lot 8c, partie C : Options en partie (E2-12), même composant (contexte « partie ») : réglages appliqués au lancement verrouillés, préréglages
+// modifiables (options « tout de suite » appliquées, valeurs « au lancement » enregistrées et en attente), barre « Recharger maintenant » retirée.
+async function partieDirecte(page, size = REF, extra = '') {
+  await page.setViewportSize(size);
+  await page.goto(`/jeu.html?test=1&seed=1&nospawn=1${extra}`);
+  await page.waitForFunction(() => (window.__zs?.getState()?.time ?? 0) > 0.05, null, { timeout: 90_000 });
+}
+async function optionsPartie(page) {
+  await page.locator('#btn-pause').dispatchEvent('click');
+  await page.locator('#btn-options').dispatchEvent('click');
+  await expect(page.locator('#options-panel')).toBeVisible();
+}
+const graphismes = (page) => page.evaluate(() => window.__zs.getState().graphics);
+// Contraste texte / fond d'un élément (couleurs calculées, fond opaque de l'élément).
+const contraste = (n) => {
+  const rgb = (c) => c.match(/[\d.]+/g).slice(0, 3).map(Number);
+  const lum = (c) => {
+    const [r, g, b] = rgb(c).map((v) => v / 255).map((v) => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4));
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  };
+  const cs = getComputedStyle(n);
+  const [a, b] = [lum(cs.color), lum(cs.backgroundColor)].sort((x, y) => y - x);
+  return (a + 0.05) / (b + 0.05);
+};
+
+test.describe('Options en partie (E2-12)', () => {
+  for (const size of [REF, { width: 667, height: 375 }]) {
+    test(`${size.width}×${size.height} : « ‹ Pause » et titre ; mêmes sections que le menu (Son en tête) ; réglages au lancement grisés, cadenas, « Modifiable depuis le menu principal », non activables, raison lue ; préréglages modifiables ; aucune barre « Recharger maintenant » ; 44 px ; axe ; console propre`, async ({ page, baseURL, isMobile }) => {
+      const o = surveiller(page, baseURL);
+      await partieDirecte(page, size);
+      await optionsPartie(page);
+      await expect(page.locator('#options-panel')).toHaveAttribute('data-contexte', 'partie');
+      await expect(page.locator('#options-panel')).toHaveAccessibleName('Options');
+      await expect(page.locator('#options-retour')).toHaveText('Pause');
+      await expect(page.locator('#options-retour')).toHaveAccessibleName('Retour à la pause');
+      await expect(page.locator('#options-title')).toHaveText('Options');
+      await expect(page.locator('.e5-section-titre')).toHaveText(['Son', 'Image', 'Carte', 'Personnages', 'Lumières']);
+      await expect(page.locator('#options-preset-auto')).toHaveText(`Auto · ${isMobile ? 'Moyen' : 'Élevé'}`);
+      await expect(page.locator('#options-pied')).toHaveCount(0); // le pied n'existe que dans le menu
+      await expect(page.locator('#options-reload, #options-reload-now, #options-confirm')).toHaveCount(0);
+      const graphics = await page.evaluate(() => fetch('data/game/graphics.json').then((r) => r.json()));
+      const load = graphics.options.filter((x) => x.group === 'load').map((x) => x.id);
+      for (const p of ['auto', 'faible', 'moyen', 'eleve', 'perso']) await expect(page.locator(`#options-preset-${p}`)).toBeEnabled();
+      for (const x of graphics.options) {
+        const row = page.locator(`.e5-ligne[data-option="${x.id}"]`);
+        if (load.includes(x.id)) {
+          await expect(row).toHaveClass(/is-verrou/);
+          await expect(row.locator('.e5-cadenas')).toBeVisible();
+          await expect(row).toHaveAccessibleDescription('Modifiable depuis le menu principal');
+          for (const b of await row.locator('.e5-valeur').all()) {
+            await expect(b).toBeDisabled();
+            await expect(b).toHaveAccessibleDescription('Modifiable depuis le menu principal');
+          }
+          // Couleur jamais seule : nom grisé ET cadenas ET texte ; texte désactivé lisible (4,5:1 au moins, choisi ou non ; axe ignore les boutons désactivés).
+          for (const b of await row.locator('.e5-valeur').all()) expect(await b.evaluate(contraste), x.id).toBeGreaterThanOrEqual(4.5);
+        } else {
+          await expect(row).not.toHaveClass(/is-verrou/);
+          for (const b of await row.locator('.e5-valeur').all()) await expect(b).toBeEnabled();
+        }
+      }
+      // Un clic sur une valeur verrouillée (forcé) ne change rien.
+      const avant = await graphismes(page);
+      await page.locator('.e5-ligne[data-option="textures"] .e5-valeur:not([aria-pressed="true"])').dispatchEvent('click');
+      expect((await graphismes(page)).vector).toEqual(avant.vector);
+      for (const sel of ['#options-retour', '.e5-preset', '.e5-valeur', '#options-volume']) {
+        for (const n of await page.locator(sel).all()) {
+          await n.scrollIntoViewIfNeeded();
+          const r = await n.boundingBox();
+          expect(Math.round(Math.min(r.height, r.width)), sel).toBeGreaterThanOrEqual(44);
+        }
+      }
+      const panneau = await boite(page, '.e5-panneau');
+      expect([panneau.l >= -0.5, panneau.t >= -0.5, panneau.r <= size.width + 0.5, panneau.b <= size.height + 0.5]).toEqual([true, true, true, true]);
+      await page.locator('#options-scroll').evaluate((n) => { n.scrollTop = 0; });
+      const axe = await new AxeBuilder({ page }).include('#options-panel').analyze();
+      expect(axe.violations.map((v) => `${v.id} : ${v.nodes.map((n) => n.target).join(', ')}`)).toEqual([]);
+      // Échap : retour à la pause.
+      await page.keyboard.press('Escape');
+      await expect(page.locator('#options-panel')).toBeHidden();
+      await expect(page.locator('#pause-panel')).toBeVisible();
+      expect(o.problemes).toEqual([]);
+      expect(o.externes).toEqual([]);
+    });
+  }
+
+  test('préréglage choisi en partie : options « tout de suite » appliquées (rendu), réglages verrouillés en cours inchangés, ligne « En cours · au retour au menu » ; Perso par une option « tout de suite » ; son synchronisé avec l\'icône de la pause', async ({ page, isMobile }) => {
+    await partieDirecte(page);
+    await optionsPartie(page);
+    // Valeurs attendues lues dans les données : Auto vaut Élevé sur un ordinateur, Moyen sur un pointeur grossier (projet mobile).
+    const graphics = await page.evaluate(() => fetch('data/game/graphics.json').then((r) => r.json()));
+    const initial = graphics.presets[isMobile ? 'moyen' : 'eleve'];
+    const enAttente = (cible) => graphics.options.filter((x) => x.group === 'load' && cible[x.id] !== initial[x.id]).map((x) => ({ id: x.id, enCours: initial[x.id], retour: cible[x.id] }));
+    const g0 = await graphismes(page);
+    await page.locator('#options-preset-faible').click();
+    const g1 = await graphismes(page);
+    expect(g1).toMatchObject({ choice: 'faible', preset: 'faible', live: { dprMax: 1, ombres: false, vhs: 'off', brouillard: 'simple' }, shadows: false });
+    expect(g1.world.mists).toEqual([false, false, false]);
+    expect(g1.load).toEqual(g0.load); // réglages du chargement : inchangés pendant la partie
+    expect(g1.running).toEqual(g0.running);
+    expect(g1.waiting).toEqual(enAttente(graphics.presets.faible));
+    expect(g1.waiting.map((w) => w.id)).toEqual(expect.arrayContaining(['carte', 'textures']));
+    await expect(page.locator('#options-attente-textures')).toHaveText('En cours : Riche · au retour au menu : Simple');
+    await expect(page.locator('#options-attente-carte')).toHaveText('En cours : Complet · au retour au menu : Réduit');
+    if (!isMobile) await expect(page.locator('#options-attente-anticrenelage')).toHaveText('En cours : Activé · au retour au menu : Coupé');
+    await expect(page.locator('.e5-ligne[data-option="textures"]')).toHaveAccessibleDescription('Modifiable depuis le menu principal En cours : Riche · au retour au menu : Simple');
+    // Valeur en cours marquée (aria-pressed), valeur du retour au menu marquée autrement (bord en tirets, et le texte).
+    await expect(page.locator('.e5-ligne[data-option="textures"] [data-value="fines"]')).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.locator('.e5-ligne[data-option="textures"] [data-value="simples"]')).toHaveClass(/is-attente/);
+    await expect(page.locator('#options-attente-resolution')).toBeHidden(); // option « tout de suite » : jamais en attente
+    // Option « tout de suite » modifiée : Perso, appliquée à chaud ; les valeurs « au lancement » de Faible restent en attente.
+    await page.locator('.e5-ligne[data-option="brume"] [data-value="complete"]').click();
+    const g2 = await graphismes(page);
+    expect(g2).toMatchObject({ choice: 'perso', live: { brouillard: 'complet' } });
+    expect(g2.waiting).toEqual(enAttente(graphics.presets.faible));
+    await expect(page.locator('#options-preset-perso')).toHaveAttribute('aria-pressed', 'true');
+    // Retour au préréglage du chargement : plus rien en attente.
+    await page.locator(`#options-preset-${isMobile ? 'moyen' : 'eleve'}`).click();
+    expect((await graphismes(page)).waiting).toEqual([]);
+    await expect(page.locator('.e5-attente:not([hidden])')).toHaveCount(0);
+    // Son : Coupé dans les Options → icône de la pause barrée ; l'icône remet le son → Options à jour.
+    await page.locator('#options-son-coupe').click();
+    expect((await page.evaluate(() => window.__zs.getState().audio)).muted).toBe(true);
+    await page.locator('#options-volume').focus();
+    await page.keyboard.press('ArrowLeft');
+    expect((await page.evaluate(() => window.__zs.getState().audio)).volume).toBe(90);
+    await page.locator('#options-retour').click();
+    await expect(page.locator('#btn-sound')).toHaveAttribute('data-muted', 'true');
+    await page.locator('#btn-sound').click();
+    await page.locator('#btn-options').click();
+    await expect(page.locator('#options-son-active')).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.locator('#options-volume-valeur')).toHaveText('90 %');
+  });
+
+  test('« Rejouer » ne recharge pas (valeurs toujours en attente) ; après « Quitter » puis « JOUER », les valeurs choisies en partie sont en vigueur (?store=local)', async ({ page, isMobile }) => {
+    test.setTimeout(180_000);
+    await page.addInitScript(() => {
+      if (sessionStorage.getItem('zs.test.vide')) return;
+      sessionStorage.setItem('zs.test.vide', '1');
+      localStorage.clear();
+    });
+    await ouvrirMenu(page, REF, '&store=local');
+    await page.locator('#menu-jouer').click();
+    await page.waitForFunction(() => (window.__zs?.getState()?.time ?? 0) > 0.05, null, { timeout: 120_000 });
+    expect((await graphismes(page)).load).toMatchObject({ texturesFines: true, decor: 'complet' });
+    await optionsPartie(page);
+    await page.locator('#options-preset-faible').click();
+    expect((await graphismes(page)).load).toMatchObject({ texturesFines: true, decor: 'complet' }); // en cours : inchangés
+    await page.locator('#options-retour').click();
+    // « Rejouer » (fin de partie) : game.restart(), sans rechargement : les réglages au lancement restent ceux du chargement, toujours en attente.
+    await page.evaluate(() => { window.__marque = 1; });
+    await page.locator('#btn-resume').click();
+    await page.evaluate(() => { const zs = window.__zs; zs.setChutes(0); zs.downPlayer(); zs.step(0.3); });
+    await expect(page.locator('#end-panel')).toBeVisible();
+    await page.locator('#btn-replay').click();
+    await expect(page.locator('#end-panel')).toBeHidden();
+    expect(await page.evaluate(() => window.__marque)).toBe(1);
+    const rejoue = await graphismes(page);
+    expect(rejoue).toMatchObject({ choice: 'faible', load: { texturesFines: true, decor: 'complet' } });
+    expect(rejoue.waiting.map((w) => w.id)).toEqual(isMobile ? ['carte', 'textures'] : ['anticrenelage', 'carte', 'textures', 'personnages']); // depuis Moyen (mobile) ou Élevé
+    await page.locator('#btn-pause').click();
+    await page.locator('#btn-quit').click();
+    await Promise.all([page.waitForURL(/[?&]menu=1/), page.locator('#btn-quit-ok').click()]);
+    await expect(page.locator('#menu-jouer')).toBeVisible({ timeout: 60_000 });
+    await page.locator('#menu-jouer').click();
+    await page.waitForFunction(() => (window.__zs?.getState()?.time ?? 0) > 0.05, null, { timeout: 120_000 });
+    const g = await graphismes(page);
+    expect(g).toMatchObject({ choice: 'faible', preset: 'faible', load: { texturesFines: false, decor: 'reduit', anticrenelage: false, personnages: 'A' }, pending: [], waiting: [] });
+    expect(JSON.parse(await page.evaluate(() => localStorage.getItem('zs.device.v1')))).toEqual({ v: 2, graphics: 'faible', custom: null });
+  });
+});

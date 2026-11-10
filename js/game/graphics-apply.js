@@ -2,17 +2,17 @@
 // léger) sont appliqués au chargement (main.js, persos-loader.js, game.js) ; les réglages « live » (rapport de pixels, ombres, effet VHS, brume, feux et
 // fumées, sang et cadavres) le sont ici : au démarrage (Élevé : aucun changement), en Auto quand il faut baisser d'un cran entre deux manches (temps
 // d'image médian sur les 10 dernières secondes de jeu actif au-delà de 22 ms) et, depuis le lot 5j, à chaque changement de l'écran Options (préréglage
-// ou option seule : passage à Perso). Une option « load » changée est enregistrée et attend le rechargement (pending) ; rien ne recharge sans le
-// bouton « Recharger maintenant ». Un paramètre explicite de l'adresse n'est jamais remplacé. Aucune logique du jeu n'est touchée.
+// ou option seule : passage à Perso). Lot 8c : en partie, une option « load » ne se change pas à la main (verrouillée) ; un préréglage choisi en
+// partie enregistre ses valeurs « load », en attente du prochain chargement de la partie (pending, waiting), sans rechargement (la barre « Recharger
+// maintenant » est retirée). Un paramètre explicite de l'adresse n'est jamais remplacé. Aucune logique du jeu n'est touchée.
 import { autoDecision, choosePreset, effectiveOptions, irregularShare, medianOf, optionsAuLancement, optionsState, optionVerrouillee, pendingReload, presetDetecte, setOption, valeursEnAttente } from '../core/graphics.js';
 
 const SAMPLES = 1200; // intervalles gardés (jeu actif)
 
-// boot : sortie de graphicsBoot() ; vhs : couche VHS ; announce(text) : #hud-live ; reload() : rechargement réel (absent sous ?test=1 : simulé).
-// Lot 8c : contexte « partie » (les réglages appliqués au lancement sont verrouillés, setOption les refuse) ou « menu » (tout est modifiable) ;
-// null (écran de la pause d'avant le lot 8c, jusqu'à sa partie C) : rien n'est verrouillé.
-export function createGraphicsController(boot, { vhs = null, announce = () => {}, reload = null, dict = {}, contexte = null } = {}) {
-  const verrouillee = (id) => contexte !== null && optionVerrouillee(boot.cfg, id, contexte);
+// boot : sortie de graphicsBoot() ; vhs : couche VHS ; announce(text) : #hud-live. Lot 8c : contexte « partie » (défaut : les réglages appliqués
+// au lancement sont verrouillés, setOption les refuse) ou « menu » (écran Options du menu principal : tout est modifiable).
+export function createGraphicsController(boot, { vhs = null, announce = () => {}, dict = {}, contexte = 'partie' } = {}) {
+  const verrouillee = (id) => optionVerrouillee(boot.cfg, id, contexte);
   const { cfg, store, resolved } = boot;
   const explicit = boot.explicit ?? {};
   const device = boot.device ?? {};
@@ -34,7 +34,6 @@ export function createGraphicsController(boot, { vhs = null, announce = () => {}
   let lastPhase = null;
   let lastDecision = null;
   let downgraded = null;
-  let reloadRequested = null;
 
   // Réglages « live » sur le rendu (les clés données par l'adresse restent celles de l'adresse).
   function applyLive(live, { hot = false } = {}) {
@@ -145,12 +144,6 @@ export function createGraphicsController(boot, { vhs = null, announce = () => {}
     setOption: (id, value) => (verrouillee(id) ? { ok: false, status: 'verrouille-partie', pending: pendingReload(eff, running, cfg) } : commit(setOption(st, id, value, cfg))),
     // Ancien choix de la ligne « Graphismes » (lot 5b) : un préréglage, sans rechargement automatique.
     choose: (choice) => commit(choosePreset(st, choice, cfg)),
-    // « Recharger maintenant » (après confirmation dans l'écran Options) : rechargement réel, simulé sous ?test=1 (reloadRequested).
-    reloadNow() {
-      reloadRequested = st.choice;
-      if (reload) reload();
-      return reloadRequested;
-    },
     // Données de l'écran Options : sections, options (identifiants, groupes, valeurs, clés de texte) et état.
     options: () => ({ sections: [...cfg.sections], sectionTexts: { ...cfg.sectionTexts }, options: cfg.options, state: api.state() }),
     label: () => (st.choice === 'auto' ? `auto (${eff.preset})` : st.choice),
@@ -158,7 +151,7 @@ export function createGraphicsController(boot, { vhs = null, announce = () => {}
       return {
         choice: st.choice, preset: eff.preset, initial: resolved.preset, origin, device: resolved.device, auto: st.choice === 'auto',
         downgraded: st.choice === 'auto' && st.current ? downgraded : null, lastDecision, live: { ...settings.live, feux: { ...settings.live.feux } }, load: { ...settings.load }, overridden: [...settings.overridden],
-        storage: store.state(), reloadRequested, world: refs?.world.graphicsStats?.() ?? null, lune: refs?.world.moonState?.() ?? [], antialias: refs ? refs.renderer.getContextAttributes?.()?.antialias ?? null : null,
+        storage: store.state(), world: refs?.world.graphicsStats?.() ?? null, lune: refs?.world.moonState?.() ?? [], antialias: refs ? refs.renderer.getContextAttributes?.()?.antialias ?? null : null,
         pixelRatio: refs ? refs.renderer.getPixelRatio() : null, shadows: refs ? refs.renderer.shadowMap.enabled : null, vhs: vhs ? vhs.mode : null,
         // Lot 5j : vecteur effectif, origine de chaque valeur, valeurs du chargement, options en attente de rechargement, Perso enregistré.
         vector: { ...eff.vector }, origins: { ...eff.origins }, imposed: [...eff.imposed], running: { ...running }, pending: pendingReload(eff, running, cfg),
