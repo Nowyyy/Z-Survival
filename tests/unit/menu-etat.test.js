@@ -241,6 +241,14 @@ describe('hygiène du menu (lot 8a)', () => {
     for (const n of ['commun', 'peu-commun', 'rare', 'epique', 'legendaire']) expect(tokens).toMatch(new RegExp(`--rarete-${n}: #[0-9a-f]{6};`));
   });
 
+  it('nouveautés : sauts de ligne gérés (white-space: pre-line, chaîne ou liste de lignes), toujours en texte brut ; infos.json documente la règle', () => {
+    expect(strip(css)).toMatch(/\.e8-info-texte \{[^}]*white-space: pre-line;/);
+    const ecrans = read('js/menu/ecrans.js');
+    expect(ecrans).toMatch(/Array\.isArray\(i\?\.texte\)/);
+    expect(ecrans).not.toMatch(/innerHTML|insertAdjacentHTML/);
+    expect(JSON.parse(read('data/menu/infos.json'))._note).toMatch(/\\n/);
+  });
+
   it('textes game.menu.* : en français seulement, chacun écrit en entier dans js/menu ou js/core/menu-etat.js ; chaque clé lue existe', () => {
     const fr = JSON.parse(read('data/i18n/fr.json'));
     const en = JSON.parse(read('data/i18n/en.json'));

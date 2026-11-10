@@ -22,7 +22,7 @@ import { generateTextureData } from './textures.js';
 import { installTestHook } from './testhook.js';
 import { createUi } from './ui.js';
 import { applyTexts, fmt, loadDict, TEXTURE_TEXTS } from './texts.js';
-import { menuProgres, menuRetour } from '../menu/demarrage.js';
+import { menuChute, menuProgres, menuRetour, modeMenu } from '../menu/demarrage.js';
 
 const DEFAULT_RATIO_CAP = 2;
 menuProgres('modules', 1); // lot 8a : modules et Three.js évalués (écran de chargement du jeu après « JOUER » ; sans effet en partie directe)
@@ -292,6 +292,7 @@ soundHint.addEventListener('click', () => ctx.audio.unlock());
 // aussi, et chaque geste retente la reprise tant que le contexte n'est pas en marche.
 for (const type of ['pointerdown', 'pointerup', 'click', 'touchend', 'keydown']) window.addEventListener(type, () => ctx.audio.unlock(), { capture: true });
 
+if (modeMenu) await menuChute(); // lot 8a : mode menu, la partie n'est créée (et ne tourne) qu'une fois la chute du Z finie
 game = createGame(ctx);
 // Lot 5b-G : l'écran de préparation reste affiché pendant la création du jeu (monde, programmes, premier rendu complet, zombies préparés) :
 // le joueur ne voit pas la première image lente ; la boucle d'images ne démarre qu'à l'image suivante, une fois l'écran retiré.

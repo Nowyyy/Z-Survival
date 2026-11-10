@@ -3,8 +3,8 @@
 //   en code (ciel, lune, bâtiment et deux fenêtres éclairées, brume lente), titre « Z-Survival » : « -Survival » affiché, puis le Z tombe une seule
 //   fois (chute, rebond, bascule à droite, ~13°), secousse, tiret écrasé, quatre nuages de poussière, trois coulures. Quand tout est prêt et la chute
 //   finie : menu E8 (js/menu/menu.js), puis cet écran est retiré.
-// - « jeu » (après « JOUER ») : le même écran, Z déjà posé ; le jeu se charge (modules dont Three.js, données, textures, sons, création du jeu :
-//   progression envoyée par main.js) ; à 100 % (partie créée), l'écran est retiré et la partie apparaît.
+// - « jeu » (après « JOUER ») : le même écran, chute du Z rejouée ; le jeu se charge (modules dont Three.js, données, textures, sons, création du
+//   jeu : progression envoyée par main.js, qui attend la fin de la chute avant de créer la partie) ; à 100 %, l'écran est retiré et la partie apparaît.
 // Les deux : barre et pourcentage réels (js/core/menu-etat.js), astuce (data/menu/astuces.json), version (build-info.json). Sous
 // prefers-reduced-motion : Z posé, sans chute ni secousse. Animations « e7-* » (css/menu.css).
 import { avancer, choisirAstuce, creerProgression, MODULES_ATTENDUS, pourcentage, texteVersion } from '../core/menu-etat.js';
@@ -42,6 +42,38 @@ export function decorNuit(classe = 'e7-decor') {
   return svg;
 }
 
+// Coulures sous le Z (retour du propriétaire : plus de détail) : trois gouttes qui partent du bas de la lettre, de longueurs et d'épaisseurs
+// différentes (col qui s'affine, renflement arrondi au bout, bord droit dans l'ombre, reflet humide sur le col et sur le renflement), puis une goutte
+// qui se détache de la plus longue. Dessinées en SVG (vue 60 × 60, haut = bas du Z) ; chaque goutte descend depuis le haut de la vue (hors vue au
+// départ), ce qui l'allonge sans déformer son renflement. Couleurs : jetons --menu-coulure*.
+const GOUTTES = [
+  { cx: 13, w: 7.5, l: 30, b: 3.6 },
+  { cx: 31, w: 9.5, l: 46, b: 4.6 },
+  { cx: 48, w: 6, l: 21, b: 3 },
+];
+const f1 = (n) => Math.round(n * 100) / 100;
+export function gouttePath({ cx, w, l, b }) {
+  const [g, d, gc, dc] = [cx - w / 2, cx + w / 2, cx - w * 0.32, cx + w * 0.32].map(f1);
+  return `M${g} -60L${g} ${f1(l * 0.35)}C${g} ${f1(l * 0.6)} ${gc} ${f1(l * 0.62)} ${gc} ${f1(l - 2 * b)}C${gc} ${f1(l - 1.3 * b)} ${f1(cx - b)} ${f1(l - 1.2 * b)} ${f1(cx - b)} ${f1(l - 0.2 * b)}`
+    + `A${b} ${b} 0 1 0 ${f1(cx + b)} ${f1(l - 0.2 * b)}C${f1(cx + b)} ${f1(l - 1.2 * b)} ${dc} ${f1(l - 1.3 * b)} ${dc} ${f1(l - 2 * b)}C${dc} ${f1(l * 0.62)} ${d} ${f1(l * 0.6)} ${d} ${f1(l * 0.35)}L${d} -60Z`;
+}
+function couluresSvg() {
+  const svg = svgEl('svg', { class: 'e7-coulures-svg', viewBox: '0 0 60 60', 'aria-hidden': 'true', focusable: 'false' });
+  GOUTTES.forEach((g, i) => {
+    const groupe = svgEl('g', { class: `e7-coulure e7-coulure-${i + 1}` });
+    groupe.append(
+      svgEl('path', { class: 'e7-coulure-corps', d: gouttePath(g) }),
+      svgEl('path', { class: 'e7-coulure-ombre', d: `M${f1(g.cx + g.w * 0.42)} 0L${f1(g.cx + g.w * 0.4)} ${f1(g.l * 0.45)}C${f1(g.cx + g.w * 0.3)} ${f1(g.l * 0.7)} ${f1(g.cx + g.b * 0.95)} ${f1(g.l - g.b)} ${f1(g.cx + g.b * 0.8)} ${f1(g.l + g.b * 0.4)}` }),
+      svgEl('path', { class: 'e7-coulure-reflet', d: `M${f1(g.cx - g.w * 0.18)} 2L${f1(g.cx - g.w * 0.16)} ${f1(g.l * 0.5)}` }),
+      svgEl('ellipse', { class: 'e7-coulure-brillant', cx: f1(g.cx - g.b * 0.38), cy: f1(g.l - g.b * 0.25), rx: f1(g.b * 0.3), ry: f1(g.b * 0.48) }),
+    );
+    svg.append(groupe);
+  });
+  const longue = GOUTTES[1];
+  svg.append(svgEl('circle', { class: 'e7-goutte', cx: longue.cx, cy: f1(longue.l + longue.b + 2.4), r: '1.9' }));
+  return svg;
+}
+
 function graine(search, phase) {
   const q = new URLSearchParams(search);
   const base = q.get('test') === '1' ? Number.parseInt(q.get('seed') ?? '1', 10) || 1 : Date.now() % 2147483647; // tests : astuce fixe
@@ -53,7 +85,7 @@ const json = (path) => fetch(path).then((r) => (r.ok ? r.json() : null)).catch((
 // phase : 'menu' ou 'jeu' ; jouer() : appelé par « JOUER » du menu (demarrage.js charge alors le jeu).
 export function creerChargement({ phase = 'menu', jouer = () => {}, root = document.body, search = globalThis.location?.search ?? '' } = {}) {
   const reduit = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const pose = reduit || phase === 'jeu';
+  const pose = reduit; // retour du propriétaire : la chute du Z se rejoue à chaque chargement (menu, partie, retour au menu)
   let etat = creerProgression(phase);
   const journal = []; // pourcentages affichés, dans l'ordre (tests : __zsMenu.etat().journal)
   let donnees = null; // phase menu : { dict, infos, liens, solde }
@@ -77,7 +109,7 @@ export function creerChargement({ phase = 'menu', jouer = () => {}, root = docum
   const impact = el('span', ['e7-impact'], { 'aria-hidden': 'true' });
   for (const sens of ['g1', 'g2', 'd1', 'd2']) impact.append(el('span', ['e7-poussiere', `e7-poussiere-${sens}`]));
   const coulures = el('span', ['e7-coulures'], { 'aria-hidden': 'true' });
-  for (const n of [1, 2, 3]) coulures.append(el('span', ['e7-coulure', `e7-coulure-${n}`]));
+  coulures.append(couluresSvg());
   z.append(coulures);
   titre.append(z, tiret, reste, impact);
   const barre = el('div', ['e7-barre'], { role: 'progressbar', 'aria-valuemin': '0', 'aria-valuemax': '100', 'aria-valuenow': '0', id: 'e7-barre' });
@@ -188,9 +220,15 @@ export function creerChargement({ phase = 'menu', jouer = () => {}, root = docum
       : Promise.resolve();
     Promise.race([polices, new Promise((r) => setTimeout(r, POLICES_MS))]).then(() => progres('polices', 1));
   }
+  let chuteResolue = null;
+  const chute = new Promise((resolve) => {
+    chuteResolue = resolve;
+  });
+  if (chuteFinie) chuteResolue();
   const finChute = () => {
     if (chuteFinie) return;
     chuteFinie = true;
+    chuteResolue();
     passer();
   };
   // Retour du propriétaire : la chute part dès l'apparition de l'écran, indépendante de la progression ; le Z attend ensuite, posé, la fin du
@@ -198,7 +236,7 @@ export function creerChargement({ phase = 'menu', jouer = () => {}, root = docum
   if (!pose) {
     box.classList.add('e7-joue');
     setTimeout(finChute, FIN_CHUTE_MS);
-    coulures.lastElementChild.addEventListener('animationend', finChute, { once: true });
+    coulures.querySelector('.e7-coulure-3').addEventListener('animationend', finChute, { once: true }); // la dernière goutte
   }
 
   // Fin : phase « menu », menu E8 (chargement fini et chute finie) ; phase « jeu », la partie est créée (main.js) : l'écran est retiré.
@@ -238,6 +276,7 @@ export function creerChargement({ phase = 'menu', jouer = () => {}, root = docum
   afficher();
   return {
     progres,
+    chute, // promesse : la chute du Z est finie (main.js attend avant de créer la partie, phase « jeu »)
     etat: () => ({ phase, pourcentage: pourcentage(etat), pret: etat.pret, chuteFinie, journal: [...journal], visible: box.isConnected, menu: menu?.element.isConnected ? menu.etat() : null }),
   };
 }

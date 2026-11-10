@@ -1,11 +1,11 @@
 {
-  "_note": "Lot 8a : nouveautés de l'écran Information (E8-7). Un point jaune signale une nouveauté non lue ; l'état « lu » reste en mémoire jusqu'au lot 8h (sauvegarde v2). Français seul ; « id » unique et stable.",
+  "_note": "Lot 8a : nouveautés de l'écran Information (E8-7). Un point jaune signale une nouveauté non lue ; l'état « lu » reste en mémoire jusqu'au lot 8h (sauvegarde v2). Français seul ; « id » unique et stable. Sauts de ligne dans « texte » : écrire \\n (saut de ligne) ou \\n\\n (ligne vide) dans la chaîne, ou donner une liste de lignes ([\"ligne 1\", \"\", \"ligne 3\"]) ; le texte est toujours affiché tel quel, sans HTML.",
   "infos": [
     {
       "id": "v0.8-menu",
       "date": "2026-11-09",
       "titre": "Nouveau menu principal",
-      "texte": "Le jeu s'ouvre maintenant sur un écran de chargement puis sur un menu. Boutique, Personnage et Infini arrivent aux prochaines mises à jour (contenu provisoire)."
+      "texte": "Le jeu s'ouvre maintenant sur un écran de chargement puis sur un menu.\nBoutique, Personnage et Infini arrivent aux prochaines mises à jour (contenu provisoire)."
     }
   ]
 }
