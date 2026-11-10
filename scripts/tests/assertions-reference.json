@@ -23,7 +23,7 @@
   },
   "tests/e2e/options-menu.spec.js": {
    "tests": 8,
-   "assertions": 150,
+   "assertions": 149,
    "chargements": 8
   },
   "tests/e2e/menu-onglets.spec.js": {

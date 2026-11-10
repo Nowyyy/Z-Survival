@@ -173,4 +173,5 @@ Onglet actif, menu à trois barres ouvert, écran ouvert, nouveautés lues : `et
 - **Styles** : classes `e5-*` de `css/menu.css`, jetons `--menu-options-*` (bloc du menu de `tokens.css`) ; en partie directe, `feuilleMenu()` (`demarrage.js`, passée par `main.js` à `ui.js`) charge la feuille à la première ouverture des Options.
 - `main.js` + `game.js` : 4 lignes ajoutées, 3 modifiées (`game.js` inchangé).
 
+- **Retour du propriétaire (après la fusion)** : en partie, la ligne « En cours : X · au retour au menu : Y » (plan ci-dessus) est retirée, avec le bord en tirets de la valeur du retour : elle était en trop. La ligne verrouillée garde sa seule note.
 - **Preuves** (bilan `Docs/lots/lot-8c.md`) : logique identique à chaque pas (6 scénarios), rendu à 100 % (12 mesures), Lighthouse mobile, 5 passes, médianes : `jeu.html` 78 (référence 79), `index.html` 90 ; CLS ≤ 0,004.

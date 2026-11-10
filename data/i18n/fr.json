@@ -444,7 +444,6 @@
   "game.options.note.lancement": "↻ au lancement de la partie",
   "game.options.note.direct": "Appliqué tout de suite",
   "game.options.note.verrou": "Modifiable depuis le menu principal",
-  "game.options.note.attente": "En cours : {enCours} · au retour au menu : {retour}",
   "game.options.pied": "↻ = s'applique au lancement de la prochaine partie (dans une partie, ces réglages sont verrouillés).",
   "game.options.section.son": "Son",
   "game.options.son": "Son",

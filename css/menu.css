@@ -1580,7 +1580,7 @@
 /* ---------------------------------------------------------------------------------------------------------------------------------------------- */
 /* Lot 8c : Options (composant partagé, js/game/options-menu.js) : page du menu principal (E5, maquette Options.html, écran plein : la barre
    d'onglets est masquée) et panneau de la partie (E2-12, maquette OptionsJeu.html ; cette feuille est alors chargée à la première ouverture).
-   Choisi : rouge peint et souligné (aria-pressed) ; verrouillé : grisé, cadenas et texte ; en attente : bord en tirets et texte. Tailles en
+   Choisi : rouge peint et souligné (aria-pressed) ; verrouillé : grisé, cadenas et texte. Tailles en
    calc(N * var(--u)) (N = pixels de la maquette), cibles de 44 px au moins. */
 .e8[data-ecran='options'] .e8-contenu {
   grid-row: 2 / 4;
@@ -1702,11 +1702,6 @@
   background: var(--menu-options-inactif-choisi);
 }
 
-.e5-bouton.is-attente {
-  outline: 2px dashed var(--menu-options-verrou);
-  outline-offset: 1px;
-}
-
 .e5-preset {
   padding: 0 calc(14 * var(--u));
   font-family: var(--font-label);
@@ -1764,8 +1759,7 @@
   font-weight: var(--font-weight-bold);
 }
 
-.e5-note,
-.e5-attente {
+.e5-note {
   display: flex;
   align-items: center;
   gap: calc(4 * var(--u));
@@ -1787,8 +1781,7 @@
   color: var(--menu-options-nom-inactif);
 }
 
-.e5-ligne.is-verrou .e5-note,
-.e5-attente {
+.e5-ligne.is-verrou .e5-note {
   color: var(--menu-options-verrou);
 }
 
@@ -1902,7 +1895,6 @@
 
 /* Partie : texte de 14 px au moins dans le panneau (règle de lisibilité du jeu, contrôlée depuis le lot 5j ; la maquette descend à 12 px). */
 .e5-panneau .e5-note,
-.e5-panneau .e5-attente,
 .e5-panneau .e5-petit,
 .e5-panneau .e5-preset,
 .e5-panneau .e5-valeur,

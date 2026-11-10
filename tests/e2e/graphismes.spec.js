@@ -10,7 +10,7 @@ import { parseGraphics } from '../../js/core/graphics.js';
 // Lot 5j : la ligne « Graphismes » et la bascule « Effet VHS » quittent la pause pour l'écran Options (E2-12, js/game/options-menu.js importé à la première
 // ouverture) : préréglages Auto, Faible, Moyen, Élevé, Perso ; une option modifiée passe à Perso ; « live » à chaud, « load » en attente avec la barre
 // « Recharger maintenant » ; zs.device.v1 schéma 2 ; invariance de la logique pour 12 vecteurs tirés d'une graine.
-// Lot 8c : composant partagé avec la page Options du menu ; en partie, les options « load » sont verrouillées (valeurs en attente affichées) et la barre
+// Lot 8c : composant partagé avec la page Options du menu ; en partie, les options « load » sont verrouillées (valeurs en attente non affichées) et la barre
 // « Recharger maintenant » est retirée.
 const SIZE = { width: 667, height: 375 };
 const PRESETS = ['faible', 'moyen', 'eleve', 'auto'];
@@ -176,8 +176,8 @@ test.describe('préréglages graphiques', () => {
 
   // Lot 5j : remplace « pause : ligne « Graphismes » (44 px, choix marqué), confirmation, zs.device.v1 écrit, rechargement demandé ; Annuler n'écrit rien ; axe ».
   // Lot 8c : remplace « option « load » en attente (barre « Recharger maintenant », confirmation, rechargement simulé) » par le verrouillage en partie :
-  // réglages appliqués au lancement grisés, cadenas et raison, valeurs en cours inchangées, valeurs en attente affichées ; aucune barre ni rechargement.
-  test('Options en partie : préréglages appliquant tout de suite leurs options « live », options « load » verrouillées (en cours inchangées, en attente affichées), option « live » → Perso à chaud, Perso restauré, zs.device.v1 v2, aucune barre « Recharger maintenant » ; axe', async ({ page }) => {
+  // réglages appliqués au lancement grisés, cadenas et raison, valeurs en cours inchangées, valeurs en attente enregistrées (non affichées depuis le retour du propriétaire) ; aucune barre ni rechargement.
+  test('Options en partie : préréglages appliquant tout de suite leurs options « live », options « load » verrouillées (en cours inchangées, en attente enregistrées sans ligne affichée), option « live » → Perso à chaud, Perso restauré, zs.device.v1 v2, aucune barre « Recharger maintenant » ; axe', async ({ page }) => {
     test.setTimeout(120_000);
     const errors = watch(page);
     await open(page, '&nospawn=1&store=local');
@@ -211,7 +211,6 @@ test.describe('préréglages graphiques', () => {
     await expect(page.locator('.e5-ligne[data-option="textures"]')).toHaveAccessibleDescription('Modifiable depuis le menu principal');
     await expect(opt(page, 'textures', 'simples')).toHaveAccessibleDescription('Modifiable depuis le menu principal');
     // Chaque préréglage applique son vecteur : options « live » tout de suite (brume, rapport de pixels…) ; « load » enregistrées, en attente, en cours inchangées.
-    const label = (id, v) => (id === 'anticrenelage' ? { oui: 'Activé', non: 'Coupé' } : id === 'carte' ? { complet: 'Complet', reduit: 'Réduit' } : { fines: 'Riche', simples: 'Simple', riches: 'Riche' })[v];
     for (const p of ['faible', 'moyen', 'eleve']) {
       await preset(page, p).click();
       const g = (await S(page)).graphics;
@@ -227,13 +226,10 @@ test.describe('préréglages graphiques', () => {
       expect(g.waiting.map((w) => w.id)).toEqual(attendu);
       await expect(preset(page, p)).toHaveAttribute('aria-pressed', 'true');
       for (const o of GFX.options) await expect(opt(page, o.id, (LOAD.includes(o.id) ? VECTORS.eleve : VECTORS[p])[o.id])).toHaveAttribute('aria-pressed', 'true');
-      for (const id of LOAD) {
-        const a = page.locator(`#options-attente-${id}`);
-        if (attendu.includes(id)) {
-          await expect(a).toHaveText(`En cours : ${label(id, VECTORS.eleve[id])} · au retour au menu : ${label(id, VECTORS[p][id])}`);
-          await expect(opt(page, id, VECTORS[p][id])).toHaveClass(/is-attente/);
-        } else await expect(a).toBeHidden();
-      }
+      // Retour du propriétaire (après le lot) : avant, « En cours : X · au retour au menu : Y » et bord en tirets ; après, aucune ligne ni marque.
+      await expect(page.locator('[id^="options-attente-"]')).toHaveCount(0);
+      for (const id of LOAD) await expect(opt(page, id, VECTORS[p][id])).not.toHaveClass(/is-attente/);
+      expect(g.waiting).toEqual(attendu.map((id) => ({ id, enCours: VECTORS.eleve[id], retour: VECTORS[p][id] }))); // valeurs enregistrées pour le prochain chargement
       expect(JSON.parse(await page.evaluate((k) => localStorage.getItem(k), DEVICE))).toEqual({ v: 2, graphics: p, custom: null });
     }
     // Lot 5j-D : « Feux et fumées » (une seule option) : Complets depuis Moyen → la fumée de l'hélicoptère entière, à chaud ; puis retour à Moyens.

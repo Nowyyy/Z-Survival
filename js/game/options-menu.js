@@ -21,10 +21,10 @@ function el(tag, classes = [], attrs = {}) {
 // contexte « menu » : page Options du menu principal (E5, écran plein dans #e8, bandeau « Réglages / Options », « ‹ Menu ») : tout est modifiable.
 // contexte « partie » : Options de la pause (E2-12, panneau au-dessus de la partie, « ‹ Pause », titre) : mêmes sections, lignes et notes ; les
 // réglages appliqués au lancement (groupe « load » de graphics.json) sont verrouillés (grisés, cadenas, « Modifiable depuis le menu principal »,
-// boutons désactivés, raison dans la description du groupe) ; les préréglages restent modifiables et une valeur en attente du prochain chargement
-// s'affiche en texte. Section « Son » en tête (son, volume) : son = { etat() → { disponible, coupe, volume, pas }, couper(bool), regler(n) }.
-// Aucune couleur ici (feuille des écrans du menu, jetons --menu-* de tokens.css ; en partie, chargée par demarrage.js) ; choix, verrou et attente jamais portés par la couleur seule (aria-pressed et
-// soulignement, cadenas et texte, texte). Le DOM est construit une fois ; sync() ne met à jour que des attributs et des textes.
+// boutons désactivés, raison dans la description du groupe) ; les préréglages restent modifiables (leurs valeurs verrouillées valent au prochain
+// chargement de la partie ; retour du propriétaire : aucune ligne « En cours · au retour au menu » affichée). Section « Son » en tête (son, volume) : son = { etat() → { disponible, coupe, volume, pas }, couper(bool), regler(n) }.
+// Aucune couleur ici (feuille des écrans du menu, jetons --menu-* de tokens.css ; en partie, chargée par demarrage.js) ; choix et verrou jamais portés par la couleur seule (aria-pressed et
+// soulignement, cadenas et texte). Le DOM est construit une fois ; sync() ne met à jour que des attributs et des textes.
 const SVG_NS = 'http://www.w3.org/2000/svg';
 const ICONES = { chevron: 'M10 3.5 5.5 8l4.5 4.5', cadenas: 'M4 7.5h8v6.5H4zM5.6 7.5V5.4a2.4 2.4 0 0 1 4.8 0v2.1' };
 
@@ -90,7 +90,7 @@ export function creerOptions({ contexte = 'menu', dict, graphics, son = null, vh
     liste.append(sec);
     return sec;
   };
-  // Ligne : à gauche le nom (gras), sa note (cadenas éventuel) et la valeur en attente ; à droite les valeurs.
+  // Ligne : à gauche le nom (gras) et sa note (cadenas éventuel) ; à droite les valeurs.
   // pour : identifiant d'un champ (curseur du volume) dont le nom est l'étiquette (<label for>), visible.
   const ligne = (sec, id, cle, groupeId, pour = null) => {
     const row = el('div', ['e5-ligne'], { role: 'group', 'aria-labelledby': `options-label-${id}`, 'aria-describedby': `options-note-${id}`, 'data-option': id, 'data-group': groupeId });
@@ -101,13 +101,11 @@ export function creerOptions({ contexte = 'menu', dict, graphics, son = null, vh
     const cadenas = icone('cadenas', 'e5-cadenas');
     const noteTexte = el('span');
     note.append(cadenas, noteTexte);
-    const attente = el('span', ['e5-attente'], { id: `options-attente-${id}` });
-    attente.hidden = true;
-    gauche.append(nom, note, attente);
+    gauche.append(nom, note);
     const valeurs = el('div', ['e5-valeurs']);
     row.append(gauche, valeurs);
     sec.append(row);
-    return { row, note, cadenas, noteTexte, attente, valeurs };
+    return { row, note, cadenas, noteTexte, valeurs };
   };
 
   let sonEls = null;
@@ -182,8 +180,6 @@ export function creerOptions({ contexte = 'menu', dict, graphics, son = null, vh
     sync();
   }
 
-  const libelle = (o, v) => t(o.valeurs.find((x) => x.id === v)?.texte ?? 'game.options.value.adresse');
-
   function sync() {
     const s = graphics.state();
     for (const b of presetEls) {
@@ -192,19 +188,16 @@ export function creerOptions({ contexte = 'menu', dict, graphics, son = null, vh
     }
     presetEls[0].textContent = fmt(t('game.options.auto'), { preset: t(PRESET_TEXTS[s.detected] ?? s.detected) });
     const reduced = Boolean(vhs?.reducedMotion);
-    const attentes = new Map((s.waiting ?? []).map((w) => [w.id, w]));
     const verrous = s.lockedOptions ?? [];
     for (const [id, r] of rows) {
       const imposed = s.origins[id] === 'adresse';
       const motion = id === 'vhs' && reduced && !imposed;
       const verrou = verrous.includes(id);
-      const w = verrou ? attentes.get(id) ?? null : null;
       const value = verrou ? s.running[id] : s.vector[id];
       for (const b of r.buttons) {
         b.setAttribute('aria-pressed', String(b.dataset.value === value));
-        b.classList.toggle('is-attente', Boolean(w) && b.dataset.value === w.retour);
         b.disabled = s.locked || imposed || motion || verrou;
-        if (verrou) b.setAttribute('aria-describedby', w ? `options-note-${id} options-attente-${id}` : `options-note-${id}`);
+        if (verrou) b.setAttribute('aria-describedby', `options-note-${id}`);
         else b.removeAttribute('aria-describedby');
       }
       const etat = imposed ? 'impose' : motion ? 'mouvement' : verrou ? 'verrou' : r.option.group === 'load' ? 'lancement' : 'direct';
@@ -214,12 +207,8 @@ export function creerOptions({ contexte = 'menu', dict, graphics, son = null, vh
       }[etat];
       r.note.dataset.etat = etat;
       r.cadenas.style.display = verrou ? '' : 'none';
-      r.attente.hidden = !w;
-      r.attente.textContent = w ? fmt(t('game.options.note.attente'), { enCours: libelle(r.option, w.enCours), retour: libelle(r.option, w.retour) }) : '';
-      r.row.setAttribute('aria-describedby', w ? `options-note-${id} options-attente-${id}` : `options-note-${id}`);
       r.row.classList.toggle('is-verrou', verrou);
       r.row.classList.toggle('is-impose', imposed || motion || s.locked);
-      r.row.classList.toggle('is-attente', Boolean(w));
     }
     if (sonEls) {
       const e = son.etat();
