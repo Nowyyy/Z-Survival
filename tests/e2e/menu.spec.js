@@ -192,7 +192,7 @@ test.describe('menu principal (E8)', () => {
     expect(h).toBeGreaterThanOrEqual(3.5); // quatre lignes affichées (dont une vide)
   });
 
-  test('Connexion : écran provisoire « Connexion : bientôt » ; Options : l\'écran Options existant (E2-12) hors partie, fermé par la croix et Échap', async ({ page }) => {
+  test('Connexion : écran provisoire « Connexion : bientôt » ; Options : la page Options du menu (E5, lot 8c) hors partie, fermée par « ‹ Menu » et Échap', async ({ page }) => {
     await ouvrirMenu(page);
     await page.locator('#menu-connexion').click();
     const connexion = page.getByRole('dialog', { name: 'Connexion : bientôt' });
@@ -202,15 +202,15 @@ test.describe('menu principal (E8)', () => {
     await expect(page.locator('#menu-connexion')).toBeFocused();
     await page.locator('#menu-trois-barres').click();
     await page.locator('#menu-options').click();
-    await expect(page.locator('#options-panel')).toBeVisible();
+    await expect(page.locator('#menu-ecran-options')).toBeVisible();
     await expect(page.locator('#pause-panel')).toBeHidden();
-    await page.locator('#options-close').click();
-    await expect(page.locator('#options-panel')).toBeHidden();
+    await page.locator('#options-retour').click();
+    await expect(page.locator('#menu-ecran-options')).toBeHidden();
     await page.locator('#menu-trois-barres').click();
     await page.locator('#menu-options').click();
-    await expect(page.locator('#options-panel')).toBeVisible();
+    await expect(page.locator('#menu-ecran-options')).toBeVisible();
     await page.keyboard.press('Escape');
-    await expect(page.locator('#options-panel')).toBeHidden();
+    await expect(page.locator('#menu-ecran-options')).toBeHidden();
     await expect(page.locator('#pause-panel')).toBeHidden(); // Échap n'ouvre jamais la pause pendant le menu
     expect(await page.evaluate(() => typeof window.__zs)).toBe('undefined'); // aucune partie pendant le menu
   });

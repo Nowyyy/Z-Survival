@@ -4,12 +4,15 @@
 // d'image médian sur les 10 dernières secondes de jeu actif au-delà de 22 ms) et, depuis le lot 5j, à chaque changement de l'écran Options (préréglage
 // ou option seule : passage à Perso). Une option « load » changée est enregistrée et attend le rechargement (pending) ; rien ne recharge sans le
 // bouton « Recharger maintenant ». Un paramètre explicite de l'adresse n'est jamais remplacé. Aucune logique du jeu n'est touchée.
-import { autoDecision, choosePreset, effectiveOptions, irregularShare, medianOf, optionsState, pendingReload, setOption } from '../core/graphics.js';
+import { autoDecision, choosePreset, effectiveOptions, irregularShare, medianOf, optionsAuLancement, optionsState, optionVerrouillee, pendingReload, presetDetecte, setOption, valeursEnAttente } from '../core/graphics.js';
 
 const SAMPLES = 1200; // intervalles gardés (jeu actif)
 
 // boot : sortie de graphicsBoot() ; vhs : couche VHS ; announce(text) : #hud-live ; reload() : rechargement réel (absent sous ?test=1 : simulé).
-export function createGraphicsController(boot, { vhs = null, announce = () => {}, reload = null, dict = {} } = {}) {
+// Lot 8c : contexte « partie » (les réglages appliqués au lancement sont verrouillés, setOption les refuse) ou « menu » (tout est modifiable) ;
+// null (écran de la pause d'avant le lot 8c, jusqu'à sa partie C) : rien n'est verrouillé.
+export function createGraphicsController(boot, { vhs = null, announce = () => {}, reload = null, dict = {}, contexte = null } = {}) {
+  const verrouillee = (id) => contexte !== null && optionVerrouillee(boot.cfg, id, contexte);
   const { cfg, store, resolved } = boot;
   const explicit = boot.explicit ?? {};
   const device = boot.device ?? {};
@@ -139,7 +142,7 @@ export function createGraphicsController(boot, { vhs = null, announce = () => {}
     },
     // Lot 5j (écran Options) : un préréglage (Auto, Faible, Moyen, Élevé, Perso) ou une option seule (passage à Perso). Renvoie { ok, status, saved, pending }.
     choosePreset: (name) => commit(choosePreset(st, name, cfg)),
-    setOption: (id, value) => commit(setOption(st, id, value, cfg)),
+    setOption: (id, value) => (verrouillee(id) ? { ok: false, status: 'verrouille-partie', pending: pendingReload(eff, running, cfg) } : commit(setOption(st, id, value, cfg))),
     // Ancien choix de la ligne « Graphismes » (lot 5b) : un préréglage, sans rechargement automatique.
     choose: (choice) => commit(choosePreset(st, choice, cfg)),
     // « Recharger maintenant » (après confirmation dans l'écran Options) : rechargement réel, simulé sous ?test=1 (reloadRequested).
@@ -160,6 +163,8 @@ export function createGraphicsController(boot, { vhs = null, announce = () => {}
         // Lot 5j : vecteur effectif, origine de chaque valeur, valeurs du chargement, options en attente de rechargement, Perso enregistré.
         vector: { ...eff.vector }, origins: { ...eff.origins }, imposed: [...eff.imposed], running: { ...running }, pending: pendingReload(eff, running, cfg),
         custom: st.custom ? { ...st.custom } : null, locked: st.locked, write: lastWrite,
+        // Lot 8c : contexte de l'écran, préréglage détecté d'Auto (« Auto · Moyen »), réglages verrouillés, valeurs en attente du prochain chargement.
+        contexte, detected: presetDetecte(eff), lockedOptions: optionsAuLancement(cfg).filter(verrouillee), waiting: valeursEnAttente(eff, running, cfg),
       };
     },
   };

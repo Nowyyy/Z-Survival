@@ -345,6 +345,25 @@
   --menu-classement-toi: #2a0d0d;   /* fond de la ligne « Toi » */
   --menu-classement-toi-texte: #ff6a5d; /* « Toi » */
   --menu-exemple: #9fd3ff;          /* « exemple, arrive avec le compte » */
+  /* Lot 8c : page Options du menu (E5) et Options de la partie (E2-12) (maquettes Options.html, OptionsJeu.html) */
+  --menu-options-fond: #121110;     /* fond de la page Options */
+  --menu-options-trait: #1b1916;    /* filets du fond */
+  --menu-options-bouton: #1a1614;   /* bouton de valeur non choisi */
+  --menu-options-bouton-bord: #3a3434; /* bord d'un bouton non choisi */
+  --menu-options-bouton-texte: #cfc6b8; /* texte d'un bouton non choisi */
+  --menu-options-note: #a9a49c;     /* notes, petit texte, pied */
+  --menu-options-filet: #2f2a25;    /* filet sous les préréglages */
+  --menu-options-ligne: #1f1c19;    /* filet entre deux lignes */
+  --menu-options-verrou: #c9a94a;   /* cadenas, « Modifiable depuis le menu principal », valeur en attente */
+  --menu-options-nom-inactif: #8a857e; /* nom d'un réglage verrouillé */
+  --menu-options-inactif: #141210;  /* bouton désactivé */
+  --menu-options-inactif-bord: #2a2725; /* bord d'un bouton désactivé */
+  --menu-options-inactif-texte: #9a948b; /* texte d'un bouton désactivé (4,5:1 au moins : la maquette, #7a756e, n'y arrive pas) */
+  --menu-options-inactif-choisi: #2f2b28; /* bouton désactivé choisi */
+  --menu-options-inactif-choisi-bord: #5a5550; /* son bord */
+  --menu-options-panneau: rgb(12 10 9 / 96%); /* panneau des Options en partie */
+  --menu-options-panneau-bord: #4a1a18; /* bord de ce panneau */
+  --menu-options-voile: rgb(0 0 0 / 72%); /* partie voilée sous le panneau */
   /* Raretés (lots suivants : inventaire, boutique, tirage) */
   --rarete-commun: #a3a3a8;         /* gris */
   --rarete-peu-commun: #5cc46a;     /* vert */

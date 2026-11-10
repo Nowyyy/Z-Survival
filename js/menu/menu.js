@@ -3,13 +3,14 @@
 // Déconnexion grisée) ; contenu de l'onglet ; barre d'onglets E8-2 (Boutique · Personnage · JOUER · Infini · Event verrouillé). « JOUER » fait
 // charger le jeu sans recharger la page (jouer() : écran de chargement du jeu, puis main.js). État en mémoire seulement (js/core/menu-etat.js) : rien
 // n'est écrit dans le stockage jusqu'au lot 8h. preparerMenu() lit ce que le menu affiche (textes, nouveautés, liens, solde), sans rien du jeu.
-// Écrans à la demande : js/menu/ecrans.js (Information, Connexion, onglets « Bientôt »), js/menu/infini.js (lot 8b : onglet Infini), js/game/options-menu.js (Options, E2-12).
+// Écrans à la demande : js/menu/ecrans.js (Information, Connexion, onglets « Bientôt »), js/menu/infini.js (lot 8b : onglet Infini), js/game/options-menu.js
+// (lot 8c : page Options E5, écran plein, avec les réglages résolus sans Three.js par graphicsReglages() et le son gardé en mémoire par demarrage.js).
 // Lot 8b : onglet Jouer (js/menu/jouer.js, chargé avec le menu) ; option de démarrage (histoire ou infini) passée à jouer().
 import { formatMoney } from '../core/economy.js';
 import { basculerMenu, choisirOnglet, creerEtatMenu, fermerEcran, fermerMenu, lienExterne, lireMondes, lireOptionDemarrage, lireRecord, nouveauteNonLue, ONGLETS, ouvrirEcran, premierJouable } from '../core/menu-etat.js';
 import { ecranJouer } from './jouer.js';
 import { fmt, loadDict } from '../game/texts.js';
-import { graphicsBoot, pageSearch } from '../game/graphics-boot.js';
+import { graphicsReglages, pageSearch } from '../game/graphics-boot.js';
 import { createRepository } from '../save/index.js';
 
 const SVG = 'http://www.w3.org/2000/svg';
@@ -99,7 +100,8 @@ export async function preparerMenu({ search = pageSearch(), onProgress = () => {
   return { dict, infos: Array.isArray(infos?.infos) ? infos.infos : [], liens: liens ?? {}, solde, record, mondes: lireMondes(mondes) };
 }
 
-export function creerMenu({ dict, infos = [], liens = {}, solde: montant = 0, record = null, mondes = lireMondes(null), jouer, root = document.body }) {
+// son : { lire() → { coupe, volume }, poser(réglages) } (lot 8c, donné par demarrage.js : mémoire de la page, appliquée par main.js à « JOUER »).
+export function creerMenu({ dict, infos = [], liens = {}, solde: montant = 0, record = null, mondes = lireMondes(null), jouer, son: memoireSon = null, root = document.body }) {
   const t = (k) => dict[k] ?? '';
   let etat = creerEtatMenu();
   const lien = lienExterne(liens?.discord);
@@ -212,7 +214,11 @@ export function creerMenu({ dict, infos = [], liens = {}, solde: montant = 0, re
       if (id === etat.onglet) b.setAttribute('aria-current', 'page');
       else b.removeAttribute('aria-current');
     }
-    for (const [id, s] of ecransOnglets) s.hidden = id !== etat.onglet;
+    // Lot 8c : page Options (écran plein) : la barre d'onglets et l'écran de l'onglet sont masqués ; « ‹ Menu » revient à l'onglet d'où l'on venait.
+    const pageOptions = etat.ecran === 'options';
+    box.dataset.ecran = pageOptions ? 'options' : '';
+    nav.hidden = pageOptions;
+    for (const [id, s] of ecransOnglets) s.hidden = id !== etat.onglet || pageOptions;
     animer();
     liste.hidden = !etat.menuOuvert;
     barres.setAttribute('aria-expanded', String(etat.menuOuvert));
@@ -224,7 +230,7 @@ export function creerMenu({ dict, infos = [], liens = {}, solde: montant = 0, re
 
   // Lot 8b : animations de la scène de l'onglet affiché seulement, et jamais quand la page est cachée (data-anim : off = en pause).
   function animer() {
-    for (const [id, scene] of scenes) scene.dataset.anim = id === etat.onglet && !document.hidden ? 'on' : 'off';
+    for (const [id, scene] of scenes) scene.dataset.anim = id === etat.onglet && etat.ecran !== 'options' && !document.hidden ? 'on' : 'off';
   }
   document.addEventListener('visibilitychange', animer);
 
@@ -267,6 +273,7 @@ export function creerMenu({ dict, infos = [], liens = {}, solde: montant = 0, re
   });
 
   async function ouvrirDialogue(nom, opener) {
+    options?.close(); // lot 8c : un seul écran à la fois (la page Options laisse la place à Information ou Connexion)
     etat = ouvrirEcran(etat, nom, infos);
     synchroniser();
     retourFocus = opener;
@@ -287,14 +294,29 @@ export function creerMenu({ dict, infos = [], liens = {}, solde: montant = 0, re
     etat = ouvrirEcran(etat, 'options');
     synchroniser();
     try {
-      // Écran Options existant (E2-12) : réglages graphiques résolus à la première ouverture (graphics-boot.js) ; le jeu les relit à « JOUER ».
+      // Lot 8c : page Options (E5, composant partagé avec la partie, contexte « menu » : tout est modifiable). Réglages graphiques résolus sans
+      // précharger les lampes (graphicsReglages : ni Three.js ni données du jeu), écrits dans zs.device.v1 comme avant et relus par le jeu à « JOUER ».
+      // Son et volume : mémoire de la page (demarrage.js, donnée par l'écran de chargement), appliquée par main.js à « JOUER » ; défaut et pas : audio.json.
       if (!options) {
-        const [{ createOptionsMenu }, { createGraphicsController }, gfx] = await Promise.all([import('../game/options-menu.js'), import('../game/graphics-apply.js'), graphicsBoot()]);
-        const test = new URLSearchParams(pageSearch()).get('test') === '1';
-        const graphics = createGraphicsController(gfx, { dict, reload: test ? null : () => location.reload() });
-        options = createOptionsMenu({ dict, graphics, vhs: null, onClose: () => fermerOptions() });
+        const [{ creerOptions }, { createGraphicsController }, gfx, audio] = await Promise.all([
+          import('../game/options-menu.js'), import('../game/graphics-apply.js'), graphicsReglages(), json('data/game/audio.json'),
+        ]);
+        let local = { coupe: false, volume: null }; // sans mémoire donnée (créateur de test) : réglages de cet écran seulement
+        const lire = () => memoireSon?.lire() ?? local;
+        const poser = (r) => (memoireSon ? memoireSon.poser(r) : (local = { ...local, ...r }));
+        const volume = audio?.volume ?? {};
+        const defaut = Number.isFinite(volume.default) ? volume.default : 100;
+        const pas = Number.isFinite(volume.step) ? volume.step : 10;
+        const son = {
+          etat: () => ({ disponible: true, coupe: lire().coupe, volume: lire().volume ?? defaut, pas }),
+          couper: (coupe) => poser({ coupe }),
+          regler: (n) => poser({ volume: n }),
+        };
+        const graphics = createGraphicsController(gfx, { dict, contexte: 'menu' });
+        if (etat.ecran !== 'options') return; // fermée pendant le chargement
+        options = creerOptions({ contexte: 'menu', dict, graphics, son, bandeau, onClose: () => fermerOptions(), root: contenu });
       }
-      options.open();
+      if (etat.ecran === 'options') options.open();
     } catch {
       fermerOptions();
     }
@@ -320,9 +342,8 @@ export function creerMenu({ dict, infos = [], liens = {}, solde: montant = 0, re
   // Échap : Options (confirmation d'abord), puis l'écran ouvert, puis le menu à trois barres. Un appui ailleurs ferme le menu à trois barres.
   function clavier(e) {
     if (e.code !== 'Escape') return;
-    if (etat.ecran === 'options') {
-      if (!options?.escape()) fermerOptions();
-    } else if (dialogue) dialogue.close();
+    if (dialogue) dialogue.close();
+    else if (etat.ecran === 'options') fermerOptions();
     else if (etat.menuOuvert) fermerListe(true);
     else return;
     e.preventDefault();

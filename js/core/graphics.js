@@ -2,6 +2,7 @@
 // l'Élevé pour toute valeur invalide), choix du préréglage (?gfx= > choix mémorisé de l'appareil > auto), décision d'Auto (une baisse d'un cran au plus,
 // entre deux manches, jamais sous Faible, jamais de remontée), fusion avec les paramètres explicites de l'adresse (ils l'emportent toujours).
 // Lot 5j : options séparées (un vecteur par préréglage, Perso enregistré à part), vecteur effectif et origines, passage à Perso, options en attente.
+// Lot 8c : réglages appliqués au lancement (verrouillés en partie), préréglage détecté d'Auto, valeurs en attente du prochain chargement.
 // Rien ici ne touche la logique du jeu : ces réglages ne changent que l'image.
 
 export const PRESET_IDS = ['faible', 'moyen', 'eleve'];
@@ -423,6 +424,39 @@ export function pendingReload(effective, running, cfg) {
   const e = obj(obj(effective).vector ?? effective);
   const r = obj(obj(running).vector ?? running);
   return c.options.filter((o) => o.group === 'load' && o.id in e && o.id in r && e[o.id] !== r[o.id]).map((o) => o.id);
+}
+
+// ---- Lot 8c : Options du menu principal (E5) et de la partie (E2-12) ----
+// Contextes de l'écran : « menu » (hors partie : tout est modifiable) et « partie » (les réglages appliqués au lancement sont verrouillés).
+export const CONTEXTES_OPTIONS = Object.freeze(['menu', 'partie']);
+const cfgOf = (cfg) => (cfg && cfg.vectors ? cfg : parseGraphics(null));
+
+// Réglages appliqués au lancement de la partie (groupe « load » de data/game/graphics.json, jamais recopiés en dur) : identifiants dans l'ordre des données.
+export function optionsAuLancement(cfg) {
+  return cfgOf(cfg).options.filter((o) => o.group === 'load').map((o) => o.id);
+}
+
+// Vrai si l'option ne peut pas changer dans ce contexte : en partie, un réglage appliqué au lancement (il ne vaudrait qu'au prochain chargement).
+// Contexte inconnu : traité comme « partie » (le plus prudent) ; identifiant inconnu : faux.
+export function optionVerrouillee(cfg, id, contexte) {
+  return contexte !== 'menu' && optionsAuLancement(cfg).includes(id);
+}
+
+// Préréglage que donnerait Auto, affiché sur son bouton (« Auto · Moyen ») : en Auto, le préréglage en cours (baissé éventuellement) ; sinon,
+// le préréglage initial de la classe de l'appareil. effective : sortie d'effectiveOptions.
+export function presetDetecte(effective) {
+  const e = obj(effective);
+  const v = e.choice === 'auto' ? e.preset : e.initial;
+  return PRESET_IDS.includes(v) ? v : 'eleve';
+}
+
+// Valeurs en attente (en partie) : pour chaque réglage appliqué au lancement dont la valeur enregistrée (vecteur effectif) diffère de celle du
+// jeu en cours (running), { id, enCours, retour } dans l'ordre des données ; s'appliqueront au prochain chargement de la partie.
+export function valeursEnAttente(effective, running, cfg) {
+  const c = cfgOf(cfg);
+  const e = obj(obj(effective).vector ?? effective);
+  const r = obj(obj(running).vector ?? running);
+  return pendingReload(e, r, c).map((id) => ({ id, enCours: r[id], retour: e[id] }));
 }
 
 // Adresse passée au chargeur des personnages : la variante et le niveau de sang du préréglage, sauf s'ils sont déjà dans l'adresse. La table des

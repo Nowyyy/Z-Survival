@@ -1576,3 +1576,324 @@
     transform: none;
   }
 }
+
+/* ---------------------------------------------------------------------------------------------------------------------------------------------- */
+/* Lot 8c : Options (composant partagé, js/game/options-menu.js) : page du menu principal (E5, maquette Options.html, écran plein : la barre
+   d'onglets est masquée) et panneau de la partie (E2-12, maquette OptionsJeu.html ; cette feuille est alors chargée à la première ouverture).
+   Choisi : rouge peint et souligné (aria-pressed) ; verrouillé : grisé, cadenas et texte ; en attente : bord en tirets et texte. Tailles en
+   calc(N * var(--u)) (N = pixels de la maquette), cibles de 44 px au moins. */
+.e8[data-ecran='options'] .e8-contenu {
+  grid-row: 2 / 4;
+}
+
+.e5 {
+  --e5-bouton-h: max(var(--menu-cible), calc(40 * var(--u)));
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  color: var(--menu-texte);
+  font-family: var(--font-sans);
+}
+
+.e8-ecran.e5-page {
+  align-items: stretch;
+  gap: 0;
+  padding-bottom: calc(10 * var(--u));
+  background:
+    linear-gradient(var(--menu-options-trait), var(--menu-options-trait)) 0 calc(99 * var(--u)) / 100% 2px no-repeat,
+    linear-gradient(var(--menu-options-trait), var(--menu-options-trait)) 0 calc(229 * var(--u)) / 100% 2px no-repeat,
+    linear-gradient(var(--menu-options-trait), var(--menu-options-trait)) calc(239 * var(--u)) 0 / 2px calc(100 * var(--u)) no-repeat,
+    linear-gradient(var(--menu-options-trait), var(--menu-options-trait)) calc(599 * var(--u)) calc(100 * var(--u)) / 2px calc(130 * var(--u)) no-repeat,
+    linear-gradient(var(--menu-options-trait), var(--menu-options-trait)) calc(119 * var(--u)) calc(230 * var(--u)) / 2px 100% no-repeat,
+    linear-gradient(var(--menu-options-trait), var(--menu-options-trait)) calc(819 * var(--u)) calc(230 * var(--u)) / 2px 100% no-repeat,
+    var(--menu-options-fond);
+}
+
+/* En-tête : bandeau et « ‹ Menu » (menu) ; « ‹ Pause » et titre (partie). */
+.e5-tete {
+  display: flex;
+  flex: none;
+  align-items: flex-start;
+  gap: calc(34 * var(--u));
+}
+
+.e5-retour {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: calc(4 * var(--u));
+  height: var(--e5-bouton-h);
+  margin-top: calc(4 * var(--u));
+  padding: 0 calc(12 * var(--u)) 0 calc(6 * var(--u));
+  font-family: var(--font-label);
+  font-size: max(12px, calc(13 * var(--u)));
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.e5-chevron {
+  width: max(14px, calc(18 * var(--u)));
+  height: max(14px, calc(18 * var(--u)));
+  fill: none;
+  stroke: currentcolor;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.e5-titre {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: var(--font-weight-normal);
+  font-size: max(22px, calc(28 * var(--u)));
+  line-height: 1.1;
+  color: var(--menu-rouge-trait);
+}
+
+/* Préréglages et petit texte à droite. */
+.e5-presets {
+  display: flex;
+  flex: none;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: calc(6 * var(--u)) calc(8 * var(--u));
+  margin-top: calc(17 * var(--u)); /* sous les coulures du bandeau commun (plus haut que celui de la maquette) */
+}
+
+.e5-presets-boutons {
+  display: flex;
+  gap: calc(8 * var(--u));
+}
+
+.e5-bouton {
+  box-sizing: border-box;
+  height: var(--e5-bouton-h);
+  border: 2px solid var(--menu-options-bouton-bord);
+  border-radius: calc(4 * var(--u));
+  background: var(--menu-options-bouton);
+  color: var(--menu-options-bouton-texte);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.e5-bouton[aria-pressed='true'] {
+  border-color: var(--menu-bord);
+  background: var(--menu-rouge);
+  box-shadow: 0 calc(3 * var(--u)) 0 var(--menu-ombre);
+  color: var(--menu-texte);
+  text-decoration: underline 2px;
+  text-underline-offset: 3px;
+}
+
+.e5-bouton:not(:disabled):hover {
+  border-color: var(--menu-options-note);
+}
+
+.e5-bouton:disabled {
+  border-color: var(--menu-options-inactif-bord);
+  background: var(--menu-options-inactif);
+  box-shadow: none;
+  color: var(--menu-options-inactif-texte);
+  cursor: not-allowed;
+}
+
+.e5-bouton[aria-pressed='true']:disabled {
+  border-color: var(--menu-options-inactif-choisi-bord);
+  background: var(--menu-options-inactif-choisi);
+}
+
+.e5-bouton.is-attente {
+  outline: 2px dashed var(--menu-options-verrou);
+  outline-offset: 1px;
+}
+
+.e5-preset {
+  padding: 0 calc(14 * var(--u));
+  font-family: var(--font-label);
+  font-size: max(12px, calc(13 * var(--u)));
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.e5-petit {
+  margin: 0;
+  font-size: max(11px, calc(12 * var(--u)));
+  color: var(--menu-options-note);
+}
+
+/* Liste qui défile : titres de section, une ligne par réglage. */
+.e5-liste {
+  flex: 1 1 auto;
+  min-height: 0;
+  margin-top: calc(10 * var(--u));
+  padding-right: calc(8 * var(--u));
+  border-top: 1px solid var(--menu-options-filet);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.e5-section-titre {
+  margin: calc(12 * var(--u)) 0 calc(4 * var(--u));
+  font-family: var(--font-label);
+  font-weight: var(--font-weight-normal);
+  font-size: max(13px, calc(14 * var(--u)));
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--menu-rouge-trait);
+}
+
+.e5-ligne {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: calc(12 * var(--u));
+  min-height: calc(50 * var(--u));
+  padding: 3px 0;
+  border-bottom: 1px solid var(--menu-options-ligne);
+}
+
+.e5-gauche {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.2;
+}
+
+.e5-nom {
+  font-size: max(14px, calc(15 * var(--u)));
+  font-weight: var(--font-weight-bold);
+}
+
+.e5-note {
+  display: flex;
+  align-items: center;
+  gap: calc(4 * var(--u));
+  font-size: max(11px, calc(12 * var(--u)));
+  color: var(--menu-options-note);
+}
+
+.e5-cadenas {
+  flex: none;
+  width: max(11px, calc(13 * var(--u)));
+  height: max(11px, calc(13 * var(--u)));
+  fill: none;
+  stroke: currentcolor;
+  stroke-width: 1.8;
+  stroke-linejoin: round;
+}
+
+.e5-ligne.is-verrou .e5-nom {
+  color: var(--menu-options-nom-inactif);
+}
+
+.e5-ligne.is-verrou .e5-note {
+  color: var(--menu-options-verrou);
+}
+
+.e5-valeurs {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: calc(6 * var(--u));
+}
+
+.e5-valeur {
+  min-width: max(var(--menu-cible), calc(76 * var(--u)));
+  padding: 0 calc(10 * var(--u));
+  font-family: var(--font-sans);
+  font-size: max(12px, calc(13 * var(--u)));
+  font-weight: var(--font-weight-bold);
+}
+
+/* Volume : curseur de 0 à 100 % (pas de 10), valeur en texte à droite. */
+.e5-curseur {
+  width: calc(232 * var(--u));
+  height: var(--menu-cible);
+  margin: 0;
+  background: transparent;
+  cursor: pointer;
+  appearance: none;
+}
+
+.e5-curseur::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--menu-options-bouton-bord);
+}
+
+.e5-curseur::-moz-range-track {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--menu-options-bouton-bord);
+}
+
+.e5-curseur::-moz-range-progress {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--menu-rouge);
+}
+
+.e5-curseur::-webkit-slider-thumb {
+  width: 22px;
+  height: 22px;
+  margin-top: -8px;
+  border: 3px solid var(--menu-rouge);
+  border-radius: 50%;
+  background: var(--menu-texte);
+  appearance: none;
+}
+
+.e5-curseur::-moz-range-thumb {
+  box-sizing: border-box;
+  width: 22px;
+  height: 22px;
+  border: 3px solid var(--menu-rouge);
+  border-radius: 50%;
+  background: var(--menu-texte);
+}
+
+.e5-volume-valeur {
+  min-width: 3.2em;
+  font-size: max(13px, calc(14 * var(--u)));
+  font-weight: var(--font-weight-bold);
+  text-align: right;
+}
+
+.e5-statut {
+  flex: none;
+  margin-top: calc(4 * var(--u));
+  color: var(--menu-options-verrou);
+}
+
+.e5-pied {
+  flex: none;
+  margin-top: calc(8 * var(--u));
+}
+
+/* Partie : panneau au-dessus de la partie voilée (en pause). */
+.panel-wrap.e5-voile {
+  background: var(--menu-options-voile);
+}
+
+.e5-panneau {
+  box-sizing: border-box;
+  width: min(calc(852 * var(--u)), 100%);
+  height: min(calc(398 * var(--u)), 100%);
+  padding: calc(14 * var(--u)) calc(20 * var(--u)) calc(12 * var(--u));
+  border: 2px solid var(--menu-options-panneau-bord);
+  border-radius: 6px;
+  background: var(--menu-options-panneau);
+}
+
+.e5-panneau .e5-tete {
+  align-items: center;
+  gap: calc(26 * var(--u));
+}
+
+.e5-panneau .e5-retour {
+  margin-top: 0;
+}
+
+.e5-panneau .e5-presets {
+  margin-top: calc(10 * var(--u));
+}

@@ -22,7 +22,7 @@ import { generateTextureData } from './textures.js';
 import { installTestHook } from './testhook.js';
 import { createUi } from './ui.js';
 import { applyTexts, fmt, loadDict, TEXTURE_TEXTS } from './texts.js';
-import { menuChute, menuProgres, menuRetour, modeMenu, optionPartie } from '../menu/demarrage.js';
+import { menuChute, menuProgres, menuRetour, modeMenu, optionPartie, reglagesSon } from '../menu/demarrage.js';
 
 const DEFAULT_RATIO_CAP = 2;
 menuProgres('modules', 1); // lot 8a : modules et Three.js évalués (écran de chargement du jeu après « JOUER » ; sans effet en partie directe)
@@ -143,6 +143,9 @@ const textureData = await generateTextureData(texturesCfg.textures, { lookup: cr
 }, detail: detail && gfxLoad.texturesFines });
 const soundMode = parseSoundMode(search); // ?sons= (groupe T)
 const audio = createAudio({ config: { audio: audioCfg, materials: materialsCfg, voice: voiceCfg, sounds: soundsCfg.sounds }, test: testMode, seed: Number.isFinite(seedParam) ? seedParam : 1, mode: soundMode });
+const sonMenu = reglagesSon(); // lot 8c : son et volume choisis dans les Options du menu (mémoire de la page ; partie directe : défauts, rien ne change)
+if (sonMenu.coupe) audio.toggleMute();
+if (sonMenu.volume !== null) audio.setVolume(sonMenu.volume);
 const essential = await renderSounds(planSounds(soundsCfg.sounds, 'essentiel'), { onProgress: (p) => {
   loading.update(TEXTURE_SHARE + (1 - TEXTURE_SHARE) * p);
   menuProgres('sons', p);
