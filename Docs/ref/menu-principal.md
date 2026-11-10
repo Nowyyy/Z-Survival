@@ -93,7 +93,7 @@ Onglet actif, menu à trois barres ouvert, écran ouvert, nouveautés lues : `et
 - Tests sans `?test=1` qui attendaient la partie (relevé 11, plus trois tests « le jeu se charge » de `publication.spec`) : une étape « JOUER » ajoutée, paramètres inchangés ; en portrait (projet mobile), « Tourne ton téléphone » couvre le menu : le bouton est déclenché directement (`dispatchEvent`).
 
 ## Lot 8b — onglets Jouer et Infini, mode infini, textes séparés
-État : **livré** (lot 8b, parties A à D, base `origin/dev` `1f6f064`). Lighthouse mobile, 5 passes, médianes en fin de lot : `index.html` 90 (référence 89 : 89, 89, 88, 89, 89), `jeu.html` 78 (partie B : 79 ; référence 79). Fichiers JavaScript au démarrage du menu (`?test=1&menu=1`) : 28 → 29 (`jouer.js`) ; à l'onglet Infini : + `infini.js`. Partie directe inchangée.
+État : **livré** (lot 8b, parties A à D, base `origin/dev` `1f6f064` ; fusionné dans `dev` par la PR #73, `d450b87`). Lighthouse mobile, 5 passes, médianes en fin de lot : `index.html` 90 (référence 89 : 89, 89, 88, 89, 89), `jeu.html` 78 (partie B : 79 ; référence 79). Fichiers JavaScript au démarrage du menu (`?test=1&menu=1`) : 28 → 29 (`jouer.js`) ; à l'onglet Infini : + `infini.js`. Partie directe inchangée.
 
 ### Relevé (code de `origin/dev`, maquettes)
 1. Accueil : `index.html` → `js/accueil/main.js` → `startPage` (`js/page.js`) → `data/i18n/fr.json` préchargé (31 154 octets, 566 clés, dont 21 lues par l'accueil) ; `en.json` (1 746 octets) jamais chargé (langue fixée à fr).

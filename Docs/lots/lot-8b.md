@@ -1,6 +1,6 @@
 # Lot 8b — Onglets Jouer et Infini, mode infini réel, textes de l'accueil séparés (V0.8)
 ## Base
-- `origin/dev` `1f6f064` (seed 0.28, pas 0.29 : le prompt décrit tout ; `main` ancêtre de `dev` ; bilan `lot-8a.md` présent ; CI de `dev` verte), arbre propre ; branche `lot-8b` (la session proposait `claude/lot-8b-jouer-infini-7m45il` : j'ai suivi le prompt). Commits : A `fcc11fe`, B `7d940f5`, C `2ce07a0`, D (ce bilan). Aucune fusion. **Les règles du jeu ne changent pas.**
+- `origin/dev` `1f6f064` (seed 0.28, pas 0.29 : le prompt décrit tout ; `main` ancêtre de `dev` ; bilan `lot-8a.md` présent ; CI de `dev` verte), arbre propre ; branche `lot-8b` (la session proposait `claude/lot-8b-jouer-infini-7m45il` : j'ai suivi le prompt). Commits : A `fcc11fe`, B `7d940f5`, C `2ce07a0`, D `7ad1e59`. **Fusion dans `dev` par l'agent, à la demande explicite du propriétaire** : PR #73, « Create a merge commit », `d450b87`. **Les règles du jeu ne changent pas.**
 ## Livré
 - **Jouer** (`js/menu/jouer.js`, chargé avec le menu) : scène de nuit animée en SVG, record lu dans la sauvegarde, panneaux 1 à 40, portes, monde 2 verrouillé, « JOUER » (histoire) ; `data/menu/mondes.json` (monde 1 jouable, mondes 2 à 6 « [à venir] »).
 - **Infini** (`js/menu/infini.js`, à la demande) : décor rouge, cartes qui défilent, carte choisie, cartes verrouillées, classement d'exemple (`data/menu/classement.json`), « Jouer » : **mode infini réel**.
@@ -20,9 +20,9 @@
 ## Tests adaptés (tests / assertions, `compter.mjs`)
 - `data-i18n.test` 11/13 → 14/24 ; `publication.test` 98/426 → 98/427 (clés `home.*` lues dans `accueil.fr.json`) ; `data-changelog.test` 9/54 → 9/56. Nouveaux : `menu-mondes.test` 22/73, `menu-onglets.spec` 13/119 (garde-fou, bureau et mobile en paysage ; référence d'assertions ajoutée). `menu.spec` et `menu-etat.test` inchangés. Vitest 6967 → 6993. Aucune assertion retirée. Test des maquettes : aucun n'a réagi.
 ## CI
-- `lot-8b` : A `42797012463` verte, B `42800162014` verte, C `42802702232` verte (≈ 7 min chacune ; `tokens.css` touché : rejeu total de la sélection), D (ce bilan) : lue après le push, résultat dans le message de livraison.
+- `lot-8b` : A `42797012463` verte, B `42800162014` verte, C `42802702232` verte (≈ 7 min chacune ; `tokens.css` touché : rejeu total de la sélection), D `42806830780` verte. `dev` après la fusion : Tests `42809922644` et Pages `42809922596` verts.
 ## Points ouverts
-- **Esthétique et téléphone non jugés par l'agent** (tests en émulation mobile seulement). Records non gardés avant le lot 8h : un record établi en partie ne s'affiche au retour que s'il est dans `bestWave` (histoire) ; **record du mode infini ni gardé ni affiché** (« — »). Zombies de la scène peu visibles (noir sur nuit, comme la maquette).
+- **Esthétique et téléphone non jugés par l'agent** (tests en émulation mobile seulement). Records non gardés avant le lot 8h : un record établi en partie ne s'affiche au retour que s'il est dans `bestWave` (histoire) ; **record du mode infini ni gardé ni affiché** (« — »). **Décision du propriétaire (après le lot) : records histoire et infini séparés (par monde), argent, gains, niveaux et nombre de parties communs, au lot 8h** (`Docs/ref/menu-principal.md`) ; le filtre actuel (infini : ni `bestWave` ni `bestKills`) est donc confirmé jusque-là. Zombies de la scène peu visibles (noir sur nuit, comme la maquette).
 ## Idées
 - Scène Jouer : zombies un peu plus clairs ou éclairés par les lueurs. Défilement des cartes au clavier (flèches). Classement réel avec les comptes. Mettre en commun la scène de E7 et celle de Jouer.
 ## Entrée du journal
@@ -33,4 +33,4 @@
 ## Passages du seed à réécrire par le propriétaire
 - Table des lots (8b fait) ; onglets Jouer et Infini ; mode infini du menu (sans lecture seule, record non gardé avant 8h) ; textes de l'accueil séparés.
 ## À faire par moi
-1. Fusionner `lot-8b` dans `dev` (« Create a merge commit »), attendre la CI et le déploiement. 2. Tester sur le téléphone `…/dev/jeu.html` : onglet Jouer (animations, record), onglet Infini (défilement, cartes verrouillées), « Jouer » en infini puis au-delà de la manche 40 si tu veux, retour au menu. 3. Modifier les noms des mondes dans `data/menu/mondes.json` si tu le souhaites. 4. Rapporter les retours avant le lot 8c.
+1. ~~Fusionner `lot-8b` dans `dev`~~ (fait, PR #73). 2. Tester sur le téléphone `…/dev/jeu.html` : onglet Jouer (animations, record), onglet Infini (défilement, cartes verrouillées), « Jouer » en infini puis au-delà de la manche 40 si tu veux, retour au menu. 3. Modifier les noms des mondes dans `data/menu/mondes.json` si tu le souhaites. 4. Rapporter les retours avant le lot 8c.
