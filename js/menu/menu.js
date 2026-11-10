@@ -7,7 +7,7 @@
 // (lot 8c : page Options E5, écran plein, avec les réglages résolus sans Three.js par graphicsReglages() et le son gardé en mémoire par demarrage.js).
 // Lot 8b : onglet Jouer (js/menu/jouer.js, chargé avec le menu) ; option de démarrage (histoire ou infini) passée à jouer().
 import { formatMoney } from '../core/economy.js';
-import { basculerMenu, choisirOnglet, creerEtatMenu, fermerEcran, fermerMenu, lienExterne, lireMondes, lireOptionDemarrage, lireRecord, nouveauteNonLue, ONGLETS, ouvrirEcran, premierJouable } from '../core/menu-etat.js';
+import { basculerMenu, choisirOnglet, creerEtatMenu, ECRANS_PLEINS, fermerEcran, fermerMenu, lienExterne, lireMondes, lireOptionDemarrage, lireRecord, nouveauteNonLue, ONGLETS, ouvrirEcran, premierJouable } from '../core/menu-etat.js';
 import { ecranJouer } from './jouer.js';
 import { fmt, loadDict } from '../game/texts.js';
 import { graphicsReglages, pageSearch } from '../game/graphics-boot.js';
@@ -232,10 +232,12 @@ export function creerMenu({ dict, infos = [], liens = {}, solde: montant = 0, re
       else b.removeAttribute('aria-current');
     }
     // Lot 8c : page Options (écran plein) : la barre d'onglets et l'écran de l'onglet sont masqués ; « ‹ Menu » revient à l'onglet d'où l'on venait.
-    const pageOptions = etat.ecran === 'options';
-    box.dataset.ecran = pageOptions ? 'options' : '';
-    nav.hidden = pageOptions;
-    for (const [id, s] of ecransOnglets) s.hidden = id !== etat.onglet || pageOptions;
+    // Lot 8d : sous-menus du Personnage (Inventaire, Fusion, Personnages), écrans pleins eux aussi ; « ‹ Équipement » revient à l'écran Personnage.
+    const plein = ECRANS_PLEINS.includes(etat.ecran);
+    box.dataset.ecran = plein ? etat.ecran : '';
+    nav.hidden = plein;
+    for (const [id, s] of ecransOnglets) s.hidden = id !== etat.onglet || plein;
+    perso?.synchroniser(etat.ecran);
     animer();
     liste.hidden = !etat.menuOuvert;
     barres.setAttribute('aria-expanded', String(etat.menuOuvert));
@@ -248,6 +250,9 @@ export function creerMenu({ dict, infos = [], liens = {}, solde: montant = 0, re
   // Lot 8b : animations de la scène de l'onglet affiché seulement, et jamais quand la page est cachée (data-anim : off = en pause).
   function animer() {
     for (const [id, scene] of scenes) scene.dataset.anim = id === etat.onglet && etat.ecran !== 'options' && !document.hidden ? 'on' : 'off';
+    // Lot 8d : écran Personnage ou sous-menu affiché (animations e9-*), en pause ailleurs et quand la page est cachée.
+    const actif = etat.onglet === 'personnage' && !document.hidden && !lance ? (etat.ecran === null ? 'personnage' : etat.ecran) : null;
+    perso?.animer(actif);
   }
   document.addEventListener('visibilitychange', animer);
 
@@ -267,6 +272,7 @@ export function creerMenu({ dict, infos = [], liens = {}, solde: montant = 0, re
   const ecrans = () => import('./ecrans.js');
 
   let infini = null; // lot 8b : écran Infini (js/menu/infini.js, chargé au premier affichage) : { section, scene, etat() }
+  let perso = null; // lot 8d : écran Personnage (js/menu/personnage.js, chargé au premier affichage) et ses sous-menus
   async function changerOnglet(id) {
     etat = choisirOnglet(etat, id);
     if (!ecransOnglets.has(etat.onglet)) {
@@ -277,6 +283,17 @@ export function creerMenu({ dict, infos = [], liens = {}, solde: montant = 0, re
         infini = await m.ecranInfini({ t, mondes, bandeau, jouer: lancer });
         s = infini.section;
         scenes.set('infini', infini.scene);
+      } else if (onglet === 'personnage') {
+        const m = await import('./personnage.js');
+        const ecran = await m.ecranPersonnage({
+          t, bandeau, niveaux, statsCfg, root: contenu,
+          poserEcran: (nom) => {
+            etat = nom ? ouvrirEcran(etat, nom) : fermerEcran(etat);
+            synchroniser();
+          },
+        });
+        perso ??= ecran;
+        s = ecran.section;
       } else {
         const m = await ecrans();
         s = m.ecranBientot({ dict, id: onglet, titre: t(ONGLET_TEXTES[onglet]) });
@@ -371,6 +388,7 @@ export function creerMenu({ dict, infos = [], liens = {}, solde: montant = 0, re
     document.removeEventListener('visibilitychange', animer);
     document.removeEventListener('fullscreenchange', syncPleinEcran);
     for (const scene of scenes.values()) scene.dataset.anim = 'off';
+    perso?.animer(null);
     let stats;
     try {
       const equipement = await (await import('./equipement-etat.js')).chargerEquipement();
@@ -385,12 +403,16 @@ export function creerMenu({ dict, infos = [], liens = {}, solde: montant = 0, re
   let statsLancees = null;
   btJouer.addEventListener('click', () => lancer({ mode: 'histoire', monde: monde.id }));
 
-  // Échap : Options (confirmation d'abord), puis l'écran ouvert, puis le menu à trois barres. Un appui ailleurs ferme le menu à trois barres.
+  // Échap : Options (confirmation d'abord), puis l'écran ouvert, puis le menu à trois barres, puis (lot 8d) le sous-menu du Personnage. Un appui
+  // ailleurs ferme le menu à trois barres.
   function clavier(e) {
     if (e.code !== 'Escape') return;
     if (dialogue) dialogue.close();
     else if (etat.ecran === 'options') fermerOptions();
     else if (etat.menuOuvert) fermerListe(true);
+    else if (perso?.echap()) {
+      // lot 8d : sous-menu du Personnage refermé (retour à l'écran Personnage)
+    }
     else return;
     e.preventDefault();
   }
@@ -403,6 +425,6 @@ export function creerMenu({ dict, infos = [], liens = {}, solde: montant = 0, re
   synchroniser();
   return {
     element: box,
-    etat: () => ({ pleinEcran: { disponible: peutPleinEcran, actif: Boolean(document.fullscreenElement) }, onglet: etat.onglet, menuOuvert: etat.menuOuvert, ecran: etat.ecran, nonLue: nouveauteNonLue(infos, etat.lues), solde: montant, discord: lien.actif, record, monde: monde.id, infini: infini?.etat() ?? null, niveaux, statsLancees }),
+    etat: () => ({ pleinEcran: { disponible: peutPleinEcran, actif: Boolean(document.fullscreenElement) }, onglet: etat.onglet, menuOuvert: etat.menuOuvert, ecran: etat.ecran, nonLue: nouveauteNonLue(infos, etat.lues), solde: montant, discord: lien.actif, record, monde: monde.id, infini: infini?.etat() ?? null, personnage: perso?.etat() ?? null, niveaux, statsLancees }),
   };
 }

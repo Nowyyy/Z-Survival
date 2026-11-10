@@ -368,6 +368,32 @@
   --menu-perso-survivant: #4d4b3b;  /* teinte du Survivant (veste) */
   --menu-perso-2: #3e4a52;          /* teinte de [Personnage 2] */
   --menu-perso-inconnu: #2a2725;    /* silhouette d'un personnage verrouillé */
+  --menu-perso-assombri: #000000;   /* mêlé à la teinte pour les bras (12 %) */
+  --menu-perso-jambes: #2c2f26;     /* pantalon */
+  --menu-perso-sangle: #2c2a22;     /* bretelles, cheveux */
+  --menu-perso-poche: #3a3828;      /* poche de poitrine */
+  --menu-perso-sang: #8f1010;       /* bandana, tache de sang */
+  --menu-perso-arme: #141414;       /* pistolet */
+  --menu-perso-peau: #b89a7a;       /* visage */
+  --menu-perso-bottes: #1a1612;     /* bottes */
+  --menu-perso-ombre: #050404;      /* ombre au sol */
+  --menu-e9-sol: #0b0a09;           /* sol sous le personnage, fond des icônes d'emplacement */
+  --menu-e9-sol-trait: #1f1c19;     /* bord du sol */
+  --menu-e9-projecteur: #ffe2b0;    /* cône du projecteur (opacité dans menu.css) */
+  --menu-e9-lumiere: #ffcf8a;       /* halo au sol (opacité dans menu.css) */
+  --menu-e9-lampe: #2a2621;         /* lampe du projecteur */
+  --menu-e9-case: #1c1a17;          /* emplacement rempli */
+  --menu-e9-case-vide: #100e0d;     /* emplacement vide */
+  --menu-e9-stats-fond: rgb(5 5 5 / 60%); /* boîte des statistiques */
+  --menu-e9-stats-bord: #4a3e33;    /* son bord en tirets, bord de l'étiquette */
+  --menu-e9-texte-doux: #d9d4cb;    /* statistiques, effet, texte secondaire */
+  --menu-e9-etiquette: rgb(5 5 5 / 70%); /* « Touche-le pour changer » */
+  --menu-e9-capacite: rgb(12 10 9 / 92%); /* encart de capacité */
+  --menu-e9-or: #ffd60a;            /* bord de l'encart de capacité, « Capacité : », objet choisi, personnage choisi */
+  --menu-e9-violet: #3a2350;        /* bouton Fusion */
+  --menu-e9-violet-bord: #1c1028;   /* son bord */
+  --menu-e9-violet-texte: #f2e8ff;  /* son texte */
+  --menu-e9-bois-texte: #fff4e2;    /* texte des boutons planche du Personnage */
   /* Raretés (lots suivants : inventaire, boutique, tirage) */
   --rarete-commun: #a3a3a8;         /* gris */
   --rarete-peu-commun: #5cc46a;     /* vert */
