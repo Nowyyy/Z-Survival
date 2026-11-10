@@ -21,6 +21,11 @@
    "assertions": 154,
    "chargements": 39
   },
+  "tests/e2e/menu-onglets.spec.js": {
+   "tests": 13,
+   "assertions": 119,
+   "chargements": 10
+  },
   "tests/e2e/menu.spec.js": {
    "tests": 8,
    "assertions": 109,

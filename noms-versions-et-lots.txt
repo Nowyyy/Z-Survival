@@ -156,3 +156,9 @@ version: v0.8
 nom: Écran de chargement et menu principal
 description: Le jeu s'ouvre sur un écran de chargement animé puis sur un menu en paysage : en-tête, solde, onglets et bouton Jouer. On peut quitter une partie pour revenir au menu.
 afficher: oui
+
+[lot-8b]
+version: v0.8
+nom: Onglets Jouer et Infini, mode infini
+description: L'onglet Jouer montre le bâtiment de nuit animé, avec ton record sur la route. Nouvel onglet Infini : choix de la carte et partie sans fin au-delà de la manche 40.
+afficher: oui
