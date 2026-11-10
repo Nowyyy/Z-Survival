@@ -22,7 +22,7 @@ import { generateTextureData } from './textures.js';
 import { installTestHook } from './testhook.js';
 import { createUi } from './ui.js';
 import { applyTexts, fmt, loadDict, TEXTURE_TEXTS } from './texts.js';
-import { menuChute, menuProgres, menuRetour, modeMenu } from '../menu/demarrage.js';
+import { menuChute, menuProgres, menuRetour, modeMenu, optionPartie } from '../menu/demarrage.js';
 
 const DEFAULT_RATIO_CAP = 2;
 menuProgres('modules', 1); // lot 8a : modules et Three.js évalués (écran de chargement du jeu après « JOUER » ; sans effet en partie directe)
@@ -221,6 +221,7 @@ const ctx = {
   audioCfg,
   audioMaterials: materialsCfg,
   canal, // lot 5l : canal de la page (null : refusé) ; l'icône de débogage de la pause n'existe que sur les canaux de débogage
+  modePartie: optionPartie().mode, // lot 8b : option de démarrage posée par le menu (histoire, ou infini sans paramètre d'adresse) ; partie directe : histoire
 };
 
 // Lot 5b : préréglages graphiques en jeu (réglages « live », Auto entre deux manches) ; sous ?test=1 le rechargement est simulé (getState().graphics).

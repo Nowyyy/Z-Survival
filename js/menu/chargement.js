@@ -31,6 +31,7 @@ function svgEl(tag, attrs) {
 }
 
 // Décor (vue 932 × 430, ancré en bas) : ciel par dégradé CSS, lune et halo, bâtiment à toit plat avec cheminée, deux fenêtres éclairées.
+// Lot 8b : écran de chargement seulement (l'onglet Jouer a sa propre scène, js/menu/jouer.js).
 export function decorNuit(classe = 'e7-decor') {
   const svg = svgEl('svg', { class: classe, viewBox: '0 0 932 430', preserveAspectRatio: 'xMidYMax slice', 'aria-hidden': 'true', focusable: 'false' });
   svg.append(
@@ -51,7 +52,7 @@ function graine(search, phase) {
 
 const json = (path) => fetch(path).then((r) => (r.ok ? r.json() : null)).catch(() => null);
 
-// phase : 'menu' ou 'jeu' ; jouer() : appelé par « JOUER » du menu (demarrage.js charge alors le jeu).
+// phase : 'menu' ou 'jeu' ; jouer(option) : appelé par « JOUER » du menu (demarrage.js charge alors le jeu ; lot 8b : option de démarrage).
 export function creerChargement({ phase = 'menu', jouer = () => {}, root = document.body, search = globalThis.location?.search ?? '' } = {}) {
   const reduit = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const pose = reduit; // retour du propriétaire : la chute du Z se rejoue à chaque chargement (menu, partie, retour au menu)
@@ -224,9 +225,9 @@ export function creerChargement({ phase = 'menu', jouer = () => {}, root = docum
       menu = m.creerMenu({
         ...donnees,
         root,
-        jouer: () => {
+        jouer: (option) => {
           menu.element.remove();
-          jouer();
+          jouer(option); // lot 8b : option de démarrage (mode histoire ou infini)
         },
       });
       retirer();

@@ -1420,6 +1420,7 @@ export function createGame(ctx) {
         laserEnd: laser ? { x: laser.ray.end.x, y: laser.ray.end.y } : null,
         laser: laser ? { length: laser.ray.length, hit: laser.ray.hit?.id ?? null, stoppedBy: laser.ray.stoppedBy?.id ?? null, range: laser.cone.length, cone: { leftAngle: sim.aim.angle - laser.cone.half, rightAngle: sim.aim.angle + laser.cone.half } } : null,
         world: { width: layout.size.width, height: layout.size.height, empty: layout.empty },
+        mode: ctx.modePartie ?? 'histoire', // lot 8b : mode de la partie (histoire ; infini : « Jouer » de l'onglet Infini du menu)
         map: { id: layout.id, size: { width: layout.size.width, height: layout.size.height }, windowIds: geoms.map((g) => g.id), pillars: layout.pillars.map((o) => ({ id: o.id, x: o.x, y: o.y, w: o.w, h: o.h })), start: { ...layout.start } },
         labels: labelState.map((l) => ({ ...l })),
         obstacles: layout.furniture.map((o) => ({ id: o.id, kind: o.kind, x: o.x, y: o.y, w: o.w, h: o.h, hauteur: o.hauteur, screen: screenAt(o.x + o.w / 2, o.hauteur, o.y + o.h / 2) })),

@@ -20,6 +20,7 @@
   ],
   "garde-fous": [
     { "fichier": "tests/e2e/fumee.spec.js", "categorie": "G", "raison": "Fumée du lot 4e : démarrage, axe des pages publiées, aucune requête externe." },
+    { "fichier": "tests/e2e/menu-onglets.spec.js", "categorie": "G", "raison": "Lot 8b : onglets Jouer et Infini du menu à 932 × 430, 667 × 375 et 1440 × 900, en bureau et sur téléphone en paysage (emplacements, 44 px, axe, contraste, animations en pause hors de l'écran, mouvement réduit), record en lecture seule, mode histoire et mode infini réel (sans lecture seule), aucune écriture nouvelle." },
     { "fichier": "tests/e2e/argent.spec.js", "categorie": "G", "raison": "Sauvegarde réelle : écritures, échecs de stockage, verrouillage, mode essai, multi-onglets ; 1 rechargement par test." },
     { "fichier": "tests/e2e/atelier-carte.spec.js", "categorie": "G", "motif": "immobile|zones actives", "raison": "tests G d'un fichier F" },
     { "fichier": "tests/e2e/atelier-carte.spec.js", "categorie": "G", "motif": "appels et triangles", "raison": "tests G d'un fichier F" },
@@ -821,11 +822,11 @@
     },
     {
       "id": "menu",
-      "description": "Menu principal (lot 8a) : démarrage de jeu.html (menu ou partie directe), écran de chargement E7, menu E8 (en-tête, onglets, écrans Information et Connexion), état pur js/core/menu-etat.js, données data/menu/, css/menu.css.",
-      "sources": ["js/menu/chargement.js", "js/menu/menu.js", "js/menu/ecrans.js", "js/core/menu-etat.js", "css/menu.css", "data/menu/**"],
+      "description": "Menu principal (lots 8a et 8b) : démarrage de jeu.html (menu ou partie directe), écran de chargement E7, menu E8 (en-tête, onglets, écrans Information et Connexion), état pur js/core/menu-etat.js, données data/menu/, css/menu.css.",
+      "sources": ["js/menu/chargement.js", "js/menu/menu.js", "js/menu/ecrans.js", "js/menu/jouer.js", "js/core/menu-etat.js", "css/menu.css", "data/menu/**"],
       "dependances": ["economie", "graphismes", "interface", "publication", "textes"],
-      "vitest": ["tests/unit/menu-etat.test.js"],
-      "e2e": ["tests/e2e/menu.spec.js"],
+      "vitest": ["tests/unit/menu-etat.test.js", "tests/unit/menu-mondes.test.js"],
+      "e2e": ["tests/e2e/menu.spec.js", "tests/e2e/menu-onglets.spec.js"],
       "complet": []
     },
     {

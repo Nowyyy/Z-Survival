@@ -86,7 +86,7 @@ Onglet actif, menu à trois barres ouvert, écran ouvert, nouveautés lues : `et
 - Tests sans `?test=1` qui attendaient la partie (relevé 11, plus trois tests « le jeu se charge » de `publication.spec`) : une étape « JOUER » ajoutée, paramètres inchangés ; en portrait (projet mobile), « Tourne ton téléphone » couvre le menu : le bouton est déclenché directement (`dispatchEvent`).
 
 ## Lot 8b — onglets Jouer et Infini, mode infini, textes séparés
-État : **en cours** (partie A : relevé, plan, textes séparés ; Lighthouse mobile de `index.html` après séparation : 90, 90, 90, 90, 90, médiane 90 ; référence `1f6f064` : 89, 89, 88, 89, 89). Base `origin/dev` `1f6f064`. Maquettes de référence : `Docs/maquettes-v0.8/` (`Main.html`, `Infini.html`, `LISEZ-MOI.md` ; copies du propriétaire, ni publiées ni testées, jamais modifiées).
+État : **en cours** (partie B : onglet Jouer livré, `js/menu/jouer.js`, `data/menu/mondes.json` ; Lighthouse mobile de `jeu.html` : 79, 78, 79, 79, 79, médiane 79, comme la référence ; fichiers JavaScript au démarrage du menu, `?test=1&menu=1` : 28 → 29, `jouer.js`. Partie A : relevé, plan, textes séparés ; Lighthouse mobile de `index.html` après séparation : 90, 90, 90, 90, 90, médiane 90 ; référence `1f6f064` : 89, 89, 88, 89, 89). Base `origin/dev` `1f6f064`. Maquettes de référence : `Docs/maquettes-v0.8/` (`Main.html`, `Infini.html`, `LISEZ-MOI.md` ; copies du propriétaire, ni publiées ni testées, jamais modifiées).
 
 ### Relevé (code de `origin/dev`, maquettes)
 1. Accueil : `index.html` → `js/accueil/main.js` → `startPage` (`js/page.js`) → `data/i18n/fr.json` préchargé (31 154 octets, 566 clés, dont 21 lues par l'accueil) ; `en.json` (1 746 octets) jamais chargé (langue fixée à fr).

@@ -118,3 +118,95 @@ export function adresseRetour(search) {
   const out = q.toString();
   return out ? `?${out}` : '';
 }
+
+// --- Lot 8b : mondes, record, carrousel du mode infini, option de démarrage (Docs/ref/menu-principal.md) ----------------------------------------
+// Monde de repli (fichier absent ou sans monde jouable) : celui que le jeu sait lancer (le bâtiment, 40 manches, portes après 10, 20, 30).
+export const MONDE_DEFAUT = Object.freeze({ id: 'batiment', numero: 1, nom: '', jouable: true, manches: 40, portes: Object.freeze([10, 20, 30]) });
+const MAX_MONDES = 24;
+const entier = (n, min, max) => (Number.isInteger(n) && n >= min && n <= max ? n : null);
+const texteCourt = (s) => (typeof s === 'string' ? s.trim().slice(0, 40) : '');
+
+// data/menu/mondes.json → liste de mondes valides, dans l'ordre des numéros. Entrée invalide ignorée (identifiant ou numéro absent, en double) ;
+// un monde jouable sans manches ni portes valides prend celles du monde de repli. Aucun monde jouable : le monde de repli en tête.
+export function lireMondes(json) {
+  const brut = json && typeof json === 'object' && Array.isArray(json.mondes) ? json.mondes.slice(0, MAX_MONDES) : [];
+  const ids = new Set();
+  const numeros = new Set();
+  const mondes = [];
+  for (const m of brut) {
+    if (!m || typeof m !== 'object') continue;
+    const id = typeof m.id === 'string' && /^[a-z0-9-]{1,32}$/.test(m.id) ? m.id : null;
+    const numero = entier(m.numero, 1, 99);
+    if (!id || !numero || ids.has(id) || numeros.has(numero)) continue;
+    ids.add(id);
+    numeros.add(numero);
+    const jouable = m.jouable === true;
+    const manches = entier(m.manches, 1, 999) ?? MONDE_DEFAUT.manches;
+    const portes = Array.isArray(m.portes) && m.portes.every((p) => entier(p, 1, manches - 1) !== null) ? [...new Set(m.portes)].sort((a, b) => a - b) : [...MONDE_DEFAUT.portes];
+    mondes.push(jouable ? { id, numero, nom: texteCourt(m.nom), jouable, manches, portes } : { id, numero, nom: texteCourt(m.nom), jouable });
+  }
+  mondes.sort((a, b) => a.numero - b.numero);
+  if (!mondes.some((m) => m.jouable)) return [{ ...MONDE_DEFAUT, portes: [...MONDE_DEFAUT.portes] }, ...mondes.filter((m) => m.id !== MONDE_DEFAUT.id && m.numero !== 1)];
+  return mondes;
+}
+
+export const premierJouable = (mondes) => (Array.isArray(mondes) ? mondes.find((m) => m?.jouable) : null) ?? MONDE_DEFAUT;
+
+// Meilleure manche de la sauvegarde (records.bestWave, lu sans écriture) : entier ≥ 1, sinon null (« — »).
+export const lireRecord = (n) => (Number.isInteger(n) && n >= 1 ? n : null);
+
+// Onglet Jouer : panneaux de la route (manche 1, chaque porte, dernière manche), atteints si record ≥ leur numéro ; portes ouvertes = portes dont la
+// manche est atteinte ; record affiché borné à la dernière manche du monde (l'histoire finit là) ; repère : position sur la route, en indice de
+// panneau (0 = premier, fraction entre deux), null sans record.
+export function etatJouer(monde, record) {
+  const m = monde?.jouable ? monde : MONDE_DEFAUT;
+  const r = lireRecord(record);
+  const paliers = [1, ...m.portes, m.manches];
+  const panneaux = paliers.map((manche) => ({ manche, atteint: r !== null && r >= manche }));
+  const portesOuvertes = r === null ? 0 : m.portes.filter((p) => r >= p).length;
+  let repere = null;
+  if (r !== null) {
+    const v = Math.min(r, m.manches);
+    const i = paliers.findIndex((p, k) => k === paliers.length - 1 || (v >= p && v < paliers[k + 1]));
+    repere = i === paliers.length - 1 ? i : i + (v - paliers[i]) / (paliers[i + 1] - paliers[i]);
+  }
+  return { record: r === null ? null : Math.min(r, m.manches), manches: m.manches, panneaux, portesOuvertes, portesTotal: m.portes.length, repere };
+}
+
+// Monde suivant d'un monde (onglet Jouer : carte « Monde 2 · Verrouillé ») ; null s'il n'y en a pas.
+export function mondeSuivant(mondes, id) {
+  const liste = Array.isArray(mondes) ? mondes : [];
+  const i = liste.findIndex((m) => m.id === id);
+  return i >= 0 && i + 1 < liste.length ? liste[i + 1] : null;
+}
+
+// Carrousel de l'onglet Infini : carte choisie (en mémoire) ; un monde inconnu ou verrouillé ne se choisit pas (état inchangé).
+export function creerCarrousel(mondes) {
+  return { choisi: premierJouable(mondes).id };
+}
+export function choisirCarte(etat, mondes, id) {
+  const m = Array.isArray(mondes) ? mondes.find((x) => x.id === id) : null;
+  return m && m.jouable ? { ...etat, choisi: m.id } : etat;
+}
+
+// Option de démarrage de la partie, passée par le menu au chargement du jeu (sans paramètre d'adresse) : { mode: 'histoire' | 'infini', monde }.
+// Mode inconnu, monde inconnu ou verrouillé, entrée hostile : histoire sur le premier monde jouable.
+export const MODES = Object.freeze(['histoire', 'infini']);
+export function lireOptionDemarrage(entree, mondes) {
+  const defaut = { mode: 'histoire', monde: premierJouable(mondes).id };
+  if (!entree || typeof entree !== 'object' || Array.isArray(entree)) return defaut;
+  const mode = Object.hasOwn(entree, 'mode') ? entree.mode : undefined;
+  const id = Object.hasOwn(entree, 'monde') ? entree.monde : undefined;
+  if (typeof mode !== 'string' || !MODES.includes(mode) || typeof id !== 'string') return defaut;
+  const m = Array.isArray(mondes) ? mondes.find((x) => x.id === id) : null;
+  return m && m.jouable ? { mode, monde: m.id } : defaut;
+}
+
+// Classement d'exemple de l'onglet Infini (data/menu/classement.json) : au plus 5 lignes valides { rang, pseudo, manche } ; absent ou invalide : [].
+export function lireClassement(json) {
+  const brut = json && typeof json === 'object' && Array.isArray(json.lignes) ? json.lignes : [];
+  return brut
+    .filter((l) => l && typeof l === 'object' && typeof l.pseudo === 'string' && l.pseudo.trim() !== '' && Number.isInteger(l.manche) && l.manche >= 1)
+    .slice(0, 5)
+    .map((l, i) => ({ rang: i + 1, pseudo: l.pseudo.trim().slice(0, 20), manche: l.manche }));
+}
