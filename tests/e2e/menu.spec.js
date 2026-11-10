@@ -303,6 +303,9 @@ test.describe('partie et retour au menu', () => {
     await page.locator('#btn-quit').click();
     await expect(page.locator('#quit-confirm-text')).toHaveText('Quitter la partie ? L\'argent gagné est conservé.');
     await expect(page.locator('#btn-quit-cancel')).toBeFocused();
+    // Retour du propriétaire : la question ne touche plus les boutons (avant : 0 px d'écart).
+    const ecart = await page.evaluate(() => document.getElementById('btn-quit-ok').getBoundingClientRect().top - document.getElementById('quit-confirm-text').getBoundingClientRect().bottom);
+    expect(ecart).toBeGreaterThanOrEqual(8);
     await page.locator('#btn-quit-cancel').click();
     await expect(page.locator('#btn-resume')).toBeVisible();
     await page.locator('#btn-quit').click();

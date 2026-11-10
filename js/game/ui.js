@@ -224,6 +224,7 @@ export function createUi(dict, handlers) {
     if (!quitBox) {
       quitBox = document.createElement('div');
       quitBox.id = 'quit-confirm';
+      quitBox.className = 'quit-confirm'; // retour du propriétaire : écart entre la question et les boutons (game-ui.css)
       quitBox.setAttribute('role', 'alertdialog');
       quitBox.setAttribute('aria-labelledby', 'quit-confirm-text');
       const text = document.createElement('p');
