@@ -80,6 +80,11 @@ partie : pause « Quitter » → confirmation → rechargement → E7 « menu »
 ## État en mémoire jusqu'au lot 8h
 Onglet actif, menu à trois barres ouvert, écran ouvert, nouveautés lues : `etatMenu` (mémoire). Le solde est lu une fois par `repository.load()` (lecture seule). Aucune clé ni aucun champ nouveau dans `zs.save.v1` ni `zs.device.v1` (vérifié par `menu.spec.js` : clés et contenu identiques avant et après une visite du menu, aucun `setItem`). Le retour au menu recharge la page : l'état « lu » des nouveautés est alors perdu (point jaune de nouveau visible) jusqu'au lot 8h.
 
+### Décision du propriétaire (2026-11-10, après le lot 8b) : records histoire et infini séparés, au lot 8h
+- **Séparés** : les records (meilleure manche, meilleur nombre de tués) du mode histoire et ceux du mode infini, par monde ; chacun affiché dans son onglet (Jouer : record d'histoire, panneaux et portes ; Infini : « Record : manche N » de la carte et ligne « Toi »).
+- **Communs** aux deux modes : argent, gains (`earned`), niveaux des statistiques, nombre de parties.
+- Fait au lot 8h (sauvegarde v2, migration de `zs.save.v1`) : les `records` actuels deviennent le record d'histoire du bâtiment ; le record infini part de zéro. D'ici là, le mode infini n'écrit aucun record (`js/game/game.js`, lot 8b) et l'onglet Infini affiche « Record : — ».
+
 ## Risques
 - Lighthouse mesure désormais le seul menu (`jeu.html` : 79) : rien du jeu ne doit revenir au démarrage du mode menu (`menu.spec.js` le vérifie). Accueil `index.html` : **89, sous le seuil de 90** (référence `80372e2` : 89, 89, 90 ; écart dû aux fichiers partagés agrandis par le lot, textes et jetons, pas au logo).
 - Options du menu : sur un ordinateur, la première ouverture charge le module des lampes (Three.js) par `graphicsBoot()` ; rien de plus n'est écrit que la préférence existante `zs.device.v1`.
