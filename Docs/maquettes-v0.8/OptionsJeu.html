@@ -1,0 +1,321 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pause, options en partie — maquette V0.8 (référence)</title>
+<style>
+body{margin:0;background:#000}
+/* Polices : celles hébergées par le jeu (Barlow, Rubik Wet Paint, Rubik Dirt). Sans elles, le navigateur en substitue d'autres. */
+
+body{margin:0}
+a{color:#f4f1ec}a:hover{color:#ffffff}
+
+@media (prefers-reduced-motion: reduce){*{animation:none !important}}
+</style>
+</head>
+<body>
+<div style="position: relative; width: 932px; height: 430px; overflow: hidden; background: #0c0b0a; font-family: 'Barlow', sans-serif; color: #f4f1ec">
+<svg aria-hidden="true" width="932" height="430" viewBox="0 0 932 430" style="position: absolute; left: 0; top: 0">
+<rect width="932" height="430" fill="#1a1917"></rect>
+<path d="M0 60 H932 M0 120 H932 M0 180 H932 M0 240 H932 M0 300 H932 M0 360 H932 M60 0 V430 M120 0 V430 M180 0 V430 M240 0 V430 M300 0 V430 M360 0 V430 M420 0 V430 M480 0 V430 M540 0 V430 M600 0 V430 M660 0 V430 M720 0 V430 M780 0 V430 M840 0 V430 M900 0 V430" stroke="#24221f" stroke-width="2"></path>
+<rect x="420" y="190" width="60" height="40" fill="#2c2a25"></rect><circle cx="300" cy="300" r="14" fill="#3a3530"></circle><circle cx="640" cy="120" r="14" fill="#2a2724"></circle>
+<rect width="932" height="430" fill="#000000" opacity="0.72"></rect>
+</svg>
+<section style="position: absolute; left: 40px; top: 16px; width: 852px; height: 398px; box-sizing: border-box; background: rgba(12,10,9,0.96); border: 2px solid #4a1a18; border-radius: 6px"></section>
+<a href="#" style="position: absolute; left: 60px; top: 30px; height: 40px; padding: 0 12px 0 6px; display: flex; align-items: center; gap: 4px; background: #1a1614; border: 2px solid #3a3434; border-radius: 4px; text-decoration: none; color: #f4f1ec; font-family: 'Rubik Dirt', sans-serif; font-size: 13px; letter-spacing: 0.06em; text-transform: uppercase"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><path d="M15 6l-6 6 6 6"></path></svg>Pause</a>
+<h1 style="position: absolute; left: 170px; top: 30px; margin: 0; font-family: 'Rubik Wet Paint', sans-serif; font-weight: 400; font-size: 28px; color: #ff4a3d">Options</h1>
+<div role="radiogroup" aria-label="Préréglage" style="position: absolute; left: 60px; top: 84px; display: flex; gap: 8px; align-items: center">
+
+<button aria-pressed="true" disabled style="height: 40px; padding: 0 14px; background: #2f2b28; border: 2px solid #5a5550; border-radius: 4px; color: #7a756e; font-family: 'Rubik Dirt', sans-serif; font-size: 13px; letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer">Auto · Moyen</button>
+
+
+<button aria-pressed="false" disabled style="height: 40px; padding: 0 14px; background: #141210; border: 2px solid #2a2725; border-radius: 4px; color: #7a756e; font-family: 'Rubik Dirt', sans-serif; font-size: 13px; letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer">Faible</button>
+
+
+<button aria-pressed="false" disabled style="height: 40px; padding: 0 14px; background: #141210; border: 2px solid #2a2725; border-radius: 4px; color: #7a756e; font-family: 'Rubik Dirt', sans-serif; font-size: 13px; letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer">Moyen</button>
+
+
+<button aria-pressed="false" disabled style="height: 40px; padding: 0 14px; background: #141210; border: 2px solid #2a2725; border-radius: 4px; color: #7a756e; font-family: 'Rubik Dirt', sans-serif; font-size: 13px; letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer">Élevé</button>
+
+
+<button aria-pressed="false" disabled style="height: 40px; padding: 0 14px; background: #141210; border: 2px solid #2a2725; border-radius: 4px; color: #7a756e; font-family: 'Rubik Dirt', sans-serif; font-size: 13px; letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer">Perso</button>
+
+<span style="font-size: 12px; color: #a9a49c">Préréglages : depuis le menu principal</span>
+</div>
+<div style="position: absolute; left: 60px; top: 134px; width: 812px; height: 268px; overflow-y: auto; box-sizing: border-box; padding-right: 8px; border-top: 1px solid #2f2a25">
+
+<h2 style="margin: 12px 0 4px; font-family: 'Rubik Dirt', sans-serif; font-weight: 400; font-size: 14px; letter-spacing: 0.08em; text-transform: uppercase; color: #ff4a3d">Image</h2>
+
+
+
+
+
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 50px; border-bottom: 1px solid #1f1c19">
+<span style="display: flex; flex-direction: column; line-height: 1.2"><span style="font-size: 15px; font-weight: 700; color: #f4f1ec">Résolution</span><span style="display: flex; align-items: center; gap: 4px; font-size: 12px; color: #a9a49c">Appliqué tout de suite</span></span>
+<span role="radiogroup" aria-label="Résolution" style="display: flex; gap: 6px">
+
+<button aria-pressed="false" style="min-width: 76px; height: 40px; padding: 0 10px; background: #1a1614; border: 2px solid #3a3434; border-radius: 4px; color: #cfc6b8; font-family: 'Barlow', sans-serif; font-size: 13px; font-weight: 700; cursor: pointer">Basse</button>
+
+
+<button aria-pressed="true" style="min-width: 76px; height: 40px; padding: 0 10px; background: #c4110f; border: 2px solid #5a0606; border-radius: 4px; color: #ffffff; font-family: 'Barlow', sans-serif; font-size: 13px; font-weight: 700; cursor: pointer">Moyenne</button>
+
+
+<button aria-pressed="false" style="min-width: 76px; height: 40px; padding: 0 10px; background: #1a1614; border: 2px solid #3a3434; border-radius: 4px; color: #cfc6b8; font-family: 'Barlow', sans-serif; font-size: 13px; font-weight: 700; cursor: pointer">Haute</button>
+
+</span>
+</div>
+
+
+
+
+
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 50px; border-bottom: 1px solid #1f1c19">
+<span style="display: flex; flex-direction: column; line-height: 1.2"><span style="font-size: 15px; font-weight: 700; color: #8a857e">Anticrénelage</span><span style="display: flex; align-items: center; gap: 4px; font-size: 12px; color: #c9a94a"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path></svg>Modifiable depuis le menu principal</span></span>
+<span role="radiogroup" aria-label="Anticrénelage" style="display: flex; gap: 6px">
+
+<button aria-pressed="false" disabled style="min-width: 76px; height: 40px; padding: 0 10px; background: #141210; border: 2px solid #2a2725; border-radius: 4px; color: #7a756e; font-family: 'Barlow', sans-serif; font-size: 13px; font-weight: 700; cursor: pointer">Non</button>
+
+
+<button aria-pressed="true" disabled style="min-width: 76px; height: 40px; padding: 0 10px; background: #2f2b28; border: 2px solid #5a5550; border-radius: 4px; color: #7a756e; font-family: 'Barlow', sans-serif; font-size: 13px; font-weight: 700; cursor: pointer">Oui</button>
+
+</span>
+</div>
+
+
+
+
+
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 50px; border-bottom: 1px solid #1f1c19">
+<span style="display: flex; flex-direction: column; line-height: 1.2"><span style="font-size: 15px; font-weight: 700; color: #f4f1ec">Ombres</span><span style="display: flex; align-items: center; gap: 4px; font-size: 12px; color: #a9a49c">Appliqué tout de suite</span></span>
+<span role="radiogroup" aria-label="Ombres" style="display: flex; gap: 6px">
+
+<button aria-pressed="false" style="min-width: 76px; height: 40px; padding: 0 10px; background: #1a1614; border: 2px solid #3a3434; border-radius: 4px; color: #cfc6b8; font-family: 'Barlow', sans-serif; font-size: 13px; font-weight: 700; cursor: pointer">Aucune</button>
+
+
+<button aria-pressed="true" style="min-width: 76px; height: 40px; padding: 0 10px; background: #c4110f; border: 2px solid #5a0606; border-radius: 4px; color: #ffffff; font-family: 'Barlow', sans-serif; font-size: 13px; font-weight: 700; cursor: pointer">Moyennes</button>
+
+
+<button aria-pressed="false" style="min-width: 76px; height: 40px; padding: 0 10px; background: #1a1614; border: 2px solid #3a3434; border-radius: 4px; color: #cfc6b8; font-family: 'Barlow', sans-serif; font-size: 13px; font-weight: 700; cursor: pointer">Hautes</button>
+
+</span>
+</div>
+
+
+
+
+
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 50px; border-bottom: 1px solid #1f1c19">
+<span style="display: flex; flex-direction: column; line-height: 1.2"><span style="font-size: 15px; font-weight: 700; color: #f4f1ec">Effet VHS</span><span style="display: flex; align-items: center; gap: 4px; font-size: 12px; color: #a9a49c">Appliqué tout de suite</span></span>
+<span role="radiogroup" aria-label="Effet VHS" style="display: flex; gap: 6px">
+
+<button aria-pressed="false" style="min-width: 76px; height: 40px; padding: 0 10px; background: #1a1614; border: 2px solid #3a3434; border-radius: 4px; color: #cfc6b8; font-family: 'Barlow', sans-serif; font-size: 13px; font-weight: 700; cursor: pointer">Coupé</button>
+
+
+<button aria-pressed="true" style="min-width: 76px; height: 40px; padding: 0 10px; background: #c4110f; border: 2px solid #5a0606; border-radius: 4px; color: #ffffff; font-family: 'Barlow', sans-serif; font-size: 13px; font-weight: 700; cursor: pointer">Statique</button>
+
+
+<button aria-pressed="false" style="min-width: 76px; height: 40px; padding: 0 10px; background: #1a1614; border: 2px solid #3a3434; border-radius: 4px; color: #cfc6b8; font-family: 'Barlow', sans-serif; font-size: 13px; font-weight: 700; cursor: pointer">Animé</button>
+
+</span>
+</div>
+
+
+
+<h2 style="margin: 12px 0 4px; font-family: 'Rubik Dirt', sans-serif; font-weight: 400; font-size: 14px; letter-spacing: 0.08em; text-transform: uppercase; color: #ff4a3d">Carte</h2>
+
+
+
+
+
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 50px; border-bottom: 1px solid #1f1c19">
+<span style="display: flex; flex-direction: column; line-height: 1.2"><span style="font-size: 15px; font-weight: 700; color: #8a857e">Détail de la carte</span><span style="display: flex; align-items: center; gap: 4px; font-size: 12px; color: #c9a94a"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path></svg>Modifiable depuis le menu principal</span></span>
+<span role="radiogroup" aria-label="Détail de la carte" style="display: flex; gap: 6px">
+
+<button aria-pressed="false" disabled style="min-width: 76px; height: 40px; padding: 0 10px; background: #141210; border: 2px solid #2a2725; border-radius: 4px; color: #7a756e; font-family: 'Barlow', sans-serif; font-size: 13px; font-weight: 700; cursor: pointer">Réduit</button>
+
+
+<button aria-pressed="true" disabled style="min-width: 76px; height: 40px; padding: 0 10px; background: #2f2b28; border: 2px solid #5a5550; border-radius: 4px; color: #7a756e; font-family: 'Barlow', sans-serif; font-size: 13px; font-weight: 700; cursor: pointer">Complet</button>
+
+</span>
+</div>
+
+
+
+
+
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 50px; border-bottom: 1px solid #1f1c19">
+<span style="display: flex; flex-direction: column; line-height: 1.2"><span style="font-size: 15px; font-weight: 700; color: #8a857e">Textures</span><span style="display: flex; align-items: center; gap: 4px; font-size: 12px; color: #c9a94a"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path></svg>Modifiable depuis le menu principal</span></span>
+<span role="radiogroup" aria-label="Textures" style="display: flex; gap: 6px">
+
+<button aria-pressed="false" disabled style="min-width: 76px; height: 40px; padding: 0 10px; background: #141210; border: 2px solid #2a2725; border-radius: 4px; color: #7a756e; font-family: 'Barlow', sans-serif; font-size: 13px; font-weight: 700; cursor: pointer">Simples</button>
+
+
+<button aria-pressed="true" disabled style="min-width: 76px; height: 40px; padding: 0 10px; background: #2f2b28; border: 2px solid #5a5550; border-radius: 4px; color: #7a756e; font-family: 'Barlow', sans-serif; font-size: 13px; font-weight: 700; cursor: pointer">Fines</button>
+
+</span>
+</div>
+
+
+
+
+
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 50px; border-bottom: 1px solid #1f1c19">
+<span style="display: flex; flex-direction: column; line-height: 1.2"><span style="font-size: 15px; font-weight: 700; color: #f4f1ec">Brume</span><span style="display: flex; align-items: center; gap: 4px; font-size: 12px; color: #a9a49c">Appliqué tout de suite</span></span>
+<span role="radiogroup" aria-label="Brume" style="display: flex; gap: 6px">
+
+<button aria-pressed="false" style="min-width: 76px; height: 40px; padding: 0 10px; background: #1a1614; border: 2px solid #3a3434; border-radius: 4px; color: #cfc6b8; font-family: 'Barlow', sans-serif; font-size: 13px; font-weight: 700; cursor: pointer">Simple</button>
+
+
+<button aria-pressed="true" style="min-width: 76px; height: 40px; padding: 0 10px; background: #c4110f; border: 2px solid #5a0606; border-radius: 4px; color: #ffffff; font-family: 'Barlow', sans-serif; font-size: 13px; font-weight: 700; cursor: pointer">Réduite</button>
+
+
+<button aria-pressed="false" style="min-width: 76px; height: 40px; padding: 0 10px; background: #1a1614; border: 2px solid #3a3434; border-radius: 4px; color: #cfc6b8; font-family: 'Barlow', sans-serif; font-size: 13px; font-weight: 700; cursor: pointer">Complète</button>
+
+</span>
+</div>
+
+
+
+
+
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 50px; border-bottom: 1px solid #1f1c19">
+<span style="display: flex; flex-direction: column; line-height: 1.2"><span style="font-size: 15px; font-weight: 700; color: #f4f1ec">Feux et fumées</span><span style="display: flex; align-items: center; gap: 4px; font-size: 12px; color: #a9a49c">Appliqué tout de suite</span></span>
+<span role="radiogroup" aria-label="Feux et fumées" style="display: flex; gap: 6px">
+
+<button aria-pressed="false" style="min-width: 76px; height: 40px; padding: 0 10px; background: #1a1614; border: 2px solid #3a3434; border-radius: 4px; color: #cfc6b8; font-family: 'Barlow', sans-serif; font-size: 13px; font-weight: 700; cursor: pointer">Réduits</button>
+
+
+<button aria-pressed="true" style="min-width: 76px; height: 40px; padding: 0 10px; background: #c4110f; border: 2px solid #5a0606; border-radius: 4px; color: #ffffff; font-family: 'Barlow', sans-serif; font-size: 13px; font-weight: 700; cursor: pointer">Moyens</button>
+
+
+<button aria-pressed="false" style="min-width: 76px; height: 40px; padding: 0 10px; background: #1a1614; border: 2px solid #3a3434; border-radius: 4px; color: #cfc6b8; font-family: 'Barlow', sans-serif; font-size: 13px; font-weight: 700; cursor: pointer">Complets</button>
+
+</span>
+</div>
+
+
+
+<h2 style="margin: 12px 0 4px; font-family: 'Rubik Dirt', sans-serif; font-weight: 400; font-size: 14px; letter-spacing: 0.08em; text-transform: uppercase; color: #ff4a3d">Personnages</h2>
+
+
+
+
+
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 50px; border-bottom: 1px solid #1f1c19">
+<span style="display: flex; flex-direction: column; line-height: 1.2"><span style="font-size: 15px; font-weight: 700; color: #8a857e">Détail des modèles</span><span style="display: flex; align-items: center; gap: 4px; font-size: 12px; color: #c9a94a"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path></svg>Modifiable depuis le menu principal</span></span>
+<span role="radiogroup" aria-label="Détail des modèles" style="display: flex; gap: 6px">
+
+<button aria-pressed="true" disabled style="min-width: 76px; height: 40px; padding: 0 10px; background: #2f2b28; border: 2px solid #5a5550; border-radius: 4px; color: #7a756e; font-family: 'Barlow', sans-serif; font-size: 13px; font-weight: 700; cursor: pointer">Simple</button>
+
+
+<button aria-pressed="false" disabled style="min-width: 76px; height: 40px; padding: 0 10px; background: #141210; border: 2px solid #2a2725; border-radius: 4px; color: #7a756e; font-family: 'Barlow', sans-serif; font-size: 13px; font-weight: 700; cursor: pointer">Riche</button>
+
+</span>
+</div>
+
+
+
+
+
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 50px; border-bottom: 1px solid #1f1c19">
+<span style="display: flex; flex-direction: column; line-height: 1.2"><span style="font-size: 15px; font-weight: 700; color: #f4f1ec">Sang</span><span style="display: flex; align-items: center; gap: 4px; font-size: 12px; color: #a9a49c">Appliqué tout de suite</span></span>
+<span role="radiogroup" aria-label="Sang" style="display: flex; gap: 6px">
+
+<button aria-pressed="false" style="min-width: 76px; height: 40px; padding: 0 10px; background: #1a1614; border: 2px solid #3a3434; border-radius: 4px; color: #cfc6b8; font-family: 'Barlow', sans-serif; font-size: 13px; font-weight: 700; cursor: pointer">Aucun</button>
+
+
+<button aria-pressed="true" style="min-width: 76px; height: 40px; padding: 0 10px; background: #c4110f; border: 2px solid #5a0606; border-radius: 4px; color: #ffffff; font-family: 'Barlow', sans-serif; font-size: 13px; font-weight: 700; cursor: pointer">Réduit</button>
+
+
+<button aria-pressed="false" style="min-width: 76px; height: 40px; padding: 0 10px; background: #1a1614; border: 2px solid #3a3434; border-radius: 4px; color: #cfc6b8; font-family: 'Barlow', sans-serif; font-size: 13px; font-weight: 700; cursor: pointer">Complet</button>
+
+</span>
+</div>
+
+
+
+
+
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 50px; border-bottom: 1px solid #1f1c19">
+<span style="display: flex; flex-direction: column; line-height: 1.2"><span style="font-size: 15px; font-weight: 700; color: #f4f1ec">Cadavres</span><span style="display: flex; align-items: center; gap: 4px; font-size: 12px; color: #a9a49c">Appliqué tout de suite</span></span>
+<span role="radiogroup" aria-label="Cadavres" style="display: flex; gap: 6px">
+
+<button aria-pressed="false" style="min-width: 76px; height: 40px; padding: 0 10px; background: #1a1614; border: 2px solid #3a3434; border-radius: 4px; color: #cfc6b8; font-family: 'Barlow', sans-serif; font-size: 13px; font-weight: 700; cursor: pointer">0</button>
+
+
+<button aria-pressed="true" style="min-width: 76px; height: 40px; padding: 0 10px; background: #c4110f; border: 2px solid #5a0606; border-radius: 4px; color: #ffffff; font-family: 'Barlow', sans-serif; font-size: 13px; font-weight: 700; cursor: pointer">1</button>
+
+
+<button aria-pressed="false" style="min-width: 76px; height: 40px; padding: 0 10px; background: #1a1614; border: 2px solid #3a3434; border-radius: 4px; color: #cfc6b8; font-family: 'Barlow', sans-serif; font-size: 13px; font-weight: 700; cursor: pointer">2</button>
+
+</span>
+</div>
+
+
+
+<h2 style="margin: 12px 0 4px; font-family: 'Rubik Dirt', sans-serif; font-weight: 400; font-size: 14px; letter-spacing: 0.08em; text-transform: uppercase; color: #ff4a3d">Lumières</h2>
+
+
+
+
+
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 50px; border-bottom: 1px solid #1f1c19">
+<span style="display: flex; flex-direction: column; line-height: 1.2"><span style="font-size: 15px; font-weight: 700; color: #f4f1ec">Lumière des lampes</span><span style="display: flex; align-items: center; gap: 4px; font-size: 12px; color: #a9a49c">Appliqué tout de suite</span></span>
+<span role="radiogroup" aria-label="Lumière des lampes" style="display: flex; gap: 6px">
+
+<button aria-pressed="true" style="min-width: 76px; height: 40px; padding: 0 10px; background: #c4110f; border: 2px solid #5a0606; border-radius: 4px; color: #ffffff; font-family: 'Barlow', sans-serif; font-size: 13px; font-weight: 700; cursor: pointer">Coupée</button>
+
+
+<button aria-pressed="false" style="min-width: 76px; height: 40px; padding: 0 10px; background: #1a1614; border: 2px solid #3a3434; border-radius: 4px; color: #cfc6b8; font-family: 'Barlow', sans-serif; font-size: 13px; font-weight: 700; cursor: pointer">Dynamique</button>
+
+</span>
+</div>
+
+
+
+
+
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 50px; border-bottom: 1px solid #1f1c19">
+<span style="display: flex; flex-direction: column; line-height: 1.2"><span style="font-size: 15px; font-weight: 700; color: #f4f1ec">Lumières simultanées</span><span style="display: flex; align-items: center; gap: 4px; font-size: 12px; color: #a9a49c">Appliqué tout de suite</span></span>
+<span role="radiogroup" aria-label="Lumières simultanées" style="display: flex; gap: 6px">
+
+<button aria-pressed="false" style="min-width: 76px; height: 40px; padding: 0 10px; background: #1a1614; border: 2px solid #3a3434; border-radius: 4px; color: #cfc6b8; font-family: 'Barlow', sans-serif; font-size: 13px; font-weight: 700; cursor: pointer">2</button>
+
+
+<button aria-pressed="true" style="min-width: 76px; height: 40px; padding: 0 10px; background: #c4110f; border: 2px solid #5a0606; border-radius: 4px; color: #ffffff; font-family: 'Barlow', sans-serif; font-size: 13px; font-weight: 700; cursor: pointer">4</button>
+
+
+<button aria-pressed="false" style="min-width: 76px; height: 40px; padding: 0 10px; background: #1a1614; border: 2px solid #3a3434; border-radius: 4px; color: #cfc6b8; font-family: 'Barlow', sans-serif; font-size: 13px; font-weight: 700; cursor: pointer">6</button>
+
+</span>
+</div>
+
+
+
+
+
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 50px; border-bottom: 1px solid #1f1c19">
+<span style="display: flex; flex-direction: column; line-height: 1.2"><span style="font-size: 15px; font-weight: 700; color: #f4f1ec">Ombres des lumières</span><span style="display: flex; align-items: center; gap: 4px; font-size: 12px; color: #a9a49c">Appliqué tout de suite</span></span>
+<span role="radiogroup" aria-label="Ombres des lumières" style="display: flex; gap: 6px">
+
+<button aria-pressed="true" style="min-width: 76px; height: 40px; padding: 0 10px; background: #c4110f; border: 2px solid #5a0606; border-radius: 4px; color: #ffffff; font-family: 'Barlow', sans-serif; font-size: 13px; font-weight: 700; cursor: pointer">0</button>
+
+
+<button aria-pressed="false" style="min-width: 76px; height: 40px; padding: 0 10px; background: #1a1614; border: 2px solid #3a3434; border-radius: 4px; color: #cfc6b8; font-family: 'Barlow', sans-serif; font-size: 13px; font-weight: 700; cursor: pointer">1</button>
+
+
+<button aria-pressed="false" style="min-width: 76px; height: 40px; padding: 0 10px; background: #1a1614; border: 2px solid #3a3434; border-radius: 4px; color: #cfc6b8; font-family: 'Barlow', sans-serif; font-size: 13px; font-weight: 700; cursor: pointer">2</button>
+
+</span>
+</div>
+
+
+</div>
+
+
+<svg aria-hidden="true" width="932" height="430" style="position: absolute; left: 0; top: 0; pointer-events: none; opacity: 0.1"><filter id="grain"><feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="2" stitchTiles="stitch"></feTurbulence><feColorMatrix type="saturate" values="0"></feColorMatrix></filter><rect width="932" height="430" filter="url(#grain)"></rect></svg>
+<div aria-hidden="true" style="position: absolute; left: 0; top: 0; width: 932px; height: 430px; pointer-events: none; background: repeating-linear-gradient(to bottom, rgba(255,255,255,0.03) 0px, rgba(255,255,255,0.03) 1px, transparent 1px, transparent 3px)"></div>
+</div>
+</body>
+</html>
