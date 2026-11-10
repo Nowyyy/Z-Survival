@@ -1,0 +1,18 @@
+{
+  "_provisoire": "Lot 8d : personnages du menu (exemples). teinte : jeton de css/tokens.css (--menu-perso-*) pour la silhouette ; debloque ; niveau : niveau de départ (1 par défaut) ; niveauMax ; prixAmelioration : prix d'un niveau (affiché, jamais prélevé avant le lot 8h). capacite : nom, description (une ligne), effet = niveaux de statistiques ajoutés au niveau 1 (clés de data/game/player-stats.json), effetParNiveau = ajout à chaque niveau du personnage au-delà du premier. La capacité du Survivant est à définir par le propriétaire (aucun effet) ; celle de « [Personnage 2] » est un exemple. Capacités définitives (effets permanents originaux) à venir du propriétaire. Lu par js/core/equipement.js.",
+  "choisi": "survivant",
+  "personnages": [
+    { "id": "survivant", "nom": "Survivant", "teinte": "--menu-perso-survivant", "debloque": true, "niveau": 1, "niveauMax": 10, "prixAmelioration": 300,
+      "capacite": { "nom": "[à définir]", "description": "[Capacité à définir par le propriétaire : aucun effet pour l'instant]", "effet": {}, "effetParNiveau": {} } },
+    { "id": "personnage-2", "nom": "[Personnage 2]", "teinte": "--menu-perso-2", "debloque": true, "niveau": 1, "niveauMax": 10, "prixAmelioration": 300,
+      "capacite": { "nom": "Pas léger (exemple)", "description": "Vitesse +1, puis +1 tous les deux niveaux (exemple)", "effet": { "vitesse": 1 }, "effetParNiveau": { "vitesse": 0.5 } } },
+    { "id": "personnage-3", "nom": "[Personnage 3]", "teinte": "--menu-perso-inconnu", "debloque": false, "niveauMax": 10, "prixAmelioration": 300,
+      "capacite": { "nom": "[à définir]", "description": "[Capacité à définir par le propriétaire]", "effet": {}, "effetParNiveau": {} } },
+    { "id": "personnage-4", "nom": "[Personnage 4]", "teinte": "--menu-perso-inconnu", "debloque": false, "niveauMax": 10, "prixAmelioration": 300,
+      "capacite": { "nom": "[à définir]", "description": "[Capacité à définir par le propriétaire]", "effet": {}, "effetParNiveau": {} } },
+    { "id": "personnage-5", "nom": "[Personnage 5]", "teinte": "--menu-perso-inconnu", "debloque": false, "niveauMax": 10, "prixAmelioration": 300,
+      "capacite": { "nom": "[à définir]", "description": "[Capacité à définir par le propriétaire]", "effet": {}, "effetParNiveau": {} } },
+    { "id": "personnage-6", "nom": "[Personnage 6]", "teinte": "--menu-perso-inconnu", "debloque": false, "niveauMax": 10, "prixAmelioration": 300,
+      "capacite": { "nom": "[à définir]", "description": "[Capacité à définir par le propriétaire]", "effet": {}, "effetParNiveau": {} } }
+  ]
+}

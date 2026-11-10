@@ -82,6 +82,7 @@ export async function preparerMenu({ search = pageSearch(), onProgress = () => {
   ]);
   let solde = 0;
   let record = null;
+  let niveaux = null; // lot 8d : niveaux de statistiques de la sauvegarde (base des statistiques effectives), si elle est lue « ok » (comme la partie)
   try {
     const storage = (() => {
       try {
@@ -94,14 +95,16 @@ export async function preparerMenu({ search = pageSearch(), onProgress = () => {
     const lu = repository.load();
     if (lu && lu.save && Number.isFinite(lu.save.money)) solde = lu.save.money;
     record = lireRecord(lu?.save?.records?.bestWave);
+    if (lu?.status === 'ok' && lu.save?.stats && typeof lu.save.stats === 'object') niveaux = { ...lu.save.stats };
   } catch {
     // sauvegarde illisible ou stockage bloqué : solde 0 et record « — » affichés, rien n'est écrit
   }
-  return { dict, infos: Array.isArray(infos?.infos) ? infos.infos : [], liens: liens ?? {}, solde, record, mondes: lireMondes(mondes) };
+  return { dict, infos: Array.isArray(infos?.infos) ? infos.infos : [], liens: liens ?? {}, solde, record, mondes: lireMondes(mondes), niveaux, statsCfg: stats };
 }
 
 // son : { lire() → { coupe, volume }, poser(réglages) } (lot 8c, donné par demarrage.js : mémoire de la page, appliquée par main.js à « JOUER »).
-export function creerMenu({ dict, infos = [], liens = {}, solde: montant = 0, record = null, mondes = lireMondes(null), jouer, son: memoireSon = null, root = document.body }) {
+// niveaux, statsCfg (lot 8d) : niveaux de la sauvegarde et data/game/player-stats.json, pour les statistiques effectives (Personnage, « JOUER »).
+export function creerMenu({ dict, infos = [], liens = {}, solde: montant = 0, record = null, mondes = lireMondes(null), niveaux = null, statsCfg = null, jouer, son: memoireSon = null, root = document.body }) {
   const t = (k) => dict[k] ?? '';
   let etat = creerEtatMenu();
   const lien = lienExterne(liens?.discord);
@@ -357,14 +360,29 @@ export function creerMenu({ dict, infos = [], liens = {}, solde: montant = 0, re
 
   // « JOUER » : le menu laisse la place à l'écran de chargement du jeu (chargement.js, demarrage.js). Lot 8b : option de démarrage (mode histoire
   // depuis l'onglet Jouer, mode infini depuis l'onglet Infini), validée (lireOptionDemarrage), sans paramètre d'adresse.
-  function lancer(option) {
+  // Lot 8d : les niveaux effectifs (équipement porté et capacité du personnage choisi, js/core/equipement.js) partent dans l'option (champ stats) ;
+  // l'équipement de départ est chargé ici si l'onglet Personnage n'a jamais été ouvert ; données absentes : la partie lit la sauvegarde.
+  let lance = false;
+  async function lancer(option) {
+    if (lance) return;
+    lance = true;
     document.removeEventListener('keydown', clavier, true);
     document.removeEventListener('pointerdown', dehors, true);
     document.removeEventListener('visibilitychange', animer);
     document.removeEventListener('fullscreenchange', syncPleinEcran);
     for (const scene of scenes.values()) scene.dataset.anim = 'off';
+    let stats;
+    try {
+      const equipement = await (await import('./equipement-etat.js')).chargerEquipement();
+      stats = equipement.statistiques(niveaux, statsCfg).niveaux;
+    } catch {
+      stats = null; // données absentes : la partie lit la sauvegarde
+    }
+    statsLancees = stats;
+    if (stats) option = { ...option, stats };
     jouer(lireOptionDemarrage(option, mondes));
   }
+  let statsLancees = null;
   btJouer.addEventListener('click', () => lancer({ mode: 'histoire', monde: monde.id }));
 
   // Échap : Options (confirmation d'abord), puis l'écran ouvert, puis le menu à trois barres. Un appui ailleurs ferme le menu à trois barres.
@@ -385,6 +403,6 @@ export function creerMenu({ dict, infos = [], liens = {}, solde: montant = 0, re
   synchroniser();
   return {
     element: box,
-    etat: () => ({ pleinEcran: { disponible: peutPleinEcran, actif: Boolean(document.fullscreenElement) }, onglet: etat.onglet, menuOuvert: etat.menuOuvert, ecran: etat.ecran, nonLue: nouveauteNonLue(infos, etat.lues), solde: montant, discord: lien.actif, record, monde: monde.id, infini: infini?.etat() ?? null }),
+    etat: () => ({ pleinEcran: { disponible: peutPleinEcran, actif: Boolean(document.fullscreenElement) }, onglet: etat.onglet, menuOuvert: etat.menuOuvert, ecran: etat.ecran, nonLue: nouveauteNonLue(infos, etat.lues), solde: montant, discord: lien.actif, record, monde: monde.id, infini: infini?.etat() ?? null, niveaux, statsLancees }),
   };
 }

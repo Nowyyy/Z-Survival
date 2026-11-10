@@ -364,6 +364,10 @@
   --menu-options-panneau: rgb(12 10 9 / 96%); /* panneau des Options en partie */
   --menu-options-panneau-bord: #4a1a18; /* bord de ce panneau */
   --menu-options-voile: rgb(0 0 0 / 72%); /* partie voilée sous le panneau */
+  /* Lot 8d : Personnage (maquettes Personnage.html, Inventaire.html, Fusion.html, Personnages.html) */
+  --menu-perso-survivant: #4d4b3b;  /* teinte du Survivant (veste) */
+  --menu-perso-2: #3e4a52;          /* teinte de [Personnage 2] */
+  --menu-perso-inconnu: #2a2725;    /* silhouette d'un personnage verrouillé */
   /* Raretés (lots suivants : inventaire, boutique, tirage) */
   --rarete-commun: #a3a3a8;         /* gris */
   --rarete-peu-commun: #5cc46a;     /* vert */
