@@ -128,7 +128,21 @@ export function creerMenu({ dict, infos = [], liens = {}, solde: montant = 0, re
   const barres = el('button', ['e8-barres'], { type: 'button', id: 'menu-trois-barres', 'aria-expanded': 'false', 'aria-controls': 'menu-liste', 'aria-label': t('game.menu.ouvrir') });
   const pointBarres = el('span', ['menu-point', 'e8-point-barres'], { 'aria-hidden': 'true' });
   barres.append(icone('barres'), pointBarres);
-  droite.append(solde, barres);
+  // Plein écran (retour du propriétaire après le lot 8c, comme l'icône de la pause : lot 5j-G) : coins vers l'extérieur, vers l'intérieur une fois en
+  // plein écran (« Quitter le plein écran ») ; masqué sans l'API (ex. iPhone). « JOUER » ne recharge pas la page : la partie reste en plein écran.
+  const peutPleinEcran = Boolean(document.fullscreenEnabled && document.documentElement.requestFullscreen);
+  const pleinEcran = el('button', ['e8-plein-ecran'], { type: 'button', id: 'menu-plein-ecran', 'data-active': 'false' });
+  pleinEcran.hidden = !peutPleinEcran;
+  const svgPlein = document.createElementNS(SVG, 'svg');
+  for (const [k, v] of Object.entries({ viewBox: '0 0 16 16', class: 'e8-icone', 'aria-hidden': 'true', focusable: 'false' })) svgPlein.setAttribute(k, v);
+  for (const [classe, d] of [['e8-fs-entrer', 'M2.5 6V2.5H6M10 2.5h3.5V6M13.5 10v3.5H10M6 13.5H2.5V10'], ['e8-fs-sortir', 'M6 2.5V6H2.5M10 2.5V6h3.5M13.5 10H10v3.5M6 13.5V10H2.5']]) {
+    const p = document.createElementNS(SVG, 'path');
+    p.setAttribute('class', classe);
+    p.setAttribute('d', d);
+    svgPlein.append(p);
+  }
+  pleinEcran.append(svgPlein);
+  droite.append(solde, pleinEcran, barres);
 
   // Menu à trois barres : juste sous le bouton, aligné à droite.
   const liste = el('div', ['e8-liste'], { id: 'menu-liste' });
@@ -234,6 +248,19 @@ export function creerMenu({ dict, infos = [], liens = {}, solde: montant = 0, re
   }
   document.addEventListener('visibilitychange', animer);
 
+  function syncPleinEcran() {
+    const actif = Boolean(document.fullscreenElement);
+    pleinEcran.dataset.active = String(actif);
+    pleinEcran.setAttribute('aria-label', t(actif ? 'game.pause.fullscreenExit' : 'game.pause.fullscreen'));
+  }
+  pleinEcran.addEventListener('click', () => {
+    if (!peutPleinEcran) return;
+    if (document.fullscreenElement) document.exitFullscreen?.().catch(() => {});
+    else document.documentElement.requestFullscreen({ navigationUI: 'hide' }).catch(() => {});
+  });
+  document.addEventListener('fullscreenchange', syncPleinEcran);
+  syncPleinEcran();
+
   const ecrans = () => import('./ecrans.js');
 
   let infini = null; // lot 8b : écran Infini (js/menu/infini.js, chargé au premier affichage) : { section, scene, etat() }
@@ -334,6 +361,7 @@ export function creerMenu({ dict, infos = [], liens = {}, solde: montant = 0, re
     document.removeEventListener('keydown', clavier, true);
     document.removeEventListener('pointerdown', dehors, true);
     document.removeEventListener('visibilitychange', animer);
+    document.removeEventListener('fullscreenchange', syncPleinEcran);
     for (const scene of scenes.values()) scene.dataset.anim = 'off';
     jouer(lireOptionDemarrage(option, mondes));
   }
@@ -357,6 +385,6 @@ export function creerMenu({ dict, infos = [], liens = {}, solde: montant = 0, re
   synchroniser();
   return {
     element: box,
-    etat: () => ({ onglet: etat.onglet, menuOuvert: etat.menuOuvert, ecran: etat.ecran, nonLue: nouveauteNonLue(infos, etat.lues), solde: montant, discord: lien.actif, record, monde: monde.id, infini: infini?.etat() ?? null }),
+    etat: () => ({ pleinEcran: { disponible: peutPleinEcran, actif: Boolean(document.fullscreenElement) }, onglet: etat.onglet, menuOuvert: etat.menuOuvert, ecran: etat.ecran, nonLue: nouveauteNonLue(infos, etat.lues), solde: montant, discord: lien.actif, record, monde: monde.id, infini: infini?.etat() ?? null }),
   };
 }

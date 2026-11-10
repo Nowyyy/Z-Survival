@@ -228,7 +228,8 @@ test.describe('page Options du menu (E5)', () => {
 });
 
 // Lot 8c, partie C : Options en partie (E2-12), même composant (contexte « partie ») : réglages appliqués au lancement verrouillés, préréglages
-// modifiables (options « tout de suite » appliquées, valeurs « au lancement » enregistrées et en attente), barre « Recharger maintenant » retirée.
+// modifiables (options « tout de suite » appliquées, valeurs « au lancement » enregistrées pour le prochain chargement, sans ligne « En cours · au retour au
+// menu » : retirée à la demande du propriétaire après le lot), barre « Recharger maintenant » retirée.
 async function partieDirecte(page, size = REF, extra = '') {
   await page.setViewportSize(size);
   await page.goto(`/jeu.html?test=1&seed=1&nospawn=1${extra}`);
@@ -328,14 +329,14 @@ test.describe('Options en partie (E2-12)', () => {
     expect(g1.running).toEqual(g0.running);
     expect(g1.waiting).toEqual(enAttente(graphics.presets.faible));
     expect(g1.waiting.map((w) => w.id)).toEqual(expect.arrayContaining(['carte', 'textures']));
-    await expect(page.locator('#options-attente-textures')).toHaveText('En cours : Riche · au retour au menu : Simple');
-    await expect(page.locator('#options-attente-carte')).toHaveText('En cours : Complet · au retour au menu : Réduit');
-    if (!isMobile) await expect(page.locator('#options-attente-anticrenelage')).toHaveText('En cours : Activé · au retour au menu : Coupé');
-    await expect(page.locator('.e5-ligne[data-option="textures"]')).toHaveAccessibleDescription('Modifiable depuis le menu principal En cours : Riche · au retour au menu : Simple');
-    // Valeur en cours marquée (aria-pressed), valeur du retour au menu marquée autrement (bord en tirets, et le texte).
+    // Retour du propriétaire (après le lot) : avant, une ligne « En cours : X · au retour au menu : Y » et un bord en tirets sur la valeur du retour ;
+    // après, rien de tel : la ligne verrouillée garde sa seule note, la valeur en cours reste marquée.
+    await expect(page.locator('.e5-attente, [id^="options-attente-"]')).toHaveCount(0);
+    await expect(page.locator('#options-panel')).not.toContainText('au retour au menu');
+    await expect(page.locator('.e5-ligne[data-option="textures"]')).toHaveAccessibleDescription('Modifiable depuis le menu principal');
     await expect(page.locator('.e5-ligne[data-option="textures"] [data-value="fines"]')).toHaveAttribute('aria-pressed', 'true');
-    await expect(page.locator('.e5-ligne[data-option="textures"] [data-value="simples"]')).toHaveClass(/is-attente/);
-    await expect(page.locator('#options-attente-resolution')).toBeHidden(); // option « tout de suite » : jamais en attente
+    await expect(page.locator('.e5-ligne[data-option="textures"] [data-value="simples"]')).not.toHaveClass(/is-attente/);
+    if (!isMobile) await expect(page.locator('.e5-ligne[data-option="anticrenelage"] [data-value="oui"]')).toHaveAttribute('aria-pressed', 'true');
     // Option « tout de suite » modifiée : Perso, appliquée à chaud ; les valeurs « au lancement » de Faible restent en attente.
     await page.locator('.e5-ligne[data-option="brume"] [data-value="complete"]').click();
     const g2 = await graphismes(page);
@@ -345,7 +346,7 @@ test.describe('Options en partie (E2-12)', () => {
     // Retour au préréglage du chargement : plus rien en attente.
     await page.locator(`#options-preset-${isMobile ? 'moyen' : 'eleve'}`).click();
     expect((await graphismes(page)).waiting).toEqual([]);
-    await expect(page.locator('.e5-attente:not([hidden])')).toHaveCount(0);
+    await expect(page.locator('#options-panel')).not.toContainText('au retour au menu');
     // Son : Coupé dans les Options → icône de la pause barrée ; l'icône remet le son → Options à jour.
     await page.locator('#options-son-coupe').click();
     expect((await page.evaluate(() => window.__zs.getState().audio)).muted).toBe(true);

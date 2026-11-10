@@ -85,7 +85,7 @@ test.describe('menu principal (E8)', () => {
   for (const size of SIZES) {
     test(`${size.width}×${size.height} : en-tête, onglets et Jouer à leur place ; trois barres dans le bandeau ; rien hors de l'écran ni superposé ; cibles de 44 px ; axe`, async ({ page }) => {
       await ouvrirMenu(page, size);
-      const ids = ['#menu-connexion', '#menu-solde', '#menu-trois-barres', '.menu-bandeau', '#menu-jouer', ...['boutique', 'personnage', 'jouer', 'infini', 'event'].map((o) => `#menu-onglet-${o}`)];
+      const ids = ['#menu-connexion', '#menu-solde', '#menu-plein-ecran', '#menu-trois-barres', '.menu-bandeau', '#menu-jouer', ...['boutique', 'personnage', 'jouer', 'infini', 'event'].map((o) => `#menu-onglet-${o}`)];
       const b = Object.fromEntries(await Promise.all(ids.map(async (s) => [s, await boite(page, s)])));
       for (const [s, r] of Object.entries(b)) expect([r.l >= 0, r.t >= 0, r.r <= size.width + 0.5, r.b <= size.height + 0.5], s).toEqual([true, true, true, true]);
       const entete = await boite(page, '.e8-entete');
@@ -93,8 +93,11 @@ test.describe('menu principal (E8)', () => {
       expect([barres.t >= entete.t, barres.b <= entete.b, barres.r <= entete.r]).toEqual([true, true, true]);
       expect(barres.r).toBeLessThanOrEqual(size.width - 15.5); // marge de 16 px
       expect(b['#menu-connexion'].l).toBeGreaterThanOrEqual(15.5);
-      // Ordre et emplacement : Connexion à gauche, solde puis trois barres à droite ; Jouer au centre ; bandeau sous l'en-tête, à gauche.
+      // Ordre et emplacement : Connexion à gauche, solde, plein écran (retour du propriétaire après le lot 8c) puis trois barres à droite ; Jouer au centre ;
+      // bandeau sous l'en-tête, à gauche.
       expect(b['#menu-solde'].r).toBeLessThanOrEqual(barres.l);
+      expect([b['#menu-solde'].r <= b['#menu-plein-ecran'].l, b['#menu-plein-ecran'].r <= barres.l]).toEqual([true, true]);
+      expect([b['#menu-plein-ecran'].t >= entete.t, b['#menu-plein-ecran'].b <= entete.b]).toEqual([true, true]);
       expect(Math.abs((b['#menu-onglet-jouer'].l + b['#menu-onglet-jouer'].r) / 2 - size.width / 2)).toBeLessThan(2);
       expect(b['#menu-onglet-jouer'].w).toBeGreaterThan(b['#menu-onglet-boutique'].w);
       expect([b['.menu-bandeau'].t >= entete.b, b['.menu-bandeau'].l >= 15.5]).toEqual([true, true]);
@@ -213,6 +216,48 @@ test.describe('menu principal (E8)', () => {
     await expect(page.locator('#menu-ecran-options')).toBeHidden();
     await expect(page.locator('#pause-panel')).toBeHidden(); // Échap n'ouvre jamais la pause pendant le menu
     expect(await page.evaluate(() => typeof window.__zs)).toBe('undefined'); // aucune partie pendant le menu
+  });
+});
+
+// Retour du propriétaire après le lot 8c : bouton plein écran dans l'en-tête du menu, comme l'icône de la pause (lot 5j-G).
+test.describe('plein écran du menu', () => {
+  test('icône de 44 px dans l\'en-tête (« Plein écran ») ; bascule en plein écran puis en sort (« Quitter le plein écran », icône inversée) ; la partie lancée par « JOUER » reste en plein écran (icône de la pause à jour)', async ({ page }) => {
+    test.setTimeout(120_000);
+    await ouvrirMenu(page);
+    const bouton = page.locator('#menu-plein-ecran');
+    await expect(bouton).toBeVisible();
+    await expect(bouton).toHaveAccessibleName('Plein écran');
+    await expect(bouton).toHaveAttribute('data-active', 'false');
+    const r = await boite(page, '#menu-plein-ecran');
+    expect([Math.round(r.w) >= 44, Math.round(r.h) >= 44]).toEqual([true, true]);
+    const icones = () => bouton.evaluate((n) => [...n.querySelectorAll('path')].filter((p) => getComputedStyle(p).display !== 'none').map((p) => p.getAttribute('class')));
+    expect(await icones()).toEqual(['e8-fs-entrer']);
+    await bouton.click();
+    await page.waitForFunction(() => Boolean(document.fullscreenElement));
+    await expect(bouton).toHaveAttribute('data-active', 'true');
+    await expect(bouton).toHaveAccessibleName('Quitter le plein écran');
+    expect(await icones()).toEqual(['e8-fs-sortir']);
+    expect((await etatMenu(page)).menu.pleinEcran).toEqual({ disponible: true, actif: true });
+    await bouton.click();
+    await page.waitForFunction(() => !document.fullscreenElement);
+    await expect(bouton).toHaveAccessibleName('Plein écran');
+    // Plein écran puis « JOUER » : sans rechargement, la partie reste en plein écran ; l'icône de la pause le montre.
+    await bouton.click();
+    await page.waitForFunction(() => Boolean(document.fullscreenElement));
+    await page.locator('#menu-jouer').click();
+    await page.waitForFunction(() => (window.__zs?.getState()?.time ?? 0) > 0.05, null, { timeout: 90_000 });
+    expect(await page.evaluate(() => Boolean(document.fullscreenElement))).toBe(true);
+    await page.locator('#btn-pause').click();
+    await expect(page.locator('#btn-fullscreen')).toHaveAttribute('data-active', 'true');
+    await expect(page.locator('#btn-fullscreen')).toHaveAccessibleName('Quitter le plein écran');
+  });
+
+  test('sans l\'API plein écran (ex. iPhone) : bouton absent, comme dans la pause ; les trois barres restent à leur place', async ({ page }) => {
+    await page.addInitScript(() => Object.defineProperty(Document.prototype, 'fullscreenEnabled', { get: () => false, configurable: true }));
+    await ouvrirMenu(page);
+    await expect(page.locator('#menu-plein-ecran')).toBeHidden();
+    expect((await etatMenu(page)).menu.pleinEcran).toEqual({ disponible: false, actif: false });
+    expect((await boite(page, '#menu-trois-barres')).r).toBeLessThanOrEqual(REF.width - 15.5);
   });
 });
 
