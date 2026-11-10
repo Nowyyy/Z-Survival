@@ -42,6 +42,9 @@ test.describe('écran de chargement (E7)', () => {
     page.on('request', (r) => r.url().startsWith(baseURL) && fichiers.push(new URL(r.url()).pathname));
     await page.setViewportSize(REF);
     await page.goto('/jeu.html?test=1&menu=1&seed=1');
+    await page.locator('#e7').waitFor({ state: 'attached' });
+    // Retour du propriétaire : la chute part dès l'apparition de l'écran, sans attendre la progression (ni la police).
+    expect(await page.evaluate(() => [document.getElementById('e7').classList.contains('e7-joue'), window.__zsMenu.etat().pourcentage < 100])).toEqual([true, true]);
     await expect(page.locator('#e7-titre')).toHaveText('Z-Survival');
     await expect(page.locator('#e7-titre')).toHaveAccessibleName('Z-Survival');
     await expect(page.locator('#e7-barre')).toHaveAttribute('role', 'progressbar');

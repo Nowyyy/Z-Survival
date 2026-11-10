@@ -172,7 +172,7 @@ export function creerChargement({ phase = 'menu', jouer = () => {}, root = docum
     }
   }
 
-  // Phase « menu » : modules du menu, données (textes, nouveautés, liens, solde), polices ; chute du Z (une fois, après la police du titre).
+  // Phase « menu » : modules du menu, données (textes, nouveautés, liens, solde), polices. La chute du Z (une fois) ne dépend pas de la progression.
   const menuModule = phase === 'menu' ? import('./menu.js') : null;
   if (phase === 'menu') {
     progres('modules', 0.5); // l'écran de chargement et l'état du menu sont là ; le module du menu suit
@@ -193,12 +193,11 @@ export function creerChargement({ phase = 'menu', jouer = () => {}, root = docum
     chuteFinie = true;
     passer();
   };
+  // Retour du propriétaire : la chute part dès l'apparition de l'écran, indépendante de la progression ; le Z attend ensuite, posé, la fin du
+  // chargement (la police du titre est préchargée par demarrage.js : sans elle, le Z garde la police de secours).
   if (!pose) {
-    const police = document.fonts?.load ? document.fonts.load('1em "Rubik Wet Paint"').catch(() => {}) : Promise.resolve();
-    Promise.race([police, new Promise((r) => setTimeout(r, 1500))]).then(() => {
-      box.classList.add('e7-joue');
-      setTimeout(finChute, FIN_CHUTE_MS);
-    });
+    box.classList.add('e7-joue');
+    setTimeout(finChute, FIN_CHUTE_MS);
     coulures.lastElementChild.addEventListener('animationend', finChute, { once: true });
   }
 
