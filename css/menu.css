@@ -472,6 +472,7 @@
 
 .e8-connexion,
 .e8-barres,
+.e8-plein-ecran,
 .e8-croix {
   min-width: var(--menu-cible);
   min-height: var(--menu-cible);
@@ -506,6 +507,20 @@
   font-weight: var(--font-weight-bold);
   font-size: max(15px, calc(18 * var(--u)));
   font-variant-numeric: tabular-nums;
+}
+
+.e8-plein-ecran {
+  display: grid;
+  place-items: center;
+  width: var(--menu-cible);
+  height: var(--menu-cible);
+  padding: 0;
+}
+
+/* Plein écran : une seule des deux icônes (coins vers l'extérieur ou vers l'intérieur), l'état est aussi dans le nom accessible. */
+.e8-plein-ecran[data-active='true'] .e8-fs-entrer,
+.e8-plein-ecran[data-active='false'] .e8-fs-sortir {
+  display: none;
 }
 
 .e8-barres {

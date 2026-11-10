@@ -267,6 +267,7 @@
       "Le menu principal a sa propre page Options : préréglages, réglages graphiques et nouvelle section Son (son activé ou coupé, volume de 0 à 100 %), tout modifiable avant de lancer la partie.",
       "Chaque réglage indique s'il s'applique tout de suite ou au lancement de la partie ; ouvrir les Options du menu ne charge plus le jeu en arrière-plan.",
       "En partie, les réglages qui demandent un redémarrage sont verrouillés (modifiables depuis le menu principal) ; changer de préréglage reste possible : ses réglages verrouillés s'appliqueront au retour au menu. La barre « Recharger maintenant » disparaît.",
+      "Nouveau bouton plein écran dans l'en-tête du menu principal (Android et navigateurs qui le permettent ; absent sur iPhone, comme dans la pause) : la partie lancée ensuite reste en plein écran.",
       "Les règles du jeu ne changent pas ; le rendu d'un préréglage donné non plus."
     ] }
   ]

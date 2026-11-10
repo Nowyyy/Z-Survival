@@ -29,7 +29,7 @@
 ```
 jeu.html ──(menu)──► E7 « menu » (menu seul) ──100 % et chute finie──► E8 menu
           └(partie directe : ?test=1 sans menu=1, ou un paramètre de Partie)──► #loading puis partie (comme avant)
-E8 : en-tête (Connexion → E8-8 « Connexion : bientôt » ; solde ; ≡ → Options E5 (lot 8c, écran plein) · Information E8-7 · Discord · Déconnexion grisée)
+E8 : en-tête (Connexion → E8-8 « Connexion : bientôt » ; solde ; plein écran (après le lot 8c) ; ≡ → Options E5 (lot 8c, écran plein) · Information E8-7 · Discord · Déconnexion grisée)
      onglets Boutique · Personnage · JOUER · Infini · Event (verrouillé)
      « JOUER » → E7 « jeu » (chargement du jeu, sans rechargement de la page) ──chute finie, partie créée──► partie
 partie : pause « Quitter » → confirmation → rechargement → E7 « menu » → E8 ; fin « Revenir au menu principal » → idem
@@ -174,4 +174,5 @@ Onglet actif, menu à trois barres ouvert, écran ouvert, nouveautés lues : `et
 - `main.js` + `game.js` : 4 lignes ajoutées, 3 modifiées (`game.js` inchangé).
 
 - **Retour du propriétaire (après la fusion)** : en partie, la ligne « En cours : X · au retour au menu : Y » (plan ci-dessus) est retirée, avec le bord en tirets de la valeur du retour : elle était en trop. La ligne verrouillée garde sa seule note.
+- **Retour du propriétaire (après la fusion) : plein écran dans le menu** : icône `#menu-plein-ecran` dans l'en-tête, entre le solde et les trois barres (44 px, même forme et mêmes textes que l'icône de la pause, lot 5j-G : « Plein écran », « Quitter le plein écran », coins vers l'extérieur ou l'intérieur ; `data-active`) ; masquée sans l'API (`document.fullscreenEnabled`, ex. iPhone). « JOUER » ne recharge pas la page : la partie reste en plein écran et l'icône de la pause le montre ; le retour au menu (rechargement) en sort, comme le navigateur l'impose. `__zsMenu.etat().menu.pleinEcran` sous `?test=1`.
 - **Preuves** (bilan `Docs/lots/lot-8c.md`) : logique identique à chaque pas (6 scénarios), rendu à 100 % (12 mesures), Lighthouse mobile, 5 passes, médianes : `jeu.html` 78 (référence 79), `index.html` 90 ; CLS ≤ 0,004.
