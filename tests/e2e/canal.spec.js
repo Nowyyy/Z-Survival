@@ -56,9 +56,9 @@ async function observe(page) {
   await page.locator('#btn-options').click();
   await expect(page.locator('#options-panel')).toBeVisible();
   const options = await page.evaluate(() => ({
-    imposed: [...document.querySelectorAll('.options-mark[data-state="imposed"]')].filter((m) => !m.hidden).map((m) => m.id.replace('options-mark-', '')),
+    imposed: [...document.querySelectorAll('.e5-note[data-etat="impose"]')].map((m) => m.id.replace('options-note-', '')), // lot 8c : note de la ligne (avant : .options-mark)
     locked: document.getElementById('options-status').textContent,
-    ombres: document.querySelector('.options-row[data-option="ombres"] .options-value[aria-pressed="true"]')?.dataset.value ?? null,
+    ombres: document.querySelector('.e5-ligne[data-option="ombres"] .e5-valeur[aria-pressed="true"]')?.dataset.value ?? null,
   }));
   return { ...base, ...options };
 }

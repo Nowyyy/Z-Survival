@@ -20,7 +20,10 @@ export function createUi(dict, handlers) {
     endBalance: $('end-balance'), endBest: $('end-best'), endRecord: $('end-record'), endRecordText: $('end-record-text'), endSave: $('end-save'),
   };
   // Lot 5j : écran Options (créé à la première ouverture) ; binding : contrôleur graphique et couche VHS, donnés par game.js (bindOptions).
+  // Lot 8c : composant partagé avec le menu (contexte « partie ») ; sa section Son lit l'audio en cours (sonAudio) et passe par les mêmes
+  // commandes que l'icône du son de la pause (onToggleSound, onVolume) : les deux restent synchronisés.
   let binding = null;
+  let sonAudio = null;
   let menu = null;
   let optionsOpen = false;
   // Lot 5l : menu de débogage (créé au premier clic) ; debugBinding : { search, planksMax } donné par main.js sur un canal de débogage, sinon null.
@@ -61,9 +64,9 @@ export function createUi(dict, handlers) {
     },
 
     togglePause() {
-      // Lot 5j : Échap dans l'écran Options : ferme la confirmation du rechargement, sinon revient à la pause.
+      // Lot 5j : Échap dans l'écran Options : retour à la pause (lot 8c : plus de confirmation de rechargement).
       if (optionsOpen) {
-        if (!menu?.escape()) ui.closeOptions();
+        ui.closeOptions();
         return;
       }
       // Lot 5l : de même pour le menu de débogage (confirmation d'abord).
@@ -133,6 +136,8 @@ export function createUi(dict, handlers) {
     // Bouton Son selon l'état courant ; masqué sans moteur audio utilisable. Lot 3l (retour du propriétaire) : plus de curseur de volume. Lot 5j-F : icône
     // en haut à droite de la pause (haut-parleur ; barré d'une croix quand le son est coupé : data-muted) ; l'état est dans le nom accessible.
     syncSound(audio) {
+      sonAudio = audio ?? null;
+      if (optionsOpen) menu?.sync();
       hasAudio = Boolean(audio?.supported);
       els.sound.hidden = !hasAudio;
       if (!hasAudio) return;
@@ -151,7 +156,17 @@ export function createUi(dict, handlers) {
     optionsOpen = true;
     els.pausePanel.hidden = true; // la partie reste en pause (optionsOpen)
     try {
-      menu ??= (await import('./options-menu.js')).createOptionsMenu({ dict, graphics: binding.graphics, vhs: binding.vhs, onClose: () => ui.closeOptions() });
+      if (!menu) {
+        const [m] = await Promise.all([import('./options-menu.js'), handlers.chargerStyles?.()]);
+        const son = {
+          etat: () => ({ disponible: hasAudio, coupe: Boolean(sonAudio?.muted), volume: sonAudio?.volume ?? 100, pas: sonAudio?.volumeStep ?? 10 }),
+          couper: (coupe) => {
+            if (hasAudio && Boolean(sonAudio?.muted) !== coupe) handlers.onToggleSound();
+          },
+          regler: (n) => handlers.onVolume?.(n),
+        };
+        menu = m.creerOptions({ contexte: 'partie', dict, graphics: binding.graphics, son, vhs: binding.vhs, onClose: () => ui.closeOptions() });
+      }
     } catch {
       optionsOpen = false;
       els.pausePanel.hidden = false;

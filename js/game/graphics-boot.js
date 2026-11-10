@@ -10,7 +10,8 @@ import { resolveMapId } from '../core/maps.js';
 
 let ready = null;
 
-async function boot(search) {
+// lampes : faux pour l'écran Options du menu (lot 8c) : aucun préchargement des lampes, donc ni Three.js ni données de la carte.
+async function boot(search, { lampes = true } = {}) {
   const json = await fetch('data/game/graphics.json').then((r) => (r.ok ? r.json() : null)).catch(() => null);
   const cfg = parseGraphics(json);
   const store = createDeviceSettings({ search, storage: browserStorage() });
@@ -26,7 +27,7 @@ async function boot(search) {
   // alors dans la scène dès la première image et précompilées avec le reste.
   const q = new URLSearchParams(search);
   const mapId = q.get('test') === '1' && q.get('empty') === '1' ? 'salle' : resolveMapId(search);
-  const lamps = settings.live.lampes !== 'off' ? await import('./lamps.js').then((m) => m.preloadLamps(settings.live.lampes, mapId)).catch(() => null) : null;
+  const lamps = lampes && settings.live.lampes !== 'off' ? await import('./lamps.js').then((m) => m.preloadLamps(settings.live.lampes, mapId)).catch(() => null) : null;
   return { cfg, store, stored, resolved, explicit, device, effective, settings, persosSearch: presetSearch(search, settings), corpses, lamps, mapId };
 }
 
@@ -55,4 +56,12 @@ export function graphicsBoot(search = pageSearch()) {
 // relit zs.device.v1 (sans effet en partie directe, où rien n'est résolu avant main.js).
 export function graphicsReboot() {
   ready = null;
+}
+
+// Lot 8c : réglages de l'écran Options du menu principal (E5) : même résolution que graphicsBoot() (préréglage, Perso, adresse, classe de
+// l'appareil), sans précharger les lampes (ni Three.js ni données du jeu) et sans toucher la résolution du jeu (graphicsBoot, relancée à « JOUER »).
+let reglages = null;
+export function graphicsReglages(search = pageSearch()) {
+  reglages ??= boot(String(search).slice(0, 2000), { lampes: false });
+  return reglages;
 }

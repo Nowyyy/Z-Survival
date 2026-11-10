@@ -22,7 +22,7 @@ import { generateTextureData } from './textures.js';
 import { installTestHook } from './testhook.js';
 import { createUi } from './ui.js';
 import { applyTexts, fmt, loadDict, TEXTURE_TEXTS } from './texts.js';
-import { menuChute, menuProgres, menuRetour, modeMenu, optionPartie } from '../menu/demarrage.js';
+import { feuilleMenu, menuChute, menuProgres, menuRetour, modeMenu, optionPartie, reglagesSon } from '../menu/demarrage.js';
 
 const DEFAULT_RATIO_CAP = 2;
 menuProgres('modules', 1); // lot 8a : modules et Three.js évalués (écran de chargement du jeu après « JOUER » ; sans effet en partie directe)
@@ -143,6 +143,9 @@ const textureData = await generateTextureData(texturesCfg.textures, { lookup: cr
 }, detail: detail && gfxLoad.texturesFines });
 const soundMode = parseSoundMode(search); // ?sons= (groupe T)
 const audio = createAudio({ config: { audio: audioCfg, materials: materialsCfg, voice: voiceCfg, sounds: soundsCfg.sounds }, test: testMode, seed: Number.isFinite(seedParam) ? seedParam : 1, mode: soundMode });
+const sonMenu = reglagesSon(); // lot 8c : son et volume choisis dans les Options du menu (mémoire de la page ; partie directe : défauts, rien ne change)
+if (sonMenu.coupe) audio.toggleMute();
+if (sonMenu.volume !== null) audio.setVolume(sonMenu.volume);
 const essential = await renderSounds(planSounds(soundsCfg.sounds, 'essentiel'), { onProgress: (p) => {
   loading.update(TEXTURE_SHARE + (1 - TEXTURE_SHARE) * p);
   menuProgres('sons', p);
@@ -225,8 +228,8 @@ const ctx = {
   modePartie: optionPartie().mode, // lot 8b : option de démarrage posée par le menu (histoire, ou infini sans paramètre d'adresse) ; partie directe : histoire
 };
 
-// Lot 5b : préréglages graphiques en jeu (réglages « live », Auto entre deux manches) ; sous ?test=1 le rechargement est simulé (getState().graphics).
-ctx.graphics = createGraphicsController(gfx, { vhs, dict, announce: (text) => ctx.ui?.setLive(text), reload: testMode ? null : () => location.reload() });
+// Lot 5b : préréglages graphiques en jeu (réglages « live », Auto entre deux manches) ; lot 8c : réglages « load » verrouillés en partie, sans rechargement.
+ctx.graphics = createGraphicsController(gfx, { vhs, dict, announce: (text) => ctx.ui?.setLive(text) });
 ctx.graphicsLabel = () => ctx.graphics.label();
 if (perfMode) ctx.profiler = (await import('./profiler.js')).createProfiler({ search, ua: navigator.userAgent });
 if (query.has('cap')) ctx.gate = (await import('./frame-cap.js')).gateFromParam(query.get('cap'));
@@ -234,6 +237,7 @@ if (query.has('cap')) ctx.gate = (await import('./frame-cap.js')).gateFromParam(
 let game = null;
 ctx.ui = createUi(dict, {
   onRestart: () => game?.restart(),
+  chargerStyles: feuilleMenu, // lot 8c : feuille des Options (composant partagé avec le menu), chargée à leur première ouverture
   onToggleSound: () => {
     ctx.audio.toggleMute();
     ctx.ui.syncSound(ctx.audio);

@@ -15,6 +15,17 @@ export const modeMenu = choixDemarrage(pageCanal(), pageSearch()) === 'menu';
 let partie = Object.freeze({ mode: 'histoire', monde: 'batiment' });
 export const optionPartie = () => partie;
 
+// Lot 8c : son et volume choisis dans les Options du menu, en mémoire de la page seulement (rien n'est stocké : la pause ne les garde pas non plus) ;
+// main.js les applique à l'audio de la partie (« JOUER » ne recharge pas la page) ; le retour au menu recharge la page : son activé, volume par défaut.
+// volume : null = défaut de data/game/audio.json.
+let son = Object.freeze({ coupe: false, volume: null });
+export const reglagesSon = () => son;
+export function poserSon({ coupe = son.coupe, volume = son.volume } = {}) {
+  const v = Number(volume);
+  son = Object.freeze({ coupe: coupe === true, volume: volume === null || !Number.isFinite(v) ? son.volume : Math.min(100, Math.max(0, Math.round(v))) });
+  return son;
+}
+
 // Avancées arrivées avant l'écran de chargement (import en cours) : gardées puis rejouées dans l'ordre.
 const attente = [];
 let ecran = null;
@@ -37,6 +48,25 @@ export async function menuRetour(loc = globalThis.location) {
   const search = adresseRetour(loc.search);
   if (search === loc.search) loc.reload();
   else loc.replace(`${loc.pathname}${search}${loc.hash}`);
+}
+
+// Feuille des écrans du menu (css/menu.css), une seule fois par page : chargée au démarrage en mode menu ; lot 8c : aussi par les Options de la
+// partie (composant partagé avec le menu, js/game/options-menu.js), à leur première ouverture en partie directe (main.js la donne à ui.js).
+let feuille = null;
+export function feuilleMenu(doc = globalThis.document) {
+  feuille ??= new Promise((resolve) => {
+    if (doc.querySelector('link[rel="stylesheet"][href="css/menu.css"]')) {
+      resolve();
+      return;
+    }
+    const css = doc.createElement('link');
+    css.rel = 'stylesheet';
+    css.href = 'css/menu.css';
+    css.addEventListener('load', resolve, { once: true });
+    css.addEventListener('error', resolve, { once: true });
+    doc.head.append(css);
+  });
+  return feuille;
 }
 
 // Chargement du jeu : Three.js préchargé (avant le lot 8a : balises modulepreload de jeu.html), puis le graphe de main.js.
@@ -64,16 +94,9 @@ if (!modeMenu) {
   police.crossOrigin = 'anonymous';
   police.href = 'fonts/rubik-wet-paint-latin-400-normal.woff2';
   document.head.append(police);
-  const css = document.createElement('link');
-  css.rel = 'stylesheet';
-  css.href = 'css/menu.css';
-  const feuille = new Promise((resolve) => {
-    css.addEventListener('load', resolve, { once: true });
-    css.addEventListener('error', resolve, { once: true });
-  });
-  document.head.append(css);
+  const styles = feuilleMenu();
   import('./chargement.js').then(async (m) => {
-    await feuille;
+    await styles;
     // « JOUER » : écran de chargement du jeu (Z posé), réglages graphiques relus (l'écran Options du menu a pu les changer), puis le jeu.
     // Option déjà validée par le menu (lireOptionDemarrage, js/core/menu-etat.js) : seuls ses deux champs connus sont gardés.
     const jouer = (option) => {
@@ -83,7 +106,7 @@ if (!modeMenu) {
       graphicsReboot();
       lancerJeu();
     };
-    ecran = m.creerChargement({ phase: 'menu', jouer });
+    ecran = m.creerChargement({ phase: 'menu', jouer, son: { lire: reglagesSon, poser: poserSon } });
   }).catch(() => {
     // Écran de chargement indisponible : la partie démarre comme avant le menu (écran de préparation #loading).
     document.documentElement.classList.remove('zs-mode-menu');

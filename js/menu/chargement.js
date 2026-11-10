@@ -53,7 +53,8 @@ function graine(search, phase) {
 const json = (path) => fetch(path).then((r) => (r.ok ? r.json() : null)).catch(() => null);
 
 // phase : 'menu' ou 'jeu' ; jouer(option) : appelé par « JOUER » du menu (demarrage.js charge alors le jeu ; lot 8b : option de démarrage).
-export function creerChargement({ phase = 'menu', jouer = () => {}, root = document.body, search = globalThis.location?.search ?? '' } = {}) {
+// son : { lire(), poser(réglages) } (lot 8c : son et volume des Options du menu, gardés en mémoire par demarrage.js), transmis au menu.
+export function creerChargement({ phase = 'menu', jouer = () => {}, son = null, root = document.body, search = globalThis.location?.search ?? '' } = {}) {
   const reduit = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const pose = reduit; // retour du propriétaire : la chute du Z se rejoue à chaque chargement (menu, partie, retour au menu)
   let etat = creerProgression(phase);
@@ -225,6 +226,7 @@ export function creerChargement({ phase = 'menu', jouer = () => {}, root = docum
       menu = m.creerMenu({
         ...donnees,
         root,
+        son,
         jouer: (option) => {
           menu.element.remove();
           jouer(option); // lot 8b : option de démarrage (mode histoire ou infini)

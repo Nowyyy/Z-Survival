@@ -330,6 +330,10 @@ export function createAudio({ config, test = false, seed = 1, autoAmbience = tru
     get volume() {
       return volume;
     },
+    // Lot 8c : pas du curseur de volume des Options (data/game/audio.json, lu seulement).
+    get volumeStep() {
+      return config.audio.volume?.step ?? 10;
+    },
     stats,
 
     // À appeler depuis un geste du joueur. Sans effet si l'audio n'existe pas ou refuse : le jeu continue sans son.
