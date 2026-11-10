@@ -46,6 +46,14 @@ if (!modeMenu) {
   document.documentElement.classList.add('zs-mode-menu');
   // Tests (?test=1&menu=1) : état de l'écran de chargement en cours et du menu (phase, pourcentages affichés, onglet…), lecture seule.
   if (new URLSearchParams(pageSearch()).get('test') === '1') window.__zsMenu = { etat: () => ecran?.etat() ?? null };
+  // Police du titre préchargée (fichier hébergé existant) : la chute du Z part dès l'apparition de l'écran de chargement.
+  const police = document.createElement('link');
+  police.rel = 'preload';
+  police.as = 'font';
+  police.type = 'font/woff2';
+  police.crossOrigin = 'anonymous';
+  police.href = 'fonts/rubik-wet-paint-latin-400-normal.woff2';
+  document.head.append(police);
   const css = document.createElement('link');
   css.rel = 'stylesheet';
   css.href = 'css/menu.css';
