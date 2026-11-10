@@ -2,6 +2,7 @@
 // Progression du chargement (E7), astuce, texte de version, onglets et menu à trois barres (E8), nouveautés lues, adresse du retour au menu.
 // Jusqu'au lot 8h, tout cet état reste en mémoire : rien n'est écrit dans le stockage.
 import { PARAMS_PARTIE } from './graphics.js';
+import { ALL_STAT_IDS } from './player-stats.js';
 
 // Deux chargements réels, chacun sous l'écran E7 : « menu » au démarrage (seul le menu se charge : ses modules, ses données et le solde, ses polices)
 // puis « jeu » au clic sur « JOUER » (modules du jeu dont Three.js, données JSON, textures, sons « essentiel », création du jeu : compilation et
@@ -64,7 +65,9 @@ export const ONGLETS = Object.freeze([
   Object.freeze({ id: 'infini' }),
   Object.freeze({ id: 'event', verrouille: true }),
 ]);
-export const ECRANS = Object.freeze(['information', 'connexion', 'options']);
+export const ECRANS = Object.freeze(['information', 'connexion', 'options', 'inventaire', 'fusion', 'personnages']);
+// Écrans pleins (en-tête gardé, barre d'onglets masquée) : Options (lot 8c) ; lot 8d : sous-menus de l'écran Personnage.
+export const ECRANS_PLEINS = Object.freeze(['options', 'inventaire', 'fusion', 'personnages']);
 
 export function creerEtatMenu() {
   return { onglet: 'jouer', menuOuvert: false, ecran: null, lues: [] };
@@ -191,15 +194,43 @@ export function choisirCarte(etat, mondes, id) {
 
 // Option de démarrage de la partie, passée par le menu au chargement du jeu (sans paramètre d'adresse) : { mode: 'histoire' | 'infini', monde }.
 // Mode inconnu, monde inconnu ou verrouillé, entrée hostile : histoire sur le premier monde jouable.
+// Lot 8d : champ stats (niveaux effectifs calculés par le menu : équipement porté, capacité du personnage) gardé seulement s'il est valide
+// (lireStatsOption) ; absent ou invalide : champ retiré, la partie lit les niveaux de la sauvegarde.
 export const MODES = Object.freeze(['histoire', 'infini']);
 export function lireOptionDemarrage(entree, mondes) {
   const defaut = { mode: 'histoire', monde: premierJouable(mondes).id };
   if (!entree || typeof entree !== 'object' || Array.isArray(entree)) return defaut;
-  const mode = Object.hasOwn(entree, 'mode') ? entree.mode : undefined;
-  const id = Object.hasOwn(entree, 'monde') ? entree.monde : undefined;
-  if (typeof mode !== 'string' || !MODES.includes(mode) || typeof id !== 'string') return defaut;
+  const stats = lireStatsOption(propre(entree, 'stats'));
+  const avec = (o) => (stats ? { ...o, stats } : o);
+  const mode = propre(entree, 'mode');
+  const id = propre(entree, 'monde');
+  if (typeof mode !== 'string' || !MODES.includes(mode) || typeof id !== 'string') return avec(defaut);
   const m = Array.isArray(mondes) ? mondes.find((x) => x.id === id) : null;
-  return m && m.jouable ? { mode, monde: m.id } : defaut;
+  return avec(m && m.jouable ? { mode, monde: m.id } : defaut);
+}
+
+// Valeur propre d'un champ (jamais un accesseur ni un champ hérité) ; sinon undefined.
+function propre(o, cle) {
+  const d = Object.getOwnPropertyDescriptor(o, cle);
+  return d && 'value' in d ? d.value : undefined;
+}
+
+// Lot 8d : niveaux transmis à la partie : objet simple, au plus les statistiques de player-stats.js, valeurs entières de 0 à 99 (la partie les borne
+// ensuite par normalizeLevels) ; une seule valeur invalide (clé inconnue, accesseur, nombre non entier, négatif, trop grand) : null.
+export const NIVEAU_OPTION_MAX = 99;
+export function lireStatsOption(stats) {
+  if (!stats || typeof stats !== 'object' || Array.isArray(stats)) return null;
+  const proto = Object.getPrototypeOf(stats);
+  if (proto !== Object.prototype && proto !== null) return null;
+  const cles = Reflect.ownKeys(stats);
+  if (cles.length === 0 || cles.length > ALL_STAT_IDS.length) return null;
+  const out = {};
+  for (const k of cles) {
+    const v = typeof k === 'string' && ALL_STAT_IDS.includes(k) ? propre(stats, k) : undefined;
+    if (!Number.isInteger(v) || v < 0 || v > NIVEAU_OPTION_MAX) return null;
+    out[k] = v;
+  }
+  return Object.freeze(out);
 }
 
 // Classement d'exemple de l'onglet Infini (data/menu/classement.json) : au plus 5 lignes valides { rang, pseudo, manche } ; absent ou invalide : [].

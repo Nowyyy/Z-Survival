@@ -1918,3 +1918,958 @@
 .e5-panneau .e5-volume-valeur {
   font-size: max(14px, calc(14 * var(--u)));
 }
+
+/* ---------------------------------------------------------------------------------------------------------------------------------------------- */
+/* Lot 8d : écran Personnage (E9-1, maquette Personnage.html) et sous-menus (E9-2 à E9-4), js/menu/personnage.js, inventaire.js, fusion.js,
+   personnages.js. Tailles en calc(N * var(--u)) (N = pixels de la maquette 932 × 430 ; ordonnées comptées depuis le bas de l'en-tête, y 50),
+   cibles de 44 px au moins ; rareté, porté, choisi, verrouillé toujours écrits (jamais la couleur seule). Animations e9-*, en pause hors de l'écran
+   (data-anim, classe e9-anime), coupées sous prefers-reduced-motion (règle .e8 * plus haut). */
+.e9 {
+  --e5-bouton-h: max(var(--menu-cible), calc(40 * var(--u))); /* « ‹ Équipement » et filtres : composants de la page Options (lot 8c) */
+  --e9-col: calc(220 * var(--u));
+  --e9-case-h: max(var(--menu-cible), calc(52 * var(--u)));
+  --e9-petit: max(11px, calc(11 * var(--u)));
+  --e9-texte: max(12px, calc(12 * var(--u)));
+  --e9-moyen: max(12px, calc(13 * var(--u)));
+  color: var(--menu-texte);
+  font-family: var(--font-sans);
+}
+
+:where(.e9) button {
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+.e9-icone {
+  flex: none;
+  width: max(18px, calc(24 * var(--u)));
+  height: max(18px, calc(24 * var(--u)));
+  fill: none;
+  stroke: currentcolor;
+  stroke-width: 1.8;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+/* Fond : gris presque noir, sol plus sombre à partir de y 262 (bord de 2 px). */
+.e8-ecran.e9-perso {
+  background:
+    linear-gradient(var(--menu-options-ligne), var(--menu-options-ligne)) 0 calc(211 * var(--u)) / 100% 2px no-repeat,
+    linear-gradient(var(--menu-scene-fenetre-noire), var(--menu-scene-fenetre-noire)) 0 calc(212 * var(--u)) / 100% 100% no-repeat,
+    var(--menu-options-fond);
+}
+
+.e9-scene {
+  position: absolute;
+  top: calc(-6 * var(--u));
+  left: calc(50% - 466 * var(--u));
+  width: calc(932 * var(--u));
+  height: calc(324 * var(--u));
+  pointer-events: none;
+}
+
+.e9-decor {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.e9-cone {
+  fill: var(--menu-e9-projecteur);
+  animation: e9-projecteur 6s linear infinite;
+}
+
+.e9-halo-centre {
+  stop-color: var(--menu-e9-lumiere);
+  stop-opacity: 0.22;
+}
+
+.e9-halo-bord {
+  stop-color: var(--menu-e9-lumiere);
+  stop-opacity: 0;
+}
+
+.e9-lampe {
+  fill: var(--menu-e9-lampe);
+}
+
+.e9-scene[data-anim='off'] *,
+.e9:not(.e9-anime) .e9-perso-bouton *,
+.e9-sous:not(.e9-anime) * {
+  animation-play-state: paused;
+}
+
+.e9-essai {
+  position: absolute;
+  top: calc(18 * var(--u));
+  right: var(--e8-droite);
+  margin: 0;
+  font-size: var(--e9-petit);
+  color: var(--menu-options-note);
+}
+
+/* Personnage au centre (180 × 236 à y 10) : un bouton (ouvre Personnages) ; étiquette au-dessus. */
+.e9-perso-bouton {
+  position: absolute;
+  top: calc(10 * var(--u));
+  left: calc(50% - 90 * var(--u));
+  width: calc(180 * var(--u));
+  height: calc(236 * var(--u));
+  padding: 0;
+  border: 0;
+  border-radius: calc(8 * var(--u));
+  background: none;
+}
+
+.e9-perso-cadre,
+.e9-perso-cadre .e9-silhouette {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.e9-etiquette {
+  position: absolute;
+  top: calc(-4 * var(--u));
+  left: 50%;
+  min-width: calc(140 * var(--u));
+  padding: calc(3 * var(--u)) calc(8 * var(--u));
+  transform: translateX(-50%);
+  white-space: nowrap;
+  border: 1px solid var(--menu-e9-stats-bord);
+  border-radius: calc(10 * var(--u));
+  background: var(--menu-e9-voile);
+  font-size: var(--e9-petit);
+  line-height: 1.2;
+  color: var(--menu-texte);
+  text-align: center;
+}
+
+/* Silhouette (couleurs : jetons --menu-perso-* ; teinte du personnage : --e9-teinte). */
+.e9-silhouette {
+  overflow: visible;
+}
+
+.e9-sil-buste,
+.e9-buste {
+  fill: var(--e9-teinte, var(--menu-perso-inconnu));
+}
+
+.e9-sil-bras {
+  fill: color-mix(in srgb, var(--e9-teinte, var(--menu-perso-inconnu)) 88%, var(--menu-perso-assombri));
+}
+
+.e9-sil-sangle {
+  fill: none;
+  stroke: var(--menu-perso-sangle);
+  stroke-width: 6;
+}
+
+.e9-sil-poche { fill: var(--menu-perso-poche); }
+.e9-sil-sang { fill: var(--menu-panneau-atteint); opacity: 0.8; }
+.e9-sil-arme { fill: var(--menu-perso-arme); }
+.e9-sil-peau { fill: var(--menu-perso-peau); }
+.e9-sil-cheveux { fill: var(--menu-perso-sangle); }
+.e9-sil-bandana { fill: var(--menu-panneau-atteint); }
+.e9-sil-jambes { fill: var(--menu-perso-jambes); }
+.e9-sil-bottes { fill: var(--menu-perso-bottes); }
+.e9-sil-ombre { fill: var(--menu-perso-ombre); }
+
+.e9-sil-respire { animation: e9-respire 2.6s ease-in-out infinite; }
+.e9-sil-tete { transform-box: fill-box; transform-origin: 50% 100%; animation: e9-tete 5s ease-in-out infinite; }
+.e9-sil-viser { transform-box: fill-box; transform-origin: 0% 15%; animation: e9-viser 2.6s ease-in-out infinite; }
+.e9-sil-pan { transform-box: fill-box; transform-origin: 0% 50%; animation: e9-bandana 1.2s ease-in-out infinite; }
+.e9-sil-ombre { transform-box: fill-box; transform-origin: 50% 50%; animation: e9-ombre 2.6s ease-in-out infinite; }
+
+@keyframes e9-respire {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+
+@keyframes e9-tete {
+  0%, 100% { transform: rotate(0deg); }
+  30% { transform: rotate(-5deg); }
+  65% { transform: rotate(4deg); }
+}
+
+@keyframes e9-viser {
+  0%, 100% { transform: rotate(0deg); }
+  50% { transform: rotate(-7deg); }
+}
+
+@keyframes e9-bandana {
+  0%, 100% { transform: skewY(0deg); }
+  50% { transform: skewY(12deg); }
+}
+
+@keyframes e9-ombre {
+  0%, 100% { transform: scaleX(1); }
+  50% { transform: scaleX(0.93); }
+}
+
+/* Grésillement : un seul creux d'opacité en 6 s (de 46 à 54 %), bien moins de 3 éclats par seconde. La maquette déclare une opacité de 0,04 que son
+   animation remplace (cône clair, opaque) : c'est ce rendu affiché qui est reproduit. */
+@keyframes e9-projecteur {
+  0%, 46%, 54%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* Colonnes d'emplacements (220 de large, cases de 52, écart 8) à y 78 : à gauche (statistiques dessous), à droite (Inventaire et Fusion dessous). */
+.e9-colonne {
+  position: absolute;
+  top: calc(78 * var(--u));
+  display: flex;
+  flex-direction: column;
+  gap: calc(8 * var(--u));
+  width: var(--e9-col);
+}
+
+#menu-perso-gauche {
+  left: var(--e8-gauche);
+}
+
+#menu-perso-droite {
+  right: var(--e8-droite);
+}
+
+.e9-emplacements {
+  display: flex;
+  flex-direction: column;
+  gap: calc(8 * var(--u));
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.e9-emplacement {
+  display: flex;
+  align-items: center;
+  gap: calc(10 * var(--u));
+  width: 100%;
+  min-height: var(--e9-case-h);
+  padding: calc(4 * var(--u)) calc(10 * var(--u)) calc(4 * var(--u)) calc(4 * var(--u));
+  border: 2px solid var(--e9-rarete, var(--menu-options-bouton-bord));
+  border-radius: 4px;
+  background: var(--menu-e9-case);
+  text-align: left;
+}
+
+.e9-emplacement.is-vide {
+  background: var(--menu-e9-case-vide);
+  color: var(--menu-options-note);
+}
+
+.e9-emplacement-icone {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: calc(40 * var(--u));
+  height: calc(40 * var(--u));
+  min-width: 30px;
+  min-height: 30px;
+  border-radius: 3px;
+  background: var(--menu-scene-fenetre-noire);
+}
+
+.e9-emplacement-textes {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.15;
+}
+
+.e9-emplacement-ligne {
+  font-size: var(--e9-petit);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--menu-options-note);
+}
+
+.e9-emplacement-nom {
+  font-size: max(12px, calc(14 * var(--u)));
+  font-weight: var(--font-weight-bold);
+}
+
+/* Couleur de la rareté (bordures) : jetons --rarete-* ; la rareté est aussi écrite. */
+[data-rarete='commun'] { --e9-rarete: var(--rarete-commun); }
+[data-rarete='peu-commun'] { --e9-rarete: var(--rarete-peu-commun); }
+[data-rarete='rare'] { --e9-rarete: var(--rarete-rare); }
+[data-rarete='epique'] { --e9-rarete: var(--rarete-epique); }
+[data-rarete='legendaire'] { --e9-rarete: var(--rarete-legendaire); }
+
+/* Statistiques effectives sous la colonne de gauche (bord en tirets, deux colonnes). */
+.e9-stats-boite {
+  padding: calc(4 * var(--u)) calc(10 * var(--u));
+  border: 1px dashed var(--menu-e9-stats-bord);
+  background: var(--menu-e9-voile);
+}
+
+.e9-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: calc(2 * var(--u)) calc(10 * var(--u));
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--e9-texte);
+  line-height: 1.2;
+  color: var(--menu-e9-texte-doux);
+}
+
+.e9-stat {
+  white-space: nowrap;
+}
+
+/* Inventaire (planche de bois) et Fusion (violet), 106 × 52 côte à côte ; icône au-dessus du libellé (Rubik Dirt est plus large que la police de
+   substitution de la maquette : icône et libellé ne tiennent pas côte à côte dans 106). */
+.e9-actions {
+  display: flex;
+  gap: calc(8 * var(--u));
+}
+
+.e9-action {
+  display: inline-flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: calc(2 * var(--u));
+  min-width: 0;
+  min-height: var(--e9-case-h);
+  padding: calc(2 * var(--u)) calc(4 * var(--u));
+  font-family: var(--font-label);
+  font-size: max(10px, calc(12 * var(--u)));
+  line-height: 1.1;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--menu-e9-bois-texte);
+}
+
+.e9-action .e9-icone {
+  width: max(16px, calc(20 * var(--u)));
+  height: max(16px, calc(20 * var(--u)));
+}
+
+.e9 .e9-violet {
+  border-color: var(--menu-e9-violet-bord);
+  background: var(--menu-e9-violet);
+  color: var(--menu-e9-violet-texte);
+}
+
+/* Encart de capacité (240 × 56 à y 250, centré, bord doré) : ouvre Personnages. */
+.e9-capacite {
+  position: absolute;
+  top: calc(250 * var(--u));
+  left: calc(50% - 120 * var(--u));
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  width: calc(240 * var(--u));
+  min-height: max(var(--menu-cible), calc(56 * var(--u)));
+  padding: calc(4 * var(--u)) calc(10 * var(--u));
+  border: 2px solid var(--menu-record);
+  border-radius: 4px;
+  background: var(--menu-e9-capacite);
+  line-height: 1.25;
+  text-align: left;
+}
+
+.e9-capacite-tete {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: calc(8 * var(--u));
+}
+
+.e9-capacite-nom {
+  font-family: var(--font-label);
+  font-size: max(12px, calc(14 * var(--u)));
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.e9-capacite-niveau {
+  font-size: var(--e9-texte);
+  color: var(--menu-options-note);
+}
+
+.e9-capacite-titre {
+  font-size: var(--e9-texte);
+  font-weight: var(--font-weight-bold);
+  color: var(--menu-record);
+}
+
+.e9-capacite-effet {
+  overflow: hidden;
+  font-size: var(--e9-texte);
+  color: var(--menu-e9-texte-doux);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* Sous-menus (écrans pleins : en-tête gardé, barre d'onglets masquée ; « ‹ Équipement » et Échap reviennent à l'écran Personnage). */
+.e8[data-ecran='inventaire'] .e8-contenu,
+.e8[data-ecran='fusion'] .e8-contenu,
+.e8[data-ecran='personnages'] .e8-contenu {
+  grid-row: 2 / 4;
+}
+
+.e8-ecran.e9-sous {
+  align-items: stretch;
+  gap: 0;
+  background:
+    linear-gradient(var(--menu-options-trait), var(--menu-options-trait)) 0 calc(99 * var(--u)) / 100% 2px no-repeat,
+    linear-gradient(var(--menu-options-trait), var(--menu-options-trait)) 0 calc(219 * var(--u)) / 100% 2px no-repeat,
+    linear-gradient(var(--menu-options-trait), var(--menu-options-trait)) calc(239 * var(--u)) 0 / 2px calc(100 * var(--u)) no-repeat,
+    linear-gradient(var(--menu-options-trait), var(--menu-options-trait)) calc(599 * var(--u)) calc(100 * var(--u)) / 2px calc(120 * var(--u)) no-repeat,
+    linear-gradient(var(--menu-options-trait), var(--menu-options-trait)) calc(119 * var(--u)) calc(220 * var(--u)) / 2px 100% no-repeat,
+    linear-gradient(var(--menu-options-trait), var(--menu-options-trait)) calc(819 * var(--u)) calc(220 * var(--u)) / 2px 100% no-repeat,
+    var(--menu-options-fond);
+}
+
+.e9-sous-gauche {
+  display: flex;
+  flex-direction: column;
+  gap: calc(6 * var(--u));
+  min-height: 0;
+}
+
+.e9-inventaire .e9-sous-gauche { width: calc(520 * var(--u)); }
+.e9-fusion .e9-sous-gauche { width: calc(420 * var(--u)); }
+.e9-personnages .e9-sous-gauche { width: calc(438 * var(--u)); }
+
+.e9-tete {
+  margin-bottom: calc(8 * var(--u));
+}
+
+/* Panneaux (détail, fiche, compatibles) : à droite, aux places de la maquette ; hauteur de la maquette, au moins ce qu'il faut à 667 × 375. */
+.e9-panneau {
+  display: flex;
+  flex-direction: column;
+  gap: calc(8 * var(--u));
+  border: 3px solid var(--menu-scene-route-trait);
+  background: var(--menu-e9-panneau);
+}
+
+.e9-detail,
+.e9-fiche,
+.e9-compatibles {
+  position: absolute;
+  right: var(--e8-droite);
+  overflow: auto;
+}
+
+.e9-detail {
+  top: calc(8 * var(--u));
+  width: calc(328 * var(--u));
+  height: max(calc(298 * var(--u)), 224px);
+  padding: calc(12 * var(--u)) calc(14 * var(--u));
+}
+
+.e9-fiche {
+  top: calc(12 * var(--u));
+  width: calc(410 * var(--u));
+  height: max(calc(340 * var(--u)), 290px); /* maquette : 294 avec la barre d'onglets ; ici la raison des boutons s'ajoute (écran plein) */
+  padding: calc(12 * var(--u)) calc(14 * var(--u));
+}
+
+.e9-compatibles {
+  top: calc(58 * var(--u));
+  width: calc(428 * var(--u));
+  height: max(calc(248 * var(--u)), 196px);
+  padding: calc(12 * var(--u));
+  border: 1px solid var(--menu-options-filet);
+  background: var(--menu-e9-compatibles);
+}
+
+/* Filtres (boutons de la page Options : rouge peint quand choisi, aria-pressed) et pagination. */
+.e9-filtres {
+  display: flex;
+  flex-wrap: wrap;
+  gap: calc(8 * var(--u));
+}
+
+.e9-filtre {
+  min-width: 0;
+  padding: 0 max(8px, calc(14 * var(--u)));
+  font-family: var(--font-label);
+  font-size: max(11px, calc(13 * var(--u)));
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.e9-pagination {
+  display: flex;
+  align-items: center;
+  gap: calc(8 * var(--u));
+}
+
+.e9-page {
+  margin: 0 auto 0 0;
+  font-size: var(--e9-moyen);
+  color: var(--menu-options-note);
+}
+
+.e9-page-bouton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--e5-bouton-h);
+  min-width: var(--e5-bouton-h);
+  padding: 0;
+}
+
+.e9-page-bouton[aria-disabled='true'] {
+  border-color: var(--menu-options-inactif-bord);
+  background: var(--menu-options-inactif);
+  color: var(--menu-options-inactif-texte);
+  cursor: not-allowed;
+}
+
+/* Grilles d'objets et de personnages (listes nommées) ; case choisie bordée de jaune (aria-pressed), rareté, niveau et « Porté » écrits. */
+.e9-grille {
+  display: grid;
+  gap: calc(8 * var(--u));
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.e9-grille-objets { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+.e9-grille-compatibles {
+  flex: 1;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  align-content: start;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.e9-grille-persos {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: calc(10 * var(--u));
+  margin-top: calc(6 * var(--u));
+}
+
+.e9-case {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: calc(2 * var(--u));
+  width: 100%;
+  min-width: 0;
+  min-height: max(var(--menu-cible), calc(64 * var(--u)));
+  padding: calc(4 * var(--u));
+  border: 2px solid var(--e9-rarete, var(--menu-options-bouton-bord));
+  border-radius: 4px;
+  background: var(--menu-e9-panneau);
+  line-height: 1.15;
+  text-align: center;
+}
+
+.e9-grille-objets .e9-case {
+  min-height: max(var(--menu-cible), calc(70 * var(--u)));
+}
+
+.e9-case[aria-pressed='true'] {
+  border: 3px solid var(--menu-record);
+  background: var(--menu-e9-case-choisie);
+}
+
+.e9-case-nom {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  font-size: var(--e9-moyen);
+  font-weight: var(--font-weight-bold);
+}
+
+.e9-case-rarete {
+  font-size: var(--e9-petit);
+  color: var(--menu-e9-texte-doux);
+}
+
+.e9-case-niveau {
+  font-size: var(--e9-petit);
+  color: var(--menu-options-note);
+}
+
+/* Panneau de détail de l'Inventaire. */
+.e9-detail-haut {
+  display: flex;
+  align-items: center;
+  gap: calc(12 * var(--u));
+}
+
+.e9-detail-icone {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: calc(52 * var(--u));
+  height: calc(52 * var(--u));
+  min-width: 36px;
+  min-height: 36px;
+  border: 2px solid var(--e9-rarete, var(--menu-options-bouton-bord));
+  border-radius: 4px;
+  background: var(--menu-scene-fenetre-noire);
+}
+
+.e9 .e9-icone-grande {
+  width: max(22px, calc(30 * var(--u)));
+  height: max(22px, calc(30 * var(--u)));
+}
+
+.e9-detail-textes {
+  min-width: 0;
+  line-height: 1.2;
+}
+
+.e9-detail-nom {
+  margin: 0;
+  font-size: max(15px, calc(18 * var(--u)));
+  font-weight: var(--font-weight-bold);
+}
+
+.e9-detail-ligne,
+.e9-effet,
+.e9-detail-info,
+.e9-regle {
+  margin: 0;
+  font-size: var(--e9-moyen);
+  color: var(--menu-e9-texte-doux);
+}
+
+.e9-effet {
+  color: var(--menu-e9-effet);
+}
+
+.e9-raison {
+  margin: 0;
+  font-size: var(--e9-texte);
+  color: var(--menu-options-note);
+}
+
+.e9-detail-boutons {
+  display: flex;
+  gap: calc(8 * var(--u));
+}
+
+/* Boutons du Personnage : rouge peint (Équiper, Choisir), planche (Améliorer, Remplir), violet (Fusionner) ; désactivés : grisés, aria-disabled. */
+.e9-bouton {
+  display: inline-flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  gap: calc(8 * var(--u));
+  min-width: 0;
+  min-height: max(var(--menu-cible), calc(44 * var(--u)));
+  padding: 0 calc(10 * var(--u));
+  border-radius: 4px;
+  font-family: var(--font-label);
+  font-size: max(12px, calc(14 * var(--u)));
+  line-height: 1.1;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--menu-e9-bois-texte);
+}
+
+.e9-detail-boutons .e9-sans-casse {
+  font-size: max(12px, calc(15 * var(--u)));
+  text-transform: none;
+}
+
+.e9-rouge {
+  border: 2px solid var(--menu-bord);
+  background: var(--menu-rouge);
+  color: var(--menu-texte);
+}
+
+.e9-bouton[aria-disabled='true'] {
+  border-color: var(--menu-options-inactif-bord);
+  background: var(--menu-options-inactif);
+  box-shadow: none;
+  color: var(--menu-options-inactif-texte);
+  cursor: not-allowed;
+}
+
+.e9 .e9-violet[aria-disabled='true'] {
+  border-color: var(--menu-e9-violet-inactif-bord);
+  background: var(--menu-e9-violet-inactif);
+  color: var(--menu-e9-violet-inactif-texte);
+}
+
+.e9 .e9-choisir.is-choisi {
+  border: 2px solid var(--menu-record);
+  background: var(--menu-options-bouton);
+  color: var(--menu-record);
+}
+
+.e9-detail-fusion,
+.e9-fusionner,
+.e9-auto,
+.e9-fiche-boutons {
+  flex: none;
+  margin-top: auto;
+}
+
+/* Fusion : règle, trois emplacements, flèche, résultat (brille quand la fusion est possible), message, « Fusionner ». */
+.e9-regle {
+  max-width: calc(420 * var(--u));
+  line-height: 1.35;
+}
+
+.e9-atelier {
+  flex: none;
+  gap: calc(12 * var(--u));
+  min-height: max(calc(200 * var(--u)), 150px);
+  padding: calc(10 * var(--u)) calc(14 * var(--u));
+}
+
+.e9-fusion-rangee {
+  display: flex;
+  align-items: center;
+  gap: calc(10 * var(--u));
+}
+
+.e9-fusion-places {
+  display: flex;
+  gap: calc(10 * var(--u));
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.e9-place {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: max(var(--menu-cible), calc(72 * var(--u)));
+  height: max(var(--menu-cible), calc(72 * var(--u)));
+  padding: 2px;
+  border: 2px solid var(--e9-rarete, var(--menu-options-bouton-bord));
+  border-radius: 4px;
+  background: var(--menu-scene-fenetre-noire);
+  line-height: 1.1;
+  text-align: center;
+}
+
+.e9-place.is-vide {
+  border-style: dashed;
+  border-color: var(--menu-desactive);
+  font-size: max(18px, calc(26 * var(--u)));
+  color: var(--menu-options-note);
+}
+
+.e9-place .e9-case-niveau {
+  display: none; /* 72 × 72 : nom et rareté (le niveau est dans le nom accessible) */
+}
+
+.e9-fusion-fleche {
+  display: flex;
+  flex: none;
+}
+
+.e9 .e9-fleche {
+  width: max(22px, calc(34 * var(--u)));
+  height: max(22px, calc(34 * var(--u)));
+  stroke: var(--menu-e9-fleche);
+  stroke-width: 2.4;
+  animation: e9-etincelle 1.4s ease-in-out infinite;
+}
+
+.e9-resultat {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: max(56px, calc(84 * var(--u)));
+  height: max(56px, calc(84 * var(--u)));
+  padding: 2px;
+  border: 3px solid var(--e9-rarete, var(--menu-desactive));
+  border-radius: 4px;
+  background: var(--menu-scene-fenetre-noire);
+  font-size: max(13px, calc(15 * var(--u)));
+  font-weight: var(--font-weight-bold);
+  line-height: 1.1;
+  text-align: center;
+}
+
+.e9-resultat.is-pret,
+.e9-resultat.is-obtenu {
+  animation: e9-lueur 2s ease-in-out infinite;
+}
+
+.e9-resultat-effet {
+  font-size: var(--e9-petit);
+  font-weight: var(--font-weight-normal);
+  color: var(--menu-e9-effet);
+}
+
+.e9-resultat-obtenu {
+  font-size: var(--e9-petit);
+  text-transform: uppercase;
+  color: var(--menu-record);
+}
+
+.e9-resultat-vide {
+  font-size: max(18px, calc(26 * var(--u)));
+  color: var(--menu-options-note);
+}
+
+.e9-fusionner {
+  font-size: max(14px, calc(18 * var(--u)));
+}
+
+.e9-compatibles-tete {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: calc(8 * var(--u));
+}
+
+.e9-compatibles-titre {
+  margin: 0;
+  font-family: var(--font-label);
+  font-weight: var(--font-weight-normal);
+  font-size: max(13px, calc(15 * var(--u)));
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.e9-compatibles-rarete {
+  margin: 0;
+  font-size: var(--e9-texte);
+  color: var(--menu-e9-texte-doux);
+}
+
+@keyframes e9-etincelle {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 1; }
+}
+
+@keyframes e9-lueur {
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--e9-rarete, var(--menu-desactive)) 0%, transparent); }
+  50% { box-shadow: 0 0 calc(18 * var(--u)) calc(4 * var(--u)) color-mix(in srgb, var(--e9-rarete, var(--menu-desactive)) 45%, transparent); }
+}
+
+/* Personnages : grille (buste de la teinte, nom, état écrit, cadenas) et fiche du personnage sélectionné. */
+.e9-case-perso {
+  position: relative;
+  justify-content: flex-end;
+  min-height: max(var(--menu-cible), calc(104 * var(--u)));
+  border-color: var(--menu-options-nom-inactif);
+}
+
+.e9-case-perso.is-choisi {
+  border-color: var(--menu-record);
+}
+
+.e9-case-perso.is-verrou {
+  border-color: var(--menu-options-bouton-bord);
+}
+
+.e9-buste {
+  width: calc(40 * var(--u));
+  height: calc(54 * var(--u));
+  min-width: 24px;
+  min-height: 32px;
+}
+
+.e9 .e9-cadenas {
+  position: absolute;
+  top: calc(6 * var(--u));
+  right: calc(6 * var(--u));
+  width: max(14px, calc(18 * var(--u)));
+  height: max(14px, calc(18 * var(--u)));
+  color: var(--menu-texte-doux);
+}
+
+.e9-fiche-haut {
+  display: flex;
+  align-items: center;
+  gap: calc(12 * var(--u));
+}
+
+.e9-fiche-silhouette {
+  flex: none;
+  width: calc(56 * var(--u));
+  height: calc(74 * var(--u));
+}
+
+.e9-fiche-silhouette .e9-silhouette {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.e9-fiche-textes {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: calc(4 * var(--u));
+  min-width: 0;
+}
+
+.e9-fiche-nom {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: var(--font-weight-normal);
+  font-size: max(18px, calc(24 * var(--u)));
+  line-height: 1.05;
+  color: var(--menu-rouge-trait);
+}
+
+.e9-fiche-niveau {
+  margin: 0;
+  font-size: var(--e9-moyen);
+  color: var(--menu-e9-texte-doux);
+}
+
+.e9-barre {
+  height: max(6px, calc(8 * var(--u)));
+  border: 1px solid var(--menu-options-bouton-bord);
+  background: var(--menu-scene-fenetre-noire);
+}
+
+.e9-barre-rempli {
+  display: block;
+  height: 100%;
+  background: var(--menu-record);
+}
+
+.e9-fiche-capacite {
+  padding: calc(8 * var(--u)) calc(10 * var(--u));
+  border: 2px solid var(--menu-record);
+  border-radius: 4px;
+  background: var(--menu-e9-voile);
+}
+
+.e9-fiche-capacite-titre {
+  margin: 0;
+  font-size: var(--e9-moyen);
+  font-weight: var(--font-weight-bold);
+  color: var(--menu-record);
+}
+
+.e9-fiche-capacite-texte {
+  margin: 0;
+  font-size: var(--e9-moyen);
+  line-height: 1.35;
+  color: var(--menu-texte-doux);
+}
+
+.e9-fiche-stats-titre {
+  margin: 0;
+  font-size: var(--e9-texte);
+  color: var(--menu-options-note);
+}
+
+.e9-fiche .e9-stats {
+  font-size: var(--e9-moyen);
+}

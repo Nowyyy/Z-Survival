@@ -7,6 +7,7 @@ import { createAudio } from './audio.js';
 import { createGame } from './game.js';
 import { createLoading } from './loading.js';
 import { readLevels } from './levels-source.js';
+import { normalizeLevels } from '../core/player-stats.js';
 import { makeEconomy } from '../core/economy.js';
 import { createRepository } from '../save/index.js';
 import { createInput } from './input.js';
@@ -187,6 +188,10 @@ const { repository, mode: saveMode } = createRepository({
   now: () => Date.now(),
 });
 const loadedSave = repository.load();
+// Lot 8d : niveaux effectifs calculés par le menu (équipement porté, capacité du personnage), reçus par l'option de démarrage (jamais par l'adresse) :
+// ils remplacent ceux de la sauvegarde pour cette partie seulement (source « menu ») ; ?lvl= garde la priorité ; rien n'est écrit (la banque ne
+// recopie que les niveaux de la sauvegarde). Partie directe : aucune option, niveaux lus comme avant.
+const niveauxPartie = (lus) => (optionPartie().stats && lus.source !== 'url' ? { ...normalizeLevels(optionPartie().stats, statsCfg), source: 'menu' } : lus);
 
 const ctx = {
   cfg: { layout, layouts, stairs: stairsCfg, player, weapon: weapons.pistol, stats: statsCfg, zombie: enemies.zombie, enemies, gaits: gaitsCfg, waves: wavesCfg, render, camera, nav, windows: windowsCfg, down: downCfg },
@@ -213,7 +218,7 @@ const ctx = {
   },
   seed: Number.isFinite(seedParam) ? seedParam : Date.now() % 2147483647,
   seedRun: 0,
-  levels: readLevels(search, statsCfg, loadedSave.status === 'ok' ? loadedSave.save : null),
+  levels: niveauxPartie(readLevels(search, statsCfg, loadedSave.status === 'ok' ? loadedSave.save : null)),
   repository,
   mode: saveMode,
   economy: makeEconomy(economyCfg, enemies),

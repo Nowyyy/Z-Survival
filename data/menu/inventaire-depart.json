@@ -1,0 +1,22 @@
+{
+  "_provisoire": "Lot 8d : inventaire de démonstration au démarrage du menu (exemple, pas un vrai butin) et équipement porté de départ (celui de la maquette Personnage.html). uid : identifiant unique de l'exemplaire ; id : objet de data/menu/objets.json ; rarete : data/menu/raretes.json ; niveau : 1 à niveauMax. Trois triplets identiques (Gilet commun, Bottes commun, Bague rare) permettent de fusionner. Jusqu'au lot 8h, rien n'est gardé : le retour au menu remet cet état. Lu par js/core/equipement.js.",
+  "objets": [
+    { "uid": "o1", "id": "pistolet", "rarete": "rare", "niveau": 3 },
+    { "uid": "o2", "id": "gilet", "rarete": "commun", "niveau": 3 },
+    { "uid": "o3", "id": "bottes", "rarete": "peu-commun", "niveau": 2 },
+    { "uid": "o4", "id": "amulette", "rarete": "epique", "niveau": 1 },
+    { "uid": "o5", "id": "gilet", "rarete": "commun", "niveau": 1 },
+    { "uid": "o6", "id": "gilet", "rarete": "commun", "niveau": 2 },
+    { "uid": "o7", "id": "bottes", "rarete": "commun", "niveau": 1 },
+    { "uid": "o8", "id": "bottes", "rarete": "commun", "niveau": 1 },
+    { "uid": "o9", "id": "bottes", "rarete": "commun", "niveau": 4 },
+    { "uid": "o10", "id": "gants", "rarete": "commun", "niveau": 1 },
+    { "uid": "o11", "id": "gants", "rarete": "rare", "niveau": 2 },
+    { "uid": "o12", "id": "casquette", "rarete": "peu-commun", "niveau": 1 },
+    { "uid": "o13", "id": "bague", "rarete": "rare", "niveau": 1 },
+    { "uid": "o14", "id": "bague", "rarete": "rare", "niveau": 2 },
+    { "uid": "o15", "id": "bague", "rarete": "rare", "niveau": 1 },
+    { "uid": "o16", "id": "couteau", "rarete": "legendaire", "niveau": 1 }
+  ],
+  "equipement": { "arme": "o1", "tenue": "o2", "gants": null, "bottes": "o3", "accessoire1": "o4", "accessoire2": null }
+}

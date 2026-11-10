@@ -332,7 +332,9 @@ test.describe('onglet Infini (E8-4) et mode infini', () => {
     expect(o.externes).toEqual([]);
   });
 
-  test('même logique que ?endless=1 à graine égale (manches 40 à 42, pas à pas) ; ?endless=1 en lecture seule, le mode infini non', async ({ browser }) => {
+  // Lot 8d : « JOUER » transmet les niveaux effectifs de l'équipement de départ (option de démarrage, source « menu ») ; la partie directe reçoit les
+  // mêmes niveaux par ?lvl= (source « url ») : même logique pas à pas, la source seule diffère (vérifiée à part, retirée de l'empreinte).
+  test('même logique que ?endless=1 à graine égale et niveaux égaux (manches 40 à 42, pas à pas) ; ?endless=1 en lecture seule, le mode infini non', async ({ browser }) => {
     test.setTimeout(240_000);
     async function partie(url, viaMenu) {
       const context = await browser.newContext({ viewport: { width: 667, height: 375 } });
@@ -348,7 +350,9 @@ test.describe('onglet Infini (E8-4) et mode infini', () => {
       await page.waitForFunction(() => window.__zs, null, { timeout: 90_000 });
       const r = await page.evaluate((keys) => {
         const zs = window.__zs;
-        const logique = () => { const s = zs.getState(); return JSON.stringify(keys.map((k) => s[k])); };
+        const depart = zs.getState().stats;
+        const logique = () => { const s = zs.getState(); return JSON.stringify(keys.map((k) => (k === 'stats' ? { ...s.stats, source: '' } : s[k]))); };
+        const premier = logique();
         zs.setLevels({ degats: 10, cadence: 10 });
         zs.startWave(40);
         const pas = [];
@@ -359,14 +363,19 @@ test.describe('onglet Infini (E8-4) et mode infini', () => {
           pas.push(logique());
         }
         const s = zs.getState();
-        return { pas, mode: s.mode, readOnly: s.save.readOnly, vague: s.waves.wave, fin: s.worldOver };
+        return { pas, premier, source: depart.source, niveaux: { ...depart.levels, ...depart.extraLevels }, mode: s.mode, readOnly: s.save.readOnly, vague: s.waves.wave, fin: s.worldOver };
       }, LOGIQUE);
       await context.close();
       return r;
     }
-    const endless = await partie('/jeu.html?test=1&seed=5&endless=1', false);
     const infini = await partie('/jeu.html?test=1&menu=1&seed=5', true);
+    const lvl = Object.entries(infini.niveaux).map(([k, v]) => `${k}:${v}`).join(',');
+    const endless = await partie(`/jeu.html?test=1&seed=5&endless=1&lvl=${lvl}`, false);
     expect([endless.mode, endless.readOnly, infini.mode, infini.readOnly]).toEqual(['histoire', true, 'infini', false]);
+    expect([infini.source, endless.source]).toEqual(['menu', 'url']);
+    expect(Object.values(infini.niveaux).some((n) => n > 0)).toBe(true); // bonus de l'équipement de départ reçus
+    expect(endless.niveaux).toEqual(infini.niveaux);
+    expect(infini.premier).toBe(endless.premier); // état de départ identique (vie maximale comprise), avant setLevels
     expect(infini.vague).toBeGreaterThan(41);
     expect([infini.fin, endless.fin]).toEqual([false, false]);
     expect(infini.pas.length).toBe(700);

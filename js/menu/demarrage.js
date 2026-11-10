@@ -11,7 +11,7 @@ import { graphicsReboot, pageCanal, pageSearch } from '../game/graphics-boot.js'
 export const modeMenu = choixDemarrage(pageCanal(), pageSearch()) === 'menu';
 
 // Lot 8b : option de démarrage de la partie, posée par le menu (« JOUER » : histoire ; « Jouer » de l'onglet Infini : infini), lue par main.js
-// (optionPartie) ; sans paramètre d'adresse, donc sans lecture seule de la sauvegarde. Partie directe : histoire, le bâtiment.
+// (optionPartie) ; sans paramètre d'adresse, donc sans lecture seule de la sauvegarde. Partie directe : histoire, le bâtiment, sans stats.
 let partie = Object.freeze({ mode: 'histoire', monde: 'batiment' });
 export const optionPartie = () => partie;
 
@@ -98,9 +98,11 @@ if (!modeMenu) {
   import('./chargement.js').then(async (m) => {
     await styles;
     // « JOUER » : écran de chargement du jeu (Z posé), réglages graphiques relus (l'écran Options du menu a pu les changer), puis le jeu.
-    // Option déjà validée par le menu (lireOptionDemarrage, js/core/menu-etat.js) : seuls ses deux champs connus sont gardés.
+    // Option déjà validée par le menu (lireOptionDemarrage, js/core/menu-etat.js) : seuls ses champs connus sont gardés. Lot 8d : stats (niveaux
+    // effectifs de l'équipement et du personnage, pour cette partie seulement ; main.js les met à la place de ceux de la sauvegarde, sauf ?lvl=).
     const jouer = (option) => {
       if (option?.mode === 'infini' && typeof option.monde === 'string') partie = Object.freeze({ mode: 'infini', monde: option.monde });
+      if (option?.stats && typeof option.stats === 'object') partie = Object.freeze({ ...partie, stats: Object.freeze({ ...option.stats }) });
       ecran = m.creerChargement({ phase: 'jeu' });
       for (const [e, f] of attente.splice(0)) ecran.progres(e, f);
       graphicsReboot();
