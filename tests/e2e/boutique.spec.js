@@ -528,6 +528,13 @@ test.describe('barre d\'onglets (lot 8e)', () => {
       await expect(page.locator('#menu-onglet-event')).toBeDisabled();
       await expect(page.locator('#menu-onglet-event')).toHaveClass(/menu-ruban/);
       await expect(page.locator('#menu-onglet-event .e8-onglet-goutte')).toHaveCount(0);
+      // Retour du propriétaire : sang sur la barre (traînée en haut, coulures, taches), jamais sous un libellé ni une icône.
+      await expect(page.locator('.e8-onglets-bande')).toHaveCount(1);
+      expect(await page.locator('.e8-onglets-sang .menu-coulure').count()).toBeGreaterThanOrEqual(8);
+      expect(await page.locator('.e8-onglets-tache').count()).toBeGreaterThanOrEqual(4);
+      const libelles = await page.locator('.e8-onglet .e8-onglet-nom, .e8-onglet .e8-icone').evaluateAll((ns) => ns.map((n) => { const r = n.getBoundingClientRect(); return { l: r.left, t: r.top, r: r.right, b: r.bottom }; }));
+      const sang = await page.locator('.e8-onglets-sang .menu-coulure, .e8-onglets-tache').evaluateAll((ns) => ns.map((n) => { const r = n.getBoundingClientRect(); return { l: r.left, t: r.top, r: r.right, b: r.bottom }; }));
+      expect(sang.filter((x) => libelles.some((y) => chevauche(x, y)))).toEqual([]);
       expect((await new AxeBuilder({ page }).include('.e8-onglets').analyze()).violations.map((v) => v.id)).toEqual([]);
     });
   }

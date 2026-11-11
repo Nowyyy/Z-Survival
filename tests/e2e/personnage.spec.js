@@ -672,7 +672,7 @@ test('PC 2000 × 1020 : écrans à la largeur de la fenêtre, inventaire sur une
   const size = { width: 2000, height: 1020 };
   await ouvrirPersonnage(page, size);
   const droite = await boite(page, '#menu-perso-droite');
-  expect(size.width - droite.r).toBeLessThan(40); // colonne de droite contre le bord droit, à l'échelle de la fenêtre
+  expect(Math.abs(size.width - droite.r - 32 * Math.min(size.width / 932, size.height / 430))).toBeLessThan(2); // colonne de droite à la marge droite : 32 de la référence à l'échelle de la fenêtre (lot 8e, retour du propriétaire ; avant : contre le bord, moins de 40 px)
   expect(droite.w).toBeGreaterThan(400); // 220 de la maquette × une unité d'environ 2,1
   // Gouttes allongées (fin de l'animation e8-coulure) sur chaque écran, Inventaire compris.
   const allongees = async (sec) => {
@@ -830,5 +830,16 @@ test('bandeaux de même taille sur chaque écran, cartes d\'Infini de même tail
     }));
     expect(new Set(cartes.map((c) => c.taille)).size, `${size.width} ${JSON.stringify(cartes)}`).toBe(1);
     expect(cartes.filter((c) => c.deborde), `${size.width}`).toEqual([]);
+  }
+});
+
+// Lot 8e, retour du propriétaire : l'encart de capacité ne colle plus au bas du cône de lumière (6 plus bas à la référence, jusqu'à 18 sur grand écran).
+test('encart de capacité sous le cône de lumière, avec un écart (932 × 430, 667 × 375, 2000 × 1125), toujours au-dessus de la barre d\'onglets', async ({ page }) => {
+  for (const size of [REF, { width: 667, height: 375 }, { width: 2000, height: 1125 }]) {
+    await ouvrirPersonnage(page, size);
+    const [cone, cap, barre] = [await boite(page, '#menu-ecran-personnage .e9-cone'), await boite(page, '#menu-perso-capacite'), await boite(page, '.e8-onglets')];
+    const u = Math.min(size.width / 932, size.height / 430);
+    expect(cap.t - cone.b, `${size.width} : écart cône / encart`).toBeGreaterThanOrEqual(4 * Math.min(u, 1) - 0.5);
+    expect(cap.b, `${size.width} : encart au-dessus de la barre`).toBeLessThanOrEqual(barre.t + 0.5);
   }
 });

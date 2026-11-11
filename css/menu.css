@@ -429,8 +429,12 @@
 .e8 {
   --e8-entete: max(48px, calc(50 * var(--u)));
   --e8-onglets: max(50px, calc(62 * var(--u)));
-  --e8-gauche: max(var(--menu-marge), env(safe-area-inset-left, 0px));
-  --e8-droite: max(var(--menu-marge), env(safe-area-inset-right, 0px));
+  /* Retour du propriétaire (lot 8e) : « tout est un peu trop au bord » : marges latérales de 32 de la référence (celles des maquettes), 16 px au
+     moins, ou la zone sûre si elle est plus large ; la barre d'onglets reste de bord à bord (zone sûre seulement : --e8-sur-*). */
+  --e8-sur-g: max(var(--menu-marge), env(safe-area-inset-left, 0px));
+  --e8-sur-d: max(var(--menu-marge), env(safe-area-inset-right, 0px));
+  --e8-gauche: max(var(--e8-sur-g), calc(32 * var(--u)));
+  --e8-droite: max(var(--e8-sur-d), calc(32 * var(--u)));
   position: fixed;
   inset: 0;
   z-index: 8;
@@ -1495,7 +1499,7 @@
   z-index: 2;
   display: grid;
   grid-template-columns: 1fr 1fr 1.5fr 1fr 1fr;
-  padding: 0 calc(var(--e8-droite) - var(--menu-marge)) 0 calc(var(--e8-gauche) - var(--menu-marge));
+  padding: 0 calc(var(--e8-sur-d) - var(--menu-marge)) 0 calc(var(--e8-sur-g) - var(--menu-marge));
   background-color: var(--menu-bois);
   background-image:
     linear-gradient(to bottom, var(--menu-bois-clair) 0 2px, transparent 2px),
@@ -1584,6 +1588,47 @@
 
 .e8-onglet-event {
   cursor: not-allowed;
+}
+
+/* Retour du propriétaire (lot 8e) : sang sur la barre d'onglets (js/menu/menu.js, sangBarre) : traînée le long du haut, coulures qui en pendent
+   (immobiles ; deux laissent tomber une goutte toutes les 5 s, en pause page cachée ou partie lancée), taches séchées dans des coins de planches.
+   Décoratif : au-dessus des planches, jamais sous un libellé (coulures entre les icônes, taches dans les coins bas). */
+.e8-onglets-sang {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.e8-onglets-bande {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: calc(7 * var(--u));
+}
+
+.e8-onglets-sang .menu-coulure {
+  top: calc(3 * var(--u));
+}
+
+.e8-onglets-sang .menu-coulure-flux {
+  animation: none;
+}
+
+.e8-pause .e8-onglets-sang * {
+  animation-play-state: paused;
+}
+
+.e8-onglets-tache {
+  position: absolute;
+  bottom: calc(1 * var(--u));
+  left: var(--e8-x);
+  width: calc(30 * var(--u));
+  height: calc(12.5 * var(--u));
+  fill: var(--menu-sang);
+  opacity: 0.75;
 }
 
 .e8-cadenas {
@@ -2044,11 +2089,11 @@
    personnages.js. Tailles en calc(N * var(--u)) (N = pixels de la maquette 932 × 430 ; ordonnées comptées depuis le bas de l'en-tête, y 50),
    cibles de 44 px au moins ; rareté, porté, choisi, verrouillé toujours écrits (jamais la couleur seule). Animations e9-*, en pause hors de l'écran
    (data-anim, classe e9-anime), coupées sous prefers-reduced-motion (règle .e8 * plus haut). */
-/* Encoche (téléphone en paysage) : les marges latérales (--e8-gauche, --e8-droite : 16 px ou la zone sûre) dépassent les 16 px prévus ; l'unité se
-   règle alors sur la largeur restante, pour que colonnes et panneaux ne se chevauchent pas (retour du propriétaire après la fusion). Sans encoche :
+/* Encoche (téléphone en paysage) : l'unité se règle sur la largeur laissée par les marges latérales (--e8-gauche, --e8-droite : 32 de la référence,
+   16 px au moins, ou la zone sûre ; 868 = 932 − 2 × 32, la largeur utile des maquettes), pour que colonnes et panneaux ne se chevauchent pas (retour du propriétaire après la fusion). Sans encoche :
    même valeur que --u de :root. Plancher 0,6 px (au lieu de 0,7) pour les téléphones étroits à encoche. */
 .e9 {
-  --u: clamp(0.6px, min(calc((100vw - var(--e8-gauche) - var(--e8-droite) + 32px) / 932), calc(100vh / 430)), 2.4px);
+  --u: clamp(0.6px, min(calc((100vw - var(--e8-gauche) - var(--e8-droite)) / 868), calc(100vh / 430)), 2.4px);
   --e5-bouton-h: max(var(--menu-cible), calc(40 * var(--u))); /* « ‹ Équipement » et filtres : composants de la page Options (lot 8c) */
   --e9-col: calc(220 * var(--u));
   --e9-case-h: max(var(--menu-cible), calc(52 * var(--u)));
@@ -2078,7 +2123,7 @@
 
 /* Écran Personnage : l'unité tient aussi compte de la hauteur réelle du contenu (en-tête et onglets ont 48 et 50 px au moins). */
 .e9.e9-perso {
-  --u: clamp(0.6px, min(calc((100vw - var(--e8-gauche) - var(--e8-droite) + 32px) / 932), calc((100vh - 98px) / 318)), 2.4px);
+  --u: clamp(0.6px, min(calc((100vw - var(--e8-gauche) - var(--e8-droite)) / 868), calc((100vh - 98px) / 318)), 2.4px);
 }
 
 /* Fond : gris presque noir ; sol plus sombre (.e9-sol, bord de 2 px) à y 212 de la maquette. Retour du propriétaire : personnage, cône, sol et encart
@@ -2402,9 +2447,12 @@
 }
 
 /* Encart de capacité (240 × 56 à y 250, centré, bord doré) : ouvre Personnages. */
+/* Retour du propriétaire (lot 8e) : l'encart ne colle plus au bas du cône de lumière : 6 plus bas à la référence, jusqu'à 18 quand l'écran a de la
+   place (moitié de la hauteur libre). */
 .e9-capacite {
+  --e9-baisse: min(calc(18 * var(--u)), calc(6 * var(--u) + var(--e9-centre)));
   position: absolute;
-  top: calc(250 * var(--u) + var(--e9-centre));
+  top: calc(250 * var(--u) + var(--e9-centre) + var(--e9-baisse));
   left: calc(50% - 120 * var(--u));
   display: flex;
   flex-direction: column;
@@ -3097,7 +3145,7 @@
   }
 
   .e9-capacite {
-    top: calc(246 * var(--u) + var(--e9-centre));
+    top: calc(246 * var(--u) + var(--e9-centre) + min(calc(4 * var(--u)), var(--e9-centre)));
   }
 }
 
@@ -3125,7 +3173,7 @@
    teinte de la caisse (--e3-teinte) et rareté d'un objet (--e3-rarete) posées par le JavaScript en var(--jeton). Animations e3-*, en pause hors de
    l'écran et page cachée (data-anim), coupées sous prefers-reduced-motion (règle .e8 * plus haut). */
 .e3 {
-  --u: clamp(0.6px, min(calc((100vw - var(--e8-gauche) - var(--e8-droite) + 32px) / 932), calc(100vh / 430)), 2.4px);
+  --u: clamp(0.6px, min(calc((100vw - var(--e8-gauche) - var(--e8-droite)) / 868), calc(100vh / 430)), 2.4px);
   --e3-sous-bandeau: calc(12 * var(--u) + 10 * var(--u) + max(11px, calc(12 * var(--u))) * 1.2 + max(17px, calc(20 * var(--u))) * 1.15 + 20 * var(--u));
   --e3-teinte: var(--menu-panneau-bois-texte);
   --e3-rarete: var(--rarete-commun);
