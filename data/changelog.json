@@ -284,11 +284,11 @@
     { "name": "lot-8e", "version": "v0.8", "date": "2026-11-11", "titre": "Boutique : offres du jour, caisses et résultats", "points": [
       "Nouvel onglet Boutique qui défile, par rubriques (petit menu à gauche pour y aller vite) : offres du jour, équipement, personnages, cosmétiques.",
       "Offres du jour : six objets à prix fixe, renouvelés chaque nuit à minuit (heure de l'appareil), avec le temps restant.",
-      "Caisses mystère animées, chacune avec son dessin : trois caisses d'équipement (ravitaillement en bois, militaire en métal, coffre d'élite), une malle de recrues (nouveau personnage : débloqué ; déjà obtenu : un niveau de plus) et une valise de tenues d'exemple (pas encore portables). Chaque caisse contient toutes les raretés ; les meilleures donnent plus souvent les plus rares.",
+      "Caisses mystère animées, chacune avec son dessin : trois caisses d'équipement (ravitaillement en bois, militaire en métal, coffre d'élite), trois malles de personnages (recrues, vétérans, légendes ; nouveau personnage : débloqué, déjà obtenu : un niveau de plus) et trois valises de tenues d'exemple (pas encore portables). Chaque caisse contient toutes les raretés ; les meilleures donnent plus souvent les plus rares.",
       "« Voir les chances » affiche, pour chaque caisse, le pourcentage de chaque rareté (ou de chaque personnage) et ce qu'on peut obtenir.",
       "Ouvrir une caisse (une ou dix fois, dix tirages indépendants sans garantie) montre le résultat en plein écran : une carte, ou dix cartes avec un résumé ; « Rouvrir » recommence.",
       "Les objets obtenus vont dans l'inventaire du Personnage : ils se portent, s'améliorent, se fusionnent et comptent dans les statistiques de la partie.",
-      "Barre d'onglets : « Histoire » n'est plus rouge en permanence ; l'onglet affiché est une planche plus claire et relevée, avec une goutte qui coule à la sélection ; du sang coule le long de la barre.",
+      "Barre d'onglets : « Histoire » n'est plus rouge en permanence ; l'onglet touché devient une planche plus claire et relevée, où le sang se verse et coule ; des taches séchées marquent la barre.",
       "Menu moins collé aux bords de l'écran ; l'encart de capacité du Personnage s'écarte de la lumière.",
       "Essai : caisses, prix, chances et tenues sont provisoires ; aucun prix n'est prélevé et rien n'est encore gardé avant la sauvegarde v2.",
       "Les règles du jeu ne changent pas ; une partie lancée directement (adresses de test) est identique."

@@ -92,34 +92,36 @@ function goutteBandeau(c, i) {
   return svg;
 }
 
-// Lot 8e (demande du propriétaire) : onglet affiché marqué par une goutte de sang qui pend du haut de sa planche, dessinée comme celles des bandeaux
-// (gouttePath) ; visible seulement sur l'onglet affiché (css/menu.css : planche plus claire et relevée, libellé blanc) ; elle coule une fois à la
-// sélection (e8-onglet-coule), l'icône rebondit une fois (e8-onglet-rebond), puis l'état reste marqué sans animation. Décorative.
-const GOUTTE_ONGLET = Object.freeze({ w: 6, l: 14.5, b: 3.2, h: 19 });
+// Lot 8e (demande du propriétaire, puis retour : « les coulures n'apparaissent que quand on clique sur le bouton ») : sur l'onglet affiché seulement,
+// une traînée de sang versée le long du haut de sa planche et trois coulures qui en pendent (dessin des bandeaux, gouttePath), entre l'icône et les
+// bords ; elles coulent à la sélection (e8-onglet-verse, e8-coulure), l'icône rebondit une fois (e8-onglet-rebond), puis l'état reste marqué sans
+// animation (css/menu.css : planche plus claire et relevée, libellé blanc). Aucune coulure ailleurs sur la barre (taches séchées seulement). Décoratif.
+export const COULURES_ONGLET = Object.freeze([
+  Object.freeze({ x: 12, w: 5.5, l: 12, b: 3, h: 15 }),
+  Object.freeze({ x: 27, w: 6.5, l: 16, b: 3.3, h: 19.5 }),
+  Object.freeze({ x: 82, w: 5, l: 10, b: 2.7, h: 13 }),
+]);
+const traineeOnglet = (() => {
+  const pts = [];
+  for (let i = 0; i <= 20; i += 1) pts.push(`${i * 10} ${(3 + 1.6 * Math.sin(i * 1.7) + 1.1 * Math.sin(i * 0.6 + 1)).toFixed(2)}`);
+  return `M0 0H200V${pts.at(-1).split(' ')[1]}L${pts.slice().reverse().join('L')}Z`;
+})();
 function goutteOnglet() {
-  const c = GOUTTE_ONGLET;
-  const svg = svgEl('svg', { viewBox: `0 0 12 ${c.h}`, 'aria-hidden': 'true', focusable: 'false' }, 'e8-onglet-goutte');
-  const flux = svgEl('g', {}, 'e8-onglet-goutte-flux');
-  flux.append(
-    svgEl('path', { d: gouttePath({ cx: 6, w: c.w, l: c.l, b: c.b }) }, 'menu-coulure-corps'),
-    svgEl('path', { d: `M${6 - c.w * 0.18} 1L${6 - c.w * 0.16} ${c.l * 0.5}` }, 'menu-coulure-reflet'),
-    svgEl('ellipse', { cx: 6 - c.b * 0.38, cy: c.l - c.b * 0.25, rx: c.b * 0.3, ry: c.b * 0.48 }, 'menu-coulure-brillant'));
-  svg.append(flux);
-  return svg;
+  const box = el('span', ['e8-onglet-goutte'], { 'aria-hidden': 'true' });
+  const bande = svgEl('svg', { viewBox: '0 0 200 6.5', preserveAspectRatio: 'none', 'aria-hidden': 'true', focusable: 'false' }, 'e8-onglet-bande');
+  bande.append(svgEl('path', { d: traineeOnglet }, 'menu-coulure-corps'));
+  box.append(bande, ...COULURES_ONGLET.map((c) => {
+    const g = goutteBandeau(c, 0);
+    g.classList.add('e8-onglet-coulure');
+    return g;
+  }));
+  return box;
 }
 
-// Retour du propriétaire (lot 8e) : « plus d'effet de sang sur le menu du bas » : une traînée de sang versée le long du haut de la barre d'onglets, des
-// coulures qui en pendent (dessin des bandeaux, entre les icônes et loin des gouttes des onglets affichés) dont deux laissent tomber une goutte de
-// temps en temps (e8-goutte, 5 s), et des taches séchées dans des coins de planches. Décoratif, sous les libellés ; couleurs en jetons.
+// Retour du propriétaire (lot 8e) : taches de sang séchées dans des coins bas de planches de la barre d'onglets (permanentes, sous aucun libellé) ; les
+// coulures, elles, n'apparaissent que sur l'onglet touché (goutteOnglet). Décoratif ; couleurs en jetons.
 export const SANG_BARRE = Object.freeze({
-  coulures: Object.freeze([
-    Object.freeze({ x: 11.5, w: 5, l: 9, b: 2.6, h: 12 }), Object.freeze({ x: 16, w: 6.5, l: 15, b: 3.2, h: 19, goutte: true }),
-    Object.freeze({ x: 30, w: 4, l: 6, b: 2.2, h: 8.5 }), Object.freeze({ x: 34.5, w: 5.5, l: 12, b: 2.8, h: 15 }),
-    Object.freeze({ x: 47, w: 4.5, l: 7, b: 2.4, h: 9.5 }), Object.freeze({ x: 57.5, w: 6, l: 13, b: 3, h: 17, goutte: true }),
-    Object.freeze({ x: 61.5, w: 4, l: 5, b: 2, h: 7.5 }), Object.freeze({ x: 76.5, w: 5.5, l: 11, b: 2.8, h: 14 }),
-    Object.freeze({ x: 85, w: 4.5, l: 8, b: 2.4, h: 10.5 }), Object.freeze({ x: 96, w: 6, l: 14, b: 3, h: 18 }),
-  ]),
-  // Taches : position (% de la largeur), côté (bas à gauche ou à droite de la planche), forme (0 à 2).
+  // Taches : position (% de la largeur), forme (0 à 2).
   taches: Object.freeze([
     Object.freeze({ x: 1, forme: 0 }), Object.freeze({ x: 14.6, forme: 2 }), Object.freeze({ x: 33, forme: 1 }), Object.freeze({ x: 58.5, forme: 2 }),
     Object.freeze({ x: 78.5, forme: 0 }), Object.freeze({ x: 64, forme: 1 }),
@@ -132,17 +134,7 @@ const TACHES = [
 ];
 function sangBarre() {
   const box = el('span', ['e8-onglets-sang'], { 'aria-hidden': 'true' });
-  // Traînée : bord bas irrégulier (points fixes), étirée sur toute la largeur.
-  const pts = [];
-  for (let i = 0; i <= 40; i += 1) pts.push(`${i * 10} ${(3 + 1.6 * Math.sin(i * 1.7) + 1.1 * Math.sin(i * 0.6 + 1)).toFixed(2)}`);
-  const bande = svgEl('svg', { viewBox: '0 0 400 6.5', preserveAspectRatio: 'none', 'aria-hidden': 'true', focusable: 'false' }, 'e8-onglets-bande');
-  bande.append(svgEl('path', { d: `M0 0H400V${pts.at(-1).split(' ')[1]}L${pts.slice().reverse().join('L')}Z` }, 'menu-coulure-corps'));
-  box.append(bande, ...SANG_BARRE.coulures.map((c) => {
-    const g = goutteBandeau(c, c.goutte ? 1 : 0);
-    g.classList.add('e8-onglets-coulure');
-    if (!c.goutte) g.querySelector('.menu-goutte')?.remove();
-    return g;
-  }), ...SANG_BARRE.taches.map((t) => {
+  box.append(...SANG_BARRE.taches.map((t) => {
     const svg = svgEl('svg', { viewBox: '0 0 26 11', 'aria-hidden': 'true', focusable: 'false' }, 'e8-onglets-tache');
     svg.style.setProperty('--e8-x', `${t.x}%`);
     svg.append(svgEl('path', { d: TACHES[t.forme % TACHES.length] }));
