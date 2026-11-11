@@ -3724,11 +3724,11 @@
   stroke-width: 3;
 }
 
-/* Variantes (retour du propriétaire : trois caisses de personnages, trois de tenues) : vétérans (malle olive), légendes (malle noire cerclée de la
-   teinte), mode (valise bordeaux), haute couture (valise noire, sangles et coins de la teinte). */
-.e3-caisse-veterans .e3-malle { fill: var(--menu-perso-survivant); }
-.e3-caisse-veterans .e3-malle-couvercle { fill: var(--menu-perso-poche); }
-.e3-caisse-veterans :is(.e3-malle, .e3-malle-couvercle, .e3-malle-bande) { stroke: var(--menu-perso-jambes); }
+/* Variantes (retour du propriétaire : trois caisses de personnages, trois de tenues) : recrues (malle olive ; vétérans : malle violette de base), légendes (malle noire cerclée de la
+   teinte ; retour du propriétaire : recrues olive au bleu, vétérans violets, comme les raretés), mode (valise bordeaux), haute couture (valise noire, sangles et coins de la teinte). */
+.e3-caisse-recrues .e3-malle { fill: var(--menu-perso-survivant); }
+.e3-caisse-recrues .e3-malle-couvercle { fill: var(--menu-perso-poche); }
+.e3-caisse-recrues :is(.e3-malle, .e3-malle-couvercle, .e3-malle-bande) { stroke: var(--menu-perso-jambes); }
 .e3-caisse-legendes .e3-malle { fill: var(--menu-scene-voiture); }
 .e3-caisse-legendes .e3-malle-couvercle { fill: var(--menu-scene-toit-salle); }
 .e3-caisse-legendes :is(.e3-malle, .e3-malle-couvercle) { stroke: var(--menu-bois-sombre); }
