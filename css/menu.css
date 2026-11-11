@@ -2005,6 +2005,7 @@
 
 .e9-scene[data-anim='off'] *,
 .e9:not(.e9-anime) .e9-perso-bouton *,
+.e9:not(.e9-anime) .e9-coulures *,
 .e9-sous:not(.e9-anime) * {
   animation-play-state: paused;
 }
@@ -2048,7 +2049,7 @@
   white-space: nowrap;
   border: 1px solid var(--menu-e9-stats-bord);
   border-radius: calc(10 * var(--u));
-  background: var(--menu-e9-voile);
+  background: var(--menu-bouton-rond); /* voile à 70 % (maquette) : 4,5:1 sur le cône clair */
   font-size: var(--e9-petit);
   line-height: 1.2;
   color: var(--menu-texte);
@@ -2937,4 +2938,66 @@
   .e9-capacite {
     top: calc(246 * var(--u));
   }
+}
+
+/* Coulures du bandeau des écrans du Personnage (js/menu/personnage.js, couluresBandeau) : gouttes dessinées comme celles du logo de l'écran de
+   chargement, qui s'allongent à l'affichage (comme e7-coulure) ; petite goutte au bout de la plus longue, qui tombe de quelques unités et s'efface
+   avant le bloc suivant (20 sous le bandeau). Aucune animation sous prefers-reduced-motion (gouttes à leur longueur finale, petite goutte cachée). */
+.e9-coulure {
+  position: absolute;
+  top: 0;
+  left: var(--e9-x);
+  width: calc(12 * var(--u));
+  height: calc(var(--e9-h) * var(--u));
+  margin-left: calc(-6 * var(--u));
+  overflow: hidden;
+}
+
+.e9-coulure-corps,
+.e9-goutte {
+  fill: var(--menu-rouge);
+}
+
+.e9-coulure-ombre {
+  fill: none;
+  stroke: var(--menu-coulure-sombre);
+  stroke-width: 0.9;
+  stroke-linecap: round;
+}
+
+.e9-coulure-reflet {
+  fill: none;
+  stroke: var(--menu-coulure-reflet);
+  stroke-width: 0.6;
+  stroke-linecap: round;
+  opacity: 0.8;
+}
+
+.e9-coulure-brillant {
+  fill: var(--menu-coulure-reflet);
+}
+
+.e9-coulure-flux {
+  animation: e9-coulure 1.1s cubic-bezier(0.55, 0, 0.8, 0.6) 0.15s both;
+}
+
+.e9-coulure-1 .e9-coulure-flux { animation-duration: 0.9s; }
+.e9-coulure-3 .e9-coulure-flux { animation-duration: 0.75s; animation-delay: 0.3s; }
+
+.e9-goutte {
+  opacity: 0;
+  animation: e9-goutte 5s ease-in 1.4s infinite;
+}
+
+@keyframes e9-coulure {
+  from { transform: translateY(calc(var(--e9-l) * -1px)); }
+  to { transform: translateY(0); }
+}
+
+/* Une goutte en 5 s : elle grossit au bout de la coulure, tombe de 2 et s'efface (bien moins de 3 changements par seconde). */
+@keyframes e9-goutte {
+  0%, 60% { opacity: 0; transform: translateY(0); }
+  70% { opacity: 1; transform: translateY(0); }
+  92% { opacity: 1; transform: translateY(1.5px); }
+  100% { opacity: 0; transform: translateY(2px); }
 }

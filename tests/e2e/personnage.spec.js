@@ -14,7 +14,7 @@ const DONNEES = { raretes: lire('data/menu/raretes.json'), objets: lire('data/me
 const { cat, depart } = lireCatalogue(DONNEES);
 // Fonction pure (js/core/equipement.js) : niveaux attendus avec l'équipement de départ ; ?test=1 : sauvegarde en mémoire, vide (base : zéros).
 const ATTENDU = statistiquesEffectives(null, creerEtatEquipement(cat, depart), cat, PARAMS).niveaux;
-const ANIMS_E9 = ['e9-bandana', 'e9-ombre', 'e9-projecteur', 'e9-respire', 'e9-tete', 'e9-viser'];
+const ANIMS_E9 = ['e9-bandana', 'e9-coulure', 'e9-goutte', 'e9-ombre', 'e9-projecteur', 'e9-respire', 'e9-tete', 'e9-viser']; // retour du propriétaire : coulures du bandeau (e9-coulure, e9-goutte)
 
 function surveiller(page, baseURL) {
   const problemes = [];
@@ -63,7 +63,8 @@ const boite = (page, sel) => page.locator(sel).first().evaluate((n) => {
 const chevauche = (x, y) => x.l < y.r - 0.5 && y.l < x.r - 0.5 && x.t < y.b - 0.5 && y.t < x.b - 0.5;
 const animations = (page, sel) => page.locator(sel).evaluate((n) => n.getAnimations({ subtree: true }).filter((a) => a.animationName).map((a) => [a.animationName, a.playState]));
 const nomsAnims = async (page, sel) => [...new Set((await animations(page, sel)).map(([n]) => n))].sort();
-const etats = async (page, sel) => [...new Set((await animations(page, sel)).map(([, s]) => s))];
+// États des animations ; « finished » (allongement des coulures du bandeau, joué une fois à l'affichage) n'est pas compté.
+const etats = async (page, sel) => [...new Set((await animations(page, sel)).map(([, s]) => s).filter((s) => s !== 'finished'))];
 
 // Contraste : couleur du texte contre le pixel le plus clair derrière lui (texte rendu transparent, capture de sa boîte).
 async function contrastes(page, sels) {
@@ -75,7 +76,8 @@ async function contrastes(page, sels) {
   const out = {};
   for (const s of sels) {
     const r = await boite(page, s);
-    const png = await page.screenshot({ clip: { x: r.l, y: r.t, width: Math.max(1, r.w), height: Math.max(1, r.h) } });
+    // Boîte resserrée d'un pixel : le fond derrière le texte, sans le bord antialiasé de la boîte (densité 2,75 du projet mobile).
+    const png = await page.screenshot({ clip: { x: r.l + 1, y: r.t + 1, width: Math.max(1, r.w - 2), height: Math.max(1, r.h - 2) } });
     const clair = await page.evaluate(async (b64) => {
       const img = new Image();
       img.src = `data:image/png;base64,${b64}`;
@@ -370,7 +372,7 @@ test.describe('sous-menus Inventaire, Fusion, Personnages (E9-2 à E9-4)', () =>
     expect((await etatSous(page, 'fusion')).places).toEqual(['o5', 'o6', 'o2']);
     await expect(page.locator('#menu-fusion-message')).toHaveText('Fusion possible. Coût : 100');
     await expect(page.locator('#menu-fusion-resultat')).toHaveClass(/is-pret/);
-    expect(await nomsAnims(page, '#menu-ecran-fusion')).toEqual(['e9-etincelle', 'e9-lueur']);
+    expect(await nomsAnims(page, '#menu-ecran-fusion')).toEqual(['e9-coulure', 'e9-etincelle', 'e9-goutte', 'e9-lueur']);
     await page.locator('#menu-fusion-fusionner').click();
     await expect(page.locator('#menu-fusion-annonce')).toHaveText('Fusion réussie : Gilet Peu commun, niveau 3 (porté).');
     const e = await etatPerso(page);
@@ -400,7 +402,7 @@ test.describe('sous-menus Inventaire, Fusion, Personnages (E9-2 à E9-4)', () =>
     await expect(page.locator('#menu-personnages-choisir')).toHaveAttribute('aria-disabled', 'true');
     await expect(page.locator('#menu-personnages-niveau')).toHaveText('Niveau 1 · prochain niveau : 2');
     await expect(page.locator('#menu-personnages-barre')).toHaveAttribute('aria-valuenow', '1');
-    expect(await nomsAnims(page, '#menu-ecran-personnages')).toEqual(['e9-bandana', 'e9-respire', 'e9-tete', 'e9-viser']);
+    expect(await nomsAnims(page, '#menu-ecran-personnages')).toEqual(['e9-bandana', 'e9-coulure', 'e9-goutte', 'e9-respire', 'e9-tete', 'e9-viser']);
     expect(await etats(page, '#menu-ecran-personnages')).toEqual(['running']);
     // Verrouillé : sélectionnable pour sa fiche, ni choisissable ni améliorable.
     await page.locator('#menu-perso-carte-personnage-3').click();
@@ -599,7 +601,7 @@ test.describe('coulures du bandeau au-dessus du bloc suivant', () => {
       if (encoche) await page.addStyleTag({ content: '#e8 { --e8-gauche: 50px !important; --e8-droite: 50px !important; }' });
       await page.locator('#menu-onglet-personnage').click();
       await expect(page.locator('#menu-ecran-personnage')).toBeVisible();
-      const bas = (sec) => page.locator(`${sec} .menu-bandeau-coulure`).evaluateAll((ns) => Math.max(...ns.map((n) => n.getBoundingClientRect().bottom)));
+      const bas = (sec) => page.locator(`${sec} .menu-bandeau-coulures > *`).evaluateAll((ns) => Math.max(...ns.map((n) => n.getBoundingClientRect().bottom)));
       expect(await bas('#menu-ecran-personnage'), 'Personnage').toBeLessThanOrEqual((await boite(page, '#menu-perso-gauche')).t + 0.5);
       for (const [ouvreur, nom, suivant] of [['#menu-perso-inventaire', 'inventaire', '#menu-inventaire-filtres'], ['#menu-perso-fusion', 'fusion', '#menu-fusion-regle'], ['#menu-perso-silhouette', 'personnages', '#menu-personnages-grille']]) {
         await page.locator(ouvreur).click();
@@ -609,4 +611,26 @@ test.describe('coulures du bandeau au-dessus du bloc suivant', () => {
       }
     });
   }
+});
+
+// Retour du propriétaire : coulures du bandeau « comme celles du chargement » (gouttes du logo, js/logo.js).
+test('coulures du bandeau : trois gouttes dessinées comme celles du logo (renflement, ombre, reflet), allongées à l\'affichage ; immobiles sous prefers-reduced-motion', async ({ page }) => {
+  await ouvrirPersonnage(page);
+  for (const sec of ['#menu-ecran-personnage']) {
+    await expect(page.locator(`${sec} .e9-coulure`)).toHaveCount(3);
+    await expect(page.locator(`${sec} .e9-coulure .e9-coulure-corps`)).toHaveCount(3);
+    await expect(page.locator(`${sec} .e9-coulure .e9-coulure-ombre`)).toHaveCount(3);
+    await expect(page.locator(`${sec} .e9-coulure .e9-coulure-reflet`)).toHaveCount(3);
+    await expect(page.locator(`${sec} .e9-goutte`)).toHaveCount(1);
+    expect(await page.locator(`${sec} .e9-coulure-corps`).first().getAttribute('d')).toMatch(/A[\d.]+ [\d.]+ 0 1 0/); // renflement arrondi (gouttePath)
+    // Même rouge que le bandeau (zone pleine), aucune couleur écrite par le JavaScript.
+    const [corps, fond] = await page.evaluate((s) => [getComputedStyle(document.querySelector(`${s} .e9-coulure-corps`)).fill, getComputedStyle(document.querySelector(`${s} .menu-bandeau`)).backgroundColor], sec);
+    expect(corps).toBe(fond);
+  }
+  await page.locator('#menu-perso-inventaire').click();
+  await expect(page.locator('#menu-ecran-inventaire .e9-coulure')).toHaveCount(3);
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  expect(await animations(page, '#menu-ecran-inventaire .e9-coulures')).toEqual([]);
+  const t = await page.locator('#menu-ecran-inventaire .e9-coulure-flux').first().evaluate((n) => getComputedStyle(n).transform);
+  expect(['none', 'matrix(1, 0, 0, 1, 0, 0)']).toContain(t); // longueur finale
 });

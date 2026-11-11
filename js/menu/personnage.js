@@ -8,6 +8,7 @@
 import { EMPLACEMENTS, definition, emplacementDe, objetDe, personnageDe, typeEmplacement } from '../core/equipement.js';
 import { fmt } from '../game/texts.js';
 import { el } from './menu.js';
+import { gouttePath } from '../logo.js';
 import { chargerEquipement } from './equipement-etat.js';
 
 const SVG = 'http://www.w3.org/2000/svg';
@@ -115,13 +116,44 @@ export function listeStats(t, niveaux, { id, classe = 'e9-stats' } = {}) {
   return ul;
 }
 
+// Coulures du bandeau (retour du propriétaire : « comme celles du chargement ») : les trois traits droits du composant commun deviennent des gouttes
+// dessinées comme celles du logo (js/logo.js : col qui s'affine, renflement arrondi, bord dans l'ombre, reflet), qui s'allongent à l'affichage de l'écran
+// (e9-coulure) ; une petite goutte se forme au bout de la plus longue et tombe un peu (e9-goutte), sans atteindre le bloc suivant (20 sous le bandeau).
+// Chaque goutte : vue 12 × h (unités = var(--u)), haut = bas du bandeau. Couleurs : jetons --menu-rouge, --menu-coulure-sombre, --menu-coulure-reflet.
+export const COULURES_BANDEAU = Object.freeze([
+  Object.freeze({ x: 14, w: 5, l: 10, b: 2.6, h: 13 }),
+  Object.freeze({ x: 47, w: 6.5, l: 14.5, b: 3.2, h: 18 }),
+  Object.freeze({ x: 82, w: 4, l: 6, b: 2.2, h: 8.5 }),
+]);
+export function couluresBandeau(bandeauEl) {
+  const zone = bandeauEl.querySelector('.menu-bandeau-coulures');
+  if (!zone) return bandeauEl;
+  zone.classList.add('e9-coulures');
+  zone.replaceChildren(...COULURES_BANDEAU.map((c, i) => {
+    const svg = forme('svg', { viewBox: `0 0 12 ${c.h}`, 'aria-hidden': 'true', focusable: 'false' }, `e9-coulure e9-coulure-${i + 1}`);
+    svg.style.setProperty('--e9-x', `${c.x}%`);
+    svg.style.setProperty('--e9-h', String(c.h));
+    const g = { cx: 6, w: c.w, l: c.l, b: c.b };
+    const flux = groupe('e9-coulure-flux',
+      forme('path', { d: gouttePath(g) }, 'e9-coulure-corps'),
+      forme('path', { d: `M${6 + c.w * 0.4} 0L${6 + c.w * 0.38} ${c.l * 0.45}C${6 + c.w * 0.3} ${c.l * 0.7} ${6 + c.b * 0.95} ${c.l - c.b} ${6 + c.b * 0.8} ${c.l + c.b * 0.4}` }, 'e9-coulure-ombre'),
+      forme('path', { d: `M${6 - c.w * 0.18} 1L${6 - c.w * 0.16} ${c.l * 0.5}` }, 'e9-coulure-reflet'),
+      forme('ellipse', { cx: 6 - c.b * 0.38, cy: c.l - c.b * 0.25, rx: c.b * 0.3, ry: c.b * 0.48 }, 'e9-coulure-brillant'));
+    flux.style.setProperty('--e9-l', String(c.h));
+    svg.append(flux);
+    if (i === 1) svg.append(forme('circle', { cx: 6, cy: c.l + c.b * 0.6, r: 1.1 }, 'e9-goutte'));
+    return svg;
+  }));
+  return bandeauEl;
+}
+
 // En-tête d'un sous-menu (écran plein) : bandeau « Équipement » / titre, puis « ‹ Équipement » (planche, comme « ‹ Menu » des Options du lot 8c).
 export function teteSous(t, bandeau, titre, id, retour) {
   const tete = el('div', ['e5-tete', 'e9-tete']);
   const b = el('button', ['menu-planche', 'e5-retour'], { type: 'button', id: `${id}-retour`, 'aria-label': t('game.menu.perso.retour.aria') });
   b.append(icone24('chevron', 'e5-chevron'), Object.assign(el('span'), { textContent: t('game.menu.perso.retour') }));
   b.addEventListener('click', () => retour());
-  tete.append(bandeau(t('game.menu.perso.titre'), titre, `${id}-titre`), b);
+  tete.append(couluresBandeau(bandeau(t('game.menu.perso.titre'), titre, `${id}-titre`)), b);
   return { tete, bouton: b };
 }
 
@@ -223,7 +255,7 @@ export async function ecranPersonnage({ t, bandeau, niveaux = null, statsCfg = n
   capSuite.textContent = t('game.menu.perso.capacite.suite');
   capacite.append(capTete, capTitre, capEffet, capSuite);
 
-  section.append(decor, bandeau(t('game.menu.perso.libelle'), t('game.menu.perso.titre'), 'menu-titre-personnage'), essai, btPerso, gauche, droite, capacite);
+  section.append(decor, couluresBandeau(bandeau(t('game.menu.perso.libelle'), t('game.menu.perso.titre'), 'menu-titre-personnage')), essai, btPerso, gauche, droite, capacite);
 
   function rendre() {
     const etat = eq.etat();
