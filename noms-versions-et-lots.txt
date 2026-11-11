@@ -178,5 +178,5 @@ afficher: oui
 [lot-8e]
 version: v0.8
 nom: Boutique et caisses mystère
-description: Nouvel onglet Boutique : trois caisses mystère, leurs chances, une ou dix ouvertures et leurs résultats. Les objets obtenus vont dans l'inventaire ; aucun prix n'est prélevé, rien n'est gardé.
+description: Nouvel onglet Boutique par rubriques : offres du jour, caisses d'équipement, de personnages et de tenues, chances affichées et résultats. Aucun prix n'est prélevé, rien n'est gardé.
 afficher: oui

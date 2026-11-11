@@ -108,6 +108,49 @@ function goutteOnglet() {
   return svg;
 }
 
+// Retour du propriétaire (lot 8e) : « plus d'effet de sang sur le menu du bas » : une traînée de sang versée le long du haut de la barre d'onglets, des
+// coulures qui en pendent (dessin des bandeaux, entre les icônes et loin des gouttes des onglets affichés) dont deux laissent tomber une goutte de
+// temps en temps (e8-goutte, 5 s), et des taches séchées dans des coins de planches. Décoratif, sous les libellés ; couleurs en jetons.
+export const SANG_BARRE = Object.freeze({
+  coulures: Object.freeze([
+    Object.freeze({ x: 11.5, w: 5, l: 9, b: 2.6, h: 12 }), Object.freeze({ x: 16, w: 6.5, l: 15, b: 3.2, h: 19, goutte: true }),
+    Object.freeze({ x: 30, w: 4, l: 6, b: 2.2, h: 8.5 }), Object.freeze({ x: 34.5, w: 5.5, l: 12, b: 2.8, h: 15 }),
+    Object.freeze({ x: 47, w: 4.5, l: 7, b: 2.4, h: 9.5 }), Object.freeze({ x: 57.5, w: 6, l: 13, b: 3, h: 17, goutte: true }),
+    Object.freeze({ x: 61.5, w: 4, l: 5, b: 2, h: 7.5 }), Object.freeze({ x: 76.5, w: 5.5, l: 11, b: 2.8, h: 14 }),
+    Object.freeze({ x: 85, w: 4.5, l: 8, b: 2.4, h: 10.5 }), Object.freeze({ x: 96, w: 6, l: 14, b: 3, h: 18 }),
+  ]),
+  // Taches : position (% de la largeur), côté (bas à gauche ou à droite de la planche), forme (0 à 2).
+  taches: Object.freeze([
+    Object.freeze({ x: 1, forme: 0 }), Object.freeze({ x: 14.6, forme: 2 }), Object.freeze({ x: 33, forme: 1 }), Object.freeze({ x: 58.5, forme: 2 }),
+    Object.freeze({ x: 78.5, forme: 0 }), Object.freeze({ x: 64, forme: 1 }),
+  ]),
+});
+const TACHES = [
+  'M4 7c1-3 5-4 8-3 2-2 6-2 7 1 3 0 4 3 2 4-1 2-5 2-7 1-2 1-6 1-8-1-2 0-3-1-2-2zM23 3a1.4 1.4 0 1 1 0.1 0zM1 3a1 1 0 1 1 0.1 0z',
+  'M2 6c2-3 6-3 9-2 3-1 7 0 7 2 0 3-4 3-6 3-2 1-5 1-7 0-2 0-4-1-3-3zM21 8a1.2 1.2 0 1 1 0.1 0z',
+  'M5 8c0-3 4-5 7-4 2-2 5-1 6 1 2 1 2 3 0 4-2 2-6 1-8 1-3 1-5 0-5-2zM2 4a1.3 1.3 0 1 1 0.1 0zM20 2a0.9 0.9 0 1 1 0.1 0z',
+];
+function sangBarre() {
+  const box = el('span', ['e8-onglets-sang'], { 'aria-hidden': 'true' });
+  // Traînée : bord bas irrégulier (points fixes), étirée sur toute la largeur.
+  const pts = [];
+  for (let i = 0; i <= 40; i += 1) pts.push(`${i * 10} ${(3 + 1.6 * Math.sin(i * 1.7) + 1.1 * Math.sin(i * 0.6 + 1)).toFixed(2)}`);
+  const bande = svgEl('svg', { viewBox: '0 0 400 6.5', preserveAspectRatio: 'none', 'aria-hidden': 'true', focusable: 'false' }, 'e8-onglets-bande');
+  bande.append(svgEl('path', { d: `M0 0H400V${pts.at(-1).split(' ')[1]}L${pts.slice().reverse().join('L')}Z` }, 'menu-coulure-corps'));
+  box.append(bande, ...SANG_BARRE.coulures.map((c) => {
+    const g = goutteBandeau(c, c.goutte ? 1 : 0);
+    g.classList.add('e8-onglets-coulure');
+    if (!c.goutte) g.querySelector('.menu-goutte')?.remove();
+    return g;
+  }), ...SANG_BARRE.taches.map((t) => {
+    const svg = svgEl('svg', { viewBox: '0 0 26 11', 'aria-hidden': 'true', focusable: 'false' }, 'e8-onglets-tache');
+    svg.style.setProperty('--e8-x', `${t.x}%`);
+    svg.append(svgEl('path', { d: TACHES[t.forme % TACHES.length] }));
+    return svg;
+  }));
+  return box;
+}
+
 // Retour du propriétaire : blocs de taille fixe (bandeaux de titre, cartes d'Infini), quelle que soit la longueur de leurs textes. Un texte d'une
 // ligne (white-space: nowrap, overflow: hidden en CSS) plus large que sa place voit sa police réduite pour tenir, jamais agrandie ; recalculé quand
 // le bloc change de taille (ResizeObserver : écran affiché, fenêtre redimensionnée), quand les polices arrivent, ou à la demande (texte changé).
@@ -327,6 +370,7 @@ export function creerMenu({ dict, infos = [], liens = {}, solde: montant = 0, re
     boutonsOnglets.set(o.id, b);
     nav.append(b);
   }
+  nav.append(sangBarre());
 
   box.append(entete, contenu, nav, el('div', ['menu-grain'], { 'aria-hidden': 'true' }));
   root.append(box);
@@ -342,8 +386,10 @@ export function creerMenu({ dict, infos = [], liens = {}, solde: montant = 0, re
     // Lot 8d : sous-menus du Personnage (Inventaire, Fusion, Personnages), écrans pleins eux aussi ; « ‹ Équipement » revient à l'écran Personnage.
     const plein = ECRANS_PLEINS.includes(etat.ecran);
     const sous = SOUS_MENUS.includes(etat.ecran); // sous-menu du Personnage : à la place de l'écran de l'onglet, barre d'onglets visible
-    box.dataset.ecran = plein || sous ? etat.ecran : '';
-    nav.hidden = plein;
+    // Lot 8e (retour du propriétaire) : résultat d'un achat de la Boutique en écran plein (barre d'onglets masquée, comme l'ouverture du lot 8f).
+    const resultat = etat.onglet === 'boutique' && !plein && !sous && Boolean(boutique?.pleinEcran());
+    box.dataset.ecran = plein || sous ? etat.ecran : resultat ? 'resultat' : '';
+    nav.hidden = plein || resultat;
     for (const [id, s] of ecransOnglets) s.hidden = id !== etat.onglet || plein || sous;
     boutique?.synchroniser(etat.onglet === 'boutique' && !plein && !sous); // lot 8e : la Boutique tient sa vue (caisses ou résultat)
     perso?.synchroniser(etat.ecran);

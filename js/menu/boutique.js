@@ -1,16 +1,18 @@
 // Lot 8e : onglet Boutique (E3-1, maquette Docs/maquettes-v0.8/Caisses.html ; Docs/ref/menu-principal.md), chargé à la demande au premier affichage
-// de l'onglet, avec data/menu/caisses.json, js/core/caisses.js et l'équipement du lot 8d (equipement-etat.js : catalogue et inventaire en mémoire).
-// Trois cartes : caisse mystère dessinée en SVG (bois, planches, coins rivetés, couvercle, grand « ? » lumineux et deux petits de la teinte de la
-// caisse, rayons ; animations e3-* : flotte, « ? » qui pulse, tremblement bref toutes les 4 s, en décalé d'une carte à l'autre ; en pause hors de
-// l'écran et page cachée, coupées sous prefers-reduced-motion), nom, contenu, « Ouvrir ×1 » et « Ouvrir ×10 » avec leur prix, « Voir les chances »
-// (dialogue E3-6, js/menu/chances.js). Achat : tirage à graine (crypto.getRandomValues), objets ajoutés à l'inventaire en mémoire, puis
+// de l'onglet, avec data/menu/caisses.json, data/menu/cosmetiques.json, js/core/caisses.js et l'équipement du lot 8d (equipement-etat.js).
+// Retours du propriétaire : écran qui défile, par rubriques (petit menu à gauche pour y aller vite) : offres du jour (six objets, renouvelés à minuit,
+// heure de l'appareil), caisses d'équipement, caisses de personnages, cosmétiques (tenues d'exemple, pas encore portables). Caisse mystère dessinée en
+// SVG (bois, planches, coins rivetés, couvercle, grand « ? » lumineux et deux petits de la teinte de la caisse, rayons ; animations e3-* : flotte,
+// « ? » qui pulse, tremblement bref toutes les 4 s, en décalé ; en pause hors de l'écran et page cachée, coupées sous prefers-reduced-motion).
+// Achat : tirage à graine (crypto.getRandomValues), éléments ajoutés à l'état en mémoire (inventaire, personnages, collection de tenues), puis
 // afficherOuverture(resultat) → écran de résultat (E3-4, E3-5 : js/menu/resultat.js). Le prix est affiché, jamais prélevé ; rien n'est écrit.
 import { formatMoney } from '../core/economy.js';
-import { TIRAGES_X10, bornes, lireCaisses, prixAchat, tirer, tirer10 } from '../core/caisses.js';
-import { ajouterObjets } from '../core/equipement.js';
+import { TIRAGES_X10, ajouterCosmetiques, bornes, lireCaisses, lireCosmetiques, lireOffres, offresDuJour, prixAchat, tirer, tirer10 } from '../core/caisses.js';
+import { ajouterObjets, obtenirPersonnages } from '../core/equipement.js';
 import { fmt } from '../game/texts.js';
 import { el } from './menu.js';
 import { chargerEquipement } from './equipement-etat.js';
+import { icone24 } from './personnage.js';
 
 const SVG = 'http://www.w3.org/2000/svg';
 const json = (path) => fetch(path).then((r) => (r.ok ? r.json() : null)).catch(() => null);
@@ -33,12 +35,13 @@ const point = (x, y, classe, texte) => {
 
 // Décalage des animations d'une carte à l'autre (maquette : 0, −1,3 s, −2,6 s).
 export const DECALAGES = Object.freeze([0, -1.3, -2.6]);
+// Rubriques de la Boutique, dans l'ordre de l'écran (petit menu de gauche).
+export const RUBRIQUES = Object.freeze(['offres', 'equipement', 'personnage', 'cosmetique']);
+const RUBRIQUE_TEXTES = { offres: 'game.menu.boutique.rubrique.offres', equipement: 'game.menu.boutique.rubrique.equipement', personnage: 'game.menu.boutique.rubrique.personnage', cosmetique: 'game.menu.boutique.rubrique.cosmetique' };
 
-// Caisse mystère (maquette : 150 × 96, rayons au-dessus jusqu'à −10) ; décorative. Couleurs en jetons (css/menu.css), teinte : --e3-teinte. Vue
-// resserrée sur la caisse (y de 4 à 96) : la carte garde la place d'une cible de 44 px pour « Voir les chances » ; les rayons sortent du couvercle
-// et s'arrêtent au haut de la vue.
+// Caisse mystère (maquette : 150 × 96, rayons au-dessus jusqu'à −10) ; décorative. Couleurs en jetons (css/menu.css), teinte : --e3-teinte.
 export function caisseSvg() {
-  const svg = forme('svg', { viewBox: '0 4 150 92', 'aria-hidden': 'true', focusable: 'false', preserveAspectRatio: 'xMidYMax meet' }, 'e3-caisse');
+  const svg = forme('svg', { viewBox: '0 -10 150 106', 'aria-hidden': 'true', focusable: 'false', preserveAspectRatio: 'xMidYMax meet' }, 'e3-caisse');
   svg.append(
     groupe('e3-rayons', forme('path', { d: 'M40 30 L20 -6 L55 -6 Z M75 30 L66 -10 L84 -10 Z M110 30 L95 -6 L130 -6 Z' })),
     groupe('e3-tremble', groupe('e3-flotte',
@@ -70,40 +73,128 @@ export function poserJeton(n, variable, jeton) {
 }
 
 const graineAchat = () => crypto.getRandomValues(new Uint32Array(1))[0];
+// Numéro du jour local (offres du jour : renouvelées à minuit, heure de l'appareil) et temps restant jusqu'à minuit.
+export const jourLocal = (d) => Math.floor(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / 86_400_000);
+export const avantMinuit = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1).getTime() - d.getTime();
 
-// contexte : { t, bandeau, root (#menu-contenu : section du résultat), rootDialogue (#e8 : dialogue des chances), surVue() (menu.js resynchronise) }.
-export async function ecranBoutique({ t, bandeau, root, rootDialogue, surVue = () => {} }) {
-  const [eq, donnees] = await Promise.all([chargerEquipement(), json('data/menu/caisses.json')]);
-  const { cat } = eq;
+// contexte : { t, bandeau, root (#menu-contenu : section du résultat), rootDialogue (#e8 : dialogue des chances), surVue() (menu.js resynchronise),
+// maintenant() (date de l'appareil ; les tests la fixent par l'horloge du navigateur) }.
+export async function ecranBoutique({ t, bandeau, root, rootDialogue, surVue = () => {}, maintenant = () => new Date() }) {
+  const [eq, donnees, cosm] = await Promise.all([chargerEquipement(), json('data/menu/caisses.json'), json('data/menu/cosmetiques.json')]);
+  const cat = { ...eq.cat, cosmetiques: lireCosmetiques(cosm, eq.cat.raretes) };
   const { caisses } = lireCaisses(donnees, cat);
+  const { regles } = lireOffres(donnees, cat);
   const nomRarete = (rid) => cat.raretes.find((r) => r.id === rid)?.nom ?? '';
+  const jetonRarete = (rid) => cat.raretes.find((r) => r.id === rid)?.jeton;
   const minuscule = (s) => s.toLocaleLowerCase('fr');
+  let collection = Object.freeze({}); // tenues obtenues (mémoire de la page jusqu'au lot 8h)
 
   const section = el('section', ['e8-ecran', 'e3', 'e3-boutique'], { id: 'menu-ecran-boutique', 'aria-labelledby': 'menu-titre-boutique', 'data-block': 'E3-1', 'data-anim': 'off' });
-  const note = el('p', ['e3-note'], { id: 'menu-boutique-note' });
-  note.textContent = t('game.menu.boutique.note');
-  const liste = el('ul', ['e3-cartes'], { id: 'menu-boutique-caisses', 'aria-label': t('game.menu.boutique.caisses') });
+  // Petit menu des rubriques, sous le bandeau, à gauche ; le contenu défile à droite.
+  const nav = el('nav', ['e3-rubriques'], { id: 'menu-boutique-rubriques', 'aria-label': t('game.menu.boutique.rubriques') });
+  const navListe = el('ul');
+  nav.append(navListe);
+  const defile = el('div', ['e3-defile'], { id: 'menu-boutique-defile', tabindex: '0', role: 'region', 'aria-label': t('game.menu.boutique.contenu') });
+  const rayons = new Map(); // rubrique → { section, bouton }
   const boutons = new Map(); // id de caisse → { un, dix, chances }
 
-  caisses.forEach((c, i) => {
-    const li = el('li', ['e3-carte'], { 'data-caisse': c.id, 'aria-labelledby': `menu-caisse-${c.id}-nom` });
-    poserJeton(li, '--e3-teinte', c.teinte);
-    li.style.setProperty('--e3-decalage', `${DECALAGES[i % DECALAGES.length]}s`);
-    const nom = el('h3', ['e3-carte-nom'], { id: `menu-caisse-${c.id}-nom` });
-    nom.textContent = c.nom;
-    const b = bornes(c, cat);
+  function rayon(id, extra = []) {
+    const s = el('section', ['e3-rayon'], { id: `menu-boutique-${id}`, 'aria-labelledby': `menu-boutique-${id}-titre`, 'data-rubrique': id });
+    const tete = el('div', ['e3-rayon-tete']);
+    const h = el('h3', ['e3-rayon-titre'], { id: `menu-boutique-${id}-titre` });
+    h.textContent = t(RUBRIQUE_TEXTES[id]);
+    tete.append(h, ...extra);
+    s.append(tete);
+    const b = el('button', ['e3-rubrique'], { type: 'button', id: `menu-boutique-aller-${id}`, 'aria-controls': `menu-boutique-${id}` });
+    b.append(Object.assign(el('span', ['e3-rubrique-nom']), { textContent: t(RUBRIQUE_TEXTES[id]) }));
+    b.addEventListener('click', () => aller(id));
+    const li = el('li');
+    li.append(b);
+    navListe.append(li);
+    rayons.set(id, { section: s, bouton: b });
+    defile.append(s);
+    return s;
+  }
+
+  // --- Offres du jour ----------------------------------------------------------------------------------------------------------------------------
+  const compte = el('p', ['e3-compte'], { id: 'menu-boutique-compte' });
+  const offresListe = el('ul', ['e3-offres'], { id: 'menu-boutique-offres-liste', 'aria-labelledby': 'menu-boutique-offres-titre' });
+  rayon('offres', [compte]).append(offresListe);
+  let jour = null;
+  let offres = [];
+  const achetees = new Set();
+  function rendreOffres() {
+    const d = maintenant();
+    const j = jourLocal(d);
+    if (j !== jour) {
+      jour = j;
+      offres = offresDuJour(regles, cat, j);
+      achetees.clear();
+      offresListe.replaceChildren(...offres.map((o, i) => {
+        const def = cat.objets.get(o.id);
+        const li = el('li', ['e3-offre'], { 'data-rarete': o.rarete, 'data-objet': o.id, id: `menu-offre-${i}` });
+        poserJeton(li, '--e3-rarete', jetonRarete(o.rarete));
+        const ico = el('span', ['e3-offre-icone']);
+        ico.append(icone24(def?.type ?? 'accessoire', 'e9-icone e3-offre-svg'));
+        const nom = el('span', ['e3-offre-nom'], { id: `menu-offre-${i}-nom` });
+        nom.textContent = def?.nom ?? o.id;
+        const rar = el('span', ['e3-offre-rarete']);
+        rar.textContent = nomRarete(o.rarete);
+        const b = el('button', ['e3-action', 'e3-rouge', 'e3-offre-acheter'], { type: 'button', id: `menu-offre-${i}-acheter`, 'aria-describedby': `menu-offre-${i}-nom` });
+        b.textContent = fmt(t('game.menu.boutique.offre.acheter'), { prix: formatMoney(o.prix) });
+        b.addEventListener('click', () => acheterOffre(i, b));
+        li.append(ico, nom, rar, b);
+        return li;
+      }));
+    }
+    const ms = avantMinuit(d);
+    compte.textContent = fmt(t('game.menu.boutique.offres.compte'), { h: Math.floor(ms / 3_600_000), m: Math.floor((ms % 3_600_000) / 60_000) });
+  }
+  function acheterOffre(i, bouton) {
+    const o = offres[i];
+    if (!o || achetees.has(o.cle)) return;
+    const objet = { id: o.id, rarete: o.rarete, niveau: 1 };
+    const { etat, uids } = ajouterObjets(eq.etat(), cat, [objet]);
+    if (uids.length !== 1) return;
+    eq.poser(etat);
+    achetees.add(o.cle);
+    bouton.textContent = t('game.menu.boutique.offre.achetee');
+    bouton.setAttribute('aria-disabled', 'true');
+    bouton.closest('li')?.classList.add('is-achetee');
+    achats += 1;
+    retourFocus = bouton;
+    afficherOuverture({ type: 'offre', caisse: null, quantite: 1, objets: [objet], uids, prix: o.prix, graine: null });
+  }
+
+  // --- Caisses --------------------------------------------------------------------------------------------------------------------------------
+  function contenuCaisse(c) {
     const contenu = el('p', ['e3-carte-contenu'], { id: `menu-caisse-${c.id}-contenu` });
     const resume = el('span', ['e3-carte-resume']);
-    resume.textContent = b.n === 1
-      ? fmt(t('game.menu.boutique.contenu.un'), { rarete: minuscule(nomRarete(b.min)) })
-      : fmt(t(b.n === 2 ? 'game.menu.boutique.contenu.ou' : 'game.menu.boutique.contenu.a'), { min: minuscule(nomRarete(b.min)), max: minuscule(nomRarete(b.max)) });
     const raretes = el('span', ['e3-carte-raretes']);
-    raretes.textContent = c.chances.map((x) => nomRarete(x.rarete)).join(' · ');
+    if (c.type === 'personnage') {
+      resume.textContent = t('game.menu.boutique.contenu.personnage');
+      raretes.textContent = t('game.menu.boutique.contenu.personnage.regle');
+    } else {
+      const b = bornes(c, cat);
+      const quoi = t(c.type === 'cosmetique' ? 'game.menu.boutique.quoi.tenue' : 'game.menu.boutique.quoi.objet');
+      resume.textContent = b.n === 1
+        ? fmt(t('game.menu.boutique.contenu.un'), { quoi, rarete: minuscule(nomRarete(b.min)) })
+        : fmt(t(b.n === 2 ? 'game.menu.boutique.contenu.ou' : 'game.menu.boutique.contenu.a'), { quoi, min: minuscule(nomRarete(b.min)), max: minuscule(nomRarete(b.max)) });
+      raretes.textContent = c.chances.map((x) => nomRarete(x.rarete)).join(' · ');
+    }
     contenu.append(resume, raretes);
+    return contenu;
+  }
+  function carteCaisse(c, i) {
+    const li = el('li', ['e3-carte'], { 'data-caisse': c.id, 'data-type': c.type, 'aria-labelledby': `menu-caisse-${c.id}-nom` });
+    poserJeton(li, '--e3-teinte', c.teinte);
+    li.style.setProperty('--e3-decalage', `${DECALAGES[i % DECALAGES.length]}s`);
+    const nom = el('h4', ['e3-carte-nom'], { id: `menu-caisse-${c.id}-nom` });
+    nom.textContent = c.nom;
     const actions = el('div', ['e3-carte-actions']);
     const bouton = (quantite, classes, cle) => {
       const prix = formatMoney(prixAchat(c, quantite));
-      // Nom accessible = texte visible (« Ouvrir ×1, 150 ») ; la caisse en description (son nom, titre de la carte).
+      // Nom accessible = texte visible (« Ouvrir ×1 · prix : 150 ») ; la caisse en description (son nom, titre de la carte).
       const n = el('button', ['e3-ouvrir', ...classes], { type: 'button', id: `menu-caisse-${c.id}-${quantite === 1 ? 'un' : 'dix'}`, 'aria-describedby': `menu-caisse-${c.id}-nom` });
       const action = el('span', ['e3-ouvrir-action']);
       action.textContent = t(cle);
@@ -121,11 +212,46 @@ export async function ecranBoutique({ t, bandeau, root, rootDialogue, surVue = (
     const lien = el('button', ['e3-lien'], { type: 'button', id: `menu-caisse-${c.id}-chances`, 'aria-haspopup': 'dialog', 'aria-describedby': `menu-caisse-${c.id}-nom` });
     lien.textContent = t('game.menu.boutique.chances');
     lien.addEventListener('click', () => ouvrirChances(c, lien));
-    li.append(el('span', ['e3-carte-bande'], { 'aria-hidden': 'true' }), caisseSvg(), nom, contenu, actions, lien);
-    liste.append(li);
+    li.append(el('span', ['e3-carte-bande'], { 'aria-hidden': 'true' }), caisseSvg(), nom, contenuCaisse(c), actions, lien);
     boutons.set(c.id, { un, dix, chances: lien });
-  });
-  section.append(fond(), bandeau(t('game.menu.boutique.libelle'), t('game.menu.boutique.titre'), 'menu-titre-boutique'), note, liste);
+    return li;
+  }
+  const noteTenues = el('p', ['e3-rayon-note'], { id: 'menu-boutique-tenues-note' });
+  for (const type of ['equipement', 'personnage', 'cosmetique']) {
+    const liste = el('ul', ['e3-cartes'], { id: `menu-boutique-${type}-caisses`, 'aria-labelledby': `menu-boutique-${type}-titre` });
+    caisses.filter((c) => c.type === type).forEach((c, i) => liste.append(carteCaisse(c, i)));
+    rayon(type, type === 'cosmetique' ? [noteTenues] : []).append(liste);
+  }
+  const rendreNoteTenues = () => {
+    noteTenues.textContent = fmt(t('game.menu.boutique.tenues.note'), { n: Object.keys(collection).length, total: cat.cosmetiques.length });
+  };
+  rendreNoteTenues();
+  section.append(fond(), bandeau(t('game.menu.boutique.libelle'), t('game.menu.boutique.titre'), 'menu-titre-boutique'), nav, defile);
+
+  // --- Rubriques : aller à une rubrique, rubrique courante selon le défilement ----------------------------------------------------------------
+  let courante = RUBRIQUES[0];
+  function marquer(id) {
+    courante = id;
+    for (const [k, { bouton }] of rayons) {
+      if (k === id) bouton.setAttribute('aria-current', 'true');
+      else bouton.removeAttribute('aria-current');
+    }
+  }
+  function aller(id) {
+    const r = rayons.get(id);
+    if (!r) return;
+    const doux = !window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    defile.scrollTo({ top: r.section.offsetTop, behavior: doux ? 'smooth' : 'auto' }); // la zone qui défile est le parent positionné des sections
+    marquer(id);
+  }
+  defile.addEventListener('scroll', () => {
+    const haut = defile.scrollTop + 8;
+    let id = RUBRIQUES[0];
+    for (const [k, { section: s }] of rayons) if (s.offsetTop <= haut) id = k;
+    if (defile.scrollTop + defile.clientHeight >= defile.scrollHeight - 2) id = RUBRIQUES.at(-1);
+    if (id !== courante) marquer(id);
+  }, { passive: true });
+  marquer(RUBRIQUES[0]);
 
   // --- Achat, ouverture, résultat --------------------------------------------------------------------------------------------------------------
   let vue = 'caisses'; // 'caisses' ou 'resultat'
@@ -136,29 +262,46 @@ export async function ecranBoutique({ t, bandeau, root, rootDialogue, surVue = (
   let actif = false;
   let chancesOuvertes = null; // dialogue des chances : { fermer() }
   let achats = 0;
+  let minuterie = null;
 
-  // Tirage (graine du navigateur), objets ajoutés à l'inventaire en mémoire (même modèle que le lot 8d), puis l'ouverture. Prix jamais prélevé.
+  // Tirage (graine du navigateur), éléments ajoutés à l'état en mémoire, puis l'ouverture. Prix jamais prélevé.
   function acheter(caisse, quantite, depuis) {
     const graine = graineAchat();
     const objets = quantite === TIRAGES_X10 ? tirer10(caisse, cat, graine) : [tirer(caisse, cat, graine)].filter(Boolean);
     if (!objets || objets.length !== quantite) return;
-    const { etat, uids } = ajouterObjets(eq.etat(), cat, objets);
-    if (uids.length !== quantite) return;
-    eq.poser(etat);
+    const r = { type: caisse.type, caisse, quantite, objets, uids: [], graine };
+    if (caisse.type === 'personnage') {
+      const { etat, issues } = obtenirPersonnages(eq.etat(), cat, objets.map((o) => o.id));
+      if (issues.length !== quantite) return;
+      eq.poser(etat);
+      r.issues = issues;
+    } else if (caisse.type === 'cosmetique') {
+      const a = ajouterCosmetiques(collection, cat, objets.map((o) => o.id));
+      if (a.nouveaux.length !== quantite) return;
+      collection = a.collection;
+      r.nouveaux = a.nouveaux;
+      r.collection = { ...collection };
+      rendreNoteTenues();
+    } else {
+      const { etat, uids } = ajouterObjets(eq.etat(), cat, objets);
+      if (uids.length !== quantite) return;
+      eq.poser(etat);
+      r.uids = uids;
+    }
     achats += 1;
     if (vue === 'caisses') retourFocus = depuis;
-    afficherOuverture({ caisse, quantite, objets, uids, graine });
+    afficherOuverture(r);
   }
 
-  // Point d'insertion du lot 8f : seule fonction appelée après un achat. Au lot 8e, elle mène directement à l'écran de résultat ; au lot 8f,
-  // l'ouverture animée en 3D (E3-2, E3-3) s'intercalera ici, avant ce même écran.
+  // Point d'insertion du lot 8f : seule fonction appelée après un achat. Au lot 8e, elle mène directement à l'écran de résultat (plein écran : barre
+  // d'onglets masquée, retour du propriétaire) ; au lot 8f, l'ouverture animée en 3D (E3-2, E3-3) s'intercalera ici, avant ce même écran.
   async function afficherOuverture(r) {
     if (!resultat) {
       const m = await import('./resultat.js');
       resultat ??= m.creerResultat({
         t, bandeau, cat,
         continuer: () => fermerResultat(true),
-        rouvrir: () => dernier && acheter(dernier.caisse, dernier.quantite, null),
+        rouvrir: () => dernier?.caisse && acheter(dernier.caisse, dernier.quantite, null),
       });
       resultat.section.hidden = true;
       root.append(resultat.section);
@@ -195,9 +338,19 @@ export async function ecranBoutique({ t, bandeau, root, rootDialogue, surVue = (
   function appliquer() {
     section.hidden = !visible || vue !== 'caisses';
     if (resultat) resultat.section.hidden = !visible || vue !== 'resultat';
-    section.dataset.anim = actif && vue === 'caisses' ? 'on' : 'off';
+    const enCours = actif && vue === 'caisses';
+    section.dataset.anim = enCours ? 'on' : 'off';
     resultat?.animer(actif && vue === 'resultat');
+    // Compte à rebours des offres (et changement de jour) : relu toutes les 20 s, seulement quand la Boutique est affichée et la page visible.
+    if (enCours && !minuterie) {
+      rendreOffres();
+      minuterie = setInterval(rendreOffres, 20_000);
+    } else if (!enCours && minuterie) {
+      clearInterval(minuterie);
+      minuterie = null;
+    }
   }
+  rendreOffres();
 
   return {
     section,
@@ -207,12 +360,14 @@ export async function ecranBoutique({ t, bandeau, root, rootDialogue, surVue = (
       if (!v) chancesOuvertes?.fermer();
       appliquer();
     },
+    // Résultat affiché : écran plein (barre d'onglets masquée par menu.js).
+    pleinEcran: () => vue === 'resultat',
     // Animations : en cours seulement quand l'onglet est affiché et la page visible.
     animer(a) {
       actif = a;
       appliquer();
     },
-    // Un onglet touché : retour aux caisses (comme les sous-menus du Personnage).
+    // Un onglet touché (barre visible seulement sur les caisses) : retour aux caisses.
     fermerResultat: () => fermerResultat(false),
     // Échap : dialogue des chances, puis écran de résultat (true : traité).
     echap() {
@@ -224,11 +379,16 @@ export async function ecranBoutique({ t, bandeau, root, rootDialogue, surVue = (
     },
     etat: () => ({
       vue,
-      caisses: caisses.map((c) => ({ id: c.id, nom: c.nom, prix: c.prix, prix10: c.prix10, chances: c.chances.map((x) => ({ ...x })) })),
+      rubrique: courante,
+      caisses: caisses.map((c) => ({ id: c.id, type: c.type, nom: c.nom, prix: c.prix, prix10: c.prix10, chances: c.chances.map((x) => ({ ...x })) })),
+      offres: offres.map((o) => ({ ...o, achetee: achetees.has(o.cle) })),
+      jour,
+      collection: { ...collection },
       chances: chancesOuvertes ? chancesOuvertes.caisse : null,
       achats,
-      dernier: dernier ? { caisse: dernier.caisse.id, quantite: dernier.quantite, graine: dernier.graine, objets: dernier.objets.map((o) => ({ ...o })), uids: [...dernier.uids] } : null,
+      dernier: dernier ? { type: dernier.type, caisse: dernier.caisse?.id ?? null, quantite: dernier.quantite, graine: dernier.graine, objets: dernier.objets.map((o) => ({ ...o })), uids: [...dernier.uids], issues: dernier.issues?.map((x) => ({ ...x })) ?? null, nouveaux: dernier.nouveaux ? [...dernier.nouveaux] : null } : null,
       resultat: resultat?.etat() ?? null,
     }),
   };
 }
+

@@ -281,13 +281,16 @@
       "La première carte s'appelle désormais « Night of the Undead » ; le menu à trois barres montre la version du jeu (avec « dev » ou « recette ») et une entrée Discord à ses couleurs.",
       "Les règles du jeu ne changent pas ; une partie lancée directement (adresses de test) est identique."
     ] },
-    { "name": "lot-8e", "version": "v0.8", "date": "2026-11-11", "titre": "Boutique : caisses mystère et résultats", "points": [
-      "Nouvel onglet Boutique : trois caisses mystère animées (ravitaillement, militaire, élite), chacune avec ses raretés possibles et ses prix pour une ou dix ouvertures.",
-      "« Voir les chances » affiche, pour chaque caisse, le pourcentage de chaque rareté et les objets possibles.",
-      "Ouvrir une caisse tire un objet selon ces chances (dix tirages indépendants pour ×10, sans garantie) et montre le résultat : une carte, ou dix cartes avec un résumé ; « Rouvrir » recommence.",
+    { "name": "lot-8e", "version": "v0.8", "date": "2026-11-11", "titre": "Boutique : offres du jour, caisses et résultats", "points": [
+      "Nouvel onglet Boutique qui défile, par rubriques (petit menu à gauche pour y aller vite) : offres du jour, équipement, personnages, cosmétiques.",
+      "Offres du jour : six objets à prix fixe, renouvelés chaque nuit à minuit (heure de l'appareil), avec le temps restant.",
+      "Caisses mystère animées : trois caisses d'équipement (ravitaillement, militaire, élite), une caisse de personnages (nouveau : débloqué ; déjà obtenu : un niveau de plus) et une caisse de tenues d'exemple (pas encore portables).",
+      "« Voir les chances » affiche, pour chaque caisse, le pourcentage de chaque rareté (ou de chaque personnage) et ce qu'on peut obtenir.",
+      "Ouvrir une caisse (une ou dix fois, dix tirages indépendants sans garantie) montre le résultat en plein écran : une carte, ou dix cartes avec un résumé ; « Rouvrir » recommence.",
       "Les objets obtenus vont dans l'inventaire du Personnage : ils se portent, s'améliorent, se fusionnent et comptent dans les statistiques de la partie.",
-      "Barre d'onglets : « Histoire » n'est plus rouge en permanence ; l'onglet affiché est une planche plus claire et relevée, avec une goutte de sang qui coule à la sélection.",
-      "Essai : caisses, prix et chances sont provisoires ; aucun prix n'est prélevé et rien n'est encore gardé avant la sauvegarde v2.",
+      "Barre d'onglets : « Histoire » n'est plus rouge en permanence ; l'onglet affiché est une planche plus claire et relevée, avec une goutte qui coule à la sélection ; du sang coule le long de la barre.",
+      "Menu moins collé aux bords de l'écran ; l'encart de capacité du Personnage s'écarte de la lumière.",
+      "Essai : caisses, prix, chances et tenues sont provisoires ; aucun prix n'est prélevé et rien n'est encore gardé avant la sauvegarde v2.",
       "Les règles du jeu ne changent pas ; une partie lancée directement (adresses de test) est identique."
     ] }
   ]

@@ -1,6 +1,6 @@
 // Lot 8e : panneau des chances d'une caisse (E3-6, Docs/ref/menu-principal.md), chargé à la demande à « Voir les chances ». Dialogue modal (voile et
-// panneau du menu : .e8-voile, .e8-panneau), bandeau (nom de la caisse / « Chances »), croix de 44 × 44 ; chaque rareté : nom écrit, barre de sa
-// couleur (largeur = pour cent) et pour cent en texte ; puis les objets possibles par rareté ; règle du tirage. Focus piégé (Tab, Maj+Tab), Échap
+// panneau du menu : .e8-voile, .e8-panneau), bandeau (nom de la caisse / « Chances »), croix de 44 × 44 ; chaque rareté (ou personnage, pour une
+// caisse de personnages) : nom écrit, barre (largeur = pour cent) et pour cent en texte ; puis les éléments possibles par rareté ; règle du tirage. Focus piégé (Tab, Maj+Tab), Échap
 // (géré par menu.js → boutique.echap()) et appui sur le voile ferment ; le focus revient à « Voir les chances ». Valeurs : js/core/caisses.js.
 import { chances } from '../core/caisses.js';
 import { fmt } from '../game/texts.js';
@@ -31,10 +31,11 @@ export function ouvrirChances({ t, bandeau, cat, caisse, root, fermer }) {
   const corps = el('div', ['e8-panneau-corps', 'e3-chances-corps'], { tabindex: '0', role: 'region', 'aria-labelledby': `${id}-titre` });
   // Chances : une ligne par rareté (nom, barre, pour cent) ; la barre est décorative, le pour cent est écrit.
   const lignes = el('ul', ['e3-chances-liste'], { id: `${id}-liste`, 'aria-label': t('game.menu.chances.liste') });
+  const parPersonnage = caisse.type === 'personnage';
   for (const x of liste) {
     const r = cat.raretes.find((y) => y.id === x.rarete);
-    const li = el('li', ['e3-chance'], { 'data-rarete': x.rarete });
-    poserJeton(li, '--e3-rarete', r?.jeton);
+    const li = el('li', ['e3-chance'], { 'data-cle': x.rarete ?? x.personnage });
+    poserJeton(li, '--e3-rarete', parPersonnage ? caisse.teinte : r?.jeton);
     const nom = el('span', ['e3-chance-nom']);
     nom.textContent = x.nom;
     const barre = el('span', ['e3-chance-barre'], { 'aria-hidden': 'true' });
@@ -50,7 +51,7 @@ export function ouvrirChances({ t, bandeau, cat, caisse, root, fermer }) {
   const titreObjets = el('h3', ['e3-chances-sous-titre'], { id: `${id}-objets-titre` });
   titreObjets.textContent = t('game.menu.chances.objets');
   const objets = el('ul', ['e3-chances-objets'], { id: `${id}-objets`, 'aria-labelledby': `${id}-objets-titre` });
-  for (const x of liste) {
+  for (const x of parPersonnage ? [] : liste) {
     const li = el('li', ['e3-chances-groupe'], { 'data-rarete': x.rarete });
     const r = cat.raretes.find((y) => y.id === x.rarete);
     poserJeton(li, '--e3-rarete', r?.jeton);
@@ -62,8 +63,8 @@ export function ouvrirChances({ t, bandeau, cat, caisse, root, fermer }) {
     objets.append(li);
   }
   const regle = el('p', ['e3-chances-regle'], { id: `${id}-regle` });
-  regle.textContent = t('game.menu.chances.regle');
-  corps.append(lignes, titreObjets, objets, regle);
+  regle.textContent = t(parPersonnage ? 'game.menu.chances.regle.personnage' : caisse.type === 'cosmetique' ? 'game.menu.chances.regle.tenue' : 'game.menu.chances.regle');
+  corps.append(lignes, ...(parPersonnage ? [] : [titreObjets, objets]), regle);
   panneau.append(tete, corps);
   voile.append(panneau);
   voile.addEventListener('pointerdown', (e) => {
@@ -86,5 +87,5 @@ export function ouvrirChances({ t, bandeau, cat, caisse, root, fermer }) {
   });
   root.append(voile);
   croix.focus();
-  return { element: voile, fermer, caisse: caisse.id, chances: liste.map((x) => ({ rarete: x.rarete, pourcent: x.pourcent, objets: x.objets.map((o) => o.id) })) };
+  return { element: voile, fermer, caisse: caisse.id, chances: liste.map((x) => ({ cle: x.rarete ?? x.personnage, pourcent: x.pourcent, objets: x.objets.map((o) => o.id) })) };
 }

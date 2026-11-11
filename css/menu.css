@@ -429,8 +429,12 @@
 .e8 {
   --e8-entete: max(48px, calc(50 * var(--u)));
   --e8-onglets: max(50px, calc(62 * var(--u)));
-  --e8-gauche: max(var(--menu-marge), env(safe-area-inset-left, 0px));
-  --e8-droite: max(var(--menu-marge), env(safe-area-inset-right, 0px));
+  /* Retour du propriétaire (lot 8e) : « tout est un peu trop au bord » : marges latérales de 32 de la référence (celles des maquettes), 16 px au
+     moins, ou la zone sûre si elle est plus large ; la barre d'onglets reste de bord à bord (zone sûre seulement : --e8-sur-*). */
+  --e8-sur-g: max(var(--menu-marge), env(safe-area-inset-left, 0px));
+  --e8-sur-d: max(var(--menu-marge), env(safe-area-inset-right, 0px));
+  --e8-gauche: max(var(--e8-sur-g), calc(32 * var(--u)));
+  --e8-droite: max(var(--e8-sur-d), calc(32 * var(--u)));
   position: fixed;
   inset: 0;
   z-index: 8;
@@ -1495,7 +1499,7 @@
   z-index: 2;
   display: grid;
   grid-template-columns: 1fr 1fr 1.5fr 1fr 1fr;
-  padding: 0 calc(var(--e8-droite) - var(--menu-marge)) 0 calc(var(--e8-gauche) - var(--menu-marge));
+  padding: 0 calc(var(--e8-sur-d) - var(--menu-marge)) 0 calc(var(--e8-sur-g) - var(--menu-marge));
   background-color: var(--menu-bois);
   background-image:
     linear-gradient(to bottom, var(--menu-bois-clair) 0 2px, transparent 2px),
@@ -1584,6 +1588,47 @@
 
 .e8-onglet-event {
   cursor: not-allowed;
+}
+
+/* Retour du propriétaire (lot 8e) : sang sur la barre d'onglets (js/menu/menu.js, sangBarre) : traînée le long du haut, coulures qui en pendent
+   (immobiles ; deux laissent tomber une goutte toutes les 5 s, en pause page cachée ou partie lancée), taches séchées dans des coins de planches.
+   Décoratif : au-dessus des planches, jamais sous un libellé (coulures entre les icônes, taches dans les coins bas). */
+.e8-onglets-sang {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.e8-onglets-bande {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: calc(7 * var(--u));
+}
+
+.e8-onglets-sang .menu-coulure {
+  top: calc(3 * var(--u));
+}
+
+.e8-onglets-sang .menu-coulure-flux {
+  animation: none;
+}
+
+.e8-pause .e8-onglets-sang * {
+  animation-play-state: paused;
+}
+
+.e8-onglets-tache {
+  position: absolute;
+  bottom: calc(1 * var(--u));
+  left: var(--e8-x);
+  width: calc(30 * var(--u));
+  height: calc(12.5 * var(--u));
+  fill: var(--menu-sang);
+  opacity: 0.75;
 }
 
 .e8-cadenas {
@@ -1717,7 +1762,8 @@
    d'onglets est masquée) et panneau de la partie (E2-12, maquette OptionsJeu.html ; cette feuille est alors chargée à la première ouverture).
    Choisi : rouge peint et souligné (aria-pressed) ; verrouillé : grisé, cadenas et texte. Tailles en
    calc(N * var(--u)) (N = pixels de la maquette), cibles de 44 px au moins. */
-.e8[data-ecran='options'] .e8-contenu {
+.e8[data-ecran='options'] .e8-contenu,
+.e8[data-ecran='resultat'] .e8-contenu {
   grid-row: 2 / 4;
 }
 
@@ -2044,11 +2090,11 @@
    personnages.js. Tailles en calc(N * var(--u)) (N = pixels de la maquette 932 × 430 ; ordonnées comptées depuis le bas de l'en-tête, y 50),
    cibles de 44 px au moins ; rareté, porté, choisi, verrouillé toujours écrits (jamais la couleur seule). Animations e9-*, en pause hors de l'écran
    (data-anim, classe e9-anime), coupées sous prefers-reduced-motion (règle .e8 * plus haut). */
-/* Encoche (téléphone en paysage) : les marges latérales (--e8-gauche, --e8-droite : 16 px ou la zone sûre) dépassent les 16 px prévus ; l'unité se
-   règle alors sur la largeur restante, pour que colonnes et panneaux ne se chevauchent pas (retour du propriétaire après la fusion). Sans encoche :
+/* Encoche (téléphone en paysage) : l'unité se règle sur la largeur laissée par les marges latérales (--e8-gauche, --e8-droite : 32 de la référence,
+   16 px au moins, ou la zone sûre ; 868 = 932 − 2 × 32, la largeur utile des maquettes), pour que colonnes et panneaux ne se chevauchent pas (retour du propriétaire après la fusion). Sans encoche :
    même valeur que --u de :root. Plancher 0,6 px (au lieu de 0,7) pour les téléphones étroits à encoche. */
 .e9 {
-  --u: clamp(0.6px, min(calc((100vw - var(--e8-gauche) - var(--e8-droite) + 32px) / 932), calc(100vh / 430)), 2.4px);
+  --u: clamp(0.6px, min(calc((100vw - var(--e8-gauche) - var(--e8-droite)) / 868), calc(100vh / 430)), 2.4px);
   --e5-bouton-h: max(var(--menu-cible), calc(40 * var(--u))); /* « ‹ Équipement » et filtres : composants de la page Options (lot 8c) */
   --e9-col: calc(220 * var(--u));
   --e9-case-h: max(var(--menu-cible), calc(52 * var(--u)));
@@ -2078,7 +2124,7 @@
 
 /* Écran Personnage : l'unité tient aussi compte de la hauteur réelle du contenu (en-tête et onglets ont 48 et 50 px au moins). */
 .e9.e9-perso {
-  --u: clamp(0.6px, min(calc((100vw - var(--e8-gauche) - var(--e8-droite) + 32px) / 932), calc((100vh - 98px) / 318)), 2.4px);
+  --u: clamp(0.6px, min(calc((100vw - var(--e8-gauche) - var(--e8-droite)) / 868), calc((100vh - 98px) / 318)), 2.4px);
 }
 
 /* Fond : gris presque noir ; sol plus sombre (.e9-sol, bord de 2 px) à y 212 de la maquette. Retour du propriétaire : personnage, cône, sol et encart
@@ -2402,9 +2448,12 @@
 }
 
 /* Encart de capacité (240 × 56 à y 250, centré, bord doré) : ouvre Personnages. */
+/* Retour du propriétaire (lot 8e) : l'encart ne colle plus au bas du cône de lumière : 6 plus bas à la référence, jusqu'à 18 quand l'écran a de la
+   place (moitié de la hauteur libre). */
 .e9-capacite {
+  --e9-baisse: min(calc(18 * var(--u)), calc(6 * var(--u) + var(--e9-centre)));
   position: absolute;
-  top: calc(250 * var(--u) + var(--e9-centre));
+  top: calc(250 * var(--u) + var(--e9-centre) + var(--e9-baisse));
   left: calc(50% - 120 * var(--u));
   display: flex;
   flex-direction: column;
@@ -3097,7 +3146,7 @@
   }
 
   .e9-capacite {
-    top: calc(246 * var(--u) + var(--e9-centre));
+    top: calc(246 * var(--u) + var(--e9-centre) + min(calc(4 * var(--u)), var(--e9-centre)));
   }
 }
 
@@ -3125,7 +3174,7 @@
    teinte de la caisse (--e3-teinte) et rareté d'un objet (--e3-rarete) posées par le JavaScript en var(--jeton). Animations e3-*, en pause hors de
    l'écran et page cachée (data-anim), coupées sous prefers-reduced-motion (règle .e8 * plus haut). */
 .e3 {
-  --u: clamp(0.6px, min(calc((100vw - var(--e8-gauche) - var(--e8-droite) + 32px) / 932), calc(100vh / 430)), 2.4px);
+  --u: clamp(0.6px, min(calc((100vw - var(--e8-gauche) - var(--e8-droite)) / 868), calc(100vh / 430)), 2.4px);
   --e3-sous-bandeau: calc(12 * var(--u) + 10 * var(--u) + max(11px, calc(12 * var(--u))) * 1.2 + max(17px, calc(20 * var(--u))) * 1.15 + 20 * var(--u));
   --e3-teinte: var(--menu-panneau-bois-texte);
   --e3-rarete: var(--rarete-commun);
@@ -3175,33 +3224,157 @@
   opacity: 0.6;
 }
 
-/* Mention en pointillés, en haut à droite (maquette : 32 du bord, haut 70, 360 au plus ; plus large sur un petit écran pour tenir en deux lignes). */
-.e3-note {
+/* Retour du propriétaire : la Boutique défile, par rubriques ; petit menu des rubriques à gauche, sous le bandeau (même largeur), contenu à droite. */
+.e3-rubriques {
   position: absolute;
-  top: calc(20 * var(--u));
-  right: var(--e8-droite);
-  box-sizing: border-box;
-  max-width: min(max(calc(360 * var(--u)), 34em), calc(100% - var(--e8-gauche) - var(--e8-droite) - max(160px, calc(176 * var(--u))) - 24 * var(--u)));
-  margin: 0;
-  padding: calc(6 * var(--u)) calc(12 * var(--u));
-  border: 1px dashed var(--menu-e9-stats-bord);
-  color: var(--menu-e9-texte-doux);
-  font-size: max(12px, calc(13 * var(--u)));
-  line-height: 1.35;
-  text-align: right;
+  top: var(--e3-sous-bandeau);
+  bottom: calc(8 * var(--u));
+  left: var(--e8-gauche);
+  width: max(160px, calc(176 * var(--u)));
+  overflow: auto;
 }
 
-/* Trois cartes côte à côte, 20 sous le bandeau (place de ses coulures) ; jusqu'à 4 du bas ; centrées dans la hauteur libre sur un grand écran. */
-.e3-cartes {
-  --e3-h: min(calc(300 * var(--u)), calc(100% - var(--e3-sous-bandeau) - 4 * var(--u)));
+.e3-rubriques ul {
+  display: flex;
+  flex-direction: column;
+  gap: calc(8 * var(--u));
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.e3-rubrique {
+  width: 100%;
+  min-height: max(var(--menu-cible), calc(44 * var(--u)));
+  padding: 0 calc(12 * var(--u)) 0 calc(16 * var(--u));
+  border: 2px solid var(--menu-bois-sombre);
+  border-left-width: calc(6 * var(--u));
+  border-radius: 4px;
+  background: var(--menu-bois);
+  color: var(--menu-e9-bois-texte);
+  font-family: var(--font-label);
+  font-size: max(12px, calc(14 * var(--u)));
+  letter-spacing: 0.04em;
+  text-align: left;
+}
+
+/* Rubrique affichée : zone rouge pleine, bord gauche clair et plus épais (forme), aria-current. */
+.e3-rubrique[aria-current='true'] {
+  border-color: var(--menu-coulure);
+  border-left-color: var(--menu-texte);
+  background: var(--menu-rouge-clair);
+  color: var(--menu-texte);
+}
+
+.e3-defile {
   position: absolute;
-  top: calc(var(--e3-sous-bandeau) + max(0px, (100% - var(--e3-sous-bandeau) - 4 * var(--u) - 300 * var(--u)) / 2));
-  right: var(--e8-droite);
-  left: var(--e8-gauche);
+  top: calc(12 * var(--u));
+  right: 0;
+  bottom: 0;
+  left: calc(var(--e8-gauche) + max(160px, calc(176 * var(--u))) + 24 * var(--u));
+  padding: 0 var(--e8-droite) calc(16 * var(--u)) 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-color: var(--menu-bois-clair) transparent;
+  scrollbar-width: thin;
+}
+
+.e3-rayon {
+  margin-bottom: calc(22 * var(--u));
+}
+
+.e3-rayon-tete {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: calc(4 * var(--u)) calc(12 * var(--u));
+  margin-bottom: calc(10 * var(--u));
+  padding-bottom: calc(4 * var(--u));
+  border-bottom: 2px solid var(--menu-scene-route-trait);
+}
+
+.e3-rayon-titre {
+  margin: 0;
+  font-family: var(--font-label);
+  font-size: max(13px, calc(16 * var(--u)));
+  font-weight: var(--font-weight-normal);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.e3-compte,
+.e3-rayon-note {
+  margin: 0;
+  color: var(--menu-e9-texte-doux);
+  font-size: max(12px, calc(13 * var(--u)));
+}
+
+/* Offres du jour : six objets en une rangée (deux rangées sur un écran étroit). */
+.e3-offres {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(max(96px, calc((100% - 50 * var(--u)) / 6)), 1fr));
+  gap: calc(10 * var(--u));
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.e3-offre {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: calc(3 * var(--u));
+  min-width: 0;
+  padding: calc(8 * var(--u)) calc(6 * var(--u));
+  border: 3px solid var(--e3-rarete);
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--e3-rarete) 14%, var(--menu-e9-case));
+  text-align: center;
+}
+
+.e3-offre-svg {
+  width: max(24px, calc(30 * var(--u)));
+  height: max(24px, calc(30 * var(--u)));
+  color: color-mix(in srgb, var(--e3-rarete) 30%, var(--menu-texte));
+}
+
+.e3-offre-nom {
+  max-width: 100%;
+  overflow: hidden;
+  font-size: max(12px, calc(14 * var(--u)));
+  font-weight: var(--font-weight-bold);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.e3-offre-rarete {
+  font-size: max(11px, calc(12 * var(--u)));
+}
+
+.e3 .e3-offre-acheter {
+  width: 100%;
+  margin-top: auto;
+  padding: 0 calc(4 * var(--u));
+  font-family: var(--font-sans);
+  font-size: max(12px, calc(13 * var(--u)));
+  font-weight: var(--font-weight-bold);
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.e3 .e3-offre-acheter[aria-disabled='true'] {
+  border-color: var(--menu-options-inactif-bord);
+  background: var(--menu-options-inactif);
+  color: var(--menu-options-inactif-texte);
+  cursor: not-allowed;
+}
+
+/* Caisses : trois cartes au plus par rangée (deux sur un écran étroit). */
+.e3-cartes {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(max(180px, calc((100% - 32 * var(--u)) / 3)), 1fr));
   gap: calc(16 * var(--u));
-  height: var(--e3-h);
   margin: 0;
   padding: 0;
   list-style: none;
@@ -3215,7 +3388,7 @@
   gap: calc(3 * var(--u));
   box-sizing: border-box;
   min-height: 0;
-  padding: calc(6 * var(--u)) calc(12 * var(--u)) calc(2 * var(--u));
+  padding: calc(6 * var(--u)) calc(12 * var(--u)) calc(4 * var(--u));
   border: 3px solid var(--menu-scene-route-trait);
   background: var(--menu-e9-case);
 }
@@ -3229,12 +3402,12 @@
   background: var(--e3-teinte);
 }
 
-/* Caisse : prend la hauteur qui reste (au plus 1,15 fois la maquette), jamais moins de 40 px. */
+/* Caisse : la taille de la maquette (la carte n'est plus limitée en hauteur : la Boutique défile). */
 .e3-caisse {
-  flex: 1 1 0;
+  flex: none;
   width: 100%;
-  min-height: 40px;
-  max-height: calc(106 * var(--u));
+  height: max(70px, calc(106 * var(--u)));
+  overflow: visible;
 }
 
 .e3-rayons {
@@ -3354,7 +3527,8 @@
   flex: 1;
   flex-direction: column;
   padding: 0 calc(4 * var(--u));
-  font-size: max(12px, calc(15 * var(--u)));
+  font-size: max(12px, calc(14 * var(--u)));
+  letter-spacing: 0.02em;
 }
 
 .e3-ouvrir-prix {
@@ -3506,7 +3680,8 @@
   font-size: max(12px, calc(13 * var(--u)));
 }
 
-/* E3-4 et E3-5 : écrans de résultat (fond bleu nuit radial de la maquette) ; centrés dans la hauteur libre sur un grand écran. */
+/* E3-4 et E3-5 : écrans de résultat (fond bleu nuit radial de la maquette), en écran plein (barre d'onglets masquée : retour du propriétaire) ;
+   centrés dans la hauteur libre. */
 .e8-ecran.e3-resultat {
   --e3-centre: max(0px, calc((100% - 318 * var(--u)) / 2));
   align-items: stretch;
@@ -3639,11 +3814,10 @@
 
 .e3-case-nom {
   max-width: 100%;
-  overflow: hidden;
   font-size: max(12px, calc(15 * var(--u)));
   font-weight: var(--font-weight-bold);
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
 }
 
 .e3-case-rarete {

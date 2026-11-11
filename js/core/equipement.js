@@ -181,7 +181,8 @@ export function creerEtatEquipement(cat, depart) {
     porte: Object.freeze({ ...Object.fromEntries(EMPLACEMENTS.map((e) => [e, null])), ...(depart?.porte ?? {}) }),
     persos: Object.freeze(Object.fromEntries(cat.personnages.map((p) => [p.id, p.niveauDepart]))),
     choisi: depart?.choisi ?? null,
-    suivant: 1, // numéro du prochain objet né d'une fusion (uid « f<N> »)
+    suivant: 1, // numéro du prochain objet né d'une fusion (uid « f<N> ») ou obtenu dans une caisse (« c<N> »)
+    debloques: Object.freeze([]), // lot 8e : personnages verrouillés au départ, obtenus dans une caisse de personnages
   });
 }
 
@@ -339,22 +340,46 @@ export function remplirAuto(etat, cat, places) {
 
 // --- Personnages ------------------------------------------------------------------------------------------------------------------------
 export const personnageDe = (cat, id) => cat.personnages.find((p) => p.id === id) ?? null;
+// Lot 8e : débloqué au départ (données) ou obtenu dans une caisse de personnages (état).
+export const estDebloque = (etat, p) => Boolean(p && (p.debloque || (Array.isArray(etat?.debloques) && etat.debloques.includes(p.id))));
 export function choisirPersonnage(etat, cat, id) {
   const p = personnageDe(cat, id);
-  if (!p || !p.debloque || etat.choisi === id) return etat;
+  if (!p || !estDebloque(etat, p) || etat.choisi === id) return etat;
   return geler(etat, { choisi: id });
 }
 export function infoPersonnage(etat, cat, id) {
   const p = personnageDe(cat, id);
   if (!p) return null;
   const niveau = etat.persos[id] ?? p.niveauDepart;
-  const raison = !p.debloque ? 'verrouille' : niveau >= p.niveauMax ? 'max' : null;
-  return { niveau, niveauMax: p.niveauMax, prix: raison ? null : p.prixAmelioration, choisi: etat.choisi === id, verrouille: !p.debloque, peutAmeliorer: raison === null, raison };
+  const verrouille = !estDebloque(etat, p);
+  const raison = verrouille ? 'verrouille' : niveau >= p.niveauMax ? 'max' : null;
+  return { niveau, niveauMax: p.niveauMax, prix: raison ? null : p.prixAmelioration, choisi: etat.choisi === id, verrouille, peutAmeliorer: raison === null, raison };
 }
 export function ameliorerPersonnage(etat, cat, id) {
   const info = infoPersonnage(etat, cat, id);
   if (!info?.peutAmeliorer) return etat;
   return geler(etat, { persos: Object.freeze({ ...etat.persos, [id]: info.niveau + 1 }) });
+}
+// Lot 8e : personnages obtenus dans une caisse, dans l'ordre : verrouillé → débloqué (à son niveau de départ) ; déjà débloqué → un niveau de plus
+// (gratuit), au plus son maximum. → { etat, issues: [{ id, nouveau, niveau, max }] } ; liste vide ou personnage inconnu : refusé (même état, []).
+export function obtenirPersonnages(etat, cat, ids) {
+  const liste = Array.isArray(ids) ? ids : [];
+  if (liste.length === 0 || liste.length > 100 || !liste.every((id) => personnageDe(cat, id))) return { etat, issues: [] };
+  const persos = { ...etat.persos };
+  const debloques = [...(Array.isArray(etat.debloques) ? etat.debloques : [])];
+  const issues = liste.map((id) => {
+    const p = personnageDe(cat, id);
+    const niveau = persos[id] ?? p.niveauDepart;
+    if (!p.debloque && !debloques.includes(id)) {
+      debloques.push(id);
+      persos[id] = niveau;
+      return { id, nouveau: true, niveau, max: niveau >= p.niveauMax };
+    }
+    const n = Math.min(p.niveauMax, niveau + 1);
+    persos[id] = n;
+    return { id, nouveau: false, niveau: n, max: n >= p.niveauMax };
+  });
+  return { etat: geler(etat, { persos: Object.freeze(persos), debloques: Object.freeze(debloques) }), issues };
 }
 // Effet de la capacité au niveau N : effet + effetParNiveau × (N − 1), sans arrondi.
 export function effetCapacite(perso, niveau) {
@@ -377,7 +402,7 @@ export function bonusTotal(etat, cat, persoId = etat.choisi) {
   };
   for (const e of EMPLACEMENTS) ajouter(bonusObjet(cat, objetDe(etat, etat.porte[e])));
   const p = personnageDe(cat, persoId);
-  if (p?.debloque) ajouter(effetCapacite(p, etat.persos[p.id] ?? p.niveauDepart));
+  if (estDebloque(etat, p)) ajouter(effetCapacite(p, etat.persos[p.id] ?? p.niveauDepart));
   return total;
 }
 

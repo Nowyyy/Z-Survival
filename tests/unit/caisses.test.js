@@ -3,15 +3,20 @@
 // (ajouterObjets de js/core/equipement.js) : objets obtenus utilisables comme les autres (équiper, fusionner, statistiques). Docs/ref/menu-principal.md.
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
-import { TEINTE_DEFAUT, TIRAGES_X10, bornes, chances, lireCaisses, objetsDeRarete, prixAchat, resume, tirer, tirer10, tirerN } from '../../js/core/caisses.js';
-import { ajouterObjets, creerEtatEquipement, equiper, etatFusion, fusionner, lireCatalogue, objetDe, statistiquesEffectives } from '../../js/core/equipement.js';
+import { TEINTE_DEFAUT, TIRAGES_X10, ajouterCosmetiques, bornes, chances, elementsDe, lireCaisses, lireCosmetiques, lireOffres, objetsDeRarete, offresDuJour, prixAchat, resume, tirer, tirer10, tirerN } from '../../js/core/caisses.js';
+import { ajouterObjets, ameliorerPersonnage, choisirPersonnage, creerEtatEquipement, equiper, estDebloque, etatFusion, fusionner, infoPersonnage, lireCatalogue, objetDe, obtenirPersonnages, statistiquesEffectives } from '../../js/core/equipement.js';
 
 const lire = (f) => JSON.parse(readFileSync(f, 'utf8'));
 const DONNEES = { raretes: lire('data/menu/raretes.json'), objets: lire('data/menu/objets.json'), personnages: lire('data/menu/personnages.json'), inventaire: lire('data/menu/inventaire-depart.json') };
 const JSON_CAISSES = lire('data/menu/caisses.json');
 const PARAMS = lire('data/game/player-stats.json');
-const { cat, depart } = lireCatalogue(DONNEES);
-const { caisses, erreurs } = lireCaisses(JSON_CAISSES, cat);
+const { cat: catBase, depart } = lireCatalogue(DONNEES);
+// Lot 8e, retour du propriétaire : catalogue complété des tenues (cosmétiques) ; caisses d'équipement, de personnages et de tenues, offres du jour.
+const JSON_COSM = lire('data/menu/cosmetiques.json');
+const erreursCosm = [];
+const cat = { ...catBase, cosmetiques: lireCosmetiques(JSON_COSM, catBase.raretes, erreursCosm) };
+const { caisses: toutes, erreurs } = lireCaisses(JSON_CAISSES, cat);
+const caisses = toutes.filter((c) => c.type === 'equipement');
 const caisse = (id) => caisses.find((c) => c.id === id);
 const RARETES = cat.raretes.map((r) => r.id);
 const TOKENS = readFileSync('css/tokens.css', 'utf8');
@@ -22,8 +27,9 @@ const borne = (p, n) => 4 * Math.sqrt((p * (1 - p)) / n);
 
 describe('données data/menu/caisses.json (lireCaisses)', () => {
   it('fichier valide, sans erreur, marqué provisoire ; trois caisses dans l\'ordre, raretés de la demande', () => {
-    expect(erreurs).toEqual([]);
-    expect(JSON_CAISSES._provisoire).toMatch(/provisoire/i);
+    expect([erreurs, erreursCosm]).toEqual([[], []]);
+    expect([JSON_CAISSES._provisoire, JSON_COSM._provisoire]).toEqual([expect.stringMatching(/provisoire/i), expect.stringMatching(/exemple/i)]);
+    expect(toutes.map((c) => [c.id, c.type])).toEqual([['ravitaillement', 'equipement'], ['militaire', 'equipement'], ['elite', 'equipement'], ['recrues', 'personnage'], ['tenues', 'cosmetique']]);
     expect(caisses.map((c) => c.id)).toEqual(['ravitaillement', 'militaire', 'elite']);
     expect(caisses.map((c) => c.nom)).toEqual(['Caisse de ravitaillement', 'Caisse militaire', 'Caisse d\'élite']);
     expect(caisse('ravitaillement').chances.map((x) => x.rarete)).toEqual(['commun', 'peu-commun', 'rare']);
@@ -79,10 +85,10 @@ describe('données data/menu/caisses.json (lireCaisses)', () => {
 
   it('règle écrite : une rareté tirable sans objet dans le catalogue fait refuser la caisse (et le tirage d\'une caisse forgée rend null)', () => {
     const objetsSansLegendaire = { ...DONNEES.objets, objets: DONNEES.objets.objets.map((o) => ({ ...o, raretes: Object.fromEntries(Object.entries(o.raretes).filter(([r]) => r !== 'legendaire')) })) };
-    const cat2 = lireCatalogue({ ...DONNEES, objets: objetsSansLegendaire }).cat;
+    const cat2 = { ...lireCatalogue({ ...DONNEES, objets: objetsSansLegendaire }).cat, cosmetiques: cat.cosmetiques };
     expect(objetsDeRarete(cat2, 'legendaire')).toEqual([]);
     const lu = lireCaisses(JSON_CAISSES, cat2);
-    expect(lu.caisses.map((c) => c.id)).toEqual(['ravitaillement', 'militaire']);
+    expect(lu.caisses.map((c) => c.id)).toEqual(['ravitaillement', 'militaire', 'recrues', 'tenues']);
     expect(lu.erreurs).toEqual(['caisse elite : aucun objet legendaire dans le catalogue']);
     // Caisse valide pour le catalogue complet, tirée avec le catalogue réduit : jamais d'objet inventé.
     const legendaires = Array.from({ length: 400 }, (_, g) => tirer(caisse('elite'), cat2, g));
@@ -258,5 +264,106 @@ describe('ajout à l\'inventaire (ajouterObjets, js/core/equipement.js)', () => 
     const sans = statistiquesEffectives(null, e2, cat, PARAMS).niveaux;
     const avec = statistiquesEffectives(null, e3, cat, PARAMS).niveaux;
     expect(avec.cadence).toBe(Math.min(PARAMS.maxLevel, sans.cadence + 5));
+  });
+});
+
+// --- Retour du propriétaire : caisses de personnages et de tenues, offres du jour -----------------------------------------------------------
+describe('caisses de personnages et de tenues', () => {
+  const recrues = toutes.find((c) => c.id === 'recrues');
+  const tenues = toutes.find((c) => c.id === 'tenues');
+
+  it('données : tenues valides (raretés connues, au moins une par rareté tirable) ; chances de la caisse de recrues sur des personnages existants, somme de 100', () => {
+    expect(cat.cosmetiques.length).toBeGreaterThanOrEqual(5);
+    for (const x of tenues.chances) expect(elementsDe('cosmetique', cat, x.rarete).length, x.rarete).toBeGreaterThan(0);
+    expect(recrues.chances.map((x) => x.personnage)).toEqual(cat.personnages.map((p) => p.id));
+    expect(recrues.chances.reduce((s, x) => s + x.pourcent, 0)).toBeCloseTo(100, 9);
+    expect(chances(recrues, cat).map((x) => x.nom)).toEqual(cat.personnages.map((p) => p.nom));
+    expect(bornes(recrues, cat)).toBeNull();
+    expect(bornes(tenues, cat)).toEqual({ min: 'commun', max: 'legendaire', n: 5 });
+    // Personnage inconnu, tenue de rareté inconnue : refus.
+    expect(lireCaisses({ caisses: [{ ...JSON_CAISSES.caisses[3], chances: { inconnu: 100 } }] }, cat).caisses).toEqual([]);
+    expect(lireCaisses({ caisses: [{ ...JSON_CAISSES.caisses[0], type: 'autre' }] }, cat).caisses).toEqual([]);
+    expect(lireCosmetiques({ cosmetiques: [{ id: 'x', nom: 'X', rarete: 'mythique' }, { id: 'X Y', rarete: 'commun' }] }, cat.raretes)).toEqual([]);
+  });
+
+  it('tirage déterministe ; personnage { type, id } ; tenue { type, id, rarete } ; répartition sur 10 000 graines conforme aux chances (4 σ)', () => {
+    for (const c of [recrues, tenues]) {
+      const n = new Map();
+      for (let g = 0; g < N; g += 1) {
+        const o = tirer(c, cat, g);
+        expect(o).toEqual(tirer(c, cat, g));
+        n.set(o.rarete ?? o.id, (n.get(o.rarete ?? o.id) ?? 0) + 1);
+      }
+      for (const x of c.chances) {
+        const p = x.pourcent / 100;
+        expect(Math.abs((n.get(x.rarete ?? x.personnage) ?? 0) / N - p), `${c.id} ${x.rarete ?? x.personnage}`).toBeLessThanOrEqual(borne(p, N));
+      }
+    }
+    expect(Object.keys(tirer(recrues, cat, 3)).sort()).toEqual(['id', 'type']);
+    expect(Object.keys(tirer(tenues, cat, 3)).sort()).toEqual(['id', 'rarete', 'type']);
+    expect(tirer10(recrues, cat, 4)).toHaveLength(10);
+  });
+
+  it('personnages obtenus (obtenirPersonnages) : verrouillé → débloqué, choisissable, compté ; déjà obtenu → un niveau de plus (au plus le maximum) ; refus sans exception', () => {
+    const e0 = creerEtatEquipement(cat, depart);
+    expect(e0.debloques).toEqual([]);
+    const p3 = cat.personnages.find((p) => p.id === 'personnage-3');
+    expect([estDebloque(e0, p3), infoPersonnage(e0, cat, 'personnage-3').verrouille]).toEqual([false, true]);
+    expect(choisirPersonnage(e0, cat, 'personnage-3')).toBe(e0);
+    const { etat: e1, issues } = obtenirPersonnages(e0, cat, ['personnage-3', 'survivant', 'personnage-3']);
+    expect(issues).toEqual([
+      { id: 'personnage-3', nouveau: true, niveau: 1, max: false },
+      { id: 'survivant', nouveau: false, niveau: 2, max: false },
+      { id: 'personnage-3', nouveau: false, niveau: 2, max: false },
+    ]);
+    expect([estDebloque(e1, p3), e1.debloques, e0.debloques]).toEqual([true, ['personnage-3'], []]);
+    expect(choisirPersonnage(e1, cat, 'personnage-3').choisi).toBe('personnage-3');
+    expect(ameliorerPersonnage(e1, cat, 'personnage-3').persos['personnage-3']).toBe(3);
+    // Au maximum : le niveau ne dépasse pas niveauMax.
+    const max = cat.personnages.find((p) => p.id === 'survivant').niveauMax;
+    const plein = obtenirPersonnages(e0, cat, Array.from({ length: max + 3 }, () => 'survivant'));
+    expect([plein.etat.persos.survivant, plein.issues.at(-1)]).toEqual([max, { id: 'survivant', nouveau: false, niveau: max, max: true }]);
+    for (const x of [[], null, ['inconnu'], ['survivant', 3]]) expect(obtenirPersonnages(e0, cat, x)).toEqual({ etat: e0, issues: [] });
+  });
+
+  it('collection de tenues (ajouterCosmetiques) : compte, nouvelle ou déjà obtenue ; refus d\'une tenue inconnue', () => {
+    const a = ajouterCosmetiques({}, cat, ['treillis', 'doree', 'treillis']);
+    expect(a).toEqual({ collection: { treillis: 2, doree: 1 }, nouveaux: [true, true, false] });
+    expect(Object.isFrozen(a.collection)).toBe(true);
+    expect(ajouterCosmetiques(a.collection, cat, ['doree']).nouveaux).toEqual([false]);
+    for (const x of [[], null, ['inconnue']]) expect(ajouterCosmetiques(a.collection, cat, x)).toEqual({ collection: a.collection, nouveaux: [] });
+  });
+});
+
+describe('offres du jour (lireOffres, offresDuJour)', () => {
+  const { regles, erreurs: erreursOffres } = lireOffres(JSON_CAISSES, cat);
+
+  it('règles valides : six offres, chances de somme 100, prix par rareté', () => {
+    expect(erreursOffres).toEqual([]);
+    expect(regles.nombre).toBe(6);
+    expect(regles.chances.reduce((s, x) => s + x.pourcent, 0)).toBeCloseTo(100, 9);
+    expect(lireOffres({ offres: { ...JSON_CAISSES.offres, nombre: 0 } }, cat).regles).toBeNull();
+    expect(lireOffres({ offres: { ...JSON_CAISSES.offres, chances: { commun: 50 } } }, cat).regles).toBeNull();
+    expect(lireOffres({}, cat).regles).toBeNull();
+  });
+
+  it('déterministes pour un jour, six objets différents du catalogue au prix de leur rareté ; un autre jour, d\'autres offres ; jour invalide : aucune', () => {
+    const j = 20_768;
+    const o = offresDuJour(regles, cat, j);
+    expect(o).toEqual(offresDuJour(regles, cat, j));
+    expect(o).toHaveLength(6);
+    expect(new Set(o.map((x) => x.id)).size).toBe(6);
+    for (const x of o) {
+      expect(cat.objets.get(x.id).raretes[x.rarete]).toBeTruthy();
+      expect(x.prix).toBe(JSON_CAISSES.offres.prix[x.rarete]);
+    }
+    const autres = Array.from({ length: 30 }, (_, i) => JSON.stringify(offresDuJour(regles, cat, j + 1 + i)));
+    expect(autres.filter((x) => x !== JSON.stringify(o)).length).toBe(30);
+    for (const x of [-1, 1.5, NaN, '3', null]) expect(offresDuJour(regles, cat, x)).toEqual([]);
+    expect(offresDuJour(null, cat, j)).toEqual([]);
+    // Raretés sur 3 000 jours : conformes aux chances (première offre de chaque jour, 4 σ).
+    const n = new Map();
+    for (let d = 0; d < 3000; d += 1) { const r = offresDuJour(regles, cat, d)[0].rarete; n.set(r, (n.get(r) ?? 0) + 1); }
+    for (const x of regles.chances) expect(Math.abs((n.get(x.rarete) ?? 0) / 3000 - x.pourcent / 100), x.rarete).toBeLessThanOrEqual(borne(x.pourcent / 100, 3000));
   });
 });
