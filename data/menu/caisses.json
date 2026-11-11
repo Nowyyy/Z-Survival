@@ -1,0 +1,11 @@
+{
+  "_provisoire": "Lot 8e : caisses mystère de la Boutique (noms, prix et chances provisoires, à régler par le propriétaire sans lot ; l'équilibrage n'est pas jugé par l'agent). teinte : jeton de css/tokens.css (--menu-* ou --rarete-*) des « ? », des rayons et de la bande de la caisse ; prix : « Ouvrir ×1 », prix10 : « Ouvrir ×10 » (affichés, jamais prélevés avant le lot 8h) ; chances : pour cent par rareté de data/menu/raretes.json (somme de 100, chaque rareté avec au moins un objet de data/menu/objets.json). Tirage : rareté selon les chances, puis objet uniforme parmi ceux qui existent dans cette rareté ; ×10 = dix tirages indépendants, sans garantie. Lu par js/core/caisses.js (lireCaisses).",
+  "caisses": [
+    { "id": "ravitaillement", "nom": "Caisse de ravitaillement", "teinte": "--menu-panneau-bois-texte", "prix": 150, "prix10": 1350,
+      "chances": { "commun": 70, "peu-commun": 25, "rare": 5 } },
+    { "id": "militaire", "nom": "Caisse militaire", "teinte": "--rarete-rare", "prix": 500, "prix10": 4500,
+      "chances": { "peu-commun": 60, "rare": 32, "epique": 8 } },
+    { "id": "elite", "nom": "Caisse d'élite", "teinte": "--rarete-legendaire", "prix": 1500, "prix10": 13500,
+      "chances": { "epique": 85, "legendaire": 15 } }
+  ]
+}
