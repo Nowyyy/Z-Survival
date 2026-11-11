@@ -532,6 +532,11 @@
   padding: 0;
 }
 
+.e8-icone-logo {
+  fill: currentcolor;
+  stroke: none;
+}
+
 .e8-barres .e8-icone {
   width: 24px;
   height: 24px;
@@ -2065,15 +2070,6 @@
   animation-play-state: paused;
 }
 
-.e9-essai {
-  position: absolute;
-  top: calc(18 * var(--u));
-  right: var(--e8-droite);
-  margin: 0;
-  font-size: var(--e9-petit);
-  color: var(--menu-options-note);
-}
-
 /* Personnage au centre (180 × 236 à y 10) : un bouton (ouvre Personnages) ; étiquette au-dessus. */
 .e9-perso-bouton {
   position: absolute;
@@ -2097,8 +2093,9 @@
 .e9-etiquette {
   position: absolute;
   z-index: 1;
-  /* Dans la zone grise au-dessus de la lampe (haut de la lampe : centre − 6 ; hauteur de l'étiquette ≈ 20) quand il y a la place, sinon en haut de l'écran. */
-  top: max(calc(2 * var(--u)), calc(var(--e9-centre) - 28 * var(--u)));
+  /* Centrée dans la zone grise au-dessus de la lampe (du haut de l'écran au haut de la lampe, centre − 6 ; hauteur de l'étiquette : 19,2 u + 2 px)
+     quand il y a la place, sinon en haut de l'écran (retour du propriétaire). */
+  top: max(calc(2 * var(--u)), calc((var(--e9-centre) - 25.2 * var(--u)) / 2 - 1px));
   left: 50%;
   min-width: calc(140 * var(--u));
   padding: calc(3 * var(--u)) calc(8 * var(--u));

@@ -53,7 +53,7 @@ test.describe('onglet Jouer (E8-3)', () => {
       await expect(scene).toHaveAttribute('aria-hidden', 'true');
       await expect(scene.locator('svg')).toHaveCount(1);
       await expect(page.locator('#menu-ecran-jouer .menu-bandeau-libelle')).toHaveText('Monde 1 · histoire');
-      await expect(page.locator('#menu-titre-jouer')).toHaveText('Le bâtiment');
+      await expect(page.locator('#menu-titre-jouer')).toHaveText('Night of the Undead');
       await expect(page.locator('#menu-jouer-record')).toHaveText('Record : —');
       await expect(page.locator('#menu-jouer-portes')).toHaveText('Portes ouvertes : 0 / 3');
       await expect(page.locator('#menu-monde-precedent')).toBeDisabled();
@@ -214,7 +214,7 @@ test.describe('onglet Infini (E8-4) et mode infini', () => {
       expect(await libelles(page)).toEqual(['Monde 1 · Choisie', ...[2, 3, 4, 5, 6].map((n) => `Monde ${n} · Verrouillée`)]);
       const premiere = page.locator('#menu-carte-batiment');
       await expect(premiere).toHaveAttribute('aria-pressed', 'true');
-      await expect(premiere).toContainText('Le bâtiment');
+      await expect(premiere).toContainText('Night of the Undead');
       await expect(premiere).toContainText('Record : —');
       expect(await premiere.evaluate((n) => [getComputedStyle(n).borderTopColor, getComputedStyle(n).borderTopWidth])).toEqual(['rgb(216, 20, 20)', '3px']);
       for (const n of [2, 3, 4, 5, 6]) {
@@ -225,7 +225,7 @@ test.describe('onglet Infini (E8-4) et mode infini', () => {
         expect(await c.evaluate((x) => getComputedStyle(x).borderTopColor)).toBe('rgb(58, 52, 52)');
       }
       await expect(page.locator('#menu-classement-titre')).toHaveText('Classement');
-      await expect(page.locator('#menu-classement-carte')).toHaveText('Le bâtiment · exemple, arrive avec le compte');
+      await expect(page.locator('#menu-classement-carte')).toHaveText('Night of the Undead · exemple, arrive avec le compte');
       await expect(page.locator('#menu-classement-lignes > li')).toHaveText(['1[pseudo]Manche 58', '2[pseudo]Manche 51', '3[pseudo]Manche 47', '4[pseudo]Manche 44', '5[pseudo]Manche 42']);
       await expect(page.locator('#menu-classement-toi')).toHaveText('ToiRang —Manche —');
       await expect(page.locator('#menu-cartes-suivantes')).toHaveAccessibleName('Cartes suivantes');

@@ -140,7 +140,7 @@ test.describe('écran Personnage (E9-1)', () => {
       await expect(page.locator('.e9-capacite-effet')).toHaveText('[À définir : aucun effet]');
       await expect(page.locator('#menu-perso-silhouette')).toHaveAccessibleName('Touche-le pour changer de personnage ou l\'améliorer');
       await expect(page.locator('#menu-perso-silhouette .e9-silhouette')).toHaveCount(1);
-      await expect(page.locator('#menu-perso-essai')).toHaveText('Essai : rien n\'est encore gardé');
+      await expect(page.locator('#menu-perso-essai')).toHaveCount(0); // retour du propriétaire : mention « Essai » retirée
       // Statistiques effectives : celles de la fonction pure.
       await expect(page.locator('#menu-perso-stats-liste')).toHaveAccessibleName('Statistiques effectives');
       await expect(page.locator('#menu-perso-stats-liste li')).toHaveText([`Dégâts : ${ATTENDU.degats}`, `Vie : ${ATTENDU.vie}`, `Cadence : ${ATTENDU.cadence}`, `Vitesse : ${ATTENDU.vitesse}`, `Portée : ${ATTENDU.portee}`, `Précision : ${ATTENDU.precision}`]);
@@ -149,7 +149,7 @@ test.describe('écran Personnage (E9-1)', () => {
       await expect(page.locator('#menu-perso-inventaire')).toHaveText('Inventaire');
       await expect(page.locator('#menu-perso-fusion')).toHaveText('Fusion');
       // Disposition : tout dans la fenêtre, dans la zone de contenu ; aucun bloc superposé ; 44 px.
-      const ids = ['.e8-entete', '#menu-ecran-personnage .menu-bandeau', '#menu-perso-essai', '#menu-perso-silhouette', '#menu-perso-gauche', '#menu-perso-droite', '#menu-perso-capacite', '.e8-onglets'];
+      const ids = ['.e8-entete', '#menu-ecran-personnage .menu-bandeau', '#menu-perso-silhouette', '#menu-perso-gauche', '#menu-perso-droite', '#menu-perso-capacite', '.e8-onglets'];
       const b = {};
       for (const s of ids) b[s] = await boite(page, s);
       const contenu = await boite(page, '#menu-contenu');
@@ -160,7 +160,7 @@ test.describe('écran Personnage (E9-1)', () => {
         for (const r of await page.locator(s).evaluateAll((ns) => ns.map((n) => n.getBoundingClientRect().toJSON()))) expect([r.width >= 44, r.height >= 44], s).toEqual([true, true]);
       }
       // Aucun texte coupé ni débordant de sa boîte.
-      const debord = await page.locator('#menu-ecran-personnage').evaluate((sec) => [...sec.querySelectorAll('button, .e9-stat, .e9-essai')].filter((n) => n.scrollWidth > n.clientWidth + 1 && !n.classList.contains('e9-perso-bouton')).map((n) => n.id || n.className));
+      const debord = await page.locator('#menu-ecran-personnage').evaluate((sec) => [...sec.querySelectorAll('button, .e9-stat')].filter((n) => n.scrollWidth > n.clientWidth + 1 && !n.classList.contains('e9-perso-bouton')).map((n) => n.id || n.className));
       expect(debord).toEqual([]);
       const axe = await new AxeBuilder({ page }).include('#e8').analyze();
       expect(axe.violations.map((v) => `${v.id} : ${v.nodes.map((n) => n.target.join(' ')).join(', ')}`)).toEqual([]);
@@ -173,7 +173,7 @@ test.describe('écran Personnage (E9-1)', () => {
   test('contraste : 4,5:1 au moins contre le pixel le plus clair derrière chaque texte (932 × 430 et 667 × 375)', async ({ page }) => {
     for (const size of SIZES.slice(0, 2)) {
       await ouvrirPersonnage(page, size);
-      const sels = ['.e9-etiquette', '#menu-perso-essai', '#menu-perso-stats-liste', '.e9-capacite-nom', '.e9-capacite-titre', '.e9-capacite-effet', '.e9-capacite-niveau',
+      const sels = ['.e9-etiquette', '#menu-perso-stats-liste', '.e9-capacite-nom', '.e9-capacite-titre', '.e9-capacite-effet', '.e9-capacite-niveau',
         '#menu-perso-arme .e9-emplacement-ligne', '#menu-perso-arme .e9-emplacement-nom', '#menu-perso-gants .e9-emplacement-ligne', '#menu-perso-gants .e9-emplacement-nom', '#menu-perso-inventaire span', '#menu-perso-fusion span'];
       const c = await contrastes(page, sels);
       for (const s of sels) expect(c[s].ratio, `${size.width} ${s} ${c[s].couleur} sur ${c[s].fond}`).toBeGreaterThanOrEqual(4.5);
@@ -742,11 +742,14 @@ test('un onglet touché referme le sous-menu du Personnage ; l\'onglet Personnag
   await expect(page.locator('.e8-onglets button')).toHaveText(['Boutique', 'Personnage', 'Histoire', 'Infini', 'Prochainement']);
 });
 
-test('PC 2000 × 1060 : « Touche-le pour changer » au-dessus de la lampe ; menu à trois barres de 300 px au plus, bordé, ombré, avec icônes', async ({ page }) => {
+test('PC 2000 × 1060 : « Touche-le pour changer » centré au-dessus de la lampe ; menu à trois barres de 300 px au plus, bordé, ombré, avec icônes', async ({ page }) => {
   await ouvrirPersonnage(page, { width: 2000, height: 1060 });
   const etiquette = await boite(page, '.e9-etiquette');
   const lampe = await boite(page, '.e9-lampe');
   expect(etiquette.b).toBeLessThanOrEqual(lampe.t + 0.5);
+  // Retour du propriétaire : centrée dans la zone grise (du haut de l'écran Personnage au haut de la lampe).
+  const ecran = await boite(page, '#menu-ecran-personnage');
+  expect(Math.abs((etiquette.t + etiquette.b) / 2 - (ecran.t + lampe.t) / 2)).toBeLessThanOrEqual(2);
   await expect(page.locator('#menu-perso-silhouette')).toHaveAccessibleName('Touche-le pour changer de personnage ou l\'améliorer');
   await page.locator('#menu-trois-barres').click();
   const liste = await boite(page, '#menu-liste');
@@ -754,6 +757,8 @@ test('PC 2000 × 1060 : « Touche-le pour changer » au-dessus de la lampe ; men
   const style = await page.locator('#menu-liste').evaluate((n) => { const c = getComputedStyle(n); return [c.borderTopWidth, c.borderTopLeftRadius, c.boxShadow !== 'none', c.backgroundColor !== getComputedStyle(document.querySelector('#menu-ecran-personnage')).backgroundColor]; });
   expect(style).toEqual(['2px', '6px', true, true]);
   await expect(page.locator('#menu-liste .e8-icone-entree')).toHaveCount(4);
+  // Retour du propriétaire : logo de Discord (forme pleine) à la place de la bulle.
+  expect(await page.locator('#menu-discord .e8-icone-entree').evaluate((n) => [n.getAttribute('viewBox'), n.classList.contains('e8-icone-logo'), getComputedStyle(n).fill !== 'none'])).toEqual(['0 0 24 24', true, true]);
 });
 
 // Retours du propriétaire : route de l'onglet Histoire sous le bâtiment, vers le bouton « JOUER » ; tête du personnage qui pivote au cou.

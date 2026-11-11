@@ -16,9 +16,9 @@ const batiment = mondes[0];
 const atteints = (record) => etatJouer(batiment, record).panneaux.filter((p) => p.atteint).map((p) => p.manche);
 
 describe('data/menu/mondes.json (lireMondes)', () => {
-  it('monde 1 « Le bâtiment » jouable (40 manches, portes après 10, 20, 30), puis mondes 2 à 6 « [à venir] » verrouillés', () => {
+  it('monde 1 « Night of the Undead » jouable (40 manches, portes après 10, 20, 30), puis mondes 2 à 6 « [à venir] » verrouillés', () => {
     expect(mondes.map((m) => [m.numero, m.id, m.jouable])).toEqual([[1, 'batiment', true], [2, 'monde-2', false], [3, 'monde-3', false], [4, 'monde-4', false], [5, 'monde-5', false], [6, 'monde-6', false]]);
-    expect(batiment).toEqual({ id: 'batiment', numero: 1, nom: 'Le bâtiment', jouable: true, manches: 40, portes: [10, 20, 30] });
+    expect(batiment).toEqual({ id: 'batiment', numero: 1, nom: 'Night of the Undead', jouable: true, manches: 40, portes: [10, 20, 30] });
     for (const m of mondes.slice(1)) expect([m.nom, m.manches, m.portes]).toEqual(['[à venir]', undefined, undefined]);
     expect(fichier._note).toMatch(/provisoires/);
   });
