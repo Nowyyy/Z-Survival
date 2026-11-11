@@ -618,6 +618,7 @@
   "game.menu.inventaire.objets": "Objets possédés",
   "game.menu.inventaire.avant": "Page précédente",
   "game.menu.inventaire.apres": "Page suivante",
+  "game.menu.inventaire.pages": "Pages de l'inventaire",
   "game.menu.inventaire.page": "Page {p} / {n} · trié par rareté",
   "game.menu.inventaire.case.porte": "niv. {n} · Porté",
   "game.menu.inventaire.vide": "Aucun objet dans ce filtre.",

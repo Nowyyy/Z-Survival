@@ -66,8 +66,10 @@ export const ONGLETS = Object.freeze([
   Object.freeze({ id: 'event', verrouille: true }),
 ]);
 export const ECRANS = Object.freeze(['information', 'connexion', 'options', 'inventaire', 'fusion', 'personnages']);
-// Écrans pleins (en-tête gardé, barre d'onglets masquée) : Options (lot 8c) ; lot 8d : sous-menus de l'écran Personnage.
-export const ECRANS_PLEINS = Object.freeze(['options', 'inventaire', 'fusion', 'personnages']);
+// Écrans pleins (en-tête gardé, barre d'onglets masquée) : Options (lot 8c). Lot 8d : les sous-menus du Personnage gardent la barre d'onglets (retour du
+// propriétaire) : ils remplacent l'écran de l'onglet, comme un écran d'onglet ; toucher un onglet les referme.
+export const ECRANS_PLEINS = Object.freeze(['options']);
+export const SOUS_MENUS = Object.freeze(['inventaire', 'fusion', 'personnages']);
 
 export function creerEtatMenu() {
   return { onglet: 'jouer', menuOuvert: false, ecran: null, lues: [] };

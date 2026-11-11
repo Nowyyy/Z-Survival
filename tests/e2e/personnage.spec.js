@@ -234,21 +234,23 @@ test.describe('sous-menus Inventaire, Fusion, Personnages (E9-2 à E9-4)', () =>
         await page.locator(ouvreur).click();
         const sec = `#menu-ecran-${nom}`;
         await expect(page.locator(sec)).toBeVisible();
-        await expect(page.locator('.e8-onglets')).toBeHidden();
+        // Retour du propriétaire : la barre d'onglets reste visible dans les sous-menus (avant : écran plein, barre masquée) ; Personnage reste l'onglet actif.
+        await expect(page.locator('.e8-onglets')).toBeVisible();
+        await expect(page.locator('#menu-onglet-personnage')).toHaveAttribute('aria-current', 'page');
         await expect(page.locator('#menu-ecran-personnage')).toBeHidden();
         await expect(page.locator('#e8')).toHaveAttribute('data-ecran', nom);
         await expect(page.locator(`${sec} .menu-bandeau-libelle`)).toHaveText('Équipement');
         await expect(page.getByRole('heading', { name: titre, exact: true })).toBeVisible();
         await expect(page.locator(`#menu-${nom}-retour`)).toHaveAccessibleName('Retour à l\'équipement');
         await expect(page.locator(`#menu-${nom}-retour`)).toHaveText('Retour'); // retour du propriétaire (avant : « Équipement »)
-        const ids = ['.e8-entete', `${sec} .e9-tete`, ...blocs];
+        const ids = ['.e8-entete', `${sec} .e9-tete`, ...blocs, '.e8-onglets'];
         const b = {};
         for (const s of ids) b[s] = await boite(page, s);
         for (const s of ids) expect([b[s].l >= 0, b[s].t >= 0, b[s].r <= size.width + 0.5, b[s].b <= size.height + 0.5], `${nom} ${s}`).toEqual([true, true, true, true]);
         for (let i = 0; i < ids.length; i += 1) for (let j = i + 1; j < ids.length; j += 1) expect(chevauche(b[ids[i]], b[ids[j]]), `${nom} : ${ids[i]} / ${ids[j]}`).toBe(false);
         for (const r of await page.locator(`${sec} button`).evaluateAll((ns) => ns.filter((n) => n.offsetParent).map((n) => [n.id || n.className, n.getBoundingClientRect().toJSON()]))) expect([r[1].width >= 44, r[1].height >= 44], `${nom} ${r[0]}`).toEqual([true, true]);
-        // Retour du propriétaire (« espace vide en bas ») : écran plein, panneau de droite et dernier bloc de gauche descendent jusqu'en bas.
-        for (const s of BAS[nom]) expect(size.height - b[s].b, `${nom} ${s} : écart avec le bas`).toBeLessThan(20);
+        // Retour du propriétaire (« espace vide en bas ») : panneau de droite et dernier bloc de gauche descendent jusqu'à la barre d'onglets.
+        for (const s of BAS[nom]) expect(b['.e8-onglets'].t - b[s].b, `${nom} ${s} : écart avec la barre d'onglets`).toBeLessThan(20);
         // Rien de coupé : panneaux et grilles sans défilement à ces tailles (inventaire de départ), sauf la grille des objets compatibles, qui défile
         // quand tous les fusionnables sont listés (aucun objet placé) ; ses cases restent atteignables au clavier.
         const coupe = await page.locator(sec).evaluate((n) => [...n.querySelectorAll('.e9-panneau, .e9-grille')].filter((x) => x.id !== 'menu-fusion-grille' && x.scrollHeight > x.clientHeight + 1).map((x) => x.id || x.className));
@@ -581,8 +583,9 @@ test.describe('téléphone à encoche (762 × 351, marges latérales de 50 px)',
     ]) {
       await page.locator(ouvreur).click();
       await expect(page.locator(`#menu-ecran-${nom}`)).toBeVisible();
-      await verifier(nom, [`#menu-ecran-${nom} .e9-tete`, ...blocs], size.height);
-      for (const sel of BAS[nom]) expect(size.height - (await boite(page, sel)).b, `${nom} ${sel} : écart avec le bas`).toBeLessThan(20);
+      const barre = await boite(page, '.e8-onglets');
+      await verifier(nom, [`#menu-ecran-${nom} .e9-tete`, ...blocs], barre.t);
+      for (const sel of BAS[nom]) expect(barre.t - (await boite(page, sel)).b, `${nom} ${sel} : écart avec la barre d'onglets`).toBeLessThan(20);
       // Aucun nom d'objet coupé au milieu d'un mot (un seul mot par nom dans les données : une seule ligne).
       const coupes = await page.locator(`#menu-ecran-${nom} .e9-case-nom`).evaluateAll((ns) => ns.filter((n) => n.offsetParent && n.getClientRects().length && n.getBoundingClientRect().height > parseFloat(getComputedStyle(n).lineHeight) * 1.5 && !/\s/.test(n.textContent)).map((n) => n.textContent));
       expect(coupes, nom).toEqual([]);
@@ -718,4 +721,60 @@ test('PC 2000 × 1060 : personnage, cône, sol et capacité centrés verticaleme
     expect([c > bg.r - 0.5, c < bd.l + 0.5], sec).toEqual([true, true]); // centré entre la colonne de gauche et le panneau
     await page.keyboard.press('Escape');
   }
+});
+
+// Retours du propriétaire : barre d'onglets dans les sous-menus (un onglet touché les referme) ; « Touche-le pour changer » au-dessus de la lampe ;
+// menu à trois barres plus étroit et détaché (bord, ombre, icônes).
+test('un onglet touché referme le sous-menu du Personnage ; l\'onglet Personnage revient à l\'écran Personnage', async ({ page }) => {
+  await ouvrirPersonnage(page);
+  await page.locator('#menu-perso-fusion').click();
+  await expect(page.locator('#menu-ecran-fusion')).toBeVisible();
+  await page.locator('#menu-onglet-infini').click();
+  await expect(page.locator('#menu-ecran-infini')).toBeVisible();
+  await expect(page.locator('#menu-ecran-fusion')).toBeHidden();
+  expect((await page.evaluate(() => window.__zsMenu.etat().menu)).ecran).toBeNull();
+  await page.locator('#menu-onglet-personnage').click();
+  await expect(page.locator('#menu-ecran-personnage')).toBeVisible();
+  await page.locator('#menu-perso-inventaire').click();
+  await page.locator('#menu-onglet-personnage').click();
+  await expect(page.locator('#menu-ecran-inventaire')).toBeHidden();
+  await expect(page.locator('#menu-ecran-personnage')).toBeVisible();
+  await expect(page.locator('.e8-onglets button')).toHaveText(['Boutique', 'Personnage', 'Histoire', 'Infini', 'Prochainement']);
+});
+
+test('PC 2000 × 1060 : « Touche-le pour changer » au-dessus de la lampe ; menu à trois barres de 300 px au plus, bordé, ombré, avec icônes', async ({ page }) => {
+  await ouvrirPersonnage(page, { width: 2000, height: 1060 });
+  const etiquette = await boite(page, '.e9-etiquette');
+  const lampe = await boite(page, '.e9-lampe');
+  expect(etiquette.b).toBeLessThanOrEqual(lampe.t + 0.5);
+  await expect(page.locator('#menu-perso-silhouette')).toHaveAccessibleName('Touche-le pour changer de personnage ou l\'améliorer');
+  await page.locator('#menu-trois-barres').click();
+  const liste = await boite(page, '#menu-liste');
+  expect(liste.w).toBeLessThanOrEqual(300.5);
+  const style = await page.locator('#menu-liste').evaluate((n) => { const c = getComputedStyle(n); return [c.borderTopWidth, c.borderTopLeftRadius, c.boxShadow !== 'none', c.backgroundColor !== getComputedStyle(document.querySelector('#menu-ecran-personnage')).backgroundColor]; });
+  expect(style).toEqual(['2px', '6px', true, true]);
+  await expect(page.locator('#menu-liste .e8-icone-entree')).toHaveCount(4);
+});
+
+// Retours du propriétaire : route de l'onglet Histoire sous le bâtiment, vers le bouton « JOUER » ; tête du personnage qui pivote au cou.
+test('route de l\'onglet Histoire : ne touche pas le bâtiment (bord haut sous son pied), finit vers le bouton « JOUER » ; tête et bras pivotent au cou et à l\'épaule', async ({ page }) => {
+  await ouvrirMenu(page);
+  const r = await page.locator('#menu-jouer-scene .e8-jouer-route').evaluate((p) => {
+    const n = p.getTotalLength();
+    const demi = parseFloat(getComputedStyle(p).strokeWidth) / 2;
+    let hautSousBatiment = Infinity;
+    for (let i = 0; i <= 200; i += 1) {
+      const q = p.getPointAtLength((n * i) / 200);
+      if (q.x >= 258 && q.x <= 700) hautSousBatiment = Math.min(hautSousBatiment, q.y - demi);
+    }
+    const fin = p.getPointAtLength(n);
+    return { hautSousBatiment, fin: [fin.x, fin.y] };
+  });
+  expect(r.hautSousBatiment).toBeGreaterThan(286); // pied du bâtiment (aile et salle) : y 286 de la maquette
+  expect(r.fin[0]).toBeGreaterThan(640); // vers le bouton « JOUER » (x 674 de la maquette)
+  expect(r.fin[1]).toBeGreaterThan(300);
+  await page.locator('#menu-onglet-personnage').click();
+  await expect(page.locator('#menu-perso-silhouette .e9-sil-tete')).toHaveCount(1);
+  const origines = await page.evaluate(() => ['.e9-sil-tete', '.e9-sil-viser'].map((s) => { const c = getComputedStyle(document.querySelector(`#menu-perso-silhouette ${s}`)); return [c.transformBox, c.transformOrigin]; }));
+  expect(origines).toEqual([['view-box', '90px 72px'], ['view-box', '122px 86px']]);
 });

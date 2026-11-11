@@ -4,7 +4,7 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync, readdirSync } from 'node:fs';
 import { CANAUX_DEBUG, PARAMS_PARTIE, PARAMS_TEST, acces, choixDemarrage } from '../../js/core/graphics.js';
 import {
-  ECRANS, ECRANS_PLEINS, MODULES_ATTENDUS, ONGLETS, PHASES, adresseRetour, avancer, basculerMenu, choisirAstuce, choisirOnglet, creerEtatMenu, creerProgression,
+  ECRANS, ECRANS_PLEINS, SOUS_MENUS, MODULES_ATTENDUS, ONGLETS, PHASES, adresseRetour, avancer, basculerMenu, choisirAstuce, choisirOnglet, creerEtatMenu, creerProgression,
   fermerEcran, fermerMenu, lienExterne, nouveauteNonLue, ouvrirEcran, pourcentage, texteVersion,
 } from '../../js/core/menu-etat.js';
 
@@ -188,7 +188,8 @@ describe('onglets, menu à trois barres, nouveautés (lot 8a, état en mémoire)
     expect([e.ecran, nouveauteNonLue(infos, e.lues)]).toEqual(['information', false]);
     expect(ouvrirEcran(e, 'boutique')).toBe(e);
     expect(ECRANS).toEqual(['information', 'connexion', 'options', 'inventaire', 'fusion', 'personnages']); // lot 8d : sous-menus du Personnage
-    expect(ECRANS_PLEINS).toEqual(['options', 'inventaire', 'fusion', 'personnages']);
+    expect(ECRANS_PLEINS).toEqual(['options']); // lot 8d, retour du propriétaire : les sous-menus du Personnage gardent la barre d'onglets
+    expect(SOUS_MENUS).toEqual(['inventaire', 'fusion', 'personnages']);
     e = ouvrirEcran(fermerEcran(e), 'inventaire', infos);
     expect([e.ecran, e.menuOuvert]).toEqual(['inventaire', false]);
     expect(nouveauteNonLue([], [])).toBe(false);
