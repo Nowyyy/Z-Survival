@@ -596,12 +596,17 @@ test.describe('téléphone à encoche (762 × 351, marges latérales de 50 px)',
 // sur téléphone, où le bandeau garde ses tailles de texte minimales. Le bas des coulures doit rester au-dessus du bloc qui suit le bandeau.
 test.describe('coulures du bandeau au-dessus du bloc suivant', () => {
   for (const [size, encoche] of [[REF, false], [{ width: 667, height: 375 }, false], [{ width: 1440, height: 900 }, false], [{ width: 762, height: 351 }, true]]) {
-    test(`${size.width}×${size.height}${encoche ? ' (encoche simulée)' : ''} : Personnage, Inventaire, Fusion, Personnages`, async ({ page }) => {
+    test(`${size.width}×${size.height}${encoche ? ' (encoche simulée)' : ''} : Jouer, Infini, Personnage, Inventaire, Fusion, Personnages`, async ({ page }) => {
       await ouvrirMenu(page, size);
       if (encoche) await page.addStyleTag({ content: '#e8 { --e8-gauche: 50px !important; --e8-droite: 50px !important; }' });
+      const bas = (sec) => page.locator(`${sec} .menu-bandeau-coulures > *`).evaluateAll((ns) => Math.max(...ns.map((n) => n.getBoundingClientRect().bottom)));
+      // Retour du propriétaire (PC) : les coulures mordaient sur « Choisis ta carte » (Infini).
+      expect(await bas('#menu-ecran-jouer'), 'Jouer').toBeLessThanOrEqual((await boite(page, '.e8-jouer-infos')).t + 0.5);
+      await page.locator('#menu-onglet-infini').click();
+      await expect(page.locator('#menu-ecran-infini')).toBeVisible();
+      expect(await bas('#menu-ecran-infini'), 'Infini').toBeLessThanOrEqual((await boite(page, '#menu-infini-choix')).t + 0.5);
       await page.locator('#menu-onglet-personnage').click();
       await expect(page.locator('#menu-ecran-personnage')).toBeVisible();
-      const bas = (sec) => page.locator(`${sec} .menu-bandeau-coulures > *`).evaluateAll((ns) => Math.max(...ns.map((n) => n.getBoundingClientRect().bottom)));
       expect(await bas('#menu-ecran-personnage'), 'Personnage').toBeLessThanOrEqual((await boite(page, '#menu-perso-gauche')).t + 0.5);
       for (const [ouvreur, nom, suivant] of [['#menu-perso-inventaire', 'inventaire', '#menu-inventaire-filtres'], ['#menu-perso-fusion', 'fusion', '#menu-fusion-regle'], ['#menu-perso-silhouette', 'personnages', '#menu-personnages-grille']]) {
         await page.locator(ouvreur).click();
@@ -656,4 +661,34 @@ test.describe('coulures des bandeaux du menu', () => {
     const t = await page.locator('#menu-ecran-infini .menu-coulure-flux').first().evaluate((n) => getComputedStyle(n).transform);
     expect(['none', 'matrix(1, 0, 0, 1, 0, 0)']).toContain(t); // longueur finale
   });
+});
+
+// Retours du propriétaire sur PC (2000 × 1020) : trop de vide (l'unité plafonnait à 1,3 : elle va jusqu'à 2,4), inventaire sur deux pages alors que tout
+// tenait (rangées selon la hauteur libre), coulures absentes de l'Inventaire (ses animations restaient en pause).
+test('PC 2000 × 1020 : écrans à la largeur de la fenêtre, inventaire sur une page, coulures allongées sur chaque écran', async ({ page }) => {
+  const size = { width: 2000, height: 1020 };
+  await ouvrirPersonnage(page, size);
+  const droite = await boite(page, '#menu-perso-droite');
+  expect(size.width - droite.r).toBeLessThan(40); // colonne de droite contre le bord droit, à l'échelle de la fenêtre
+  expect(droite.w).toBeGreaterThan(400); // 220 de la maquette × une unité d'environ 2,1
+  // Gouttes allongées (fin de l'animation e8-coulure) sur chaque écran, Inventaire compris.
+  const allongees = async (sec) => {
+    await page.waitForTimeout(1500);
+    return page.locator(`${sec} .menu-coulure-flux`).evaluateAll((ns) => ns.map((n) => new DOMMatrix(getComputedStyle(n).transform).f));
+  };
+  expect(await allongees('#menu-ecran-personnage')).toEqual([0, 0, 0]);
+  await page.locator('#menu-perso-inventaire').click();
+  expect(await allongees('#menu-ecran-inventaire')).toEqual([0, 0, 0]);
+  const s = await etatSous(page, 'inventaire');
+  expect([s.pages, s.visibles.length, s.parPage >= 18]).toEqual([1, 16, true]);
+  await expect(page.locator('#menu-inventaire-grille li')).toHaveCount(16);
+  await expect(page.locator('#menu-inventaire-page')).toHaveText('Page 1 / 1 · trié par rareté');
+  const grille = await boite(page, '#menu-inventaire-grille');
+  const pied = await boite(page, '.e9-pagination');
+  expect(pied.t).toBeGreaterThanOrEqual(grille.b - 0.5);
+  for (const [o, sec] of [['#menu-perso-fusion', '#menu-ecran-fusion'], ['#menu-perso-silhouette', '#menu-ecran-personnages']]) {
+    await page.keyboard.press('Escape');
+    await page.locator(o).click();
+    expect(await allongees(sec), sec).toEqual([0, 0, 0]);
+  }
 });
