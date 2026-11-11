@@ -2329,6 +2329,7 @@
 .e8-ecran.e9-sous {
   align-items: stretch;
   gap: 0;
+  padding-bottom: calc(12 * var(--u)); /* écran plein : le contenu descend jusqu'en bas (retour du propriétaire) */
   background:
     linear-gradient(var(--menu-options-trait), var(--menu-options-trait)) 0 calc(99 * var(--u)) / 100% 2px no-repeat,
     linear-gradient(var(--menu-options-trait), var(--menu-options-trait)) 0 calc(219 * var(--u)) / 100% 2px no-repeat,
@@ -2341,6 +2342,7 @@
 
 .e9-sous-gauche {
   display: flex;
+  flex: 1;
   flex-direction: column;
   gap: calc(6 * var(--u));
   min-height: 0;
@@ -2355,7 +2357,8 @@
   margin-bottom: calc(8 * var(--u));
 }
 
-/* Panneaux (détail, fiche, compatibles) : à droite, aux places de la maquette ; hauteur de la maquette, au moins ce qu'il faut à 667 × 375. */
+/* Panneaux (détail, fiche, compatibles) : à droite, en haut aux places de la maquette ; ils descendent jusqu'au bas de l'écran plein (la maquette
+   les arrêtait au-dessus de la barre d'onglets, masquée ici : retour du propriétaire, « espace vide en bas ») ; défilement si l'écran est trop bas. */
 .e9-panneau {
   display: flex;
   flex-direction: column;
@@ -2374,22 +2377,22 @@
 
 .e9-detail {
   top: calc(8 * var(--u));
+  bottom: calc(12 * var(--u));
   width: calc(328 * var(--u));
-  height: max(calc(298 * var(--u)), 224px);
   padding: calc(12 * var(--u)) calc(14 * var(--u));
 }
 
 .e9-fiche {
   top: calc(12 * var(--u));
+  bottom: calc(12 * var(--u));
   width: calc(410 * var(--u));
-  height: max(calc(340 * var(--u)), 290px); /* maquette : 294 avec la barre d'onglets ; ici la raison des boutons s'ajoute (écran plein) */
   padding: calc(12 * var(--u)) calc(14 * var(--u));
 }
 
 .e9-compatibles {
   top: calc(58 * var(--u));
+  bottom: calc(12 * var(--u));
   width: calc(428 * var(--u));
-  height: max(calc(248 * var(--u)), min(calc(100% - 70 * var(--u)), 250px)); /* deux rangées visibles sur téléphone (écran plein, sans onglets) */
   padding: calc(12 * var(--u));
   border: 1px solid var(--menu-options-filet);
   background: var(--menu-e9-compatibles);
@@ -2448,7 +2451,18 @@
   list-style: none;
 }
 
-.e9-grille-objets { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+/* Grilles de gauche : elles occupent la hauteur libre, cases agrandies jusqu'à 1,4 fois la maquette ; la pagination reste en bas. */
+.e9-grille-objets {
+  flex: 1;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-auto-rows: minmax(max(var(--menu-cible), calc(70 * var(--u))), calc(100 * var(--u)));
+  align-content: start;
+  min-height: 0;
+}
+
+.e9-grille > li {
+  display: flex;
+}
 .e9-grille-compatibles {
   flex: 1;
   grid-template-columns: repeat(5, minmax(0, 1fr));
@@ -2458,13 +2472,18 @@
 }
 
 .e9-grille-persos {
+  flex: 1;
   grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-auto-rows: minmax(max(var(--menu-cible), calc(104 * var(--u))), calc(146 * var(--u)));
+  align-content: start;
   gap: calc(10 * var(--u));
+  min-height: 0;
   margin-top: calc(6 * var(--u));
 }
 
 .e9-case {
   display: flex;
+  flex: 1;
   flex-direction: column;
   align-items: center;
   justify-content: center;
@@ -2633,7 +2652,7 @@
 }
 
 .e9-atelier {
-  flex: none;
+  flex: 1;
   gap: calc(12 * var(--u));
   min-height: max(calc(200 * var(--u)), 150px);
   padding: calc(10 * var(--u)) calc(14 * var(--u));
