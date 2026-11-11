@@ -3558,16 +3558,176 @@
 }
 
 /* « Voir les chances » : lien (souligné, bleu clair de la maquette), cible de 44 de haut. */
+/* « Voir les chances » (retour du propriétaire : bouton stylisé) : pastille sombre bordée de la teinte de la caisse, icône de pourcentage, libellé en
+   capitales ; survol : fond de la teinte assombrie. */
 .e3-lien {
+  display: inline-flex;
   flex: none;
+  align-items: center;
+  justify-content: center;
+  gap: calc(6 * var(--u));
   min-height: var(--menu-cible);
-  padding: 0 calc(8 * var(--u));
-  border: 0;
-  background: none;
-  color: var(--menu-exemple);
-  font-size: max(12px, calc(12 * var(--u)));
-  text-decoration: underline;
-  text-underline-offset: 2px;
+  margin-top: calc(4 * var(--u));
+  max-width: 100%;
+  padding: 0 calc(12 * var(--u));
+  border: 2px solid color-mix(in srgb, var(--e3-teinte) 70%, var(--menu-e9-case));
+  border-radius: 999px;
+  background: var(--menu-scene-voiture);
+  color: var(--menu-texte);
+  font-family: var(--font-label);
+  font-size: max(11px, calc(12 * var(--u)));
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.e3-lien:hover {
+  border-color: var(--e3-teinte);
+  background: color-mix(in srgb, var(--e3-teinte) 22%, var(--menu-scene-voiture));
+}
+
+.e3-lien-icone {
+  width: max(14px, calc(15 * var(--u)));
+  height: max(14px, calc(15 * var(--u)));
+  fill: none;
+  stroke: var(--e3-teinte);
+  stroke-width: 1.8;
+  stroke-linecap: round;
+}
+
+/* Répartition des raretés d'une caisse (décorative, les pour cent exacts sont dans « Voir les chances ») : une part par rareté, de sa couleur. */
+.e3-repartition {
+  display: flex;
+  gap: 1px;
+  width: min(100%, calc(200 * var(--u)));
+  height: calc(6 * var(--u));
+  min-height: 5px;
+  margin: calc(4 * var(--u)) auto;
+  overflow: hidden;
+  border-radius: 3px;
+}
+
+.e3-repartition-part {
+  flex: 1 1 0;
+  min-width: 2px;
+  background: var(--e3-rarete);
+}
+
+/* Dessins des caisses (retour du propriétaire) : militaire (métal olive), élite (coffre sombre cerclé de la teinte), recrues (malle violette, plaques),
+   tenues (valise de cuir à sangles). Jetons existants seulement. */
+.e3-poignee,
+.e3-chaine {
+  fill: none;
+  stroke: var(--menu-clou);
+  stroke-width: 3;
+  stroke-linejoin: round;
+}
+
+.e3-chaine {
+  stroke-width: 1.4;
+  stroke-dasharray: 2 1.5;
+}
+
+.e3-metal,
+.e3-metal-couvercle {
+  stroke: var(--menu-perso-jambes);
+  stroke-width: 3;
+}
+
+.e3-metal {
+  fill: var(--menu-perso-survivant);
+}
+
+.e3-metal-couvercle {
+  fill: var(--menu-perso-poche);
+}
+
+.e3-metal-arete {
+  fill: none;
+  stroke: var(--menu-perso-poche);
+  stroke-width: 3;
+}
+
+.e3-loquet,
+.e3-plaque {
+  fill: var(--menu-clou);
+  stroke: var(--menu-bois-sombre);
+  stroke-width: 1.5;
+}
+
+.e3-coffre,
+.e3-coffre-couvercle {
+  stroke: var(--menu-bois-sombre);
+  stroke-width: 3;
+}
+
+.e3-coffre {
+  fill: var(--menu-scene-voiture);
+}
+
+.e3-coffre-couvercle {
+  fill: var(--menu-scene-toit-salle);
+}
+
+.e3-cercle {
+  fill: none;
+  stroke: var(--e3-teinte);
+  stroke-width: 5;
+}
+
+.e3-coin-or {
+  fill: var(--e3-teinte);
+  stroke: var(--menu-bois-sombre);
+  stroke-width: 1.5;
+}
+
+.e3-malle,
+.e3-malle-couvercle {
+  stroke: var(--menu-e9-violet-bord);
+  stroke-width: 3;
+}
+
+.e3-malle {
+  fill: var(--menu-e9-violet);
+}
+
+.e3-malle-couvercle {
+  fill: var(--menu-e9-violet-inactif);
+}
+
+.e3-malle-bande {
+  fill: none;
+  stroke: var(--menu-e9-violet-bord);
+  stroke-width: 4;
+}
+
+.e3-valise {
+  fill: var(--menu-scene-planche);
+  stroke: var(--menu-bois-sombre);
+  stroke-width: 3;
+}
+
+.e3-anse {
+  fill: none;
+  stroke: var(--menu-bois-sombre);
+  stroke-width: 6;
+  stroke-linecap: round;
+}
+
+.e3-sangle {
+  fill: var(--menu-bois-sombre);
+}
+
+.e3-boucle {
+  fill: none;
+  stroke: var(--menu-clou);
+  stroke-width: 2;
+}
+
+.e3-coin-valise {
+  fill: none;
+  stroke: var(--menu-clou);
+  stroke-width: 3;
 }
 
 @keyframes e3-flotte {

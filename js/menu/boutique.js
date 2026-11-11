@@ -7,7 +7,7 @@
 // Achat : tirage à graine (crypto.getRandomValues), éléments ajoutés à l'état en mémoire (inventaire, personnages, collection de tenues), puis
 // afficherOuverture(resultat) → écran de résultat (E3-4, E3-5 : js/menu/resultat.js). Le prix est affiché, jamais prélevé ; rien n'est écrit.
 import { formatMoney } from '../core/economy.js';
-import { TIRAGES_X10, ajouterCosmetiques, bornes, lireCaisses, lireCosmetiques, lireOffres, offresDuJour, prixAchat, tirer, tirer10 } from '../core/caisses.js';
+import { TIRAGES_X10, ajouterCosmetiques, lireCaisses, lireCosmetiques, lireOffres, offresDuJour, partHaute, prixAchat, tirer, tirer10 } from '../core/caisses.js';
 import { ajouterObjets, obtenirPersonnages } from '../core/equipement.js';
 import { fmt } from '../game/texts.js';
 import { el } from './menu.js';
@@ -40,20 +40,69 @@ export const RUBRIQUES = Object.freeze(['offres', 'equipement', 'personnage', 'c
 const RUBRIQUE_TEXTES = { offres: 'game.menu.boutique.rubrique.offres', equipement: 'game.menu.boutique.rubrique.equipement', personnage: 'game.menu.boutique.rubrique.personnage', cosmetique: 'game.menu.boutique.rubrique.cosmetique' };
 
 // Caisse mystère (maquette : 150 × 96, rayons au-dessus jusqu'à −10) ; décorative. Couleurs en jetons (css/menu.css), teinte : --e3-teinte.
-export function caisseSvg() {
-  const svg = forme('svg', { viewBox: '0 -10 150 106', 'aria-hidden': 'true', focusable: 'false', preserveAspectRatio: 'xMidYMax meet' }, 'e3-caisse');
+// Retour du propriétaire : un dessin par genre de caisse (modele de data/menu/caisses.json) : bois (ravitaillement : planches, coins rivetés), militaire
+// (caisse à munitions en métal : nervures, loquets, poignées), elite (coffre bombé cerclé de la teinte, coins et serrure), recrues (malle et plaques
+// d'identité), tenues (valise à sangles et coins protégés) ; grand « ? » lumineux remonté au milieu de la face (il était trop bas), deux petits.
+const RIVETS = [[18, 44], [132, 44], [18, 84], [132, 84]];
+const DESSINS = {
+  bois: () => [
+    forme('rect', { x: 10, y: 34, width: 130, height: 58 }, 'e3-bois'),
+    forme('path', { d: 'M10 52 H140 M10 72 H140' }, 'e3-joint'),
+    forme('rect', { x: 6, y: 24, width: 138, height: 14 }, 'e3-couvercle'),
+    forme('rect', { x: 8, y: 36, width: 134, height: 3 }, 'e3-bande'),
+    ...RIVETS.map(([cx, cy]) => forme('circle', { cx, cy, r: 2 }, 'e3-rivet')),
+  ],
+  militaire: () => [
+    forme('path', { d: 'M12 54 h-6 v16 h6 M138 54 h6 v16 h-6' }, 'e3-poignee'),
+    forme('rect', { x: 12, y: 36, width: 126, height: 56, rx: 3 }, 'e3-metal'),
+    forme('path', { d: 'M28 40 V88 M122 40 V88' }, 'e3-metal-arete'),
+    forme('rect', { x: 12, y: 82, width: 126, height: 5 }, 'e3-bande'),
+    forme('path', { d: 'M58 26 V19 H92 V26' }, 'e3-poignee'),
+    forme('rect', { x: 8, y: 25, width: 134, height: 13, rx: 2 }, 'e3-metal-couvercle'),
+    forme('rect', { x: 20, y: 33, width: 11, height: 11, rx: 1 }, 'e3-loquet'),
+    forme('rect', { x: 119, y: 33, width: 11, height: 11, rx: 1 }, 'e3-loquet'),
+  ],
+  elite: () => [
+    forme('rect', { x: 14, y: 44, width: 122, height: 48 }, 'e3-coffre'),
+    forme('path', { d: 'M10 46 Q10 21 75 19 Q140 21 140 46 Z' }, 'e3-coffre-couvercle'),
+    forme('path', { d: 'M40 21 V92 M110 21 V92 M10 46 H140' }, 'e3-cercle'),
+    forme('path', { d: 'M14 92 V80 H26 V92 Z M136 92 V80 H124 V92 Z' }, 'e3-coin-or'),
+    forme('rect', { x: 68, y: 39, width: 14, height: 13, rx: 2 }, 'e3-coin-or'),
+  ],
+  recrues: () => [
+    forme('rect', { x: 12, y: 36, width: 126, height: 56, rx: 2 }, 'e3-malle'),
+    forme('path', { d: 'M12 50 H138 M12 82 H138' }, 'e3-malle-bande'),
+    forme('rect', { x: 8, y: 26, width: 134, height: 12, rx: 2 }, 'e3-malle-couvercle'),
+    forme('rect', { x: 10, y: 37, width: 130, height: 3 }, 'e3-bande'),
+    forme('path', { d: 'M121 30 Q127 44 120 54 M125 30 Q133 46 129 58' }, 'e3-chaine'),
+    forme('rect', { x: 114, y: 52, width: 11, height: 16, rx: 4, transform: 'rotate(-12 119 60)' }, 'e3-plaque'),
+    forme('rect', { x: 124, y: 56, width: 11, height: 16, rx: 4, transform: 'rotate(10 129 64)' }, 'e3-plaque'),
+  ],
+  tenues: () => [
+    forme('path', { d: 'M58 34 V25 Q75 18 92 25 V34' }, 'e3-anse'),
+    forme('rect', { x: 12, y: 34, width: 126, height: 58, rx: 9 }, 'e3-valise'),
+    forme('rect', { x: 12, y: 62, width: 126, height: 4 }, 'e3-bande'),
+    forme('rect', { x: 38, y: 34, width: 9, height: 58 }, 'e3-sangle'),
+    forme('rect', { x: 103, y: 34, width: 9, height: 58 }, 'e3-sangle'),
+    forme('rect', { x: 36, y: 70, width: 13, height: 9, rx: 1 }, 'e3-boucle'),
+    forme('rect', { x: 101, y: 70, width: 13, height: 9, rx: 1 }, 'e3-boucle'),
+    forme('path', { d: 'M12 46 V43 Q12 34 21 34 H24 M138 46 V43 Q138 34 129 34 H126 M12 80 V83 Q12 92 21 92 H24 M138 80 V83 Q138 92 129 92 H126' }, 'e3-coin-valise'),
+  ],
+};
+// Places des « ? » par dessin : grand (y de la ligne de base), petits (x, x, y).
+const POINTS = { bois: [74, 34, 116, 62], militaire: [74, 44, 106, 64], elite: [79, 26, 124, 72], recrues: [74, 36, 98, 64], tenues: [76, 25, 125, 58] };
+export function caisseSvg(modele = 'bois') {
+  const m = DESSINS[modele] ? modele : 'bois';
+  const [y, x1, x2, y2] = POINTS[m];
+  const svg = forme('svg', { viewBox: '0 -10 150 106', 'aria-hidden': 'true', focusable: 'false', preserveAspectRatio: 'xMidYMax meet', 'data-modele': m }, `e3-caisse e3-caisse-${m}`);
   svg.append(
     groupe('e3-rayons', forme('path', { d: 'M40 30 L20 -6 L55 -6 Z M75 30 L66 -10 L84 -10 Z M110 30 L95 -6 L130 -6 Z' })),
     groupe('e3-tremble', groupe('e3-flotte',
-      forme('rect', { x: 10, y: 34, width: 130, height: 58 }, 'e3-bois'),
-      forme('path', { d: 'M10 52 H140 M10 72 H140' }, 'e3-joint'),
-      forme('rect', { x: 6, y: 24, width: 138, height: 14 }, 'e3-couvercle'),
-      forme('rect', { x: 8, y: 36, width: 134, height: 3 }, 'e3-bande'),
-      ...[[18, 44], [132, 44], [18, 84], [132, 84]].map(([cx, cy]) => forme('circle', { cx, cy, r: 2 }, 'e3-rivet')),
+      ...DESSINS[m](),
       // Grand « ? » lumineux : un halo de la teinte (trait large et transparent, sans filtre) sous le « ? » clair ; il pulse (e3-lueur).
-      groupe('e3-lueur', point(75, 82, 'e3-q e3-q-halo', '?'), point(75, 82, 'e3-q', '?')),
-      point(34, 66, 'e3-q e3-q-petit', '?'),
-      point(116, 66, 'e3-q e3-q-petit', '?'))));
+      groupe('e3-lueur', point(75, y, 'e3-q e3-q-halo', '?'), point(75, y, 'e3-q', '?')),
+      point(x1, y2, 'e3-q e3-q-petit', '?'),
+      point(x2, y2, 'e3-q e3-q-petit', '?'))));
   return svg;
 }
 
@@ -73,6 +122,7 @@ export function poserJeton(n, variable, jeton) {
 }
 
 const graineAchat = () => crypto.getRandomValues(new Uint32Array(1))[0];
+const pourcentTexte = (n) => (Number.isFinite(n) ? n.toLocaleString('fr-FR', { maximumFractionDigits: 2 }) : '');
 // Numéro du jour local (offres du jour : renouvelées à minuit, heure de l'appareil) et temps restant jusqu'à minuit.
 export const jourLocal = (d) => Math.floor(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / 86_400_000);
 export const avantMinuit = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1).getTime() - d.getTime();
@@ -86,7 +136,6 @@ export async function ecranBoutique({ t, bandeau, root, rootDialogue, surVue = (
   const { regles } = lireOffres(donnees, cat);
   const nomRarete = (rid) => cat.raretes.find((r) => r.id === rid)?.nom ?? '';
   const jetonRarete = (rid) => cat.raretes.find((r) => r.id === rid)?.jeton;
-  const minuscule = (s) => s.toLocaleLowerCase('fr');
   let collection = Object.freeze({}); // tenues obtenues (mémoire de la page jusqu'au lot 8h)
 
   const section = el('section', ['e8-ecran', 'e3', 'e3-boutique'], { id: 'menu-ecran-boutique', 'aria-labelledby': 'menu-titre-boutique', 'data-block': 'E3-1', 'data-anim': 'off' });
@@ -174,15 +223,22 @@ export async function ecranBoutique({ t, bandeau, root, rootDialogue, surVue = (
     if (c.type === 'personnage') {
       resume.textContent = t('game.menu.boutique.contenu.personnage');
       raretes.textContent = t('game.menu.boutique.contenu.personnage.regle');
-    } else {
-      const b = bornes(c, cat);
-      const quoi = t(c.type === 'cosmetique' ? 'game.menu.boutique.quoi.tenue' : 'game.menu.boutique.quoi.objet');
-      resume.textContent = b.n === 1
-        ? fmt(t('game.menu.boutique.contenu.un'), { quoi, rarete: minuscule(nomRarete(b.min)) })
-        : fmt(t(b.n === 2 ? 'game.menu.boutique.contenu.ou' : 'game.menu.boutique.contenu.a'), { quoi, min: minuscule(nomRarete(b.min)), max: minuscule(nomRarete(b.max)) });
-      raretes.textContent = c.chances.map((x) => nomRarete(x.rarete)).join(' · ');
+      contenu.append(resume, raretes);
+      return contenu;
     }
-    contenu.append(resume, raretes);
+    // Retour du propriétaire : toutes les raretés dans chaque caisse ; ce qui change, c'est la part des plus rares (« Épique ou mieux : 4 % »),
+    // et la barre de répartition (décorative : les pour cent exacts sont dans « Voir les chances »).
+    resume.textContent = fmt(t('game.menu.boutique.contenu.toutes'), { quoi: t(c.type === 'cosmetique' ? 'game.menu.boutique.quoi.tenue' : 'game.menu.boutique.quoi.objet') });
+    const h = partHaute(c, cat);
+    raretes.textContent = fmt(t('game.menu.boutique.contenu.haute'), { rarete: nomRarete(h.rarete), n: pourcentTexte(h.pourcent) });
+    const barre = el('span', ['e3-repartition'], { 'aria-hidden': 'true' });
+    for (const x of c.chances) {
+      const seg = el('span', ['e3-repartition-part'], { 'data-rarete': x.rarete });
+      poserJeton(seg, '--e3-rarete', jetonRarete(x.rarete));
+      seg.style.flexGrow = String(x.pourcent);
+      barre.append(seg);
+    }
+    contenu.append(resume, barre, raretes);
     return contenu;
   }
   function carteCaisse(c, i) {
@@ -209,10 +265,13 @@ export async function ecranBoutique({ t, bandeau, root, rootDialogue, surVue = (
     const un = bouton(1, ['e3-rouge'], 'game.menu.boutique.ouvrir1');
     const dix = bouton(TIRAGES_X10, ['e3-planche'], 'game.menu.boutique.ouvrir10');
     actions.append(un, dix);
+    // « Voir les chances » (retour du propriétaire : bouton stylisé) : pastille sombre bordée de la teinte, icône de pourcentage, libellé.
     const lien = el('button', ['e3-lien'], { type: 'button', id: `menu-caisse-${c.id}-chances`, 'aria-haspopup': 'dialog', 'aria-describedby': `menu-caisse-${c.id}-nom` });
-    lien.textContent = t('game.menu.boutique.chances');
+    const pc = forme('svg', { viewBox: '0 0 16 16', 'aria-hidden': 'true', focusable: 'false' }, 'e3-lien-icone');
+    pc.append(forme('path', { d: 'M3.5 12.5l9-9' }), forme('circle', { cx: 4.5, cy: 4.5, r: 2 }), forme('circle', { cx: 11.5, cy: 11.5, r: 2 }));
+    lien.append(pc, Object.assign(el('span', ['e3-lien-nom']), { textContent: t('game.menu.boutique.chances') }));
     lien.addEventListener('click', () => ouvrirChances(c, lien));
-    li.append(el('span', ['e3-carte-bande'], { 'aria-hidden': 'true' }), caisseSvg(), nom, contenuCaisse(c), actions, lien);
+    li.append(el('span', ['e3-carte-bande'], { 'aria-hidden': 'true' }), caisseSvg(c.modele), nom, contenuCaisse(c), actions, lien);
     boutons.set(c.id, { un, dix, chances: lien });
     return li;
   }

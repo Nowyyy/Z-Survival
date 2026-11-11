@@ -284,7 +284,7 @@
     { "name": "lot-8e", "version": "v0.8", "date": "2026-11-11", "titre": "Boutique : offres du jour, caisses et résultats", "points": [
       "Nouvel onglet Boutique qui défile, par rubriques (petit menu à gauche pour y aller vite) : offres du jour, équipement, personnages, cosmétiques.",
       "Offres du jour : six objets à prix fixe, renouvelés chaque nuit à minuit (heure de l'appareil), avec le temps restant.",
-      "Caisses mystère animées : trois caisses d'équipement (ravitaillement, militaire, élite), une caisse de personnages (nouveau : débloqué ; déjà obtenu : un niveau de plus) et une caisse de tenues d'exemple (pas encore portables).",
+      "Caisses mystère animées, chacune avec son dessin : trois caisses d'équipement (ravitaillement en bois, militaire en métal, coffre d'élite), une malle de recrues (nouveau personnage : débloqué ; déjà obtenu : un niveau de plus) et une valise de tenues d'exemple (pas encore portables). Chaque caisse contient toutes les raretés ; les meilleures donnent plus souvent les plus rares.",
       "« Voir les chances » affiche, pour chaque caisse, le pourcentage de chaque rareté (ou de chaque personnage) et ce qu'on peut obtenir.",
       "Ouvrir une caisse (une ou dix fois, dix tirages indépendants sans garantie) montre le résultat en plein écran : une carte, ou dix cartes avec un résumé ; « Rouvrir » recommence.",
       "Les objets obtenus vont dans l'inventaire du Personnage : ils se portent, s'améliorent, se fusionnent et comptent dans les statistiques de la partie.",
