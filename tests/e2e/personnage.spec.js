@@ -791,3 +791,44 @@ test('route de l\'onglet Histoire : ne touche pas le bâtiment (bord haut sous s
   const origines = await page.evaluate(() => ['.e9-sil-tete', '.e9-sil-viser'].map((s) => { const c = getComputedStyle(document.querySelector(`#menu-perso-silhouette ${s}`)); return [c.transformBox, c.transformOrigin]; }));
   expect(origines).toEqual([['view-box', '90px 72px'], ['view-box', '122px 86px']]);
 });
+
+// Retour du propriétaire : bandeaux de titre et cartes d'Infini de même taille partout, quelle que soit la longueur des textes (police réduite au besoin).
+test('bandeaux de même taille sur chaque écran, cartes d\'Infini de même taille ; aucun texte coupé ni sur deux lignes', async ({ page }) => {
+  test.setTimeout(120_000);
+  const mesure = () => page.evaluate(() => new Promise((ok) => { requestAnimationFrame(() => requestAnimationFrame(ok)); })).then(() => page.evaluate(() => [...document.querySelectorAll('.menu-bandeau')].filter((b) => b.offsetParent).map((b) => {
+    const r = b.getBoundingClientRect();
+    const textes = [...b.querySelectorAll('.menu-bandeau-libelle, .menu-bandeau-titre')];
+    return { w: Math.round(r.width * 2) / 2, h: Math.round(r.height * 2) / 2, deborde: textes.some((n) => n.scrollWidth > n.clientWidth + 1), lignes: textes.map((n) => Math.round(n.getBoundingClientRect().height / parseFloat(getComputedStyle(n).lineHeight))) };
+  })));
+  for (const size of [{ width: 932, height: 430 }, { width: 667, height: 375 }, { width: 2000, height: 1020 }]) {
+    await ouvrirMenu(page, size);
+    const vus = [...await mesure()];
+    for (const o of ['infini', 'boutique', 'personnage']) {
+      await page.locator(`#menu-onglet-${o}`).click();
+      vus.push(...await mesure());
+    }
+    for (const s of ['inventaire', 'fusion']) {
+      await page.locator(`#menu-perso-${s}`).click();
+      vus.push(...await mesure());
+      await page.locator('#menu-onglet-personnage').click();
+    }
+    await page.locator('#menu-perso-silhouette').click();
+    vus.push(...await mesure());
+    expect(vus.length, `${size.width}`).toBe(7);
+    expect(new Set(vus.map((v) => `${v.w}×${v.h}`)).size, `${size.width} ${JSON.stringify(vus)}`).toBe(1);
+    expect(vus.filter((v) => v.deborde || v.lignes.some((l) => l !== 1)), `${size.width}`).toEqual([]);
+    // « Night of the Undead » (le plus long) réduit, mais lisible.
+    await page.locator('#menu-onglet-jouer').click();
+    expect(await page.locator('#menu-titre-jouer').evaluate((n) => parseFloat(getComputedStyle(n).fontSize))).toBeGreaterThanOrEqual(12);
+    await page.locator('#menu-onglet-infini').click();
+    await expect(page.locator('.e8-infini-carte').first()).toBeVisible();
+    await page.evaluate(() => new Promise((ok) => { requestAnimationFrame(() => requestAnimationFrame(ok)); })); // ajustement (ResizeObserver) appliqué
+    const cartes = await page.locator('.e8-infini-carte').evaluateAll((ns) => ns.map((c) => {
+      const r = c.getBoundingClientRect();
+      const textes = [...c.querySelectorAll('.e8-infini-carte-libelle, .e8-infini-carte-nom, .e8-infini-carte-detail')];
+      return { taille: `${Math.round(r.width * 2) / 2}×${Math.round(r.height * 2) / 2}`, deborde: textes.some((n) => n.scrollWidth > n.clientWidth + 1 || n.getBoundingClientRect().bottom > r.bottom + 0.5) };
+    }));
+    expect(new Set(cartes.map((c) => c.taille)).size, `${size.width} ${JSON.stringify(cartes)}`).toBe(1);
+    expect(cartes.filter((c) => c.deborde), `${size.width}`).toEqual([]);
+  }
+});

@@ -670,15 +670,26 @@
   position: relative;
   z-index: 1;
   flex: none;
+  /* Retour du propriétaire : même taille sur tous les écrans (largeur fixe, une ligne par texte, interlignes fixes) ; un texte trop long voit sa
+     police réduite pour tenir (ajusterTextes de js/menu/menu.js). */
+  box-sizing: border-box;
+  width: max(160px, calc(176 * var(--u)));
   padding: calc(4 * var(--u)) calc(16 * var(--u)) calc(6 * var(--u));
   background: var(--menu-rouge);
   box-shadow: 0 calc(4 * var(--u)) 0 var(--menu-ombre);
+}
+
+.menu-bandeau-libelle,
+.menu-bandeau-titre {
+  overflow: hidden;
+  white-space: nowrap;
 }
 
 .menu-bandeau-libelle {
   margin: 0;
   font-family: var(--font-label);
   font-size: max(11px, calc(12 * var(--u)));
+  line-height: calc(max(11px, calc(12 * var(--u))) * 1.2);
   letter-spacing: 0.04em;
   color: var(--menu-texte);
 }
@@ -688,7 +699,7 @@
   font-family: var(--font-display);
   font-weight: var(--font-weight-normal);
   font-size: max(17px, calc(20 * var(--u)));
-  line-height: 1.15;
+  line-height: calc(max(17px, calc(20 * var(--u))) * 1.15);
   color: var(--menu-texte);
 }
 
@@ -1205,7 +1216,9 @@
   flex-direction: column;
   box-sizing: border-box;
   width: max(132px, calc(184 * var(--u)));
-  min-height: calc(150 * var(--u));
+  /* Retour du propriétaire : même taille pour toutes les cartes, quel que soit le nom du monde : hauteur fixe (miniature, trois lignes d'interligne
+     fixe, marges, bordures) ; textes d'une ligne, réduits s'ils sont trop longs (ajusterTextes de js/menu/menu.js). */
+  height: max(calc(150 * var(--u)), calc(96 * var(--u) + 1.2 * (max(10px, calc(11 * var(--u))) + max(13px, calc(15 * var(--u))) + max(11px, calc(12 * var(--u)))) + 6px));
   padding: 0 0 calc(6 * var(--u));
   overflow: hidden;
   border: 3px solid var(--menu-carte-bord);
@@ -1264,9 +1277,18 @@
 .e8-infini-mini-lampe { fill: var(--menu-scene-lampe); opacity: 0.7; }
 .e8-infini-mini-vive { opacity: 1; }
 
+.e8-infini-carte-libelle,
+.e8-infini-carte-nom,
+.e8-infini-carte-detail {
+  flex: none;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
 .e8-infini-carte-libelle {
   padding: calc(6 * var(--u)) calc(10 * var(--u)) 0;
   font-size: max(10px, calc(11 * var(--u)));
+  line-height: calc(max(10px, calc(11 * var(--u))) * 1.2);
   font-weight: var(--font-weight-bold);
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -1276,12 +1298,14 @@
 .e8-infini-carte-nom {
   padding: 0 calc(10 * var(--u));
   font-size: max(13px, calc(15 * var(--u)));
+  line-height: calc(max(13px, calc(15 * var(--u))) * 1.2);
   font-weight: var(--font-weight-bold);
 }
 
 .e8-infini-carte-detail {
   padding: 0 calc(10 * var(--u));
   font-size: max(11px, calc(12 * var(--u)));
+  line-height: calc(max(11px, calc(12 * var(--u))) * 1.2);
   color: var(--menu-record);
 }
 
@@ -2206,10 +2230,6 @@
    garde ses tailles de texte minimales) : haut des colonnes = marge haute + hauteur du bandeau (interlignes fixés ci-dessous) + 20. */
 .e9 {
   --e9-sous-bandeau: calc(12 * var(--u) + 10 * var(--u) + max(11px, calc(12 * var(--u))) * 1.2 + max(17px, calc(20 * var(--u))) * 1.15 + 20 * var(--u));
-}
-
-.e9 .menu-bandeau-libelle {
-  line-height: 1.2;
 }
 
 .e9-colonne {

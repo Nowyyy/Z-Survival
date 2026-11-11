@@ -91,7 +91,36 @@ function goutteBandeau(c, i) {
   return svg;
 }
 
-// Bandeau de titre rouge à coulures (même place sur tous les écrans : bord gauche du contenu, sous l'en-tête) : petit libellé, titre.
+// Retour du propriétaire : blocs de taille fixe (bandeaux de titre, cartes d'Infini), quelle que soit la longueur de leurs textes. Un texte d'une
+// ligne (white-space: nowrap, overflow: hidden en CSS) plus large que sa place voit sa police réduite pour tenir, jamais agrandie ; recalculé quand
+// le bloc change de taille (ResizeObserver : écran affiché, fenêtre redimensionnée), quand les polices arrivent, ou à la demande (texte changé).
+const AJUSTES = new Map(); // bloc → textes
+let observateur = null;
+function ajusterTexte(n) {
+  n.style.fontSize = '';
+  for (let i = 0; i < 4 && n.clientWidth > 0 && n.scrollWidth > n.clientWidth + 0.5; i += 1) {
+    const taille = parseFloat(getComputedStyle(n).fontSize);
+    n.style.fontSize = `${Math.max(6, taille * (n.clientWidth / n.scrollWidth) * 0.98).toFixed(2)}px`;
+  }
+}
+export function ajusterBloc(bloc) {
+  for (const n of AJUSTES.get(bloc) ?? []) ajusterTexte(n);
+}
+export function ajusterTextes(bloc, textes) {
+  AJUSTES.set(bloc, textes);
+  if (!observateur && typeof ResizeObserver === 'function') {
+    observateur = new ResizeObserver((entrees) => {
+      for (const e of entrees) ajusterBloc(e.target);
+    });
+    document.fonts?.addEventListener?.('loadingdone', () => {
+      for (const b of AJUSTES.keys()) ajusterBloc(b);
+    });
+  }
+  observateur?.observe(bloc);
+}
+
+// Bandeau de titre rouge à coulures (même place sur tous les écrans : bord gauche du contenu, sous l'en-tête) : petit libellé, titre. Taille fixe sur
+// tous les écrans (retour du propriétaire) : textes réduits s'ils sont trop longs (ajusterTextes).
 export function bandeau(libelle, titre, id) {
   const b = el('div', ['menu-bandeau']);
   const l = el('p', ['menu-bandeau-libelle']);
@@ -101,6 +130,7 @@ export function bandeau(libelle, titre, id) {
   const coulures = el('span', ['menu-bandeau-coulures'], { 'aria-hidden': 'true' });
   coulures.append(...COULURES_BANDEAU.map(goutteBandeau));
   b.append(l, h, coulures);
+  ajusterTextes(b, [l, h]);
   return b;
 }
 
