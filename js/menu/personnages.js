@@ -7,7 +7,7 @@ import { formatMoney } from '../core/economy.js';
 import { ameliorerPersonnage, choisirPersonnage, infoPersonnage } from '../core/equipement.js';
 import { fmt } from '../game/texts.js';
 import { el } from './menu.js';
-import { annonce, buste, estActif, icone24, listeStats, poserActif, silhouette, teteSous } from './personnage.js';
+import { filigrane, annonce, buste, estActif, icone24, listeStats, poserActif, silhouette, teteSous } from './personnage.js';
 
 export function creer({ t, bandeau, eq, cat, stats, retour }) {
   let selection = eq.etat().choisi;
@@ -42,7 +42,7 @@ export function creer({ t, bandeau, eq, cat, stats, retour }) {
   const raison = el('p', ['e9-raison'], { id: 'menu-personnages-raison' });
   const { element: live, dire } = annonce('menu-personnages-annonce');
   panneau.append(haut, capacite, statsTitre, statsBoite, raison, boutons);
-  section.append(gauche, panneau, live);
+  section.append(filigrane('personne'), gauche, panneau, live);
 
   function rendre() {
     const etat = eq.etat();

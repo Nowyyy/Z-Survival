@@ -6,7 +6,7 @@ import { formatMoney } from '../core/economy.js';
 import { bonusObjet, compatibles, definition, emplacementDe, etatFusion, fusionner, indexRarete, objetDe, remplirAuto } from '../core/equipement.js';
 import { fmt } from '../game/texts.js';
 import { el } from './menu.js';
-import { annonce, estActif, icone24, nomObjet, nomRarete, poserActif, teteSous, texteEffet } from './personnage.js';
+import { filigrane, annonce, estActif, icone24, nomObjet, nomRarete, poserActif, teteSous, texteEffet } from './personnage.js';
 
 export function creer({ t, bandeau, eq, cat, retour }) {
   let places = [null, null, null];
@@ -42,7 +42,7 @@ export function creer({ t, bandeau, eq, cat, retour }) {
   btAuto.textContent = t('game.menu.fusion.auto');
   droite.append(droiteTete, grille, btAuto);
   const { element: live, dire } = annonce('menu-fusion-annonce');
-  section.append(gauche, droite, live);
+  section.append(filigrane('fusion'), gauche, droite, live);
 
   const nettoyer = () => {
     const etat = eq.etat();
