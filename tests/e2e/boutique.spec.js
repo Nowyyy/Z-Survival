@@ -490,3 +490,67 @@ test.describe('« JOUER » avec un objet obtenu', () => {
     await page.evaluate(() => localStorage.clear());
   });
 });
+
+// --- Barre d'onglets (partie D, demande du propriétaire) ------------------------------------------------------------------------------------------
+const ONGLETS = ['boutique', 'personnage', 'jouer', 'infini'];
+const couleurJeton = (page, jeton) => page.evaluate((j) => { const d = document.createElement('div'); d.style.color = `var(${j})`; document.body.append(d); const c = getComputedStyle(d).color; d.remove(); return c; }, jeton);
+const styleOnglet = (page, id) => page.locator(`#menu-onglet-${id}`).evaluate((n) => {
+  const g = n.querySelector('.e8-onglet-goutte');
+  return { fond: getComputedStyle(n).backgroundColor, texte: getComputedStyle(n).color, ombre: getComputedStyle(n).boxShadow, goutte: g ? getComputedStyle(g).display : null, courant: n.getAttribute('aria-current') };
+});
+
+test.describe('barre d\'onglets (lot 8e)', () => {
+  for (const [size, encoche] of [[REF, false], [{ width: 667, height: 375 }, false], [{ width: 1440, height: 900 }, false], [{ width: 2000, height: 1020 }, false], [{ width: 762, height: 351 }, true]]) {
+    test(`${size.width}×${size.height}${encoche ? ' (encoche simulée)' : ''} : un seul onglet marqué à la fois (aria-current, planche plus claire et relevée, libellé blanc, goutte) ; « Histoire » non rouge au repos ; goutte dans sa planche ; axe`, async ({ page }) => {
+      await ouvrirMenu(page, size);
+      if (encoche) await page.addStyleTag({ content: '#e8 { --e8-gauche: 50px !important; --e8-droite: 50px !important; }' });
+      const [clair, bois, blanc, rouge] = [await couleurJeton(page, '--menu-bois-clair'), await couleurJeton(page, '--menu-bois'), await couleurJeton(page, '--menu-panneau-atteint-texte'), await couleurJeton(page, '--menu-rouge')];
+      for (const id of [...ONGLETS, 'jouer']) {
+        if (id !== 'jouer' || (await etatMenu(page)).onglet !== 'jouer') await page.locator(`#menu-onglet-${id}`).click();
+        await expect(page.locator('.e8-onglets [aria-current]')).toHaveCount(1);
+        await expect(page.locator(`#menu-onglet-${id}`)).toHaveAttribute('aria-current', 'page');
+        for (const autre of ONGLETS) {
+          const s = await styleOnglet(page, autre);
+          if (autre === id) expect([s.fond, s.texte, s.goutte, s.ombre.includes('inset')], `${id} affiché`).toEqual([clair, blanc, 'block', true]);
+          else expect([s.fond === rouge, s.goutte, s.ombre], `${autre} au repos (${id} affiché)`).toEqual([false, 'none', 'none']);
+        }
+        const [g, o] = [await boite(page, `#menu-onglet-${id} .e8-onglet-goutte`), await boite(page, `#menu-onglet-${id}`)];
+        expect([g.t >= o.t - 0.5, g.b <= o.b + 0.5, g.l >= o.l, g.r <= o.r], id).toEqual([true, true, true, true]);
+      }
+      // « Histoire » au repos : la même planche que les autres onglets (plus de rouge permanent), colonne plus large et police de titre gardées.
+      await page.locator('#menu-onglet-infini').click();
+      const [h, b] = [await styleOnglet(page, 'jouer'), await styleOnglet(page, 'boutique')];
+      expect([h.fond, h.fond === rouge]).toEqual([b.fond, false]);
+      expect([h.fond === bois || h.fond === 'rgba(0, 0, 0, 0)']).toEqual([true]);
+      expect((await boite(page, '#menu-onglet-jouer')).w).toBeGreaterThan((await boite(page, '#menu-onglet-boutique')).w);
+      expect(await page.locator('#menu-onglet-jouer').evaluate((n) => getComputedStyle(n).fontFamily)).toMatch(/Rubik Wet Paint/);
+      // « Prochainement » inchangé : ruban, désactivé, jamais marqué.
+      await expect(page.locator('#menu-onglet-event')).toBeDisabled();
+      await expect(page.locator('#menu-onglet-event')).toHaveClass(/menu-ruban/);
+      await expect(page.locator('#menu-onglet-event .e8-onglet-goutte')).toHaveCount(0);
+      expect((await new AxeBuilder({ page }).include('.e8-onglets').analyze()).violations.map((v) => v.id)).toEqual([]);
+    });
+  }
+
+  test('animation à la sélection seulement : la goutte coule et l\'icône (ou « Histoire ») rebondit une fois, puis l\'état reste marqué sans animation ; aucune sous prefers-reduced-motion', async ({ page }) => {
+    await ouvrirMenu(page);
+    const anims = (id) => page.locator(`#menu-onglet-${id}`).evaluate((n) => n.getAnimations({ subtree: true }).filter((a) => a.animationName).map((a) => [a.animationName, a.playState, a.effect.getComputedTiming().iterations]).sort());
+    await page.waitForTimeout(1200);
+    expect((await anims('jouer')).filter(([, s]) => s === 'running')).toEqual([]);
+    await page.locator('#menu-onglet-boutique').click();
+    await expect(page.locator('#menu-onglet-boutique')).toHaveAttribute('aria-current', 'page');
+    expect(await anims('boutique')).toEqual([['e8-onglet-coule', 'running', 1], ['e8-onglet-rebond', 'running', 1]]);
+    expect(await anims('personnage')).toEqual([]);
+    await page.waitForTimeout(1200);
+    expect((await anims('boutique')).filter(([, s]) => s !== 'finished')).toEqual([]);
+    expect((await styleOnglet(page, 'boutique')).goutte).toBe('block'); // toujours marqué
+    await page.locator('#menu-onglet-jouer').click();
+    await expect(page.locator('#menu-onglet-jouer')).toHaveAttribute('aria-current', 'page');
+    expect((await anims('jouer')).map(([n, s]) => [n, s])).toEqual([['e8-onglet-coule', 'running'], ['e8-onglet-rebond', 'running']]);
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.locator('#menu-onglet-infini').click();
+    await expect(page.locator('#menu-onglet-infini')).toHaveAttribute('aria-current', 'page');
+    expect(await anims('infini')).toEqual([]);
+    expect((await styleOnglet(page, 'infini')).goutte).toBe('block');
+  });
+});

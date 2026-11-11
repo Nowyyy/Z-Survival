@@ -92,6 +92,22 @@ function goutteBandeau(c, i) {
   return svg;
 }
 
+// Lot 8e (demande du propriétaire) : onglet affiché marqué par une goutte de sang qui pend du haut de sa planche, dessinée comme celles des bandeaux
+// (gouttePath) ; visible seulement sur l'onglet affiché (css/menu.css : planche plus claire et relevée, libellé blanc) ; elle coule une fois à la
+// sélection (e8-onglet-coule), l'icône rebondit une fois (e8-onglet-rebond), puis l'état reste marqué sans animation. Décorative.
+const GOUTTE_ONGLET = Object.freeze({ w: 6, l: 14.5, b: 3.2, h: 19 });
+function goutteOnglet() {
+  const c = GOUTTE_ONGLET;
+  const svg = svgEl('svg', { viewBox: `0 0 12 ${c.h}`, 'aria-hidden': 'true', focusable: 'false' }, 'e8-onglet-goutte');
+  const flux = svgEl('g', {}, 'e8-onglet-goutte-flux');
+  flux.append(
+    svgEl('path', { d: gouttePath({ cx: 6, w: c.w, l: c.l, b: c.b }) }, 'menu-coulure-corps'),
+    svgEl('path', { d: `M${6 - c.w * 0.18} 1L${6 - c.w * 0.16} ${c.l * 0.5}` }, 'menu-coulure-reflet'),
+    svgEl('ellipse', { cx: 6 - c.b * 0.38, cy: c.l - c.b * 0.25, rx: c.b * 0.3, ry: c.b * 0.48 }, 'menu-coulure-brillant'));
+  svg.append(flux);
+  return svg;
+}
+
 // Retour du propriétaire : blocs de taille fixe (bandeaux de titre, cartes d'Infini), quelle que soit la longueur de leurs textes. Un texte d'une
 // ligne (white-space: nowrap, overflow: hidden en CSS) plus large que sa place voit sa police réduite pour tenir, jamais agrandie ; recalculé quand
 // le bloc change de taille (ResizeObserver : écran affiché, fenêtre redimensionnée), quand les polices arrivent, ou à la demande (texte changé).
@@ -305,7 +321,7 @@ export function creerMenu({ dict, infos = [], liens = {}, solde: montant = 0, re
       if (!o.central) b.append(icone(o.id, 'e8-icone e8-icone-onglet'));
       const s = el('span', ['e8-onglet-nom']);
       s.textContent = t(ONGLET_TEXTES[o.id]);
-      b.append(s);
+      b.append(s, goutteOnglet());
       b.addEventListener('click', () => changerOnglet(o.id));
     }
     boutonsOnglets.set(o.id, b);
