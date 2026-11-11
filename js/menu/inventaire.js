@@ -8,7 +8,10 @@ import { fmt } from '../game/texts.js';
 import { el } from './menu.js';
 import { TYPE_TEXTES, annonce, estActif, icone24, nomObjet, nomRarete, poserActif, teteSous, texteEffet, typeObjet } from './personnage.js';
 
+// Objets par page : 6 colonnes × autant de rangées que la hauteur libre en contient (2 au moins, comme la maquette ; retour du propriétaire : « tout
+// pourrait être affiché en une page » sur PC) ; mesuré à l'affichage et à chaque changement de taille.
 export const PAR_PAGE = 12;
+const COLONNES = 6;
 const FILTRES = { tout: 'game.menu.inventaire.filtre.tout', arme: 'game.menu.inventaire.filtre.arme', tenue: 'game.menu.inventaire.filtre.tenue', gants: 'game.menu.inventaire.filtre.gants', bottes: 'game.menu.inventaire.filtre.bottes', accessoire: 'game.menu.inventaire.filtre.accessoire' };
 const FILTRES_BASE = ['tout', 'arme', 'tenue', 'accessoire'];
 
@@ -18,6 +21,7 @@ export function creer({ t, bandeau, eq, cat, retour, ouvrir }) {
   let page = 0;
   let choisi = null;
   let emplacementCible = null; // emplacement d'où l'on vient (accessoire1 ou accessoire2 : « Équiper » y place l'objet)
+  let parPage = PAR_PAGE;
 
   const section = el('section', ['e8-ecran', 'e9', 'e9-sous', 'e9-inventaire'], { id: 'menu-ecran-inventaire', 'aria-labelledby': 'menu-inventaire-titre', 'data-block': 'E9-2' });
   const { tete, bouton: btRetour } = teteSous(t, bandeau, t('game.menu.inventaire.titre'), 'menu-inventaire', retour);
@@ -85,9 +89,9 @@ export function creer({ t, bandeau, eq, cat, retour, ouvrir }) {
   function rendreGrille() {
     const etat = eq.etat();
     const v = visibles();
-    const pages = Math.max(1, Math.ceil(v.length / PAR_PAGE));
+    const pages = Math.max(1, Math.ceil(v.length / parPage));
     page = Math.min(page, pages - 1);
-    grille.replaceChildren(...v.slice(page * PAR_PAGE, (page + 1) * PAR_PAGE).map((o) => {
+    grille.replaceChildren(...v.slice(page * parPage, (page + 1) * parPage).map((o) => {
       const li = el('li');
       const b = el('button', ['e9-case'], { type: 'button', id: `menu-objet-${o.uid}`, 'data-uid': o.uid, 'data-rarete': o.rarete, 'aria-pressed': String(o.uid === choisi) });
       const n = el('span', ['e9-case-nom']);
@@ -176,6 +180,23 @@ export function creer({ t, bandeau, eq, cat, retour, ouvrir }) {
     ouvrir('fusion', { place: choisi, depuis: btRetour });
   });
 
+  // Rangées qui tiennent dans la hauteur de la grille (hauteur minimale d'une case + écart) ; la page en cours garde son premier objet visible.
+  function mesurer() {
+    const cellule = grille.querySelector('.e9-case');
+    const h = grille.clientHeight;
+    if (!cellule || !h) return;
+    const ecart = parseFloat(getComputedStyle(grille).rowGap) || 0;
+    const min = parseFloat(getComputedStyle(cellule).minHeight) || 0;
+    if (!min) return;
+    const n = COLONNES * Math.max(2, Math.floor((h + ecart) / (min + ecart)));
+    if (n === parPage) return;
+    const premier = page * parPage;
+    parPage = n;
+    page = Math.floor(premier / parPage);
+    rendreGrille();
+  }
+  if (typeof ResizeObserver === 'function') new ResizeObserver(() => mesurer()).observe(grille);
+
   eq.abonner(() => {
     if (!objetDe(eq.etat(), choisi)) choisi = visibles()[0]?.uid ?? null; // objet fusionné : le premier visible
     if (!section.hidden) rendre();
@@ -194,10 +215,15 @@ export function creer({ t, bandeau, eq, cat, retour, ouvrir }) {
       const porte = emplacementCible ? etat.porte[emplacementCible] : null;
       const v = visibles();
       choisi = porte && v.some((o) => o.uid === porte) ? porte : v[0]?.uid ?? null;
-      if (choisi) page = Math.floor(v.findIndex((o) => o.uid === choisi) / PAR_PAGE);
+      if (choisi) page = Math.floor(v.findIndex((o) => o.uid === choisi) / parPage);
       rendre();
     },
     focus: () => (filtres.querySelector('[aria-pressed="true"]') ?? btRetour).focus(),
-    etat: () => ({ filtre, filtres: [...filtres.querySelectorAll('button')].map((b) => b.id.replace('menu-inventaire-filtre-', '')), page: page + 1, pages: Math.max(1, Math.ceil(visibles().length / PAR_PAGE)), choisi, visibles: visibles().map((o) => o.uid) }),
+    // Animations (coulures du bandeau) : en cours seulement quand l'Inventaire est affiché (avant : jamais, les coulures restaient cachées).
+    animer(actif) {
+      section.classList.toggle('e9-anime', actif);
+      if (actif) mesurer();
+    },
+    etat: () => ({ filtre, filtres: [...filtres.querySelectorAll('button')].map((b) => b.id.replace('menu-inventaire-filtre-', '')), page: page + 1, pages: Math.max(1, Math.ceil(visibles().length / parPage)), parPage, choisi, visibles: visibles().map((o) => o.uid) }),
   };
 }

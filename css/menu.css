@@ -2,7 +2,7 @@
    Couleurs : jetons --menu-* et --rarete-* de tokens.css. Référence 932 × 430 ; même disposition jusqu'à 667 × 375 (unité --u, resserrée) ; cibles de 44 px.
    Animations nommées par écran (e7-*, e8-*), coupées sous prefers-reduced-motion ; ni filter, ni mix-blend-mode, ni backdrop-filter. */
 :root {
-  --u: clamp(0.7px, min(calc(100vw / 932), calc(100vh / 430)), 1.3px); /* 1 px de la référence 932 × 430 */
+  --u: clamp(0.7px, min(calc(100vw / 932), calc(100vh / 430)), 2.4px); /* 1 px de la référence 932 × 430 ; plafond 2,4 (avant 1,3 : retour du propriétaire après le lot 8d, trop de vide sur PC) */
   --menu-marge: 16px;
   --menu-cible: var(--touch-target, 44px);
 }
@@ -808,7 +808,7 @@
   display: flex;
   flex-direction: column;
   gap: calc(2 * var(--u));
-  margin: calc(-12 * var(--u)) 0 0 calc(2 * var(--u));
+  margin: calc(-6 * var(--u)) 0 0 calc(2 * var(--u)); /* avec l'écart de 26 : 20 sous le bandeau, la place de ses coulures (lot 8d ; avant : −12) */
 }
 
 .e8-jouer-record,
@@ -1133,7 +1133,7 @@
 .e8-infini-choix {
   position: relative;
   max-width: var(--e8-infini-gauche);
-  margin: calc(4 * var(--u)) 0 0;
+  margin: calc(16 * var(--u)) 0 0; /* avec l'écart de 4 : 20 sous le bandeau, la place de ses coulures (lot 8d ; avant : 4) */
   font-size: max(12px, calc(13 * var(--u)));
 }
 
@@ -1158,7 +1158,7 @@
   display: flex;
   gap: calc(14 * var(--u));
   margin: 0;
-  padding: 0 0 calc(8 * var(--u));
+  padding: 0 0 calc(6 * var(--u));
   overflow: auto hidden;
   overscroll-behavior-x: contain;
   list-style: none;
@@ -1291,9 +1291,9 @@
   gap: calc(14 * var(--u));
   box-sizing: border-box;
   width: var(--e8-infini-gauche);
-  height: max(var(--menu-cible), calc(54 * var(--u)));
+  height: max(var(--menu-cible), calc(44 * var(--u))); /* lot 8d, retour du propriétaire (« trop gros ») : 44 et 26 (maquette : 54 et 30) */
   padding: 0;
-  font-size: max(22px, calc(30 * var(--u)));
+  font-size: max(20px, calc(26 * var(--u)));
   line-height: 1;
 }
 
@@ -1971,7 +1971,7 @@
    règle alors sur la largeur restante, pour que colonnes et panneaux ne se chevauchent pas (retour du propriétaire après la fusion). Sans encoche :
    même valeur que --u de :root. Plancher 0,6 px (au lieu de 0,7) pour les téléphones étroits à encoche. */
 .e9 {
-  --u: clamp(0.6px, min(calc((100vw - var(--e8-gauche) - var(--e8-droite) + 32px) / 932), calc(100vh / 430)), 1.3px);
+  --u: clamp(0.6px, min(calc((100vw - var(--e8-gauche) - var(--e8-droite) + 32px) / 932), calc(100vh / 430)), 2.4px);
   --e5-bouton-h: max(var(--menu-cible), calc(40 * var(--u))); /* « ‹ Équipement » et filtres : composants de la page Options (lot 8c) */
   --e9-col: calc(220 * var(--u));
   --e9-case-h: max(var(--menu-cible), calc(52 * var(--u)));
@@ -2001,7 +2001,7 @@
 
 /* Écran Personnage : l'unité tient aussi compte de la hauteur réelle du contenu (en-tête et onglets ont 48 et 50 px au moins). */
 .e9.e9-perso {
-  --u: clamp(0.6px, min(calc((100vw - var(--e8-gauche) - var(--e8-droite) + 32px) / 932), calc((100vh - 98px) / 318)), 1.3px);
+  --u: clamp(0.6px, min(calc((100vw - var(--e8-gauche) - var(--e8-droite) + 32px) / 932), calc((100vh - 98px) / 318)), 2.4px);
 }
 
 /* Fond : gris presque noir, sol plus sombre à partir de y 262 (bord de 2 px). */
