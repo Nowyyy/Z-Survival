@@ -208,7 +208,8 @@ test.describe('page Options du menu (E5)', () => {
     const ouverture = o.fichiers.slice(depart);
     expect(ouverture.filter((f) => JEU.test(f))).toEqual([]);
     expect(ouverture.filter((f) => f.endsWith('.js'))).toEqual(['/js/game/options-menu.js', '/js/game/graphics-apply.js']);
-    expect(ouverture.filter((f) => !f.endsWith('.js'))).toEqual(['/data/game/graphics.json', '/data/game/audio.json']);
+    // Lot 8d (retour du propriétaire) : le journal est lu à la première ouverture du menu à trois barres (version sous « Déconnexion »).
+    expect(ouverture.filter((f) => !f.endsWith('.js')).sort()).toEqual(['/data/changelog.json', '/data/game/audio.json', '/data/game/graphics.json']);
     expect(await page.evaluate(() => window.__ecritures)).toEqual([]); // ouvrir n'écrit rien
     await page.locator('#options-preset-moyen').click();
     await page.locator('.e5-ligne[data-option="anticrenelage"] .e5-valeur[data-value="oui"]').click();

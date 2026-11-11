@@ -1,7 +1,7 @@
 {
   "_note": "Lot 8b : mondes du menu (onglets Jouer et Infini). Noms provisoires, modifiables par le propriétaire ; « [à venir] » : monde pas encore fait. Monde jouable : manches (fin du monde) et portes (manches après lesquelles une porte s'ouvre) comme data/game/maps/rez-de-chaussee/zones.json. Un monde verrouillé dit « Termine le monde N−1 ». Lu par js/core/menu-etat.js (lireMondes).",
   "mondes": [
-    { "id": "batiment", "numero": 1, "nom": "Le bâtiment", "jouable": true, "manches": 40, "portes": [10, 20, 30] },
+    { "id": "batiment", "numero": 1, "nom": "Night of the Undead", "jouable": true, "manches": 40, "portes": [10, 20, 30] },
     { "id": "monde-2", "numero": 2, "nom": "[à venir]", "jouable": false },
     { "id": "monde-3", "numero": 3, "nom": "[à venir]", "jouable": false },
     { "id": "monde-4", "numero": 4, "nom": "[à venir]", "jouable": false },

@@ -5,7 +5,7 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { CANAUX_DEBUG, PARAMS_PARTIE, PARAMS_TEST, acces, choixDemarrage } from '../../js/core/graphics.js';
 import {
   ECRANS, ECRANS_PLEINS, SOUS_MENUS, MODULES_ATTENDUS, ONGLETS, PHASES, adresseRetour, avancer, basculerMenu, choisirAstuce, choisirOnglet, creerEtatMenu, creerProgression,
-  fermerEcran, fermerMenu, lienExterne, nouveauteNonLue, ouvrirEcran, pourcentage, texteVersion,
+  fermerEcran, fermerMenu, lienExterne, nouveauteNonLue, ouvrirEcran, pourcentage, texteVersion, versionMenu,
 } from '../../js/core/menu-etat.js';
 
 const read = (f) => readFileSync(f, 'utf8');
@@ -149,6 +149,16 @@ describe('astuce, version, liens (lot 8a)', () => {
     expect(texteVersion({ channel: 'dev', version: 'V0.7', sha: 'abcdef1' })).toEqual({ cle: 'game.menu.version.dev', params: { sha: 'abcdef1' } });
     expect(texteVersion(JSON.parse(read('build-info.json')))).toEqual({ cle: 'game.menu.version.source', params: {} });
     for (const bad of [null, undefined, 'V0.7', {}, { channel: 'prod' }]) expect(texteVersion(bad)).toBe(null);
+  });
+
+  it('version du menu à trois barres : plus haute version cible du journal, canal dev, release ou source seulement', () => {
+    const journal = { lots: [{ version: 'v0.9' }, { version: 'v0.10' }, { version: 'v0.8' }, { name: 'sans' }, { version: 'V1.0' }, { version: 'v1' }] };
+    expect(versionMenu(journal, 'dev')).toEqual({ v: 'V0.10', canal: 'dev' });
+    expect(versionMenu(journal, 'release')).toEqual({ v: 'V0.10', canal: 'release' });
+    expect(versionMenu(journal, 'source')).toEqual({ v: 'V0.10', canal: 'source' });
+    for (const c of ['archive', 'prod', null, 'autre']) expect(versionMenu(journal, c)).toEqual({ v: 'V0.10', canal: null });
+    for (const bad of [null, {}, { lots: 'x' }, { lots: [{ version: 'V0.8' }] }]) expect(versionMenu(bad, 'dev')).toBe(null);
+    expect(versionMenu(JSON.parse(read('data/changelog.json')), 'source')).toEqual({ v: 'V0.8', canal: 'source' });
   });
 
   it('lien Discord : https seulement ; vide, autre schéma ou invalide : inactif ; liens.json vide aujourd\'hui', () => {

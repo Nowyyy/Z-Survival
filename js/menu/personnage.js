@@ -172,8 +172,6 @@ export async function ecranPersonnage({ t, bandeau, niveaux = null, statsCfg = n
   const decor = el('div', ['e9-scene'], { 'data-anim': 'off' });
   decor.append(scene);
 
-  const essai = el('p', ['e9-essai'], { id: 'menu-perso-essai' });
-  essai.textContent = t('game.menu.perso.essai');
 
   // Personnage : un bouton (ouvre Personnages) ; étiquette « Touche-le pour changer » au-dessus, dans la zone grise au-dessus de la lampe quand il y a
   // la place (retour du propriétaire) : élément décoratif de l'écran (aria-hidden, sans effet au toucher) ; le nom du bouton garde la phrase entière.
@@ -234,7 +232,7 @@ export async function ecranPersonnage({ t, bandeau, niveaux = null, statsCfg = n
   capSuite.textContent = t('game.menu.perso.capacite.suite');
   capacite.append(capTete, capTitre, capEffet, capSuite);
 
-  section.append(sol, decor, bandeau(t('game.menu.perso.libelle'), t('game.menu.perso.titre'), 'menu-titre-personnage'), essai, btPerso, etiquette, gauche, droite, capacite);
+  section.append(sol, decor, bandeau(t('game.menu.perso.libelle'), t('game.menu.perso.titre'), 'menu-titre-personnage'), btPerso, etiquette, gauche, droite, capacite);
 
   function rendre() {
     const etat = eq.etat();
