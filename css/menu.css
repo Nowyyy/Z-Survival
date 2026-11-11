@@ -449,6 +449,7 @@
 
 :where(.e8) button {
   font: inherit;
+  touch-action: manipulation; /* retour du propriétaire (iPhone) : aucun délai de double-toucher */
 }
 
 .e8-icone {

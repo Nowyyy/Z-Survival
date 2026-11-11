@@ -805,6 +805,7 @@ test('bandeaux de même taille sur chaque écran, cartes d\'Infini de même tail
     const vus = [...await mesure()];
     for (const o of ['infini', 'boutique', 'personnage']) {
       await page.locator(`#menu-onglet-${o}`).click();
+      await page.locator(`#menu-ecran-${o}`).waitFor({ state: 'visible' }); // lot 8e : l'onglet est marqué avant que son écran (chargé à la demande) soit prêt
       vus.push(...await mesure());
     }
     for (const s of ['inventaire', 'fusion']) {

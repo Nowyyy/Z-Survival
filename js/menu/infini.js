@@ -92,8 +92,12 @@ function miniature(jouable) {
 const json = (path) => fetch(path).then((r) => (r.ok ? r.json() : null)).catch(() => null);
 
 // Section de l'onglet : { section, scene, bouton, etat() }. jouer(option) : lance la partie (menu.js : lancer).
+// Retour du propriétaire (latence au premier toucher sur iPhone) : données demandées dès que le doigt se pose sur l'onglet (menu.js, precharger).
+let donnees = null;
+export const precharger = () => (donnees ??= json('data/menu/classement.json'));
+
 export async function ecranInfini({ t, mondes, bandeau, jouer }) {
-  const classement = lireClassement(await json('data/menu/classement.json'));
+  const classement = lireClassement(await precharger());
   let carrousel = creerCarrousel(mondes);
   const section = el('section', ['e8-ecran', 'e8-infini'], { id: 'menu-ecran-infini', 'aria-labelledby': 'menu-titre-infini' });
   const scene = el('div', ['e8-infini-scene'], { 'aria-hidden': 'true', 'data-anim': 'off', id: 'menu-infini-scene' });
