@@ -381,7 +381,7 @@
   --menu-e9-lampe: #2a2621;
   --menu-e9-case: #1c1a17;
   --menu-e9-case-vide: #100e0d;
-  --menu-e9-voile: rgb(5 5 5 / 60%); /* statistiques, étiquette */
+  --menu-e9-voile: rgb(5 5 5 / 60%);
   --menu-e9-stats-bord: #4a3e33;
   --menu-e9-texte-doux: #d9d4cb;
   --menu-e9-capacite: rgb(12 10 9 / 92%);
@@ -399,6 +399,7 @@
   --menu-e9-violet-inactif: #2a1e36;
   --menu-e9-violet-inactif-bord: #3a2a4a;
   --menu-e9-violet-inactif-texte: #b8a8c8;
+  --menu-e3-fond: #1b2a44;
   /* Raretés (lots suivants : inventaire, boutique, tirage) */
   --rarete-commun: #a3a3a8;         /* gris */
   --rarete-peu-commun: #5cc46a;     /* vert */

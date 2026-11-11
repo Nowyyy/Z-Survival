@@ -6,6 +6,7 @@
 // Écrans à la demande : js/menu/ecrans.js (Information, Connexion, onglets « Bientôt »), js/menu/infini.js (lot 8b : onglet Infini), js/game/options-menu.js
 // (lot 8c : page Options E5, écran plein, avec les réglages résolus sans Three.js par graphicsReglages() et le son gardé en mémoire par demarrage.js).
 // Lot 8b : onglet Jouer (js/menu/jouer.js, chargé avec le menu) ; option de démarrage (histoire ou infini) passée à jouer().
+// Lot 8e : onglet Boutique (js/menu/boutique.js à la demande : caisses, chances, écrans de résultat ; objets ajoutés à l'inventaire en mémoire).
 import { formatMoney } from '../core/economy.js';
 import { basculerMenu, choisirOnglet, versionMenu, creerEtatMenu, ECRANS_PLEINS, SOUS_MENUS, fermerEcran, fermerMenu, lienExterne, lireMondes, lireOptionDemarrage, lireRecord, nouveauteNonLue, ONGLETS, ouvrirEcran, premierJouable } from '../core/menu-etat.js';
 import { ecranJouer } from './jouer.js';
@@ -328,6 +329,7 @@ export function creerMenu({ dict, infos = [], liens = {}, solde: montant = 0, re
     box.dataset.ecran = plein || sous ? etat.ecran : '';
     nav.hidden = plein;
     for (const [id, s] of ecransOnglets) s.hidden = id !== etat.onglet || plein || sous;
+    boutique?.synchroniser(etat.onglet === 'boutique' && !plein && !sous); // lot 8e : la Boutique tient sa vue (caisses ou résultat)
     perso?.synchroniser(etat.ecran);
     animer();
     liste.hidden = !etat.menuOuvert;
@@ -345,6 +347,7 @@ export function creerMenu({ dict, infos = [], liens = {}, solde: montant = 0, re
     // Lot 8d : écran Personnage ou sous-menu affiché (animations e9-*), en pause ailleurs et quand la page est cachée.
     const actif = etat.onglet === 'personnage' && !document.hidden && !lance ? (etat.ecran === null ? 'personnage' : etat.ecran) : null;
     perso?.animer(actif);
+    boutique?.animer(etat.onglet === 'boutique' && etat.ecran === null && !document.hidden && !lance); // lot 8e : caisses (e3-*), en pause ailleurs
   }
   document.addEventListener('visibilitychange', animer);
 
@@ -365,8 +368,10 @@ export function creerMenu({ dict, infos = [], liens = {}, solde: montant = 0, re
 
   let infini = null; // lot 8b : écran Infini (js/menu/infini.js, chargé au premier affichage) : { section, scene, etat() }
   let perso = null; // lot 8d : écran Personnage (js/menu/personnage.js, chargé au premier affichage) et ses sous-menus
+  let boutique = null; // lot 8e : onglet Boutique (js/menu/boutique.js, chargé au premier affichage), chances et écrans de résultat
   async function changerOnglet(id) {
     if (SOUS_MENUS.includes(etat.ecran)) etat = fermerEcran(etat); // lot 8d : un onglet touché referme le sous-menu du Personnage
+    boutique?.fermerResultat(); // lot 8e : un onglet touché ramène la Boutique à ses caisses
     etat = choisirOnglet(etat, id);
     if (!ecransOnglets.has(etat.onglet)) {
       const onglet = etat.onglet;
@@ -386,6 +391,11 @@ export function creerMenu({ dict, infos = [], liens = {}, solde: montant = 0, re
           },
         });
         perso ??= ecran;
+        s = ecran.section;
+      } else if (onglet === 'boutique') {
+        const m = await import('./boutique.js');
+        const ecran = await m.ecranBoutique({ t, bandeau, root: contenu, rootDialogue: box, surVue: () => synchroniser() });
+        boutique ??= ecran;
         s = ecran.section;
       } else {
         const m = await ecrans();
@@ -485,6 +495,7 @@ export function creerMenu({ dict, infos = [], liens = {}, solde: montant = 0, re
     document.removeEventListener('fullscreenchange', syncPleinEcran);
     for (const scene of scenes.values()) scene.dataset.anim = 'off';
     perso?.animer(null);
+    boutique?.animer(false);
     box.classList.add('e8-pause');
     let stats;
     try {
@@ -507,6 +518,9 @@ export function creerMenu({ dict, infos = [], liens = {}, solde: montant = 0, re
     if (dialogue) dialogue.close();
     else if (etat.ecran === 'options') fermerOptions();
     else if (etat.menuOuvert) fermerListe(true);
+    else if (etat.onglet === 'boutique' && boutique?.echap()) {
+      // lot 8e : dialogue des chances fermé, ou écran de résultat refermé (retour à la Boutique)
+    }
     else if (perso?.echap()) {
       // lot 8d : sous-menu du Personnage refermé (retour à l'écran Personnage)
     }
@@ -522,6 +536,6 @@ export function creerMenu({ dict, infos = [], liens = {}, solde: montant = 0, re
   synchroniser();
   return {
     element: box,
-    etat: () => ({ pleinEcran: { disponible: peutPleinEcran, actif: Boolean(document.fullscreenElement) }, onglet: etat.onglet, menuOuvert: etat.menuOuvert, ecran: etat.ecran, nonLue: nouveauteNonLue(infos, etat.lues), solde: montant, discord: lien.actif, record, monde: monde.id, infini: infini?.etat() ?? null, personnage: perso?.etat() ?? null, niveaux, statsLancees }),
+    etat: () => ({ pleinEcran: { disponible: peutPleinEcran, actif: Boolean(document.fullscreenElement) }, onglet: etat.onglet, menuOuvert: etat.menuOuvert, ecran: etat.ecran, nonLue: nouveauteNonLue(infos, etat.lues), solde: montant, discord: lien.actif, record, monde: monde.id, infini: infini?.etat() ?? null, personnage: perso?.etat() ?? null, boutique: boutique?.etat() ?? null, niveaux, statsLancees }),
   };
 }

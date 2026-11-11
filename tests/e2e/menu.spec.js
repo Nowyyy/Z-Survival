@@ -109,7 +109,7 @@ test.describe('menu principal (E8)', () => {
     });
   }
 
-  test('onglets : Jouer actif au départ (aria-current et trait), changement d\'onglet, « Bientôt » ; Event verrouillé (cadenas et « Prochainement », « Prochainement : contenu verrouillé », non activable)', async ({ page }) => {
+  test('onglets : Jouer actif au départ (aria-current et trait), changement d\'onglet, Boutique (lot 8e ; avant : « Bientôt ») ; Event verrouillé (cadenas et « Prochainement », « Prochainement : contenu verrouillé », non activable)', async ({ page }) => {
     await ouvrirMenu(page);
     await expect(page.locator('#menu-onglet-jouer')).toHaveAttribute('aria-current', 'page');
     await expect(page.locator('.e8-onglets [aria-current]')).toHaveCount(1);
@@ -121,7 +121,7 @@ test.describe('menu principal (E8)', () => {
     await expect(page.locator('#menu-onglet-jouer')).not.toHaveAttribute('aria-current', /.*/);
     expect([await trait('#menu-onglet-boutique'), await trait('#menu-onglet-jouer')]).toEqual(['""', 'none']);
     await expect(page.getByRole('heading', { name: 'Boutique' })).toBeVisible();
-    await expect(page.locator('#menu-ecran-boutique')).toContainText('Bientôt');
+    await expect(page.locator('#menu-ecran-boutique .menu-bandeau-libelle')).toHaveText('Ravitaillement'); // lot 8e (avant : « Bientôt »)
     await expect(page.locator('#menu-jouer')).toBeHidden();
     const event = page.locator('#menu-onglet-event');
     await expect(event).toBeDisabled();
