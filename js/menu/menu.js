@@ -7,7 +7,7 @@
 // (lot 8c : page Options E5, écran plein, avec les réglages résolus sans Three.js par graphicsReglages() et le son gardé en mémoire par demarrage.js).
 // Lot 8b : onglet Jouer (js/menu/jouer.js, chargé avec le menu) ; option de démarrage (histoire ou infini) passée à jouer().
 import { formatMoney } from '../core/economy.js';
-import { basculerMenu, choisirOnglet, creerEtatMenu, ECRANS_PLEINS, fermerEcran, fermerMenu, lienExterne, lireMondes, lireOptionDemarrage, lireRecord, nouveauteNonLue, ONGLETS, ouvrirEcran, premierJouable } from '../core/menu-etat.js';
+import { basculerMenu, choisirOnglet, creerEtatMenu, ECRANS_PLEINS, SOUS_MENUS, fermerEcran, fermerMenu, lienExterne, lireMondes, lireOptionDemarrage, lireRecord, nouveauteNonLue, ONGLETS, ouvrirEcran, premierJouable } from '../core/menu-etat.js';
 import { ecranJouer } from './jouer.js';
 import { gouttePath } from '../logo.js';
 import { fmt, loadDict } from '../game/texts.js';
@@ -25,6 +25,11 @@ const ICONES = {
   infini: 'M8 8c-1.4-1.9-2.6-3-4-3a3 3 0 0 0 0 6c1.4 0 2.6-1.1 4-3Zm0 0c1.4 1.9 2.6 3 4 3a3 3 0 0 0 0-6c-1.4 0-2.6 1.1-4 3Z',
   cadenas: 'M4 7.5h8v6.5H4zM5.6 7.5V5.4a2.4 2.4 0 0 1 4.8 0v2.1M8 10.2v1.6',
   externe: 'M9.5 2.5h4v4M13.5 2.5 7.5 8.5M12 9.5v4H2.5V4h4',
+  // Lot 8d : entrées du menu à trois barres (maquette MenuOuvert.html, ramenées à 16 × 16).
+  options: 'M10 8a2 2 0 1 1-4 0 2 2 0 0 1 4 0ZM8 1.3v2M8 12.7v2M1.3 8h2M12.7 8h2M3.3 3.3l1.4 1.4M11.3 11.3l1.4 1.4M3.3 12.7l1.4-1.4M11.3 4.7l1.4-1.4',
+  information: 'M14 8A6 6 0 1 1 2 8a6 6 0 0 1 12 0ZM8 7.3v4M8 5v.3',
+  discord: 'M2.7 3.3h10.6v7.4H6l-3.3 2.6Z',
+  deconnexion: 'M9.3 2.7h3.4v10.6H9.3M6.7 5.3 4 8l2.7 2.7M4 8h6.7',
 };
 const ONGLET_TEXTES = { boutique: 'game.menu.onglet.boutique', personnage: 'game.menu.onglet.personnage', jouer: 'game.menu.onglet.jouer', infini: 'game.menu.onglet.infini' };
 
@@ -182,20 +187,22 @@ export function creerMenu({ dict, infos = [], liens = {}, solde: montant = 0, re
   // Menu à trois barres : juste sous le bouton, aligné à droite.
   const liste = el('div', ['e8-liste'], { id: 'menu-liste' });
   liste.hidden = true;
-  const entree = (id, cle, extra = []) => {
+  // Lot 8d (retour du propriétaire : menu trop allongé, peu distinct) : icône de chaque entrée (maquette MenuOuvert.html).
+  const entree = (id, cle, extra = [], ico = null) => {
     const b = el('button', ['e8-entree'], { type: 'button', id });
     const s = el('span');
     s.textContent = t(cle);
+    if (ico) b.append(icone(ico, 'e8-icone e8-icone-entree'));
     b.append(s, ...extra);
     return b;
   };
   const note = (cle) => Object.assign(el('span', ['e8-note']), { textContent: t(cle) });
-  const btOptions = entree('menu-options', 'game.menu.options');
+  const btOptions = entree('menu-options', 'game.menu.options', [], 'options');
   const pointInfo = el('span', ['menu-point', 'e8-point-info'], { id: 'menu-point-info' });
   pointInfo.append(Object.assign(el('span', ['sr-only']), { textContent: t('game.menu.nouveau') }));
-  const btInfo = entree('menu-information', 'game.menu.information', [pointInfo]);
+  const btInfo = entree('menu-information', 'game.menu.information', [pointInfo], 'information');
   const discordPlace = el('li');
-  const btDeconnexion = entree('menu-deconnexion', 'game.menu.deconnexion', [note('game.menu.nonConnecte')]);
+  const btDeconnexion = entree('menu-deconnexion', 'game.menu.deconnexion', [note('game.menu.nonConnecte')], 'deconnexion');
   btDeconnexion.disabled = true;
   const li = (n) => {
     const item = el('li');
@@ -215,9 +222,9 @@ export function creerMenu({ dict, infos = [], liens = {}, solde: montant = 0, re
       n = el('a', ['e8-entree'], { id: 'menu-discord', href: lien.adresse, target: '_blank', rel: 'noopener noreferrer' });
       const s = el('span');
       s.textContent = t('game.menu.discord');
-      n.append(s, icone('externe', 'e8-icone e8-externe'), Object.assign(el('span', ['sr-only']), { textContent: ` (${t('game.menu.nouvelOnglet')})` }));
+      n.append(icone('discord', 'e8-icone e8-icone-entree'), s, icone('externe', 'e8-icone e8-externe'), Object.assign(el('span', ['sr-only']), { textContent: ` (${t('game.menu.nouvelOnglet')})` }));
     } else {
-      n = entree('menu-discord', 'game.menu.discord', [note('game.menu.bientot')]);
+      n = entree('menu-discord', 'game.menu.discord', [note('game.menu.bientot')], 'discord');
       n.disabled = true;
     }
     discordPlace.replaceChildren(n);
@@ -269,9 +276,10 @@ export function creerMenu({ dict, infos = [], liens = {}, solde: montant = 0, re
     // Lot 8c : page Options (écran plein) : la barre d'onglets et l'écran de l'onglet sont masqués ; « ‹ Menu » revient à l'onglet d'où l'on venait.
     // Lot 8d : sous-menus du Personnage (Inventaire, Fusion, Personnages), écrans pleins eux aussi ; « ‹ Équipement » revient à l'écran Personnage.
     const plein = ECRANS_PLEINS.includes(etat.ecran);
-    box.dataset.ecran = plein ? etat.ecran : '';
+    const sous = SOUS_MENUS.includes(etat.ecran); // sous-menu du Personnage : à la place de l'écran de l'onglet, barre d'onglets visible
+    box.dataset.ecran = plein || sous ? etat.ecran : '';
     nav.hidden = plein;
-    for (const [id, s] of ecransOnglets) s.hidden = id !== etat.onglet || plein;
+    for (const [id, s] of ecransOnglets) s.hidden = id !== etat.onglet || plein || sous;
     perso?.synchroniser(etat.ecran);
     animer();
     liste.hidden = !etat.menuOuvert;
@@ -310,6 +318,7 @@ export function creerMenu({ dict, infos = [], liens = {}, solde: montant = 0, re
   let infini = null; // lot 8b : écran Infini (js/menu/infini.js, chargé au premier affichage) : { section, scene, etat() }
   let perso = null; // lot 8d : écran Personnage (js/menu/personnage.js, chargé au premier affichage) et ses sous-menus
   async function changerOnglet(id) {
+    if (SOUS_MENUS.includes(etat.ecran)) etat = fermerEcran(etat); // lot 8d : un onglet touché referme le sous-menu du Personnage
     etat = choisirOnglet(etat, id);
     if (!ecransOnglets.has(etat.onglet)) {
       const onglet = etat.onglet;

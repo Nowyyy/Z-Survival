@@ -31,15 +31,17 @@ function degrade(type, id, attrs, stops) {
   return g;
 }
 
-// Route : deux courbes de Bézier (maquette) ; point sur la route pour une abscisse donnée (repère du record).
-const ROUTE = 'M2 368 C120 344 230 330 330 316 C420 304 480 296 560 288';
-const SEGMENTS = [[[2, 368], [120, 344], [230, 330], [330, 316]], [[330, 316], [420, 304], [480, 296], [560, 288]]];
+// Route : deux courbes de Bézier ; point sur la route pour une abscisse donnée (repère du record). Lot 8d, retour du propriétaire : elle part du coin
+// en bas à gauche et file vers le bouton « JOUER » (en bas à droite) en passant sous le bâtiment, sans le toucher (maquette : jusqu'au pied du bâtiment,
+// 560, 288).
+const ROUTE = 'M2 368 C150 354 300 343 440 336 C540 331 610 328 668 326';
+const SEGMENTS = [[[2, 368], [150, 354], [300, 343], [440, 336]], [[440, 336], [540, 331], [610, 328], [668, 326]]];
 const bezier = (p, t) => {
   const u = 1 - t;
   return [0, 1].map((k) => u * u * u * p[0][k] + 3 * u * u * t * p[1][k] + 3 * u * t * t * p[2][k] + t * t * t * p[3][k]);
 };
 export function pointRoute(x) {
-  const seg = x <= 330 ? SEGMENTS[0] : SEGMENTS[1];
+  const seg = x <= SEGMENTS[0][3][0] ? SEGMENTS[0] : SEGMENTS[1];
   let lo = 0;
   let hi = 1;
   for (let i = 0; i < 30; i += 1) {
@@ -49,8 +51,8 @@ export function pointRoute(x) {
   }
   return bezier(seg, (lo + hi) / 2);
 }
-// Panneaux (abscisse du piquet, haut de la planche) : maquette.
-const PANNEAUX = [[94, 320], [200, 302], [298, 286], [400, 274], [508, 264]];
+// Panneaux (abscisse du piquet, haut de la planche) : espacés le long de la route, le pied du piquet sur la route (lot 8d ; maquette : 94 à 508).
+const PANNEAUX = [94, 218, 342, 466, 590].map((x) => [x, Math.round(pointRoute(x + 2)[1] - 30)]);
 
 // Silhouette de zombie (pieds à l'origine, regard vers la droite) : tête, corps et jambes, bras tendus, œil rouge.
 function zombie(x, y, echelle = 1, miroir = false) {

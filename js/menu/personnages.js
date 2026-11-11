@@ -90,6 +90,7 @@ export function creer({ t, bandeau, eq, cat, stats, retour }) {
     const r = info.verrouille ? 'game.menu.personnages.raison.verrou' : info.choisi && !info.peutAmeliorer ? 'game.menu.personnages.raison.max.choisi' : info.choisi ? 'game.menu.personnages.raison.choisi' : !info.peutAmeliorer ? 'game.menu.personnages.raison.max' : null;
     raison.hidden = !r;
     raison.textContent = r ? fmt(t(r), { n: info.niveauMax }) : '';
+    raison.classList.toggle('sr-only', r === 'game.menu.personnages.raison.choisi'); // « Déjà choisi » : déjà écrit sur le bouton, lu seulement
   }
 
   btChoisir.addEventListener('click', () => {

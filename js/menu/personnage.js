@@ -175,14 +175,15 @@ export async function ecranPersonnage({ t, bandeau, niveaux = null, statsCfg = n
   const essai = el('p', ['e9-essai'], { id: 'menu-perso-essai' });
   essai.textContent = t('game.menu.perso.essai');
 
-  // Personnage : un bouton (ouvre Personnages) ; étiquette « Touche-le pour changer » au-dessus.
+  // Personnage : un bouton (ouvre Personnages) ; étiquette « Touche-le pour changer » au-dessus, dans la zone grise au-dessus de la lampe quand il y a
+  // la place (retour du propriétaire) : élément décoratif de l'écran (aria-hidden, sans effet au toucher) ; le nom du bouton garde la phrase entière.
   const btPerso = el('button', ['e9-perso-bouton'], { type: 'button', id: 'menu-perso-silhouette' });
-  const etiquette = el('span', ['e9-etiquette']);
-  etiquette.textContent = t('game.menu.perso.toucher');
-  const etiquetteSuite = el('span', ['sr-only']);
-  etiquetteSuite.textContent = t('game.menu.perso.toucher.suite');
+  const nomPerso = el('span', ['sr-only']);
+  nomPerso.textContent = `${t('game.menu.perso.toucher')}${t('game.menu.perso.toucher.suite')}`;
   const cadre = el('span', ['e9-perso-cadre']);
-  btPerso.append(cadre, etiquette, etiquetteSuite);
+  btPerso.append(cadre, nomPerso);
+  const etiquette = el('span', ['e9-etiquette'], { 'aria-hidden': 'true' });
+  etiquette.textContent = t('game.menu.perso.toucher');
 
   // Emplacements : deux colonnes de trois (gauche : arme, tenue, gants ; droite : bottes, accessoires).
   const boutons = new Map();
@@ -233,7 +234,7 @@ export async function ecranPersonnage({ t, bandeau, niveaux = null, statsCfg = n
   capSuite.textContent = t('game.menu.perso.capacite.suite');
   capacite.append(capTete, capTitre, capEffet, capSuite);
 
-  section.append(sol, decor, bandeau(t('game.menu.perso.libelle'), t('game.menu.perso.titre'), 'menu-titre-personnage'), essai, btPerso, gauche, droite, capacite);
+  section.append(sol, decor, bandeau(t('game.menu.perso.libelle'), t('game.menu.perso.titre'), 'menu-titre-personnage'), essai, btPerso, etiquette, gauche, droite, capacite);
 
   function rendre() {
     const etat = eq.etat();

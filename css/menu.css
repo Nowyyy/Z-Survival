@@ -561,13 +561,15 @@
 /* Menu à trois barres : juste sous le bouton, aligné à droite. */
 .e8-liste {
   position: absolute;
-  top: 100%;
+  top: calc(100% + 4px);
   right: var(--e8-droite);
-  min-width: max(220px, calc(240 * var(--u)));
-  padding: 4px 0;
-  background: var(--menu-panneau);
-  border: 1px solid var(--color-border);
-  box-shadow: 0 6px 0 var(--menu-ombre);
+  /* Lot 8d (retour du propriétaire : trop allongé, peu distinct) : largeur de la maquette (220), bordée de bois, coins arrondis, ombre portée. */
+  width: clamp(220px, calc(240 * var(--u)), 300px);
+  padding: 6px;
+  border: 2px solid var(--menu-scene-route-trait);
+  border-radius: 6px;
+  background: var(--menu-e9-panneau);
+  box-shadow: 0 calc(10 * var(--u)) calc(24 * var(--u)) var(--menu-ombre);
 }
 
 .e8-liste-groupe {
@@ -579,14 +581,16 @@
 .e8-entree {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   width: 100%;
   min-height: var(--menu-cible);
-  padding: 0 14px;
+  padding: 0 10px;
   border: 0;
+  border-radius: 4px;
   background: transparent;
   color: var(--menu-texte);
-  font-size: 16px;
+  font-size: 15px;
+  font-weight: var(--font-weight-bold);
   text-align: left;
   text-decoration: none;
   cursor: pointer;
@@ -2092,7 +2096,9 @@
 
 .e9-etiquette {
   position: absolute;
-  top: calc(-4 * var(--u));
+  z-index: 1;
+  /* Dans la zone grise au-dessus de la lampe (haut de la lampe : centre − 6 ; hauteur de l'étiquette ≈ 20) quand il y a la place, sinon en haut de l'écran. */
+  top: max(calc(2 * var(--u)), calc(var(--e9-centre) - 28 * var(--u)));
   left: 50%;
   min-width: calc(140 * var(--u));
   padding: calc(3 * var(--u)) calc(8 * var(--u));
@@ -2105,6 +2111,7 @@
   line-height: 1.2;
   color: var(--menu-texte);
   text-align: center;
+  pointer-events: none;
 }
 
 /* Silhouette (couleurs : jetons --menu-perso-* ; teinte du personnage : --e9-teinte). */
@@ -2138,8 +2145,10 @@
 .e9-sil-ombre { fill: var(--menu-perso-ombre); }
 
 .e9-sil-respire { animation: e9-respire 2.6s ease-in-out infinite; }
-.e9-sil-tete { transform-box: fill-box; transform-origin: 50% 100%; animation: e9-tete 5s ease-in-out infinite; }
-.e9-sil-viser { transform-box: fill-box; transform-origin: 0% 15%; animation: e9-viser 2.6s ease-in-out infinite; }
+/* Pivots dans le repère de la silhouette (180 × 236) : le cou (90, 72) et l'épaule (122, 86). Retour du propriétaire : avec la boîte englobante, le pan
+   du bandana décalait le pivot et la tête sortait de son axe. */
+.e9-sil-tete { transform-box: view-box; transform-origin: 90px 72px; animation: e9-tete 5s ease-in-out infinite; }
+.e9-sil-viser { transform-box: view-box; transform-origin: 122px 86px; animation: e9-viser 2.6s ease-in-out infinite; }
 .e9-sil-pan { transform-box: fill-box; transform-origin: 0% 50%; animation: e9-bandana 1.2s ease-in-out infinite; }
 .e9-sil-ombre { transform-box: fill-box; transform-origin: 50% 50%; animation: e9-ombre 2.6s ease-in-out infinite; }
 
@@ -2150,8 +2159,8 @@
 
 @keyframes e9-tete {
   0%, 100% { transform: rotate(0deg); }
-  30% { transform: rotate(-5deg); }
-  65% { transform: rotate(4deg); }
+  30% { transform: rotate(-3deg); }
+  65% { transform: rotate(2.5deg); }
 }
 
 @keyframes e9-viser {
@@ -2383,12 +2392,6 @@
 }
 
 /* Sous-menus (écrans pleins : en-tête gardé, barre d'onglets masquée ; « ‹ Équipement » et Échap reviennent à l'écran Personnage). */
-.e8[data-ecran='inventaire'] .e8-contenu,
-.e8[data-ecran='fusion'] .e8-contenu,
-.e8[data-ecran='personnages'] .e8-contenu {
-  grid-row: 2 / 4;
-}
-
 .e8-ecran.e9-sous {
   align-items: stretch;
   gap: 0;
@@ -2482,7 +2485,7 @@
   top: calc(12 * var(--u));
   bottom: calc(12 * var(--u));
   width: calc(410 * var(--u));
-  padding: calc(12 * var(--u)) calc(14 * var(--u));
+  padding: calc(10 * var(--u)) calc(14 * var(--u));
 }
 
 .e9-compatibles {
@@ -2514,6 +2517,13 @@
   display: flex;
   align-items: center;
   gap: calc(8 * var(--u));
+}
+
+/* Flèches de page dans l'en-tête de l'Inventaire, à droite de « Retour ». */
+.e9-pages {
+  display: flex;
+  gap: calc(8 * var(--u));
+  margin: calc(4 * var(--u)) 0 0 auto;
 }
 
 .e9-page {
@@ -2551,7 +2561,7 @@
 .e9-grille-objets {
   flex: 1;
   grid-template-columns: repeat(6, minmax(0, 1fr));
-  grid-auto-rows: minmax(max(var(--menu-cible), calc(70 * var(--u))), calc(100 * var(--u)));
+  grid-auto-rows: minmax(max(var(--menu-cible), calc(60 * var(--u))), calc(100 * var(--u))); /* 60 au moins (maquette 70) : une rangée de plus sur PC */
   align-content: start;
   min-height: 0;
 }
@@ -2596,7 +2606,7 @@
 }
 
 .e9-grille-objets .e9-case {
-  min-height: max(var(--menu-cible), calc(70 * var(--u)));
+  min-height: max(var(--menu-cible), calc(60 * var(--u)));
 }
 
 .e9-case[aria-pressed='true'] {
@@ -2996,6 +3006,12 @@
   color: var(--menu-options-note);
 }
 
+/* Fiche : les quatre statistiques de la maquette (la barre d'onglets visible lui laisse la hauteur de la maquette). */
+.e9-fiche .e9-stat[data-stat='portee'],
+.e9-fiche .e9-stat[data-stat='precision'] {
+  display: none;
+}
+
 .e9-fiche .e9-stats {
   font-size: var(--e9-moyen);
 }
@@ -3021,5 +3037,23 @@
 
   .e9-capacite {
     top: calc(246 * var(--u) + var(--e9-centre));
+  }
+}
+
+/* Fusion sur écran très bas (téléphone en paysage, barre d'onglets visible) : emplacements et résultat plus petits pour tenir au-dessus de la barre. */
+@media (max-height: 380px) {
+  .e9-atelier {
+    gap: calc(8 * var(--u));
+    min-height: 0;
+  }
+
+  .e9-place {
+    width: max(var(--menu-cible), calc(60 * var(--u)));
+    height: max(var(--menu-cible), calc(60 * var(--u)));
+  }
+
+  .e9-resultat {
+    width: max(52px, calc(70 * var(--u)));
+    height: max(52px, calc(70 * var(--u)));
   }
 }

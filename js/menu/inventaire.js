@@ -33,7 +33,11 @@ export function creer({ t, bandeau, eq, cat, retour, ouvrir }) {
   btAvant.append(icone24('chevron'));
   const btApres = el('button', ['e5-bouton', 'e9-page-bouton'], { type: 'button', id: 'menu-inventaire-apres', 'aria-label': t('game.menu.inventaire.apres') });
   btApres.append(icone24('suivant'));
-  pied.append(pageTexte, btAvant, btApres);
+  pied.append(pageTexte);
+  // Flèches de page dans l'en-tête, à droite de « Retour » (la barre d'onglets reste visible : la colonne n'a plus la place d'une rangée de 44 de plus).
+  const fleches = el('div', ['e9-pages'], { role: 'group', 'aria-label': t('game.menu.inventaire.pages') });
+  fleches.append(btAvant, btApres);
+  tete.append(fleches);
   const gauche = el('div', ['e9-sous-gauche']);
   gauche.append(tete, filtres, grille, pied);
 
