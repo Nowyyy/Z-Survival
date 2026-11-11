@@ -57,6 +57,19 @@ export function texteVersion(info) {
   return null;
 }
 
+// Lot 8d (retour du propriétaire) : version sous « Déconnexion » du menu à trois barres : la plus haute version cible du journal (data/changelog.json,
+// lots[].version au format v0.N : la version en cours sur dev, la dernière fusionnée sur la Recette) et le canal de la page (balise zs-canal) quand
+// c'est dev, release (Recette) ou source (dépôt) ; aucune mention ailleurs. { v: 'V0.8', canal } ou null (journal absent ou sans version lisible).
+export const CANAUX_VERSION = Object.freeze(['dev', 'release', 'source']);
+export function versionMenu(journal, canal) {
+  let haute = null;
+  for (const lot of Array.isArray(journal?.lots) ? journal.lots : []) {
+    const m = /^v(\d{1,3})\.(\d{1,3})$/.exec(typeof lot?.version === 'string' ? lot.version : '');
+    if (m && (!haute || Number(m[1]) * 1000 + Number(m[2]) > haute[0] * 1000 + haute[1])) haute = [Number(m[1]), Number(m[2])];
+  }
+  return haute ? { v: `V${haute[0]}.${haute[1]}`, canal: CANAUX_VERSION.includes(canal) ? canal : null } : null;
+}
+
 // Onglets de la barre E8-2, de gauche à droite (Jouer au centre) ; Event est verrouillé (aucune action).
 export const ONGLETS = Object.freeze([
   Object.freeze({ id: 'boutique' }),

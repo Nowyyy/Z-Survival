@@ -610,6 +610,11 @@
   cursor: default;
 }
 
+/* Retour du propriétaire : cadre bleu de Discord autour de l'entrée Discord. */
+.e8-discord {
+  border: 2px solid var(--menu-discord);
+}
+
 .e8-note {
   margin-left: auto;
   padding-left: 12px;
@@ -621,6 +626,13 @@
 .e8-externe {
   width: 16px;
   height: 16px;
+}
+
+.e8-version {
+  margin: 2px 0 0;
+  padding: 4px 8px 2px 40px;
+  font-size: 12px;
+  color: var(--menu-texte-doux);
 }
 
 .e8-separateur {

@@ -757,7 +757,12 @@ test('PC 2000 × 1060 : « Touche-le pour changer » centré au-dessus de la lam
   const style = await page.locator('#menu-liste').evaluate((n) => { const c = getComputedStyle(n); return [c.borderTopWidth, c.borderTopLeftRadius, c.boxShadow !== 'none', c.backgroundColor !== getComputedStyle(document.querySelector('#menu-ecran-personnage')).backgroundColor]; });
   expect(style).toEqual(['2px', '6px', true, true]);
   await expect(page.locator('#menu-liste .e8-icone-entree')).toHaveCount(4);
+  // Retour du propriétaire : version du jeu sous « Déconnexion » (dépôt : canal source ; journal lu à la première ouverture du menu).
+  await expect(page.locator('#menu-version')).toHaveText('V0.8 · source');
+  const [deco, version, cadre] = [await boite(page, '#menu-deconnexion'), await boite(page, '#menu-version'), await boite(page, '#menu-liste')];
+  expect([version.t >= deco.b - 0.5, version.b <= cadre.b + 0.5, cadre.b <= 1060]).toEqual([true, true, true]);
   // Retour du propriétaire : logo de Discord (forme pleine) à la place de la bulle.
+  expect(await page.locator('#menu-discord').evaluate((n) => [getComputedStyle(n).borderTopWidth, getComputedStyle(n).borderTopColor])).toEqual(['2px', 'rgb(88, 101, 242)']); // cadre bleu de Discord
   expect(await page.locator('#menu-discord .e8-icone-entree').evaluate((n) => [n.getAttribute('viewBox'), n.classList.contains('e8-icone-logo'), getComputedStyle(n).fill !== 'none'])).toEqual(['0 0 24 24', true, true]);
 });
 
