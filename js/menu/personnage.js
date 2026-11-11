@@ -152,6 +152,9 @@ const SOUS = { inventaire: () => import('./inventaire.js'), fusion: () => import
 export const SOUS_ECRANS = Object.freeze(Object.keys(SOUS));
 
 // poserEcran(nom | null) : menu.js place l'écran plein (etatMenu.ecran) et resynchronise ; il appelle ensuite synchroniser(ecran) et animer(actif).
+// Retour du propriétaire (latence au premier toucher sur iPhone) : données demandées dès que le doigt se pose sur l'onglet (menu.js, precharger).
+export const precharger = () => chargerEquipement();
+
 export async function ecranPersonnage({ t, bandeau, niveaux = null, statsCfg = null, root, poserEcran }) {
   const eq = await chargerEquipement();
   const { cat } = eq;

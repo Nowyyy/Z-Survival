@@ -358,6 +358,10 @@ export function creerMenu({ dict, infos = [], liens = {}, solde: montant = 0, re
       s.textContent = t(ONGLET_TEXTES[o.id]);
       b.append(s, goutteOnglet());
       b.addEventListener('click', () => changerOnglet(o.id));
+      // Retour du propriétaire (latence au premier toucher sur iPhone) : l'écran se charge dès que le doigt se pose (avant le clic), tous ses
+      // fichiers en parallèle ; au clavier, au focus.
+      b.addEventListener('pointerdown', () => precharger(o.id), { passive: true });
+      b.addEventListener('focus', () => precharger(o.id));
     }
     boutonsOnglets.set(o.id, b);
     nav.append(b);
@@ -423,20 +427,57 @@ export function creerMenu({ dict, infos = [], liens = {}, solde: montant = 0, re
   let infini = null; // lot 8b : écran Infini (js/menu/infini.js, chargé au premier affichage) : { section, scene, etat() }
   let perso = null; // lot 8d : écran Personnage (js/menu/personnage.js, chargé au premier affichage) et ses sous-menus
   let boutique = null; // lot 8e : onglet Boutique (js/menu/boutique.js, chargé au premier affichage), chances et écrans de résultat
+  // Retour du propriétaire (lot 8e) : « légère latence quand on clique pour la première fois sur un onglet » (iPhone). Les modules d'un écran
+  // s'importaient en cascade (chaque fichier ne découvre ses dépendances qu'une fois reçu) : dès le toucher, tous ses fichiers sont demandés en même
+  // temps (modulepreload) avec ses données (precharger() du module) ; et l'onglet est marqué tout de suite, avant la fin du chargement. Jamais au
+  // démarrage du menu : seulement quand le doigt se pose sur un onglet.
+  const EQUIPEMENT = ['data/menu/raretes.json', 'data/menu/objets.json', 'data/menu/personnages.json', 'data/menu/inventaire-depart.json'];
+  const PRECHARGE = {
+    infini: { modules: ['js/menu/infini.js'], donnees: ['data/menu/classement.json'] },
+    personnage: { modules: ['js/menu/personnage.js', 'js/menu/equipement-etat.js', 'js/core/equipement.js'], donnees: EQUIPEMENT },
+    boutique: { modules: ['js/menu/boutique.js', 'js/core/caisses.js', 'js/core/equipement.js', 'js/menu/equipement-etat.js', 'js/menu/personnage.js'], donnees: ['data/menu/caisses.json', 'data/menu/cosmetiques.json', ...EQUIPEMENT] },
+  };
+  const IMPORTS = { infini: () => import('./infini.js'), personnage: () => import('./personnage.js'), boutique: () => import('./boutique.js') };
+  const precharges = new Map(); // onglet → promesse du module (données lancées)
+  function precharger(id) {
+    if (!IMPORTS[id]) return null;
+    if (!precharges.has(id)) {
+      const lien = (rel, href, as) => {
+        if (document.head.querySelector(`link[href="${href}"]`)) return;
+        const l = document.createElement('link');
+        l.rel = rel;
+        l.href = href;
+        if (as) {
+          l.as = as; // données : préchargées comme le fetch() qui les lira (même mode, même origine), sans seconde requête
+          l.crossOrigin = 'anonymous';
+        }
+        document.head.append(l);
+      };
+      for (const href of PRECHARGE[id].modules) lien('modulepreload', href);
+      for (const href of PRECHARGE[id].donnees) lien('preload', href, 'fetch');
+      precharges.set(id, IMPORTS[id]().then((m) => {
+        m.precharger?.();
+        return m;
+      }));
+    }
+    return precharges.get(id);
+  }
   async function changerOnglet(id) {
     if (SOUS_MENUS.includes(etat.ecran)) etat = fermerEcran(etat); // lot 8d : un onglet touché referme le sous-menu du Personnage
     boutique?.fermerResultat(); // lot 8e : un onglet touché ramène la Boutique à ses caisses
     etat = choisirOnglet(etat, id);
     if (!ecransOnglets.has(etat.onglet)) {
       const onglet = etat.onglet;
+      synchroniser(); // onglet marqué tout de suite (planche claire, sang qui coule), avant la fin du chargement
+      contenu.setAttribute('aria-busy', 'true');
       let s;
       if (onglet === 'infini') {
-        const m = await import('./infini.js');
+        const m = await precharger('infini');
         infini = await m.ecranInfini({ t, mondes, bandeau, jouer: lancer });
         s = infini.section;
         scenes.set('infini', infini.scene);
       } else if (onglet === 'personnage') {
-        const m = await import('./personnage.js');
+        const m = await precharger('personnage');
         const ecran = await m.ecranPersonnage({
           t, bandeau, niveaux, statsCfg, root: contenu,
           poserEcran: (nom) => {
@@ -447,7 +488,7 @@ export function creerMenu({ dict, infos = [], liens = {}, solde: montant = 0, re
         perso ??= ecran;
         s = ecran.section;
       } else if (onglet === 'boutique') {
-        const m = await import('./boutique.js');
+        const m = await precharger('boutique');
         const ecran = await m.ecranBoutique({ t, bandeau, root: contenu, rootDialogue: box, surVue: () => synchroniser() });
         boutique ??= ecran;
         s = ecran.section;
@@ -459,6 +500,7 @@ export function creerMenu({ dict, infos = [], liens = {}, solde: montant = 0, re
         ecransOnglets.set(onglet, s);
         contenu.append(s);
       }
+      contenu.removeAttribute('aria-busy');
     }
     synchroniser();
   }

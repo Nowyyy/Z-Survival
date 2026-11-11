@@ -133,8 +133,12 @@ export const avantMinuit = (d) => new Date(d.getFullYear(), d.getMonth(), d.getD
 
 // contexte : { t, bandeau, root (#menu-contenu : section du résultat), rootDialogue (#e8 : dialogue des chances), surVue() (menu.js resynchronise),
 // maintenant() (date de l'appareil ; les tests la fixent par l'horloge du navigateur) }.
+// Retour du propriétaire (latence au premier toucher sur iPhone) : données demandées dès que le doigt se pose sur l'onglet (menu.js, precharger).
+let chargement = null;
+export const precharger = () => (chargement ??= Promise.all([chargerEquipement(), json('data/menu/caisses.json'), json('data/menu/cosmetiques.json')]));
+
 export async function ecranBoutique({ t, bandeau, root, rootDialogue, surVue = () => {}, maintenant = () => new Date() }) {
-  const [eq, donnees, cosm] = await Promise.all([chargerEquipement(), json('data/menu/caisses.json'), json('data/menu/cosmetiques.json')]);
+  const [eq, donnees, cosm] = await precharger();
   const cat = { ...eq.cat, cosmetiques: lireCosmetiques(cosm, eq.cat.raretes) };
   const { caisses } = lireCaisses(donnees, cat);
   const { regles } = lireOffres(donnees, cat);

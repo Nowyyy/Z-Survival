@@ -685,3 +685,28 @@ test.describe('Boutique par rubriques (retour du propriétaire)', () => {
     expect((await etatBoutique(page)).collection).toEqual({ [tenue.id]: 1 });
   });
 });
+
+// Retour du propriétaire (iPhone : « légère latence au premier toucher d'un onglet ») : dès que le doigt se pose, tous les fichiers de l'écran sont
+// demandés en même temps (une seule fois chacun), jamais au démarrage ; l'onglet est marqué avant la fin du chargement.
+test('premier toucher d\'un onglet : fichiers et données demandés dès le pointerdown, une fois chacun ; onglet marqué avant l\'écran (chargement ralenti)', async ({ page, baseURL }) => {
+  const o = surveiller(page, baseURL);
+  await ouvrirMenu(page);
+  const avant = o.fichiers.length;
+  expect(o.fichiers.filter((f) => /boutique\.js|caisses\.js|cosmetiques\.json/.test(f))).toEqual([]);
+  // Écran de la Boutique ralenti (1,5 s) : le marquage de l'onglet ne l'attend pas.
+  let lacher;
+  await page.route('**/js/menu/boutique.js', async (route) => { await new Promise((r) => { lacher = r; setTimeout(r, 1500); }); await route.continue(); });
+  await page.locator('#menu-onglet-boutique').dispatchEvent('pointerdown');
+  await expect.poll(() => o.fichiers.filter((f) => /\/data\/menu\/(caisses|cosmetiques|objets)\.json$|\/js\/core\/caisses\.js$/.test(f)).length).toBe(4); // données et dépendances parties sans attendre boutique.js
+  await page.locator('#menu-onglet-boutique').click();
+  await expect(page.locator('#menu-onglet-boutique')).toHaveAttribute('aria-current', 'page');
+  expect(await page.locator('#menu-ecran-boutique').count()).toBe(0); // écran encore en chargement
+  await expect(page.locator('#menu-contenu')).toHaveAttribute('aria-busy', 'true');
+  lacher?.();
+  await expect(page.locator('#menu-ecran-boutique')).toBeVisible();
+  await expect(page.locator('#menu-contenu')).not.toHaveAttribute('aria-busy', /.*/);
+  const apres = o.fichiers.slice(avant);
+  const doublons = apres.filter((f, i) => apres.indexOf(f) !== i);
+  expect(doublons).toEqual([]);
+  expect(o.problemes).toEqual([]);
+});
