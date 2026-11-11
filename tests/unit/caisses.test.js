@@ -29,7 +29,7 @@ describe('données data/menu/caisses.json (lireCaisses)', () => {
   it('fichier valide, sans erreur, marqué provisoire ; trois caisses dans l\'ordre, raretés de la demande', () => {
     expect([erreurs, erreursCosm]).toEqual([[], []]);
     expect([JSON_CAISSES._provisoire, JSON_COSM._provisoire]).toEqual([expect.stringMatching(/provisoire/i), expect.stringMatching(/exemple/i)]);
-    expect(toutes.map((c) => [c.id, c.type])).toEqual([['ravitaillement', 'equipement'], ['militaire', 'equipement'], ['elite', 'equipement'], ['recrues', 'personnage'], ['tenues', 'cosmetique']]);
+    expect(toutes.map((c) => [c.id, c.type])).toEqual([['ravitaillement', 'equipement'], ['militaire', 'equipement'], ['elite', 'equipement'], ['recrues', 'personnage'], ['veterans', 'personnage'], ['legendes', 'personnage'], ['tenues', 'cosmetique'], ['mode', 'cosmetique'], ['couture', 'cosmetique']]); // trois caisses par rubrique (retour du propriétaire)
     expect(caisses.map((c) => c.id)).toEqual(['ravitaillement', 'militaire', 'elite']);
     expect(caisses.map((c) => c.nom)).toEqual(['Caisse de ravitaillement', 'Caisse militaire', 'Caisse d\'élite']);
     // Retour du propriétaire : toutes les raretés dans chaque caisse ; d'une caisse à la suivante, la part des plus rares augmente.
@@ -37,9 +37,13 @@ describe('données data/menu/caisses.json (lireCaisses)', () => {
     const hautes = ['ravitaillement', 'militaire', 'elite'].map((id) => partHaute(caisse(id), cat).pourcent);
     expect(hautes).toEqual([4, 10, 45]);
     expect(hautes[0] < hautes[1] && hautes[1] < hautes[2]).toBe(true);
-    expect(toutes.find((c) => c.id === 'tenues').chances.map((x) => x.rarete)).toEqual(['commun', 'peu-commun', 'rare', 'epique', 'legendaire']);
+    for (const id of ['tenues', 'mode', 'couture']) expect(toutes.find((c) => c.id === id).chances.map((x) => x.rarete), id).toEqual(['commun', 'peu-commun', 'rare', 'epique', 'legendaire']);
+    expect(['tenues', 'mode', 'couture'].map((id) => partHaute(toutes.find((c) => c.id === id), cat).pourcent)).toEqual([5, 13, 45]);
+    // Caisses de personnages : de la moins chère à la plus chère, la part des personnages verrouillés au départ augmente.
+    const verrouilles = (id) => toutes.find((c) => c.id === id).chances.filter((x) => !cat.personnages.find((p) => p.id === x.personnage).debloque).reduce((t, x) => t + x.pourcent, 0);
+    expect(['recrues', 'veterans', 'legendes'].map(verrouilles)).toEqual([40, 70, 92]);
     // Un dessin par genre de caisse.
-    expect(toutes.map((c) => c.modele)).toEqual(['bois', 'militaire', 'elite', 'recrues', 'tenues']);
+    expect(toutes.map((c) => c.modele)).toEqual(['bois', 'militaire', 'elite', 'recrues', 'veterans', 'legendes', 'tenues', 'mode', 'couture']);
     expect(partHaute(toutes.find((c) => c.id === 'recrues'), cat)).toBeNull();
   });
 
@@ -99,7 +103,7 @@ describe('données data/menu/caisses.json (lireCaisses)', () => {
     const cat2 = { ...lireCatalogue({ ...DONNEES, objets: objetsSansLegendaire }).cat, cosmetiques: cat.cosmetiques };
     expect(objetsDeRarete(cat2, 'legendaire')).toEqual([]);
     const lu = lireCaisses(JSON_CAISSES, cat2);
-    expect(lu.caisses.map((c) => c.id)).toEqual(['recrues', 'tenues']); // toutes les caisses d'objets contiennent des légendaires
+    expect(lu.caisses.map((c) => c.id)).toEqual(['recrues', 'veterans', 'legendes', 'tenues', 'mode', 'couture']); // toutes les caisses d'objets contiennent des légendaires
     expect(lu.erreurs).toEqual(['ravitaillement', 'militaire', 'elite'].map((id) => `caisse ${id} : aucun objet legendaire dans le catalogue`));
     // Caisse valide pour le catalogue complet, tirée avec le catalogue réduit : jamais d'objet inventé.
     const legendaires = Array.from({ length: 400 }, (_, g) => tirer(caisse('elite'), cat2, g));

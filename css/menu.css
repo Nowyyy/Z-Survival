@@ -1553,20 +1553,34 @@
 .e8-onglet-goutte {
   position: absolute;
   top: 0;
-  left: 22%;
+  right: 0;
+  left: 0;
+  z-index: 1;
   display: none;
-  width: calc(12 * var(--u));
-  height: calc(19 * var(--u));
-  margin-left: calc(-6 * var(--u));
+  height: calc(22 * var(--u));
   overflow: hidden;
+  pointer-events: none;
 }
 
 .e8-onglet[aria-current="page"] .e8-onglet-goutte {
   display: block;
 }
 
-.e8-onglet[aria-current="page"] .e8-onglet-goutte-flux {
-  animation: e8-onglet-coule 0.9s cubic-bezier(0.55, 0, 0.8, 0.6) both;
+.e8-onglet-bande {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: calc(6 * var(--u));
+  transform-origin: 50% 0;
+}
+
+.e8-onglet[aria-current="page"] .e8-onglet-bande {
+  animation: e8-onglet-verse 0.35s ease-out both;
+}
+
+.e8-onglet-goutte .menu-coulure {
+  top: calc(2 * var(--u));
 }
 
 .e8-onglet[aria-current="page"] .e8-icone-onglet,
@@ -1574,9 +1588,10 @@
   animation: e8-onglet-rebond 0.5s ease-out;
 }
 
-@keyframes e8-onglet-coule {
-  from { transform: translateY(-19px); }
-  to { transform: translateY(0); }
+/* La traînée se verse (une fois, à la sélection), puis les coulures s'allongent (e8-coulure, comme les bandeaux). */
+@keyframes e8-onglet-verse {
+  from { transform: scaleY(0); }
+  to { transform: scaleY(1); }
 }
 
 /* Un rebond, une fois : monte de 5 et retombe (0,5 s). */
@@ -1590,35 +1605,14 @@
   cursor: not-allowed;
 }
 
-/* Retour du propriétaire (lot 8e) : sang sur la barre d'onglets (js/menu/menu.js, sangBarre) : traînée le long du haut, coulures qui en pendent
-   (immobiles ; deux laissent tomber une goutte toutes les 5 s, en pause page cachée ou partie lancée), taches séchées dans des coins de planches.
-   Décoratif : au-dessus des planches, jamais sous un libellé (coulures entre les icônes, taches dans les coins bas). */
+/* Retour du propriétaire (lot 8e) : taches de sang séchées dans des coins bas de planches (js/menu/menu.js, sangBarre) ; les coulures n'apparaissent
+   que sur l'onglet touché (.e8-onglet-goutte). Décoratif, jamais sous un libellé. */
 .e8-onglets-sang {
   position: absolute;
   inset: 0;
   z-index: 1;
   overflow: hidden;
   pointer-events: none;
-}
-
-.e8-onglets-bande {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: calc(7 * var(--u));
-}
-
-.e8-onglets-sang .menu-coulure {
-  top: calc(3 * var(--u));
-}
-
-.e8-onglets-sang .menu-coulure-flux {
-  animation: none;
-}
-
-.e8-pause .e8-onglets-sang * {
-  animation-play-state: paused;
 }
 
 .e8-onglets-tache {
@@ -3456,13 +3450,13 @@
 .e3-q {
   fill: var(--menu-texte);
   font-family: var(--font-display);
-  font-size: 40px;
+  font-size: 30px; /* retour du propriétaire : le « ? » du milieu était trop gros (40 de la maquette) */
 }
 
 .e3-q-halo {
   fill: var(--e3-teinte);
   stroke: var(--e3-teinte);
-  stroke-width: 7;
+  stroke-width: 5.5;
   stroke-linejoin: round;
   opacity: 0.45;
 }
@@ -3729,6 +3723,21 @@
   stroke: var(--menu-clou);
   stroke-width: 3;
 }
+
+/* Variantes (retour du propriétaire : trois caisses de personnages, trois de tenues) : vétérans (malle olive), légendes (malle noire cerclée de la
+   teinte), mode (valise bordeaux), haute couture (valise noire, sangles et coins de la teinte). */
+.e3-caisse-veterans .e3-malle { fill: var(--menu-perso-survivant); }
+.e3-caisse-veterans .e3-malle-couvercle { fill: var(--menu-perso-poche); }
+.e3-caisse-veterans :is(.e3-malle, .e3-malle-couvercle, .e3-malle-bande) { stroke: var(--menu-perso-jambes); }
+.e3-caisse-legendes .e3-malle { fill: var(--menu-scene-voiture); }
+.e3-caisse-legendes .e3-malle-couvercle { fill: var(--menu-scene-toit-salle); }
+.e3-caisse-legendes :is(.e3-malle, .e3-malle-couvercle) { stroke: var(--menu-bois-sombre); }
+.e3-caisse-legendes .e3-malle-bande { stroke: var(--e3-teinte); }
+.e3-caisse-legendes .e3-plaque { fill: var(--e3-teinte); }
+.e3-caisse-mode .e3-valise { fill: var(--menu-classement-bord); }
+.e3-caisse-couture .e3-valise { fill: var(--menu-scene-voiture); }
+.e3-caisse-couture .e3-sangle { fill: var(--e3-teinte); }
+.e3-caisse-couture :is(.e3-coin-valise, .e3-boucle) { stroke: var(--e3-teinte); }
 
 @keyframes e3-flotte {
   0%, 100% { transform: translateY(0); }

@@ -1,5 +1,5 @@
 {
-  "_provisoire": "Lot 8e : caisses mystère et offres du jour de la Boutique (noms, prix et chances provisoires, à régler par le propriétaire sans lot ; l'équilibrage n'est pas jugé par l'agent). modele : dessin de la caisse (bois, militaire, elite, recrues, tenues) ; type : equipement (objets de data/menu/objets.json, chances par rareté), personnage (chances par personnage de data/menu/personnages.json : nouveau = débloqué, déjà obtenu = un niveau de plus), cosmetique (tenues de data/menu/cosmetiques.json, chances par rareté). teinte : jeton de css/tokens.css (--menu-* ou --rarete-*) des « ? », des rayons et de la bande de la caisse ; prix : « Ouvrir ×1 », prix10 : « Ouvrir ×10 » (affichés, jamais prélevés avant le lot 8h) ; chances : pour cent (somme de 100, chaque clé avec au moins un élément ; une caisse d'objets ou de tenues contient toutes les raretés, une meilleure caisse en augmente seulement les chances). Tirage : clé selon les chances, puis élément uniforme parmi ceux de cette rareté ; ×10 = dix tirages indépendants, sans garantie. offres : offres du jour (nombre, chances et prix par rareté), renouvelées à minuit (heure de l'appareil). Lu par js/core/caisses.js (lireCaisses, lireOffres).",
+  "_provisoire": "Lot 8e : caisses mystère et offres du jour de la Boutique (noms, prix et chances provisoires, à régler par le propriétaire sans lot ; l'équilibrage n'est pas jugé par l'agent). modele : dessin de la caisse (bois, militaire, elite ; recrues, veterans, legendes ; tenues, mode, couture) ; type : equipement (objets de data/menu/objets.json, chances par rareté), personnage (chances par personnage de data/menu/personnages.json : nouveau = débloqué, déjà obtenu = un niveau de plus), cosmetique (tenues de data/menu/cosmetiques.json, chances par rareté). teinte : jeton de css/tokens.css (--menu-* ou --rarete-*) des « ? », des rayons et de la bande de la caisse ; prix : « Ouvrir ×1 », prix10 : « Ouvrir ×10 » (affichés, jamais prélevés avant le lot 8h) ; chances : pour cent (somme de 100, chaque clé avec au moins un élément ; une caisse d'objets ou de tenues contient toutes les raretés, une meilleure caisse en augmente seulement les chances). Tirage : clé selon les chances, puis élément uniforme parmi ceux de cette rareté ; ×10 = dix tirages indépendants, sans garantie. offres : offres du jour (nombre, chances et prix par rareté), renouvelées à minuit (heure de l'appareil). Lu par js/core/caisses.js (lireCaisses, lireOffres).",
   "offres": {
     "nombre": 6,
     "chances": { "commun": 45, "peu-commun": 30, "rare": 16, "epique": 7, "legendaire": 2 },
@@ -13,8 +13,16 @@
     { "id": "elite", "type": "equipement", "modele": "elite", "nom": "Caisse d'élite", "teinte": "--rarete-legendaire", "prix": 1500, "prix10": 13500,
       "chances": { "commun": 8, "peu-commun": 17, "rare": 30, "epique": 32, "legendaire": 13 } },
     { "id": "recrues", "type": "personnage", "modele": "recrues", "nom": "Caisse de recrues", "teinte": "--rarete-epique", "prix": 2000, "prix10": 18000,
-      "chances": { "survivant": 20, "personnage-2": 20, "personnage-3": 15, "personnage-4": 15, "personnage-5": 15, "personnage-6": 15 } },
+      "chances": { "survivant": 30, "personnage-2": 30, "personnage-3": 10, "personnage-4": 10, "personnage-5": 10, "personnage-6": 10 } },
+    { "id": "veterans", "type": "personnage", "modele": "veterans", "nom": "Caisse de vétérans", "teinte": "--rarete-rare", "prix": 4000, "prix10": 36000,
+      "chances": { "survivant": 15, "personnage-2": 15, "personnage-3": 17.5, "personnage-4": 17.5, "personnage-5": 17.5, "personnage-6": 17.5 } },
+    { "id": "legendes", "type": "personnage", "modele": "legendes", "nom": "Caisse de légendes", "teinte": "--rarete-legendaire", "prix": 8000, "prix10": 72000,
+      "chances": { "survivant": 4, "personnage-2": 4, "personnage-3": 23, "personnage-4": 23, "personnage-5": 23, "personnage-6": 23 } },
     { "id": "tenues", "type": "cosmetique", "modele": "tenues", "nom": "Caisse de tenues", "teinte": "--rarete-peu-commun", "prix": 400, "prix10": 3600,
-      "chances": { "commun": 55, "peu-commun": 28, "rare": 12, "epique": 4, "legendaire": 1 } }
+      "chances": { "commun": 55, "peu-commun": 28, "rare": 12, "epique": 4, "legendaire": 1 } },
+    { "id": "mode", "type": "cosmetique", "modele": "mode", "nom": "Caisse de mode", "teinte": "--rarete-epique", "prix": 900, "prix10": 8100,
+      "chances": { "commun": 30, "peu-commun": 35, "rare": 22, "epique": 10, "legendaire": 3 } },
+    { "id": "couture", "type": "cosmetique", "modele": "couture", "nom": "Caisse de haute couture", "teinte": "--rarete-legendaire", "prix": 2500, "prix10": 22500,
+      "chances": { "commun": 8, "peu-commun": 17, "rare": 30, "epique": 32, "legendaire": 13 } }
   ]
 }

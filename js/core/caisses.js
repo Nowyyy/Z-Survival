@@ -13,7 +13,7 @@ import { createRng, nextFloat } from './rng.js';
 export const TIRAGES_X10 = 10;
 export const TYPES_CAISSE = Object.freeze(['equipement', 'personnage', 'cosmetique']);
 // Dessin de la caisse (retour du propriétaire : un design par genre de caisse) ; absent : bois.
-export const MODELES = Object.freeze(['bois', 'militaire', 'elite', 'recrues', 'tenues']);
+export const MODELES = Object.freeze(['bois', 'militaire', 'elite', 'recrues', 'veterans', 'legendes', 'tenues', 'mode', 'couture']);
 const ID = /^[a-z0-9-]{1,32}$/;
 // Teinte d'une caisse (couleur de ses « ? », de ses rayons et de sa bande) : un jeton existant de css/tokens.css.
 const TEINTE = /^--(menu|rarete)-[a-z0-9-]{1,40}$/;

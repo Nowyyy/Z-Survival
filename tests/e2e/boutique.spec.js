@@ -174,7 +174,7 @@ test.describe('Boutique (E3-1)', () => {
       await expect(page.locator('.e3-offre')).toHaveCount(6);
       expect(await page.locator('#menu-boutique-defile').evaluate((n) => [getComputedStyle(n).overflowY, n.scrollHeight > n.clientHeight])).toEqual(['auto', true]);
       // Retour du propriétaire : toutes les raretés dans chaque caisse ; la carte donne la part des plus rares (et une barre de répartition décorative).
-      const CONTENUS = { ravitaillement: 'Un objet, toutes raretésÉpique ou mieux : 4\u00a0%', militaire: 'Un objet, toutes raretésÉpique ou mieux : 10\u00a0%', elite: 'Un objet, toutes raretésÉpique ou mieux : 45\u00a0%', recrues: 'Un personnage au hasardNouveau : débloqué · déjà obtenu : +1 niveau', tenues: 'Une tenue, toutes raretésÉpique ou mieux : 5\u00a0%' };
+      const CONTENUS = { ravitaillement: 'Un objet, toutes raretésÉpique ou mieux : 4\u00a0%', militaire: 'Un objet, toutes raretésÉpique ou mieux : 10\u00a0%', elite: 'Un objet, toutes raretésÉpique ou mieux : 45\u00a0%', recrues: 'Un personnage au hasardNouveau personnage : 40\u00a0%', veterans: 'Un personnage au hasardNouveau personnage : 70\u00a0%', legendes: 'Un personnage au hasardNouveau personnage : 92\u00a0%', tenues: 'Une tenue, toutes raretésÉpique ou mieux : 5\u00a0%', mode: 'Une tenue, toutes raretésÉpique ou mieux : 13\u00a0%', couture: 'Une tenue, toutes raretésÉpique ou mieux : 45\u00a0%' };
       for (const c of caisses) {
         const carte = page.locator(`.e3-carte[data-caisse="${c.id}"]`);
         await carte.scrollIntoViewIfNeeded();
@@ -553,12 +553,15 @@ test.describe('barre d\'onglets (lot 8e)', () => {
       await expect(page.locator('#menu-onglet-event')).toBeDisabled();
       await expect(page.locator('#menu-onglet-event')).toHaveClass(/menu-ruban/);
       await expect(page.locator('#menu-onglet-event .e8-onglet-goutte')).toHaveCount(0);
-      // Retour du propriétaire : sang sur la barre (traînée en haut, coulures, taches), jamais sous un libellé ni une icône.
-      await expect(page.locator('.e8-onglets-bande')).toHaveCount(1);
-      expect(await page.locator('.e8-onglets-sang .menu-coulure').count()).toBeGreaterThanOrEqual(8);
+      // Retours du propriétaire : coulures seulement sur l'onglet touché (traînée et trois coulures, ici Infini), aucune ailleurs ; taches séchées
+      // permanentes ; jamais sous un libellé ni une icône.
+      await expect(page.locator('.e8-onglets-sang .menu-coulure')).toHaveCount(0);
+      await expect(page.locator('#menu-onglet-infini .e8-onglet-bande')).toBeVisible();
+      await expect(page.locator('#menu-onglet-infini .e8-onglet-coulure')).toHaveCount(3);
+      expect(await page.locator('.e8-onglet-coulure').evaluateAll((ns) => ns.filter((n) => n.getClientRects().length > 0).length)).toBe(3);
       expect(await page.locator('.e8-onglets-tache').count()).toBeGreaterThanOrEqual(4);
       const libelles = await page.locator('.e8-onglet .e8-onglet-nom, .e8-onglet .e8-icone').evaluateAll((ns) => ns.map((n) => { const r = n.getBoundingClientRect(); return { l: r.left, t: r.top, r: r.right, b: r.bottom }; }));
-      const sang = await page.locator('.e8-onglets-sang .menu-coulure, .e8-onglets-tache').evaluateAll((ns) => ns.map((n) => { const r = n.getBoundingClientRect(); return { l: r.left, t: r.top, r: r.right, b: r.bottom }; }));
+      const sang = await page.locator('#menu-onglet-infini .e8-onglet-coulure, .e8-onglets-tache').evaluateAll((ns) => ns.map((n) => { const r = n.getBoundingClientRect(); return { l: r.left, t: r.top, r: r.right, b: r.bottom }; }));
       expect(sang.filter((x) => libelles.some((y) => chevauche(x, y)))).toEqual([]);
       expect((await new AxeBuilder({ page }).include('.e8-onglets').analyze()).violations.map((v) => v.id)).toEqual([]);
     });
@@ -571,14 +574,15 @@ test.describe('barre d\'onglets (lot 8e)', () => {
     expect((await anims('jouer')).filter(([, s]) => s === 'running')).toEqual([]);
     await page.locator('#menu-onglet-boutique').click();
     await expect(page.locator('#menu-onglet-boutique')).toHaveAttribute('aria-current', 'page');
-    expect(await anims('boutique')).toEqual([['e8-onglet-coule', 'running', 1], ['e8-onglet-rebond', 'running', 1]]);
+    const noms = (a) => [...new Set(a.map(([n, st, it]) => `${n} ${st} ${it}`))].sort();
+    expect(noms(await anims('boutique'))).toEqual(['e8-coulure running 1', 'e8-onglet-rebond running 1', 'e8-onglet-verse running 1']); // retour du propriétaire : traînée et coulures versées au clic
     expect(await anims('personnage')).toEqual([]);
     await page.waitForTimeout(1200);
     expect((await anims('boutique')).filter(([, s]) => s !== 'finished')).toEqual([]);
     expect((await styleOnglet(page, 'boutique')).goutte).toBe('block'); // toujours marqué
     await page.locator('#menu-onglet-jouer').click();
     await expect(page.locator('#menu-onglet-jouer')).toHaveAttribute('aria-current', 'page');
-    expect((await anims('jouer')).map(([n, s]) => [n, s])).toEqual([['e8-onglet-coule', 'running'], ['e8-onglet-rebond', 'running']]);
+    expect(noms(await anims('jouer'))).toEqual(['e8-coulure running 1', 'e8-onglet-rebond running 1', 'e8-onglet-verse running 1']);
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.locator('#menu-onglet-infini').click();
     await expect(page.locator('#menu-onglet-infini')).toHaveAttribute('aria-current', 'page');

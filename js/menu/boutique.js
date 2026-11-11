@@ -8,7 +8,7 @@
 // afficherOuverture(resultat) → écran de résultat (E3-4, E3-5 : js/menu/resultat.js). Le prix est affiché, jamais prélevé ; rien n'est écrit.
 import { formatMoney } from '../core/economy.js';
 import { TIRAGES_X10, ajouterCosmetiques, lireCaisses, lireCosmetiques, lireOffres, offresDuJour, partHaute, prixAchat, tirer, tirer10 } from '../core/caisses.js';
-import { ajouterObjets, obtenirPersonnages } from '../core/equipement.js';
+import { ajouterObjets, estDebloque, obtenirPersonnages } from '../core/equipement.js';
 import { fmt } from '../game/texts.js';
 import { el } from './menu.js';
 import { chargerEquipement } from './equipement-etat.js';
@@ -42,7 +42,8 @@ const RUBRIQUE_TEXTES = { offres: 'game.menu.boutique.rubrique.offres', equipeme
 // Caisse mystère (maquette : 150 × 96, rayons au-dessus jusqu'à −10) ; décorative. Couleurs en jetons (css/menu.css), teinte : --e3-teinte.
 // Retour du propriétaire : un dessin par genre de caisse (modele de data/menu/caisses.json) : bois (ravitaillement : planches, coins rivetés), militaire
 // (caisse à munitions en métal : nervures, loquets, poignées), elite (coffre bombé cerclé de la teinte, coins et serrure), recrues (malle et plaques
-// d'identité), tenues (valise à sangles et coins protégés) ; grand « ? » lumineux remonté au milieu de la face (il était trop bas), deux petits.
+// d'identité ; aussi veterans, legendes), tenues (valise à sangles et coins protégés ; aussi mode, couture) ; grand « ? » lumineux au milieu de la
+// face (remonté, puis réduit : retours du propriétaire), deux petits.
 const RIVETS = [[18, 44], [132, 44], [18, 84], [132, 84]];
 const DESSINS = {
   bois: () => [
@@ -69,7 +70,7 @@ const DESSINS = {
     forme('path', { d: 'M14 92 V80 H26 V92 Z M136 92 V80 H124 V92 Z' }, 'e3-coin-or'),
     forme('rect', { x: 68, y: 39, width: 14, height: 13, rx: 2 }, 'e3-coin-or'),
   ],
-  recrues: () => [
+  malle: () => [
     forme('rect', { x: 12, y: 36, width: 126, height: 56, rx: 2 }, 'e3-malle'),
     forme('path', { d: 'M12 50 H138 M12 82 H138' }, 'e3-malle-bande'),
     forme('rect', { x: 8, y: 26, width: 134, height: 12, rx: 2 }, 'e3-malle-couvercle'),
@@ -78,7 +79,7 @@ const DESSINS = {
     forme('rect', { x: 114, y: 52, width: 11, height: 16, rx: 4, transform: 'rotate(-12 119 60)' }, 'e3-plaque'),
     forme('rect', { x: 124, y: 56, width: 11, height: 16, rx: 4, transform: 'rotate(10 129 64)' }, 'e3-plaque'),
   ],
-  tenues: () => [
+  valise: () => [
     forme('path', { d: 'M58 34 V25 Q75 18 92 25 V34' }, 'e3-anse'),
     forme('rect', { x: 12, y: 34, width: 126, height: 58, rx: 9 }, 'e3-valise'),
     forme('rect', { x: 12, y: 62, width: 126, height: 4 }, 'e3-bande'),
@@ -90,15 +91,18 @@ const DESSINS = {
   ],
 };
 // Places des « ? » par dessin : grand (y de la ligne de base), petits (x, x, y).
-const POINTS = { bois: [74, 34, 116, 62], militaire: [74, 44, 106, 64], elite: [79, 26, 124, 72], recrues: [74, 36, 98, 64], tenues: [76, 25, 125, 58] };
+const POINTS = { bois: [70, 34, 116, 62], militaire: [70, 44, 106, 64], elite: [75, 26, 124, 72], malle: [70, 36, 98, 64], valise: [72, 25, 125, 58] };
+// Retour du propriétaire : trois caisses de personnages et trois de tenues ; même forme (malle, valise) dans d'autres couleurs (css/menu.css).
+const FORMES = { bois: 'bois', militaire: 'militaire', elite: 'elite', recrues: 'malle', veterans: 'malle', legendes: 'malle', tenues: 'valise', mode: 'valise', couture: 'valise' };
 export function caisseSvg(modele = 'bois') {
-  const m = DESSINS[modele] ? modele : 'bois';
-  const [y, x1, x2, y2] = POINTS[m];
+  const m = FORMES[modele] ? modele : 'bois';
+  const f = FORMES[m];
+  const [y, x1, x2, y2] = POINTS[f];
   const svg = forme('svg', { viewBox: '0 -10 150 106', 'aria-hidden': 'true', focusable: 'false', preserveAspectRatio: 'xMidYMax meet', 'data-modele': m }, `e3-caisse e3-caisse-${m}`);
   svg.append(
     groupe('e3-rayons', forme('path', { d: 'M40 30 L20 -6 L55 -6 Z M75 30 L66 -10 L84 -10 Z M110 30 L95 -6 L130 -6 Z' })),
     groupe('e3-tremble', groupe('e3-flotte',
-      ...DESSINS[m](),
+      ...DESSINS[f](),
       // Grand « ? » lumineux : un halo de la teinte (trait large et transparent, sans filtre) sous le « ? » clair ; il pulse (e3-lueur).
       groupe('e3-lueur', point(75, y, 'e3-q e3-q-halo', '?'), point(75, y, 'e3-q', '?')),
       point(x1, y2, 'e3-q e3-q-petit', '?'),
@@ -221,8 +225,16 @@ export async function ecranBoutique({ t, bandeau, root, rootDialogue, surVue = (
     const resume = el('span', ['e3-carte-resume']);
     const raretes = el('span', ['e3-carte-raretes']);
     if (c.type === 'personnage') {
+      // Retour du propriétaire (trois caisses de personnages) : ce qui change d'une caisse à l'autre, c'est la chance d'un personnage nouveau
+      // (encore verrouillé) ; recalculée après chaque achat (un personnage obtenu ne compte plus).
       resume.textContent = t('game.menu.boutique.contenu.personnage');
-      raretes.textContent = t('game.menu.boutique.contenu.personnage.regle');
+      const rendre = () => {
+        const etat = eq.etat();
+        const n = c.chances.filter((x) => !estDebloque(etat, cat.personnages.find((p) => p.id === x.personnage))).reduce((s2, x) => s2 + x.pourcent, 0);
+        raretes.textContent = n > 0 ? fmt(t('game.menu.boutique.contenu.nouveau'), { n: pourcentTexte(Math.round(n * 100) / 100) }) : t('game.menu.boutique.contenu.nouveau.aucun');
+      };
+      rendre();
+      eq.abonner(rendre);
       contenu.append(resume, raretes);
       return contenu;
     }
