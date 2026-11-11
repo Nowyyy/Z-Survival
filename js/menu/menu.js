@@ -9,6 +9,7 @@
 import { formatMoney } from '../core/economy.js';
 import { basculerMenu, choisirOnglet, creerEtatMenu, ECRANS_PLEINS, fermerEcran, fermerMenu, lienExterne, lireMondes, lireOptionDemarrage, lireRecord, nouveauteNonLue, ONGLETS, ouvrirEcran, premierJouable } from '../core/menu-etat.js';
 import { ecranJouer } from './jouer.js';
+import { gouttePath } from '../logo.js';
 import { fmt, loadDict } from '../game/texts.js';
 import { graphicsReglages, pageSearch } from '../game/graphics-boot.js';
 import { createRepository } from '../save/index.js';
@@ -51,6 +52,37 @@ export function icone(nom, classe = 'e8-icone') {
   return svg;
 }
 
+// Coulures du bandeau (lot 8d, retours du propriétaire : « comme celles du chargement », « à chaque ouverture d'un onglet ») : trois gouttes dessinées
+// comme celles du logo (js/logo.js, gouttePath : col qui s'affine, renflement arrondi, bord dans l'ombre, reflet), qui s'allongent à chaque affichage
+// de l'écran (e8-coulure : l'animation repart quand la section réapparaît) ; une petite goutte se forme au bout de la plus longue et tombe un peu
+// (e8-goutte), sans atteindre le bloc suivant. Chaque goutte : vue 12 × h (unités = var(--u)), haut = bas du bandeau ; couleurs en jetons (css/menu.css).
+export const COULURES_BANDEAU = Object.freeze([
+  Object.freeze({ x: 14, w: 5, l: 10, b: 2.6, h: 13 }),
+  Object.freeze({ x: 47, w: 6.5, l: 14.5, b: 3.2, h: 18 }),
+  Object.freeze({ x: 82, w: 4, l: 6, b: 2.2, h: 8.5 }),
+]);
+const svgEl = (tag, attrs, classe) => {
+  const n = document.createElementNS(SVG, tag);
+  for (const [k, v] of Object.entries(attrs)) n.setAttribute(k, String(v));
+  if (classe) n.setAttribute('class', classe);
+  return n;
+};
+function goutteBandeau(c, i) {
+  const svg = svgEl('svg', { viewBox: `0 0 12 ${c.h}`, 'aria-hidden': 'true', focusable: 'false' }, `menu-coulure menu-coulure-${i + 1}`);
+  svg.style.setProperty('--e8-x', `${c.x}%`);
+  svg.style.setProperty('--e8-h', String(c.h));
+  const flux = svgEl('g', {}, 'menu-coulure-flux');
+  flux.style.setProperty('--e8-l', String(c.h));
+  flux.append(
+    svgEl('path', { d: gouttePath({ cx: 6, w: c.w, l: c.l, b: c.b }) }, 'menu-coulure-corps'),
+    svgEl('path', { d: `M${6 + c.w * 0.4} 0L${6 + c.w * 0.38} ${c.l * 0.45}C${6 + c.w * 0.3} ${c.l * 0.7} ${6 + c.b * 0.95} ${c.l - c.b} ${6 + c.b * 0.8} ${c.l + c.b * 0.4}` }, 'menu-coulure-ombre'),
+    svgEl('path', { d: `M${6 - c.w * 0.18} 1L${6 - c.w * 0.16} ${c.l * 0.5}` }, 'menu-coulure-reflet'),
+    svgEl('ellipse', { cx: 6 - c.b * 0.38, cy: c.l - c.b * 0.25, rx: c.b * 0.3, ry: c.b * 0.48 }, 'menu-coulure-brillant'));
+  svg.append(flux);
+  if (i === 1) svg.append(svgEl('circle', { cx: 6, cy: c.l + c.b * 0.6, r: 1.1 }, 'menu-goutte'));
+  return svg;
+}
+
 // Bandeau de titre rouge à coulures (même place sur tous les écrans : bord gauche du contenu, sous l'en-tête) : petit libellé, titre.
 export function bandeau(libelle, titre, id) {
   const b = el('div', ['menu-bandeau']);
@@ -59,7 +91,7 @@ export function bandeau(libelle, titre, id) {
   const h = el('h2', ['menu-bandeau-titre'], { id });
   h.textContent = titre;
   const coulures = el('span', ['menu-bandeau-coulures'], { 'aria-hidden': 'true' });
-  for (const n of [1, 2, 3]) coulures.append(el('span', ['menu-bandeau-coulure', `menu-bandeau-coulure-${n}`]));
+  coulures.append(...COULURES_BANDEAU.map(goutteBandeau));
   b.append(l, h, coulures);
   return b;
 }
@@ -250,6 +282,7 @@ export function creerMenu({ dict, infos = [], liens = {}, solde: montant = 0, re
   // Lot 8b : animations de la scène de l'onglet affiché seulement, et jamais quand la page est cachée (data-anim : off = en pause).
   function animer() {
     for (const [id, scene] of scenes) scene.dataset.anim = id === etat.onglet && etat.ecran !== 'options' && !document.hidden ? 'on' : 'off';
+    box.classList.toggle('e8-pause', document.hidden || lance); // lot 8d : coulures des bandeaux en pause (page cachée, partie lancée)
     // Lot 8d : écran Personnage ou sous-menu affiché (animations e9-*), en pause ailleurs et quand la page est cachée.
     const actif = etat.onglet === 'personnage' && !document.hidden && !lance ? (etat.ecran === null ? 'personnage' : etat.ecran) : null;
     perso?.animer(actif);
@@ -389,6 +422,7 @@ export function creerMenu({ dict, infos = [], liens = {}, solde: montant = 0, re
     document.removeEventListener('fullscreenchange', syncPleinEcran);
     for (const scene of scenes.values()) scene.dataset.anim = 'off';
     perso?.animer(null);
+    box.classList.add('e8-pause');
     let stats;
     try {
       const equipement = await (await import('./equipement-etat.js')).chargerEquipement();

@@ -13,18 +13,18 @@
   inset: 0;
   pointer-events: none;
   background:
-    repeating-linear-gradient(to bottom, var(--menu-ligne) 0 1px, transparent 1px 3px),
+    repeating-linear-gradient(to bottom, var(--e8-ligne) 0 1px, transparent 1px 3px),
     radial-gradient(circle, var(--menu-grain) 0.6px, transparent 0.8px) 0 0 / 3px 3px,
     radial-gradient(circle, var(--menu-grain) 0.6px, transparent 0.8px) 1px 2px / 5px 7px;
 }
 
 /* Décor de nuit (E7 et onglet Jouer). */
 .menu-lune {
-  fill: var(--menu-lune);
+  fill: var(--e8-lune);
 }
 
 .menu-lune-halo {
-  fill: var(--menu-lune-halo);
+  fill: var(--e8-lune-halo);
 }
 
 .menu-batiment {
@@ -672,28 +672,71 @@
   height: 0;
 }
 
-.menu-bandeau-coulure {
+/* Coulures (lot 8d, retours du propriétaire) : trois gouttes dessinées comme celles du logo de l'écran de chargement (js/menu/menu.js), qui
+   s'allongent à chaque affichage de l'écran (comme e7-coulure) ; petite goutte au bout de la plus longue, qui tombe de quelques unités et s'efface avant
+   le bloc suivant. En pause quand la page est cachée ou la partie lancée (.e8-pause) ; aucune animation sous prefers-reduced-motion (gouttes à leur
+   longueur finale, petite goutte cachée). */
+.menu-coulure {
   position: absolute;
   top: 0;
-  width: calc(5 * var(--u));
-  min-width: 3px;
-  border-radius: 0 0 4px 4px;
-  background: var(--menu-rouge);
+  left: var(--e8-x);
+  width: calc(12 * var(--u));
+  height: calc(var(--e8-h) * var(--u));
+  margin-left: calc(-6 * var(--u));
+  overflow: hidden;
 }
 
-.menu-bandeau-coulure-1 {
-  left: 14%;
-  height: calc(12 * var(--u));
+.menu-coulure-corps,
+.menu-goutte {
+  fill: var(--menu-rouge);
 }
 
-.menu-bandeau-coulure-2 {
-  left: 47%;
-  height: calc(18 * var(--u));
+.menu-coulure-ombre {
+  fill: none;
+  stroke: var(--menu-coulure-sombre);
+  stroke-width: 0.9;
+  stroke-linecap: round;
 }
 
-.menu-bandeau-coulure-3 {
-  left: 82%;
-  height: calc(8 * var(--u));
+.menu-coulure-reflet {
+  fill: none;
+  stroke: var(--menu-coulure-reflet);
+  stroke-width: 0.6;
+  stroke-linecap: round;
+  opacity: 0.8;
+}
+
+.menu-coulure-brillant {
+  fill: var(--menu-coulure-reflet);
+}
+
+.menu-coulure-flux {
+  animation: e8-coulure 1.1s cubic-bezier(0.55, 0, 0.8, 0.6) 0.15s both;
+}
+
+.menu-coulure-1 .menu-coulure-flux { animation-duration: 0.9s; }
+.menu-coulure-3 .menu-coulure-flux { animation-duration: 0.75s; animation-delay: 0.3s; }
+
+.menu-goutte {
+  opacity: 0;
+  animation: e8-goutte 5s ease-in 1.4s infinite;
+}
+
+.e8-pause .menu-bandeau-coulures * {
+  animation-play-state: paused;
+}
+
+@keyframes e8-coulure {
+  from { transform: translateY(calc(var(--e8-l) * -1px)); }
+  to { transform: translateY(0); }
+}
+
+/* Une goutte en 5 s : elle grossit au bout de la coulure, tombe de 2 et s'efface (bien moins de 3 changements par seconde). */
+@keyframes e8-goutte {
+  0%, 60% { opacity: 0; transform: translateY(0); }
+  70% { opacity: 1; transform: translateY(0); }
+  92% { opacity: 1; transform: translateY(1.5px); }
+  100% { opacity: 0; transform: translateY(2px); }
 }
 
 /* Bouton peint : zone rouge pleine, bordure sombre, ombre portée basse. */
@@ -2005,7 +2048,6 @@
 
 .e9-scene[data-anim='off'] *,
 .e9:not(.e9-anime) .e9-perso-bouton *,
-.e9:not(.e9-anime) .e9-coulures *,
 .e9-sous:not(.e9-anime) * {
   animation-play-state: paused;
 }
@@ -2938,66 +2980,4 @@
   .e9-capacite {
     top: calc(246 * var(--u));
   }
-}
-
-/* Coulures du bandeau des écrans du Personnage (js/menu/personnage.js, couluresBandeau) : gouttes dessinées comme celles du logo de l'écran de
-   chargement, qui s'allongent à l'affichage (comme e7-coulure) ; petite goutte au bout de la plus longue, qui tombe de quelques unités et s'efface
-   avant le bloc suivant (20 sous le bandeau). Aucune animation sous prefers-reduced-motion (gouttes à leur longueur finale, petite goutte cachée). */
-.e9-coulure {
-  position: absolute;
-  top: 0;
-  left: var(--e9-x);
-  width: calc(12 * var(--u));
-  height: calc(var(--e9-h) * var(--u));
-  margin-left: calc(-6 * var(--u));
-  overflow: hidden;
-}
-
-.e9-coulure-corps,
-.e9-goutte {
-  fill: var(--menu-rouge);
-}
-
-.e9-coulure-ombre {
-  fill: none;
-  stroke: var(--menu-coulure-sombre);
-  stroke-width: 0.9;
-  stroke-linecap: round;
-}
-
-.e9-coulure-reflet {
-  fill: none;
-  stroke: var(--menu-coulure-reflet);
-  stroke-width: 0.6;
-  stroke-linecap: round;
-  opacity: 0.8;
-}
-
-.e9-coulure-brillant {
-  fill: var(--menu-coulure-reflet);
-}
-
-.e9-coulure-flux {
-  animation: e9-coulure 1.1s cubic-bezier(0.55, 0, 0.8, 0.6) 0.15s both;
-}
-
-.e9-coulure-1 .e9-coulure-flux { animation-duration: 0.9s; }
-.e9-coulure-3 .e9-coulure-flux { animation-duration: 0.75s; animation-delay: 0.3s; }
-
-.e9-goutte {
-  opacity: 0;
-  animation: e9-goutte 5s ease-in 1.4s infinite;
-}
-
-@keyframes e9-coulure {
-  from { transform: translateY(calc(var(--e9-l) * -1px)); }
-  to { transform: translateY(0); }
-}
-
-/* Une goutte en 5 s : elle grossit au bout de la coulure, tombe de 2 et s'efface (bien moins de 3 changements par seconde). */
-@keyframes e9-goutte {
-  0%, 60% { opacity: 0; transform: translateY(0); }
-  70% { opacity: 1; transform: translateY(0); }
-  92% { opacity: 1; transform: translateY(1.5px); }
-  100% { opacity: 0; transform: translateY(2px); }
 }

@@ -14,7 +14,7 @@ const DONNEES = { raretes: lire('data/menu/raretes.json'), objets: lire('data/me
 const { cat, depart } = lireCatalogue(DONNEES);
 // Fonction pure (js/core/equipement.js) : niveaux attendus avec l'équipement de départ ; ?test=1 : sauvegarde en mémoire, vide (base : zéros).
 const ATTENDU = statistiquesEffectives(null, creerEtatEquipement(cat, depart), cat, PARAMS).niveaux;
-const ANIMS_E9 = ['e9-bandana', 'e9-coulure', 'e9-goutte', 'e9-ombre', 'e9-projecteur', 'e9-respire', 'e9-tete', 'e9-viser']; // retour du propriétaire : coulures du bandeau (e9-coulure, e9-goutte)
+const ANIMS_E9 = ['e8-coulure', 'e8-goutte', 'e9-bandana', 'e9-ombre', 'e9-projecteur', 'e9-respire', 'e9-tete', 'e9-viser']; // retour du propriétaire : coulures du bandeau commun (e8-coulure, e8-goutte)
 
 function surveiller(page, baseURL) {
   const problemes = [];
@@ -372,7 +372,7 @@ test.describe('sous-menus Inventaire, Fusion, Personnages (E9-2 à E9-4)', () =>
     expect((await etatSous(page, 'fusion')).places).toEqual(['o5', 'o6', 'o2']);
     await expect(page.locator('#menu-fusion-message')).toHaveText('Fusion possible. Coût : 100');
     await expect(page.locator('#menu-fusion-resultat')).toHaveClass(/is-pret/);
-    expect(await nomsAnims(page, '#menu-ecran-fusion')).toEqual(['e9-coulure', 'e9-etincelle', 'e9-goutte', 'e9-lueur']);
+    expect(await nomsAnims(page, '#menu-ecran-fusion')).toEqual(['e8-coulure', 'e8-goutte', 'e9-etincelle', 'e9-lueur']);
     await page.locator('#menu-fusion-fusionner').click();
     await expect(page.locator('#menu-fusion-annonce')).toHaveText('Fusion réussie : Gilet Peu commun, niveau 3 (porté).');
     const e = await etatPerso(page);
@@ -402,7 +402,7 @@ test.describe('sous-menus Inventaire, Fusion, Personnages (E9-2 à E9-4)', () =>
     await expect(page.locator('#menu-personnages-choisir')).toHaveAttribute('aria-disabled', 'true');
     await expect(page.locator('#menu-personnages-niveau')).toHaveText('Niveau 1 · prochain niveau : 2');
     await expect(page.locator('#menu-personnages-barre')).toHaveAttribute('aria-valuenow', '1');
-    expect(await nomsAnims(page, '#menu-ecran-personnages')).toEqual(['e9-bandana', 'e9-coulure', 'e9-goutte', 'e9-respire', 'e9-tete', 'e9-viser']);
+    expect(await nomsAnims(page, '#menu-ecran-personnages')).toEqual(['e8-coulure', 'e8-goutte', 'e9-bandana', 'e9-respire', 'e9-tete', 'e9-viser']);
     expect(await etats(page, '#menu-ecran-personnages')).toEqual(['running']);
     // Verrouillé : sélectionnable pour sa fiche, ni choisissable ni améliorable.
     await page.locator('#menu-perso-carte-personnage-3').click();
@@ -613,24 +613,47 @@ test.describe('coulures du bandeau au-dessus du bloc suivant', () => {
   }
 });
 
-// Retour du propriétaire : coulures du bandeau « comme celles du chargement » (gouttes du logo, js/logo.js).
-test('coulures du bandeau : trois gouttes dessinées comme celles du logo (renflement, ombre, reflet), allongées à l\'affichage ; immobiles sous prefers-reduced-motion', async ({ page }) => {
-  await ouvrirPersonnage(page);
-  for (const sec of ['#menu-ecran-personnage']) {
-    await expect(page.locator(`${sec} .e9-coulure`)).toHaveCount(3);
-    await expect(page.locator(`${sec} .e9-coulure .e9-coulure-corps`)).toHaveCount(3);
-    await expect(page.locator(`${sec} .e9-coulure .e9-coulure-ombre`)).toHaveCount(3);
-    await expect(page.locator(`${sec} .e9-coulure .e9-coulure-reflet`)).toHaveCount(3);
-    await expect(page.locator(`${sec} .e9-goutte`)).toHaveCount(1);
-    expect(await page.locator(`${sec} .e9-coulure-corps`).first().getAttribute('d')).toMatch(/A[\d.]+ [\d.]+ 0 1 0/); // renflement arrondi (gouttePath)
-    // Même rouge que le bandeau (zone pleine), aucune couleur écrite par le JavaScript.
-    const [corps, fond] = await page.evaluate((s) => [getComputedStyle(document.querySelector(`${s} .e9-coulure-corps`)).fill, getComputedStyle(document.querySelector(`${s} .menu-bandeau`)).backgroundColor], sec);
-    expect(corps).toBe(fond);
-  }
-  await page.locator('#menu-perso-inventaire').click();
-  await expect(page.locator('#menu-ecran-inventaire .e9-coulure')).toHaveCount(3);
-  await page.emulateMedia({ reducedMotion: 'reduce' });
-  expect(await animations(page, '#menu-ecran-inventaire .e9-coulures')).toEqual([]);
-  const t = await page.locator('#menu-ecran-inventaire .e9-coulure-flux').first().evaluate((n) => getComputedStyle(n).transform);
-  expect(['none', 'matrix(1, 0, 0, 1, 0, 0)']).toContain(t); // longueur finale
+// Retours du propriétaire : coulures du bandeau « comme celles du chargement » (gouttes du logo, js/logo.js), sur tous les bandeaux du menu, qui
+// recoulent à chaque ouverture d'un onglet ou d'un écran.
+test.describe('coulures des bandeaux du menu', () => {
+  test('trois gouttes dessinées comme celles du logo (renflement, ombre, reflet), du rouge du bandeau, sur chaque onglet et écran', async ({ page }) => {
+    await ouvrirMenu(page);
+    for (const [ouvreur, sec] of [[null, '#menu-ecran-jouer'], ['#menu-onglet-infini', '#menu-ecran-infini'], ['#menu-onglet-personnage', '#menu-ecran-personnage'], ['#menu-perso-inventaire', '#menu-ecran-inventaire'], ['#menu-onglet-boutique', '#menu-ecran-boutique']]) {
+      if (ouvreur === '#menu-onglet-boutique') await page.keyboard.press('Escape');
+      if (ouvreur) await page.locator(ouvreur).click();
+      await expect(page.locator(sec)).toBeVisible();
+      await expect(page.locator(`${sec} .menu-coulure`), sec).toHaveCount(3);
+      for (const c of ['menu-coulure-corps', 'menu-coulure-ombre', 'menu-coulure-reflet']) await expect(page.locator(`${sec} .${c}`), `${sec} ${c}`).toHaveCount(3);
+      await expect(page.locator(`${sec} .menu-goutte`)).toHaveCount(1);
+      expect(await page.locator(`${sec} .menu-coulure-corps`).first().getAttribute('d')).toMatch(/A[\d.]+ [\d.]+ 0 1 0/); // renflement arrondi (gouttePath)
+      const [corps, fond] = await page.evaluate((s) => [getComputedStyle(document.querySelector(`${s} .menu-coulure-corps`)).fill, getComputedStyle(document.querySelector(`${s} .menu-bandeau`)).backgroundColor], sec);
+      expect(corps, sec).toBe(fond);
+    }
+  });
+
+  test('les gouttes recoulent à chaque ouverture d\'un onglet ; en pause quand la page est cachée ; immobiles sous prefers-reduced-motion', async ({ page }) => {
+    await ouvrirMenu(page);
+    // Temps écoulé de l'allongement des coulures du bandeau d'un écran (ms) ; null s'il n'y en a pas.
+    const temps = (sec) => page.locator(`${sec} .menu-bandeau-coulures`).evaluate((n) => {
+      const a = n.getAnimations({ subtree: true }).filter((x) => x.animationName === 'e8-coulure');
+      return a.length ? Math.max(...a.map((x) => x.currentTime)) : null;
+    });
+    await page.waitForTimeout(1600);
+    expect(await temps('#menu-ecran-jouer')).toBeGreaterThan(1200);
+    for (const [onglet, sec] of [['infini', '#menu-ecran-infini'], ['personnage', '#menu-ecran-personnage'], ['jouer', '#menu-ecran-jouer'], ['infini', '#menu-ecran-infini']]) {
+      await page.locator(`#menu-onglet-${onglet}`).click();
+      await expect(page.locator(sec)).toBeVisible();
+      expect(await temps(sec), `${onglet} : les gouttes repartent du haut`).toBeLessThan(600);
+      await page.waitForTimeout(1300);
+    }
+    await page.evaluate(() => { Object.defineProperty(document, 'hidden', { configurable: true, get: () => true }); document.dispatchEvent(new Event('visibilitychange')); });
+    await expect(page.locator('#e8')).toHaveClass(/e8-pause/);
+    expect(await page.locator('#menu-ecran-infini .menu-goutte').evaluate((n) => n.getAnimations().map((a) => a.playState))).toEqual(['paused']);
+    await page.evaluate(() => { Object.defineProperty(document, 'hidden', { configurable: true, get: () => false }); document.dispatchEvent(new Event('visibilitychange')); });
+    await expect(page.locator('#e8')).not.toHaveClass(/e8-pause/);
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    expect((await animations(page, '#e8')).filter(([n]) => n === 'e8-coulure' || n === 'e8-goutte')).toEqual([]);
+    const t = await page.locator('#menu-ecran-infini .menu-coulure-flux').first().evaluate((n) => getComputedStyle(n).transform);
+    expect(['none', 'matrix(1, 0, 0, 1, 0, 0)']).toContain(t); // longueur finale
+  });
 });
