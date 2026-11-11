@@ -7,6 +7,7 @@
 // Le record du mode infini n'est pas encore gardé (lot 8h) : « Record : — ». Couleurs : classes de css/menu.css ; animations « e8-infini-* ».
 import { choisirCarte, creerCarrousel, lireClassement } from '../core/menu-etat.js';
 import { fmt } from '../game/texts.js';
+import { ajusterBloc, ajusterTextes } from './menu.js';
 
 const SVG = 'http://www.w3.org/2000/svg';
 
@@ -122,6 +123,7 @@ export async function ecranInfini({ t, mondes, bandeau, jouer }) {
       carrousel = choisirCarte(carrousel, mondes, m.id);
       synchroniser();
     });
+    ajusterTextes(carte, [libelle, nom, detail]); // retour du propriétaire : cartes de taille fixe, textes réduits s'ils sont trop longs
     cartes.set(m.id, { carte, libelle, monde: m });
     item.append(carte);
     rangee.append(item);
@@ -178,6 +180,7 @@ export async function ecranInfini({ t, mondes, bandeau, jouer }) {
       carte.classList.toggle('e8-infini-carte-choisie', choisie);
       if (monde.jouable) carte.setAttribute('aria-pressed', String(choisie));
       libelle.textContent = fmt(t(choisie ? 'game.menu.infini.choisie' : monde.jouable ? 'game.menu.monde' : 'game.menu.infini.verrouillee'), { n: monde.numero });
+      ajusterBloc(carte);
     }
     const m = cartes.get(carrousel.choisi)?.monde;
     sousTitre.firstChild.textContent = `${m?.nom || fmt(t('game.menu.monde'), { n: m?.numero ?? 1 })} · `;
