@@ -299,6 +299,22 @@ export function fusionner(etat, cat, places) {
   return { etat: geler(etat, { objets: Object.freeze([...etat.objets.filter((o) => !uids.includes(o.uid)), nouveau]), porte: Object.freeze(porte), suivant: n + 1 }), uid };
 }
 
+// Lot 8e : objets obtenus dans une caisse de la Boutique (js/core/caisses.js) : un exemplaire de niveau 1 par objet tiré { id, rarete } connu du
+// catalogue, uid « c<N> » numéroté par le même compteur que les fusions (jamais un uid existant), ajouté à la fin de l'inventaire, non porté ; même
+// modèle que ceux du lot 8d (équiper, améliorer, fusionner). → { etat, uids } ; liste vide ou un objet inconnu : refusé, { etat (le même), uids: [] }.
+export function ajouterObjets(etat, cat, tires) {
+  const liste = Array.isArray(tires) ? tires : [];
+  if (liste.length === 0 || liste.length > 100 || !liste.every((o) => estObjet(o) && cat.objets.get(o.id)?.raretes[o.rarete])) return { etat, uids: [] };
+  let n = etat.suivant;
+  const nouveaux = [];
+  for (const o of liste) {
+    while (etat.objets.some((x) => x.uid === `c${n}`)) n += 1;
+    nouveaux.push(Object.freeze({ uid: `c${n}`, id: o.id, rarete: o.rarete, niveau: 1 }));
+    n += 1;
+  }
+  return { etat: geler(etat, { objets: Object.freeze([...etat.objets, ...nouveaux]), suivant: n }), uids: nouveaux.map((o) => o.uid) };
+}
+
 // Objets compatibles : ceux de même id et même rareté que le premier placé (placés compris) ; sans objet placé, tous les fusionnables.
 export function compatibles(etat, cat, places) {
   const premier = (Array.isArray(places) ? places : []).map((u) => objetDe(etat, u)).find(Boolean);

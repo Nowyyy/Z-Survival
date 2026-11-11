@@ -280,6 +280,15 @@
       "Essai : objets, prix, personnages et capacités sont des exemples ; rien n'est encore gardé (retour au menu = état de départ) et aucun prix n'est prélevé avant la sauvegarde v2.",
       "La première carte s'appelle désormais « Night of the Undead » ; le menu à trois barres montre la version du jeu (avec « dev » ou « recette ») et une entrée Discord à ses couleurs.",
       "Les règles du jeu ne changent pas ; une partie lancée directement (adresses de test) est identique."
+    ] },
+    { "name": "lot-8e", "version": "v0.8", "date": "2026-11-11", "titre": "Boutique : caisses mystère et résultats", "points": [
+      "Nouvel onglet Boutique : trois caisses mystère animées (ravitaillement, militaire, élite), chacune avec ses raretés possibles et ses prix pour une ou dix ouvertures.",
+      "« Voir les chances » affiche, pour chaque caisse, le pourcentage de chaque rareté et les objets possibles.",
+      "Ouvrir une caisse tire un objet selon ces chances (dix tirages indépendants pour ×10, sans garantie) et montre le résultat : une carte, ou dix cartes avec un résumé ; « Rouvrir » recommence.",
+      "Les objets obtenus vont dans l'inventaire du Personnage : ils se portent, s'améliorent, se fusionnent et comptent dans les statistiques de la partie.",
+      "Barre d'onglets : « Histoire » n'est plus rouge en permanence ; l'onglet affiché est une planche plus claire et relevée, avec une goutte de sang qui coule à la sélection.",
+      "Essai : caisses, prix et chances sont provisoires ; aucun prix n'est prélevé et rien n'est encore gardé avant la sauvegarde v2.",
+      "Les règles du jeu ne changent pas ; une partie lancée directement (adresses de test) est identique."
     ] }
   ]
 }

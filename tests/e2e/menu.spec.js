@@ -109,19 +109,20 @@ test.describe('menu principal (E8)', () => {
     });
   }
 
-  test('onglets : Jouer actif au départ (aria-current et trait), changement d\'onglet, « Bientôt » ; Event verrouillé (cadenas et « Prochainement », « Prochainement : contenu verrouillé », non activable)', async ({ page }) => {
+  test('onglets : Jouer actif au départ (aria-current et goutte), changement d\'onglet, Boutique (lot 8e ; avant : « Bientôt ») ; Event verrouillé (cadenas et « Prochainement », « Prochainement : contenu verrouillé », non activable)', async ({ page }) => {
     await ouvrirMenu(page);
     await expect(page.locator('#menu-onglet-jouer')).toHaveAttribute('aria-current', 'page');
     await expect(page.locator('.e8-onglets [aria-current]')).toHaveCount(1);
     await expect(page.locator('.e8-onglets button')).toHaveText(['Boutique', 'Personnage', 'Histoire', 'Infini', 'Prochainement']); // lot 8d, retour du propriétaire (avant : « JOUER », cadenas seul)
-    const trait = (sel) => page.locator(sel).evaluate((n) => getComputedStyle(n, '::after').content);
-    expect(await trait('#menu-onglet-jouer')).toBe('""');
+    // Lot 8e (demande du propriétaire ; avant : trait rouge ::after) : onglet affiché marqué par sa goutte de sang (forme), visible sur lui seul.
+    const trait = (sel) => page.locator(`${sel} .e8-onglet-goutte`).evaluate((n) => getComputedStyle(n).display);
+    expect(await trait('#menu-onglet-jouer')).toBe('block');
     await page.locator('#menu-onglet-boutique').click();
     await expect(page.locator('#menu-onglet-boutique')).toHaveAttribute('aria-current', 'page');
     await expect(page.locator('#menu-onglet-jouer')).not.toHaveAttribute('aria-current', /.*/);
-    expect([await trait('#menu-onglet-boutique'), await trait('#menu-onglet-jouer')]).toEqual(['""', 'none']);
+    expect([await trait('#menu-onglet-boutique'), await trait('#menu-onglet-jouer')]).toEqual(['block', 'none']);
     await expect(page.getByRole('heading', { name: 'Boutique' })).toBeVisible();
-    await expect(page.locator('#menu-ecran-boutique')).toContainText('Bientôt');
+    await expect(page.locator('#menu-ecran-boutique .menu-bandeau-libelle')).toHaveText('Ravitaillement'); // lot 8e (avant : « Bientôt »)
     await expect(page.locator('#menu-jouer')).toBeHidden();
     const event = page.locator('#menu-onglet-event');
     await expect(event).toBeDisabled();

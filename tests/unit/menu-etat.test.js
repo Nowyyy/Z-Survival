@@ -235,12 +235,12 @@ describe('hygiène du menu (lot 8a)', () => {
     expect(html).not.toMatch(/css\/menu\.css/); // feuille chargée par demarrage.js en mode menu seulement
   });
 
-  it('animations : noms propres à chaque écran (e7-*, e8-*, lot 8d : e9-*), chacune définie une fois et utilisée ; coupées sous prefers-reduced-motion', () => {
+  it('animations : noms propres à chaque écran (e7-*, e8-*, lot 8d : e9-*, lot 8e : e3-*), chacune définie une fois et utilisée ; coupées sous prefers-reduced-motion', () => {
     const defs = [...strip(css).matchAll(/@keyframes\s+([\w-]+)/g)].map((m) => m[1]);
     expect(defs.length).toBeGreaterThan(0);
     expect(new Set(defs).size).toBe(defs.length);
     for (const d of defs) {
-      expect(d, d).toMatch(/^e[789]-/);
+      expect(d, d).toMatch(/^e[3789]-/);
       expect(strip(css).split(`@keyframes ${d}`).join(''), d).toMatch(new RegExp(`animation:\\s*${d}\\b`));
     }
     const autres = readdirSync('css').filter((f) => f !== 'menu.css' && f.endsWith('.css')).flatMap((f) => [...read(`css/${f}`).matchAll(/@keyframes\s+([\w-]+)/g)].map((m) => m[1]));

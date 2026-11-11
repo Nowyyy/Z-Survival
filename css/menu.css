@@ -1487,7 +1487,9 @@
   color: var(--menu-texte-doux);
 }
 
-/* E8-2 : barre d'onglets en planches clouées ; Jouer au centre (colonne plus large, rouge) ; onglet actif : texte plus clair et trait rouge. */
+/* E8-2 : barre d'onglets en planches clouées ; Histoire au centre (colonne plus large, police de titre). Lot 8e (demande du propriétaire) : plus de
+   rouge permanent sur Histoire ; onglet affiché : planche plus claire et relevée (rebord sombre en bas, contenu remonté), libellé blanc, goutte de
+   sang qui pend du haut ; à la sélection, l'icône (ou le libellé d'Histoire) rebondit une fois et la goutte coule une fois. */
 .e8-onglets {
   position: relative;
   z-index: 2;
@@ -1532,29 +1534,52 @@
 }
 
 .e8-onglet[aria-current="page"] {
-  color: var(--menu-texte);
-}
-
-.e8-onglet[aria-current="page"]::after {
-  content: "";
-  position: absolute;
-  right: 22%;
-  bottom: calc(5 * var(--u));
-  left: 22%;
-  height: 3px;
-  background: var(--menu-rouge-trait);
+  padding-bottom: calc(12 * var(--u));
+  background-color: var(--menu-bois-clair);
+  box-shadow: inset 0 calc(-6 * var(--u)) 0 var(--menu-bois-sombre), inset 0 2px 0 var(--menu-panneau-bois-texte);
+  color: var(--menu-panneau-atteint-texte);
 }
 
 .e8-onglet-jouer {
-  background-color: var(--menu-rouge);
-  color: var(--menu-texte);
   font-family: var(--font-display);
   font-size: max(18px, calc(24 * var(--u)));
   letter-spacing: 0.06em;
 }
 
-.e8-onglet-jouer[aria-current="page"]::after {
-  background: var(--menu-bord);
+.e8-onglet-goutte {
+  position: absolute;
+  top: 0;
+  left: 22%;
+  display: none;
+  width: calc(12 * var(--u));
+  height: calc(19 * var(--u));
+  margin-left: calc(-6 * var(--u));
+  overflow: hidden;
+}
+
+.e8-onglet[aria-current="page"] .e8-onglet-goutte {
+  display: block;
+}
+
+.e8-onglet[aria-current="page"] .e8-onglet-goutte-flux {
+  animation: e8-onglet-coule 0.9s cubic-bezier(0.55, 0, 0.8, 0.6) both;
+}
+
+.e8-onglet[aria-current="page"] .e8-icone-onglet,
+.e8-onglet-jouer[aria-current="page"] .e8-onglet-nom {
+  animation: e8-onglet-rebond 0.5s ease-out;
+}
+
+@keyframes e8-onglet-coule {
+  from { transform: translateY(-19px); }
+  to { transform: translateY(0); }
+}
+
+/* Un rebond, une fois : monte de 5 et retombe (0,5 s). */
+@keyframes e8-onglet-rebond {
+  0%, 100% { transform: translateY(0); }
+  40% { transform: translateY(calc(-5 * var(--u))); }
+  70% { transform: translateY(calc(1 * var(--u))); }
 }
 
 .e8-onglet-event {
@@ -3092,4 +3117,580 @@
     width: max(52px, calc(70 * var(--u)));
     height: max(52px, calc(70 * var(--u)));
   }
+}
+
+/* ---------------------------------------------------------------------------------------------------------------------------------------------- */
+/* Lot 8e : Boutique (E3-1, maquette Caisses.html), chances (E3-6), résultats ×1 et ×10 (E3-4, E3-5 ; Resultat1.html, Resultat10.html). js/menu/boutique.js,
+   chances.js, resultat.js. Unité réglée comme les écrans e9 (encoche : largeur laissée par les marges sûres). Couleurs : jetons --menu-*, --rarete-*,
+   teinte de la caisse (--e3-teinte) et rareté d'un objet (--e3-rarete) posées par le JavaScript en var(--jeton). Animations e3-*, en pause hors de
+   l'écran et page cachée (data-anim), coupées sous prefers-reduced-motion (règle .e8 * plus haut). */
+.e3 {
+  --u: clamp(0.6px, min(calc((100vw - var(--e8-gauche) - var(--e8-droite) + 32px) / 932), calc(100vh / 430)), 2.4px);
+  --e3-sous-bandeau: calc(12 * var(--u) + 10 * var(--u) + max(11px, calc(12 * var(--u))) * 1.2 + max(17px, calc(20 * var(--u))) * 1.15 + 20 * var(--u));
+  --e3-teinte: var(--menu-panneau-bois-texte);
+  --e3-rarete: var(--rarete-commun);
+  color: var(--menu-texte);
+  font-family: var(--font-sans);
+}
+
+:where(.e3) button {
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+.e3[data-anim='off'] *,
+.e8-pause .e3 * {
+  animation-play-state: paused !important;
+}
+
+.e8-ecran.e3-boutique {
+  isolation: isolate;
+  background: var(--menu-options-fond);
+}
+
+.e3-fond {
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.e3-filet {
+  fill: none;
+  stroke: var(--menu-options-trait);
+  stroke-width: 2;
+}
+
+.e3-fissure {
+  fill: none;
+  stroke: var(--menu-scene-sol);
+  stroke-width: 2;
+}
+
+.e3-tache {
+  fill: var(--menu-coulure-sombre);
+  opacity: 0.6;
+}
+
+/* Mention en pointillés, en haut à droite (maquette : 32 du bord, haut 70, 360 au plus ; plus large sur un petit écran pour tenir en deux lignes). */
+.e3-note {
+  position: absolute;
+  top: calc(20 * var(--u));
+  right: var(--e8-droite);
+  box-sizing: border-box;
+  max-width: min(max(calc(360 * var(--u)), 34em), calc(100% - var(--e8-gauche) - var(--e8-droite) - max(160px, calc(176 * var(--u))) - 24 * var(--u)));
+  margin: 0;
+  padding: calc(6 * var(--u)) calc(12 * var(--u));
+  border: 1px dashed var(--menu-e9-stats-bord);
+  color: var(--menu-e9-texte-doux);
+  font-size: max(12px, calc(13 * var(--u)));
+  line-height: 1.35;
+  text-align: right;
+}
+
+/* Trois cartes côte à côte, 20 sous le bandeau (place de ses coulures) ; jusqu'à 4 du bas ; centrées dans la hauteur libre sur un grand écran. */
+.e3-cartes {
+  --e3-h: min(calc(300 * var(--u)), calc(100% - var(--e3-sous-bandeau) - 4 * var(--u)));
+  position: absolute;
+  top: calc(var(--e3-sous-bandeau) + max(0px, (100% - var(--e3-sous-bandeau) - 4 * var(--u) - 300 * var(--u)) / 2));
+  right: var(--e8-droite);
+  left: var(--e8-gauche);
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: calc(16 * var(--u));
+  height: var(--e3-h);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.e3-carte {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: calc(3 * var(--u));
+  box-sizing: border-box;
+  min-height: 0;
+  padding: calc(6 * var(--u)) calc(12 * var(--u)) calc(2 * var(--u));
+  border: 3px solid var(--menu-scene-route-trait);
+  background: var(--menu-e9-case);
+}
+
+.e3-carte-bande {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: calc(4 * var(--u));
+  background: var(--e3-teinte);
+}
+
+/* Caisse : prend la hauteur qui reste (au plus 1,15 fois la maquette), jamais moins de 40 px. */
+.e3-caisse {
+  flex: 1 1 0;
+  width: 100%;
+  min-height: 40px;
+  max-height: calc(106 * var(--u));
+}
+
+.e3-rayons {
+  fill: var(--e3-teinte);
+  opacity: 0.15;
+  animation: e3-rayons 2.4s ease-in-out var(--e3-decalage, 0s) infinite;
+}
+
+.e3-tremble {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  animation: e3-tremble 4s ease-in-out var(--e3-decalage, 0s) infinite;
+}
+
+.e3-flotte {
+  animation: e3-flotte 2.4s ease-in-out var(--e3-decalage, 0s) infinite;
+}
+
+.e3-bois {
+  fill: var(--menu-bois);
+  stroke: var(--menu-bois-sombre);
+  stroke-width: 3;
+}
+
+.e3-joint {
+  fill: none;
+  stroke: var(--menu-bois-sombre);
+  stroke-width: 2;
+}
+
+.e3-couvercle {
+  fill: var(--menu-bois-clair);
+  stroke: var(--menu-bois-sombre);
+  stroke-width: 3;
+}
+
+.e3-bande {
+  fill: var(--e3-teinte);
+  opacity: 0.8;
+}
+
+.e3-rivet {
+  fill: var(--menu-clou);
+}
+
+.e3-q {
+  fill: var(--menu-texte);
+  font-family: var(--font-display);
+  font-size: 40px;
+}
+
+.e3-q-halo {
+  fill: var(--e3-teinte);
+  stroke: var(--e3-teinte);
+  stroke-width: 7;
+  stroke-linejoin: round;
+  opacity: 0.45;
+}
+
+.e3-q-petit {
+  fill: var(--e3-teinte);
+  font-size: 16px;
+  opacity: 0.7;
+}
+
+.e3-lueur {
+  animation: e3-lueur 1.6s ease-in-out var(--e3-decalage, 0s) infinite;
+}
+
+.e3-carte-nom {
+  margin: 0;
+  font-size: max(13px, calc(16 * var(--u)));
+  font-weight: var(--font-weight-bold);
+  line-height: 1.2;
+  text-align: center;
+}
+
+.e3-carte-contenu {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  color: var(--menu-e9-texte-doux);
+  font-size: max(12px, calc(13 * var(--u)));
+  line-height: 1.3;
+  text-align: center;
+}
+
+.e3-carte-raretes {
+  color: var(--menu-texte);
+  font-weight: var(--font-weight-bold);
+}
+
+.e3-carte-actions {
+  display: flex;
+  flex: none;
+  gap: calc(8 * var(--u));
+  width: 100%;
+  margin-top: calc(3 * var(--u));
+}
+
+/* Boutons des caisses et des résultats : rouge peint (Ouvrir ×1, Rouvrir), planche (Ouvrir ×10, Continuer) ; 44 de haut au moins. */
+.e3-ouvrir,
+.e3-action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  min-height: max(var(--menu-cible), calc(44 * var(--u)));
+  box-sizing: border-box;
+  border-radius: 4px;
+  font-family: var(--font-label);
+  letter-spacing: 0.06em;
+  line-height: 1.1;
+}
+
+.e3-ouvrir {
+  flex: 1;
+  flex-direction: column;
+  padding: 0 calc(4 * var(--u));
+  font-size: max(12px, calc(15 * var(--u)));
+}
+
+.e3-ouvrir-prix {
+  font-family: var(--font-sans);
+  font-size: max(11px, calc(11 * var(--u)));
+  letter-spacing: 0;
+}
+
+.e3 .e3-rouge {
+  border: 2px solid var(--menu-coulure);
+  background: var(--menu-rouge-clair);
+  color: var(--menu-texte);
+}
+
+.e3 .e3-rouge:hover {
+  background: var(--menu-rouge);
+}
+
+.e3 .e3-planche {
+  border: 2px solid var(--menu-bois-sombre);
+  background: var(--menu-bois);
+  color: var(--menu-e9-bois-texte);
+}
+
+.e3 .e3-planche:hover {
+  background: var(--menu-bois-clair);
+}
+
+/* « Voir les chances » : lien (souligné, bleu clair de la maquette), cible de 44 de haut. */
+.e3-lien {
+  flex: none;
+  min-height: var(--menu-cible);
+  padding: 0 calc(8 * var(--u));
+  border: 0;
+  background: none;
+  color: var(--menu-exemple);
+  font-size: max(12px, calc(12 * var(--u)));
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+@keyframes e3-flotte {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+
+/* Tremblement bref toutes les 4 s (de 82 à 92 % : quatre oscillations en 0,4 s, une fois par cycle : bien moins de 3 éclats par seconde). */
+@keyframes e3-tremble {
+  0%, 82%, 100% { transform: rotate(0deg); }
+  84% { transform: rotate(-3deg); }
+  86% { transform: rotate(3deg); }
+  88% { transform: rotate(-2deg); }
+  90% { transform: rotate(2deg); }
+  92% { transform: rotate(0deg); }
+}
+
+@keyframes e3-lueur {
+  0%, 100% { opacity: 0.55; }
+  50% { opacity: 1; }
+}
+
+@keyframes e3-rayons {
+  0%, 100% { opacity: 0.15; }
+  50% { opacity: 0.6; }
+}
+
+/* E3-6 : panneau des chances (dialogue modal sur la zone de contenu, comme Information). */
+.e3-chances .e8-panneau-tete .menu-bandeau-libelle {
+  letter-spacing: 0;
+}
+
+.e3-chances-corps {
+  display: flex;
+  flex-direction: column;
+  gap: calc(10 * var(--u));
+  max-width: min(100%, calc(620 * var(--u)));
+}
+
+.e3-chances-liste,
+.e3-chances-objets {
+  display: flex;
+  flex-direction: column;
+  gap: calc(8 * var(--u));
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.e3-chance {
+  display: grid;
+  grid-template-columns: minmax(6em, max-content) 1fr 4.5em;
+  align-items: center;
+  gap: calc(12 * var(--u));
+  font-size: max(13px, calc(15 * var(--u)));
+}
+
+.e3-chance-nom {
+  font-weight: var(--font-weight-bold);
+}
+
+.e3-chance-barre {
+  height: calc(12 * var(--u));
+  min-height: 8px;
+  border: 1px solid var(--menu-options-filet);
+  background: var(--menu-options-inactif);
+}
+
+.e3-chance-plein {
+  display: block;
+  height: 100%;
+  background: var(--e3-rarete);
+}
+
+.e3-chance-pc {
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--font-weight-bold);
+  text-align: right;
+}
+
+.e3-chances-sous-titre {
+  margin: calc(6 * var(--u)) 0 0;
+  font-family: var(--font-label);
+  font-size: max(12px, calc(14 * var(--u)));
+  font-weight: var(--font-weight-normal);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--menu-e9-texte-doux);
+}
+
+.e3-chances-groupe {
+  padding-left: calc(10 * var(--u));
+  border-left: 4px solid var(--e3-rarete);
+  font-size: max(13px, calc(14 * var(--u)));
+  line-height: 1.35;
+}
+
+.e3-chances-groupe-nom {
+  margin-right: 0.4em;
+  font-weight: var(--font-weight-bold);
+}
+
+.e3-chances-groupe-objets,
+.e3-chances-regle {
+  color: var(--menu-e9-texte-doux);
+}
+
+.e3-chances-regle {
+  margin: 0;
+  font-size: max(12px, calc(13 * var(--u)));
+}
+
+/* E3-4 et E3-5 : écrans de résultat (fond bleu nuit radial de la maquette) ; centrés dans la hauteur libre sur un grand écran. */
+.e8-ecran.e3-resultat {
+  --e3-centre: max(0px, calc((100% - 318 * var(--u)) / 2));
+  align-items: stretch;
+  gap: 0;
+  background: radial-gradient(circle at 50% 55%, var(--menu-e3-fond) 0, var(--menu-nuit) 65%);
+}
+
+.e3-tete {
+  margin-bottom: calc(14 * var(--u));
+}
+
+.e3-halo {
+  position: absolute;
+  top: calc(40 * var(--u) + var(--e3-centre));
+  left: calc(50% - 200 * var(--u));
+  width: calc(400 * var(--u));
+  height: calc(300 * var(--u));
+  border-radius: 50%;
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--e3-rarete) 45%, transparent), transparent);
+  pointer-events: none;
+}
+
+.e3-objet {
+  position: absolute;
+  top: calc(80 * var(--u) + var(--e3-centre));
+  left: calc(50% - 130 * var(--u));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: calc(6 * var(--u));
+  box-sizing: border-box;
+  width: calc(260 * var(--u));
+  height: calc(190 * var(--u));
+  border: 3px solid var(--e3-rarete);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--e3-rarete) 14%, var(--menu-e9-case));
+  text-align: center;
+}
+
+.e3-objet.e3-brille,
+.e3-case.e3-brille {
+  box-shadow: 0 0 calc(30 * var(--u)) calc(8 * var(--u)) color-mix(in srgb, var(--e3-rarete) 40%, transparent);
+}
+
+.e3-objet-svg {
+  width: max(32px, calc(48 * var(--u)));
+  height: max(32px, calc(48 * var(--u)));
+  color: color-mix(in srgb, var(--e3-rarete) 30%, var(--menu-texte));
+}
+
+.e3-objet-nom {
+  margin: 0;
+  font-size: max(18px, calc(26 * var(--u)));
+  font-weight: var(--font-weight-bold);
+  line-height: 1.1;
+}
+
+.e3-objet-rarete,
+.e3-objet-ligne,
+.e3-range {
+  margin: 0;
+}
+
+.e3-objet-rarete {
+  color: color-mix(in srgb, var(--e3-rarete) 35%, var(--menu-texte));
+  font-size: max(13px, calc(15 * var(--u)));
+  font-weight: var(--font-weight-bold);
+}
+
+.e3-objet-ligne {
+  padding: 0 calc(8 * var(--u));
+  color: var(--menu-e9-texte-doux);
+  font-size: max(12px, calc(13 * var(--u)));
+}
+
+.e3-range {
+  position: absolute;
+  top: calc(284 * var(--u) + var(--e3-centre));
+  left: calc(50% - 130 * var(--u));
+  width: calc(260 * var(--u));
+  color: var(--menu-e9-texte-doux);
+  font-size: max(12px, calc(13 * var(--u)));
+  text-align: center;
+}
+
+/* ×10 : grille 5 × 2 (640 de large au plus, jamais sous les boutons de droite), résumé dessous ; les cases rétrécissent si l'écran est bas. */
+.e3-dix {
+  position: absolute;
+  top: calc(var(--e3-sous-bandeau) + var(--e3-centre));
+  bottom: calc(8 * var(--u));
+  left: var(--e8-gauche);
+  display: flex;
+  flex-direction: column;
+  gap: calc(10 * var(--u));
+  width: min(calc(640 * var(--u)), calc(100% - var(--e8-gauche) - var(--e8-droite) - 228 * var(--u)));
+}
+
+.e3-grille {
+  display: grid;
+  flex: 0 1 calc(206 * var(--u));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-rows: repeat(2, minmax(0, 1fr));
+  gap: calc(14 * var(--u));
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.e3-case {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: calc(2 * var(--u));
+  box-sizing: border-box;
+  min-width: 0;
+  min-height: 0;
+  padding: 0 calc(4 * var(--u));
+  border: 3px solid var(--e3-rarete);
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--e3-rarete) 14%, var(--menu-e9-case));
+  text-align: center;
+}
+
+.e3-case.e3-brille {
+  box-shadow: 0 0 calc(26 * var(--u)) calc(6 * var(--u)) color-mix(in srgb, var(--e3-rarete) 55%, transparent);
+}
+
+.e3-case-nom {
+  max-width: 100%;
+  overflow: hidden;
+  font-size: max(12px, calc(15 * var(--u)));
+  font-weight: var(--font-weight-bold);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.e3-case-rarete {
+  color: var(--menu-texte);
+  font-size: max(11px, calc(12 * var(--u)));
+}
+
+.e3-resume {
+  flex: none;
+  margin: 0;
+  color: var(--menu-e9-texte-doux);
+  font-size: max(12px, calc(14 * var(--u)));
+  line-height: 1.3;
+}
+
+.e3-meilleur {
+  color: color-mix(in srgb, var(--e3-rarete) 70%, var(--menu-texte));
+}
+
+/* Boutons de droite (maquette : 200 de large, x 700 ; ×1 : haut 210, ×10 : haut 124). */
+.e3-actions {
+  position: absolute;
+  top: calc(160 * var(--u) + var(--e3-centre));
+  right: var(--e8-droite);
+  display: flex;
+  flex-direction: column;
+  gap: calc(8 * var(--u));
+  width: calc(200 * var(--u));
+}
+
+.e3-resultat[data-quantite='10'] .e3-actions {
+  top: calc(var(--e3-sous-bandeau) + var(--e3-centre));
+}
+
+.e3-action {
+  padding: 0 calc(8 * var(--u));
+  font-size: max(12px, calc(14 * var(--u)));
+  text-align: center;
+  text-transform: uppercase;
+}
+
+/* Apparition simple (fondu, léger glissement), décalée d'une case à l'autre pour ×10 ; directe sous prefers-reduced-motion. */
+.e3-apparait {
+  animation: e3-apparition 0.4s ease-out calc(var(--e3-rang, 0) * 70ms) both;
+}
+
+@keyframes e3-apparition {
+  from { opacity: 0; transform: translateY(calc(10 * var(--u))); }
+  to { opacity: 1; transform: translateY(0); }
 }
