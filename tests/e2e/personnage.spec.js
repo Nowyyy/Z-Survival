@@ -761,8 +761,11 @@ test('PC 2000 × 1060 : « Touche-le pour changer » centré au-dessus de la lam
   await expect(page.locator('#menu-version')).toHaveText('V0.8 · source');
   const [deco, version, cadre] = [await boite(page, '#menu-deconnexion'), await boite(page, '#menu-version'), await boite(page, '#menu-liste')];
   expect([version.t >= deco.b - 0.5, version.b <= cadre.b + 0.5, cadre.b <= 1060]).toEqual([true, true, true]);
+  // Tout à gauche du menu : le texte commence au bord des icônes des entrées.
+  const gauches = await page.evaluate(() => { const r = document.createRange(); r.selectNodeContents(document.querySelector('#menu-version')); return [r.getBoundingClientRect().left, document.querySelector('#menu-deconnexion .e8-icone-entree').getBoundingClientRect().left]; });
+  expect(Math.abs(gauches[0] - gauches[1])).toBeLessThanOrEqual(1);
   // Retour du propriétaire : logo de Discord (forme pleine) à la place de la bulle.
-  expect(await page.locator('#menu-discord').evaluate((n) => [getComputedStyle(n).borderTopWidth, getComputedStyle(n).borderTopColor])).toEqual(['2px', 'rgb(88, 101, 242)']); // cadre bleu de Discord
+  expect(await page.locator('#menu-discord').evaluate((n) => [getComputedStyle(n).backgroundColor, getComputedStyle(n).color, getComputedStyle(n.querySelector('.e8-note')).color])).toEqual(['rgb(88, 101, 242)', 'rgb(255, 255, 255)', 'rgb(255, 255, 255)']); // entrée pleine, bleu de Discord
   expect(await page.locator('#menu-discord .e8-icone-entree').evaluate((n) => [n.getAttribute('viewBox'), n.classList.contains('e8-icone-logo'), getComputedStyle(n).fill !== 'none'])).toEqual(['0 0 24 24', true, true]);
 });
 
