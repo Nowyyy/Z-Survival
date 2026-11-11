@@ -29,7 +29,7 @@
 ## Points ouverts
 - **Esthétique et téléphone non jugés par l'agent** (émulation seulement) ; lisibilité de Rubik Dirt à 10 px (Inventaire / Fusion à 667 × 375) à vérifier. État perdu au rechargement avant le lot 8h. Capacités, objets, prix et équilibrage à définir par le propriétaire.
 ## Idées
-- Propriétaire : petite animation d'attente du personnage au bout d'un moment (comme une « idle pose » des jeux de combat) ; tenue et couleurs du personnage du menu identiques à celles du personnage en jeu. Comparer avant d'équiper (statistiques « avec / sans ») ; tri et recherche dans l'inventaire ; fusion en lot ; aperçu de la capacité au niveau suivant ; vendre un objet (lot 8e).
+- Propriétaire (prochain lot) : barre d'onglets plus claire sur l'onglet affiché : retirer le rouge permanent du bouton « Histoire », et marquer l'onglet choisi par une petite animation ou un effet propre (plus que le trait rouge actuel). Propriétaire : petite animation d'attente du personnage au bout d'un moment (comme une « idle pose » des jeux de combat) ; tenue et couleurs du personnage du menu identiques à celles du personnage en jeu. Comparer avant d'équiper (statistiques « avec / sans ») ; tri et recherche dans l'inventaire ; fusion en lot ; aperçu de la capacité au niveau suivant ; vendre un objet (lot 8e).
 ## Entrée du journal
 - `lot-8d` (v0.8, 2026-11-10) : « Personnage : équipement, inventaire, fusion » (7 points) ; bloc `[lot-8d]` affiché (« Personnage, équipement et fusion »).
 ## Lignes à ajouter à conventions.md (aucune pour `CLAUDE.md`)
