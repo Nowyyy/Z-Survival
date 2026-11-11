@@ -25,6 +25,7 @@ const ICONES = {
   suivant: 'M9 6l6 6-6 6',
   fleche: 'M4 12h13M12 6l6 6-6 6',
   cadenas: 'M7 11h10a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-6a2 2 0 0 1 2-2zM8 11V8a4 4 0 0 1 8 0v3',
+  personne: 'M12 4a4 4 0 1 1 0 8 4 4 0 0 1 0-8zM4 21c0-4.4 3.6-8 8-8s8 3.6 8 8',
 };
 export function icone24(nom, classe = 'e9-icone') {
   const svg = document.createElementNS(SVG, 'svg');
@@ -125,6 +126,14 @@ export function teteSous(t, bandeau, titre, id, retour) {
   return { tete, bouton: b };
 }
 
+// Filigrane d'un sous-menu (retour du propriétaire : les filets du fond ne disaient pas où l'on est) : grand pictogramme de l'écran (sac, fusion,
+// personnage), très atténué, qui respire lentement (e9-filigrane) derrière le contenu ; décoratif.
+export function filigrane(nom) {
+  const n = el('span', ['e9-filigrane'], { 'aria-hidden': 'true' });
+  n.append(icone24(nom, 'e9-filigrane-icone'));
+  return n;
+}
+
 // Zone d'annonce (aria-live) d'un sous-menu : résultat d'une action (équipé, amélioré, fusionné, choisi).
 export function annonce(id) {
   const n = el('p', ['sr-only'], { id, 'aria-live': 'polite', role: 'status' });
@@ -159,6 +168,7 @@ export async function ecranPersonnage({ t, bandeau, niveaux = null, statsCfg = n
     forme('path', { d: 'M436 50 L496 50 L600 300 L332 300Z' }, 'e9-cone'),
     forme('ellipse', { cx: 466, cy: 296, rx: 150, ry: 26, fill: 'url(#e9-halo)' }),
     forme('rect', { x: 452, y: 44, width: 28, height: 10 }, 'e9-lampe'));
+  const sol = el('div', ['e9-sol'], { 'aria-hidden': 'true' }); // sol sombre, centré verticalement avec le personnage (retour du propriétaire)
   const decor = el('div', ['e9-scene'], { 'data-anim': 'off' });
   decor.append(scene);
 
@@ -223,7 +233,7 @@ export async function ecranPersonnage({ t, bandeau, niveaux = null, statsCfg = n
   capSuite.textContent = t('game.menu.perso.capacite.suite');
   capacite.append(capTete, capTitre, capEffet, capSuite);
 
-  section.append(decor, bandeau(t('game.menu.perso.libelle'), t('game.menu.perso.titre'), 'menu-titre-personnage'), essai, btPerso, gauche, droite, capacite);
+  section.append(sol, decor, bandeau(t('game.menu.perso.libelle'), t('game.menu.perso.titre'), 'menu-titre-personnage'), essai, btPerso, gauche, droite, capacite);
 
   function rendre() {
     const etat = eq.etat();

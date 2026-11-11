@@ -240,8 +240,11 @@ export function creerMenu({ dict, infos = [], liens = {}, solde: montant = 0, re
     if (o.verrouille) {
       b.disabled = true;
       b.classList.add('menu-ruban');
-      b.setAttribute('aria-label', t('game.menu.verrouille'));
-      b.append(icone('cadenas', 'e8-icone e8-cadenas'));
+      // Lot 8d (retour du propriétaire) : « Prochainement » écrit sous le cadenas ; nom accessible : « Prochainement : contenu verrouillé ».
+      b.setAttribute('aria-label', `${t('game.menu.prochainement')} : ${t('game.menu.verrouille').toLocaleLowerCase('fr')}`);
+      const nom = el('span', ['e8-onglet-nom']);
+      nom.textContent = t('game.menu.prochainement');
+      b.append(icone('cadenas', 'e8-icone e8-cadenas'), nom);
     } else {
       if (!o.central) b.append(icone(o.id, 'e8-icone e8-icone-onglet'));
       const s = el('span', ['e8-onglet-nom']);

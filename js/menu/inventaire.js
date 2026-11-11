@@ -6,7 +6,7 @@ import { formatMoney } from '../core/economy.js';
 import { ameliorer, bonusObjet, emplacementDe, emplacementsDuType, equiper, fusionnable, identiques, indexRarete, infoAmelioration, objetDe, retirer } from '../core/equipement.js';
 import { fmt } from '../game/texts.js';
 import { el } from './menu.js';
-import { TYPE_TEXTES, annonce, estActif, icone24, nomObjet, nomRarete, poserActif, teteSous, texteEffet, typeObjet } from './personnage.js';
+import { filigrane, TYPE_TEXTES, annonce, estActif, icone24, nomObjet, nomRarete, poserActif, teteSous, texteEffet, typeObjet } from './personnage.js';
 
 // Objets par page : 6 colonnes × autant de rangées que la hauteur libre en contient (2 au moins, comme la maquette ; retour du propriétaire : « tout
 // pourrait être affiché en une page » sur PC) ; mesuré à l'affichage et à chaque changement de taille.
@@ -59,7 +59,7 @@ export function creer({ t, bandeau, eq, cat, retour, ouvrir }) {
   vide.textContent = t('game.menu.inventaire.vide');
   const { element: live, dire } = annonce('menu-inventaire-annonce');
   panneau.append(haut, boutons, raison, exemplaires, btFusion, vide);
-  section.append(gauche, panneau, live);
+  section.append(filigrane('inventaire'), gauche, panneau, live);
 
   // Objets du filtre, triés par rareté décroissante (légendaire d'abord), puis dans l'ordre du catalogue, puis par niveau décroissant.
   const ordreCatalogue = [...cat.objets.keys()];

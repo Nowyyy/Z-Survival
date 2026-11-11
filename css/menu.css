@@ -2004,17 +2004,26 @@
   --u: clamp(0.6px, min(calc((100vw - var(--e8-gauche) - var(--e8-droite) + 32px) / 932), calc((100vh - 98px) / 318)), 2.4px);
 }
 
-/* Fond : gris presque noir, sol plus sombre à partir de y 262 (bord de 2 px). */
+/* Fond : gris presque noir ; sol plus sombre (.e9-sol, bord de 2 px) à y 212 de la maquette. Retour du propriétaire : personnage, cône, sol et encart
+   de capacité centrés verticalement (décalés de la moitié de la hauteur libre au-delà des 318 de la maquette, jamais vers le haut). */
 .e8-ecran.e9-perso {
-  background:
-    linear-gradient(var(--menu-options-ligne), var(--menu-options-ligne)) 0 calc(211 * var(--u)) / 100% 2px no-repeat,
-    linear-gradient(var(--menu-scene-fenetre-noire), var(--menu-scene-fenetre-noire)) 0 calc(212 * var(--u)) / 100% 100% no-repeat,
-    var(--menu-options-fond);
+  --e9-centre: max(0px, calc((100% - 318 * var(--u)) / 2));
+  background: var(--menu-options-fond);
+}
+
+.e9-sol {
+  position: absolute;
+  top: calc(211 * var(--u) + var(--e9-centre));
+  right: 0;
+  bottom: 0;
+  left: 0;
+  border-top: 2px solid var(--menu-options-ligne);
+  background: var(--menu-scene-fenetre-noire);
 }
 
 .e9-scene {
   position: absolute;
-  top: calc(-6 * var(--u));
+  top: calc(-6 * var(--u) + var(--e9-centre));
   left: calc(50% - 466 * var(--u));
   width: calc(932 * var(--u));
   height: calc(324 * var(--u));
@@ -2064,7 +2073,7 @@
 /* Personnage au centre (180 × 236 à y 10) : un bouton (ouvre Personnages) ; étiquette au-dessus. */
 .e9-perso-bouton {
   position: absolute;
-  top: calc(10 * var(--u));
+  top: calc(10 * var(--u) + var(--e9-centre));
   left: calc(50% - 90 * var(--u));
   width: calc(180 * var(--u));
   height: calc(236 * var(--u));
@@ -2325,7 +2334,7 @@
 /* Encart de capacité (240 × 56 à y 250, centré, bord doré) : ouvre Personnages. */
 .e9-capacite {
   position: absolute;
-  top: calc(250 * var(--u));
+  top: calc(250 * var(--u) + var(--e9-centre));
   left: calc(50% - 120 * var(--u));
   display: flex;
   flex-direction: column;
@@ -2384,14 +2393,47 @@
   align-items: stretch;
   gap: 0;
   padding-bottom: calc(12 * var(--u)); /* écran plein : le contenu descend jusqu'en bas (retour du propriétaire) */
-  background:
-    linear-gradient(var(--menu-options-trait), var(--menu-options-trait)) 0 calc(99 * var(--u)) / 100% 2px no-repeat,
-    linear-gradient(var(--menu-options-trait), var(--menu-options-trait)) 0 calc(219 * var(--u)) / 100% 2px no-repeat,
-    linear-gradient(var(--menu-options-trait), var(--menu-options-trait)) calc(239 * var(--u)) 0 / 2px calc(100 * var(--u)) no-repeat,
-    linear-gradient(var(--menu-options-trait), var(--menu-options-trait)) calc(599 * var(--u)) calc(100 * var(--u)) / 2px calc(120 * var(--u)) no-repeat,
-    linear-gradient(var(--menu-options-trait), var(--menu-options-trait)) calc(119 * var(--u)) calc(220 * var(--u)) / 2px 100% no-repeat,
-    linear-gradient(var(--menu-options-trait), var(--menu-options-trait)) calc(819 * var(--u)) calc(220 * var(--u)) / 2px 100% no-repeat,
-    var(--menu-options-fond);
+  isolation: isolate; /* le filigrane (z-index -1) passe derrière le contenu, devant le fond */
+  background: var(--menu-options-fond); /* retour du propriétaire : filets des maquettes retirés, remplacés par le filigrane */
+}
+
+/* Filigrane : grand pictogramme de l'écran, très atténué, centré entre la colonne de gauche et le panneau de droite, qui respire lentement. */
+.e9-sous {
+  --e9-g: calc(520 * var(--u));
+  --e9-d: calc(328 * var(--u));
+}
+
+.e9-fusion { --e9-g: calc(420 * var(--u)); --e9-d: calc(428 * var(--u)); }
+.e9-personnages { --e9-g: calc(438 * var(--u)); --e9-d: calc(410 * var(--u)); }
+
+.e9-filigrane {
+  position: absolute;
+  z-index: -1;
+  top: 50%;
+  left: calc(var(--e8-gauche) + var(--e9-g) + (100% - var(--e8-gauche) - var(--e8-droite) - var(--e9-g) - var(--e9-d)) / 2);
+  width: clamp(calc(120 * var(--u)), calc(100% - var(--e8-gauche) - var(--e8-droite) - var(--e9-g) - var(--e9-d) - 24 * var(--u)), calc(230 * var(--u)));
+  aspect-ratio: 1;
+  color: var(--menu-rouge-trait);
+  opacity: 0.07;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+  animation: e9-filigrane 7s ease-in-out infinite;
+}
+
+.e9-filigrane-icone {
+  display: block;
+  width: 100%;
+  height: 100%;
+  fill: none;
+  stroke: currentcolor;
+  stroke-width: 1;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+@keyframes e9-filigrane {
+  0%, 100% { opacity: 0.05; transform: translate(-50%, -50%) scale(0.96); }
+  50% { opacity: 0.1; transform: translate(-50%, -50%) scale(1.04); }
 }
 
 .e9-sous-gauche {
@@ -2978,6 +3020,6 @@
   }
 
   .e9-capacite {
-    top: calc(246 * var(--u));
+    top: calc(246 * var(--u) + var(--e9-centre));
   }
 }

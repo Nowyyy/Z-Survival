@@ -240,7 +240,7 @@ test.describe('sous-menus Inventaire, Fusion, Personnages (E9-2 à E9-4)', () =>
         await expect(page.locator(`${sec} .menu-bandeau-libelle`)).toHaveText('Équipement');
         await expect(page.getByRole('heading', { name: titre, exact: true })).toBeVisible();
         await expect(page.locator(`#menu-${nom}-retour`)).toHaveAccessibleName('Retour à l\'équipement');
-        await expect(page.locator(`#menu-${nom}-retour`)).toHaveText('Équipement');
+        await expect(page.locator(`#menu-${nom}-retour`)).toHaveText('Retour'); // retour du propriétaire (avant : « Équipement »)
         const ids = ['.e8-entete', `${sec} .e9-tete`, ...blocs];
         const b = {};
         for (const s of ids) b[s] = await boite(page, s);
@@ -372,7 +372,7 @@ test.describe('sous-menus Inventaire, Fusion, Personnages (E9-2 à E9-4)', () =>
     expect((await etatSous(page, 'fusion')).places).toEqual(['o5', 'o6', 'o2']);
     await expect(page.locator('#menu-fusion-message')).toHaveText('Fusion possible. Coût : 100');
     await expect(page.locator('#menu-fusion-resultat')).toHaveClass(/is-pret/);
-    expect(await nomsAnims(page, '#menu-ecran-fusion')).toEqual(['e8-coulure', 'e8-goutte', 'e9-etincelle', 'e9-lueur']);
+    expect(await nomsAnims(page, '#menu-ecran-fusion')).toEqual(['e8-coulure', 'e8-goutte', 'e9-etincelle', 'e9-filigrane', 'e9-lueur']);
     await page.locator('#menu-fusion-fusionner').click();
     await expect(page.locator('#menu-fusion-annonce')).toHaveText('Fusion réussie : Gilet Peu commun, niveau 3 (porté).');
     const e = await etatPerso(page);
@@ -402,7 +402,7 @@ test.describe('sous-menus Inventaire, Fusion, Personnages (E9-2 à E9-4)', () =>
     await expect(page.locator('#menu-personnages-choisir')).toHaveAttribute('aria-disabled', 'true');
     await expect(page.locator('#menu-personnages-niveau')).toHaveText('Niveau 1 · prochain niveau : 2');
     await expect(page.locator('#menu-personnages-barre')).toHaveAttribute('aria-valuenow', '1');
-    expect(await nomsAnims(page, '#menu-ecran-personnages')).toEqual(['e8-coulure', 'e8-goutte', 'e9-bandana', 'e9-respire', 'e9-tete', 'e9-viser']);
+    expect(await nomsAnims(page, '#menu-ecran-personnages')).toEqual(['e8-coulure', 'e8-goutte', 'e9-bandana', 'e9-filigrane', 'e9-respire', 'e9-tete', 'e9-viser']);
     expect(await etats(page, '#menu-ecran-personnages')).toEqual(['running']);
     // Verrouillé : sélectionnable pour sa fiche, ni choisissable ni améliorable.
     await page.locator('#menu-perso-carte-personnage-3').click();
@@ -690,5 +690,32 @@ test('PC 2000 × 1020 : écrans à la largeur de la fenêtre, inventaire sur une
     await page.keyboard.press('Escape');
     await page.locator(o).click();
     expect(await allongees(sec), sec).toEqual([0, 0, 0]);
+  }
+});
+
+// Retours du propriétaire (PC) : personnage centré verticalement ; filigrane de l'écran dans chaque sous-menu (à la place des filets des maquettes).
+test('PC 2000 × 1060 : personnage, cône, sol et capacité centrés verticalement ; filigrane de chaque sous-menu entre les deux blocs, derrière le contenu', async ({ page }) => {
+  const size = { width: 2000, height: 1060 };
+  await ouvrirPersonnage(page, size);
+  const contenu = await boite(page, '#menu-contenu');
+  const perso = await boite(page, '#menu-perso-silhouette');
+  const cap = await boite(page, '#menu-perso-capacite');
+  // Bloc personnage + capacité au milieu de la zone de contenu (à 4 % près de sa hauteur) ; avant le retour, collé en haut.
+  const milieu = (perso.t + cap.b) / 2;
+  expect(Math.abs(milieu - (contenu.t + contenu.b) / 2)).toBeLessThan(contenu.h * 0.04);
+  const sol = await boite(page, '.e9-sol');
+  expect(sol.t).toBeGreaterThan(perso.t);
+  expect(sol.t).toBeLessThan(perso.b); // le personnage se tient sur le sol
+  for (const [o, sec, g, d] of [['#menu-perso-inventaire', 'inventaire', '#menu-inventaire-grille', '#menu-inventaire-detail'], ['#menu-perso-fusion', 'fusion', '#menu-fusion-atelier', '#menu-fusion-compatibles'], ['#menu-perso-silhouette', 'personnages', '#menu-personnages-grille', '#menu-personnages-fiche']]) {
+    await page.locator(o).click();
+    const f = page.locator(`#menu-ecran-${sec} .e9-filigrane`);
+    await expect(f).toHaveCount(1);
+    await expect(f).toHaveAttribute('aria-hidden', 'true');
+    expect(await f.evaluate((n) => getComputedStyle(n).zIndex)).toBe('-1');
+    const b = await boite(page, `#menu-ecran-${sec} .e9-filigrane`);
+    const [bg, bd] = [await boite(page, g), await boite(page, d)];
+    const c = (b.l + b.r) / 2;
+    expect([c > bg.r - 0.5, c < bd.l + 0.5], sec).toEqual([true, true]); // centré entre la colonne de gauche et le panneau
+    await page.keyboard.press('Escape');
   }
 });

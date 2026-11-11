@@ -109,11 +109,11 @@ test.describe('menu principal (E8)', () => {
     });
   }
 
-  test('onglets : Jouer actif au départ (aria-current et trait), changement d\'onglet, « Bientôt » ; Event verrouillé (cadenas seul, « Contenu verrouillé », non activable)', async ({ page }) => {
+  test('onglets : Jouer actif au départ (aria-current et trait), changement d\'onglet, « Bientôt » ; Event verrouillé (cadenas et « Prochainement », « Prochainement : contenu verrouillé », non activable)', async ({ page }) => {
     await ouvrirMenu(page);
     await expect(page.locator('#menu-onglet-jouer')).toHaveAttribute('aria-current', 'page');
     await expect(page.locator('.e8-onglets [aria-current]')).toHaveCount(1);
-    await expect(page.locator('.e8-onglets button')).toHaveText(['Boutique', 'Personnage', 'JOUER', 'Infini', '']);
+    await expect(page.locator('.e8-onglets button')).toHaveText(['Boutique', 'Personnage', 'Histoire', 'Infini', 'Prochainement']); // lot 8d, retour du propriétaire (avant : « JOUER », cadenas seul)
     const trait = (sel) => page.locator(sel).evaluate((n) => getComputedStyle(n, '::after').content);
     expect(await trait('#menu-onglet-jouer')).toBe('""');
     await page.locator('#menu-onglet-boutique').click();
@@ -125,7 +125,7 @@ test.describe('menu principal (E8)', () => {
     await expect(page.locator('#menu-jouer')).toBeHidden();
     const event = page.locator('#menu-onglet-event');
     await expect(event).toBeDisabled();
-    await expect(event).toHaveAccessibleName('Contenu verrouillé');
+    await expect(event).toHaveAccessibleName('Prochainement : contenu verrouillé'); // lot 8d (avant : « Contenu verrouillé »)
     await expect(event.locator('svg')).toHaveCount(1);
     await event.click({ force: true });
     expect((await etatMenu(page)).menu.onglet).toBe('boutique');
