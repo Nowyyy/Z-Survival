@@ -214,6 +214,7 @@ test.describe('écran Personnage (E9-1)', () => {
 });
 
 // --- Sous-menus (partie D) ----------------------------------------------------------------------------------------------------------------
+const BAS = { inventaire: ['.e9-pagination', '#menu-inventaire-detail'], fusion: ['#menu-fusion-atelier', '#menu-fusion-compatibles'], personnages: ['#menu-personnages-grille', '#menu-personnages-fiche'] };
 const etatSous = (page, nom) => page.evaluate((n) => window.__zsMenu.etat().menu.personnage.sous[n], nom);
 
 test.describe('sous-menus Inventaire, Fusion, Personnages (E9-2 à E9-4)', () => {
@@ -244,6 +245,8 @@ test.describe('sous-menus Inventaire, Fusion, Personnages (E9-2 à E9-4)', () =>
         for (const s of ids) expect([b[s].l >= 0, b[s].t >= 0, b[s].r <= size.width + 0.5, b[s].b <= size.height + 0.5], `${nom} ${s}`).toEqual([true, true, true, true]);
         for (let i = 0; i < ids.length; i += 1) for (let j = i + 1; j < ids.length; j += 1) expect(chevauche(b[ids[i]], b[ids[j]]), `${nom} : ${ids[i]} / ${ids[j]}`).toBe(false);
         for (const r of await page.locator(`${sec} button`).evaluateAll((ns) => ns.filter((n) => n.offsetParent).map((n) => [n.id || n.className, n.getBoundingClientRect().toJSON()]))) expect([r[1].width >= 44, r[1].height >= 44], `${nom} ${r[0]}`).toEqual([true, true]);
+        // Retour du propriétaire (« espace vide en bas ») : écran plein, panneau de droite et dernier bloc de gauche descendent jusqu'en bas.
+        for (const s of BAS[nom]) expect(size.height - b[s].b, `${nom} ${s} : écart avec le bas`).toBeLessThan(20);
         // Rien de coupé : panneaux et grilles sans défilement à ces tailles (inventaire de départ), sauf la grille des objets compatibles, qui défile
         // quand tous les fusionnables sont listés (aucun objet placé) ; ses cases restent atteignables au clavier.
         const coupe = await page.locator(sec).evaluate((n) => [...n.querySelectorAll('.e9-panneau, .e9-grille')].filter((x) => x.id !== 'menu-fusion-grille' && x.scrollHeight > x.clientHeight + 1).map((x) => x.id || x.className));
@@ -577,6 +580,7 @@ test.describe('téléphone à encoche (762 × 351, marges latérales de 50 px)',
       await page.locator(ouvreur).click();
       await expect(page.locator(`#menu-ecran-${nom}`)).toBeVisible();
       await verifier(nom, [`#menu-ecran-${nom} .e9-tete`, ...blocs], size.height);
+      for (const sel of BAS[nom]) expect(size.height - (await boite(page, sel)).b, `${nom} ${sel} : écart avec le bas`).toBeLessThan(20);
       // Aucun nom d'objet coupé au milieu d'un mot (un seul mot par nom dans les données : une seule ligne).
       const coupes = await page.locator(`#menu-ecran-${nom} .e9-case-nom`).evaluateAll((ns) => ns.filter((n) => n.offsetParent && n.getClientRects().length && n.getBoundingClientRect().height > parseFloat(getComputedStyle(n).lineHeight) * 1.5 && !/\s/.test(n.textContent)).map((n) => n.textContent));
       expect(coupes, nom).toEqual([]);
