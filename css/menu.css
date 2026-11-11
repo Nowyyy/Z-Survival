@@ -2125,9 +2125,19 @@
 }
 
 /* Colonnes d'emplacements (220 de large, cases de 52, écart 8) à y 78 : à gauche (statistiques dessous), à droite (Inventaire et Fusion dessous). */
+/* Sous le bandeau et ses coulures (18 de long, retour du propriétaire : elles débordaient sur l'emplacement Arme sur téléphone, où le bandeau
+   garde ses tailles de texte minimales) : haut des colonnes = marge haute + hauteur du bandeau (interlignes fixés ci-dessous) + 20. */
+.e9 {
+  --e9-sous-bandeau: calc(12 * var(--u) + 10 * var(--u) + max(11px, calc(12 * var(--u))) * 1.2 + max(17px, calc(20 * var(--u))) * 1.15 + 20 * var(--u));
+}
+
+.e9 .menu-bandeau-libelle {
+  line-height: 1.2;
+}
+
 .e9-colonne {
   position: absolute;
-  top: calc(78 * var(--u));
+  top: var(--e9-sous-bandeau);
   display: flex;
   flex-direction: column;
   gap: calc(8 * var(--u));
@@ -2139,6 +2149,7 @@
 }
 
 #menu-perso-droite {
+  top: min(var(--e9-sous-bandeau), calc(78 * var(--u))); /* aucun bandeau au-dessus : place de la maquette */
   right: var(--e8-droite);
 }
 
@@ -2354,7 +2365,7 @@
 .e9-personnages .e9-sous-gauche { width: min(calc(438 * var(--u)), calc(100% - 430 * var(--u))); }
 
 .e9-tete {
-  margin-bottom: calc(8 * var(--u));
+  margin-bottom: calc(14 * var(--u)); /* avec l'écart de 6 : 20 sous le bandeau, la place de ses coulures (18) */
 }
 
 /* Panneaux (détail, fiche, compatibles) : à droite, en haut aux places de la maquette ; ils descendent jusqu'au bas de l'écran plein (la maquette
@@ -2907,8 +2918,11 @@
 /* Écrans peu hauts (téléphone en paysage, moins de 370 px) : écran Personnage resserré, quatre statistiques (celles de la maquette) au lieu de six. */
 @media (max-height: 370px) {
   .e9-perso .e9-colonne {
-    top: calc(70 * var(--u));
-    gap: calc(6 * var(--u));
+    gap: calc(4 * var(--u));
+  }
+
+  #menu-perso-droite {
+    top: min(var(--e9-sous-bandeau), calc(70 * var(--u)));
   }
 
   .e9-perso .e9-emplacements {

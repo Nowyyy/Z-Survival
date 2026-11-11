@@ -589,3 +589,24 @@ test.describe('téléphone à encoche (762 × 351, marges latérales de 50 px)',
     expect(o.problemes).toEqual([]);
   });
 });
+
+// Retour du propriétaire après la fusion : les coulures du bandeau débordaient sur le bloc suivant (emplacement Arme, règle de la Fusion, filtres)
+// sur téléphone, où le bandeau garde ses tailles de texte minimales. Le bas des coulures doit rester au-dessus du bloc qui suit le bandeau.
+test.describe('coulures du bandeau au-dessus du bloc suivant', () => {
+  for (const [size, encoche] of [[REF, false], [{ width: 667, height: 375 }, false], [{ width: 1440, height: 900 }, false], [{ width: 762, height: 351 }, true]]) {
+    test(`${size.width}×${size.height}${encoche ? ' (encoche simulée)' : ''} : Personnage, Inventaire, Fusion, Personnages`, async ({ page }) => {
+      await ouvrirMenu(page, size);
+      if (encoche) await page.addStyleTag({ content: '#e8 { --e8-gauche: 50px !important; --e8-droite: 50px !important; }' });
+      await page.locator('#menu-onglet-personnage').click();
+      await expect(page.locator('#menu-ecran-personnage')).toBeVisible();
+      const bas = (sec) => page.locator(`${sec} .menu-bandeau-coulure`).evaluateAll((ns) => Math.max(...ns.map((n) => n.getBoundingClientRect().bottom)));
+      expect(await bas('#menu-ecran-personnage'), 'Personnage').toBeLessThanOrEqual((await boite(page, '#menu-perso-gauche')).t + 0.5);
+      for (const [ouvreur, nom, suivant] of [['#menu-perso-inventaire', 'inventaire', '#menu-inventaire-filtres'], ['#menu-perso-fusion', 'fusion', '#menu-fusion-regle'], ['#menu-perso-silhouette', 'personnages', '#menu-personnages-grille']]) {
+        await page.locator(ouvreur).click();
+        await expect(page.locator(`#menu-ecran-${nom}`)).toBeVisible();
+        expect(await bas(`#menu-ecran-${nom}`), nom).toBeLessThanOrEqual((await boite(page, suivant)).t + 0.5);
+        await page.keyboard.press('Escape');
+      }
+    });
+  }
+});
