@@ -1762,7 +1762,8 @@
    d'onglets est masquée) et panneau de la partie (E2-12, maquette OptionsJeu.html ; cette feuille est alors chargée à la première ouverture).
    Choisi : rouge peint et souligné (aria-pressed) ; verrouillé : grisé, cadenas et texte. Tailles en
    calc(N * var(--u)) (N = pixels de la maquette), cibles de 44 px au moins. */
-.e8[data-ecran='options'] .e8-contenu {
+.e8[data-ecran='options'] .e8-contenu,
+.e8[data-ecran='resultat'] .e8-contenu {
   grid-row: 2 / 4;
 }
 
@@ -3223,33 +3224,157 @@
   opacity: 0.6;
 }
 
-/* Mention en pointillés, en haut à droite (maquette : 32 du bord, haut 70, 360 au plus ; plus large sur un petit écran pour tenir en deux lignes). */
-.e3-note {
+/* Retour du propriétaire : la Boutique défile, par rubriques ; petit menu des rubriques à gauche, sous le bandeau (même largeur), contenu à droite. */
+.e3-rubriques {
   position: absolute;
-  top: calc(20 * var(--u));
-  right: var(--e8-droite);
-  box-sizing: border-box;
-  max-width: min(max(calc(360 * var(--u)), 34em), calc(100% - var(--e8-gauche) - var(--e8-droite) - max(160px, calc(176 * var(--u))) - 24 * var(--u)));
-  margin: 0;
-  padding: calc(6 * var(--u)) calc(12 * var(--u));
-  border: 1px dashed var(--menu-e9-stats-bord);
-  color: var(--menu-e9-texte-doux);
-  font-size: max(12px, calc(13 * var(--u)));
-  line-height: 1.35;
-  text-align: right;
+  top: var(--e3-sous-bandeau);
+  bottom: calc(8 * var(--u));
+  left: var(--e8-gauche);
+  width: max(160px, calc(176 * var(--u)));
+  overflow: auto;
 }
 
-/* Trois cartes côte à côte, 20 sous le bandeau (place de ses coulures) ; jusqu'à 4 du bas ; centrées dans la hauteur libre sur un grand écran. */
-.e3-cartes {
-  --e3-h: min(calc(300 * var(--u)), calc(100% - var(--e3-sous-bandeau) - 4 * var(--u)));
+.e3-rubriques ul {
+  display: flex;
+  flex-direction: column;
+  gap: calc(8 * var(--u));
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.e3-rubrique {
+  width: 100%;
+  min-height: max(var(--menu-cible), calc(44 * var(--u)));
+  padding: 0 calc(12 * var(--u)) 0 calc(16 * var(--u));
+  border: 2px solid var(--menu-bois-sombre);
+  border-left-width: calc(6 * var(--u));
+  border-radius: 4px;
+  background: var(--menu-bois);
+  color: var(--menu-e9-bois-texte);
+  font-family: var(--font-label);
+  font-size: max(12px, calc(14 * var(--u)));
+  letter-spacing: 0.04em;
+  text-align: left;
+}
+
+/* Rubrique affichée : zone rouge pleine, bord gauche clair et plus épais (forme), aria-current. */
+.e3-rubrique[aria-current='true'] {
+  border-color: var(--menu-coulure);
+  border-left-color: var(--menu-texte);
+  background: var(--menu-rouge-clair);
+  color: var(--menu-texte);
+}
+
+.e3-defile {
   position: absolute;
-  top: calc(var(--e3-sous-bandeau) + max(0px, (100% - var(--e3-sous-bandeau) - 4 * var(--u) - 300 * var(--u)) / 2));
-  right: var(--e8-droite);
-  left: var(--e8-gauche);
+  top: calc(12 * var(--u));
+  right: 0;
+  bottom: 0;
+  left: calc(var(--e8-gauche) + max(160px, calc(176 * var(--u))) + 24 * var(--u));
+  padding: 0 var(--e8-droite) calc(16 * var(--u)) 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-color: var(--menu-bois-clair) transparent;
+  scrollbar-width: thin;
+}
+
+.e3-rayon {
+  margin-bottom: calc(22 * var(--u));
+}
+
+.e3-rayon-tete {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: calc(4 * var(--u)) calc(12 * var(--u));
+  margin-bottom: calc(10 * var(--u));
+  padding-bottom: calc(4 * var(--u));
+  border-bottom: 2px solid var(--menu-scene-route-trait);
+}
+
+.e3-rayon-titre {
+  margin: 0;
+  font-family: var(--font-label);
+  font-size: max(13px, calc(16 * var(--u)));
+  font-weight: var(--font-weight-normal);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.e3-compte,
+.e3-rayon-note {
+  margin: 0;
+  color: var(--menu-e9-texte-doux);
+  font-size: max(12px, calc(13 * var(--u)));
+}
+
+/* Offres du jour : six objets en une rangée (deux rangées sur un écran étroit). */
+.e3-offres {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(max(96px, calc((100% - 50 * var(--u)) / 6)), 1fr));
+  gap: calc(10 * var(--u));
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.e3-offre {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: calc(3 * var(--u));
+  min-width: 0;
+  padding: calc(8 * var(--u)) calc(6 * var(--u));
+  border: 3px solid var(--e3-rarete);
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--e3-rarete) 14%, var(--menu-e9-case));
+  text-align: center;
+}
+
+.e3-offre-svg {
+  width: max(24px, calc(30 * var(--u)));
+  height: max(24px, calc(30 * var(--u)));
+  color: color-mix(in srgb, var(--e3-rarete) 30%, var(--menu-texte));
+}
+
+.e3-offre-nom {
+  max-width: 100%;
+  overflow: hidden;
+  font-size: max(12px, calc(14 * var(--u)));
+  font-weight: var(--font-weight-bold);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.e3-offre-rarete {
+  font-size: max(11px, calc(12 * var(--u)));
+}
+
+.e3 .e3-offre-acheter {
+  width: 100%;
+  margin-top: auto;
+  padding: 0 calc(4 * var(--u));
+  font-family: var(--font-sans);
+  font-size: max(12px, calc(13 * var(--u)));
+  font-weight: var(--font-weight-bold);
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.e3 .e3-offre-acheter[aria-disabled='true'] {
+  border-color: var(--menu-options-inactif-bord);
+  background: var(--menu-options-inactif);
+  color: var(--menu-options-inactif-texte);
+  cursor: not-allowed;
+}
+
+/* Caisses : trois cartes au plus par rangée (deux sur un écran étroit). */
+.e3-cartes {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(max(180px, calc((100% - 32 * var(--u)) / 3)), 1fr));
   gap: calc(16 * var(--u));
-  height: var(--e3-h);
   margin: 0;
   padding: 0;
   list-style: none;
@@ -3263,7 +3388,7 @@
   gap: calc(3 * var(--u));
   box-sizing: border-box;
   min-height: 0;
-  padding: calc(6 * var(--u)) calc(12 * var(--u)) calc(2 * var(--u));
+  padding: calc(6 * var(--u)) calc(12 * var(--u)) calc(4 * var(--u));
   border: 3px solid var(--menu-scene-route-trait);
   background: var(--menu-e9-case);
 }
@@ -3277,12 +3402,12 @@
   background: var(--e3-teinte);
 }
 
-/* Caisse : prend la hauteur qui reste (au plus 1,15 fois la maquette), jamais moins de 40 px. */
+/* Caisse : la taille de la maquette (la carte n'est plus limitée en hauteur : la Boutique défile). */
 .e3-caisse {
-  flex: 1 1 0;
+  flex: none;
   width: 100%;
-  min-height: 40px;
-  max-height: calc(106 * var(--u));
+  height: max(70px, calc(106 * var(--u)));
+  overflow: visible;
 }
 
 .e3-rayons {
@@ -3402,7 +3527,8 @@
   flex: 1;
   flex-direction: column;
   padding: 0 calc(4 * var(--u));
-  font-size: max(12px, calc(15 * var(--u)));
+  font-size: max(12px, calc(14 * var(--u)));
+  letter-spacing: 0.02em;
 }
 
 .e3-ouvrir-prix {
@@ -3554,7 +3680,8 @@
   font-size: max(12px, calc(13 * var(--u)));
 }
 
-/* E3-4 et E3-5 : écrans de résultat (fond bleu nuit radial de la maquette) ; centrés dans la hauteur libre sur un grand écran. */
+/* E3-4 et E3-5 : écrans de résultat (fond bleu nuit radial de la maquette), en écran plein (barre d'onglets masquée : retour du propriétaire) ;
+   centrés dans la hauteur libre. */
 .e8-ecran.e3-resultat {
   --e3-centre: max(0px, calc((100% - 318 * var(--u)) / 2));
   align-items: stretch;
@@ -3687,11 +3814,10 @@
 
 .e3-case-nom {
   max-width: 100%;
-  overflow: hidden;
   font-size: max(12px, calc(15 * var(--u)));
   font-weight: var(--font-weight-bold);
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
 }
 
 .e3-case-rarete {

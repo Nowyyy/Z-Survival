@@ -6,8 +6,8 @@ import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { readFileSync } from 'node:fs';
 import { formatMoney } from '../../js/core/economy.js';
-import { chances, lireCaisses, resume, tirer, tirer10 } from '../../js/core/caisses.js';
-import { ajouterObjets, creerEtatEquipement, equiper, lireCatalogue, statistiquesEffectives } from '../../js/core/equipement.js';
+import { chances, lireCaisses, lireCosmetiques, lireOffres, offresDuJour, resume, tirer, tirer10 } from '../../js/core/caisses.js';
+import { ajouterObjets, creerEtatEquipement, equiper, lireCatalogue, obtenirPersonnages, statistiquesEffectives } from '../../js/core/equipement.js';
 
 const REF = { width: 932, height: 430 };
 const SIZES = [REF, { width: 667, height: 375 }, { width: 1440, height: 900 }, { width: 2000, height: 1020 }];
@@ -15,7 +15,10 @@ const BRUIT = /GL Driver Message|GPU stall|swiftshader|WebGL/i; // messages du r
 const lire = (f) => JSON.parse(readFileSync(f, 'utf8'));
 const PARAMS = lire('data/game/player-stats.json');
 const { cat, depart } = lireCatalogue({ raretes: lire('data/menu/raretes.json'), objets: lire('data/menu/objets.json'), personnages: lire('data/menu/personnages.json'), inventaire: lire('data/menu/inventaire-depart.json') });
+// Lot 8e, retour du propriétaire : catalogue complété des tenues ; caisses d'équipement, de personnages et de tenues ; offres du jour.
+cat.cosmetiques = lireCosmetiques(lire('data/menu/cosmetiques.json'), cat.raretes);
 const { caisses } = lireCaisses(lire('data/menu/caisses.json'), cat);
+const { regles: REGLES_OFFRES } = lireOffres(lire('data/menu/caisses.json'), cat);
 const caisse = (id) => caisses.find((c) => c.id === id);
 const nomRarete = (rid) => cat.raretes.find((r) => r.id === rid).nom;
 const premiere = (f) => {
@@ -86,7 +89,7 @@ async function ouvrirBoutique(page, size = REF, extra = '') {
   await ouvrirMenu(page, size, extra);
   await page.locator('#menu-onglet-boutique').click();
   await expect(page.locator('#menu-ecran-boutique')).toBeVisible();
-  await expect(page.locator('.e3-carte')).toHaveCount(3);
+  await expect(page.locator('.e3-carte')).toHaveCount(caisses.length); // retour du propriétaire : 3 d'équipement, 1 de personnages, 1 de tenues
 }
 const etatMenu = (page) => page.evaluate(() => window.__zsMenu.etat().menu);
 const etatBoutique = (page) => page.evaluate(() => window.__zsMenu.etat().menu.boutique);
@@ -103,7 +106,8 @@ const cachee = (page, v) => page.evaluate((h) => { Object.defineProperty(documen
 // Blocs dans l'écran (ou entre des marges), au-dessus de la barre d'onglets, sans superposition.
 async function verifierBlocs(page, ids, { marge = 0, nom = '' } = {}) {
   const vp = page.viewportSize();
-  const barre = await boite(page, '.e8-onglets');
+  // Barre d'onglets masquée (résultats en écran plein) : le bas de l'écran.
+  const barre = (await page.locator('.e8-onglets').isVisible()) ? await boite(page, '.e8-onglets') : { t: vp.height };
   const b = {};
   for (const s of ids) b[s] = await boite(page, s);
   for (const s of ids) expect([b[s].l >= marge - 0.5, b[s].t >= 0, b[s].r <= vp.width - marge + 0.5, b[s].b <= barre.t + 0.5], `${nom} ${s}`).toEqual([true, true, true, true]);
@@ -124,6 +128,7 @@ async function contrastes(page, sels) {
   const lum = ([r, g, b]) => [r, g, b].map((c) => { const v = c / 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; }).reduce((s, v, i) => s + v * [0.2126, 0.7152, 0.0722][i], 0);
   const out = {};
   for (const s of sels) {
+    await page.locator(s).first().scrollIntoViewIfNeeded();
     const r = await boite(page, s);
     const png = await page.screenshot({ clip: { x: r.l + 1, y: r.t + 1, width: Math.max(1, r.w - 2), height: Math.max(1, r.h - 2) } });
     const clair = await page.evaluate(async (b64) => {
@@ -150,7 +155,8 @@ async function contrastes(page, sels) {
   return out;
 }
 
-const BLOCS_BOUTIQUE = ['#menu-ecran-boutique .menu-bandeau', '#menu-boutique-note', ...caisses.map((c) => `.e3-carte[data-caisse="${c.id}"]`)];
+// La zone qui défile va jusqu'au bord droit (barre de défilement) ; son contenu (première rubrique) respecte la marge.
+const BLOCS_BOUTIQUE = ['#menu-ecran-boutique .menu-bandeau', '#menu-boutique-rubriques', '#menu-boutique-offres .e3-rayon-tete', '#menu-offre-0'];
 
 test.describe('Boutique (E3-1)', () => {
   for (const size of SIZES) {
@@ -161,11 +167,17 @@ test.describe('Boutique (E3-1)', () => {
       await expect(page.locator('#menu-onglet-boutique')).toHaveAttribute('aria-current', 'page');
       await expect(page.locator('#menu-ecran-boutique .menu-bandeau-libelle')).toHaveText('Ravitaillement');
       await expect(page.getByRole('heading', { name: 'Boutique', level: 2 })).toBeVisible();
-      await expect(page.locator('#menu-boutique-note')).toHaveText('Payé uniquement avec l\'argent gagné en jeu. Chances d\'obtention affichées pour chaque caisse.');
-      const CONTENUS = { ravitaillement: 'Un objet commun à rareCommun · Peu commun · Rare', militaire: 'Un objet peu commun à épiquePeu commun · Rare · Épique', elite: 'Un objet épique ou légendaireÉpique · Légendaire' };
+      await expect(page.locator('#menu-boutique-note')).toHaveCount(0); // retour du propriétaire : mention en pointillés retirée
+      // Rubriques (petit menu de gauche) et leurs sections, dans l'ordre ; contenu qui défile.
+      await expect(page.locator('.e3-rubrique')).toHaveText(['Offres du jour', 'Équipement', 'Personnages', 'Cosmétiques']);
+      await expect(page.locator('.e3-rayon-titre')).toHaveText(['Offres du jour', 'Équipement', 'Personnages', 'Cosmétiques']);
+      await expect(page.locator('.e3-offre')).toHaveCount(6);
+      expect(await page.locator('#menu-boutique-defile').evaluate((n) => [getComputedStyle(n).overflowY, n.scrollHeight > n.clientHeight])).toEqual(['auto', true]);
+      const CONTENUS = { ravitaillement: 'Un objet commun à rareCommun · Peu commun · Rare', militaire: 'Un objet peu commun à épiquePeu commun · Rare · Épique', elite: 'Un objet épique ou légendaireÉpique · Légendaire', recrues: 'Un personnage au hasardNouveau : débloqué · déjà obtenu : +1 niveau', tenues: 'Tenues : commun à légendaireCommun · Peu commun · Rare · Épique · Légendaire' };
       for (const c of caisses) {
         const carte = page.locator(`.e3-carte[data-caisse="${c.id}"]`);
-        await expect(carte.locator('h3')).toHaveText(c.nom);
+        await carte.scrollIntoViewIfNeeded();
+        await expect(carte.locator('h4')).toHaveText(c.nom);
         await expect(carte.locator('.e3-carte-contenu')).toHaveText(CONTENUS[c.id]);
         await expect(carte.locator('.e3-ouvrir-prix')).toHaveText([formatMoney(c.prix), formatMoney(c.prix10)]);
         await expect(page.locator(`#menu-caisse-${c.id}-un`)).toHaveAccessibleName(`Ouvrir ×1 · prix : ${formatMoney(c.prix)}`);
@@ -178,10 +190,11 @@ test.describe('Boutique (E3-1)', () => {
         const [svg, bloc] = [await boite(page, `.e3-carte[data-caisse="${c.id}"] .e3-caisse`), await boite(page, `.e3-carte[data-caisse="${c.id}"]`)];
         expect([svg.h >= 39, svg.t >= bloc.t, svg.b <= bloc.b]).toEqual([true, true, true]);
       }
+      await page.locator('#menu-boutique-defile').evaluate((n) => { n.scrollTop = 0; });
       await verifierBlocs(page, BLOCS_BOUTIQUE, { nom: 'boutique' });
-      // Le bas des coulures du bandeau reste au-dessus des cartes.
+      // Le bas des coulures du bandeau reste au-dessus du menu des rubriques.
       const coulures = await page.locator('#menu-ecran-boutique .menu-coulure').evaluateAll((ns) => Math.max(...ns.map((n) => n.getBoundingClientRect().bottom)));
-      expect(coulures).toBeLessThanOrEqual((await boite(page, '.e3-cartes')).t + 0.5);
+      expect(coulures).toBeLessThanOrEqual((await boite(page, '#menu-boutique-rubriques')).t + 0.5);
       await cibles(page, '#menu-ecran-boutique');
       expect((await new AxeBuilder({ page }).analyze()).violations.map((v) => v.id)).toEqual([]);
       await expect(page.locator('#menu-solde-texte')).toHaveText('0');
@@ -216,7 +229,7 @@ test.describe('Boutique (E3-1)', () => {
     await graines(page, [G_LEGENDAIRE, 3, G_LEGENDAIRE, 3]);
     for (const size of [REF, { width: 667, height: 375 }]) {
       await ouvrirBoutique(page, size);
-      const r = await contrastes(page, ['#menu-boutique-note', '#menu-caisse-militaire-nom', '#menu-caisse-militaire-contenu', '.e3-carte-raretes', '#menu-caisse-elite-un .e3-ouvrir-action', '#menu-caisse-elite-un .e3-ouvrir-prix', '#menu-caisse-elite-dix .e3-ouvrir-prix', '#menu-caisse-elite-chances']);
+      const r = await contrastes(page, ['.e3-rubrique[aria-current] .e3-rubrique-nom', '.e3-rubrique:not([aria-current]) .e3-rubrique-nom', '#menu-boutique-compte', '.e3-offre-nom', '.e3-offre-rarete', '.e3-offre-acheter', '#menu-caisse-militaire-nom', '#menu-caisse-militaire-contenu', '.e3-carte-raretes', '#menu-caisse-elite-un .e3-ouvrir-action', '#menu-caisse-elite-un .e3-ouvrir-prix', '#menu-caisse-elite-dix .e3-ouvrir-prix', '#menu-caisse-elite-chances']);
       for (const [s, v] of Object.entries(r)) expect(v, `${size.width} ${s}`).toBeGreaterThanOrEqual(4.5);
       await page.locator('#menu-caisse-elite-un').click();
       const r1 = await contrastes(page, ['#menu-resultat-nom', '#menu-resultat-rarete', '#menu-resultat-ligne', '#menu-resultat-range', '#menu-resultat-continuer', '#menu-resultat-rouvrir']);
@@ -231,19 +244,19 @@ test.describe('Boutique (E3-1)', () => {
   test('chargée à la demande (démarrage du menu inchangé : 29 fichiers JavaScript) ; chances et résultats à leur première ouverture ; ni Three.js ni le jeu', async ({ page, baseURL }) => {
     const o = surveiller(page, baseURL);
     await ouvrirMenu(page);
-    const BOUTIQUE = /\/js\/menu\/(boutique|chances|resultat|personnage|equipement-etat)\.js$|\/js\/core\/(caisses|equipement)\.js$|\/data\/menu\/(caisses|objets|raretes|personnages|inventaire-depart)\.json$/;
+    const BOUTIQUE = /\/js\/menu\/(boutique|chances|resultat|personnage|equipement-etat)\.js$|\/js\/core\/(caisses|equipement)\.js$|\/data\/menu\/(caisses|cosmetiques|objets|raretes|personnages|inventaire-depart)\.json$/;
     expect(o.fichiers.filter((f) => BOUTIQUE.test(f))).toEqual([]);
     expect(o.fichiers.filter((f) => f.endsWith('.js')).length).toBe(29);
     await page.locator('#menu-onglet-boutique').click();
     await expect(page.locator('#menu-ecran-boutique')).toBeVisible();
-    expect(o.fichiers.filter((f) => BOUTIQUE.test(f)).sort()).toEqual(['/data/menu/caisses.json', '/data/menu/inventaire-depart.json', '/data/menu/objets.json', '/data/menu/personnages.json', '/data/menu/raretes.json', '/js/core/caisses.js', '/js/core/equipement.js', '/js/menu/boutique.js', '/js/menu/equipement-etat.js']);
+    expect(o.fichiers.filter((f) => BOUTIQUE.test(f)).sort()).toEqual(['/data/menu/caisses.json', '/data/menu/cosmetiques.json', '/data/menu/inventaire-depart.json', '/data/menu/objets.json', '/data/menu/personnages.json', '/data/menu/raretes.json', '/js/core/caisses.js', '/js/core/equipement.js', '/js/menu/boutique.js', '/js/menu/equipement-etat.js', '/js/menu/personnage.js']);
     await page.locator('#menu-caisse-elite-chances').click();
     await expect(page.locator('#menu-ecran-chances')).toBeVisible();
     expect(o.fichiers.filter((f) => f.endsWith('/js/menu/chances.js'))).toHaveLength(1);
     await page.keyboard.press('Escape');
     await page.locator('#menu-caisse-elite-un').click();
     await expect(page.locator('#menu-ecran-resultat')).toBeVisible();
-    expect(o.fichiers.filter((f) => /\/js\/menu\/(resultat|personnage)\.js$/.test(f)).sort()).toEqual(['/js/menu/personnage.js', '/js/menu/resultat.js']);
+    expect(o.fichiers.filter((f) => /\/js\/menu\/(resultat|personnage)\.js$/.test(f)).sort()).toEqual(['/js/menu/personnage.js', '/js/menu/resultat.js']); // personnage.js (icônes) dès l'onglet
     expect(o.fichiers.filter((f) => /\/vendor\/three\/|\/js\/game\/(main|game)\.js$/.test(f))).toEqual([]);
     expect([o.problemes, o.externes]).toEqual([[], []]);
   });
@@ -254,7 +267,7 @@ test.describe('Boutique (E3-1)', () => {
     expect(await nomsAnims(page, sel)).toEqual(ANIMS_E3);
     expect(await etats(page, sel)).toEqual(['running']);
     // Décalage d'une carte à l'autre (0, −1,3 s, −2,6 s), tremblement en 4 s et pulsation en 1,6 s (moins de 3 éclats par seconde).
-    const tremble = await page.locator('.e3-tremble').evaluateAll((ns) => ns.map((n) => [getComputedStyle(n).animationDelay, getComputedStyle(n).animationDuration]));
+    const tremble = await page.locator('.e3-carte[data-type="equipement"] .e3-tremble').evaluateAll((ns) => ns.map((n) => [getComputedStyle(n).animationDelay, getComputedStyle(n).animationDuration]));
     expect(tremble).toEqual([['0s', '4s'], ['-1.3s', '4s'], ['-2.6s', '4s']]);
     expect(await page.locator('.e3-lueur').first().evaluate((n) => getComputedStyle(n).animationDuration)).toBe('1.6s');
     await page.locator('#menu-onglet-infini').click();
@@ -303,7 +316,7 @@ test.describe('chances (E3-6)', () => {
       await expect(page.locator('.e3-chance-pc')).toHaveText(attendu.map((x) => `${x.pourcent.toLocaleString('fr-FR')}\u00a0%`));
       const largeurs = await page.locator('.e3-chance').evaluateAll((ns) => ns.map((n) => n.querySelector('.e3-chance-plein').getBoundingClientRect().width / n.querySelector('.e3-chance-barre').clientWidth));
       largeurs.forEach((l, i) => expect(Math.abs(l - attendu[i].pourcent / 100), `${c.id} barre ${i}`).toBeLessThan(0.02));
-      await expect(page.locator('.e3-chances-groupe-objets')).toHaveText(attendu.map((x) => x.objets.map((ob) => ob.nom).join(', ')));
+      await expect(page.locator('.e3-chances-groupe-objets')).toHaveText(c.type === 'personnage' ? [] : attendu.map((x) => x.objets.map((ob) => ob.nom).join(', ')));
       await expect(page.locator('#menu-ecran-chances-regle')).toContainText('dix tirages indépendants, sans garantie');
       expect((await etatBoutique(page)).chances).toBe(c.id);
       // Focus piégé : croix → zone → croix (Tab), et en arrière.
@@ -343,7 +356,9 @@ test.describe('achats et résultats (E3-4, E3-5)', () => {
     const sec = page.locator('#menu-ecran-resultat');
     await expect(sec).toBeVisible();
     await expect(page.locator('#menu-ecran-boutique')).toBeHidden();
-    await expect(page.locator('.e8-onglets')).toBeVisible(); // barre d'onglets gardée
+    await expect(page.locator('.e8-onglets')).toBeHidden(); // retour du propriétaire : écran plein, barre d'onglets masquée
+    await expect(page.locator('#e8')).toHaveAttribute('data-ecran', 'resultat');
+    await expect(page.locator('#menu-resultat-retour')).toHaveCount(0); // « Continuer » et « Rouvrir » suffisent
     await expect(page.locator('#menu-onglet-boutique')).toHaveAttribute('aria-current', 'page');
     const attendu = tirer(caisse('elite'), cat, G_EPIQUE);
     expect(attendu.rarete).toBe('epique');
@@ -398,7 +413,7 @@ test.describe('achats et résultats (E3-4, E3-5)', () => {
     expect([o.problemes, o.externes]).toEqual([[], []]);
   });
 
-  test('« Ouvrir ×10 » (ravitaillement) : dix cartes dans l\'ordre de la fonction pure, rareté écrite et bordée, halo des épiques et légendaires, résumé exact ; « Rouvrir ×10 » ; « Retour », Échap et un onglet touché ramènent à la Boutique', async ({ page }) => {
+  test('« Ouvrir ×10 » (ravitaillement) : dix cartes dans l\'ordre de la fonction pure, rareté écrite et bordée, halo des épiques et légendaires, résumé exact ; « Rouvrir ×10 » ; « Continuer » et Échap ramènent à la Boutique ; barre d\'onglets masquée pendant le résultat', async ({ page }) => {
     await graines(page, [5, 6, 8]);
     await ouvrirBoutique(page);
     await page.locator('#menu-caisse-ravitaillement-dix').click();
@@ -428,16 +443,19 @@ test.describe('achats et résultats (E3-4, E3-5)', () => {
     expect([b.achats, b.dernier.uids]).toEqual([2, Array.from({ length: 10 }, (_, i) => `c${11 + i}`)]);
     // Inventaire en mémoire : 20 objets de plus (fonction pure : mêmes uid).
     const pur = ajouterObjets(ajouterObjets(creerEtatEquipement(cat, depart), cat, dix).etat, cat, dix2).etat;
-    await page.locator('#menu-resultat-retour').click();
+    await page.locator('#menu-resultat-continuer').click();
     await expect(page.locator('#menu-ecran-boutique')).toBeVisible();
+    await expect(page.locator('.e8-onglets')).toBeVisible();
     await expect(page.locator('#menu-caisse-ravitaillement-dix')).toBeFocused();
-    // Échap ferme le résultat ; un onglet touché aussi.
+    // Échap ferme le résultat ; la barre d'onglets n'est jamais visible pendant un résultat.
     await page.locator('#menu-caisse-ravitaillement-dix').click();
     await expect(page.locator('#menu-ecran-resultat')).toBeVisible();
     await page.keyboard.press('Escape');
     await expect(page.locator('#menu-ecran-boutique')).toBeVisible();
     await page.locator('#menu-caisse-ravitaillement-dix').click();
     await expect(page.locator('#menu-ecran-resultat')).toBeVisible();
+    await expect(page.locator('.e8-onglets')).toBeHidden();
+    await page.keyboard.press('Escape');
     await page.locator('#menu-onglet-personnage').click();
     await expect(page.locator('#menu-ecran-personnage')).toBeVisible();
     const perso = (await etatMenu(page)).personnage;
@@ -467,6 +485,7 @@ test.describe('« JOUER » avec un objet obtenu', () => {
     await page.locator('#menu-caisse-elite-un').click();
     await expect(page.locator('#menu-ecran-resultat')).toBeVisible();
     const gants = tirer(caisse('elite'), cat, G_GANTS);
+    await page.locator('#menu-resultat-continuer').click();
     await page.locator('#menu-onglet-personnage').click();
     await page.locator('#menu-perso-gants').click(); // emplacement vide : Inventaire filtré sur les gants
     await page.locator('#menu-objet-c1').click();
@@ -559,5 +578,100 @@ test.describe('barre d\'onglets (lot 8e)', () => {
     await expect(page.locator('#menu-onglet-infini')).toHaveAttribute('aria-current', 'page');
     expect(await anims('infini')).toEqual([]);
     expect((await styleOnglet(page, 'infini')).goutte).toBe('block');
+  });
+});
+
+// --- Retours du propriétaire : rubriques, offres du jour, caisses de personnages et de tenues -------------------------------------------------
+test.describe('Boutique par rubriques (retour du propriétaire)', () => {
+  test.use({ timezoneId: 'Europe/Paris' });
+
+  test('rubriques : chaque bouton mène à sa section (en haut de la zone qui défile) et devient la rubrique courante ; le défilement met la rubrique à jour ; 44 px', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' }); // défilement immédiat
+    await ouvrirBoutique(page);
+    await expect(page.locator('#menu-boutique-aller-offres')).toHaveAttribute('aria-current', 'true');
+    for (const id of ['equipement', 'personnage', 'cosmetique', 'offres']) {
+      await page.locator(`#menu-boutique-aller-${id}`).click();
+      await expect(page.locator(`#menu-boutique-aller-${id}`)).toHaveAttribute('aria-current', 'true');
+      await expect(page.locator('.e3-rubrique[aria-current]')).toHaveCount(1);
+      const [sec, zone] = [await boite(page, `#menu-boutique-${id}`), await boite(page, '#menu-boutique-defile')];
+      const bas = await page.locator('#menu-boutique-defile').evaluate((n) => n.scrollTop + n.clientHeight >= n.scrollHeight - 2);
+      expect(Math.abs(sec.t - zone.t) < 2 || (bas && sec.t >= zone.t), id).toBe(true);
+      expect((await etatBoutique(page)).rubrique).toBe(id);
+    }
+    // Défilement à la main (molette) : la rubrique suit.
+    await page.locator('#menu-boutique-defile').evaluate((n) => { n.scrollTop = n.scrollHeight; n.dispatchEvent(new Event('scroll')); });
+    await expect(page.locator('#menu-boutique-aller-cosmetique')).toHaveAttribute('aria-current', 'true');
+    await cibles(page, '#menu-boutique-rubriques');
+  });
+
+  test('offres du jour : six objets de la fonction pure pour la date de l\'appareil, compte à rebours jusqu\'à minuit ; « Acheter » → résultat ×1 sans « Rouvrir », objet dans l\'inventaire, offre « Acheté » ; prix non prélevé ; aucune écriture', async ({ page }) => {
+    await espionStockage(page);
+    await page.clock.setFixedTime(new Date('2026-11-11T20:00:00Z')); // 21 h à Paris
+    await ouvrirBoutique(page);
+    const jour = Math.floor(Date.UTC(2026, 10, 11) / 86_400_000);
+    const attendu = offresDuJour(REGLES_OFFRES, cat, jour);
+    await expect(page.locator('.e3-offre-nom')).toHaveText(attendu.map((o) => cat.objets.get(o.id).nom));
+    await expect(page.locator('.e3-offre-rarete')).toHaveText(attendu.map((o) => nomRarete(o.rarete)));
+    await expect(page.locator('.e3-offre-acheter')).toHaveText(attendu.map((o) => `Acheter · ${formatMoney(o.prix)}`));
+    await expect(page.locator('#menu-boutique-compte')).toHaveText('Nouvelles offres dans 3 h 0 min');
+    expect((await etatBoutique(page)).jour).toBe(jour);
+    await page.locator('#menu-offre-2-acheter').click();
+    await expect(page.locator('#menu-ecran-resultat')).toBeVisible();
+    await expect(page.locator('#menu-resultat-nom')).toHaveText(cat.objets.get(attendu[2].id).nom);
+    await expect(page.locator('#menu-resultat-rouvrir')).toBeHidden();
+    await expect(page.locator('.e8-onglets')).toBeHidden();
+    await page.locator('#menu-resultat-continuer').click();
+    await expect(page.locator('#menu-offre-2-acheter')).toHaveText('Acheté');
+    await expect(page.locator('#menu-offre-2-acheter')).toHaveAttribute('aria-disabled', 'true');
+    await expect(page.locator('#menu-offre-2-acheter')).toBeFocused();
+    await page.locator('#menu-offre-2-acheter').dispatchEvent('click'); // déjà acheté (aria-disabled) : rien
+    await expect(page.locator('#menu-ecran-resultat')).toBeHidden();
+    const b = await etatBoutique(page);
+    expect([b.achats, b.offres.map((o) => o.achetee)]).toEqual([1, [false, false, true, false, false, false]]);
+    await page.locator('#menu-onglet-personnage').click();
+    await expect(page.locator('#menu-ecran-personnage')).toBeVisible();
+    const perso = (await etatMenu(page)).personnage;
+    expect(perso.objets.filter((x) => /^c/.test(x.uid)).map(({ id, rarete, niveau }) => ({ id, rarete, niveau }))).toEqual([{ id: attendu[2].id, rarete: attendu[2].rarete, niveau: 1 }]);
+    expect((await etatMenu(page)).solde).toBe(0);
+    expect(await page.evaluate(() => window.__ecritures)).toEqual([]);
+  });
+
+  test('caisse de recrues ×10 : personnages de la fonction pure (nouveau : débloqué ; déjà obtenu : un niveau de plus), résumé ; débloqués et choisissables dans Personnages', async ({ page }) => {
+    await graines(page, [21]);
+    await ouvrirBoutique(page);
+    await page.locator('#menu-caisse-recrues-dix').click();
+    await expect(page.locator('#menu-ecran-resultat')).toBeVisible();
+    const tires = tirer10(caisse('recrues'), cat, 21);
+    const { issues } = obtenirPersonnages(creerEtatEquipement(cat, depart), cat, tires.map((x) => x.id));
+    await expect(page.locator('.e3-case-nom')).toHaveText(tires.map((x) => cat.personnages.find((p) => p.id === x.id).nom));
+    await expect(page.locator('.e3-case-rarete')).toHaveText(issues.map((x) => (x.nouveau ? 'Nouveau personnage' : 'Déjà obtenu')));
+    expect(await page.locator('.e3-case').evaluateAll((ns) => ns.map((n) => n.dataset.statut))).toEqual(issues.map((x) => (x.nouveau ? 'nouveau' : 'doublon')));
+    const nouveaux = issues.filter((x) => x.nouveau);
+    await expect(page.locator('#menu-resultat-resume')).toContainText(`${nouveaux.length} nouveau`);
+    expect((await etatBoutique(page)).dernier.issues).toEqual(issues);
+    expect((await new AxeBuilder({ page }).analyze()).violations.map((v) => v.id)).toEqual([]);
+    await page.locator('#menu-resultat-continuer').click();
+    await page.locator('#menu-onglet-personnage').click();
+    await page.locator('#menu-perso-silhouette').click();
+    const id = nouveaux[0].id;
+    await page.locator(`#menu-perso-carte-${id}`).click();
+    await expect(page.locator('#menu-personnages-choisir')).toHaveAttribute('aria-disabled', 'false');
+    await page.locator('#menu-personnages-choisir').click();
+    expect((await etatMenu(page)).personnage.choisi).toBe(id);
+  });
+
+  test('caisse de tenues ×1 : tenue de la fonction pure, rareté écrite, « nouvelle », rangée dans la collection (pas encore portable) ; compteur de la rubrique', async ({ page }) => {
+    await graines(page, [8]);
+    await ouvrirBoutique(page);
+    await expect(page.locator('#menu-boutique-tenues-note')).toHaveText(`Tenues d'exemple, pas encore portables · obtenues : 0 / ${cat.cosmetiques.length}`);
+    await page.locator('#menu-caisse-tenues-un').click();
+    const tenue = tirer(caisse('tenues'), cat, 8);
+    await expect(page.locator('#menu-resultat-nom')).toHaveText(cat.cosmetiques.find((c) => c.id === tenue.id).nom);
+    await expect(page.locator('#menu-resultat-rarete')).toHaveText(nomRarete(tenue.rarete));
+    await expect(page.locator('#menu-resultat-ligne')).toHaveText('Tenue · nouvelle');
+    await expect(page.locator('#menu-resultat-range')).toHaveText('Rangée dans la collection (pas encore portable).');
+    await page.locator('#menu-resultat-continuer').click();
+    await expect(page.locator('#menu-boutique-tenues-note')).toContainText('obtenues : 1 /');
+    expect((await etatBoutique(page)).collection).toEqual({ [tenue.id]: 1 });
   });
 });

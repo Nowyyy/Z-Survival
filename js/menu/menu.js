@@ -386,8 +386,10 @@ export function creerMenu({ dict, infos = [], liens = {}, solde: montant = 0, re
     // Lot 8d : sous-menus du Personnage (Inventaire, Fusion, Personnages), écrans pleins eux aussi ; « ‹ Équipement » revient à l'écran Personnage.
     const plein = ECRANS_PLEINS.includes(etat.ecran);
     const sous = SOUS_MENUS.includes(etat.ecran); // sous-menu du Personnage : à la place de l'écran de l'onglet, barre d'onglets visible
-    box.dataset.ecran = plein || sous ? etat.ecran : '';
-    nav.hidden = plein;
+    // Lot 8e (retour du propriétaire) : résultat d'un achat de la Boutique en écran plein (barre d'onglets masquée, comme l'ouverture du lot 8f).
+    const resultat = etat.onglet === 'boutique' && !plein && !sous && Boolean(boutique?.pleinEcran());
+    box.dataset.ecran = plein || sous ? etat.ecran : resultat ? 'resultat' : '';
+    nav.hidden = plein || resultat;
     for (const [id, s] of ecransOnglets) s.hidden = id !== etat.onglet || plein || sous;
     boutique?.synchroniser(etat.onglet === 'boutique' && !plein && !sous); // lot 8e : la Boutique tient sa vue (caisses ou résultat)
     perso?.synchroniser(etat.ecran);
