@@ -12,6 +12,8 @@ import { createRng, nextFloat } from './rng.js';
 
 export const TIRAGES_X10 = 10;
 export const TYPES_CAISSE = Object.freeze(['equipement', 'personnage', 'cosmetique']);
+// Dessin de la caisse (retour du propriétaire : un design par genre de caisse) ; absent : bois.
+export const MODELES = Object.freeze(['bois', 'militaire', 'elite', 'recrues', 'tenues']);
 const ID = /^[a-z0-9-]{1,32}$/;
 // Teinte d'une caisse (couleur de ses « ? », de ses rayons et de sa bande) : un jeton existant de css/tokens.css.
 const TEINTE = /^--(menu|rarete)-[a-z0-9-]{1,40}$/;
@@ -82,9 +84,21 @@ export function lireCaisses(json, cat) {
       erreurs.push(`caisse ${id} : teinte invalide`);
       teinte = TEINTE_DEFAUT;
     }
+    const modele = c.modele === undefined ? 'bois' : c.modele;
+    if (!MODELES.includes(modele)) {
+      erreurs.push(`caisse ${id} : modèle inconnu ${c.modele}`);
+      continue;
+    }
     const cles = clesDe(type, cat);
     const sources = estObjet(c.chances) ? c.chances : {};
     let ok = true;
+    // Retour du propriétaire : une caisse à raretés (objets, tenues) contient toutes les raretés ; une meilleure caisse en augmente seulement les
+    // chances.
+    const manquantes = type === 'personnage' ? [] : cles.filter((k) => !Object.hasOwn(sources, k));
+    if (manquantes.length) {
+      erreurs.push(`caisse ${id} : raretés absentes ${manquantes.join(', ')}`);
+      ok = false;
+    }
     for (const [cle, v] of Object.entries(sources)) {
       if (!cles.includes(cle)) {
         erreurs.push(`caisse ${id} : ${type === 'personnage' ? 'personnage' : 'rareté'} inconnu(e) ${cle}`);
@@ -104,7 +118,7 @@ export function lireCaisses(json, cat) {
       ok = false;
     }
     if (!ok) continue;
-    caisses.push(Object.freeze({ id, type, nom, teinte, prix: p1, prix10: p10, chances: Object.freeze(chancesLues) }));
+    caisses.push(Object.freeze({ id, type, modele, nom, teinte, prix: p1, prix10: p10, chances: Object.freeze(chancesLues) }));
   }
   return { caisses, erreurs };
 }
@@ -130,6 +144,14 @@ export function bornes(caisse, cat) {
   if (typeDe(caisse) === 'personnage') return null;
   const c = chances(caisse, cat);
   return c.length ? { min: c[0].rarete, max: c[c.length - 1].rarete, n: c.length } : null;
+}
+
+// Part des deux raretés les plus hautes (« Épique ou mieux : 4 % » sur la carte) ; caisse de personnages ou invalide : null.
+export function partHaute(caisse, cat) {
+  if (typeDe(caisse) === 'personnage' || !caisseValide(caisse, cat)) return null;
+  const hautes = cat.raretes.slice(-2).map((r) => r.id);
+  const p = caisse.chances.filter((x) => hautes.includes(x.rarete)).reduce((s, x) => s + x.pourcent, 0);
+  return { rarete: hautes[0], pourcent: Math.round(p * 100) / 100 };
 }
 
 // Un tirage avec le générateur donné : { objet | null, rng }. Équipement : { id, rarete, niveau: 1 } ; cosmétique : { type: 'cosmetique', id, rarete } ;

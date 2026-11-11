@@ -3,7 +3,7 @@
 // (ajouterObjets de js/core/equipement.js) : objets obtenus utilisables comme les autres (équiper, fusionner, statistiques). Docs/ref/menu-principal.md.
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
-import { TEINTE_DEFAUT, TIRAGES_X10, ajouterCosmetiques, bornes, chances, elementsDe, lireCaisses, lireCosmetiques, lireOffres, objetsDeRarete, offresDuJour, prixAchat, resume, tirer, tirer10, tirerN } from '../../js/core/caisses.js';
+import { TEINTE_DEFAUT, TIRAGES_X10, ajouterCosmetiques, partHaute, bornes, chances, elementsDe, lireCaisses, lireCosmetiques, lireOffres, objetsDeRarete, offresDuJour, prixAchat, resume, tirer, tirer10, tirerN } from '../../js/core/caisses.js';
 import { ajouterObjets, ameliorerPersonnage, choisirPersonnage, creerEtatEquipement, equiper, estDebloque, etatFusion, fusionner, infoPersonnage, lireCatalogue, objetDe, obtenirPersonnages, statistiquesEffectives } from '../../js/core/equipement.js';
 
 const lire = (f) => JSON.parse(readFileSync(f, 'utf8'));
@@ -32,9 +32,15 @@ describe('données data/menu/caisses.json (lireCaisses)', () => {
     expect(toutes.map((c) => [c.id, c.type])).toEqual([['ravitaillement', 'equipement'], ['militaire', 'equipement'], ['elite', 'equipement'], ['recrues', 'personnage'], ['tenues', 'cosmetique']]);
     expect(caisses.map((c) => c.id)).toEqual(['ravitaillement', 'militaire', 'elite']);
     expect(caisses.map((c) => c.nom)).toEqual(['Caisse de ravitaillement', 'Caisse militaire', 'Caisse d\'élite']);
-    expect(caisse('ravitaillement').chances.map((x) => x.rarete)).toEqual(['commun', 'peu-commun', 'rare']);
-    expect(caisse('militaire').chances.map((x) => x.rarete)).toEqual(['peu-commun', 'rare', 'epique']);
-    expect(caisse('elite').chances.map((x) => x.rarete)).toEqual(['epique', 'legendaire']);
+    // Retour du propriétaire : toutes les raretés dans chaque caisse ; d'une caisse à la suivante, la part des plus rares augmente.
+    for (const id of ['ravitaillement', 'militaire', 'elite']) expect(caisse(id).chances.map((x) => x.rarete), id).toEqual(['commun', 'peu-commun', 'rare', 'epique', 'legendaire']);
+    const hautes = ['ravitaillement', 'militaire', 'elite'].map((id) => partHaute(caisse(id), cat).pourcent);
+    expect(hautes).toEqual([4, 10, 45]);
+    expect(hautes[0] < hautes[1] && hautes[1] < hautes[2]).toBe(true);
+    expect(toutes.find((c) => c.id === 'tenues').chances.map((x) => x.rarete)).toEqual(['commun', 'peu-commun', 'rare', 'epique', 'legendaire']);
+    // Un dessin par genre de caisse.
+    expect(toutes.map((c) => c.modele)).toEqual(['bois', 'militaire', 'elite', 'recrues', 'tenues']);
+    expect(partHaute(toutes.find((c) => c.id === 'recrues'), cat)).toBeNull();
   });
 
   it('chances : somme de 100 par caisse, raretés connues, pour cent > 0 ; chaque rareté tirable a des objets dans le catalogue', () => {
@@ -79,8 +85,13 @@ describe('données data/menu/caisses.json (lireCaisses)', () => {
     expect(lireCaisses({ caisses: [base, base] }, cat).caisses).toHaveLength(1);
     for (const j of [null, undefined, 3, 'x', [], {}, { caisses: 'x' }]) expect(() => lireCaisses(j, cat)).not.toThrow();
     expect(lireCaisses(JSON_CAISSES, null)).toEqual({ caisses: [], erreurs: ['caisses : catalogue absent'] });
-    // 0,1 + 0,2 + 99,7 : somme à 10⁻⁹ près acceptée.
-    expect(un({ chances: { commun: 0.1, 'peu-commun': 0.2, rare: 99.7 } }).caisses).toHaveLength(1);
+    // 0,1 + 0,2 + 99,5 + 0,1 + 0,1 : somme à 10⁻⁹ près acceptée.
+    expect(un({ chances: { commun: 0.1, 'peu-commun': 0.2, rare: 99.5, epique: 0.1, legendaire: 0.1 } }).caisses).toHaveLength(1);
+    // Règle du propriétaire : une caisse d'objets ou de tenues sans toutes les raretés est refusée ; modèle inconnu refusé.
+    const sansLeg = un({ chances: { commun: 60, 'peu-commun': 30, rare: 8, epique: 2 } });
+    expect([sansLeg.caisses, sansLeg.erreurs]).toEqual([[], ['caisse ravitaillement : raretés absentes legendaire']]);
+    expect(un({ modele: 'inconnu' }).caisses).toEqual([]);
+    expect(un({ modele: undefined }).caisses[0].modele).toBe('bois');
   });
 
   it('règle écrite : une rareté tirable sans objet dans le catalogue fait refuser la caisse (et le tirage d\'une caisse forgée rend null)', () => {
@@ -88,23 +99,23 @@ describe('données data/menu/caisses.json (lireCaisses)', () => {
     const cat2 = { ...lireCatalogue({ ...DONNEES, objets: objetsSansLegendaire }).cat, cosmetiques: cat.cosmetiques };
     expect(objetsDeRarete(cat2, 'legendaire')).toEqual([]);
     const lu = lireCaisses(JSON_CAISSES, cat2);
-    expect(lu.caisses.map((c) => c.id)).toEqual(['ravitaillement', 'militaire', 'recrues', 'tenues']);
-    expect(lu.erreurs).toEqual(['caisse elite : aucun objet legendaire dans le catalogue']);
+    expect(lu.caisses.map((c) => c.id)).toEqual(['recrues', 'tenues']); // toutes les caisses d'objets contiennent des légendaires
+    expect(lu.erreurs).toEqual(['ravitaillement', 'militaire', 'elite'].map((id) => `caisse ${id} : aucun objet legendaire dans le catalogue`));
     // Caisse valide pour le catalogue complet, tirée avec le catalogue réduit : jamais d'objet inventé.
     const legendaires = Array.from({ length: 400 }, (_, g) => tirer(caisse('elite'), cat2, g));
     expect(legendaires.some((o) => o === null)).toBe(true);
-    expect(legendaires.filter(Boolean).every((o) => o.rarete === 'epique')).toBe(true);
+    expect(legendaires.filter(Boolean).every((o) => o.rarete !== 'legendaire')).toBe(true);
   });
 });
 
 describe('chances affichées (E3-6)', () => {
   it('liste « rareté, pour cent » dans l\'ordre des raretés, noms des données, objets possibles par rareté (ordre du catalogue)', () => {
     const c = chances(caisse('ravitaillement'), cat);
-    expect(c.map((x) => [x.rarete, x.nom, x.pourcent])).toEqual([['commun', 'Commun', 70], ['peu-commun', 'Peu commun', 25], ['rare', 'Rare', 5]]);
+    expect(c.map((x) => [x.rarete, x.nom, x.pourcent])).toEqual([['commun', 'Commun', 62], ['peu-commun', 'Peu commun', 25], ['rare', 'Rare', 9], ['epique', 'Épique', 3], ['legendaire', 'Légendaire', 1]]);
     for (const x of c) expect(x.objets.map((o) => o.id)).toEqual([...cat.objets.values()].filter((o) => o.raretes[x.rarete]).map((o) => o.id));
     expect(c[0].objets[0]).toEqual({ id: 'pistolet', nom: 'Pistolet' });
-    expect(bornes(caisse('militaire'), cat)).toEqual({ min: 'peu-commun', max: 'epique', n: 3 });
-    expect(bornes(caisse('elite'), cat)).toEqual({ min: 'epique', max: 'legendaire', n: 2 });
+    expect(bornes(caisse('militaire'), cat)).toEqual({ min: 'commun', max: 'legendaire', n: 5 });
+    expect(bornes(caisse('elite'), cat)).toEqual({ min: 'commun', max: 'legendaire', n: 5 });
     for (const x of [null, {}, { chances: [] }, { chances: [{ rarete: 'x', pourcent: 5 }] }]) {
       expect(chances(x, cat)).toEqual([]);
       expect(bornes(x, cat)).toBeNull();
@@ -143,7 +154,7 @@ describe('tirage (tirer, tirer10)', () => {
       expect(dix).toEqual(tirerN(c, cat, g, 10));
       expect(tirerN(c, cat, g, 3)).toEqual(dix.slice(0, 3));
     }
-    // Aucune garantie : parmi 2 000 ×10 de la caisse de ravitaillement, certains ne contiennent que des communs (0,7¹⁰ ≈ 2,8 %).
+    // Aucune garantie : parmi 2 000 ×10 de la caisse de ravitaillement, certains ne contiennent que des communs (0,62¹⁰ ≈ 0,8 %).
     const seulementCommuns = Array.from({ length: 2000 }, (_, g) => tirer10(c, cat, g)).filter((d) => d.every((o) => o.rarete === 'commun')).length;
     expect(seulementCommuns).toBeGreaterThan(0);
   });

@@ -173,7 +173,8 @@ test.describe('Boutique (E3-1)', () => {
       await expect(page.locator('.e3-rayon-titre')).toHaveText(['Offres du jour', 'Équipement', 'Personnages', 'Cosmétiques']);
       await expect(page.locator('.e3-offre')).toHaveCount(6);
       expect(await page.locator('#menu-boutique-defile').evaluate((n) => [getComputedStyle(n).overflowY, n.scrollHeight > n.clientHeight])).toEqual(['auto', true]);
-      const CONTENUS = { ravitaillement: 'Un objet commun à rareCommun · Peu commun · Rare', militaire: 'Un objet peu commun à épiquePeu commun · Rare · Épique', elite: 'Un objet épique ou légendaireÉpique · Légendaire', recrues: 'Un personnage au hasardNouveau : débloqué · déjà obtenu : +1 niveau', tenues: 'Tenues : commun à légendaireCommun · Peu commun · Rare · Épique · Légendaire' };
+      // Retour du propriétaire : toutes les raretés dans chaque caisse ; la carte donne la part des plus rares (et une barre de répartition décorative).
+      const CONTENUS = { ravitaillement: 'Un objet, toutes raretésÉpique ou mieux : 4\u00a0%', militaire: 'Un objet, toutes raretésÉpique ou mieux : 10\u00a0%', elite: 'Un objet, toutes raretésÉpique ou mieux : 45\u00a0%', recrues: 'Un personnage au hasardNouveau : débloqué · déjà obtenu : +1 niveau', tenues: 'Une tenue, toutes raretésÉpique ou mieux : 5\u00a0%' };
       for (const c of caisses) {
         const carte = page.locator(`.e3-carte[data-caisse="${c.id}"]`);
         await carte.scrollIntoViewIfNeeded();
@@ -186,7 +187,11 @@ test.describe('Boutique (E3-1)', () => {
         await expect(page.locator(`#menu-caisse-${c.id}-chances`)).toHaveText('Voir les chances');
         // Caisse dessinée : trois « ? » (un grand doublé d'un halo, deux petits), rayons, quatre rivets ; dans sa carte.
         await expect(carte.locator('.e3-caisse .e3-q')).toHaveCount(4);
-        await expect(carte.locator('.e3-rivet')).toHaveCount(4);
+        await expect(carte.locator('.e3-caisse')).toHaveAttribute('data-modele', c.modele); // un dessin par genre de caisse
+        await expect(carte.locator('.e3-repartition-part')).toHaveCount(c.type === 'personnage' ? 0 : 5);
+        // Le grand « ? » est au milieu de la face de la caisse (retour du propriétaire : il était trop bas).
+        const [q, face] = await carte.locator('.e3-caisse').evaluate((n) => [n.querySelector('.e3-lueur .e3-q:not(.e3-q-halo)'), n.querySelector('.e3-flotte > :not(.e3-poignee):not(.e3-anse)')].map((x) => { const r = x.getBBox(); return { y: r.y, height: r.height }; }));
+        expect(Math.abs((q.y + q.height / 2) - (face.y + face.height / 2)), c.id).toBeLessThan(face.height * 0.2);
         const [svg, bloc] = [await boite(page, `.e3-carte[data-caisse="${c.id}"] .e3-caisse`), await boite(page, `.e3-carte[data-caisse="${c.id}"]`)];
         expect([svg.h >= 39, svg.t >= bloc.t, svg.b <= bloc.b]).toEqual([true, true, true]);
       }
@@ -229,7 +234,7 @@ test.describe('Boutique (E3-1)', () => {
     await graines(page, [G_LEGENDAIRE, 3, G_LEGENDAIRE, 3]);
     for (const size of [REF, { width: 667, height: 375 }]) {
       await ouvrirBoutique(page, size);
-      const r = await contrastes(page, ['.e3-rubrique[aria-current] .e3-rubrique-nom', '.e3-rubrique:not([aria-current]) .e3-rubrique-nom', '#menu-boutique-compte', '.e3-offre-nom', '.e3-offre-rarete', '.e3-offre-acheter', '#menu-caisse-militaire-nom', '#menu-caisse-militaire-contenu', '.e3-carte-raretes', '#menu-caisse-elite-un .e3-ouvrir-action', '#menu-caisse-elite-un .e3-ouvrir-prix', '#menu-caisse-elite-dix .e3-ouvrir-prix', '#menu-caisse-elite-chances']);
+      const r = await contrastes(page, ['.e3-rubrique[aria-current] .e3-rubrique-nom', '.e3-rubrique:not([aria-current]) .e3-rubrique-nom', '#menu-boutique-compte', '.e3-offre-nom', '.e3-offre-rarete', '.e3-offre-acheter', '#menu-caisse-militaire-nom', '#menu-caisse-militaire-contenu .e3-carte-resume', '.e3-carte-raretes', '#menu-caisse-elite-un .e3-ouvrir-action', '#menu-caisse-elite-un .e3-ouvrir-prix', '#menu-caisse-elite-dix .e3-ouvrir-prix', '#menu-caisse-elite-chances .e3-lien-nom']);
       for (const [s, v] of Object.entries(r)) expect(v, `${size.width} ${s}`).toBeGreaterThanOrEqual(4.5);
       await page.locator('#menu-caisse-elite-un').click();
       const r1 = await contrastes(page, ['#menu-resultat-nom', '#menu-resultat-rarete', '#menu-resultat-ligne', '#menu-resultat-range', '#menu-resultat-continuer', '#menu-resultat-rouvrir']);
@@ -269,6 +274,7 @@ test.describe('Boutique (E3-1)', () => {
     // Décalage d'une carte à l'autre (0, −1,3 s, −2,6 s), tremblement en 4 s et pulsation en 1,6 s (moins de 3 éclats par seconde).
     const tremble = await page.locator('.e3-carte[data-type="equipement"] .e3-tremble').evaluateAll((ns) => ns.map((n) => [getComputedStyle(n).animationDelay, getComputedStyle(n).animationDuration]));
     expect(tremble).toEqual([['0s', '4s'], ['-1.3s', '4s'], ['-2.6s', '4s']]);
+    expect(await page.locator('.e3-caisse').evaluateAll((ns) => new Set(ns.map((n) => n.dataset.modele)).size)).toBe(caisses.length);
     expect(await page.locator('.e3-lueur').first().evaluate((n) => getComputedStyle(n).animationDuration)).toBe('1.6s');
     await page.locator('#menu-onglet-infini').click();
     await expect(page.locator(sel)).toBeHidden();
