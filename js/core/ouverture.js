@@ -81,7 +81,8 @@ export function lireOuvertures(json, raretes) {
   const legendaire = {
     duree: nombre(jl.duree, 0.5, 30),
     explosion: plage(jl.explosion, 0, 30),
-    projection: { delai: nombre(jp.delai, 0, 10), vol: nombre(jp.vol, 0.01, 10), colle: nombre(jp.colle, 0, 10), glissade: nombre(jp.glissade, 0.01, 10), trainees: nombre(jp.trainees, 0, 10) },
+    // montee : part du vol où le zombie, soufflé par une seconde explosion sous lui, monte hors de l'écran (puis il retombe sur l'écran).
+    projection: { delai: nombre(jp.delai, 0, 10), vol: nombre(jp.vol, 0.01, 10), montee: nombre(jp.montee, 0.05, 0.95), colle: nombre(jp.colle, 0, 10), glissade: nombre(jp.glissade, 0.01, 10), trainees: nombre(jp.trainees, 0, 10) },
     objet: plage(jl.objet, 0, 30),
     vol: plage(jl.vol, 0, 30),
     retour: { apparition: nombre(jr.apparition, 0, 10), marche: nombre(jr.marche, 0.01, 10) },
@@ -210,7 +211,8 @@ export function chronologie(reglages, raretes, { graine = 1 } = {}) {
       const decolle = impact + p.colle;
       const bas = decolle + p.glissade;
       const apparition = bas + L.retour.apparition;
-      c.projection = Object.freeze({ zombie: choix.zombie, cote: choix.cote, depart, impact, decolle, bas, apparition, place: apparition + L.retour.marche });
+      // Retour du propriétaire : seconde explosion sous le zombie au départ (souffle), il monte hors de l'écran jusqu'au sommet, puis retombe sur l'écran.
+      c.projection = Object.freeze({ zombie: choix.zombie, cote: choix.cote, depart, souffle: depart, sommet: depart + p.vol * p.montee, impact, decolle, bas, apparition, place: apparition + L.retour.marche });
       c.sombre = Object.freeze([impact, decolle + p.glissade * 0.85]);
       c.trainees = Object.freeze([decolle, bas + p.trainees]);
       // L'objet doré sort derrière le zombie collé à l'écran (révélé par la glissade).
@@ -375,7 +377,7 @@ function zombieA(chrono, reglages, z, t) {
       else if (t < P.bas) [phase, p] = ['glisse', lisse(progres(t, P.decolle, P.bas))];
       else if (t < P.apparition) [phase, p] = ['absent', progres(t, P.bas, P.apparition)];
       else [phase, p] = ['retour', progres(t, P.apparition, P.place)];
-      out.projection = { phase, p, cote: P.cote };
+      out.projection = { phase, p, cote: P.cote, etapeVol: phase === 'vol' ? (t < P.sommet ? 'montee' : 'retombe') : null, pv: phase === 'vol' ? (t < P.sommet ? progres(t, P.depart, P.sommet) : progres(t, P.sommet, P.impact)) : 0 };
       if (phase === 'retour') {
         // Réapparaît au fond, sur le côté tiré, et marche jusqu'à sa place (promenade du moment).
         const bord = P.cote === 'gauche' ? -0.62 : 0.62;

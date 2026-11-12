@@ -360,6 +360,34 @@ export async function ecranBoutique({ t, bandeau, root, rootDialogue, surVue = (
   let minuterie = null;
   let ouverture = null; // lot 8f : ouverture en 3D en cours ({ section, liberer(), focus() })
   let preparation = false; // lot 8f : chargement de l'ouverture (Three.js, scène) en cours
+  let gel = null; // lot 8f : menu figé pendant le chargement et l'ouverture ({ roue(), fin() })
+
+  // Lot 8f (retour du propriétaire) : « Ouvrir » touché pendant le chargement de l'ouverture : les commandes de l'écran sont figées (inert : ni
+  // toucher ni clavier) et une petite roue tourne au centre (styles en ligne et jetons : css/ouvertures.css n'est peut-être pas encore chargée) ;
+  // la roue part quand l'ouverture est prête, le menu reste figé derrière elle jusqu'à sa fin.
+  function geler() {
+    const figes = [...rootDialogue.children].filter((n) => !n.inert);
+    for (const n of figes) n.inert = true;
+    const roue = el('div', [], { id: 'menu-ouverture-chargement', role: 'status' });
+    Object.assign(roue.style, { position: 'fixed', left: '50%', top: '50%', zIndex: '12', width: '44px', height: '44px', margin: '-22px 0 0 -22px', boxSizing: 'border-box', borderRadius: '50%', border: '4px solid var(--menu-texte-doux)', borderTopColor: 'var(--menu-rouge-clair)', pointerEvents: 'none' });
+    const texte = el('span', ['sr-only']);
+    texte.textContent = t('game.menu.ouverture.chargement');
+    roue.append(texte);
+    rootDialogue.append(roue);
+    roue.animate?.([{ transform: 'rotate(0deg)' }, { transform: 'rotate(360deg)' }], { duration: 800, iterations: Infinity });
+    let retiree = false;
+    return {
+      roue() {
+        if (retiree) return;
+        retiree = true;
+        roue.remove();
+      },
+      fin() {
+        this.roue();
+        for (const n of figes) n.inert = false;
+      },
+    };
+  }
 
   // Tirage (graine du navigateur), éléments ajoutés à l'état en mémoire, puis l'ouverture. Prix jamais prélevé.
   function acheter(caisse, quantite, depuis) {
@@ -399,6 +427,7 @@ export async function ecranBoutique({ t, bandeau, root, rootDialogue, surVue = (
     dernier = r;
     if (r.caisse && ouvertureVoulue()) {
       preparation = true;
+      gel ??= geler();
       const m = await chargerOuverture();
       resultat.afficher(r); // cartes et annonce lues dans l'écran de résultat (encore caché)
       const o = m ? await m.lancerOuverture({
@@ -410,6 +439,7 @@ export async function ecranBoutique({ t, bandeau, root, rootDialogue, surVue = (
         },
       }).catch(() => null) : null;
       preparation = false;
+      gel?.roue();
       if (o && dernier === r) {
         ouverture = o;
         vue = 'ouverture';
@@ -418,8 +448,13 @@ export async function ecranBoutique({ t, bandeau, root, rootDialogue, surVue = (
         return;
       }
       o?.liberer();
+      degeler();
     }
     montrerResultat(r);
+  }
+  function degeler() {
+    gel?.fin();
+    gel = null;
   }
 
   // Lot 8f : cartes de l'ouverture = cartes de l'écran de résultat du lot 8e (nom, rareté écrite, détail, jeton de la bordure, halo), dans l'ordre.
@@ -439,6 +474,7 @@ export async function ecranBoutique({ t, bandeau, root, rootDialogue, surVue = (
     const o = ouverture;
     ouverture = null;
     o.liberer();
+    degeler();
     return true;
   }
   function retourCaisses() {
