@@ -331,20 +331,24 @@ export async function creerScene({ canvas, couleur, chrono, reglages, cartes, mo
   // --- Fusil à la première personne ---------------------------------------------------------------------------------------------------------
   const FG = fusilGeo();
   for (const g of Object.values(FG)) geo(g);
-  const texArme = T.metal('--ouv-arme', 31);
+  // Retour du propriétaire (« des textures sur l'arme, la lunette ») : métal bruni aux arêtes usées, polymère grainé, cuir des gants à
+  // coutures, tissu des manches, verre bleuté à reflet (textures sur canevas, couleurs --ouv-*).
   const fusil = new THREE.Group();
+  const texFusil = [T.armeUsee(), T.polymere(), T.gantCuir(), T.tissu()];
   const meshesFusil = [
-    new THREE.Mesh(FG.arme, mat(new THREE.MeshPhongMaterial({ color: NEUTRE, map: texArme, shininess: 48, specular: SPEC_METAL }))),
-    new THREE.Mesh(FG.polymere, mat(new THREE.MeshPhongMaterial({ color: col('--ouv-polymere'), shininess: 10, specular: SPEC_MAT }))),
-    new THREE.Mesh(FG.gant, mat(new THREE.MeshPhongMaterial({ color: col('--ouv-gant'), shininess: 10, specular: SPEC_MAT }))),
-    new THREE.Mesh(FG.manche, mat(new THREE.MeshPhongMaterial({ color: col('--ouv-manche'), shininess: 10, specular: SPEC_MAT }))),
-    new THREE.Mesh(FG.lentille, mat(new THREE.MeshBasicMaterial({ color: col('--ouv-lentille') }))),
+    new THREE.Mesh(FG.arme, mat(new THREE.MeshPhongMaterial({ color: NEUTRE, map: texFusil[0], shininess: 60, specular: SPEC_METAL }))),
+    new THREE.Mesh(FG.polymere, mat(new THREE.MeshPhongMaterial({ color: NEUTRE, map: texFusil[1], shininess: 10, specular: SPEC_MAT }))),
+    new THREE.Mesh(FG.gant, mat(new THREE.MeshPhongMaterial({ color: NEUTRE, map: texFusil[2], shininess: 10, specular: SPEC_MAT }))),
+    new THREE.Mesh(FG.manche, mat(new THREE.MeshPhongMaterial({ color: NEUTRE, map: texFusil[3], shininess: 10, specular: SPEC_MAT }))),
+    new THREE.Mesh(FG.lentille, mat(new THREE.MeshBasicMaterial({ color: NEUTRE, map: T.lentilleVerre() }))),
     new THREE.Mesh(FG.point, mat(new THREE.MeshBasicMaterial({ color: col('--ouv-point') }))),
   ];
   fusil.add(...meshesFusil);
-  // Lueur propre du fusil, des gants et des manches (sans lumière d'appoint) : ils restent lisibles au premier plan.
-  for (const m of meshesFusil.slice(1, 4)) m.material.emissive.copy(m.material.color).multiplyScalar(0.12);
-  meshesFusil[0].material.emissive.setScalar(0.025);
+  // Lueur propre du fusil, des gants et des manches (sans lumière d'appoint) : ils restent lisibles au premier plan (même texture en lueur).
+  meshesFusil.slice(0, 4).forEach((m, k) => {
+    m.material.emissiveMap = texFusil[k];
+    m.material.emissive.setScalar(k === 0 ? 0.08 : 0.12);
+  });
   const flamme = new THREE.Sprite(mat(new THREE.SpriteMaterial({ map: texEtoile, color: col('--ouv-flamme'), transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, opacity: 0 })));
   flamme.position.set(...BOUT).add(new THREE.Vector3(0, 0, -3));
   fusil.add(flamme);

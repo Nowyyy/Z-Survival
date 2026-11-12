@@ -58,6 +58,16 @@
   --ouv-gant-sombre: #2b2319;
   --ouv-manche: #454a35;
   --ouv-lentille: #132030;
+  /* Retour du propriétaire (« des textures sur l'arme, la lunette ») : arêtes usées, coutures, trame, reflet du verre */
+  --ouv-arme-sombre: #2a2a27;
+  --ouv-arme-use: #9a998f;
+  --ouv-polymere-clair: #45443e;
+  --ouv-gant-clair: #a08458;
+  --ouv-couture: #c9b48a;
+  --ouv-manche-sombre: #2d3122;
+  --ouv-manche-clair: #5f664a;
+  --ouv-lentille-bord: #3d6f8f;
+  --ouv-reflet: #e8f4ff;
   --ouv-point: #ff3b2a;
   --ouv-flamme: var(--game-muzzle);
   --ouv-flamme-coeur: var(--game-lamp-core);
