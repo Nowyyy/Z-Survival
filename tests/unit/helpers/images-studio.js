@@ -8,6 +8,8 @@ import { existsSync, readFileSync } from 'node:fs';
 export const IMAGES_STUDIO = Object.freeze({
   'assets/studio/no-way-studio-logo-anime.svg': '4bfe9df41eac6eaf70ebdcf55a9b5686a14f0724c5d2bdcef3a21723840aa197',
   'assets/studio/no-way-studio-logo-fixe.svg': 'd8244715dbf08381c329a8f8cc4f22612f4ce6c4ddcd8fc91c6cfe990666fd6b',
+  // Retour du propriétaire : logo de Noven Studio (PNG fourni par lui, affiché dans les Crédits).
+  'assets/studio/noven-studio-logo.png': '5d9798611ee8d0d8ca98d681a3a6b6e6544cb5e3f38fe8145c606b753e678718',
 });
 export const SONS_STUDIO = Object.freeze({
   'Docs/studio/no-way-studio-logo-son.wav': 'a78cfd56ddb94f9bc6801dd7e2a917a7b7ca5077a0928062394fff7722556256',

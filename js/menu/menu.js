@@ -310,7 +310,7 @@ export function creerMenu({ dict, infos = [], liens = {}, solde: montant = 0, re
   version.hidden = true;
   // Lot 8g : tout en bas, le logo du studio en petit (copie fixe) à côté de la version (à sa droite) ; image demandée à la première ouverture (déjà en cache :
   // l'écran de chargement l'affiche).
-  const studio = el('img', ['e8-studio'], { id: 'menu-studio', alt: t('game.menu.studio.nom'), width: '792', height: '556', decoding: 'async' });
+  const studio = el('img', ['e8-studio'], { id: 'menu-studio', alt: t('game.menu.studio.nom'), width: '824', height: '628', decoding: 'async' });
   const pied = el('div', ['e8-pied'], { id: 'menu-pied' });
   pied.append(version, studio); // la version reste alignée sur les icônes des entrées (retour du propriétaire, lot 8d) ; le logo à sa droite
   let versionDemandee = false;

@@ -39,7 +39,9 @@ describe('logo du studio (lot 8g)', () => {
   });
 
   it('exception nominative : ces deux chemins avec leur somme exacte seulement ; un autre chemin ou une autre somme reste refusé', () => {
-    expect(Object.keys(IMAGES_STUDIO)).toEqual([ORIGINAL, FIXE]);
+    expect(Object.keys(IMAGES_STUDIO)).toEqual([ORIGINAL, FIXE, 'assets/studio/noven-studio-logo.png']);
+    const png = readFileSync('assets/studio/noven-studio-logo.png');
+    expect([png.subarray(0, 8).toString('hex'), png.readUInt32BE(16), png.readUInt32BE(20), png.length <= 32 * 1024]).toEqual(['89504e470d0a1a0a', 480, 290, true]);
     expect(Object.keys(SONS_STUDIO)).toEqual([SON_ORIGINAL, SON_SORTIE]);
     for (const f of Object.keys(FICHIERS_STUDIO)) expect(imageStudio(f), f).toBe(true);
     expect(imageStudio('assets/studio/no-way-studio-logo-son.wav')).toBe(false);

@@ -4130,9 +4130,9 @@
 
 .e0-logo {
   display: block;
-  width: min(78vw, calc(62vh * 792 / 556), 720px);
+  width: min(78vw, calc(62vh * 824 / 628), 720px);
   height: auto;
-  aspect-ratio: 792 / 556;
+  aspect-ratio: 824 / 628; /* viewBox du logo (nouvelle version : -20 -62 824 628) */
   user-select: none;
   -webkit-user-drag: none;
 }
@@ -4161,19 +4161,20 @@
   pointer-events: auto;
 }
 
-/* Retour du propriétaire (son du logo) : attente du premier geste : logo fixe atténué, « Toucher pour commencer » qui respire lentement (2,4 s). */
-.e0-geste .e0-logo {
-  opacity: 0.35;
+/* Retour du propriétaire (son du logo) : attente du premier geste : écran noir, sans logo, « Toucher pour commencer » au milieu, qui respire
+   lentement (2,4 s). */
+.e0-logo[hidden] {
+  display: none;
 }
 
 .e0-commencer {
   position: absolute;
+  top: 50%;
   left: 50%;
-  bottom: calc(env(safe-area-inset-bottom, 0px) + 12px);
   min-width: var(--menu-cible);
   min-height: var(--menu-cible);
   padding: 0 18px;
-  transform: translateX(-50%);
+  transform: translate(-50%, -50%);
   border: 0;
   background: transparent;
   color: var(--menu-texte);
@@ -4292,11 +4293,20 @@
   padding-right: 4px;
 }
 
+.e11-logos {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: calc(14 * var(--u));
+  margin: 0 0 calc(8 * var(--u));
+}
+
+/* Retour du propriétaire : logos en petit (avant : jusqu'à 230 de large, trop grand sur PC) ; No Way Studio et Noven Studio côte à côte. */
 .e11-logo {
   display: block;
-  width: min(100%, calc(230 * var(--u)));
-  height: auto;
-  margin: 0 0 calc(6 * var(--u));
+  width: auto;
+  max-width: 100%;
+  height: clamp(48px, calc(72 * var(--u)), 110px);
 }
 
 .e11-signature {

@@ -4,7 +4,8 @@
 // js/core/graphics.js : jamais en partie directe, ni au retour d'une partie, ni sous ?test=1 sans ?intro=1).
 // Retour du propriétaire : son du logo (assets/studio/no-way-studio-logo-son.mp3, fourni par lui) joué avec l'animation, nouveau logo calé sur ce son.
 // Les navigateurs (Safari surtout) refusent tout son avant un geste, et le jeu n'en joue aucun avant (CLAUDE.md) : écran « Toucher pour commencer »
-// (logo fixe atténué) ; au toucher ou à une touche, le logo animé et le son partent ensemble. Sans geste pendant 4 s, le logo se joue sans son.
+// (fond noir, texte au milieu, sans logo : retour du propriétaire) ; au toucher ou à une touche, le logo animé et le son partent ensemble. Sans geste
+// pendant 4 s, le logo se joue sans son.
 // - Pendant le logo, un appui (n'importe où) ou une touche passe l'introduction (le son s'éteint en fondu) ; « Toucher pour passer » (bouton, 44 px)
 //   apparaît au bout d'une seconde. Durée : celle du son (6,5 s, l'animation finit à 5,7 s).
 // - prefers-reduced-motion : copie fixe du logo (son état final) pendant 1 s, sans geste, sans son, sans fondu.
@@ -50,7 +51,7 @@ export function jouerIntro({ root = document.body, reduit = matchMedia('(prefers
   const box = el('div', 'e0', { id: 'e0', 'data-block': 'E0' });
   if (reduit) box.classList.add('e0-reduit');
   else box.classList.add('e0-geste');
-  const logo = el('img', 'e0-logo', { id: 'e0-logo', alt: '', width: '792', height: '556', decoding: 'async' });
+  const logo = el('img', 'e0-logo', { id: 'e0-logo', alt: '', width: '824', height: '628', decoding: 'async' });
   const commencer = el('button', 'e0-commencer', { type: 'button', id: 'e0-commencer' });
   commencer.hidden = reduit;
   const indice = el('button', 'e0-passer', { type: 'button', id: 'e0-passer' });
@@ -132,6 +133,7 @@ export function jouerIntro({ root = document.body, reduit = matchMedia('(prefers
     phase = 'attente';
     box.classList.remove('e0-geste');
     commencer.hidden = true;
+    logo.hidden = false;
     plus(terminer, FILET_MS);
     adresseStudio(LOGO_ANIME).then((a) => {
       logo.src = a;
@@ -203,10 +205,8 @@ export function jouerIntro({ root = document.body, reduit = matchMedia('(prefers
       logo.src = a;
     }, terminer);
   } else {
-    // Attente du geste : logo fixe atténué (même place, même taille) ; sans geste, départ sans son.
-    adresseStudio(LOGO_FIXE).then((a) => {
-      if (phase === 'geste') logo.src = a;
-    }, () => {});
+    // Attente du geste (retour du propriétaire : sans logo, texte au milieu de l'écran) ; sans geste, départ sans son.
+    logo.hidden = true;
     logo.addEventListener('load', () => {
       if (phase === 'attente') affiche();
     });
@@ -220,6 +220,6 @@ export function jouerIntro({ root = document.body, reduit = matchMedia('(prefers
   return {
     fin,
     passer,
-    etat: () => ({ phase, passe, reduit, son, logo: phase === 'geste' || reduit ? LOGO_FIXE : LOGO_ANIME, indice: box.classList.contains('e0-indice'), visible: box.isConnected, debut: t0, ...temps }),
+    etat: () => ({ phase, passe, reduit, son, logo: phase === 'geste' ? null : reduit ? LOGO_FIXE : LOGO_ANIME, indice: box.classList.contains('e0-indice'), visible: box.isConnected, debut: t0, ...temps }),
   };
 }
