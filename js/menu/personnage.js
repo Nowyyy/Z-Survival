@@ -270,17 +270,32 @@ export async function ecranPersonnage({ t, bandeau, niveaux = null, statsCfg = n
   let retourFocus = null;
   const contexte = { t, bandeau, eq, cat, stats, niveaux, statsCfg, retour: () => fermer(), ouvrir: (nom, opts) => ouvrir(nom, opts) };
 
+  // Retour du propriétaire (bug : après « Retour », l'écran Personnages restait affiché par-dessus les autres) : deux touchers pendant le premier
+  // chargement d'un sous-menu en créaient deux ; le premier, oublié, ne se cachait plus. Un seul chargement par sous-menu (promesse gardée) ;
+  // seule la dernière demande s'ouvre, et aucune si l'on a quitté l'écran Personnage entre-temps.
+  const chargements = new Map(); // nom → promesse du sous-menu créé
+  let demande = 0;
+  let affiche = true;
+  function charger(nom) {
+    if (sous.has(nom)) return Promise.resolve(sous.get(nom));
+    if (!chargements.has(nom)) {
+      chargements.set(nom, SOUS[nom]().then((m) => {
+        const s = m.creer(contexte);
+        sous.set(nom, s);
+        s.section.hidden = true;
+        root.append(s.section);
+        return s;
+      }).finally(() => chargements.delete(nom)));
+    }
+    return chargements.get(nom);
+  }
   async function ouvrir(nom, opts = {}) {
     if (!SOUS[nom]) return;
-    if (!ouvert) retourFocus = opts.depuis ?? document.activeElement;
-    let s = sous.get(nom);
-    if (!s) {
-      const m = await SOUS[nom]();
-      s = m.creer(contexte);
-      sous.set(nom, s);
-      s.section.hidden = true;
-      root.append(s.section);
-    }
+    const jeton = ++demande;
+    const depuis = opts.depuis ?? document.activeElement;
+    const s = await charger(nom);
+    if (jeton !== demande || !affiche) return;
+    if (!ouvert) retourFocus = depuis;
     ouvert = nom;
     s.ouvrir(opts);
     poserEcran(nom);
@@ -302,7 +317,10 @@ export async function ecranPersonnage({ t, bandeau, niveaux = null, statsCfg = n
   return {
     section,
     // Écran plein affiché par menu.js (etatMenu.ecran) : seul le sous-menu de ce nom est visible ; un autre écran (Options…) les cache tous.
-    synchroniser(ecran) {
+    // affiche : onglet Personnage affiché (sinon, une ouverture en cours de chargement est abandonnée).
+    synchroniser(ecran, visible = true) {
+      if (!visible && affiche) demande += 1;
+      affiche = visible;
       if (!SOUS_ECRANS.includes(ecran)) ouvert = null;
       for (const [nom, s] of sous) s.section.hidden = nom !== ecran;
     },

@@ -270,6 +270,38 @@ test.describe('sous-menus Inventaire, Fusion, Personnages (E9-2 à E9-4)', () =>
     });
   }
 
+  test('retour du propriétaire (bug) : deux touchers pendant le premier chargement d\'un sous-menu : un seul écran créé, « Retour » le cache, rien ne reste par-dessus les autres onglets ; onglet quitté pendant le chargement : sous-menu non ouvert', async ({ page, baseURL }) => {
+    const o = surveiller(page, baseURL);
+    // Chargement du module ralenti (téléphone, réseau lent) : les deux touchers arrivent avant sa fin.
+    await page.route('**/js/menu/personnages.js', async (r) => {
+      await new Promise((ok) => setTimeout(ok, 600));
+      await r.continue();
+    });
+    await page.route('**/js/menu/inventaire.js', async (r) => {
+      await new Promise((ok) => setTimeout(ok, 600));
+      await r.continue();
+    });
+    await ouvrirPersonnage(page, REF);
+    const visibles = () => page.evaluate(() => [...document.querySelectorAll('section.e8-ecran')].filter((s) => s.checkVisibility()).map((s) => s.id));
+    await page.locator('#menu-perso-silhouette').click();
+    await page.locator('#menu-perso-silhouette').click();
+    await expect(page.locator('#menu-ecran-personnages')).toBeVisible();
+    expect(await page.locator('#menu-ecran-personnages').count()).toBe(1);
+    await page.locator('#menu-personnages-retour').click();
+    expect(await visibles()).toEqual(['menu-ecran-personnage']);
+    await page.locator('#menu-onglet-jouer').click();
+    expect(await visibles()).toEqual(['menu-ecran-jouer']);
+    // Onglet quitté pendant le chargement de l'Inventaire : il ne s'ouvre pas par-dessus l'Histoire.
+    await page.locator('#menu-onglet-personnage').click();
+    await expect(page.locator('#menu-ecran-personnage')).toBeVisible();
+    await page.locator('#menu-perso-inventaire').click();
+    await page.locator('#menu-onglet-jouer').click();
+    await page.waitForTimeout(900);
+    expect(await page.evaluate(() => window.__zsMenu.etat().menu.ecran)).toBeNull();
+    expect(await visibles()).toEqual(['menu-ecran-jouer']);
+    expect(o.problemes).toEqual([]);
+  });
+
   test('Inventaire : filtre venu d\'un emplacement, filtres, pagination, objet choisi, Équiper puis Retirer, Améliorer jusqu\'au maximum (prix affiché, argent non prélevé), « Fusionner cet objet »', async ({ page, baseURL }) => {
     const o = surveiller(page, baseURL);
     await espionStockage(page);
