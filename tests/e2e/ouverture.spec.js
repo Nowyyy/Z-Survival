@@ -191,19 +191,29 @@ test.describe('ouverture ×1 (E3-2)', () => {
       await new Promise((res) => setTimeout(res, 1500));
       await route.continue();
     });
+    // Retour du propriétaire (écran figé après la roue) : écran de résultat lent au premier achat, second toucher aussitôt : un seul achat, une
+    // seule ouverture, menu figé dès le premier toucher puis rendu actif.
+    await page.route('**/js/menu/resultat.js', async (route) => {
+      await new Promise((res) => setTimeout(res, 800));
+      await route.continue();
+    });
     // 1. « Passer » pendant l'arrivée.
     await page.locator('#menu-caisse-elite-un').click();
+    await page.locator('#menu-caisse-militaire-un').dispatchEvent('click');
     await expect(page.locator('#menu-ouverture-chargement')).toBeVisible();
     await expect(page.locator('#menu-ouverture-chargement')).toHaveAttribute('role', 'status');
     expect(await page.locator('#menu-caisse-militaire-un').evaluate((n) => Boolean(n.closest('[inert]')))).toBe(true);
     await attendreOuverture(page);
     await expect(page.locator('#menu-ouverture-chargement')).toHaveCount(0);
     expect((await etatBoutique(page)).achats).toBe(1);
+    expect(await page.locator('#menu-ecran-ouverture').count()).toBe(1);
+    expect(await contextesVivants(page)).toBe(1);
     await avancer(page, 1);
     await page.locator('#menu-ouverture-passer').click();
     await expect(page.locator('#menu-ecran-resultat')).toBeVisible();
     await expect(page.locator('#menu-resultat-continuer')).toBeFocused();
     expect(await page.locator('#menu-resultat-continuer').evaluate((n) => Boolean(n.closest('[inert]')))).toBe(false);
+    expect(await page.locator('#e8 [inert]').count()).toBe(0);
     let r = (await etatBoutique(page)).resultat;
     expect(r.cartes.map((x) => [x.objet, x.rarete])).toEqual([[attendus[0].id, attendus[0].rarete]]);
     expect(await contextesVivants(page)).toBe(0);

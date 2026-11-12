@@ -17,6 +17,9 @@ const Z_ZOMBIES = -430;
 // le grossit) et s'arrête contre l'écran à cette fraction de la largeur ; il retombe dans la surcouche (devant tout).
 const LARGEUR_ECRASE = 0.72;
 const NB_FEUX = 10;
+// Gravité du vol du zombie projeté (unités par seconde²) : avec un vol de 1,3 s, il monte d'environ 330 au-dessus de sa place (juste hors de
+// l'écran au sommet), assez lentement pour être vu monter.
+const GRAVITE_VOL = 1150;
 const NB_FUMEES = 8;
 const NB_ECLATS = 10;
 // Hachage déterministe dans [0, 1) (variété des volutes et des éclats ; jamais le hasard du navigateur).
@@ -401,6 +404,16 @@ export async function creerScene({ canvas, couleur, chrono, reglages, cartes, mo
   // --- Cadrage : champ selon le rapport largeur / hauteur ; fusil en bas à droite, canon vers le centre --------------------------------------
   let largeur = 932;
   let hauteur = 430;
+  // Orientation de la caméra, une fois pour toutes : depuis sa place finale (devant le tapis), vers le tapis.
+  const orientationCamera = new THREE.Quaternion();
+  {
+    const c = new THREE.PerspectiveCamera();
+    c.position.set(0, OEIL.y, 0);
+    c.lookAt(new THREE.Vector3(...OEIL.cible));
+    orientationCamera.copy(c.quaternion);
+  }
+  camera.quaternion.copy(orientationCamera);
+  camera.position.set(0, OEIL.y, OEIL.depart);
   function cadrer() {
     const aspect = largeur / Math.max(1, hauteur);
     // Champ horizontal visé ≈ 96° (tapis entier, zombies sur les côtés), vertical borné à [48°, 64°].
@@ -434,10 +447,11 @@ export async function creerScene({ canvas, couleur, chrono, reglages, cartes, mo
   const q1 = new THREE.Quaternion();
   const q2 = new THREE.Quaternion();
   const qRot = new THREE.Quaternion();
+  const qVol = new THREE.Quaternion();
+  const vTour = new THREE.Vector3();
   const AX = new THREE.Vector3(1, 0, 0);
   const AZ = new THREE.Vector3(0, 0, 1);
   const AY = new THREE.Vector3(0, 1, 0);
-  const regard = new THREE.Vector3(...OEIL.cible);
   const pic = { appels: 0, triangles: 0 };
   const dernier = { appels: 0, triangles: 0 };
   const ouvertureDe = (k, v) => v.set(-ECART * k.position, TAPIS.y + CG.haut, TAPIS.z);
@@ -457,8 +471,10 @@ export async function creerScene({ canvas, couleur, chrono, reglages, cartes, mo
       camera.position.x += k * bruit(t, 5);
       camera.position.y += k * bruit(t, 6);
     }
-    camera.lookAt(regard);
-    camera.rotation.z += sec * 0.004 * bruit(t, 3);
+    // Retour du propriétaire (« la porte de garage bouge au rythme des pas ») : la caméra garde l'orientation de son arrivée au tapis ; avant,
+    // elle se réorientait vers le tapis à chaque pas (pivot autour de lui : le décor du fond bougeait à contre-sens). Le balancement des pas ne
+    // fait plus que la déplacer (le fond, lointain, reste fixe à l'écran) ; la secousse ajoute un léger roulis.
+    camera.quaternion.copy(orientationCamera).multiply(qRot.setFromAxisAngle(AZ, sec * 0.004 * bruit(t, 3)));
     // Fusil : se balance en marchant, respire, recule au tir.
     const sw = s.marche.enMarche ? Math.sin(Math.PI * pasPhase) : 0;
     const respire = Math.sin((TAU * t) / 2.4) * 0.35;
@@ -725,27 +741,24 @@ export async function creerScene({ canvas, couleur, chrono, reglages, cartes, mo
         v2.sub(v3.set(0, 31 * z.base, 0).applyQuaternion(q2));
         let enX = 1;
         if (P.phase === 'vol') {
-          const pv = P.pv;
-          // Place du zombie au moment du souffle (sa promenade à cet instant).
-          const x0 = promenade(reglages.promenade[n], PP.depart).x * LARGEUR_ZOMBIES;
-          if (P.etapeVol === 'montee') {
-            // Soufflé par l'explosion sous lui : il monte en tournoyant, de plus en plus lentement, jusqu'à sortir de l'écran par le haut.
-            root.position.set(x0, 650 * (0.45 * pv + 0.55 * pv * pv), Z_ZOMBIES + n * 26 + 60 * pv);
-            root.quaternion.setFromAxisAngle(AY, e.sens > 0 ? Math.PI / 2 : -Math.PI / 2).multiply(qRot.setFromAxisAngle(AX, -pv * 1.6 * Math.PI));
-            enX = 0;
-          } else {
-            // Il retombe du haut de l'écran, de plus en plus vite (gravité), en tournant de moins en moins, droit sur l'écran.
-            const k = pv * pv;
-            v3.set(-0.1 * D, h * 2, -D * 1.6);
-            camera.localToWorld(v3);
-            v3.sub(vI.set(0, 31 * z.base, 0).applyQuaternion(q2));
-            root.position.lerpVectors(v3, v2, k);
-            // Rotation surtout autour de l'axe de la vue (il tourne à plat, face à l'écran : membres dans le plan de l'image).
-            qRot.setFromAxisAngle(vI.set(0.15, 0.1, 1).normalize(), (1 - pv) ** 1.3 * 1.5 * Math.PI);
-            root.quaternion.copy(q2).multiply(qRot);
-            enX = lisseLocal(Math.max(0, (pv - 0.65) / 0.35));
-          }
+          // Retour du propriétaire (« la physique dans les airs est bizarre : il semble changer de direction » ; « s'il est à gauche, il revient de
+          // la gauche ») : une seule parabole sous gravité, de sa place (soufflé par l'explosion) jusqu'à l'écran : il monte de son côté, sort
+          // par le haut, redescend du même côté droit sur l'écran ; rotation autour d'un seul axe, qui ralentit jusqu'à la posture finale.
+          const p = P.p;
+          const T = PP.impact - PP.depart;
+          const tau = p * T;
+          v3.set(promenade(reglages.promenade[n], PP.depart).x * LARGEUR_ZOMBIES, 0, Z_ZOMBIES + n * 26);
+          // Vitesse de départ telle que la parabole (gravité G) arrive au point d'impact (v2) au bout de T.
+          vI.copy(v2).sub(v3).multiplyScalar(1 / T);
+          vI.y += 0.5 * GRAVITE_VOL * T;
+          root.position.copy(v3).addScaledVector(vI, tau);
+          root.position.y -= 0.5 * GRAVITE_VOL * tau * tau;
+          const depart = q1.setFromAxisAngle(AY, e.sens > 0 ? Math.PI / 2 : -Math.PI / 2);
+          qRot.setFromAxisAngle(vTour.set(n === 0 ? -0.3 : 0.3, 0.2, 1).normalize(), (n === 0 ? -1 : 1) * (1 - p) ** 1.2 * 2.5 * Math.PI);
+          qVol.copy(q2).multiply(qRot);
+          root.quaternion.slerpQuaternions(depart, qVol, lisseLocal(Math.min(1, p / 0.15)));
           root.scale.setScalar(z.base);
+          enX = lisseLocal(Math.max(0, (p - 0.75) / 0.25));
         } else {
           root.position.copy(v2);
           root.quaternion.copy(q2);

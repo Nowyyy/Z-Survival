@@ -246,7 +246,12 @@ describe('légendaire : explosion, projection, glissade, réapparition', () => {
     expect(c.onde2).not.toBeNull();
   });
 
-  it('réapparition à gauche ou à droite selon la graine (déterministe), puis marche jusqu\'à sa place', () => {
+  it('réapparition de son côté (zombie de gauche : à gauche ; de droite : à droite ; zombie projeté selon la graine, déterministe), puis marche jusqu\'à sa place', () => {
+    for (let g = 0; g < 64; g += 1) {
+      const a = choixLegendaire(g, 9);
+      expect(a.cote, String(g)).toBe(a.zombie === 0 ? 'gauche' : 'droite');
+      expect(Math.sign(R.promenade[a.zombie].x)).toBe(a.cote === 'gauche' ? -1 : 1);
+    }
     const cotes = new Set();
     const zombies = new Set();
     for (let g = 0; g < 64; g += 1) {

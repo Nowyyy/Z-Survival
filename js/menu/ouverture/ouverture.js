@@ -74,7 +74,19 @@ if (acces(pageCanal(), new URLSearchParams(pageSearch())).test) {
 
 // r : résultat d'achat du lot 8e ; cat : catalogue (raretés) ; cartes : [{ objet, nom, ligne2, ligne3, jeton, halo }] (écran de résultat) ;
 // annonce : texte annoncé à la fin (×1) ; parent : élément du menu (#e8) ; rappels : { fin() (résultat), continuer(), rouvrir() }.
-export async function lancerOuverture({ r, cat, cartes, annonce, t, parent, rappels }) {
+// Une seule création à la fois (retour du propriétaire : écran figé après une double ouverture) : un second appel pendant la création renvoie null.
+let creation = false;
+export async function lancerOuverture(options) {
+  if (creation) return null;
+  creation = true;
+  try {
+    return await creerOuverture(options);
+  } finally {
+    creation = false;
+  }
+}
+
+async function creerOuverture({ r, cat, cartes, annonce, t, parent, rappels }) {
   if (enCours || !ouvertureVoulue() || !r?.caisse || !Array.isArray(cartes) || cartes.length !== r.objets.length) return null;
   let donnees;
   let sceneMod;
@@ -264,6 +276,11 @@ export async function lancerOuverture({ r, cat, cartes, annonce, t, parent, rapp
   passer.addEventListener('click', () => rappels.fin());
   // Retour du propriétaire : toucher l'écran (doigt ou souris, hors boutons) passe la caisse en cours (prochainSaut : arrivée → première caisse ;
   // ×10 : caisse suivante, la dernière mène au résultat ; ×1 : carte et boutons). « Passer » mène toujours au résultat.
+  // Contexte WebGL perdu (mémoire du téléphone) : l'image se figerait ; l'ouverture s'arrête et le résultat s'affiche.
+  canvas.addEventListener('webglcontextlost', (ev) => {
+    ev.preventDefault();
+    if (!libere) queueMicrotask(() => rappels.fin());
+  });
   canvas.addEventListener('click', () => {
     if (libere) return;
     const cible = prochainSaut(chrono, temps);

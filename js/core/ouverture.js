@@ -2,7 +2,7 @@
 // propre. Le rendu (js/menu/ouverture/) ne fait que suivre ce module, le temps en argument : chronologie d'une ouverture (×1 ou ×10 : arrivée en
 // marchant, puis pour chaque caisse le tapis, le tir, le couvercle, la lumière, les rayons, l'objet, les réactions des zombies, la projection du
 // légendaire et le vol de la carte vers sa case), forces des effets par rareté (data/menu/ouvertures.json, modifiable par le propriétaire),
-// rareté qui règle les effets d'un élément obtenu, côté de réapparition du zombie projeté (graine de l'achat, js/core/rng.js), promenade des
+// rareté qui règle les effets d'un élément obtenu, zombie projeté (graine de l'achat, js/core/rng.js ; il réapparaît de son côté), promenade des
 // zombies et état de chaque élément à un instant donné (instant). L'ouverture montre un résultat déjà tiré : elle ne tire rien.
 import { createRng, nextInt } from './rng.js';
 
@@ -151,13 +151,14 @@ export function rareteEffets(r, i, raretes) {
   return liste.some((x) => x.id === rid) ? rid : basse;
 }
 
-// Zombie projeté et côté de sa réapparition (légendaire), d'après la graine de l'achat et le rang de la caisse : déterministe.
+// Zombie projeté (légendaire), d'après la graine de l'achat et le rang de la caisse : déterministe ; il réapparaît de son côté.
 export function choixLegendaire(graine, i = 0) {
   const g = Number.isSafeInteger(graine) && graine >= 0 ? graine : 1;
   const r0 = createRng((g ^ Math.imul((i + 1) >>> 0, 0x9e3779b1)) >>> 0);
   const a = nextInt(r0, ZOMBIES);
-  const b = nextInt(a.rng, 2);
-  return Object.freeze({ zombie: a.value, cote: b.value === 0 ? 'gauche' : 'droite' });
+  // Retour du propriétaire : il réapparaît de son côté (zombie 0 : à gauche ; 1 : à droite), au lieu d'un côté tiré : trajet plus court, retour
+  // à sa place plus lent ; seul le zombie projeté est tiré.
+  return Object.freeze({ zombie: a.value, cote: a.value === 0 ? 'gauche' : 'droite' });
 }
 
 function finRetour(l) {
