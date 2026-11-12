@@ -348,6 +348,7 @@ export function creerTextures({ couleur, anisotropie = 1 }) {
   return {
     beton, bois, metal, porte, bande, tapis, question, degrade, lueur, etoile, sang, carte, toileCarte, marque,
     nombre: () => toutes.size,
+    toutes: () => [...toutes],
     liberer() {
       for (const t of toutes) t.dispose();
       toutes.clear();

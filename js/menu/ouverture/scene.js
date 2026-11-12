@@ -11,10 +11,10 @@ import { creerZombies } from './zombies.js';
 
 // Écart entre deux caisses sur le tapis ; demi-largeur de la promenade des zombies ; profondeur des zombies.
 const ECART = 300;
-const LARGEUR_ZOMBIES = 760;
-const Z_ZOMBIES = -478;
+const LARGEUR_ZOMBIES = 600;
+const Z_ZOMBIES = -430;
 const PROFONDEUR_ECRASE = 90;
-const OEIL = Object.freeze({ y: 104, cible: [0, 74, TAPIS.z], depart: 380 });
+const OEIL = Object.freeze({ y: 124, cible: [0, 70, TAPIS.z], depart: 380 });
 const MAX_PARTICULES = 14;
 const MAX_ETINCELLES = 12;
 const MAX_RAYONS = 7;
@@ -24,6 +24,7 @@ const NEUTRE = new THREE.Color(1, 1, 1);
 const SPEC_METAL = new THREE.Color().setScalar(0.23);
 const SPEC_MAT = new THREE.Color().setScalar(0.07);
 
+const lisseLocal = (x) => x * x * (3 - 2 * x);
 // Bruit lisse et déterministe (somme de sinus) : secousse, grésillement de la lampe.
 const bruit = (t, k) => Math.sin(t * 37.1 + k * 1.7) * 0.5 + Math.sin(t * 23.3 + k * 4.1) * 0.35 + Math.sin(t * 61.7 + k) * 0.15;
 
@@ -66,27 +67,29 @@ export async function creerScene({ canvas, couleur, chrono, reglages, cartes, mo
   devant.matrixAutoUpdate = false;
   surcouche.add(devant);
 
-  // --- Lumières : ambiance de nuit, lampe suspendue (seule lumière à ombres), lumière de la rareté, éclair du canon -----------------------------
-  const ambiance = new THREE.HemisphereLight(col('--ouv-ambiant'), col('--ouv-sol-ambiant'), 2.6);
+  // --- Lumières : ambiance de nuit, lampe suspendue (seule lumière à ombres), lumière de la rareté ---------------------------------------------
+  // Retour du propriétaire (fluidité) : trois lumières seulement (chaque lumière ponctuelle coûte à chaque pixel) ; plus de lumière du canon ni
+  // d'appoint du fusil (le fusil a une légère lueur propre) ; l'éclair du canon relève brièvement l'ambiance.
+  const AMBIANCE = 2.5;
+  const ambiance = new THREE.HemisphereLight(col('--ouv-ambiant'), col('--ouv-sol-ambiant'), AMBIANCE);
   scene.add(ambiance);
-  const ambianceSur = new THREE.HemisphereLight(col('--ouv-ambiant'), col('--ouv-sol-ambiant'), 2.2);
-  const soleilSur = new THREE.DirectionalLight(col('--ouv-lumiere'), 2.4);
+  // Lumière neutre : le zombie écrasé garde les couleurs de sa tenue (retour du propriétaire : zombies comme en partie).
+  const ambianceSur = new THREE.HemisphereLight(col('--ouv-q'), col('--ouv-sol-ambiant'), 1.6);
+  const soleilSur = new THREE.DirectionalLight(col('--ouv-q'), 1.8);
   soleilSur.position.set(-0.4, 1, 0.6);
   surcouche.add(ambianceSur, soleilSur);
   const LAMPE = new THREE.Vector3(0, 232, TAPIS.z - 18);
-  const spot = new THREE.SpotLight(col('--ouv-lumiere'), 13, 0, 0.74, 0.6, 0);
+  const spot = new THREE.SpotLight(col('--ouv-lumiere'), 13, 0, 0.9, 0.6, 0);
   spot.position.copy(LAMPE);
   spot.target.position.set(0, 0, TAPIS.z - 30);
   spot.castShadow = true;
-  spot.shadow.mapSize.set(1024, 1024);
+  spot.shadow.mapSize.set(768, 768);
   spot.shadow.camera.near = 40;
   spot.shadow.camera.far = 600;
   spot.shadow.bias = -0.0008;
   scene.add(spot, spot.target);
   const lumRarete = new THREE.PointLight(col('--ouv-lumiere'), 0, 340, 0);
   scene.add(lumRarete);
-  const lumCanon = new THREE.PointLight(col('--ouv-flamme'), 0, 260, 0);
-  scene.add(lumCanon);
 
   // --- Hangar ---------------------------------------------------------------------------------------------------------------------------------
   const texSol = T.beton(3, true);
@@ -204,6 +207,11 @@ export async function creerScene({ canvas, couleur, chrono, reglages, cartes, mo
     return { g, couvercle, lueur, i: -1 };
   });
   const jetonRarete = (rid) => `--rarete-${rid}`;
+  const couleursR = new Map();
+  const couleurRarete = (rid) => {
+    if (!couleursR.has(rid)) couleursR.set(rid, col(jetonRarete(rid)));
+    return couleursR.get(rid);
+  };
 
   // --- Effets de l'ouverture (une caisse active à la fois) ------------------------------------------------------------------------------------
   const texDegrade = T.degrade();
@@ -254,10 +262,9 @@ export async function creerScene({ canvas, couleur, chrono, reglages, cartes, mo
     new THREE.Mesh(FG.point, mat(new THREE.MeshBasicMaterial({ color: col('--ouv-point') }))),
   ];
   fusil.add(...meshesFusil);
-  // Lumière d'appoint du fusil (sans ombre) : il reste lisible au premier plan.
-  const appoint = new THREE.PointLight(col('--ouv-lumiere'), 3.2, 110, 0);
-  appoint.position.set(-16, 26, -14);
-  fusil.add(appoint);
+  // Lueur propre du fusil, des gants et des manches (sans lumière d'appoint) : ils restent lisibles au premier plan.
+  for (const m of meshesFusil.slice(1, 4)) m.material.emissive.copy(m.material.color).multiplyScalar(0.12);
+  meshesFusil[0].material.emissive.setScalar(0.025);
   const flamme = new THREE.Sprite(mat(new THREE.SpriteMaterial({ map: texEtoile, color: col('--ouv-flamme'), transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, opacity: 0 })));
   flamme.position.set(...BOUT).add(new THREE.Vector3(0, 0, -3));
   fusil.add(flamme);
@@ -295,15 +302,19 @@ export async function creerScene({ canvas, couleur, chrono, reglages, cartes, mo
   devant.add(sang);
 
   // --- Zombies du jeu et leurs marques ---------------------------------------------------------------------------------------------------------
-  const zombies = await creerZombies();
+  const zombies = await creerZombies({ graine: (Number(chrono.graine) >>> 0) || 7 });
   const marques = { '!': T.marque('!', '--ouv-marque-1', police), '!!': T.marque('!!', '--ouv-marque-2', police), '!!!': T.marque('!!!', '--ouv-marque-3', police) };
   const zs = zombies.liste.map((z) => {
     scene.add(z.c.root);
+    // Poussière soulevée à l'impact de la chute (retour du propriétaire : chute plus vivante).
+    const poussiere = new THREE.Sprite(mat(new THREE.SpriteMaterial({ map: texLueur, color: col('--ouv-poussiere'), transparent: true, depthWrite: false, opacity: 0 })));
+    poussiere.visible = false;
+    scene.add(poussiere);
     const sprite = new THREE.Sprite(mat(new THREE.SpriteMaterial({ map: marques['!'], transparent: true, depthWrite: false })));
     sprite.visible = false;
     sprite.renderOrder = 5;
     scene.add(sprite);
-    return { ...z, sprite, projete: false };
+    return { ...z, sprite, poussiere, projete: false };
   });
 
   // --- Cadrage : champ selon le rapport largeur / hauteur ; fusil en bas à droite, canon vers le centre --------------------------------------
@@ -367,12 +378,11 @@ export async function creerScene({ canvas, couleur, chrono, reglages, cartes, mo
     flamme.material.opacity = s.tir.flamme;
     flamme.scale.setScalar(4 + 10 * s.tir.flamme);
     flamme.visible = s.tir.flamme > 0;
-    lumCanon.intensity = s.tir.flamme * 14;
+    ambiance.intensity = AMBIANCE * (1 + 0.5 * s.tir.flamme);
     camera.updateMatrixWorld(true);
     fusil.updateMatrixWorld(true);
     v1.set(...BOUT);
     fusil.localToWorld(v1);
-    lumCanon.position.copy(v1);
 
     // Tapis : la bande défile, les rouleaux tournent.
     texTapis.offset.x = -(s.tapis * ECART) / 64;
@@ -399,7 +409,7 @@ export async function creerScene({ canvas, couleur, chrono, reglages, cartes, mo
       p.couvercle.visible = c < 1;
       p.couvercle.position.set(-c * 80, CG.haut + c * 190 + Math.sin(c * Math.PI) * 30, c * 70);
       p.couvercle.rotation.set(-c * 1.6, c * 0.6, c * 2.6);
-      p.lueur.material.color.set(couleur(jetonRarete(k.rarete)));
+      p.lueur.material.color.copy(couleurRarete(k.rarete));
       p.lueur.material.opacity = k.ouverte ? k.lumiere * 0.95 * Math.max(0, 1 - Math.abs(k.position) * 1.2) : 0;
       if (k.i === s.active || (active === null && k.ouverte && Math.abs(k.position) < 0.5)) active = k;
     }
@@ -417,12 +427,12 @@ export async function creerScene({ canvas, couleur, chrono, reglages, cartes, mo
     if (active) {
       const c = chrono.caisses[active.i];
       const fx = c.effets;
-      const couleurR = couleur(jetonRarete(active.rarete));
+      const couleurR = couleurRarete(active.rarete);
       ouvertureDe(active, v2);
       const depart = Math.max(0, 1 - Math.abs(active.position) * 1.6);
       if (active.ouverte && active.rayons > 0) {
         rayons.count = fx.rayons;
-        matRayons.color.set(couleurR);
+        matRayons.color.copy(couleurR);
         matRayons.opacity = (active.rayons < 1 ? active.rayons : 0.78) * depart;
         const ev = THREE.MathUtils.degToRad(fx.eventail);
         for (let r = 0; r < fx.rayons; r += 1) {
@@ -440,7 +450,7 @@ export async function creerScene({ canvas, couleur, chrono, reglages, cartes, mo
           if (p <= 0) return;
           const o = ondes[n];
           o.visible = true;
-          o.material.color.set(couleurR);
+          o.material.color.copy(couleurR);
           o.material.opacity = 0.9 * (1 - p);
           o.position.copy(v2).add(v3.set(0, 2, 0));
           o.scale.setScalar(20 + p * 32 * fx.onde * (n ? 1.25 : 1));
@@ -448,7 +458,7 @@ export async function creerScene({ canvas, couleur, chrono, reglages, cartes, mo
       }
       if (active.particules > 0 && fx.etincelles > 0) {
         particules.visible = true;
-        particules.material.color.set(couleurR);
+        particules.material.color.copy(couleurR);
         particules.material.opacity = 1 - active.particules;
         const pos = particules.geometry.attributes.position;
         for (let k = 0; k < MAX_PARTICULES; k += 1) {
@@ -464,6 +474,7 @@ export async function creerScene({ canvas, couleur, chrono, reglages, cartes, mo
       }
       if (active.etincelles > 0) {
         etincelles.visible = true;
+        etincelles.material.size = 9;
         etincelles.material.opacity = 1 - active.etincelles;
         const pos = etincelles.geometry.attributes.position;
         const e = active.etincelles;
@@ -478,16 +489,28 @@ export async function creerScene({ canvas, couleur, chrono, reglages, cartes, mo
         const p = active.explosion;
         boule.visible = true;
         boule.position.copy(v2).add(v3.set(0, 18 + p * 30, 0));
-        boule.scale.setScalar(30 + 330 * Math.sqrt(p));
-        boule.material.opacity = (1 - p) ** 1.2;
-        coeur.material.opacity = (1 - p) ** 2;
-        eclat.visible = true;
+        // Retour du propriétaire (« on ne voit pas l'explosion ») : boule qui gonfle vite puis reste visible après l'éclair d'écran, cœur clair,
+        // éclat bref, gerbe d'éclats projetés.
+        boule.scale.setScalar(40 + 260 * Math.min(1, p * 2.2) + 60 * p);
+        boule.material.opacity = Math.min(1, 1.25 * (1 - p));
+        coeur.material.opacity = Math.min(1, 1.4 * (1 - p) ** 1.5);
+        eclat.visible = p < 0.35;
         eclat.position.copy(boule.position);
-        eclat.scale.setScalar(60 + 520 * p);
-        eclat.material.opacity = (1 - p) * 0.9;
+        eclat.scale.setScalar(80 + 900 * p);
+        eclat.material.opacity = 1 - p / 0.35;
+        etincelles.visible = true;
+        etincelles.material.opacity = Math.min(1, 1.6 * (1 - p));
+        etincelles.material.size = 22;
+        const pos = etincelles.geometry.attributes.position;
+        for (let k = 0; k < MAX_ETINCELLES; k += 1) {
+          const a = (k / MAX_ETINCELLES) * TAU + 0.3;
+          const r = (60 + (k % 4) * 30) * Math.sqrt(p) * 2.2;
+          pos.setXYZ(k, boule.position.x + Math.cos(a) * r, boule.position.y + Math.sin(a) * r * 0.8 - p * p * 140, boule.position.z + ((k % 3) - 1) * 30 * p);
+        }
+        pos.needsUpdate = true;
       }
       if (active.ouverte) {
-        lumRarete.color.set(couleurR);
+        lumRarete.color.copy(couleurR);
         lumRarete.position.copy(v2).add(v3.set(0, 40, 30));
         lumRarete.intensity = active.lumiere * (2.2 + fx.eclair * 4) * depart + active.explosion * 10 * (1 - active.explosion);
       }
@@ -542,6 +565,7 @@ export async function creerScene({ canvas, couleur, chrono, reglages, cartes, mo
       const root = z.c.root;
       const P = e.projection;
       const proj = P && ['vol', 'colle', 'glisse'].includes(P.phase);
+      z.poussiere.visible = false;
       root.visible = !(P && P.phase === 'absent');
       if (z.projete !== Boolean(proj)) {
         z.projete = Boolean(proj);
@@ -581,9 +605,36 @@ export async function creerScene({ canvas, couleur, chrono, reglages, cartes, mo
         z.c.setAnim('mortAvant', 0.22, {}, t);
       } else {
         root.scale.setScalar(z.base);
-        root.position.set(xMonde, e.hauteur, Z_ZOMBIES + n * 26);
-        root.quaternion.setFromAxisAngle(AY, e.marche ? (e.sens > 0 ? Math.PI / 2 : -Math.PI / 2) : (e.sens > 0 ? 0.5 : -0.5));
-        if (e.sol > 0) z.c.setAnim('mortArriere', Math.min(1, e.sol), {}, t);
+        // Retour du propriétaire (« la chute fait trop simple ») : face à la caisse pendant une réaction ; saut bras levés, chute en arrière
+        // avec recul et rebond, soubresauts au sol, relevé en titubant.
+        const face = e.geste ? Math.atan2(-xMonde, TAPIS.z - Z_ZOMBIES) * 0.6 : e.marche ? (e.sens > 0 ? Math.PI / 2 : -Math.PI / 2) : (e.sens > 0 ? 0.5 : -0.5);
+        let y = e.hauteur;
+        let tangage = 0;
+        let roulis = 0;
+        if (e.etape === 'chute' && e.pe > 0.7) y += Math.sin(((e.pe - 0.7) / 0.3) * Math.PI) * 7;
+        if (e.etape === 'sol') {
+          const spasme = Math.max(0, 1 - e.pe * 2.5);
+          roulis = Math.sin(t * 31) * 0.06 * spasme;
+          y += Math.abs(Math.sin(t * 23)) * 2.5 * spasme;
+        }
+        if (e.etape === 'releve') {
+          tangage = Math.sin(e.pe * Math.PI) * 0.22;
+          roulis = Math.sin(e.pe * Math.PI * 3) * 0.08 * (1 - e.pe);
+        }
+        root.position.set(xMonde, y, Z_ZOMBIES + n * 26 - e.recul * 14);
+        // Poussière : de l'impact (fin de la chute) au début du temps au sol.
+        const d = e.etape === 'chute' ? (e.pe - 0.7) / 0.3 : e.etape === 'sol' ? 1 + e.pe * 3 : -1;
+        z.poussiere.visible = d >= 0 && d < 2;
+        if (z.poussiere.visible) {
+          z.poussiere.position.set(xMonde, 10 + d * 6, root.position.z - 30);
+          z.poussiere.scale.set(70 + d * 60, 30 + d * 18, 1);
+          z.poussiere.material.opacity = 0.75 * (1 - d / 2);
+        }
+        root.quaternion.setFromAxisAngle(AY, face).multiply(qRot.setFromAxisAngle(AX, tangage)).multiply(q1.setFromAxisAngle(AZ, roulis));
+        if (e.etape === 'saut') z.c.setAnim('escalade', 0.15 + 0.35 * e.pe, {}, t);
+        else if (e.etape === 'chute') z.c.setAnim('mortArriere', Math.min(1, e.pe * 1.15), {}, t);
+        else if (e.etape === 'sol') z.c.setAnim('mortArriere', 1, {}, t);
+        else if (e.etape === 'releve') z.c.setAnim('mortArriere', 1 - lisseLocal(e.pe), {}, t);
         else if (e.geste) z.c.setAnim('touche', Math.min(1, e.p * 3), {}, t);
         else if (e.marche) z.c.setAnim('marcheLente', ((t * 0.95 + n * 0.37) % 1 + 1) % 1, {}, t);
         else z.c.setAnim('attente', ((t / 2.6) % 1 + 1) % 1, {}, t);
@@ -643,6 +694,51 @@ export async function creerScene({ canvas, couleur, chrono, reglages, cartes, mo
   }
   redimensionner(canvas.clientWidth || 932, canvas.clientHeight || 430);
 
+  // Retour du propriétaire (saccades à la première apparition d'une rareté, et toujours au légendaire) : la première image d'un objet compilait
+  // son programme et envoyait ses textures pendant l'ouverture. Tout est préparé ici, derrière le fondu noir : chaque effet rendu une fois (rayons,
+  // ondes, particules, explosion, flamme, traînée, carte, assombrissement, sang, marques), un zombie dans la surcouche, toutes les textures.
+  function prechauffer() {
+    const caches = [rayons, ...ondes, particules, etincelles, boule, eclat, trainee, flamme, carte, sombre, sang, ...zs.flatMap((z) => [z.sprite, z.poussiere]), ...pool.map((p) => p.g)];
+    const avant = caches.map((o) => o.visible);
+    for (const o of caches) o.visible = true;
+    rayons.count = MAX_RAYONS;
+    T.carte(texCarte, { nom: cartes[0]?.nom ?? '', ligne2: cartes[0]?.ligne2 ?? '', ligne3: cartes[0]?.ligne3 ?? '', bord: couleur(cartes[0]?.jeton ?? '--rarete-commun'), grand: chrono.quantite === 1 });
+    carteDessinee = 0;
+    T.toutes().forEach((tx) => renderer.initTexture(tx));
+    camera.updateMatrixWorld(true);
+    renderer.compile(scene, camera);
+    renderer.clear();
+    renderer.render(scene, camera);
+    for (const [k, z] of zs.entries()) {
+      z.sprite.material.map = marques[['!', '!!', '!!!'][k % 3]];
+      if (k === 0) {
+        surcouche.add(z.c.root);
+        devant.matrix.copy(camera.matrixWorld);
+        renderer.compile(surcouche, camera);
+        renderer.clearDepth();
+        renderer.render(surcouche, camera);
+        scene.add(z.c.root);
+      }
+    }
+    renderer.render(scene, camera);
+    caches.forEach((o, i) => {
+      o.visible = avant[i];
+    });
+    rayons.count = 0;
+    renderer.info.reset();
+  }
+  prechauffer();
+
+  // Résolution adaptative (ouverture.js, d'après la durée réelle des images) : rapport de pixels entre 0,75 et le plafond (2, ou celui de l'écran).
+  const PLAFOND = Math.min(globalThis.devicePixelRatio || 1, 2);
+  function pixels(r) {
+    const v = Math.max(0.75, Math.min(PLAFOND, r));
+    if (Math.abs(v - renderer.getPixelRatio()) < 0.01) return v;
+    renderer.setPixelRatio(v);
+    renderer.setSize(largeur, hauteur, false);
+    return v;
+  }
+
   let libere = false;
   function liberer() {
     if (libere) return memoire();
@@ -669,6 +765,8 @@ export async function creerScene({ canvas, couleur, chrono, reglages, cartes, mo
     rendre,
     redimensionner,
     liberer,
+    pixels,
+    plafond: PLAFOND,
     // Mesures (tests) : dernière image et pire image (renderer.info), mémoire Three.js, triangles des zombies.
     info: () => ({ dernier: { ...dernier }, pic: { ...pic }, memoire: libere ? null : memoire(), pixels: renderer.getPixelRatio(), zombies: zombies.triangles() }),
     contexte: () => renderer.getContext(),

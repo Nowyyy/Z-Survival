@@ -299,7 +299,8 @@
       "Les effets grandissent avec la rareté : plus de rayons, éclair d'écran, onde de choc, étincelles et secousse ; les deux zombies du fond sursautent, sautent ou tombent.",
       "Légendaire : explosion dorée, puis un zombie projeté s'écrase sur l'écran et glisse en laissant des traînées de sang, avant de revenir au fond.",
       "Dix caisses : le tapis les amène l'une après l'autre et chaque carte file vers sa case en haut de l'écran, puis le résultat des dix s'affiche.",
-      "« Passer » (ou Échap) mène au résultat à tout moment ; avec les animations réduites, le résultat s'affiche directement, sans 3D.",
+      "« Passer » (ou Échap) mène au résultat à tout moment ; toucher l'écran passe à la caisse suivante ; avec les animations réduites, le résultat s'affiche directement, sans 3D.",
+      "Retours : plus fluide (tout est préparé avant l'ouverture, résolution qui s'adapte), explosion du légendaire bien visible, zombies identiques à ceux de la partie, chute plus vivante, sans réticule.",
       "Le résultat montré est celui du tirage ; la scène 3D ne se charge qu'à l'ouverture d'une caisse et tout est libéré ensuite, avant de jouer.",
       "Essai : durées et effets réglables, provisoires ; aucun son pour l'instant ; aucun prix n'est prélevé.",
       "Les règles du jeu ne changent pas."
