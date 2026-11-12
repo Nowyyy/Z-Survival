@@ -57,6 +57,8 @@ function entre(a, b, r1, r2, n = 10) {
   return piece(new THREE.CylinderGeometry(r2, r1, d.length(), n), va.addScaledVector(d, 0.5).toArray(), [e.x, e.y, e.z]);
 }
 const cyl = (r1, r2, h, n = 12) => new THREE.CylinderGeometry(r1, r2, h, n);
+// Ellipsoïde de dimensions (w, h, d) : mains arrondies (retour du propriétaire : « le bras et la main font très cubique »).
+const bulle = (w, h, d, n = 16) => new THREE.SphereGeometry(0.5, n, Math.max(6, Math.round(n * 0.75))).scale(w, h, d);
 
 // --- Caisses ------------------------------------------------------------------------------------------------------------------------------
 // Dimensions communes : largeur 150 (retour du propriétaire : « carrées dans l'animation, rectangulaires dans le menu » ; avant 110), profondeur 80,
@@ -176,18 +178,27 @@ export function fusilGeo() {
   poly.push(piece(boite(3.6, 5, 14), [0, -0.8, 16]));
   arme.push(piece(boite(1.2, 2.2, 3.4), [0, -3.4, 3.4]));
   // Main gauche sous le garde-main : paume dessous, quatre doigts repliés sur le flanc gauche (côté visible), pouce dessus à droite, poignet.
-  gant.push(piece(boite(5.2, 2.6, 7.6), [-0.6, -3.3, -22], [0, 0, 0.18]));
-  for (let k = 0; k < 4; k += 1) gant.push(entre([-2.7, -3, -25.2 + k * 1.85], [-2.5, 0.9 - k * 0.25, -25 + k * 1.85], 0.95, 0.8, 8));
-  gant.push(entre([1.8, -1.6, -18.8], [2.3, 1.8, -23.5], 1.05, 0.85, 8));
-  gant.push(piece(boite(5, 4.2, 4.4), [-1.4, -4.6, -18.2], [0.25, 0, 0.2]));
+  gant.push(piece(bulle(5.8, 3.2, 8.4), [-0.6, -3.3, -22], [0, 0, 0.18]));
+  for (let k = 0; k < 4; k += 1) {
+    gant.push(entre([-2.7, -3, -25.2 + k * 1.85], [-2.5, 0.9 - k * 0.25, -25 + k * 1.85], 0.95, 0.8, 12));
+    gant.push(piece(bulle(1.7, 1.7, 1.7, 8), [-2.5, 0.9 - k * 0.25, -25 + k * 1.85])); // bout du doigt arrondi
+  }
+  gant.push(entre([1.8, -1.6, -18.8], [2.3, 1.8, -23.5], 1.05, 0.85, 12));
+  gant.push(piece(bulle(1.8, 1.8, 1.8, 8), [2.3, 1.8, -23.5]));
+  gant.push(piece(bulle(5.6, 4.8, 5.2), [-1.4, -4.6, -18.2], [0.25, 0, 0.2]));
   // Main droite sur la poignée : poing autour de la poignée, index le long du pontet, pouce sur le flanc gauche.
-  gant.push(piece(boite(4.6, 6.4, 5), [0.1, -6, 8.4], [0.38, 0, 0]));
-  gant.push(entre([-2.4, -2.9, 5.6], [-2.2, -2.7, 1.4], 0.9, 0.78, 8));
-  gant.push(entre([-2.5, -4, 9.8], [-2.4, -1.5, 6.2], 0.95, 0.8, 8));
-  gant.push(piece(boite(4.8, 4.4, 4.6), [0.6, -9.2, 11.2], [0.5, 0, 0]));
+  gant.push(piece(bulle(5.4, 7.2, 5.8), [0.1, -6, 8.4], [0.38, 0, 0]));
+  gant.push(entre([-2.4, -2.9, 5.6], [-2.2, -2.7, 1.4], 0.9, 0.78, 12));
+  gant.push(piece(bulle(1.6, 1.6, 1.6, 8), [-2.2, -2.7, 1.4]));
+  gant.push(entre([-2.5, -4, 9.8], [-2.4, -1.5, 6.2], 0.95, 0.8, 12));
+  gant.push(piece(bulle(1.7, 1.7, 1.7, 8), [-2.4, -1.5, 6.2]));
+  gant.push(piece(bulle(5.4, 5, 5.4), [0.6, -9.2, 11.2], [0.5, 0, 0]));
   // Manches de la veste, du poignet vers le bas de l'écran (hors champ).
-  manche.push(entre([-2.2, -5.4, -17], [-13, -22, -1], 3.1, 4.4, 12));
-  manche.push(entre([0.8, -10.4, 12.6], [6.5, -25, 27], 3.3, 4.6, 12));
+  // Manches plus rondes (24 côtés), poignet bordé d'un revers arrondi.
+  manche.push(entre([-2.2, -5.4, -17], [-13, -22, -1], 3.1, 4.4, 24));
+  manche.push(entre([0.8, -10.4, 12.6], [6.5, -25, 27], 3.3, 4.6, 24));
+  manche.push(piece(bulle(6.6, 6.6, 6.6), [-2.2, -5.4, -17]));
+  manche.push(piece(bulle(7, 7, 7), [0.8, -10.4, 12.6]));
   return {
     arme: fusion(arme),
     polymere: fusion(poly),

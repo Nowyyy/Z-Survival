@@ -216,55 +216,58 @@ export function creerTextures({ couleur, anisotropie = 1 }) {
     bordUse(ctx, 128, f, couleur('--ouv-polymere-clair'), 3, 0.6);
     return tex(c);
   }
-  // Cuir des gants : plis sombres, coutures claires près des bords, usure.
+  // Cuir des gants : marbrures douces, plis légers, reflets usés ; aucun trait sur les bords (retour du propriétaire : « la main fait très cubique » :
+  // les coutures et l'usure des bords dessinaient les faces des pièces).
   function gantCuir() {
     const [c, ctx] = toile(128, 128);
     const f = hasard(79);
     ctx.fillStyle = couleur('--ouv-gant');
     ctx.fillRect(0, 0, 128, 128);
-    grain(ctx, 128, 128, f, couleur('--ouv-gant-clair'), couleur('--ouv-gant-sombre'), 900, 2);
-    ctx.strokeStyle = couleur('--ouv-gant-sombre');
-    for (let i = 0; i < 10; i += 1) {
-      ctx.globalAlpha = 0.25 + f() * 0.25;
-      ctx.lineWidth = 1 + f() * 1.5;
+    for (let i = 0; i < 26; i += 1) {
+      const x = f() * 128;
       const y = f() * 128;
+      const r = 10 + f() * 26;
+      const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+      g.addColorStop(0, couleur(f() < 0.5 ? '--ouv-gant-clair' : '--ouv-gant-sombre'));
+      g.addColorStop(1, 'transparent');
+      ctx.globalAlpha = 0.18 + f() * 0.12;
+      ctx.fillStyle = g;
+      ctx.fillRect(x - r, y - r, 2 * r, 2 * r);
+    }
+    grain(ctx, 128, 128, f, couleur('--ouv-gant-clair'), couleur('--ouv-gant-sombre'), 500, 1.5);
+    ctx.strokeStyle = couleur('--ouv-gant-sombre');
+    ctx.lineCap = 'round';
+    for (let i = 0; i < 6; i += 1) {
+      ctx.globalAlpha = 0.15 + f() * 0.15;
+      ctx.lineWidth = 0.8 + f();
+      const x = 20 + f() * 88;
+      const y = 20 + f() * 88;
       ctx.beginPath();
-      ctx.moveTo(0, y);
-      ctx.bezierCurveTo(40, y + (f() - 0.5) * 20, 90, y + (f() - 0.5) * 20, 128, y + (f() - 0.5) * 10);
+      ctx.moveTo(x, y);
+      ctx.quadraticCurveTo(x + 10, y + (f() - 0.5) * 10, x + 18 + f() * 10, y + (f() - 0.5) * 8);
       ctx.stroke();
     }
-    ctx.globalAlpha = 0.85;
-    ctx.strokeStyle = couleur('--ouv-couture');
-    ctx.lineWidth = 2;
-    ctx.setLineDash([5, 4]);
-    ctx.strokeRect(8, 8, 112, 112);
-    ctx.setLineDash([]);
-    bordUse(ctx, 128, f, couleur('--ouv-gant-clair'), 3, 0.4);
-    return tex(c);
+    ctx.globalAlpha = 1;
+    return tex(c, { repeter: true });
   }
-  // Tissu des manches : trame croisée, plis.
+  // Tissu des manches : grain fin, plis qui font le tour du bras (bandes douces dans le sens de la longueur de l'image), sans quadrillage.
   function tissu() {
     const [c, ctx] = toile(128, 128);
     const f = hasard(83);
     ctx.fillStyle = couleur('--ouv-manche');
     ctx.fillRect(0, 0, 128, 128);
-    for (let k = 0; k < 128; k += 3) {
-      ctx.globalAlpha = 0.18;
-      ctx.fillStyle = couleur('--ouv-manche-sombre');
-      ctx.fillRect(k, 0, 1, 128);
-      ctx.globalAlpha = 0.12;
-      ctx.fillStyle = couleur('--ouv-manche-clair');
-      ctx.fillRect(0, k + 1, 128, 1);
-    }
-    ctx.strokeStyle = couleur('--ouv-manche-sombre');
-    for (let i = 0; i < 7; i += 1) {
-      ctx.globalAlpha = 0.3 + f() * 0.25;
-      ctx.lineWidth = 2 + f() * 4;
-      const x = f() * 128;
-      ctx.beginPath();
-      ctx.moveTo(x, 0);
-      ctx.bezierCurveTo(x + (f() - 0.5) * 40, 40, x + (f() - 0.5) * 40, 90, x + (f() - 0.5) * 30, 128);
-      ctx.stroke();
+    grain(ctx, 128, 128, f, couleur('--ouv-manche-clair'), couleur('--ouv-manche-sombre'), 1400, 1);
+    for (let i = 0; i < 6; i += 1) {
+      const y = f() * 128;
+      const h = 6 + f() * 12;
+      const g = ctx.createLinearGradient(0, y - h, 0, y + h);
+      g.addColorStop(0, 'transparent');
+      g.addColorStop(0.45, couleur('--ouv-manche-clair'));
+      g.addColorStop(0.55, couleur('--ouv-manche-sombre'));
+      g.addColorStop(1, 'transparent');
+      ctx.globalAlpha = 0.35 + f() * 0.2;
+      ctx.fillStyle = g;
+      ctx.fillRect(0, y - h, 128, 2 * h);
     }
     ctx.globalAlpha = 1;
     return tex(c, { repeter: true });
