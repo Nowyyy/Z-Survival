@@ -196,12 +196,12 @@ test.describe('menu principal (E8)', () => {
     expect(h).toBeGreaterThanOrEqual(3.5); // quatre lignes affichées (dont une vide)
   });
 
-  test('Connexion : écran provisoire « Connexion : bientôt » ; Options : la page Options du menu (E5, lot 8c) hors partie, fermée par « ‹ Menu » et Échap', async ({ page }) => {
+  test('Connexion : écran Connexion (lot 8g ; avant : écran provisoire « Connexion : bientôt »), fermé par « ‹ Menu » ; Options : la page Options du menu (E5, lot 8c) hors partie, fermée par « ‹ Menu » et Échap', async ({ page }) => {
     await ouvrirMenu(page);
     await page.locator('#menu-connexion').click();
-    const connexion = page.getByRole('dialog', { name: 'Connexion : bientôt' });
+    const connexion = page.getByRole('region', { name: 'Connexion' });
     await expect(connexion).toBeVisible();
-    await page.locator('#menu-ecran-connexion-fermer').click();
+    await page.locator('#menu-ecran-connexion-retour').click();
     await expect(connexion).toBeHidden();
     await expect(page.locator('#menu-connexion')).toBeFocused();
     await page.locator('#menu-trois-barres').click();

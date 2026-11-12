@@ -197,9 +197,9 @@ describe('onglets, menu à trois barres, nouveautés (lot 8a, état en mémoire)
     e = ouvrirEcran(fermerEcran(e), 'information', infos);
     expect([e.ecran, nouveauteNonLue(infos, e.lues)]).toEqual(['information', false]);
     expect(ouvrirEcran(e, 'boutique')).toBe(e);
-    expect(ECRANS).toEqual(['information', 'connexion', 'options', 'inventaire', 'fusion', 'personnages', 'credits']); // lot 8d : sous-menus du Personnage ; lot 8g : Crédits
+    expect(ECRANS).toEqual(['information', 'connexion', 'options', 'inventaire', 'fusion', 'personnages', 'credits', 'profil']); // lot 8d : sous-menus du Personnage ; lot 8g : Crédits, Profil
     expect(ECRANS_MENU).toEqual(['credits']); // lot 8g : garde la barre d'onglets
-    expect(ECRANS_PLEINS).toEqual(['options']); // lot 8d, retour du propriétaire : les sous-menus du Personnage gardent la barre d'onglets
+    expect(ECRANS_PLEINS).toEqual(['options', 'connexion', 'profil']); // lot 8d, retour du propriétaire : les sous-menus du Personnage gardent la barre d'onglets ; lot 8g : Connexion et Profil pleins
     expect(SOUS_MENUS).toEqual(['inventaire', 'fusion', 'personnages']);
     e = ouvrirEcran(fermerEcran(e), 'inventaire', infos);
     expect([e.ecran, e.menuOuvert]).toEqual(['inventaire', false]);

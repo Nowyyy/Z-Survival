@@ -179,3 +179,79 @@ describe('Crédits et licences (lot 8g)', () => {
     expect(credits).toMatch(/adresseStudio\(fichier, \{ neuve: !fixe \}\)/);
   });
 });
+
+describe('Connexion et Profil (lot 8g)', () => {
+  it('pseudo : 2 à 20 caractères Unicode, espaces des bords retirés et suites réduites, caractères de contrôle et invisibles refusés', async () => {
+    const { ERREURS_PSEUDO, PSEUDO_MAX, PSEUDO_MIN, validerPseudo } = await import('../../js/menu/profil-etat.js');
+    expect([PSEUDO_MIN, PSEUDO_MAX]).toEqual([2, 20]);
+    expect(validerPseudo('Nowy')).toEqual({ ok: true, pseudo: 'Nowy' });
+    expect(validerPseudo('  Le   Survivant  ')).toEqual({ ok: true, pseudo: 'Le Survivant' });
+    expect(validerPseudo('Zoé 🧟')).toEqual({ ok: true, pseudo: 'Zoé 🧟' });
+    expect(validerPseudo('ab')).toEqual({ ok: true, pseudo: 'ab' });
+    expect(validerPseudo('a'.repeat(20))).toEqual({ ok: true, pseudo: 'a'.repeat(20) });
+    expect(validerPseudo('🧟'.repeat(20)).ok).toBe(true); // un emoji = un caractère
+    for (const [saisie, erreur] of [['', 'court'], ['a', 'court'], ['   ', 'court'], [' a ', 'court'], ['a'.repeat(21), 'long'], ['🧟'.repeat(21), 'long'],
+      ['ab\ncd', 'controle'], ['ab\tcd', 'controle'], ['ab\u0000', 'controle'], ['ab\u007f', 'controle'], ['ab\u0085', 'controle'], ['a​b', 'controle'], ['a‮b', 'controle'], ['a﻿b', 'controle'],
+      [null, 'court'], [undefined, 'court'], [42, 'court'], [{}, 'court']]) {
+      expect(validerPseudo(saisie), JSON.stringify(saisie)).toEqual({ ok: false, erreur });
+    }
+    for (const k of Object.values(ERREURS_PSEUDO)) expect(JSON.parse(read('data/i18n/fr.json'))[k], k).toBeTruthy();
+  });
+
+  it('avatars : six, formes et teintes ; « Changer d\'avatar » fait le tour ; teintes en jetons de tokens.css', async () => {
+    const { AVATARS, avatarSuivant } = await import('../../js/menu/profil-etat.js');
+    expect(AVATARS.map((a) => a.id)).toEqual(['os', 'rouge', 'or', 'vert', 'bleu', 'violet']);
+    expect(new Set(AVATARS.map((a) => a.forme))).toEqual(new Set(['survivant', 'casque', 'capuche']));
+    let id = 'os';
+    const vus = [];
+    for (let i = 0; i < AVATARS.length; i += 1) {
+      id = avatarSuivant(id).id;
+      vus.push(id);
+    }
+    expect(vus).toEqual(['rouge', 'or', 'vert', 'bleu', 'violet', 'os']);
+    expect(avatarSuivant('inconnu').id).toBe('os');
+    const css = read('css/menu.css');
+    for (const a of AVATARS) expect(css, a.id).toMatch(new RegExp(`\\.e10-avatar-${a.id} \\{ color: var\\(--(menu|rarete)-[a-z-]+\\); \\}`));
+  });
+
+  it('statistiques : lues dans la sauvegarde quand elles existent (meilleure manche, parties, argent gagné), « — » sinon ; illisible : tout à « — »', async () => {
+    const { STATS_EN_ATTENTE, STATS_PROFIL, statsProfil } = await import('../../js/menu/profil-etat.js');
+    const { defaultSave } = await import('../../js/core/save.js');
+    expect(STATS_PROFIL).toEqual(['meilleureManche', 'recordInfini', 'tues', 'parties', 'temps', 'argent']);
+    expect(STATS_EN_ATTENTE).toEqual(['recordInfini', 'tues', 'temps']);
+    const save = { ...defaultSave(), money: 900, earned: 1234, records: { bestWave: 17, bestKills: 88, runs: 6, worldsCompleted: 0 } };
+    const v = (lu, m) => Object.fromEntries(statsProfil(lu, m).map((s) => [s.id, s.valeur]));
+    expect(v({ status: 'ok', save }, 40)).toEqual({ meilleureManche: 17, recordInfini: null, tues: null, parties: 6, temps: null, argent: 1234 });
+    expect(statsProfil({ status: 'ok', save }, 40)[0]).toEqual({ id: 'meilleureManche', valeur: 17, max: 40 });
+    expect(v({ status: 'empty', save: defaultSave() })).toEqual({ meilleureManche: null, recordInfini: null, tues: null, parties: 0, temps: null, argent: 0 });
+    const vide = { meilleureManche: null, recordInfini: null, tues: null, parties: null, temps: null, argent: null };
+    for (const lu of [{ status: 'corrupt', save }, { status: 'future', save }, { status: 'unavailable', save }, null, undefined, {}, { status: 'ok', save: null }]) expect(v(lu), JSON.stringify(lu)).toEqual(vide);
+    expect(statsProfil({ status: 'ok', save }, 'x')[0].max).toBe(null);
+  });
+
+  it('export et import réutilisés : code ZS1 de encodeSave relu par decodeSave (aller-retour), code abîmé refusé avec le message de sauvegarde.html ; aperçu et confirmation de js/sauvegarde/logic.js ; aucun format nouveau', async () => {
+    const { decodeSave, defaultSave, encodeSave } = await import('../../js/core/save.js');
+    const { canReplace, errorKey, previewRows } = await import('../../js/sauvegarde/logic.js');
+    const params = { save: JSON.parse(read('data/game/save.json')), economy: JSON.parse(read('data/game/economy.json')), stats: JSON.parse(read('data/game/player-stats.json')) };
+    const save = { ...defaultSave(), money: 321, earned: 4321, records: { bestWave: 9, bestKills: 40, runs: 3, worldsCompleted: 0 } };
+    const code = encodeSave(save, params);
+    expect(code).toMatch(/^ZS1\.[A-Za-z0-9_-]+\.[0-9a-f]{8}$/);
+    const r = decodeSave(code, params);
+    expect(r.ok).toBe(true);
+    expect([r.save.money, r.save.earned, r.save.records.bestWave]).toEqual([321, 4321, 9]);
+    const abime = `${code.slice(0, -3)}${code.endsWith('000') ? '111' : '000'}`;
+    const e = decodeSave(abime, params);
+    expect([e.ok, e.error, errorKey(e.error)]).toEqual([false, 'bad-checksum', 'game.save.page.error.bad-checksum']);
+    expect(decodeSave('', params).error).toBe('empty');
+    expect(previewRows(defaultSave(), r.save).find((x) => x.id === 'money')).toMatchObject({ current: 0, incoming: 321, changed: true });
+    expect([canReplace(true, false), canReplace(false, true), canReplace(true, true)]).toEqual([false, false, true]);
+    // Le Profil n'écrit que par repository.replace, après vérification et case cochée, en décodant de nouveau le champ (comme sauvegarde.html).
+    const compte = read('js/menu/compte.js');
+    expect(compte).toMatch(/import \{ decodeSave, encodeSave \} from '\.\.\/core\/save\.js';/);
+    expect(compte).toMatch(/import \{ canReplace, errorKey, levelRows, previewRows, recordKey, rowKey, statKey \} from '\.\.\/sauvegarde\/logic\.js';/);
+    expect(compte.match(/repository\.(replace|commit|clear)\(/g)).toEqual(['repository.replace(']);
+    expect(compte).toMatch(/if \(!canReplace\(verifie !== null, caseAck\.checked\)\) return;\n {6}\/\/[^\n]*\n {6}const encore = decodeSave\(zone\.value, params\);/);
+    expect(compte).not.toMatch(/localStorage\.setItem|sessionStorage|indexedDB|innerHTML/);
+    for (const f of ['js/menu/compte.js', 'js/menu/profil-etat.js', 'js/menu/credits.js', 'js/menu/credits-donnees.js']) expect(read(f), f).not.toMatch(/fetch\(['"`]https?:/);
+  });
+});

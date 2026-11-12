@@ -4,6 +4,8 @@
 // simulé (marges posées par variables) ; projets bureau et mobile (paysage). Les durées sont lues dans les horodatages de la page, jamais attendues.
 import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
+import { readFileSync } from 'node:fs';
+import { decodeSave, defaultSave, encodeSave } from '../../js/core/save.js';
 
 const REF = { width: 932, height: 430 };
 const PETIT = { width: 667, height: 375 };
@@ -382,5 +384,208 @@ test.describe('Crédits (E11)', () => {
     await page.locator('#menu-credits').click();
     await expect.poll(async () => (await page.evaluate(() => window.__zsMenu.etat().menu.credits)).logo).toBe(FIXE);
     expect(await page.evaluate(() => window.__ecritures)).toEqual([]);
+  });
+});
+
+const lireJson = (f) => JSON.parse(readFileSync(f, 'utf8'));
+const PARAMS_SAVE = { save: lireJson('data/game/save.json'), economy: lireJson('data/game/economy.json'), stats: lireJson('data/game/player-stats.json') };
+const KEY = 'zs.save.v1';
+const NNBSP = String.fromCharCode(0x202f);
+const SAUVEGARDE = { ...defaultSave(), rev: 3, savedAt: 1_700_000_000_000, money: 1500, earned: 4321, stats: { ...defaultSave().stats, vie: 2, degats: 1 }, records: { bestWave: 17, bestKills: 88, runs: 6, worldsCompleted: 0 } };
+
+// Sauvegarde posée dans le vrai stockage (même origine), puis menu sous ?store=local ; écritures comptées depuis l'ouverture du menu.
+async function menuAvecSauvegarde(page, size = REF, save = SAUVEGARDE) {
+  await page.setViewportSize(size);
+  await page.goto('/sauvegarde.html?store=memory');
+  await page.evaluate(([k, v]) => { localStorage.clear(); localStorage.setItem(k, v); }, [KEY, JSON.stringify(save)]);
+  await espions(page);
+  await page.goto('/jeu.html?test=1&menu=1&seed=1&store=local');
+  await expect(page.locator('#menu-jouer')).toBeVisible({ timeout: 60_000 });
+  await page.waitForFunction(() => window.__zsMenu?.etat()?.menu !== null && !document.getElementById('e7'));
+}
+async function ouvrirProfil(page) {
+  await page.locator('#menu-connexion').click();
+  await expect(page.locator('#menu-ecran-connexion')).toBeVisible();
+  await page.locator('#menu-connexion-profil').click();
+  await expect(page.locator('#menu-ecran-profil')).toBeVisible();
+}
+
+test.describe('Connexion et Profil (E10)', () => {
+  for (const [size, encoche] of [[REF, false], [PETIT, false], [LARGE, false], [ENCOCHE, true]]) {
+    test(`tailles ${size.width}×${size.height}${encoche ? ' (encoche simulée)' : ''} : Connexion (deux boutons désactivés avec raison, phrase, « Mon profil local ») → Profil (carte, six statistiques, Sauvegarde) ; écrans pleins ; dans l'écran, sans superposition ; 44 px ; axe`, async ({ page, baseURL }) => {
+      const o = surveiller(page, baseURL);
+      await ouvrirMenu(page, size);
+      if (encoche) await page.addStyleTag({ content: '#e8 { --e8-gauche: 50px !important; --e8-droite: 50px !important; }' });
+      expect(o.fichiers.filter((f) => /compte|profil-etat|sauvegarde\/logic/.test(f))).toEqual([]); // rien au démarrage
+      await page.locator('#menu-connexion').click();
+      await expect(page.locator('#menu-ecran-connexion')).toBeVisible();
+      await expect(page.locator('#menu-ecran-connexion .menu-bandeau-libelle')).toHaveText('Compte');
+      await expect(page.locator('#menu-ecran-connexion-titre')).toHaveText('Connexion');
+      await expect(page.locator('.e8-onglets')).toBeHidden(); // écran plein
+      await expect(page.locator('#menu-ecran-connexion-retour')).toBeFocused();
+      for (const [id, texte, raison] of [['#menu-connexion-google', 'Se connecter avec Google · bientôt', /connexion avec Google arrive/], ['#menu-connexion-nws', 'Compte No Way Studio · à l\'étude', /est à l'étude/]]) {
+        await expect(page.locator(id)).toHaveText(texte);
+        await expect(page.locator(id)).toHaveAttribute('aria-disabled', 'true');
+        await expect(page.locator(id)).toHaveAccessibleDescription(raison);
+      }
+      await page.locator('#menu-connexion-google').click({ force: true }); // aria-disabled : atteignable, sans effet
+      await expect(page.locator('#menu-ecran-connexion')).toBeVisible();
+      await expect(page.locator('#menu-connexion-texte')).toHaveText('Sans compte, ta progression reste sur cet appareil.');
+      const nav0 = size.height;
+      for (const s of ['#menu-ecran-connexion-retour', '#menu-connexion-google', '#menu-connexion-nws', '#menu-connexion-profil']) {
+        const r = await boite(page, s);
+        expect([r.w >= 44, r.h >= 44, r.b <= nav0 + 0.5, r.r <= size.width + 0.5], s).toEqual([true, true, true, true]);
+      }
+      expect((await new AxeBuilder({ page }).analyze()).violations.map((v) => v.id)).toEqual([]);
+      await page.locator('#menu-connexion-profil').click();
+      await expect(page.locator('#menu-ecran-profil')).toBeVisible();
+      await expect(page.locator('#menu-ecran-connexion')).toBeHidden();
+      await expect(page.locator('#menu-ecran-profil .menu-bandeau-libelle')).toHaveText('Joueur');
+      await expect(page.locator('#menu-ecran-profil-titre')).toHaveText('Profil');
+      await expect(page.locator('#menu-profil-pseudo')).toHaveText('Survivant');
+      await expect(page.locator('#menu-profil-compte')).toHaveText('Compte : non connecté');
+      await expect(page.locator('#menu-profil-google')).toHaveAttribute('aria-disabled', 'true');
+      await expect(page.locator('.e10-stat-nom')).toHaveText(['Meilleure manche', 'Record infini', 'Zombies tués', 'Parties jouées', 'Temps de jeu', 'Argent gagné']);
+      await expect(page.locator('#menu-profil-exporter')).toHaveText('Exporter mon code');
+      await expect(page.locator('#menu-profil-importer')).toHaveText('Importer un code');
+      const marge = encoche ? 50 : 15.5;
+      const blocs = ['#menu-ecran-profil .menu-bandeau', '#menu-ecran-profil-retour', '#menu-profil-carte', '#menu-profil-stats', '#menu-profil-sauvegarde'];
+      const b = Object.fromEntries(await Promise.all(blocs.map(async (s) => [s, await boite(page, s)])));
+      for (const [s, r] of Object.entries(b)) expect([r.l >= marge - 0.5, r.r <= size.width - marge + 0.5, r.b <= size.height + 0.5, r.t >= 0], s).toEqual([true, true, true, true]);
+      expect([chevauche(b['#menu-profil-carte'], b['#menu-profil-stats']), chevauche(b['#menu-profil-carte'], b['#menu-profil-sauvegarde']), chevauche(b['#menu-profil-stats'], b['#menu-profil-sauvegarde'])]).toEqual([false, false, false]);
+      // Disposition de la maquette : carte à gauche ; statistiques en 3 × 2 au-dessus du cadre Sauvegarde, à droite.
+      expect([b['#menu-profil-carte'].r <= b['#menu-profil-stats'].l, b['#menu-profil-stats'].b <= b['#menu-profil-sauvegarde'].t + 0.5]).toEqual([true, true]);
+      const cartes = await page.locator('.e10-stat').evaluateAll((ns) => ns.map((n) => Math.round(n.getBoundingClientRect().top)));
+      expect(new Set(cartes).size).toBe(2);
+      for (const s of ['#menu-ecran-profil-retour', '#menu-profil-changer', '#menu-profil-pseudo-modifier', '#menu-profil-google', '#menu-profil-exporter', '#menu-profil-importer']) {
+        await page.locator(s).scrollIntoViewIfNeeded();
+        const r = await boite(page, s);
+        expect([r.w >= 44, r.h >= 44], s).toEqual([true, true]);
+      }
+      expect((await new AxeBuilder({ page }).analyze()).violations.map((v) => v.id)).toEqual([]);
+      await page.keyboard.press('Escape');
+      await expect(page.locator('#menu-ecran-profil')).toBeHidden();
+      await expect(page.locator('#menu-ecran-jouer')).toBeVisible();
+      await expect(page.locator('.e8-onglets')).toBeVisible();
+      await expect(page.locator('#menu-connexion')).toBeFocused();
+      expect(o.fichiers.filter((f) => /compte|profil-etat|sauvegarde\/logic/.test(f)).sort()).toEqual(['/js/menu/compte.js', '/js/menu/profil-etat.js', '/js/sauvegarde/logic.js']);
+      expect([o.problemes, o.externes]).toEqual([[], []]);
+    });
+  }
+
+  test('avatar et pseudo changés en mémoire (aucune écriture) ; pseudo : erreurs lues (trop court, trop long, caractère invisible), espaces nettoyés, Échap annule ; statistiques égales à la sauvegarde (?store=local) ; rechargement : valeurs par défaut', async ({ page }) => {
+    await menuAvecSauvegarde(page);
+    await ouvrirProfil(page);
+    await expect(page.locator('.e10-stat-valeur')).toHaveText([`17 / 40`, /^—/, /^—/, '6', /^—/, `4${NNBSP}321`]);
+    expect((await page.evaluate(() => window.__zsMenu.etat().menu.compte)).stats).toEqual([['meilleureManche', '17'], ['recordInfini', ''], ['tues', ''], ['parties', '6'], ['temps', ''], ['argent', '4321']]);
+    await expect(page.locator('#menu-profil-avatar')).toHaveAttribute('aria-label', 'Avatar 1 sur 6');
+    await page.locator('#menu-profil-changer').click();
+    await expect(page.locator('#menu-profil-avatar')).toHaveAttribute('aria-label', 'Avatar 2 sur 6');
+    await expect(page.locator('#menu-profil-annonce')).toHaveText('Avatar 2 sur 6');
+    expect(await page.locator('#menu-profil-avatar').evaluate((n) => getComputedStyle(n).color)).toBe('rgb(255, 74, 61)'); // --menu-rouge-trait
+    await page.locator('#menu-profil-pseudo-modifier').click();
+    const champ = page.locator('#menu-profil-pseudo-champ');
+    await expect(champ).toBeFocused();
+    await expect(page.getByLabel('Pseudo', { exact: true })).toBeVisible();
+    for (const [saisie, message] of [['a', 'Trop court : 2 caractères au moins.'], ['x'.repeat(21), 'Trop long : 20 caractères au plus.'], ['ab​cd', 'Caractère interdit : retour à la ligne, tabulation ou caractère invisible.']]) {
+      await champ.fill(saisie);
+      await page.locator('#menu-profil-pseudo-valider').click();
+      await expect(page.locator('#menu-profil-pseudo-erreur')).toHaveText(message);
+      await expect(champ).toHaveAttribute('aria-invalid', 'true');
+      await expect(champ).toHaveAccessibleDescription(new RegExp(`De 2 à 20 caractères\\. ${message.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`));
+    }
+    await page.keyboard.press('Escape');
+    await expect(page.locator('#menu-profil-pseudo')).toHaveText('Survivant');
+    await expect(page.locator('#menu-ecran-profil')).toBeVisible(); // Échap a seulement annulé l'édition
+    await page.locator('#menu-profil-pseudo-modifier').click();
+    await champ.fill('  Le   Chef  ');
+    await champ.press('Enter');
+    await expect(page.locator('#menu-profil-pseudo')).toHaveText('Le Chef');
+    await expect(page.locator('#menu-profil-annonce')).toHaveText('Pseudo changé : Le Chef.');
+    expect((await page.evaluate(() => window.__zsMenu.etat().menu.compte))).toMatchObject({ avatar: 'rouge', pseudo: 'Le Chef', depot: 'local' });
+    // Gardés en mémoire en quittant et en revenant ; aucune écriture.
+    await page.locator('#menu-ecran-profil-retour').click();
+    await page.locator('#menu-connexion').click();
+    await page.locator('#menu-connexion-profil').click();
+    await expect(page.locator('#menu-profil-pseudo')).toHaveText('Le Chef');
+    expect(await page.evaluate(() => window.__ecritures)).toEqual([]);
+    expect(JSON.parse(await page.evaluate((k) => localStorage.getItem(k), KEY))).toEqual(SAUVEGARDE);
+    await page.reload();
+    await expect(page.locator('#menu-jouer')).toBeVisible({ timeout: 60_000 });
+    await ouvrirProfil(page);
+    await expect(page.locator('#menu-profil-pseudo')).toHaveText('Survivant');
+    await expect(page.locator('#menu-profil-avatar')).toHaveAttribute('aria-label', 'Avatar 1 sur 6');
+  });
+
+  test('« Exporter mon code » : code ZS1 valide (relu par decodeSave = la sauvegarde) ; « Importer un code » : code abîmé refusé (message, aucune écriture), code valide vérifié (aperçu), confirmation exigée, puis importé : seule écriture, puis menu rechargé sans introduction, solde à jour', async ({ page, context }) => {
+    test.setTimeout(120_000);
+    await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+    await menuAvecSauvegarde(page);
+    await ouvrirProfil(page);
+    await page.locator('#menu-profil-exporter').click();
+    await expect(page.getByRole('dialog', { name: 'Exporter mon code' })).toBeVisible();
+    const code = await page.locator('#menu-export-code').inputValue();
+    expect(code).toMatch(/^ZS1\./);
+    const relu = decodeSave(code, PARAMS_SAVE);
+    expect(relu.ok).toBe(true);
+    expect(relu.save).toEqual(SAUVEGARDE);
+    await expect(page.locator('#menu-export-longueur')).toHaveText(`${code.length} caractères`);
+    await page.locator('#menu-export-copier').click();
+    await expect(page.locator('#menu-export-message')).toHaveText(/^(Code copié\.|Copie automatique impossible.*)$/);
+    expect((await new AxeBuilder({ page }).analyze()).violations.map((v) => v.id)).toEqual([]);
+    await page.keyboard.press('Escape');
+    await expect(page.locator('#menu-export')).toHaveCount(0);
+    await expect(page.locator('#menu-profil-exporter')).toBeFocused();
+    await expect(page.locator('#menu-ecran-profil')).toBeVisible();
+    // Import : code abîmé.
+    await page.locator('#menu-profil-importer').click();
+    const champ = page.locator('#menu-import-code');
+    await expect(champ).toBeFocused();
+    const autre = { ...defaultSave(), money: 777, earned: 9000, records: { bestWave: 25, bestKills: 120, runs: 11, worldsCompleted: 0 } };
+    const valide = encodeSave(autre, PARAMS_SAVE);
+    await champ.fill(`${valide.slice(0, -3)}${valide.endsWith('000') ? '111' : '000'}`);
+    await page.locator('#menu-import-verifier').click();
+    await expect(page.locator('#menu-import-erreur')).toHaveText('Le code est abîmé : la somme de contrôle ne correspond pas. Copie-le de nouveau en entier.');
+    await expect(champ).toHaveAttribute('aria-invalid', 'true');
+    await expect(page.locator('#menu-import-apercu')).toBeHidden();
+    // Code valide : aperçu, remplacement seulement après la case cochée.
+    await champ.fill(valide);
+    await page.locator('#menu-import-verifier').click();
+    await expect(page.locator('#menu-import-erreur')).toHaveText('');
+    await expect(page.locator('#menu-import-apercu')).toBeVisible();
+    await expect(page.locator('#menu-import-message')).toHaveText('Code valide : vérifie l\'aperçu avant de remplacer ta sauvegarde.');
+    await expect(page.locator('#menu-import-table tr[data-changed="true"] th')).toContainText(['Solde', 'Total gagné', 'Meilleure manche']);
+    await expect(page.locator('#menu-import-remplacer')).toBeDisabled();
+    expect((await new AxeBuilder({ page }).analyze()).violations.map((v) => v.id)).toEqual([]);
+    expect(await page.evaluate(() => window.__ecritures)).toEqual([]);
+    await page.locator('#menu-import-ack').check();
+    await expect(page.locator('#menu-import-remplacer')).toBeEnabled();
+    await page.locator('#menu-import-remplacer').click();
+    await expect(page.locator('#menu-import-message')).toHaveText('Sauvegarde importée. Le menu va se recharger pour la prendre en compte.');
+    expect(await page.evaluate(() => window.__ecritures)).toEqual(['local.setItem']); // la seule écriture, celle de l'import existant
+    const ecrite = JSON.parse(await page.evaluate((k) => localStorage.getItem(k), KEY));
+    expect([ecrite.money, ecrite.earned, ecrite.records.bestWave, ecrite.records.runs]).toEqual([777, 9000, 25, 11]);
+    await expect(page.locator('.e10-stat-valeur').first()).toHaveText('25 / 40');
+    await expect(page.locator('#menu-import-recharger')).toBeFocused();
+    const rechargement = page.waitForEvent('framenavigated', { predicate: (f) => f === page.mainFrame() });
+    await page.locator('#menu-import-recharger').click();
+    expect((await rechargement).url()).toMatch(/[?&]store=local.*#retour$/);
+    await expect(page.locator('#menu-jouer')).toBeVisible({ timeout: 60_000 });
+    await expect(page.locator('#menu-solde-texte')).toHaveText('777');
+    expect(await page.evaluate(() => [window.__vus.e0 ?? null, location.hash])).toEqual([null, '']);
+  });
+
+  test('sous ?test=1 sans store=local : dépôt en mémoire, « En mémoire (mode test) » ; l\'import n\'écrit rien dans le vrai stockage', async ({ page }) => {
+    await espions(page);
+    await ouvrirMenu(page);
+    await ouvrirProfil(page);
+    await expect(page.locator('#menu-profil-sauvegarde .e10-sous')).toHaveText('En mémoire (mode test)');
+    await page.locator('#menu-profil-importer').click();
+    await page.locator('#menu-import-code').fill(encodeSave({ ...defaultSave(), money: 50 }, PARAMS_SAVE));
+    await page.locator('#menu-import-verifier').click();
+    await page.locator('#menu-import-ack').check();
+    await page.locator('#menu-import-remplacer').click();
+    await expect(page.locator('#menu-import-message')).toContainText('Sauvegarde importée.');
+    expect(await page.evaluate(() => [window.__ecritures, localStorage.length])).toEqual([[], 0]);
   });
 });

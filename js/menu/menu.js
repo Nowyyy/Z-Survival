@@ -405,6 +405,7 @@ export function creerMenu({ dict, infos = [], liens = {}, solde: montant = 0, re
     nav.hidden = plein || resultat;
     for (const [id, s] of ecransOnglets) s.hidden = id !== etat.onglet || plein || sous || ecranMenu;
     if (credits) credits.section.hidden = etat.ecran !== 'credits';
+    compte?.synchroniser(etat.ecran); // lot 8g : Connexion et Profil
     boutique?.synchroniser(etat.onglet === 'boutique' && !plein && !sous && !ecranMenu); // lot 8e : la Boutique tient sa vue (caisses ou résultat)
     perso?.synchroniser(etat.ecran, etat.onglet === 'personnage' || SOUS_MENUS.includes(etat.ecran));
     animer();
@@ -418,7 +419,7 @@ export function creerMenu({ dict, infos = [], liens = {}, solde: montant = 0, re
 
   // Lot 8b : animations de la scène de l'onglet affiché seulement, et jamais quand la page est cachée (data-anim : off = en pause).
   function animer() {
-    for (const [id, scene] of scenes) scene.dataset.anim = id === etat.onglet && etat.ecran !== 'options' && !document.hidden ? 'on' : 'off';
+    for (const [id, scene] of scenes) scene.dataset.anim = id === etat.onglet && !ECRANS_PLEINS.includes(etat.ecran) && !ECRANS_MENU.includes(etat.ecran) && !document.hidden ? 'on' : 'off';
     box.classList.toggle('e8-pause', document.hidden || lance); // lot 8d : coulures des bandeaux en pause (page cachée, partie lancée)
     // Lot 8d : écran Personnage ou sous-menu affiché (animations e9-*), en pause ailleurs et quand la page est cachée.
     const actif = etat.onglet === 'personnage' && !document.hidden && !lance ? (etat.ecran === null ? 'personnage' : etat.ecran) : null;
@@ -580,7 +581,7 @@ export function creerMenu({ dict, infos = [], liens = {}, solde: montant = 0, re
       synchroniser();
       retourFocus?.focus();
     };
-    dialogue = nom === 'information' ? m.ecranInformation({ dict, infos, onClose: fermer, root: box }) : m.ecranConnexion({ dict, onClose: fermer, root: box });
+    dialogue = m.ecranInformation({ dict, infos, onClose: fermer, root: box }); // lot 8g : Connexion n'est plus un dialogue (écran plein, compte.js)
   }
 
   // Lot 8g : écran Crédits (js/menu/credits.js, chargé à la première ouverture, roue de chargement au-delà de 120 ms ; données demandées dès que le
@@ -623,7 +624,45 @@ export function creerMenu({ dict, infos = [], liens = {}, solde: montant = 0, re
   }
   btCredits.addEventListener('click', () => ouvrirCredits());
 
-  connexion.addEventListener('click', () => ouvrirDialogue('connexion', connexion));
+  // Lot 8g : écrans Connexion et Profil (js/menu/compte.js, chargé à la première ouverture, roue de chargement ; données demandées dès que le doigt
+  // se pose sur « Connexion ») : écrans pleins, comme les Options ; « ‹ Menu » revient à l'onglet, le focus au bouton d'origine.
+  let compte = null;
+  let chargementCompte = null;
+  let retourCompte = null;
+  const ECRANS_COMPTE = ['connexion', 'profil'];
+  const moduleCompte = () => import('./compte.js');
+  connexion.addEventListener('pointerdown', () => moduleCompte().then((m) => m.precharger()).catch(() => {}), { passive: true });
+  async function ouvrirCompte(nom, depuis = null) {
+    options?.close();
+    if (!ECRANS_COMPTE.includes(etat.ecran)) retourCompte = depuis ?? connexion;
+    etat = ouvrirEcran(etat, nom);
+    synchroniser();
+    if (!compte) {
+      const roue = roueDifferee(box, { fixe: true, texte: t('game.menu.chargement.texte') });
+      try {
+        chargementCompte ??= moduleCompte().then((m) => m.ecransCompte({ t, bandeau, root: contenu, rootDialogue: box, monde, poserEcran: (n) => (n ? ouvrirCompte(n) : fermerCompte()) }));
+        const c = await chargementCompte;
+        compte ??= c;
+      } catch {
+        chargementCompte = null;
+        if (etat.ecran === nom) fermerCompte();
+        return;
+      } finally {
+        roue.fin();
+      }
+    }
+    if (etat.ecran !== nom) return;
+    synchroniser();
+    compte.focus(nom);
+  }
+  function fermerCompte() {
+    if (!ECRANS_COMPTE.includes(etat.ecran)) return;
+    etat = fermerEcran(etat);
+    synchroniser();
+    (retourCompte ?? connexion).focus();
+    retourCompte = null;
+  }
+  connexion.addEventListener('click', () => ouvrirCompte('connexion', connexion));
   btInfo.addEventListener('click', () => ouvrirDialogue('information', barres));
   btOptions.addEventListener('click', async () => {
     etat = ouvrirEcran(etat, 'options');
@@ -700,6 +739,9 @@ export function creerMenu({ dict, infos = [], liens = {}, solde: montant = 0, re
     if (dialogue) dialogue.close();
     else if (etat.ecran === 'options') fermerOptions();
     else if (etat.menuOuvert) fermerListe(true);
+    else if (ECRANS_COMPTE.includes(etat.ecran)) {
+      if (!compte?.echap()) fermerCompte(); // lot 8g : fenêtre d'export ou d'import, édition du pseudo, puis l'écran
+    }
     else if (etat.ecran === 'credits') fermerCredits(); // lot 8g
     else if (etat.onglet === 'boutique' && boutique?.echap()) {
       // lot 8e : dialogue des chances fermé, ou écran de résultat refermé (retour à la Boutique)
@@ -719,6 +761,6 @@ export function creerMenu({ dict, infos = [], liens = {}, solde: montant = 0, re
   synchroniser();
   return {
     element: box,
-    etat: () => ({ pleinEcran: { disponible: peutPleinEcran, actif: Boolean(document.fullscreenElement) }, onglet: etat.onglet, menuOuvert: etat.menuOuvert, ecran: etat.ecran, nonLue: nouveauteNonLue(infos, etat.lues), solde: montant, discord: lien.actif, record, monde: monde.id, infini: infini?.etat() ?? null, personnage: perso?.etat() ?? null, boutique: boutique?.etat() ?? null, credits: credits?.etat() ?? null, niveaux, statsLancees }),
+    etat: () => ({ pleinEcran: { disponible: peutPleinEcran, actif: Boolean(document.fullscreenElement) }, onglet: etat.onglet, menuOuvert: etat.menuOuvert, ecran: etat.ecran, nonLue: nouveauteNonLue(infos, etat.lues), solde: montant, discord: lien.actif, record, monde: monde.id, infini: infini?.etat() ?? null, personnage: perso?.etat() ?? null, boutique: boutique?.etat() ?? null, credits: credits?.etat() ?? null, compte: compte?.etat() ?? null, niveaux, statsLancees }),
   };
 }

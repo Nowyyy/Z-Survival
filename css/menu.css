@@ -4380,3 +4380,459 @@
   overflow-wrap: anywhere;
   color: var(--menu-texte-doux);
 }
+
+/* ---------------------------------------------------------------------------------------------------------------------------------------------- */
+/* Lot 8g — E10 : Connexion et Profil (js/menu/compte.js ; maquette Profil.html, 932 × 430) : écrans pleins comme les Options (même fond à filets),
+   bandeau et « ‹ Menu » ; Profil : carte de 268 × 280 à gauche (avatar de 88, pseudo, compte), six statistiques en 3 × 2 (cartes de 78 de haut, écart
+   de 10) et cadre « Sauvegarde » de 74 de haut à droite ; fenêtres d'export et d'import (voile et panneau du menu). Tailles en calc(N * var(--u)). */
+.e8[data-ecran='connexion'] .e8-contenu,
+.e8[data-ecran='profil'] .e8-contenu {
+  grid-row: 2 / 4;
+}
+
+.e8-ecran.e10 {
+  --e5-bouton-h: max(var(--menu-cible), calc(40 * var(--u)));
+  align-items: stretch;
+  gap: calc(14 * var(--u));
+  padding-bottom: calc(26 * var(--u));
+  color: var(--menu-texte);
+  background:
+    linear-gradient(var(--menu-options-trait), var(--menu-options-trait)) 0 calc(99 * var(--u)) / 100% 2px no-repeat,
+    linear-gradient(var(--menu-options-trait), var(--menu-options-trait)) 0 calc(229 * var(--u)) / 100% 2px no-repeat,
+    linear-gradient(var(--menu-options-trait), var(--menu-options-trait)) calc(239 * var(--u)) 0 / 2px calc(100 * var(--u)) no-repeat,
+    linear-gradient(var(--menu-options-trait), var(--menu-options-trait)) calc(599 * var(--u)) calc(100 * var(--u)) / 2px calc(130 * var(--u)) no-repeat,
+    linear-gradient(var(--menu-options-trait), var(--menu-options-trait)) calc(119 * var(--u)) calc(230 * var(--u)) / 2px 100% no-repeat,
+    linear-gradient(var(--menu-options-trait), var(--menu-options-trait)) calc(819 * var(--u)) calc(230 * var(--u)) / 2px 100% no-repeat,
+    var(--menu-options-fond);
+}
+
+.e10-bouton {
+  min-height: var(--menu-cible);
+  padding: 0 calc(12 * var(--u));
+  border: 1px solid var(--menu-options-bouton-bord);
+  border-radius: 4px;
+  background: var(--menu-options-bouton);
+  color: var(--menu-options-bouton-texte);
+  font-size: max(13px, calc(13 * var(--u)));
+  cursor: pointer;
+}
+
+.e10-bouton:hover:not([aria-disabled='true']) {
+  background: var(--color-surface-raised);
+}
+
+.e10-indisponible,
+.e10-indisponible:hover {
+  border-width: 2px;
+  color: var(--menu-carte-libelle);
+  cursor: not-allowed;
+}
+
+.e10-large {
+  width: 100%;
+}
+
+.e10-planche {
+  min-height: var(--menu-cible);
+  padding: 0 calc(14 * var(--u));
+  font-size: max(13px, calc(13 * var(--u)));
+  font-weight: var(--font-weight-bold);
+}
+
+/* Connexion : colonne centrée sous l'en-tête. */
+.e10-choix {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: calc(10 * var(--u));
+  width: min(100%, calc(420 * var(--u)), 460px);
+  margin: calc(6 * var(--u)) auto 0;
+  overflow-y: auto;
+}
+
+.e10-phrase {
+  margin: calc(4 * var(--u)) 0;
+  font-size: max(14px, calc(15 * var(--u)));
+  text-align: center;
+  color: var(--menu-e9-texte-doux);
+}
+
+/* Profil : deux colonnes. */
+.e10-grille {
+  display: grid;
+  flex: 1;
+  grid-template-columns: calc(268 * var(--u)) minmax(0, 1fr);
+  column-gap: calc(20 * var(--u));
+  min-height: 0;
+}
+
+.e10-carte {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: calc(4 * var(--u));
+  min-height: 0;
+  overflow-y: auto;
+  padding: calc(10 * var(--u)) calc(14 * var(--u));
+  border: 3px solid var(--menu-panneau-bois);
+  background: var(--menu-e9-panneau);
+}
+
+.e10-avatar {
+  display: grid;
+  flex: none;
+  place-items: center;
+  box-sizing: border-box;
+  width: max(56px, calc(76 * var(--u)));
+  height: max(56px, calc(76 * var(--u)));
+  border: 3px solid var(--menu-e9-stats-bord);
+  border-radius: 50%;
+  background: var(--menu-e9-case);
+}
+
+.e10-avatar-svg {
+  width: 64%;
+  height: 64%;
+  fill: currentcolor;
+}
+
+.e10-avatar-detail {
+  fill: var(--menu-e9-case);
+}
+
+.e10-avatar-os { color: var(--menu-texte); }
+.e10-avatar-rouge { color: var(--menu-rouge-trait); }
+.e10-avatar-or { color: var(--rarete-legendaire); }
+.e10-avatar-vert { color: var(--rarete-peu-commun); }
+.e10-avatar-bleu { color: var(--rarete-rare); }
+.e10-avatar-violet { color: var(--rarete-epique); }
+
+.e10-pseudo {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 100%;
+}
+
+.e10-pseudo[hidden],
+.e10-pseudo-form[hidden] {
+  display: none;
+}
+
+.e10-pseudo-texte {
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  font-family: var(--font-label);
+  font-size: max(16px, calc(20 * var(--u)));
+  letter-spacing: 0.04em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.e10-crayon {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: var(--menu-cible);
+  height: var(--menu-cible);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--menu-options-bouton-texte);
+  cursor: pointer;
+}
+
+.e10-crayon-icone {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentcolor;
+  stroke-width: 2;
+  stroke-linejoin: round;
+}
+
+.e10-pseudo-form {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+}
+
+.e10-label {
+  font-weight: var(--font-weight-bold);
+  font-size: max(13px, calc(13 * var(--u)));
+}
+
+.e10-champ,
+.e10-code {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: var(--menu-cible);
+  padding: 6px 10px;
+  border: 2px solid var(--menu-options-bouton-bord);
+  border-radius: 4px;
+  background: var(--menu-options-bouton);
+  color: var(--menu-texte);
+  font: inherit;
+  font-size: max(14px, calc(15 * var(--u)));
+}
+
+.e10-champ[aria-invalid='true'],
+.e10-code[aria-invalid='true'] {
+  border-color: var(--menu-rouge-trait);
+}
+
+.e10-code {
+  font-size: 13px;
+  resize: vertical;
+  overflow-wrap: anywhere;
+}
+
+.e10-consigne,
+.e10-sous,
+.e10-compte-texte {
+  margin: 0;
+  font-size: max(12px, calc(13 * var(--u)));
+  color: var(--menu-e9-texte-doux);
+}
+
+.e10-erreur {
+  margin: 0;
+  font-weight: var(--font-weight-bold);
+  font-size: max(12px, calc(13 * var(--u)));
+  color: var(--menu-rouge-trait);
+}
+
+.e10-erreur:empty {
+  display: none;
+}
+
+.e10-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.e10-compte {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+  margin-top: auto;
+  padding-top: 6px;
+  border-top: 1px dashed var(--menu-e9-stats-bord);
+}
+
+/* Colonne de droite : statistiques et sauvegarde. */
+.e10-droite {
+  display: flex;
+  flex-direction: column;
+  gap: calc(8 * var(--u));
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.e10-titre {
+  margin: 0;
+  font-family: var(--font-label);
+  font-weight: var(--font-weight-normal);
+  font-size: max(13px, calc(15 * var(--u)));
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--menu-e9-texte-doux);
+}
+
+.e10-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: calc(10 * var(--u));
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.e10-stat {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  min-height: calc(78 * var(--u));
+  padding: calc(6 * var(--u)) calc(12 * var(--u));
+  line-height: 1.2;
+  border: 2px solid var(--menu-panneau-bois);
+  background: var(--menu-e9-panneau);
+}
+
+.e10-stat-nom {
+  font-weight: var(--font-weight-bold);
+  font-size: max(11px, calc(12 * var(--u)));
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--menu-carte-libelle);
+}
+
+.e10-stat-valeur {
+  font-weight: var(--font-weight-bold);
+  font-size: max(16px, calc(20 * var(--u)));
+  color: var(--menu-record);
+}
+
+.e10-stat-detail {
+  font-size: max(11px, calc(12 * var(--u)));
+  color: var(--menu-panneau-bois-texte);
+}
+
+.e10-sauvegarde {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 4px 8px;
+  min-height: calc(74 * var(--u));
+  margin-top: auto;
+  padding: calc(6 * var(--u)) calc(12 * var(--u));
+  line-height: 1.25;
+  border: 1px dashed var(--menu-e9-stats-bord);
+}
+
+.e10-sauvegarde .e10-titre {
+  font-size: max(13px, calc(14 * var(--u)));
+  color: var(--menu-texte);
+}
+
+.e10-sauvegarde-texte {
+  min-width: 0;
+}
+
+.e10-sauvegarde-boutons {
+  display: flex;
+  flex: none;
+  gap: 8px;
+  margin-left: auto; /* place étroite (encoche) : les boutons passent sous le texte, à droite */
+}
+
+.e10-sauvegarde-boutons > button {
+  padding: 0 max(8px, calc(12 * var(--u)));
+  white-space: nowrap;
+}
+
+.e10-importer {
+  border-width: 2px;
+  font-weight: var(--font-weight-bold);
+  color: var(--menu-texte);
+}
+
+/* Fenêtres d'export et d'import : panneau du menu, sur toute la hauteur sous l'en-tête (la barre d'onglets est masquée). */
+.e10-voile .e10-panneau {
+  bottom: 0;
+}
+
+.e10-panneau-titre {
+  margin: 0;
+  font-family: var(--font-label);
+  font-weight: var(--font-weight-normal);
+  font-size: max(15px, calc(17 * var(--u)));
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.e10-panneau-corps {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.e10-croix {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentcolor;
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+.e10-message {
+  margin: 0;
+  font-size: max(13px, calc(14 * var(--u)));
+}
+
+.e10-message:empty {
+  display: none;
+}
+
+.e10-apercu {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  width: 100%;
+}
+
+.e10-apercu[hidden] {
+  display: none;
+}
+
+.e10-sous-titre {
+  margin: 0;
+  font-size: max(13px, calc(14 * var(--u)));
+}
+
+.e10-table {
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.e10-table th,
+.e10-table td {
+  padding: 3px 10px 3px 0;
+  text-align: left;
+}
+
+.e10-change {
+  font-weight: var(--font-weight-bold);
+  color: var(--menu-record);
+}
+
+.e10-case {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: var(--menu-cible);
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.e10-case input {
+  width: 22px;
+  height: 22px;
+}
+
+.e10-remplacer:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Lot 8g : écran très bas (téléphone à encoche, 351 px de haut) : le Profil tient sans défiler ; les détails des statistiques (secondaires) sont masqués. */
+@media (max-height: 360px) {
+  .e8-ecran.e10 {
+    padding-bottom: 8px;
+  }
+
+  .e10-stat {
+    min-height: 0;
+    padding: 4px 10px;
+  }
+
+  .e10-stat-detail {
+    display: none;
+  }
+
+  .e10-sauvegarde {
+    min-height: 0;
+    padding: 4px 10px;
+  }
+}

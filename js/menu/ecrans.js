@@ -1,5 +1,5 @@
 // Lot 8a : écrans du menu principal chargés à la demande (Docs/ref/menu-principal.md) : Information (E8-7, nouveautés de data/menu/infos.json),
-// Connexion provisoire (« Connexion : bientôt », lot 8g), onglets « Bientôt » (Boutique, Personnage, Infini : écrans aux lots 8b à 8e).
+// onglets « Bientôt » (lot 8g : la Connexion provisoire est remplacée par l'écran Connexion de js/menu/compte.js) (Boutique, Personnage, Infini : écrans aux lots 8b à 8e).
 // Pour ajouter l'écran d'un onglet : une fonction qui rend une <section class="e8-ecran"> avec bandeau(), appelée par changerOnglet() de menu.js.
 import { bandeau, el } from './menu.js';
 
@@ -62,13 +62,6 @@ export function ecranInformation({ dict, infos = [], onClose, root }) {
     liste.append(item);
   }
   return dialogue({ id: 'menu-ecran-information', bloc: 'E8-7', libelle: t('game.menu.information.libelle'), titre: t('game.menu.information.titre'), corps: [liste], onClose, root, fermer: t('game.menu.fermer') });
-}
-
-export function ecranConnexion({ dict, onClose, root }) {
-  const t = (k) => dict[k] ?? '';
-  const texte = el('p', ['e8-texte']);
-  texte.textContent = t('game.menu.connexion.texte');
-  return dialogue({ id: 'menu-ecran-connexion', bloc: 'E8-8', libelle: t('game.menu.connexion.libelle'), titre: t('game.menu.connexion.titre'), corps: [texte], onClose, root, fermer: t('game.menu.fermer') });
 }
 
 // Onglet sans écran pour l'instant : bandeau (libellé « Bientôt », titre = nom de l'onglet) et une phrase.
