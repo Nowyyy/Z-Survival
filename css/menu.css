@@ -4112,3 +4112,109 @@
   text-align: center;
   pointer-events: none;
 }
+
+/* ---------------------------------------------------------------------------------------------------------------------------------------------- */
+/* Lot 8g — E0 : introduction du studio (js/menu/intro.js) : fond noir, logo animé de No Way Studio au centre (image fournie par le propriétaire :
+   ses couleurs sont dans le fichier, aucune ici), « Toucher pour passer » au bout d'une seconde, fondu final. Au-dessus de l'écran de chargement
+   (E7, z-index 51), qui charge le menu dessous. Taille : tient dans l'écran de 667 × 375 à 2000 × 1020 (62 % de la hauteur au plus, 720 px de large ; « Toucher pour passer » dessous). */
+.e0 {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--menu-entete);
+  touch-action: none;
+}
+
+.e0-logo {
+  display: block;
+  width: min(78vw, calc(62vh * 792 / 556), 720px);
+  height: auto;
+  aspect-ratio: 792 / 556;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+.e0-passer {
+  position: absolute;
+  left: 50%;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 12px);
+  min-width: var(--menu-cible);
+  min-height: var(--menu-cible);
+  padding: 0 16px;
+  transform: translateX(-50%);
+  border: 0;
+  background: transparent;
+  color: var(--menu-texte-doux);
+  font: inherit;
+  font-family: var(--font-sans);
+  font-size: max(13px, calc(14 * var(--u)));
+  letter-spacing: 0.04em;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.e0-indice .e0-passer {
+  animation: e0-indice 0.5s ease-out both;
+  pointer-events: auto;
+}
+
+.e0-sortie {
+  animation: e0-sortie 0.4s ease-in both;
+  pointer-events: none;
+}
+
+@keyframes e0-indice {
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes e0-sortie {
+  to {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .e0-indice .e0-passer {
+    animation: none;
+    opacity: 1;
+  }
+
+  .e0-sortie {
+    animation: none;
+  }
+}
+
+/* Lot 8g : logo du studio (copie fixe) en petit en bas à gauche de l'écran de chargement, à 16 px des bords de la zone sûre ; la version reste
+   en bas à droite ; sous la barre de chargement et l'astuce, sans les toucher (vérifié à 667 × 375). */
+.e7-studio {
+  position: absolute;
+  left: calc(var(--e7-sur-g, env(safe-area-inset-left, 0px)) + 16px);
+  bottom: calc(var(--e7-sur-b, env(safe-area-inset-bottom, 0px)) + 16px);
+  width: auto;
+  height: clamp(36px, calc(52 * var(--u)), 80px);
+  pointer-events: none;
+}
+
+/* Lot 8g : bas du menu à trois barres : logo du studio (copie fixe) à droite de la version (le texte de la version reste aligné sur les icônes). */
+.e8-pied {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 10px 2px;
+}
+
+.e8-pied .e8-version {
+  margin: 0;
+  padding: 0;
+}
+
+.e8-studio {
+  flex: none;
+  width: auto;
+  height: 26px;
+}

@@ -576,6 +576,8 @@
   "game.menu.connexion.titre": "Connexion : bientôt",
   "game.menu.connexion.texte": "Les comptes arrivent dans une prochaine mise à jour. En attendant, ta progression reste enregistrée sur cet appareil.",
   "game.menu.fermer": "Fermer",
+  "game.menu.studio.nom": "No Way Studio",
+  "game.menu.intro.passer": "Toucher pour passer",
   "game.menu.perso.libelle": "Personnage",
   "game.menu.perso.titre": "Équipement",
   "game.menu.perso.toucher": "Touche-le pour changer",

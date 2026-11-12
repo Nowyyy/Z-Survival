@@ -7,6 +7,9 @@
 //   jeu : progression envoyée par main.js, qui attend la fin de la chute avant de créer la partie) ; à 100 %, l'écran est retiré et la partie apparaît.
 // Les deux : barre et pourcentage réels (js/core/menu-etat.js), astuce (data/menu/astuces.json), version (build-info.json). Sous
 // prefers-reduced-motion : Z posé, sans chute ni secousse. Animations « e7-* » (css/menu.css).
+// Lot 8g : logo du studio en petit en bas à gauche (copie fixe, assets/studio/) dans les deux phases ; phase « menu » avec l'introduction du studio
+// (intro : promesse de sa fin, demarrage.js) : l'écran se construit dessous et charge le menu, Z posé (la chute se jouerait cachée), et le menu
+// s'ouvre à la fin de l'introduction si tout est prêt (aucune attente ajoutée), sinon dès que tout est prêt.
 import { avancer, choisirAstuce, creerProgression, MODULES_ATTENDUS, pourcentage, texteVersion } from '../core/menu-etat.js';
 import { fmt, loadDict } from '../game/texts.js';
 import { CANAUX_DEBUG } from '../core/graphics.js';
@@ -16,6 +19,20 @@ import { couluresSvg } from '../logo.js';
 const SVG = 'http://www.w3.org/2000/svg';
 const FIN_CHUTE_MS = 4000; // filet de sécurité si la fin d'animation n'arrive pas (onglet caché) : la chute dure 2,8 s
 const POLICES_MS = 3000; // attente maximale des polices du menu
+export const LOGO_STUDIO_FIXE = 'assets/studio/no-way-studio-logo-fixe.svg'; // lot 8g : copie fixe du logo (scripts/studio/logo-fixe.mjs)
+
+// Lot 8g : adresse d'affichage d'un fichier du logo du studio : son texte lu une fois (fetch, même origine), puis une adresse blob: de type
+// image/svg+xml. Le type ne dépend ainsi pas du serveur (le serveur local des tests sert les .svg sans type d'image), et neuve = true donne une adresse
+// inédite, donc une animation qui repart de zéro (Crédits) : deux images de même adresse partagent leur chronologie. Sans requête externe.
+const textesStudio = new Map();
+const adressesStudio = new Map();
+export function adresseStudio(chemin, { neuve = false } = {}) {
+  if (!textesStudio.has(chemin)) textesStudio.set(chemin, fetch(chemin).then((r) => (r.ok ? r.text() : Promise.reject(new Error(`${chemin} : ${r.status}`)))));
+  if (!neuve && adressesStudio.has(chemin)) return adressesStudio.get(chemin);
+  const adresse = textesStudio.get(chemin).then((texte) => URL.createObjectURL(new Blob([texte], { type: 'image/svg+xml' })));
+  if (!neuve) adressesStudio.set(chemin, adresse);
+  return adresse;
+}
 
 function el(tag, classes = [], attrs = {}) {
   const n = document.createElement(tag);
@@ -54,9 +71,12 @@ const json = (path) => fetch(path).then((r) => (r.ok ? r.json() : null)).catch((
 
 // phase : 'menu' ou 'jeu' ; jouer(option) : appelé par « JOUER » du menu (demarrage.js charge alors le jeu ; lot 8b : option de démarrage).
 // son : { lire(), poser(réglages) } (lot 8c : son et volume des Options du menu, gardés en mémoire par demarrage.js), transmis au menu.
-export function creerChargement({ phase = 'menu', jouer = () => {}, son = null, root = document.body, search = globalThis.location?.search ?? '' } = {}) {
+export function creerChargement({ phase = 'menu', jouer = () => {}, son = null, intro = null, root = document.body, search = globalThis.location?.search ?? '' } = {}) {
   const reduit = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const pose = reduit; // retour du propriétaire : la chute du Z se rejoue à chaque chargement (menu, partie, retour au menu)
+  const avecIntro = phase === 'menu' && Boolean(intro);
+  const pose = reduit || avecIntro; // retour du propriétaire : la chute du Z se rejoue à chaque chargement (menu, partie, retour au menu) ; lot 8g : sauf sous l'introduction
+  let introFinie = !avecIntro;
+  let sortieDirecte = false; // lot 8g : fin de l'introduction sur un menu prêt : E7, caché dessous, se termine aussitôt (sans fondu)
   let etat = creerProgression(phase);
   const journal = []; // pourcentages affichés, dans l'ordre (tests : __zsMenu.etat().journal)
   let donnees = null; // phase menu : { dict, infos, liens, solde }
@@ -96,8 +116,13 @@ export function creerChargement({ phase = 'menu', jouer = () => {}, son = null, 
   erreur.hidden = true;
   centre.append(titre, barre, ligne, astuce, erreur);
   const version = el('p', ['e7-version'], { id: 'e7-version' });
+  // Lot 8g : logo du studio (copie fixe), nom accessible posé avec les textes.
+  const studio = el('img', ['e7-studio'], { id: 'e7-studio', alt: '', width: '792', height: '556', decoding: 'async' });
+  adresseStudio(LOGO_STUDIO_FIXE).then((a) => {
+    studio.src = a;
+  }, () => studio.remove());
   const annonce = el('p', ['sr-only'], { 'aria-live': 'polite', id: 'e7-annonce' });
-  box.append(scene, centre, version, annonce, el('div', ['menu-grain'], { 'aria-hidden': 'true' }));
+  box.append(scene, centre, studio, version, annonce, el('div', ['menu-grain'], { 'aria-hidden': 'true' }));
   if (pose) box.classList.add('e7-pose');
   root.append(box);
   document.getElementById('boot')?.remove();
@@ -122,6 +147,7 @@ export function creerChargement({ phase = 'menu', jouer = () => {}, son = null, 
   textes.then((d) => {
     dict = d;
     titre.setAttribute('aria-label', 'Z-Survival');
+    studio.alt = t('game.menu.studio.nom');
     barre.setAttribute('aria-label', t(phase === 'jeu' ? 'game.menu.chargement.jeu' : 'game.menu.chargement.aria'));
     etatTexte.textContent = t(phase === 'jeu' ? 'game.menu.chargement.texteJeu' : 'game.menu.chargement.texte');
     afficher();
@@ -212,7 +238,7 @@ export function creerChargement({ phase = 'menu', jouer = () => {}, son = null, 
 
   // Fin : phase « menu », menu E8 (chargement fini et chute finie) ; phase « jeu », la partie est créée (main.js) : l'écran est retiré.
   function passer() {
-    if (sortie || !chuteFinie || !etat.pret) return;
+    if (sortie || !chuteFinie || !introFinie || !etat.pret) return;
     if (phase === 'jeu') {
       sortie = true;
       retirer();
@@ -221,6 +247,7 @@ export function creerChargement({ phase = 'menu', jouer = () => {}, son = null, 
     }
     if (!donnees) return;
     sortie = true;
+    const direct = reduit || sortieDirecte;
     menuModule.then((m) => {
       document.getElementById('loading')?.setAttribute('hidden', ''); // écran de préparation d'avant : il ne doit jamais couvrir le menu
       menu = m.creerMenu({
@@ -233,7 +260,7 @@ export function creerChargement({ phase = 'menu', jouer = () => {}, son = null, 
         },
       });
       retirer();
-      if (reduit) box.remove();
+      if (direct) box.remove();
       else {
         box.classList.add('e7-sortie');
         box.addEventListener('animationend', () => box.remove(), { once: true });
@@ -245,10 +272,21 @@ export function creerChargement({ phase = 'menu', jouer = () => {}, son = null, 
     });
   }
 
+  // Lot 8g : fin de l'introduction (passée ou finie ; échec compris) : le menu s'ouvre s'il est prêt.
+  if (avecIntro) {
+    const finIntro = () => {
+      introFinie = true;
+      sortieDirecte = true;
+      passer();
+      sortieDirecte = false;
+    };
+    Promise.resolve(intro).then(finIntro, finIntro);
+  }
+
   afficher();
   return {
     progres,
     chute, // promesse : la chute du Z est finie (main.js attend avant de créer la partie, phase « jeu »)
-    etat: () => ({ phase, pourcentage: pourcentage(etat), pret: etat.pret, chuteFinie, journal: [...journal], visible: box.isConnected, menu: menu?.element.isConnected ? menu.etat() : null }),
+    etat: () => ({ phase, pourcentage: pourcentage(etat), pret: etat.pret, chuteFinie, introFinie, journal: [...journal], visible: box.isConnected, menu: menu?.element.isConnected ? menu.etat() : null }),
   };
 }

@@ -21,7 +21,7 @@ function attendu(canal, name, withTest) {
   const debug = ['source', 'dev', 'release'].includes(canal);
   const test = debug && withTest;
   if (['gfx', 'lum', 'lampgain', 'shadows', 'vhs', 'dpr', 'detail', 'perso', 'sang', 'usure', 'percee'].includes(name)) return test || canal === 'source';
-  if (['wave', 'lvl', 'money', 'planks', 'floor', 'map', 'nospawn', 'endless', 'fin', 'perf', 'cap', 'fps', 'zoom', 'tilt', 'labels', 'sons', 'test', 'store', 'seed', 'empty', 'menu'].includes(name)) return debug;
+  if (['wave', 'lvl', 'money', 'planks', 'floor', 'map', 'nospawn', 'endless', 'fin', 'perf', 'cap', 'fps', 'zoom', 'tilt', 'labels', 'sons', 'test', 'store', 'seed', 'empty', 'menu', 'intro'].includes(name)) return debug; // lot 8g : intro
   return true;
 }
 
@@ -31,7 +31,7 @@ describe('canaux et groupes (lot 5l)', () => {
     expect(CANAUX_DEBUG).toEqual(['source', 'dev', 'release']);
     expect(PARAMS_G).toEqual(['gfx', 'lum', 'lampgain', 'shadows', 'vhs', 'dpr', 'detail', 'perso', 'sang', 'usure', 'percee']);
     expect(PARAMS_T).toEqual(['wave', 'lvl', 'money', 'planks', 'floor', 'map', 'nospawn', 'endless', 'fin', 'perf', 'cap', 'fps', 'zoom', 'tilt', 'labels', 'sons']);
-    expect(PARAMS_TEST).toEqual(['test', 'store', 'seed', 'empty', 'menu']); // lot 8a : menu
+    expect(PARAMS_TEST).toEqual(['test', 'store', 'seed', 'empty', 'menu', 'intro']); // lot 8a : menu ; lot 8g : intro
     expect(new Set(ALL).size).toBe(ALL.length);
     for (const list of [CANAUX, CANAUX_DEBUG, PARAMS_G, PARAMS_T, PARAMS_TEST]) expect(Object.isFrozen(list)).toBe(true);
     expect(['gfx', 'wave', 'test', 'v', 'x'].map(groupeParam)).toEqual(['G', 'T', 'test', 'autre', 'autre']);

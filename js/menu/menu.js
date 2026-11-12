@@ -9,6 +9,7 @@
 // Lot 8e : onglet Boutique (js/menu/boutique.js à la demande : caisses, chances, écrans de résultat ; objets ajoutés à l'inventaire en mémoire).
 import { activerGlisser } from '../glisser.js';
 import { roueDifferee } from './roue.js';
+import { adresseStudio, LOGO_STUDIO_FIXE } from './chargement.js';
 import { formatMoney } from '../core/economy.js';
 import { basculerMenu, choisirOnglet, versionMenu, creerEtatMenu, ECRANS_PLEINS, SOUS_MENUS, fermerEcran, fermerMenu, lienExterne, lireMondes, lireOptionDemarrage, lireRecord, nouveauteNonLue, ONGLETS, ouvrirEcran, premierJouable } from '../core/menu-etat.js';
 import { ecranJouer } from './jouer.js';
@@ -305,10 +306,18 @@ export function creerMenu({ dict, infos = [], liens = {}, solde: montant = 0, re
   // Retour du propriétaire : version du jeu sous « Déconnexion » (« V0.8 · dev », « V0.8 · recette ») ; journal lu à la première ouverture du menu.
   const version = el('p', ['e8-version'], { id: 'menu-version' });
   version.hidden = true;
+  // Lot 8g : tout en bas, le logo du studio en petit (copie fixe) à côté de la version (à sa droite) ; image demandée à la première ouverture (déjà en cache :
+  // l'écran de chargement l'affiche).
+  const studio = el('img', ['e8-studio'], { id: 'menu-studio', alt: t('game.menu.studio.nom'), width: '792', height: '556', decoding: 'async' });
+  const pied = el('div', ['e8-pied'], { id: 'menu-pied' });
+  pied.append(version, studio); // la version reste alignée sur les icônes des entrées (retour du propriétaire, lot 8d) ; le logo à sa droite
   let versionDemandee = false;
   const poserVersion = () => {
     if (versionDemandee) return;
     versionDemandee = true;
+    adresseStudio(LOGO_STUDIO_FIXE).then((a) => {
+      studio.src = a;
+    }, () => studio.remove());
     json('data/changelog.json').then((journal) => {
       const v = versionMenu(journal, pageCanal());
       if (!v) return;
@@ -316,7 +325,7 @@ export function creerMenu({ dict, infos = [], liens = {}, solde: montant = 0, re
       version.hidden = false;
     });
   };
-  liste.append(haut, el('hr', ['e8-separateur']), bas, version);
+  liste.append(haut, el('hr', ['e8-separateur']), bas, pied);
   entete.append(connexion, droite, liste);
 
   function poserDiscord() {

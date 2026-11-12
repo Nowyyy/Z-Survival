@@ -5,10 +5,16 @@
 // - Menu : seul le menu se charge (feuille css/menu.css, écran de chargement E7 « menu », puis menu E8) ; au clic sur « JOUER », l'écran de
 //   chargement revient (phase « jeu », chute du Z rejouée) et main.js est importé : Three.js, données, textures, sons et création du jeu se chargent à ce moment-là,
 //   avec leur progression réelle (menuProgres, appelé par main.js ; sans effet en partie directe).
-import { choixDemarrage } from '../core/graphics.js';
+import { choixDemarrage, introAuDemarrage, REPERE_RETOUR } from '../core/graphics.js';
 import { graphicsReboot, pageCanal, pageSearch } from '../game/graphics-boot.js';
 
 export const modeMenu = choixDemarrage(pageCanal(), pageSearch()) === 'menu';
+
+// Lot 8g : introduction du studio au vrai lancement seulement (introAuDemarrage, js/core/graphics.js) ; le repère #retour posé par menuRetour la fait
+// sauter, puis il est retiré aussitôt de l'adresse affichée (#plein-ecran, lui, est lu et retiré par le menu). Aucun stockage.
+const fragment = globalThis.location?.hash ?? '';
+export const avecIntro = introAuDemarrage(pageCanal(), pageSearch(), fragment);
+if (fragment === REPERE_RETOUR) globalThis.history?.replaceState(null, '', `${location.pathname}${location.search}`);
 
 // Lot 8b : option de démarrage de la partie, posée par le menu (« JOUER » : histoire ; « Jouer » de l'onglet Infini : infini), lue par main.js
 // (optionPartie) ; sans paramètre d'adresse, donc sans lecture seule de la sauvegarde. Partie directe : histoire, le bâtiment, sans stats.
@@ -45,11 +51,12 @@ export function menuChute() {
 // ?test=1). La partie ne peut pas être libérée sans rechargement (écouteurs, WebGL, audio) ; l'argent a déjà été écrit (bank.runEnd).
 // Retour du propriétaire (« au retour au menu, le jeu sort du plein écran ») : un rechargement fait toujours quitter le plein écran (règle des
 // navigateurs) ; en plein écran, l'adresse porte le repère #plein-ecran, et le menu le reprend au premier toucher (creerMenu, menu.js).
+// Lot 8g (précision du propriétaire) : sinon, le repère #retour : l'introduction du studio ne se rejoue pas au retour (les deux repères valent retour).
 export const REPERE_PLEIN_ECRAN = '#plein-ecran';
 export async function menuRetour(loc = globalThis.location, doc = globalThis.document, hist = globalThis.history) {
   const { adresseRetour } = await import('../core/menu-etat.js');
   const search = adresseRetour(loc.search);
-  const hash = doc?.fullscreenElement ? REPERE_PLEIN_ECRAN : loc.hash === REPERE_PLEIN_ECRAN ? '' : loc.hash;
+  const hash = doc?.fullscreenElement ? REPERE_PLEIN_ECRAN : REPERE_RETOUR;
   const adresse = `${loc.pathname}${search}${hash}`;
   if (search === loc.search) {
     if (hash !== loc.hash) hist?.replaceState(null, '', adresse);
@@ -92,7 +99,9 @@ if (!modeMenu) {
 } else {
   document.documentElement.classList.add('zs-mode-menu');
   // Tests (?test=1&menu=1) : état de l'écran de chargement en cours et du menu (phase, pourcentages affichés, onglet…), lecture seule.
-  if (new URLSearchParams(pageSearch()).get('test') === '1') window.__zsMenu = { etat: () => ecran?.etat() ?? null };
+  // Lot 8g : intro() : état de l'introduction du studio (null quand elle ne se joue pas).
+  let introEcran = null;
+  if (new URLSearchParams(pageSearch()).get('test') === '1') window.__zsMenu = { etat: () => ecran?.etat() ?? null, intro: () => introEcran?.etat() ?? null };
   // Police du titre préchargée (fichier hébergé existant) : la chute du Z part dès l'apparition de l'écran de chargement.
   const police = document.createElement('link');
   police.rel = 'preload';
@@ -102,6 +111,15 @@ if (!modeMenu) {
   police.href = 'fonts/rubik-wet-paint-latin-400-normal.woff2';
   document.head.append(police);
   const styles = feuilleMenu();
+  // Lot 8g : introduction (js/menu/intro.js, chargé seulement quand elle se joue) par-dessus l'écran de chargement, qui charge le menu dessous ; elle
+  // ne rallonge pas le démarrage. Introduction indisponible : l'écran de chargement continue seul.
+  const intro = avecIntro
+    ? import('./intro.js').then(async (i) => {
+      await styles;
+      introEcran = i.jouerIntro();
+      return introEcran.fin;
+    }).catch(() => {})
+    : null;
   import('./chargement.js').then(async (m) => {
     await styles;
     // « JOUER » : écran de chargement du jeu (Z posé), réglages graphiques relus (l'écran Options du menu a pu les changer), puis le jeu.
@@ -115,7 +133,7 @@ if (!modeMenu) {
       graphicsReboot();
       lancerJeu();
     };
-    ecran = m.creerChargement({ phase: 'menu', jouer, son: { lire: reglagesSon, poser: poserSon } });
+    ecran = m.creerChargement({ phase: 'menu', jouer, son: { lire: reglagesSon, poser: poserSon }, intro });
   }).catch(() => {
     // Écran de chargement indisponible : la partie démarre comme avant le menu (écran de préparation #loading).
     document.documentElement.classList.remove('zs-mode-menu');
