@@ -221,16 +221,17 @@ describe('réactions des zombies', () => {
 });
 
 describe('légendaire : explosion, projection, glissade, réapparition', () => {
-  it('projection environ 0,7 s après l\'explosion ; collé, glissade, assombrissement, traînées ; carte dorée révélée par la glissade', () => {
+  it('projection avec la brillance jaune ; collé, glissade, assombrissement, traînées ; carte dorée révélée par la glissade', () => {
     const ch = chronologie(R, ['legendaire'], { graine: 3 });
     const c = ch.caisses[0];
     const P = c.projection;
     expect(c.explosion[0]).toBeGreaterThan(c.tir);
-    expect(P.depart - c.explosion[0]).toBeCloseTo(0.7, 6);
+    expect(P.depart).toBeCloseTo(c.eclair[0] + R.legendaire.projection.delai, 9);
     expect(P.depart < P.impact && P.impact < P.decolle && P.decolle < P.bas && P.bas < P.apparition && P.apparition < P.place).toBe(true);
     expect(c.sombre[0]).toBe(P.impact);
     expect(c.trainees[0]).toBe(P.decolle);
-    expect(c.objet[0]).toBeLessThan(P.bas); // derrière le zombie, montrée quand il glisse
+    expect(c.objet[0]).toBe(P.decolle); // derrière le zombie, découverte par le sang qui s'écoule
+    expect(c.devoile).toEqual([P.decolle, P.bas]);
     expect(c.objet[0]).toBeGreaterThanOrEqual(c.couvercle[0]);
     expect(c.boutons[0]).toBeGreaterThan(P.bas); // ×1 : boutons après la glissade
     const phases = [P.depart + 0.05, P.impact + 0.1, P.decolle + 0.1, P.bas + 0.1, P.apparition + 0.1].map((t) => instant(ch, R, t).zombies[P.zombie].projection.phase);
@@ -381,5 +382,44 @@ describe('retour du propriétaire (après la PR #98) : seconde explosion sous le
     expect(z((P.depart + P.sommet) / 2).pv).toBeCloseTo(0.5, 6);
     expect(c.objet[0]).toBeGreaterThan(P.impact);
     expect(c.objet[0]).toBeLessThan(P.bas);
+  });
+});
+
+describe('retour du propriétaire (après la PR #101) : explosion sous le zombie avec la brillance jaune, objet découvert par le sang', () => {
+  it('la seconde explosion part au début de l\'éclair d\'écran de la caisse dorée (×1 et ×10)', () => {
+    expect(R.legendaire.projection.delai).toBe(0);
+    for (const raretes of [['legendaire'], ['commun', 'legendaire', ...Array(8).fill('rare')]]) {
+      const c = chronologie(R, raretes, { graine: 2 }).caisses.find((k) => k.legendaire);
+      expect(c.projection.souffle).toBeCloseTo(c.eclair[0], 9);
+      expect(c.projection.souffle).toBeGreaterThanOrEqual(c.explosion[0]); // pas avant l'explosion de la caisse
+    }
+  });
+
+  it('objet invisible avant l\'écoulement, déjà à sa place, découvert de 0 à 1 pendant la glissade ; jamais révélé ailleurs', () => {
+    const ch = chronologie(R, ['legendaire'], { graine: 5 });
+    const c = ch.caisses[0];
+    const P = c.projection;
+    for (const t of [c.tir, P.depart + 0.2, P.impact + 0.05, P.decolle - 0.01]) expect(instant(ch, R, t).caisses[0].objet).toBeNull();
+    const o = (t) => instant(ch, R, t).caisses[0].objet;
+    expect(o(P.decolle + 0.001).sortie).toBe(1);
+    expect(o(P.decolle + 0.001).devoile).toBeLessThan(0.01);
+    expect(o((P.decolle + P.bas) / 2).devoile).toBeCloseTo(0.5, 6);
+    expect(o(P.bas + 0.01).devoile).toBe(1);
+    // Caisses ordinaires : carte entière dès sa sortie.
+    const ch2 = chronologie(R, ['epique']);
+    expect(instant(ch2, R, ch2.caisses[0].objet[0] + 0.1).caisses[0].objet.devoile).toBe(1);
+  });
+
+  it('×10 : la carte dorée part vers sa case après avoir été découverte', () => {
+    const ch = chronologie(R, ['legendaire', ...Array(9).fill('commun')], { graine: 9 });
+    const c = ch.caisses[0];
+    expect(c.vol[0]).toBeGreaterThanOrEqual(c.devoile[1]);
+    expect(c.projection.place).toBeLessThanOrEqual(c.fin);
+  });
+
+  it('réglages refusés : carte qui part avant d\'être découverte', () => {
+    const j = structuredClone(JSON_OUV);
+    j.legendaire.projection.glissade = 3.5;
+    expect(lireOuvertures(j, IDS).erreurs.join(' ')).toMatch(/découverte/);
   });
 });

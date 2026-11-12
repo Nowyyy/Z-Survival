@@ -276,7 +276,7 @@ test.describe('ouverture ×1 (E3-2)', () => {
     await page2.close();
   });
 
-  test('légendaire ×1 : explosion, projection environ 0,7 s après, zombie écrasé (assombrissement), glissade avec traînées, carte dorée révélée, réapparition ; budget ; captures', async ({ page, baseURL }, info) => {
+  test('légendaire ×1 : explosion, projection avec la brillance jaune, zombie écrasé (assombrissement), sang qui s\'écoule et découvre la carte dorée, réapparition ; budget ; captures', async ({ page, baseURL }, info) => {
     test.setTimeout(120_000);
     const o = surveiller(page, baseURL);
     await espions(page);
@@ -291,12 +291,18 @@ test.describe('ouverture ×1 (E3-2)', () => {
     const P = e.chronologie[0].projection;
     expect(P).toEqual(JSON.parse(JSON.stringify(ch.caisses[0].projection)));
     expect(['gauche', 'droite']).toContain(P.cote);
-    const instants = { tir: e.chronologie[0].tir + 0.04, explosion: e.chronologie[0].tir + 0.35, colle: P.impact + 0.3, glissade: P.decolle + 0.5, retour: P.apparition + 0.5 };
+    // Retour du propriétaire (après la PR #101) : seconde explosion avec la brillance jaune ; objet invisible avant l'écoulement du sang.
+    expect(P.souffle).toBeCloseTo(e.chronologie[0].eclair[0], 6);
+    const mi = (P.decolle + P.bas) / 2;
+    const instants = { tir: e.chronologie[0].tir + 0.04, explosion: e.chronologie[0].tir + 0.35, souffle: P.souffle + 0.12, retombe: P.impact - 0.15, colle: P.impact + 0.3, ecoulement: P.decolle + 0.2, glissade: mi, decouverte: P.bas + 0.1, retour: P.apparition + 0.5 };
     for (const [nom, t] of Object.entries(instants)) {
       await aller(page, t);
       await page.screenshot({ path: info.outputPath(`legendaire-${nom}.png`) });
       const s = (await ouv(page)).instant;
+      if (['souffle', 'retombe', 'colle'].includes(nom)) expect(s.objets[0], nom).toBeNull();
       if (nom === 'colle') expect(s.sombre).toBeGreaterThan(0.5);
+      if (nom === 'glissade') expect(s.objets[0].devoile).toBeCloseTo(0.5, 2);
+      if (nom === 'decouverte') expect(s.objets[0].devoile).toBe(1);
       if (nom === 'retour') expect(s.sombre).toBe(0);
     }
     await aller(page, e.fin + 0.1);

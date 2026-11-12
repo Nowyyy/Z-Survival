@@ -13,6 +13,9 @@ const toile = (w, h) => {
 };
 
 // Générateur déterministe : f() dans [0, 1).
+// Part de la hauteur de la nappe de sang sous laquelle son bord du haut ne descend jamais (scene.js y règle la découverte de la carte).
+export const NAPPE_BORD = 28 / 512;
+
 function hasard(graine) {
   let r = createRng(graine);
   return () => {
@@ -282,6 +285,57 @@ export function creerTextures({ couleur, anisotropie = 1 }) {
     return tex(c);
   }
 
+  // Nappe de sang qui s'écoule sur la « vitre » (légendaire) : bord du haut ondulé (jamais plus bas que NAPPE_BORD de la hauteur : au-dessous,
+  // la nappe couvre toute sa largeur), corps plein veiné de sang sec, coulures qui pendent en bas, alpha.
+  function nappe() {
+    const [c, ctx] = toile(256, 512);
+    const f = hasard(41);
+    ctx.clearRect(0, 0, 256, 512);
+    const bord = NAPPE_BORD * 512;
+    // Contour : bord du haut ondulé, flancs irréguliers (dans les 34 px du bord, hors de la largeur de la carte), coulures en bas.
+    const flanc = () => 6 + f() * 26;
+    ctx.fillStyle = couleur('--ouv-sang');
+    ctx.globalAlpha = 0.96;
+    ctx.beginPath();
+    ctx.moveTo(flanc(), bord);
+    for (let x = 32; x <= 224; x += 16) ctx.lineTo(x, bord - 4 - f() * (bord - 6));
+    for (let y = bord; y <= 392; y += 24) ctx.lineTo(256 - flanc(), y);
+    for (let x = 230; x > 26; x -= 12 + f() * 14) {
+      const w = 6 + f() * 9;
+      const long = 410 + f() * 96;
+      ctx.lineTo(x, 396 + f() * 12);
+      ctx.bezierCurveTo(x - 1, long - 24, x - w * 0.15, long, x - w / 2, long);
+      ctx.bezierCurveTo(x - w * 0.85, long, x - w + 1, long - 24, x - w, 396 + f() * 12);
+    }
+    for (let y = 392; y >= bord; y -= 24) ctx.lineTo(flanc(), y);
+    ctx.closePath();
+    ctx.fill();
+    // Veines de sang plus sombre (coulées verticales dans la nappe), gouttes autour des flancs.
+    ctx.fillStyle = couleur('--ouv-sang-sec');
+    for (let i = 0; i < 9; i += 1) {
+      const x = 30 + f() * 196;
+      const w = 2 + f() * 5;
+      const y0 = bord + f() * 80;
+      const long = 120 + f() * 200;
+      ctx.globalAlpha = 0.15 + f() * 0.2;
+      ctx.beginPath();
+      ctx.moveTo(x, y0);
+      ctx.quadraticCurveTo(x + w * 2, y0 + long / 2, x + w / 2, y0 + long);
+      ctx.quadraticCurveTo(x + w, y0 + long / 2, x + w, y0);
+      ctx.fill();
+    }
+    for (let i = 0; i < 26; i += 1) {
+      ctx.globalAlpha = 0.6 + f() * 0.35;
+      ctx.fillStyle = couleur(f() < 0.7 ? '--ouv-sang' : '--ouv-sang-sec');
+      const gauche = f() < 0.5;
+      ctx.beginPath();
+      ctx.arc(gauche ? f() * 30 : 226 + f() * 30, bord + f() * 380, 1.5 + f() * 4, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+    return tex(c);
+  }
+
   // Volute (flamme ou fumée de l'explosion) : nuage irrégulier blanc, opacité en dégradé (teinté par la matière).
   function bouffee() {
     const [c, ctx] = toile(128, 128);
@@ -416,7 +470,7 @@ export function creerTextures({ couleur, anisotropie = 1 }) {
   }
 
   return {
-    beton, bois, metal, porte, bande, tapis, question, degrade, lueur, etoile, sang, bouffee, eclaboussure, carte, toileCarte, marque,
+    beton, bois, metal, porte, bande, tapis, question, degrade, lueur, etoile, sang, nappe, bouffee, eclaboussure, carte, toileCarte, marque,
     nombre: () => toutes.size,
     toutes: () => [...toutes],
     liberer() {
