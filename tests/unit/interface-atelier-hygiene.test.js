@@ -3,6 +3,7 @@
 import { describe, it, expect } from 'vitest';
 import { execSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
+import { sansImagesStudio } from './helpers/images-studio.js'; // lot 8g : logo du studio, exception nominative
 
 const NEW_CORE = ['js/core/ui-mock.js', 'js/core/ui-measure.js'];
 
@@ -48,6 +49,6 @@ describe('dépendances et fichiers binaires (git diff avec main)', () => {
 
   it('aucun fichier image, police, son ni vidéo ajouté', () => {
     const added = ref ? diff(`--diff-filter=A ${ref}`) : [];
-    expect(added.filter((f) => /\.(png|jpe?g|gif|webp|avif|svg|ico|woff2?|ttf|otf|eot|mp3|wav|ogg|m4a|aac|flac|mp4|webm)$/i.test(f))).toEqual([]);
+    expect(sansImagesStudio(added).filter((f) => /\.(png|jpe?g|gif|webp|avif|svg|ico|woff2?|ttf|otf|eot|mp3|wav|ogg|m4a|aac|flac|mp4|webm)$/i.test(f))).toEqual([]);
   });
 });
