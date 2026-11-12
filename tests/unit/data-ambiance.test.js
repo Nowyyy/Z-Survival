@@ -6,6 +6,7 @@ import { contrast, luminance, mix, parseColor } from '../../js/core/color.js';
 import { renderSound, soundBytes, variantCount } from '../../js/core/synth.js';
 import { KEYS } from '../../js/core/wave-splash.js';
 import { SPLASH_TEXTS, VHS_TEXTS } from '../../js/game/texts.js';
+import { sansImagesStudio } from './helpers/images-studio.js'; // lot 8g : logo et son du studio, exception nominative
 // Lot 4c (publication par versions, seul lot autorisé à modifier le workflow) : workflow, accueil, ses textes et tests du journal modifiés ; ce garde-fou de branche
 // (comparaison à main ou à lot-4b) n'a plus de sens pour eux après l'entrée dans main : ils sortent de la liste.
 const LOT_4C = ['.github/workflows/pages.yml', 'index.html', 'data/i18n/fr.json', 'tests/unit/data-changelog.test.js', 'tests/e2e/dev.spec.js'];
@@ -213,7 +214,7 @@ describe('hygiène du lot 2c', () => {
     } catch {
       return; // pas de dépôt git ou de branche main : rien à comparer
     }
-    expect(added.filter((f) => !f.startsWith('Docs/ref/modele-rdc/') && /\.(wav|mp3|ogg|m4a|flac|webm|aac|opus|aiff?|png|jpe?g|gif|webp|avif|ico|bmp|woff2?|ttf|otf|eot)$/i.test(f))).toEqual([]);
+    expect(sansImagesStudio(added).filter((f) => !f.startsWith('Docs/ref/modele-rdc/') && /\.(wav|mp3|ogg|m4a|flac|webm|aac|opus|aiff?|png|jpe?g|gif|webp|avif|ico|bmp|woff2?|ttf|otf|eot)$/i.test(f))).toEqual([]);
   });
 
   it('aucun fichier de plus de 5 Mo dans le dépôt', () => {

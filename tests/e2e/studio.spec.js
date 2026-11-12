@@ -14,6 +14,7 @@ const ENCOCHE = { width: 762, height: 351 };
 const BRUIT = /GL Driver Message|GPU stall|swiftshader|WebGL/i; // messages du rendu logiciel de Chromium, sans rapport avec la page
 const LOGO = 'assets/studio/no-way-studio-logo-anime.svg';
 const FIXE = 'assets/studio/no-way-studio-logo-fixe.svg';
+const SON = 'assets/studio/no-way-studio-logo-son.mp3';
 
 function surveiller(page, baseURL) {
   const problemes = [];
@@ -62,9 +63,12 @@ const boite = (page, sel) => page.locator(sel).evaluate((n) => {
 const chevauche = (x, y) => x.l < y.r - 0.5 && y.l < x.r - 0.5 && x.t < y.b - 0.5 && y.t < x.b - 0.5;
 const imageAffichee = (page, sel) => page.locator(sel).evaluate((n) => n.complete && n.naturalWidth > 0 && n.src.startsWith('data:image/svg+xml'));
 
+// Retour du propriétaire (son du logo) : l'introduction attend un premier geste (« Toucher pour commencer ») ; un toucher la démarre (logo et son).
 async function ouvrirIntro(page, size = REF, extra = '') {
   await page.setViewportSize(size);
   await page.goto(`/jeu.html?test=1&menu=1&intro=1&seed=1${extra}`);
+  await page.waitForFunction(() => ['geste', 'joue'].includes(window.__zsMenu?.intro()?.phase));
+  if ((await page.evaluate(() => window.__zsMenu.intro().phase)) === 'geste') await page.mouse.click(size.width / 2, size.height / 3);
   await page.waitForFunction(() => window.__zsMenu?.intro()?.phase === 'joue');
 }
 async function ouvrirMenu(page, size = REF) {
@@ -80,7 +84,8 @@ test.describe('introduction du studio (E0)', () => {
       const o = surveiller(page, baseURL);
       await ouvrirIntro(page, size);
       const e = await intro(page);
-      expect([e.logo, e.reduit, e.passe, e.indice]).toEqual([LOGO, false, false, false]);
+      expect([e.logo, e.reduit, e.passe, e.indice, e.son]).toEqual([LOGO, false, false, false, 'joue']);
+      expect(Math.abs(e.sonDebut - e.affiche)).toBeLessThan(100); // son et animation partent ensemble
       await expect(page.locator('#e0-logo')).toHaveAttribute('alt', 'No Way Studio');
       await expect(page.locator('#e0-annonce')).toHaveText('No Way Studio');
       expect(await imageAffichee(page, '#e0-logo')).toBe(true);
@@ -107,7 +112,7 @@ test.describe('introduction du studio (E0)', () => {
     });
   }
 
-  test('retour du propriétaire : durée de l\'animation (3,8 s depuis l\'affichage du logo) ; rien du menu ne se charge pendant le logo ; à sa fin, l\'écran de chargement complet (chute du Z, barre jusqu\'à 100 %), puis le menu ; aucune écriture', async ({ page, baseURL }) => {
+  test('retour du propriétaire : durée du son (6,5 s depuis l\'affichage du logo ; avant : 3,8 s) ; rien du menu ne se charge pendant le logo ; à sa fin, l\'écran de chargement complet (chute du Z, barre jusqu\'à 100 %), puis le menu ; aucune écriture', async ({ page, baseURL }) => {
     test.setTimeout(90_000);
     const o = surveiller(page, baseURL);
     await espions(page);
@@ -116,8 +121,9 @@ test.describe('introduction du studio (E0)', () => {
     await page.waitForFunction(() => window.__zsMenu.intro().phase !== 'joue', null, { timeout: 15_000 });
     const e = await intro(page);
     expect(e.passe).toBe(false);
-    expect(e.fin - e.affiche).toBeGreaterThanOrEqual(3790);
-    expect(e.fin - e.affiche).toBeLessThan(4600);
+    expect(e.fin - e.affiche).toBeGreaterThanOrEqual(6490); // durée du son (avant le son : 3,8 s)
+    expect(e.fin - e.affiche).toBeLessThan(7300);
+    expect(e.son).toBe('eteint');
     // Pendant le logo : ni écran de chargement, ni module du menu, ni ses données.
     const pendant = (await page.evaluate(() => window.__fichiersIntro)) ?? [];
     expect(pendant.filter((f) => /\/js\/menu\/(chargement|menu|jouer)\.js$|\/data\/menu\/|\/data\/game\//.test(f))).toEqual([]);
@@ -143,7 +149,7 @@ test.describe('introduction du studio (E0)', () => {
     await page.keyboard.press('Escape');
     await expect(page.locator('#e0')).toHaveCount(0);
     const e = await intro(page);
-    expect([e.passe, e.fin < 3790]).toEqual([true, true]);
+    expect([e.passe, e.fin - e.affiche < 6490, e.son]).toEqual([true, true, 'eteint']); // son éteint en fondu
     await expect(page.locator('#menu-jouer')).toBeVisible({ timeout: 60_000 });
     expect(await page.evaluate(() => window.__zsMenu.etat().menu.menuOuvert)).toBe(false);
   });
@@ -152,7 +158,7 @@ test.describe('introduction du studio (E0)', () => {
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await ouvrirIntro(page);
     const e = await intro(page);
-    expect([e.logo, e.reduit, e.indice]).toEqual([FIXE, true, true]);
+    expect([e.logo, e.reduit, e.indice, e.son, e.geste]).toEqual([FIXE, true, true, 'aucun', null]); // ni attente du geste, ni son
     expect(await page.locator('#e0-logo').evaluate((n) => n.getAnimations().length)).toBe(0);
     await page.waitForFunction(() => window.__zsMenu.intro().phase === 'finie', null, { timeout: 10_000 });
     const f = await intro(page);
@@ -160,6 +166,49 @@ test.describe('introduction du studio (E0)', () => {
     expect(f.fin - f.affiche).toBeLessThan(1600);
     expect(f.retire - f.fin).toBeLessThan(50); // retirée sans fondu (les deux horodatages sont lus l'un après l'autre)
     await expect(page.locator('#menu-jouer')).toBeVisible({ timeout: 60_000 });
+  });
+
+  test('retour du propriétaire (son du logo) : attente du premier geste (« Toucher pour commencer », logo fixe atténué, aucun contexte audio ni son avant) ; sans geste pendant 4 s, le logo se joue sans son ; au clavier, une touche démarre logo et son', async ({ page, baseURL }) => {
+    const o = surveiller(page, baseURL);
+    await page.addInitScript(() => {
+      window.__contextes = 0;
+      const AC = window.AudioContext;
+      window.AudioContext = class extends AC {
+        constructor(...a) {
+          super(...a);
+          window.__contextes += 1;
+        }
+      };
+    });
+    await page.setViewportSize(REF);
+    await page.goto('/jeu.html?test=1&menu=1&intro=1&seed=1');
+    await page.waitForFunction(() => window.__zsMenu?.intro()?.phase === 'geste');
+    await expect(page.locator('#e0-commencer')).toHaveText('Toucher pour commencer');
+    const c = await boite(page, '#e0-commencer');
+    expect([c.w >= 44, c.h >= 44, c.b <= REF.height + 0.5]).toEqual([true, true, true]);
+    await page.waitForFunction(() => { const n = document.getElementById('e0-logo'); return n.complete && n.naturalWidth > 0; });
+    expect(await page.locator('#e0-logo').evaluate((n) => getComputedStyle(n).opacity)).toBe('0.35');
+    expect((await intro(page)).logo).toBe(FIXE);
+    expect(await page.evaluate(() => window.__contextes)).toBe(0); // aucun contexte audio avant un geste
+    expect((await new AxeBuilder({ page }).include('#e0').analyze()).violations.map((v) => v.id)).toEqual([]);
+    // Sans geste : départ sans son au bout de 4 s.
+    await page.waitForFunction(() => window.__zsMenu.intro().phase === 'joue', null, { timeout: 10_000 });
+    const e = await intro(page);
+    expect([e.son, e.geste, e.logo]).toEqual(['muet', null, LOGO]);
+    expect(e.affiche).toBeGreaterThanOrEqual(3990);
+    expect(await page.evaluate(() => window.__contextes)).toBe(0);
+    await expect(page.locator('#e0-commencer')).toBeHidden();
+    // Nouveau lancement : une touche (Entrée) démarre le logo et le son.
+    await page.goto('/jeu.html?test=1&menu=1&intro=1&seed=1');
+    await page.waitForFunction(() => window.__zsMenu?.intro()?.phase === 'geste');
+    await page.keyboard.press('Enter');
+    await page.waitForFunction(() => window.__zsMenu.intro().son === 'joue');
+    const f = await intro(page);
+    expect([f.phase, f.logo, f.passe]).toEqual(['joue', LOGO, false]); // la touche a démarré, sans passer
+    expect(Math.abs(f.sonDebut - f.affiche)).toBeLessThan(100);
+    expect(await page.evaluate(() => window.__contextes)).toBe(1);
+    expect(o.fichiers.filter((x) => x.endsWith('.mp3'))).toEqual([`/${SON}`, `/${SON}`]); // une fois par chargement de page
+    expect([o.problemes, o.externes]).toEqual([[], []]);
   });
 
   test('jamais sans intro=1 sous ?test=1&menu=1, ni en partie directe ; démarrage du menu : 31 fichiers JavaScript (inchangé), 32 avec l\'introduction (intro.js)', async ({ page, baseURL }) => {
@@ -176,8 +225,11 @@ test.describe('introduction du studio (E0)', () => {
     await espions(p2);
     await p2.setViewportSize(REF);
     await p2.goto('/jeu.html?test=1&menu=1&intro=1&seed=1');
-    await p2.locator('#e0').click({ position: { x: 20, y: 20 } });
+    await p2.locator('#e0').click({ position: { x: 20, y: 20 } }); // démarre (geste)
+    await p2.waitForFunction(() => window.__zsMenu.intro().phase === 'joue');
+    await p2.locator('#e0').click({ position: { x: 20, y: 20 } }); // passe
     await expect(p2.locator('#menu-jouer')).toBeVisible({ timeout: 60_000 });
+    expect(o.fichiers.filter((f) => f.endsWith('.mp3'))).toEqual([`/${SON}`]);
     expect(o.fichiers.filter((f) => f.endsWith('.js')).length).toBe(32);
     expect(o.fichiers.filter((f) => f.endsWith('.svg')).sort()).toEqual([`/${LOGO}`, `/${FIXE}`]);
     await p2.close();
@@ -188,7 +240,7 @@ test.describe('introduction du studio (E0)', () => {
     await p3.goto('/jeu.html?test=1&seed=1&intro=1');
     await p3.waitForFunction(() => (window.__zs?.getState()?.time ?? 0) >= 0, null, { timeout: 60_000 });
     expect(await p3.evaluate(() => window.__vus.e0 ?? null)).toBe(null);
-    expect(o.fichiers.filter((f) => /\/js\/menu\/intro\.js$|\/assets\/studio\//.test(f))).toEqual([]);
+    expect(o.fichiers.filter((f) => /\/js\/menu\/intro\.js$|\/assets\/studio\//.test(f))).toEqual([]); // ni logo ni son en partie directe
   });
 
   test('précision du propriétaire : lancement → introduction ; « Quitter » puis retour au menu → pas d\'introduction (repère #retour, retiré aussitôt de l\'adresse) ; nouveau lancement → introduction ; aucune écriture dans le stockage pour cela', async ({ page }) => {
@@ -219,8 +271,8 @@ test.describe('introduction du studio (E0)', () => {
     expect(await page.evaluate(() => [window.__vus.e0 ?? null, location.hash])).toEqual([null, '']);
     // Nouveau lancement (même adresse, sans repère) : introduction.
     await page.goto('/jeu.html?test=1&menu=1&intro=1&seed=1');
-    await page.waitForFunction(() => window.__zsMenu?.intro()?.phase === 'joue');
-    await expect(page.locator('#e0-logo')).toBeVisible();
+    await page.waitForFunction(() => window.__zsMenu?.intro()?.phase === 'geste');
+    await expect(page.locator('#e0-commencer')).toBeVisible();
   });
 });
 
@@ -384,20 +436,18 @@ test.describe('Crédits (E11)', () => {
     expect((await page.evaluate(() => window.__zsMenu.etat().menu)).ecran).toBe('connexion');
   });
 
-  test('logo : animation rejouée à chaque ouverture (adresse neuve), copie fixe sous prefers-reduced-motion ; aucune écriture dans le stockage', async ({ page }) => {
+  test('retour du propriétaire : logo fixe (la même image que l\'écran de chargement), identique à chaque ouverture et sans animation ; aucune écriture dans le stockage', async ({ page }) => {
     await espions(page);
     await ouvrirCredits(page);
     const premier = await page.locator('#menu-credits-logo').getAttribute('src');
-    expect((await page.evaluate(() => window.__zsMenu.etat().menu.credits)).logo).toBe(LOGO);
+    expect((await page.evaluate(() => window.__zsMenu.etat().menu.credits)).logo).toBe(FIXE);
+    expect(await page.locator('#menu-credits-logo').evaluate((n) => n.getAnimations().length)).toBe(0);
     await page.locator('#menu-credits-retour').click();
     await page.locator('#menu-trois-barres').click();
     await page.locator('#menu-credits').click();
-    await expect.poll(() => page.locator('#menu-credits-logo').getAttribute('src')).not.toBe(premier);
-    await page.emulateMedia({ reducedMotion: 'reduce' });
-    await page.locator('#menu-credits-retour').click();
-    await page.locator('#menu-trois-barres').click();
-    await page.locator('#menu-credits').click();
-    await expect.poll(async () => (await page.evaluate(() => window.__zsMenu.etat().menu.credits)).logo).toBe(FIXE);
+    await expect(page.locator('#menu-ecran-credits')).toBeVisible();
+    expect(await page.locator('#menu-credits-logo').getAttribute('src')).toBe(premier);
+    expect(await page.locator('#e7-studio').count()).toBe(0); // (l'écran de chargement est fermé ; même fichier : FIXE)
     expect(await page.evaluate(() => window.__ecritures)).toEqual([]);
   });
 });

@@ -25,6 +25,7 @@
 - L'import recharge le menu (le plus sûr : solde, niveaux et record relus partout) ; avatar et pseudo perdus au rechargement jusqu'au lot 8h.
 ## Retours du propriétaire (après la fusion, PR #115)
 - Crédits en écran plein (sans la barre d'onglets) ; introduction seule (rien du menu ne se charge pendant le logo), puis l'écran de chargement complet (chute du Z, barre, astuce) avant le menu (choix du propriétaire ; environ 3 s de plus). Freeze non reproduit en émulation (processeur ×4) : à vérifier sur le téléphone. Lighthouse `jeu.html` : médiane 82 (avant : 76). Tests : `menu-etat.test` (`ECRANS_PLEINS` avec `credits`, `ECRANS_MENU` retiré), `studio.spec` (Crédits sans barre ; durée de l'introduction : aucun fichier du menu pendant le logo, chute du Z ensuite), `studio.test` (chargement après le logo).
+- Après la PR #116 : nouveau logo calé sur le son (SHA-256 `4bfe9df4…`) ; image fixe (copie dérivée, = le PNG) sur l'écran de chargement et dans les Crédits ; son du logo (MP3 dérivé du WAV fourni, exception nominative) joué avec l'animation après un écran « Toucher pour commencer » (sans geste en 4 s : sans son) ; introduction de 6,5 s. Choix par défaut, faute de réponse aux deux questions.
 ## Idées
 - Son court sous le logo (au premier geste seulement) ; Crédits défilant tout seuls ; avatar dessiné à partir du personnage choisi ; partage du code par le menu de partage du téléphone.
 ## Entrée du journal

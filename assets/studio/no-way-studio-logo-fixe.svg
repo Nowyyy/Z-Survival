@@ -1,5 +1,29 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="-44 -84 792 556" role="img" aria-label="No Way Studio"><style>.tilt{transform:rotate(-4deg)}</style>
-<g class="drop"><g transform="translate(662 42)"><g class="tilt"><g transform="translate(-662 -42)">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-20 -62 824 628" role="img" aria-label="No Way Studio"><style>
+.ltr,.slam,.ring{transform-box:fill-box;transform-origin:center}
+.drop{animation:nw-drop .55s cubic-bezier(.3,.7,.4,1) both}
+.ltr{animation:nw-neon .7s linear both}
+.d1{animation-delay:.60s}.d2{animation-delay:.78s}.la{animation-delay:.96s}.d3{animation-delay:1.14s}
+.wipe{animation:nw-wipe .35s ease-out 1.40s both}
+.fade{animation:nw-fade .3s ease-out both}
+.f1{animation-delay:1.62s}.f2{animation-delay:1.72s}
+.slam{animation:nw-slam .18s cubic-bezier(.7,0,1,.5) 2.10s both,nw-squash .3s ease-out 2.28s forwards}
+.flash{opacity:0;animation:nw-flash .22s ease-out 2.28s forwards}
+.ring{opacity:0;animation:nw-ring .5s cubic-bezier(.1,.7,.3,1) 2.28s forwards}
+.shake{animation:nw-shake .34s linear 2.28s both}
+.tilt{animation:nw-tilt 3.4s ease-in-out 2.30s both}
+@keyframes nw-drop{0%{opacity:0;transform:translateY(-50px)}60%{opacity:1;transform:translateY(0)}80%{opacity:1;transform:translateY(-8px)}100%{opacity:1;transform:translateY(0)}}
+@keyframes nw-neon{0%{opacity:0}8%{opacity:1}16%{opacity:0}30%{opacity:1}40%{opacity:.25}55%{opacity:1}66%{opacity:.5}78%{opacity:1}100%{opacity:1}}
+@keyframes nw-wipe{from{clip-path:inset(0 100% 0 0)}to{clip-path:inset(0 0 0 0)}}
+@keyframes nw-fade{from{opacity:0}to{opacity:1}}
+@keyframes nw-slam{0%{opacity:0;transform:scale(5)}20%{opacity:1}100%{opacity:1;transform:scale(1)}}
+@keyframes nw-squash{0%{transform:scale(1.22,.8)}40%{transform:scale(.93,1.07)}70%{transform:scale(1.03,.98)}100%{transform:scale(1)}}
+@keyframes nw-flash{0%{opacity:.95}100%{opacity:0}}
+@keyframes nw-ring{0%{opacity:.9;transform:scale(.8);stroke-width:14}100%{opacity:0;transform:scale(3.3);stroke-width:1}}
+@keyframes nw-shake{0%{transform:translate(0,0)}12%{transform:translate(-9px,12px)}30%{transform:translate(7px,-6px)}50%{transform:translate(-5px,5px)}70%{transform:translate(3px,-2px)}100%{transform:translate(0,0)}}
+@keyframes nw-tilt{0%{transform:rotate(0)}10%{transform:rotate(-15deg)}23%{transform:rotate(-3deg)}36%{transform:rotate(-15deg)}48%{transform:rotate(-5deg)}60%{transform:rotate(-15deg)}71%{transform:rotate(-6.5deg)}82%{transform:rotate(-15deg)}100%{transform:rotate(-4deg)}}
+*{animation:none!important}.tilt{transform:rotate(-4deg)}
+</style>
+<g class="drop"><g class="shake"><g transform="translate(662 42)"><g class="tilt"><g transform="translate(-662 -42)">
 <rect x="0" y="0" width="704" height="400" rx="34" fill="#1B1917"></rect>
 <rect x="18" y="18" width="668" height="364" rx="20" fill="none" stroke="#F5B700" stroke-width="6"></rect>
 <circle cx="42" cy="42" r="7" fill="#F5B700"></circle><circle cx="662" cy="42" r="7" fill="#F5B700"></circle><circle cx="42" cy="358" r="7" fill="#F5B700"></circle><circle cx="662" cy="358" r="7" fill="#F5B700"></circle>
@@ -8,10 +32,10 @@
 <g class="ltr d2"><g stroke="#F5B700" stroke-width="30" fill="none"><path transform="translate(260 0)" d="M15 0V123A22 22 0 0 0 37 145H103A22 22 0 0 0 125 123V0M70 40V145"></path></g></g>
 <g class="ltr d3"><g stroke="#F5B700" stroke-width="30" fill="none"><path transform="translate(420 0)" d="M15 0V48A22 22 0 0 0 37 70H63A22 22 0 0 0 85 48V0M50 70V160"></path></g></g>
 <g class="ltr la"><g transform="translate(407 96) scale(0.4)" fill="none" stroke="#F5B700"><path d="M17 160L33 17H67L83 160" stroke-width="36" stroke-linejoin="round"></path><path d="M30 110H70" stroke-width="22"></path></g></g>
-<g class="slam"><rect x="116" y="0" width="100" height="160" rx="37" fill="#C81E17"></rect><rect x="134" y="68" width="64" height="24" fill="#FFFFFF"></rect></g>
+<g class="slam"><rect x="116" y="0" width="100" height="160" rx="37" fill="#C81E17"></rect><rect x="134" y="68" width="64" height="24" fill="#FFFFFF"></rect></g><rect class="flash" x="116" y="0" width="100" height="160" rx="37" fill="#FFFFFF"></rect><circle class="ring" cx="166" cy="80" r="60" fill="none" stroke="#FFFFFF" stroke-width="10"></circle>
 </g>
 <rect class="wipe" x="64" y="244" width="576" height="60" fill="#F5B700"></rect>
 <g class="fade f1"><g transform="translate(208.5 257) scale(0.85)" fill="none" stroke="#1B1917" stroke-width="6"><path transform="translate(0 0)" d="M25 3H9A6 6 0 0 0 3 9V14A6 6 0 0 0 9 20H19A6 6 0 0 1 25 26V31A6 6 0 0 1 19 37H3"></path><path transform="translate(62 0)" d="M3 3H25M14 3V40"></path><path transform="translate(124 0)" d="M3 0V31A6 6 0 0 0 9 37H19A6 6 0 0 0 25 31V0"></path><path transform="translate(186 0)" d="M3 3H19A6 6 0 0 1 25 9V31A6 6 0 0 1 19 37H3Z"></path><path transform="translate(248 0)" d="M14 0V40"></path><path transform="translate(310 0)" d="M9 3H19A6 6 0 0 1 25 9V31A6 6 0 0 1 19 37H9A6 6 0 0 1 3 31V9A6 6 0 0 1 9 3Z"></path></g></g>
 <g class="fade f2"><clipPath id="band"><rect x="64" y="322" width="576" height="28"></rect></clipPath><path clip-path="url(#band)" fill="#F5B700" d="M-73.10 322H-41.99L-69.99 350H-101.10ZM-10.87 322H20.24L-7.76 350H-38.87ZM51.35 322H82.47L54.47 350H23.35ZM113.58 322H144.69L116.69 350H85.58ZM175.80 322H206.92L178.92 350H147.80ZM238.03 322H269.14L241.14 350H210.03ZM300.25 322H331.37L303.37 350H272.25ZM362.48 322H393.59L365.59 350H334.48ZM424.70 322H455.82L427.82 350H396.70ZM486.93 322H518.04L490.04 350H458.93ZM549.16 322H580.27L552.27 350H521.16ZM611.38 322H642.49L614.49 350H583.38Z"></path></g>
 </g></g></g></g>
-</svg>
+</g></svg>

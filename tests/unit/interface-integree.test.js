@@ -4,6 +4,7 @@ import { describe, it, expect } from 'vitest';
 import { execSync } from 'node:child_process';
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { downView, formatChrono, killsText, pad2, waveParts } from '../../js/core/hud-format.js';
+import { sansImagesStudio } from './helpers/images-studio.js'; // lot 8g : logo et son du studio, exception nominative
 // Lot 4c (publication par versions, seul lot autorisé à modifier le workflow) : workflow, accueil, ses textes et tests du journal modifiés ; ce garde-fou de branche
 // (comparaison à main ou à lot-4b) n'a plus de sens pour eux après l'entrée dans main : ils sortent de la liste.
 const LOT_4C = ['.github/workflows/pages.yml', 'index.html', 'data/i18n/fr.json', 'tests/unit/data-changelog.test.js', 'tests/e2e/dev.spec.js'];
@@ -360,7 +361,7 @@ describe('hygiène du lot 3l (diff avec lot-4b avant le lot)', () => {
     expect(now.dependencies).toEqual(before.dependencies);
     expect(now.devDependencies).toEqual(before.devDependencies);
     const added = [...(git(`diff --name-only --diff-filter=A ${BASE}`) ?? '').split('\n'), ...(git('ls-files --others --exclude-standard') ?? '').split('\n')].filter(Boolean);
-    expect(added.filter((f) => /\.(png|jpe?g|gif|webp|avif|svg|ico|woff2?|ttf|otf|eot|mp3|wav|ogg|m4a|aac|flac|mp4|webm)$/i.test(f))).toEqual([]);
+    expect(sansImagesStudio(added).filter((f) => /\.(png|jpe?g|gif|webp|avif|svg|ico|woff2?|ttf|otf|eot|mp3|wav|ogg|m4a|aac|flac|mp4|webm)$/i.test(f))).toEqual([]);
   });
 
   it('aucun nouveau paramètre d\'adresse en lecture seule (data/game/save.json inchangé)', () => {

@@ -1,6 +1,6 @@
 // Lot 8g : écran Crédits E11 (Docs/ref/menu-principal.md, « Lot 8g »), ouvert par l'entrée « Crédits » du menu à trois barres, chargé à la demande
 // (roue de chargement de menu.js). Écran plein, comme les Options (retour du propriétaire : sans la barre d'onglets) : bandeau « No Way Studio » /
-// « Crédits », « ‹ Retour ». À gauche : logo du studio (animation rejouée à chaque ouverture ; copie fixe sous prefers-reduced-motion), « Un jeu de
+// « Crédits », « ‹ Retour ». À gauche : logo du studio (retour du propriétaire : l'image fixe, celle de l'écran de chargement), « Un jeu de
 // No Way Studio », sections de data/menu/credits.json ; à droite : « Outils et licences » (data/menu/licences.json, copié des fichiers du dépôt par
 // scripts/studio/licences.mjs) : une zone dépliable par licence (aria-expanded), dont le texte défile. Les deux colonnes défilent et glissent à la
 // souris (js/glisser.js, posé sur tout le menu). Textes des données en texte brut seulement.
@@ -8,7 +8,6 @@ import { bandeau, el } from './menu.js';
 import { adresseStudio, LOGO_STUDIO_FIXE } from './chargement.js';
 import { licencesManquantes, lireCredits, lireLicences } from './credits-donnees.js';
 
-export const LOGO_STUDIO_ANIME = 'assets/studio/no-way-studio-logo-anime.svg';
 const SVG = 'http://www.w3.org/2000/svg';
 const json = (path) => fetch(path).then((r) => (r.ok ? r.json() : null)).catch(() => null);
 
@@ -33,7 +32,6 @@ export async function ecranCredits({ t, onClose = () => {} }) {
   const [brutCredits, brutLicences] = await precharger();
   const sections = lireCredits(brutCredits);
   const licences = lireLicences(brutLicences);
-  const reduit = matchMedia('(prefers-reduced-motion: reduce)');
 
   const section = el('section', ['e8-ecran', 'e11'], { id: 'menu-ecran-credits', 'aria-labelledby': 'menu-titre-credits', 'data-block': 'E11' });
   section.hidden = true;
@@ -96,21 +94,16 @@ export async function ecranCredits({ t, onClose = () => {} }) {
   grille.append(gauche, droite);
   section.append(tete, grille);
 
-  // Logo : à chaque ouverture, une adresse neuve (l'animation repart de zéro). Mouvement réduit : copie fixe.
-  let fichier = null;
-  function poserLogo() {
-    const fixe = reduit.matches;
-    fichier = fixe ? LOGO_STUDIO_FIXE : LOGO_STUDIO_ANIME;
-    adresseStudio(fichier, { neuve: !fixe }).then((a) => {
-      logo.src = a;
-    }, () => {});
-  }
+  // Logo : image fixe (retour du propriétaire : celle de l'écran de chargement ; avant : animation rejouée à chaque ouverture).
+  const fichier = LOGO_STUDIO_FIXE;
+  adresseStudio(fichier).then((a) => {
+    logo.src = a;
+  }, () => {});
 
   return {
     section,
-    // Affichage (à chaque ouverture) : logo rejoué, zones remises en haut.
+    // Affichage (à chaque ouverture) : zones remises en haut.
     afficher() {
-      poserLogo();
       gauche.scrollTop = 0;
       droite.scrollTop = 0;
     },

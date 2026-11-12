@@ -4161,6 +4161,45 @@
   pointer-events: auto;
 }
 
+/* Retour du propriétaire (son du logo) : attente du premier geste : logo fixe atténué, « Toucher pour commencer » qui respire lentement (2,4 s). */
+.e0-geste .e0-logo {
+  opacity: 0.35;
+}
+
+.e0-commencer {
+  position: absolute;
+  left: 50%;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 12px);
+  min-width: var(--menu-cible);
+  min-height: var(--menu-cible);
+  padding: 0 18px;
+  transform: translateX(-50%);
+  border: 0;
+  background: transparent;
+  color: var(--menu-texte);
+  font: inherit;
+  font-family: var(--font-label);
+  font-size: max(15px, calc(17 * var(--u)));
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  animation: e0-pouls 2.4s ease-in-out infinite;
+}
+
+.e0-commencer[hidden] {
+  display: none;
+}
+
+@keyframes e0-pouls {
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.55;
+  }
+}
+
 .e0-sortie {
   animation: e0-sortie 0.4s ease-in both;
   pointer-events: none;
@@ -4179,6 +4218,10 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .e0-commencer {
+    animation: none;
+  }
+
   .e0-indice .e0-passer {
     animation: none;
     opacity: 1;
