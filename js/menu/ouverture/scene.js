@@ -13,7 +13,18 @@ import { creerZombies } from './zombies.js';
 const ECART = 300;
 const LARGEUR_ZOMBIES = 600;
 const Z_ZOMBIES = -430;
-const PROFONDEUR_ECRASE = 90;
+// Retour du propriétaire (« la projection et la posture écrasée ne font pas naturel ») : le zombie vole à sa taille réelle (seule la perspective
+// le grossit) et s'arrête contre l'écran à cette fraction de la largeur ; il passe dans la surcouche une fois devant la caisse.
+const LARGEUR_ECRASE = 0.72;
+const DISTANCE_SURCOUCHE = 230;
+const NB_FEUX = 10;
+const NB_FUMEES = 8;
+const NB_ECLATS = 10;
+// Hachage déterministe dans [0, 1) (variété des volutes et des éclats ; jamais le hasard du navigateur).
+const h01 = (k, j) => {
+  const x = Math.sin(k * 12.9898 + j * 78.233) * 43758.5453;
+  return x - Math.floor(x);
+};
 const OEIL = Object.freeze({ y: 124, cible: [0, 70, TAPIS.z], depart: 380 });
 const MAX_PARTICULES = 14;
 const MAX_ETINCELLES = 12;
@@ -206,6 +217,10 @@ export async function creerScene({ canvas, couleur, chrono, reglages, cartes, mo
     scene.add(g);
     return { g, couvercle, lueur, i: -1 };
   });
+  const eclats = new THREE.InstancedMesh(geo(new THREE.BoxGeometry(12, 3, 5)), matCorps, NB_ECLATS);
+  eclats.visible = false;
+  eclats.frustumCulled = false;
+  scene.add(eclats);
   const jetonRarete = (rid) => `--rarete-${rid}`;
   const couleursR = new Map();
   const couleurRarete = (rid) => {
@@ -247,6 +262,22 @@ export async function creerScene({ canvas, couleur, chrono, reglages, cartes, mo
   const eclat = new THREE.Sprite(mat(new THREE.SpriteMaterial({ map: texEtoile, color: col('--ouv-boule-bord'), transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, opacity: 0 })));
   eclat.visible = false;
   scene.add(rayons, ...ondes, particules, etincelles, boule, eclat);
+  // Explosion (retour du propriétaire : « ne fait pas naturel ») : volutes de feu qui gonflent, montent et virent du blanc à l'orange puis au rouge,
+  // fumée sombre qui monte ensuite, éclats de la caisse projetés qui retombent au sol, flash bref (boule et éclat ci-dessus).
+  const texBouffee = T.bouffee();
+  const feux = Array.from({ length: NB_FEUX }, () => {
+    const sp = new THREE.Sprite(mat(new THREE.SpriteMaterial({ map: texBouffee, color: new THREE.Color(), transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, opacity: 0 })));
+    sp.visible = false;
+    scene.add(sp);
+    return sp;
+  });
+  const fumees = Array.from({ length: NB_FUMEES }, () => {
+    const sp = new THREE.Sprite(mat(new THREE.SpriteMaterial({ map: texBouffee, color: col('--ouv-fumee'), transparent: true, depthWrite: false, opacity: 0 })));
+    sp.visible = false;
+    scene.add(sp);
+    return sp;
+  });
+  const cFeu = [col('--ouv-cone'), col('--ouv-boule'), col('--ouv-boule-bord'), col('--ouv-braise')];
 
   // --- Fusil à la première personne ---------------------------------------------------------------------------------------------------------
   const FG = fusilGeo();
@@ -300,6 +331,12 @@ export async function creerScene({ canvas, couleur, chrono, reglages, cartes, mo
   sang.visible = false;
   camera.add(sombre);
   devant.add(sang);
+  // Éclaboussure sur la « vitre » au point d'impact du zombie projeté (surcouche, devant lui).
+  const texEclab = T.eclaboussure();
+  const eclab = new THREE.Mesh(geo(new THREE.PlaneGeometry(1, 1)), mat(new THREE.MeshBasicMaterial({ map: texEclab, transparent: true, opacity: 0, depthWrite: false, depthTest: false })));
+  eclab.renderOrder = 11;
+  eclab.visible = false;
+  devant.add(eclab);
 
   // --- Zombies du jeu et leurs marques ---------------------------------------------------------------------------------------------------------
   const zombies = await creerZombies({ graine: (Number(chrono.graine) >>> 0) || 7 });
@@ -314,7 +351,8 @@ export async function creerScene({ canvas, couleur, chrono, reglages, cartes, mo
     sprite.visible = false;
     sprite.renderOrder = 5;
     scene.add(sprite);
-    return { ...z, sprite, poussiere, projete: false };
+    const os = Object.fromEntries(['torso', 'head', 'shoulderL', 'shoulderR', 'elbowL', 'elbowR', 'hipL', 'hipR', 'kneeL', 'kneeR'].map((n) => [n, z.c.root.getObjectByName(n)]));
+    return { ...z, sprite, poussiere, os, projete: false };
   });
 
   // --- Cadrage : champ selon le rapport largeur / hauteur ; fusil en bas à droite, canon vers le centre --------------------------------------
@@ -369,6 +407,13 @@ export async function creerScene({ canvas, couleur, chrono, reglages, cartes, mo
     const balance = s.marche.enMarche ? Math.abs(Math.sin(Math.PI * pasPhase)) : 0;
     const sec = s.secousse * 0.45;
     camera.position.set(Math.sin(Math.PI * pasPhase) * 1.4 * (s.marche.enMarche ? 1 : 0) + sec * bruit(t, 1), OEIL.y + balance * 3.2 - 1.6 * (s.marche.enMarche ? 1 : 0) + sec * bruit(t, 2), OEIL.depart * (1 - avance));
+    // Secousse à l'impact du zombie projeté sur l'écran (0,35 s).
+    const impact = chrono.caisses.find((c) => c.projection && t >= c.projection.impact && t < c.projection.impact + 0.35);
+    if (impact) {
+      const k = 9 * (1 - (t - impact.projection.impact) / 0.35);
+      camera.position.x += k * bruit(t, 5);
+      camera.position.y += k * bruit(t, 6);
+    }
     camera.lookAt(regard);
     camera.rotation.z += sec * 0.004 * bruit(t, 3);
     // Fusil : se balance en marchant, respire, recule au tir.
@@ -422,6 +467,9 @@ export async function creerScene({ canvas, couleur, chrono, reglages, cartes, mo
     etincelles.visible = false;
     boule.visible = false;
     eclat.visible = false;
+    for (const sp of feux) sp.visible = false;
+    for (const sp of fumees) sp.visible = false;
+    eclats.visible = false;
     lumRarete.intensity = 0;
     trainee.visible = false;
     if (active) {
@@ -433,7 +481,9 @@ export async function creerScene({ canvas, couleur, chrono, reglages, cartes, mo
       if (active.ouverte && active.rayons > 0) {
         rayons.count = fx.rayons;
         matRayons.color.copy(couleurR);
-        matRayons.opacity = (active.rayons < 1 ? active.rayons : 0.78) * depart;
+        // Légendaire : les rayons montent après la boule de feu (elle reste visible).
+        const apresFeu = c.explosion ? Math.min(1, Math.max(0, (t - c.explosion[0] - 0.35) / 0.45)) : 1;
+        matRayons.opacity = (active.rayons < 1 ? active.rayons : 0.78) * depart * apresFeu;
         const ev = THREE.MathUtils.degToRad(fx.eventail);
         for (let r = 0; r < fx.rayons; r += 1) {
           const a = fx.rayons === 1 ? 0 : -ev / 2 + (ev * r) / (fx.rayons - 1);
@@ -487,32 +537,69 @@ export async function creerScene({ canvas, couleur, chrono, reglages, cartes, mo
       }
       if (active.explosion > 0) {
         const p = active.explosion;
-        boule.visible = true;
-        boule.position.copy(v2).add(v3.set(0, 18 + p * 30, 0));
-        // Retour du propriétaire (« on ne voit pas l'explosion ») : boule qui gonfle vite puis reste visible après l'éclair d'écran, cœur clair,
-        // éclat bref, gerbe d'éclats projetés.
-        boule.scale.setScalar(40 + 260 * Math.min(1, p * 2.2) + 60 * p);
-        boule.material.opacity = Math.min(1, 1.25 * (1 - p));
-        coeur.material.opacity = Math.min(1, 1.4 * (1 - p) ** 1.5);
-        eclat.visible = p < 0.35;
-        eclat.position.copy(boule.position);
-        eclat.scale.setScalar(80 + 900 * p);
-        eclat.material.opacity = 1 - p / 0.35;
-        etincelles.visible = true;
-        etincelles.material.opacity = Math.min(1, 1.6 * (1 - p));
-        etincelles.material.size = 22;
-        const pos = etincelles.geometry.attributes.position;
-        for (let k = 0; k < MAX_ETINCELLES; k += 1) {
-          const a = (k / MAX_ETINCELLES) * TAU + 0.3;
-          const r = (60 + (k % 4) * 30) * Math.sqrt(p) * 2.2;
-          pos.setXYZ(k, boule.position.x + Math.cos(a) * r, boule.position.y + Math.sin(a) * r * 0.8 - p * p * 140, boule.position.z + ((k % 3) - 1) * 30 * p);
+        const duree = c.explosion[1] - c.explosion[0];
+        const tau = p * duree;
+        v3.copy(v2).add(vI.set(0, 16, 0));
+        // Flash bref : boule et éclat (0,3 s).
+        boule.visible = tau < 0.3;
+        boule.position.copy(v3);
+        boule.scale.setScalar(50 + 520 * Math.min(1, tau / 0.12));
+        boule.material.opacity = Math.max(0, 1 - tau / 0.3);
+        coeur.material.opacity = Math.max(0, 1 - tau / 0.18);
+        eclat.visible = tau < 0.16;
+        eclat.position.copy(v3);
+        eclat.scale.setScalar(120 + 1600 * tau);
+        eclat.material.opacity = Math.max(0, 1 - tau / 0.16);
+        // Volutes de feu.
+        feux.forEach((sp, k) => {
+          const u = (tau - 0.1 * h01(k, 1)) / (0.55 + 0.4 * h01(k, 2));
+          sp.visible = u > 0 && u < 1;
+          if (!sp.visible) return;
+          const a2 = h01(k, 3) * TAU;
+          const dist = (30 + 120 * h01(k, 4)) * (1 - (1 - u) ** 2);
+          sp.position.set(v3.x + Math.cos(a2) * dist, v3.y + Math.abs(Math.sin(a2)) * dist * 0.6 + u * 70, v3.z + (h01(k, 5) - 0.5) * dist);
+          sp.scale.setScalar((50 + 150 * Math.sqrt(u)) * (0.7 + 0.6 * h01(k, 6)));
+          const q = Math.min(2.999, u * 4.5);
+          const i0 = Math.floor(q);
+          sp.material.color.copy(cFeu[i0]).lerp(cFeu[i0 + 1], q - i0);
+          sp.material.opacity = 0.7 * (1 - u) ** 1.3;
+          sp.material.rotation = h01(k, 7) * TAU + u * 1.2;
+        });
+        // Fumée sombre qui monte ensuite.
+        fumees.forEach((sp, k) => {
+          const u = (tau - 0.08 - 0.25 * h01(k, 8)) / (1.0 + 0.3 * h01(k, 9));
+          sp.visible = u > 0 && u < 1;
+          if (!sp.visible) return;
+          const a2 = h01(k, 10) * TAU;
+          sp.position.set(v3.x + Math.cos(a2) * (40 + 70 * h01(k, 11)) * Math.sqrt(u), v3.y + 30 + u * 190, v3.z + Math.sin(a2) * 30 * u);
+          sp.scale.setScalar(70 + 230 * u);
+          sp.material.opacity = 0.85 * Math.sin(Math.PI * Math.min(1, u * 1.4)) * (1 - u * 0.6);
+          sp.material.rotation = h01(k, 12) * TAU - u * 0.8;
+        });
+        // Éclats de la caisse : projetés, ils tournent et retombent au sol.
+        eclats.visible = true;
+        for (let k = 0; k < NB_ECLATS; k += 1) {
+          const a2 = (k / NB_ECLATS) * TAU + h01(k, 13);
+          const vit = 230 + 200 * h01(k, 14);
+          const vy = 180 + 220 * h01(k, 15);
+          let y = v3.y + vy * tau - 0.5 * 900 * tau * tau;
+          let tt = tau;
+          if (y < 2) {
+            const sol = (vy + Math.sqrt(vy * vy + 2 * 900 * (v3.y - 2))) / 900; // instant de l'arrivée au sol
+            tt = Math.min(tau, sol);
+            y = 2;
+          }
+          vI.set(v3.x + Math.cos(a2) * vit * tt, y, v3.z + Math.sin(a2) * vit * 0.6 * tt + 20 * tt);
+          eI.set(tt * (7 + 6 * h01(k, 16)), tt * 5, tt * (9 + 4 * h01(k, 17)));
+          mI.compose(vI, qI.setFromEuler(eI), sI.set(1, 1, 1));
+          eclats.setMatrixAt(k, mI);
         }
-        pos.needsUpdate = true;
+        eclats.instanceMatrix.needsUpdate = true;
       }
       if (active.ouverte) {
         lumRarete.color.copy(couleurR);
         lumRarete.position.copy(v2).add(v3.set(0, 40, 30));
-        lumRarete.intensity = active.lumiere * (2.2 + fx.eclair * 4) * depart + active.explosion * 10 * (1 - active.explosion);
+        lumRarete.intensity = active.lumiere * (2.2 + fx.eclair * 4) * depart + (active.explosion > 0 ? 12 * (1 - active.explosion) * (0.8 + 0.2 * Math.sin(t * 47)) : 0);
       }
       // Traînée de la balle : du canon à la face de la caisse.
       if (s.tir.trainee > 0) {
@@ -567,43 +654,74 @@ export async function creerScene({ canvas, couleur, chrono, reglages, cartes, mo
       const proj = P && ['vol', 'colle', 'glisse'].includes(P.phase);
       z.poussiere.visible = false;
       root.visible = !(P && P.phase === 'absent');
-      if (z.projete !== Boolean(proj)) {
-        z.projete = Boolean(proj);
-        // Projeté : dans la surcouche (dessinée après la scène, devant tout) ; à sa place : dans la scène.
-        (proj ? surcouche : scene).add(root);
-        root.traverse((o) => {
-          if (o.isMesh) o.frustumCulled = !proj;
-        });
-      }
       const xMonde = e.x * LARGEUR_ZOMBIES;
       if (proj) {
-        // Assez loin pour que la perspective ne grossisse pas les membres proches ; aplati dans la profondeur ; à la hauteur de la carte (qu'il
-        // cache jusqu'à sa glissade).
-        const { h, w } = demi(PROFONDEUR_ECRASE);
-        // Échelle d'écrasement : le corps (≈ 62 unités) prend presque toute la largeur de l'écran.
-        const ecrase = (2 * w * 0.94) / 62;
-        const yColle = h * 0.3;
-        // Orientation finale : face à la caméra, couché en travers de l'écran (tête à gauche), légèrement penché ; centré sur le milieu du corps.
-        q2.copy(camera.quaternion).multiply(qRot.setFromAxisAngle(AZ, Math.PI / 2 - 0.1)).multiply(q1.setFromAxisAngle(AY, Math.PI));
-        v2.set(0, P.phase === 'glisse' ? yColle - P.p * (h * 2.4) : yColle, -PROFONDEUR_ECRASE);
+        const PP = actifP.projection;
+        // Profondeur d'arrêt : le corps (≈ 62 unités × échelle) tient dans LARGEUR_ECRASE de la largeur ; à la hauteur de la carte (qu'il cache).
+        const long = 62 * z.base;
+        const D = Math.max(55, long / (2 * demi(1).w * LARGEUR_ECRASE));
+        const { h } = demi(D);
+        const yColle = h * 0.36;
+        // Orientation finale : face à l'écran, presque à l'horizontale (tête à gauche, un peu relevée).
+        q2.copy(camera.quaternion).multiply(qRot.setFromAxisAngle(AZ, 1.2));
+        const glisse = P.phase === 'glisse' ? P.p * P.p : 0;
+        v2.set(0, yColle - glisse * h * 2.5, -D);
         camera.localToWorld(v2);
-        v2.sub(v3.set(0, 30 * ecrase, 0).applyQuaternion(q2));
+        v2.sub(v3.set(0, 31 * z.base, 0).applyQuaternion(q2));
+        let enX = 1;
         if (P.phase === 'vol') {
           const p = P.p;
-          v3.set(xMonde, 0, Z_ZOMBIES);
+          // Trajectoire balistique : départ de sa place, en cloche, droit vers l'écran (taille réelle : la perspective le grossit).
+          v3.set(xMonde, 0, Z_ZOMBIES + n * 26);
           root.position.lerpVectors(v3, v2, p);
-          root.position.y += Math.sin(p * Math.PI) * 140;
-          q1.setFromAxisAngle(AY, e.sens > 0 ? Math.PI / 2 : -Math.PI / 2);
-          root.quaternion.slerpQuaternions(q1, q2, p).multiply(qRot.setFromAxisAngle(AX, TAU * 2 * p));
-          root.scale.setScalar(z.base + (ecrase - z.base) * p);
+          root.position.y += 4 * p * (1 - p) * 45;
+          // Rotation qui ralentit jusqu'à l'impact (arrive dans la posture finale), après un départ dans son orientation de marche.
+          qRot.setFromAxisAngle(vI.set(1, 0.25, 0.35).normalize(), (1 - p) ** 1.4 * 2.6 * Math.PI);
+          q1.copy(q2).multiply(qRot);
+          const depart = new THREE.Quaternion().setFromAxisAngle(AY, e.sens > 0 ? Math.PI / 2 : -Math.PI / 2);
+          root.quaternion.slerpQuaternions(depart, q1, lisseLocal(Math.min(1, p / 0.2)));
+          root.scale.setScalar(z.base);
+          enX = lisseLocal(Math.max(0, (p - 0.7) / 0.3));
         } else {
           root.position.copy(v2);
           root.quaternion.copy(q2);
-          const ecrasement = P.phase === 'colle' ? 1 - 0.12 * Math.sin(Math.min(1, P.p * 4) * Math.PI) : 1;
-          root.scale.set(ecrase * ecrasement, ecrase, ecrase * 0.3);
+          // Impact : aplati contre l'écran (profondeur), un peu élargi, puis il se détend ; pendant la glissade, il tourne un peu.
+          const u = t - PP.impact;
+          const choc = Math.exp(-u * 9);
+          const plat = 0.5 + 0.25 * (1 - choc);
+          root.scale.set(z.base * (1 + 0.08 * choc), z.base * (1 + 0.05 * choc), z.base * plat);
+          if (P.phase === 'glisse') root.quaternion.multiply(qRot.setFromAxisAngle(AZ, -0.25 * glisse));
         }
-        z.c.setAnim('mortAvant', 0.22, {}, t);
+        // Surcouche (devant tout) seulement une fois devant la caisse : avant, la profondeur de la scène s'applique.
+        const devantTout = P.phase !== 'vol' || root.position.distanceTo(camera.position) < DISTANCE_SURCOUCHE;
+        if (z.projete !== devantTout) {
+          z.projete = devantTout;
+          (devantTout ? surcouche : scene).add(root);
+          root.traverse((o) => {
+            if (o.isMesh) o.frustumCulled = !devantTout;
+          });
+        }
+        // Posture : membres qui battent l'air pendant le vol, puis bras et jambes écartés en X, plaqué contre l'écran.
+        z.c.setAnim('attente', 0, {}, t);
+        const bat = (1 - enX) * Math.sin(t * 17);
+        const O = z.os;
+        if (O.shoulderL) O.shoulderL.rotation.set(0.3 * bat, 0, 1.2 + 0.9 * bat + (2.35 - 1.2) * enX);
+        if (O.shoulderR) O.shoulderR.rotation.set(-0.3 * bat, 0, -1.2 + 0.9 * bat - (2.35 - 1.2) * enX);
+        if (O.elbowL) O.elbowL.rotation.set(0, 0, 0.5 * (1 - enX) + 0.25 * enX);
+        if (O.elbowR) O.elbowR.rotation.set(0, 0, -0.5 * (1 - enX) - 0.25 * enX);
+        if (O.hipL) O.hipL.rotation.set(0.6 * bat, 0, 0.55 * enX + 0.2 * (1 - enX));
+        if (O.hipR) O.hipR.rotation.set(-0.6 * bat, 0, -0.55 * enX - 0.2 * (1 - enX));
+        if (O.kneeL) O.kneeL.rotation.set(0.5 * (1 - enX) + 0.15 * enX, 0, 0);
+        if (O.kneeR) O.kneeR.rotation.set(0.4 * (1 - enX) + 0.15 * enX, 0, 0);
+        if (O.head) O.head.rotation.set(0, 0, 0.35 * enX);
       } else {
+        if (z.projete) {
+          z.projete = false;
+          scene.add(root);
+          root.traverse((o) => {
+            if (o.isMesh) o.frustumCulled = true;
+          });
+        }
         root.scale.setScalar(z.base);
         // Retour du propriétaire (« la chute fait trop simple ») : face à la caisse pendant une réaction ; saut bras levés, chute en arrière
         // avec recul et rebond, soubresauts au sol, relevé en titubant.
@@ -657,23 +775,35 @@ export async function creerScene({ canvas, couleur, chrono, reglages, cartes, mo
       sombre.material.opacity = s.sombre;
     }
     sang.visible = false;
+    eclab.visible = false;
     if (actifP) {
       const P = actifP.projection;
       const c = actifP.trainees;
+      // Repère de l'impact : même profondeur et même hauteur que le zombie collé.
+      const zp = zs[P.zombie];
+      const D = Math.max(55, (62 * zp.base) / (2 * demi(1).w * LARGEUR_ECRASE));
+      const { h, w } = demi(D - 4);
+      const yImpact = h * 0.36;
+      if (t >= P.impact && t < c[1]) {
+        eclab.visible = true;
+        const u = t - P.impact;
+        eclab.position.set(0, yImpact, -(D - 4));
+        eclab.scale.set(w * 1.15 * Math.min(1, 0.6 + u * 6), w * 0.75 * Math.min(1, 0.6 + u * 6), 1);
+        eclab.material.opacity = 0.9 * (1 - progres(t, P.bas, c[1]));
+      }
       if (t >= c[0] && t < c[1]) {
-        const { h, w } = demi(34);
         const p = progres(t, P.decolle, P.bas);
         sang.visible = true;
-        sang.position.set(0, h * 0.2, -34);
-        sang.scale.set(w * 1.6, Math.max(0.01, p * h * 2.2), 1);
-        sang.material.opacity = 0.92 * (1 - progres(t, P.bas, c[1]));
+        sang.position.set(0, yImpact, -(D - 4));
+        sang.scale.set(w * 0.8, Math.max(0.01, p * p * h * 2.5 + 0.01), 1);
+        sang.material.opacity = 0.9 * (1 - progres(t, P.bas, c[1]));
       }
     }
 
     renderer.info.reset();
     renderer.clear();
     renderer.render(scene, camera);
-    if (zs.some((z) => z.projete) || sang.visible) {
+    if (zs.some((z) => z.projete) || sang.visible || eclab.visible) {
       devant.matrix.copy(camera.matrixWorld);
       devant.matrixWorldNeedsUpdate = true;
       renderer.clearDepth();
@@ -698,7 +828,7 @@ export async function creerScene({ canvas, couleur, chrono, reglages, cartes, mo
   // son programme et envoyait ses textures pendant l'ouverture. Tout est préparé ici, derrière le fondu noir : chaque effet rendu une fois (rayons,
   // ondes, particules, explosion, flamme, traînée, carte, assombrissement, sang, marques), un zombie dans la surcouche, toutes les textures.
   function prechauffer() {
-    const caches = [rayons, ...ondes, particules, etincelles, boule, eclat, trainee, flamme, carte, sombre, sang, ...zs.flatMap((z) => [z.sprite, z.poussiere]), ...pool.map((p) => p.g)];
+    const caches = [rayons, ...ondes, particules, etincelles, boule, eclat, ...feux, ...fumees, eclats, eclab, trainee, flamme, carte, sombre, sang, ...zs.flatMap((z) => [z.sprite, z.poussiere]), ...pool.map((p) => p.g)];
     const avant = caches.map((o) => o.visible);
     for (const o of caches) o.visible = true;
     rayons.count = MAX_RAYONS;
@@ -748,6 +878,7 @@ export async function creerScene({ canvas, couleur, chrono, reglages, cartes, mo
     for (const m of materiaux) m.dispose();
     rouleaux.dispose();
     rayons.dispose();
+    eclats.dispose();
     T.liberer();
     // Carte d'ombre : ses textures (couleur et profondeur, Three.js 0.186) ne sont pas comptées libérées avec elle.
     const profondeur = spot.shadow.map?.depthTexture ?? null;

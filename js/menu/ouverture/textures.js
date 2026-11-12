@@ -282,6 +282,76 @@ export function creerTextures({ couleur, anisotropie = 1 }) {
     return tex(c);
   }
 
+  // Volute (flamme ou fumée de l'explosion) : nuage irrégulier blanc, opacité en dégradé (teinté par la matière).
+  function bouffee() {
+    const [c, ctx] = toile(128, 128);
+    const f = hasard(23);
+    ctx.clearRect(0, 0, 128, 128);
+    for (let i = 0; i < 14; i += 1) {
+      const a = f() * Math.PI * 2;
+      const d = f() * 30;
+      const x = 64 + Math.cos(a) * d;
+      const y = 64 + Math.sin(a) * d;
+      const r = 18 + f() * 26;
+      const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+      g.addColorStop(0, couleur('--ouv-q'));
+      g.addColorStop(1, couleur('--ouv-q'));
+      ctx.globalAlpha = 0.22 + f() * 0.2;
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    // Bord adouci : opacité ramenée à zéro vers l'extérieur.
+    ctx.globalAlpha = 1;
+    ctx.globalCompositeOperation = 'destination-in';
+    const m = ctx.createRadialGradient(64, 64, 20, 64, 64, 62);
+    m.addColorStop(0, couleur('--ouv-q'));
+    m.addColorStop(1, 'transparent');
+    ctx.fillStyle = m;
+    ctx.fillRect(0, 0, 128, 128);
+    return tex(c);
+  }
+
+  // Éclaboussure de sang sur la « vitre » (zombie écrasé contre l'écran) : tache centrale, gouttes projetées, alpha.
+  function eclaboussure() {
+    const [c, ctx] = toile(256, 256);
+    const f = hasard(29);
+    ctx.clearRect(0, 0, 256, 256);
+    ctx.fillStyle = couleur('--ouv-sang');
+    for (let i = 0; i < 6; i += 1) {
+      ctx.globalAlpha = 0.3 + f() * 0.25;
+      ctx.beginPath();
+      ctx.ellipse(128 + (f() - 0.5) * 50, 128 + (f() - 0.5) * 34, 10 + f() * 20, 7 + f() * 14, f() * 3, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    // Giclures en rayons (traits fins qui partent du centre).
+    ctx.strokeStyle = couleur('--ouv-sang');
+    ctx.lineCap = 'round';
+    for (let i = 0; i < 16; i += 1) {
+      const a = f() * Math.PI * 2;
+      const d0 = 18 + f() * 20;
+      const d1 = d0 + 30 + f() * 60;
+      ctx.globalAlpha = 0.5 + f() * 0.4;
+      ctx.lineWidth = 1.5 + f() * 3.5;
+      ctx.beginPath();
+      ctx.moveTo(128 + Math.cos(a) * d0, 128 + Math.sin(a) * d0 * 0.8);
+      ctx.lineTo(128 + Math.cos(a) * d1, 128 + Math.sin(a) * d1 * 0.8);
+      ctx.stroke();
+    }
+    for (let i = 0; i < 46; i += 1) {
+      const a = f() * Math.PI * 2;
+      const d = 50 + f() * 70;
+      ctx.globalAlpha = 0.55 + f() * 0.4;
+      ctx.fillStyle = couleur(f() < 0.7 ? '--ouv-sang' : '--ouv-sang-sec');
+      ctx.beginPath();
+      ctx.arc(128 + Math.cos(a) * d, 128 + Math.sin(a) * d * 0.8, 1.5 + f() * 6, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+    return tex(c);
+  }
+
   // Carte de l'objet (nom, rareté écrite, ligne de détail) : fond sombre, bord de la couleur de la rareté.
   function carte(canvasTex, { nom, ligne2, ligne3, bord, grand }) {
     const c = canvasTex.image;
@@ -346,7 +416,7 @@ export function creerTextures({ couleur, anisotropie = 1 }) {
   }
 
   return {
-    beton, bois, metal, porte, bande, tapis, question, degrade, lueur, etoile, sang, carte, toileCarte, marque,
+    beton, bois, metal, porte, bande, tapis, question, degrade, lueur, etoile, sang, bouffee, eclaboussure, carte, toileCarte, marque,
     nombre: () => toutes.size,
     toutes: () => [...toutes],
     liberer() {
