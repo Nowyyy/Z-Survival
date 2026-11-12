@@ -398,7 +398,7 @@ export async function creerScene({ canvas, couleur, chrono, reglages, cartes, mo
   const qF = new THREE.Quaternion();
   const sF = new THREE.Vector3();
   const pF = new THREE.Vector3();
-  const FILETS = Array.from({ length: NB_FILETS }, (_, k) => ({ x: -0.82 + (1.64 * (k + 0.2 + 0.6 * h01(k, 21))) / NB_FILETS, l: 0.055 + 0.04 * h01(k, 22), long: 0.8 + 0.7 * h01(k, 23), depart: 0.25 + 0.5 * h01(k, 24) }));
+  const FILETS = Array.from({ length: NB_FILETS }, (_, k) => ({ x: -0.82 + (1.64 * (k + 0.2 + 0.6 * h01(k, 21))) / NB_FILETS, l: 0.055 + 0.04 * h01(k, 22), long: 0.8 + 0.7 * h01(k, 23), depart: 0.25 + 0.5 * h01(k, 24), retard: 0.04 + 0.3 * h01(k, 25), vitesse: 0.7 + 0.45 * h01(k, 26) }));
   // Éclaboussure sur la « vitre » au point d'impact du zombie projeté (surcouche, devant lui).
   const texEclab = T.eclaboussure();
   const eclab = new THREE.Mesh(geo(new THREE.PlaneGeometry(1, 1)), mat(new THREE.MeshBasicMaterial({ map: texEclab, transparent: true, opacity: 0, depthWrite: false, depthTest: false })));
@@ -943,9 +943,11 @@ export async function creerScene({ canvas, couleur, chrono, reglages, cartes, mo
         gouttes.material.opacity = fin;
         FILETS.forEach((f, k) => {
           const x = f.x * K.rx;
-          // Haut du filet : sous la tache, puis il suit le bord de l'écoulement quand celui-ci le dépasse (le filet se vide aussi).
+          // Haut du filet : sous la tache, puis il descend quand le bord de l'écoulement le dépasse (le filet se vide aussi). Retour du
+          // propriétaire (après la PR 103 : « elles ne doivent pas toutes descendre en même temps ») : chaque filet part avec son retard sur le
+          // bord (hauteur) et descend à sa vitesse.
           const ySous = (K.y - 0.08 * dv) - K.ry * Math.sqrt(Math.max(0, 1 - f.x * f.x)) * 0.92;
-          const y0 = Math.min(ySous, yFront);
+          const y0 = ySous - Math.max(0, ySous - yFront - f.retard) * f.vitesse;
           const tau = Math.max(0, u - f.depart);
           const bout = ySous - (f.long * Math.min(2.2, (tau / (P.bas - P.impact - f.depart)) ** 1.6) + 0.01);
           const long = Math.max(0.01, y0 - bout);
