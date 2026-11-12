@@ -119,6 +119,7 @@ describe('introduction au démarrage (lot 8g)', () => {
     expect(d).toMatch(/if \(fragment === REPERE_RETOUR\) globalThis\.history\?\.replaceState/);
     expect(d).toMatch(/doc\?\.fullscreenElement \? REPERE_PLEIN_ECRAN : REPERE_RETOUR/);
     expect(d).toMatch(/avecIntro\s*\? import\('\.\/intro\.js'\)/);
+    expect(d).toMatch(/intro\.then\(\(\) => import\('\.\/chargement\.js'\)\)/); // retour du propriétaire : le menu se charge après le logo
     expect(d).not.toMatch(/^import .*intro\.js/m);
     // Aucune écriture dans le stockage pour l'introduction ni le repère.
     for (const f of ['js/menu/demarrage.js', 'js/menu/intro.js']) expect(read(f), f).not.toMatch(/localStorage|sessionStorage|indexedDB|document\.cookie/);

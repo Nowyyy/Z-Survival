@@ -1,5 +1,5 @@
 // Lot 8g : écran Crédits E11 (Docs/ref/menu-principal.md, « Lot 8g »), ouvert par l'entrée « Crédits » du menu à trois barres, chargé à la demande
-// (roue de chargement de menu.js). Écran du menu qui garde la barre d'onglets (comme les sous-menus du lot 8d) : bandeau « No Way Studio » /
+// (roue de chargement de menu.js). Écran plein, comme les Options (retour du propriétaire : sans la barre d'onglets) : bandeau « No Way Studio » /
 // « Crédits », « ‹ Retour ». À gauche : logo du studio (animation rejouée à chaque ouverture ; copie fixe sous prefers-reduced-motion), « Un jeu de
 // No Way Studio », sections de data/menu/credits.json ; à droite : « Outils et licences » (data/menu/licences.json, copié des fichiers du dépôt par
 // scripts/studio/licences.mjs) : une zone dépliable par licence (aria-expanded), dont le texte défile. Les deux colonnes défilent et glissent à la
