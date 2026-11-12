@@ -1,0 +1,240 @@
+/* Lot 8f : ouvertures de caisses en 3D (Docs/ref/menu-principal.md ; maquettes Docs/maquettes-v0.8/Ouverture.html, Ouverture10.html). Chargée avec
+   l'ouverture (js/menu/ouverture/ouverture.js), jamais au démarrage du menu : css/tokens.css n'est pas modifié (l'accueil est au seuil Lighthouse).
+   Jetons --ouv-* de la scène (lus par le JavaScript au chargement, par un témoin : la scène ne contient aucune couleur écrite), pris parmi les jetons
+   existants quand il y en a un, en dur sinon (seule exception à la règle « couleurs dans tokens.css », vérifiée par tests/unit/tokens.test.js :
+   uniquement dans des déclarations --ouv-*). Raretés : --rarete-* de tokens.css, lues, jamais recopiées. Écran plein (au-dessus de l'en-tête du
+   menu) ; « Passer » et la rangée de cases dans la zone sûre (encoche) ; cibles de 44 px ; ni filter, ni mix-blend-mode, ni backdrop-filter. */
+.e3-ouverture {
+  /* Hangar de nuit */
+  --ouv-noir: #000000;
+  --ouv-nuit: #0c0d12;
+  --ouv-ambiant: #4a5468;
+  --ouv-sol-ambiant: #120f0c;
+  --ouv-beton: #3a3835;
+  --ouv-beton-clair: #4a4743;
+  --ouv-beton-sombre: #242220;
+  --ouv-mur: #2b2a27;
+  --ouv-porte: #34332f;
+  --ouv-porte-rainure: #1e1d1b;
+  --ouv-bande-jaune: var(--menu-ruban-jaune);
+  --ouv-bande-noire: var(--menu-ruban-noir);
+  --ouv-pile: var(--menu-bois);
+  --ouv-pile-clair: var(--menu-bois-clair);
+  --ouv-pile-sombre: var(--menu-bois-sombre);
+  --ouv-lampe: var(--game-lamp-metal);
+  --ouv-lumiere: var(--game-lamp-light);
+  --ouv-cone: var(--game-lamp-core);
+  /* Tapis roulant */
+  --ouv-tapis: #1b1a19;
+  --ouv-tapis-rainure: #2c2a27;
+  --ouv-chassis: #2f2e2b;
+  --ouv-rouleau: #55524c;
+  /* Caisses (dessin de leur genre, comme la Boutique du lot 8e) ; « ? » neutres */
+  --ouv-q: var(--menu-texte);
+  --ouv-clou: var(--menu-clou);
+  --ouv-bois: var(--menu-bois);
+  --ouv-bois-clair: var(--menu-bois-clair);
+  --ouv-bois-sombre: var(--menu-bois-sombre);
+  --ouv-militaire: var(--menu-perso-survivant);
+  --ouv-militaire-couvercle: var(--menu-perso-poche);
+  --ouv-militaire-arete: var(--menu-perso-jambes);
+  --ouv-elite: var(--menu-scene-voiture);
+  --ouv-elite-couvercle: var(--menu-scene-toit-salle);
+  --ouv-recrues: var(--menu-perso-survivant);
+  --ouv-recrues-couvercle: var(--menu-perso-poche);
+  --ouv-veterans: var(--menu-e9-violet);
+  --ouv-veterans-couvercle: var(--menu-e9-violet-inactif);
+  --ouv-legendes: var(--menu-scene-voiture);
+  --ouv-legendes-couvercle: var(--menu-scene-toit-salle);
+  --ouv-tenues: var(--menu-scene-planche);
+  --ouv-mode: var(--menu-classement-bord);
+  --ouv-couture: var(--menu-scene-voiture);
+  --ouv-sangle: var(--menu-bois-sombre);
+  /* Fusil et mains */
+  --ouv-arme: #4a4a45;
+  --ouv-arme-clair: #5a5a54;
+  --ouv-polymere: #2c2c29;
+  --ouv-gant: #6e5a40;
+  --ouv-gant-sombre: #2b2319;
+  --ouv-manche: #454a35;
+  --ouv-lentille: #132030;
+  --ouv-point: #ff3b2a;
+  --ouv-flamme: var(--game-muzzle);
+  --ouv-flamme-coeur: var(--game-lamp-core);
+  --ouv-trainee: var(--game-bullet);
+  --ouv-etincelle: var(--menu-scene-flamme-coeur);
+  /* Effets */
+  --ouv-boule: var(--menu-scene-flamme-coeur);
+  --ouv-boule-bord: var(--menu-scene-flamme);
+  --ouv-sang: var(--sang-frais);
+  --ouv-sang-sec: var(--sang-sec);
+  --ouv-marque-1: var(--menu-ruban-jaune);
+  --ouv-marque-2: var(--menu-rouge-trait);
+  --ouv-marque-3: var(--rarete-legendaire);
+  --ouv-carte: #1a1714;
+  --ouv-carte-texte: var(--menu-texte);
+  --ouv-carte-doux: var(--menu-texte-doux);
+  --ouv-sombre: var(--menu-scene-vignette);
+  /* Interface par-dessus la scène */
+  --ouv-passer-fond: rgb(5 5 5 / 80%);
+  --ouv-passer-bord: var(--menu-classement-rang);
+  --ouv-case-fond: rgb(5 5 5 / 60%);
+  --ouv-case-bord: #4a4540;
+  --ouv-reticule: var(--menu-texte);
+  --ouv-marge-d: max(var(--menu-marge), env(safe-area-inset-right, 0px), calc(32 * var(--u)));
+  --ouv-marge-h: max(16px, env(safe-area-inset-top, 0px));
+  position: fixed;
+  inset: 0;
+  z-index: 9;
+  overflow: hidden;
+  background: var(--ouv-noir);
+  color: var(--menu-texte);
+  font-family: var(--font-sans);
+}
+
+.e3-ouverture[hidden] {
+  display: none;
+}
+
+.e3-ouv-canevas {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* Éclair d'écran (couleur de la rareté, opacité de la chronologie : au plus 3 par seconde, js/core/ouverture.js) et fondu depuis le noir. */
+.e3-ouv-eclair,
+.e3-ouv-fondu {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+}
+
+.e3-ouv-eclair {
+  background: var(--e3-rarete, var(--rarete-commun));
+}
+
+.e3-ouv-fondu {
+  background: var(--ouv-noir);
+}
+
+/* Réticule au centre (s'écarte au tir). */
+.e3-ouv-reticule {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 48px;
+  height: 48px;
+  margin: -24px 0 0 -24px;
+  pointer-events: none;
+  fill: none;
+  stroke: var(--ouv-reticule);
+  stroke-width: 2.5;
+  opacity: 0.85;
+}
+
+.e3-ouv-reticule circle {
+  fill: var(--ouv-reticule);
+  stroke: none;
+}
+
+.e3-ouv-passer {
+  position: absolute;
+  top: var(--ouv-marge-h);
+  right: var(--ouv-marge-d);
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: var(--menu-cible);
+  min-width: var(--menu-cible);
+  box-sizing: border-box;
+  padding: 0 16px;
+  border: 2px solid var(--ouv-passer-bord);
+  border-radius: 4px;
+  background: var(--ouv-passer-fond);
+  color: var(--menu-texte);
+  font-family: var(--font-label);
+  font-size: 14px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.e3-ouv-passer svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentcolor;
+  stroke-width: 3;
+}
+
+.e3-ouv-passer:focus-visible,
+.e3-ouv-actions .e3-action:focus-visible {
+  outline: 3px solid var(--color-focus, var(--menu-texte));
+  outline-offset: 2px;
+}
+
+/* ×10 : rangée de dix cases en haut, au centre (remplies dans l'ordre du tirage, bord de la rareté). */
+.e3-ouv-cases {
+  --ouv-case: max(22px, calc(40 * var(--u)));
+  position: absolute;
+  top: calc(var(--ouv-marge-h) + 2px);
+  left: 50%;
+  display: flex;
+  gap: max(3px, calc(6 * var(--u)));
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.e3-ouv-case {
+  width: var(--ouv-case);
+  height: calc(var(--ouv-case) * 0.7);
+  box-sizing: border-box;
+  border: 2px dashed var(--ouv-case-bord);
+  border-radius: 3px;
+  background: var(--ouv-case-fond);
+}
+
+.e3-ouv-case[data-rempli='true'] {
+  border: 2px solid var(--e3-rarete, var(--rarete-commun));
+  background: color-mix(in srgb, var(--e3-rarete, var(--rarete-commun)) 22%, var(--ouv-carte));
+}
+
+/* ×1 : « Continuer » et « Rouvrir » par-dessus la scène, à droite (maquette : 700, 80, 200 de large). */
+.e3-ouv-actions {
+  position: absolute;
+  top: max(calc(80 * var(--u)), calc(var(--ouv-marge-h) + var(--menu-cible) + 12px));
+  right: var(--ouv-marge-d);
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: max(160px, calc(200 * var(--u)));
+  opacity: 0;
+}
+
+.e3-ouv-actions .e3-action {
+  width: 100%;
+  min-height: var(--menu-cible);
+}
+
+.e3-ouv-temoin {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .e3-ouverture * {
+    transition: none;
+    animation: none;
+  }
+}
