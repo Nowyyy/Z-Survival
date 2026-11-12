@@ -147,6 +147,153 @@ export function creerTextures({ couleur, anisotropie = 1 }) {
     return tex(c, { repeter: true });
   }
 
+  // Retour du propriétaire (« pourrait-on ajouter des textures sur l'arme ? La lunette… ») : chaque face d'une pièce du fusil reçoit l'image
+  // entière (coordonnées des boîtes), donc le bord de l'image = les arêtes de la pièce : arêtes usées plus claires, rayures, grain.
+  function bordUse(ctx, n, f, clair, largeur, alpha) {
+    ctx.strokeStyle = clair;
+    for (let i = 0; i < 90; i += 1) {
+      const cote = Math.floor(f() * 4);
+      const t = f() * n;
+      const l = 6 + f() * 22;
+      ctx.globalAlpha = alpha * (0.5 + f() * 0.5);
+      ctx.lineWidth = 1 + f() * largeur;
+      const e = f() * largeur;
+      ctx.beginPath();
+      if (cote === 0) { ctx.moveTo(t, e); ctx.lineTo(t + l, e); }
+      else if (cote === 1) { ctx.moveTo(t, n - e); ctx.lineTo(t + l, n - e); }
+      else if (cote === 2) { ctx.moveTo(e, t); ctx.lineTo(e, t + l); }
+      else { ctx.moveTo(n - e, t); ctx.lineTo(n - e, t + l); }
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+  }
+  // Métal bruni du fusil : base sombre, brossé, rayures, arêtes usées.
+  function armeUsee() {
+    const [c, ctx] = toile(128, 128);
+    const f = hasard(71);
+    ctx.fillStyle = couleur('--ouv-arme');
+    ctx.fillRect(0, 0, 128, 128);
+    const g = ctx.createLinearGradient(0, 0, 0, 128);
+    g.addColorStop(0, couleur('--ouv-arme-clair'));
+    g.addColorStop(1, couleur('--ouv-arme-sombre'));
+    ctx.globalAlpha = 0.5;
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, 128, 128);
+    ctx.globalAlpha = 1;
+    // Brossé (traits horizontaux fins).
+    for (let y = 0; y < 128; y += 2) {
+      ctx.globalAlpha = 0.05 + f() * 0.08;
+      ctx.fillStyle = couleur(f() < 0.5 ? '--ouv-arme-clair' : '--ouv-arme-sombre');
+      ctx.fillRect(0, y, 128, 1);
+    }
+    grain(ctx, 128, 128, f, couleur('--ouv-arme-use'), couleur('--ouv-arme-sombre'), 500, 1.5);
+    ctx.strokeStyle = couleur('--ouv-arme-use');
+    for (let i = 0; i < 18; i += 1) {
+      ctx.globalAlpha = 0.15 + f() * 0.25;
+      ctx.lineWidth = 0.5 + f() * 0.6;
+      const x = f() * 128;
+      const y = f() * 128;
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(x + (f() - 0.5) * 34, y + (f() - 0.5) * 10);
+      ctx.stroke();
+    }
+    bordUse(ctx, 128, f, couleur('--ouv-arme-use'), 3, 0.55);
+    ctx.globalAlpha = 1;
+    return tex(c);
+  }
+  // Polymère (garde-main, chargeur, poignée, crosse) : grain moucheté, arêtes un peu plus claires.
+  function polymere() {
+    const [c, ctx] = toile(128, 128);
+    const f = hasard(73);
+    ctx.fillStyle = couleur('--ouv-polymere');
+    ctx.fillRect(0, 0, 128, 128);
+    for (let i = 0; i < 1600; i += 1) {
+      ctx.globalAlpha = 0.12 + f() * 0.2;
+      ctx.fillStyle = couleur(f() < 0.5 ? '--ouv-polymere-clair' : '--ouv-arme-sombre');
+      ctx.fillRect(f() * 128, f() * 128, 1.5, 1.5);
+    }
+    bordUse(ctx, 128, f, couleur('--ouv-polymere-clair'), 3, 0.6);
+    return tex(c);
+  }
+  // Cuir des gants : plis sombres, coutures claires près des bords, usure.
+  function gantCuir() {
+    const [c, ctx] = toile(128, 128);
+    const f = hasard(79);
+    ctx.fillStyle = couleur('--ouv-gant');
+    ctx.fillRect(0, 0, 128, 128);
+    grain(ctx, 128, 128, f, couleur('--ouv-gant-clair'), couleur('--ouv-gant-sombre'), 900, 2);
+    ctx.strokeStyle = couleur('--ouv-gant-sombre');
+    for (let i = 0; i < 10; i += 1) {
+      ctx.globalAlpha = 0.25 + f() * 0.25;
+      ctx.lineWidth = 1 + f() * 1.5;
+      const y = f() * 128;
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.bezierCurveTo(40, y + (f() - 0.5) * 20, 90, y + (f() - 0.5) * 20, 128, y + (f() - 0.5) * 10);
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 0.85;
+    ctx.strokeStyle = couleur('--ouv-couture');
+    ctx.lineWidth = 2;
+    ctx.setLineDash([5, 4]);
+    ctx.strokeRect(8, 8, 112, 112);
+    ctx.setLineDash([]);
+    bordUse(ctx, 128, f, couleur('--ouv-gant-clair'), 3, 0.4);
+    return tex(c);
+  }
+  // Tissu des manches : trame croisée, plis.
+  function tissu() {
+    const [c, ctx] = toile(128, 128);
+    const f = hasard(83);
+    ctx.fillStyle = couleur('--ouv-manche');
+    ctx.fillRect(0, 0, 128, 128);
+    for (let k = 0; k < 128; k += 3) {
+      ctx.globalAlpha = 0.18;
+      ctx.fillStyle = couleur('--ouv-manche-sombre');
+      ctx.fillRect(k, 0, 1, 128);
+      ctx.globalAlpha = 0.12;
+      ctx.fillStyle = couleur('--ouv-manche-clair');
+      ctx.fillRect(0, k + 1, 128, 1);
+    }
+    ctx.strokeStyle = couleur('--ouv-manche-sombre');
+    for (let i = 0; i < 7; i += 1) {
+      ctx.globalAlpha = 0.3 + f() * 0.25;
+      ctx.lineWidth = 2 + f() * 4;
+      const x = f() * 128;
+      ctx.beginPath();
+      ctx.moveTo(x, 0);
+      ctx.bezierCurveTo(x + (f() - 0.5) * 40, 40, x + (f() - 0.5) * 40, 90, x + (f() - 0.5) * 30, 128);
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+    return tex(c, { repeter: true });
+  }
+  // Verre de la lunette : bleu profond, bord plus clair, reflet en arc et petit éclat.
+  function lentilleVerre() {
+    const [c, ctx] = toile(64, 64);
+    const g = ctx.createRadialGradient(28, 26, 2, 32, 32, 32);
+    g.addColorStop(0, couleur('--ouv-lentille-bord'));
+    g.addColorStop(0.55, couleur('--ouv-lentille'));
+    g.addColorStop(0.9, couleur('--ouv-lentille'));
+    g.addColorStop(1, couleur('--ouv-lentille-bord'));
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, 64, 64);
+    ctx.strokeStyle = couleur('--ouv-reflet');
+    ctx.globalAlpha = 0.55;
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(32, 32, 22, Math.PI * 1.05, Math.PI * 1.45);
+    ctx.stroke();
+    ctx.globalAlpha = 0.8;
+    ctx.fillStyle = couleur('--ouv-reflet');
+    ctx.beginPath();
+    ctx.arc(41, 21, 2.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.globalAlpha = 1;
+    return tex(c);
+  }
+
   // Porte roulante : lames horizontales.
   function porte() {
     const [c, ctx] = toile(128, 256);
@@ -582,7 +729,7 @@ export function creerTextures({ couleur, anisotropie = 1 }) {
   }
 
   return {
-    beton, bois, metal, porte, bande, tapis, question, degrade, lueur, etoile, tache, vidange, filet, hautsFilets, goutte, bouffee, eclaboussure, carte, toileCarte, marque,
+    beton, bois, metal, armeUsee, polymere, gantCuir, tissu, lentilleVerre, porte, bande, tapis, question, degrade, lueur, etoile, tache, vidange, filet, hautsFilets, goutte, bouffee, eclaboussure, carte, toileCarte, marque,
     nombre: () => toutes.size,
     toutes: () => [...toutes],
     liberer() {

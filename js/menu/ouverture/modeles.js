@@ -152,10 +152,20 @@ export function fusilGeo() {
   arme.push(piece(cyl(1.15, 1.05, 4.5, 10), [0, 0.6, -47.5], [Math.PI / 2, 0, 0]));
   arme.push(piece(boite(2.4, 0.9, 34), [0, 3.4, -9]));
   for (let k = 0; k < 15; k += 1) arme.push(piece(boite(2.8, 0.7, 0.9), [0, 3.95, -24 + k * 2.2]));
-  // Viseur point rouge : boîtier et monture.
-  arme.push(piece(boite(3, 3.2, 6), [0, 5.6, 1]));
-  arme.push(piece(cyl(1.9, 1.9, 1.6, 14), [0, 6.1, -2.4], [Math.PI / 2, 0, 0]));
-  arme.push(piece(boite(1.2, 1.2, 1.2), [1.8, 6.4, 2]));
+  // Retour du propriétaire (« des textures sur l'arme, la lunette… ») : lunette de visée à la place du viseur point rouge : deux montures sur
+  // le rail, tube, objectif évasé à l'avant, oculaire à l'arrière, tourelles de réglage (dessus et côté), bagues.
+  const L = { y: 6.6, z: -4 }; // axe du tube
+  for (const z of [-8, 0]) {
+    arme.push(piece(boite(2.4, 2.2, 1.6), [0, 4.9, z]));
+    arme.push(piece(cyl(1.5, 1.5, 1.3, 16), [0, L.y, z], [Math.PI / 2, 0, 0]));
+  }
+  arme.push(piece(cyl(1.25, 1.25, 12, 16), [0, L.y, L.z], [Math.PI / 2, 0, 0]));
+  arme.push(piece(cyl(1.25, 1.95, 3.5, 16), [0, L.y, -11.75], [Math.PI / 2, 0, 0]));
+  arme.push(piece(cyl(2.05, 2.05, 0.8, 16), [0, L.y, -13.9], [Math.PI / 2, 0, 0]));
+  arme.push(piece(cyl(1.7, 1.25, 3.5, 16), [0, L.y, 3.75], [Math.PI / 2, 0, 0]));
+  arme.push(piece(cyl(1.8, 1.8, 0.8, 16), [0, L.y, 5.9], [Math.PI / 2, 0, 0]));
+  arme.push(piece(cyl(0.75, 0.75, 1.7, 10), [0, L.y + 1.9, L.z]));
+  arme.push(piece(cyl(0.75, 0.75, 1.7, 10), [1.9, L.y, L.z], [0, 0, Math.PI / 2]));
   // Garde-main à fentes (polymère, fentes en métal sombre par-dessus).
   poly.push(piece(boite(4.2, 4.6, 20), [0, 0.4, -20]));
   for (let k = 0; k < 4; k += 1) for (const sx of [-1, 1]) arme.push(piece(boite(0.4, 1.2, 3.2), [sx * 2.15, 0.6, -27 + k * 4.6]));
@@ -183,8 +193,9 @@ export function fusilGeo() {
     polymere: fusion(poly),
     gant: fusion(gant),
     manche: fusion(manche),
-    lentille: fusion([piece(new THREE.CircleGeometry(1.55, 14), [0, 6.1, -3.25], [0, Math.PI, 0])]),
-    point: fusion([piece(new THREE.CircleGeometry(0.18, 8), [0, 6.1, -3.3], [0, Math.PI, 0])]),
+    // Verres de la lunette : oculaire (vers le tireur) et objectif (vers l'avant) ; point rouge du réticule sur l'oculaire.
+    lentille: fusion([piece(new THREE.CircleGeometry(1.5, 16), [0, 6.6, 6.32]), piece(new THREE.CircleGeometry(1.85, 16), [0, 6.6, -14.32], [0, Math.PI, 0])]),
+    point: fusion([piece(new THREE.CircleGeometry(0.16, 8), [0, 6.6, 6.34])]),
   };
 }
 
