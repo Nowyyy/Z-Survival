@@ -144,11 +144,11 @@ test.describe('lampes à huile', () => {
     expect(runs.eclairage).toEqual(runs.off);
   });
 
-  test('fichiers : « off » n\'en charge aucun de plus (114 JavaScript, lot 8a : + js/menu/demarrage.js) ; « decor » demande lamps.js et lampes.world.json, jamais lights.js ni lumieres.json', async ({ page, baseURL }) => {
+  test('fichiers : « off » n\'en charge aucun de plus (115 JavaScript, lot 8a : + js/menu/demarrage.js ; lot 8f : + js/glisser.js) ; « decor » demande lamps.js et lampes.world.json, jamais lights.js ni lumieres.json', async ({ page, baseURL }) => {
     const files = [];
     page.on('request', (r) => r.url().startsWith(baseURL) && files.push(new URL(r.url()).pathname));
     await open(page, '&nospawn=1&lum=off');
-    expect(new Set(files.filter((f) => f.endsWith('.js'))).size).toBe(114);
+    expect(new Set(files.filter((f) => f.endsWith('.js'))).size).toBe(115);
     for (const f of ['/js/game/lamps.js', '/js/core/lamps.js', '/js/game/lights.js', '/data/game/lumieres.json']) expect(files).not.toContain(f);
     expect(files.some((f) => f.includes('lampes'))).toBe(false);
     files.length = 0;
