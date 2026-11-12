@@ -7,6 +7,8 @@
 // (lot 8c : page Options E5, écran plein, avec les réglages résolus sans Three.js par graphicsReglages() et le son gardé en mémoire par demarrage.js).
 // Lot 8b : onglet Jouer (js/menu/jouer.js, chargé avec le menu) ; option de démarrage (histoire ou infini) passée à jouer().
 // Lot 8e : onglet Boutique (js/menu/boutique.js à la demande : caisses, chances, écrans de résultat ; objets ajoutés à l'inventaire en mémoire).
+import { activerGlisser } from '../glisser.js';
+import { roueDifferee } from './roue.js';
 import { formatMoney } from '../core/economy.js';
 import { basculerMenu, choisirOnglet, versionMenu, creerEtatMenu, ECRANS_PLEINS, SOUS_MENUS, fermerEcran, fermerMenu, lienExterne, lireMondes, lireOptionDemarrage, lireRecord, nouveauteNonLue, ONGLETS, ouvrirEcran, premierJouable } from '../core/menu-etat.js';
 import { ecranJouer } from './jouer.js';
@@ -236,6 +238,8 @@ export function creerMenu({ dict, infos = [], liens = {}, solde: montant = 0, re
   const ecransOnglets = new Map(); // id → section (créée au premier affichage)
 
   const box = el('div', ['e8'], { id: 'e8', 'data-block': 'E8' });
+  // Retour du propriétaire : zones qui défilent glissables à la souris, comme au doigt (js/glisser.js).
+  activerGlisser(box);
 
   // --- En-tête E8-1 -------------------------------------------------------------------------------------------------------------------------
   const entete = el('header', ['e8-entete'], { 'data-block': 'E8-1' });
@@ -470,37 +474,43 @@ export function creerMenu({ dict, infos = [], liens = {}, solde: montant = 0, re
       const onglet = etat.onglet;
       synchroniser(); // onglet marqué tout de suite (planche claire, sang qui coule), avant la fin du chargement
       contenu.setAttribute('aria-busy', 'true');
-      let s;
-      if (onglet === 'infini') {
-        const m = await precharger('infini');
-        infini = await m.ecranInfini({ t, mondes, bandeau, jouer: lancer });
-        s = infini.section;
-        scenes.set('infini', infini.scene);
-      } else if (onglet === 'personnage') {
-        const m = await precharger('personnage');
-        const ecran = await m.ecranPersonnage({
-          t, bandeau, niveaux, statsCfg, root: contenu,
-          poserEcran: (nom) => {
-            etat = nom ? ouvrirEcran(etat, nom) : fermerEcran(etat);
-            synchroniser();
-          },
-        });
-        perso ??= ecran;
-        s = ecran.section;
-      } else if (onglet === 'boutique') {
-        const m = await precharger('boutique');
-        const ecran = await m.ecranBoutique({ t, bandeau, root: contenu, rootDialogue: box, surVue: () => synchroniser() });
-        boutique ??= ecran;
-        s = ecran.section;
-      } else {
-        const m = await ecrans();
-        s = m.ecranBientot({ dict, id: onglet, titre: t(ONGLET_TEXTES[onglet]) });
+      // Retour du propriétaire : roue de chargement pendant le chargement d'un onglet (au-delà de 120 ms).
+      const roue = roueDifferee(box, { fixe: true, texte: t('game.menu.chargement.texte') });
+      try {
+        let s;
+        if (onglet === 'infini') {
+          const m = await precharger('infini');
+          infini = await m.ecranInfini({ t, mondes, bandeau, jouer: lancer });
+          s = infini.section;
+          scenes.set('infini', infini.scene);
+        } else if (onglet === 'personnage') {
+          const m = await precharger('personnage');
+          const ecran = await m.ecranPersonnage({
+            t, bandeau, niveaux, statsCfg, root: contenu,
+            poserEcran: (nom) => {
+              etat = nom ? ouvrirEcran(etat, nom) : fermerEcran(etat);
+              synchroniser();
+            },
+          });
+          perso ??= ecran;
+          s = ecran.section;
+        } else if (onglet === 'boutique') {
+          const m = await precharger('boutique');
+          const ecran = await m.ecranBoutique({ t, bandeau, root: contenu, rootDialogue: box, surVue: () => synchroniser() });
+          boutique ??= ecran;
+          s = ecran.section;
+        } else {
+          const m = await ecrans();
+          s = m.ecranBientot({ dict, id: onglet, titre: t(ONGLET_TEXTES[onglet]) });
+        }
+        if (!ecransOnglets.has(onglet)) {
+          ecransOnglets.set(onglet, s);
+          contenu.append(s);
+        }
+      } finally {
+        roue.fin();
+        contenu.removeAttribute('aria-busy');
       }
-      if (!ecransOnglets.has(onglet)) {
-        ecransOnglets.set(onglet, s);
-        contenu.append(s);
-      }
-      contenu.removeAttribute('aria-busy');
     }
     synchroniser();
   }

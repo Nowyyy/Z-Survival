@@ -7,6 +7,7 @@
 // deux appellent main.js (onQuit, onMenu : retour au menu par rechargement).
 import { formatMoney } from '../core/economy.js';
 import { fmt, MONEY_TEXTS, SAVE_TEXTS } from './texts.js';
+import { activerGlisser } from '../glisser.js';
 
 const PORTRAIT_PHONE = '(orientation: portrait) and (pointer: coarse) and (max-width: 600px)';
 
@@ -34,6 +35,7 @@ export function createUi(dict, handlers) {
   const canFullscreen = Boolean(document.fullscreenEnabled && document.documentElement.requestFullscreen);
   let hasAudio = false;
   let quitBox = null; // lot 8a : confirmation de « Quitter » (créée au premier appui)
+  let sortieVoulue = false; // sortie du plein écran demandée par le jeu (icône, touche F) : pas de pause
 
   const ui = {
     isPaused: () => !els.pausePanel.hidden || optionsOpen || debugOpen || rotateQuery.matches || document.hidden,
@@ -129,6 +131,7 @@ export function createUi(dict, handlers) {
 
     toggleFullscreen() {
       if (!canFullscreen) return;
+      sortieVoulue = Boolean(document.fullscreenElement);
       if (document.fullscreenElement) document.exitFullscreen?.().catch(() => {});
       else document.documentElement.requestFullscreen({ navigationUI: 'hide' }).catch(() => {});
     },
@@ -261,13 +264,22 @@ export function createUi(dict, handlers) {
   els.menuBtn.addEventListener('click', () => handlers.onMenu?.());
   els.fullscreen.hidden = !canFullscreen;
   // Lot 5j-G : icône de plein écran (coins vers l'extérieur ; vers l'intérieur et nom « Quitter le plein écran » quand la page est en plein écran).
-  const syncFullscreen = () => {
+  // Retour du propriétaire (sur ordinateur, en plein écran, Échap quittait le plein écran sans ouvrir la pause ; il fallait un second Échap) :
+  // en plein écran, la touche Échap est réservée à la page quand le navigateur le permet (Keyboard Lock : un appui ouvre la pause, un appui
+  // long quitte le plein écran) ; sinon, une sortie du plein écran non demandée par le jeu (Échap du navigateur) ouvre la pause.
+  const syncFullscreen = (event) => {
     const on = Boolean(document.fullscreenElement);
     els.fullscreen.dataset.active = String(on);
     els.fullscreen.setAttribute('aria-label', dict[on ? 'game.pause.fullscreenExit' : 'game.pause.fullscreen']);
+    if (on) navigator.keyboard?.lock?.(['Escape'])?.catch?.(() => {});
+    else navigator.keyboard?.unlock?.();
+    if (event && !on && !sortieVoulue && !ui.isPaused() && !ui.isEnded()) ui.openPause();
+    if (!on) sortieVoulue = false;
   };
   document.addEventListener('fullscreenchange', syncFullscreen);
   syncFullscreen();
+  // Retour du propriétaire : zones qui défilent (pause, Options…) glissables à la souris, comme au doigt (même module que le menu).
+  activerGlisser(document.body);
   els.pauseBtn.addEventListener('click', () => ui.openPause());
   els.resume.addEventListener('click', () => ui.closePause());
   els.fullscreen.addEventListener('click', () => ui.toggleFullscreen());
