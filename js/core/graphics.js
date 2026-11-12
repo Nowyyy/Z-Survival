@@ -490,13 +490,13 @@ export function bloodWithCorpses(blood, level, n) {
 // Lot 5l : paramètres d'adresse par canal (Docs/ref/debug.md). Le canal vient de la balise <meta name="zs-canal" content="…"> de jeu.html (source dans
 // le dépôt ; l'assembleur écrit release, dev ou archive dans les copies publiées ; prod viendra d'un assembleur de production), lue par graphics-boot.js
 // sans requête. Groupe G (doublons d'Options et réglages graphiques sans menu) : pris en compte sous ?test=1 (autorisé) ou sur source ; groupe T (outils) :
-// sur les canaux de débogage ; test, store, seed, empty, menu (lot 8a) : sur les canaux de débogage. Canal absent, inconnu, archive ou prod : tout est refusé.
+// sur les canaux de débogage ; test, store, seed, empty, menu (lot 8a), intro (lot 8g) : sur les canaux de débogage. Canal absent, inconnu, archive ou prod : tout est refusé.
 // Un nom absent des trois listes (?v=, inconnu) n'est lu par aucun code : il passe tel quel.
 export const CANAUX = Object.freeze(['source', 'dev', 'release', 'archive', 'prod']);
 export const CANAUX_DEBUG = Object.freeze(['source', 'dev', 'release']);
 export const PARAMS_G = Object.freeze(['gfx', 'lum', 'lampgain', 'shadows', 'vhs', 'dpr', 'detail', 'perso', 'sang', 'usure', 'percee']);
 export const PARAMS_T = Object.freeze(['wave', 'lvl', 'money', 'planks', 'floor', 'map', 'nospawn', 'endless', 'fin', 'perf', 'cap', 'fps', 'zoom', 'tilt', 'labels', 'sons']);
-export const PARAMS_TEST = Object.freeze(['test', 'store', 'seed', 'empty', 'menu']);
+export const PARAMS_TEST = Object.freeze(['test', 'store', 'seed', 'empty', 'menu', 'intro']); // lot 8g : intro
 // Lot 8a : paramètres de « Partie » (Docs/ref/menu-principal.md) : l'un d'eux, avec une valeur, démarre la partie directement (sans menu).
 export const PARAMS_PARTIE = Object.freeze(['wave', 'lvl', 'money', 'planks', 'floor', 'map', 'nospawn', 'endless', 'fin', 'empty']);
 
@@ -545,6 +545,21 @@ export function choixDemarrage(canal, params) {
   const a = acces(canal, q);
   if (a.test) return a.params.menu && q.get('menu') === '1' ? 'menu' : 'partie';
   return PARAMS_PARTIE.some((n) => a.params[n] && (q.get(n) ?? '') !== '') ? 'partie' : 'menu';
+}
+
+// Lot 8g : introduction du studio (logo animé de No Way Studio) au lancement en mode menu. Jamais en partie directe ; jamais au retour au menu après
+// une partie (précision du propriétaire) : le rechargement fait par « Quitter » et « Revenir au menu principal » porte le repère #retour (ou
+// #plein-ecran, posé à sa place quand la partie était en plein écran), lu ici depuis le fragment de l'adresse (aucun stockage). Sous ?test=1 pris en
+// compte, seulement avec ?intro=1 (groupe « test ») : les tests existants du menu (?test=1&menu=1) ne la voient pas. Sinon : toujours.
+export const REPERE_RETOUR = '#retour';
+export const REPERES_RETOUR = Object.freeze([REPERE_RETOUR, '#plein-ecran']);
+export function introAuDemarrage(canal, params, fragment = '') {
+  if (choixDemarrage(canal, params) !== 'menu') return false;
+  if (REPERES_RETOUR.includes(typeof fragment === 'string' ? fragment : '')) return false;
+  const q = searchOf(params);
+  const a = acces(canal, q);
+  if (a.test) return a.params.intro === true && q.get('intro') === '1';
+  return true;
 }
 
 // Adresse (chaîne de requête) sans les paramètres refusés pour ce canal. Rien de refusé (toujours le cas sur source) : la chaîne d'origine, identique.

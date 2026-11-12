@@ -4,6 +4,7 @@ import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { PART_KINDS, expandParts } from '../../js/core/character-parts.js';
 import { characters, load, poses, texturesJson } from '../../scripts/personnages/lib.mjs';
 import { bilansChangesDepuis } from '../../scripts/docs/bilans.mjs';
+import { sansImagesStudio } from './helpers/images-studio.js'; // lot 8g : logo du studio, exception nominative
 
 // Lot 3j : données des personnages (characters-v2.json, poses-v2.json) et hygiène du lot (fichiers interdits, assets, pureté).
 // Lot 5q : « fichiers interdits du lot inchangés depuis main » (garde-fou du lot 3j, actif seulement sur sa branche : première ligne d'apercu.txt =
@@ -84,7 +85,7 @@ describe('hygiène du lot 3j', () => {
   it('aucune image, police, modèle ni son ajouté par le lot', () => {
     const added = git('diff --name-only --diff-filter=A main');
     if (added === null) return;
-    expect(added.filter((f) => /\.(png|jpe?g|gif|webp|avif|svg|ico|woff2?|ttf|otf|glb|gltf|obj|fbx|dae|wav|mp3|ogg|flac|m4a)$/i.test(f))).toEqual([]);
+    expect(sansImagesStudio(added).filter((f) => /\.(png|jpe?g|gif|webp|avif|svg|ico|woff2?|ttf|otf|glb|gltf|obj|fbx|dae|wav|mp3|ogg|flac|m4a)$/i.test(f))).toEqual([]);
   });
   // Lot 5m : chaque bilan de main est retrouvé avec le même texte, séparé ou regroupé (scripts/docs/bilans.mjs), avant et après la publication
   // du regroupement ; avant : `git diff --name-only --diff-filter=MD main -- Docs/lots` vide (un bilan regroupé y apparaîtrait supprimé).

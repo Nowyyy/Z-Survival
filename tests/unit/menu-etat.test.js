@@ -4,7 +4,7 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync, readdirSync } from 'node:fs';
 import { CANAUX_DEBUG, PARAMS_PARTIE, PARAMS_TEST, acces, choixDemarrage } from '../../js/core/graphics.js';
 import {
-  ECRANS, ECRANS_PLEINS, SOUS_MENUS, MODULES_ATTENDUS, ONGLETS, PHASES, adresseRetour, avancer, basculerMenu, choisirAstuce, choisirOnglet, creerEtatMenu, creerProgression,
+  ECRANS, ECRANS_MENU, ECRANS_PLEINS, SOUS_MENUS, MODULES_ATTENDUS, ONGLETS, PHASES, adresseRetour, avancer, basculerMenu, choisirAstuce, choisirOnglet, creerEtatMenu, creerProgression,
   fermerEcran, fermerMenu, lienExterne, nouveauteNonLue, ouvrirEcran, pourcentage, texteVersion, versionMenu,
 } from '../../js/core/menu-etat.js';
 
@@ -197,8 +197,9 @@ describe('onglets, menu à trois barres, nouveautés (lot 8a, état en mémoire)
     e = ouvrirEcran(fermerEcran(e), 'information', infos);
     expect([e.ecran, nouveauteNonLue(infos, e.lues)]).toEqual(['information', false]);
     expect(ouvrirEcran(e, 'boutique')).toBe(e);
-    expect(ECRANS).toEqual(['information', 'connexion', 'options', 'inventaire', 'fusion', 'personnages']); // lot 8d : sous-menus du Personnage
-    expect(ECRANS_PLEINS).toEqual(['options']); // lot 8d, retour du propriétaire : les sous-menus du Personnage gardent la barre d'onglets
+    expect(ECRANS).toEqual(['information', 'connexion', 'options', 'inventaire', 'fusion', 'personnages', 'credits', 'profil']); // lot 8d : sous-menus du Personnage ; lot 8g : Crédits, Profil
+    expect(ECRANS_MENU).toEqual(['credits']); // lot 8g : garde la barre d'onglets
+    expect(ECRANS_PLEINS).toEqual(['options', 'connexion', 'profil']); // lot 8d, retour du propriétaire : les sous-menus du Personnage gardent la barre d'onglets ; lot 8g : Connexion et Profil pleins
     expect(SOUS_MENUS).toEqual(['inventaire', 'fusion', 'personnages']);
     e = ouvrirEcran(fermerEcran(e), 'inventaire', infos);
     expect([e.ecran, e.menuOuvert]).toEqual(['inventaire', false]);
@@ -235,12 +236,12 @@ describe('hygiène du menu (lot 8a)', () => {
     expect(html).not.toMatch(/css\/menu\.css/); // feuille chargée par demarrage.js en mode menu seulement
   });
 
-  it('animations : noms propres à chaque écran (e7-*, e8-*, lot 8d : e9-*, lot 8e : e3-*), chacune définie une fois et utilisée ; coupées sous prefers-reduced-motion', () => {
+  it('animations : noms propres à chaque écran (e7-*, e8-*, lot 8d : e9-*, lot 8e : e3-*, lot 8g : e0-*, e10-*, e11-*), chacune définie une fois et utilisée ; coupées sous prefers-reduced-motion', () => {
     const defs = [...strip(css).matchAll(/@keyframes\s+([\w-]+)/g)].map((m) => m[1]);
     expect(defs.length).toBeGreaterThan(0);
     expect(new Set(defs).size).toBe(defs.length);
     for (const d of defs) {
-      expect(d, d).toMatch(/^e[3789]-/);
+      expect(d, d).toMatch(/^e(?:[03789]|1[01])-/);
       expect(strip(css).split(`@keyframes ${d}`).join(''), d).toMatch(new RegExp(`animation:\\s*${d}\\b`));
     }
     const autres = readdirSync('css').filter((f) => f !== 'menu.css' && f.endsWith('.css')).flatMap((f) => [...read(`css/${f}`).matchAll(/@keyframes\s+([\w-]+)/g)].map((m) => m[1]));

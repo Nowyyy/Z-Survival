@@ -7,6 +7,7 @@ import { moveCircle } from '../../js/core/movement.js';
 import { DOWN_TEXTS, WINDOW_INITIALS, WINDOW_NAMES, WINDOW_TEXTS } from '../../js/game/texts.js';
 import { layout, load } from './helpers/monde.js';
 import { geoms } from './helpers/sim-siege.js';
+import { sansImagesStudio } from './helpers/images-studio.js'; // lot 8g : logo du studio, exception nominative
 // Lot 4c (publication par versions, seul lot autorisé à modifier le workflow) : workflow, accueil, ses textes et tests du journal modifiés ; ce garde-fou de branche
 // (comparaison à main ou à lot-4b) n'a plus de sens pour eux après l'entrée dans main : ils sortent de la liste.
 // Lot 4e : workflow de tests ajouté (.github/workflows/tests.yml, autorisé par le prompt du lot ; pages.yml intact).
@@ -160,7 +161,7 @@ describe('textes, jetons, pureté et hygiène du lot 3', () => {
 
   it('aucun fichier audio, image ou police ajouté depuis main', () => {
     const added = git('diff --name-only --diff-filter=A main');
-    if (added !== null) expect(added.filter((f) => !f.startsWith('Docs/ref/modele-rdc/') && /\.(wav|mp3|ogg|m4a|flac|webm|aac|opus|png|jpe?g|gif|webp|svg|ico|woff2?|ttf|otf)$/i.test(f))).toEqual([]);
+    if (added !== null) expect(sansImagesStudio(added).filter((f) => !f.startsWith('Docs/ref/modele-rdc/') && /\.(wav|mp3|ogg|m4a|flac|webm|aac|opus|png|jpe?g|gif|webp|svg|ico|woff2?|ttf|otf)$/i.test(f))).toEqual([]);
   });
 
   it('aucune dépendance d\'exécution, aucun fichier de plus de 5 Mo', () => {

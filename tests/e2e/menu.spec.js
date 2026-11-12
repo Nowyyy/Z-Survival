@@ -134,7 +134,7 @@ test.describe('menu principal (E8)', () => {
     await expect(page.locator('#menu-jouer')).toBeVisible();
   });
 
-  test('trois barres : ouverture sous le bouton, quatre entrées, Échap et appui ailleurs ; point jaune présent puis absent après Information ; Discord grisé (« bientôt ») et aucune requête ; Déconnexion grisée ; axe', async ({ page, baseURL }) => {
+  test('trois barres : ouverture sous le bouton, cinq entrées (lot 8g : Crédits), Échap et appui ailleurs ; point jaune présent puis absent après Information ; Discord grisé (« bientôt ») et aucune requête ; Déconnexion grisée ; axe', async ({ page, baseURL }) => {
     const o = surveiller(page, baseURL);
     await ouvrirMenu(page);
     const barres = page.locator('#menu-trois-barres');
@@ -145,11 +145,11 @@ test.describe('menu principal (E8)', () => {
     const liste = page.locator('#menu-liste');
     await expect(liste).toBeVisible();
     expect((await boite(page, '#menu-liste')).t).toBeGreaterThanOrEqual((await boite(page, '#menu-trois-barres')).b - 0.5);
-    await expect(liste.locator('.e8-entree')).toHaveText([/^Options$/, /^Information/, /^Discord\s*bientôt$/, /^Déconnexion\s*non connecté$/]);
+    await expect(liste.locator('.e8-entree')).toHaveText([/^Options$/, /^Information/, /^Crédits$/, /^Discord\s*bientôt$/, /^Déconnexion\s*non connecté$/]); // lot 8g : Crédits entre Information et Discord
     await expect(page.locator('#menu-point-info')).toBeVisible();
     await expect(page.locator('#menu-discord')).toBeDisabled();
     await expect(page.locator('#menu-deconnexion')).toBeDisabled();
-    for (const s of ['#menu-options', '#menu-information', '#menu-discord', '#menu-deconnexion']) expect((await boite(page, s)).h, s).toBeGreaterThanOrEqual(44);
+    for (const s of ['#menu-options', '#menu-information', '#menu-credits', '#menu-discord', '#menu-deconnexion']) expect((await boite(page, s)).h, s).toBeGreaterThanOrEqual(44);
     expect((await new AxeBuilder({ page }).analyze()).violations.map((v) => v.id)).toEqual([]);
     await page.keyboard.press('Escape');
     await expect(liste).toBeHidden();
@@ -196,12 +196,12 @@ test.describe('menu principal (E8)', () => {
     expect(h).toBeGreaterThanOrEqual(3.5); // quatre lignes affichées (dont une vide)
   });
 
-  test('Connexion : écran provisoire « Connexion : bientôt » ; Options : la page Options du menu (E5, lot 8c) hors partie, fermée par « ‹ Menu » et Échap', async ({ page }) => {
+  test('Connexion : écran Connexion (lot 8g ; avant : écran provisoire « Connexion : bientôt »), fermé par « ‹ Menu » ; Options : la page Options du menu (E5, lot 8c) hors partie, fermée par « ‹ Menu » et Échap', async ({ page }) => {
     await ouvrirMenu(page);
     await page.locator('#menu-connexion').click();
-    const connexion = page.getByRole('dialog', { name: 'Connexion : bientôt' });
+    const connexion = page.getByRole('region', { name: 'Connexion' });
     await expect(connexion).toBeVisible();
-    await page.locator('#menu-ecran-connexion-fermer').click();
+    await page.locator('#menu-ecran-connexion-retour').click();
     await expect(connexion).toBeHidden();
     await expect(page.locator('#menu-connexion')).toBeFocused();
     await page.locator('#menu-trois-barres').click();

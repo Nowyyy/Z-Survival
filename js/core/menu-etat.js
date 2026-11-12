@@ -78,11 +78,14 @@ export const ONGLETS = Object.freeze([
   Object.freeze({ id: 'infini' }),
   Object.freeze({ id: 'event', verrouille: true }),
 ]);
-export const ECRANS = Object.freeze(['information', 'connexion', 'options', 'inventaire', 'fusion', 'personnages']);
+export const ECRANS = Object.freeze(['information', 'connexion', 'options', 'inventaire', 'fusion', 'personnages', 'credits', 'profil']); // lot 8g : credits, profil
 // Écrans pleins (en-tête gardé, barre d'onglets masquée) : Options (lot 8c). Lot 8d : les sous-menus du Personnage gardent la barre d'onglets (retour du
 // propriétaire) : ils remplacent l'écran de l'onglet, comme un écran d'onglet ; toucher un onglet les referme.
-export const ECRANS_PLEINS = Object.freeze(['options']);
+export const ECRANS_PLEINS = Object.freeze(['options', 'connexion', 'profil']); // lot 8g : Connexion et Profil, écrans pleins comme les Options
 export const SOUS_MENUS = Object.freeze(['inventaire', 'fusion', 'personnages']);
+// Lot 8g : écrans ouverts depuis le menu à trois barres qui gardent la barre d'onglets (Crédits) : à la place de l'écran de l'onglet ; toucher un onglet
+// les referme.
+export const ECRANS_MENU = Object.freeze(['credits']);
 
 export function creerEtatMenu() {
   return { onglet: 'jouer', menuOuvert: false, ecran: null, lues: [] };
