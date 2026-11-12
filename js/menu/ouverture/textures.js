@@ -354,6 +354,45 @@ export function creerTextures({ couleur, anisotropie = 1 }) {
     return tex(c);
   }
 
+  // Haut d'un filet (retour du propriétaire : « le haut des coulures ne doit pas être rectangulaire mais imparfait ») : même colonne que le corps
+  // (mêmes bords, ombre et reflet, raccord sans couture en bas), bord du haut bosselé et penché, gouttelette détachée au-dessus.
+  function hautFilet() {
+    const [c, ctx] = toile(32, 64);
+    ctx.clearRect(0, 0, 32, 64);
+    const forme = new Path2D();
+    const pts = [[5, 64], [5, 30], [5.5, 22], [8, 17], [10.5, 21], [13, 14], [15.5, 9], [18, 12.5], [20, 7], [22.5, 10], [25, 17], [26.5, 23], [27, 30], [27, 64]];
+    forme.moveTo(...pts[0]);
+    for (let i = 1; i < pts.length - 1; i += 1) {
+      const [x, y] = pts[i];
+      const [nx, ny] = pts[i + 1];
+      forme.quadraticCurveTo(x, y, (x + nx) / 2, (y + ny) / 2);
+    }
+    forme.lineTo(...pts.at(-1));
+    forme.closePath();
+    ctx.fillStyle = couleur('--ouv-sang');
+    ctx.fill(forme);
+    // Gouttelette détachée au-dessus du bord (le sang qui se décolle).
+    ctx.beginPath();
+    ctx.ellipse(11, 4.5, 2, 2.6, 0.2, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.save();
+    ctx.clip(forme);
+    ctx.globalAlpha = 0.45;
+    ctx.fillStyle = couleur('--ouv-sang-sec');
+    ctx.fillRect(20, 0, 7, 64);
+    ctx.globalAlpha = 0.35;
+    ctx.fillStyle = couleur('--ouv-q');
+    ctx.fillRect(9, 20, 2, 44);
+    ctx.restore();
+    // Bords adoucis, comme le corps, sous la partie irrégulière.
+    ctx.globalAlpha = 0.5;
+    ctx.fillStyle = couleur('--ouv-sang');
+    ctx.fillRect(3, 36, 2, 28);
+    ctx.fillRect(27, 32, 2, 32);
+    ctx.globalAlpha = 1;
+    return tex(c);
+  }
+
   // Goutte au bout d'un filet : col à la largeur du filet (moitié de la largeur de l'image) puis renflement rond, ombre et brillant.
   function goutte() {
     const [c, ctx] = toile(64, 64);
@@ -514,7 +553,7 @@ export function creerTextures({ couleur, anisotropie = 1 }) {
   }
 
   return {
-    beton, bois, metal, porte, bande, tapis, question, degrade, lueur, etoile, tache, vidange, filet, goutte, bouffee, eclaboussure, carte, toileCarte, marque,
+    beton, bois, metal, porte, bande, tapis, question, degrade, lueur, etoile, tache, vidange, filet, hautFilet, goutte, bouffee, eclaboussure, carte, toileCarte, marque,
     nombre: () => toutes.size,
     toutes: () => [...toutes],
     liberer() {

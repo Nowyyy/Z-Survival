@@ -417,3 +417,4 @@ Onglet actif, menu à trois barres ouvert, écran ouvert, nouveautés lues : `et
 
 ### Retour du propriétaire : caisses de l'animation allongées
 - `CAISSE.w` 110 → 150 (`js/menu/ouverture/modeles.js`) : les caisses de l'animation paraissaient carrées (le haut de la caisse est vu d'en haut), celles du menu sont rectangulaires ; maintenant environ 1,9 fois plus larges que hautes à l'écran. Écart entre caisses sur le tapis inchangé (300).
+- **Haut des filets imparfait** (retour suivant : « le haut des coulures ne doit pas être rectangulaire ») : chaque filet porte un haut irrégulier (texture `hautFilet` : même colonne que le corps, bord bosselé et penché, gouttelette détachée au-dessus), de hauteur propre (0,9 à 2 fois sa largeur) et retourné pour un filet sur deux environ ; une instance de plus (un appel de dessin).
