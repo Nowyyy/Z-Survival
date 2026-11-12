@@ -42,8 +42,15 @@ async function espions(page) {
     }
     window.__vus = {};
     new MutationObserver(() => {
-      for (const id of ['e0', 'e8']) if (!window.__vus[id] && document.getElementById(id)) window.__vus[id] = performance.now();
+      for (const id of ['e0', 'e7', 'e8']) if (!window.__vus[id] && document.getElementById(id)) window.__vus[id] = performance.now();
     }).observe(document, { childList: true, subtree: true });
+    // Fichiers demandés pendant que le logo se joue (de son affichage au début du fondu).
+    window.__fichiersIntro = [];
+    new PerformanceObserver((l) => {
+      const i = window.__zsMenu?.intro?.();
+      if (!i || i.phase !== 'joue') return;
+      for (const e of l.getEntries()) window.__fichiersIntro.push(new URL(e.name).pathname);
+    }).observe({ type: 'resource' });
   });
 }
 
@@ -100,23 +107,29 @@ test.describe('introduction du studio (E0)', () => {
     });
   }
 
-  test('durée de l\'animation (3,8 s depuis l\'affichage du logo), menu chargé pendant l\'introduction et ouvert aussitôt après (aucune attente ajoutée) ; puis E7 n\'existe plus ; aucune écriture', async ({ page, baseURL }) => {
+  test('retour du propriétaire : durée de l\'animation (3,8 s depuis l\'affichage du logo) ; rien du menu ne se charge pendant le logo ; à sa fin, l\'écran de chargement complet (chute du Z, barre jusqu\'à 100 %), puis le menu ; aucune écriture', async ({ page, baseURL }) => {
+    test.setTimeout(90_000);
     const o = surveiller(page, baseURL);
     await espions(page);
     await ouvrirIntro(page);
-    // Le menu est prêt (chargement à 100 %) avant la fin de l'introduction : elle ne rallonge pas le démarrage.
-    await page.waitForFunction(() => window.__zsMenu.etat()?.pret === true);
-    expect((await intro(page)).phase).toBe('joue');
-    expect(await page.evaluate(() => window.__zsMenu.etat().chuteFinie)).toBe(true); // Z posé sous l'introduction
-    await page.waitForFunction(() => window.__zsMenu.intro().phase === 'finie', null, { timeout: 15_000 });
+    expect(await page.evaluate(() => [window.__zsMenu.etat(), document.getElementById('e7')])).toEqual([null, null]);
+    await page.waitForFunction(() => window.__zsMenu.intro().phase !== 'joue', null, { timeout: 15_000 });
     const e = await intro(page);
     expect(e.passe).toBe(false);
     expect(e.fin - e.affiche).toBeGreaterThanOrEqual(3790);
     expect(e.fin - e.affiche).toBeLessThan(4600);
-    expect(e.retire - e.fin).toBeLessThan(1000); // fondu de 0,4 s
-    await expect(page.locator('#menu-jouer')).toBeVisible();
-    const vu = await page.evaluate(() => window.__vus.e8);
-    expect(vu - (e.debut + e.fin)).toBeLessThan(800); // menu affiché pendant le fondu
+    // Pendant le logo : ni écran de chargement, ni module du menu, ni ses données.
+    const pendant = (await page.evaluate(() => window.__fichiersIntro)) ?? [];
+    expect(pendant.filter((f) => /\/js\/menu\/(chargement|menu|jouer)\.js$|\/data\/menu\/|\/data\/game\//.test(f))).toEqual([]);
+    // À la fin du logo : l'écran de chargement apparaît (sous le fondu), chute du Z jouée, puis le menu.
+    await expect(page.locator('#menu-jouer')).toBeVisible({ timeout: 60_000 });
+    const vus = await page.evaluate(() => window.__vus);
+    expect(vus.e7 - (e.debut + e.fin)).toBeGreaterThanOrEqual(-5);
+    expect(vus.e7 - (e.debut + e.fin)).toBeLessThan(1500);
+    expect(vus.e8 - vus.e7).toBeGreaterThan(2000); // la chute du Z (2,8 s) se joue avant le menu
+    const ch = await page.evaluate(() => window.__zsMenu.etat());
+    expect([ch.phase, ch.chuteFinie, ch.journal.at(-1)]).toEqual(['menu', true, 100]);
+    await expect(page.locator('#e0')).toHaveCount(0);
     await expect(page.locator('#e7')).toHaveCount(0);
     expect(await page.evaluate(() => window.__ecritures)).toEqual([]);
     expect(o.fichiers.filter((f) => f.endsWith('/js/menu/intro.js'))).toHaveLength(1);
@@ -274,7 +287,7 @@ async function ouvrirCredits(page, size = REF) {
 
 test.describe('Crédits (E11)', () => {
   for (const [size, encoche] of [[REF, false], [PETIT, false], [LARGE, false], [ENCOCHE, true]]) {
-    test(`tailles ${size.width}×${size.height}${encoche ? ' (encoche simulée)' : ''} : entrée entre Information et Discord ; bandeau « No Way Studio » / « Crédits », logo, « Un jeu de No Way Studio », sections, cinq licences ; barre d'onglets gardée ; dans l'écran, sans superposition ; 44 px ; axe`, async ({ page, baseURL }) => {
+    test(`tailles ${size.width}×${size.height}${encoche ? ' (encoche simulée)' : ''} : entrée entre Information et Discord ; bandeau « No Way Studio » / « Crédits », logo, « Un jeu de No Way Studio », sections, cinq licences ; écran plein, sans la barre d'onglets (retour du propriétaire) ; dans l'écran, sans superposition ; 44 px ; axe`, async ({ page, baseURL }) => {
       const o = surveiller(page, baseURL);
       await ouvrirMenu(page, size);
       if (encoche) await page.addStyleTag({ content: '#e8 { --e8-gauche: 50px !important; --e8-droite: 50px !important; }' });
@@ -295,14 +308,15 @@ test.describe('Crédits (E11)', () => {
       await expect(page.locator('.e11-deplier-nom')).toHaveText(['Three.js', 'Barlow', 'Rubik Wet Paint', 'Rubik Dirt', 'Logo de Discord']);
       await expect(page.locator('.e11-deplier[aria-expanded="false"]')).toHaveCount(5);
       await expect(page.locator('#menu-credits-retour')).toBeFocused();
-      // Barre d'onglets gardée (comme les sous-menus du lot 8d) ; l'écran de l'onglet est caché.
-      await expect(page.locator('.e8-onglets')).toBeVisible();
+      // Retour du propriétaire : écran plein, sans la barre d'onglets (avant : barre gardée) ; l'écran de l'onglet est caché.
+      await expect(page.locator('.e8-onglets')).toBeHidden();
       await expect(page.locator('#menu-ecran-jouer')).toBeHidden();
       const marge = encoche ? 50 : 15.5;
       const blocs = ['#menu-ecran-credits .menu-bandeau', '#menu-credits-retour', '#menu-credits-equipe', '#menu-credits-licences'];
       const b = Object.fromEntries(await Promise.all(blocs.map(async (s) => [s, await boite(page, s)])));
-      const nav = await boite(page, '.e8-onglets');
-      for (const [s, r] of Object.entries(b)) expect([r.l >= marge - 0.5, r.r <= size.width - marge + 0.5, r.b <= nav.t + 0.5, r.t >= 0], s).toEqual([true, true, true, true]);
+      for (const [s, r] of Object.entries(b)) expect([r.l >= marge - 0.5, r.r <= size.width - marge + 0.5, r.b <= size.height + 0.5, r.t >= 0], s).toEqual([true, true, true, true]);
+      // Les colonnes descendent plus bas que la barre d'onglets qu'elles remplacent.
+      expect(b['#menu-credits-licences'].b).toBeGreaterThan(size.height - Math.max(50, 62 * Math.min(size.width / 932, size.height / 430)));
       expect(chevauche(b['#menu-credits-equipe'], b['#menu-credits-licences'])).toBe(false);
       expect(b['#menu-credits-equipe'].t).toBeGreaterThanOrEqual(b['#menu-ecran-credits .menu-bandeau'].b - 0.5);
       for (const s of ['#menu-credits-retour', ...['three', 'barlow', 'rubik-wet-paint', 'rubik-dirt', 'discord'].map((id) => `#menu-licence-${id}`)]) {
@@ -321,7 +335,7 @@ test.describe('Crédits (E11)', () => {
     });
   }
 
-  test('licences dépliables : aria-expanded, texte lu dans les données (avis et licence entière), zone qui défile (molette et glissement à la souris) ; repliées de nouveau ; Échap ferme l\'écran ; un onglet touché le referme', async ({ page }) => {
+  test('licences dépliables : aria-expanded, texte lu dans les données (avis et licence entière), zone qui défile (molette et glissement à la souris) ; repliées de nouveau ; Échap ferme l\'écran ; « Connexion » de l\'en-tête le remplace', async ({ page }) => {
     await ouvrirCredits(page);
     const bouton = page.locator('#menu-licence-three');
     const zone = page.locator('#menu-licence-three-texte');
@@ -363,10 +377,11 @@ test.describe('Crédits (E11)', () => {
     await page.locator('#menu-trois-barres').click();
     await page.locator('#menu-credits').click();
     await expect(page.locator('#menu-ecran-credits')).toBeVisible();
-    await page.locator('#menu-onglet-infini').click();
+    await expect(page.locator('.e8-onglets')).toBeHidden(); // écran plein : aucun onglet à toucher
+    await page.locator('#menu-connexion').click();
     await expect(page.locator('#menu-ecran-credits')).toBeHidden();
-    await expect(page.locator('#menu-ecran-infini')).toBeVisible();
-    expect((await page.evaluate(() => window.__zsMenu.etat().menu)).ecran).toBe(null);
+    await expect(page.locator('#menu-ecran-connexion')).toBeVisible();
+    expect((await page.evaluate(() => window.__zsMenu.etat().menu)).ecran).toBe('connexion');
   });
 
   test('logo : animation rejouée à chaque ouverture (adresse neuve), copie fixe sous prefers-reduced-motion ; aucune écriture dans le stockage', async ({ page }) => {

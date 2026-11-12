@@ -111,16 +111,17 @@ if (!modeMenu) {
   police.href = 'fonts/rubik-wet-paint-latin-400-normal.woff2';
   document.head.append(police);
   const styles = feuilleMenu();
-  // Lot 8g : introduction (js/menu/intro.js, chargé seulement quand elle se joue) par-dessus l'écran de chargement, qui charge le menu dessous ; elle
-  // ne rallonge pas le démarrage. Introduction indisponible : l'écran de chargement continue seul.
+  // Lot 8g : introduction (js/menu/intro.js, chargé seulement quand elle se joue). Retour du propriétaire (léger freeze à l'apparition du logo, écran
+  // de chargement sauté) : le logo se joue seul, rien du menu ne se charge pendant ; à sa fin (début du fondu), l'écran de chargement complet (chute du
+  // Z, barre réelle, astuce) apparaît dessous et charge le menu. Introduction indisponible : l'écran de chargement démarre aussitôt.
   const intro = avecIntro
     ? import('./intro.js').then(async (i) => {
       await styles;
       introEcran = i.jouerIntro();
       return introEcran.fin;
     }).catch(() => {})
-    : null;
-  import('./chargement.js').then(async (m) => {
+    : Promise.resolve();
+  intro.then(() => import('./chargement.js')).then(async (m) => {
     await styles;
     // « JOUER » : écran de chargement du jeu (Z posé), réglages graphiques relus (l'écran Options du menu a pu les changer), puis le jeu.
     // Option déjà validée par le menu (lireOptionDemarrage, js/core/menu-etat.js) : seuls ses champs connus sont gardés. Lot 8d : stats (niveaux
@@ -133,7 +134,7 @@ if (!modeMenu) {
       graphicsReboot();
       lancerJeu();
     };
-    ecran = m.creerChargement({ phase: 'menu', jouer, son: { lire: reglagesSon, poser: poserSon }, intro });
+    ecran = m.creerChargement({ phase: 'menu', jouer, son: { lire: reglagesSon, poser: poserSon } });
   }).catch(() => {
     // Écran de chargement indisponible : la partie démarre comme avant le menu (écran de préparation #loading).
     document.documentElement.classList.remove('zs-mode-menu');

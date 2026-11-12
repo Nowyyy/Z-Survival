@@ -11,7 +11,7 @@ import { activerGlisser } from '../glisser.js';
 import { roueDifferee } from './roue.js';
 import { adresseStudio, LOGO_STUDIO_FIXE } from './chargement.js';
 import { formatMoney } from '../core/economy.js';
-import { basculerMenu, choisirOnglet, versionMenu, creerEtatMenu, ECRANS_MENU, ECRANS_PLEINS, SOUS_MENUS, fermerEcran, fermerMenu, lienExterne, lireMondes, lireOptionDemarrage, lireRecord, nouveauteNonLue, ONGLETS, ouvrirEcran, premierJouable } from '../core/menu-etat.js';
+import { basculerMenu, choisirOnglet, versionMenu, creerEtatMenu, ECRANS_PLEINS, SOUS_MENUS, fermerEcran, fermerMenu, lienExterne, lireMondes, lireOptionDemarrage, lireRecord, nouveauteNonLue, ONGLETS, ouvrirEcran, premierJouable } from '../core/menu-etat.js';
 import { ecranJouer } from './jouer.js';
 import { gouttePath } from '../logo.js';
 import { fmt, loadDict } from '../game/texts.js';
@@ -398,15 +398,14 @@ export function creerMenu({ dict, infos = [], liens = {}, solde: montant = 0, re
     const plein = ECRANS_PLEINS.includes(etat.ecran);
     const sous = SOUS_MENUS.includes(etat.ecran); // sous-menu du Personnage : à la place de l'écran de l'onglet, barre d'onglets visible
     // Lot 8e (retour du propriétaire) : résultat d'un achat de la Boutique en écran plein (barre d'onglets masquée, comme l'ouverture du lot 8f).
-    // Lot 8g : Crédits (écran du menu à trois barres) : à la place de l'écran de l'onglet, barre d'onglets visible, comme un sous-menu.
-    const ecranMenu = ECRANS_MENU.includes(etat.ecran);
-    const resultat = etat.onglet === 'boutique' && !plein && !sous && !ecranMenu && Boolean(boutique?.pleinEcran());
-    box.dataset.ecran = plein || sous || ecranMenu ? etat.ecran : resultat ? 'resultat' : '';
+    // Lot 8g : Crédits, Connexion et Profil : écrans pleins (retour du propriétaire : pas de barre d'onglets pendant les Crédits).
+    const resultat = etat.onglet === 'boutique' && !plein && !sous && Boolean(boutique?.pleinEcran());
+    box.dataset.ecran = plein || sous ? etat.ecran : resultat ? 'resultat' : '';
     nav.hidden = plein || resultat;
-    for (const [id, s] of ecransOnglets) s.hidden = id !== etat.onglet || plein || sous || ecranMenu;
+    for (const [id, s] of ecransOnglets) s.hidden = id !== etat.onglet || plein || sous;
     if (credits) credits.section.hidden = etat.ecran !== 'credits';
     compte?.synchroniser(etat.ecran); // lot 8g : Connexion et Profil
-    boutique?.synchroniser(etat.onglet === 'boutique' && !plein && !sous && !ecranMenu); // lot 8e : la Boutique tient sa vue (caisses ou résultat)
+    boutique?.synchroniser(etat.onglet === 'boutique' && !plein && !sous); // lot 8e : la Boutique tient sa vue (caisses ou résultat)
     perso?.synchroniser(etat.ecran, etat.onglet === 'personnage' || SOUS_MENUS.includes(etat.ecran));
     animer();
     liste.hidden = !etat.menuOuvert;
@@ -419,7 +418,7 @@ export function creerMenu({ dict, infos = [], liens = {}, solde: montant = 0, re
 
   // Lot 8b : animations de la scène de l'onglet affiché seulement, et jamais quand la page est cachée (data-anim : off = en pause).
   function animer() {
-    for (const [id, scene] of scenes) scene.dataset.anim = id === etat.onglet && !ECRANS_PLEINS.includes(etat.ecran) && !ECRANS_MENU.includes(etat.ecran) && !document.hidden ? 'on' : 'off';
+    for (const [id, scene] of scenes) scene.dataset.anim = id === etat.onglet && !ECRANS_PLEINS.includes(etat.ecran) && !document.hidden ? 'on' : 'off';
     box.classList.toggle('e8-pause', document.hidden || lance); // lot 8d : coulures des bandeaux en pause (page cachée, partie lancée)
     // Lot 8d : écran Personnage ou sous-menu affiché (animations e9-*), en pause ailleurs et quand la page est cachée.
     const actif = etat.onglet === 'personnage' && !document.hidden && !lance ? (etat.ecran === null ? 'personnage' : etat.ecran) : null;
@@ -504,7 +503,7 @@ export function creerMenu({ dict, infos = [], liens = {}, solde: montant = 0, re
     return precharges.get(id);
   }
   async function changerOnglet(id) {
-    if (SOUS_MENUS.includes(etat.ecran) || ECRANS_MENU.includes(etat.ecran)) etat = fermerEcran(etat); // lot 8d : un onglet touché referme le sous-menu du Personnage (lot 8g : et les Crédits)
+    if (SOUS_MENUS.includes(etat.ecran)) etat = fermerEcran(etat); // lot 8d : un onglet touché referme le sous-menu du Personnage
     boutique?.fermerResultat(); // lot 8e : un onglet touché ramène la Boutique à ses caisses
     etat = choisirOnglet(etat, id);
     if (!ecransOnglets.has(etat.onglet)) {

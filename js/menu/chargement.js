@@ -7,9 +7,8 @@
 //   jeu : progression envoyée par main.js, qui attend la fin de la chute avant de créer la partie) ; à 100 %, l'écran est retiré et la partie apparaît.
 // Les deux : barre et pourcentage réels (js/core/menu-etat.js), astuce (data/menu/astuces.json), version (build-info.json). Sous
 // prefers-reduced-motion : Z posé, sans chute ni secousse. Animations « e7-* » (css/menu.css).
-// Lot 8g : logo du studio en petit en bas à gauche (copie fixe, assets/studio/) dans les deux phases ; phase « menu » avec l'introduction du studio
-// (intro : promesse de sa fin, demarrage.js) : l'écran se construit dessous et charge le menu, Z posé (la chute se jouerait cachée), et le menu
-// s'ouvre à la fin de l'introduction si tout est prêt (aucune attente ajoutée), sinon dès que tout est prêt.
+// Lot 8g : logo du studio en petit en bas à gauche (copie fixe, assets/studio/) dans les deux phases. Après l'introduction du studio, demarrage.js crée
+// cet écran à la fin du logo (retour du propriétaire) : chargement complet, chute du Z comprise.
 import { avancer, choisirAstuce, creerProgression, MODULES_ATTENDUS, pourcentage, texteVersion } from '../core/menu-etat.js';
 import { fmt, loadDict } from '../game/texts.js';
 import { CANAUX_DEBUG } from '../core/graphics.js';
@@ -75,12 +74,9 @@ const json = (path) => fetch(path).then((r) => (r.ok ? r.json() : null)).catch((
 
 // phase : 'menu' ou 'jeu' ; jouer(option) : appelé par « JOUER » du menu (demarrage.js charge alors le jeu ; lot 8b : option de démarrage).
 // son : { lire(), poser(réglages) } (lot 8c : son et volume des Options du menu, gardés en mémoire par demarrage.js), transmis au menu.
-export function creerChargement({ phase = 'menu', jouer = () => {}, son = null, intro = null, root = document.body, search = globalThis.location?.search ?? '' } = {}) {
+export function creerChargement({ phase = 'menu', jouer = () => {}, son = null, root = document.body, search = globalThis.location?.search ?? '' } = {}) {
   const reduit = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const avecIntro = phase === 'menu' && Boolean(intro);
-  const pose = reduit || avecIntro; // retour du propriétaire : la chute du Z se rejoue à chaque chargement (menu, partie, retour au menu) ; lot 8g : sauf sous l'introduction
-  let introFinie = !avecIntro;
-  let sortieDirecte = false; // lot 8g : fin de l'introduction sur un menu prêt : E7, caché dessous, se termine aussitôt (sans fondu)
+  const pose = reduit; // retour du propriétaire : la chute du Z se rejoue à chaque chargement (menu, partie, retour au menu)
   let etat = creerProgression(phase);
   const journal = []; // pourcentages affichés, dans l'ordre (tests : __zsMenu.etat().journal)
   let donnees = null; // phase menu : { dict, infos, liens, solde }
@@ -242,7 +238,7 @@ export function creerChargement({ phase = 'menu', jouer = () => {}, son = null, 
 
   // Fin : phase « menu », menu E8 (chargement fini et chute finie) ; phase « jeu », la partie est créée (main.js) : l'écran est retiré.
   function passer() {
-    if (sortie || !chuteFinie || !introFinie || !etat.pret) return;
+    if (sortie || !chuteFinie || !etat.pret) return;
     if (phase === 'jeu') {
       sortie = true;
       retirer();
@@ -251,7 +247,6 @@ export function creerChargement({ phase = 'menu', jouer = () => {}, son = null, 
     }
     if (!donnees) return;
     sortie = true;
-    const direct = reduit || sortieDirecte;
     menuModule.then((m) => {
       document.getElementById('loading')?.setAttribute('hidden', ''); // écran de préparation d'avant : il ne doit jamais couvrir le menu
       menu = m.creerMenu({
@@ -264,7 +259,7 @@ export function creerChargement({ phase = 'menu', jouer = () => {}, son = null, 
         },
       });
       retirer();
-      if (direct) box.remove();
+      if (reduit) box.remove();
       else {
         box.classList.add('e7-sortie');
         box.addEventListener('animationend', () => box.remove(), { once: true });
@@ -276,21 +271,10 @@ export function creerChargement({ phase = 'menu', jouer = () => {}, son = null, 
     });
   }
 
-  // Lot 8g : fin de l'introduction (passée ou finie ; échec compris) : le menu s'ouvre s'il est prêt.
-  if (avecIntro) {
-    const finIntro = () => {
-      introFinie = true;
-      sortieDirecte = true;
-      passer();
-      sortieDirecte = false;
-    };
-    Promise.resolve(intro).then(finIntro, finIntro);
-  }
-
   afficher();
   return {
     progres,
     chute, // promesse : la chute du Z est finie (main.js attend avant de créer la partie, phase « jeu »)
-    etat: () => ({ phase, pourcentage: pourcentage(etat), pret: etat.pret, chuteFinie, introFinie, journal: [...journal], visible: box.isConnected, menu: menu?.element.isConnected ? menu.etat() : null }),
+    etat: () => ({ phase, pourcentage: pourcentage(etat), pret: etat.pret, chuteFinie, journal: [...journal], visible: box.isConnected, menu: menu?.element.isConnected ? menu.etat() : null }),
   };
 }
