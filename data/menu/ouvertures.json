@@ -1,0 +1,50 @@
+{
+  "_provisoire": "Lot 8f : ouvertures de caisses en 3D (durées en secondes, forces des effets par rareté), lu par js/core/ouverture.js (lireOuvertures) ; valeurs relevées dans les maquettes Ouverture.html et Ouverture10.html, provisoires, modifiables par le propriétaire sans lot (Docs/ref/menu-principal.md : « Régler les ouvertures »). arrivee : durée de la marche jusqu'au tapis, fondu depuis le noir [début, fin], nombre de pas. x1 et x10 : temps depuis le départ de chaque caisse (tapis [début, fin], tir) puis, dans ouverture, depuis le tir ([début, fin] de chaque événement ; reaction : départ des réactions des zombies) ; x1.boutons : « Continuer » et « Rouvrir » ; x10.periode : durée d'une caisse, x10.vol : vol de la carte vers sa case (case remplie à la fin), x10.fin : pause après la dernière case avant le résultat ×10. legendaire : durée de la caisse dorée en ×10, explosion, projection du zombie (delai après l'explosion, vol vers l'écran, colle, glissade, trainees qui restent après), objet et vol (depuis le tir), retour (apparition au fond après la glissade, marche jusqu'à sa place). reactions : durée, hauteur du saut (unités de la scène), marque au-dessus de la tête et sa plage d'affichage, sol (chute : à terre [début, fin]). promenade : position (fraction de la largeur), amplitude et période de la promenade de chaque zombie. effets : par rareté de data/menu/raretes.json : rayons (nombre), eventail (degrés), largeur (épaisseur relative), eclair (opacité de l'éclair d'écran, 0 à 1), onde (taille de l'onde de choc, 0 : aucune), ondeDouble, etincelles (nombre), secousse (amplitude), explosion, reaction (aucune, sursaut-leger, sursaut, saut, chute, projection).",
+  "arrivee": { "duree": 3.4, "fondu": [0.5, 1.4], "pas": 8 },
+  "x1": {
+    "tapis": [0, 1.32],
+    "tir": 1.5,
+    "ouverture": {
+      "etincelles": [0.05, 0.42], "couvercle": [0.09, 0.78], "lumiere": [0.21, 0.42], "rayons": [0.3, 0.66], "onde": [0.3, 1.14],
+      "eclair": [0.3, 1.08], "secousse": [0.3, 0.78], "particules": [0.36, 2.7], "reaction": 0.3, "objet": [0.78, 1.98]
+    },
+    "boutons": [2.22, 2.7]
+  },
+  "x10": {
+    "periode": 3.0,
+    "tapis": [0, 0.66],
+    "tir": 0.77,
+    "ouverture": {
+      "etincelles": [0, 0.19], "couvercle": [0.03, 0.37], "lumiere": [0.08, 0.19], "rayons": [0.13, 0.31], "onde": [0.13, 0.53],
+      "eclair": [0.13, 0.52], "secousse": [0.13, 0.37], "particules": [0.16, 1.23], "reaction": 0.13, "objet": [0.37, 0.73]
+    },
+    "vol": [1.21, 1.54],
+    "fin": 0.8
+  },
+  "legendaire": {
+    "duree": 6.5,
+    "explosion": [0.13, 0.58],
+    "projection": { "delai": 0.7, "vol": 0.18, "colle": 0.78, "glissade": 1.14, "trainees": 0.9 },
+    "objet": [1.24, 1.33],
+    "vol": [4.33, 4.72],
+    "retour": { "apparition": 0.3, "marche": 2.16 }
+  },
+  "reactions": {
+    "sursaut-leger": { "duree": 0.3, "hauteur": 3 },
+    "sursaut": { "duree": 0.33, "hauteur": 9 },
+    "saut": { "duree": 1.3, "hauteur": 20, "marque": "!", "vue": [0.06, 1.08] },
+    "chute": { "duree": 2.6, "hauteur": 34, "marque": "!!", "vue": [0.06, 0.72], "sol": [0.72, 1.9] },
+    "chute-forte": { "duree": 3.4, "hauteur": 44, "marque": "!!!", "vue": [0.06, 0.8], "sol": [0.8, 2.6] }
+  },
+  "promenade": [
+    { "x": -0.34, "amplitude": 0.16, "periode": 14 },
+    { "x": 0.36, "amplitude": -0.14, "periode": 17 }
+  ],
+  "effets": {
+    "commun": { "rayons": 1, "eventail": 0, "largeur": 1, "eclair": 0, "onde": 0, "etincelles": 0, "secousse": 0, "reaction": "sursaut-leger" },
+    "peu-commun": { "rayons": 3, "eventail": 26, "largeur": 0.55, "eclair": 0.08, "onde": 1.3, "etincelles": 2, "secousse": 0, "reaction": "sursaut" },
+    "rare": { "rayons": 3, "eventail": 40, "largeur": 1, "eclair": 0.22, "onde": 2, "etincelles": 3, "secousse": 3, "reaction": "saut" },
+    "epique": { "rayons": 5, "eventail": 70, "largeur": 1.1, "eclair": 0.5, "onde": 4, "etincelles": 8, "secousse": 9, "reaction": "chute" },
+    "legendaire": { "rayons": 7, "eventail": 120, "largeur": 1.25, "eclair": 0.7, "onde": 5.5, "ondeDouble": true, "etincelles": 14, "secousse": 16, "explosion": true, "reaction": "projection" }
+  }
+}
