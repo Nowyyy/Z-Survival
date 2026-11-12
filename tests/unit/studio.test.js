@@ -4,6 +4,7 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { CANAUX_DEBUG, PARAMS_PARTIE, PARAMS_TEST, REPERES_RETOUR, REPERE_RETOUR, acces, choixDemarrage, introAuDemarrage } from '../../js/core/graphics.js';
 import { FIXE, ORIGINAL, REGLE_FIXE, logoFixe } from '../../scripts/studio/logo-fixe.mjs';
+import { ORIGINAL as NOVEN_ORIGINAL, SORTIE as NOVEN_SORTIE, copieTransparente, decoderPng, forceContour } from '../../scripts/studio/noven-transparent.mjs';
 import { ARGS as ARGS_SON, ORIGINAL as SON_ORIGINAL, SORTIE as SON_SORTIE } from '../../scripts/studio/son.mjs';
 import { FICHIERS_STUDIO, IMAGES_STUDIO, SONS_STUDIO, imageStudio, sha256 } from './helpers/images-studio.js';
 
@@ -39,7 +40,9 @@ describe('logo du studio (lot 8g)', () => {
   });
 
   it('exception nominative : ces deux chemins avec leur somme exacte seulement ; un autre chemin ou une autre somme reste refusé', () => {
-    expect(Object.keys(IMAGES_STUDIO)).toEqual([ORIGINAL, FIXE]);
+    expect(Object.keys(IMAGES_STUDIO)).toEqual([ORIGINAL, FIXE, NOVEN_ORIGINAL, NOVEN_SORTIE]);
+    const png = readFileSync(NOVEN_ORIGINAL);
+    expect([png.subarray(0, 8).toString('hex'), png.readUInt32BE(16), png.readUInt32BE(20), png.length <= 32 * 1024]).toEqual(['89504e470d0a1a0a', 480, 290, true]);
     expect(Object.keys(SONS_STUDIO)).toEqual([SON_ORIGINAL, SON_SORTIE]);
     for (const f of Object.keys(FICHIERS_STUDIO)) expect(imageStudio(f), f).toBe(true);
     expect(imageStudio('assets/studio/no-way-studio-logo-son.wav')).toBe(false);
@@ -56,6 +59,31 @@ describe('logo du studio (lot 8g)', () => {
     expect([mp3[0], mp3[1] & 0xe0]).toEqual([0xff, 0xe0]); // trame MP3 dès le début (aucune étiquette ID3)
     expect(ARGS_SON).toEqual(expect.arrayContaining(['-i', SON_ORIGINAL, 'libmp3lame', '128k', SON_SORTIE]));
     expect(SON_ORIGINAL.startsWith('Docs/')).toBe(true); // Docs/ n'est jamais publié (build.test)
+  });
+
+  it('logo de Noven Studio (retours du propriétaire) : copie = sortie exacte du script ; fond noir extérieur transparent, fond intérieur de l\'ovale gardé, contour bleu et lettres intacts ; original non publié', () => {
+    expect(readFileSync(NOVEN_SORTIE).equals(copieTransparente(readFileSync(NOVEN_ORIGINAL)))).toBe(true);
+    const o = decoderPng(readFileSync(NOVEN_ORIGINAL));
+    const c = decoderPng(readFileSync(NOVEN_SORTIE));
+    expect([c.largeur, c.hauteur]).toEqual([480, 290]);
+    const px = (img, x, y) => Array.from(img.pixels.subarray((y * img.largeur + x) * 4, (y * img.largeur + x) * 4 + 4));
+    expect(px(o, 0, 0)).toEqual([0, 0, 0, 255]); // coin : noir opaque dans l'original
+    for (const [x, y] of [[0, 0], [479, 289], [5, 145], [240, 3]]) expect(px(c, x, y), `${x},${y}`).toEqual([0, 0, 0, 0]); // dehors : transparent
+    expect(px(c, 240, 145)[3]).toBe(255); // centre de l'ovale : fond gardé, opaque
+    expect(px(c, 240, 145)).toEqual(px(o, 240, 145));
+    // Hors du liseré extérieur, tout pixel gardé est identique à l'original.
+    let diff = 0;
+    let transparents = 0;
+    for (let i = 0; i < c.pixels.length; i += 4) {
+      if (c.pixels[i + 3] === 0) transparents += 1;
+      else if (c.pixels[i + 3] === 255 && (c.pixels[i] !== o.pixels[i] || c.pixels[i + 1] !== o.pixels[i + 1] || c.pixels[i + 2] !== o.pixels[i + 2])) diff += 1;
+    }
+    expect(diff).toBe(0);
+    expect(transparents).toBeGreaterThan(480 * 290 * 0.2);
+    expect(transparents).toBeLessThan(480 * 290 * 0.6); // 53 % : le fond autour de l'ovale
+    expect(forceContour(o.pixels)).toBeGreaterThan(150);
+    expect(NOVEN_ORIGINAL.startsWith('Docs/')).toBe(true);
+    expect(read('js/menu/credits.js')).toMatch(/LOGO_NOVEN = 'assets\/studio\/noven-studio-logo-transparent\.png'/);
   });
 
   it('servi par le build (assets/) ; jamais par la partie : aucun fichier de js/game/ ne le cite', () => {

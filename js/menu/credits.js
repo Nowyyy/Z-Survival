@@ -8,6 +8,9 @@ import { bandeau, el } from './menu.js';
 import { adresseStudio, LOGO_STUDIO_FIXE } from './chargement.js';
 import { licencesManquantes, lireCredits, lireLicences } from './credits-donnees.js';
 
+// Retour du propriétaire : logo de Noven Studio (PNG fourni par lui, Docs/studio/, jamais retouché) ; copie transparente (sans le fond noir, dedans
+// comme dehors) dérivée par scripts/studio/noven-transparent.mjs.
+export const LOGO_NOVEN = 'assets/studio/noven-studio-logo-transparent.png';
 const SVG = 'http://www.w3.org/2000/svg';
 const json = (path) => fetch(path).then((r) => (r.ok ? r.json() : null)).catch(() => null);
 
@@ -44,10 +47,14 @@ export async function ecranCredits({ t, onClose = () => {} }) {
   const grille = el('div', ['e11-grille']);
   // Colonne de gauche : studio et équipe.
   const gauche = el('div', ['e11-colonne', 'e11-gauche'], { id: 'menu-credits-equipe', role: 'region', tabindex: '0', 'aria-label': t('game.menu.credits.equipe') });
-  const logo = el('img', ['e11-logo'], { id: 'menu-credits-logo', alt: t('game.menu.studio.nom'), width: '792', height: '556', decoding: 'async' });
+  const logo = el('img', ['e11-logo'], { id: 'menu-credits-logo', alt: t('game.menu.studio.nom'), width: '824', height: '628', decoding: 'async' });
   const signature = el('p', ['e11-signature'], { id: 'menu-credits-signature' });
   signature.textContent = t('game.menu.credits.signature');
-  gauche.append(logo, signature);
+  // Retour du propriétaire : logo de Noven Studio (PNG fourni par lui, assets/studio/) à côté de celui de No Way Studio, les deux en petit.
+  const noven = el('img', ['e11-logo', 'e11-logo-noven'], { id: 'menu-credits-noven', src: LOGO_NOVEN, alt: t('game.menu.studio.noven'), width: '480', height: '290', decoding: 'async' });
+  const logos = el('div', ['e11-logos'], { id: 'menu-credits-logos' });
+  logos.append(logo, noven);
+  gauche.append(logos, signature);
   sections.forEach((s, i) => {
     const bloc = el('div', ['e11-section'], { 'data-section': String(i) });
     const h = el('h3', ['e11-section-titre'], { id: `menu-credits-section-${i}` });

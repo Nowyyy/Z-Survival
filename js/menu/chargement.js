@@ -111,7 +111,7 @@ export function creerChargement({ phase = 'menu', jouer = () => {}, son = null, 
   centre.append(titre, barre, ligne, astuce, erreur);
   const version = el('p', ['e7-version'], { id: 'e7-version' });
   // Lot 8g : logo du studio (copie fixe), nom accessible posé avec les textes.
-  const studio = el('img', ['e7-studio'], { id: 'e7-studio', alt: '', width: '792', height: '556', decoding: 'async' });
+  const studio = el('img', ['e7-studio'], { id: 'e7-studio', alt: '', width: '824', height: '628', decoding: 'async' });
   adresseStudio(LOGO_STUDIO_FIXE).then((a) => {
     studio.src = a;
   }, () => studio.remove());

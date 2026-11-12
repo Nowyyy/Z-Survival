@@ -95,7 +95,7 @@ test.describe('introduction du studio (E0)', () => {
       expect(Math.abs((b.l + b.r) / 2 - size.width / 2)).toBeLessThan(1.5);
       expect(Math.abs((b.t + b.b) / 2 - size.height / 2)).toBeLessThan(1.5);
       expect(b.h).toBeLessThanOrEqual(size.height * 0.62 + 1);
-      expect(b.w).toBeGreaterThan(Math.min(300, size.width * 0.4));
+      expect(b.h).toBeGreaterThan(Math.min(size.height * 0.6, 720 * 628 / 824 - 1)); // 62 % de la hauteur (ou 720 px de large) : nouveau logo, moins large
       await expect(page.locator('#e0-passer')).toHaveCSS('opacity', '0');
       await page.waitForFunction(() => window.__zsMenu.intro().indice);
       await expect(page.locator('#e0-passer')).toHaveText('Toucher pour passer');
@@ -168,7 +168,7 @@ test.describe('introduction du studio (E0)', () => {
     await expect(page.locator('#menu-jouer')).toBeVisible({ timeout: 60_000 });
   });
 
-  test('retour du propriétaire (son du logo) : attente du premier geste (« Toucher pour commencer », logo fixe atténué, aucun contexte audio ni son avant) ; sans geste pendant 4 s, le logo se joue sans son ; au clavier, une touche démarre logo et son', async ({ page, baseURL }) => {
+  test('retour du propriétaire (son du logo) : attente du premier geste (« Toucher pour commencer » au milieu, sans logo, aucun contexte audio ni son avant) ; sans geste pendant 4 s, le logo se joue sans son ; au clavier, une touche démarre logo et son', async ({ page, baseURL }) => {
     const o = surveiller(page, baseURL);
     await page.addInitScript(() => {
       window.__contextes = 0;
@@ -186,9 +186,10 @@ test.describe('introduction du studio (E0)', () => {
     await expect(page.locator('#e0-commencer')).toHaveText('Toucher pour commencer');
     const c = await boite(page, '#e0-commencer');
     expect([c.w >= 44, c.h >= 44, c.b <= REF.height + 0.5]).toEqual([true, true, true]);
-    await page.waitForFunction(() => { const n = document.getElementById('e0-logo'); return n.complete && n.naturalWidth > 0; });
-    expect(await page.locator('#e0-logo').evaluate((n) => getComputedStyle(n).opacity)).toBe('0.35');
-    expect((await intro(page)).logo).toBe(FIXE);
+    // Retour du propriétaire : écran d'attente sans logo, texte au milieu de l'écran.
+    await expect(page.locator('#e0-logo')).toBeHidden();
+    expect((await intro(page)).logo).toBe(null);
+    expect([Math.abs((c.l + c.r) / 2 - REF.width / 2) < 1.5, Math.abs((c.t + c.b) / 2 - REF.height / 2) < 1.5]).toEqual([true, true]);
     expect(await page.evaluate(() => window.__contextes)).toBe(0); // aucun contexte audio avant un geste
     expect((await new AxeBuilder({ page }).include('#e0').analyze()).violations.map((v) => v.id)).toEqual([]);
     // Sans geste : départ sans son au bout de 4 s.
@@ -353,6 +354,11 @@ test.describe('Crédits (E11)', () => {
       await expect(page.locator('#menu-ecran-credits .menu-bandeau-libelle')).toHaveText('No Way Studio');
       await expect(page.locator('#menu-titre-credits')).toHaveText('Crédits');
       await expect(page.locator('#menu-credits-logo')).toHaveAttribute('alt', 'No Way Studio');
+      // Retour du propriétaire : logos en petit, Noven Studio à côté de No Way Studio.
+      await page.waitForFunction(() => { const n = document.getElementById('menu-credits-noven'); return n.complete && n.naturalWidth === 480; });
+      await expect(page.locator('#menu-credits-noven')).toHaveAttribute('alt', 'Noven Studio');
+      const [lnw, lnv] = [await boite(page, '#menu-credits-logo'), await boite(page, '#menu-credits-noven')];
+      expect([lnv.l >= lnw.r - 0.5, Math.abs((lnw.t + lnw.b) / 2 - (lnv.t + lnv.b) / 2) < 2, lnw.h <= 110.5, lnv.h <= 110.5, lnw.h >= 47.5]).toEqual([true, true, true, true, true]);
       await expect(page.locator('#menu-credits-signature')).toHaveText('Un jeu de No Way Studio');
       await expect(page.locator('.e11-section-titre')).toHaveText(['Création', 'Remerciements', 'Outils et licences']);
       await expect(page.locator('.e11-nom')).toHaveText(['Nowy']);
