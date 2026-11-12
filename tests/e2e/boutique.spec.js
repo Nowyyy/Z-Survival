@@ -81,7 +81,8 @@ async function graines(page, liste) {
 }
 async function ouvrirMenu(page, size = REF, extra = '') {
   await page.setViewportSize(size);
-  await page.goto(`/jeu.html?test=1&menu=1&seed=1${extra}`);
+  // Lot 8f : ?ouverture=0 : ces tests attendent le résultat aussitôt après l'achat (l'ouverture en 3D a ses tests : ouverture.spec.js).
+  await page.goto(`/jeu.html?test=1&menu=1&seed=1&ouverture=0${extra}`);
   await expect(page.locator('#menu-jouer')).toBeVisible({ timeout: 60_000 });
   await page.waitForFunction(() => window.__zsMenu?.etat()?.menu !== null && !document.getElementById('e7'));
 }
