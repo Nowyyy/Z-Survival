@@ -386,7 +386,15 @@ export async function creerScene({ canvas, couleur, chrono, reglages, cartes, mo
   const NB_FILETS = 7;
   const filets = new THREE.InstancedMesh(geo(new THREE.PlaneGeometry(1, 1).translate(0, -0.5, 0)), mat(new THREE.MeshBasicMaterial({ map: T.filet(), transparent: true, opacity: 0, depthWrite: false, depthTest: false })), NB_FILETS);
   const gouttes = new THREE.InstancedMesh(geo(new THREE.PlaneGeometry(1, 1)), mat(new THREE.MeshBasicMaterial({ map: T.goutte(), transparent: true, opacity: 0, depthWrite: false, depthTest: false })), NB_FILETS);
-  for (const m of [filets, gouttes]) {
+  // Haut irrégulier de chaque filet (retours du propriétaire) : une forme différente par filet (planche hautsFilets, une case chacun), retournée
+  // pour un filet sur deux environ ; un seul maillage de NB_FILETS rectangles dont les coins sont recalculés à chaque image (géométrie gardée,
+  // attribut de position mis à jour sur place) : un appel de dessin.
+  const geoHauts = geo(new THREE.BufferGeometry());
+  geoHauts.setAttribute('position', new THREE.BufferAttribute(new Float32Array(NB_FILETS * 4 * 3), 3).setUsage(THREE.DynamicDrawUsage));
+  geoHauts.setAttribute('uv', new THREE.BufferAttribute(new Float32Array(NB_FILETS * 4 * 2), 2));
+  geoHauts.setIndex(Array.from({ length: NB_FILETS }, (_, k) => [0, 1, 2, 2, 1, 3].map((i) => k * 4 + i)).flat());
+  const hauts = new THREE.Mesh(geoHauts, mat(new THREE.MeshBasicMaterial({ map: T.hautsFilets(NB_FILETS), transparent: true, opacity: 0, depthWrite: false, depthTest: false, side: THREE.DoubleSide })));
+  for (const m of [filets, gouttes, hauts]) {
     m.frustumCulled = false;
     m.renderOrder = 12;
     m.visible = false;
@@ -398,7 +406,20 @@ export async function creerScene({ canvas, couleur, chrono, reglages, cartes, mo
   const qF = new THREE.Quaternion();
   const sF = new THREE.Vector3();
   const pF = new THREE.Vector3();
-  const FILETS = Array.from({ length: NB_FILETS }, (_, k) => ({ x: -0.82 + (1.64 * (k + 0.2 + 0.6 * h01(k, 21))) / NB_FILETS, l: 0.055 + 0.04 * h01(k, 22), long: 0.8 + 0.7 * h01(k, 23), depart: 0.25 + 0.5 * h01(k, 24), retard: 0.04 + 0.3 * h01(k, 25), vitesse: 0.7 + 0.45 * h01(k, 26) }));
+  const gouttesForme = []; // allongement propre à la goutte de chaque filet
+  const FILETS = Array.from({ length: NB_FILETS }, (_, k) => ({ x: -0.82 + (1.64 * (k + 0.2 + 0.6 * h01(k, 21))) / NB_FILETS, l: 0.055 + 0.04 * h01(k, 22), long: 0.8 + 0.7 * h01(k, 23), depart: 0.25 + 0.5 * h01(k, 24), retard: 0.04 + 0.3 * h01(k, 25), vitesse: 0.7 + 0.45 * h01(k, 26), haut: 1.6 + 1.6 * h01(k, 27), sens: h01(k, 28) < 0.5 ? -1 : 1 }));
+  // Case de la planche de chaque filet (sens : case retournée) ; gouttes un peu différentes aussi (largeur et hauteur propres).
+  {
+    const uv = geoHauts.getAttribute('uv');
+    FILETS.forEach((f, k) => {
+      const [u0, u1] = f.sens > 0 ? [k / NB_FILETS, (k + 1) / NB_FILETS] : [(k + 1) / NB_FILETS, k / NB_FILETS];
+      uv.setXY(k * 4, u0, 0);
+      uv.setXY(k * 4 + 1, u1, 0);
+      uv.setXY(k * 4 + 2, u0, 1);
+      uv.setXY(k * 4 + 3, u1, 1);
+      gouttesForme.push([0.85 + 0.3 * h01(k, 29), 0.85 + 0.35 * h01(k, 30)]);
+    });
+  }
   // Éclaboussure sur la « vitre » au point d'impact du zombie projeté (surcouche, devant lui).
   const texEclab = T.eclaboussure();
   const eclab = new THREE.Mesh(geo(new THREE.PlaneGeometry(1, 1)), mat(new THREE.MeshBasicMaterial({ map: texEclab, transparent: true, opacity: 0, depthWrite: false, depthTest: false })));
@@ -901,6 +922,7 @@ export async function creerScene({ canvas, couleur, chrono, reglages, cartes, mo
     tache.visible = false;
     filets.visible = false;
     gouttes.visible = false;
+    hauts.visible = false;
     if (actifP) {
       const P = actifP.projection;
       const c = actifP.trainees;
@@ -939,8 +961,10 @@ export async function creerScene({ canvas, couleur, chrono, reglages, cartes, mo
         const r = demi(D - 4);
         filets.visible = true;
         gouttes.visible = true;
+        hauts.visible = true;
         filets.material.opacity = fin;
         gouttes.material.opacity = fin;
+        hauts.material.opacity = fin;
         FILETS.forEach((f, k) => {
           const x = f.x * K.rx;
           // Haut du filet : sous la tache, puis il descend quand le bord de l'écoulement le dépasse (le filet se vide aussi). Retour du
@@ -955,12 +979,22 @@ export async function creerScene({ canvas, couleur, chrono, reglages, cartes, mo
           pF.set(x * r.h, y0 * r.h, -(D - 4));
           mF.compose(pF, qF, sF.set(lw * r.h, long * r.h, 1));
           filets.setMatrixAt(k, mF);
+          // Haut irrégulier : posé sur le haut du corps (recouvrement de 15 %), forme, hauteur et sens propres à chaque filet.
+          const hh = lw * f.haut;
+          const pos = hauts.geometry.getAttribute('position');
+          const [xg, xd] = [(x - lw / 2) * r.h, (x + lw / 2) * r.h];
+          const [yb, yh] = [(y0 - hh * 0.15) * r.h, (y0 + hh * 0.85) * r.h];
+          pos.setXYZ(k * 4, xg, yb, -(D - 4));
+          pos.setXYZ(k * 4 + 1, xd, yb, -(D - 4));
+          pos.setXYZ(k * 4 + 2, xg, yh, -(D - 4));
+          pos.setXYZ(k * 4 + 3, xd, yh, -(D - 4));
           pF.y -= long * r.h + lw * r.h * 0.4;
-          mF.compose(pF, qF, sF.set(lw * r.h * 2, lw * r.h * 2, 1));
+          mF.compose(pF, qF, sF.set(lw * r.h * 2 * gouttesForme[k][0], lw * r.h * 2 * gouttesForme[k][1], 1));
           gouttes.setMatrixAt(k, mF);
         });
         filets.instanceMatrix.needsUpdate = true;
         gouttes.instanceMatrix.needsUpdate = true;
+        hauts.geometry.getAttribute('position').needsUpdate = true;
       }
     }
 
@@ -992,7 +1026,7 @@ export async function creerScene({ canvas, couleur, chrono, reglages, cartes, mo
   // son programme et envoyait ses textures pendant l'ouverture. Tout est préparé ici, derrière le fondu noir : chaque effet rendu une fois (rayons,
   // ondes, particules, explosion, flamme, traînée, carte, assombrissement, sang, marques), un zombie dans la surcouche, toutes les textures.
   function prechauffer() {
-    const caches = [rayons, ...ondes, particules, etincelles, boule, eclat, ...feux, ...fumees, ...feux2, ...fumees2, flash2, eclats, eclab, tache, filets, gouttes, trainee, flamme, carte, sombre, ...zs.flatMap((z) => [z.sprite, z.poussiere]), ...pool.map((p) => p.g)];
+    const caches = [rayons, ...ondes, particules, etincelles, boule, eclat, ...feux, ...fumees, ...feux2, ...fumees2, flash2, eclats, eclab, tache, filets, gouttes, hauts, trainee, flamme, carte, sombre, ...zs.flatMap((z) => [z.sprite, z.poussiere]), ...pool.map((p) => p.g)];
     const avant = caches.map((o) => o.visible);
     for (const o of caches) o.visible = true;
     rayons.count = MAX_RAYONS;
