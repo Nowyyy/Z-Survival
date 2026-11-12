@@ -11,7 +11,7 @@ import { activerGlisser } from '../glisser.js';
 import { roueDifferee } from './roue.js';
 import { adresseStudio, LOGO_STUDIO_FIXE } from './chargement.js';
 import { formatMoney } from '../core/economy.js';
-import { basculerMenu, choisirOnglet, versionMenu, creerEtatMenu, ECRANS_PLEINS, SOUS_MENUS, fermerEcran, fermerMenu, lienExterne, lireMondes, lireOptionDemarrage, lireRecord, nouveauteNonLue, ONGLETS, ouvrirEcran, premierJouable } from '../core/menu-etat.js';
+import { basculerMenu, choisirOnglet, versionMenu, creerEtatMenu, ECRANS_MENU, ECRANS_PLEINS, SOUS_MENUS, fermerEcran, fermerMenu, lienExterne, lireMondes, lireOptionDemarrage, lireRecord, nouveauteNonLue, ONGLETS, ouvrirEcran, premierJouable } from '../core/menu-etat.js';
 import { ecranJouer } from './jouer.js';
 import { gouttePath } from '../logo.js';
 import { fmt, loadDict } from '../game/texts.js';
@@ -33,6 +33,7 @@ const ICONES = {
   options: 'M10 8a2 2 0 1 1-4 0 2 2 0 0 1 4 0ZM8 1.3v2M8 12.7v2M1.3 8h2M12.7 8h2M3.3 3.3l1.4 1.4M11.3 11.3l1.4 1.4M3.3 12.7l1.4-1.4M11.3 4.7l1.4-1.4',
   information: 'M14 8A6 6 0 1 1 2 8a6 6 0 0 1 12 0ZM8 7.3v4M8 5v.3',
   deconnexion: 'M9.3 2.7h3.4v10.6H9.3M6.7 5.3 4 8l2.7 2.7M4 8h6.7',
+  credits: 'm8 1.8 1.9 3.9 4.3.6-3.1 3 .7 4.3L8 11.6l-3.8 2 .7-4.3-3.1-3 4.3-.6Z', // lot 8g : Crédits (étoile)
 };
 // Logo de Discord (retour du propriétaire : à la place de la bulle), forme pleine en 24 × 24 (tracé du jeu d'icônes libre Simple Icons, CC0).
 const LOGO_DISCORD = 'M20.317 4.3698a19.7913 19.7913 0 00-4.8851-1.5152.0741.0741 0 00-.0785.0371c-.211.3753-.4447.8648-.6083 1.2495-1.8447-.2762-3.68-.2762-5.4868 0-.1636-.3933-.4058-.8742-.6177-1.2495a.077.077 0 00-.0785-.037 19.7363 19.7363 0 00-4.8852 1.515.0699.0699 0 00-.0321.0277C.5334 9.0458-.319 13.5799.0992 18.0578a.0824.0824 0 00.0312.0561c2.0528 1.5076 4.0413 2.4228 5.9929 3.0294a.0777.0777 0 00.0842-.0276c.4616-.6304.8731-1.2952 1.226-1.9942a.076.076 0 00-.0416-.1057c-.6528-.2476-1.2743-.5495-1.8722-.8923a.077.077 0 01-.0076-.1277c.1258-.0943.2517-.1923.3718-.2914a.0743.0743 0 01.0776-.0105c3.9278 1.7933 8.18 1.7933 12.0614 0a.0739.0739 0 01.0785.0095c.1202.099.246.1981.3728.2924a.077.077 0 01-.0066.1276 12.2986 12.2986 0 01-1.873.8914.0766.0766 0 00-.0407.1067c.3604.698.7719 1.3628 1.225 1.9932a.076.076 0 00.0842.0286c1.961-.6067 3.9495-1.5219 6.0023-3.0294a.077.077 0 00.0313-.0552c.5004-5.177-.8382-9.6739-3.5485-13.6604a.061.061 0 00-.0312-.0286zM8.02 15.3312c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9555-2.4189 2.157-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.9555 2.4189-2.1569 2.4189zm7.9748 0c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9554-2.4189 2.1569-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.946 2.4189-2.1568 2.4189Z';
@@ -291,6 +292,7 @@ export function creerMenu({ dict, infos = [], liens = {}, solde: montant = 0, re
   const pointInfo = el('span', ['menu-point', 'e8-point-info'], { id: 'menu-point-info' });
   pointInfo.append(Object.assign(el('span', ['sr-only']), { textContent: t('game.menu.nouveau') }));
   const btInfo = entree('menu-information', 'game.menu.information', [pointInfo], 'information');
+  const btCredits = entree('menu-credits', 'game.menu.credits', [], 'credits'); // lot 8g : entre Information et Discord
   const discordPlace = el('li');
   const btDeconnexion = entree('menu-deconnexion', 'game.menu.deconnexion', [note('game.menu.nonConnecte')], 'deconnexion');
   btDeconnexion.disabled = true;
@@ -300,7 +302,7 @@ export function creerMenu({ dict, infos = [], liens = {}, solde: montant = 0, re
     return item;
   };
   const haut = el('ul', ['e8-liste-groupe']);
-  haut.append(li(btOptions), li(btInfo), discordPlace);
+  haut.append(li(btOptions), li(btInfo), li(btCredits), discordPlace);
   const bas = el('ul', ['e8-liste-groupe']);
   bas.append(li(btDeconnexion));
   // Retour du propriétaire : version du jeu sous « Déconnexion » (« V0.8 · dev », « V0.8 · recette ») ; journal lu à la première ouverture du menu.
@@ -396,11 +398,14 @@ export function creerMenu({ dict, infos = [], liens = {}, solde: montant = 0, re
     const plein = ECRANS_PLEINS.includes(etat.ecran);
     const sous = SOUS_MENUS.includes(etat.ecran); // sous-menu du Personnage : à la place de l'écran de l'onglet, barre d'onglets visible
     // Lot 8e (retour du propriétaire) : résultat d'un achat de la Boutique en écran plein (barre d'onglets masquée, comme l'ouverture du lot 8f).
-    const resultat = etat.onglet === 'boutique' && !plein && !sous && Boolean(boutique?.pleinEcran());
-    box.dataset.ecran = plein || sous ? etat.ecran : resultat ? 'resultat' : '';
+    // Lot 8g : Crédits (écran du menu à trois barres) : à la place de l'écran de l'onglet, barre d'onglets visible, comme un sous-menu.
+    const ecranMenu = ECRANS_MENU.includes(etat.ecran);
+    const resultat = etat.onglet === 'boutique' && !plein && !sous && !ecranMenu && Boolean(boutique?.pleinEcran());
+    box.dataset.ecran = plein || sous || ecranMenu ? etat.ecran : resultat ? 'resultat' : '';
     nav.hidden = plein || resultat;
-    for (const [id, s] of ecransOnglets) s.hidden = id !== etat.onglet || plein || sous;
-    boutique?.synchroniser(etat.onglet === 'boutique' && !plein && !sous); // lot 8e : la Boutique tient sa vue (caisses ou résultat)
+    for (const [id, s] of ecransOnglets) s.hidden = id !== etat.onglet || plein || sous || ecranMenu;
+    if (credits) credits.section.hidden = etat.ecran !== 'credits';
+    boutique?.synchroniser(etat.onglet === 'boutique' && !plein && !sous && !ecranMenu); // lot 8e : la Boutique tient sa vue (caisses ou résultat)
     perso?.synchroniser(etat.ecran, etat.onglet === 'personnage' || SOUS_MENUS.includes(etat.ecran));
     animer();
     liste.hidden = !etat.menuOuvert;
@@ -498,7 +503,7 @@ export function creerMenu({ dict, infos = [], liens = {}, solde: montant = 0, re
     return precharges.get(id);
   }
   async function changerOnglet(id) {
-    if (SOUS_MENUS.includes(etat.ecran)) etat = fermerEcran(etat); // lot 8d : un onglet touché referme le sous-menu du Personnage
+    if (SOUS_MENUS.includes(etat.ecran) || ECRANS_MENU.includes(etat.ecran)) etat = fermerEcran(etat); // lot 8d : un onglet touché referme le sous-menu du Personnage (lot 8g : et les Crédits)
     boutique?.fermerResultat(); // lot 8e : un onglet touché ramène la Boutique à ses caisses
     etat = choisirOnglet(etat, id);
     if (!ecransOnglets.has(etat.onglet)) {
@@ -578,6 +583,46 @@ export function creerMenu({ dict, infos = [], liens = {}, solde: montant = 0, re
     dialogue = nom === 'information' ? m.ecranInformation({ dict, infos, onClose: fermer, root: box }) : m.ecranConnexion({ dict, onClose: fermer, root: box });
   }
 
+  // Lot 8g : écran Crédits (js/menu/credits.js, chargé à la première ouverture, roue de chargement au-delà de 120 ms ; données demandées dès que le
+  // doigt se pose sur l'entrée). Un seul chargement à la fois ; fermé pendant le chargement : rien ne s'affiche.
+  let credits = null;
+  let chargementCredits = null;
+  const moduleCredits = () => import('./credits.js');
+  btCredits.addEventListener('pointerdown', () => moduleCredits().then((m) => m.precharger()).catch(() => {}), { passive: true });
+  async function ouvrirCredits() {
+    options?.close();
+    etat = ouvrirEcran(etat, 'credits');
+    synchroniser();
+    if (!credits) {
+      const roue = roueDifferee(box, { fixe: true, texte: t('game.menu.chargement.texte') });
+      try {
+        chargementCredits ??= moduleCredits().then((m) => m.ecranCredits({ t, onClose: () => fermerCredits() }));
+        const c = await chargementCredits;
+        if (!credits) {
+          credits = c;
+          contenu.append(c.section);
+        }
+      } catch {
+        chargementCredits = null;
+        if (etat.ecran === 'credits') fermerCredits();
+        return;
+      } finally {
+        roue.fin();
+      }
+    }
+    if (etat.ecran !== 'credits') return;
+    synchroniser();
+    credits.afficher();
+    credits.focus();
+  }
+  function fermerCredits() {
+    if (etat.ecran !== 'credits') return;
+    etat = fermerEcran(etat);
+    synchroniser();
+    barres.focus();
+  }
+  btCredits.addEventListener('click', () => ouvrirCredits());
+
   connexion.addEventListener('click', () => ouvrirDialogue('connexion', connexion));
   btInfo.addEventListener('click', () => ouvrirDialogue('information', barres));
   btOptions.addEventListener('click', async () => {
@@ -655,6 +700,7 @@ export function creerMenu({ dict, infos = [], liens = {}, solde: montant = 0, re
     if (dialogue) dialogue.close();
     else if (etat.ecran === 'options') fermerOptions();
     else if (etat.menuOuvert) fermerListe(true);
+    else if (etat.ecran === 'credits') fermerCredits(); // lot 8g
     else if (etat.onglet === 'boutique' && boutique?.echap()) {
       // lot 8e : dialogue des chances fermé, ou écran de résultat refermé (retour à la Boutique)
     }
@@ -673,6 +719,6 @@ export function creerMenu({ dict, infos = [], liens = {}, solde: montant = 0, re
   synchroniser();
   return {
     element: box,
-    etat: () => ({ pleinEcran: { disponible: peutPleinEcran, actif: Boolean(document.fullscreenElement) }, onglet: etat.onglet, menuOuvert: etat.menuOuvert, ecran: etat.ecran, nonLue: nouveauteNonLue(infos, etat.lues), solde: montant, discord: lien.actif, record, monde: monde.id, infini: infini?.etat() ?? null, personnage: perso?.etat() ?? null, boutique: boutique?.etat() ?? null, niveaux, statsLancees }),
+    etat: () => ({ pleinEcran: { disponible: peutPleinEcran, actif: Boolean(document.fullscreenElement) }, onglet: etat.onglet, menuOuvert: etat.menuOuvert, ecran: etat.ecran, nonLue: nouveauteNonLue(infos, etat.lues), solde: montant, discord: lien.actif, record, monde: monde.id, infini: infini?.etat() ?? null, personnage: perso?.etat() ?? null, boutique: boutique?.etat() ?? null, credits: credits?.etat() ?? null, niveaux, statsLancees }),
   };
 }

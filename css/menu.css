@@ -4218,3 +4218,165 @@
   width: auto;
   height: 26px;
 }
+
+/* ---------------------------------------------------------------------------------------------------------------------------------------------- */
+/* Lot 8g — E11 : Crédits (js/menu/credits.js) : écran du menu qui garde la barre d'onglets ; bandeau et « ‹ Retour » (composants des Options) ; deux
+   colonnes qui défilent (studio et équipe à gauche, outils et licences à droite) ; une zone dépliable par licence, dont le texte défile. */
+.e11 {
+  --e5-bouton-h: max(var(--menu-cible), calc(40 * var(--u)));
+  gap: calc(14 * var(--u));
+  padding-bottom: calc(10 * var(--u));
+  color: var(--menu-texte);
+}
+
+.e11-tete {
+  margin-bottom: calc(6 * var(--u)); /* place des coulures du bandeau */
+}
+
+.e11-grille {
+  display: grid;
+  flex: 1;
+  grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+  gap: calc(28 * var(--u));
+  width: 100%;
+  min-height: 0;
+}
+
+.e11-colonne {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-right: 4px;
+}
+
+.e11-logo {
+  display: block;
+  width: min(100%, calc(230 * var(--u)));
+  height: auto;
+  margin: 0 0 calc(6 * var(--u));
+}
+
+.e11-signature {
+  margin: 0 0 calc(16 * var(--u));
+  font-family: var(--font-label);
+  font-size: max(13px, calc(15 * var(--u)));
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.e11-section {
+  margin-bottom: calc(14 * var(--u));
+}
+
+.e11-section-titre {
+  margin: 0 0 calc(6 * var(--u));
+  font-family: var(--font-label);
+  font-weight: var(--font-weight-normal);
+  font-size: max(13px, calc(15 * var(--u)));
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--menu-texte-doux);
+}
+
+.e11-noms {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.e11-nom {
+  font-size: max(15px, calc(17 * var(--u)));
+  font-weight: var(--font-weight-bold);
+  line-height: 1.35;
+}
+
+.e11-provisoire {
+  margin: 0;
+  font-size: max(13px, calc(14 * var(--u)));
+  font-style: italic;
+  color: var(--menu-texte-doux);
+}
+
+.e11-licence {
+  margin-bottom: calc(8 * var(--u));
+}
+
+.e11-deplier {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  min-height: var(--menu-cible);
+  padding: 4px 12px;
+  border: 2px solid var(--menu-bouton-rond-bord);
+  border-radius: 4px;
+  background: var(--menu-panneau);
+  color: var(--menu-texte);
+  text-align: left;
+  cursor: pointer;
+}
+
+.e11-deplier:hover {
+  background: var(--color-surface-raised);
+}
+
+.e11-deplier-noms {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.e11-deplier-nom {
+  font-weight: var(--font-weight-bold);
+  font-size: max(14px, calc(15 * var(--u)));
+}
+
+.e11-deplier-licence {
+  font-size: max(12px, calc(13 * var(--u)));
+  color: var(--menu-texte-doux);
+}
+
+.e11-chevron {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentcolor;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.e11-deplier[aria-expanded='true'] .e11-chevron {
+  transform: rotate(180deg);
+}
+
+.e11-licence-texte {
+  max-height: max(140px, calc(170 * var(--u)));
+  margin-top: 4px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 8px 12px;
+  border: 1px solid var(--menu-bouton-rond-bord);
+  border-top: 0;
+  background: var(--menu-panneau);
+}
+
+.e11-avis {
+  margin: 0 0 8px;
+  font-weight: var(--font-weight-bold);
+  font-size: max(12px, calc(13 * var(--u)));
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+.e11-texte {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-size: max(12px, calc(12.5 * var(--u)));
+  line-height: 1.4;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  color: var(--menu-texte-doux);
+}

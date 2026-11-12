@@ -261,3 +261,126 @@ test.describe('logo du studio : écran de chargement et menu à trois barres', (
     expect([Math.abs(l.l - 16) < 0.6, Math.abs(REF.height - l.b - 16) < 0.6]).toEqual([true, true]);
   });
 });
+
+async function ouvrirCredits(page, size = REF) {
+  await ouvrirMenu(page, size);
+  await page.locator('#menu-trois-barres').click();
+  await page.locator('#menu-credits').click();
+  await expect(page.locator('#menu-ecran-credits')).toBeVisible();
+  await page.waitForFunction(() => { const n = document.getElementById('menu-credits-logo'); return n.complete && n.naturalWidth > 0; });
+}
+
+test.describe('Crédits (E11)', () => {
+  for (const [size, encoche] of [[REF, false], [PETIT, false], [LARGE, false], [ENCOCHE, true]]) {
+    test(`tailles ${size.width}×${size.height}${encoche ? ' (encoche simulée)' : ''} : entrée entre Information et Discord ; bandeau « No Way Studio » / « Crédits », logo, « Un jeu de No Way Studio », sections, cinq licences ; barre d'onglets gardée ; dans l'écran, sans superposition ; 44 px ; axe`, async ({ page, baseURL }) => {
+      const o = surveiller(page, baseURL);
+      await ouvrirMenu(page, size);
+      if (encoche) await page.addStyleTag({ content: '#e8 { --e8-gauche: 50px !important; --e8-droite: 50px !important; }' });
+      expect(o.fichiers.filter((f) => /credits|licences/.test(f))).toEqual([]); // rien au démarrage
+      await page.locator('#menu-trois-barres').click();
+      const [info, credits, discord] = [await boite(page, '#menu-information'), await boite(page, '#menu-credits'), await boite(page, '#menu-discord')];
+      expect([credits.t >= info.b - 0.5, discord.t >= credits.b - 0.5, credits.h >= 44]).toEqual([true, true, true]);
+      await page.locator('#menu-credits').click();
+      await expect(page.locator('#menu-ecran-credits')).toBeVisible();
+      await page.waitForFunction(() => { const n = document.getElementById('menu-credits-logo'); return n.complete && n.naturalWidth > 0; });
+      await expect(page.locator('#menu-ecran-credits .menu-bandeau-libelle')).toHaveText('No Way Studio');
+      await expect(page.locator('#menu-titre-credits')).toHaveText('Crédits');
+      await expect(page.locator('#menu-credits-logo')).toHaveAttribute('alt', 'No Way Studio');
+      await expect(page.locator('#menu-credits-signature')).toHaveText('Un jeu de No Way Studio');
+      await expect(page.locator('.e11-section-titre')).toHaveText(['Création', 'Remerciements', 'Outils et licences']);
+      await expect(page.locator('.e11-nom')).toHaveText(['Nowy']);
+      await expect(page.locator('.e11-provisoire')).toHaveText(['À compléter']);
+      await expect(page.locator('.e11-deplier-nom')).toHaveText(['Three.js', 'Barlow', 'Rubik Wet Paint', 'Rubik Dirt', 'Logo de Discord']);
+      await expect(page.locator('.e11-deplier[aria-expanded="false"]')).toHaveCount(5);
+      await expect(page.locator('#menu-credits-retour')).toBeFocused();
+      // Barre d'onglets gardée (comme les sous-menus du lot 8d) ; l'écran de l'onglet est caché.
+      await expect(page.locator('.e8-onglets')).toBeVisible();
+      await expect(page.locator('#menu-ecran-jouer')).toBeHidden();
+      const marge = encoche ? 50 : 15.5;
+      const blocs = ['#menu-ecran-credits .menu-bandeau', '#menu-credits-retour', '#menu-credits-equipe', '#menu-credits-licences'];
+      const b = Object.fromEntries(await Promise.all(blocs.map(async (s) => [s, await boite(page, s)])));
+      const nav = await boite(page, '.e8-onglets');
+      for (const [s, r] of Object.entries(b)) expect([r.l >= marge - 0.5, r.r <= size.width - marge + 0.5, r.b <= nav.t + 0.5, r.t >= 0], s).toEqual([true, true, true, true]);
+      expect(chevauche(b['#menu-credits-equipe'], b['#menu-credits-licences'])).toBe(false);
+      expect(b['#menu-credits-equipe'].t).toBeGreaterThanOrEqual(b['#menu-ecran-credits .menu-bandeau'].b - 0.5);
+      for (const s of ['#menu-credits-retour', ...['three', 'barlow', 'rubik-wet-paint', 'rubik-dirt', 'discord'].map((id) => `#menu-licence-${id}`)]) {
+        if (!(await page.locator(s).isVisible())) continue;
+        const r = await boite(page, s);
+        expect([r.w >= 44, r.h >= 44], s).toEqual([true, true]);
+      }
+      expect((await new AxeBuilder({ page }).analyze()).violations.map((v) => v.id)).toEqual([]);
+      // « ‹ Retour » : l'onglet revient, focus sur le bouton à trois barres.
+      await page.locator('#menu-credits-retour').click();
+      await expect(page.locator('#menu-ecran-credits')).toBeHidden();
+      await expect(page.locator('#menu-ecran-jouer')).toBeVisible();
+      await expect(page.locator('#menu-trois-barres')).toBeFocused();
+      expect(o.fichiers.filter((f) => /credits|licences/.test(f)).sort()).toEqual(['/data/menu/credits.json', '/data/menu/licences.json', '/js/menu/credits-donnees.js', '/js/menu/credits.js']);
+      expect([o.problemes, o.externes]).toEqual([[], []]);
+    });
+  }
+
+  test('licences dépliables : aria-expanded, texte lu dans les données (avis et licence entière), zone qui défile (molette et glissement à la souris) ; repliées de nouveau ; Échap ferme l\'écran ; un onglet touché le referme', async ({ page }) => {
+    await ouvrirCredits(page);
+    const bouton = page.locator('#menu-licence-three');
+    const zone = page.locator('#menu-licence-three-texte');
+    await expect(zone).toBeHidden();
+    await bouton.click();
+    await expect(bouton).toHaveAttribute('aria-expanded', 'true');
+    await expect(zone).toBeVisible();
+    await expect(zone.locator('.e11-avis')).toHaveText('Copyright © 2010-2026 three.js authors');
+    await expect(zone.locator('.e11-texte')).toContainText('Permission is hereby granted, free of charge');
+    await expect(zone.locator('.e11-texte')).toContainText('THE SOFTWARE IS PROVIDED "AS IS"');
+    expect(await zone.evaluate((n) => n.scrollHeight > n.clientHeight + 10)).toBe(true);
+    const r = await boite(page, '#menu-licence-three-texte');
+    await page.mouse.move(r.l + r.w / 2, r.t + r.h / 2);
+    await page.mouse.wheel(0, 120);
+    await expect.poll(() => zone.evaluate((n) => n.scrollTop)).toBeGreaterThan(0);
+    await zone.evaluate((n) => { n.scrollTop = 0; });
+    // Glissement à la souris (js/glisser.js) : le contenu suit la souris (départ dans la partie visible de la zone, que la colonne peut couper).
+    const col = await boite(page, '#menu-credits-licences');
+    const [haut, bas] = [Math.max(r.t, col.t), Math.min(r.b, col.b)];
+    await page.mouse.move(r.l + r.w / 2, bas - 8);
+    await page.mouse.down();
+    for (let k = 1; k <= 8; k += 1) await page.mouse.move(r.l + r.w / 2, bas - 8 - k * ((bas - haut - 16) / 8));
+    await page.mouse.up();
+    await expect.poll(() => zone.evaluate((n) => n.scrollTop)).toBeGreaterThan(20);
+    expect((await page.evaluate(() => window.__zsMenu.etat().menu)).onglet).toBe('jouer'); // le geste n'a rien touché dessous
+    await page.locator('#menu-licence-barlow').scrollIntoViewIfNeeded();
+    await page.locator('#menu-licence-barlow').click();
+    await expect(page.locator('#menu-licence-barlow-texte .e11-texte')).toContainText('SIL OPEN FONT LICENSE Version 1.1');
+    expect((await page.evaluate(() => window.__zsMenu.etat().menu.credits)).ouvertes).toEqual(['three', 'barlow']);
+    await bouton.click();
+    await expect(bouton).toHaveAttribute('aria-expanded', 'false');
+    await expect(zone).toBeHidden();
+    // La colonne des licences défile elle aussi quand elle déborde.
+    const colonne = page.locator('#menu-credits-licences');
+    expect(await colonne.evaluate((n) => getComputedStyle(n).overflowY)).toBe('auto');
+    await page.keyboard.press('Escape');
+    await expect(page.locator('#menu-ecran-credits')).toBeHidden();
+    await expect(page.locator('#menu-ecran-jouer')).toBeVisible();
+    await page.locator('#menu-trois-barres').click();
+    await page.locator('#menu-credits').click();
+    await expect(page.locator('#menu-ecran-credits')).toBeVisible();
+    await page.locator('#menu-onglet-infini').click();
+    await expect(page.locator('#menu-ecran-credits')).toBeHidden();
+    await expect(page.locator('#menu-ecran-infini')).toBeVisible();
+    expect((await page.evaluate(() => window.__zsMenu.etat().menu)).ecran).toBe(null);
+  });
+
+  test('logo : animation rejouée à chaque ouverture (adresse neuve), copie fixe sous prefers-reduced-motion ; aucune écriture dans le stockage', async ({ page }) => {
+    await espions(page);
+    await ouvrirCredits(page);
+    const premier = await page.locator('#menu-credits-logo').getAttribute('src');
+    expect((await page.evaluate(() => window.__zsMenu.etat().menu.credits)).logo).toBe(LOGO);
+    await page.locator('#menu-credits-retour').click();
+    await page.locator('#menu-trois-barres').click();
+    await page.locator('#menu-credits').click();
+    await expect.poll(() => page.locator('#menu-credits-logo').getAttribute('src')).not.toBe(premier);
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.locator('#menu-credits-retour').click();
+    await page.locator('#menu-trois-barres').click();
+    await page.locator('#menu-credits').click();
+    await expect.poll(async () => (await page.evaluate(() => window.__zsMenu.etat().menu.credits)).logo).toBe(FIXE);
+    expect(await page.evaluate(() => window.__ecritures)).toEqual([]);
+  });
+});
