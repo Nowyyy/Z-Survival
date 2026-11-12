@@ -185,7 +185,7 @@ test.describe('écran Personnage (E9-1)', () => {
     await ouvrirMenu(page);
     const PERSO = /\/js\/menu\/(personnage|equipement-etat|inventaire|fusion|personnages)\.js$|\/js\/core\/equipement\.js$|\/data\/menu\/(objets|raretes|personnages|inventaire-depart)\.json$/;
     expect(o.fichiers.filter((f) => PERSO.test(f))).toEqual([]);
-    expect(o.fichiers.filter((f) => f.endsWith('.js')).length).toBe(29); // démarrage du menu inchangé
+    expect(o.fichiers.filter((f) => f.endsWith('.js')).length).toBe(31); // démarrage du menu (retours du propriétaire : roue et glissement à la souris, 29 → 31)
     await page.locator('#menu-onglet-personnage').click();
     await expect(page.locator('#menu-ecran-personnage')).toBeVisible();
     expect(o.fichiers.filter((f) => PERSO.test(f)).sort()).toEqual(['/data/menu/inventaire-depart.json', '/data/menu/objets.json', '/data/menu/personnages.json', '/data/menu/raretes.json', '/js/core/equipement.js', '/js/menu/equipement-etat.js', '/js/menu/personnage.js']);
@@ -269,6 +269,38 @@ test.describe('sous-menus Inventaire, Fusion, Personnages (E9-2 à E9-4)', () =>
       expect(o.externes).toEqual([]);
     });
   }
+
+  test('retour du propriétaire (bug) : deux touchers pendant le premier chargement d\'un sous-menu : un seul écran créé, « Retour » le cache, rien ne reste par-dessus les autres onglets ; onglet quitté pendant le chargement : sous-menu non ouvert', async ({ page, baseURL }) => {
+    const o = surveiller(page, baseURL);
+    // Chargement du module ralenti (téléphone, réseau lent) : les deux touchers arrivent avant sa fin.
+    await page.route('**/js/menu/personnages.js', async (r) => {
+      await new Promise((ok) => setTimeout(ok, 600));
+      await r.continue();
+    });
+    await page.route('**/js/menu/inventaire.js', async (r) => {
+      await new Promise((ok) => setTimeout(ok, 600));
+      await r.continue();
+    });
+    await ouvrirPersonnage(page, REF);
+    const visibles = () => page.evaluate(() => [...document.querySelectorAll('section.e8-ecran')].filter((s) => s.checkVisibility()).map((s) => s.id));
+    await page.locator('#menu-perso-silhouette').click();
+    await page.locator('#menu-perso-silhouette').click();
+    await expect(page.locator('#menu-ecran-personnages')).toBeVisible();
+    expect(await page.locator('#menu-ecran-personnages').count()).toBe(1);
+    await page.locator('#menu-personnages-retour').click();
+    expect(await visibles()).toEqual(['menu-ecran-personnage']);
+    await page.locator('#menu-onglet-jouer').click();
+    expect(await visibles()).toEqual(['menu-ecran-jouer']);
+    // Onglet quitté pendant le chargement de l'Inventaire : il ne s'ouvre pas par-dessus l'Histoire.
+    await page.locator('#menu-onglet-personnage').click();
+    await expect(page.locator('#menu-ecran-personnage')).toBeVisible();
+    await page.locator('#menu-perso-inventaire').click();
+    await page.locator('#menu-onglet-jouer').click();
+    await page.waitForTimeout(900);
+    expect(await page.evaluate(() => window.__zsMenu.etat().menu.ecran)).toBeNull();
+    expect(await visibles()).toEqual(['menu-ecran-jouer']);
+    expect(o.problemes).toEqual([]);
+  });
 
   test('Inventaire : filtre venu d\'un emplacement, filtres, pagination, objet choisi, Équiper puis Retirer, Améliorer jusqu\'au maximum (prix affiché, argent non prélevé), « Fusionner cet objet »', async ({ page, baseURL }) => {
     const o = surveiller(page, baseURL);
@@ -805,6 +837,7 @@ test('bandeaux de même taille sur chaque écran, cartes d\'Infini de même tail
     const vus = [...await mesure()];
     for (const o of ['infini', 'boutique', 'personnage']) {
       await page.locator(`#menu-onglet-${o}`).click();
+      await page.locator(`#menu-ecran-${o}`).waitFor({ state: 'visible' }); // lot 8e : l'onglet est marqué avant que son écran (chargé à la demande) soit prêt
       vus.push(...await mesure());
     }
     for (const s of ['inventaire', 'fusion']) {

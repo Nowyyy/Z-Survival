@@ -5,6 +5,7 @@
 // effectives (js/core/equipement.js : sauvegarde + objets portés + capacité) ; boutons Inventaire et Fusion. Sous-menus (écrans pleins, en-tête gardé,
 // onglets masqués) : js/menu/inventaire.js, fusion.js, personnages.js, chargés à leur première ouverture. État en mémoire (equipement-etat.js) :
 // rien n'est écrit dans le stockage jusqu'au lot 8h.
+import { pendant } from './roue.js';
 import { EMPLACEMENTS, definition, emplacementDe, objetDe, personnageDe, typeEmplacement } from '../core/equipement.js';
 import { fmt } from '../game/texts.js';
 import { el } from './menu.js';
@@ -152,6 +153,9 @@ const SOUS = { inventaire: () => import('./inventaire.js'), fusion: () => import
 export const SOUS_ECRANS = Object.freeze(Object.keys(SOUS));
 
 // poserEcran(nom | null) : menu.js place l'écran plein (etatMenu.ecran) et resynchronise ; il appelle ensuite synchroniser(ecran) et animer(actif).
+// Retour du propriétaire (latence au premier toucher sur iPhone) : données demandées dès que le doigt se pose sur l'onglet (menu.js, precharger).
+export const precharger = () => chargerEquipement();
+
 export async function ecranPersonnage({ t, bandeau, niveaux = null, statsCfg = null, root, poserEcran }) {
   const eq = await chargerEquipement();
   const { cat } = eq;
@@ -267,17 +271,32 @@ export async function ecranPersonnage({ t, bandeau, niveaux = null, statsCfg = n
   let retourFocus = null;
   const contexte = { t, bandeau, eq, cat, stats, niveaux, statsCfg, retour: () => fermer(), ouvrir: (nom, opts) => ouvrir(nom, opts) };
 
+  // Retour du propriétaire (bug : après « Retour », l'écran Personnages restait affiché par-dessus les autres) : deux touchers pendant le premier
+  // chargement d'un sous-menu en créaient deux ; le premier, oublié, ne se cachait plus. Un seul chargement par sous-menu (promesse gardée) ;
+  // seule la dernière demande s'ouvre, et aucune si l'on a quitté l'écran Personnage entre-temps.
+  const chargements = new Map(); // nom → promesse du sous-menu créé
+  let demande = 0;
+  let affiche = true;
+  function charger(nom) {
+    if (sous.has(nom)) return Promise.resolve(sous.get(nom));
+    if (!chargements.has(nom)) {
+      chargements.set(nom, SOUS[nom]().then((m) => {
+        const s = m.creer(contexte);
+        sous.set(nom, s);
+        s.section.hidden = true;
+        root.append(s.section);
+        return s;
+      }).finally(() => chargements.delete(nom)));
+    }
+    return chargements.get(nom);
+  }
   async function ouvrir(nom, opts = {}) {
     if (!SOUS[nom]) return;
-    if (!ouvert) retourFocus = opts.depuis ?? document.activeElement;
-    let s = sous.get(nom);
-    if (!s) {
-      const m = await SOUS[nom]();
-      s = m.creer(contexte);
-      sous.set(nom, s);
-      s.section.hidden = true;
-      root.append(s.section);
-    }
+    const jeton = ++demande;
+    const depuis = opts.depuis ?? document.activeElement;
+    const s = await pendant(charger(nom), root, { fixe: true, texte: t('game.menu.chargement.texte') });
+    if (jeton !== demande || !affiche) return;
+    if (!ouvert) retourFocus = depuis;
     ouvert = nom;
     s.ouvrir(opts);
     poserEcran(nom);
@@ -299,7 +318,10 @@ export async function ecranPersonnage({ t, bandeau, niveaux = null, statsCfg = n
   return {
     section,
     // Écran plein affiché par menu.js (etatMenu.ecran) : seul le sous-menu de ce nom est visible ; un autre écran (Options…) les cache tous.
-    synchroniser(ecran) {
+    // affiche : onglet Personnage affiché (sinon, une ouverture en cours de chargement est abandonnée).
+    synchroniser(ecran, visible = true) {
+      if (!visible && affiche) demande += 1;
+      affiche = visible;
       if (!SOUS_ECRANS.includes(ecran)) ouvert = null;
       for (const [nom, s] of sous) s.section.hidden = nom !== ecran;
     },

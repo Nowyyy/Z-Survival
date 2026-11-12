@@ -22,7 +22,9 @@ const scripts = ['js/main.js', 'js/page.js', ...readdirSync('js/accueil').map((f
 // « Voir ma sauvegarde ») que le jeu intégré (B) n'affiche plus : ses modules comptent comme consommateurs.
 scripts.push(...readdirSync('js/atelier-interface').map((f) => readFileSync(`js/atelier-interface/${f}`, 'utf8')));
 // Lot 8a : le menu principal (js/menu/, état pur js/core/menu-etat.js) consomme les clés game.menu.* (écrites en entier).
-scripts.push(...readdirSync('js/menu').map((f) => readFileSync(`js/menu/${f}`, 'utf8')), readFileSync('js/core/menu-etat.js', 'utf8'));
+// Lot 8f : js/menu/ contient un sous-dossier (js/menu/ouverture/, ouvertures en 3D) : lu en entier, sous-dossiers compris (avant : fichiers à plat).
+const fichiersDe = (dir) => readdirSync(dir, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? fichiersDe(`${dir}/${e.name}`) : [`${dir}/${e.name}`]));
+scripts.push(...fichiersDe('js/menu').map((f) => readFileSync(f, 'utf8')), readFileSync('js/core/menu-etat.js', 'utf8'));
 // Lot 5j : les libellés des options (écran Options du jeu) sont nommés dans data/game/graphics.json et lus par js/game/options-menu.js ; chaque clé y est
 // écrite entre guillemets : le fichier compte comme consommateur (avant : seuls les scripts et les pages).
 const graphicsJson = readFileSync('data/game/graphics.json', 'utf8');

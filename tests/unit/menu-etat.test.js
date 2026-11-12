@@ -278,7 +278,9 @@ describe('hygiène du menu (lot 8a)', () => {
   it('textes game.menu.* : en français seulement, chacun écrit en entier dans js/menu ou js/core/menu-etat.js ; chaque clé lue existe', () => {
     const fr = JSON.parse(read('data/i18n/fr.json'));
     const en = JSON.parse(read('data/i18n/en.json'));
-    const code = [...readdirSync('js/menu').map((f) => read(`js/menu/${f}`)), read('js/core/menu-etat.js')].join('\n');
+    // Lot 8f : sous-dossiers de js/menu/ compris (js/menu/ouverture/).
+    const fichiersDe = (dir) => readdirSync(dir, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? fichiersDe(`${dir}/${e.name}`) : [`${dir}/${e.name}`]));
+    const code = [...fichiersDe('js/menu').map((f) => read(f)), read('js/core/menu-etat.js')].join('\n');
     const keys = Object.keys(fr).filter((k) => k.startsWith('game.menu.'));
     expect(keys.length).toBeGreaterThan(5);
     for (const k of keys) {

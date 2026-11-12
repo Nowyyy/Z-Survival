@@ -80,6 +80,61 @@ test.describe('onglet Jouer (E8-3)', () => {
     });
   }
 
+  test('retour du propriétaire : roue de chargement (grosse, visible, texte) pendant le chargement lent d\'un onglet, retirée ensuite ; glissement à la souris dans la Boutique (défile, sans clic sur le bouton de départ) et dans la rangée de l\'Infini', async ({ page }) => {
+    await page.route('**/js/menu/boutique.js', async (r) => {
+      await new Promise((ok) => setTimeout(ok, 700));
+      await r.continue();
+    });
+    await ouvrirMenu(page, { width: 667, height: 375 }, '&ouverture=0');
+    await page.locator('#menu-onglet-boutique').click();
+    const roue = page.locator('#e8 > .menu-roue');
+    await expect(roue).toBeVisible();
+    await expect(roue).toHaveAttribute('role', 'status');
+    await expect(roue).toContainText('Chargement…');
+    const anneau = await page.locator('.menu-roue-anneau').evaluate((n) => n.getBoundingClientRect().width);
+    expect(anneau).toBeGreaterThanOrEqual(70); // avant : 44
+    await expect(page.locator('#menu-ecran-boutique')).toBeVisible();
+    await expect(page.locator('.menu-roue')).toHaveCount(0);
+    // Glissement vertical dans la Boutique, départ sur un bouton d'achat : la liste défile, l'achat n'est pas déclenché.
+    const zone = await page.evaluate(() => {
+      const n = [...document.querySelectorAll('#menu-ecran-boutique, #menu-ecran-boutique *')].find((x) => ['auto', 'scroll'].includes(getComputedStyle(x).overflowY) && x.scrollHeight > x.clientHeight + 1);
+      if (!n) return null;
+      n.dataset.testZone = '1';
+      return { haut: n.scrollTop };
+    });
+    expect(zone).not.toBeNull();
+    // Point de départ : un bouton d'achat visible dans la zone (offre du jour).
+    const depart = await page.evaluate(() => {
+      const z = document.querySelector('[data-test-zone]').getBoundingClientRect();
+      const bt = [...document.querySelectorAll('[data-test-zone] button')].map((n) => n.getBoundingClientRect()).find((r) => r.top + r.height / 2 > z.top && r.top + r.height / 2 < Math.min(z.bottom, innerHeight));
+      return { x: bt.left + bt.width / 2, y: bt.top + bt.height / 2 };
+    });
+    await page.mouse.move(depart.x, depart.y);
+    await page.mouse.down();
+    for (let k = 1; k <= 8; k += 1) await page.mouse.move(depart.x, depart.y - k * 15);
+    await page.mouse.up();
+    await page.waitForTimeout(600);
+    expect(await page.locator('[data-test-zone]').evaluate((n) => n.scrollTop)).toBeGreaterThan(zone.haut + 60);
+    const b = await page.evaluate(() => window.__zsMenu.etat().menu.boutique);
+    expect([b.dernier, b.resultat, b.ouverture]).toEqual([null, null, null]); // aucun achat : le clic qui suit le glissement est annulé
+    // Rangée des cartes de l'Infini : glissement horizontal quand elle déborde.
+    await page.locator('#menu-onglet-infini').click();
+    const rangee = page.locator('.e8-infini-rangee');
+    await expect(rangee).toBeVisible();
+    const deborde = await rangee.evaluate((n) => n.scrollWidth > n.clientWidth + 1);
+    if (deborde) {
+      const r = await rangee.boundingBox();
+      await page.mouse.move(r.x + r.width * 0.8, r.y + r.height / 2);
+      await page.mouse.down();
+      for (let k = 1; k <= 8; k += 1) await page.mouse.move(r.x + r.width * 0.8 - k * 25, r.y + r.height / 2);
+      await page.mouse.up();
+      await page.waitForTimeout(800);
+      expect(await rangee.evaluate((n) => n.scrollLeft)).toBeGreaterThan(20);
+      expect(await rangee.evaluate((n) => n.style.scrollSnapType)).toBe(''); // aimantation rendue
+    }
+    expect(await page.evaluate(() => window.__zsMenu.etat().menu.onglet)).toBe('infini');
+  });
+
   test('contraste du texte posé sur la scène : 4,5:1 au moins contre le pixel le plus clair derrière lui (932 × 430)', async ({ page }) => {
     await ouvrirMenu(page);
     await page.evaluate(() => { for (const a of document.getAnimations()) a.pause(); });

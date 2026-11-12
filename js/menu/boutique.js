@@ -6,6 +6,9 @@
 // « ? » qui pulse, tremblement bref toutes les 4 s, en décalé ; en pause hors de l'écran et page cachée, coupées sous prefers-reduced-motion).
 // Achat : tirage à graine (crypto.getRandomValues), éléments ajoutés à l'état en mémoire (inventaire, personnages, collection de tenues), puis
 // afficherOuverture(resultat) → écran de résultat (E3-4, E3-5 : js/menu/resultat.js). Le prix est affiché, jamais prélevé ; rien n'est écrit.
+// Lot 8f : afficherOuverture passe d'abord par l'ouverture animée en 3D (js/menu/ouverture/ouverture.js, chargée au premier achat d'une caisse,
+// préchargée au toucher de « Ouvrir »), sauf offre du jour, mouvement réduit, WebGL indisponible ou ?ouverture=0 en test : résultat direct.
+import { creerRoue } from './roue.js';
 import { formatMoney } from '../core/economy.js';
 import { TIRAGES_X10, ajouterCosmetiques, lireCaisses, lireCosmetiques, lireOffres, offresDuJour, partHaute, prixAchat, tirer, tirer10 } from '../core/caisses.js';
 import { ajouterObjets, estDebloque, obtenirPersonnages } from '../core/equipement.js';
@@ -13,6 +16,8 @@ import { fmt } from '../game/texts.js';
 import { el } from './menu.js';
 import { chargerEquipement } from './equipement-etat.js';
 import { icone24 } from './personnage.js';
+import { acces } from '../core/graphics.js';
+import { pageCanal, pageSearch } from '../game/graphics-boot.js';
 
 const SVG = 'http://www.w3.org/2000/svg';
 const json = (path) => fetch(path).then((r) => (r.ok ? r.json() : null)).catch(() => null);
@@ -126,6 +131,21 @@ export function poserJeton(n, variable, jeton) {
 }
 
 const graineAchat = () => crypto.getRandomValues(new Uint32Array(1))[0];
+// Lot 8f : ouverture animée voulue (sans charger son module) : ni mouvement réduit, ni ?ouverture=0 sous ?test=1 pris en compte.
+function ouvertureVoulue() {
+  if (globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return false;
+  const q = new URLSearchParams(pageSearch());
+  return !(acces(pageCanal(), q).test && q.get('ouverture') === '0');
+}
+let moduleOuverture = null;
+const chargerOuverture = () => (moduleOuverture ??= import('./ouverture/ouverture.js').catch(() => {
+  moduleOuverture = null;
+  return null;
+}));
+// Préchargement au toucher de « Ouvrir » : module, Three.js, scène, données et feuille de l'ouverture (jamais au démarrage du menu).
+const prechargerOuverture = () => {
+  if (ouvertureVoulue()) chargerOuverture().then((m) => m?.precharger().catch(() => {}));
+};
 const pourcentTexte = (n) => (Number.isFinite(n) ? n.toLocaleString('fr-FR', { maximumFractionDigits: 2 }) : '');
 // Numéro du jour local (offres du jour : renouvelées à minuit, heure de l'appareil) et temps restant jusqu'à minuit.
 export const jourLocal = (d) => Math.floor(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / 86_400_000);
@@ -133,8 +153,12 @@ export const avantMinuit = (d) => new Date(d.getFullYear(), d.getMonth(), d.getD
 
 // contexte : { t, bandeau, root (#menu-contenu : section du résultat), rootDialogue (#e8 : dialogue des chances), surVue() (menu.js resynchronise),
 // maintenant() (date de l'appareil ; les tests la fixent par l'horloge du navigateur) }.
+// Retour du propriétaire (latence au premier toucher sur iPhone) : données demandées dès que le doigt se pose sur l'onglet (menu.js, precharger).
+let chargement = null;
+export const precharger = () => (chargement ??= Promise.all([chargerEquipement(), json('data/menu/caisses.json'), json('data/menu/cosmetiques.json')]));
+
 export async function ecranBoutique({ t, bandeau, root, rootDialogue, surVue = () => {}, maintenant = () => new Date() }) {
-  const [eq, donnees, cosm] = await Promise.all([chargerEquipement(), json('data/menu/caisses.json'), json('data/menu/cosmetiques.json')]);
+  const [eq, donnees, cosm] = await precharger();
   const cat = { ...eq.cat, cosmetiques: lireCosmetiques(cosm, eq.cat.raretes) };
   const { caisses } = lireCaisses(donnees, cat);
   const { regles } = lireOffres(donnees, cat);
@@ -272,6 +296,7 @@ export async function ecranBoutique({ t, bandeau, root, rootDialogue, surVue = (
       p.textContent = prix;
       n.append(action, sep, p);
       n.addEventListener('click', () => acheter(c, quantite, n));
+      n.addEventListener('pointerdown', prechargerOuverture, { passive: true }); // lot 8f
       return n;
     };
     const un = bouton(1, ['e3-rouge'], 'game.menu.boutique.ouvrir1');
@@ -325,7 +350,7 @@ export async function ecranBoutique({ t, bandeau, root, rootDialogue, surVue = (
   marquer(RUBRIQUES[0]);
 
   // --- Achat, ouverture, résultat --------------------------------------------------------------------------------------------------------------
-  let vue = 'caisses'; // 'caisses' ou 'resultat'
+  let vue = 'caisses'; // 'caisses', 'ouverture' (lot 8f) ou 'resultat'
   let resultat = null; // écran de résultat (js/menu/resultat.js, créé au premier achat)
   let dernier = null; // dernier résultat affiché
   let retourFocus = null;
@@ -334,9 +359,31 @@ export async function ecranBoutique({ t, bandeau, root, rootDialogue, surVue = (
   let chancesOuvertes = null; // dialogue des chances : { fermer() }
   let achats = 0;
   let minuterie = null;
+  let ouverture = null; // lot 8f : ouverture en 3D en cours ({ section, liberer(), focus() })
+  let preparation = false; // lot 8f : chargement de l'ouverture (Three.js, scène) en cours
+  let gel = null; // lot 8f : menu figé pendant le chargement et l'ouverture ({ roue(), fin() })
+
+  // Lot 8f (retour du propriétaire) : « Ouvrir » touché pendant le chargement de l'ouverture : les commandes de l'écran sont figées (inert : ni
+  // toucher ni clavier) et une petite roue tourne au centre (styles en ligne et jetons : css/ouvertures.css n'est peut-être pas encore chargée) ;
+  // la roue part quand l'ouverture est prête, le menu reste figé derrière elle jusqu'à sa fin.
+  function geler() {
+    const figes = [...rootDialogue.children].filter((n) => !n.inert);
+    for (const n of figes) n.inert = true;
+    const roue = creerRoue(rootDialogue, { fixe: true, id: 'menu-ouverture-chargement', texte: t('game.menu.ouverture.chargement') });
+    return {
+      roue() {
+        roue.retirer();
+      },
+      fin() {
+        this.roue();
+        for (const n of figes) n.inert = false;
+      },
+    };
+  }
 
   // Tirage (graine du navigateur), éléments ajoutés à l'état en mémoire, puis l'ouverture. Prix jamais prélevé.
   function acheter(caisse, quantite, depuis) {
+    if (preparation) return; // lot 8f : ouverture en cours de chargement (un seul achat à la fois)
     const graine = graineAchat();
     const objets = quantite === TIRAGES_X10 ? tirer10(caisse, cat, graine) : [tirer(caisse, cat, graine)].filter(Boolean);
     if (!objets || objets.length !== quantite) return;
@@ -364,9 +411,84 @@ export async function ecranBoutique({ t, bandeau, root, rootDialogue, surVue = (
     afficherOuverture(r);
   }
 
-  // Point d'insertion du lot 8f : seule fonction appelée après un achat. Au lot 8e, elle mène directement à l'écran de résultat (plein écran : barre
-  // d'onglets masquée, retour du propriétaire) ; au lot 8f, l'ouverture animée en 3D (E3-2, E3-3) s'intercalera ici, avant ce même écran.
+  // Seule fonction appelée après un achat. Lot 8e : écran de résultat (plein écran : barre d'onglets masquée, retour du propriétaire). Lot 8f :
+  // l'ouverture animée en 3D (E3-2, E3-3) s'intercale avant (caisses seulement) ; elle reçoit les cartes de l'écran de résultat (mêmes textes, même
+  // ordre que le tirage) ; « Passer », Échap et la fin d'un ×10 mènent à ce même écran ; « Continuer » (×1) revient aux caisses, « Rouvrir » rachète.
   async function afficherOuverture(r) {
+    dernier = r;
+    // Retour du propriétaire (« après la roue, tout l'écran était figé ») : le menu est figé et les achats bloqués dès le toucher, avant toute
+    // attente (avant : seulement après le chargement de l'écran de résultat, si bien qu'un second toucher lançait une seconde ouverture en
+    // parallèle) ; la roue part et le menu est rendu actif quoi qu'il arrive (erreur comprise).
+    const anime = Boolean(r.caisse) && ouvertureVoulue();
+    if (anime) {
+      preparation = true;
+      gel ??= geler();
+    }
+    let o = null;
+    try {
+      await preparerResultat();
+      if (anime) {
+        const m = await chargerOuverture();
+        resultat.afficher(r); // cartes et annonce lues dans l'écran de résultat (encore caché)
+        o = m ? await m.lancerOuverture({
+          r, cat, t, parent: rootDialogue, cartes: cartesDe(r), annonce: resultat.section.querySelector('#menu-resultat-annonce')?.textContent ?? '',
+          rappels: {
+            fin: () => finOuverture() && montrerResultat(r),
+            continuer: () => finOuverture() && retourCaisses(),
+            rouvrir: () => finOuverture() && acheter(r.caisse, r.quantite, null),
+          },
+        }) : null;
+      }
+    } catch {
+      o = null;
+    } finally {
+      preparation = false;
+      gel?.roue();
+    }
+    if (o && dernier === r) {
+      ouverture = o;
+      vue = 'ouverture';
+      surVue();
+      o.focus();
+      return;
+    }
+    o?.liberer();
+    degeler();
+    if (resultat) montrerResultat(r);
+  }
+  function degeler() {
+    gel?.fin();
+    gel = null;
+  }
+
+  // Lot 8f : cartes de l'ouverture = cartes de l'écran de résultat du lot 8e (nom, rareté écrite, détail, jeton de la bordure, halo), dans l'ordre.
+  function cartesDe(r) {
+    const jeton = (n) => /var\((--[a-z0-9-]+)\)/.exec(n?.style.getPropertyValue('--e3-rarete') ?? '')?.[1] ?? null;
+    const s = resultat.section;
+    if (r.quantite === TIRAGES_X10) {
+      return [...s.querySelectorAll('#menu-resultat-grille > li')].map((li) => ({ objet: li.dataset.objet, nom: li.querySelector('.e3-case-nom')?.textContent ?? '', ligne2: li.querySelector('.e3-case-rarete')?.textContent ?? '', ligne3: '', jeton: jeton(li), halo: li.classList.contains('e3-brille') }));
+    }
+    const carte = s.querySelector('#menu-resultat-carte');
+    return [{ objet: carte?.dataset.objet, nom: s.querySelector('#menu-resultat-nom')?.textContent ?? '', ligne2: s.querySelector('#menu-resultat-rarete')?.textContent ?? '', ligne3: s.querySelector('#menu-resultat-ligne')?.textContent ?? '', jeton: jeton(carte), halo: Boolean(carte?.classList.contains('e3-brille')) }];
+  }
+
+  // Lot 8f : fin de l'ouverture (tout est libéré : un seul rendu WebGL à la fois). Renvoie vrai si une ouverture était en cours.
+  function finOuverture() {
+    if (!ouverture) return false;
+    const o = ouverture;
+    ouverture = null;
+    o.liberer();
+    degeler();
+    return true;
+  }
+  function retourCaisses() {
+    vue = 'caisses';
+    surVue();
+    (retourFocus?.isConnected ? retourFocus : boutons.values().next().value?.un)?.focus();
+    retourFocus = null;
+  }
+
+  async function preparerResultat() {
     if (!resultat) {
       const m = await import('./resultat.js');
       resultat ??= m.creerResultat({
@@ -377,6 +499,9 @@ export async function ecranBoutique({ t, bandeau, root, rootDialogue, surVue = (
       resultat.section.hidden = true;
       root.append(resultat.section);
     }
+  }
+
+  function montrerResultat(r) {
     dernier = r;
     vue = 'resultat';
     resultat.afficher(r);
@@ -407,6 +532,11 @@ export async function ecranBoutique({ t, bandeau, root, rootDialogue, surVue = (
   }
 
   function appliquer() {
+    // Lot 8f : la Boutique n'est plus affichée (autre onglet, écran plein du menu) : l'ouverture s'arrête et tout est libéré.
+    if (!visible && ouverture) {
+      finOuverture();
+      vue = 'resultat';
+    }
     section.hidden = !visible || vue !== 'caisses';
     if (resultat) resultat.section.hidden = !visible || vue !== 'resultat';
     const enCours = actif && vue === 'caisses';
@@ -432,7 +562,7 @@ export async function ecranBoutique({ t, bandeau, root, rootDialogue, surVue = (
       appliquer();
     },
     // Résultat affiché : écran plein (barre d'onglets masquée par menu.js).
-    pleinEcran: () => vue === 'resultat',
+    pleinEcran: () => vue === 'resultat' || vue === 'ouverture',
     // Animations : en cours seulement quand l'onglet est affiché et la page visible.
     animer(a) {
       actif = a;
@@ -442,6 +572,11 @@ export async function ecranBoutique({ t, bandeau, root, rootDialogue, surVue = (
     fermerResultat: () => fermerResultat(false),
     // Échap : dialogue des chances, puis écran de résultat (true : traité).
     echap() {
+      // Lot 8f : Échap pendant l'ouverture = « Passer » (résultat).
+      if (vue === 'ouverture' && ouverture) {
+        if (finOuverture()) montrerResultat(dernier);
+        return true;
+      }
       if (chancesOuvertes) {
         chancesOuvertes.fermer();
         return true;
@@ -459,6 +594,7 @@ export async function ecranBoutique({ t, bandeau, root, rootDialogue, surVue = (
       achats,
       dernier: dernier ? { type: dernier.type, caisse: dernier.caisse?.id ?? null, quantite: dernier.quantite, graine: dernier.graine, objets: dernier.objets.map((o) => ({ ...o })), uids: [...dernier.uids], issues: dernier.issues?.map((x) => ({ ...x })) ?? null, nouveaux: dernier.nouveaux ? [...dernier.nouveaux] : null } : null,
       resultat: resultat?.etat() ?? null,
+      ouverture: ouverture ? ouverture.etat() : null,
     }),
   };
 }

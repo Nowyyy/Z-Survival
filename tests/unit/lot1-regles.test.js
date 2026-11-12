@@ -76,6 +76,7 @@ describe('mêmes règles qu\'au lot 1', () => {
     allowed.push('js/core/menu-etat.js'); // lot 8a : état du menu principal (nouveau fichier, pur, chargé seulement en mode menu)
     allowed.push('js/core/equipement.js'); // lot 8d : objets, équipement, fusion, personnages et statistiques effectives du Personnage (nouveau fichier, pur, chargé seulement en mode menu)
     allowed.push('js/core/caisses.js'); // lot 8e : caisses mystère de la Boutique, chances et tirage à graine (nouveau fichier, pur, chargé seulement à l'onglet Boutique)
+    allowed.push('js/core/ouverture.js'); // lot 8f : chronologie des ouvertures de caisses en 3D (nouveau fichier, pur, chargé seulement à la première ouverture)
     expect(changed.filter((f) => !allowed.includes(f))).toEqual([]);
   });
 });

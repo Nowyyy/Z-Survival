@@ -449,6 +449,7 @@
 
 :where(.e8) button {
   font: inherit;
+  touch-action: manipulation; /* retour du propriétaire (iPhone) : aucun délai de double-toucher */
 }
 
 .e8-icone {
@@ -3724,11 +3725,11 @@
   stroke-width: 3;
 }
 
-/* Variantes (retour du propriétaire : trois caisses de personnages, trois de tenues) : vétérans (malle olive), légendes (malle noire cerclée de la
-   teinte), mode (valise bordeaux), haute couture (valise noire, sangles et coins de la teinte). */
-.e3-caisse-veterans .e3-malle { fill: var(--menu-perso-survivant); }
-.e3-caisse-veterans .e3-malle-couvercle { fill: var(--menu-perso-poche); }
-.e3-caisse-veterans :is(.e3-malle, .e3-malle-couvercle, .e3-malle-bande) { stroke: var(--menu-perso-jambes); }
+/* Variantes (retour du propriétaire : trois caisses de personnages, trois de tenues) : recrues (malle olive ; vétérans : malle violette de base), légendes (malle noire cerclée de la
+   teinte ; retour du propriétaire : recrues olive au bleu, vétérans violets, comme les raretés), mode (valise bordeaux), haute couture (valise noire, sangles et coins de la teinte). */
+.e3-caisse-recrues .e3-malle { fill: var(--menu-perso-survivant); }
+.e3-caisse-recrues .e3-malle-couvercle { fill: var(--menu-perso-poche); }
+.e3-caisse-recrues :is(.e3-malle, .e3-malle-couvercle, .e3-malle-bande) { stroke: var(--menu-perso-jambes); }
 .e3-caisse-legendes .e3-malle { fill: var(--menu-scene-voiture); }
 .e3-caisse-legendes .e3-malle-couvercle { fill: var(--menu-scene-toit-salle); }
 .e3-caisse-legendes :is(.e3-malle, .e3-malle-couvercle) { stroke: var(--menu-bois-sombre); }
@@ -4036,4 +4037,78 @@
 @keyframes e3-apparition {
   from { opacity: 0; transform: translateY(calc(10 * var(--u))); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+/* Roue de chargement (js/menu/roue.js ; retour du propriétaire : plus grosse et plus visible) : anneau de 76 px (au plus 22 % du petit côté)
+   sur un disque sombre, lueur rouge, texte dessous. Au centre de son parent ; .menu-roue-fixe : au centre de l'écran, devant tout. */
+.menu-roue {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  pointer-events: none;
+}
+
+.menu-roue-fixe {
+  position: fixed;
+  z-index: 40;
+}
+
+.menu-roue-anneau {
+  box-sizing: border-box;
+  width: min(76px, 22vmin);
+  height: min(76px, 22vmin);
+  border-radius: 50%;
+  border: min(8px, 2.3vmin) solid var(--menu-texte-doux);
+  border-top-color: var(--menu-rouge-clair);
+  border-right-color: var(--menu-rouge-clair);
+  background: var(--menu-barre-fond);
+  box-shadow: 0 0 0 6px var(--menu-barre-fond), 0 0 22px 4px var(--menu-rouge);
+  animation: e8-roue 0.8s linear infinite;
+}
+
+.menu-roue-texte {
+  padding: 4px 12px;
+  border-radius: 4px;
+  background: var(--menu-barre-fond);
+  color: var(--menu-texte);
+  font-weight: 700;
+  font-size: max(14px, calc(15 * var(--u, 1px)));
+  text-shadow: 0 1px 2px var(--menu-texte-ombre);
+}
+
+@keyframes e8-roue {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .menu-roue-anneau {
+    animation: none;
+  }
+}
+
+/* Rappel du plein écran au retour de la partie (retour du propriétaire) : bandeau discret en haut au centre, sous l'en-tête ; ne capte rien. */
+.e8-rappel-plein {
+  position: fixed;
+  top: calc(env(safe-area-inset-top, 0px) + 64px);
+  left: 50%;
+  z-index: 35;
+  max-width: calc(100% - 32px);
+  margin: 0;
+  padding: 8px 16px;
+  transform: translateX(-50%);
+  border: 2px solid var(--menu-rouge-clair);
+  border-radius: 6px;
+  background: var(--menu-barre-fond);
+  color: var(--menu-texte);
+  font-weight: 700;
+  font-size: max(14px, calc(15 * var(--u, 1px)));
+  text-align: center;
+  pointer-events: none;
 }

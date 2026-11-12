@@ -81,7 +81,8 @@ async function graines(page, liste) {
 }
 async function ouvrirMenu(page, size = REF, extra = '') {
   await page.setViewportSize(size);
-  await page.goto(`/jeu.html?test=1&menu=1&seed=1${extra}`);
+  // Lot 8f : ?ouverture=0 : ces tests attendent le résultat aussitôt après l'achat (l'ouverture en 3D a ses tests : ouverture.spec.js).
+  await page.goto(`/jeu.html?test=1&menu=1&seed=1&ouverture=0${extra}`);
   await expect(page.locator('#menu-jouer')).toBeVisible({ timeout: 60_000 });
   await page.waitForFunction(() => window.__zsMenu?.etat()?.menu !== null && !document.getElementById('e7'));
 }
@@ -246,12 +247,14 @@ test.describe('Boutique (E3-1)', () => {
     }
   });
 
-  test('chargée à la demande (démarrage du menu inchangé : 29 fichiers JavaScript) ; chances et résultats à leur première ouverture ; ni Three.js ni le jeu', async ({ page, baseURL }) => {
+  test('chargée à la demande (démarrage du menu : 31 fichiers JavaScript, roue de chargement et glissement à la souris compris) ; chances et résultats à leur première ouverture ; ni Three.js ni le jeu', async ({ page, baseURL }) => {
     const o = surveiller(page, baseURL);
     await ouvrirMenu(page);
     const BOUTIQUE = /\/js\/menu\/(boutique|chances|resultat|personnage|equipement-etat)\.js$|\/js\/core\/(caisses|equipement)\.js$|\/data\/menu\/(caisses|cosmetiques|objets|raretes|personnages|inventaire-depart)\.json$/;
     expect(o.fichiers.filter((f) => BOUTIQUE.test(f))).toEqual([]);
-    expect(o.fichiers.filter((f) => f.endsWith('.js')).length).toBe(29);
+    // Retours du propriétaire : roue de chargement (js/menu/roue.js) et glissement à la souris (js/glisser.js) dès le démarrage du menu (29 → 31).
+    expect(o.fichiers.filter((f) => f.endsWith('.js')).length).toBe(31);
+    expect(o.fichiers.filter((f) => /\/(roue|glisser)\.js$/.test(f)).length).toBe(2);
     await page.locator('#menu-onglet-boutique').click();
     await expect(page.locator('#menu-ecran-boutique')).toBeVisible();
     expect(o.fichiers.filter((f) => BOUTIQUE.test(f)).sort()).toEqual(['/data/menu/caisses.json', '/data/menu/cosmetiques.json', '/data/menu/inventaire-depart.json', '/data/menu/objets.json', '/data/menu/personnages.json', '/data/menu/raretes.json', '/js/core/caisses.js', '/js/core/equipement.js', '/js/menu/boutique.js', '/js/menu/equipement-etat.js', '/js/menu/personnage.js']);
@@ -684,4 +687,29 @@ test.describe('Boutique par rubriques (retour du propriétaire)', () => {
     await expect(page.locator('#menu-boutique-tenues-note')).toContainText('obtenues : 1 /');
     expect((await etatBoutique(page)).collection).toEqual({ [tenue.id]: 1 });
   });
+});
+
+// Retour du propriétaire (iPhone : « légère latence au premier toucher d'un onglet ») : dès que le doigt se pose, tous les fichiers de l'écran sont
+// demandés en même temps (une seule fois chacun), jamais au démarrage ; l'onglet est marqué avant la fin du chargement.
+test('premier toucher d\'un onglet : fichiers et données demandés dès le pointerdown, une fois chacun ; onglet marqué avant l\'écran (chargement ralenti)', async ({ page, baseURL }) => {
+  const o = surveiller(page, baseURL);
+  await ouvrirMenu(page);
+  const avant = o.fichiers.length;
+  expect(o.fichiers.filter((f) => /boutique\.js|caisses\.js|cosmetiques\.json/.test(f))).toEqual([]);
+  // Écran de la Boutique ralenti (1,5 s) : le marquage de l'onglet ne l'attend pas.
+  let lacher;
+  await page.route('**/js/menu/boutique.js', async (route) => { await new Promise((r) => { lacher = r; setTimeout(r, 1500); }); await route.continue(); });
+  await page.locator('#menu-onglet-boutique').dispatchEvent('pointerdown');
+  await expect.poll(() => o.fichiers.filter((f) => /\/data\/menu\/(caisses|cosmetiques|objets)\.json$|\/js\/core\/caisses\.js$/.test(f)).length).toBe(4); // données et dépendances parties sans attendre boutique.js
+  await page.locator('#menu-onglet-boutique').click();
+  await expect(page.locator('#menu-onglet-boutique')).toHaveAttribute('aria-current', 'page');
+  expect(await page.locator('#menu-ecran-boutique').count()).toBe(0); // écran encore en chargement
+  await expect(page.locator('#menu-contenu')).toHaveAttribute('aria-busy', 'true');
+  lacher?.();
+  await expect(page.locator('#menu-ecran-boutique')).toBeVisible();
+  await expect(page.locator('#menu-contenu')).not.toHaveAttribute('aria-busy', /.*/);
+  const apres = o.fichiers.slice(avant);
+  const doublons = apres.filter((f, i) => apres.indexOf(f) !== i);
+  expect(doublons).toEqual([]);
+  expect(o.problemes).toEqual([]);
 });
