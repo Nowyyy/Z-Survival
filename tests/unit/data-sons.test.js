@@ -4,6 +4,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { renderSound, soundBytes, variantCount } from '../../js/core/synth.js';
 import { attackTime, centroid, maxCorrelation, mean, medianPitch, peakOf, rmsOf, toDb } from './helpers/dsp.js';
 import { synthRecipes } from './helpers/sons-synth.js';
+import { sansImagesStudio } from './helpers/images-studio.js'; // lot 8g : logo et son du studio, exception nominative
 
 // Lot 3i : recettes de synth.js ; lot 5e : celles du pack par défaut seulement (le pack d'avant, sounds-legacy.json, est retiré) ; l'atelier :
 // sons-integres.test.js. La cohérence du jeu (sons attendus, nombre de tampons) se lit sur sounds.json entier (table).
@@ -243,7 +244,7 @@ describe('cohérence des données sonores', () => {
 
   it('aucun fichier audio dans le dépôt', () => {
     const tracked = execSync('git ls-files', { encoding: 'utf8' }).split('\n').filter((f) => f && existsSync(f));
-    expect(tracked.filter((f) => /\.(wav|mp3|ogg|m4a|flac|webm|aac|opus|aiff?)$/i.test(f))).toEqual([]);
+    expect(sansImagesStudio(tracked).filter((f) => /\.(wav|mp3|ogg|m4a|flac|webm|aac|opus|aiff?)$/i.test(f))).toEqual([]);
   });
 
   it('js/core/ n\'utilise ni Math.random, ni Date.now, ni DOM, ni Web Audio (synth.js compris)', () => {

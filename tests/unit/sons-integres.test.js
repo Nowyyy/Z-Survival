@@ -11,6 +11,7 @@ import { DEFAULT_MODE, SOUND_MODES, bufferName, checkChoices, durationRange, isA
 import { renderChoice } from '../../js/core/sound-render.js';
 import { integrate } from '../../scripts/sons/integrer.mjs';
 import { planSounds } from '../../js/game/sound-loader.js';
+import { sansImagesStudio } from './helpers/images-studio.js'; // lot 8g : logo et son du studio, exception nominative
 // Lot 4c (publication par versions, seul lot autorisé à modifier le workflow) : workflow, accueil, ses textes et tests du journal modifiés ; ce garde-fou de branche
 // (comparaison à main ou à lot-4b) n'a plus de sens pour eux après l'entrée dans main : ils sortent de la liste.
 const LOT_4C = ['.github/workflows/pages.yml', 'index.html', 'data/i18n/fr.json', 'tests/unit/data-changelog.test.js', 'tests/e2e/dev.spec.js', 'package.json']; // package.json : scripts site, archive, serve:site (dépendances inchangées, voir publication.test.js)
@@ -315,7 +316,7 @@ describe('hygiène du lot 3i', () => {
     const base = git('merge-base HEAD origin/lot-4b')?.trim();
     if (!base) return;
     const added = (git(`diff --name-only --diff-filter=A ${base}`) ?? '').split('\n').filter(Boolean);
-    expect(added.filter((f) => /\.(mp3|ogg|wav|flac|m4a|aac|png|jpe?g|gif|webp|svg|ico|woff2?|ttf|otf)$/i.test(f))).toEqual([]);
+    expect(sansImagesStudio(added).filter((f) => /\.(mp3|ogg|wav|flac|m4a|aac|png|jpe?g|gif|webp|svg|ico|woff2?|ttf|otf)$/i.test(f))).toEqual([]);
   });
   // data/changelog.json : entrée lot-3i ajoutée à la demande du propriétaire (CI rouge sans elle : data-changelog exige une entrée par bilan).
   it('fichiers interdits au lot inchangés', () => {

@@ -1,15 +1,23 @@
-// Lot 8g : exception nominative décidée par le propriétaire au pilier « aucune image importée » : le logo du studio (fourni par lui, jamais retouché)
-// et sa copie fixe dérivée par script (scripts/studio/logo-fixe.mjs) sont les seules images admises, chacune à ce chemin et avec cette somme SHA-256
-// exactement (un autre chemin, ou le même fichier modifié, reste refusé par les garde-fous « aucune image ajoutée »).
+// Lot 8g : exception nominative décidée par le propriétaire aux piliers « aucune image importée » et « aucun fichier audio » : le logo du studio
+// (fourni par lui, jamais retouché) et sa copie fixe dérivée par script (scripts/studio/logo-fixe.mjs) ; retour du propriétaire : le son du logo
+// (WAV d'origine, non publié, et sa copie MP3 dérivée par scripts/studio/son.mjs). Seuls admis, chacun à ce chemin et avec cette somme SHA-256
+// exactement (un autre chemin, ou le même fichier modifié, reste refusé par les garde-fous « aucune image ni aucun son ajouté »).
 import { createHash } from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
 
 export const IMAGES_STUDIO = Object.freeze({
-  'assets/studio/no-way-studio-logo-anime.svg': '1969029df4e24f796677ba06db25cf733898290fac49e38e0288dfcef19526e0',
-  'assets/studio/no-way-studio-logo-fixe.svg': 'e4daf572c179f890dd26c757aeb16a3b6e8abbef0443697a1d9d85a1f12ec43d',
+  'assets/studio/no-way-studio-logo-anime.svg': '4bfe9df41eac6eaf70ebdcf55a9b5686a14f0724c5d2bdcef3a21723840aa197',
+  'assets/studio/no-way-studio-logo-fixe.svg': 'd8244715dbf08381c329a8f8cc4f22612f4ce6c4ddcd8fc91c6cfe990666fd6b',
 });
+export const SONS_STUDIO = Object.freeze({
+  'Docs/studio/no-way-studio-logo-son.wav': 'a78cfd56ddb94f9bc6801dd7e2a917a7b7ca5077a0928062394fff7722556256',
+  'assets/studio/no-way-studio-logo-son.mp3': '9c162310c6bea51562e3948fe8e83b6b8e4dd91eaa0427f3afda3163cff30af8',
+});
+export const FICHIERS_STUDIO = Object.freeze({ ...IMAGES_STUDIO, ...SONS_STUDIO });
 
 export const sha256 = (f) => createHash('sha256').update(readFileSync(f)).digest('hex');
-export const imageStudio = (f) => Object.hasOwn(IMAGES_STUDIO, f) && existsSync(f) && sha256(f) === IMAGES_STUDIO[f];
-// Liste de chemins sans les images du studio admises.
+// Fichier du studio admis (image ou son) : chemin exact et somme exacte.
+export const imageStudio = (f) => Object.hasOwn(FICHIERS_STUDIO, f) && existsSync(f) && sha256(f) === FICHIERS_STUDIO[f];
+export const fichierStudio = imageStudio;
+// Liste de chemins sans les fichiers du studio admis.
 export const sansImagesStudio = (files) => (files ?? []).filter((f) => !imageStudio(f));

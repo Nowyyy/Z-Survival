@@ -372,7 +372,8 @@ test.describe('partie et retour au menu', () => {
     const o = surveiller(page, baseURL);
     await page.setViewportSize(REF);
     await page.goto('/jeu.html');
-    await expect(page.locator('#e7-titre')).toBeVisible();
+    // Lot 8g : sans paramètre, l'introduction du studio passe d'abord (attente du geste 4 s au plus, puis logo 6,5 s) : écran de chargement ensuite.
+    await expect(page.locator('#e7-titre')).toBeVisible({ timeout: 30_000 });
     await expect(page.locator('#menu-jouer')).toBeVisible({ timeout: 60_000 });
     expect(await page.evaluate(() => [typeof window.__zs, typeof window.__zsMenu])).toEqual(['undefined', 'undefined']);
     await expect(page.locator('#game-root')).toBeHidden();

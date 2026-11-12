@@ -3,19 +3,20 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { CANAUX_DEBUG, PARAMS_PARTIE, PARAMS_TEST, REPERES_RETOUR, REPERE_RETOUR, acces, choixDemarrage, introAuDemarrage } from '../../js/core/graphics.js';
-import { FIXE, ORIGINAL, logoFixe } from '../../scripts/studio/logo-fixe.mjs';
-import { IMAGES_STUDIO, imageStudio, sha256 } from './helpers/images-studio.js';
+import { FIXE, ORIGINAL, REGLE_FIXE, logoFixe } from '../../scripts/studio/logo-fixe.mjs';
+import { ARGS as ARGS_SON, ORIGINAL as SON_ORIGINAL, SORTIE as SON_SORTIE } from '../../scripts/studio/son.mjs';
+import { FICHIERS_STUDIO, IMAGES_STUDIO, SONS_STUDIO, imageStudio, sha256 } from './helpers/images-studio.js';
 
 const read = (f) => readFileSync(f, 'utf8');
 const CANAUX = ['source', 'dev', 'release', 'archive', 'prod', null, 'inconnu'];
 
 describe('logo du studio (lot 8g)', () => {
-  it('original fourni : chemin, SHA-256 de la partie 0, aucun script, gestionnaire, objet étranger, image ni adresse externe ; viewBox ; ≤ 16 Ko', () => {
-    expect(sha256(ORIGINAL)).toBe('1969029df4e24f796677ba06db25cf733898290fac49e38e0288dfcef19526e0');
+  it('original fourni (retour du propriétaire : nouvelle version calée sur le son) : chemin, SHA-256, aucun script, gestionnaire, objet étranger, image ni adresse externe ; viewBox ; ≤ 16 Ko', () => {
+    expect(sha256(ORIGINAL)).toBe('4bfe9df41eac6eaf70ebdcf55a9b5686a14f0724c5d2bdcef3a21723840aa197'); // avant : 1969029d… (partie 0)
     const svg = read(ORIGINAL);
     expect(Buffer.byteLength(svg)).toBeLessThanOrEqual(16 * 1024);
     expect(svg.startsWith('<svg')).toBe(true);
-    expect(svg).toMatch(/viewBox="-44 -84 792 556"/);
+    expect(svg).toMatch(/viewBox="-20 -62 824 628"/);
     expect(svg).not.toMatch(/<script|<foreignObject|<iframe|<image|\son[a-z]+\s*=|href|data:|@import|@font-face|font-family/i);
     // Seules adresses : les deux déclarations d'espace de noms ; seule référence : url(#band), interne.
     expect(svg.match(/https?:\/\/[^"]+/g)).toEqual(['http://www.w3.org/2000/svg', 'http://c2pa.org/manifest']);
@@ -23,13 +24,15 @@ describe('logo du studio (lot 8g)', () => {
     expect(svg).toMatch(/@media \(prefers-reduced-motion:reduce\)\{\*\{animation:none!important\}\.tilt\{transform:rotate\(-4deg\)\}\}/);
   });
 
-  it('copie fixe : sortie exacte du script (état final, sans animation ni manifeste) ; mêmes formes que l\'original', () => {
+  it('copie fixe : sortie exacte du script (règle « mouvement réduit » de l\'original rendue permanente, sans manifeste) ; mêmes formes que l\'original', () => {
     const original = read(ORIGINAL);
     const fixe = read(FIXE);
     expect(fixe).toBe(logoFixe(original));
-    expect(fixe).not.toMatch(/animation|@keyframes|<metadata|c2pa|prefers-reduced-motion/);
-    expect(fixe).toMatch(/<style>\.tilt\{transform:rotate\(-4deg\)\}<\/style>/);
-    const formes = (s) => s.replace(/<style>[\s\S]*?<\/style>/, '').replace(/<metadata>[\s\S]*?<\/metadata>/, '').replace(/\s+xmlns:c2pa="[^"]*"/, '');
+    expect(fixe).not.toMatch(/<metadata|c2pa|prefers-reduced-motion/);
+    expect(REGLE_FIXE).toBe('*{animation:none!important}.tilt{transform:rotate(-4deg)}');
+    expect(fixe.split(REGLE_FIXE)).toHaveLength(2); // hors de tout @media : toujours appliquée
+    expect(fixe).toMatch(/\.flash\{opacity:0;/); // éléments cachés hors animation : gardés cachés
+    const formes = (x) => x.replace(/<style>[\s\S]*?<\/style>/, '').replace(/<metadata>[\s\S]*?<\/metadata>/, '').replace(/\s+xmlns:c2pa="[^"]*"/, '');
     expect(formes(fixe)).toBe(formes(original));
     expect(() => logoFixe('<svg><style>a{}</style></svg>')).toThrow();
     expect(() => logoFixe('<svg></svg>')).toThrow();
@@ -37,10 +40,22 @@ describe('logo du studio (lot 8g)', () => {
 
   it('exception nominative : ces deux chemins avec leur somme exacte seulement ; un autre chemin ou une autre somme reste refusé', () => {
     expect(Object.keys(IMAGES_STUDIO)).toEqual([ORIGINAL, FIXE]);
-    for (const f of Object.keys(IMAGES_STUDIO)) expect(imageStudio(f), f).toBe(true);
+    expect(Object.keys(SONS_STUDIO)).toEqual([SON_ORIGINAL, SON_SORTIE]);
+    for (const f of Object.keys(FICHIERS_STUDIO)) expect(imageStudio(f), f).toBe(true);
+    expect(imageStudio('assets/studio/no-way-studio-logo-son.wav')).toBe(false);
     expect(imageStudio('Docs/studio/no-way-studio-logo-anime.svg')).toBe(false);
     expect(imageStudio('assets/studio/autre.svg')).toBe(false);
     expect(imageStudio('__proto__')).toBe(false);
+  });
+
+  it('son du logo (retour du propriétaire) : WAV d\'origine (PCM 16 bits, stéréo, 44,1 kHz, 6,8 s) non publié (Docs/) ; MP3 dérivé par scripts/studio/son.mjs (128 kbit/s, ≤ 150 Ko), publié', () => {
+    const wav = readFileSync(SON_ORIGINAL);
+    expect([wav.toString('ascii', 0, 4), wav.toString('ascii', 8, 12), wav.readUInt16LE(20), wav.readUInt16LE(22), wav.readUInt32LE(24), wav.readUInt16LE(34)]).toEqual(['RIFF', 'WAVE', 1, 2, 44100, 16]);
+    const mp3 = readFileSync(SON_SORTIE);
+    expect(mp3.length).toBeLessThanOrEqual(150 * 1024);
+    expect([mp3[0], mp3[1] & 0xe0]).toEqual([0xff, 0xe0]); // trame MP3 dès le début (aucune étiquette ID3)
+    expect(ARGS_SON).toEqual(expect.arrayContaining(['-i', SON_ORIGINAL, 'libmp3lame', '128k', SON_SORTIE]));
+    expect(SON_ORIGINAL.startsWith('Docs/')).toBe(true); // Docs/ n'est jamais publié (build.test)
   });
 
   it('servi par le build (assets/) ; jamais par la partie : aucun fichier de js/game/ ne le cite', () => {
@@ -123,6 +138,12 @@ describe('introduction au démarrage (lot 8g)', () => {
     expect(d).not.toMatch(/^import .*intro\.js/m);
     // Aucune écriture dans le stockage pour l'introduction ni le repère.
     for (const f of ['js/menu/demarrage.js', 'js/menu/intro.js']) expect(read(f), f).not.toMatch(/localStorage|sessionStorage|indexedDB|document\.cookie/);
+    // Retour du propriétaire (son du logo) : contexte audio créé seulement dans le geste (aucun son avant un geste : CLAUDE.md).
+    const intro = read('js/menu/intro.js');
+    expect(intro.match(/new AC\(\)/g)).toHaveLength(1);
+    const geste = intro.slice(intro.indexOf('function geste()'), intro.indexOf('function passer()'));
+    expect(geste).toMatch(/new AC\(\)/);
+    expect(intro).toMatch(/export const SON = 'assets\/studio\/no-way-studio-logo-son\.mp3';/);
   });
 });
 
@@ -177,7 +198,7 @@ describe('Crédits et licences (lot 8g)', () => {
     expect(menu).toMatch(/roueDifferee\(box, \{ fixe: true, texte: t\('game\.menu\.chargement\.texte'\) \}\);\n {6}try \{\n {8}chargementCredits/);
     expect(credits).not.toMatch(/innerHTML|insertAdjacentHTML|outerHTML/);
     expect(credits).toMatch(/'aria-expanded': 'false'/);
-    expect(credits).toMatch(/adresseStudio\(fichier, \{ neuve: !fixe \}\)/);
+    expect(credits).toMatch(/const fichier = LOGO_STUDIO_FIXE;\n {2}adresseStudio\(fichier\)/); // retour du propriétaire : logo fixe
   });
 });
 
