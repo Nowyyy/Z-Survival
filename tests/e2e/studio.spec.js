@@ -24,7 +24,7 @@ function surveiller(page, baseURL) {
   page.on('request', (r) => {
     const u = r.url();
     if (u.startsWith(baseURL)) fichiers.push(new URL(u).pathname);
-    else if (!u.startsWith('data:') && !u.startsWith('blob:')) externes.push(u);
+    else if (!u.startsWith('data:')) externes.push(u); // lot 8g : le logo s'affiche par une adresse data:, sans requête
   });
   return { problemes, externes, fichiers };
 }
@@ -53,7 +53,7 @@ const boite = (page, sel) => page.locator(sel).evaluate((n) => {
   return { l: r.left, t: r.top, r: r.right, b: r.bottom, w: r.width, h: r.height };
 });
 const chevauche = (x, y) => x.l < y.r - 0.5 && y.l < x.r - 0.5 && x.t < y.b - 0.5 && y.t < x.b - 0.5;
-const imageAffichee = (page, sel) => page.locator(sel).evaluate((n) => n.complete && n.naturalWidth > 0 && n.src.startsWith('blob:'));
+const imageAffichee = (page, sel) => page.locator(sel).evaluate((n) => n.complete && n.naturalWidth > 0 && n.src.startsWith('data:image/svg+xml'));
 
 async function ouvrirIntro(page, size = REF, extra = '') {
   await page.setViewportSize(size);

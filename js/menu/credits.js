@@ -96,15 +96,12 @@ export async function ecranCredits({ t, onClose = () => {} }) {
   grille.append(gauche, droite);
   section.append(tete, grille);
 
-  // Logo : à chaque ouverture, une adresse neuve (l'animation repart de zéro) ; la précédente est libérée. Mouvement réduit : copie fixe.
+  // Logo : à chaque ouverture, une adresse neuve (l'animation repart de zéro). Mouvement réduit : copie fixe.
   let fichier = null;
-  let neuve = null;
   function poserLogo() {
     const fixe = reduit.matches;
     fichier = fixe ? LOGO_STUDIO_FIXE : LOGO_STUDIO_ANIME;
     adresseStudio(fichier, { neuve: !fixe }).then((a) => {
-      if (neuve) URL.revokeObjectURL(neuve);
-      neuve = fixe ? null : a;
       logo.src = a;
     }, () => {});
   }

@@ -35,7 +35,7 @@ Balise : `<meta name="zs-canal" content="source">` dans `jeu.html`, forme exacte
 |---|---|---|
 | G (doublons d'Options, réglages graphiques sans menu) | `gfx`, `lum`, `lampgain`, `shadows`, `vhs`, `dpr`, `detail`, `perso`, `sang`, `usure`, `percee` | `test=1` pris en compte, ou canal `source` |
 | T (outils techniques) | `wave`, `lvl`, `money`, `planks`, `floor`, `map`, `nospawn`, `endless`, `fin`, `perf`, `cap`, `fps`, `zoom`, `tilt`, `labels`, `sons` | canal dans `CANAUX_DEBUG` (avec ou sans `test=1`) |
-| Test | `test`, `store`, `seed`, `empty`, `menu` (lot 8a) | canal dans `CANAUX_DEBUG` |
+| Test | `test`, `store`, `seed`, `empty`, `menu` (lot 8a), `intro` (lot 8g) | canal dans `CANAUX_DEBUG` |
 | Autres (`v`, tout nom inconnu) | lus par aucun code | inchangés |
 
 `readOnlyParams` (`data/game/save.json`) : inchangé ; `gfx`, `perf`, `cap` n'y sont jamais. Un paramètre refusé est retiré de l'adresse **lue par le jeu** (l'adresse affichée ne change pas) : il n'a aucun effet et ne déclenche pas le mode essai.
@@ -83,3 +83,7 @@ Balise : `<meta name="zs-canal" content="source">` dans `jeu.html`, forme exacte
 
 ## Pages techniques
 `carte.html` et `visite.html` ouvrent le jeu avec `?zoom=1&labels=1&wave=…&floor=1&nospawn=1&map=salle` (groupe T) : ces liens marchent sur `source`, `dev` et `Recette` ; ils cesseront en production (canal refusé). Pages à retirer au lot 13.
+
+## Paramètre `intro` et introduction du studio (lot 8g)
+- Au lancement en mode menu, l'introduction du studio (logo animé de No Way Studio) se joue avant l'écran de chargement ; règle : `introAuDemarrage(canal, adresse, fragment)` (`js/core/graphics.js`), lue par `js/menu/demarrage.js`. Jamais en partie directe ; jamais avec le repère `#retour` ou `#plein-ecran` (retour au menu après une partie, posé par `menuRetour`).
+- `?intro=1` (groupe test) : sous `?test=1&menu=1` (canaux de débogage), joue l'introduction (les tests du menu, sans lui, ne la voient pas) ; `window.__zsMenu.intro()` : phase (`attente`, `joue`, `sortie`, `finie`), passée ou non, mouvement réduit, horodatages. Sans `?test=1`, sans effet (l'introduction se joue déjà). Refusé sur archive, prod et canal absent.

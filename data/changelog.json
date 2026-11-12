@@ -305,6 +305,15 @@
       "Menu : roue de chargement plus grande et visible (aussi en changeant d'onglet), zones qui défilent glissables à la souris comme au doigt, écran Personnages qui ne reste plus par-dessus les autres ; en partie, Échap ouvre la pause même en plein écran, et le plein écran reprend au premier toucher après le retour au menu.",
       "Essai : durées et effets réglables, provisoires ; aucun son pour l'instant ; aucun prix n'est prélevé.",
       "Les règles du jeu ne changent pas."
+    ] },
+    { "name": "lot-8g", "version": "v0.8", "date": "2026-11-12", "titre": "Signature du studio, Crédits et Profil", "points": [
+      "Au lancement du jeu, une courte introduction montre le logo animé de No Way Studio sur fond noir ; un toucher ou une touche la passe, et le menu se charge pendant ce temps.",
+      "L'introduction ne se rejoue pas au retour au menu après une partie ; avec les animations réduites, le logo reste fixe une seconde.",
+      "Le logo du studio apparaît en petit en bas à gauche de l'écran de chargement, et en bas du menu à trois barres, à côté de la version.",
+      "Nouvelle entrée « Crédits » : le studio, l'équipe, et les outils utilisés avec leurs licences (Three.js, les trois polices, le logo de Discord), dans des zones dépliables.",
+      "« Connexion » ouvre l'écran Connexion (connexion Google et compte No Way Studio pas encore disponibles) et mène au Profil local : avatar, pseudo, statistiques de la sauvegarde.",
+      "Depuis le Profil, « Exporter mon code » et « Importer un code » reprennent la sauvegarde par code ; l'avatar et le pseudo ne sont pas encore gardés.",
+      "Les règles du jeu ne changent pas."
     ] }
   ]
 }

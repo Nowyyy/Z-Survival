@@ -21,15 +21,19 @@ const FIN_CHUTE_MS = 4000; // filet de sécurité si la fin d'animation n'arrive
 const POLICES_MS = 3000; // attente maximale des polices du menu
 export const LOGO_STUDIO_FIXE = 'assets/studio/no-way-studio-logo-fixe.svg'; // lot 8g : copie fixe du logo (scripts/studio/logo-fixe.mjs)
 
-// Lot 8g : adresse d'affichage d'un fichier du logo du studio : son texte lu une fois (fetch, même origine), puis une adresse blob: de type
-// image/svg+xml. Le type ne dépend ainsi pas du serveur (le serveur local des tests sert les .svg sans type d'image), et neuve = true donne une adresse
-// inédite, donc une animation qui repart de zéro (Crédits) : deux images de même adresse partagent leur chronologie. Sans requête externe.
+// Lot 8g : adresse d'affichage d'un fichier du logo du studio : son texte lu une fois (fetch, même origine), puis une adresse data: de type
+// image/svg+xml (aucune requête de plus). Le type ne dépend ainsi pas du serveur (le serveur local des tests sert les .svg sans type d'image), et
+// neuve = true donne une adresse inédite (commentaire numéroté ajouté en fin de texte : l'image est la même), donc une animation qui repart de zéro
+// (Crédits) : deux images de même adresse partagent leur chronologie.
 const textesStudio = new Map();
 const adressesStudio = new Map();
+let neuves = 0;
+const enData = (texte) => `data:image/svg+xml;charset=utf-8,${encodeURIComponent(texte)}`;
 export function adresseStudio(chemin, { neuve = false } = {}) {
   if (!textesStudio.has(chemin)) textesStudio.set(chemin, fetch(chemin).then((r) => (r.ok ? r.text() : Promise.reject(new Error(`${chemin} : ${r.status}`)))));
   if (!neuve && adressesStudio.has(chemin)) return adressesStudio.get(chemin);
-  const adresse = textesStudio.get(chemin).then((texte) => URL.createObjectURL(new Blob([texte], { type: 'image/svg+xml' })));
+  const n = neuve ? (neuves += 1) : 0;
+  const adresse = textesStudio.get(chemin).then((texte) => enData(neuve ? `${texte}<!-- ${n} -->` : texte));
   if (!neuve) adressesStudio.set(chemin, adresse);
   return adresse;
 }
