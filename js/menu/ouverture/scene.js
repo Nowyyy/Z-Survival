@@ -28,6 +28,8 @@ const h01 = (k, j) => {
   return x - Math.floor(x);
 };
 const OEIL = Object.freeze({ y: 124, cible: [0, 70, TAPIS.z], depart: 380 });
+// Profondeur de la porte du fond (pivot de la caméra : le fond reste fixe à l'écran pendant les mouvements de tête).
+const Z_PORTE = -678;
 const MAX_PARTICULES = 14;
 const MAX_ETINCELLES = 12;
 const MAX_RAYONS = 7;
@@ -134,7 +136,7 @@ export async function creerScene({ canvas, couleur, chrono, reglages, cartes, mo
   const texPorte = T.porte();
   texPorte.repeat.set(3, 1.6);
   const porte = new THREE.Mesh(geo(new THREE.PlaneGeometry(600, 340)), mat(new THREE.MeshLambertMaterial({ map: texPorte })));
-  porte.position.set(0, 170, -678);
+  porte.position.set(0, 170, Z_PORTE);
   const texBande = T.bande();
   texBande.repeat.set(10, 1);
   const bande = new THREE.Mesh(geo(new THREE.PlaneGeometry(600, 26)), mat(new THREE.MeshLambertMaterial({ map: texBande })));
@@ -414,6 +416,8 @@ export async function creerScene({ canvas, couleur, chrono, reglages, cartes, mo
   }
   camera.quaternion.copy(orientationCamera);
   camera.position.set(0, OEIL.y, OEIL.depart);
+  // Point visé à la profondeur de la porte du fond, sur la ligne de visée de la place finale (même cadrage, pivot au fond).
+  const regardFond = new THREE.Vector3(...OEIL.cible).sub(vI.set(0, OEIL.y, 0)).multiplyScalar(-Z_PORTE / -OEIL.cible[2]).add(vI.set(0, OEIL.y, 0));
   function cadrer() {
     const aspect = largeur / Math.max(1, hauteur);
     // Champ horizontal visé ≈ 96° (tapis entier, zombies sur les côtés), vertical borné à [48°, 64°].
@@ -463,7 +467,7 @@ export async function creerScene({ canvas, couleur, chrono, reglages, cartes, mo
     const pasPhase = s.marche.pas;
     const balance = s.marche.enMarche ? Math.abs(Math.sin(Math.PI * pasPhase)) : 0;
     const sec = s.secousse * 0.45;
-    camera.position.set(Math.sin(Math.PI * pasPhase) * 1.4 * (s.marche.enMarche ? 1 : 0) + sec * bruit(t, 1), OEIL.y + balance * 3.2 - 1.6 * (s.marche.enMarche ? 1 : 0) + sec * bruit(t, 2), OEIL.depart * (1 - avance));
+    camera.position.set(Math.sin(Math.PI * pasPhase) * 3 * (s.marche.enMarche ? 1 : 0) + sec * bruit(t, 1), OEIL.y + balance * 5 - 2.5 * (s.marche.enMarche ? 1 : 0) + sec * bruit(t, 2), OEIL.depart * (1 - avance));
     // Secousse à l'impact du zombie projeté sur l'écran (0,35 s).
     const impact = chrono.caisses.find((c) => c.projection && t >= c.projection.impact && t < c.projection.impact + 0.35);
     if (impact) {
@@ -471,10 +475,12 @@ export async function creerScene({ canvas, couleur, chrono, reglages, cartes, mo
       camera.position.x += k * bruit(t, 5);
       camera.position.y += k * bruit(t, 6);
     }
-    // Retour du propriétaire (« la porte de garage bouge au rythme des pas ») : la caméra garde l'orientation de son arrivée au tapis ; avant,
-    // elle se réorientait vers le tapis à chaque pas (pivot autour de lui : le décor du fond bougeait à contre-sens). Le balancement des pas ne
-    // fait plus que la déplacer (le fond, lointain, reste fixe à l'écran) ; la secousse ajoute un léger roulis.
-    camera.quaternion.copy(orientationCamera).multiply(qRot.setFromAxisAngle(AZ, sec * 0.004 * bruit(t, 3)));
+    // Retours du propriétaire : « la porte de garage bouge au rythme des pas » puis « j'aimais bien les mouvements de tête, je ne veux pas que le
+    // décor bouge » : la tête se balance à chaque pas et la caméra pivote autour d'un point à la profondeur de la porte du fond (au début : autour
+    // du tapis, d'où le fond qui bougeait) : la porte et le mur restent fixes à l'écran, le tapis, les caisses et le fusil bougent avec la tête.
+    // Même cadrage qu'avant à l'arrêt (le point est sur la même ligne de visée) ; la secousse ajoute un léger roulis.
+    camera.lookAt(regardFond);
+    camera.quaternion.multiply(qRot.setFromAxisAngle(AZ, sec * 0.004 * bruit(t, 3)));
     // Fusil : se balance en marchant, respire, recule au tir.
     const sw = s.marche.enMarche ? Math.sin(Math.PI * pasPhase) : 0;
     const respire = Math.sin((TAU * t) / 2.4) * 0.35;
