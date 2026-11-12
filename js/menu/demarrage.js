@@ -95,6 +95,7 @@ function lancerJeu() {
 }
 
 if (!modeMenu) {
+  document.documentElement.classList.remove('zs-attente'); // lot 8g : écran de préparation (jeu.html) montré en partie directe seulement
   lancerJeu();
 } else {
   document.documentElement.classList.add('zs-mode-menu');
@@ -137,7 +138,7 @@ if (!modeMenu) {
     ecran = m.creerChargement({ phase: 'menu', jouer, son: { lire: reglagesSon, poser: poserSon } });
   }).catch(() => {
     // Écran de chargement indisponible : la partie démarre comme avant le menu (écran de préparation #loading).
-    document.documentElement.classList.remove('zs-mode-menu');
+    document.documentElement.classList.remove('zs-mode-menu', 'zs-attente');
     lancerJeu();
   });
 }

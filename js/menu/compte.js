@@ -1,13 +1,13 @@
-// Lot 8g : écrans Connexion et Profil E10 (Docs/ref/menu-principal.md, « Lot 8g » ; maquette Docs/maquettes-v0.8/Profil.html), chargés à la demande
-// (roue de chargement de menu.js), écrans pleins comme les Options (en-tête gardé, barre d'onglets masquée, « ‹ Menu »).
-// - Connexion (E10-1) : bouton « Connexion » de l'en-tête (remplace l'écran provisoire « Connexion : bientôt » du lot 8a) : deux boutons désactivés
-//   (raison lue), une phrase, « Mon profil local ».
-// - Profil (E10-2) : carte (avatar généré en code, pseudo modifiable, compte non connecté), six statistiques lues dans la sauvegarde existante (« — »
-//   sinon : js/menu/profil-etat.js), Sauvegarde : « Exporter mon code » et « Importer un code », par la logique de sauvegarde.html (code ZS1.…,
-//   vérification, aperçu, confirmation, message) : js/core/save.js (encodeSave, decodeSave) et js/sauvegarde/logic.js ; l'import remplace la
-//   sauvegarde par repository.replace (seule écriture, déjà existante, après confirmation), puis le menu se recharge (repère #retour, comme le
-//   retour au menu : sans introduction ; tout le menu relit la sauvegarde importée).
-// Avatar et pseudo restent en mémoire jusqu'au lot 8h (le retour au menu les remet par défaut). Animations « e10-* » (css/menu.css).
+// Lot 8g : page Profil E10 (Docs/ref/menu-principal.md, « Lot 8g » ; maquette Docs/maquettes-v0.8/Profil.html), chargée à la demande (roue de
+// chargement de menu.js), écran plein comme les Options (en-tête gardé, barre d'onglets masquée, « ‹ Menu »). Retour du propriétaire : plus d'écran
+// Connexion : le bouton « Connexion » de l'en-tête ouvre directement le Profil ; « Se connecter avec Google · bientôt » est sur le Profil et dans le
+// menu à trois barres (raison lue).
+// - Profil : carte (avatar dessiné en code d'après le joueur et les zombies du jeu, pseudo modifiable, compte non connecté), six statistiques lues
+//   dans la sauvegarde existante (« — » sinon : js/menu/profil-etat.js), Sauvegarde : « Exporter mon code » et « Importer un code », par la logique de
+//   sauvegarde.html (code ZS1.…, vérification, aperçu, confirmation, message) : js/core/save.js (encodeSave, decodeSave) et js/sauvegarde/logic.js ;
+//   l'import remplace la sauvegarde par repository.replace (seule écriture, déjà existante, après confirmation), puis le menu se recharge (repère
+//   #retour, comme le retour au menu : sans introduction ; tout le menu relit la sauvegarde importée).
+// Avatar et pseudo restent en mémoire jusqu'au lot 8h (le retour au menu les remet par défaut).
 import { el } from './menu.js';
 import { AVATARS, ERREURS_PSEUDO, avatarSuivant, statsProfil, validerPseudo, PSEUDO_MAX, PSEUDO_MIN } from './profil-etat.js';
 import { decodeSave, encodeSave } from '../core/save.js';
@@ -43,18 +43,50 @@ function icone(d, classe) {
   return svg;
 }
 const CHEVRON = 'M15 6l-6 6 6 6';
+const NOMS_AVATARS = {
+  survivant: 'game.menu.profil.avatar.survivant', eclaireur: 'game.menu.profil.avatar.eclaireur', tireur: 'game.menu.profil.avatar.tireur',
+  rodeur: 'game.menu.profil.avatar.rodeur', ouvrier: 'game.menu.profil.avatar.ouvrier', affame: 'game.menu.profil.avatar.affame',
+};
 const STAT_TEXTES = {
-  meilleureManche: 'game.menu.profil.stat.meilleureManche', recordInfini: 'game.menu.profil.stat.recordInfini', tues: 'game.menu.profil.stat.tues',
-  parties: 'game.menu.profil.stat.parties', temps: 'game.menu.profil.stat.temps', argent: 'game.menu.profil.stat.argent',
+  meilleureManche: 'game.menu.profil.stat.meilleureManche', tues: 'game.menu.profil.stat.tues', partiesHistoire: 'game.menu.profil.stat.partiesHistoire',
+  partiesInfini: 'game.menu.profil.stat.partiesInfini', temps: 'game.menu.profil.stat.temps', argent: 'game.menu.profil.stat.argent',
 };
 const CRAYON = 'M4 20h4L20 8l-4-4L4 16z';
-// Silhouettes d'avatar (24 × 24) : épaules communes, tête selon la forme.
-const EPAULES = 'M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8z';
-function silhouette(forme) {
+// Portraits d'avatar (64 × 64, retour du propriétaire : d'après le personnage du jeu et les zombies) : buste, cou, tête, puis détails de la tenue ;
+// couleurs par classes (av-peau, av-habit, av-acc, av-sombre, av-yeux, av-sang, av-lampe), dont css/menu.css donne les jetons de chaque avatar.
+const BUSTE = 'M6 64C6 50 17 44 32 44s26 6 26 20Z';
+function portrait(avatar) {
   const g = svgEl('g');
-  if (forme === 'casque') g.append(svgEl('circle', { cx: 12, cy: 8.6, r: 3.6 }), svgEl('path', { d: 'M6.6 8.4a5.4 5.4 0 0 1 10.8 0v.8H6.6z' }, 'e10-avatar-detail'), svgEl('path', { d: EPAULES }));
-  else if (forme === 'capuche') g.append(svgEl('path', { d: 'M12 1.8a6.4 6.4 0 0 0-6.4 6.4v5.4h12.8V8.2A6.4 6.4 0 0 0 12 1.8z' }), svgEl('circle', { cx: 12, cy: 9, r: 3 }, 'e10-avatar-detail'), svgEl('path', { d: EPAULES }));
-  else g.append(svgEl('circle', { cx: 12, cy: 8, r: 4 }), svgEl('path', { d: EPAULES }));
+  const zombie = avatar.type === 'zombie';
+  const tete = svgEl('g', zombie ? { transform: 'rotate(-7 32 30)' } : {});
+  const t = avatar.tenue;
+  if (t === 'capuche') g.append(svgEl('path', { d: 'M17 33C16 13 48 13 47 33L49 47H15Z' }, 'av-habit'));
+  g.append(svgEl('path', { d: BUSTE }, 'av-habit'), svgEl('rect', { x: 27, y: 37, width: 10, height: 10 }, 'av-peau'));
+  // Tenue (buste).
+  if (t === 'bandana' || t === 'veste') g.append(svgEl('path', { d: 'M24 46L28 64M40 46L36 64' }, 'av-trait'));
+  if (t === 'veste') g.append(svgEl('path', { d: 'M24 45L32 54L40 45' }, 'av-col'));
+  if (t === 'chemise') g.append(svgEl('path', { d: 'M24 45L32 52L40 45M14 64L18 58L22 64L27 57L31 64' }, 'av-trait'));
+  if (t === 'chantier') g.append(svgEl('path', { d: 'M15 50L23 46L27 64H17ZM49 50L41 46L37 64H47Z' }, 'av-acc'));
+  if (t === 'sweat') g.append(svgEl('path', { d: 'M44 64L46 56L49 60L51 54' }, 'av-trait'), svgEl('circle', { cx: 21, cy: 56, r: 2.4 }, 'av-sang'));
+  // Tête.
+  tete.append(svgEl('ellipse', { cx: 32, cy: 28, rx: 11.5, ry: 13 }, 'av-peau'));
+  if (t === 'bandana' || t === 'veste') tete.append(svgEl('path', { d: 'M20.5 27C19 13 45 13 43.5 27C40 19 24 19 20.5 27Z' }, 'av-sombre'));
+  if (t === 'capuche') tete.append(svgEl('rect', { x: 23, y: 15.5, width: 18, height: 3, rx: 1.5 }, 'av-sombre'), svgEl('circle', { cx: 32, cy: 17, r: 3 }, 'av-lampe'));
+  if (t === 'chantier') tete.append(svgEl('path', { d: 'M19 24C19 11 45 11 45 24Z' }, 'av-acc2'), svgEl('rect', { x: 16, y: 22, width: 32, height: 3.5, rx: 1.5 }, 'av-acc2'));
+  if (t === 'chemise' || t === 'sweat') tete.append(svgEl('path', { d: 'M21 25C21 15 30 13 36 15C41 16 44 20 43 26L40 21L36 23L33 19L29 22L25 20Z' }, 'av-sombre'));
+  if (zombie) {
+    // Yeux luisants, cernes, bouche entrouverte, sang au menton.
+    tete.append(
+      svgEl('ellipse', { cx: 27, cy: 29, rx: 3.4, ry: 2.6 }, 'av-sombre'), svgEl('ellipse', { cx: 37, cy: 29, rx: 3.4, ry: 2.6 }, 'av-sombre'),
+      svgEl('circle', { cx: 27, cy: 29, r: t === 'sweat' ? 2.2 : 1.6 }, 'av-yeux'), svgEl('circle', { cx: 37, cy: 29, r: 1.6 }, 'av-yeux'),
+      svgEl('path', { d: 'M26 35.5L28.5 34L30.5 36.5L32.5 34L34.5 36.5L37 35L36 38.5H27Z' }, 'av-sombre'),
+      svgEl('path', { d: 'M29 38.5C29 41 30 43 31 43S32 41 32 38.5Z' }, 'av-sang'));
+  } else {
+    tete.append(svgEl('circle', { cx: 27.5, cy: 28, r: 1.6 }, 'av-sombre'), svgEl('circle', { cx: 36.5, cy: 28, r: 1.6 }, 'av-sombre'));
+    if (t === 'bandana') tete.append(svgEl('rect', { x: 20.5, y: 32, width: 23, height: 6.5, rx: 1 }, 'av-acc'), svgEl('path', { d: 'M43 33L50 35L44 38Z' }, 'av-acc'));
+    else tete.append(svgEl('path', { d: 'M28.5 35Q32 37 35.5 35' }, 'av-trait'));
+  }
+  g.append(tete);
   return g;
 }
 
@@ -142,21 +174,6 @@ export async function ecransCompte({ t, bandeau, root, rootDialogue, monde, pose
     }
   };
 
-  // --- Connexion (E10-1) -----------------------------------------------------------------------------------------------------------------------
-  const connexion = el('section', ['e8-ecran', 'e10', 'e10-connexion'], { id: 'menu-ecran-connexion', 'aria-labelledby': 'menu-ecran-connexion-titre', 'data-block': 'E10-1' });
-  connexion.hidden = true;
-  const tc = tete({ t, bandeau, libelle: t('game.menu.connexion.libelle'), titre: t('game.menu.connexion.titre'), id: 'menu-ecran-connexion', onClose: () => poserEcran(null) });
-  const choix = el('div', ['e10-choix']);
-  const google = boutonIndisponible('menu-connexion-google', t('game.menu.compte.google'), t('game.menu.compte.google.raison'), ['e10-bouton', 'e10-indisponible', 'e10-large']);
-  const nws = boutonIndisponible('menu-connexion-nws', t('game.menu.compte.nws'), t('game.menu.compte.nws.raison'), ['e10-bouton', 'e10-indisponible', 'e10-large']);
-  const phrase = el('p', ['e10-phrase'], { id: 'menu-connexion-texte' });
-  phrase.textContent = t('game.menu.connexion.texte');
-  const versProfil = el('button', ['menu-planche', 'e10-planche'], { type: 'button', id: 'menu-connexion-profil' });
-  versProfil.textContent = t('game.menu.compte.profilLocal');
-  versProfil.addEventListener('click', () => poserEcran('profil'));
-  choix.append(google.bouton, google.raison, nws.bouton, nws.raison, phrase, versProfil);
-  connexion.append(tc.tete, choix);
-
   // --- Profil (E10-2) -------------------------------------------------------------------------------------------------------------------------
   const profil = el('section', ['e8-ecran', 'e10', 'e10-profil'], { id: 'menu-ecran-profil', 'aria-labelledby': 'menu-ecran-profil-titre', 'data-block': 'E10-2' });
   profil.hidden = true;
@@ -171,7 +188,7 @@ export async function ecransCompte({ t, bandeau, root, rootDialogue, monde, pose
   // Carte : avatar, pseudo, compte.
   const carte = el('section', ['e10-carte'], { id: 'menu-profil-carte', 'aria-label': t('game.menu.profil.carte') });
   const avatar = el('div', ['e10-avatar'], { id: 'menu-profil-avatar', role: 'img' });
-  const avatarSvg = svgEl('svg', { viewBox: '0 0 24 24', 'aria-hidden': 'true', focusable: 'false' }, 'e10-avatar-svg');
+  const avatarSvg = svgEl('svg', { viewBox: '0 0 64 64', 'aria-hidden': 'true', focusable: 'false' }, 'e10-avatar-svg');
   avatar.append(avatarSvg);
   const changer = el('button', ['e10-bouton'], { type: 'button', id: 'menu-profil-changer' });
   changer.textContent = t('game.menu.profil.avatar.changer');
@@ -179,8 +196,8 @@ export async function ecransCompte({ t, bandeau, root, rootDialogue, monde, pose
     const a = AVATARS.find((x) => x.id === memoire.avatar) ?? AVATARS[0];
     avatar.dataset.avatar = a.id;
     avatar.className = `e10-avatar e10-avatar-${a.id}`;
-    avatarSvg.replaceChildren(silhouette(a.forme));
-    avatar.setAttribute('aria-label', fmt(t('game.menu.profil.avatar.nom'), { n: AVATARS.indexOf(a) + 1, total: AVATARS.length }));
+    avatarSvg.replaceChildren(portrait(a));
+    avatar.setAttribute('aria-label', fmt(t('game.menu.profil.avatar.nom'), { n: AVATARS.indexOf(a) + 1, total: AVATARS.length, nom: t(NOMS_AVATARS[a.id]) }));
   };
   changer.addEventListener('click', () => {
     memoire.avatar = avatarSuivant(memoire.avatar).id;
@@ -251,9 +268,9 @@ export async function ecransCompte({ t, bandeau, root, rootDialogue, monde, pose
   const stats = el('ul', ['e10-stats'], { id: 'menu-profil-stats', 'aria-labelledby': 'menu-profil-stats-titre' });
   const DETAILS = {
     meilleureManche: fmt(t('game.menu.profil.stat.meilleureManche.detail'), { monde: monde?.nom || '' }),
-    recordInfini: monde?.nom || '',
     tues: t('game.menu.profil.stat.tues.detail'),
-    parties: t('game.menu.profil.stat.parties.detail'),
+    partiesHistoire: t('game.menu.profil.stat.partiesHistoire.detail'),
+    partiesInfini: t('game.menu.profil.stat.partiesInfini.detail'),
     temps: t('game.menu.profil.stat.temps.detail'),
     argent: t('game.menu.profil.stat.argent.detail'),
   };
@@ -441,23 +458,22 @@ export async function ecransCompte({ t, bandeau, root, rootDialogue, monde, pose
   exporter.addEventListener('click', ouvrirExport);
   importer.addEventListener('click', ouvrirImport);
 
-  root.append(connexion, profil);
+  root.append(profil);
   poserAvatar();
   poserPseudo();
 
   return {
-    // Écran affiché (connexion, profil ou null) ; le Profil relit la sauvegarde à chaque affichage.
+    // Écran affiché (profil ou autre) ; le Profil relit la sauvegarde à chaque affichage.
     synchroniser(ecran) {
       const avant = !profil.hidden;
-      connexion.hidden = ecran !== 'connexion';
       profil.hidden = ecran !== 'profil';
       if (ecran !== 'profil') {
         fermerFenetre();
         if (!form.hidden) editer(false);
       } else if (!avant) poserStats();
     },
-    focus(ecran) {
-      (ecran === 'profil' ? tp.retour : tc.retour).focus();
+    focus() {
+      tp.retour.focus();
     },
     // Échap : fenêtre d'export ou d'import, puis édition du pseudo (true : traité) ; sinon l'écran se ferme (menu.js).
     echap() {

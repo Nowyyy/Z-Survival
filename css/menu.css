@@ -580,6 +580,10 @@
   border-radius: 6px;
   background: var(--menu-e9-panneau);
   box-shadow: 0 calc(10 * var(--u)) calc(24 * var(--u)) var(--menu-ombre);
+  /* Lot 8g (entrée Google en plus) : jamais plus bas que l'écran (téléphone à encoche, 351 px de haut) ; au-delà, la liste défile. */
+  max-height: calc(100dvh - var(--e8-entete) - 4px - max(8px, env(safe-area-inset-bottom, 0px)));
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .e8-liste-groupe {
@@ -4244,25 +4248,6 @@
   pointer-events: none;
 }
 
-/* Lot 8g : bas du menu à trois barres : logo du studio (copie fixe) à droite de la version (le texte de la version reste aligné sur les icônes). */
-.e8-pied {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 4px 10px 2px;
-}
-
-.e8-pied .e8-version {
-  margin: 0;
-  padding: 0;
-}
-
-.e8-studio {
-  flex: none;
-  width: auto;
-  height: 26px;
-}
-
 /* ---------------------------------------------------------------------------------------------------------------------------------------------- */
 /* Lot 8g — E11 : Crédits (js/menu/credits.js) : écran plein (retour du propriétaire : sans la barre d'onglets) ; bandeau et « ‹ Retour » (composants des Options) ; deux
    colonnes qui défilent (studio et équipe à gauche, outils et licences à droite) ; une zone dépliable par licence, dont le texte défile. */
@@ -4306,7 +4291,7 @@
   display: block;
   width: auto;
   max-width: 100%;
-  height: clamp(48px, calc(72 * var(--u)), 110px);
+  height: clamp(60px, calc(96 * var(--u)), 150px); /* retour du propriétaire : un peu plus grands (avant : 48 à 110) */
 }
 
 .e11-signature {
@@ -4438,10 +4423,13 @@
 /* Lot 8g — E10 : Connexion et Profil (js/menu/compte.js ; maquette Profil.html, 932 × 430) : écrans pleins comme les Options (même fond à filets),
    bandeau et « ‹ Menu » ; Profil : carte de 268 × 280 à gauche (avatar de 88, pseudo, compte), six statistiques en 3 × 2 (cartes de 78 de haut, écart
    de 10) et cadre « Sauvegarde » de 74 de haut à droite ; fenêtres d'export et d'import (voile et panneau du menu). Tailles en calc(N * var(--u)). */
-.e8[data-ecran='connexion'] .e8-contenu,
 .e8[data-ecran='profil'] .e8-contenu,
 .e8[data-ecran='credits'] .e8-contenu {
   grid-row: 2 / 4;
+}
+
+.e10-tete {
+  margin-bottom: calc(10 * var(--u)); /* retour du propriétaire : les coulures du bandeau (18) ne coulent plus sur la carte de l'avatar */
 }
 
 .e8-ecran.e10 {
@@ -4493,24 +4481,6 @@
   font-weight: var(--font-weight-bold);
 }
 
-/* Connexion : colonne centrée sous l'en-tête. */
-.e10-choix {
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  gap: calc(10 * var(--u));
-  width: min(100%, calc(420 * var(--u)), 460px);
-  margin: calc(6 * var(--u)) auto 0;
-  overflow-y: auto;
-}
-
-.e10-phrase {
-  margin: calc(4 * var(--u)) 0;
-  font-size: max(14px, calc(15 * var(--u)));
-  text-align: center;
-  color: var(--menu-e9-texte-doux);
-}
-
 /* Profil : deux colonnes. */
 .e10-grille {
   display: grid;
@@ -4545,22 +4515,32 @@
   background: var(--menu-e9-case);
 }
 
+.e10-avatar {
+  overflow: hidden;
+}
+
 .e10-avatar-svg {
-  width: 64%;
-  height: 64%;
-  fill: currentcolor;
+  width: 100%;
+  height: 100%;
 }
 
-.e10-avatar-detail {
-  fill: var(--menu-e9-case);
-}
-
-.e10-avatar-os { color: var(--menu-texte); }
-.e10-avatar-rouge { color: var(--menu-rouge-trait); }
-.e10-avatar-or { color: var(--rarete-legendaire); }
-.e10-avatar-vert { color: var(--rarete-peu-commun); }
-.e10-avatar-bleu { color: var(--rarete-rare); }
-.e10-avatar-violet { color: var(--rarete-epique); }
+/* Retour du propriétaire : avatars d'après le personnage du jeu et les zombies (couleurs des personnages : jetons --perso-*). */
+.e10-avatar-svg .av-peau { fill: var(--av-peau); }
+.e10-avatar-svg .av-habit { fill: var(--av-habit); }
+.e10-avatar-svg .av-sombre { fill: var(--perso-sombre); }
+.e10-avatar-svg .av-acc { fill: var(--av-acc, var(--menu-panneau-atteint)); }
+.e10-avatar-svg .av-acc2 { fill: var(--perso-casque); }
+.e10-avatar-svg .av-yeux { fill: var(--perso-yeux); }
+.e10-avatar-svg .av-sang { fill: var(--menu-sang); }
+.e10-avatar-svg .av-lampe { fill: var(--perso-lampe); }
+.e10-avatar-svg .av-trait { fill: none; stroke: var(--perso-sombre); stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.e10-avatar-svg .av-col { fill: var(--perso-tissu-os); }
+.e10-avatar-survivant { --av-peau: var(--perso-peau-joueur); --av-habit: var(--perso-joueur-veste); }
+.e10-avatar-eclaireur { --av-peau: var(--perso-peau-joueur); --av-habit: var(--perso-joueur-sweat); }
+.e10-avatar-tireur { --av-peau: var(--perso-peau-joueur); --av-habit: var(--perso-joueur-vif); }
+.e10-avatar-rodeur { --av-peau: var(--perso-peau-cendre); --av-habit: var(--perso-tissu-os); }
+.e10-avatar-ouvrier { --av-peau: var(--perso-peau-verte); --av-habit: var(--perso-tissu-kaki); --av-acc: var(--perso-orange); }
+.e10-avatar-affame { --av-peau: var(--perso-peau-jaune); --av-habit: var(--perso-tissu-gris); }
 
 .e10-pseudo {
   display: flex;

@@ -9,7 +9,6 @@
 // Lot 8e : onglet Boutique (js/menu/boutique.js à la demande : caisses, chances, écrans de résultat ; objets ajoutés à l'inventaire en mémoire).
 import { activerGlisser } from '../glisser.js';
 import { roueDifferee } from './roue.js';
-import { adresseStudio, LOGO_STUDIO_FIXE } from './chargement.js';
 import { formatMoney } from '../core/economy.js';
 import { basculerMenu, choisirOnglet, versionMenu, creerEtatMenu, ECRANS_PLEINS, SOUS_MENUS, fermerEcran, fermerMenu, lienExterne, lireMondes, lireOptionDemarrage, lireRecord, nouveauteNonLue, ONGLETS, ouvrirEcran, premierJouable } from '../core/menu-etat.js';
 import { ecranJouer } from './jouer.js';
@@ -296,6 +295,9 @@ export function creerMenu({ dict, infos = [], liens = {}, solde: montant = 0, re
   const discordPlace = el('li');
   const btDeconnexion = entree('menu-deconnexion', 'game.menu.deconnexion', [note('game.menu.nonConnecte')], 'deconnexion');
   btDeconnexion.disabled = true;
+  // Lot 8g (retour du propriétaire) : connexion avec Google depuis le menu à trois barres (et le Profil), pas encore disponible.
+  const btGoogle = entree('menu-google', 'game.menu.compte.google.entree', [note('game.menu.bientot')], 'connexion');
+  btGoogle.disabled = true;
   const li = (n) => {
     const item = el('li');
     item.append(n);
@@ -304,22 +306,14 @@ export function creerMenu({ dict, infos = [], liens = {}, solde: montant = 0, re
   const haut = el('ul', ['e8-liste-groupe']);
   haut.append(li(btOptions), li(btInfo), li(btCredits), discordPlace);
   const bas = el('ul', ['e8-liste-groupe']);
-  bas.append(li(btDeconnexion));
+  bas.append(li(btGoogle), li(btDeconnexion));
   // Retour du propriétaire : version du jeu sous « Déconnexion » (« V0.8 · dev », « V0.8 · recette ») ; journal lu à la première ouverture du menu.
   const version = el('p', ['e8-version'], { id: 'menu-version' });
   version.hidden = true;
-  // Lot 8g : tout en bas, le logo du studio en petit (copie fixe) à côté de la version (à sa droite) ; image demandée à la première ouverture (déjà en cache :
-  // l'écran de chargement l'affiche).
-  const studio = el('img', ['e8-studio'], { id: 'menu-studio', alt: t('game.menu.studio.nom'), width: '824', height: '628', decoding: 'async' });
-  const pied = el('div', ['e8-pied'], { id: 'menu-pied' });
-  pied.append(version, studio); // la version reste alignée sur les icônes des entrées (retour du propriétaire, lot 8d) ; le logo à sa droite
   let versionDemandee = false;
   const poserVersion = () => {
     if (versionDemandee) return;
     versionDemandee = true;
-    adresseStudio(LOGO_STUDIO_FIXE).then((a) => {
-      studio.src = a;
-    }, () => studio.remove());
     json('data/changelog.json').then((journal) => {
       const v = versionMenu(journal, pageCanal());
       if (!v) return;
@@ -327,7 +321,7 @@ export function creerMenu({ dict, infos = [], liens = {}, solde: montant = 0, re
       version.hidden = false;
     });
   };
-  liste.append(haut, el('hr', ['e8-separateur']), bas, pied);
+  liste.append(haut, el('hr', ['e8-separateur']), bas, version); // lot 8g, retour du propriétaire : sans le logo du studio
   entete.append(connexion, droite, liste);
 
   function poserDiscord() {
@@ -628,7 +622,7 @@ export function creerMenu({ dict, infos = [], liens = {}, solde: montant = 0, re
   let compte = null;
   let chargementCompte = null;
   let retourCompte = null;
-  const ECRANS_COMPTE = ['connexion', 'profil'];
+  const ECRANS_COMPTE = ['profil']; // retour du propriétaire : plus d'écran Connexion, « Connexion » ouvre le Profil
   const moduleCompte = () => import('./compte.js');
   connexion.addEventListener('pointerdown', () => moduleCompte().then((m) => m.precharger()).catch(() => {}), { passive: true });
   async function ouvrirCompte(nom, depuis = null) {
@@ -661,7 +655,7 @@ export function creerMenu({ dict, infos = [], liens = {}, solde: montant = 0, re
     (retourCompte ?? connexion).focus();
     retourCompte = null;
   }
-  connexion.addEventListener('click', () => ouvrirCompte('connexion', connexion));
+  connexion.addEventListener('click', () => ouvrirCompte('profil', connexion));
   btInfo.addEventListener('click', () => ouvrirDialogue('information', barres));
   btOptions.addEventListener('click', async () => {
     etat = ouvrirEcran(etat, 'options');

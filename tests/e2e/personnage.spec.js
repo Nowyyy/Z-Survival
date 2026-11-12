@@ -788,7 +788,7 @@ test('PC 2000 × 1060 : « Touche-le pour changer » centré au-dessus de la lam
   expect(liste.w).toBeLessThanOrEqual(300.5);
   const style = await page.locator('#menu-liste').evaluate((n) => { const c = getComputedStyle(n); return [c.borderTopWidth, c.borderTopLeftRadius, c.boxShadow !== 'none', c.backgroundColor !== getComputedStyle(document.querySelector('#menu-ecran-personnage')).backgroundColor]; });
   expect(style).toEqual(['2px', '6px', true, true]);
-  await expect(page.locator('#menu-liste .e8-icone-entree')).toHaveCount(5); // lot 8g : Crédits
+  await expect(page.locator('#menu-liste .e8-icone-entree')).toHaveCount(6); // lot 8g : Crédits, Google
   // Retour du propriétaire : version du jeu sous « Déconnexion » (dépôt : canal source ; journal lu à la première ouverture du menu).
   await expect(page.locator('#menu-version')).toHaveText('V0.8 · source');
   const [deco, version, cadre] = [await boite(page, '#menu-deconnexion'), await boite(page, '#menu-version'), await boite(page, '#menu-liste')];

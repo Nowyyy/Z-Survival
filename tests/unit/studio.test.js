@@ -166,6 +166,12 @@ describe('introduction au démarrage (lot 8g)', () => {
     expect(d).not.toMatch(/^import .*intro\.js/m);
     // Aucune écriture dans le stockage pour l'introduction ni le repère.
     for (const f of ['js/menu/demarrage.js', 'js/menu/intro.js']) expect(read(f), f).not.toMatch(/localStorage|sessionStorage|indexedDB|document\.cookie/);
+    // Retour du propriétaire (barre de chargement entrevue avant « Toucher pour commencer ») : jeu.html cache l'écran de préparation dès son analyse
+    // (classe posée par le script en ligne, avant les modules) ; demarrage.js ne le montre qu'en partie directe.
+    const html = read('jeu.html');
+    expect(html).toMatch(/<style>\.zs-attente #boot, \.zs-attente #loading \{ visibility: hidden; \}<\/style>/);
+    expect(html.indexOf("classList.add('zs-attente')")).toBeLessThan(html.indexOf('<script type="module"'));
+    expect(d).toMatch(/if \(!modeMenu\) \{\n {2}document\.documentElement\.classList\.remove\('zs-attente'\);/);
     // Retour du propriétaire (son du logo) : contexte audio créé seulement dans le geste (aucun son avant un geste : CLAUDE.md).
     const intro = read('js/menu/intro.js');
     expect(intro.match(/new AC\(\)/g)).toHaveLength(1);
@@ -248,33 +254,35 @@ describe('Connexion et Profil (lot 8g)', () => {
     for (const k of Object.values(ERREURS_PSEUDO)) expect(JSON.parse(read('data/i18n/fr.json'))[k], k).toBeTruthy();
   });
 
-  it('avatars : six, formes et teintes ; « Changer d\'avatar » fait le tour ; teintes en jetons de tokens.css', async () => {
+  it('avatars (retour du propriétaire) : trois d\'après le joueur, trois d\'après les zombies ; « Changer d\'avatar » fait le tour ; couleurs des personnages (jetons --perso-*)', async () => {
     const { AVATARS, avatarSuivant } = await import('../../js/menu/profil-etat.js');
-    expect(AVATARS.map((a) => a.id)).toEqual(['os', 'rouge', 'or', 'vert', 'bleu', 'violet']);
-    expect(new Set(AVATARS.map((a) => a.forme))).toEqual(new Set(['survivant', 'casque', 'capuche']));
-    let id = 'os';
+    expect(AVATARS.map((a) => a.id)).toEqual(['survivant', 'eclaireur', 'tireur', 'rodeur', 'ouvrier', 'affame']);
+    expect(AVATARS.map((a) => a.type)).toEqual(['joueur', 'joueur', 'joueur', 'zombie', 'zombie', 'zombie']);
+    let id = 'survivant';
     const vus = [];
     for (let i = 0; i < AVATARS.length; i += 1) {
       id = avatarSuivant(id).id;
       vus.push(id);
     }
-    expect(vus).toEqual(['rouge', 'or', 'vert', 'bleu', 'violet', 'os']);
-    expect(avatarSuivant('inconnu').id).toBe('os');
+    expect(vus).toEqual(['eclaireur', 'tireur', 'rodeur', 'ouvrier', 'affame', 'survivant']);
+    expect(avatarSuivant('inconnu').id).toBe('survivant');
     const css = read('css/menu.css');
-    for (const a of AVATARS) expect(css, a.id).toMatch(new RegExp(`\\.e10-avatar-${a.id} \\{ color: var\\(--(menu|rarete)-[a-z-]+\\); \\}`));
+    for (const a of AVATARS) expect(css, a.id).toMatch(new RegExp(`\\.e10-avatar-${a.id} \\{ --av-peau: var\\(--perso-peau-[a-z]+\\); --av-habit: var\\(--perso-[a-z-]+\\);`));
+    const fr = JSON.parse(read('data/i18n/fr.json'));
+    for (const a of AVATARS) expect(fr[`game.menu.profil.avatar.${a.id}`], a.id).toBeTruthy();
   });
 
   it('statistiques : lues dans la sauvegarde quand elles existent (meilleure manche, parties, argent gagné), « — » sinon ; illisible : tout à « — »', async () => {
     const { STATS_EN_ATTENTE, STATS_PROFIL, statsProfil } = await import('../../js/menu/profil-etat.js');
     const { defaultSave } = await import('../../js/core/save.js');
-    expect(STATS_PROFIL).toEqual(['meilleureManche', 'recordInfini', 'tues', 'parties', 'temps', 'argent']);
-    expect(STATS_EN_ATTENTE).toEqual(['recordInfini', 'tues', 'temps']);
+    expect(STATS_PROFIL).toEqual(['meilleureManche', 'tues', 'partiesHistoire', 'partiesInfini', 'temps', 'argent']); // retour du propriétaire : sans record infini
+    expect(STATS_EN_ATTENTE).toEqual(['tues', 'partiesHistoire', 'partiesInfini', 'temps']);
     const save = { ...defaultSave(), money: 900, earned: 1234, records: { bestWave: 17, bestKills: 88, runs: 6, worldsCompleted: 0 } };
     const v = (lu, m) => Object.fromEntries(statsProfil(lu, m).map((s) => [s.id, s.valeur]));
-    expect(v({ status: 'ok', save }, 40)).toEqual({ meilleureManche: 17, recordInfini: null, tues: null, parties: 6, temps: null, argent: 1234 });
+    expect(v({ status: 'ok', save }, 40)).toEqual({ meilleureManche: 17, tues: null, partiesHistoire: null, partiesInfini: null, temps: null, argent: 1234 }); // records.runs : les deux modes ensemble
     expect(statsProfil({ status: 'ok', save }, 40)[0]).toEqual({ id: 'meilleureManche', valeur: 17, max: 40 });
-    expect(v({ status: 'empty', save: defaultSave() })).toEqual({ meilleureManche: null, recordInfini: null, tues: null, parties: 0, temps: null, argent: 0 });
-    const vide = { meilleureManche: null, recordInfini: null, tues: null, parties: null, temps: null, argent: null };
+    expect(v({ status: 'empty', save: defaultSave() })).toEqual({ meilleureManche: null, tues: null, partiesHistoire: null, partiesInfini: null, temps: null, argent: 0 });
+    const vide = { meilleureManche: null, tues: null, partiesHistoire: null, partiesInfini: null, temps: null, argent: null };
     for (const lu of [{ status: 'corrupt', save }, { status: 'future', save }, { status: 'unavailable', save }, null, undefined, {}, { status: 'ok', save: null }]) expect(v(lu), JSON.stringify(lu)).toEqual(vide);
     expect(statsProfil({ status: 'ok', save }, 'x')[0].max).toBe(null);
   });

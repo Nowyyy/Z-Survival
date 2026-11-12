@@ -134,7 +134,7 @@ test.describe('menu principal (E8)', () => {
     await expect(page.locator('#menu-jouer')).toBeVisible();
   });
 
-  test('trois barres : ouverture sous le bouton, cinq entrées (lot 8g : Crédits), Échap et appui ailleurs ; point jaune présent puis absent après Information ; Discord grisé (« bientôt ») et aucune requête ; Déconnexion grisée ; axe', async ({ page, baseURL }) => {
+  test('trois barres : ouverture sous le bouton, six entrées (lot 8g : Crédits, Google), Échap et appui ailleurs ; point jaune présent puis absent après Information ; Discord grisé (« bientôt ») et aucune requête ; Déconnexion grisée ; axe', async ({ page, baseURL }) => {
     const o = surveiller(page, baseURL);
     await ouvrirMenu(page);
     const barres = page.locator('#menu-trois-barres');
@@ -145,7 +145,7 @@ test.describe('menu principal (E8)', () => {
     const liste = page.locator('#menu-liste');
     await expect(liste).toBeVisible();
     expect((await boite(page, '#menu-liste')).t).toBeGreaterThanOrEqual((await boite(page, '#menu-trois-barres')).b - 0.5);
-    await expect(liste.locator('.e8-entree')).toHaveText([/^Options$/, /^Information/, /^Crédits$/, /^Discord\s*bientôt$/, /^Déconnexion\s*non connecté$/]); // lot 8g : Crédits entre Information et Discord
+    await expect(liste.locator('.e8-entree')).toHaveText([/^Options$/, /^Information/, /^Crédits$/, /^Discord\s*bientôt$/, /^Se connecter avec Google\s*bientôt$/, /^Déconnexion\s*non connecté$/]); // lot 8g : Crédits entre Information et Discord ; Google (bientôt) avant Déconnexion
     await expect(page.locator('#menu-point-info')).toBeVisible();
     await expect(page.locator('#menu-discord')).toBeDisabled();
     await expect(page.locator('#menu-deconnexion')).toBeDisabled();
@@ -196,12 +196,12 @@ test.describe('menu principal (E8)', () => {
     expect(h).toBeGreaterThanOrEqual(3.5); // quatre lignes affichées (dont une vide)
   });
 
-  test('Connexion : écran Connexion (lot 8g ; avant : écran provisoire « Connexion : bientôt »), fermé par « ‹ Menu » ; Options : la page Options du menu (E5, lot 8c) hors partie, fermée par « ‹ Menu » et Échap', async ({ page }) => {
+  test('Connexion : le Profil (lot 8g ; avant : écran provisoire « Connexion : bientôt »), fermé par « ‹ Menu » ; Options : la page Options du menu (E5, lot 8c) hors partie, fermée par « ‹ Menu » et Échap', async ({ page }) => {
     await ouvrirMenu(page);
     await page.locator('#menu-connexion').click();
-    const connexion = page.getByRole('region', { name: 'Connexion' });
+    const connexion = page.locator('#menu-ecran-profil'); // lot 8g, retour du propriétaire : « Connexion » ouvre le Profil
     await expect(connexion).toBeVisible();
-    await page.locator('#menu-ecran-connexion-retour').click();
+    await page.locator('#menu-ecran-profil-retour').click();
     await expect(connexion).toBeHidden();
     await expect(page.locator('#menu-connexion')).toBeFocused();
     await page.locator('#menu-trois-barres').click();
