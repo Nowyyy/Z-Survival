@@ -180,3 +180,9 @@ version: v0.8
 nom: Boutique et caisses mystère
 description: Nouvel onglet Boutique par rubriques : offres du jour, caisses d'équipement, de personnages et de tenues, chances affichées et résultats. Aucun prix n'est prélevé, rien n'est gardé.
 afficher: oui
+
+[lot-8f]
+version: v0.8
+nom: Ouverture des caisses en 3D
+description: Les caisses de la Boutique s'ouvrent en 3D, à la première personne : tir sur la caisse, rayons et réactions des zombies selon la rareté. « Passer » mène au résultat.
+afficher: oui

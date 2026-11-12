@@ -292,6 +292,17 @@
       "Menu moins collé aux bords de l'écran ; l'encart de capacité du Personnage s'écarte de la lumière.",
       "Essai : caisses, prix, chances et tenues sont provisoires ; aucun prix n'est prélevé et rien n'est encore gardé avant la sauvegarde v2.",
       "Les règles du jeu ne changent pas ; une partie lancée directement (adresses de test) est identique."
+    ] },
+    { "name": "lot-8f", "version": "v0.8", "date": "2026-11-12", "titre": "Ouverture des caisses en 3D", "points": [
+      "Ouvrir une caisse de la Boutique la montre maintenant en 3D, à la première personne : on marche dans un hangar de nuit jusqu'à un tapis roulant, fusil d'assaut en main, et on tire sur la caisse.",
+      "Le couvercle s'envole, l'ouverture s'illumine de la couleur de la rareté, des rayons en sortent, puis la carte de l'objet obtenu ; aucune couleur de rareté n'est visible avant.",
+      "Les effets grandissent avec la rareté : plus de rayons, éclair d'écran, onde de choc, étincelles et secousse ; les deux zombies du fond sursautent, sautent ou tombent.",
+      "Légendaire : explosion dorée, puis un zombie projeté s'écrase sur l'écran et glisse en laissant des traînées de sang, avant de revenir au fond.",
+      "Dix caisses : le tapis les amène l'une après l'autre et chaque carte file vers sa case en haut de l'écran, puis le résultat des dix s'affiche.",
+      "« Passer » (ou Échap) mène au résultat à tout moment ; avec les animations réduites, le résultat s'affiche directement, sans 3D.",
+      "Le résultat montré est celui du tirage ; la scène 3D ne se charge qu'à l'ouverture d'une caisse et tout est libéré ensuite, avant de jouer.",
+      "Essai : durées et effets réglables, provisoires ; aucun son pour l'instant ; aucun prix n'est prélevé.",
+      "Les règles du jeu ne changent pas."
     ] }
   ]
 }
