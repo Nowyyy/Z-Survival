@@ -423,34 +423,46 @@ export async function ecranBoutique({ t, bandeau, root, rootDialogue, surVue = (
   // l'ouverture animée en 3D (E3-2, E3-3) s'intercale avant (caisses seulement) ; elle reçoit les cartes de l'écran de résultat (mêmes textes, même
   // ordre que le tirage) ; « Passer », Échap et la fin d'un ×10 mènent à ce même écran ; « Continuer » (×1) revient aux caisses, « Rouvrir » rachète.
   async function afficherOuverture(r) {
-    await preparerResultat();
     dernier = r;
-    if (r.caisse && ouvertureVoulue()) {
+    // Retour du propriétaire (« après la roue, tout l'écran était figé ») : le menu est figé et les achats bloqués dès le toucher, avant toute
+    // attente (avant : seulement après le chargement de l'écran de résultat, si bien qu'un second toucher lançait une seconde ouverture en
+    // parallèle) ; la roue part et le menu est rendu actif quoi qu'il arrive (erreur comprise).
+    const anime = Boolean(r.caisse) && ouvertureVoulue();
+    if (anime) {
       preparation = true;
       gel ??= geler();
-      const m = await chargerOuverture();
-      resultat.afficher(r); // cartes et annonce lues dans l'écran de résultat (encore caché)
-      const o = m ? await m.lancerOuverture({
-        r, cat, t, parent: rootDialogue, cartes: cartesDe(r), annonce: resultat.section.querySelector('#menu-resultat-annonce')?.textContent ?? '',
-        rappels: {
-          fin: () => finOuverture() && montrerResultat(r),
-          continuer: () => finOuverture() && retourCaisses(),
-          rouvrir: () => finOuverture() && acheter(r.caisse, r.quantite, null),
-        },
-      }).catch(() => null) : null;
+    }
+    let o = null;
+    try {
+      await preparerResultat();
+      if (anime) {
+        const m = await chargerOuverture();
+        resultat.afficher(r); // cartes et annonce lues dans l'écran de résultat (encore caché)
+        o = m ? await m.lancerOuverture({
+          r, cat, t, parent: rootDialogue, cartes: cartesDe(r), annonce: resultat.section.querySelector('#menu-resultat-annonce')?.textContent ?? '',
+          rappels: {
+            fin: () => finOuverture() && montrerResultat(r),
+            continuer: () => finOuverture() && retourCaisses(),
+            rouvrir: () => finOuverture() && acheter(r.caisse, r.quantite, null),
+          },
+        }) : null;
+      }
+    } catch {
+      o = null;
+    } finally {
       preparation = false;
       gel?.roue();
-      if (o && dernier === r) {
-        ouverture = o;
-        vue = 'ouverture';
-        surVue();
-        o.focus();
-        return;
-      }
-      o?.liberer();
-      degeler();
     }
-    montrerResultat(r);
+    if (o && dernier === r) {
+      ouverture = o;
+      vue = 'ouverture';
+      surVue();
+      o.focus();
+      return;
+    }
+    o?.liberer();
+    degeler();
+    if (resultat) montrerResultat(r);
   }
   function degeler() {
     gel?.fin();

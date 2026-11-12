@@ -25,6 +25,7 @@
 - Après la PR #97 : explosion en volutes de feu et de fumée avec éclats de la caisse, projection balistique à taille réelle avec rotation qui ralentit, zombie plaqué en X contre l'écran (aplati, éclaboussure, secousse), glissade qui accélère ; 61 appels, 8 672 triangles au pire.
 - Après la PR #98 : seconde explosion sous un zombie, qui monte hors de l'écran puis retombe sur lui ; roue de chargement et menu figé pendant le chargement de l'ouverture ; 64 appels, 8 336 triangles au pire.
 - Après la PR #99 : réapparition du zombie projeté de son côté, vol en une seule parabole (sans changement de direction), porte du fond fixe pendant la marche (caméra à orientation constante).
+- Écran figé après la roue (retour) : un second toucher pendant le premier chargement lançait une seconde ouverture en parallèle ; menu figé dès le toucher, libéré dans tous les cas, une seule création à la fois, perte du contexte WebGL gérée (résultat affiché).
 ## Points ouverts
 - **Esthétique, fluidité et téléphone non jugés par l'agent** (émulation et rendu logiciel seulement) : zombie écrasé peu détaillé à cette taille, scène sombre, lisibilité du fusil et des mains, 60 images par seconde sur un téléphone moyen.
 ## Idées
