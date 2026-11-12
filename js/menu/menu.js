@@ -388,7 +388,7 @@ export function creerMenu({ dict, infos = [], liens = {}, solde: montant = 0, re
     nav.hidden = plein || resultat;
     for (const [id, s] of ecransOnglets) s.hidden = id !== etat.onglet || plein || sous;
     boutique?.synchroniser(etat.onglet === 'boutique' && !plein && !sous); // lot 8e : la Boutique tient sa vue (caisses ou résultat)
-    perso?.synchroniser(etat.ecran);
+    perso?.synchroniser(etat.ecran, etat.onglet === 'personnage' || SOUS_MENUS.includes(etat.ecran));
     animer();
     liste.hidden = !etat.menuOuvert;
     barres.setAttribute('aria-expanded', String(etat.menuOuvert));
