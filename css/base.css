@@ -504,3 +504,10 @@ a.item {
   color: var(--color-action-text);
   font-weight: var(--font-weight-bold);
 }
+
+/* Glissement à la souris (js/glisser.js) : main fermée, pas de sélection de texte pendant le geste. */
+.zs-glisse,
+.zs-glisse * {
+  cursor: grabbing !important;
+  user-select: none !important;
+}

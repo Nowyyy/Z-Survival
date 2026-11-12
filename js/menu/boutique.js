@@ -8,6 +8,7 @@
 // afficherOuverture(resultat) → écran de résultat (E3-4, E3-5 : js/menu/resultat.js). Le prix est affiché, jamais prélevé ; rien n'est écrit.
 // Lot 8f : afficherOuverture passe d'abord par l'ouverture animée en 3D (js/menu/ouverture/ouverture.js, chargée au premier achat d'une caisse,
 // préchargée au toucher de « Ouvrir »), sauf offre du jour, mouvement réduit, WebGL indisponible ou ?ouverture=0 en test : résultat direct.
+import { creerRoue } from './roue.js';
 import { formatMoney } from '../core/economy.js';
 import { TIRAGES_X10, ajouterCosmetiques, lireCaisses, lireCosmetiques, lireOffres, offresDuJour, partHaute, prixAchat, tirer, tirer10 } from '../core/caisses.js';
 import { ajouterObjets, estDebloque, obtenirPersonnages } from '../core/equipement.js';
@@ -368,19 +369,10 @@ export async function ecranBoutique({ t, bandeau, root, rootDialogue, surVue = (
   function geler() {
     const figes = [...rootDialogue.children].filter((n) => !n.inert);
     for (const n of figes) n.inert = true;
-    const roue = el('div', [], { id: 'menu-ouverture-chargement', role: 'status' });
-    Object.assign(roue.style, { position: 'fixed', left: '50%', top: '50%', zIndex: '12', width: '44px', height: '44px', margin: '-22px 0 0 -22px', boxSizing: 'border-box', borderRadius: '50%', border: '4px solid var(--menu-texte-doux)', borderTopColor: 'var(--menu-rouge-clair)', pointerEvents: 'none' });
-    const texte = el('span', ['sr-only']);
-    texte.textContent = t('game.menu.ouverture.chargement');
-    roue.append(texte);
-    rootDialogue.append(roue);
-    roue.animate?.([{ transform: 'rotate(0deg)' }, { transform: 'rotate(360deg)' }], { duration: 800, iterations: Infinity });
-    let retiree = false;
+    const roue = creerRoue(rootDialogue, { fixe: true, id: 'menu-ouverture-chargement', texte: t('game.menu.ouverture.chargement') });
     return {
       roue() {
-        if (retiree) return;
-        retiree = true;
-        roue.remove();
+        roue.retirer();
       },
       fin() {
         this.roue();

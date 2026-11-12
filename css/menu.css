@@ -4038,3 +4038,57 @@
   from { opacity: 0; transform: translateY(calc(10 * var(--u))); }
   to { opacity: 1; transform: translateY(0); }
 }
+
+/* Roue de chargement (js/menu/roue.js ; retour du propriétaire : plus grosse et plus visible) : anneau de 76 px (au plus 22 % du petit côté)
+   sur un disque sombre, lueur rouge, texte dessous. Au centre de son parent ; .menu-roue-fixe : au centre de l'écran, devant tout. */
+.menu-roue {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  pointer-events: none;
+}
+
+.menu-roue-fixe {
+  position: fixed;
+  z-index: 40;
+}
+
+.menu-roue-anneau {
+  box-sizing: border-box;
+  width: min(76px, 22vmin);
+  height: min(76px, 22vmin);
+  border-radius: 50%;
+  border: min(8px, 2.3vmin) solid var(--menu-texte-doux);
+  border-top-color: var(--menu-rouge-clair);
+  border-right-color: var(--menu-rouge-clair);
+  background: var(--menu-barre-fond);
+  box-shadow: 0 0 0 6px var(--menu-barre-fond), 0 0 22px 4px var(--menu-rouge);
+  animation: e8-roue 0.8s linear infinite;
+}
+
+.menu-roue-texte {
+  padding: 4px 12px;
+  border-radius: 4px;
+  background: var(--menu-barre-fond);
+  color: var(--menu-texte);
+  font-weight: 700;
+  font-size: max(14px, calc(15 * var(--u, 1px)));
+  text-shadow: 0 1px 2px var(--menu-texte-ombre);
+}
+
+@keyframes e8-roue {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .menu-roue-anneau {
+    animation: none;
+  }
+}

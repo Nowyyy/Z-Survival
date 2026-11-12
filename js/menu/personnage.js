@@ -5,6 +5,7 @@
 // effectives (js/core/equipement.js : sauvegarde + objets portés + capacité) ; boutons Inventaire et Fusion. Sous-menus (écrans pleins, en-tête gardé,
 // onglets masqués) : js/menu/inventaire.js, fusion.js, personnages.js, chargés à leur première ouverture. État en mémoire (equipement-etat.js) :
 // rien n'est écrit dans le stockage jusqu'au lot 8h.
+import { pendant } from './roue.js';
 import { EMPLACEMENTS, definition, emplacementDe, objetDe, personnageDe, typeEmplacement } from '../core/equipement.js';
 import { fmt } from '../game/texts.js';
 import { el } from './menu.js';
@@ -293,7 +294,7 @@ export async function ecranPersonnage({ t, bandeau, niveaux = null, statsCfg = n
     if (!SOUS[nom]) return;
     const jeton = ++demande;
     const depuis = opts.depuis ?? document.activeElement;
-    const s = await charger(nom);
+    const s = await pendant(charger(nom), root, { fixe: true, texte: t('game.menu.chargement.texte') });
     if (jeton !== demande || !affiche) return;
     if (!ouvert) retourFocus = depuis;
     ouvert = nom;
