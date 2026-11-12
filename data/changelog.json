@@ -297,11 +297,12 @@
       "Ouvrir une caisse de la Boutique la montre maintenant en 3D, à la première personne : on marche dans un hangar de nuit jusqu'à un tapis roulant, fusil d'assaut en main, et on tire sur la caisse.",
       "Le couvercle s'envole, l'ouverture s'illumine de la couleur de la rareté, des rayons en sortent, puis la carte de l'objet obtenu ; aucune couleur de rareté n'est visible avant.",
       "Les effets grandissent avec la rareté : plus de rayons, éclair d'écran, onde de choc, étincelles et secousse ; les deux zombies du fond sursautent, sautent ou tombent.",
-      "Légendaire : explosion dorée, puis un zombie projeté s'écrase sur l'écran et glisse en laissant des traînées de sang, avant de revenir au fond.",
+      "Légendaire : explosion dorée et, avec l'éclair, une seconde sous un zombie, projeté hors de l'écran ; il retombe, s'écrase sur l'écran et glisse ; sa tache de sang s'écoule en filets et découvre l'objet, invisible avant ; puis il revient au fond, de son côté.",
       "Dix caisses : le tapis les amène l'une après l'autre et chaque carte file vers sa case en haut de l'écran, puis le résultat des dix s'affiche.",
       "« Passer » (ou Échap) mène au résultat à tout moment ; toucher l'écran passe à la caisse suivante ; avec les animations réduites, le résultat s'affiche directement, sans 3D.",
-      "Retours : plus fluide (tout est préparé avant l'ouverture, résolution qui s'adapte), explosion du légendaire bien visible, zombies identiques à ceux de la partie, chute plus vivante, sans réticule.",
+      "Retours : plus fluide (tout est préparé avant l'ouverture, résolution qui s'adapte), explosion du légendaire bien visible, zombies identiques à ceux de la partie, chute plus vivante, sans réticule, décor fixe pendant la marche, fusil pointé sur la caisse, caisses plus allongées.",
       "Le résultat montré est celui du tirage ; la scène 3D ne se charge qu'à l'ouverture d'une caisse et tout est libéré ensuite, avant de jouer.",
+      "Menu : roue de chargement plus grande et visible (aussi en changeant d'onglet), zones qui défilent glissables à la souris comme au doigt, écran Personnages qui ne reste plus par-dessus les autres ; en partie, Échap ouvre la pause même en plein écran, et le plein écran reprend au premier toucher après le retour au menu.",
       "Essai : durées et effets réglables, provisoires ; aucun son pour l'instant ; aucun prix n'est prélevé.",
       "Les règles du jeu ne changent pas."
     ] }
