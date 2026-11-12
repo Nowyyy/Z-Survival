@@ -192,13 +192,13 @@ describe('onglets, menu à trois barres, nouveautés (lot 8a, état en mémoire)
     expect(new Set(infos.map((i) => i.id)).size).toBe(infos.length);
     let e = creerEtatMenu();
     expect(nouveauteNonLue(infos, e.lues)).toBe(true);
-    e = ouvrirEcran(basculerMenu(e), 'connexion', infos);
-    expect([e.ecran, e.menuOuvert, nouveauteNonLue(infos, e.lues)]).toEqual(['connexion', false, true]);
+    e = ouvrirEcran(basculerMenu(e), 'profil', infos); // lot 8g : plus d'écran connexion (avant : 'connexion')
+    expect([e.ecran, e.menuOuvert, nouveauteNonLue(infos, e.lues)]).toEqual(['profil', false, true]);
     e = ouvrirEcran(fermerEcran(e), 'information', infos);
     expect([e.ecran, nouveauteNonLue(infos, e.lues)]).toEqual(['information', false]);
     expect(ouvrirEcran(e, 'boutique')).toBe(e);
-    expect(ECRANS).toEqual(['information', 'connexion', 'options', 'inventaire', 'fusion', 'personnages', 'credits', 'profil']); // lot 8d : sous-menus du Personnage ; lot 8g : Crédits, Profil
-    expect(ECRANS_PLEINS).toEqual(['options', 'connexion', 'profil', 'credits']); // lot 8d, retour du propriétaire : les sous-menus du Personnage gardent la barre d'onglets ; lot 8g : Connexion et Profil pleins
+    expect(ECRANS).toEqual(['information', 'options', 'inventaire', 'fusion', 'personnages', 'credits', 'profil']); // lot 8d : sous-menus du Personnage ; lot 8g : Crédits, Profil
+    expect(ECRANS_PLEINS).toEqual(['options', 'profil', 'credits']); // lot 8d, retour du propriétaire : les sous-menus du Personnage gardent la barre d'onglets ; lot 8g : Connexion et Profil pleins
     expect(SOUS_MENUS).toEqual(['inventaire', 'fusion', 'personnages']);
     e = ouvrirEcran(fermerEcran(e), 'inventaire', infos);
     expect([e.ecran, e.menuOuvert]).toEqual(['inventaire', false]);

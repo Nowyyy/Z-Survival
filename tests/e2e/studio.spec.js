@@ -218,6 +218,8 @@ test.describe('introduction du studio (E0)', () => {
     await ouvrirMenu(page);
     expect(await page.evaluate(() => [window.__vus.e0 ?? null, window.__zsMenu.intro()])).toEqual([null, null]);
     expect(o.fichiers.filter((f) => f.endsWith('.js')).length).toBe(31);
+    // Retour du propriétaire : en mode menu, l'écran de préparation de la partie (barre) n'est jamais visible.
+    expect(await page.evaluate(() => [document.documentElement.classList.contains('zs-attente'), getComputedStyle(document.getElementById('loading')).visibility])).toEqual([true, 'hidden']);
     expect(o.fichiers.filter((f) => f.endsWith('/js/menu/intro.js'))).toEqual([]);
     expect(o.fichiers.filter((f) => f.endsWith('.svg'))).toEqual([`/${FIXE}`]); // seul le logo fixe de l'écran de chargement
     await page.close();
@@ -241,6 +243,7 @@ test.describe('introduction du studio (E0)', () => {
     await p3.goto('/jeu.html?test=1&seed=1&intro=1');
     await p3.waitForFunction(() => (window.__zs?.getState()?.time ?? 0) >= 0, null, { timeout: 60_000 });
     expect(await p3.evaluate(() => window.__vus.e0 ?? null)).toBe(null);
+    expect(await p3.evaluate(() => document.documentElement.classList.contains('zs-attente'))).toBe(false); // partie directe : écran de préparation montré
     expect(o.fichiers.filter((f) => /\/js\/menu\/intro\.js$|\/assets\/studio\//.test(f))).toEqual([]); // ni logo ni son en partie directe
   });
 
@@ -279,7 +282,7 @@ test.describe('introduction du studio (E0)', () => {
 
 test.describe('logo du studio : écran de chargement et menu à trois barres', () => {
   for (const [size, encoche] of [[REF, false], [PETIT, false], [LARGE, false], [ENCOCHE, true]]) {
-    test(`tailles ${size.width}×${size.height}${encoche ? ' (encoche simulée)' : ''} : E7, logo fixe en bas à gauche (16 px des bords de la zone sûre), sans toucher barre, astuce ni version ; menu à trois barres : logo à côté de la version (à sa droite) ; axe`, async ({ page, baseURL }) => {
+    test(`tailles ${size.width}×${size.height}${encoche ? ' (encoche simulée)' : ''} : E7, logo fixe en bas à gauche (16 px des bords de la zone sûre), sans toucher barre, astuce ni version ; menu à trois barres sans logo (retour du propriétaire) ; axe`, async ({ page, baseURL }) => {
       const o = surveiller(page, baseURL);
       if (encoche) await page.addInitScript(() => document.addEventListener('DOMContentLoaded', () => {
         const s = document.createElement('style');
@@ -305,15 +308,13 @@ test.describe('logo du studio : écran de chargement et menu à trois barres', (
       expect((await new AxeBuilder({ page }).include('#e7').analyze()).violations.map((v) => v.id)).toEqual([]);
       await expect(page.locator('#menu-jouer')).toBeVisible({ timeout: 60_000 });
       await page.locator('#menu-trois-barres').click();
-      await expect(page.locator('#menu-studio')).toBeVisible();
+      // Retour du propriétaire : plus de logo du studio dans le menu à trois barres (avant : à droite de la version).
       await expect(page.locator('#menu-version')).toBeVisible();
-      await page.waitForFunction(() => document.getElementById('menu-studio').complete && document.getElementById('menu-studio').naturalWidth > 0);
-      expect(await imageAffichee(page, '#menu-studio')).toBe(true);
-      await expect(page.locator('#menu-studio')).toHaveAttribute('alt', 'No Way Studio');
-      const s = await boite(page, '#menu-studio');
+      expect(await page.locator('#menu-liste img').count()).toBe(0);
+      await page.locator('#menu-version').scrollIntoViewIfNeeded(); // écran bas (encoche) : la liste défile
       const v = await boite(page, '#menu-version');
       const liste = await boite(page, '#menu-liste');
-      expect([s.l >= v.r, s.l - v.r <= 12, Math.abs((s.t + s.b) / 2 - (v.t + v.b) / 2) < 3, s.r <= liste.r, s.b <= liste.b, s.t >= (await boite(page, '#menu-deconnexion')).b]).toEqual([true, true, true, true, true, true]);
+      expect([v.b <= liste.b + 0.5, v.t >= (await boite(page, '#menu-deconnexion')).b]).toEqual([true, true]);
       expect([liste.r <= size.width + 0.5, liste.b <= size.height + 0.5]).toEqual([true, true]);
       expect((await new AxeBuilder({ page }).include('#menu-liste').analyze()).violations.map((x) => x.id)).toEqual([]);
       expect(o.fichiers.filter((f) => f.endsWith('.svg'))).toEqual([`/${FIXE}`]); // une seule requête : l'image est réutilisée
@@ -358,7 +359,7 @@ test.describe('Crédits (E11)', () => {
       await page.waitForFunction(() => { const n = document.getElementById('menu-credits-noven'); return n.complete && n.naturalWidth === 480; });
       await expect(page.locator('#menu-credits-noven')).toHaveAttribute('alt', 'Noven Studio');
       const [lnw, lnv] = [await boite(page, '#menu-credits-logo'), await boite(page, '#menu-credits-noven')];
-      expect([lnv.l >= lnw.r - 0.5, Math.abs((lnw.t + lnw.b) / 2 - (lnv.t + lnv.b) / 2) < 2, lnw.h <= 110.5, lnv.h <= 110.5, lnw.h >= 47.5]).toEqual([true, true, true, true, true]);
+      expect([lnv.l >= lnw.r - 0.5, Math.abs((lnw.t + lnw.b) / 2 - (lnv.t + lnv.b) / 2) < 2, lnw.h <= 150.5, lnv.h <= 150.5, lnw.h >= 59.5]).toEqual([true, true, true, true, true]);
       await expect(page.locator('#menu-credits-signature')).toHaveText('Un jeu de No Way Studio');
       await expect(page.locator('.e11-section-titre')).toHaveText(['Création', 'Remerciements', 'Outils et licences']);
       await expect(page.locator('.e11-nom')).toHaveText(['Nowy']);
@@ -393,7 +394,7 @@ test.describe('Crédits (E11)', () => {
     });
   }
 
-  test('licences dépliables : aria-expanded, texte lu dans les données (avis et licence entière), zone qui défile (molette et glissement à la souris) ; repliées de nouveau ; Échap ferme l\'écran ; « Connexion » de l\'en-tête le remplace', async ({ page }) => {
+  test('licences dépliables : aria-expanded, texte lu dans les données (avis et licence entière), zone qui défile (molette et glissement à la souris) ; repliées de nouveau ; Échap ferme l\'écran ; « Connexion » de l\'en-tête le remplace (par le Profil)', async ({ page }) => {
     await ouvrirCredits(page);
     const bouton = page.locator('#menu-licence-three');
     const zone = page.locator('#menu-licence-three-texte');
@@ -438,8 +439,8 @@ test.describe('Crédits (E11)', () => {
     await expect(page.locator('.e8-onglets')).toBeHidden(); // écran plein : aucun onglet à toucher
     await page.locator('#menu-connexion').click();
     await expect(page.locator('#menu-ecran-credits')).toBeHidden();
-    await expect(page.locator('#menu-ecran-connexion')).toBeVisible();
-    expect((await page.evaluate(() => window.__zsMenu.etat().menu)).ecran).toBe('connexion');
+    await expect(page.locator('#menu-ecran-profil')).toBeVisible();
+    expect((await page.evaluate(() => window.__zsMenu.etat().menu)).ecran).toBe('profil');
   });
 
   test('retour du propriétaire : logo fixe (la même image que l\'écran de chargement), identique à chaque ouverture et sans animation ; aucune écriture dans le stockage', async ({ page }) => {
@@ -474,49 +475,34 @@ async function menuAvecSauvegarde(page, size = REF, save = SAUVEGARDE) {
   await expect(page.locator('#menu-jouer')).toBeVisible({ timeout: 60_000 });
   await page.waitForFunction(() => window.__zsMenu?.etat()?.menu !== null && !document.getElementById('e7'));
 }
+// Retour du propriétaire : « Connexion » ouvre directement le Profil (plus d'écran Connexion).
 async function ouvrirProfil(page) {
   await page.locator('#menu-connexion').click();
-  await expect(page.locator('#menu-ecran-connexion')).toBeVisible();
-  await page.locator('#menu-connexion-profil').click();
   await expect(page.locator('#menu-ecran-profil')).toBeVisible();
 }
 
 test.describe('Connexion et Profil (E10)', () => {
   for (const [size, encoche] of [[REF, false], [PETIT, false], [LARGE, false], [ENCOCHE, true]]) {
-    test(`tailles ${size.width}×${size.height}${encoche ? ' (encoche simulée)' : ''} : Connexion (deux boutons désactivés avec raison, phrase, « Mon profil local ») → Profil (carte, six statistiques, Sauvegarde) ; écrans pleins ; dans l'écran, sans superposition ; 44 px ; axe`, async ({ page, baseURL }) => {
+    test(`tailles ${size.width}×${size.height}${encoche ? ' (encoche simulée)' : ''} : « Connexion » → Profil (carte, six statistiques, Sauvegarde ; Google « bientôt ») ; écran plein ; dans l'écran, sans superposition ; 44 px ; axe`, async ({ page, baseURL }) => {
       const o = surveiller(page, baseURL);
       await ouvrirMenu(page, size);
       if (encoche) await page.addStyleTag({ content: '#e8 { --e8-gauche: 50px !important; --e8-droite: 50px !important; }' });
       expect(o.fichiers.filter((f) => /compte|profil-etat|sauvegarde\/logic/.test(f))).toEqual([]); // rien au démarrage
+      // Retour du propriétaire : « Connexion » ouvre directement le Profil ; « Se connecter avec Google · bientôt » sur le Profil (raison lue) et dans
+      // le menu à trois barres ; plus d'écran Connexion.
       await page.locator('#menu-connexion').click();
-      await expect(page.locator('#menu-ecran-connexion')).toBeVisible();
-      await expect(page.locator('#menu-ecran-connexion .menu-bandeau-libelle')).toHaveText('Compte');
-      await expect(page.locator('#menu-ecran-connexion-titre')).toHaveText('Connexion');
-      await expect(page.locator('.e8-onglets')).toBeHidden(); // écran plein
-      await expect(page.locator('#menu-ecran-connexion-retour')).toBeFocused();
-      for (const [id, texte, raison] of [['#menu-connexion-google', 'Se connecter avec Google · bientôt', /connexion avec Google arrive/], ['#menu-connexion-nws', 'Compte No Way Studio · à l\'étude', /est à l'étude/]]) {
-        await expect(page.locator(id)).toHaveText(texte);
-        await expect(page.locator(id)).toHaveAttribute('aria-disabled', 'true');
-        await expect(page.locator(id)).toHaveAccessibleDescription(raison);
-      }
-      await page.locator('#menu-connexion-google').click({ force: true }); // aria-disabled : atteignable, sans effet
-      await expect(page.locator('#menu-ecran-connexion')).toBeVisible();
-      await expect(page.locator('#menu-connexion-texte')).toHaveText('Sans compte, ta progression reste sur cet appareil.');
-      const nav0 = size.height;
-      for (const s of ['#menu-ecran-connexion-retour', '#menu-connexion-google', '#menu-connexion-nws', '#menu-connexion-profil']) {
-        const r = await boite(page, s);
-        expect([r.w >= 44, r.h >= 44, r.b <= nav0 + 0.5, r.r <= size.width + 0.5], s).toEqual([true, true, true, true]);
-      }
-      expect((await new AxeBuilder({ page }).analyze()).violations.map((v) => v.id)).toEqual([]);
-      await page.locator('#menu-connexion-profil').click();
       await expect(page.locator('#menu-ecran-profil')).toBeVisible();
-      await expect(page.locator('#menu-ecran-connexion')).toBeHidden();
+      expect(await page.locator('#menu-ecran-connexion').count()).toBe(0);
+      await expect(page.locator('.e8-onglets')).toBeHidden(); // écran plein
+      await expect(page.locator('#menu-ecran-profil-retour')).toBeFocused();
+      await expect(page.locator('#menu-profil-google')).toHaveText('Se connecter avec Google · bientôt');
+      await expect(page.locator('#menu-profil-google')).toHaveAccessibleDescription(/connexion avec Google arrive/);
       await expect(page.locator('#menu-ecran-profil .menu-bandeau-libelle')).toHaveText('Joueur');
       await expect(page.locator('#menu-ecran-profil-titre')).toHaveText('Profil');
       await expect(page.locator('#menu-profil-pseudo')).toHaveText('Survivant');
       await expect(page.locator('#menu-profil-compte')).toHaveText('Compte : non connecté');
       await expect(page.locator('#menu-profil-google')).toHaveAttribute('aria-disabled', 'true');
-      await expect(page.locator('.e10-stat-nom')).toHaveText(['Meilleure manche', 'Record infini', 'Zombies tués', 'Parties jouées', 'Temps de jeu', 'Argent gagné']);
+      await expect(page.locator('.e10-stat-nom')).toHaveText(['Meilleure manche', 'Zombies tués', 'Parties histoire', 'Parties infini', 'Temps de jeu', 'Argent gagné']); // sans record infini
       await expect(page.locator('#menu-profil-exporter')).toHaveText('Exporter mon code');
       await expect(page.locator('#menu-profil-importer')).toHaveText('Importer un code');
       const marge = encoche ? 50 : 15.5;
@@ -547,13 +533,20 @@ test.describe('Connexion et Profil (E10)', () => {
   test('avatar et pseudo changés en mémoire (aucune écriture) ; pseudo : erreurs lues (trop court, trop long, caractère invisible), espaces nettoyés, Échap annule ; statistiques égales à la sauvegarde (?store=local) ; rechargement : valeurs par défaut', async ({ page }) => {
     await menuAvecSauvegarde(page);
     await ouvrirProfil(page);
-    await expect(page.locator('.e10-stat-valeur')).toHaveText([`17 / 40`, /^—/, /^—/, '6', /^—/, `4${NNBSP}321`]);
-    expect((await page.evaluate(() => window.__zsMenu.etat().menu.compte)).stats).toEqual([['meilleureManche', '17'], ['recordInfini', ''], ['tues', ''], ['parties', '6'], ['temps', ''], ['argent', '4321']]);
-    await expect(page.locator('#menu-profil-avatar')).toHaveAttribute('aria-label', 'Avatar 1 sur 6');
+    await expect(page.locator('.e10-stat-valeur')).toHaveText([`17 / 40`, /^—/, /^—/, /^—/, /^—/, `4${NNBSP}321`]);
+    expect((await page.evaluate(() => window.__zsMenu.etat().menu.compte)).stats).toEqual([['meilleureManche', '17'], ['tues', ''], ['partiesHistoire', ''], ['partiesInfini', ''], ['temps', ''], ['argent', '4321']]);
+    // Retour du propriétaire : avatars d'après le personnage du jeu et les zombies.
+    await expect(page.locator('#menu-profil-avatar')).toHaveAttribute('aria-label', 'Avatar 1 sur 6 : Survivant');
+    const noms = [];
+    for (let i = 0; i < 6; i += 1) {
+      await page.locator('#menu-profil-changer').click();
+      noms.push(await page.locator('#menu-profil-avatar').getAttribute('aria-label'));
+    }
+    expect(noms).toEqual(['Avatar 2 sur 6 : Éclaireur', 'Avatar 3 sur 6 : Tireur', 'Avatar 4 sur 6 : Zombie rôdeur', 'Avatar 5 sur 6 : Zombie de chantier', 'Avatar 6 sur 6 : Zombie affamé', 'Avatar 1 sur 6 : Survivant']);
     await page.locator('#menu-profil-changer').click();
-    await expect(page.locator('#menu-profil-avatar')).toHaveAttribute('aria-label', 'Avatar 2 sur 6');
-    await expect(page.locator('#menu-profil-annonce')).toHaveText('Avatar 2 sur 6');
-    expect(await page.locator('#menu-profil-avatar').evaluate((n) => getComputedStyle(n).color)).toBe('rgb(255, 74, 61)'); // --menu-rouge-trait
+    await expect(page.locator('#menu-profil-annonce')).toHaveText('Avatar 2 sur 6 : Éclaireur');
+    expect(await page.locator('#menu-profil-avatar .av-lampe').count()).toBe(1); // lampe frontale du joueur B
+    expect(await page.locator('#menu-profil-avatar .av-peau').first().evaluate((n) => getComputedStyle(n).fill)).toBe('rgb(232, 201, 168)'); // --perso-peau-joueur
     await page.locator('#menu-profil-pseudo-modifier').click();
     const champ = page.locator('#menu-profil-pseudo-champ');
     await expect(champ).toBeFocused();
@@ -573,11 +566,10 @@ test.describe('Connexion et Profil (E10)', () => {
     await champ.press('Enter');
     await expect(page.locator('#menu-profil-pseudo')).toHaveText('Le Chef');
     await expect(page.locator('#menu-profil-annonce')).toHaveText('Pseudo changé : Le Chef.');
-    expect((await page.evaluate(() => window.__zsMenu.etat().menu.compte))).toMatchObject({ avatar: 'rouge', pseudo: 'Le Chef', depot: 'local' });
+    expect((await page.evaluate(() => window.__zsMenu.etat().menu.compte))).toMatchObject({ avatar: 'eclaireur', pseudo: 'Le Chef', depot: 'local' });
     // Gardés en mémoire en quittant et en revenant ; aucune écriture.
     await page.locator('#menu-ecran-profil-retour').click();
     await page.locator('#menu-connexion').click();
-    await page.locator('#menu-connexion-profil').click();
     await expect(page.locator('#menu-profil-pseudo')).toHaveText('Le Chef');
     expect(await page.evaluate(() => window.__ecritures)).toEqual([]);
     expect(JSON.parse(await page.evaluate((k) => localStorage.getItem(k), KEY))).toEqual(SAUVEGARDE);
@@ -585,7 +577,7 @@ test.describe('Connexion et Profil (E10)', () => {
     await expect(page.locator('#menu-jouer')).toBeVisible({ timeout: 60_000 });
     await ouvrirProfil(page);
     await expect(page.locator('#menu-profil-pseudo')).toHaveText('Survivant');
-    await expect(page.locator('#menu-profil-avatar')).toHaveAttribute('aria-label', 'Avatar 1 sur 6');
+    await expect(page.locator('#menu-profil-avatar')).toHaveAttribute('aria-label', 'Avatar 1 sur 6 : Survivant');
   });
 
   test('« Exporter mon code » : code ZS1 valide (relu par decodeSave = la sauvegarde) ; « Importer un code » : code abîmé refusé (message, aucune écriture), code valide vérifié (aperçu), confirmation exigée, puis importé : seule écriture, puis menu rechargé sans introduction, solde à jour', async ({ page, context }) => {

@@ -26,34 +26,37 @@ export const ERREURS_PSEUDO = Object.freeze({
   long: 'game.menu.profil.pseudo.erreur.long',
 });
 
-// Avatars : une silhouette (forme) et une teinte (jeton de couleur de css/tokens.css, appliqué par css/menu.css) ; « Changer d'avatar » passe au suivant.
+// Avatars (retour du propriétaire : d'après le personnage du jeu et les zombies ; d'autres viendront) : portrait dessiné en code (js/menu/compte.js),
+// couleurs des personnages du jeu (jetons --perso-* de css/tokens.css, posés par css/menu.css) ; type joueur ou zombie, tenue (détails du dessin).
+// « Changer d'avatar » passe au suivant.
 export const AVATARS = Object.freeze([
-  Object.freeze({ id: 'os', forme: 'survivant' }),
-  Object.freeze({ id: 'rouge', forme: 'casque' }),
-  Object.freeze({ id: 'or', forme: 'capuche' }),
-  Object.freeze({ id: 'vert', forme: 'survivant' }),
-  Object.freeze({ id: 'bleu', forme: 'casque' }),
-  Object.freeze({ id: 'violet', forme: 'capuche' }),
+  Object.freeze({ id: 'survivant', type: 'joueur', tenue: 'bandana' }), // joueur A : veste tactique sable, bandana rouge
+  Object.freeze({ id: 'eclaireur', type: 'joueur', tenue: 'capuche' }), // joueur B : sweat à capuche gris, lampe frontale
+  Object.freeze({ id: 'tireur', type: 'joueur', tenue: 'veste' }), // joueur C : veste turquoise
+  Object.freeze({ id: 'rodeur', type: 'zombie', tenue: 'chemise' }), // zombie à la peau cendre, chemise déchirée
+  Object.freeze({ id: 'ouvrier', type: 'zombie', tenue: 'chantier' }), // zombie de chantier : casque jaune, gilet orange
+  Object.freeze({ id: 'affame', type: 'zombie', tenue: 'sweat' }), // zombie à la peau jaunie, sweat gris
 ]);
 export function avatarSuivant(id) {
   const i = AVATARS.findIndex((a) => a.id === id);
   return AVATARS[(i + 1) % AVATARS.length];
 }
 
-// Six statistiques du Profil, dans l'ordre de la maquette : { id, valeur (nombre ou null : « — »), max (meilleure manche : dernière manche du monde) }.
-// Existent dans la sauvegarde v1 : meilleure manche (records.bestWave, 0 = aucune), parties jouées (records.runs), argent gagné (earned). Attendent le
-// lot 8h : record infini, zombies tués au total (records.bestKills n'est que la meilleure partie), temps de jeu. Sauvegarde illisible, verrouillée ou
-// indisponible : tout à « — ».
-export const STATS_PROFIL = Object.freeze(['meilleureManche', 'recordInfini', 'tues', 'parties', 'temps', 'argent']);
-export const STATS_EN_ATTENTE = Object.freeze(['recordInfini', 'tues', 'temps']);
+// Six statistiques du Profil : { id, valeur (nombre ou null : « — »), max (meilleure manche : dernière manche du monde) }. Retour du propriétaire : plus
+// de record infini (il dépend de la carte : il est dans l'onglet Infini) ; parties jouées séparées en histoire et en infini. Existent dans la
+// sauvegarde v1 : meilleure manche (records.bestWave, 0 = aucune), argent gagné (earned). Attendent le lot 8h : zombies tués au total
+// (records.bestKills n'est que la meilleure partie), parties en histoire et en infini (records.runs les compte ensemble), temps de jeu.
+// Sauvegarde illisible, verrouillée ou indisponible : tout à « — ».
+export const STATS_PROFIL = Object.freeze(['meilleureManche', 'tues', 'partiesHistoire', 'partiesInfini', 'temps', 'argent']);
+export const STATS_EN_ATTENTE = Object.freeze(['tues', 'partiesHistoire', 'partiesInfini', 'temps']);
 export function statsProfil(lu, manches = 40) {
   const lisible = lu && (lu.status === 'ok' || lu.status === 'empty') && lu.save && typeof lu.save === 'object';
   const d = lisible ? describeSave(lu.save) : null;
   const valeurs = {
     meilleureManche: d && d.records.bestWave >= 1 ? d.records.bestWave : null,
-    recordInfini: null,
     tues: null,
-    parties: d ? d.records.runs : null,
+    partiesHistoire: null,
+    partiesInfini: null,
     temps: null,
     argent: d ? d.earned : null,
   };

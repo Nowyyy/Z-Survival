@@ -26,12 +26,18 @@
   <link rel="stylesheet" href="css/base.css">
   <link rel="stylesheet" href="css/game.css">
   <link rel="stylesheet" href="css/game-ui.css">
+  <!-- Lot 8g (retour du propriétaire : « une fraction de seconde une barre de chargement avant Toucher pour commencer ») : l'écran de préparation de la
+       partie (#loading, #boot) reste invisible tant que le module de démarrage n'a pas choisi : partie directe, il le montre ; mode menu, il reste caché
+       (écran de chargement du menu, ou introduction du studio). Une erreur de chargement le montre aussi (message ci-dessous). -->
+  <style>.zs-attente #boot, .zs-attente #loading { visibility: hidden; }</style>
   <script>
+    document.documentElement.classList.add('zs-attente');
     // Si le chargement échoue (script introuvable, erreur au démarrage), le dire à l'écran au lieu de rester à 0 %.
     (function () {
       function fail(detail) {
         var box = document.getElementById('loading');
         if (!box || box.hidden) return;
+        if (!document.documentElement.classList.contains('zs-mode-menu')) document.documentElement.classList.remove('zs-attente');
         document.getElementById('loading-error').hidden = false;
         var d = document.getElementById('loading-detail');
         d.hidden = false;
