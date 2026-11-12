@@ -337,7 +337,7 @@ export function instant(chrono, reglages, t) {
 // État d'un zombie : promenade, geste en cours (progression), marque (« ! »), projection (légendaire).
 function zombieA(chrono, reglages, z, t) {
   const base = promenade(reglages.promenade[z], t);
-  const out = { x: base.x, sens: base.sens, marche: base.marche, geste: null, p: 0, hauteur: 0, sol: 0, marque: null, marqueEchelle: 0, projection: null };
+  const out = { x: base.x, sens: base.sens, marche: base.marche, geste: null, p: 0, hauteur: 0, sol: 0, etape: null, pe: 0, recul: 0, marque: null, marqueEchelle: 0, projection: null };
   for (const c of chrono.caisses) {
     for (const r of c.reactions) {
       if (r.zombie !== z || t < r.debut || t >= r.fin) continue;
@@ -348,7 +348,18 @@ function zombieA(chrono, reglages, z, t) {
       // Saut : parabole sur la première partie du geste (jusqu'à la chute pour une chute).
       const montee = d.sol ? d.sol[0] : Math.min(d.duree, 0.5);
       out.hauteur = u < montee ? d.hauteur * 4 * (u / montee) * (1 - u / montee) : 0;
-      if (d.sol) out.sol = u < d.sol[0] ? progres(u, d.sol[0] * 0.55, d.sol[0]) : u < d.sol[1] ? 1 : 1 - progres(u, d.sol[1], d.duree);
+      if (d.sol) {
+        out.sol = u < d.sol[0] ? progres(u, d.sol[0] * 0.55, d.sol[0]) : u < d.sol[1] ? 1 : 1 - progres(u, d.sol[1], d.duree);
+        // Retour du propriétaire (« la chute fait trop simple ») : étapes d'une chute : saut (bras levés), chute en arrière avec rebond, au sol
+        // (soubresauts), relevé ; recul : déplacement en arrière (0 → 1 pendant la chute, garde la place au sol, revient au relevé).
+        const a = d.sol[0] * 0.55;
+        const b = d.sol[0] + 0.18;
+        if (u < a) [out.etape, out.pe] = ['saut', progres(u, 0, a)];
+        else if (u < b) [out.etape, out.pe] = ['chute', progres(u, a, b)];
+        else if (u < d.sol[1]) [out.etape, out.pe] = ['sol', progres(u, b, d.sol[1])];
+        else [out.etape, out.pe] = ['releve', progres(u, d.sol[1], d.duree)];
+        out.recul = u < a ? 0 : u < d.sol[1] ? lisse(progres(u, a, d.sol[0])) : 1 - lisse(progres(u, d.sol[1], d.duree));
+      }
       if (d.marque && d.vue && u >= d.vue[0] && u < d.vue[1]) {
         out.marque = d.marque;
         const v = u - d.vue[0];
@@ -381,4 +392,15 @@ function zombieA(chrono, reglages, z, t) {
 export function chronologieAchat(reglages, r, raretes) {
   if (!r || r.type === 'offre' || !Array.isArray(r.objets)) return null;
   return chronologie(reglages, r.objets.map((_, i) => rareteEffets(r, i, raretes)), { graine: r.graine });
+}
+
+// Retour du propriétaire : toucher l'écran (doigt ou souris) passe la caisse en cours. Temps où sauter depuis t : pendant l'arrivée, le départ de la
+// première caisse ; ×10 : la fin de la caisse en cours (départ de la suivante ; la dernière : fin de l'ouverture, donc le résultat) ; ×1 : la fin
+// (carte et boutons). null : rien à passer. Les cartes des caisses passées sont déjà dans leurs cases (instant est pur).
+export function prochainSaut(chrono, t) {
+  if (!chrono || !(t < chrono.fin)) return null;
+  if (t < chrono.arrivee.duree) return chrono.caisses[0].debut;
+  if (chrono.quantite === 1) return chrono.fin;
+  const c = chrono.caisses.find((k) => t < k.fin);
+  return !c || c.i === chrono.quantite - 1 ? chrono.fin : c.fin;
 }

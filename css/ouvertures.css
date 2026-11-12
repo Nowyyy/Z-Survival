@@ -8,8 +8,8 @@
   /* Hangar de nuit */
   --ouv-noir: #000000;
   --ouv-nuit: #0c0d12;
-  --ouv-ambiant: #4a5468;
-  --ouv-sol-ambiant: #120f0c;
+  --ouv-ambiant: #6e7178;
+  --ouv-sol-ambiant: #24201c;
   --ouv-beton: #3a3835;
   --ouv-beton-clair: #4a4743;
   --ouv-beton-sombre: #242220;
@@ -67,6 +67,7 @@
   --ouv-boule: var(--menu-scene-flamme-coeur);
   --ouv-boule-bord: var(--menu-scene-flamme);
   --ouv-sang: var(--sang-frais);
+  --ouv-poussiere: var(--menu-scene-fumee);
   --ouv-sang-sec: var(--sang-sec);
   --ouv-marque-1: var(--menu-ruban-jaune);
   --ouv-marque-2: var(--menu-rouge-trait);
@@ -80,7 +81,6 @@
   --ouv-passer-bord: var(--menu-classement-rang);
   --ouv-case-fond: rgb(5 5 5 / 60%);
   --ouv-case-bord: #4a4540;
-  --ouv-reticule: var(--menu-texte);
   --ouv-marge-d: max(var(--menu-marge), env(safe-area-inset-right, 0px), calc(32 * var(--u)));
   --ouv-marge-h: max(16px, env(safe-area-inset-top, 0px));
   position: fixed;
@@ -102,6 +102,8 @@
   display: block;
   width: 100%;
   height: 100%;
+  cursor: pointer; /* toucher ou cliquer : caisse suivante */
+  touch-action: manipulation;
 }
 
 /* Éclair d'écran (couleur de la rareté, opacité de la chronologie : au plus 3 par seconde, js/core/ouverture.js) et fondu depuis le noir. */
@@ -119,26 +121,6 @@
 
 .e3-ouv-fondu {
   background: var(--ouv-noir);
-}
-
-/* Réticule au centre (s'écarte au tir). */
-.e3-ouv-reticule {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: 48px;
-  height: 48px;
-  margin: -24px 0 0 -24px;
-  pointer-events: none;
-  fill: none;
-  stroke: var(--ouv-reticule);
-  stroke-width: 2.5;
-  opacity: 0.85;
-}
-
-.e3-ouv-reticule circle {
-  fill: var(--ouv-reticule);
-  stroke: none;
 }
 
 .e3-ouv-passer {

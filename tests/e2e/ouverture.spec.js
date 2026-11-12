@@ -373,6 +373,12 @@ test.describe('ouverture ×10 (E3-3)', () => {
     await attendreOuverture(page);
     const attendus = tirer10(caisse('ravitaillement'), cat, G_DIX);
     const e = await ouv(page);
+    // Retour du propriétaire : toucher l'écran passe la caisse en cours (sa carte va dans sa case, la suivante arrive).
+    await aller(page, e.chronologie[3].tir + 0.1);
+    expect((await ouv(page)).cases).toEqual([0, 1, 2]);
+    await page.locator('#menu-ecran-ouverture canvas').click({ position: { x: 200, y: 200 } });
+    const apres = await ouv(page);
+    expect([apres.sauts, apres.temps, apres.cases]).toEqual([1, e.chronologie[3].fin, [0, 1, 2, 3]]);
     await aller(page, e.chronologie[4].case + 0.1);
     expect((await ouv(page)).cases).toEqual([0, 1, 2, 3, 4]);
     for (const [size, marge] of [[{ width: 667, height: 375 }, 16], [{ width: 2000, height: 1020 }, 16], [{ width: 932, height: 430 }, 16], [{ width: 762, height: 351 }, 50]]) {
@@ -386,6 +392,8 @@ test.describe('ouverture ×10 (E3-3)', () => {
       expect(chevauche(p, rangee), nom).toBe(false);
     }
     expect((await new AxeBuilder({ page }).analyze()).violations.map((v) => v.id)).toEqual([]);
+    // Pas de réticule (retour du propriétaire).
+    await expect(page.locator('#menu-ecran-ouverture .e3-ouv-reticule')).toHaveCount(0);
     await page.locator('#menu-ouverture-passer').click();
     await expect(page.locator('#menu-ecran-resultat')).toBeVisible();
     let r = (await etatBoutique(page)).resultat;

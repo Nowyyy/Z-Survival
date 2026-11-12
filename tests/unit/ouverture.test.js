@@ -4,7 +4,7 @@
 // projection, glissade, réapparition à gauche ou à droite selon la graine), éclairs d'écran limités, données invalides refusées. Aucun rendu.
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
-import { ECLAIRS_PAR_SECONDE, EVENEMENTS, REACTIONS, choixLegendaire, chronologie, chronologieAchat, eclairsParSeconde, effets, instant, limiterEclairs, lireOuvertures, promenade, rareteEffets } from '../../js/core/ouverture.js';
+import { ECLAIRS_PAR_SECONDE, EVENEMENTS, REACTIONS, choixLegendaire, chronologie, chronologieAchat, eclairsParSeconde, effets, instant, limiterEclairs, lireOuvertures, prochainSaut, promenade, rareteEffets } from '../../js/core/ouverture.js';
 
 const lire = (f) => JSON.parse(readFileSync(f, 'utf8'));
 const JSON_OUV = lire('data/menu/ouvertures.json');
@@ -310,5 +310,55 @@ describe('rareté qui règle les effets (rareteEffets) et achats', () => {
       expect(R.x1.ouverture[e], e).toHaveLength(2);
       expect(R.x10.ouverture[e], e).toHaveLength(2);
     }
+  });
+});
+
+describe('retours du propriétaire (après la fusion, PR #96)', () => {
+  it('chute en étapes : saut, chute (avec recul), au sol, relevé ; le zombie revient à sa place', () => {
+    for (const rid of ['epique', 'legendaire']) {
+      const ch = chronologie(R, [rid], { graine: 3 });
+      const r = ch.caisses[0].reactions[0];
+      const d = R.reactions[r.geste];
+      const etapes = [];
+      for (let t = r.debut; t < r.fin; t += 0.02) {
+        const z = instant(ch, R, t).zombies[r.zombie];
+        if (etapes.at(-1) !== z.etape) etapes.push(z.etape);
+        expect(z.pe).toBeGreaterThanOrEqual(0);
+        expect(z.pe).toBeLessThanOrEqual(1);
+      }
+      expect(etapes, rid).toEqual(['saut', 'chute', 'sol', 'releve']);
+      expect(instant(ch, R, r.debut + d.sol[0] + 0.5).zombies[r.zombie].recul).toBe(1);
+      expect(instant(ch, R, r.fin + 0.01).zombies[r.zombie]).toMatchObject({ etape: null, recul: 0, sol: 0 });
+    }
+    // Sursauts et saut : sans étapes de chute.
+    const ch = chronologie(R, ['rare']);
+    expect(instant(ch, R, ch.caisses[0].reactions[0].debut + 0.2).zombies[0].etape).toBeNull();
+  });
+
+  it('toucher l\'écran : arrivée → première caisse ; ×10 : caisse suivante (la dernière : fin, donc le résultat) ; ×1 : fin', () => {
+    const tirage = ['commun', 'rare', 'legendaire', 'commun', 'peu-commun', 'rare', 'epique', 'commun', 'peu-commun', 'rare'];
+    const ch = chronologie(R, tirage, { graine: 2 });
+    expect(prochainSaut(ch, 0.5)).toBe(ch.caisses[0].debut);
+    for (const c of ch.caisses.slice(0, -1)) {
+      expect(prochainSaut(ch, c.debut + 0.01)).toBe(c.fin);
+      expect(prochainSaut(ch, c.fin - 0.01)).toBe(c.fin);
+      // Sauter là : la carte de cette caisse est déjà dans sa case, la suivante arrive.
+      const s = instant(ch, R, c.fin);
+      expect(s.cases).toBe(c.i + 1);
+      expect(s.zombies.every((z) => z.projection === null)).toBe(true);
+    }
+    expect(prochainSaut(ch, ch.caisses[9].debut + 0.5)).toBe(ch.fin);
+    expect(prochainSaut(ch, ch.fin)).toBeNull();
+    expect(instant(ch, R, ch.fin).cases).toBe(10);
+    const un = chronologie(R, ['epique']);
+    expect(prochainSaut(un, 1)).toBe(un.caisses[0].debut);
+    expect(prochainSaut(un, un.caisses[0].debut + 0.1)).toBe(un.fin);
+    expect(prochainSaut(un, un.fin + 1)).toBeNull();
+    expect(prochainSaut(null, 0)).toBeNull();
+  });
+
+  it('légendaire : l\'explosion dure plus longtemps que l\'éclair d\'écran (elle reste visible après lui)', () => {
+    const c = chronologie(R, ['legendaire']).caisses[0];
+    expect(c.explosion[1]).toBeGreaterThan(c.eclair[1] + 0.3);
   });
 });

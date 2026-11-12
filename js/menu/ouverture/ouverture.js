@@ -7,7 +7,7 @@
 // perdu de force) et la section retirée ; un seul rendu WebGL à la fois. WebGL indisponible ou chargement en échec : null (résultat direct).
 // Tests (?test=1 pris en compte, acces()) : ?ouverture=0 (aucune ouverture), rapide (temps ×6), pas (le temps n'avance que par
 // window.__zsOuverture.avancer(s)) ; window.__zsOuverture.etat() : chronologie, cartes, cases, budget mesuré (renderer.info), libération.
-import { chronologieAchat, lireOuvertures } from '../../core/ouverture.js';
+import { chronologieAchat, lireOuvertures, prochainSaut } from '../../core/ouverture.js';
 import { acces } from '../../core/graphics.js';
 import { parseColor, toHex } from '../../core/color.js';
 import { formatMoney } from '../../core/economy.js';
@@ -96,16 +96,6 @@ export async function lancerOuverture({ r, cat, cartes, annonce, t, parent, rapp
   const canvas = el('canvas', ['e3-ouv-canevas'], { 'aria-hidden': 'true' });
   const eclair = el('div', ['e3-ouv-eclair'], { 'aria-hidden': 'true' });
   const fondu = el('div', ['e3-ouv-fondu'], { 'aria-hidden': 'true' });
-  const reticule = document.createElementNS(SVG, 'svg');
-  reticule.setAttribute('viewBox', '0 0 48 48');
-  reticule.setAttribute('class', 'e3-ouv-reticule');
-  reticule.setAttribute('aria-hidden', 'true');
-  reticule.setAttribute('focusable', 'false');
-  const traits = document.createElementNS(SVG, 'path');
-  traits.setAttribute('d', 'M24 0V12M24 36V48M0 24H12M36 24H48');
-  const centre = document.createElementNS(SVG, 'circle');
-  for (const [k, v] of Object.entries({ cx: 24, cy: 24, r: 1.8 })) centre.setAttribute(k, String(v));
-  reticule.append(traits, centre);
   const temoin = el('span', ['e3-ouv-temoin'], { 'aria-hidden': 'true' });
   const passer = el('button', ['e3-ouv-passer'], { type: 'button', id: 'menu-ouverture-passer', 'aria-label': t('game.menu.ouverture.passer.aria') });
   const passerTexte = el('span');
@@ -134,7 +124,7 @@ export async function lancerOuverture({ r, cat, cartes, annonce, t, parent, rapp
   btRouvrir.setAttribute('aria-label', fmt(t('game.menu.resultat.rouvrir.aria'), { action: btRouvrir.textContent, caisse: r.caisse.nom }));
   actions.append(btContinuer, btRouvrir);
   const live = el('p', ['sr-only'], { id: 'menu-ouverture-annonce', 'aria-live': 'polite' });
-  section.append(titre, canvas, eclair, reticule, fondu, cases, actions, passer, live, temoin);
+  section.append(titre, canvas, eclair, fondu, cases, actions, passer, live, temoin);
   parent.append(section);
 
   // Jetons --ouv-* et --rarete-* lus par un témoin (couleur calculée), mis en cache.
@@ -158,6 +148,12 @@ export async function lancerOuverture({ r, cat, cartes, annonce, t, parent, rapp
     return { x: ((b.left + b.width / 2 - s.left) / s.width) * 2 - 1, y: 1 - ((b.top + b.height / 2 - s.top) / s.height) * 2, l: b.width / s.width };
   };
 
+  // « Passer » touché pendant la création de la scène (écran noir) : l'ouverture s'arrête aussitôt prête, le résultat s'affiche.
+  let annulee = false;
+  const annulerTot = () => {
+    annulee = true;
+  };
+  passer.addEventListener('click', annulerTot);
   let scene;
   try {
     const police = getComputedStyle(document.documentElement).getPropertyValue('--font-display').trim() || 'sans-serif';
@@ -165,6 +161,12 @@ export async function lancerOuverture({ r, cat, cartes, annonce, t, parent, rapp
     scene = await sceneMod.creerScene({ canvas, couleur, chrono, reglages, cartes: cartesScene, modele: r.caisse.modele, teinte: r.caisse.teinte, police, caseCible });
   } catch {
     // WebGL indisponible (ou création impossible) : rien de plus n'est montré, le résultat s'affiche directement.
+    section.remove();
+    return null;
+  }
+  passer.removeEventListener('click', annulerTot);
+  if (annulee) {
+    scene.liberer();
     section.remove();
     return null;
   }
@@ -178,14 +180,42 @@ export async function lancerOuverture({ r, cat, cartes, annonce, t, parent, rapp
   let annonceFaite = false;
   let focusFait = false;
   let derniersRemplis = 0;
+  let sauts = 0;
   let etatScene = null;
   const vitesse = VITESSES[mode] ?? 1;
+  // Retour du propriétaire (fluidité) : résolution adaptative. Durée réelle des images lissée ; au-dessus de 21 ms (moins de 48 images par
+  // seconde), le rapport de pixels baisse d'un cran (0,25, jusqu'à 0,75) ; sous 14 ms pendant 3 s, il remonte (jusqu'au plafond). Jamais en test
+  // pas à pas (ni accéléré) : les mesures y restent comparables.
+  const adaptative = mode === null;
+  let lisse = 16;
+  let bonnes = 0;
+  let ratio = scene.plafond;
+  let attente = 0.5;
+  function adapter(ms) {
+    lisse += (ms - lisse) * 0.1;
+    attente -= ms / 1000;
+    if (attente > 0) return;
+    if (lisse > 21 && ratio > 0.75) {
+      ratio = scene.pixels(ratio - 0.25);
+      attente = 0.6;
+      bonnes = 0;
+    } else if (lisse < 14) {
+      bonnes += ms / 1000;
+      if (bonnes > 3 && ratio < scene.plafond) {
+        ratio = scene.pixels(ratio + 0.25);
+        attente = 1;
+        bonnes = 0;
+      }
+    } else bonnes = 0;
+  }
   function image(maintenant) {
     raf = 0;
     if (libere) return;
     if (mode !== 'pas') {
-      const dt = precedent === null ? 0 : Math.min(0.1, (maintenant - precedent) / 1000);
+      const brut = precedent === null ? 0 : maintenant - precedent;
+      const dt = Math.min(0.1, brut / 1000);
       temps += dt * vitesse;
+      if (adaptative && brut > 0 && brut < 250) adapter(brut);
     }
     precedent = maintenant;
     dessiner();
@@ -197,7 +227,6 @@ export async function lancerOuverture({ r, cat, cartes, annonce, t, parent, rapp
     fondu.style.opacity = String(s.fondu);
     eclair.style.opacity = String(s.eclair.force);
     if (s.eclair.rarete) eclair.style.setProperty('--e3-rarete', `var(--rarete-${s.eclair.rarete})`);
-    reticule.style.transform = `scale(${1 + 0.7 * s.tir.reticule})`;
     if (dix && s.cases !== derniersRemplis) {
       lis.forEach((li, i) => {
         const plein = i < s.cases;
@@ -233,6 +262,16 @@ export async function lancerOuverture({ r, cat, cartes, annonce, t, parent, rapp
   observateur?.observe(section);
   window.addEventListener('resize', redimensionner);
   passer.addEventListener('click', () => rappels.fin());
+  // Retour du propriétaire : toucher l'écran (doigt ou souris, hors boutons) passe la caisse en cours (prochainSaut : arrivée → première caisse ;
+  // ×10 : caisse suivante, la dernière mène au résultat ; ×1 : carte et boutons). « Passer » mène toujours au résultat.
+  canvas.addEventListener('click', () => {
+    if (libere) return;
+    const cible = prochainSaut(chrono, temps);
+    if (cible === null) return;
+    temps = cible;
+    sauts += 1;
+    if (mode === 'pas' || !raf) dessiner();
+  });
   btContinuer.addEventListener('click', () => rappels.continuer());
   btRouvrir.addEventListener('click', () => rappels.rouvrir());
 
@@ -248,6 +287,7 @@ export async function lancerOuverture({ r, cat, cartes, annonce, t, parent, rapp
     chronologie: chrono.caisses.map((c) => ({ rarete: c.rarete, debut: c.debut, tir: c.tir, couvercle: c.couvercle, objet: c.objet, case: c.case, fin: c.fin, projection: c.projection })),
     instant: etatScene ? { active: etatScene.active, cases: etatScene.cases, boutons: etatScene.boutons, fini: etatScene.fini, eclair: etatScene.eclair.force, sombre: etatScene.sombre } : null,
     rendu: libere ? dernierEtat?.rendu ?? null : scene.info(),
+    sauts,
     liberation: null,
   });
 
