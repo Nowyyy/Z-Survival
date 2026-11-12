@@ -34,7 +34,7 @@
 - Roue de chargement plus grosse (76 px, texte) aussi au chargement d'un onglet ou d'un sous-menu ; glissement à la souris de toutes les zones qui défilent (`js/glisser.js`, clic annulé après un glissement, élan) ; Échap en plein écran pendant la partie : pause (Keyboard Lock, sinon pause à la sortie du plein écran) — **`js/game/ui.js` modifié à la demande du propriétaire** (hors du lot, sans effet sur la logique).
 - Retour au menu en plein écran : le rechargement le fait quitter (règle des navigateurs) ; repère `#plein-ecran`, rappel « Touchez l'écran pour revenir en plein écran » et plein écran repris au premier geste.
 - Caisses de l'animation allongées (150 au lieu de 110 de large, comme les caisses rectangulaires du menu).
-- Haut des filets de sang irrégulier (bosselé, penché, gouttelette détachée), hauteur et sens propres à chaque filet.
+- Haut des filets de sang irrégulier et différent pour chaque filet (cinq familles de formes tirées : pointe, biseau, fourche, bosses, fil fin ; gouttelettes détachées), gouttes du bout un peu différentes.
 ## Points ouverts
 - **Esthétique, fluidité et téléphone non jugés par l'agent** (émulation et rendu logiciel seulement) : zombie écrasé peu détaillé à cette taille, scène sombre, lisibilité du fusil et des mains, 60 images par seconde sur un téléphone moyen.
 - Démarrage du menu : 31 fichiers JavaScript (29 + `js/menu/roue.js`, `js/glisser.js`) ; démarrage de la partie : 115 (114 + `js/glisser.js`). Lighthouse non rejoué après ces deux modules (quelques Ko).

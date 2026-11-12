@@ -354,42 +354,71 @@ export function creerTextures({ couleur, anisotropie = 1 }) {
     return tex(c);
   }
 
-  // Haut d'un filet (retour du propriétaire : « le haut des coulures ne doit pas être rectangulaire mais imparfait ») : même colonne que le corps
-  // (mêmes bords, ombre et reflet, raccord sans couture en bas), bord du haut bosselé et penché, gouttelette détachée au-dessus.
-  function hautFilet() {
-    const [c, ctx] = toile(32, 64);
-    ctx.clearRect(0, 0, 32, 64);
-    const forme = new Path2D();
-    const pts = [[5, 64], [5, 30], [5.5, 22], [8, 17], [10.5, 21], [13, 14], [15.5, 9], [18, 12.5], [20, 7], [22.5, 10], [25, 17], [26.5, 23], [27, 30], [27, 64]];
-    forme.moveTo(...pts[0]);
-    for (let i = 1; i < pts.length - 1; i += 1) {
-      const [x, y] = pts[i];
-      const [nx, ny] = pts[i + 1];
-      forme.quadraticCurveTo(x, y, (x + nx) / 2, (y + ny) / 2);
+  // Hauts des filets (retours du propriétaire : « le haut des coulures ne doit pas être rectangulaire mais imparfait », puis « chaque goutte ne
+  // doit pas être identique dans son irrégularité ») : planche de n cases de 32 × 64, une forme tirée par case (graine propre) : même colonne que
+  // le corps (bords, ombre et reflet, raccord sans couture en bas), bord du haut bosselé à hauteurs et pentes variables, 0 à 2 gouttelettes
+  // détachées au-dessus. Case k : u de k / n à (k + 1) / n.
+  function hautsFilets(n) {
+    const [c, ctx] = toile(32 * n, 64);
+    ctx.clearRect(0, 0, 32 * n, 64);
+    for (let k = 0; k < n; k += 1) {
+      const f = hasard(61 + k * 13);
+      const ox = 32 * k;
+      // Bord du haut : une famille de forme par case (pointe décalée, biseau, fourche, bosses arrondies, fil fin qui monte), réglée au hasard.
+      const type = k % 5;
+      const bruit = () => (f() - 0.5) * 5;
+      let pts;
+      if (type === 0) {
+        const px = 9 + f() * 14; // pointe haute, décalée
+        pts = [[5, 64], [5, 40 + bruit()], [px - 4, 22 + bruit()], [px, 2 + f() * 4], [px + 3, 20 + bruit()], [27, 34 + bruit()], [27, 64]];
+      } else if (type === 1) {
+        const haut = 6 + f() * 8; // biseau : haut d'un côté, bas de l'autre, bosselé
+        pts = [[5, 64], [5, haut], [10, haut + 6 + bruit()], [15, haut + 12 + bruit()], [20, haut + 20 + bruit()], [27, haut + 30 + bruit()], [27, 64]];
+      } else if (type === 2) {
+        const a = 7 + f() * 5; // fourche : deux pointes de hauteurs différentes
+        pts = [[5, 64], [5, 34 + bruit()], [a, 6 + f() * 6], [16, 26 + bruit()], [20 + f() * 4, 12 + f() * 10], [27, 32 + bruit()], [27, 64]];
+      } else if (type === 3) {
+        pts = [[5, 64], [5, 28 + bruit()]]; // bosses arrondies irrégulières
+        for (let i = 1; i < 6; i += 1) pts.push([5 + (22 * i) / 6, 10 + f() * 16]);
+        pts.push([27, 26 + bruit()], [27, 64]);
+      } else {
+        const fx = 12 + f() * 8; // fil fin qui monte au-dessus d'un bord presque plat
+        pts = [[5, 64], [5, 34 + bruit()], [fx - 3, 30 + bruit()], [fx - 0.8, 1], [fx + 0.8, 1], [fx + 3, 30 + bruit()], [27, 36 + bruit()], [27, 64]];
+      }
+      const forme = new Path2D();
+      forme.moveTo(ox + pts[0][0], pts[0][1]);
+      for (let i = 1; i < pts.length - 1; i += 1) {
+        const [x, y] = pts[i];
+        const [nx, ny] = pts[i + 1];
+        forme.quadraticCurveTo(ox + x, y, ox + (x + nx) / 2, (y + ny) / 2);
+      }
+      forme.lineTo(ox + 27, 64);
+      forme.closePath();
+      ctx.fillStyle = couleur('--ouv-sang');
+      ctx.fill(forme);
+      // Gouttelettes détachées (0 à 2), au-dessus du bord.
+      const gouttelettes = Math.floor(f() * 3);
+      for (let g = 0; g < gouttelettes; g += 1) {
+        ctx.beginPath();
+        ctx.ellipse(ox + 8 + f() * 16, 2.5 + f() * 6, 1.2 + f() * 1.3, 1.6 + f() * 1.6, f() - 0.5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.save();
+      ctx.clip(forme);
+      ctx.globalAlpha = 0.45;
+      ctx.fillStyle = couleur('--ouv-sang-sec');
+      ctx.fillRect(ox + 20, 0, 7, 64);
+      ctx.globalAlpha = 0.35;
+      ctx.fillStyle = couleur('--ouv-q');
+      ctx.fillRect(ox + 9, 20, 2, 44);
+      ctx.restore();
+      // Bords adoucis, comme le corps, sous la partie irrégulière.
+      ctx.globalAlpha = 0.5;
+      ctx.fillStyle = couleur('--ouv-sang');
+      ctx.fillRect(ox + 3, 40, 2, 24);
+      ctx.fillRect(ox + 27, 40, 2, 24);
+      ctx.globalAlpha = 1;
     }
-    forme.lineTo(...pts.at(-1));
-    forme.closePath();
-    ctx.fillStyle = couleur('--ouv-sang');
-    ctx.fill(forme);
-    // Gouttelette détachée au-dessus du bord (le sang qui se décolle).
-    ctx.beginPath();
-    ctx.ellipse(11, 4.5, 2, 2.6, 0.2, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.save();
-    ctx.clip(forme);
-    ctx.globalAlpha = 0.45;
-    ctx.fillStyle = couleur('--ouv-sang-sec');
-    ctx.fillRect(20, 0, 7, 64);
-    ctx.globalAlpha = 0.35;
-    ctx.fillStyle = couleur('--ouv-q');
-    ctx.fillRect(9, 20, 2, 44);
-    ctx.restore();
-    // Bords adoucis, comme le corps, sous la partie irrégulière.
-    ctx.globalAlpha = 0.5;
-    ctx.fillStyle = couleur('--ouv-sang');
-    ctx.fillRect(3, 36, 2, 28);
-    ctx.fillRect(27, 32, 2, 32);
-    ctx.globalAlpha = 1;
     return tex(c);
   }
 
@@ -553,7 +582,7 @@ export function creerTextures({ couleur, anisotropie = 1 }) {
   }
 
   return {
-    beton, bois, metal, porte, bande, tapis, question, degrade, lueur, etoile, tache, vidange, filet, hautFilet, goutte, bouffee, eclaboussure, carte, toileCarte, marque,
+    beton, bois, metal, porte, bande, tapis, question, degrade, lueur, etoile, tache, vidange, filet, hautsFilets, goutte, bouffee, eclaboussure, carte, toileCarte, marque,
     nombre: () => toutes.size,
     toutes: () => [...toutes],
     liberer() {
