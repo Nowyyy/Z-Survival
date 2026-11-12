@@ -385,6 +385,20 @@ describe('retour du propriétaire (après la PR #98) : seconde explosion sous le
   });
 });
 
+describe('retour du propriétaire (après la PR #102) : marche qui ralentit', () => {
+  it('les pas suivent la distance parcourue : presque plus de pas quand il n\'avance presque plus ; balancement de plus en plus faible', () => {
+    const ch = chronologie(R, ['rare']);
+    const m = (t) => instant(ch, R, t).marche;
+    const A = R.arrivee;
+    for (const t of [0.3, 1, 2, 3, 3.3]) expect(m(t).pas).toBeCloseTo(m(t).avance * A.pas, 9);
+    // Dernier dixième de la marche : moins d'un dixième de pas (avant : 0,8 pas à cadence constante).
+    expect(m(A.duree - 0.001).pas - m(A.duree * 0.9).pas).toBeLessThan(0.1);
+    expect(m(0).vitesse).toBe(1);
+    expect(m(A.duree * 0.5).vitesse).toBeCloseTo(0.25, 6);
+    expect(m(A.duree + 0.1)).toMatchObject({ vitesse: 0, enMarche: false, pas: A.pas });
+  });
+});
+
 describe('retour du propriétaire (après la PR #101) : explosion sous le zombie avec la brillance jaune, objet découvert par le sang', () => {
   it('la seconde explosion part au début de l\'éclair d\'écran de la caisse dorée (×1 et ×10)', () => {
     expect(R.legendaire.projection.delai).toBe(0);

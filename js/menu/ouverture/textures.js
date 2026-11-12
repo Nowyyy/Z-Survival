@@ -13,8 +13,10 @@ const toile = (w, h) => {
 };
 
 // Générateur déterministe : f() dans [0, 1).
-// Part de la hauteur de la nappe de sang sous laquelle son bord du haut ne descend jamais (scene.js y règle la découverte de la carte).
-export const NAPPE_BORD = 28 / 512;
+// Tache de sang du légendaire : rayon de la partie pleine (part de la demi-taille de l'image) ; bord de l'écoulement (part de la hauteur du
+// masque, depuis le haut). scene.js en déduit la taille de la tache et l'avancée de l'écoulement.
+export const TACHE_R = 0.8;
+export const VIDANGE_BORD = 0.5;
 
 function hasard(graine) {
   let r = createRng(graine);
@@ -262,76 +264,118 @@ export function creerTextures({ couleur, anisotropie = 1 }) {
     return tex(c, { srgb: false });
   }
 
-  // Traînées de sang (laissées par le zombie qui glisse) : coulures verticales irrégulières, alpha.
-  function sang() {
+  // Retour du propriétaire (« pas de gros bloc rectangulaire : une tache qui s'écoule en plusieurs filets, comme les filets du Z du logo ») :
+  // tache de sang sur la « vitre » (légendaire) : ellipse pleine (rayon TACHE_R de la demi-taille, opaque : elle cache la carte), bord bosselé,
+  // caillots plus sombres, gouttes projetées autour ; alpha.
+  function tache() {
     const [c, ctx] = toile(256, 256);
-    const f = hasard(17);
+    const f = hasard(43);
     ctx.clearRect(0, 0, 256, 256);
-    for (let i = 0; i < 9; i += 1) {
-      const x = 12 + f() * 232;
-      const w = 6 + f() * 16;
-      const long = 120 + f() * 136;
-      ctx.fillStyle = couleur(f() < 0.6 ? '--ouv-sang' : '--ouv-sang-sec');
-      ctx.globalAlpha = 0.75 + f() * 0.25;
+    const r = TACHE_R * 128;
+    ctx.fillStyle = couleur('--ouv-sang');
+    ctx.beginPath();
+    ctx.arc(128, 128, r, 0, Math.PI * 2);
+    ctx.fill();
+    for (let i = 0; i < 22; i += 1) {
+      const a = (i / 22) * Math.PI * 2 + f() * 0.2;
+      const b = 6 + f() * 12;
       ctx.beginPath();
-      ctx.moveTo(x - w / 2, 0);
-      ctx.bezierCurveTo(x - w * 0.6, long * 0.4, x - w * 0.3, long * 0.8, x - w * 0.25, long);
-      ctx.arc(x, long, w * 0.32, Math.PI, 0, true);
-      ctx.bezierCurveTo(x + w * 0.3, long * 0.8, x + w * 0.6, long * 0.4, x + w / 2, 0);
-      ctx.closePath();
+      ctx.arc(128 + Math.cos(a) * (r + b * 0.3), 128 + Math.sin(a) * (r + b * 0.3), b, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.fillStyle = couleur('--ouv-sang-sec');
+    for (let i = 0; i < 9; i += 1) {
+      const a = f() * Math.PI * 2;
+      const d = f() * r * 0.75;
+      ctx.globalAlpha = 0.25 + f() * 0.3;
+      ctx.beginPath();
+      ctx.ellipse(128 + Math.cos(a) * d, 128 + Math.sin(a) * d, 8 + f() * 22, 6 + f() * 14, f() * 3, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    for (let i = 0; i < 30; i += 1) {
+      const a = f() * Math.PI * 2;
+      const d = r + 14 + f() * (128 - r - 16);
+      ctx.globalAlpha = 0.7 + f() * 0.3;
+      ctx.fillStyle = couleur(f() < 0.7 ? '--ouv-sang' : '--ouv-sang-sec');
+      ctx.beginPath();
+      ctx.arc(128 + Math.cos(a) * d, 128 + Math.sin(a) * d, 1.5 + f() * 3.5, 0, Math.PI * 2);
       ctx.fill();
     }
     ctx.globalAlpha = 1;
     return tex(c);
   }
 
-  // Nappe de sang qui s'écoule sur la « vitre » (légendaire) : bord du haut ondulé (jamais plus bas que NAPPE_BORD de la hauteur : au-dessous,
-  // la nappe couvre toute sa largeur), corps plein veiné de sang sec, coulures qui pendent en bas, alpha.
-  function nappe() {
-    const [c, ctx] = toile(256, 512);
-    const f = hasard(41);
-    ctx.clearRect(0, 0, 256, 512);
-    const bord = NAPPE_BORD * 512;
-    // Contour : bord du haut ondulé, flancs irréguliers (dans les 34 px du bord, hors de la largeur de la carte), coulures en bas.
-    const flanc = () => 6 + f() * 26;
-    ctx.fillStyle = couleur('--ouv-sang');
-    ctx.globalAlpha = 0.96;
+  // Écoulement de la tache (masque d'opacité, canal vert : clair = sang, noir = vitre propre) : sous un bord ondulé (ligne VIDANGE_BORD du haut,
+  // à ± 4 % près), du sang ; au-dessus, rien, sauf des filets fins qui pendent derrière le bord. Décalé vers le bas au fil de l'écoulement.
+  function vidange() {
+    const [c, ctx] = toile(128, 256);
+    const f = hasard(47);
+    ctx.fillStyle = couleur('--ouv-noir');
+    ctx.fillRect(0, 0, 128, 256);
+    ctx.fillStyle = couleur('--ouv-q');
+    const bord = VIDANGE_BORD * 256;
     ctx.beginPath();
-    ctx.moveTo(flanc(), bord);
-    for (let x = 32; x <= 224; x += 16) ctx.lineTo(x, bord - 4 - f() * (bord - 6));
-    for (let y = bord; y <= 392; y += 24) ctx.lineTo(256 - flanc(), y);
-    for (let x = 230; x > 26; x -= 12 + f() * 14) {
-      const w = 6 + f() * 9;
-      const long = 410 + f() * 96;
-      ctx.lineTo(x, 396 + f() * 12);
-      ctx.bezierCurveTo(x - 1, long - 24, x - w * 0.15, long, x - w / 2, long);
-      ctx.bezierCurveTo(x - w * 0.85, long, x - w + 1, long - 24, x - w, 396 + f() * 12);
-    }
-    for (let y = 392; y >= bord; y -= 24) ctx.lineTo(flanc(), y);
+    ctx.moveTo(0, 256);
+    for (let x = 0; x <= 128; x += 8) ctx.lineTo(x, bord + (f() - 0.5) * 18);
+    ctx.lineTo(128, 256);
     ctx.closePath();
     ctx.fill();
-    // Veines de sang plus sombre (coulées verticales dans la nappe), gouttes autour des flancs.
-    ctx.fillStyle = couleur('--ouv-sang-sec');
     for (let i = 0; i < 9; i += 1) {
-      const x = 30 + f() * 196;
-      const w = 2 + f() * 5;
-      const y0 = bord + f() * 80;
-      const long = 120 + f() * 200;
-      ctx.globalAlpha = 0.15 + f() * 0.2;
+      const x = 6 + f() * 116;
+      const w = 1.5 + f() * 3;
+      const long = 24 + f() * 70;
       ctx.beginPath();
-      ctx.moveTo(x, y0);
-      ctx.quadraticCurveTo(x + w * 2, y0 + long / 2, x + w / 2, y0 + long);
-      ctx.quadraticCurveTo(x + w, y0 + long / 2, x + w, y0);
+      ctx.moveTo(x - w, bord + 10);
+      ctx.quadraticCurveTo(x - w * 0.5, bord - long * 0.6, x - w * 0.25, bord - long);
+      ctx.lineTo(x + w * 0.25, bord - long);
+      ctx.quadraticCurveTo(x + w * 0.5, bord - long * 0.6, x + w, bord + 10);
+      ctx.closePath();
       ctx.fill();
     }
-    for (let i = 0; i < 26; i += 1) {
-      ctx.globalAlpha = 0.6 + f() * 0.35;
-      ctx.fillStyle = couleur(f() < 0.7 ? '--ouv-sang' : '--ouv-sang-sec');
-      const gauche = f() < 0.5;
-      ctx.beginPath();
-      ctx.arc(gauche ? f() * 30 : 226 + f() * 30, bord + f() * 380, 1.5 + f() * 4, 0, Math.PI * 2);
-      ctx.fill();
-    }
+    return tex(c, { srgb: false });
+  }
+
+  // Filet de sang (corps, étiré en longueur) : trait vertical aux bords adoucis, ombre à droite, reflet à gauche (comme les coulures du logo).
+  function filet() {
+    const [c, ctx] = toile(32, 32);
+    ctx.clearRect(0, 0, 32, 32);
+    ctx.fillStyle = couleur('--ouv-sang');
+    ctx.fillRect(5, 0, 22, 32);
+    ctx.globalAlpha = 0.5;
+    ctx.fillRect(3, 0, 2, 32);
+    ctx.fillRect(27, 0, 2, 32);
+    ctx.globalAlpha = 0.45;
+    ctx.fillStyle = couleur('--ouv-sang-sec');
+    ctx.fillRect(20, 0, 7, 32);
+    ctx.globalAlpha = 0.35;
+    ctx.fillStyle = couleur('--ouv-q');
+    ctx.fillRect(9, 0, 2, 32);
+    ctx.globalAlpha = 1;
+    return tex(c);
+  }
+
+  // Goutte au bout d'un filet : col à la largeur du filet (moitié de la largeur de l'image) puis renflement rond, ombre et brillant.
+  function goutte() {
+    const [c, ctx] = toile(64, 64);
+    ctx.clearRect(0, 0, 64, 64);
+    ctx.fillStyle = couleur('--ouv-sang');
+    ctx.beginPath();
+    ctx.moveTo(18, 0);
+    ctx.bezierCurveTo(18, 16, 11, 22, 11, 38);
+    ctx.arc(32, 40, 21, Math.PI, 0, true);
+    ctx.bezierCurveTo(53, 22, 46, 16, 46, 0);
+    ctx.closePath();
+    ctx.fill();
+    ctx.globalAlpha = 0.45;
+    ctx.fillStyle = couleur('--ouv-sang-sec');
+    ctx.beginPath();
+    ctx.arc(36, 43, 15, -0.6, 1.9);
+    ctx.fill();
+    ctx.globalAlpha = 0.55;
+    ctx.fillStyle = couleur('--ouv-q');
+    ctx.beginPath();
+    ctx.ellipse(25, 40, 4, 7, 0, 0, Math.PI * 2);
+    ctx.fill();
     ctx.globalAlpha = 1;
     return tex(c);
   }
@@ -470,7 +514,7 @@ export function creerTextures({ couleur, anisotropie = 1 }) {
   }
 
   return {
-    beton, bois, metal, porte, bande, tapis, question, degrade, lueur, etoile, sang, nappe, bouffee, eclaboussure, carte, toileCarte, marque,
+    beton, bois, metal, porte, bande, tapis, question, degrade, lueur, etoile, tache, vidange, filet, goutte, bouffee, eclaboussure, carte, toileCarte, marque,
     nombre: () => toutes.size,
     toutes: () => [...toutes],
     liberer() {

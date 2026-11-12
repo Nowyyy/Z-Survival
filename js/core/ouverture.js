@@ -292,7 +292,9 @@ export function instant(chrono, reglages, t) {
   const out = {
     t,
     fondu: 1 - progres(t, A.fondu[0], A.fondu[1]),
-    marche: { avance: sortie(progres(t, 0, A.duree)), pas: A.pas > 0 ? clamp01(t / A.duree) * A.pas : 0, enMarche: t < A.duree },
+    // Retour du propriétaire (« à la fin, les bras bougent comme s'il faisait plein de pas alors qu'il n'avance presque plus ») : les pas suivent la
+    // distance parcourue (ils ralentissent avec lui) ; vitesse : 1 au départ, 0 à l'arrêt (amplitude du balancement).
+    marche: { avance: sortie(progres(t, 0, A.duree)), pas: A.pas > 0 ? sortie(progres(t, 0, A.duree)) * A.pas : 0, vitesse: t < A.duree ? (1 - clamp01(t / A.duree)) ** 2 : 0, enMarche: t < A.duree },
     tapis: 0,
     active: -1,
     caisses: [],

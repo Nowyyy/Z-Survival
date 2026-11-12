@@ -28,6 +28,7 @@
 - Écran figé après la roue (retour) : un second toucher pendant le premier chargement lançait une seconde ouverture en parallèle ; menu figé dès le toucher, libéré dans tous les cas, une seule création à la fois, perte du contexte WebGL gérée (résultat affiché).
 - Mouvements de tête rendus, pivot de la caméra à la profondeur de la porte : le fond reste fixe à l'écran, le premier plan bouge avec la tête.
 - Après la PR #101 : seconde explosion avec la brillance jaune (début de l'éclair doré) ; objet invisible avant l'écoulement du sang : nappe de sang derrière le zombie écrasé qui coule pendant la glissade (1,4 s) et découvre la carte, déjà à sa place (plan de coupe) ; `ouverture.test` 23 → 27 tests.
+- Après la PR #102 : vue un peu plus haute et canon pointé sur la caisse ; pas qui suivent la distance (fin de marche sans pas dans le vide) ; tache de sang qui se vide de haut en bas et coule en sept filets terminés par une goutte (à la place de la nappe rectangulaire).
 ## Points ouverts
 - **Esthétique, fluidité et téléphone non jugés par l'agent** (émulation et rendu logiciel seulement) : zombie écrasé peu détaillé à cette taille, scène sombre, lisibilité du fusil et des mains, 60 images par seconde sur un téléphone moyen.
 ## Idées
