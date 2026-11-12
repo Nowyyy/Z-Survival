@@ -29,7 +29,7 @@
 - Mouvements de tête rendus, pivot de la caméra à la profondeur de la porte : le fond reste fixe à l'écran, le premier plan bouge avec la tête.
 - Après la PR #101 : seconde explosion avec la brillance jaune (début de l'éclair doré) ; objet invisible avant l'écoulement du sang : nappe de sang derrière le zombie écrasé qui coule pendant la glissade (1,4 s) et découvre la carte, déjà à sa place (plan de coupe) ; `ouverture.test` 23 → 27 tests.
 - Après la PR #102 : vue un peu plus haute et canon pointé sur la caisse ; pas qui suivent la distance (fin de marche sans pas dans le vide) ; tache de sang qui se vide de haut en bas et coule en sept filets terminés par une goutte (à la place de la nappe rectangulaire).
-- Après la PR #103 : filets décalés (retard et vitesse propres à chacun). À prévoir avec la base de données : tirage de tous les objets en un appel pendant la roue, avant l'animation ; « Rouvrir » : nouvelle roue le temps de l'appel (`Docs/ref/menu-principal.md`, « À prévoir »).
+- Après la PR #103 : filets décalés (retard et vitesse propres à chacun). À prévoir avec la base de données : tirage de tous les objets en un appel pendant la roue, avant l'animation ; « Rouvrir » : nouvelle roue le temps de l'appel ; échec de l'appel : pas d'animation, fenêtre d'erreur (`Docs/ref/menu-principal.md`, « À prévoir »).
 ## Points ouverts
 - **Esthétique, fluidité et téléphone non jugés par l'agent** (émulation et rendu logiciel seulement) : zombie écrasé peu détaillé à cette taille, scène sombre, lisibilité du fusil et des mains, 60 images par seconde sur un téléphone moyen.
 ## Idées
