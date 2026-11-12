@@ -180,7 +180,8 @@
 
 /* ×10 : rangée de dix cases en haut, au centre (remplies dans l'ordre du tirage, bord de la rareté). */
 .e3-ouv-cases {
-  --ouv-case: max(22px, calc(40 * var(--u)));
+  /* 40 de la référence, mais jamais sous « Passer » (encoche, écran étroit) : la rangée tient entre deux réserves de la largeur de « Passer ». */
+  --ouv-case: max(20px, min(calc(40 * var(--u)), calc((100vw - 2 * (var(--ouv-marge-d) + 136px)) / 11.5)));
   position: absolute;
   top: calc(var(--ouv-marge-h) + 2px);
   left: 50%;

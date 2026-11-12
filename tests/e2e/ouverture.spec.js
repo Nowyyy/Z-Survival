@@ -5,7 +5,7 @@
 import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { readFileSync } from 'node:fs';
-import { lireCaisses, tirer } from '../../js/core/caisses.js';
+import { lireCaisses, tirer, tirer10 } from '../../js/core/caisses.js';
 import { lireCatalogue } from '../../js/core/equipement.js';
 import { chronologie, lireOuvertures, rareteEffets } from '../../js/core/ouverture.js';
 
@@ -24,6 +24,11 @@ const premiere = (f) => {
 const G_RARE = premiere((g) => tirer(caisse('elite'), cat, g).rarete === 'rare');
 const G_EPIQUE = premiere((g) => tirer(caisse('elite'), cat, g).rarete === 'epique');
 const G_LEGENDAIRE = premiere((g) => tirer(caisse('elite'), cat, g).rarete === 'legendaire');
+// ×10 avec un seul légendaire, un épique et un rare (pire cas du budget : légendaire en ×10).
+const G_DIX = premiere((g) => {
+  const t = tirer10(caisse('elite'), cat, g).map((o) => o.rarete);
+  return t.filter((r) => r === 'legendaire').length === 1 && t.includes('epique') && t.includes('rare');
+});
 const chronoDe = (objets, graine) => chronologie(R, objets.map((o) => rareteEffets({ type: 'equipement', objets }, objets.indexOf(o), cat.raretes)), { graine });
 
 function surveiller(page, baseURL) {
@@ -307,6 +312,94 @@ test.describe('ouverture ×1 (E3-2)', () => {
       expect([chevauche(b.passer, b.continuer), chevauche(b.passer, b.rouvrir), chevauche(b.continuer, b.rouvrir)], nom).toEqual([false, false, false]);
     }
     expect((await new AxeBuilder({ page }).analyze()).violations.map((v) => v.id)).toEqual([]);
+    expect([o.problemes, o.externes]).toEqual([[], []]);
+  });
+});
+
+test.describe('ouverture ×10 (E3-3)', () => {
+  test('dix caisses dans l\'ordre du tirage, cases remplies dans l\'ordre à l\'arrivée de chaque carte, caisse dorée plus longue ; fin : résultat ×10 identique ; budget pire cas (×10 avec un légendaire) ; tout libéré', async ({ page, baseURL }, info) => {
+    test.setTimeout(150_000);
+    const o = surveiller(page, baseURL);
+    await espions(page);
+    await graines(page, [G_DIX]);
+    await ouvrirBoutique(page);
+    await page.locator('#menu-caisse-elite-dix').click();
+    await attendreOuverture(page);
+    const attendus = tirer10(caisse('elite'), cat, G_DIX);
+    const e = await ouv(page);
+    expect(e.quantite).toBe(10);
+    expect(e.cartes.map((c) => c.objet)).toEqual(attendus.map((x) => x.id));
+    expect(e.raretes).toEqual(attendus.map((x) => x.rarete));
+    const ch = chronoDe(attendus, G_DIX);
+    expect(e.chronologie.map((c) => c.case)).toEqual(ch.caisses.map((c) => c.case));
+    for (const c of e.chronologie) expect(c.fin - c.debut, c.rarete).toBeCloseTo(c.rarete === 'legendaire' ? R.legendaire.duree : R.x10.periode, 6);
+    await expect(page.locator('#menu-ouverture-cases > li')).toHaveCount(10);
+    // Cases : vides avant l'arrivée de chaque carte, remplies (bord de la rareté) dans l'ordre.
+    for (const [i, c] of e.chronologie.entries()) {
+      await aller(page, c.case - 0.05);
+      expect((await ouv(page)).cases).toEqual([...Array(i).keys()]);
+      if (i === 0) await page.screenshot({ path: info.outputPath('x10-carte.png') });
+      await aller(page, c.case + 0.02);
+      expect((await ouv(page)).cases).toEqual([...Array(i + 1).keys()]);
+      await expect(page.locator(`#menu-ouverture-cases > li[data-rang="${i}"]`)).toHaveAttribute('data-rempli', 'true');
+      if (c.projection) {
+        await aller(page, c.projection.impact + 0.3);
+        await page.screenshot({ path: info.outputPath('x10-projection.png') });
+      }
+    }
+    const pic = (await ouv(page)).rendu.pic;
+    info.annotations.push({ type: 'budget ×10 avec un légendaire', description: JSON.stringify(pic) });
+    expect(pic.appels).toBeLessThanOrEqual(BUDGET.appels);
+    expect(pic.triangles).toBeLessThanOrEqual(BUDGET.triangles);
+    // Fin de l'ouverture ×10 : le résultat ×10, identique au tirage, focus sur « Continuer ».
+    await aller(page, e.fin + 0.05);
+    await expect(page.locator('#menu-ecran-resultat')).toBeVisible();
+    await expect(page.locator('#menu-resultat-continuer')).toBeFocused();
+    const r = (await etatBoutique(page)).resultat;
+    expect([r.quantite, r.cartes.map((x) => [x.objet, x.rarete])]).toEqual([10, attendus.map((x) => [x.id, x.rarete])]);
+    expect((await ouv(page)).liberation).toEqual({ geometries: 0, textures: 0, contextePerdu: true });
+    expect(await contextesVivants(page)).toBe(0);
+    expect(await page.evaluate(() => window.__ecritures)).toEqual([]);
+    expect([o.problemes, o.externes]).toEqual([[], []]);
+  });
+
+  test('« Passer » au milieu d\'un ×10 : résultat ×10 identique, libéré ; mouvement réduit : résultat ×10 direct ; tailles : rangée de cases et « Passer » dans l\'écran, sans superposition, 44 px ; axe', async ({ page, baseURL }) => {
+    test.setTimeout(150_000);
+    const o = surveiller(page, baseURL);
+    await espions(page);
+    await graines(page, [G_DIX, G_DIX]);
+    await ouvrirBoutique(page, { width: 667, height: 375 });
+    await page.locator('#menu-caisse-ravitaillement-dix').click();
+    await attendreOuverture(page);
+    const attendus = tirer10(caisse('ravitaillement'), cat, G_DIX);
+    const e = await ouv(page);
+    await aller(page, e.chronologie[4].case + 0.1);
+    expect((await ouv(page)).cases).toEqual([0, 1, 2, 3, 4]);
+    for (const [size, marge] of [[{ width: 667, height: 375 }, 16], [{ width: 2000, height: 1020 }, 16], [{ width: 932, height: 430 }, 16], [{ width: 762, height: 351 }, 50]]) {
+      await page.setViewportSize(size);
+      if (marge === 50) await page.addStyleTag({ content: '#menu-ecran-ouverture { --ouv-marge-d: 50px !important; }' });
+      await avancer(page, 0.01);
+      const nom = `${size.width}×${size.height}`;
+      const p = await boite(page, '#menu-ouverture-passer');
+      const rangee = await boite(page, '#menu-ouverture-cases');
+      expect([rangee.l >= marge - 0.5, rangee.r <= size.width - marge + 0.5, rangee.t >= 15.5, p.r <= size.width - marge + 0.5, p.w >= 43.5, p.h >= 43.5], nom).toEqual([true, true, true, true, true, true]);
+      expect(chevauche(p, rangee), nom).toBe(false);
+    }
+    expect((await new AxeBuilder({ page }).analyze()).violations.map((v) => v.id)).toEqual([]);
+    await page.locator('#menu-ouverture-passer').click();
+    await expect(page.locator('#menu-ecran-resultat')).toBeVisible();
+    let r = (await etatBoutique(page)).resultat;
+    expect(r.cartes.map((x) => x.objet)).toEqual(attendus.map((x) => x.id));
+    expect(await contextesVivants(page)).toBe(0);
+    await expect(page.locator('#menu-ecran-ouverture')).toHaveCount(0);
+    // Mouvement réduit : rachat ×10, résultat direct.
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.locator('#menu-resultat-rouvrir').click();
+    await expect(page.locator('#menu-ecran-resultat')).toBeVisible();
+    await expect(page.locator('#menu-ecran-ouverture')).toHaveCount(0);
+    r = (await etatBoutique(page)).resultat;
+    expect(r.cartes.map((x) => x.objet)).toEqual(attendus.map((x) => x.id));
+    expect(await page.evaluate(() => window.__ecritures)).toEqual([]);
     expect([o.problemes, o.externes]).toEqual([[], []]);
   });
 });
