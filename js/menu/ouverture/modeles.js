@@ -177,14 +177,17 @@ export function fusilGeo() {
   poly.push(piece(boite(3, 7, 3.4), [0, -5.6, 7.2], [0.38, 0, 0]));
   poly.push(piece(boite(3.6, 5, 14), [0, -0.8, 16]));
   arme.push(piece(boite(1.2, 2.2, 3.4), [0, -3.4, 3.4]));
-  // Main gauche sous le garde-main : paume dessous, quatre doigts repliés sur le flanc gauche (côté visible), pouce dessus à droite, poignet.
-  gant.push(piece(bulle(5.8, 3.2, 8.4), [-0.6, -3.3, -22], [0, 0, 0.18]));
+  // Main gauche sous le garde-main (retour du propriétaire, photo à l'appui : on voit le flanc gauche du fusil, donc seulement le pouce et une
+  // partie de la paume ; les quatre doigts passent de l'autre côté) : paume en berceau sous le garde-main, débordant un peu sur le flanc gauche ;
+  // pouce allongé vers l'avant le long du flanc gauche (côté visible) ; quatre doigts repliés sur le flanc droit (cachés par le fusil) ; talon
+  // de la paume et poignet.
+  gant.push(piece(bulle(5.6, 3.2, 8.4), [-0.7, -3.2, -22], [0, 0, 0.32]));
+  gant.push(entre([-2.5, -2.4, -19.6], [-2.85, -0.6, -25.4], 1.1, 0.88, 12));
+  gant.push(piece(bulle(1.85, 1.85, 2.1, 8), [-2.85, -0.6, -25.4]));
   for (let k = 0; k < 4; k += 1) {
-    gant.push(entre([-2.7, -3, -25.2 + k * 1.85], [-2.5, 0.9 - k * 0.25, -25 + k * 1.85], 0.95, 0.8, 12));
-    gant.push(piece(bulle(1.7, 1.7, 1.7, 8), [-2.5, 0.9 - k * 0.25, -25 + k * 1.85])); // bout du doigt arrondi
+    gant.push(entre([1.4, -3.1, -25.4 + k * 1.85], [2.55, 0.2 - k * 0.2, -25.2 + k * 1.85], 0.95, 0.8, 12));
+    gant.push(piece(bulle(1.7, 1.7, 1.7, 8), [2.55, 0.2 - k * 0.2, -25.2 + k * 1.85]));
   }
-  gant.push(entre([1.8, -1.6, -18.8], [2.3, 1.8, -23.5], 1.05, 0.85, 12));
-  gant.push(piece(bulle(1.8, 1.8, 1.8, 8), [2.3, 1.8, -23.5]));
   gant.push(piece(bulle(5.6, 4.8, 5.2), [-1.4, -4.6, -18.2], [0.25, 0, 0.2]));
   // Main droite sur la poignée : poing autour de la poignée, index le long du pontet, pouce sur le flanc gauche.
   gant.push(piece(bulle(5.4, 7.2, 5.8), [0.1, -6, 8.4], [0.38, 0, 0]));
