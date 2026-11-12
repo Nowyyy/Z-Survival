@@ -328,6 +328,46 @@ test.describe('partie et retour au menu', () => {
     await page.evaluate(() => localStorage.clear());
   });
 
+  test('retour du propriétaire : partie en plein écran puis « Revenir au menu principal » : le menu affiche un rappel et reprend le plein écran au premier toucher ; sans plein écran, ni rappel ni repère', async ({ page }) => {
+    test.setTimeout(120_000);
+    // Plein écran simulé (le navigateur de test n'en a pas) : demandes comptées.
+    await page.addInitScript(() => {
+      window.__demandes = 0;
+      Element.prototype.requestFullscreen = function () {
+        window.__demandes += 1;
+        return Promise.resolve();
+      };
+    });
+    await page.setViewportSize({ width: 932, height: 430 });
+    await page.goto('/jeu.html?test=1&menu=1&seed=1');
+    await expect(page.locator('#menu-jouer')).toBeVisible({ timeout: 60_000 });
+    await expect(page.locator('#menu-rappel-plein')).toHaveCount(0);
+    await page.locator('#menu-jouer').click();
+    await page.waitForFunction(() => (window.__zs?.getState()?.time ?? 0) > 0.05, null, { timeout: 60_000 });
+    await page.evaluate(() => Object.defineProperty(document, 'fullscreenElement', { configurable: true, get: () => document.documentElement }));
+    await page.locator('#btn-pause').click();
+    await page.locator('#btn-quit').click();
+    const rechargement = page.waitForEvent('framenavigated', { predicate: (f) => f === page.mainFrame() });
+    await page.locator('#btn-quit-ok').click();
+    expect((await rechargement).url()).toMatch(/[?&]menu=1.*#plein-ecran$/); // repère posé avant le rechargement
+    await expect(page.locator('#menu-jouer')).toBeVisible({ timeout: 60_000 });
+    await expect(page.locator('#menu-rappel-plein')).toHaveText('Touchez l\'écran pour revenir en plein écran');
+    expect(new URL(page.url()).hash).toBe(''); // repère retiré de l'adresse
+    expect(await page.evaluate(() => window.__demandes)).toBe(0);
+    await page.mouse.click(466, 300);
+    await expect(page.locator('#menu-rappel-plein')).toHaveCount(0);
+    expect(await page.evaluate(() => window.__demandes)).toBe(1);
+    // Partie hors plein écran : retour au menu sans repère ni rappel.
+    await page.locator('#menu-jouer').click();
+    await page.waitForFunction(() => (window.__zs?.getState()?.time ?? 0) > 0.05, null, { timeout: 60_000 });
+    await page.locator('#btn-pause').click();
+    await page.locator('#btn-quit').click();
+    await Promise.all([page.waitForURL(/[?&]menu=1/), page.locator('#btn-quit-ok').click()]);
+    await expect(page.locator('#menu-jouer')).toBeVisible({ timeout: 60_000 });
+    expect(new URL(page.url()).hash).toBe('');
+    await expect(page.locator('#menu-rappel-plein')).toHaveCount(0);
+  });
+
   test('sans paramètre (canal source) : écran de chargement puis menu, sans crochet de test ; « JOUER » montre la partie', async ({ page, baseURL }) => {
     const o = surveiller(page, baseURL);
     await page.setViewportSize(REF);

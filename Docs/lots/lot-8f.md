@@ -32,6 +32,7 @@
 - Après la PR #103 : filets décalés (retard et vitesse propres à chacun). À prévoir avec la base de données : tirage de tous les objets en un appel pendant la roue, avant l'animation ; « Rouvrir » : nouvelle roue le temps de l'appel ; échec de l'appel : pas d'animation, fenêtre d'erreur (`Docs/ref/menu-principal.md`, « À prévoir »).
 - Bug signalé (menu du lot 8d) : écran Personnages resté par-dessus les autres après « Retour » (deux touchers pendant le premier chargement : deux écrans créés) ; un seul chargement par sous-menu, dernière demande seulement, abandon si l'onglet est quitté ; test qui échoue sur l'ancien code.
 - Roue de chargement plus grosse (76 px, texte) aussi au chargement d'un onglet ou d'un sous-menu ; glissement à la souris de toutes les zones qui défilent (`js/glisser.js`, clic annulé après un glissement, élan) ; Échap en plein écran pendant la partie : pause (Keyboard Lock, sinon pause à la sortie du plein écran) — **`js/game/ui.js` modifié à la demande du propriétaire** (hors du lot, sans effet sur la logique).
+- Retour au menu en plein écran : le rechargement le fait quitter (règle des navigateurs) ; repère `#plein-ecran`, rappel « Touchez l'écran pour revenir en plein écran » et plein écran repris au premier geste.
 ## Points ouverts
 - **Esthétique, fluidité et téléphone non jugés par l'agent** (émulation et rendu logiciel seulement) : zombie écrasé peu détaillé à cette taille, scène sombre, lisibilité du fusil et des mains, 60 images par seconde sur un téléphone moyen.
 ## Idées

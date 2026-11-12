@@ -43,11 +43,18 @@ export function menuChute() {
 
 // Retour au menu (« Quitter » confirmé, « Revenir au menu principal ») : rechargement de jeu.html sans les paramètres de « Partie » (menu=1 sous
 // ?test=1). La partie ne peut pas être libérée sans rechargement (écouteurs, WebGL, audio) ; l'argent a déjà été écrit (bank.runEnd).
-export async function menuRetour(loc = globalThis.location) {
+// Retour du propriétaire (« au retour au menu, le jeu sort du plein écran ») : un rechargement fait toujours quitter le plein écran (règle des
+// navigateurs) ; en plein écran, l'adresse porte le repère #plein-ecran, et le menu le reprend au premier toucher (creerMenu, menu.js).
+export const REPERE_PLEIN_ECRAN = '#plein-ecran';
+export async function menuRetour(loc = globalThis.location, doc = globalThis.document, hist = globalThis.history) {
   const { adresseRetour } = await import('../core/menu-etat.js');
   const search = adresseRetour(loc.search);
-  if (search === loc.search) loc.reload();
-  else loc.replace(`${loc.pathname}${search}${loc.hash}`);
+  const hash = doc?.fullscreenElement ? REPERE_PLEIN_ECRAN : loc.hash === REPERE_PLEIN_ECRAN ? '' : loc.hash;
+  const adresse = `${loc.pathname}${search}${hash}`;
+  if (search === loc.search) {
+    if (hash !== loc.hash) hist?.replaceState(null, '', adresse);
+    loc.reload();
+  } else loc.replace(adresse);
 }
 
 // Feuille des écrans du menu (css/menu.css), une seule fois par page : chargée au démarrage en mode menu ; lot 8c : aussi par les Options de la
