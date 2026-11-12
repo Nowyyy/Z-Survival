@@ -362,3 +362,19 @@ describe('retours du propriétaire (après la fusion, PR #96)', () => {
     expect(c.explosion[1]).toBeGreaterThan(c.eclair[1] + 0.3);
   });
 });
+
+describe('retour du propriétaire (après la PR #98) : seconde explosion sous le zombie', () => {
+  it('souffle au départ du vol, montée hors de l\'écran jusqu\'au sommet, puis retombée sur l\'écran ; carte dorée sortie après l\'impact', () => {
+    const ch = chronologie(R, ['legendaire'], { graine: 4 });
+    const c = ch.caisses[0];
+    const P = c.projection;
+    expect(P.souffle).toBe(P.depart);
+    expect(P.sommet).toBeCloseTo(P.depart + R.legendaire.projection.vol * R.legendaire.projection.montee, 9);
+    expect(P.depart < P.sommet && P.sommet < P.impact).toBe(true);
+    const z = (t) => instant(ch, R, t).zombies[P.zombie].projection;
+    expect([z(P.depart + 0.01).etapeVol, z(P.sommet + 0.01).etapeVol, z(P.impact + 0.01).etapeVol]).toEqual(['montee', 'retombe', null]);
+    expect(z((P.depart + P.sommet) / 2).pv).toBeCloseTo(0.5, 6);
+    expect(c.objet[0]).toBeGreaterThan(P.impact);
+    expect(c.objet[0]).toBeLessThan(P.bas);
+  });
+});

@@ -186,13 +186,24 @@ test.describe('ouverture ×1 (E3-2)', () => {
     await graines(page, [G_EPIQUE, G_RARE, G_LEGENDAIRE, G_RARE]);
     await ouvrirBoutique(page);
     const attendus = [G_EPIQUE, G_RARE, G_LEGENDAIRE, G_RARE].map((g) => tirer(caisse('elite'), cat, g));
+    // 0. Retour du propriétaire : pendant le chargement de l'ouverture (Three.js ralenti ici), roue qui tourne et commandes figées (inert).
+    await page.route('**/vendor/three/three.module.js', async (route) => {
+      await new Promise((res) => setTimeout(res, 1500));
+      await route.continue();
+    });
     // 1. « Passer » pendant l'arrivée.
     await page.locator('#menu-caisse-elite-un').click();
+    await expect(page.locator('#menu-ouverture-chargement')).toBeVisible();
+    await expect(page.locator('#menu-ouverture-chargement')).toHaveAttribute('role', 'status');
+    expect(await page.locator('#menu-caisse-militaire-un').evaluate((n) => Boolean(n.closest('[inert]')))).toBe(true);
     await attendreOuverture(page);
+    await expect(page.locator('#menu-ouverture-chargement')).toHaveCount(0);
+    expect((await etatBoutique(page)).achats).toBe(1);
     await avancer(page, 1);
     await page.locator('#menu-ouverture-passer').click();
     await expect(page.locator('#menu-ecran-resultat')).toBeVisible();
     await expect(page.locator('#menu-resultat-continuer')).toBeFocused();
+    expect(await page.locator('#menu-resultat-continuer').evaluate((n) => Boolean(n.closest('[inert]')))).toBe(false);
     let r = (await etatBoutique(page)).resultat;
     expect(r.cartes.map((x) => [x.objet, x.rarete])).toEqual([[attendus[0].id, attendus[0].rarete]]);
     expect(await contextesVivants(page)).toBe(0);

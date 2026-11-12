@@ -693,6 +693,7 @@
   "game.menu.ouverture.titre": "Ouverture : {caisse}",
   "game.menu.ouverture.titre10": "Ouverture de dix caisses : {caisse}",
   "game.menu.ouverture.passer": "Passer",
+  "game.menu.ouverture.chargement": "Chargement de l'ouverture…",
   "game.menu.ouverture.passer.aria": "Passer l'ouverture et voir le résultat",
   "game.menu.resultat.libelle": "Boutique",
   "game.menu.resultat.titre": "Résultat",

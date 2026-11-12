@@ -1,5 +1,5 @@
 {
-  "_provisoire": "Lot 8f : ouvertures de caisses en 3D (durées en secondes, forces des effets par rareté), lu par js/core/ouverture.js (lireOuvertures) ; valeurs relevées dans les maquettes Ouverture.html et Ouverture10.html, provisoires, modifiables par le propriétaire sans lot (Docs/ref/menu-principal.md : « Régler les ouvertures »). arrivee : durée de la marche jusqu'au tapis, fondu depuis le noir [début, fin], nombre de pas. x1 et x10 : temps depuis le départ de chaque caisse (tapis [début, fin], tir) puis, dans ouverture, depuis le tir ([début, fin] de chaque événement ; reaction : départ des réactions des zombies) ; x1.boutons : « Continuer » et « Rouvrir » ; x10.periode : durée d'une caisse, x10.vol : vol de la carte vers sa case (case remplie à la fin), x10.fin : pause après la dernière case avant le résultat ×10. legendaire : durée de la caisse dorée en ×10, explosion, projection du zombie (delai après l'explosion, vol vers l'écran, colle, glissade, trainees qui restent après), objet et vol (depuis le tir), retour (apparition au fond après la glissade, marche jusqu'à sa place). reactions : durée, hauteur du saut (unités de la scène), marque au-dessus de la tête et sa plage d'affichage, sol (chute : à terre [début, fin]). promenade : position (fraction de la largeur), amplitude et période de la promenade de chaque zombie. effets : par rareté de data/menu/raretes.json : rayons (nombre), eventail (degrés), largeur (épaisseur relative), eclair (opacité de l'éclair d'écran, 0 à 1), onde (taille de l'onde de choc, 0 : aucune), ondeDouble, etincelles (nombre), secousse (amplitude), explosion, reaction (aucune, sursaut-leger, sursaut, saut, chute, projection).",
+  "_provisoire": "Lot 8f : ouvertures de caisses en 3D (durées en secondes, forces des effets par rareté), lu par js/core/ouverture.js (lireOuvertures) ; valeurs relevées dans les maquettes Ouverture.html et Ouverture10.html, provisoires, modifiables par le propriétaire sans lot (Docs/ref/menu-principal.md : « Régler les ouvertures »). arrivee : durée de la marche jusqu'au tapis, fondu depuis le noir [début, fin], nombre de pas. x1 et x10 : temps depuis le départ de chaque caisse (tapis [début, fin], tir) puis, dans ouverture, depuis le tir ([début, fin] de chaque événement ; reaction : départ des réactions des zombies) ; x1.boutons : « Continuer » et « Rouvrir » ; x10.periode : durée d'une caisse, x10.vol : vol de la carte vers sa case (case remplie à la fin), x10.fin : pause après la dernière case avant le résultat ×10. legendaire : durée de la caisse dorée en ×10, explosion, projection du zombie (delai après l'explosion, vol : seconde explosion sous lui, montée hors de l'écran pendant la part « montee » du vol, puis retombée sur l'écran ; colle, glissade, trainees qui restent après), objet et vol (depuis le tir), retour (apparition au fond après la glissade, marche jusqu'à sa place). reactions : durée, hauteur du saut (unités de la scène), marque au-dessus de la tête et sa plage d'affichage, sol (chute : à terre [début, fin]). promenade : position (fraction de la largeur), amplitude et période de la promenade de chaque zombie. effets : par rareté de data/menu/raretes.json : rayons (nombre), eventail (degrés), largeur (épaisseur relative), eclair (opacité de l'éclair d'écran, 0 à 1), onde (taille de l'onde de choc, 0 : aucune), ondeDouble, etincelles (nombre), secousse (amplitude), explosion, reaction (aucune, sursaut-leger, sursaut, saut, chute, projection).",
   "arrivee": { "duree": 3.4, "fondu": [0.5, 1.4], "pas": 8 },
   "x1": {
     "tapis": [0, 1.32],
@@ -24,10 +24,10 @@
   "legendaire": {
     "duree": 6.5,
     "explosion": [0.13, 1.6],
-    "projection": { "delai": 0.7, "vol": 0.45, "colle": 0.78, "glissade": 1.14, "trainees": 0.9 },
-    "objet": [1.3, 1.4],
+    "projection": { "delai": 0.7, "vol": 1.0, "montee": 0.5, "colle": 0.7, "glissade": 1.0, "trainees": 0.9 },
+    "objet": [1.9, 2.0],
     "vol": [4.33, 4.72],
-    "retour": { "apparition": 0.3, "marche": 2.0 }
+    "retour": { "apparition": 0.3, "marche": 1.8 }
   },
   "reactions": {
     "sursaut-leger": { "duree": 0.3, "hauteur": 3 },

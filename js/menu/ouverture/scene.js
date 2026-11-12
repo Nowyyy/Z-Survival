@@ -4,7 +4,7 @@
 // chronologie pure (js/core/ouverture.js : instant(chrono, reglages, t)) : il ne décide rien, le temps est en argument. Une seule lumière projette
 // des ombres ; particules en tampons réutilisés ; géométries et matériaux créés une fois, libérés par liberer() (contexte WebGL perdu de force).
 import * as THREE from 'three';
-import { instant, progres } from '../../core/ouverture.js';
+import { instant, progres, promenade } from '../../core/ouverture.js';
 import { BOUT, CAISSE, TAPIS, caisseGeo, fusilGeo, lampeGeo, pilesGeo, tapisGeo } from './modeles.js';
 import { creerTextures } from './textures.js';
 import { creerZombies } from './zombies.js';
@@ -14,9 +14,8 @@ const ECART = 300;
 const LARGEUR_ZOMBIES = 600;
 const Z_ZOMBIES = -430;
 // Retour du propriétaire (« la projection et la posture écrasée ne font pas naturel ») : le zombie vole à sa taille réelle (seule la perspective
-// le grossit) et s'arrête contre l'écran à cette fraction de la largeur ; il passe dans la surcouche une fois devant la caisse.
+// le grossit) et s'arrête contre l'écran à cette fraction de la largeur ; il retombe dans la surcouche (devant tout).
 const LARGEUR_ECRASE = 0.72;
-const DISTANCE_SURCOUCHE = 230;
 const NB_FEUX = 10;
 const NB_FUMEES = 8;
 const NB_ECLATS = 10;
@@ -278,6 +277,50 @@ export async function creerScene({ canvas, couleur, chrono, reglages, cartes, mo
     return sp;
   });
   const cFeu = [col('--ouv-cone'), col('--ouv-boule'), col('--ouv-boule-bord'), col('--ouv-braise')];
+  // Retour du propriétaire (après la PR #98) : seconde explosion sous un zombie, qui l'envoie hors de l'écran par le haut avant qu'il ne retombe sur
+  // l'écran. Volutes propres (elle chevauche celle de la caisse) et flash au sol.
+  const feux2 = Array.from({ length: 8 }, () => {
+    const sp = new THREE.Sprite(mat(new THREE.SpriteMaterial({ map: texBouffee, color: new THREE.Color(), transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, opacity: 0 })));
+    sp.visible = false;
+    scene.add(sp);
+    return sp;
+  });
+  const fumees2 = Array.from({ length: 5 }, () => {
+    const sp = new THREE.Sprite(mat(new THREE.SpriteMaterial({ map: texBouffee, color: col('--ouv-fumee'), transparent: true, depthWrite: false, opacity: 0 })));
+    sp.visible = false;
+    scene.add(sp);
+    return sp;
+  });
+  const flash2 = new THREE.Sprite(mat(new THREE.SpriteMaterial({ map: texLueur, color: col('--ouv-boule'), transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, opacity: 0 })));
+  flash2.visible = false;
+  scene.add(flash2);
+  // Volutes de feu puis de fumée autour d'un centre (tau : secondes depuis le départ ; echelle : taille relative ; graine : variété).
+  function volutes(feuxL, fumeesL, centre, tau, echelle, graine) {
+    feuxL.forEach((sp, k) => {
+      const u = (tau - 0.08 * h01(k + graine, 1)) / (0.5 + 0.35 * h01(k + graine, 2));
+      sp.visible = u > 0 && u < 1;
+      if (!sp.visible) return;
+      const a2 = h01(k + graine, 3) * TAU;
+      const dist = (25 + 90 * h01(k + graine, 4)) * echelle * (1 - (1 - u) ** 2);
+      sp.position.set(centre.x + Math.cos(a2) * dist, centre.y + Math.abs(Math.sin(a2)) * dist * 0.7 + u * 80 * echelle, centre.z + (h01(k + graine, 5) - 0.5) * dist);
+      sp.scale.setScalar((45 + 140 * Math.sqrt(u)) * echelle * (0.7 + 0.6 * h01(k + graine, 6)));
+      const q = Math.min(2.999, u * 4.5);
+      const i0 = Math.floor(q);
+      sp.material.color.copy(cFeu[i0]).lerp(cFeu[i0 + 1], q - i0);
+      sp.material.opacity = 0.75 * (1 - u) ** 1.3;
+      sp.material.rotation = h01(k + graine, 7) * TAU + u * 1.2;
+    });
+    fumeesL.forEach((sp, k) => {
+      const u = (tau - 0.1 - 0.2 * h01(k + graine, 8)) / (0.9 + 0.3 * h01(k + graine, 9));
+      sp.visible = u > 0 && u < 1;
+      if (!sp.visible) return;
+      const a2 = h01(k + graine, 10) * TAU;
+      sp.position.set(centre.x + Math.cos(a2) * 50 * echelle * Math.sqrt(u), centre.y + 25 + u * 170 * echelle, centre.z + Math.sin(a2) * 25 * u);
+      sp.scale.setScalar((60 + 200 * u) * echelle);
+      sp.material.opacity = 0.85 * Math.sin(Math.PI * Math.min(1, u * 1.4)) * (1 - u * 0.6);
+      sp.material.rotation = h01(k + graine, 12) * TAU - u * 0.8;
+    });
+  }
 
   // --- Fusil à la première personne ---------------------------------------------------------------------------------------------------------
   const FG = fusilGeo();
@@ -467,8 +510,7 @@ export async function creerScene({ canvas, couleur, chrono, reglages, cartes, mo
     etincelles.visible = false;
     boule.visible = false;
     eclat.visible = false;
-    for (const sp of feux) sp.visible = false;
-    for (const sp of fumees) sp.visible = false;
+    for (const sp of [...feux, ...fumees, ...feux2, ...fumees2, flash2]) sp.visible = false;
     eclats.visible = false;
     lumRarete.intensity = 0;
     trainee.visible = false;
@@ -612,6 +654,19 @@ export async function creerScene({ canvas, couleur, chrono, reglages, cartes, mo
       }
     }
 
+    // Seconde explosion (légendaire) : sous le zombie projeté, au départ de son vol.
+    const souffle = chrono.caisses.find((c) => c.projection && t >= c.projection.souffle && t < c.projection.souffle + 1.3);
+    if (souffle) {
+      const P = souffle.projection;
+      const tau = t - P.souffle;
+      v3.set(promenade(reglages.promenade[P.zombie], P.depart).x * LARGEUR_ZOMBIES, 12, Z_ZOMBIES + P.zombie * 26);
+      volutes(feux2, fumees2, v3, tau, 0.9, 31);
+      flash2.visible = tau < 0.25;
+      flash2.position.copy(v3);
+      flash2.scale.setScalar(60 + 900 * Math.min(1, tau / 0.1));
+      flash2.material.opacity = Math.max(0, 1 - tau / 0.25);
+    }
+
     // Carte de l'objet : sort de la caisse jusqu'au haut de l'écran ; ×10 : file ensuite vers sa case.
     const kc = s.caisses.find((k) => k.objet);
     carte.visible = Boolean(kc);
@@ -670,18 +725,27 @@ export async function creerScene({ canvas, couleur, chrono, reglages, cartes, mo
         v2.sub(v3.set(0, 31 * z.base, 0).applyQuaternion(q2));
         let enX = 1;
         if (P.phase === 'vol') {
-          const p = P.p;
-          // Trajectoire balistique : départ de sa place, en cloche, droit vers l'écran (taille réelle : la perspective le grossit).
-          v3.set(xMonde, 0, Z_ZOMBIES + n * 26);
-          root.position.lerpVectors(v3, v2, p);
-          root.position.y += 4 * p * (1 - p) * 45;
-          // Rotation qui ralentit jusqu'à l'impact (arrive dans la posture finale), après un départ dans son orientation de marche.
-          qRot.setFromAxisAngle(vI.set(1, 0.25, 0.35).normalize(), (1 - p) ** 1.4 * 2.6 * Math.PI);
-          q1.copy(q2).multiply(qRot);
-          const depart = new THREE.Quaternion().setFromAxisAngle(AY, e.sens > 0 ? Math.PI / 2 : -Math.PI / 2);
-          root.quaternion.slerpQuaternions(depart, q1, lisseLocal(Math.min(1, p / 0.2)));
+          const pv = P.pv;
+          // Place du zombie au moment du souffle (sa promenade à cet instant).
+          const x0 = promenade(reglages.promenade[n], PP.depart).x * LARGEUR_ZOMBIES;
+          if (P.etapeVol === 'montee') {
+            // Soufflé par l'explosion sous lui : il monte en tournoyant, de plus en plus lentement, jusqu'à sortir de l'écran par le haut.
+            root.position.set(x0, 650 * (0.45 * pv + 0.55 * pv * pv), Z_ZOMBIES + n * 26 + 60 * pv);
+            root.quaternion.setFromAxisAngle(AY, e.sens > 0 ? Math.PI / 2 : -Math.PI / 2).multiply(qRot.setFromAxisAngle(AX, -pv * 1.6 * Math.PI));
+            enX = 0;
+          } else {
+            // Il retombe du haut de l'écran, de plus en plus vite (gravité), en tournant de moins en moins, droit sur l'écran.
+            const k = pv * pv;
+            v3.set(-0.1 * D, h * 2, -D * 1.6);
+            camera.localToWorld(v3);
+            v3.sub(vI.set(0, 31 * z.base, 0).applyQuaternion(q2));
+            root.position.lerpVectors(v3, v2, k);
+            // Rotation surtout autour de l'axe de la vue (il tourne à plat, face à l'écran : membres dans le plan de l'image).
+            qRot.setFromAxisAngle(vI.set(0.15, 0.1, 1).normalize(), (1 - pv) ** 1.3 * 1.5 * Math.PI);
+            root.quaternion.copy(q2).multiply(qRot);
+            enX = lisseLocal(Math.max(0, (pv - 0.65) / 0.35));
+          }
           root.scale.setScalar(z.base);
-          enX = lisseLocal(Math.max(0, (p - 0.7) / 0.3));
         } else {
           root.position.copy(v2);
           root.quaternion.copy(q2);
@@ -693,7 +757,7 @@ export async function creerScene({ canvas, couleur, chrono, reglages, cartes, mo
           if (P.phase === 'glisse') root.quaternion.multiply(qRot.setFromAxisAngle(AZ, -0.25 * glisse));
         }
         // Surcouche (devant tout) seulement une fois devant la caisse : avant, la profondeur de la scène s'applique.
-        const devantTout = P.phase !== 'vol' || root.position.distanceTo(camera.position) < DISTANCE_SURCOUCHE;
+        const devantTout = P.phase !== 'vol' || P.etapeVol === 'retombe';
         if (z.projete !== devantTout) {
           z.projete = devantTout;
           (devantTout ? surcouche : scene).add(root);
@@ -828,7 +892,7 @@ export async function creerScene({ canvas, couleur, chrono, reglages, cartes, mo
   // son programme et envoyait ses textures pendant l'ouverture. Tout est préparé ici, derrière le fondu noir : chaque effet rendu une fois (rayons,
   // ondes, particules, explosion, flamme, traînée, carte, assombrissement, sang, marques), un zombie dans la surcouche, toutes les textures.
   function prechauffer() {
-    const caches = [rayons, ...ondes, particules, etincelles, boule, eclat, ...feux, ...fumees, eclats, eclab, trainee, flamme, carte, sombre, sang, ...zs.flatMap((z) => [z.sprite, z.poussiere]), ...pool.map((p) => p.g)];
+    const caches = [rayons, ...ondes, particules, etincelles, boule, eclat, ...feux, ...fumees, ...feux2, ...fumees2, flash2, eclats, eclab, trainee, flamme, carte, sombre, sang, ...zs.flatMap((z) => [z.sprite, z.poussiere]), ...pool.map((p) => p.g)];
     const avant = caches.map((o) => o.visible);
     for (const o of caches) o.visible = true;
     rayons.count = MAX_RAYONS;
