@@ -418,6 +418,28 @@ export function creerMenu({ dict, infos = [], liens = {}, solde: montant = 0, re
     pleinEcran.dataset.active = String(actif);
     pleinEcran.setAttribute('aria-label', t(actif ? 'game.pause.fullscreenExit' : 'game.pause.fullscreen'));
   }
+  // Retour du propriétaire : revenu de la partie en plein écran (repère #plein-ecran posé par menuRetour, demarrage.js), le rechargement l'a fait
+  // quitter ; le navigateur n'accepte d'y revenir qu'après un geste : message discret, puis plein écran au premier toucher ou à la première touche.
+  if (peutPleinEcran && location.hash === '#plein-ecran') {
+    history.replaceState(null, '', `${location.pathname}${location.search}`);
+    const rappel = el('p', ['e8-rappel-plein'], { id: 'menu-rappel-plein', role: 'status' });
+    rappel.textContent = t('game.menu.pleinEcran.rappel');
+    box.append(rappel);
+    const fin = () => {
+      rappel.remove();
+      document.removeEventListener('pointerup', geste, true);
+      document.removeEventListener('keydown', geste, true);
+      document.removeEventListener('fullscreenchange', fin);
+    };
+    const geste = (e) => {
+      if (e.type === 'keydown' && ['Escape', 'Tab'].includes(e.code)) return;
+      if (!document.fullscreenElement && !pleinEcran.contains(e.target)) document.documentElement.requestFullscreen({ navigationUI: 'hide' }).catch(() => {});
+      fin();
+    };
+    document.addEventListener('pointerup', geste, true);
+    document.addEventListener('keydown', geste, true);
+    document.addEventListener('fullscreenchange', fin);
+  }
   pleinEcran.addEventListener('click', () => {
     if (!peutPleinEcran) return;
     if (document.fullscreenElement) document.exitFullscreen?.().catch(() => {});

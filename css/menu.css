@@ -4092,3 +4092,23 @@
     animation: none;
   }
 }
+
+/* Rappel du plein écran au retour de la partie (retour du propriétaire) : bandeau discret en haut au centre, sous l'en-tête ; ne capte rien. */
+.e8-rappel-plein {
+  position: fixed;
+  top: calc(env(safe-area-inset-top, 0px) + 64px);
+  left: 50%;
+  z-index: 35;
+  max-width: calc(100% - 32px);
+  margin: 0;
+  padding: 8px 16px;
+  transform: translateX(-50%);
+  border: 2px solid var(--menu-rouge-clair);
+  border-radius: 6px;
+  background: var(--menu-barre-fond);
+  color: var(--menu-texte);
+  font-weight: 700;
+  font-size: max(14px, calc(15 * var(--u, 1px)));
+  text-align: center;
+  pointer-events: none;
+}
