@@ -24,10 +24,10 @@
   "legendaire": {
     "duree": 6.5,
     "explosion": [0.13, 1.6],
-    "projection": { "delai": 0.7, "vol": 0.18, "colle": 0.78, "glissade": 1.14, "trainees": 0.9 },
-    "objet": [1.24, 1.33],
+    "projection": { "delai": 0.7, "vol": 0.45, "colle": 0.78, "glissade": 1.14, "trainees": 0.9 },
+    "objet": [1.3, 1.4],
     "vol": [4.33, 4.72],
-    "retour": { "apparition": 0.3, "marche": 2.16 }
+    "retour": { "apparition": 0.3, "marche": 2.0 }
   },
   "reactions": {
     "sursaut-leger": { "duree": 0.3, "hauteur": 3 },

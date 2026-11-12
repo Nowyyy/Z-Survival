@@ -68,6 +68,8 @@
   --ouv-boule-bord: var(--menu-scene-flamme);
   --ouv-sang: var(--sang-frais);
   --ouv-poussiere: var(--menu-scene-fumee);
+  --ouv-fumee: #5c5650;
+  --ouv-braise: var(--menu-rouge);
   --ouv-sang-sec: var(--sang-sec);
   --ouv-marque-1: var(--menu-ruban-jaune);
   --ouv-marque-2: var(--menu-rouge-trait);
