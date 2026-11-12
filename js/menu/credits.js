@@ -8,7 +8,9 @@ import { bandeau, el } from './menu.js';
 import { adresseStudio, LOGO_STUDIO_FIXE } from './chargement.js';
 import { licencesManquantes, lireCredits, lireLicences } from './credits-donnees.js';
 
-export const LOGO_NOVEN = 'assets/studio/noven-studio-logo.png'; // retour du propriétaire : logo de Noven Studio, fourni par lui (PNG, jamais retouché)
+// Retour du propriétaire : logo de Noven Studio (PNG fourni par lui, Docs/studio/, jamais retouché) ; copie transparente (sans le fond noir, dedans
+// comme dehors) dérivée par scripts/studio/noven-transparent.mjs.
+export const LOGO_NOVEN = 'assets/studio/noven-studio-logo-transparent.png';
 const SVG = 'http://www.w3.org/2000/svg';
 const json = (path) => fetch(path).then((r) => (r.ok ? r.json() : null)).catch(() => null);
 
