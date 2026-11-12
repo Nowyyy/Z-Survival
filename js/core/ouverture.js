@@ -81,16 +81,17 @@ export function lireOuvertures(json, raretes) {
   const legendaire = {
     duree: nombre(jl.duree, 0.5, 30),
     explosion: plage(jl.explosion, 0, 30),
-    // montee : part du vol où le zombie, soufflé par une seconde explosion sous lui, monte hors de l'écran (puis il retombe sur l'écran).
+    // delai : après la brillance jaune (début de l'éclair d'écran de la caisse dorée) ; montee : part du vol où le zombie, soufflé par une seconde
+    // explosion sous lui, monte hors de l'écran (puis il retombe sur l'écran) ; glissade : écoulement du sang qui découvre l'objet.
     projection: { delai: nombre(jp.delai, 0, 10), vol: nombre(jp.vol, 0.01, 10), montee: nombre(jp.montee, 0.05, 0.95), colle: nombre(jp.colle, 0, 10), glissade: nombre(jp.glissade, 0.01, 10), trainees: nombre(jp.trainees, 0, 10) },
-    objet: plage(jl.objet, 0, 30),
     vol: plage(jl.vol, 0, 30),
     retour: { apparition: nombre(jr.apparition, 0, 10), marche: nombre(jr.marche, 0.01, 10) },
   };
-  if (legendaire.duree === null || !legendaire.explosion || !legendaire.objet || !legendaire.vol || Object.values(legendaire.projection).some((v) => v === null) || Object.values(legendaire.retour).some((v) => v === null)) erreurs.push('legendaire invalide');
+  if (legendaire.duree === null || !legendaire.explosion || !legendaire.vol || Object.values(legendaire.projection).some((v) => v === null) || Object.values(legendaire.retour).some((v) => v === null)) erreurs.push('legendaire invalide');
   else if (x10.periode !== null && legendaire.duree <= x10.periode) erreurs.push('legendaire : la caisse dorée doit durer plus longtemps');
   else if (x10.tir !== null && x10.tir + legendaire.vol[1] > legendaire.duree) erreurs.push('legendaire : la carte doit partir avant la caisse suivante');
-  else if (x10.tir !== null && x10.tir + finRetour(legendaire) > legendaire.duree) erreurs.push('legendaire : le zombie doit revenir avant la caisse suivante');
+  else if (x10.tir !== null && legendaire.vol[0] < finGlissade(legendaire, x10.ouverture?.eclair?.[0] ?? 0)) erreurs.push('legendaire : la carte doit être découverte avant de partir');
+  else if (x10.tir !== null && x10.tir + finRetour(legendaire, x10.ouverture?.eclair?.[0] ?? 0) > legendaire.duree) erreurs.push('legendaire : le zombie doit revenir avant la caisse suivante');
   const reactions = {};
   const jre = estObjet(json.reactions) ? json.reactions : {};
   for (const g of GESTES) {
@@ -161,9 +162,13 @@ export function choixLegendaire(graine, i = 0) {
   return Object.freeze({ zombie: a.value, cote: a.value === 0 ? 'gauche' : 'droite' });
 }
 
-function finRetour(l) {
+// Temps depuis le tir (eclair : début de la brillance jaune, depuis le tir) : fin de la glissade, retour du zombie à sa place.
+function finGlissade(l, eclair) {
   const p = l.projection;
-  return (l.explosion?.[0] ?? 0) + p.delai + p.vol + p.colle + p.glissade + l.retour.apparition + l.retour.marche;
+  return eclair + p.delai + p.vol + p.colle + p.glissade;
+}
+function finRetour(l, eclair) {
+  return finGlissade(l, eclair) + l.retour.apparition + l.retour.marche;
 }
 
 // --- Chronologie ---------------------------------------------------------------------------------------------------------------------------
@@ -205,9 +210,11 @@ export function chronologie(reglages, raretes, { graine = 1 } = {}) {
     c.projection = null;
     c.sombre = null;
     c.trainees = null;
+    c.devoile = null;
     if (leg) {
       const p = L.projection;
-      const depart = c.explosion ? c.explosion[0] + p.delai : T + o.reaction + p.delai;
+      // Retour du propriétaire (après la PR 101) : la seconde explosion, sous le zombie, part en même temps que la brillance jaune de la caisse.
+      const depart = (c.eclair ? c.eclair[0] : c.explosion ? c.explosion[0] : T + o.reaction) + p.delai;
       const impact = depart + p.vol;
       const decolle = impact + p.colle;
       const bas = decolle + p.glissade;
@@ -216,8 +223,10 @@ export function chronologie(reglages, raretes, { graine = 1 } = {}) {
       c.projection = Object.freeze({ zombie: choix.zombie, cote: choix.cote, depart, souffle: depart, sommet: depart + p.vol * p.montee, impact, decolle, bas, apparition, place: apparition + L.retour.marche });
       c.sombre = Object.freeze([impact, decolle + p.glissade * 0.85]);
       c.trainees = Object.freeze([decolle, bas + p.trainees]);
-      // L'objet doré sort derrière le zombie collé à l'écran (révélé par la glissade).
-      c.objet = decale(L.objet, T);
+      // Retour du propriétaire : le zombie s'écrase, son sang s'écoule et c'est en s'écoulant qu'il découvre l'objet, invisible avant (déjà à sa
+      // place en haut de l'écran : il ne sort pas de la caisse) ; devoile : écoulement, du décollement du zombie à la fin de sa glissade.
+      c.objet = Object.freeze([decolle, decolle]);
+      c.devoile = Object.freeze([decolle, bas]);
     }
     c.vol = null;
     c.case = null;
@@ -314,7 +323,8 @@ export function instant(chrono, reglages, t) {
       onde2: c.onde2 && dans(t, c.onde2) ? progres(t, c.onde2[0], c.onde2[1]) : 0,
       particules: c.particules && dans(t, c.particules) ? progres(t, c.particules[0], c.particules[1]) : 0,
       explosion: c.explosion && dans(t, c.explosion) ? progres(t, c.explosion[0], c.explosion[1]) : 0,
-      objet: objetVisible ? { sortie: sortie(progres(t, c.objet[0], c.objet[1])), vol: c.vol ? lisse(progres(t, c.vol[0], c.vol[1])) : 0 } : null,
+      // devoile : part découverte de la carte (1 : entière ; légendaire : suit l'écoulement du sang).
+      objet: objetVisible ? { sortie: c.devoile ? 1 : sortie(progres(t, c.objet[0], c.objet[1])), vol: c.vol ? lisse(progres(t, c.vol[0], c.vol[1])) : 0, devoile: c.devoile ? progres(t, c.devoile[0], c.devoile[1]) : 1 } : null,
     });
     // Tir : recul et flamme (0,12 s), traînée (0,08 s), réticule écarté (0,6 s).
     if (t >= c.tir && t < c.tir + 0.6) {

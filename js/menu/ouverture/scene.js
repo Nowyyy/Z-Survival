@@ -6,7 +6,7 @@
 import * as THREE from 'three';
 import { instant, progres, promenade } from '../../core/ouverture.js';
 import { BOUT, CAISSE, TAPIS, caisseGeo, fusilGeo, lampeGeo, pilesGeo, tapisGeo } from './modeles.js';
-import { creerTextures } from './textures.js';
+import { NAPPE_BORD, creerTextures } from './textures.js';
 import { creerZombies } from './zombies.js';
 
 // Écart entre deux caisses sur le tapis ; demi-largeur de la promenade des zombies ; profondeur des zombies.
@@ -57,6 +57,10 @@ export async function creerScene({ canvas, couleur, chrono, reglages, cartes, mo
   // Deux passes par image (scène, puis surcouche du zombie écrasé) : effacement et compteurs gérés à la main.
   renderer.autoClear = false;
   renderer.info.autoReset = false;
+  // Plan de coupe de la carte (légendaire : seule la part déjà découverte par le sang qui s'écoule est dessinée) ; toujours présent, très loin
+  // quand rien n'est caché : un seul programme, préparé avec les autres.
+  renderer.localClippingEnabled = true;
+  const planCarte = new THREE.Plane(new THREE.Vector3(0, 1, 0), 1e9);
   const T = creerTextures({ couleur, anisotropie: Math.min(4, renderer.capabilities.getMaxAnisotropy()) });
   const materiaux = new Set();
   const geos = new Set();
@@ -356,10 +360,11 @@ export async function creerScene({ canvas, couleur, chrono, reglages, cartes, mo
   // --- Carte de l'objet (devant la caméra) ----------------------------------------------------------------------------------------------------
   const texCarte = T.toileCarte();
   const carte = new THREE.Group();
-  const matCarte = mat(new THREE.MeshBasicMaterial({ map: texCarte, transparent: true, depthWrite: false }));
+  const matCarte = mat(new THREE.MeshBasicMaterial({ map: texCarte, transparent: true, depthWrite: false, clippingPlanes: [planCarte] }));
   const plaqueCarte = new THREE.Mesh(geo(new THREE.PlaneGeometry(1, 0.5625)), matCarte);
   plaqueCarte.renderOrder = 4;
   const haloCarte = new THREE.Mesh(geo(new THREE.PlaneGeometry(1.9, 1.5)), additif('--ouv-q', texLueur, 0));
+  haloCarte.material.clippingPlanes = [planCarte];
   haloCarte.position.z = -0.5;
   haloCarte.renderOrder = 3;
   carte.add(haloCarte, plaqueCarte);
@@ -379,6 +384,12 @@ export async function creerScene({ canvas, couleur, chrono, reglages, cartes, mo
   sang.visible = false;
   camera.add(sombre);
   devant.add(sang);
+  // Retour du propriétaire (après la PR 101) : nappe de sang derrière le zombie écrasé, qui s'écoule pendant sa glissade et découvre la carte
+  // (surcouche ; elle teste la profondeur : le zombie reste devant elle).
+  const nappe = new THREE.Mesh(geo(new THREE.PlaneGeometry(1, 1).translate(0, -0.5, 0)), mat(new THREE.MeshBasicMaterial({ map: T.nappe(), transparent: true, opacity: 0, depthWrite: false })));
+  nappe.renderOrder = 10;
+  nappe.visible = false;
+  devant.add(nappe);
   // Éclaboussure sur la « vitre » au point d'impact du zombie projeté (surcouche, devant lui).
   const texEclab = T.eclaboussure();
   const eclab = new THREE.Mesh(geo(new THREE.PlaneGeometry(1, 1)), mat(new THREE.MeshBasicMaterial({ map: texEclab, transparent: true, opacity: 0, depthWrite: false, depthTest: false })));
@@ -429,6 +440,19 @@ export async function creerScene({ canvas, couleur, chrono, reglages, cartes, mo
   const demi = (d) => {
     const h = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * d;
     return { h, w: h * camera.aspect };
+  };
+  // Carte à sa place (fractions de la demi-hauteur de l'écran) : centre et demi-hauteur.
+  const cadreCarte = (dix) => {
+    const { h, w } = demi(100);
+    return { y: dix ? 0.36 : 0.42, dh: ((dix ? 0.172 : 0.225) * 2 * w * 0.5625) / 2 / h };
+  };
+  // Écoulement du sang (légendaire) : ligne sous laquelle la nappe couvre toute sa largeur, du haut de la carte (dv = 0) à son bas (dv = 1),
+  // de plus en plus vite (dv²) ; au-delà (dv > 1), elle continue à la même vitesse. La carte n'est dessinée qu'au-dessus de la ligne.
+  const ecoulement = (dix) => {
+    const k = cadreCarte(dix);
+    const haut = k.y + k.dh + 0.05;
+    const bas = k.y - k.dh - 0.05;
+    return { haut, bas, ligne: (dv) => haut - (haut - bas) * (dv <= 1 ? dv * dv : 2 * dv - 1) };
   };
   fusil.rotation.order = 'YXZ';
   const vise = new THREE.Vector3();
@@ -719,7 +743,14 @@ export async function creerScene({ canvas, couleur, chrono, reglages, cartes, mo
       }
       carte.position.set(x, y, -D);
       carte.scale.setScalar(l);
-      haloCarte.material.opacity = c.halo ? 0.55 * (1 - kc.objet.vol) : 0;
+      const dv = kc.objet.devoile;
+      haloCarte.material.opacity = c.halo ? 0.55 * (1 - kc.objet.vol) * dv : 0;
+      if (dv < 1) {
+        // Plan horizontal (repère de la caméra) à la hauteur de l'écoulement, à la profondeur de la carte : on garde ce qui est au-dessus.
+        v3.set(0, ecoulement(dix).ligne(dv) * h, -D);
+        camera.localToWorld(v3);
+        planCarte.setFromNormalAndCoplanarPoint(vI.set(0, 1, 0).applyQuaternion(camera.quaternion), v3);
+      } else planCarte.set(vI.set(0, 1, 0), 1e9);
     }
 
     // Zombies : promenade, réactions, marques, projection du légendaire.
@@ -859,6 +890,7 @@ export async function creerScene({ canvas, couleur, chrono, reglages, cartes, mo
     }
     sang.visible = false;
     eclab.visible = false;
+    nappe.visible = false;
     if (actifP) {
       const P = actifP.projection;
       const c = actifP.trainees;
@@ -867,26 +899,41 @@ export async function creerScene({ canvas, couleur, chrono, reglages, cartes, mo
       const D = Math.max(55, (62 * zp.base) / (2 * demi(1).w * LARGEUR_ECRASE));
       const { h, w } = demi(D - 4);
       const yImpact = h * 0.36;
+      // Écoulement : la nappe (derrière le zombie) descend du haut au bas de la carte pendant la glissade, l'éclaboussure descend avec elle ;
+      // les traînées restent au-dessus, sur la carte découverte (plus légères : elle reste lisible). Fractions de la demi-hauteur.
+      const E = ecoulement(chrono.quantite === 10);
+      const dv = progres(t, P.decolle, P.bas);
+      const apres = progres(t, P.bas, c[1]);
+      const fin = 1 - apres;
+      // Une fois la carte découverte, la nappe continue de couler à la même vitesse et sort par le bas de l'écran.
+      const coule = E.ligne(dv + (t > P.bas ? (t - P.bas) / (P.bas - P.decolle) : 0));
+      const ligne = E.ligne(dv);
       if (t >= P.impact && t < c[1]) {
-        eclab.visible = true;
         const u = t - P.impact;
-        eclab.position.set(0, yImpact, -(D - 4));
+        const Dn = D + 40;
+        const n = demi(Dn);
+        const H = (E.haut - E.bas + 0.15) / (400 / 512 - NAPPE_BORD);
+        nappe.visible = true;
+        nappe.position.set(0, (coule + NAPPE_BORD * H) * n.h, -Dn);
+        nappe.scale.set(n.w * 0.62, H * n.h * (1 + 0.25 * dv), 1);
+        nappe.material.opacity = Math.min(1, u / 0.12) * fin;
+        eclab.visible = true;
+        eclab.position.set(0, yImpact - (E.haut - coule) * h, -(D - 4));
         eclab.scale.set(w * 1.15 * Math.min(1, 0.6 + u * 6), w * 0.75 * Math.min(1, 0.6 + u * 6), 1);
-        eclab.material.opacity = 0.9 * (1 - progres(t, P.bas, c[1]));
+        eclab.material.opacity = 0.9 * (1 - 0.6 * dv) * fin;
       }
       if (t >= c[0] && t < c[1]) {
-        const p = progres(t, P.decolle, P.bas);
         sang.visible = true;
-        sang.position.set(0, yImpact, -(D - 4));
-        sang.scale.set(w * 0.8, Math.max(0.01, p * p * h * 2.5 + 0.01), 1);
-        sang.material.opacity = 0.9 * (1 - progres(t, P.bas, c[1]));
+        sang.position.set(0, (E.haut + 0.02) * h, -(D - 4));
+        sang.scale.set(w * 0.62, Math.max(0.01, (E.haut - ligne + 0.06) * h), 1);
+        sang.material.opacity = 0.45 * fin;
       }
     }
 
     renderer.info.reset();
     renderer.clear();
     renderer.render(scene, camera);
-    if (zs.some((z) => z.projete) || sang.visible || eclab.visible) {
+    if (zs.some((z) => z.projete) || sang.visible || eclab.visible || nappe.visible) {
       devant.matrix.copy(camera.matrixWorld);
       devant.matrixWorldNeedsUpdate = true;
       renderer.clearDepth();
@@ -911,7 +958,7 @@ export async function creerScene({ canvas, couleur, chrono, reglages, cartes, mo
   // son programme et envoyait ses textures pendant l'ouverture. Tout est préparé ici, derrière le fondu noir : chaque effet rendu une fois (rayons,
   // ondes, particules, explosion, flamme, traînée, carte, assombrissement, sang, marques), un zombie dans la surcouche, toutes les textures.
   function prechauffer() {
-    const caches = [rayons, ...ondes, particules, etincelles, boule, eclat, ...feux, ...fumees, ...feux2, ...fumees2, flash2, eclats, eclab, trainee, flamme, carte, sombre, sang, ...zs.flatMap((z) => [z.sprite, z.poussiere]), ...pool.map((p) => p.g)];
+    const caches = [rayons, ...ondes, particules, etincelles, boule, eclat, ...feux, ...fumees, ...feux2, ...fumees2, flash2, eclats, eclab, nappe, trainee, flamme, carte, sombre, sang, ...zs.flatMap((z) => [z.sprite, z.poussiere]), ...pool.map((p) => p.g)];
     const avant = caches.map((o) => o.visible);
     for (const o of caches) o.visible = true;
     rayons.count = MAX_RAYONS;
