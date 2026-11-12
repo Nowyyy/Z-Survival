@@ -59,8 +59,9 @@ function entre(a, b, r1, r2, n = 10) {
 const cyl = (r1, r2, h, n = 12) => new THREE.CylinderGeometry(r1, r2, h, n);
 
 // --- Caisses ------------------------------------------------------------------------------------------------------------------------------
-// Dimensions communes : largeur 110, profondeur 80, corps 62 de haut, couvercle 12 ; origine au centre du bas.
-export const CAISSE = Object.freeze({ w: 110, d: 80, h: 62, couvercle: 12 });
+// Dimensions communes : largeur 150 (retour du propriétaire : « carrées dans l'animation, rectangulaires dans le menu » ; avant 110), profondeur 80,
+// corps 62 de haut, couvercle 12 ; origine au centre du bas.
+export const CAISSE = Object.freeze({ w: 150, d: 80, h: 62, couvercle: 12 });
 // Forme d'un modèle (genres du lot 8e : data/menu/caisses.json → modele).
 export const FORMES = Object.freeze({ bois: 'bois', militaire: 'militaire', elite: 'elite', recrues: 'malle', veterans: 'malle', legendes: 'malle', tenues: 'valise', mode: 'valise', couture: 'valise' });
 
