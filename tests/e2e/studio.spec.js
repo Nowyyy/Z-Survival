@@ -556,6 +556,9 @@ test.describe('Connexion et Profil (E10)', () => {
       }
       expect((await new AxeBuilder({ page }).analyze()).violations.map((v) => v.id)).toEqual([]);
       // Retour du propriétaire : choix de l'avatar sous le grand portrait, dans la carte, sans défiler ; sept tuiles de 44 px au moins ; axe.
+      await page.locator('#menu-profil-carte').evaluate((n) => {
+        n.scrollTop = 0; // carte remise en haut (les contrôles de taille ci-dessus l'ont fait défiler jusqu'au bouton Google sur les petits écrans)
+      });
       const portraitAvant = await boite(page, '#menu-profil-avatar');
       await page.locator('#menu-profil-changer').click();
       await expect(page.locator('#menu-profil-choix')).toBeVisible();
@@ -571,7 +574,8 @@ test.describe('Connexion et Profil (E10)', () => {
       expect(new Set(tuilesB.map((r) => Math.round(r.t))).size).toBe(2); // deux lignes (quatre colonnes au moins)
       expect(tuilesB.every((r) => r.t >= portraitB.b - 0.5)).toBe(true); // sous le grand portrait
       expect([valB.t >= Math.max(...tuilesB.map((r) => r.b)) - 0.5]).toEqual([true]);
-      expect([Math.abs(portraitB.w - portraitAvant.w) < 0.5, Math.abs(portraitB.h - portraitAvant.h) < 0.5]).toEqual([true, true]); // retour du propriétaire : même taille
+      // Retours du propriétaire : même taille et même place (le portrait ne se décale pas en ouvrant le choix).
+      expect([portraitB.w - portraitAvant.w, portraitB.h - portraitAvant.h, portraitB.t - portraitAvant.t, portraitB.l - portraitAvant.l].map((d) => Math.abs(d) < 0.5)).toEqual([true, true, true, true]);
       expect(await page.locator('#menu-profil-choix-grille').evaluate((n) => n.scrollHeight - n.clientHeight)).toBeLessThanOrEqual(1); // sept avatars : la liste ne défile pas
       expect((await new AxeBuilder({ page }).analyze()).violations.map((v) => v.id)).toEqual([]);
       // Retour du propriétaire : plus d'avatars plus tard (simulés ici : trois fois les tuiles) : seule la liste défile (molette) ; portrait et
