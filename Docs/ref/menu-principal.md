@@ -518,3 +518,8 @@ Base : `lot-8g` (partie 0 : logo reçu depuis `origin/dev` `2817172`), mise à j
 
 ### Sons du menu (décisions du propriétaire, à faire dans un lot dédié)
 - Liste et points à trancher : `Docs/ref/sons-menu.md` (clic unique, musique des menus, deux volumes, achat déjà dans l'atelier, ouvertures 3D, Personnage, chute et rebond du chargement).
+
+### Retours du propriétaire (après la PR #126) : écran Information en cadres, future base de données
+- **Cadres** : chaque nouveauté de `data/menu/infos.json` est dans un cadre sur toute la largeur de l'écran (plus de limite de 70 caractères), haut comme son contenu (titre, date à droite, texte) ; les cadres s'empilent et la liste défile (doigt, molette, souris par `js/glisser.js`) quand ils dépassent. Nouveauté réelle ajoutée : « Studio, Crédits et Profil » (`v0.8-studio`, modifiable par le propriétaire), qui rallume le point jaune.
+- **À terme (décision du propriétaire, plus tard)** : les nouveautés (et les autres contenus du menu réglables : Crédits, liens, mondes, classement) seront lus dans la future base de données et réglés par une interface d'administration. Préparé : l'écran ne connaît que la liste `[{ id, date, titre, texte }]` (`ecranInformation` de `js/menu/ecrans.js`, texte brut seulement, jamais de HTML) ; seule la source change (aujourd'hui `fetch('data/menu/infos.json')` dans `menu.js`, demain l'adresse de l'API, même format) ; `id` unique et stable (l'état « lu » s'y rattache). À trancher avec la base : authentification de l'interface d'administration, cache hors ligne (repli sur le fichier livré), ordre et dates de publication, textes en plusieurs langues.
+
