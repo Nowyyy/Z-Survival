@@ -1720,14 +1720,34 @@
   padding-top: calc(10 * var(--u));
 }
 
+/* Lot 8g (retour du propriétaire) : chaque nouveauté dans un cadre sur toute la largeur, haut comme son contenu ; les cadres s'empilent et la
+   liste défile (doigt, molette, souris par js/glisser.js, racine du menu). */
+#menu-ecran-information .e8-panneau-corps {
+  max-width: none;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: var(--menu-e9-stats-bord) transparent;
+}
+
 .e8-infos {
+  display: flex;
+  flex-direction: column;
+  gap: max(8px, calc(10 * var(--u)));
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
-.e8-info + .e8-info {
-  margin-top: 14px;
+.e8-info {
+  box-sizing: border-box;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  column-gap: 12px;
+  row-gap: 4px;
+  width: 100%;
+  padding: max(10px, calc(12 * var(--u))) max(12px, calc(16 * var(--u)));
+  border: 2px solid var(--menu-e9-stats-bord);
+  background: var(--menu-e9-panneau);
 }
 
 .e8-info-titre {
@@ -1736,12 +1756,16 @@
 }
 
 .e8-info-date {
-  margin: 0 0 4px;
+  align-self: baseline;
+  margin: 0;
   font-size: 13px;
   color: var(--menu-texte-doux);
+  white-space: nowrap;
 }
 
+
 .e8-info-texte {
+  grid-column: 1 / -1;
   margin: 0;
   font-size: max(14px, calc(15 * var(--u)));
   white-space: pre-line; /* sauts de ligne de data/menu/infos.json (« \n » ; « \n\n » : ligne vide) */

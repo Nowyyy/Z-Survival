@@ -197,6 +197,45 @@ test.describe('menu principal (E8)', () => {
     expect(h).toBeGreaterThanOrEqual(3.5); // quatre lignes affichées (dont une vide)
   });
 
+  test('Information (lot 8g, retour du propriétaire) : chaque nouveauté dans un cadre sur toute la largeur, haut comme son contenu ; cadres empilés ; la liste défile quand ils dépassent (molette), l\'écran non', async ({ page }) => {
+    const infos = { infos: Array.from({ length: 6 }, (_, i) => ({ id: `n${i}`, date: `2026-11-1${i}`, titre: `Nouveauté ${i + 1}`, texte: i % 2 ? ['Une ligne', 'Deux lignes'] : 'Une seule ligne' })) };
+    await page.route('**/data/menu/infos.json', (r) => r.fulfill({ contentType: 'application/json', body: JSON.stringify(infos) }));
+    for (const size of [{ width: 932, height: 430 }, { width: 667, height: 375 }]) {
+      await ouvrirMenu(page, size);
+      await page.locator('#menu-trois-barres').click();
+      await page.locator('#menu-information').click();
+      const cadres = page.locator('#menu-infos .e8-info');
+      await expect(cadres).toHaveCount(6);
+      const zone = await boite(page, '#menu-ecran-information .e8-panneau-corps');
+      const panneau = await page.locator('#menu-ecran-information .e8-panneau').evaluate((n) => {
+        const r = n.getBoundingClientRect();
+        const st = getComputedStyle(n);
+        return { l: r.left + parseFloat(st.paddingLeft), r: r.right - parseFloat(st.paddingRight) };
+      });
+      expect([Math.abs(zone.l - panneau.l) < 1, Math.abs(zone.r - panneau.r) < 1]).toEqual([true, true]); // toute la largeur (plus de limite de 70 caractères)
+      const b = await cadres.evaluateAll((ns) => ns.map((n) => {
+        const r = n.getBoundingClientRect();
+        const st = getComputedStyle(n);
+        return { l: r.left, r: r.right, t: r.top, b: r.bottom, h: r.height, bord: st.borderTopWidth, contenu: n.scrollHeight <= n.clientHeight + 1 };
+      }));
+      for (const [i, c] of b.entries()) {
+        expect([c.l - zone.l < 1, zone.r - c.r < 12, c.bord, c.contenu], `cadre ${i}`).toEqual([true, true, '2px', true]); // largeur de la zone (barre de défilement mise à part), bordé, rien de coupé
+        if (i > 0) expect(c.t, `cadre ${i}`).toBeGreaterThanOrEqual(b[i - 1].b); // empilés, sans chevauchement
+      }
+      expect(b[1].h).toBeGreaterThan(b[0].h); // haut comme son contenu (deux lignes contre une)
+      const titre = await boite(page, '#menu-infos .e8-info:first-child .e8-info-titre');
+      const date = await boite(page, '#menu-infos .e8-info:first-child .e8-info-date');
+      expect([date.l >= titre.r, Math.abs(date.t - titre.t) < 8]).toEqual([true, true]); // date à droite du titre
+      const defile = await page.locator('#menu-ecran-information .e8-panneau-corps').evaluate((n) => ({ deborde: n.scrollHeight > n.clientHeight + 1, overflow: getComputedStyle(n).overflowY }));
+      expect(defile).toEqual({ deborde: true, overflow: 'auto' });
+      await page.mouse.move((zone.l + zone.r) / 2, (zone.t + zone.b) / 2);
+      await page.mouse.wheel(0, 300);
+      await expect.poll(() => page.locator('#menu-ecran-information .e8-panneau-corps').evaluate((n) => n.scrollTop)).toBeGreaterThan(0);
+      expect(await page.evaluate(() => [document.scrollingElement.scrollTop, window.scrollY])).toEqual([0, 0]);
+      expect((await new AxeBuilder({ page }).include('#menu-ecran-information').analyze()).violations.map((v) => v.id)).toEqual([]);
+    }
+  });
+
   test('Connexion : le Profil (lot 8g ; avant : écran provisoire « Connexion : bientôt »), fermé par « ‹ Menu » ; Options : la page Options du menu (E5, lot 8c) hors partie, fermée par « ‹ Menu » et Échap', async ({ page }) => {
     await ouvrirMenu(page);
     await page.locator('#menu-profil').click();

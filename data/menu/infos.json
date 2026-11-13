@@ -2,6 +2,12 @@
   "_note": "Lot 8a : nouveautés de l'écran Information (E8-7). Un point jaune signale une nouveauté non lue ; l'état « lu » reste en mémoire jusqu'au lot 8h (sauvegarde v2). Français seul ; « id » unique et stable. Sauts de ligne dans « texte » : écrire \\n (saut de ligne) ou \\n\\n (ligne vide) dans la chaîne, ou donner une liste de lignes ([\"ligne 1\", \"\", \"ligne 3\"]) ; le texte est toujours affiché tel quel, sans HTML.",
   "infos": [
     {
+      "id": "v0.8-studio",
+      "date": "2026-11-13",
+      "titre": "Studio, Crédits et Profil",
+      "texte": "Le jeu s'ouvre sur le logo animé et sonore de No Way Studio (touche l'écran pour commencer).\nNouveaux écrans : Crédits (dans le menu à trois barres) et Profil (en haut à gauche) : avatar, pseudo, statistiques, export et import de la sauvegarde.\nL'avatar et le pseudo ne sont pas encore gardés après un rechargement (prochaine mise à jour)."
+    },
+    {
       "id": "v0.8-menu",
       "date": "2026-11-09",
       "titre": "Nouveau menu principal",
