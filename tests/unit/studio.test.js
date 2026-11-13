@@ -178,6 +178,12 @@ describe('introduction au démarrage (lot 8g)', () => {
     const geste = intro.slice(intro.indexOf('function geste()'), intro.indexOf('function passer()'));
     expect(geste).toMatch(/new AC\(\)/);
     expect(intro).toMatch(/export const SON = 'assets\/studio\/no-way-studio-logo-son\.mp3';/);
+    // Retour du propriétaire (iPhone : rectangle vide avant le logo) : logo caché dès sa création, montré seulement dans affiche(), après lecture
+    // et décodage de l'image ; jamais montré sans adresse.
+    expect(intro.match(/logo\.hidden = (true|false)/g)).toEqual(['logo.hidden = true', 'logo.hidden = false']);
+    const affiche = intro.slice(intro.indexOf('const affiche = () =>'), intro.indexOf("logo.addEventListener('error'"));
+    expect(affiche).toMatch(/logo\.hidden = false;/);
+    expect(intro).toMatch(/logo\.addEventListener\('load', \(\) => \{\n\s+const decodee = [^\n]*logo\.decode\(\)/);
   });
 });
 
@@ -254,7 +260,7 @@ describe('Connexion et Profil (lot 8g)', () => {
     for (const k of Object.values(ERREURS_PSEUDO)) expect(JSON.parse(read('data/i18n/fr.json'))[k], k).toBeTruthy();
   });
 
-  it('avatars (retours du propriétaire) : par défaut un personnage tout gris, puis trois d\'après le joueur, trois d\'après les zombies ; « Changer d\'avatar » fait le tour ; couleurs des personnages (jetons --perso-*)', async () => {
+  it('avatars (retours du propriétaire) : par défaut un personnage tout gris, puis trois d\'après le joueur, trois d\'après les zombies ; ordre de la liste (avatarSuivant) ; couleurs des personnages (jetons --perso-*)', async () => {
     const { AVATARS, avatarSuivant } = await import('../../js/menu/profil-etat.js');
     expect(AVATARS.map((a) => a.id)).toEqual(['anonyme', 'survivant', 'eclaireur', 'tireur', 'rodeur', 'ouvrier', 'affame']);
     expect(AVATARS.map((a) => a.type)).toEqual(['neutre', 'joueur', 'joueur', 'joueur', 'zombie', 'zombie', 'zombie']);
@@ -275,6 +281,13 @@ describe('Connexion et Profil (lot 8g)', () => {
     for (const a of AVATARS.slice(1)) expect(css, a.id).toMatch(new RegExp(`\\.e10-avatar-${a.id} \\{ --av-peau: var\\(--perso-peau-[a-z]+\\); --av-habit: var\\(--perso-[a-z-]+\\);`));
     const fr = JSON.parse(read('data/i18n/fr.json'));
     for (const a of AVATARS) expect(fr[`game.menu.profil.avatar.${a.id}`], a.id).toBeTruthy();
+    // Retour du propriétaire : petit menu de choix (groupe de boutons radio) sous le grand portrait ; « Valider » seul pose l'avatar.
+    expect([fr['game.menu.profil.avatar.choix'], fr['game.menu.profil.avatar.valider'], fr['game.menu.profil.avatar.fait']]).toEqual(['Choisis ton avatar', 'Valider', 'Avatar changé : {nom}.']);
+    const compte = read('js/menu/compte.js');
+    expect(compte).toMatch(/role: 'radiogroup'/);
+    expect(compte.match(/poserProfil\(\{ avatar/g)).toHaveLength(1); // seulement dans « Valider »
+    const valider = compte.slice(compte.indexOf("choixValider.addEventListener('click'"), compte.indexOf('// Pseudo : affichage'));
+    expect(valider).toMatch(/poserProfil\(\{ avatar: a\.id \}\)/);
   });
 
   it('en-tête (retour du propriétaire) : avatar et pseudo partagés par js/menu/avatar.js (mémoire seule, abonnés prévenus) ; réexport par profil-etat.js ; menu.js affiche portrait et pseudo', async () => {

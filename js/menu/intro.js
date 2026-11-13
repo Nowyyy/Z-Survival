@@ -52,6 +52,9 @@ export function jouerIntro({ root = document.body, reduit = matchMedia('(prefers
   if (reduit) box.classList.add('e0-reduit');
   else box.classList.add('e0-geste');
   const logo = el('img', 'e0-logo', { id: 'e0-logo', alt: '', width: '824', height: '628', decoding: 'async' });
+  // Retour du propriétaire (iPhone) : logo caché jusqu'à son affichage (image lue et décodée). Montrée sans adresse, l'image laissait voir à Safari un
+  // rectangle vide (cadre du texte de remplacement) une fraction de seconde après « Toucher pour commencer ».
+  logo.hidden = true;
   const commencer = el('button', 'e0-commencer', { type: 'button', id: 'e0-commencer' });
   commencer.hidden = reduit;
   const indice = el('button', 'e0-passer', { type: 'button', id: 'e0-passer' });
@@ -133,7 +136,6 @@ export function jouerIntro({ root = document.body, reduit = matchMedia('(prefers
     phase = 'attente';
     box.classList.remove('e0-geste');
     commencer.hidden = true;
-    logo.hidden = false;
     plus(terminer, FILET_MS);
     adresseStudio(LOGO_ANIME).then((a) => {
       logo.src = a;
@@ -189,6 +191,7 @@ export function jouerIntro({ root = document.body, reduit = matchMedia('(prefers
   const affiche = () => {
     if (phase !== 'attente') return;
     phase = 'joue';
+    logo.hidden = false;
     temps.affiche = maintenant();
     box.classList.add('e0-joue');
     jouerSon();
@@ -197,19 +200,21 @@ export function jouerIntro({ root = document.body, reduit = matchMedia('(prefers
     if (!reduit) plus(() => box.classList.add('e0-indice'), INDICE_MS);
   };
   logo.addEventListener('error', terminer);
+  // Image lue : décodée avant d'être montrée (aucune image à moitié peinte), puis affichée avec le son.
+  logo.addEventListener('load', () => {
+    const decodee = typeof logo.decode === 'function' ? logo.decode().catch(() => {}) : Promise.resolve();
+    decodee.then(() => {
+      if (phase === 'attente') affiche();
+    });
+  }, { once: true });
   if (reduit) {
     box.classList.add('e0-indice');
-    logo.addEventListener('load', affiche, { once: true });
     plus(terminer, FILET_MS);
     adresseStudio(LOGO_FIXE).then((a) => {
       logo.src = a;
     }, terminer);
   } else {
     // Attente du geste (retour du propriétaire : sans logo, texte au milieu de l'écran) ; sans geste, départ sans son.
-    logo.hidden = true;
-    logo.addEventListener('load', () => {
-      if (phase === 'attente') affiche();
-    });
     plus(() => {
       if (phase !== 'geste') return;
       son = 'muet';

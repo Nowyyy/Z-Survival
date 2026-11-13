@@ -10,7 +10,7 @@
 // Avatar et pseudo restent en mémoire jusqu'au lot 8h (le retour au menu les remet par défaut).
 import { el } from './menu.js';
 import { ERREURS_PSEUDO, statsProfil, validerPseudo, PSEUDO_MAX, PSEUDO_MIN } from './profil-etat.js';
-import { AVATARS, NOMS_AVATARS, avatarDe, avatarSuivant, lireProfil, poserProfil, portrait, suivreProfil } from './avatar.js';
+import { AVATARS, NOMS_AVATARS, avatarDe, lireProfil, poserProfil, portrait, suivreProfil, svgPortrait } from './avatar.js';
 import { decodeSave, encodeSave } from '../core/save.js';
 import { canReplace, errorKey, levelRows, previewRows, recordKey, rowKey, statKey } from '../sauvegarde/logic.js';
 import { formatMoney } from '../core/economy.js';
@@ -151,16 +151,80 @@ export async function ecransCompte({ t, bandeau, root, rootDialogue, monde, pose
   avatar.append(avatarSvg);
   const changer = el('button', ['e10-bouton'], { type: 'button', id: 'menu-profil-changer' });
   changer.textContent = t('game.menu.profil.avatar.changer');
-  const poserAvatar = () => {
-    const a = avatarDe(lireProfil().avatar);
+  const nomAvatar = (a) => fmt(t('game.menu.profil.avatar.nom'), { n: AVATARS.indexOf(a) + 1, total: AVATARS.length, nom: t(NOMS_AVATARS[a.id]) });
+  // Grand portrait : l'avatar choisi, ou celui qu'on regarde dans le choix (aperçu, rien n'est posé avant « Valider »).
+  const poserAvatar = (id = lireProfil().avatar) => {
+    const a = avatarDe(id);
     avatar.dataset.avatar = a.id;
     avatar.className = `e10-avatar e10-avatar-${a.id}`;
     avatarSvg.replaceChildren(portrait(a));
-    avatar.setAttribute('aria-label', fmt(t('game.menu.profil.avatar.nom'), { n: AVATARS.indexOf(a) + 1, total: AVATARS.length, nom: t(NOMS_AVATARS[a.id]) }));
+    avatar.setAttribute('aria-label', nomAvatar(a));
   };
-  changer.addEventListener('click', () => {
-    poserProfil({ avatar: avatarSuivant(lireProfil().avatar).id }); // en-tête et Profil suivent (suivreProfil)
-    dire(avatar.getAttribute('aria-label'));
+  // Retour du propriétaire : « Changer d'avatar » ouvre, sous le grand portrait, un petit menu des avatars (à la place du bouton, du pseudo et du
+  // compte) : un toucher montre l'avatar dans le grand portrait, « Valider » le garde (en-tête compris) et rend la carte normale ; « Annuler » ou
+  // Échap la rendent sans rien changer. Groupe de boutons radio (flèches, Début, Fin ; un seul arrêt de tabulation).
+  const choix = el('div', ['e10-choix'], { id: 'menu-profil-choix' });
+  choix.hidden = true;
+  const choixTitre = el('p', ['e10-choix-titre'], { id: 'menu-profil-choix-titre' });
+  choixTitre.textContent = t('game.menu.profil.avatar.choix');
+  const tuiles = el('div', ['e10-choix-grille'], { role: 'radiogroup', 'aria-labelledby': 'menu-profil-choix-titre', id: 'menu-profil-choix-grille' });
+  let regarde = null; // avatar montré pendant le choix
+  const boutonsAvatar = AVATARS.map((a) => {
+    const b = el('button', ['e10-tuile', `e10-avatar-${a.id}`], { type: 'button', role: 'radio', id: `menu-profil-choix-${a.id}`, 'data-avatar': a.id, 'aria-label': t(NOMS_AVATARS[a.id]) });
+    const rond = el('span', ['e10-tuile-rond']);
+    rond.append(svgPortrait(a.id));
+    b.append(rond);
+    return b;
+  });
+  tuiles.append(...boutonsAvatar);
+  const regarder = (id, focus = false) => {
+    regarde = avatarDe(id).id;
+    for (const b of boutonsAvatar) {
+      const oui = b.dataset.avatar === regarde;
+      b.setAttribute('aria-checked', String(oui));
+      b.tabIndex = oui ? 0 : -1;
+      if (oui && focus) b.focus({ preventScroll: true });
+    }
+    poserAvatar(regarde);
+  };
+  tuiles.addEventListener('click', (e) => {
+    const b = e.target.closest('.e10-tuile');
+    if (b) regarder(b.dataset.avatar, true);
+  });
+  tuiles.addEventListener('keydown', (e) => {
+    const i = AVATARS.findIndex((a) => a.id === regarde);
+    const n = AVATARS.length;
+    const vers = { ArrowRight: i + 1, ArrowDown: i + 1, ArrowLeft: i - 1, ArrowUp: i - 1, Home: 0, End: n - 1 }[e.code];
+    if (vers === undefined) return;
+    e.preventDefault();
+    regarder(AVATARS[(vers + n) % n].id, true);
+  });
+  const choixActions = el('div', ['e10-actions']);
+  const choixValider = el('button', ['menu-planche', 'e10-valider'], { type: 'button', id: 'menu-profil-choix-valider' });
+  choixValider.textContent = t('game.menu.profil.avatar.valider');
+  const choixAnnuler = el('button', ['e10-bouton'], { type: 'button', id: 'menu-profil-choix-annuler' });
+  choixAnnuler.textContent = t('game.save.page.cancel');
+  choixActions.append(choixValider, choixAnnuler);
+  choix.append(choixTitre, tuiles, choixActions);
+  const choisir = (oui) => {
+    if (oui && !form.hidden) editer(false); // une seule édition à la fois
+    choix.hidden = !oui;
+    for (const n of [changer, ligne, compte]) n.hidden = oui;
+    carte.classList.toggle('e10-carte-choix', oui);
+    if (oui) regarder(lireProfil().avatar, true);
+    else {
+      regarde = null;
+      poserAvatar();
+      changer.focus();
+    }
+  };
+  changer.addEventListener('click', () => choisir(true));
+  choixAnnuler.addEventListener('click', () => choisir(false));
+  choixValider.addEventListener('click', () => {
+    const a = avatarDe(regarde);
+    poserProfil({ avatar: a.id }); // en-tête et Profil suivent (suivreProfil)
+    choisir(false);
+    dire(fmt(t('game.menu.profil.avatar.fait'), { nom: t(NOMS_AVATARS[a.id]) }));
   });
   // Pseudo : affichage et crayon ; édition : champ étiqueté, consigne, erreur (role alert), Valider et Annuler.
   const ligne = el('div', ['e10-pseudo']);
@@ -216,7 +280,7 @@ export async function ecransCompte({ t, bandeau, root, rootDialogue, monde, pose
   etatCompte.textContent = t('game.menu.profil.compte');
   const googleProfil = boutonIndisponible('menu-profil-google', t('game.menu.compte.google'), t('game.menu.compte.google.raison'), ['e10-bouton', 'e10-indisponible', 'e10-large']);
   compte.append(etatCompte, googleProfil.bouton, googleProfil.raison);
-  carte.append(avatar, changer, ligne, form, compte);
+  carte.append(avatar, changer, choix, ligne, form, compte);
 
   // Statistiques : six cartes.
   const droite = el('div', ['e10-droite']);
@@ -419,7 +483,7 @@ export async function ecransCompte({ t, bandeau, root, rootDialogue, monde, pose
   poserAvatar();
   poserPseudo();
   suivreProfil(() => {
-    poserAvatar();
+    poserAvatar(regarde ?? undefined);
     poserPseudo();
   });
 
@@ -431,12 +495,13 @@ export async function ecransCompte({ t, bandeau, root, rootDialogue, monde, pose
       if (ecran !== 'profil') {
         fermerFenetre();
         if (!form.hidden) editer(false);
+        if (!choix.hidden) choisir(false);
       } else if (!avant) poserStats();
     },
     focus() {
       tp.retour.focus();
     },
-    // Échap : fenêtre d'export ou d'import, puis édition du pseudo (true : traité) ; sinon l'écran se ferme (menu.js).
+    // Échap : fenêtre d'export ou d'import, puis édition du pseudo ou choix de l'avatar (true : traité) ; sinon l'écran se ferme (menu.js).
     echap() {
       if (ouverte) {
         fermerFenetre();
@@ -446,8 +511,12 @@ export async function ecransCompte({ t, bandeau, root, rootDialogue, monde, pose
         editer(false);
         return true;
       }
+      if (!choix.hidden) {
+        choisir(false);
+        return true;
+      }
       return false;
     },
-    etat: () => ({ avatar: lireProfil().avatar, pseudo: lireProfil().pseudo, fenetre: ouverte ? ouverte.element.id : null, depot: mode.base, stats: [...stats.querySelectorAll('.e10-stat')].map((n) => [n.dataset.stat, n.querySelector('.e10-stat-valeur').dataset.valeur]) }),
+    etat: () => ({ avatar: lireProfil().avatar, choix: choix.hidden ? null : regarde, pseudo: lireProfil().pseudo, fenetre: ouverte ? ouverte.element.id : null, depot: mode.base, stats: [...stats.querySelectorAll('.e10-stat')].map((n) => [n.dataset.stat, n.querySelector('.e10-stat-valeur').dataset.valeur]) }),
   };
 }
