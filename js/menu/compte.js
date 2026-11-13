@@ -9,7 +9,8 @@
 //   #retour, comme le retour au menu : sans introduction ; tout le menu relit la sauvegarde importée).
 // Avatar et pseudo restent en mémoire jusqu'au lot 8h (le retour au menu les remet par défaut).
 import { el } from './menu.js';
-import { AVATARS, ERREURS_PSEUDO, avatarSuivant, statsProfil, validerPseudo, PSEUDO_MAX, PSEUDO_MIN } from './profil-etat.js';
+import { ERREURS_PSEUDO, statsProfil, validerPseudo, PSEUDO_MAX, PSEUDO_MIN } from './profil-etat.js';
+import { AVATARS, NOMS_AVATARS, avatarDe, avatarSuivant, lireProfil, poserProfil, portrait, suivreProfil } from './avatar.js';
 import { decodeSave, encodeSave } from '../core/save.js';
 import { canReplace, errorKey, levelRows, previewRows, recordKey, rowKey, statKey } from '../sauvegarde/logic.js';
 import { formatMoney } from '../core/economy.js';
@@ -28,8 +29,6 @@ export const precharger = () => {
   return donnees;
 };
 
-// Mémoire de la page (jusqu'au lot 8h) : avatar et pseudo choisis ; null = défaut.
-const memoire = { avatar: AVATARS[0].id, pseudo: null };
 
 function svgEl(tag, attrs = {}, classe = null) {
   const n = document.createElementNS(SVG, tag);
@@ -43,52 +42,12 @@ function icone(d, classe) {
   return svg;
 }
 const CHEVRON = 'M15 6l-6 6 6 6';
-const NOMS_AVATARS = {
-  survivant: 'game.menu.profil.avatar.survivant', eclaireur: 'game.menu.profil.avatar.eclaireur', tireur: 'game.menu.profil.avatar.tireur',
-  rodeur: 'game.menu.profil.avatar.rodeur', ouvrier: 'game.menu.profil.avatar.ouvrier', affame: 'game.menu.profil.avatar.affame',
-};
 const STAT_TEXTES = {
   meilleureManche: 'game.menu.profil.stat.meilleureManche', tues: 'game.menu.profil.stat.tues', partiesHistoire: 'game.menu.profil.stat.partiesHistoire',
   partiesInfini: 'game.menu.profil.stat.partiesInfini', temps: 'game.menu.profil.stat.temps', argent: 'game.menu.profil.stat.argent',
 };
 const CRAYON = 'M4 20h4L20 8l-4-4L4 16z';
-// Portraits d'avatar (64 × 64, retour du propriétaire : d'après le personnage du jeu et les zombies) : buste, cou, tête, puis détails de la tenue ;
-// couleurs par classes (av-peau, av-habit, av-acc, av-sombre, av-yeux, av-sang, av-lampe), dont css/menu.css donne les jetons de chaque avatar.
-const BUSTE = 'M6 64C6 50 17 44 32 44s26 6 26 20Z';
-function portrait(avatar) {
-  const g = svgEl('g');
-  const zombie = avatar.type === 'zombie';
-  const tete = svgEl('g', zombie ? { transform: 'rotate(-7 32 30)' } : {});
-  const t = avatar.tenue;
-  if (t === 'capuche') g.append(svgEl('path', { d: 'M17 33C16 13 48 13 47 33L49 47H15Z' }, 'av-habit'));
-  g.append(svgEl('path', { d: BUSTE }, 'av-habit'), svgEl('rect', { x: 27, y: 37, width: 10, height: 10 }, 'av-peau'));
-  // Tenue (buste).
-  if (t === 'bandana' || t === 'veste') g.append(svgEl('path', { d: 'M24 46L28 64M40 46L36 64' }, 'av-trait'));
-  if (t === 'veste') g.append(svgEl('path', { d: 'M24 45L32 54L40 45' }, 'av-col'));
-  if (t === 'chemise') g.append(svgEl('path', { d: 'M24 45L32 52L40 45M14 64L18 58L22 64L27 57L31 64' }, 'av-trait'));
-  if (t === 'chantier') g.append(svgEl('path', { d: 'M15 50L23 46L27 64H17ZM49 50L41 46L37 64H47Z' }, 'av-acc'));
-  if (t === 'sweat') g.append(svgEl('path', { d: 'M44 64L46 56L49 60L51 54' }, 'av-trait'), svgEl('circle', { cx: 21, cy: 56, r: 2.4 }, 'av-sang'));
-  // Tête.
-  tete.append(svgEl('ellipse', { cx: 32, cy: 28, rx: 11.5, ry: 13 }, 'av-peau'));
-  if (t === 'bandana' || t === 'veste') tete.append(svgEl('path', { d: 'M20.5 27C19 13 45 13 43.5 27C40 19 24 19 20.5 27Z' }, 'av-sombre'));
-  if (t === 'capuche') tete.append(svgEl('rect', { x: 23, y: 15.5, width: 18, height: 3, rx: 1.5 }, 'av-sombre'), svgEl('circle', { cx: 32, cy: 17, r: 3 }, 'av-lampe'));
-  if (t === 'chantier') tete.append(svgEl('path', { d: 'M19 24C19 11 45 11 45 24Z' }, 'av-acc2'), svgEl('rect', { x: 16, y: 22, width: 32, height: 3.5, rx: 1.5 }, 'av-acc2'));
-  if (t === 'chemise' || t === 'sweat') tete.append(svgEl('path', { d: 'M21 25C21 15 30 13 36 15C41 16 44 20 43 26L40 21L36 23L33 19L29 22L25 20Z' }, 'av-sombre'));
-  if (zombie) {
-    // Yeux luisants, cernes, bouche entrouverte, sang au menton.
-    tete.append(
-      svgEl('ellipse', { cx: 27, cy: 29, rx: 3.4, ry: 2.6 }, 'av-sombre'), svgEl('ellipse', { cx: 37, cy: 29, rx: 3.4, ry: 2.6 }, 'av-sombre'),
-      svgEl('circle', { cx: 27, cy: 29, r: t === 'sweat' ? 2.2 : 1.6 }, 'av-yeux'), svgEl('circle', { cx: 37, cy: 29, r: 1.6 }, 'av-yeux'),
-      svgEl('path', { d: 'M26 35.5L28.5 34L30.5 36.5L32.5 34L34.5 36.5L37 35L36 38.5H27Z' }, 'av-sombre'),
-      svgEl('path', { d: 'M29 38.5C29 41 30 43 31 43S32 41 32 38.5Z' }, 'av-sang'));
-  } else {
-    tete.append(svgEl('circle', { cx: 27.5, cy: 28, r: 1.6 }, 'av-sombre'), svgEl('circle', { cx: 36.5, cy: 28, r: 1.6 }, 'av-sombre'));
-    if (t === 'bandana') tete.append(svgEl('rect', { x: 20.5, y: 32, width: 23, height: 6.5, rx: 1 }, 'av-acc'), svgEl('path', { d: 'M43 33L50 35L44 38Z' }, 'av-acc'));
-    else tete.append(svgEl('path', { d: 'M28.5 35Q32 37 35.5 35' }, 'av-trait'));
-  }
-  g.append(tete);
-  return g;
-}
+
 
 // En-tête d'un écran : bandeau, « ‹ Menu » (planche, comme les Options).
 function tete({ t, bandeau, libelle, titre, id, onClose }) {
@@ -193,15 +152,14 @@ export async function ecransCompte({ t, bandeau, root, rootDialogue, monde, pose
   const changer = el('button', ['e10-bouton'], { type: 'button', id: 'menu-profil-changer' });
   changer.textContent = t('game.menu.profil.avatar.changer');
   const poserAvatar = () => {
-    const a = AVATARS.find((x) => x.id === memoire.avatar) ?? AVATARS[0];
+    const a = avatarDe(lireProfil().avatar);
     avatar.dataset.avatar = a.id;
     avatar.className = `e10-avatar e10-avatar-${a.id}`;
     avatarSvg.replaceChildren(portrait(a));
     avatar.setAttribute('aria-label', fmt(t('game.menu.profil.avatar.nom'), { n: AVATARS.indexOf(a) + 1, total: AVATARS.length, nom: t(NOMS_AVATARS[a.id]) }));
   };
   changer.addEventListener('click', () => {
-    memoire.avatar = avatarSuivant(memoire.avatar).id;
-    poserAvatar();
+    poserProfil({ avatar: avatarSuivant(lireProfil().avatar).id }); // en-tête et Profil suivent (suivreProfil)
     dire(avatar.getAttribute('aria-label'));
   });
   // Pseudo : affichage et crayon ; édition : champ étiqueté, consigne, erreur (role alert), Valider et Annuler.
@@ -226,7 +184,7 @@ export async function ecransCompte({ t, bandeau, root, rootDialogue, monde, pose
   actions.append(valider, annuler);
   form.append(label, champ, consigne, erreur, actions);
   const poserPseudo = () => {
-    pseudo.textContent = memoire.pseudo ?? t('game.menu.profil.pseudo.defaut');
+    pseudo.textContent = lireProfil().pseudo ?? t('game.menu.profil.pseudo.defaut');
   };
   const editer = (oui) => {
     form.hidden = !oui;
@@ -234,7 +192,7 @@ export async function ecransCompte({ t, bandeau, root, rootDialogue, monde, pose
     erreur.textContent = '';
     champ.removeAttribute('aria-invalid');
     if (oui) {
-      champ.value = memoire.pseudo ?? '';
+      champ.value = lireProfil().pseudo ?? '';
       champ.focus();
     } else crayon.focus();
   };
@@ -249,8 +207,7 @@ export async function ecransCompte({ t, bandeau, root, rootDialogue, monde, pose
       champ.focus();
       return;
     }
-    memoire.pseudo = v.pseudo;
-    poserPseudo();
+    poserProfil({ pseudo: v.pseudo });
     editer(false);
     dire(fmt(t('game.menu.profil.pseudo.fait'), { pseudo: v.pseudo }));
   });
@@ -461,6 +418,10 @@ export async function ecransCompte({ t, bandeau, root, rootDialogue, monde, pose
   root.append(profil);
   poserAvatar();
   poserPseudo();
+  suivreProfil(() => {
+    poserAvatar();
+    poserPseudo();
+  });
 
   return {
     // Écran affiché (profil ou autre) ; le Profil relit la sauvegarde à chaque affichage.
@@ -487,6 +448,6 @@ export async function ecransCompte({ t, bandeau, root, rootDialogue, monde, pose
       }
       return false;
     },
-    etat: () => ({ avatar: memoire.avatar, pseudo: memoire.pseudo, fenetre: ouverte ? ouverte.element.id : null, depot: mode.base, stats: [...stats.querySelectorAll('.e10-stat')].map((n) => [n.dataset.stat, n.querySelector('.e10-stat-valeur').dataset.valeur]) }),
+    etat: () => ({ avatar: lireProfil().avatar, pseudo: lireProfil().pseudo, fenetre: ouverte ? ouverte.element.id : null, depot: mode.base, stats: [...stats.querySelectorAll('.e10-stat')].map((n) => [n.dataset.stat, n.querySelector('.e10-stat-valeur').dataset.valeur]) }),
   };
 }

@@ -247,13 +247,13 @@ test.describe('Boutique (E3-1)', () => {
     }
   });
 
-  test('chargée à la demande (démarrage du menu : 31 fichiers JavaScript, roue de chargement et glissement à la souris compris) ; chances et résultats à leur première ouverture ; ni Three.js ni le jeu', async ({ page, baseURL }) => {
+  test('chargée à la demande (démarrage du menu : 32 fichiers JavaScript, roue de chargement, glissement à la souris et avatar de l\'en-tête compris) ; chances et résultats à leur première ouverture ; ni Three.js ni le jeu', async ({ page, baseURL }) => {
     const o = surveiller(page, baseURL);
     await ouvrirMenu(page);
     const BOUTIQUE = /\/js\/menu\/(boutique|chances|resultat|personnage|equipement-etat)\.js$|\/js\/core\/(caisses|equipement)\.js$|\/data\/menu\/(caisses|cosmetiques|objets|raretes|personnages|inventaire-depart)\.json$/;
     expect(o.fichiers.filter((f) => BOUTIQUE.test(f))).toEqual([]);
     // Retours du propriétaire : roue de chargement (js/menu/roue.js) et glissement à la souris (js/glisser.js) dès le démarrage du menu (29 → 31).
-    expect(o.fichiers.filter((f) => f.endsWith('.js')).length).toBe(31);
+    expect(o.fichiers.filter((f) => f.endsWith('.js')).length).toBe(32);
     expect(o.fichiers.filter((f) => /\/(roue|glisser)\.js$/.test(f)).length).toBe(2);
     await page.locator('#menu-onglet-boutique').click();
     await expect(page.locator('#menu-ecran-boutique')).toBeVisible();

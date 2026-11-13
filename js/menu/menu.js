@@ -9,6 +9,7 @@
 // Lot 8e : onglet Boutique (js/menu/boutique.js à la demande : caisses, chances, écrans de résultat ; objets ajoutés à l'inventaire en mémoire).
 import { activerGlisser } from '../glisser.js';
 import { roueDifferee } from './roue.js';
+import { lireProfil, suivreProfil, svgPortrait } from './avatar.js';
 import { formatMoney } from '../core/economy.js';
 import { basculerMenu, choisirOnglet, versionMenu, creerEtatMenu, ECRANS_PLEINS, SOUS_MENUS, fermerEcran, fermerMenu, lienExterne, lireMondes, lireOptionDemarrage, lireRecord, nouveauteNonLue, ONGLETS, ouvrirEcran, premierJouable } from '../core/menu-etat.js';
 import { ecranJouer } from './jouer.js';
@@ -244,12 +245,22 @@ export function creerMenu({ dict, infos = [], liens = {}, solde: montant = 0, re
 
   // --- En-tête E8-1 -------------------------------------------------------------------------------------------------------------------------
   const entete = el('header', ['e8-entete'], { 'data-block': 'E8-1' });
-  // Lot 8g (retour du propriétaire : « retire le gros bouton Connexion, affiche Profil ») : lien discret « Profil » (icône et texte, sans cadre, cible
-  // de 44 px) qui ouvre le Profil ; la connexion (Google, bientôt) se fait depuis le Profil ou le menu à trois barres.
+  // Lot 8g (retours du propriétaire : « retire le gros bouton Connexion », puis « affiche la photo de profil du joueur et son pseudo ») : avatar en
+  // petit et pseudo (mémoire commune avec le Profil, js/menu/avatar.js : un changement dans le Profil se voit aussitôt), sans cadre, cible de 44 px ;
+  // il ouvre le Profil. La connexion (Google, bientôt) se fait depuis le Profil ou le menu à trois barres.
   const connexion = el('button', ['e8-profil'], { type: 'button', id: 'menu-profil' });
-  const connexionTexte = el('span');
-  connexionTexte.textContent = t('game.menu.profil');
-  connexion.append(icone('connexion'), connexionTexte);
+  const connexionAvatar = el('span', ['e8-profil-avatar'], { id: 'menu-entete-avatar', 'aria-hidden': 'true' });
+  const connexionTexte = el('span', ['e8-profil-pseudo'], { id: 'menu-entete-pseudo' });
+  connexion.append(connexionAvatar, connexionTexte);
+  const poserEntete = ({ avatar, pseudo }) => {
+    const nom = pseudo ?? t('game.menu.profil.pseudo.defaut');
+    connexionAvatar.className = `e8-profil-avatar e10-avatar-${avatar}`; // couleurs de l'avatar (jetons --perso-*)
+    connexionAvatar.replaceChildren(svgPortrait(avatar));
+    connexionTexte.textContent = nom;
+    connexion.setAttribute('aria-label', fmt(t('game.menu.profil.entete'), { pseudo: nom }));
+  };
+  poserEntete(lireProfil());
+  suivreProfil(poserEntete);
   const droite = el('div', ['e8-droite']);
   const solde = el('p', ['e8-solde'], { id: 'menu-solde' });
   const soldeTexte = el('span', ['e8-solde-texte'], { id: 'menu-solde-texte', 'aria-hidden': 'true' });

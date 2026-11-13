@@ -254,22 +254,50 @@ describe('Connexion et Profil (lot 8g)', () => {
     for (const k of Object.values(ERREURS_PSEUDO)) expect(JSON.parse(read('data/i18n/fr.json'))[k], k).toBeTruthy();
   });
 
-  it('avatars (retour du propriétaire) : trois d\'après le joueur, trois d\'après les zombies ; « Changer d\'avatar » fait le tour ; couleurs des personnages (jetons --perso-*)', async () => {
+  it('avatars (retours du propriétaire) : par défaut un personnage tout gris, puis trois d\'après le joueur, trois d\'après les zombies ; « Changer d\'avatar » fait le tour ; couleurs des personnages (jetons --perso-*)', async () => {
     const { AVATARS, avatarSuivant } = await import('../../js/menu/profil-etat.js');
-    expect(AVATARS.map((a) => a.id)).toEqual(['survivant', 'eclaireur', 'tireur', 'rodeur', 'ouvrier', 'affame']);
-    expect(AVATARS.map((a) => a.type)).toEqual(['joueur', 'joueur', 'joueur', 'zombie', 'zombie', 'zombie']);
-    let id = 'survivant';
+    expect(AVATARS.map((a) => a.id)).toEqual(['anonyme', 'survivant', 'eclaireur', 'tireur', 'rodeur', 'ouvrier', 'affame']);
+    expect(AVATARS.map((a) => a.type)).toEqual(['neutre', 'joueur', 'joueur', 'joueur', 'zombie', 'zombie', 'zombie']);
+    let id = 'anonyme';
     const vus = [];
     for (let i = 0; i < AVATARS.length; i += 1) {
       id = avatarSuivant(id).id;
       vus.push(id);
     }
-    expect(vus).toEqual(['eclaireur', 'tireur', 'rodeur', 'ouvrier', 'affame', 'survivant']);
-    expect(avatarSuivant('inconnu').id).toBe('survivant');
+    expect(vus).toEqual(['survivant', 'eclaireur', 'tireur', 'rodeur', 'ouvrier', 'affame', 'anonyme']);
+    expect(avatarSuivant('inconnu').id).toBe('anonyme');
     const css = read('css/menu.css');
-    for (const a of AVATARS) expect(css, a.id).toMatch(new RegExp(`\\.e10-avatar-${a.id} \\{ --av-peau: var\\(--perso-peau-[a-z]+\\); --av-habit: var\\(--perso-[a-z-]+\\);`));
+    // Par défaut : deux gris neutres (rouge = vert = bleu), sans visage (aucun œil, aucune bouche).
+    expect(css).toMatch(/\.e10-avatar-anonyme \{ --av-peau: var\(--perso-anonyme-tete\); --av-habit: var\(--perso-anonyme\); \}/);
+    const tokens = read('css/tokens.css');
+    for (const nom of ['--perso-anonyme', '--perso-anonyme-tete']) expect(tokens, nom).toMatch(new RegExp(`${nom}: #([0-9a-f]{2})\\1\\1;`));
+    expect(read('js/menu/avatar.js')).toMatch(/if \(t === 'silhouette'\) \{\n(?:.*\n){1,3}\s+return g;\n/); // buste et tête seulement (vérifié aussi en e2e)
+    for (const a of AVATARS.slice(1)) expect(css, a.id).toMatch(new RegExp(`\\.e10-avatar-${a.id} \\{ --av-peau: var\\(--perso-peau-[a-z]+\\); --av-habit: var\\(--perso-[a-z-]+\\);`));
     const fr = JSON.parse(read('data/i18n/fr.json'));
     for (const a of AVATARS) expect(fr[`game.menu.profil.avatar.${a.id}`], a.id).toBeTruthy();
+  });
+
+  it('en-tête (retour du propriétaire) : avatar et pseudo partagés par js/menu/avatar.js (mémoire seule, abonnés prévenus) ; réexport par profil-etat.js ; menu.js affiche portrait et pseudo', async () => {
+    const av = await import('../../js/menu/avatar.js');
+    const pe = await import('../../js/menu/profil-etat.js');
+    expect([pe.AVATARS, pe.avatarSuivant]).toEqual([av.AVATARS, av.avatarSuivant]);
+    expect(av.lireProfil()).toEqual({ avatar: 'anonyme', pseudo: null }); // retour du propriétaire : personnage tout gris par défaut
+    const vus = [];
+    const fin = av.suivreProfil((p) => vus.push(p));
+    av.poserProfil({ pseudo: 'Nowy' });
+    av.poserProfil({ avatar: 'affame' });
+    fin();
+    av.poserProfil({ avatar: 'anonyme', pseudo: null });
+    expect(vus).toEqual([{ avatar: 'anonyme', pseudo: 'Nowy' }, { avatar: 'affame', pseudo: 'Nowy' }]);
+    expect(av.lireProfil()).toEqual({ avatar: 'anonyme', pseudo: null });
+    const src = read('js/menu/avatar.js');
+    expect(src).not.toMatch(/localStorage|sessionStorage|fetch\(|document\.cookie/);
+    const menu = read('js/menu/menu.js');
+    expect(menu).toMatch(/from '\.\/avatar\.js'/);
+    expect(menu).toMatch(/suivreProfil\(/);
+    const fr = JSON.parse(read('data/i18n/fr.json'));
+    expect(fr['game.menu.profil.entete']).toBe('Profil : {pseudo}');
+    expect(fr['game.menu.profil']).toBeUndefined();
   });
 
   it('statistiques : lues dans la sauvegarde quand elles existent (meilleure manche, parties, argent gagné), « — » sinon ; illisible : tout à « — »', async () => {
