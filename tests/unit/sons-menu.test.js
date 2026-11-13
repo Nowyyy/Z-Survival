@@ -26,7 +26,7 @@ const tous = catalogue.sons.flatMap((s) => s.variantes.flatMap((v) => Array.from
 describe('catalogue des sons du menu', () => {
   it('data/menu/sons.json est valide : groupes connus, variantes A, B (C), variante par défaut, gains', () => {
     expect(erreurs).toEqual([]);
-    expect(catalogue.sons.length).toBeGreaterThanOrEqual(30);
+    expect(catalogue.sons.length).toBeGreaterThanOrEqual(29); // retours du propriétaire : 32 − 4 (voix des zombies, sang) + 1 (point d'exclamation)
     for (const s of catalogue.sons) {
       expect(GROUPES).toContain(s.groupe);
       expect(s.variantes.length).toBeGreaterThanOrEqual(2);
@@ -36,7 +36,7 @@ describe('catalogue des sons du menu', () => {
   });
   it('les sons demandés par le lot existent tous', () => {
     const ids = catalogue.sons.map((s) => s.id);
-    for (const id of ['clic', 'achat', 'equiper', 'retirer', 'ameliorer', 'fusion', 'choisir', 'chute-impact', 'chute-tiret', 'chute-rebond', 'rarete-commun', 'rarete-peu-commun', 'rarete-rare', 'rarete-epique', 'rarete-legendaire', 'ouv-pas', 'ouv-tapis', 'ouv-tir', 'ouv-impact', 'ouv-couvercle', 'ouv-lumiere', 'ouv-explosion', 'ouv-souffle', 'ouv-ecrasement', 'ouv-sang', 'ouv-zombie-sursaut', 'ouv-zombie-saut', 'ouv-zombie-cri', 'ouv-zombie-tombe', 'ouv-carte', 'ouv-case', 'ouv-passer']) expect(ids).toContain(id);
+    for (const id of ['clic', 'achat', 'equiper', 'retirer', 'ameliorer', 'fusion', 'choisir', 'chute-impact', 'chute-tiret', 'chute-rebond', 'rarete-commun', 'rarete-peu-commun', 'rarete-rare', 'rarete-epique', 'rarete-legendaire', 'ouv-pas', 'ouv-tapis', 'ouv-tir', 'ouv-impact', 'ouv-couvercle', 'ouv-lumiere', 'ouv-explosion', 'ouv-souffle', 'ouv-ecrasement', 'ouv-zombie-tombe', 'ouv-exclamation', 'ouv-carte', 'ouv-case', 'ouv-passer']) expect(ids).toContain(id);
     expect(lire('data/menu/raretes.json').raretes.map((r) => `rarete-${r.id}`).every((id) => ids.includes(id))).toBe(true);
   });
   it('un catalogue invalide est refusé avec ses erreurs', () => {
@@ -56,7 +56,7 @@ describe('synthèse des sons du menu', () => {
     for (const [s, v, g] of tous) expect(sha(rendu(s, v.id, g).samples), `${s.id}:${v.id}:${g}`).toBe(reference[`${s.id}:${v.id}:${g}`]);
   });
   it('déterministe : deux rendus de la même graine sont identiques ; deux graines différentes ne le sont pas pour un son à hasard', () => {
-    for (const id of ['clic', 'rarete-legendaire', 'ouv-zombie-cri', 'achat']) {
+    for (const id of ['clic', 'rarete-legendaire', 'ouv-pas', 'achat']) {
       const s = catalogue.sons.find((x) => x.id === id);
       expect(sha(rendreSon(s, 'A', 3).samples)).toBe(sha(rendreSon(s, 'A', 3).samples));
     }
@@ -85,7 +85,9 @@ describe('synthèse des sons du menu', () => {
   });
   it('signatures de rareté de plus en plus fortes : durée, gain de lecture et énergie croissants du commun au légendaire', () => {
     const ordre = lire('data/menu/raretes.json').raretes.map((r) => catalogue.sons.find((s) => s.id === `rarete-${r.id}`));
-    for (const v of ['A', 'B', 'C']) {
+    // Retour du propriétaire : sept familles de mélodies (A à G) ; chacune croît du commun au légendaire.
+    expect(ordre.every((s) => s.variantes.length === 7)).toBe(true);
+    for (const v of ordre[0].variantes.map((x) => x.id)) {
       const energie = ordre.map((s) => {
         const r = rendu(s, v);
         let e = 0;
@@ -193,14 +195,19 @@ describe('sons d\'une ouverture sur la chronologie pure', () => {
     expect(un('ouv-explosion').t).toBe(c.explosion[0]);
     expect(un('ouv-souffle').t).toBe(c.projection.souffle);
     expect(un('ouv-ecrasement').t).toBe(c.projection.impact);
-    expect(un('ouv-sang').t).toBe(c.projection.decolle);
-    expect(un('ouv-sang').fin).toBeGreaterThan(c.projection.bas);
-    expect(un('ouv-zombie-cri').t).toBe(c.reactions[0].debut);
+    // Retours du propriétaire : plus de sang qui coule ni de voix de zombie ; un son au point d'exclamation (« !!! » : plein niveau), la chute gardée.
+    expect(un('ouv-exclamation').t).toBeCloseTo(c.reactions[0].debut + reglages.reactions['chute-forte'].vue[0], 9);
+    expect(un('ouv-exclamation').gain).toBe(1);
+    expect(sons.filter((s) => s.son === 'ouv-exclamation').length).toBe(1);
+    expect(sons.some((s) => s.son === 'ouv-sang' || /^ouv-zombie-(sursaut|saut|cri)$/.test(s.son))).toBe(false);
     expect(un('ouv-zombie-tombe').t).toBeCloseTo(c.reactions[0].debut + reglages.reactions['chute-forte'].sol[0], 9);
-    expect(sons.filter((s) => s.son === 'ouv-zombie-cri').length).toBe(1); // l'autre zombie est projeté
+    expect(sons.filter((s) => s.son === 'ouv-zombie-tombe').length).toBe(1); // l'autre zombie est projeté
     const commun = sonsOuverture(chronologie(reglages, ['commun']), reglages);
-    for (const nom of ['ouv-explosion', 'ouv-souffle', 'ouv-ecrasement', 'ouv-sang', 'ouv-zombie-cri', 'ouv-carte', 'ouv-case']) expect(commun.some((s) => s.son === nom), nom).toBe(false);
-    expect(commun.filter((s) => s.son === 'ouv-zombie-sursaut').length).toBe(2);
+    for (const nom of ['ouv-explosion', 'ouv-souffle', 'ouv-ecrasement', 'ouv-exclamation', 'ouv-zombie-tombe', 'ouv-carte', 'ouv-case']) expect(commun.some((s) => s.son === nom), nom).toBe(false);
+    expect(commun.filter((s) => s.son.startsWith('ouv-zombie-')).length).toBe(0); // sursaut léger : ni voix ni point d'exclamation
+    // Point d'exclamation de plus en plus fort : « ! » (saut), « !! » (chute), « !!! » (chute forte).
+    const gainMarque = (r) => sonsOuverture(chronologie(reglages, [r], { graine: 5 }), reglages).find((s) => s.son === 'ouv-exclamation').gain;
+    expect([gainMarque('rare'), gainMarque('epique'), gainMarque('legendaire')]).toEqual([0.7, 0.85, 1]);
   });
   it('×10 : une signature par caisse dans l\'ordre du tirage, carte et case par caisse, réactions selon la rareté', () => {
     const tirage = ['commun', 'rare', 'commun', 'peu-commun', 'epique', 'commun', 'legendaire', 'commun', 'rare', 'commun'];
@@ -210,7 +217,11 @@ describe('sons d\'une ouverture sur la chronologie pure', () => {
     expect(sons.filter((s) => s.son === 'ouv-carte').map((s) => s.t)).toEqual(chrono.caisses.map((c) => c.vol[0]));
     expect(sons.filter((s) => s.son === 'ouv-case').map((s) => s.t)).toEqual(chrono.caisses.map((c) => c.case));
     expect(sons.filter((s) => s.son === 'ouv-tir').length).toBe(10);
-    expect(sons.filter((s) => s.son === 'ouv-zombie-saut').length).toBe(4); // deux rares × deux zombies
+    // Retours du propriétaire : un point d'exclamation par caisse marquée (deux rares, un épique, un légendaire), le tapis à la première caisse seulement,
+    // la chute des zombies gardée (épique : deux zombies ; légendaire : celui qui reste).
+    expect(sons.filter((s) => s.son === 'ouv-exclamation').length).toBe(4);
+    expect(sons.filter((s) => s.son === 'ouv-tapis').map((s) => s.t)).toEqual([chrono.caisses[0].tapis[0]]);
+    expect(sons.filter((s) => s.son === 'ouv-zombie-tombe').length).toBe(3);
     expect(sons.filter((s) => s.son === 'ouv-explosion').length).toBe(1);
     expect(new Set(sons.map((s) => s.cle)).size).toBe(sons.length);
   });

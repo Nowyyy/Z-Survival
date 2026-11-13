@@ -6,7 +6,7 @@
 // - sonsOuverture(chrono, reglages) : sons d'une ouverture de caisses, aux instants de la chronologie pure (js/core/ouverture.js).
 // - avancerMusique : états de la musique des menus (silence, attente du geste, musique, baisse, fondu, arrêt).
 export const GROUPES = Object.freeze(['chute', 'menu', 'raretes', 'ouverture']);
-export const VARIANTES = Object.freeze(['A', 'B', 'C']);
+export const VARIANTES = Object.freeze(['A', 'B', 'C', 'D', 'E', 'F', 'G']); // deux au moins, dans l'ordre
 export const VOLUME_PAS = 10;
 export const VOLUME_DEFAUT = 100;
 
@@ -32,7 +32,7 @@ export function lireSons(json) {
     if (!GROUPES.includes(s.groupe)) erreurs.push(`${id} : groupe inconnu`);
     const variantes = Array.isArray(s.variantes) ? s.variantes : [];
     const ids = variantes.map((v) => v?.id);
-    if (variantes.length < 2 || variantes.length > VARIANTES.length || ids.some((v, i) => v !== VARIANTES[i])) erreurs.push(`${id} : variantes A, B (et C) attendues, dans l'ordre`);
+    if (variantes.length < 2 || variantes.length > VARIANTES.length || ids.some((v, i) => v !== VARIANTES[i])) erreurs.push(`${id} : variantes A, B (puis C à G) attendues, dans l'ordre`);
     for (const v of variantes) {
       if (typeof v?.nom !== 'string' || v.nom.length === 0) erreurs.push(`${id}.${v?.id} : nom absent`);
       if (!fini(v?.dur) || v.dur <= 0 || v.dur > 4) erreurs.push(`${id}.${v?.id} : durée invalide`);
@@ -42,7 +42,8 @@ export function lireSons(json) {
     if (!fini(s.gain) || s.gain <= 0 || s.gain > 1) erreurs.push(`${id} : gain invalide`);
     const versions = s.versions === undefined ? 1 : s.versions;
     if (!Number.isInteger(versions) || versions < 1 || versions > 3) erreurs.push(`${id} : versions invalides`);
-    sons.push(Object.freeze({ id, groupe: s.groupe, gain: s.gain, defaut: s.defaut, versions, variantes }));
+    // aChoisir : son encore à juger par le propriétaire (la page d'écoute ne montre que ceux-là par défaut).
+    sons.push(Object.freeze({ id, groupe: s.groupe, gain: s.gain, defaut: s.defaut, versions, variantes, aChoisir: s.aChoisir === true }));
   }
   const m = estObjet(json.musique) ? json.musique : null;
   const mv = Array.isArray(m?.variantes) ? m.variantes.map((v) => v?.id) : [];
@@ -118,7 +119,6 @@ export function admettreClic(etat, t, regles = {}) {
 }
 
 // --- Ouvertures ----------------------------------------------------------------------------------------------------------------------------
-const SON_GESTE = { 'sursaut-leger': 'ouv-zombie-sursaut', sursaut: 'ouv-zombie-sursaut', saut: 'ouv-zombie-saut', chute: 'ouv-zombie-cri', 'chute-forte': 'ouv-zombie-cri' };
 
 // Instants des pas de l'arrivée : la marche avance de sortie(p) = 1 − (1 − p)³ (js/core/ouverture.js, instant().marche.pas) ; le k-ième pas
 // touche le sol quand elle vaut k / pas.
@@ -132,6 +132,9 @@ export function instantsPas(arrivee) {
 // Sons d'une ouverture, triés par instant : [{ t, son, caisse (−1 : arrivée), gain, fin (arrêt en fondu, s) | null, zombie | null, cle }].
 // chrono : chronologie(…) de js/core/ouverture.js ; reglages : lireOuvertures(…).reglages (durées des réactions). Aucun instant propre : tout
 // vient de la chronologie (tapis, tir, étincelles, couvercle, lumière, rayons, explosion, projection, réactions, vol, case).
+// Retours du propriétaire (après le lot 8i) : plus de voix de zombie ni de sang qui coule ; le tapis ne s'entend qu'à l'arrivée de la première
+// caisse (plus entre les caisses d'un ×10) ; un petit son quand le point d'exclamation apparaît au-dessus des zombies (une fois par caisse, plus
+// fort avec « !! » et « !!! ») ; le corps qui tombe est gardé.
 export function sonsOuverture(chrono, reglages) {
   if (!chrono || !Array.isArray(chrono.caisses)) return [];
   const out = [];
@@ -141,7 +144,7 @@ export function sonsOuverture(chrono, reglages) {
   const pas = instantsPas(chrono.arrivee);
   pas.forEach((t, k) => ajouter(t, 'ouv-pas', -1, { gain: 0.5 + 0.5 * ((k + 1) / pas.length), zombie: k % 2 }));
   for (const c of chrono.caisses) {
-    ajouter(c.tapis[0], 'ouv-tapis', c.i, { fin: c.tapis[1] });
+    if (c.i === 0) ajouter(c.tapis[0], 'ouv-tapis', c.i, { fin: c.tapis[1] });
     ajouter(c.tir, 'ouv-tir', c.i);
     ajouter(c.etincelles[0], 'ouv-impact', c.i);
     ajouter(c.couvercle[0], 'ouv-couvercle', c.i);
@@ -151,14 +154,16 @@ export function sonsOuverture(chrono, reglages) {
     if (c.projection) {
       ajouter(c.projection.souffle, 'ouv-souffle', c.i);
       ajouter(c.projection.impact, 'ouv-ecrasement', c.i);
-      ajouter(c.projection.decolle, 'ouv-sang', c.i, { fin: c.projection.bas + 0.3 });
     }
+    let marque = false;
     for (const r of c.reactions ?? []) {
-      const son = SON_GESTE[r.geste];
-      if (!son) continue;
-      ajouter(r.debut, son, c.i, { zombie: r.zombie, gain: r.geste === 'sursaut-leger' ? 0.55 : r.geste === 'chute-forte' ? 1 : 0.85 });
-      const sol = reglages?.reactions?.[r.geste]?.sol;
-      if (sol) ajouter(r.debut + sol[0], 'ouv-zombie-tombe', c.i, { zombie: r.zombie });
+      const d = reglages?.reactions?.[r.geste];
+      if (!d) continue;
+      if (d.marque && d.vue && !marque) {
+        marque = true;
+        ajouter(r.debut + d.vue[0], 'ouv-exclamation', c.i, { gain: [0.7, 0.85, 1][d.marque.length - 1] ?? 1 });
+      }
+      if (d.sol) ajouter(r.debut + d.sol[0], 'ouv-zombie-tombe', c.i, { zombie: r.zombie });
     }
     if (c.vol) ajouter(c.vol[0], 'ouv-carte', c.i);
     if (c.case !== null && c.case !== undefined) ajouter(c.case, 'ouv-case', c.i);

@@ -296,7 +296,7 @@ test.describe('sons des ouvertures de caisses', () => {
     expect(joues.every((e) => e.joue)).toBe(true);
     expect(joues.map((e) => e.son)).toEqual(attendu.filter((e) => e.t <= arret).map((e) => e.son));
     expect(joues.filter((e) => e.son.startsWith('rarete-')).map((e) => e.son)).toEqual(chrono.caisses.slice(0, rangLeg + 1).map((c) => `rarete-${c.rarete}`));
-    for (const nom of ['ouv-explosion', 'ouv-souffle', 'ouv-ecrasement', 'ouv-sang']) expect(joues.map((e) => e.son)).toContain(nom);
+    for (const nom of ['ouv-explosion', 'ouv-souffle', 'ouv-ecrasement', 'ouv-exclamation']) expect(joues.map((e) => e.son)).toContain(nom);
     expect(s.actifs.ouverture ?? 0).toBeGreaterThan(0); // des sons de l'ouverture sont en cours
     // « Passer » : son propre, puis tout est coupé et libéré.
     const m = s.journal.length;

@@ -9,9 +9,10 @@ const BRUIT = /GL Driver Message/;
 const etat = (page) => page.evaluate(() => window.__zsSonsMenu.etat());
 const journal = (page) => page.evaluate(() => window.__zsSonsMenu.journal());
 
-async function ouvrir(page) {
+// tout : tous les sons et la musique (?tout=1) ; sinon la vue par défaut, les seuls sons encore à choisir.
+async function ouvrir(page, tout = true) {
   await page.setViewportSize({ width: 667, height: 375 });
-  await page.goto('/atelier-sons-menu.html?test=1');
+  await page.goto(`/atelier-sons-menu.html?test=1${tout ? '&tout=1' : ''}`);
   await expect(page.locator('#app')).toBeVisible();
 }
 
@@ -61,7 +62,9 @@ test('page d\'écoute : démonstration sur la chronologie réelle, musique (lect
   const demo = (await etat(page)).demo;
   expect(demo.rarete).toBe('legendaire');
   const noms = demo.sons.map((s) => s.son);
-  for (const attendu of ['ouv-pas', 'ouv-tapis', 'ouv-tir', 'ouv-impact', 'ouv-couvercle', 'ouv-lumiere', 'rarete-legendaire', 'ouv-explosion', 'ouv-souffle', 'ouv-ecrasement', 'ouv-sang']) expect(noms).toContain(attendu);
+  for (const attendu of ['ouv-pas', 'ouv-tapis', 'ouv-tir', 'ouv-impact', 'ouv-couvercle', 'ouv-lumiere', 'rarete-legendaire', 'ouv-explosion', 'ouv-souffle', 'ouv-ecrasement', 'ouv-exclamation', 'ouv-zombie-tombe']) expect(noms).toContain(attendu);
+  // Retours du propriétaire : ni voix de zombie ni sang qui coule.
+  expect(noms.filter((x) => x === 'ouv-sang' || /^ouv-zombie-(sursaut|saut|cri)$/.test(x))).toEqual([]);
   expect(demo.sons.map((s) => s.t)).toEqual([...demo.sons.map((s) => s.t)].sort((a, b) => a - b));
   expect((await journal(page)).filter((e) => e.origine === 'demo').length).toBe(demo.sons.length);
   await page.locator('[data-rarete="commun"]').click();
@@ -95,4 +98,30 @@ test('page d\'écoute : accessibilité (axe sans violation, cibles de 44 px, com
   expect(petites).toEqual([]);
   const sansNom = await page.evaluate(() => [...document.querySelectorAll('button')].filter((b) => !(b.getAttribute('aria-label') || b.textContent).trim()).length);
   expect(sansNom).toBe(0);
+});
+
+test('page d\'écoute, vue par défaut : seuls les sons encore à choisir (mélodies de rareté A à G, point d\'exclamation), musique masquée ; le texte de sons-choix.json reste complet ; lien vers tous les sons', async ({ page }) => {
+  await ouvrir(page, false);
+  const restants = catalogue.sons.filter((s) => s.aChoisir);
+  expect(restants.map((s) => s.id).sort()).toEqual(['ouv-exclamation', 'rarete-commun', 'rarete-epique', 'rarete-legendaire', 'rarete-peu-commun', 'rarete-rare']);
+  await expect(page.locator('.slot')).toHaveCount(restants.length);
+  expect((await etat(page)).vue).toBe('a-choisir');
+  for (const s of restants) await expect(page.locator(`#son-${s.id} .atelier-play`)).toHaveCount(s.variantes.length);
+  await expect(page.locator('#son-rarete-legendaire .atelier-play')).toHaveCount(7);
+  await expect(page.locator('#son-clic')).toHaveCount(0);
+  await expect(page.locator('#music')).toBeHidden();
+  await expect(page.locator('#demo')).toBeVisible();
+  // Une nouvelle mélodie écoutée et gardée : le texte à copier reste le fichier complet, les autres choix inchangés.
+  await page.locator('#son-rarete-rare [data-variante="E"]').click();
+  expect((await journal(page)).at(-1)).toMatchObject({ son: 'rarete-rare', variante: 'E' });
+  await page.locator('#garder-rarete-rare-E').check();
+  const texte = JSON.parse(await page.locator('#choices-text').inputValue());
+  expect(texte.choix['rarete-rare']).toBe('E');
+  expect(Object.keys(texte.choix)).toEqual([...catalogue.sons.map((s) => s.id), 'musique']);
+  const fichier = JSON.parse(readFileSync('data/menu/sons-choix.json', 'utf8')).choix;
+  for (const [id, v] of Object.entries(fichier)) if (id !== 'rarete-rare') expect(texte.choix[id], id).toBe(v);
+  // Lien vers la vue complète.
+  await expect(page.locator('#lien-vue')).toHaveAttribute('href', 'atelier-sons-menu.html?tout=1');
+  const resultat = await new AxeBuilder({ page }).analyze();
+  expect(resultat.violations.map((v) => v.id)).toEqual([]);
 });
