@@ -7,6 +7,7 @@ import { formatMoney } from '../core/economy.js';
 import { ameliorerPersonnage, choisirPersonnage, infoPersonnage } from '../core/equipement.js';
 import { fmt } from '../game/texts.js';
 import { el } from './menu.js';
+import { son } from './sons/sons.js';
 import { filigrane, annonce, buste, estActif, icone24, listeStats, poserActif, silhouette, teteSous } from './personnage.js';
 
 export function creer({ t, bandeau, eq, cat, stats, retour }) {
@@ -96,13 +97,17 @@ export function creer({ t, bandeau, eq, cat, stats, retour }) {
   btChoisir.addEventListener('click', () => {
     if (!estActif(btChoisir)) return;
     const etat = eq.etat();
-    if (eq.poser(choisirPersonnage(etat, cat, selection)) !== etat) dire(fmt(t('game.menu.personnages.annonce.choisi'), { nom: cat.personnages.find((p) => p.id === selection).nom }));
+    if (eq.poser(choisirPersonnage(etat, cat, selection)) === etat) return;
+    son('choisir'); // lot 8i
+    dire(fmt(t('game.menu.personnages.annonce.choisi'), { nom: cat.personnages.find((p) => p.id === selection).nom }));
   });
   btAmeliorer.addEventListener('click', () => {
     if (!estActif(btAmeliorer)) return;
     const etat = eq.etat();
     const n = eq.poser(ameliorerPersonnage(etat, cat, selection));
-    if (n !== etat) dire(fmt(t('game.menu.personnages.annonce.ameliore'), { nom: cat.personnages.find((p) => p.id === selection).nom, n: n.persos[selection] }));
+    if (n === etat) return;
+    son('ameliorer'); // lot 8i
+    dire(fmt(t('game.menu.personnages.annonce.ameliore'), { nom: cat.personnages.find((p) => p.id === selection).nom, n: n.persos[selection] }));
   });
 
   eq.abonner(() => {

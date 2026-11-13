@@ -147,6 +147,7 @@ const audio = createAudio({ config: { audio: audioCfg, materials: materialsCfg, 
 const sonMenu = reglagesSon(); // lot 8c : son et volume choisis dans les Options du menu (mémoire de la page ; partie directe : défauts, rien ne change)
 if (sonMenu.coupe) audio.toggleMute();
 if (sonMenu.volume !== null) audio.setVolume(sonMenu.volume);
+if (sonMenu.musique !== null) audio.setMusicVolume(sonMenu.musique); // lot 8i : volume de la musique (mélodie d'annonce de vague)
 const essential = await renderSounds(planSounds(soundsCfg.sounds, 'essentiel'), { onProgress: (p) => {
   loading.update(TEXTURE_SHARE + (1 - TEXTURE_SHARE) * p);
   menuProgres('sons', p);
@@ -249,6 +250,10 @@ ctx.ui = createUi(dict, {
   },
   onVolume: (n) => {
     ctx.audio.setVolume(n);
+    ctx.ui.syncSound(ctx.audio);
+  },
+  onMusicVolume: (n) => {
+    ctx.audio.setMusicVolume(n);
     ctx.ui.syncSound(ctx.audio);
   },
   onToggleVhs: () => {

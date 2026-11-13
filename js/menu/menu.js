@@ -9,6 +9,7 @@
 // Lot 8e : onglet Boutique (js/menu/boutique.js à la demande : caisses, chances, écrans de résultat ; objets ajoutés à l'inventaire en mémoire).
 import { activerGlisser } from '../glisser.js';
 import { roueDifferee } from './roue.js';
+import { clic as clicSon, ecouterClics, regler as reglerSons } from './sons/sons.js';
 import { lireProfil, suivreProfil, svgPortrait } from './avatar.js';
 import { formatMoney } from '../core/economy.js';
 import { basculerMenu, choisirOnglet, versionMenu, creerEtatMenu, ECRANS_PLEINS, SOUS_MENUS, fermerEcran, fermerMenu, lienExterne, lireMondes, lireOptionDemarrage, lireRecord, nouveauteNonLue, ONGLETS, ouvrirEcran, premierJouable } from '../core/menu-etat.js';
@@ -240,6 +241,7 @@ export function creerMenu({ dict, infos = [], liens = {}, solde: montant = 0, re
   const ecransOnglets = new Map(); // id → section (créée au premier affichage)
 
   const box = el('div', ['e8'], { id: 'e8', 'data-block': 'E8' });
+  ecouterClics(box); // lot 8i : un même son de clic pour toute commande du menu (js/menu/sons/sons.js)
   // Retour du propriétaire : zones qui défilent glissables à la souris, comme au doigt (js/glisser.js).
   activerGlisser(box);
 
@@ -682,16 +684,26 @@ export function creerMenu({ dict, infos = [], liens = {}, solde: montant = 0, re
         const [{ creerOptions }, { createGraphicsController }, gfx, audio] = await Promise.all([
           import('../game/options-menu.js'), import('../game/graphics-apply.js'), graphicsReglages(), json('data/game/audio.json'),
         ]);
-        let local = { coupe: false, volume: null }; // sans mémoire donnée (créateur de test) : réglages de cet écran seulement
+        let local = { coupe: false, volume: null, musique: null }; // sans mémoire donnée (créateur de test) : réglages de cet écran seulement
         const lire = () => memoireSon?.lire() ?? local;
-        const poser = (r) => (memoireSon ? memoireSon.poser(r) : (local = { ...local, ...r }));
         const volume = audio?.volume ?? {};
         const defaut = Number.isFinite(volume.default) ? volume.default : 100;
         const pas = Number.isFinite(volume.step) ? volume.step : 10;
+        // Lot 8i : chaque réglage vaut tout de suite pour les sons du menu (effets et musique), et à « JOUER » pour la partie (main.js).
+        const poser = (r) => {
+          if (memoireSon) memoireSon.poser(r);
+          else local = { ...local, ...r };
+          const e = lire();
+          reglerSons({ coupe: e.coupe, jeu: e.volume ?? defaut, musique: e.musique ?? defaut });
+        };
         const son = {
-          etat: () => ({ disponible: true, coupe: lire().coupe, volume: lire().volume ?? defaut, pas }),
+          etat: () => ({ disponible: true, coupe: lire().coupe, volume: lire().volume ?? defaut, musique: lire().musique ?? defaut, pas }),
           couper: (coupe) => poser({ coupe }),
-          regler: (n) => poser({ volume: n }),
+          regler: (n) => {
+            poser({ volume: n });
+            clicSon(); // le clic du menu donne le niveau à l'oreille (un seul à la fois)
+          },
+          reglerMusique: (n) => poser({ musique: n }),
         };
         const graphics = createGraphicsController(gfx, { dict, contexte: 'menu' });
         if (etat.ecran !== 'options') return; // fermée pendant le chargement

@@ -162,11 +162,12 @@ export function createUi(dict, handlers) {
       if (!menu) {
         const [m] = await Promise.all([import('./options-menu.js'), handlers.chargerStyles?.()]);
         const son = {
-          etat: () => ({ disponible: hasAudio, coupe: Boolean(sonAudio?.muted), volume: sonAudio?.volume ?? 100, pas: sonAudio?.volumeStep ?? 10 }),
+          etat: () => ({ disponible: hasAudio, coupe: Boolean(sonAudio?.muted), volume: sonAudio?.volume ?? 100, musique: sonAudio?.musicVolume ?? 100, pas: sonAudio?.volumeStep ?? 10 }),
           couper: (coupe) => {
             if (hasAudio && Boolean(sonAudio?.muted) !== coupe) handlers.onToggleSound();
           },
           regler: (n) => handlers.onVolume?.(n),
+          reglerMusique: (n) => handlers.onMusicVolume?.(n), // lot 8i : volume de la musique (mélodie d'annonce de vague)
         };
         menu = m.creerOptions({ contexte: 'partie', dict, graphics: binding.graphics, son, vhs: binding.vhs, onClose: () => ui.closeOptions() });
       }

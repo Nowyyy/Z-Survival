@@ -6,6 +6,7 @@ import { formatMoney } from '../core/economy.js';
 import { ameliorer, bonusObjet, emplacementDe, emplacementsDuType, equiper, fusionnable, identiques, indexRarete, infoAmelioration, objetDe, retirer } from '../core/equipement.js';
 import { fmt } from '../game/texts.js';
 import { el } from './menu.js';
+import { son } from './sons/sons.js';
 import { filigrane, TYPE_TEXTES, annonce, estActif, icone24, nomObjet, nomRarete, poserActif, teteSous, texteEffet, typeObjet } from './personnage.js';
 
 // Objets par page : 6 colonnes × autant de rangées que la hauteur libre en contient (2 au moins, comme la maquette ; retour du propriétaire : « tout
@@ -168,13 +169,16 @@ export function creer({ t, bandeau, eq, cat, retour, ouvrir }) {
     const porte = emplacementDe(etat, o.uid);
     const cible = emplacementCible && emplacementsDuType(typeObjet(cat, o)).includes(emplacementCible) ? emplacementCible : null;
     const n = eq.poser(porte ? retirer(etat, o.uid) : equiper(etat, cat, o.uid, cible));
-    if (n !== etat) dire(fmt(t(porte ? 'game.menu.inventaire.annonce.retire' : 'game.menu.inventaire.annonce.equipe'), { nom: nomObjet(cat, o) }));
+    if (n === etat) return;
+    son(porte ? 'retirer' : 'equiper'); // lot 8i
+    dire(fmt(t(porte ? 'game.menu.inventaire.annonce.retire' : 'game.menu.inventaire.annonce.equipe'), { nom: nomObjet(cat, o) }));
   });
   btAmeliorer.addEventListener('click', () => {
     if (!estActif(btAmeliorer)) return;
     const etat = eq.etat();
     const n = eq.poser(ameliorer(etat, cat, choisi));
     if (n !== etat) {
+      son('ameliorer'); // lot 8i
       const o = objetDe(n, choisi);
       dire(fmt(t('game.menu.inventaire.annonce.ameliore'), { nom: nomObjet(cat, o), n: o.niveau }));
     }

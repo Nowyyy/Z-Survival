@@ -15,6 +15,7 @@ import { prixAchat } from '../../core/caisses.js';
 import { fmt } from '../../game/texts.js';
 import { pageCanal, pageSearch } from '../../game/graphics-boot.js';
 import { el } from '../menu.js';
+import { liberer as libererSons, ouvertureSons, preparer as preparerSons, signaler, son } from '../sons/sons.js';
 
 const SVG = 'http://www.w3.org/2000/svg';
 const json = (path) => fetch(path).then((r) => (r.ok ? r.json() : Promise.reject(new Error(path))));
@@ -90,6 +91,8 @@ async function creerOuverture({ r, cat, cartes, annonce, t, parent, rappels }) {
   if (enCours || !ouvertureVoulue() || !r?.caisse || !Array.isArray(cartes) || cartes.length !== r.objets.length) return null;
   let donnees;
   let sceneMod;
+  // Lot 8i : sons de l'ouverture calculés en même temps (calculateur d'arrière-plan ; null sans geste : l'ouverture reste muette).
+  const sonsPrets = preparerSons('ouverture').catch(() => null);
   try {
     [, donnees, sceneMod] = await precharger();
   } catch {
@@ -109,7 +112,7 @@ async function creerOuverture({ r, cat, cartes, annonce, t, parent, rappels }) {
   const eclair = el('div', ['e3-ouv-eclair'], { 'aria-hidden': 'true' });
   const fondu = el('div', ['e3-ouv-fondu'], { 'aria-hidden': 'true' });
   const temoin = el('span', ['e3-ouv-temoin'], { 'aria-hidden': 'true' });
-  const passer = el('button', ['e3-ouv-passer'], { type: 'button', id: 'menu-ouverture-passer', 'aria-label': t('game.menu.ouverture.passer.aria') });
+  const passer = el('button', ['e3-ouv-passer'], { type: 'button', id: 'menu-ouverture-passer', 'aria-label': t('game.menu.ouverture.passer.aria'), 'data-son': 'aucun' });
   const passerTexte = el('span');
   passerTexte.textContent = t('game.menu.ouverture.passer');
   const fleche = document.createElementNS(SVG, 'svg');
@@ -180,8 +183,13 @@ async function creerOuverture({ r, cat, cartes, annonce, t, parent, rappels }) {
   if (annulee) {
     scene.liberer();
     section.remove();
+    libererSons('ouverture');
     return null;
   }
+  // Lot 8i : sons synchronisés sur la chronologie (suivis image par image dans dessiner), musique baissée pendant l'ouverture.
+  await Promise.race([sonsPrets, new Promise((res) => setTimeout(res, 2000))]); // jamais plus de 2 s d'attente : un son pas prêt n'est pas joué
+  const sons = ouvertureSons(chrono, reglages);
+  signaler('ouverture');
 
   // --- Boucle d'images ------------------------------------------------------------------------------------------------------------------------
   let temps = 0;
@@ -234,6 +242,7 @@ async function creerOuverture({ r, cat, cartes, annonce, t, parent, rappels }) {
     if (!libere && mode !== 'pas') raf = requestAnimationFrame(image);
   }
   function dessiner() {
+    sons?.suivre(temps);
     const s = scene.rendre(temps);
     etatScene = s;
     fondu.style.opacity = String(s.fondu);
@@ -273,7 +282,10 @@ async function creerOuverture({ r, cat, cartes, annonce, t, parent, rappels }) {
   const observateur = typeof ResizeObserver === 'function' ? new ResizeObserver(() => redimensionner()) : null;
   observateur?.observe(section);
   window.addEventListener('resize', redimensionner);
-  passer.addEventListener('click', () => rappels.fin());
+  passer.addEventListener('click', () => {
+    son('ouv-passer', { groupe: 'menu' }); // lot 8i : « Passer » coupe les sons de l'ouverture (liberer), ce son-ci finit seul
+    rappels.fin();
+  });
   // Retour du propriétaire : toucher l'écran (doigt ou souris, hors boutons) passe la caisse en cours (prochainSaut : arrivée → première caisse ;
   // ×10 : caisse suivante, la dernière mène au résultat ; ×1 : carte et boutons). « Passer » mène toujours au résultat.
   // Contexte WebGL perdu (mémoire du téléphone) : l'image se figerait ; l'ouverture s'arrête et le résultat s'affiche.
@@ -287,6 +299,8 @@ async function creerOuverture({ r, cat, cartes, annonce, t, parent, rappels }) {
     if (cible === null) return;
     temps = cible;
     sauts += 1;
+    sons?.sauter(cible); // lot 8i : caisse passée : sons en cours coupés, reprise au premier son de l'instant visé
+    son('ouv-passer', { groupe: 'menu' });
     if (mode === 'pas' || !raf) dessiner();
   });
   btContinuer.addEventListener('click', () => rappels.continuer());
@@ -326,6 +340,10 @@ async function creerOuverture({ r, cat, cartes, annonce, t, parent, rappels }) {
       if (raf) cancelAnimationFrame(raf);
       observateur?.disconnect();
       window.removeEventListener('resize', redimensionner);
+      // Lot 8i : sons de l'ouverture arrêtés, tampons libérés, musique remontée.
+      sons?.arreter();
+      libererSons('ouverture');
+      signaler('fin-ouverture');
       const gl = scene.contexte();
       const memoire = scene.liberer();
       section.remove();

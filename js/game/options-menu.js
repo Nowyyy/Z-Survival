@@ -22,7 +22,7 @@ function el(tag, classes = [], attrs = {}) {
 // contexte « partie » : Options de la pause (E2-12, panneau au-dessus de la partie, « ‹ Pause », titre) : mêmes sections, lignes et notes ; les
 // réglages appliqués au lancement (groupe « load » de graphics.json) sont verrouillés (grisés, cadenas, « Modifiable depuis le menu principal »,
 // boutons désactivés, raison dans la description du groupe) ; les préréglages restent modifiables (leurs valeurs verrouillées valent au prochain
-// chargement de la partie ; retour du propriétaire : aucune ligne « En cours · au retour au menu » affichée). Section « Son » en tête (son, volume) : son = { etat() → { disponible, coupe, volume, pas }, couper(bool), regler(n) }.
+// chargement de la partie ; retour du propriétaire : aucune ligne « En cours · au retour au menu » affichée). Section « Son » en tête (son, volume du jeu, volume de la musique : lot 8i) : son = { etat() → { disponible, coupe, volume, musique, pas }, couper(bool), regler(n), reglerMusique(n) }.
 // Aucune couleur ici (feuille des écrans du menu, jetons --menu-* de tokens.css ; en partie, chargée par demarrage.js) ; choix et verrou jamais portés par la couleur seule (aria-pressed et
 // soulignement, cadenas et texte). Le DOM est construit une fois ; sync() ne met à jour que des attributs et des textes.
 const SVG_NS = 'http://www.w3.org/2000/svg';
@@ -122,15 +122,22 @@ export function creerOptions({ contexte = 'menu', dict, graphics, son = null, vh
       l1.valeurs.append(b);
       return { b, coupe };
     });
-    const l2 = ligne(sec, 'son-niveau', 'game.options.volume', 'son', 'options-volume');
-    const curseur = el('input', ['e5-curseur'], { type: 'range', min: '0', max: '100', step: '10', id: 'options-volume', 'aria-describedby': 'options-note-son-niveau' });
-    const valeur = el('output', ['e5-volume-valeur'], { for: 'options-volume', id: 'options-volume-valeur', 'aria-hidden': 'true' });
-    curseur.addEventListener('input', () => {
-      son.regler(Number(curseur.value));
-      sync();
-    });
-    l2.valeurs.append(curseur, valeur);
-    sonEls = { sec, l1, l2, boutons, curseur, valeur };
+    // Lot 8i : deux curseurs, « Volume du jeu » (sons de la partie, effets du menu) et « Volume de la musique » (musique des menus, mélodie
+    // d'annonce de vague ; affiché quand le contexte sait le régler : son.reglerMusique). 0 à 100 % par pas de 10, réglables au clavier.
+    const curseurDe = (id, cle, champ, regler) => {
+      const l = ligne(sec, id, cle, 'son', champ);
+      const c = el('input', ['e5-curseur'], { type: 'range', min: '0', max: '100', step: '10', id: champ, 'aria-describedby': `options-note-${id}` });
+      const v = el('output', ['e5-volume-valeur'], { for: champ, id: `${champ}-valeur`, 'aria-hidden': 'true' });
+      c.addEventListener('input', () => {
+        regler(Number(c.value));
+        sync();
+      });
+      l.valeurs.append(c, v);
+      return { l, c, v };
+    };
+    const jeu = curseurDe('son-niveau', 'game.options.volume', 'options-volume', (n) => son.regler(n));
+    const musique = typeof son.reglerMusique === 'function' ? curseurDe('son-musique', 'game.options.volume.musique', 'options-volume-musique', (n) => son.reglerMusique(n)) : null;
+    sonEls = { sec, l1, boutons, jeu, musique };
   }
 
   const rows = new Map();
@@ -215,12 +222,16 @@ export function creerOptions({ contexte = 'menu', dict, graphics, son = null, vh
       sonEls.sec.hidden = !e.disponible;
       for (const { b, coupe } of sonEls.boutons) b.setAttribute('aria-pressed', String(coupe === e.coupe));
       const pas = Number.isFinite(e.pas) && e.pas > 0 ? e.pas : 10;
-      sonEls.curseur.step = String(pas);
-      sonEls.curseur.value = String(e.volume);
-      const texte = fmt(t('game.options.volume.valeur'), { n: e.volume });
-      sonEls.curseur.setAttribute('aria-valuetext', texte);
-      sonEls.valeur.textContent = texte;
-      for (const l of [sonEls.l1, sonEls.l2]) {
+      for (const [x, n] of [[sonEls.jeu, e.volume], [sonEls.musique, e.musique]]) {
+        if (!x) continue;
+        x.c.step = String(pas);
+        x.c.value = String(n);
+        const texte = fmt(t('game.options.volume.valeur'), { n });
+        x.c.setAttribute('aria-valuetext', texte);
+        x.v.textContent = texte;
+      }
+      for (const l of [sonEls.l1, sonEls.jeu.l, sonEls.musique?.l]) {
+        if (!l) continue;
         l.noteTexte.textContent = t('game.options.note.direct');
         l.note.dataset.etat = 'direct';
         l.cadenas.style.display = 'none';

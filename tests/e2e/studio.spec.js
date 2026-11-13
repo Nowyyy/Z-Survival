@@ -223,12 +223,12 @@ test.describe('introduction du studio (E0)', () => {
     expect([o.problemes, o.externes]).toEqual([[], []]);
   });
 
-  test('jamais sans intro=1 sous ?test=1&menu=1, ni en partie directe ; démarrage du menu : 32 fichiers JavaScript (31 + avatar.js de l\'en-tête), 33 avec l\'introduction (intro.js)', async ({ page, baseURL }) => {
+  test('jamais sans intro=1 sous ?test=1&menu=1, ni en partie directe ; démarrage du menu : 33 fichiers JavaScript (31 + avatar.js de l\'en-tête + module léger des sons), 34 avec l\'introduction (intro.js), hors moteur des sons chargé après le geste', async ({ page, baseURL }) => {
     let o = surveiller(page, baseURL);
     await espions(page);
     await ouvrirMenu(page);
     expect(await page.evaluate(() => [window.__vus.e0 ?? null, window.__zsMenu.intro()])).toEqual([null, null]);
-    expect(o.fichiers.filter((f) => f.endsWith('.js')).length).toBe(32);
+    expect(o.fichiers.filter((f) => f.endsWith('.js')).length).toBe(33); // lot 8i : + js/menu/sons/sons.js
     // Retour du propriétaire : en mode menu, l'écran de préparation de la partie (barre) n'est jamais visible.
     expect(await page.evaluate(() => [document.documentElement.classList.contains('zs-attente'), getComputedStyle(document.getElementById('loading')).visibility])).toEqual([true, 'hidden']);
     expect(o.fichiers.filter((f) => f.endsWith('/js/menu/intro.js'))).toEqual([]);
@@ -244,7 +244,11 @@ test.describe('introduction du studio (E0)', () => {
     await p2.locator('#e0').click({ position: { x: 20, y: 20 } }); // passe
     await expect(p2.locator('#menu-jouer')).toBeVisible({ timeout: 60_000 });
     expect(o.fichiers.filter((f) => f.endsWith('.mp3'))).toEqual([`/${SON}`]);
-    expect(o.fichiers.filter((f) => f.endsWith('.js')).length).toBe(33);
+    // Lot 8i : le geste de l'introduction ouvre l'audio : le moteur des sons (js/menu/sons/moteur.js, musique.js, js/core/sons-menu.js,
+    // musique-menu.js ; synthèse dans le calculateur d'arrière-plan) se charge alors à la demande, compté à part du démarrage.
+    // (fichiers distincts : le calculateur redemande js/core/vec.js, déjà chargé par le menu).
+    const MOTEUR_SONS = /\/js\/menu\/sons\/(moteur|musique|calcul|synthese)\.js$|\/js\/core\/(sons-menu|musique-menu|synth2|synth2-dsp|synth2-sources|audio-analysis)\.js$/;
+    expect(new Set(o.fichiers.filter((f) => f.endsWith('.js') && !MOTEUR_SONS.test(f))).size).toBe(34);
     expect(o.fichiers.filter((f) => f.endsWith('.svg')).sort()).toEqual([`/${LOGO}`, `/${FIXE}`]);
     await p2.close();
     const p3 = await page.context().newPage();
