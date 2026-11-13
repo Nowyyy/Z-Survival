@@ -62,13 +62,15 @@ test('page d\'écoute : démonstration sur la chronologie réelle, musique (lect
   const demo = (await etat(page)).demo;
   expect(demo.rarete).toBe('legendaire');
   const noms = demo.sons.map((s) => s.son);
-  for (const attendu of ['ouv-pas', 'ouv-tapis', 'ouv-tir', 'ouv-impact', 'ouv-couvercle', 'ouv-lumiere', 'rarete-legendaire', 'ouv-explosion', 'ouv-souffle', 'ouv-ecrasement', 'ouv-exclamation', 'ouv-zombie-tombe']) expect(noms).toContain(attendu);
+  for (const attendu of ['ouv-pas', 'ouv-tapis', 'ouv-tir', 'ouv-impact', 'ouv-couvercle', 'ouv-lumiere', 'ouv-explosion', 'ouv-souffle', 'ouv-ecrasement', 'ouv-exclamation', 'ouv-zombie-tombe']) expect(noms).toContain(attendu);
   // Retours du propriétaire : ni voix de zombie ni sang qui coule.
   expect(noms.filter((x) => x === 'ouv-sang' || /^ouv-zombie-(sursaut|saut|cri)$/.test(x))).toEqual([]);
   expect(demo.sons.map((s) => s.t)).toEqual([...demo.sons.map((s) => s.t)].sort((a, b) => a - b));
   expect((await journal(page)).filter((e) => e.origine === 'demo').length).toBe(demo.sons.length);
   await page.locator('[data-rarete="commun"]').click();
-  expect((await etat(page)).demo.sons.map((s) => s.son)).toContain('rarete-commun');
+  const commun = (await etat(page)).demo.sons.map((s) => s.son);
+  expect(commun).toContain('ouv-tir');
+  expect(commun.filter((x) => x.startsWith('rarete-'))).toEqual([]); // retour du propriétaire : plus de signature de rareté
   // Musique : lecture, une couche coupée, arrêt.
   await page.locator('#music-play').click();
   await expect.poll(async () => (await etat(page)).musique?.enMarche).toBe(true);
@@ -100,28 +102,15 @@ test('page d\'écoute : accessibilité (axe sans violation, cibles de 44 px, com
   expect(sansNom).toBe(0);
 });
 
-test('page d\'écoute, vue par défaut : seuls les sons encore à choisir (mélodies de rareté A à G, point d\'exclamation), musique masquée ; le texte de sons-choix.json reste complet ; lien vers tous les sons', async ({ page }) => {
+test('page d\'écoute, plus aucun son à choisir (retours du propriétaire : tout est choisi) : tous les sons et la musique sont montrés, sans lien de vue réduite', async ({ page }) => {
   await ouvrir(page, false);
-  const restants = catalogue.sons.filter((s) => s.aChoisir);
-  expect(restants.map((s) => s.id).sort()).toEqual(['ouv-exclamation', 'rarete-commun', 'rarete-epique', 'rarete-legendaire', 'rarete-peu-commun', 'rarete-rare']);
-  await expect(page.locator('.slot')).toHaveCount(restants.length);
-  expect((await etat(page)).vue).toBe('a-choisir');
-  for (const s of restants) await expect(page.locator(`#son-${s.id} .atelier-play`)).toHaveCount(s.variantes.length);
-  await expect(page.locator('#son-rarete-legendaire .atelier-play')).toHaveCount(7);
-  await expect(page.locator('#son-clic')).toHaveCount(0);
-  await expect(page.locator('#music')).toBeHidden();
-  await expect(page.locator('#demo')).toBeVisible();
-  // Une nouvelle mélodie écoutée et gardée : le texte à copier reste le fichier complet, les autres choix inchangés.
-  await page.locator('#son-rarete-rare [data-variante="E"]').click();
-  expect((await journal(page)).at(-1)).toMatchObject({ son: 'rarete-rare', variante: 'E' });
-  await page.locator('#garder-rarete-rare-E').check();
-  const texte = JSON.parse(await page.locator('#choices-text').inputValue());
-  expect(texte.choix['rarete-rare']).toBe('E');
-  expect(Object.keys(texte.choix)).toEqual([...catalogue.sons.map((s) => s.id), 'musique']);
+  expect(catalogue.sons.filter((s) => s.aChoisir)).toEqual([]);
+  expect((await etat(page)).vue).toBe('tout');
+  await expect(page.locator('.slot')).toHaveCount(catalogue.sons.length);
+  await expect(page.locator('#music')).toBeVisible();
+  await expect(page.locator('#lien-vue')).toBeHidden();
+  // Le point d'exclamation : variante retenue par le propriétaire cochée ; le texte à copier est le fichier tel quel.
   const fichier = JSON.parse(readFileSync('data/menu/sons-choix.json', 'utf8')).choix;
-  for (const [id, v] of Object.entries(fichier)) if (id !== 'rarete-rare') expect(texte.choix[id], id).toBe(v);
-  // Lien vers la vue complète.
-  await expect(page.locator('#lien-vue')).toHaveAttribute('href', 'atelier-sons-menu.html?tout=1');
-  const resultat = await new AxeBuilder({ page }).analyze();
-  expect(resultat.violations.map((v) => v.id)).toEqual([]);
+  await expect(page.locator(`#garder-ouv-exclamation-${fichier['ouv-exclamation']}`)).toBeChecked();
+  expect(JSON.parse(await page.locator('#choices-text').inputValue()).choix).toEqual(fichier);
 });

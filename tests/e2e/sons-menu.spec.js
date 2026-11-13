@@ -186,10 +186,7 @@ test.describe('sons du menu', () => {
     n = await taille(page);
     await page.locator('#menu-fusion-fusionner').click();
     await expect(page.locator('#menu-fusion-annonce')).toContainText('Fusion réussie');
-    expect(await lectures(page, n)).toEqual(['fusion', 'rarete-peu-commun']);
-    const [montee, signature] = (await sons(page)).journal.slice(n);
-    expect(signature.t - montee.t).toBeGreaterThan(0.5);
-    expect(signature.t - montee.t).toBeLessThan(1.2);
+    expect(await lectures(page, n)).toEqual(['fusion']); // retour du propriétaire : plus de signature de rareté après la montée
     // Personnage choisi.
     await page.keyboard.press('Escape');
     await page.locator('#menu-perso-capacite').click();
@@ -258,7 +255,8 @@ test.describe('sons des ouvertures de caisses', () => {
     const joues = s.journal.slice(n).filter((e) => e.origine === 'ouverture');
     expect(joues.every((e) => e.joue)).toBe(true);
     expect(joues.map((e) => e.son)).toEqual(attendu.map((e) => e.son));
-    expect(joues.filter((e) => e.son.startsWith('rarete-')).map((e) => e.son)).toEqual(['rarete-rare']);
+    expect(joues.filter((e) => e.son.startsWith('rarete-'))).toEqual([]); // retour du propriétaire : plus de signature de rareté
+    expect(joues.filter((e) => e.son === 'ouv-exclamation').length).toBe(1); // rare : « ! »
     expect(s.suiviMaxMs).toBeLessThan(50); // le suivi des sons n'allonge jamais une image
     await page.locator('#menu-ouverture-continuer').click();
     await expect(page.locator('#menu-ecran-ouverture')).toHaveCount(0);
@@ -295,7 +293,8 @@ test.describe('sons des ouvertures de caisses', () => {
     const joues = s.journal.slice(n).filter((e) => e.origine === 'ouverture');
     expect(joues.every((e) => e.joue)).toBe(true);
     expect(joues.map((e) => e.son)).toEqual(attendu.filter((e) => e.t <= arret).map((e) => e.son));
-    expect(joues.filter((e) => e.son.startsWith('rarete-')).map((e) => e.son)).toEqual(chrono.caisses.slice(0, rangLeg + 1).map((c) => `rarete-${c.rarete}`));
+    expect(joues.filter((e) => e.son.startsWith('rarete-'))).toEqual([]);
+    expect(joues.filter((e) => e.son === 'ouv-lumiere').length).toBe(rangLeg + 1); // une montée de lumière par caisse ouverte
     for (const nom of ['ouv-explosion', 'ouv-souffle', 'ouv-ecrasement', 'ouv-exclamation']) expect(joues.map((e) => e.son)).toContain(nom);
     expect(s.actifs.ouverture ?? 0).toBeGreaterThan(0); // des sons de l'ouverture sont en cours
     // « Passer » : son propre, puis tout est coupé et libéré.
@@ -329,7 +328,8 @@ test.describe('sons des ouvertures de caisses', () => {
     const suite = s.journal.slice(n);
     expect(suite.some((e) => e.ouverture === 'saut')).toBe(true);
     expect(suite.filter((e) => e.son === 'ouv-passer' && e.joue).length).toBe(1);
-    expect(suite.filter((e) => e.son === 'rarete-rare' && e.joue).length).toBe(1);
+    expect(suite.filter((e) => e.son === 'ouv-lumiere' && e.joue).length).toBe(1);
+    expect(suite.filter((e) => String(e.son).startsWith('rarete-'))).toEqual([]);
     expect(s.suiviMaxMs).toBeLessThan(50);
   });
 });

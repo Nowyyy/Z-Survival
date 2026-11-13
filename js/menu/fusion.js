@@ -7,8 +7,6 @@ import { bonusObjet, compatibles, definition, emplacementDe, etatFusion, fusionn
 import { fmt } from '../game/texts.js';
 import { el } from './menu.js';
 import { son } from './sons/sons.js';
-
-export const DELAI_SIGNATURE_S = 0.8; // lot 8i : la signature de la rareté part à la fin de la montée de la fusion
 import { filigrane, annonce, estActif, icone24, nomObjet, nomRarete, poserActif, teteSous, texteEffet } from './personnage.js';
 
 export function creer({ t, bandeau, eq, cat, retour }) {
@@ -168,9 +166,7 @@ export function creer({ t, bandeau, eq, cat, retour }) {
     dernier = uid;
     eq.poser(etat);
     const o = objetDe(etat, uid);
-    // Lot 8i : montée de la fusion, puis signature de la rareté obtenue.
-    son('fusion');
-    son(`rarete-${o.rarete}`, { delai: DELAI_SIGNATURE_S });
+    son('fusion'); // lot 8i : montée de la fusion (retour du propriétaire : sans mélodie de signature de rareté ensuite)
     dire(fmt(t('game.menu.fusion.annonce'), { nom: nomObjet(cat, o), rarete: nomRarete(cat, o.rarete), n: o.niveau, porte: emplacementDe(etat, uid) ? t('game.menu.fusion.annonce.porte') : '' }));
     rendre();
   });
