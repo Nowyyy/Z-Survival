@@ -1,0 +1,4 @@
+{
+  "_note": "Lot 8i : variantes retenues des sons du menu (A, B ou C par son ; musique : A, B ou C). Fichier du propriétaire : choisir à l'oreille sur atelier-sons-menu.html, puis coller ici le texte donné en bas de la page. Un nom ou une variante inconnus donnent la variante par défaut de data/menu/sons.json. Valeurs de départ : choix par défaut de l'agent, qui n'a écouté aucun son.",
+  "choix": {}
+}
