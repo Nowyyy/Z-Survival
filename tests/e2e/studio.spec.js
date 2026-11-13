@@ -314,7 +314,7 @@ test.describe('logo du studio : écran de chargement et menu à trois barres', (
       await page.locator('#menu-version').scrollIntoViewIfNeeded(); // écran bas (encoche) : la liste défile
       const v = await boite(page, '#menu-version');
       const liste = await boite(page, '#menu-liste');
-      expect([v.b <= liste.b + 0.5, v.t >= (await boite(page, '#menu-deconnexion')).b]).toEqual([true, true]);
+      expect([v.b <= liste.b + 0.5, v.t >= (await boite(page, '#menu-google')).b]).toEqual([true, true]);
       expect([liste.r <= size.width + 0.5, liste.b <= size.height + 0.5]).toEqual([true, true]);
       expect((await new AxeBuilder({ page }).include('#menu-liste').analyze()).violations.map((x) => x.id)).toEqual([]);
       expect(o.fichiers.filter((f) => f.endsWith('.svg'))).toEqual([`/${FIXE}`]); // une seule requête : l'image est réutilisée
@@ -437,7 +437,7 @@ test.describe('Crédits (E11)', () => {
     await page.locator('#menu-credits').click();
     await expect(page.locator('#menu-ecran-credits')).toBeVisible();
     await expect(page.locator('.e8-onglets')).toBeHidden(); // écran plein : aucun onglet à toucher
-    await page.locator('#menu-connexion').click();
+    await page.locator('#menu-profil').click();
     await expect(page.locator('#menu-ecran-credits')).toBeHidden();
     await expect(page.locator('#menu-ecran-profil')).toBeVisible();
     expect((await page.evaluate(() => window.__zsMenu.etat().menu)).ecran).toBe('profil');
@@ -477,7 +477,7 @@ async function menuAvecSauvegarde(page, size = REF, save = SAUVEGARDE) {
 }
 // Retour du propriétaire : « Connexion » ouvre directement le Profil (plus d'écran Connexion).
 async function ouvrirProfil(page) {
-  await page.locator('#menu-connexion').click();
+  await page.locator('#menu-profil').click();
   await expect(page.locator('#menu-ecran-profil')).toBeVisible();
 }
 
@@ -490,7 +490,7 @@ test.describe('Connexion et Profil (E10)', () => {
       expect(o.fichiers.filter((f) => /compte|profil-etat|sauvegarde\/logic/.test(f))).toEqual([]); // rien au démarrage
       // Retour du propriétaire : « Connexion » ouvre directement le Profil ; « Se connecter avec Google · bientôt » sur le Profil (raison lue) et dans
       // le menu à trois barres ; plus d'écran Connexion.
-      await page.locator('#menu-connexion').click();
+      await page.locator('#menu-profil').click();
       await expect(page.locator('#menu-ecran-profil')).toBeVisible();
       expect(await page.locator('#menu-ecran-connexion').count()).toBe(0);
       await expect(page.locator('.e8-onglets')).toBeHidden(); // écran plein
@@ -524,7 +524,7 @@ test.describe('Connexion et Profil (E10)', () => {
       await expect(page.locator('#menu-ecran-profil')).toBeHidden();
       await expect(page.locator('#menu-ecran-jouer')).toBeVisible();
       await expect(page.locator('.e8-onglets')).toBeVisible();
-      await expect(page.locator('#menu-connexion')).toBeFocused();
+      await expect(page.locator('#menu-profil')).toBeFocused();
       expect(o.fichiers.filter((f) => /compte|profil-etat|sauvegarde\/logic/.test(f)).sort()).toEqual(['/js/menu/compte.js', '/js/menu/profil-etat.js', '/js/sauvegarde/logic.js']);
       expect([o.problemes, o.externes]).toEqual([[], []]);
     });
@@ -569,7 +569,7 @@ test.describe('Connexion et Profil (E10)', () => {
     expect((await page.evaluate(() => window.__zsMenu.etat().menu.compte))).toMatchObject({ avatar: 'eclaireur', pseudo: 'Le Chef', depot: 'local' });
     // Gardés en mémoire en quittant et en revenant ; aucune écriture.
     await page.locator('#menu-ecran-profil-retour').click();
-    await page.locator('#menu-connexion').click();
+    await page.locator('#menu-profil').click();
     await expect(page.locator('#menu-profil-pseudo')).toHaveText('Le Chef');
     expect(await page.evaluate(() => window.__ecritures)).toEqual([]);
     expect(JSON.parse(await page.evaluate((k) => localStorage.getItem(k), KEY))).toEqual(SAUVEGARDE);

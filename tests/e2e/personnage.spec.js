@@ -788,13 +788,13 @@ test('PC 2000 × 1060 : « Touche-le pour changer » centré au-dessus de la lam
   expect(liste.w).toBeLessThanOrEqual(300.5);
   const style = await page.locator('#menu-liste').evaluate((n) => { const c = getComputedStyle(n); return [c.borderTopWidth, c.borderTopLeftRadius, c.boxShadow !== 'none', c.backgroundColor !== getComputedStyle(document.querySelector('#menu-ecran-personnage')).backgroundColor]; });
   expect(style).toEqual(['2px', '6px', true, true]);
-  await expect(page.locator('#menu-liste .e8-icone-entree')).toHaveCount(6); // lot 8g : Crédits, Google
-  // Retour du propriétaire : version du jeu sous « Déconnexion » (dépôt : canal source ; journal lu à la première ouverture du menu).
+  await expect(page.locator('#menu-liste .e8-icone-entree')).toHaveCount(5); // lot 8g : Crédits, Google ; sans Déconnexion hors connexion
+  // Retour du propriétaire : version du jeu sous la dernière entrée (lot 8g : Google ; avant : « Déconnexion ») (dépôt : canal source ; journal lu à la première ouverture du menu).
   await expect(page.locator('#menu-version')).toHaveText('V0.8 · source');
-  const [deco, version, cadre] = [await boite(page, '#menu-deconnexion'), await boite(page, '#menu-version'), await boite(page, '#menu-liste')];
+  const [deco, version, cadre] = [await boite(page, '#menu-google'), await boite(page, '#menu-version'), await boite(page, '#menu-liste')];
   expect([version.t >= deco.b - 0.5, version.b <= cadre.b + 0.5, cadre.b <= 1060]).toEqual([true, true, true]);
   // Tout à gauche du menu : le texte commence au bord des icônes des entrées.
-  const gauches = await page.evaluate(() => { const r = document.createRange(); r.selectNodeContents(document.querySelector('#menu-version')); return [r.getBoundingClientRect().left, document.querySelector('#menu-deconnexion .e8-icone-entree').getBoundingClientRect().left]; });
+  const gauches = await page.evaluate(() => { const r = document.createRange(); r.selectNodeContents(document.querySelector('#menu-version')); return [r.getBoundingClientRect().left, document.querySelector('#menu-google .e8-icone-entree').getBoundingClientRect().left]; });
   expect(Math.abs(gauches[0] - gauches[1])).toBeLessThanOrEqual(1);
   // Retour du propriétaire : logo de Discord (forme pleine) à la place de la bulle.
   expect(await page.locator('#menu-discord').evaluate((n) => [getComputedStyle(n).backgroundColor, getComputedStyle(n).color, getComputedStyle(n.querySelector('.e8-note')).color])).toEqual(['rgb(88, 101, 242)', 'rgb(255, 255, 255)', 'rgb(255, 255, 255)']); // entrée pleine, bleu de Discord

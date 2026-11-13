@@ -475,7 +475,6 @@
   background: var(--menu-entete);
 }
 
-.e8-connexion,
 .e8-barres,
 .e8-plein-ecran,
 .e8-croix {
@@ -488,13 +487,24 @@
   cursor: pointer;
 }
 
-.e8-connexion {
+/* Lot 8g (retour du propriétaire) : « Profil » à la place du gros bouton « Connexion » : discret, sans cadre ; cible de 44 px. */
+.e8-profil {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 0 calc(12 * var(--u));
+  min-width: var(--menu-cible);
+  min-height: var(--menu-cible);
+  padding: 0 calc(4 * var(--u));
+  border: 0;
+  background: transparent;
+  color: var(--menu-texte);
   font-weight: var(--font-weight-bold);
   font-size: max(14px, calc(15 * var(--u)));
+  cursor: pointer;
+}
+
+.e8-profil:hover {
+  color: var(--menu-texte-doux);
 }
 
 .e8-droite {
@@ -547,7 +557,6 @@
   height: 24px;
 }
 
-.e8-connexion:hover,
 .e8-barres:hover,
 .e8-croix:hover {
   border-color: var(--menu-texte-doux);

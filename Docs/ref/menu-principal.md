@@ -497,3 +497,7 @@ Base : `lot-8g` (partie 0 : logo reçu depuis `origin/dev` `2817172`), mise à j
 - **Menu à trois barres** : logo du studio retiré (la version reste seule en bas).
 - **Démarrage sans barre entrevue** : `jeu.html` cache l'écran de préparation de la partie (`#loading`, `#boot`) dès l'analyse de la page (classe `zs-attente` posée par le script en ligne, style en ligne) ; `demarrage.js` le montre seulement en partie directe ; une erreur de chargement le montre aussi.
 - Menu à trois barres plafonné à la hauteur de l'écran (il défile au-delà : téléphone à encoche). Lighthouse mobile de `jeu.html` (5 passes) : 76, 76, 76, 77, 77 (médiane 76), CLS ≤ 0,001.
+
+### Retours du propriétaire (après la PR #119) : en-tête et menu à trois barres
+- **En-tête** : le gros bouton encadré « Connexion » devient « Profil » (`#menu-profil`, icône et texte, sans cadre, cible de 44 px), qui ouvre le Profil.
+- **Menu à trois barres** : « Déconnexion » seulement quand un compte est connecté (`connecte`, toujours faux tant que les comptes n'existent pas) ; la version est sous « Se connecter avec Google · bientôt ».

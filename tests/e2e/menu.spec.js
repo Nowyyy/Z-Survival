@@ -85,15 +85,15 @@ test.describe('menu principal (E8)', () => {
   for (const size of SIZES) {
     test(`${size.width}×${size.height} : en-tête, onglets et Jouer à leur place ; trois barres dans le bandeau ; rien hors de l'écran ni superposé ; cibles de 44 px ; axe`, async ({ page }) => {
       await ouvrirMenu(page, size);
-      const ids = ['#menu-connexion', '#menu-solde', '#menu-plein-ecran', '#menu-trois-barres', '.menu-bandeau', '#menu-jouer', ...['boutique', 'personnage', 'jouer', 'infini', 'event'].map((o) => `#menu-onglet-${o}`)];
+      const ids = ['#menu-profil', '#menu-solde', '#menu-plein-ecran', '#menu-trois-barres', '.menu-bandeau', '#menu-jouer', ...['boutique', 'personnage', 'jouer', 'infini', 'event'].map((o) => `#menu-onglet-${o}`)];
       const b = Object.fromEntries(await Promise.all(ids.map(async (s) => [s, await boite(page, s)])));
       for (const [s, r] of Object.entries(b)) expect([r.l >= 0, r.t >= 0, r.r <= size.width + 0.5, r.b <= size.height + 0.5], s).toEqual([true, true, true, true]);
       const entete = await boite(page, '.e8-entete');
       const barres = b['#menu-trois-barres'];
       expect([barres.t >= entete.t, barres.b <= entete.b, barres.r <= entete.r]).toEqual([true, true, true]);
       expect(barres.r).toBeLessThanOrEqual(size.width - 15.5); // marge de 16 px
-      expect(b['#menu-connexion'].l).toBeGreaterThanOrEqual(15.5);
-      // Ordre et emplacement : Connexion à gauche, solde, plein écran (retour du propriétaire après le lot 8c) puis trois barres à droite ; Jouer au centre ;
+      expect(b['#menu-profil'].l).toBeGreaterThanOrEqual(15.5); // lot 8g : « Profil » (avant : bouton « Connexion »)
+      // Ordre et emplacement : Profil à gauche (lot 8g ; avant : Connexion), solde, plein écran (retour du propriétaire après le lot 8c) puis trois barres à droite ; Jouer au centre ;
       // bandeau sous l'en-tête, à gauche.
       expect(b['#menu-solde'].r).toBeLessThanOrEqual(barres.l);
       expect([b['#menu-solde'].r <= b['#menu-plein-ecran'].l, b['#menu-plein-ecran'].r <= barres.l]).toEqual([true, true]);
@@ -134,7 +134,7 @@ test.describe('menu principal (E8)', () => {
     await expect(page.locator('#menu-jouer')).toBeVisible();
   });
 
-  test('trois barres : ouverture sous le bouton, six entrées (lot 8g : Crédits, Google), Échap et appui ailleurs ; point jaune présent puis absent après Information ; Discord grisé (« bientôt ») et aucune requête ; Déconnexion grisée ; axe', async ({ page, baseURL }) => {
+  test('trois barres : ouverture sous le bouton, cinq entrées (lot 8g : Crédits, Google ; sans Déconnexion hors connexion), Échap et appui ailleurs ; point jaune présent puis absent après Information ; Discord grisé (« bientôt ») et aucune requête ; Déconnexion grisée ; axe', async ({ page, baseURL }) => {
     const o = surveiller(page, baseURL);
     await ouvrirMenu(page);
     const barres = page.locator('#menu-trois-barres');
@@ -145,11 +145,12 @@ test.describe('menu principal (E8)', () => {
     const liste = page.locator('#menu-liste');
     await expect(liste).toBeVisible();
     expect((await boite(page, '#menu-liste')).t).toBeGreaterThanOrEqual((await boite(page, '#menu-trois-barres')).b - 0.5);
-    await expect(liste.locator('.e8-entree')).toHaveText([/^Options$/, /^Information/, /^Crédits$/, /^Discord\s*bientôt$/, /^Se connecter avec Google\s*bientôt$/, /^Déconnexion\s*non connecté$/]); // lot 8g : Crédits entre Information et Discord ; Google (bientôt) avant Déconnexion
+    await expect(liste.locator('.e8-entree')).toHaveText([/^Options$/, /^Information/, /^Crédits$/, /^Discord\s*bientôt$/, /^Se connecter avec Google\s*bientôt$/]); // lot 8g : Déconnexion seulement une fois connecté (avant : grisée, « non connecté ») // lot 8g : Crédits entre Information et Discord ; Google (bientôt) avant Déconnexion
     await expect(page.locator('#menu-point-info')).toBeVisible();
     await expect(page.locator('#menu-discord')).toBeDisabled();
-    await expect(page.locator('#menu-deconnexion')).toBeDisabled();
-    for (const s of ['#menu-options', '#menu-information', '#menu-credits', '#menu-discord', '#menu-deconnexion']) expect((await boite(page, s)).h, s).toBeGreaterThanOrEqual(44);
+    await expect(page.locator('#menu-deconnexion')).toHaveCount(0);
+    await expect(page.locator('#menu-google')).toBeDisabled();
+    for (const s of ['#menu-options', '#menu-information', '#menu-credits', '#menu-discord', '#menu-google']) expect((await boite(page, s)).h, s).toBeGreaterThanOrEqual(44);
     expect((await new AxeBuilder({ page }).analyze()).violations.map((v) => v.id)).toEqual([]);
     await page.keyboard.press('Escape');
     await expect(liste).toBeHidden();
@@ -198,12 +199,12 @@ test.describe('menu principal (E8)', () => {
 
   test('Connexion : le Profil (lot 8g ; avant : écran provisoire « Connexion : bientôt »), fermé par « ‹ Menu » ; Options : la page Options du menu (E5, lot 8c) hors partie, fermée par « ‹ Menu » et Échap', async ({ page }) => {
     await ouvrirMenu(page);
-    await page.locator('#menu-connexion').click();
+    await page.locator('#menu-profil').click();
     const connexion = page.locator('#menu-ecran-profil'); // lot 8g, retour du propriétaire : « Connexion » ouvre le Profil
     await expect(connexion).toBeVisible();
     await page.locator('#menu-ecran-profil-retour').click();
     await expect(connexion).toBeHidden();
-    await expect(page.locator('#menu-connexion')).toBeFocused();
+    await expect(page.locator('#menu-profil')).toBeFocused();
     await page.locator('#menu-trois-barres').click();
     await page.locator('#menu-options').click();
     await expect(page.locator('#menu-ecran-options')).toBeVisible();
