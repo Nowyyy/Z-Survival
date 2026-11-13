@@ -556,6 +556,7 @@ test.describe('Connexion et Profil (E10)', () => {
       }
       expect((await new AxeBuilder({ page }).analyze()).violations.map((v) => v.id)).toEqual([]);
       // Retour du propriétaire : choix de l'avatar sous le grand portrait, dans la carte, sans défiler ; sept tuiles de 44 px au moins ; axe.
+      const portraitAvant = await boite(page, '#menu-profil-avatar');
       await page.locator('#menu-profil-changer').click();
       await expect(page.locator('#menu-profil-choix')).toBeVisible();
       await expect(page.locator('.e10-tuile')).toHaveCount(7);
@@ -570,7 +571,28 @@ test.describe('Connexion et Profil (E10)', () => {
       expect(new Set(tuilesB.map((r) => Math.round(r.t))).size).toBe(2); // deux lignes (quatre colonnes au moins)
       expect(tuilesB.every((r) => r.t >= portraitB.b - 0.5)).toBe(true); // sous le grand portrait
       expect([valB.t >= Math.max(...tuilesB.map((r) => r.b)) - 0.5]).toEqual([true]);
+      expect([Math.abs(portraitB.w - portraitAvant.w) < 0.5, Math.abs(portraitB.h - portraitAvant.h) < 0.5]).toEqual([true, true]); // retour du propriétaire : même taille
+      expect(await page.locator('#menu-profil-choix-grille').evaluate((n) => n.scrollHeight - n.clientHeight)).toBeLessThanOrEqual(1); // sept avatars : la liste ne défile pas
       expect((await new AxeBuilder({ page }).analyze()).violations.map((v) => v.id)).toEqual([]);
+      // Retour du propriétaire : plus d'avatars plus tard (simulés ici : trois fois les tuiles) : seule la liste défile (molette) ; portrait et
+      // boutons restent en place dans la carte, qui ne défile pas.
+      await page.locator('#menu-profil-choix-grille').evaluate((n) => {
+        for (let i = 0; i < 2; i += 1) for (const t of [...n.children].slice(0, 7)) n.append(Object.assign(t.cloneNode(true), { id: '' }));
+      });
+      const liste = await page.locator('#menu-profil-choix-grille').evaluate((n) => ({ deborde: n.scrollHeight > n.clientHeight + 1, overflow: getComputedStyle(n).overflowY }));
+      expect(liste).toEqual({ deborde: true, overflow: 'auto' });
+      expect(await page.locator('#menu-profil-carte').evaluate((n) => n.scrollHeight - n.clientHeight)).toBeLessThanOrEqual(1);
+      const listeB = await boite(page, '#menu-profil-choix-grille');
+      const valB2 = await boite(page, '#menu-profil-choix-valider');
+      const portraitB2 = await boite(page, '#menu-profil-avatar');
+      expect([valB2.b <= carte.b + 0.5, valB2.t >= listeB.b - 0.5, Math.abs(portraitB2.t - portraitB.t) < 0.5, Math.abs(portraitB2.w - portraitAvant.w) < 0.5]).toEqual([true, true, true, true]);
+      expect(listeB.h).toBeGreaterThanOrEqual(88); // deux lignes de 44 px visibles au moins
+      await page.mouse.move((listeB.l + listeB.r) / 2, (listeB.t + listeB.b) / 2);
+      await page.mouse.wheel(0, 200);
+      await expect.poll(() => page.locator('#menu-profil-choix-grille').evaluate((n) => n.scrollTop)).toBeGreaterThan(0);
+      await page.locator('#menu-profil-choix-grille').evaluate((n) => {
+        for (const t of [...n.children].slice(7)) t.remove();
+      });
       await page.locator('#menu-profil-choix-annuler').click();
       await expect(page.locator('#menu-profil-choix')).toBeHidden();
       await page.keyboard.press('Escape');
