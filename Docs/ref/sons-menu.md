@@ -23,3 +23,62 @@ Total hors ouvertures : 9 sons à créer ou intégrer (clic, musique, achat, qua
 - **Poids au démarrage** : le menu compte 32 fichiers JavaScript et l'accueil Lighthouse est au seuil ; les sons du menu se génèrent après l'affichage (comme Rubik Dirt), la musique au premier geste.
 - Le chargement E7 joue avant le menu : chute et rebond seulement après un geste (vrai lancement : l'introduction l'a donné).
 - Jugement à l'oreille : par le propriétaire seulement (aucun son n'est écouté par un agent).
+
+## Lot 8i : plan (écrit par l'agent du lot 8i ; les décisions ci-dessus priment)
+
+### Relevé
+- Moteur de l'atelier (`js/core/synth2.js`, `synth2-dsp.js`, `synth2-sources.js`) : pur, déterministe par graine, mono 22 050 Hz en Float32 (4 octets par échantillon, soit 88 Ko par seconde) ; briques : bruits blanc, rose et brun, enveloppes, biquads fixes et glissants, modes amortis, réverbération courte, saturation douce, fondus ; familles utiles au menu : `register` (caisse enregistreuse de `interface-achat`), `chime` (métal), `voice` (voix de zombie), `flesh` (chair). Coût mesuré sous Node : 17 à 56 ms pour un son d'une seconde (un rendu ne se découpe pas).
+- Volume du jeu aujourd'hui (`js/game/audio.js`) : un seul gain général après le compresseur (`masterGain × volume / 100`, 0 quand le son est coupé) ; la mélodie d'annonce de vague (catégorie `annonce`) passe par le même gain. Contexte audio créé au premier geste (`unlock`), suspendu en pause et onglet caché.
+- Introduction (lot 8g) : `js/menu/intro.js` crée un contexte audio dans le geste « Toucher pour commencer », y joue le son du logo, puis le **ferme** : le lot 8i le garde ouvert et le donne aux sons du menu. Au retour d'une partie (`#retour`), aucun contexte : il est créé au premier toucher.
+- Chronologie des ouvertures (`js/core/ouverture.js`, lecture seule) : instants par caisse `tapis`, `tir`, `etincelles`, `couvercle`, `lumiere`, `rayons`, `explosion`, `reactions` (geste, début, fin), `projection` (souffle, impact, décolle, bas), `vol`, `case`, et la marche de l'arrivée (nombre de pas). Le temps de l'ouverture avance dans la boucle d'images de `js/menu/ouverture/ouverture.js` (sauts par « toucher l'écran », ×6 en test).
+
+### Choix de l'agent (là où la fiche ne décide pas)
+- **Deux volumes** (proposition du propriétaire) : faits. « Volume du jeu » : sons de la partie et effets du menu ; « Volume de la musique » : musique des menus **et mélodie d'annonce de vague** (sinon le curseur ne réglerait rien en partie ; la vague reste annoncée à l'écran).
+- **Musique baissée pendant les ouvertures** (à 35 %, réglable : `musique.baisseOuverture` de `data/menu/sons.json`, 1 = pas de baisse), pour laisser entendre le tir et la signature de rareté.
+- **Voix des zombies des ouvertures** : même famille que celles du jeu (source glottale et formants du moteur), recettes propres au menu ; aucun tampon de la partie n'est recalculé.
+- **Achat** : la recette de l'atelier (`interface-achat`, variantes A et B copiées dans `data/menu/sons.json`), plus une variante C (pièces).
+- **Ambiance du menu** : non faite (gardée en idée par le propriétaire).
+
+### Sons (22 050 Hz mono ; variante par défaut en gras ; durées visées)
+| Nom | Moment | Durée | Variantes |
+| --- | --- | --- | --- |
+| `clic` | toute commande du menu (boutons, onglets, entrées, choix) | 0,07 s | **A** tic de bois sec · B déclic de métal grave · C goutte sourde |
+| `achat` | achat d'une offre du jour, d'une caisse | 0,5 à 1,25 s | **A** levier et sonnette · B tiroir et pièces · C poignée de pièces |
+| `equiper` | objet équipé | 0,25 s | **A** sangle et boucle · B métal qui s'enclenche · C cuir frotté |
+| `retirer` | objet retiré | 0,2 s | **A** sangle relâchée · B métal qui se libère |
+| `ameliorer` | amélioration | 0,6 s | **A** marteau puis tintement montant · B frottement de meule et éclat |
+| `fusion` | fusion (montée ; la signature de la rareté obtenue suit) | 0,9 s | **A** souffle qui monte · B grondement qui se serre |
+| `choisir` | personnage choisi, avatar validé | 0,3 s | **A** deux notes graves · B souffle court et coup |
+| `chute-impact` | écran de chargement : le Z touche le sol (0,60 s) | 0,5 s | **A** masse sourde et gravats · B tôle et sol |
+| `chute-tiret` | le tiret s'écrase (0,62 s) | 0,25 s | **A** craquement sec · B écrasement mou |
+| `chute-rebond` | second contact du Z (0,96 s) | 0,3 s | **A** coup sourd plus faible · B raclement et coup |
+| `rarete-commun` … `rarete-legendaire` | signature de la rareté (ouverture : début des rayons ; fusion : après la montée) | 0,35 · 0,6 · 1,0 · 1,6 · 2,6 s | **A** cloches (du toc discret à la cascade dorée) · B cuivres sombres · C verre et chœur |
+| `ouv-pas` | chaque pas de l'arrivée | 0,18 s | **A** semelle sur béton · B botte lourde |
+| `ouv-tapis` | tapis roulant (arrêté à la fin du tapis) | 1,4 s | **A** moteur et rouleaux · B chaîne qui cliquette |
+| `ouv-tir` | tir du fusil d'assaut | 0,4 s | **A** coup sec et queue · B coup grave étouffé · C rafale de deux |
+| `ouv-impact` | balle sur la caisse, étincelles | 0,3 s | **A** tôle et grésillement · B ricochet |
+| `ouv-couvercle` | couvercle qui saute | 0,5 s | **A** verrou et souffle · B tôle qui claque |
+| `ouv-lumiere` | montée de la lumière et des rayons | 0,7 s | **A** souffle clair montant · B bourdon qui s'ouvre |
+| `ouv-explosion` | explosion du légendaire | 1,8 s | **A** coup grave et débris · B double détonation · C souffle long |
+| `ouv-souffle` | seconde explosion, sous le zombie | 1,2 s | **A** souffle sourd · B coup et sifflement |
+| `ouv-ecrasement` | le zombie s'écrase contre l'écran | 0,6 s | **A** choc mou sur vitre · B claque humide |
+| `ouv-sang` | le sang coule et découvre l'objet | 1,5 s | **A** glissement humide · B gouttes et frottement |
+| `ouv-zombie-sursaut` | sursaut et sursaut léger | 0,3 s | **A** grognement bref · B hoquet |
+| `ouv-zombie-saut` | saut | 0,5 s | **A** cri court · B râle surpris |
+| `ouv-zombie-cri` | chute, chute forte : le cri | 0,7 s | **A** cri qui retombe · B râle long |
+| `ouv-zombie-tombe` | chute : le corps touche le sol | 0,4 s | **A** corps sur béton · B corps et os |
+| `ouv-carte` | la carte file vers sa case (×10) | 0,35 s | **A** souffle bref · B papier qui claque |
+| `ouv-case` | la carte arrive dans sa case | 0,12 s | **A** toc de bois · B tic clair |
+| `ouv-passer` | « Passer », caisse passée au toucher | 0,2 s | **A** bande qui file · B souffle coupé |
+
+### Musique des menus
+- **Séquenceur en temps réel**, pas de tampon de musique : une partition pure (`js/core/musique-menu.js` : mesures, notes, niveaux des couches, d'après une graine) jouée par des nœuds Web Audio (`js/menu/sons/musique.js` : bourdon continu de deux oscillateurs filtrés, pouls grave, ostinato pincé, nappe dissonante, cloche rare, souffle, écho par ligne à retard). Mémoire : un seul tampon de bruit de 2 s (moins de 0,4 Mo).
+- **Boucle sans coupure** : rien ne s'arrête au bouclage (le bourdon tient, les niveaux de la dernière section rejoignent ceux de la première) ; **variations** : les sections font entrer et sortir les couches, les motifs de l'ostinato et les accords changent d'un tour à l'autre (graine).
+- Variantes : **A** ré mineur, 80 à la noire, pouls et ostinato · B plus lente (60), nappes et cloches, presque sans rythme · C plus tendue (96), ostinato en croches et tic métallique.
+- États (purs, `js/core/sons-menu.js`) : silence → attente du geste → musique ; baisse pendant une ouverture ; fondu de 1,2 s à « JOUER » ; arrêt page cachée ou son coupé, reprise au retour.
+
+### Volumes, chargement, page d'écoute, fichier de choix
+- **Volumes** : `Son` (activé, coupé), `Volume du jeu`, `Volume de la musique` (0 à 100 %, pas de 10, gain linéaire comme aujourd'hui) dans le composant d'Options ; en mémoire (`js/menu/demarrage.js`) jusqu'au lot 8h.
+- **Chargement** : un module léger au démarrage (`js/menu/sons/sons.js` : geste, volumes, demandes de sons) ; le moteur, `data/menu/sons.json`, `sons-choix.json` et les tampons du menu (une variante par son, un tampon par image) après l'écran de chargement ; les trois sons de la chute dès l'écran de chargement (joués seulement s'ils sont prêts à leur instant, jamais en retard) ; ceux des ouvertures au toucher de « Ouvrir », libérés avec l'ouverture. Bornes : menu ≤ 3 Mo, ouverture ≤ 4 Mo.
+- **Page d'écoute** `atelier-sons-menu.html` (canaux de débogage) : chaque son et ses variantes (écoute, durée, crête, niveau), variante choisie marquée, démonstration d'une ouverture ×1 par rareté (son seul, chronologie réelle), musique (lecture, arrêt, couches), et le contenu de `sons-choix.json` à copier.
+- **`data/menu/sons-choix.json`** : `{ "choix": { "<nom>": "A" | "B" | "C", …, "musique": "A" } }` ; nom ou variante inconnus : variante par défaut de `sons.json`.
