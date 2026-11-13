@@ -192,3 +192,9 @@ version: v0.8
 nom: Signature du studio, Crédits et Profil
 description: Logo animé et sonore de No Way Studio au lancement, logo sur l'écran de chargement, Crédits avec les licences, Profil local en haut à gauche (avatar, pseudo, statistiques).
 afficher: oui
+
+[lot-8i]
+version: v0.8
+nom: Sons du menu, musique et volumes
+description: Clic, achat et sons du Personnage, musique d'ambiance des menus, ouvertures de caisses sonorisées avec une signature par rareté, volumes du jeu et de la musique séparés.
+afficher: oui
