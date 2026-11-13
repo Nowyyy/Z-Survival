@@ -4652,7 +4652,7 @@
    ligne dès 667 px de large) qui ne défile plus elle-même : seule la liste défile, « Valider » et « Annuler » restent au bas de la carte. */
 .e10-carte-choix {
   gap: 4px;
-  padding: 4px 2px;
+  padding: calc(10 * var(--u)) 2px 2px; /* même marge du haut qu'en temps normal : le portrait ne bouge pas (retour du propriétaire) */
   overflow: hidden;
 }
 

@@ -513,7 +513,7 @@ Base : `lot-8g` (partie 0 : logo reçu depuis `origin/dev` `2817172`), mise à j
 - **Introduction (iPhone)** : une fraction de seconde après « Toucher pour commencer », Safari montrait un rectangle vide : l'image du logo était rendue visible avant d'avoir une adresse (cadre du texte de remplacement). Le logo reste caché jusqu'à ce que son image soit lue et décodée (`decode()`), puis apparaît au moment où l'animation et le son partent ; test : le logo n'est jamais visible sans image prête.
 
 ### Retours du propriétaire (après la PR #122) : taille du portrait, liste qui défile
-- **Grand portrait** : même taille dans le choix qu'en temps normal (il rapetissait à l'ouverture du choix).
+- **Grand portrait** : même taille dans le choix qu'en temps normal (il rapetissait à l'ouverture du choix). Puis (capture iPhone) : même place aussi ; la carte gardait une marge du haut plus fine pendant le choix (4 px au lieu de `10 × u`), le portrait remontait de quelques pixels ; seules les marges des côtés et du bas sont réduites. Test : taille et position identiques avant et après l'ouverture.
 - **Liste des avatars prête pour plus d'avatars** : seule la liste défile vers le bas quand elle ne tient plus (`overflow-y: auto`, glissable au doigt, à la molette et à la souris par `js/glisser.js` branché sur la racine du menu) ; le portrait reste en haut, « Valider » et « Annuler » au bas de la carte, qui ne défile plus pendant le choix. Deux lignes au moins restent visibles (88 px) ; l'avatar regardé est amené dans la liste (flèches, ouverture). Avec les sept avatars actuels, rien ne défile ; test : tuiles triplées en simulation.
 
 ### Sons du menu (décisions du propriétaire, à faire dans un lot dédié)
