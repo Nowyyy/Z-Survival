@@ -218,6 +218,8 @@
   --perso-joueur-veste: #e0d4ae;    /* joueur A : veste tactique sable */
   --perso-joueur-sweat: #d4d8dc;    /* joueur B : sweat à capuche gris clair */
   --perso-joueur-vif: #8fdbe0;      /* joueur C : couleur dominante turquoise, contrastée avec tous les sols */
+  --perso-anonyme: #8f8f8f;         /* avatar par défaut du Profil (lot 8g) : buste gris */
+  --perso-anonyme-tete: #b3b3b3;    /* avatar par défaut : tête grise, plus claire */
   --perso-lampe: #fff1b8;           /* lampe frontale du joueur B (teinte émissive faible) */
   --perso-yeux: #d8e070;            /* lueur des yeux (proposition de priorité 2, jamais seule porteuse d'information) */
   --sang-frais: #7a0a0a;            /* sang frais : rouge profond du site */

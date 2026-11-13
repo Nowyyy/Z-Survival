@@ -26,21 +26,8 @@ export const ERREURS_PSEUDO = Object.freeze({
   long: 'game.menu.profil.pseudo.erreur.long',
 });
 
-// Avatars (retour du propriétaire : d'après le personnage du jeu et les zombies ; d'autres viendront) : portrait dessiné en code (js/menu/compte.js),
-// couleurs des personnages du jeu (jetons --perso-* de css/tokens.css, posés par css/menu.css) ; type joueur ou zombie, tenue (détails du dessin).
-// « Changer d'avatar » passe au suivant.
-export const AVATARS = Object.freeze([
-  Object.freeze({ id: 'survivant', type: 'joueur', tenue: 'bandana' }), // joueur A : veste tactique sable, bandana rouge
-  Object.freeze({ id: 'eclaireur', type: 'joueur', tenue: 'capuche' }), // joueur B : sweat à capuche gris, lampe frontale
-  Object.freeze({ id: 'tireur', type: 'joueur', tenue: 'veste' }), // joueur C : veste turquoise
-  Object.freeze({ id: 'rodeur', type: 'zombie', tenue: 'chemise' }), // zombie à la peau cendre, chemise déchirée
-  Object.freeze({ id: 'ouvrier', type: 'zombie', tenue: 'chantier' }), // zombie de chantier : casque jaune, gilet orange
-  Object.freeze({ id: 'affame', type: 'zombie', tenue: 'sweat' }), // zombie à la peau jaunie, sweat gris
-]);
-export function avatarSuivant(id) {
-  const i = AVATARS.findIndex((a) => a.id === id);
-  return AVATARS[(i + 1) % AVATARS.length];
-}
+// Avatars : js/menu/avatar.js (communs au Profil et à l'en-tête) ; réexportés ici pour les lecteurs de l'état du Profil.
+export { AVATARS, avatarSuivant } from './avatar.js';
 
 // Six statistiques du Profil : { id, valeur (nombre ou null : « — »), max (meilleure manche : dernière manche du monde) }. Retour du propriétaire : plus
 // de record infini (il dépend de la carte : il est dans l'onglet Infini) ; parties jouées séparées en histoire et en infini. Existent dans la

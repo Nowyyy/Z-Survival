@@ -501,3 +501,9 @@ Base : `lot-8g` (partie 0 : logo reçu depuis `origin/dev` `2817172`), mise à j
 ### Retours du propriétaire (après la PR #119) : en-tête et menu à trois barres
 - **En-tête** : le gros bouton encadré « Connexion » devient « Profil » (`#menu-profil`, icône et texte, sans cadre, cible de 44 px), qui ouvre le Profil.
 - **Menu à trois barres** : « Déconnexion » seulement quand un compte est connecté (`connecte`, toujours faux tant que les comptes n'existent pas) ; la version est sous « Se connecter avec Google · bientôt ».
+
+### Retour du propriétaire (après la PR #120) : photo de profil et pseudo en haut à gauche
+- **En-tête** : `#menu-profil` affiche le portrait de l'avatar du joueur (`#menu-entete-avatar`, rond, 32 px au moins) et son pseudo (`#menu-entete-pseudo`, « Survivant » par défaut, coupé par des points de suspension), à la place du mot « Profil ». Nom accessible : « Profil : {pseudo} » (`game.menu.profil.entete`). Il ouvre toujours le Profil.
+- **Code** : avatars, portraits et mémoire (avatar, pseudo) déplacés dans `js/menu/avatar.js`, commun à l'en-tête et au Profil (`compte.js`) ; `poserProfil` prévient les abonnés (`suivreProfil`), l'en-tête suit donc aussitôt un changement fait dans le Profil. `profil-etat.js` réexporte `AVATARS` et `avatarSuivant`. Toujours en mémoire seule jusqu'au lot 8h (perdu au rechargement).
+- **Avatar par défaut** (retour suivant) : un personnage tout gris, « Anonyme » (`anonyme`, silhouette : buste et tête, sans visage ni tenue ; deux gris neutres `--perso-anonyme` et `--perso-anonyme-tete` ajoutés à `css/tokens.css`), premier des sept avatars (« Avatar 1 sur 7 ») et choisi au démarrage ; « Changer d'avatar » passe ensuite aux six autres puis y revient.
+- **Démarrage du menu** : 32 fichiers JavaScript sous `?test=1&menu=1` (31 + `avatar.js`), 33 avec l'introduction.

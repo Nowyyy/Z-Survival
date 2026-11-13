@@ -487,11 +487,12 @@
   cursor: pointer;
 }
 
-/* Lot 8g (retour du propriétaire) : « Profil » à la place du gros bouton « Connexion » : discret, sans cadre ; cible de 44 px. */
+/* Lot 8g (retours du propriétaire) : avatar et pseudo du joueur à la place du gros bouton « Connexion » : sans cadre ; cible de 44 px. */
 .e8-profil {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
+  max-width: 45%;
   min-width: var(--menu-cible);
   min-height: var(--menu-cible);
   padding: 0 calc(4 * var(--u));
@@ -505,6 +506,27 @@
 
 .e8-profil:hover {
   color: var(--menu-texte-doux);
+}
+
+.e8-profil-avatar {
+  display: block;
+  flex: none;
+  box-sizing: border-box;
+  width: max(32px, calc(36 * var(--u)));
+  height: max(32px, calc(36 * var(--u)));
+  overflow: hidden;
+  border: 2px solid var(--menu-e9-stats-bord);
+  border-radius: 50%;
+  background: var(--menu-e9-case);
+}
+
+.e8-profil-pseudo {
+  min-width: 0;
+  overflow: hidden;
+  font-family: var(--font-label);
+  letter-spacing: 0.04em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .e8-droite {
@@ -4544,6 +4566,7 @@
 .e10-avatar-svg .av-lampe { fill: var(--perso-lampe); }
 .e10-avatar-svg .av-trait { fill: none; stroke: var(--perso-sombre); stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
 .e10-avatar-svg .av-col { fill: var(--perso-tissu-os); }
+.e10-avatar-anonyme { --av-peau: var(--perso-anonyme-tete); --av-habit: var(--perso-anonyme); } /* par défaut : tout gris */
 .e10-avatar-survivant { --av-peau: var(--perso-peau-joueur); --av-habit: var(--perso-joueur-veste); }
 .e10-avatar-eclaireur { --av-peau: var(--perso-peau-joueur); --av-habit: var(--perso-joueur-sweat); }
 .e10-avatar-tireur { --av-peau: var(--perso-peau-joueur); --av-habit: var(--perso-joueur-vif); }

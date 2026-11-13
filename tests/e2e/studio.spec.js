@@ -212,12 +212,12 @@ test.describe('introduction du studio (E0)', () => {
     expect([o.problemes, o.externes]).toEqual([[], []]);
   });
 
-  test('jamais sans intro=1 sous ?test=1&menu=1, ni en partie directe ; démarrage du menu : 31 fichiers JavaScript (inchangé), 32 avec l\'introduction (intro.js)', async ({ page, baseURL }) => {
+  test('jamais sans intro=1 sous ?test=1&menu=1, ni en partie directe ; démarrage du menu : 32 fichiers JavaScript (31 + avatar.js de l\'en-tête), 33 avec l\'introduction (intro.js)', async ({ page, baseURL }) => {
     let o = surveiller(page, baseURL);
     await espions(page);
     await ouvrirMenu(page);
     expect(await page.evaluate(() => [window.__vus.e0 ?? null, window.__zsMenu.intro()])).toEqual([null, null]);
-    expect(o.fichiers.filter((f) => f.endsWith('.js')).length).toBe(31);
+    expect(o.fichiers.filter((f) => f.endsWith('.js')).length).toBe(32);
     // Retour du propriétaire : en mode menu, l'écran de préparation de la partie (barre) n'est jamais visible.
     expect(await page.evaluate(() => [document.documentElement.classList.contains('zs-attente'), getComputedStyle(document.getElementById('loading')).visibility])).toEqual([true, 'hidden']);
     expect(o.fichiers.filter((f) => f.endsWith('/js/menu/intro.js'))).toEqual([]);
@@ -233,7 +233,7 @@ test.describe('introduction du studio (E0)', () => {
     await p2.locator('#e0').click({ position: { x: 20, y: 20 } }); // passe
     await expect(p2.locator('#menu-jouer')).toBeVisible({ timeout: 60_000 });
     expect(o.fichiers.filter((f) => f.endsWith('.mp3'))).toEqual([`/${SON}`]);
-    expect(o.fichiers.filter((f) => f.endsWith('.js')).length).toBe(32);
+    expect(o.fichiers.filter((f) => f.endsWith('.js')).length).toBe(33);
     expect(o.fichiers.filter((f) => f.endsWith('.svg')).sort()).toEqual([`/${LOGO}`, `/${FIXE}`]);
     await p2.close();
     const p3 = await page.context().newPage();
@@ -482,6 +482,30 @@ async function ouvrirProfil(page) {
 }
 
 test.describe('Connexion et Profil (E10)', () => {
+  // Retour du propriétaire : en haut à gauche, la photo de profil (portrait de l'avatar) et le pseudo du joueur à la place de « Profil ».
+  for (const size of [REF, PETIT, LARGE, ENCOCHE]) {
+    test(`tailles ${size.width}×${size.height} : en-tête = portrait de l'avatar et pseudo (« Survivant » par défaut), nom accessible « Profil : … » ; dans l'en-tête, 44 px, sans chevauchement du solde ; axe`, async ({ page, baseURL }) => {
+      const o = surveiller(page, baseURL);
+      await ouvrirMenu(page, size);
+      const bouton = page.locator('#menu-profil');
+      await expect(bouton).toHaveAccessibleName('Profil : Survivant');
+      await expect(page.locator('#menu-entete-pseudo')).toHaveText('Survivant');
+      await expect(page.locator('#menu-entete-avatar')).toHaveClass(/e10-avatar-anonyme/); // personnage tout gris par défaut
+      expect(await page.locator('#menu-entete-avatar svg').evaluate((s) => [...s.querySelectorAll('path, ellipse, circle, rect')].map((n) => getComputedStyle(n).fill))).toEqual(['rgb(143, 143, 143)', 'rgb(179, 179, 179)']);
+      await expect(page.locator('#menu-entete-avatar')).toHaveAttribute('aria-hidden', 'true');
+      expect(await page.locator('#menu-entete-avatar svg .av-peau').count()).toBeGreaterThan(0);
+      expect(await bouton.textContent()).toBe('Survivant'); // plus le mot « Profil » affiché
+      const b = await boite(page, '#menu-profil');
+      const a = await boite(page, '#menu-entete-avatar');
+      const e = await boite(page, '.e8-entete');
+      const s = await boite(page, '#menu-solde');
+      expect([b.w >= 44, b.h >= 44, a.w >= 32, Math.abs(a.w - a.h) < 0.5]).toEqual([true, true, true, true]);
+      expect([a.l >= b.l - 0.5, a.r <= b.r + 0.5, b.t >= e.t - 0.5, b.b <= e.b + 0.5, b.r <= s.l + 0.5]).toEqual([true, true, true, true, true]);
+      expect((await new AxeBuilder({ page }).include('.e8-entete').analyze()).violations.map((v) => v.id)).toEqual([]);
+      expect([o.problemes, o.externes]).toEqual([[], []]);
+    });
+  }
+
   for (const [size, encoche] of [[REF, false], [PETIT, false], [LARGE, false], [ENCOCHE, true]]) {
     test(`tailles ${size.width}×${size.height}${encoche ? ' (encoche simulée)' : ''} : « Connexion » → Profil (carte, six statistiques, Sauvegarde ; Google « bientôt ») ; écran plein ; dans l'écran, sans superposition ; 44 px ; axe`, async ({ page, baseURL }) => {
       const o = surveiller(page, baseURL);
@@ -536,15 +560,16 @@ test.describe('Connexion et Profil (E10)', () => {
     await expect(page.locator('.e10-stat-valeur')).toHaveText([`17 / 40`, /^—/, /^—/, /^—/, /^—/, `4${NNBSP}321`]);
     expect((await page.evaluate(() => window.__zsMenu.etat().menu.compte)).stats).toEqual([['meilleureManche', '17'], ['tues', ''], ['partiesHistoire', ''], ['partiesInfini', ''], ['temps', ''], ['argent', '4321']]);
     // Retour du propriétaire : avatars d'après le personnage du jeu et les zombies.
-    await expect(page.locator('#menu-profil-avatar')).toHaveAttribute('aria-label', 'Avatar 1 sur 6 : Survivant');
+    await expect(page.locator('#menu-profil-avatar')).toHaveAttribute('aria-label', 'Avatar 1 sur 7 : Anonyme'); // personnage tout gris par défaut
     const noms = [];
-    for (let i = 0; i < 6; i += 1) {
+    for (let i = 0; i < 7; i += 1) {
       await page.locator('#menu-profil-changer').click();
       noms.push(await page.locator('#menu-profil-avatar').getAttribute('aria-label'));
     }
-    expect(noms).toEqual(['Avatar 2 sur 6 : Éclaireur', 'Avatar 3 sur 6 : Tireur', 'Avatar 4 sur 6 : Zombie rôdeur', 'Avatar 5 sur 6 : Zombie de chantier', 'Avatar 6 sur 6 : Zombie affamé', 'Avatar 1 sur 6 : Survivant']);
+    expect(noms).toEqual(['Avatar 2 sur 7 : Survivant', 'Avatar 3 sur 7 : Éclaireur', 'Avatar 4 sur 7 : Tireur', 'Avatar 5 sur 7 : Zombie rôdeur', 'Avatar 6 sur 7 : Zombie de chantier', 'Avatar 7 sur 7 : Zombie affamé', 'Avatar 1 sur 7 : Anonyme']);
     await page.locator('#menu-profil-changer').click();
-    await expect(page.locator('#menu-profil-annonce')).toHaveText('Avatar 2 sur 6 : Éclaireur');
+    await page.locator('#menu-profil-changer').click();
+    await expect(page.locator('#menu-profil-annonce')).toHaveText('Avatar 3 sur 7 : Éclaireur');
     expect(await page.locator('#menu-profil-avatar .av-lampe').count()).toBe(1); // lampe frontale du joueur B
     expect(await page.locator('#menu-profil-avatar .av-peau').first().evaluate((n) => getComputedStyle(n).fill)).toBe('rgb(232, 201, 168)'); // --perso-peau-joueur
     await page.locator('#menu-profil-pseudo-modifier').click();
@@ -567,6 +592,11 @@ test.describe('Connexion et Profil (E10)', () => {
     await expect(page.locator('#menu-profil-pseudo')).toHaveText('Le Chef');
     await expect(page.locator('#menu-profil-annonce')).toHaveText('Pseudo changé : Le Chef.');
     expect((await page.evaluate(() => window.__zsMenu.etat().menu.compte))).toMatchObject({ avatar: 'eclaireur', pseudo: 'Le Chef', depot: 'local' });
+    // Retour du propriétaire : l'en-tête suit aussitôt (portrait et pseudo du Profil).
+    await expect(page.locator('#menu-entete-pseudo')).toHaveText('Le Chef');
+    await expect(page.locator('#menu-profil')).toHaveAttribute('aria-label', 'Profil : Le Chef');
+    await expect(page.locator('#menu-entete-avatar')).toHaveClass(/e10-avatar-eclaireur/);
+    expect(await page.locator('#menu-entete-avatar .av-lampe').count()).toBe(1);
     // Gardés en mémoire en quittant et en revenant ; aucune écriture.
     await page.locator('#menu-ecran-profil-retour').click();
     await page.locator('#menu-profil').click();
@@ -577,7 +607,7 @@ test.describe('Connexion et Profil (E10)', () => {
     await expect(page.locator('#menu-jouer')).toBeVisible({ timeout: 60_000 });
     await ouvrirProfil(page);
     await expect(page.locator('#menu-profil-pseudo')).toHaveText('Survivant');
-    await expect(page.locator('#menu-profil-avatar')).toHaveAttribute('aria-label', 'Avatar 1 sur 6 : Survivant');
+    await expect(page.locator('#menu-profil-avatar')).toHaveAttribute('aria-label', 'Avatar 1 sur 7 : Anonyme');
   });
 
   test('« Exporter mon code » : code ZS1 valide (relu par decodeSave = la sauvegarde) ; « Importer un code » : code abîmé refusé (message, aucune écriture), code valide vérifié (aperçu), confirmation exigée, puis importé : seule écriture, puis menu rechargé sans introduction, solde à jour', async ({ page, context }) => {
