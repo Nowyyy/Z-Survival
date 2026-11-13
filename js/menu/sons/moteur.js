@@ -43,6 +43,7 @@ export async function creerMoteur({ ctx, faits, volumes }) {
   let vol = volumes();
   let clic = creerClic();
   let calculMs = 0;
+  let suiviMaxMs = 0; // plus longue durée d'un suivi d'ouverture dans une image (ms) : le son ne doit jamais allonger une image
 
   // ---------- calcul des tampons ----------
   let worker = null; // Worker, null (pas encore créé) ou false (indisponible)
@@ -211,7 +212,7 @@ export async function creerMoteur({ ctx, faits, volumes }) {
     em = avancerMusique(em, ev);
     appliquerMusique(avant);
     // Menu affiché : ses sons se calculent en arrière-plan (clic et commandes d'abord, signatures de rareté ensuite).
-    if (ev === 'pret') preparer('menu').then(() => preparer('raretes'));
+    if (ev === 'pret') preparer('menu').then(() => preparer('raretes')).then(() => preparer('chute'));
     // Page cachée : le contexte est suspendu après le fondu de la musique, repris au retour.
     if (ev === 'cachee') setTimeout(() => em.cachee && !ferme && ctx.suspend?.().catch(() => {}), 400);
     if (ev === 'visible' && !ferme) ctx.resume?.().catch(() => {});
@@ -224,20 +225,12 @@ export async function creerMoteur({ ctx, faits, volumes }) {
   function ouverture(chrono, reglages) {
     const liste = sonsOuverture(chrono, reglages);
     let i = 0;
-    let dernier = 0;
     const tenus = []; // sons tenus (tapis, sang) : arrêtés à leur instant de fin
     return {
       sons: liste,
       suivre(t) {
         if (ferme) return;
-        // Saut en avant de plus d'une demi-seconde (ou retour en arrière) : caisse passée.
-        if (t < dernier || t - dernier > 0.5) {
-          arreterGroupe('ouverture');
-          tenus.length = 0;
-          i = indiceSon(liste, t);
-          noter({ ouverture: 'saut', t: ctx.currentTime, temps: t });
-        }
-        dernier = t;
+        const t0 = performance.now();
         while (i < liste.length && liste[i].t <= t) {
           const e = liste[i];
           i += 1;
@@ -250,6 +243,14 @@ export async function creerMoteur({ ctx, faits, volumes }) {
             tenus.splice(k, 1);
           }
         }
+        suiviMaxMs = Math.max(suiviMaxMs, performance.now() - t0);
+      },
+      // Caisse passée au toucher : les sons en cours sont coupés, la suite reprend au premier son d'instant ≥ t.
+      sauter(t) {
+        arreterGroupe('ouverture');
+        tenus.length = 0;
+        i = indiceSon(liste, t);
+        noter({ ouverture: 'saut', t: ctx.currentTime, temps: t });
       },
       arreter() {
         arreterGroupe('ouverture');
@@ -304,7 +305,7 @@ export async function creerMoteur({ ctx, faits, volumes }) {
       }
       for (const a of actifs) parGroupe[a.groupe] = (parGroupe[a.groupe] ?? 0) + 1;
       return {
-        pretes: [...tampons.keys()], octets, actifs: parGroupe, calculMs: Math.round(calculMs), calculateur: worker ? 'arriere-plan' : worker === false ? 'sur-place' : 'aucun', choix: { ...choix },
+        pretes: [...tampons.keys()], octets, actifs: parGroupe, calculMs: Math.round(calculMs), suiviMaxMs, calculateur: worker ? 'arriere-plan' : worker === false ? 'sur-place' : 'aucun', choix: { ...choix },
         gains: { effets: effets.gain.value, musique: busMusique.gain.value },
         musique: { mode: em.mode, lecteur: lecteur?.etat() ?? null }, journal: journal.map((e) => ({ ...e })),
       };

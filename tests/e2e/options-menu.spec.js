@@ -205,8 +205,13 @@ test.describe('page Options du menu (E5)', () => {
     const depart = o.fichiers.length;
     await ouvrirOptions(page);
     await page.waitForTimeout(500);
-    const ouverture = o.fichiers.slice(depart);
-    expect(ouverture.filter((f) => JEU.test(f))).toEqual([]);
+    // Lot 8i : le premier geste (ici, l'ouverture du menu à trois barres) charge aussi le moteur des sons du menu (js/menu/sons/, ses fonctions
+    // pures, sa synthèse dans le calculateur d'arrière-plan, data/menu/sons.json et sons-choix.json) : compté à part, ni Three.js ni le jeu.
+    const SONS = /^\/js\/menu\/sons\/|^\/js\/core\/(sons-menu|musique-menu|synth2|synth2-dsp|synth2-sources|audio-analysis|vec)\.js$|^\/data\/menu\/sons(-choix)?\.json$/;
+    const tout = o.fichiers.slice(depart);
+    expect(tout.filter((f) => JEU.test(f))).toEqual([]);
+    expect(tout.filter((f) => SONS.test(f) && /three|\/js\/game\//.test(f))).toEqual([]);
+    const ouverture = tout.filter((f) => !SONS.test(f));
     expect(ouverture.filter((f) => f.endsWith('.js'))).toEqual(['/js/game/options-menu.js', '/js/game/graphics-apply.js']);
     // Lot 8d (retour du propriétaire) : le journal est lu à la première ouverture du menu à trois barres (version sous « Déconnexion »).
     expect(ouverture.filter((f) => !f.endsWith('.js')).sort()).toEqual(['/data/changelog.json', '/data/game/audio.json', '/data/game/graphics.json']);

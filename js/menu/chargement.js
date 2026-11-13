@@ -14,11 +14,14 @@ import { fmt, loadDict } from '../game/texts.js';
 import { CANAUX_DEBUG } from '../core/graphics.js';
 import { pageCanal } from '../game/graphics-boot.js';
 import { couluresSvg } from '../logo.js';
-import { adopter, ecouterGestes, partir, signaler } from './sons/sons.js';
+import { adopter, chute as sonsChute, ecouterGestes, partir, signaler } from './sons/sons.js';
 
 const SVG = 'http://www.w3.org/2000/svg';
 const FIN_CHUTE_MS = 4000; // filet de sécurité si la fin d'animation n'arrive pas (onglet caché) : la chute dure 2,8 s
 const POLICES_MS = 3000; // attente maximale des polices du menu
+// Lot 8i : sons de la chute du Z, en secondes depuis le départ de l'animation e7-chute (1,5 s ; css/menu.css) : le Z touche le sol à 40 % (0,60 s,
+// secousse et tiret écrasé au même instant), second contact après le rebond à 64 % (0,96 s).
+export const SONS_CHUTE = Object.freeze([['chute-impact', 0.6], ['chute-tiret', 0.62], ['chute-rebond', 0.96]]);
 export const LOGO_STUDIO_FIXE = 'assets/studio/no-way-studio-logo-fixe.svg'; // lot 8g : copie fixe du logo (scripts/studio/logo-fixe.mjs)
 
 // Lot 8g : adresse d'affichage d'un fichier du logo du studio : son texte lu une fois (fetch, même origine), puis une adresse data: de type
@@ -230,6 +233,7 @@ export function creerChargement({ phase = 'menu', jouer = () => {}, son = null, 
   // chargement (la police du titre est préchargée par demarrage.js : sans elle, le Z garde la police de secours).
   if (!pose) {
     box.classList.add('e7-joue');
+    sonsChute(SONS_CHUTE); // lot 8i : seulement après un geste, et si les tampons sont prêts à leur instant
     setTimeout(finChute, FIN_CHUTE_MS);
     coulures.querySelector('.logo-coulure-3').addEventListener('animationend', finChute, { once: true }); // la dernière goutte
   }

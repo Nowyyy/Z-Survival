@@ -9,6 +9,7 @@
 //   #retour, comme le retour au menu : sans introduction ; tout le menu relit la sauvegarde importée).
 // Avatar et pseudo restent en mémoire jusqu'au lot 8h (le retour au menu les remet par défaut).
 import { el } from './menu.js';
+import { son } from './sons/sons.js';
 import { ERREURS_PSEUDO, statsProfil, validerPseudo, PSEUDO_MAX, PSEUDO_MIN } from './profil-etat.js';
 import { AVATARS, NOMS_AVATARS, avatarDe, lireProfil, poserProfil, portrait, suivreProfil, svgPortrait } from './avatar.js';
 import { decodeSave, encodeSave } from '../core/save.js';
@@ -235,6 +236,7 @@ export async function ecransCompte({ t, bandeau, root, rootDialogue, monde, pose
   choixValider.addEventListener('click', () => {
     const a = avatarDe(regarde);
     poserProfil({ avatar: a.id }); // en-tête et Profil suivent (suivreProfil)
+    son('choisir'); // lot 8i
     choisir(false);
     dire(fmt(t('game.menu.profil.avatar.fait'), { nom: t(NOMS_AVATARS[a.id]) }));
   });

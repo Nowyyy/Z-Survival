@@ -9,6 +9,7 @@
 // Lot 8e : onglet Boutique (js/menu/boutique.js à la demande : caisses, chances, écrans de résultat ; objets ajoutés à l'inventaire en mémoire).
 import { activerGlisser } from '../glisser.js';
 import { roueDifferee } from './roue.js';
+import { ecouterClics } from './sons/sons.js';
 import { lireProfil, suivreProfil, svgPortrait } from './avatar.js';
 import { formatMoney } from '../core/economy.js';
 import { basculerMenu, choisirOnglet, versionMenu, creerEtatMenu, ECRANS_PLEINS, SOUS_MENUS, fermerEcran, fermerMenu, lienExterne, lireMondes, lireOptionDemarrage, lireRecord, nouveauteNonLue, ONGLETS, ouvrirEcran, premierJouable } from '../core/menu-etat.js';
@@ -240,6 +241,7 @@ export function creerMenu({ dict, infos = [], liens = {}, solde: montant = 0, re
   const ecransOnglets = new Map(); // id → section (créée au premier affichage)
 
   const box = el('div', ['e8'], { id: 'e8', 'data-block': 'E8' });
+  ecouterClics(box); // lot 8i : un même son de clic pour toute commande du menu (js/menu/sons/sons.js)
   // Retour du propriétaire : zones qui défilent glissables à la souris, comme au doigt (js/glisser.js).
   activerGlisser(box);
 

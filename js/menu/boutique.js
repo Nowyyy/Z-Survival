@@ -9,6 +9,7 @@
 // Lot 8f : afficherOuverture passe d'abord par l'ouverture animée en 3D (js/menu/ouverture/ouverture.js, chargée au premier achat d'une caisse,
 // préchargée au toucher de « Ouvrir »), sauf offre du jour, mouvement réduit, WebGL indisponible ou ?ouverture=0 en test : résultat direct.
 import { creerRoue } from './roue.js';
+import { preparer as preparerSons, son } from './sons/sons.js';
 import { formatMoney } from '../core/economy.js';
 import { TIRAGES_X10, ajouterCosmetiques, lireCaisses, lireCosmetiques, lireOffres, offresDuJour, partHaute, prixAchat, tirer, tirer10 } from '../core/caisses.js';
 import { ajouterObjets, estDebloque, obtenirPersonnages } from '../core/equipement.js';
@@ -144,7 +145,9 @@ const chargerOuverture = () => (moduleOuverture ??= import('./ouverture/ouvertur
 }));
 // Préchargement au toucher de « Ouvrir » : module, Three.js, scène, données et feuille de l'ouverture (jamais au démarrage du menu).
 const prechargerOuverture = () => {
-  if (ouvertureVoulue()) chargerOuverture().then((m) => m?.precharger().catch(() => {}));
+  if (!ouvertureVoulue()) return;
+  chargerOuverture().then((m) => m?.precharger().catch(() => {}));
+  preparerSons('ouverture'); // lot 8i : sons de l'ouverture calculés dès le toucher de « Ouvrir » (libérés avec elle)
 };
 const pourcentTexte = (n) => (Number.isFinite(n) ? n.toLocaleString('fr-FR', { maximumFractionDigits: 2 }) : '');
 // Numéro du jour local (offres du jour : renouvelées à minuit, heure de l'appareil) et temps restant jusqu'à minuit.
@@ -235,6 +238,7 @@ export async function ecranBoutique({ t, bandeau, root, rootDialogue, surVue = (
     if (uids.length !== 1) return;
     eq.poser(etat);
     achetees.add(o.cle);
+    son('achat'); // lot 8i
     bouton.textContent = t('game.menu.boutique.offre.achetee');
     bouton.setAttribute('aria-disabled', 'true');
     bouton.closest('li')?.classList.add('is-achetee');
@@ -407,6 +411,7 @@ export async function ecranBoutique({ t, bandeau, root, rootDialogue, surVue = (
       r.uids = uids;
     }
     achats += 1;
+    son('achat'); // lot 8i
     if (vue === 'caisses') retourFocus = depuis;
     afficherOuverture(r);
   }
