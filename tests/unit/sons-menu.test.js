@@ -26,7 +26,7 @@ const tous = catalogue.sons.flatMap((s) => s.variantes.flatMap((v) => Array.from
 describe('catalogue des sons du menu', () => {
   it('data/menu/sons.json est valide : groupes connus, variantes A, B (C), variante par défaut, gains', () => {
     expect(erreurs).toEqual([]);
-    expect(catalogue.sons.length).toBeGreaterThanOrEqual(29); // retours du propriétaire : 32 − 4 (voix des zombies, sang) + 1 (point d'exclamation)
+    expect(catalogue.sons.length).toBe(24); // retours du propriétaire : 32 − 4 (voix des zombies, sang) + 1 (point d'exclamation) − 5 (signatures de rareté)
     for (const s of catalogue.sons) {
       expect(GROUPES).toContain(s.groupe);
       expect(s.variantes.length).toBeGreaterThanOrEqual(2);
@@ -36,8 +36,8 @@ describe('catalogue des sons du menu', () => {
   });
   it('les sons demandés par le lot existent tous', () => {
     const ids = catalogue.sons.map((s) => s.id);
-    for (const id of ['clic', 'achat', 'equiper', 'retirer', 'ameliorer', 'fusion', 'choisir', 'chute-impact', 'chute-tiret', 'chute-rebond', 'rarete-commun', 'rarete-peu-commun', 'rarete-rare', 'rarete-epique', 'rarete-legendaire', 'ouv-pas', 'ouv-tapis', 'ouv-tir', 'ouv-impact', 'ouv-couvercle', 'ouv-lumiere', 'ouv-explosion', 'ouv-souffle', 'ouv-ecrasement', 'ouv-zombie-tombe', 'ouv-exclamation', 'ouv-carte', 'ouv-case', 'ouv-passer']) expect(ids).toContain(id);
-    expect(lire('data/menu/raretes.json').raretes.map((r) => `rarete-${r.id}`).every((id) => ids.includes(id))).toBe(true);
+    for (const id of ['clic', 'achat', 'equiper', 'retirer', 'ameliorer', 'fusion', 'choisir', 'chute-impact', 'chute-tiret', 'chute-rebond', 'ouv-pas', 'ouv-tapis', 'ouv-tir', 'ouv-impact', 'ouv-couvercle', 'ouv-lumiere', 'ouv-explosion', 'ouv-souffle', 'ouv-ecrasement', 'ouv-zombie-tombe', 'ouv-exclamation', 'ouv-carte', 'ouv-case', 'ouv-passer']) expect(ids).toContain(id);
+    expect(ids.filter((id) => id.startsWith('rarete-'))).toEqual([]); // retour du propriétaire : signatures de rareté retirées
   });
   it('un catalogue invalide est refusé avec ses erreurs', () => {
     expect(lireSons(null).catalogue).toBeNull();
@@ -56,7 +56,7 @@ describe('synthèse des sons du menu', () => {
     for (const [s, v, g] of tous) expect(sha(rendu(s, v.id, g).samples), `${s.id}:${v.id}:${g}`).toBe(reference[`${s.id}:${v.id}:${g}`]);
   });
   it('déterministe : deux rendus de la même graine sont identiques ; deux graines différentes ne le sont pas pour un son à hasard', () => {
-    for (const id of ['clic', 'rarete-legendaire', 'ouv-pas', 'achat']) {
+    for (const id of ['clic', 'ouv-explosion', 'ouv-pas', 'achat']) {
       const s = catalogue.sons.find((x) => x.id === id);
       expect(sha(rendreSon(s, 'A', 3).samples)).toBe(sha(rendreSon(s, 'A', 3).samples));
     }
@@ -83,23 +83,12 @@ describe('synthèse des sons du menu', () => {
       expect(r.samples.at(-1)).toBe(0);
     }
   });
-  it('signatures de rareté de plus en plus fortes : durée, gain de lecture et énergie croissants du commun au légendaire', () => {
-    const ordre = lire('data/menu/raretes.json').raretes.map((r) => catalogue.sons.find((s) => s.id === `rarete-${r.id}`));
-    // Retour du propriétaire : sept familles de mélodies (A à G) ; chacune croît du commun au légendaire.
-    expect(ordre.every((s) => s.variantes.length === 7)).toBe(true);
-    for (const v of ordre[0].variantes.map((x) => x.id)) {
-      const energie = ordre.map((s) => {
-        const r = rendu(s, v);
-        let e = 0;
-        for (const x of r.samples) e += x * x;
-        return e * s.gain * s.gain;
-      });
-      for (let i = 1; i < ordre.length; i += 1) {
-        expect(ordre[i].variantes.find((x) => x.id === v).dur).toBeGreaterThan(ordre[i - 1].variantes.find((x) => x.id === v).dur);
-        expect(ordre[i].gain).toBeGreaterThan(ordre[i - 1].gain);
-        expect(energie[i], `${v} ${ordre[i].id}`).toBeGreaterThan(energie[i - 1]);
-      }
-    }
+  it('retour du propriétaire : plus aucune mélodie de signature de rareté, ni au catalogue ni dans une ouverture, quelle que soit la rareté', () => {
+    expect(catalogue.sons.filter((x) => x.id.startsWith('rarete-') || x.groupe === 'raretes')).toEqual([]);
+    const raretes = lire('data/menu/raretes.json').raretes.map((r) => r.id);
+    const { reglages } = lireOuvertures(lire('data/menu/ouvertures.json'), raretes);
+    for (const r of raretes) expect(sonsOuverture(chronologie(reglages, [r], { graine: 5 }), reglages).filter((x) => x.son.startsWith('rarete-'))).toEqual([]);
+    expect(readFileSync('js/menu/fusion.js', 'utf8')).not.toMatch(/rarete-\$\{/);
   });
   it('variante inconnue : tampon vide, sans erreur', () => {
     expect(rendreSon(catalogue.sons[0], 'Z').samples.length).toBe(0);
@@ -126,11 +115,11 @@ describe('fichier de choix (data/menu/sons-choix.json)', () => {
     }
   });
   it('nom inconnu ignoré, variante inconnue remplacée par celle par défaut, choix valides gardés', () => {
-    const r = lireChoix({ choix: { clic: 'C', achat: 'Z', retirer: 'C', inconnu: 'A', musique: 'B', 'rarete-rare': 7 } }, catalogue);
+    const r = lireChoix({ choix: { clic: 'C', achat: 'Z', retirer: 'C', inconnu: 'A', musique: 'B', 'ouv-tir': 7 } }, catalogue);
     expect(r.choix.clic).toBe('C');
     expect(r.choix.achat).toBe('A');
     expect(r.choix.retirer).toBe('A'); // retirer n'a que A et B
-    expect(r.choix['rarete-rare']).toBe('A');
+    expect(r.choix['ouv-tir']).toBe('A');
     expect(r.choix.musique).toBe('B');
     expect(r.choix.inconnu).toBeUndefined();
     expect(r.ecarts.length).toBe(4);
@@ -178,12 +167,11 @@ describe('sons d\'une ouverture sur la chronologie pure', () => {
       expect(a('ouv-impact')).toEqual([c.etincelles[0]]);
       expect(a('ouv-couvercle')).toEqual([c.couvercle[0]]);
       expect(a('ouv-lumiere')).toEqual([c.lumiere[0]]);
-      expect(a(`rarete-${rarete}`)).toEqual([c.rayons[0]]);
-      expect(sons.filter((s) => s.son.startsWith('rarete-')).length).toBe(1);
+      expect(sons.filter((s) => s.son.startsWith('rarete-')).length).toBe(0); // retour du propriétaire : plus de signature de rareté
       expect(a('ouv-pas')).toEqual(instantsPas(chrono.arrivee));
       expect(a('ouv-pas').length).toBe(reglages.arrivee.pas);
       // Ordre des événements d'une caisse : tapis, tir, impact, couvercle, lumière, signature.
-      const ordre = ['ouv-tapis', 'ouv-tir', 'ouv-impact', 'ouv-couvercle', 'ouv-lumiere', `rarete-${rarete}`].map((n) => sons.findIndex((s) => s.son === n));
+      const ordre = ['ouv-tapis', 'ouv-tir', 'ouv-impact', 'ouv-couvercle', 'ouv-lumiere'].map((n) => sons.findIndex((s) => s.son === n));
       expect([...ordre].sort((x, y) => x - y)).toEqual(ordre);
     }
   });
@@ -213,7 +201,8 @@ describe('sons d\'une ouverture sur la chronologie pure', () => {
     const tirage = ['commun', 'rare', 'commun', 'peu-commun', 'epique', 'commun', 'legendaire', 'commun', 'rare', 'commun'];
     const chrono = chronologie(reglages, tirage, { graine: 9 });
     const sons = sonsOuverture(chrono, reglages);
-    expect(sons.filter((s) => s.son.startsWith('rarete-')).map((s) => s.son)).toEqual(tirage.map((r) => `rarete-${r}`));
+    expect(sons.filter((s) => s.son.startsWith('rarete-'))).toEqual([]); // retour du propriétaire : plus de signature de rareté
+    expect(sons.filter((s) => s.son === 'ouv-lumiere').map((s) => s.t)).toEqual(chrono.caisses.map((c) => c.lumiere[0]));
     expect(sons.filter((s) => s.son === 'ouv-carte').map((s) => s.t)).toEqual(chrono.caisses.map((c) => c.vol[0]));
     expect(sons.filter((s) => s.son === 'ouv-case').map((s) => s.t)).toEqual(chrono.caisses.map((c) => c.case));
     expect(sons.filter((s) => s.son === 'ouv-tir').length).toBe(10);

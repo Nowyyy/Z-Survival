@@ -134,7 +134,8 @@ export function instantsPas(arrivee) {
 // vient de la chronologie (tapis, tir, étincelles, couvercle, lumière, rayons, explosion, projection, réactions, vol, case).
 // Retours du propriétaire (après le lot 8i) : plus de voix de zombie ni de sang qui coule ; le tapis ne s'entend qu'à l'arrivée de la première
 // caisse (plus entre les caisses d'un ×10) ; un petit son quand le point d'exclamation apparaît au-dessus des zombies (une fois par caisse, plus
-// fort avec « !! » et « !!! ») ; le corps qui tombe est gardé.
+// fort avec « !! » et « !!! ») ; le corps qui tombe est gardé. Puis : plus de mélodie de signature de rareté (la rareté reste montrée par
+// la lumière, les rayons et la carte).
 export function sonsOuverture(chrono, reglages) {
   if (!chrono || !Array.isArray(chrono.caisses)) return [];
   const out = [];
@@ -149,7 +150,6 @@ export function sonsOuverture(chrono, reglages) {
     ajouter(c.etincelles[0], 'ouv-impact', c.i);
     ajouter(c.couvercle[0], 'ouv-couvercle', c.i);
     ajouter(c.lumiere[0], 'ouv-lumiere', c.i);
-    ajouter(c.rayons[0], `rarete-${c.rarete}`, c.i);
     if (c.explosion) ajouter(c.explosion[0], 'ouv-explosion', c.i);
     if (c.projection) {
       ajouter(c.projection.souffle, 'ouv-souffle', c.i);

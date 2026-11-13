@@ -137,7 +137,7 @@ const texteMesures = (v, r) => t('dev.sonsmenu.mesures', { variante: v, duree: n
 function majChoix() {
   $('choices-text').value = texteChoix(choix, catalogue, t('dev.sonsmenu.choix.note'));
 }
-for (const groupe of ['menu', 'chute', 'raretes', 'ouverture']) {
+for (const groupe of ['menu', 'chute', 'ouverture']) {
   const duGroupe = montres.filter((x) => x.groupe === groupe);
   if (duGroupe.length === 0) continue;
   const liste = el('ul', { class: 'slot-list' });

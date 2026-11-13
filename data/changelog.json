@@ -319,7 +319,7 @@
     { "name": "lot-8i", "version": "v0.8", "date": "2026-11-13", "titre": "Sons du menu, musique et volumes", "points": [
       "Le menu n'est plus muet : un même clic pour toutes les commandes, un son d'achat, des sons pour équiper, retirer, améliorer, fusionner et choisir un personnage.",
       "Une musique d'ambiance sombre accompagne les menus ; elle est jouée en direct par le jeu, change d'un tour à l'autre, se baisse pendant l'ouverture d'une caisse et s'éteint en fondu à « JOUER ».",
-      "Les ouvertures de caisses sont sonorisées : pas, tapis, tir, couvercle, lumière, puis une signature de plus en plus éclatante selon la rareté, jusqu'à l'explosion du légendaire ; un petit son accompagne le point d'exclamation des zombies.",
+      "Les ouvertures de caisses sont sonorisées : pas, tir, impact, couvercle, montée de la lumière, explosion du légendaire ; un petit son accompagne le point d'exclamation des zombies.",
       "La chute du Z sur l'écran de chargement se fait entendre (impact, tiret écrasé, rebond).",
       "Options : « Volume du jeu » et « Volume de la musique » séparés, dans le menu comme en partie ; « Son coupé » coupe tout. Ces réglages ne sont pas encore gardés après un rechargement.",
       "Tous ces sons sont calculés par le jeu, sans fichier audio ; aucun son avant le premier toucher. Sur iPhone, le commutateur silencieux les coupe.",
