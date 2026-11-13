@@ -4574,6 +4574,93 @@
 .e10-avatar-ouvrier { --av-peau: var(--perso-peau-verte); --av-habit: var(--perso-tissu-kaki); --av-acc: var(--perso-orange); }
 .e10-avatar-affame { --av-peau: var(--perso-peau-jaune); --av-habit: var(--perso-tissu-gris); }
 
+/* Retour du propriétaire : petit menu des avatars sous le grand portrait (à la place du bouton, du pseudo et du compte) ; tuiles carrées de
+   44 px au moins (cibles jointives), rond visible 4 px plus petit (l'écart entre deux ronds) ; autant de colonnes que la carte en tient (quatre dès
+   667 px de large : deux lignes pour sept avatars) ; l'avatar regardé est encadré en jaune (et coché : aria-checked). */
+.e10-choix {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: calc(6 * var(--u));
+  width: 100%;
+}
+
+.e10-choix[hidden],
+.e10-carte > .e10-bouton[hidden],
+.e10-compte[hidden] {
+  display: none;
+}
+
+.e10-choix-titre {
+  margin: 0;
+  font-family: var(--font-label);
+  font-size: max(13px, calc(14 * var(--u)));
+  letter-spacing: 0.04em;
+}
+
+.e10-choix-grille {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, max(44px, calc(50 * var(--u))));
+  justify-content: center;
+  width: 100%;
+}
+
+.e10-tuile {
+  box-sizing: border-box;
+  display: grid;
+  place-items: center;
+  width: max(44px, calc(50 * var(--u)));
+  height: max(44px, calc(50 * var(--u)));
+  padding: 2px;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  cursor: pointer;
+}
+
+.e10-tuile-rond {
+  box-sizing: border-box;
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  border: 2px solid var(--menu-e9-stats-bord);
+  border-radius: 50%;
+  background: var(--menu-e9-case);
+}
+
+.e10-tuile:hover .e10-tuile-rond {
+  border-color: var(--menu-texte-doux);
+}
+
+.e10-tuile[aria-checked='true'] .e10-tuile-rond {
+  border: 3px solid var(--color-money);
+}
+
+/* Pendant le choix : carte aux bords plus fins (quatre tuiles par ligne dès 667 px de large : deux lignes pour sept avatars), grand portrait un peu
+   plus petit ; tout tient sans défiler, de 667 × 375 à l'encoche (351 px de haut). « Valider » et « Annuler » restent collés au bas de la carte
+   par sécurité. */
+.e10-carte-choix {
+  gap: 4px;
+  padding: 6px 2px;
+}
+
+.e10-carte-choix .e10-avatar {
+  width: max(44px, calc(60 * var(--u)));
+  height: max(44px, calc(60 * var(--u)));
+}
+
+.e10-choix .e10-actions {
+  position: sticky;
+  bottom: -6px;
+  z-index: 1;
+  justify-content: center;
+  width: 100%;
+  padding: 0 0 6px;
+  margin-bottom: -6px;
+  background: var(--menu-e9-panneau);
+}
+
 .e10-pseudo {
   display: flex;
   align-items: center;
@@ -4678,6 +4765,11 @@
 .e10-actions {
   display: flex;
   gap: 8px;
+}
+
+/* « Valider » (pseudo, avatar) : même taille de texte que les autres boutons de la carte (la planche n'en fixe pas). */
+.e10-valider {
+  font-size: max(13px, calc(13 * var(--u)));
 }
 
 .e10-compte {
@@ -4880,6 +4972,18 @@
 .e10-remplacer:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+/* Retour du propriétaire : écran bas (moins de 400 px) : le titre du choix d'avatar n'est plus affiché (toujours lu : nom du groupe). */
+@media (max-height: 400px) {
+  .e10-choix-titre {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
 }
 
 /* Lot 8g : écran très bas (téléphone à encoche, 351 px de haut) : le Profil tient sans défiler ; les détails des statistiques (secondaires) sont masqués. */

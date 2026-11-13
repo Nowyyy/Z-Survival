@@ -168,9 +168,18 @@ test.describe('introduction du studio (E0)', () => {
     await expect(page.locator('#menu-jouer')).toBeVisible({ timeout: 60_000 });
   });
 
-  test('retour du propriétaire (son du logo) : attente du premier geste (« Toucher pour commencer » au milieu, sans logo, aucun contexte audio ni son avant) ; sans geste pendant 4 s, le logo se joue sans son ; au clavier, une touche démarre logo et son', async ({ page, baseURL }) => {
+  test('retour du propriétaire (son du logo) : attente du premier geste (« Toucher pour commencer » au milieu, sans logo, aucun contexte audio ni son avant) ; sans geste pendant 4 s, le logo se joue sans son ; au clavier, une touche démarre logo et son ; le logo n\'apparaît jamais avant son image (iPhone : rectangle vide)', async ({ page, baseURL }) => {
     const o = surveiller(page, baseURL);
     await page.addInitScript(() => {
+      // Retour du propriétaire (iPhone : rectangle vide une fraction de seconde après le toucher) : chaque fois que le logo devient visible,
+      // son image doit être lue et décodée (complete, largeur naturelle).
+      window.__logoMontre = [];
+      new MutationObserver((ms) => {
+        for (const m of ms) {
+          const n = m.target;
+          if (n.id === 'e0-logo' && (m.type === 'childList' || !n.hidden) && n.isConnected && !n.hidden) window.__logoMontre.push({ complet: n.complete, largeur: n.naturalWidth > 0, adresse: n.src.slice(0, 18) });
+        }
+      }).observe(document, { subtree: true, attributes: true, attributeFilter: ['hidden'] });
       window.__contextes = 0;
       const AC = window.AudioContext;
       window.AudioContext = class extends AC {
@@ -198,6 +207,7 @@ test.describe('introduction du studio (E0)', () => {
     expect([e.son, e.geste, e.logo]).toEqual(['muet', null, LOGO]);
     expect(e.affiche).toBeGreaterThanOrEqual(3990);
     expect(await page.evaluate(() => window.__contextes)).toBe(0);
+    expect(await page.evaluate(() => window.__logoMontre)).toEqual([{ complet: true, largeur: true, adresse: 'data:image/svg+xml' }]);
     await expect(page.locator('#e0-commencer')).toBeHidden();
     // Nouveau lancement : une touche (Entrée) démarre le logo et le son.
     await page.goto('/jeu.html?test=1&menu=1&intro=1&seed=1');
@@ -208,6 +218,7 @@ test.describe('introduction du studio (E0)', () => {
     expect([f.phase, f.logo, f.passe]).toEqual(['joue', LOGO, false]); // la touche a démarré, sans passer
     expect(Math.abs(f.sonDebut - f.affiche)).toBeLessThan(100);
     expect(await page.evaluate(() => window.__contextes)).toBe(1);
+    expect(await page.evaluate(() => window.__logoMontre)).toEqual([{ complet: true, largeur: true, adresse: 'data:image/svg+xml' }]);
     expect(o.fichiers.filter((x) => x.endsWith('.mp3'))).toEqual([`/${SON}`, `/${SON}`]); // une fois par chargement de page
     expect([o.problemes, o.externes]).toEqual([[], []]);
   });
@@ -544,6 +555,24 @@ test.describe('Connexion et Profil (E10)', () => {
         expect([r.w >= 44, r.h >= 44], s).toEqual([true, true]);
       }
       expect((await new AxeBuilder({ page }).analyze()).violations.map((v) => v.id)).toEqual([]);
+      // Retour du propriétaire : choix de l'avatar sous le grand portrait, dans la carte, sans défiler ; sept tuiles de 44 px au moins ; axe.
+      await page.locator('#menu-profil-changer').click();
+      await expect(page.locator('#menu-profil-choix')).toBeVisible();
+      await expect(page.locator('.e10-tuile')).toHaveCount(7);
+      expect(await page.locator('#menu-profil-carte').evaluate((n) => n.scrollHeight - n.clientHeight)).toBeLessThanOrEqual(1);
+      const carte = await boite(page, '#menu-profil-carte');
+      const portraitB = await boite(page, '#menu-profil-avatar');
+      const tuilesB = await page.locator('.e10-tuile').evaluateAll((ns) => ns.map((n) => n.getBoundingClientRect()).map((r) => ({ l: r.left, r: r.right, t: r.top, b: r.bottom, w: r.width, h: r.height })));
+      const valB = await boite(page, '#menu-profil-choix-valider');
+      const annB = await boite(page, '#menu-profil-choix-annuler');
+      for (const [nom, r] of [['portrait', portraitB], ...tuilesB.map((r, i) => [`tuile ${i}`, r]), ['valider', valB], ['annuler', annB]]) expect([r.l >= carte.l - 0.5, r.r <= carte.r + 0.5, r.t >= carte.t - 0.5, r.b <= carte.b + 0.5], nom).toEqual([true, true, true, true]);
+      for (const r of [...tuilesB, valB, annB]) expect([r.w >= 44, r.h >= 44]).toEqual([true, true]);
+      expect(new Set(tuilesB.map((r) => Math.round(r.t))).size).toBe(2); // deux lignes (quatre colonnes au moins)
+      expect(tuilesB.every((r) => r.t >= portraitB.b - 0.5)).toBe(true); // sous le grand portrait
+      expect([valB.t >= Math.max(...tuilesB.map((r) => r.b)) - 0.5]).toEqual([true]);
+      expect((await new AxeBuilder({ page }).analyze()).violations.map((v) => v.id)).toEqual([]);
+      await page.locator('#menu-profil-choix-annuler').click();
+      await expect(page.locator('#menu-profil-choix')).toBeHidden();
       await page.keyboard.press('Escape');
       await expect(page.locator('#menu-ecran-profil')).toBeHidden();
       await expect(page.locator('#menu-ecran-jouer')).toBeVisible();
@@ -559,17 +588,51 @@ test.describe('Connexion et Profil (E10)', () => {
     await ouvrirProfil(page);
     await expect(page.locator('.e10-stat-valeur')).toHaveText([`17 / 40`, /^—/, /^—/, /^—/, /^—/, `4${NNBSP}321`]);
     expect((await page.evaluate(() => window.__zsMenu.etat().menu.compte)).stats).toEqual([['meilleureManche', '17'], ['tues', ''], ['partiesHistoire', ''], ['partiesInfini', ''], ['temps', ''], ['argent', '4321']]);
-    // Retour du propriétaire : avatars d'après le personnage du jeu et les zombies.
-    await expect(page.locator('#menu-profil-avatar')).toHaveAttribute('aria-label', 'Avatar 1 sur 7 : Anonyme'); // personnage tout gris par défaut
-    const noms = [];
-    for (let i = 0; i < 7; i += 1) {
-      await page.locator('#menu-profil-changer').click();
-      noms.push(await page.locator('#menu-profil-avatar').getAttribute('aria-label'));
+    // Retours du propriétaire : avatars d'après le personnage du jeu et les zombies, personnage tout gris par défaut ; « Changer d'avatar » ouvre un
+    // petit menu des avatars sous le grand portrait (à la place du bouton, du pseudo et du compte) ; « Valider » garde le choix et rend la carte.
+    await expect(page.locator('#menu-profil-avatar')).toHaveAttribute('aria-label', 'Avatar 1 sur 7 : Anonyme');
+    await expect(page.locator('#menu-profil-choix')).toBeHidden();
+    await page.locator('#menu-profil-changer').click();
+    await expect(page.locator('#menu-profil-choix')).toBeVisible();
+    for (const s of ['#menu-profil-changer', '#menu-profil-pseudo', '#menu-profil-compte', '#menu-profil-google']) await expect(page.locator(s), s).toBeHidden();
+    await expect(page.locator('#menu-profil-avatar')).toBeVisible();
+    const groupe = page.getByRole('radiogroup', { name: 'Choisis ton avatar' });
+    await expect(groupe.getByRole('radio')).toHaveText(['', '', '', '', '', '', '']);
+    expect(await groupe.getByRole('radio').evaluateAll((ns) => ns.map((n) => n.getAttribute('aria-label')))).toEqual(['Anonyme', 'Survivant', 'Éclaireur', 'Tireur', 'Zombie rôdeur', 'Zombie de chantier', 'Zombie affamé']);
+    await expect(groupe.getByRole('radio', { name: 'Anonyme' })).toBeChecked();
+    await expect(groupe.getByRole('radio', { name: 'Anonyme' })).toBeFocused();
+    expect(await groupe.getByRole('radio').evaluateAll((ns) => ns.map((n) => n.tabIndex))).toEqual([0, -1, -1, -1, -1, -1, -1]); // un seul arrêt de tabulation
+    // Un toucher : aperçu dans le grand portrait, rien de posé (en-tête inchangé).
+    await groupe.getByRole('radio', { name: 'Éclaireur' }).click();
+    await expect(page.locator('#menu-profil-avatar')).toHaveAttribute('aria-label', 'Avatar 3 sur 7 : Éclaireur');
+    await expect(groupe.getByRole('radio', { name: 'Éclaireur' })).toBeChecked();
+    await expect(page.locator('#menu-entete-avatar')).toHaveClass(/e10-avatar-anonyme/);
+    expect(await page.evaluate(() => window.__zsMenu.etat().menu.compte)).toMatchObject({ avatar: 'anonyme', choix: 'eclaireur' });
+    // Clavier : flèches (en boucle), Début, Fin.
+    for (const [touche, nom] of [['ArrowRight', 'Tireur'], ['ArrowDown', 'Zombie rôdeur'], ['ArrowLeft', 'Tireur'], ['End', 'Zombie affamé'], ['ArrowRight', 'Anonyme'], ['ArrowUp', 'Zombie affamé'], ['Home', 'Anonyme']]) {
+      await page.keyboard.press(touche);
+      await expect(groupe.getByRole('radio', { name: nom }), touche).toBeFocused();
+      await expect(groupe.getByRole('radio', { name: nom }), touche).toBeChecked();
     }
-    expect(noms).toEqual(['Avatar 2 sur 7 : Survivant', 'Avatar 3 sur 7 : Éclaireur', 'Avatar 4 sur 7 : Tireur', 'Avatar 5 sur 7 : Zombie rôdeur', 'Avatar 6 sur 7 : Zombie de chantier', 'Avatar 7 sur 7 : Zombie affamé', 'Avatar 1 sur 7 : Anonyme']);
+    // Échap (ou Annuler) : la carte revient sans rien changer.
+    await groupe.getByRole('radio', { name: 'Tireur' }).click();
+    await page.keyboard.press('Escape');
+    await expect(page.locator('#menu-profil-choix')).toBeHidden();
+    await expect(page.locator('#menu-ecran-profil')).toBeVisible();
+    await expect(page.locator('#menu-profil-avatar')).toHaveAttribute('aria-label', 'Avatar 1 sur 7 : Anonyme');
+    await expect(page.locator('#menu-profil-changer')).toBeFocused();
+    for (const s of ['#menu-profil-changer', '#menu-profil-pseudo', '#menu-profil-compte']) await expect(page.locator(s), s).toBeVisible();
+    // Valider : avatar gardé (en-tête compris), carte normale, annonce lue.
     await page.locator('#menu-profil-changer').click();
-    await page.locator('#menu-profil-changer').click();
-    await expect(page.locator('#menu-profil-annonce')).toHaveText('Avatar 3 sur 7 : Éclaireur');
+    await groupe.getByRole('radio', { name: 'Éclaireur' }).click();
+    await page.locator('#menu-profil-choix-valider').click();
+    await expect(page.locator('#menu-profil-choix')).toBeHidden();
+    for (const s of ['#menu-profil-changer', '#menu-profil-pseudo', '#menu-profil-compte']) await expect(page.locator(s), s).toBeVisible();
+    await expect(page.locator('#menu-profil-changer')).toBeFocused();
+    await expect(page.locator('#menu-profil-avatar')).toHaveAttribute('aria-label', 'Avatar 3 sur 7 : Éclaireur');
+    await expect(page.locator('#menu-profil-annonce')).toHaveText('Avatar changé : Éclaireur.');
+    await expect(page.locator('#menu-entete-avatar')).toHaveClass(/e10-avatar-eclaireur/);
+    expect(await page.evaluate(() => window.__zsMenu.etat().menu.compte)).toMatchObject({ avatar: 'eclaireur', choix: null });
     expect(await page.locator('#menu-profil-avatar .av-lampe').count()).toBe(1); // lampe frontale du joueur B
     expect(await page.locator('#menu-profil-avatar .av-peau').first().evaluate((n) => getComputedStyle(n).fill)).toBe('rgb(232, 201, 168)'); // --perso-peau-joueur
     await page.locator('#menu-profil-pseudo-modifier').click();
