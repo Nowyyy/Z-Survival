@@ -270,7 +270,7 @@ test.describe('sons des ouvertures de caisses', () => {
     expect(await page.evaluate(() => window.__ecritures)).toEqual([]);
   });
 
-  test('ouverture ×10 avec un légendaire : une signature par caisse dans l\'ordre du tirage, sons de la projection ; « Passer » arrête les sons en cours, plus aucun nœud audio de l\'ouverture actif, tampons libérés', async ({ page, baseURL }) => {
+  test('ouverture ×10 avec un légendaire : sons de chaque caisse dans l\'ordre de la chronologie, explosion du légendaire ; « Passer » arrête les sons en cours, plus aucun nœud audio de l\'ouverture actif, tampons libérés', async ({ page, baseURL }) => {
     test.setTimeout(120_000);
     const o = surveiller(page, baseURL);
     await espions(page, [G_DIX]);
@@ -286,8 +286,9 @@ test.describe('sons des ouvertures de caisses', () => {
     const attendu = sonsOuverture(chrono, R);
     const rangLeg = chrono.caisses.findIndex((c) => c.legendaire);
     const n = (await sons(page)).journal.length;
-    // Jusqu'au milieu de la glissade du sang du légendaire (sons tenus en cours).
-    const arret = chrono.caisses[rangLeg].projection.decolle + 0.3;
+    // Jusqu'à l'explosion du légendaire, qui vient de partir (1,8 s) : des sons de l'ouverture sont en cours quel que soit le temps réel écoulé
+    // (retours du propriétaire : plus de sang ni de signature de rareté, les sons longs d'avant).
+    const arret = chrono.caisses[rangLeg].explosion[0] + 0.12;
     for (let t = 0; t < arret; t += 0.25) await avancer(page, Math.min(0.25, arret - t));
     let s = await sons(page);
     const joues = s.journal.slice(n).filter((e) => e.origine === 'ouverture');
@@ -295,7 +296,7 @@ test.describe('sons des ouvertures de caisses', () => {
     expect(joues.map((e) => e.son)).toEqual(attendu.filter((e) => e.t <= arret).map((e) => e.son));
     expect(joues.filter((e) => e.son.startsWith('rarete-'))).toEqual([]);
     expect(joues.filter((e) => e.son === 'ouv-lumiere').length).toBe(rangLeg + 1); // une montée de lumière par caisse ouverte
-    for (const nom of ['ouv-explosion', 'ouv-souffle', 'ouv-ecrasement', 'ouv-exclamation']) expect(joues.map((e) => e.son)).toContain(nom);
+    for (const nom of ['ouv-explosion', 'ouv-souffle', 'ouv-exclamation']) expect(joues.map((e) => e.son)).toContain(nom);
     expect(s.actifs.ouverture ?? 0).toBeGreaterThan(0); // des sons de l'ouverture sont en cours
     // « Passer » : son propre, puis tout est coupé et libéré.
     const m = s.journal.length;
