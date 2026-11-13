@@ -162,13 +162,22 @@ export async function ecransCompte({ t, bandeau, root, rootDialogue, monde, pose
   };
   // Retour du propriétaire : « Changer d'avatar » ouvre, sous le grand portrait, un petit menu des avatars (à la place du bouton, du pseudo et du
   // compte) : un toucher montre l'avatar dans le grand portrait, « Valider » le garde (en-tête compris) et rend la carte normale ; « Annuler » ou
-  // Échap la rendent sans rien changer. Groupe de boutons radio (flèches, Début, Fin ; un seul arrêt de tabulation).
+  // Échap la rendent sans rien changer. Groupe de boutons radio (flèches, Début, Fin ; un seul arrêt de tabulation). Le grand portrait garde sa taille ;
+// la liste défile vers le bas quand elle ne tient plus (portrait et boutons restent en place).
   const choix = el('div', ['e10-choix'], { id: 'menu-profil-choix' });
   choix.hidden = true;
   const choixTitre = el('p', ['e10-choix-titre'], { id: 'menu-profil-choix-titre' });
   choixTitre.textContent = t('game.menu.profil.avatar.choix');
   const tuiles = el('div', ['e10-choix-grille'], { role: 'radiogroup', 'aria-labelledby': 'menu-profil-choix-titre', id: 'menu-profil-choix-grille' });
   let regarde = null; // avatar montré pendant le choix
+  // La liste défile quand elle dépasse la place (d'autres avatars viendront) : l'avatar regardé est amené dans la liste seule (ni la carte ni la
+  // page ne bougent).
+  const montrerTuile = (b) => {
+    const g = tuiles.getBoundingClientRect();
+    const r = b.getBoundingClientRect();
+    if (r.top < g.top) tuiles.scrollTop -= g.top - r.top;
+    else if (r.bottom > g.bottom) tuiles.scrollTop += r.bottom - g.bottom;
+  };
   const boutonsAvatar = AVATARS.map((a) => {
     const b = el('button', ['e10-tuile', `e10-avatar-${a.id}`], { type: 'button', role: 'radio', id: `menu-profil-choix-${a.id}`, 'data-avatar': a.id, 'aria-label': t(NOMS_AVATARS[a.id]) });
     const rond = el('span', ['e10-tuile-rond']);
@@ -183,7 +192,10 @@ export async function ecransCompte({ t, bandeau, root, rootDialogue, monde, pose
       const oui = b.dataset.avatar === regarde;
       b.setAttribute('aria-checked', String(oui));
       b.tabIndex = oui ? 0 : -1;
-      if (oui && focus) b.focus({ preventScroll: true });
+      if (oui && focus) {
+        b.focus({ preventScroll: true });
+        montrerTuile(b);
+      }
     }
     poserAvatar(regarde);
   };
