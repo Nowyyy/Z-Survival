@@ -30,7 +30,8 @@ const el = (tag, props = {}, enfants = []) => {
 };
 const nombre = (x, d = 1) => (Number.isFinite(x) ? x.toFixed(d).replace('.', ',') : '–');
 
-const test = new URLSearchParams(location.search).get('test') === '1';
+const adresse = new URLSearchParams(location.search);
+const test = adresse.get('test') === '1';
 const [dict, brut, choixBrut, ouverturesBrut, raretesBrut] = await Promise.all([
   charger('data/i18n/atelier-sons-menu.json'), charger('data/menu/sons.json'), charger('data/menu/sons-choix.json').catch(() => null),
   charger('data/menu/ouvertures.json'), charger('data/menu/raretes.json'),
@@ -48,6 +49,11 @@ const lu = lireChoix(choixBrut, catalogue);
 const fichier = choixBrut?.choix && typeof choixBrut.choix === 'object' ? choixBrut.choix : {};
 const choix = { ...lu.choix }; // variantes cochées sur la page
 const sons = new Map(catalogue.sons.map((s) => [s.id, s]));
+// Retour du propriétaire : par défaut, seuls les sons encore à choisir (aChoisir de data/menu/sons.json) sont montrés ; ?tout=1 : tous les sons
+// et la musique (déjà choisis). Le texte de sons-choix.json reste complet dans les deux vues. Aucun son à choisir : tout est montré.
+const restants = catalogue.sons.filter((s) => s.aChoisir);
+const tout = adresse.get('tout') === '1' || restants.length === 0;
+const montres = tout ? catalogue.sons : restants;
 const journal = [];
 
 // ---------- lecture ----------
@@ -132,10 +138,12 @@ function majChoix() {
   $('choices-text').value = texteChoix(choix, catalogue, t('dev.sonsmenu.choix.note'));
 }
 for (const groupe of ['menu', 'chute', 'raretes', 'ouverture']) {
+  const duGroupe = montres.filter((x) => x.groupe === groupe);
+  if (duGroupe.length === 0) continue;
   const liste = el('ul', { class: 'slot-list' });
   const titreId = `groupe-${groupe}`;
   groupes.append(el('section', { class: 'atelier-section', 'aria-labelledby': titreId, 'data-groupe': groupe }, [el('h2', { class: 'atelier-heading', id: titreId, text: t(`dev.sonsmenu.groupe.${groupe}`) }), liste]));
-  for (const s of catalogue.sons.filter((x) => x.groupe === groupe)) {
+  for (const s of duGroupe) {
     const nom = t(`dev.sonsmenu.son.${s.id}`);
     const carte = el('li', { class: 'slot', 'data-son': s.id, id: `son-${s.id}` });
     carte.append(el('h3', { class: 'slot-title', id: `t-${s.id}` }, [nom, ' ', el('code', { class: 'slot-id', text: s.id })]));
@@ -234,6 +242,7 @@ for (const c of ['bourdon', ...COUCHES_MUSIQUE]) {
   });
   couches.append(el('label', { for: input.id }, [input, t(`dev.sonsmenu.couche.${c}`)]));
 }
+$('music').hidden = !tout; // musique déjà choisie : montrée seulement avec tous les sons
 $('music-play').addEventListener('click', lireLaMusique);
 $('music-stop').addEventListener('click', arreterMusique);
 $('music-status').textContent = t('dev.sonsmenu.musique.etat.arret');
@@ -264,6 +273,11 @@ if (lu.ecarts.length && choixBrut && Object.keys(fichier).length) {
   $('choices-gaps').textContent = t('dev.sonsmenu.ecarts', { liste: lu.ecarts.join(' ; ') });
   $('choices-gaps').hidden = false;
 }
+const lienVue = $('lien-vue');
+lienVue.textContent = t(tout ? 'dev.sonsmenu.lien.achoisir' : 'dev.sonsmenu.lien.tout');
+lienVue.href = `atelier-sons-menu.html${tout ? '' : '?tout=1'}`;
+lienVue.hidden = restants.length === 0;
+$('vue-note').textContent = t(tout ? 'dev.sonsmenu.vue.tout' : 'dev.sonsmenu.vue.achoisir', { n: restants.length });
 majChoix();
 statut.textContent = t(Contexte ? 'dev.sonsmenu.status.verrou' : 'dev.sonsmenu.status.absent');
 document.addEventListener('visibilitychange', () => {
@@ -273,7 +287,7 @@ $('app').hidden = false;
 
 if (test) {
   window.__zsSonsMenu = {
-    etat: () => ({ debloque: ctx !== null, contexte: ctx?.state ?? 'aucun', volume, actives: actives.size, tampons: tampons.size, choix: { ...choix }, texte: $('choices-text').value, demo, musique: musique?.etat() ?? null, ecarts: [...lu.ecarts] }),
+    etat: () => ({ vue: tout ? 'tout' : 'a-choisir', montres: montres.map((s) => s.id), debloque: ctx !== null, contexte: ctx?.state ?? 'aucun', volume, actives: actives.size, tampons: tampons.size, choix: { ...choix }, texte: $('choices-text').value, demo, musique: musique?.etat() ?? null, ecarts: [...lu.ecarts] }),
     journal: () => journal.map((e) => ({ ...e })),
     mesures: (id, variante, version = 1) => ({ ...rendu(id, variante, version).mesures }),
   };

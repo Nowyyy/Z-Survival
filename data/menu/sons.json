@@ -1,5 +1,5 @@
 {
-  "_provisoire": "Lot 8i : sons du menu principal, synthétisés en code (js/menu/sons/synthese.js), aucun fichier audio. AUCUN SON N'A ÉTÉ ÉCOUTÉ PAR L'AGENT : recettes provisoires, à juger à l'oreille par le propriétaire sur atelier-sons-menu.html, variante retenue dans data/menu/sons-choix.json (Docs/ref/sons-menu.md : « Lot 8i »). sons : id, groupe (chute : écran de chargement ; menu et raretes : chargés après l'écran de chargement ; ouverture : chargés avec une ouverture de caisses, libérés avec elle), gain de lecture (0 à 1), defaut (variante jouée sans choix), versions (graines alternées, 1 à 3), variantes A, B (et C) : nom (caractère), dur (s), crete (dBFS, −3 par défaut), couches, post. Couches (t) : ton (forme sin, tri, scie, carre ; f Hz glissant vers f2 en tg s ; a attaque, d décroissance, dur ; vib, trem, desac, lp), bruit (couleur blanc, rose, brun ; filtre bas, haut, bande ; f, f2, q ; a, d, dur ou env par points), modes (partiels [Hz, gain, décroissance], mult), grains (n éclats entre de et de + sur ; sorte ton ou bruit ; f [bas, haut] ; d [bas, haut] ; serre), notes (timbre cloche, cuivre, verre, pince ; liste [instant, note MIDI, gain, décroissance]), moteur (recette d'une famille de js/core/synth2.js) ; at : début de la couche (s), gain. post : sat (saturation), hp, lp (Hz), echo [retard, réinjection, part], reverb [part, durée, amortissement], fin (fondu de sortie, s). clic : écart minimal entre deux clics (s), fenêtre du volume dégressif (s), facteur, plancher. musique : séquenceur en temps réel (js/core/musique-menu.js, js/menu/sons/musique.js) : bpm, temps par mesure, tonique (note MIDI), graine, bourdon, couches (pouls, ostinato, nappe, cloche, souffle, tic) et sections (mesures, niveau de chaque couche de 0 à 1 : les couches entrent et sortent) ; baisseOuverture : niveau pendant une ouverture de caisses (1 : pas de baisse) ; fonduJouer : fondu de sortie à « JOUER » (s).",
+  "_provisoire": "Lot 8i : sons du menu principal, synthétisés en code (js/menu/sons/synthese.js), aucun fichier audio. AUCUN SON N'A ÉTÉ ÉCOUTÉ PAR L'AGENT : recettes provisoires, à juger à l'oreille par le propriétaire sur atelier-sons-menu.html, variante retenue dans data/menu/sons-choix.json (Docs/ref/sons-menu.md : « Lot 8i »). sons : id, groupe (chute : écran de chargement ; menu et raretes : chargés après l'écran de chargement ; ouverture : chargés avec une ouverture de caisses, libérés avec elle), gain de lecture (0 à 1), defaut (variante jouée sans choix), versions (graines alternées, 1 à 3), variantes A, B (puis C à G) : nom (caractère) ; aChoisir : son encore à juger par le propriétaire (la page d'écoute ne montre que ceux-là par défaut), dur (s), crete (dBFS, −3 par défaut), couches, post. Couches (t) : ton (forme sin, tri, scie, carre ; f Hz glissant vers f2 en tg s ; a attaque, d décroissance, dur ; vib, trem, desac, lp), bruit (couleur blanc, rose, brun ; filtre bas, haut, bande ; f, f2, q ; a, d, dur ou env par points), modes (partiels [Hz, gain, décroissance], mult), grains (n éclats entre de et de + sur ; sorte ton ou bruit ; f [bas, haut] ; d [bas, haut] ; serre), notes (timbre cloche, cuivre, verre, pince, orgue, bip ; liste [instant, note MIDI, gain, décroissance]), moteur (recette d'une famille de js/core/synth2.js) ; at : début de la couche (s), gain. post : sat (saturation), hp, lp (Hz), echo [retard, réinjection, part], reverb [part, durée, amortissement], fin (fondu de sortie, s). clic : écart minimal entre deux clics (s), fenêtre du volume dégressif (s), facteur, plancher. musique : séquenceur en temps réel (js/core/musique-menu.js, js/menu/sons/musique.js) : bpm, temps par mesure, tonique (note MIDI), graine, bourdon, couches (pouls, ostinato, nappe, cloche, souffle, tic) et sections (mesures, niveau de chaque couche de 0 à 1 : les couches entrent et sortent) ; baisseOuverture : niveau pendant une ouverture de caisses (1 : pas de baisse) ; fonduJouer : fondu de sortie à « JOUER » (s).",
   "frequence": 22050,
   "clic": { "ecart": 0.05, "fenetre": 0.25, "degressif": 0.6, "plancher": 0.25 },
   "sons": [
@@ -155,7 +155,7 @@
       ]
     },
     {
-      "id": "rarete-commun", "groupe": "raretes", "gain": 0.35, "defaut": "A",
+      "id": "rarete-commun", "groupe": "raretes", "gain": 0.35, "defaut": "A", "aChoisir": true,
       "variantes": [
         { "id": "A", "nom": "cloches : un toc discret", "dur": 0.35, "couches": [
           { "t": "notes", "timbre": "cloche", "liste": [[0, 62, 1, 0.07]] }
@@ -165,11 +165,23 @@
         ], "post": { "lp": 1800 } },
         { "id": "C", "nom": "verre : un tintement voilé", "dur": 0.35, "couches": [
           { "t": "notes", "timbre": "verre", "liste": [[0, 74, 1, 0.06]] }
-        ], "post": { "lp": 3500 } }
+        ], "post": { "lp": 3500 } },
+        { "id": "D", "nom": "fanfare rythmée : un « pom » grave", "dur": 0.35, "couches": [
+          { "t": "notes", "timbre": "cuivre", "liste": [[0, 55, 1, 0.06]] }
+        ], "post": { "lp": 1800 } },
+        { "id": "E", "nom": "boîte à musique : une note pincée", "dur": 0.35, "couches": [
+          { "t": "notes", "timbre": "pince", "liste": [[0, 74, 1, 0.08]] }
+        ], "post": { "lp": 3000 } },
+        { "id": "F", "nom": "orgue sombre : une note basse", "dur": 0.35, "couches": [
+          { "t": "notes", "timbre": "orgue", "liste": [[0, 50, 1, 0.1]] }
+        ], "post": { "lp": 1500 } },
+        { "id": "G", "nom": "arpège électrique : un bip", "dur": 0.35, "couches": [
+          { "t": "notes", "timbre": "bip", "liste": [[0, 62, 1, 0.05]] }
+        ], "post": { "lp": 2500 } }
       ]
     },
     {
-      "id": "rarete-peu-commun", "groupe": "raretes", "gain": 0.45, "defaut": "A",
+      "id": "rarete-peu-commun", "groupe": "raretes", "gain": 0.45, "defaut": "A", "aChoisir": true,
       "variantes": [
         { "id": "A", "nom": "cloches : deux notes montantes", "dur": 0.6, "couches": [
           { "t": "notes", "timbre": "cloche", "liste": [[0, 62, 0.8, 0.1], [0.11, 69, 1, 0.16]] }
@@ -179,11 +191,23 @@
         ], "post": { "lp": 2600, "reverb": [0.15, 0.1, 0.4] } },
         { "id": "C", "nom": "verre : deux tintements", "dur": 0.6, "couches": [
           { "t": "notes", "timbre": "verre", "liste": [[0, 74, 0.8, 0.1], [0.12, 81, 1, 0.15]] }
-        ], "post": { "reverb": [0.2, 0.1, 0.3] } }
+        ], "post": { "reverb": [0.2, 0.1, 0.3] } },
+        { "id": "D", "nom": "fanfare rythmée : « ta-taa »", "dur": 0.6, "couches": [
+          { "t": "notes", "timbre": "cuivre", "liste": [[0, 57, 0.8, 0.06], [0.12, 62, 1, 0.16]] }
+        ], "post": { "lp": 2600, "reverb": [0.15, 0.1, 0.4] } },
+        { "id": "E", "nom": "boîte à musique : deux notes", "dur": 0.6, "couches": [
+          { "t": "notes", "timbre": "pince", "liste": [[0, 74, 0.9, 0.1], [0.13, 77, 1, 0.15]] }
+        ], "post": { "lp": 4000, "reverb": [0.2, 0.1, 0.3] } },
+        { "id": "F", "nom": "orgue sombre : quinte tenue", "dur": 0.6, "couches": [
+          { "t": "notes", "timbre": "orgue", "liste": [[0, 50, 1, 0.2], [0, 57, 0.7, 0.2]] }
+        ], "post": { "lp": 2000, "reverb": [0.15, 0.1, 0.4] } },
+        { "id": "G", "nom": "arpège électrique : deux bips montants", "dur": 0.6, "couches": [
+          { "t": "notes", "timbre": "bip", "liste": [[0, 62, 0.9, 0.05], [0.07, 69, 1, 0.08]] }
+        ], "post": { "lp": 3500, "echo": [0.09, 0.3, 0.25] } }
       ]
     },
     {
-      "id": "rarete-rare", "groupe": "raretes", "gain": 0.55, "defaut": "A",
+      "id": "rarete-rare", "groupe": "raretes", "gain": 0.55, "defaut": "A", "aChoisir": true,
       "variantes": [
         { "id": "A", "nom": "cloches : arpège mineur et scintillement", "dur": 1.0, "couches": [
           { "t": "notes", "timbre": "cloche", "liste": [[0, 62, 0.8, 0.14], [0.09, 65, 0.85, 0.16], [0.18, 69, 0.9, 0.2], [0.27, 74, 1, 0.3]] },
@@ -196,11 +220,24 @@
         { "id": "C", "nom": "verre : trois notes et souffle", "dur": 1.0, "couches": [
           { "t": "notes", "timbre": "verre", "liste": [[0, 74, 0.8, 0.16], [0.12, 77, 0.9, 0.18], [0.24, 81, 1, 0.3]] },
           { "t": "bruit", "couleur": "rose", "filtre": "bande", "f": 2500, "f2": 5000, "q": 2, "env": [[0, 0], [0.4, 0.5], [1, 0]], "gain": 0.12 }
-        ], "post": { "echo": [0.12, 0.3, 0.25] } }
+        ], "post": { "echo": [0.12, 0.3, 0.25] } },
+        { "id": "D", "nom": "fanfare rythmée : « ta-ta-taa » qui monte, timbale", "dur": 1.0, "couches": [
+          { "t": "notes", "timbre": "cuivre", "liste": [[0, 57, 0.8, 0.07], [0.11, 57, 0.8, 0.07], [0.22, 62, 0.9, 0.1], [0.36, 66, 1, 0.3]] },
+          { "t": "ton", "f": 73.4, "a": 0.01, "d": 0.25, "gain": 0.5 }
+        ], "post": { "lp": 3400, "echo": [0.13, 0.25, 0.2], "reverb": [0.2, 0.12, 0.4] } },
+        { "id": "E", "nom": "boîte à musique : quatre notes qui descendent puis remontent", "dur": 1.0, "couches": [
+          { "t": "notes", "timbre": "cloche", "liste": [[0, 81, 0.8, 0.12], [0.1, 77, 0.85, 0.12], [0.2, 74, 0.9, 0.14], [0.32, 81, 1, 0.3]] }
+        ], "post": { "echo": [0.11, 0.3, 0.25], "reverb": [0.2, 0.12, 0.3] } },
+        { "id": "F", "nom": "orgue sombre : accord mineur qui s'ouvre", "dur": 1.0, "couches": [
+          { "t": "notes", "timbre": "orgue", "liste": [[0, 50, 1, 0.35], [0, 57, 0.8, 0.35], [0.15, 65, 0.8, 0.35]] }
+        ], "post": { "lp": 2600, "reverb": [0.2, 0.12, 0.4] } },
+        { "id": "G", "nom": "arpège électrique : cinq notes rapides", "dur": 1.0, "couches": [
+          { "t": "notes", "timbre": "bip", "liste": [[0.0, 62, 0.8, 0.07], [0.06, 65, 0.8500000000000001, 0.07], [0.12, 69, 0.9, 0.07], [0.18, 74, 0.9500000000000001, 0.07], [0.24, 77, 1.0, 0.3]] }
+        ], "post": { "lp": 4500, "echo": [0.12, 0.35, 0.3] } }
       ]
     },
     {
-      "id": "rarete-epique", "groupe": "raretes", "gain": 0.7, "defaut": "A",
+      "id": "rarete-epique", "groupe": "raretes", "gain": 0.7, "defaut": "A", "aChoisir": true,
       "variantes": [
         { "id": "A", "nom": "cloches : accord plaqué, coup grave et scintillement", "dur": 1.6, "couches": [
           { "t": "ton", "f": 110, "f2": 36.7, "tg": 0.05, "a": 0.002, "d": 0.3, "gain": 0.9 },
@@ -216,11 +253,28 @@
           { "t": "notes", "timbre": "verre", "liste": [[0, 62, 0.8, 0.5], [0.05, 69, 0.8, 0.5], [0.1, 74, 0.9, 0.5], [0.3, 77, 0.9, 0.5], [0.5, 86, 1, 0.5]] },
           { "t": "ton", "forme": "scie", "h": 6, "f": 293.7, "desac": 18, "lp": 1400, "env": [[0, 0], [0.3, 1], [0.7, 0.6], [1, 0]], "vib": [5, 0.006], "gain": 0.35 },
           { "t": "ton", "f": 73.4, "a": 0.01, "d": 0.4, "gain": 0.6 }
-        ], "post": { "echo": [0.16, 0.4, 0.3], "reverb": [0.25, 0.15, 0.3] } }
+        ], "post": { "echo": [0.16, 0.4, 0.3], "reverb": [0.25, 0.15, 0.3] } },
+        { "id": "D", "nom": "fanfare rythmée : montée en cinq notes, accord tenu, timbale", "dur": 1.6, "couches": [
+          { "t": "ton", "f": 100, "f2": 36.7, "tg": 0.06, "a": 0.002, "d": 0.35, "gain": 0.9 },
+          { "t": "notes", "timbre": "cuivre", "liste": [[0, 50, 1, 0.1], [0.12, 57, 0.9, 0.1], [0.24, 62, 0.9, 0.1], [0.36, 66, 0.9, 0.12], [0.52, 69, 1, 0.6], [0.52, 62, 0.7, 0.6]] }
+        ], "post": { "lp": 4400, "echo": [0.15, 0.3, 0.25], "reverb": [0.25, 0.15, 0.4] } },
+        { "id": "E", "nom": "boîte à musique : cascade qui descend puis s'élève, scintillement", "dur": 1.6, "couches": [
+          { "t": "ton", "f": 90, "f2": 36.7, "tg": 0.06, "a": 0.002, "d": 0.3, "gain": 0.6 },
+          { "t": "notes", "timbre": "cloche", "liste": [[0, 86, 0.8, 0.15], [0.1, 81, 0.8, 0.15], [0.2, 77, 0.85, 0.15], [0.3, 74, 0.9, 0.2], [0.45, 77, 0.9, 0.25], [0.6, 81, 0.95, 0.3], [0.78, 86, 1, 0.5]] },
+          { "t": "grains", "sorte": "ton", "n": 14, "de": 0.4, "sur": 0.9, "f": [3500, 9000], "d": [0.01, 0.05], "gain": 0.14 }
+        ], "post": { "echo": [0.14, 0.4, 0.3], "reverb": [0.25, 0.15, 0.3] } },
+        { "id": "F", "nom": "orgue sombre : grand accord mineur à deux étages", "dur": 1.6, "couches": [
+          { "t": "ton", "f": 100, "f2": 36.7, "tg": 0.06, "a": 0.002, "d": 0.4, "gain": 0.9 },
+          { "t": "notes", "timbre": "orgue", "liste": [[0, 38, 1, 0.6], [0, 50, 0.9, 0.6], [0, 57, 0.8, 0.6], [0.2, 65, 0.8, 0.6], [0.5, 69, 0.9, 0.6], [0.5, 74, 0.8, 0.6]] }
+        ], "post": { "lp": 3600, "echo": [0.16, 0.3, 0.25], "reverb": [0.25, 0.15, 0.4] } },
+        { "id": "G", "nom": "arpège électrique : huit notes qui filent, accord tenu", "dur": 1.6, "couches": [
+          { "t": "ton", "f": 100, "f2": 36.7, "tg": 0.06, "a": 0.002, "d": 0.35, "gain": 0.8 },
+          { "t": "notes", "timbre": "bip", "liste": [[0.0, 50, 0.75, 0.07], [0.06, 57, 0.78, 0.07], [0.12, 62, 0.81, 0.07], [0.18, 65, 0.84, 0.07], [0.24, 69, 0.87, 0.07], [0.3, 74, 0.9, 0.07], [0.36, 77, 0.9299999999999999, 0.07], [0.42, 81, 0.96, 0.07], [0.5, 74, 0.9, 0.5], [0.5, 81, 0.9, 0.5]] }
+        ], "post": { "lp": 5000, "echo": [0.12, 0.4, 0.3], "reverb": [0.2, 0.15, 0.4] } }
       ]
     },
     {
-      "id": "rarete-legendaire", "groupe": "raretes", "gain": 0.9, "defaut": "A",
+      "id": "rarete-legendaire", "groupe": "raretes", "gain": 0.9, "defaut": "A", "aChoisir": true,
       "variantes": [
         { "id": "A", "nom": "cloches : cascade dorée en majeur, coup grave, pluie d'éclats", "dur": 2.6, "couches": [
           { "t": "ton", "f": 130, "f2": 36.7, "tg": 0.06, "a": 0.002, "d": 0.5 },
@@ -241,7 +295,31 @@
           { "t": "ton", "forme": "scie", "h": 8, "f": 220, "desac": 16, "lp": 2200, "env": [[0, 0], [0.25, 1], [0.6, 0.7], [1, 0]], "vib": [5.3, 0.006], "gain": 0.3 },
           { "t": "notes", "timbre": "verre", "liste": [[0, 74, 0.9, 0.5], [0.15, 78, 0.9, 0.5], [0.3, 81, 0.9, 0.6], [0.45, 86, 1, 0.7], [0.65, 90, 0.9, 0.8], [0.85, 93, 0.9, 0.9], [1.1, 98, 0.8, 0.9]] },
           { "t": "grains", "sorte": "ton", "n": 34, "de": 0.4, "sur": 1.7, "f": [4000, 9500], "d": [0.01, 0.06], "gain": 0.16 }
-        ], "post": { "echo": [0.2, 0.45, 0.35], "reverb": [0.25, 0.2, 0.3], "fin": 0.3 } }
+        ], "post": { "echo": [0.2, 0.45, 0.35], "reverb": [0.25, 0.2, 0.3], "fin": 0.3 } },
+        { "id": "D", "nom": "fanfare rythmée : appel, grand accord majeur, reprise à l'aigu, timbales, éclats", "dur": 2.6, "couches": [
+          { "t": "ton", "f": 120, "f2": 36.7, "tg": 0.06, "a": 0.002, "d": 0.55, "gain": 1 },
+          { "t": "ton", "at": 0.78, "f": 110, "f2": 36.7, "tg": 0.07, "a": 0.002, "d": 0.5, "gain": 0.7 },
+          { "t": "notes", "timbre": "cuivre", "liste": [[0, 50, 1, 0.12], [0.13, 57, 0.9, 0.1], [0.26, 62, 0.9, 0.1], [0.39, 66, 0.9, 0.12], [0.52, 69, 1, 0.2], [0.78, 74, 1, 0.9], [0.78, 66, 0.8, 0.9], [0.78, 62, 0.7, 0.9], [1.3, 78, 0.9, 0.9], [1.3, 81, 0.8, 0.9]] },
+          { "t": "grains", "sorte": "ton", "n": 30, "de": 0.8, "sur": 1.5, "f": [3500, 9000], "d": [0.01, 0.05], "gain": 0.14 }
+        ], "post": { "lp": 6000, "echo": [0.18, 0.4, 0.3], "reverb": [0.25, 0.2, 0.35], "fin": 0.3 } },
+        { "id": "E", "nom": "boîte à musique : descente puis envolée en majeur, accord de verre, pluie d'éclats", "dur": 2.6, "couches": [
+          { "t": "ton", "f": 110, "f2": 36.7, "tg": 0.06, "a": 0.002, "d": 0.5, "gain": 0.8 },
+          { "t": "notes", "timbre": "cloche", "liste": [[0, 86, 0.8, 0.2], [0.1, 81, 0.8, 0.2], [0.2, 78, 0.85, 0.2], [0.3, 74, 0.9, 0.25], [0.48, 78, 0.9, 0.3], [0.62, 81, 0.95, 0.4], [0.76, 86, 1, 0.5], [0.92, 90, 0.95, 0.7], [1.1, 93, 0.9, 0.9]] },
+          { "t": "notes", "timbre": "verre", "liste": [[0.48, 62, 0.5, 0.8], [0.48, 66, 0.45, 0.8], [0.48, 69, 0.45, 0.8]] },
+          { "t": "grains", "sorte": "ton", "n": 40, "de": 0.5, "sur": 1.7, "f": [3500, 9000], "d": [0.01, 0.05], "gain": 0.18 }
+        ], "post": { "echo": [0.17, 0.45, 0.35], "reverb": [0.25, 0.2, 0.3], "fin": 0.3 } },
+        { "id": "F", "nom": "orgue : mineur grave qui bascule en majeur éclatant, carillon", "dur": 2.6, "couches": [
+          { "t": "ton", "f": 120, "f2": 36.7, "tg": 0.06, "a": 0.002, "d": 0.55, "gain": 1 },
+          { "t": "notes", "timbre": "orgue", "liste": [[0, 38, 1, 0.9], [0, 50, 0.9, 0.9], [0, 57, 0.8, 0.9], [0, 65, 0.7, 0.5], [0.6, 66, 0.9, 1], [0.6, 69, 0.9, 1], [0.6, 74, 0.9, 1], [1.2, 78, 0.8, 1], [1.2, 81, 0.8, 1], [1.2, 86, 0.7, 1]] },
+          { "t": "notes", "timbre": "cloche", "liste": [[0.6, 86, 0.5, 0.6], [0.9, 90, 0.5, 0.6], [1.2, 93, 0.5, 0.8]] },
+          { "t": "grains", "sorte": "ton", "n": 30, "de": 0.7, "sur": 1.5, "f": [3500, 9000], "d": [0.01, 0.05], "gain": 0.14 }
+        ], "post": { "lp": 5500, "echo": [0.2, 0.4, 0.3], "reverb": [0.25, 0.2, 0.35], "fin": 0.3 } },
+        { "id": "G", "nom": "arpège électrique : deux octaves en majeur, accord tenu, coup grave, éclats", "dur": 2.6, "couches": [
+          { "t": "ton", "f": 120, "f2": 36.7, "tg": 0.06, "a": 0.002, "d": 0.5, "gain": 0.9 },
+          { "t": "notes", "timbre": "bip", "liste": [[0.0, 50, 0.7, 0.07], [0.05, 54, 0.725, 0.07], [0.1, 57, 0.75, 0.07], [0.15000000000000002, 62, 0.7749999999999999, 0.07], [0.2, 66, 0.7999999999999999, 0.07], [0.25, 69, 0.825, 0.07], [0.30000000000000004, 74, 0.85, 0.07], [0.35000000000000003, 78, 0.875, 0.07], [0.4, 81, 0.8999999999999999, 0.07], [0.45, 86, 0.9249999999999999, 0.07], [0.5, 90, 0.95, 0.07], [0.55, 93, 0.975, 0.07], [0.62, 74, 0.9, 0.9], [0.62, 78, 0.85, 0.9], [0.62, 81, 0.85, 0.9], [0.62, 86, 0.8, 0.9]] },
+          { "t": "notes", "timbre": "cuivre", "liste": [[0.62, 50, 0.5, 0.9], [0.62, 57, 0.4, 0.9]] },
+          { "t": "grains", "sorte": "ton", "n": 34, "de": 0.6, "sur": 1.6, "f": [3500, 9000], "d": [0.01, 0.05], "gain": 0.16 }
+        ], "post": { "lp": 6500, "echo": [0.15, 0.45, 0.35], "reverb": [0.25, 0.2, 0.35], "fin": 0.3 } }
       ]
     },
     {
@@ -388,52 +466,6 @@
       ]
     },
     {
-      "id": "ouv-sang", "groupe": "ouverture", "gain": 0.5, "defaut": "A",
-      "variantes": [
-        { "id": "A", "nom": "glissement humide", "dur": 1.5, "couches": [
-          { "t": "bruit", "couleur": "rose", "filtre": "bande", "f": 700, "f2": 380, "q": 2, "env": [[0, 0], [0.1, 1], [0.8, 0.7], [1, 0]], "trem": [17, 0.75] },
-          { "t": "grains", "sorte": "ton", "n": 12, "de": 0.1, "sur": 1.3, "f": [300, 900], "d": [0.01, 0.03], "gain": 0.4 }
-        ], "post": { "lp": 2400, "fin": 0.2 } },
-        { "id": "B", "nom": "gouttes et frottement", "dur": 1.5, "couches": [
-          { "t": "grains", "sorte": "ton", "n": 22, "de": 0, "sur": 1.4, "f": [400, 1400], "d": [0.008, 0.03] },
-          { "t": "bruit", "couleur": "rose", "filtre": "bande", "f": 500, "q": 1.4, "env": [[0, 0], [0.15, 0.5], [0.9, 0.4], [1, 0]], "trem": [9, 0.6], "gain": 0.5 }
-        ], "post": { "lp": 2800, "fin": 0.2 } }
-      ]
-    },
-    {
-      "id": "ouv-zombie-sursaut", "groupe": "ouverture", "gain": 0.6, "defaut": "A", "versions": 2,
-      "variantes": [
-        { "id": "A", "nom": "grognement bref", "dur": 0.3, "couches": [
-          { "t": "moteur", "recette": { "kind": "voice", "vary": 0.03, "jitter": 0.025, "shimmer": 0.1, "oq": 0.6, "sq": 2.5, "wander": 0.03, "breathPulse": 0.6, "drift": 0.04, "driftRate": 0.4, "hp": 70, "tilt": 850, "drive": 2.6, "dur": 0.28, "contour": [[0, 1.05], [0.3, 1.35], [1, 1.15]], "vowels": ["eu", "ae"], "env": [[0, 0], [0.08, 1], [0.5, 0.6], [1, 0]], "breath": 0.1, "sub": 0.06, "rough": { "rate": 40, "depth": 0.09 }, "f0": 100, "formantScale": 0.94 } }
-        ] },
-        { "id": "B", "nom": "hoquet", "dur": 0.22, "couches": [
-          { "t": "moteur", "recette": { "kind": "voice", "vary": 0.03, "jitter": 0.02, "shimmer": 0.1, "oq": 0.6, "sq": 2.5, "wander": 0.03, "breathPulse": 0.6, "drift": 0.04, "driftRate": 0.4, "hp": 70, "tilt": 950, "drive": 2.2, "dur": 0.2, "contour": [[0, 1], [0.4, 1.7], [1, 1.5]], "vowels": ["u", "i"], "env": [[0, 0], [0.1, 1], [0.6, 0.5], [1, 0]], "breath": 0.14, "sub": 0.04, "rough": { "rate": 45, "depth": 0.05 }, "f0": 125, "formantScale": 1 } }
-        ] }
-      ]
-    },
-    {
-      "id": "ouv-zombie-saut", "groupe": "ouverture", "gain": 0.6, "defaut": "A", "versions": 2,
-      "variantes": [
-        { "id": "A", "nom": "cri court", "dur": 0.5, "couches": [
-          { "t": "moteur", "recette": { "kind": "voice", "vary": 0.03, "jitter": 0.025, "shimmer": 0.1, "oq": 0.6, "sq": 2.5, "wander": 0.03, "breathPulse": 0.6, "drift": 0.04, "driftRate": 0.4, "hp": 70, "tilt": 950, "drive": 2.8, "dur": 0.48, "contour": [[0, 1], [0.2, 1.6], [0.6, 1.5], [1, 1.2]], "vowels": ["a", "ae"], "env": [[0, 0], [0.06, 1], [0.6, 0.7], [1, 0]], "breath": 0.09, "sub": 0.06, "rough": { "rate": 38, "depth": 0.1 }, "f0": 108, "formantScale": 0.95 } }
-        ] },
-        { "id": "B", "nom": "râle surpris", "dur": 0.55, "couches": [
-          { "t": "moteur", "recette": { "kind": "voice", "vary": 0.03, "jitter": 0.03, "shimmer": 0.12, "oq": 0.6, "sq": 2.5, "wander": 0.03, "breathPulse": 0.6, "drift": 0.04, "driftRate": 0.4, "hp": 70, "tilt": 800, "drive": 2.6, "dur": 0.52, "contour": [[0, 1.1], [0.3, 1.3], [1, 0.95]], "vowels": ["o", "a"], "env": [[0, 0], [0.1, 1], [0.6, 0.7], [1, 0]], "breath": 0.13, "sub": 0.12, "rough": { "rate": 28, "depth": 0.14 }, "f0": 86, "formantScale": 0.9 } }
-        ] }
-      ]
-    },
-    {
-      "id": "ouv-zombie-cri", "groupe": "ouverture", "gain": 0.6, "defaut": "A", "versions": 2,
-      "variantes": [
-        { "id": "A", "nom": "cri qui retombe", "dur": 0.72, "couches": [
-          { "t": "moteur", "recette": { "kind": "voice", "vary": 0.03, "jitter": 0.025, "shimmer": 0.1, "oq": 0.6, "sq": 2.5, "wander": 0.03, "breathPulse": 0.6, "drift": 0.04, "driftRate": 0.4, "hp": 70, "tilt": 1000, "drive": 3, "dur": 0.7, "contour": [[0, 1.4], [0.25, 1.65], [0.6, 1.3], [1, 0.8]], "vowels": ["a", "o"], "env": [[0, 0], [0.05, 1], [0.6, 0.8], [1, 0]], "breath": 0.09, "sub": 0.08, "rough": { "rate": 36, "depth": 0.12 }, "f0": 112, "formantScale": 0.95 } }
-        ] },
-        { "id": "B", "nom": "râle long", "dur": 0.8, "couches": [
-          { "t": "moteur", "recette": { "kind": "voice", "vary": 0.03, "jitter": 0.03, "shimmer": 0.12, "oq": 0.6, "sq": 2.5, "wander": 0.03, "breathPulse": 0.6, "drift": 0.04, "driftRate": 0.4, "hp": 70, "tilt": 800, "drive": 2.6, "dur": 0.78, "contour": [[0, 1.15], [0.3, 1.05], [1, 0.7]], "vowels": ["a", "o", "u"], "env": [[0, 0], [0.08, 1], [0.6, 0.8], [1, 0]], "breath": 0.1, "sub": 0.13, "rough": { "rate": 26, "depth": 0.12 }, "rattle": { "from": 0.5, "rate": 16, "gain": 0.1, "f": 800 }, "f0": 84, "formantScale": 0.9 } }
-        ] }
-      ]
-    },
-    {
       "id": "ouv-zombie-tombe", "groupe": "ouverture", "gain": 0.6, "defaut": "A",
       "variantes": [
         { "id": "A", "nom": "corps sur béton", "dur": 0.4, "couches": [
@@ -446,6 +478,22 @@
           { "t": "grains", "sorte": "bruit", "n": 6, "de": 0.01, "sur": 0.12, "f": [500, 1300], "d": [0.004, 0.012], "gain": 0.6 },
           { "t": "modes", "at": 0.02, "partiels": [[380, 0.4, 0.02], [820, 0.3, 0.012]] }
         ], "post": { "lp": 2600 } }
+      ]
+    },
+    {
+      "id": "ouv-exclamation", "groupe": "ouverture", "gain": 0.4, "defaut": "A", "aChoisir": true,
+      "variantes": [
+        { "id": "A", "nom": "deux notes vives qui montent", "dur": 0.2, "couches": [
+          { "t": "notes", "timbre": "pince", "liste": [[0, 81, 0.9, 0.05], [0.07, 88, 1, 0.08]] }
+        ], "post": { "lp": 6000 } },
+        { "id": "B", "nom": "bip aigu de dessin animé", "dur": 0.16, "couches": [
+          { "t": "notes", "timbre": "bip", "liste": [[0, 86, 1, 0.05]] },
+          { "t": "ton", "f": 1400, "f2": 2100, "tg": 0.03, "a": 0.002, "d": 0.04, "gain": 0.4 }
+        ], "post": { "lp": 7000 } },
+        { "id": "C", "nom": "toc de bois et pointe claire", "dur": 0.15, "couches": [
+          { "t": "modes", "partiels": [[900, 1, 0.015], [2100, 0.6, 0.01]] },
+          { "t": "notes", "timbre": "cloche", "liste": [[0.02, 93, 0.6, 0.05]] }
+        ], "post": { "lp": 7000 } }
       ]
     },
     {

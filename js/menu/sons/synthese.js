@@ -175,7 +175,7 @@ function coucheGrains(c, n, sr, graine) {
 
 // Notes (signatures de rareté) : liste [[instant, note MIDI, gain, décroissance]] jouée par un timbre :
 // cloche (partiels inharmoniques d'une barre : 1 ; 2,76 ; 5,40 ; 8,93), cuivre (scie adoucie, attaque de 40 ms), verre (sinus et partiels
-// aigus, attaque de 60 ms, vibrato léger), pince (triangle bref).
+// aigus, attaque de 60 ms, vibrato léger), pince (triangle bref), orgue (scie douce tenue, deux rangs désaccordés), bip (carré bref).
 const BARRE = [[1, 1, 1], [2.76, 0.5, 0.6], [5.4, 0.25, 0.4], [8.93, 0.12, 0.25]];
 function coucheNotes(c, n, sr) {
   const out = new Float64Array(n);
@@ -189,7 +189,9 @@ function coucheNotes(c, n, sr) {
     else {
       const couche = timbre === 'cuivre' ? { forme: 'scie', h: 12, f, a: 0.04, d, desac: 9, lp: Math.min(sr * 0.4, f * 6) }
         : timbre === 'verre' ? { forme: 'sin', f, a: 0.06, d, vib: [5.5, 0.004] }
-          : { forme: 'tri', f, a: 0.003, d };
+          : timbre === 'orgue' ? { forme: 'scie', h: 6, f, a: 0.025, d, desac: 6, lp: Math.min(sr * 0.4, f * 4) }
+            : timbre === 'bip' ? { forme: 'carre', h: 7, f, a: 0.003, d, lp: Math.min(sr * 0.4, f * 5) }
+              : { forme: 'tri', f, a: 0.003, d };
       const x = coucheTon({ ...couche, at, dur: Math.min(n / sr - at, d * 6 + 0.1) }, n, sr);
       for (let i = 0; i < n; i += 1) out[i] += x[i] * g;
       if (timbre === 'verre') ajouterModes(out, Math.max(0, Math.round(at * sr)), sr, [[f * 2, 0.3, d * 0.5], [f * 3.01, 0.15, d * 0.3]], 1, g);
