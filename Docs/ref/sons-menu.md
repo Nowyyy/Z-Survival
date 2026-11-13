@@ -25,6 +25,7 @@ Total hors ouvertures : 9 sons à créer ou intégrer (clic, musique, achat, qua
 - Jugement à l'oreille : par le propriétaire seulement (aucun son n'est écouté par un agent).
 
 ## Lot 8i : plan (écrit par l'agent du lot 8i ; les décisions ci-dessus priment)
+> Avant les retours du propriétaire : l'état final est en fin de fiche (« État final du lot 8i »).
 
 ### Relevé
 - Moteur de l'atelier (`js/core/synth2.js`, `synth2-dsp.js`, `synth2-sources.js`) : pur, déterministe par graine, mono 22 050 Hz en Float32 (4 octets par échantillon, soit 88 Ko par seconde) ; briques : bruits blanc, rose et brun, enveloppes, biquads fixes et glissants, modes amortis, réverbération courte, saturation douce, fondus ; familles utiles au menu : `register` (caisse enregistreuse de `interface-achat`), `chime` (métal), `voice` (voix de zombie), `flesh` (chair). Coût mesuré sous Node : 17 à 56 ms pour un son d'une seconde (un rendu ne se découpe pas).
@@ -84,6 +85,7 @@ Total hors ouvertures : 9 sons à créer ou intégrer (clic, musique, achat, qua
 - **`data/menu/sons-choix.json`** : `{ "choix": { "<nom>": "A" | "B" | "C", …, "musique": "A" } }` ; nom ou variante inconnus : variante par défaut de `sons.json`.
 
 ## Lot 8i : fait (mode d'emploi)
+> Avant les retours du propriétaire : l'état final est en fin de fiche (« État final du lot 8i »).
 **Aucun son n'a été écouté par l'agent** : tout est décrit et mesuré (durées, crêtes, niveaux moyens, mémoire), rien n'est jugé à l'oreille. Bilan et preuves : `Docs/lots/lot-8i.md`.
 
 ### Ce qui joue, et quand
@@ -141,3 +143,27 @@ Toutes les variantes et versions (83 tampons) : `tests/unit/helpers/sons-menu-em
 - **Page d'écoute** : par défaut, elle ne montre plus que les sons encore à choisir (`"aChoisir": true` dans `data/menu/sons.json` : les cinq signatures et le point d'exclamation) ; la musique et les sons déjà choisis sont sous « Voir aussi les sons déjà choisis » (`?tout=1`). Le texte à copier reste le fichier complet, vos autres choix compris. Une fois un son choisi, retirer son `aChoisir` le sort de la vue par défaut.
 - Catalogue : 29 sons ; tampons d'une ouverture : 0,71 Mo (borne 4 Mo). Les empreintes des variantes A, B et C existantes n'ont pas changé. **Aucun de ces sons n'a été écouté par l'agent.**
 - **Puis (même jour)** : point d'exclamation : variante **B** gardée (« bip aigu de dessin animé ») ; **mélodie de signature de rareté retirée** : les cinq sons `rarete-*` (sept familles) sortent du catalogue, des ouvertures et de la fusion (la montée `fusion` reste seule) ; la rareté reste montrée par la lumière, les rayons et la carte. Catalogue : 24 sons ; menu 0,39 Mo, ouverture 0,71 Mo. Plus aucun son à choisir : la page d'écoute montre de nouveau tout. Les timbres `orgue` et `bip` et les variantes jusqu'à G restent possibles pour de futures propositions.
+
+## État final du lot 8i (fin du lot, 13/11/2026)
+Cette section fait foi : les sections « plan » et « fait » plus haut décrivent le lot avant les retours du propriétaire (elles citent encore les voix des zombies, le sang et les signatures de rareté, retirés depuis).
+- **Catalogue** : 24 sons (`data/menu/sons.json`), 56 tampons toutes variantes comprises ; **variantes choisies à l'oreille par le propriétaire** (`data/menu/sons-choix.json`) ; musique : variante **C**. Plus aucun son à choisir : la page d'écoute montre tout (un son remis à juger se marque `"aChoisir": true` dans `sons.json`, la page ne montre alors que ceux-là, `?tout=1` pour tout voir).
+- **Menu** : clic unique, achat, équiper, retirer, améliorer, fusion (montée seule), choisir (personnage, avatar), chute du Z (impact, tiret, rebond), musique, volumes : inchangés depuis la section « fait ».
+- **Ouverture d'une caisse, dans l'ordre** : pas de l'arrivée ; tapis (**première caisse seulement**) ; tir ; impact et étincelles ; couvercle ; montée de la lumière ; **point d'exclamation** des zombies quand la marque apparaît (rare « ! », épique « !! », légendaire « !!! », une fois par caisse, de plus en plus fort) ; corps du zombie qui tombe (épique, légendaire) ; légendaire : explosion, seconde explosion, zombie contre l'écran ; ×10 : carte vers sa case, case remplie ; « Passer » et caisse passée au toucher. **Retirés** : voix des zombies, sang qui coule, tapis entre les caisses, mélodie de signature de rareté (ouvertures et fusion).
+- **Mémoire** (variantes retenues) : menu 0,39 Mo (chute 92 Ko, menu 310 Ko ; borne 3 Mo), ouverture 0,71 Mo (borne 4 Mo), musique 0,34 Mo.
+
+| Son | Variante | Durée | Niveau moyen (dBFS) | SHA-256 (début) | | Son | Variante | Durée | Niveau moyen (dBFS) | SHA-256 (début) |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| `clic` | A | 0,07 s | −19,0 | `0ae18b23c45c` | | `ouv-tapis` | A | 1,4 s | −12,8 | `cbc3a5100d09` |
+| `achat` | B | 1,25 s | −18,6 | `c27287e913d2` | | `ouv-tir` | A | 0,4 s | −17,9 | `6f77cc08fd35` |
+| `equiper` | C | 0,28 s | −17,7 | `c42bf7cccf3e` | | `ouv-impact` | A | 0,3 s | −21,9 | `407f841ad62f` |
+| `retirer` | B | 0,2 s | −19,9 | `20646d5bfacf` | | `ouv-couvercle` | B | 0,5 s | −20,3 | `8640e7273422` |
+| `ameliorer` | A | 0,6 s | −17,4 | `f61bb1146a36` | | `ouv-lumiere` | A | 0,7 s | −14,5 | `610f40287eb8` |
+| `fusion` | B | 0,9 s | −11,9 | `576e627621e7` | | `ouv-explosion` | A | 1,8 s | −16,8 | `12b5673b3d59` |
+| `choisir` | B | 0,3 s | −16,7 | `42c757ae2efd` | | `ouv-souffle` | B | 1,2 s | −16,5 | `7dafd2c4e6bc` |
+| `chute-impact` | A | 0,5 s | −15,0 | `f0d82fa7c61e` | | `ouv-ecrasement` | A | 0,6 s | −19,7 | `7d8d3b9f5fb8` |
+| `chute-tiret` | B | 0,25 s | −16,9 | `738efac85c07` | | `ouv-zombie-tombe` | B | 0,4 s | −16,7 | `0231a19b3f4e` |
+| `chute-rebond` | B | 0,32 s | −16,2 | `37956f154b1f` | | `ouv-exclamation` | B | 0,16 s | −16,2 | `290116d6adf6` |
+| `ouv-pas` | B | 0,2 s | −15,7 | `219519d0496a` | | `ouv-carte` | B | 0,3 s | −27,3 | `3788be46a480` |
+| `ouv-case` | A | 0,12 s | −19,3 | `f1feb6430e96` | | `ouv-passer` | B | 0,18 s | −17,8 | `c4867c28e8aa` |
+
+Crête de −3,0 dBFS pour tous. `ouv-carte` B est nettement plus faible en moyenne que les autres (−27 dBFS) : à monter par son `gain` s'il s'entend trop peu. Bilan : `Docs/lots/lot-8i.md`.
