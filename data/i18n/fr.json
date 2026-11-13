@@ -524,7 +524,7 @@
   "game.pause.quitOk": "Quitter la partie",
   "game.pause.quitCancel": "Annuler",
   "game.menu.jouer.bouton": "JOUER",
-  "game.menu.connexion": "Connexion",
+  "game.menu.profil": "Profil",
   "game.menu.solde": "Solde : {n}",
   "game.menu.ouvrir": "Menu",
   "game.menu.ouvrir.nouveau": "Menu (nouveauté non lue)",

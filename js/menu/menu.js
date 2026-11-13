@@ -1,6 +1,6 @@
-// Lot 8a : menu principal E8 (Docs/ref/menu-principal.md), affiché quand le chargement (E7) est fini. En-tête E8-1 : « Connexion » (écran
-// provisoire), solde (lecture seule de la sauvegarde existante), bouton à trois barres (Options, Information et son point jaune, Discord,
-// Déconnexion grisée) ; contenu de l'onglet ; barre d'onglets E8-2 (Boutique · Personnage · JOUER · Infini · Event verrouillé). « JOUER » fait
+// Lot 8a : menu principal E8 (Docs/ref/menu-principal.md), affiché quand le chargement (E7) est fini. En-tête E8-1 : « Profil » (lot 8g ; avant :
+// « Connexion »), solde (lecture seule de la sauvegarde existante), bouton à trois barres (Options, Information et son point jaune, Crédits, Discord,
+// Google « bientôt » ; Déconnexion seulement une fois connecté) ; contenu de l'onglet ; barre d'onglets E8-2 (Boutique · Personnage · JOUER · Infini · Event verrouillé). « JOUER » fait
 // charger le jeu sans recharger la page (jouer() : écran de chargement du jeu, puis main.js). État en mémoire seulement (js/core/menu-etat.js) : rien
 // n'est écrit dans le stockage jusqu'au lot 8h. preparerMenu() lit ce que le menu affiche (textes, nouveautés, liens, solde), sans rien du jeu.
 // Écrans à la demande : js/menu/ecrans.js (Information, Connexion, onglets « Bientôt »), js/menu/infini.js (lot 8b : onglet Infini), js/game/options-menu.js
@@ -244,9 +244,11 @@ export function creerMenu({ dict, infos = [], liens = {}, solde: montant = 0, re
 
   // --- En-tête E8-1 -------------------------------------------------------------------------------------------------------------------------
   const entete = el('header', ['e8-entete'], { 'data-block': 'E8-1' });
-  const connexion = el('button', ['e8-connexion'], { type: 'button', id: 'menu-connexion' });
+  // Lot 8g (retour du propriétaire : « retire le gros bouton Connexion, affiche Profil ») : lien discret « Profil » (icône et texte, sans cadre, cible
+  // de 44 px) qui ouvre le Profil ; la connexion (Google, bientôt) se fait depuis le Profil ou le menu à trois barres.
+  const connexion = el('button', ['e8-profil'], { type: 'button', id: 'menu-profil' });
   const connexionTexte = el('span');
-  connexionTexte.textContent = t('game.menu.connexion');
+  connexionTexte.textContent = t('game.menu.profil');
   connexion.append(icone('connexion'), connexionTexte);
   const droite = el('div', ['e8-droite']);
   const solde = el('p', ['e8-solde'], { id: 'menu-solde' });
@@ -293,8 +295,9 @@ export function creerMenu({ dict, infos = [], liens = {}, solde: montant = 0, re
   const btInfo = entree('menu-information', 'game.menu.information', [pointInfo], 'information');
   const btCredits = entree('menu-credits', 'game.menu.credits', [], 'credits'); // lot 8g : entre Information et Discord
   const discordPlace = el('li');
-  const btDeconnexion = entree('menu-deconnexion', 'game.menu.deconnexion', [note('game.menu.nonConnecte')], 'deconnexion');
-  btDeconnexion.disabled = true;
+  // Lot 8g (retour du propriétaire) : « Déconnexion » seulement quand un compte est connecté (comptes : plus tard) ; jamais aujourd'hui.
+  const connecte = false;
+  const btDeconnexion = connecte ? entree('menu-deconnexion', 'game.menu.deconnexion', [note('game.menu.nonConnecte')], 'deconnexion') : null;
   // Lot 8g (retour du propriétaire) : connexion avec Google depuis le menu à trois barres (et le Profil), pas encore disponible.
   const btGoogle = entree('menu-google', 'game.menu.compte.google.entree', [note('game.menu.bientot')], 'connexion');
   btGoogle.disabled = true;
@@ -306,8 +309,8 @@ export function creerMenu({ dict, infos = [], liens = {}, solde: montant = 0, re
   const haut = el('ul', ['e8-liste-groupe']);
   haut.append(li(btOptions), li(btInfo), li(btCredits), discordPlace);
   const bas = el('ul', ['e8-liste-groupe']);
-  bas.append(li(btGoogle), li(btDeconnexion));
-  // Retour du propriétaire : version du jeu sous « Déconnexion » (« V0.8 · dev », « V0.8 · recette ») ; journal lu à la première ouverture du menu.
+  bas.append(li(btGoogle), ...(btDeconnexion ? [li(btDeconnexion)] : []));
+  // Retour du propriétaire : version du jeu tout en bas (« V0.8 · dev », « V0.8 · recette ») ; journal lu à la première ouverture du menu.
   const version = el('p', ['e8-version'], { id: 'menu-version' });
   version.hidden = true;
   let versionDemandee = false;
