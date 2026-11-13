@@ -190,5 +190,5 @@ afficher: oui
 [lot-8g]
 version: v0.8
 nom: Signature du studio, Crédits et Profil
-description: Introduction avec le logo animé de No Way Studio au lancement, logo sur l'écran de chargement et dans le menu, écran Crédits avec les licences, écrans Connexion et Profil local.
+description: Logo animé et sonore de No Way Studio au lancement, logo sur l'écran de chargement, Crédits avec les licences, Profil local en haut à gauche (avatar, pseudo, statistiques).
 afficher: oui
