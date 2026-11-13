@@ -177,7 +177,7 @@ test.describe('page Options du menu (E5)', () => {
     await expect(page.locator('#options-son-active')).toHaveAttribute('aria-pressed', 'false');
     await page.locator('#options-son-active').click();
     await expect(page.locator('#options-son-active')).toHaveAttribute('aria-pressed', 'true');
-    await expect(page.locator('#options-volume')).toHaveAccessibleName('Volume');
+    await expect(page.locator('#options-volume')).toHaveAccessibleName('Volume du jeu'); // lot 8i : « Volume » devient « Volume du jeu » (et « Volume de la musique » à côté)
     await expect(page.locator('#options-volume')).toHaveAttribute('aria-valuetext', '100 %');
     await expect(page.locator('#options-volume-valeur')).toHaveText('100 %');
     await page.locator('#options-volume').focus();

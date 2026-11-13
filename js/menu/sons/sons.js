@@ -96,6 +96,11 @@ export function son(nom, options) {
   return moteur?.jouer(nom, options) ?? null;
 }
 
+// Clic demandé hors d'un toucher de commande (retour sonore du curseur « Volume du jeu ») : mêmes règles (un seul à la fois, dégressif).
+export function clic() {
+  moteur?.clic();
+}
+
 // Volumes des Options : { coupe, jeu (0 à 100), musique (0 à 100) }.
 export function regler(v) {
   const avant = volumes.coupe;

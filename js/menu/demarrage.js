@@ -23,12 +23,13 @@ export const optionPartie = () => partie;
 
 // Lot 8c : son et volume choisis dans les Options du menu, en mémoire de la page seulement (rien n'est stocké : la pause ne les garde pas non plus) ;
 // main.js les applique à l'audio de la partie (« JOUER » ne recharge pas la page) ; le retour au menu recharge la page : son activé, volume par défaut.
-// volume : null = défaut de data/game/audio.json.
-let son = Object.freeze({ coupe: false, volume: null });
+// volume : null = défaut de data/game/audio.json. Lot 8i : volume = volume du jeu (effets) ; musique = volume de la musique (musique des menus,
+// mélodie d'annonce de vague), null = même défaut ; toujours en mémoire (lot 8h : sauvegarde).
+let son = Object.freeze({ coupe: false, volume: null, musique: null });
 export const reglagesSon = () => son;
-export function poserSon({ coupe = son.coupe, volume = son.volume } = {}) {
-  const v = Number(volume);
-  son = Object.freeze({ coupe: coupe === true, volume: volume === null || !Number.isFinite(v) ? son.volume : Math.min(100, Math.max(0, Math.round(v))) });
+export function poserSon({ coupe = son.coupe, volume = son.volume, musique = son.musique } = {}) {
+  const borner = (n, avant) => (n === null || !Number.isFinite(Number(n)) ? avant : Math.min(100, Math.max(0, Math.round(Number(n)))));
+  son = Object.freeze({ coupe: coupe === true, volume: borner(volume, son.volume), musique: borner(musique, son.musique) });
   return son;
 }
 
