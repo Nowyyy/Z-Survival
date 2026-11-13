@@ -72,6 +72,7 @@ export function jouerIntro({ root = document.body, reduit = matchMedia('(prefers
 
   // Son : fichier lu pendant l'attente du geste (aucun son ni contexte audio avant) ; contexte audio créé dans le geste, puis décodage.
   let ctx = null;
+  let garde = null; // lot 8i : contexte audio gardé pour les sons du menu
   let gain = null;
   let source = null;
   let tampon = null;
@@ -86,7 +87,19 @@ export function jouerIntro({ root = document.body, reduit = matchMedia('(prefers
       // contexte déjà fermé
     }
     if (son === 'joue') son = 'eteint';
-    setTimeout(() => c.close().catch(() => {}), FONDU_SON_S * 1000 + 100);
+    // Lot 8i : le contexte audio n'est plus fermé : créé dans le geste, il sert ensuite aux sons du menu (contexte(), js/menu/sons/sons.js) ;
+    // seul le son du logo est arrêté et débranché après son fondu.
+    const g = gain;
+    const s = source;
+    setTimeout(() => {
+      try {
+        s?.stop();
+      } catch {
+        // déjà arrêté
+      }
+      g.disconnect();
+    }, FONDU_SON_S * 1000 + 100);
+    garde = c;
     ctx = null;
   }
   function jouerSon() {
@@ -225,6 +238,8 @@ export function jouerIntro({ root = document.body, reduit = matchMedia('(prefers
   return {
     fin,
     passer,
+    // Lot 8i : contexte audio créé dans le geste « Toucher pour commencer » (null : aucun geste, mouvement réduit, audio indisponible).
+    contexte: () => garde ?? ctx,
     etat: () => ({ phase, passe, reduit, son, logo: phase === 'geste' ? null : reduit ? LOGO_FIXE : LOGO_ANIME, indice: box.classList.contains('e0-indice'), visible: box.isConnected, debut: t0, ...temps }),
   };
 }

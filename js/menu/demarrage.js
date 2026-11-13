@@ -135,7 +135,8 @@ if (!modeMenu) {
       graphicsReboot();
       lancerJeu();
     };
-    ecran = m.creerChargement({ phase: 'menu', jouer, son: { lire: reglagesSon, poser: poserSon } });
+    // Lot 8i : contexte audio de l'introduction (créé dans le geste), donné aux sons du menu.
+    ecran = m.creerChargement({ phase: 'menu', jouer, son: { lire: reglagesSon, poser: poserSon }, contexteAudio: introEcran?.contexte?.() ?? null });
   }).catch(() => {
     // Écran de chargement indisponible : la partie démarre comme avant le menu (écran de préparation #loading).
     document.documentElement.classList.remove('zs-mode-menu', 'zs-attente');

@@ -14,6 +14,7 @@ import { fmt, loadDict } from '../game/texts.js';
 import { CANAUX_DEBUG } from '../core/graphics.js';
 import { pageCanal } from '../game/graphics-boot.js';
 import { couluresSvg } from '../logo.js';
+import { adopter, ecouterGestes, partir, signaler } from './sons/sons.js';
 
 const SVG = 'http://www.w3.org/2000/svg';
 const FIN_CHUTE_MS = 4000; // filet de sécurité si la fin d'animation n'arrive pas (onglet caché) : la chute dure 2,8 s
@@ -68,7 +69,10 @@ const json = (path) => fetch(path).then((r) => (r.ok ? r.json() : null)).catch((
 
 // phase : 'menu' ou 'jeu' ; jouer(option) : appelé par « JOUER » du menu (demarrage.js charge alors le jeu ; lot 8b : option de démarrage).
 // son : { lire(), poser(réglages) } (lot 8c : son et volume des Options du menu, gardés en mémoire par demarrage.js), transmis au menu.
-export function creerChargement({ phase = 'menu', jouer = () => {}, son = null, root = document.body, search = globalThis.location?.search ?? '' } = {}) {
+// contexteAudio (lot 8i) : contexte audio de l'introduction, gardé pour les sons du menu (js/menu/sons/sons.js).
+export function creerChargement({ phase = 'menu', jouer = () => {}, son = null, contexteAudio = null, root = document.body, search = globalThis.location?.search ?? '' } = {}) {
+  ecouterGestes();
+  adopter(contexteAudio);
   const reduit = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const pose = reduit; // retour du propriétaire : la chute du Z se rejoue à chaque chargement (menu, partie, retour au menu)
   let etat = creerProgression(phase);
@@ -249,9 +253,11 @@ export function creerChargement({ phase = 'menu', jouer = () => {}, son = null, 
         son,
         jouer: (option) => {
           menu.element.remove();
+          partir(); // lot 8i : la musique des menus s'éteint en fondu (la partie garde ses propres sons)
           jouer(option); // lot 8b : option de démarrage (mode histoire ou infini)
         },
       });
+      signaler('pret'); // lot 8i : menu affiché : sons du menu chargés à la demande, musique au premier geste
       retirer();
       if (reduit) box.remove();
       else {

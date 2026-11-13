@@ -6,7 +6,28 @@
 // - Boucle : après la dernière section vient la première ; le glissement vaut aussi à ce passage, et le bourdon ne s'arrête jamais : aucune
 //   jointure. D'un tour à l'autre (cycle), les motifs de l'ostinato et du pouls, les accords et les cloches changent (graine) : pas de lassitude.
 // - rendreMusique : rendu de référence hors ligne, simplifié (sinus et enveloppes), pour mesurer la continuité au bouclage (tests).
-import { createRandom, hashSeed } from './synth2-dsp.js';
+// Hasard à graine, local (aucune dépendance : ce module est chargé par le menu, le moteur de synthèse reste dans le calculateur d'arrière-plan) :
+// graine dérivée de plusieurs parties (FNV-1a), suite mulberry32.
+function hashSeed(...parts) {
+  let h = 0x811c9dc5;
+  for (const p of parts) {
+    const s = String(p);
+    for (let i = 0; i < s.length; i += 1) h = Math.imul(h ^ s.charCodeAt(i), 0x01000193) >>> 0;
+    h = Math.imul(h ^ 0x2f, 0x01000193) >>> 0;
+  }
+  return h >>> 0;
+}
+function createRandom(seed) {
+  let s = seed >>> 0;
+  const next = () => {
+    s = (s + 0x6d2b79f5) >>> 0;
+    let t = s;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+  return { next, signed: () => next() * 2 - 1 };
+}
 
 export const COUCHES_MUSIQUE = Object.freeze(['pouls', 'ostinato', 'nappe', 'cloche', 'souffle', 'tic']);
 const estObjet = (o) => o !== null && typeof o === 'object' && !Array.isArray(o);
