@@ -515,3 +515,6 @@ Base : `lot-8g` (partie 0 : logo reçu depuis `origin/dev` `2817172`), mise à j
 ### Retours du propriétaire (après la PR #122) : taille du portrait, liste qui défile
 - **Grand portrait** : même taille dans le choix qu'en temps normal (il rapetissait à l'ouverture du choix).
 - **Liste des avatars prête pour plus d'avatars** : seule la liste défile vers le bas quand elle ne tient plus (`overflow-y: auto`, glissable au doigt, à la molette et à la souris par `js/glisser.js` branché sur la racine du menu) ; le portrait reste en haut, « Valider » et « Annuler » au bas de la carte, qui ne défile plus pendant le choix. Deux lignes au moins restent visibles (88 px) ; l'avatar regardé est amené dans la liste (flèches, ouverture). Avec les sept avatars actuels, rien ne défile ; test : tuiles triplées en simulation.
+
+### Sons du menu (décisions du propriétaire, à faire dans un lot dédié)
+- Liste et points à trancher : `Docs/ref/sons-menu.md` (clic unique, musique des menus, deux volumes, achat déjà dans l'atelier, ouvertures 3D, Personnage, chute et rebond du chargement).
