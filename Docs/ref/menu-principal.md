@@ -431,7 +431,7 @@ Onglet actif, menu à trois barres ouvert, écran ouvert, nouveautés lues : `et
 - **À prévoir** : jeu toujours en plein écran (retour au menu sans rechargement) ; tirage par la base de données en un appel pendant la roue, fenêtre d'erreur en cas d'échec (voir « À prévoir » plus haut).
 - Bilan, preuves et lignes proposées pour `conventions.md` : `Docs/lots/lot-8f.md`.
 
-## Lot 8g — Introduction du studio, logo, Crédits, Connexion et Profil
+## Lot 8g — Introduction du studio, logo, Crédits et Profil
 Base : `lot-8g` (partie 0 : logo reçu depuis `origin/dev` `2817172`), mise à jour après le GO par une fusion de `origin/dev` `97f6ce1` (`f777519`).
 
 ### Relevé (code de `origin/dev`, logo, maquette)
@@ -522,4 +522,13 @@ Base : `lot-8g` (partie 0 : logo reçu depuis `origin/dev` `2817172`), mise à j
 ### Retours du propriétaire (après la PR #126) : écran Information en cadres, future base de données
 - **Cadres** : chaque nouveauté de `data/menu/infos.json` est dans un cadre sur toute la largeur de l'écran (plus de limite de 70 caractères), haut comme son contenu (titre, date à droite, texte) ; les cadres s'empilent et la liste défile (doigt, molette, souris par `js/glisser.js`) quand ils dépassent. Nouveauté réelle ajoutée : « Studio, Crédits et Profil » (`v0.8-studio`, modifiable par le propriétaire), qui rallume le point jaune.
 - **À terme (décision du propriétaire, plus tard)** : les nouveautés (et les autres contenus du menu réglables : Crédits, liens, mondes, classement) seront lus dans la future base de données et réglés par une interface d'administration. Préparé : l'écran ne connaît que la liste `[{ id, date, titre, texte }]` (`ecranInformation` de `js/menu/ecrans.js`, texte brut seulement, jamais de HTML) ; seule la source change (aujourd'hui `fetch('data/menu/infos.json')` dans `menu.js`, demain l'adresse de l'API, même format) ; `id` unique et stable (l'état « lu » s'y rattache). À trancher avec la base : authentification de l'interface d'administration, cache hors ligne (repli sur le fichier livré), ordre et dates de publication, textes en plusieurs langues.
+
+### État final du lot 8g (fin du lot)
+- **Introduction** : au vrai lancement, « Toucher pour commencer » (sans logo), puis logo animé de No Way Studio et son ensemble (6,5 s ; sans geste en 4 s : sans son ; mouvement réduit : logo fixe 1 s), « Toucher pour passer » ; rien du menu ne se charge pendant le logo, puis l'écran de chargement complet ; jamais au retour au menu (`#retour`, `#plein-ecran`) ni en partie directe.
+- **Logos** : logo fixe sur E7 ; Crédits avec les logos de No Way Studio et de Noven Studio ; plus de logo dans le menu à trois barres. Fichiers, sommes et scripts de dérivation : `Docs/lots/lot-8g.md` (« Logo »).
+- **Menu à trois barres** : Options, Information, Crédits, Discord ; « Se connecter avec Google · bientôt » ; version ; « Déconnexion » seulement une fois connecté.
+- **En-tête et Profil** : portrait de l'avatar et pseudo en haut à gauche, qui ouvrent le Profil (écran plein) ; sept avatars (gris par défaut) choisis sous le portrait, qui garde sa taille et sa place ; pseudo ; six statistiques (quatre « — » jusqu'au lot 8h) ; export et import par code. Avatar et pseudo en mémoire jusqu'au lot 8h. Démarrage du menu : 32 fichiers JavaScript (33 avec l'introduction).
+- **Information** : une nouveauté par cadre, toute la largeur, liste qui défile ; contenus du menu lus plus tard dans la base de données et réglés par une interface d'administration (format prêt).
+- **À prévoir** : sons du menu (nouveau lot : `Docs/ref/sons-menu.md`) ; sauvegarde de l'avatar, du pseudo et des statistiques séparées (lot 8h).
+- Bilan, preuves et lignes proposées pour `conventions.md` : `Docs/lots/lot-8g.md`.
 
