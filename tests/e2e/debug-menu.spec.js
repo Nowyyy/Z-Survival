@@ -210,3 +210,74 @@ for (const viewport of [{ width: 1440, height: 900 }, { width: 375, height: 812 
     expect(problems).toEqual([]);
   });
 }
+
+// Lot 8h : outils de débogage du menu (js/menu/debogage.js) : icône dans l'en-tête seulement sur les canaux « source » et « dev » ; jamais dans la
+// Recette (canal « release »), une archive ni la production (sites assemblés de test). Chaque outil écrit vraiment dans zs.save.v2, après confirmation.
+test.describe('outils de débogage du menu (lot 8h)', () => {
+  test.use({ viewport: { width: 932, height: 430 } });
+  const SITES = [
+    ['dev', 'http://127.0.0.1:4174/full/dev/jeu.html', 1],
+    ['release (Recette)', 'http://127.0.0.1:4174/full/Recette/jeu.html', 0],
+    ['archive', 'http://127.0.0.1:4174/canaux/v0.5/jeu.html', 0],
+    ['prod', 'http://127.0.0.1:4174/canaux/prod/jeu.html', 0],
+  ];
+  for (const [canal, url, n] of SITES) {
+    test(`canal ${canal} (site assemblé) : icône des outils ${n ? 'présente' : 'absente'} ; aucune requête externe`, async ({ page }) => {
+      test.setTimeout(120_000);
+      const { problems, external, files } = watch(page);
+      await page.goto(url);
+      await expect(page.locator('#menu-jouer')).toBeVisible({ timeout: 60_000 }); // l'introduction se joue sans geste, puis le menu
+      await page.waitForFunction(() => window.__zsMenu === undefined || !document.getElementById('e7'));
+      await expect(page.locator('#menu-plein-ecran, #menu-trois-barres').first()).toBeVisible();
+      await expect(page.locator('#menu-debogage-ouvrir')).toHaveCount(n);
+      if (!n) expect(files.filter((f) => f.endsWith('/js/menu/debogage.js'))).toEqual([]);
+      expect(external).toEqual([]);
+      expect(problems).toEqual([]);
+    });
+  }
+
+  test('canal source, ?store=local : icône 44 px nommée ; « Ajouter 10 000 bleus » demande confirmation (« Annuler » n\'écrit rien), puis écrit zs.save.v2 et met l\'en-tête à jour ; « Remettre à zéro » efface zs.save.v2, jamais zs.save.v1 ; Échap ferme et rend le focus ; axe', async ({ page }) => {
+    test.setTimeout(120_000);
+    const { problems, external } = watch(page);
+    await page.addInitScript(() => {
+      if (sessionStorage.getItem('zs.test.outils')) return;
+      sessionStorage.setItem('zs.test.outils', '1');
+      localStorage.clear();
+      localStorage.setItem('zs.save.v1', '{"v":1,"temoin":true}');
+    });
+    await page.goto('/jeu.html?test=1&menu=1&seed=1&store=local');
+    await expect(page.locator('#menu-jouer')).toBeVisible({ timeout: 60_000 });
+    await page.waitForFunction(() => window.__zsMenu?.etat()?.menu !== null && !document.getElementById('e7'));
+    const icone = page.locator('#menu-debogage-ouvrir');
+    await expect(icone).toHaveAccessibleName('Outils de débogage');
+    const r = await icone.boundingBox();
+    expect(Math.min(r.width, r.height)).toBeGreaterThanOrEqual(44);
+    await icone.click();
+    const panneau = page.getByRole('dialog', { name: 'Débogage' });
+    await expect(panneau).toBeVisible();
+    await expect(panneau.locator('.e8-debogage-liste button')).toHaveText(['Ajouter 10 000 bleus', 'Donner l\'inventaire de démonstration', 'Débloquer tous les personnages', 'Remettre la progression V0.8 à zéro']);
+    expect((await new AxeBuilder({ page }).include('#menu-debogage').analyze()).violations.map((v) => v.id)).toEqual([]);
+    const v2 = () => page.evaluate(() => localStorage.getItem('zs.save.v2'));
+    await page.locator('#menu-debogage-bleus').click();
+    await expect(page.locator('#menu-debogage-question')).toHaveText('Confirmer : Ajouter 10 000 bleus ?');
+    await page.locator('#menu-debogage-non').click();
+    expect(await v2()).toBeNull();
+    await page.locator('#menu-debogage-bleus').click();
+    await page.locator('#menu-debogage-oui').click();
+    await expect(page.locator('#menu-debogage-message')).toHaveText('C\'est fait.');
+    expect(JSON.parse(await v2()).bleu).toEqual({ gagne: 10_000, depense: 0 });
+    await expect(page.locator('#menu-solde-texte')).toHaveText(`10${String.fromCharCode(0x202f)}000`);
+    await page.locator('#menu-debogage-zero').click();
+    await page.locator('#menu-debogage-oui').click();
+    await expect(page.locator('#menu-debogage-message')).toHaveText('C\'est fait.');
+    expect(await v2()).toBeNull();
+    await expect(page.locator('#menu-solde-texte')).toHaveText('0');
+    expect(await page.evaluate(() => localStorage.getItem('zs.save.v1'))).toBe('{"v":1,"temoin":true}');
+    await page.keyboard.press('Escape');
+    await expect(panneau).toBeHidden();
+    await expect(icone).toBeFocused();
+    expect(external).toEqual([]);
+    expect(problems).toEqual([]);
+    await page.evaluate(() => { localStorage.clear(); sessionStorage.clear(); });
+  });
+});

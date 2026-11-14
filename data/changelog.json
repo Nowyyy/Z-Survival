@@ -325,6 +325,15 @@
       "Tous ces sons sont calculés par le jeu, sans fichier audio ; aucun son avant le premier toucher. Sur iPhone, le commutateur silencieux les coupe.",
       "Sons provisoires : chaque son a deux ou trois variantes à comparer sur la page d'écoute atelier-sons-menu.html ; aucun n'a encore été jugé à l'oreille.",
       "Les règles et les sons de la partie ne changent pas."
+    ] },
+    { "name": "lot-8h", "version": "v0.8", "date": "2026-11-14", "titre": "Deux monnaies et progression gardée", "points": [
+      "Deux monnaies : la jaune se gagne pendant la partie (zombies, planches) et repart de zéro à chaque partie ; la bleue se gagne à chaque manche terminée et à la fin du monde, en histoire comme en infini, et n'est jamais perdue.",
+      "En partie, un « +N » bleu discret à chaque manche terminée ; l'écran de fin montre la jaune perdue, la bleue gagnée et le solde bleu ; l'en-tête du menu montre le solde bleu.",
+      "Les achats du menu coûtent vraiment de la monnaie bleue : caisses, offres du jour, améliorations, fusion et personnages ; « Il manque N » quand le solde ne suffit pas.",
+      "Les armes quittent le menu : six emplacements de survie (tête, gants, bottes, torse, accessoire, pantalon) et un équipement militaire qui améliore la vie, la vitesse, la réparation et la régénération. Le pistolet de départ reste dans la partie.",
+      "Toute la progression est gardée sur l'appareil : inventaire, équipement, personnages, tenues, offres achetées, avatar, pseudo, nouveautés lues, records de l'histoire et de l'infini par carte, statistiques du Profil ; le son et les volumes aussi.",
+      "Nouvelle sauvegarde : tout le monde repart de zéro, la progression de la V0.7 n'est pas touchée ; plusieurs onglets ouverts ne perdent rien et ne dépensent jamais deux fois. Code d'export ZS2 ; un ancien code ZS1 s'importe encore.",
+      "Prix, gains et objets provisoires, à régler en jouant."
     ] }
   ]
 }
