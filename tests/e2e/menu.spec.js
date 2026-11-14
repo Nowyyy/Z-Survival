@@ -390,9 +390,9 @@ test.describe('partie et retour au menu', () => {
     await page.locator('#btn-quit').click();
     await Promise.all([page.waitForURL(/[?&]menu=1/), page.locator('#btn-quit-ok').click()]);
     await expect(page.locator('#menu-jouer')).toBeVisible({ timeout: 60_000 });
-    await expect(page.locator('#menu-solde-texte')).toHaveText(`1${String.fromCharCode(0x202f)}246`);
+    await expect(page.locator('#menu-solde-texte')).toHaveText(`1${String.fromCharCode(0x202f)}254`);
     const quitte = await page.evaluate((k) => JSON.parse(localStorage.getItem(k)), KEY);
-    expect(quitte.bleu.gagne - quitte.bleu.depense).toBe(1246);
+    expect(quitte.bleu.gagne - quitte.bleu.depense).toBe(1254); // lot 8k : 1 234 + 20 (bleue fixe ; avant : + 12)
     expect(JSON.stringify(quitte)).not.toMatch(/money/);
     // Même gain, mort puis « Revenir au menu principal » : même solde, même chemin (bank.runEnd).
     await page.locator('#menu-jouer').click();
@@ -401,7 +401,7 @@ test.describe('partie et retour au menu', () => {
     await expect(page.locator('#end-panel')).toBeVisible();
     await Promise.all([page.waitForURL(/[?&]menu=1/), page.locator('#btn-menu').click()]);
     await expect(page.locator('#menu-jouer')).toBeVisible({ timeout: 60_000 });
-    await expect(page.locator('#menu-solde-texte')).toHaveText(`1${String.fromCharCode(0x202f)}258`);
+    await expect(page.locator('#menu-solde-texte')).toHaveText(`1${String.fromCharCode(0x202f)}274`);
     const mort = await page.evaluate((k) => JSON.parse(localStorage.getItem(k)), KEY);
     expect(mort.bleu.gagne - quitte.bleu.gagne).toBe(quitte.bleu.gagne - 1234);
     await page.evaluate(() => localStorage.clear());

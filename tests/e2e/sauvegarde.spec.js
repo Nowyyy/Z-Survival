@@ -456,7 +456,7 @@ test.describe('compatibilité V0.7 ↔ V0.8, même origine', () => {
     const apres08 = await lire(page);
     expect(apres08[V1]).toBe(v1);
     const v2 = apres08[KEY];
-    expect(JSON.parse(v2).bleu).toEqual({ gagne: 5678 + 12, depense: 4444 });
+    expect(JSON.parse(v2).bleu).toEqual({ gagne: 5678 + 20, depense: 4444 }); // lot 8k : bleue fixe (avant : + 12)
     // 3. V0.7 rejoue : elle relit sa progression, l'augmente, et ne touche jamais zs.save.v2.
     const b = await jouer(page, 'Recette');
     expect(b.time).toBeGreaterThan(1);
@@ -465,7 +465,7 @@ test.describe('compatibilité V0.7 ↔ V0.8, même origine', () => {
     expect(apres07[KEY]).toBe(v2);
     // 4. V0.8 : sa progression est là, intacte.
     await page.goto(`${BASE}/dev/sauvegarde.html`);
-    await expect(page.locator('#state-list')).toContainText('Monnaie bleue1246');
+    await expect(page.locator('#state-list')).toContainText('Monnaie bleue1254');
     expect((await lire(page))[KEY]).toBe(v2);
   });
 });

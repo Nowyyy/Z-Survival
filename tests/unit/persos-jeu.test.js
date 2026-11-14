@@ -101,7 +101,9 @@ describe('fichiers du jeu modifiés : liste fermée, 40 lignes au plus chacun', 
       if (avant === null) continue;
       const a = JSON.parse(avant);
       const b = JSON.parse(readFileSync(f, 'utf8'));
-      for (const k of Object.keys(a).filter((x) => !x.startsWith('_'))) expect(b[k], `${f} : ${k}`).toEqual(a[k]);
+      // Lot 8k (décision du propriétaire, prompt du lot) : la monnaie bleue passe à un gain fixe ; seules ces deux valeurs changent, à ces valeurs.
+      const decides = f === 'data/game/economy.json' ? { waveBonusBase: 20, waveBonusPerWave: 0 } : {};
+      for (const k of Object.keys(a).filter((x) => !x.startsWith('_'))) expect(b[k], `${f} : ${k}`).toEqual(Object.hasOwn(decides, k) ? decides[k] : a[k]);
     }
   });
 });

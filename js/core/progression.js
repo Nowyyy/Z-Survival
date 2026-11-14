@@ -4,6 +4,7 @@
 // params : { save: save.json (section v2), economy: economy.json, stats: player-stats.json } ; tout est facultatif (repli le plus strict).
 import { crc32, decodeSave, fromBase64Url, statMaxLevels, toBase64Url } from './save.js';
 import { ALL_STAT_IDS } from './player-stats.js';
+import { paliersNouveaux } from './economy.js';
 
 export const VERSION = 2;
 export const EMPLACEMENTS = Object.freeze(['tete', 'gants', 'bottes', 'torse', 'accessoire', 'pantalon']);
@@ -14,7 +15,11 @@ export const OBJETS_DUR = 1000; // plafond de sécurité du format (le plafond d
 export const LUES_MAX = 200;
 export const PERSO_DEFAUT = 'survivant';
 export const AVATAR_DEFAUT = 'anonyme';
-export const REFUS = Object.freeze(['solde', 'plein', 'absent', 'niveau', 'offre', 'invalide']);
+export const REFUS = Object.freeze(['solde', 'plein', 'absent', 'niveau', 'offre', 'invalide', 'pitie']);
+// Lot 8k : compteurs de pitié, un par rubrique de caisse (type de data/menu/caisses.json) : e = tirages depuis le dernier épique ou mieux,
+// l = tirages depuis le dernier légendaire (Docs/ref/economie.md).
+export const RUBRIQUES = Object.freeze(['equipement', 'personnage', 'cosmetique']);
+export const PITIE_MAX = 999;
 
 const SAFE = Number.MAX_SAFE_INTEGER;
 const MAX_WARNINGS = 20;
@@ -24,7 +29,7 @@ const OP_ID = /^[0-9A-Za-z._:-]{1,48}$/;
 const CLE_OFFRE = /^\d{1,7}-\d{1,2}$/;
 const INTERDITS = /[\p{Cc}\p{Cf}]/u;
 const INTERDITES = new Set(['__proto__', 'constructor', 'prototype']);
-const CONNUES = ['v', 'rev', 'savedAt', 'w', 'bleu', 'objets', 'porte', 'persos', 'tenues', 'offres', 'niveaux', 'records', 'mondes', 'profil', 'lues', 'dates', 'journal'];
+const CONNUES = ['v', 'rev', 'savedAt', 'w', 'bleu', 'medailles', 'objets', 'porte', 'persos', 'tenues', 'offres', 'niveaux', 'records', 'mondes', 'paliers', 'mondesFinis', 'pitie', 'profil', 'lues', 'dates', 'journal'];
 const EXTRA_MAX = 8192; // octets gardés pour les champs inconnus de la racine (version plus récente du même format)
 
 const isObject = (o) => o !== null && typeof o === 'object' && !Array.isArray(o);
@@ -34,6 +39,8 @@ const warn = (w, t) => {
   if (w.length < MAX_WARNINGS) w.push(t);
 };
 const soldeMaxOf = (params) => (isInt(params?.economy?.maxBleu) && params.economy.maxBleu >= 0 ? params.economy.maxBleu : SOLDE_MAX);
+const medMaxOf = (params) => (isInt(params?.economy?.maxMedailles) && params.economy.maxMedailles >= 0 ? params.economy.maxMedailles : SOLDE_MAX);
+const pitieVide = () => Object.fromEntries(RUBRIQUES.map((r) => [r, { e: 0, l: 0 }]));
 
 export function defaultProgression() {
   return {
@@ -41,6 +48,7 @@ export function defaultProgression() {
     rev: 0,
     savedAt: 0,
     bleu: { gagne: 0, depense: 0 },
+    medailles: { gagne: 0, depense: 0, jour: 0 }, // lot 8k : jour = dernier jour local de la médaille « première partie du jour »
     objets: [],
     porte: Object.fromEntries(EMPLACEMENTS.map((e) => [e, null])),
     persos: { debloques: [PERSO_DEFAUT], niveaux: { [PERSO_DEFAUT]: 1 }, choisi: PERSO_DEFAUT },
@@ -49,6 +57,9 @@ export function defaultProgression() {
     niveaux: Object.fromEntries(ALL_STAT_IDS.map((id) => [id, 0])),
     records: { histoire: {}, infini: {} },
     mondes: [],
+    paliers: { histoire: {}, infini: {} }, // lot 8k : plus haut palier récompensé par monde (histoire) ou carte (infini)
+    mondesFinis: [], // lot 8k : mondes dont la première fin a rapporté ses médailles
+    pitie: pitieVide(),
     profil: { avatar: AVATAR_DEFAUT, pseudo: null, tues: 0, partiesHistoire: 0, partiesInfini: 0, tempsMs: 0 },
     lues: [],
     dates: { porte: 0, choisi: 0, avatar: 0, pseudo: 0 },
@@ -57,6 +68,8 @@ export function defaultProgression() {
 }
 
 export const solde = (save) => Math.max(0, (save?.bleu?.gagne ?? 0) - (save?.bleu?.depense ?? 0));
+// Lot 8k : solde de médailles.
+export const soldeMedailles = (save) => Math.max(0, (save?.medailles?.gagne ?? 0) - (save?.medailles?.depense ?? 0));
 
 function int(value, min, max, name, w, fallback) {
   if (value === undefined) return fallback;
@@ -134,6 +147,16 @@ export function sanitize(raw, params) {
     depense = gagne;
   }
   save.bleu = { gagne: Math.min(gagne, depense + soldeMaxOf(params)), depense };
+  // Lot 8k : médailles, même règle ; absentes (sauvegarde d'avant le lot) : 0, sans aucun crédit rétroactif.
+  const m = field(raw, 'medailles');
+  if (m !== undefined && !isObject(m)) warn(w, 'medailles : objet attendu');
+  const mGagne = int(field(m, 'gagne'), 0, SAFE, 'medailles.gagne', w, 0);
+  let mDepense = int(field(m, 'depense'), 0, SAFE, 'medailles.depense', w, 0);
+  if (mDepense > mGagne) {
+    warn(w, 'medailles : dépensé supérieur au gagné');
+    mDepense = mGagne;
+  }
+  save.medailles = { gagne: Math.min(mGagne, mDepense + medMaxOf(params)), depense: mDepense, jour: int(field(m, 'jour'), 0, 9_999_999, 'medailles.jour', w, 0) };
   // Inventaire : exemplaires valides, uid uniques.
   const objets = field(raw, 'objets');
   if (objets !== undefined && !Array.isArray(objets)) warn(w, 'objets : liste attendue');
@@ -202,6 +225,32 @@ export function sanitize(raw, params) {
     }
   }
   save.mondes = ids(field(raw, 'mondes'), ID, 32, 'mondes', w);
+  // Lot 8k : paliers récompensés (multiples de 5 au format : tout entier ≥ 0 gardé), mondes récompensés, compteurs de pitié. Jamais déduits des
+  // records ni des mondes terminés (aucun crédit rétroactif).
+  const pal = field(raw, 'paliers');
+  for (const mode of MODES) {
+    const x = field(pal, mode);
+    if (x !== undefined && !isObject(x)) warn(w, `paliers.${mode} : objet attendu`);
+    let n = 0;
+    for (const [k, v] of Object.entries(isObject(x) ? x : {})) {
+      if (!ID.test(k) || INTERDITES.has(k) || n >= 32) {
+        warn(w, `paliers.${mode} : entrée ignorée`);
+        continue;
+      }
+      const haut = int(v, 0, 1_000_000, `paliers.${mode}.${k}`, w, 0);
+      if (haut > 0) {
+        save.paliers[mode][k] = haut;
+        n += 1;
+      }
+    }
+  }
+  save.mondesFinis = ids(field(raw, 'mondesFinis'), ID, 32, 'mondesFinis', w);
+  const pit = field(raw, 'pitie');
+  if (pit !== undefined && !isObject(pit)) warn(w, 'pitie : objet attendu');
+  for (const r of RUBRIQUES) {
+    const c = field(pit, r);
+    save.pitie[r] = { e: int(field(c, 'e'), 0, PITIE_MAX, `pitie.${r}.e`, w, 0), l: int(field(c, 'l'), 0, PITIE_MAX, `pitie.${r}.l`, w, 0) };
+  }
   const p = field(raw, 'profil');
   const avatar = field(p, 'avatar');
   const pseudo = field(p, 'pseudo');
@@ -256,6 +305,7 @@ export function serialiser(save, extra = {}) {
   if (typeof s.w === 'string') out.w = s.w;
   Object.assign(out, {
     bleu: { gagne: s.bleu.gagne, depense: s.bleu.depense },
+    medailles: { gagne: s.medailles.gagne, depense: s.medailles.depense, jour: s.medailles.jour },
     objets: s.objets.map((o) => ({ u: o.u, i: o.i, r: o.r, n: o.n })),
     porte: Object.fromEntries(EMPLACEMENTS.map((e) => [e, s.porte[e] ?? null])),
     persos: { debloques: [...s.persos.debloques], niveaux: { ...s.persos.niveaux }, choisi: s.persos.choisi },
@@ -264,6 +314,9 @@ export function serialiser(save, extra = {}) {
     niveaux: Object.fromEntries(ALL_STAT_IDS.map((id) => [id, s.niveaux[id]])),
     records: { histoire: { ...s.records.histoire }, infini: { ...s.records.infini } },
     mondes: [...s.mondes],
+    paliers: { histoire: { ...s.paliers.histoire }, infini: { ...s.paliers.infini } },
+    mondesFinis: [...s.mondesFinis],
+    pitie: Object.fromEntries(RUBRIQUES.map((r) => [r, { e: s.pitie[r].e, l: s.pitie[r].l }])),
     profil: { ...s.profil },
     lues: [...s.lues],
     dates: { ...s.dates },
@@ -277,8 +330,12 @@ export function serialiser(save, extra = {}) {
 // Opérations. Chacune a un identifiant unique (id) ; une opération déjà au journal est ignorée (jamais appliquée deux fois) ; une opération
 // impossible sur la valeur la plus récente (solde, inventaire plein, exemplaire absent, niveau changé, offre déjà achetée) est REFUSÉE en entier :
 // rien n'est ajouté, rien n'est prélevé. Types :
-//   gain     { bleu, tues, tempsMs, partie: 'histoire'|'infini'|null, record: { mode, monde, manche }|null, monde (terminé)|null }
-//   achat    { prix, place (plafond de l'inventaire), objets: [{ u, i, r }], persos: [{ id, max }], tenues: [id], offre: { jour, cle }|null }
+//   gain     { bleu, tues, tempsMs, partie: 'histoire'|'infini'|null, record: { mode, monde, manche }|null, monde (terminé)|null,
+//              lot 8k : medailles (portes, milliers de zombies : montant), palier: { mode, monde, manche, pas, gain }|null (paliers au-delà du plus haut
+//              déjà récompensé), mondeFini: { id, gain }|null (première fin récompensée), jour: { n, gain }|null (jour local plus grand que le dernier) }
+//   achat    { prix, place (plafond de l'inventaire), objets: [{ u, i, r }], persos: [{ id, max }], tenues: [id], offre: { jour, cle }|null,
+//              lot 8k : monnaie: 'bleu'|'medailles', pitie: { r (rubrique), de: { e, l }, a: { e, l } }|null (refusé si les compteurs ne sont plus « de ») }
+//   pitie    { valeurs: { rubrique: { e, l } } } (lot 8k, outil de débogage : compteurs posés)
 //   ameliorer { u, de, prix }            perso { perso, de, prix }          fusion { uids: [3], nouveau: { u, i, r, n }, prix }
 //   choix    { champ: 'porte'|'choisi'|'avatar'|'pseudo', valeur, date }  lues { ids: [] }
 //   debloquer { persos: [id | { id, niveau }] } (personnages débloqués par les données, outil de débogage) ; remise à zéro : le dépôt (clear)
@@ -286,11 +343,18 @@ const clone = (s) => serialiser(s);
 
 function appliquer(s, op, params) {
   const prix = isInt(op.prix) && op.prix >= 0 ? op.prix : 0;
+  const medailles = op.monnaie === 'medailles'; // lot 8k : les caisses se paient en médailles
   const payer = () => {
-    if (solde(s) < prix) return false;
-    s.bleu.depense += prix;
+    if ((medailles ? soldeMedailles(s) : solde(s)) < prix) return false;
+    if (medailles) s.medailles.depense += prix;
+    else s.bleu.depense += prix;
     return true;
   };
+  const maxMed = medMaxOf(params);
+  const crediter = (n) => {
+    if (isInt(n) && n > 0) s.medailles.gagne += Math.max(0, Math.min(n, maxMed - soldeMedailles(s)));
+  };
+  const gainDe = (x) => (isObject(x) && isInt(x.gain) && x.gain > 0 ? Math.min(x.gain, maxMed) : 0);
   switch (op.t) {
     case 'gain': {
       const max = soldeMaxOf(params);
@@ -308,6 +372,28 @@ function appliquer(s, op, params) {
         s.records[r.mode][r.monde] = Math.max(s.records[r.mode][r.monde] ?? 0, Math.min(r.manche, 1_000_000));
       }
       if (typeof op.monde === 'string' && ID.test(op.monde) && !s.mondes.includes(op.monde) && s.mondes.length < 32) s.mondes.push(op.monde);
+      // Lot 8k : médailles. Portes et milliers : montant de l'opération (une fois : journal). Paliers, premier monde terminé, jour : selon la
+      // progression la plus récente (jamais deux fois, même rejouée par un autre onglet avec un autre identifiant).
+      if (isInt(op.medailles) && op.medailles > 0) crediter(Math.min(op.medailles, maxMed));
+      const p = op.palier;
+      if (isObject(p) && MODES.includes(p.mode) && typeof p.monde === 'string' && ID.test(p.monde) && !INTERDITES.has(p.monde) && isInt(p.manche) && isInt(p.pas) && p.pas >= 1) {
+        const deja = s.paliers[p.mode][p.monde] ?? 0;
+        const nouveaux = paliersNouveaux(deja, p.manche, { medaillePalierPas: p.pas });
+        if (nouveaux.length && (deja > 0 || Object.keys(s.paliers[p.mode]).length < 32)) {
+          s.paliers[p.mode][p.monde] = nouveaux.at(-1);
+          crediter(nouveaux.length * gainDe(p));
+        }
+      }
+      const f = op.mondeFini;
+      if (isObject(f) && typeof f.id === 'string' && ID.test(f.id) && !s.mondesFinis.includes(f.id) && s.mondesFinis.length < 32) {
+        s.mondesFinis.push(f.id);
+        crediter(gainDe(f));
+      }
+      const j = op.jour;
+      if (isObject(j) && isInt(j.n) && j.n > s.medailles.jour && j.n <= 9_999_999) {
+        s.medailles.jour = j.n;
+        crediter(gainDe(j));
+      }
       return null;
     }
     case 'achat': {
@@ -323,7 +409,14 @@ function appliquer(s, op, params) {
       const offre = isObject(op.offre) ? op.offre : null;
       if (offre && (!isInt(offre.jour) || typeof offre.cle !== 'string' || !CLE_OFFRE.test(offre.cle))) return 'invalide';
       if (offre && s.offres.jour === offre.jour && s.offres.achetees.includes(offre.cle)) return 'offre';
+      // Lot 8k : pitié de la rubrique. Le tirage a été fait avec les compteurs « de » : s'ils ont changé (autre onglet), l'achat est refusé en entier
+      // (aucune garantie perdue ni dupliquée).
+      const pit = isObject(op.pitie) && RUBRIQUES.includes(op.pitie.r) ? op.pitie : null;
+      const compteur = (c) => (isObject(c) && isInt(c.e) && isInt(c.l) && c.e >= 0 && c.l >= 0 && c.e <= PITIE_MAX && c.l <= PITIE_MAX ? { e: c.e, l: c.l } : null);
+      if (op.pitie !== undefined && op.pitie !== null && (!pit || !compteur(pit.de) || !compteur(pit.a))) return 'invalide';
+      if (pit && (s.pitie[pit.r].e !== pit.de.e || s.pitie[pit.r].l !== pit.de.l)) return 'pitie';
       if (!payer()) return 'solde';
+      if (pit) s.pitie[pit.r] = compteur(pit.a);
       s.objets.push(...nouveaux);
       for (const p of Array.isArray(op.persos) ? op.persos : []) {
         if (!isObject(p) || typeof p.id !== 'string' || !ID.test(p.id)) continue;
@@ -408,6 +501,13 @@ function appliquer(s, op, params) {
     case 'lues': {
       for (const id of Array.isArray(op.ids) ? op.ids : []) if (typeof id === 'string' && /^[0-9A-Za-z._-]{1,64}$/.test(id) && !s.lues.includes(id)) s.lues.push(id);
       if (s.lues.length > LUES_MAX) s.lues = s.lues.slice(-LUES_MAX);
+      return null;
+    }
+    case 'pitie': {
+      for (const r of RUBRIQUES) {
+        const c = isObject(op.valeurs) ? op.valeurs[r] : undefined;
+        if (isObject(c) && isInt(c.e) && isInt(c.l) && c.e >= 0 && c.l >= 0) s.pitie[r] = { e: Math.min(c.e, PITIE_MAX), l: Math.min(c.l, PITIE_MAX) };
+      }
       return null;
     }
     case 'debloquer': {
@@ -507,7 +607,7 @@ export function decoder(text, params) {
 export function decrire(save, params) {
   const s = sanitize(save, params).save;
   return {
-    solde: solde(s), gagne: s.bleu.gagne, objets: s.objets.length, persos: s.persos.debloques.length, tenues: s.tenues.length,
+    solde: solde(s), gagne: s.bleu.gagne, medailles: soldeMedailles(s), medaillesGagnees: s.medailles.gagne, objets: s.objets.length, persos: s.persos.debloques.length, tenues: s.tenues.length,
     records: { histoire: { ...s.records.histoire }, infini: { ...s.records.infini } }, mondes: s.mondes.length,
     tues: s.profil.tues, parties: s.profil.partiesHistoire + s.profil.partiesInfini, tempsMs: s.profil.tempsMs,
     niveaux: ALL_STAT_IDS.reduce((n, id) => n + s.niveaux[id], 0),

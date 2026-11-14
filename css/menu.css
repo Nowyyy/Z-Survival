@@ -546,6 +546,10 @@
   font-variant-numeric: tabular-nums;
 }
 
+.e8-solde.e8-medailles {
+  color: var(--color-money-medaille); /* lot 8k : médailles */
+}
+
 .e8-plein-ecran {
   display: grid;
   place-items: center;
@@ -4860,8 +4864,8 @@
 
 .e10-stats {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: calc(10 * var(--u));
+  grid-template-columns: repeat(4, minmax(0, 1fr)); /* lot 8k : sept statistiques (médailles gagnées) sur deux rangées, cartes un peu plus serrées */
+  gap: calc(8 * var(--u));
   margin: 0;
   padding: 0;
   list-style: none;
@@ -4874,7 +4878,7 @@
   justify-content: center;
   gap: 2px;
   min-height: calc(78 * var(--u));
-  padding: calc(6 * var(--u)) calc(12 * var(--u));
+  padding: calc(5 * var(--u)) calc(7 * var(--u));
   line-height: 1.2;
   border: 2px solid var(--menu-panneau-bois);
   background: var(--menu-e9-panneau);
@@ -4883,7 +4887,7 @@
 .e10-stat-nom {
   font-weight: var(--font-weight-bold);
   font-size: max(11px, calc(12 * var(--u)));
-  letter-spacing: 0.06em;
+  letter-spacing: 0.02em;
   text-transform: uppercase;
   color: var(--menu-carte-libelle);
 }

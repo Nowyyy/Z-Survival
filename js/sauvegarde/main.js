@@ -71,6 +71,7 @@ function render() {
   const d = decrire(s, params);
   addFact(list, t('game.save.page.state.balance'), String(d.solde));
   addFact(list, t('game.save.page.state.earned'), String(d.gagne));
+  addFact(list, t('game.save.page.state.medailles'), t('game.save.page.state.medaillesValue', { solde: d.medailles, gagne: d.medaillesGagnees })); // lot 8k
   addFact(list, t('game.save.page.state.items'), t('game.save.page.state.itemsValue', { objets: d.objets, persos: d.persos, tenues: d.tenues }));
   addFact(list, t('game.save.page.state.levels'), STAT_KEYS.map((id) => `${t(statKey(id))} ${s.niveaux[id]}`).join(' · '));
   const records = MODES.flatMap((mode) => Object.entries(d.records[mode]).map(([monde, n]) => `${t(MODE_RECORD_KEYS[mode], { monde })} ${n}`));

@@ -321,7 +321,10 @@ describe('structure de jeu.html', () => {
   it('fin : colonne de gauche vague, record, meilleure manche ; colonne de droite tués, jaune perdue, prime du monde, bleue gagnée, solde bleu (lot 8h) ; plus de note « provisoire »', () => {
     const end = html.slice(at('id="end-panel"'), at('id="rotate"'));
     const cols = end.split('class="facts-col"').slice(1).map((c) => [...c.matchAll(/id="(end-[a-z]+)"/g)].map((m) => m[1]).filter((i) => !i.endsWith('text')));
-    expect(cols[0]).toEqual(['end-wave', 'end-record', 'end-best']);
+    expect(cols[0]).toEqual(['end-wave', 'end-record', 'end-best', 'end-medailles']); // lot 8k : puis médailles gagnées (sources, solde)
+    expect(end.indexOf('id="end-best"')).toBeLessThan(end.indexOf('id="end-medailles-sources"'));
+    expect(end.indexOf('id="end-medailles-sources"')).toBeLessThan(end.indexOf('id="end-medailles-solde"'));
+    expect(end.indexOf('id="end-medailles-solde"')).toBeLessThan(end.indexOf('id="end-kills"'));
     expect(cols[1].slice(0, 5)).toEqual(['end-kills', 'end-earned', 'end-bonus', 'end-bleu', 'end-balance']);
     expect(end).not.toContain('game.end.provisional');
     expect(fr['game.end.provisional']).toBeUndefined();

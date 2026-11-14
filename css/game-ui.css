@@ -294,6 +294,28 @@
   color: var(--color-money-blue);
 }
 
+/* Lot 8k : médailles (troisième monnaie, gardée, paie les caisses) : médaille dessinée en code, couleur bronze ; fin de manche (même bloc que la
+   monnaie bleue, juste dessous), pause (après le solde bleu) et écran de fin. Contraste du texte ≥ 4,5:1 comme le bleu. */
+.hud-medaille {
+  fill: none;
+  stroke: var(--color-money-medaille);
+  stroke-width: 1.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.hud-bleu-manche.hud-medailles-manche,
+.end-medaille {
+  color: var(--color-money-medaille);
+}
+
+.pause-medailles {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35em;
+  margin-left: 0.6em;
+}
+
 /* « +N » (lot 4, agrégé, décoratif) : sous le bouton Pause, sur la ligne de l'argent (retour du propriétaire), au moins de la largeur de Pause ; sans animation. */
 .hud-gain {
   position: absolute;

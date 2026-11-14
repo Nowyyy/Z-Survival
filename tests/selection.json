@@ -624,10 +624,11 @@
         "tests/unit/sauvegarde-depots.test.js",
         "tests/unit/sauvegarde-onglets.test.js",
         "tests/unit/progression.test.js",
+        "tests/unit/medailles.test.js",
         "tests/unit/sauvegarde-page.test.js",
         "tests/unit/sauvegarde-schema.test.js"
       ],
-      "e2e": ["tests/e2e/argent.spec.js", "tests/e2e/sauvegarde.spec.js"],
+      "e2e": ["tests/e2e/argent.spec.js", "tests/e2e/sauvegarde.spec.js", "tests/e2e/medailles.spec.js"],
       "complet": []
     },
     {

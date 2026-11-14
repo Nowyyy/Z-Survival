@@ -21,6 +21,7 @@ export function createUi(dict, handlers) {
     options: $('btn-options'), debug: $('btn-debug'), restart: $('btn-restart'), replay: $('btn-replay'), quit: $('btn-quit'), menuBtn: $('btn-menu'), endKills: $('end-kills'), endWave: $('end-wave'),
     endBox: $('end-box'), endTitle: $('end-title-text'), pauseBalance: $('pause-balance-text'), endEarned: $('end-earned'), endEarnedText: $('end-earned-text'), endBonus: $('end-bonus'), endBonusText: $('end-bonus-text'),
     endBalance: $('end-balance'), endBalanceText: $('end-balance-text'), endBleu: $('end-bleu'), endBleuText: $('end-bleu-text'), endBest: $('end-best'), endRecord: $('end-record'), endRecordText: $('end-record-text'), endSave: $('end-save'),
+    pauseMedailles: $('pause-medailles-text'), endMed: $('end-medailles'), endMedText: $('end-medailles-text'), endMedSources: $('end-medailles-sources'), endMedSolde: $('end-medailles-solde'), endMedSoldeText: $('end-medailles-solde-text'),
   };
   // Lot 5j : écran Options (créé à la première ouverture) ; binding : contrôleur graphique et couche VHS, donnés par game.js (bindOptions).
   // Lot 8c : composant partagé avec le menu (contexte « partie ») ; sa section Son lit l'audio en cours (sonAudio) et passe par les mêmes
@@ -95,6 +96,8 @@ export function createUi(dict, handlers) {
       // Retour du propriétaire après le lot 8j : la pause montre le solde de la monnaie bleue (gemme puis montant, comme l'en-tête du menu ;
       // « Monnaie bleue : » reste dit aux lecteurs d'écran), et plus la monnaie jaune.
       els.pauseBalance.textContent = fmt(dict[MONEY_TEXTS.pauseBalance], { n: formatMoney(summary?.soldeBleu) });
+      // Lot 8k : puis le solde de médailles (médaille puis montant ; « Médailles : » dit aux lecteurs d'écran).
+      if (els.pauseMedailles) els.pauseMedailles.textContent = fmt(dict[MONEY_TEXTS.pauseBalance], { n: formatMoney(summary?.soldeMedailles) });
     },
 
     // info (lot 4, de bank.runEnd) : { earned, world, balance, best, record, status } ; absent : les lignes d'argent restent vides.
@@ -117,6 +120,16 @@ export function createUi(dict, handlers) {
         els.endBleuText.textContent = fmt(dict[MONEY_TEXTS.bleu], { n: formatMoney(info.bleu) });
         els.endBalanceText.textContent = fmt(dict[MONEY_TEXTS.balance], { n: formatMoney(info.soldeBleu) });
         els.endBest.textContent = fmt(dict[info.mode === 'infini' ? MONEY_TEXTS.bestInfini : MONEY_TEXTS.best], { n: info.best });
+      }
+      // Lot 8k : médailles gagnées pendant la partie (avec leurs sources non nulles) et solde de médailles.
+      const med = money && info.medailles ? info.medailles : null;
+      for (const n of [els.endMed, els.endMedSolde]) if (n) n.hidden = !med;
+      if (els.endMedSources) els.endMedSources.hidden = !(med && med.total > 0);
+      if (med && els.endMed) {
+        els.endMedText.textContent = fmt(dict['game.end.medailles'], { n: formatMoney(med.total) });
+        els.endMedSoldeText.textContent = fmt(dict['game.end.medailles.solde'], { n: formatMoney(med.solde) });
+        const sources = { portes: 'game.end.medailles.portes', zombies: 'game.end.medailles.zombies', paliers: 'game.end.medailles.paliers', monde: 'game.end.medailles.monde', jour: 'game.end.medailles.jour' };
+        els.endMedSources.textContent = Object.entries(sources).filter(([k]) => med[k] > 0).map(([k, cle]) => fmt(dict[cle], { n: formatMoney(med[k]) })).join(' · ');
       }
       const world = money && variant === 'world';
       els.endBonus.hidden = !world;

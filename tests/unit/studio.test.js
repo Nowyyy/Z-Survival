@@ -317,15 +317,16 @@ describe('Connexion et Profil (lot 8g)', () => {
     const { STATS_EN_ATTENTE, STATS_PROFIL, statsProfil, tempsJeu } = await import('../../js/menu/profil-etat.js');
     const { defaultProgression } = await import('../../js/core/progression.js');
     const defaultSave = defaultProgression;
-    expect(STATS_PROFIL).toEqual(['meilleureManche', 'tues', 'partiesHistoire', 'partiesInfini', 'temps', 'argent']); // retour du propriétaire : sans record infini
+    expect(STATS_PROFIL).toEqual(['meilleureManche', 'tues', 'partiesHistoire', 'partiesInfini', 'temps', 'argent', 'medailles']); // retour du propriétaire : sans record infini ; lot 8k : médailles gagnées
     expect(STATS_EN_ATTENTE).toEqual([]); // lot 8h : plus aucune en attente
     const save = { ...defaultSave(), bleu: { gagne: 1234, depense: 334 }, records: { histoire: { batiment: 17 }, infini: { batiment: 30 } }, profil: { ...defaultSave().profil, tues: 88, partiesHistoire: 6, partiesInfini: 2, tempsMs: 3_725_000 } };
     const v = (lu, m) => Object.fromEntries(statsProfil(lu, m).map((s) => [s.id, s.valeur]));
-    expect(v({ status: 'ok', save }, 40)).toEqual({ meilleureManche: 17, tues: 88, partiesHistoire: 6, partiesInfini: 2, temps: 3_725_000, argent: 1234 }); // record infini : jamais celui de l'histoire
+    expect(v({ status: 'ok', save }, 40)).toEqual({ meilleureManche: 17, tues: 88, partiesHistoire: 6, partiesInfini: 2, temps: 3_725_000, argent: 1234, medailles: 0 }); // record infini : jamais celui de l'histoire
+    expect(v({ status: 'ok', save: { ...save, medailles: { gagne: 460, depense: 300, jour: 0 } } }, 40).medailles).toBe(460); // lot 8k : gagnées au total
     expect(statsProfil({ status: 'ok', save }, 40)[0]).toEqual({ id: 'meilleureManche', valeur: 17, max: 40 });
     expect(tempsJeu(3_725_000)).toEqual({ h: 1, m: 2 });
-    expect(v({ status: 'empty', save: defaultSave() })).toEqual({ meilleureManche: null, tues: 0, partiesHistoire: 0, partiesInfini: 0, temps: 0, argent: 0 });
-    const vide = { meilleureManche: null, tues: null, partiesHistoire: null, partiesInfini: null, temps: null, argent: null };
+    expect(v({ status: 'empty', save: defaultSave() })).toEqual({ meilleureManche: null, tues: 0, partiesHistoire: 0, partiesInfini: 0, temps: 0, argent: 0, medailles: 0 });
+    const vide = { meilleureManche: null, tues: null, partiesHistoire: null, partiesInfini: null, temps: null, argent: null, medailles: null };
     for (const lu of [{ status: 'corrupt', save }, { status: 'future', save }, { status: 'unavailable', save }, null, undefined, {}, { status: 'ok', save: null }]) expect(v(lu), JSON.stringify(lu)).toEqual(vide);
     expect(statsProfil({ status: 'ok', save }, 'x')[0].max).toBe(null);
   });
