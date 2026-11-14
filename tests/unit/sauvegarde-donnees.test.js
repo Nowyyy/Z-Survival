@@ -130,7 +130,8 @@ describe('textes', () => {
   });
 
   it('les lignes de la pause et de l\'état de la sauvegarde sont écrites en toutes lettres', () => {
-    expect(fr['game.pause.balance']).toBe('Monnaie jaune : {n}'); // lot 8h : la pause montre la monnaie jaune de la partie
+    expect(fr['game.pause.balance']).toBe('{n}'); // retour du propriétaire après le lot 8j : la pause montre le solde bleu, gemme puis montant (lot 8h : « Monnaie jaune : {n} »)
+    expect(fr['game.pause.balance.label']).toBe('Monnaie bleue :'); // dit aux lecteurs d'écran seulement
     expect(fr['game.save.status.saved']).toBe('Sauvegarde : enregistrée');
     expect(fr['game.save.status.pending']).toBe('Sauvegarde : en attente');
     expect(fr['game.save.status.failed']).toBe('Sauvegarde : échec, nouvelle tentative');

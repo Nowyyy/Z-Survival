@@ -92,7 +92,9 @@ export function createUi(dict, handlers) {
     // Lot 4 : « Solde » (summary : { balance, status }, de js/game/bank.js). Lot 3l (retour du propriétaire) : à côté de « PAUSE » ; l'état de la sauvegarde
     // n'est plus dans la pause (il reste sur l'écran de fin quand il pose problème : illisible, indisponible, échec, mode essai).
     setPauseInfo(summary) {
-      els.pauseBalance.textContent = fmt(dict[MONEY_TEXTS.pauseBalance], { n: formatMoney(summary?.balance) });
+      // Retour du propriétaire après le lot 8j : la pause montre le solde de la monnaie bleue (gemme puis montant, comme l'en-tête du menu ;
+      // « Monnaie bleue : » reste dit aux lecteurs d'écran), et plus la monnaie jaune.
+      els.pauseBalance.textContent = fmt(dict[MONEY_TEXTS.pauseBalance], { n: formatMoney(summary?.soldeBleu) });
     },
 
     // info (lot 4, de bank.runEnd) : { earned, world, balance, best, record, status } ; absent : les lignes d'argent restent vides.

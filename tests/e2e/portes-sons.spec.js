@@ -91,7 +91,7 @@ test.describe('message à l\'approche d\'une porte fermée (lot 8j)', () => {
 });
 
 test.describe('fin de manche : solde bleu et gain sous la vague (retour du propriétaire après le lot 8j)', () => {
-  test('« Monnaie bleue : solde (+gain) » sous le compteur de vague à la fin d\'une manche, pendant 4 s de jeu, puis masqué ; montants lus dans la banque', async ({ page }) => {
+  test('gemme bleue puis « solde (+gain) » sous le compteur de vague à la fin d\'une manche, pendant 4 s de jeu, puis masqué ; montants lus dans la banque', async ({ page }) => {
     await page.addInitScript(() => Object.defineProperty(Document.prototype, 'hidden', { get: () => true, configurable: true }));
     await page.setViewportSize({ width: 932, height: 430 });
     await page.goto('/jeu.html?test=1&seed=1&wave=3');
@@ -109,7 +109,8 @@ test.describe('fin de manche : solde bleu et gain sous la vague (retour du propr
     await expect(bloc).toBeVisible();
     const gain = etat.solde - avant;
     expect(gain).toBeGreaterThan(0);
-    await expect(bloc).toHaveText(`Monnaie bleue : ${etat.solde.toLocaleString('fr-FR').replace(/\u202f|\u00a0/g, ' ')} (+${gain})`);
+    await expect(bloc).toHaveText(`${etat.solde.toLocaleString('fr-FR').replace(/\u202f|\u00a0/g, ' ')} (+${gain})`);
+    expect(await bloc.evaluate((n) => n.firstElementChild.classList.contains('hud-gem'))).toBe(true); // seulement le logo de la monnaie bleue (retour du propriétaire)
     const boites = await page.evaluate(() => [document.getElementById('hud-wave'), document.getElementById('hud-bleu-manche')].map((n) => {
       const r = n.getBoundingClientRect();
       return { cx: r.left + r.width / 2, t: r.top, b: r.bottom, color: getComputedStyle(n).color };

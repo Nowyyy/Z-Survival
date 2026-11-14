@@ -117,10 +117,10 @@ describe('sons des zombies : environ un coup sur quatre', () => {
 });
 
 describe('fin de manche : solde bleu et gain sous la vague (retour du propriétaire)', () => {
-  it('texte « Monnaie bleue : solde (+gain) » (fr.json), montants mis en forme ; durée 1 à 15 s de jeu, sinon 4', () => {
+  it('texte « solde (+gain) » après la gemme (fr.json ; retour du propriétaire : seulement le logo), montants mis en forme ; durée 1 à 15 s de jeu, sinon 4', () => {
     const fr = json('data/i18n/fr.json');
-    expect(fr['game.hud.bleuManche']).toBe('Monnaie bleue : {solde} (+{gain})');
-    expect(texteBleuManche(fr['game.hud.bleuManche'], 168, 12)).toBe('Monnaie bleue : 168 (+12)');
+    expect(fr['game.hud.bleuManche']).toBe('{solde} (+{gain})');
+    expect(texteBleuManche(fr['game.hud.bleuManche'], 168, 12)).toBe('168 (+12)');
     expect(BLEU_MANCHE_DEFAUT.duree).toBe(4);
     expect(reglagesBleuManche({ duree: 6 }).duree).toBe(6);
     for (const d of [0, 16, '5', null, Number.NaN]) expect(reglagesBleuManche({ duree: d }).duree).toBe(4);
