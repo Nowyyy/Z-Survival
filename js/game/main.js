@@ -23,7 +23,7 @@ import { generateTextureData } from './textures.js';
 import { installTestHook } from './testhook.js';
 import { createUi } from './ui.js';
 import { applyTexts, fmt, loadDict, TEXTURE_TEXTS } from './texts.js';
-import { feuilleMenu, menuChute, menuProgres, menuRetour, modeMenu, optionPartie, reglagesSon } from '../menu/demarrage.js';
+import { feuilleMenu, menuChute, menuProgres, menuRetour, modeMenu, optionPartie, poserSon, reglagesSon } from '../menu/demarrage.js';
 
 const DEFAULT_RATIO_CAP = 2;
 menuProgres('modules', 1); // lot 8a : modules et Three.js évalués (écran de chargement du jeu après « JOUER » ; sans effet en partie directe)
@@ -144,7 +144,7 @@ const textureData = await generateTextureData(texturesCfg.textures, { lookup: cr
 }, detail: detail && gfxLoad.texturesFines });
 const soundMode = parseSoundMode(search); // ?sons= (groupe T)
 const audio = createAudio({ config: { audio: audioCfg, materials: materialsCfg, voice: voiceCfg, sounds: soundsCfg.sounds }, test: testMode, seed: Number.isFinite(seedParam) ? seedParam : 1, mode: soundMode });
-const sonMenu = reglagesSon(); // lot 8c : son et volume choisis dans les Options du menu (mémoire de la page ; partie directe : défauts, rien ne change)
+const sonMenu = reglagesSon(); // lot 8c : son et volume des Options du menu ; lot 8h : gardés dans zs.device.v1 (partie directe comprise)
 if (sonMenu.coupe) audio.toggleMute();
 if (sonMenu.volume !== null) audio.setVolume(sonMenu.volume);
 if (sonMenu.musique !== null) audio.setMusicVolume(sonMenu.musique); // lot 8i : volume de la musique (mélodie d'annonce de vague)
@@ -164,8 +164,8 @@ const zones = zonesJson ? zonesToWorld(parseZones(zonesJson), world.transform) :
 const layouts = buildLayouts({ rdc: { world, decor }, etage: upperWorld ? { world: upperWorld } : null, zones }, { empty: emptyMode, slack: camera.slack });
 const layout = layouts.rdc;
 
-// Sauvegarde (lot 4) : le dépôt est choisi d'après l'adresse (mémoire pour ?test=1, lecture seule pour les paramètres d'essai) ; la seule clé de stockage
-// est zs.save.v1. L'accès à localStorage peut lever (stockage bloqué) : le dépôt local passe alors à « indisponible », le jeu continue.
+// Sauvegarde (lot 4) : le dépôt est choisi d'après l'adresse (mémoire pour ?test=1, lecture seule pour les paramètres d'essai) ; lot 8h : progression v2
+// (zs.save.v2 ; zs.save.v1 n'est ni lue ni écrite). L'accès à localStorage peut lever (stockage bloqué) : le dépôt local passe à « indisponible ».
 const storage = (() => {
   try {
     return window.localStorage;
@@ -178,13 +178,14 @@ const { repository, mode: saveMode } = createRepository({
   search,
   storage,
   params: saveParams,
+  format: 'v2',
   listen: (handler) => {
     window.addEventListener('storage', handler);
     return () => window.removeEventListener('storage', handler);
   },
   persist: () => navigator.storage?.persist?.(),
   // Lot 5o : canal entre onglets (défaut des deux onglets) ; save-merge.js n'est chargé que si un autre onglet se manifeste. Sans BroadcastChannel : null.
-  channel: () => (typeof BroadcastChannel === 'function' ? new BroadcastChannel(saveCfg.storageKey) : null),
+  channel: () => (typeof BroadcastChannel === 'function' ? new BroadcastChannel(saveCfg.v2.storageKey) : null),
   merge: () => import('../core/save-merge.js'),
   now: () => Date.now(),
 });
@@ -219,7 +220,7 @@ const ctx = {
   },
   seed: Number.isFinite(seedParam) ? seedParam : Date.now() % 2147483647,
   seedRun: 0,
-  levels: niveauxPartie(readLevels(search, statsCfg, loadedSave.status === 'ok' ? loadedSave.save : null)),
+  levels: niveauxPartie(readLevels(search, statsCfg, loadedSave.status === 'ok' ? { stats: loadedSave.save.niveaux } : null)),
   repository,
   mode: saveMode,
   economy: makeEconomy(economyCfg, enemies),
@@ -231,6 +232,7 @@ const ctx = {
   audioCfg,
   audioMaterials: materialsCfg,
   canal, // lot 5l : canal de la page (null : refusé) ; l'icône de débogage de la pause n'existe que sur les canaux de débogage
+  monde: optionPartie().monde ?? 'batiment', // lot 8h : monde de la partie (record par monde et par mode)
   modePartie: optionPartie().mode, // lot 8b : option de démarrage posée par le menu (histoire, ou infini sans paramètre d'adresse) ; partie directe : histoire
 };
 
@@ -246,14 +248,15 @@ ctx.ui = createUi(dict, {
   chargerStyles: feuilleMenu, // lot 8c : feuille des Options (composant partagé avec le menu), chargée à leur première ouverture
   onToggleSound: () => {
     ctx.audio.toggleMute();
+    poserSon({ coupe: ctx.audio.muted }); // lot 8h : gardé (zs.device.v1)
     ctx.ui.syncSound(ctx.audio);
   },
   onVolume: (n) => {
-    ctx.audio.setVolume(n);
+    poserSon({ volume: ctx.audio.setVolume(n) });
     ctx.ui.syncSound(ctx.audio);
   },
   onMusicVolume: (n) => {
-    ctx.audio.setMusicVolume(n);
+    poserSon({ musique: ctx.audio.setMusicVolume(n) });
     ctx.ui.syncSound(ctx.audio);
   },
   onToggleVhs: () => {

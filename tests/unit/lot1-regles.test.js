@@ -78,6 +78,7 @@ describe('mêmes règles qu\'au lot 1', () => {
     allowed.push('js/core/caisses.js'); // lot 8e : caisses mystère de la Boutique, chances et tirage à graine (nouveau fichier, pur, chargé seulement à l'onglet Boutique)
     allowed.push('js/core/ouverture.js'); // lot 8f : chronologie des ouvertures de caisses en 3D (nouveau fichier, pur, chargé seulement à la première ouverture)
     allowed.push('js/core/sons-menu.js', 'js/core/musique-menu.js'); // lot 8i : sons du menu (catalogue, choix, volumes, clic, sons d'une ouverture, états de la musique) et partition de la musique des menus : modules nouveaux, aucun module existant modifié
+    allowed.push('js/core/progression.js'); // lot 8h : progression v2 (zs.save.v2 : format, opérations, ZS2 et ZS1 ; nouveau fichier, pur)
     expect(changed.filter((f) => !allowed.includes(f))).toEqual([]);
   });
 });

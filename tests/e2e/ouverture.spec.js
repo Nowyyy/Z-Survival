@@ -8,6 +8,13 @@ import { readFileSync } from 'node:fs';
 import { lireCaisses, tirer, tirer10 } from '../../js/core/caisses.js';
 import { lireCatalogue } from '../../js/core/equipement.js';
 import { chronologie, lireOuvertures, rareteEffets } from '../../js/core/ouverture.js';
+import { CLE_V2, poserProgression } from './helpers.js';
+
+// Lot 8h : progression v2 de démonstration (100 000 bleus ; tests/e2e/helpers.js), ?store=local ; prix prélevés, une écriture par achat.
+test.beforeEach(async ({ page }) => {
+  await poserProgression(page);
+});
+const NNBSP = String.fromCharCode(0x202f);
 
 const REF = { width: 932, height: 430 };
 const BRUIT = /GL Driver Message|GPU stall|swiftshader|WebGL/i; // messages du rendu logiciel de Chromium, sans rapport avec la page
@@ -76,7 +83,7 @@ async function graines(page, liste) {
 }
 async function ouvrirBoutique(page, size = REF, mode = 'pas') {
   await page.setViewportSize(size);
-  await page.goto(`/jeu.html?test=1&menu=1&seed=1${mode ? `&ouverture=${mode}` : ''}`);
+  await page.goto(`/jeu.html?test=1&menu=1&seed=1&store=local${mode ? `&ouverture=${mode}` : ''}`);
   await expect(page.locator('#menu-jouer')).toBeVisible({ timeout: 60_000 });
   await page.waitForFunction(() => window.__zsMenu?.etat()?.menu !== null && !document.getElementById('e7'));
   await page.locator('#menu-onglet-boutique').click();
@@ -172,10 +179,10 @@ test.describe('ouverture ×1 (E3-2)', () => {
     expect(lib).toEqual({ geometries: 0, textures: 0, contextePerdu: true });
     expect(await contextesVivants(page)).toBe(0);
     expect(await page.locator('canvas').count()).toBe(0);
-    // L'objet est dans l'inventaire en mémoire (ajouté par le tirage, comme au lot 8e) ; prix jamais prélevés ; rien n'est écrit.
+    // L'objet est dans l'inventaire ; lot 8h : prix prélevé (caisse d'élite, 1 500) dans la même écriture que l'objet.
     expect((await etatBoutique(page)).dernier.objets).toEqual([attendu]);
-    await expect(page.locator('#menu-solde-texte')).toHaveText('0');
-    expect(await page.evaluate(() => window.__ecritures)).toEqual([]);
+    await expect(page.locator('#menu-solde-texte')).toHaveText(`98${NNBSP}500`);
+    expect(await page.evaluate(() => window.__ecritures)).toEqual([CLE_V2]);
     expect([o.problemes, o.externes]).toEqual([[], []]);
   });
 
@@ -239,8 +246,8 @@ test.describe('ouverture ×1 (E3-2)', () => {
     await page.locator('#menu-ouverture-passer').click();
     await expect(page.locator('#menu-ecran-resultat')).toBeVisible();
     expect(await contextesVivants(page)).toBe(0);
-    // Inventaire en mémoire : les quatre objets, dans l'ordre des achats ; rien n'est écrit.
-    expect(await page.evaluate(() => window.__ecritures)).toEqual([]);
+    // Inventaire : les quatre objets, dans l'ordre des achats ; lot 8h : une écriture par achat (quatre).
+    expect(await page.evaluate(() => window.__ecritures)).toEqual([CLE_V2, CLE_V2, CLE_V2, CLE_V2]);
     // 4. « JOUER » : la partie démarre normalement (un seul contexte WebGL : celui du jeu).
     await page.locator('#menu-resultat-continuer').click();
     await page.locator('#menu-onglet-jouer').click();
@@ -264,6 +271,7 @@ test.describe('ouverture ×1 (E3-2)', () => {
     expect(o.problemes).toEqual([]);
     // WebGL indisponible : nouvel onglet, getContext('webgl2') renvoie null.
     const page2 = await browser.newPage();
+    await poserProgression(page2); // lot 8h : nouveau contexte (le beforeEach ne pose la progression que pour `page`)
     const o2 = surveiller(page2, baseURL);
     await espions(page2, { sansWebgl: true });
     await graines(page2, [G_RARE]);
@@ -386,7 +394,7 @@ test.describe('ouverture ×10 (E3-3)', () => {
     expect([r.quantite, r.cartes.map((x) => [x.objet, x.rarete])]).toEqual([10, attendus.map((x) => [x.id, x.rarete])]);
     expect((await ouv(page)).liberation).toEqual({ geometries: 0, textures: 0, contextePerdu: true });
     expect(await contextesVivants(page)).toBe(0);
-    expect(await page.evaluate(() => window.__ecritures)).toEqual([]);
+    expect(await page.evaluate(() => window.__ecritures)).toEqual([CLE_V2]); // lot 8h : l'achat ×10, une écriture
     expect([o.problemes, o.externes]).toEqual([[], []]);
   });
 
@@ -434,7 +442,7 @@ test.describe('ouverture ×10 (E3-3)', () => {
     await expect(page.locator('#menu-ecran-ouverture')).toHaveCount(0);
     r = (await etatBoutique(page)).resultat;
     expect(r.cartes.map((x) => x.objet)).toEqual(attendus.map((x) => x.id));
-    expect(await page.evaluate(() => window.__ecritures)).toEqual([]);
+    expect((await page.evaluate(() => window.__ecritures)).every((k) => k === CLE_V2)).toBe(true); // lot 8h : seulement les achats (progression v2)
     expect([o.problemes, o.externes]).toEqual([[], []]);
   });
 });

@@ -148,7 +148,7 @@ test.describe('lampes à huile', () => {
     const files = [];
     page.on('request', (r) => r.url().startsWith(baseURL) && files.push(new URL(r.url()).pathname));
     await open(page, '&nospawn=1&lum=off');
-    expect(new Set(files.filter((f) => f.endsWith('.js'))).size).toBe(115);
+    expect(new Set(files.filter((f) => f.endsWith('.js'))).size).toBe(117); // lot 8h : + js/save/codecs.js et js/core/progression.js (progression v2)
     for (const f of ['/js/game/lamps.js', '/js/core/lamps.js', '/js/game/lights.js', '/data/game/lumieres.json']) expect(files).not.toContain(f);
     expect(files.some((f) => f.includes('lampes'))).toBe(false);
     files.length = 0;

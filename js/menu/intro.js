@@ -33,7 +33,8 @@ function el(tag, classes, attrs = {}) {
 }
 
 // Joue l'introduction. Renvoie { fin (promesse : début du fondu, ou fin immédiate), passer(), etat() }.
-export function jouerIntro({ root = document.body, reduit = matchMedia('(prefers-reduced-motion: reduce)').matches } = {}) {
+// coupe (lot 8h) : « Son coupé » gardé dans l'appareil : le logo se joue sans son (état « muet »).
+export function jouerIntro({ root = document.body, reduit = matchMedia('(prefers-reduced-motion: reduce)').matches, coupe = false } = {}) {
   const t0 = performance.now();
   const temps = { geste: null, affiche: null, sonDebut: null, fin: null, retire: null };
   // geste (attente du toucher) → attente (logo en chargement) → joue → sortie (fondu) → finie
@@ -103,7 +104,8 @@ export function jouerIntro({ root = document.body, reduit = matchMedia('(prefers
     ctx = null;
   }
   function jouerSon() {
-    if (!ctx || !tampon || phase !== 'joue') return;
+    if (coupe && son !== 'aucun') son = 'muet';
+    if (coupe || !ctx || !tampon || phase !== 'joue') return;
     try {
       source = ctx.createBufferSource();
       source.buffer = tampon;

@@ -1,10 +1,10 @@
 // Lot 8d : sous-menu Personnages (E9-4, maquette Docs/maquettes-v0.8/Personnages.html), écran plein chargé à sa première ouverture
 // (js/menu/personnage.js). Grille des personnages (silhouette de leur teinte, nom, « Choisi · niv. N », « niv. N » ou « Verrouillé » avec cadenas) ;
 // à droite, le personnage sélectionné : petite silhouette animée, nom, niveau, barre de progression, capacité, ses statistiques effectives (s'il
-// était choisi), « Choisir » (ou « Choisi », désactivé) et « Améliorer · [prix] » (prix affiché, jamais prélevé avant le lot 8h). Un personnage
+// était choisi), « Choisir » (ou « Choisi », désactivé) et « Améliorer · [prix] » (lot 8h : prix prélevé en monnaie bleue, « Il manque N » sinon). Un personnage
 // verrouillé n'est ni choisissable ni améliorable. État en mémoire (equipement-etat.js).
 import { formatMoney } from '../core/economy.js';
-import { ameliorerPersonnage, choisirPersonnage, infoPersonnage } from '../core/equipement.js';
+import { infoPersonnage } from '../core/equipement.js';
 import { fmt } from '../game/texts.js';
 import { el } from './menu.js';
 import { son } from './sons/sons.js';
@@ -85,29 +85,32 @@ export function creer({ t, bandeau, eq, cat, stats, retour }) {
     btChoisir.textContent = t(info.choisi ? 'game.menu.personnages.choisi' : 'game.menu.personnages.choisir');
     btChoisir.classList.toggle('is-choisi', info.choisi);
     poserActif(btChoisir, !info.choisi && !info.verrouille, 'menu-personnages-raison');
-    btAmeliorer.textContent = info.peutAmeliorer ? fmt(t('game.menu.personnages.ameliorer'), { prix: formatMoney(info.prix) }) : t('game.menu.inventaire.ameliorer.max');
+    // Lot 8h : prix prélevé en monnaie bleue ; solde insuffisant : « Il manque N » grisé, raison lue.
+    const manque = info.peutAmeliorer ? Math.max(0, info.prix - eq.solde()) : 0;
+    btAmeliorer.textContent = !info.peutAmeliorer ? t('game.menu.inventaire.ameliorer.max') : manque > 0 ? fmt(t('game.menu.prix.manque'), { n: formatMoney(manque) }) : fmt(t('game.menu.personnages.ameliorer'), { prix: formatMoney(info.prix) });
     if (info.verrouille) btAmeliorer.textContent = t('game.menu.personnages.ameliorer.verrou');
-    poserActif(btAmeliorer, info.peutAmeliorer, 'menu-personnages-raison');
-    const r = info.verrouille ? 'game.menu.personnages.raison.verrou' : info.choisi && !info.peutAmeliorer ? 'game.menu.personnages.raison.max.choisi' : info.choisi ? 'game.menu.personnages.raison.choisi' : !info.peutAmeliorer ? 'game.menu.personnages.raison.max' : null;
+    poserActif(btAmeliorer, info.peutAmeliorer && manque === 0, 'menu-personnages-raison');
+    const r = info.verrouille ? 'game.menu.personnages.raison.verrou' : info.choisi && !info.peutAmeliorer ? 'game.menu.personnages.raison.max.choisi' : manque > 0 ? 'game.menu.prix.raison' : info.choisi ? 'game.menu.personnages.raison.choisi' : !info.peutAmeliorer ? 'game.menu.personnages.raison.max' : null;
     raison.hidden = !r;
-    raison.textContent = r ? fmt(t(r), { n: info.niveauMax }) : '';
+    raison.textContent = r ? fmt(t(r), { n: info.niveauMax, prix: formatMoney(info.prix ?? 0), solde: formatMoney(eq.solde()) }) : '';
     raison.classList.toggle('sr-only', r === 'game.menu.personnages.raison.choisi'); // « Déjà choisi » : déjà écrit sur le bouton, lu seulement
   }
 
   btChoisir.addEventListener('click', () => {
     if (!estActif(btChoisir)) return;
-    const etat = eq.etat();
-    if (eq.poser(choisirPersonnage(etat, cat, selection)) === etat) return;
+    if (!eq.choisirPersonnage(selection).ok) return;
     son('choisir'); // lot 8i
     dire(fmt(t('game.menu.personnages.annonce.choisi'), { nom: cat.personnages.find((p) => p.id === selection).nom }));
   });
   btAmeliorer.addEventListener('click', () => {
     if (!estActif(btAmeliorer)) return;
-    const etat = eq.etat();
-    const n = eq.poser(ameliorerPersonnage(etat, cat, selection));
-    if (n === etat) return;
+    const r = eq.ameliorerPersonnage(selection);
+    if (!r.ok) {
+      dire(t(`game.menu.achat.refus.${r.raison === 'solde' ? 'solde' : 'autre'}`));
+      return;
+    }
     son('ameliorer'); // lot 8i
-    dire(fmt(t('game.menu.personnages.annonce.ameliore'), { nom: cat.personnages.find((p) => p.id === selection).nom, n: n.persos[selection] }));
+    dire(fmt(t('game.menu.personnages.annonce.ameliore'), { nom: cat.personnages.find((p) => p.id === selection).nom, n: eq.etat().persos[selection] }));
   });
 
   eq.abonner(() => {

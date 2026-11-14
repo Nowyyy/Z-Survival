@@ -2,12 +2,16 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { ERROR_CODES, defaultSave } from '../../js/core/save.js';
 import { readLevels } from '../../js/game/levels-source.js';
-import { canReplace, confirmStep, errorKey, levelRows, previewRows, recordKey, rowKey, savedAtDate, statKey, stateKey, stateName } from '../../js/sauvegarde/logic.js';
+import { canReplace, confirmStep, errorKey, levelRows, MODE_RECORD_KEYS, previewRows, recordKey, rowKey, savedAtDate, statKey, stateKey, stateName } from '../../js/sauvegarde/logic.js';
+import { defaultProgression } from '../../js/core/progression.js';
 
 const load = (name) => JSON.parse(readFileSync(`data/game/${name}.json`, 'utf8'));
 const stats = load('player-stats');
 const fr = JSON.parse(readFileSync('data/i18n/fr.json', 'utf8'));
 const withStats = (s) => ({ ...defaultSave(), stats: { ...defaultSave().stats, ...s } });
+// Lot 8h : la page montre la progression v2 (niveaux de base dans `niveaux`).
+const params = { save: load('save'), economy: load('economy'), stats };
+const withNiveaux = (n) => ({ ...defaultProgression(), niveaux: { ...defaultProgression().niveaux, ...n } });
 
 describe('priorité des niveaux : ?lvl= > sauvegarde > zéros', () => {
   it('sans ?lvl= ni sauvegarde : zéros, source « default »', () => {
@@ -74,32 +78,34 @@ describe('logique pure de sauvegarde.html', () => {
   it('toutes les clés de noms (statistiques, records, lignes) existent dans fr.json', () => {
     for (const id of ['degats', 'portee', 'precision', 'cadence', 'vitesse', 'vie', 'regen', 'chutes', 'reparation']) expect(fr[statKey(id)], id).toBeTruthy();
     for (const id of ['bestWave', 'bestKills', 'runs', 'worldsCompleted']) expect(fr[recordKey(id)], id).toBeTruthy();
-    for (const id of ['money', 'earned', 'levelsSum', 'bestWave']) expect(fr[rowKey(id)], id).toBeTruthy();
+    for (const id of ['money', 'earned', 'levelsSum', 'bestWave', 'objets', 'persos', 'tenues', 'mondes', 'tues', 'parties']) expect(fr[rowKey(id)], id).toBeTruthy();
+    for (const mode of ['histoire', 'infini']) expect(fr[MODE_RECORD_KEYS[mode]], mode).toMatch(/\{monde\}/);
   });
 
-  it('aperçu d\'un import : lignes de solde, de total, de niveaux et de records, avec ce qui change', () => {
-    const current = { ...defaultSave(), money: 100, earned: 100, records: { bestWave: 4, bestKills: 0, runs: 1, worldsCompleted: 0 } };
-    const incoming = { ...withStats({ degats: 3 }), money: 500, earned: 100, records: { bestWave: 4, bestKills: 10, runs: 2, worldsCompleted: 0 } };
-    const rows = previewRows(current, incoming);
-    expect(rows.map((r) => r.id)).toEqual(['money', 'earned', 'levelsSum', 'bestWave', 'bestKills', 'runs', 'worldsCompleted']);
+  it('aperçu d\'un import (v2) : monnaie bleue, total gagné, objets, niveaux, profil et un record par mode et par monde, avec ce qui change', () => {
+    const current = { ...defaultProgression(), bleu: { gagne: 100, depense: 0 }, records: { histoire: { batiment: 4 }, infini: {} }, profil: { ...defaultProgression().profil, partiesHistoire: 1 } };
+    const incoming = { ...withNiveaux({ degats: 3 }), bleu: { gagne: 600, depense: 100 }, records: { histoire: { batiment: 4 }, infini: { batiment: 9 } }, profil: { ...defaultProgression().profil, partiesHistoire: 2 } };
+    const rows = previewRows(current, incoming, params);
+    expect(rows.map((r) => r.id)).toEqual(['money', 'earned', 'objets', 'persos', 'tenues', 'levelsSum', 'mondes', 'tues', 'parties', 'histoire.batiment', 'infini.batiment']);
     const byId = Object.fromEntries(rows.map((r) => [r.id, r]));
     expect(byId.money).toMatchObject({ current: 100, incoming: 500, changed: true });
-    expect(byId.earned.changed).toBe(false);
+    expect(byId.earned).toMatchObject({ current: 100, incoming: 600, changed: true });
     expect(byId.levelsSum).toMatchObject({ current: 0, incoming: 3, changed: true });
-    expect(byId.bestWave.changed).toBe(false);
-    expect(byId.runs).toMatchObject({ current: 1, incoming: 2, changed: true });
+    expect(byId['histoire.batiment'].changed).toBe(false);
+    expect(byId['infini.batiment']).toMatchObject({ mode: 'infini', monde: 'batiment', current: 0, incoming: 9, changed: true });
+    expect(byId.parties).toMatchObject({ current: 1, incoming: 2, changed: true });
   });
 
-  it('aperçu des niveaux : neuf lignes, chaque niveau comparé', () => {
-    const rows = levelRows(withStats({ degats: 1, chutes: 2 }), withStats({ degats: 1, chutes: 4, reparation: 9 }));
+  it('aperçu des niveaux de base : neuf lignes, chaque niveau comparé', () => {
+    const rows = levelRows(withNiveaux({ degats: 1, chutes: 2 }), withNiveaux({ degats: 1, chutes: 4, reparation: 9 }));
     expect(rows).toHaveLength(9);
     expect(rows.find((r) => r.id === 'degats')).toMatchObject({ current: 1, incoming: 1, changed: false });
     expect(rows.find((r) => r.id === 'chutes')).toMatchObject({ current: 2, incoming: 4, changed: true });
     expect(rows.find((r) => r.id === 'reparation')).toMatchObject({ incoming: 9, changed: true });
   });
 
-  it.each([null, undefined, 5, 'x'])('aperçu avec une sauvegarde hostile %j : zéros, sans exception', (bad) => {
-    expect(previewRows(bad, bad).every((r) => r.current === 0 && r.incoming === 0 && !r.changed)).toBe(true);
+  it.each([null, undefined, 5, 'x'])('aperçu avec une sauvegarde hostile %j : valeurs d\'un nouveau joueur, sans exception', (bad) => {
+    expect(previewRows(bad, bad, params).every((r) => r.current === r.incoming && !r.changed && (r.id === 'persos' ? r.current === 1 : r.current === 0))).toBe(true);
     expect(levelRows(bad, bad).every((r) => !r.changed)).toBe(true);
   });
 

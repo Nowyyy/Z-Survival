@@ -7,6 +7,7 @@
 //   avec leur progression réelle (menuProgres, appelé par main.js ; sans effet en partie directe).
 import { choixDemarrage, introAuDemarrage, REPERE_RETOUR } from '../core/graphics.js';
 import { graphicsReboot, pageCanal, pageSearch } from '../game/graphics-boot.js';
+import { browserStorage, createDeviceSettings } from '../save/device-settings.js';
 
 export const modeMenu = choixDemarrage(pageCanal(), pageSearch()) === 'menu';
 
@@ -21,15 +22,38 @@ if (fragment === REPERE_RETOUR) globalThis.history?.replaceState(null, '', `${lo
 let partie = Object.freeze({ mode: 'histoire', monde: 'batiment' });
 export const optionPartie = () => partie;
 
-// Lot 8c : son et volume choisis dans les Options du menu, en mémoire de la page seulement (rien n'est stocké : la pause ne les garde pas non plus) ;
-// main.js les applique à l'audio de la partie (« JOUER » ne recharge pas la page) ; le retour au menu recharge la page : son activé, volume par défaut.
+// Lot 8c : son et volume choisis dans les Options du menu ; main.js les applique à l'audio de la partie (« JOUER » ne recharge pas la page).
 // volume : null = défaut de data/game/audio.json. Lot 8i : volume = volume du jeu (effets) ; musique = volume de la musique (musique des menus,
-// mélodie d'annonce de vague), null = même défaut ; toujours en mémoire (lot 8h : sauvegarde).
-let son = Object.freeze({ coupe: false, volume: null, musique: null });
+// mélodie d'annonce de vague), null = même défaut. Lot 8h : gardés dans l'appareil (zs.device.v1, champ son { coupe, jeu, musique } :
+// js/save/device-settings.js ; mémoire sous ?test=1 sans store=local) : relus au chargement de la page (menu et partie directe), écrits à chaque
+// changement (Options du menu et de la pause : main.js appelle poserSon).
+const appareil = (() => {
+  try {
+    return createDeviceSettings({ search: pageSearch(), storage: browserStorage() });
+  } catch {
+    return null;
+  }
+})();
+const garde = (() => {
+  try {
+    return appareil?.read()?.son ?? null;
+  } catch {
+    return null;
+  }
+})();
+let son = Object.freeze({ coupe: garde?.coupe === true, volume: garde?.jeu ?? null, musique: garde?.musique ?? null });
 export const reglagesSon = () => son;
 export function poserSon({ coupe = son.coupe, volume = son.volume, musique = son.musique } = {}) {
   const borner = (n, avant) => (n === null || !Number.isFinite(Number(n)) ? avant : Math.min(100, Math.max(0, Math.round(Number(n)))));
+  const avant = son;
   son = Object.freeze({ coupe: coupe === true, volume: borner(volume, son.volume), musique: borner(musique, son.musique) });
+  if (son.coupe !== avant.coupe || son.volume !== avant.volume || son.musique !== avant.musique) {
+    try {
+      appareil?.writeSon({ coupe: son.coupe, jeu: son.volume, musique: son.musique });
+    } catch {
+      // stockage bloqué : le réglage vaut pour la page
+    }
+  }
   return son;
 }
 
@@ -119,7 +143,7 @@ if (!modeMenu) {
   const intro = avecIntro
     ? import('./intro.js').then(async (i) => {
       await styles;
-      introEcran = i.jouerIntro();
+      introEcran = i.jouerIntro({ coupe: son.coupe }); // lot 8h : « Son coupé » gardé : logo sans son
       return introEcran.fin;
     }).catch(() => {})
     : Promise.resolve();

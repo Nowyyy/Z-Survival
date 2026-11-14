@@ -198,3 +198,9 @@ version: v0.8
 nom: Sons du menu, musique et volumes
 description: Clic, achat et sons du Personnage, musique d'ambiance des menus, ouvertures de caisses sonorisées, volumes du jeu et de la musique séparés.
 afficher: oui
+
+[lot-8h]
+version: v0.8
+nom: Deux monnaies et progression gardée
+description: Monnaie jaune pendant la partie, monnaie bleue gardée pour toujours, achats du menu payants, équipement de survie sans armes, toute la progression gardée sur l'appareil.
+afficher: oui

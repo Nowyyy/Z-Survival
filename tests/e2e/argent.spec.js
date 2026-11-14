@@ -1,14 +1,17 @@
 import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { readFileSync } from 'node:fs';
-import { defaultSave, encodeSave } from '../../js/core/save.js';
+import { defaultProgression as defaultSave, encoder, serialiser, solde } from '../../js/core/progression.js';
 import { waitReady, hudBoxes, screenShare, apart } from './helpers.js';
 
 // Lot 4-C : argent et sauvegarde dans le jeu. 667×375, step() et les hooks (aucune durée réelle attendue). Les adresses de gain n'ont AUCUN paramètre d'essai
 // (wave, lvl, map, planks, empty, nospawn, endless, floor, money) : sinon la sauvegarde est en lecture seule.
+// Lot 8h : deux monnaies. JAUNE (getState().save.balance, economy.*) : 10 par zombie tué par balle, 1 par planche, remise à 0 à chaque partie, jamais écrite.
+// BLEUE (getState().save.bleu, zs.save.v2) : bonus de fin de manche et prime du monde, écrite à chaque manche terminée, gardée pour toujours.
 const load = (name) => JSON.parse(readFileSync(`data/game/${name}.json`, 'utf8'));
 const params = { save: load('save'), economy: load('economy'), stats: load('player-stats') };
-const KEY = params.save.storageKey;
+const KEY = params.save.v2.storageKey;
+const bleu = async (page) => { const t = await stored(page); return t === null ? 0 : solde(JSON.parse(t)); };
 // Lot 5a : triangles des épaves (hélicoptère écrasé et voiture calcinée, maillage du décor de l'atlas, dessinés aussi avec ?detail=0 : ils sont solides), ajoutés aux références.
 const EPAVES = (JSON.parse(readFileSync('data/game/maps/rez-de-chaussee/decor.json', 'utf8')).wrecks?.helicopter?.triangles ?? 0) + 158 + (JSON.parse(readFileSync('data/game/maps/rez-de-chaussee/decor.json', 'utf8')).wrecks?.helicopter?.scarTriangles ?? 0); // lot 5a-F : + le cratère et la traînée (sol de terre) // + la voiture calcinée posée à part (3 boîtes de 10 triangles, 4 roues de 32), dans le même maillage
 const SIZE = { width: 667, height: 375 };
@@ -26,7 +29,7 @@ const SPY = `
   Storage.prototype.setItem = function (k, v) { window.__writes.push(['set', k, String(v).length]); return set.call(this, k, v); };
   Storage.prototype.removeItem = function (k) { window.__writes.push(['remove', k]); return remove.call(this, k); };
   Storage.prototype.clear = function () { window.__writes.push(['clear']); return clear.call(this); };`;
-const writes = (page) => page.evaluate(() => window.__writes.filter((w) => w[1] === 'zs.save.v1' || w[0] === 'clear'));
+const writes = (page) => page.evaluate((k) => window.__writes.filter((w) => w[1] === k || w[0] === 'clear'), KEY);
 
 // Ouvre le jeu ; par défaut la boucle de rendu est arrêtée (requestAnimationFrame neutralisé) : le temps de jeu n'avance que par step().
 async function open(page, url = LOCAL, { live = false, size = SIZE } = {}) {
@@ -56,17 +59,16 @@ async function shoot(page, type) {
     return zs.getState().kills - kills;
   }, type);
 }
-const balance = async (page) => (await state(page)).save.balance;
 
 test.describe('gains', () => {
   test.skip(({ isMobile }) => isMobile, 'bureau (la fenêtre est réglée par chaque test)');
 
   for (const [type, amount] of [['marcheur', 10]]) {
-    test(`un ${type} tué par une balle rapporte ${amount} (montant fixe)`, async ({ page }) => {
+    test(`un ${type} tué par une balle rapporte ${amount} jaunes (montant fixe)`, async ({ page }) => {
       await open(page);
       expect(await shoot(page, type)).toBe(1);
       const s = await state(page);
-      expect(s.save.pending).toBe(amount);
+      expect(s.save.pending).toBe(0); // lot 8h : la jaune n'attend aucune écriture (jamais écrite)
       expect(s.save.balance).toBe(amount);
       expect(s.economy.byKind.kill).toBe(amount);
       expect(s.economy.killsRun).toBe(1);
@@ -116,9 +118,10 @@ test.describe('gains', () => {
     await page.evaluate(() => window.__zs.skipWave());
     await step(page, 0.2);
     s = await state(page);
-    expect(s.economy.byKind).toMatchObject({ kill: 0, wave: 12 });
-    expect(s.save.balance).toBe(12);
-    expect((await storedJson(page)).money).toBe(12);
+    expect(s.economy.byKind).toMatchObject({ kill: 0, wave: 0 }); // lot 8h : le bonus de manche est en bleu, plus dans la jaune
+    expect(s.save.bleu).toMatchObject({ run: 12, solde: 12, pending: 0 });
+    expect(s.save.balance).toBe(0);
+    expect(await bleu(page)).toBe(12);
   });
 
   test('un seul bonus par manche : une fin de manche ne rapporte pas deux fois', async ({ page }) => {
@@ -126,7 +129,7 @@ test.describe('gains', () => {
     await step(page, 3.2);
     expect(await page.evaluate(() => [window.__zs.skipWave(), window.__zs.skipWave()].length)).toBe(2);
     await step(page, 0.5);
-    expect((await state(page)).economy.byKind.wave).toBe(12);
+    expect((await state(page)).save.bleu.run).toBe(12);
   });
 
   test('la manche 5 (renforcée) rapporte 30', async ({ page }) => {
@@ -135,16 +138,16 @@ test.describe('gains', () => {
     await step(page, 3.2);
     await page.evaluate(() => window.__zs.skipWave());
     await step(page, 0.2);
-    expect((await state(page)).economy.byKind.wave).toBe(30);
+    expect((await state(page)).save.bleu.run).toBe(30);
   });
 
-  test('giveMoney(n) ajoute au journal (type test) et flushSave() écrit tout de suite', async ({ page }) => {
+  test('giveMoney(n) ajoute à la jaune (type test) ; flushSave() n\'écrit jamais la jaune', async ({ page }) => {
     await open(page);
     await page.evaluate(() => window.__zs.giveMoney(250));
     expect((await state(page)).economy.byKind.test).toBe(250);
     const r = await page.evaluate(() => window.__zs.flushSave());
     expect(r.ok).toBe(true);
-    expect((await storedJson(page)).money).toBe(250);
+    expect(await stored(page)).toBeNull();
     expect((await state(page)).save).toMatchObject({ status: 'saved', pending: 0, balance: 250, kind: 'local', readOnly: false, key: KEY });
   });
 });
@@ -158,14 +161,15 @@ test.describe('gains (suite)', () => {
     await step(page, 3.2);
     await page.evaluate(() => window.__zs.skipWave());
     await step(page, 0.2);
-    expect((await state(page)).economy.byKind.wave).toBe(45);
+    expect((await state(page)).save.bleu.run).toBe(45);
     for (let i = 0; i < 12; i += 1) await step(page, 1);
     const s = await state(page);
-    expect(s.economy.byKind).toMatchObject({ kill: 0, wave: 45, world: 0 });
+    expect(s.save.bleu.run).toBe(45);
+    expect(await bleu(page)).toBe(45);
     expect(s.zones.doors?.length ?? 1).toBeGreaterThan(0);
   });
 
-  test('la fin du monde rapporte 500 une seule fois, et worldsCompleted passe à 1', async ({ page }) => {
+  test('la fin du monde rapporte 500 bleus une seule fois ; monde terminé, record de l\'histoire, partie comptée', async ({ page }) => {
     await open(page);
     await page.evaluate(() => window.__zs.startWave(40));
     await step(page, 3.2);
@@ -173,14 +177,16 @@ test.describe('gains (suite)', () => {
     await step(page, 0.3);
     await expect(page.locator('#end-panel')).toBeVisible();
     let s = await state(page);
-    expect(s.economy.byKind).toMatchObject({ wave: 135, world: 500 });
+    expect(s.save.bleu.run).toBe(635);
     await step(page, 5);
     s = await state(page);
-    expect(s.economy.byKind.world).toBe(500);
+    expect(s.save.bleu.run).toBe(635);
     const saved = await storedJson(page);
-    expect(saved.money).toBe(635);
-    expect(saved.records).toMatchObject({ worldsCompleted: 1, bestWave: 40, runs: 1 });
-    await expect(page.locator('#end-bonus')).toHaveText('Bonus de fin de monde : 500');
+    expect(solde(saved)).toBe(635);
+    expect(saved.mondes).toEqual(['batiment']);
+    expect(saved.records).toEqual({ histoire: { batiment: 40 }, infini: {} });
+    expect(saved.profil.partiesHistoire).toBe(1);
+    await expect(page.locator('#end-bonus')).toHaveText('Dont prime du monde : 500');
   });
 });
 
@@ -196,44 +202,64 @@ test.describe('conservation à la mort', () => {
     await expect(page.locator('#end-panel')).toBeVisible();
   }
 
-  test('la mort conserve tout : E2-7 affiche « Argent gagné » et « Solde » ; « Rejouer » repart avec le même solde ; la page rechargée aussi', async ({ page }) => {
+  test('la mort : E2-7 affiche la jaune perdue, la bleue gagnée et le solde bleu ; « Rejouer » remet la jaune à 0, la bleue reste ; la page rechargée aussi', async ({ page }) => {
     await open(page);
+    await page.evaluate(() => window.__zs.startWave(2));
+    await step(page, 3.2);
+    await page.evaluate(() => window.__zs.skipWave()); // manche 2 terminée : 14 bleus
+    await step(page, 0.3);
     await dieAfterKill(page);
-    await expect(page.locator('#end-earned')).toHaveText('Argent gagné : 10');
-    await expect(page.locator('#end-balance')).toHaveText('Solde : 10');
+    await expect(page.locator('#end-earned')).toHaveText('Monnaie jaune perdue : 10');
+    await expect(page.locator('#end-bleu')).toHaveText('Monnaie bleue gagnée : 14');
+    await expect(page.locator('#end-balance')).toHaveText('Solde bleu : 14');
     await expect(page.locator('#end-best')).toHaveText('Meilleure manche : 3');
-    expect((await storedJson(page)).money).toBe(10);
+    expect(await bleu(page)).toBe(14);
     await page.locator('#btn-replay').click();
     await step(page, 0.1);
-    expect((await state(page)).save.balance).toBe(10);
+    expect((await state(page)).save).toMatchObject({ balance: 0, bleu: { solde: 14, run: 0 } });
     expect((await state(page)).economy.earnedRun).toBe(0);
     await page.reload();
     await waitReady(page);
     const s = await state(page);
-    expect(s.save).toMatchObject({ balance: 10, status: 'saved' });
-    expect(s.save.saved.records).toMatchObject({ bestWave: 3, bestKills: 1, runs: 1 });
+    expect(s.save).toMatchObject({ balance: 0, status: 'saved', bleu: { solde: 14 } });
+    expect(s.save.saved.records).toEqual({ histoire: { batiment: 3 }, infini: {} });
+    expect(s.save.saved.profil).toMatchObject({ tues: 1, partiesHistoire: 1 });
   });
 
-  test('localStorage ne contient que zs.save.v1, JSON conforme au schéma, moins de 1 Ko ; runs, bestWave et bestKills justes', async ({ page }) => {
+  test('onglet fermé après une manche terminée puis rouvert : la bleue est gardée (écrite à la fin de la manche, sans attendre la fin de partie)', async ({ page, context }) => {
+    await open(page);
+    await step(page, 3.2);
+    await page.evaluate(() => window.__zs.skipWave());
+    await step(page, 0.2);
+    await page.close({ runBeforeUnload: false });
+    const p2 = await context.newPage();
+    await open(p2);
+    expect((await state(p2)).save.bleu.solde).toBe(12);
+  });
+
+  test('localStorage ne contient que zs.save.v2 (lot 8h), JSON conforme au format v2, moins de 2 Ko ; tués, partie, record justes ; aucune jaune', async ({ page }) => {
     await open(page);
     await dieAfterKill(page, 4);
     const keys = await page.evaluate(() => Object.keys(localStorage));
-    // Lot 5b (décision du propriétaire) : seules clés permises zs.save.v1 et zs.device.v1 (préférence graphique de l'appareil, écrite seulement
-    // par la ligne « Graphismes » de la pause) ; rien n'y a été choisi ici : zs.save.v1 reste la seule clé.
+    // Lot 5b (décision du propriétaire) : seules clés permises la progression et zs.device.v1 (préférence de l'appareil) ; lot 8h : la progression
+    // de la V0.8 est zs.save.v2 (zs.save.v1 n'est ni lue ni écrite) ; rien n'a été choisi dans les Options ici : zs.save.v2 reste la seule clé.
     expect(keys.filter((k) => ![KEY, 'zs.device.v1'].includes(k))).toEqual([]);
     expect(keys).toEqual([KEY]);
     const raw = await stored(page);
-    expect(raw.length).toBeLessThan(1024);
+    expect(raw.length).toBeLessThan(2048);
     const saved = JSON.parse(raw);
-    expect(Object.keys(saved).sort()).toEqual(['earned', 'money', 'records', 'rev', 'savedAt', 'stats', 'v']);
-    expect(saved.v).toBe(1);
-    expect(saved.records).toEqual({ bestWave: 4, bestKills: 1, runs: 1, worldsCompleted: 0 });
+    expect(Object.keys(saved).sort()).toEqual(['bleu', 'dates', 'journal', 'lues', 'mondes', 'niveaux', 'objets', 'offres', 'persos', 'porte', 'profil', 'records', 'rev', 'savedAt', 'tenues', 'v']);
+    expect(saved.v).toBe(2);
+    expect(saved.records).toEqual({ histoire: { batiment: 4 }, infini: {} });
+    expect(saved.profil).toMatchObject({ tues: 1, partiesHistoire: 1, partiesInfini: 0 });
+    expect(saved.bleu).toEqual({ gagne: 0, depense: 0 });
+    expect(raw).not.toMatch(/money|jaune/);
     expect(saved.savedAt).toBeGreaterThan(1_600_000_000_000);
     expect(await page.evaluate(() => [sessionStorage.length, document.cookie])).toEqual([0, '']);
   });
 
   test('« Nouveau record » seulement quand la manche dépasse l\'ancien record', async ({ page }) => {
-    await page.addInitScript(seedStorage({ ...defaultSave(), records: { bestWave: 4, bestKills: 0, runs: 1, worldsCompleted: 0 } }));
+    await page.addInitScript(seedStorage(serialiser({ ...defaultSave(), records: { histoire: { batiment: 4 }, infini: { batiment: 50 } } })));
     await open(page);
     await dieAfterKill(page, 4);
     await expect(page.locator('#end-record')).toBeHidden();
@@ -247,10 +273,11 @@ test.describe('conservation à la mort', () => {
 test.describe('écriture', () => {
   test.skip(({ isMobile }) => isMobile, 'bureau');
 
-  test('rien n\'est écrit tant qu\'aucun gain ni aucune manche n\'a eu lieu (pause, flushSave comprises)', async ({ page }) => {
+  test('rien n\'est écrit tant qu\'aucune manche n\'a commencé (pause, flushSave comprises) ; la jaune ne l\'est jamais', async ({ page }) => {
     await page.addInitScript(SPY);
     await open(page);
     await step(page, 1);
+    await page.evaluate(() => window.__zs.giveMoney(40));
     await page.getByRole('button', { name: 'Pause' }).click();
     await page.getByRole('button', { name: 'Reprendre' }).click();
     expect((await page.evaluate(() => window.__zs.flushSave())).skipped).toBe(true);
@@ -258,7 +285,7 @@ test.describe('écriture', () => {
     expect(await stored(page)).toBeNull();
   });
 
-  test('10 kills en 1 s produisent au plus 2 écritures', async ({ page }) => {
+  test('10 kills en 1 s : aucune écriture tout de suite (ni regroupée) ; les tués sont écrits à la pause, une seule fois', async ({ page }) => {
     await page.addInitScript(SPY);
     await open(page);
     await page.evaluate(() => {
@@ -274,9 +301,12 @@ test.describe('écriture', () => {
     await step(page, 3);
     const s = await state(page);
     expect(s.economy.killsRun).toBe(10);
-    expect((await writes(page)).length).toBeLessThanOrEqual(2);
-    expect((await storedJson(page)).money).toBe(100);
-    expect(s.save.pending).toBe(0);
+    expect(s.save.balance).toBe(100);
+    expect(await writes(page)).toEqual([]);
+    await page.getByRole('button', { name: 'Pause' }).click();
+    expect(await writes(page)).toHaveLength(1);
+    expect((await storedJson(page)).profil.tues).toBe(10);
+    expect(await bleu(page)).toBe(0);
   });
 
   test('écriture immédiate à la fin de manche', async ({ page }) => {
@@ -286,50 +316,57 @@ test.describe('écriture', () => {
     await page.evaluate(() => window.__zs.skipWave());
     await step(page, 0.2);
     expect(await writes(page)).toHaveLength(1);
-    expect((await storedJson(page)).money).toBe(12);
+    expect(await bleu(page)).toBe(12);
   });
 
-  test('écriture immédiate à l\'ouverture de la pause', async ({ page }) => {
+  test('écriture immédiate à l\'ouverture de la pause (zombies tués, partie, temps de jeu)', async ({ page }) => {
     await page.addInitScript(SPY);
     await open(page);
-    await page.evaluate(() => window.__zs.giveMoney(30));
+    await step(page, 3.2);
+    expect(await shoot(page, 'marcheur')).toBe(1);
     expect(await writes(page)).toEqual([]);
     await page.getByRole('button', { name: 'Pause' }).click();
     await expect(page.locator('#pause-panel')).toBeVisible();
     expect(await writes(page)).toHaveLength(1);
-    expect((await storedJson(page)).money).toBe(30);
+    expect((await storedJson(page)).profil).toMatchObject({ tues: 1, partiesHistoire: 1 });
+    expect((await storedJson(page)).profil.tempsMs).toBeGreaterThan(0);
   });
 
   test('écriture immédiate à visibilitychange (caché) et à pagehide', async ({ page }) => {
     await page.addInitScript(SPY);
     await open(page);
-    await page.evaluate(() => window.__zs.giveMoney(10));
+    await step(page, 3.2);
+    expect(await shoot(page, 'marcheur')).toBe(1);
     await page.evaluate(() => {
       Object.defineProperty(document, 'hidden', { value: true, configurable: true });
       document.dispatchEvent(new Event('visibilitychange'));
     });
-    expect((await storedJson(page)).money).toBe(10);
-    await page.evaluate(() => { Object.defineProperty(document, 'hidden', { value: false, configurable: true }); window.__zs.giveMoney(5); });
+    expect((await storedJson(page)).profil.tues).toBe(1);
+    await page.evaluate(() => { Object.defineProperty(document, 'hidden', { value: false, configurable: true }); });
+    expect(await shoot(page, 'marcheur')).toBe(1);
     await page.evaluate(() => window.dispatchEvent(new Event('pagehide')));
-    expect((await storedJson(page)).money).toBe(15);
+    expect((await storedJson(page)).profil.tues).toBe(2);
   });
 
   test('écriture immédiate à la mort', async ({ page }) => {
     await open(page);
+    await step(page, 3.2);
     await page.evaluate(() => { window.__zs.giveMoney(40); window.__zs.setChutes(0); window.__zs.downPlayer(); });
     await step(page, 0.3);
     await expect(page.locator('#end-panel')).toBeVisible();
-    expect((await storedJson(page)).money).toBe(40);
+    expect((await storedJson(page)).profil.partiesHistoire).toBe(1);
+    expect(await bleu(page)).toBe(0); // la jaune (40) est perdue
   });
 
-  test('regroupement : le commit part après 2 s de temps de jeu, pas avant', async ({ page }) => {
+  test('lot 8h : plus d\'écriture regroupée : 30 s de jeu dans une manche sans fin de manche n\'écrivent rien, la pause écrit tout', async ({ page }) => {
     await open(page);
+    await step(page, 3.2);
     await page.evaluate(() => window.__zs.giveMoney(8));
-    await step(page, 1.5);
+    for (let i = 0; i < 10; i += 1) await step(page, 3);
     expect(await stored(page)).toBeNull();
     expect((await state(page)).save.status).toBe('pending');
-    await step(page, 0.6);
-    expect((await storedJson(page)).money).toBe(8);
+    await page.evaluate(() => window.__zs.flushSave());
+    expect((await storedJson(page)).profil.tempsMs).toBeGreaterThanOrEqual(29_000);
     expect((await state(page)).save.status).toBe('saved');
   });
 });
@@ -337,21 +374,21 @@ test.describe('écriture', () => {
 test.describe('multi-onglets', () => {
   test.skip(({ isMobile }) => isMobile, 'bureau');
 
-  test('deux pages additionnent leurs gains ; la page affichée suit le signal storage', async ({ page, context }) => {
+  test('deux onglets réels de la V0.8 additionnent leurs bleus (manches terminées) ; la page affichée suit le signal storage', async ({ page, context }) => {
     await open(page);
     const other = await context.newPage();
     await open(other);
-    expect(await shoot(page, 'marcheur')).toBe(1);
-    expect(await shoot(other, 'marcheur')).toBe(1);
-    expect((await page.evaluate(() => window.__zs.flushSave())).ok).toBe(true);
-    expect((await other.evaluate(() => window.__zs.flushSave())).ok).toBe(true);
+    for (const p of [page, other]) await step(p, 3.2);
+    for (const p of [page, other]) await p.evaluate(() => window.__zs.skipWave());
+    for (const p of [page, other]) await step(p, 0.2);
     // Lot 5n (T3) : l'écriture d'un onglet n'est pas visible tout de suite dans l'autre (Chrome : 2 à 3 lectures sur 300 périmées juste après
     // l'écriture, mesuré) : la valeur écrite est lue dans l'onglet qui vient d'écrire (une écriture perdue y donne 10), puis attendue dans
     // l'autre. Avant : lue tout de suite dans l'autre onglet (10 au lieu de 20 quand la lecture était périmée).
-    await expect.poll(async () => (await storedJson(other))?.money, { timeout: 5_000 }).toBe(20); // lot 5p : attendue (avant : lue tout de suite ; sous charge, 10 pendant quelques ms, puis 20)
-    await expect.poll(async () => (await storedJson(page))?.money).toBe(20);
-    await expect.poll(() => balance(page)).toBe(20);
-    expect(await balance(other)).toBe(20);
+    await expect.poll(async () => bleu(other), { timeout: 5_000 }).toBe(24); // lot 5p : attendue (avant : lue tout de suite ; sous charge, 12 pendant quelques ms, puis 24)
+    await expect.poll(async () => bleu(page)).toBe(24);
+    await expect.poll(async () => (await state(page)).save.bleu.solde).toBe(24);
+    await expect.poll(async () => (await state(other)).save.bleu.solde).toBe(24);
+    expect((await storedJson(page)).profil.partiesHistoire).toBe(2);
   });
 
   // Lot 5o : trois onglets valident en même temps (défaut des deux onglets : une lecture périmée perdait un gain). Gains de test (giveMoney),
@@ -359,12 +396,12 @@ test.describe('multi-onglets', () => {
   test('trois onglets valident en même temps : aucun gain perdu ni compté deux fois', async ({ context, page }) => {
     const pages = [page, await context.newPage(), await context.newPage()];
     await Promise.all(pages.map((p) => open(p)));
-    for (const p of pages) await p.evaluate(() => window.__zs.giveMoney(10));
+    for (const p of pages) await step(p, 3.2);
+    for (const p of pages) expect(await shoot(p, 'marcheur')).toBe(1);
     const results = await Promise.all(pages.map((p) => p.evaluate(() => window.__zs.flushSave())));
     expect(results.map((r) => r.ok)).toEqual([true, true, true]);
-    for (const p of pages) await expect.poll(async () => (await storedJson(p))?.money).toBe(30);
-    for (const p of pages) await expect.poll(() => balance(p)).toBe(30);
-    await expect.poll(async () => (await storedJson(page))?.earned).toBe(30);
+    for (const p of pages) await expect.poll(async () => (await storedJson(p))?.profil?.tues).toBe(3);
+    await expect.poll(async () => (await storedJson(page))?.profil?.partiesHistoire).toBe(3);
   });
 });
 
@@ -377,22 +414,24 @@ test.describe('échecs de stockage', () => {
       const set = Storage.prototype.setItem;
       Storage.prototype.setItem = function (k, v) { if (k === '${KEY}' && window.__fail) throw new DOMException('quota', 'QuotaExceededError'); return set.call(this, k, v); };`);
     await open(page);
-    expect(await shoot(page, 'marcheur')).toBe(1);
+    await step(page, 3.2);
+    await page.evaluate(() => window.__zs.skipWave());
+    await step(page, 0.2);
     const r = await page.evaluate(() => window.__zs.flushSave());
     expect(r).toMatchObject({ ok: false, error: 'QuotaExceededError' });
     let s = await state(page);
-    expect(s.save).toMatchObject({ status: 'failed', pending: 10, balance: 10 });
+    expect(s.save).toMatchObject({ status: 'failed', pending: 12, bleu: { solde: 12 } });
     expect(s.save.lastCommit).toMatchObject({ ok: false, error: 'QuotaExceededError' });
     await page.getByRole('button', { name: 'Pause' }).click();
     await expect(page.locator('#pause-save')).toHaveCount(0); // lot 3l (retour du propriétaire) : l'état de la sauvegarde n'est plus affiché dans la pause ; il est vérifié dans getState().save
     await page.getByRole('button', { name: 'Reprendre' }).click();
     await page.evaluate(() => { window.__fail = false; });
-    await step(page, 2.5);
+    await page.evaluate(() => window.__zs.flushSave());
     s = await state(page);
-    expect(s.save).toMatchObject({ pending: 0, balance: 10 });
-    expect((await storedJson(page)).money).toBe(10);
-    await step(page, 5);
-    expect((await storedJson(page)).money).toBe(10);
+    expect(s.save).toMatchObject({ pending: 0, bleu: { solde: 12 } });
+    expect(await bleu(page)).toBe(12);
+    await page.evaluate(() => window.__zs.flushSave());
+    expect(await bleu(page)).toBe(12);
     expect((await state(page)).save.status).toBe('saved');
   });
 
@@ -413,7 +452,7 @@ test.describe('échecs de stockage', () => {
     expect(problems).toEqual([]);
   });
 
-  for (const [label, raw] of [['illisible ({bad)', '{bad'], ['version future', '{"v":99,"money":5}']]) {
+  for (const [label, raw] of [['illisible ({bad)', '{bad'], ['version future', '{"v":99,"bleu":5}']]) {
     // Lot 3l : le lien « Voir ma sauvegarde » quitte l'écran de fin (choix du propriétaire) ; « Revenir au menu principal » le remplace (sans action).
     test(`sauvegarde ${label} : « locked », aucune écriture pendant toute une partie, E2-7 le dit (plus la pause : lot 3l)`, async ({ page }) => {
       await page.addInitScript(`${SPY}\n${seedStorage(raw)}`);
@@ -442,23 +481,23 @@ test.describe('échecs de stockage', () => {
 
 test.describe('mode essai', () => {
   test.skip(({ isMobile }) => isMobile, 'bureau');
-  const REAL = { ...defaultSave(), rev: 2, savedAt: 1_700_000_000_000, money: 300, earned: 300, stats: { ...defaultSave().stats, degats: 2 } };
+  const REAL = serialiser({ ...defaultSave(), rev: 2, savedAt: 1_700_000_000_000, bleu: { gagne: 300, depense: 0 }, niveaux: { ...defaultSave().niveaux, degats: 2 } });
 
-  test('?wave=5 : les gains s\'affichent (solde de session) mais localStorage est inchangé ; E2-7 dit « Mode essai » (la pause ne le dit plus : lot 3l)', async ({ page }) => {
+  test('?wave=5 : les gains s\'affichent (jaune de la partie, vrai solde bleu lu) mais localStorage est inchangé ; E2-7 dit « Mode essai » (la pause ne le dit plus : lot 3l)', async ({ page }) => {
     await page.addInitScript(`${SPY}\n${seedStorage(REAL)}`);
     await open(page, `${LOCAL}&wave=5`);
     const before = await stored(page);
-    expect((await state(page)).save).toMatchObject({ status: 'readonly', readOnly: true, balance: 300 });
+    expect((await state(page)).save).toMatchObject({ status: 'readonly', readOnly: true, balance: 0, bleu: { solde: 300 } });
     expect(await shoot(page, 'marcheur')).toBe(1);
     await page.evaluate(() => window.__zs.flushSave());
-    expect((await state(page)).save.balance).toBe(310);
+    expect((await state(page)).save.balance).toBe(10);
     await page.getByRole('button', { name: 'Pause' }).click();
     await expect(page.locator('#pause-save')).toHaveCount(0); // lot 3l (retour du propriétaire) : l'état de la sauvegarde n'est plus affiché dans la pause ; il est vérifié dans getState().save (readonly)
-    await expect(page.locator('#pause-balance')).toHaveText('Solde : 310');
+    await expect(page.locator('#pause-balance')).toHaveText('Monnaie jaune : 10');
     await page.getByRole('button', { name: 'Reprendre' }).click();
     await page.evaluate(() => { window.__zs.setChutes(0); window.__zs.downPlayer(); });
     await step(page, 0.3);
-    await expect(page.locator('#end-save')).toHaveText('Mode essai : cet argent n\'est pas enregistré');
+    await expect(page.locator('#end-save')).toHaveText('Mode essai : rien n\'est enregistré');
     await expect(page.locator('#end-record')).toBeHidden();
     expect(await stored(page)).toBe(before);
     expect(await writes(page)).toHaveLength(1);
@@ -483,7 +522,7 @@ test.describe('mode essai', () => {
     expect(s).toMatchObject({ readOnly: false, kind: 'local', reasons: [] });
   });
 
-  test('?money=500 fixe le solde à 500 sans rien écrire ; le vrai solde reste 300', async ({ page }) => {
+  test('?money=500 fixe la jaune de la partie à 500 sans rien écrire ; le vrai solde bleu reste 300', async ({ page }) => {
     await page.addInitScript(seedStorage(REAL));
     await open(page, `${LOCAL}&money=500`);
     const before = await stored(page);
@@ -491,7 +530,7 @@ test.describe('mode essai', () => {
     await page.evaluate(() => { window.__zs.giveMoney(5); window.__zs.flushSave(); });
     expect((await state(page)).save.balance).toBe(505);
     expect(await stored(page)).toBe(before);
-    expect(JSON.parse(before).money).toBe(300);
+    expect(solde(JSON.parse(before))).toBe(300);
   });
 
   test('?lvl=degats:3 : source « url », dégâts × 1,45, sauvegarde inchangée', async ({ page }) => {
@@ -509,7 +548,7 @@ test.describe('niveaux depuis la sauvegarde', () => {
   test.skip(({ isMobile }) => isMobile, 'bureau');
 
   test('sans ?lvl= : source « save », et degats 2 donne des dégâts × 1,3', async ({ page }) => {
-    await page.addInitScript(seedStorage({ ...defaultSave(), stats: { ...defaultSave().stats, degats: 2, chutes: 2 } }));
+    await page.addInitScript(seedStorage(serialiser({ ...defaultSave(), niveaux: { ...defaultSave().niveaux, degats: 2, chutes: 2 } })));
     await open(page);
     const s = await state(page);
     expect(s.stats.source).toBe('save');
@@ -519,7 +558,7 @@ test.describe('niveaux depuis la sauvegarde', () => {
   });
 
   test('un code importé par sauvegarde.html est pris en compte après rechargement', async ({ page }) => {
-    const code = encodeSave({ ...defaultSave(), money: 90, stats: { ...defaultSave().stats, degats: 2 } }, params);
+    const code = encoder({ ...defaultSave(), bleu: { gagne: 90, depense: 0 }, niveaux: { ...defaultSave().niveaux, degats: 2 } }, params);
     await page.goto('/sauvegarde.html');
     await page.locator('#import-code').fill(code);
     await page.getByRole('button', { name: 'Vérifier' }).click();
@@ -530,7 +569,7 @@ test.describe('niveaux depuis la sauvegarde', () => {
     const s = await state(page);
     expect(s.stats.source).toBe('save');
     expect(s.stats.values.damage).toBeCloseTo(32.5, 9);
-    expect(s.save.balance).toBe(90);
+    expect(s.save.bleu.solde).toBe(90);
   });
 
   test('sans sauvegarde : source « default », zéros', async ({ page }) => {
@@ -544,7 +583,7 @@ test.describe('niveaux depuis la sauvegarde', () => {
 test.describe('par défaut (sans ?test=1)', () => {
   test.skip(({ isMobile }) => isMobile, 'bureau');
 
-  test('la page lit zs.save.v1 et n\'écrit rien tant que rien n\'est gagné ; aucun cookie, sessionStorage vide, aucun IndexedDB, aucune requête externe', async ({ page, context, baseURL }) => {
+  test('la page lit zs.save.v2 (lot 8h) et n\'écrit rien tant qu\'aucune manche n\'a commencé ; aucun cookie, sessionStorage vide, aucun IndexedDB, aucune requête externe', async ({ page, context, baseURL }) => {
     const external = [];
     page.on('request', (r) => !r.url().startsWith(baseURL) && !r.url().startsWith('data:') && !r.url().startsWith('blob:') && external.push(r.url()));
     await page.addInitScript(`${SPY}
@@ -571,18 +610,18 @@ test.describe('par défaut (sans ?test=1)', () => {
     await page.goto('/jeu.html?money=500');
     await expect(page.locator('#game-root')).toBeVisible({ timeout: 60_000 });
     expect(await page.evaluate(() => typeof window.__zs)).toBe('undefined');
-    await expect(page.locator('#hud-money')).toHaveAttribute('aria-label', 'Argent : 500');
+    await expect(page.locator('#hud-money')).toHaveAttribute('aria-label', 'Monnaie jaune : 500');
   });
 });
 
 test.describe('interface', () => {
   test.skip(({ isMobile }) => isMobile, 'bureau');
 
-  test('puce d\'argent : montant court, aria-label avec le montant entier', async ({ page }) => {
+  test('puce de la monnaie jaune : montant court, aria-label avec le montant entier', async ({ page }) => {
     await open(page);
     await page.evaluate(() => { window.__zs.giveMoney(12345); window.__zs.step(0.1); });
     await expect(page.locator('#hud-money-text')).toHaveText(`12,3${String.fromCharCode(0xa0)}k`);
-    await expect(page.locator('#hud-money')).toHaveAttribute('aria-label', `Argent : 12${String.fromCharCode(0x202f)}345`);
+    await expect(page.locator('#hud-money')).toHaveAttribute('aria-label', `Monnaie jaune : 12${String.fromCharCode(0x202f)}345`);
     await expect(page.locator('#hud-money svg')).toHaveAttribute('aria-hidden', 'true');
   });
 
@@ -678,11 +717,11 @@ test.describe('interface', () => {
     await expect(page.locator('#hud-gain')).toBeHidden();
   });
 
-  test('pause : « Solde » à côté de « PAUSE » (lot 3l : plus d\'état de la sauvegarde), le panneau tient à 667×375, aucune cible sous 44 px', async ({ page }) => {
+  test('pause : « Monnaie jaune » à côté de « PAUSE » (lot 3l : plus d\'état de la sauvegarde), le panneau tient à 667×375, aucune cible sous 44 px', async ({ page }) => {
     await open(page);
     await page.evaluate(() => window.__zs.giveMoney(1234));
     await page.getByRole('button', { name: 'Pause' }).click();
-    await expect(page.locator('#pause-balance')).toHaveText(`Solde : 1${String.fromCharCode(0x202f)}234`);
+    await expect(page.locator('#pause-balance')).toHaveText(`Monnaie jaune : 1${String.fromCharCode(0x202f)}234`);
     expect((await state(page)).save.status).toBe('saved'); // lot 3l (retour du propriétaire) : l'état de la sauvegarde n'est plus affiché dans la pause ; il est vérifié dans getState().save
     const m = await page.evaluate(() => {
       const panel = document.querySelector('#pause-panel .panel');
@@ -711,7 +750,7 @@ test.describe('interface', () => {
           await step(page, 0.3);
         }
         await expect(page.locator('#end-panel')).toBeVisible();
-        const ids = ['end-title', 'end-kills', 'end-earned', 'end-balance', 'end-best', 'btn-replay', 'btn-menu', ...(variant === 'world' ? ['end-bonus'] : [])];
+        const ids = ['end-title', 'end-kills', 'end-earned', 'end-bleu', 'end-balance', 'end-best', 'btn-replay', 'btn-menu', ...(variant === 'world' ? ['end-bonus'] : [])];
         for (const id of ids) await expect(page.locator(`#${id}`), id).toBeVisible();
         const m = await page.evaluate(() => {
           const panel = document.querySelector('#end-panel .panel');
@@ -751,13 +790,28 @@ test.describe('interface', () => {
     expect(await shoot(page, 'marcheur')).toBe(1);
     await page.evaluate(() => window.__zs.skipWave());
     await step(page, 0.3);
-    await expect(page.locator('#hud-live')).toHaveText('Manche 1 terminée, bonus +12.');
+    await expect(page.locator('#hud-live')).toHaveText('Manche 1 terminée, +12 en monnaie bleue.');
     await page.evaluate(() => { window.__zs.setChutes(0); window.__zs.downPlayer(); });
     await step(page, 0.3);
     const log = await page.evaluate(() => window.__live);
     expect(log.filter((t) => t.startsWith('Manche 1 terminée'))).toHaveLength(1);
     expect(log.filter((t) => t.includes('Nouveau record : manche 1'))).toHaveLength(1);
     expect(log.filter((t) => /Argent|\+10\b/.test(t) && !t.startsWith('Manche'))).toEqual([]);
+  });
+
+  test('lot 8h : « +N » bleu discret à la fin d\'une manche qui rapporte (décoratif), qui s\'efface ; la jaune ne bouge pas', async ({ page }) => {
+    await open(page);
+    await step(page, 3.2);
+    await page.evaluate(() => window.__zs.skipWave());
+    await step(page, 0.3);
+    await expect(page.locator('#hud-gain-bleu')).toBeVisible();
+    await expect(page.locator('#hud-gain-bleu')).toHaveAttribute('aria-hidden', 'true');
+    await expect(page.locator('#hud-gain-bleu')).toHaveText('+12');
+    await expect(page.locator('#hud-gain')).toBeHidden();
+    expect((await state(page)).save.balance).toBe(0);
+    expect(await page.locator('#hud-gain-bleu').evaluate((n) => getComputedStyle(n).color)).toBe('rgb(90, 176, 255)'); // --color-money-blue
+    await step(page, 2);
+    await expect(page.locator('#hud-gain-bleu')).toBeHidden();
   });
 
   test('l\'ordre des blocs E2 est inchangé, sans nouveau bloc', async ({ page }) => {

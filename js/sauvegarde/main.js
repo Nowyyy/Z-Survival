@@ -1,10 +1,13 @@
 // Page technique sauvegarde.html (lot 4) : état de la sauvegarde, export et import par code, section « sauvegarde illisible », effacement.
 // Utilise js/core/save.js (codec) et js/save/ (le seul endroit qui touche le stockage) ; aucun Three.js. Les textes viennent de fr.json (game.save.page.*).
 // Cette page utilise toujours le stockage du navigateur ; ?store=memory force la mémoire (tests).
-import { decodeSave, describeSave, encodeSave, STAT_KEYS } from '../core/save.js';
+// Lot 8h : progression v2 (zs.save.v2, js/core/progression.js) : export ZS2, import ZS2 ou ZS1 (migré comme une sauvegarde v1 : niveaux et record
+// de l'histoire ; argent non converti) ; zs.save.v1 (V0.7 et avant) n'est ni lue ni écrite.
+import { STAT_KEYS } from '../core/save.js';
+import { decoder, decrire, encoder, MODES } from '../core/progression.js';
 import { createRepository } from '../save/index.js';
 import { translate } from '../i18n.js';
-import { canReplace, confirmStep, errorKey, levelRows, previewRows, recordKey, rowKey, savedAtDate, statKey, stateKey, stateName } from './logic.js';
+import { canReplace, confirmStep, errorKey, levelRows, MODE_RECORD_KEYS, previewRows, rowKey, savedAtDate, statKey, stateKey, stateName } from './logic.js';
 
 const fmt = (text, p) => String(text).replace(/\{(\w+)\}/g, (_, k) => String(p?.[k] ?? ''));
 const loadJson = async (path) => {
@@ -34,6 +37,7 @@ const { repository, mode } = createRepository({
   storage,
   params,
   page: true,
+  format: 'v2',
   listen: (handler) => {
     window.addEventListener('storage', handler);
     return () => window.removeEventListener('storage', handler);
@@ -64,11 +68,14 @@ function render() {
   const list = $('state-list');
   list.replaceChildren();
   const s = loaded.save;
-  const d = describeSave(s);
-  addFact(list, t('game.save.page.state.balance'), String(d.money));
-  addFact(list, t('game.save.page.state.earned'), String(d.earned));
-  addFact(list, t('game.save.page.state.levels'), STAT_KEYS.map((id) => `${t(statKey(id))} ${s.stats[id]}`).join(' · '));
-  addFact(list, t('game.save.page.state.records'), Object.entries(d.records).map(([id, n]) => `${t(recordKey(id))} ${n}`).join(' · '));
+  const d = decrire(s, params);
+  addFact(list, t('game.save.page.state.balance'), String(d.solde));
+  addFact(list, t('game.save.page.state.earned'), String(d.gagne));
+  addFact(list, t('game.save.page.state.items'), t('game.save.page.state.itemsValue', { objets: d.objets, persos: d.persos, tenues: d.tenues }));
+  addFact(list, t('game.save.page.state.levels'), STAT_KEYS.map((id) => `${t(statKey(id))} ${s.niveaux[id]}`).join(' · '));
+  const records = MODES.flatMap((mode) => Object.entries(d.records[mode]).map(([monde, n]) => `${t(MODE_RECORD_KEYS[mode], { monde })} ${n}`));
+  addFact(list, t('game.save.page.state.records'), records.length ? records.join(' · ') : t('game.save.page.state.none'));
+  addFact(list, t('game.save.page.state.profile'), t('game.save.page.state.profileValue', { tues: d.tues, parties: d.parties, mondes: d.mondes }));
   const when = savedAtDate(s.savedAt);
   addFact(list, t('game.save.page.state.lastWrite'), when ? when.toLocaleString('fr-FR') : t('game.save.page.state.never'));
   addFact(list, t('game.save.page.state.status'), t(stateKey(name)));
@@ -76,7 +83,7 @@ function render() {
   list.dataset.state = name;
 
   const readable = loaded.status === 'ok' || loaded.status === 'empty';
-  const code = readable ? encodeSave(s, params) : '';
+  const code = readable ? encoder(s, params) : '';
   $('export-code').value = code;
   $('export-length').textContent = code ? t('game.save.page.export.length', { n: code.length }) : '';
   $('btn-copy').disabled = !readable;
@@ -140,7 +147,7 @@ function cell(tag, text, className) {
 
 $('btn-verify').addEventListener('click', () => {
   resetImport();
-  const result = decodeSave($('import-code').value, params);
+  const result = decoder($('import-code').value, params);
   if (!result.ok) {
     const error = $('import-error');
     error.textContent = t(errorKey(result.error));
@@ -158,13 +165,16 @@ $('btn-verify').addEventListener('click', () => {
     tr.dataset.changed = String(row.changed);
     rows.append(tr);
   };
-  const preview = previewRows(current, verified);
+  const preview = previewRows(current, verified, params);
   for (const row of preview.filter((r) => r.group !== 'records')) add(t(rowKey(row.id)), row);
   for (const row of levelRows(current, verified)) add(t(statKey(row.id)), row);
-  for (const row of preview.filter((r) => r.group === 'records')) add(t(recordKey(row.id)), row);
+  for (const row of preview.filter((r) => r.group === 'records')) add(t(MODE_RECORD_KEYS[row.mode], { monde: row.monde }), row);
   const warnings = $('import-warnings');
-  warnings.hidden = result.warnings.length === 0;
-  warnings.textContent = result.warnings.length ? t('game.save.page.import.warnings', { n: result.warnings.length }) : '';
+  const notes = [];
+  if (result.source === 'ZS1') notes.push(t('game.save.page.import.zs1'));
+  if (result.warnings.length) notes.push(t('game.save.page.import.warnings', { n: result.warnings.length }));
+  warnings.hidden = notes.length === 0;
+  warnings.textContent = notes.join(' ');
   $('import-preview').hidden = false;
   say(t('game.save.page.import.ok'));
 });
@@ -172,7 +182,7 @@ $('btn-verify').addEventListener('click', () => {
 $('btn-replace').addEventListener('click', () => {
   if (!canReplace(verified !== null, $('import-ack').checked)) return;
   // Le texte est décodé de nouveau : on importe exactement ce qui est dans le champ, jamais une version périmée.
-  const again = decodeSave($('import-code').value, params);
+  const again = decoder($('import-code').value, params);
   if (!again.ok) {
     resetImport();
     return;

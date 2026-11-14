@@ -171,14 +171,16 @@ describe('option de démarrage (lireOptionDemarrage)', () => {
     expect(lireOptionDemarrage({ mode: 'infini', monde: 'batiment' }, null)).toEqual({ mode: 'histoire', monde: 'batiment' });
   });
 
-  it('le jeu lit l\'option sans paramètre d\'adresse : main.js (endless = ?endless=1 ou mode infini), demarrage.js (deux champs connus), game.js (records filtrés)', () => {
+  it('le jeu lit l\'option sans paramètre d\'adresse : main.js (endless = ?endless=1 ou mode infini), demarrage.js (deux champs connus), game.js (lot 8h : mode et monde de la partie donnés à la banque)', () => {
     const main = read('js/game/main.js');
     expect(main).toContain("endless: query.get('endless') === '1' || optionPartie().mode === 'infini',");
     expect(main).toContain('modePartie: optionPartie().mode,');
     const dem = read('js/menu/demarrage.js');
     expect(dem).toContain("if (option?.mode === 'infini' && typeof option.monde === 'string') partie = Object.freeze({ mode: 'infini', monde: option.monde });");
     expect(dem).toContain("let partie = Object.freeze({ mode: 'histoire', monde: 'batiment' });");
-    expect(read('js/game/game.js')).toContain("const depot = ctx.modePartie === 'infini' ? { ...ctx.repository, commit: (delta, at) => ctx.repository.commit({ ...delta, bestWave: 0, bestKills: 0 }, at) } : ctx.repository;");
+    // Lot 8h : records séparés par mode et par monde : la banque reçoit le mode et le monde de la partie (plus de filtre du lot 8b).
+    expect(read('js/game/game.js')).toContain('partie: { mode: ctx.modePartie, monde: ctx.monde } });');
+    expect(main).toContain("monde: optionPartie().monde ?? 'batiment',");
     expect(read('js/menu/menu.js')).toContain('jouer(lireOptionDemarrage(option, mondes));');
   });
 });

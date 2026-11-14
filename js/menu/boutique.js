@@ -12,7 +12,7 @@ import { creerRoue } from './roue.js';
 import { preparer as preparerSons, son } from './sons/sons.js';
 import { formatMoney } from '../core/economy.js';
 import { TIRAGES_X10, ajouterCosmetiques, lireCaisses, lireCosmetiques, lireOffres, offresDuJour, partHaute, prixAchat, tirer, tirer10 } from '../core/caisses.js';
-import { ajouterObjets, estDebloque, obtenirPersonnages } from '../core/equipement.js';
+import { estDebloque } from '../core/equipement.js';
 import { fmt } from '../game/texts.js';
 import { el } from './menu.js';
 import { chargerEquipement } from './equipement-etat.js';
@@ -167,7 +167,8 @@ export async function ecranBoutique({ t, bandeau, root, rootDialogue, surVue = (
   const { regles } = lireOffres(donnees, cat);
   const nomRarete = (rid) => cat.raretes.find((r) => r.id === rid)?.nom ?? '';
   const jetonRarete = (rid) => cat.raretes.find((r) => r.id === rid)?.jeton;
-  let collection = Object.freeze({}); // tenues obtenues (mémoire de la page jusqu'au lot 8h)
+  // Lot 8h : tenues obtenues et offres achetées lues dans la progression v2 (equipement-etat.js) ; prix prélevés en monnaie bleue.
+  const collection = () => eq.collection();
 
   const section = el('section', ['e8-ecran', 'e3', 'e3-boutique'], { id: 'menu-ecran-boutique', 'aria-labelledby': 'menu-titre-boutique', 'data-block': 'E3-1', 'data-anim': 'off' });
   // Petit menu des rubriques, sous le bandeau, à gauche ; le contenu défile à droite.
@@ -203,13 +204,30 @@ export async function ecranBoutique({ t, bandeau, root, rootDialogue, surVue = (
   let jour = null;
   let offres = [];
   const achetees = new Set();
+  const boutonsOffres = [];
+  // Lot 8h : « Achetée » (gardée pour la journée dans la progression), « Il manque N » grisé si le solde bleu ne suffit pas, sinon le prix.
+  function majOffres() {
+    achetees.clear();
+    for (const cle of eq.achetees(jour)) achetees.add(cle);
+    offres.forEach((o, i) => {
+      const b = boutonsOffres[i];
+      if (!b) return;
+      const prise = achetees.has(o.cle);
+      const manque = Math.max(0, o.prix - eq.solde());
+      b.textContent = prise ? t('game.menu.boutique.offre.achetee') : manque > 0 ? fmt(t('game.menu.prix.manque'), { n: formatMoney(manque) }) : fmt(t('game.menu.boutique.offre.acheter'), { prix: formatMoney(o.prix) });
+      b.setAttribute('aria-disabled', String(prise || manque > 0));
+      const raison = document.getElementById(`menu-offre-${i}-raison`);
+      if (raison) raison.textContent = !prise && manque > 0 ? fmt(t('game.menu.prix.raison'), { prix: formatMoney(o.prix), solde: formatMoney(eq.solde()) }) : '';
+      b.closest('li')?.classList.toggle('is-achetee', prise);
+    });
+  }
   function rendreOffres() {
     const d = maintenant();
     const j = jourLocal(d);
     if (j !== jour) {
       jour = j;
       offres = offresDuJour(regles, cat, j);
-      achetees.clear();
+      boutonsOffres.length = 0;
       offresListe.replaceChildren(...offres.map((o, i) => {
         const def = cat.objets.get(o.id);
         const li = el('li', ['e3-offre'], { 'data-rarete': o.rarete, 'data-objet': o.id, id: `menu-offre-${i}` });
@@ -220,28 +238,32 @@ export async function ecranBoutique({ t, bandeau, root, rootDialogue, surVue = (
         nom.textContent = def?.nom ?? o.id;
         const rar = el('span', ['e3-offre-rarete']);
         rar.textContent = nomRarete(o.rarete);
-        const b = el('button', ['e3-action', 'e3-rouge', 'e3-offre-acheter'], { type: 'button', id: `menu-offre-${i}-acheter`, 'aria-describedby': `menu-offre-${i}-nom` });
-        b.textContent = fmt(t('game.menu.boutique.offre.acheter'), { prix: formatMoney(o.prix) });
+        const b = el('button', ['e3-action', 'e3-rouge', 'e3-offre-acheter'], { type: 'button', id: `menu-offre-${i}-acheter`, 'aria-describedby': `menu-offre-${i}-nom menu-offre-${i}-raison` });
         b.addEventListener('click', () => acheterOffre(i, b));
-        li.append(ico, nom, rar, b);
+        const raison = el('span', ['sr-only'], { id: `menu-offre-${i}-raison` });
+        boutonsOffres[i] = b;
+        li.append(ico, nom, rar, b, raison);
         return li;
       }));
+      majOffres();
     }
     const ms = avantMinuit(d);
     compte.textContent = fmt(t('game.menu.boutique.offres.compte'), { h: Math.floor(ms / 3_600_000), m: Math.floor((ms % 3_600_000) / 60_000) });
   }
   function acheterOffre(i, bouton) {
     const o = offres[i];
-    if (!o || achetees.has(o.cle)) return;
+    if (!o || achetees.has(o.cle) || bouton.getAttribute('aria-disabled') === 'true') return;
     const objet = { id: o.id, rarete: o.rarete, niveau: 1 };
-    const { etat, uids } = ajouterObjets(eq.etat(), cat, [objet]);
-    if (uids.length !== 1) return;
-    eq.poser(etat);
-    achetees.add(o.cle);
+    // Lot 8h : prix prélevé et objet ajouté dans la même écriture ; offre gardée « Achetée » pour la journée.
+    const a = eq.acheterObjets({ prix: o.prix, objets: [objet], offre: { jour, cle: o.cle } });
+    if (!a.ok) {
+      refus(a.raison);
+      majOffres();
+      return;
+    }
+    const uids = a.uids;
     son('achat'); // lot 8i
-    bouton.textContent = t('game.menu.boutique.offre.achetee');
-    bouton.setAttribute('aria-disabled', 'true');
-    bouton.closest('li')?.classList.add('is-achetee');
+    majOffres();
     achats += 1;
     retourFocus = bouton;
     afficherOuverture({ type: 'offre', caisse: null, quantite: 1, objets: [objet], uids, prix: o.prix, graine: null });
@@ -291,7 +313,7 @@ export async function ecranBoutique({ t, bandeau, root, rootDialogue, surVue = (
     const bouton = (quantite, classes, cle) => {
       const prix = formatMoney(prixAchat(c, quantite));
       // Nom accessible = texte visible (« Ouvrir ×1 · prix : 150 ») ; la caisse en description (son nom, titre de la carte).
-      const n = el('button', ['e3-ouvrir', ...classes], { type: 'button', id: `menu-caisse-${c.id}-${quantite === 1 ? 'un' : 'dix'}`, 'aria-describedby': `menu-caisse-${c.id}-nom` });
+      const n = el('button', ['e3-ouvrir', ...classes], { type: 'button', id: `menu-caisse-${c.id}-${quantite === 1 ? 'un' : 'dix'}`, 'aria-describedby': `menu-caisse-${c.id}-nom menu-caisse-${c.id}-raison` });
       const action = el('span', ['e3-ouvrir-action']);
       action.textContent = t(cle);
       const sep = el('span', ['sr-only']);
@@ -299,7 +321,9 @@ export async function ecranBoutique({ t, bandeau, root, rootDialogue, surVue = (
       const p = el('span', ['e3-ouvrir-prix']);
       p.textContent = prix;
       n.append(action, sep, p);
-      n.addEventListener('click', () => acheter(c, quantite, n));
+      n.addEventListener('click', () => {
+        if (n.getAttribute('aria-disabled') !== 'true') acheter(c, quantite, n);
+      });
       n.addEventListener('pointerdown', prechargerOuverture, { passive: true }); // lot 8f
       return n;
     };
@@ -312,8 +336,9 @@ export async function ecranBoutique({ t, bandeau, root, rootDialogue, surVue = (
     pc.append(forme('path', { d: 'M3.5 12.5l9-9' }), forme('circle', { cx: 4.5, cy: 4.5, r: 2 }), forme('circle', { cx: 11.5, cy: 11.5, r: 2 }));
     lien.append(pc, Object.assign(el('span', ['e3-lien-nom']), { textContent: t('game.menu.boutique.chances') }));
     lien.addEventListener('click', () => ouvrirChances(c, lien));
-    li.append(el('span', ['e3-carte-bande'], { 'aria-hidden': 'true' }), caisseSvg(c.modele), nom, contenuCaisse(c), actions, lien);
-    boutons.set(c.id, { un, dix, chances: lien });
+    const raison = el('span', ['sr-only'], { id: `menu-caisse-${c.id}-raison` });
+    li.append(el('span', ['e3-carte-bande'], { 'aria-hidden': 'true' }), caisseSvg(c.modele), nom, contenuCaisse(c), actions, lien, raison);
+    boutons.set(c.id, { un, dix, chances: lien, raison, caisse: c });
     return li;
   }
   const noteTenues = el('p', ['e3-rayon-note'], { id: 'menu-boutique-tenues-note' });
@@ -323,10 +348,37 @@ export async function ecranBoutique({ t, bandeau, root, rootDialogue, surVue = (
     rayon(type, type === 'cosmetique' ? [noteTenues] : []).append(liste);
   }
   const rendreNoteTenues = () => {
-    noteTenues.textContent = fmt(t('game.menu.boutique.tenues.note'), { n: Object.keys(collection).length, total: cat.cosmetiques.length });
+    noteTenues.textContent = fmt(t('game.menu.boutique.tenues.note'), { n: Object.keys(collection()).length, total: cat.cosmetiques.length });
   };
   rendreNoteTenues();
-  section.append(fond(), bandeau(t('game.menu.boutique.libelle'), t('game.menu.boutique.titre'), 'menu-titre-boutique'), nav, defile);
+  // Lot 8h : prix des caisses selon le solde bleu : « Il manque N » grisé (raison lue) quand il ne suffit pas.
+  function majPrix() {
+    const s = eq.solde();
+    for (const { un, dix, raison, caisse: c } of boutons.values()) {
+      let manqueUn = 0;
+      for (const [b, q] of [[un, 1], [dix, TIRAGES_X10]]) {
+        const prix = prixAchat(c, q);
+        const manque = Math.max(0, prix - s);
+        if (q === 1) manqueUn = manque;
+        b.querySelector('.e3-ouvrir-prix').textContent = manque > 0 ? fmt(t('game.menu.prix.manque'), { n: formatMoney(manque) }) : formatMoney(prix);
+        b.setAttribute('aria-disabled', String(manque > 0));
+      }
+      raison.textContent = Math.max(manqueUn, prixAchat(c, TIRAGES_X10) - s) > 0 ? fmt(t('game.menu.prix.raison'), { prix: `${formatMoney(prixAchat(c, 1))} / ${formatMoney(prixAchat(c, TIRAGES_X10))}`, solde: formatMoney(s) }) : '';
+    }
+  }
+  majPrix();
+  // Annonce d'un achat refusé (solde, inventaire plein) ou annulé après coup (un autre onglet a dépensé la monnaie).
+  const annonceAchat = el('p', ['sr-only'], { id: 'menu-boutique-annonce', role: 'status', 'aria-live': 'polite' });
+  const refus = (raison) => {
+    annonceAchat.textContent = raison === 'plein' ? fmt(t('game.menu.achat.refus.plein'), { max: cat.inventaireMax }) : t(raison === 'solde' ? 'game.menu.achat.refus.solde' : 'game.menu.achat.refus.autre');
+  };
+  eq.abonner((_etat, annules) => {
+    majPrix();
+    majOffres();
+    rendreNoteTenues();
+    if (annules?.length) annonceAchat.textContent = t('game.menu.achat.annule');
+  });
+  section.append(fond(), bandeau(t('game.menu.boutique.libelle'), t('game.menu.boutique.titre'), 'menu-titre-boutique'), nav, defile, annonceAchat);
 
   // --- Rubriques : aller à une rubrique, rubrique courante selon le défilement ----------------------------------------------------------------
   let courante = RUBRIQUES[0];
@@ -385,30 +437,35 @@ export async function ecranBoutique({ t, bandeau, root, rootDialogue, surVue = (
     };
   }
 
-  // Tirage (graine du navigateur), éléments ajoutés à l'état en mémoire, puis l'ouverture. Prix jamais prélevé.
+  // Tirage (graine du navigateur), puis lot 8h : prix prélevé en monnaie bleue et contenu ajouté dans la MÊME écriture (progression v2) ; refusé
+  // (solde, inventaire plein) : rien n'est prélevé ni ajouté, la raison est lue ; puis l'ouverture.
   function acheter(caisse, quantite, depuis) {
     if (preparation) return; // lot 8f : ouverture en cours de chargement (un seul achat à la fois)
+    const prix = prixAchat(caisse, quantite);
+    if (eq.solde() < prix) {
+      refus('solde');
+      return;
+    }
     const graine = graineAchat();
     const objets = quantite === TIRAGES_X10 ? tirer10(caisse, cat, graine) : [tirer(caisse, cat, graine)].filter(Boolean);
     if (!objets || objets.length !== quantite) return;
     const r = { type: caisse.type, caisse, quantite, objets, uids: [], graine };
     if (caisse.type === 'personnage') {
-      const { etat, issues } = obtenirPersonnages(eq.etat(), cat, objets.map((o) => o.id));
-      if (issues.length !== quantite) return;
-      eq.poser(etat);
-      r.issues = issues;
+      const a = eq.acheterPersonnages({ prix, ids: objets.map((o) => o.id) });
+      if (!a.ok) return refus(a.raison);
+      r.issues = a.issues;
     } else if (caisse.type === 'cosmetique') {
-      const a = ajouterCosmetiques(collection, cat, objets.map((o) => o.id));
-      if (a.nouveaux.length !== quantite) return;
-      collection = a.collection;
-      r.nouveaux = a.nouveaux;
-      r.collection = { ...collection };
+      const apercu = ajouterCosmetiques(collection(), cat, objets.map((o) => o.id));
+      if (apercu.nouveaux.length !== quantite) return;
+      const a = eq.acheterTenues({ prix, ids: objets.map((o) => o.id) });
+      if (!a.ok) return refus(a.raison);
+      r.nouveaux = apercu.nouveaux;
+      r.collection = { ...collection() };
       rendreNoteTenues();
     } else {
-      const { etat, uids } = ajouterObjets(eq.etat(), cat, objets);
-      if (uids.length !== quantite) return;
-      eq.poser(etat);
-      r.uids = uids;
+      const a = eq.acheterObjets({ prix, objets });
+      if (!a.ok) return refus(a.raison);
+      r.uids = a.uids;
     }
     achats += 1;
     son('achat'); // lot 8i
@@ -497,7 +554,7 @@ export async function ecranBoutique({ t, bandeau, root, rootDialogue, surVue = (
     if (!resultat) {
       const m = await import('./resultat.js');
       resultat ??= m.creerResultat({
-        t, bandeau, cat,
+        t, bandeau, cat, solde: () => eq.solde(),
         continuer: () => fermerResultat(true),
         rouvrir: () => dernier?.caisse && acheter(dernier.caisse, dernier.quantite, null),
       });
@@ -594,7 +651,7 @@ export async function ecranBoutique({ t, bandeau, root, rootDialogue, surVue = (
       caisses: caisses.map((c) => ({ id: c.id, type: c.type, nom: c.nom, prix: c.prix, prix10: c.prix10, chances: c.chances.map((x) => ({ ...x })) })),
       offres: offres.map((o) => ({ ...o, achetee: achetees.has(o.cle) })),
       jour,
-      collection: { ...collection },
+      collection: { ...collection() },
       chances: chancesOuvertes ? chancesOuvertes.caisse : null,
       achats,
       dernier: dernier ? { type: dernier.type, caisse: dernier.caisse?.id ?? null, quantite: dernier.quantite, graine: dernier.graine, objets: dernier.objets.map((o) => ({ ...o })), uids: [...dernier.uids], issues: dernier.issues?.map((x) => ({ ...x })) ?? null, nouveaux: dernier.nouveaux ? [...dernier.nouveaux] : null } : null,

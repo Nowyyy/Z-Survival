@@ -201,6 +201,30 @@
   color: var(--color-money);
 }
 
+/* Lot 8h : monnaie bleue (gagnée en terminant des manches, gardée pour toujours) : icône (gemme dessinée en code) et « +N » bleu discret, sous la
+   ligne de l'argent, à droite ; texte bleu sur le fond du HUD : contraste ≥ 4,5:1. */
+.hud-gem {
+  fill: none;
+  stroke: var(--color-money-blue);
+  stroke-width: 1.4;
+  stroke-linejoin: round;
+}
+
+.hud-gain.hud-gain-bleu {
+  top: 100%;
+  left: auto;
+  right: 0;
+  gap: 0.25em;
+  min-width: 0;
+  height: auto;
+  padding: 0.1em 0.35em;
+  color: var(--color-money-blue);
+}
+
+.end-bleu {
+  color: var(--color-money-blue);
+}
+
 /* « +N » (lot 4, agrégé, décoratif) : sous le bouton Pause, sur la ligne de l'argent (retour du propriétaire), au moins de la largeur de Pause ; sans animation. */
 .hud-gain {
   position: absolute;

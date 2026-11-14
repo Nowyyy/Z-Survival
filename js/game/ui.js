@@ -18,7 +18,7 @@ export function createUi(dict, handlers) {
     pauseBtn: $('btn-pause'), resume: $('btn-resume'), fullscreen: $('btn-fullscreen'), sound: $('btn-sound'),
     options: $('btn-options'), debug: $('btn-debug'), restart: $('btn-restart'), replay: $('btn-replay'), quit: $('btn-quit'), menuBtn: $('btn-menu'), endKills: $('end-kills'), endWave: $('end-wave'),
     endBox: $('end-box'), endTitle: $('end-title-text'), pauseBalance: $('pause-balance-text'), endEarned: $('end-earned'), endEarnedText: $('end-earned-text'), endBonus: $('end-bonus'), endBonusText: $('end-bonus-text'),
-    endBalance: $('end-balance'), endBest: $('end-best'), endRecord: $('end-record'), endRecordText: $('end-record-text'), endSave: $('end-save'),
+    endBalance: $('end-balance'), endBalanceText: $('end-balance-text'), endBleu: $('end-bleu'), endBleuText: $('end-bleu-text'), endBest: $('end-best'), endRecord: $('end-record'), endRecordText: $('end-record-text'), endSave: $('end-save'),
   };
   // Lot 5j : écran Options (créé à la première ouverture) ; binding : contrôleur graphique et couche VHS, donnés par game.js (bindOptions).
   // Lot 8c : composant partagé avec le menu (contexte « partie ») ; sa section Son lit l'audio en cours (sonAudio) et passe par les mêmes
@@ -94,6 +94,8 @@ export function createUi(dict, handlers) {
     },
 
     // info (lot 4, de bank.runEnd) : { earned, world, balance, best, record, status } ; absent : les lignes d'argent restent vides.
+    // Lot 8h (deux monnaies) : monnaie jaune perdue (earned), monnaie bleue gagnée pendant la partie (bleu, prime du monde comprise), solde bleu
+    // (soldeBleu) ; meilleure manche du mode joué (histoire ou infini).
     showEnd(kills, wave = 0, variant = 'death', info = null) {
       els.pausePanel.hidden = true;
       els.endTitle.textContent = dict[variant === 'world' ? 'game.end.world' : 'game.end.title'];
@@ -103,12 +105,14 @@ export function createUi(dict, handlers) {
       els.endWave.hidden = !(wave > 0);
       const money = info !== null && info !== undefined;
       els.endEarned.hidden = !money;
+      els.endBleu.hidden = !money;
       els.endBalance.hidden = !money;
       els.endBest.hidden = !money;
       if (money) {
         els.endEarnedText.textContent = fmt(dict[MONEY_TEXTS.earned], { n: formatMoney(info.earned) });
-        els.endBalance.textContent = fmt(dict[MONEY_TEXTS.balance], { n: formatMoney(info.balance) });
-        els.endBest.textContent = fmt(dict[MONEY_TEXTS.best], { n: info.best });
+        els.endBleuText.textContent = fmt(dict[MONEY_TEXTS.bleu], { n: formatMoney(info.bleu) });
+        els.endBalanceText.textContent = fmt(dict[MONEY_TEXTS.balance], { n: formatMoney(info.soldeBleu) });
+        els.endBest.textContent = fmt(dict[info.mode === 'infini' ? MONEY_TEXTS.bestInfini : MONEY_TEXTS.best], { n: info.best });
       }
       const world = money && variant === 'world';
       els.endBonus.hidden = !world;

@@ -10,14 +10,15 @@
 import { activerGlisser } from '../glisser.js';
 import { roueDifferee } from './roue.js';
 import { clic as clicSon, ecouterClics, regler as reglerSons } from './sons/sons.js';
-import { lireProfil, suivreProfil, svgPortrait } from './avatar.js';
+import { brancherProfil, lireProfil, suivreProfil, svgPortrait } from './avatar.js';
 import { formatMoney } from '../core/economy.js';
 import { basculerMenu, choisirOnglet, versionMenu, creerEtatMenu, ECRANS_PLEINS, SOUS_MENUS, fermerEcran, fermerMenu, lienExterne, lireMondes, lireOptionDemarrage, lireRecord, nouveauteNonLue, ONGLETS, ouvrirEcran, premierJouable } from '../core/menu-etat.js';
 import { ecranJouer } from './jouer.js';
 import { gouttePath } from '../logo.js';
 import { fmt, loadDict } from '../game/texts.js';
 import { graphicsReglages, pageCanal, pageSearch } from '../game/graphics-boot.js';
-import { createRepository } from '../save/index.js';
+import { solde as soldeBleu } from '../core/progression.js';
+import { chargerProgression } from './progression-etat.js';
 
 const SVG = 'http://www.w3.org/2000/svg';
 // Icônes au trait (16 × 16), décoratives.
@@ -25,6 +26,7 @@ const ICONES = {
   connexion: 'M8 2.2a2.8 2.8 0 1 1 0 5.6 2.8 2.8 0 0 1 0-5.6ZM2.8 14c0-2.9 2.3-4.8 5.2-4.8s5.2 1.9 5.2 4.8',
   barres: 'M2 4h12M2 8h12M2 12h12',
   piece: 'M8 4.2v7.6M5.6 6.2h3.7a1.2 1.2 0 0 1 0 2.4H6.7a1.2 1.2 0 0 0 0 2.4h3.7',
+  gemme: 'M8 1.6 14 6.4 8 14.4 2 6.4ZM2 6.4h12M5.6 6.4 8 14.4l2.4-8', // lot 8h : monnaie bleue
   boutique: 'M3 5.5h10l-1 8.5H4zM5.5 5.5V4a2.5 2.5 0 0 1 5 0v1.5',
   personnage: 'M8 1.8a2.4 2.4 0 1 1 0 4.8 2.4 2.4 0 0 1 0-4.8ZM4 14.2V10c0-1.5 1.2-2.6 2.6-2.6h2.8C10.8 7.4 12 8.5 12 10v4.2',
   infini: 'M8 8c-1.4-1.9-2.6-3-4-3a3 3 0 0 0 0 6c1.4 0 2.6-1.1 4-3Zm0 0c1.4 1.9 2.6 3 4 3a3 3 0 0 0 0-6c-1.4 0-2.6 1.1-4 3Z',
@@ -193,9 +195,9 @@ export function bandeau(libelle, titre, id) {
 
 const json = (path) => fetch(path).then((r) => (r.ok ? r.json() : null)).catch(() => null);
 
-// Chargement du menu (phase « menu » de l'écran de chargement) : textes, nouveautés, liens, mondes (lot 8b), et le solde et le record (lot 8b :
-// records.bestWave, champ existant) lus dans la sauvegarde existante par son API (createRepository, lecture seule : load(), sans canal entre onglets
-// ni écriture). onProgress(f) : part des fichiers reçus (0 à 1).
+// Chargement du menu (phase « menu » de l'écran de chargement) : textes, nouveautés, liens, mondes (lot 8b), et le solde et le record lus dans la
+// progression v2 (lot 8h : zs.save.v2, monnaie bleue, record de l'histoire du premier monde jouable, niveaux de base) par son API (createRepository,
+// load()). onProgress(f) : part des fichiers reçus (0 à 1).
 export async function preparerMenu({ search = pageSearch(), onProgress = () => {} } = {}) {
   let recus = 0;
   const suivre = (p) => p.then((v) => {
@@ -210,30 +212,30 @@ export async function preparerMenu({ search = pageSearch(), onProgress = () => {
   let solde = 0;
   let record = null;
   let niveaux = null; // lot 8d : niveaux de statistiques de la sauvegarde (base des statistiques effectives), si elle est lue « ok » (comme la partie)
+  let lues = []; // lot 8h : nouveautés déjà lues (progression v2)
+  let recordsInfini = {}; // lot 8h : record de l'infini par carte (meilleure manche démarrée)
   try {
-    const storage = (() => {
-      try {
-        return window.localStorage;
-      } catch {
-        return null;
-      }
-    })();
-    const { repository } = createRepository({ search, storage, params: { save, economy, stats } });
-    const lu = repository.load();
-    if (lu && lu.save && Number.isFinite(lu.save.money)) solde = lu.save.money;
-    record = lireRecord(lu?.save?.records?.bestWave);
-    if (lu?.status === 'ok' && lu.save?.stats && typeof lu.save.stats === 'object') niveaux = { ...lu.save.stats };
+    // Lot 8h : dépôt partagé par tout le menu (en-tête, Boutique, Personnage), avec le canal entre onglets (js/menu/progression-etat.js).
+    const prog = await chargerProgression({ save, economy, stats }, { search });
+    const lu = prog.lire();
+    if (lu && lu.save) solde = soldeBleu(lu.save);
+    record = lireRecord(lu?.save?.records?.histoire?.[premierJouable(lireMondes(mondes)).id]);
+    if (lu?.status === 'ok' && lu.save?.niveaux && typeof lu.save.niveaux === 'object') niveaux = { ...lu.save.niveaux };
+    lues = Array.isArray(lu?.save?.lues) ? [...lu.save.lues] : [];
+    recordsInfini = { ...(lu?.save?.records?.infini ?? {}) };
+    brancherProfil(prog); // avatar et pseudo gardés (js/menu/avatar.js)
   } catch {
     // sauvegarde illisible ou stockage bloqué : solde 0 et record « — » affichés, rien n'est écrit
   }
-  return { dict, infos: Array.isArray(infos?.infos) ? infos.infos : [], liens: liens ?? {}, solde, record, mondes: lireMondes(mondes), niveaux, statsCfg: stats };
+  return { dict, infos: Array.isArray(infos?.infos) ? infos.infos : [], liens: liens ?? {}, solde, record, mondes: lireMondes(mondes), niveaux, statsCfg: stats, lues, recordsInfini };
 }
 
 // son : { lire() → { coupe, volume }, poser(réglages) } (lot 8c, donné par demarrage.js : mémoire de la page, appliquée par main.js à « JOUER »).
 // niveaux, statsCfg (lot 8d) : niveaux de la sauvegarde et data/game/player-stats.json, pour les statistiques effectives (Personnage, « JOUER »).
-export function creerMenu({ dict, infos = [], liens = {}, solde: montant = 0, record = null, mondes = lireMondes(null), niveaux = null, statsCfg = null, jouer, son: memoireSon = null, root = document.body }) {
+// lues, recordsInfini (lot 8h) : nouveautés déjà lues et records de l'infini par carte, lus dans la progression v2 (preparerMenu).
+export function creerMenu({ dict, infos = [], liens = {}, solde: montant = 0, record = null, mondes = lireMondes(null), niveaux = null, statsCfg = null, jouer, son: memoireSon = null, root = document.body, lues = [], recordsInfini = {} }) {
   const t = (k) => dict[k] ?? '';
-  let etat = creerEtatMenu();
+  let etat = { ...creerEtatMenu(), lues: Array.isArray(lues) ? [...lues] : [] };
   const lien = lienExterne(liens?.discord);
   let options = null; // écran Options (créé à la première ouverture)
   let dialogue = null; // écran Information ou Connexion ouvert : { close, escape, element }
@@ -264,12 +266,20 @@ export function creerMenu({ dict, infos = [], liens = {}, solde: montant = 0, re
   poserEntete(lireProfil());
   suivreProfil(poserEntete);
   const droite = el('div', ['e8-droite']);
+  // Lot 8h : en-tête = solde de la monnaie bleue seul (icône bleue dessinée en code, nom accessible « Monnaie bleue : N ») ; posé de nouveau après un
+  // achat ou quand un autre onglet écrit (poserSolde).
   const solde = el('p', ['e8-solde'], { id: 'menu-solde' });
   const soldeTexte = el('span', ['e8-solde-texte'], { id: 'menu-solde-texte', 'aria-hidden': 'true' });
-  soldeTexte.textContent = formatMoney(montant);
   const soldeNom = el('span', ['sr-only']);
-  soldeNom.textContent = fmt(t('game.menu.solde'), { n: formatMoney(montant) });
-  solde.append(icone('piece', 'e8-icone e8-piece'), soldeTexte, soldeNom);
+  let soldeActuel = montant;
+  const poserSolde = (n) => {
+    soldeActuel = Number.isInteger(n) && n >= 0 ? n : 0;
+    soldeTexte.textContent = formatMoney(soldeActuel);
+    soldeNom.textContent = fmt(t('game.menu.solde'), { n: formatMoney(soldeActuel) });
+  };
+  poserSolde(montant);
+  solde.append(icone('gemme', 'e8-icone e8-gemme'), soldeTexte, soldeNom);
+  chargerProgression().then((prog) => prog.abonner(() => poserSolde(prog.solde()))).catch(() => {});
   const barres = el('button', ['e8-barres'], { type: 'button', id: 'menu-trois-barres', 'aria-expanded': 'false', 'aria-controls': 'menu-liste', 'aria-label': t('game.menu.ouvrir') });
   const pointBarres = el('span', ['menu-point', 'e8-point-barres'], { 'aria-hidden': 'true' });
   barres.append(icone('barres'), pointBarres);
@@ -287,7 +297,25 @@ export function creerMenu({ dict, infos = [], liens = {}, solde: montant = 0, re
     svgPlein.append(p);
   }
   pleinEcran.append(svgPlein);
-  droite.append(solde, pleinEcran, barres);
+  // Lot 8h : outils de débogage (écritures réelles dans la progression v2) : petite icône à côté du plein écran et du menu à trois barres, seulement
+  // sur les canaux « source » et « dev » (jamais la Recette, les archives ni la production) ; le panneau (js/menu/debogage.js) se charge au toucher.
+  let debogage = null;
+  const outils = ['source', 'dev'].includes(pageCanal()) ? el('button', ['e8-plein-ecran', 'e8-debogage'], { type: 'button', id: 'menu-debogage-ouvrir', 'aria-label': t('game.menu.debogage.ouvrir'), 'aria-haspopup': 'dialog' }) : null;
+  if (outils) {
+    const svgOutils = document.createElementNS(SVG, 'svg');
+    for (const [k, v] of Object.entries({ viewBox: '0 0 16 16', class: 'e8-icone', 'aria-hidden': 'true', focusable: 'false' })) svgOutils.setAttribute(k, v);
+    const p = document.createElementNS(SVG, 'path');
+    p.setAttribute('d', 'M5.5 7h5v3.5a2.5 2.5 0 0 1-5 0zM6.5 7V5.5a1.5 1.5 0 0 1 3 0V7M1.5 9h4M10.5 9h4M2.5 5.5l3 1.5M13.5 5.5l-3 1.5M2.5 13.5l3-2M13.5 13.5l-3-2'); // insecte (comme la pause)
+    svgOutils.append(p);
+    outils.append(svgOutils);
+    outils.addEventListener('click', () => {
+      if (debogage?.element.isConnected) return;
+      import('./debogage.js').then((m) => {
+        debogage = m.ouvrirDebogage({ t, root: box, retour: outils });
+      }).catch(() => {});
+    });
+  }
+  droite.append(solde, ...(outils ? [outils] : []), pleinEcran, barres);
 
   // Menu à trois barres : juste sous le bouton, aligné à droite.
   const liste = el('div', ['e8-liste'], { id: 'menu-liste' });
@@ -481,7 +509,7 @@ export function creerMenu({ dict, infos = [], liens = {}, solde: montant = 0, re
   // s'importaient en cascade (chaque fichier ne découvre ses dépendances qu'une fois reçu) : dès le toucher, tous ses fichiers sont demandés en même
   // temps (modulepreload) avec ses données (precharger() du module) ; et l'onglet est marqué tout de suite, avant la fin du chargement. Jamais au
   // démarrage du menu : seulement quand le doigt se pose sur un onglet.
-  const EQUIPEMENT = ['data/menu/raretes.json', 'data/menu/objets.json', 'data/menu/personnages.json', 'data/menu/inventaire-depart.json'];
+  const EQUIPEMENT = ['data/menu/raretes.json', 'data/menu/objets.json', 'data/menu/personnages.json']; // lot 8h : inventaire-depart.json n'est plus lu au démarrage (outil de débogage)
   const PRECHARGE = {
     infini: { modules: ['js/menu/infini.js'], donnees: ['data/menu/classement.json'] },
     personnage: { modules: ['js/menu/personnage.js', 'js/menu/equipement-etat.js', 'js/core/equipement.js'], donnees: EQUIPEMENT },
@@ -526,7 +554,7 @@ export function creerMenu({ dict, infos = [], liens = {}, solde: montant = 0, re
         let s;
         if (onglet === 'infini') {
           const m = await precharger('infini');
-          infini = await m.ecranInfini({ t, mondes, bandeau, jouer: lancer });
+          infini = await m.ecranInfini({ t, mondes, bandeau, jouer: lancer, records: recordsInfini });
           s = infini.section;
           scenes.set('infini', infini.scene);
         } else if (onglet === 'personnage') {
@@ -579,7 +607,10 @@ export function creerMenu({ dict, infos = [], liens = {}, solde: montant = 0, re
 
   async function ouvrirDialogue(nom, opener) {
     options?.close(); // lot 8c : un seul écran à la fois (la page Options laisse la place à Information ou Connexion)
+    const avant = etat.lues.length;
     etat = ouvrirEcran(etat, nom, infos);
+    // Lot 8h : nouveautés lues gardées (une écriture la première fois seulement ; jamais sous la lecture seule du mode essai).
+    if (etat.lues.length > avant) chargerProgression().then((p) => p.marquerLues(etat.lues)).catch(() => {});
     synchroniser();
     retourFocus = opener;
     const m = await ecrans();
@@ -755,7 +786,8 @@ export function creerMenu({ dict, infos = [], liens = {}, solde: montant = 0, re
   // ailleurs ferme le menu à trois barres.
   function clavier(e) {
     if (e.code !== 'Escape') return;
-    if (dialogue) dialogue.close();
+    if (debogage?.element.isConnected) debogage.fermer(); // lot 8h : panneau des outils de débogage
+    else if (dialogue) dialogue.close();
     else if (etat.ecran === 'options') fermerOptions();
     else if (etat.menuOuvert) fermerListe(true);
     else if (ECRANS_COMPTE.includes(etat.ecran)) {
@@ -780,6 +812,6 @@ export function creerMenu({ dict, infos = [], liens = {}, solde: montant = 0, re
   synchroniser();
   return {
     element: box,
-    etat: () => ({ pleinEcran: { disponible: peutPleinEcran, actif: Boolean(document.fullscreenElement) }, onglet: etat.onglet, menuOuvert: etat.menuOuvert, ecran: etat.ecran, nonLue: nouveauteNonLue(infos, etat.lues), solde: montant, discord: lien.actif, record, monde: monde.id, infini: infini?.etat() ?? null, personnage: perso?.etat() ?? null, boutique: boutique?.etat() ?? null, credits: credits?.etat() ?? null, compte: compte?.etat() ?? null, niveaux, statsLancees }),
+    etat: () => ({ pleinEcran: { disponible: peutPleinEcran, actif: Boolean(document.fullscreenElement) }, onglet: etat.onglet, menuOuvert: etat.menuOuvert, ecran: etat.ecran, nonLue: nouveauteNonLue(infos, etat.lues), solde: soldeActuel, discord: lien.actif, record, monde: monde.id, infini: infini?.etat() ?? null, personnage: perso?.etat() ?? null, boutique: boutique?.etat() ?? null, credits: credits?.etat() ?? null, compte: compte?.etat() ?? null, niveaux, statsLancees }),
   };
 }

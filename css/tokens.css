@@ -16,6 +16,7 @@
   --color-success: #7ed48b;         /* réussite */
   --color-warning: #f2c94c;         /* avertissement */
   --color-money: #ffd60a;           /* argent, jaune */
+  --color-money-blue: #5ab0ff;      /* monnaie bleue (lot 8h) */
   --color-focus: #9fd3ff;           /* anneau de focus */
 
   /* Teintes dérivées */
@@ -69,7 +70,7 @@
   --touch-target: 44px;
 
   /* Accueil de la Recette (lot 5i) : carte de la version actuelle, en tête de « Toutes les versions » (css/accueil.css). */
-  --home-current-border: #d81414;   /* bordure de 2 px : rouge sang (même valeur que --color-action) */
+  --home-current-border: #d81414;   /* bordure de 2 px : rouge sang */
   --home-current-surface: #2a0f0f;  /* fond légèrement teinté de rouge ; texte os (--color-text) au-dessus : contraste ≥ 4,5:1 */
 
   /* Jeu : couleurs de la scène 3D (lues par js/game/palette.js). Provisoires, à valider. */
@@ -402,7 +403,7 @@
   --menu-e9-violet-inactif-bord: #3a2a4a;
   --menu-e9-violet-inactif-texte: #b8a8c8;
   --menu-e3-fond: #1b2a44;
-  /* Raretés (lots suivants : inventaire, boutique, tirage) */
+  /* Raretés */
   --rarete-commun: #a3a3a8;         /* gris */
   --rarete-peu-commun: #5cc46a;     /* vert */
   --rarete-rare: #4a94ff;           /* bleu */

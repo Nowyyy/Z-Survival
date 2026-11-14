@@ -1,9 +1,11 @@
 // Lot 8d : objets, équipement, fusion, personnages et statistiques effectives (js/core/equipement.js, pur), option de démarrage étendue (stats,
 // js/core/menu-etat.js), données data/menu/ (raretes, objets, personnages, inventaire-depart). Docs/ref/menu-principal.md.
+// Lot 8h : catalogue militaire de survie (six emplacements, un seul accessoire, aucune arme ni statistique d'attaque ni de chutes) ; l'inventaire de
+// démonstration (inventaire-depart.json, outil de débogage) garde la forme du lot 8d (o1 à o16, trois triplets) pour ces tests.
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import {
-  EMPLACEMENTS, EPSILON, TYPES, ameliorer, ameliorerPersonnage, bonusObjet, bonusTotal, choisirPersonnage, compatibles, creerEtatEquipement, effetCapacite,
+  EMPLACEMENTS, EPSILON, STATS_SURVIE, TYPES, ameliorer, ameliorerPersonnage, bonusObjet, bonusTotal, choisirPersonnage, compatibles, creerEtatEquipement, effetCapacite,
   emplacementDe, equiper, etatFusion, fusionnable, fusionner, identiques, infoAmelioration, infoPersonnage, lireCatalogue, objetDe, remplirAuto, retirer,
   statistiquesEffectives,
 } from '../../js/core/equipement.js';
@@ -33,10 +35,13 @@ describe('données data/menu/ (lireCatalogue)', () => {
     expect(cat.raretes.map((r) => r.prixFusion)).toEqual([100, 250, 600, 1500, null]);
   });
 
-  it('une douzaine d\'objets couvrant les cinq types, chacun dans les cinq raretés, niveaux maximaux croissants', () => {
-    expect(cat.objets.size).toBeGreaterThanOrEqual(12);
+  it('lot 8h : seize objets militaires couvrant les six emplacements de survie (six accessoires), chacun dans les cinq raretés, niveaux maximaux croissants', () => {
+    expect(cat.objets.size).toBe(16);
+    expect(TYPES).toEqual(['tete', 'torse', 'gants', 'pantalon', 'bottes', 'accessoire']);
+    expect(EMPLACEMENTS).toEqual(['tete', 'gants', 'bottes', 'torse', 'accessoire', 'pantalon']); // gauche : Tête, Gants, Bottes ; droite : Torse, Accessoire, Pantalon
     expect(new Set([...cat.objets.values()].map((o) => o.type))).toEqual(new Set(TYPES));
-    for (const o of ['pistolet', 'gilet', 'bottes', 'gants', 'casquette', 'bague', 'amulette', 'couteau']) expect(cat.objets.has(o), o).toBe(true);
+    expect([...cat.objets.values()].filter((o) => o.type === 'accessoire').map((o) => o.id)).toEqual(['ceinture-munitions', 'plaques-identite', 'montre-campagne', 'trousse-secours', 'boussole', 'masque-gaz']);
+    expect(cat.inventaireMax).toBe(100);
     for (const o of cat.objets.values()) {
       expect(Object.keys(o.raretes), o.id).toEqual(cat.raretes.map((r) => r.id));
       const max = Object.values(o.raretes).map((d) => d.niveauMax);
@@ -50,9 +55,9 @@ describe('données data/menu/ (lireCatalogue)', () => {
     expect(new Set(depart.objets.map((o) => o.rarete)).size).toBe(5);
     const groupes = {};
     for (const o of depart.objets) groupes[`${o.id}|${o.rarete}`] = (groupes[`${o.id}|${o.rarete}`] ?? 0) + 1;
-    expect(Object.entries(groupes).filter(([, n]) => n >= 3).map(([k]) => k).sort()).toEqual(['bague|rare', 'bottes|commun', 'gilet|commun']);
+    expect(Object.entries(groupes).filter(([, n]) => n >= 3).map(([k]) => k).sort()).toEqual(['gilet-pare-balles|commun', 'montre-campagne|rare', 'rangers|commun']);
     const porte = Object.fromEntries(EMPLACEMENTS.map((e) => [e, depart.porte[e] && objetDe(neuf(), depart.porte[e])]).map(([e, o]) => [e, o ? `${o.id} ${o.rarete}` : null]));
-    expect(porte).toEqual({ arme: 'pistolet rare', tenue: 'gilet commun', gants: null, bottes: 'bottes peu-commun', accessoire1: 'amulette epique', accessoire2: null });
+    expect(porte).toEqual({ tete: 'casque-kevlar rare', gants: null, bottes: 'rangers peu-commun', torse: 'gilet-pare-balles commun', accessoire: 'masque-gaz epique', pantalon: null });
   });
 
   it('personnages : Survivant débloqué et choisi (capacité « [à définir] » sans effet), [Personnage 2] débloqué (capacité d\'exemple), quatre verrouillés ; teintes en jetons', () => {
@@ -69,17 +74,17 @@ describe('données data/menu/ (lireCatalogue)', () => {
 
   it('validation : objet sans rareté, type inconnu, rareté inconnue, statistique inconnue, personnage sans capacité, exemplaire inconnu, emplacement impossible', () => {
     const objets = { objets: [
-      { id: 'vide', nom: 'Vide', type: 'arme', raretes: {} },
+      { id: 'vide', nom: 'Vide', type: 'tete', raretes: {} },
       { id: 'bizarre', nom: 'Bizarre', type: 'chapeau', raretes: { commun: { bonus: { vie: 1 }, niveauMax: 5 } } },
-      { id: 'ok', nom: 'Ok', type: 'arme', raretes: { commun: { bonus: { vie: 1, magie: 2, degats: -1 }, niveauMax: 5 }, mythique: { niveauMax: 3 } } },
+      { id: 'ok', nom: 'Ok', type: 'tete', raretes: { commun: { bonus: { vie: 1, magie: 2, degats: -1 }, niveauMax: 5 }, mythique: { niveauMax: 3 } } },
     ] };
     const personnages = { personnages: [{ id: 'sans', nom: 'Sans', teinte: '--menu-perso-2', debloque: true }, { id: 'p', nom: 'P', teinte: 'red', debloque: true, capacite: { nom: 'C' } }] };
-    const inventaire = { objets: [{ uid: 'a', id: 'ok', rarete: 'commun', niveau: 99 }, { uid: 'b', id: 'fantome', rarete: 'commun' }, { uid: 'a', id: 'ok', rarete: 'commun' }], equipement: { tenue: 'a', arme: 'zz' } };
+    const inventaire = { objets: [{ uid: 'a', id: 'ok', rarete: 'commun', niveau: 99 }, { uid: 'b', id: 'fantome', rarete: 'commun' }, { uid: 'a', id: 'ok', rarete: 'commun' }], equipement: { torse: 'a', tete: 'zz' } };
     const r = lireCatalogue({ raretes: DONNEES.raretes, objets, personnages, inventaire });
     expect(r.erreurs).toEqual(expect.arrayContaining([
       'objet vide : sans rareté', 'objet bizarre : type inconnu chapeau', 'objet ok : rareté inconnue mythique', 'objet ok (commun) bonus : statistique inconnue magie',
       'objet ok (commun) bonus : valeur invalide pour degats', 'personnage sans : sans capacité', 'personnage p : teinte invalide', 'inventaire : exemplaire invalide b',
-      'inventaire : exemplaire invalide a', 'équipement : tenue invalide', 'équipement : arme invalide',
+      'inventaire : exemplaire invalide a', 'équipement : torse invalide', 'équipement : tete invalide',
     ]));
     expect([...r.cat.objets.keys()]).toEqual(['ok']);
     expect(r.cat.objets.get('ok').raretes.commun.bonus).toEqual({ vie: 1 });
@@ -120,27 +125,42 @@ describe('statistiques effectives', () => {
     expect(statistiquesEffectives({}, e, cat, PARAMS).niveaux.vie).toBe(1);
   });
 
-  it('plusieurs objets et accessoires doubles : bonus additionnés sans arrondi intermédiaire', () => {
-    // Équipement de départ : Pistolet rare 3 (degats 3,6), Gilet commun 3 (vie 1,4), Bottes peu communes 2 (vitesse 2,25), Amulette épique 1 (vie 4).
+  it('plusieurs objets : bonus additionnés sans arrondi intermédiaire ; second bonus à l\'épique (lot 8h) ; un seul accessoire', () => {
+    // Démonstration : Casque kevlar rare 3 (vie 3,6), Gilet pare-balles commun 3 (vie 1,4), Rangers peu communs 2 (vitesse 2,25), Masque à gaz
+    // épique 1 (vie 4, second bonus regen 2).
     const d = statistiquesEffectives({}, neuf(), cat, PARAMS);
-    expect(d.bonus).toEqual({ degats: 3 + 0.3 * 2, vie: 1 + 0.2 * 2 + 4, vitesse: 2 + 0.25 });
-    expect([d.niveaux.degats, d.niveaux.vie, d.niveaux.vitesse]).toEqual([3, 5, 2]);
-    // Deux accessoires : Amulette (vie 4) et Bague rare (regen 3) ; deux bonus fractionnaires (0,4 + 0,6 = 1) comptent ensemble.
-    let e = equiper(neuf(), cat, 'o13', 'accessoire2');
-    expect([e.porte.accessoire1, e.porte.accessoire2]).toEqual(['o4', 'o13']);
+    expect(d.bonus).toEqual({ vie: 3 + 0.3 * 2 + 1 + 0.2 * 2 + 4, vitesse: 2 + 0.25, regen: 2 });
+    expect([d.niveaux.vie, d.niveaux.vitesse, d.niveaux.regen]).toEqual([9, 2, 2]);
+    // Un seul accessoire : la Montre de campagne rare (regen 3) remplace le Masque à gaz.
+    let e = equiper(neuf(), cat, 'o13');
+    expect(e.porte.accessoire).toBe('o13');
     expect(statistiquesEffectives({}, e, cat, PARAMS).niveaux.regen).toBe(3);
-    e = equiper(retirer(e, 'accessoire1'), cat, 'o14', 'accessoire1'); // Bague rare niv. 2 : regen 3,3 ; avec niv. 1 : 3 → 6,3
-    expect(statistiquesEffectives({}, e, cat, PARAMS).niveaux.regen).toBe(6);
+    e = equiper(e, cat, 'o14'); // Montre rare niv. 2 : regen 3,3 → 3
+    expect([e.porte.accessoire, statistiquesEffectives({}, e, cat, PARAMS).niveaux.regen]).toEqual(['o14', 3]);
+  });
+
+  it('lot 8h : aucun objet ne donne dégâts, cadence, portée, précision ni chutes ; seulement les statistiques de survie, la principale de son emplacement', () => {
+    const principale = { tete: 'vie', torse: 'vie', gants: 'reparation', pantalon: 'regen', bottes: 'vitesse' };
+    for (const o of cat.objets.values()) {
+      for (const [rid, d] of Object.entries(o.raretes)) {
+        const cles = [...new Set([...Object.keys(d.bonus), ...Object.keys(d.bonusParNiveau)])];
+        expect(cles.every((k) => STATS_SURVIE.includes(k)), `${o.id} ${rid} : ${cles}`).toBe(true);
+        expect(cles.length, `${o.id} ${rid}`).toBe(['epique', 'legendaire'].includes(rid) ? Math.min(2, cles.length) : 1);
+        if (o.type !== 'accessoire') expect(Object.keys(d.bonus)[0], o.id).toBe(principale[o.type]);
+        else expect(['vie', 'regen'], o.id).toContain(Object.keys(d.bonus)[0]);
+      }
+    }
+    expect(STATS_SURVIE).toEqual(['vie', 'vitesse', 'reparation', 'regen']);
   });
 
   it('tolérance de l\'arrondi : 0,2 + 0,7 + 0,1 compte pour 1 ; bornes de player-stats.json (10, chutes 5)', () => {
     const c = { raretes: cat.raretes, objets: new Map([
-      ['a', { id: 'a', nom: 'A', type: 'arme', raretes: { commun: { bonus: { vie: 0.2, chutes: 9 }, bonusParNiveau: {}, niveauMax: 1, prixAmelioration: 0 } } }],
-      ['b', { id: 'b', nom: 'B', type: 'tenue', raretes: { commun: { bonus: { vie: 0.7, degats: 99 }, bonusParNiveau: {}, niveauMax: 1, prixAmelioration: 0 } } }],
-      ['c', { id: 'c', nom: 'C', type: 'gants', raretes: { commun: { bonus: { vie: 0.1 }, bonusParNiveau: {}, niveauMax: 1, prixAmelioration: 0 } } }],
+      ['a', { id: 'a', nom: 'A', type: 'tete', raretes: { commun: { bonus: { vie: 0.2, chutes: 9 }, bonusParNiveau: {}, niveauMax: 1, prixAmelioration: 0 } } }],
+      ['b', { id: 'b', nom: 'B', type: 'gants', raretes: { commun: { bonus: { vie: 0.7, degats: 99 }, bonusParNiveau: {}, niveauMax: 1, prixAmelioration: 0 } } }],
+      ['c', { id: 'c', nom: 'C', type: 'bottes', raretes: { commun: { bonus: { vie: 0.1 }, bonusParNiveau: {}, niveauMax: 1, prixAmelioration: 0 } } }],
     ]), personnages: [] };
-    const e = creerEtatEquipement(c, { objets: ['a', 'b', 'c'].map((id) => ({ uid: id, id, rarete: 'commun', niveau: 1 })), porte: { arme: 'a', tenue: 'b', gants: 'c' }, choisi: null });
-    expect(0.2 + 0.7 + 0.1).toBeLessThan(1); // 0,9999999999999999 en virgule flottante (ordre des emplacements : arme, tenue, gants)
+    const e = creerEtatEquipement(c, { objets: ['a', 'b', 'c'].map((id) => ({ uid: id, id, rarete: 'commun', niveau: 1 })), porte: { tete: 'a', gants: 'b', bottes: 'c' }, choisi: null });
+    expect(0.2 + 0.7 + 0.1).toBeLessThan(1); // 0,9999999999999999 en virgule flottante (ordre des emplacements : tête, gants, bottes)
     expect(EPSILON).toBe(1e-9);
     const n = statistiquesEffectives({ degats: 4 }, e, c, PARAMS).niveaux;
     expect([n.vie, n.degats, n.chutes]).toEqual([1, 10, 5]);
@@ -161,33 +181,33 @@ describe('statistiques effectives', () => {
 
 describe('équiper, retirer', () => {
   it('l\'objet va dans l\'emplacement de son type et remplace celui qui y était ; retirer libère l\'emplacement', () => {
-    let e = equiper(neuf(), cat, 'o5'); // autre Gilet commun
-    expect(e.porte.tenue).toBe('o5');
+    let e = equiper(neuf(), cat, 'o5'); // autre Gilet pare-balles commun
+    expect(e.porte.torse).toBe('o5');
     e = equiper(e, cat, 'o10'); // Gants commun → emplacement vide
     expect(e.porte.gants).toBe('o10');
     e = retirer(e, 'gants');
     expect(e.porte.gants).toBeNull();
     e = retirer(e, 'o5'); // par l'exemplaire
-    expect(e.porte.tenue).toBeNull();
+    expect(e.porte.torse).toBeNull();
   });
 
-  it('accessoires : premier emplacement libre, sinon le premier ; emplacement demandé ; un objet porté ailleurs est d\'abord retiré', () => {
-    let e = equiper(neuf(), cat, 'o12'); // Casquette → accessoire2 (libre)
-    expect([e.porte.accessoire1, e.porte.accessoire2]).toEqual(['o4', 'o12']);
-    e = equiper(e, cat, 'o13'); // aucun libre → accessoire1
-    expect([e.porte.accessoire1, e.porte.accessoire2]).toEqual(['o13', 'o12']);
-    e = equiper(e, cat, 'o13', 'accessoire2'); // déplacé : retiré de accessoire1
-    expect([e.porte.accessoire1, e.porte.accessoire2]).toEqual([null, 'o13']);
-    expect(emplacementDe(e, 'o13')).toBe('accessoire2');
+  it('lot 8h : un seul accessoire (le nouveau remplace l\'ancien) ; un objet ne va que dans l\'emplacement de son type', () => {
+    let e = equiper(neuf(), cat, 'o13'); // Montre de campagne → accessoire (remplace le Masque à gaz)
+    expect(e.porte.accessoire).toBe('o13');
+    expect(emplacementDe(e, 'o4')).toBeNull();
+    e = equiper(e, cat, 'o12'); // Treillis → pantalon
+    expect([e.porte.pantalon, emplacementDe(e, 'o12')]).toEqual(['o12', 'pantalon']);
+    expect(equiper(e, cat, 'o12', 'accessoire')).toBe(e);
+    expect(Object.keys(e.porte)).toEqual(EMPLACEMENTS);
   });
 
   it('refusé sans exception (même état) : objet inconnu, emplacement impossible, déjà porté, rien à retirer', () => {
     const e = neuf();
     expect(equiper(e, cat, 'inconnu')).toBe(e);
-    expect(equiper(e, cat, 'o5', 'arme')).toBe(e);
+    expect(equiper(e, cat, 'o5', 'tete')).toBe(e);
     expect(equiper(e, cat, 'o5', 'nulle-part')).toBe(e);
     expect(equiper(e, cat, 'o1')).toBe(e);
-    expect(equiper(e, cat, 'o1', 'arme')).toBe(e);
+    expect(equiper(e, cat, 'o1', 'tete')).toBe(e);
     expect(retirer(e, 'gants')).toBe(e);
     expect(retirer(e, 'o5')).toBe(e);
     expect(retirer(e, 'xyz')).toBe(e);
@@ -213,34 +233,34 @@ describe('améliorer', () => {
 describe('fusionner', () => {
   it('triplet valide : un objet de la rareté supérieure (même id), niveau = le plus haut des trois ; porté à la place de l\'objet porté du triplet', () => {
     const e0 = neuf();
-    expect(etatFusion(e0, cat, ['o5', 'o6', 'o2'])).toMatchObject({ possible: true, manque: 0, objet: 'gilet', rarete: 'commun', resultat: 'peu-commun', prix: 100, raison: null });
+    expect(etatFusion(e0, cat, ['o5', 'o6', 'o2'])).toMatchObject({ possible: true, manque: 0, objet: 'gilet-pare-balles', rarete: 'commun', resultat: 'peu-commun', prix: 100, raison: null });
     const { etat: e, uid } = fusionner(e0, cat, ['o5', 'o6', 'o2']);
     expect(uid).toBe('f1');
-    expect(objetDe(e, 'f1')).toEqual({ uid: 'f1', id: 'gilet', rarete: 'peu-commun', niveau: 3 });
+    expect(objetDe(e, 'f1')).toEqual({ uid: 'f1', id: 'gilet-pare-balles', rarete: 'peu-commun', niveau: 3 });
     expect(['o2', 'o5', 'o6'].map((u) => objetDe(e, u))).toEqual([null, null, null]);
     expect(e.objets.length).toBe(e0.objets.length - 2);
-    expect(e.porte.tenue).toBe('f1');
-    expect(e0.porte.tenue).toBe('o2'); // ancien état intact
+    expect(e.porte.torse).toBe('f1');
+    expect(e0.porte.torse).toBe('o2'); // ancien état intact
     // Deuxième fusion : uid suivant, résultat non porté.
     const r2 = fusionner(e, cat, ['o7', 'o8', 'o9']);
     expect([r2.uid, objetDe(r2.etat, r2.uid).niveau, emplacementDe(r2.etat, r2.uid)]).toEqual(['f2', 4, null]);
   });
 
-  it('niveau du résultat borné au niveauMax de la nouvelle rareté ; deux accessoires du triplet portés : le résultat en prend un, l\'autre est libéré', () => {
+  it('niveau du résultat borné au niveauMax de la nouvelle rareté ; l\'accessoire porté du triplet : le résultat le remplace', () => {
     const c = { raretes: cat.raretes, objets: new Map([['x', { id: 'x', nom: 'X', type: 'accessoire', raretes: { commun: { bonus: { vie: 1 }, bonusParNiveau: {}, niveauMax: 9, prixAmelioration: 0 }, 'peu-commun': { bonus: { vie: 2 }, bonusParNiveau: {}, niveauMax: 4, prixAmelioration: 0 } } }]]), personnages: [] };
-    const e0 = creerEtatEquipement(c, { objets: ['a', 'b', 'd'].map((uid, i) => ({ uid, id: 'x', rarete: 'commun', niveau: [9, 2, 1][i] })), porte: { accessoire1: 'b', accessoire2: 'd' }, choisi: null });
+    const e0 = creerEtatEquipement(c, { objets: ['a', 'b', 'd'].map((uid, i) => ({ uid, id: 'x', rarete: 'commun', niveau: [9, 2, 1][i] })), porte: { accessoire: 'b' }, choisi: null });
     const { etat, uid } = fusionner(e0, c, ['a', 'b', 'd']);
     expect(objetDe(etat, uid).niveau).toBe(4);
-    expect([etat.porte.accessoire1, etat.porte.accessoire2]).toEqual([uid, null]);
+    expect(etat.porte.accessoire).toBe(uid);
     expect(fusionnable(c, objetDe(etat, uid))).toBe(false); // pas de rareté supérieure pour cet objet
   });
 
   it('refusé (état inchangé) : rareté mélangée, id différent, légendaire, incomplet, doublon, inconnu ; « il manque N »', () => {
     const e = neuf();
-    expect(etatFusion(e, cat, ['o7', 'o8', 'o3'])).toMatchObject({ possible: false, raison: 'different' }); // Bottes commun ×2 + peu commune
-    expect(etatFusion(e, cat, ['o5', 'o6', 'o7'])).toMatchObject({ possible: false, raison: 'different' }); // Gilet ×2 + Bottes
-    expect(etatFusion(e, cat, ['o16'])).toMatchObject({ possible: false, raison: 'max', resultat: null }); // Couteau légendaire
-    expect(etatFusion(e, cat, ['o5', 'o6', null])).toMatchObject({ possible: false, manque: 1, raison: null, objet: 'gilet', rarete: 'commun', resultat: 'peu-commun' });
+    expect(etatFusion(e, cat, ['o7', 'o8', 'o3'])).toMatchObject({ possible: false, raison: 'different' }); // Rangers commun ×2 + peu communs
+    expect(etatFusion(e, cat, ['o5', 'o6', 'o7'])).toMatchObject({ possible: false, raison: 'different' }); // Gilet ×2 + Rangers
+    expect(etatFusion(e, cat, ['o16'])).toMatchObject({ possible: false, raison: 'max', resultat: null }); // Veste de combat légendaire
+    expect(etatFusion(e, cat, ['o5', 'o6', null])).toMatchObject({ possible: false, manque: 1, raison: null, objet: 'gilet-pare-balles', rarete: 'commun', resultat: 'peu-commun' });
     expect(etatFusion(e, cat, ['o5', 'o5', 'o6'])).toMatchObject({ possible: false, raison: 'double' });
     expect(etatFusion(e, cat, ['o5', 'zz', 'o6'])).toMatchObject({ possible: false, raison: 'inconnu' });
     expect(etatFusion(e, cat, [])).toMatchObject({ possible: false, manque: 3, raison: 'vide' });
@@ -256,9 +276,9 @@ describe('fusionner', () => {
     expect(identiques(e, 'o5').map((o) => o.uid)).toEqual(['o2', 'o5', 'o6']);
     expect(remplirAuto(e, cat, ['o2', null, null])).toEqual(['o2', 'o5', 'o6']);
     expect(remplirAuto(e, cat, [null, 'o6', null])).toEqual(['o5', 'o6', 'o2']); // le Gilet porté (o2) en dernier
-    // Sans objet placé : groupe de trois de la rareté la plus haute (Bague rare).
+    // Sans objet placé : groupe de trois de la rareté la plus haute (Montre de campagne rare).
     expect(remplirAuto(e, cat, [null, null, null])).toEqual(['o13', 'o14', 'o15']);
-    expect(remplirAuto(e, cat, ['o11', null, null])).toEqual(['o11', null, null]); // Gants rare : seul exemplaire
+    expect(remplirAuto(e, cat, ['o11', null, null])).toEqual(['o11', null, null]); // Gants de sapeur rares : seul exemplaire
   });
 });
 

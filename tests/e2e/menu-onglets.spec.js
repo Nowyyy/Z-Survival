@@ -1,11 +1,12 @@
 // Lot 8b : onglets Jouer (scène animée, record, portes, panneaux, monde suivant) et Infini (cartes, classement d'exemple, mode infini réel) du
 // menu principal (Docs/ref/menu-principal.md). ?test=1&menu=1 ; 932 × 430 (référence), 667 × 375, 1440 × 900 ; projets bureau et mobile (paysage).
 import { test, expect } from '@playwright/test';
+import { poserProgression } from './helpers.js';
 import AxeBuilder from '@axe-core/playwright';
 
 const REF = { width: 932, height: 430 };
 const SIZES = [REF, { width: 667, height: 375 }, { width: 1440, height: 900 }];
-const KEY = 'zs.save.v1';
+const KEY = 'zs.save.v2'; // lot 8h : progression v2 (zs.save.v1 n'est plus lue)
 const BRUIT = /GL Driver Message|GPU stall|swiftshader|WebGL/i; // messages du rendu logiciel de Chromium, sans rapport avec la page
 
 function surveiller(page, baseURL) {
@@ -25,7 +26,7 @@ async function poserRecord(page, bestWave) {
   await page.addInitScript(([k, n]) => {
     if (sessionStorage.getItem('zs.test.pose')) return; // une seule fois : les rechargements gardent ce que le jeu a écrit
     sessionStorage.setItem('zs.test.pose', '1');
-    localStorage.setItem(k, JSON.stringify({ v: 1, rev: 1, savedAt: 0, money: 0, earned: 0, records: { bestWave: n, bestKills: 0, runs: 1, worldsCompleted: 0 } }));
+    localStorage.setItem(k, JSON.stringify({ v: 2, rev: 1, savedAt: 0, records: { histoire: { batiment: n }, infini: {} }, profil: { partiesHistoire: 1 } })); // lot 8h : record de l'histoire du bâtiment
   }, [KEY, bestWave]);
 }
 
@@ -322,7 +323,7 @@ test.describe('onglet Infini (E8-4) et mode infini', () => {
     await page.locator('#menu-carte-monde-3').click({ force: true }); // aria-disabled : Playwright ne clique pas sans force
     expect(await libelles(page)).toEqual(['Monde 1 · Choisie', ...[2, 3, 4, 5, 6].map((n) => `Monde ${n} · Verrouillée`)]);
     await expect(page.locator('#menu-carte-batiment')).toHaveAttribute('aria-pressed', 'true');
-    expect((await page.evaluate(() => window.__zsMenu.etat().menu)).infini).toEqual({ choisi: 'batiment' });
+    expect((await page.evaluate(() => window.__zsMenu.etat().menu)).infini).toEqual({ choisi: 'batiment', record: null }); // lot 8h : record de l'infini de la carte (aucun ici)
     // Retour à Jouer puis à Infini : même écran, même choix.
     await page.locator('#menu-onglet-jouer').click();
     await page.locator('#menu-onglet-infini').click();
@@ -396,6 +397,7 @@ test.describe('onglet Infini (E8-4) et mode infini', () => {
       const page = await context.newPage();
       // Onglet « caché » : la boucle d'images ne tourne pas, seul step() fait avancer la partie (méthode de trace-logique.mjs).
       await page.addInitScript(() => Object.defineProperty(Document.prototype, 'hidden', { get: () => true, configurable: true }));
+      if (viaMenu) await poserProgression(page); // lot 8h : équipement de démonstration (nouveau joueur : rien d'équipé)
       await page.goto(url);
       if (viaMenu) {
         await expect(page.locator('#menu-jouer')).toBeVisible({ timeout: 60_000 });
@@ -423,7 +425,7 @@ test.describe('onglet Infini (E8-4) et mode infini', () => {
       await context.close();
       return r;
     }
-    const infini = await partie('/jeu.html?test=1&menu=1&seed=5', true);
+    const infini = await partie('/jeu.html?test=1&menu=1&seed=5&store=local', true);
     const lvl = Object.entries(infini.niveaux).map(([k, v]) => `${k}:${v}`).join(',');
     const endless = await partie(`/jeu.html?test=1&seed=5&endless=1&lvl=${lvl}`, false);
     expect([endless.mode, endless.readOnly, infini.mode, infini.readOnly]).toEqual(['histoire', true, 'infini', false]);
@@ -438,7 +440,27 @@ test.describe('onglet Infini (E8-4) et mode infini', () => {
     expect(ecart, `premier écart au pas ${ecart}`).toBe(-1);
   });
 
-  test('?store=local : visite du menu sans écriture ; en mode infini, l\'argent gagné est écrit comme dans une partie normale, le record n\'est pas gardé', async ({ page }) => {
+  // Lot 8h : record de l'infini par carte (progression v2), séparé de celui de l'histoire : sur la carte et sur la ligne « Toi » du classement.
+  test('?store=local : record de l\'infini de la carte lu dans zs.save.v2 (« Record : manche 23 », « Toi » : manche 23) ; carte sans record : « Record : — » ; aucune écriture', async ({ page }) => {
+    await page.addInitScript((k) => {
+      if (!sessionStorage.getItem('zs.test.pose')) {
+        sessionStorage.setItem('zs.test.pose', '1');
+        localStorage.setItem(k, JSON.stringify({ v: 2, rev: 1, savedAt: 0, records: { histoire: { batiment: 7 }, infini: { batiment: 23 } } }));
+      }
+      window.__ecritures = [];
+      const set = Storage.prototype.setItem;
+      Storage.prototype.setItem = function (cle, v) { if (cle !== 'zs.test.pose') window.__ecritures.push(cle); return set.call(this, cle, v); };
+    }, KEY);
+    await ouvrirInfini(page, REF, '&store=local');
+    await expect(page.locator('#menu-carte-batiment .e8-infini-carte-detail')).toHaveText('Record : manche 23');
+    await expect(page.locator('#menu-classement-toi-manche')).toHaveText('Manche 23');
+    await expect(page.locator('#menu-jouer-record')).toHaveText('Record : manche 7 / 40'); // l'onglet Jouer garde celui de l'histoire
+    expect((await page.evaluate(() => window.__zsMenu.etat().menu.infini))).toMatchObject({ choisi: 'batiment', record: 23 });
+    expect(await page.evaluate(() => window.__ecritures)).toEqual([]);
+    await page.evaluate(() => { localStorage.clear(); sessionStorage.clear(); });
+  });
+
+  test('?store=local : visite du menu sans écriture ; en mode infini (lot 8h), la bleue des manches est écrite, la jaune jamais, le record de l\'infini est séparé de celui de l\'histoire', async ({ page }) => {
     test.setTimeout(150_000);
     await poserRecord(page, 12);
     await page.addInitScript(() => {
@@ -460,15 +482,16 @@ test.describe('onglet Infini (E8-4) et mode infini', () => {
       const zs = window.__zs;
       zs.giveMoney(77);
       zs.startWave(15);
+      for (let i = 0; i < 400 && zs.getState().waves.phase === 'attente'; i += 1) zs.step(0.05); // la manche 15 démarre vraiment (partie infini comptée)
       for (let i = 0; i < 400 && zs.getState().waves.wave < 16; i += 1) { zs.skipWave(); zs.step(0.05); }
       zs.flushSave();
       return { s: JSON.parse(localStorage.getItem(k)), vague: zs.getState().waves.wave };
     }, KEY);
     expect(apres.vague).toBe(16);
-    expect(apres.s.money).toBeGreaterThanOrEqual(77); // argent gardé comme dans une partie normale (gain de test et bonus de manche)
-    expect(apres.s.earned).toBe(apres.s.money);
-    expect(apres.s.records.bestWave).toBe(12); // record du mode infini pas encore gardé (lot 8h) : celui de l'histoire reste
-    expect(apres.s.rev).toBeGreaterThan(1); // écrit dans zs.save.v1 (révision suivante)
+    expect(apres.s.bleu.gagne).toBe(60); // bonus bleu de la manche 15, renforcée : (10 + 2 × 15) × 1,5 ; la jaune (77) n'est jamais écrite
+    expect(apres.s.records).toEqual({ histoire: { batiment: 12 }, infini: { batiment: 15 } }); // record de l'infini de la carte jouée (le monde 2 n'est pas jouable : le bâtiment) = dernière manche démarrée ; celui de l'histoire reste
+    expect(apres.s.profil.partiesInfini).toBe(1);
+    expect(apres.s.rev).toBeGreaterThan(1); // écrit dans zs.save.v2 (révision suivante)
     await page.evaluate(() => localStorage.clear());
   });
 });

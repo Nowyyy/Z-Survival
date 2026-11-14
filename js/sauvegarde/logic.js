@@ -1,6 +1,8 @@
 // Logique pure de la page sauvegarde.html (lot 4) : messages d'erreur du code, texte de l'état, aperçu d'un import, confirmation en deux temps.
 // Aucun accès au DOM ni au stockage. Les clés de fr.json sont écrites en toutes lettres (pas de clé orpheline).
-import { ERROR_CODES, RECORD_KEYS, STAT_KEYS, describeSave } from '../core/save.js';
+// Lot 8h : la page montre la progression v2 (zs.save.v2, js/core/progression.js) ; les lignes de l'aperçu viennent de decrire().
+import { ERROR_CODES, STAT_KEYS } from '../core/save.js';
+import { decrire, MODES } from '../core/progression.js';
 
 // Clé de fr.json du message de chaque code d'erreur du codec (un code inconnu donne le message de « bad-schema »).
 export const ERROR_KEYS = {
@@ -38,7 +40,13 @@ export const STAT_NAME_KEYS = {
 export const RECORD_NAME_KEYS = {
   bestWave: 'game.save.page.record.bestWave', bestKills: 'game.save.page.record.bestKills', runs: 'game.save.page.record.runs', worldsCompleted: 'game.save.page.record.worldsCompleted',
 };
-export const ROW_NAME_KEYS = { money: 'game.save.page.import.row.money', earned: 'game.save.page.import.row.earned', levelsSum: 'game.save.page.import.row.levelsSum' };
+export const ROW_NAME_KEYS = {
+  money: 'game.save.page.import.row.money', earned: 'game.save.page.import.row.earned', levelsSum: 'game.save.page.import.row.levelsSum',
+  objets: 'game.save.page.import.row.objets', persos: 'game.save.page.import.row.persos', tenues: 'game.save.page.import.row.tenues', mondes: 'game.save.page.import.row.mondes',
+  tues: 'game.save.page.import.row.tues', parties: 'game.save.page.import.row.parties',
+};
+// Record d'un mode (histoire, infini) et d'un monde : clé du texte (le monde est passé en paramètre {monde}).
+export const MODE_RECORD_KEYS = { histoire: 'game.save.page.record.histoire', infini: 'game.save.page.record.infini' };
 export const statKey = (id) => STAT_NAME_KEYS[id] ?? STAT_NAME_KEYS.degats;
 export const recordKey = (id) => RECORD_NAME_KEYS[id] ?? RECORD_NAME_KEYS.bestWave;
 // Clé du nom d'une ligne de l'aperçu : solde, total gagné, somme des niveaux ou record.
@@ -47,22 +55,32 @@ export const rowKey = (id) => ROW_NAME_KEYS[id] ?? recordKey(id);
 // Date de la dernière écriture : null quand elle manque (affichage « jamais »).
 export const savedAtDate = (ms) => (Number.isInteger(ms) && ms > 0 && ms < 8.64e15 ? new Date(ms) : null);
 
-// Aperçu d'un import comparé à la sauvegarde actuelle : lignes { id, group, current, incoming, changed } (solde, total gagné, somme des niveaux, records).
-export function previewRows(current, incoming) {
-  const a = describeSave(current);
-  const b = describeSave(incoming);
+// Aperçu d'un import comparé à la progression actuelle : lignes { id, group, current, incoming, changed, mode?, monde? } (monnaie bleue, total gagné,
+// objets, personnages, tenues, somme des niveaux, mondes terminés, zombies tués, parties, puis un record par mode et par monde).
+export function previewRows(current, incoming, params) {
+  const a = decrire(current, params);
+  const b = decrire(incoming, params);
   const rows = [
-    { id: 'money', group: 'money', current: a.money, incoming: b.money },
-    { id: 'earned', group: 'money', current: a.earned, incoming: b.earned },
-    { id: 'levelsSum', group: 'levels', current: a.levelsSum, incoming: b.levelsSum },
+    { id: 'money', group: 'money', current: a.solde, incoming: b.solde },
+    { id: 'earned', group: 'money', current: a.gagne, incoming: b.gagne },
+    { id: 'objets', group: 'menu', current: a.objets, incoming: b.objets },
+    { id: 'persos', group: 'menu', current: a.persos, incoming: b.persos },
+    { id: 'tenues', group: 'menu', current: a.tenues, incoming: b.tenues },
+    { id: 'levelsSum', group: 'levels', current: a.niveaux, incoming: b.niveaux },
+    { id: 'mondes', group: 'profil', current: a.mondes, incoming: b.mondes },
+    { id: 'tues', group: 'profil', current: a.tues, incoming: b.tues },
+    { id: 'parties', group: 'profil', current: a.parties, incoming: b.parties },
   ];
-  for (const key of RECORD_KEYS) rows.push({ id: key, group: 'records', current: a.records[key], incoming: b.records[key] });
+  for (const mode of MODES) {
+    const mondes = [...new Set([...Object.keys(a.records[mode]), ...Object.keys(b.records[mode])])].sort();
+    for (const monde of mondes) rows.push({ id: `${mode}.${monde}`, group: 'records', mode, monde, current: a.records[mode][monde] ?? 0, incoming: b.records[mode][monde] ?? 0 });
+  }
   return rows.map((row) => ({ ...row, changed: row.current !== row.incoming }));
 }
 
-// Niveaux détaillés des deux sauvegardes : [{ id, current, incoming, changed }] pour les neuf statistiques.
+// Niveaux de base détaillés des deux progressions : [{ id, current, incoming, changed }] pour les neuf statistiques.
 export function levelRows(current, incoming) {
-  const get = (save, id) => (Number.isInteger(save?.stats?.[id]) && save.stats[id] > 0 ? save.stats[id] : 0);
+  const get = (save, id) => (Number.isInteger(save?.niveaux?.[id]) && save.niveaux[id] > 0 ? save.niveaux[id] : 0);
   return STAT_KEYS.map((id) => ({ id, current: get(current, id), incoming: get(incoming, id), changed: get(current, id) !== get(incoming, id) }));
 }
 

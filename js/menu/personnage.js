@@ -1,12 +1,12 @@
 // Lot 8d : écran Personnage (E9-1, maquette Docs/maquettes-v0.8/Personnage.html ; Docs/ref/menu-principal.md), chargé à la demande au premier
 // affichage de l'onglet Personnage. Personnage animé au centre (silhouette SVG de sa teinte, sous un projecteur qui grésille ; animations e9-*, en pause
-// hors de l'écran ou page cachée, coupées sous prefers-reduced-motion) : le toucher ouvre Personnages ; six emplacements (arme, tenue, gants à gauche ;
-// bottes et deux accessoires à droite) : en toucher un ouvre l'Inventaire filtré sur son type ; encart de capacité (ouvre Personnages) ; statistiques
-// effectives (js/core/equipement.js : sauvegarde + objets portés + capacité) ; boutons Inventaire et Fusion. Sous-menus (écrans pleins, en-tête gardé,
-// onglets masqués) : js/menu/inventaire.js, fusion.js, personnages.js, chargés à leur première ouverture. État en mémoire (equipement-etat.js) :
-// rien n'est écrit dans le stockage jusqu'au lot 8h.
+// hors de l'écran ou page cachée, coupées sous prefers-reduced-motion) : le toucher ouvre Personnages ; lot 8h : six emplacements de survie (Tête,
+// Gants, Bottes à gauche ; Torse, Accessoire, Pantalon à droite) : en toucher un ouvre l'Inventaire filtré sur son type ; encart de capacité (ouvre
+// Personnages) ; statistiques effectives que l'équipement peut changer (vie, vitesse, réparation, régénération : js/core/equipement.js) ; boutons
+// Inventaire et Fusion. Sous-menus (écrans pleins, en-tête gardé, onglets masqués) : js/menu/inventaire.js, fusion.js, personnages.js, chargés à leur
+// première ouverture. État : progression v2 (equipement-etat.js), écrite à chaque geste.
 import { pendant } from './roue.js';
-import { EMPLACEMENTS, definition, emplacementDe, objetDe, personnageDe, typeEmplacement } from '../core/equipement.js';
+import { EMPLACEMENTS, STATS_SURVIE, definition, emplacementDe, objetDe, personnageDe, typeEmplacement } from '../core/equipement.js';
 import { fmt } from '../game/texts.js';
 import { el } from './menu.js';
 import { chargerEquipement } from './equipement-etat.js';
@@ -15,11 +15,14 @@ const SVG = 'http://www.w3.org/2000/svg';
 
 // Icônes 24 × 24 au trait (maquettes), décoratives.
 const ICONES = {
-  arme: 'M3 9h14l2 2v2h-8l-1 4H7l1-4H3z',
-  tenue: 'M8 3l4 3 4-3 3 3v15H5V6z',
+  // Lot 8h : six emplacements de survie (thème militaire) : casque, gilet, gants, pantalon, rangers, plaques d'identité.
+  tete: 'M4 15a8 8 0 0 1 16 0v2H4zM2 17h20M9 7.4V5h6v2.4',
+  torse: 'M8 3l4 2 4-2 3 3v15H5V6zM9 11h6M9 15h6',
   gants: 'M7 21v-9l1-7h2v6l1-7h2v7l1-6h2v7l1-3h2v8c0 3-2 4-5 4z',
+  pantalon: 'M6 3h12l1 18h-5l-2-11-2 11H5zM6 7h12',
   bottes: 'M7 3h5v10l7 3v5H5V3z',
-  accessoire: 'M12 3l3 4-3 3-3-3zM12 10a5 5 0 1 0 0.01 0z',
+  accessoire: 'M8 6h5v8H8zM11 14l2 6h4l-2-6zM10.5 6V3h1M13 9l4-5',
+  tenue: 'M8 3l4 3 4-3 3 3v15H5V6z', // tenues (cosmétiques de la Boutique)
   inventaire: 'M5 8h14l-1 13H6zM9 8V6a3 3 0 0 1 6 0v2',
   fusion: 'M3 4h5v5H3zM3 15h5v5H3zM15 9h6v6h-6zM8 6.5l7 4.5M8 17.5l7-4.5',
   chevron: 'M15 6l-6 6 6 6',
@@ -91,13 +94,17 @@ export function poserTeinte(n, perso) {
 }
 
 // Textes partagés par les sous-menus.
-export const TYPE_TEXTES = { arme: 'game.menu.perso.type.arme', tenue: 'game.menu.perso.type.tenue', gants: 'game.menu.perso.type.gants', bottes: 'game.menu.perso.type.bottes', accessoire: 'game.menu.perso.type.accessoire' };
+export const TYPE_TEXTES = {
+  tete: 'game.menu.perso.type.tete', torse: 'game.menu.perso.type.torse', gants: 'game.menu.perso.type.gants', pantalon: 'game.menu.perso.type.pantalon',
+  bottes: 'game.menu.perso.type.bottes', accessoire: 'game.menu.perso.type.accessoire',
+};
 export const STAT_TEXTES = {
   degats: 'game.menu.perso.stat.degats', portee: 'game.menu.perso.stat.portee', precision: 'game.menu.perso.stat.precision', cadence: 'game.menu.perso.stat.cadence',
   vitesse: 'game.menu.perso.stat.vitesse', vie: 'game.menu.perso.stat.vie', regen: 'game.menu.perso.stat.regen', chutes: 'game.menu.perso.stat.chutes', reparation: 'game.menu.perso.stat.reparation',
 };
-// Statistiques affichées sous la colonne de gauche (et dans Personnages) : les quatre de la maquette, puis portée et précision (trois rangées).
-export const STATS_AFFICHEES = ['degats', 'vie', 'cadence', 'vitesse', 'portee', 'precision'];
+// Statistiques affichées sous la colonne de gauche (et dans Personnages) : lot 8h, celles que l'équipement peut changer (vie, vitesse, réparation,
+// régénération ; ni attaque ni chutes), deux rangées, à toutes les tailles.
+export const STATS_AFFICHEES = [...STATS_SURVIE];
 export const nombre = (n) => (Number.isFinite(n) ? n.toLocaleString('fr-FR', { maximumFractionDigits: 2 }) : '');
 export const nomRarete = (cat, rid) => cat.raretes.find((r) => r.id === rid)?.nom ?? '';
 export const nomObjet = (cat, o) => cat.objets.get(o?.id)?.nom ?? '';
@@ -187,7 +194,7 @@ export async function ecranPersonnage({ t, bandeau, niveaux = null, statsCfg = n
   const etiquette = el('span', ['e9-etiquette'], { 'aria-hidden': 'true' });
   etiquette.textContent = t('game.menu.perso.toucher');
 
-  // Emplacements : deux colonnes de trois (gauche : arme, tenue, gants ; droite : bottes, accessoires).
+  // Emplacements : deux colonnes de trois (lot 8h : gauche Tête, Gants, Bottes ; droite Torse, Accessoire, Pantalon).
   const boutons = new Map();
   const colonne = (ids, cle, id) => {
     const col = el('div', ['e9-colonne'], { id });
@@ -246,7 +253,10 @@ export async function ecranPersonnage({ t, bandeau, niveaux = null, statsCfg = n
       if (o) {
         b.dataset.rarete = o.rarete;
         ligne.textContent = fmt(t('game.menu.perso.ligne'), { type, rarete: nomRarete(cat, o.rarete) });
-        nom.textContent = fmt(t('game.menu.perso.objet.niveau'), { nom: nomObjet(cat, o), n: o.niveau });
+        // Lot 8h : noms militaires plus longs : le nom se coupe (points de suspension) avant le niveau, toujours visible ; texte entier lu.
+        const complet = fmt(t('game.menu.perso.objet.niveau'), { nom: nomObjet(cat, o), n: o.niveau });
+        const i = complet.lastIndexOf(nomObjet(cat, o)) + nomObjet(cat, o).length;
+        nom.replaceChildren(Object.assign(el('span', ['e9-emplacement-nom-texte']), { textContent: complet.slice(0, i) }), Object.assign(el('span', ['e9-emplacement-niveau']), { textContent: complet.slice(i) }));
       } else {
         delete b.dataset.rarete;
         ligne.textContent = fmt(t('game.menu.perso.ligne'), { type, rarete: t('game.menu.perso.vide') });

@@ -86,14 +86,23 @@ describe('chargeur : chargé par défaut (lot 5e : aussi avec ?perso=actuel&sang
 });
 
 describe('fichiers du jeu modifiés : liste fermée, 40 lignes au plus chacun', () => {
-  it('données de logique inchangées (ennemis, allures, armes, joueur, vagues, fenêtres, statistiques, économie, sauvegarde)', () => {
+  it('données de logique inchangées (ennemis, allures, armes, joueur, vagues, fenêtres, statistiques ; économie et sauvegarde : valeurs existantes inchangées)', () => {
     // Lot 3m-A : dans lot-4b, comparées à la base de la branche d'intégration (le lot 4 a changé economy.json, enemies.json, save.json depuis main).
     // Lot 4e : origin/lot-4b n'existe plus et la branche locale « main » peut être périmée : base = celle de la branche avec origin/main
     // (à jour après git fetch), sinon origin/dev, sinon main ; sans historique (CI superficielle), rien à comparer.
     const base = git('merge-base HEAD origin/main')?.trim() || git('merge-base HEAD origin/dev')?.trim() || 'main';
-    const changed = git(`diff --name-only ${base} -- data/game/enemies.json data/game/gaits.json data/game/weapons.json data/game/player.json data/game/waves.json data/game/windows.json data/game/player-stats.json data/game/economy.json data/game/save.json data/game/player-down.json data/game/stairs.json`);
+    const changed = git(`diff --name-only ${base} -- data/game/enemies.json data/game/gaits.json data/game/weapons.json data/game/player.json data/game/waves.json data/game/windows.json data/game/player-stats.json data/game/player-down.json data/game/stairs.json`);
     if (changed === null) return;
     expect(changed.trim()).toBe('');
+    // Lot 8h (autorisé par le prompt du lot : gains de la monnaie bleue, section v2 de la sauvegarde) : economy.json et save.json peuvent recevoir des
+    // clés nouvelles et un texte _provisoire nouveau, jamais une valeur existante changée ni une clé retirée.
+    for (const f of ['data/game/economy.json', 'data/game/save.json']) {
+      const avant = git(`show ${base}:${f}`);
+      if (avant === null) continue;
+      const a = JSON.parse(avant);
+      const b = JSON.parse(readFileSync(f, 'utf8'));
+      for (const k of Object.keys(a).filter((x) => !x.startsWith('_'))) expect(b[k], `${f} : ${k}`).toEqual(a[k]);
+    }
   });
 });
 
