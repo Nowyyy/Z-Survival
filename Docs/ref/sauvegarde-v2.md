@@ -2,6 +2,22 @@
 
 État : **plan (partie A)**, écrit avant tout changement de code, sur la base `origin/dev` `ed0aa8d` (branche `lot-8h`). Rien n'est codé avant le « GO 8h » du propriétaire ; ses réponses iront dans « Décisions au GO » et primeront sur ce plan. Les noms de branches, de fichiers, de clés et le contenu des anciennes versions sont des données.
 
+## 0. Réponses du propriétaire (2026-11-14, avant le GO) — elles priment sur la suite du plan
+| Question | Réponse | Effet sur le plan |
+|---|---|---|
+| 1. Niveaux de base | « c'est quoi ? » (expliqué : les 9 niveaux de `stats` de `zs.save.v1`, 0 à 10, qu'aucun écran n'achète) | gardés dans le format (`niveaux`, tous à 0) pour un futur achat ; **à confirmer au GO** avec la réponse 3 |
+| 2. Achats avec l'argent | la jaune : à ajouter dans un prochain lot | aucun achat en jaune dans ce lot (déjà prévu : lot 6) |
+| 3. Suivi de la V0.7 | « on peut repartir de 0 » | **lecture retenue (à confirmer au GO)** : tout le monde repart de zéro dans la V0.8 ; `zs.save.v1` n'est **ni lue ni écrite** par la V0.8 (ni migration ni suivi) ; niveaux et records à 0 |
+| 4. Import `ZS1` | remplacer | un code `ZS1` **remplace** la progression v2 (niveaux et record du code, 0 bleu, inventaire vide), après aperçu et case à cocher |
+| 5. Son dans `zs.device.v1` | la V0.7 reste pour l'historique, peu importe ce qui n'y marche plus | `{ v: 2, …, son }` gardé (le plus simple ; la V0.7 démarre toujours) ; le test de compatibilité V0.7 → V0.8 → V0.7 est gardé, réduit à « démarre, garde sa propre progression, joue » |
+| 6. Plafond de l'inventaire | 100 dans un premier temps | `inventaireMax` 100 (`data/menu/objets.json`) ; caisse refusée « Inventaire plein » ; ×10 exige 10 places ; pire cas environ 8 Ko |
+| 7. Second bonus | à partir de la couleur violette | second bonus **dès l'épique** (violet, `--rarete-epique`) et au légendaire seulement |
+| 8. Statistiques | « c'est quoi ? » | expliquées en 6 ; **choix des quatre à confirmer au GO** |
+| 9. Outils de débogage | une petite icône à côté du menu à trois barres et du bouton plein écran | icône « Débogage » dans l'en-tête du menu (44 px, canaux `source` et `dev` seulement), qui ouvre les quatre outils |
+| 10. `jeu.html` | modifs permises (ou prochain lot si pas important pour la sauvegarde) | `jeu.html` modifié **dans ce lot**, seulement pour le « +N » bleu du HUD et les lignes de la fin de partie E2-7 (affichage des monnaies) |
+| 11. Décor armé | faire varier l'équipement : prochain lot | silhouette et ouverture 3D inchangées ; équipement visible sur le personnage → « Idées » |
+| 12. Record infini | meilleure manche par carte | `records.infini.<carte>` |
+
 ## 1. Relevé
 
 ### 1.1 Stockage actuel (`origin/dev` = code de la V0.7 pour tout `js/save/` et `js/core/save.js`, aucune différence)
@@ -39,14 +55,14 @@ Site assemblé comme en ligne (`scripts/site/local.mjs --main origin/main --dev 
 ### 1.4 Argent : gains et dépenses
 - **Gains** (`js/core/economy.js`, `bank.js`, `game.js`) : zombie tué par balle 10 (`kill`, game.js:609) ; planche posée 1 (`repair`, :650) ; fin de manche `round((10 + 2 × manche) × (renforcée ? 1,5 : 1))` (`waveEnd`, :717, une fois par manche) ; fin de monde 500 (`worldEnd`, :807, une fois par partie) ; essai `giveMoney` (tests). Rien d'autre.
 - **Dépenses** : **aucune, nulle part**. Ni en partie, ni entre deux parties, ni dans le menu : les prix (caisses, offres, amélioration d'objet, fusion, amélioration de personnage) sont affichés sans comparaison au solde ni prélèvement.
-- **Niveaux de base** (`save.stats`, 9 clés) : **aucun écran, aucun prix, aucun achat** ; ils ne changent que par l'import d'un code, `?lvl=` (lecture seule) et `__zs.setLevels` (tests). `player-stats.json` le dit : « le prix des niveaux viendra avec la boutique ». Avec une jaune remise à 0, rien ne change donc pour eux (question 1).
+- **Niveaux de base** (`save.stats`, 9 clés) : **aucun écran, aucun prix, aucun achat** ; ils ne changent que par l'import d'un code, `?lvl=` (lecture seule) et `__zs.setLevels` (tests). `player-stats.json` le dit : « le prix des niveaux viendra avec la boutique ». Avec une jaune remise à 0, rien ne change donc pour eux (réponses 1 et 3 : repartent de 0).
 - **Affichages** : HUD `#hud-money-text` (solde = `saved.money` + en attente) et `#hud-gain` (« +N » agrégé 1,2 s) ; pause « Solde » ; fin E2-7 (`ui.showEnd`) : tués, manche, « Argent gagné », bonus du monde, « Solde », « Meilleure manche », étoile de record, état ; en-tête du menu : `save.money` lu une fois ; Profil « argent » = `earned`.
 - **Défaut relevé** : en infini (option du menu), `runEnd` compare la manche au record de l'histoire : l'écran de fin peut annoncer un record qui n'est pas gardé. Corrigé par les records séparés (partie E).
 
 ### 1.5 Équipement (armes, emplacements)
 - `objets.json` : 13 objets, types `arme` (pistolet : dégâts ; revolver : dégâts + portée ; couteau : vitesse + dégâts), `tenue` (gilet : vie ; blouson : vie + régén.), `gants` (gants : **cadence** ; mitaines : réparation + **cadence**), `bottes` (bottes : vitesse ; rangers : vitesse + chutes), `accessoire` (casquette : **précision** ; bague : régén. ; amulette : vie ; montre : réparation). Chaque objet a les 5 raretés (bonus 1 à 5, niveau max 5 à 25, amélioration 40 à 640).
 - `equipement.js` : `TYPES` et `EMPLACEMENTS = ['arme','tenue','gants','bottes','accessoire1','accessoire2']` (deux accessoires codés en dur) ; uid `c<N>` (caisse) et `f<N>` (fusion), compteur `suivant` commun.
-- Armes présentes : inventaire (filtre « arme »), caisses d'équipement (tout le catalogue), offres du jour (tout le catalogue), fusion (`compatibles`, `remplirAuto`), écran Personnage (emplacement `arme`, `STATS_AFFICHEES` = dégâts, vie, cadence, vitesse, portée, précision), `inventaire-depart.json` (pistolet porté, couteau légendaire), « Voir les chances », icônes des offres et des résultats. Décor sans lien avec le catalogue : silhouette armée de l'écran Personnage, fusil tenu pendant l'ouverture 3D (question 11).
+- Armes présentes : inventaire (filtre « arme »), caisses d'équipement (tout le catalogue), offres du jour (tout le catalogue), fusion (`compatibles`, `remplirAuto`), écran Personnage (emplacement `arme`, `STATS_AFFICHEES` = dégâts, vie, cadence, vitesse, portée, précision), `inventaire-depart.json` (pistolet porté, couteau légendaire), « Voir les chances », icônes des offres et des résultats. Décor sans lien avec le catalogue : silhouette armée de l'écran Personnage, fusil tenu pendant l'ouverture 3D (réponse 11 : inchangés ; équipement visible au prochain lot).
 - Clés de statistiques (`player-stats.json`, lecture seule) : attaque `degats`, `portee`, `precision`, `cadence` ; survie `vie`, `vitesse`, `regen`, `chutes` (max 5), `reparation` (max 10).
 - Tirage : `caisses.js` (mulberry32 de `rng.js`, graine `crypto` par achat) ; offres du jour : graine du numéro de jour local. Retirer les armes **change les offres de chaque jour** (catalogue différent) mais le tirage reste identique à graine et catalogue égaux.
 
@@ -73,8 +89,8 @@ Site assemblé comme en ligne (`scripts/site/local.mjs --main origin/main --dev 
 Lighthouse mobile (`npm run lighthouse`, 5 passes, médianes) : `index.html` performance **90** (90, 90, 90, 90, 90), accessibilité 100, bonnes pratiques 100, CLS 0,000 ; `jeu.html` performance **77** (77, 76, 76, 79, 78), accessibilité 100, bonnes pratiques 100, CLS 0,000 (au plus 0,001). Seuil du lot pour `jeu.html` : 72 au moins. **`index.html` est déjà au seuil (90)** : le seul jeton bleu de `tokens.css` devra être compensé en octets et mesuré (section 8, « Risques »).
 
 ## 2. Choix : option (a), nouvelle clé `zs.save.v2`
-- La V0.8 lit et écrit **`zs.save.v2`** (nouvelle clé, `data/game/save.json` : `storageKeyV2`, plafond 65 536 octets) ; elle **lit** `zs.save.v1` (migration et suivi) et **ne l'écrit jamais**. La V0.7 et les archives continuent d'écrire `zs.save.v1` comme avant : leur progression est intacte et elles restent jouables (E3).
-- **Pilier du seed qui change** : « une seule clé de progression `zs.save.v1` » devient « `zs.save.v1` (V0.7 et avant, lue par la V0.8, jamais écrite par elle) + `zs.save.v2` (V0.8) ». À réécrire par le propriétaire (bilan).
+- La V0.8 lit et écrit **`zs.save.v2`** (nouvelle clé, `data/game/save.json` : `storageKeyV2`, plafond 65 536 octets) ; d'après la réponse 3, elle **ne lit ni n'écrit** `zs.save.v1` (seul un code `ZS1` importé est encore compris). La V0.7 et les archives continuent d'écrire `zs.save.v1` comme avant : leur progression est intacte et elles restent jouables (E3).
+- **Pilier du seed qui change** : « une seule clé de progression `zs.save.v1` » devient « `zs.save.v1` (V0.7 et avant, ignorée par la V0.8) + `zs.save.v2` (V0.8, départ de zéro pour tous) ». À réécrire par le propriétaire (bilan).
 - Leçon pour la suite : la V0.8 **garde les champs inconnus de la racine** de `zs.save.v2` en réécrivant (dans la limite du plafond) : une V0.9 qui ajoute un champ sans changer `v` ne le perdra pas si la V0.8 réécrit après elle.
 - Canal entre onglets : `BroadcastChannel('zs.save.v2')` (celui de `zs.save.v1` reste aux anciennes versions).
 
@@ -96,27 +112,24 @@ Lighthouse mobile (`npm run lighthouse`, 5 passes, médianes) : `index.html` per
   "profil": { "avatar": "anonyme", "pseudo": null, "tues": 1203, "partiesHistoire": 31, "partiesInfini": 4, "tempsMs": 7260000 },
   "lues": ["info-8g-1"],                    // nouveautés lues (au plus 200)
   "dates": { "porte": 1794615500000, "choisi": 1794615400000, "avatar": 0, "pseudo": 0 }, // dates des choix (onglets : le plus récent gagne)
-  "journal": ["7a1c09e2", "p3f1.5"],        // 64 derniers identifiants d'opérations appliquées (idempotence entre onglets)
-  "v1": { "rev": 7 }                        // dernière zs.save.v1 suivie (migration et suivi)
+  "journal": ["7a1c09e2", "p3f1.5"]         // 64 derniers identifiants d'opérations appliquées (idempotence entre onglets)
 }
 ```
 - **Bleu gagné total** = `bleu.gagne`. Jamais de jaune, d'onglet affiché, de carte choisie ni de partie en cours.
-- **Taille** : typique (30 objets, 6 personnages) environ 2,5 Ko ; pire cas raisonnable (inventaire plein à 300 exemplaires, question 6) environ 21 Ko ; plafond 65 536 octets (au-delà : écriture refusée, message, rien n'est perdu de ce qui est déjà écrit).
+- **Taille** : typique (30 objets, 6 personnages) environ 2,5 Ko ; pire cas raisonnable (inventaire plein à 100 exemplaires, réponse 6) environ 8 Ko ; plafond 65 536 octets (au-delà : écriture refusée, message, rien n'est perdu de ce qui est déjà écrit).
 - **Exemplaires** : uid = 8 chiffres hexadécimaux tirés par `crypto` à chaque achat ou fusion + rang dans l'achat (`7a1c09e2.0` … `.9`) : uniques entre onglets (un uid déjà présent est retiré au tirage) ; les anciens `c<N>` / `f<N>` disparaissent avec l'état en mémoire.
 
 ### Migration, refus, réparation
 | Stockage trouvé | Résultat |
 |---|---|
 | vide | nouveau joueur : Survivant choisi, rien d'équipé, inventaire vide, 0 bleu ; **rien n'est écrit** tant que rien ne change |
-| `zs.save.v1` seule, lisible | joueur existant : `niveaux` = `stats` v1, `records.histoire.batiment` = `bestWave`, `mondes` = `["batiment"]` si `worldsCompleted` > 0, `profil.partiesHistoire` = `runs` ; argent **non converti** ; écrit à la première écriture |
-| `zs.save.v1` corrompue ou plus récente, pas de v2 | nouveau joueur (v1 laissée telle quelle, jamais écrite) ; message discret dans le Profil |
-| `zs.save.v2` lisible + `zs.save.v1` lisible | **suivi** (question 3) : niveaux = maximum des deux, record histoire du `batiment` = maximum ; idempotent, jamais d'addition |
+| `zs.save.v1` seule (lisible, corrompue ou plus récente) | **nouveau joueur** (réponse 3) ; `zs.save.v1` jamais lue ni écrite, laissée telle quelle pour la V0.7 |
 | `zs.save.v2` corrompue (JSON, racine, plus de 65 536 octets) | **verrouillée** : jouable (en mémoire), rien écrit, message ; `sauvegarde.html` montre le texte brut, l'import et « Repartir de zéro » |
 | `zs.save.v2` `v` > 2 | **refus sans effacement** : verrouillée, message « sauvegarde d'une version plus récente » |
 | stockage indisponible | partie et menu jouables en mémoire, rien écrit, message (comme aujourd'hui) |
 | champ invalide (type, bornes, id inconnu du catalogue, uid en double, emplacement incompatible) | **réparé champ par champ** : valeur par défaut de ce seul champ (objet inconnu retiré de l'inventaire et de l'équipement), avertissement listé dans `sauvegarde.html`, corrigé à la prochaine écriture ; jamais d'effacement silencieux du reste |
 | code `ZS2` importé | remplace la progression v2 (aperçu, case à cocher, comme `ZS1` aujourd'hui) |
-| code `ZS1` importé | migré comme une v1 ; **fusionné** par maximum (niveaux, record) sans effacer la progression v2 (question 4) |
+| code `ZS1` importé | migré comme une v1 (niveaux, `bestWave` → record histoire du `batiment`, `runs` → parties histoire, monde terminé) ; **remplace** la progression v2 (réponse 4), après aperçu et case à cocher ; argent non converti |
 
 ### Moments d'écriture (et seulement eux)
 - **Partie** (hors lecture seule, `?test=1` en mémoire) : manche terminée (bleu de la manche, tués, temps, record, partie comptée) **aussitôt** ; fin de monde ; fin de partie (mort, « Quitter », « Recommencer », « Rejouer ») ; pause, page cachée ou fermée (tués et temps seulement, s'ils ont changé). Plus d'écriture regroupée toutes les 2 s (la jaune n'est jamais écrite).
@@ -125,7 +138,7 @@ Lighthouse mobile (`npm run lighthouse`, 5 passes, médianes) : `index.html` per
 - Coût mesuré : voir 1.7 (≤ 1,3 ms à 20 Ko) ; garantie 9 vérifiée en partie C.
 
 ### Préférence d'appareil (`zs.device.v1`)
-`{ v: 2, graphics, custom, son: { coupe: false, jeu: 100, musique: 100 } }` : **même `v: 2`** pour que la V0.7 continue de lire et régler ses graphismes. Limite prouvée (E3) : un choix de graphismes **dans la V0.7** réécrit la clé sans `son` (son et volumes reviennent aux défauts dans la V0.8). L'autre voie (`v: 3`) verrouillerait les graphismes de la V0.7 (question 5).
+`{ v: 2, graphics, custom, son: { coupe: false, jeu: 100, musique: 100 } }` : **même `v: 2`** (réponse 5 : le plus simple). Limite prouvée (E3) et acceptée : un choix de graphismes **dans la V0.7** réécrit la clé sans `son` (son et volumes reviennent aux défauts dans la V0.8).
 
 ## 4. Plusieurs onglets : modèle
 On garde le mécanisme prouvé du lot 5o (relevés `{ by, base, value }` sur le canal, réécriture des opérations **certainement** absentes, `newerBase`) et on remplace la « différence d'argent » par des **opérations** à identifiant unique :
@@ -144,8 +157,8 @@ On garde le mécanisme prouvé du lot 5o (relevés `{ by, base, value }` sur le 
 ## 5. Deux monnaies
 - **Jaune** : journal de la banque (`kill` 10, `repair` 1, `test`) ; **remise à 0 à chaque partie** (début, Rejouer, Recommencer) ; jamais écrite ; HUD comme aujourd'hui ; aucun achat dans ce lot.
 - **Bleue** : `waveBonus` et `worldBonus` (valeurs actuelles, `economy.json` : `bleu.manche`, `bleu.parManche`, `bleu.renforcee`, `bleu.monde`, `bleu.max`) vont dans la bleue, en histoire **et** en infini ; écrite à chaque manche terminée ; plafond 9 999 999 ; solde de départ 0 pour tous.
-- **HUD** : jaune inchangée ; « +N » **bleu** discret (élément créé par `hud.js`, icône bleue en code, jeton `--…-bleu`, `aria-live` poli) à chaque manche terminée qui rapporte ; mouvement réduit : sans animation.
-- **E2-7** : « Monnaie jaune perdue : N », « Monnaie bleue gagnée : N », « Solde bleu : N » (lignes créées par `ui.js`, question 10) ; record du mode joué.
+- **HUD** : jaune inchangée ; « +N » **bleu** discret (élément ajouté dans `jeu.html`, rempli par `hud.js`, icône bleue en code, jeton `--…-bleu`, `aria-live` poli) à chaque manche terminée qui rapporte ; mouvement réduit : sans animation.
+- **E2-7** : « Monnaie jaune perdue : N », « Monnaie bleue gagnée : N », « Solde bleu : N » (lignes ajoutées dans `jeu.html` et remplies par `ui.js`, réponse 10) ; record du mode joué.
 - **En-tête du menu** : solde bleu seul, icône bleue dessinée en code, nom accessible « Monnaie bleue : N » ; mis à jour après chaque achat et sur l'événement du stockage.
 - **Mode essai, `?test=1`, `?endless=1`** : n'écrivent toujours rien (dépôt en lecture seule ou en mémoire, comme aujourd'hui).
 - **Trace logique** : on garde la forme de `getState().economy` pour la jaune ; la bleue va sous `getState().save` (hors empreinte). Champs d'argent : `economy.earnedRun`, `economy.killsRun`, `economy.byKind.*`, `economy.gainText` ; `byKind.wave` et `byKind.world` passent à 0 (aucune fin de manche dans les 6 scénarios). Seconde empreinte calculée sans `economy` : identique exigée ; la première devrait l'être aussi.
@@ -171,39 +184,30 @@ On garde le mécanisme prouvé du lot 5o (relevés `{ by, base, value }` sur le 
 | `trousse-secours` | Trousse de secours | accessoire | regen | vie |
 | `boussole` | Boussole | accessoire | chutes | — |
 | `masque-gaz` | Masque à gaz | accessoire | vie | regen |
-Bonus : principal 1 à 5 (+0,2 à +0,4 par niveau), secondaire 1, 1, 2, 2 (question 7) ; aucun `degats`, `cadence`, `portee`, `precision` (test Vitest). Caisses d'objets : mêmes chances, toutes les raretés tirables (16 objets × 5 raretés). Offres du jour sur ce catalogue.
+Bonus : principal 1 à 5 (+0,2 à +0,4 par niveau) ; secondaire **à l'épique et au légendaire seulement** (2, puis 2 ; +0,2 par niveau ; réponse 7) ; aucun `degats`, `cadence`, `portee`, `precision` (test Vitest). Caisses d'objets : mêmes chances, toutes les raretés tirables (16 objets × 5 raretés). Offres du jour sur ce catalogue.
 
 ### Écran Personnage
 - `EMPLACEMENTS = ['tete','gants','bottes','torse','accessoire','pantalon']` : colonne gauche Tête, Gants, Bottes ; droite Torse, Accessoire, Pantalon ; icônes en code (casque, gants, rangers, gilet, plaques, pantalon). Filtres de l'inventaire : Tout + un par emplacement (7 boutons, défilement horizontal à 667 px).
-- Statistiques affichées : vie, vitesse, réparation, régénération, chutes ; resserré (667 × 375, encoche) : quatre (question 8) ; vérifié à 667 × 375, 932 × 430, ordinateur large, encoche (`safe-area`).
+- Statistiques affichées : vie, vitesse, réparation, régénération, chutes ; resserré (667 × 375, encoche) : quatre, proposé vie, vitesse, réparation, régénération (chutes retirée ; à confirmer au GO) ; vérifié à 667 × 375, 932 × 430, ordinateur large, encoche (`safe-area`).
 - Prix prélevés dans la même écriture que l'objet ; « Il manque N » (grisé, raison lue par les lecteurs d'écran) ; offre achetée : « Achetée ». Départ : nouveau joueur et joueur existant (section 3).
 
 ### Outils de débogage (écritures réelles, chacun avec confirmation)
-« Ajouter 10 000 bleus », « Donner l'inventaire de démonstration » (`inventaire-depart.json` réécrit sans armes, seul usage restant), « Débloquer tous les personnages », « Remettre la progression V0.8 à zéro » (efface `zs.save.v2` et le champ `son` de `zs.device.v1`, jamais `zs.save.v1` : au chargement suivant, la migration reprend les niveaux et le record de la V0.7). Place proposée : entrée « Débogage » du menu à trois barres (question 9). **Visibles seulement sur les canaux `source` et `dev`** : le canal `release` (Recette) fait partie de `CANAUX_DEBUG` pour le menu de la pause ; il est exclu ici, comme l'archive.
+« Ajouter 10 000 bleus », « Donner l'inventaire de démonstration » (`inventaire-depart.json` réécrit sans armes, seul usage restant), « Débloquer tous les personnages », « Remettre la progression V0.8 à zéro » (efface `zs.save.v2` et le champ `son` de `zs.device.v1`, jamais `zs.save.v1` : on repart en nouveau joueur). Place (réponse 9) : petite icône « Débogage » dans l'en-tête du menu, à côté du menu à trois barres et du bouton plein écran (44 px, nom accessible, focus visible), qui ouvre un panneau des quatre outils. **Visibles seulement sur les canaux `source` et `dev`** : le canal `release` (Recette) fait partie de `CANAUX_DEBUG` pour le menu de la pause ; il est exclu ici, comme l'archive.
 
 ## 7. Tests prévus
-- **Vitest** : format et réparation champ par champ ; migration (vide, v1 seule, v1 corrompue, v2 corrompue, v2 plus récente, indisponible) ; suivi v1 par maximum ; `ZS2` aller-retour, `ZS1` importé et fusionné, codes hostiles ; achats atomiques (solde suffisant, insuffisant, exact, deux achats concurrents) ; plafond 9 999 999 ; gains bleus (manche normale, renforcée, fin de monde) ; jaune jamais écrite ; mode essai sans écriture ; catalogue sans arme, caisses et offres sans arme, toutes les raretés tirables, **tirage identique à graine et catalogue égaux** ; statistiques effectives sans bonus d'attaque ; simulateur 10 000 suites (extension de `onglets-simulateur.js`).
-- **Playwright** (bureau, et menu en projet mobile en local) : compatibilité réelle V0.7 → V0.8 → V0.7 (et V0.5, V0.6 : le site assemblé coûte environ 11 s, déjà fait en partie A) ; deux onglets réels ; partie jusqu'à une manche terminée, onglet fermé et rouvert : bleue gardée ; mort et « Quitter » : jaune perdue ; acheter, ouvrir, équiper, améliorer, fusionner, choisir, recharger ; outils de débogage présents en `dev`, absents en Recette ; aucune requête externe ; axe ; 44 px.
+- **Vitest** : format et réparation champ par champ ; départ (vide, v1 seule : nouveau joueur et v1 intacte, v1 corrompue, v2 corrompue, v2 plus récente, indisponible) ; `ZS2` aller-retour, `ZS1` importé (remplacement), codes hostiles ; achats atomiques (solde suffisant, insuffisant, exact, deux achats concurrents) ; plafond 9 999 999 ; gains bleus (manche normale, renforcée, fin de monde) ; jaune jamais écrite ; mode essai sans écriture ; catalogue sans arme, caisses et offres sans arme, toutes les raretés tirables, inventaire plein à 100, **tirage identique à graine et catalogue égaux** ; statistiques effectives sans bonus d'attaque ; simulateur 10 000 suites (extension de `onglets-simulateur.js`).
+- **Playwright** (bureau, et menu en projet mobile en local) : compatibilité réelle V0.7 → V0.8 → V0.7 (réponse 5 : réduit à « la V0.7 démarre, garde sa propre progression et joue » ; V0.5 et V0.6 couvertes par les essais de la partie A) ; deux onglets réels ; partie jusqu'à une manche terminée, onglet fermé et rouvert : bleue gardée ; mort et « Quitter » : jaune perdue ; acheter, ouvrir, équiper, améliorer, fusionner, choisir, recharger ; outils de débogage présents en `dev`, absents en Recette ; aucune requête externe ; axe ; 44 px.
 - **Remplacés (jamais retirés)** : les assertions « aucune écriture » du menu (`menu.spec.js`, `menu-onglets.spec.js`, `boutique.spec.js`, `personnage.spec.js`, `ouverture.spec.js`, `studio.spec.js`, `sons-volumes.spec.js`, `sons-menu.spec.js`, `options-menu.spec.js`) deviennent « seules les écritures attendues » (clé, moment, contenu) ; les listes de clés (`argent.spec.js`, `sauvegarde.spec.js`, `graphics*.test.js`, `sauvegarde-*.test.js`) admettent `zs.save.v2` ; listes « avant / après » avec `scripts/tests/compter.mjs`. Budget : 120 s ajoutées au plus.
 
 ## 8. Risques
 - Changement large des tests du menu (beaucoup d'assertions « aucune écriture ») : risque de dépasser le budget de durée ; les tests de compatibilité assemblent le site (11 s) une seule fois.
 - Offres du jour différentes (catalogue changé) : tests datés à recalculer par la fonction pure.
 - Achat annulé après coup (limite 1 du modèle) : rare, mais visible ; message et test dédiés.
-- `zs.device.v1` réécrite par la V0.7 : son et volumes remis aux défauts (limite connue, question 5).
+- `zs.device.v1` réécrite par la V0.7 : son et volumes remis aux défauts (limite connue, acceptée : réponse 5).
 - `index.html` à 90 exactement (seuil) : tout octet de plus dans `css/tokens.css` (jeton bleu) est compensé et mesuré ; sinon l'icône bleue garde ses couleurs dans `css/menu.css` (non chargé par l'accueil).
 - Lighthouse de `jeu.html` : quelques modules de plus au démarrage du menu (fusion v2, catalogue lu plus tôt pour l'en-tête) ; mesuré en partie E.
 
 ## 9. Questions au propriétaire
-1. **Niveaux de base** : rien ne les achète aujourd'hui (aucun écran, aucun prix). Proposé : figés dans ce lot (migrés de la V0.7, puis suivis) ; leur achat en bleu → « Idées ». D'accord ?
-2. **Achats avec l'argent** : il n'en existe aucun (rien n'est prélevé nulle part, ni en partie ni ailleurs). Rien à décider, sauf si vous voyez un achat que j'aurais manqué.
-3. **Suivi de la V0.7** après la migration : si l'on rejoue à la Recette, la V0.8 reprend à chaque chargement le **maximum** des niveaux et du record de la V0.7 (jamais l'argent). D'accord ?
-4. **Import d'un code `ZS1`** dans la V0.8 : fusion par maximum sans effacer la progression v2 (proposé), ou remplacement complet ?
-5. **Son et volumes** dans `zs.device.v1` en gardant `v: 2` (la V0.7 les efface si on y change les graphismes : retour aux défauts) — proposé ; ou `v: 3` (la V0.7 ne peut plus régler ses graphismes) ?
-6. **Inventaire plafonné à 300 exemplaires** (caisse refusée « Inventaire plein », ×10 exige 10 places) ? Autre nombre ?
-7. **Second bonus** des objets dès peu-commun (tableau, toujours une statistique de survie) : gardé, ou un seul bonus par emplacement ?
-8. **Écran resserré** : quatre statistiques sur cinq ; proposé : retirer « chutes ». Autre choix ?
-9. **Outils de débogage** : dans le menu principal (menu à trois barres, canaux `source` et `dev`), proposé ; ou dans le menu de débogage de la pause ?
-10. **`jeu.html`** n'est pas dans la liste des fichiers autorisés : les lignes de E2-7 et le « +N » bleu seront créés par `ui.js` et `hud.js`. D'accord, ou j'ai le droit d'ajouter ces quelques éléments dans `jeu.html` ?
-11. **Décor armé** : la silhouette de l'écran Personnage tient une arme, et l'ouverture 3D montre un fusil tenu en main. Les garder (le pistolet reste en partie) ?
-12. **Record d'infini** : proposé « meilleure manche atteinte » par carte, comme l'histoire. D'accord ?
+Les douze questions de la première version du plan ont reçu leurs réponses (section 0). Deux points restent à confirmer au GO :
+1. **Réponse 3** (« repartir de 0 ») : lecture retenue = **tout le monde repart de zéro** dans la V0.8 (niveaux de base et records à 0, `zs.save.v1` ni lue ni écrite) ; un code `ZS1` importé reste la seule façon de reprendre ses niveaux et son record. C'est bien cela ? (L'autre lecture : reprendre une fois la V0.7 au premier lancement, sans suivi ensuite.)
+2. **Écran resserré** (réponse 8) : les statistiques sont les effets de l'équipement et du personnage sur la partie : **Vie** (points de vie maximum, +12 par niveau), **Vitesse** (déplacement, +4 % par niveau, +40 % au plus), **Réparation** (pose d'une planche : 1,8 s, ×0,88 par niveau, 0,4 s au plus vite), **Régénération** (points de vie rendus par zombie tué : 1 + 1 par niveau), **Chutes** (fois où l'on tombe à terre et se relève avant de mourir : 1 + 1 par niveau, 5 niveaux au plus). Sur le petit écran, quatre tiennent : je propose de retirer « Chutes ». D'accord ?
