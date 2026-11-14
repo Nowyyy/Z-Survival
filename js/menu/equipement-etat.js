@@ -5,20 +5,11 @@
 // obtenu ; une opération refusée (solde, inventaire plein, autre onglet) ne change rien. Chargé à la demande : à la première ouverture de l'onglet
 // Personnage ou de la Boutique, ou à « JOUER » ; jamais au démarrage du menu.
 import { creerEtatEquipement, EMPLACEMENTS, equiper, etatFusion, fusionner, infoAmelioration, infoPersonnage, lireCatalogue, obtenirPersonnages, objetDe, personnageDe, retirer, statistiquesEffectives, choisirPersonnage, estDebloque } from '../core/equipement.js';
-import { chargerProgression } from './progression-etat.js';
+import { chargerProgression, nouvelId } from './progression-etat.js';
 
 const json = (path) => fetch(path).then((r) => (r.ok ? r.json() : null)).catch(() => null);
 
-// Identifiant unique d'opération ou d'achat : 8 chiffres hexadécimaux tirés par crypto (aucun générateur pseudo-aléatoire), plus un compteur de la page.
-let compteur = 0;
-export function nouvelId() {
-  compteur += 1;
-  try {
-    return `${Array.from(crypto.getRandomValues(new Uint8Array(4)), (b) => b.toString(16).padStart(2, '0')).join('')}${compteur.toString(36)}`;
-  } catch {
-    return `m${Date.now().toString(36)}${compteur.toString(36)}`;
-  }
-}
+export { nouvelId }; // lot 8h : identifiants d'opération (js/menu/progression-etat.js)
 
 // État au format de js/core/equipement.js d'après la progression v2 (objets inconnus du catalogue écartés, niveaux bornés à leur maximum).
 export function etatDepuis(save, cat) {

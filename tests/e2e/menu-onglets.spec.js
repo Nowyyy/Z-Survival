@@ -323,7 +323,7 @@ test.describe('onglet Infini (E8-4) et mode infini', () => {
     await page.locator('#menu-carte-monde-3').click({ force: true }); // aria-disabled : Playwright ne clique pas sans force
     expect(await libelles(page)).toEqual(['Monde 1 · Choisie', ...[2, 3, 4, 5, 6].map((n) => `Monde ${n} · Verrouillée`)]);
     await expect(page.locator('#menu-carte-batiment')).toHaveAttribute('aria-pressed', 'true');
-    expect((await page.evaluate(() => window.__zsMenu.etat().menu)).infini).toEqual({ choisi: 'batiment' });
+    expect((await page.evaluate(() => window.__zsMenu.etat().menu)).infini).toEqual({ choisi: 'batiment', record: null }); // lot 8h : record de l'infini de la carte (aucun ici)
     // Retour à Jouer puis à Infini : même écran, même choix.
     await page.locator('#menu-onglet-jouer').click();
     await page.locator('#menu-onglet-infini').click();
@@ -438,6 +438,26 @@ test.describe('onglet Infini (E8-4) et mode infini', () => {
     expect(infini.pas.length).toBe(700);
     const ecart = infini.pas.findIndex((p, i) => p !== endless.pas[i]);
     expect(ecart, `premier écart au pas ${ecart}`).toBe(-1);
+  });
+
+  // Lot 8h : record de l'infini par carte (progression v2), séparé de celui de l'histoire : sur la carte et sur la ligne « Toi » du classement.
+  test('?store=local : record de l\'infini de la carte lu dans zs.save.v2 (« Record : manche 23 », « Toi » : manche 23) ; carte sans record : « Record : — » ; aucune écriture', async ({ page }) => {
+    await page.addInitScript((k) => {
+      if (!sessionStorage.getItem('zs.test.pose')) {
+        sessionStorage.setItem('zs.test.pose', '1');
+        localStorage.setItem(k, JSON.stringify({ v: 2, rev: 1, savedAt: 0, records: { histoire: { batiment: 7 }, infini: { batiment: 23 } } }));
+      }
+      window.__ecritures = [];
+      const set = Storage.prototype.setItem;
+      Storage.prototype.setItem = function (cle, v) { if (cle !== 'zs.test.pose') window.__ecritures.push(cle); return set.call(this, cle, v); };
+    }, KEY);
+    await ouvrirInfini(page, REF, '&store=local');
+    await expect(page.locator('#menu-carte-batiment .e8-infini-carte-detail')).toHaveText('Record : manche 23');
+    await expect(page.locator('#menu-classement-toi-manche')).toHaveText('Manche 23');
+    await expect(page.locator('#menu-jouer-record')).toHaveText('Record : manche 7 / 40'); // l'onglet Jouer garde celui de l'histoire
+    expect((await page.evaluate(() => window.__zsMenu.etat().menu.infini))).toMatchObject({ choisi: 'batiment', record: 23 });
+    expect(await page.evaluate(() => window.__ecritures)).toEqual([]);
+    await page.evaluate(() => { localStorage.clear(); sessionStorage.clear(); });
   });
 
   test('?store=local : visite du menu sans écriture ; en mode infini (lot 8h), la bleue des manches est écrite, la jaune jamais, le record de l\'infini est séparé de celui de l\'histoire', async ({ page }) => {

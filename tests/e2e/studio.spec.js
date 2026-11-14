@@ -613,7 +613,7 @@ test.describe('Connexion et Profil (E10)', () => {
     });
   }
 
-  test('avatar et pseudo changés en mémoire (aucune écriture) ; pseudo : erreurs lues (trop court, trop long, caractère invisible), espaces nettoyés, Échap annule ; statistiques égales à la sauvegarde (?store=local) ; rechargement : valeurs par défaut', async ({ page }) => {
+  test('avatar et pseudo gardés (lot 8h : zs.save.v2, une écriture par validation) ; pseudo : erreurs lues (trop court, trop long, caractère invisible), espaces nettoyés, Échap annule ; statistiques égales à la sauvegarde (?store=local) ; rechargement : valeurs gardées', async ({ page }) => {
     await menuAvecSauvegarde(page);
     await ouvrirProfil(page);
     await expect(page.locator('.e10-stat-valeur')).toHaveText([`17 / 40`, '88', '6', '2', '1 h 2 min', `4${NNBSP}321`]); // lot 8h : toutes lues dans la progression v2
@@ -690,17 +690,23 @@ test.describe('Connexion et Profil (E10)', () => {
     await expect(page.locator('#menu-profil')).toHaveAttribute('aria-label', 'Profil : Le Chef');
     await expect(page.locator('#menu-entete-avatar')).toHaveClass(/e10-avatar-eclaireur/);
     expect(await page.locator('#menu-entete-avatar .av-lampe').count()).toBe(1);
-    // Gardés en mémoire en quittant et en revenant ; aucune écriture.
+    // Lot 8h : gardés en quittant et en revenant ; deux écritures dans zs.save.v2 (avatar validé, pseudo validé), rien d'autre ne change.
     await page.locator('#menu-ecran-profil-retour').click();
     await page.locator('#menu-profil').click();
     await expect(page.locator('#menu-profil-pseudo')).toHaveText('Le Chef');
-    expect(await page.evaluate(() => window.__ecritures)).toEqual([]);
-    expect(JSON.parse(await page.evaluate((k) => localStorage.getItem(k), KEY))).toEqual(SAUVEGARDE);
+    expect(await page.evaluate(() => window.__ecritures)).toEqual(['local.setItem', 'local.setItem']);
+    const ecrit = JSON.parse(await page.evaluate((k) => localStorage.getItem(k), KEY));
+    expect(ecrit.profil).toEqual({ ...SAUVEGARDE.profil, avatar: 'eclaireur', pseudo: 'Le Chef' });
+    expect({ ...ecrit, profil: null, rev: 0, savedAt: 0, dates: null, journal: null }).toEqual({ ...SAUVEGARDE, profil: null, rev: 0, savedAt: 0, dates: null, journal: null });
+    expect(ecrit.rev).toBe(SAUVEGARDE.rev + 2);
+    // Rechargement (retour au menu) : avatar et pseudo relus de la progression, en-tête compris.
     await page.reload();
     await expect(page.locator('#menu-jouer')).toBeVisible({ timeout: 60_000 });
+    await expect(page.locator('#menu-entete-pseudo')).toHaveText('Le Chef');
+    await expect(page.locator('#menu-entete-avatar')).toHaveClass(/e10-avatar-eclaireur/);
     await ouvrirProfil(page);
-    await expect(page.locator('#menu-profil-pseudo')).toHaveText('Survivant');
-    await expect(page.locator('#menu-profil-avatar')).toHaveAttribute('aria-label', 'Avatar 1 sur 7 : Anonyme');
+    await expect(page.locator('#menu-profil-pseudo')).toHaveText('Le Chef');
+    await expect(page.locator('#menu-profil-avatar')).toHaveAttribute('aria-label', 'Avatar 3 sur 7 : Éclaireur');
   });
 
   test('« Exporter mon code » : code ZS2 valide (lot 8h ; relu par decoder = la progression) ; « Importer un code » : code abîmé refusé (message, aucune écriture), code valide vérifié (aperçu), confirmation exigée, puis importé : seule écriture, puis menu rechargé sans introduction, solde à jour', async ({ page, context }) => {

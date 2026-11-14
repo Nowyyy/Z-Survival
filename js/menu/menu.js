@@ -10,7 +10,7 @@
 import { activerGlisser } from '../glisser.js';
 import { roueDifferee } from './roue.js';
 import { clic as clicSon, ecouterClics, regler as reglerSons } from './sons/sons.js';
-import { lireProfil, suivreProfil, svgPortrait } from './avatar.js';
+import { brancherProfil, lireProfil, suivreProfil, svgPortrait } from './avatar.js';
 import { formatMoney } from '../core/economy.js';
 import { basculerMenu, choisirOnglet, versionMenu, creerEtatMenu, ECRANS_PLEINS, SOUS_MENUS, fermerEcran, fermerMenu, lienExterne, lireMondes, lireOptionDemarrage, lireRecord, nouveauteNonLue, ONGLETS, ouvrirEcran, premierJouable } from '../core/menu-etat.js';
 import { ecranJouer } from './jouer.js';
@@ -212,6 +212,8 @@ export async function preparerMenu({ search = pageSearch(), onProgress = () => {
   let solde = 0;
   let record = null;
   let niveaux = null; // lot 8d : niveaux de statistiques de la sauvegarde (base des statistiques effectives), si elle est lue « ok » (comme la partie)
+  let lues = []; // lot 8h : nouveautés déjà lues (progression v2)
+  let recordsInfini = {}; // lot 8h : record de l'infini par carte (meilleure manche démarrée)
   try {
     // Lot 8h : dépôt partagé par tout le menu (en-tête, Boutique, Personnage), avec le canal entre onglets (js/menu/progression-etat.js).
     const prog = await chargerProgression({ save, economy, stats }, { search });
@@ -219,17 +221,21 @@ export async function preparerMenu({ search = pageSearch(), onProgress = () => {
     if (lu && lu.save) solde = soldeBleu(lu.save);
     record = lireRecord(lu?.save?.records?.histoire?.[premierJouable(lireMondes(mondes)).id]);
     if (lu?.status === 'ok' && lu.save?.niveaux && typeof lu.save.niveaux === 'object') niveaux = { ...lu.save.niveaux };
+    lues = Array.isArray(lu?.save?.lues) ? [...lu.save.lues] : [];
+    recordsInfini = { ...(lu?.save?.records?.infini ?? {}) };
+    brancherProfil(prog); // avatar et pseudo gardés (js/menu/avatar.js)
   } catch {
     // sauvegarde illisible ou stockage bloqué : solde 0 et record « — » affichés, rien n'est écrit
   }
-  return { dict, infos: Array.isArray(infos?.infos) ? infos.infos : [], liens: liens ?? {}, solde, record, mondes: lireMondes(mondes), niveaux, statsCfg: stats };
+  return { dict, infos: Array.isArray(infos?.infos) ? infos.infos : [], liens: liens ?? {}, solde, record, mondes: lireMondes(mondes), niveaux, statsCfg: stats, lues, recordsInfini };
 }
 
 // son : { lire() → { coupe, volume }, poser(réglages) } (lot 8c, donné par demarrage.js : mémoire de la page, appliquée par main.js à « JOUER »).
 // niveaux, statsCfg (lot 8d) : niveaux de la sauvegarde et data/game/player-stats.json, pour les statistiques effectives (Personnage, « JOUER »).
-export function creerMenu({ dict, infos = [], liens = {}, solde: montant = 0, record = null, mondes = lireMondes(null), niveaux = null, statsCfg = null, jouer, son: memoireSon = null, root = document.body }) {
+// lues, recordsInfini (lot 8h) : nouveautés déjà lues et records de l'infini par carte, lus dans la progression v2 (preparerMenu).
+export function creerMenu({ dict, infos = [], liens = {}, solde: montant = 0, record = null, mondes = lireMondes(null), niveaux = null, statsCfg = null, jouer, son: memoireSon = null, root = document.body, lues = [], recordsInfini = {} }) {
   const t = (k) => dict[k] ?? '';
-  let etat = creerEtatMenu();
+  let etat = { ...creerEtatMenu(), lues: Array.isArray(lues) ? [...lues] : [] };
   const lien = lienExterne(liens?.discord);
   let options = null; // écran Options (créé à la première ouverture)
   let dialogue = null; // écran Information ou Connexion ouvert : { close, escape, element }
@@ -548,7 +554,7 @@ export function creerMenu({ dict, infos = [], liens = {}, solde: montant = 0, re
         let s;
         if (onglet === 'infini') {
           const m = await precharger('infini');
-          infini = await m.ecranInfini({ t, mondes, bandeau, jouer: lancer });
+          infini = await m.ecranInfini({ t, mondes, bandeau, jouer: lancer, records: recordsInfini });
           s = infini.section;
           scenes.set('infini', infini.scene);
         } else if (onglet === 'personnage') {
@@ -601,7 +607,10 @@ export function creerMenu({ dict, infos = [], liens = {}, solde: montant = 0, re
 
   async function ouvrirDialogue(nom, opener) {
     options?.close(); // lot 8c : un seul écran à la fois (la page Options laisse la place à Information ou Connexion)
+    const avant = etat.lues.length;
     etat = ouvrirEcran(etat, nom, infos);
+    // Lot 8h : nouveautés lues gardées (une écriture la première fois seulement ; jamais sous la lecture seule du mode essai).
+    if (etat.lues.length > avant) chargerProgression().then((p) => p.marquerLues(etat.lues)).catch(() => {});
     synchroniser();
     retourFocus = opener;
     const m = await ecrans();

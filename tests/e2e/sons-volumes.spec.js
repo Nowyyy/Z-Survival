@@ -192,4 +192,50 @@ test.describe('volumes du jeu et de la musique', () => {
     expect(a.muted).toBe(true);
     expect(a.gains).toEqual({ effets: 0, musique: 0 });
   });
+  // Lot 8h : son et volumes gardés dans l'appareil (zs.device.v1, champ son), relus au rechargement (retour au menu) : menu, partie et pause.
+  test('?store=local : son et volumes gardés dans zs.device.v1 (graphismes intacts) ; rechargement : relus par le menu (sons du menu) et par la partie ; la pause les écrit aussi', async ({ page }) => {
+    test.setTimeout(240_000);
+    await page.addInitScript(() => {
+      if (sessionStorage.getItem('zs.test.son')) return;
+      sessionStorage.setItem('zs.test.son', '1');
+      localStorage.clear();
+      localStorage.setItem('zs.device.v1', JSON.stringify({ v: 2, graphics: 'moyen', custom: null }));
+    });
+    await page.setViewportSize(REF);
+    const menu = async () => {
+      await page.goto('/jeu.html?test=1&menu=1&seed=1&ouverture=0&store=local');
+      await expect(page.locator('#menu-jouer')).toBeVisible({ timeout: 60_000 });
+      await page.waitForFunction(() => window.__zsMenu?.etat()?.menu !== null && !document.getElementById('e7'));
+    };
+    const appareil = () => page.evaluate(() => JSON.parse(localStorage.getItem('zs.device.v1')));
+    await menu();
+    expect(await appareil()).toEqual({ v: 2, graphics: 'moyen', custom: null }); // rien d'écrit sans réglage
+    await ouvrirOptions(page);
+    await fleches(page, '#options-volume', 'ArrowLeft', 3); // jeu : 70
+    await fleches(page, '#options-volume-musique', 'ArrowLeft', 6); // musique : 40
+    await page.locator('#options-son-coupe').click();
+    expect(await appareil()).toEqual({ v: 2, graphics: 'moyen', custom: null, son: { coupe: true, jeu: 70, musique: 40 } });
+    await menu(); // rechargement : réglages relus, appliqués aux sons du menu dès l'ouverture
+    expect((await sons(page)).volumes).toEqual({ coupe: true, jeu: 70, musique: 40 });
+    await ouvrirOptions(page);
+    await expect(page.locator('#options-son-coupe')).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.locator('#options-volume')).toHaveValue('70');
+    await expect(page.locator('#options-volume-musique')).toHaveValue('40');
+    await page.locator('#options-son-active').click();
+    await page.locator('#options-retour').click();
+    await page.locator('#menu-jouer').click();
+    await page.waitForFunction(() => (window.__zs?.getState()?.time ?? 0) > 0.05, null, { timeout: 120_000 });
+    expect(await audioPartie(page)).toMatchObject({ muted: false, volume: 70, musicVolume: 40 });
+    // Pause : Options de la partie, écrites aussi.
+    await page.locator('#btn-pause').dispatchEvent('click');
+    await page.locator('#btn-options').click();
+    await expect(page.locator('#options-panel')).toBeVisible();
+    await fleches(page, '#options-volume-musique', 'ArrowRight', 2);
+    await page.locator('#options-son-coupe').click();
+    expect(await appareil()).toEqual({ v: 2, graphics: 'moyen', custom: null, son: { coupe: true, jeu: 70, musique: 60 } });
+    await menu();
+    expect((await sons(page)).volumes).toEqual({ coupe: true, jeu: 70, musique: 60 });
+    expect(await page.evaluate(() => localStorage.getItem('zs.save.v1'))).toBeNull();
+    await page.evaluate(() => { localStorage.clear(); sessionStorage.clear(); });
+  });
 });

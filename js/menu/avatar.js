@@ -1,7 +1,7 @@
 // Lot 8g (retours du propriétaire) : avatars du joueur, communs au Profil (js/menu/compte.js) et à l'en-tête du menu (js/menu/menu.js, en haut à
 // gauche : portrait et pseudo). Liste des avatars (d'après le personnage du jeu et les zombies ; d'autres viendront), portrait dessiné en code (couleurs
-// des personnages : jetons --perso-* posés par css/menu.css) et mémoire de la page (avatar et pseudo choisis) : rien n'est écrit jusqu'au lot 8h, le
-// retour au menu les remet par défaut. Aucun accès au document à l'import (Vitest lit la liste et la mémoire).
+// des personnages : jetons --perso-* posés par css/menu.css) et avatar et pseudo choisis : lot 8h, gardés dans la progression v2 (zs.save.v2,
+// brancherProfil, appelé par menu.js) ; sans progression branchée (créateur de test), en mémoire de la page. Aucun accès au document à l'import.
 const SVG = 'http://www.w3.org/2000/svg';
 
 // Type neutre, joueur ou zombie, tenue (détails du dessin). « Changer d'avatar » passe au suivant. Retour du propriétaire : image par défaut = un
@@ -25,15 +25,38 @@ export const NOMS_AVATARS = Object.freeze({
   rodeur: 'game.menu.profil.avatar.rodeur', ouvrier: 'game.menu.profil.avatar.ouvrier', affame: 'game.menu.profil.avatar.affame',
 });
 
-// Mémoire de la page : { avatar, pseudo (null = défaut) } ; poserProfil prévient les abonnés (en-tête, Profil).
+// { avatar, pseudo (null = défaut) } ; poserProfil prévient les abonnés (en-tête, Profil). Lot 8h : progression branchée (brancherProfil), chaque
+// changement est écrit (opération « choix » de js/core/progression.js) ; un autre onglet qui écrit met l'en-tête et le Profil à jour.
 const memoire = { avatar: AVATARS[0].id, pseudo: null };
 const abonnes = new Set();
+let progression = null;
 export const lireProfil = () => ({ ...memoire });
-export function poserProfil({ avatar = memoire.avatar, pseudo = memoire.pseudo } = {}) {
-  memoire.avatar = avatarDe(avatar).id;
-  memoire.pseudo = typeof pseudo === 'string' && pseudo !== '' ? pseudo : null;
+const prevenir = () => {
   for (const f of abonnes) f(lireProfil());
+};
+function relire(profil) {
+  memoire.avatar = avatarDe(profil?.avatar).id;
+  memoire.pseudo = typeof profil?.pseudo === 'string' && profil.pseudo !== '' ? profil.pseudo : null;
+}
+export function poserProfil({ avatar = memoire.avatar, pseudo = memoire.pseudo } = {}) {
+  const avant = lireProfil();
+  relire({ avatar, pseudo });
+  if (progression) {
+    if (memoire.avatar !== avant.avatar) progression.choisir('avatar', memoire.avatar);
+    if (memoire.pseudo !== avant.pseudo) progression.choisir('pseudo', memoire.pseudo);
+  }
+  prevenir();
   return lireProfil();
+}
+// prog : progression du menu (js/menu/progression-etat.js) : { lire(), choisir(champ, valeur), abonner(f) }.
+export function brancherProfil(prog) {
+  progression = prog;
+  relire(prog.lire()?.save?.profil);
+  prog.abonner((save) => {
+    const avant = lireProfil();
+    relire(save?.profil);
+    if (memoire.avatar !== avant.avatar || memoire.pseudo !== avant.pseudo) prevenir();
+  });
 }
 export function suivreProfil(f) {
   abonnes.add(f);

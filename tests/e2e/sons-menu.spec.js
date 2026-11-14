@@ -214,7 +214,7 @@ test.describe('sons du menu', () => {
     expect(await lectures(page, n)).toEqual(['choisir']);
     expect(o.externes).toEqual([]);
     expect(o.problemes).toEqual([]);
-    expect(await page.evaluate(() => window.__ecritures)).toEqual(Array(6).fill('setItem')); // lot 8h : équiper, retirer, améliorer, fusionner, choisir, améliorer le personnage (l'avatar : partie E)
+    expect(await page.evaluate(() => window.__ecritures)).toEqual(Array(7).fill('setItem')); // lot 8h : équiper, retirer, améliorer, fusionner, choisir, améliorer le personnage, valider l'avatar
   });
 
   test('chute du Z : sans geste, aucun son ; après un geste, à « JOUER », impact, tiret et rebond sont programmés aux instants de l\'animation', async ({ page }) => {

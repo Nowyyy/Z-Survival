@@ -4,7 +4,7 @@
 // en texte : bandeau « Vagues sans fin / Mode infini », « Choisis ta carte », rangée de cartes qui défile (doigt, molette, flèche ; accroche sur
 // chaque carte), carte choisie (bordure rouge, « Choisie », en mémoire), cartes verrouillées non sélectionnables (aria-disabled, raison lue),
 // panneau « Classement » (exemple, arrive avec le compte ; ligne « Toi »), bouton « Jouer » : mode infini sur la carte choisie.
-// Le record du mode infini n'est pas encore gardé (lot 8h) : « Record : — ». Couleurs : classes de css/menu.css ; animations « e8-infini-* ».
+// Lot 8h : record du mode infini par carte (progression v2 : meilleure manche démarrée), sur sa carte et sur la ligne « Toi » ; « Record : — » sinon. Couleurs : classes de css/menu.css ; animations « e8-infini-* ».
 import { choisirCarte, creerCarrousel, lireClassement } from '../core/menu-etat.js';
 import { fmt } from '../game/texts.js';
 import { ajusterBloc, ajusterTextes } from './menu.js';
@@ -96,7 +96,9 @@ const json = (path) => fetch(path).then((r) => (r.ok ? r.json() : null)).catch((
 let donnees = null;
 export const precharger = () => (donnees ??= json('data/menu/classement.json'));
 
-export async function ecranInfini({ t, mondes, bandeau, jouer }) {
+// records : { [monde]: manche } (lot 8h, progression v2).
+export async function ecranInfini({ t, mondes, bandeau, jouer, records = {} }) {
+  const recordDe = (id) => (Number.isInteger(records?.[id]) && records[id] > 0 ? records[id] : null);
   const classement = lireClassement(await precharger());
   let carrousel = creerCarrousel(mondes);
   const section = el('section', ['e8-ecran', 'e8-infini'], { id: 'menu-ecran-infini', 'aria-labelledby': 'menu-titre-infini' });
@@ -116,7 +118,7 @@ export async function ecranInfini({ t, mondes, bandeau, jouer }) {
     const carte = el('button', ['e8-infini-carte'], { type: 'button', id: `menu-carte-${m.id}`, 'data-monde': m.id });
     const libelle = el('span', ['e8-infini-carte-libelle']);
     const nom = texte('span', ['e8-infini-carte-nom'], m.nom || fmt(t('game.menu.monde'), { n: m.numero }));
-    const detail = texte('span', ['e8-infini-carte-detail'], m.jouable ? t('game.menu.infini.recordAucun') : fmt(t('game.menu.infini.condition'), { n: m.numero - 1 }));
+    const detail = texte('span', ['e8-infini-carte-detail'], m.jouable ? (recordDe(m.id) ? fmt(t('game.menu.infini.record'), { n: recordDe(m.id) }) : t('game.menu.infini.recordAucun')) : fmt(t('game.menu.infini.condition'), { n: m.numero - 1 }));
     if (!m.jouable) {
       carte.setAttribute('aria-disabled', 'true');
       carte.classList.add('e8-infini-carte-verrouillee');
@@ -159,7 +161,7 @@ export async function ecranInfini({ t, mondes, bandeau, jouer }) {
   bouton.append(icone, texte('span', [], t('game.menu.infini.jouer')));
   bouton.addEventListener('click', () => jouer({ mode: 'infini', monde: carrousel.choisi }));
 
-  // Classement d'exemple (aucun joueur réel) : 5 lignes, puis « Toi » (rang et record : pas encore de compte ni de record du mode infini).
+  // Classement d'exemple (aucun joueur réel) : 5 lignes, puis « Toi » (rang : pas encore de compte ; record de la carte choisie, lot 8h).
   const panneau = el('section', ['e8-infini-classement'], { id: 'menu-classement', 'aria-labelledby': 'menu-classement-titre' });
   const sousTitre = el('p', ['e8-infini-classement-carte'], { id: 'menu-classement-carte' });
   const exemple = texte('span', ['e8-infini-exemple'], t('game.menu.infini.exemple'));
@@ -174,7 +176,7 @@ export async function ecranInfini({ t, mondes, bandeau, jouer }) {
   toi.append(
     texte('span', ['e8-infini-toi-nom'], t('game.menu.infini.toi')),
     texte('span', ['e8-infini-toi-rang'], fmt(t('game.menu.infini.rang'), { n: t('game.menu.infini.aucun') })),
-    texte('span', ['e8-infini-toi-manche'], fmt(t('game.menu.infini.manche'), { n: t('game.menu.infini.aucun') })),
+    texte('span', ['e8-infini-toi-manche'], '', { id: 'menu-classement-toi-manche' }),
   );
   panneau.append(texte('h3', ['e8-infini-classement-titre'], t('game.menu.infini.classement'), { id: 'menu-classement-titre' }), sousTitre, lignes, toi);
 
@@ -188,9 +190,10 @@ export async function ecranInfini({ t, mondes, bandeau, jouer }) {
     }
     const m = cartes.get(carrousel.choisi)?.monde;
     sousTitre.firstChild.textContent = `${m?.nom || fmt(t('game.menu.monde'), { n: m?.numero ?? 1 })} · `;
+    toi.lastChild.textContent = fmt(t('game.menu.infini.manche'), { n: recordDe(carrousel.choisi) ?? t('game.menu.infini.aucun') });
   }
   synchroniser();
 
   section.append(scene, bandeau(t('game.menu.infini.libelle'), t('game.menu.infini.titre'), 'menu-titre-infini'), choix, zone, bouton, panneau);
-  return { section, scene, bouton, etat: () => ({ choisi: carrousel.choisi }) };
+  return { section, scene, bouton, etat: () => ({ choisi: carrousel.choisi, record: recordDe(carrousel.choisi) }) };
 }

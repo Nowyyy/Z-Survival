@@ -6,6 +6,17 @@ import { createRepository } from '../save/index.js';
 import { solde as soldeDe } from '../core/progression.js';
 import { pageSearch } from '../game/graphics-boot.js';
 
+// Identifiant unique d'opération ou d'achat : 8 chiffres hexadécimaux tirés par crypto (aucun générateur pseudo-aléatoire), plus un compteur de la page.
+let compteur = 0;
+export function nouvelId() {
+  compteur += 1;
+  try {
+    return `${Array.from(crypto.getRandomValues(new Uint8Array(4)), (b) => b.toString(16).padStart(2, '0')).join('')}${compteur.toString(36)}`;
+  } catch {
+    return `m${Date.now().toString(36)}${compteur.toString(36)}`;
+  }
+}
+
 const json = (path) => fetch(path).then((r) => (r.ok ? r.json() : null)).catch(() => null);
 let chargement = null;
 
@@ -77,6 +88,16 @@ export function creerProgression(params, { search = pageSearch(), storage = stoc
       }
       prevenir(r.refused ?? []);
       return { ok: true, refused: r.refused ?? [] };
+    },
+    // Choix du Profil (avatar, pseudo) : le plus récent l'emporte entre onglets (date). → résultat de commit.
+    choisir(champ, valeur) {
+      return this.commit([{ id: nouvelId(), t: 'choix', champ, valeur, date: Date.now() }]);
+    },
+    // Nouveautés lues (écran Information) : seuls les identifiants pas encore gardés sont écrits ; rien de nouveau, aucune écriture.
+    marquerLues(ids) {
+      const deja = new Set(lu.save?.lues ?? []);
+      const nouveaux = [...new Set(ids)].filter((id) => typeof id === 'string' && !deja.has(id));
+      return nouveaux.length ? this.commit([{ id: nouvelId(), t: 'lues', ids: nouveaux }]) : { ok: true, refused: [] };
     },
     // Outil de débogage « Remettre la progression V0.8 à zéro » : efface zs.save.v2 seulement (jamais zs.save.v1).
     effacer() {

@@ -14,7 +14,7 @@ import { fmt, loadDict } from '../game/texts.js';
 import { CANAUX_DEBUG } from '../core/graphics.js';
 import { pageCanal } from '../game/graphics-boot.js';
 import { couluresSvg } from '../logo.js';
-import { adopter, chute as sonsChute, ecouterGestes, partir, signaler } from './sons/sons.js';
+import { adopter, chute as sonsChute, ecouterGestes, partir, regler as reglerSons, signaler } from './sons/sons.js';
 
 const SVG = 'http://www.w3.org/2000/svg';
 const FIN_CHUTE_MS = 4000; // filet de sécurité si la fin d'animation n'arrive pas (onglet caché) : la chute dure 2,8 s
@@ -76,6 +76,9 @@ const json = (path) => fetch(path).then((r) => (r.ok ? r.json() : null)).catch((
 export function creerChargement({ phase = 'menu', jouer = () => {}, son = null, contexteAudio = null, root = document.body, search = globalThis.location?.search ?? '' } = {}) {
   ecouterGestes();
   adopter(contexteAudio);
+  // Lot 8h : son et volumes gardés (zs.device.v1, relus par demarrage.js) : valent dès la chute du Z et pour la musique des menus.
+  const garde = son?.lire?.();
+  if (garde) reglerSons({ coupe: garde.coupe === true, ...(garde.volume !== null ? { jeu: garde.volume } : {}), ...(garde.musique !== null ? { musique: garde.musique } : {}) });
   const reduit = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const pose = reduit; // retour du propriétaire : la chute du Z se rejoue à chaque chargement (menu, partie, retour au menu)
   let etat = creerProgression(phase);

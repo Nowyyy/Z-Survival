@@ -23,7 +23,7 @@ import { generateTextureData } from './textures.js';
 import { installTestHook } from './testhook.js';
 import { createUi } from './ui.js';
 import { applyTexts, fmt, loadDict, TEXTURE_TEXTS } from './texts.js';
-import { feuilleMenu, menuChute, menuProgres, menuRetour, modeMenu, optionPartie, reglagesSon } from '../menu/demarrage.js';
+import { feuilleMenu, menuChute, menuProgres, menuRetour, modeMenu, optionPartie, poserSon, reglagesSon } from '../menu/demarrage.js';
 
 const DEFAULT_RATIO_CAP = 2;
 menuProgres('modules', 1); // lot 8a : modules et Three.js évalués (écran de chargement du jeu après « JOUER » ; sans effet en partie directe)
@@ -144,7 +144,7 @@ const textureData = await generateTextureData(texturesCfg.textures, { lookup: cr
 }, detail: detail && gfxLoad.texturesFines });
 const soundMode = parseSoundMode(search); // ?sons= (groupe T)
 const audio = createAudio({ config: { audio: audioCfg, materials: materialsCfg, voice: voiceCfg, sounds: soundsCfg.sounds }, test: testMode, seed: Number.isFinite(seedParam) ? seedParam : 1, mode: soundMode });
-const sonMenu = reglagesSon(); // lot 8c : son et volume choisis dans les Options du menu (mémoire de la page ; partie directe : défauts, rien ne change)
+const sonMenu = reglagesSon(); // lot 8c : son et volume des Options du menu ; lot 8h : gardés dans zs.device.v1 (partie directe comprise)
 if (sonMenu.coupe) audio.toggleMute();
 if (sonMenu.volume !== null) audio.setVolume(sonMenu.volume);
 if (sonMenu.musique !== null) audio.setMusicVolume(sonMenu.musique); // lot 8i : volume de la musique (mélodie d'annonce de vague)
@@ -248,14 +248,15 @@ ctx.ui = createUi(dict, {
   chargerStyles: feuilleMenu, // lot 8c : feuille des Options (composant partagé avec le menu), chargée à leur première ouverture
   onToggleSound: () => {
     ctx.audio.toggleMute();
+    poserSon({ coupe: ctx.audio.muted }); // lot 8h : gardé (zs.device.v1)
     ctx.ui.syncSound(ctx.audio);
   },
   onVolume: (n) => {
-    ctx.audio.setVolume(n);
+    poserSon({ volume: ctx.audio.setVolume(n) });
     ctx.ui.syncSound(ctx.audio);
   },
   onMusicVolume: (n) => {
-    ctx.audio.setMusicVolume(n);
+    poserSon({ musique: ctx.audio.setMusicVolume(n) });
     ctx.ui.syncSound(ctx.audio);
   },
   onToggleVhs: () => {

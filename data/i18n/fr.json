@@ -596,6 +596,7 @@
   "game.menu.infini.choisie": "Monde {n} · Choisie",
   "game.menu.infini.verrouillee": "Monde {n} · Verrouillée",
   "game.menu.infini.recordAucun": "Record : —",
+  "game.menu.infini.record": "Record : manche {n}",
   "game.menu.infini.condition": "Termine le monde {n}",
   "game.menu.infini.jouer": "Jouer",
   "game.menu.infini.classement": "Classement",

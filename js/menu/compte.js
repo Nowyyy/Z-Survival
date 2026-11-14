@@ -8,7 +8,7 @@
 //   (encoder, decoder) et js/sauvegarde/logic.js ;
 //   l'import remplace la sauvegarde par repository.replace (seule écriture, déjà existante, après confirmation), puis le menu se recharge (repère
 //   #retour, comme le retour au menu : sans introduction ; tout le menu relit la sauvegarde importée).
-// Avatar et pseudo restent en mémoire jusqu'au lot 8h (le retour au menu les remet par défaut).
+// Lot 8h : avatar et pseudo gardés dans la progression v2 (js/menu/avatar.js, brancherProfil) ; écrits à « Valider » et survivent au retour au menu.
 import { el } from './menu.js';
 import { son } from './sons/sons.js';
 import { ERREURS_PSEUDO, statsProfil, tempsJeu, validerPseudo, PSEUDO_MAX, PSEUDO_MIN } from './profil-etat.js';
