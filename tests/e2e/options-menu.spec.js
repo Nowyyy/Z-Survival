@@ -166,7 +166,7 @@ test.describe('page Options du menu (E5)', () => {
     expect(await page.locator('#options-preset-perso').evaluate((n) => getComputedStyle(n).textDecorationLine)).toContain('underline');
   });
 
-  test('section Son : son coupé puis activé, volume par pas de 10 (texte et valeur lue) ; repris par la partie après « JOUER »', async ({ page }) => {
+  test('section Son : son coupé puis activé, volume au pour cent (lot 8j : flèches ±1, Page bas −10 ; texte et valeur lue) ; repris par la partie après « JOUER »', async ({ page }) => {
     test.setTimeout(150_000);
     await ouvrirMenu(page);
     await ouvrirOptions(page);
@@ -181,7 +181,11 @@ test.describe('page Options du menu (E5)', () => {
     await expect(page.locator('#options-volume')).toHaveAttribute('aria-valuetext', '100 %');
     await expect(page.locator('#options-volume-valeur')).toHaveText('100 %');
     await page.locator('#options-volume').focus();
-    for (let i = 0; i < 3; i += 1) await page.keyboard.press('ArrowLeft');
+    await page.keyboard.press('ArrowLeft'); // lot 8j : flèche = 1 %
+    await expect(page.locator('#options-volume')).toHaveValue('99');
+    await expect(page.locator('#options-volume')).toHaveAttribute('aria-valuetext', '99 %');
+    await page.keyboard.press('ArrowRight');
+    for (let i = 0; i < 3; i += 1) await page.keyboard.press('PageDown');
     await expect(page.locator('#options-volume')).toHaveValue('70');
     await expect(page.locator('#options-volume')).toHaveAttribute('aria-valuetext', '70 %');
     await expect(page.locator('#options-volume-valeur')).toHaveText('70 %');
@@ -358,13 +362,13 @@ test.describe('Options en partie (E2-12)', () => {
     expect((await page.evaluate(() => window.__zs.getState().audio)).muted).toBe(true);
     await page.locator('#options-volume').focus();
     await page.keyboard.press('ArrowLeft');
-    expect((await page.evaluate(() => window.__zs.getState().audio)).volume).toBe(90);
+    expect((await page.evaluate(() => window.__zs.getState().audio)).volume).toBe(99); // lot 8j : flèche = 1 % (90 avant, pas de 10)
     await page.locator('#options-retour').click();
     await expect(page.locator('#btn-sound')).toHaveAttribute('data-muted', 'true');
     await page.locator('#btn-sound').click();
     await page.locator('#btn-options').click();
     await expect(page.locator('#options-son-active')).toHaveAttribute('aria-pressed', 'true');
-    await expect(page.locator('#options-volume-valeur')).toHaveText('90 %');
+    await expect(page.locator('#options-volume-valeur')).toHaveText('99 %');
   });
 
   test('« Rejouer » ne recharge pas (valeurs toujours en attente) ; après « Quitter » puis « JOUER », les valeurs choisies en partie sont en vigueur (?store=local)', async ({ page, isMobile }) => {

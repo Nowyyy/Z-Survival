@@ -149,6 +149,7 @@
   "game.pause.nextZone": "Prochaine zone : manche {n}",
   "game.end.world": "Monde terminé",
   "game.live.zone": "Nouvelle zone. Une porte s'ouvre.",
+  "game.porte.message": "Porte ouverte à la manche {n}",
   "game.live.world": "Monde terminé.",
   "game.hud.floor.rdc": "RDC",
   "game.hud.floor.etage": "Étage",

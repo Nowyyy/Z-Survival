@@ -5,6 +5,7 @@
 import { distanceGain, dropCategory } from '../core/audio-mix.js';
 import { createDirector, direct, soundTable } from '../core/sound-director.js';
 import { bufferName, isAtelier, packStats } from '../core/sound-choice.js';
+import { filtrerCoups, reglagesCoups, rngCoups } from '../core/sons-coups.js';
 import { renderAtelier, soundMode } from './sound-loader.js';
 
 const LOG_MAX = 200;
@@ -41,6 +42,10 @@ export function createAudio({ config, test = false, seed = 1, autoAmbience = tru
   const MUSIQUE = 'annonce';
   let ambience = null;
   let director = createDirector(seed);
+  // Lot 8j : environ un coup de zombie sur quatre fait un son (config.coups : data/game/reglages-partie.json → sonsZombies) ; générateur propre.
+  const coupsCfg = config.coups === undefined ? { ...reglagesCoups(null), probabilite: 1 } : reglagesCoups(config.coups); // sans réglage (page sons.html) : tous
+  let coupsRng = rngCoups(seed);
+  const coupsVus = { coups: 0, gardes: 0, morts: 0, probabilite: coupsCfg.probabilite }; // compte (tests, ?test=1)
   let muted = false;
   let volume = config.audio.volume?.default ?? 100;
   let musicVolume = config.audio.volume?.default ?? 100;
@@ -452,7 +457,16 @@ export function createAudio({ config, test = false, seed = 1, autoAmbience = tru
     handle(frame) {
       if (!ctx) return { requests: [], played: [] }; // aucun son demandé avant le premier geste
       lastFrame = { time: frame.time, listener: frame.listener, walls: frame.walls ?? [], floor: frame.floor };
-      const out = direct(director, frame, cfg);
+      const tri = filtrerCoups(frame.events, coupsRng, coupsCfg);
+      coupsRng = tri.rng;
+      if (test && Array.isArray(frame.events)) {
+        for (const e of frame.events) {
+          if (e?.type === 'zombieHit' && e.killed === true) coupsVus.morts += 1;
+          else if (coupsCfg.types.includes(e?.type)) coupsVus.coups += 1;
+        }
+        for (const e of tri.events) if (coupsCfg.types.includes(e?.type) && !(e.type === 'zombieHit' && e.killed === true)) coupsVus.gardes += 1;
+      }
+      const out = direct(director, tri.events === frame.events ? frame : { ...frame, events: tri.events }, cfg);
       director = out.state;
       if (out.stops?.length) stopVoices(out.stops);
       updateLoops({ ...lastFrame, paused: frame.paused === true });
@@ -500,6 +514,7 @@ export function createAudio({ config, test = false, seed = 1, autoAmbience = tru
       stopLoops();
       ended = false;
       director = createDirector(seed2);
+      coupsRng = rngCoups(seed2);
       lastFrame = { time: 0, listener: lastFrame.listener, walls: lastFrame.walls };
     },
 
@@ -514,7 +529,7 @@ export function createAudio({ config, test = false, seed = 1, autoAmbience = tru
       for (const it of pcm.values()) bytes += it.samples.length * 4;
       return {
         supported: Boolean(Context), unlocked: ctx !== null, contextState: ctx ? ctx.state : 'aucun', started: ctx !== null, muted, volume, musicVolume, gains: { effets: master ? master.gain.value : masterGain(), musique: masterMusique ? masterMusique.gain.value : musicGain() }, suspended, buffers: pcm.size, loaded: [...pcm.keys()], bytes, mode, pack: api.pack(),
-        essentialMs: Math.round(stats.essentialMs), backgroundMs: Math.round(stats.backgroundMs), ready: stats.ready, activeVoices: active.size, annonceActive: [...active.values()].filter((v) => v.category === 'annonce').length, sums: Object.fromEntries(sums), ambience: ambience !== null, loops: [...loopVoices.values()].map((v) => v.def.sound), fires: fires.length, log: log.map((e) => ({ ...e })),
+        essentialMs: Math.round(stats.essentialMs), backgroundMs: Math.round(stats.backgroundMs), ready: stats.ready, activeVoices: active.size, annonceActive: [...active.values()].filter((v) => v.category === 'annonce').length, sums: Object.fromEntries(sums), ambience: ambience !== null, loops: [...loopVoices.values()].map((v) => v.def.sound), fires: fires.length, log: log.map((e) => ({ ...e })), coups: { ...coupsVus },
       };
     },
   };

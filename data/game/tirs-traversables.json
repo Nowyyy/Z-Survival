@@ -1,0 +1,10 @@
+{
+  "_provisoire": "Liste provisoire (lot 8j), à ajuster par le propriétaire en jouant.",
+  "_note": "Lot 8j : objets par-dessus lesquels (ou à travers lesquels) passent les TIRS (balles et laser de visée) ; le joueur et les zombies restent bloqués. Par carte puis par étage (rdc, etage), les identifiants des meubles (world.json, etage.world.json → obstacles), des objets du décor extérieur (voiture-1…) et des grilles (decor-interieur.json : grille-F7, grille-F8). Règle de départ : tous les meubles de moins de 100 de haut et toutes les grilles ; jamais les piliers, les escaliers ni un objet de 100 de haut ou plus. Après un changement : npm run carte (vérifie les identifiants et écrit tirs.world.json), puis npm test. Relevé et mode d'emploi : Docs/ref/correctifs-8j.md.",
+  "cartes": {
+    "rez-de-chaussee": {
+      "rdc": ["M4", "M1+M3+M7", "M10", "M12+M15+M17+M18", "M19", "M21", "M22", "M26+M28+M29+M31", "M32", "M33+M34+M35", "P4", "P5", "P6", "P7", "P8", "P9", "P10", "P11", "P12", "P13", "P3+R-G37", "P1+P2+R-G39", "grille-F7", "grille-F8"],
+      "etage": ["E1", "E2", "Q1", "Q2", "Q3", "Q4", "Q5", "Q6"]
+    }
+  }
+}

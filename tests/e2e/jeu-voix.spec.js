@@ -24,7 +24,7 @@ test.describe('voix de zombies', () => {
 
   test('un zombie à l\'extérieur derrière un mur est joué étouffé ; le même devant une fenêtre ne l\'est pas', async ({ page }) => {
     await page.setViewportSize(SIZE);
-    await page.goto(salle('/jeu.html?test=1&nospawn=1&seed=1'));
+    await page.goto(salle('/jeu.html?test=1&nospawn=1&seed=1&coups=1'));
     await waitReady(page);
     await unlock(page);
     const win = layout.windows.find((w) => w.side === 'nord');

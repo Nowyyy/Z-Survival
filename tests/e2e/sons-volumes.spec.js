@@ -1,6 +1,6 @@
 // Lot 8i-E : volumes du jeu et de la musique (Options du menu E5 et de la partie E2-12, même composant ; Docs/ref/sons-menu.md).
 // ?test=1&menu=1 ; l'état des gains (window.__zsMenu.sons().gains, window.__zs.getState().audio) remplace l'écoute. Réglages du menu appliqués
-// tout de suite aux sons du menu et à la partie après « JOUER » ; « Son coupé » coupe tout ; curseurs au clavier ; 932 × 430, 667 × 375 et
+// tout de suite aux sons du menu et à la partie après « JOUER » ; « Son coupé » coupe tout ; curseurs au clavier (lot 8j : au pour cent, Page haut / Page bas = ±10) ; 932 × 430, 667 × 375 et
 // téléphone à encoche simulé ; axe ; rien n'est écrit. Projets bureau et mobile (paysage ; mobile : les tests « tailles »).
 import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
@@ -56,7 +56,7 @@ test.describe('volumes du jeu et de la musique', () => {
       for (const sel of ['#options-volume', '#options-volume-musique']) {
         await expect(page.locator(sel)).toHaveAttribute('min', '0');
         await expect(page.locator(sel)).toHaveAttribute('max', '100');
-        await expect(page.locator(sel)).toHaveAttribute('step', '10');
+        await expect(page.locator(sel)).toHaveAttribute('step', '1');
         await expect(page.locator(sel)).toHaveAttribute('aria-valuetext', '100 %');
         await page.locator(sel).scrollIntoViewIfNeeded();
         const r = await page.locator(sel).boundingBox();
@@ -91,7 +91,7 @@ test.describe('volumes du jeu et de la musique', () => {
     await page.waitForFunction(() => window.__zsMenu.sons().musique.lecteur?.enMarche === true && window.__zsMenu.sons().pretes.includes('clic'), null, { timeout: 60_000 });
     expect((await sons(page)).gains).toEqual({ effets: 1, musique: 1 });
     // Volume du jeu au clavier : 100 → 70 ; la musique ne bouge pas.
-    await fleches(page, '#options-volume', 'ArrowLeft', 3);
+    await fleches(page, '#options-volume', 'PageDown', 3);
     await expect(page.locator('#options-volume')).toHaveValue('70');
     await expect(page.locator('#options-volume')).toHaveAttribute('aria-valuetext', '70 %');
     await expect(page.locator('#options-volume-valeur')).toHaveText('70 %');
@@ -100,7 +100,7 @@ test.describe('volumes du jeu et de la musique', () => {
     expect(s.gains.musique).toBe(1);
     expect(s.volumes).toEqual({ coupe: false, jeu: 70, musique: 100 });
     // Volume de la musique au clavier : 100 → 40, puis Début (0) et Fin (100) ; les effets ne bougent pas.
-    await fleches(page, '#options-volume-musique', 'ArrowLeft', 6);
+    await fleches(page, '#options-volume-musique', 'PageDown', 6);
     await expect(page.locator('#options-volume-musique-valeur')).toHaveText('40 %');
     s = await sons(page);
     expect(s.gains.musique).toBeCloseTo(0.4, 6);
@@ -109,9 +109,9 @@ test.describe('volumes du jeu et de la musique', () => {
     expect((await sons(page)).gains.musique).toBe(0);
     await expect(page.locator('#options-volume-musique')).toHaveAttribute('aria-valuetext', '0 %');
     await page.keyboard.press('End');
-    await page.keyboard.press('ArrowLeft');
+    await page.keyboard.press('PageDown');
     expect((await sons(page)).gains.musique).toBeCloseTo(0.9, 6);
-    await fleches(page, '#options-volume-musique', 'ArrowLeft', 5);
+    await fleches(page, '#options-volume-musique', 'PageDown', 5);
     expect((await sons(page)).gains.musique).toBeCloseTo(0.4, 6);
     // « Son coupé » : tout à zéro, musique arrêtée, plus aucun son joué ; l'état reste lisible (bouton pressé, texte).
     await page.locator('#options-son-coupe').click();
@@ -143,8 +143,8 @@ test.describe('volumes du jeu et de la musique', () => {
     test.setTimeout(180_000);
     await ouvrirMenu(page);
     await ouvrirOptions(page);
-    await fleches(page, '#options-volume', 'ArrowLeft', 3); // jeu : 70
-    await fleches(page, '#options-volume-musique', 'ArrowLeft', 6); // musique : 40
+    await fleches(page, '#options-volume', 'PageDown', 3); // jeu : 70
+    await fleches(page, '#options-volume-musique', 'PageDown', 6); // musique : 40
     await page.locator('#options-retour').click();
     await page.locator('#menu-jouer').click();
     await page.waitForFunction(() => (window.__zs?.getState()?.time ?? 0) > 0.05, null, { timeout: 120_000 });
@@ -160,12 +160,12 @@ test.describe('volumes du jeu et de la musique', () => {
     await expect(page.locator('#options-volume')).toHaveValue('70');
     await expect(page.locator('#options-volume-musique')).toHaveValue('40');
     await expect(page.locator('#options-volume-musique')).toHaveAccessibleName('Volume de la musique');
-    await fleches(page, '#options-volume-musique', 'ArrowRight', 2);
+    await fleches(page, '#options-volume-musique', 'PageUp', 2);
     a = await audioPartie(page);
     expect(a).toMatchObject({ volume: 70, musicVolume: 60 });
     expect(a.gains.musique).toBeCloseTo(0.8 * 0.6, 6);
     expect(a.gains.effets).toBeCloseTo(0.8 * 0.7, 6);
-    await fleches(page, '#options-volume', 'ArrowRight', 1);
+    await fleches(page, '#options-volume', 'PageUp', 1);
     expect((await audioPartie(page)).volume).toBe(80);
     expect((await audioPartie(page)).musicVolume).toBe(60);
     await page.locator('#options-son-coupe').click();
@@ -211,8 +211,8 @@ test.describe('volumes du jeu et de la musique', () => {
     await menu();
     expect(await appareil()).toEqual({ v: 2, graphics: 'moyen', custom: null }); // rien d'écrit sans réglage
     await ouvrirOptions(page);
-    await fleches(page, '#options-volume', 'ArrowLeft', 3); // jeu : 70
-    await fleches(page, '#options-volume-musique', 'ArrowLeft', 6); // musique : 40
+    await fleches(page, '#options-volume', 'PageDown', 3); // jeu : 70
+    await fleches(page, '#options-volume-musique', 'PageDown', 6); // musique : 40
     await page.locator('#options-son-coupe').click();
     expect(await appareil()).toEqual({ v: 2, graphics: 'moyen', custom: null, son: { coupe: true, jeu: 70, musique: 40 } });
     await menu(); // rechargement : réglages relus, appliqués aux sons du menu dès l'ouverture
@@ -230,7 +230,7 @@ test.describe('volumes du jeu et de la musique', () => {
     await page.locator('#btn-pause').dispatchEvent('click');
     await page.locator('#btn-options').click();
     await expect(page.locator('#options-panel')).toBeVisible();
-    await fleches(page, '#options-volume-musique', 'ArrowRight', 2);
+    await fleches(page, '#options-volume-musique', 'PageUp', 2);
     await page.locator('#options-son-coupe').click();
     expect(await appareil()).toEqual({ v: 2, graphics: 'moyen', custom: null, son: { coupe: true, jeu: 70, musique: 60 } });
     await menu();

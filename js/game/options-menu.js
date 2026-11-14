@@ -40,6 +40,30 @@ function icone(nom, classe) {
   return svg;
 }
 
+// Lot 8j : curseurs de volume au pour cent près. Touches (event.code) : flèches ±1, Page haut / Page bas ±10, Début 0, Fin 100 ; autre touche : null.
+export const VOLUME_TOUCHES = Object.freeze({ ArrowUp: 1, ArrowRight: 1, ArrowDown: -1, ArrowLeft: -1, PageUp: 10, PageDown: -10 });
+export function volumeClavier(code, valeur) {
+  const v = Math.min(100, Math.max(0, Math.round(Number(valeur) || 0)));
+  if (code === 'Home') return 0;
+  if (code === 'End') return 100;
+  const d = VOLUME_TOUCHES[code];
+  return d === undefined ? null : Math.min(100, Math.max(0, v + d));
+}
+
+// Lot 8j : pendant qu'on glisse (ou qu'une touche se répète), le réglage (et le clic d'essai du menu qu'il déclenche) passe au plus une fois toutes
+// les ESSAI_MS millisecondes, puis une fois au relâchement (change, keyup) ou à la fin de l'intervalle ; la valeur écrite suit chaque pour cent.
+export const ESSAI_MS = 150;
+// Limiteur pur : demander(t) → 'maintenant' (appliquer) ou un délai en ms avant d'appliquer ; applique(t) note l'application.
+export function creerLimiteur(intervalle = ESSAI_MS) {
+  let dernier = -Infinity;
+  return {
+    demander: (t) => (t - dernier >= intervalle ? 'maintenant' : intervalle - (t - dernier)),
+    applique: (t) => {
+      dernier = t;
+    },
+  };
+}
+
 // bandeau : fonction bandeau(libellé, titre, id) du menu (js/menu/menu.js), donnée par le menu (le jeu n'importe rien du menu).
 export function creerOptions({ contexte = 'menu', dict, graphics, son = null, vhs = null, onClose = () => {}, root = document.body, bandeau = null }) {
   const t = (k) => dict[k] ?? k;
@@ -123,17 +147,52 @@ export function creerOptions({ contexte = 'menu', dict, graphics, son = null, vh
       return { b, coupe };
     });
     // Lot 8i : deux curseurs, « Volume du jeu » (sons de la partie, effets du menu) et « Volume de la musique » (musique des menus, mélodie
-    // d'annonce de vague ; affiché quand le contexte sait le régler : son.reglerMusique). 0 à 100 % par pas de 10, réglables au clavier.
+    // d'annonce de vague ; affiché quand le contexte sait le régler : son.reglerMusique). Lot 8j : 0 à 100 % au pour cent près (le pas de
+    // data/game/audio.json n'est plus lu ici), clavier complet (volumeClavier), réglage limité pendant le glissement (creerLimiteur).
     const curseurDe = (id, cle, champ, regler) => {
       const l = ligne(sec, id, cle, 'son', champ);
-      const c = el('input', ['e5-curseur'], { type: 'range', min: '0', max: '100', step: '10', id: champ, 'aria-describedby': `options-note-${id}` });
+      const c = el('input', ['e5-curseur'], { type: 'range', min: '0', max: '100', step: '1', id: champ, 'aria-describedby': `options-note-${id}` });
       const v = el('output', ['e5-volume-valeur'], { for: champ, id: `${champ}-valeur`, 'aria-hidden': 'true' });
-      c.addEventListener('input', () => {
+      const limite = creerLimiteur();
+      let minuterie = null;
+      const afficher = () => {
+        const texte = fmt(t('game.options.volume.valeur'), { n: Number(c.value) });
+        c.setAttribute('aria-valuetext', texte);
+        v.textContent = texte;
+      };
+      const appliquer = () => {
+        clearTimeout(minuterie);
+        minuterie = null;
+        limite.applique(performance.now());
         regler(Number(c.value));
         sync();
+      };
+      const demander = () => {
+        const reponse = limite.demander(performance.now());
+        if (reponse === 'maintenant') appliquer();
+        else {
+          minuterie ??= setTimeout(appliquer, reponse);
+          afficher();
+        }
+      };
+      const relacher = () => {
+        if (minuterie !== null) appliquer();
+      };
+      c.addEventListener('input', demander);
+      c.addEventListener('change', relacher);
+      c.addEventListener('keydown', (ev) => {
+        const n = volumeClavier(ev.code, c.value);
+        if (n === null) return;
+        ev.preventDefault();
+        if (n === Number(c.value)) return;
+        c.value = String(n);
+        demander();
+      });
+      c.addEventListener('keyup', (ev) => {
+        if (volumeClavier(ev.code, c.value) !== null) relacher();
       });
       l.valeurs.append(c, v);
-      return { l, c, v };
+      return { l, c, v, enAttente: () => minuterie !== null };
     };
     const jeu = curseurDe('son-niveau', 'game.options.volume', 'options-volume', (n) => son.regler(n));
     const musique = typeof son.reglerMusique === 'function' ? curseurDe('son-musique', 'game.options.volume.musique', 'options-volume-musique', (n) => son.reglerMusique(n)) : null;
@@ -221,11 +280,11 @@ export function creerOptions({ contexte = 'menu', dict, graphics, son = null, vh
       const e = son.etat();
       sonEls.sec.hidden = !e.disponible;
       for (const { b, coupe } of sonEls.boutons) b.setAttribute('aria-pressed', String(coupe === e.coupe));
-      const pas = Number.isFinite(e.pas) && e.pas > 0 ? e.pas : 10;
-      for (const [x, n] of [[sonEls.jeu, e.volume], [sonEls.musique, e.musique]]) {
+      for (const [x, lu] of [[sonEls.jeu, e.volume], [sonEls.musique, e.musique]]) {
         if (!x) continue;
-        x.c.step = String(pas);
-        x.c.value = String(n);
+        // Lot 8j : pendant un glissement limité, la valeur du curseur prime sur celle déjà réglée (elle la rejoint au plus 150 ms après).
+        if (!x.enAttente()) x.c.value = String(lu);
+        const n = Number(x.c.value);
         const texte = fmt(t('game.options.volume.valeur'), { n });
         x.c.setAttribute('aria-valuetext', texte);
         x.v.textContent = texte;

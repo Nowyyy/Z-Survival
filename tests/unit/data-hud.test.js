@@ -73,8 +73,11 @@ describe('lot 3a et 3l : interdits sur l\'interface de jeu (css/game.css, css/ga
     expect(sizes.length).toBeGreaterThan(3);
     for (const v of sizes) {
       if (v === 'var(--hud-fs)') continue;
-      expect(v, v).toMatch(/^\d+(\.\d+)?em$/);
-      expect(Number.parseFloat(v), v).toBeGreaterThanOrEqual(1);
+      // Lot 8j : une taille en em multipliée par le facteur de l'interface (--ui-k, jamais sous 1) reste au moins de 1 em.
+      const k = v.match(/^calc\((\d+(?:\.\d+)?em) \* var\(--ui-k, 1\)\)$/);
+      const em = k ? k[1] : v;
+      expect(em, v).toMatch(/^\d+(\.\d+)?em$/);
+      expect(Number.parseFloat(em), v).toBeGreaterThanOrEqual(1);
     }
     expect(14 * Number(tokens['--hud-text-scale'])).toBeGreaterThanOrEqual(14);
   });

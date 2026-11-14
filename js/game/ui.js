@@ -8,10 +8,12 @@
 import { formatMoney } from '../core/economy.js';
 import { fmt, MONEY_TEXTS, SAVE_TEXTS } from './texts.js';
 import { activerGlisser } from '../glisser.js';
+import { installerEchelle } from './ui-echelle.js';
 
 const PORTRAIT_PHONE = '(orientation: portrait) and (pointer: coarse) and (max-width: 600px)';
 
 export function createUi(dict, handlers) {
+  installerEchelle(); // lot 8j : --ui-k, facteur de l'interface de la partie (1 jusqu'à 1080 px de haut, plafond 2)
   const $ = (id) => document.getElementById(id);
   const els = {
     pausePanel: $('pause-panel'), endPanel: $('end-panel'), live: $('hud-live'), rotate: $('rotate'),

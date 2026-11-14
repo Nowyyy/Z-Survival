@@ -84,6 +84,9 @@ const detail = query.get('detail') !== '0';
 // Lot 5b : préréglage graphique (?gfx= > préférence de l'appareil zs.device.v1 > auto) ; les paramètres explicites de l'adresse l'emportent.
 const gfx = await graphicsBoot(search);
 const gfxLoad = gfx.settings.load;
+// Lot 8j : objets traversables par les tirs (tirs.world.json de la carte, npm run carte) ; ?test=1&tirtraverse=0 : liste vide (jamais mémorisé).
+const tirsJson = mapId === 'salle' || (testMode && query.get('tirtraverse') === '0') ? null : await loadJson(`${mapDir}/tirs.world.json`).catch(() => null);
+const reglagesPartie = await loadJson('data/game/reglages-partie.json').catch(() => ({})); // lot 8j : message des portes, sons des zombies
 const decorInterieur = detail && gfxLoad.decor !== 'reduit' && mapId !== 'salle' ? await loadJson(`${mapDir}/decor-interieur.world.json`).catch(() => null) : null;
 // Retours du propriétaire : mobilier dessiné d'après le modèle (mobilier.world.json, avec le détail).
 const mobilier = detail && mapId !== 'salle' ? await loadJson(`${mapDir}/mobilier.world.json`).catch(() => null) : null;
@@ -143,7 +146,7 @@ const textureData = await generateTextureData(texturesCfg.textures, { lookup: cr
   menuProgres('textures', p);
 }, detail: detail && gfxLoad.texturesFines });
 const soundMode = parseSoundMode(search); // ?sons= (groupe T)
-const audio = createAudio({ config: { audio: audioCfg, materials: materialsCfg, voice: voiceCfg, sounds: soundsCfg.sounds }, test: testMode, seed: Number.isFinite(seedParam) ? seedParam : 1, mode: soundMode });
+const audio = createAudio({ config: { audio: audioCfg, materials: materialsCfg, voice: voiceCfg, sounds: soundsCfg.sounds, coups: testMode && query.get('coups') === '1' ? { ...reglagesPartie.sonsZombies, probabilite: 1 } : (reglagesPartie.sonsZombies ?? {}) }, test: testMode, seed: Number.isFinite(seedParam) ? seedParam : 1, mode: soundMode });
 const sonMenu = reglagesSon(); // lot 8c : son et volume des Options du menu ; lot 8h : gardés dans zs.device.v1 (partie directe comprise)
 if (sonMenu.coupe) audio.toggleMute();
 if (sonMenu.volume !== null) audio.setVolume(sonMenu.volume);
@@ -196,7 +199,7 @@ const loadedSave = repository.load();
 const niveauxPartie = (lus) => (optionPartie().stats && lus.source !== 'url' ? { ...normalizeLevels(optionPartie().stats, statsCfg), source: 'menu' } : lus);
 
 const ctx = {
-  cfg: { layout, layouts, stairs: stairsCfg, player, weapon: weapons.pistol, stats: statsCfg, zombie: enemies.zombie, enemies, gaits: gaitsCfg, waves: wavesCfg, render, camera, nav, windows: windowsCfg, down: downCfg },
+  cfg: { layout, layouts, stairs: stairsCfg, player, weapon: weapons.pistol, stats: statsCfg, zombie: enemies.zombie, enemies, gaits: gaitsCfg, waves: wavesCfg, render, camera, nav, windows: windowsCfg, down: downCfg, tirs: tirsJson },
   palette,
   dict,
   textureData,
@@ -233,6 +236,7 @@ const ctx = {
   audioMaterials: materialsCfg,
   canal, // lot 5l : canal de la page (null : refusé) ; l'icône de débogage de la pause n'existe que sur les canaux de débogage
   monde: optionPartie().monde ?? 'batiment', // lot 8h : monde de la partie (record par monde et par mode)
+  reglages: reglagesPartie, // lot 8j : data/game/reglages-partie.json
   modePartie: optionPartie().mode, // lot 8b : option de démarrage posée par le menu (histoire, ou infini sans paramètre d'adresse) ; partie directe : histoire
 };
 

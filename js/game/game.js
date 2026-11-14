@@ -22,6 +22,7 @@ import { applyHeal, canFire, canHealOnKill, canMove, createPlayerDown, isInvulne
 import { effectivePlayer, effectiveWeapon, normalizeLevels, STAT_IDS, statValues } from '../core/player-stats.js';
 import { createBullet, stepBullets } from '../core/projectile.js';
 import { castRay } from '../core/ray.js';
+import { obstaclesTirs, preparerTirs } from '../core/tir-traverse.js';
 import { createRng } from '../core/rng.js';
 import { shotAngle, speedRatio, spreadHalfAngle, stepSpreadRatio, toRadians } from '../core/spread.js';
 import { createFootsteps, stepFootsteps } from '../core/footsteps.js';
@@ -37,6 +38,7 @@ import { createEffects, MAX_SPARKS, SPARK_TIME } from './effects.js';
 import { createFloorFade } from './floor-fade.js';
 import { createBank } from './bank.js';
 import { createHud } from './hud.js';
+import { createPorteMessage } from './porte-message.js';
 import { createSplashView } from './splash-view.js';
 import { pickGround } from './picking.js';
 import { STRIDE } from './skeleton.js';
@@ -75,6 +77,7 @@ export function createGame(ctx) {
   // jusqu'au bord du monde. Salle du lot 1m (?empty=1) : les limites de la salle, comme avant. Lot 3c : les portes fermées arrêtent aussi les balles et le laser (sans
   // dégâts) ; la liste suit l'état des portes et l'étage du joueur (syncSolids). Lot 3e : ce sont toujours les solides de l'étage du joueur.
   let blockers = [];
+  const tirs = preparerTirs(cfg.tirs, layouts); // lot 8j : tirs par-dessus les objets bas et à travers les grilles (null : liste d'avant)
   let playerSolids = layout.playerObstacles;
   // Lot 3 : les fenêtres ont des planches (siège par les zombies) ; la salle du lot 1m (?empty=1) n'a ni planches ni siège. Lot 3e : tout ce qui est par étage (grilles de
   // chemin, planches, champs de flux, escaliers) vit dans js/core/floor-sim.js, une seule fois au chargement.
@@ -134,6 +137,7 @@ export function createGame(ctx) {
   if (ctx.graphics) ctx.ui?.bindOptions?.({ graphics: ctx.graphics, vhs: ctx.vhs }); // lot 5j : écran Options de la pause (importé à la première ouverture)
   const effects = createEffects(world.effectsRoot, palette, { gunHeight: render.gunHeight, bulletRadius: cfg.weapon.bulletRadius });
   const hud = createHud(ctx.dict);
+  const porteMsg = siegeOn ? createPorteMessage(ctx.dict, ctx.reglages?.porte, doorCfgs) : null; // lot 8j : « Porte ouverte à la manche X » (lecture seule)
   const floorFade = createFloorFade();
   const splashView = createSplashView(ctx.dict);
   const splashOptions = { reducedMotion: reduced, params: ctx.splashCfg };
@@ -206,7 +210,7 @@ export function createGame(ctx) {
     const open = openIds();
     const l = layoutOf(pf());
     playerSolids = [...l.playerObstacles, ...closedDoors(l, open)];
-    blockers = l.empty ? [] : [...l.furniture.filter((f) => f.kind !== 'escalier'), ...l.walls, ...(l.decor?.solids ?? []), ...closedDoors(l, open)];
+    blockers = obstaclesTirs(l, closedDoors(l, open), tirs); // lot 8j : sans tirs, exactement la liste d'avant
   }
   const activeIdsNow = () => (zoneCfg ? activeWindows(zoneCfg, zoneOf, openIds()) : geoms.map((g) => g.id));
   const allSpawnPoints = () => layouts.floors.flatMap((f) => (layoutOf(f).spawnPoints ?? layoutOf(f).windows).map((p) => ({ ...p, floor: f })));
@@ -1043,6 +1047,7 @@ export function createGame(ctx) {
     P?.mark('effets');
     hud.update(sim.player, sim.kills, waveInfo(sim.waves), { chutes: sim.down.chutes, floor: multi ? pf() : null, maxWave: zoneCfg && !sim.waves.endless ? zoneCfg.wavesPerWorld : null, money: { balance: bank.balance(), gain: bank.gain(), gainBleu: bank.gainBleu() }, time: sim.time, trial: trialMode });
     floorFade.set(sim.trView.veil);
+    porteMsg?.update(sim.player, pf(), sim.doors, !sim.dead);
     hud.updateDown(sim.down, sim.dead, cfg.down); // lot 3l : E2-10 dans la colonne centrale du HUD (js/game/hud.js)
     world.windowMeshes?.sync(sim.win); // pastille de la planche en cours de réparation : elle se remplit peu à peu
     updateEdgeArrows();

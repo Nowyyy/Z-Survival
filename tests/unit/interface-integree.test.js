@@ -141,9 +141,13 @@ describe('feuilles de style de l\'interface (css/game-ui.css, css/game.css, css/
 
   it('toutes les variables utilisées par game-ui.css sont définies (jetons, game.css, game-ui.css) ou posées par le code (--down-p, --safe-*)', () => {
     const used = [...uiCss.matchAll(/var\((--[a-z0-9-]+)/g)].map((m) => m[1]);
-    const byCode = ['--down-p'];
+    // Lot 8j : --ui-k (facteur de l'interface) est posé par js/game/ui-echelle.js ; --u est l'unité des écrans du menu (css/menu.css), reprise
+    // par le panneau d'Options de la partie.
+    const byCode = ['--down-p', '--ui-k', '--u'];
     for (const v of used) expect(defined.has(v) || byCode.includes(v), v).toBe(true);
     expect(gameJs).toMatch(/setProperty\('--down-p'/);
+    expect(gameJs).toMatch(/setProperty\('--ui-k'/);
+    expect(readFileSync('css/menu.css', 'utf8')).toMatch(/:root \{\s*--u: /);
   });
 
   it('le bloc « Interface intégrée (lot 3l) » est le dernier de tokens.css et ne contient aucune couleur', () => {

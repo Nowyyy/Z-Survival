@@ -6,7 +6,7 @@ import { waitReady, salle } from './helpers.js';
 
 // Lot 1d : les sons se vérifient par le journal des lectures (?test=1), jamais à l'écoute ; 667×375 pour un rendu logiciel plus rapide.
 const SIZE = { width: 667, height: 375 };
-const URL = (extra = '') => `/jeu.html?test=1&empty=1&nospawn=1&seed=1${extra}`;
+const URL = (extra = '') => `/jeu.html?test=1&empty=1&nospawn=1&seed=1&coups=1${extra}`;
 const BROWSER_NOISE = /GL Driver Message/;
 const world = JSON.parse(readFileSync('data/game/world.json', 'utf8'));
 const decor = JSON.parse(readFileSync('data/game/decor.json', 'utf8'));
@@ -67,7 +67,7 @@ test.describe('sons : démarrage et journal', () => {
 
   test('une balle sur le bois, l\'étagère, la pierre et la voiture donne la bonne matière', async ({ page }) => {
     await page.setViewportSize(SIZE);
-    await page.goto(salle('/jeu.html?test=1&nospawn=1&seed=1')); // monde complet : meubles et décor
+    await page.goto(salle('/jeu.html?test=1&nospawn=1&seed=1&coups=1')); // monde complet : meubles et décor
     await waitReady(page);
     await unlock(page);
     const room = world.room;
