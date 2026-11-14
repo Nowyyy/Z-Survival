@@ -14,7 +14,7 @@ const BROWSER_NOISE = /GL Driver Message/;
 const { sounds } = JSON.parse(readFileSync('data/game/sounds.json', 'utf8'));
 const slots = new Map(resolveAtelier(JSON.parse(readFileSync('data/game/sounds-atelier.json', 'utf8'))).slots.map((s) => [s.id, s]));
 const byId = new Map(sounds.map((s) => [s.id, s]));
-const URL = (extra = '') => `/jeu.html?test=1&empty=1&nospawn=1&seed=1${extra}`;
+const URL = (extra = '') => `/jeu.html?test=1&empty=1&nospawn=1&seed=1&coups=1${extra}`;
 const audio = (page) => page.evaluate(() => window.__zs.getState().audio);
 const step = (page, s) => page.evaluate((x) => window.__zs.step(x), s);
 const emit = (page, events) => page.evaluate((e) => window.__zs.audioEvent(e), events);
@@ -146,7 +146,7 @@ test.describe('sons intégrés : lecture sous les identifiants du jeu', () => {
 
   test('vraie réparation en jeu : son au début de la pose de la planche (et non à la planche posée) @lent', async ({ page }) => {
     await page.setViewportSize(SIZE);
-    await page.goto('/jeu.html?test=1&map=salle&nospawn=1&seed=1&planks=2');
+    await page.goto('/jeu.html?test=1&map=salle&nospawn=1&seed=1&planks=2&coups=1');
     await waitReady(page);
     await unlockReady(page);
     const w = (await page.evaluate(() => window.__zs.getState())).windows.find((x) => x.planks < x.maxPlanks);
@@ -282,7 +282,7 @@ test.describe('impact sur la chair (lot 5a)', () => {
     expect(a.sums['impact-pierre-1']).toBe(fp(renderSound(byId.get('impact-pierre'), 0).samples));
     // Mur : un pilier de la carte par défaut (?empty=1 n'a aucun obstacle de tir), comme tests/e2e/carte-jeu.spec.js.
     const pillar = JSON.parse(readFileSync('data/game/maps/rez-de-chaussee/world.json', 'utf8')).pillars.find((q) => q.id === 'pilier-7');
-    await page.goto('/jeu.html?test=1&nospawn=1&seed=1');
+    await page.goto('/jeu.html?test=1&nospawn=1&seed=1&coups=1');
     await waitReady(page);
     await unlockReady(page);
     await page.evaluate(([x, y]) => window.__zs.setPlayer(x, y), [pillar.x - 150, pillar.y + pillar.h / 2]);

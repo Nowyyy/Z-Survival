@@ -51,11 +51,14 @@ const taille = async (page, [width, height]) => {
 };
 const facteur = (page) => page.evaluate(() => Number(getComputedStyle(document.documentElement).getPropertyValue('--ui-k')));
 // Capture avec les règles du lot, puis avec les règles d'avant : renvoie les deux tampons.
-async function avantApres(page) {
+// Hors HUD, le rappel du son (écran tactile) se masque au gré d'une minuterie de 2 s quand la partie est en pause : il est caché sur ces captures.
+async function avantApres(page, sansRappel = false) {
+  const cache = sansRappel ? await page.addStyleTag({ content: '#sound-hint{visibility:hidden!important}' }) : null;
   const apres = await page.screenshot();
   const style = await page.addStyleTag({ content: AVANT });
   const avant = await page.screenshot();
   await style.evaluate((n) => n.remove());
+  await cache?.evaluate((n) => n.remove());
   return { apres, avant };
 }
 const boites = (page, sel) => page.evaluate((s) => [...document.querySelectorAll(s)].filter((e) => e.getClientRects().length > 0).map((e) => {
@@ -96,11 +99,11 @@ test.describe('interface de la partie à l\'échelle de l\'écran (lot 8j)', () 
       const hud = await avantApres(page);
       expect(hud.apres.equals(hud.avant), `HUD ${s}`).toBe(true);
       await ouvrirPause(page);
-      const pause = await avantApres(page);
+      const pause = await avantApres(page, true);
       expect(pause.apres.equals(pause.avant), `pause ${s}`).toBe(true);
       await ouvrirOptionsPartie(page);
       if (TELEPHONES.includes(`${s}`)) {
-        const options = await avantApres(page);
+        const options = await avantApres(page, true);
         expect(options.apres.equals(options.avant), `Options ${s}`).toBe(true);
       }
       await fermerTout(page);
@@ -108,7 +111,7 @@ test.describe('interface de la partie à l\'échelle de l\'écran (lot 8j)', () 
     await mourir(page);
     for (const s of PETITES) {
       await taille(page, s);
-      const fin = await avantApres(page);
+      const fin = await avantApres(page, true);
       expect(fin.apres.equals(fin.avant), `fin ${s}`).toBe(true);
     }
   });

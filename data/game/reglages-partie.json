@@ -1,0 +1,15 @@
+{
+  "_provisoire": "Valeurs provisoires (lot 8j), à régler par le propriétaire en jouant.",
+  "_note": "Lot 8j : réglages de la partie modifiables par le propriétaire sans lot (relire Docs/ref/correctifs-8j.md). porte.distance : distance (unités du jeu, 20 à 2000 ; 200 par défaut) entre le joueur et le bloc d'une porte encore fermée à partir de laquelle « Porte ouverte à la manche X » s'affiche. sonsZombies.probabilite : part des coups reçus et portés par les zombies qui font un bruit (0 à 1 ; 0,25 = environ un sur quatre ; la mort sonne toujours) ; sonsZombies.types : événements concernés (zombieHit : balle qui touche sans tuer ; zombieAttack : coup porté au joueur ; plankTorn : planche arrachée). Valeur invalide : le défaut.",
+  "porte": {
+    "distance": 200
+  },
+  "sonsZombies": {
+    "probabilite": 0.25,
+    "types": [
+      "zombieHit",
+      "zombieAttack",
+      "plankTorn"
+    ]
+  }
+}

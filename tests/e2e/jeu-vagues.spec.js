@@ -13,7 +13,7 @@ const enemies = load('enemies');
 const gaits = load('gaits');
 const variants = load('zombie-variants').zombie.variants.map((v) => v.id);
 const audioCfg = load('audio');
-const URL = (extra = '') => salle(`/jeu.html?test=1&seed=1${extra}`);
+const URL = (extra = '') => salle(`/jeu.html?test=1&seed=1&coups=1${extra}`);
 const state = (page) => page.evaluate(() => window.__zs.getState());
 const step = (page, seconds) => page.evaluate((s) => window.__zs.step(s), seconds);
 const BROWSER_NOISE = /GL Driver Message|ReadPixels|GPU stall/;

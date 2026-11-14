@@ -37,6 +37,7 @@ import { createEffects, MAX_SPARKS, SPARK_TIME } from './effects.js';
 import { createFloorFade } from './floor-fade.js';
 import { createBank } from './bank.js';
 import { createHud } from './hud.js';
+import { createPorteMessage } from './porte-message.js';
 import { createSplashView } from './splash-view.js';
 import { pickGround } from './picking.js';
 import { STRIDE } from './skeleton.js';
@@ -134,6 +135,7 @@ export function createGame(ctx) {
   if (ctx.graphics) ctx.ui?.bindOptions?.({ graphics: ctx.graphics, vhs: ctx.vhs }); // lot 5j : écran Options de la pause (importé à la première ouverture)
   const effects = createEffects(world.effectsRoot, palette, { gunHeight: render.gunHeight, bulletRadius: cfg.weapon.bulletRadius });
   const hud = createHud(ctx.dict);
+  const porteMsg = siegeOn ? createPorteMessage(ctx.dict, ctx.reglages?.porte, doorCfgs) : null; // lot 8j : « Porte ouverte à la manche X » (lecture seule)
   const floorFade = createFloorFade();
   const splashView = createSplashView(ctx.dict);
   const splashOptions = { reducedMotion: reduced, params: ctx.splashCfg };
@@ -1043,6 +1045,7 @@ export function createGame(ctx) {
     P?.mark('effets');
     hud.update(sim.player, sim.kills, waveInfo(sim.waves), { chutes: sim.down.chutes, floor: multi ? pf() : null, maxWave: zoneCfg && !sim.waves.endless ? zoneCfg.wavesPerWorld : null, money: { balance: bank.balance(), gain: bank.gain(), gainBleu: bank.gainBleu() }, time: sim.time, trial: trialMode });
     floorFade.set(sim.trView.veil);
+    porteMsg?.update(sim.player, pf(), sim.doors, !sim.dead);
     hud.updateDown(sim.down, sim.dead, cfg.down); // lot 3l : E2-10 dans la colonne centrale du HUD (js/game/hud.js)
     world.windowMeshes?.sync(sim.win); // pastille de la planche en cours de réparation : elle se remplit peu à peu
     updateEdgeArrows();
