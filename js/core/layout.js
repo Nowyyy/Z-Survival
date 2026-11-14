@@ -7,7 +7,6 @@ import { innerBounds } from './movement.js';
 import { faceDistance } from './plank-layout.js';
 import { DEFAULT_FLOOR, floorOf, UPPER_FLOOR } from './floors.js';
 import { doorRect } from './zones.js';
-import { furnitureHitbox } from './furniture-model.js';
 import { polygonRects, segmentRects, unionRects } from './shape.js';
 import { isNum, num } from './vec.js';
 
@@ -109,8 +108,9 @@ function segmentedLayout(world, decorCfg, opts = {}) {
   const gaps = windows.map((win) => ({ id: win.id, ...windowGap(win, windowSize, t) })).filter((g) => isNum(g.w));
   const walls = unionRects(raw, gaps).map((r, i) => ({ id: `mur-${i + 1}`, ...r }));
   const interior = unionRects(floor, raw);
-  // Lot 3c : une chaise ne bloque que son assise (furnitureHitbox) ; le rectangle du plan reste dans `plan` pour le dessin.
-  const furniture = validRects(world.obstacles).map((o) => furnitureHitbox(o));
+  // Lot 3c : une chaise ne bloquait que son assise (furnitureHitbox). Lot 8j (retour du propriétaire : le joueur entrait dans les petites caisses et
+  // tables dessinées en entier depuis le lot 3g, mobilier.world.json) : sur la carte, chaque meuble bloque tout son rectangle, celui de son dessin.
+  const furniture = validRects(world.obstacles).map((o) => ({ ...o }));
   const barriers = validRects(world.playerBarriers).map((b) => ({ ...b }));
   const decor = generateDecor(decorCfg, world);
   const room = { ...world.room };

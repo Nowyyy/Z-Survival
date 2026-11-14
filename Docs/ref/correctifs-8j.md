@@ -7,7 +7,7 @@
 - **Sons des zombies** : `js/core/sound-director.js` (pur, générateur propre au son) : `zombieHit` → `impact-zombie` + `zombie-blessure` ou `zombie-mort` ; `zombieAttack` (contact avec le joueur, une fois par seconde par zombie) → `zombie-attaque` ; `plankTorn` (planche arrachée, 2,2 s par planche) → `planche-arrachee`. Vague chargée (estimation par les cadences : tir 0,4 s, 4 balles par zombie, 3 à 4 fenêtres attaquées) : 5 à 7 coups sonores par seconde.
 - **Tirs** : `syncSolids` (`js/game/game.js`) : balles (`stepBullets`, `js/core/projectile.js`), laser et ligne de tir (`castRay`, `js/core/ray.js`) arrêtés par les meubles (sauf escaliers), murs (fenêtres percées : on tire à travers, planches comprises), décor extérieur solide (voitures, arbres, hélicoptère), portes fermées. Les grilles F7 et F8 (`decor-interieur.json`) ne sont que dessinées : le mur logique (`mur-20`, `mur-19`) reste plein.
 
-## Objets bas (< 100) et grilles
+## Objets bas (< 100) et grilles (relevé de la partie A ; règle finale : sous l'arme, voir le bilan)
 | Étage | Objets (type, hauteur de collision) | Traversable |
 | --- | --- | --- |
 | rdc | comptoirs M4, M22, P6, P7, P8 (55), M33+M34+M35 (70) ; tables M1+M3+M7 (55), M10, P5, P9, P12 (40) ; étagères M12+M15+M17+M18, M19, M26+M28+M29+M31, P4, P3+R-G37, P1+P2+R-G39 (70) ; caisses M21, M32, P10, P13 (45) ; armoire P11 (65) | oui (22) |
@@ -24,8 +24,11 @@
 5. **Tirs** : `js/core/tir-traverse.js` (pur) : objets listés retirés et murs percés aux grilles **pour les tirs seulement** (`obstaclesTirs`, appelé par `syncSolids`) ; balles, laser et ligne de tir partagent la liste. Fenêtres : inchangées (ouvertures sans obstacle, planches comprises, comme avant le lot).
 
 ## Régler sans lot
-- Distance du message : `data/game/reglages-partie.json` → `porte.distance` (unités, 20 à 2000 ; 200).
+- Distance du message : `data/game/reglages-partie.json` → `porte.distance` (unités, 20 à 2000 ; 60 depuis le retour du propriétaire). Fin de manche : `bleuManche.duree` (secondes de jeu, 1 à 15 ; 4).
 - Sons : même fichier → `sonsZombies.probabilite` (0 à 1 ; 0,25) et `sonsZombies.types` (`zombieHit`, `zombieAttack`, `plankTorn`).
-- Traversables : `data/game/tirs-traversables.json` → `cartes.rez-de-chaussee.rdc` et `.etage` (identifiants) ; puis `npm run carte` (refuse un identifiant inconnu ou en double, un pilier, un escalier, un objet de 100 de haut ou plus, une grille hors mur ; écrit `tirs.world.json`), puis `npm test`.
+- Traversables : `data/game/tirs-traversables.json` → `cartes.rez-de-chaussee.rdc` et `.etage` (identifiants) ; puis `npm run carte` (refuse un identifiant inconnu ou en double, un pilier, un escalier, un objet **dessiné** à la hauteur de l'arme ou plus haut — `render.json` → `gunHeight`, 43 —, une grille hors mur ; écrit `tirs.world.json`), puis `npm test`.
 - Densité des Options sur PC : `css/menu.css`, `.e5` → `--e5-u-max` (1,25 px ; 864 = 1080 / 1,25). Facteur de l'interface : `js/game/ui-echelle.js` (1080, plafond 2).
 - Essais (jamais mémorisés, `?test=1`) : `&tirtraverse=0` (liste vide, tirs d'avant le lot), `&coups=1` (chaque coup sonne).
+
+## Retours du propriétaire après la fusion
+- Meubles de la carte : boîte de collision = rectangle dessiné (fin de la boîte de « chaise » du lot 3c) ; tirs par-dessus ce qui est dessiné sous l'arme (43) seulement ; cône arrêté comme le laser (`longueursCone`, `js/core/tir-traverse.js`) ; message des portes à 60 ; « Monnaie bleue : solde (+gain) » sous la vague en fin de manche (`js/game/bleu-manche.js`).

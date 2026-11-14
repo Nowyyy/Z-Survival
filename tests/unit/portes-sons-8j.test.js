@@ -7,6 +7,7 @@ import { parseZones, zonesToWorld } from '../../js/core/zones.js';
 import { createRng, nextFloat } from '../../js/core/rng.js';
 import { PORTE_DEFAUT, porteProche, reglagesPorte } from '../../js/core/porte-message.js';
 import { COUPS_DEFAUT, estCoup, filtrerCoups, reglagesCoups, rngCoups } from '../../js/core/sons-coups.js';
+import { BLEU_MANCHE_DEFAUT, reglagesBleuManche, texteBleuManche } from '../../js/game/bleu-manche.js';
 
 const json = (p) => JSON.parse(readFileSync(p, 'utf8'));
 const D = 'data/game/maps/rez-de-chaussee/';
@@ -52,11 +53,11 @@ describe('message « Porte ouverte à la manche X »', () => {
     porteProche(portes, etat, centre(bloc('porte-2')), 'rdc', 200);
     expect(JSON.stringify(portes)).toBe(avant);
   });
-  it('distance réglable : 20 à 2000 unités, sinon le défaut (200)', () => {
-    expect(PORTE_DEFAUT.distance).toBe(200);
+  it('distance réglable : 20 à 2000 unités, sinon le défaut (60 : retour du propriétaire, tout près de la porte)', () => {
+    expect(PORTE_DEFAUT.distance).toBe(60);
     expect(reglagesPorte({ distance: 350 }).distance).toBe(350);
-    for (const d of [10, 2001, '300', null, Number.NaN]) expect(reglagesPorte({ distance: d }).distance).toBe(200);
-    expect(reglagesPorte(undefined).distance).toBe(200);
+    for (const d of [10, 2001, '300', null, Number.NaN]) expect(reglagesPorte({ distance: d }).distance).toBe(60);
+    expect(reglagesPorte(undefined).distance).toBe(60);
   });
 });
 
@@ -114,3 +115,16 @@ describe('sons des zombies : environ un coup sur quatre', () => {
     expect(reglagesCoups(r.sonsZombies).types).toEqual(r.sonsZombies.types);
   });
 });
+
+describe('fin de manche : solde bleu et gain sous la vague (retour du propriétaire)', () => {
+  it('texte « Monnaie bleue : solde (+gain) » (fr.json), montants mis en forme ; durée 1 à 15 s de jeu, sinon 4', () => {
+    const fr = json('data/i18n/fr.json');
+    expect(fr['game.hud.bleuManche']).toBe('Monnaie bleue : {solde} (+{gain})');
+    expect(texteBleuManche(fr['game.hud.bleuManche'], 168, 12)).toBe('Monnaie bleue : 168 (+12)');
+    expect(BLEU_MANCHE_DEFAUT.duree).toBe(4);
+    expect(reglagesBleuManche({ duree: 6 }).duree).toBe(6);
+    for (const d of [0, 16, '5', null, Number.NaN]) expect(reglagesBleuManche({ duree: d }).duree).toBe(4);
+    expect(reglagesBleuManche(json('data/game/reglages-partie.json').bleuManche).duree).toBe(4);
+  });
+});
+

@@ -805,6 +805,7 @@
         "js/game/debug-menu.js",
         "js/game/ui-echelle.js",
         "js/game/porte-message.js",
+        "js/game/bleu-manche.js",
         "js/core/porte-message.js",
         "data/game/reglages-partie.json"
       ],

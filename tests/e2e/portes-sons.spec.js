@@ -58,7 +58,7 @@ test.describe('message à l\'approche d\'une porte fermée (lot 8j)', () => {
     await expect(msg(page)).toHaveAttribute('data-visible', 'false');
     await expect(msg(page)).toBeHidden();
     // Revenir : annoncé de nouveau (une fois par approche).
-    await page.evaluate(([x, y]) => window.__zs.setPlayer(x, y), [r.x - 60, r.y + r.h / 2]);
+    await page.evaluate(([x, y]) => window.__zs.setPlayer(x, y), [r.x - 40, r.y + r.h / 2]);
     await expect(msg(page)).toHaveAttribute('data-visible', 'true');
     // Porte ouverte : plus jamais de message près d'elle.
     expect(await page.evaluate(() => window.__zs.setDoor('porte-1', true))).toBe(true);
@@ -81,12 +81,44 @@ test.describe('message à l\'approche d\'une porte fermée (lot 8j)', () => {
     await images(page);
     await expect(msg(page)).toHaveAttribute('data-visible', 'false');
     const r2 = bloc('porte-2');
-    await page.evaluate(([x, y]) => window.__zs.setPlayer(x, y), [r2.x + r2.w / 2, r2.y - 80]);
+    await page.evaluate(([x, y]) => window.__zs.setPlayer(x, y), [r2.x + r2.w / 2, r2.y - 40]);
     await expect(msg(page)).toHaveText('Porte ouverte à la manche 21');
     await expect(msg(page)).toHaveAttribute('data-visible', 'true');
     // Aucune transition propre (règle de game-ui.css) ; la règle commune de base.css ramène toute durée à 0,01 ms au plus.
     const durees = (await msg(page).evaluate((n) => getComputedStyle(n).transitionDuration)).split(',').map((d) => Number.parseFloat(d));
     for (const d of durees) expect(d).toBeLessThanOrEqual(0.00001);
+  });
+});
+
+test.describe('fin de manche : solde bleu et gain sous la vague (retour du propriétaire après le lot 8j)', () => {
+  test('« Monnaie bleue : solde (+gain) » sous le compteur de vague à la fin d\'une manche, pendant 4 s de jeu, puis masqué ; montants lus dans la banque', async ({ page }) => {
+    await page.addInitScript(() => Object.defineProperty(Document.prototype, 'hidden', { get: () => true, configurable: true }));
+    await page.setViewportSize({ width: 932, height: 430 });
+    await page.goto('/jeu.html?test=1&seed=1&wave=3');
+    await page.waitForFunction(() => window.__zs, null, { timeout: 120_000 });
+    const bloc = page.locator('#hud-bleu-manche');
+    await expect(bloc).toBeHidden();
+    const avant = await page.evaluate(() => window.__zs.getState().save.bleu.solde);
+    const etat = await page.evaluate(() => {
+      const zs = window.__zs;
+      zs.step(4); // la manche démarre (compte à rebours)
+      zs.skipWave();
+      for (let i = 0; i < 10 && document.getElementById('hud-bleu-manche').hidden; i += 1) zs.step(0.1);
+      return zs.getState().save.bleu;
+    });
+    await expect(bloc).toBeVisible();
+    const gain = etat.solde - avant;
+    expect(gain).toBeGreaterThan(0);
+    await expect(bloc).toHaveText(`Monnaie bleue : ${etat.solde.toLocaleString('fr-FR').replace(/\u202f|\u00a0/g, ' ')} (+${gain})`);
+    const boites = await page.evaluate(() => [document.getElementById('hud-wave'), document.getElementById('hud-bleu-manche')].map((n) => {
+      const r = n.getBoundingClientRect();
+      return { cx: r.left + r.width / 2, t: r.top, b: r.bottom, color: getComputedStyle(n).color };
+    }));
+    expect(boites[1].t).toBeGreaterThanOrEqual(boites[0].b - 0.5); // sous la vague
+    expect(Math.abs(boites[1].cx - boites[0].cx)).toBeLessThan(2); // même colonne, centré
+    expect(await bloc.getAttribute('aria-hidden')).toBe('true');
+    await page.evaluate(() => window.__zs.step(4.2));
+    await expect(bloc).toBeHidden();
   });
 });
 

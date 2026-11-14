@@ -9,7 +9,7 @@ import { castRay } from '../../js/core/ray.js';
 import { moveWithCollision } from '../../js/core/collision.js';
 import { createRng, nextFloat } from '../../js/core/rng.js';
 import { generateMapFiles } from '../../scripts/plan-vers-monde.mjs';
-import { lireTirs, obstaclesTirs, preparerTirs, TIRS_HAUTEUR_MAX, tirsMonde, trousGrilles } from '../../js/core/tir-traverse.js';
+import { lireTirs, longueursCone, obstaclesTirs, preparerTirs, tirsMonde, trousGrilles } from '../../js/core/tir-traverse.js';
 
 const json = (p) => JSON.parse(readFileSync(p, 'utf8'));
 const D = 'data/game/maps/rez-de-chaussee/';
@@ -38,21 +38,25 @@ function vol(x0, y0, angle, ennemis, obstacles) {
 }
 
 describe('données : liste du propriétaire et fichier dérivé', () => {
-  it('tirs.world.json est à jour (npm run carte) et suit la liste ; par défaut, tous les meubles bas (22 au rez-de-chaussée, 8 à l\'étage) et les deux grilles', () => {
+  it('tirs.world.json est à jour (npm run carte) et suit la liste ; règle (retour du propriétaire) : meubles dessinés plus bas que l\'arme (11 au rez-de-chaussée, 5 à l\'étage) et les deux grilles', () => {
     const gen = generateMapFiles('rez-de-chaussee');
     expect(gen.tirs).toBe(readFileSync(`${D}tirs.world.json`, 'utf8'));
     expect(gen.tirsReport.problems).toEqual([]);
     const liste = json('data/game/tirs-traversables.json').cartes['rez-de-chaussee'];
     expect([...TIRS.rdc.ids, ...TIRS.rdc.grilles.map((g) => g.id)].sort()).toEqual([...liste.rdc].sort());
-    expect(TIRS.rdc.ids).toHaveLength(22);
+    expect(TIRS.rdc.ids).toHaveLength(11);
     expect(TIRS.rdc.grilles.map((g) => g.id)).toEqual(['grille-F7', 'grille-F8']);
-    expect(TIRS.etage.ids).toHaveLength(8);
-    // Règle de départ : chaque meuble listé fait moins de 100 de haut ; aucun pilier ni escalier.
-    for (const [l, ids] of [[L.rdc, TIRS.rdc.ids], [L.etage, TIRS.etage.ids]]) {
+    expect(TIRS.etage.ids).toHaveLength(5);
+    // Chaque meuble listé est DESSINÉ plus bas que l'arme (mobilier.world.json, render.json → gunHeight 43) ; aucun pilier ni escalier.
+    const arme = json('data/game/render.json').gunHeight;
+    expect(arme).toBe(43);
+    const pieces = Object.values(json(`${D}mobilier.world.json`).pieces);
+    const dessin = (id, f) => Math.max(...pieces.filter((p) => p.obstacle === id && p.floor === f).flatMap((p) => p.boxes.map((b) => b.y1)));
+    for (const [f, l, ids] of [['rdc', L.rdc, TIRS.rdc.ids], ['etage', L.etage, TIRS.etage.ids]]) {
       for (const id of ids) {
         const m = meuble(id, l);
         expect(m, id).toBeTruthy();
-        expect(m.hauteur, id).toBeLessThan(TIRS_HAUTEUR_MAX);
+        expect(dessin(id, f), id).toBeLessThan(arme);
         expect(['pilier', 'escalier'], id).not.toContain(m.kind);
       }
     }
@@ -60,8 +64,12 @@ describe('données : liste du propriétaire et fichier dérivé', () => {
   it('vérification : identifiant inconnu, en double, pilier, escalier, objet de 100 ou plus et grille hors mur refusés', () => {
     const couche = { obstacles: [...rdc.furniture, { id: 'haut', kind: 'armoire', hauteur: 120 }], solids: rdc.decor.solids, grilles: [{ id: 'g-hors', a: { x: 0, y: 0 }, b: { x: 10, y: 0 }, n: { x: 0, y: 1 } }], walls: rdc.walls, thick: 40 };
     const { doc, problems } = tirsMonde({ rdc: ['M4', 'M4', 'X1', 'pilier-1', 'escalier-aile', 'haut', 'g-hors', 'voiture-1'] }, { rdc: couche });
+    // Avec la hauteur de l'arme (43) et les hauteurs dessinées : une étagère (70) et un comptoir dessiné à 48 sont refusés, un comptoir dessiné à 9 passe.
+    const arme = tirsMonde({ rdc: ['M26+M28+M29+M31', 'M4', 'M22'] }, { rdc: { ...couche, hauteurs: new Map([['M4', 48], ['M22', 9.3]]) } }, { hauteurMax: 43 });
+    expect(arme.doc.rdc.ids).toEqual(['M22']);
+    expect(arme.problems).toEqual(['rdc : M26+M28+M29+M31 (70 de haut, arme à 43) arrête toujours les tirs', 'rdc : M4 (48 de haut, arme à 43) arrête toujours les tirs']);
     expect(doc.rdc.ids).toEqual(['M4', 'voiture-1']);
-    expect(problems).toEqual(['rdc : M4 en double', 'rdc : identifiant inconnu X1', 'rdc : pilier-1 (pilier) arrête toujours les tirs', 'rdc : escalier-aile (escalier) arrête toujours les tirs', 'rdc : haut (120 de haut) arrête toujours les tirs', 'rdc : grille g-hors hors de tout mur']);
+    expect(problems).toEqual(['rdc : M4 en double', 'rdc : identifiant inconnu X1', 'rdc : pilier-1 (pilier) arrête toujours les tirs', 'rdc : escalier-aile (escalier) arrête toujours les tirs', 'rdc : haut (120 de haut, arme à 100) arrête toujours les tirs', 'rdc : grille g-hors hors de tout mur']);
     expect(tirsMonde({ etage: ['E1'] }, { rdc: couche }).problems).toEqual(['etage : étage absent de la carte']);
     expect(lireTirs(null)).toBeNull();
     expect(lireTirs({ rdc: { ids: ['a', 3, ''], grilles: [{ id: 'g' }] } }).rdc).toEqual({ ids: new Set(['a']), grilles: [] });
@@ -84,13 +92,17 @@ describe('balles et laser', () => {
     const z = [{ id: 7, x: t.x + t.w + 60, y, r: 20 }];
     expect(vol(t.x - 80, y, 0, z, AVEC).impact).toMatchObject({ enemyId: 7 });
     expect(vol(t.x - 80, y, 0, z, SANS).gone).toMatchObject({ reason: 'obstacle', obstacleId: 'M10' });
-    // Une étagère de 70 aussi (règle de départ : moins de 100).
+    // Un comptoir dessiné bas (P8, 29) aussi ; une étagère (M26…, 70 : plus haute que l'arme) arrête la balle (retour du propriétaire).
+    const c = meuble('P8');
+    const xc = c.x + c.w / 2;
+    const zc = [{ id: 8, x: xc, y: c.y + c.h + 60, r: 20 }];
+    expect(vol(xc, c.y - 50, Math.PI / 2, zc, AVEC).impact).toMatchObject({ enemyId: 8 });
     const e = meuble('M26+M28+M29+M31');
     const xe = e.x + e.w / 2;
-    const ze = [{ id: 8, x: xe, y: e.y + e.h + 60, r: 20 }];
-    expect(vol(xe, e.y - 50, Math.PI / 2, ze, AVEC).impact).toMatchObject({ enemyId: 8 });
-    expect(vol(xe, e.y - 50, Math.PI / 2, ze, SANS).gone).toMatchObject({ obstacleId: 'M26+M28+M29+M31' });
+    const ze = [{ id: 9, x: xe, y: e.y + e.h + 60, r: 20 }];
+    expect(vol(xe, e.y - 50, Math.PI / 2, ze, AVEC).gone).toMatchObject({ obstacleId: 'M26+M28+M29+M31' });
   });
+
   it('s\'arrête toujours sur un objet haut, un mur, un pilier, une porte fermée ; une fenêtre (planches comprises) se traverse comme avant le lot', () => {
     // Objet haut (hors liste) : arrête la balle.
     const haut = { ...rdc, furniture: [{ id: 'haut', kind: 'armoire', x: 2000, y: 1000, w: 40, h: 40, hauteur: 150 }], walls: [], decor: { solids: [] } };
@@ -127,6 +139,19 @@ describe('balles et laser', () => {
       expect(raySans.stoppedBy.id).toBe(sans.gone.obstacleId);
     }
   });
+  it('cône de visée (retour du propriétaire) : chaque bord s\'arrête sur les obstacles des tirs comme le laser ; à travers une grille, il passe', () => {
+    const m = rdc.walls[0];
+    const o = { x: m.x + m.w / 2, y: m.y + m.h + 100 };
+    const [g, d] = longueursCone(o, -Math.PI / 2, 0.1, 300, BORNES, AVEC);
+    for (const [len, a] of [[g, -Math.PI / 2 - 0.1], [d, -Math.PI / 2 + 0.1]]) {
+      expect(len).toBeLessThan(110);
+      expect(len).toBeCloseTo(castRay(o, a, 300, [], BORNES, AVEC).length, 9);
+    }
+    const gr = TIRS.rdc.grilles.find((q) => q.id === 'grille-F7');
+    const og = { x: (gr.a.x + gr.b.x) / 2, y: 2450 };
+    expect(longueursCone(og, Math.PI / 2, 0.05, 300, BORNES, AVEC)).toEqual([300, 300]);
+    for (const len of longueursCone(og, Math.PI / 2, 0.05, 300, BORNES, SANS)) expect(len).toBeLessThan(100);
+  });
   it('liste vide : obstacles et résultats identiques à ceux d\'avant le lot (même liste, mêmes impacts sur 300 tirs tirés au hasard)', () => {
     for (const f of ['rdc', 'etage']) {
       const l = L[f];
@@ -159,6 +184,21 @@ describe('balles et laser', () => {
 });
 
 describe('joueur et zombies : toujours bloqués', () => {
+  it('retour du propriétaire : chaque meuble de la carte bloque tout son rectangle dessiné (plus de petite boîte de « chaise » : M21, M10, P10…)', () => {
+    for (const [l, ids] of [[L.rdc, ['M4', 'M10', 'M21', 'M32', 'P5', 'P10']], [L.etage, ['E2', 'Q5', 'Q6']]]) {
+      for (const id of ids) {
+        const m = meuble(id, l);
+        const plan = (l === L.rdc ? world : json(`${D}etage.world.json`)).obstacles.find((o) => o.id === id);
+        expect([m.x, m.y, m.w, m.h], id).toEqual([plan.x, plan.y, plan.w, plan.h]);
+        expect(m.plan, id).toBeUndefined();
+      }
+    }
+    // La caisse M21 (85 × 30, contre le mur est) : le joueur venu de l'ouest s'arrête à son bord (avant : il entrait de 32).
+    const c = meuble('M21');
+    let p = { x: c.x - 40, y: c.y + c.h / 2, r: 18 };
+    for (let i = 0; i < 12; i += 1) p = { ...p, ...moveWithCollision(p, { x: 11, y: 0 }, playerSolids(rdc, []), rdc.moveRoom) };
+    expect(p.x).toBeCloseTo(c.x - 18, 6);
+  });
   it('le joueur et les zombies ne traversent ni la table basse ni la grille ; leurs obstacles ne lisent jamais la liste des tirs', () => {
     const t = meuble('M10');
     const y = t.y + t.h / 2;

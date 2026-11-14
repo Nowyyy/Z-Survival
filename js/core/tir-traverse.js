@@ -6,6 +6,8 @@
 // exactement comme le dessin (js/game/world.js, cutGrilles : la boîte de mur qui contient le milieu de l'ouverture, sur la longueur [a, b]).
 // Sans données (null : ?test=1&tirtraverse=0, ancienne salle) : la liste d'obstacles des tirs est exactement celle d'avant le lot.
 
+import { castRay } from './ray.js';
+
 const FLOORS = ['rdc', 'etage'];
 const isNum = (v) => typeof v === 'number' && Number.isFinite(v);
 const isPoint = (p) => p && isNum(p.x) && isNum(p.y);
@@ -82,11 +84,14 @@ export function obstaclesTirs(couche, portesFermees, prep) {
 
 // npm run carte : vérifie la liste du propriétaire (data/game/tirs-traversables.json, une carte : { rdc: [ids], etage: [ids] }) et rend le
 // contenu du fichier dérivé (tirs.world.json) et les problèmes. couches : { rdc, etage } = { obstacles (meubles du monde), solids (décor solide), grilles
-// (décor intérieur « grille » : { id, a, b, n }), walls (murs logiques), thick }. Refusés : identifiant inconnu ou en double, pilier, escalier,
-// objet de TIRS_HAUTEUR_MAX ou plus (les objets hauts arrêtent toujours les tirs), grille hors de tout mur.
+// (décor intérieur « grille » : { id, a, b, n }), walls (murs logiques), thick, hauteurs (facultatif : Map identifiant → hauteur DESSINÉE,
+// mobilier.world.json) }. Refusés : identifiant inconnu ou en double, pilier, escalier, objet dont la hauteur (dessinée si connue, sinon de
+// collision) atteint options.hauteurMax (retour du propriétaire après le lot 8j : la hauteur de l'arme, render.json → gunHeight, 43 ; on ne
+// tire jamais à travers ce qui dépasse l'arme ; TIRS_HAUTEUR_MAX sans réglage), grille hors de tout mur. Les grilles passent quelle que soit leur hauteur.
 export const TIRS_HAUTEUR_MAX = 100;
 export const TIRS_JAMAIS = Object.freeze(['pilier', 'escalier']);
-export function tirsMonde(liste, couches) {
+export function tirsMonde(liste, couches, options = {}) {
+  const hauteurMax = isNum(options.hauteurMax) && options.hauteurMax > 0 ? options.hauteurMax : TIRS_HAUTEUR_MAX;
   const problems = [];
   const doc = {};
   for (const f of FLOORS) {
@@ -112,7 +117,7 @@ export function tirsMonde(liste, couches) {
       const g = grilles.get(id);
       if (o) {
         if (TIRS_JAMAIS.includes(o.kind)) problems.push(`${f} : ${id} (${o.kind}) arrête toujours les tirs`);
-        else if (isNum(o.hauteur) && o.hauteur >= TIRS_HAUTEUR_MAX) problems.push(`${f} : ${id} (${o.hauteur} de haut) arrête toujours les tirs`);
+        else if (isNum(c.hauteurs?.get?.(id) ?? o.hauteur) && (c.hauteurs?.get?.(id) ?? o.hauteur) >= hauteurMax) problems.push(`${f} : ${id} (${c.hauteurs?.get?.(id) ?? o.hauteur} de haut, arme à ${hauteurMax}) arrête toujours les tirs`);
         else out.ids.push(id);
       } else if (g && isPoint(g.a) && isPoint(g.b) && isPoint(g.n)) {
         if (trousGrilles(c.walls, [g], isNum(c.thick) ? c.thick : 40).size === 0) problems.push(`${f} : grille ${id} hors de tout mur`);
@@ -122,4 +127,10 @@ export function tirsMonde(liste, couches) {
     doc[f] = out;
   }
   return { doc, problems };
+}
+
+// Retour du propriétaire après le lot 8j : les deux bords du cône de visée s'arrêtent, comme le laser, sur les obstacles des tirs (mêmes murs,
+// meubles, portes ; les objets traversables laissent passer). Renvoie [longueur du bord gauche (angle − demi-angle), longueur du bord droit].
+export function longueursCone(from, angle, half, length, bounds, obstacles) {
+  return [-1, 1].map((s) => castRay(from, angle + s * half, length, [], bounds, obstacles).length);
 }

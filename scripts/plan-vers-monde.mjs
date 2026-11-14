@@ -147,8 +147,12 @@ export function generateMapFiles(id = 'rez-de-chaussee') {
   if (liste) {
     const L = buildLayouts({ rdc: { world: out.world, decor: out.decor }, etage: etageWorldOut ? { world: etageWorldOut } : null, zones: zonesToWorld(zones, out.world.transform) });
     const items = result.decorInterieur ? JSON.parse(result.decorInterieur).items : [];
-    const couche = (f, w) => (w && L[f] ? { obstacles: w.obstacles, solids: L[f].decor?.solids ?? [], grilles: items.filter((it) => it.kind === 'grille' && it.floor === f), walls: L[f].walls, thick: L[f].wallThickness } : null);
-    const conv = tirsMonde(liste, { rdc: couche('rdc', out.world), etage: couche('etage', etageWorldOut) });
+    // Retour du propriétaire après le lot 8j : hauteur DESSINÉE de chaque meuble (mobilier.world.json), comparée à celle de l'arme (render.json → gunHeight).
+    const pieces = result.mobilier ? Object.values(JSON.parse(result.mobilier).pieces) : [];
+    const hauteursDe = (f) => new Map(pieces.filter((p) => p.floor === f).reduce((m, p) => m.set(p.obstacle, Math.max(m.get(p.obstacle) ?? 0, ...p.boxes.map((b) => b.y1))), new Map()));
+    const gunHeight = JSON.parse(readFileSync(new URL('../render.json', ROOT), 'utf8')).gunHeight;
+    const couche = (f, w) => (w && L[f] ? { obstacles: w.obstacles, solids: L[f].decor?.solids ?? [], grilles: items.filter((it) => it.kind === 'grille' && it.floor === f), walls: L[f].walls, thick: L[f].wallThickness, hauteurs: hauteursDe(f) } : null);
+    const conv = tirsMonde(liste, { rdc: couche('rdc', out.world), etage: couche('etage', etageWorldOut) }, { hauteurMax: gunHeight });
     result.tirs = `${formatJson({ _provisoire: 'Objets traversables par les tirs générés par npm run carte (scripts/plan-vers-monde.mjs) d\'après data/game/tirs-traversables.json : ne jamais éditer à la main. ids : meubles et objets par-dessus lesquels passent balles et laser ; grilles : ouvertures grillagées (a, b sur la face intérieure du mur, n vers la salle) à travers lesquelles ils passent. Le joueur et les zombies restent bloqués. Valeurs provisoires.', ...conv.doc })}\n`;
     result.tirsReport = { counts: Object.fromEntries(Object.entries(conv.doc).map(([f, d]) => [f, `${d.ids.length} objets, ${d.grilles.length} grilles`])), problems: conv.problems };
     result.problems.push(...conv.problems.map((v) => `tirs : ${v}`));
