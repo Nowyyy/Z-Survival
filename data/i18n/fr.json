@@ -391,6 +391,7 @@
   "game.hud.rec": "Rec",
   "game.hud.lifeShort": "Vie",
   "game.hud.waveShort": "Vague",
+  "game.hud.bleuManche": "Monnaie bleue : {solde} (+{gain})",
   "game.hud.waveOf": "{n} / {max}",
   "game.hud.reinforced": "Renforcée",
   "game.hud.remainingShort": "Restants",

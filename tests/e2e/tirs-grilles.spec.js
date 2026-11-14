@@ -23,9 +23,14 @@ const tirer = (page, x, yJ, yZ, secondes = 3) => page.evaluate(([px, pj, pz, s])
   zs.setWaveParams?.({});
   zs.step(0.1);
   const premier = zs.getState().laser;
-  for (let t = 0; t < s; t += 0.1) zs.step(0.1);
+  let touche = false; // un zombie a perdu de la vie (ou est mort)
+  for (let t = 0; t < s; t += 0.1) {
+    zs.step(0.1);
+    const e = zs.getState();
+    touche = touche || e.kills > 0 || e.enemies.some((z) => z.health < z.maxHp);
+  }
   const st = zs.getState();
-  return { laser: premier, kills: st.kills, shots: st.shots.length };
+  return { laser: premier, kills: st.kills, shots: st.shots.length, touche };
 }, [x, yJ, yZ, secondes]);
 
 test.describe('tirs à travers les grilles et par-dessus les meubles bas (lot 8j)', () => {
@@ -41,6 +46,27 @@ test.describe('tirs à travers les grilles et par-dessus les meubles bas (lot 8j
     });
   }
 
+  test('cône de visée (retour du propriétaire) : face à un mur plein, ses deux bords s\'arrêtent au mur comme le laser ; face à la grille F7, ils la traversent', async ({ page }) => {
+    await ouvrir(page);
+    const vise = (x, y) => page.evaluate(([px, py]) => {
+      const zs = window.__zs;
+      zs.setPlayer(px, py);
+      zs.setInput({ move: { x: 0, y: 0 }, aim: { angle: Math.PI / 2 } });
+      zs.step(0.1);
+      return zs.getState().laser;
+    }, [x, y]);
+    const g = TIRS.rdc.grilles.find((q) => q.id === 'grille-F7');
+    const mur = await vise(2100, 2450); // mur sud plein (mur-20, hors de la grille), à 90 du joueur
+    expect(mur.stoppedBy).toMatch(/^mur-/);
+    for (const len of mur.cone.lengths) {
+      expect(len).toBeLessThan(mur.range);
+      expect(Math.abs(len - mur.length)).toBeLessThan(10);
+    }
+    const grille = await vise((g.a.x + g.b.x) / 2, 2450);
+    expect(grille.stoppedBy).toBeNull();
+    for (const len of grille.cone.lengths) expect(len).toBeGreaterThan(150);
+  });
+
   test('?tirtraverse=0 (liste vide, essai) : comme avant le lot, le mur de la grille arrête le laser, aucun tir ne part, le zombie reste en vie', async ({ page }) => {
     await ouvrir(page, '&tirtraverse=0');
     const g = TIRS.rdc.grilles.find((q) => q.id === 'grille-F7');
@@ -52,13 +78,15 @@ test.describe('tirs à travers les grilles et par-dessus les meubles bas (lot 8j
     expect(r.kills).toBe(0);
   });
 
-  test('par-dessus une table basse (M10, 40 de haut) : zombie derrière touché ; le joueur, lui, ne la traverse pas', async ({ page }) => {
+  test('par-dessus une table basse (M10, dessinée à 40, sous l\'arme) : zombie derrière touché ; le joueur, lui, ne la traverse pas', async ({ page }) => {
     await ouvrir(page);
     const t = WORLD.obstacles.find((o) => o.id === 'M10');
     const x = t.x + t.w / 2;
     const r = await tirer(page, x, t.y - 60, t.y + t.h + 70);
     expect(r.laser.stoppedBy).toBeNull();
-    expect(r.kills).toBe(1);
+    expect(r.laser.hit).not.toBeNull();
+    // Retour du propriétaire : la table bloque désormais tout son dessin (80 × 55) ; le zombie la contourne après le premier impact.
+    expect(r.touche).toBe(true);
     // Le joueur marche vers le sud depuis le nord de la table : il s'arrête contre elle (collisions inchangées).
     const y = await page.evaluate(([px, py]) => {
       const zs = window.__zs;

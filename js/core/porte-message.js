@@ -4,10 +4,10 @@
 // même convention que nextDoor, js/core/zones.js). Une porte « planned » ou ouverte n'a jamais de message.
 import { distanceToRect } from './collision.js';
 
-export const PORTE_DEFAUT = Object.freeze({ distance: 200 });
+export const PORTE_DEFAUT = Object.freeze({ distance: 60 }); // retour du propriétaire après le lot 8j : 200 → 60 (tout près de la porte)
 export const PORTE_BORNES = Object.freeze({ min: 20, max: 2000 });
 
-// Réglage lu dans data/game/reglages-partie.json (porte.distance, unités du jeu) ; hors bornes ou invalide : le défaut.
+// Réglage lu dans data/game/reglages-partie.json (porte.distance, unités du jeu) ; hors bornes ou invalide : le défaut (60).
 export function reglagesPorte(json) {
   const d = json?.distance;
   return { distance: typeof d === 'number' && Number.isFinite(d) && d >= PORTE_BORNES.min && d <= PORTE_BORNES.max ? d : PORTE_DEFAUT.distance };

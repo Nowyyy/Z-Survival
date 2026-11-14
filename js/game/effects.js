@@ -106,7 +106,7 @@ export function createEffects(scene, palette, { gunHeight, bulletRadius }) {
         strip(halo, from.x, from.y, ray.end.x, ray.end.y, laserY, thick * 2.6);
         offLine.visible = false;
         offHalo.visible = false;
-        // Cône : de l'arme, ± le demi-angle de l'axe, sur la longueur du laser effectif (pas arrêtées par les obstacles : repère de dispersion).
+        // Cône : de l'arme, ± le demi-angle de l'axe, sur la longueur du laser ; retour du propriétaire après le lot 8j : chaque bord s'arrête sur les obstacles des tirs (cone.lengths).
         const cone = frame.laser.cone;
         for (let i = 0; i < 2; i += 1) {
           if (!cone) {
@@ -114,7 +114,8 @@ export function createEffects(scene, palette, { gunHeight, bulletRadius }) {
             continue;
           }
           const a = cone.angle + (i === 0 ? -cone.half : cone.half);
-          strip(coneLines[i], from.x, from.y, from.x + Math.cos(a) * cone.length, from.y + Math.sin(a) * cone.length, laserY, thick);
+          const len = cone.lengths?.[i] ?? cone.length; // retour du propriétaire après le lot 8j : arrêté par les murs comme le laser
+          strip(coneLines[i], from.x, from.y, from.x + Math.cos(a) * len, from.y + Math.sin(a) * len, laserY, thick);
         }
         dot.position.set(ray.end.x, laserY, ray.end.y);
         dot.scale.setScalar(Math.max(ray.hit ? 3.2 : 2, (ray.hit ? 3.5 : 2.5) * upp));

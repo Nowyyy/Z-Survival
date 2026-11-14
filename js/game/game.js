@@ -22,7 +22,7 @@ import { applyHeal, canFire, canHealOnKill, canMove, createPlayerDown, isInvulne
 import { effectivePlayer, effectiveWeapon, normalizeLevels, STAT_IDS, statValues } from '../core/player-stats.js';
 import { createBullet, stepBullets } from '../core/projectile.js';
 import { castRay } from '../core/ray.js';
-import { obstaclesTirs, preparerTirs } from '../core/tir-traverse.js';
+import { longueursCone, obstaclesTirs, preparerTirs } from '../core/tir-traverse.js';
 import { createRng } from '../core/rng.js';
 import { shotAngle, speedRatio, spreadHalfAngle, stepSpreadRatio, toRadians } from '../core/spread.js';
 import { createFootsteps, stepFootsteps } from '../core/footsteps.js';
@@ -39,6 +39,7 @@ import { createFloorFade } from './floor-fade.js';
 import { createBank } from './bank.js';
 import { createHud } from './hud.js';
 import { createPorteMessage } from './porte-message.js';
+import { createBleuManche } from './bleu-manche.js';
 import { createSplashView } from './splash-view.js';
 import { pickGround } from './picking.js';
 import { STRIDE } from './skeleton.js';
@@ -137,6 +138,7 @@ export function createGame(ctx) {
   if (ctx.graphics) ctx.ui?.bindOptions?.({ graphics: ctx.graphics, vhs: ctx.vhs }); // lot 5j : écran Options de la pause (importé à la première ouverture)
   const effects = createEffects(world.effectsRoot, palette, { gunHeight: render.gunHeight, bulletRadius: cfg.weapon.bulletRadius });
   const hud = createHud(ctx.dict);
+  const bleuManche = createBleuManche(ctx.dict, ctx.reglages?.bleuManche); // retour du propriétaire : solde bleu et gain sous la vague en fin de manche
   const porteMsg = siegeOn ? createPorteMessage(ctx.dict, ctx.reglages?.porte, doorCfgs) : null; // lot 8j : « Porte ouverte à la manche X » (lecture seule)
   const floorFade = createFloorFade();
   const splashView = createSplashView(ctx.dict);
@@ -566,7 +568,7 @@ export function createGame(ctx) {
     // Laser : sert à viser et à déclencher le tir, jamais aux dégâts.
     const muzzle = muzzlePoint(sim.player, sim.aim.angle, weapon.muzzleOffset, layout.muzzleBounds);
     const ray = castRay(muzzle, sim.aim.angle, weapon.laserRange, sim.enemies, shotBounds, blockers, pf());
-    laser = !firing ? null : { from: muzzle, ray, cone: { angle: sim.aim.angle, half: toRadians(halfAngle()), length: weapon.laserRange } };
+    laser = !firing ? null : { from: muzzle, ray, cone: { angle: sim.aim.angle, half: toRadians(halfAngle()), length: weapon.laserRange, lengths: longueursCone(muzzle, sim.aim.angle, toRadians(halfAngle()), weapon.laserRange, shotBounds, blockers) } }; // cône arrêté comme le laser
     // Le tir part aussi quand la visée passe sur un ennemi au-delà de la portée du laser (le trait s'estompe, la balle continue) ;
     // un ennemi caché derrière un meuble ne déclenche jamais de tir.
     // Marge de visée : le tir part si la ligne passe à moins de aimTolerance du bord d'un ennemi ; la balle suit la vraie visée et peut le rater.
@@ -717,6 +719,7 @@ export function createGame(ctx) {
           sim.down = healed.down;
           // Lot 4 : bonus de fin de manche (une seule fois par manche), annoncé avec la fin de manche.
           const paid = bank.waveEnd(ev.wave, waveInfo(sim.waves).reinforced === true);
+          if (paid.bonus > 0) bleuManche.montrer(bank.soldeBleu(), paid.bonus, sim.time);
           waveLive = paid.bonus > 0 ? fmt(ctx.dict[MONEY_TEXTS.liveWave], { n: ev.wave, bonus: paid.bonus }) : fmt(ctx.dict['game.wave.liveDone'], { n: ev.wave });
         }
       }
@@ -1048,6 +1051,7 @@ export function createGame(ctx) {
     hud.update(sim.player, sim.kills, waveInfo(sim.waves), { chutes: sim.down.chutes, floor: multi ? pf() : null, maxWave: zoneCfg && !sim.waves.endless ? zoneCfg.wavesPerWorld : null, money: { balance: bank.balance(), gain: bank.gain(), gainBleu: bank.gainBleu() }, time: sim.time, trial: trialMode });
     floorFade.set(sim.trView.veil);
     porteMsg?.update(sim.player, pf(), sim.doors, !sim.dead);
+    bleuManche.update(sim.time, !sim.dead && !sim.worldOver);
     hud.updateDown(sim.down, sim.dead, cfg.down); // lot 3l : E2-10 dans la colonne centrale du HUD (js/game/hud.js)
     world.windowMeshes?.sync(sim.win); // pastille de la planche en cours de réparation : elle se remplit peu à peu
     updateEdgeArrows();
@@ -1424,7 +1428,7 @@ export function createGame(ctx) {
         view: visibleRect(),
         playerScreen: projectPlayer(),
         laserEnd: laser ? { x: laser.ray.end.x, y: laser.ray.end.y } : null,
-        laser: laser ? { length: laser.ray.length, hit: laser.ray.hit?.id ?? null, stoppedBy: laser.ray.stoppedBy?.id ?? null, range: laser.cone.length, cone: { leftAngle: sim.aim.angle - laser.cone.half, rightAngle: sim.aim.angle + laser.cone.half } } : null,
+        laser: laser ? { length: laser.ray.length, hit: laser.ray.hit?.id ?? null, stoppedBy: laser.ray.stoppedBy?.id ?? null, range: laser.cone.length, cone: { leftAngle: sim.aim.angle - laser.cone.half, rightAngle: sim.aim.angle + laser.cone.half, lengths: laser.cone.lengths } } : null,
         world: { width: layout.size.width, height: layout.size.height, empty: layout.empty },
         mode: ctx.modePartie ?? 'histoire', // lot 8b : mode de la partie (histoire ; infini : « Jouer » de l'onglet Infini du menu)
         map: { id: layout.id, size: { width: layout.size.width, height: layout.size.height }, windowIds: geoms.map((g) => g.id), pillars: layout.pillars.map((o) => ({ id: o.id, x: o.x, y: o.y, w: o.w, h: o.h })), start: { ...layout.start } },
