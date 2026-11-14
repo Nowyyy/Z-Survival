@@ -254,7 +254,7 @@ test.describe('Boutique (E3-1)', () => {
     expect(o.fichiers.filter((f) => BOUTIQUE.test(f))).toEqual([]);
     // Retours du propriétaire : roue de chargement (js/menu/roue.js) et glissement à la souris (js/glisser.js) dès le démarrage du menu (29 → 31).
     // Lot 8i : + js/menu/sons/sons.js (module léger des sons : 32 → 33) ; le moteur des sons ne se charge qu'après un geste.
-    expect(o.fichiers.filter((f) => f.endsWith('.js')).length).toBe(33);
+    expect(o.fichiers.filter((f) => f.endsWith('.js')).length).toBe(35); // lot 8h : + js/save/codecs.js et js/core/progression.js (progression v2)
     expect(o.fichiers.filter((f) => /\/(roue|glisser)\.js$/.test(f)).length).toBe(2);
     expect(o.fichiers.filter((f) => /\/js\/menu\/sons\//.test(f))).toEqual(['/js/menu/sons/sons.js']);
     await page.locator('#menu-onglet-boutique').click();

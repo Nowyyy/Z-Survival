@@ -321,6 +321,7 @@
     { "fichier": "tests/unit/publication-controle.test.js", "categorie": "P", "valeur": "contrôle de publication", "recommandation": "garder", "raison": "Lot 5o : contrôle de publication en lecture seule (décisions pures, liste blanche des commandes)." },
     { "fichier": "tests/unit/sauvegarde-depots.test.js", "categorie": "G", "valeur": "garde-fou", "recommandation": "garder", "raison": "Dépôts de sauvegarde." },
     { "fichier": "tests/unit/sauvegarde-onglets.test.js", "categorie": "G", "valeur": "garde-fou", "recommandation": "garder", "raison": "Lot 5o : défaut des deux onglets (simulateur, fusion entre onglets, octets identiques pour un seul onglet)." },
+    { "fichier": "tests/unit/progression.test.js", "categorie": "G", "valeur": "garde-fou", "recommandation": "garder", "raison": "Lot 8h : progression v2 (départ, réparation, achats atomiques, ZS2 et ZS1, simulateur de 10 000 suites à plusieurs onglets)." },
     { "fichier": "tests/unit/sauvegarde-donnees.test.js", "categorie": "G", "valeur": "garde-fou", "recommandation": "garder", "raison": "Données de sauvegarde." },
     { "fichier": "tests/unit/sauvegarde-page.test.js", "categorie": "G", "valeur": "garde-fou", "recommandation": "garder", "raison": "Page de sauvegarde." },
     { "fichier": "tests/unit/sauvegarde-schema.test.js", "categorie": "G", "valeur": "garde-fou", "recommandation": "garder", "raison": "Schéma, migrations, codec." },

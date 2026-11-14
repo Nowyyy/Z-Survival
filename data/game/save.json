@@ -1,5 +1,5 @@
 {
-  "_provisoire": "Lot 4 : réglages de la sauvegarde locale (provisoires). Lu par js/core/save.js et js/save/. La seule clé de stockage du jeu est storageKey. readOnlyParams : un de ces paramètres d'adresse met la sauvegarde en lecture seule (mode essai : aucune écriture). memoryByDefaultWith : ?test=1 utilise la mémoire, sauf ?store=local.",
+  "_provisoire": "Lot 4 : réglages de la sauvegarde locale (provisoires). Lu par js/core/save.js et js/save/. Lot 8h : la V0.8 lit et écrit seulement la progression v2 (section v2 : clé zs.save.v2, code ZS2, Docs/ref/sauvegarde-v2.md) ; storageKey (zs.save.v1) est celle de la V0.7 et d'avant, jamais lue ni écrite par la V0.8 (un code ZS1 reste importable). readOnlyParams : un de ces paramètres d'adresse met la sauvegarde en lecture seule (mode essai : aucune écriture). memoryByDefaultWith : ?test=1 utilise la mémoire, sauf ?store=local.",
   "storageKey": "zs.save.v1",
   "schemaVersion": 1,
   "autosaveMs": 2000,
@@ -7,5 +7,12 @@
   "maxCodeLength": 2048,
   "exportPrefix": "ZS1",
   "readOnlyParams": ["wave", "lvl", "planks", "map", "empty", "nospawn", "endless", "floor", "money"],
-  "memoryByDefaultWith": ["test"]
+  "memoryByDefaultWith": ["test"],
+  "v2": {
+    "storageKey": "zs.save.v2",
+    "schemaVersion": 2,
+    "maxStoredBytes": 65536,
+    "maxCodeLength": 32768,
+    "exportPrefix": "ZS2"
+  }
 }

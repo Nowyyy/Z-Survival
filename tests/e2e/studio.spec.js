@@ -5,7 +5,7 @@
 import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { readFileSync } from 'node:fs';
-import { decodeSave, defaultSave, encodeSave } from '../../js/core/save.js';
+import { decoder, defaultProgression as defaultSave, encoder, serialiser } from '../../js/core/progression.js';
 
 const REF = { width: 932, height: 430 };
 const PETIT = { width: 667, height: 375 };
@@ -228,7 +228,7 @@ test.describe('introduction du studio (E0)', () => {
     await espions(page);
     await ouvrirMenu(page);
     expect(await page.evaluate(() => [window.__vus.e0 ?? null, window.__zsMenu.intro()])).toEqual([null, null]);
-    expect(o.fichiers.filter((f) => f.endsWith('.js')).length).toBe(33); // lot 8i : + js/menu/sons/sons.js
+    expect(o.fichiers.filter((f) => f.endsWith('.js')).length).toBe(35); // lot 8i : + js/menu/sons/sons.js ; lot 8h : + js/save/codecs.js et js/core/progression.js (progression v2)
     // Retour du propriétaire : en mode menu, l'écran de préparation de la partie (barre) n'est jamais visible.
     expect(await page.evaluate(() => [document.documentElement.classList.contains('zs-attente'), getComputedStyle(document.getElementById('loading')).visibility])).toEqual([true, 'hidden']);
     expect(o.fichiers.filter((f) => f.endsWith('/js/menu/intro.js'))).toEqual([]);
@@ -248,7 +248,7 @@ test.describe('introduction du studio (E0)', () => {
     // musique-menu.js ; synthèse dans le calculateur d'arrière-plan) se charge alors à la demande, compté à part du démarrage.
     // (fichiers distincts : le calculateur redemande js/core/vec.js, déjà chargé par le menu).
     const MOTEUR_SONS = /\/js\/menu\/sons\/(moteur|musique|calcul|synthese)\.js$|\/js\/core\/(sons-menu|musique-menu|synth2|synth2-dsp|synth2-sources|audio-analysis)\.js$/;
-    expect(new Set(o.fichiers.filter((f) => f.endsWith('.js') && !MOTEUR_SONS.test(f))).size).toBe(34);
+    expect(new Set(o.fichiers.filter((f) => f.endsWith('.js') && !MOTEUR_SONS.test(f))).size).toBe(36); // lot 8h : + 2 (progression v2)
     expect(o.fichiers.filter((f) => f.endsWith('.svg')).sort()).toEqual([`/${LOGO}`, `/${FIXE}`]);
     await p2.close();
     const p3 = await page.context().newPage();
@@ -476,9 +476,9 @@ test.describe('Crédits (E11)', () => {
 
 const lireJson = (f) => JSON.parse(readFileSync(f, 'utf8'));
 const PARAMS_SAVE = { save: lireJson('data/game/save.json'), economy: lireJson('data/game/economy.json'), stats: lireJson('data/game/player-stats.json') };
-const KEY = 'zs.save.v1';
+const KEY = 'zs.save.v2'; // lot 8h : progression v2 (le Profil lit et écrit zs.save.v2 ; zs.save.v1 n'est plus lue)
 const NNBSP = String.fromCharCode(0x202f);
-const SAUVEGARDE = { ...defaultSave(), rev: 3, savedAt: 1_700_000_000_000, money: 1500, earned: 4321, stats: { ...defaultSave().stats, vie: 2, degats: 1 }, records: { bestWave: 17, bestKills: 88, runs: 6, worldsCompleted: 0 } };
+const SAUVEGARDE = serialiser({ ...defaultSave(), rev: 3, savedAt: 1_700_000_000_000, bleu: { gagne: 4321, depense: 2821 }, niveaux: { ...defaultSave().niveaux, vie: 2, degats: 1 }, records: { histoire: { batiment: 17 }, infini: { batiment: 30 } }, profil: { ...defaultSave().profil, tues: 88, partiesHistoire: 6, partiesInfini: 2, tempsMs: 3_725_000 } });
 
 // Sauvegarde posée dans le vrai stockage (même origine), puis menu sous ?store=local ; écritures comptées depuis l'ouverture du menu.
 async function menuAvecSauvegarde(page, size = REF, save = SAUVEGARDE) {
@@ -541,7 +541,7 @@ test.describe('Connexion et Profil (E10)', () => {
       await expect(page.locator('#menu-profil-pseudo')).toHaveText('Survivant');
       await expect(page.locator('#menu-profil-compte')).toHaveText('Compte : non connecté');
       await expect(page.locator('#menu-profil-google')).toHaveAttribute('aria-disabled', 'true');
-      await expect(page.locator('.e10-stat-nom')).toHaveText(['Meilleure manche', 'Zombies tués', 'Parties histoire', 'Parties infini', 'Temps de jeu', 'Argent gagné']); // sans record infini
+      await expect(page.locator('.e10-stat-nom')).toHaveText(['Meilleure manche', 'Zombies tués', 'Parties histoire', 'Parties infini', 'Temps de jeu', 'Monnaie bleue gagnée']); // sans record infini ; lot 8h : monnaie bleue
       await expect(page.locator('#menu-profil-exporter')).toHaveText('Exporter mon code');
       await expect(page.locator('#menu-profil-importer')).toHaveText('Importer un code');
       const marge = encoche ? 50 : 15.5;
@@ -616,8 +616,8 @@ test.describe('Connexion et Profil (E10)', () => {
   test('avatar et pseudo changés en mémoire (aucune écriture) ; pseudo : erreurs lues (trop court, trop long, caractère invisible), espaces nettoyés, Échap annule ; statistiques égales à la sauvegarde (?store=local) ; rechargement : valeurs par défaut', async ({ page }) => {
     await menuAvecSauvegarde(page);
     await ouvrirProfil(page);
-    await expect(page.locator('.e10-stat-valeur')).toHaveText([`17 / 40`, /^—/, /^—/, /^—/, /^—/, `4${NNBSP}321`]);
-    expect((await page.evaluate(() => window.__zsMenu.etat().menu.compte)).stats).toEqual([['meilleureManche', '17'], ['tues', ''], ['partiesHistoire', ''], ['partiesInfini', ''], ['temps', ''], ['argent', '4321']]);
+    await expect(page.locator('.e10-stat-valeur')).toHaveText([`17 / 40`, '88', '6', '2', '1 h 2 min', `4${NNBSP}321`]); // lot 8h : toutes lues dans la progression v2
+    expect((await page.evaluate(() => window.__zsMenu.etat().menu.compte)).stats).toEqual([['meilleureManche', '17'], ['tues', '88'], ['partiesHistoire', '6'], ['partiesInfini', '2'], ['temps', '3725000'], ['argent', '4321']]);
     // Retours du propriétaire : avatars d'après le personnage du jeu et les zombies, personnage tout gris par défaut ; « Changer d'avatar » ouvre un
     // petit menu des avatars sous le grand portrait (à la place du bouton, du pseudo et du compte) ; « Valider » garde le choix et rend la carte.
     await expect(page.locator('#menu-profil-avatar')).toHaveAttribute('aria-label', 'Avatar 1 sur 7 : Anonyme');
@@ -703,7 +703,7 @@ test.describe('Connexion et Profil (E10)', () => {
     await expect(page.locator('#menu-profil-avatar')).toHaveAttribute('aria-label', 'Avatar 1 sur 7 : Anonyme');
   });
 
-  test('« Exporter mon code » : code ZS1 valide (relu par decodeSave = la sauvegarde) ; « Importer un code » : code abîmé refusé (message, aucune écriture), code valide vérifié (aperçu), confirmation exigée, puis importé : seule écriture, puis menu rechargé sans introduction, solde à jour', async ({ page, context }) => {
+  test('« Exporter mon code » : code ZS2 valide (lot 8h ; relu par decoder = la progression) ; « Importer un code » : code abîmé refusé (message, aucune écriture), code valide vérifié (aperçu), confirmation exigée, puis importé : seule écriture, puis menu rechargé sans introduction, solde à jour', async ({ page, context }) => {
     test.setTimeout(120_000);
     await context.grantPermissions(['clipboard-read', 'clipboard-write']);
     await menuAvecSauvegarde(page);
@@ -711,10 +711,10 @@ test.describe('Connexion et Profil (E10)', () => {
     await page.locator('#menu-profil-exporter').click();
     await expect(page.getByRole('dialog', { name: 'Exporter mon code' })).toBeVisible();
     const code = await page.locator('#menu-export-code').inputValue();
-    expect(code).toMatch(/^ZS1\./);
-    const relu = decodeSave(code, PARAMS_SAVE);
+    expect(code).toMatch(/^ZS2\./);
+    const relu = decoder(code, PARAMS_SAVE);
     expect(relu.ok).toBe(true);
-    expect(relu.save).toEqual(SAUVEGARDE);
+    expect(serialiser(relu.save)).toEqual(SAUVEGARDE);
     await expect(page.locator('#menu-export-longueur')).toHaveText(`${code.length} caractères`);
     await page.locator('#menu-export-copier').click();
     await expect(page.locator('#menu-export-message')).toHaveText(/^(Code copié\.|Copie automatique impossible.*)$/);
@@ -727,8 +727,8 @@ test.describe('Connexion et Profil (E10)', () => {
     await page.locator('#menu-profil-importer').click();
     const champ = page.locator('#menu-import-code');
     await expect(champ).toBeFocused();
-    const autre = { ...defaultSave(), money: 777, earned: 9000, records: { bestWave: 25, bestKills: 120, runs: 11, worldsCompleted: 0 } };
-    const valide = encodeSave(autre, PARAMS_SAVE);
+    const autre = { ...defaultSave(), bleu: { gagne: 9000, depense: 8223 }, records: { histoire: { batiment: 25 }, infini: {} }, profil: { ...defaultSave().profil, partiesHistoire: 11 } };
+    const valide = encoder(autre, PARAMS_SAVE);
     await champ.fill(`${valide.slice(0, -3)}${valide.endsWith('000') ? '111' : '000'}`);
     await page.locator('#menu-import-verifier').click();
     await expect(page.locator('#menu-import-erreur')).toHaveText('Le code est abîmé : la somme de contrôle ne correspond pas. Copie-le de nouveau en entier.');
@@ -740,7 +740,7 @@ test.describe('Connexion et Profil (E10)', () => {
     await expect(page.locator('#menu-import-erreur')).toHaveText('');
     await expect(page.locator('#menu-import-apercu')).toBeVisible();
     await expect(page.locator('#menu-import-message')).toHaveText('Code valide : vérifie l\'aperçu avant de remplacer ta sauvegarde.');
-    await expect(page.locator('#menu-import-table tr[data-changed="true"] th')).toContainText(['Solde', 'Total gagné', 'Meilleure manche']);
+    await expect(page.locator('#menu-import-table tr[data-changed="true"] th')).toContainText(['Monnaie bleue', 'Monnaie bleue gagnée (total)', 'Record histoire (batiment)']);
     await expect(page.locator('#menu-import-remplacer')).toBeDisabled();
     expect((await new AxeBuilder({ page }).analyze()).violations.map((v) => v.id)).toEqual([]);
     expect(await page.evaluate(() => window.__ecritures)).toEqual([]);
@@ -750,7 +750,7 @@ test.describe('Connexion et Profil (E10)', () => {
     await expect(page.locator('#menu-import-message')).toHaveText('Sauvegarde importée. Le menu va se recharger pour la prendre en compte.');
     expect(await page.evaluate(() => window.__ecritures)).toEqual(['local.setItem']); // la seule écriture, celle de l'import existant
     const ecrite = JSON.parse(await page.evaluate((k) => localStorage.getItem(k), KEY));
-    expect([ecrite.money, ecrite.earned, ecrite.records.bestWave, ecrite.records.runs]).toEqual([777, 9000, 25, 11]);
+    expect([ecrite.bleu.gagne - ecrite.bleu.depense, ecrite.bleu.gagne, ecrite.records.histoire.batiment, ecrite.profil.partiesHistoire]).toEqual([777, 9000, 25, 11]);
     await expect(page.locator('.e10-stat-valeur').first()).toHaveText('25 / 40');
     await expect(page.locator('#menu-import-recharger')).toBeFocused();
     const rechargement = page.waitForEvent('framenavigated', { predicate: (f) => f === page.mainFrame() });
@@ -767,7 +767,7 @@ test.describe('Connexion et Profil (E10)', () => {
     await ouvrirProfil(page);
     await expect(page.locator('#menu-profil-sauvegarde .e10-sous')).toHaveText('En mémoire (mode test)');
     await page.locator('#menu-profil-importer').click();
-    await page.locator('#menu-import-code').fill(encodeSave({ ...defaultSave(), money: 50 }, PARAMS_SAVE));
+    await page.locator('#menu-import-code').fill(encoder({ ...defaultSave(), bleu: { gagne: 50, depense: 0 } }, PARAMS_SAVE));
     await page.locator('#menu-import-verifier').click();
     await page.locator('#menu-import-ack').check();
     await page.locator('#menu-import-remplacer').click();

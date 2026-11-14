@@ -4,16 +4,17 @@
 // menu à trois barres (raison lue).
 // - Profil : carte (avatar dessiné en code d'après le joueur et les zombies du jeu, pseudo modifiable, compte non connecté), six statistiques lues
 //   dans la sauvegarde existante (« — » sinon : js/menu/profil-etat.js), Sauvegarde : « Exporter mon code » et « Importer un code », par la logique de
-//   sauvegarde.html (code ZS1.…, vérification, aperçu, confirmation, message) : js/core/save.js (encodeSave, decodeSave) et js/sauvegarde/logic.js ;
+//   sauvegarde.html (lot 8h : code ZS2.… de la progression v2, import ZS2 ou ZS1 ; vérification, aperçu, confirmation, message) : js/core/progression.js
+//   (encoder, decoder) et js/sauvegarde/logic.js ;
 //   l'import remplace la sauvegarde par repository.replace (seule écriture, déjà existante, après confirmation), puis le menu se recharge (repère
 //   #retour, comme le retour au menu : sans introduction ; tout le menu relit la sauvegarde importée).
 // Avatar et pseudo restent en mémoire jusqu'au lot 8h (le retour au menu les remet par défaut).
 import { el } from './menu.js';
 import { son } from './sons/sons.js';
-import { ERREURS_PSEUDO, statsProfil, validerPseudo, PSEUDO_MAX, PSEUDO_MIN } from './profil-etat.js';
+import { ERREURS_PSEUDO, statsProfil, tempsJeu, validerPseudo, PSEUDO_MAX, PSEUDO_MIN } from './profil-etat.js';
 import { AVATARS, NOMS_AVATARS, avatarDe, lireProfil, poserProfil, portrait, suivreProfil, svgPortrait } from './avatar.js';
-import { decodeSave, encodeSave } from '../core/save.js';
-import { canReplace, errorKey, levelRows, previewRows, recordKey, rowKey, statKey } from '../sauvegarde/logic.js';
+import { decoder, encoder } from '../core/progression.js';
+import { canReplace, errorKey, levelRows, MODE_RECORD_KEYS, previewRows, rowKey, statKey } from '../sauvegarde/logic.js';
 import { formatMoney } from '../core/economy.js';
 import { REPERE_RETOUR } from '../core/graphics.js';
 import { adresseRetour } from '../core/menu-etat.js';
@@ -125,7 +126,7 @@ export async function ecransCompte({ t, bandeau, root, rootDialogue, monde, pose
     }
   })();
   // Même dépôt que la partie (mémoire sous ?test=1 sauf store=local, lecture seule en mode essai) ; lu à chaque affichage du Profil.
-  const { repository, mode } = createRepository({ search: pageSearch(), storage, params });
+  const { repository, mode } = createRepository({ search: pageSearch(), storage, params, format: 'v2' });
   const lire = () => {
     try {
       return repository.load();
@@ -311,7 +312,7 @@ export async function ecransCompte({ t, bandeau, root, rootDialogue, monde, pose
   };
   const poserStats = () => {
     const lu = lire();
-    stats.replaceChildren(...statsProfil(lu, monde?.manches).map((s) => {
+    stats.replaceChildren(...statsProfil(lu, monde?.manches, monde?.id).map((s) => {
       const li = el('li', ['e10-stat'], { 'data-stat': s.id });
       const nom = el('span', ['e10-stat-nom']);
       nom.textContent = t(STAT_TEXTES[s.id]);
@@ -321,6 +322,7 @@ export async function ecransCompte({ t, bandeau, root, rootDialogue, monde, pose
         valeur.append(Object.assign(el('span', ['sr-only']), { textContent: ` (${t('game.menu.profil.stat.absente')})` }));
       } else if (s.id === 'meilleureManche') valeur.textContent = s.max ? `${s.valeur} / ${s.max}` : String(s.valeur);
       else if (s.id === 'argent') valeur.textContent = formatMoney(s.valeur);
+      else if (s.id === 'temps') valeur.textContent = fmt(t('game.menu.profil.stat.temps.valeur'), tempsJeu(s.valeur));
       else valeur.textContent = String(s.valeur);
       const detail = el('span', ['e10-stat-detail']);
       detail.textContent = DETAILS[s.id];
@@ -361,7 +363,7 @@ export async function ecransCompte({ t, bandeau, root, rootDialogue, monde, pose
   function ouvrirExport() {
     const lu = lire();
     const lisible = lu.status === 'ok' || lu.status === 'empty';
-    const code = lisible ? encodeSave(lu.save, params) : '';
+    const code = lisible ? encoder(lu.save, params) : '';
     const message = el('p', ['e10-message'], { id: 'menu-export-message', role: 'status' });
     const corps = [];
     if (lisible) {
@@ -440,7 +442,7 @@ export async function ecransCompte({ t, bandeau, root, rootDialogue, monde, pose
     verifier.addEventListener('click', () => {
       remettre();
       message.textContent = '';
-      const r = decodeSave(zone.value, params);
+      const r = decoder(zone.value, params);
       if (!r.ok) {
         err.textContent = t(errorKey(r.error));
         zone.setAttribute('aria-invalid', 'true');
@@ -454,19 +456,22 @@ export async function ecransCompte({ t, bandeau, root, rootDialogue, monde, pose
         tr.append(Object.assign(el('th', [], { scope: 'row' }), { textContent: nom }), Object.assign(el('td'), { textContent: String(row.current) }), Object.assign(el('td', row.changed ? ['e10-change'] : []), { textContent: row.changed ? `→ ${row.incoming}` : String(row.incoming) }));
         lignes.append(tr);
       };
-      const rows = previewRows(actuelle, verifie);
+      const rows = previewRows(actuelle, verifie, params);
       for (const row of rows.filter((x) => x.group !== 'records')) ajouter(t(rowKey(row.id)), row);
       for (const row of levelRows(actuelle, verifie)) ajouter(t(statKey(row.id)), row);
-      for (const row of rows.filter((x) => x.group === 'records')) ajouter(t(recordKey(row.id)), row);
-      avert.textContent = r.warnings.length ? fmt(t('game.save.page.import.warnings'), { n: r.warnings.length }) : '';
-      avert.hidden = r.warnings.length === 0;
+      for (const row of rows.filter((x) => x.group === 'records')) ajouter(fmt(t(MODE_RECORD_KEYS[row.mode]), { monde: row.monde }), row);
+      const notes = [];
+      if (r.source === 'ZS1') notes.push(t('game.save.page.import.zs1'));
+      if (r.warnings.length) notes.push(fmt(t('game.save.page.import.warnings'), { n: r.warnings.length }));
+      avert.textContent = notes.join(' ');
+      avert.hidden = notes.length === 0;
       apercu.hidden = false;
       message.textContent = t('game.save.page.import.ok');
     });
     remplacer.addEventListener('click', () => {
       if (!canReplace(verifie !== null, caseAck.checked)) return;
       // Le texte est décodé de nouveau : on importe exactement ce qui est dans le champ (comme sauvegarde.html).
-      const encore = decodeSave(zone.value, params);
+      const encore = decoder(zone.value, params);
       if (!encore.ok) {
         remettre();
         return;

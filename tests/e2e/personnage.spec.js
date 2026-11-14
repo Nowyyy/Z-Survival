@@ -185,7 +185,7 @@ test.describe('écran Personnage (E9-1)', () => {
     await ouvrirMenu(page);
     const PERSO = /\/js\/menu\/(personnage|equipement-etat|inventaire|fusion|personnages)\.js$|\/js\/core\/equipement\.js$|\/data\/menu\/(objets|raretes|personnages|inventaire-depart)\.json$/;
     expect(o.fichiers.filter((f) => PERSO.test(f))).toEqual([]);
-    expect(o.fichiers.filter((f) => f.endsWith('.js')).length).toBe(33); // démarrage du menu (retours du propriétaire : roue et glissement à la souris, 29 → 31 ; avatar de l'en-tête, 31 → 32 ; lot 8i : module léger des sons, 32 → 33)
+    expect(o.fichiers.filter((f) => f.endsWith('.js')).length).toBe(35); // lot 8h : + js/save/codecs.js et js/core/progression.js, 33 → 35 ; démarrage du menu (retours du propriétaire : roue et glissement à la souris, 29 → 31 ; avatar de l'en-tête, 31 → 32 ; lot 8i : module léger des sons, 32 → 33)
     await page.locator('#menu-onglet-personnage').click();
     await expect(page.locator('#menu-ecran-personnage')).toBeVisible();
     expect(o.fichiers.filter((f) => PERSO.test(f)).sort()).toEqual(['/data/menu/inventaire-depart.json', '/data/menu/objets.json', '/data/menu/personnages.json', '/data/menu/raretes.json', '/js/core/equipement.js', '/js/menu/equipement-etat.js', '/js/menu/personnage.js']);

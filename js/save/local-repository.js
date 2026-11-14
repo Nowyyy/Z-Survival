@@ -11,7 +11,8 @@
 // effacé. Avec un canal entre onglets (options.channel, BroadcastChannel), chaque écriture est annoncée par un relevé (base lue, texte écrit) et chaque
 // onglet réécrit ses propres gains CERTAINEMENT absents de la valeur stockée (js/core/save-merge.js, chargé seulement quand un autre onglet se manifeste).
 // Le texte stocké garde exactement son format : seul, un onglet écrit les mêmes octets qu'avant. Sans canal : comportement d'avant, sans erreur.
-import { commitDelta, defaultSave, makeRecord, migrate, sanitize } from '../core/save.js';
+import { makeRecord } from '../core/save.js';
+import { codecV1 } from './codecs.js';
 import { errorName, failure, safely } from './repository.js';
 
 const RAW_KEEP = 65_536; // texte brut gardé (pour l'afficher et le copier), en caractères
@@ -39,10 +40,11 @@ function newTabId() {
 
 // options : { listen(handler) -> stop (écoute de l'événement `storage`), persist() -> Promise<boolean> (navigator.storage.persist),
 //             lot 5o : channel(nom) -> canal entre onglets ou null, merge (module save-merge.js ou fonction qui le charge), now() -> ms (date des
-//             réparations), tabId (tests) }
+//             réparations), tabId (tests) ; lot 8h : codec (format, js/save/codecs.js : v1 par défaut, v2 pour zs.save.v2) }
 export function createLocalRepository(storage, params, options = {}) {
-  const key = typeof params?.save?.storageKey === 'string' ? params.save.storageKey : 'zs.save.v1';
-  const maxBytes = Number.isInteger(params?.save?.maxStoredBytes) ? params.save.maxStoredBytes : 0;
+  const codec = options.codec ?? codecV1(params);
+  const { key, maxBytes } = codec;
+  const defaultSave = codec.empty;
   let last = { status: 'empty', locked: false };
   let wrote = false;
   let persistence = null; // résultat de requestPersistence : jamais redemandé
@@ -73,18 +75,19 @@ export function createLocalRepository(storage, params, options = {}) {
     } catch {
       return bad('corrupt');
     }
-    const result = migrate(parsed, params);
+    const result = codec.parse(parsed);
     if (!result.ok) return bad(result.error === 'future-version' ? 'future' : 'corrupt');
-    return { status: 'ok', save: result.save, warnings: result.warnings, locked: false, text };
+    return { status: 'ok', save: result.save, warnings: result.warnings, extra: result.extra, locked: false, text };
   }
 
-  function write(next) {
+  // clean : sauvegarde nettoyée rendue à l'appelant (v2 : sans champs inconnus ni identifiant d'écriture) ; refused : opérations refusées (v2).
+  function write(next, clean = next, refused = undefined) {
     try {
       lastText = JSON.stringify(next);
       storage.setItem(key, lastText);
       wrote = true;
       last = { status: 'ok', locked: false };
-      return { ok: true, applied: true, save: structuredClone(next) };
+      return { ok: true, applied: true, save: structuredClone(clean), ...(refused ? { refused } : {}) };
     } catch (error) {
       return failure(errorName(error));
     }
@@ -94,8 +97,9 @@ export function createLocalRepository(storage, params, options = {}) {
     last = { status: r.status, locked: r.locked };
     return r;
   };
-  const notify = (r) => {
-    for (const fn of [...listeners]) safely(() => fn(structuredClone(r.save), r.status), null);
+  // refused (v2) : opérations de cet onglet refusées en les réécrivant (achat annulé après coup : la monnaie a été dépensée dans un autre onglet).
+  const notify = (r, refused) => {
+    for (const fn of [...listeners]) safely(() => fn(structuredClone(r.save), r.status, refused?.length ? refused : undefined), null);
   };
   let stopListening = null;
   const onStorage = (event) => {
@@ -113,10 +117,11 @@ export function createLocalRepository(storage, params, options = {}) {
     const candidate = newer === null ? null : parse(newer);
     const r = candidate && candidate.status === 'ok' ? candidate : stored;
     const extra = tabs?.merge ? tabs.merge.missingOps(tabs.view, r.text) ?? [] : [];
-    const sum = extra.length ? tabs.merge.sumDeltas([delta, ...extra.map((s) => tabs.view.ops.get(s))]) : delta;
-    const next = commitDelta(r.save, sum, now, params);
+    const sum = extra.length ? codec.sum(delta, extra.map((s) => tabs.view.ops.get(s)), tabs.merge) : delta;
+    const c = codec.commit(r.save, sum, now, r.extra);
+    const next = c.next;
     // Plusieurs onglets connus : identifiant d'écriture facultatif `w` (deux écritures n'ont jamais le même texte) ; seul, aucun champ de plus.
-    const result = write(tabs.multi ? { ...next, w: `${tabs.view.id}.${(tabs.writes += 1)}` } : next);
+    const result = write(tabs.multi ? { ...next, w: `${tabs.view.id}.${(tabs.writes += 1)}` } : next, c.save, codec.version === 2 ? c.refused : undefined);
     if (result.ok) tabs.wrote(r.text, lastText, own, extra);
     return result;
   }
@@ -129,7 +134,8 @@ export function createLocalRepository(storage, params, options = {}) {
     const missing = tabs.merge.missingOps(tabs.view, r.text);
     if (!missing || missing.length === 0) return;
     const now = typeof options.now === 'function' ? safely(options.now, r.save.savedAt) : r.save.savedAt;
-    if (trackedWrite(r, {}, now, null).ok) notify(remember(read()));
+    const done = trackedWrite(r, codec.version === 2 ? [] : {}, now, null);
+    if (done.ok) notify(remember(read()), done.refused);
   }
   if (tabs) tabs.reconcile = reconcile;
 
@@ -145,7 +151,9 @@ export function createLocalRepository(storage, params, options = {}) {
       return safely(() => {
         const r = remember(read());
         if (r.locked) return failure('locked');
-        return tabs ? trackedWrite(r, delta, now, delta) : write(commitDelta(r.save, delta, now, params));
+        if (tabs) return trackedWrite(r, delta, now, delta);
+        const c = codec.commit(r.save, delta, now, r.extra);
+        return write(c.next, c.save, codec.version === 2 ? c.refused : undefined);
       }, () => failure('error'));
     },
     // Import d'un code : permis même quand la sauvegarde est verrouillée (c'est la façon de la déverrouiller), jamais quand le stockage est indisponible.
@@ -153,8 +161,8 @@ export function createLocalRepository(storage, params, options = {}) {
       return safely(() => {
         const r = remember(read());
         if (r.status === 'unavailable') return failure('locked');
-        const incoming = sanitize(save, params).save;
-        const result = write({ ...commitDelta(incoming, {}, now, params), rev: Math.min(Number.MAX_SAFE_INTEGER, r.save.rev + 1) });
+        const next = codec.replace(save, now, Math.min(Number.MAX_SAFE_INTEGER, r.save.rev + 1));
+        const result = write(next, codec.clean(next));
         if (result.ok && tabs) tabs.reset(r.text, lastText); // import voulu : les gains d'avant ne sont jamais réécrits
         return result;
       }, () => failure('error'));
@@ -237,7 +245,7 @@ function openTabs(options) {
       const adds = [...extra];
       if (own !== null) {
         tabs.seq += 1;
-        keep(view.ops, tabs.seq, { ...own }, KEEP_OPS);
+        keep(view.ops, tabs.seq, Array.isArray(own) ? [...own] : { ...own }, KEEP_OPS); // lot 8h : v2, liste d'opérations
         adds.push(tabs.seq);
       }
       keep(view.own, text, { base, adds }, KEEP);

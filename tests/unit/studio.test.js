@@ -313,43 +313,45 @@ describe('Connexion et Profil (lot 8g)', () => {
     expect(fr['game.menu.profil']).toBeUndefined();
   });
 
-  it('statistiques : lues dans la sauvegarde quand elles existent (meilleure manche, parties, argent gagné), « — » sinon ; illisible : tout à « — »', async () => {
-    const { STATS_EN_ATTENTE, STATS_PROFIL, statsProfil } = await import('../../js/menu/profil-etat.js');
-    const { defaultSave } = await import('../../js/core/save.js');
+  it('statistiques (lot 8h : progression v2) : meilleure manche de l\'histoire du monde, tués, parties histoire et infini, temps hors pauses, bleu gagné ; illisible : tout à « — »', async () => {
+    const { STATS_EN_ATTENTE, STATS_PROFIL, statsProfil, tempsJeu } = await import('../../js/menu/profil-etat.js');
+    const { defaultProgression } = await import('../../js/core/progression.js');
+    const defaultSave = defaultProgression;
     expect(STATS_PROFIL).toEqual(['meilleureManche', 'tues', 'partiesHistoire', 'partiesInfini', 'temps', 'argent']); // retour du propriétaire : sans record infini
-    expect(STATS_EN_ATTENTE).toEqual(['tues', 'partiesHistoire', 'partiesInfini', 'temps']);
-    const save = { ...defaultSave(), money: 900, earned: 1234, records: { bestWave: 17, bestKills: 88, runs: 6, worldsCompleted: 0 } };
+    expect(STATS_EN_ATTENTE).toEqual([]); // lot 8h : plus aucune en attente
+    const save = { ...defaultSave(), bleu: { gagne: 1234, depense: 334 }, records: { histoire: { batiment: 17 }, infini: { batiment: 30 } }, profil: { ...defaultSave().profil, tues: 88, partiesHistoire: 6, partiesInfini: 2, tempsMs: 3_725_000 } };
     const v = (lu, m) => Object.fromEntries(statsProfil(lu, m).map((s) => [s.id, s.valeur]));
-    expect(v({ status: 'ok', save }, 40)).toEqual({ meilleureManche: 17, tues: null, partiesHistoire: null, partiesInfini: null, temps: null, argent: 1234 }); // records.runs : les deux modes ensemble
+    expect(v({ status: 'ok', save }, 40)).toEqual({ meilleureManche: 17, tues: 88, partiesHistoire: 6, partiesInfini: 2, temps: 3_725_000, argent: 1234 }); // record infini : jamais celui de l'histoire
     expect(statsProfil({ status: 'ok', save }, 40)[0]).toEqual({ id: 'meilleureManche', valeur: 17, max: 40 });
-    expect(v({ status: 'empty', save: defaultSave() })).toEqual({ meilleureManche: null, tues: null, partiesHistoire: null, partiesInfini: null, temps: null, argent: 0 });
+    expect(tempsJeu(3_725_000)).toEqual({ h: 1, m: 2 });
+    expect(v({ status: 'empty', save: defaultSave() })).toEqual({ meilleureManche: null, tues: 0, partiesHistoire: 0, partiesInfini: 0, temps: 0, argent: 0 });
     const vide = { meilleureManche: null, tues: null, partiesHistoire: null, partiesInfini: null, temps: null, argent: null };
     for (const lu of [{ status: 'corrupt', save }, { status: 'future', save }, { status: 'unavailable', save }, null, undefined, {}, { status: 'ok', save: null }]) expect(v(lu), JSON.stringify(lu)).toEqual(vide);
     expect(statsProfil({ status: 'ok', save }, 'x')[0].max).toBe(null);
   });
 
-  it('export et import réutilisés : code ZS1 de encodeSave relu par decodeSave (aller-retour), code abîmé refusé avec le message de sauvegarde.html ; aperçu et confirmation de js/sauvegarde/logic.js ; aucun format nouveau', async () => {
-    const { decodeSave, defaultSave, encodeSave } = await import('../../js/core/save.js');
+  it('export et import réutilisés (lot 8h : code ZS2 de la progression v2, ZS1 importable) : aller-retour, code abîmé refusé avec le message de sauvegarde.html ; aperçu et confirmation de js/sauvegarde/logic.js', async () => {
+    const { decoder, defaultProgression: defaultSave, encoder } = await import('../../js/core/progression.js');
     const { canReplace, errorKey, previewRows } = await import('../../js/sauvegarde/logic.js');
     const params = { save: JSON.parse(read('data/game/save.json')), economy: JSON.parse(read('data/game/economy.json')), stats: JSON.parse(read('data/game/player-stats.json')) };
-    const save = { ...defaultSave(), money: 321, earned: 4321, records: { bestWave: 9, bestKills: 40, runs: 3, worldsCompleted: 0 } };
-    const code = encodeSave(save, params);
-    expect(code).toMatch(/^ZS1\.[A-Za-z0-9_-]+\.[0-9a-f]{8}$/);
-    const r = decodeSave(code, params);
+    const save = { ...defaultSave(), bleu: { gagne: 4321, depense: 4000 }, records: { histoire: { batiment: 9 }, infini: {} } };
+    const code = encoder(save, params);
+    expect(code).toMatch(/^ZS2\.[A-Za-z0-9_-]+\.[0-9a-f]{8}$/);
+    const r = decoder(code, params);
     expect(r.ok).toBe(true);
-    expect([r.save.money, r.save.earned, r.save.records.bestWave]).toEqual([321, 4321, 9]);
+    expect([r.save.bleu.gagne - r.save.bleu.depense, r.save.bleu.gagne, r.save.records.histoire.batiment]).toEqual([321, 4321, 9]);
     const abime = `${code.slice(0, -3)}${code.endsWith('000') ? '111' : '000'}`;
-    const e = decodeSave(abime, params);
+    const e = decoder(abime, params);
     expect([e.ok, e.error, errorKey(e.error)]).toEqual([false, 'bad-checksum', 'game.save.page.error.bad-checksum']);
-    expect(decodeSave('', params).error).toBe('empty');
-    expect(previewRows(defaultSave(), r.save).find((x) => x.id === 'money')).toMatchObject({ current: 0, incoming: 321, changed: true });
+    expect(decoder('', params).error).toBe('empty');
+    expect(previewRows(defaultSave(), r.save, params).find((x) => x.id === 'money')).toMatchObject({ current: 0, incoming: 321, changed: true });
     expect([canReplace(true, false), canReplace(false, true), canReplace(true, true)]).toEqual([false, false, true]);
     // Le Profil n'écrit que par repository.replace, après vérification et case cochée, en décodant de nouveau le champ (comme sauvegarde.html).
     const compte = read('js/menu/compte.js');
-    expect(compte).toMatch(/import \{ decodeSave, encodeSave \} from '\.\.\/core\/save\.js';/);
-    expect(compte).toMatch(/import \{ canReplace, errorKey, levelRows, previewRows, recordKey, rowKey, statKey \} from '\.\.\/sauvegarde\/logic\.js';/);
+    expect(compte).toMatch(/import \{ decoder, encoder \} from '\.\.\/core\/progression\.js';/);
+    expect(compte).toMatch(/import \{ canReplace, errorKey, levelRows, MODE_RECORD_KEYS, previewRows, rowKey, statKey \} from '\.\.\/sauvegarde\/logic\.js';/);
     expect(compte.match(/repository\.(replace|commit|clear)\(/g)).toEqual(['repository.replace(']);
-    expect(compte).toMatch(/if \(!canReplace\(verifie !== null, caseAck\.checked\)\) return;\n {6}\/\/[^\n]*\n {6}const encore = decodeSave\(zone\.value, params\);/);
+    expect(compte).toMatch(/if \(!canReplace\(verifie !== null, caseAck\.checked\)\) return;\n {6}\/\/[^\n]*\n {6}const encore = decoder\(zone\.value, params\);/);
     expect(compte).not.toMatch(/localStorage\.setItem|sessionStorage|indexedDB|innerHTML/);
     for (const f of ['js/menu/compte.js', 'js/menu/profil-etat.js', 'js/menu/credits.js', 'js/menu/credits-donnees.js']) expect(read(f), f).not.toMatch(/fetch\(['"`]https?:/);
   });

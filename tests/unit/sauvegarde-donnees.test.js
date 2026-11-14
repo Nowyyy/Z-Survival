@@ -60,7 +60,7 @@ describe('data/game/economy.json', () => {
 describe('data/game/save.json', () => {
   it('est marqué provisoire et complet', () => {
     expect(typeof save._provisoire).toBe('string');
-    expect(Object.keys(save).filter((k) => !k.startsWith('_')).sort()).toEqual(['autosaveMs', 'exportPrefix', 'maxCodeLength', 'maxStoredBytes', 'memoryByDefaultWith', 'readOnlyParams', 'schemaVersion', 'storageKey']);
+    expect(Object.keys(save).filter((k) => !k.startsWith('_')).sort()).toEqual(['autosaveMs', 'exportPrefix', 'maxCodeLength', 'maxStoredBytes', 'memoryByDefaultWith', 'readOnlyParams', 'schemaVersion', 'storageKey', 'v2']);
   });
 
   it('la clé de stockage est zs.save.v1 et la version de schéma 1', () => {

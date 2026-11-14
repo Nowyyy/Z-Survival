@@ -18,6 +18,10 @@
 | 11. Décor armé | faire varier l'équipement : prochain lot | silhouette et ouverture 3D inchangées ; équipement visible sur le personnage → « Idées » |
 | 12. Record infini | meilleure manche par carte | `records.infini.<carte>` |
 
+## Décisions au GO (2026-11-14)
+« Go 8h » reçu le 2026-11-14 : le plan de la section 0 et de la suite est validé tel quel, avec les réponses du propriétaire de la section 0 (elles priment). Aucune réponse nouvelle au GO.
+- Écart d'ordre (partie B) : le test Playwright de deux onglets réels de la V0.8 vient avec la partie C, car seule la partie (la page de jeu) ouvre le canal entre onglets et elle n'écrit la v2 qu'à partir de la partie C ; la partie B le prouve par le simulateur (vrai dépôt, 10 000 suites).
+
 ## 1. Relevé
 
 ### 1.1 Stockage actuel (`origin/dev` = code de la V0.7 pour tout `js/save/` et `js/core/save.js`, aucune différence)

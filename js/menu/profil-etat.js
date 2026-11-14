@@ -1,7 +1,6 @@
 // Lot 8g : état pur de la page Profil E10 (Docs/ref/menu-principal.md, « Lot 8g ») : pseudo (2 à 20 caractères, texte libre filtré), avatars générés en
 // code, six statistiques lues dans la sauvegarde existante (« — » quand la donnée n'existe pas encore : lot 8h). Pur : ni rendu, ni stockage, ni réseau,
 // ni horloge. Jusqu'au lot 8h, avatar et pseudo restent en mémoire (js/menu/compte.js) : rien n'est écrit.
-import { describeSave } from '../core/save.js';
 
 export const PSEUDO_MIN = 2;
 export const PSEUDO_MAX = 20;
@@ -30,22 +29,30 @@ export const ERREURS_PSEUDO = Object.freeze({
 export { AVATARS, avatarSuivant } from './avatar.js';
 
 // Six statistiques du Profil : { id, valeur (nombre ou null : « — »), max (meilleure manche : dernière manche du monde) }. Retour du propriétaire : plus
-// de record infini (il dépend de la carte : il est dans l'onglet Infini) ; parties jouées séparées en histoire et en infini. Existent dans la
-// sauvegarde v1 : meilleure manche (records.bestWave, 0 = aucune), argent gagné (earned). Attendent le lot 8h : zombies tués au total
-// (records.bestKills n'est que la meilleure partie), parties en histoire et en infini (records.runs les compte ensemble), temps de jeu.
-// Sauvegarde illisible, verrouillée ou indisponible : tout à « — ».
+// de record infini (il dépend de la carte : il est dans l'onglet Infini) ; parties jouées séparées en histoire et en infini. Lot 8h : lues dans la
+// progression v2 (zs.save.v2) : meilleure manche de l'histoire du monde (records.histoire[monde], 0 = aucune), zombies tués au total, parties en
+// histoire et en infini, temps de jeu hors pauses (millisecondes), monnaie bleue gagnée au total. Progression illisible, verrouillée ou
+// indisponible : tout à « — ».
 export const STATS_PROFIL = Object.freeze(['meilleureManche', 'tues', 'partiesHistoire', 'partiesInfini', 'temps', 'argent']);
-export const STATS_EN_ATTENTE = Object.freeze(['tues', 'partiesHistoire', 'partiesInfini', 'temps']);
-export function statsProfil(lu, manches = 40) {
+export const STATS_EN_ATTENTE = Object.freeze([]);
+const entier = (n) => (Number.isInteger(n) && n >= 0 ? n : 0);
+export function statsProfil(lu, manches = 40, monde = 'batiment') {
   const lisible = lu && (lu.status === 'ok' || lu.status === 'empty') && lu.save && typeof lu.save === 'object';
-  const d = lisible ? describeSave(lu.save) : null;
+  const s = lisible ? lu.save : null;
+  const best = s ? entier(s.records?.histoire?.[monde]) : 0;
   const valeurs = {
-    meilleureManche: d && d.records.bestWave >= 1 ? d.records.bestWave : null,
-    tues: null,
-    partiesHistoire: null,
-    partiesInfini: null,
-    temps: null,
-    argent: d ? d.earned : null,
+    meilleureManche: s && best >= 1 ? best : null,
+    tues: s ? entier(s.profil?.tues) : null,
+    partiesHistoire: s ? entier(s.profil?.partiesHistoire) : null,
+    partiesInfini: s ? entier(s.profil?.partiesInfini) : null,
+    temps: s ? entier(s.profil?.tempsMs) : null,
+    argent: s ? entier(s.bleu?.gagne) : null,
   };
   return STATS_PROFIL.map((id) => (id === 'meilleureManche' ? { id, valeur: valeurs[id], max: Number.isInteger(manches) && manches > 0 ? manches : null } : { id, valeur: valeurs[id] }));
+}
+
+// Temps de jeu (millisecondes) → { h, m } (minutes entières, arrondi inférieur).
+export function tempsJeu(ms) {
+  const minutes = Math.floor(entier(ms) / 60_000);
+  return { h: Math.floor(minutes / 60), m: minutes % 60 };
 }

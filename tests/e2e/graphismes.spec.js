@@ -508,7 +508,7 @@ test.describe('préréglages graphiques', () => {
     await open(page, '&nospawn=1&lum=off', { freeze: false });
     for (const f of ['/data/game/graphics.json', '/js/core/graphics.js', '/js/game/graphics-boot.js', '/js/game/graphics-apply.js', '/js/save/device-settings.js']) expect(files).toContain(f);
     for (const f of ['/js/game/profiler.js', '/js/game/perf-panel.js', '/js/game/frame-cap.js', '/js/core/perf-stats.js']) expect(files).not.toContain(f);
-    expect(new Set(files.filter((f) => f.endsWith('.js'))).size).toBe(115); // 109 avant le lot 5b + 4 modules des préréglages (lot 5j : inchangé ; lot 5k : lampes « off », inchangé) ; lot 8a : + js/menu/demarrage.js (choix du démarrage) ; lot 8f : + js/glisser.js (glissement à la souris, retour du propriétaire)
+    expect(new Set(files.filter((f) => f.endsWith('.js'))).size).toBe(117); // lot 8h : + js/save/codecs.js et js/core/progression.js ; 109 avant le lot 5b + 4 modules des préréglages (lot 5j : inchangé ; lot 5k : lampes « off », inchangé) ; lot 8a : + js/menu/demarrage.js (choix du démarrage) ; lot 8f : + js/glisser.js (glissement à la souris, retour du propriétaire)
     for (const f of ['/js/game/lamps.js', '/js/core/lamps.js', '/js/game/lights.js']) expect(files).not.toContain(f); // lot 5k
     expect(files).not.toContain('/js/game/options-menu.js'); // lot 5j : rien de chargé tant que l'écran reste fermé
     expect(external).toEqual([]);
@@ -518,7 +518,7 @@ test.describe('préréglages graphiques', () => {
     await page.locator('#btn-options').click();
     expect(files.filter((f) => f === '/js/game/options-menu.js')).toHaveLength(1);
     expect(files.filter((f) => f === '/css/menu.css')).toHaveLength(1); // lot 8c : styles du composant partagé avec le menu, chargés à la première ouverture
-    expect(new Set(files.filter((f) => f.endsWith('.js'))).size).toBe(116); // lot 8a : 114 + options-menu.js (avant : 113 + 1) ; lot 8f : + js/glisser.js
+    expect(new Set(files.filter((f) => f.endsWith('.js'))).size).toBe(118); // lot 8h : + 2 (progression v2) ; lot 8a : 114 + options-menu.js (avant : 113 + 1) ; lot 8f : + js/glisser.js
     expect(external).toEqual([]);
   });
 });
