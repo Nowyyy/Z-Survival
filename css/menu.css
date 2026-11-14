@@ -3627,6 +3627,33 @@
   letter-spacing: 0;
 }
 
+/* Lot 8k : prix des caisses en médailles : médaille (décorative, couleur du texte) puis montant ou « Il manque N médailles ». */
+.e3-ouvrir-ligne {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.e3-ouvrir-medaille {
+  flex: none;
+  width: 1.05em;
+  height: 1.05em;
+  fill: none;
+  stroke: currentcolor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* Lot 8k : compteurs de pitié dans « Voir les chances ». */
+.e3-chances-pitie {
+  margin: 0 0 calc(6 * var(--u));
+  padding: 0;
+  list-style: none;
+  font-weight: var(--font-weight-bold);
+  color: var(--menu-record);
+}
+
 .e3 .e3-rouge {
   border: 2px solid var(--menu-coulure);
   background: var(--menu-rouge-clair);

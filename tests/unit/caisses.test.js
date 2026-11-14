@@ -8,7 +8,10 @@ import { ajouterObjets, ameliorerPersonnage, choisirPersonnage, creerEtatEquipem
 
 const lire = (f) => JSON.parse(readFileSync(f, 'utf8'));
 const DONNEES = { raretes: lire('data/menu/raretes.json'), objets: lire('data/menu/objets.json'), personnages: lire('data/menu/personnages.json'), inventaire: lire('data/menu/inventaire-depart.json') };
-const JSON_CAISSES = lire('data/menu/caisses.json');
+// Lot 8k : le jeu n'a plus qu'une caisse par rubrique (data/menu/caisses.json, testé dans caisses-pitie.test.js) ; les règles du moteur (lecture,
+// chances, tirage, ×10, répartition, refus) restent testées ici sur les neuf caisses du lot 8e, gardées comme données de référence (personnages par
+// rareté : tests/unit/helpers/caisses-lot-8e.json).
+const JSON_CAISSES = lire('tests/unit/helpers/caisses-lot-8e.json');
 const PARAMS = lire('data/game/player-stats.json');
 const { cat: catBase, depart } = lireCatalogue(DONNEES);
 // Lot 8e, retour du propriétaire : catalogue complété des tenues (cosmétiques) ; caisses d'équipement, de personnages et de tenues, offres du jour.
@@ -28,7 +31,7 @@ const borne = (p, n) => 4 * Math.sqrt((p * (1 - p)) / n);
 describe('données data/menu/caisses.json (lireCaisses)', () => {
   it('fichier valide, sans erreur, marqué provisoire ; trois caisses dans l\'ordre, raretés de la demande', () => {
     expect([erreurs, erreursCosm]).toEqual([[], []]);
-    expect([JSON_CAISSES._provisoire, JSON_COSM._provisoire]).toEqual([expect.stringMatching(/provisoire/i), expect.stringMatching(/exemple/i)]);
+    expect([lire('data/menu/caisses.json')._provisoire, JSON_COSM._provisoire]).toEqual([expect.stringMatching(/provisoire/i), expect.stringMatching(/exemple/i)]);
     expect(toutes.map((c) => [c.id, c.type])).toEqual([['ravitaillement', 'equipement'], ['militaire', 'equipement'], ['elite', 'equipement'], ['recrues', 'personnage'], ['veterans', 'personnage'], ['legendes', 'personnage'], ['tenues', 'cosmetique'], ['mode', 'cosmetique'], ['couture', 'cosmetique']]); // trois caisses par rubrique (retour du propriétaire)
     expect(caisses.map((c) => c.id)).toEqual(['ravitaillement', 'militaire', 'elite']);
     expect(caisses.map((c) => c.nom)).toEqual(['Caisse de ravitaillement', 'Caisse militaire', 'Caisse d\'élite']);
@@ -39,12 +42,16 @@ describe('données data/menu/caisses.json (lireCaisses)', () => {
     expect(hautes[0] < hautes[1] && hautes[1] < hautes[2]).toBe(true);
     for (const id of ['tenues', 'mode', 'couture']) expect(toutes.find((c) => c.id === id).chances.map((x) => x.rarete), id).toEqual(['commun', 'peu-commun', 'rare', 'epique', 'legendaire']);
     expect(['tenues', 'mode', 'couture'].map((id) => partHaute(toutes.find((c) => c.id === id), cat).pourcent)).toEqual([5, 13, 45]);
-    // Caisses de personnages : de la moins chère à la plus chère, la part des personnages verrouillés au départ augmente.
-    const verrouilles = (id) => toutes.find((c) => c.id === id).chances.filter((x) => !cat.personnages.find((p) => p.id === x.personnage).debloque).reduce((t, x) => t + x.pourcent, 0);
-    expect(['recrues', 'veterans', 'legendes'].map(verrouilles)).toEqual([40, 70, 92]);
+    // Caisses de personnages : de la moins chère à la plus chère, la part des personnages verrouillés au départ augmente (lot 8k : par rareté, part des
+    // personnages verrouillés de chaque rareté ; avant, par personnage : 40, 70, 92).
+    const verrouilles = (id) => Math.round(toutes.find((c) => c.id === id).chances.reduce((t, x) => {
+      const liste = cat.personnages.filter((p) => p.rarete === x.rarete);
+      return t + (x.pourcent * liste.filter((p) => !p.debloque).length) / liste.length;
+    }, 0) * 100) / 100;
+    expect(['recrues', 'veterans', 'legendes'].map(verrouilles)).toEqual([53.33, 68.33, 79.33]);
     // Un dessin par genre de caisse.
     expect(toutes.map((c) => c.modele)).toEqual(['bois', 'militaire', 'elite', 'recrues', 'veterans', 'legendes', 'tenues', 'mode', 'couture']);
-    expect(partHaute(toutes.find((c) => c.id === 'recrues'), cat)).toBeNull();
+    expect(partHaute(toutes.find((c) => c.id === 'recrues'), cat)).toEqual({ rarete: 'epique', pourcent: 30 }); // lot 8k : personnages par rareté (avant : null)
   });
 
   it('chances : somme de 100 par caisse, raretés connues, pour cent > 0 ; chaque rareté tirable a des objets dans le catalogue', () => {
@@ -290,9 +297,11 @@ describe('caisses de personnages et de tenues', () => {
   it('données : tenues valides (raretés connues, au moins une par rareté tirable) ; chances de la caisse de recrues sur des personnages existants, somme de 100', () => {
     expect(cat.cosmetiques.length).toBeGreaterThanOrEqual(5);
     for (const x of tenues.chances) expect(elementsDe('cosmetique', cat, x.rarete).length, x.rarete).toBeGreaterThan(0);
-    expect(recrues.chances.map((x) => x.personnage)).toEqual(cat.personnages.map((p) => p.id));
+    // Lot 8k : chances par rareté (avant : par personnage) ; chaque rareté liste ses personnages.
+    expect(recrues.chances.map((x) => x.rarete)).toEqual(['rare', 'epique', 'legendaire']);
     expect(recrues.chances.reduce((s, x) => s + x.pourcent, 0)).toBeCloseTo(100, 9);
-    expect(chances(recrues, cat).map((x) => x.nom)).toEqual(cat.personnages.map((p) => p.nom));
+    expect(chances(recrues, cat).map((x) => x.nom)).toEqual(['Rare', 'Épique', 'Légendaire']);
+    expect(chances(recrues, cat).flatMap((x) => x.objets.map((o) => o.id))).toEqual(cat.personnages.map((p) => p.id));
     expect(bornes(recrues, cat)).toBeNull();
     expect(bornes(tenues, cat)).toEqual({ min: 'commun', max: 'legendaire', n: 5 });
     // Personnage inconnu, tenue de rareté inconnue : refus.
@@ -314,7 +323,8 @@ describe('caisses de personnages et de tenues', () => {
         expect(Math.abs((n.get(x.rarete ?? x.personnage) ?? 0) / N - p), `${c.id} ${x.rarete ?? x.personnage}`).toBeLessThanOrEqual(borne(p, N));
       }
     }
-    expect(Object.keys(tirer(recrues, cat, 3)).sort()).toEqual(['id', 'type']);
+    expect(Object.keys(tirer(recrues, cat, 3)).sort()).toEqual(['id', 'rarete', 'type']); // lot 8k : rareté tirée (avant : { type, id })
+    for (let g = 0; g < 200; g += 1) expect(cat.personnages.find((p) => p.id === tirer(recrues, cat, g).id).rarete).toBe(tirer(recrues, cat, g).rarete);
     expect(Object.keys(tirer(tenues, cat, 3)).sort()).toEqual(['id', 'rarete', 'type']);
     expect(tirer10(recrues, cat, 4)).toHaveLength(10);
   });

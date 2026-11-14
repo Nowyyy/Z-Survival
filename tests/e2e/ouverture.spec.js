@@ -5,7 +5,7 @@
 import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { readFileSync } from 'node:fs';
-import { lireCaisses, tirer, tirer10 } from '../../js/core/caisses.js';
+import { lireCaisses, lirePitie, tirerPitie } from '../../js/core/caisses.js';
 import { lireCatalogue } from '../../js/core/equipement.js';
 import { chronologie, lireOuvertures, rareteEffets } from '../../js/core/ouverture.js';
 import { CLE_V2, poserProgression } from './helpers.js';
@@ -22,7 +22,15 @@ const BUDGET = { appels: 150, triangles: 60_000 };
 const lire = (f) => JSON.parse(readFileSync(f, 'utf8'));
 const { cat } = lireCatalogue({ raretes: lire('data/menu/raretes.json'), objets: lire('data/menu/objets.json'), personnages: lire('data/menu/personnages.json'), inventaire: lire('data/menu/inventaire-depart.json') });
 const { caisses } = lireCaisses(lire('data/menu/caisses.json'), cat);
-const caisse = (id) => caisses.find((c) => c.id === id);
+// Lot 8k : une caisse par rubrique (equipement, personnages, cosmetiques) payée en médailles, tirée avec la pitié de sa rubrique ; les anciens noms
+// de caisses du test désignent celle de leur rubrique ; résultats attendus = tirerPitie depuis les compteurs donnés (0 : progression de démonstration).
+const { regles: PITIE } = lirePitie(lire('data/menu/caisses.json'), cat);
+const ZERO = Object.freeze({ e: 0, l: 0 });
+const RUBRIQUE = { elite: 'equipement', ravitaillement: 'equipement', militaire: 'equipement', recrues: 'personnages', veterans: 'personnages', legendes: 'personnages', tenues: 'cosmetiques', mode: 'cosmetiques', couture: 'cosmetiques' };
+const caisse = (id) => caisses.find((c) => c.id === (RUBRIQUE[id] ?? id));
+const tirer = (c, k, g, cpt = ZERO) => tirerPitie(c, k, PITIE, cpt, g, 1)?.objets[0] ?? null;
+const tirer10 = (c, k, g, cpt = ZERO) => tirerPitie(c, k, PITIE, cpt, g, 10)?.objets ?? null;
+// Achats successifs de ces tests : moins de 9 tirages sans épique et de 50 sans légendaire, les compteurs ne changent donc aucune chance.
 const { reglages: R } = lireOuvertures(lire('data/menu/ouvertures.json'), cat.raretes.map((r) => r.id));
 const premiere = (f) => {
   for (let g = 1; g < 200_000; g += 1) if (f(g)) return g;
@@ -139,9 +147,9 @@ test.describe('ouverture ×1 (E3-2)', () => {
     // Démarrage du menu et onglet Boutique : ni Three.js, ni l'ouverture.
     const avant = [...o.fichiers];
     expect(avant.filter((f) => /vendor\/three|js\/menu\/ouverture\/|ouvertures\.(css|json)|characters-v2/.test(f))).toEqual([]);
-    await page.locator('#menu-caisse-elite-un').dispatchEvent('pointerdown');
+    await page.locator('#menu-caisse-equipement-un').dispatchEvent('pointerdown');
     await expect.poll(() => o.fichiers.some((f) => f.endsWith('vendor/three/three.module.js'))).toBe(true);
-    await page.locator('#menu-caisse-elite-un').click();
+    await page.locator('#menu-caisse-equipement-un').click();
     await attendreOuverture(page);
     const attendu = tirer(caisse('elite'), cat, G_RARE);
     const e0 = await ouv(page);
@@ -173,15 +181,16 @@ test.describe('ouverture ×1 (E3-2)', () => {
     await page.locator('#menu-ouverture-continuer').click();
     // Retour aux caisses, focus rendu au bouton d'achat ; tout est libéré.
     await expect(page.locator('#menu-ecran-boutique')).toBeVisible();
-    await expect(page.locator('#menu-caisse-elite-un')).toBeFocused();
+    await expect(page.locator('#menu-caisse-equipement-un')).toBeFocused();
     await expect(page.locator('#menu-ecran-ouverture')).toHaveCount(0);
     const lib = (await ouv(page)).liberation;
     expect(lib).toEqual({ geometries: 0, textures: 0, contextePerdu: true });
     expect(await contextesVivants(page)).toBe(0);
     expect(await page.locator('canvas').count()).toBe(0);
-    // L'objet est dans l'inventaire ; lot 8h : prix prélevé (caisse d'élite, 1 500) dans la même écriture que l'objet.
+    // L'objet est dans l'inventaire ; lot 8h : prix prélevé dans la même écriture que l'objet ; lot 8k : 100 médailles (avant : 1 500 bleus).
     expect((await etatBoutique(page)).dernier.objets).toEqual([attendu]);
-    await expect(page.locator('#menu-solde-texte')).toHaveText(`98${NNBSP}500`);
+    await expect(page.locator('#menu-medailles-texte')).toHaveText(`99${NNBSP}900`);
+    await expect(page.locator('#menu-solde-texte')).toHaveText(`100${NNBSP}000`);
     expect(await page.evaluate(() => window.__ecritures)).toEqual([CLE_V2]);
     expect([o.problemes, o.externes]).toEqual([[], []]);
   });
@@ -205,11 +214,11 @@ test.describe('ouverture ×1 (E3-2)', () => {
       await route.continue();
     });
     // 1. « Passer » pendant l'arrivée.
-    await page.locator('#menu-caisse-elite-un').click();
-    await page.locator('#menu-caisse-militaire-un').dispatchEvent('click');
+    await page.locator('#menu-caisse-equipement-un').click();
+    await page.locator('#menu-caisse-personnages-un').dispatchEvent('click');
     await expect(page.locator('#menu-ouverture-chargement')).toBeVisible();
     await expect(page.locator('#menu-ouverture-chargement')).toHaveAttribute('role', 'status');
-    expect(await page.locator('#menu-caisse-militaire-un').evaluate((n) => Boolean(n.closest('[inert]')))).toBe(true);
+    expect(await page.locator('#menu-caisse-personnages-un').evaluate((n) => Boolean(n.closest('[inert]')))).toBe(true);
     await attendreOuverture(page);
     await expect(page.locator('#menu-ouverture-chargement')).toHaveCount(0);
     expect((await etatBoutique(page)).achats).toBe(1);
@@ -263,8 +272,8 @@ test.describe('ouverture ×1 (E3-2)', () => {
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await graines(page, [G_EPIQUE]);
     await ouvrirBoutique(page, REF, null);
-    await page.locator('#menu-caisse-elite-un').dispatchEvent('pointerdown');
-    await page.locator('#menu-caisse-elite-un').click();
+    await page.locator('#menu-caisse-equipement-un').dispatchEvent('pointerdown');
+    await page.locator('#menu-caisse-equipement-un').click();
     await expect(page.locator('#menu-ecran-resultat')).toBeVisible();
     expect((await etatBoutique(page)).resultat.cartes.map((x) => x.objet)).toEqual([tirer(caisse('elite'), cat, G_EPIQUE).id]);
     expect(o.fichiers.filter((f) => /vendor\/three|js\/menu\/ouverture\/|ouvertures\./.test(f))).toEqual([]);
@@ -276,7 +285,7 @@ test.describe('ouverture ×1 (E3-2)', () => {
     await espions(page2, { sansWebgl: true });
     await graines(page2, [G_RARE]);
     await ouvrirBoutique(page2, REF, null);
-    await page2.locator('#menu-caisse-elite-un').click();
+    await page2.locator('#menu-caisse-equipement-un').click();
     await expect(page2.locator('#menu-ecran-resultat')).toBeVisible({ timeout: 30_000 });
     expect((await page2.evaluate(() => window.__zsMenu.etat().menu.boutique.resultat.cartes.map((x) => x.objet)))).toEqual([tirer(caisse('elite'), cat, G_RARE).id]);
     await expect(page2.locator('#menu-ecran-ouverture')).toHaveCount(0);
@@ -290,7 +299,7 @@ test.describe('ouverture ×1 (E3-2)', () => {
     await espions(page);
     await graines(page, [G_LEGENDAIRE]);
     await ouvrirBoutique(page);
-    await page.locator('#menu-caisse-elite-un').click();
+    await page.locator('#menu-caisse-equipement-un').click();
     await attendreOuverture(page);
     const e = await ouv(page);
     const attendu = tirer(caisse('elite'), cat, G_LEGENDAIRE);
@@ -331,7 +340,7 @@ test.describe('ouverture ×1 (E3-2)', () => {
     const o = surveiller(page, baseURL);
     await graines(page, [G_RARE]);
     await ouvrirBoutique(page, { width: 667, height: 375 });
-    await page.locator('#menu-caisse-elite-un').click();
+    await page.locator('#menu-caisse-equipement-un').click();
     await attendreOuverture(page);
     await aller(page, (await ouv(page)).fin + 0.1);
     for (const [size, marge] of [[{ width: 667, height: 375 }, 16], [{ width: 2000, height: 1020 }, 16], [{ width: 762, height: 351 }, 50]]) {
@@ -358,7 +367,7 @@ test.describe('ouverture ×10 (E3-3)', () => {
     await espions(page);
     await graines(page, [G_DIX]);
     await ouvrirBoutique(page);
-    await page.locator('#menu-caisse-elite-dix').click();
+    await page.locator('#menu-caisse-equipement-dix').click();
     await attendreOuverture(page);
     const attendus = tirer10(caisse('elite'), cat, G_DIX);
     const e = await ouv(page);
@@ -404,7 +413,7 @@ test.describe('ouverture ×10 (E3-3)', () => {
     await espions(page);
     await graines(page, [G_DIX, G_DIX]);
     await ouvrirBoutique(page, { width: 667, height: 375 });
-    await page.locator('#menu-caisse-ravitaillement-dix').click();
+    await page.locator('#menu-caisse-equipement-dix').click();
     await attendreOuverture(page);
     const attendus = tirer10(caisse('ravitaillement'), cat, G_DIX);
     const e = await ouv(page);

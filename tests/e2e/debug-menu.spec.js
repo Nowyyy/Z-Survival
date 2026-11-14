@@ -255,7 +255,7 @@ test.describe('outils de débogage du menu (lot 8h)', () => {
     await icone.click();
     const panneau = page.getByRole('dialog', { name: 'Débogage' });
     await expect(panneau).toBeVisible();
-    await expect(panneau.locator('.e8-debogage-liste button')).toHaveText(['Ajouter 10 000 bleus', 'Donner l\'inventaire de démonstration', 'Débloquer tous les personnages', 'Remettre la progression V0.8 à zéro']);
+    await expect(panneau.locator('.e8-debogage-liste button')).toHaveText(['Ajouter 10 000 bleus', 'Ajouter 1 000 médailles', 'Remettre la pitié à zéro', 'Donner l\'inventaire de démonstration', 'Débloquer tous les personnages', 'Remettre la progression V0.8 à zéro']); // lot 8k : + médailles, pitié
     expect((await new AxeBuilder({ page }).include('#menu-debogage').analyze()).violations.map((v) => v.id)).toEqual([]);
     const v2 = () => page.evaluate(() => localStorage.getItem('zs.save.v2'));
     await page.locator('#menu-debogage-bleus').click();
@@ -267,6 +267,18 @@ test.describe('outils de débogage du menu (lot 8h)', () => {
     await expect(page.locator('#menu-debogage-message')).toHaveText('C\'est fait.');
     expect(JSON.parse(await v2()).bleu).toEqual({ gagne: 10_000, depense: 0 });
     await expect(page.locator('#menu-solde-texte')).toHaveText(`10${String.fromCharCode(0x202f)}000`);
+    // Lot 8k : « Ajouter 1 000 médailles » (en-tête mis à jour), « Remettre la pitié à zéro » (compteurs des trois rubriques à 0).
+    await page.locator('#menu-debogage-medailles').click();
+    await expect(page.locator('#menu-debogage-question')).toHaveText('Confirmer : Ajouter 1 000 médailles ?');
+    await page.locator('#menu-debogage-oui').click();
+    await expect(page.locator('#menu-debogage-message')).toHaveText('C\'est fait.');
+    expect(JSON.parse(await v2()).medailles).toEqual({ gagne: 1000, depense: 0, jour: 0 });
+    await expect(page.locator('#menu-medailles-texte')).toHaveText(`1${String.fromCharCode(0x202f)}000`);
+    await page.evaluate(() => { const s = JSON.parse(localStorage.getItem('zs.save.v2')); s.pitie = { equipement: { e: 8, l: 60 }, personnage: { e: 3, l: 3 }, cosmetique: { e: 1, l: 1 } }; localStorage.setItem('zs.save.v2', JSON.stringify(s)); });
+    await page.locator('#menu-debogage-pitie').click();
+    await page.locator('#menu-debogage-oui').click();
+    await expect(page.locator('#menu-debogage-message')).toHaveText('C\'est fait.');
+    expect(JSON.parse(await v2()).pitie).toEqual({ equipement: { e: 0, l: 0 }, personnage: { e: 0, l: 0 }, cosmetique: { e: 0, l: 0 } });
     await page.locator('#menu-debogage-zero').click();
     await page.locator('#menu-debogage-oui').click();
     await expect(page.locator('#menu-debogage-message')).toHaveText('C\'est fait.');

@@ -5,7 +5,7 @@
 // propre. Projets bureau et mobile (paysage ; mobile : les tests « clic » et « achat »).
 import { test, expect } from '@playwright/test';
 import { readFileSync } from 'node:fs';
-import { lireCaisses, tirer, tirer10 } from '../../js/core/caisses.js';
+import { lireCaisses, lirePitie, tirerPitie } from '../../js/core/caisses.js';
 import { lireCatalogue } from '../../js/core/equipement.js';
 import { chronologie, lireOuvertures, rareteEffets } from '../../js/core/ouverture.js';
 import { sonsOuverture } from '../../js/core/sons-menu.js';
@@ -22,7 +22,15 @@ const MO = 1024 * 1024;
 const lire = (f) => JSON.parse(readFileSync(f, 'utf8'));
 const { cat } = lireCatalogue({ raretes: lire('data/menu/raretes.json'), objets: lire('data/menu/objets.json'), personnages: lire('data/menu/personnages.json'), inventaire: lire('data/menu/inventaire-depart.json') });
 const { caisses } = lireCaisses(lire('data/menu/caisses.json'), cat);
-const caisse = (id) => caisses.find((c) => c.id === id);
+// Lot 8k : une caisse par rubrique (equipement, personnages, cosmetiques) payée en médailles, tirée avec la pitié de sa rubrique ; les anciens noms
+// de caisses du test désignent celle de leur rubrique ; résultats attendus = tirerPitie depuis les compteurs donnés (0 : progression de démonstration).
+const { regles: PITIE } = lirePitie(lire('data/menu/caisses.json'), cat);
+const ZERO = Object.freeze({ e: 0, l: 0 });
+const RUBRIQUE = { elite: 'equipement', ravitaillement: 'equipement', militaire: 'equipement', recrues: 'personnages', veterans: 'personnages', legendes: 'personnages', tenues: 'cosmetiques', mode: 'cosmetiques', couture: 'cosmetiques' };
+const caisse = (id) => caisses.find((c) => c.id === (RUBRIQUE[id] ?? id));
+const tirer = (c, k, g, cpt = ZERO) => tirerPitie(c, k, PITIE, cpt, g, 1)?.objets[0] ?? null;
+const tirer10 = (c, k, g, cpt = ZERO) => tirerPitie(c, k, PITIE, cpt, g, 10)?.objets ?? null;
+// Achats successifs de ces tests : moins de 9 tirages sans épique et de 50 sans légendaire, les compteurs ne changent donc aucune chance.
 const { reglages: R } = lireOuvertures(lire('data/menu/ouvertures.json'), cat.raretes.map((r) => r.id));
 const catalogueSons = lire('data/menu/sons.json');
 const premiere = (f) => {
@@ -158,7 +166,7 @@ test.describe('sons du menu', () => {
     await page.locator('#menu-resultat-continuer').click();
     await page.waitForTimeout(320);
     n = await taille(page);
-    await page.locator('#menu-caisse-elite-un').click();
+    await page.locator('#menu-caisse-equipement-un').click();
     await expect(page.locator('#menu-resultat-continuer')).toBeVisible();
     expect(await lectures(page, n)).toEqual(['achat']);
     expect(o.externes).toEqual([]);
@@ -245,8 +253,8 @@ test.describe('sons des ouvertures de caisses', () => {
     await page.locator('#menu-onglet-boutique').click();
     await expect(page.locator('#menu-ecran-boutique')).toBeVisible();
     expect((await sons(page)).octets.ouverture).toBeUndefined(); // rien de l'ouverture avant « Ouvrir »
-    await page.locator('#menu-caisse-elite-un').dispatchEvent('pointerdown');
-    await page.locator('#menu-caisse-elite-un').click();
+    await page.locator('#menu-caisse-equipement-un').dispatchEvent('pointerdown');
+    await page.locator('#menu-caisse-equipement-un').click();
     await attendreOuverture(page);
     let s = await sons(page);
     expect(s.octets.ouverture).toBeGreaterThan(0);
@@ -284,8 +292,8 @@ test.describe('sons des ouvertures de caisses', () => {
     await sonsPrets(page);
     await page.locator('#menu-onglet-boutique').click();
     await expect(page.locator('#menu-ecran-boutique')).toBeVisible();
-    await page.locator('#menu-caisse-elite-dix').dispatchEvent('pointerdown');
-    await page.locator('#menu-caisse-elite-dix').click();
+    await page.locator('#menu-caisse-equipement-dix').dispatchEvent('pointerdown');
+    await page.locator('#menu-caisse-equipement-dix').click();
     await attendreOuverture(page);
     const objets = tirer10(caisse('elite'), cat, G_DIX);
     const chrono = chronoDe(objets, G_DIX);
@@ -325,7 +333,7 @@ test.describe('sons des ouvertures de caisses', () => {
     await sonsPrets(page);
     await page.locator('#menu-onglet-boutique').click();
     await expect(page.locator('#menu-ecran-boutique')).toBeVisible();
-    await page.locator('#menu-caisse-elite-un').click();
+    await page.locator('#menu-caisse-equipement-un').click();
     await attendreOuverture(page);
     const n = (await sons(page)).journal.length;
     // Toucher l'écran pendant l'arrivée : saut à la première caisse, noté au journal, sons en cours coupés.

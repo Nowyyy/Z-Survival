@@ -57,13 +57,13 @@ export function screenShare(boxes, width, height) {
 export const apart = (a, b) => a.r <= b.l + 0.5 || b.r <= a.l + 0.5 || a.b <= b.t + 0.5 || b.b <= a.t + 0.5;
 
 // Lot 8h : progression v2 de démonstration (zs.save.v2) pour les tests du menu : inventaire et équipement de data/menu/inventaire-depart.json (uid o1 à
-// o16, mêmes que le lot 8d), monnaie bleue `bleu`, Survivant choisi. Posée UNE fois (les rechargements gardent ce que le menu a écrit), avant tout
+// o16, mêmes que le lot 8d), monnaie bleue `bleu`, médailles `medailles` (lot 8k : elles paient les caisses), Survivant choisi. Posée UNE fois (les rechargements gardent ce que le menu a écrit), avant tout
 // autre script de la page ; à appeler avant l'espion du stockage (sa propre écriture n'est pas comptée) ; adresse du menu avec &store=local.
 export const CLE_V2 = 'zs.save.v2';
-export function progressionDemo({ bleu = 100_000, extra = {} } = {}) {
+export function progressionDemo({ bleu = 100_000, medailles = 100_000, extra = {} } = {}) {
   const inv = JSON.parse(readFileSync('data/menu/inventaire-depart.json', 'utf8'));
   return {
-    v: 2, rev: 1, savedAt: 1, bleu: { gagne: bleu, depense: 0 },
+    v: 2, rev: 1, savedAt: 1, bleu: { gagne: bleu, depense: 0 }, medailles: { gagne: medailles, depense: 0, jour: 0 },
     objets: inv.objets.map((o) => ({ u: o.uid, i: o.id, r: o.rarete, n: o.niveau })),
     porte: { ...inv.equipement },
     persos: { debloques: ['survivant'], niveaux: { survivant: 1 }, choisi: 'survivant' },

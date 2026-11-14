@@ -2,18 +2,20 @@
 // panneau du menu : .e8-voile, .e8-panneau), bandeau (nom de la caisse / « Chances »), croix de 44 × 44 ; chaque rareté (ou personnage, pour une
 // caisse de personnages) : nom écrit, barre (largeur = pour cent) et pour cent en texte ; puis les éléments possibles par rareté ; règle du tirage. Focus piégé (Tab, Maj+Tab), Échap
 // (géré par menu.js → boutique.echap()) et appui sur le voile ferment ; le focus revient à « Voir les chances ». Valeurs : js/core/caisses.js.
-import { chances } from '../core/caisses.js';
+// Lot 8k : personnages par rareté (comme les objets et les tenues) ; section « Pitié » : règle (valeurs de caisses.json) et compteurs de la rubrique
+// (« Épique garanti dans N tirages », « Légendaire garanti dans N tirages au plus »).
+import { avantGarantie, chances } from '../core/caisses.js';
 import { fmt } from '../game/texts.js';
 import { el } from './menu.js';
 import { poserJeton } from './boutique.js';
 
 export const pourcentTexte = (n) => (Number.isFinite(n) ? n.toLocaleString('fr-FR', { maximumFractionDigits: 2 }) : '');
 
-export function ouvrirChances({ t, bandeau, cat, caisse, root, fermer }) {
+export function ouvrirChances({ t, bandeau, cat, caisse, root, fermer, pitie = null, compteurs = null }) {
   const id = 'menu-ecran-chances';
   const liste = chances(caisse, cat);
   const voile = el('div', ['e8-voile', 'e3-voile'], { id, 'data-block': 'E3-6' });
-  const panneau = el('div', ['e8-panneau', 'e3-chances'], { role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': `${id}-caisse ${id}-titre`, 'aria-describedby': `${id}-regle`, 'data-caisse': caisse.id });
+  const panneau = el('div', ['e8-panneau', 'e3-chances'], { role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': `${id}-caisse ${id}-titre`, 'aria-describedby': `${id}-regle${pitie ? ` ${id}-pitie-regle` : ''}`, 'data-caisse': caisse.id });
   poserJeton(panneau, '--e3-teinte', caisse.teinte);
   const tete = el('div', ['e8-panneau-tete']);
   const croix = el('button', ['e8-croix'], { type: 'button', id: `${id}-fermer`, 'aria-label': t('game.menu.fermer') });
@@ -34,8 +36,8 @@ export function ouvrirChances({ t, bandeau, cat, caisse, root, fermer }) {
   const parPersonnage = caisse.type === 'personnage';
   for (const x of liste) {
     const r = cat.raretes.find((y) => y.id === x.rarete);
-    const li = el('li', ['e3-chance'], { 'data-cle': x.rarete ?? x.personnage });
-    poserJeton(li, '--e3-rarete', parPersonnage ? caisse.teinte : r?.jeton);
+    const li = el('li', ['e3-chance'], { 'data-cle': x.rarete });
+    poserJeton(li, '--e3-rarete', r?.jeton);
     const nom = el('span', ['e3-chance-nom']);
     nom.textContent = x.nom;
     const barre = el('span', ['e3-chance-barre'], { 'aria-hidden': 'true' });
@@ -49,9 +51,9 @@ export function ouvrirChances({ t, bandeau, cat, caisse, root, fermer }) {
   }
   // Objets possibles, par rareté.
   const titreObjets = el('h3', ['e3-chances-sous-titre'], { id: `${id}-objets-titre` });
-  titreObjets.textContent = t('game.menu.chances.objets');
+  titreObjets.textContent = t(parPersonnage ? 'game.menu.chances.personnages' : 'game.menu.chances.objets');
   const objets = el('ul', ['e3-chances-objets'], { id: `${id}-objets`, 'aria-labelledby': `${id}-objets-titre` });
-  for (const x of parPersonnage ? [] : liste) {
+  for (const x of liste) {
     const li = el('li', ['e3-chances-groupe'], { 'data-rarete': x.rarete });
     const r = cat.raretes.find((y) => y.id === x.rarete);
     poserJeton(li, '--e3-rarete', r?.jeton);
@@ -64,7 +66,26 @@ export function ouvrirChances({ t, bandeau, cat, caisse, root, fermer }) {
   }
   const regle = el('p', ['e3-chances-regle'], { id: `${id}-regle` });
   regle.textContent = t(parPersonnage ? 'game.menu.chances.regle.personnage' : caisse.type === 'cosmetique' ? 'game.menu.chances.regle.tenue' : 'game.menu.chances.regle');
-  corps.append(lignes, ...(parPersonnage ? [] : [titreObjets, objets]), regle);
+  // Lot 8k : pitié (règle et compteurs de cette rubrique).
+  const sectionPitie = [];
+  const restants = avantGarantie(pitie, compteurs);
+  if (pitie && restants) {
+    const titrePitie = el('h3', ['e3-chances-sous-titre'], { id: `${id}-pitie-titre` });
+    titrePitie.textContent = t('game.menu.chances.pitie');
+    const reglePitie = el('p', ['e3-chances-regle'], { id: `${id}-pitie-regle` });
+    const nomR = (rid) => cat.raretes.find((y) => y.id === rid)?.nom ?? rid;
+    const base = liste.find((x) => x.rarete === pitie.top.rarete)?.pourcent ?? 0;
+    reglePitie.textContent = fmt(t('game.menu.chances.pitie.regle'), { haute: nomR(pitie.haute.rarete), n: pitie.haute.garanti, top: nomR(pitie.top.rarete), base: pourcentTexte(base), douce: pitie.top.douce, pas: pourcentTexte(pitie.top.pas), garanti: pitie.top.garanti });
+    const compte = el('ul', ['e3-chances-pitie'], { id: `${id}-pitie`, 'aria-labelledby': `${id}-pitie-titre` });
+    const textes = { haute: ['game.menu.chances.pitie.haute', 'game.menu.chances.pitie.haute.prochain'], top: ['game.menu.chances.pitie.top', 'game.menu.chances.pitie.top.prochain'] };
+    for (const [cle, n] of [['haute', restants.haute], ['top', restants.top]]) {
+      const li = el('li', ['e3-chances-compteur'], { 'data-pitie': cle, 'data-restants': String(n) });
+      li.textContent = fmt(t(textes[cle][n === 1 ? 1 : 0]), { rarete: nomR(pitie[cle].rarete), n });
+      compte.append(li);
+    }
+    sectionPitie.push(titrePitie, compte, reglePitie);
+  }
+  corps.append(lignes, ...sectionPitie, titreObjets, objets, regle);
   panneau.append(tete, corps);
   voile.append(panneau);
   voile.addEventListener('pointerdown', (e) => {
@@ -87,5 +108,5 @@ export function ouvrirChances({ t, bandeau, cat, caisse, root, fermer }) {
   });
   root.append(voile);
   croix.focus();
-  return { element: voile, fermer, caisse: caisse.id, chances: liste.map((x) => ({ cle: x.rarete ?? x.personnage, pourcent: x.pourcent, objets: x.objets.map((o) => o.id) })) };
+  return { element: voile, fermer, caisse: caisse.id, chances: liste.map((x) => ({ cle: x.rarete, pourcent: x.pourcent, objets: x.objets.map((o) => o.id) })), restants };
 }

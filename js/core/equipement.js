@@ -127,6 +127,7 @@ export function lirePersonnages(json, erreurs = []) {
       niveauDepart: Math.min(niveauMax, entier(p.niveau, 1, 999) ?? 1),
       niveauMax,
       prixAmelioration: prix(p.prixAmelioration) ?? 0,
+      rarete: typeof p.rarete === 'string' && ID.test(p.rarete) ? p.rarete : null, // lot 8k : rareté (caisse de personnages), vérifiée par lireCatalogue
       capacite: {
         nom: texte(c.nom),
         description: texte(c.description, 120) ?? '',
@@ -176,6 +177,11 @@ export function lireCatalogue({ raretes, objets, personnages, inventaire } = {})
   const r = lireRaretes(raretes, erreurs);
   const max = estObjet(objets) ? entier(objets.inventaireMax, 1, 1000) : null;
   const cat = { raretes: r, objets: lireObjets(objets, r, erreurs), personnages: lirePersonnages(personnages, erreurs), inventaireMax: max ?? INVENTAIRE_MAX };
+  // Lot 8k : la rareté d'un personnage doit exister (data/menu/raretes.json) ; sinon aucune (il n'est tiré par aucune caisse).
+  for (const p of cat.personnages) if (p.rarete !== null && !r.some((x) => x.id === p.rarete)) {
+    erreurs.push(`personnage ${p.id} : rareté inconnue ${p.rarete}`);
+    p.rarete = null;
+  }
   const inv = lireInventaire(inventaire, cat, erreurs);
   const voulu = estObjet(personnages) ? personnages.choisi : null;
   const choisi = cat.personnages.find((p) => p.id === voulu && p.debloque) ?? cat.personnages.find((p) => p.debloque) ?? null;

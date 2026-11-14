@@ -8,15 +8,19 @@
 // afficherOuverture(resultat) → écran de résultat (E3-4, E3-5 : js/menu/resultat.js). Le prix est affiché, jamais prélevé ; rien n'est écrit.
 // Lot 8f : afficherOuverture passe d'abord par l'ouverture animée en 3D (js/menu/ouverture/ouverture.js, chargée au premier achat d'une caisse,
 // préchargée au toucher de « Ouvrir »), sauf offre du jour, mouvement réduit, WebGL indisponible ou ?ouverture=0 en test : résultat direct.
+// Lot 8k (Docs/ref/economie.md) : une caisse par rubrique, payée en MÉDAILLES (« Il manque N médailles » grisé), tirée avec la pitié de sa rubrique :
+// compteurs relus juste avant le tirage, prix, contenu et compteurs écrits ensemble (refusé si un autre onglet a ouvert une caisse entre-temps) ;
+// offres du jour en monnaie bleue (inchangées).
 import { creerRoue } from './roue.js';
 import { preparer as preparerSons, son } from './sons/sons.js';
 import { formatMoney } from '../core/economy.js';
-import { TIRAGES_X10, ajouterCosmetiques, lireCaisses, lireCosmetiques, lireOffres, offresDuJour, partHaute, prixAchat, tirer, tirer10 } from '../core/caisses.js';
+import { TIRAGES_X10, ajouterCosmetiques, lireCaisses, lireCosmetiques, lireOffres, lirePitie, offresDuJour, partHaute, prixAchat, tirerPitie } from '../core/caisses.js';
 import { estDebloque } from '../core/equipement.js';
 import { fmt } from '../game/texts.js';
 import { el } from './menu.js';
 import { chargerEquipement } from './equipement-etat.js';
 import { icone24 } from './personnage.js';
+import { iconeMedaille } from '../game/bleu-manche.js';
 import { acces } from '../core/graphics.js';
 import { pageCanal, pageSearch } from '../game/graphics-boot.js';
 
@@ -165,6 +169,7 @@ export async function ecranBoutique({ t, bandeau, root, rootDialogue, surVue = (
   const cat = { ...eq.cat, cosmetiques: lireCosmetiques(cosm, eq.cat.raretes) };
   const { caisses } = lireCaisses(donnees, cat);
   const { regles } = lireOffres(donnees, cat);
+  const { regles: pitie } = lirePitie(donnees, cat); // lot 8k
   const nomRarete = (rid) => cat.raretes.find((r) => r.id === rid)?.nom ?? '';
   const jetonRarete = (rid) => cat.raretes.find((r) => r.id === rid)?.jeton;
   // Lot 8h : tenues obtenues et offres achetées lues dans la progression v2 (equipement-etat.js) ; prix prélevés en monnaie bleue.
@@ -274,25 +279,6 @@ export async function ecranBoutique({ t, bandeau, root, rootDialogue, surVue = (
     const contenu = el('p', ['e3-carte-contenu'], { id: `menu-caisse-${c.id}-contenu` });
     const resume = el('span', ['e3-carte-resume']);
     const raretes = el('span', ['e3-carte-raretes']);
-    if (c.type === 'personnage') {
-      // Retour du propriétaire (trois caisses de personnages) : ce qui change d'une caisse à l'autre, c'est la chance d'un personnage nouveau
-      // (encore verrouillé) ; recalculée après chaque achat (un personnage obtenu ne compte plus).
-      resume.textContent = t('game.menu.boutique.contenu.personnage');
-      const rendre = () => {
-        const etat = eq.etat();
-        const n = c.chances.filter((x) => !estDebloque(etat, cat.personnages.find((p) => p.id === x.personnage))).reduce((s2, x) => s2 + x.pourcent, 0);
-        raretes.textContent = n > 0 ? fmt(t('game.menu.boutique.contenu.nouveau'), { n: pourcentTexte(Math.round(n * 100) / 100) }) : t('game.menu.boutique.contenu.nouveau.aucun');
-      };
-      rendre();
-      eq.abonner(rendre);
-      contenu.append(resume, raretes);
-      return contenu;
-    }
-    // Retour du propriétaire : toutes les raretés dans chaque caisse ; ce qui change, c'est la part des plus rares (« Épique ou mieux : 4 % »),
-    // et la barre de répartition (décorative : les pour cent exacts sont dans « Voir les chances »).
-    resume.textContent = fmt(t('game.menu.boutique.contenu.toutes'), { quoi: t(c.type === 'cosmetique' ? 'game.menu.boutique.quoi.tenue' : 'game.menu.boutique.quoi.objet') });
-    const h = partHaute(c, cat);
-    raretes.textContent = fmt(t('game.menu.boutique.contenu.haute'), { rarete: nomRarete(h.rarete), n: pourcentTexte(h.pourcent) });
     const barre = el('span', ['e3-repartition'], { 'aria-hidden': 'true' });
     for (const x of c.chances) {
       const seg = el('span', ['e3-repartition-part'], { 'data-rarete': x.rarete });
@@ -300,6 +286,28 @@ export async function ecranBoutique({ t, bandeau, root, rootDialogue, surVue = (
       seg.style.flexGrow = String(x.pourcent);
       barre.append(seg);
     }
+    if (c.type === 'personnage') {
+      // Retour du propriétaire : la chance d'un personnage nouveau (encore verrouillé), recalculée après chaque achat ; lot 8k : par rareté (part des
+      // personnages encore verrouillés dans chaque rareté), aux chances de base.
+      resume.textContent = t('game.menu.boutique.contenu.personnage');
+      const rendre = () => {
+        const etat = eq.etat();
+        const n = c.chances.reduce((s2, x) => {
+          const liste = cat.personnages.filter((p) => p.rarete === x.rarete);
+          return s2 + (liste.length ? (x.pourcent * liste.filter((p) => !estDebloque(etat, p)).length) / liste.length : 0);
+        }, 0);
+        raretes.textContent = n > 0 ? fmt(t('game.menu.boutique.contenu.nouveau'), { n: pourcentTexte(Math.round(n * 100) / 100) }) : t('game.menu.boutique.contenu.nouveau.aucun');
+      };
+      rendre();
+      eq.abonner(rendre);
+      contenu.append(resume, barre, raretes);
+      return contenu;
+    }
+    // Retour du propriétaire : toutes les raretés dans chaque caisse ; ce qui change, c'est la part des plus rares (« Épique ou mieux : 4 % »),
+    // et la barre de répartition (décorative : les pour cent exacts sont dans « Voir les chances »).
+    resume.textContent = fmt(t('game.menu.boutique.contenu.toutes'), { quoi: t(c.type === 'cosmetique' ? 'game.menu.boutique.quoi.tenue' : 'game.menu.boutique.quoi.objet') });
+    const h = partHaute(c, cat);
+    raretes.textContent = fmt(t('game.menu.boutique.contenu.haute'), { rarete: nomRarete(h.rarete), n: pourcentTexte(h.pourcent) });
     contenu.append(resume, barre, raretes);
     return contenu;
   }
@@ -320,7 +328,10 @@ export async function ecranBoutique({ t, bandeau, root, rootDialogue, surVue = (
       sep.textContent = t('game.menu.boutique.prix.sep');
       const p = el('span', ['e3-ouvrir-prix']);
       p.textContent = prix;
-      n.append(action, sep, p);
+      // Lot 8k : prix en médailles (médaille décorative avant le montant ; le nom accessible dit « médailles » par la description de la carte).
+      const ligne = el('span', ['e3-ouvrir-ligne']);
+      ligne.append(iconeMedaille('e3-ouvrir-medaille'), p);
+      n.append(action, sep, ligne);
       n.addEventListener('click', () => {
         if (n.getAttribute('aria-disabled') !== 'true') acheter(c, quantite, n);
       });
@@ -342,35 +353,37 @@ export async function ecranBoutique({ t, bandeau, root, rootDialogue, surVue = (
     return li;
   }
   const noteTenues = el('p', ['e3-rayon-note'], { id: 'menu-boutique-tenues-note' });
+  let rang = 0; // lot 8k : une caisse par rubrique, décalées d'une rubrique à l'autre (0, −1,3 s, −2,6 s)
   for (const type of ['equipement', 'personnage', 'cosmetique']) {
     const liste = el('ul', ['e3-cartes'], { id: `menu-boutique-${type}-caisses`, 'aria-labelledby': `menu-boutique-${type}-titre` });
-    caisses.filter((c) => c.type === type).forEach((c, i) => liste.append(carteCaisse(c, i)));
+    for (const c of caisses.filter((x) => x.type === type)) liste.append(carteCaisse(c, rang++));
     rayon(type, type === 'cosmetique' ? [noteTenues] : []).append(liste);
   }
   const rendreNoteTenues = () => {
     noteTenues.textContent = fmt(t('game.menu.boutique.tenues.note'), { n: Object.keys(collection()).length, total: cat.cosmetiques.length });
   };
   rendreNoteTenues();
-  // Lot 8h : prix des caisses selon le solde bleu : « Il manque N » grisé (raison lue) quand il ne suffit pas.
+  // Lot 8h : prix des caisses selon le solde : « Il manque N » grisé (raison lue) quand il ne suffit pas ; lot 8k : en médailles.
   function majPrix() {
-    const s = eq.solde();
+    const s = eq.medailles();
     for (const { un, dix, raison, caisse: c } of boutons.values()) {
       let manqueUn = 0;
       for (const [b, q] of [[un, 1], [dix, TIRAGES_X10]]) {
         const prix = prixAchat(c, q);
         const manque = Math.max(0, prix - s);
         if (q === 1) manqueUn = manque;
-        b.querySelector('.e3-ouvrir-prix').textContent = manque > 0 ? fmt(t('game.menu.prix.manque'), { n: formatMoney(manque) }) : formatMoney(prix);
+        b.querySelector('.e3-ouvrir-prix').textContent = manque > 0 ? fmt(t('game.menu.prix.manqueMedailles'), { n: formatMoney(manque) }) : formatMoney(prix);
         b.setAttribute('aria-disabled', String(manque > 0));
       }
-      raison.textContent = Math.max(manqueUn, prixAchat(c, TIRAGES_X10) - s) > 0 ? fmt(t('game.menu.prix.raison'), { prix: `${formatMoney(prixAchat(c, 1))} / ${formatMoney(prixAchat(c, TIRAGES_X10))}`, solde: formatMoney(s) }) : '';
+      raison.textContent = Math.max(manqueUn, prixAchat(c, TIRAGES_X10) - s) > 0 ? fmt(t('game.menu.prix.raisonMedailles'), { prix: `${formatMoney(prixAchat(c, 1))} / ${formatMoney(prixAchat(c, TIRAGES_X10))}`, solde: formatMoney(s) }) : '';
     }
   }
   majPrix();
   // Annonce d'un achat refusé (solde, inventaire plein) ou annulé après coup (un autre onglet a dépensé la monnaie).
   const annonceAchat = el('p', ['sr-only'], { id: 'menu-boutique-annonce', role: 'status', 'aria-live': 'polite' });
   const refus = (raison) => {
-    annonceAchat.textContent = raison === 'plein' ? fmt(t('game.menu.achat.refus.plein'), { max: cat.inventaireMax }) : t(raison === 'solde' ? 'game.menu.achat.refus.solde' : 'game.menu.achat.refus.autre');
+    const cles = { solde: 'game.menu.achat.refus.solde', medailles: 'game.menu.achat.refus.medailles', pitie: 'game.menu.achat.refus.pitie' };
+    annonceAchat.textContent = raison === 'plein' ? fmt(t('game.menu.achat.refus.plein'), { max: cat.inventaireMax }) : t(cles[raison] ?? 'game.menu.achat.refus.autre');
   };
   eq.abonner((_etat, annules) => {
     majPrix();
@@ -442,29 +455,34 @@ export async function ecranBoutique({ t, bandeau, root, rootDialogue, surVue = (
   function acheter(caisse, quantite, depuis) {
     if (preparation) return; // lot 8f : ouverture en cours de chargement (un seul achat à la fois)
     const prix = prixAchat(caisse, quantite);
-    if (eq.solde() < prix) {
-      refus('solde');
+    if (eq.medailles() < prix) {
+      refus('medailles');
       return;
     }
+    // Lot 8k : compteurs de pitié de la rubrique relus juste avant le tirage ; ×10 = dix tirages qui les avancent dans l'ordre.
+    const de = eq.pitie(caisse.type, true);
     const graine = graineAchat();
-    const objets = quantite === TIRAGES_X10 ? tirer10(caisse, cat, graine) : [tirer(caisse, cat, graine)].filter(Boolean);
-    if (!objets || objets.length !== quantite) return;
-    const r = { type: caisse.type, caisse, quantite, objets, uids: [], graine };
+    const tire = tirerPitie(caisse, cat, pitie, de, graine, quantite);
+    if (!tire || tire.objets.length !== quantite) return;
+    const objets = tire.objets;
+    const pit = { r: caisse.type, de, a: { ...tire.compteurs } };
+    const paiement = { monnaie: 'medailles', pitie: pit };
+    const r = { type: caisse.type, caisse, quantite, objets, uids: [], graine, compteurs: pit };
     if (caisse.type === 'personnage') {
-      const a = eq.acheterPersonnages({ prix, ids: objets.map((o) => o.id) });
-      if (!a.ok) return refus(a.raison);
+      const a = eq.acheterPersonnages({ prix, ids: objets.map((o) => o.id), ...paiement });
+      if (!a.ok) return refus(a.raison === 'solde' ? 'medailles' : a.raison);
       r.issues = a.issues;
     } else if (caisse.type === 'cosmetique') {
       const apercu = ajouterCosmetiques(collection(), cat, objets.map((o) => o.id));
       if (apercu.nouveaux.length !== quantite) return;
-      const a = eq.acheterTenues({ prix, ids: objets.map((o) => o.id) });
-      if (!a.ok) return refus(a.raison);
+      const a = eq.acheterTenues({ prix, ids: objets.map((o) => o.id), ...paiement });
+      if (!a.ok) return refus(a.raison === 'solde' ? 'medailles' : a.raison);
       r.nouveaux = apercu.nouveaux;
       r.collection = { ...collection() };
       rendreNoteTenues();
     } else {
-      const a = eq.acheterObjets({ prix, objets });
-      if (!a.ok) return refus(a.raison);
+      const a = eq.acheterObjets({ prix, objets, ...paiement });
+      if (!a.ok) return refus(a.raison === 'solde' ? 'medailles' : a.raison);
       r.uids = a.uids;
     }
     achats += 1;
@@ -584,7 +602,7 @@ export async function ecranBoutique({ t, bandeau, root, rootDialogue, surVue = (
     if (chancesOuvertes) return;
     const m = await import('./chances.js');
     chancesOuvertes = m.ouvrirChances({
-      t, bandeau, cat, caisse, root: rootDialogue,
+      t, bandeau, cat, caisse, root: rootDialogue, pitie, compteurs: eq.pitie(caisse.type, true), // lot 8k : règle et compteurs de la rubrique
       fermer: () => {
         chancesOuvertes?.element.remove();
         chancesOuvertes = null;
@@ -654,7 +672,10 @@ export async function ecranBoutique({ t, bandeau, root, rootDialogue, surVue = (
       collection: { ...collection() },
       chances: chancesOuvertes ? chancesOuvertes.caisse : null,
       achats,
-      dernier: dernier ? { type: dernier.type, caisse: dernier.caisse?.id ?? null, quantite: dernier.quantite, graine: dernier.graine, objets: dernier.objets.map((o) => ({ ...o })), uids: [...dernier.uids], issues: dernier.issues?.map((x) => ({ ...x })) ?? null, nouveaux: dernier.nouveaux ? [...dernier.nouveaux] : null } : null,
+      dernier: dernier ? { type: dernier.type, caisse: dernier.caisse?.id ?? null, quantite: dernier.quantite, graine: dernier.graine, objets: dernier.objets.map((o) => ({ ...o })), uids: [...dernier.uids], issues: dernier.issues?.map((x) => ({ ...x })) ?? null, nouveaux: dernier.nouveaux ? [...dernier.nouveaux] : null, compteurs: dernier.compteurs ? structuredClone(dernier.compteurs) : null } : null,
+      // Lot 8k : médailles, règles et compteurs de pitié de chaque rubrique (lus dans la progression).
+      medailles: eq.medailles(),
+      pitie: { regles: pitie, compteurs: Object.fromEntries(['equipement', 'personnage', 'cosmetique'].map((k) => [k, eq.pitie(k)])) },
       resultat: resultat?.etat() ?? null,
       ouverture: ouverture ? ouverture.etat() : null,
     }),

@@ -2,7 +2,8 @@
 // et du menu à trois barres. L'icône n'existe que sur les canaux de débogage « source » (sources locales) et « dev » (/dev/) : jamais dans la Recette
 // (canal « release »), les archives ni la production. Chaque outil écrit VRAIMENT dans la progression v2 (zs.save.v2), après une confirmation :
 // ajouter 10 000 bleus, donner l'inventaire de démonstration (data/menu/inventaire-depart.json), débloquer tous les personnages, remettre la
-// progression V0.8 à zéro (efface zs.save.v2 et le son de zs.device.v1 ; jamais zs.save.v1).
+// progression V0.8 à zéro (efface zs.save.v2 et le son de zs.device.v1 ; jamais zs.save.v1). Lot 8k : ajouter 1 000 médailles, remettre la pitié
+// des trois caisses à zéro.
 import { el } from './menu.js';
 import { chargerEquipement } from './equipement-etat.js';
 import { createDeviceSettings, browserStorage } from '../save/device-settings.js';
@@ -10,9 +11,9 @@ import { pageSearch } from '../game/graphics-boot.js';
 import { fmt } from '../game/texts.js';
 
 export const CANAUX_OUTILS = Object.freeze(['source', 'dev']);
-export const OUTILS = Object.freeze(['bleus', 'demo', 'persos', 'zero']);
+export const OUTILS = Object.freeze(['bleus', 'medailles', 'pitie', 'demo', 'persos', 'zero']);
 const TEXTES = {
-  bleus: 'game.menu.debogage.bleus', demo: 'game.menu.debogage.demo', persos: 'game.menu.debogage.persos', zero: 'game.menu.debogage.zero',
+  bleus: 'game.menu.debogage.bleus', medailles: 'game.menu.debogage.medailles', pitie: 'game.menu.debogage.pitie', demo: 'game.menu.debogage.demo', persos: 'game.menu.debogage.persos', zero: 'game.menu.debogage.zero',
 };
 
 // root : racine du menu (#e8) ; retour : bouton à qui rendre le focus. → { element, fermer() }.
@@ -60,6 +61,8 @@ export function ouvrirDebogage({ t, root, retour }) {
     const eq = await chargerEquipement();
     let r = { ok: false };
     if (id === 'bleus') r = eq.ajouterBleu(10_000);
+    else if (id === 'medailles') r = eq.ajouterMedailles(1000);
+    else if (id === 'pitie') r = eq.remettrePitie();
     else if (id === 'demo') r = await eq.donnerDemo();
     else if (id === 'persos') r = eq.debloquerTous();
     else if (id === 'zero') {
