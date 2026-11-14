@@ -2150,7 +2150,7 @@
 .e9 {
   --u: clamp(0.6px, min(calc((100vw - var(--e8-gauche) - var(--e8-droite)) / 868), calc(100vh / 430)), 2.4px);
   --e5-bouton-h: max(var(--menu-cible), calc(40 * var(--u))); /* « ‹ Équipement » et filtres : composants de la page Options (lot 8c) */
-  --e9-col: calc(220 * var(--u));
+  --e9-col: calc(244 * var(--u)); /* lot 8h : 220 → 244, noms militaires plus longs */
   --e9-case-h: max(var(--menu-cible), calc(52 * var(--u)));
   --e9-petit: max(11px, calc(11 * var(--u)));
   --e9-texte: max(12px, calc(12 * var(--u)));
@@ -2425,14 +2425,28 @@
 .e9-emplacement-ligne {
   font-size: var(--e9-petit);
   font-weight: var(--font-weight-bold);
-  letter-spacing: 0.06em;
+  letter-spacing: 0.03em; /* lot 8h : 0,06 → 0,03 em (« ACCESSOIRE · ÉPIQUE » sur une ligne) */
   text-transform: uppercase;
   color: var(--menu-options-note);
 }
 
 .e9-emplacement-nom {
+  display: flex;
+  min-width: 0;
   font-size: max(12px, calc(14 * var(--u)));
   font-weight: var(--font-weight-bold);
+  white-space: nowrap;
+}
+
+/* Lot 8h : nom de l'objet sur une ligne (points de suspension si besoin), niveau toujours visible après lui. */
+.e9-emplacement-nom-texte {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.e9-emplacement-niveau {
+  flex: none;
+  white-space: pre; /* garde l'espace avant « · niv. » (élément flexible) */
 }
 
 /* Couleur de la rareté (bordures) : jetons --rarete-* ; la rareté est aussi écrite. */
@@ -2444,15 +2458,16 @@
 
 /* Statistiques effectives sous la colonne de gauche (bord en tirets, deux colonnes). */
 .e9-stats-boite {
-  padding: calc(4 * var(--u)) calc(10 * var(--u));
+  padding: calc(4 * var(--u)) calc(6 * var(--u));
   border: 1px dashed var(--menu-e9-stats-bord);
   background: var(--menu-e9-voile);
 }
 
 .e9-stats {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: calc(2 * var(--u)) calc(10 * var(--u));
+  grid-template-columns: repeat(2, max-content); /* lot 8h : « Réparation », « Régénération » : colonnes à la largeur de leur texte */
+  justify-content: space-between;
+  gap: calc(2 * var(--u)) calc(6 * var(--u));
   margin: 0;
   padding: 0;
   list-style: none;
@@ -2664,11 +2679,18 @@
 /* Filtres (boutons de la page Options : rouge peint quand choisi, aria-pressed) et pagination. */
 .e9-filtres {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap; /* lot 8h : sept filtres (Tout et un par emplacement) sur une seule rangée, qui défile si elle ne tient pas */
   gap: calc(8 * var(--u));
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.e9-filtres::-webkit-scrollbar {
+  display: none;
 }
 
 .e9-filtre {
+  flex: none; /* lot 8h : la rangée défile au lieu de serrer les filtres */
   min-width: 0;
   padding: 0 max(8px, calc(14 * var(--u)));
   font-family: var(--font-label);
@@ -3182,6 +3204,11 @@
 
 /* Écrans peu hauts (téléphone en paysage, moins de 370 px) : écran Personnage resserré, quatre statistiques (celles de la maquette) au lieu de six. */
 @media (max-height: 370px) {
+  /* Lot 8h : libellés moins espacés (noms militaires plus longs). */
+  .e9-perso .e9-emplacement-ligne {
+    letter-spacing: 0.02em;
+  }
+
   .e9-perso .e9-colonne {
     gap: calc(4 * var(--u));
   }

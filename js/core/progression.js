@@ -281,7 +281,7 @@ export function serialiser(save, extra = {}) {
 //   achat    { prix, place (plafond de l'inventaire), objets: [{ u, i, r }], persos: [{ id, max }], tenues: [id], offre: { jour, cle }|null }
 //   ameliorer { u, de, prix }            perso { perso, de, prix }          fusion { uids: [3], nouveau: { u, i, r, n }, prix }
 //   choix    { champ: 'porte'|'choisi'|'avatar'|'pseudo', valeur, date }  lues { ids: [] }
-//   debloquer { persos: [id] }           (outil de débogage)                remise : aucune (outil de débogage : voir le dépôt, clear)
+//   debloquer { persos: [id | { id, niveau }] } (personnages débloqués par les données, outil de débogage) ; remise à zéro : le dépôt (clear)
 const clone = (s) => serialiser(s);
 
 function appliquer(s, op, params) {
@@ -411,9 +411,12 @@ function appliquer(s, op, params) {
       return null;
     }
     case 'debloquer': {
-      for (const id of Array.isArray(op.persos) ? op.persos : []) if (typeof id === 'string' && ID.test(id) && !s.persos.debloques.includes(id) && s.persos.debloques.length < 64) {
+      // Liste d'identifiants ou de { id, niveau } (niveau de départ du personnage, 1 par défaut).
+      for (const x of Array.isArray(op.persos) ? op.persos : []) {
+        const id = typeof x === 'string' ? x : isObject(x) ? x.id : null;
+        if (typeof id !== 'string' || !ID.test(id) || s.persos.debloques.includes(id) || s.persos.debloques.length >= 64) continue;
         s.persos.debloques.push(id);
-        s.persos.niveaux[id] = 1;
+        s.persos.niveaux[id] = isObject(x) && isInt(x.niveau) && x.niveau >= 1 ? Math.min(x.niveau, 99) : 1;
       }
       return null;
     }

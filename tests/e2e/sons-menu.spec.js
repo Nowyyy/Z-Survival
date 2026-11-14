@@ -9,6 +9,12 @@ import { lireCaisses, tirer, tirer10 } from '../../js/core/caisses.js';
 import { lireCatalogue } from '../../js/core/equipement.js';
 import { chronologie, lireOuvertures, rareteEffets } from '../../js/core/ouverture.js';
 import { sonsOuverture } from '../../js/core/sons-menu.js';
+import { poserProgression } from './helpers.js';
+
+// Lot 8h : progression v2 de démonstration (100 000 bleus, inventaire o1 à o16 ; tests/e2e/helpers.js), ?store=local : achats et gestes écrits.
+test.beforeEach(async ({ page }) => {
+  await poserProgression(page);
+});
 
 const REF = { width: 932, height: 430 };
 const BRUIT = /GL Driver Message|GPU stall|swiftshader|WebGL/i;
@@ -65,7 +71,7 @@ const lectures = async (page, depuis = 0) => (await sons(page)).journal.slice(de
 const taille = async (page) => (await sons(page)).journal.length;
 async function ouvrirMenu(page, extra = '&ouverture=0', size = REF) {
   await page.setViewportSize(size);
-  await page.goto(`/jeu.html?test=1&menu=1&seed=1${extra}`);
+  await page.goto(`/jeu.html?test=1&menu=1&seed=1&store=local${extra}`);
   await expect(page.locator('#menu-jouer')).toBeVisible({ timeout: 60_000 });
   await page.waitForFunction(() => window.__zsMenu?.etat()?.menu !== null && !document.getElementById('e7'));
 }
@@ -157,7 +163,7 @@ test.describe('sons du menu', () => {
     expect(await lectures(page, n)).toEqual(['achat']);
     expect(o.externes).toEqual([]);
     expect(o.problemes).toEqual([]);
-    expect(await page.evaluate(() => window.__ecritures)).toEqual([]);
+    expect(await page.evaluate(() => window.__ecritures)).toEqual(['setItem', 'setItem']); // lot 8h : deux achats écrits (progression v2)
   });
 
   test('Personnage : équiper, retirer, améliorer, fusionner (montée puis signature de la rareté obtenue), choisir un personnage, valider un avatar', async ({ page, baseURL }) => {
@@ -208,7 +214,7 @@ test.describe('sons du menu', () => {
     expect(await lectures(page, n)).toEqual(['choisir']);
     expect(o.externes).toEqual([]);
     expect(o.problemes).toEqual([]);
-    expect(await page.evaluate(() => window.__ecritures)).toEqual([]);
+    expect(await page.evaluate(() => window.__ecritures)).toEqual(Array(6).fill('setItem')); // lot 8h : équiper, retirer, améliorer, fusionner, choisir, améliorer le personnage (l'avatar : partie E)
   });
 
   test('chute du Z : sans geste, aucun son ; après un geste, à « JOUER », impact, tiret et rebond sont programmés aux instants de l\'animation', async ({ page }) => {
@@ -267,7 +273,7 @@ test.describe('sons des ouvertures de caisses', () => {
     expect(s.musique.mode).toBe('joue');
     expect(o.externes).toEqual([]);
     expect(o.problemes).toEqual([]);
-    expect(await page.evaluate(() => window.__ecritures)).toEqual([]);
+    expect(await page.evaluate(() => window.__ecritures)).toEqual(['setItem']); // lot 8h : l'achat écrit (progression v2)
   });
 
   test('ouverture ×10 avec un légendaire : sons de chaque caisse dans l\'ordre de la chronologie, explosion du légendaire ; « Passer » arrête les sons en cours, plus aucun nœud audio de l\'ouverture actif, tampons libérés', async ({ page, baseURL }) => {
@@ -309,7 +315,7 @@ test.describe('sons des ouvertures de caisses', () => {
     expect(s.musique.mode).toBe('joue');
     expect(o.externes).toEqual([]);
     expect(o.problemes).toEqual([]);
-    expect(await page.evaluate(() => window.__ecritures)).toEqual([]);
+    expect(await page.evaluate(() => window.__ecritures)).toEqual(['setItem']); // lot 8h : l'achat ×10 écrit (progression v2)
   });
 
   test('ouverture accélérée (temps réel ×6) : le suivi des sons ne prend jamais 50 ms dans une image ; toucher l\'écran passe la caisse et coupe ses sons', async ({ page }) => {

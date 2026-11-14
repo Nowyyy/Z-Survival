@@ -1,96 +1,118 @@
 {
-  "_provisoire": "Lot 8d : catalogue d'exemple des objets du Personnage (noms, bonus, niveaux maximaux et prix provisoires, à régler par le propriétaire sans lot ; l'équilibrage n'est pas jugé par l'agent). type : arme, tenue, gants, bottes ou accessoire (deux emplacements). Par rareté (data/menu/raretes.json) : bonus = niveaux de statistiques ajoutés au niveau 1 (clés de data/game/player-stats.json : degats, portee, precision, cadence, vitesse, vie, regen, chutes, reparation) ; bonusParNiveau = ajout à chaque niveau d'amélioration au-delà du premier (fractionnaire possible ; total arrondi à l'entier inférieur une seule fois, à la fin) ; niveauMax ; prixAmelioration = prix d'un niveau (affiché, jamais prélevé avant le lot 8h). Lu par js/core/equipement.js (lireCatalogue).",
+  "_provisoire": "Lot 8h : catalogue d'objets de SURVIE sur le thème militaire (valeurs provisoires, à régler par le propriétaire sans lot ; l'équilibrage n'est pas jugé par l'agent). Principe : l'arme fait l'attaque (achetée sur les cartes, lot 6), l'équipement fait la survie : aucun objet ne donne dégâts, cadence, portée, précision ni chutes. type = emplacement de l'écran Personnage : tete (vie), torse (vie), gants (reparation), pantalon (regen), bottes (vitesse), accessoire (un seul emplacement : vie ou regen selon l'objet). Second bonus (une autre statistique de survie) : seulement aux raretés épique (violet) et légendaire (décision du propriétaire). Par rareté (data/menu/raretes.json, toutes présentes pour chaque objet : toutes les raretés restent tirables dans chaque caisse) : bonus = niveaux de statistiques ajoutés au niveau 1 (clés de data/game/player-stats.json) ; bonusParNiveau = ajout à chaque niveau d'amélioration au-delà du premier (total arrondi à l'entier inférieur une seule fois, à la fin) ; niveauMax ; prixAmelioration = prix d'un niveau, prélevé en monnaie bleue. inventaireMax : plafond de l'inventaire (100 exemplaires ; une caisse est refusée si elle ne tient pas). Lu par js/core/equipement.js (lireCatalogue).",
+  "inventaireMax": 100,
   "objets": [
-    { "id": "pistolet", "nom": "Pistolet", "type": "arme", "raretes": {
-      "commun": {"bonus": {"degats": 1}, "bonusParNiveau": {"degats": 0.2}, "niveauMax": 5, "prixAmelioration": 40},
-      "peu-commun": {"bonus": {"degats": 2}, "bonusParNiveau": {"degats": 0.25}, "niveauMax": 10, "prixAmelioration": 80},
-      "rare": {"bonus": {"degats": 3}, "bonusParNiveau": {"degats": 0.3}, "niveauMax": 15, "prixAmelioration": 160},
-      "epique": {"bonus": {"degats": 4}, "bonusParNiveau": {"degats": 0.35}, "niveauMax": 20, "prixAmelioration": 320},
-      "legendaire": {"bonus": {"degats": 5}, "bonusParNiveau": {"degats": 0.4}, "niveauMax": 25, "prixAmelioration": 640}
-    } },
-    { "id": "revolver", "nom": "Revolver", "type": "arme", "raretes": {
-      "commun": {"bonus": {"degats": 1}, "bonusParNiveau": {"degats": 0.2, "portee": 0.1}, "niveauMax": 5, "prixAmelioration": 40},
-      "peu-commun": {"bonus": {"degats": 2, "portee": 1}, "bonusParNiveau": {"degats": 0.25, "portee": 0.125}, "niveauMax": 10, "prixAmelioration": 80},
-      "rare": {"bonus": {"degats": 3, "portee": 1}, "bonusParNiveau": {"degats": 0.3, "portee": 0.15}, "niveauMax": 15, "prixAmelioration": 160},
-      "epique": {"bonus": {"degats": 4, "portee": 2}, "bonusParNiveau": {"degats": 0.35, "portee": 0.175}, "niveauMax": 20, "prixAmelioration": 320},
-      "legendaire": {"bonus": {"degats": 5, "portee": 2}, "bonusParNiveau": {"degats": 0.4, "portee": 0.2}, "niveauMax": 25, "prixAmelioration": 640}
-    } },
-    { "id": "couteau", "nom": "Couteau", "type": "arme", "raretes": {
-      "commun": {"bonus": {"vitesse": 1}, "bonusParNiveau": {"vitesse": 0.2, "degats": 0.1}, "niveauMax": 5, "prixAmelioration": 40},
-      "peu-commun": {"bonus": {"vitesse": 2, "degats": 1}, "bonusParNiveau": {"vitesse": 0.25, "degats": 0.125}, "niveauMax": 10, "prixAmelioration": 80},
-      "rare": {"bonus": {"vitesse": 3, "degats": 1}, "bonusParNiveau": {"vitesse": 0.3, "degats": 0.15}, "niveauMax": 15, "prixAmelioration": 160},
-      "epique": {"bonus": {"vitesse": 4, "degats": 2}, "bonusParNiveau": {"vitesse": 0.35, "degats": 0.175}, "niveauMax": 20, "prixAmelioration": 320},
-      "legendaire": {"bonus": {"vitesse": 5, "degats": 2}, "bonusParNiveau": {"vitesse": 0.4, "degats": 0.2}, "niveauMax": 25, "prixAmelioration": 640}
-    } },
-    { "id": "gilet", "nom": "Gilet", "type": "tenue", "raretes": {
+    { "id": "casque-kevlar", "nom": "Casque kevlar", "type": "tete", "raretes": {
       "commun": {"bonus": {"vie": 1}, "bonusParNiveau": {"vie": 0.2}, "niveauMax": 5, "prixAmelioration": 40},
       "peu-commun": {"bonus": {"vie": 2}, "bonusParNiveau": {"vie": 0.25}, "niveauMax": 10, "prixAmelioration": 80},
       "rare": {"bonus": {"vie": 3}, "bonusParNiveau": {"vie": 0.3}, "niveauMax": 15, "prixAmelioration": 160},
       "epique": {"bonus": {"vie": 4}, "bonusParNiveau": {"vie": 0.35}, "niveauMax": 20, "prixAmelioration": 320},
       "legendaire": {"bonus": {"vie": 5}, "bonusParNiveau": {"vie": 0.4}, "niveauMax": 25, "prixAmelioration": 640}
     } },
-    { "id": "blouson", "nom": "Blouson", "type": "tenue", "raretes": {
-      "commun": {"bonus": {"vie": 1}, "bonusParNiveau": {"vie": 0.2, "regen": 0.1}, "niveauMax": 5, "prixAmelioration": 40},
-      "peu-commun": {"bonus": {"vie": 2, "regen": 1}, "bonusParNiveau": {"vie": 0.25, "regen": 0.125}, "niveauMax": 10, "prixAmelioration": 80},
-      "rare": {"bonus": {"vie": 3, "regen": 1}, "bonusParNiveau": {"vie": 0.3, "regen": 0.15}, "niveauMax": 15, "prixAmelioration": 160},
-      "epique": {"bonus": {"vie": 4, "regen": 2}, "bonusParNiveau": {"vie": 0.35, "regen": 0.175}, "niveauMax": 20, "prixAmelioration": 320},
+    { "id": "casque-commando", "nom": "Casque de commando", "type": "tete", "raretes": {
+      "commun": {"bonus": {"vie": 1}, "bonusParNiveau": {"vie": 0.2}, "niveauMax": 5, "prixAmelioration": 40},
+      "peu-commun": {"bonus": {"vie": 2}, "bonusParNiveau": {"vie": 0.25}, "niveauMax": 10, "prixAmelioration": 80},
+      "rare": {"bonus": {"vie": 3}, "bonusParNiveau": {"vie": 0.3}, "niveauMax": 15, "prixAmelioration": 160},
+      "epique": {"bonus": {"vie": 4, "regen": 2}, "bonusParNiveau": {"vie": 0.35, "regen": 0.2}, "niveauMax": 20, "prixAmelioration": 320},
       "legendaire": {"bonus": {"vie": 5, "regen": 2}, "bonusParNiveau": {"vie": 0.4, "regen": 0.2}, "niveauMax": 25, "prixAmelioration": 640}
     } },
-    { "id": "gants", "nom": "Gants", "type": "gants", "raretes": {
-      "commun": {"bonus": {"cadence": 1}, "bonusParNiveau": {"cadence": 0.2}, "niveauMax": 5, "prixAmelioration": 40},
-      "peu-commun": {"bonus": {"cadence": 2}, "bonusParNiveau": {"cadence": 0.25}, "niveauMax": 10, "prixAmelioration": 80},
-      "rare": {"bonus": {"cadence": 3}, "bonusParNiveau": {"cadence": 0.3}, "niveauMax": 15, "prixAmelioration": 160},
-      "epique": {"bonus": {"cadence": 4}, "bonusParNiveau": {"cadence": 0.35}, "niveauMax": 20, "prixAmelioration": 320},
-      "legendaire": {"bonus": {"cadence": 5}, "bonusParNiveau": {"cadence": 0.4}, "niveauMax": 25, "prixAmelioration": 640}
+    { "id": "gilet-pare-balles", "nom": "Gilet pare-balles", "type": "torse", "raretes": {
+      "commun": {"bonus": {"vie": 1}, "bonusParNiveau": {"vie": 0.2}, "niveauMax": 5, "prixAmelioration": 40},
+      "peu-commun": {"bonus": {"vie": 2}, "bonusParNiveau": {"vie": 0.25}, "niveauMax": 10, "prixAmelioration": 80},
+      "rare": {"bonus": {"vie": 3}, "bonusParNiveau": {"vie": 0.3}, "niveauMax": 15, "prixAmelioration": 160},
+      "epique": {"bonus": {"vie": 4}, "bonusParNiveau": {"vie": 0.35}, "niveauMax": 20, "prixAmelioration": 320},
+      "legendaire": {"bonus": {"vie": 5}, "bonusParNiveau": {"vie": 0.4}, "niveauMax": 25, "prixAmelioration": 640}
     } },
-    { "id": "mitaines", "nom": "Mitaines", "type": "gants", "raretes": {
-      "commun": {"bonus": {"reparation": 1}, "bonusParNiveau": {"reparation": 0.2, "cadence": 0.1}, "niveauMax": 5, "prixAmelioration": 40},
-      "peu-commun": {"bonus": {"reparation": 2, "cadence": 1}, "bonusParNiveau": {"reparation": 0.25, "cadence": 0.125}, "niveauMax": 10, "prixAmelioration": 80},
-      "rare": {"bonus": {"reparation": 3, "cadence": 1}, "bonusParNiveau": {"reparation": 0.3, "cadence": 0.15}, "niveauMax": 15, "prixAmelioration": 160},
-      "epique": {"bonus": {"reparation": 4, "cadence": 2}, "bonusParNiveau": {"reparation": 0.35, "cadence": 0.175}, "niveauMax": 20, "prixAmelioration": 320},
-      "legendaire": {"bonus": {"reparation": 5, "cadence": 2}, "bonusParNiveau": {"reparation": 0.4, "cadence": 0.2}, "niveauMax": 25, "prixAmelioration": 640}
+    { "id": "veste-combat", "nom": "Veste de combat", "type": "torse", "raretes": {
+      "commun": {"bonus": {"vie": 1}, "bonusParNiveau": {"vie": 0.2}, "niveauMax": 5, "prixAmelioration": 40},
+      "peu-commun": {"bonus": {"vie": 2}, "bonusParNiveau": {"vie": 0.25}, "niveauMax": 10, "prixAmelioration": 80},
+      "rare": {"bonus": {"vie": 3}, "bonusParNiveau": {"vie": 0.3}, "niveauMax": 15, "prixAmelioration": 160},
+      "epique": {"bonus": {"vie": 4, "regen": 2}, "bonusParNiveau": {"vie": 0.35, "regen": 0.2}, "niveauMax": 20, "prixAmelioration": 320},
+      "legendaire": {"bonus": {"vie": 5, "regen": 2}, "bonusParNiveau": {"vie": 0.4, "regen": 0.2}, "niveauMax": 25, "prixAmelioration": 640}
     } },
-    { "id": "bottes", "nom": "Bottes", "type": "bottes", "raretes": {
-      "commun": {"bonus": {"vitesse": 1}, "bonusParNiveau": {"vitesse": 0.2}, "niveauMax": 5, "prixAmelioration": 40},
-      "peu-commun": {"bonus": {"vitesse": 2}, "bonusParNiveau": {"vitesse": 0.25}, "niveauMax": 10, "prixAmelioration": 80},
-      "rare": {"bonus": {"vitesse": 3}, "bonusParNiveau": {"vitesse": 0.3}, "niveauMax": 15, "prixAmelioration": 160},
-      "epique": {"bonus": {"vitesse": 4}, "bonusParNiveau": {"vitesse": 0.35}, "niveauMax": 20, "prixAmelioration": 320},
-      "legendaire": {"bonus": {"vitesse": 5}, "bonusParNiveau": {"vitesse": 0.4}, "niveauMax": 25, "prixAmelioration": 640}
+    { "id": "gants-tactiques", "nom": "Gants tactiques", "type": "gants", "raretes": {
+      "commun": {"bonus": {"reparation": 1}, "bonusParNiveau": {"reparation": 0.2}, "niveauMax": 5, "prixAmelioration": 40},
+      "peu-commun": {"bonus": {"reparation": 2}, "bonusParNiveau": {"reparation": 0.25}, "niveauMax": 10, "prixAmelioration": 80},
+      "rare": {"bonus": {"reparation": 3}, "bonusParNiveau": {"reparation": 0.3}, "niveauMax": 15, "prixAmelioration": 160},
+      "epique": {"bonus": {"reparation": 4}, "bonusParNiveau": {"reparation": 0.35}, "niveauMax": 20, "prixAmelioration": 320},
+      "legendaire": {"bonus": {"reparation": 5}, "bonusParNiveau": {"reparation": 0.4}, "niveauMax": 25, "prixAmelioration": 640}
     } },
-    { "id": "rangers", "nom": "Rangers", "type": "bottes", "raretes": {
-      "commun": {"bonus": {"vitesse": 1}, "bonusParNiveau": {"vitesse": 0.2, "chutes": 0.1}, "niveauMax": 5, "prixAmelioration": 40},
-      "peu-commun": {"bonus": {"vitesse": 2, "chutes": 1}, "bonusParNiveau": {"vitesse": 0.25, "chutes": 0.125}, "niveauMax": 10, "prixAmelioration": 80},
-      "rare": {"bonus": {"vitesse": 3, "chutes": 1}, "bonusParNiveau": {"vitesse": 0.3, "chutes": 0.15}, "niveauMax": 15, "prixAmelioration": 160},
-      "epique": {"bonus": {"vitesse": 4, "chutes": 2}, "bonusParNiveau": {"vitesse": 0.35, "chutes": 0.175}, "niveauMax": 20, "prixAmelioration": 320},
-      "legendaire": {"bonus": {"vitesse": 5, "chutes": 2}, "bonusParNiveau": {"vitesse": 0.4, "chutes": 0.2}, "niveauMax": 25, "prixAmelioration": 640}
+    { "id": "gants-sapeur", "nom": "Gants de sapeur", "type": "gants", "raretes": {
+      "commun": {"bonus": {"reparation": 1}, "bonusParNiveau": {"reparation": 0.2}, "niveauMax": 5, "prixAmelioration": 40},
+      "peu-commun": {"bonus": {"reparation": 2}, "bonusParNiveau": {"reparation": 0.25}, "niveauMax": 10, "prixAmelioration": 80},
+      "rare": {"bonus": {"reparation": 3}, "bonusParNiveau": {"reparation": 0.3}, "niveauMax": 15, "prixAmelioration": 160},
+      "epique": {"bonus": {"reparation": 4, "vie": 2}, "bonusParNiveau": {"reparation": 0.35, "vie": 0.2}, "niveauMax": 20, "prixAmelioration": 320},
+      "legendaire": {"bonus": {"reparation": 5, "vie": 2}, "bonusParNiveau": {"reparation": 0.4, "vie": 0.2}, "niveauMax": 25, "prixAmelioration": 640}
     } },
-    { "id": "casquette", "nom": "Casquette", "type": "accessoire", "raretes": {
-      "commun": {"bonus": {"precision": 1}, "bonusParNiveau": {"precision": 0.2}, "niveauMax": 5, "prixAmelioration": 40},
-      "peu-commun": {"bonus": {"precision": 2}, "bonusParNiveau": {"precision": 0.25}, "niveauMax": 10, "prixAmelioration": 80},
-      "rare": {"bonus": {"precision": 3}, "bonusParNiveau": {"precision": 0.3}, "niveauMax": 15, "prixAmelioration": 160},
-      "epique": {"bonus": {"precision": 4}, "bonusParNiveau": {"precision": 0.35}, "niveauMax": 20, "prixAmelioration": 320},
-      "legendaire": {"bonus": {"precision": 5}, "bonusParNiveau": {"precision": 0.4}, "niveauMax": 25, "prixAmelioration": 640}
-    } },
-    { "id": "bague", "nom": "Bague", "type": "accessoire", "raretes": {
+    { "id": "treillis", "nom": "Treillis", "type": "pantalon", "raretes": {
       "commun": {"bonus": {"regen": 1}, "bonusParNiveau": {"regen": 0.2}, "niveauMax": 5, "prixAmelioration": 40},
       "peu-commun": {"bonus": {"regen": 2}, "bonusParNiveau": {"regen": 0.25}, "niveauMax": 10, "prixAmelioration": 80},
       "rare": {"bonus": {"regen": 3}, "bonusParNiveau": {"regen": 0.3}, "niveauMax": 15, "prixAmelioration": 160},
       "epique": {"bonus": {"regen": 4}, "bonusParNiveau": {"regen": 0.35}, "niveauMax": 20, "prixAmelioration": 320},
       "legendaire": {"bonus": {"regen": 5}, "bonusParNiveau": {"regen": 0.4}, "niveauMax": 25, "prixAmelioration": 640}
     } },
-    { "id": "amulette", "nom": "Amulette", "type": "accessoire", "raretes": {
+    { "id": "pantalon-cargo", "nom": "Pantalon cargo renforcé", "type": "pantalon", "raretes": {
+      "commun": {"bonus": {"regen": 1}, "bonusParNiveau": {"regen": 0.2}, "niveauMax": 5, "prixAmelioration": 40},
+      "peu-commun": {"bonus": {"regen": 2}, "bonusParNiveau": {"regen": 0.25}, "niveauMax": 10, "prixAmelioration": 80},
+      "rare": {"bonus": {"regen": 3}, "bonusParNiveau": {"regen": 0.3}, "niveauMax": 15, "prixAmelioration": 160},
+      "epique": {"bonus": {"regen": 4, "vitesse": 2}, "bonusParNiveau": {"regen": 0.35, "vitesse": 0.2}, "niveauMax": 20, "prixAmelioration": 320},
+      "legendaire": {"bonus": {"regen": 5, "vitesse": 2}, "bonusParNiveau": {"regen": 0.4, "vitesse": 0.2}, "niveauMax": 25, "prixAmelioration": 640}
+    } },
+    { "id": "rangers", "nom": "Rangers", "type": "bottes", "raretes": {
+      "commun": {"bonus": {"vitesse": 1}, "bonusParNiveau": {"vitesse": 0.2}, "niveauMax": 5, "prixAmelioration": 40},
+      "peu-commun": {"bonus": {"vitesse": 2}, "bonusParNiveau": {"vitesse": 0.25}, "niveauMax": 10, "prixAmelioration": 80},
+      "rare": {"bonus": {"vitesse": 3}, "bonusParNiveau": {"vitesse": 0.3}, "niveauMax": 15, "prixAmelioration": 160},
+      "epique": {"bonus": {"vitesse": 4}, "bonusParNiveau": {"vitesse": 0.35}, "niveauMax": 20, "prixAmelioration": 320},
+      "legendaire": {"bonus": {"vitesse": 5}, "bonusParNiveau": {"vitesse": 0.4}, "niveauMax": 25, "prixAmelioration": 640}
+    } },
+    { "id": "bottes-jungle", "nom": "Bottes de jungle", "type": "bottes", "raretes": {
+      "commun": {"bonus": {"vitesse": 1}, "bonusParNiveau": {"vitesse": 0.2}, "niveauMax": 5, "prixAmelioration": 40},
+      "peu-commun": {"bonus": {"vitesse": 2}, "bonusParNiveau": {"vitesse": 0.25}, "niveauMax": 10, "prixAmelioration": 80},
+      "rare": {"bonus": {"vitesse": 3}, "bonusParNiveau": {"vitesse": 0.3}, "niveauMax": 15, "prixAmelioration": 160},
+      "epique": {"bonus": {"vitesse": 4, "vie": 2}, "bonusParNiveau": {"vitesse": 0.35, "vie": 0.2}, "niveauMax": 20, "prixAmelioration": 320},
+      "legendaire": {"bonus": {"vitesse": 5, "vie": 2}, "bonusParNiveau": {"vitesse": 0.4, "vie": 0.2}, "niveauMax": 25, "prixAmelioration": 640}
+    } },
+    { "id": "ceinture-munitions", "nom": "Ceinture de munitions", "type": "accessoire", "raretes": {
       "commun": {"bonus": {"vie": 1}, "bonusParNiveau": {"vie": 0.2}, "niveauMax": 5, "prixAmelioration": 40},
       "peu-commun": {"bonus": {"vie": 2}, "bonusParNiveau": {"vie": 0.25}, "niveauMax": 10, "prixAmelioration": 80},
       "rare": {"bonus": {"vie": 3}, "bonusParNiveau": {"vie": 0.3}, "niveauMax": 15, "prixAmelioration": 160},
       "epique": {"bonus": {"vie": 4}, "bonusParNiveau": {"vie": 0.35}, "niveauMax": 20, "prixAmelioration": 320},
       "legendaire": {"bonus": {"vie": 5}, "bonusParNiveau": {"vie": 0.4}, "niveauMax": 25, "prixAmelioration": 640}
     } },
-    { "id": "montre", "nom": "Montre", "type": "accessoire", "raretes": {
-      "commun": {"bonus": {"reparation": 1}, "bonusParNiveau": {"reparation": 0.2}, "niveauMax": 5, "prixAmelioration": 40},
-      "peu-commun": {"bonus": {"reparation": 2}, "bonusParNiveau": {"reparation": 0.25}, "niveauMax": 10, "prixAmelioration": 80},
-      "rare": {"bonus": {"reparation": 3}, "bonusParNiveau": {"reparation": 0.3}, "niveauMax": 15, "prixAmelioration": 160},
-      "epique": {"bonus": {"reparation": 4}, "bonusParNiveau": {"reparation": 0.35}, "niveauMax": 20, "prixAmelioration": 320},
-      "legendaire": {"bonus": {"reparation": 5}, "bonusParNiveau": {"reparation": 0.4}, "niveauMax": 25, "prixAmelioration": 640}
+    { "id": "plaques-identite", "nom": "Plaques d'identité", "type": "accessoire", "raretes": {
+      "commun": {"bonus": {"vie": 1}, "bonusParNiveau": {"vie": 0.2}, "niveauMax": 5, "prixAmelioration": 40},
+      "peu-commun": {"bonus": {"vie": 2}, "bonusParNiveau": {"vie": 0.25}, "niveauMax": 10, "prixAmelioration": 80},
+      "rare": {"bonus": {"vie": 3}, "bonusParNiveau": {"vie": 0.3}, "niveauMax": 15, "prixAmelioration": 160},
+      "epique": {"bonus": {"vie": 4}, "bonusParNiveau": {"vie": 0.35}, "niveauMax": 20, "prixAmelioration": 320},
+      "legendaire": {"bonus": {"vie": 5}, "bonusParNiveau": {"vie": 0.4}, "niveauMax": 25, "prixAmelioration": 640}
+    } },
+    { "id": "montre-campagne", "nom": "Montre de campagne", "type": "accessoire", "raretes": {
+      "commun": {"bonus": {"regen": 1}, "bonusParNiveau": {"regen": 0.2}, "niveauMax": 5, "prixAmelioration": 40},
+      "peu-commun": {"bonus": {"regen": 2}, "bonusParNiveau": {"regen": 0.25}, "niveauMax": 10, "prixAmelioration": 80},
+      "rare": {"bonus": {"regen": 3}, "bonusParNiveau": {"regen": 0.3}, "niveauMax": 15, "prixAmelioration": 160},
+      "epique": {"bonus": {"regen": 4}, "bonusParNiveau": {"regen": 0.35}, "niveauMax": 20, "prixAmelioration": 320},
+      "legendaire": {"bonus": {"regen": 5}, "bonusParNiveau": {"regen": 0.4}, "niveauMax": 25, "prixAmelioration": 640}
+    } },
+    { "id": "trousse-secours", "nom": "Trousse de secours", "type": "accessoire", "raretes": {
+      "commun": {"bonus": {"regen": 1}, "bonusParNiveau": {"regen": 0.2}, "niveauMax": 5, "prixAmelioration": 40},
+      "peu-commun": {"bonus": {"regen": 2}, "bonusParNiveau": {"regen": 0.25}, "niveauMax": 10, "prixAmelioration": 80},
+      "rare": {"bonus": {"regen": 3}, "bonusParNiveau": {"regen": 0.3}, "niveauMax": 15, "prixAmelioration": 160},
+      "epique": {"bonus": {"regen": 4, "vie": 2}, "bonusParNiveau": {"regen": 0.35, "vie": 0.2}, "niveauMax": 20, "prixAmelioration": 320},
+      "legendaire": {"bonus": {"regen": 5, "vie": 2}, "bonusParNiveau": {"regen": 0.4, "vie": 0.2}, "niveauMax": 25, "prixAmelioration": 640}
+    } },
+    { "id": "boussole", "nom": "Boussole", "type": "accessoire", "raretes": {
+      "commun": {"bonus": {"regen": 1}, "bonusParNiveau": {"regen": 0.2}, "niveauMax": 5, "prixAmelioration": 40},
+      "peu-commun": {"bonus": {"regen": 2}, "bonusParNiveau": {"regen": 0.25}, "niveauMax": 10, "prixAmelioration": 80},
+      "rare": {"bonus": {"regen": 3}, "bonusParNiveau": {"regen": 0.3}, "niveauMax": 15, "prixAmelioration": 160},
+      "epique": {"bonus": {"regen": 4}, "bonusParNiveau": {"regen": 0.35}, "niveauMax": 20, "prixAmelioration": 320},
+      "legendaire": {"bonus": {"regen": 5}, "bonusParNiveau": {"regen": 0.4}, "niveauMax": 25, "prixAmelioration": 640}
+    } },
+    { "id": "masque-gaz", "nom": "Masque à gaz", "type": "accessoire", "raretes": {
+      "commun": {"bonus": {"vie": 1}, "bonusParNiveau": {"vie": 0.2}, "niveauMax": 5, "prixAmelioration": 40},
+      "peu-commun": {"bonus": {"vie": 2}, "bonusParNiveau": {"vie": 0.25}, "niveauMax": 10, "prixAmelioration": 80},
+      "rare": {"bonus": {"vie": 3}, "bonusParNiveau": {"vie": 0.3}, "niveauMax": 15, "prixAmelioration": 160},
+      "epique": {"bonus": {"vie": 4, "regen": 2}, "bonusParNiveau": {"vie": 0.35, "regen": 0.2}, "niveauMax": 20, "prixAmelioration": 320},
+      "legendaire": {"bonus": {"vie": 5, "regen": 2}, "bonusParNiveau": {"vie": 0.4, "regen": 0.2}, "niveauMax": 25, "prixAmelioration": 640}
     } }
   ]
 }

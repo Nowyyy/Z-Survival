@@ -117,7 +117,7 @@ describe('chances affichées (E3-6)', () => {
     const c = chances(caisse('ravitaillement'), cat);
     expect(c.map((x) => [x.rarete, x.nom, x.pourcent])).toEqual([['commun', 'Commun', 62], ['peu-commun', 'Peu commun', 25], ['rare', 'Rare', 9], ['epique', 'Épique', 3], ['legendaire', 'Légendaire', 1]]);
     for (const x of c) expect(x.objets.map((o) => o.id)).toEqual([...cat.objets.values()].filter((o) => o.raretes[x.rarete]).map((o) => o.id));
-    expect(c[0].objets[0]).toEqual({ id: 'pistolet', nom: 'Pistolet' });
+    expect(c[0].objets[0]).toEqual({ id: 'casque-kevlar', nom: 'Casque kevlar' }); // lot 8h : catalogue militaire, sans arme
     expect(bornes(caisse('militaire'), cat)).toEqual({ min: 'commun', max: 'legendaire', n: 5 });
     expect(bornes(caisse('elite'), cat)).toEqual({ min: 'commun', max: 'legendaire', n: 5 });
     for (const x of [null, {}, { chances: [] }, { chances: [{ rarete: 'x', pourcent: 5 }] }]) {
@@ -270,15 +270,15 @@ describe('ajout à l\'inventaire (ajouterObjets, js/core/equipement.js)', () => 
     expect(objetDe(f.etat, obtenu)).toBeNull();
     expect(new Set(f.etat.objets.map((o) => o.uid)).size).toBe(f.etat.objets.length);
     // Trois objets obtenus identiques : fusionnables entre eux.
-    const trois = ajouterObjets(e0, cat, [{ id: 'montre', rarete: 'rare' }, { id: 'montre', rarete: 'rare' }, { id: 'montre', rarete: 'rare' }]);
+    const trois = ajouterObjets(e0, cat, [{ id: 'montre-campagne', rarete: 'rare' }, { id: 'montre-campagne', rarete: 'rare' }, { id: 'montre-campagne', rarete: 'rare' }]);
     expect(etatFusion(trois.etat, cat, trois.uids).possible).toBe(true);
     // Porté : les statistiques effectives le comptent.
-    const { etat: e2, uids: [gants] } = ajouterObjets(e0, cat, [{ id: 'gants', rarete: 'legendaire' }]);
+    const { etat: e2, uids: [gants] } = ajouterObjets(e0, cat, [{ id: 'gants-tactiques', rarete: 'legendaire' }]);
     const e3 = equiper(e2, cat, gants, 'gants');
     expect(e3.porte.gants).toBe(gants);
     const sans = statistiquesEffectives(null, e2, cat, PARAMS).niveaux;
     const avec = statistiquesEffectives(null, e3, cat, PARAMS).niveaux;
-    expect(avec.cadence).toBe(Math.min(PARAMS.maxLevel, sans.cadence + 5));
+    expect(avec.reparation).toBe(Math.min(PARAMS.extra.reparation.maxLevel, (sans.reparation ?? 0) + 5)); // lot 8h : les gants donnent la réparation
   });
 });
 

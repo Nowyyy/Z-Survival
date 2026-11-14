@@ -3,7 +3,7 @@
 // « Il manque N … » sinon ; « Fusionner » (désactivé tant qu'il manque un objet, raison lue ; coût affiché, jamais prélevé avant le lot 8h) ; objets
 // compatibles (même id et même rareté que le premier placé, sinon tous les fusionnables) ; « Remplir automatiquement » ; résultat annoncé (aria-live).
 import { formatMoney } from '../core/economy.js';
-import { bonusObjet, compatibles, definition, emplacementDe, etatFusion, fusionner, indexRarete, objetDe, remplirAuto } from '../core/equipement.js';
+import { bonusObjet, compatibles, definition, emplacementDe, etatFusion, indexRarete, objetDe, remplirAuto } from '../core/equipement.js';
 import { fmt } from '../game/texts.js';
 import { el } from './menu.js';
 import { son } from './sons/sons.js';
@@ -130,9 +130,13 @@ export function creer({ t, bandeau, eq, cat, retour }) {
     if (nouveau && f.raison === 'vide') message.textContent = fmt(t('game.menu.fusion.message.obtenu'), { nom: nomObjet(cat, nouveau), rarete: nomRarete(cat, nouveau.rarete).toLocaleLowerCase('fr'), n: nouveau.niveau });
     else if (f.raison === 'vide') message.textContent = t('game.menu.fusion.message.vide');
     else if (f.raison === 'max') message.textContent = t('game.menu.fusion.message.max');
+    else if (f.possible && f.prix > eq.solde()) message.textContent = fmt(t('game.menu.fusion.message.solde'), { prix, n: formatMoney(f.prix - eq.solde()) }); // lot 8h
     else if (f.possible) message.textContent = fmt(t('game.menu.fusion.message.pret'), { prix });
     else message.textContent = fmt(t(f.manque === 1 ? 'game.menu.fusion.message.manque.un' : 'game.menu.fusion.message.manque'), { n: f.manque, objet: objetNom, rarete, prix });
-    poserActif(btFusionner, f.possible, 'menu-fusion-message');
+    // Lot 8h : prix prélevé en monnaie bleue ; solde insuffisant : bouton grisé « Il manque N », raison dans le message.
+    const manque = f.possible ? Math.max(0, f.prix - eq.solde()) : 0;
+    btFusionner.textContent = manque > 0 ? fmt(t('game.menu.prix.manque'), { n: formatMoney(manque) }) : t('game.menu.fusion.fusionner');
+    poserActif(btFusionner, f.possible && manque === 0, 'menu-fusion-message');
 
     // Objets compatibles : placés bordés de jaune (« Placé ») ; sans objet placé, tous les fusionnables (rareté écrite).
     const liste = compatibles(etat, cat, places).sort((a, b) => indexRarete(cat, b.rarete) - indexRarete(cat, a.rarete) || a.id.localeCompare(b.id) || b.niveau - a.niveau);
@@ -160,11 +164,16 @@ export function creer({ t, bandeau, eq, cat, retour }) {
   });
   btFusionner.addEventListener('click', () => {
     if (!estActif(btFusionner)) return;
-    const { etat, uid } = fusionner(eq.etat(), cat, places);
-    if (!uid) return;
+    const r = eq.fusionner(places);
+    if (!r.ok) {
+      dire(t(`game.menu.achat.refus.${r.raison === 'solde' ? 'solde' : 'autre'}`));
+      rendre();
+      return;
+    }
+    const uid = r.uid;
     places = [null, null, null];
     dernier = uid;
-    eq.poser(etat);
+    const etat = eq.etat();
     const o = objetDe(etat, uid);
     son('fusion'); // lot 8i : montée de la fusion (retour du propriétaire : sans mélodie de signature de rareté ensuite)
     dire(fmt(t('game.menu.fusion.annonce'), { nom: nomObjet(cat, o), rarete: nomRarete(cat, o.rarete), n: o.niveau, porte: emplacementDe(etat, uid) ? t('game.menu.fusion.annonce.porte') : '' }));

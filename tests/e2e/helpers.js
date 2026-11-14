@@ -1,5 +1,6 @@
 import { test } from '@playwright/test';
 import { fitDistance } from '../../js/core/viewport.js';
+import { readFileSync } from 'node:fs';
 
 // Attend que le jeu tourne (le temps de jeu avance : la mise en page est terminée). Si WebGL manque dans l'environnement,
 // le jeu affiche son message d'erreur et le test se désactive proprement.
@@ -54,3 +55,27 @@ export function screenShare(boxes, width, height) {
 }
 // Vrai si deux boîtes { l, t, r, b } ne se recouvrent pas (tolérance d'un demi-pixel).
 export const apart = (a, b) => a.r <= b.l + 0.5 || b.r <= a.l + 0.5 || a.b <= b.t + 0.5 || b.b <= a.t + 0.5;
+
+// Lot 8h : progression v2 de démonstration (zs.save.v2) pour les tests du menu : inventaire et équipement de data/menu/inventaire-depart.json (uid o1 à
+// o16, mêmes que le lot 8d), monnaie bleue `bleu`, Survivant choisi. Posée UNE fois (les rechargements gardent ce que le menu a écrit), avant tout
+// autre script de la page ; à appeler avant l'espion du stockage (sa propre écriture n'est pas comptée) ; adresse du menu avec &store=local.
+export const CLE_V2 = 'zs.save.v2';
+export function progressionDemo({ bleu = 100_000, extra = {} } = {}) {
+  const inv = JSON.parse(readFileSync('data/menu/inventaire-depart.json', 'utf8'));
+  return {
+    v: 2, rev: 1, savedAt: 1, bleu: { gagne: bleu, depense: 0 },
+    objets: inv.objets.map((o) => ({ u: o.uid, i: o.id, r: o.rarete, n: o.niveau })),
+    porte: { ...inv.equipement },
+    persos: { debloques: ['survivant'], niveaux: { survivant: 1 }, choisi: 'survivant' },
+    ...extra,
+  };
+}
+export async function poserProgression(page, save = progressionDemo()) {
+  // Plusieurs poses dans un même test : la dernière l'emporte (même page) ; un rechargement ne repose rien.
+  await page.addInitScript(([k, v]) => {
+    if (sessionStorage.getItem('zs.test.pose') && !window.__zsPose) return;
+    window.__zsPose = true;
+    sessionStorage.setItem('zs.test.pose', '1');
+    localStorage.setItem(k, v);
+  }, [CLE_V2, JSON.stringify(save)]);
+}

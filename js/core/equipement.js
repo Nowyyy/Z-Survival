@@ -2,14 +2,20 @@
 // ni stockage, ni réseau, ni horloge, ni hasard. Les données (data/menu/raretes.json, objets.json, personnages.json, inventaire-depart.json)
 // arrivent en argument ; chaque fonction prend un état et rend un nouvel état (l'ancien n'est jamais modifié) ; une entrée invalide (objet inconnu,
 // emplacement impossible, triplet incomplet, niveau au maximum, personnage verrouillé) est refusée sans exception : l'état rendu est alors le même
-// objet. Jusqu'au lot 8h, cet état vit en mémoire seulement (js/menu/equipement-etat.js) et les prix sont affichés, jamais prélevés.
+// objet. Lot 8h : cet état est dérivé de la progression v2 (js/menu/equipement-etat.js, zs.save.v2) ; les prix sont prélevés en monnaie bleue par
+// les opérations de js/core/progression.js (dans la même écriture que l'objet obtenu). Plus aucune arme : l'arme fait l'attaque (achetée sur les
+// cartes, lot 6), l'équipement fait la survie (six emplacements).
 import { ALL_STAT_IDS, normalizeLevels } from './player-stats.js';
 
-export const TYPES = Object.freeze(['arme', 'tenue', 'gants', 'bottes', 'accessoire']);
-// Emplacements de l'écran Personnage : à gauche arme, tenue, gants ; à droite bottes et deux accessoires.
-export const EMPLACEMENTS = Object.freeze(['arme', 'tenue', 'gants', 'bottes', 'accessoire1', 'accessoire2']);
-export const emplacementsDuType = (type) => (type === 'accessoire' ? ['accessoire1', 'accessoire2'] : TYPES.includes(type) ? [type] : []);
-export const typeEmplacement = (e) => (e === 'accessoire1' || e === 'accessoire2' ? 'accessoire' : EMPLACEMENTS.includes(e) ? e : null);
+// Lot 8h : six emplacements de survie, un type d'objet par emplacement (un seul accessoire). Écran Personnage : à gauche Tête, Gants, Bottes ; à
+// droite Torse, Accessoire, Pantalon (ordre de EMPLACEMENTS : colonne de gauche puis colonne de droite).
+export const TYPES = Object.freeze(['tete', 'torse', 'gants', 'pantalon', 'bottes', 'accessoire']);
+export const EMPLACEMENTS = Object.freeze(['tete', 'gants', 'bottes', 'torse', 'accessoire', 'pantalon']);
+export const emplacementsDuType = (type) => (TYPES.includes(type) ? [type] : []);
+export const typeEmplacement = (e) => (EMPLACEMENTS.includes(e) ? e : null);
+// Statistiques que l'équipement peut changer (affichées sur l'écran Personnage) ; aucune statistique d'attaque ni de chutes.
+export const STATS_SURVIE = Object.freeze(['vie', 'vitesse', 'reparation', 'regen']);
+export const INVENTAIRE_MAX = 100; // repli si data/menu/objets.json n'a pas inventaireMax
 
 // Tolérance de l'arrondi final (0,2 + 0,7 + 0,1 doit donner 1, pas 0,999… arrondi à 0).
 export const EPSILON = 1e-9;
@@ -168,7 +174,8 @@ export function lireInventaire(json, cat, erreurs = []) {
 export function lireCatalogue({ raretes, objets, personnages, inventaire } = {}) {
   const erreurs = [];
   const r = lireRaretes(raretes, erreurs);
-  const cat = { raretes: r, objets: lireObjets(objets, r, erreurs), personnages: lirePersonnages(personnages, erreurs) };
+  const max = estObjet(objets) ? entier(objets.inventaireMax, 1, 1000) : null;
+  const cat = { raretes: r, objets: lireObjets(objets, r, erreurs), personnages: lirePersonnages(personnages, erreurs), inventaireMax: max ?? INVENTAIRE_MAX };
   const inv = lireInventaire(inventaire, cat, erreurs);
   const voulu = estObjet(personnages) ? personnages.choisi : null;
   const choisi = cat.personnages.find((p) => p.id === voulu && p.debloque) ?? cat.personnages.find((p) => p.debloque) ?? null;
@@ -210,8 +217,8 @@ export function bonusObjet(cat, o) {
   return out;
 }
 
-// Équiper : l'objet va dans l'emplacement de son type (accessoire : l'emplacement demandé, sinon le premier libre, sinon le premier) ; porté
-// ailleurs, il en est d'abord retiré. Refusé : objet inconnu, emplacement impossible pour son type, déjà porté (sans emplacement demandé).
+// Équiper : l'objet va dans l'emplacement de son type ; porté ailleurs, il en est d'abord retiré. Refusé : objet inconnu, emplacement impossible
+// pour son type, déjà porté (sans emplacement demandé).
 export function equiper(etat, cat, uid, emplacement = null) {
   const o = objetDe(etat, uid);
   const def = o ? cat.objets.get(o.id) : null;
@@ -235,7 +242,7 @@ export function retirer(etat, cible) {
   return geler(etat, { porte: Object.freeze({ ...etat.porte, [e]: null }) });
 }
 
-// Améliorer : { possible, prix, raison: null | 'inconnu' | 'max' } ; le prix est affiché, jamais prélevé avant le lot 8h.
+// Améliorer : { possible, prix, raison: null | 'inconnu' | 'max' } ; lot 8h : le prix est prélevé en monnaie bleue (opération « ameliorer »).
 export function infoAmelioration(etat, cat, uid) {
   const o = objetDe(etat, uid);
   const d = definition(cat, o);
@@ -279,7 +286,7 @@ export function etatFusion(etat, cat, places) {
 
 // Fusionner trois exemplaires distincts de même id et même rareté : un exemplaire de la rareté suivante (même id), de niveau le plus haut des trois
 // borné au niveauMax de la nouvelle rareté ; si l'un était porté, le résultat est porté à sa place (un deuxième emplacement occupé par le triplet
-// est libéré). → { etat, uid } (uid null : refusé, état inchangé). Le prix est affiché, jamais prélevé avant le lot 8h.
+// est libéré). → { etat, uid } (uid null : refusé, état inchangé). Lot 8h : le prix est prélevé en monnaie bleue (opération « fusion »).
 export function fusionner(etat, cat, places) {
   const f = etatFusion(etat, cat, places);
   if (!f.possible) return { etat, uid: null };

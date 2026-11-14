@@ -17,8 +17,8 @@ import { ecranJouer } from './jouer.js';
 import { gouttePath } from '../logo.js';
 import { fmt, loadDict } from '../game/texts.js';
 import { graphicsReglages, pageCanal, pageSearch } from '../game/graphics-boot.js';
-import { createRepository } from '../save/index.js';
 import { solde as soldeBleu } from '../core/progression.js';
+import { chargerProgression } from './progression-etat.js';
 
 const SVG = 'http://www.w3.org/2000/svg';
 // Icônes au trait (16 × 16), décoratives.
@@ -213,15 +213,9 @@ export async function preparerMenu({ search = pageSearch(), onProgress = () => {
   let record = null;
   let niveaux = null; // lot 8d : niveaux de statistiques de la sauvegarde (base des statistiques effectives), si elle est lue « ok » (comme la partie)
   try {
-    const storage = (() => {
-      try {
-        return window.localStorage;
-      } catch {
-        return null;
-      }
-    })();
-    const { repository } = createRepository({ search, storage, params: { save, economy, stats }, format: 'v2' });
-    const lu = repository.load();
+    // Lot 8h : dépôt partagé par tout le menu (en-tête, Boutique, Personnage), avec le canal entre onglets (js/menu/progression-etat.js).
+    const prog = await chargerProgression({ save, economy, stats }, { search });
+    const lu = prog.lire();
     if (lu && lu.save) solde = soldeBleu(lu.save);
     record = lireRecord(lu?.save?.records?.histoire?.[premierJouable(lireMondes(mondes)).id]);
     if (lu?.status === 'ok' && lu.save?.niveaux && typeof lu.save.niveaux === 'object') niveaux = { ...lu.save.niveaux };
@@ -279,6 +273,7 @@ export function creerMenu({ dict, infos = [], liens = {}, solde: montant = 0, re
   };
   poserSolde(montant);
   solde.append(icone('gemme', 'e8-icone e8-gemme'), soldeTexte, soldeNom);
+  chargerProgression().then((prog) => prog.abonner(() => poserSolde(prog.solde()))).catch(() => {});
   const barres = el('button', ['e8-barres'], { type: 'button', id: 'menu-trois-barres', 'aria-expanded': 'false', 'aria-controls': 'menu-liste', 'aria-label': t('game.menu.ouvrir') });
   const pointBarres = el('span', ['menu-point', 'e8-point-barres'], { 'aria-hidden': 'true' });
   barres.append(icone('barres'), pointBarres);
@@ -296,7 +291,25 @@ export function creerMenu({ dict, infos = [], liens = {}, solde: montant = 0, re
     svgPlein.append(p);
   }
   pleinEcran.append(svgPlein);
-  droite.append(solde, pleinEcran, barres);
+  // Lot 8h : outils de débogage (écritures réelles dans la progression v2) : petite icône à côté du plein écran et du menu à trois barres, seulement
+  // sur les canaux « source » et « dev » (jamais la Recette, les archives ni la production) ; le panneau (js/menu/debogage.js) se charge au toucher.
+  let debogage = null;
+  const outils = ['source', 'dev'].includes(pageCanal()) ? el('button', ['e8-plein-ecran', 'e8-debogage'], { type: 'button', id: 'menu-debogage-ouvrir', 'aria-label': t('game.menu.debogage.ouvrir'), 'aria-haspopup': 'dialog' }) : null;
+  if (outils) {
+    const svgOutils = document.createElementNS(SVG, 'svg');
+    for (const [k, v] of Object.entries({ viewBox: '0 0 16 16', class: 'e8-icone', 'aria-hidden': 'true', focusable: 'false' })) svgOutils.setAttribute(k, v);
+    const p = document.createElementNS(SVG, 'path');
+    p.setAttribute('d', 'M5.5 7h5v3.5a2.5 2.5 0 0 1-5 0zM6.5 7V5.5a1.5 1.5 0 0 1 3 0V7M1.5 9h4M10.5 9h4M2.5 5.5l3 1.5M13.5 5.5l-3 1.5M2.5 13.5l3-2M13.5 13.5l-3-2'); // insecte (comme la pause)
+    svgOutils.append(p);
+    outils.append(svgOutils);
+    outils.addEventListener('click', () => {
+      if (debogage?.element.isConnected) return;
+      import('./debogage.js').then((m) => {
+        debogage = m.ouvrirDebogage({ t, root: box, retour: outils });
+      }).catch(() => {});
+    });
+  }
+  droite.append(solde, ...(outils ? [outils] : []), pleinEcran, barres);
 
   // Menu à trois barres : juste sous le bouton, aligné à droite.
   const liste = el('div', ['e8-liste'], { id: 'menu-liste' });
@@ -490,7 +503,7 @@ export function creerMenu({ dict, infos = [], liens = {}, solde: montant = 0, re
   // s'importaient en cascade (chaque fichier ne découvre ses dépendances qu'une fois reçu) : dès le toucher, tous ses fichiers sont demandés en même
   // temps (modulepreload) avec ses données (precharger() du module) ; et l'onglet est marqué tout de suite, avant la fin du chargement. Jamais au
   // démarrage du menu : seulement quand le doigt se pose sur un onglet.
-  const EQUIPEMENT = ['data/menu/raretes.json', 'data/menu/objets.json', 'data/menu/personnages.json', 'data/menu/inventaire-depart.json'];
+  const EQUIPEMENT = ['data/menu/raretes.json', 'data/menu/objets.json', 'data/menu/personnages.json']; // lot 8h : inventaire-depart.json n'est plus lu au démarrage (outil de débogage)
   const PRECHARGE = {
     infini: { modules: ['js/menu/infini.js'], donnees: ['data/menu/classement.json'] },
     personnage: { modules: ['js/menu/personnage.js', 'js/menu/equipement-etat.js', 'js/core/equipement.js'], donnees: EQUIPEMENT },
@@ -764,7 +777,8 @@ export function creerMenu({ dict, infos = [], liens = {}, solde: montant = 0, re
   // ailleurs ferme le menu à trois barres.
   function clavier(e) {
     if (e.code !== 'Escape') return;
-    if (dialogue) dialogue.close();
+    if (debogage?.element.isConnected) debogage.fermer(); // lot 8h : panneau des outils de débogage
+    else if (dialogue) dialogue.close();
     else if (etat.ecran === 'options') fermerOptions();
     else if (etat.menuOuvert) fermerListe(true);
     else if (ECRANS_COMPTE.includes(etat.ecran)) {

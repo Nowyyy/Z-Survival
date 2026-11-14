@@ -1,6 +1,7 @@
 // Lot 8b : onglets Jouer (scène animée, record, portes, panneaux, monde suivant) et Infini (cartes, classement d'exemple, mode infini réel) du
 // menu principal (Docs/ref/menu-principal.md). ?test=1&menu=1 ; 932 × 430 (référence), 667 × 375, 1440 × 900 ; projets bureau et mobile (paysage).
 import { test, expect } from '@playwright/test';
+import { poserProgression } from './helpers.js';
 import AxeBuilder from '@axe-core/playwright';
 
 const REF = { width: 932, height: 430 };
@@ -396,6 +397,7 @@ test.describe('onglet Infini (E8-4) et mode infini', () => {
       const page = await context.newPage();
       // Onglet « caché » : la boucle d'images ne tourne pas, seul step() fait avancer la partie (méthode de trace-logique.mjs).
       await page.addInitScript(() => Object.defineProperty(Document.prototype, 'hidden', { get: () => true, configurable: true }));
+      if (viaMenu) await poserProgression(page); // lot 8h : équipement de démonstration (nouveau joueur : rien d'équipé)
       await page.goto(url);
       if (viaMenu) {
         await expect(page.locator('#menu-jouer')).toBeVisible({ timeout: 60_000 });
@@ -423,7 +425,7 @@ test.describe('onglet Infini (E8-4) et mode infini', () => {
       await context.close();
       return r;
     }
-    const infini = await partie('/jeu.html?test=1&menu=1&seed=5', true);
+    const infini = await partie('/jeu.html?test=1&menu=1&seed=5&store=local', true);
     const lvl = Object.entries(infini.niveaux).map(([k, v]) => `${k}:${v}`).join(',');
     const endless = await partie(`/jeu.html?test=1&seed=5&endless=1&lvl=${lvl}`, false);
     expect([endless.mode, endless.readOnly, infini.mode, infini.readOnly]).toEqual(['histoire', true, 'infini', false]);
@@ -460,13 +462,14 @@ test.describe('onglet Infini (E8-4) et mode infini', () => {
       const zs = window.__zs;
       zs.giveMoney(77);
       zs.startWave(15);
+      for (let i = 0; i < 400 && zs.getState().waves.phase === 'attente'; i += 1) zs.step(0.05); // la manche 15 démarre vraiment (partie infini comptée)
       for (let i = 0; i < 400 && zs.getState().waves.wave < 16; i += 1) { zs.skipWave(); zs.step(0.05); }
       zs.flushSave();
       return { s: JSON.parse(localStorage.getItem(k)), vague: zs.getState().waves.wave };
     }, KEY);
     expect(apres.vague).toBe(16);
     expect(apres.s.bleu.gagne).toBe(60); // bonus bleu de la manche 15, renforcée : (10 + 2 × 15) × 1,5 ; la jaune (77) n'est jamais écrite
-    expect(apres.s.records).toEqual({ histoire: { batiment: 12 }, infini: { 'monde-2': 16 } }); // record de l'infini de la carte jouée, celui de l'histoire reste
+    expect(apres.s.records).toEqual({ histoire: { batiment: 12 }, infini: { batiment: 15 } }); // record de l'infini de la carte jouée (le monde 2 n'est pas jouable : le bâtiment) = dernière manche démarrée ; celui de l'histoire reste
     expect(apres.s.profil.partiesInfini).toBe(1);
     expect(apres.s.rev).toBeGreaterThan(1); // écrit dans zs.save.v2 (révision suivante)
     await page.evaluate(() => localStorage.clear());

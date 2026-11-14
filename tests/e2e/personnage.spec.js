@@ -1,9 +1,12 @@
 // Lot 8d : écran Personnage (E9-1) et sous-menus Inventaire, Fusion, Personnages (E9-2 à E9-4) du menu principal ; niveaux effectifs transmis à la
 // partie par « JOUER » (Docs/ref/menu-principal.md). ?test=1&menu=1 ; 932 × 430 (référence), 667 × 375, 1440 × 900 ; projets bureau et mobile (paysage).
+// Lot 8h : six emplacements de survie, catalogue militaire, état gardé dans la progression v2 (zs.save.v2) : chaque test part de la progression de
+// démonstration (inventaire o1 à o16 de data/menu/inventaire-depart.json, 100 000 bleus ; tests/e2e/helpers.js), adresse ?store=local ; prix prélevés.
 import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { readFileSync } from 'node:fs';
 import { creerEtatEquipement, lireCatalogue, statistiquesEffectives } from '../../js/core/equipement.js';
+import { CLE_V2, poserProgression, progressionDemo } from './helpers.js';
 
 const REF = { width: 932, height: 430 };
 const SIZES = [REF, { width: 667, height: 375 }, { width: 1440, height: 900 }];
@@ -12,8 +15,13 @@ const lire = (f) => JSON.parse(readFileSync(f, 'utf8'));
 const PARAMS = lire('data/game/player-stats.json');
 const DONNEES = { raretes: lire('data/menu/raretes.json'), objets: lire('data/menu/objets.json'), personnages: lire('data/menu/personnages.json'), inventaire: lire('data/menu/inventaire-depart.json') };
 const { cat, depart } = lireCatalogue(DONNEES);
-// Fonction pure (js/core/equipement.js) : niveaux attendus avec l'équipement de départ ; ?test=1 : sauvegarde en mémoire, vide (base : zéros).
-const ATTENDU = statistiquesEffectives(null, creerEtatEquipement(cat, depart), cat, PARAMS).niveaux;
+// Fonction pure (js/core/equipement.js) : niveaux attendus avec l'équipement de démonstration ; niveaux de base 0 (lot 8h : tout le monde part de 0).
+const NNBSP = String.fromCharCode(0x202f);
+const soldeTexte = (n) => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, NNBSP);
+test.beforeEach(async ({ page }) => {
+  await poserProgression(page);
+});
+const ATTENDU = statistiquesEffectives(progressionDemo().niveaux ?? Object.fromEntries(['degats', 'portee', 'precision', 'cadence', 'vitesse', 'vie', 'regen', 'chutes', 'reparation'].map((k) => [k, 0])), creerEtatEquipement(cat, depart), cat, PARAMS).niveaux;
 const ANIMS_E9 = ['e8-coulure', 'e8-goutte', 'e9-bandana', 'e9-ombre', 'e9-projecteur', 'e9-respire', 'e9-tete', 'e9-viser']; // retour du propriétaire : coulures du bandeau commun (e8-coulure, e8-goutte)
 
 function surveiller(page, baseURL) {
@@ -30,7 +38,7 @@ function surveiller(page, baseURL) {
   return { problemes, externes, fichiers };
 }
 
-// Écritures dans le stockage (sauf la marque de test) : aucune n'est permise depuis le menu.
+// Écritures dans le stockage (sauf la marque de test) : lot 8h, seules les écritures attendues de la progression v2 (zs.save.v2), une par geste.
 async function espionStockage(page) {
   await page.addInitScript(() => {
     window.__ecritures = [];
@@ -45,7 +53,7 @@ async function espionStockage(page) {
 
 async function ouvrirMenu(page, size = REF, extra = '') {
   await page.setViewportSize(size);
-  await page.goto(`/jeu.html?test=1&menu=1&seed=1${extra}`);
+  await page.goto(`/jeu.html?test=1&menu=1&seed=1${extra.includes('store=') ? '' : '&store=local'}${extra}`);
   await expect(page.locator('#menu-jouer')).toBeVisible({ timeout: 60_000 });
   await page.waitForFunction(() => window.__zsMenu?.etat()?.menu !== null && !document.getElementById('e7'));
 }
@@ -103,12 +111,12 @@ async function contrastes(page, sels) {
 }
 
 const EMPLACEMENTS_DEPART = [
-  ['arme', 'Arme · Rare', 'Pistolet · niv. 3', 'rare'],
-  ['tenue', 'Tenue · Commun', 'Gilet · niv. 3', 'commun'],
+  ['tete', 'Tête · Rare', 'Casque kevlar · niv. 3', 'rare'],
   ['gants', 'Gants · Vide', 'Aucun objet', null],
-  ['bottes', 'Bottes · Peu commun', 'Bottes · niv. 2', 'peu-commun'],
-  ['accessoire1', 'Accessoire · Épique', 'Amulette · niv. 1', 'epique'],
-  ['accessoire2', 'Accessoire · Vide', 'Aucun objet', null],
+  ['bottes', 'Bottes · Peu commun', 'Rangers · niv. 2', 'peu-commun'],
+  ['torse', 'Torse · Commun', 'Gilet pare-balles · niv. 3', 'commun'],
+  ['accessoire', 'Accessoire · Épique', 'Masque à gaz · niv. 1', 'epique'],
+  ['pantalon', 'Pantalon · Vide', 'Aucun objet', null],
 ];
 
 test.describe('écran Personnage (E9-1)', () => {
@@ -131,8 +139,8 @@ test.describe('écran Personnage (E9-1)', () => {
       // Bordure de la couleur de la rareté (jeton --rarete-*), neutre si vide.
       const bords = await page.locator('.e9-emplacement').evaluateAll((ns) => ns.map((n) => getComputedStyle(n).borderTopColor));
       expect(new Set(bords).size).toBe(5);
-      await expect(page.locator('#menu-perso-gauche > ul')).toHaveAccessibleName('Arme, tenue et gants');
-      await expect(page.locator('#menu-perso-droite > ul')).toHaveAccessibleName('Bottes et accessoires');
+      await expect(page.locator('#menu-perso-gauche > ul')).toHaveAccessibleName('Tête, gants et bottes');
+      await expect(page.locator('#menu-perso-droite > ul')).toHaveAccessibleName('Torse, accessoire et pantalon');
       // Capacité du Survivant (à définir, sans effet) ; personnage et étiquette.
       await expect(page.locator('.e9-capacite-nom')).toHaveText('Survivant');
       await expect(page.locator('.e9-capacite-niveau')).toHaveText('niv. 1');
@@ -143,8 +151,9 @@ test.describe('écran Personnage (E9-1)', () => {
       await expect(page.locator('#menu-perso-essai')).toHaveCount(0); // retour du propriétaire : mention « Essai » retirée
       // Statistiques effectives : celles de la fonction pure.
       await expect(page.locator('#menu-perso-stats-liste')).toHaveAccessibleName('Statistiques effectives');
-      await expect(page.locator('#menu-perso-stats-liste li')).toHaveText([`Dégâts : ${ATTENDU.degats}`, `Vie : ${ATTENDU.vie}`, `Cadence : ${ATTENDU.cadence}`, `Vitesse : ${ATTENDU.vitesse}`, `Portée : ${ATTENDU.portee}`, `Précision : ${ATTENDU.precision}`]);
-      expect([ATTENDU.degats, ATTENDU.vie, ATTENDU.vitesse]).toEqual([3, 5, 2]); // 3,6 ; 1,4 + 4 ; 2,25 : arrondis à la fin
+      // Lot 8h : statistiques que l'équipement peut changer (vie, vitesse, réparation, régénération).
+      await expect(page.locator('#menu-perso-stats-liste li')).toHaveText([`Vie : ${ATTENDU.vie}`, `Vitesse : ${ATTENDU.vitesse}`, `Réparation : ${ATTENDU.reparation ?? 0}`, `Régénération : ${ATTENDU.regen}`]);
+      expect([ATTENDU.vie, ATTENDU.vitesse, ATTENDU.regen]).toEqual([9, 2, 2]); // 3,6 + 1,4 + 4 ; 2,25 ; 2 (second bonus du Masque à gaz épique) : arrondis à la fin
       expect((await etatPerso(page)).stats).toEqual(ATTENDU);
       await expect(page.locator('#menu-perso-inventaire')).toHaveText('Inventaire');
       await expect(page.locator('#menu-perso-fusion')).toHaveText('Fusion');
@@ -174,7 +183,7 @@ test.describe('écran Personnage (E9-1)', () => {
     for (const size of SIZES.slice(0, 2)) {
       await ouvrirPersonnage(page, size);
       const sels = ['.e9-etiquette', '#menu-perso-stats-liste', '.e9-capacite-nom', '.e9-capacite-titre', '.e9-capacite-effet', '.e9-capacite-niveau',
-        '#menu-perso-arme .e9-emplacement-ligne', '#menu-perso-arme .e9-emplacement-nom', '#menu-perso-gants .e9-emplacement-ligne', '#menu-perso-gants .e9-emplacement-nom', '#menu-perso-inventaire span', '#menu-perso-fusion span'];
+        '#menu-perso-tete .e9-emplacement-ligne', '#menu-perso-tete .e9-emplacement-nom', '#menu-perso-gants .e9-emplacement-ligne', '#menu-perso-gants .e9-emplacement-nom', '#menu-perso-inventaire span', '#menu-perso-fusion span'];
       const c = await contrastes(page, sels);
       for (const s of sels) expect(c[s].ratio, `${size.width} ${s} ${c[s].couleur} sur ${c[s].fond}`).toBeGreaterThanOrEqual(4.5);
     }
@@ -185,10 +194,10 @@ test.describe('écran Personnage (E9-1)', () => {
     await ouvrirMenu(page);
     const PERSO = /\/js\/menu\/(personnage|equipement-etat|inventaire|fusion|personnages)\.js$|\/js\/core\/equipement\.js$|\/data\/menu\/(objets|raretes|personnages|inventaire-depart)\.json$/;
     expect(o.fichiers.filter((f) => PERSO.test(f))).toEqual([]);
-    expect(o.fichiers.filter((f) => f.endsWith('.js')).length).toBe(35); // lot 8h : + js/save/codecs.js et js/core/progression.js, 33 → 35 ; démarrage du menu (retours du propriétaire : roue et glissement à la souris, 29 → 31 ; avatar de l'en-tête, 31 → 32 ; lot 8i : module léger des sons, 32 → 33)
+    expect(o.fichiers.filter((f) => f.endsWith('.js')).length).toBe(36); // lot 8h : + js/save/codecs.js, js/core/progression.js et js/menu/progression-etat.js, 33 → 36 ; démarrage du menu (retours du propriétaire : roue et glissement à la souris, 29 → 31 ; avatar de l'en-tête, 31 → 32 ; lot 8i : module léger des sons, 32 → 33)
     await page.locator('#menu-onglet-personnage').click();
     await expect(page.locator('#menu-ecran-personnage')).toBeVisible();
-    expect(o.fichiers.filter((f) => PERSO.test(f)).sort()).toEqual(['/data/menu/inventaire-depart.json', '/data/menu/objets.json', '/data/menu/personnages.json', '/data/menu/raretes.json', '/js/core/equipement.js', '/js/menu/equipement-etat.js', '/js/menu/personnage.js']);
+    expect(o.fichiers.filter((f) => PERSO.test(f)).sort()).toEqual(['/data/menu/objets.json', '/data/menu/personnages.json', '/data/menu/raretes.json', '/js/core/equipement.js', '/js/menu/equipement-etat.js', '/js/menu/personnage.js']); // lot 8h : inventaire-depart.json n'est plus chargé (outil de débogage seulement)
     expect(o.fichiers.filter((f) => /\/vendor\/three\/|\/js\/game\/(main|game)\.js$/.test(f))).toEqual([]);
     const sel = '#menu-ecran-personnage';
     expect(await nomsAnims(page, sel)).toEqual(ANIMS_E9);
@@ -302,7 +311,7 @@ test.describe('sous-menus Inventaire, Fusion, Personnages (E9-2 à E9-4)', () =>
     expect(o.problemes).toEqual([]);
   });
 
-  test('Inventaire : filtre venu d\'un emplacement, filtres, pagination, objet choisi, Équiper puis Retirer, Améliorer jusqu\'au maximum (prix affiché, argent non prélevé), « Fusionner cet objet »', async ({ page, baseURL }) => {
+  test('Inventaire : filtre venu d\'un emplacement, filtres par emplacement (lot 8h), pagination, objet choisi, Équiper puis Retirer, Améliorer jusqu\'au maximum (prix prélevé en bleu, une écriture par geste), « Fusionner cet objet »', async ({ page, baseURL }) => {
     const o = surveiller(page, baseURL);
     await espionStockage(page);
     await ouvrirPersonnage(page);
@@ -310,30 +319,30 @@ test.describe('sous-menus Inventaire, Fusion, Personnages (E9-2 à E9-4)', () =>
     await page.locator('#menu-perso-gants').click();
     await expect(page.locator('#menu-ecran-inventaire')).toBeVisible();
     let s = await etatSous(page, 'inventaire');
-    expect([s.filtre, s.filtres, s.visibles]).toEqual(['gants', ['tout', 'arme', 'tenue', 'accessoire', 'gants'], ['o11', 'o10']]);
+    expect([s.filtre, s.filtres, s.visibles]).toEqual(['gants', ['tout', 'tete', 'gants', 'bottes', 'torse', 'accessoire', 'pantalon'], ['o11', 'o10']]);
     await expect(page.locator('#menu-inventaire-filtre-gants')).toHaveAttribute('aria-pressed', 'true');
     await expect(page.locator('#menu-inventaire-filtre-tout')).toHaveAttribute('aria-pressed', 'false');
     await expect(page.locator('#menu-inventaire-grille')).toHaveAccessibleName('Objets possédés');
     await expect(page.locator('#menu-objet-o11')).toHaveAttribute('aria-pressed', 'true');
-    await expect(page.locator('#menu-inventaire-nom')).toHaveText('Gants');
+    await expect(page.locator('#menu-inventaire-nom')).toHaveText('Gants de sapeur');
     await expect(page.locator('#menu-inventaire-ligne')).toHaveText('Gants · Rare · niv. 2');
-    await expect(page.locator('#menu-inventaire-effet')).toHaveText('Cadence +3,3');
+    await expect(page.locator('#menu-inventaire-effet')).toHaveText('Réparation +3,3');
     await expect(page.locator('#menu-inventaire-exemplaires')).toHaveText('Exemplaires identiques : 1 sur 3 pour une fusion');
     // Équiper : l'emplacement Gants est rempli, annonce ; puis Retirer.
     await page.locator('#menu-inventaire-equiper').click();
-    await expect(page.locator('#menu-inventaire-annonce')).toHaveText('Gants équipé.');
+    await expect(page.locator('#menu-inventaire-annonce')).toHaveText('Gants de sapeur équipé.');
     await expect(page.locator('#menu-inventaire-equiper')).toHaveText('Retirer');
     await expect(page.locator('#menu-objet-o11 .e9-case-niveau')).toHaveText('niv. 2 · Porté');
     expect((await etatPerso(page)).emplacements.gants.uid).toBe('o11');
-    expect((await etatPerso(page)).stats.cadence).toBe(ATTENDU.cadence + 3);
+    expect((await etatPerso(page)).stats.reparation).toBe((ATTENDU.reparation ?? 0) + 3);
     await page.locator('#menu-inventaire-equiper').click();
-    await expect(page.locator('#menu-inventaire-annonce')).toHaveText('Gants retiré.');
+    await expect(page.locator('#menu-inventaire-annonce')).toHaveText('Gants de sapeur retiré.');
     expect((await etatPerso(page)).emplacements.gants).toBeNull();
     await page.locator('#menu-inventaire-equiper').click();
-    // Filtres de base : Armes, Tout (16 objets, 2 pages de 12, triés par rareté décroissante).
-    await page.locator('#menu-inventaire-filtre-arme').click();
+    // Filtres par emplacement : Torse, Tout (16 objets, 2 pages de 12, triés par rareté décroissante).
+    await page.locator('#menu-inventaire-filtre-torse').click();
     s = await etatSous(page, 'inventaire');
-    expect([s.filtre, s.visibles]).toEqual(['arme', ['o16', 'o1']]);
+    expect([s.filtre, s.visibles]).toEqual(['torse', ['o16', 'o2', 'o6', 'o5']]);
     await page.locator('#menu-inventaire-filtre-tout').click();
     s = await etatSous(page, 'inventaire');
     expect([s.page, s.pages, s.visibles.length, s.visibles[0]]).toEqual([1, 2, 16, 'o16']);
@@ -347,19 +356,21 @@ test.describe('sous-menus Inventaire, Fusion, Personnages (E9-2 à E9-4)', () =>
     await page.locator('#menu-inventaire-apres').click({ force: true }); // désactivé : rien
     await expect(page.locator('#menu-inventaire-page')).toHaveText('Page 2 / 2 · trié par rareté');
     await page.locator('#menu-inventaire-avant').click();
-    // Améliorer un Gilet commun (niv. 1, maximum 5) jusqu'au maximum : prix affiché, solde inchangé, puis désactivé avec sa raison.
+    // Améliorer un Gilet pare-balles commun (niv. 1, maximum 5) jusqu'au maximum : 40 prélevés à chaque niveau, puis désactivé avec sa raison.
     await page.locator('#menu-objet-o5').click();
     await expect(page.locator('#menu-inventaire-ameliorer')).toHaveText('Améliorer · 40');
     for (let n = 2; n <= 5; n += 1) {
       await page.locator('#menu-inventaire-ameliorer').click();
-      await expect(page.locator('#menu-inventaire-annonce')).toHaveText(`Gilet amélioré : niveau ${n}.`);
+      await expect(page.locator('#menu-inventaire-annonce')).toHaveText(`Gilet pare-balles amélioré : niveau ${n}.`);
     }
     await expect(page.locator('#menu-inventaire-ameliorer')).toHaveText('Niveau maximal');
     await expect(page.locator('#menu-inventaire-ameliorer')).toHaveAttribute('aria-disabled', 'true');
     await expect(page.locator('#menu-inventaire-ameliorer')).toHaveAccessibleDescription('Niveau maximal atteint (5).');
     await page.locator('#menu-inventaire-ameliorer').click({ force: true });
     expect((await etatPerso(page)).objets.find((x) => x.uid === 'o5').niveau).toBe(5);
-    await expect(page.locator('#menu-solde-texte')).toHaveText('0'); // argent jamais prélevé
+    await expect(page.locator('#menu-solde-texte')).toHaveText(soldeTexte(100_000 - 4 * 40)); // lot 8h : prix prélevés en bleu
+    const garde = JSON.parse(await page.evaluate((k) => localStorage.getItem(k), CLE_V2));
+    expect([garde.bleu.depense, garde.objets.find((x) => x.u === 'o5').n, garde.porte.gants]).toEqual([160, 5, 'o11']);
     // Légendaire : « Fusionner cet objet » désactivé (raison écrite).
     await page.locator('#menu-objet-o16').click();
     await expect(page.locator('#menu-inventaire-fusionner')).toHaveAttribute('aria-disabled', 'true');
@@ -371,11 +382,25 @@ test.describe('sous-menus Inventaire, Fusion, Personnages (E9-2 à E9-4)', () =>
     await page.locator('#menu-inventaire-fusionner').click();
     await expect(page.locator('#menu-ecran-fusion')).toBeVisible();
     expect((await etatSous(page, 'fusion')).places).toEqual(['o5', null, null]);
-    expect(await page.evaluate(() => window.__ecritures)).toEqual([]);
+    expect(await page.evaluate(() => window.__ecritures)).toEqual(Array(7).fill(CLE_V2)); // lot 8h : équiper, retirer, équiper, 4 améliorations
     expect(o.problemes).toEqual([]);
   });
 
-  test('Fusion : placer trois objets (compatibles filtrés), manque, Remplir automatiquement, Fusionner (résultat annoncé, inventaire et équipement mis à jour) ; légendaire non fusionnable ; coût affiché non prélevé', async ({ page, baseURL }) => {
+  test('lot 8h : solde bleu insuffisant : « Il manque N » grisé, raison lue, rien n\'est prélevé ni écrit', async ({ page }) => {
+    await poserProgression(page, progressionDemo({ bleu: 25 }));
+    await espionStockage(page);
+    await ouvrirPersonnage(page);
+    await page.locator('#menu-perso-inventaire').click();
+    await page.locator('#menu-objet-o5').click();
+    await expect(page.locator('#menu-inventaire-ameliorer')).toHaveText('Il manque 15');
+    await expect(page.locator('#menu-inventaire-ameliorer')).toHaveAttribute('aria-disabled', 'true');
+    await expect(page.locator('#menu-inventaire-ameliorer')).toHaveAccessibleDescription('Monnaie bleue insuffisante : prix 40, solde 25.');
+    await page.locator('#menu-inventaire-ameliorer').click({ force: true });
+    expect((await etatPerso(page)).objets.find((x) => x.uid === 'o5').niveau).toBe(1);
+    expect(await page.evaluate(() => window.__ecritures)).toEqual([]);
+  });
+
+  test('Fusion : placer trois objets (compatibles filtrés), manque, Remplir automatiquement, Fusionner (résultat annoncé, inventaire et équipement mis à jour) ; légendaire non fusionnable ; coût prélevé en bleu (lot 8h)', async ({ page, baseURL }) => {
     const o = surveiller(page, baseURL);
     await espionStockage(page);
     await ouvrirPersonnage(page);
@@ -391,12 +416,12 @@ test.describe('sous-menus Inventaire, Fusion, Personnages (E9-2 à E9-4)', () =>
     expect(await page.locator('#menu-fusion-grille button').evaluateAll((ns) => ns.map((n) => n.dataset.uid).sort())).toEqual(['o2', 'o5', 'o6']);
     await expect(page.locator('#menu-fusion-objet-o5')).toHaveAttribute('aria-pressed', 'true');
     await expect(page.locator('#menu-fusion-objet-o5 .e9-case-niveau')).toHaveText('Placé');
-    await expect(page.locator('#menu-fusion-message')).toHaveText('Il manque 2 exemplaires de Gilet commun. Coût : 100');
+    await expect(page.locator('#menu-fusion-message')).toHaveText('Il manque 2 exemplaires de Gilet pare-balles commun. Coût : 100');
     await expect(page.locator('#menu-fusion-resultat')).toHaveAttribute('data-rarete', 'peu-commun');
     await expect(page.locator('#menu-fusion-resultat')).toContainText('Peu commun');
     await page.locator('#menu-fusion-objet-o6').click();
-    await expect(page.locator('#menu-fusion-message')).toHaveText('Il manque 1 Gilet commun. Coût : 100');
-    await expect(page.locator('#menu-fusion-fusionner')).toHaveAccessibleDescription('Il manque 1 Gilet commun. Coût : 100');
+    await expect(page.locator('#menu-fusion-message')).toHaveText('Il manque 1 Gilet pare-balles commun. Coût : 100');
+    await expect(page.locator('#menu-fusion-fusionner')).toHaveAccessibleDescription('Il manque 1 Gilet pare-balles commun. Coût : 100');
     await page.locator('#menu-fusion-fusionner').click({ force: true }); // désactivé : rien
     expect((await etatSous(page, 'fusion')).places).toEqual(['o5', 'o6', null]);
     // Retirer un objet placé, puis Remplir automatiquement (le Gilet porté en dernier recours).
@@ -408,22 +433,23 @@ test.describe('sous-menus Inventaire, Fusion, Personnages (E9-2 à E9-4)', () =>
     await expect(page.locator('#menu-fusion-resultat')).toHaveClass(/is-pret/);
     expect(await nomsAnims(page, '#menu-ecran-fusion')).toEqual(['e8-coulure', 'e8-goutte', 'e9-etincelle', 'e9-filigrane', 'e9-lueur']);
     await page.locator('#menu-fusion-fusionner').click();
-    await expect(page.locator('#menu-fusion-annonce')).toHaveText('Fusion réussie : Gilet Peu commun, niveau 3 (porté).');
+    await expect(page.locator('#menu-fusion-annonce')).toHaveText('Fusion réussie : Gilet pare-balles Peu commun, niveau 3 (porté).');
     const e = await etatPerso(page);
     expect(e.objets.length).toBe(14);
     expect(e.objets.filter((x) => ['o2', 'o5', 'o6'].includes(x.uid))).toEqual([]);
-    expect(e.emplacements.tenue).toEqual({ uid: 'f1', id: 'gilet', rarete: 'peu-commun', niveau: 3, niveauMax: 10 });
+    expect(e.emplacements.torse).toMatchObject({ id: 'gilet-pare-balles', rarete: 'peu-commun', niveau: 3, niveauMax: 10 });
+    expect(e.emplacements.torse.uid).toMatch(/^[0-9a-z]+\.0$/); // lot 8h : identifiant unique (crypto), plus « f1 »
     expect((await etatSous(page, 'fusion')).places).toEqual([null, null, null]);
-    await expect(page.locator('#menu-solde-texte')).toHaveText('0');
-    // Retour à l'écran Personnage : la tenue portée est le Gilet peu commun.
+    await expect(page.locator('#menu-solde-texte')).toHaveText(soldeTexte(100_000 - 100));
+    // Retour à l'écran Personnage : le torse porté est le Gilet pare-balles peu commun.
     await page.locator('#menu-fusion-retour').click();
-    await expect(page.locator('#menu-perso-tenue .e9-emplacement-ligne')).toHaveText('Tenue · Peu commun');
-    await expect(page.locator('#menu-perso-tenue .e9-emplacement-nom')).toHaveText('Gilet · niv. 3');
-    expect(await page.evaluate(() => window.__ecritures)).toEqual([]);
+    await expect(page.locator('#menu-perso-torse .e9-emplacement-ligne')).toHaveText('Torse · Peu commun');
+    await expect(page.locator('#menu-perso-torse .e9-emplacement-nom')).toHaveText('Gilet pare-balles · niv. 3');
+    expect(await page.evaluate(() => window.__ecritures)).toEqual([CLE_V2]); // une écriture : trois retirés, un créé, prix prélevé
     expect(o.problemes).toEqual([]);
   });
 
-  test('Personnages : choisir le deuxième (écran Personnage et statistiques mis à jour), verrouillé ni choisissable ni améliorable, améliorer (prix affiché, argent non prélevé) ; animations e9-* en pause hors de l\'écran', async ({ page, baseURL }) => {
+  test('Personnages : choisir le deuxième (écran Personnage et statistiques mis à jour), verrouillé ni choisissable ni améliorable, améliorer (lot 8h : prix prélevé en bleu) ; animations e9-* en pause hors de l\'écran', async ({ page, baseURL }) => {
     const o = surveiller(page, baseURL);
     await espionStockage(page);
     await ouvrirPersonnage(page);
@@ -451,7 +477,7 @@ test.describe('sous-menus Inventaire, Fusion, Personnages (E9-2 à E9-4)', () =>
     // Le deuxième : choisir, puis améliorer deux fois (300 affiché, solde inchangé).
     await page.locator('#menu-perso-carte-personnage-2').click();
     await expect(page.locator('#menu-personnages-stats-titre')).toHaveText('Statistiques s\'il est choisi');
-    await expect(page.locator('#menu-personnages-stats li').nth(3)).toHaveText(`Vitesse : ${ATTENDU.vitesse + 1}`);
+    await expect(page.locator('#menu-personnages-stats li').nth(1)).toHaveText(`Vitesse : ${ATTENDU.vitesse + 1}`);
     await page.locator('#menu-personnages-choisir').click();
     await expect(page.locator('#menu-personnages-annonce')).toHaveText('[Personnage 2] choisi.');
     await expect(page.locator('#menu-personnages-choisir')).toHaveText('Choisi');
@@ -461,33 +487,30 @@ test.describe('sous-menus Inventaire, Fusion, Personnages (E9-2 à E9-4)', () =>
     await page.locator('#menu-personnages-ameliorer').click();
     await expect(page.locator('#menu-personnages-annonce')).toHaveText('[Personnage 2] amélioré : niveau 3.');
     await expect(page.locator('#menu-personnages-niveau')).toHaveText('Niveau 3 · prochain niveau : 4');
-    await expect(page.locator('#menu-solde-texte')).toHaveText('0');
+    await expect(page.locator('#menu-solde-texte')).toHaveText(soldeTexte(100_000 - 2 * 300));
     // Écran Personnage : nom, niveau, capacité et statistiques du personnage choisi (vitesse 2,25 + 1 + 0,5 × 2 = 4,25 → 4).
     await page.locator('#menu-personnages-retour').click();
     await expect(page.locator('.e9-capacite-nom')).toHaveText('[Personnage 2]');
     await expect(page.locator('.e9-capacite-niveau')).toHaveText('niv. 3');
     await expect(page.locator('.e9-capacite-titre')).toHaveText('Capacité : Pas léger (exemple)');
-    await expect(page.locator('#menu-perso-stats-liste li').nth(3)).toHaveText('Vitesse : 4');
+    await expect(page.locator('#menu-perso-stats-liste li').nth(1)).toHaveText('Vitesse : 4');
     expect(await etats(page, '#menu-ecran-personnage')).toEqual(['running']);
     expect(await etats(page, '#menu-ecran-personnages')).toEqual([]); // sous-menu masqué : aucune animation
-    expect(await page.evaluate(() => window.__ecritures)).toEqual([]);
+    expect(await page.evaluate(() => window.__ecritures)).toEqual([CLE_V2, CLE_V2, CLE_V2]); // choisir, améliorer deux fois
     expect(o.problemes).toEqual([]);
   });
 });
 
 // --- « JOUER » : niveaux effectifs transmis à la partie (option de démarrage), rien d'écrit -----------------------------------------------
-const KEY = 'zs.save.v2'; // lot 8h : progression v2
+const KEY = CLE_V2; // lot 8h : progression v2
+// Niveaux de base posés à la main (lot 8h : 0 pour tout le monde au départ ; un lot d'équilibrage les donnera) pour vérifier leur transmission.
 const SAVE_STATS = { degats: 2, portee: 1, precision: 0, cadence: 3, vitesse: 9, vie: 1, regen: 0, chutes: 1, reparation: 0 };
 async function poserSauvegarde(page) {
-  await page.addInitScript(([k, stats]) => {
-    if (sessionStorage.getItem('zs.test.pose')) return;
-    sessionStorage.setItem('zs.test.pose', '1');
-    localStorage.setItem(k, JSON.stringify({ v: 2, rev: 1, savedAt: 0, bleu: { gagne: 500, depense: 0 }, niveaux: stats, records: { histoire: { batiment: 3 }, infini: {} } })); // lot 8h : progression v2
-  }, [KEY, SAVE_STATS]);
+  await poserProgression(page, progressionDemo({ bleu: 500, extra: { niveaux: SAVE_STATS, records: { histoire: { batiment: 3 }, infini: {} } } }));
 }
 const niveauxPartie = (page) => page.evaluate(() => { const s = window.__zs.getState(); return { source: s.stats.source, niveaux: { ...s.stats.levels, ...s.stats.extraLevels } }; });
 async function retirerTout(page) {
-  for (const e of ['arme', 'tenue', 'bottes', 'accessoire1']) {
+  for (const e of ['tete', 'bottes', 'torse', 'accessoire']) { // lot 8h : emplacements portés par la démonstration
     await page.locator(`#menu-perso-${e}`).click();
     await page.locator('#menu-inventaire-equiper').click(); // l'objet porté de cet emplacement est choisi : « Retirer »
     await expect(page.locator('#menu-inventaire-annonce')).toContainText('retiré');
@@ -502,14 +525,14 @@ async function jouer(page) {
 }
 
 test.describe('« JOUER » : niveaux de la partie', () => {
-  test('avec l\'équipement modifié et le deuxième personnage : la partie reçoit exactement les niveaux de la fonction pure (bornés), source « menu » ; argent et sauvegarde inchangés, aucun objet ni niveau écrit', async ({ page }) => {
+  test('avec l\'équipement modifié et le deuxième personnage : la partie reçoit exactement les niveaux de la fonction pure (bornés), source « menu » ; lot 8h : les deux gestes écrits (équipement, personnage choisi), niveaux de base et bleu inchangés', async ({ page }) => {
     test.setTimeout(150_000);
     await poserSauvegarde(page);
     await espionStockage(page);
     await ouvrirPersonnage(page, REF, '&store=local');
     const avant = await page.evaluate((k) => localStorage.getItem(k), KEY);
     await page.locator('#menu-perso-gants').click();
-    await page.locator('#menu-inventaire-equiper').click(); // Gants rares (cadence 3,3)
+    await page.locator('#menu-inventaire-equiper').click(); // Gants de sapeur rares (réparation 3,3)
     await page.keyboard.press('Escape');
     await page.locator('#menu-perso-silhouette').click();
     await page.locator('#menu-perso-carte-personnage-2').click();
@@ -520,21 +543,21 @@ test.describe('« JOUER » : niveaux de la partie', () => {
     let etat = creerEtatEquipement(cat, depart);
     etat = choisirPersonnage(equiper(etat, cat, 'o11', 'gants'), cat, 'personnage-2');
     const attendu = statistiquesEffectives(SAVE_STATS, etat, cat, PARAMS).niveaux;
-    expect(attendu).toEqual({ degats: 5, portee: 1, precision: 0, cadence: 6, vitesse: 10, vie: 6, regen: 0, chutes: 1, reparation: 0 }); // vitesse 9 + 2,25 + 1 → 10 (maximum)
+    expect(attendu).toEqual({ degats: 2, portee: 1, precision: 0, cadence: 3, vitesse: 10, vie: 10, regen: 2, chutes: 1, reparation: 3 }); // vitesse 9 + 2,25 + 1 → 10 et vie 1 + 9 → 10 (maximum) ; aucun bonus d'attaque
     expect((await etatPerso(page)).stats).toEqual(attendu);
-    expect(await page.evaluate(() => window.__ecritures)).toEqual([]);
+    expect(await page.evaluate(() => window.__ecritures)).toEqual([KEY, KEY]);
     await jouer(page);
     const p = await niveauxPartie(page);
     expect(p.source).toBe('menu');
     expect(p.niveaux).toEqual(attendu);
     const s = await page.evaluate(() => { const st = window.__zs.getState(); return [st.mode, st.save.kind, st.save.readOnly]; });
     expect(s).toEqual(['histoire', 'local', false]);
-    // Rien de nouveau dans la sauvegarde : mêmes niveaux, même argent, aucun champ d'objet ni de personnage.
+    // Progression : niveaux de base et bleu inchangés ; gants portés et personnage choisi gardés.
     await page.evaluate(() => window.__zs.flushSave());
     const apres = JSON.parse(await page.evaluate((k) => localStorage.getItem(k), KEY));
     expect(apres.niveaux).toEqual(JSON.parse(avant).niveaux);
     expect(apres.bleu).toEqual({ gagne: 500, depense: 0 });
-    expect(Object.keys(apres).sort()).toEqual(Object.keys(JSON.parse(avant)).sort());
+    expect([apres.porte.gants, apres.persos.choisi]).toEqual(['o11', 'personnage-2']);
     expect(await page.evaluate(() => Object.keys(localStorage).sort())).toEqual([KEY]);
     await page.evaluate(() => localStorage.clear());
   });
@@ -559,6 +582,7 @@ test.describe('« JOUER » : niveaux de la partie', () => {
       // Onglet « caché » : la boucle d'images ne tourne pas, seul step() fait avancer la partie (méthode de trace-logique.mjs).
       await page.addInitScript(() => Object.defineProperty(Document.prototype, 'hidden', { get: () => true, configurable: true }));
       if (viaMenu) {
+        await poserProgression(page); // lot 8h : progression de démonstration (nouveau contexte : le beforeEach ne la pose que pour `page`)
         await ouvrirPersonnage(page, { width: 667, height: 375 });
         await retirerTout(page);
         await page.locator('#menu-onglet-jouer').click();

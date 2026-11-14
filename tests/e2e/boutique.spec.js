@@ -2,12 +2,21 @@
 // utilisables et comptés à « JOUER » (Docs/ref/menu-principal.md). ?test=1&menu=1 ; 932 × 430 (référence), 667 × 375, 1440 × 900, 2000 × 1020,
 // téléphone à encoche simulé ; projets bureau et mobile (paysage). Graines des achats fixées en remplaçant crypto.getRandomValues (aucun crochet dans
 // le code) ; résultats attendus calculés par les fonctions pures (js/core/caisses.js).
+// Lot 8h : progression v2 (zs.save.v2) : chaque test part de la démonstration (100 000 bleus, inventaire o1 à o16 ; tests/e2e/helpers.js), ?store=local ;
+// prix prélevés en monnaie bleue dans la même écriture que ce qui est obtenu (une écriture par achat) ; identifiants d'objets uniques (crypto).
 import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { readFileSync } from 'node:fs';
 import { formatMoney } from '../../js/core/economy.js';
 import { chances, lireCaisses, lireCosmetiques, lireOffres, offresDuJour, resume, tirer, tirer10 } from '../../js/core/caisses.js';
 import { ajouterObjets, creerEtatEquipement, equiper, lireCatalogue, obtenirPersonnages, statistiquesEffectives } from '../../js/core/equipement.js';
+import { CLE_V2, poserProgression, progressionDemo } from './helpers.js';
+
+test.beforeEach(async ({ page }) => {
+  await poserProgression(page);
+});
+const NNBSP = String.fromCharCode(0x202f);
+const nouveaux = (objets) => objets.filter((x) => !/^o\d+$/.test(x.uid)); // objets obtenus pendant le test (la démonstration : o1 à o16)
 
 const REF = { width: 932, height: 430 };
 const SIZES = [REF, { width: 667, height: 375 }, { width: 1440, height: 900 }, { width: 2000, height: 1020 }];
@@ -53,7 +62,7 @@ function surveiller(page, baseURL) {
   });
   return { problemes, externes, fichiers };
 }
-// Écritures dans le stockage : aucune n'est permise depuis le menu.
+// Écritures dans le stockage : lot 8h, seules celles de la progression v2 (zs.save.v2), une par achat ou geste.
 async function espionStockage(page) {
   await page.addInitScript(() => {
     window.__ecritures = [];
@@ -82,7 +91,7 @@ async function graines(page, liste) {
 async function ouvrirMenu(page, size = REF, extra = '') {
   await page.setViewportSize(size);
   // Lot 8f : ?ouverture=0 : ces tests attendent le résultat aussitôt après l'achat (l'ouverture en 3D a ses tests : ouverture.spec.js).
-  await page.goto(`/jeu.html?test=1&menu=1&seed=1&ouverture=0${extra}`);
+  await page.goto(`/jeu.html?test=1&menu=1&seed=1&ouverture=0${extra.includes('store=') ? '' : '&store=local'}${extra}`);
   await expect(page.locator('#menu-jouer')).toBeVisible({ timeout: 60_000 });
   await page.waitForFunction(() => window.__zsMenu?.etat()?.menu !== null && !document.getElementById('e7'));
 }
@@ -203,8 +212,8 @@ test.describe('Boutique (E3-1)', () => {
       expect(coulures).toBeLessThanOrEqual((await boite(page, '#menu-boutique-rubriques')).t + 0.5);
       await cibles(page, '#menu-ecran-boutique');
       expect((await new AxeBuilder({ page }).analyze()).violations.map((v) => v.id)).toEqual([]);
-      await expect(page.locator('#menu-solde-texte')).toHaveText('0');
-      expect(await page.evaluate(() => window.__ecritures)).toEqual([]);
+      await expect(page.locator('#menu-solde-texte')).toHaveText(`100${NNBSP}000`);
+      expect(await page.evaluate(() => window.__ecritures)).toEqual([]); // visite sans achat : aucune écriture
       expect([o.problemes, o.externes]).toEqual([[], []]);
     });
   }
@@ -247,19 +256,19 @@ test.describe('Boutique (E3-1)', () => {
     }
   });
 
-  test('chargée à la demande (démarrage du menu : 33 fichiers JavaScript, roue de chargement, glissement à la souris, avatar de l\'en-tête et module léger des sons compris) ; chances et résultats à leur première ouverture ; ni Three.js ni le jeu', async ({ page, baseURL }) => {
+  test('chargée à la demande (démarrage du menu : 36 fichiers JavaScript (lot 8h : progression v2), roue de chargement, glissement à la souris, avatar de l\'en-tête et module léger des sons compris) ; chances et résultats à leur première ouverture ; ni Three.js ni le jeu', async ({ page, baseURL }) => {
     const o = surveiller(page, baseURL);
     await ouvrirMenu(page);
     const BOUTIQUE = /\/js\/menu\/(boutique|chances|resultat|personnage|equipement-etat)\.js$|\/js\/core\/(caisses|equipement)\.js$|\/data\/menu\/(caisses|cosmetiques|objets|raretes|personnages|inventaire-depart)\.json$/;
     expect(o.fichiers.filter((f) => BOUTIQUE.test(f))).toEqual([]);
     // Retours du propriétaire : roue de chargement (js/menu/roue.js) et glissement à la souris (js/glisser.js) dès le démarrage du menu (29 → 31).
     // Lot 8i : + js/menu/sons/sons.js (module léger des sons : 32 → 33) ; le moteur des sons ne se charge qu'après un geste.
-    expect(o.fichiers.filter((f) => f.endsWith('.js')).length).toBe(35); // lot 8h : + js/save/codecs.js et js/core/progression.js (progression v2)
+    expect(o.fichiers.filter((f) => f.endsWith('.js')).length).toBe(36); // lot 8h : + js/save/codecs.js, js/core/progression.js et js/menu/progression-etat.js (progression v2)
     expect(o.fichiers.filter((f) => /\/(roue|glisser)\.js$/.test(f)).length).toBe(2);
     expect(o.fichiers.filter((f) => /\/js\/menu\/sons\//.test(f))).toEqual(['/js/menu/sons/sons.js']);
     await page.locator('#menu-onglet-boutique').click();
     await expect(page.locator('#menu-ecran-boutique')).toBeVisible();
-    expect(o.fichiers.filter((f) => BOUTIQUE.test(f)).sort()).toEqual(['/data/menu/caisses.json', '/data/menu/cosmetiques.json', '/data/menu/inventaire-depart.json', '/data/menu/objets.json', '/data/menu/personnages.json', '/data/menu/raretes.json', '/js/core/caisses.js', '/js/core/equipement.js', '/js/menu/boutique.js', '/js/menu/equipement-etat.js', '/js/menu/personnage.js']);
+    expect(o.fichiers.filter((f) => BOUTIQUE.test(f)).sort()).toEqual(['/data/menu/caisses.json', '/data/menu/cosmetiques.json', '/data/menu/objets.json', '/data/menu/personnages.json', '/data/menu/raretes.json', '/js/core/caisses.js', '/js/core/equipement.js', '/js/menu/boutique.js', '/js/menu/equipement-etat.js', '/js/menu/personnage.js']);
     await page.locator('#menu-caisse-elite-chances').click();
     await expect(page.locator('#menu-ecran-chances')).toBeVisible();
     expect(o.fichiers.filter((f) => f.endsWith('/js/menu/chances.js'))).toHaveLength(1);
@@ -357,7 +366,7 @@ test.describe('chances (E3-6)', () => {
 });
 
 test.describe('achats et résultats (E3-4, E3-5)', () => {
-  test('« Ouvrir ×1 » (élite) : objet de la fonction pure, carte (icône, nom, rareté écrite, effet) bordée de sa rareté et halo ; annonce ; « Rouvrir » ; « Continuer » ; objet dans l\'Inventaire, utilisable ; prix jamais prélevé ; aucune écriture', async ({ page, baseURL }) => {
+  test('« Ouvrir ×1 » (élite) : objet de la fonction pure, carte (icône, nom, rareté écrite, effet) bordée de sa rareté et halo ; annonce ; « Rouvrir » ; « Continuer » ; objet dans l\'Inventaire, utilisable ; lot 8h : prix prélevé, une écriture par achat', async ({ page, baseURL }) => {
     const o = surveiller(page, baseURL);
     await espionStockage(page);
     await graines(page, [G_EPIQUE, G_LEGENDAIRE]);
@@ -391,14 +400,17 @@ test.describe('achats et résultats (E3-4, E3-5)', () => {
     await cibles(page, '#menu-ecran-resultat');
     expect((await new AxeBuilder({ page }).analyze()).violations.map((v) => v.id)).toEqual([]);
     let b = await etatBoutique(page);
-    expect([b.vue, b.achats, b.dernier.objets, b.dernier.uids]).toEqual(['resultat', 1, [attendu], ['c1']]);
+    expect([b.vue, b.achats, b.dernier.objets, b.dernier.uids.length]).toEqual(['resultat', 1, [attendu], 1]);
+    const u1 = b.dernier.uids[0];
+    expect(u1).toMatch(/^[0-9a-z]+\.0$/);
     // « Rouvrir » : même caisse, ×1 ; un légendaire cette fois.
     await page.locator('#menu-resultat-rouvrir').click();
     const second = tirer(caisse('elite'), cat, G_LEGENDAIRE);
     await expect(page.locator('#menu-resultat-nom')).toHaveText(cat.objets.get(second.id).nom);
     await expect(page.locator('#menu-resultat-rarete')).toHaveText('Légendaire');
     b = await etatBoutique(page);
-    expect([b.achats, b.dernier.uids]).toEqual([2, ['c2']]);
+    expect(b.achats).toBe(2);
+    const u2 = b.dernier.uids[0];
     // « Continuer » : retour à la Boutique, focus sur « Ouvrir ×1 » de la caisse d'élite.
     await page.locator('#menu-resultat-continuer').click();
     await expect(page.locator('#menu-ecran-boutique')).toBeVisible();
@@ -407,20 +419,23 @@ test.describe('achats et résultats (E3-4, E3-5)', () => {
     // Objets dans l'Inventaire (en tête : rareté la plus haute), puis équipés.
     await page.locator('#menu-onglet-personnage').click();
     await page.locator('#menu-perso-inventaire').click();
-    await expect(page.locator('#menu-objet-c2')).toBeVisible();
-    await expect(page.locator('#menu-objet-c1')).toBeVisible();
+    await expect(page.locator(`[id="menu-objet-${u2}"]`)).toBeVisible();
+    await expect(page.locator(`[id="menu-objet-${u1}"]`)).toBeVisible();
     const perso = (await etatMenu(page)).personnage;
-    expect(perso.objets.filter((x) => /^c/.test(x.uid)).map(({ uid, id, rarete, niveau, porte }) => ({ uid, id, rarete, niveau, porte }))).toEqual([
-      { uid: 'c1', ...attendu, porte: null }, { uid: 'c2', ...second, porte: null },
+    expect(nouveaux(perso.objets).map(({ uid, id, rarete, niveau, porte }) => ({ uid, id, rarete, niveau, porte }))).toEqual([
+      { uid: u1, ...attendu, porte: null }, { uid: u2, ...second, porte: null },
     ]);
     expect(perso.objets).toHaveLength(depart.objets.length + 2);
-    await page.locator('#menu-objet-c2').click();
+    await page.locator(`[id="menu-objet-${u2}"]`).click();
     await page.locator('#menu-inventaire-equiper').click();
     await expect(page.locator('#menu-inventaire-annonce')).toContainText('équipé');
-    expect(Object.values((await etatMenu(page)).personnage.emplacements).some((x) => x?.uid === 'c2')).toBe(true);
-    await expect(page.locator('#menu-solde-texte')).toHaveText(solde); // prix jamais prélevé
-    expect((await etatMenu(page)).solde).toBe(0);
-    expect(await page.evaluate(() => window.__ecritures)).toEqual([]);
+    expect(Object.values((await etatMenu(page)).personnage.emplacements).some((x) => x?.uid === u2)).toBe(true);
+    expect(solde).toBe(`100${NNBSP}000`);
+    await expect(page.locator('#menu-solde-texte')).toHaveText(`97${NNBSP}000`); // lot 8h : deux caisses d'élite (1 500 chacune) prélevées
+    expect((await etatMenu(page)).solde).toBe(97_000);
+    expect(await page.evaluate(() => window.__ecritures)).toEqual([CLE_V2, CLE_V2, CLE_V2]); // deux achats, un équipement
+    const garde = JSON.parse(await page.evaluate((k) => localStorage.getItem(k), CLE_V2));
+    expect([garde.bleu.depense, garde.objets.length]).toEqual([3000, depart.objets.length + 2]);
     expect([o.problemes, o.externes]).toEqual([[], []]);
   });
 
@@ -451,8 +466,8 @@ test.describe('achats et résultats (E3-4, E3-5)', () => {
     await expect(page.locator('.e3-case-nom')).toHaveText(dix2.map((x) => cat.objets.get(x.id).nom));
     await expect(page.locator('#menu-resultat-resume')).toHaveText(resumeAttendu(dix2));
     const b = await etatBoutique(page);
-    expect([b.achats, b.dernier.uids]).toEqual([2, Array.from({ length: 10 }, (_, i) => `c${11 + i}`)]);
-    // Inventaire en mémoire : 20 objets de plus (fonction pure : mêmes uid).
+    expect([b.achats, b.dernier.uids.length, new Set(b.dernier.uids).size]).toEqual([2, 10, 10]);
+    // Inventaire : 20 objets de plus, dans l'ordre des tirages (fonction pure ; lot 8h : identifiants uniques, comparés sans eux).
     const pur = ajouterObjets(ajouterObjets(creerEtatEquipement(cat, depart), cat, dix).etat, cat, dix2).etat;
     await page.locator('#menu-resultat-continuer').click();
     await expect(page.locator('#menu-ecran-boutique')).toBeVisible();
@@ -470,44 +485,41 @@ test.describe('achats et résultats (E3-4, E3-5)', () => {
     await page.locator('#menu-onglet-personnage').click();
     await expect(page.locator('#menu-ecran-personnage')).toBeVisible();
     const perso = (await etatMenu(page)).personnage;
-    expect(perso.objets.filter((x) => /^c/.test(x.uid)).slice(0, 20).map(({ uid, id, rarete, niveau }) => ({ uid, id, rarete, niveau }))).toEqual(pur.objets.filter((x) => /^c/.test(x.uid)).map((x) => ({ ...x })));
+    expect(nouveaux(perso.objets).slice(0, 20).map(({ id, rarete, niveau }) => ({ id, rarete, niveau }))).toEqual(pur.objets.filter((x) => /^c/.test(x.uid)).map(({ id, rarete, niveau }) => ({ id, rarete, niveau })));
     await page.locator('#menu-onglet-boutique').click();
     await expect(page.locator('#menu-ecran-boutique')).toBeVisible();
     await expect(page.locator('#menu-ecran-resultat')).toBeHidden();
-    expect((await etatMenu(page)).solde).toBe(0);
+    expect((await etatMenu(page)).solde).toBe(100_000 - 4 * caisse('ravitaillement').prix10); // lot 8h : quatre ×10 prélevés
   });
 });
 
 test.describe('« JOUER » avec un objet obtenu', () => {
   const KEY = 'zs.save.v2'; // lot 8h : progression v2
   const SAVE_STATS = { degats: 2, portee: 1, precision: 0, cadence: 3, vitesse: 9, vie: 1, regen: 0, chutes: 1, reparation: 0 };
-  test('gants obtenus (caisse d\'élite) et portés : la partie reçoit les niveaux de la fonction pure ; argent et sauvegarde inchangés, aucun objet écrit', async ({ page }) => {
+  test('gants obtenus (caisse d\'élite) et portés : la partie reçoit les niveaux de la fonction pure ; lot 8h : achat et équipement écrits (deux écritures), prix prélevé, niveaux de base inchangés', async ({ page }) => {
     test.setTimeout(150_000);
-    await page.addInitScript(([k, stats]) => {
-      if (sessionStorage.getItem('zs.test.pose')) return;
-      sessionStorage.setItem('zs.test.pose', '1');
-      localStorage.setItem(k, JSON.stringify({ v: 2, rev: 1, savedAt: 0, bleu: { gagne: 500, depense: 0 }, niveaux: stats, records: { histoire: { batiment: 3 }, infini: {} } })); // lot 8h : progression v2
-    }, [KEY, SAVE_STATS]);
+    await poserProgression(page, progressionDemo({ bleu: 5000, extra: { niveaux: SAVE_STATS, records: { histoire: { batiment: 3 }, infini: {} } } }));
     await espionStockage(page);
     await graines(page, [G_GANTS]);
     await ouvrirBoutique(page, REF, '&store=local');
-    await expect(page.locator('#menu-solde-texte')).toHaveText('500');
+    await expect(page.locator('#menu-solde-texte')).toHaveText(`5${NNBSP}000`);
     const avant = await page.evaluate((k) => localStorage.getItem(k), KEY);
     await page.locator('#menu-caisse-elite-un').click();
     await expect(page.locator('#menu-ecran-resultat')).toBeVisible();
     const gants = tirer(caisse('elite'), cat, G_GANTS);
+    const uid = (await etatBoutique(page)).dernier.uids[0];
     await page.locator('#menu-resultat-continuer').click();
     await page.locator('#menu-onglet-personnage').click();
     await page.locator('#menu-perso-gants').click(); // emplacement vide : Inventaire filtré sur les gants
-    await page.locator('#menu-objet-c1').click();
+    await page.locator(`[id="menu-objet-${uid}"]`).click();
     await page.locator('#menu-inventaire-equiper').click();
     await page.keyboard.press('Escape');
     const etat = equiper(ajouterObjets(creerEtatEquipement(cat, depart), cat, [gants]).etat, cat, 'c1', 'gants');
     const attendu = statistiquesEffectives(SAVE_STATS, etat, cat, PARAMS).niveaux;
     expect(attendu).not.toEqual(statistiquesEffectives(SAVE_STATS, creerEtatEquipement(cat, depart), cat, PARAMS).niveaux);
     expect((await etatMenu(page)).personnage.stats).toEqual(attendu);
-    await expect(page.locator('#menu-solde-texte')).toHaveText('500');
-    expect(await page.evaluate(() => window.__ecritures)).toEqual([]);
+    await expect(page.locator('#menu-solde-texte')).toHaveText(`3${NNBSP}500`);
+    expect(await page.evaluate(() => window.__ecritures)).toEqual([KEY, KEY]);
     await page.locator('#menu-onglet-jouer').click();
     await page.locator('#menu-jouer').click();
     await page.waitForFunction(() => (window.__zs?.getState()?.time ?? 0) > 0.05, null, { timeout: 90_000 });
@@ -515,8 +527,8 @@ test.describe('« JOUER » avec un objet obtenu', () => {
     expect([p.source, p.niveaux]).toEqual(['menu', attendu]);
     await page.evaluate(() => window.__zs.flushSave());
     const apres = JSON.parse(await page.evaluate((k) => localStorage.getItem(k), KEY));
-    expect([apres.bleu, apres.niveaux]).toEqual([{ gagne: 500, depense: 0 }, JSON.parse(avant).niveaux]);
-    expect(Object.keys(apres).sort()).toEqual(Object.keys(JSON.parse(avant)).sort());
+    expect([apres.bleu, apres.niveaux]).toEqual([{ gagne: 5000, depense: 1500 }, JSON.parse(avant).niveaux]);
+    expect(apres.porte.gants).toBe(uid);
     await page.evaluate(() => localStorage.clear());
   });
 });
@@ -619,7 +631,7 @@ test.describe('Boutique par rubriques (retour du propriétaire)', () => {
     await cibles(page, '#menu-boutique-rubriques');
   });
 
-  test('offres du jour : six objets de la fonction pure pour la date de l\'appareil, compte à rebours jusqu\'à minuit ; « Acheter » → résultat ×1 sans « Rouvrir », objet dans l\'inventaire, offre « Acheté » ; prix non prélevé ; aucune écriture', async ({ page }) => {
+  test('offres du jour : six objets de la fonction pure pour la date de l\'appareil, compte à rebours jusqu\'à minuit ; « Acheter » → résultat ×1 sans « Rouvrir », objet dans l\'inventaire, offre « Achetée » (lot 8h : gardée au rechargement) ; prix prélevé, une écriture', async ({ page }) => {
     await espionStockage(page);
     await page.clock.setFixedTime(new Date('2026-11-11T20:00:00Z')); // 21 h à Paris
     await ouvrirBoutique(page);
@@ -636,7 +648,7 @@ test.describe('Boutique par rubriques (retour du propriétaire)', () => {
     await expect(page.locator('#menu-resultat-rouvrir')).toBeHidden();
     await expect(page.locator('.e8-onglets')).toBeHidden();
     await page.locator('#menu-resultat-continuer').click();
-    await expect(page.locator('#menu-offre-2-acheter')).toHaveText('Acheté');
+    await expect(page.locator('#menu-offre-2-acheter')).toHaveText('Achetée');
     await expect(page.locator('#menu-offre-2-acheter')).toHaveAttribute('aria-disabled', 'true');
     await expect(page.locator('#menu-offre-2-acheter')).toBeFocused();
     await page.locator('#menu-offre-2-acheter').dispatchEvent('click'); // déjà acheté (aria-disabled) : rien
@@ -646,9 +658,15 @@ test.describe('Boutique par rubriques (retour du propriétaire)', () => {
     await page.locator('#menu-onglet-personnage').click();
     await expect(page.locator('#menu-ecran-personnage')).toBeVisible();
     const perso = (await etatMenu(page)).personnage;
-    expect(perso.objets.filter((x) => /^c/.test(x.uid)).map(({ id, rarete, niveau }) => ({ id, rarete, niveau }))).toEqual([{ id: attendu[2].id, rarete: attendu[2].rarete, niveau: 1 }]);
-    expect((await etatMenu(page)).solde).toBe(0);
-    expect(await page.evaluate(() => window.__ecritures)).toEqual([]);
+    expect(nouveaux(perso.objets).map(({ id, rarete, niveau }) => ({ id, rarete, niveau }))).toEqual([{ id: attendu[2].id, rarete: attendu[2].rarete, niveau: 1 }]);
+    expect((await etatMenu(page)).solde).toBe(100_000 - attendu[2].prix);
+    expect(await page.evaluate(() => window.__ecritures)).toEqual([CLE_V2]);
+    // Rechargement : l'offre reste « Achetée » pour la journée (progression v2 : offres.achetees).
+    await page.reload();
+    await expect(page.locator('#menu-jouer')).toBeVisible({ timeout: 60_000 });
+    await page.locator('#menu-onglet-boutique').click();
+    await expect(page.locator('#menu-offre-2-acheter')).toHaveText('Achetée');
+    expect((await etatBoutique(page)).offres.map((o) => o.achetee)).toEqual([false, false, true, false, false, false]);
   });
 
   test('caisse de recrues ×10 : personnages de la fonction pure (nouveau : débloqué ; déjà obtenu : un niveau de plus), résumé ; débloqués et choisissables dans Personnages', async ({ page }) => {

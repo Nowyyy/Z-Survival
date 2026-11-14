@@ -32,7 +32,7 @@ export const avecHalo = (cat, rid) => {
 const JETON_NOUVEAU = '--rarete-legendaire';
 const JETON_DOUBLON = '--rarete-commun';
 
-export function creerResultat({ t, bandeau, cat, continuer, rouvrir }) {
+export function creerResultat({ t, bandeau, cat, continuer, rouvrir, solde = () => Infinity }) {
   const rarete = (rid) => cat.raretes.find((r) => r.id === rid) ?? null;
   const nomDe = (o, type) => (type === 'personnage' ? personnageDe(cat, o.id)?.nom : type === 'cosmetique' ? cat.cosmetiques?.find((c) => c.id === o.id)?.nom : cat.objets.get(o.id)?.nom) ?? o.id;
 
@@ -64,7 +64,9 @@ export function creerResultat({ t, bandeau, cat, continuer, rouvrir }) {
   btContinuer.textContent = t('game.menu.resultat.continuer');
   btContinuer.addEventListener('click', () => continuer());
   const btRouvrir = el('button', ['e3-action', 'e3-rouge'], { type: 'button', id: 'menu-resultat-rouvrir' });
-  btRouvrir.addEventListener('click', () => rouvrir());
+  btRouvrir.addEventListener('click', () => {
+    if (btRouvrir.getAttribute('aria-disabled') !== 'true') rouvrir();
+  });
   actions.append(btContinuer, btRouvrir);
   const { element: live, dire } = annonce('menu-resultat-annonce');
   section.append(tete, un, dix, actions, live);
@@ -109,7 +111,10 @@ export function creerResultat({ t, bandeau, cat, continuer, rouvrir }) {
     dix.hidden = !plusieurs;
     btRouvrir.hidden = !r.caisse; // offre du jour : achetée une fois, rien à rouvrir
     if (r.caisse) {
-      btRouvrir.textContent = fmt(t(plusieurs ? 'game.menu.resultat.rouvrir10' : 'game.menu.resultat.rouvrir'), { prix: formatMoney(prixAchat(r.caisse, r.quantite)) });
+      // Lot 8h : prix prélevé en monnaie bleue ; solde insuffisant : « Il manque N », grisé.
+      const manque = Math.max(0, prixAchat(r.caisse, r.quantite) - solde());
+      btRouvrir.textContent = manque > 0 ? fmt(t('game.menu.prix.manque'), { n: formatMoney(manque) }) : fmt(t(plusieurs ? 'game.menu.resultat.rouvrir10' : 'game.menu.resultat.rouvrir'), { prix: formatMoney(prixAchat(r.caisse, r.quantite)) });
+      btRouvrir.setAttribute('aria-disabled', String(manque > 0));
       btRouvrir.setAttribute('aria-label', fmt(t('game.menu.resultat.rouvrir.aria'), { action: btRouvrir.textContent, caisse: r.caisse.nom }));
     }
     if (!plusieurs) {

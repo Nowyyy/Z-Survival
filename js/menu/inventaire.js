@@ -1,9 +1,10 @@
 // Lot 8d : sous-menu Inventaire (E9-2, maquette Docs/maquettes-v0.8/Inventaire.html), écran plein chargé à sa première ouverture (js/menu/personnage.js).
-// Filtres (Tout, Armes, Tenues, Accessoires, et le type venu d'un emplacement), grille paginée de 12 objets (6 × 2 comme la maquette, triés par
-// rareté décroissante), panneau de détail : Équiper ou Retirer, Améliorer (prix affiché, jamais prélevé avant le lot 8h ; désactivé au niveau
-// maximum, raison lue), exemplaires identiques, « Fusionner cet objet » (ouvre Fusion avec l'objet placé). État en mémoire (equipement-etat.js).
+// Filtres (lot 8h : Tout et un par emplacement de survie), grille paginée de 12 objets (6 × 2 comme la maquette, triés par rareté décroissante),
+// panneau de détail : Équiper ou Retirer, Améliorer (lot 8h : prix prélevé en monnaie bleue ; « Il manque N » grisé quand le solde ne suffit pas ;
+// désactivé au niveau maximum ; raison lue), exemplaires identiques, « Fusionner cet objet » (ouvre Fusion avec l'objet placé). État : progression
+// v2 (equipement-etat.js).
 import { formatMoney } from '../core/economy.js';
-import { ameliorer, bonusObjet, emplacementDe, emplacementsDuType, equiper, fusionnable, identiques, indexRarete, infoAmelioration, objetDe, retirer } from '../core/equipement.js';
+import { bonusObjet, emplacementDe, emplacementsDuType, fusionnable, identiques, indexRarete, infoAmelioration, objetDe, TYPES } from '../core/equipement.js';
 import { fmt } from '../game/texts.js';
 import { el } from './menu.js';
 import { son } from './sons/sons.js';
@@ -13,8 +14,14 @@ import { filigrane, TYPE_TEXTES, annonce, estActif, icone24, nomObjet, nomRarete
 // pourrait être affiché en une page » sur PC) ; mesuré à l'affichage et à chaque changement de taille.
 export const PAR_PAGE = 12;
 const COLONNES = 6;
-const FILTRES = { tout: 'game.menu.inventaire.filtre.tout', arme: 'game.menu.inventaire.filtre.arme', tenue: 'game.menu.inventaire.filtre.tenue', gants: 'game.menu.inventaire.filtre.gants', bottes: 'game.menu.inventaire.filtre.bottes', accessoire: 'game.menu.inventaire.filtre.accessoire' };
-const FILTRES_BASE = ['tout', 'arme', 'tenue', 'accessoire'];
+// Lot 8h : un filtre par emplacement de survie (ordre de l'écran Personnage), tous visibles.
+const FILTRES = {
+  tout: 'game.menu.inventaire.filtre.tout', tete: 'game.menu.inventaire.filtre.tete', gants: 'game.menu.inventaire.filtre.gants', bottes: 'game.menu.inventaire.filtre.bottes',
+  torse: 'game.menu.inventaire.filtre.torse', accessoire: 'game.menu.inventaire.filtre.accessoire', pantalon: 'game.menu.inventaire.filtre.pantalon',
+};
+const FILTRES_BASE = Object.keys(FILTRES);
+// Objet vide d'un emplacement : rien à filtrer de plus (filtre « extra » des lots 8d à 8g, gardé pour un type hors de la liste).
+const FILTRE_CONNU = (f) => f === 'tout' || TYPES.includes(f);
 
 export function creer({ t, bandeau, eq, cat, retour, ouvrir }) {
   let filtre = 'tout';
@@ -134,11 +141,16 @@ export function creer({ t, bandeau, eq, cat, retour, ouvrir }) {
     effet.textContent = texteEffet(t, bonusObjet(cat, o));
     btEquiper.textContent = t(porte ? 'game.menu.inventaire.retirer' : 'game.menu.inventaire.equiper');
     const info = infoAmelioration(etat, cat, o.uid);
-    btAmeliorer.textContent = info.possible ? fmt(t('game.menu.inventaire.ameliorer'), { prix: formatMoney(info.prix) }) : t('game.menu.inventaire.ameliorer.max');
-    poserActif(btAmeliorer, info.possible, 'menu-inventaire-raison');
+    // Lot 8h : prix prélevé en monnaie bleue ; solde insuffisant : « Il manque N » grisé, raison lue.
+    const manque = info.possible ? Math.max(0, info.prix - eq.solde()) : 0;
+    btAmeliorer.textContent = !info.possible ? t('game.menu.inventaire.ameliorer.max') : manque > 0 ? fmt(t('game.menu.prix.manque'), { n: formatMoney(manque) }) : fmt(t('game.menu.inventaire.ameliorer'), { prix: formatMoney(info.prix) });
+    poserActif(btAmeliorer, info.possible && manque === 0, 'menu-inventaire-raison');
     if (!info.possible) {
       raison.hidden = false;
       raison.textContent = fmt(t('game.menu.inventaire.raison.max'), { n: info.niveauMax ?? o.niveau });
+    } else if (manque > 0) {
+      raison.hidden = false;
+      raison.textContent = fmt(t('game.menu.prix.raison'), { prix: formatMoney(info.prix), solde: formatMoney(eq.solde()) });
     }
     const n = identiques(etat, o.uid).length;
     const peut = fusionnable(cat, o);
@@ -168,20 +180,19 @@ export function creer({ t, bandeau, eq, cat, retour, ouvrir }) {
     if (!o) return;
     const porte = emplacementDe(etat, o.uid);
     const cible = emplacementCible && emplacementsDuType(typeObjet(cat, o)).includes(emplacementCible) ? emplacementCible : null;
-    const n = eq.poser(porte ? retirer(etat, o.uid) : equiper(etat, cat, o.uid, cible));
-    if (n === etat) return;
+    const r = porte ? eq.retirer(o.uid) : eq.equiper(o.uid, cible);
+    if (!r.ok) return;
     son(porte ? 'retirer' : 'equiper'); // lot 8i
     dire(fmt(t(porte ? 'game.menu.inventaire.annonce.retire' : 'game.menu.inventaire.annonce.equipe'), { nom: nomObjet(cat, o) }));
   });
   btAmeliorer.addEventListener('click', () => {
     if (!estActif(btAmeliorer)) return;
-    const etat = eq.etat();
-    const n = eq.poser(ameliorer(etat, cat, choisi));
-    if (n !== etat) {
+    const r = eq.ameliorer(choisi);
+    if (r.ok) {
       son('ameliorer'); // lot 8i
-      const o = objetDe(n, choisi);
+      const o = objetDe(eq.etat(), choisi);
       dire(fmt(t('game.menu.inventaire.annonce.ameliore'), { nom: nomObjet(cat, o), n: o.niveau }));
-    }
+    } else dire(t(`game.menu.achat.refus.${r.raison === 'solde' ? 'solde' : 'autre'}`));
   });
   btFusion.addEventListener('click', () => {
     if (!estActif(btFusion)) return;
@@ -214,7 +225,7 @@ export function creer({ t, bandeau, eq, cat, retour, ouvrir }) {
     section,
     // opts : { filtre (type ou « tout »), emplacement (d'où l'on vient) }.
     ouvrir(opts = {}) {
-      const f = Object.hasOwn(FILTRES, opts.filtre) ? opts.filtre : 'tout';
+      const f = Object.hasOwn(FILTRES, opts.filtre) && FILTRE_CONNU(opts.filtre) ? opts.filtre : 'tout';
       extra = FILTRES_BASE.includes(f) ? null : f;
       filtre = f;
       page = 0;

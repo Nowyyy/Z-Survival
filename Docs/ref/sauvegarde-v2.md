@@ -172,7 +172,7 @@ On garde le mécanisme prouvé du lot 5o (relevés `{ by, base, value }` sur le 
 ### Catalogue militaire proposé (`objets.json`, valeurs provisoires, même barème qu'au lot 8d, les 5 raretés chacun)
 | id | nom | emplacement | statistique | 2e bonus (épique et légendaire) |
 |---|---|---|---|---|
-| `casque-kevlar` | Casque en kevlar | tete | vie | — |
+| `casque-kevlar` | Casque kevlar | tete | vie | — |
 | `casque-commando` | Casque de commando | tete | vie | regen |
 | `gilet-pare-balles` | Gilet pare-balles | torse | vie | — |
 | `veste-combat` | Veste de combat | torse | vie | regen |
