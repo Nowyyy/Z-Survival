@@ -1,6 +1,6 @@
 # Lot 8h — Deux monnaies, armes retirées du menu, sauvegarde v2 (V0.8)
 ## Base
-- `origin/dev` `ed0aa8d` (seed 0.32 ; Tests de `dev` verts), arbre propre ; branche `lot-8h`. Commits : A `e125031` et `3677acd` (plan), B `eeb1db0`, C `ef6310e`, D `97ef235`, E `23d8a98`, F (ce bilan). Plan et référence : `Docs/ref/sauvegarde-v2.md` (section 11 : réalisé).
+- `origin/dev` `ed0aa8d` (seed 0.32 ; Tests de `dev` verts), arbre propre ; branche `lot-8h`. Commits : A `e125031` et `3677acd` (plan), B `eeb1db0`, C `ef6310e`, D `97ef235`, E `23d8a98`, F `b6b5960` (bilan) puis clôture (ce commit) ; fusion dans `dev` : `526cdfb` (commit de fusion, à la demande du propriétaire). Plan et référence : `Docs/ref/sauvegarde-v2.md` (section 11 : réalisé).
 ## Livré
 - **B** : progression v2 (`js/core/progression.js` pur, `js/save/codecs.js`, dépôts v1/v2), page `sauvegarde.html` et Profil en v2, codes `ZS2` (export, import) et `ZS1` (import). **C** : monnaies jaune et bleue (`bank.js`, HUD « +N » bleu, E2-7, en-tête, jeton `--color-money-blue`). **D** : armes retirées, six emplacements, catalogue militaire, état du menu dérivé de `zs.save.v2`, prix prélevés, outils de débogage. **E** : avatar, pseudo, nouveautés lues, record de l'infini par carte, son et volumes gardés (`zs.device.v1`).
 ## Décisions suivies (prompt et réponses au GO)
@@ -18,9 +18,9 @@
 ## Tests adaptés (tests / assertions, avant → après, `compter.mjs`)
 - B : `sauvegarde.spec` 23/103 → 25/125 ; `studio.spec` 307 = (Profil v2, ZS2) ; `sauvegarde-page` 58 → 60 ; `persos-jeu` 60 → 61 (« fichier inchangé » → « valeurs existantes inchangées »). C : `argent.spec` 49/220 → 51/240 ; `bank.test` 30/83 → 32/99 ; `sauvegarde-donnees` 65 → 67. D : `boutique.spec` 244 → 250 ; `personnage.spec` 23/280 → 24/287 ; `equipement.test` 23/127 → 24/136 ; `sons-menu.spec` 86 = (5 « aucune écriture » → écritures attendues 0, 2, 7, 1, 1). E : `menu.spec` 13/161 → 14/172 ; `menu-onglets.spec` 14/136 → 15/141 ; `sons-volumes.spec` 4/61 → 5/73 ; `studio.spec` 307 → 311 (avatar et pseudo gardés au lieu de « aucune écriture »). F : `debug-menu.spec` + 5 tests ; `data-changelog.test` décalé d'un rang. Nouveaux : `progression.test` (34 tests), `menu-garde.test` (10/39), `profil-garde.test` (8/33), simulateur v2. Aucune assertion retirée sans équivalent.
 ## CI
-- Standard de `lot-8h` : B et C rouges (B : la partie lisait encore la v1, corrigé en C ; C : record de l'infini attendu, corrigé en D) ; D et E **verts** (E : 371 s, 532 exécutions, 0 échec ; `dev` avant le lot : 361 s). F : résultat dans le message de livraison. Local : standard 526 réussis ; menu en projet mobile 140 réussis (3 échecs hors lot : site 4174 absent de la config locale ×2, minutage sous charge ×1, 3/3 seul).
+- Standard de `lot-8h` : B et C rouges (B : la partie lisait encore la v1, corrigé en C ; C : record de l'infini attendu, corrigé en D) ; D, E et F **verts** (E : 371 s, 532 exécutions, 0 échec ; F : 359 s, 279 exécutions, 0 échec ; `dev` avant le lot : 361 s). Après la fusion, `dev` : Tests verts, déploiement Pages réussi (`/dev/jeu.html`). Local : standard 526 réussis ; menu en projet mobile 140 réussis (3 échecs hors lot : site 4174 absent de la config locale ×2, minutage sous charge ×1, 3/3 seul).
 ## Points ouverts
-- Un achat lancé dans deux onglets à quelques millisecondes d'écart avec un solde pour un seul peut être annulé après coup (ouverture déjà montrée). `index.html` reste au seuil exact (90, des passes à 89). Non testé sur téléphone.
+- Un achat lancé dans deux onglets à quelques millisecondes d'écart avec un solde pour un seul peut être annulé après coup (ouverture déjà montrée). `index.html` reste au seuil exact (90, des passes à 89). Retour du propriétaire sur `/dev/` après la fusion : « Ça m'a l'air tout bon ».
 ## Idées
 - Statistiques de base par personnage (équilibrage) ; « chutes » comme compétence ou objet légendaire ; achats en jaune (lot 6) ; équipement visible sur le personnage ; écrire le volume au relâchement du curseur si l'on veut moins d'écritures.
 ## Entrée du journal
@@ -30,6 +30,6 @@
 ## Passages du seed à réécrire par le propriétaire
 - Pilier 2 (« l'argent n'est jamais perdu » → la monnaie bleue n'est jamais perdue) ; pilier 4 et « Stockage » (clé `zs.save.v1` seule → `zs.save.v1` des versions ≤ V0.7, ignorée, + `zs.save.v2`) ; pilier 15 (caisses payées en monnaie bleue) ; E2 et E4 (« argent » → jaune et bleue) ; en-tête (solde lu dans `zs.save.v2`) ; modes histoire et infini, « Argent (lot 4) », « Records et progression » (« argent conservé » → bleue gardée, jaune perdue) ; « Sauvegarde v2 » (clé séparée, et non la même lue par toutes les versions) ; ligne 8h du tableau des lots (faite).
 ## À faire par moi
-1. Fusionner `lot-8h` dans `dev` (« Create a merge commit »), attendre la CI et le déploiement.
-2. **Sur le téléphone** : jouer sur `…/dev/jeu.html` quelques manches, quitter, vérifier le solde bleu ; acheter, équiper, recharger ; ouvrir `…/Recette/` (V0.7) : progression intacte et jouable ; revenir sur `…/dev/` : tout est là.
-3. Régler `data/game/economy.json`, `data/menu/objets.json` (et prix de `caisses.json`, `raretes.json`, `personnages.json`) si besoin. 4. Rapporter les retours.
+1. ~~Fusionner `lot-8h` dans `dev`~~ : fait (`526cdfb`, CI et déploiement verts). 2. ~~Essai sur `/dev/`~~ : validé par le propriétaire (2026-11-14).
+3. Reporter dans `CLAUDE.md`, `conventions.md` et le seed les lignes et passages ci-dessus.
+4. Régler `data/game/economy.json`, `data/menu/objets.json` (et prix de `caisses.json`, `raretes.json`, `personnages.json`) en jouant ; rapporter les retours au lot suivant.
