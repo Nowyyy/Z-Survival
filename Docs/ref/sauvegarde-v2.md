@@ -5,14 +5,14 @@
 ## 0. Réponses du propriétaire (2026-11-14, avant le GO) — elles priment sur la suite du plan
 | Question | Réponse | Effet sur le plan |
 |---|---|---|
-| 1. Niveaux de base | « c'est quoi ? » (expliqué : les 9 niveaux de `stats` de `zs.save.v1`, 0 à 10, qu'aucun écran n'achète) | gardés dans le format (`niveaux`, tous à 0) pour un futur achat ; **à confirmer au GO** avec la réponse 3 |
+| 1. Niveaux de base | « c'est quoi ? » (expliqué : les 9 niveaux de `stats` de `zs.save.v1`, 0 à 10, qu'aucun écran n'achète) | gardés dans le format (`niveaux`), **tous à 0 au départ** (confirmé le 2026-11-14) ; un futur lot d'équilibrage donnera à chaque personnage ses statistiques de base, améliorées ensuite par l'équipement (« Idées ») |
 | 2. Achats avec l'argent | la jaune : à ajouter dans un prochain lot | aucun achat en jaune dans ce lot (déjà prévu : lot 6) |
-| 3. Suivi de la V0.7 | « on peut repartir de 0 » | **lecture retenue (à confirmer au GO)** : tout le monde repart de zéro dans la V0.8 ; `zs.save.v1` n'est **ni lue ni écrite** par la V0.8 (ni migration ni suivi) ; niveaux et records à 0 |
+| 3. Suivi de la V0.7 | « on peut repartir de 0 » | **confirmé** (2026-11-14) : tout le monde repart de zéro dans la V0.8 ; `zs.save.v1` n'est **ni lue ni écrite** par la V0.8 (ni migration ni suivi) ; niveaux et records à 0 |
 | 4. Import `ZS1` | remplacer | un code `ZS1` **remplace** la progression v2 (niveaux et record du code, 0 bleu, inventaire vide), après aperçu et case à cocher |
 | 5. Son dans `zs.device.v1` | la V0.7 reste pour l'historique, peu importe ce qui n'y marche plus | `{ v: 2, …, son }` gardé (le plus simple ; la V0.7 démarre toujours) ; le test de compatibilité V0.7 → V0.8 → V0.7 est gardé, réduit à « démarre, garde sa propre progression, joue » |
 | 6. Plafond de l'inventaire | 100 dans un premier temps | `inventaireMax` 100 (`data/menu/objets.json`) ; caisse refusée « Inventaire plein » ; ×10 exige 10 places ; pire cas environ 8 Ko |
 | 7. Second bonus | à partir de la couleur violette | second bonus **dès l'épique** (violet, `--rarete-epique`) et au légendaire seulement |
-| 8. Statistiques | « c'est quoi ? » | expliquées en 6 ; **choix des quatre à confirmer au GO** |
+| 8. Statistiques | « c'est quoi ? » | **« chutes » retirée de l'équipement tout court** (confirmé) : aucun objet ne la donne, elle n'est plus affichée ; elle sera une compétence d'un personnage ou de certains objets légendaires (lot à venir, « Idées ») ; la règle du jeu ne change pas (`player-stats.json` intact) ; affichées partout : vie, vitesse, réparation, régénération |
 | 9. Outils de débogage | une petite icône à côté du menu à trois barres et du bouton plein écran | icône « Débogage » dans l'en-tête du menu (44 px, canaux `source` et `dev` seulement), qui ouvre les quatre outils |
 | 10. `jeu.html` | modifs permises (ou prochain lot si pas important pour la sauvegarde) | `jeu.html` modifié **dans ce lot**, seulement pour le « +N » bleu du HUD et les lignes de la fin de partie E2-7 (affichage des monnaies) |
 | 11. Décor armé | faire varier l'équipement : prochain lot | silhouette et ouverture 3D inchangées ; équipement visible sur le personnage → « Idées » |
@@ -166,36 +166,36 @@ On garde le mécanisme prouvé du lot 5o (relevés `{ by, base, value }` sur le 
 
 ## 6. Menu gardé
 ### Catalogue militaire proposé (`objets.json`, valeurs provisoires, même barème qu'au lot 8d, les 5 raretés chacun)
-| id | nom | emplacement | statistique | 2e bonus dès peu-commun |
+| id | nom | emplacement | statistique | 2e bonus (épique et légendaire) |
 |---|---|---|---|---|
 | `casque-kevlar` | Casque en kevlar | tete | vie | — |
 | `casque-commando` | Casque de commando | tete | vie | regen |
 | `gilet-pare-balles` | Gilet pare-balles | torse | vie | — |
-| `veste-combat` | Veste de combat | torse | vie | chutes |
+| `veste-combat` | Veste de combat | torse | vie | regen |
 | `gants-tactiques` | Gants tactiques | gants | reparation | — |
 | `gants-sapeur` | Gants de sapeur | gants | reparation | vie |
 | `treillis` | Treillis | pantalon | regen | — |
 | `pantalon-cargo` | Pantalon cargo renforcé | pantalon | regen | vitesse |
 | `rangers` | Rangers | bottes | vitesse | — |
-| `bottes-jungle` | Bottes de jungle | bottes | vitesse | chutes |
+| `bottes-jungle` | Bottes de jungle | bottes | vitesse | vie |
 | `ceinture-munitions` | Ceinture de munitions | accessoire | vie | — |
-| `plaques-identite` | Plaques d'identité | accessoire | chutes | — |
+| `plaques-identite` | Plaques d'identité | accessoire | vie | — |
 | `montre-campagne` | Montre de campagne | accessoire | regen | — |
 | `trousse-secours` | Trousse de secours | accessoire | regen | vie |
-| `boussole` | Boussole | accessoire | chutes | — |
+| `boussole` | Boussole | accessoire | regen | — |
 | `masque-gaz` | Masque à gaz | accessoire | vie | regen |
-Bonus : principal 1 à 5 (+0,2 à +0,4 par niveau) ; secondaire **à l'épique et au légendaire seulement** (2, puis 2 ; +0,2 par niveau ; réponse 7) ; aucun `degats`, `cadence`, `portee`, `precision` (test Vitest). Caisses d'objets : mêmes chances, toutes les raretés tirables (16 objets × 5 raretés). Offres du jour sur ce catalogue.
+Bonus : principal 1 à 5 (+0,2 à +0,4 par niveau) ; secondaire **à l'épique et au légendaire seulement** (2, puis 2 ; +0,2 par niveau ; réponse 7) ; aucun `degats`, `cadence`, `portee`, `precision` ni `chutes` (test Vitest) ; accessoires : vie ou régénération. Caisses d'objets : mêmes chances, toutes les raretés tirables (16 objets × 5 raretés). Offres du jour sur ce catalogue.
 
 ### Écran Personnage
 - `EMPLACEMENTS = ['tete','gants','bottes','torse','accessoire','pantalon']` : colonne gauche Tête, Gants, Bottes ; droite Torse, Accessoire, Pantalon ; icônes en code (casque, gants, rangers, gilet, plaques, pantalon). Filtres de l'inventaire : Tout + un par emplacement (7 boutons, défilement horizontal à 667 px).
-- Statistiques affichées : vie, vitesse, réparation, régénération, chutes ; resserré (667 × 375, encoche) : quatre, proposé vie, vitesse, réparation, régénération (chutes retirée ; à confirmer au GO) ; vérifié à 667 × 375, 932 × 430, ordinateur large, encoche (`safe-area`).
+- Statistiques affichées (toutes tailles) : vie, vitesse, réparation, régénération (chutes retirée de l'équipement) ; vérifié à 667 × 375, 932 × 430, ordinateur large, encoche (`safe-area`).
 - Prix prélevés dans la même écriture que l'objet ; « Il manque N » (grisé, raison lue par les lecteurs d'écran) ; offre achetée : « Achetée ». Départ : nouveau joueur et joueur existant (section 3).
 
 ### Outils de débogage (écritures réelles, chacun avec confirmation)
 « Ajouter 10 000 bleus », « Donner l'inventaire de démonstration » (`inventaire-depart.json` réécrit sans armes, seul usage restant), « Débloquer tous les personnages », « Remettre la progression V0.8 à zéro » (efface `zs.save.v2` et le champ `son` de `zs.device.v1`, jamais `zs.save.v1` : on repart en nouveau joueur). Place (réponse 9) : petite icône « Débogage » dans l'en-tête du menu, à côté du menu à trois barres et du bouton plein écran (44 px, nom accessible, focus visible), qui ouvre un panneau des quatre outils. **Visibles seulement sur les canaux `source` et `dev`** : le canal `release` (Recette) fait partie de `CANAUX_DEBUG` pour le menu de la pause ; il est exclu ici, comme l'archive.
 
 ## 7. Tests prévus
-- **Vitest** : format et réparation champ par champ ; départ (vide, v1 seule : nouveau joueur et v1 intacte, v1 corrompue, v2 corrompue, v2 plus récente, indisponible) ; `ZS2` aller-retour, `ZS1` importé (remplacement), codes hostiles ; achats atomiques (solde suffisant, insuffisant, exact, deux achats concurrents) ; plafond 9 999 999 ; gains bleus (manche normale, renforcée, fin de monde) ; jaune jamais écrite ; mode essai sans écriture ; catalogue sans arme, caisses et offres sans arme, toutes les raretés tirables, inventaire plein à 100, **tirage identique à graine et catalogue égaux** ; statistiques effectives sans bonus d'attaque ; simulateur 10 000 suites (extension de `onglets-simulateur.js`).
+- **Vitest** : format et réparation champ par champ ; départ (vide, v1 seule : nouveau joueur et v1 intacte, v1 corrompue, v2 corrompue, v2 plus récente, indisponible) ; `ZS2` aller-retour, `ZS1` importé (remplacement), codes hostiles ; achats atomiques (solde suffisant, insuffisant, exact, deux achats concurrents) ; plafond 9 999 999 ; gains bleus (manche normale, renforcée, fin de monde) ; jaune jamais écrite ; mode essai sans écriture ; catalogue sans arme, caisses et offres sans arme, toutes les raretés tirables, inventaire plein à 100, **tirage identique à graine et catalogue égaux** ; statistiques effectives sans bonus d'attaque ni de chutes ; simulateur 10 000 suites (extension de `onglets-simulateur.js`).
 - **Playwright** (bureau, et menu en projet mobile en local) : compatibilité réelle V0.7 → V0.8 → V0.7 (réponse 5 : réduit à « la V0.7 démarre, garde sa propre progression et joue » ; V0.5 et V0.6 couvertes par les essais de la partie A) ; deux onglets réels ; partie jusqu'à une manche terminée, onglet fermé et rouvert : bleue gardée ; mort et « Quitter » : jaune perdue ; acheter, ouvrir, équiper, améliorer, fusionner, choisir, recharger ; outils de débogage présents en `dev`, absents en Recette ; aucune requête externe ; axe ; 44 px.
 - **Remplacés (jamais retirés)** : les assertions « aucune écriture » du menu (`menu.spec.js`, `menu-onglets.spec.js`, `boutique.spec.js`, `personnage.spec.js`, `ouverture.spec.js`, `studio.spec.js`, `sons-volumes.spec.js`, `sons-menu.spec.js`, `options-menu.spec.js`) deviennent « seules les écritures attendues » (clé, moment, contenu) ; les listes de clés (`argent.spec.js`, `sauvegarde.spec.js`, `graphics*.test.js`, `sauvegarde-*.test.js`) admettent `zs.save.v2` ; listes « avant / après » avec `scripts/tests/compter.mjs`. Budget : 120 s ajoutées au plus.
 
@@ -208,6 +208,10 @@ Bonus : principal 1 à 5 (+0,2 à +0,4 par niveau) ; secondaire **à l'épique e
 - Lighthouse de `jeu.html` : quelques modules de plus au démarrage du menu (fusion v2, catalogue lu plus tôt pour l'en-tête) ; mesuré en partie E.
 
 ## 9. Questions au propriétaire
-Les douze questions de la première version du plan ont reçu leurs réponses (section 0). Deux points restent à confirmer au GO :
-1. **Réponse 3** (« repartir de 0 ») : lecture retenue = **tout le monde repart de zéro** dans la V0.8 (niveaux de base et records à 0, `zs.save.v1` ni lue ni écrite) ; un code `ZS1` importé reste la seule façon de reprendre ses niveaux et son record. C'est bien cela ? (L'autre lecture : reprendre une fois la V0.7 au premier lancement, sans suivi ensuite.)
-2. **Écran resserré** (réponse 8) : les statistiques sont les effets de l'équipement et du personnage sur la partie : **Vie** (points de vie maximum, +12 par niveau), **Vitesse** (déplacement, +4 % par niveau, +40 % au plus), **Réparation** (pose d'une planche : 1,8 s, ×0,88 par niveau, 0,4 s au plus vite), **Régénération** (points de vie rendus par zombie tué : 1 + 1 par niveau), **Chutes** (fois où l'on tombe à terre et se relève avant de mourir : 1 + 1 par niveau, 5 niveaux au plus). Sur le petit écran, quatre tiennent : je propose de retirer « Chutes ». D'accord ?
+Toutes les questions ont reçu leur réponse (section 0, 2026-11-14) ; aucune n'est ouverte. Le plan attend le « GO 8h ».
+
+## 10. Idées (hors périmètre, notées pour d'autres lots)
+- Lot d'équilibrage : statistiques de base propres à chaque personnage, améliorées ensuite par l'équipement (les niveaux de base restent à 0 dans ce lot).
+- « Chutes » : compétence d'un personnage ou de certains objets légendaires.
+- Achats en monnaie jaune pendant la partie (lot 6, V0.9).
+- Équipement visible sur le personnage (silhouette de l'écran Personnage, ouverture 3D).
