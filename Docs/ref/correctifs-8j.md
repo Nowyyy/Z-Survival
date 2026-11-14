@@ -16,9 +16,16 @@
 | les deux | piliers (70) ; escaliers (déjà sans effet sur les tirs) | non (règle du prompt) |
 | extérieur | voitures (55), arbres, hélicoptère | non (pas des meubles ; ajoutables par la liste) |
 
-## Plan
-1. **Interface en 2K** : facteur `--ui-k` = min(2, max(1, hauteur / 1080)) posé sur la racine par `js/game/ui-echelle.js` (appelé par `js/game/ui.js`, au redimensionnement) ; `css/game-ui.css` redéfinit `--hud-fs`, `--hud-gap`, `--hud-target`, `--hud-pause-size`, `--hud-radius`, `--game-margin` × `--ui-k`, et l'unité `--u` du seul panneau d'Options de la partie ; ni `zoom` ni `transform`. Tests : captures au pixel (4 tailles × 4 écrans), mesures et chevauchements en grand.
-2. **Volumes** : pas 1, clavier par `event.code` (flèches ±1, Page ±10, Début, Fin), application au plus toutes les 150 ms pendant le glissement et au relâchement (le clic d'essai du menu suit). Tests e2e (menu et pause).
-3. **Message des portes** : `js/core/porte-message.js` (pur : porte fermée la plus proche de l'étage du joueur) et `js/game/porte-message.js` (texte, fondu, `aria-live`) ; distance dans `data/game/reglages-partie.json` (`porte.distance`) ; clé `game.porte.message`. Tests Vitest et e2e.
-4. **Sons** : `js/core/sons-coups.js` (pur, tirage à part) appliqué par `js/game/audio.js` avant le directeur ; probabilité `sonsZombies.probabilite` (0,25) du même fichier ; morts toujours sonores. Tests Vitest et e2e (journal des sons).
-5. **Tirs** : liste du propriétaire `data/game/tirs-traversables.json` → `npm run carte` vérifie les identifiants et écrit `tirs.world.json` ; `js/core/tir-traverse.js` (pur) retire les objets listés et perce les murs aux grilles pour les seuls tirs ; `?test=1&tirtraverse=0` vide la liste. Tests Vitest, e2e (grille de F8), trace logique.
+## Fait (lot 8j)
+1. **Interface en 2K** : `--ui-k` = 1 jusqu'à 1080 px de haut, puis hauteur / 1080, plafond 2 (`js/game/ui-echelle.js`, appelé par `js/game/ui.js`) ; `css/game-ui.css` reprend `--hud-fs`, `--hud-gap`, `--hud-radius`, `--hud-target`, `--hud-pause-size`, `--game-margin` × `--ui-k` (le reste est en `em`) ; ni `zoom` ni `transform` ; identique au pixel jusqu'à 1080 px. **Options plus denses sur PC** (demande du propriétaire en cours de lot) : unité des écrans Options (menu et partie) plafonnée à `--e5-u-max` = max(1,25 px, 100vh / 864) (`css/menu.css`, `.e5`) ; téléphones inchangés ; en partie, cibles et curseur × `--ui-k`.
+2. **Volumes** : pas de 1 %, clavier par `event.code` (flèches ±1, Page ±10, Début 0, Fin 100), réglage (et clic d'essai du menu) au plus toutes les 150 ms pendant le glissement, puis au relâchement ; `zs.device.v1` inchangé (entier 0 à 100, validé par `js/save/device-settings.js`, non modifié).
+3. **Portes** : `js/core/porte-message.js` (pur, lecture seule) et `js/game/porte-message.js` (texte à 66 % de la hauteur, fondu de 0,25 s dans `css/game.css`, `aria-live` poli) ; clé `game.porte.message` dans `fr.json` seulement (`en.json` n'a aucune clé `game.*` : le jeu est en français seul).
+4. **Sons** : `js/core/sons-coups.js` (pur, générateur propre au son) appliqué par `js/game/audio.js` avant le directeur des sons : coups reçus non mortels, coups au joueur, planches arrachées ; morts toujours.
+5. **Tirs** : `js/core/tir-traverse.js` (pur) : objets listés retirés et murs percés aux grilles **pour les tirs seulement** (`obstaclesTirs`, appelé par `syncSolids`) ; balles, laser et ligne de tir partagent la liste. Fenêtres : inchangées (ouvertures sans obstacle, planches comprises, comme avant le lot).
+
+## Régler sans lot
+- Distance du message : `data/game/reglages-partie.json` → `porte.distance` (unités, 20 à 2000 ; 200).
+- Sons : même fichier → `sonsZombies.probabilite` (0 à 1 ; 0,25) et `sonsZombies.types` (`zombieHit`, `zombieAttack`, `plankTorn`).
+- Traversables : `data/game/tirs-traversables.json` → `cartes.rez-de-chaussee.rdc` et `.etage` (identifiants) ; puis `npm run carte` (refuse un identifiant inconnu ou en double, un pilier, un escalier, un objet de 100 de haut ou plus, une grille hors mur ; écrit `tirs.world.json`), puis `npm test`.
+- Densité des Options sur PC : `css/menu.css`, `.e5` → `--e5-u-max` (1,25 px ; 864 = 1080 / 1,25). Facteur de l'interface : `js/game/ui-echelle.js` (1080, plafond 2).
+- Essais (jamais mémorisés, `?test=1`) : `&tirtraverse=0` (liste vide, tirs d'avant le lot), `&coups=1` (chaque coup sonne).
