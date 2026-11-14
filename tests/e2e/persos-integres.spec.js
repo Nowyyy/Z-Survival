@@ -343,10 +343,13 @@ test.describe('personnages intégrés (choix par défaut)', () => {
 
   test('?perso=, ?sang= et ?usure= ne déclenchent pas le mode essai : la sauvegarde reste écrite (store=local)', async ({ page }) => {
     await open(page, '&store=local&perso=B&sang=reduit&usure=2');
+    // Lot 8h : la progression v2 (zs.save.v2) est écrite à la fin d'une manche (la monnaie jaune, elle, n'est jamais écrite).
     const s = await page.evaluate(() => {
-      window.__zs.giveMoney(25);
+      window.__zs.step(3.2);
+      window.__zs.skipWave();
+      window.__zs.step(0.2);
       window.__zs.flushSave();
-      return { save: window.__zs.getState().save, stored: localStorage.getItem('zs.save.v1') !== null };
+      return { save: window.__zs.getState().save, stored: localStorage.getItem('zs.save.v2') !== null };
     });
     expect(s.save.readOnly).toBe(false);
     expect(s.stored).toBe(true);

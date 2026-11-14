@@ -31,7 +31,7 @@ export function createHud(dict, root = document) {
   const els = {
     chrono: el('hud-chrono-text'), bar: el('hud-bar'), life: el('hud-life'), chutes: el('hud-chutes'), chuteIcons: el('hud-chutes-icons'), chuteText: el('hud-chutes-text'),
     floor: el('hud-floor'), floorText: el('hud-floor-text'), trial: el('hud-trial'), wave: el('hud-wave'), waveText: el('hud-wave-text'), reinforced: el('hud-reinforced'),
-    money: el('hud-money'), moneyText: el('hud-money-text'), gain: el('hud-gain'), remaining: el('hud-remaining'), remainingText: el('hud-remaining-text'),
+    money: el('hud-money'), moneyText: el('hud-money-text'), gain: el('hud-gain'), gainBleu: el('hud-gain-bleu'), gainBleuText: el('hud-gain-bleu-text'), remaining: el('hud-remaining'), remainingText: el('hud-remaining-text'),
     next: el('hud-next'), nextText: el('hud-next-text'), kills: el('hud-kills-text'),
     down: el('down'), downBody: el('down-body'), downTitle: el('down-title-text'), downSub: el('down-sub'), downFill: el('down-fill'),
   };
@@ -92,6 +92,13 @@ export function createHud(dict, root = document) {
         setText(els.gain, gainText);
         setHidden(els.gain, gainText === '');
         els.gain.dataset.animate = extras.money?.gain?.animate === false ? 'false' : 'true';
+      }
+      // Lot 8h : « +N » bleu discret (fin de manche, fin du monde ; décoratif, aria-hidden : l'annonce de fin de manche le dit en texte).
+      const bleu = extras.money?.gainBleu?.visible ? extras.money.gainBleu.text : '';
+      if (els.gainBleu && changed('gainBleu', bleu)) {
+        setText(els.gainBleuText, bleu);
+        setHidden(els.gainBleu, bleu === '');
+        els.gainBleu.dataset.animate = extras.money?.gainBleu?.animate === false ? 'false' : 'true';
       }
       if (changed('chutes', extras.chutes)) {
         const n = Number.isInteger(extras.chutes) && extras.chutes > 0 ? extras.chutes : 0;

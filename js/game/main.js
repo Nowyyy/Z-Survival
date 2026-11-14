@@ -164,8 +164,8 @@ const zones = zonesJson ? zonesToWorld(parseZones(zonesJson), world.transform) :
 const layouts = buildLayouts({ rdc: { world, decor }, etage: upperWorld ? { world: upperWorld } : null, zones }, { empty: emptyMode, slack: camera.slack });
 const layout = layouts.rdc;
 
-// Sauvegarde (lot 4) : le dépôt est choisi d'après l'adresse (mémoire pour ?test=1, lecture seule pour les paramètres d'essai) ; la seule clé de stockage
-// est zs.save.v1. L'accès à localStorage peut lever (stockage bloqué) : le dépôt local passe alors à « indisponible », le jeu continue.
+// Sauvegarde (lot 4) : le dépôt est choisi d'après l'adresse (mémoire pour ?test=1, lecture seule pour les paramètres d'essai) ; lot 8h : progression v2
+// (zs.save.v2 ; zs.save.v1 n'est ni lue ni écrite). L'accès à localStorage peut lever (stockage bloqué) : le dépôt local passe à « indisponible ».
 const storage = (() => {
   try {
     return window.localStorage;
@@ -178,13 +178,14 @@ const { repository, mode: saveMode } = createRepository({
   search,
   storage,
   params: saveParams,
+  format: 'v2',
   listen: (handler) => {
     window.addEventListener('storage', handler);
     return () => window.removeEventListener('storage', handler);
   },
   persist: () => navigator.storage?.persist?.(),
   // Lot 5o : canal entre onglets (défaut des deux onglets) ; save-merge.js n'est chargé que si un autre onglet se manifeste. Sans BroadcastChannel : null.
-  channel: () => (typeof BroadcastChannel === 'function' ? new BroadcastChannel(saveCfg.storageKey) : null),
+  channel: () => (typeof BroadcastChannel === 'function' ? new BroadcastChannel(saveCfg.v2.storageKey) : null),
   merge: () => import('../core/save-merge.js'),
   now: () => Date.now(),
 });
@@ -219,7 +220,7 @@ const ctx = {
   },
   seed: Number.isFinite(seedParam) ? seedParam : Date.now() % 2147483647,
   seedRun: 0,
-  levels: niveauxPartie(readLevels(search, statsCfg, loadedSave.status === 'ok' ? loadedSave.save : null)),
+  levels: niveauxPartie(readLevels(search, statsCfg, loadedSave.status === 'ok' ? { stats: loadedSave.save.niveaux } : null)),
   repository,
   mode: saveMode,
   economy: makeEconomy(economyCfg, enemies),
@@ -231,6 +232,7 @@ const ctx = {
   audioCfg,
   audioMaterials: materialsCfg,
   canal, // lot 5l : canal de la page (null : refusé) ; l'icône de débogage de la pause n'existe que sur les canaux de débogage
+  monde: optionPartie().monde ?? 'batiment', // lot 8h : monde de la partie (record par monde et par mode)
   modePartie: optionPartie().mode, // lot 8b : option de démarrage posée par le menu (histoire, ou infini sans paramètre d'adresse) ; partie directe : histoire
 };
 

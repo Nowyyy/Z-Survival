@@ -1,5 +1,5 @@
 {
-  "_provisoire": "Lot 4 : toutes les valeurs sont provisoires. Montants FIXES pour l'instant : un zombie tué rapporte 10 (killWaveGrowth 0 : aucune hausse avec la manche), une planche posée rapporte repairMoney (1) ; les améliorations les feront évoluer, à régler en jouant (équilibrage non jugé par l'agent). Lu par js/core/economy.js, js/core/money-gain.js et js/core/save.js. Gain d'un zombie tué par une balle = round(bounty[type] × min(killGrowthCap, 1 + killWaveGrowth × (manche − 1))), bounty vient de enemies.json. Bonus de fin de manche = round((waveBonusBase + waveBonusPerWave × manche) × (renforcée ? reinforcedBonusMul : 1)). worldBonus : une fois par partie, à la fin du monde. maxMoney : plafond du solde. gainWindowMs et gainThrottleMs : agrégation et fréquence du « +N » affiché dans le HUD.",
+  "_provisoire": "Lot 4 : toutes les valeurs sont provisoires. Montants FIXES pour l'instant : un zombie tué rapporte 10 (killWaveGrowth 0 : aucune hausse avec la manche), une planche posée rapporte repairMoney (1) ; les améliorations les feront évoluer, à régler en jouant (équilibrage non jugé par l'agent). Lu par js/core/economy.js, js/core/money-gain.js et js/core/save.js. Gain d'un zombie tué par une balle = round(bounty[type] × min(killGrowthCap, 1 + killWaveGrowth × (manche − 1))), bounty vient de enemies.json. Bonus de fin de manche = round((waveBonusBase + waveBonusPerWave × manche) × (renforcée ? reinforcedBonusMul : 1)). worldBonus : une fois par partie, à la fin du monde. maxMoney : plafond du solde. gainWindowMs et gainThrottleMs : agrégation et fréquence du « +N » affiché dans le HUD. Lot 8h (deux monnaies, Docs/ref/sauvegarde-v2.md) : les gains des zombies (10) et des planches (1) sont la monnaie JAUNE de la partie, remise à 0 à chaque partie et jamais écrite (maxMoney : son plafond) ; le bonus de fin de manche (waveBonusBase, waveBonusPerWave, reinforcedBonusMul) et la prime de fin du monde (worldBonus) sont la monnaie BLEUE, gardée pour toujours (écrite à chaque manche terminée, en histoire et en infini) ; maxBleu : plafond du solde bleu. Modifiables par le propriétaire sans lot.",
   "killWaveGrowth": 0,
   "repairMoney": 1,
   "killGrowthCap": 3,
@@ -8,6 +8,7 @@
   "reinforcedBonusMul": 1.5,
   "worldBonus": 500,
   "maxMoney": 9999999,
+  "maxBleu": 9999999,
   "gainWindowMs": 1200,
   "gainThrottleMs": 250
 }

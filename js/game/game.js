@@ -166,10 +166,8 @@ export function createGame(ctx) {
   // Argent et sauvegarde (lot 4) : js/game/bank.js relie les événements de la partie à l'économie (js/core/economy.js) et au dépôt de sauvegarde (js/save/).
   // Son horloge est le temps de jeu cumulé (millisecondes, jamais remis à zéro par « Rejouer »), la date enregistrée est l'horloge murale.
   let bankMs = 0;
-  // Lot 8b : mode infini (option du menu) : argent écrit comme d'habitude, mais ni meilleure manche ni meilleur nombre de tués : le record du mode
-  // infini n'est pas encore gardé (lot 8h) et ne remplace pas celui de l'histoire (commitDelta garde le maximum : 0 ne change rien).
-  const depot = ctx.modePartie === 'infini' ? { ...ctx.repository, commit: (delta, at) => ctx.repository.commit({ ...delta, bestWave: 0, bestKills: 0 }, at) } : ctx.repository;
-  const bank = createBank({ repository: depot, mode: ctx.mode, economy: ctx.economy, save: ctx.saveCfg, clock: () => bankMs, wall: () => Date.now(), reducedMotion: reduced });
+  // Lot 8h : deux monnaies (jaune de la partie, bleue gardée) ; mode (histoire, infini) et monde de la partie : record de ce mode et de ce monde.
+  const bank = createBank({ repository: ctx.repository, mode: ctx.mode, economy: ctx.economy, save: ctx.saveCfg, clock: () => bankMs, wall: () => Date.now(), reducedMotion: reduced, partie: { mode: ctx.modePartie, monde: ctx.monde } });
   // Mise à l'abri de la sauvegarde quand la page est cachée ou fermée (en plus de l'écriture à l'ouverture de la pause).
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) bank.flush('hidden');
@@ -809,7 +807,7 @@ export function createGame(ctx) {
       ctx.ui.setLive(`${ctx.dict[ZONE_TEXTS.liveWorld]}${end?.record ? ` ${fmt(ctx.dict[MONEY_TEXTS.liveRecord], { n: end.reached })}` : ''}`);
       ctx.ui.showEnd(sim.kills, waveInfo(sim.waves).wave, 'world', end);
     }
-    bank.tick(); // commit regroupé échu (toutes les autosaveMs de temps de jeu), « +N » du HUD
+    bank.tick(); // « +N » jaune et bleu du HUD (lot 8h : plus d'écriture regroupée, la monnaie jaune n'est jamais écrite)
   }
 
   // Panneau de pause (E2-6) : « Prochaine zone : manche N » tant qu'une porte active reste fermée ; écrit seulement si la valeur change.
@@ -1043,7 +1041,7 @@ export function createGame(ctx) {
       unitsPerPixel: size.unitsPerPixel,
     });
     P?.mark('effets');
-    hud.update(sim.player, sim.kills, waveInfo(sim.waves), { chutes: sim.down.chutes, floor: multi ? pf() : null, maxWave: zoneCfg && !sim.waves.endless ? zoneCfg.wavesPerWorld : null, money: { balance: bank.balance(), gain: bank.gain() }, time: sim.time, trial: trialMode });
+    hud.update(sim.player, sim.kills, waveInfo(sim.waves), { chutes: sim.down.chutes, floor: multi ? pf() : null, maxWave: zoneCfg && !sim.waves.endless ? zoneCfg.wavesPerWorld : null, money: { balance: bank.balance(), gain: bank.gain(), gainBleu: bank.gainBleu() }, time: sim.time, trial: trialMode });
     floorFade.set(sim.trView.veil);
     hud.updateDown(sim.down, sim.dead, cfg.down); // lot 3l : E2-10 dans la colonne centrale du HUD (js/game/hud.js)
     world.windowMeshes?.sync(sim.win); // pastille de la planche en cours de réparation : elle se remplit peu à peu

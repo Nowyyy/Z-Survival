@@ -479,14 +479,14 @@ test.describe('achats et résultats (E3-4, E3-5)', () => {
 });
 
 test.describe('« JOUER » avec un objet obtenu', () => {
-  const KEY = 'zs.save.v1';
+  const KEY = 'zs.save.v2'; // lot 8h : progression v2
   const SAVE_STATS = { degats: 2, portee: 1, precision: 0, cadence: 3, vitesse: 9, vie: 1, regen: 0, chutes: 1, reparation: 0 };
   test('gants obtenus (caisse d\'élite) et portés : la partie reçoit les niveaux de la fonction pure ; argent et sauvegarde inchangés, aucun objet écrit', async ({ page }) => {
     test.setTimeout(150_000);
     await page.addInitScript(([k, stats]) => {
       if (sessionStorage.getItem('zs.test.pose')) return;
       sessionStorage.setItem('zs.test.pose', '1');
-      localStorage.setItem(k, JSON.stringify({ v: 1, rev: 1, savedAt: 0, money: 500, earned: 500, stats, records: { bestWave: 3, bestKills: 0, runs: 1, worldsCompleted: 0 } }));
+      localStorage.setItem(k, JSON.stringify({ v: 2, rev: 1, savedAt: 0, bleu: { gagne: 500, depense: 0 }, niveaux: stats, records: { histoire: { batiment: 3 }, infini: {} } })); // lot 8h : progression v2
     }, [KEY, SAVE_STATS]);
     await espionStockage(page);
     await graines(page, [G_GANTS]);
@@ -515,7 +515,7 @@ test.describe('« JOUER » avec un objet obtenu', () => {
     expect([p.source, p.niveaux]).toEqual(['menu', attendu]);
     await page.evaluate(() => window.__zs.flushSave());
     const apres = JSON.parse(await page.evaluate((k) => localStorage.getItem(k), KEY));
-    expect([apres.money, apres.stats]).toEqual([500, JSON.parse(avant).stats]);
+    expect([apres.bleu, apres.niveaux]).toEqual([{ gagne: 500, depense: 0 }, JSON.parse(avant).niveaux]);
     expect(Object.keys(apres).sort()).toEqual(Object.keys(JSON.parse(avant)).sort());
     await page.evaluate(() => localStorage.clear());
   });

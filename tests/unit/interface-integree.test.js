@@ -301,19 +301,19 @@ describe('structure de jeu.html', () => {
   // Retours du propriétaire : « Nouveau record » à la place d'« Argent gagné » (colonne de gauche), « Argent gagné » entre « Zombies tués » et « Solde » ; note
   // « Écran de fin provisoire » retirée.
   // Retour du propriétaire : le symbole d'argent vient après la somme (pause, mort, victoire).
-  it('pièce après la somme : « Solde : 234 », « Argent gagné : 154 », « Bonus de fin de monde : 500 » puis le symbole', () => {
-    for (const id of ['pause-balance', 'end-earned', 'end-bonus']) {
+  it('pièce après la somme : « Monnaie jaune : 234 », « Monnaie jaune perdue : 154 » puis la pièce ; lot 8h : bleue gagnée, prime du monde, solde bleu puis la gemme bleue', () => {
+    for (const [id, icone] of [['pause-balance', 'hud-coin'], ['end-earned', 'hud-coin'], ['end-bonus', 'hud-gem'], ['end-bleu', 'hud-gem'], ['end-balance', 'hud-gem']]) {
       const line = html.slice(at(`id="${id}"`), html.indexOf('</p>', at(`id="${id}"`)));
-      expect(line.indexOf(`id="${id}-text"`), id).toBeLessThan(line.indexOf('hud-coin'));
-      expect(line.indexOf('hud-coin'), id).toBeGreaterThan(0);
+      expect(line.indexOf(`id="${id}-text"`), id).toBeLessThan(line.indexOf(icone));
+      expect(line.indexOf(icone), id).toBeGreaterThan(0);
     }
   });
 
-  it('fin : colonne de gauche vague, record, meilleure manche ; colonne de droite tués, argent gagné, bonus, solde ; plus de note « provisoire »', () => {
+  it('fin : colonne de gauche vague, record, meilleure manche ; colonne de droite tués, jaune perdue, prime du monde, bleue gagnée, solde bleu (lot 8h) ; plus de note « provisoire »', () => {
     const end = html.slice(at('id="end-panel"'), at('id="rotate"'));
     const cols = end.split('class="facts-col"').slice(1).map((c) => [...c.matchAll(/id="(end-[a-z]+)"/g)].map((m) => m[1]).filter((i) => !i.endsWith('text')));
     expect(cols[0]).toEqual(['end-wave', 'end-record', 'end-best']);
-    expect(cols[1].slice(0, 4)).toEqual(['end-kills', 'end-earned', 'end-bonus', 'end-balance']);
+    expect(cols[1].slice(0, 5)).toEqual(['end-kills', 'end-earned', 'end-bonus', 'end-bleu', 'end-balance']);
     expect(end).not.toContain('game.end.provisional');
     expect(fr['game.end.provisional']).toBeUndefined();
     expect(readFileSync('js/game/ui.js', 'utf8')).toMatch(/els\.quit\.addEventListener\('click', \(\) => ui\.openQuit\(\)\)/); // lot 8a (avant : aucun écouteur)

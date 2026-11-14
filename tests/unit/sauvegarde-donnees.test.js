@@ -33,7 +33,7 @@ const code = (f) => readFileSync(f, 'utf8').split('\n').filter((l) => !l.trim().
 describe('data/game/economy.json', () => {
   it('est marqué provisoire et complet (dix clés de réglage)', () => {
     expect(typeof economy._provisoire).toBe('string');
-    expect(Object.keys(economy).filter((k) => !k.startsWith('_')).sort()).toEqual(['gainThrottleMs', 'gainWindowMs', 'killGrowthCap', 'killWaveGrowth', 'maxMoney', 'reinforcedBonusMul', 'repairMoney', 'waveBonusBase', 'waveBonusPerWave', 'worldBonus']);
+    expect(Object.keys(economy).filter((k) => !k.startsWith('_')).sort()).toEqual(['gainThrottleMs', 'gainWindowMs', 'killGrowthCap', 'killWaveGrowth', 'maxBleu', 'maxMoney', 'reinforcedBonusMul', 'repairMoney', 'waveBonusBase', 'waveBonusPerWave', 'worldBonus']);
   });
 
   it('a les valeurs du lot', () => {
@@ -130,7 +130,7 @@ describe('textes', () => {
   });
 
   it('les lignes de la pause et de l\'état de la sauvegarde sont écrites en toutes lettres', () => {
-    expect(fr['game.pause.balance']).toBe('Solde : {n}');
+    expect(fr['game.pause.balance']).toBe('Monnaie jaune : {n}'); // lot 8h : la pause montre la monnaie jaune de la partie
     expect(fr['game.save.status.saved']).toBe('Sauvegarde : enregistrée');
     expect(fr['game.save.status.pending']).toBe('Sauvegarde : en attente');
     expect(fr['game.save.status.failed']).toBe('Sauvegarde : échec, nouvelle tentative');
@@ -142,6 +142,8 @@ describe('textes', () => {
   it('les lignes de l\'écran de fin contiennent leurs paramètres', () => {
     expect(fr['game.end.earned']).toContain('{n}');
     expect(fr['game.end.balance']).toContain('{n}');
+    expect(fr['game.end.bleu']).toContain('{n}'); // lot 8h
+    expect(fr['game.end.bestInfini']).toContain('{n}');
     expect(fr['game.end.best']).toContain('{n}');
     expect(fr['game.end.worldBonus']).toContain('{n}');
     expect(fr['game.hud.moneyLabel']).toContain('{n}');

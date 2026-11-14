@@ -476,13 +476,13 @@ test.describe('sous-menus Inventaire, Fusion, Personnages (E9-2 à E9-4)', () =>
 });
 
 // --- « JOUER » : niveaux effectifs transmis à la partie (option de démarrage), rien d'écrit -----------------------------------------------
-const KEY = 'zs.save.v1';
+const KEY = 'zs.save.v2'; // lot 8h : progression v2
 const SAVE_STATS = { degats: 2, portee: 1, precision: 0, cadence: 3, vitesse: 9, vie: 1, regen: 0, chutes: 1, reparation: 0 };
 async function poserSauvegarde(page) {
   await page.addInitScript(([k, stats]) => {
     if (sessionStorage.getItem('zs.test.pose')) return;
     sessionStorage.setItem('zs.test.pose', '1');
-    localStorage.setItem(k, JSON.stringify({ v: 1, rev: 1, savedAt: 0, money: 500, earned: 500, stats, records: { bestWave: 3, bestKills: 0, runs: 1, worldsCompleted: 0 } }));
+    localStorage.setItem(k, JSON.stringify({ v: 2, rev: 1, savedAt: 0, bleu: { gagne: 500, depense: 0 }, niveaux: stats, records: { histoire: { batiment: 3 }, infini: {} } })); // lot 8h : progression v2
   }, [KEY, SAVE_STATS]);
 }
 const niveauxPartie = (page) => page.evaluate(() => { const s = window.__zs.getState(); return { source: s.stats.source, niveaux: { ...s.stats.levels, ...s.stats.extraLevels } }; });
@@ -532,8 +532,8 @@ test.describe('« JOUER » : niveaux de la partie', () => {
     // Rien de nouveau dans la sauvegarde : mêmes niveaux, même argent, aucun champ d'objet ni de personnage.
     await page.evaluate(() => window.__zs.flushSave());
     const apres = JSON.parse(await page.evaluate((k) => localStorage.getItem(k), KEY));
-    expect(apres.stats).toEqual(JSON.parse(avant).stats);
-    expect(apres.money).toBe(500);
+    expect(apres.niveaux).toEqual(JSON.parse(avant).niveaux);
+    expect(apres.bleu).toEqual({ gagne: 500, depense: 0 });
     expect(Object.keys(apres).sort()).toEqual(Object.keys(JSON.parse(avant)).sort());
     expect(await page.evaluate(() => Object.keys(localStorage).sort())).toEqual([KEY]);
     await page.evaluate(() => localStorage.clear());

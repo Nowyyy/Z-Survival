@@ -364,7 +364,7 @@ test.describe('états du jeu', () => {
     await expect(page.locator('#end-panel')).toBeVisible({ timeout: 60_000 });
     await expect(page.locator('#end-title')).toHaveText('Monde terminé');
     await expect(page.locator('#end-bonus')).toBeVisible();
-    await expect(page.locator('#end-save')).toHaveText('Mode essai : cet argent n\'est pas enregistré');
+    await expect(page.locator('#end-save')).toHaveText('Mode essai : rien n\'est enregistré'); // lot 8h
     expect(await page.evaluate(() => localStorage.length)).toBe(0);
     await page.goto('/jeu.html?test=1&fin=monde&vhs=0'); // ?test=1 seul : sauvegarde en mémoire, pas en lecture seule
     await waitReady(page);

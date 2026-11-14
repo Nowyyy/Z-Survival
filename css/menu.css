@@ -540,7 +540,7 @@
   align-items: center;
   gap: 6px;
   margin: 0;
-  color: var(--color-money);
+  color: var(--color-money-blue); /* lot 8h : monnaie bleue */
   font-weight: var(--font-weight-bold);
   font-size: max(15px, calc(18 * var(--u)));
   font-variant-numeric: tabular-nums;

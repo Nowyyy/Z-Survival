@@ -450,10 +450,13 @@ test.describe('compatibilité V0.7 ↔ V0.8, même origine', () => {
     await expect(page.locator('#state-list')).toHaveAttribute('data-state', 'empty');
     await replaceWith(page, CODE);
     await expect(page.locator('#live')).toHaveText('Sauvegarde importée.');
+    // 2 bis. La partie de la V0.8 joue : la manche terminée rapporte 12 bleus, écrits dans zs.save.v2 ; zs.save.v1 intacte.
+    const c = await jouer(page, 'dev');
+    expect(c.time).toBeGreaterThan(1);
     const apres08 = await lire(page);
     expect(apres08[V1]).toBe(v1);
     const v2 = apres08[KEY];
-    expect(JSON.parse(v2).bleu).toEqual({ gagne: 5678, depense: 4444 });
+    expect(JSON.parse(v2).bleu).toEqual({ gagne: 5678 + 12, depense: 4444 });
     // 3. V0.7 rejoue : elle relit sa progression, l'augmente, et ne touche jamais zs.save.v2.
     const b = await jouer(page, 'Recette');
     expect(b.time).toBeGreaterThan(1);
@@ -462,7 +465,7 @@ test.describe('compatibilité V0.7 ↔ V0.8, même origine', () => {
     expect(apres07[KEY]).toBe(v2);
     // 4. V0.8 : sa progression est là, intacte.
     await page.goto(`${BASE}/dev/sauvegarde.html`);
-    await expect(page.locator('#state-list')).toContainText('Monnaie bleue1234');
+    await expect(page.locator('#state-list')).toContainText('Monnaie bleue1246');
     expect((await lire(page))[KEY]).toBe(v2);
   });
 });

@@ -214,7 +214,7 @@ test.describe('sons intégrés : ?sons=', () => {
     await waitReady(page);
     const s = (await page.evaluate(() => window.__zs.getState())).save;
     expect(s).toMatchObject({ readOnly: false, reasons: [] });
-    const keys = await page.evaluate(() => Object.keys(localStorage).filter((k) => k !== 'zs.save.v1'));
+    const keys = await page.evaluate(() => Object.keys(localStorage).filter((k) => k !== 'zs.save.v2'));
     expect(keys).toEqual([]);
     expect(await page.evaluate(() => sessionStorage.length)).toBe(0);
   });

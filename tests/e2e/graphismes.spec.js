@@ -15,7 +15,7 @@ import { parseGraphics } from '../../js/core/graphics.js';
 const SIZE = { width: 667, height: 375 };
 const PRESETS = ['faible', 'moyen', 'eleve', 'auto'];
 const DEVICE = 'zs.device.v1';
-const SAVE = 'zs.save.v1';
+const SAVE = 'zs.save.v2'; // lot 8h : progression v2
 const NOISE = /GL Driver|GPU stall|ReadPixels/;
 const cfg = JSON.parse(readFileSync('data/game/ui-atelier.json', 'utf8'));
 const backgrounds = backgroundsFrom(tokensFromCss(readFileSync('css/tokens.css', 'utf8')), cfg.worstBackgrounds);

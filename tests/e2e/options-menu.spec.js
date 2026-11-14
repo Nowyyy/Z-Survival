@@ -8,7 +8,7 @@ import AxeBuilder from '@axe-core/playwright';
 const REF = { width: 932, height: 430 };
 const SIZES = [REF, { width: 667, height: 375 }, { width: 1440, height: 900 }];
 const DEVICE = 'zs.device.v1';
-const SAVE = 'zs.save.v1';
+const SAVE = 'zs.save.v2'; // lot 8h : progression v2 (les Options ne l'écrivent jamais)
 const BRUIT = /GL Driver Message|GPU stall|swiftshader|WebGL/i; // messages du rendu logiciel de Chromium, sans rapport avec la page
 const JEU = /\/vendor\/three\/|\/js\/game\/(main|game|world|lamps|lights)\.js$|\/data\/game\/(textures|sounds|world|lumieres)\.json$|\/maps\//;
 
@@ -192,7 +192,7 @@ test.describe('page Options du menu (E5)', () => {
     expect((await page.evaluate(() => window.__zs.getState().audio))).toMatchObject({ muted: true, volume: 70 });
   });
 
-  test('aucun fichier de Three.js ni du jeu chargé en ouvrant Options ; après « JOUER », la partie utilise le préréglage et le réglage au lancement choisis (?store=local) ; zs.device.v1 dans ses seuls champs, zs.save.v1 intact', async ({ page, baseURL }) => {
+  test('aucun fichier de Three.js ni du jeu chargé en ouvrant Options ; après « JOUER », la partie utilise le préréglage et le réglage au lancement choisis (?store=local) ; zs.device.v1 dans ses seuls champs, zs.save.v2 intact (lot 8h)', async ({ page, baseURL }) => {
     test.setTimeout(150_000);
     const o = surveiller(page, baseURL);
     await page.addInitScript(() => {

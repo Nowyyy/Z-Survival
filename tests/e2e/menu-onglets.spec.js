@@ -5,7 +5,7 @@ import AxeBuilder from '@axe-core/playwright';
 
 const REF = { width: 932, height: 430 };
 const SIZES = [REF, { width: 667, height: 375 }, { width: 1440, height: 900 }];
-const KEY = 'zs.save.v1';
+const KEY = 'zs.save.v2'; // lot 8h : progression v2 (zs.save.v1 n'est plus lue)
 const BRUIT = /GL Driver Message|GPU stall|swiftshader|WebGL/i; // messages du rendu logiciel de Chromium, sans rapport avec la page
 
 function surveiller(page, baseURL) {
@@ -25,7 +25,7 @@ async function poserRecord(page, bestWave) {
   await page.addInitScript(([k, n]) => {
     if (sessionStorage.getItem('zs.test.pose')) return; // une seule fois : les rechargements gardent ce que le jeu a écrit
     sessionStorage.setItem('zs.test.pose', '1');
-    localStorage.setItem(k, JSON.stringify({ v: 1, rev: 1, savedAt: 0, money: 0, earned: 0, records: { bestWave: n, bestKills: 0, runs: 1, worldsCompleted: 0 } }));
+    localStorage.setItem(k, JSON.stringify({ v: 2, rev: 1, savedAt: 0, records: { histoire: { batiment: n }, infini: {} }, profil: { partiesHistoire: 1 } })); // lot 8h : record de l'histoire du bâtiment
   }, [KEY, bestWave]);
 }
 
@@ -438,7 +438,7 @@ test.describe('onglet Infini (E8-4) et mode infini', () => {
     expect(ecart, `premier écart au pas ${ecart}`).toBe(-1);
   });
 
-  test('?store=local : visite du menu sans écriture ; en mode infini, l\'argent gagné est écrit comme dans une partie normale, le record n\'est pas gardé', async ({ page }) => {
+  test('?store=local : visite du menu sans écriture ; en mode infini (lot 8h), la bleue des manches est écrite, la jaune jamais, le record de l\'infini est séparé de celui de l\'histoire', async ({ page }) => {
     test.setTimeout(150_000);
     await poserRecord(page, 12);
     await page.addInitScript(() => {
@@ -465,10 +465,10 @@ test.describe('onglet Infini (E8-4) et mode infini', () => {
       return { s: JSON.parse(localStorage.getItem(k)), vague: zs.getState().waves.wave };
     }, KEY);
     expect(apres.vague).toBe(16);
-    expect(apres.s.money).toBeGreaterThanOrEqual(77); // argent gardé comme dans une partie normale (gain de test et bonus de manche)
-    expect(apres.s.earned).toBe(apres.s.money);
-    expect(apres.s.records.bestWave).toBe(12); // record du mode infini pas encore gardé (lot 8h) : celui de l'histoire reste
-    expect(apres.s.rev).toBeGreaterThan(1); // écrit dans zs.save.v1 (révision suivante)
+    expect(apres.s.bleu.gagne).toBe(60); // bonus bleu de la manche 15, renforcée : (10 + 2 × 15) × 1,5 ; la jaune (77) n'est jamais écrite
+    expect(apres.s.records).toEqual({ histoire: { batiment: 12 }, infini: { 'monde-2': 16 } }); // record de l'infini de la carte jouée, celui de l'histoire reste
+    expect(apres.s.profil.partiesInfini).toBe(1);
+    expect(apres.s.rev).toBeGreaterThan(1); // écrit dans zs.save.v2 (révision suivante)
     await page.evaluate(() => localStorage.clear());
   });
 });
