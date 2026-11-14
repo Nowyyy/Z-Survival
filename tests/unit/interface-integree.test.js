@@ -305,8 +305,13 @@ describe('structure de jeu.html', () => {
   // Retours du propriétaire : « Nouveau record » à la place d'« Argent gagné » (colonne de gauche), « Argent gagné » entre « Zombies tués » et « Solde » ; note
   // « Écran de fin provisoire » retirée.
   // Retour du propriétaire : le symbole d'argent vient après la somme (pause, mort, victoire).
-  it('pièce après la somme : « Monnaie jaune : 234 », « Monnaie jaune perdue : 154 » puis la pièce ; lot 8h : bleue gagnée, prime du monde, solde bleu puis la gemme bleue', () => {
-    for (const [id, icone] of [['pause-balance', 'hud-coin'], ['end-earned', 'hud-coin'], ['end-bonus', 'hud-gem'], ['end-bleu', 'hud-gem'], ['end-balance', 'hud-gem']]) {
+  it('pièce après la somme : « Monnaie jaune perdue : 154 » puis la pièce (pause : gemme puis solde bleu, retour du propriétaire) ; lot 8h : bleue gagnée, prime du monde, solde bleu puis la gemme bleue', () => {
+    // Retour du propriétaire après le lot 8j : la pause montre le solde bleu, gemme PUIS montant (comme l'en-tête du menu), sans « Monnaie jaune ».
+    const pause = html.slice(at('id="pause-balance"'), html.indexOf('</p>', at('id="pause-balance"')));
+    expect(pause.indexOf('hud-gem')).toBeGreaterThan(0);
+    expect(pause.indexOf('hud-gem')).toBeLessThan(pause.indexOf('id="pause-balance-text"'));
+    expect(pause).not.toContain('hud-coin');
+    for (const [id, icone] of [['end-earned', 'hud-coin'], ['end-bonus', 'hud-gem'], ['end-bleu', 'hud-gem'], ['end-balance', 'hud-gem']]) {
       const line = html.slice(at(`id="${id}"`), html.indexOf('</p>', at(`id="${id}"`)));
       expect(line.indexOf(`id="${id}-text"`), id).toBeLessThan(line.indexOf(icone));
       expect(line.indexOf(icone), id).toBeGreaterThan(0);

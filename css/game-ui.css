@@ -265,11 +265,18 @@
   stroke-linejoin: round;
 }
 
-/* Retour du propriétaire après le lot 8j : « Monnaie bleue : solde (+gain) » sous la vague, quelques secondes après chaque fin de manche
+/* Retour du propriétaire après le lot 8j : gemme bleue puis « solde (+gain) » sous la vague, quelques secondes après chaque fin de manche
    (js/game/bleu-manche.js) ; même bloc que la vague, texte de la couleur de la monnaie bleue (contraste vérifié comme le « +N » bleu). */
 .hud-bleu-manche {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3em;
   color: var(--color-money-blue);
   white-space: nowrap;
+}
+
+.hud-bleu-manche[hidden] {
+  display: none;
 }
 
 .hud-gain.hud-gain-bleu {

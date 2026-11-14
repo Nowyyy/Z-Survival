@@ -493,7 +493,10 @@ test.describe('mode essai', () => {
     expect((await state(page)).save.balance).toBe(10);
     await page.getByRole('button', { name: 'Pause' }).click();
     await expect(page.locator('#pause-save')).toHaveCount(0); // lot 3l (retour du propriétaire) : l'état de la sauvegarde n'est plus affiché dans la pause ; il est vérifié dans getState().save (readonly)
-    await expect(page.locator('#pause-balance')).toHaveText('Monnaie jaune : 10');
+    // Retour du propriétaire après le lot 8j : la pause montre le solde bleu (gemme puis montant ; « Monnaie bleue : » pour les lecteurs d'écran), plus la jaune.
+    await expect(page.locator('#pause-balance-text')).toHaveText('300');
+    await expect(page.locator('#pause-balance .sr-only')).toHaveText('Monnaie bleue :');
+    await expect(page.locator('#pause-balance svg.hud-gem')).toHaveCount(1);
     await page.getByRole('button', { name: 'Reprendre' }).click();
     await page.evaluate(() => { window.__zs.setChutes(0); window.__zs.downPlayer(); });
     await step(page, 0.3);
@@ -717,11 +720,14 @@ test.describe('interface', () => {
     await expect(page.locator('#hud-gain')).toBeHidden();
   });
 
-  test('pause : « Monnaie jaune » à côté de « PAUSE » (lot 3l : plus d\'état de la sauvegarde), le panneau tient à 667×375, aucune cible sous 44 px', async ({ page }) => {
+  test('pause : solde bleu (gemme puis montant, retour du propriétaire après le lot 8j ; avant : « Monnaie jaune ») à côté de « PAUSE » (lot 3l : plus d\'état de la sauvegarde), le panneau tient à 667×375, aucune cible sous 44 px', async ({ page }) => {
     await open(page);
     await page.evaluate(() => window.__zs.giveMoney(1234));
     await page.getByRole('button', { name: 'Pause' }).click();
-    await expect(page.locator('#pause-balance')).toHaveText(`Monnaie jaune : 1${String.fromCharCode(0x202f)}234`);
+    const bleu = (await state(page)).save.bleu.solde;
+    await expect(page.locator('#pause-balance-text')).toHaveText(bleu.toLocaleString('fr-FR').replace(/\u00a0/g, String.fromCharCode(0x202f)));
+    await expect(page.locator('#pause-balance')).not.toContainText('jaune');
+    expect(await page.locator('#pause-balance').evaluate((n) => n.firstElementChild.classList.contains('hud-gem'))).toBe(true);
     expect((await state(page)).save.status).toBe('saved'); // lot 3l (retour du propriétaire) : l'état de la sauvegarde n'est plus affiché dans la pause ; il est vérifié dans getState().save
     const m = await page.evaluate(() => {
       const panel = document.querySelector('#pause-panel .panel');
