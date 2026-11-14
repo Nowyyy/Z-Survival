@@ -31,4 +31,4 @@
 - Essais (jamais mémorisés, `?test=1`) : `&tirtraverse=0` (liste vide, tirs d'avant le lot), `&coups=1` (chaque coup sonne).
 
 ## Retours du propriétaire après la fusion
-- Meubles de la carte : boîte de collision = rectangle dessiné (fin de la boîte de « chaise » du lot 3c) ; tirs par-dessus ce qui est dessiné sous l'arme (43) seulement ; cône arrêté comme le laser (`longueursCone`, `js/core/tir-traverse.js`) ; message des portes à 60 ; « Monnaie bleue : solde (+gain) » sous la vague en fin de manche (`js/game/bleu-manche.js`).
+- Meubles de la carte : boîte de collision = rectangle dessiné (fin de la boîte de « chaise » du lot 3c) ; tirs par-dessus ce qui est dessiné sous l'arme (43) seulement ; cône arrêté comme le laser (`longueursCone`, `js/core/tir-traverse.js`) ; message des portes à 60 ; gemme bleue puis « solde (+gain) » sous la vague en fin de manche (`js/game/bleu-manche.js`) ; pause : gemme bleue et solde bleu au lieu de « Monnaie jaune » (`jeu.html`, `js/game/ui.js`). Validé par le propriétaire sur `/dev/` (PR #135 à #137).
