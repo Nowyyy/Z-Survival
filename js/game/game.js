@@ -22,6 +22,7 @@ import { applyHeal, canFire, canHealOnKill, canMove, createPlayerDown, isInvulne
 import { effectivePlayer, effectiveWeapon, normalizeLevels, STAT_IDS, statValues } from '../core/player-stats.js';
 import { createBullet, stepBullets } from '../core/projectile.js';
 import { castRay } from '../core/ray.js';
+import { obstaclesTirs, preparerTirs } from '../core/tir-traverse.js';
 import { createRng } from '../core/rng.js';
 import { shotAngle, speedRatio, spreadHalfAngle, stepSpreadRatio, toRadians } from '../core/spread.js';
 import { createFootsteps, stepFootsteps } from '../core/footsteps.js';
@@ -76,6 +77,7 @@ export function createGame(ctx) {
   // jusqu'au bord du monde. Salle du lot 1m (?empty=1) : les limites de la salle, comme avant. Lot 3c : les portes fermées arrêtent aussi les balles et le laser (sans
   // dégâts) ; la liste suit l'état des portes et l'étage du joueur (syncSolids). Lot 3e : ce sont toujours les solides de l'étage du joueur.
   let blockers = [];
+  const tirs = preparerTirs(cfg.tirs, layouts); // lot 8j : tirs par-dessus les objets bas et à travers les grilles (null : liste d'avant)
   let playerSolids = layout.playerObstacles;
   // Lot 3 : les fenêtres ont des planches (siège par les zombies) ; la salle du lot 1m (?empty=1) n'a ni planches ni siège. Lot 3e : tout ce qui est par étage (grilles de
   // chemin, planches, champs de flux, escaliers) vit dans js/core/floor-sim.js, une seule fois au chargement.
@@ -208,7 +210,7 @@ export function createGame(ctx) {
     const open = openIds();
     const l = layoutOf(pf());
     playerSolids = [...l.playerObstacles, ...closedDoors(l, open)];
-    blockers = l.empty ? [] : [...l.furniture.filter((f) => f.kind !== 'escalier'), ...l.walls, ...(l.decor?.solids ?? []), ...closedDoors(l, open)];
+    blockers = obstaclesTirs(l, closedDoors(l, open), tirs); // lot 8j : sans tirs, exactement la liste d'avant
   }
   const activeIdsNow = () => (zoneCfg ? activeWindows(zoneCfg, zoneOf, openIds()) : geoms.map((g) => g.id));
   const allSpawnPoints = () => layouts.floors.flatMap((f) => (layoutOf(f).spawnPoints ?? layoutOf(f).windows).map((p) => ({ ...p, floor: f })));

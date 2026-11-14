@@ -84,6 +84,8 @@ const detail = query.get('detail') !== '0';
 // Lot 5b : préréglage graphique (?gfx= > préférence de l'appareil zs.device.v1 > auto) ; les paramètres explicites de l'adresse l'emportent.
 const gfx = await graphicsBoot(search);
 const gfxLoad = gfx.settings.load;
+// Lot 8j : objets traversables par les tirs (tirs.world.json de la carte, npm run carte) ; ?test=1&tirtraverse=0 : liste vide (jamais mémorisé).
+const tirsJson = mapId === 'salle' || (testMode && query.get('tirtraverse') === '0') ? null : await loadJson(`${mapDir}/tirs.world.json`).catch(() => null);
 const reglagesPartie = await loadJson('data/game/reglages-partie.json').catch(() => ({})); // lot 8j : message des portes, sons des zombies
 const decorInterieur = detail && gfxLoad.decor !== 'reduit' && mapId !== 'salle' ? await loadJson(`${mapDir}/decor-interieur.world.json`).catch(() => null) : null;
 // Retours du propriétaire : mobilier dessiné d'après le modèle (mobilier.world.json, avec le détail).
@@ -197,7 +199,7 @@ const loadedSave = repository.load();
 const niveauxPartie = (lus) => (optionPartie().stats && lus.source !== 'url' ? { ...normalizeLevels(optionPartie().stats, statsCfg), source: 'menu' } : lus);
 
 const ctx = {
-  cfg: { layout, layouts, stairs: stairsCfg, player, weapon: weapons.pistol, stats: statsCfg, zombie: enemies.zombie, enemies, gaits: gaitsCfg, waves: wavesCfg, render, camera, nav, windows: windowsCfg, down: downCfg },
+  cfg: { layout, layouts, stairs: stairsCfg, player, weapon: weapons.pistol, stats: statsCfg, zombie: enemies.zombie, enemies, gaits: gaitsCfg, waves: wavesCfg, render, camera, nav, windows: windowsCfg, down: downCfg, tirs: tirsJson },
   palette,
   dict,
   textureData,
