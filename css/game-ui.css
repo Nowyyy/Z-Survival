@@ -7,6 +7,61 @@
   --edge-top: calc(var(--game-margin) + var(--safe-top));
 }
 
+/* Lot 8j : interface de la partie plus grande sur les grands écrans. Un seul facteur, --ui-k (js/game/ui-echelle.js) : 1 jusqu'à 1080 px de haut,
+   puis hauteur / 1080, plafond 2. Les réglages de tokens.css (lot 3l) et la marge de game.css sont repris ici multipliés par ce facteur ; le reste
+   de l'interface est en em (rien à changer). Sans le script (ou à 1080 px et moins), --ui-k vaut 1 : tailles identiques au pixel. Ni zoom ni
+   transform : le texte reste net et les zones de toucher suivent. Le rendu 3D et le menu principal ne lisent pas ces variables. */
+:root {
+  --hud-fs: calc(14px * var(--hud-text-scale) * var(--ui-k, 1));
+  --hud-gap: calc(4px * var(--ui-k, 1));
+  --hud-radius: calc(6px * var(--ui-k, 1));
+  --hud-target: calc(44px * var(--ui-k, 1));
+  --hud-pause-size: max(calc(44px * var(--ui-k, 1)), calc(2 * var(--hud-row) + var(--hud-gap)));
+  --game-margin: calc(16px * var(--ui-k, 1));
+}
+
+/* Rappel du son (téléphone) : bouton commun de base.css, mis à la même échelle. */
+.sound-hint {
+  min-width: calc(var(--touch-target) * var(--ui-k, 1));
+  min-height: calc(var(--touch-target) * var(--ui-k, 1));
+  padding: calc(var(--space-2) * var(--ui-k, 1)) calc(var(--space-5) * var(--ui-k, 1));
+  font-size: calc(1em * var(--ui-k, 1));
+}
+
+/* Options en partie (E2-12) : composant partagé avec le menu (styles e5-* de menu.css, en calc(N × --u)). Leur unité suit déjà la hauteur au-delà
+   de 1080 px (plafond de densité de menu.css, lot 8j, demande du propriétaire) ; ici, seules les cibles (44 px) et le curseur suivent --ui-k. */
+.panel-wrap.e5-voile > .e5-panneau {
+  --menu-cible: calc(var(--touch-target, 44px) * var(--ui-k, 1));
+}
+
+.e5-panneau .e5-curseur::-webkit-slider-runnable-track {
+  height: calc(6px * var(--ui-k, 1));
+  border-radius: calc(3px * var(--ui-k, 1));
+}
+
+.e5-panneau .e5-curseur::-moz-range-track {
+  height: calc(6px * var(--ui-k, 1));
+  border-radius: calc(3px * var(--ui-k, 1));
+}
+
+.e5-panneau .e5-curseur::-moz-range-progress {
+  height: calc(6px * var(--ui-k, 1));
+  border-radius: calc(3px * var(--ui-k, 1));
+}
+
+.e5-panneau .e5-curseur::-webkit-slider-thumb {
+  width: calc(22px * var(--ui-k, 1));
+  height: calc(22px * var(--ui-k, 1));
+  margin-top: calc(-8px * var(--ui-k, 1));
+  border-width: calc(3px * var(--ui-k, 1));
+}
+
+.e5-panneau .e5-curseur::-moz-range-thumb {
+  width: calc(22px * var(--ui-k, 1));
+  height: calc(22px * var(--ui-k, 1));
+  border-width: calc(3px * var(--ui-k, 1));
+}
+
 /* ---------- HUD (E2-2) : trois colonnes en haut de l'écran ---------- */
 .hud {
   position: absolute;

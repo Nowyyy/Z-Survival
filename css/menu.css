@@ -1821,7 +1821,12 @@
   grid-row: 2 / 4;
 }
 
+/* Lot 8j (demande du propriétaire : trop peu de réglages visibles sur PC) : l'unité des écrans Options (menu et partie) est plafonnée à
+   --e5-u-max = 1,25 px jusqu'à 1080 px de haut, puis suit la hauteur (100vh / 864 = 1,25 px × hauteur / 1080, comme le facteur de l’interface de la partie) ;
+   en dessous du plafond (téléphones, 932 × 430 et moins), rien ne change. Régler la densité sur PC : la valeur 1,25 px (et 864 = 1080 / 1,25). */
 .e5 {
+  --e5-u-max: max(1.25px, calc(100vh / 864));
+  --u: min(clamp(0.7px, min(calc(100vw / 932), calc(100vh / 430)), 2.4px), var(--e5-u-max));
   --e5-bouton-h: max(var(--menu-cible), calc(40 * var(--u)));
   display: flex;
   flex-direction: column;
