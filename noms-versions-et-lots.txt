@@ -210,3 +210,9 @@ version: v0.8
 nom: Grands écrans, volumes, portes, bruits et tirs
 description: Interface plus grande sur les grands écrans, Options plus denses sur ordinateur, volumes au pour cent, message des portes, moins de bruits de zombies, tirs par-dessus les meubles bas.
 afficher: oui
+
+[lot-8k]
+version: v0.8
+nom: Médailles, paliers et caisses à pitié
+description: Les médailles, nouvelle monnaie gagnée en progressant ; une caisse par rubrique, payée en médailles, avec une pitié qui garantit épiques et légendaires ; monnaie bleue à gain fixe.
+afficher: oui
