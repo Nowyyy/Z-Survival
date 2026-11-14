@@ -162,3 +162,70 @@ test.describe('en-tête du menu (lot 8k)', () => {
     });
   }
 });
+
+test.describe('paliers et aucun crédit rétroactif (lot 8k, partie C)', () => {
+  // Manche 5 démarrée puis terminée par le hook : palier 5 (premier franchissement) ; renvoie les médailles écrites.
+  async function palier5(page) {
+    await page.evaluate(() => window.__zs.startWave(5));
+    await step(page, 3.2);
+    await page.evaluate(() => window.__zs.skipWave());
+    await step(page, 0.3);
+    return storedJson(page);
+  }
+
+  test('palier 5 crédité une fois (+50, écrit à la fin de la manche) ; une nouvelle partie qui le refranchit ne rapporte plus rien', async ({ page }) => {
+    test.setTimeout(150_000);
+    await open(page);
+    const a = await palier5(page);
+    expect(soldeMedailles(a)).toBe(params.economy.medaillePalier);
+    expect(a.paliers).toEqual({ histoire: { batiment: 5 }, infini: {} });
+    await open(page); // nouvelle partie (page rechargée), même stockage
+    const b = await palier5(page);
+    expect(soldeMedailles(b)).toBe(params.economy.medaillePalier);
+    expect((await state(page)).save.medailles.run.paliers).toBe(0);
+  });
+
+  test('sauvegarde v2 préparée d\'avant le lot (records 40, monde terminé) : 0 médaille au menu et en partie, rien écrit au chargement ; le premier palier franchi ensuite rapporte', async ({ page }) => {
+    test.setTimeout(150_000);
+    const avant = { ...serialiser(defaultProgression()), bleu: { gagne: 900, depense: 0 }, records: { histoire: { batiment: 40 }, infini: { batiment: 61 } }, mondes: ['batiment'] };
+    for (const k of ['medailles', 'paliers', 'mondesFinis', 'pitie']) delete avant[k];
+    const texte = JSON.stringify(avant);
+    await page.addInitScript(([k, v]) => {
+      if (!sessionStorage.getItem('zs.test.pose')) {
+        sessionStorage.setItem('zs.test.pose', '1');
+        localStorage.setItem(k, v);
+      }
+      window.__ecritures = [];
+      const set = Storage.prototype.setItem;
+      Storage.prototype.setItem = function (cle, val) { window.__ecritures.push(cle); return set.call(this, cle, val); };
+    }, [KEY, texte]);
+    await page.setViewportSize(SIZE);
+    await page.goto('/jeu.html?test=1&menu=1&seed=1&store=local');
+    await expect(page.locator('#menu-jouer')).toBeVisible({ timeout: 60_000 });
+    await page.waitForFunction(() => window.__zsMenu?.etat()?.menu !== null && !document.getElementById('e7'));
+    await expect(page.locator('#menu-medailles-texte')).toHaveText('0');
+    expect(await page.evaluate((k) => localStorage.getItem(k), KEY)).toBe(texte);
+    await open(page);
+    expect((await state(page)).save.medailles.solde).toBe(0);
+    expect(await page.evaluate((k) => localStorage.getItem(k), KEY)).toBe(texte);
+    expect(await page.evaluate(() => window.__ecritures.filter((k) => k === 'zs.save.v2'))).toEqual([]);
+    const apres = await palier5(page);
+    expect(soldeMedailles(apres)).toBe(params.economy.medaillePalier);
+    expect(apres.records.histoire.batiment).toBe(40);
+  });
+
+  test('deux onglets réels franchissent le palier 5 : crédité une seule fois', async ({ page, context }) => {
+    test.setTimeout(150_000);
+    await open(page);
+    const other = await context.newPage();
+    await open(other);
+    for (const p of [page, other]) await p.evaluate(() => window.__zs.startWave(5));
+    for (const p of [page, other]) await step(p, 3.2);
+    for (const p of [page, other]) await p.evaluate(() => window.__zs.skipWave());
+    for (const p of [page, other]) await step(p, 0.3);
+    await expect.poll(async () => soldeMedailles(await storedJson(other)), { timeout: 5_000 }).toBe(params.economy.medaillePalier);
+    await expect.poll(async () => soldeMedailles(await storedJson(page))).toBe(params.economy.medaillePalier);
+    expect((await storedJson(page)).paliers.histoire.batiment).toBe(5);
+    expect((await storedJson(page)).bleu.gagne).toBe(2 * 30); // les deux manches 5 (renforcées) rapportent leur bleue : opérations distinctes
+  });
+});

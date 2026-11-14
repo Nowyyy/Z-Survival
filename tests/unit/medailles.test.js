@@ -14,12 +14,13 @@ const economy = makeEconomy(params.economy, load('enemies'));
 const KEY = params.save.v2.storageKey;
 const stored = (storage) => JSON.parse(storage.data.get(KEY));
 
+let parties = 0;
 function make({ search = '', initial, wall = new Date(2026, 10, 14, 12).getTime(), partie = {} } = {}) {
   const storage = createFakeStorage(initial === undefined ? {} : { [KEY]: JSON.stringify(initial) });
   const { repository, mode } = createRepository({ search, storage, params, format: 'v2' });
   const time = { ms: 0, wall };
-  let n = 0;
-  const bank = createBank({ repository, mode, economy, clock: () => time.ms, wall: () => time.wall, partie, runId: () => `m${(n += 1)}` });
+  // Identifiants de partie uniques entre toutes les banques d'un fichier (dans le jeu : tirés par crypto).
+  const bank = createBank({ repository, mode, economy, clock: () => time.ms, wall: () => time.wall, partie, runId: () => `m${(parties += 1)}` });
   return { bank, storage, time, mode, repository };
 }
 // n zombies tués par balle.
@@ -178,5 +179,133 @@ describe('format v2 : champs du lot 8k, migration, import (partie B)', () => {
   it('jour local (date de l\'appareil) : change à minuit local, pas à minuit UTC', () => {
     expect(jourLocal(new Date(2026, 10, 14, 23, 59))).toBe(jourLocal(new Date(2026, 10, 14, 0, 0)));
     expect(jourLocal(new Date(2026, 10, 15, 0, 0)) - jourLocal(new Date(2026, 10, 14, 23, 59))).toBe(1);
+  });
+});
+
+describe('paliers, premier monde terminé, première partie du jour (partie C)', () => {
+  const finir = (bank, n) => {
+    bank.waveStart(1);
+    for (let w = 1; w <= n; w += 1) bank.waveEnd(w, false);
+  };
+  it('palier toutes les 5 manches terminées : +50 à la 5e, +50 à la 10e, rien entre ; écrit à la fin de la manche', () => {
+    const { bank, storage } = make();
+    bank.waveStart(1);
+    for (let w = 1; w <= 4; w += 1) bank.waveEnd(w, false);
+    expect(soldeMedailles(stored(storage))).toBe(0);
+    bank.waveEnd(5, true);
+    expect(soldeMedailles(stored(storage))).toBe(50);
+    for (let w = 6; w <= 9; w += 1) bank.waveEnd(w, false);
+    expect(soldeMedailles(stored(storage))).toBe(50);
+    bank.waveEnd(10, true);
+    expect(soldeMedailles(stored(storage))).toBe(100);
+    expect(stored(storage).paliers).toEqual({ histoire: { batiment: 10 }, infini: {} });
+    expect(bank.medaillesPartie().paliers).toBe(100);
+  });
+
+  it('jamais deux fois : une nouvelle partie qui refait les manches 1 à 10 ne rapporte aucun palier ; la 15e, oui', () => {
+    const { bank, storage } = make();
+    finir(bank, 10);
+    bank.runEnd({ reason: 'death' });
+    bank.restart();
+    finir(bank, 10);
+    expect(bank.medaillesPartie().paliers).toBe(0);
+    const avant = soldeMedailles(stored(storage));
+    for (let w = 11; w <= 15; w += 1) bank.waveEnd(w, false);
+    expect(soldeMedailles(stored(storage)) - avant).toBe(50);
+  });
+
+  it('saut de plusieurs paliers dans une même écriture (manche 17 d\'un coup) : 5, 10 et 15, une fois chacun ; rejouée sous un autre identifiant : rien de plus', () => {
+    const op = (id) => ({ id, t: 'gain', palier: { mode: 'histoire', monde: 'batiment', manche: 17, pas: 5, gain: 50 } });
+    const s1 = appliquerOps(defaultProgression(), [op('a')], 1, params).save;
+    expect([soldeMedailles(s1), s1.paliers.histoire.batiment]).toEqual([150, 15]);
+    const s2 = appliquerOps(s1, [op('b'), op('c')], 2, params).save;
+    expect(soldeMedailles(s2)).toBe(150);
+  });
+
+  it('histoire par monde, infini par carte : paliers séparés (le même palier rapporte une fois en histoire et une fois en infini)', () => {
+    const h = make({ partie: { mode: 'histoire', monde: 'batiment' } });
+    finir(h.bank, 5);
+    const s = stored(h.storage);
+    const i = make({ initial: s, partie: { mode: 'infini', monde: 'batiment' } });
+    finir(i.bank, 5);
+    expect(stored(i.storage).paliers).toEqual({ histoire: { batiment: 5 }, infini: { batiment: 5 } });
+    expect(soldeMedailles(stored(i.storage))).toBe(100);
+  });
+
+  it('aucun crédit au chargement : progression d\'avant le lot avec records 40 et monde terminé → 0 médaille ; le palier 5 rapporte au premier franchissement suivant', () => {
+    const avant = { ...serialiser(defaultProgression()), records: { histoire: { batiment: 40 }, infini: { batiment: 55 } }, mondes: ['batiment'], profil: { ...defaultProgression().profil, partiesHistoire: 30 } };
+    for (const k of ['medailles', 'paliers', 'mondesFinis', 'pitie']) delete avant[k];
+    const { bank, storage, repository } = make({ initial: avant });
+    expect(soldeMedailles(repository.load().save)).toBe(0);
+    expect(bank.soldeMedailles()).toBe(0);
+    bank.waveStart(1);
+    bank.flush('pause');
+    expect(soldeMedailles(stored(storage))).toBe(0);
+    for (let w = 1; w <= 5; w += 1) bank.waveEnd(w, false);
+    expect(soldeMedailles(stored(storage))).toBe(50);
+  });
+
+  it('premier monde terminé : +300 une seule fois pour toujours (prime bleue de 500 à chaque fois) ; jamais déduit de « mondes » d\'avant le lot', () => {
+    const { bank, storage } = make({ initial: { ...serialiser(defaultProgression()), mondes: ['batiment'] } });
+    finir(bank, 40);
+    const avantMonde = soldeMedailles(stored(storage));
+    expect(bank.worldEnd().bonus).toBe(500);
+    bank.runEnd({ reason: 'world' });
+    expect(bank.medaillesPartie().monde).toBe(300);
+    expect(stored(storage).mondesFinis).toEqual(['batiment']);
+    const apres = soldeMedailles(stored(storage));
+    expect(apres - avantMonde).toBe(300 + 100); // + la partie du jour
+    bank.restart();
+    finir(bank, 40);
+    bank.worldEnd();
+    bank.runEnd({ reason: 'world' });
+    expect(bank.medaillesPartie().monde).toBe(0);
+    expect(soldeMedailles(stored(storage)) - apres).toBe(0); // paliers déjà obtenus, monde déjà récompensé, jour déjà compté
+  });
+
+  it('première partie du jour : +100 à la fin d\'une partie qui a terminé au moins une manche ; pas pour une partie sans manche terminée ; une fois par jour', () => {
+    const { bank, storage } = make();
+    bank.waveStart(1);
+    bank.runEnd({ reason: 'death' }); // aucune manche terminée
+    expect(stored(storage).medailles).toEqual({ gagne: 0, depense: 0, jour: 0 });
+    bank.restart();
+    finir(bank, 1);
+    const fin = bank.runEnd({ reason: 'death' });
+    expect(fin.medailles).toMatchObject({ jour: 100, total: 100, solde: 100 });
+    expect(stored(storage).medailles.jour).toBe(jourLocal(new Date(2026, 10, 14)));
+    bank.restart();
+    finir(bank, 1);
+    expect(bank.runEnd({ reason: 'quit' }).medailles.jour).toBe(0);
+    expect(soldeMedailles(stored(storage))).toBe(100);
+  });
+
+  it('minuit local : une partie finie à 23 h 59 puis une autre à 0 h 01 le lendemain → deux médailles du jour', () => {
+    const { bank, storage, time } = make({ wall: new Date(2026, 10, 14, 23, 59).getTime() });
+    finir(bank, 1);
+    bank.runEnd({ reason: 'death' });
+    time.wall = new Date(2026, 10, 15, 0, 1).getTime();
+    bank.restart();
+    finir(bank, 1);
+    bank.runEnd({ reason: 'death' });
+    expect(soldeMedailles(stored(storage))).toBe(200);
+    expect(stored(storage).medailles.jour).toBe(jourLocal(new Date(2026, 10, 15)));
+  });
+
+  it('jour plus ancien rejoué (horloge d\'un autre onglet en retard) : jamais crédité après un jour plus récent', () => {
+    const s1 = appliquerOps(defaultProgression(), [{ id: 'j2', t: 'gain', jour: { n: 20407, gain: 100 } }], 1, params).save;
+    const s2 = appliquerOps(s1, [{ id: 'j1', t: 'gain', jour: { n: 20406, gain: 100 } }, { id: 'j3', t: 'gain', jour: { n: 20407, gain: 100 } }], 2, params).save;
+    expect([soldeMedailles(s2), s2.medailles.jour]).toEqual([100, 20407]);
+  });
+
+  it('deux onglets le même jour (deux banques sur le même stockage) : la partie du jour et le palier comptés une fois', () => {
+    const a = make();
+    finir(a.bank, 5);
+    const b = make({ initial: stored(a.storage) });
+    finir(b.bank, 5);
+    a.bank.runEnd({ reason: 'death' });
+    b.storage.data.set(KEY, a.storage.data.get(KEY));
+    b.bank.runEnd({ reason: 'death' });
+    const s = stored(b.storage);
+    expect([s.paliers.histoire.batiment, s.medailles.jour > 0, soldeMedailles(s)]).toEqual([5, true, 150]);
   });
 });
