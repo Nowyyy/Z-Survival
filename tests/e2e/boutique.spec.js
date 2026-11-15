@@ -350,8 +350,11 @@ test.describe('chances (E3-6)', () => {
       await expect(page.locator('.e3-chances-groupe-objets')).toHaveText(attendu.map((x) => x.objets.map((ob) => ob.nom).join(', '))); // lot 8k : personnages par rareté aussi
       await expect(page.locator('#menu-ecran-chances-regle')).toContainText('dix tirages à la suite, qui avancent la pitié dans l\'ordre'); // lot 8k (avant : « indépendants, sans garantie »)
       // Lot 8k : pitié de la rubrique (progression de démonstration : compteurs à 0).
-      await expect(page.locator('.e3-chances-compteur')).toHaveText(['Épique garanti dans 10 tirages', 'Légendaire garanti dans 70 tirages au plus']);
-      await expect(page.locator('#menu-ecran-chances-pitie-regle')).toHaveText(/^Épique ou mieux : garanti au 10e tirage au plus\. Légendaire : 1 % jusqu'au 50e tirage, puis \+ 5 points à chaque tirage, garanti au 70e au plus\./);
+      // Retour du propriétaire : seulement la pitié du légendaire (plus rien sur la garantie épique).
+      await expect(page.locator('.e3-chances-compteur')).toHaveText(['Légendaire garanti dans 70 tirages au plus']);
+      await expect(page.locator('#menu-ecran-chances-pitie')).not.toContainText('Épique');
+      await expect(page.locator('#menu-ecran-chances-pitie-regle')).not.toContainText('Épique');
+      await expect(page.locator('#menu-ecran-chances-pitie-regle')).toHaveText(/^Légendaire : 1 % jusqu'au 50e tirage, puis \+ 5 points à chaque tirage, garanti au 70e au plus\./);
       expect((await etatBoutique(page)).chances).toBe(c.id);
       // Focus piégé : croix → zone → croix (Tab), et en arrière.
       await page.keyboard.press('Tab');

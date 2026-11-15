@@ -50,7 +50,7 @@ function externes(page, baseURL) {
 }
 async function compteurs(page, id) {
   await page.locator(`#menu-caisse-${id}-chances`).click();
-  await expect(page.locator('.e3-chances-compteur')).toHaveCount(2);
+  await expect(page.locator('.e3-chances-compteur')).toHaveCount(1); // retour du propriétaire : légendaire seulement
   const texte = await page.locator('.e3-chances-compteur').allTextContents();
   await page.locator('#menu-ecran-chances-fermer').click();
   return texte;
@@ -64,7 +64,7 @@ test.describe('caisses uniques et pitié (lot 8k)', () => {
     await graines(page, [11, 12]);
     await ouvrirBoutique(page);
     const c = caisse('equipement');
-    expect(await compteurs(page, 'equipement')).toEqual(['Épique garanti dans 10 tirages', 'Légendaire garanti dans 70 tirages au plus']);
+    expect(await compteurs(page, 'equipement')).toEqual(['Légendaire garanti dans 70 tirages au plus']);
     const un = tirerPitie(c, cat, regles, { e: 0, l: 0 }, 11, 1);
     await page.locator('#menu-caisse-equipement-un').click();
     await expect(page.locator('#menu-ecran-resultat')).toBeVisible();
@@ -80,9 +80,9 @@ test.describe('caisses uniques et pitié (lot 8k)', () => {
     const s = await stocke(page);
     expect([s.medailles, s.bleu, s.pitie.equipement, s.pitie.personnage]).toEqual([{ gagne: 1500, depense: 1100, jour: 0 }, { gagne: 100_000, depense: 0 }, dix.compteurs, { e: 0, l: 0 }]);
     await expect(page.locator('#menu-medailles-texte')).toHaveText('400');
-    const attendu = [`Épique garanti dans ${10 - dix.compteurs.e} tirages`, `Légendaire garanti dans ${70 - dix.compteurs.l} tirages au plus`];
+    const attendu = [`Légendaire garanti dans ${70 - dix.compteurs.l} tirages au plus`];
     expect(await compteurs(page, 'equipement')).toEqual(attendu);
-    expect(await compteurs(page, 'personnages')).toEqual(['Épique garanti dans 10 tirages', 'Légendaire garanti dans 70 tirages au plus']); // compteur propre à chaque rubrique
+    expect(await compteurs(page, 'personnages')).toEqual(['Légendaire garanti dans 70 tirages au plus']); // compteur propre à chaque rubrique
     await page.reload();
     await expect(page.locator('#menu-jouer')).toBeVisible({ timeout: 60_000 });
     await page.waitForFunction(() => window.__zsMenu?.etat()?.menu !== null && !document.getElementById('e7'));
@@ -100,14 +100,19 @@ test.describe('caisses uniques et pitié (lot 8k)', () => {
     const ap = page.locator('#menu-caisse-equipement-apercu');
     await expect(ap).toBeVisible();
     await expect(ap.locator('.e3-apercu-titre')).toHaveText(['Ta pitié dans cette caisse', 'Légendaires possibles']);
-    await expect(ap.locator('.e3-apercu-compte')).toHaveText(['7 / 10', '52 / 70']);
-    await expect(ap.locator('.e3-apercu-texte')).toHaveText(['Épique garanti dans 3 tirages', 'Légendaire garanti dans 18 tirages au plus']);
+    // Retour du propriétaire : seulement la pitié du légendaire (rien sur la garantie épique, compteur épique de 7 non affiché).
+    await expect(ap.locator('.e3-apercu-compte')).toHaveText(['52 / 70']);
+    await expect(ap.locator('.e3-apercu-texte')).toHaveText(['Légendaire garanti dans 18 tirages au plus']);
+    await expect(ap.locator('.e3-apercu-pitie')).not.toContainText('Épique');
     await expect(ap.locator('.e3-apercu-chance')).toHaveText('Prochain tirage : 16 % de chance de légendaire (en hausse).');
     const legs = cat.objets.size;
     await expect(ap.locator('.e3-apercu-element')).toHaveCount(Math.min(6, legs));
     if (legs > 6) await expect(ap.locator('.e3-apercu-autres')).toHaveText(`et ${legs - 6} autres`);
-    const largeur = await ap.locator('.e3-apercu-plein').first().evaluate((n) => n.getBoundingClientRect().width / n.parentElement.clientWidth);
-    expect(Math.abs(largeur - 0.7)).toBeLessThan(0.03);
+    // Retour du propriétaire : une seule jauge, celle du légendaire (52 / 70) ; « épique ou mieux » sans jauge.
+    await expect(ap.locator('.e3-apercu-barre')).toHaveCount(1);
+    await expect(ap.locator('[data-pitie="haute"]')).toHaveCount(0);
+    const largeur = await ap.locator('[data-pitie="top"] .e3-apercu-plein').evaluate((n) => n.getBoundingClientRect().width / n.parentElement.clientWidth);
+    expect(Math.abs(largeur - 52 / 70)).toBeLessThan(0.03);
     const perso = page.locator('#menu-caisse-personnages-apercu');
     await expect(perso.locator('.e3-apercu-element')).toHaveText(cat.personnages.filter((p) => p.rarete === 'legendaire').map((p) => p.nom));
     await expect(perso.locator('.e3-apercu-chance')).toHaveText('Prochain tirage : 1 % de chance de légendaire (en hausse dès le 51e).');
@@ -122,7 +127,7 @@ test.describe('caisses uniques et pitié (lot 8k)', () => {
     await page.locator('#menu-caisse-equipement-un').click();
     await expect(page.locator('#menu-ecran-resultat')).toBeVisible();
     await page.locator('#menu-resultat-continuer').click();
-    await expect(ap.locator('.e3-apercu-compte')).toHaveText([`${un.compteurs.e} / 10`, `${un.compteurs.l} / 70`]);
+    await expect(ap.locator('.e3-apercu-compte')).toHaveText([`${un.compteurs.l} / 70`]);
     await expect.poll(async () => (await new AxeBuilder({ page }).include('#menu-boutique-equipement').analyze()).violations.map((v) => v.id), { timeout: 10_000 }).toEqual([]);
   });
 
@@ -131,7 +136,7 @@ test.describe('caisses uniques et pitié (lot 8k)', () => {
     await poserProgression(page, progressionDemo({ medailles: 500, extra: { pitie: { equipement: { e: 9, l: 69 }, personnage: { e: 9, l: 3 }, cosmetique: { e: 2, l: 2 } } } }));
     await graines(page, [1, 2]);
     await ouvrirBoutique(page);
-    expect(await compteurs(page, 'equipement')).toEqual(['Épique garanti au prochain tirage', 'Légendaire garanti au prochain tirage']);
+    expect(await compteurs(page, 'equipement')).toEqual(['Légendaire garanti au prochain tirage']);
     await page.locator('#menu-caisse-equipement-un').click();
     await expect(page.locator('#menu-ecran-resultat')).toBeVisible();
     expect((await etatBoutique(page)).dernier.objets[0].rarete).toBe('legendaire');
@@ -175,7 +180,7 @@ test.describe('caisses uniques et pitié (lot 8k)', () => {
     expect((await stocke(page)).medailles).toEqual({ gagne: 40, depense: 0, jour: 0 });
     expect((await new AxeBuilder({ page }).include('#menu-ecran-boutique').analyze()).violations.map((v) => v.id)).toEqual([]);
     await page.locator('#menu-caisse-equipement-chances').click();
-    await expect(page.locator('.e3-chances-compteur')).toHaveCount(2);
+    await expect(page.locator('.e3-chances-compteur')).toHaveCount(1);
     // Le dialogue entre en fondu : l'analyse est reprise jusqu'à la fin du fondu (contraste mesuré sur l'état final).
     await expect.poll(async () => (await new AxeBuilder({ page }).include('#menu-ecran-chances').analyze()).violations.map((v) => v.id), { timeout: 10_000 }).toEqual([]);
   });

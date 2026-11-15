@@ -365,28 +365,25 @@ export async function ecranBoutique({ t, bandeau, root, rootDialogue, surVue = (
     const titre = el('h4', ['e3-apercu-titre'], { id: `${id}-titre` });
     titre.textContent = t('game.menu.boutique.apercu.pitie');
     const lignes = el('ul', ['e3-apercu-pitie'], { 'aria-labelledby': `${id}-titre` });
+    // Retour du propriétaire : seulement la pitié du légendaire (plus aucune information sur la garantie épique, toujours appliquée au tirage).
     const ligne = (cle) => {
       const rid = pitie[cle].rarete;
       const li = el('li', ['e3-apercu-ligne'], { 'data-pitie': cle });
       poserJeton(li, '--e3-rarete', jetonRarete(rid));
       const nom = el('span', ['e3-apercu-nom']);
-      nom.textContent = fmt(t(cle === 'haute' ? 'game.menu.boutique.apercu.haute' : 'game.menu.boutique.apercu.top'), { rarete: nomRarete(rid) });
+      nom.textContent = fmt(t('game.menu.boutique.apercu.top'), { rarete: nomRarete(rid) });
       const compte = el('span', ['e3-apercu-compte']);
       const barre = el('span', ['e3-apercu-barre'], { 'aria-hidden': 'true' });
       const plein = el('span', ['e3-apercu-plein']);
-      barre.append(plein);
-      // « Légendaire » : repère du tirage où la chance commence à monter (pitie.top.douce).
-      if (cle === 'top') {
-        const repere = el('span', ['e3-apercu-repere']);
-        repere.style.left = `${(pitie.top.douce / pitie.top.garanti) * 100}%`;
-        barre.append(repere);
-      }
+      // Repère du tirage où la chance commence à monter (pitie.top.douce).
+      const repere = el('span', ['e3-apercu-repere']);
+      repere.style.left = `${(pitie.top.douce / pitie.top.garanti) * 100}%`;
+      barre.append(plein, repere);
       const texte = el('span', ['e3-apercu-texte']);
       li.append(nom, compte, barre, texte);
       lignes.append(li);
       return { li, compte, plein, texte };
     };
-    const haute = ligne('haute');
     const top = ligne('top');
     const chance = el('p', ['e3-apercu-chance'], { id: `${id}-chance` });
     const titreLeg = el('h4', ['e3-apercu-titre'], { id: `${id}-legendaires-titre` });
@@ -412,14 +409,11 @@ export async function ecranBoutique({ t, bandeau, root, rootDialogue, surVue = (
     const maj = () => {
       const cpt = eq.pitie(c.type);
       const reste = avantGarantie(pitie, cpt);
-      for (const [cle, l, n, max] of [['haute', haute, cpt.e, pitie.haute.garanti], ['top', top, cpt.l, pitie.top.garanti]]) {
-        l.compte.textContent = fmt(t('game.menu.boutique.apercu.compte'), { n: Math.min(n, max), max });
-        l.plein.style.width = `${Math.min(100, (n / max) * 100)}%`;
-        const r = reste[cle];
-        const cles = cle === 'haute' ? ['game.menu.chances.pitie.haute', 'game.menu.chances.pitie.haute.prochain'] : ['game.menu.chances.pitie.top', 'game.menu.chances.pitie.top.prochain'];
-        l.texte.textContent = fmt(t(cles[r === 1 ? 1 : 0]), { rarete: nomRarete(pitie[cle].rarete), n: r });
-        l.li.dataset.restants = String(r);
-      }
+      const max = pitie.top.garanti;
+      top.compte.textContent = fmt(t('game.menu.boutique.apercu.compte'), { n: Math.min(cpt.l, max), max });
+      top.plein.style.width = `${Math.min(100, (cpt.l / max) * 100)}%`;
+      top.texte.textContent = fmt(t(reste.top === 1 ? 'game.menu.chances.pitie.top.prochain' : 'game.menu.chances.pitie.top'), { rarete: nomRarete(pitie.top.rarete), n: reste.top });
+      top.li.dataset.restants = String(reste.top);
       const p = chancesTirage(c, cat, pitie, cpt).find((x) => x.rarete === pitie.top.rarete)?.pourcent ?? 0;
       chance.textContent = fmt(t(cpt.l + 1 > pitie.top.douce ? 'game.menu.boutique.apercu.chance.hausse' : 'game.menu.boutique.apercu.chance'), { rarete: nomRarete(pitie.top.rarete).toLocaleLowerCase('fr-FR'), n: pourcentTexte(Math.round(p * 100) / 100), douce: pitie.top.douce + 1 });
     };

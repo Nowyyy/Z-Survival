@@ -75,14 +75,13 @@ export function ouvrirChances({ t, bandeau, cat, caisse, root, fermer, pitie = n
     const reglePitie = el('p', ['e3-chances-regle'], { id: `${id}-pitie-regle` });
     const nomR = (rid) => cat.raretes.find((y) => y.id === rid)?.nom ?? rid;
     const base = liste.find((x) => x.rarete === pitie.top.rarete)?.pourcent ?? 0;
-    reglePitie.textContent = fmt(t('game.menu.chances.pitie.regle'), { haute: nomR(pitie.haute.rarete), n: pitie.haute.garanti, top: nomR(pitie.top.rarete), base: pourcentTexte(base), douce: pitie.top.douce, pas: pourcentTexte(pitie.top.pas), garanti: pitie.top.garanti });
+    // Retour du propriétaire : seulement la pitié du légendaire (plus aucune information sur la garantie épique, toujours appliquée au tirage).
+    reglePitie.textContent = fmt(t('game.menu.chances.pitie.regle'), { top: nomR(pitie.top.rarete), topMin: nomR(pitie.top.rarete).toLocaleLowerCase('fr-FR'), base: pourcentTexte(base), douce: pitie.top.douce, pas: pourcentTexte(pitie.top.pas), garanti: pitie.top.garanti });
     const compte = el('ul', ['e3-chances-pitie'], { id: `${id}-pitie`, 'aria-labelledby': `${id}-pitie-titre` });
-    const textes = { haute: ['game.menu.chances.pitie.haute', 'game.menu.chances.pitie.haute.prochain'], top: ['game.menu.chances.pitie.top', 'game.menu.chances.pitie.top.prochain'] };
-    for (const [cle, n] of [['haute', restants.haute], ['top', restants.top]]) {
-      const li = el('li', ['e3-chances-compteur'], { 'data-pitie': cle, 'data-restants': String(n) });
-      li.textContent = fmt(t(textes[cle][n === 1 ? 1 : 0]), { rarete: nomR(pitie[cle].rarete), n });
-      compte.append(li);
-    }
+    const n = restants.top;
+    const li = el('li', ['e3-chances-compteur'], { 'data-pitie': 'top', 'data-restants': String(n) });
+    li.textContent = fmt(t(n === 1 ? 'game.menu.chances.pitie.top.prochain' : 'game.menu.chances.pitie.top'), { rarete: nomR(pitie.top.rarete), n });
+    compte.append(li);
     sectionPitie.push(titrePitie, compte, reglePitie);
   }
   corps.append(lignes, ...sectionPitie, titreObjets, objets, regle);
