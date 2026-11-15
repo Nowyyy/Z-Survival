@@ -1,4 +1,4 @@
-# Contrôle de publication (lot 5o ; CI de dev : lot 5q)
+# Contrôle de publication (lot 5o ; CI de dev : lot 5q ; contrôle 1 : lot 8m)
 
 `scripts/publication/controler.mjs` vérifie, **en lecture seule**, qu'un état est prêt à être publié (avant la fusion `dev` → `main`) et qu'il a bien été publié (après). Il ne pousse rien, ne récupère rien (`git fetch` reste à faire soi-même), n'écrit rien dans le dépôt et n'appelle l'API de GitHub qu'en `GET`.
 
@@ -32,7 +32,7 @@ Le résumé met d'abord les ATTENTION et les NON VÉRIFIABLE, puis « **PRÊT À
 | # | Contrôle | OK si | Sinon |
 |---|---|---|---|
 | 0 | références `origin/*` à jour | `git ls-remote --heads origin` = références locales | ATTENTION : `git fetch origin --prune` puis relancer |
-| 1 | dev | `origin/dev` existe ; bilan `Docs/lots/lot-5o.md` ou le dernier présent (lot 5p : `lot-5o.md` est regroupé dans `Docs/lots/versions/v0.7.md` ; le contrôle cite alors le dernier bilan séparé par ordre de nom (`lot-8k.md` avant le lot 8l, puis `lot-8l.md`) ; lot 8l : `lot-5p.md` regroupé à son tour ; le nom `lot-5o.md` reste écrit dans `scripts/publication/controles.mjs`, à généraliser au lot de publication, point ouvert du lot 5q) | KO sans `origin/dev` |
+| 1 | dev | `origin/dev` existe ; bilan cité : **le dernier bilan séparé de `Docs/lots/`** dans l'ordre des lots (numéro, puis lettres, moins de lettres d'abord : `lot-9z` < `lot-10a`, `lot-8z` < `lot-8aa` ; `ordreBilans`, `scripts/publication/controles.mjs`). *Lot 8m : généralisé ; avant, `lot-5o.md` était écrit en dur (préféré s'il était présent), sinon le dernier par ordre de nom (point ouvert du lot 5q).* Aucun bilan : ATTENTION | KO sans `origin/dev` |
 | 2 | CI de dev | **Pages** : exécution réussie sur le hash de `origin/dev`, aucune en cours ; **Tests** (lot 5q) : le dernier commit testé avec succès de la lignée de `dev` est la tête, ou seuls des fichiers ignorés par `tests.yml` ont changé depuis (voir « CI de dev : dernier commit testé ») | KO (Pages absente, en cours ou échouée ; Tests : fichier non ignoré changé, dernière exécution en échec, aucun commit testé dans les 50 derniers) ; NON VÉRIFIABLE (Tests en cours, `tests.yml` illisible) |
 | 3 | main ancêtre de dev | `git merge-base --is-ancestor origin/main origin/dev` | KO avec le geste : Pull Request `main` → `dev`, « Create a merge commit », sans « Resolve conflicts » |
 | 4 | Pull Requests ouvertes | aucune vers `main` ou `dev` | ATTENTION avec la liste |

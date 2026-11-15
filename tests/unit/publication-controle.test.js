@@ -32,9 +32,16 @@ describe('contrôles --avant : OK, KO, ATTENTION, NON VÉRIFIABLE', () => {
     expect(r(C.fraicheur, { locales: {}, distantes: { erreur: 'réseau' } }).resultat).toBe(C.NV);
   });
 
-  it('dev : hash et bilan (lot-5o.md, sinon le dernier)', () => {
+  // Lot 8m : le dernier bilan dans l'ordre des lots, aucun nom écrit en dur (avant : lot-5o.md s'il était présent, sinon le dernier par ordre de nom).
+  it('dev : hash et dernier bilan séparé dans l\'ordre des lots (numéro, puis lettres), aucun nom en dur', () => {
     expect(r(C.dev, { devSha: 'abcdef1234', bilans: ['lot-5n.md', 'lot-5o.md', 'versions'] })).toMatchObject({ resultat: C.OK, detail: 'origin/dev abcdef1 ; bilan : Docs/lots/lot-5o.md' });
     expect(r(C.dev, { devSha: 'abcdef1234', bilans: ['lot-5m.md', 'lot-5n.md', 'lot-10a.md'] }).detail).toContain('lot-10a.md');
+    expect(r(C.dev, { devSha: 'abcdef1234', bilans: ['lot-5a.md', 'lot-5o.md', 'lot-5q.md', 'lot-8a.md', 'lot-8l.md', 'lot-8m.md', 'versions'] }).detail).toBe('origin/dev abcdef1 ; bilan : Docs/lots/lot-8m.md'); // lot-5o.md n'est plus préféré
+    expect(r(C.dev, { devSha: 'abcdef1234', bilans: ['lot-8m.md', 'lot-10a.md', 'lot-9z.md'] }).detail).toContain('lot-10a.md'); // numéro avant lettres
+    expect(r(C.dev, { devSha: 'abcdef1234', bilans: ['lot-8aa.md', 'lot-8z.md', 'lot-8m.md'] }).detail).toContain('lot-8aa.md'); // lot-8z < lot-8aa
+    expect(r(C.dev, { devSha: 'abcdef1234', bilans: ['lot-8m.md', 'LISEZMOI.md', 'lot-8m.txt', 'lot-x.md', 42] }).detail).toContain('lot-8m.md'); // noms hors format ignorés
+    expect([...['lot-8b.md', 'lot-10a.md', 'lot-8aa.md', 'lot-0.md', 'lot-8z.md', 'lot-0e.md']].sort(C.ordreBilans)).toEqual(['lot-0.md', 'lot-0e.md', 'lot-8b.md', 'lot-8z.md', 'lot-8aa.md', 'lot-10a.md']);
+    expect(readFileSync('scripts/publication/controles.mjs', 'utf8')).not.toMatch(/lot-\d+[a-z]*\.md'/); // aucun bilan nommé en dur
     expect(r(C.dev, { devSha: { erreur: 'absent' }, bilans: [] }).resultat).toBe(C.KO);
     expect(r(C.dev, { devSha: 'abc', bilans: [] }).resultat).toBe(C.ATTENTION);
     expect(r(C.dev, { devSha: 'abc', bilans: { erreur: 'x' } }).resultat).toBe(C.NV);

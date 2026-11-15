@@ -25,9 +25,13 @@ afterAll(() => rmSync(ROOT, { recursive: true, force: true }));
 // Lot 5p : V0.7 publiée (actuelle), V0.6 archivée. « real » retire aussi V0.7 (avant : V0.6 seulement) ; « avantV07 » = versions.json tel qu'il était
 // à la publication de V0.6 (sans V0.7, V0.6 actuelle et latest), pour « site-info.json de la publication de V0.6 » ; le fichier réel (« actuel »,
 // V0.7 Recette) est vérifié par « site-info.json de la publication de V0.7 ».
+// Lot 8m : V0.8 publiée (actuelle), V0.7 archivée. « real » et « avantV07 » retirent aussi V0.8 ; « avantV08 » = versions.json tel qu'il était à la
+// publication de V0.7 (sans V0.8, V0.7 actuelle et latest ; ref de V0.7 : celui de l'archive), pour les scénarios des lots 5p et 5q ; le fichier réel
+// (« actuel », V0.8 Recette) est vérifié par « site-info.json de la publication de V0.8 ».
 const actuel = JSON.parse(readFileSync('versions.json', 'utf8'));
-const real = { ...actuel, latest: 'v0.5', versions: actuel.versions.filter((v) => !['v0.6', 'v0.7'].includes(v.id)).map((v) => (v.id === 'v0.5' ? { ...v, status: 'actuelle' } : v)) };
-const avantV07 = { ...actuel, latest: 'v0.6', versions: actuel.versions.filter((v) => v.id !== 'v0.7').map((v) => (v.id === 'v0.6' ? { ...v, status: 'actuelle' } : v)) };
+const real = { ...actuel, latest: 'v0.5', versions: actuel.versions.filter((v) => !['v0.6', 'v0.7', 'v0.8'].includes(v.id)).map((v) => (v.id === 'v0.5' ? { ...v, status: 'actuelle' } : v)) };
+const avantV07 = { ...actuel, latest: 'v0.6', versions: actuel.versions.filter((v) => !['v0.7', 'v0.8'].includes(v.id)).map((v) => (v.id === 'v0.6' ? { ...v, status: 'actuelle' } : v)) };
+const avantV08 = { ...actuel, latest: 'v0.7', versions: actuel.versions.filter((v) => v.id !== 'v0.8').map((v) => (v.id === 'v0.7' ? { ...v, status: 'actuelle' } : v)) };
 let n = 0;
 const GENERE = '2026-11-06T12:00:00Z';
 
@@ -860,15 +864,16 @@ describe('site-info.json de la publication de V0.6 (lot 5f)', () => {
 
 // Lot 5p : publication de V0.7. Jeu de données : versions.json réel (V0.7 actuelle, V0.6 à V0.1 archivées) dans main, journal réel
 // (data/changelog.json : lots 5j à 5p en v0.7) dans le build de dev, archives fictives v0.1 à v0.6, sans fichier des noms (textes d'origine).
+// Lot 8m : versions.json d'avant V0.8 (avantV08 ; avant : le fichier réel, alors dans cet état).
 describe('site-info.json de la publication de V0.7 (lot 5p)', () => {
   const journal = journalPublie(); // lot 5q : sans les lots de la V0.8 (état du journal à cette publication) ; avant : journal réel entier
-  const siteDe = (changelog) => assemble({ versions: actuel, mainDir: build(), devDir: build({ changelog }), archiveDir: archiveDir(['v0.1', 'v0.2', 'v0.3', 'v0.4', 'v0.5', 'v0.6'], actuel), dev: DEV });
+  const siteDe = (changelog) => assemble({ versions: avantV08, mainDir: build(), devDir: build({ changelog }), archiveDir: archiveDir(['v0.1', 'v0.2', 'v0.3', 'v0.4', 'v0.5', 'v0.6'], avantV08), dev: DEV });
 
   it('recette = V0.7, versions précédentes V0.6 → V0.1 (archives), évolutions vides (les lots 5j à 5p, v0.7, disparaissent) ; site-info.json valide', () => {
-    expect(actuel.latest).toBe('v0.7');
+    expect(avantV08.latest).toBe('v0.7');
     expect(journal.lots.filter((l) => l.version === 'v0.7').map((l) => l.name)).toEqual(['lot-5j', 'lot-5k', 'lot-5l', 'lot-5m', 'lot-5n', 'lot-5o', 'lot-5p']);
     const { out: dir, siteInfo } = siteDe(journal);
-    const v07 = actuel.versions.find((v) => v.id === 'v0.7');
+    const v07 = avantV08.versions.find((v) => v.id === 'v0.7');
     expect(siteInfo.recette).toEqual({ id: 'v0.7', label: 'V0.7', title: v07.title, date: '2026-11-09', ref: v07.ref, entry: 'jeu.html' });
     expect(siteInfo.precedentes.map((p) => [p.label, p.entry, p.status])).toEqual([
       ['V0.6', '../v0.6/jeu.html', 'archive'], ['V0.5', '../v0.5/jeu.html', 'archive'], ['V0.4', '../v0.4/jeu.html', 'archive'], ['V0.3', '../v0.3/jeu.html', 'archive'], ['V0.2', '../v0.2/jeu.html', 'archive'], ['V0.1', '../v0.1/jeu.html', 'archive'],
@@ -878,7 +883,7 @@ describe('site-info.json de la publication de V0.7 (lot 5p)', () => {
     expect(readJson(join(dir, 'Recette/site-info.json'))).toEqual(siteInfo);
     expect(validateSiteInfo(siteInfo)).toEqual({ ok: true, errors: [] });
     expect(readJson(join(dir, 'Recette/build-info.json'))).toMatchObject({ channel: 'release', version: 'V0.7', branch: 'main' });
-    expect(readJson(join(dir, 'Recette/versions.json'))).toEqual(actuel);
+    expect(readJson(join(dir, 'Recette/versions.json'))).toEqual(avantV08);
     expect(readdirSync(dir).filter((name) => /^v0\.\d+$/.test(name)).sort()).toEqual(['v0.1', 'v0.2', 'v0.3', 'v0.4', 'v0.5', 'v0.6']);
   });
 
@@ -898,10 +903,11 @@ describe('site-info.json de la publication de V0.7 (lot 5p)', () => {
 describe('site-info.json au début de la V0.8 (lot 5q)', () => {
   const journal = JSON.parse(readFileSync('data/changelog.json', 'utf8'));
   const texte = readFileSync(NOMS_FICHIER, 'utf8');
-  const siteDe = (changelog, noms = texte) => assemble({ versions: actuel, mainDir: build(), devDir: build({ changelog, extra: { [NOMS_FICHIER]: noms } }), archiveDir: archiveDir(['v0.1', 'v0.2', 'v0.3', 'v0.4', 'v0.5', 'v0.6'], actuel), dev: DEV });
+  // Lot 8m : versions.json d'avant V0.8 (avantV08 ; avant : le fichier réel, alors dans cet état).
+  const siteDe = (changelog, noms = texte) => assemble({ versions: avantV08, mainDir: build(), devDir: build({ changelog, extra: { [NOMS_FICHIER]: noms } }), archiveDir: archiveDir(['v0.1', 'v0.2', 'v0.3', 'v0.4', 'v0.5', 'v0.6'], avantV08), dev: DEV });
 
   it('journal et noms réels : aucun lot de v0.7, lot-5q absent (masqué) ; sans le fichier des noms, lot-5q apparaîtrait', () => {
-    expect(actuel.latest).toBe('v0.7');
+    expect(avantV08.latest).toBe('v0.7');
     expect(journal.lots.find((l) => l.name === 'lot-5q')).toMatchObject({ version: 'v0.8' });
     expect(parseNoms(texte).blocs.find((b) => b.id === 'lot-5q')).toMatchObject({ type: 'lot', version: 'v0.8', afficher: false });
     const { siteInfo } = siteDe(journal);
@@ -919,6 +925,52 @@ describe('site-info.json au début de la V0.8 (lot 5q)', () => {
     expect(siteInfo.evolutions[0]).toEqual({ id: 'lot-6a', title: 'Lot visible de la V0.8 (fictif)', text: 'Premier point du lot de test.', date: '2026-11-10', version: 'v0.8' });
     expect(siteInfo.evolutions.map((e) => e.id)).not.toContain('lot-5q');
     expect(siteInfo.evolutions.filter((e) => e.version === 'v0.7')).toEqual([]);
+    expect(validateSiteInfo(siteInfo)).toEqual({ ok: true, errors: [] });
+  });
+});
+
+// Lot 8m : publication de V0.8. Jeu de données : versions.json réel (V0.8 actuelle, V0.7 à V0.1 archivées) dans main, journal réel (lots 5q et 8a à
+// 8m en v0.8) dans le build de dev, archives fictives v0.1 à v0.7 ; sans fichier des noms (textes d'origine), puis avec le fichier des noms réel.
+describe('site-info.json de la publication de V0.8 (lot 8m)', () => {
+  const journal = JSON.parse(readFileSync('data/changelog.json', 'utf8'));
+  const texte = readFileSync(NOMS_FICHIER, 'utf8');
+  const ARCHIVES = ['v0.1', 'v0.2', 'v0.3', 'v0.4', 'v0.5', 'v0.6', 'v0.7'];
+  const siteDe = (changelog, extra = {}) => assemble({ versions: actuel, mainDir: build(), devDir: build({ changelog, extra }), archiveDir: archiveDir(ARCHIVES, actuel), dev: DEV });
+
+  it('recette = V0.8, versions précédentes V0.7 → V0.1 (archives), évolutions vides (les lots 5q et 8a à 8m, v0.8, disparaissent) ; site-info.json valide', () => {
+    expect(actuel.latest).toBe('v0.8');
+    expect(journal.lots.filter((l) => l.version === 'v0.8').map((l) => l.name)).toEqual(['lot-5q', 'lot-8a', 'lot-8b', 'lot-8c', 'lot-8d', 'lot-8e', 'lot-8f', 'lot-8g', 'lot-8i', 'lot-8h', 'lot-8j', 'lot-8k', 'lot-8l', 'lot-8m']);
+    const { out: dir, siteInfo } = siteDe(journal);
+    const v08 = actuel.versions.find((v) => v.id === 'v0.8');
+    expect(siteInfo.recette).toEqual({ id: 'v0.8', label: 'V0.8', title: v08.title, date: '2026-11-15', ref: v08.ref, entry: 'jeu.html' });
+    expect(siteInfo.precedentes.map((p) => [p.label, p.entry, p.status])).toEqual([
+      ['V0.7', '../v0.7/jeu.html', 'archive'], ['V0.6', '../v0.6/jeu.html', 'archive'], ['V0.5', '../v0.5/jeu.html', 'archive'], ['V0.4', '../v0.4/jeu.html', 'archive'], ['V0.3', '../v0.3/jeu.html', 'archive'], ['V0.2', '../v0.2/jeu.html', 'archive'], ['V0.1', '../v0.1/jeu.html', 'archive'],
+    ]);
+    expect(siteInfo.evolutions).toEqual([]);
+    expect(siteInfo.dev).toEqual({ present: true, sha: 'bbbbbbb', date: '2026-11-03T08:00:00Z', entry: '../dev/jeu.html' });
+    expect(readJson(join(dir, 'Recette/site-info.json'))).toEqual(siteInfo);
+    expect(validateSiteInfo(siteInfo)).toEqual({ ok: true, errors: [] });
+    expect(readJson(join(dir, 'Recette/build-info.json'))).toMatchObject({ channel: 'release', version: 'V0.8', branch: 'main' });
+    expect(readJson(join(dir, 'Recette/versions.json'))).toEqual(actuel);
+    expect(readdirSync(dir).filter((name) => /^v0\.\d+$/.test(name)).sort()).toEqual(ARCHIVES);
+  });
+
+  it('avec le fichier des noms réel : Recette « V0.8 » et sa description complète (bloc [v0.8]), V0.7 en tête des précédentes, évolutions vides', () => {
+    const bloc = parseNoms(texte).blocs.find((b) => b.id === 'v0.8');
+    expect(bloc).toMatchObject({ type: 'version', nom: 'V0.8' });
+    const { siteInfo } = siteDe(journal, { [NOMS_FICHIER]: texte });
+    expect([siteInfo.recette.id, siteInfo.recette.label, siteInfo.recette.title]).toEqual(['v0.8', 'V0.8', cleanText(bloc.description, MAX_VERSION_TITLE)]);
+    expect(siteInfo.precedentes[0]).toMatchObject({ id: 'v0.7', label: 'V0.7', entry: '../v0.7/jeu.html', status: 'archive' });
+    expect(siteInfo.evolutions).toEqual([]);
+    expect(validateSiteInfo(siteInfo)).toEqual({ ok: true, errors: [] });
+  });
+
+  it('le même jeu avec un lot ajouté de version v0.9 (non publiée) : il apparaît, seul ; la Recette reste V0.8', () => {
+    const lot = { name: 'lot-9a', version: 'v0.9', date: '2026-11-16', titre: 'Premier lot de la V0.9 (fictif)', points: ['Premier point du lot de test.', 'Second point, jamais affiché.'] };
+    const { siteInfo } = siteDe({ ...journal, lots: [...journal.lots, lot] });
+    expect(siteInfo.evolutions).toEqual([{ id: 'lot-9a', title: 'Premier lot de la V0.9 (fictif)', text: 'Premier point du lot de test.', date: '2026-11-16', version: 'v0.9' }]);
+    expect(siteInfo.recette.id).toBe('v0.8');
+    expect(siteInfo.precedentes.map((p) => p.id)).toEqual(['v0.7', 'v0.6', 'v0.5', 'v0.4', 'v0.3', 'v0.2', 'v0.1']);
     expect(validateSiteInfo(siteInfo)).toEqual({ ok: true, errors: [] });
   });
 });
@@ -994,9 +1046,12 @@ describe('accueil retouché (lot 5i) : carte de la version actuelle, « Jouer - 
     expect([apres.current, apres.playLabel]).toEqual([{ label: 'V0.7', title: 'Version suivante (fictive).' }, 'V0.7']);
     expect(apres.previous.map((v) => v.label)).toEqual(['V0.6', 'V0.5', 'V0.4', 'V0.3', 'V0.2', 'V0.1']);
     expect(apres.previous[0]).toMatchObject({ title: avantV07.versions.find((v) => v.id === 'v0.6').title, href: '../v0.6/jeu.html' });
-    const reelle = homeModel(buildSiteInfo({ versions: actuel, dev: {}, genere: GENERE }));
-    expect([reelle.current, reelle.playLabel]).toEqual([{ label: 'V0.7', title: actuel.versions.find((v) => v.id === 'v0.7').title }, 'V0.7']);
+    const reelle = homeModel(buildSiteInfo({ versions: avantV08, dev: {}, genere: GENERE })); // lot 8m : état de la publication de V0.7 (avant : le fichier réel)
+    expect([reelle.current, reelle.playLabel]).toEqual([{ label: 'V0.7', title: avantV08.versions.find((v) => v.id === 'v0.7').title }, 'V0.7']);
     expect(reelle.previous.map((v) => [v.label, v.href])).toEqual(apres.previous.map((v) => [v.label, v.href]));
+    const v08 = homeModel(buildSiteInfo({ versions: actuel, dev: {}, genere: GENERE })); // lot 8m : publication réelle de V0.8
+    expect([v08.current, v08.playLabel]).toEqual([{ label: 'V0.8', title: actuel.versions.find((v) => v.id === 'v0.8').title }, 'V0.8']);
+    expect(v08.previous.map((v) => [v.label, v.href])).toEqual([['V0.7', '../v0.7/jeu.html'], ...apres.previous.map((v) => [v.label, v.href])]);
   });
 
   it('site-info.json : recette.title = description complète du fichier des noms (200 caractères, avant : tronquée à 120) ; validateSiteInfo l\'accepte, refuse 201', () => {
@@ -1014,11 +1069,12 @@ describe('accueil retouché (lot 5i) : carte de la version actuelle, « Jouer - 
   });
 
   // Lot 5p : Recette V0.7 (bloc [v0.7]) ; avant : V0.6 (bloc [v0.6]) ; archives fictives v0.1 à v0.6 (avant : v0.5).
-  it('fichier des noms du dépôt : recette.title de la Recette (V0.7) = sa description complète (bloc [v0.7]), quelle que soit sa longueur (≤ 200)', () => {
+  // Lot 8m : Recette V0.8 (bloc [v0.8]) ; archives fictives v0.1 à v0.7.
+  it('fichier des noms du dépôt : recette.title de la Recette (V0.8) = sa description complète (bloc [v0.8]), quelle que soit sa longueur (≤ 200)', () => {
     const texte = readFileSync(NOMS_FICHIER, 'utf8');
     const bloc = parseNoms(texte).blocs.find((b) => b.id === actuel.latest);
-    const result = assemble({ versions: actuel, mainDir: build(), devDir: build({ extra: { [NOMS_FICHIER]: texte } }), archiveDir: archiveDir(['v0.1', 'v0.2', 'v0.3', 'v0.4', 'v0.5', 'v0.6'], actuel), dev: DEV });
-    expect(actuel.latest).toBe('v0.7');
+    const result = assemble({ versions: actuel, mainDir: build(), devDir: build({ extra: { [NOMS_FICHIER]: texte } }), archiveDir: archiveDir(['v0.1', 'v0.2', 'v0.3', 'v0.4', 'v0.5', 'v0.6', 'v0.7'], actuel), dev: DEV });
+    expect(actuel.latest).toBe('v0.8');
     const attendu = typeof bloc?.description === 'string' ? cleanText(bloc.description, MAX_VERSION_TITLE) : cleanText(actuel.versions.find((v) => v.id === actuel.latest).title, MAX_VERSION_TITLE);
     expect(result.siteInfo.recette.title).toBe(attendu);
     expect(result.siteInfo.recette.title.endsWith('…')).toBe(false);
