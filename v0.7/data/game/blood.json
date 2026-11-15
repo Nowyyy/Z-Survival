@@ -1,0 +1,37 @@
+{
+  "_provisoire": "Sang du lot 3j (valeurs provisoires, purement visuelles, aucun effet de jeu). levels : niveaux de ?sang= (0 : aucun ; reduit : moins de particules et de taches, plus courtes, teinte plus sombre, corps sans taches ; 1 : complet). hit, kill, player : particules par tir non mortel, par mort, par coup reçu par le joueur ; maxParticles, maxDecals : plafonds (la plus ancienne tache est évincée) ; decalLife, fade : durée de vie et fondu final des taches (secondes) ; corpseLife : durée d'un cadavre visuel avant de s'enfoncer (secondes) ; bodyStains : taches sur les corps selon la vie. corpses : cadavres simultanés du niveau (lot 3m : 2 au lieu de 6 en réduit et complet : avec les variantes « riche » par défaut, un cadavre coûte environ 2 100 triangles et 6 cadavres plus 10 zombies dépassaient 45 000 triangles dans R1, U1, U4 ; corpses.max reste le plafond absolu, 6). Unités du jeu (y = hauteur).",
+  "version": 1,
+  "levels": {
+    "0": { "label": "aucun", "hit": 0, "kill": 0, "player": 0, "maxParticles": 0, "maxDecals": 0, "decalLife": 0, "fade": 0, "corpses": 0, "corpseLife": 0, "bodyStains": false, "tint": "--sang-frais" },
+    "reduit": { "label": "réduit", "hit": 3, "kill": 8, "player": 4, "maxParticles": 96, "maxDecals": 12, "decalLife": 8, "fade": 3, "corpses": 2, "corpseLife": 2, "bodyStains": false, "tint": "--sang-reduit" },
+    "1": { "label": "complet", "hit": 8, "kill": 20, "player": 4, "maxParticles": 256, "maxDecals": 48, "decalLife": 20, "fade": 5, "corpses": 2, "corpseLife": 6, "bodyStains": true, "tint": "--sang-frais" }
+  },
+  "particles": {
+    "gravity": 520,
+    "speed": [40, 120],
+    "up": [30, 95],
+    "spread": 0.9,
+    "life": [0.35, 0.9],
+    "size": [0.7, 2.2],
+    "hitHeight": 34,
+    "killHeight": 28,
+    "playerHeight": 30
+  },
+  "decals": {
+    "y": 0.2,
+    "shapes": 4,
+    "hitSize": [3, 7],
+    "killSize": [16, 24],
+    "dropSize": [1.5, 3.5],
+    "maxFootprint": 1.2
+  },
+  "corpses": { "max": 6, "sink": 0.8, "depth": 16, "deaths": ["mortAvant", "mortArriere", "effondrement"] },
+  "wounds": [0.75, 0.5, 0.25],
+  "budget": { "calls": 3, "triangles": 1200, "particleTriangles": 2, "decalTriangles": 2 },
+  "texture": { "size": 256, "seed": 31 },
+  "priority2": [
+    { "id": "yeux", "label": "Lueur très faible des yeux", "enabled": false, "token": "--perso-yeux", "parts": 2, "triangles": 48, "calls": 1, "reason": "Repère des têtes dans la brume ; jamais seule porteuse d'information (la silhouette et le contraste suffisent sans elle)." },
+    { "id": "lampe", "label": "Lampe frontale ou torche du joueur", "enabled": false, "token": "--perso-lampe", "parts": 1, "triangles": 12, "calls": 1, "reason": "Déjà présente en matière émissive sur le joueur B ; une vraie lumière coûterait une lumière dynamique de plus (non mesurée ici)." },
+    { "id": "copeaux", "label": "Copeaux de bois pendant la réparation", "enabled": false, "token": "--game-wood", "parts": 6, "triangles": 12, "calls": 1, "reason": "Rendrait chaque coup de marteau visible ; même instance que les particules (un appel), copeaux au lieu de sang." }
+  ]
+}

@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="robots" content="noindex">
+  <meta name="color-scheme" content="dark">
+  <title>Z-Survival · Sons choisis</title>
+  <link rel="icon" href="data:,">
+  <link rel="preload" href="fonts/barlow-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="fonts/barlow-latin-700-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="data/i18n/atelier-sons.json" as="fetch" crossorigin>
+  <link rel="stylesheet" href="css/tokens.css">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/atelier-sons.css">
+  <script type="module" src="js/atelier-sons/main.js"></script>
+</head>
+<body class="atelier-page" data-vue="choix">
+  <noscript>
+    <p class="noscript">Cette page a besoin de JavaScript.</p>
+  </noscript>
+  <main id="app" class="atelier" hidden>
+    <header class="atelier-head" aria-labelledby="atelier-title">
+      <h1 id="atelier-title" class="atelier-title" data-i18n="dev.atelier.choix.title"></h1>
+      <p class="atelier-intro" data-i18n="dev.atelier.choix.intro"></p>
+      <p class="atelier-warning" data-i18n="dev.atelier.warning"></p>
+      <div class="atelier-controls">
+        <div class="atelier-volume">
+          <label for="volume" data-i18n="dev.atelier.volume"></label>
+          <input id="volume" class="atelier-range" type="range" min="0" max="100" step="5" value="40">
+          <output id="volume-value" class="atelier-value" for="volume"></output>
+        </div>
+        <button id="btn-unlock" class="button atelier-button" type="button" data-i18n="dev.atelier.unlock"></button>
+        <a class="atelier-link" href="sons.html" data-i18n="dev.atelier.sonsActuels"></a>
+        <a class="atelier-link" href="atelier-sons.html" data-i18n="dev.atelier.lienTout"></a>
+      </div>
+      <p class="atelier-note" data-i18n="dev.atelier.iphone"></p>
+      <p id="status" class="atelier-status" role="status" aria-live="polite"></p>
+      <nav class="atelier-nav" aria-labelledby="nav-title">
+        <h2 id="nav-title" class="atelier-nav-title" data-i18n="dev.atelier.nav"></h2>
+        <ul id="nav-list" class="atelier-nav-list"></ul>
+      </nav>
+    </header>
+    <section id="refs" class="atelier-section" aria-labelledby="refs-title">
+      <h2 id="refs-title" class="atelier-heading" data-i18n="dev.atelier.refs"></h2>
+      <p class="atelier-note" data-i18n="dev.atelier.refs.intro"></p>
+      <div id="refs-list" class="atelier-buttons"></div>
+      <p id="refs-measures" class="atelier-measures"></p>
+    </section>
+    <section id="ecartes" class="atelier-section" aria-labelledby="ecartes-title">
+      <h2 id="ecartes-title" class="atelier-heading" data-i18n="dev.atelier.choix.ecartes"></h2>
+      <p id="ecartes-list" class="atelier-note"></p>
+    </section>
+    <div id="groups"></div>
+    <section id="scenes" class="atelier-section" aria-labelledby="scenes-title">
+      <h2 id="scenes-title" class="atelier-heading" data-i18n="dev.atelier.scenes"></h2>
+      <p class="atelier-note" data-i18n="dev.atelier.scenes.intro"></p>
+      <div id="scenes-list" class="atelier-buttons"></div>
+      <p id="scene-status" class="atelier-measures" role="status" aria-live="polite"></p>
+    </section>
+    <section id="choices" class="atelier-section" aria-labelledby="choices-title">
+      <h2 id="choices-title" class="atelier-heading" data-i18n="dev.atelier.choices"></h2>
+      <p class="atelier-note" data-i18n="dev.atelier.choices.intro"></p>
+      <label class="atelier-choices-label" for="choices-text" data-i18n="dev.atelier.choices.label"></label>
+      <textarea id="choices-text" class="atelier-choices" rows="6" readonly spellcheck="false"></textarea>
+      <p id="choices-empty" class="atelier-note" data-i18n="dev.atelier.choices.empty"></p>
+      <button id="btn-copy" class="button atelier-button" type="button" data-i18n="dev.atelier.copy"></button>
+    </section>
+    <div class="atelier-stopbar">
+      <button id="btn-stop" class="button atelier-button atelier-stop" type="button" data-i18n="dev.atelier.stop"></button>
+    </div>
+  </main>
+</body>
+</html>

@@ -1,0 +1,199 @@
+/* Atelier des personnages (lot 3j) : page technique, mêmes jetons que le reste du site, aucun habillage de jeu. */
+.persos-page {
+  padding: max(var(--space-3), env(safe-area-inset-top)) max(var(--space-4), env(safe-area-inset-right)) max(var(--space-3), env(safe-area-inset-bottom)) max(var(--space-4), env(safe-area-inset-left));
+}
+
+.persos {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  max-width: 64rem;
+  margin: 0 auto;
+}
+
+.persos-title {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-size: var(--text-xl);
+  font-weight: var(--font-weight-bold);
+  line-height: 1.2;
+  color: var(--color-action-text);
+}
+
+.persos-heading {
+  margin: 0;
+  font-size: var(--text-lg);
+  font-weight: var(--font-weight-bold);
+}
+
+.persos-subheading {
+  margin: 0;
+  font-size: var(--text-md);
+  font-weight: var(--font-weight-bold);
+}
+
+.persos-intro,
+.persos-note,
+.persos-status,
+.persos-legend {
+  margin: 0;
+  color: var(--color-text-muted);
+}
+
+.persos-warning {
+  margin: 0;
+  color: var(--color-warning);
+}
+
+.persos-error {
+  margin: 0;
+  padding: var(--space-3);
+  border: 2px solid var(--color-danger);
+  border-radius: var(--radius-md);
+  background: var(--color-danger-surface);
+}
+
+.persos-head,
+.persos-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.persos-section {
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+}
+
+.persos-nav-title {
+  margin: 0;
+  font-size: var(--text-md);
+}
+
+.persos-nav-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.persos-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--touch-target);
+  padding: 0 var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  color: var(--color-text);
+}
+
+.persos-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  align-items: flex-end;
+}
+
+.persos-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 9rem;
+}
+
+.persos-field-range {
+  min-width: 12rem;
+}
+
+.persos-select,
+.persos-range {
+  min-height: var(--touch-target);
+  font: inherit;
+}
+
+.persos-select {
+  padding: 0 var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-raised);
+  color: var(--color-text);
+}
+
+.persos-range {
+  width: 100%;
+  accent-color: var(--color-action);
+}
+
+.persos-value {
+  font-variant-numeric: tabular-nums;
+}
+
+.persos-button {
+  align-self: flex-start;
+}
+
+.persos-stage {
+  width: 100%;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg);
+}
+
+.persos-stage-main {
+  aspect-ratio: 667 / 375;
+}
+
+.persos-stage-grid {
+  aspect-ratio: 4 / 3;
+}
+
+.persos-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.persos-measures {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin: 0;
+  padding-left: var(--space-5);
+}
+
+.persos-out {
+  color: var(--color-warning);
+  font-weight: var(--font-weight-bold);
+}
+
+.persos-choices-label {
+  font-weight: var(--font-weight-bold);
+}
+
+.persos-choices {
+  width: 100%;
+  min-height: 8rem;
+  padding: var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: ui-monospace, monospace;
+  font-size: var(--text-sm);
+}
+
+.noscript {
+  padding: var(--space-4);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .persos-link,
+  .persos-button {
+    transition: none;
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "_provisoire": "Variantes de zombies du lot 1c (provisoires). scale : échelle du personnage (0,92 à 1,08) ; outfit, trousers, skin : régions de data/game/textures.json (atlas-persos) ; dominant : jeton de la couleur qui domine le personnage (contraste ≥ 3:1 avec le sol, testé) ; headTilt, armLift : écarts de posture en radians ajoutés à js/core/pose.js (tête penchée, hauteur des bras). Le joueur a sa propre tenue (player).",
+  "player": { "outfit": "veste", "trousers": "jean", "boot": "botte", "hair": "cheveux", "skin": "peau", "gun": "arme", "dominant": "--game-jacket" },
+  "zombie": {
+    "boot": "botte",
+    "variants": [
+      { "id": "marcheur", "scale": 1.0, "outfit": "tenue-1", "trousers": "pantalon-1", "skin": "peau-1", "dominant": "--game-cloth-1", "headTilt": 0.0, "armLift": 0.0 },
+      { "id": "petit", "scale": 0.93, "outfit": "tenue-2", "trousers": "pantalon-2", "skin": "peau-2", "dominant": "--game-cloth-2", "headTilt": 0.18, "armLift": -0.12 },
+      { "id": "grand", "scale": 1.07, "outfit": "tenue-3", "trousers": "pantalon-1", "skin": "peau-3", "dominant": "--game-cloth-3", "headTilt": -0.1, "armLift": 0.1 },
+      { "id": "voute", "scale": 0.98, "outfit": "tenue-4", "trousers": "pantalon-2", "skin": "peau-4", "dominant": "--game-cloth-4", "headTilt": 0.28, "armLift": 0.04 }
+    ]
+  }
+}

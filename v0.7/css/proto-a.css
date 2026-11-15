@@ -1,0 +1,134 @@
+/* Direction A « sobre » (lot 3k, proposition non intégrée) : le minimum à l'écran, sans cadre (fond transparent par défaut), texte os à fort contraste
+   avec contour noir (macro « contour »), barre de vie fine, vague au centre en haut, argent en haut à droite, chutes en pastilles (pleines = restantes,
+   vides sinon, et le nombre écrit). Blocs de taille fixe (em) : aucune boîte ne bouge quand une valeur change. Ni filter, ni mix-blend-mode, ni backdrop-filter. */
+
+.ui3k-dir-a {
+  --ui3k-pause-size: 44px;
+}
+
+.ui3k-dir-a .p-block {
+  height: 1.55em;
+  padding: 0 0.35em;
+  border-radius: var(--hud-radius);
+  background: color-mix(in srgb, var(--hud-bg) calc(var(--ui3k-alpha) * 100%), transparent);
+  text-shadow: var(--ui3k-shadow);
+}
+
+.ui3k-dir-a .p-life {
+  width: 10.4em;
+}
+
+.ui3k-dir-a .p-life .p-icon {
+  color: var(--color-action-text);
+}
+
+/* Barre fine : 0,3 em de haut, piste os atténué, remplissage rouge ; la valeur est écrite à côté (jamais la couleur seule). */
+.ui3k-dir-a .p-bar {
+  width: 4.2em;
+  height: 0.3em;
+  border-radius: 1px;
+  background: var(--color-border);
+}
+
+.ui3k-dir-a .p-life-text {
+  width: 3.8em;
+  text-align: right;
+}
+
+.ui3k-dir-a .p-chutes {
+  width: 5.4em;
+}
+
+.ui3k-dir-a .p-pips {
+  display: inline-flex;
+  gap: 0.15em;
+}
+
+.ui3k-dir-a .p-pip {
+  box-sizing: border-box;
+  width: 0.6em;
+  height: 0.6em;
+  border: 2px solid var(--color-text);
+  border-radius: 50%;
+}
+
+.ui3k-dir-a .p-pip.is-on {
+  background: var(--color-text);
+}
+
+.ui3k-dir-a .p-floor {
+  width: 4.8em;
+}
+
+.ui3k-dir-a .p-wave {
+  flex-direction: column;
+  justify-content: center;
+  gap: 0;
+  width: 7.6em;
+  height: 2.4em;
+  line-height: 1.15;
+}
+
+.ui3k-dir-a .p-wave .p-value {
+  font-size: 1.1em;
+}
+
+.ui3k-dir-a .p-tag {
+  color: var(--color-action-text);
+}
+
+.ui3k-dir-a .p-remaining {
+  justify-content: center;
+  width: 6.1em;
+}
+
+.ui3k-dir-a .p-money {
+  justify-content: flex-end;
+  width: 5.2em;
+}
+
+.ui3k-dir-a .p-trial {
+  color: var(--color-warning);
+}
+
+.ui3k-dir-a .p-pause {
+  border-color: var(--color-border);
+  background: color-mix(in srgb, var(--hud-bg) calc(max(var(--ui3k-alpha), 0.6) * 100%), transparent);
+}
+
+/* Panneaux : surface sombre sans cadre rouge, boutons à contour. */
+.ui3k-dir-a .p-panel {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.ui3k-dir-a .p-btn-quiet {
+  background: transparent;
+}
+
+/* À terre : texte sur zone pleine, barre fine du compte à rebours. */
+.ui3k-dir-a .p-down-bar {
+  height: 0.3em;
+}
+
+/* Sticks : anneau fin, pastille os cerclée. */
+.ui3k-dir-a .p-stick-base {
+  border-width: 2px;
+  background: color-mix(in srgb, var(--color-bg) 35%, transparent);
+}
+
+.ui3k-dir-a .p-stick-knob {
+  width: 44px;
+  height: 44px;
+  border-color: var(--color-text);
+  background: var(--color-action);
+}
+
+/* Écrans hors partie : cartes sans contour, surfaces sombres. */
+.ui3k-dir-a .p-card {
+  border-color: transparent;
+}
+
+.ui3k-dir-a .p-menu-title {
+  font-size: 2em;
+}

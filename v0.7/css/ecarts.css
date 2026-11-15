@@ -1,0 +1,125 @@
+/* Page des écarts carte / modèle (lot 3g) : page technique, mêmes jetons que le reste du site. À retirer au lot 13. */
+.ecarts-page {
+  padding: max(var(--space-3), env(safe-area-inset-top)) max(var(--space-3), env(safe-area-inset-right)) max(var(--space-3), env(safe-area-inset-bottom)) max(var(--space-3), env(safe-area-inset-left));
+}
+
+.ecarts {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  max-width: 80rem;
+  margin: 0 auto;
+}
+
+.ecarts-title {
+  font-family: var(--font-sans);
+  font-size: var(--text-xl);
+  font-weight: var(--font-weight-bold);
+  line-height: 1.2;
+  color: var(--color-action-text);
+}
+
+.ecarts-intro,
+.ecarts-stats {
+  color: var(--color-text-muted);
+}
+
+.ecarts-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ecarts-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--touch-target);
+  min-width: var(--touch-target);
+  padding: 0 var(--space-4);
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  font-weight: var(--font-weight-bold);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.ecarts-button[aria-pressed="true"] {
+  border-color: var(--color-action);
+  background: var(--color-action-deep);
+}
+
+.ecarts-button:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.ecarts-figure {
+  margin: 0;
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  overflow: hidden;
+}
+
+.ecarts-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 85vh;
+}
+
+.ecarts-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+
+.ecarts-legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.ecarts-swatch {
+  width: 1.25rem;
+  height: 1.25rem;
+  border: 2px solid var(--color-border);
+}
+
+.sw-carte { background: var(--game-wall-base); }
+.sw-modele { border: 3px dashed var(--color-focus); background: transparent; }
+.sw-objet { border-color: var(--color-warning); background: repeating-linear-gradient(45deg, var(--color-warning) 0 3px, transparent 3px 7px); }
+.sw-ecart { border: 3px solid var(--color-danger); background: transparent; }
+
+/* Dessin SVG : tout par classes, aucune couleur dans le script. */
+.fond { fill: var(--color-bg); }
+.sol { fill: var(--color-surface-raised); }
+.mur { fill: var(--game-wall-base); opacity: 0.85; }
+.fenetre { fill: var(--color-success); }
+.pilier { fill: var(--game-metal); }
+.escalier { fill: var(--game-wood-dark); stroke: var(--game-wood); stroke-width: 3; }
+.meuble { fill: var(--game-wood); opacity: 0.85; }
+.meuble-provisoire { fill: var(--game-plank); opacity: 0.6; }
+.releve { fill: none; stroke: var(--color-focus); stroke-width: 4; stroke-dasharray: 10 8; }
+.releve-ligne { stroke-width: 3; }
+.releve-fenetre { stroke: var(--color-success); }
+.releve-objet { stroke-dasharray: 4 6; }
+.objet-sans { fill: url(#ecarts-hachures); stroke: var(--color-warning); stroke-width: 5; stroke-dasharray: none; }
+.hachure { fill: var(--color-warning); opacity: 0.55; }
+.ecart { fill: none; stroke: var(--color-danger); stroke-width: 7; }
+.etiquette { fill: var(--color-text); font-family: var(--font-sans); font-weight: var(--font-weight-bold); paint-order: stroke; stroke: var(--color-bg); stroke-width: 5px; }
+.etiquette-ecart { fill: var(--color-danger); }
+.etiquette-objet { fill: var(--color-warning); }
+.echelle-trait { stroke: var(--color-text); stroke-width: 8; }

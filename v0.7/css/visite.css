@@ -1,0 +1,74 @@
+/* Page de lancement de la visite libre (lot 3g) : page technique, mêmes jetons que le reste du site. À retirer au lot 13. */
+.visite-page {
+  padding: max(var(--space-3), env(safe-area-inset-top)) max(var(--space-3), env(safe-area-inset-right)) max(var(--space-3), env(safe-area-inset-bottom)) max(var(--space-3), env(safe-area-inset-left));
+}
+
+.visite {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  max-width: 48rem;
+  margin: 0 auto;
+}
+
+.visite-title {
+  font-family: var(--font-sans);
+  font-size: var(--text-xl);
+  font-weight: var(--font-weight-bold);
+  line-height: 1.2;
+  color: var(--color-action-text);
+}
+
+.visite-intro,
+.visite-note {
+  color: var(--color-text-muted);
+}
+
+.visite-intro {
+  color: var(--color-text);
+}
+
+.visite-nav {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.visite-link {
+  display: flex;
+  align-items: center;
+  min-height: calc(var(--touch-target) * 1.25);
+  padding: var(--space-2) var(--space-4);
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: var(--text-lg);
+  font-weight: var(--font-weight-bold);
+  text-decoration: none;
+}
+
+.visite-link:hover {
+  border-color: var(--color-action);
+}
+
+.visite-link:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+@media (min-width: 768px) {
+  .visite-nav {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .visite-link {
+    transition: none;
+  }
+}
