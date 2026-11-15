@@ -24,7 +24,7 @@ Avant de modifier une page, lis `Docs/ref/conventions.md` (arborescence, pages, 
 ## Git
 - Une branche par lot : `lot-N`, supprimée par le propriétaire en fin de version, jamais par un agent (gardés : lots de la version en cours ; repères : étiquettes `v0.N`). Un commit par partie : « Lot N-X — titre ». Arbre propre au départ.
 - Push de `lot-N` seulement, puis comparer `git rev-parse HEAD` et `git ls-remote origin lot-N`.
-- Jamais de force-push, jamais de fusion dans `main`, pas de Pull Request sans demande. Tags facultatifs. Une seule partie par session, puis arrêt.
+- Jamais de force-push, jamais de fusion dans `main`, pas de Pull Request sans demande. Pas de nouvelle étiquette. Une seule partie par session, puis arrêt.
 
 ## Règles durables
 - Jetons : aucune couleur en dur hors `css/tokens.css` (sauf --ouv-* de `css/ouvertures.css`) ; couleurs du jeu : variables --game-* (palette.js), jamais en dur dans js/.

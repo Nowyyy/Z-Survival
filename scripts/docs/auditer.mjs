@@ -273,8 +273,8 @@ const rattachement = BILANS.map((b) => {
 
 // ---------------------------------------------------------------- catégories
 const PUBLIEES = new Set(versions.map((v) => v.id));
-// Version en cours de développement (lot 5q : v0.8 ; avant : v0.7, publiée au lot 5p) : ses bilans restent séparés (catégorie « V0.8 »).
-const EN_COURS = 'v0.8';
+// Version en cours de développement (lot 9a : v0.9 ; lot 5q : v0.8 ; avant : v0.7, publiée au lot 5p) : ses bilans restent séparés (catégorie « V0.9 »).
+const EN_COURS = 'v0.9';
 const CAT_EN_COURS = EN_COURS.toUpperCase();
 const R_REGLES = [
   ['R1', /^Docs\/ref\/fusion-[^/]+\.md$/, 'manifeste de fusion terminé'],

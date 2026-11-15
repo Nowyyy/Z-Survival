@@ -821,7 +821,12 @@ describe('assembleur : fichier des noms (lot 5h)', () => {
 // Lot 5q : journal réel sans les lots de la version en cours (v0.8), pour les scénarios des publications de V0.6 et V0.7 (état du journal alors).
 const journalPublie = () => {
   const reel = JSON.parse(readFileSync('data/changelog.json', 'utf8'));
-  return { ...reel, lots: reel.lots.filter((l) => l?.version !== 'v0.8') };
+  return { ...reel, lots: reel.lots.filter((l) => l?.version !== 'v0.8' && l?.version !== 'v0.9') }; // lot 9a : ni ceux de la V0.9
+};
+// Lot 9a : journal réel sans les lots de la V0.9, pour les scénarios du début et de la publication de la V0.8 (état du journal alors).
+const journalSansV09 = () => {
+  const reel = JSON.parse(readFileSync('data/changelog.json', 'utf8'));
+  return { ...reel, lots: reel.lots.filter((l) => l?.version !== 'v0.9') };
 };
 
 // Lot 5f : publication de V0.6. Jeu de données : versions.json réel (V0.6 actuelle, V0.5 à V0.1 archivées) dans main, journal réel
@@ -901,7 +906,7 @@ describe('site-info.json de la publication de V0.7 (lot 5p)', () => {
 // fichier des noms réel ([lot-5q] « afficher: non ») dans le build de dev, archives fictives v0.1 à v0.6. Les évolutions ne contiennent aucun lot
 // de la V0.7 publiée, jamais lot-5q (masqué), et tout lot visible de la V0.8.
 describe('site-info.json au début de la V0.8 (lot 5q)', () => {
-  const journal = JSON.parse(readFileSync('data/changelog.json', 'utf8'));
+  const journal = journalSansV09(); // lot 9a : sans les lots de la V0.9 (avant : journal réel entier)
   const texte = readFileSync(NOMS_FICHIER, 'utf8');
   // Lot 8m : versions.json d'avant V0.8 (avantV08 ; avant : le fichier réel, alors dans cet état).
   const siteDe = (changelog, noms = texte) => assemble({ versions: avantV08, mainDir: build(), devDir: build({ changelog, extra: { [NOMS_FICHIER]: noms } }), archiveDir: archiveDir(['v0.1', 'v0.2', 'v0.3', 'v0.4', 'v0.5', 'v0.6'], avantV08), dev: DEV });
@@ -932,7 +937,7 @@ describe('site-info.json au début de la V0.8 (lot 5q)', () => {
 // Lot 8m : publication de V0.8. Jeu de données : versions.json réel (V0.8 actuelle, V0.7 à V0.1 archivées) dans main, journal réel (lots 5q et 8a à
 // 8m en v0.8) dans le build de dev, archives fictives v0.1 à v0.7 ; sans fichier des noms (textes d'origine), puis avec le fichier des noms réel.
 describe('site-info.json de la publication de V0.8 (lot 8m)', () => {
-  const journal = JSON.parse(readFileSync('data/changelog.json', 'utf8'));
+  const journal = journalSansV09(); // lot 9a : sans les lots de la V0.9 (avant : journal réel entier)
   const texte = readFileSync(NOMS_FICHIER, 'utf8');
   const ARCHIVES = ['v0.1', 'v0.2', 'v0.3', 'v0.4', 'v0.5', 'v0.6', 'v0.7'];
   const siteDe = (changelog, extra = {}) => assemble({ versions: actuel, mainDir: build(), devDir: build({ changelog, extra }), archiveDir: archiveDir(ARCHIVES, actuel), dev: DEV });
@@ -972,6 +977,36 @@ describe('site-info.json de la publication de V0.8 (lot 8m)', () => {
     expect(siteInfo.recette.id).toBe('v0.8');
     expect(siteInfo.precedentes.map((p) => p.id)).toEqual(['v0.7', 'v0.6', 'v0.5', 'v0.4', 'v0.3', 'v0.2', 'v0.1']);
     expect(validateSiteInfo(siteInfo)).toEqual({ ok: true, errors: [] });
+  });
+});
+
+// Lot 9a : début de la V0.9. Jeu de données : versions.json réel (V0.8 actuelle, V0.7 à V0.1 archivées) dans main, journal réel (lots 5q et 8a à 8m en
+// v0.8, lot-9a en v0.9) et fichier des noms réel ([lot-9a] « afficher: oui ») dans le build de dev, archives fictives v0.1 à v0.7. Les évolutions ne
+// contiennent aucun lot de la V0.8 publiée, et lot-9a (visible) en tête, avec le nom et la description du fichier des noms.
+describe('site-info.json au début de la V0.9 (lot 9a)', () => {
+  const journal = JSON.parse(readFileSync('data/changelog.json', 'utf8'));
+  const texte = readFileSync(NOMS_FICHIER, 'utf8');
+  const ARCHIVES = ['v0.1', 'v0.2', 'v0.3', 'v0.4', 'v0.5', 'v0.6', 'v0.7'];
+  const siteDe = (changelog, noms = texte) => assemble({ versions: actuel, mainDir: build(), devDir: build({ changelog, extra: { [NOMS_FICHIER]: noms } }), archiveDir: archiveDir(ARCHIVES, actuel), dev: DEV });
+
+  it('journal et noms réels : aucune évolution v0.8, lot-9a seul (visible) avec le nom et la description de son bloc ; Recette V0.8', () => {
+    expect(actuel.latest).toBe('v0.8');
+    const entree = journal.lots.find((l) => l.name === 'lot-9a');
+    expect(entree).toMatchObject({ version: 'v0.9', date: '2026-11-15' });
+    const bloc = parseNoms(texte).blocs.find((b) => b.id === 'lot-9a');
+    expect(bloc).toMatchObject({ type: 'lot', version: 'v0.9', afficher: true });
+    const { siteInfo } = siteDe(journal);
+    expect(siteInfo.evolutions.filter((e) => e.version === 'v0.8')).toEqual([]);
+    expect(siteInfo.evolutions.map((e) => [e.id, e.version])).toEqual([['lot-9a', 'v0.9']]);
+    expect(siteInfo.evolutions[0]).toMatchObject({ title: bloc.nom, text: bloc.description, date: '2026-11-15' });
+    expect(siteInfo.recette.id).toBe('v0.8');
+    expect(validateSiteInfo(siteInfo)).toEqual({ ok: true, errors: [] });
+  });
+
+  it('sans le fichier des noms : lot-9a apparaît avec le titre et le premier point du journal ; aucun lot de v0.8', () => {
+    const { siteInfo } = siteDe(journal, '# vide\n');
+    const entree = journal.lots.find((l) => l.name === 'lot-9a');
+    expect(siteInfo.evolutions).toEqual([{ id: 'lot-9a', title: entree.titre, text: entree.points[0], date: '2026-11-15', version: 'v0.9' }]);
   });
 });
 

@@ -814,7 +814,7 @@ test('PC 2000 × 1060 : « Touche-le pour changer » centré au-dessus de la lam
   expect(style).toEqual(['2px', '6px', true, true]);
   await expect(page.locator('#menu-liste .e8-icone-entree')).toHaveCount(5); // lot 8g : Crédits, Google ; sans Déconnexion hors connexion
   // Retour du propriétaire : version du jeu sous la dernière entrée (lot 8g : Google ; avant : « Déconnexion ») (dépôt : canal source ; journal lu à la première ouverture du menu).
-  await expect(page.locator('#menu-version')).toHaveText('V0.8 · source');
+  await expect(page.locator('#menu-version')).toHaveText('V0.9 · source'); // lot 9a : dernier lot du journal en v0.9 (avant : V0.8)
   const [deco, version, cadre] = [await boite(page, '#menu-google'), await boite(page, '#menu-version'), await boite(page, '#menu-liste')];
   expect([version.t >= deco.b - 0.5, version.b <= cadre.b + 0.5, cadre.b <= 1060]).toEqual([true, true, true]);
   // Tout à gauche du menu : le texte commence au bord des icônes des entrées.
