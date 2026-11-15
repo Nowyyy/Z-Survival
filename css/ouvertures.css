@@ -13,14 +13,11 @@
   --ouv-beton: #3a3835;
   --ouv-beton-clair: #4a4743;
   --ouv-beton-sombre: #242220;
-  --ouv-mur: #2b2a27;
   --ouv-porte: #34332f;
   --ouv-porte-rainure: #1e1d1b;
   --ouv-bande-jaune: var(--menu-ruban-jaune);
   --ouv-bande-noire: var(--menu-ruban-noir);
   --ouv-pile: var(--menu-bois);
-  --ouv-pile-clair: var(--menu-bois-clair);
-  --ouv-pile-sombre: var(--menu-bois-sombre);
   --ouv-lampe: var(--game-lamp-metal);
   --ouv-lumiere: var(--game-lamp-light);
   --ouv-cone: var(--game-lamp-core);
@@ -38,17 +35,9 @@
   --ouv-militaire: var(--menu-perso-survivant);
   --ouv-militaire-couvercle: var(--menu-perso-poche);
   --ouv-militaire-arete: var(--menu-perso-jambes);
-  --ouv-elite: var(--menu-scene-voiture);
-  --ouv-elite-couvercle: var(--menu-scene-toit-salle);
-  --ouv-recrues: var(--menu-perso-survivant);
-  --ouv-recrues-couvercle: var(--menu-perso-poche);
   --ouv-veterans: var(--menu-e9-violet);
   --ouv-veterans-couvercle: var(--menu-e9-violet-inactif);
-  --ouv-legendes: var(--menu-scene-voiture);
-  --ouv-legendes-couvercle: var(--menu-scene-toit-salle);
   --ouv-tenues: var(--menu-scene-planche);
-  --ouv-mode: var(--menu-classement-bord);
-  --ouv-couture: var(--menu-scene-voiture);
   --ouv-sangle: var(--menu-bois-sombre);
   /* Fusil et mains */
   --ouv-arme: #4a4a45;
@@ -70,7 +59,6 @@
   --ouv-reflet: #e8f4ff;
   --ouv-point: #ff3b2a;
   --ouv-flamme: var(--game-muzzle);
-  --ouv-flamme-coeur: var(--game-lamp-core);
   --ouv-trainee: var(--game-bullet);
   --ouv-etincelle: var(--menu-scene-flamme-coeur);
   /* Effets */

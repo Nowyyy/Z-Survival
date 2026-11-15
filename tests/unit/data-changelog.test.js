@@ -1,6 +1,10 @@
 import { describe, it, expect } from 'vitest';
 import { existsSync, readFileSync } from 'node:fs';
-import { parseLot } from '../../js/lots.js';
+// Lot 8l : js/lots.js (module mort) retiré ; sa règle de nom de lot est recopiée ici telle quelle (même expression).
+const parseLot = (name) => {
+  const m = typeof name === 'string' ? /^lot-(\d+)([a-z]*)$/.exec(name) : null;
+  return m ? { num: Number(m[1]), suffix: m[2] } : null;
+};
 import { readEvolutions, VERSION_RE } from '../../scripts/site/site-info.mjs';
 import { bilansDuDossier } from '../../scripts/docs/bilans.mjs';
 

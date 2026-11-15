@@ -50,19 +50,11 @@ export const RUBRIQUES = Object.freeze(['offres', 'equipement', 'personnage', 'c
 const RUBRIQUE_TEXTES = { offres: 'game.menu.boutique.rubrique.offres', equipement: 'game.menu.boutique.rubrique.equipement', personnage: 'game.menu.boutique.rubrique.personnage', cosmetique: 'game.menu.boutique.rubrique.cosmetique' };
 
 // Caisse mystère (maquette : 150 × 96, rayons au-dessus jusqu'à −10) ; décorative. Couleurs en jetons (css/menu.css), teinte : --e3-teinte.
-// Retour du propriétaire : un dessin par genre de caisse (modele de data/menu/caisses.json) : bois (ravitaillement : planches, coins rivetés), militaire
-// (caisse à munitions en métal : nervures, loquets, poignées), elite (coffre bombé cerclé de la teinte, coins et serrure), recrues (malle et plaques
-// d'identité ; aussi veterans, legendes), tenues (valise à sangles et coins protégés ; aussi mode, couture) ; grand « ? » lumineux au milieu de la
-// face (remonté, puis réduit : retours du propriétaire), deux petits.
-const RIVETS = [[18, 44], [132, 44], [18, 84], [132, 84]];
+// Retour du propriétaire : un dessin par genre de caisse (modele de data/menu/caisses.json) : militaire (caisse à munitions en métal : nervures,
+// loquets, poignées), veterans (malle et plaques d'identité), tenues (valise à sangles et coins protégés) ; grand « ? » lumineux au milieu de la
+// face (remonté, puis réduit : retours du propriétaire), deux petits. Lot 8l : dessins bois et elite (et variantes recrues, legendes, mode, couture)
+// retirés, plus utilisés par aucune caisse depuis le lot 8k.
 const DESSINS = {
-  bois: () => [
-    forme('rect', { x: 10, y: 34, width: 130, height: 58 }, 'e3-bois'),
-    forme('path', { d: 'M10 52 H140 M10 72 H140' }, 'e3-joint'),
-    forme('rect', { x: 6, y: 24, width: 138, height: 14 }, 'e3-couvercle'),
-    forme('rect', { x: 8, y: 36, width: 134, height: 3 }, 'e3-bande'),
-    ...RIVETS.map(([cx, cy]) => forme('circle', { cx, cy, r: 2 }, 'e3-rivet')),
-  ],
   militaire: () => [
     forme('path', { d: 'M12 54 h-6 v16 h6 M138 54 h6 v16 h-6' }, 'e3-poignee'),
     forme('rect', { x: 12, y: 36, width: 126, height: 56, rx: 3 }, 'e3-metal'),
@@ -72,13 +64,6 @@ const DESSINS = {
     forme('rect', { x: 8, y: 25, width: 134, height: 13, rx: 2 }, 'e3-metal-couvercle'),
     forme('rect', { x: 20, y: 33, width: 11, height: 11, rx: 1 }, 'e3-loquet'),
     forme('rect', { x: 119, y: 33, width: 11, height: 11, rx: 1 }, 'e3-loquet'),
-  ],
-  elite: () => [
-    forme('rect', { x: 14, y: 44, width: 122, height: 48 }, 'e3-coffre'),
-    forme('path', { d: 'M10 46 Q10 21 75 19 Q140 21 140 46 Z' }, 'e3-coffre-couvercle'),
-    forme('path', { d: 'M40 21 V92 M110 21 V92 M10 46 H140' }, 'e3-cercle'),
-    forme('path', { d: 'M14 92 V80 H26 V92 Z M136 92 V80 H124 V92 Z' }, 'e3-coin-or'),
-    forme('rect', { x: 68, y: 39, width: 14, height: 13, rx: 2 }, 'e3-coin-or'),
   ],
   malle: () => [
     forme('rect', { x: 12, y: 36, width: 126, height: 56, rx: 2 }, 'e3-malle'),
@@ -101,11 +86,11 @@ const DESSINS = {
   ],
 };
 // Places des « ? » par dessin : grand (y de la ligne de base), petits (x, x, y).
-const POINTS = { bois: [70, 34, 116, 62], militaire: [70, 44, 106, 64], elite: [75, 26, 124, 72], malle: [70, 36, 98, 64], valise: [72, 25, 125, 58] };
-// Retour du propriétaire : trois caisses de personnages et trois de tenues ; même forme (malle, valise) dans d'autres couleurs (css/menu.css).
-const FORMES = { bois: 'bois', militaire: 'militaire', elite: 'elite', recrues: 'malle', veterans: 'malle', legendes: 'malle', tenues: 'valise', mode: 'valise', couture: 'valise' };
-export function caisseSvg(modele = 'bois') {
-  const m = FORMES[modele] ? modele : 'bois';
+const POINTS = { militaire: [70, 44, 106, 64], malle: [70, 36, 98, 64], valise: [72, 25, 125, 58] };
+// Forme de chaque dessin (lot 8l : les seuls encore acceptés par js/core/caisses.js).
+const FORMES = { militaire: 'militaire', veterans: 'malle', tenues: 'valise' };
+export function caisseSvg(modele = 'militaire') {
+  const m = FORMES[modele] ? modele : 'militaire';
   const f = FORMES[m];
   const [y, x1, x2, y2] = POINTS[f];
   const svg = forme('svg', { viewBox: '0 -10 150 106', 'aria-hidden': 'true', focusable: 'false', preserveAspectRatio: 'xMidYMax meet', 'data-modele': m }, `e3-caisse e3-caisse-${m}`);

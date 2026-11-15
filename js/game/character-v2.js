@@ -118,21 +118,6 @@ export function createRigidCharacter(shared) {
   };
 }
 
-// Données partagées d'une variante : géométrie du corps (une par jeu de couleurs `color`), proxy d'ombre, inverses des os.
-export function rigidShared(variant, { skeletons, rect, color, materials, shadowMaterial, materialOrder = null }) {
-  const joints = jointsOf(variant, skeletons);
-  const parts = expandParts(variant);
-  const shadowParts = Array.isArray(variant.shadow) ? expandParts({ parts: variant.shadow }) : parts.filter((p) => p.casts === true);
-  return {
-    joints,
-    inverses: boneInverses(joints),
-    geometry: rigidGeometry(parts, { joints, rect, color, materials: materialOrder }),
-    shadowGeometry: shadowParts.length > 0 ? rigidGeometry(shadowParts.map((p) => ({ ...p, material: 'body' })), { joints }) : null,
-    materials,
-    shadowMaterial,
-  };
-}
-
 // --- Kit du jeu et de l'atelier (lot 3j-B) ---------------------------------------------------------------------------------------------
 // Textures (js/core/texgen-persos.js) : un atlas par type de zombie (4 tuiles = paliers de blessure, une matière par palier qui partage
 // l'image : seul le décalage de texture change), un pour le joueur ; matières partagées ; géométries par tenue (pièces facultatives) et par

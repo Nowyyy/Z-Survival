@@ -173,7 +173,7 @@ async function creerOuverture({ r, cat, cartes, annonce, t, parent, rappels }) {
   try {
     const police = getComputedStyle(document.documentElement).getPropertyValue('--font-display').trim() || 'sans-serif';
     await Promise.race([document.fonts?.load?.(`48px ${police}`), new Promise((res) => setTimeout(res, 800))]).catch(() => {});
-    scene = await sceneMod.creerScene({ canvas, couleur, chrono, reglages, cartes: cartesScene, modele: r.caisse.modele, teinte: r.caisse.teinte, police, caseCible });
+    scene = await sceneMod.creerScene({ canvas, couleur, chrono, reglages, cartes: cartesScene, modele: r.caisse.modele, police, caseCible });
   } catch {
     // WebGL indisponible (ou création impossible) : rien de plus n'est montré, le résultat s'affiche directement.
     section.remove();

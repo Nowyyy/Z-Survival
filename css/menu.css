@@ -2360,7 +2360,7 @@
 }
 
 /* Colonnes d'emplacements (220 de large, cases de 52, écart 8) à y 78 : à gauche (statistiques dessous), à droite (Inventaire et Fusion dessous). */
-/* Sous le bandeau et ses coulures (18 de long, retour du propriétaire : elles débordaient sur l'emplacement Arme sur téléphone, où le bandeau
+/* Sous le bandeau et ses coulures (18 de long, retour du propriétaire au lot 8d : elles débordaient sur l'emplacement Arme, devenu Tête au lot 8h, sur téléphone, où le bandeau
    garde ses tailles de texte minimales) : haut des colonnes = marge haute + hauteur du bandeau (interlignes fixés ci-dessous) + 20. */
 .e9 {
   --e9-sous-bandeau: calc(12 * var(--u) + 10 * var(--u) + max(11px, calc(12 * var(--u))) * 1.2 + max(17px, calc(20 * var(--u))) * 1.15 + 20 * var(--u));
@@ -3666,31 +3666,9 @@
   animation: e3-flotte 2.4s ease-in-out var(--e3-decalage, 0s) infinite;
 }
 
-.e3-bois {
-  fill: var(--menu-bois);
-  stroke: var(--menu-bois-sombre);
-  stroke-width: 3;
-}
-
-.e3-joint {
-  fill: none;
-  stroke: var(--menu-bois-sombre);
-  stroke-width: 2;
-}
-
-.e3-couvercle {
-  fill: var(--menu-bois-clair);
-  stroke: var(--menu-bois-sombre);
-  stroke-width: 3;
-}
-
 .e3-bande {
   fill: var(--e3-teinte);
   opacity: 0.8;
-}
-
-.e3-rivet {
-  fill: var(--menu-clou);
 }
 
 .e3-q {
@@ -3922,32 +3900,6 @@
   stroke-width: 1.5;
 }
 
-.e3-coffre,
-.e3-coffre-couvercle {
-  stroke: var(--menu-bois-sombre);
-  stroke-width: 3;
-}
-
-.e3-coffre {
-  fill: var(--menu-scene-voiture);
-}
-
-.e3-coffre-couvercle {
-  fill: var(--menu-scene-toit-salle);
-}
-
-.e3-cercle {
-  fill: none;
-  stroke: var(--e3-teinte);
-  stroke-width: 5;
-}
-
-.e3-coin-or {
-  fill: var(--e3-teinte);
-  stroke: var(--menu-bois-sombre);
-  stroke-width: 1.5;
-}
-
 .e3-malle,
 .e3-malle-couvercle {
   stroke: var(--menu-e9-violet-bord);
@@ -3996,21 +3948,6 @@
   stroke: var(--menu-clou);
   stroke-width: 3;
 }
-
-/* Variantes (retour du propriétaire : trois caisses de personnages, trois de tenues) : recrues (malle olive ; vétérans : malle violette de base), légendes (malle noire cerclée de la
-   teinte ; retour du propriétaire : recrues olive au bleu, vétérans violets, comme les raretés), mode (valise bordeaux), haute couture (valise noire, sangles et coins de la teinte). */
-.e3-caisse-recrues .e3-malle { fill: var(--menu-perso-survivant); }
-.e3-caisse-recrues .e3-malle-couvercle { fill: var(--menu-perso-poche); }
-.e3-caisse-recrues :is(.e3-malle, .e3-malle-couvercle, .e3-malle-bande) { stroke: var(--menu-perso-jambes); }
-.e3-caisse-legendes .e3-malle { fill: var(--menu-scene-voiture); }
-.e3-caisse-legendes .e3-malle-couvercle { fill: var(--menu-scene-toit-salle); }
-.e3-caisse-legendes :is(.e3-malle, .e3-malle-couvercle) { stroke: var(--menu-bois-sombre); }
-.e3-caisse-legendes .e3-malle-bande { stroke: var(--e3-teinte); }
-.e3-caisse-legendes .e3-plaque { fill: var(--e3-teinte); }
-.e3-caisse-mode .e3-valise { fill: var(--menu-classement-bord); }
-.e3-caisse-couture .e3-valise { fill: var(--menu-scene-voiture); }
-.e3-caisse-couture .e3-sangle { fill: var(--e3-teinte); }
-.e3-caisse-couture :is(.e3-coin-valise, .e3-boucle) { stroke: var(--e3-teinte); }
 
 @keyframes e3-flotte {
   0%, 100% { transform: translateY(0); }
