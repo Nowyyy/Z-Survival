@@ -1,6 +1,8 @@
 # Sauvegarde v2, deux monnaies, menu gardé (lot 8h, V0.8)
 
-État : **plan (partie A)**, écrit avant tout changement de code, sur la base `origin/dev` `ed0aa8d` (branche `lot-8h`). Rien n'est codé avant le « GO 8h » du propriétaire ; ses réponses iront dans « Décisions au GO » et primeront sur ce plan. Les noms de branches, de fichiers, de clés et le contenu des anciennes versions sont des données.
+**État à la fin de la V0.8 (lot 8l)** : plan **réalisé** au lot 8h (sections « Livré ») puis complété au lot 8k (médailles, pitié, diamants : `Docs/ref/economie.md`). Ce qui a changé depuis le plan : clés de la monnaie bleue dans `economy.json` = `waveBonusBase`, `waveBonusPerWave`, `reinforcedBonusMul`, `worldBonus`, `maxBleu` (les noms `bleu.*` du plan n'ont jamais existé) ; écran de fin (E2-7) et en-tête du menu refaits au lot 8k (deux soldes, « Diamants : N », « Médailles : N » ; plus de ligne « Monnaie jaune perdue ») ; **six** outils de débogage (« Ajouter 10 000 diamants », « Ajouter 1 000 médailles », « Remettre la pitié à zéro », inventaire de démonstration, personnages, remise à zéro) ; prix des caisses en médailles.
+
+État d'origine : **plan (partie A)**, écrit avant tout changement de code, sur la base `origin/dev` `ed0aa8d` (branche `lot-8h`). Rien n'est codé avant le « GO 8h » du propriétaire ; ses réponses iront dans « Décisions au GO » et primeront sur ce plan. Les noms de branches, de fichiers, de clés et le contenu des anciennes versions sont des données.
 
 ## 0. Réponses du propriétaire (2026-11-14, avant le GO) — elles priment sur la suite du plan
 | Question | Réponse | Effet sur le plan |

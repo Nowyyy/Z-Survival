@@ -32,7 +32,7 @@ Le résumé met d'abord les ATTENTION et les NON VÉRIFIABLE, puis « **PRÊT À
 | # | Contrôle | OK si | Sinon |
 |---|---|---|---|
 | 0 | références `origin/*` à jour | `git ls-remote --heads origin` = références locales | ATTENTION : `git fetch origin --prune` puis relancer |
-| 1 | dev | `origin/dev` existe ; bilan `Docs/lots/lot-5o.md` ou le dernier présent (lot 5p : `lot-5o.md` est regroupé dans `Docs/lots/versions/v0.7.md` ; le contrôle cite alors le dernier bilan séparé, `lot-5p.md`) | KO sans `origin/dev` |
+| 1 | dev | `origin/dev` existe ; bilan `Docs/lots/lot-5o.md` ou le dernier présent (lot 5p : `lot-5o.md` est regroupé dans `Docs/lots/versions/v0.7.md` ; le contrôle cite alors le dernier bilan séparé par ordre de nom (`lot-8k.md` avant le lot 8l, puis `lot-8l.md`) ; lot 8l : `lot-5p.md` regroupé à son tour ; le nom `lot-5o.md` reste écrit dans `scripts/publication/controles.mjs`, à généraliser au lot de publication, point ouvert du lot 5q) | KO sans `origin/dev` |
 | 2 | CI de dev | **Pages** : exécution réussie sur le hash de `origin/dev`, aucune en cours ; **Tests** (lot 5q) : le dernier commit testé avec succès de la lignée de `dev` est la tête, ou seuls des fichiers ignorés par `tests.yml` ont changé depuis (voir « CI de dev : dernier commit testé ») | KO (Pages absente, en cours ou échouée ; Tests : fichier non ignoré changé, dernière exécution en échec, aucun commit testé dans les 50 derniers) ; NON VÉRIFIABLE (Tests en cours, `tests.yml` illisible) |
 | 3 | main ancêtre de dev | `git merge-base --is-ancestor origin/main origin/dev` | KO avec le geste : Pull Request `main` → `dev`, « Create a merge commit », sans « Resolve conflicts » |
 | 4 | Pull Requests ouvertes | aucune vers `main` ou `dev` | ATTENTION avec la liste |

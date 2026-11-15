@@ -8,6 +8,8 @@
 - **Tirs** : `syncSolids` (`js/game/game.js`) : balles (`stepBullets`, `js/core/projectile.js`), laser et ligne de tir (`castRay`, `js/core/ray.js`) arrêtés par les meubles (sauf escaliers), murs (fenêtres percées : on tire à travers, planches comprises), décor extérieur solide (voitures, arbres, hélicoptère), portes fermées. Les grilles F7 et F8 (`decor-interieur.json`) ne sont que dessinées : le mur logique (`mur-20`, `mur-19`) reste plein.
 
 ## Objets bas (< 100) et grilles (relevé de la partie A ; règle finale : sous l'arme, voir le bilan)
+*(Lot 8l : tableau du relevé de la partie A, **périmé** : la règle finale du lot 8j, après les retours du propriétaire, est « dessiné sous la hauteur de l'arme (43) » plus les grilles ; la liste qui fait foi est `data/game/tirs-traversables.json`, voir plus bas.)*
+
 | Étage | Objets (type, hauteur de collision) | Traversable |
 | --- | --- | --- |
 | rdc | comptoirs M4, M22, P6, P7, P8 (55), M33+M34+M35 (70) ; tables M1+M3+M7 (55), M10, P5, P9, P12 (40) ; étagères M12+M15+M17+M18, M19, M26+M28+M29+M31, P4, P3+R-G37, P1+P2+R-G39 (70) ; caisses M21, M32, P10, P13 (45) ; armoire P11 (65) | oui (22) |

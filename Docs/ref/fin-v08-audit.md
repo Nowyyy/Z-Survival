@@ -88,3 +88,22 @@
 
 ## Décisions au GO
 Réponse du propriétaire (2026-11-15) : « go 8l » : **décisions 1 à 20 acceptées**, aucune refusée ni modifiée (la 7 vaut accord explicite pour `tests/budget-mesure.json`). Question jointe : pourquoi ne pas supprimer les branches de la V0.8 une fois `lot-8l` dans `dev` ? Réponse : rien ne l'empêche techniquement (toutes fusionnées, 0 commit absent) ; la règle du seed les garde jusqu'à la fin de la version, et l'agent ne peut pas supprimer (serveur des sessions) : les commandes sont données en partie D, facultatives.
+
+## Branches : commandes pour le propriétaire (partie D)
+Décision 20 : **aucune branche hors V0.8** sur le dépôt distant, donc rien à supprimer selon la règle du seed (branches de la version en cours gardées). **Facultatif, à ta décision** (réponse à ta question au GO) : une fois `lot-8l` fusionné dans `dev` (CI verte), les branches de lot de la V0.8 n'ont plus aucun commit absent de `dev` ; tu peux les supprimer maintenant ou après la publication (lot 8m). Vérifie d'abord qu'aucune session n'y travaille. L'agent ne les supprime pas (le serveur des sessions refuse les suppressions). Une commande par ligne, depuis ton dépôt local ; ou sur GitHub : onglet « Code » → « Branches » → icône de corbeille de chaque branche. **Jamais** `main`, `dev` ni `archive`.
+```
+git fetch origin --prune
+git push origin --delete lot-5q
+git push origin --delete lot-8a
+git push origin --delete lot-8b
+git push origin --delete lot-8c
+git push origin --delete lot-8d
+git push origin --delete lot-8e
+git push origin --delete lot-8f
+git push origin --delete lot-8g
+git push origin --delete lot-8h
+git push origin --delete lot-8i
+git push origin --delete lot-8j
+git push origin --delete lot-8k
+git push origin --delete lot-8l
+```

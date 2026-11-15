@@ -2,7 +2,7 @@
 
 Ce fichier suffit pour fusionner `lot-3j` dans la branche d'intégration `lot-4b` sans relire la conversation du lot. Il liste **tout ce que le lot a fait** (livraison puis retours du propriétaire), les fichiers touchés, la résolution exacte de chaque conflit (vérifiée par une fusion à blanc dans `lot-4b`), les tests à surveiller et les règles à reporter dans `CLAUDE.md` et `conventions.md`.
 
-Documents liés : bilan `Docs/lots/versions/v0.5.md#lot-3j` ; manifeste `Docs/ref/fusion-3j.md` ; méthode et données `Docs/ref/atelier-personnages.md` ; plan d'intégration `Docs/ref/integration-personnages.md` ; état des lieux d'avant `Docs/ref/personnages-actuels.md`.
+Documents liés : bilan `Docs/lots/versions/v0.5.md#lot-3j` ; manifeste `Docs/ref/fusion-3j.md` ; méthode et données `Docs/ref/archives/audits-v0.4-v0.7.md#atelier-personnages` ; plan d'intégration `Docs/ref/integration-personnages.md` ; état des lieux d'avant `Docs/ref/archives/audits-v0.4-v0.7.md#personnages-actuels`.
 
 ## 1. Où regarder
 

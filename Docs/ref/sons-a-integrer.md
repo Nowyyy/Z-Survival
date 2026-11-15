@@ -1,6 +1,6 @@
 # Sons à intégrer (lot 3i) : à quoi sert chaque son
 
-Fiche d'intégration des choix du propriétaire (lot 3h). Source des choix : `data/game/sounds-atelier-choix.txt` (variante et réglages de chaque emplacement, au format de « Mes choix ») ; recettes : `data/game/sounds-atelier.json` (moteur `js/core/synth2.js`) ; plan détaillé : `Docs/ref/integration-sons.md`. **Aucun son n'a été écouté par l'agent** ; les déclencheurs proposés ci-dessous sont à valider en jeu.
+Fiche d'intégration des choix du propriétaire (lot 3h). Source des choix : `data/game/sounds-atelier-choix.txt` (variante et réglages de chaque emplacement, au format de « Mes choix ») ; recettes : `data/game/sounds-atelier.json` (moteur `js/core/synth2.js`) ; plan détaillé : `Docs/ref/archives/audits-v0.4-v0.7.md#integration-sons`. **Aucun son n'a été écouté par l'agent** ; les déclencheurs proposés ci-dessous sont à valider en jeu.
 
 ## Règles communes
 - **Taille** : la limite de 8 Mo est levée par le propriétaire (lot 3h, après les choix). Au lot 3i, relever ou retirer le plafond du test `data-sons` (« mémoire audio 8 Mo au plus ») et la mention de `CLAUDE.md` ; garder les voix **par type** (un jeu de tampons par type de zombie, timbres propres) plutôt que la hauteur de lecture.
