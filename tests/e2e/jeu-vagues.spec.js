@@ -117,7 +117,7 @@ test.describe('vagues du lot 2', () => {
     expect(s.splash).toMatchObject({ visible: true, kind: 'fin', wave: 1 }); // lot 2c : l'annonce est l'animation centrale (avant : waves.announce)
     await expect(page.locator('#wave-announce')).toHaveClass(/is-visible/);
     await expect(page.locator('#wave-announce-title')).toHaveText('Vague 1 terminée');
-    await expect(page.locator('#hud-live')).toHaveText('Manche 1 terminée, bonus +12.');
+    await expect(page.locator('#hud-live')).toHaveText('Manche 1 terminée, +20 diamants.'); // lot 8k : bonus de manche fixe (20 diamants à la manche 1 ; avant : « bonus +12 »)
     await step(page, 7.7);
     expect((await state(page)).waves.phase).toBe('attente');
     await step(page, 0.4);
@@ -341,7 +341,7 @@ test.describe('vagues du lot 2', () => {
     });
     expect((await state(page)).dead).toBe(true);
     await expect(page.locator('#end-panel')).toBeVisible();
-    await expect(page.locator('#end-wave')).toHaveText('Vague atteinte : 4');
+    await expect(page.locator('#end-wave-text')).toHaveText('Vague atteinte : 4'); // lot 8k : « Record » peut suivre sur la même ligne (#end-record)
     await page.getByRole('button', { name: 'Rejouer' }).click();
     await expect(page.locator('#end-panel')).toBeHidden();
     const s = await state(page);
@@ -359,7 +359,7 @@ test.describe('vagues du lot 2', () => {
       for (let i = 0; i < 14; i += 1) zs.spawnEnemy(p.x + 25 + (i % 5) * 6, p.y + (i - 7) * 4);
       zs.step(3);
     });
-    await expect(page.locator('#end-wave')).toHaveText('Vague atteinte : 3');
+    await expect(page.locator('#end-wave-text')).toHaveText('Vague atteinte : 3'); // lot 8k : « Record » peut suivre sur la même ligne (#end-record)
     await page.getByRole('button', { name: 'Rejouer' }).click();
     expect((await state(page)).waves.wave).toBe(3);
   });
@@ -415,7 +415,7 @@ test.describe('vagues du lot 2', () => {
     await step(page, 3.2);
     await expect(page.locator('#hud-live')).toHaveText('Vague 1.');
     await page.evaluate(() => { window.__zs.setWaveParams({ total: { base: 1, linear: 0, quadratic: 0 } }); window.__zs.killAll(); window.__zs.step(0.3); });
-    await expect(page.locator('#hud-live')).toHaveText('Manche 1 terminée, bonus +12.');
+    await expect(page.locator('#hud-live')).toHaveText('Manche 1 terminée, +20 diamants.'); // lot 8k : bonus de manche fixe (20 diamants à la manche 1 ; avant : « bonus +12 »)
     await step(page, 5);
     for (const t of seen) expect(t).not.toMatch(/Prochaine|Restants|\ds\b/);
     expect(seen.some((t) => /Vague 1/.test(t))).toBe(true);
