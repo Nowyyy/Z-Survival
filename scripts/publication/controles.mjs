@@ -67,13 +67,20 @@ export const fraicheur = controle('fraicheur', 'références origin/* à jour', 
 
 // ---------------------------------------------------------------------------------------------------------------------------------------------
 // Contrôles --avant
+// Lot 8m : le bilan cité est le dernier bilan séparé de Docs/lots/ dans l'ordre des lots (avant : lot-5o.md écrit en dur, sinon le dernier par ordre
+// de nom). Ordre : numéro du lot, puis lettres (moins de lettres d'abord : lot-8z < lot-8aa), puis le reste du nom ; lot-9z < lot-10a.
+const BILAN_RE = /^lot-(\d+)([a-z]*)(.*)\.md$/;
+export function ordreBilans(a, b) {
+  const [, na, la, ra] = a.match(BILAN_RE);
+  const [, nb, lb, rb] = b.match(BILAN_RE);
+  return Number(na) - Number(nb) || la.length - lb.length || (la < lb ? -1 : la > lb ? 1 : 0) || (ra < rb ? -1 : ra > rb ? 1 : 0);
+}
 export const dev = controle('avant-1', 'dev', ({ devSha, bilans }) => {
   if (illisible(devSha) || typeof devSha !== 'string') return { resultat: KO, texte: `origin/dev introuvable (${raison(devSha)})` };
   if (illisible(bilans) || !Array.isArray(bilans)) return { resultat: NV, texte: `origin/dev ${court(devSha)} ; bilans illisibles` };
-  const noms = bilans.filter((b) => /^lot-[0-9a-z-]+\.md$/.test(b)).sort((a, b) => a.localeCompare(b, 'fr', { numeric: true }));
+  const noms = bilans.filter((b) => typeof b === 'string' && /^lot-[0-9a-z-]+\.md$/.test(b) && BILAN_RE.test(b)).sort(ordreBilans);
   if (noms.length === 0) return { resultat: ATTENTION, texte: `origin/dev ${court(devSha)} ; aucun bilan dans Docs/lots/` };
-  const cible = noms.includes('lot-5o.md') ? 'lot-5o.md' : noms.at(-1);
-  return { resultat: OK, texte: `origin/dev ${court(devSha)} ; bilan : Docs/lots/${cible}` };
+  return { resultat: OK, texte: `origin/dev ${court(devSha)} ; bilan : Docs/lots/${noms.at(-1)}` };
 });
 
 // Lot 5q — Tests : le commit de référence est le plus récent de la première lignée de parents de dev (tête d'abord, LIGNEE_MAX au plus) qui a une

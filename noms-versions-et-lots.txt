@@ -228,3 +228,9 @@ afficher: non
 [v0.8]
 nom: V0.8
 description: Menus, monnaies d'amélioration et caisses. Interfaces pour grands écrans. Portes qui annoncent leur manche. Moins de bruits de zombies. Tirs par-dessus les petits obstacles et à travers les grilles.
+
+[lot-8m]
+version: v0.8
+nom: Publication de la V0.8
+description: Fin de version : la V0.8 devient la version Recette, la V0.7 est archivée, la documentation est remise à jour. Le jeu ne change pas.
+afficher: non
