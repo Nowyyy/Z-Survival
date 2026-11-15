@@ -48,7 +48,7 @@ const panneaux = (page) => page.locator('.e8-jouer-panneau').evaluateAll((ns) =>
 
 test.describe('onglet Jouer (E8-3)', () => {
   for (const size of SIZES) {
-    test(`${size.width}×${size.height} : scène décorative ; bandeau, record, portes ; monde précédent désactivé ; monde 2 verrouillé ; rien hors de l'écran ni superposé ; 44 px ; axe`, async ({ page }) => {
+    test(`${size.width}×${size.height} : scène décorative ; bandeau, record, portes ; en-tête, onglets et Jouer à leur place, trois barres dans le bandeau (lot 8l : venu de menu.spec.js) ; monde précédent désactivé ; monde 2 verrouillé ; rien hors de l'écran ni superposé ; 44 px ; axe`, async ({ page }) => {
       await ouvrirMenu(page, size);
       const scene = page.locator('#menu-ecran-jouer .e8-jouer-scene');
       await expect(scene).toHaveAttribute('aria-hidden', 'true');
@@ -77,6 +77,28 @@ test.describe('onglet Jouer (E8-3)', () => {
       // Ruban du monde suivant juste sous sa carte, dans l'écran.
       const ruban = await boite(page, '#menu-monde-suivant .menu-ruban');
       expect([ruban.t >= b['#menu-monde-suivant'].b - 3, ruban.r <= size.width]).toEqual([true, true]);
+      {
+        // Lot 8l (fusion, venu de menu.spec.js « en-tête, onglets et Jouer à leur place », même chargement) : en-tête, onglets et Jouer à leur place ;
+        // trois barres dans le bandeau ; rien hors de l'écran ni superposé ; cibles de 44 px. Un seul axe (ci-dessous) pour les deux.
+        const ids8 = ['#menu-profil', '#menu-solde', '#menu-plein-ecran', '#menu-trois-barres', '.menu-bandeau', '#menu-jouer', ...['boutique', 'personnage', 'jouer', 'infini', 'event'].map((o) => `#menu-onglet-${o}`)];
+        const e = Object.fromEntries(await Promise.all(ids8.map(async (s) => [s, await boite(page, s)])));
+        for (const [s, r] of Object.entries(e)) expect([r.l >= 0, r.t >= 0, r.r <= size.width + 0.5, r.b <= size.height + 0.5], s).toEqual([true, true, true, true]);
+        const entete = await boite(page, '.e8-entete');
+        const barres = e['#menu-trois-barres'];
+        expect([barres.t >= entete.t, barres.b <= entete.b, barres.r <= entete.r]).toEqual([true, true, true]);
+        expect(barres.r).toBeLessThanOrEqual(size.width - 15.5); // marge de 16 px
+        expect(e['#menu-profil'].l).toBeGreaterThanOrEqual(15.5); // lot 8g : « Profil » (avant : bouton « Connexion »)
+        // Ordre et emplacement : Profil à gauche, solde, plein écran puis trois barres à droite ; Jouer au centre ; bandeau sous l'en-tête, à gauche.
+        expect(e['#menu-solde'].r).toBeLessThanOrEqual(barres.l);
+        expect([e['#menu-solde'].r <= e['#menu-plein-ecran'].l, e['#menu-plein-ecran'].r <= barres.l]).toEqual([true, true]);
+        expect([e['#menu-plein-ecran'].t >= entete.t, e['#menu-plein-ecran'].b <= entete.b]).toEqual([true, true]);
+        expect(Math.abs((e['#menu-onglet-jouer'].l + e['#menu-onglet-jouer'].r) / 2 - size.width / 2)).toBeLessThan(2);
+        expect(e['#menu-onglet-jouer'].w).toBeGreaterThan(e['#menu-onglet-boutique'].w);
+        expect([e['.menu-bandeau'].t >= entete.b, e['.menu-bandeau'].l >= 15.5]).toEqual([true, true]);
+        const liste8 = Object.entries(e);
+        for (let i = 0; i < liste8.length; i += 1) for (let j = i + 1; j < liste8.length; j += 1) expect(chevauche(liste8[i][1], liste8[j][1]), `${liste8[i][0]} / ${liste8[j][0]}`).toBe(false);
+        for (const s of ids8.filter((x) => x !== '#menu-solde' && x !== '.menu-bandeau')) expect([e[s].w >= 44, e[s].h >= 44], s).toEqual([true, true]);
+      }
       expect((await new AxeBuilder({ page }).analyze()).violations.map((v) => v.id)).toEqual([]);
     });
   }
@@ -224,9 +246,16 @@ test.describe('onglet Jouer (E8-3)', () => {
     expect((await animations(page, scene)).every(([, s]) => s === 'running')).toBe(true);
   });
 
-  test('prefers-reduced-motion : scène fixe (aucune animation), zombies absents, flammes et lueurs présentes', async ({ page }) => {
+  test('prefers-reduced-motion : le Z est posé (aucune animation dans l\'écran de chargement, lot 8l : venu de menu.spec.js), puis le menu ; scène fixe (aucune animation), zombies absents, flammes et lueurs présentes', async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' });
-    await ouvrirMenu(page);
+    await page.setViewportSize(REF);
+    await page.goto('/jeu.html?test=1&menu=1&seed=1');
+    await expect(page.locator('#e7')).toHaveClass(/e7-pose/);
+    // Animations CSS seulement (la feuille de base réduit toute transition à 0,01 ms sous mouvement réduit : ce n'est pas une animation de l'écran).
+    expect(await page.locator('#e7').evaluate((n) => n.getAnimations({ subtree: true }).filter((a) => a.animationName).length)).toBe(0);
+    await expect(page.locator('#menu-jouer')).toBeVisible({ timeout: 60_000 });
+    await page.waitForFunction(() => window.__zsMenu?.etat()?.menu !== null && !document.getElementById('e7'));
+    expect(await page.locator('#e8').evaluate((n) => n.getAnimations({ subtree: true }).filter((a) => a.animationName).length)).toBe(0);
     expect(await animations(page, '#menu-jouer-scene')).toEqual([]);
     expect(await page.locator('.e8-jouer-zombie-proche, .e8-jouer-rodeur-g, .e8-jouer-rodeur-d').evaluateAll((ns) => ns.map((n) => getComputedStyle(n).display))).toEqual(['none', 'none', 'none', 'none']);
     expect(await page.locator('.e8-jouer-flammes, .e8-jouer-lampe').evaluateAll((ns) => ns.map((n) => getComputedStyle(n).opacity))).toEqual(['1', '1', '1', '1']);

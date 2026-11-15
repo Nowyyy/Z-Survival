@@ -15,7 +15,6 @@ export const OBJETS_DUR = 1000; // plafond de sécurité du format (le plafond d
 export const LUES_MAX = 200;
 export const PERSO_DEFAUT = 'survivant';
 export const AVATAR_DEFAUT = 'anonyme';
-export const REFUS = Object.freeze(['solde', 'plein', 'absent', 'niveau', 'offre', 'invalide', 'pitie']);
 // Lot 8k : compteurs de pitié, un par rubrique de caisse (type de data/menu/caisses.json) : e = tirages depuis le dernier épique ou mieux,
 // l = tirages depuis le dernier légendaire (Docs/ref/economie.md).
 export const RUBRIQUES = Object.freeze(['equipement', 'personnage', 'cosmetique']);

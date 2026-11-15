@@ -223,7 +223,7 @@ test.describe('introduction du studio (E0)', () => {
     expect([o.problemes, o.externes]).toEqual([[], []]);
   });
 
-  test('jamais sans intro=1 sous ?test=1&menu=1, ni en partie directe ; démarrage du menu : 33 fichiers JavaScript (31 + avatar.js de l\'en-tête + module léger des sons), 34 avec l\'introduction (intro.js), hors moteur des sons chargé après le geste', async ({ page, baseURL }) => {
+  test('jamais sans intro=1 sous ?test=1&menu=1, ni en partie directe ; démarrage du menu : 36 fichiers JavaScript (lot 8h et 8i : progression v2 et module léger des sons), 37 avec l\'introduction (intro.js), hors moteur des sons chargé après le geste', async ({ page, baseURL }) => {
     let o = surveiller(page, baseURL);
     await espions(page);
     await ouvrirMenu(page);

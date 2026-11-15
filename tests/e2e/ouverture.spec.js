@@ -138,7 +138,7 @@ async function ecartType(page) {
 }
 
 test.describe('ouverture ×1 (E3-2)', () => {
-  test('achat ×1 : Three.js chargé au toucher de « Ouvrir » (jamais avant), scène 3D, carte = tirage, puis « Continuer » ; tout libéré, aucun contexte restant, mémoire à zéro ; budget ; aucune écriture, aucune requête externe, console propre', async ({ page, baseURL }, info) => {
+  test('achat ×1 : Three.js chargé au toucher de « Ouvrir » (jamais avant), scène 3D, carte = tirage, puis « Continuer » ; tout libéré, aucun contexte restant, mémoire à zéro ; budget ; seule écriture : l\'achat dans zs.save.v2 (lot 8h), aucune requête externe, console propre', async ({ page, baseURL }, info) => {
     test.setTimeout(120_000);
     const o = surveiller(page, baseURL);
     await espions(page);

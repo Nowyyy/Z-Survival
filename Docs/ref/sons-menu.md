@@ -1,7 +1,7 @@
-# Sons du menu principal : décisions du propriétaire (lot 8g, à faire dans un lot dédié)
+# Sons du menu principal : décisions du propriétaire (lot 8g), réalisées au lot 8i
 
-Décisions données pendant le lot 8g, après l'estimation des sons nécessaires au menu. **Rien n'est fait** : cette fiche sert de base au prompt du
-lot qui les intégrera. Règles qui s'appliquent : sons synthétisés en code (`js/game/synth.js`, `synth2*.js`, `data/game/sounds.json`), aucun
+**Fait au lot 8i** (section « État final du lot 8i », qui fait foi ; moteur des sons : `js/core/synth.js`). Texte d'origine : décisions données pendant le lot 8g, après l'estimation des sons nécessaires au menu. **Rien n'est fait** (au lot 8g) : cette fiche sert de base au prompt du
+lot qui les intégrera. Règles qui s'appliquent : sons synthétisés en code (`js/core/synth.js`, `js/core/synth2*.js`, `data/game/sounds.json` ; chemins corrigés au lot 8l), aucun
 fichier audio (le son du logo du studio est l'exception nominative du lot 8g) ; jamais de son dans `js/core/` ; **aucun son avant le premier geste**.
 
 | Famille | Décision | Sons | État |
@@ -108,7 +108,7 @@ Total hors ouvertures : 9 sons à créer ou intégrer (clic, musique, achat, qua
 - Options (menu E5 et pause E2-12, même composant) : **Son** (activé, coupé), **Volume du jeu**, **Volume de la musique** (curseurs de 0 à 100 % ; lot 8j : par pas de 1, au clavier : flèches ±1, Page haut / Page bas ±10, Début, Fin ; clic d'essai au plus toutes les 150 ms pendant le glissement, et un au relâchement). « Son coupé » coupe tout. Le volume du jeu règle les sons de la partie et les effets du menu ; le volume de la musique règle la musique des menus et la mélodie d'annonce de vague de la partie (catégorie `annonce`, sortie par son propre compresseur et son propre gain : `js/game/audio.js`). Gains linéaires (`gainsVolumes`, `js/core/sons-menu.js`). En mémoire (`js/menu/demarrage.js`), appliqués à la partie à « JOUER » ; perdus au rechargement jusqu'au lot 8h.
 
 ### Chargement et mémoire
-- Démarrage du menu : un seul fichier de plus, `js/menu/sons/sons.js` (33 fichiers JavaScript sous `?test=1&menu=1`, 34 avec l'introduction). Rien d'autre sans geste. Après un geste : `moteur.js`, `js/core/sons-menu.js`, `data/menu/sons.json`, `sons-choix.json`, le calculateur d'arrière-plan (`calcul.js`, `synthese.js` et le moteur de l'atelier), puis `musique.js` et `js/core/musique-menu.js` au premier départ de la musique. Au vrai lancement, le geste de l'introduction a déjà eu lieu : le moteur se charge pendant l'écran de chargement (pour la chute du Z).
+- Démarrage du menu : un seul fichier de plus, `js/menu/sons/sons.js` (33 fichiers JavaScript sous `?test=1&menu=1`, 34 avec l'introduction, au lot 8i ; 36 et 37 depuis la progression v2 du lot 8h). Rien d'autre sans geste. Après un geste : `moteur.js`, `js/core/sons-menu.js`, `data/menu/sons.json`, `sons-choix.json`, le calculateur d'arrière-plan (`calcul.js`, `synthese.js` et le moteur de l'atelier), puis `musique.js` et `js/core/musique-menu.js` au premier départ de la musique. Au vrai lancement, le geste de l'introduction a déjà eu lieu : le moteur se charge pendant l'écran de chargement (pour la chute du Z).
 - Tampons (variantes par défaut, 22 050 Hz mono) : menu 0,89 Mo (chute 90 Ko, menu 296 Ko, raretés 530 Ko ; borne 3 Mo), ouverture 1,08 Mo (borne 4 Mo), libérés après chaque ouverture ; musique : un tampon de bruit de 2 s (0,34 Mo à 44,1 kHz). Calcul hors du fil principal (0,4 s au total pour le menu en émulation).
 - État pour les tests : `window.__zsMenu.sons()` (faits, volumes, gains, tampons prêts, octets par groupe, nœuds actifs, mode de la musique, journal des lectures).
 

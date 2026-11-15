@@ -256,8 +256,6 @@
   --menu-nuit: #06070c;             /* fond du menu et de l'écran de chargement */
   --menu-ciel-haut: #0a0e1c;        /* ciel, haut */
   --menu-ciel-bas: #1b1422;         /* ciel, horizon */
-  --menu-lune: #e8e2cf;             /* lune */
-  --menu-lune-halo: rgb(232 226 207 / 14%); /* halo de la lune */
   --menu-batiment: #010102;         /* silhouette du bâtiment */
   --menu-fenetre: #e9b44c;          /* deux fenêtres éclairées */
   --menu-brume: rgb(176 172 190 / 9%); /* brume lente */
@@ -283,7 +281,6 @@
   --menu-voile: rgb(0 0 0 / 72%);   /* voile sous les écrans superposés (Information, Connexion) */
   --menu-panneau: #121012;          /* fond des écrans superposés */
   --menu-grain: rgb(255 255 255 / 5%); /* grain léger */
-  --menu-ligne: rgb(0 0 0 / 28%);   /* fines lignes horizontales */
   --menu-poussiere: rgb(200 190 175 / 55%); /* poussière soulevée par le Z */
   --menu-barre-fond: #2a1414;       /* fond de la barre de chargement */
   --menu-point: #ffd60a;            /* point jaune « nouveauté non lue » */

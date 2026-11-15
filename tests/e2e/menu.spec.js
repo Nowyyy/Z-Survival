@@ -4,7 +4,6 @@ import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 
 const REF = { width: 932, height: 430 };
-const SIZES = [REF, { width: 667, height: 375 }, { width: 1440, height: 900 }];
 const KEY = 'zs.save.v2'; // lot 8h : progression v2
 const BRUIT = /GL Driver Message|GPU stall|swiftshader|WebGL/i; // messages du rendu logiciel de Chromium, sans rapport avec la page
 
@@ -69,45 +68,11 @@ test.describe('écran de chargement (E7)', () => {
     expect(o.externes).toEqual([]);
   });
 
-  test('prefers-reduced-motion : le Z est posé (aucune animation dans l\'écran de chargement), puis le menu', async ({ page }) => {
-    await page.emulateMedia({ reducedMotion: 'reduce' });
-    await page.setViewportSize(REF);
-    await page.goto('/jeu.html?test=1&menu=1&seed=1');
-    await expect(page.locator('#e7')).toHaveClass(/e7-pose/);
-    // Animations CSS seulement (la feuille de base réduit toute transition à 0,01 ms sous mouvement réduit : ce n'est pas une animation de l'écran).
-    expect(await page.locator('#e7').evaluate((n) => n.getAnimations({ subtree: true }).filter((a) => a.animationName).length)).toBe(0);
-    await expect(page.locator('#menu-jouer')).toBeVisible({ timeout: 60_000 });
-    expect(await page.locator('#e8').evaluate((n) => n.getAnimations({ subtree: true }).filter((a) => a.animationName).length)).toBe(0);
-  });
 });
 
 test.describe('menu principal (E8)', () => {
-  for (const size of SIZES) {
-    test(`${size.width}×${size.height} : en-tête, onglets et Jouer à leur place ; trois barres dans le bandeau ; rien hors de l'écran ni superposé ; cibles de 44 px ; axe`, async ({ page }) => {
-      await ouvrirMenu(page, size);
-      const ids = ['#menu-profil', '#menu-solde', '#menu-plein-ecran', '#menu-trois-barres', '.menu-bandeau', '#menu-jouer', ...['boutique', 'personnage', 'jouer', 'infini', 'event'].map((o) => `#menu-onglet-${o}`)];
-      const b = Object.fromEntries(await Promise.all(ids.map(async (s) => [s, await boite(page, s)])));
-      for (const [s, r] of Object.entries(b)) expect([r.l >= 0, r.t >= 0, r.r <= size.width + 0.5, r.b <= size.height + 0.5], s).toEqual([true, true, true, true]);
-      const entete = await boite(page, '.e8-entete');
-      const barres = b['#menu-trois-barres'];
-      expect([barres.t >= entete.t, barres.b <= entete.b, barres.r <= entete.r]).toEqual([true, true, true]);
-      expect(barres.r).toBeLessThanOrEqual(size.width - 15.5); // marge de 16 px
-      expect(b['#menu-profil'].l).toBeGreaterThanOrEqual(15.5); // lot 8g : « Profil » (avant : bouton « Connexion »)
-      // Ordre et emplacement : Profil à gauche (lot 8g ; avant : Connexion), solde, plein écran (retour du propriétaire après le lot 8c) puis trois barres à droite ; Jouer au centre ;
-      // bandeau sous l'en-tête, à gauche.
-      expect(b['#menu-solde'].r).toBeLessThanOrEqual(barres.l);
-      expect([b['#menu-solde'].r <= b['#menu-plein-ecran'].l, b['#menu-plein-ecran'].r <= barres.l]).toEqual([true, true]);
-      expect([b['#menu-plein-ecran'].t >= entete.t, b['#menu-plein-ecran'].b <= entete.b]).toEqual([true, true]);
-      expect(Math.abs((b['#menu-onglet-jouer'].l + b['#menu-onglet-jouer'].r) / 2 - size.width / 2)).toBeLessThan(2);
-      expect(b['#menu-onglet-jouer'].w).toBeGreaterThan(b['#menu-onglet-boutique'].w);
-      expect([b['.menu-bandeau'].t >= entete.b, b['.menu-bandeau'].l >= 15.5]).toEqual([true, true]);
-      const chevauche = (x, y) => x.l < y.r - 0.5 && y.l < x.r - 0.5 && x.t < y.b - 0.5 && y.t < x.b - 0.5;
-      const liste = Object.entries(b);
-      for (let i = 0; i < liste.length; i += 1) for (let j = i + 1; j < liste.length; j += 1) expect(chevauche(liste[i][1], liste[j][1]), `${liste[i][0]} / ${liste[j][0]}`).toBe(false);
-      for (const s of ids.filter((x) => x !== '#menu-solde' && x !== '.menu-bandeau')) expect([b[s].w >= 44, b[s].h >= 44], s).toEqual([true, true]);
-      expect((await new AxeBuilder({ page }).analyze()).violations.map((v) => v.id)).toEqual([]);
-    });
-  }
+  // Lot 8l : les tests « en-tête, onglets et Jouer à leur place » (3 tailles) et « prefers-reduced-motion : le Z est posé » sont fusionnés dans
+  // menu-onglets.spec.js (même chargement que ses tests « onglet Jouer » aux mêmes tailles et « prefers-reduced-motion : scène fixe »).
 
   test('onglets : Jouer actif au départ (aria-current et goutte), changement d\'onglet, Boutique (lot 8e ; avant : « Bientôt ») ; Event verrouillé (cadenas et « Prochainement », « Prochainement : contenu verrouillé », non activable)', async ({ page }) => {
     await ouvrirMenu(page);

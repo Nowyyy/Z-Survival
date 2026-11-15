@@ -44,7 +44,7 @@ const lisseLocal = (x) => x * x * (3 - 2 * x);
 // Bruit lisse et déterministe (somme de sinus) : secousse, grésillement de la lampe.
 const bruit = (t, k) => Math.sin(t * 37.1 + k * 1.7) * 0.5 + Math.sin(t * 23.3 + k * 4.1) * 0.35 + Math.sin(t * 61.7 + k) * 0.15;
 
-export async function creerScene({ canvas, couleur, chrono, reglages, cartes, modele, teinte, police, caseCible }) {
+export async function creerScene({ canvas, couleur, chrono, reglages, cartes, modele, police, caseCible }) {
   const col = (jeton) => new THREE.Color(couleur(jeton));
   // Contexte WebGL 2 demandé ici (Three.js 0.186 n'accepte que WebGL 2) : s'il n'y en a pas, l'ouverture s'arrête sans que Three.js n'écrive
   // d'erreur (résultat direct).
@@ -189,14 +189,13 @@ export async function creerScene({ canvas, couleur, chrono, reglages, cartes, mo
   const CG = caisseGeo(modele);
   for (const g of [CG.corps.principal, CG.corps.garniture, CG.couvercle.principal, CG.couvercle.garniture, CG.interieur, CG.q]) geo(g);
   const forme = CG.forme;
-  const texPrincipal = forme === 'bois' ? T.bois('--ouv-bois', 5, 4) : null;
-  const corpsJeton = { bois: '--ouv-bois', militaire: '--ouv-militaire', elite: '--ouv-elite', malle: `--ouv-${['recrues', 'veterans', 'legendes'].includes(modele) ? modele : 'recrues'}`, valise: `--ouv-${['tenues', 'mode', 'couture'].includes(modele) ? modele : 'tenues'}` }[forme];
-  const couvercleJeton = { bois: '--ouv-bois', militaire: '--ouv-militaire-couvercle', elite: '--ouv-elite-couvercle', malle: `${corpsJeton}-couvercle`, valise: corpsJeton }[forme];
-  const texMetal = forme !== 'bois' ? T.metal(corpsJeton, 7) : null;
-  const matCorps = mat(new THREE.MeshPhongMaterial({ color: NEUTRE, map: texPrincipal ?? texMetal, shininess: 48, specular: SPEC_METAL }));
-  const matCouvercle = forme === 'bois' ? matCorps : mat(new THREE.MeshPhongMaterial({ color: NEUTRE, map: T.metal(couvercleJeton, 8), shininess: 48, specular: SPEC_METAL }));
-  const garnitureTeinte = forme === 'elite' || modele === 'legendes' || modele === 'couture';
-  const matGarniture = mat(new THREE.MeshPhongMaterial({ color: garnitureTeinte ? col(teinte) : col(forme === 'militaire' ? '--ouv-militaire-arete' : forme === 'valise' ? '--ouv-sangle' : '--ouv-clou'), shininess: 48, specular: SPEC_METAL }));
+  // Lot 8l : dessins bois et elite, variantes recrues, legendes, mode et couture retirés (plus utilisés par aucune caisse depuis le lot 8k).
+  const corpsJeton = { militaire: '--ouv-militaire', malle: '--ouv-veterans', valise: '--ouv-tenues' }[forme];
+  const couvercleJeton = { militaire: '--ouv-militaire-couvercle', malle: `${corpsJeton}-couvercle`, valise: corpsJeton }[forme];
+  const texMetal = T.metal(corpsJeton, 7);
+  const matCorps = mat(new THREE.MeshPhongMaterial({ color: NEUTRE, map: texMetal, shininess: 48, specular: SPEC_METAL }));
+  const matCouvercle = mat(new THREE.MeshPhongMaterial({ color: NEUTRE, map: T.metal(couvercleJeton, 8), shininess: 48, specular: SPEC_METAL }));
+  const matGarniture = mat(new THREE.MeshPhongMaterial({ color: col(forme === 'militaire' ? '--ouv-militaire-arete' : forme === 'valise' ? '--ouv-sangle' : '--ouv-clou'), shininess: 48, specular: SPEC_METAL }));
   const matInterieur = mat(new THREE.MeshBasicMaterial({ color: col('--ouv-noir') }));
   const texQ = T.question(police);
   const matQ = mat(new THREE.MeshBasicMaterial({ color: col('--ouv-q'), map: texQ, transparent: true, depthWrite: false }));

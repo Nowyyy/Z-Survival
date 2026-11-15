@@ -1,7 +1,7 @@
 STATUT: VALIDE
 ## Catégories
 D: APPROUVE   (les tests de règles ne tournent plus que sur le projet bureau ; les tests G et P restent en mobile)
-R: APPROUVE   (retirer les doublons e2e dont le test unitaire équivalent est identifié dans l'annexe de tests-audit.md ; exception : conserver au plus un fichier e2e d'intégration par zone)
+R: APPROUVE   (retirer les doublons e2e dont le test unitaire équivalent est identifié dans l'annexe de archives/audits-v0.4-v0.7.md#tests-audit ; exception : conserver au plus un fichier e2e d'intégration par zone)
 F: APPROUVE   (retrait des détails non critiques)
 T: APPROUVE   (retrait des tests propres aux pages techniques, sauf le chargement et l'axe tant que la page est publiée)
 L: APPROUVE   (retrait des tests propres à l'ancien code ; le code reste ; liste du code sans test dans le bilan)

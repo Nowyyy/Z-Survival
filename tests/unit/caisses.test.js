@@ -49,8 +49,9 @@ describe('données data/menu/caisses.json (lireCaisses)', () => {
       return t + (x.pourcent * liste.filter((p) => !p.debloque).length) / liste.length;
     }, 0) * 100) / 100;
     expect(['recrues', 'veterans', 'legendes'].map(verrouilles)).toEqual([53.33, 68.33, 79.33]);
-    // Un dessin par genre de caisse.
-    expect(toutes.map((c) => c.modele)).toEqual(['bois', 'militaire', 'elite', 'recrues', 'veterans', 'legendes', 'tenues', 'mode', 'couture']);
+    // Un dessin par genre de caisse (lot 8l : les six dessins du lot 8e qu'aucune caisse n'utilise plus sont retirés ; la référence garde ses neuf
+    // caisses, dessinées avec les trois dessins restants : avant, bois, militaire, elite, recrues, veterans, legendes, tenues, mode, couture).
+    expect(toutes.map((c) => c.modele)).toEqual(['militaire', 'militaire', 'militaire', 'veterans', 'veterans', 'veterans', 'tenues', 'tenues', 'tenues']);
     expect(partHaute(toutes.find((c) => c.id === 'recrues'), cat)).toEqual({ rarete: 'epique', pourcent: 30 }); // lot 8k : personnages par rareté (avant : null)
   });
 
@@ -102,7 +103,8 @@ describe('données data/menu/caisses.json (lireCaisses)', () => {
     const sansLeg = un({ chances: { commun: 60, 'peu-commun': 30, rare: 8, epique: 2 } });
     expect([sansLeg.caisses, sansLeg.erreurs]).toEqual([[], ['caisse ravitaillement : raretés absentes legendaire']]);
     expect(un({ modele: 'inconnu' }).caisses).toEqual([]);
-    expect(un({ modele: undefined }).caisses[0].modele).toBe('bois');
+    expect(un({ modele: undefined }).caisses[0].modele).toBe('militaire'); // lot 8l : défaut militaire (avant : bois, retiré)
+    expect(un({ modele: 'bois' }).caisses).toEqual([]); // lot 8l : ancien dessin du lot 8e refusé
   });
 
   it('règle écrite : une rareté tirable sans objet dans le catalogue fait refuser la caisse (et le tirage d\'une caisse forgée rend null)', () => {

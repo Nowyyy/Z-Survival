@@ -65,7 +65,6 @@ export const SETTING_KEYS = Object.freeze({
   live: Object.freeze(['dprMax', 'ombres', 'ombreTaille', 'vhs', 'brouillard', 'feux.voitureFoyers', 'feux.fumeeHelico', 'feux.particules', 'feux.lueur', 'sang', 'cadavres', 'lampes', 'lumieres', 'ombresLampes']),
   load: Object.freeze(['personnages', 'anticrenelage', 'texturesFines', 'decor']),
 });
-export const ORIGINS = ['preset', 'perso', 'adresse'];
 const ID_RE = /^[a-z][A-Za-z0-9]{0,31}$/;
 const VALUE_RE = /^[A-Za-z0-9._-]{1,16}$/;
 const KEY_RE = /^game\.[A-Za-z0-9._-]{1,80}$/;

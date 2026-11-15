@@ -144,14 +144,11 @@ test.describe('lampes à huile', () => {
     expect(runs.eclairage).toEqual(runs.off);
   });
 
-  test('fichiers : « off » n\'en charge aucun de plus (115 JavaScript, lot 8a : + js/menu/demarrage.js ; lot 8f : + js/glisser.js) ; « decor » demande lamps.js et lampes.world.json, jamais lights.js ni lumieres.json', async ({ page, baseURL }) => {
+  // Lot 8l : le cas « off » (123 fichiers JavaScript, aucun fichier des lampes) est vérifié par graphismes.spec.js (« par défaut (lampes « off ») »,
+  // même chargement), qui est rejoué quand les lampes changent (zone graphismes, dépendante de rendu).
+  test('fichiers : « decor » demande lamps.js et lampes.world.json, jamais lights.js ni lumieres.json ; « eclairage » les deux, une fois chacun', async ({ page, baseURL }) => {
     const files = [];
     page.on('request', (r) => r.url().startsWith(baseURL) && files.push(new URL(r.url()).pathname));
-    await open(page, '&nospawn=1&lum=off');
-    expect(new Set(files.filter((f) => f.endsWith('.js'))).size).toBe(123); // lot 8j : + js/game/ui-echelle.js, js/game/porte-message.js, js/core/porte-message.js, js/core/sons-coups.js, js/core/tir-traverse.js, js/game/bleu-manche.js ; lot 8h : + js/save/codecs.js et js/core/progression.js (progression v2)
-    for (const f of ['/js/game/lamps.js', '/js/core/lamps.js', '/js/game/lights.js', '/data/game/lumieres.json']) expect(files).not.toContain(f);
-    expect(files.some((f) => f.includes('lampes'))).toBe(false);
-    files.length = 0;
     await open(page, '&nospawn=1&lum=decor');
     for (const f of ['/js/game/lamps.js', '/js/core/lamps.js', '/data/game/maps/rez-de-chaussee/lampes.world.json']) expect(files).toContain(f);
     for (const f of ['/js/game/lights.js', '/data/game/lumieres.json']) expect(files).not.toContain(f);

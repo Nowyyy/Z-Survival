@@ -64,25 +64,18 @@ const bulle = (w, h, d, n = 16) => new THREE.SphereGeometry(0.5, n, Math.max(6, 
 // Dimensions communes : largeur 150 (retour du propriétaire : « carrées dans l'animation, rectangulaires dans le menu » ; avant 110), profondeur 80,
 // corps 62 de haut, couvercle 12 ; origine au centre du bas.
 export const CAISSE = Object.freeze({ w: 150, d: 80, h: 62, couvercle: 12 });
-// Forme d'un modèle (genres du lot 8e : data/menu/caisses.json → modele).
-export const FORMES = Object.freeze({ bois: 'bois', militaire: 'militaire', elite: 'elite', recrues: 'malle', veterans: 'malle', legendes: 'malle', tenues: 'valise', mode: 'valise', couture: 'valise' });
+// Forme d'un modèle (data/menu/caisses.json → modele ; lot 8l : les seuls dessins encore acceptés par js/core/caisses.js).
+export const FORMES = Object.freeze({ militaire: 'militaire', veterans: 'malle', tenues: 'valise' });
 
 // { corps: { principal, garniture }, couvercle: { principal, garniture }, interieur, q (quatre « ? »), y : hauteur du haut du corps }.
 export function caisseGeo(modele) {
-  const forme = FORMES[modele] ?? 'bois';
+  const forme = FORMES[modele] ?? 'militaire';
   const { w, d, h, couvercle: hc } = CAISSE;
   const corps = [];
   const garniture = [];
   const cp = [];
   const cg = [];
-  if (forme === 'bois') {
-    corps.push(piece(boite(w, h, d), [0, h / 2, 0]));
-    // Coins rivetés et lattes verticales.
-    for (const sx of [-1, 1]) for (const sz of [-1, 1]) garniture.push(piece(boite(9, h + 1, 9), [sx * (w / 2 - 3.5), h / 2, sz * (d / 2 - 3.5)]));
-    for (const sz of [-1, 1]) garniture.push(piece(boite(w - 10, 4, 1.5), [0, h * 0.5, sz * (d / 2 + 0.5)]));
-    cp.push(piece(boite(w + 4, hc, d + 4), [0, hc / 2, 0]));
-    cg.push(piece(boite(w + 5, 3, d + 5), [0, 1.5, 0]));
-  } else if (forme === 'militaire') {
+  if (forme === 'militaire') {
     corps.push(piece(boite(w - 4, h, d - 4), [0, h / 2, 0]));
     // Nervures, poignées, loquets.
     for (const x of [-w * 0.3, w * 0.3]) garniture.push(piece(boite(5, h - 4, d - 1), [x, h / 2, 0]));
@@ -90,17 +83,6 @@ export function caisseGeo(modele) {
     for (const sx of [-1, 1]) garniture.push(piece(boite(10, 10, 3), [sx * w * 0.36, h - 4, d / 2 - 1]));
     cp.push(piece(boite(w, hc, d), [0, hc / 2, 0]));
     cg.push(piece(boite(40, 3, 6), [0, hc + 1.5, 0]));
-  } else if (forme === 'elite') {
-    corps.push(piece(boite(w - 6, h - 8, d - 6), [0, (h - 8) / 2, 0]));
-    // Coffre bombé : couvercle en demi-cylindre, cerclé de la teinte.
-    const r = (d - 2) / 2;
-    cp.push(piece(new THREE.CylinderGeometry(r, r, w - 2, 20, 1, false, 0, Math.PI), [0, 0, 0], [0, 0, Math.PI / 2], [0.55, 1, 1]));
-    for (const x of [-w * 0.28, w * 0.28]) {
-      garniture.push(piece(boite(7, h - 7, d - 3), [x, (h - 8) / 2, 0]));
-      cg.push(piece(new THREE.CylinderGeometry(r + 1.2, r + 1.2, 7, 20, 1, false, 0, Math.PI), [x, 0, 0], [0, 0, Math.PI / 2], [0.58, 1, 1.03]));
-    }
-    for (const sx of [-1, 1]) for (const sz of [-1, 1]) garniture.push(piece(boite(12, 12, 12), [sx * (w / 2 - 8), 6, sz * (d / 2 - 6)]));
-    garniture.push(piece(boite(13, 14, 3), [0, h - 14, d / 2 - 2]));
   } else if (forme === 'malle') {
     corps.push(piece(boite(w - 4, h, d - 4), [0, h / 2, 0]));
     for (const y of [h * 0.22, h * 0.78]) garniture.push(piece(boite(w - 2, 4, d - 2), [0, y, 0]));
@@ -118,16 +100,16 @@ export function caisseGeo(modele) {
     cg.push(piece(new THREE.TorusGeometry(10, 2, 6, 12, Math.PI), [0, hc, 0]));
     for (const x of [-w * 0.24, w * 0.24]) cg.push(piece(boite(8, hc + 1, d - 4), [x, hc / 2, 0]));
   }
-  const top = forme === 'elite' ? h - 8 : h;
+  const top = h;
   // Intérieur sombre (vu quand le couvercle est parti).
   const interieur = fusion([piece(new THREE.PlaneGeometry(w * 0.86, d * 0.8), [0, top + 0.6, 0], [-Math.PI / 2, 0, 0])]);
   // Quatre « ? » : un grand au milieu de la face, deux petits, un sur le côté droit.
-  const zf = (forme === 'bois' ? d / 2 : forme === 'elite' ? d / 2 - 3 : forme === 'valise' ? d / 2 - 4 : d / 2 - 2) + 0.9;
+  const zf = (forme === 'valise' ? d / 2 - 4 : d / 2 - 2) + 0.9;
   const q = fusion([
     piece(new THREE.PlaneGeometry(34, 34), [0, top * 0.52, zf]),
     piece(new THREE.PlaneGeometry(15, 15), [-w * 0.33, top * 0.4, zf]),
     piece(new THREE.PlaneGeometry(15, 15), [w * 0.33, top * 0.4, zf]),
-    piece(new THREE.PlaneGeometry(18, 18), [(forme === 'bois' ? w / 2 : w / 2 - 2) + 0.9, top * 0.5, 0], [0, Math.PI / 2, 0]),
+    piece(new THREE.PlaneGeometry(18, 18), [w / 2 - 2 + 0.9, top * 0.5, 0], [0, Math.PI / 2, 0]),
   ]);
   return {
     forme,

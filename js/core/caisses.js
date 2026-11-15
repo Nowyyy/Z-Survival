@@ -15,8 +15,9 @@ import { createRng, nextFloat } from './rng.js';
 
 export const TIRAGES_X10 = 10;
 export const TYPES_CAISSE = Object.freeze(['equipement', 'personnage', 'cosmetique']);
-// Dessin de la caisse (retour du propriétaire : un design par genre de caisse) ; absent : bois.
-export const MODELES = Object.freeze(['bois', 'militaire', 'elite', 'recrues', 'veterans', 'legendes', 'tenues', 'mode', 'couture']);
+// Dessin de la caisse (retour du propriétaire : un design par genre de caisse) ; absent : militaire. Lot 8l : les six dessins du lot 8e
+// qu'aucune caisse n'utilise plus (bois, elite, recrues, legendes, mode, couture) sont retirés.
+export const MODELES = Object.freeze(['militaire', 'veterans', 'tenues']);
 const ID = /^[a-z0-9-]{1,32}$/;
 // Teinte d'une caisse (couleur de ses « ? », de ses rayons et de sa bande) : un jeton existant de css/tokens.css.
 const TEINTE = /^--(menu|rarete)-[a-z0-9-]{1,40}$/;
@@ -87,7 +88,7 @@ export function lireCaisses(json, cat) {
       erreurs.push(`caisse ${id} : teinte invalide`);
       teinte = TEINTE_DEFAUT;
     }
-    const modele = c.modele === undefined ? 'bois' : c.modele;
+    const modele = c.modele === undefined ? 'militaire' : c.modele;
     if (!MODELES.includes(modele)) {
       erreurs.push(`caisse ${id} : modèle inconnu ${c.modele}`);
       continue;
@@ -290,7 +291,6 @@ export function offresDuJour(regles, cat, jour) {
 // Règles (caisses.json → pitie) : { haute: { rarete, garanti }, top: { rarete, douce, pas, garanti } } : « haute » (épique ou mieux) garantie au
 // garanti-ième tirage sans elle ; « top » (légendaire) à sa chance de base jusqu'au tirage douce, puis + pas points par tirage, garantie au
 // garanti-ième. Compteurs { e, l } : tirages faits depuis la dernière rareté haute ou mieux (e), depuis le dernier « top » (l).
-export const PITIE_DEFAUT = Object.freeze({ haute: Object.freeze({ rarete: 'epique', garanti: 10 }), top: Object.freeze({ rarete: 'legendaire', douce: 50, pas: 5, garanti: 70 }) });
 const entierPos = (n, min, max) => (Number.isInteger(n) && n >= min && n <= max ? n : null);
 export function lirePitie(json, cat) {
   const erreurs = [];
