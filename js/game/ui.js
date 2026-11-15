@@ -19,9 +19,9 @@ export function createUi(dict, handlers) {
     pausePanel: $('pause-panel'), endPanel: $('end-panel'), live: $('hud-live'), rotate: $('rotate'),
     pauseBtn: $('btn-pause'), resume: $('btn-resume'), fullscreen: $('btn-fullscreen'), sound: $('btn-sound'),
     options: $('btn-options'), debug: $('btn-debug'), restart: $('btn-restart'), replay: $('btn-replay'), quit: $('btn-quit'), menuBtn: $('btn-menu'), endKills: $('end-kills'), endWave: $('end-wave'),
-    endBox: $('end-box'), endTitle: $('end-title-text'), pauseBalance: $('pause-balance-text'), endEarned: $('end-earned'), endEarnedText: $('end-earned-text'), endBonus: $('end-bonus'), endBonusText: $('end-bonus-text'),
+    endBox: $('end-box'), endTitle: $('end-title-text'), pauseBalance: $('pause-balance-text'), endWaveText: $('end-wave-text'),
     endBalance: $('end-balance'), endBalanceText: $('end-balance-text'), endBleu: $('end-bleu'), endBleuText: $('end-bleu-text'), endBest: $('end-best'), endRecord: $('end-record'), endRecordText: $('end-record-text'), endSave: $('end-save'),
-    pauseMedailles: $('pause-medailles-text'), endMed: $('end-medailles'), endMedText: $('end-medailles-text'), endMedSources: $('end-medailles-sources'), endMedSolde: $('end-medailles-solde'), endMedSoldeText: $('end-medailles-solde-text'),
+    pauseMedailles: $('pause-medailles-text'), endMed: $('end-medailles'), endMedText: $('end-medailles-text'), endMedSolde: $('end-medailles-solde'), endMedSoldeText: $('end-medailles-solde-text'),
   };
   // Lot 5j : écran Options (créé à la première ouverture) ; binding : contrôleur graphique et couche VHS, donnés par game.js (bindOptions).
   // Lot 8c : composant partagé avec le menu (contexte « partie ») ; sa section Son lit l'audio en cours (sonAudio) et passe par les mêmes
@@ -108,32 +108,24 @@ export function createUi(dict, handlers) {
       els.endTitle.textContent = dict[variant === 'world' ? 'game.end.world' : 'game.end.title'];
       els.endBox.dataset.variant = variant === 'world' ? 'world' : 'death'; // icône du titre : coche ou crâne (décoratives)
       els.endKills.textContent = fmt(dict['game.end.kills'], { n: kills });
-      els.endWave.textContent = wave > 0 ? fmt(dict['game.wave.reached'], { n: wave }) : '';
+      // Retour du propriétaire après le lot 8k : à gauche, vague atteinte (« Record » en jaune sur la même ligne), meilleure manche, zombies tués ;
+      // à droite, solde de diamants puis « +gain », solde de médailles puis « +gain » (gains de la partie, prime du monde comprise).
+      els.endWaveText.textContent = wave > 0 ? fmt(dict['game.wave.reached'], { n: wave }) : '';
       els.endWave.hidden = !(wave > 0);
       const money = info !== null && info !== undefined;
-      els.endEarned.hidden = !money;
-      els.endBleu.hidden = !money;
       els.endBalance.hidden = !money;
       els.endBest.hidden = !money;
       if (money) {
-        els.endEarnedText.textContent = fmt(dict[MONEY_TEXTS.earned], { n: formatMoney(info.earned) });
         els.endBleuText.textContent = fmt(dict[MONEY_TEXTS.bleu], { n: formatMoney(info.bleu) });
         els.endBalanceText.textContent = fmt(dict[MONEY_TEXTS.balance], { n: formatMoney(info.soldeBleu) });
         els.endBest.textContent = fmt(dict[info.mode === 'infini' ? MONEY_TEXTS.bestInfini : MONEY_TEXTS.best], { n: info.best });
       }
-      // Lot 8k : médailles gagnées pendant la partie (avec leurs sources non nulles) et solde de médailles.
       const med = money && info.medailles ? info.medailles : null;
-      for (const n of [els.endMed, els.endMedSolde]) if (n) n.hidden = !med;
-      if (els.endMedSources) els.endMedSources.hidden = !(med && med.total > 0);
-      if (med && els.endMed) {
+      els.endMedSolde.hidden = !med;
+      if (med) {
         els.endMedText.textContent = fmt(dict['game.end.medailles'], { n: formatMoney(med.total) });
         els.endMedSoldeText.textContent = fmt(dict['game.end.medailles.solde'], { n: formatMoney(med.solde) });
-        const sources = { portes: 'game.end.medailles.portes', zombies: 'game.end.medailles.zombies', paliers: 'game.end.medailles.paliers', monde: 'game.end.medailles.monde', jour: 'game.end.medailles.jour' };
-        els.endMedSources.textContent = Object.entries(sources).filter(([k]) => med[k] > 0).map(([k, cle]) => fmt(dict[cle], { n: formatMoney(med[k]) })).join(' · ');
       }
-      const world = money && variant === 'world';
-      els.endBonus.hidden = !world;
-      if (world) els.endBonusText.textContent = fmt(dict[MONEY_TEXTS.worldBonus], { n: formatMoney(info.world) });
       els.endRecord.hidden = !(money && info.record === true);
       els.endRecordText.textContent = dict[MONEY_TEXTS.record];
       // Ligne d'état seulement quand l'argent n'est pas écrit : mode essai (texte propre à l'écran de fin), sauvegarde illisible, indisponible, échec.

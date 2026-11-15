@@ -394,7 +394,7 @@ test.describe('sous-menus Inventaire, Fusion, Personnages (E9-2 à E9-4)', () =>
     await page.locator('#menu-objet-o5').click();
     await expect(page.locator('#menu-inventaire-ameliorer')).toHaveText('Il manque 15');
     await expect(page.locator('#menu-inventaire-ameliorer')).toHaveAttribute('aria-disabled', 'true');
-    await expect(page.locator('#menu-inventaire-ameliorer')).toHaveAccessibleDescription('Monnaie bleue insuffisante : prix 40, solde 25.');
+    await expect(page.locator('#menu-inventaire-ameliorer')).toHaveAccessibleDescription('Diamants insuffisants : prix 40, solde 25.');
     await page.locator('#menu-inventaire-ameliorer').click({ force: true });
     expect((await etatPerso(page)).objets.find((x) => x.uid === 'o5').niveau).toBe(1);
     expect(await page.evaluate(() => window.__ecritures)).toEqual([]);
@@ -859,10 +859,12 @@ test('bandeaux de même taille sur chaque écran, cartes d\'Infini de même tail
   for (const size of [{ width: 932, height: 430 }, { width: 667, height: 375 }, { width: 2000, height: 1020 }]) {
     await ouvrirMenu(page, size);
     const vus = [...await mesure()];
+    let navBoutique = null;
     for (const o of ['infini', 'boutique', 'personnage']) {
       await page.locator(`#menu-onglet-${o}`).click();
       await page.locator(`#menu-ecran-${o}`).waitFor({ state: 'visible' }); // lot 8e : l'onglet est marqué avant que son écran (chargé à la demande) soit prêt
       vus.push(...await mesure());
+      if (o === 'boutique') navBoutique = await page.evaluate(() => Math.round(document.getElementById('menu-boutique-rubriques').getBoundingClientRect().width * 2) / 2);
     }
     for (const s of ['inventaire', 'fusion']) {
       await page.locator(`#menu-perso-${s}`).click();
@@ -872,7 +874,15 @@ test('bandeaux de même taille sur chaque écran, cartes d\'Infini de même tail
     await page.locator('#menu-perso-silhouette').click();
     vus.push(...await mesure());
     expect(vus.length, `${size.width}`).toBe(7);
-    expect(new Set(vus.map((v) => `${v.w}×${v.h}`)).size, `${size.width} ${JSON.stringify(vus)}`).toBe(1);
+    // Retour du propriétaire après le lot 8k : sur téléphone (hauteur ≤ 520 px), le bandeau de la Boutique prend la largeur de sa colonne de rubriques,
+    // plus étroite (zone des caisses élargie) ; même hauteur. Les six autres bandeaux restent identiques ; ailleurs, les sept le sont.
+    const boutique = vus[2];
+    const autres = vus.filter((_, i) => i !== 2);
+    expect(new Set(autres.map((v) => `${v.w}×${v.h}`)).size, `${size.width} ${JSON.stringify(vus)}`).toBe(1);
+    if (size.height <= 520) {
+      expect([boutique.w, boutique.h], `${size.width}`).toEqual([navBoutique, autres[0].h]);
+      expect(boutique.w).toBeLessThan(autres[0].w);
+    } else expect(`${boutique.w}×${boutique.h}`, `${size.width}`).toBe(`${autres[0].w}×${autres[0].h}`);
     expect(vus.filter((v) => v.deborde || v.lignes.some((l) => l !== 1)), `${size.width}`).toEqual([]);
     // « Night of the Undead » (le plus long) réduit, mais lisible.
     await page.locator('#menu-onglet-jouer').click();

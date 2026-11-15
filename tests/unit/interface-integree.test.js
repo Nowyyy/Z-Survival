@@ -203,10 +203,20 @@ describe('feuilles de style de l\'interface (css/game-ui.css, css/game.css, css/
 describe('identifiants de jeu.html (table de Docs/ref/interface-integree.md)', () => {
   const KEPT = ['hud', 'hud-bar', 'hud-life', 'hud-chutes', 'hud-chutes-icons', 'hud-chutes-text', 'hud-floor', 'hud-wave', 'hud-money', 'hud-money-text', 'hud-gain', 'hud-remaining', 'hud-next', 'hud-kills',
     'down', 'down-title', 'down-sub', 'btn-pause', 'stick-left', 'stick-right', 'sound-hint', 'hud-live', 'pause-panel', 'pause-title', 'pause-balance',
-    'btn-resume', 'btn-fullscreen', 'btn-sound', 'btn-restart', 'end-panel', 'end-title', 'end-kills', 'end-wave', 'end-earned', 'end-bonus',
+    'btn-resume', 'btn-fullscreen', 'btn-sound', 'btn-restart', 'end-panel', 'end-title', 'end-kills', 'end-wave',
     'end-balance', 'end-best', 'end-record', 'end-save', 'btn-replay', 'wave-announce', 'labels', 'rotate'];
   const ADDED = ['hud-chrono', 'hud-rec', 'hud-chrono-text', 'hud-floor-text', 'hud-trial', 'hud-wave-text', 'hud-reinforced', 'hud-remaining-text', 'hud-next-text', 'hud-kills-text',
-    'down-body', 'down-title-text', 'down-fill', 'pause-balance-text', 'end-box', 'end-title-text', 'end-earned-text', 'end-bonus-text', 'end-record-text', 'btn-menu', 'btn-quit'];
+    'down-body', 'down-title-text', 'down-fill', 'pause-balance-text', 'end-box', 'end-title-text', 'end-record-text', 'btn-menu', 'btn-quit'];
+  // Retour du propriétaire après le lot 8k : « Monnaie jaune perdue » et « Dont prime du monde » quittent l'écran de fin (avant : conservé #end-earned,
+  // #end-bonus ; ajoutés #end-earned-text, #end-bonus-text) ; les sources des médailles aussi.
+  const RETIRES_8K = ['end-earned', 'end-bonus', 'end-earned-text', 'end-bonus-text', 'end-medailles-sources'];
+  it('retour du propriétaire après le lot 8k : jaune perdue, prime du monde et sources des médailles absentes de jeu.html et de ui.js', () => {
+    const ui = readFileSync('js/game/ui.js', 'utf8');
+    for (const id of RETIRES_8K) {
+      expect(ids.has(id), id).toBe(false);
+      expect(ui, id).not.toContain(`'${id}'`);
+    }
+  });
   // Retours du propriétaire après l'intégration : « Prochaine zone », état de la sauvegarde et volume quittent la pause.
   const REMOVED = ['hud-fill', 'end-save-link', 'pause-next', 'pause-save', 'volume-row', 'volume', 'volume-value'];
   const doc = existsSync('Docs/ref/interface-integree.md') ? readFileSync('Docs/ref/interface-integree.md', 'utf8') : '';
@@ -311,21 +321,25 @@ describe('structure de jeu.html', () => {
     expect(pause.indexOf('hud-gem')).toBeGreaterThan(0);
     expect(pause.indexOf('hud-gem')).toBeLessThan(pause.indexOf('id="pause-balance-text"'));
     expect(pause).not.toContain('hud-coin');
-    for (const [id, icone] of [['end-earned', 'hud-coin'], ['end-bonus', 'hud-gem'], ['end-bleu', 'hud-gem'], ['end-balance', 'hud-gem']]) {
+    // Retour du propriétaire après le lot 8k : solde de diamants (puis gemme, puis « +gain ») et solde de médailles (puis médaille, puis « +gain »).
+    for (const [id, icone, gain] of [['end-balance', 'hud-gem', 'end-bleu'], ['end-medailles-solde', 'hud-medaille', 'end-medailles']]) {
       const line = html.slice(at(`id="${id}"`), html.indexOf('</p>', at(`id="${id}"`)));
       expect(line.indexOf(`id="${id}-text"`), id).toBeLessThan(line.indexOf(icone));
       expect(line.indexOf(icone), id).toBeGreaterThan(0);
+      expect(line.indexOf(icone), id).toBeLessThan(line.indexOf(`id="${gain}-text"`));
     }
   });
 
   it('fin : colonne de gauche vague, record, meilleure manche ; colonne de droite tués, jaune perdue, prime du monde, bleue gagnée, solde bleu (lot 8h) ; plus de note « provisoire »', () => {
     const end = html.slice(at('id="end-panel"'), at('id="rotate"'));
     const cols = end.split('class="facts-col"').slice(1).map((c) => [...c.matchAll(/id="(end-[a-z]+)"/g)].map((m) => m[1]).filter((i) => !i.endsWith('text')));
-    expect(cols[0]).toEqual(['end-wave', 'end-record', 'end-best', 'end-medailles']); // lot 8k : puis médailles gagnées (sources, solde)
-    expect(end.indexOf('id="end-best"')).toBeLessThan(end.indexOf('id="end-medailles-sources"'));
-    expect(end.indexOf('id="end-medailles-sources"')).toBeLessThan(end.indexOf('id="end-medailles-solde"'));
-    expect(end.indexOf('id="end-medailles-solde"')).toBeLessThan(end.indexOf('id="end-kills"'));
-    expect(cols[1].slice(0, 5)).toEqual(['end-kills', 'end-earned', 'end-bonus', 'end-bleu', 'end-balance']);
+    // Retour du propriétaire après le lot 8k : à gauche vague atteinte (« Record » dans la même ligne), meilleure manche, zombies tués ; à droite solde de
+    // diamants (+gain), solde de médailles (+gain). Avant : gauche vague, record, meilleure manche, médailles ; droite tués, jaune perdue, prime, bleue.
+    expect(cols[0]).toEqual(['end-wave', 'end-record', 'end-best', 'end-kills']);
+    const vague = end.slice(end.indexOf('id="end-wave"'), end.indexOf('id="end-best"'));
+    expect(vague).toContain('id="end-record"');
+    expect(cols[1].slice(0, 3)).toEqual(['end-balance', 'end-bleu', 'end-medailles']);
+    expect(end.indexOf('id="end-bleu"')).toBeLessThan(end.indexOf('id="end-medailles-solde"'));
     expect(end).not.toContain('game.end.provisional');
     expect(fr['game.end.provisional']).toBeUndefined();
     expect(readFileSync('js/game/ui.js', 'utf8')).toMatch(/els\.quit\.addEventListener\('click', \(\) => ui\.openQuit\(\)\)/); // lot 8a (avant : aucun écouteur)

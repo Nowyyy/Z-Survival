@@ -603,6 +603,23 @@
   font-weight: var(--font-weight-bold);
 }
 
+/* Retour du propriétaire après le lot 8k : « Record » sur la ligne de la vague atteinte (une ligne de gagnée) ; gains de la partie à côté des soldes. */
+.panel-line > .end-record {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25em;
+  margin-left: 0.5em;
+}
+
+.panel-line > .end-record[hidden] {
+  display: none;
+}
+
+.end-gain {
+  margin-left: 0.15em;
+  font-weight: var(--font-weight-bold);
+}
+
 /* Boutons sur deux colonnes : Reprendre, Recommencer | Options, Quitter (lot 5j-G ; Plein écran et Son : icônes de la tête) ; fin : Rejouer | menu. */
 .panel-actions {
   display: grid;

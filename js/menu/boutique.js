@@ -14,12 +14,12 @@
 import { creerRoue } from './roue.js';
 import { preparer as preparerSons, son } from './sons/sons.js';
 import { formatMoney } from '../core/economy.js';
-import { TIRAGES_X10, ajouterCosmetiques, lireCaisses, lireCosmetiques, lireOffres, lirePitie, offresDuJour, partHaute, prixAchat, tirerPitie } from '../core/caisses.js';
+import { TIRAGES_X10, ajouterCosmetiques, avantGarantie, chancesTirage, elementsDe, lireCaisses, lireCosmetiques, lireOffres, lirePitie, offresDuJour, partHaute, prixAchat, tirerPitie } from '../core/caisses.js';
 import { estDebloque } from '../core/equipement.js';
 import { fmt } from '../game/texts.js';
 import { el } from './menu.js';
 import { chargerEquipement } from './equipement-etat.js';
-import { icone24 } from './personnage.js';
+import { buste, icone24 } from './personnage.js';
 import { iconeMedaille } from '../game/bleu-manche.js';
 import { acces } from '../core/graphics.js';
 import { pageCanal, pageSearch } from '../game/graphics-boot.js';
@@ -352,12 +352,93 @@ export async function ecranBoutique({ t, bandeau, root, rootDialogue, surVue = (
     boutons.set(c.id, { un, dix, chances: lien, raison, caisse: c });
     return li;
   }
+  // Retour du propriétaire après le lot 8k (une seule caisse laissait la droite vide) : à côté de chaque caisse, un aperçu : la pitié de la rubrique
+  // (barres « épique ou mieux » et « légendaire », tirages avant la garantie, chance du prochain tirage) et les éléments légendaires possibles.
+  const LEGENDAIRES_MAX = 6;
+  const apercus = [];
+  function apercuCaisse(c) {
+    const id = `menu-caisse-${c.id}-apercu`;
+    // Nom du repère : la caisse puis « Ta pitié… » (un nom différent par rubrique).
+    const a = el('aside', ['e3-apercu'], { id, 'aria-labelledby': `menu-caisse-${c.id}-nom ${id}-titre`, 'data-caisse': c.id });
+    poserJeton(a, '--e3-teinte', c.teinte);
+    if (!pitie) return { element: a, maj: () => {} };
+    const titre = el('h4', ['e3-apercu-titre'], { id: `${id}-titre` });
+    titre.textContent = t('game.menu.boutique.apercu.pitie');
+    const lignes = el('ul', ['e3-apercu-pitie'], { 'aria-labelledby': `${id}-titre` });
+    const ligne = (cle) => {
+      const rid = pitie[cle].rarete;
+      const li = el('li', ['e3-apercu-ligne'], { 'data-pitie': cle });
+      poserJeton(li, '--e3-rarete', jetonRarete(rid));
+      const nom = el('span', ['e3-apercu-nom']);
+      nom.textContent = fmt(t(cle === 'haute' ? 'game.menu.boutique.apercu.haute' : 'game.menu.boutique.apercu.top'), { rarete: nomRarete(rid) });
+      const compte = el('span', ['e3-apercu-compte']);
+      const barre = el('span', ['e3-apercu-barre'], { 'aria-hidden': 'true' });
+      const plein = el('span', ['e3-apercu-plein']);
+      barre.append(plein);
+      // « Légendaire » : repère du tirage où la chance commence à monter (pitie.top.douce).
+      if (cle === 'top') {
+        const repere = el('span', ['e3-apercu-repere']);
+        repere.style.left = `${(pitie.top.douce / pitie.top.garanti) * 100}%`;
+        barre.append(repere);
+      }
+      const texte = el('span', ['e3-apercu-texte']);
+      li.append(nom, compte, barre, texte);
+      lignes.append(li);
+      return { li, compte, plein, texte };
+    };
+    const haute = ligne('haute');
+    const top = ligne('top');
+    const chance = el('p', ['e3-apercu-chance'], { id: `${id}-chance` });
+    const titreLeg = el('h4', ['e3-apercu-titre'], { id: `${id}-legendaires-titre` });
+    titreLeg.textContent = t('game.menu.boutique.apercu.legendaires');
+    const legs = el('ul', ['e3-apercu-legendaires'], { id: `${id}-legendaires`, 'aria-labelledby': `${id}-legendaires-titre` });
+    poserJeton(legs, '--e3-rarete', jetonRarete(pitie.top.rarete));
+    const elements = elementsDe(c.type, cat, pitie.top.rarete);
+    for (const o of elements.slice(0, LEGENDAIRES_MAX)) {
+      const li = el('li', ['e3-apercu-element'], { 'data-element': o.id });
+      const ico = el('span', ['e3-apercu-icone']);
+      ico.append(c.type === 'personnage' ? buste(cat.personnages.find((p) => p.id === o.id)) : icone24(c.type === 'cosmetique' ? 'tenue' : cat.objets.get(o.id)?.type ?? 'accessoire', 'e9-icone e3-apercu-svg'));
+      const nom = el('span', ['e3-apercu-element-nom']);
+      nom.textContent = o.nom;
+      li.append(ico, nom);
+      legs.append(li);
+    }
+    if (elements.length > LEGENDAIRES_MAX) {
+      const li = el('li', ['e3-apercu-autres']);
+      li.textContent = fmt(t('game.menu.boutique.apercu.autres'), { n: elements.length - LEGENDAIRES_MAX });
+      legs.append(li);
+    }
+    a.append(titre, lignes, chance, titreLeg, legs);
+    const maj = () => {
+      const cpt = eq.pitie(c.type);
+      const reste = avantGarantie(pitie, cpt);
+      for (const [cle, l, n, max] of [['haute', haute, cpt.e, pitie.haute.garanti], ['top', top, cpt.l, pitie.top.garanti]]) {
+        l.compte.textContent = fmt(t('game.menu.boutique.apercu.compte'), { n: Math.min(n, max), max });
+        l.plein.style.width = `${Math.min(100, (n / max) * 100)}%`;
+        const r = reste[cle];
+        const cles = cle === 'haute' ? ['game.menu.chances.pitie.haute', 'game.menu.chances.pitie.haute.prochain'] : ['game.menu.chances.pitie.top', 'game.menu.chances.pitie.top.prochain'];
+        l.texte.textContent = fmt(t(cles[r === 1 ? 1 : 0]), { rarete: nomRarete(pitie[cle].rarete), n: r });
+        l.li.dataset.restants = String(r);
+      }
+      const p = chancesTirage(c, cat, pitie, cpt).find((x) => x.rarete === pitie.top.rarete)?.pourcent ?? 0;
+      chance.textContent = fmt(t(cpt.l + 1 > pitie.top.douce ? 'game.menu.boutique.apercu.chance.hausse' : 'game.menu.boutique.apercu.chance'), { rarete: nomRarete(pitie.top.rarete).toLocaleLowerCase('fr-FR'), n: pourcentTexte(Math.round(p * 100) / 100), douce: pitie.top.douce + 1 });
+    };
+    maj();
+    return { element: a, maj };
+  }
   const noteTenues = el('p', ['e3-rayon-note'], { id: 'menu-boutique-tenues-note' });
   let rang = 0; // lot 8k : une caisse par rubrique, décalées d'une rubrique à l'autre (0, −1,3 s, −2,6 s)
   for (const type of ['equipement', 'personnage', 'cosmetique']) {
     const liste = el('ul', ['e3-cartes'], { id: `menu-boutique-${type}-caisses`, 'aria-labelledby': `menu-boutique-${type}-titre` });
-    for (const c of caisses.filter((x) => x.type === type)) liste.append(carteCaisse(c, rang++));
-    rayon(type, type === 'cosmetique' ? [noteTenues] : []).append(liste);
+    const corps = el('div', ['e3-rayon-corps']);
+    corps.append(liste);
+    for (const c of caisses.filter((x) => x.type === type)) {
+      liste.append(carteCaisse(c, rang++));
+      const ap = apercuCaisse(c);
+      apercus.push(ap);
+      corps.append(ap.element);
+    }
+    rayon(type, type === 'cosmetique' ? [noteTenues] : []).append(corps);
   }
   const rendreNoteTenues = () => {
     noteTenues.textContent = fmt(t('game.menu.boutique.tenues.note'), { n: Object.keys(collection()).length, total: cat.cosmetiques.length });
@@ -387,6 +468,7 @@ export async function ecranBoutique({ t, bandeau, root, rootDialogue, surVue = (
   };
   eq.abonner((_etat, annules) => {
     majPrix();
+    for (const ap of apercus) ap.maj(); // lot 8k : compteurs de pitié après un achat (ou un autre onglet)
     majOffres();
     rendreNoteTenues();
     if (annules?.length) annonceAchat.textContent = t('game.menu.achat.annule');

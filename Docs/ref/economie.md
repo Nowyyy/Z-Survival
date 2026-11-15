@@ -1,12 +1,12 @@
 # Économie : trois monnaies, médailles, caisses à pitié (lot 8k, V0.8)
 
-Fiche de référence (lot 8k, branche `lot-8k`, base `origin/dev` `3c25e3a`, seed 0.33). Décisions du propriétaire : prompt du lot 8k. **Toutes les valeurs sont provisoires et se règlent sans lot** dans `data/game/economy.json` et `data/menu/caisses.json` (section 6). Les noms de fichiers et de clés sont des données.
+**Nom affiché** (retour du propriétaire après le lot 8k) : la monnaie bleue s'appelle **« diamants »** dans tout le jeu (gemme bleue) ; le code et la sauvegarde gardent `bleu`. Fiche de référence (lot 8k, branche `lot-8k`, base `origin/dev` `3c25e3a`, seed 0.33). Décisions du propriétaire : prompt du lot 8k. **Toutes les valeurs sont provisoires et se règlent sans lot** dans `data/game/economy.json` et `data/menu/caisses.json` (section 6). Les noms de fichiers et de clés sont des données.
 
 ## 1. Trois monnaies
 | Monnaie | Se gagne | Sert à | Gardée | Code |
 |---|---|---|---|---|
 | **Jaune** | 10 par zombie tué par balle, 1 par planche posée | armes sur la carte (lot 6, V0.9) | non (0 à chaque partie, jamais écrite) | `js/core/economy.js`, `js/game/bank.js` (journal `createLedger`) |
-| **Bleue** | **20 par manche terminée** (×1,5 renforcée), **500** à chaque fin de monde (répétable) | améliorer un objet ou un personnage, fusion, offres du jour | oui (plafond 9 999 999) | `bank.waveEnd`, `bank.worldEnd` → opération `gain` (`bleu`) |
+| **Diamants** (ex-bleue) | **20 par manche terminée** (×1,5 renforcée), **500** à chaque fin de monde (répétable) | améliorer un objet ou un personnage, fusion, offres du jour | oui (plafond 9 999 999) | `bank.waveEnd`, `bank.worldEnd` → opération `gain` (`bleu`) |
 | **Médailles** (nom provisoire) | portes, milliers de zombies, paliers, premier monde terminé, première partie du jour (section 2) | **caisses** (100 ; ×10 : 1 000) | oui (plafond 9 999 999) | `bank.door`, `bank.kill`, `bank.waveEnd`, `bank.worldEnd`, `bank.runEnd` → opération `gain` (`medailles`, `palier`, `mondeFini`, `jour`) |
 - Calcul de l'argent et des médailles : `js/core/economy.js` seulement (`waveBonus`, `worldBonus`, `medaillePorte`, `medaillesZombies`, `paliersNouveaux`, `medaillePalier`, `medailleMonde`, `medailleJour`, `jourLocal`).
 - Départ : solde bleu gardé ; médailles 0 ; paliers et mondes « récompensés » vides pour tous, **aucun crédit rétroactif** (les records et mondes terminés d'avant le lot ne servent pas à les remplir).
@@ -19,7 +19,7 @@ Fiche de référence (lot 8k, branche `lot-8k`, base `origin/dev` `3c25e3a`, see
 | Palier : toutes les 5 manches **terminées**, par monde (histoire) et par carte (infini) | 50 | non | fin de la manche | `paliers[mode][monde]` = plus haut palier récompensé ; crédit = paliers au-delà de la valeur la plus récente |
 | Premier monde terminé | 300 | non | fin du monde | `mondesFinis` |
 | Première partie du jour (date locale), au moins une manche terminée | 100 | une fois par jour | fin de partie (mort, monde, Quitter, Recommencer) | `medailles.jour` : crédité seulement si le jour est plus grand |
-- Affichage : en partie, médaille puis « solde (+gain) » sous la monnaie bleue pendant `bleuManche.duree` s de jeu (`js/game/bleu-manche.js`, bloc à part, gains rapprochés additionnés, aucune animation) ; pause (gemme puis médaille) ; E2-7 (gagnées, sources, solde) ; en-tête du menu (« Monnaie bleue : N », « Médailles : N ») ; Profil (« Médailles gagnées », total) ; `sauvegarde.html`.
+- Affichage : en partie, médaille puis « solde (+gain) » sous les diamants pendant `bleuManche.duree` s de jeu (`js/game/bleu-manche.js`, bloc à part, gains rapprochés additionnés, aucune animation) ; pause (gemme puis médaille) ; E2-7 (retour du propriétaire : à gauche vague atteinte avec « Record » en jaune sur la même ligne, meilleure manche, zombies tués ; à droite « Solde diamants : N » puis « +gain », « Solde médailles : N » puis « +gain » ; plus de jaune perdue, de prime du monde ni de sources) ; en-tête du menu (« Diamants : N », « Médailles : N ») ; Profil (« Médailles gagnées », total) ; `sauvegarde.html`.
 - Modes sans écriture (mode essai, `?endless=1`, `?test=1` en mémoire) : affichées pour la session, jamais écrites.
 
 ## 3. Caisses : une par rubrique
@@ -37,6 +37,7 @@ Fiche de référence (lot 8k, branche `lot-8k`, base `origin/dev` `3c25e3a`, see
 - Compteurs `pitie[rubrique] = { e, l }` (tirages depuis le dernier épique ou mieux, depuis le dernier légendaire) ; un compteur repart à 0 quand sa rareté ou mieux tombe ; ×10 = dix tirages qui avancent les compteurs dans l'ordre (`tirerPitie` de `js/core/caisses.js` : même graine et mêmes compteurs, même résultat).
 - Achat : compteurs relus juste avant le tirage ; prix en médailles, contenu et nouveaux compteurs dans **la même opération** (`achat` avec `monnaie: 'medailles'`, `pitie: { r, de, a }`) ; refusée en entier si les compteurs ne sont plus `de` (autre onglet : « Achat annulé… réessaie »).
 - Mesuré (100 000 tirages par rubrique) : jamais plus de 9 tirages de suite sans épique, au plus 64 sans légendaire ; légendaire 2,36 à 2,37 % ; épique ou mieux ≈ 13,8 % ; légendaire en 42,1 à 42,4 tirages en moyenne (calcul exact : 42,6).
+- **Aperçu à droite de chaque caisse** (retour du propriétaire : une seule caisse laissait la droite vide) : « Ta pitié dans cette caisse » (barres « Épique ou mieux » N / 10 et « Légendaire » N / 70 avec un repère au tirage où la chance monte, tirages avant la garantie, chance de légendaire au prochain tirage), puis « Légendaires possibles » (six au plus, « et N autres »). Sur téléphone (hauteur ≤ 520 px), colonne des rubriques et bandeau de la Boutique plus étroits.
 - « Voir les chances » : chances de base, règle de pitié (valeurs lues dans les données), « Épique garanti dans N tirages », « Légendaire garanti dans N tirages au plus » ; boutons grisés « Il manque N médailles » avec leur raison.
 - Outils de débogage (canaux `source` et `dev`) : « Ajouter 1 000 médailles », « Remettre la pitié à zéro » (avec ceux du lot 8h).
 

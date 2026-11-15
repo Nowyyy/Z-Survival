@@ -214,5 +214,5 @@ afficher: oui
 [lot-8k]
 version: v0.8
 nom: Médailles, paliers et caisses à pitié
-description: Les médailles, nouvelle monnaie gagnée en progressant ; une caisse par rubrique, payée en médailles, avec une pitié qui garantit épiques et légendaires ; monnaie bleue à gain fixe.
+description: Les médailles, monnaie gagnée en progressant ; une caisse par rubrique, payée en médailles, avec une pitié qui garantit épiques et légendaires ; la monnaie bleue devient les diamants.
 afficher: oui

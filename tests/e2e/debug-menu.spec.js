@@ -236,7 +236,7 @@ test.describe('outils de débogage du menu (lot 8h)', () => {
     });
   }
 
-  test('canal source, ?store=local : icône 44 px nommée ; « Ajouter 10 000 bleus » demande confirmation (« Annuler » n\'écrit rien), puis écrit zs.save.v2 et met l\'en-tête à jour ; « Remettre à zéro » efface zs.save.v2, jamais zs.save.v1 ; Échap ferme et rend le focus ; axe', async ({ page }) => {
+  test('canal source, ?store=local : icône 44 px nommée ; « Ajouter 10 000 diamants » demande confirmation (« Annuler » n\'écrit rien), puis écrit zs.save.v2 et met l\'en-tête à jour ; « Remettre à zéro » efface zs.save.v2, jamais zs.save.v1 ; Échap ferme et rend le focus ; axe', async ({ page }) => {
     test.setTimeout(120_000);
     const { problems, external } = watch(page);
     await page.addInitScript(() => {
@@ -255,11 +255,11 @@ test.describe('outils de débogage du menu (lot 8h)', () => {
     await icone.click();
     const panneau = page.getByRole('dialog', { name: 'Débogage' });
     await expect(panneau).toBeVisible();
-    await expect(panneau.locator('.e8-debogage-liste button')).toHaveText(['Ajouter 10 000 bleus', 'Ajouter 1 000 médailles', 'Remettre la pitié à zéro', 'Donner l\'inventaire de démonstration', 'Débloquer tous les personnages', 'Remettre la progression V0.8 à zéro']); // lot 8k : + médailles, pitié
+    await expect(panneau.locator('.e8-debogage-liste button')).toHaveText(['Ajouter 10 000 diamants', 'Ajouter 1 000 médailles', 'Remettre la pitié à zéro', 'Donner l\'inventaire de démonstration', 'Débloquer tous les personnages', 'Remettre la progression V0.8 à zéro']); // lot 8k : + médailles, pitié
     expect((await new AxeBuilder({ page }).include('#menu-debogage').analyze()).violations.map((v) => v.id)).toEqual([]);
     const v2 = () => page.evaluate(() => localStorage.getItem('zs.save.v2'));
     await page.locator('#menu-debogage-bleus').click();
-    await expect(page.locator('#menu-debogage-question')).toHaveText('Confirmer : Ajouter 10 000 bleus ?');
+    await expect(page.locator('#menu-debogage-question')).toHaveText('Confirmer : Ajouter 10 000 diamants ?');
     await page.locator('#menu-debogage-non').click();
     expect(await v2()).toBeNull();
     await page.locator('#menu-debogage-bleus').click();

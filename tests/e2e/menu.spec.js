@@ -353,7 +353,7 @@ test.describe('partie et retour au menu', () => {
     });
     await ouvrirMenu(page, REF, '&store=local');
     await expect(page.locator('#menu-solde-texte')).toHaveText(`1${String.fromCharCode(0x202f)}234`);
-    await expect(page.locator('#menu-solde')).toContainText('Monnaie bleue : 1');
+    await expect(page.locator('#menu-solde')).toContainText('Diamants : 1');
     await page.locator('#menu-onglet-infini').click();
     await page.locator('#menu-trois-barres').click();
     await page.locator('#menu-information').click();
@@ -380,7 +380,7 @@ test.describe('partie et retour au menu', () => {
     await page.evaluate(() => { const zs = window.__zs; zs.giveMoney(50); zs.step(3.2); zs.skipWave(); zs.step(0.2); });
     await page.locator('#btn-pause').click();
     await page.locator('#btn-quit').click();
-    await expect(page.locator('#quit-confirm-text')).toHaveText('Quitter la partie ? La monnaie bleue gagnée est gardée, la monnaie jaune est perdue.');
+    await expect(page.locator('#quit-confirm-text')).toHaveText('Quitter la partie ? Les diamants et les médailles gagnés sont gardés, la monnaie jaune est perdue.');
     await expect(page.locator('#btn-quit-cancel')).toBeFocused();
     // Retour du propriétaire : la question ne touche plus les boutons (avant : 0 px d'écart).
     const ecart = await page.evaluate(() => document.getElementById('btn-quit-ok').getBoundingClientRect().top - document.getElementById('quit-confirm-text').getBoundingClientRect().bottom);

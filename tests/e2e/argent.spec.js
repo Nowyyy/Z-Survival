@@ -186,7 +186,9 @@ test.describe('gains (suite)', () => {
     expect(saved.mondes).toEqual(['batiment']);
     expect(saved.records).toEqual({ histoire: { batiment: 40 }, infini: {} });
     expect(saved.profil.partiesHistoire).toBe(1);
-    await expect(page.locator('#end-bonus')).toHaveText('Dont prime du monde : 500');
+    // Retour du propriétaire après le lot 8k : plus de ligne « Dont prime du monde » ; la prime est dans le « +gain » des diamants.
+    await expect(page.locator('#end-bonus')).toHaveCount(0);
+    await expect(page.locator('#end-bleu-text')).toHaveText('+530');
   });
 });
 
@@ -209,9 +211,11 @@ test.describe('conservation à la mort', () => {
     await page.evaluate(() => window.__zs.skipWave()); // manche 2 terminée : 20 bleus (lot 8k ; avant : 14)
     await step(page, 0.3);
     await dieAfterKill(page);
-    await expect(page.locator('#end-earned')).toHaveText('Monnaie jaune perdue : 10');
-    await expect(page.locator('#end-bleu')).toHaveText('Monnaie bleue gagnée : 20');
-    await expect(page.locator('#end-balance')).toHaveText('Solde bleu : 20');
+    // Retour du propriétaire après le lot 8k : « Solde diamants : N » puis « +gain » sur la même ligne ; plus de ligne « Monnaie jaune perdue ».
+    await expect(page.locator('#end-earned')).toHaveCount(0);
+    await expect(page.locator('#end-bleu-text')).toHaveText('+20');
+    await expect(page.locator('#end-balance-text')).toHaveText('Solde diamants : 20');
+    await expect(page.locator('#end-balance')).toHaveText('Solde diamants : 20+20gagnés pendant la partie');
     await expect(page.locator('#end-best')).toHaveText('Meilleure manche : 3');
     expect(await bleu(page)).toBe(20);
     await page.locator('#btn-replay').click();
@@ -266,7 +270,8 @@ test.describe('conservation à la mort', () => {
     await expect(page.locator('#end-record')).toBeHidden();
     await page.locator('#btn-replay').click();
     await dieAfterKill(page, 6);
-    await expect(page.locator('#end-record')).toHaveText('Nouveau record');
+    await expect(page.locator('#end-record')).toHaveText('Record'); // retour du propriétaire après le lot 8k : sur la ligne de la vague (avant : « Nouveau record »)
+    await expect(page.locator('#end-wave')).toContainText('Record');
     await expect(page.locator('#end-best')).toHaveText('Meilleure manche : 6');
   });
 });
@@ -496,7 +501,7 @@ test.describe('mode essai', () => {
     await expect(page.locator('#pause-save')).toHaveCount(0); // lot 3l (retour du propriétaire) : l'état de la sauvegarde n'est plus affiché dans la pause ; il est vérifié dans getState().save (readonly)
     // Retour du propriétaire après le lot 8j : la pause montre le solde bleu (gemme puis montant ; « Monnaie bleue : » pour les lecteurs d'écran), plus la jaune.
     await expect(page.locator('#pause-balance-text')).toHaveText('300');
-    await expect(page.locator('#pause-balance > .sr-only')).toHaveText('Monnaie bleue :');
+    await expect(page.locator('#pause-balance > .sr-only')).toHaveText('Diamants :');
     await expect(page.locator('#pause-balance svg.hud-gem')).toHaveCount(1);
     await page.getByRole('button', { name: 'Reprendre' }).click();
     await page.evaluate(() => { window.__zs.setChutes(0); window.__zs.downPlayer(); });
@@ -757,7 +762,7 @@ test.describe('interface', () => {
           await step(page, 0.3);
         }
         await expect(page.locator('#end-panel')).toBeVisible();
-        const ids = ['end-title', 'end-kills', 'end-earned', 'end-bleu', 'end-balance', 'end-best', 'btn-replay', 'btn-menu', ...(variant === 'world' ? ['end-bonus'] : [])];
+        const ids = ['end-title', 'end-kills', 'end-bleu', 'end-balance', 'end-medailles-solde', 'end-best', 'btn-replay', 'btn-menu']; // lot 8k, retour du propriétaire : sans jaune perdue ni prime
         for (const id of ids) await expect(page.locator(`#${id}`), id).toBeVisible();
         const m = await page.evaluate(() => {
           const panel = document.querySelector('#end-panel .panel');
@@ -784,7 +789,7 @@ test.describe('interface', () => {
     await page.evaluate(() => window.__zs.skipWave());
     await step(page, 0.3);
     await expect(page.locator('#end-title')).toHaveText('Monde terminé');
-    await expect(page.locator('#end-bonus')).toBeVisible();
+    await expect(page.locator('#end-bleu-text')).toHaveText('+530'); // retour du propriétaire après le lot 8k : prime du monde comprise dans le gain (avant : ligne #end-bonus)
   });
 
   test('#hud-live : « Manche N terminée, bonus +X » une fois par manche, « Nouveau record » une fois, jamais par kill', async ({ page }) => {
@@ -797,7 +802,7 @@ test.describe('interface', () => {
     expect(await shoot(page, 'marcheur')).toBe(1);
     await page.evaluate(() => window.__zs.skipWave());
     await step(page, 0.3);
-    await expect(page.locator('#hud-live')).toHaveText('Manche 1 terminée, +20 en monnaie bleue.');
+    await expect(page.locator('#hud-live')).toHaveText('Manche 1 terminée, +20 diamants.');
     await page.evaluate(() => { window.__zs.setChutes(0); window.__zs.downPlayer(); });
     await step(page, 0.3);
     const log = await page.evaluate(() => window.__live);

@@ -92,6 +92,40 @@ test.describe('caisses uniques et pitié (lot 8k)', () => {
     expect(ext).toEqual([]);
   });
 
+  test('aperçu à droite de chaque caisse (retour du propriétaire) : pitié de la rubrique (compteurs, barres, chance du prochain tirage) et légendaires possibles ; mis à jour après un achat ; à côté de la caisse, sans chevauchement ; axe', async ({ page }) => {
+    test.setTimeout(120_000);
+    await poserProgression(page, progressionDemo({ medailles: 500, extra: { pitie: { equipement: { e: 7, l: 52 }, personnage: { e: 0, l: 0 }, cosmetique: { e: 0, l: 0 } } } }));
+    await graines(page, [31]);
+    await ouvrirBoutique(page);
+    const ap = page.locator('#menu-caisse-equipement-apercu');
+    await expect(ap).toBeVisible();
+    await expect(ap.locator('.e3-apercu-titre')).toHaveText(['Ta pitié dans cette caisse', 'Légendaires possibles']);
+    await expect(ap.locator('.e3-apercu-compte')).toHaveText(['7 / 10', '52 / 70']);
+    await expect(ap.locator('.e3-apercu-texte')).toHaveText(['Épique garanti dans 3 tirages', 'Légendaire garanti dans 18 tirages au plus']);
+    await expect(ap.locator('.e3-apercu-chance')).toHaveText('Prochain tirage : 16 % de chance de légendaire (en hausse).');
+    const legs = cat.objets.size;
+    await expect(ap.locator('.e3-apercu-element')).toHaveCount(Math.min(6, legs));
+    if (legs > 6) await expect(ap.locator('.e3-apercu-autres')).toHaveText(`et ${legs - 6} autres`);
+    const largeur = await ap.locator('.e3-apercu-plein').first().evaluate((n) => n.getBoundingClientRect().width / n.parentElement.clientWidth);
+    expect(Math.abs(largeur - 0.7)).toBeLessThan(0.03);
+    const perso = page.locator('#menu-caisse-personnages-apercu');
+    await expect(perso.locator('.e3-apercu-element')).toHaveText(cat.personnages.filter((p) => p.rarete === 'legendaire').map((p) => p.nom));
+    await expect(perso.locator('.e3-apercu-chance')).toHaveText('Prochain tirage : 1 % de chance de légendaire (en hausse dès le 51e).');
+    await expect(page.locator('#menu-caisse-cosmetiques-apercu .e3-apercu-element')).toHaveText(cat.cosmetiques.filter((x) => x.rarete === 'legendaire').map((x) => x.nom));
+    // À côté de la caisse (même rangée à 932 × 430), sans chevauchement, dans l'écran.
+    const [carte, boite] = await Promise.all([page.locator('.e3-carte[data-caisse="equipement"]').boundingBox(), ap.boundingBox()]);
+    expect(boite.x).toBeGreaterThanOrEqual(carte.x + carte.width - 0.5);
+    expect(Math.abs(boite.y - carte.y)).toBeLessThan(1);
+    expect(boite.x + boite.width).toBeLessThanOrEqual(REF.width);
+    // Après un achat ×1, l'aperçu suit les nouveaux compteurs.
+    const un = tirerPitie(caisse('equipement'), cat, regles, { e: 7, l: 52 }, 31, 1);
+    await page.locator('#menu-caisse-equipement-un').click();
+    await expect(page.locator('#menu-ecran-resultat')).toBeVisible();
+    await page.locator('#menu-resultat-continuer').click();
+    await expect(ap.locator('.e3-apercu-compte')).toHaveText([`${un.compteurs.e} / 10`, `${un.compteurs.l} / 70`]);
+    await expect.poll(async () => (await new AxeBuilder({ page }).include('#menu-boutique-equipement').analyze()).violations.map((v) => v.id), { timeout: 10_000 }).toEqual([]);
+  });
+
   test('garantie déclenchée : compteurs préparés (9 sans épique, 69 sans légendaire) → légendaire au premier tirage ; (9, 0) → épique ou mieux ; compteurs remis à 0', async ({ page }) => {
     test.setTimeout(120_000);
     await poserProgression(page, progressionDemo({ medailles: 500, extra: { pitie: { equipement: { e: 9, l: 69 }, personnage: { e: 9, l: 3 }, cosmetique: { e: 2, l: 2 } } } }));

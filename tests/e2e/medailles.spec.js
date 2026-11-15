@@ -105,9 +105,11 @@ test.describe('médailles en partie (lot 8k)', () => {
     await page.evaluate(() => { window.__zs.killAll(); window.__zs.setChutes(0); window.__zs.downPlayer(); });
     await step(page, 0.3);
     await expect(page.locator('#end-panel')).toBeVisible();
-    await expect(page.locator('#end-medailles')).toHaveText(`Médailles gagnées : ${total + params.economy.medailleJour}`);
-    await expect(page.locator('#end-medailles-sources')).toHaveText(`portes 10 · paliers 100 · partie du jour ${params.economy.medailleJour}`);
-    await expect(page.locator('#end-medailles-solde')).toHaveText(`Médailles : ${total + params.economy.medailleJour}`);
+    // Retour du propriétaire après le lot 8k : « Solde médailles : N » puis la médaille et « +gain » (gain de la partie ; plus de ligne des sources).
+    await expect(page.locator('#end-medailles-text')).toHaveText(`+${total + params.economy.medailleJour}`);
+    await expect(page.locator('#end-medailles-solde-text')).toHaveText(`Solde médailles : ${total + params.economy.medailleJour}`);
+    await expect(page.locator('#end-medailles-sources')).toHaveCount(0);
+    expect((await state(page)).save.medailles.run).toMatchObject({ portes: 10, paliers: 100, jour: params.economy.medailleJour });
     expect(soldeMedailles(await storedJson(page))).toBe(total + params.economy.medailleJour);
     const axe = await new AxeBuilder({ page }).include('#end-panel').analyze();
     expect(axe.violations).toEqual([]);

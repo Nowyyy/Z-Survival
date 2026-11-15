@@ -132,7 +132,7 @@ describe('textes', () => {
 
   it('les lignes de la pause et de l\'état de la sauvegarde sont écrites en toutes lettres', () => {
     expect(fr['game.pause.balance']).toBe('{n}'); // retour du propriétaire après le lot 8j : la pause montre le solde bleu, gemme puis montant (lot 8h : « Monnaie jaune : {n} »)
-    expect(fr['game.pause.balance.label']).toBe('Monnaie bleue :'); // dit aux lecteurs d'écran seulement
+    expect(fr['game.pause.balance.label']).toBe('Diamants :'); // dit aux lecteurs d'écran seulement ; retour du propriétaire après le lot 8k : la monnaie bleue s'appelle « diamants »
     expect(fr['game.save.status.saved']).toBe('Sauvegarde : enregistrée');
     expect(fr['game.save.status.pending']).toBe('Sauvegarde : en attente');
     expect(fr['game.save.status.failed']).toBe('Sauvegarde : échec, nouvelle tentative');
@@ -150,7 +150,9 @@ describe('textes', () => {
     expect(fr['game.end.worldBonus']).toContain('{n}');
     expect(fr['game.hud.moneyLabel']).toContain('{n}');
     expect(fr['game.live.waveBonus']).toContain('{bonus}');
-    expect(fr['game.end.record']).toBe('Nouveau record');
+    expect(fr['game.end.record']).toBe('Record'); // retour du propriétaire après le lot 8k : sur la ligne de la vague atteinte (avant : « Nouveau record »)
+    expect(fr['game.end.medailles']).toContain('{n}');
+    expect(fr['game.end.medailles.solde']).toContain('{n}');
   });
 
   it('aucune clé « save.page.* » en dehors de « game.* » (le jeu est en français seul)', () => {
