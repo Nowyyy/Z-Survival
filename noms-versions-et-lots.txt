@@ -144,3 +144,93 @@ version: v0.7
 nom: Publication de la V0.7
 description: La V0.6 rejoint les anciennes versions et la V0.7 devient la version Recette ; la documentation est mise à jour. Le jeu ne change pas.
 afficher: oui
+
+[lot-5q]
+version: v0.8
+nom: Début de la V0.8 : contrôle de publication et tests
+description: Le contrôle de publication accepte un dernier changement de documentation seule ; quelques tests sont corrigés ou retirés. Le jeu ne change pas.
+afficher: non
+
+[lot-8a]
+version: v0.8
+nom: Écran de chargement et menu principal
+description: Le jeu s'ouvre sur un écran de chargement animé puis sur un menu en paysage : en-tête, solde, onglets et bouton Jouer. On peut quitter une partie pour revenir au menu.
+afficher: oui
+
+[lot-8b]
+version: v0.8
+nom: Onglets Jouer et Infini, mode infini
+description: L'onglet Jouer montre le bâtiment de nuit animé, avec ton record sur la route. Nouvel onglet Infini : choix de la carte et partie sans fin au-delà de la manche 40.
+afficher: oui
+
+[lot-8c]
+version: v0.8
+nom: Page Options du menu, son et volume
+description: Le menu principal a sa page Options, avec le son et le volume. En partie, les réglages qui demandent un redémarrage sont verrouillés ; les préréglages restent modifiables.
+afficher: oui
+
+[lot-8d]
+version: v0.8
+nom: Personnage, équipement et fusion
+description: Nouvel onglet Personnage : équipement porté, inventaire, fusion de trois objets identiques et choix du personnage. La partie reçoit les statistiques de l'équipement ; rien n'est encore gardé.
+afficher: oui
+
+[lot-8e]
+version: v0.8
+nom: Boutique et caisses mystère
+description: Nouvel onglet Boutique par rubriques : offres du jour, caisses d'équipement, de personnages et de tenues, chances affichées et résultats. Aucun prix n'est prélevé, rien n'est gardé.
+afficher: oui
+
+[lot-8f]
+version: v0.8
+nom: Ouverture des caisses en 3D
+description: Les caisses de la Boutique s'ouvrent en 3D, à la première personne : tir sur la caisse, rayons et réactions des zombies selon la rareté. « Passer » mène au résultat.
+afficher: oui
+
+[lot-8g]
+version: v0.8
+nom: Signature du studio, Crédits et Profil
+description: Logo animé et sonore de No Way Studio au lancement, logo sur l'écran de chargement, Crédits avec les licences, Profil local en haut à gauche (avatar, pseudo, statistiques).
+afficher: oui
+
+[lot-8i]
+version: v0.8
+nom: Sons du menu, musique et volumes
+description: Clic, achat et sons du Personnage, musique d'ambiance des menus, ouvertures de caisses sonorisées, volumes du jeu et de la musique séparés.
+afficher: oui
+
+[lot-8h]
+version: v0.8
+nom: Deux monnaies et progression gardée
+description: Monnaie jaune pendant la partie, monnaie bleue gardée pour toujours, achats du menu payants, équipement de survie sans armes, toute la progression gardée sur l'appareil.
+afficher: oui
+
+[lot-8j]
+version: v0.8
+nom: Grands écrans, volumes, portes, bruits et tirs
+description: Interface plus grande sur les grands écrans, Options plus denses sur ordinateur, volumes au pour cent, message des portes, moins de bruits de zombies, tirs par-dessus les meubles bas.
+afficher: oui
+
+[lot-8k]
+version: v0.8
+nom: Médailles, paliers et caisses à pitié
+description: Les médailles, monnaie gagnée en progressant ; une caisse par rubrique, payée en médailles, avec une pitié qui garantit épiques et légendaires ; la monnaie bleue devient les diamants.
+afficher: oui
+
+[lot-8l]
+version: v0.8
+nom: Allègement des tests et nettoyage
+description: Fin de version : tests en double fusionnés, code et documentation inutiles retirés ou rangés. Le jeu ne change pas.
+afficher: non
+
+# --- V0.8 (texte du propriétaire, raccourci à 200 caractères avec son accord) ---
+
+[v0.8]
+nom: V0.8
+description: Menus, monnaies d'amélioration et caisses. Interfaces pour grands écrans. Portes qui annoncent leur manche. Moins de bruits de zombies. Tirs par-dessus les petits obstacles et à travers les grilles.
+
+[lot-8m]
+version: v0.8
+nom: Publication de la V0.8
+description: Fin de version : la V0.8 devient la version Recette, la V0.7 est archivée, la documentation est remise à jour. Le jeu ne change pas.
+afficher: non

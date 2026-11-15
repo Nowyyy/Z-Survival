@@ -1,0 +1,20 @@
+{
+  "_provisoire": "Lot 8e ; lot 8k (Docs/ref/economie.md) : UNE caisse par rubrique de la Boutique (Équipement, Personnages, Cosmétiques), payée en MÉDAILLES (prix : « Ouvrir ×1 », prix10 : « Ouvrir ×10 », sans remise), avec PITIÉ propre à chaque rubrique ; offres du jour payées en monnaie bleue (« diamants » depuis le lot 8k). Noms, prix, chances et pitié provisoires, à régler par le propriétaire sans lot (l'équilibrage n'est pas jugé par l'agent). modele : dessin de la caisse (menu et ouverture 3D : militaire = caisse à munitions, veterans = malle, tenues = valise ; les trois seuls dessins acceptés depuis le lot 8l, qui a retiré les six autres du lot 8e). type : equipement (objets de data/menu/objets.json), personnage (personnages de data/menu/personnages.json, chacun avec sa rareté : nouveau = débloqué, déjà obtenu = un niveau de plus), cosmetique (tenues de data/menu/cosmetiques.json). teinte : jeton de css/tokens.css (--menu-* ou --rarete-*) des « ? », des rayons et de la bande. chances : pour cent par rareté (somme 100, chaque rareté avec au moins un élément ; une caisse d'objets ou de tenues contient toutes les raretés). Tirage : rareté selon les chances corrigées par la pitié, puis élément uniforme parmi ceux de cette rareté ; ×10 = dix tirages à la suite qui avancent les compteurs dans l'ordre. pitie : haute (rareté et tout ce qui est au-dessus, garantie au garanti-ième tirage sans elle) ; top (chance de base jusqu'au tirage douce, puis + pas points par tirage, garantie au garanti-ième) ; hors « top », les autres raretés gardent leurs proportions de base ; un compteur repart à 0 quand sa rareté (ou mieux) tombe. offres : offres du jour (nombre, chances et prix par rareté, en monnaie bleue), renouvelées à minuit (heure de l'appareil). Lu par js/core/caisses.js (lireCaisses, lirePitie, lireOffres).",
+  "offres": {
+    "nombre": 6,
+    "chances": { "commun": 45, "peu-commun": 30, "rare": 16, "epique": 7, "legendaire": 2 },
+    "prix": { "commun": 80, "peu-commun": 200, "rare": 500, "epique": 1200, "legendaire": 3000 }
+  },
+  "pitie": {
+    "haute": { "rarete": "epique", "garanti": 10 },
+    "top": { "rarete": "legendaire", "douce": 50, "pas": 5, "garanti": 70 }
+  },
+  "caisses": [
+    { "id": "equipement", "type": "equipement", "modele": "militaire", "nom": "Caisse d'équipement", "teinte": "--rarete-rare", "prix": 100, "prix10": 1000,
+      "chances": { "commun": 54, "peu-commun": 30, "rare": 10, "epique": 5, "legendaire": 1 } },
+    { "id": "personnages", "type": "personnage", "modele": "veterans", "nom": "Caisse de personnages", "teinte": "--rarete-epique", "prix": 100, "prix10": 1000,
+      "chances": { "rare": 94, "epique": 5, "legendaire": 1 } },
+    { "id": "cosmetiques", "type": "cosmetique", "modele": "tenues", "nom": "Caisse de cosmétiques", "teinte": "--rarete-peu-commun", "prix": 100, "prix10": 1000,
+      "chances": { "commun": 54, "peu-commun": 30, "rare": 10, "epique": 5, "legendaire": 1 } }
+  ]
+}

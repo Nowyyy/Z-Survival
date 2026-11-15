@@ -5,6 +5,7 @@
 import { distanceGain, dropCategory } from '../core/audio-mix.js';
 import { createDirector, direct, soundTable } from '../core/sound-director.js';
 import { bufferName, isAtelier, packStats } from '../core/sound-choice.js';
+import { filtrerCoups, reglagesCoups, rngCoups } from '../core/sons-coups.js';
 import { renderAtelier, soundMode } from './sound-loader.js';
 
 const LOG_MAX = 200;
@@ -34,10 +35,20 @@ export function createAudio({ config, test = false, seed = 1, autoAmbience = tru
   let ctx = null;
   let compressor = null;
   let master = null;
+  // Lot 8i : volume de la musique séparé du volume du jeu. La mélodie d'annonce de vague (catégorie « annonce ») sort par son propre
+  // compresseur (mêmes réglages) et son propre gain général ; tous les autres sons gardent leur chaîne. Aucun tampon ne change.
+  let compressorMusique = null;
+  let masterMusique = null;
+  const MUSIQUE = 'annonce';
   let ambience = null;
   let director = createDirector(seed);
+  // Lot 8j : environ un coup de zombie sur quatre fait un son (config.coups : data/game/reglages-partie.json → sonsZombies) ; générateur propre.
+  const coupsCfg = config.coups === undefined ? { ...reglagesCoups(null), probabilite: 1 } : reglagesCoups(config.coups); // sans réglage (page sons.html) : tous
+  let coupsRng = rngCoups(seed);
+  const coupsVus = { coups: 0, gardes: 0, morts: 0, probabilite: coupsCfg.probabilite }; // compte (tests, ?test=1)
   let muted = false;
   let volume = config.audio.volume?.default ?? 100;
+  let musicVolume = config.audio.volume?.default ?? 100;
   let suspended = false;
   let suspendTimer = 0;
   let nextVoice = 0;
@@ -52,7 +63,14 @@ export function createAudio({ config, test = false, seed = 1, autoAmbience = tru
   let onState = () => {};
   const stats = { essentialMs: 0, backgroundMs: 0, ready: false, zombieVoices: 0 };
 
+  // Gains généraux : « Son coupé » coupe tout ; volume du jeu et volume de la musique linéaires (n / 100), la même loi que gainsVolumes
+  // (js/core/sons-menu.js, sons du menu ; non importé ici : aucun fichier de plus au démarrage de la partie ; égalité vérifiée par les tests).
   const masterGain = () => (muted ? 0 : config.audio.masterGain * (volume / 100));
+  const musicGain = () => (muted ? 0 : config.audio.masterGain * (musicVolume / 100));
+  const applyGains = () => {
+    if (master) master.gain.value = masterGain();
+    if (masterMusique) masterMusique.gain.value = musicGain();
+  };
   const toBuffer = (name) => {
     const item = pcm.get(name);
     if (!ctx || !item || buffers.has(name)) return;
@@ -251,7 +269,7 @@ export function createAudio({ config, test = false, seed = 1, autoAmbience = tru
       tail = filter;
       nodes.push(filter);
     }
-    tail.connect(compressor);
+    tail.connect(r.category === MUSIQUE ? compressorMusique : compressor);
     source.onended = () => {
       for (const n of nodes) n.disconnect();
       active.delete(id);
@@ -330,6 +348,13 @@ export function createAudio({ config, test = false, seed = 1, autoAmbience = tru
     get volume() {
       return volume;
     },
+    get musicVolume() {
+      return musicVolume;
+    },
+    // Lot 8c : pas du curseur de volume des Options (data/game/audio.json, lu seulement).
+    get volumeStep() {
+      return config.audio.volume?.step ?? 10;
+    },
     stats,
 
     // À appeler depuis un geste du joueur. Sans effet si l'audio n'existe pas ou refuse : le jeu continue sans son.
@@ -342,17 +367,25 @@ export function createAudio({ config, test = false, seed = 1, autoAmbience = tru
       if (!Context) return;
       try {
         ctx = new Context();
-        compressor = ctx.createDynamicsCompressor();
         const c = config.audio.compressor;
-        compressor.threshold.value = c.threshold;
-        compressor.knee.value = c.knee;
-        compressor.ratio.value = c.ratio;
-        compressor.attack.value = c.attack;
-        compressor.release.value = c.release;
+        const creerCompresseur = () => {
+          const n = ctx.createDynamicsCompressor();
+          n.threshold.value = c.threshold;
+          n.knee.value = c.knee;
+          n.ratio.value = c.ratio;
+          n.attack.value = c.attack;
+          n.release.value = c.release;
+          return n;
+        };
+        compressor = creerCompresseur();
         master = ctx.createGain();
-        master.gain.value = masterGain();
         compressor.connect(master);
         master.connect(ctx.destination);
+        compressorMusique = creerCompresseur();
+        masterMusique = ctx.createGain();
+        compressorMusique.connect(masterMusique);
+        masterMusique.connect(ctx.destination);
+        applyGains();
         for (const name of pcm.keys()) toBuffer(name);
         ctx.addEventListener?.('statechange', () => onState());
       } catch {
@@ -375,7 +408,7 @@ export function createAudio({ config, test = false, seed = 1, autoAmbience = tru
 
     toggleMute() {
       muted = !muted;
-      if (master) master.gain.value = masterGain();
+      applyGains();
       if (muted) {
         stopAmbience();
         stopLoops();
@@ -389,8 +422,17 @@ export function createAudio({ config, test = false, seed = 1, autoAmbience = tru
       const v = Math.round(Number(n));
       if (!Number.isFinite(v)) return volume;
       volume = Math.min(100, Math.max(0, v));
-      if (master) master.gain.value = masterGain();
+      applyGains();
       return volume;
+    },
+
+    // Lot 8i : volume de la musique de 0 à 100 (mélodie d'annonce de vague ; en mémoire seulement).
+    setMusicVolume(n) {
+      const v = Math.round(Number(n));
+      if (!Number.isFinite(v)) return musicVolume;
+      musicVolume = Math.min(100, Math.max(0, v));
+      applyGains();
+      return musicVolume;
     },
 
     // Pause ou onglet caché : le contexte est suspendu (après la fin du son d'interface) et repris ensuite.
@@ -415,7 +457,16 @@ export function createAudio({ config, test = false, seed = 1, autoAmbience = tru
     handle(frame) {
       if (!ctx) return { requests: [], played: [] }; // aucun son demandé avant le premier geste
       lastFrame = { time: frame.time, listener: frame.listener, walls: frame.walls ?? [], floor: frame.floor };
-      const out = direct(director, frame, cfg);
+      const tri = filtrerCoups(frame.events, coupsRng, coupsCfg);
+      coupsRng = tri.rng;
+      if (test && Array.isArray(frame.events)) {
+        for (const e of frame.events) {
+          if (e?.type === 'zombieHit' && e.killed === true) coupsVus.morts += 1;
+          else if (coupsCfg.types.includes(e?.type)) coupsVus.coups += 1;
+        }
+        for (const e of tri.events) if (coupsCfg.types.includes(e?.type) && !(e.type === 'zombieHit' && e.killed === true)) coupsVus.gardes += 1;
+      }
+      const out = direct(director, tri.events === frame.events ? frame : { ...frame, events: tri.events }, cfg);
       director = out.state;
       if (out.stops?.length) stopVoices(out.stops);
       updateLoops({ ...lastFrame, paused: frame.paused === true });
@@ -463,6 +514,7 @@ export function createAudio({ config, test = false, seed = 1, autoAmbience = tru
       stopLoops();
       ended = false;
       director = createDirector(seed2);
+      coupsRng = rngCoups(seed2);
       lastFrame = { time: 0, listener: lastFrame.listener, walls: lastFrame.walls };
     },
 
@@ -476,8 +528,8 @@ export function createAudio({ config, test = false, seed = 1, autoAmbience = tru
       let bytes = 0;
       for (const it of pcm.values()) bytes += it.samples.length * 4;
       return {
-        supported: Boolean(Context), unlocked: ctx !== null, contextState: ctx ? ctx.state : 'aucun', started: ctx !== null, muted, volume, suspended, buffers: pcm.size, loaded: [...pcm.keys()], bytes, mode, pack: api.pack(),
-        essentialMs: Math.round(stats.essentialMs), backgroundMs: Math.round(stats.backgroundMs), ready: stats.ready, activeVoices: active.size, annonceActive: [...active.values()].filter((v) => v.category === 'annonce').length, sums: Object.fromEntries(sums), ambience: ambience !== null, loops: [...loopVoices.values()].map((v) => v.def.sound), fires: fires.length, log: log.map((e) => ({ ...e })),
+        supported: Boolean(Context), unlocked: ctx !== null, contextState: ctx ? ctx.state : 'aucun', started: ctx !== null, muted, volume, musicVolume, gains: { effets: master ? master.gain.value : masterGain(), musique: masterMusique ? masterMusique.gain.value : musicGain() }, suspended, buffers: pcm.size, loaded: [...pcm.keys()], bytes, mode, pack: api.pack(),
+        essentialMs: Math.round(stats.essentialMs), backgroundMs: Math.round(stats.backgroundMs), ready: stats.ready, activeVoices: active.size, annonceActive: [...active.values()].filter((v) => v.category === 'annonce').length, sums: Object.fromEntries(sums), ambience: ambience !== null, loops: [...loopVoices.values()].map((v) => v.def.sound), fires: fires.length, log: log.map((e) => ({ ...e })), coups: { ...coupsVus },
       };
     },
   };

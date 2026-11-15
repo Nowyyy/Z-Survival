@@ -1,0 +1,109 @@
+{
+  "_provisoire": "Lot 8h : inventaire de DÉMONSTRATION (exemple, pas un vrai butin), donné seulement par l'outil de débogage « Donner l'inventaire de démonstration » (canaux source et dev ; jamais au démarrage). uid : identifiant de l'exemplaire (remplacé par un identifiant unique au don) ; id : objet de data/menu/objets.json ; rarete : data/menu/raretes.json ; niveau : 1 à niveauMax. Trois triplets identiques (Gilet pare-balles commun, Rangers commun, Montre de campagne rare) permettent de fusionner. equipement : objets portés après le don. Lu par js/core/equipement.js.",
+  "objets": [
+    {
+      "uid": "o1",
+      "id": "casque-kevlar",
+      "rarete": "rare",
+      "niveau": 3
+    },
+    {
+      "uid": "o2",
+      "id": "gilet-pare-balles",
+      "rarete": "commun",
+      "niveau": 3
+    },
+    {
+      "uid": "o3",
+      "id": "rangers",
+      "rarete": "peu-commun",
+      "niveau": 2
+    },
+    {
+      "uid": "o4",
+      "id": "masque-gaz",
+      "rarete": "epique",
+      "niveau": 1
+    },
+    {
+      "uid": "o5",
+      "id": "gilet-pare-balles",
+      "rarete": "commun",
+      "niveau": 1
+    },
+    {
+      "uid": "o6",
+      "id": "gilet-pare-balles",
+      "rarete": "commun",
+      "niveau": 2
+    },
+    {
+      "uid": "o7",
+      "id": "rangers",
+      "rarete": "commun",
+      "niveau": 1
+    },
+    {
+      "uid": "o8",
+      "id": "rangers",
+      "rarete": "commun",
+      "niveau": 1
+    },
+    {
+      "uid": "o9",
+      "id": "rangers",
+      "rarete": "commun",
+      "niveau": 4
+    },
+    {
+      "uid": "o10",
+      "id": "gants-tactiques",
+      "rarete": "commun",
+      "niveau": 1
+    },
+    {
+      "uid": "o11",
+      "id": "gants-sapeur",
+      "rarete": "rare",
+      "niveau": 2
+    },
+    {
+      "uid": "o12",
+      "id": "treillis",
+      "rarete": "peu-commun",
+      "niveau": 1
+    },
+    {
+      "uid": "o13",
+      "id": "montre-campagne",
+      "rarete": "rare",
+      "niveau": 1
+    },
+    {
+      "uid": "o14",
+      "id": "montre-campagne",
+      "rarete": "rare",
+      "niveau": 2
+    },
+    {
+      "uid": "o15",
+      "id": "montre-campagne",
+      "rarete": "rare",
+      "niveau": 1
+    },
+    {
+      "uid": "o16",
+      "id": "veste-combat",
+      "rarete": "legendaire",
+      "niveau": 1
+    }
+  ],
+  "equipement": {
+    "tete": "o1",
+    "gants": null,
+    "bottes": "o3",
+    "torse": "o2",
+    "accessoire": "o4",
+    "pantalon": null
+  }
+}

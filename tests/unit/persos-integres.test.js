@@ -8,6 +8,7 @@ import { createV2Kit } from '../../js/game/character-v2.js';
 import { ANIM_MACROS, MACRO_IDS } from '../../js/core/persos-variants.js';
 import { LIMITS, characterCost, choicesOf, crowdCost, project } from '../../scripts/personnages/projection.mjs';
 import { characters, load, poses } from '../../scripts/personnages/lib.mjs';
+import { sansImagesStudio } from './helpers/images-studio.js'; // lot 8g : logo et son du studio, exception nominative
 // Lot 4c (publication par versions, seul lot autorisé à modifier le workflow) : workflow, accueil, ses textes et tests du journal modifiés ; ce garde-fou de branche
 // (comparaison à main ou à lot-4b) n'a plus de sens pour eux après l'entrée dans main : ils sortent de la liste.
 const LOT_4C = ['.github/workflows/pages.yml', 'index.html', 'data/i18n/fr.json', 'tests/unit/data-changelog.test.js', 'tests/e2e/dev.spec.js'];
@@ -343,7 +344,7 @@ describe('hygiène du lot', () => {
     const base = git('merge-base HEAD origin/lot-4b')?.trim();
     if (!base) return;
     const added = (git(`diff --name-only --diff-filter=A ${base}`) ?? '').split('\n').filter(Boolean);
-    expect(added.filter((f) => /\.(mp3|ogg|wav|flac|m4a|aac|png|jpe?g|gif|webp|svg|ico|woff2?|ttf|otf|glb|gltf|obj|fbx)$/i.test(f))).toEqual([]);
+    expect(sansImagesStudio(added).filter((f) => /\.(mp3|ogg|wav|flac|m4a|aac|png|jpe?g|gif|webp|svg|ico|woff2?|ttf|otf|glb|gltf|obj|fbx)$/i.test(f))).toEqual([]);
   });
   it('dépendances inchangées (package.json : dependencies et devDependencies)', () => {
     const base = git('merge-base HEAD origin/lot-4b')?.trim();

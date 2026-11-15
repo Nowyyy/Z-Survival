@@ -71,10 +71,11 @@ describe('retours du propriétaire (2e et 3e retouches)', () => {
     expect(hudJs).toMatch(/killsText\(killCount\)/);
   });
 
-  it('fins : « Voir ma sauvegarde » retiré, « Revenir au menu principal » (sans action)', () => {
+  // Lot 8a : « Revenir au menu principal » ramène au menu principal (avant : sans action, aucune lecture de #btn-menu).
+  it('fins : « Voir ma sauvegarde » retiré, « Revenir au menu principal » (retour au menu)', () => {
     expect(html).not.toContain('end-save-link');
     expect(html).toContain('data-i18n="game.end.menu"');
-    expect(gameJs).not.toMatch(/getElementById\('btn-menu'\)|\$\('btn-menu'\)/);
+    expect(gameJs).toMatch(/menuBtn: \$\('btn-menu'\)/);
   });
 
   it('à terre : texte dans la colonne centrale sous la vague (l\'argent est parti à droite), sans cadre blanc, angles droits', () => {

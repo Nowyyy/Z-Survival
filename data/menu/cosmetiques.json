@@ -1,0 +1,13 @@
+{
+  "_provisoire": "Lot 8e (retour du propriétaire) : tenues (cosmétiques) d'exemple de la caisse de tenues ; noms, raretés et nombre à définir par le propriétaire sans lot. Elles ne se portent pas encore (aucun effet, ni en jeu ni dans le menu) : obtenues, elles rejoignent une collection en mémoire (jusqu'au lot 8h). rarete : une rareté de data/menu/raretes.json. Lu par js/core/caisses.js (lireCosmetiques).",
+  "cosmetiques": [
+    { "id": "tenue-nuit", "nom": "Tenue de nuit (exemple)", "rarete": "commun" },
+    { "id": "treillis", "nom": "Treillis délavé (exemple)", "rarete": "commun" },
+    { "id": "blouson-rouge", "nom": "Blouson rouge (exemple)", "rarete": "peu-commun" },
+    { "id": "impermeable", "nom": "Imperméable (exemple)", "rarete": "peu-commun" },
+    { "id": "chantier", "nom": "Tenue de chantier (exemple)", "rarete": "rare" },
+    { "id": "combinaison", "nom": "Combinaison NBC (exemple)", "rarete": "rare" },
+    { "id": "chasseur", "nom": "Manteau de chasseur (exemple)", "rarete": "epique" },
+    { "id": "doree", "nom": "Tenue dorée (exemple)", "rarete": "legendaire" }
+  ]
+}

@@ -3,6 +3,7 @@ import { execSync } from 'node:child_process';
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { renderSound, variantCount } from '../../js/core/synth.js';
 import { dbfs, shortLevel } from '../../js/core/audio-analysis.js';
+import { sansImagesStudio } from './helpers/images-studio.js'; // lot 8g : logo du studio, exception nominative
 
 // Lot 3h : hygiène de l'atelier des sons. Le jeu, son moteur sonore et ses sons restent intacts ; les nouveaux modules sont purs ;
 // les données de l'atelier renvoient à de vrais sons du jeu.
@@ -45,7 +46,7 @@ describe('hygiène du lot 3h : pureté et fichiers', () => {
   it('aucun fichier audio, image, police ou modèle ajouté depuis main', () => {
     if (!BASE) return;
     const added = [...(git(`diff --name-only --diff-filter=A ${BASE}`) ?? '').split('\n'), ...(git('ls-files --others --exclude-standard') ?? '').split('\n')].filter(Boolean);
-    expect(added.filter((f) => /\.(wav|mp3|ogg|m4a|flac|webm|aac|opus|aiff?|png|jpe?g|gif|webp|avif|ico|bmp|svg|woff2?|ttf|otf|eot|glb|gltf|obj)$/i.test(f))).toEqual([]);
+    expect(sansImagesStudio(added).filter((f) => /\.(wav|mp3|ogg|m4a|flac|webm|aac|opus|aiff?|png|jpe?g|gif|webp|avif|ico|bmp|svg|woff2?|ttf|otf|eot|glb|gltf|obj)$/i.test(f))).toEqual([]);
   });
 
   it('le moteur sonore existant, sa page d\'écoute et ses tests sont inchangés par le lot 3h (diff vide)', () => {

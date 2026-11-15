@@ -262,6 +262,12 @@ export function createDebugMenu({ dict, search = '', planksMax = PLANKS_MAX, nav
   row(sections.partie, 'fin', 'game.debug.fin', choice('fin', yesNo, () => values.fin, (v) => { values.fin = v; }), 'game.debug.fin.hint');
   row(sections.mesure, 'perf', 'game.debug.perf', choice('perf', [[false, 'game.debug.coupe'], [true, 'game.debug.active']], () => values.perf, (v) => { values.perf = v; }));
   row(sections.mesure, 'cap', 'game.debug.cap', choice('cap', [[null, 'game.debug.cap.aucun'], ['30', 'game.debug.cap.30'], ['45', 'game.debug.cap.45'], ['60', 'game.debug.cap.60']], () => values.cap, (v) => { values.cap = v; }));
+  // Lot 8i : lien vers la page d'écoute des sons du menu (page technique ; quitter la partie : la page est rechargée au retour).
+  const lienSons = el('div', ['options-values']);
+  const aSons = el('a', ['button', 'button-quiet', 'options-value'], { href: 'atelier-sons-menu.html', id: 'debug-sons-menu' });
+  aSons.textContent = t('game.debug.sonsMenu.lien');
+  lienSons.append(aSons);
+  row(sections.mesure, 'sons-menu', 'game.debug.sonsMenu', lienSons);
 
   // Pied : adresse obtenue, actions et confirmation.
   const foot = el('div', ['options-foot']);

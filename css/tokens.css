@@ -16,6 +16,8 @@
   --color-success: #7ed48b;         /* réussite */
   --color-warning: #f2c94c;         /* avertissement */
   --color-money: #ffd60a;           /* argent, jaune */
+  --color-money-blue: #5ab0ff;      /* monnaie bleue (lot 8h) */
+  --color-money-medaille: #d08b4c;
   --color-focus: #9fd3ff;           /* anneau de focus */
 
   /* Teintes dérivées */
@@ -69,7 +71,7 @@
   --touch-target: 44px;
 
   /* Accueil de la Recette (lot 5i) : carte de la version actuelle, en tête de « Toutes les versions » (css/accueil.css). */
-  --home-current-border: #d81414;   /* bordure de 2 px : rouge sang (même valeur que --color-action) */
+  --home-current-border: #d81414;   /* bordure de 2 px : rouge sang */
   --home-current-surface: #2a0f0f;  /* fond légèrement teinté de rouge ; texte os (--color-text) au-dessus : contraste ≥ 4,5:1 */
 
   /* Jeu : couleurs de la scène 3D (lues par js/game/palette.js). Provisoires, à valider. */
@@ -218,6 +220,8 @@
   --perso-joueur-veste: #e0d4ae;    /* joueur A : veste tactique sable */
   --perso-joueur-sweat: #d4d8dc;    /* joueur B : sweat à capuche gris clair */
   --perso-joueur-vif: #8fdbe0;      /* joueur C : couleur dominante turquoise, contrastée avec tous les sols */
+  --perso-anonyme: #8f8f8f;         /* avatar par défaut du Profil (lot 8g) : buste gris */
+  --perso-anonyme-tete: #b3b3b3;    /* avatar par défaut : tête grise, plus claire */
   --perso-lampe: #fff1b8;           /* lampe frontale du joueur B (teinte émissive faible) */
   --perso-yeux: #d8e070;            /* lueur des yeux (proposition de priorité 2, jamais seule porteuse d'information) */
   --sang-frais: #7a0a0a;            /* sang frais : rouge profond du site */
@@ -245,6 +249,164 @@
   --game-lamp-flame: #f08a2c;       /* bas de la flamme (émissif) */
   --game-lamp-core: #ffe7a6;        /* pointe de la flamme (émissive) */
   --game-lamp-light: #ffc27a;       /* lumière ponctuelle d'une lampe (chaude) */
+}
+
+/* Menu principal (lot 8a) : bloc isolé, lu par css/menu.css et par le logo partagé de base.css (accueil) ; aucune couleur dans le JavaScript. */
+:root {
+  --menu-nuit: #06070c;             /* fond du menu et de l'écran de chargement */
+  --menu-ciel-haut: #0a0e1c;        /* ciel, haut */
+  --menu-ciel-bas: #1b1422;         /* ciel, horizon */
+  --menu-batiment: #010102;         /* silhouette du bâtiment */
+  --menu-fenetre: #e9b44c;          /* deux fenêtres éclairées */
+  --menu-brume: rgb(176 172 190 / 9%); /* brume lente */
+  --menu-entete: #000000;           /* bandeau noir de l'en-tête */
+  --menu-texte: #f4f1ec;            /* texte (os) */
+  --menu-texte-doux: #d1c9bd;       /* onglet inactif, texte secondaire */
+  --menu-rouge: #a50f0d;            /* bandeaux de titre et boutons peints (zone pleine) */
+  --menu-rouge-clair: #c4130f;      /* bouton peint survolé */
+  --menu-rouge-trait: #ff4a3d;      /* trait de l'onglet actif, sur le bois */
+  --menu-coulure: #7d0b0a;          /* coulures sous les bandeaux et sous le Z */
+  --menu-coulure-sombre: #4a0505;   /* coulures du Z : bord dans l'ombre */
+  --menu-coulure-reflet: #c42a22;   /* coulures du Z : reflet humide */
+  --menu-z: #d81414;                /* lettre Z du titre */
+  --menu-z-contour: #1a0303;        /* contour sombre du Z */
+  --menu-bord: #160404;             /* bordure sombre des boutons peints */
+  --menu-ombre: rgb(0 0 0 / 60%);   /* ombre portée basse */
+  --menu-bois: #4e321c;             /* planches (onglets, boutons secondaires) */
+  --menu-bois-clair: #6b4527;       /* veinure claire */
+  --menu-bois-sombre: #24170c;      /* joints entre planches */
+  --menu-clou: #a59d90;             /* têtes de clous */
+  --menu-ruban-jaune: #f2c94c;      /* ruban de verrouillage : jaune */
+  --menu-ruban-noir: #111111;       /* ruban de verrouillage : noir */
+  --menu-voile: rgb(0 0 0 / 72%);   /* voile sous les écrans superposés (Information, Connexion) */
+  --menu-panneau: #121012;          /* fond des écrans superposés */
+  --menu-grain: rgb(255 255 255 / 5%); /* grain léger */
+  --menu-poussiere: rgb(200 190 175 / 55%); /* poussière soulevée par le Z */
+  --menu-barre-fond: #2a1414;       /* fond de la barre de chargement */
+  --menu-point: #ffd60a;            /* point jaune « nouveauté non lue » */
+  /* Lot 8b : scène de l'onglet Jouer (maquette Main.html) */
+  --menu-scene-ciel-haut: #04060b;
+  --menu-scene-ciel-bas: #131a26;
+  --menu-scene-lune: #d9dde6;
+  --menu-scene-halo: #c9d3e4;
+  --menu-scene-lointain: #0b0e14;
+  --menu-scene-sol: #0a0908;
+  --menu-scene-aile: #1d1c1a;
+  --menu-scene-salle: #181715;
+  --menu-scene-toit: #2a2823;
+  --menu-scene-toit-salle: #24221d;
+  --menu-scene-etage: #2c2a25;
+  --menu-scene-fenetre-noire: #0b0a09;
+  --menu-scene-lampe: #ffb347;
+  --menu-scene-planche: #7a5432;
+  --menu-scene-route: #231a12;
+  --menu-scene-route-trait: #3a2c1f;
+  --menu-scene-voiture: #141210;
+  --menu-scene-feu: #ff6a1a;
+  --menu-scene-flamme: #ff7a1a;
+  --menu-scene-flamme-coeur: #ffd166;
+  --menu-scene-fumee: #3a3a3a;
+  --menu-scene-brume: rgb(154 164 180 / 7%);
+  --menu-scene-vignette: #000000;
+  --menu-zombie: #040303;
+  --menu-zombie-yeux: #ff2a1f;
+  --menu-sang: #7a0b0a;
+  --menu-sang-clair: #9a1210;
+  --menu-tir: rgb(255 209 102 / 50%);
+  --menu-tir-coeur: #fff2a8;
+  --menu-panneau-piquet: #4a3826;
+  --menu-panneau-atteint: #8f1010;
+  --menu-panneau-atteint-texte: #ffffff;
+  --menu-panneau-bois: #3a2c1f;
+  --menu-panneau-bois-texte: #cfc6b8;
+  --menu-record: #ffd60a;
+  --menu-texte-ombre: #000000;
+  --menu-bouton-rond: rgb(5 5 5 / 70%);
+  --menu-bouton-rond-bord: #3a3434;
+  --menu-desactive: #5a5550;
+  /* Lot 8b : onglet Infini (maquette Infini.html) */
+  --menu-infini-ciel-haut: #0a0405;
+  --menu-infini-ciel-bas: #22090a;
+  --menu-infini-halo: #ff3b2a;
+  --menu-infini-lune: #a8231a;
+  --menu-infini-sol: #070304;
+  --menu-infini-horde: #050203;
+  --menu-carte-fond: #0f0c0c;
+  --menu-carte-bord: #3a3434;
+  --menu-carte-choisie: #d81414;
+  --menu-carte-libelle: #a9a49c;
+  --menu-mini-ciel: #0f1520;
+  --menu-mini-verrou: #141211;
+  --menu-mini-cadenas: #cfc6b8;
+  --menu-fleche-fond: rgb(5 5 5 / 85%);
+  --menu-classement-fond: rgb(8 5 5 / 86%);
+  --menu-classement-bord: #4a1a18;
+  --menu-classement-ligne: #161212;
+  --menu-classement-rang: #cfc6b8;
+  --menu-classement-toi: #2a0d0d;
+  --menu-classement-toi-texte: #ff6a5d;
+  --menu-exemple: #9fd3ff;
+  /* Lot 8c : page Options du menu (E5) et Options de la partie (E2-12) (maquettes Options.html, OptionsJeu.html) */
+  --menu-options-fond: #121110;
+  --menu-options-trait: #1b1916;
+  --menu-options-bouton: #1a1614;
+  --menu-options-bouton-bord: #3a3434;
+  --menu-options-bouton-texte: #cfc6b8;
+  --menu-options-note: #a9a49c;
+  --menu-options-filet: #2f2a25;
+  --menu-options-ligne: #1f1c19;
+  --menu-options-verrou: #c9a94a;
+  --menu-options-nom-inactif: #8a857e;
+  --menu-options-inactif: #141210;
+  --menu-options-inactif-bord: #2a2725;
+  --menu-options-inactif-texte: #9a948b;
+  --menu-options-inactif-choisi: #2f2b28;
+  --menu-options-inactif-choisi-bord: #5a5550;
+  --menu-options-panneau: rgb(12 10 9 / 96%);
+  --menu-options-panneau-bord: #4a1a18;
+  --menu-options-voile: rgb(0 0 0 / 72%);
+  /* Lot 8d : Personnage (E9-1 à E9-4) ; réemploie --menu-scene-fenetre-noire (sol), --menu-record (or), --menu-options-ligne, --menu-scene-route-trait, --menu-panneau-atteint (sang) */
+  --menu-perso-survivant: #4d4b3b;
+  --menu-perso-2: #3e4a52;
+  --menu-perso-inconnu: #2a2725;    /* verrouillé */
+  --menu-perso-assombri: #000000;   /* bras */
+  --menu-perso-jambes: #2c2f26;
+  --menu-perso-sangle: #2c2a22;
+  --menu-perso-poche: #3a3828;
+  --menu-perso-arme: #141414;
+  --menu-perso-peau: #b89a7a;
+  --menu-perso-bottes: #1a1612;
+  --menu-perso-ombre: #050404;
+  --menu-e9-projecteur: #ffe2b0;
+  --menu-e9-lumiere: #ffcf8a;
+  --menu-e9-lampe: #2a2621;
+  --menu-e9-case: #1c1a17;
+  --menu-e9-case-vide: #100e0d;
+  --menu-e9-voile: rgb(5 5 5 / 60%);
+  --menu-e9-stats-bord: #4a3e33;
+  --menu-e9-texte-doux: #d9d4cb;
+  --menu-e9-capacite: rgb(12 10 9 / 92%);
+  --menu-e9-violet: #3a2350;
+  --menu-e9-violet-bord: #1c1028;
+  --menu-e9-violet-texte: #f2e8ff;
+  --menu-e9-bois-texte: #fff4e2;
+  --menu-e9-panneau: #181513;
+  --menu-discord: #5865f2;
+  --menu-discord-texte: #fff;
+  --menu-e9-case-choisie: #26201a;
+  --menu-e9-effet: #7ed48b;
+  --menu-e9-fleche: #c08cff;
+  --menu-e9-compatibles: #161311;
+  --menu-e9-violet-inactif: #2a1e36;
+  --menu-e9-violet-inactif-bord: #3a2a4a;
+  --menu-e9-violet-inactif-texte: #b8a8c8;
+  --menu-e3-fond: #1b2a44;
+  /* Raretés */
+  --rarete-commun: #a3a3a8;         /* gris */
+  --rarete-peu-commun: #5cc46a;     /* vert */
+  --rarete-rare: #4a94ff;           /* bleu */
+  --rarete-epique: #b072f5;         /* violet */
+  --rarete-legendaire: #f0bd3e;     /* doré */
 }
 
 /* Interface intégrée (lot 3l) */

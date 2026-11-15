@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "latest": "v0.7",
+  "latest": "v0.8",
   "versions": [
     {
       "id": "v0.1",
@@ -74,10 +74,21 @@
       "title": "Rework du système de lumière. Menu option et menu de débug pour ne pas surcharger le menu pause. Bugfix sur la map. Opt…",
       "date": "2026-11-09",
       "branch": "dev",
-      "ref": "3740ffd05fdb4e0a97680862711a392e4568a2f3",
+      "ref": "4be0796d5e5058f1a5de1686878f29df8716dbe3",
+      "entry": "jeu.html",
+      "status": "archive",
+      "note": "Hash : tête de main archivée au lot 8m (4be0796) ; même jeu que 3740ffd (tête de dev au lot 5p) : seuls diffèrent la publication du lot 5p (versions.json, noms, journal, documentation, tests) et le seed."
+    },
+    {
+      "id": "v0.8",
+      "label": "V0.8",
+      "title": "Menus, monnaies d'amélioration et caisses. Interfaces pour grands écrans. Portes qui annoncent leur manche. Moins de br…",
+      "date": "2026-11-15",
+      "branch": "dev",
+      "ref": "df723e89372e9a5d93b4ac184181b3532aacd0aa",
       "entry": "jeu.html",
       "status": "actuelle",
-      "note": "Menu Options et réglages graphiques séparés, lampes à huile et lumières dynamiques, menu de débogage, sauvegarde sûre avec plusieurs onglets, nettoyage et tests allégés, contrôle de publication."
+      "note": "Menu principal (onglets, Personnage, Boutique, Studio, Profil, Options), diamants et médailles gardés, caisses à pitié et ouvertures en 3D, sons et musique du menu, sauvegarde v2, interfaces pour grands écrans, tirs par-dessus les meubles bas et à travers les grilles, nettoyage et tests allégés."
     }
   ],
   "dev": {

@@ -1,0 +1,160 @@
+{
+  "_provisoire": "Données de référence des tests du moteur des caisses (tests/unit/caisses.test.js) : les neuf caisses du lot 8e (data/menu/caisses.json avant le lot 8k), caisses de personnages converties en chances par rareté (lot 8k : chaque personnage a une rareté, data/menu/personnages.json ; mêmes pour cent regroupés : survivant, [Personnage 2] et [3] rares, [4] et [5] épiques, [6] légendaire). Fichier de test : les données du jeu sont data/menu/caisses.json.",
+  "offres": {
+    "nombre": 6,
+    "chances": {
+      "commun": 45,
+      "peu-commun": 30,
+      "rare": 16,
+      "epique": 7,
+      "legendaire": 2
+    },
+    "prix": {
+      "commun": 80,
+      "peu-commun": 200,
+      "rare": 500,
+      "epique": 1200,
+      "legendaire": 3000
+    }
+  },
+  "caisses": [
+    {
+      "id": "ravitaillement",
+      "type": "equipement",
+      "modele": "militaire",
+      "nom": "Caisse de ravitaillement",
+      "teinte": "--menu-panneau-bois-texte",
+      "prix": 150,
+      "prix10": 1350,
+      "chances": {
+        "commun": 62,
+        "peu-commun": 25,
+        "rare": 9,
+        "epique": 3,
+        "legendaire": 1
+      }
+    },
+    {
+      "id": "militaire",
+      "type": "equipement",
+      "modele": "militaire",
+      "nom": "Caisse militaire",
+      "teinte": "--rarete-rare",
+      "prix": 500,
+      "prix10": 4500,
+      "chances": {
+        "commun": 30,
+        "peu-commun": 38,
+        "rare": 22,
+        "epique": 8,
+        "legendaire": 2
+      }
+    },
+    {
+      "id": "elite",
+      "type": "equipement",
+      "modele": "militaire",
+      "nom": "Caisse d'élite",
+      "teinte": "--rarete-legendaire",
+      "prix": 1500,
+      "prix10": 13500,
+      "chances": {
+        "commun": 8,
+        "peu-commun": 17,
+        "rare": 30,
+        "epique": 32,
+        "legendaire": 13
+      }
+    },
+    {
+      "id": "recrues",
+      "type": "personnage",
+      "modele": "veterans",
+      "nom": "Caisse de recrues",
+      "teinte": "--rarete-rare",
+      "prix": 2000,
+      "prix10": 18000,
+      "chances": {
+        "rare": 70,
+        "epique": 20,
+        "legendaire": 10
+      }
+    },
+    {
+      "id": "veterans",
+      "type": "personnage",
+      "modele": "veterans",
+      "nom": "Caisse de vétérans",
+      "teinte": "--rarete-epique",
+      "prix": 4000,
+      "prix10": 36000,
+      "chances": {
+        "rare": 47.5,
+        "epique": 35,
+        "legendaire": 17.5
+      }
+    },
+    {
+      "id": "legendes",
+      "type": "personnage",
+      "modele": "veterans",
+      "nom": "Caisse de légendes",
+      "teinte": "--rarete-legendaire",
+      "prix": 8000,
+      "prix10": 72000,
+      "chances": {
+        "rare": 31,
+        "epique": 46,
+        "legendaire": 23
+      }
+    },
+    {
+      "id": "tenues",
+      "type": "cosmetique",
+      "modele": "tenues",
+      "nom": "Caisse de tenues",
+      "teinte": "--rarete-peu-commun",
+      "prix": 400,
+      "prix10": 3600,
+      "chances": {
+        "commun": 55,
+        "peu-commun": 28,
+        "rare": 12,
+        "epique": 4,
+        "legendaire": 1
+      }
+    },
+    {
+      "id": "mode",
+      "type": "cosmetique",
+      "modele": "tenues",
+      "nom": "Caisse de mode",
+      "teinte": "--rarete-epique",
+      "prix": 900,
+      "prix10": 8100,
+      "chances": {
+        "commun": 30,
+        "peu-commun": 35,
+        "rare": 22,
+        "epique": 10,
+        "legendaire": 3
+      }
+    },
+    {
+      "id": "couture",
+      "type": "cosmetique",
+      "modele": "tenues",
+      "nom": "Caisse de haute couture",
+      "teinte": "--rarete-legendaire",
+      "prix": 2500,
+      "prix10": 22500,
+      "chances": {
+        "commun": 8,
+        "peu-commun": 17,
+        "rare": 30,
+        "epique": 32,
+        "legendaire": 13
+      }
+    }
+  ]
+}

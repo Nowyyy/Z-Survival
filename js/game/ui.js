@@ -3,22 +3,31 @@
 // Lot 5j : bouton « Options » de la pause (écran E2-12, js/game/options-menu.js importé à la première ouverture) ; « Graphismes » et « Effet VHS » quittent
 // la pause (ils sont dans l'écran Options). Pendant l'écran Options, la partie reste en pause.
 // Lot 5l : icône « Débogage » de la pause (canaux de débogage seulement) ; menu E2-13 (js/game/debug-menu.js importé au premier clic) ; la partie reste en pause.
+// Lot 8a : « Quitter » actif (confirmation construite au premier appui, à la place des boutons de la pause) et « Revenir au menu principal » actif : tous
+// deux appellent main.js (onQuit, onMenu : retour au menu par rechargement).
 import { formatMoney } from '../core/economy.js';
 import { fmt, MONEY_TEXTS, SAVE_TEXTS } from './texts.js';
+import { activerGlisser } from '../glisser.js';
+import { installerEchelle } from './ui-echelle.js';
 
 const PORTRAIT_PHONE = '(orientation: portrait) and (pointer: coarse) and (max-width: 600px)';
 
 export function createUi(dict, handlers) {
+  installerEchelle(); // lot 8j : --ui-k, facteur de l'interface de la partie (1 jusqu'à 1080 px de haut, plafond 2)
   const $ = (id) => document.getElementById(id);
   const els = {
     pausePanel: $('pause-panel'), endPanel: $('end-panel'), live: $('hud-live'), rotate: $('rotate'),
     pauseBtn: $('btn-pause'), resume: $('btn-resume'), fullscreen: $('btn-fullscreen'), sound: $('btn-sound'),
-    options: $('btn-options'), debug: $('btn-debug'), restart: $('btn-restart'), replay: $('btn-replay'), endKills: $('end-kills'), endWave: $('end-wave'),
-    endBox: $('end-box'), endTitle: $('end-title-text'), pauseBalance: $('pause-balance-text'), endEarned: $('end-earned'), endEarnedText: $('end-earned-text'), endBonus: $('end-bonus'), endBonusText: $('end-bonus-text'),
-    endBalance: $('end-balance'), endBest: $('end-best'), endRecord: $('end-record'), endRecordText: $('end-record-text'), endSave: $('end-save'),
+    options: $('btn-options'), debug: $('btn-debug'), restart: $('btn-restart'), replay: $('btn-replay'), quit: $('btn-quit'), menuBtn: $('btn-menu'), endKills: $('end-kills'), endWave: $('end-wave'),
+    endBox: $('end-box'), endTitle: $('end-title-text'), pauseBalance: $('pause-balance-text'), endWaveText: $('end-wave-text'),
+    endBalance: $('end-balance'), endBalanceText: $('end-balance-text'), endBleu: $('end-bleu'), endBleuText: $('end-bleu-text'), endBest: $('end-best'), endRecord: $('end-record'), endRecordText: $('end-record-text'), endSave: $('end-save'),
+    pauseMedailles: $('pause-medailles-text'), endMed: $('end-medailles'), endMedText: $('end-medailles-text'), endMedSolde: $('end-medailles-solde'), endMedSoldeText: $('end-medailles-solde-text'),
   };
   // Lot 5j : écran Options (créé à la première ouverture) ; binding : contrôleur graphique et couche VHS, donnés par game.js (bindOptions).
+  // Lot 8c : composant partagé avec le menu (contexte « partie ») ; sa section Son lit l'audio en cours (sonAudio) et passe par les mêmes
+  // commandes que l'icône du son de la pause (onToggleSound, onVolume) : les deux restent synchronisés.
   let binding = null;
+  let sonAudio = null;
   let menu = null;
   let optionsOpen = false;
   // Lot 5l : menu de débogage (créé au premier clic) ; debugBinding : { search, planksMax } donné par main.js sur un canal de débogage, sinon null.
@@ -28,6 +37,8 @@ export function createUi(dict, handlers) {
   const rotateQuery = matchMedia(PORTRAIT_PHONE);
   const canFullscreen = Boolean(document.fullscreenEnabled && document.documentElement.requestFullscreen);
   let hasAudio = false;
+  let quitBox = null; // lot 8a : confirmation de « Quitter » (créée au premier appui)
+  let sortieVoulue = false; // sortie du plein écran demandée par le jeu (icône, touche F) : pas de pause
 
   const ui = {
     isPaused: () => !els.pausePanel.hidden || optionsOpen || debugOpen || rotateQuery.matches || document.hidden,
@@ -49,6 +60,7 @@ export function createUi(dict, handlers) {
     },
 
     closePause() {
+      ui.closeQuit(false);
       els.pausePanel.hidden = true;
       els.pauseBtn.blur();
       document.activeElement?.blur?.();
@@ -57,14 +69,19 @@ export function createUi(dict, handlers) {
     },
 
     togglePause() {
-      // Lot 5j : Échap dans l'écran Options : ferme la confirmation du rechargement, sinon revient à la pause.
+      // Lot 5j : Échap dans l'écran Options : retour à la pause (lot 8c : plus de confirmation de rechargement).
       if (optionsOpen) {
-        if (!menu?.escape()) ui.closeOptions();
+        ui.closeOptions();
         return;
       }
       // Lot 5l : de même pour le menu de débogage (confirmation d'abord).
       if (debugOpen) {
         if (!debugMenu?.escape()) ui.closeDebug();
+        return;
+      }
+      // Lot 8a : Échap dans la confirmation de « Quitter » : retour aux boutons de la pause.
+      if (quitBox && !quitBox.hidden) {
+        ui.closeQuit(true);
         return;
       }
       if (els.pausePanel.hidden) ui.openPause();
@@ -76,29 +93,39 @@ export function createUi(dict, handlers) {
     // Lot 4 : « Solde » (summary : { balance, status }, de js/game/bank.js). Lot 3l (retour du propriétaire) : à côté de « PAUSE » ; l'état de la sauvegarde
     // n'est plus dans la pause (il reste sur l'écran de fin quand il pose problème : illisible, indisponible, échec, mode essai).
     setPauseInfo(summary) {
-      els.pauseBalance.textContent = fmt(dict[MONEY_TEXTS.pauseBalance], { n: formatMoney(summary?.balance) });
+      // Retour du propriétaire après le lot 8j : la pause montre le solde de la monnaie bleue (gemme puis montant, comme l'en-tête du menu ;
+      // « Monnaie bleue : » reste dit aux lecteurs d'écran), et plus la monnaie jaune.
+      els.pauseBalance.textContent = fmt(dict[MONEY_TEXTS.pauseBalance], { n: formatMoney(summary?.soldeBleu) });
+      // Lot 8k : puis le solde de médailles (médaille puis montant ; « Médailles : » dit aux lecteurs d'écran).
+      if (els.pauseMedailles) els.pauseMedailles.textContent = fmt(dict[MONEY_TEXTS.pauseBalance], { n: formatMoney(summary?.soldeMedailles) });
     },
 
     // info (lot 4, de bank.runEnd) : { earned, world, balance, best, record, status } ; absent : les lignes d'argent restent vides.
+    // Lot 8h (deux monnaies) : monnaie jaune perdue (earned), monnaie bleue gagnée pendant la partie (bleu, prime du monde comprise), solde bleu
+    // (soldeBleu) ; meilleure manche du mode joué (histoire ou infini).
     showEnd(kills, wave = 0, variant = 'death', info = null) {
       els.pausePanel.hidden = true;
       els.endTitle.textContent = dict[variant === 'world' ? 'game.end.world' : 'game.end.title'];
       els.endBox.dataset.variant = variant === 'world' ? 'world' : 'death'; // icône du titre : coche ou crâne (décoratives)
       els.endKills.textContent = fmt(dict['game.end.kills'], { n: kills });
-      els.endWave.textContent = wave > 0 ? fmt(dict['game.wave.reached'], { n: wave }) : '';
+      // Retour du propriétaire après le lot 8k : à gauche, vague atteinte (« Record » en jaune sur la même ligne), meilleure manche, zombies tués ;
+      // à droite, solde de diamants puis « +gain », solde de médailles puis « +gain » (gains de la partie, prime du monde comprise).
+      els.endWaveText.textContent = wave > 0 ? fmt(dict['game.wave.reached'], { n: wave }) : '';
       els.endWave.hidden = !(wave > 0);
       const money = info !== null && info !== undefined;
-      els.endEarned.hidden = !money;
       els.endBalance.hidden = !money;
       els.endBest.hidden = !money;
       if (money) {
-        els.endEarnedText.textContent = fmt(dict[MONEY_TEXTS.earned], { n: formatMoney(info.earned) });
-        els.endBalance.textContent = fmt(dict[MONEY_TEXTS.balance], { n: formatMoney(info.balance) });
-        els.endBest.textContent = fmt(dict[MONEY_TEXTS.best], { n: info.best });
+        els.endBleuText.textContent = fmt(dict[MONEY_TEXTS.bleu], { n: formatMoney(info.bleu) });
+        els.endBalanceText.textContent = fmt(dict[MONEY_TEXTS.balance], { n: formatMoney(info.soldeBleu) });
+        els.endBest.textContent = fmt(dict[info.mode === 'infini' ? MONEY_TEXTS.bestInfini : MONEY_TEXTS.best], { n: info.best });
       }
-      const world = money && variant === 'world';
-      els.endBonus.hidden = !world;
-      if (world) els.endBonusText.textContent = fmt(dict[MONEY_TEXTS.worldBonus], { n: formatMoney(info.world) });
+      const med = money && info.medailles ? info.medailles : null;
+      els.endMedSolde.hidden = !med;
+      if (med) {
+        els.endMedText.textContent = fmt(dict['game.end.medailles'], { n: formatMoney(med.total) });
+        els.endMedSoldeText.textContent = fmt(dict['game.end.medailles.solde'], { n: formatMoney(med.solde) });
+      }
       els.endRecord.hidden = !(money && info.record === true);
       els.endRecordText.textContent = dict[MONEY_TEXTS.record];
       // Ligne d'état seulement quand l'argent n'est pas écrit : mode essai (texte propre à l'écran de fin), sauvegarde illisible, indisponible, échec.
@@ -117,6 +144,7 @@ export function createUi(dict, handlers) {
 
     toggleFullscreen() {
       if (!canFullscreen) return;
+      sortieVoulue = Boolean(document.fullscreenElement);
       if (document.fullscreenElement) document.exitFullscreen?.().catch(() => {});
       else document.documentElement.requestFullscreen({ navigationUI: 'hide' }).catch(() => {});
     },
@@ -124,6 +152,8 @@ export function createUi(dict, handlers) {
     // Bouton Son selon l'état courant ; masqué sans moteur audio utilisable. Lot 3l (retour du propriétaire) : plus de curseur de volume. Lot 5j-F : icône
     // en haut à droite de la pause (haut-parleur ; barré d'une croix quand le son est coupé : data-muted) ; l'état est dans le nom accessible.
     syncSound(audio) {
+      sonAudio = audio ?? null;
+      if (optionsOpen) menu?.sync();
       hasAudio = Boolean(audio?.supported);
       els.sound.hidden = !hasAudio;
       if (!hasAudio) return;
@@ -142,7 +172,18 @@ export function createUi(dict, handlers) {
     optionsOpen = true;
     els.pausePanel.hidden = true; // la partie reste en pause (optionsOpen)
     try {
-      menu ??= (await import('./options-menu.js')).createOptionsMenu({ dict, graphics: binding.graphics, vhs: binding.vhs, onClose: () => ui.closeOptions() });
+      if (!menu) {
+        const [m] = await Promise.all([import('./options-menu.js'), handlers.chargerStyles?.()]);
+        const son = {
+          etat: () => ({ disponible: hasAudio, coupe: Boolean(sonAudio?.muted), volume: sonAudio?.volume ?? 100, musique: sonAudio?.musicVolume ?? 100, pas: sonAudio?.volumeStep ?? 10 }),
+          couper: (coupe) => {
+            if (hasAudio && Boolean(sonAudio?.muted) !== coupe) handlers.onToggleSound();
+          },
+          regler: (n) => handlers.onVolume?.(n),
+          reglerMusique: (n) => handlers.onMusicVolume?.(n), // lot 8i : volume de la musique (mélodie d'annonce de vague)
+        };
+        menu = m.creerOptions({ contexte: 'partie', dict, graphics: binding.graphics, son, vhs: binding.vhs, onClose: () => ui.closeOptions() });
+      }
     } catch {
       optionsOpen = false;
       els.pausePanel.hidden = false;
@@ -193,15 +234,66 @@ export function createUi(dict, handlers) {
     els.debug.focus();
   };
   els.debug.addEventListener('click', () => ui.openDebug());
+  // Lot 8a : retour au menu (« Quitter » confirmé, « Revenir au menu principal »).
+  const actions = els.pausePanel.querySelector('.panel-actions');
+  ui.openQuit = () => {
+    if (els.pausePanel.hidden) return;
+    if (!quitBox) {
+      quitBox = document.createElement('div');
+      quitBox.id = 'quit-confirm';
+      quitBox.className = 'quit-confirm'; // retour du propriétaire : écart entre la question et les boutons (game-ui.css)
+      quitBox.setAttribute('role', 'alertdialog');
+      quitBox.setAttribute('aria-labelledby', 'quit-confirm-text');
+      const text = document.createElement('p');
+      text.id = 'quit-confirm-text';
+      text.className = 'panel-line';
+      text.textContent = dict['game.pause.quitConfirm'];
+      const row = document.createElement('div');
+      row.className = 'panel-actions';
+      const make = (id, cls, key) => {
+        const b = document.createElement('button');
+        b.id = id;
+        b.type = 'button';
+        b.className = `button ${cls}`;
+        b.textContent = dict[key];
+        row.append(b);
+        return b;
+      };
+      make('btn-quit-ok', 'button-main', 'game.pause.quitOk').addEventListener('click', () => handlers.onQuit?.());
+      make('btn-quit-cancel', 'button-quiet', 'game.pause.quitCancel').addEventListener('click', () => ui.closeQuit(true));
+      quitBox.append(text, row);
+      actions.after(quitBox);
+    }
+    actions.hidden = true;
+    quitBox.hidden = false;
+    document.getElementById('btn-quit-cancel').focus();
+  };
+  ui.closeQuit = (focus) => {
+    if (!quitBox || quitBox.hidden) return;
+    quitBox.hidden = true;
+    actions.hidden = false;
+    if (focus) els.quit.focus();
+  };
+  els.quit.addEventListener('click', () => ui.openQuit());
+  els.menuBtn.addEventListener('click', () => handlers.onMenu?.());
   els.fullscreen.hidden = !canFullscreen;
   // Lot 5j-G : icône de plein écran (coins vers l'extérieur ; vers l'intérieur et nom « Quitter le plein écran » quand la page est en plein écran).
-  const syncFullscreen = () => {
+  // Retour du propriétaire (sur ordinateur, en plein écran, Échap quittait le plein écran sans ouvrir la pause ; il fallait un second Échap) :
+  // en plein écran, la touche Échap est réservée à la page quand le navigateur le permet (Keyboard Lock : un appui ouvre la pause, un appui
+  // long quitte le plein écran) ; sinon, une sortie du plein écran non demandée par le jeu (Échap du navigateur) ouvre la pause.
+  const syncFullscreen = (event) => {
     const on = Boolean(document.fullscreenElement);
     els.fullscreen.dataset.active = String(on);
     els.fullscreen.setAttribute('aria-label', dict[on ? 'game.pause.fullscreenExit' : 'game.pause.fullscreen']);
+    if (on) navigator.keyboard?.lock?.(['Escape'])?.catch?.(() => {});
+    else navigator.keyboard?.unlock?.();
+    if (event && !on && !sortieVoulue && !ui.isPaused() && !ui.isEnded()) ui.openPause();
+    if (!on) sortieVoulue = false;
   };
   document.addEventListener('fullscreenchange', syncFullscreen);
   syncFullscreen();
+  // Retour du propriétaire : zones qui défilent (pause, Options…) glissables à la souris, comme au doigt (même module que le menu).
+  activerGlisser(document.body);
   els.pauseBtn.addEventListener('click', () => ui.openPause());
   els.resume.addEventListener('click', () => ui.closePause());
   els.fullscreen.addEventListener('click', () => ui.toggleFullscreen());

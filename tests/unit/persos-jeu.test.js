@@ -21,9 +21,9 @@ const git = (cmd) => {
 };
 const variants = load('zombie-variants');
 
-// Garde-fous du lot 3j contre main : actifs seulement sur la branche du lot (première ligne d'apercu.txt = atelier-personnages.html) ;
-// dans la branche d'intégration (lot 4b), d'autres lots modifient les mêmes fichiers : ils se taisent (voir Docs/ref/passation-personnages-4b.md).
-const ON_LOT = readFileSync('apercu.txt', 'utf8').split('\n')[0].trim() === 'atelier-personnages.html';
+// Lot 5q : les garde-fous du lot 3j contre main (actifs seulement sur la branche du lot, première ligne d'apercu.txt = atelier-personnages.html,
+// sautés depuis l'intégration du lot 4b) sont retirés : trois « au plus 40 lignes » (game.js, character.js, effects.js), « aucun autre fichier de
+// js/game/ modifié » et « fichiers partagés modifiés depuis main dans le manifeste ». Portée d'un lot fini, jamais réactivable (apercu.txt = jeu.html).
 describe('persos-params.js : lecture des paramètres', () => {
   // Lot 3m : le défaut est la table des choix (?perso=choix ; data/game/persos-choix.json : « riche » pour les 5, sang complet).
   const choix = load('persos-choix');
@@ -86,26 +86,25 @@ describe('chargeur : chargé par défaut (lot 5e : aussi avec ?perso=actuel&sang
 });
 
 describe('fichiers du jeu modifiés : liste fermée, 40 lignes au plus chacun', () => {
-  const numstat = git('diff --numstat main -- js/game');
-  it.skipIf(!ON_LOT).each(['js/game/game.js', 'js/game/character.js', 'js/game/effects.js'])('%s : au plus 40 lignes ajoutées ou retirées', (f) => {
-    if (numstat === null) return;
-    const row = numstat.split('\n').find((l) => l.endsWith(`\t${f}`));
-    const n = row ? row.split('\t').slice(0, 2).reduce((a, b) => a + Number(b), 0) : 0;
-    expect(n).toBeLessThanOrEqual(40);
-  });
-  it.skipIf(!ON_LOT)('aucun autre fichier existant de js/game/ n\'est modifié (nouveaux fichiers seulement)', () => {
-    const changed = git('diff --name-only --diff-filter=M main -- js/game');
-    if (changed === null) return;
-    expect(changed.split('\n').filter(Boolean).filter((f) => !['js/game/game.js', 'js/game/character.js', 'js/game/effects.js'].includes(f))).toEqual([]);
-  });
-  it('données de logique inchangées (ennemis, allures, armes, joueur, vagues, fenêtres, statistiques, économie, sauvegarde)', () => {
+  it('données de logique inchangées (ennemis, allures, armes, joueur, vagues, fenêtres, statistiques ; économie et sauvegarde : valeurs existantes inchangées)', () => {
     // Lot 3m-A : dans lot-4b, comparées à la base de la branche d'intégration (le lot 4 a changé economy.json, enemies.json, save.json depuis main).
     // Lot 4e : origin/lot-4b n'existe plus et la branche locale « main » peut être périmée : base = celle de la branche avec origin/main
     // (à jour après git fetch), sinon origin/dev, sinon main ; sans historique (CI superficielle), rien à comparer.
     const base = git('merge-base HEAD origin/main')?.trim() || git('merge-base HEAD origin/dev')?.trim() || 'main';
-    const changed = git(`diff --name-only ${base} -- data/game/enemies.json data/game/gaits.json data/game/weapons.json data/game/player.json data/game/waves.json data/game/windows.json data/game/player-stats.json data/game/economy.json data/game/save.json data/game/player-down.json data/game/stairs.json`);
+    const changed = git(`diff --name-only ${base} -- data/game/enemies.json data/game/gaits.json data/game/weapons.json data/game/player.json data/game/waves.json data/game/windows.json data/game/player-stats.json data/game/player-down.json data/game/stairs.json`);
     if (changed === null) return;
     expect(changed.trim()).toBe('');
+    // Lot 8h (autorisé par le prompt du lot : gains de la monnaie bleue, section v2 de la sauvegarde) : economy.json et save.json peuvent recevoir des
+    // clés nouvelles et un texte _provisoire nouveau, jamais une valeur existante changée ni une clé retirée.
+    for (const f of ['data/game/economy.json', 'data/game/save.json']) {
+      const avant = git(`show ${base}:${f}`);
+      if (avant === null) continue;
+      const a = JSON.parse(avant);
+      const b = JSON.parse(readFileSync(f, 'utf8'));
+      // Lot 8k (décision du propriétaire, prompt du lot) : la monnaie bleue passe à un gain fixe ; seules ces deux valeurs changent, à ces valeurs.
+      const decides = f === 'data/game/economy.json' ? { waveBonusBase: 20, waveBonusPerWave: 0 } : {};
+      for (const k of Object.keys(a).filter((x) => !x.startsWith('_'))) expect(b[k], `${f} : ${k}`).toEqual(Object.hasOwn(decides, k) ? decides[k] : a[k]);
+    }
   });
 });
 
@@ -223,11 +222,5 @@ describe('plan d\'intégration et manifeste de fusion (formats)', () => {
   it('le manifeste liste chaque fichier partagé modifié et sa résolution ; la première ligne d\'apercu.txt n\'est jamais fusionnée', () => {
     for (const f of ['apercu.txt', 'scripts/build.mjs', 'css/tokens.css', 'tests/unit/lot1-regles.test.js', 'tests/unit/core-purity.test.js', 'tests/unit/data-i18n.test.js', 'js/game/character.js', 'js/game/game.js', 'js/game/effects.js']) expect(manifest).toContain(`\`${f}\``);
     expect(manifest).toContain('Ne jamais fusionner la première ligne');
-  });
-  it.skipIf(!ON_LOT)('les fichiers partagés réellement modifiés depuis main sont tous dans le manifeste', () => {
-    const changed = git('diff --name-only --diff-filter=M main');
-    if (changed === null) return;
-    const shared = changed.split('\n').filter(Boolean).filter((f) => !f.startsWith('Docs/') && !/persos|character-v2|characters-v2|poses-v2/.test(f) && !f.includes('lot-3j'));
-    for (const f of shared) expect(manifest, f).toContain(`\`${f}\``);
   });
 });

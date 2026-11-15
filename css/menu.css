@@ -1,0 +1,5183 @@
+/* Menu principal (lot 8a) : écran de chargement E7 et menu E8 (Docs/ref/menu-principal.md). Chargée par js/menu/demarrage.js en mode menu seulement.
+   Couleurs : jetons --menu-* et --rarete-* de tokens.css. Référence 932 × 430 ; même disposition jusqu'à 667 × 375 (unité --u, resserrée) ; cibles de 44 px.
+   Animations nommées par écran (e7-*, e8-*), coupées sous prefers-reduced-motion ; ni filter, ni mix-blend-mode, ni backdrop-filter. */
+:root {
+  --u: clamp(0.7px, min(calc(100vw / 932), calc(100vh / 430)), 2.4px); /* 1 px de la référence 932 × 430 ; plafond 2,4 (avant 1,3 : retour du propriétaire après le lot 8d, trop de vide sur PC) */
+  --menu-marge: 16px;
+  --menu-cible: var(--touch-target, 44px);
+}
+
+/* Couche de grain et de lignes horizontales (une seule par écran, fixe, sans animation). */
+.menu-grain {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    repeating-linear-gradient(to bottom, var(--e8-ligne) 0 1px, transparent 1px 3px),
+    radial-gradient(circle, var(--menu-grain) 0.6px, transparent 0.8px) 0 0 / 3px 3px,
+    radial-gradient(circle, var(--menu-grain) 0.6px, transparent 0.8px) 1px 2px / 5px 7px;
+}
+
+/* Décor de nuit (E7 et onglet Jouer). */
+.menu-lune {
+  fill: var(--e8-lune);
+}
+
+.menu-lune-halo {
+  fill: var(--e8-lune-halo);
+}
+
+.menu-batiment {
+  fill: var(--menu-batiment);
+}
+
+.menu-fenetre {
+  fill: var(--menu-fenetre);
+}
+
+/* ---------------------------------------------------------------------------------------------------------------------------------------------- */
+/* E7 — écran de chargement (au-dessus de l'écran de préparation #loading, comme lui plein écran fixe : aucun décalage de mise en page). */
+.e7 {
+  position: fixed;
+  inset: 0;
+  z-index: 51;
+  overflow: hidden;
+  background: linear-gradient(to bottom, var(--menu-ciel-haut), var(--menu-ciel-bas) 70%, var(--menu-nuit));
+  color: var(--menu-texte);
+  font-family: var(--font-sans);
+}
+
+.e7-scene,
+.e7-decor {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.e7-brume {
+  position: absolute;
+  left: -20%;
+  width: 140%;
+  height: 22%;
+  bottom: 6%;
+  background: radial-gradient(ellipse at center, var(--menu-brume), transparent 70%);
+}
+
+.e7-brume-2 {
+  bottom: 18%;
+  height: 16%;
+}
+
+.e7-joue .e7-brume-1,
+.e7-pose .e7-brume-1 {
+  animation: e7-brume 38s ease-in-out infinite alternate;
+}
+
+.e7-joue .e7-brume-2,
+.e7-pose .e7-brume-2 {
+  animation: e7-brume 52s ease-in-out infinite alternate-reverse;
+}
+
+.e7-centre {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: calc(10 * var(--u));
+  padding: var(--menu-marge);
+  text-align: center;
+}
+
+.e7-titre {
+  position: relative;
+  display: inline-flex;
+  align-items: flex-end;
+  margin: 0 0 calc(46 * var(--u)); /* place des coulures sous le Z (jusqu'à 40 px de la référence), au-dessus de la barre */
+  font-family: var(--font-display);
+  font-weight: var(--font-weight-normal);
+  font-size: calc(72 * var(--u));
+  line-height: 1;
+  color: var(--menu-texte);
+}
+
+.e7-z {
+  position: relative;
+  display: inline-block;
+  color: var(--menu-z);
+  -webkit-text-stroke: calc(2.5 * var(--u)) var(--menu-z-contour);
+  paint-order: stroke fill;
+  transform-origin: 88% 96%;
+  transform: translate(0.1em, 0) rotate(13deg); /* repos : incliné, tiret calé dans la pliure */
+}
+
+.e7:not(.e7-joue, .e7-pose) .e7-z {
+  visibility: hidden; /* « -Survival » d'abord ; le Z arrive avec la chute (ou posé sous mouvement réduit) */
+}
+
+.e7-tiret {
+  display: inline-block;
+  transform-origin: 50% 100%;
+}
+
+.e7-joue .e7-z {
+  animation: e7-chute 1.5s cubic-bezier(0.5, 0, 0.75, 0) both;
+}
+
+.e7-joue .e7-titre {
+  animation: e7-secousse 0.32s linear 0.6s both;
+}
+
+.e7-joue .e7-tiret {
+  animation: e7-ecrase 0.28s ease-out 0.6s both;
+}
+
+/* Poussière : quatre petits nuages partis du bas du Z, deux vers la gauche, deux vers la droite. */
+.e7-impact {
+  position: absolute;
+  left: 0.32em;
+  bottom: 0;
+  width: 0;
+  height: 0;
+}
+
+.e7-poussiere {
+  position: absolute;
+  left: calc(-9 * var(--u));
+  bottom: calc(-4 * var(--u));
+  width: calc(18 * var(--u));
+  height: calc(10 * var(--u));
+  border-radius: 50%;
+  background: var(--menu-poussiere);
+  opacity: 0;
+}
+
+.e7-joue .e7-poussiere-g1 {
+  animation: e7-poussiere-g 0.7s ease-out 0.6s both;
+}
+
+.e7-joue .e7-poussiere-g2 {
+  animation: e7-poussiere-g 0.9s ease-out 0.62s both;
+  --e7-loin: 1.6;
+}
+
+.e7-joue .e7-poussiere-d1 {
+  animation: e7-poussiere-d 0.7s ease-out 0.6s both;
+}
+
+.e7-joue .e7-poussiere-d2 {
+  animation: e7-poussiere-d 0.9s ease-out 0.62s both;
+  --e7-loin: 1.6;
+}
+
+/* Coulures du Z (dessin partagé : js/logo.js ; styles fixes dans base.css, « Logo ») : elles sortent de dessous le Z (z-index négatif dans le
+   contexte d'empilement du Z, qui est transformé) ; le conteneur compense l'inclinaison du Z (13°) : les gouttes pendent à la verticale. Chaque goutte
+   descend depuis le haut de la vue (hors vue au départ, donc cachée), puis une goutte se détache de la plus longue. */
+.e7-coulures {
+  position: absolute;
+  z-index: -1;
+  left: 0.04em;
+  top: 70%;
+  width: 0.72em;
+  height: 0.84em;
+  transform: rotate(-13deg);
+  transform-origin: 50% 0;
+}
+
+.e7 .logo-coulure-1 {
+  --e7-l: 36;
+}
+
+.e7 .logo-coulure-2 {
+  --e7-l: 54;
+}
+
+.e7 .logo-coulure-3 {
+  --e7-l: 26;
+}
+
+.e7:not(.e7-pose) .logo-coulure {
+  transform: translateY(calc(var(--e7-l) * -1px));
+}
+
+.e7-joue .logo-coulure-1 {
+  animation: e7-coulure 1s cubic-bezier(0.55, 0, 0.8, 0.6) 1.6s both;
+}
+
+.e7-joue .logo-coulure-2 {
+  animation: e7-coulure 1.25s cubic-bezier(0.55, 0, 0.8, 0.6) 1.7s both;
+}
+
+.e7-joue .logo-coulure-3 {
+  animation: e7-coulure 0.85s cubic-bezier(0.55, 0, 0.8, 0.6) 1.85s both;
+}
+
+.e7-joue .logo-goutte {
+  animation: e7-goutte 0.55s ease-in 2.95s both;
+}
+
+.e7-barre {
+  width: min(calc(360 * var(--u)), 70vw);
+  height: calc(10 * var(--u));
+  min-height: 6px;
+  background: var(--menu-barre-fond);
+  border: 1px solid var(--menu-bord);
+}
+
+.e7-remplissage {
+  height: 100%;
+  background: var(--menu-rouge);
+  transform-origin: 0 50%;
+  transform: scaleX(0);
+}
+
+.e7-etat {
+  margin: 0;
+  font-size: max(14px, calc(17 * var(--u)));
+  font-variant-numeric: tabular-nums;
+}
+
+.e7-pourcent {
+  display: inline-block;
+  min-width: 3.2em;
+  text-align: left;
+}
+
+.e7-astuce {
+  max-width: min(calc(560 * var(--u)), 86vw);
+  margin: 0;
+  font-size: max(13px, calc(15 * var(--u)));
+  color: var(--menu-texte-doux);
+}
+
+.e7-astuce-libelle {
+  font-family: var(--font-label);
+  color: var(--menu-texte);
+}
+
+.e7-erreur {
+  max-width: 86vw;
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  background: var(--menu-panneau);
+  border: 1px solid var(--menu-rouge-trait);
+  font-size: var(--text-sm);
+}
+
+.e7-version {
+  position: absolute;
+  right: var(--menu-marge);
+  bottom: calc(10 * var(--u));
+  margin: 0;
+  font-size: max(12px, calc(13 * var(--u)));
+  color: var(--menu-texte-doux);
+}
+
+.e7-sortie {
+  animation: e7-sortie 0.35s ease-in both;
+  pointer-events: none;
+}
+
+@keyframes e7-chute {
+  0% {
+    transform: translate(-0.1em, -120vh) rotate(-4deg);
+    animation-timing-function: cubic-bezier(0.5, 0, 0.75, 0);
+  }
+
+  40% {
+    transform: translate(-0.1em, 0) rotate(0deg) scale(1.06, 0.9);
+    animation-timing-function: cubic-bezier(0.25, 0.6, 0.4, 1);
+  }
+
+  52% {
+    transform: translate(-0.06em, -0.3em) rotate(3deg) scale(1);
+    animation-timing-function: cubic-bezier(0.5, 0, 0.75, 0);
+  }
+
+  64% {
+    transform: translate(-0.02em, 0) rotate(6deg);
+    animation-timing-function: ease-out;
+  }
+
+  82% {
+    transform: translate(0.12em, 0) rotate(15deg);
+    animation-timing-function: ease-in-out;
+  }
+
+  100% {
+    transform: translate(0.1em, 0) rotate(13deg);
+  }
+}
+
+@keyframes e7-secousse {
+  0%,
+  100% {
+    transform: translate(0, 0);
+  }
+
+  25% {
+    transform: translate(calc(-3 * var(--u)), calc(2 * var(--u)));
+  }
+
+  50% {
+    transform: translate(calc(3 * var(--u)), calc(-1 * var(--u)));
+  }
+
+  75% {
+    transform: translate(calc(-2 * var(--u)), 0);
+  }
+}
+
+@keyframes e7-ecrase {
+  0%,
+  100% {
+    transform: scale(1, 1);
+  }
+
+  30% {
+    transform: scale(1.35, 0.45);
+  }
+}
+
+@keyframes e7-poussiere-g {
+  0% {
+    opacity: 0.9;
+    transform: translate(0, 0) scale(0.4);
+  }
+
+  100% {
+    opacity: 0;
+    transform: translate(calc(-46 * var(--u) * var(--e7-loin, 1)), calc(-10 * var(--u))) scale(1.6);
+  }
+}
+
+@keyframes e7-poussiere-d {
+  0% {
+    opacity: 0.9;
+    transform: translate(0, 0) scale(0.4);
+  }
+
+  100% {
+    opacity: 0;
+    transform: translate(calc(46 * var(--u) * var(--e7-loin, 1)), calc(-10 * var(--u))) scale(1.6);
+  }
+}
+
+@keyframes e7-coulure {
+  from {
+    transform: translateY(calc(var(--e7-l) * -1px));
+  }
+
+  to {
+    transform: translateY(0);
+  }
+}
+
+@keyframes e7-goutte {
+  0% {
+    opacity: 0;
+    transform: translateY(0);
+  }
+
+  8% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  80% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+}
+
+@keyframes e7-brume {
+  from {
+    transform: translateX(-6%);
+  }
+
+  to {
+    transform: translateX(6%);
+  }
+}
+
+@keyframes e7-sortie {
+  to {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .e7 *,
+  .e7 {
+    animation: none !important;
+  }
+
+  .e7-poussiere {
+    display: none;
+  }
+}
+
+
+/* ---------------------------------------------------------------------------------------------------------------------------------------------- */
+/* E8 — menu principal (sous les panneaux .panel-wrap, z-index 10 : l'écran Options s'ouvre par-dessus ; sous le message de rotation, 20). */
+.e8 {
+  --e8-entete: max(48px, calc(50 * var(--u)));
+  --e8-onglets: max(50px, calc(62 * var(--u)));
+  /* Retour du propriétaire (lot 8e) : « tout est un peu trop au bord » : marges latérales de 32 de la référence (celles des maquettes), 16 px au
+     moins, ou la zone sûre si elle est plus large ; la barre d'onglets reste de bord à bord (zone sûre seulement : --e8-sur-*). */
+  --e8-sur-g: max(var(--menu-marge), env(safe-area-inset-left, 0px));
+  --e8-sur-d: max(var(--menu-marge), env(safe-area-inset-right, 0px));
+  --e8-gauche: max(var(--e8-sur-g), calc(32 * var(--u)));
+  --e8-droite: max(var(--e8-sur-d), calc(32 * var(--u)));
+  position: fixed;
+  inset: 0;
+  z-index: 8;
+  display: grid;
+  grid-template-rows: var(--e8-entete) minmax(0, 1fr) var(--e8-onglets);
+  overflow: hidden;
+  background: var(--menu-nuit);
+  color: var(--menu-texte);
+  font-family: var(--font-sans);
+  animation: e8-apparition 0.3s ease-out both;
+}
+
+:where(.e8) button {
+  font: inherit;
+  touch-action: manipulation; /* retour du propriétaire (iPhone) : aucun délai de double-toucher */
+}
+
+.e8-icone {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentcolor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* E8-1 : en-tête noir ; Connexion à gauche ; solde puis bouton à trois barres à droite (contenus dans le bandeau). */
+.e8-entete {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: calc(12 * var(--u));
+  padding: 0 var(--e8-droite) 0 var(--e8-gauche);
+  background: var(--menu-entete);
+}
+
+.e8-barres,
+.e8-plein-ecran,
+.e8-croix {
+  min-width: var(--menu-cible);
+  min-height: var(--menu-cible);
+  border: 1px solid var(--menu-bois-clair);
+  border-radius: 0;
+  background: transparent;
+  color: var(--menu-texte);
+  cursor: pointer;
+}
+
+/* Lot 8g (retours du propriétaire) : avatar et pseudo du joueur à la place du gros bouton « Connexion » : sans cadre ; cible de 44 px. */
+.e8-profil {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 45%;
+  min-width: var(--menu-cible);
+  min-height: var(--menu-cible);
+  padding: 0 calc(4 * var(--u));
+  border: 0;
+  background: transparent;
+  color: var(--menu-texte);
+  font-weight: var(--font-weight-bold);
+  font-size: max(14px, calc(15 * var(--u)));
+  cursor: pointer;
+}
+
+.e8-profil:hover {
+  color: var(--menu-texte-doux);
+}
+
+.e8-profil-avatar {
+  display: block;
+  flex: none;
+  box-sizing: border-box;
+  width: max(32px, calc(36 * var(--u)));
+  height: max(32px, calc(36 * var(--u)));
+  overflow: hidden;
+  border: 2px solid var(--menu-e9-stats-bord);
+  border-radius: 50%;
+  background: var(--menu-e9-case);
+}
+
+.e8-profil-pseudo {
+  min-width: 0;
+  overflow: hidden;
+  font-family: var(--font-label);
+  letter-spacing: 0.04em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.e8-droite {
+  display: flex;
+  align-items: center;
+  gap: calc(14 * var(--u));
+}
+
+.e8-solde {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  color: var(--color-money-blue); /* lot 8h : monnaie bleue */
+  font-weight: var(--font-weight-bold);
+  font-size: max(15px, calc(18 * var(--u)));
+  font-variant-numeric: tabular-nums;
+}
+
+.e8-solde.e8-medailles {
+  color: var(--color-money-medaille); /* lot 8k : médailles */
+}
+
+.e8-plein-ecran {
+  display: grid;
+  place-items: center;
+  width: var(--menu-cible);
+  height: var(--menu-cible);
+  padding: 0;
+}
+
+/* Plein écran : une seule des deux icônes (coins vers l'extérieur ou vers l'intérieur), l'état est aussi dans le nom accessible. */
+.e8-plein-ecran[data-active='true'] .e8-fs-entrer,
+.e8-plein-ecran[data-active='false'] .e8-fs-sortir {
+  display: none;
+}
+
+.e8-barres {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: var(--menu-cible);
+  height: var(--menu-cible);
+  padding: 0;
+}
+
+.e8-icone-logo {
+  fill: currentcolor;
+  stroke: none;
+}
+
+.e8-barres .e8-icone {
+  width: 24px;
+  height: 24px;
+}
+
+.e8-barres:hover,
+.e8-croix:hover {
+  border-color: var(--menu-texte-doux);
+}
+
+.menu-point {
+  display: inline-block;
+  flex: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--menu-point);
+}
+
+.e8-point-barres {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+}
+
+/* Menu à trois barres : juste sous le bouton, aligné à droite. */
+.e8-liste {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: var(--e8-droite);
+  /* Lot 8d (retour du propriétaire : trop allongé, peu distinct) : largeur de la maquette (220), bordée de bois, coins arrondis, ombre portée. */
+  width: clamp(220px, calc(240 * var(--u)), 300px);
+  padding: 6px;
+  border: 2px solid var(--menu-scene-route-trait);
+  border-radius: 6px;
+  background: var(--menu-e9-panneau);
+  box-shadow: 0 calc(10 * var(--u)) calc(24 * var(--u)) var(--menu-ombre);
+  /* Lot 8g (entrée Google en plus) : jamais plus bas que l'écran (téléphone à encoche, 351 px de haut) ; au-delà, la liste défile. */
+  max-height: calc(100dvh - var(--e8-entete) - 4px - max(8px, env(safe-area-inset-bottom, 0px)));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.e8-liste-groupe {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.e8-entree {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: var(--menu-cible);
+  padding: 0 10px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--menu-texte);
+  font-size: 15px;
+  font-weight: var(--font-weight-bold);
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.e8-entree:hover:not(:disabled) {
+  background: var(--color-surface-raised);
+}
+
+.e8-entree:disabled {
+  color: var(--menu-texte-doux);
+  cursor: default;
+}
+
+/* Retours du propriétaire : entrée Discord pleine, du bleu de Discord, texte blanc (4,6:1), même désactivée. */
+.e8-discord,
+.e8-discord:disabled,
+.e8-discord .e8-note {
+  color: var(--menu-discord-texte);
+}
+
+.e8-discord,
+.e8-discord:hover:not(:disabled) {
+  background: var(--menu-discord);
+}
+
+.e8-note {
+  margin-left: auto;
+  padding-left: 12px;
+  font-size: 13px;
+  font-style: italic;
+  color: var(--menu-texte-doux);
+}
+
+.e8-externe {
+  width: 16px;
+  height: 16px;
+}
+
+.e8-version {
+  margin: 2px 0 0;
+  padding: 4px 10px 2px;
+  font-size: 12px;
+  color: var(--menu-texte-doux);
+}
+
+.e8-separateur {
+  margin: 4px 0;
+  border: 0;
+  border-top: 1px solid var(--color-border);
+}
+
+/* Contenu de l'onglet : chaque écran commence par le bandeau de titre, au même endroit (bord gauche du contenu, sous l'en-tête). */
+.e8-contenu {
+  position: relative;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.e8-ecran {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: calc(26 * var(--u));
+  padding: calc(12 * var(--u)) var(--e8-droite) 0 var(--e8-gauche);
+}
+
+/* Bandeau de titre : zone rouge pleine (le texte n'est jamais sur les coulures), petit libellé au-dessus du titre, trois coulures dessous. */
+.menu-bandeau {
+  position: relative;
+  z-index: 1;
+  flex: none;
+  /* Retour du propriétaire : même taille sur tous les écrans (largeur fixe, une ligne par texte, interlignes fixes) ; un texte trop long voit sa
+     police réduite pour tenir (ajusterTextes de js/menu/menu.js). */
+  box-sizing: border-box;
+  width: max(160px, calc(176 * var(--u)));
+  padding: calc(4 * var(--u)) calc(16 * var(--u)) calc(6 * var(--u));
+  background: var(--menu-rouge);
+  box-shadow: 0 calc(4 * var(--u)) 0 var(--menu-ombre);
+}
+
+.menu-bandeau-libelle,
+.menu-bandeau-titre {
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.menu-bandeau-libelle {
+  margin: 0;
+  font-family: var(--font-label);
+  font-size: max(11px, calc(12 * var(--u)));
+  line-height: calc(max(11px, calc(12 * var(--u))) * 1.2);
+  letter-spacing: 0.04em;
+  color: var(--menu-texte);
+}
+
+.menu-bandeau-titre {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: var(--font-weight-normal);
+  font-size: max(17px, calc(20 * var(--u)));
+  line-height: calc(max(17px, calc(20 * var(--u))) * 1.15);
+  color: var(--menu-texte);
+}
+
+.menu-bandeau-coulures {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  width: 100%;
+  height: 0;
+}
+
+/* Coulures (lot 8d, retours du propriétaire) : trois gouttes dessinées comme celles du logo de l'écran de chargement (js/menu/menu.js), qui
+   s'allongent à chaque affichage de l'écran (comme e7-coulure) ; petite goutte au bout de la plus longue, qui tombe de quelques unités et s'efface avant
+   le bloc suivant. En pause quand la page est cachée ou la partie lancée (.e8-pause) ; aucune animation sous prefers-reduced-motion (gouttes à leur
+   longueur finale, petite goutte cachée). */
+.menu-coulure {
+  position: absolute;
+  top: 0;
+  left: var(--e8-x);
+  width: calc(12 * var(--u));
+  height: calc(var(--e8-h) * var(--u));
+  margin-left: calc(-6 * var(--u));
+  overflow: hidden;
+}
+
+.menu-coulure-corps,
+.menu-goutte {
+  fill: var(--menu-rouge);
+}
+
+.menu-coulure-ombre {
+  fill: none;
+  stroke: var(--menu-coulure-sombre);
+  stroke-width: 0.9;
+  stroke-linecap: round;
+}
+
+.menu-coulure-reflet {
+  fill: none;
+  stroke: var(--menu-coulure-reflet);
+  stroke-width: 0.6;
+  stroke-linecap: round;
+  opacity: 0.8;
+}
+
+.menu-coulure-brillant {
+  fill: var(--menu-coulure-reflet);
+}
+
+.menu-coulure-flux {
+  animation: e8-coulure 1.1s cubic-bezier(0.55, 0, 0.8, 0.6) 0.15s both;
+}
+
+.menu-coulure-1 .menu-coulure-flux { animation-duration: 0.9s; }
+.menu-coulure-3 .menu-coulure-flux { animation-duration: 0.75s; animation-delay: 0.3s; }
+
+.menu-goutte {
+  opacity: 0;
+  animation: e8-goutte 5s ease-in 1.4s infinite;
+}
+
+.e8-pause .menu-bandeau-coulures * {
+  animation-play-state: paused;
+}
+
+@keyframes e8-coulure {
+  from { transform: translateY(calc(var(--e8-l) * -1px)); }
+  to { transform: translateY(0); }
+}
+
+/* Une goutte en 5 s : elle grossit au bout de la coulure, tombe de 2 et s'efface (bien moins de 3 changements par seconde). */
+@keyframes e8-goutte {
+  0%, 60% { opacity: 0; transform: translateY(0); }
+  70% { opacity: 1; transform: translateY(0); }
+  92% { opacity: 1; transform: translateY(1.5px); }
+  100% { opacity: 0; transform: translateY(2px); }
+}
+
+/* Bouton peint : zone rouge pleine, bordure sombre, ombre portée basse. */
+.menu-peint {
+  min-width: var(--menu-cible);
+  min-height: var(--menu-cible);
+  padding: calc(8 * var(--u)) calc(28 * var(--u));
+  border: calc(3 * var(--u)) solid var(--menu-bord);
+  border-radius: 0;
+  background: var(--menu-rouge);
+  box-shadow: 0 calc(6 * var(--u)) 0 var(--menu-ombre);
+  color: var(--menu-texte);
+  font-family: var(--font-display);
+  font-size: max(18px, calc(30 * var(--u)));
+  line-height: 1.1;
+  cursor: pointer;
+}
+
+.menu-peint:hover {
+  background: var(--menu-rouge-clair);
+}
+
+.menu-peint:active {
+  transform: translateY(calc(3 * var(--u)));
+  box-shadow: 0 calc(3 * var(--u)) 0 var(--menu-ombre);
+}
+
+/* Bouton planche (boutons secondaires) et ruban jaune et noir (verrouillé) : composants communs pour les écrans des lots suivants. */
+.menu-planche {
+  min-width: var(--menu-cible);
+  min-height: var(--menu-cible);
+  padding: calc(6 * var(--u)) calc(18 * var(--u));
+  border: 2px solid var(--menu-bois-sombre);
+  border-radius: 0;
+  background: var(--menu-bois) linear-gradient(to bottom, var(--menu-bois-clair) 0 2px, transparent 2px);
+  box-shadow: 0 calc(4 * var(--u)) 0 var(--menu-ombre);
+  color: var(--menu-texte);
+  cursor: pointer;
+}
+
+.menu-ruban {
+  background-image: repeating-linear-gradient(-45deg, var(--menu-ruban-jaune) 0 7px, var(--menu-ruban-noir) 7px 14px);
+  background-repeat: no-repeat;
+  background-size: 100% 7px;
+}
+
+/* Lot 8b : onglet Jouer (E8-3, maquette Main.html) : scène SVG décorative plein écran (js/menu/jouer.js), éléments en texte par-dessus. */
+.e8-jouer {
+  background: var(--menu-scene-ciel-haut); /* prolonge le ciel au-dessus de la scène (ancrée en bas, jamais coupée) */
+}
+
+.e8-jouer-scene {
+  position: absolute;
+  inset: 0;
+}
+
+.e8-jouer-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.e8-jouer > :not(.e8-jouer-scene) {
+  z-index: 1;
+}
+
+.e8-jouer-infos {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: calc(2 * var(--u));
+  margin: calc(-6 * var(--u)) 0 0 calc(2 * var(--u)); /* avec l'écart de 26 : 20 sous le bandeau, la place de ses coulures (lot 8d ; avant : −12) */
+}
+
+.e8-jouer-record,
+.e8-jouer-portes {
+  margin: 0;
+  text-shadow: 0 1px 2px var(--menu-texte-ombre);
+}
+
+.e8-jouer-record {
+  font-size: max(13px, calc(15 * var(--u)));
+  font-weight: var(--font-weight-bold);
+  color: var(--menu-record);
+}
+
+.e8-jouer-portes {
+  font-size: max(12px, calc(13 * var(--u)));
+  color: var(--menu-texte-doux);
+}
+
+.e8-jouer-precedent {
+  position: absolute;
+  top: 50%;
+  left: var(--e8-gauche);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: max(var(--menu-cible), calc(48 * var(--u)));
+  height: max(var(--menu-cible), calc(48 * var(--u)));
+  padding: 0;
+  border: 2px solid var(--menu-bouton-rond-bord);
+  border-radius: 50%;
+  background: var(--menu-bouton-rond);
+  color: var(--menu-desactive);
+  transform: translateY(-50%);
+}
+
+.e8-jouer-fleche {
+  width: max(18px, calc(22 * var(--u)));
+  height: max(18px, calc(22 * var(--u)));
+  fill: none;
+  stroke: currentcolor;
+  stroke-width: 3;
+}
+
+.e8-jouer-suivant {
+  position: absolute;
+  top: calc(20 * var(--u));
+  right: var(--e8-droite);
+  display: flex;
+  align-items: center;
+  gap: calc(10 * var(--u));
+  box-sizing: border-box;
+  width: max(124px, calc(150 * var(--u)));
+  margin: 0;
+  padding: calc(8 * var(--u)) calc(10 * var(--u));
+  border: 2px solid var(--menu-record);
+  border-radius: calc(6 * var(--u));
+  background: var(--menu-bouton-rond);
+}
+
+.e8-jouer-fleche-suivant {
+  color: var(--menu-record);
+  stroke-width: 2.4;
+}
+
+.e8-jouer-suivant-textes {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.15;
+}
+
+.e8-jouer-suivant-nom {
+  font-family: var(--font-label);
+  font-size: max(12px, calc(13 * var(--u)));
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--menu-record);
+}
+
+.e8-jouer-suivant-etat {
+  font-size: max(12px, calc(12 * var(--u)));
+  color: var(--menu-texte-doux);
+}
+
+.e8-jouer-suivant-ruban {
+  position: absolute;
+  top: calc(100% + 2px);
+  right: -2px;
+  left: -2px;
+  height: max(6px, calc(8 * var(--u)));
+  background-size: 100% 100%;
+}
+
+.e8-jouer-bouton {
+  position: absolute;
+  right: max(var(--e8-droite), calc(26 * var(--u)));
+  bottom: calc(28 * var(--u));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: calc(12 * var(--u));
+  box-sizing: border-box;
+  width: max(150px, calc(232 * var(--u)));
+  height: max(var(--menu-cible), calc(60 * var(--u)));
+  padding: 0;
+  font-size: max(22px, calc(30 * var(--u)));
+  line-height: 1;
+}
+
+.e8-jouer-icone-bouton {
+  width: max(16px, calc(22 * var(--u)));
+  height: max(16px, calc(22 * var(--u)));
+  fill: currentcolor;
+}
+
+/* Scène : couleurs (jetons --menu-scene-*, --menu-zombie, --menu-sang, --menu-tir, --menu-panneau-*). */
+.e8-jouer-ciel-haut { stop-color: var(--menu-scene-ciel-haut); }
+.e8-jouer-ciel-bas { stop-color: var(--menu-scene-ciel-bas); }
+.e8-jouer-halo-centre { stop-color: var(--menu-scene-halo); stop-opacity: 0.35; }
+.e8-jouer-halo-bord { stop-color: var(--menu-scene-halo); stop-opacity: 0; }
+.e8-jouer-lampe-centre { stop-color: var(--menu-scene-lampe); stop-opacity: 0.55; }
+.e8-jouer-lampe-bord { stop-color: var(--menu-scene-lampe); stop-opacity: 0; }
+.e8-jouer-feu-centre { stop-color: var(--menu-scene-feu); stop-opacity: 0.6; }
+.e8-jouer-feu-bord { stop-color: var(--menu-scene-feu); stop-opacity: 0; }
+.e8-jouer-vignette-centre { stop-color: var(--menu-scene-vignette); stop-opacity: 0; }
+.e8-jouer-vignette-bord { stop-color: var(--menu-scene-vignette); stop-opacity: 0.85; }
+.e8-jouer-lune { fill: var(--menu-scene-lune); }
+.e8-jouer-lointain { fill: var(--menu-scene-lointain); }
+.e8-jouer-sol { fill: var(--menu-scene-sol); }
+.e8-jouer-aile { fill: var(--menu-scene-aile); }
+.e8-jouer-salle { fill: var(--menu-scene-salle); }
+.e8-jouer-toit { fill: var(--menu-scene-toit); }
+.e8-jouer-toit-salle { fill: var(--menu-scene-toit-salle); }
+.e8-jouer-etage { fill: var(--menu-scene-etage); }
+.e8-jouer-fenetre-noire { fill: var(--menu-scene-fenetre-noire); }
+.e8-jouer-fenetre-eclairee { fill: var(--menu-scene-lampe); opacity: 0.7; }
+.e8-jouer-fenetre-vive { opacity: 0.8; }
+.e8-jouer-lampe { fill: url("#e8-jouer-lampe"); }
+.e8-jouer-planches { fill: none; stroke: var(--menu-scene-planche); stroke-width: 5; }
+.e8-jouer-route { fill: none; stroke: var(--menu-scene-route); stroke-width: 30; stroke-linecap: round; }
+.e8-jouer-route-trait { fill: none; stroke: var(--menu-scene-route-trait); stroke-width: 2; stroke-dasharray: 10 12; }
+.e8-jouer-voiture { fill: var(--menu-scene-voiture); }
+.e8-jouer-flamme { fill: var(--menu-scene-flamme); }
+.e8-jouer-flamme-coeur { fill: var(--menu-scene-flamme-coeur); }
+.e8-jouer-fumee { fill: var(--menu-scene-fumee); opacity: 0.3; }
+.e8-jouer-zombie { fill: var(--menu-zombie); }
+.e8-jouer-yeux { fill: var(--menu-zombie-yeux); }
+.e8-jouer-sang-fond { fill: var(--menu-sang); }
+.e8-jouer-sang-clair { fill: var(--menu-sang-clair); }
+.e8-jouer-trainee { stroke: var(--menu-tir-coeur); stroke-width: 2; }
+.e8-jouer-eclair { fill: var(--menu-tir); }
+.e8-jouer-eclair-coeur { fill: var(--menu-tir-coeur); }
+.e8-jouer-piquet { fill: var(--menu-panneau-piquet); }
+.e8-jouer-panneau-texte { font-family: var(--font-sans); font-size: 12px; font-weight: var(--font-weight-bold); text-anchor: middle; }
+.e8-jouer-panneau-atteint .e8-jouer-planche { fill: var(--menu-panneau-atteint); }
+.e8-jouer-panneau-atteint .e8-jouer-panneau-texte { fill: var(--menu-panneau-atteint-texte); }
+.e8-jouer-panneau-bois .e8-jouer-planche { fill: var(--menu-panneau-bois); }
+.e8-jouer-panneau-bois .e8-jouer-panneau-texte { fill: var(--menu-panneau-bois-texte); }
+.e8-jouer-repere-point { fill: var(--menu-zombie-yeux); }
+.e8-jouer-repere-cercle { fill: none; stroke: var(--menu-zombie-yeux); stroke-width: 2; opacity: 0.5; }
+.e8-jouer-brume { fill: var(--menu-scene-brume); }
+
+/* Scène : animations (maquette : mêmes durées et décalages). Sang et tirs invisibles hors de leur instant ; tout est en pause hors de l'écran. */
+.e8-jouer-tir,
+.e8-jouer-sang,
+.e8-jouer-rodeur-g,
+.e8-jouer-rodeur-d {
+  opacity: 0;
+}
+
+.e8-jouer-corps,
+.e8-jouer-sang,
+.e8-jouer-flammes {
+  transform-box: fill-box;
+}
+
+.e8-jouer-corps,
+.e8-jouer-flammes {
+  transform-origin: 50% 100%;
+}
+
+.e8-jouer-sang {
+  transform-origin: 50% 50%;
+}
+
+.e8-jouer-lueur-1 { animation: e8-jouer-lueur 3.2s ease-in-out infinite; }
+.e8-jouer-lueur-2 { animation: e8-jouer-lueur 4.1s ease-in-out infinite; }
+.e8-jouer-lueur-3 { animation: e8-jouer-lueur 3.6s ease-in-out infinite; }
+.e8-jouer-feu { animation: e8-jouer-lueur 0.9s ease-in-out infinite; }
+.e8-jouer-flammes { animation: e8-jouer-flamme 0.45s ease-in-out infinite alternate; }
+.e8-jouer-fumee-1 { animation: e8-jouer-fumee 4s linear infinite; }
+.e8-jouer-fumee-2 { animation: e8-jouer-fumee 4s linear -2s infinite; }
+.e8-jouer-rodeur-g { animation: e8-jouer-rodeur-g 14s linear infinite; }
+.e8-jouer-rodeur-d { animation: e8-jouer-rodeur-d 12s linear -6s infinite; }
+.e8-jouer-marche-a { animation: e8-jouer-marche-a 8s linear infinite; }
+.e8-jouer-corps-a { animation: e8-jouer-meurt-a 8s linear infinite; }
+.e8-jouer-tir-a { animation: e8-jouer-tir-a 8s linear infinite; }
+.e8-jouer-sang-a { animation: e8-jouer-sang-a 8s linear infinite; }
+.e8-jouer-marche-b { animation: e8-jouer-marche-b 10s linear -3s infinite; }
+.e8-jouer-corps-b { animation: e8-jouer-meurt-b 10s linear -3s infinite; }
+.e8-jouer-tir-b { animation: e8-jouer-tir-b 10s linear -3s infinite; }
+.e8-jouer-sang-b { animation: e8-jouer-sang-b 10s linear -3s infinite; }
+
+.e8-jouer-scene[data-anim="off"] * {
+  animation-play-state: paused;
+}
+
+@keyframes e8-jouer-lueur {
+  0%, 100% { opacity: 1; }
+  45% { opacity: 0.75; }
+  60% { opacity: 0.95; }
+}
+
+@keyframes e8-jouer-flamme {
+  0% { transform: scaleY(1) skewX(0deg); }
+  50% { transform: scaleY(1.18) skewX(3deg); }
+  100% { transform: scaleY(0.92) skewX(-2deg); }
+}
+
+@keyframes e8-jouer-fumee {
+  0% { opacity: 0.3; transform: translate(0, 0); }
+  100% { opacity: 0; transform: translate(18px, -26px); }
+}
+
+@keyframes e8-jouer-rodeur-g {
+  0% { opacity: 0; transform: translateX(0); }
+  12% { opacity: 0.85; }
+  85% { opacity: 0.85; transform: translateX(150px); }
+  100% { opacity: 0; transform: translateX(176px); }
+}
+
+@keyframes e8-jouer-rodeur-d {
+  0% { opacity: 0; transform: translateX(0); }
+  12% { opacity: 0.85; }
+  85% { opacity: 0.85; transform: translateX(-110px); }
+  100% { opacity: 0; transform: translateX(-130px); }
+}
+
+/* Zombie de gauche (8 s) : marche en se dandinant jusqu'à l'aile, tir de la fenêtre éclairée de l'étage (67 %), recul, il se tasse sur place, sang. */
+@keyframes e8-jouer-marche-a {
+  0% { transform: translateX(0); }
+  68%, 100% { transform: translateX(188px); }
+}
+
+@keyframes e8-jouer-meurt-a {
+  0% { opacity: 0; transform: translateY(0) rotate(0deg); }
+  4% { opacity: 1; }
+  8%, 24%, 40%, 56% { transform: translateY(-2px) rotate(2deg); }
+  16%, 32%, 48%, 64% { transform: translateY(0) rotate(-2deg); }
+  68% { opacity: 1; transform: translateY(0) rotate(0deg); }
+  70% { transform: translateX(-4px) rotate(-14deg); }
+  74%, 90% { opacity: 1; transform: translateX(-4px) rotate(-8deg) scale(1.15, 0.22); }
+  97%, 100% { opacity: 0; transform: translateX(-4px) rotate(-8deg) scale(1.15, 0.22); }
+}
+
+@keyframes e8-jouer-tir-a {
+  0%, 66.5% { opacity: 0; }
+  67%, 68.5% { opacity: 1; }
+  69.5%, 100% { opacity: 0; }
+}
+
+@keyframes e8-jouer-sang-a {
+  0%, 68.9% { opacity: 0; transform: scale(0.3); }
+  70% { opacity: 1; transform: scale(0.6); }
+  78%, 92% { opacity: 1; transform: scale(1); }
+  98%, 100% { opacity: 0; transform: scale(1); }
+}
+
+/* Zombie de droite (10 s, décalé de −3 s) : entre à 40 %, abattu depuis la fenêtre éclairée du rez-de-chaussée (63 %), avant la voiture. */
+@keyframes e8-jouer-marche-b {
+  0%, 40% { transform: translateX(0); }
+  64%, 100% { transform: translateX(-88px); }
+}
+
+@keyframes e8-jouer-meurt-b {
+  0%, 38% { opacity: 0; transform: translateY(0) rotate(0deg); }
+  42% { opacity: 1; }
+  46%, 54% { transform: translateY(-2px) rotate(-2deg); }
+  50%, 58% { transform: translateY(0) rotate(2deg); }
+  64% { opacity: 1; transform: translateY(0) rotate(0deg); }
+  66% { transform: translateX(4px) rotate(14deg); }
+  70%, 90% { opacity: 1; transform: translateX(4px) rotate(8deg) scale(1.15, 0.22); }
+  97%, 100% { opacity: 0; transform: translateX(4px) rotate(8deg) scale(1.15, 0.22); }
+}
+
+@keyframes e8-jouer-tir-b {
+  0%, 62.5% { opacity: 0; }
+  63%, 64.5% { opacity: 1; }
+  65.5%, 100% { opacity: 0; }
+}
+
+@keyframes e8-jouer-sang-b {
+  0%, 64.9% { opacity: 0; transform: scale(0.3); }
+  66% { opacity: 1; transform: scale(0.6); }
+  74%, 92% { opacity: 1; transform: scale(1); }
+  98%, 100% { opacity: 0; transform: scale(1); }
+}
+
+/* Lot 8b : onglet Infini (E8-4, maquette Infini.html) : décor SVG décoratif, rangée de cartes qui défile, panneau Classement à droite. */
+.e8-infini {
+  --e8-infini-panneau: max(190px, calc(232 * var(--u)));
+  --e8-infini-gauche: calc(100% - var(--e8-infini-panneau) - 20 * var(--u)); /* largeur de la colonne de gauche (bandeau, cartes, Jouer) */
+  gap: calc(4 * var(--u));
+  background: var(--menu-infini-ciel-haut);
+}
+
+.e8-infini-scene {
+  position: absolute;
+  inset: 0;
+}
+
+.e8-infini-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.e8-infini > :not(.e8-infini-scene) {
+  z-index: 1;
+}
+
+.e8-infini-choix {
+  position: relative;
+  max-width: var(--e8-infini-gauche);
+  margin: calc(16 * var(--u)) 0 0; /* avec l'écart de 4 : 20 sous le bandeau, la place de ses coulures (lot 8d ; avant : 4) */
+  font-size: max(12px, calc(13 * var(--u)));
+}
+
+.e8-infini-choix-titre {
+  font-family: var(--font-label);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--menu-texte);
+}
+
+.e8-infini-choix-compte {
+  color: var(--menu-carte-libelle);
+}
+
+.e8-infini-zone {
+  position: relative;
+  flex: none;
+  width: var(--e8-infini-gauche);
+}
+
+.e8-infini-rangee {
+  display: flex;
+  gap: calc(14 * var(--u));
+  margin: 0;
+  padding: 0 0 calc(6 * var(--u));
+  overflow: auto hidden;
+  overscroll-behavior-x: contain;
+  list-style: none;
+  scroll-snap-type: x mandatory;
+  scrollbar-color: var(--menu-carte-bord) transparent;
+  scrollbar-width: thin;
+}
+
+.e8-infini-item {
+  flex: none;
+  scroll-snap-align: start;
+}
+
+.e8-infini-carte {
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  width: max(132px, calc(184 * var(--u)));
+  /* Retour du propriétaire : même taille pour toutes les cartes, quel que soit le nom du monde : hauteur fixe (miniature, trois lignes d'interligne
+     fixe, marges, bordures) ; textes d'une ligne, réduits s'ils sont trop longs (ajusterTextes de js/menu/menu.js). */
+  height: max(calc(150 * var(--u)), calc(96 * var(--u) + 1.2 * (max(10px, calc(11 * var(--u))) + max(13px, calc(15 * var(--u))) + max(11px, calc(12 * var(--u)))) + 6px));
+  padding: 0 0 calc(6 * var(--u));
+  overflow: hidden;
+  border: 3px solid var(--menu-carte-bord);
+  border-radius: calc(4 * var(--u));
+  background: var(--menu-carte-fond);
+  color: var(--menu-texte);
+  line-height: 1.2;
+  text-align: left;
+  cursor: pointer;
+}
+
+.e8-infini-carte-choisie {
+  border-color: var(--menu-carte-choisie);
+}
+
+.e8-infini-carte-verrouillee {
+  cursor: not-allowed;
+}
+
+.e8-infini-mini {
+  display: block;
+  flex: none;
+  width: 100%;
+  height: calc(84 * var(--u));
+}
+
+.e8-infini-mini-verrou {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: var(--menu-mini-verrou);
+}
+
+.e8-infini-mini-ruban {
+  position: absolute;
+  top: calc(34 * var(--u));
+  left: -10%;
+  width: 120%;
+  height: calc(14 * var(--u));
+  background: repeating-linear-gradient(135deg, var(--menu-ruban-jaune) 0 8px, var(--menu-ruban-noir) 8px 16px);
+  transform: rotate(-12deg);
+}
+
+.e8-infini-cadenas {
+  position: relative;
+  width: max(20px, calc(26 * var(--u)));
+  height: max(20px, calc(26 * var(--u)));
+  fill: none;
+  stroke: var(--menu-mini-cadenas);
+  stroke-width: 2;
+}
+
+.e8-infini-mini-ciel { fill: var(--menu-mini-ciel); }
+.e8-infini-mini-lampe { fill: var(--menu-scene-lampe); opacity: 0.7; }
+.e8-infini-mini-vive { opacity: 1; }
+
+.e8-infini-carte-libelle,
+.e8-infini-carte-nom,
+.e8-infini-carte-detail {
+  flex: none;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.e8-infini-carte-libelle {
+  padding: calc(6 * var(--u)) calc(10 * var(--u)) 0;
+  font-size: max(10px, calc(11 * var(--u)));
+  line-height: calc(max(10px, calc(11 * var(--u))) * 1.2);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--menu-carte-libelle);
+}
+
+.e8-infini-carte-nom {
+  padding: 0 calc(10 * var(--u));
+  font-size: max(13px, calc(15 * var(--u)));
+  line-height: calc(max(13px, calc(15 * var(--u))) * 1.2);
+  font-weight: var(--font-weight-bold);
+}
+
+.e8-infini-carte-detail {
+  padding: 0 calc(10 * var(--u));
+  font-size: max(11px, calc(12 * var(--u)));
+  line-height: calc(max(11px, calc(12 * var(--u))) * 1.2);
+  color: var(--menu-record);
+}
+
+.e8-infini-suivantes {
+  position: absolute;
+  top: calc(50 * var(--u));
+  right: calc(-12 * var(--u));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: max(var(--menu-cible), calc(44 * var(--u)));
+  height: max(var(--menu-cible), calc(44 * var(--u)));
+  padding: 0;
+  border: 2px solid var(--menu-rouge-clair);
+  border-radius: 50%;
+  background: var(--menu-fleche-fond);
+  color: var(--menu-texte);
+  cursor: pointer;
+}
+
+.e8-infini-fleche {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentcolor;
+  stroke-width: 3;
+}
+
+.e8-infini-bouton {
+  position: relative;
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  gap: calc(14 * var(--u));
+  box-sizing: border-box;
+  width: var(--e8-infini-gauche);
+  height: max(var(--menu-cible), calc(44 * var(--u))); /* lot 8d, retour du propriétaire (« trop gros ») : 44 et 26 (maquette : 54 et 30) */
+  padding: 0;
+  font-size: max(20px, calc(26 * var(--u)));
+  line-height: 1;
+}
+
+.e8-infini-classement {
+  position: absolute;
+  top: calc(12 * var(--u));
+  right: var(--e8-droite);
+  bottom: calc(24 * var(--u));
+  display: flex;
+  flex-direction: column;
+  gap: calc(5 * var(--u));
+  box-sizing: border-box;
+  width: var(--e8-infini-panneau);
+  padding: calc(10 * var(--u)) calc(12 * var(--u));
+  border: 1px solid var(--menu-classement-bord);
+  background: var(--menu-classement-fond);
+}
+
+.e8-infini-classement-titre {
+  margin: 0;
+  font-family: var(--font-label);
+  font-size: max(14px, calc(16 * var(--u)));
+  font-weight: var(--font-weight-normal);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.e8-infini-classement-carte {
+  margin: 0;
+  font-size: max(11px, calc(12 * var(--u)));
+  color: var(--menu-texte-doux);
+}
+
+.e8-infini-exemple {
+  color: var(--menu-exemple);
+}
+
+.e8-infini-lignes {
+  display: flex;
+  flex-direction: column;
+  gap: calc(5 * var(--u));
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.e8-infini-ligne,
+.e8-infini-toi {
+  display: flex;
+  align-items: center;
+  gap: calc(8 * var(--u));
+  padding: 0 calc(8 * var(--u));
+}
+
+.e8-infini-ligne {
+  min-height: max(22px, calc(28 * var(--u)));
+  background: var(--menu-classement-ligne);
+}
+
+.e8-infini-rang {
+  min-width: max(14px, calc(18 * var(--u)));
+  font-size: max(12px, calc(14 * var(--u)));
+  font-weight: var(--font-weight-bold);
+  color: var(--menu-classement-rang);
+}
+
+.e8-infini-pseudo {
+  flex: 1;
+  font-size: max(12px, calc(14 * var(--u)));
+  color: var(--menu-texte-doux);
+}
+
+.e8-infini-manche {
+  font-size: max(11px, calc(13 * var(--u)));
+  font-weight: var(--font-weight-bold);
+}
+
+.e8-infini-toi {
+  min-height: max(28px, calc(34 * var(--u)));
+  margin: auto 0 0;
+  border: 1px solid var(--menu-rouge-clair);
+  background: var(--menu-classement-toi);
+  font-size: max(12px, calc(13 * var(--u)));
+}
+
+.e8-infini-toi-nom {
+  font-size: max(12px, calc(14 * var(--u)));
+  font-weight: var(--font-weight-bold);
+  color: var(--menu-classement-toi-texte);
+}
+
+.e8-infini-toi-rang {
+  flex: 1;
+}
+
+.e8-infini-toi-manche {
+  font-weight: var(--font-weight-bold);
+  color: var(--menu-record);
+}
+
+/* Décor : couleurs, halo qui pulse lentement, horde qui avance sur l'horizon (apparaît et s'efface en fondu à chaque passage). */
+.e8-infini-ciel-haut { stop-color: var(--menu-infini-ciel-haut); }
+.e8-infini-ciel-bas { stop-color: var(--menu-infini-ciel-bas); }
+.e8-infini-halo-centre { stop-color: var(--menu-infini-halo); stop-opacity: 0.35; }
+.e8-infini-halo-bord { stop-color: var(--menu-infini-halo); stop-opacity: 0; }
+.e8-infini-lune { fill: var(--menu-infini-lune); opacity: 0.8; }
+.e8-infini-sol { fill: var(--menu-infini-sol); }
+.e8-infini-z { fill: var(--menu-infini-horde); }
+
+.e8-infini-halo {
+  transform-box: fill-box;
+  transform-origin: 50% 50%;
+  animation: e8-infini-halo 6s ease-in-out infinite;
+}
+
+.e8-infini-horde {
+  animation: e8-infini-horde 30s linear infinite;
+}
+
+.e8-infini-scene[data-anim="off"] * {
+  animation-play-state: paused;
+}
+
+@keyframes e8-infini-halo {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.65; transform: scale(1.06); }
+}
+
+@keyframes e8-infini-horde {
+  0% { opacity: 0; transform: translateX(0); }
+  8%, 92% { opacity: 1; }
+  100% { opacity: 0; transform: translateX(-80px); }
+}
+
+.e8-texte {
+  max-width: 62ch;
+  margin: 0;
+  font-size: max(14px, calc(16 * var(--u)));
+  color: var(--menu-texte-doux);
+}
+
+/* E8-2 : barre d'onglets en planches clouées ; Histoire au centre (colonne plus large, police de titre). Lot 8e (demande du propriétaire) : plus de
+   rouge permanent sur Histoire ; onglet affiché : planche plus claire et relevée (rebord sombre en bas, contenu remonté), libellé blanc, goutte de
+   sang qui pend du haut ; à la sélection, l'icône (ou le libellé d'Histoire) rebondit une fois et la goutte coule une fois. */
+.e8-onglets {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1.5fr 1fr 1fr;
+  padding: 0 calc(var(--e8-sur-d) - var(--menu-marge)) 0 calc(var(--e8-sur-g) - var(--menu-marge));
+  background-color: var(--menu-bois);
+  background-image:
+    linear-gradient(to bottom, var(--menu-bois-clair) 0 2px, transparent 2px),
+    repeating-linear-gradient(to bottom, transparent 0 calc(14 * var(--u)), var(--menu-bois-sombre) calc(14 * var(--u)) calc(14 * var(--u) + 1px));
+  border-top: 2px solid var(--menu-bois-sombre);
+}
+
+.e8-onglet {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-width: var(--menu-cible);
+  min-height: var(--menu-cible);
+  padding: 0 4px calc(6 * var(--u));
+  border: 0;
+  border-right: 2px solid var(--menu-bois-sombre);
+  border-radius: 0;
+  background:
+    radial-gradient(circle, var(--menu-clou) 0 2px, transparent 2.5px) 5px 5px / 6px 6px no-repeat,
+    radial-gradient(circle, var(--menu-clou) 0 2px, transparent 2.5px) calc(100% - 5px) 5px / 6px 6px no-repeat;
+  color: var(--menu-texte-doux);
+  font-family: var(--font-label);
+  font-size: max(12px, calc(14 * var(--u)));
+  cursor: pointer;
+}
+
+.e8-onglet:first-child {
+  border-left: 2px solid var(--menu-bois-sombre);
+}
+
+.e8-onglet-nom {
+  line-height: 1.1;
+}
+
+.e8-onglet[aria-current="page"] {
+  padding-bottom: calc(12 * var(--u));
+  background-color: var(--menu-bois-clair);
+  box-shadow: inset 0 calc(-6 * var(--u)) 0 var(--menu-bois-sombre), inset 0 2px 0 var(--menu-panneau-bois-texte);
+  color: var(--menu-panneau-atteint-texte);
+}
+
+.e8-onglet-jouer {
+  font-family: var(--font-display);
+  font-size: max(18px, calc(24 * var(--u)));
+  letter-spacing: 0.06em;
+}
+
+.e8-onglet-goutte {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  z-index: 1;
+  display: none;
+  height: calc(22 * var(--u));
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.e8-onglet[aria-current="page"] .e8-onglet-goutte {
+  display: block;
+}
+
+.e8-onglet-bande {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: calc(6 * var(--u));
+  transform-origin: 50% 0;
+}
+
+.e8-onglet[aria-current="page"] .e8-onglet-bande {
+  animation: e8-onglet-verse 0.35s ease-out both;
+}
+
+.e8-onglet-goutte .menu-coulure {
+  top: calc(2 * var(--u));
+}
+
+.e8-onglet[aria-current="page"] .e8-icone-onglet,
+.e8-onglet-jouer[aria-current="page"] .e8-onglet-nom {
+  animation: e8-onglet-rebond 0.5s ease-out;
+}
+
+/* La traînée se verse (une fois, à la sélection), puis les coulures s'allongent (e8-coulure, comme les bandeaux). */
+@keyframes e8-onglet-verse {
+  from { transform: scaleY(0); }
+  to { transform: scaleY(1); }
+}
+
+/* Un rebond, une fois : monte de 5 et retombe (0,5 s). */
+@keyframes e8-onglet-rebond {
+  0%, 100% { transform: translateY(0); }
+  40% { transform: translateY(calc(-5 * var(--u))); }
+  70% { transform: translateY(calc(1 * var(--u))); }
+}
+
+.e8-onglet-event {
+  cursor: not-allowed;
+}
+
+/* Retour du propriétaire (lot 8e) : taches de sang séchées dans des coins bas de planches (js/menu/menu.js, sangBarre) ; les coulures n'apparaissent
+   que sur l'onglet touché (.e8-onglet-goutte). Décoratif, jamais sous un libellé. */
+.e8-onglets-sang {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.e8-onglets-tache {
+  position: absolute;
+  bottom: calc(1 * var(--u));
+  left: var(--e8-x);
+  width: calc(30 * var(--u));
+  height: calc(12.5 * var(--u));
+  fill: var(--menu-sang);
+  opacity: 0.75;
+}
+
+.e8-cadenas {
+  width: 22px;
+  height: 22px;
+}
+
+/* Écrans superposés (Information, Connexion) : le panneau couvre la zone de contenu ; même bandeau, même place ; croix en haut à droite. */
+.e8-voile {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  background: var(--menu-voile);
+}
+
+.e8-panneau {
+  position: absolute;
+  top: var(--e8-entete);
+  right: 0;
+  bottom: var(--e8-onglets);
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  gap: calc(16 * var(--u));
+  padding: calc(12 * var(--u)) var(--e8-droite) calc(10 * var(--u)) var(--e8-gauche);
+  background: var(--menu-panneau);
+  animation: e8-panneau 0.2s ease-out both;
+}
+
+.e8-panneau-tete {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.e8-croix {
+  display: grid;
+  place-items: center;
+  width: var(--menu-cible);
+  height: var(--menu-cible);
+  padding: 0;
+}
+
+.e8-croix svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentcolor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+}
+
+.e8-panneau-corps {
+  flex: 1;
+  min-height: 0;
+  max-width: 70ch;
+  overflow: auto;
+  padding-top: calc(10 * var(--u));
+}
+
+/* Lot 8g (retour du propriétaire) : chaque nouveauté dans un cadre sur toute la largeur, haut comme son contenu ; les cadres s'empilent et la
+   liste défile (doigt, molette, souris par js/glisser.js, racine du menu). */
+#menu-ecran-information .e8-panneau-corps {
+  max-width: none;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: var(--menu-e9-stats-bord) transparent;
+}
+
+.e8-infos {
+  display: flex;
+  flex-direction: column;
+  gap: max(8px, calc(10 * var(--u)));
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.e8-info {
+  box-sizing: border-box;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  column-gap: 12px;
+  row-gap: 4px;
+  width: 100%;
+  padding: max(10px, calc(12 * var(--u))) max(12px, calc(16 * var(--u)));
+  border: 2px solid var(--menu-e9-stats-bord);
+  background: var(--menu-e9-panneau);
+}
+
+.e8-info-titre {
+  margin: 0;
+  font-size: max(16px, calc(17 * var(--u)));
+}
+
+.e8-info-date {
+  align-self: baseline;
+  margin: 0;
+  font-size: 13px;
+  color: var(--menu-texte-doux);
+  white-space: nowrap;
+}
+
+
+.e8-info-texte {
+  grid-column: 1 / -1;
+  margin: 0;
+  font-size: max(14px, calc(15 * var(--u)));
+  white-space: pre-line; /* sauts de ligne de data/menu/infos.json (« \n » ; « \n\n » : ligne vide) */
+}
+
+@keyframes e8-apparition {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes e8-panneau {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .e8,
+  .e8 * {
+    animation: none !important;
+  }
+
+  /* Lot 8b : scène fixe, zombies absents ; flammes et lueurs constantes. */
+  .e8-jouer-zombie-proche,
+  .e8-jouer-rodeur-g,
+  .e8-jouer-rodeur-d {
+    display: none;
+  }
+
+  .menu-peint:active {
+    transform: none;
+  }
+}
+
+/* ---------------------------------------------------------------------------------------------------------------------------------------------- */
+/* Lot 8c : Options (composant partagé, js/game/options-menu.js) : page du menu principal (E5, maquette Options.html, écran plein : la barre
+   d'onglets est masquée) et panneau de la partie (E2-12, maquette OptionsJeu.html ; cette feuille est alors chargée à la première ouverture).
+   Choisi : rouge peint et souligné (aria-pressed) ; verrouillé : grisé, cadenas et texte. Tailles en
+   calc(N * var(--u)) (N = pixels de la maquette), cibles de 44 px au moins. */
+.e8[data-ecran='options'] .e8-contenu,
+.e8[data-ecran='resultat'] .e8-contenu {
+  grid-row: 2 / 4;
+}
+
+/* Lot 8j (demande du propriétaire : trop peu de réglages visibles sur PC) : l'unité des écrans Options (menu et partie) est plafonnée à
+   --e5-u-max = 1,25 px jusqu'à 1080 px de haut, puis suit la hauteur (100vh / 864 = 1,25 px × hauteur / 1080, comme le facteur de l’interface de la partie) ;
+   en dessous du plafond (téléphones, 932 × 430 et moins), rien ne change. Régler la densité sur PC : la valeur 1,25 px (et 864 = 1080 / 1,25). */
+.e5 {
+  --e5-u-max: max(1.25px, calc(100vh / 864));
+  --u: min(clamp(0.7px, min(calc(100vw / 932), calc(100vh / 430)), 2.4px), var(--e5-u-max));
+  --e5-bouton-h: max(var(--menu-cible), calc(40 * var(--u)));
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  color: var(--menu-texte);
+  font-family: var(--font-sans);
+}
+
+.e8-ecran.e5-page {
+  align-items: stretch;
+  gap: 0;
+  padding-bottom: calc(10 * var(--u));
+  background:
+    linear-gradient(var(--menu-options-trait), var(--menu-options-trait)) 0 calc(99 * var(--u)) / 100% 2px no-repeat,
+    linear-gradient(var(--menu-options-trait), var(--menu-options-trait)) 0 calc(229 * var(--u)) / 100% 2px no-repeat,
+    linear-gradient(var(--menu-options-trait), var(--menu-options-trait)) calc(239 * var(--u)) 0 / 2px calc(100 * var(--u)) no-repeat,
+    linear-gradient(var(--menu-options-trait), var(--menu-options-trait)) calc(599 * var(--u)) calc(100 * var(--u)) / 2px calc(130 * var(--u)) no-repeat,
+    linear-gradient(var(--menu-options-trait), var(--menu-options-trait)) calc(119 * var(--u)) calc(230 * var(--u)) / 2px 100% no-repeat,
+    linear-gradient(var(--menu-options-trait), var(--menu-options-trait)) calc(819 * var(--u)) calc(230 * var(--u)) / 2px 100% no-repeat,
+    var(--menu-options-fond);
+}
+
+/* En-tête : bandeau et « ‹ Menu » (menu) ; « ‹ Pause » et titre (partie). */
+.e5-tete {
+  display: flex;
+  flex: none;
+  align-items: flex-start;
+  gap: calc(34 * var(--u));
+}
+
+.e5-retour {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: calc(4 * var(--u));
+  height: var(--e5-bouton-h);
+  margin-top: calc(4 * var(--u));
+  padding: 0 calc(12 * var(--u)) 0 calc(6 * var(--u));
+  font-family: var(--font-label);
+  font-size: max(12px, calc(13 * var(--u)));
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.e5-chevron {
+  width: max(14px, calc(18 * var(--u)));
+  height: max(14px, calc(18 * var(--u)));
+  fill: none;
+  stroke: currentcolor;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.e5-titre {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: var(--font-weight-normal);
+  font-size: max(22px, calc(28 * var(--u)));
+  line-height: 1.1;
+  color: var(--menu-rouge-trait);
+}
+
+/* Préréglages et petit texte à droite. */
+.e5-presets {
+  display: flex;
+  flex: none;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: calc(6 * var(--u)) calc(8 * var(--u));
+  margin-top: calc(17 * var(--u)); /* sous les coulures du bandeau commun (plus haut que celui de la maquette) */
+}
+
+.e5-presets-boutons {
+  display: flex;
+  gap: calc(8 * var(--u));
+}
+
+.e5-bouton {
+  box-sizing: border-box;
+  height: var(--e5-bouton-h);
+  border: 2px solid var(--menu-options-bouton-bord);
+  border-radius: calc(4 * var(--u));
+  background: var(--menu-options-bouton);
+  color: var(--menu-options-bouton-texte);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.e5-bouton[aria-pressed='true'] {
+  border-color: var(--menu-bord);
+  background: var(--menu-rouge);
+  box-shadow: 0 calc(3 * var(--u)) 0 var(--menu-ombre);
+  color: var(--menu-texte);
+  text-decoration: underline 2px;
+  text-underline-offset: 3px;
+}
+
+.e5-bouton:not(:disabled):hover {
+  border-color: var(--menu-options-note);
+}
+
+.e5-bouton:disabled {
+  border-color: var(--menu-options-inactif-bord);
+  background: var(--menu-options-inactif);
+  box-shadow: none;
+  color: var(--menu-options-inactif-texte);
+  cursor: not-allowed;
+}
+
+.e5-bouton[aria-pressed='true']:disabled {
+  border-color: var(--menu-options-inactif-choisi-bord);
+  background: var(--menu-options-inactif-choisi);
+}
+
+.e5-preset {
+  padding: 0 calc(14 * var(--u));
+  font-family: var(--font-label);
+  font-size: max(12px, calc(13 * var(--u)));
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.e5-petit {
+  margin: 0;
+  font-size: max(11px, calc(12 * var(--u)));
+  color: var(--menu-options-note);
+}
+
+/* Liste qui défile : titres de section, une ligne par réglage. */
+.e5-liste {
+  flex: 1 1 auto;
+  min-height: 0;
+  margin-top: calc(10 * var(--u));
+  padding-right: calc(8 * var(--u));
+  border-top: 1px solid var(--menu-options-filet);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.e5-section-titre {
+  margin: calc(12 * var(--u)) 0 calc(4 * var(--u));
+  font-family: var(--font-label);
+  font-weight: var(--font-weight-normal);
+  font-size: max(13px, calc(14 * var(--u)));
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--menu-rouge-trait);
+}
+
+.e5-ligne {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: calc(12 * var(--u));
+  min-height: calc(50 * var(--u));
+  padding: 3px 0;
+  border-bottom: 1px solid var(--menu-options-ligne);
+}
+
+.e5-gauche {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.2;
+}
+
+.e5-nom {
+  font-size: max(14px, calc(15 * var(--u)));
+  font-weight: var(--font-weight-bold);
+}
+
+.e5-note {
+  display: flex;
+  align-items: center;
+  gap: calc(4 * var(--u));
+  font-size: max(11px, calc(12 * var(--u)));
+  color: var(--menu-options-note);
+}
+
+.e5-cadenas {
+  flex: none;
+  width: max(11px, calc(13 * var(--u)));
+  height: max(11px, calc(13 * var(--u)));
+  fill: none;
+  stroke: currentcolor;
+  stroke-width: 1.8;
+  stroke-linejoin: round;
+}
+
+.e5-ligne.is-verrou .e5-nom {
+  color: var(--menu-options-nom-inactif);
+}
+
+.e5-ligne.is-verrou .e5-note {
+  color: var(--menu-options-verrou);
+}
+
+.e5-valeurs {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: calc(6 * var(--u));
+}
+
+.e5-valeur {
+  min-width: max(var(--menu-cible), calc(76 * var(--u)));
+  padding: 0 calc(10 * var(--u));
+  font-family: var(--font-sans);
+  font-size: max(12px, calc(13 * var(--u)));
+  font-weight: var(--font-weight-bold);
+}
+
+/* Volume : curseur de 0 à 100 % (pas de 10), valeur en texte à droite. */
+.e5-curseur {
+  width: calc(232 * var(--u));
+  height: var(--menu-cible);
+  margin: 0;
+  background: transparent;
+  cursor: pointer;
+  appearance: none;
+}
+
+.e5-curseur::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--menu-options-bouton-bord);
+}
+
+.e5-curseur::-moz-range-track {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--menu-options-bouton-bord);
+}
+
+.e5-curseur::-moz-range-progress {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--menu-rouge);
+}
+
+.e5-curseur::-webkit-slider-thumb {
+  width: 22px;
+  height: 22px;
+  margin-top: -8px;
+  border: 3px solid var(--menu-rouge);
+  border-radius: 50%;
+  background: var(--menu-texte);
+  appearance: none;
+}
+
+.e5-curseur::-moz-range-thumb {
+  box-sizing: border-box;
+  width: 22px;
+  height: 22px;
+  border: 3px solid var(--menu-rouge);
+  border-radius: 50%;
+  background: var(--menu-texte);
+}
+
+.e5-volume-valeur {
+  min-width: 3.2em;
+  font-size: max(13px, calc(14 * var(--u)));
+  font-weight: var(--font-weight-bold);
+  text-align: right;
+}
+
+.e5-statut {
+  flex: none;
+  margin-top: calc(4 * var(--u));
+  color: var(--menu-options-verrou);
+}
+
+.e5-pied {
+  flex: none;
+  margin-top: calc(8 * var(--u));
+}
+
+/* Partie : panneau au-dessus de la partie voilée (en pause). */
+.panel-wrap.e5-voile {
+  background: var(--menu-options-voile);
+}
+
+.e5-panneau {
+  box-sizing: border-box;
+  width: min(calc(852 * var(--u)), 100%);
+  height: min(100%, max(calc(398 * var(--u)), calc(100vh - 32px))); /* 398 / 430 de la maquette ; plus haut s'il reste de la place */
+  padding: calc(14 * var(--u)) calc(20 * var(--u)) calc(12 * var(--u));
+  border: 2px solid var(--menu-options-panneau-bord);
+  border-radius: 6px;
+  background: var(--menu-options-panneau);
+}
+
+.e5-panneau .e5-tete {
+  align-items: center;
+  gap: calc(26 * var(--u));
+}
+
+.e5-panneau .e5-retour {
+  margin-top: 0;
+}
+
+.e5-panneau .e5-presets {
+  margin-top: calc(10 * var(--u));
+}
+
+/* Partie : texte de 14 px au moins dans le panneau (règle de lisibilité du jeu, contrôlée depuis le lot 5j ; la maquette descend à 12 px). */
+.e5-panneau .e5-note,
+.e5-panneau .e5-petit,
+.e5-panneau .e5-preset,
+.e5-panneau .e5-valeur,
+.e5-panneau .e5-retour,
+.e5-panneau .e5-section-titre,
+.e5-panneau .e5-volume-valeur {
+  font-size: max(14px, calc(14 * var(--u)));
+}
+
+/* ---------------------------------------------------------------------------------------------------------------------------------------------- */
+/* Lot 8d : écran Personnage (E9-1, maquette Personnage.html) et sous-menus (E9-2 à E9-4), js/menu/personnage.js, inventaire.js, fusion.js,
+   personnages.js. Tailles en calc(N * var(--u)) (N = pixels de la maquette 932 × 430 ; ordonnées comptées depuis le bas de l'en-tête, y 50),
+   cibles de 44 px au moins ; rareté, porté, choisi, verrouillé toujours écrits (jamais la couleur seule). Animations e9-*, en pause hors de l'écran
+   (data-anim, classe e9-anime), coupées sous prefers-reduced-motion (règle .e8 * plus haut). */
+/* Encoche (téléphone en paysage) : l'unité se règle sur la largeur laissée par les marges latérales (--e8-gauche, --e8-droite : 32 de la référence,
+   16 px au moins, ou la zone sûre ; 868 = 932 − 2 × 32, la largeur utile des maquettes), pour que colonnes et panneaux ne se chevauchent pas (retour du propriétaire après la fusion). Sans encoche :
+   même valeur que --u de :root. Plancher 0,6 px (au lieu de 0,7) pour les téléphones étroits à encoche. */
+.e9 {
+  --u: clamp(0.6px, min(calc((100vw - var(--e8-gauche) - var(--e8-droite)) / 868), calc(100vh / 430)), 2.4px);
+  --e5-bouton-h: max(var(--menu-cible), calc(40 * var(--u))); /* « ‹ Équipement » et filtres : composants de la page Options (lot 8c) */
+  --e9-col: calc(244 * var(--u)); /* lot 8h : 220 → 244, noms militaires plus longs */
+  --e9-case-h: max(var(--menu-cible), calc(52 * var(--u)));
+  --e9-petit: max(11px, calc(11 * var(--u)));
+  --e9-texte: max(12px, calc(12 * var(--u)));
+  --e9-moyen: max(12px, calc(13 * var(--u)));
+  color: var(--menu-texte);
+  font-family: var(--font-sans);
+}
+
+:where(.e9) button {
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+.e9-icone {
+  flex: none;
+  width: max(18px, calc(24 * var(--u)));
+  height: max(18px, calc(24 * var(--u)));
+  fill: none;
+  stroke: currentcolor;
+  stroke-width: 1.8;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+/* Écran Personnage : l'unité tient aussi compte de la hauteur réelle du contenu (en-tête et onglets ont 48 et 50 px au moins). */
+.e9.e9-perso {
+  --u: clamp(0.6px, min(calc((100vw - var(--e8-gauche) - var(--e8-droite)) / 868), calc((100vh - 98px) / 318)), 2.4px);
+}
+
+/* Fond : gris presque noir ; sol plus sombre (.e9-sol, bord de 2 px) à y 212 de la maquette. Retour du propriétaire : personnage, cône, sol et encart
+   de capacité centrés verticalement (décalés de la moitié de la hauteur libre au-delà des 318 de la maquette, jamais vers le haut). */
+.e8-ecran.e9-perso {
+  --e9-centre: max(0px, calc((100% - 318 * var(--u)) / 2));
+  background: var(--menu-options-fond);
+}
+
+.e9-sol {
+  position: absolute;
+  top: calc(211 * var(--u) + var(--e9-centre));
+  right: 0;
+  bottom: 0;
+  left: 0;
+  border-top: 2px solid var(--menu-options-ligne);
+  background: var(--menu-scene-fenetre-noire);
+}
+
+.e9-scene {
+  position: absolute;
+  top: calc(-6 * var(--u) + var(--e9-centre));
+  left: calc(50% - 466 * var(--u));
+  width: calc(932 * var(--u));
+  height: calc(324 * var(--u));
+  pointer-events: none;
+}
+
+.e9-decor {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.e9-cone {
+  fill: var(--menu-e9-projecteur);
+  animation: e9-projecteur 6s linear infinite;
+}
+
+.e9-halo-centre {
+  stop-color: var(--menu-e9-lumiere);
+  stop-opacity: 0.22;
+}
+
+.e9-halo-bord {
+  stop-color: var(--menu-e9-lumiere);
+  stop-opacity: 0;
+}
+
+.e9-lampe {
+  fill: var(--menu-e9-lampe);
+}
+
+.e9-scene[data-anim='off'] *,
+.e9:not(.e9-anime) .e9-perso-bouton *,
+.e9-sous:not(.e9-anime) * {
+  animation-play-state: paused;
+}
+
+/* Personnage au centre (180 × 236 à y 10) : un bouton (ouvre Personnages) ; étiquette au-dessus. */
+.e9-perso-bouton {
+  position: absolute;
+  top: calc(10 * var(--u) + var(--e9-centre));
+  left: calc(50% - 90 * var(--u));
+  width: calc(180 * var(--u));
+  height: calc(236 * var(--u));
+  padding: 0;
+  border: 0;
+  border-radius: calc(8 * var(--u));
+  background: none;
+}
+
+.e9-perso-cadre,
+.e9-perso-cadre .e9-silhouette {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.e9-etiquette {
+  position: absolute;
+  z-index: 1;
+  /* Centrée dans la zone grise au-dessus de la lampe (du haut de l'écran au haut de la lampe, centre − 6 ; hauteur de l'étiquette : 19,2 u + 2 px)
+     quand il y a la place, sinon en haut de l'écran (retour du propriétaire). */
+  top: max(calc(2 * var(--u)), calc((var(--e9-centre) - 25.2 * var(--u)) / 2 - 1px));
+  left: 50%;
+  min-width: calc(140 * var(--u));
+  padding: calc(3 * var(--u)) calc(8 * var(--u));
+  transform: translateX(-50%);
+  white-space: nowrap;
+  border: 1px solid var(--menu-e9-stats-bord);
+  border-radius: calc(10 * var(--u));
+  background: var(--menu-bouton-rond); /* voile à 70 % (maquette) : 4,5:1 sur le cône clair */
+  font-size: var(--e9-petit);
+  line-height: 1.2;
+  color: var(--menu-texte);
+  text-align: center;
+  pointer-events: none;
+}
+
+/* Silhouette (couleurs : jetons --menu-perso-* ; teinte du personnage : --e9-teinte). */
+.e9-silhouette {
+  overflow: visible;
+}
+
+.e9-sil-buste,
+.e9-buste {
+  fill: var(--e9-teinte, var(--menu-perso-inconnu));
+}
+
+.e9-sil-bras {
+  fill: color-mix(in srgb, var(--e9-teinte, var(--menu-perso-inconnu)) 88%, var(--menu-perso-assombri));
+}
+
+.e9-sil-sangle {
+  fill: none;
+  stroke: var(--menu-perso-sangle);
+  stroke-width: 6;
+}
+
+.e9-sil-poche { fill: var(--menu-perso-poche); }
+.e9-sil-sang { fill: var(--menu-panneau-atteint); opacity: 0.8; }
+.e9-sil-arme { fill: var(--menu-perso-arme); }
+.e9-sil-peau { fill: var(--menu-perso-peau); }
+.e9-sil-cheveux { fill: var(--menu-perso-sangle); }
+.e9-sil-bandana { fill: var(--menu-panneau-atteint); }
+.e9-sil-jambes { fill: var(--menu-perso-jambes); }
+.e9-sil-bottes { fill: var(--menu-perso-bottes); }
+.e9-sil-ombre { fill: var(--menu-perso-ombre); }
+
+.e9-sil-respire { animation: e9-respire 2.6s ease-in-out infinite; }
+/* Pivots dans le repère de la silhouette (180 × 236) : le cou (90, 72) et l'épaule (122, 86). Retour du propriétaire : avec la boîte englobante, le pan
+   du bandana décalait le pivot et la tête sortait de son axe. */
+.e9-sil-tete { transform-box: view-box; transform-origin: 90px 72px; animation: e9-tete 5s ease-in-out infinite; }
+.e9-sil-viser { transform-box: view-box; transform-origin: 122px 86px; animation: e9-viser 2.6s ease-in-out infinite; }
+.e9-sil-pan { transform-box: fill-box; transform-origin: 0% 50%; animation: e9-bandana 1.2s ease-in-out infinite; }
+.e9-sil-ombre { transform-box: fill-box; transform-origin: 50% 50%; animation: e9-ombre 2.6s ease-in-out infinite; }
+
+@keyframes e9-respire {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+
+@keyframes e9-tete {
+  0%, 100% { transform: rotate(0deg); }
+  30% { transform: rotate(-3deg); }
+  65% { transform: rotate(2.5deg); }
+}
+
+@keyframes e9-viser {
+  0%, 100% { transform: rotate(0deg); }
+  50% { transform: rotate(-7deg); }
+}
+
+@keyframes e9-bandana {
+  0%, 100% { transform: skewY(0deg); }
+  50% { transform: skewY(12deg); }
+}
+
+@keyframes e9-ombre {
+  0%, 100% { transform: scaleX(1); }
+  50% { transform: scaleX(0.93); }
+}
+
+/* Grésillement : un seul creux d'opacité en 6 s (de 46 à 54 %), bien moins de 3 éclats par seconde. La maquette déclare une opacité de 0,04 que son
+   animation remplace (cône clair, opaque) : c'est ce rendu affiché qui est reproduit. */
+@keyframes e9-projecteur {
+  0%, 46%, 54%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* Colonnes d'emplacements (220 de large, cases de 52, écart 8) à y 78 : à gauche (statistiques dessous), à droite (Inventaire et Fusion dessous). */
+/* Sous le bandeau et ses coulures (18 de long, retour du propriétaire au lot 8d : elles débordaient sur l'emplacement Arme, devenu Tête au lot 8h, sur téléphone, où le bandeau
+   garde ses tailles de texte minimales) : haut des colonnes = marge haute + hauteur du bandeau (interlignes fixés ci-dessous) + 20. */
+.e9 {
+  --e9-sous-bandeau: calc(12 * var(--u) + 10 * var(--u) + max(11px, calc(12 * var(--u))) * 1.2 + max(17px, calc(20 * var(--u))) * 1.15 + 20 * var(--u));
+}
+
+.e9-colonne {
+  position: absolute;
+  top: var(--e9-sous-bandeau);
+  display: flex;
+  flex-direction: column;
+  gap: calc(8 * var(--u));
+  width: var(--e9-col);
+}
+
+#menu-perso-gauche {
+  left: var(--e8-gauche);
+}
+
+#menu-perso-droite {
+  top: min(var(--e9-sous-bandeau), calc(78 * var(--u))); /* aucun bandeau au-dessus : place de la maquette */
+  right: var(--e8-droite);
+}
+
+.e9-emplacements {
+  display: flex;
+  flex-direction: column;
+  gap: calc(8 * var(--u));
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.e9-emplacement {
+  display: flex;
+  align-items: center;
+  gap: calc(10 * var(--u));
+  width: 100%;
+  min-height: var(--e9-case-h);
+  padding: calc(4 * var(--u)) calc(10 * var(--u)) calc(4 * var(--u)) calc(4 * var(--u));
+  border: 2px solid var(--e9-rarete, var(--menu-options-bouton-bord));
+  border-radius: 4px;
+  background: var(--menu-e9-case);
+  text-align: left;
+}
+
+.e9-emplacement.is-vide {
+  background: var(--menu-e9-case-vide);
+  color: var(--menu-options-note);
+}
+
+.e9-emplacement-icone {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: calc(40 * var(--u));
+  height: calc(40 * var(--u));
+  min-width: 30px;
+  min-height: 30px;
+  border-radius: 3px;
+  background: var(--menu-scene-fenetre-noire);
+}
+
+.e9-emplacement-textes {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.15;
+}
+
+.e9-emplacement-ligne {
+  font-size: var(--e9-petit);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: 0.03em; /* lot 8h : 0,06 → 0,03 em (« ACCESSOIRE · ÉPIQUE » sur une ligne) */
+  text-transform: uppercase;
+  color: var(--menu-options-note);
+}
+
+.e9-emplacement-nom {
+  display: flex;
+  min-width: 0;
+  font-size: max(12px, calc(14 * var(--u)));
+  font-weight: var(--font-weight-bold);
+  white-space: nowrap;
+}
+
+/* Lot 8h : nom de l'objet sur une ligne (points de suspension si besoin), niveau toujours visible après lui. */
+.e9-emplacement-nom-texte {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.e9-emplacement-niveau {
+  flex: none;
+  white-space: pre; /* garde l'espace avant « · niv. » (élément flexible) */
+}
+
+/* Couleur de la rareté (bordures) : jetons --rarete-* ; la rareté est aussi écrite. */
+[data-rarete='commun'] { --e9-rarete: var(--rarete-commun); }
+[data-rarete='peu-commun'] { --e9-rarete: var(--rarete-peu-commun); }
+[data-rarete='rare'] { --e9-rarete: var(--rarete-rare); }
+[data-rarete='epique'] { --e9-rarete: var(--rarete-epique); }
+[data-rarete='legendaire'] { --e9-rarete: var(--rarete-legendaire); }
+
+/* Statistiques effectives sous la colonne de gauche (bord en tirets, deux colonnes). */
+.e9-stats-boite {
+  padding: calc(4 * var(--u)) calc(6 * var(--u));
+  border: 1px dashed var(--menu-e9-stats-bord);
+  background: var(--menu-e9-voile);
+}
+
+.e9-stats {
+  display: grid;
+  grid-template-columns: repeat(2, max-content); /* lot 8h : « Réparation », « Régénération » : colonnes à la largeur de leur texte */
+  justify-content: space-between;
+  gap: calc(2 * var(--u)) calc(6 * var(--u));
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--e9-texte);
+  line-height: 1.2;
+  color: var(--menu-e9-texte-doux);
+}
+
+.e9-stat {
+  white-space: nowrap;
+}
+
+/* Inventaire (planche de bois) et Fusion (violet), 106 × 52 côte à côte ; icône au-dessus du libellé (Rubik Dirt est plus large que la police de
+   substitution de la maquette : icône et libellé ne tiennent pas côte à côte dans 106). */
+.e9-actions {
+  display: flex;
+  gap: calc(8 * var(--u));
+}
+
+.e9-action {
+  display: inline-flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: calc(2 * var(--u));
+  min-width: 0;
+  min-height: var(--e9-case-h);
+  padding: calc(2 * var(--u)) calc(4 * var(--u));
+  font-family: var(--font-label);
+  font-size: max(10px, calc(12 * var(--u)));
+  line-height: 1.1;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--menu-e9-bois-texte);
+}
+
+.e9-action .e9-icone {
+  width: max(16px, calc(20 * var(--u)));
+  height: max(16px, calc(20 * var(--u)));
+}
+
+.e9 .e9-violet {
+  border-color: var(--menu-e9-violet-bord);
+  background: var(--menu-e9-violet);
+  color: var(--menu-e9-violet-texte);
+}
+
+/* Encart de capacité (240 × 56 à y 250, centré, bord doré) : ouvre Personnages. */
+/* Retour du propriétaire (lot 8e) : l'encart ne colle plus au bas du cône de lumière : 6 plus bas à la référence, jusqu'à 18 quand l'écran a de la
+   place (moitié de la hauteur libre). */
+.e9-capacite {
+  --e9-baisse: min(calc(18 * var(--u)), calc(6 * var(--u) + var(--e9-centre)));
+  position: absolute;
+  top: calc(250 * var(--u) + var(--e9-centre) + var(--e9-baisse));
+  left: calc(50% - 120 * var(--u));
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  width: calc(240 * var(--u));
+  min-height: max(var(--menu-cible), calc(56 * var(--u)));
+  padding: calc(4 * var(--u)) calc(10 * var(--u));
+  border: 2px solid var(--menu-record);
+  border-radius: 4px;
+  background: var(--menu-e9-capacite);
+  line-height: 1.25;
+  text-align: left;
+}
+
+.e9-capacite-tete {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: calc(8 * var(--u));
+}
+
+.e9-capacite-nom {
+  font-family: var(--font-label);
+  font-size: max(12px, calc(14 * var(--u)));
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.e9-capacite-niveau {
+  font-size: var(--e9-texte);
+  color: var(--menu-options-note);
+}
+
+.e9-capacite-titre {
+  font-size: var(--e9-texte);
+  font-weight: var(--font-weight-bold);
+  color: var(--menu-record);
+}
+
+.e9-capacite-effet {
+  overflow: hidden;
+  font-size: var(--e9-texte);
+  color: var(--menu-e9-texte-doux);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* Sous-menus (écrans pleins : en-tête gardé, barre d'onglets masquée ; « ‹ Équipement » et Échap reviennent à l'écran Personnage). */
+.e8-ecran.e9-sous {
+  align-items: stretch;
+  gap: 0;
+  padding-bottom: calc(12 * var(--u)); /* écran plein : le contenu descend jusqu'en bas (retour du propriétaire) */
+  isolation: isolate; /* le filigrane (z-index -1) passe derrière le contenu, devant le fond */
+  background: var(--menu-options-fond); /* retour du propriétaire : filets des maquettes retirés, remplacés par le filigrane */
+}
+
+/* Filigrane : grand pictogramme de l'écran, très atténué, centré entre la colonne de gauche et le panneau de droite, qui respire lentement. */
+.e9-sous {
+  --e9-g: calc(520 * var(--u));
+  --e9-d: calc(328 * var(--u));
+}
+
+.e9-fusion { --e9-g: calc(420 * var(--u)); --e9-d: calc(428 * var(--u)); }
+.e9-personnages { --e9-g: calc(438 * var(--u)); --e9-d: calc(410 * var(--u)); }
+
+.e9-filigrane {
+  position: absolute;
+  z-index: -1;
+  top: 50%;
+  left: calc(var(--e8-gauche) + var(--e9-g) + (100% - var(--e8-gauche) - var(--e8-droite) - var(--e9-g) - var(--e9-d)) / 2);
+  width: clamp(calc(120 * var(--u)), calc(100% - var(--e8-gauche) - var(--e8-droite) - var(--e9-g) - var(--e9-d) - 24 * var(--u)), calc(230 * var(--u)));
+  aspect-ratio: 1;
+  color: var(--menu-rouge-trait);
+  opacity: 0.07;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+  animation: e9-filigrane 7s ease-in-out infinite;
+}
+
+.e9-filigrane-icone {
+  display: block;
+  width: 100%;
+  height: 100%;
+  fill: none;
+  stroke: currentcolor;
+  stroke-width: 1;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+@keyframes e9-filigrane {
+  0%, 100% { opacity: 0.05; transform: translate(-50%, -50%) scale(0.96); }
+  50% { opacity: 0.1; transform: translate(-50%, -50%) scale(1.04); }
+}
+
+.e9-sous-gauche {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: calc(6 * var(--u));
+  min-height: 0;
+}
+
+/* Colonne de gauche : largeur de la maquette, jamais plus que la place laissée par le panneau de droite (largeur + écart de 20). */
+.e9-inventaire .e9-sous-gauche { width: min(calc(520 * var(--u)), calc(100% - 348 * var(--u))); }
+.e9-fusion .e9-sous-gauche { width: min(calc(420 * var(--u)), calc(100% - 448 * var(--u))); }
+.e9-personnages .e9-sous-gauche { width: min(calc(438 * var(--u)), calc(100% - 430 * var(--u))); }
+
+.e9-tete {
+  margin-bottom: calc(14 * var(--u)); /* avec l'écart de 6 : 20 sous le bandeau, la place de ses coulures (18) */
+}
+
+/* Panneaux (détail, fiche, compatibles) : à droite, en haut aux places de la maquette ; ils descendent jusqu'au bas de l'écran plein (la maquette
+   les arrêtait au-dessus de la barre d'onglets, masquée ici : retour du propriétaire, « espace vide en bas ») ; défilement si l'écran est trop bas. */
+.e9-panneau {
+  display: flex;
+  flex-direction: column;
+  gap: calc(8 * var(--u));
+  border: 3px solid var(--menu-scene-route-trait);
+  background: var(--menu-e9-panneau);
+}
+
+.e9-detail,
+.e9-fiche,
+.e9-compatibles {
+  position: absolute;
+  right: var(--e8-droite);
+  overflow: auto;
+}
+
+.e9-detail {
+  top: calc(8 * var(--u));
+  bottom: calc(12 * var(--u));
+  width: calc(328 * var(--u));
+  padding: calc(12 * var(--u)) calc(14 * var(--u));
+}
+
+.e9-fiche {
+  top: calc(12 * var(--u));
+  bottom: calc(12 * var(--u));
+  width: calc(410 * var(--u));
+  padding: calc(10 * var(--u)) calc(14 * var(--u));
+}
+
+.e9-compatibles {
+  top: calc(58 * var(--u));
+  bottom: calc(12 * var(--u));
+  width: calc(428 * var(--u));
+  padding: calc(12 * var(--u));
+  border: 1px solid var(--menu-options-filet);
+  background: var(--menu-e9-compatibles);
+}
+
+/* Filtres (boutons de la page Options : rouge peint quand choisi, aria-pressed) et pagination. */
+.e9-filtres {
+  display: flex;
+  flex-wrap: nowrap; /* lot 8h : sept filtres (Tout et un par emplacement) sur une seule rangée, qui défile si elle ne tient pas */
+  gap: calc(8 * var(--u));
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.e9-filtres::-webkit-scrollbar {
+  display: none;
+}
+
+.e9-filtre {
+  flex: none; /* lot 8h : la rangée défile au lieu de serrer les filtres */
+  min-width: 0;
+  padding: 0 max(8px, calc(14 * var(--u)));
+  font-family: var(--font-label);
+  font-size: max(11px, calc(13 * var(--u)));
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.e9-pagination {
+  display: flex;
+  align-items: center;
+  gap: calc(8 * var(--u));
+}
+
+/* Flèches de page dans l'en-tête de l'Inventaire, à droite de « Retour ». */
+.e9-pages {
+  display: flex;
+  gap: calc(8 * var(--u));
+  margin: calc(4 * var(--u)) 0 0 auto;
+}
+
+.e9-page {
+  margin: 0 auto 0 0;
+  font-size: var(--e9-moyen);
+  color: var(--menu-options-note);
+}
+
+.e9-page-bouton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--e5-bouton-h);
+  min-width: var(--e5-bouton-h);
+  padding: 0;
+}
+
+.e9-page-bouton[aria-disabled='true'] {
+  border-color: var(--menu-options-inactif-bord);
+  background: var(--menu-options-inactif);
+  color: var(--menu-options-inactif-texte);
+  cursor: not-allowed;
+}
+
+/* Grilles d'objets et de personnages (listes nommées) ; case choisie bordée de jaune (aria-pressed), rareté, niveau et « Porté » écrits. */
+.e9-grille {
+  display: grid;
+  gap: calc(8 * var(--u));
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Grilles de gauche : elles occupent la hauteur libre, cases agrandies jusqu'à 1,4 fois la maquette ; la pagination reste en bas. */
+.e9-grille-objets {
+  flex: 1;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-auto-rows: minmax(max(var(--menu-cible), calc(60 * var(--u))), calc(100 * var(--u))); /* 60 au moins (maquette 70) : une rangée de plus sur PC */
+  align-content: start;
+  min-height: 0;
+}
+
+.e9-grille > li {
+  display: flex;
+}
+.e9-grille-compatibles {
+  flex: 1;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  align-content: start;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.e9-grille-persos {
+  flex: 1;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-auto-rows: minmax(max(var(--menu-cible), calc(104 * var(--u))), calc(146 * var(--u)));
+  align-content: start;
+  gap: calc(10 * var(--u));
+  min-height: 0;
+  margin-top: calc(6 * var(--u));
+}
+
+.e9-case {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: calc(2 * var(--u));
+  width: 100%;
+  min-width: 0;
+  min-height: max(var(--menu-cible), calc(64 * var(--u)));
+  padding: calc(4 * var(--u)) 2px;
+  border: 2px solid var(--e9-rarete, var(--menu-options-bouton-bord));
+  border-radius: 4px;
+  background: var(--menu-e9-panneau);
+  line-height: 1.15;
+  text-align: center;
+}
+
+.e9-grille-objets .e9-case {
+  min-height: max(var(--menu-cible), calc(60 * var(--u)));
+}
+
+.e9-case[aria-pressed='true'] {
+  border: 3px solid var(--menu-record);
+  background: var(--menu-e9-case-choisie);
+}
+
+/* Cases étroites (téléphones) : texte jusqu'à 10 px plutôt qu'un mot coupé en deux. */
+.e9-case-nom {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  font-size: max(10px, calc(13 * var(--u)));
+  font-weight: var(--font-weight-bold);
+}
+
+.e9-case-rarete {
+  font-size: max(10px, calc(11 * var(--u)));
+  color: var(--menu-e9-texte-doux);
+}
+
+.e9-case-niveau {
+  font-size: max(10px, calc(11 * var(--u)));
+  color: var(--menu-options-note);
+}
+
+/* Panneau de détail de l'Inventaire. */
+.e9-detail-haut {
+  display: flex;
+  align-items: center;
+  gap: calc(12 * var(--u));
+}
+
+.e9-detail-icone {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: calc(52 * var(--u));
+  height: calc(52 * var(--u));
+  min-width: 36px;
+  min-height: 36px;
+  border: 2px solid var(--e9-rarete, var(--menu-options-bouton-bord));
+  border-radius: 4px;
+  background: var(--menu-scene-fenetre-noire);
+}
+
+.e9 .e9-icone-grande {
+  width: max(22px, calc(30 * var(--u)));
+  height: max(22px, calc(30 * var(--u)));
+}
+
+.e9-detail-textes {
+  min-width: 0;
+  line-height: 1.2;
+}
+
+.e9-detail-nom {
+  margin: 0;
+  font-size: max(15px, calc(18 * var(--u)));
+  font-weight: var(--font-weight-bold);
+}
+
+.e9-detail-ligne,
+.e9-effet,
+.e9-detail-info,
+.e9-regle {
+  margin: 0;
+  font-size: var(--e9-moyen);
+  color: var(--menu-e9-texte-doux);
+}
+
+.e9-effet {
+  color: var(--menu-e9-effet);
+}
+
+.e9-raison {
+  margin: 0;
+  font-size: var(--e9-texte);
+  color: var(--menu-options-note);
+}
+
+.e9-detail-boutons {
+  display: flex;
+  gap: calc(8 * var(--u));
+}
+
+/* Boutons du Personnage : rouge peint (Équiper, Choisir), planche (Améliorer, Remplir), violet (Fusionner) ; désactivés : grisés, aria-disabled. */
+.e9-bouton {
+  display: inline-flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  gap: calc(8 * var(--u));
+  min-width: 0;
+  min-height: max(var(--menu-cible), calc(44 * var(--u)));
+  padding: 0 calc(10 * var(--u));
+  border-radius: 4px;
+  font-family: var(--font-label);
+  font-size: max(12px, calc(14 * var(--u)));
+  line-height: 1.1;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--menu-e9-bois-texte);
+}
+
+.e9-detail-boutons .e9-sans-casse {
+  font-size: max(12px, calc(15 * var(--u)));
+  text-transform: none;
+}
+
+.e9-rouge {
+  border: 2px solid var(--menu-bord);
+  background: var(--menu-rouge);
+  color: var(--menu-texte);
+}
+
+.e9-bouton[aria-disabled='true'] {
+  border-color: var(--menu-options-inactif-bord);
+  background: var(--menu-options-inactif);
+  box-shadow: none;
+  color: var(--menu-options-inactif-texte);
+  cursor: not-allowed;
+}
+
+.e9 .e9-violet[aria-disabled='true'] {
+  border-color: var(--menu-e9-violet-inactif-bord);
+  background: var(--menu-e9-violet-inactif);
+  color: var(--menu-e9-violet-inactif-texte);
+}
+
+.e9 .e9-choisir.is-choisi {
+  border: 2px solid var(--menu-record);
+  background: var(--menu-options-bouton);
+  color: var(--menu-record);
+}
+
+.e9-detail-fusion,
+.e9-fusionner,
+.e9-auto,
+.e9-fiche-boutons {
+  flex: none;
+  margin-top: auto;
+}
+
+/* Fusion : règle, trois emplacements, flèche, résultat (brille quand la fusion est possible), message, « Fusionner ». */
+.e9-regle {
+  max-width: calc(420 * var(--u));
+  line-height: 1.35;
+}
+
+.e9-atelier {
+  flex: 1;
+  gap: calc(12 * var(--u));
+  min-height: max(calc(200 * var(--u)), 150px);
+  padding: calc(10 * var(--u)) calc(14 * var(--u));
+}
+
+.e9-fusion-rangee {
+  display: flex;
+  align-items: center;
+  gap: calc(10 * var(--u));
+}
+
+.e9-fusion-places {
+  display: flex;
+  gap: calc(10 * var(--u));
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.e9-place {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: max(var(--menu-cible), calc(72 * var(--u)));
+  height: max(var(--menu-cible), calc(72 * var(--u)));
+  padding: 2px;
+  border: 2px solid var(--e9-rarete, var(--menu-options-bouton-bord));
+  border-radius: 4px;
+  background: var(--menu-scene-fenetre-noire);
+  line-height: 1.1;
+  text-align: center;
+}
+
+.e9-place.is-vide {
+  border-style: dashed;
+  border-color: var(--menu-desactive);
+  font-size: max(18px, calc(26 * var(--u)));
+  color: var(--menu-options-note);
+}
+
+.e9-place .e9-case-niveau {
+  display: none; /* 72 × 72 : nom et rareté (le niveau est dans le nom accessible) */
+}
+
+.e9-fusion-fleche {
+  display: flex;
+  flex: none;
+}
+
+.e9 .e9-fleche {
+  width: max(22px, calc(34 * var(--u)));
+  height: max(22px, calc(34 * var(--u)));
+  stroke: var(--menu-e9-fleche);
+  stroke-width: 2.4;
+  animation: e9-etincelle 1.4s ease-in-out infinite;
+}
+
+.e9-resultat {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: max(56px, calc(84 * var(--u)));
+  height: max(56px, calc(84 * var(--u)));
+  padding: 2px;
+  border: 3px solid var(--e9-rarete, var(--menu-desactive));
+  border-radius: 4px;
+  background: var(--menu-scene-fenetre-noire);
+  font-size: max(13px, calc(15 * var(--u)));
+  font-weight: var(--font-weight-bold);
+  line-height: 1.1;
+  text-align: center;
+}
+
+.e9-resultat.is-pret,
+.e9-resultat.is-obtenu {
+  animation: e9-lueur 2s ease-in-out infinite;
+}
+
+.e9-resultat-effet {
+  font-size: var(--e9-petit);
+  font-weight: var(--font-weight-normal);
+  color: var(--menu-e9-effet);
+}
+
+.e9-resultat-obtenu {
+  font-size: var(--e9-petit);
+  text-transform: uppercase;
+  color: var(--menu-record);
+}
+
+.e9-resultat-vide {
+  font-size: max(18px, calc(26 * var(--u)));
+  color: var(--menu-options-note);
+}
+
+.e9-fusionner {
+  font-size: max(14px, calc(18 * var(--u)));
+}
+
+.e9-compatibles-tete {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: calc(8 * var(--u));
+}
+
+.e9-compatibles-titre {
+  margin: 0;
+  font-family: var(--font-label);
+  font-weight: var(--font-weight-normal);
+  font-size: max(13px, calc(15 * var(--u)));
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.e9-compatibles-rarete {
+  margin: 0;
+  font-size: var(--e9-texte);
+  color: var(--menu-e9-texte-doux);
+}
+
+@keyframes e9-etincelle {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 1; }
+}
+
+@keyframes e9-lueur {
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--e9-rarete, var(--menu-desactive)) 0%, transparent); }
+  50% { box-shadow: 0 0 calc(18 * var(--u)) calc(4 * var(--u)) color-mix(in srgb, var(--e9-rarete, var(--menu-desactive)) 45%, transparent); }
+}
+
+/* Personnages : grille (buste de la teinte, nom, état écrit, cadenas) et fiche du personnage sélectionné. */
+.e9-case-perso {
+  position: relative;
+  justify-content: flex-end;
+  min-height: max(var(--menu-cible), calc(104 * var(--u)));
+  border-color: var(--menu-options-nom-inactif);
+}
+
+.e9-case-perso.is-choisi {
+  border-color: var(--menu-record);
+}
+
+.e9-case-perso.is-verrou {
+  border-color: var(--menu-options-bouton-bord);
+}
+
+.e9-buste {
+  width: calc(40 * var(--u));
+  height: calc(54 * var(--u));
+  min-width: 24px;
+  min-height: 32px;
+}
+
+.e9 .e9-cadenas {
+  position: absolute;
+  top: calc(6 * var(--u));
+  right: calc(6 * var(--u));
+  width: max(14px, calc(18 * var(--u)));
+  height: max(14px, calc(18 * var(--u)));
+  color: var(--menu-texte-doux);
+}
+
+.e9-fiche-haut {
+  display: flex;
+  align-items: center;
+  gap: calc(12 * var(--u));
+}
+
+.e9-fiche-silhouette {
+  flex: none;
+  width: calc(56 * var(--u));
+  height: calc(74 * var(--u));
+}
+
+.e9-fiche-silhouette .e9-silhouette {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.e9-fiche-textes {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: calc(4 * var(--u));
+  min-width: 0;
+}
+
+.e9-fiche-nom {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: var(--font-weight-normal);
+  font-size: max(18px, calc(24 * var(--u)));
+  line-height: 1.05;
+  color: var(--menu-rouge-trait);
+}
+
+.e9-fiche-niveau {
+  margin: 0;
+  font-size: var(--e9-moyen);
+  color: var(--menu-e9-texte-doux);
+}
+
+.e9-barre {
+  height: max(6px, calc(8 * var(--u)));
+  border: 1px solid var(--menu-options-bouton-bord);
+  background: var(--menu-scene-fenetre-noire);
+}
+
+.e9-barre-rempli {
+  display: block;
+  height: 100%;
+  background: var(--menu-record);
+}
+
+.e9-fiche-capacite {
+  padding: calc(8 * var(--u)) calc(10 * var(--u));
+  border: 2px solid var(--menu-record);
+  border-radius: 4px;
+  background: var(--menu-e9-voile);
+}
+
+.e9-fiche-capacite-titre {
+  margin: 0;
+  font-size: var(--e9-moyen);
+  font-weight: var(--font-weight-bold);
+  color: var(--menu-record);
+}
+
+.e9-fiche-capacite-texte {
+  margin: 0;
+  font-size: var(--e9-moyen);
+  line-height: 1.35;
+  color: var(--menu-texte-doux);
+}
+
+.e9-fiche-stats-titre {
+  margin: 0;
+  font-size: var(--e9-texte);
+  color: var(--menu-options-note);
+}
+
+/* Fiche : les quatre statistiques de la maquette (la barre d'onglets visible lui laisse la hauteur de la maquette). */
+.e9-fiche .e9-stat[data-stat='portee'],
+.e9-fiche .e9-stat[data-stat='precision'] {
+  display: none;
+}
+
+.e9-fiche .e9-stats {
+  font-size: var(--e9-moyen);
+}
+
+/* Écrans peu hauts (téléphone en paysage, moins de 370 px) : écran Personnage resserré, quatre statistiques (celles de la maquette) au lieu de six. */
+@media (max-height: 370px) {
+  /* Lot 8h : libellés moins espacés (noms militaires plus longs). */
+  .e9-perso .e9-emplacement-ligne {
+    letter-spacing: 0.02em;
+  }
+
+  .e9-perso .e9-colonne {
+    gap: calc(4 * var(--u));
+  }
+
+  #menu-perso-droite {
+    top: min(var(--e9-sous-bandeau), calc(70 * var(--u)));
+  }
+
+  .e9-perso .e9-emplacements {
+    gap: calc(6 * var(--u));
+  }
+
+  .e9-perso .e9-stat[data-stat='portee'],
+  .e9-perso .e9-stat[data-stat='precision'] {
+    display: none;
+  }
+
+  .e9-capacite {
+    top: calc(246 * var(--u) + var(--e9-centre) + min(calc(4 * var(--u)), var(--e9-centre)));
+  }
+}
+
+/* Fusion sur écran très bas (téléphone en paysage, barre d'onglets visible) : emplacements et résultat plus petits pour tenir au-dessus de la barre. */
+@media (max-height: 380px) {
+  .e9-atelier {
+    gap: calc(8 * var(--u));
+    min-height: 0;
+  }
+
+  .e9-place {
+    width: max(var(--menu-cible), calc(60 * var(--u)));
+    height: max(var(--menu-cible), calc(60 * var(--u)));
+  }
+
+  .e9-resultat {
+    width: max(52px, calc(70 * var(--u)));
+    height: max(52px, calc(70 * var(--u)));
+  }
+}
+
+/* ---------------------------------------------------------------------------------------------------------------------------------------------- */
+/* Lot 8e : Boutique (E3-1, maquette Caisses.html), chances (E3-6), résultats ×1 et ×10 (E3-4, E3-5 ; Resultat1.html, Resultat10.html). js/menu/boutique.js,
+   chances.js, resultat.js. Unité réglée comme les écrans e9 (encoche : largeur laissée par les marges sûres). Couleurs : jetons --menu-*, --rarete-*,
+   teinte de la caisse (--e3-teinte) et rareté d'un objet (--e3-rarete) posées par le JavaScript en var(--jeton). Animations e3-*, en pause hors de
+   l'écran et page cachée (data-anim), coupées sous prefers-reduced-motion (règle .e8 * plus haut). */
+.e3 {
+  --u: clamp(0.6px, min(calc((100vw - var(--e8-gauche) - var(--e8-droite)) / 868), calc(100vh / 430)), 2.4px);
+  --e3-sous-bandeau: calc(12 * var(--u) + 10 * var(--u) + max(11px, calc(12 * var(--u))) * 1.2 + max(17px, calc(20 * var(--u))) * 1.15 + 20 * var(--u));
+  --e3-teinte: var(--menu-panneau-bois-texte);
+  --e3-rarete: var(--rarete-commun);
+  color: var(--menu-texte);
+  font-family: var(--font-sans);
+}
+
+:where(.e3) button {
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+.e3[data-anim='off'] *,
+.e8-pause .e3 * {
+  animation-play-state: paused !important;
+}
+
+.e8-ecran.e3-boutique {
+  isolation: isolate;
+  background: var(--menu-options-fond);
+}
+
+.e3-fond {
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.e3-filet {
+  fill: none;
+  stroke: var(--menu-options-trait);
+  stroke-width: 2;
+}
+
+.e3-fissure {
+  fill: none;
+  stroke: var(--menu-scene-sol);
+  stroke-width: 2;
+}
+
+.e3-tache {
+  fill: var(--menu-coulure-sombre);
+  opacity: 0.6;
+}
+
+/* Retour du propriétaire : la Boutique défile, par rubriques ; petit menu des rubriques à gauche, sous le bandeau (même largeur), contenu à droite. */
+.e3-rubriques {
+  position: absolute;
+  top: var(--e3-sous-bandeau);
+  bottom: calc(8 * var(--u));
+  left: var(--e8-gauche);
+  width: var(--e3-gauche, max(160px, calc(176 * var(--u))));
+  overflow: auto;
+}
+
+/* Retour du propriétaire après le lot 8k : sur téléphone (paysage, faible hauteur), colonne des rubriques et bandeau de la Boutique plus étroits
+   (libellés sur deux lignes au besoin, bandeau réduit par ajusterTextes) : la zone des caisses et de leur aperçu s'élargit d'autant. */
+@media (max-height: 520px) {
+  .e3-boutique {
+    --e3-gauche: max(108px, calc(116 * var(--u)));
+  }
+
+  .e3-boutique > .menu-bandeau {
+    width: var(--e3-gauche);
+    padding-right: calc(8 * var(--u));
+    padding-left: calc(10 * var(--u));
+  }
+
+  .e3-boutique .e3-rubrique {
+    padding: 2px calc(6 * var(--u)) 2px calc(9 * var(--u));
+    line-height: 1.15;
+  }
+
+  .e3-boutique .e3-defile {
+    left: calc(var(--e8-gauche) + var(--e3-gauche) + 12 * var(--u));
+  }
+}
+
+.e3-rubriques ul {
+  display: flex;
+  flex-direction: column;
+  gap: calc(8 * var(--u));
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.e3-rubrique {
+  width: 100%;
+  min-height: max(var(--menu-cible), calc(44 * var(--u)));
+  padding: 0 calc(12 * var(--u)) 0 calc(16 * var(--u));
+  border: 2px solid var(--menu-bois-sombre);
+  border-left-width: calc(6 * var(--u));
+  border-radius: 4px;
+  background: var(--menu-bois);
+  color: var(--menu-e9-bois-texte);
+  font-family: var(--font-label);
+  font-size: max(12px, calc(14 * var(--u)));
+  letter-spacing: 0.04em;
+  text-align: left;
+}
+
+/* Rubrique affichée : zone rouge pleine, bord gauche clair et plus épais (forme), aria-current. */
+.e3-rubrique[aria-current='true'] {
+  border-color: var(--menu-coulure);
+  border-left-color: var(--menu-texte);
+  background: var(--menu-rouge-clair);
+  color: var(--menu-texte);
+}
+
+.e3-defile {
+  position: absolute;
+  top: calc(12 * var(--u));
+  right: 0;
+  bottom: 0;
+  left: calc(var(--e8-gauche) + var(--e3-gauche, max(160px, calc(176 * var(--u)))) + 24 * var(--u));
+  padding: 0 var(--e8-droite) calc(16 * var(--u)) 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-color: var(--menu-bois-clair) transparent;
+  scrollbar-width: thin;
+}
+
+.e3-rayon {
+  margin-bottom: calc(22 * var(--u));
+}
+
+.e3-rayon-tete {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: calc(4 * var(--u)) calc(12 * var(--u));
+  margin-bottom: calc(10 * var(--u));
+  padding-bottom: calc(4 * var(--u));
+  border-bottom: 2px solid var(--menu-scene-route-trait);
+}
+
+.e3-rayon-titre {
+  margin: 0;
+  font-family: var(--font-label);
+  font-size: max(13px, calc(16 * var(--u)));
+  font-weight: var(--font-weight-normal);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.e3-compte,
+.e3-rayon-note {
+  margin: 0;
+  color: var(--menu-e9-texte-doux);
+  font-size: max(12px, calc(13 * var(--u)));
+}
+
+/* Offres du jour : six objets en une rangée (deux rangées sur un écran étroit). */
+.e3-offres {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(max(96px, calc((100% - 50 * var(--u)) / 6)), 1fr));
+  gap: calc(10 * var(--u));
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.e3-offre {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: calc(3 * var(--u));
+  min-width: 0;
+  padding: calc(8 * var(--u)) calc(6 * var(--u));
+  border: 3px solid var(--e3-rarete);
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--e3-rarete) 14%, var(--menu-e9-case));
+  text-align: center;
+}
+
+.e3-offre-svg {
+  width: max(24px, calc(30 * var(--u)));
+  height: max(24px, calc(30 * var(--u)));
+  color: color-mix(in srgb, var(--e3-rarete) 30%, var(--menu-texte));
+}
+
+.e3-offre-nom {
+  max-width: 100%;
+  overflow: hidden;
+  font-size: max(12px, calc(14 * var(--u)));
+  font-weight: var(--font-weight-bold);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.e3-offre-rarete {
+  font-size: max(11px, calc(12 * var(--u)));
+}
+
+.e3 .e3-offre-acheter {
+  width: 100%;
+  margin-top: auto;
+  padding: 0 calc(4 * var(--u));
+  font-family: var(--font-sans);
+  font-size: max(12px, calc(13 * var(--u)));
+  font-weight: var(--font-weight-bold);
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.e3 .e3-offre-acheter[aria-disabled='true'] {
+  border-color: var(--menu-options-inactif-bord);
+  background: var(--menu-options-inactif);
+  color: var(--menu-options-inactif-texte);
+  cursor: not-allowed;
+}
+
+/* Caisses : trois cartes au plus par rangée (deux sur un écran étroit). */
+.e3-cartes {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(max(180px, calc((100% - 32 * var(--u)) / 3)), 1fr));
+  gap: calc(16 * var(--u));
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Retour du propriétaire après le lot 8k : une caisse par rubrique, et à sa droite un aperçu (pitié de la rubrique, légendaires possibles) qui
+   occupe la place des deux caisses retirées ; sur un écran étroit, l'aperçu passe sous la caisse. */
+.e3-rayon-corps {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: calc(16 * var(--u));
+}
+
+.e3-rayon-corps > .e3-cartes {
+  flex: 1 1 max(180px, calc((100% - 32 * var(--u)) / 3));
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.e3-apercu {
+  display: flex;
+  flex: 2 1 230px;
+  flex-direction: column;
+  gap: calc(5 * var(--u));
+  box-sizing: border-box;
+  min-width: 0;
+  padding: calc(8 * var(--u)) calc(12 * var(--u));
+  border: 3px solid var(--menu-scene-route-trait);
+  border-top-color: var(--e3-teinte, var(--menu-scene-route-trait));
+  background: var(--menu-e9-case);
+}
+
+.e3-apercu-titre {
+  margin: 0;
+  font-family: var(--font-label);
+  font-size: max(12px, calc(13 * var(--u)));
+  font-weight: var(--font-weight-normal);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--menu-carte-libelle);
+}
+
+.e3-apercu-pitie,
+.e3-apercu-legendaires {
+  display: flex;
+  flex-direction: column;
+  gap: calc(5 * var(--u));
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.e3-apercu-ligne {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 2px calc(8 * var(--u));
+  font-size: max(12px, calc(13 * var(--u)));
+}
+
+.e3-apercu-nom {
+  font-weight: var(--font-weight-bold);
+  color: var(--e3-rarete, var(--color-text));
+}
+
+.e3-apercu-compte {
+  font-variant-numeric: tabular-nums;
+}
+
+.e3-apercu-barre {
+  position: relative;
+  grid-column: 1 / -1;
+  height: max(6px, calc(7 * var(--u)));
+  border: 1px solid var(--menu-scene-route-trait);
+  background: var(--menu-nuit);
+}
+
+.e3-apercu-plein {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: var(--e3-rarete, var(--color-text));
+}
+
+.e3-apercu-repere {
+  position: absolute;
+  top: -3px;
+  bottom: -3px;
+  width: 2px;
+  background: var(--color-text);
+}
+
+.e3-apercu-texte {
+  grid-column: 1 / -1;
+  color: var(--menu-e9-texte-doux);
+}
+
+.e3-apercu-chance {
+  margin: 0;
+  font-size: max(12px, calc(13 * var(--u)));
+  color: var(--menu-record);
+}
+
+.e3-apercu-legendaires {
+  flex-flow: row wrap;
+  gap: calc(6 * var(--u));
+}
+
+.e3-apercu-element,
+.e3-apercu-autres {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(4 * var(--u));
+  padding: 2px calc(6 * var(--u)) 2px 2px;
+  border: 2px solid var(--e3-rarete, var(--menu-scene-route-trait));
+  font-size: max(12px, calc(12 * var(--u)));
+}
+
+.e3-apercu-autres {
+  padding-left: calc(6 * var(--u));
+  color: var(--menu-e9-texte-doux);
+}
+
+.e3-apercu-icone {
+  display: grid;
+  place-items: center;
+  color: var(--e3-rarete, var(--color-text));
+}
+
+.e3-apercu-icone .e9-buste {
+  width: max(14px, calc(16 * var(--u)));
+  height: max(19px, calc(22 * var(--u)));
+}
+
+.e3-carte {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: calc(3 * var(--u));
+  box-sizing: border-box;
+  min-height: 0;
+  padding: calc(6 * var(--u)) calc(12 * var(--u)) calc(4 * var(--u));
+  border: 3px solid var(--menu-scene-route-trait);
+  background: var(--menu-e9-case);
+}
+
+.e3-carte-bande {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: calc(4 * var(--u));
+  background: var(--e3-teinte);
+}
+
+/* Caisse : la taille de la maquette (la carte n'est plus limitée en hauteur : la Boutique défile). */
+.e3-caisse {
+  flex: none;
+  width: 100%;
+  height: max(70px, calc(106 * var(--u)));
+  overflow: visible;
+}
+
+.e3-rayons {
+  fill: var(--e3-teinte);
+  opacity: 0.15;
+  animation: e3-rayons 2.4s ease-in-out var(--e3-decalage, 0s) infinite;
+}
+
+.e3-tremble {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  animation: e3-tremble 4s ease-in-out var(--e3-decalage, 0s) infinite;
+}
+
+.e3-flotte {
+  animation: e3-flotte 2.4s ease-in-out var(--e3-decalage, 0s) infinite;
+}
+
+.e3-bande {
+  fill: var(--e3-teinte);
+  opacity: 0.8;
+}
+
+.e3-q {
+  fill: var(--menu-texte);
+  font-family: var(--font-display);
+  font-size: 30px; /* retour du propriétaire : le « ? » du milieu était trop gros (40 de la maquette) */
+}
+
+.e3-q-halo {
+  fill: var(--e3-teinte);
+  stroke: var(--e3-teinte);
+  stroke-width: 5.5;
+  stroke-linejoin: round;
+  opacity: 0.45;
+}
+
+.e3-q-petit {
+  fill: var(--e3-teinte);
+  font-size: 16px;
+  opacity: 0.7;
+}
+
+.e3-lueur {
+  animation: e3-lueur 1.6s ease-in-out var(--e3-decalage, 0s) infinite;
+}
+
+.e3-carte-nom {
+  margin: 0;
+  font-size: max(13px, calc(16 * var(--u)));
+  font-weight: var(--font-weight-bold);
+  line-height: 1.2;
+  text-align: center;
+}
+
+.e3-carte-contenu {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  color: var(--menu-e9-texte-doux);
+  font-size: max(12px, calc(13 * var(--u)));
+  line-height: 1.3;
+  text-align: center;
+}
+
+.e3-carte-raretes {
+  color: var(--menu-texte);
+  font-weight: var(--font-weight-bold);
+}
+
+.e3-carte-actions {
+  display: flex;
+  flex: none;
+  gap: calc(8 * var(--u));
+  width: 100%;
+  margin-top: calc(3 * var(--u));
+}
+
+/* Boutons des caisses et des résultats : rouge peint (Ouvrir ×1, Rouvrir), planche (Ouvrir ×10, Continuer) ; 44 de haut au moins. */
+.e3-ouvrir,
+.e3-action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  min-height: max(var(--menu-cible), calc(44 * var(--u)));
+  box-sizing: border-box;
+  border-radius: 4px;
+  font-family: var(--font-label);
+  letter-spacing: 0.06em;
+  line-height: 1.1;
+}
+
+.e3-ouvrir {
+  flex: 1;
+  flex-direction: column;
+  padding: 0 calc(4 * var(--u));
+  font-size: max(12px, calc(14 * var(--u)));
+  letter-spacing: 0.02em;
+}
+
+.e3-ouvrir-prix {
+  font-family: var(--font-sans);
+  font-size: max(11px, calc(11 * var(--u)));
+  letter-spacing: 0;
+}
+
+/* Lot 8k : prix des caisses en médailles : médaille (décorative, couleur du texte) puis montant ou « Il manque N médailles ». */
+.e3-ouvrir-ligne {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.e3-ouvrir-medaille {
+  flex: none;
+  width: 1.05em;
+  height: 1.05em;
+  fill: none;
+  stroke: currentcolor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* Lot 8k : compteurs de pitié dans « Voir les chances ». */
+.e3-chances-pitie {
+  margin: 0 0 calc(6 * var(--u));
+  padding: 0;
+  list-style: none;
+  font-weight: var(--font-weight-bold);
+  color: var(--menu-record);
+}
+
+.e3 .e3-rouge {
+  border: 2px solid var(--menu-coulure);
+  background: var(--menu-rouge-clair);
+  color: var(--menu-texte);
+}
+
+.e3 .e3-rouge:hover {
+  background: var(--menu-rouge);
+}
+
+.e3 .e3-planche {
+  border: 2px solid var(--menu-bois-sombre);
+  background: var(--menu-bois);
+  color: var(--menu-e9-bois-texte);
+}
+
+.e3 .e3-planche:hover {
+  background: var(--menu-bois-clair);
+}
+
+/* « Voir les chances » : lien (souligné, bleu clair de la maquette), cible de 44 de haut. */
+/* « Voir les chances » (retour du propriétaire : bouton stylisé) : pastille sombre bordée de la teinte de la caisse, icône de pourcentage, libellé en
+   capitales ; survol : fond de la teinte assombrie. */
+.e3-lien {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  gap: calc(6 * var(--u));
+  min-height: var(--menu-cible);
+  margin-top: calc(4 * var(--u));
+  max-width: 100%;
+  padding: 0 calc(12 * var(--u));
+  border: 2px solid color-mix(in srgb, var(--e3-teinte) 70%, var(--menu-e9-case));
+  border-radius: 999px;
+  background: var(--menu-scene-voiture);
+  color: var(--menu-texte);
+  font-family: var(--font-label);
+  font-size: max(11px, calc(12 * var(--u)));
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.e3-lien:hover {
+  border-color: var(--e3-teinte);
+  background: color-mix(in srgb, var(--e3-teinte) 22%, var(--menu-scene-voiture));
+}
+
+.e3-lien-icone {
+  width: max(14px, calc(15 * var(--u)));
+  height: max(14px, calc(15 * var(--u)));
+  fill: none;
+  stroke: var(--e3-teinte);
+  stroke-width: 1.8;
+  stroke-linecap: round;
+}
+
+/* Répartition des raretés d'une caisse (décorative, les pour cent exacts sont dans « Voir les chances ») : une part par rareté, de sa couleur. */
+.e3-repartition {
+  display: flex;
+  gap: 1px;
+  width: min(100%, calc(200 * var(--u)));
+  height: calc(6 * var(--u));
+  min-height: 5px;
+  margin: calc(4 * var(--u)) auto;
+  overflow: hidden;
+  border-radius: 3px;
+}
+
+.e3-repartition-part {
+  flex: 1 1 0;
+  min-width: 2px;
+  background: var(--e3-rarete);
+}
+
+/* Dessins des caisses (retour du propriétaire) : militaire (métal olive), élite (coffre sombre cerclé de la teinte), recrues (malle violette, plaques),
+   tenues (valise de cuir à sangles). Jetons existants seulement. */
+.e3-poignee,
+.e3-chaine {
+  fill: none;
+  stroke: var(--menu-clou);
+  stroke-width: 3;
+  stroke-linejoin: round;
+}
+
+.e3-chaine {
+  stroke-width: 1.4;
+  stroke-dasharray: 2 1.5;
+}
+
+.e3-metal,
+.e3-metal-couvercle {
+  stroke: var(--menu-perso-jambes);
+  stroke-width: 3;
+}
+
+.e3-metal {
+  fill: var(--menu-perso-survivant);
+}
+
+.e3-metal-couvercle {
+  fill: var(--menu-perso-poche);
+}
+
+.e3-metal-arete {
+  fill: none;
+  stroke: var(--menu-perso-poche);
+  stroke-width: 3;
+}
+
+.e3-loquet,
+.e3-plaque {
+  fill: var(--menu-clou);
+  stroke: var(--menu-bois-sombre);
+  stroke-width: 1.5;
+}
+
+.e3-malle,
+.e3-malle-couvercle {
+  stroke: var(--menu-e9-violet-bord);
+  stroke-width: 3;
+}
+
+.e3-malle {
+  fill: var(--menu-e9-violet);
+}
+
+.e3-malle-couvercle {
+  fill: var(--menu-e9-violet-inactif);
+}
+
+.e3-malle-bande {
+  fill: none;
+  stroke: var(--menu-e9-violet-bord);
+  stroke-width: 4;
+}
+
+.e3-valise {
+  fill: var(--menu-scene-planche);
+  stroke: var(--menu-bois-sombre);
+  stroke-width: 3;
+}
+
+.e3-anse {
+  fill: none;
+  stroke: var(--menu-bois-sombre);
+  stroke-width: 6;
+  stroke-linecap: round;
+}
+
+.e3-sangle {
+  fill: var(--menu-bois-sombre);
+}
+
+.e3-boucle {
+  fill: none;
+  stroke: var(--menu-clou);
+  stroke-width: 2;
+}
+
+.e3-coin-valise {
+  fill: none;
+  stroke: var(--menu-clou);
+  stroke-width: 3;
+}
+
+@keyframes e3-flotte {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+
+/* Tremblement bref toutes les 4 s (de 82 à 92 % : quatre oscillations en 0,4 s, une fois par cycle : bien moins de 3 éclats par seconde). */
+@keyframes e3-tremble {
+  0%, 82%, 100% { transform: rotate(0deg); }
+  84% { transform: rotate(-3deg); }
+  86% { transform: rotate(3deg); }
+  88% { transform: rotate(-2deg); }
+  90% { transform: rotate(2deg); }
+  92% { transform: rotate(0deg); }
+}
+
+@keyframes e3-lueur {
+  0%, 100% { opacity: 0.55; }
+  50% { opacity: 1; }
+}
+
+@keyframes e3-rayons {
+  0%, 100% { opacity: 0.15; }
+  50% { opacity: 0.6; }
+}
+
+/* E3-6 : panneau des chances (dialogue modal sur la zone de contenu, comme Information). */
+.e3-chances .e8-panneau-tete .menu-bandeau-libelle {
+  letter-spacing: 0;
+}
+
+.e3-chances-corps {
+  display: flex;
+  flex-direction: column;
+  gap: calc(10 * var(--u));
+  max-width: min(100%, calc(620 * var(--u)));
+}
+
+.e3-chances-liste,
+.e3-chances-objets {
+  display: flex;
+  flex-direction: column;
+  gap: calc(8 * var(--u));
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.e3-chance {
+  display: grid;
+  grid-template-columns: minmax(6em, max-content) 1fr 4.5em;
+  align-items: center;
+  gap: calc(12 * var(--u));
+  font-size: max(13px, calc(15 * var(--u)));
+}
+
+.e3-chance-nom {
+  font-weight: var(--font-weight-bold);
+}
+
+.e3-chance-barre {
+  height: calc(12 * var(--u));
+  min-height: 8px;
+  border: 1px solid var(--menu-options-filet);
+  background: var(--menu-options-inactif);
+}
+
+.e3-chance-plein {
+  display: block;
+  height: 100%;
+  background: var(--e3-rarete);
+}
+
+.e3-chance-pc {
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--font-weight-bold);
+  text-align: right;
+}
+
+.e3-chances-sous-titre {
+  margin: calc(6 * var(--u)) 0 0;
+  font-family: var(--font-label);
+  font-size: max(12px, calc(14 * var(--u)));
+  font-weight: var(--font-weight-normal);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--menu-e9-texte-doux);
+}
+
+.e3-chances-groupe {
+  padding-left: calc(10 * var(--u));
+  border-left: 4px solid var(--e3-rarete);
+  font-size: max(13px, calc(14 * var(--u)));
+  line-height: 1.35;
+}
+
+.e3-chances-groupe-nom {
+  margin-right: 0.4em;
+  font-weight: var(--font-weight-bold);
+}
+
+.e3-chances-groupe-objets,
+.e3-chances-regle {
+  color: var(--menu-e9-texte-doux);
+}
+
+.e3-chances-regle {
+  margin: 0;
+  font-size: max(12px, calc(13 * var(--u)));
+}
+
+/* E3-4 et E3-5 : écrans de résultat (fond bleu nuit radial de la maquette), en écran plein (barre d'onglets masquée : retour du propriétaire) ;
+   centrés dans la hauteur libre. */
+.e8-ecran.e3-resultat {
+  --e3-centre: max(0px, calc((100% - 318 * var(--u)) / 2));
+  align-items: stretch;
+  gap: 0;
+  background: radial-gradient(circle at 50% 55%, var(--menu-e3-fond) 0, var(--menu-nuit) 65%);
+}
+
+.e3-tete {
+  margin-bottom: calc(14 * var(--u));
+}
+
+.e3-halo {
+  position: absolute;
+  top: calc(40 * var(--u) + var(--e3-centre));
+  left: calc(50% - 200 * var(--u));
+  width: calc(400 * var(--u));
+  height: calc(300 * var(--u));
+  border-radius: 50%;
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--e3-rarete) 45%, transparent), transparent);
+  pointer-events: none;
+}
+
+.e3-objet {
+  position: absolute;
+  top: calc(80 * var(--u) + var(--e3-centre));
+  left: calc(50% - 130 * var(--u));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: calc(6 * var(--u));
+  box-sizing: border-box;
+  width: calc(260 * var(--u));
+  height: calc(190 * var(--u));
+  border: 3px solid var(--e3-rarete);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--e3-rarete) 14%, var(--menu-e9-case));
+  text-align: center;
+}
+
+.e3-objet.e3-brille,
+.e3-case.e3-brille {
+  box-shadow: 0 0 calc(30 * var(--u)) calc(8 * var(--u)) color-mix(in srgb, var(--e3-rarete) 40%, transparent);
+}
+
+.e3-objet-svg {
+  width: max(32px, calc(48 * var(--u)));
+  height: max(32px, calc(48 * var(--u)));
+  color: color-mix(in srgb, var(--e3-rarete) 30%, var(--menu-texte));
+}
+
+.e3-objet-nom {
+  margin: 0;
+  font-size: max(18px, calc(26 * var(--u)));
+  font-weight: var(--font-weight-bold);
+  line-height: 1.1;
+}
+
+.e3-objet-rarete,
+.e3-objet-ligne,
+.e3-range {
+  margin: 0;
+}
+
+.e3-objet-rarete {
+  color: color-mix(in srgb, var(--e3-rarete) 35%, var(--menu-texte));
+  font-size: max(13px, calc(15 * var(--u)));
+  font-weight: var(--font-weight-bold);
+}
+
+.e3-objet-ligne {
+  padding: 0 calc(8 * var(--u));
+  color: var(--menu-e9-texte-doux);
+  font-size: max(12px, calc(13 * var(--u)));
+}
+
+.e3-range {
+  position: absolute;
+  top: calc(284 * var(--u) + var(--e3-centre));
+  left: calc(50% - 130 * var(--u));
+  width: calc(260 * var(--u));
+  color: var(--menu-e9-texte-doux);
+  font-size: max(12px, calc(13 * var(--u)));
+  text-align: center;
+}
+
+/* ×10 : grille 5 × 2 (640 de large au plus, jamais sous les boutons de droite), résumé dessous ; les cases rétrécissent si l'écran est bas. */
+.e3-dix {
+  position: absolute;
+  top: calc(var(--e3-sous-bandeau) + var(--e3-centre));
+  bottom: calc(8 * var(--u));
+  left: var(--e8-gauche);
+  display: flex;
+  flex-direction: column;
+  gap: calc(10 * var(--u));
+  width: min(calc(640 * var(--u)), calc(100% - var(--e8-gauche) - var(--e8-droite) - 228 * var(--u)));
+}
+
+.e3-grille {
+  display: grid;
+  flex: 0 1 calc(206 * var(--u));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-rows: repeat(2, minmax(0, 1fr));
+  gap: calc(14 * var(--u));
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.e3-case {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: calc(2 * var(--u));
+  box-sizing: border-box;
+  min-width: 0;
+  min-height: 0;
+  padding: 0 calc(4 * var(--u));
+  border: 3px solid var(--e3-rarete);
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--e3-rarete) 14%, var(--menu-e9-case));
+  text-align: center;
+}
+
+.e3-case.e3-brille {
+  box-shadow: 0 0 calc(26 * var(--u)) calc(6 * var(--u)) color-mix(in srgb, var(--e3-rarete) 55%, transparent);
+}
+
+.e3-case-nom {
+  max-width: 100%;
+  font-size: max(12px, calc(15 * var(--u)));
+  font-weight: var(--font-weight-bold);
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+
+.e3-case-rarete {
+  color: var(--menu-texte);
+  font-size: max(11px, calc(12 * var(--u)));
+}
+
+.e3-resume {
+  flex: none;
+  margin: 0;
+  color: var(--menu-e9-texte-doux);
+  font-size: max(12px, calc(14 * var(--u)));
+  line-height: 1.3;
+}
+
+.e3-meilleur {
+  color: color-mix(in srgb, var(--e3-rarete) 70%, var(--menu-texte));
+}
+
+/* Boutons de droite (maquette : 200 de large, x 700 ; ×1 : haut 210, ×10 : haut 124). */
+.e3-actions {
+  position: absolute;
+  top: calc(160 * var(--u) + var(--e3-centre));
+  right: var(--e8-droite);
+  display: flex;
+  flex-direction: column;
+  gap: calc(8 * var(--u));
+  width: calc(200 * var(--u));
+}
+
+.e3-resultat[data-quantite='10'] .e3-actions {
+  top: calc(var(--e3-sous-bandeau) + var(--e3-centre));
+}
+
+.e3-action {
+  padding: 0 calc(8 * var(--u));
+  font-size: max(12px, calc(14 * var(--u)));
+  text-align: center;
+  text-transform: uppercase;
+}
+
+/* Apparition simple (fondu, léger glissement), décalée d'une case à l'autre pour ×10 ; directe sous prefers-reduced-motion. */
+.e3-apparait {
+  animation: e3-apparition 0.4s ease-out calc(var(--e3-rang, 0) * 70ms) both;
+}
+
+@keyframes e3-apparition {
+  from { opacity: 0; transform: translateY(calc(10 * var(--u))); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Roue de chargement (js/menu/roue.js ; retour du propriétaire : plus grosse et plus visible) : anneau de 76 px (au plus 22 % du petit côté)
+   sur un disque sombre, lueur rouge, texte dessous. Au centre de son parent ; .menu-roue-fixe : au centre de l'écran, devant tout. */
+.menu-roue {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  pointer-events: none;
+}
+
+.menu-roue-fixe {
+  position: fixed;
+  z-index: 40;
+}
+
+.menu-roue-anneau {
+  box-sizing: border-box;
+  width: min(76px, 22vmin);
+  height: min(76px, 22vmin);
+  border-radius: 50%;
+  border: min(8px, 2.3vmin) solid var(--menu-texte-doux);
+  border-top-color: var(--menu-rouge-clair);
+  border-right-color: var(--menu-rouge-clair);
+  background: var(--menu-barre-fond);
+  box-shadow: 0 0 0 6px var(--menu-barre-fond), 0 0 22px 4px var(--menu-rouge);
+  animation: e8-roue 0.8s linear infinite;
+}
+
+.menu-roue-texte {
+  padding: 4px 12px;
+  border-radius: 4px;
+  background: var(--menu-barre-fond);
+  color: var(--menu-texte);
+  font-weight: 700;
+  font-size: max(14px, calc(15 * var(--u, 1px)));
+  text-shadow: 0 1px 2px var(--menu-texte-ombre);
+}
+
+@keyframes e8-roue {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .menu-roue-anneau {
+    animation: none;
+  }
+}
+
+/* Rappel du plein écran au retour de la partie (retour du propriétaire) : bandeau discret en haut au centre, sous l'en-tête ; ne capte rien. */
+.e8-rappel-plein {
+  position: fixed;
+  top: calc(env(safe-area-inset-top, 0px) + 64px);
+  left: 50%;
+  z-index: 35;
+  max-width: calc(100% - 32px);
+  margin: 0;
+  padding: 8px 16px;
+  transform: translateX(-50%);
+  border: 2px solid var(--menu-rouge-clair);
+  border-radius: 6px;
+  background: var(--menu-barre-fond);
+  color: var(--menu-texte);
+  font-weight: 700;
+  font-size: max(14px, calc(15 * var(--u, 1px)));
+  text-align: center;
+  pointer-events: none;
+}
+
+/* ---------------------------------------------------------------------------------------------------------------------------------------------- */
+/* Lot 8g — E0 : introduction du studio (js/menu/intro.js) : fond noir, logo animé de No Way Studio au centre (image fournie par le propriétaire :
+   ses couleurs sont dans le fichier, aucune ici), « Toucher pour passer » au bout d'une seconde, fondu final. Au-dessus de l'écran de chargement
+   (E7, z-index 51), qui charge le menu dessous. Taille : tient dans l'écran de 667 × 375 à 2000 × 1020 (62 % de la hauteur au plus, 720 px de large ; « Toucher pour passer » dessous). */
+.e0 {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--menu-entete);
+  touch-action: none;
+}
+
+.e0-logo {
+  display: block;
+  width: min(78vw, calc(62vh * 824 / 628), 720px);
+  height: auto;
+  aspect-ratio: 824 / 628; /* viewBox du logo (nouvelle version : -20 -62 824 628) */
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+.e0-passer {
+  position: absolute;
+  left: 50%;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 12px);
+  min-width: var(--menu-cible);
+  min-height: var(--menu-cible);
+  padding: 0 16px;
+  transform: translateX(-50%);
+  border: 0;
+  background: transparent;
+  color: var(--menu-texte-doux);
+  font: inherit;
+  font-family: var(--font-sans);
+  font-size: max(13px, calc(14 * var(--u)));
+  letter-spacing: 0.04em;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.e0-indice .e0-passer {
+  animation: e0-indice 0.5s ease-out both;
+  pointer-events: auto;
+}
+
+/* Retour du propriétaire (son du logo) : attente du premier geste : écran noir, sans logo, « Toucher pour commencer » au milieu, qui respire
+   lentement (2,4 s). */
+.e0-logo[hidden] {
+  display: none;
+}
+
+.e0-commencer {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  min-width: var(--menu-cible);
+  min-height: var(--menu-cible);
+  padding: 0 18px;
+  transform: translate(-50%, -50%);
+  border: 0;
+  background: transparent;
+  color: var(--menu-texte);
+  font: inherit;
+  font-family: var(--font-label);
+  font-size: max(15px, calc(17 * var(--u)));
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  animation: e0-pouls 2.4s ease-in-out infinite;
+}
+
+.e0-commencer[hidden] {
+  display: none;
+}
+
+@keyframes e0-pouls {
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.55;
+  }
+}
+
+.e0-sortie {
+  animation: e0-sortie 0.4s ease-in both;
+  pointer-events: none;
+}
+
+@keyframes e0-indice {
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes e0-sortie {
+  to {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .e0-commencer {
+    animation: none;
+  }
+
+  .e0-indice .e0-passer {
+    animation: none;
+    opacity: 1;
+  }
+
+  .e0-sortie {
+    animation: none;
+  }
+}
+
+/* Lot 8g : logo du studio (copie fixe) en petit en bas à gauche de l'écran de chargement, à 16 px des bords de la zone sûre ; la version reste
+   en bas à droite ; sous la barre de chargement et l'astuce, sans les toucher (vérifié à 667 × 375). */
+.e7-studio {
+  position: absolute;
+  left: calc(var(--e7-sur-g, env(safe-area-inset-left, 0px)) + 16px);
+  bottom: calc(var(--e7-sur-b, env(safe-area-inset-bottom, 0px)) + 16px);
+  width: auto;
+  height: clamp(36px, calc(52 * var(--u)), 80px);
+  pointer-events: none;
+}
+
+/* ---------------------------------------------------------------------------------------------------------------------------------------------- */
+/* Lot 8g — E11 : Crédits (js/menu/credits.js) : écran plein (retour du propriétaire : sans la barre d'onglets) ; bandeau et « ‹ Retour » (composants des Options) ; deux
+   colonnes qui défilent (studio et équipe à gauche, outils et licences à droite) ; une zone dépliable par licence, dont le texte défile. */
+.e11 {
+  --e5-bouton-h: max(var(--menu-cible), calc(40 * var(--u)));
+  gap: calc(14 * var(--u));
+  padding-bottom: max(12px, calc(26 * var(--u)), env(safe-area-inset-bottom, 0px));
+  color: var(--menu-texte);
+}
+
+.e11-tete {
+  margin-bottom: calc(6 * var(--u)); /* place des coulures du bandeau */
+}
+
+.e11-grille {
+  display: grid;
+  flex: 1;
+  grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+  gap: calc(28 * var(--u));
+  width: 100%;
+  min-height: 0;
+}
+
+.e11-colonne {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-right: 4px;
+}
+
+.e11-logos {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: calc(14 * var(--u));
+  margin: 0 0 calc(8 * var(--u));
+}
+
+/* Retour du propriétaire : logos en petit (avant : jusqu'à 230 de large, trop grand sur PC) ; No Way Studio et Noven Studio côte à côte. */
+.e11-logo {
+  display: block;
+  width: auto;
+  max-width: 100%;
+  height: clamp(60px, calc(96 * var(--u)), 150px); /* retour du propriétaire : un peu plus grands (avant : 48 à 110) */
+}
+
+.e11-signature {
+  margin: 0 0 calc(16 * var(--u));
+  font-family: var(--font-label);
+  font-size: max(13px, calc(15 * var(--u)));
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.e11-section {
+  margin-bottom: calc(14 * var(--u));
+}
+
+.e11-section-titre {
+  margin: 0 0 calc(6 * var(--u));
+  font-family: var(--font-label);
+  font-weight: var(--font-weight-normal);
+  font-size: max(13px, calc(15 * var(--u)));
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--menu-texte-doux);
+}
+
+.e11-noms {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.e11-nom {
+  font-size: max(15px, calc(17 * var(--u)));
+  font-weight: var(--font-weight-bold);
+  line-height: 1.35;
+}
+
+.e11-provisoire {
+  margin: 0;
+  font-size: max(13px, calc(14 * var(--u)));
+  font-style: italic;
+  color: var(--menu-texte-doux);
+}
+
+.e11-licence {
+  margin-bottom: calc(8 * var(--u));
+}
+
+.e11-deplier {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  min-height: var(--menu-cible);
+  padding: 4px 12px;
+  border: 2px solid var(--menu-bouton-rond-bord);
+  border-radius: 4px;
+  background: var(--menu-panneau);
+  color: var(--menu-texte);
+  text-align: left;
+  cursor: pointer;
+}
+
+.e11-deplier:hover {
+  background: var(--color-surface-raised);
+}
+
+.e11-deplier-noms {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.e11-deplier-nom {
+  font-weight: var(--font-weight-bold);
+  font-size: max(14px, calc(15 * var(--u)));
+}
+
+.e11-deplier-licence {
+  font-size: max(12px, calc(13 * var(--u)));
+  color: var(--menu-texte-doux);
+}
+
+.e11-chevron {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentcolor;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.e11-deplier[aria-expanded='true'] .e11-chevron {
+  transform: rotate(180deg);
+}
+
+.e11-licence-texte {
+  max-height: max(140px, calc(170 * var(--u)));
+  margin-top: 4px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 8px 12px;
+  border: 1px solid var(--menu-bouton-rond-bord);
+  border-top: 0;
+  background: var(--menu-panneau);
+}
+
+.e11-avis {
+  margin: 0 0 8px;
+  font-weight: var(--font-weight-bold);
+  font-size: max(12px, calc(13 * var(--u)));
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+.e11-texte {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-size: max(12px, calc(12.5 * var(--u)));
+  line-height: 1.4;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  color: var(--menu-texte-doux);
+}
+
+/* ---------------------------------------------------------------------------------------------------------------------------------------------- */
+/* Lot 8g — E10 : Connexion et Profil (js/menu/compte.js ; maquette Profil.html, 932 × 430) : écrans pleins comme les Options (même fond à filets),
+   bandeau et « ‹ Menu » ; Profil : carte de 268 × 280 à gauche (avatar de 88, pseudo, compte), six statistiques en 3 × 2 (cartes de 78 de haut, écart
+   de 10) et cadre « Sauvegarde » de 74 de haut à droite ; fenêtres d'export et d'import (voile et panneau du menu). Tailles en calc(N * var(--u)). */
+.e8[data-ecran='profil'] .e8-contenu,
+.e8[data-ecran='credits'] .e8-contenu {
+  grid-row: 2 / 4;
+}
+
+.e10-tete {
+  margin-bottom: calc(10 * var(--u)); /* retour du propriétaire : les coulures du bandeau (18) ne coulent plus sur la carte de l'avatar */
+}
+
+.e8-ecran.e10 {
+  --e5-bouton-h: max(var(--menu-cible), calc(40 * var(--u)));
+  align-items: stretch;
+  gap: calc(14 * var(--u));
+  padding-bottom: calc(26 * var(--u));
+  color: var(--menu-texte);
+  background:
+    linear-gradient(var(--menu-options-trait), var(--menu-options-trait)) 0 calc(99 * var(--u)) / 100% 2px no-repeat,
+    linear-gradient(var(--menu-options-trait), var(--menu-options-trait)) 0 calc(229 * var(--u)) / 100% 2px no-repeat,
+    linear-gradient(var(--menu-options-trait), var(--menu-options-trait)) calc(239 * var(--u)) 0 / 2px calc(100 * var(--u)) no-repeat,
+    linear-gradient(var(--menu-options-trait), var(--menu-options-trait)) calc(599 * var(--u)) calc(100 * var(--u)) / 2px calc(130 * var(--u)) no-repeat,
+    linear-gradient(var(--menu-options-trait), var(--menu-options-trait)) calc(119 * var(--u)) calc(230 * var(--u)) / 2px 100% no-repeat,
+    linear-gradient(var(--menu-options-trait), var(--menu-options-trait)) calc(819 * var(--u)) calc(230 * var(--u)) / 2px 100% no-repeat,
+    var(--menu-options-fond);
+}
+
+.e10-bouton {
+  min-height: var(--menu-cible);
+  padding: 0 calc(12 * var(--u));
+  border: 1px solid var(--menu-options-bouton-bord);
+  border-radius: 4px;
+  background: var(--menu-options-bouton);
+  color: var(--menu-options-bouton-texte);
+  font-size: max(13px, calc(13 * var(--u)));
+  cursor: pointer;
+}
+
+.e10-bouton:hover:not([aria-disabled='true']) {
+  background: var(--color-surface-raised);
+}
+
+.e10-indisponible,
+.e10-indisponible:hover {
+  border-width: 2px;
+  color: var(--menu-carte-libelle);
+  cursor: not-allowed;
+}
+
+.e10-large {
+  width: 100%;
+}
+
+.e10-planche {
+  min-height: var(--menu-cible);
+  padding: 0 calc(14 * var(--u));
+  font-size: max(13px, calc(13 * var(--u)));
+  font-weight: var(--font-weight-bold);
+}
+
+/* Profil : deux colonnes. */
+.e10-grille {
+  display: grid;
+  flex: 1;
+  grid-template-columns: calc(268 * var(--u)) minmax(0, 1fr);
+  column-gap: calc(20 * var(--u));
+  min-height: 0;
+}
+
+.e10-carte {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: calc(4 * var(--u));
+  min-height: 0;
+  overflow-y: auto;
+  padding: calc(10 * var(--u)) calc(14 * var(--u));
+  border: 3px solid var(--menu-panneau-bois);
+  background: var(--menu-e9-panneau);
+}
+
+.e10-avatar {
+  display: grid;
+  flex: none;
+  place-items: center;
+  box-sizing: border-box;
+  width: max(56px, calc(76 * var(--u)));
+  height: max(56px, calc(76 * var(--u)));
+  border: 3px solid var(--menu-e9-stats-bord);
+  border-radius: 50%;
+  background: var(--menu-e9-case);
+}
+
+.e10-avatar {
+  overflow: hidden;
+}
+
+.e10-avatar-svg {
+  width: 100%;
+  height: 100%;
+}
+
+/* Retour du propriétaire : avatars d'après le personnage du jeu et les zombies (couleurs des personnages : jetons --perso-*). */
+.e10-avatar-svg .av-peau { fill: var(--av-peau); }
+.e10-avatar-svg .av-habit { fill: var(--av-habit); }
+.e10-avatar-svg .av-sombre { fill: var(--perso-sombre); }
+.e10-avatar-svg .av-acc { fill: var(--av-acc, var(--menu-panneau-atteint)); }
+.e10-avatar-svg .av-acc2 { fill: var(--perso-casque); }
+.e10-avatar-svg .av-yeux { fill: var(--perso-yeux); }
+.e10-avatar-svg .av-sang { fill: var(--menu-sang); }
+.e10-avatar-svg .av-lampe { fill: var(--perso-lampe); }
+.e10-avatar-svg .av-trait { fill: none; stroke: var(--perso-sombre); stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.e10-avatar-svg .av-col { fill: var(--perso-tissu-os); }
+.e10-avatar-anonyme { --av-peau: var(--perso-anonyme-tete); --av-habit: var(--perso-anonyme); } /* par défaut : tout gris */
+.e10-avatar-survivant { --av-peau: var(--perso-peau-joueur); --av-habit: var(--perso-joueur-veste); }
+.e10-avatar-eclaireur { --av-peau: var(--perso-peau-joueur); --av-habit: var(--perso-joueur-sweat); }
+.e10-avatar-tireur { --av-peau: var(--perso-peau-joueur); --av-habit: var(--perso-joueur-vif); }
+.e10-avatar-rodeur { --av-peau: var(--perso-peau-cendre); --av-habit: var(--perso-tissu-os); }
+.e10-avatar-ouvrier { --av-peau: var(--perso-peau-verte); --av-habit: var(--perso-tissu-kaki); --av-acc: var(--perso-orange); }
+.e10-avatar-affame { --av-peau: var(--perso-peau-jaune); --av-habit: var(--perso-tissu-gris); }
+
+/* Retour du propriétaire : petit menu des avatars sous le grand portrait (à la place du bouton, du pseudo et du compte) ; tuiles carrées de
+   44 px au moins (cibles jointives), rond visible 4 px plus petit (l'écart entre deux ronds) ; autant de colonnes que la carte en tient (quatre dès
+   667 px de large : deux lignes pour sept avatars) ; l'avatar regardé est encadré en jaune (et coché : aria-checked). */
+.e10-choix {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+  min-height: 0;
+}
+
+.e10-choix[hidden],
+.e10-carte > .e10-bouton[hidden],
+.e10-compte[hidden] {
+  display: none;
+}
+
+.e10-choix-titre {
+  margin: 0;
+  font-family: var(--font-label);
+  font-size: max(13px, calc(14 * var(--u)));
+  letter-spacing: 0.04em;
+}
+
+/* Liste des avatars : défile vers le bas quand il y en a plus que la place (d'autres viendront) ; portrait et boutons restent fixes. Glissable à
+   la souris (js/glisser.js, racine du menu), au doigt et à la molette. */
+.e10-choix-grille {
+  display: grid;
+  flex: 0 1 auto;
+  grid-template-columns: repeat(auto-fill, max(44px, calc(50 * var(--u))));
+  align-content: start;
+  justify-content: center;
+  width: 100%;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: var(--menu-e9-stats-bord) transparent;
+}
+
+.e10-tuile {
+  box-sizing: border-box;
+  display: grid;
+  place-items: center;
+  width: max(44px, calc(50 * var(--u)));
+  height: max(44px, calc(50 * var(--u)));
+  padding: 2px;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  cursor: pointer;
+}
+
+.e10-tuile-rond {
+  box-sizing: border-box;
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  border: 2px solid var(--menu-e9-stats-bord);
+  border-radius: 50%;
+  background: var(--menu-e9-case);
+}
+
+.e10-tuile:hover .e10-tuile-rond {
+  border-color: var(--menu-texte-doux);
+}
+
+.e10-tuile[aria-checked='true'] .e10-tuile-rond {
+  border: 3px solid var(--color-money);
+}
+
+/* Pendant le choix : grand portrait de la même taille qu'en temps normal (retour du propriétaire) ; carte aux bords plus fins (quatre tuiles par
+   ligne dès 667 px de large) qui ne défile plus elle-même : seule la liste défile, « Valider » et « Annuler » restent au bas de la carte. */
+.e10-carte-choix {
+  gap: 4px;
+  padding: calc(10 * var(--u)) 2px 2px; /* même marge du haut qu'en temps normal : le portrait ne bouge pas (retour du propriétaire) */
+  overflow: hidden;
+}
+
+.e10-choix .e10-actions {
+  flex: none;
+  justify-content: center;
+  width: 100%;
+}
+
+.e10-pseudo {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 100%;
+}
+
+.e10-pseudo[hidden],
+.e10-pseudo-form[hidden] {
+  display: none;
+}
+
+.e10-pseudo-texte {
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  font-family: var(--font-label);
+  font-size: max(16px, calc(20 * var(--u)));
+  letter-spacing: 0.04em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.e10-crayon {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: var(--menu-cible);
+  height: var(--menu-cible);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--menu-options-bouton-texte);
+  cursor: pointer;
+}
+
+.e10-crayon-icone {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentcolor;
+  stroke-width: 2;
+  stroke-linejoin: round;
+}
+
+.e10-pseudo-form {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+}
+
+.e10-label {
+  font-weight: var(--font-weight-bold);
+  font-size: max(13px, calc(13 * var(--u)));
+}
+
+.e10-champ,
+.e10-code {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: var(--menu-cible);
+  padding: 6px 10px;
+  border: 2px solid var(--menu-options-bouton-bord);
+  border-radius: 4px;
+  background: var(--menu-options-bouton);
+  color: var(--menu-texte);
+  font: inherit;
+  font-size: max(14px, calc(15 * var(--u)));
+}
+
+.e10-champ[aria-invalid='true'],
+.e10-code[aria-invalid='true'] {
+  border-color: var(--menu-rouge-trait);
+}
+
+.e10-code {
+  font-size: 13px;
+  resize: vertical;
+  overflow-wrap: anywhere;
+}
+
+.e10-consigne,
+.e10-sous,
+.e10-compte-texte {
+  margin: 0;
+  font-size: max(12px, calc(13 * var(--u)));
+  color: var(--menu-e9-texte-doux);
+}
+
+.e10-erreur {
+  margin: 0;
+  font-weight: var(--font-weight-bold);
+  font-size: max(12px, calc(13 * var(--u)));
+  color: var(--menu-rouge-trait);
+}
+
+.e10-erreur:empty {
+  display: none;
+}
+
+.e10-actions {
+  display: flex;
+  gap: 8px;
+}
+
+/* « Valider » (pseudo, avatar) : même taille de texte que les autres boutons de la carte (la planche n'en fixe pas). */
+.e10-valider {
+  font-size: max(13px, calc(13 * var(--u)));
+}
+
+.e10-compte {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+  margin-top: auto;
+  padding-top: 6px;
+  border-top: 1px dashed var(--menu-e9-stats-bord);
+}
+
+/* Colonne de droite : statistiques et sauvegarde. */
+.e10-droite {
+  display: flex;
+  flex-direction: column;
+  gap: calc(8 * var(--u));
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.e10-titre {
+  margin: 0;
+  font-family: var(--font-label);
+  font-weight: var(--font-weight-normal);
+  font-size: max(13px, calc(15 * var(--u)));
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--menu-e9-texte-doux);
+}
+
+.e10-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr)); /* lot 8k : sept statistiques (médailles gagnées) sur deux rangées, cartes un peu plus serrées */
+  gap: calc(8 * var(--u));
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.e10-stat {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  min-height: calc(78 * var(--u));
+  padding: calc(5 * var(--u)) calc(7 * var(--u));
+  line-height: 1.2;
+  border: 2px solid var(--menu-panneau-bois);
+  background: var(--menu-e9-panneau);
+}
+
+.e10-stat-nom {
+  font-weight: var(--font-weight-bold);
+  font-size: max(11px, calc(12 * var(--u)));
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--menu-carte-libelle);
+}
+
+.e10-stat-valeur {
+  font-weight: var(--font-weight-bold);
+  font-size: max(16px, calc(20 * var(--u)));
+  color: var(--menu-record);
+}
+
+.e10-stat-detail {
+  font-size: max(11px, calc(12 * var(--u)));
+  color: var(--menu-panneau-bois-texte);
+}
+
+.e10-sauvegarde {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 4px 8px;
+  min-height: calc(74 * var(--u));
+  margin-top: auto;
+  padding: calc(6 * var(--u)) calc(12 * var(--u));
+  line-height: 1.25;
+  border: 1px dashed var(--menu-e9-stats-bord);
+}
+
+.e10-sauvegarde .e10-titre {
+  font-size: max(13px, calc(14 * var(--u)));
+  color: var(--menu-texte);
+}
+
+.e10-sauvegarde-texte {
+  min-width: 0;
+}
+
+.e10-sauvegarde-boutons {
+  display: flex;
+  flex: none;
+  gap: 8px;
+  margin-left: auto; /* place étroite (encoche) : les boutons passent sous le texte, à droite */
+}
+
+.e10-sauvegarde-boutons > button {
+  padding: 0 max(8px, calc(12 * var(--u)));
+  white-space: nowrap;
+}
+
+.e10-importer {
+  border-width: 2px;
+  font-weight: var(--font-weight-bold);
+  color: var(--menu-texte);
+}
+
+/* Fenêtres d'export et d'import : panneau du menu, sur toute la hauteur sous l'en-tête (la barre d'onglets est masquée). */
+.e10-voile .e10-panneau {
+  bottom: 0;
+}
+
+.e10-panneau-titre {
+  margin: 0;
+  font-family: var(--font-label);
+  font-weight: var(--font-weight-normal);
+  font-size: max(15px, calc(17 * var(--u)));
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.e10-panneau-corps {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.e10-croix {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentcolor;
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+.e10-message {
+  margin: 0;
+  font-size: max(13px, calc(14 * var(--u)));
+}
+
+.e10-message:empty {
+  display: none;
+}
+
+.e10-apercu {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  width: 100%;
+}
+
+.e10-apercu[hidden] {
+  display: none;
+}
+
+.e10-sous-titre {
+  margin: 0;
+  font-size: max(13px, calc(14 * var(--u)));
+}
+
+.e10-table {
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.e10-table th,
+.e10-table td {
+  padding: 3px 10px 3px 0;
+  text-align: left;
+}
+
+.e10-change {
+  font-weight: var(--font-weight-bold);
+  color: var(--menu-record);
+}
+
+.e10-case {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: var(--menu-cible);
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.e10-case input {
+  width: 22px;
+  height: 22px;
+}
+
+.e10-remplacer:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Retour du propriétaire : écran bas (moins de 400 px) : le titre du choix d'avatar n'est plus affiché (toujours lu : nom du groupe). */
+@media (max-height: 400px) {
+  .e10-choix-titre {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}
+
+/* Lot 8g : écran très bas (téléphone à encoche, 351 px de haut) : le Profil tient sans défiler ; les détails des statistiques (secondaires) sont masqués. */
+@media (max-height: 360px) {
+  .e8-ecran.e10 {
+    padding-bottom: 8px;
+  }
+
+  .e10-stat {
+    min-height: 0;
+    padding: 4px 10px;
+  }
+
+  .e10-stat-detail {
+    display: none;
+  }
+
+  .e10-sauvegarde {
+    min-height: 0;
+    padding: 4px 10px;
+  }
+}

@@ -22,6 +22,7 @@ import { applyHeal, canFire, canHealOnKill, canMove, createPlayerDown, isInvulne
 import { effectivePlayer, effectiveWeapon, normalizeLevels, STAT_IDS, statValues } from '../core/player-stats.js';
 import { createBullet, stepBullets } from '../core/projectile.js';
 import { castRay } from '../core/ray.js';
+import { longueursCone, obstaclesTirs, preparerTirs } from '../core/tir-traverse.js';
 import { createRng } from '../core/rng.js';
 import { shotAngle, speedRatio, spreadHalfAngle, stepSpreadRatio, toRadians } from '../core/spread.js';
 import { createFootsteps, stepFootsteps } from '../core/footsteps.js';
@@ -37,6 +38,8 @@ import { createEffects, MAX_SPARKS, SPARK_TIME } from './effects.js';
 import { createFloorFade } from './floor-fade.js';
 import { createBank } from './bank.js';
 import { createHud } from './hud.js';
+import { createPorteMessage } from './porte-message.js';
+import { createBleuManche, createMedaillesManche } from './bleu-manche.js';
 import { createSplashView } from './splash-view.js';
 import { pickGround } from './picking.js';
 import { STRIDE } from './skeleton.js';
@@ -75,6 +78,7 @@ export function createGame(ctx) {
   // jusqu'au bord du monde. Salle du lot 1m (?empty=1) : les limites de la salle, comme avant. Lot 3c : les portes fermées arrêtent aussi les balles et le laser (sans
   // dégâts) ; la liste suit l'état des portes et l'étage du joueur (syncSolids). Lot 3e : ce sont toujours les solides de l'étage du joueur.
   let blockers = [];
+  const tirs = preparerTirs(cfg.tirs, layouts); // lot 8j : tirs par-dessus les objets bas et à travers les grilles (null : liste d'avant)
   let playerSolids = layout.playerObstacles;
   // Lot 3 : les fenêtres ont des planches (siège par les zombies) ; la salle du lot 1m (?empty=1) n'a ni planches ni siège. Lot 3e : tout ce qui est par étage (grilles de
   // chemin, planches, champs de flux, escaliers) vit dans js/core/floor-sim.js, une seule fois au chargement.
@@ -134,6 +138,9 @@ export function createGame(ctx) {
   if (ctx.graphics) ctx.ui?.bindOptions?.({ graphics: ctx.graphics, vhs: ctx.vhs }); // lot 5j : écran Options de la pause (importé à la première ouverture)
   const effects = createEffects(world.effectsRoot, palette, { gunHeight: render.gunHeight, bulletRadius: cfg.weapon.bulletRadius });
   const hud = createHud(ctx.dict);
+  const bleuManche = createBleuManche(ctx.dict, ctx.reglages?.bleuManche); // retour du propriétaire : solde bleu et gain sous la vague en fin de manche
+  const medManche = createMedaillesManche(ctx.dict, ctx.reglages?.bleuManche, bleuManche.element); // lot 8k : médailles gagnées, sous la monnaie bleue
+  const porteMsg = siegeOn ? createPorteMessage(ctx.dict, ctx.reglages?.porte, doorCfgs) : null; // lot 8j : « Porte ouverte à la manche X » (lecture seule)
   const floorFade = createFloorFade();
   const splashView = createSplashView(ctx.dict);
   const splashOptions = { reducedMotion: reduced, params: ctx.splashCfg };
@@ -166,7 +173,8 @@ export function createGame(ctx) {
   // Argent et sauvegarde (lot 4) : js/game/bank.js relie les événements de la partie à l'économie (js/core/economy.js) et au dépôt de sauvegarde (js/save/).
   // Son horloge est le temps de jeu cumulé (millisecondes, jamais remis à zéro par « Rejouer »), la date enregistrée est l'horloge murale.
   let bankMs = 0;
-  const bank = createBank({ repository: ctx.repository, mode: ctx.mode, economy: ctx.economy, save: ctx.saveCfg, clock: () => bankMs, wall: () => Date.now(), reducedMotion: reduced });
+  // Lot 8h : deux monnaies (jaune de la partie, bleue gardée) ; mode (histoire, infini) et monde de la partie : record de ce mode et de ce monde.
+  const bank = createBank({ repository: ctx.repository, mode: ctx.mode, economy: ctx.economy, save: ctx.saveCfg, clock: () => bankMs, wall: () => Date.now(), reducedMotion: reduced, partie: { mode: ctx.modePartie, monde: ctx.monde } });
   // Mise à l'abri de la sauvegarde quand la page est cachée ou fermée (en plus de l'écriture à l'ouverture de la pause).
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) bank.flush('hidden');
@@ -205,7 +213,7 @@ export function createGame(ctx) {
     const open = openIds();
     const l = layoutOf(pf());
     playerSolids = [...l.playerObstacles, ...closedDoors(l, open)];
-    blockers = l.empty ? [] : [...l.furniture.filter((f) => f.kind !== 'escalier'), ...l.walls, ...(l.decor?.solids ?? []), ...closedDoors(l, open)];
+    blockers = obstaclesTirs(l, closedDoors(l, open), tirs); // lot 8j : sans tirs, exactement la liste d'avant
   }
   const activeIdsNow = () => (zoneCfg ? activeWindows(zoneCfg, zoneOf, openIds()) : geoms.map((g) => g.id));
   const allSpawnPoints = () => layouts.floors.flatMap((f) => (layoutOf(f).spawnPoints ?? layoutOf(f).windows).map((p) => ({ ...p, floor: f })));
@@ -561,7 +569,7 @@ export function createGame(ctx) {
     // Laser : sert à viser et à déclencher le tir, jamais aux dégâts.
     const muzzle = muzzlePoint(sim.player, sim.aim.angle, weapon.muzzleOffset, layout.muzzleBounds);
     const ray = castRay(muzzle, sim.aim.angle, weapon.laserRange, sim.enemies, shotBounds, blockers, pf());
-    laser = !firing ? null : { from: muzzle, ray, cone: { angle: sim.aim.angle, half: toRadians(halfAngle()), length: weapon.laserRange } };
+    laser = !firing ? null : { from: muzzle, ray, cone: { angle: sim.aim.angle, half: toRadians(halfAngle()), length: weapon.laserRange, lengths: longueursCone(muzzle, sim.aim.angle, toRadians(halfAngle()), weapon.laserRange, shotBounds, blockers) } }; // cône arrêté comme le laser
     // Le tir part aussi quand la visée passe sur un ennemi au-delà de la portée du laser (le trait s'estompe, la balle continue) ;
     // un ennemi caché derrière un meuble ne déclenche jamais de tir.
     // Marge de visée : le tir part si la ligne passe à moins de aimTolerance du bord d'un ennemi ; la balle suit la vraie visée et peut le rater.
@@ -700,6 +708,7 @@ export function createGame(ctx) {
           waveLive = announcedKey && announcedKey !== SPLASH_TEXTS.zoneSubtitle ? `${ctx.dict[SPLASH_TEXTS.zoneTitle]}. ${ctx.dict[announcedKey]}.` : ctx.dict[ZONE_TEXTS.liveZone];
         } else if (ev.type === 'doorOpen') {
           openDoor(ev.door);
+          bank.door(); // lot 8k : médailles d'une porte ouverte (écrites aussitôt)
           const sunk = doorById.get(ev.door)?.opening; // lot 3i : son du bloc de porte qui s'enfonce, à la position de la porte
           if (sunk) events.push({ type: 'doorSink', x: (sunk.x1 + sunk.x2) / 2, y: (sunk.y1 + sunk.y2) / 2, floor: doorById.get(ev.door).floor, door: ev.door });
           eventLog.push({ type: 'doorOpen', door: ev.door, wave: ev.wave, time: sim.time });
@@ -712,6 +721,7 @@ export function createGame(ctx) {
           sim.down = healed.down;
           // Lot 4 : bonus de fin de manche (une seule fois par manche), annoncé avec la fin de manche.
           const paid = bank.waveEnd(ev.wave, waveInfo(sim.waves).reinforced === true);
+          if (paid.bonus > 0) bleuManche.montrer(bank.soldeBleu(), paid.bonus, sim.time);
           waveLive = paid.bonus > 0 ? fmt(ctx.dict[MONEY_TEXTS.liveWave], { n: ev.wave, bonus: paid.bonus }) : fmt(ctx.dict['game.wave.liveDone'], { n: ev.wave });
         }
       }
@@ -806,7 +816,7 @@ export function createGame(ctx) {
       ctx.ui.setLive(`${ctx.dict[ZONE_TEXTS.liveWorld]}${end?.record ? ` ${fmt(ctx.dict[MONEY_TEXTS.liveRecord], { n: end.reached })}` : ''}`);
       ctx.ui.showEnd(sim.kills, waveInfo(sim.waves).wave, 'world', end);
     }
-    bank.tick(); // commit regroupé échu (toutes les autosaveMs de temps de jeu), « +N » du HUD
+    bank.tick(); // « +N » jaune et bleu du HUD (lot 8h : plus d'écriture regroupée, la monnaie jaune n'est jamais écrite)
   }
 
   // Panneau de pause (E2-6) : « Prochaine zone : manche N » tant qu'une porte active reste fermée ; écrit seulement si la valeur change.
@@ -1040,8 +1050,11 @@ export function createGame(ctx) {
       unitsPerPixel: size.unitsPerPixel,
     });
     P?.mark('effets');
-    hud.update(sim.player, sim.kills, waveInfo(sim.waves), { chutes: sim.down.chutes, floor: multi ? pf() : null, maxWave: zoneCfg && !sim.waves.endless ? zoneCfg.wavesPerWorld : null, money: { balance: bank.balance(), gain: bank.gain() }, time: sim.time, trial: trialMode });
+    hud.update(sim.player, sim.kills, waveInfo(sim.waves), { chutes: sim.down.chutes, floor: multi ? pf() : null, maxWave: zoneCfg && !sim.waves.endless ? zoneCfg.wavesPerWorld : null, money: { balance: bank.balance(), gain: bank.gain(), gainBleu: bank.gainBleu() }, time: sim.time, trial: trialMode });
     floorFade.set(sim.trView.veil);
+    porteMsg?.update(sim.player, pf(), sim.doors, !sim.dead);
+    bleuManche.update(sim.time, !sim.dead && !sim.worldOver);
+    medManche.update(sim.time, bank.gainMedailles(), bank.soldeMedailles(), !sim.dead && !sim.worldOver);
     hud.updateDown(sim.down, sim.dead, cfg.down); // lot 3l : E2-10 dans la colonne centrale du HUD (js/game/hud.js)
     world.windowMeshes?.sync(sim.win); // pastille de la planche en cours de réparation : elle se remplit peu à peu
     updateEdgeArrows();
@@ -1362,6 +1375,11 @@ export function createGame(ctx) {
       bank.flush('pause');
       ctx.ui.setPauseInfo(bank.summary());
     },
+    // Lot 8a : « Quitter » confirmé : la partie en cours s'arrête ici ; son argent et ses records sont écrits par le même chemin qu'à la mort
+    // (bank.runEnd : écriture immédiate) ; rien de plus si elle est déjà finie (mort, monde terminé).
+    quit() {
+      if (!sim.dead && !sim.worldOver) bank.runEnd({ kills: sim.kills, reason: 'quit' });
+    },
     // Remet une partie propre (Rejouer, Recommencer).
     restart() {
       // Lot 4 : la partie en cours (ni morte, ni terminée) s'arrête ici : ses records et son argent sont écrits avant la remise à zéro.
@@ -1413,8 +1431,9 @@ export function createGame(ctx) {
         view: visibleRect(),
         playerScreen: projectPlayer(),
         laserEnd: laser ? { x: laser.ray.end.x, y: laser.ray.end.y } : null,
-        laser: laser ? { length: laser.ray.length, hit: laser.ray.hit?.id ?? null, stoppedBy: laser.ray.stoppedBy?.id ?? null, range: laser.cone.length, cone: { leftAngle: sim.aim.angle - laser.cone.half, rightAngle: sim.aim.angle + laser.cone.half } } : null,
+        laser: laser ? { length: laser.ray.length, hit: laser.ray.hit?.id ?? null, stoppedBy: laser.ray.stoppedBy?.id ?? null, range: laser.cone.length, cone: { leftAngle: sim.aim.angle - laser.cone.half, rightAngle: sim.aim.angle + laser.cone.half, lengths: laser.cone.lengths } } : null,
         world: { width: layout.size.width, height: layout.size.height, empty: layout.empty },
+        mode: ctx.modePartie ?? 'histoire', // lot 8b : mode de la partie (histoire ; infini : « Jouer » de l'onglet Infini du menu)
         map: { id: layout.id, size: { width: layout.size.width, height: layout.size.height }, windowIds: geoms.map((g) => g.id), pillars: layout.pillars.map((o) => ({ id: o.id, x: o.x, y: o.y, w: o.w, h: o.h })), start: { ...layout.start } },
         labels: labelState.map((l) => ({ ...l })),
         obstacles: layout.furniture.map((o) => ({ id: o.id, kind: o.kind, x: o.x, y: o.y, w: o.w, h: o.h, hauteur: o.hauteur, screen: screenAt(o.x + o.w / 2, o.hauteur, o.y + o.h / 2) })),

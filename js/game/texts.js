@@ -60,6 +60,7 @@ export const DOWN_TEXTS = {
 export const MONEY_TEXTS = {
   chip: 'game.hud.moneyLabel', pauseBalance: 'game.pause.balance', earned: 'game.end.earned', balance: 'game.end.balance', best: 'game.end.best', record: 'game.end.record',
   trial: 'game.end.trial', worldBonus: 'game.end.worldBonus', liveWave: 'game.live.waveBonus', liveRecord: 'game.live.record',
+  bleu: 'game.end.bleu', bestInfini: 'game.end.bestInfini', // lot 8h : monnaie bleue gagnée pendant la partie ; record du mode infini
 };
 // Lot 3l : HUD intégré (direction B) ; les libellés fixes (« Rec », « Vie », « Vague », « Restants », « Début », « Tués », « Mode essai ») sont dans jeu.html (data-i18n).
 export const HUD_TEXTS = { waveOf: 'game.hud.waveOf', reinforced: 'game.hud.reinforced', nextValue: 'game.hud.nextValue' };

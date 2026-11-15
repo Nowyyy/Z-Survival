@@ -7,6 +7,7 @@ import { createAudio } from './audio.js';
 import { createGame } from './game.js';
 import { createLoading } from './loading.js';
 import { readLevels } from './levels-source.js';
+import { normalizeLevels } from '../core/player-stats.js';
 import { makeEconomy } from '../core/economy.js';
 import { createRepository } from '../save/index.js';
 import { createInput } from './input.js';
@@ -22,8 +23,10 @@ import { generateTextureData } from './textures.js';
 import { installTestHook } from './testhook.js';
 import { createUi } from './ui.js';
 import { applyTexts, fmt, loadDict, TEXTURE_TEXTS } from './texts.js';
+import { feuilleMenu, menuChute, menuProgres, menuRetour, modeMenu, optionPartie, poserSon, reglagesSon } from '../menu/demarrage.js';
 
 const DEFAULT_RATIO_CAP = 2;
+menuProgres('modules', 1); // lot 8a : modules et Three.js évalués (écran de chargement du jeu après « JOUER » ; sans effet en partie directe)
 
 async function loadJson(path) {
   const response = await fetch(path);
@@ -81,6 +84,9 @@ const detail = query.get('detail') !== '0';
 // Lot 5b : préréglage graphique (?gfx= > préférence de l'appareil zs.device.v1 > auto) ; les paramètres explicites de l'adresse l'emportent.
 const gfx = await graphicsBoot(search);
 const gfxLoad = gfx.settings.load;
+// Lot 8j : objets traversables par les tirs (tirs.world.json de la carte, npm run carte) ; ?test=1&tirtraverse=0 : liste vide (jamais mémorisé).
+const tirsJson = mapId === 'salle' || (testMode && query.get('tirtraverse') === '0') ? null : await loadJson(`${mapDir}/tirs.world.json`).catch(() => null);
+const reglagesPartie = await loadJson('data/game/reglages-partie.json').catch(() => ({})); // lot 8j : message des portes, sons des zombies
 const decorInterieur = detail && gfxLoad.decor !== 'reduit' && mapId !== 'salle' ? await loadJson(`${mapDir}/decor-interieur.world.json`).catch(() => null) : null;
 // Retours du propriétaire : mobilier dessiné d'après le modèle (mobilier.world.json, avec le détail).
 const mobilier = detail && mapId !== 'salle' ? await loadJson(`${mapDir}/mobilier.world.json`).catch(() => null) : null;
@@ -113,6 +119,7 @@ const [dict, world, decor, camera, nav, player, weapons, enemies, render, textur
   loadJson('data/game/economy.json'),
   loadJson('data/game/save.json'),
 ]);
+menuProgres('donnees', 1);
 
 applyTexts(dict);
 installSafeArea();
@@ -134,10 +141,20 @@ render.detailDoors = detail; // vraies portes et éboulis (lot 3g, retours) ; ?d
 render.seeThrough = query.get('percee') === '0' ? null : (render.seeThrough ?? null); // mur percé autour du joueur caché (lot 3g, retours) ; ?percee=0 l'enlève
 render.feux = detail && mapId !== 'salle' ? ((await loadJson(`${mapDir}/feux.json`).catch(() => null))?.feux ?? []) : []; // feux sur des caisses (lot 3g, retours)
 render.reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
-const textureData = await generateTextureData(texturesCfg.textures, { lookup: createTokenLookup(), onProgress: (p) => loading.update(p * TEXTURE_SHARE), detail: detail && gfxLoad.texturesFines });
+const textureData = await generateTextureData(texturesCfg.textures, { lookup: createTokenLookup(), onProgress: (p) => {
+  loading.update(p * TEXTURE_SHARE);
+  menuProgres('textures', p);
+}, detail: detail && gfxLoad.texturesFines });
 const soundMode = parseSoundMode(search); // ?sons= (groupe T)
-const audio = createAudio({ config: { audio: audioCfg, materials: materialsCfg, voice: voiceCfg, sounds: soundsCfg.sounds }, test: testMode, seed: Number.isFinite(seedParam) ? seedParam : 1, mode: soundMode });
-const essential = await renderSounds(planSounds(soundsCfg.sounds, 'essentiel'), { onProgress: (p) => loading.update(TEXTURE_SHARE + (1 - TEXTURE_SHARE) * p), mode: soundMode });
+const audio = createAudio({ config: { audio: audioCfg, materials: materialsCfg, voice: voiceCfg, sounds: soundsCfg.sounds, coups: testMode && query.get('coups') === '1' ? { ...reglagesPartie.sonsZombies, probabilite: 1 } : (reglagesPartie.sonsZombies ?? {}) }, test: testMode, seed: Number.isFinite(seedParam) ? seedParam : 1, mode: soundMode });
+const sonMenu = reglagesSon(); // lot 8c : son et volume des Options du menu ; lot 8h : gardés dans zs.device.v1 (partie directe comprise)
+if (sonMenu.coupe) audio.toggleMute();
+if (sonMenu.volume !== null) audio.setVolume(sonMenu.volume);
+if (sonMenu.musique !== null) audio.setMusicVolume(sonMenu.musique); // lot 8i : volume de la musique (mélodie d'annonce de vague)
+const essential = await renderSounds(planSounds(soundsCfg.sounds, 'essentiel'), { onProgress: (p) => {
+  loading.update(TEXTURE_SHARE + (1 - TEXTURE_SHARE) * p);
+  menuProgres('sons', p);
+}, mode: soundMode });
 audio.addSounds(essential.items);
 audio.stats.essentialMs = essential.ms;
 // Effet VHS : le grain est généré (texgen.js) et converti en adresse data: une seule fois, derrière l'écran de préparation.
@@ -150,8 +167,8 @@ const zones = zonesJson ? zonesToWorld(parseZones(zonesJson), world.transform) :
 const layouts = buildLayouts({ rdc: { world, decor }, etage: upperWorld ? { world: upperWorld } : null, zones }, { empty: emptyMode, slack: camera.slack });
 const layout = layouts.rdc;
 
-// Sauvegarde (lot 4) : le dépôt est choisi d'après l'adresse (mémoire pour ?test=1, lecture seule pour les paramètres d'essai) ; la seule clé de stockage
-// est zs.save.v1. L'accès à localStorage peut lever (stockage bloqué) : le dépôt local passe alors à « indisponible », le jeu continue.
+// Sauvegarde (lot 4) : le dépôt est choisi d'après l'adresse (mémoire pour ?test=1, lecture seule pour les paramètres d'essai) ; lot 8h : progression v2
+// (zs.save.v2 ; zs.save.v1 n'est ni lue ni écrite). L'accès à localStorage peut lever (stockage bloqué) : le dépôt local passe à « indisponible ».
 const storage = (() => {
   try {
     return window.localStorage;
@@ -164,20 +181,25 @@ const { repository, mode: saveMode } = createRepository({
   search,
   storage,
   params: saveParams,
+  format: 'v2',
   listen: (handler) => {
     window.addEventListener('storage', handler);
     return () => window.removeEventListener('storage', handler);
   },
   persist: () => navigator.storage?.persist?.(),
   // Lot 5o : canal entre onglets (défaut des deux onglets) ; save-merge.js n'est chargé que si un autre onglet se manifeste. Sans BroadcastChannel : null.
-  channel: () => (typeof BroadcastChannel === 'function' ? new BroadcastChannel(saveCfg.storageKey) : null),
+  channel: () => (typeof BroadcastChannel === 'function' ? new BroadcastChannel(saveCfg.v2.storageKey) : null),
   merge: () => import('../core/save-merge.js'),
   now: () => Date.now(),
 });
 const loadedSave = repository.load();
+// Lot 8d : niveaux effectifs calculés par le menu (équipement porté, capacité du personnage), reçus par l'option de démarrage (jamais par l'adresse) :
+// ils remplacent ceux de la sauvegarde pour cette partie seulement (source « menu ») ; ?lvl= garde la priorité ; rien n'est écrit (la banque ne
+// recopie que les niveaux de la sauvegarde). Partie directe : aucune option, niveaux lus comme avant.
+const niveauxPartie = (lus) => (optionPartie().stats && lus.source !== 'url' ? { ...normalizeLevels(optionPartie().stats, statsCfg), source: 'menu' } : lus);
 
 const ctx = {
-  cfg: { layout, layouts, stairs: stairsCfg, player, weapon: weapons.pistol, stats: statsCfg, zombie: enemies.zombie, enemies, gaits: gaitsCfg, waves: wavesCfg, render, camera, nav, windows: windowsCfg, down: downCfg },
+  cfg: { layout, layouts, stairs: stairsCfg, player, weapon: weapons.pistol, stats: statsCfg, zombie: enemies.zombie, enemies, gaits: gaitsCfg, waves: wavesCfg, render, camera, nav, windows: windowsCfg, down: downCfg, tirs: tirsJson },
   palette,
   dict,
   textureData,
@@ -188,7 +210,8 @@ const ctx = {
     nospawn: query.get('nospawn') === '1',
     wave: waveParam(query.get('wave')),
     // ?endless=1 (lot 3c) : les manches continuent après la manche 40, sans fin de monde ; fonctionne sans ?test=1, n'expose rien et n'est jamais mémorisé.
-    endless: query.get('endless') === '1',
+    // Lot 8b : le mode infini du menu (option de démarrage, sans paramètre d'adresse, donc sans lecture seule) fait exactement la même chose.
+    endless: query.get('endless') === '1' || optionPartie().mode === 'infini',
     planks: planksParam(query.get('planks'), windowsCfg.planks),
     tilt: parseTilt(query.get('tilt'), render.camera.tilt),
     zoom: parseZoom(query.get('zoom'), layout.zoom ?? camera.zoom),
@@ -200,7 +223,7 @@ const ctx = {
   },
   seed: Number.isFinite(seedParam) ? seedParam : Date.now() % 2147483647,
   seedRun: 0,
-  levels: readLevels(search, statsCfg, loadedSave.status === 'ok' ? loadedSave.save : null),
+  levels: niveauxPartie(readLevels(search, statsCfg, loadedSave.status === 'ok' ? { stats: loadedSave.save.niveaux } : null)),
   repository,
   mode: saveMode,
   economy: makeEconomy(economyCfg, enemies),
@@ -212,10 +235,13 @@ const ctx = {
   audioCfg,
   audioMaterials: materialsCfg,
   canal, // lot 5l : canal de la page (null : refusé) ; l'icône de débogage de la pause n'existe que sur les canaux de débogage
+  monde: optionPartie().monde ?? 'batiment', // lot 8h : monde de la partie (record par monde et par mode)
+  reglages: reglagesPartie, // lot 8j : data/game/reglages-partie.json
+  modePartie: optionPartie().mode, // lot 8b : option de démarrage posée par le menu (histoire, ou infini sans paramètre d'adresse) ; partie directe : histoire
 };
 
-// Lot 5b : préréglages graphiques en jeu (réglages « live », Auto entre deux manches) ; sous ?test=1 le rechargement est simulé (getState().graphics).
-ctx.graphics = createGraphicsController(gfx, { vhs, dict, announce: (text) => ctx.ui?.setLive(text), reload: testMode ? null : () => location.reload() });
+// Lot 5b : préréglages graphiques en jeu (réglages « live », Auto entre deux manches) ; lot 8c : réglages « load » verrouillés en partie, sans rechargement.
+ctx.graphics = createGraphicsController(gfx, { vhs, dict, announce: (text) => ctx.ui?.setLive(text) });
 ctx.graphicsLabel = () => ctx.graphics.label();
 if (perfMode) ctx.profiler = (await import('./profiler.js')).createProfiler({ search, ua: navigator.userAgent });
 if (query.has('cap')) ctx.gate = (await import('./frame-cap.js')).gateFromParam(query.get('cap'));
@@ -223,12 +249,18 @@ if (query.has('cap')) ctx.gate = (await import('./frame-cap.js')).gateFromParam(
 let game = null;
 ctx.ui = createUi(dict, {
   onRestart: () => game?.restart(),
+  chargerStyles: feuilleMenu, // lot 8c : feuille des Options (composant partagé avec le menu), chargée à leur première ouverture
   onToggleSound: () => {
     ctx.audio.toggleMute();
+    poserSon({ coupe: ctx.audio.muted }); // lot 8h : gardé (zs.device.v1)
     ctx.ui.syncSound(ctx.audio);
   },
   onVolume: (n) => {
-    ctx.audio.setVolume(n);
+    poserSon({ volume: ctx.audio.setVolume(n) });
+    ctx.ui.syncSound(ctx.audio);
+  },
+  onMusicVolume: (n) => {
+    poserSon({ musique: ctx.audio.setMusicVolume(n) });
     ctx.ui.syncSound(ctx.audio);
   },
   onToggleVhs: () => {
@@ -247,6 +279,12 @@ ctx.ui = createUi(dict, {
     syncHint();
   },
   onRotateChange: () => ctx.input.releaseAll(),
+  // Lot 8a : « Quitter » confirmé (argent écrit par bank.runEnd, comme à la mort) et « Revenir au menu principal » : rechargement vers le menu.
+  onQuit: () => {
+    game?.quit();
+    menuRetour();
+  },
+  onMenu: () => menuRetour(),
 });
 ctx.input = createInput(root, {
   isBlocked: () => ctx.ui.isPaused(),
@@ -277,6 +315,7 @@ soundHint.addEventListener('click', () => ctx.audio.unlock());
 // aussi, et chaque geste retente la reprise tant que le contexte n'est pas en marche.
 for (const type of ['pointerdown', 'pointerup', 'click', 'touchend', 'keydown']) window.addEventListener(type, () => ctx.audio.unlock(), { capture: true });
 
+if (modeMenu) await menuChute(); // lot 8a : mode menu, la partie n'est créée (et ne tourne) qu'une fois la chute du Z finie
 game = createGame(ctx);
 // Lot 5b-G : l'écran de préparation reste affiché pendant la création du jeu (monde, programmes, premier rendu complet, zombies préparés) :
 // le joueur ne voit pas la première image lente ; la boucle d'images ne démarre qu'à l'image suivante, une fois l'écran retiré.
@@ -284,9 +323,11 @@ game = createGame(ctx);
 // de 55 à 30 (temps de blocage 1,3 à 1,6 s), sous le seuil de 45 ; ce commit reste dans la première seconde de la partie (compte à rebours « DÉBUT »).
 loading.done();
 root.hidden = false;
+menuProgres('compilation', 1); // lot 8a : partie créée ; en mode menu, l'écran de chargement du jeu laisse voir la partie
 if (game === null) {
   // WebGL indisponible : un message à la place du jeu.
   root.hidden = true;
+  document.getElementById('e7')?.remove(); // lot 8a : mode menu, le message remplace l'écran de chargement
   const error = document.getElementById('game-error');
   error.textContent = dict['game.error.webgl'];
   error.hidden = false;

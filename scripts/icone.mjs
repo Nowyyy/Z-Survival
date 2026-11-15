@@ -1,4 +1,5 @@
-// Génère l'icône du site (« Z » en lettres de sang sur fond noir, police Rubik Wet Paint du dépôt, couleurs lues dans css/tokens.css) et l'écrit en adresses data: PNG dans
+// Génère l'icône du site (« Z » en lettres de sang sur fond noir, incliné de 13° comme le Z du logo depuis le lot 8a, police Rubik Wet Paint du dépôt,
+// couleurs lues dans css/tokens.css) et l'écrit en adresses data: PNG dans
 // les pages (<link rel="icon"> et <link rel="apple-touch-icon">) : aucun fichier image n'est ajouté au dépôt.
 // Usage : node scripts/icone.mjs            imprime la taille des deux images ;
 //         node scripts/icone.mjs --ecrire   met à jour index.html et jeu.html (lot 5g : dev/index.html, le journal, est supprimé) ;
@@ -16,7 +17,7 @@ const html = (size) => `<!doctype html><html><head><style>
 @font-face { font-family: "Wet"; src: url(data:font/woff2;base64,${font}) format("woff2"); }
 html, body { margin: 0; width: ${size}px; height: ${size}px; background: ${BG}; overflow: hidden; }
 body { display: flex; align-items: center; justify-content: center; }
-span { font-family: "Wet"; font-size: ${Math.round(size * 0.74)}px; line-height: 1; color: ${RED}; }
+span { display: inline-block; font-family: "Wet"; font-size: ${Math.round(size * 0.7)}px; line-height: 1; color: ${RED}; transform: rotate(13deg); }
 </style></head><body><span>Z</span></body></html>`;
 
 const browser = await chromium.launch();

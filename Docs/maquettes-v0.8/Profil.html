@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Menu principal, profil — maquette V0.8 (référence)</title>
+<style>
+body{margin:0;background:#000}
+/* Polices : celles hébergées par le jeu (Barlow, Rubik Wet Paint, Rubik Dirt). Sans elles, le navigateur en substitue d'autres. */
+
+body{margin:0}
+a{color:#f4f1ec}a:hover{color:#ffffff}
+summary::-webkit-details-marker{display:none}
+
+@media (prefers-reduced-motion: reduce){*{animation:none !important}}
+</style>
+</head>
+<body>
+<div style="position: relative; width: 932px; height: 430px; overflow: hidden; background: #0c0b0a; font-family: 'Barlow', sans-serif; color: #f4f1ec">
+<svg aria-hidden="true" width="932" height="430" viewBox="0 0 932 430" style="position: absolute; left: 0; top: 0"><rect width="932" height="430" fill="#121110"></rect><path d="M0 150 H932 M0 280 H932" stroke="#1b1916" stroke-width="2"></path><path d="M240 50 V150 M600 150 V280 M120 280 V430 M820 280 V430" stroke="#1b1916" stroke-width="2"></path></svg>
+<div style="position: absolute; left: 32px; top: 62px; display: flex; flex-direction: column; align-items: flex-start">
+<div style="padding: 4px 12px 5px 12px; background: #c4110f; border-radius: 2px; display: flex; flex-direction: column">
+<span style="font-family: 'Rubik Dirt', sans-serif; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: #ffd9d4">Joueur</span>
+<span style="font-family: 'Rubik Wet Paint', sans-serif; font-size: 20px; line-height: 1.05; color: #ffffff">Profil</span>
+</div>
+<svg aria-hidden="true" width="100%" height="9" viewBox="0 0 180 12" preserveAspectRatio="none" style="display: block"><rect x="22" y="0" width="5" height="10" rx="2.5" fill="#c4110f"></rect><rect x="74" y="0" width="5" height="12" rx="2.5" fill="#c4110f"></rect><rect x="132" y="0" width="5" height="7" rx="2.5" fill="#c4110f"></rect></svg>
+</div>
+<a href="Main.html" style="position: absolute; left: 150px; top: 66px; height: 40px; padding: 0 12px 0 6px; display: flex; align-items: center; gap: 4px; background: #1a1614; border: 2px solid #3a3434; border-radius: 4px; text-decoration: none; color: #f4f1ec; font-family: 'Rubik Dirt', sans-serif; font-size: 13px; letter-spacing: 0.06em; text-transform: uppercase"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><path d="M15 6l-6 6 6 6"></path></svg>Menu</a>
+<section style="position: absolute; left: 32px; top: 124px; width: 268px; height: 280px; box-sizing: border-box; padding: 14px; background: #181513; border: 3px solid #3a2c1f; display: flex; flex-direction: column; align-items: center; gap: 8px">
+<div aria-hidden="true" style="width: 88px; height: 88px; border-radius: 44px; background: #1f1a1a; border: 3px solid #5a4b3a; display: flex; align-items: center; justify-content: center"><svg width="56" height="56" viewBox="0 0 24 24" fill="#4d4b3b"><circle cx="12" cy="8" r="4"></circle><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8z"></path></svg></div>
+<button style="height: 36px; padding: 0 12px; background: #1a1614; border: 1px solid #3a3434; border-radius: 4px; color: #cfc6b8; font-family: 'Barlow', sans-serif; font-size: 13px; cursor: pointer">Changer d'avatar</button>
+<div style="display: flex; align-items: center; gap: 8px"><span style="font-family: 'Rubik Dirt', sans-serif; font-size: 20px; letter-spacing: 0.04em">[pseudo]</span><button aria-label="Modifier le pseudo" style="width: 44px; height: 44px; background: none; border: none; color: #cfc6b8; cursor: pointer; display: flex; align-items: center; justify-content: center"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 20h4L20 8l-4-4L4 16z"></path></svg></button></div>
+<div style="margin-top: auto; width: 100%; padding-top: 8px; border-top: 1px dashed #4a3e33; display: flex; flex-direction: column; gap: 6px">
+<span style="font-size: 13px; color: #d9d4cb">Compte : non connecté</span>
+<button disabled style="height: 40px; background: #1a1614; border: 2px solid #3a3434; border-radius: 4px; color: #a9a49c; font-family: 'Barlow', sans-serif; font-size: 13px">Se connecter avec Google · bientôt</button>
+</div>
+</section>
+<h2 style="position: absolute; left: 320px; top: 120px; margin: 0; font-family: 'Rubik Dirt', sans-serif; font-weight: 400; font-size: 15px; letter-spacing: 0.06em; text-transform: uppercase; color: #e8e2d6">Statistiques</h2>
+<div style="position: absolute; left: 320px; top: 146px; width: 580px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px">
+
+<div style="height: 78px; box-sizing: border-box; padding: 8px 12px; background: #181513; border: 2px solid #3a2c1f; display: flex; flex-direction: column; justify-content: center; gap: 2px"><span style="font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #a9a49c">Meilleure manche</span><span style="font-size: 20px; font-weight: 700; color: #ffd60a">[N] / 40</span><span style="font-size: 12px; color: #cfc6b8">Histoire · Le bâtiment</span></div>
+
+
+<div style="height: 78px; box-sizing: border-box; padding: 8px 12px; background: #181513; border: 2px solid #3a2c1f; display: flex; flex-direction: column; justify-content: center; gap: 2px"><span style="font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #a9a49c">Record infini</span><span style="font-size: 20px; font-weight: 700; color: #ffd60a">Manche [N]</span><span style="font-size: 12px; color: #cfc6b8">Le bâtiment</span></div>
+
+
+<div style="height: 78px; box-sizing: border-box; padding: 8px 12px; background: #181513; border: 2px solid #3a2c1f; display: flex; flex-direction: column; justify-content: center; gap: 2px"><span style="font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #a9a49c">Zombies tués</span><span style="font-size: 20px; font-weight: 700; color: #ffd60a">[N]</span><span style="font-size: 12px; color: #cfc6b8">Toutes parties</span></div>
+
+
+<div style="height: 78px; box-sizing: border-box; padding: 8px 12px; background: #181513; border: 2px solid #3a2c1f; display: flex; flex-direction: column; justify-content: center; gap: 2px"><span style="font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #a9a49c">Parties jouées</span><span style="font-size: 20px; font-weight: 700; color: #ffd60a">[N]</span><span style="font-size: 12px; color: #cfc6b8">Histoire et infini</span></div>
+
+
+<div style="height: 78px; box-sizing: border-box; padding: 8px 12px; background: #181513; border: 2px solid #3a2c1f; display: flex; flex-direction: column; justify-content: center; gap: 2px"><span style="font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #a9a49c">Temps de jeu</span><span style="font-size: 20px; font-weight: 700; color: #ffd60a">[durée]</span><span style="font-size: 12px; color: #cfc6b8">Hors pauses</span></div>
+
+
+<div style="height: 78px; box-sizing: border-box; padding: 8px 12px; background: #181513; border: 2px solid #3a2c1f; display: flex; flex-direction: column; justify-content: center; gap: 2px"><span style="font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #a9a49c">Argent gagné</span><span style="font-size: 20px; font-weight: 700; color: #ffd60a">[N]</span><span style="font-size: 12px; color: #cfc6b8">Depuis le début</span></div>
+
+</div>
+<section style="position: absolute; left: 320px; top: 330px; width: 580px; height: 74px; box-sizing: border-box; padding: 8px 12px; border: 1px dashed #5a4b3a; display: flex; align-items: center; justify-content: space-between; gap: 12px">
+<span style="display: flex; flex-direction: column; line-height: 1.3"><span style="font-family: 'Rubik Dirt', sans-serif; font-size: 14px; letter-spacing: 0.06em; text-transform: uppercase">Sauvegarde</span><span style="font-size: 12px; color: #cfc6b8">Enregistrée sur cet appareil</span></span>
+<span style="display: flex; gap: 8px"><button style="height: 44px; padding: 0 12px; background: #5a3f26; border: 2px solid #2a1d12; border-radius: 4px; color: #fff4e2; font-family: 'Barlow', sans-serif; font-size: 13px; font-weight: 700; cursor: pointer">Exporter mon code</button><button style="height: 44px; padding: 0 12px; background: #1a1614; border: 2px solid #3a3434; border-radius: 4px; color: #e8e2d6; font-family: 'Barlow', sans-serif; font-size: 13px; font-weight: 700; cursor: pointer">Importer un code</button></span>
+</section>
+
+<header style="position: absolute; left: 0; top: 0; width: 932px; height: 50px; box-sizing: border-box; padding: 0 28px; display: flex; align-items: center; justify-content: space-between; background: rgba(5,5,5,0.85); border-bottom: 1px solid rgba(216,20,20,0.4)">
+<div style="display: flex; align-items: center; gap: 16px">
+<a href="Profil.html" style="height: 40px; padding: 0 14px 0 10px; display: flex; align-items: center; gap: 8px; background: #c4110f; border: 2px solid #5a0606; border-radius: 4px; text-decoration: none; color: #ffffff; font-family: 'Rubik Dirt', sans-serif; font-size: 14px; letter-spacing: 0.06em; text-transform: uppercase"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><circle cx="12" cy="8" r="4"></circle><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"></path></svg>Connexion</a>
+</div>
+<div style="display: flex; align-items: center; gap: 12px">
+<div style="display: flex; align-items: center; gap: 8px; height: 34px; padding: 0 14px; border-radius: 4px; background: #14110a; border: 1px solid #5a4b10"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="#ffd60a"></circle><circle cx="12" cy="12" r="6" fill="none" stroke="#7a6205" stroke-width="2"></circle></svg><span style="font-size: 16px; font-weight: 700; color: #ffd60a">[solde]</span></div>
+<details style="position: relative"><summary aria-label="Menu, 1 nouveauté non lue" style="position: relative; width: 44px; height: 44px; box-sizing: border-box; border-radius: 6px; background: #1a1614; border: 1px solid #3a3434; color: #f4f1ec; display: flex; align-items: center; justify-content: center; cursor: pointer; list-style: none"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"></path></svg><span aria-hidden="true" style="position: absolute; right: 5px; top: 5px; width: 9px; height: 9px; border-radius: 5px; background: #ffd60a; border: 2px solid #1a1614"></span></summary><nav aria-label="Menu du jeu" style="position: absolute; right: 0; top: 50px; width: 220px; box-sizing: border-box; padding: 6px; background: #14100c; border: 2px solid #3a2c1f; border-radius: 6px; box-shadow: 0 10px 24px rgba(0,0,0,0.6); display: flex; flex-direction: column; gap: 2px"><a href="Options.html" style="height: 44px; display: flex; align-items: center; gap: 10px; padding: 0 10px; border-radius: 4px; text-decoration: none; color: #f4f1ec; font-family: 'Barlow', sans-serif; font-size: 15px; font-weight: 700"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"></path></svg><span style="flex: 1">Options</span></a><a href="#" style="height: 44px; display: flex; align-items: center; gap: 10px; padding: 0 10px; border-radius: 4px; text-decoration: none; color: #f4f1ec; font-family: 'Barlow', sans-serif; font-size: 15px; font-weight: 700"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 11v6M12 7.5v0.5"></path></svg><span style="flex: 1">Information</span><span aria-hidden="true" style="width: 10px; height: 10px; border-radius: 5px; background: #ffd60a; box-shadow: 0 0 6px #ffd60a"></span><span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">1 nouveauté non lue</span></a><a href="#" style="height: 44px; display: flex; align-items: center; gap: 10px; padding: 0 10px; border-radius: 4px; text-decoration: none; color: #f4f1ec; font-family: 'Barlow', sans-serif; font-size: 15px; font-weight: 700"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v11H9l-5 4z"></path></svg><span style="flex: 1">Discord</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#a9a49c" stroke-width="2.4" aria-hidden="true"><path d="M14 4h6v6M20 4l-9 9M18 14v6H4V6h6"></path></svg></a><div aria-hidden="true" style="height: 1px; margin: 4px 6px; background: #3a2c1f"></div><button disabled style="width: 100%; height: 44px; background: none; border: none; cursor: not-allowed; text-align: left; display: flex; align-items: center; gap: 10px; padding: 0 10px; border-radius: 4px; text-decoration: none; color: #6e6a64; font-family: 'Barlow', sans-serif; font-size: 15px; font-weight: 700"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h5v16h-5M10 8l-4 4 4 4M6 12h10"></path></svg><span style="flex: 1">Déconnexion</span><span style="font-size: 11px; font-weight: 400; color: #8a857e">non connecté</span></button></nav></details>
+</div>
+</header>
+
+<svg aria-hidden="true" width="932" height="430" style="position: absolute; left: 0; top: 0; pointer-events: none; opacity: 0.1"><filter id="grain"><feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="2" stitchTiles="stitch"></feTurbulence><feColorMatrix type="saturate" values="0"></feColorMatrix></filter><rect width="932" height="430" filter="url(#grain)"></rect></svg>
+<div aria-hidden="true" style="position: absolute; left: 0; top: 0; width: 932px; height: 430px; pointer-events: none; background: repeating-linear-gradient(to bottom, rgba(255,255,255,0.03) 0px, rgba(255,255,255,0.03) 1px, transparent 1px, transparent 3px)"></div>
+</div>
+</body>
+</html>

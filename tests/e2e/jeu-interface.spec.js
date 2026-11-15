@@ -35,6 +35,32 @@ const apart = (a, b) => a.r <= b.l + 0.5 || b.r <= a.l + 0.5 || a.b <= b.t + 0.5
 
 test.describe('HUD compact E2-2', () => {
   // Lot 3l : avant, #hud ≤ 96 × 300 px ; après, HUD et Pause ≤ 11 % de l'écran (maquette B : 10,1 %), colonne de gauche ≤ 9,15 em × 96 px, marges de 16 px.
+  test('retour du propriétaire : sortie du plein écran par le navigateur (Échap) pendant la partie : la pause s\'ouvre ; déjà en pause : elle reste ouverte (pas de bascule) ; Échap verrouillé en plein écran quand le navigateur le permet', async ({ page }) => {
+    await page.addInitScript(() => {
+      window.__verrous = [];
+      if (navigator.keyboard) {
+        navigator.keyboard.lock = (codes) => {
+          window.__verrous.push(codes);
+          return Promise.resolve();
+        };
+      }
+    });
+    await open(page);
+    await expect(page.locator('#pause-panel')).toBeHidden();
+    // Sortie du plein écran non demandée par le jeu (document.fullscreenElement nul) : pause ouverte.
+    await page.evaluate(() => document.dispatchEvent(new Event('fullscreenchange')));
+    await expect(page.locator('#pause-panel')).toBeVisible();
+    await page.evaluate(() => document.dispatchEvent(new Event('fullscreenchange')));
+    await expect(page.locator('#pause-panel')).toBeVisible();
+    // Entrée en plein écran simulée : Échap demandé au navigateur (Keyboard Lock), s'il existe.
+    await page.evaluate(() => {
+      Object.defineProperty(document, 'fullscreenElement', { configurable: true, get: () => document.documentElement });
+      document.dispatchEvent(new Event('fullscreenchange'));
+    });
+    const verrous = await page.evaluate(() => (navigator.keyboard ? window.__verrous : null));
+    if (verrous) expect(verrous).toEqual([['Escape']]);
+  });
+
   test('au repos : HUD et Pause sur 11 % de l\'écran au plus, colonne de gauche ≤ 145 × 120 px, marges de 16 px, sans chevaucher Pause (667×375)', async ({ page }) => {
     await open(page);
     const s = await STATE(page);

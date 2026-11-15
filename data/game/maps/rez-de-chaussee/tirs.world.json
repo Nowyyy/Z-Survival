@@ -1,0 +1,21 @@
+{
+  "_provisoire": "Objets traversables par les tirs générés par npm run carte (scripts/plan-vers-monde.mjs) d'après data/game/tirs-traversables.json : ne jamais éditer à la main. ids : meubles et objets par-dessus lesquels passent balles et laser ; grilles : ouvertures grillagées (a, b sur la face intérieure du mur, n vers la salle) à travers lesquelles ils passent. Le joueur et les zombies restent bloqués. Valeurs provisoires.",
+  "rdc": {
+    "ids": ["M10", "M22", "M32", "P5", "P6", "P7", "P8", "P9", "P10", "P12", "P13"],
+    "grilles": [
+      {
+        "id": "grille-F7",
+        "a": { "x": 1789.96, "y": 2540 },
+        "b": { "x": 1674.99, "y": 2540 },
+        "n": { "x": 0, "y": -1 }
+      },
+      {
+        "id": "grille-F8",
+        "a": { "x": 1554.94, "y": 2540 },
+        "b": { "x": 1524.93, "y": 2540 },
+        "n": { "x": 0, "y": -1 }
+      }
+    ]
+  },
+  "etage": { "ids": ["Q2", "Q3", "Q4", "Q5", "Q6"], "grilles": [] }
+}

@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Menu principal, mode infini — maquette V0.8 (référence)</title>
+<style>
+body{margin:0;background:#000}
+/* Polices : celles hébergées par le jeu (Barlow, Rubik Wet Paint, Rubik Dirt). Sans elles, le navigateur en substitue d'autres. */
+
+body{margin:0}
+a{color:#f4f1ec}a:hover{color:#ffffff}
+summary::-webkit-details-marker{display:none}
+
+@media (prefers-reduced-motion: reduce){*{animation:none !important}}
+</style>
+</head>
+<body>
+<div style="position: relative; width: 932px; height: 430px; overflow: hidden; background: #0c0b0a; font-family: 'Barlow', sans-serif; color: #f4f1ec">
+<svg aria-hidden="true" width="932" height="368" viewBox="0 0 932 368" style="position: absolute; left: 0; top: 0">
+<defs>
+<linearGradient id="cielrouge" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0a0405"></stop><stop offset="1" stop-color="#22090a"></stop></linearGradient>
+<radialGradient id="halorouge" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="#ff3b2a" stop-opacity="0.35"></stop><stop offset="1" stop-color="#ff3b2a" stop-opacity="0"></stop></radialGradient>
+<g id="z"><circle cx="0" cy="-30" r="6" fill="#050203"></circle><path d="M-7 -24 H7 L8 -3 H3 L2 -11 L-2 -3 H-8Z" fill="#050203"></path><path d="M5 -21 L20 -23 L20 -19 L5 -17Z" fill="#050203"></path></g>
+</defs>
+<rect width="932" height="368" fill="url(#cielrouge)"></rect>
+<circle cx="810" cy="300" r="120" fill="url(#halorouge)"></circle>
+<circle cx="810" cy="300" r="36" fill="#a8231a" opacity="0.8"></circle>
+<rect x="0" y="330" width="932" height="38" fill="#070304"></rect>
+<use href="#z" transform="translate(640 334)"></use><use href="#z" transform="translate(662 336) scale(0.9)"></use><use href="#z" transform="translate(690 334) scale(1.1)"></use><use href="#z" transform="translate(716 337) scale(0.8)"></use><use href="#z" transform="translate(744 334)"></use><use href="#z" transform="translate(770 336) scale(0.9)"></use><use href="#z" transform="translate(800 334) scale(1.05)"></use><use href="#z" transform="translate(828 337) scale(0.85)"></use><use href="#z" transform="translate(856 334)"></use><use href="#z" transform="translate(884 336) scale(0.9)"></use><use href="#z" transform="translate(910 334)"></use>
+</svg>
+
+<div style="position: absolute; left: 32px; top: 62px; display: flex; flex-direction: column; align-items: flex-start">
+<div style="padding: 4px 12px 5px 12px; background: #c4110f; border-radius: 2px; display: flex; flex-direction: column">
+<span style="font-family: 'Rubik Dirt', sans-serif; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: #ffd9d4">Vagues sans fin</span>
+<span style="font-family: 'Rubik Wet Paint', sans-serif; font-size: 20px; line-height: 1.05; color: #ffffff">Mode infini</span>
+</div>
+<svg aria-hidden="true" width="100%" height="9" viewBox="0 0 180 12" preserveAspectRatio="none" style="display: block"><rect x="22" y="0" width="5" height="10" rx="2.5" fill="#c4110f"></rect><rect x="74" y="0" width="5" height="12" rx="2.5" fill="#c4110f"></rect><rect x="132" y="0" width="5" height="7" rx="2.5" fill="#c4110f"></rect></svg>
+</div>
+
+<span style="position: absolute; left: 32px; top: 120px; font-family: 'Rubik Dirt', sans-serif; font-size: 13px; letter-spacing: 0.08em; text-transform: uppercase; color: #e8e2d6">Choisis ta carte <span style="font-family: 'Barlow', sans-serif; letter-spacing: 0; text-transform: none; color: #a9a49c">· 1 / [N] mondes, fais glisser</span></span>
+<button aria-label="Cartes suivantes" style="position: absolute; left: 616px; top: 190px; width: 44px; height: 44px; border-radius: 22px; background: rgba(5,5,5,0.85); border: 2px solid #c4110f; color: #f4f1ec; display: flex; align-items: center; justify-content: center; cursor: pointer"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg></button>
+
+<div role="list" aria-label="Cartes" style="position: absolute; left: 32px; top: 140px; width: 616px; height: 158px; display: flex; gap: 14px; overflow-x: auto; overflow-y: hidden; scroll-snap-type: x mandatory; padding-bottom: 8px; box-sizing: border-box">
+
+<button role="listitem" style="flex: none; width: 184px; height: 150px; scroll-snap-align: start; position: relative; box-sizing: border-box; padding: 0; overflow: hidden; background: #0f0c0c; border: 3px solid #d81414; border-radius: 4px; color: #f4f1ec; text-align: left; font-family: 'Barlow', sans-serif; cursor: pointer; display: flex; flex-direction: column">
+
+<svg width="100%" height="84" viewBox="0 0 190 84" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><rect width="190" height="84" fill="#0f1520"></rect><circle cx="160" cy="20" r="9" fill="#d9dde6"></circle><rect x="34" y="26" width="64" height="50" fill="#1d1c1a"></rect><rect x="98" y="44" width="62" height="32" fill="#181715"></rect><rect x="44" y="34" width="10" height="10" fill="#ffb347"></rect><rect x="62" y="34" width="10" height="10" fill="#0b0a09"></rect><rect x="62" y="56" width="10" height="10" fill="#ffb347" opacity="0.7"></rect><rect x="112" y="52" width="10" height="10" fill="#0b0a09"></rect><rect x="134" y="52" width="10" height="10" fill="#ffb347" opacity="0.7"></rect><rect x="0" y="76" width="190" height="8" fill="#0a0908"></rect></svg>
+
+
+<span style="padding: 6px 10px 0; font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #a9a49c">Monde 1 · Choisie</span>
+<span style="padding: 0 10px; font-size: 15px; font-weight: 700">Le bâtiment</span>
+<span style="padding: 0 10px; font-size: 12px; color: #ffd60a">Record : manche [N]</span>
+</button>
+
+
+<button role="listitem" style="flex: none; width: 184px; height: 150px; scroll-snap-align: start; position: relative; box-sizing: border-box; padding: 0; overflow: hidden; background: #0f0c0c; border: 3px solid #3a3434; border-radius: 4px; color: #f4f1ec; text-align: left; font-family: 'Barlow', sans-serif; cursor: pointer; display: flex; flex-direction: column">
+
+
+<div style="position: relative; height: 84px; background: #141211; display: flex; align-items: center; justify-content: center">
+<div aria-hidden="true" style="position: absolute; left: -20px; top: 34px; width: 240px; height: 14px; transform: rotate(-12deg); background: repeating-linear-gradient(135deg, #ffd60a 0px, #ffd60a 8px, #0a0a0a 8px, #0a0a0a 16px)"></div>
+<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#cfc6b8" stroke-width="2" aria-hidden="true" style="position: relative"><rect x="5" y="11" width="14" height="10" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path></svg>
+</div>
+
+<span style="padding: 6px 10px 0; font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #a9a49c">Monde 2 · Verrouillée</span>
+<span style="padding: 0 10px; font-size: 15px; font-weight: 700">[à venir]</span>
+<span style="padding: 0 10px; font-size: 12px; color: #ffd60a">Termine le monde 1</span>
+</button>
+
+
+<button role="listitem" style="flex: none; width: 184px; height: 150px; scroll-snap-align: start; position: relative; box-sizing: border-box; padding: 0; overflow: hidden; background: #0f0c0c; border: 3px solid #3a3434; border-radius: 4px; color: #f4f1ec; text-align: left; font-family: 'Barlow', sans-serif; cursor: pointer; display: flex; flex-direction: column">
+
+
+<div style="position: relative; height: 84px; background: #141211; display: flex; align-items: center; justify-content: center">
+<div aria-hidden="true" style="position: absolute; left: -20px; top: 34px; width: 240px; height: 14px; transform: rotate(-12deg); background: repeating-linear-gradient(135deg, #ffd60a 0px, #ffd60a 8px, #0a0a0a 8px, #0a0a0a 16px)"></div>
+<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#cfc6b8" stroke-width="2" aria-hidden="true" style="position: relative"><rect x="5" y="11" width="14" height="10" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path></svg>
+</div>
+
+<span style="padding: 6px 10px 0; font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #a9a49c">Monde 3 · Verrouillée</span>
+<span style="padding: 0 10px; font-size: 15px; font-weight: 700">[à venir]</span>
+<span style="padding: 0 10px; font-size: 12px; color: #ffd60a">Termine le monde 2</span>
+</button>
+
+
+<button role="listitem" style="flex: none; width: 184px; height: 150px; scroll-snap-align: start; position: relative; box-sizing: border-box; padding: 0; overflow: hidden; background: #0f0c0c; border: 3px solid #3a3434; border-radius: 4px; color: #f4f1ec; text-align: left; font-family: 'Barlow', sans-serif; cursor: pointer; display: flex; flex-direction: column">
+
+
+<div style="position: relative; height: 84px; background: #141211; display: flex; align-items: center; justify-content: center">
+<div aria-hidden="true" style="position: absolute; left: -20px; top: 34px; width: 240px; height: 14px; transform: rotate(-12deg); background: repeating-linear-gradient(135deg, #ffd60a 0px, #ffd60a 8px, #0a0a0a 8px, #0a0a0a 16px)"></div>
+<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#cfc6b8" stroke-width="2" aria-hidden="true" style="position: relative"><rect x="5" y="11" width="14" height="10" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path></svg>
+</div>
+
+<span style="padding: 6px 10px 0; font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #a9a49c">Monde 4 · Verrouillée</span>
+<span style="padding: 0 10px; font-size: 15px; font-weight: 700">[à venir]</span>
+<span style="padding: 0 10px; font-size: 12px; color: #ffd60a">Termine le monde 3</span>
+</button>
+
+
+<button role="listitem" style="flex: none; width: 184px; height: 150px; scroll-snap-align: start; position: relative; box-sizing: border-box; padding: 0; overflow: hidden; background: #0f0c0c; border: 3px solid #3a3434; border-radius: 4px; color: #f4f1ec; text-align: left; font-family: 'Barlow', sans-serif; cursor: pointer; display: flex; flex-direction: column">
+
+
+<div style="position: relative; height: 84px; background: #141211; display: flex; align-items: center; justify-content: center">
+<div aria-hidden="true" style="position: absolute; left: -20px; top: 34px; width: 240px; height: 14px; transform: rotate(-12deg); background: repeating-linear-gradient(135deg, #ffd60a 0px, #ffd60a 8px, #0a0a0a 8px, #0a0a0a 16px)"></div>
+<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#cfc6b8" stroke-width="2" aria-hidden="true" style="position: relative"><rect x="5" y="11" width="14" height="10" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path></svg>
+</div>
+
+<span style="padding: 6px 10px 0; font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #a9a49c">Monde 5 · Verrouillée</span>
+<span style="padding: 0 10px; font-size: 15px; font-weight: 700">[à venir]</span>
+<span style="padding: 0 10px; font-size: 12px; color: #ffd60a">Termine le monde 4</span>
+</button>
+
+
+<button role="listitem" style="flex: none; width: 184px; height: 150px; scroll-snap-align: start; position: relative; box-sizing: border-box; padding: 0; overflow: hidden; background: #0f0c0c; border: 3px solid #3a3434; border-radius: 4px; color: #f4f1ec; text-align: left; font-family: 'Barlow', sans-serif; cursor: pointer; display: flex; flex-direction: column">
+
+
+<div style="position: relative; height: 84px; background: #141211; display: flex; align-items: center; justify-content: center">
+<div aria-hidden="true" style="position: absolute; left: -20px; top: 34px; width: 240px; height: 14px; transform: rotate(-12deg); background: repeating-linear-gradient(135deg, #ffd60a 0px, #ffd60a 8px, #0a0a0a 8px, #0a0a0a 16px)"></div>
+<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#cfc6b8" stroke-width="2" aria-hidden="true" style="position: relative"><rect x="5" y="11" width="14" height="10" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path></svg>
+</div>
+
+<span style="padding: 6px 10px 0; font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #a9a49c">Monde 6 · Verrouillée</span>
+<span style="padding: 0 10px; font-size: 15px; font-weight: 700">[à venir]</span>
+<span style="padding: 0 10px; font-size: 12px; color: #ffd60a">Termine le monde 5</span>
+</button>
+
+</div>
+
+<a href="#" style="position: absolute; left: 32px; top: 304px; width: 616px; height: 54px; box-sizing: border-box; background: #c4110f; border: 2px solid #5a0606; border-radius: 4px; box-shadow: 0 4px 0 #5a0606; color: #ffffff; text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 14px">
+<svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4v16l13-8z" fill="#ffffff"></path></svg>
+<span style="font-family: 'Rubik Wet Paint', sans-serif; font-size: 30px; line-height: 1">Jouer</span>
+</a>
+
+<section style="position: absolute; left: 668px; top: 62px; width: 232px; height: 282px; box-sizing: border-box; padding: 10px 12px; background: rgba(8,5,5,0.86); border: 1px solid #4a1a18; display: flex; flex-direction: column; gap: 5px">
+<h2 style="margin: 0; font-family: 'Rubik Dirt', sans-serif; font-weight: 400; font-size: 16px; letter-spacing: 0.06em; text-transform: uppercase">Classement</h2>
+<span style="font-size: 12px; color: #d9d4cb">Le bâtiment · <span style="color: #9fd3ff">exemple, arrive avec le compte</span></span>
+
+<div style="display: flex; align-items: center; gap: 8px; height: 28px; padding: 0 8px; background: #161212">
+<span style="width: 18px; font-size: 14px; font-weight: 700; color: #cfc6b8">1</span>
+<span style="flex: 1; font-size: 14px; color: #d9d4cb">[pseudo]</span>
+<span style="font-size: 13px; font-weight: 700">Manche [N]</span>
+</div>
+
+
+<div style="display: flex; align-items: center; gap: 8px; height: 28px; padding: 0 8px; background: #161212">
+<span style="width: 18px; font-size: 14px; font-weight: 700; color: #cfc6b8">2</span>
+<span style="flex: 1; font-size: 14px; color: #d9d4cb">[pseudo]</span>
+<span style="font-size: 13px; font-weight: 700">Manche [N]</span>
+</div>
+
+
+<div style="display: flex; align-items: center; gap: 8px; height: 28px; padding: 0 8px; background: #161212">
+<span style="width: 18px; font-size: 14px; font-weight: 700; color: #cfc6b8">3</span>
+<span style="flex: 1; font-size: 14px; color: #d9d4cb">[pseudo]</span>
+<span style="font-size: 13px; font-weight: 700">Manche [N]</span>
+</div>
+
+
+<div style="display: flex; align-items: center; gap: 8px; height: 28px; padding: 0 8px; background: #161212">
+<span style="width: 18px; font-size: 14px; font-weight: 700; color: #cfc6b8">4</span>
+<span style="flex: 1; font-size: 14px; color: #d9d4cb">[pseudo]</span>
+<span style="font-size: 13px; font-weight: 700">Manche [N]</span>
+</div>
+
+
+<div style="display: flex; align-items: center; gap: 8px; height: 28px; padding: 0 8px; background: #161212">
+<span style="width: 18px; font-size: 14px; font-weight: 700; color: #cfc6b8">5</span>
+<span style="flex: 1; font-size: 14px; color: #d9d4cb">[pseudo]</span>
+<span style="font-size: 13px; font-weight: 700">Manche [N]</span>
+</div>
+
+<div style="margin-top: auto; display: flex; align-items: center; gap: 8px; height: 34px; padding: 0 8px; background: #2a0d0d; border: 1px solid #c4110f">
+<span style="font-size: 14px; font-weight: 700; color: #ff6a5d">Toi</span>
+<span style="flex: 1; font-size: 13px">Rang [N]</span>
+<span style="font-size: 13px; font-weight: 700; color: #ffd60a">Manche [N]</span>
+</div>
+</section>
+
+<header style="position: absolute; left: 0; top: 0; width: 932px; height: 50px; box-sizing: border-box; padding: 0 28px; display: flex; align-items: center; justify-content: space-between; background: rgba(5,5,5,0.85); border-bottom: 1px solid rgba(216,20,20,0.4)">
+<div style="display: flex; align-items: center; gap: 16px">
+<a href="Profil.html" style="height: 40px; padding: 0 14px 0 10px; display: flex; align-items: center; gap: 8px; background: #c4110f; border: 2px solid #5a0606; border-radius: 4px; text-decoration: none; color: #ffffff; font-family: 'Rubik Dirt', sans-serif; font-size: 14px; letter-spacing: 0.06em; text-transform: uppercase"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><circle cx="12" cy="8" r="4"></circle><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"></path></svg>Connexion</a>
+</div>
+<div style="display: flex; align-items: center; gap: 12px">
+<div style="display: flex; align-items: center; gap: 8px; height: 34px; padding: 0 14px; border-radius: 4px; background: #14110a; border: 1px solid #5a4b10"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="#ffd60a"></circle><circle cx="12" cy="12" r="6" fill="none" stroke="#7a6205" stroke-width="2"></circle></svg><span style="font-size: 16px; font-weight: 700; color: #ffd60a">[solde]</span></div>
+<details style="position: relative"><summary aria-label="Menu, 1 nouveauté non lue" style="position: relative; width: 44px; height: 44px; box-sizing: border-box; border-radius: 6px; background: #1a1614; border: 1px solid #3a3434; color: #f4f1ec; display: flex; align-items: center; justify-content: center; cursor: pointer; list-style: none"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"></path></svg><span aria-hidden="true" style="position: absolute; right: 5px; top: 5px; width: 9px; height: 9px; border-radius: 5px; background: #ffd60a; border: 2px solid #1a1614"></span></summary><nav aria-label="Menu du jeu" style="position: absolute; right: 0; top: 50px; width: 220px; box-sizing: border-box; padding: 6px; background: #14100c; border: 2px solid #3a2c1f; border-radius: 6px; box-shadow: 0 10px 24px rgba(0,0,0,0.6); display: flex; flex-direction: column; gap: 2px"><a href="Options.html" style="height: 44px; display: flex; align-items: center; gap: 10px; padding: 0 10px; border-radius: 4px; text-decoration: none; color: #f4f1ec; font-family: 'Barlow', sans-serif; font-size: 15px; font-weight: 700"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"></path></svg><span style="flex: 1">Options</span></a><a href="#" style="height: 44px; display: flex; align-items: center; gap: 10px; padding: 0 10px; border-radius: 4px; text-decoration: none; color: #f4f1ec; font-family: 'Barlow', sans-serif; font-size: 15px; font-weight: 700"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 11v6M12 7.5v0.5"></path></svg><span style="flex: 1">Information</span><span aria-hidden="true" style="width: 10px; height: 10px; border-radius: 5px; background: #ffd60a; box-shadow: 0 0 6px #ffd60a"></span><span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">1 nouveauté non lue</span></a><a href="#" style="height: 44px; display: flex; align-items: center; gap: 10px; padding: 0 10px; border-radius: 4px; text-decoration: none; color: #f4f1ec; font-family: 'Barlow', sans-serif; font-size: 15px; font-weight: 700"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v11H9l-5 4z"></path></svg><span style="flex: 1">Discord</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#a9a49c" stroke-width="2.4" aria-hidden="true"><path d="M14 4h6v6M20 4l-9 9M18 14v6H4V6h6"></path></svg></a><div aria-hidden="true" style="height: 1px; margin: 4px 6px; background: #3a2c1f"></div><button disabled style="width: 100%; height: 44px; background: none; border: none; cursor: not-allowed; text-align: left; display: flex; align-items: center; gap: 10px; padding: 0 10px; border-radius: 4px; text-decoration: none; color: #6e6a64; font-family: 'Barlow', sans-serif; font-size: 15px; font-weight: 700"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h5v16h-5M10 8l-4 4 4 4M6 12h10"></path></svg><span style="flex: 1">Déconnexion</span><span style="font-size: 11px; font-weight: 400; color: #8a857e">non connecté</span></button></nav></details>
+</div>
+</header>
+<nav aria-label="Menu principal" style="position: absolute; left: 0; bottom: 0; width: 932px; height: 62px; display: grid; grid-template-columns: 1fr 1fr 1.3fr 1fr 1fr; background: #1c140d; border-top: 3px solid #0a0705"><a href="Caisses.html" style="position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; text-decoration: none; color: #cfc6b8; font-family: 'Rubik Dirt', sans-serif; font-size: 14px; letter-spacing: 0.06em; text-transform: uppercase"><span aria-hidden="true" style="position: absolute; left: 8px; top: 8px; width: 5px; height: 5px; border-radius: 3px; background: #6e6a64"></span><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="7" width="18" height="13" rx="1"></rect><path d="M3 11h18M12 7v13M8 7l2-3h4l2 3"></path></svg>Boutique</a><a href="Personnage.html" style="position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; text-decoration: none; color: #cfc6b8; border-left: 2px solid #0e0a07; font-family: 'Rubik Dirt', sans-serif; font-size: 14px; letter-spacing: 0.06em; text-transform: uppercase"><span aria-hidden="true" style="position: absolute; left: 8px; top: 8px; width: 5px; height: 5px; border-radius: 3px; background: #6e6a64"></span><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="8" r="4"></circle><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"></path></svg>Personnage</a><a href="Main.html" style="position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; text-decoration: none; color: #ffffff; background: #8f0d0c; border-left: 2px solid #5a0606; border-right: 2px solid #5a0606; font-family: 'Rubik Wet Paint', sans-serif; font-size: 20px"><svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4v16l13-8z" fill="currentColor"></path></svg>Jouer</a><a href="Infini.html" aria-current="page" style="position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; text-decoration: none; color: #ffffff; background: #2a1a10; font-family: 'Rubik Dirt', sans-serif; font-size: 14px; letter-spacing: 0.06em; text-transform: uppercase"><span aria-hidden="true" style="position: absolute; left: 8px; top: 8px; width: 5px; height: 5px; border-radius: 3px; background: #6e6a64"></span><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M7 8c-2.2 0-4 1.8-4 4s1.8 4 4 4c3 0 7-8 10-8 2.2 0 4 1.8 4 4s-1.8 4-4 4c-3 0-7-8-10-8z"></path></svg>Infini<span aria-hidden="true" style="position: absolute; left: 22%; bottom: 5px; width: 56%; height: 4px; border-radius: 2px; background: #d81414"></span></a><span role="img" aria-label="Contenu verrouillé" style="position: relative; display: flex; align-items: center; justify-content: center; color: #6e6a64; background: #140e09; border-left: 2px solid #0e0a07"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path></svg></span></nav>
+<svg aria-hidden="true" width="932" height="430" style="position: absolute; left: 0; top: 0; pointer-events: none; opacity: 0.1"><filter id="grain"><feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="2" stitchTiles="stitch"></feTurbulence><feColorMatrix type="saturate" values="0"></feColorMatrix></filter><rect width="932" height="430" filter="url(#grain)"></rect></svg>
+<div aria-hidden="true" style="position: absolute; left: 0; top: 0; width: 932px; height: 430px; pointer-events: none; background: repeating-linear-gradient(to bottom, rgba(255,255,255,0.03) 0px, rgba(255,255,255,0.03) 1px, transparent 1px, transparent 3px)"></div>
+</div>
+</body>
+</html>

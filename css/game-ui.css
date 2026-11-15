@@ -7,6 +7,61 @@
   --edge-top: calc(var(--game-margin) + var(--safe-top));
 }
 
+/* Lot 8j : interface de la partie plus grande sur les grands écrans. Un seul facteur, --ui-k (js/game/ui-echelle.js) : 1 jusqu'à 1080 px de haut,
+   puis hauteur / 1080, plafond 2. Les réglages de tokens.css (lot 3l) et la marge de game.css sont repris ici multipliés par ce facteur ; le reste
+   de l'interface est en em (rien à changer). Sans le script (ou à 1080 px et moins), --ui-k vaut 1 : tailles identiques au pixel. Ni zoom ni
+   transform : le texte reste net et les zones de toucher suivent. Le rendu 3D et le menu principal ne lisent pas ces variables. */
+:root {
+  --hud-fs: calc(14px * var(--hud-text-scale) * var(--ui-k, 1));
+  --hud-gap: calc(4px * var(--ui-k, 1));
+  --hud-radius: calc(6px * var(--ui-k, 1));
+  --hud-target: calc(44px * var(--ui-k, 1));
+  --hud-pause-size: max(calc(44px * var(--ui-k, 1)), calc(2 * var(--hud-row) + var(--hud-gap)));
+  --game-margin: calc(16px * var(--ui-k, 1));
+}
+
+/* Rappel du son (téléphone) : bouton commun de base.css, mis à la même échelle. */
+.sound-hint {
+  min-width: calc(var(--touch-target) * var(--ui-k, 1));
+  min-height: calc(var(--touch-target) * var(--ui-k, 1));
+  padding: calc(var(--space-2) * var(--ui-k, 1)) calc(var(--space-5) * var(--ui-k, 1));
+  font-size: calc(1em * var(--ui-k, 1));
+}
+
+/* Options en partie (E2-12) : composant partagé avec le menu (styles e5-* de menu.css, en calc(N × --u)). Leur unité suit déjà la hauteur au-delà
+   de 1080 px (plafond de densité de menu.css, lot 8j, demande du propriétaire) ; ici, seules les cibles (44 px) et le curseur suivent --ui-k. */
+.panel-wrap.e5-voile > .e5-panneau {
+  --menu-cible: calc(var(--touch-target, 44px) * var(--ui-k, 1));
+}
+
+.e5-panneau .e5-curseur::-webkit-slider-runnable-track {
+  height: calc(6px * var(--ui-k, 1));
+  border-radius: calc(3px * var(--ui-k, 1));
+}
+
+.e5-panneau .e5-curseur::-moz-range-track {
+  height: calc(6px * var(--ui-k, 1));
+  border-radius: calc(3px * var(--ui-k, 1));
+}
+
+.e5-panneau .e5-curseur::-moz-range-progress {
+  height: calc(6px * var(--ui-k, 1));
+  border-radius: calc(3px * var(--ui-k, 1));
+}
+
+.e5-panneau .e5-curseur::-webkit-slider-thumb {
+  width: calc(22px * var(--ui-k, 1));
+  height: calc(22px * var(--ui-k, 1));
+  margin-top: calc(-8px * var(--ui-k, 1));
+  border-width: calc(3px * var(--ui-k, 1));
+}
+
+.e5-panneau .e5-curseur::-moz-range-thumb {
+  width: calc(22px * var(--ui-k, 1));
+  height: calc(22px * var(--ui-k, 1));
+  border-width: calc(3px * var(--ui-k, 1));
+}
+
 /* ---------- HUD (E2-2) : trois colonnes en haut de l'écran ---------- */
 .hud {
   position: absolute;
@@ -199,6 +254,66 @@
 
 .hud-money .hud-value {
   color: var(--color-money);
+}
+
+/* Lot 8h : monnaie bleue (gagnée en terminant des manches, gardée pour toujours) : icône (gemme dessinée en code) et « +N » bleu discret, sous la
+   ligne de l'argent, à droite ; texte bleu sur le fond du HUD : contraste ≥ 4,5:1. */
+.hud-gem {
+  fill: none;
+  stroke: var(--color-money-blue);
+  stroke-width: 1.4;
+  stroke-linejoin: round;
+}
+
+/* Retour du propriétaire après le lot 8j : gemme bleue puis « solde (+gain) » sous la vague, quelques secondes après chaque fin de manche
+   (js/game/bleu-manche.js) ; même bloc que la vague, texte de la couleur de la monnaie bleue (contraste vérifié comme le « +N » bleu). */
+.hud-bleu-manche {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3em;
+  color: var(--color-money-blue);
+  white-space: nowrap;
+}
+
+.hud-bleu-manche[hidden] {
+  display: none;
+}
+
+.hud-gain.hud-gain-bleu {
+  top: 100%;
+  left: auto;
+  right: 0;
+  gap: 0.25em;
+  min-width: 0;
+  height: auto;
+  padding: 0.1em 0.35em;
+  color: var(--color-money-blue);
+}
+
+.end-bleu {
+  color: var(--color-money-blue);
+}
+
+/* Lot 8k : médailles (troisième monnaie, gardée, paie les caisses) : médaille dessinée en code, couleur bronze ; fin de manche (même bloc que la
+   monnaie bleue, juste dessous), pause (après le solde bleu) et écran de fin. Contraste du texte ≥ 4,5:1 comme le bleu. */
+.hud-medaille {
+  fill: none;
+  stroke: var(--color-money-medaille);
+  stroke-width: 1.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.hud-bleu-manche.hud-medailles-manche,
+.end-medaille {
+  color: var(--color-money-medaille);
+}
+
+.pause-medailles {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35em;
+  margin-left: 0.6em;
 }
 
 /* « +N » (lot 4, agrégé, décoratif) : sous le bouton Pause, sur la ligne de l'argent (retour du propriétaire), au moins de la largeur de Pause ; sans animation. */
@@ -488,6 +603,23 @@
   font-weight: var(--font-weight-bold);
 }
 
+/* Retour du propriétaire après le lot 8k : « Record » sur la ligne de la vague atteinte (une ligne de gagnée) ; gains de la partie à côté des soldes. */
+.panel-line > .end-record {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25em;
+  margin-left: 0.5em;
+}
+
+.panel-line > .end-record[hidden] {
+  display: none;
+}
+
+.end-gain {
+  margin-left: 0.15em;
+  font-weight: var(--font-weight-bold);
+}
+
 /* Boutons sur deux colonnes : Reprendre, Recommencer | Options, Quitter (lot 5j-G ; Plein écran et Son : icônes de la tête) ; fin : Rejouer | menu. */
 .panel-actions {
   display: grid;
@@ -511,6 +643,14 @@
    de la tête, à gauche de celle du son. */
 #btn-quit {
   grid-area: 2 / 2;
+}
+
+/* Confirmation de « Quitter » (lot 8a, construite par ui.js à la place des boutons) : la question au-dessus des deux boutons, séparée d'eux
+   (retour du propriétaire : le texte touchait presque les boutons). */
+.quit-confirm {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9em;
 }
 
 .panel-pause,
@@ -611,25 +751,8 @@
   gap: 0.3em;
 }
 
-.options-presets-line {
-  justify-content: space-between;
-  gap: 1em;
-}
-
-.options-current {
-  color: var(--color-text-muted);
-  white-space: nowrap;
-}
-
-.options-choices {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.35em;
-}
-
 /* Lot 5j-E (retour du propriétaire) : boutons de l'écran Options moins larges (marges intérieures réduites, largeur du texte) ; hauteur 44 px gardée
    (cible tactile minimale de l'interface). */
-.panel-options .options-choice,
 .panel-options .options-value {
   padding: 0.2em 0.6em;
 }
@@ -765,7 +888,6 @@
   gap: 0.35em;
 }
 
-.panel .options-choice[aria-pressed="true"],
 .panel .options-value[aria-pressed="true"] {
   border-color: var(--color-text);
   background: var(--color-ground-light);
@@ -799,17 +921,6 @@
     flex-direction: row;
     align-items: center;
     gap: 0.6em;
-  }
-
-  .options-presets-line {
-    flex: none;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0;
-  }
-
-  .options-choices {
-    flex: 1 1 auto;
   }
 }
 

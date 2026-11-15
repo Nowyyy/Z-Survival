@@ -1,0 +1,11 @@
+{
+  "_note": "Lot 8b : classement d'EXEMPLE de l'onglet Infini (affiché « exemple, arrive avec le compte ») : aucun joueur réel ; le vrai classement arrivera avec les comptes. « [pseudo] » : place d'un pseudo. Chargé à la demande par js/menu/infini.js.",
+  "exemple": true,
+  "lignes": [
+    { "pseudo": "[pseudo]", "manche": 58 },
+    { "pseudo": "[pseudo]", "manche": 51 },
+    { "pseudo": "[pseudo]", "manche": 47 },
+    { "pseudo": "[pseudo]", "manche": 44 },
+    { "pseudo": "[pseudo]", "manche": 42 }
+  ]
+}

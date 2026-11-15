@@ -35,7 +35,7 @@ Balise : `<meta name="zs-canal" content="source">` dans `jeu.html`, forme exacte
 |---|---|---|
 | G (doublons d'Options, réglages graphiques sans menu) | `gfx`, `lum`, `lampgain`, `shadows`, `vhs`, `dpr`, `detail`, `perso`, `sang`, `usure`, `percee` | `test=1` pris en compte, ou canal `source` |
 | T (outils techniques) | `wave`, `lvl`, `money`, `planks`, `floor`, `map`, `nospawn`, `endless`, `fin`, `perf`, `cap`, `fps`, `zoom`, `tilt`, `labels`, `sons` | canal dans `CANAUX_DEBUG` (avec ou sans `test=1`) |
-| Test | `test`, `store`, `seed`, `empty` | canal dans `CANAUX_DEBUG` |
+| Test | `test`, `store`, `seed`, `empty`, `menu` (lot 8a), `intro` (lot 8g), `ouverture` (lot 8f : `0`, `rapide`, `pas`), `tirtraverse` (lot 8j : `0` = liste des tirs traversables vide, référence de la trace), `coups` (lot 8j : `1` = tous les sons de coups) | canal dans `CANAUX_DEBUG` (pris en compte avec `test=1`) |
 | Autres (`v`, tout nom inconnu) | lus par aucun code | inchangés |
 
 `readOnlyParams` (`data/game/save.json`) : inchangé ; `gfx`, `perf`, `cap` n'y sont jamais. Un paramètre refusé est retiré de l'adresse **lue par le jeu** (l'adresse affichée ne change pas) : il n'a aucun effet et ne déclenche pas le mode essai.
@@ -60,6 +60,11 @@ Balise : `<meta name="zs-canal" content="source">` dans `jeu.html`, forme exacte
 ## Règle pour le lot 5k
 `lum` et `lampgain` appartiennent au **groupe G** (ils existent sur la base : ils y sont dès ce lot). Toute nouvelle option graphique lue dans l'adresse rejoint le groupe G.
 
+## Paramètre `menu` et démarrage (lot 8a)
+- `jeu.html` s'ouvre sur l'écran de chargement puis le menu principal, seul le menu étant chargé (le jeu se charge au clic sur « JOUER » ; `Docs/ref/menu-principal.md`), sauf **partie directe** : `?test=1` pris en compte, ou un paramètre de « Partie » (`PARAMS_PARTIE` : `wave`, `lvl`, `money`, `planks`, `floor`, `map`, `nospawn`, `endless`, `fin`, `empty`) pris en compte et non vide. Règle : `choixDemarrage(canal, adresse)` (`js/core/graphics.js`), lue par `js/menu/demarrage.js`.
+- `?menu=1` (groupe test) : sous `?test=1` (canaux de débogage), force le menu (tests du menu ; `window.__zsMenu.etat()` : progression, chute, onglet, menu à trois barres). Sans `?test=1`, sans effet (le menu s'ouvre déjà sans paramètre de Partie). Refusé sur archive, prod et canal absent. `readOnlyParams` inchangé.
+- Le menu de débogage garde `menu` dans l'adresse (paramètre non géré). Il n'existe qu'en partie (pause) : pendant le menu, aucune partie n'est créée.
+
 ## Comment ajouter un paramètre
 1. L'ajouter à `PARAMS_G`, `PARAMS_T` ou `PARAMS_TEST` (`js/core/graphics.js`) ; un paramètre absent des trois listes passe sans filtre (réservé aux noms lus par aucun code).
 2. Le lire dans l'adresse filtrée (`pageSearch()` ou le `search` de `main.js`), jamais dans `location.search`.
@@ -68,13 +73,20 @@ Balise : `<meta name="zs-canal" content="source">` dans `jeu.html`, forme exacte
 
 ## Menu de débogage (E2-13)
 - **Icône** `#btn-debug` (insecte au trait, 44 × 44 px, nom accessible « Débogage ») dans la tête de la pause, **juste à gauche de l'icône du son** (le son reste en haut à droite et dernier élément de la tête : ordre de tabulation et tests de la pause inchangés) ; cachée par défaut, montrée par `ui.bindDebug` quand le canal est dans `CANAUX_DEBUG` (sous `?test=1` autorisé aussi, qui implique un tel canal).
-- **Module** `js/game/debug-menu.js`, sans import, chargé par `import()` au premier clic (`ui.js`) ; aucun fichier de plus au démarrage (113 fichiers JavaScript, inchangé).
+- **Module** `js/game/debug-menu.js`, sans import, chargé par `import()` au premier clic (`ui.js`) ; aucun fichier de plus au démarrage (113 fichiers JavaScript au lot 5l ; 114 depuis le lot 8a, qui ajoute `js/menu/demarrage.js`).
 - **Panneau** (classes de l'écran Options) : en-tête (titre « Débogage », croix « Fermer le débogage ») ; région qui défile (`role="region"`, « Réglages de débogage ») ; pied (adresse obtenue, « Appliquer et recharger », « Revenir au jeu normal », confirmation « Recharger la page ? Cette partie sera perdue. »).
 - **Ordre** (retours du propriétaire, lot 5l-E) : section **Mesure** en premier (la plus utile, visible dès l'ouverture), puis **Partie** ; l'encadré du mode essai est sur la ligne du titre « Partie » (une ligne de gagnée).
-- **Partie** : manche (1 à 200), argent (0 à 9 999 999 ; vide : solde de la sauvegarde), « Tous au niveau » (0 à 10, recopié sur chaque ligne), une ligne par statistique (dégâts, portée, précision, cadence, vitesse, vie, régénération, chutes 0 à 5, réparation), planches posées (0 à 4, `windows.json`), étage, carte, sans zombies, manches sans fin, fin du monde (marque « avec une autre valeur de Partie » : `?fin=monde` n'agit qu'en mode essai) ; encadré « Mode essai : ta sauvegarde n'est pas modifiée. » à droite du titre. **Mesure** : panneau de mesure (`perf`), plafond (`cap` : aucun, 30, 45, 60).
+- **Partie** : manche (1 à 200), argent (0 à 9 999 999 ; vide : solde de la sauvegarde *(lot 5l ; depuis le lot 8h, la jaune repart de 0 à chaque partie : vide = 0)*), « Tous au niveau » (0 à 10, recopié sur chaque ligne), une ligne par statistique (dégâts, portée, précision, cadence, vitesse, vie, régénération, chutes 0 à 5, réparation), planches posées (0 à 4, `windows.json`), étage, carte, sans zombies, manches sans fin, fin du monde (marque « avec une autre valeur de Partie » : `?fin=monde` n'agit qu'en mode essai) ; encadré « Mode essai : ta sauvegarde n'est pas modifiée. » à droite du titre. **Mesure** : panneau de mesure (`perf`), plafond (`cap` : aucun, 30, 45, 60).
 - **Adresse** : `adresseDebug(search, valeurs)` retire les paramètres gérés (`GERES`), garde les autres dans leur ordre, ajoute les seules valeurs non standard ; `?lvl=` : `all:N` puis les statistiques qui en diffèrent, ou la liste des statistiques non nulles (`degats:3,precision:5`). Préremplissage : `lireDebug(location.search)` avec les règles de lecture du jeu.
 - **Clavier** : focus piégé ; Échap ferme la confirmation puis le panneau ; focus rendu à l'icône ; dans un champ, P, F et M ne commandent pas la partie.
 - **Ajouter une ligne** : un compteur (`counter`) ou des boutons exclusifs (`choice`) dans `createDebugMenu`, la valeur standard dans `defaults`, la lecture dans `lireDebug`, l'écriture dans `paramsDebug`, le nom dans `GERES`, les textes `game.debug.*` (français seulement, écrits en entier) ; le paramètre doit être du groupe T.
 
 ## Pages techniques
 `carte.html` et `visite.html` ouvrent le jeu avec `?zoom=1&labels=1&wave=…&floor=1&nospawn=1&map=salle` (groupe T) : ces liens marchent sur `source`, `dev` et `Recette` ; ils cesseront en production (canal refusé). Pages à retirer au lot 13.
+
+## Paramètre `intro` et introduction du studio (lot 8g)
+- Au lancement en mode menu, l'introduction du studio (logo animé de No Way Studio) se joue avant l'écran de chargement ; règle : `introAuDemarrage(canal, adresse, fragment)` (`js/core/graphics.js`), lue par `js/menu/demarrage.js`. Jamais en partie directe ; jamais avec le repère `#retour` ou `#plein-ecran` (retour au menu après une partie, posé par `menuRetour`).
+- `?intro=1` (groupe test) : sous `?test=1&menu=1` (canaux de débogage), joue l'introduction (les tests du menu, sans lui, ne la voient pas) ; `window.__zsMenu.intro()` : phase (`geste` : attente de « Toucher pour commencer » ; `attente` : logo en chargement ; `joue`, `sortie`, `finie`), passée ou non, mouvement réduit, état du son (`charge`, `pret`, `joue`, `eteint`, `muet` sans geste en 4 s, `echec`, `aucun`), logo affiché (`null` pendant le geste), horodatages (geste, affichage, début du son, fin, retrait). Sans `?test=1`, sans effet (l'introduction se joue déjà). Refusé sur archive, prod et canal absent.
+
+## Outils de débogage du menu (lots 8h et 8k ; ajouté au lot 8l)
+- Icône « Outils de débogage » dans l'en-tête du menu, à côté du plein écran et du menu à trois barres, **sur les canaux `source` et `dev` seulement** (`js/menu/debogage.js`) ; six outils, chacun confirmé, qui écrivent vraiment dans la progression de cet appareil : « Ajouter 10 000 diamants », « Ajouter 1 000 médailles », « Remettre la pitié à zéro », « Donner l'inventaire de démonstration », « Débloquer tous les personnages », « Remettre la progression V0.8 à zéro » (efface `zs.save.v2` et le champ `son` de `zs.device.v1`, jamais `zs.save.v1`). Détail : `Docs/ref/sauvegarde-v2.md`, `Docs/ref/economie.md`.

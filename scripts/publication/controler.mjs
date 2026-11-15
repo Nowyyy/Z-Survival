@@ -121,10 +121,18 @@ function avant(args, api) {
   const lotsNonFusionnes = lots.erreur ? lots : lots.filter((b) => gitOk('merge-base', '--is-ancestor', b.sha, 'origin/dev') === false);
   const diffWorkflows = git('diff', '--name-only', 'origin/main..origin/dev', '--', '.github');
   const runsDev = devSha.erreur ? devSha : api(`/actions/runs?head_sha=${devSha}&per_page=100`);
+  // Lot 5q : lignée --first-parent de dev, exécutions Tests de la branche dev, tests.yml de dev, fichiers modifiés depuis le dernier commit testé.
+  const lignee = git('log', '--first-parent', '--format=%H', '-n', String(C.LIGNEE_MAX), 'origin/dev');
+  const commits = lignee.erreur ? lignee : lignee.split('\n').filter(Boolean);
+  const runsTests = api('/actions/workflows/tests.yml/runs?branch=dev&per_page=100');
+  const historique = runsTests.erreur ? runsTests : runsTests.workflow_runs;
+  const ref = C.referenceTests(commits, [...(Array.isArray(runsDev?.workflow_runs) ? runsDev.workflow_runs : []), ...(Array.isArray(historique) ? historique : [])]);
+  const diffRef = typeof ref.sha === 'string' && ref.sha !== devSha ? executer('git', ['diff', '--name-only', '--no-renames', '-z', ref.sha, 'origin/dev']) : null;
+  const fichiers = diffRef === null ? null : diffRef.erreur ? diffRef : diffRef.code === 0 ? { depuis: ref.sha, liste: diffRef.stdout.split('\0').filter(Boolean) } : { erreur: (diffRef.stderr || `code ${diffRef.code}`).trim().slice(0, 160) };
   return [
     C.fraicheur(references()),
     C.dev({ devSha, bilans: lecture(executer('git', ['ls-tree', '--name-only', 'origin/dev', 'Docs/lots/']), (s) => s.split('\n').filter(Boolean).map((p) => p.replace('Docs/lots/', ''))) }),
-    C.ciDev({ devSha, runs: runsDev.erreur ? runsDev : runsDev.workflow_runs }),
+    C.ciDev({ devSha, runs: runsDev.erreur ? runsDev : runsDev.workflow_runs, historique, commits, workflow: gitFichier('origin/dev', '.github/workflows/tests.yml'), fichiers }),
     C.mainAncetre({ ancetre: gitOk('merge-base', '--is-ancestor', 'origin/main', 'origin/dev') }),
     C.pullRequests({ prs: api('/pulls?state=open&per_page=100') }),
     C.versions({

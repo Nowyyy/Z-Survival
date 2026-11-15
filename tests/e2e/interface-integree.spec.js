@@ -293,22 +293,22 @@ test.describe('états du jeu', () => {
     expect(r.top).toBeGreaterThan(r.hud);
   });
 
-  test('« Revenir au menu principal » : bouton de 44 px sans action (aucune navigation, l\'écran de fin reste) ; plus de lien vers la sauvegarde', async ({ page }) => {
+  // Lot 8a : « Revenir au menu principal » ramène au menu (rechargement, menu=1 sous ?test=1) ; avant : sans action, l'écran de fin restait.
+  test('« Revenir au menu principal » : bouton de 44 px qui ramène au menu principal ; plus de lien vers la sauvegarde', async ({ page }) => {
     await open(page);
     await page.evaluate(() => { const zs = window.__zs; zs.setChutes(0); zs.downPlayer(); zs.step(0.3); });
     await expect(page.locator('#end-panel')).toBeVisible();
     await expect(page.locator('#end-panel a')).toHaveCount(0);
-    const url = page.url();
-    await page.locator('#btn-menu').click();
-    expect(page.url()).toBe(url);
-    await expect(page.locator('#end-panel')).toBeVisible();
     expect((await page.locator('#btn-menu').boundingBox()).height).toBeGreaterThanOrEqual(44);
     await expect(page.locator('#end-title')).toHaveText('Tu es mort');
     await expect(page.locator('#end-box .end-icon-death')).toBeVisible();
     await expect(page.locator('#end-box .end-icon-world')).toBeHidden();
+    await Promise.all([page.waitForURL(/[?&]menu=1/), page.locator('#btn-menu').click()]);
+    expect(new URL(page.url()).searchParams.get('menu')).toBe('1');
+    await expect(page.locator('#menu-jouer')).toBeVisible({ timeout: 60_000 });
   });
 
-  // Retours du propriétaire : solde à côté de « PAUSE » ; Reprendre, Recommencer, Quitter (désactivé) à gauche ; Son, Options (lot 5j, avant : Effet VHS ; sous Son), Plein écran
+  // Retours du propriétaire : solde à côté de « PAUSE » ; Reprendre, Recommencer, Quitter (actif depuis le lot 8a ; avant : désactivé) à gauche ; Son, Options (lot 5j, avant : Effet VHS ; sous Son), Plein écran
   // à droite ; ni prochaine zone, ni état de la sauvegarde, ni volume ; depuis le lot 5j, plus de ligne « Graphismes » (#gfx-row) : elle est dans l'écran Options.
   // Lot 5j-F (retour du propriétaire) : Son devient une icône en haut à droite, après le solde (avant : bouton « Son : activé » en tête de la colonne de droite) ;
   // colonne de droite : Options puis Plein écran ; Tab depuis Reprendre va à Recommencer (avant : à Son).
@@ -349,7 +349,7 @@ test.describe('états du jeu', () => {
     expect([r.inputs, r.lines]).toEqual([0, 1]); // lignes : le solde seul (lot 5b à 5i : aussi la tête de la ligne « Graphismes », retirée au lot 5j)
     expect(await page.locator('#pause-panel p').nth(0).getAttribute('id')).toBe('pause-balance');
     await expect(page.locator('#btn-options')).toHaveText('Options');
-    await expect(page.locator('#btn-quit')).toBeDisabled();
+    await expect(page.locator('#btn-quit')).toBeEnabled(); // lot 8a (avant : désactivé)
     await expect(page.locator('#btn-quit')).toHaveText('Quitter');
     await page.keyboard.press('Tab');
     await expect(page.locator('#btn-restart')).toBeFocused();
@@ -363,26 +363,31 @@ test.describe('états du jeu', () => {
     await page.goto('/jeu.html?wave=40&fin=monde&vhs=0');
     await expect(page.locator('#end-panel')).toBeVisible({ timeout: 60_000 });
     await expect(page.locator('#end-title')).toHaveText('Monde terminé');
-    await expect(page.locator('#end-bonus')).toBeVisible();
-    await expect(page.locator('#end-save')).toHaveText('Mode essai : cet argent n\'est pas enregistré');
+    await expect(page.locator('#end-bleu-text')).toHaveText(/^\+\d/); // retour du propriétaire après le lot 8k : prime du monde comprise dans le gain (avant : #end-bonus)
+    await expect(page.locator('#end-save')).toHaveText('Mode essai : rien n\'est enregistré'); // lot 8h
     expect(await page.evaluate(() => localStorage.length)).toBe(0);
     await page.goto('/jeu.html?test=1&fin=monde&vhs=0'); // ?test=1 seul : sauvegarde en mémoire, pas en lecture seule
     await waitReady(page);
     await expect(page.locator('#end-panel')).toBeHidden();
   });
 
-  test('fin : vague, « Nouveau record », meilleure manche à gauche ; tués, argent gagné, solde à droite ; plus de note « provisoire »', async ({ page }) => {
+  test('fin : vague (« Record » sur la même ligne), meilleure manche, tués à gauche ; solde de diamants et de médailles (avec le gain) à droite ; plus de note « provisoire »', async ({ page }) => {
     await page.setViewportSize(SIZE);
     await page.goto('/jeu.html?test=1&store=local&seed=1&vhs=0');
     await waitReady(page);
     await page.evaluate(() => { window.requestAnimationFrame = () => 0; const zs = window.__zs; zs.step(3.3); zs.skipWave(); zs.step(0.3); zs.setChutes(0); zs.downPlayer(); zs.step(0.3); });
     await expect(page.locator('#end-record')).toBeVisible();
     const col = (ids) => page.evaluate((list) => list.map((id) => { const q = document.getElementById(id).getBoundingClientRect(); return [q.left, q.top]; }), ids);
-    const left = await col(['end-wave', 'end-record', 'end-best']);
-    const right = await col(['end-kills', 'end-earned', 'end-balance']);
+    // Retour du propriétaire après le lot 8k : « Record » à droite de la vague atteinte (une ligne de gagnée) ; à droite, les deux soldes et leur gain.
+    const left = await col(['end-wave', 'end-best', 'end-kills']);
+    const right = await col(['end-balance', 'end-medailles-solde']);
     for (const c of [left, right]) for (let i = 1; i < c.length; i += 1) { expect(Math.abs(c[i][0] - c[0][0])).toBeLessThan(0.5); expect(c[i][1]).toBeGreaterThan(c[i - 1][1]); }
     expect(right[0][0]).toBeGreaterThan(left[0][0] + 100);
-    expect(Math.abs(left[1][1] - right[1][1])).toBeLessThan(0.5); // record sur la ligne d'« Argent gagné »
+    const [vague, record] = await col(['end-wave-text', 'end-record']);
+    expect(record[0]).toBeGreaterThan(vague[0]);
+    expect(Math.abs(record[1] - vague[1])).toBeLessThan(6); // sur la même ligne que la vague
+    const [solde, gain] = await col(['end-balance-text', 'end-bleu']);
+    expect(gain[0]).toBeGreaterThan(solde[0]);
     await expect(page.locator('#end-panel')).not.toContainText('provisoire');
   });
 });
@@ -429,7 +434,7 @@ test.describe('annonces, réseau, stockage, accessibilité, CLS', () => {
       zs.step(0.3);
     });
     expect((await page.evaluate(() => window.__live)).some((t) => t.includes('Nouveau record : manche 1'))).toBe(true);
-    await expect(page.locator('#end-record')).toHaveText('Nouveau record');
+    await expect(page.locator('#end-record')).toHaveText('Record'); // retour du propriétaire après le lot 8k (avant : « Nouveau record »)
     await expect(page.locator('#end-record svg')).toHaveAttribute('aria-hidden', 'true');
     await expect(page.locator('#end-record')).toHaveCSS('color', 'rgb(255, 214, 10)');
   });
@@ -445,7 +450,8 @@ test.describe('annonces, réseau, stockage, accessibilité, CLS', () => {
     await page.locator('#btn-pause').click();
     await page.locator('#btn-resume').click();
     await page.evaluate(() => { const zs = window.__zs; zs.setChutes(0); zs.downPlayer(); zs.step(0.3); });
-    await page.locator('#btn-menu').click();
+    await Promise.all([page.waitForURL(/[?&]menu=1/), page.locator('#btn-menu').click()]); // lot 8a : retour au menu (rechargement)
+    await page.locator('#menu-jouer').waitFor({ timeout: 60_000 });
     expect(external).toEqual([]);
     expect(problems).toEqual([]);
     expect(await page.evaluate(() => [localStorage.length, sessionStorage.length, document.cookie])).toEqual([0, 0, '']);

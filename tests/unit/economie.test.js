@@ -22,7 +22,8 @@ const deepFreeze = (o) => {
 describe('makeEconomy', () => {
   it('reprend economy.json et la prime de chaque type de enemies.json', () => {
     expect(params.bounty).toEqual({ marcheur: 10, petit: 10, voute: 10, grand: 10 });
-    expect(params.waveBonusBase).toBe(10);
+    expect(params.waveBonusBase).toBe(20); // lot 8k : gain fixe de la monnaie bleue (avant : 10 + 2 × manche)
+    expect(params.waveBonusPerWave).toBe(0);
     expect(params.maxMoney).toBe(9_999_999);
   });
 
@@ -111,30 +112,39 @@ describe('killMoney : cas limites', () => {
   });
 });
 
+// Lot 8k : la formule est inchangée ; ses tests gardent les réglages d'avant (10 + 2 × manche) et les données actuelles (gain fixe) ont les leurs.
+const formule = { ...params, waveBonusBase: 10, waveBonusPerWave: 2 };
 describe('waveBonus : round((10 + 2 × manche) × (renforcée ? 1,5 : 1))', () => {
   it.each([[1, false, 12], [2, false, 14], [5, false, 20], [5, true, 30], [10, true, 45], [20, true, 75], [40, true, 135], [41, false, 92]])('manche %i renforcée %s : %i', (wave, reinforced, amount) => {
-    expect(waveBonus(wave, reinforced, params)).toBe(amount);
+    expect(waveBonus(wave, reinforced, formule)).toBe(amount);
+  });
+
+  it('lot 8k, données actuelles : 20 par manche terminée (30 en manche renforcée), quelle que soit la manche', () => {
+    for (let w = 1; w <= 200; w += 1) {
+      expect(waveBonus(w, false, params)).toBe(20);
+      expect(waveBonus(w, true, params)).toBe(30);
+    }
   });
 
   it('une manche renforcée rapporte plus que la même manche normale', () => {
-    for (let w = 1; w <= 60; w += 1) expect(waveBonus(w, true, params)).toBeGreaterThan(waveBonus(w, false, params));
+    for (let w = 1; w <= 60; w += 1) expect(waveBonus(w, true, formule)).toBeGreaterThan(waveBonus(w, false, formule));
   });
 
   it('croît avec la manche', () => {
     let previous = 0;
     for (let w = 1; w <= 100; w += 1) {
-      const v = waveBonus(w, false, params);
+      const v = waveBonus(w, false, formule);
       expect(v).toBeGreaterThan(previous);
       previous = v;
     }
   });
 
   it.each([NaN, -1, 0, 'x', null])('manche invalide %j : comme la manche 1', (wave) => {
-    expect(waveBonus(wave, false, params)).toBe(12);
+    expect(waveBonus(wave, false, formule)).toBe(12);
   });
 
   it('renforcée n\'est vraie que pour true ; paramètres hostiles : 0', () => {
-    expect(waveBonus(5, 'oui', params)).toBe(20);
+    expect(waveBonus(5, 'oui', formule)).toBe(20);
     expect(waveBonus(5, false, null)).toBe(0);
     expect(waveBonus(5, true, {})).toBe(0);
   });
@@ -200,10 +210,10 @@ describe('earningsTable', () => {
     }
   });
 
-  it('valeurs de référence : manche 1 = 50 + 12, manche 5 = 160 + 30, manche 40 = 1 500 + 135', () => {
-    expect([table[0].killGain, table[0].bonus, table[0].gain]).toEqual([50, 12, 62]);
+  it('valeurs de référence (lot 8k : bleue fixe, 20 ou 30 renforcée) : manche 1 = 50 + 20, manche 5 = 160 + 30, manche 40 = 1 500 + 30', () => {
+    expect([table[0].killGain, table[0].bonus, table[0].gain]).toEqual([50, 20, 70]);
     expect([table[4].killGain, table[4].bonus]).toEqual([160, 30]);
-    expect([table[39].killGain, table[39].bonus]).toEqual([1500, 135]);
+    expect([table[39].killGain, table[39].bonus]).toEqual([1500, 30]);
   });
 
   it('maxWave borne le tableau (jamais plus de 40) ; accepte des paramètres déjà assemblés', () => {

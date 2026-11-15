@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Menu principal, onglet Jouer — maquette V0.8 (référence)</title>
+<style>
+body{margin:0;background:#000}
+/* Polices : celles hébergées par le jeu (Barlow, Rubik Wet Paint, Rubik Dirt). Sans elles, le navigateur en substitue d'autres. */
+
+body{margin:0}
+a{color:#f4f1ec}a:hover{color:#ffffff}
+summary::-webkit-details-marker{display:none}
+@keyframes kmain-walkA{0%{transform:translateX(0)}68%{transform:translateX(188px)}100%{transform:translateX(188px)}}
+@keyframes kmain-dieA{0%{transform:translateY(0) rotate(0deg);opacity:0}4%{opacity:1}8%,24%,40%,56%{transform:translateY(-2px) rotate(2deg)}16%,32%,48%,64%{transform:translateY(0) rotate(-2deg)}68%{transform:translateY(0) rotate(0deg);opacity:1}70%{transform:translateY(0) rotate(-14deg)}74%{transform:translateY(0) rotate(-8deg) scale(1.15,0.22);opacity:1}90%{transform:translateY(0) rotate(-8deg) scale(1.15,0.22);opacity:1}97%,100%{transform:translateY(0) rotate(-8deg) scale(1.15,0.22);opacity:0}}
+@keyframes kmain-shotA{0%,66.5%{opacity:0}67%{opacity:1}68%{opacity:0}69%{opacity:1}70%,100%{opacity:0}}
+@keyframes kmain-bloodA{0%,68.9%{opacity:0;transform:scale(0.3)}70%{opacity:1;transform:scale(0.6)}78%{opacity:1;transform:scale(1)}92%{opacity:1;transform:scale(1)}98%,100%{opacity:0;transform:scale(1)}}
+@keyframes kmain-walkB{0%{transform:translateX(0)}64%{transform:translateX(-240px)}100%{transform:translateX(-240px)}}
+@keyframes kmain-dieB{0%{transform:translateY(0) rotate(0deg);opacity:0}4%{opacity:1}8%,24%,40%,56%{transform:translateY(-2px) rotate(-2deg)}16%,32%,48%{transform:translateY(0) rotate(2deg)}64%{transform:translateY(0) rotate(0deg);opacity:1}66%{transform:translateY(0) rotate(14deg)}70%{transform:translateY(0) rotate(8deg) scale(1.15,0.22);opacity:1}90%{transform:translateY(0) rotate(8deg) scale(1.15,0.22);opacity:1}97%,100%{transform:translateY(0) rotate(8deg) scale(1.15,0.22);opacity:0}}
+@keyframes kmain-shotB{0%,62.5%{opacity:0}63%{opacity:1}64%{opacity:0}65%{opacity:1}66%,100%{opacity:0}}
+@keyframes kmain-bloodB{0%,64.9%{opacity:0;transform:scale(0.3)}66%{opacity:1;transform:scale(0.6)}74%{opacity:1;transform:scale(1)}92%{opacity:1;transform:scale(1)}98%,100%{opacity:0;transform:scale(1)}}
+@keyframes kmain-rodeur{0%{transform:translateX(0);opacity:0}12%{opacity:0.85}85%{transform:translateX(150px);opacity:0.85}100%{transform:translateX(176px);opacity:0}}
+@keyframes kmain-rodeurG{0%{transform:translateX(0);opacity:0}12%{opacity:0.85}85%{transform:translateX(-110px);opacity:0.85}100%{transform:translateX(-130px);opacity:0}}
+@keyframes kmain-flamme{0%{transform:scaleY(1) skewX(0deg)}50%{transform:scaleY(1.18) skewX(3deg)}100%{transform:scaleY(0.92) skewX(-2deg)}}
+@keyframes kmain-lueur{0%,100%{opacity:1}45%{opacity:0.75}60%{opacity:0.95}}
+@keyframes kmain-fumee{0%{transform:translate(0px,0px);opacity:0.3}100%{transform:translate(18px,-26px);opacity:0}}
+
+@media (prefers-reduced-motion: reduce){*{animation:none !important}}
+</style>
+</head>
+<body>
+<div style="position: relative; width: 932px; height: 430px; overflow: hidden; background: #0c0b0a; font-family: 'Barlow', sans-serif; color: #f4f1ec">
+<svg aria-hidden="true" width="932" height="368" viewBox="0 0 932 368" style="position: absolute; left: 0; top: 0">
+<defs>
+<linearGradient id="ciel" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#04060b"></stop><stop offset="1" stop-color="#131a26"></stop></linearGradient>
+<radialGradient id="halo" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="#c9d3e4" stop-opacity="0.35"></stop><stop offset="1" stop-color="#c9d3e4" stop-opacity="0"></stop></radialGradient>
+<radialGradient id="lampe" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="#ffb347" stop-opacity="0.55"></stop><stop offset="1" stop-color="#ffb347" stop-opacity="0"></stop></radialGradient>
+<radialGradient id="feu" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="#ff6a1a" stop-opacity="0.6"></stop><stop offset="1" stop-color="#ff6a1a" stop-opacity="0"></stop></radialGradient>
+<radialGradient id="vignette" cx="0.5" cy="0.42" r="0.78"><stop offset="0.55" stop-color="#000000" stop-opacity="0"></stop><stop offset="1" stop-color="#000000" stop-opacity="0.85"></stop></radialGradient>
+<g id="zombie"><circle cx="0" cy="-38" r="7" fill="#040303"></circle><path d="M-8 -30 H8 L10 -4 H4 L2 -14 L-2 -4 H-10Z" fill="#040303"></path><path d="M6 -27 L26 -29 L26 -24 L6 -21Z" fill="#040303"></path><circle cx="3" cy="-39" r="1.3" fill="#ff2a1f"></circle></g>
+<g id="sang"><circle cx="0" cy="0" r="9" fill="#7a0b0a"></circle><circle cx="12" cy="-3" r="4" fill="#7a0b0a"></circle><circle cx="-13" cy="2" r="3.5" fill="#7a0b0a"></circle><circle cx="6" cy="7" r="3" fill="#7a0b0a"></circle><circle cx="-6" cy="-8" r="2.5" fill="#9a1210"></circle></g>
+<g id="tir"><circle cx="0" cy="0" r="10" fill="#ffd166" opacity="0.5"></circle><circle cx="0" cy="0" r="5" fill="#fff2a8"></circle></g>
+</defs>
+<rect width="932" height="368" fill="url(#ciel)"></rect>
+<circle cx="770" cy="96" r="78" fill="url(#halo)"></circle>
+<circle cx="770" cy="96" r="22" fill="#d9dde6"></circle>
+<path d="M0 252 L50 238 L96 248 L150 228 L196 244 L250 236 L250 300 L0 300Z" fill="#0b0e14"></path>
+<path d="M700 244 L760 232 L820 240 L880 226 L932 238 L932 300 L700 300Z" fill="#0b0e14"></path>
+<rect x="0" y="282" width="932" height="86" fill="#0a0908"></rect>
+<rect x="258" y="90" width="210" height="196" fill="#1d1c1a"></rect>
+<rect x="468" y="160" width="232" height="126" fill="#181715"></rect>
+<rect x="250" y="82" width="226" height="10" fill="#2a2823"></rect>
+<rect x="460" y="152" width="248" height="10" fill="#24221d"></rect>
+<rect x="258" y="188" width="210" height="4" fill="#2c2a25"></rect>
+<circle cx="296" cy="128" r="46" fill="url(#lampe)" style="animation: kmain-lueur 3.2s ease-in-out infinite"></circle>
+<rect x="280" y="112" width="32" height="34" fill="#ffb347" opacity="0.8"></rect>
+<rect x="336" y="112" width="32" height="34" fill="#0b0a09"></rect>
+<path d="M332 120 L372 132 M332 138 L372 126" stroke="#7a5432" stroke-width="5"></path>
+<rect x="392" y="112" width="32" height="34" fill="#0b0a09"></rect>
+<rect x="280" y="214" width="32" height="34" fill="#0b0a09"></rect>
+<path d="M276 222 L316 234 M276 240 L316 228" stroke="#7a5432" stroke-width="5"></path>
+<circle cx="352" cy="230" r="44" fill="url(#lampe)" style="animation: kmain-lueur 4.1s ease-in-out infinite"></circle>
+<rect x="336" y="214" width="32" height="34" fill="#ffb347" opacity="0.7"></rect>
+<rect x="392" y="214" width="32" height="34" fill="#0b0a09"></rect>
+<rect x="496" y="200" width="32" height="34" fill="#0b0a09"></rect>
+<path d="M492 208 L532 220 M492 226 L532 214" stroke="#7a5432" stroke-width="5"></path>
+<circle cx="572" cy="216" r="44" fill="url(#lampe)" style="animation: kmain-lueur 3.6s ease-in-out infinite"></circle>
+<rect x="556" y="200" width="32" height="34" fill="#ffb347" opacity="0.7"></rect>
+<rect x="616" y="200" width="32" height="34" fill="#0b0a09"></rect>
+<path d="M612 208 L652 220 M612 226 L652 214" stroke="#7a5432" stroke-width="5"></path>
+<rect x="662" y="226" width="28" height="60" fill="#0b0a09"></rect>
+<path d="M2 368 C120 344 230 330 330 316 C420 304 480 296 560 288" fill="none" stroke="#231a12" stroke-width="30" stroke-linecap="round"></path>
+<path d="M2 368 C120 344 230 330 330 316 C420 304 480 296 560 288" fill="none" stroke="#3a2c1f" stroke-width="2" stroke-dasharray="10 12"></path>
+<path d="M742 286 L752 268 L800 266 L818 280 L838 282 L840 296 L740 296Z" fill="#141210"></path>
+<circle cx="790" cy="262" r="62" fill="url(#feu)" style="animation: kmain-lueur 0.9s ease-in-out infinite"></circle>
+<g style="transform-box: fill-box; transform-origin: 50% 100%; animation: kmain-flamme 0.45s ease-in-out infinite alternate"><path d="M770 268 C772 250 782 252 780 238 C792 250 800 246 798 232 C810 248 812 262 806 268Z" fill="#ff7a1a"></path><path d="M782 268 C784 258 790 258 792 250 C798 258 800 264 796 268Z" fill="#ffd166"></path></g>
+<ellipse cx="804" cy="206" rx="42" ry="16" fill="#3a3a3a" style="animation: kmain-fumee 4s linear infinite"></ellipse>
+<ellipse cx="826" cy="176" rx="30" ry="12" fill="#3a3a3a" style="animation: kmain-fumee 4s linear -2s infinite"></ellipse>
+
+<g style="animation: kmain-rodeur 14s linear infinite"><use href="#zombie" transform="translate(-30 292) scale(0.7)"></use></g>
+<g style="animation: kmain-rodeurG 12s linear -6s infinite"><use href="#zombie" transform="translate(990 294) scale(-0.72 0.72)"></use></g>
+
+<g style="transform-box: fill-box; transform-origin: 50% 50%; animation: kmain-bloodA 8s linear infinite"><use href="#sang" transform="translate(226 300)"></use></g>
+<g style="animation: kmain-walkA 8s linear infinite"><g style="transform-box: fill-box; transform-origin: 50% 100%; animation: kmain-dieA 8s linear infinite"><use href="#zombie" transform="translate(40 300)"></use></g></g>
+<line x1="302" y1="146" x2="234" y2="276" stroke="#fff2a8" stroke-width="2" style="animation: kmain-shotA 8s linear infinite"></line>
+<g style="animation: kmain-shotA 8s linear infinite"><use href="#tir" transform="translate(302 146)"></use></g>
+
+<g style="transform-box: fill-box; transform-origin: 50% 50%; animation: kmain-bloodB 10s linear -3s infinite"><use href="#sang" transform="translate(702 302)"></use></g>
+<g style="animation: kmain-walkB 10s linear -3s infinite"><g style="transform-box: fill-box; transform-origin: 50% 100%; animation: kmain-dieB 10s linear -3s infinite"><use href="#zombie" transform="translate(940 302) scale(-1 1)"></use></g></g>
+<line x1="580" y1="232" x2="698" y2="278" stroke="#fff2a8" stroke-width="2" style="animation: kmain-shotB 10s linear -3s infinite"></line>
+<g style="animation: kmain-shotB 10s linear -3s infinite"><use href="#tir" transform="translate(580 232)"></use></g>
+
+<g><rect x="94" y="332" width="4" height="22" fill="#4a3826"></rect><rect x="80" y="320" width="32" height="18" fill="#8f1010"></rect><text x="96" y="333" font-family="Barlow, sans-serif" font-size="12" font-weight="700" fill="#ffffff" text-anchor="middle">1</text></g>
+<g><rect x="200" y="314" width="4" height="22" fill="#4a3826"></rect><rect x="186" y="302" width="32" height="18" fill="#8f1010"></rect><text x="202" y="315" font-family="Barlow, sans-serif" font-size="12" font-weight="700" fill="#ffffff" text-anchor="middle">10</text></g>
+<g><rect x="298" y="298" width="4" height="22" fill="#4a3826"></rect><rect x="284" y="286" width="32" height="18" fill="#8f1010"></rect><text x="300" y="299" font-family="Barlow, sans-serif" font-size="12" font-weight="700" fill="#ffffff" text-anchor="middle">20</text></g>
+<g><rect x="400" y="286" width="4" height="22" fill="#4a3826"></rect><rect x="386" y="274" width="32" height="18" fill="#3a2c1f"></rect><text x="402" y="287" font-family="Barlow, sans-serif" font-size="12" font-weight="700" fill="#cfc6b8" text-anchor="middle">30</text></g>
+<g><rect x="508" y="276" width="4" height="22" fill="#4a3826"></rect><rect x="494" y="264" width="32" height="18" fill="#3a2c1f"></rect><text x="510" y="277" font-family="Barlow, sans-serif" font-size="12" font-weight="700" fill="#cfc6b8" text-anchor="middle">40</text></g>
+<circle cx="346" cy="312" r="7" fill="#ff2a1f"></circle><circle cx="346" cy="312" r="13" fill="none" stroke="#ff2a1f" stroke-width="2" opacity="0.5"></circle>
+<ellipse cx="200" cy="300" rx="260" ry="26" fill="#9aa4b4" opacity="0.07"></ellipse>
+<ellipse cx="640" cy="306" rx="320" ry="24" fill="#9aa4b4" opacity="0.06"></ellipse>
+<rect width="932" height="368" fill="url(#vignette)"></rect>
+</svg>
+
+<div style="position: absolute; left: 32px; top: 62px; display: flex; flex-direction: column; align-items: flex-start">
+<div style="padding: 4px 12px 5px 12px; background: #c4110f; border-radius: 2px; display: flex; flex-direction: column">
+<span style="font-family: 'Rubik Dirt', sans-serif; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: #ffd9d4">Monde 1 · histoire</span>
+<span style="font-family: 'Rubik Wet Paint', sans-serif; font-size: 20px; line-height: 1.05; color: #ffffff">Le bâtiment</span>
+</div>
+<svg aria-hidden="true" width="100%" height="9" viewBox="0 0 220 18" preserveAspectRatio="none" style="display: block"><rect x="26" y="0" width="6" height="12" rx="3" fill="#c4110f"></rect><rect x="70" y="0" width="6" height="17" rx="3" fill="#c4110f"></rect><rect x="118" y="0" width="5" height="9" rx="2.5" fill="#c4110f"></rect><rect x="160" y="0" width="6" height="14" rx="3" fill="#c4110f"></rect><rect x="200" y="0" width="5" height="10" rx="2.5" fill="#c4110f"></rect></svg>
+<div style="margin: 4px 0 0 2px; display: flex; flex-direction: column; gap: 2px">
+<span style="font-size: 15px; font-weight: 700; color: #ffd60a; text-shadow: 0 1px 2px #000">Record : manche [N] / 40</span>
+<span style="font-size: 13px; color: #d9d4cb; text-shadow: 0 1px 2px #000">Portes ouvertes : [N] / 3</span>
+</div>
+</div>
+
+<button aria-label="Monde précédent" disabled style="position: absolute; left: 20px; top: 196px; width: 48px; height: 48px; border-radius: 24px; background: rgba(5,5,5,0.7); border: 2px solid #3a3434; color: #5a5550; display: flex; align-items: center; justify-content: center"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><path d="M15 6l-6 6 6 6"></path></svg></button>
+
+<a href="#" style="position: absolute; right: 20px; top: 70px; width: 150px; box-sizing: border-box; padding: 8px 10px; border-radius: 6px; background: rgba(5,5,5,0.78); border: 2px solid #ffd60a; text-decoration: none; display: flex; align-items: center; gap: 10px">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ffd60a" stroke-width="2.4" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg>
+<span style="display: flex; flex-direction: column; line-height: 1.15"><span style="font-family: 'Rubik Dirt', sans-serif; font-size: 13px; letter-spacing: 0.06em; text-transform: uppercase; color: #ffd60a">Monde 2</span><span style="font-size: 12px; color: #d9d4cb">Verrouillé</span></span>
+</a>
+<div aria-hidden="true" style="position: absolute; right: 20px; top: 120px; width: 150px; height: 8px; background: repeating-linear-gradient(135deg, #ffd60a 0px, #ffd60a 8px, #0a0a0a 8px, #0a0a0a 16px)"></div>
+
+<a href="#" style="position: absolute; left: 674px; top: 280px; width: 232px; height: 60px; box-sizing: border-box; background: #c4110f; border: 2px solid #5a0606; border-radius: 4px; color: #ffffff; text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 12px; box-shadow: 0 4px 0 #5a0606">
+<svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4v16l13-8z" fill="#ffffff"></path></svg>
+<span style="font-family: 'Rubik Wet Paint', sans-serif; font-size: 30px; line-height: 1">JOUER</span>
+</a>
+
+<header style="position: absolute; left: 0; top: 0; width: 932px; height: 50px; box-sizing: border-box; padding: 0 28px; display: flex; align-items: center; justify-content: space-between; background: rgba(5,5,5,0.85); border-bottom: 1px solid rgba(216,20,20,0.4)">
+<div style="display: flex; align-items: center; gap: 16px">
+<a href="Profil.html" style="height: 40px; padding: 0 14px 0 10px; display: flex; align-items: center; gap: 8px; background: #c4110f; border: 2px solid #5a0606; border-radius: 4px; text-decoration: none; color: #ffffff; font-family: 'Rubik Dirt', sans-serif; font-size: 14px; letter-spacing: 0.06em; text-transform: uppercase"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><circle cx="12" cy="8" r="4"></circle><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"></path></svg>Connexion</a>
+</div>
+<div style="display: flex; align-items: center; gap: 12px">
+<div style="display: flex; align-items: center; gap: 8px; height: 34px; padding: 0 14px; border-radius: 4px; background: #14110a; border: 1px solid #5a4b10"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="#ffd60a"></circle><circle cx="12" cy="12" r="6" fill="none" stroke="#7a6205" stroke-width="2"></circle></svg><span style="font-size: 16px; font-weight: 700; color: #ffd60a">[solde]</span></div>
+<details style="position: relative"><summary aria-label="Menu, 1 nouveauté non lue" style="position: relative; width: 44px; height: 44px; box-sizing: border-box; border-radius: 6px; background: #1a1614; border: 1px solid #3a3434; color: #f4f1ec; display: flex; align-items: center; justify-content: center; cursor: pointer; list-style: none"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"></path></svg><span aria-hidden="true" style="position: absolute; right: 5px; top: 5px; width: 9px; height: 9px; border-radius: 5px; background: #ffd60a; border: 2px solid #1a1614"></span></summary><nav aria-label="Menu du jeu" style="position: absolute; right: 0; top: 50px; width: 220px; box-sizing: border-box; padding: 6px; background: #14100c; border: 2px solid #3a2c1f; border-radius: 6px; box-shadow: 0 10px 24px rgba(0,0,0,0.6); display: flex; flex-direction: column; gap: 2px"><a href="Options.html" style="height: 44px; display: flex; align-items: center; gap: 10px; padding: 0 10px; border-radius: 4px; text-decoration: none; color: #f4f1ec; font-family: 'Barlow', sans-serif; font-size: 15px; font-weight: 700"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"></path></svg><span style="flex: 1">Options</span></a><a href="#" style="height: 44px; display: flex; align-items: center; gap: 10px; padding: 0 10px; border-radius: 4px; text-decoration: none; color: #f4f1ec; font-family: 'Barlow', sans-serif; font-size: 15px; font-weight: 700"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 11v6M12 7.5v0.5"></path></svg><span style="flex: 1">Information</span><span aria-hidden="true" style="width: 10px; height: 10px; border-radius: 5px; background: #ffd60a; box-shadow: 0 0 6px #ffd60a"></span><span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">1 nouveauté non lue</span></a><a href="#" style="height: 44px; display: flex; align-items: center; gap: 10px; padding: 0 10px; border-radius: 4px; text-decoration: none; color: #f4f1ec; font-family: 'Barlow', sans-serif; font-size: 15px; font-weight: 700"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v11H9l-5 4z"></path></svg><span style="flex: 1">Discord</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#a9a49c" stroke-width="2.4" aria-hidden="true"><path d="M14 4h6v6M20 4l-9 9M18 14v6H4V6h6"></path></svg></a><div aria-hidden="true" style="height: 1px; margin: 4px 6px; background: #3a2c1f"></div><button disabled style="width: 100%; height: 44px; background: none; border: none; cursor: not-allowed; text-align: left; display: flex; align-items: center; gap: 10px; padding: 0 10px; border-radius: 4px; text-decoration: none; color: #6e6a64; font-family: 'Barlow', sans-serif; font-size: 15px; font-weight: 700"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h5v16h-5M10 8l-4 4 4 4M6 12h10"></path></svg><span style="flex: 1">Déconnexion</span><span style="font-size: 11px; font-weight: 400; color: #8a857e">non connecté</span></button></nav></details>
+</div>
+</header>
+<nav aria-label="Menu principal" style="position: absolute; left: 0; bottom: 0; width: 932px; height: 62px; display: grid; grid-template-columns: 1fr 1fr 1.3fr 1fr 1fr; background: #1c140d; border-top: 3px solid #0a0705"><a href="Caisses.html" style="position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; text-decoration: none; color: #cfc6b8; font-family: 'Rubik Dirt', sans-serif; font-size: 14px; letter-spacing: 0.06em; text-transform: uppercase"><span aria-hidden="true" style="position: absolute; left: 8px; top: 8px; width: 5px; height: 5px; border-radius: 3px; background: #6e6a64"></span><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="7" width="18" height="13" rx="1"></rect><path d="M3 11h18M12 7v13M8 7l2-3h4l2 3"></path></svg>Boutique</a><a href="Personnage.html" style="position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; text-decoration: none; color: #cfc6b8; border-left: 2px solid #0e0a07; font-family: 'Rubik Dirt', sans-serif; font-size: 14px; letter-spacing: 0.06em; text-transform: uppercase"><span aria-hidden="true" style="position: absolute; left: 8px; top: 8px; width: 5px; height: 5px; border-radius: 3px; background: #6e6a64"></span><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="8" r="4"></circle><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"></path></svg>Personnage</a><a href="Main.html" aria-current="page" style="position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; text-decoration: none; color: #ffffff; background: #c4110f; border-left: 2px solid #5a0606; border-right: 2px solid #5a0606; font-family: 'Rubik Wet Paint', sans-serif; font-size: 20px"><svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4v16l13-8z" fill="currentColor"></path></svg>Jouer</a><a href="Infini.html" style="position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; text-decoration: none; color: #cfc6b8; font-family: 'Rubik Dirt', sans-serif; font-size: 14px; letter-spacing: 0.06em; text-transform: uppercase"><span aria-hidden="true" style="position: absolute; left: 8px; top: 8px; width: 5px; height: 5px; border-radius: 3px; background: #6e6a64"></span><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M7 8c-2.2 0-4 1.8-4 4s1.8 4 4 4c3 0 7-8 10-8 2.2 0 4 1.8 4 4s-1.8 4-4 4c-3 0-7-8-10-8z"></path></svg>Infini</a><span role="img" aria-label="Contenu verrouillé" style="position: relative; display: flex; align-items: center; justify-content: center; color: #6e6a64; background: #140e09; border-left: 2px solid #0e0a07"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path></svg></span></nav>
+<svg aria-hidden="true" width="932" height="430" style="position: absolute; left: 0; top: 0; pointer-events: none; opacity: 0.1"><filter id="grain"><feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="2" stitchTiles="stitch"></feTurbulence><feColorMatrix type="saturate" values="0"></feColorMatrix></filter><rect width="932" height="430" filter="url(#grain)"></rect></svg>
+<div aria-hidden="true" style="position: absolute; left: 0; top: 0; width: 932px; height: 430px; pointer-events: none; background: repeating-linear-gradient(to bottom, rgba(255,255,255,0.03) 0px, rgba(255,255,255,0.03) 1px, transparent 1px, transparent 3px)"></div>
+</div>
+</body>
+</html>

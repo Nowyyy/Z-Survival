@@ -30,6 +30,11 @@
   margin: 0;
 }
 
+.home .title.logo {
+  margin-top: 0.2em; /* le Z incliné ne touche pas les taches du bandeau « Recette » */
+  margin-bottom: 0.5em; /* place des coulures du logo (lot 8a) */
+}
+
 .home-play {
   margin: 0;
 }

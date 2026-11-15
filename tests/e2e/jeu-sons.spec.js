@@ -6,7 +6,7 @@ import { waitReady, salle } from './helpers.js';
 
 // Lot 1d : les sons se vérifient par le journal des lectures (?test=1), jamais à l'écoute ; 667×375 pour un rendu logiciel plus rapide.
 const SIZE = { width: 667, height: 375 };
-const URL = (extra = '') => `/jeu.html?test=1&empty=1&nospawn=1&seed=1${extra}`;
+const URL = (extra = '') => `/jeu.html?test=1&empty=1&nospawn=1&seed=1&coups=1${extra}`;
 const BROWSER_NOISE = /GL Driver Message/;
 const world = JSON.parse(readFileSync('data/game/world.json', 'utf8'));
 const decor = JSON.parse(readFileSync('data/game/decor.json', 'utf8'));
@@ -67,7 +67,7 @@ test.describe('sons : démarrage et journal', () => {
 
   test('une balle sur le bois, l\'étagère, la pierre et la voiture donne la bonne matière', async ({ page }) => {
     await page.setViewportSize(SIZE);
-    await page.goto(salle('/jeu.html?test=1&nospawn=1&seed=1')); // monde complet : meubles et décor
+    await page.goto(salle('/jeu.html?test=1&nospawn=1&seed=1&coups=1')); // monde complet : meubles et décor
     await waitReady(page);
     await unlock(page);
     const room = world.room;
@@ -262,11 +262,11 @@ test.describe('sons : chargement, confidentialité, robustesse', () => {
   });
 
   for (const size of [SIZE, { width: 1440, height: 900 }]) {
-    // Lot 3l : le curseur de volume est retiré de la pause ; les boutons (dont « Quitter », désactivé) gardent 44 px.
+    // Lot 3l : le curseur de volume est retiré de la pause ; les boutons (dont « Quitter », actif depuis le lot 8a) gardent 44 px.
     test(`axe : aucune violation sur le panneau de pause (${size.width}×${size.height})`, async ({ page }) => {
       await open(page, size.width > 1000 ? '&dpr=1' : '', size);
       await page.getByRole('button', { name: 'Pause' }).click();
-      await expect(page.locator('#btn-quit')).toBeDisabled();
+      await expect(page.locator('#btn-quit')).toBeEnabled(); // lot 8a (avant : désactivé)
       for (const box of await Promise.all((await page.locator('#pause-panel button:not([hidden])').all()).map((b) => b.boundingBox()))) {
         expect(box.height).toBeGreaterThanOrEqual(43.5);
         expect(box.y + box.height).toBeLessThanOrEqual(size.height);

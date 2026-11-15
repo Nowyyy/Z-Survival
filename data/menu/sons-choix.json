@@ -1,0 +1,30 @@
+{
+  "_note": "Variantes choisies à l'oreille sur atelier-sons-menu.html.",
+  "choix": {
+    "clic": "A",
+    "achat": "B",
+    "equiper": "C",
+    "retirer": "B",
+    "ameliorer": "A",
+    "fusion": "B",
+    "choisir": "B",
+    "chute-impact": "A",
+    "chute-tiret": "B",
+    "chute-rebond": "B",
+    "ouv-pas": "B",
+    "ouv-tapis": "A",
+    "ouv-tir": "A",
+    "ouv-impact": "A",
+    "ouv-couvercle": "B",
+    "ouv-lumiere": "A",
+    "ouv-explosion": "A",
+    "ouv-souffle": "B",
+    "ouv-ecrasement": "A",
+    "ouv-zombie-tombe": "B",
+    "ouv-exclamation": "B",
+    "ouv-carte": "B",
+    "ouv-case": "A",
+    "ouv-passer": "B",
+    "musique": "C"
+  }
+}

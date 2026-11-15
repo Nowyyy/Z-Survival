@@ -4,6 +4,7 @@ import { describe, it, expect } from 'vitest';
 import { execSync } from 'node:child_process';
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { downView, formatChrono, killsText, pad2, waveParts } from '../../js/core/hud-format.js';
+import { sansImagesStudio } from './helpers/images-studio.js'; // lot 8g : logo et son du studio, exception nominative
 // Lot 4c (publication par versions, seul lot autorisé à modifier le workflow) : workflow, accueil, ses textes et tests du journal modifiés ; ce garde-fou de branche
 // (comparaison à main ou à lot-4b) n'a plus de sens pour eux après l'entrée dans main : ils sortent de la liste.
 const LOT_4C = ['.github/workflows/pages.yml', 'index.html', 'data/i18n/fr.json', 'tests/unit/data-changelog.test.js', 'tests/e2e/dev.spec.js'];
@@ -140,9 +141,13 @@ describe('feuilles de style de l\'interface (css/game-ui.css, css/game.css, css/
 
   it('toutes les variables utilisées par game-ui.css sont définies (jetons, game.css, game-ui.css) ou posées par le code (--down-p, --safe-*)', () => {
     const used = [...uiCss.matchAll(/var\((--[a-z0-9-]+)/g)].map((m) => m[1]);
-    const byCode = ['--down-p'];
+    // Lot 8j : --ui-k (facteur de l'interface) est posé par js/game/ui-echelle.js ; --u est l'unité des écrans du menu (css/menu.css), reprise
+    // par le panneau d'Options de la partie.
+    const byCode = ['--down-p', '--ui-k', '--u'];
     for (const v of used) expect(defined.has(v) || byCode.includes(v), v).toBe(true);
     expect(gameJs).toMatch(/setProperty\('--down-p'/);
+    expect(gameJs).toMatch(/setProperty\('--ui-k'/);
+    expect(readFileSync('css/menu.css', 'utf8')).toMatch(/:root \{\s*--u: /);
   });
 
   it('le bloc « Interface intégrée (lot 3l) » est le dernier de tokens.css et ne contient aucune couleur', () => {
@@ -198,10 +203,20 @@ describe('feuilles de style de l\'interface (css/game-ui.css, css/game.css, css/
 describe('identifiants de jeu.html (table de Docs/ref/interface-integree.md)', () => {
   const KEPT = ['hud', 'hud-bar', 'hud-life', 'hud-chutes', 'hud-chutes-icons', 'hud-chutes-text', 'hud-floor', 'hud-wave', 'hud-money', 'hud-money-text', 'hud-gain', 'hud-remaining', 'hud-next', 'hud-kills',
     'down', 'down-title', 'down-sub', 'btn-pause', 'stick-left', 'stick-right', 'sound-hint', 'hud-live', 'pause-panel', 'pause-title', 'pause-balance',
-    'btn-resume', 'btn-fullscreen', 'btn-sound', 'btn-restart', 'end-panel', 'end-title', 'end-kills', 'end-wave', 'end-earned', 'end-bonus',
+    'btn-resume', 'btn-fullscreen', 'btn-sound', 'btn-restart', 'end-panel', 'end-title', 'end-kills', 'end-wave',
     'end-balance', 'end-best', 'end-record', 'end-save', 'btn-replay', 'wave-announce', 'labels', 'rotate'];
   const ADDED = ['hud-chrono', 'hud-rec', 'hud-chrono-text', 'hud-floor-text', 'hud-trial', 'hud-wave-text', 'hud-reinforced', 'hud-remaining-text', 'hud-next-text', 'hud-kills-text',
-    'down-body', 'down-title-text', 'down-fill', 'pause-balance-text', 'end-box', 'end-title-text', 'end-earned-text', 'end-bonus-text', 'end-record-text', 'btn-menu', 'btn-quit'];
+    'down-body', 'down-title-text', 'down-fill', 'pause-balance-text', 'end-box', 'end-title-text', 'end-record-text', 'btn-menu', 'btn-quit'];
+  // Retour du propriétaire après le lot 8k : « Monnaie jaune perdue » et « Dont prime du monde » quittent l'écran de fin (avant : conservé #end-earned,
+  // #end-bonus ; ajoutés #end-earned-text, #end-bonus-text) ; les sources des médailles aussi.
+  const RETIRES_8K = ['end-earned', 'end-bonus', 'end-earned-text', 'end-bonus-text', 'end-medailles-sources'];
+  it('retour du propriétaire après le lot 8k : jaune perdue, prime du monde et sources des médailles absentes de jeu.html et de ui.js', () => {
+    const ui = readFileSync('js/game/ui.js', 'utf8');
+    for (const id of RETIRES_8K) {
+      expect(ids.has(id), id).toBe(false);
+      expect(ui, id).not.toContain(`'${id}'`);
+    }
+  });
   // Retours du propriétaire après l'intégration : « Prochaine zone », état de la sauvegarde et volume quittent la pause.
   const REMOVED = ['hud-fill', 'end-save-link', 'pause-next', 'pause-save', 'volume-row', 'volume', 'volume-value'];
   const doc = existsSync('Docs/ref/interface-integree.md') ? readFileSync('Docs/ref/interface-integree.md', 'utf8') : '';
@@ -278,42 +293,56 @@ describe('structure de jeu.html', () => {
 
   // Retours du propriétaire : solde à côté de « PAUSE » ; deux colonnes Reprendre, Recommencer, Quitter (désactivé) | Son, Options (lot 5j, avant : Effet VHS), Plein écran ;
   // ordre du HTML = lecture.
-  it('pause : « PAUSE », le solde et l\'icône du son en tête ; boutons Reprendre, Recommencer, Options, Quitter (désactivé), Plein écran ; ni volume, ni prochaine zone, ni sauvegarde', () => {
+  // Lot 8a : « Quitter » actif (avant : désactivé) ; sa confirmation est construite par ui.js au premier appui.
+  it('pause : « PAUSE », le solde et l\'icône du son en tête ; boutons Reprendre, Recommencer, Options, Quitter (actif), Plein écran ; ni volume, ni prochaine zone, ni sauvegarde', () => {
     // Lot 5j-F : Son est l'icône de la tête, après le solde (avant : entre Reprendre et Recommencer).
     // Lot 5j-G : Plein écran est l'icône à gauche du son, dans la tête (avant : dernier bouton de la grille).
     const order = ['pause-title', 'pause-balance', 'btn-fullscreen', 'btn-sound', 'btn-resume', 'btn-restart', 'btn-options', 'btn-quit'].map((id) => at(`id="${id}"`));
     expect(order.every((p, i) => p > 0 && (i === 0 || p > order[i - 1]))).toBe(true);
-    expect(html).toMatch(/<button id="btn-quit" class="button button-quiet" type="button" data-i18n="game\.pause\.quit" disabled><\/button>/);
+    expect(html).toMatch(/<button id="btn-quit" class="button button-quiet" type="button" data-i18n="game\.pause\.quit"><\/button>/);
     const pause = html.slice(at('id="pause-panel"'), at('id="end-panel"'));
     expect(pause).not.toMatch(/volume|pause-next|pause-save/);
   });
 
-  it('fin : « Rejouer » puis « Revenir au menu principal » (bouton sans lien ni action), plus de lien « Voir ma sauvegarde »', () => {
+  // Lot 8a : « Revenir au menu principal » ramène au menu (avant : sans action) ; toujours un bouton, sans lien.
+  it('fin : « Rejouer » puis « Revenir au menu principal » (bouton sans lien, retour au menu), plus de lien « Voir ma sauvegarde »', () => {
     const end = html.slice(at('id="end-panel"'), at('id="rotate"'));
     expect(end).toMatch(/id="btn-replay"[\s\S]*<button id="btn-menu" class="button button-quiet" type="button" data-i18n="game\.end\.menu"><\/button>/);
     expect(end).not.toMatch(/<a\s|sauvegarde\.html/);
-    expect(readFileSync('js/game/ui.js', 'utf8')).not.toMatch(/btn-menu|menu\.addEventListener/);
+    expect(readFileSync('js/game/ui.js', 'utf8')).toMatch(/els\.menuBtn\.addEventListener\('click', \(\) => handlers\.onMenu\?\.\(\)\)/);
   });
 
   // Retours du propriétaire : « Nouveau record » à la place d'« Argent gagné » (colonne de gauche), « Argent gagné » entre « Zombies tués » et « Solde » ; note
   // « Écran de fin provisoire » retirée.
   // Retour du propriétaire : le symbole d'argent vient après la somme (pause, mort, victoire).
-  it('pièce après la somme : « Solde : 234 », « Argent gagné : 154 », « Bonus de fin de monde : 500 » puis le symbole', () => {
-    for (const id of ['pause-balance', 'end-earned', 'end-bonus']) {
+  it('pièce après la somme : « Monnaie jaune perdue : 154 » puis la pièce (pause : gemme puis solde bleu, retour du propriétaire) ; lot 8h : bleue gagnée, prime du monde, solde bleu puis la gemme bleue', () => {
+    // Retour du propriétaire après le lot 8j : la pause montre le solde bleu, gemme PUIS montant (comme l'en-tête du menu), sans « Monnaie jaune ».
+    const pause = html.slice(at('id="pause-balance"'), html.indexOf('</p>', at('id="pause-balance"')));
+    expect(pause.indexOf('hud-gem')).toBeGreaterThan(0);
+    expect(pause.indexOf('hud-gem')).toBeLessThan(pause.indexOf('id="pause-balance-text"'));
+    expect(pause).not.toContain('hud-coin');
+    // Retour du propriétaire après le lot 8k : solde de diamants (puis gemme, puis « +gain ») et solde de médailles (puis médaille, puis « +gain »).
+    for (const [id, icone, gain] of [['end-balance', 'hud-gem', 'end-bleu'], ['end-medailles-solde', 'hud-medaille', 'end-medailles']]) {
       const line = html.slice(at(`id="${id}"`), html.indexOf('</p>', at(`id="${id}"`)));
-      expect(line.indexOf(`id="${id}-text"`), id).toBeLessThan(line.indexOf('hud-coin'));
-      expect(line.indexOf('hud-coin'), id).toBeGreaterThan(0);
+      expect(line.indexOf(`id="${id}-text"`), id).toBeLessThan(line.indexOf(icone));
+      expect(line.indexOf(icone), id).toBeGreaterThan(0);
+      expect(line.indexOf(icone), id).toBeLessThan(line.indexOf(`id="${gain}-text"`));
     }
   });
 
-  it('fin : colonne de gauche vague, record, meilleure manche ; colonne de droite tués, argent gagné, bonus, solde ; plus de note « provisoire »', () => {
+  it('fin : colonne de gauche vague, record, meilleure manche ; colonne de droite tués, jaune perdue, prime du monde, bleue gagnée, solde bleu (lot 8h) ; plus de note « provisoire »', () => {
     const end = html.slice(at('id="end-panel"'), at('id="rotate"'));
     const cols = end.split('class="facts-col"').slice(1).map((c) => [...c.matchAll(/id="(end-[a-z]+)"/g)].map((m) => m[1]).filter((i) => !i.endsWith('text')));
-    expect(cols[0]).toEqual(['end-wave', 'end-record', 'end-best']);
-    expect(cols[1].slice(0, 4)).toEqual(['end-kills', 'end-earned', 'end-bonus', 'end-balance']);
+    // Retour du propriétaire après le lot 8k : à gauche vague atteinte (« Record » dans la même ligne), meilleure manche, zombies tués ; à droite solde de
+    // diamants (+gain), solde de médailles (+gain). Avant : gauche vague, record, meilleure manche, médailles ; droite tués, jaune perdue, prime, bleue.
+    expect(cols[0]).toEqual(['end-wave', 'end-record', 'end-best', 'end-kills']);
+    const vague = end.slice(end.indexOf('id="end-wave"'), end.indexOf('id="end-best"'));
+    expect(vague).toContain('id="end-record"');
+    expect(cols[1].slice(0, 3)).toEqual(['end-balance', 'end-bleu', 'end-medailles']);
+    expect(end.indexOf('id="end-bleu"')).toBeLessThan(end.indexOf('id="end-medailles-solde"'));
     expect(end).not.toContain('game.end.provisional');
     expect(fr['game.end.provisional']).toBeUndefined();
-    expect(readFileSync('js/game/ui.js', 'utf8')).not.toMatch(/btn-quit/);
+    expect(readFileSync('js/game/ui.js', 'utf8')).toMatch(/els\.quit\.addEventListener\('click', \(\) => ui\.openQuit\(\)\)/); // lot 8a (avant : aucun écouteur)
   });
 
   it('?fin=monde (aperçu de la victoire) : seulement en mode essai et sur une carte avec fin de monde ; la dernière manche est terminée par les vrais calculs', () => {
@@ -358,7 +387,7 @@ describe('hygiène du lot 3l (diff avec lot-4b avant le lot)', () => {
     expect(now.dependencies).toEqual(before.dependencies);
     expect(now.devDependencies).toEqual(before.devDependencies);
     const added = [...(git(`diff --name-only --diff-filter=A ${BASE}`) ?? '').split('\n'), ...(git('ls-files --others --exclude-standard') ?? '').split('\n')].filter(Boolean);
-    expect(added.filter((f) => /\.(png|jpe?g|gif|webp|avif|svg|ico|woff2?|ttf|otf|eot|mp3|wav|ogg|m4a|aac|flac|mp4|webm)$/i.test(f))).toEqual([]);
+    expect(sansImagesStudio(added).filter((f) => /\.(png|jpe?g|gif|webp|avif|svg|ico|woff2?|ttf|otf|eot|mp3|wav|ogg|m4a|aac|flac|mp4|webm)$/i.test(f))).toEqual([]);
   });
 
   it('aucun nouveau paramètre d\'adresse en lecture seule (data/game/save.json inchangé)', () => {

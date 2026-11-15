@@ -22,6 +22,8 @@ const versionsData = (latest = 'v0.7', extra = {}) => ({
 const NOMS = '[v0.6]\nnom: V0.6\ndescription: Six.\n\n[v0.7]\nnom: V0.7\ndescription: Sept.\n';
 const changelog = (version = 'v0.7') => ({ lots: [{ name: 'lot-5o', titre: 'Deux onglets', points: ['Correctif.'], date: '2026-11-09', version }] });
 const r = (fn, data) => fn(data);
+// Lot 5q : tests.yml réel (déclencheurs et paths-ignore lus par le contrôle).
+const TESTS_YML = readFileSync('.github/workflows/tests.yml', 'utf8');
 
 describe('contrôles --avant : OK, KO, ATTENTION, NON VÉRIFIABLE', () => {
   it('fraîcheur des références', () => {
@@ -30,22 +32,32 @@ describe('contrôles --avant : OK, KO, ATTENTION, NON VÉRIFIABLE', () => {
     expect(r(C.fraicheur, { locales: {}, distantes: { erreur: 'réseau' } }).resultat).toBe(C.NV);
   });
 
-  it('dev : hash et bilan (lot-5o.md, sinon le dernier)', () => {
+  // Lot 8m : le dernier bilan dans l'ordre des lots, aucun nom écrit en dur (avant : lot-5o.md s'il était présent, sinon le dernier par ordre de nom).
+  it('dev : hash et dernier bilan séparé dans l\'ordre des lots (numéro, puis lettres), aucun nom en dur', () => {
     expect(r(C.dev, { devSha: 'abcdef1234', bilans: ['lot-5n.md', 'lot-5o.md', 'versions'] })).toMatchObject({ resultat: C.OK, detail: 'origin/dev abcdef1 ; bilan : Docs/lots/lot-5o.md' });
     expect(r(C.dev, { devSha: 'abcdef1234', bilans: ['lot-5m.md', 'lot-5n.md', 'lot-10a.md'] }).detail).toContain('lot-10a.md');
+    expect(r(C.dev, { devSha: 'abcdef1234', bilans: ['lot-5a.md', 'lot-5o.md', 'lot-5q.md', 'lot-8a.md', 'lot-8l.md', 'lot-8m.md', 'versions'] }).detail).toBe('origin/dev abcdef1 ; bilan : Docs/lots/lot-8m.md'); // lot-5o.md n'est plus préféré
+    expect(r(C.dev, { devSha: 'abcdef1234', bilans: ['lot-8m.md', 'lot-10a.md', 'lot-9z.md'] }).detail).toContain('lot-10a.md'); // numéro avant lettres
+    expect(r(C.dev, { devSha: 'abcdef1234', bilans: ['lot-8aa.md', 'lot-8z.md', 'lot-8m.md'] }).detail).toContain('lot-8aa.md'); // lot-8z < lot-8aa
+    expect(r(C.dev, { devSha: 'abcdef1234', bilans: ['lot-8m.md', 'LISEZMOI.md', 'lot-8m.txt', 'lot-x.md', 42] }).detail).toContain('lot-8m.md'); // noms hors format ignorés
+    expect([...['lot-8b.md', 'lot-10a.md', 'lot-8aa.md', 'lot-0.md', 'lot-8z.md', 'lot-0e.md']].sort(C.ordreBilans)).toEqual(['lot-0.md', 'lot-0e.md', 'lot-8b.md', 'lot-8z.md', 'lot-8aa.md', 'lot-10a.md']);
+    expect(readFileSync('scripts/publication/controles.mjs', 'utf8')).not.toMatch(/lot-\d+[a-z]*\.md'/); // aucun bilan nommé en dur
     expect(r(C.dev, { devSha: { erreur: 'absent' }, bilans: [] }).resultat).toBe(C.KO);
     expect(r(C.dev, { devSha: 'abc', bilans: [] }).resultat).toBe(C.ATTENTION);
     expect(r(C.dev, { devSha: 'abc', bilans: { erreur: 'x' } }).resultat).toBe(C.NV);
   });
 
+  // Lot 5q : Tests suit la règle de la lignée (voir « CI de dev : dernier commit testé ») ; la tête testée reste OK, comme avant. Avant : runs sans
+  // lignée ni tests.yml (Tests et Pages sur le hash de la tête seulement) ; mêmes six assertions, données complétées (commits, workflow).
   it('CI de dev : Tests et Pages réussis, aucune en cours', () => {
-    const ok = [{ name: 'Tests', status: 'completed', conclusion: 'success', id: 2 }, { name: 'Pages', status: 'completed', conclusion: 'success', id: 3 }];
-    expect(r(C.ciDev, { devSha: 'abc', runs: ok }).resultat).toBe(C.OK);
-    expect(r(C.ciDev, { devSha: 'abc', runs: [ok[0]] })).toMatchObject({ resultat: C.KO, detail: expect.stringContaining('Pages : aucune exécution') });
-    expect(r(C.ciDev, { devSha: 'abc', runs: [...ok, { name: 'Tests', status: 'in_progress', id: 4 }] }).detail).toContain('en cours');
-    expect(r(C.ciDev, { devSha: 'abc', runs: [ok[1], { ...ok[0], conclusion: 'failure' }] }).resultat).toBe(C.KO);
-    expect(r(C.ciDev, { devSha: 'abc', runs: [ok[1], { ...ok[0], conclusion: 'failure', id: 1 }, ok[0]] }).resultat).toBe(C.OK); // relancé : la dernière compte
-    expect(r(C.ciDev, { devSha: 'abc', runs: { erreur: 'gh refusé' } }).resultat).toBe(C.NV);
+    const ok = [{ name: 'Tests', status: 'completed', conclusion: 'success', id: 2, event: 'push' }, { name: 'Pages', status: 'completed', conclusion: 'success', id: 3, event: 'push' }];
+    const base = { devSha: 'abc1234', commits: ['abc1234'], workflow: TESTS_YML };
+    expect(r(C.ciDev, { ...base, runs: ok }).resultat).toBe(C.OK);
+    expect(r(C.ciDev, { ...base, runs: [ok[0]] })).toMatchObject({ resultat: C.KO, detail: expect.stringContaining('Pages : aucune exécution') });
+    expect(r(C.ciDev, { ...base, runs: [...ok, { name: 'Tests', status: 'in_progress', id: 4, event: 'push' }] }).detail).toContain('en cours');
+    expect(r(C.ciDev, { ...base, runs: [ok[1], { ...ok[0], conclusion: 'failure' }] }).resultat).toBe(C.KO);
+    expect(r(C.ciDev, { ...base, runs: [ok[1], { ...ok[0], conclusion: 'failure', id: 1 }, ok[0]] }).resultat).toBe(C.OK); // relancé : la dernière compte
+    expect(r(C.ciDev, { ...base, runs: { erreur: 'gh refusé' } }).resultat).toBe(C.NV);
   });
 
   it('main ancêtre de dev', () => {

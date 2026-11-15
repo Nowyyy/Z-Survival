@@ -42,7 +42,7 @@ Plan écrit en partie A (base `origin/dev` `775f1d1`), avant tout changement du 
 | `/lots/` | page de renvoi vers `../` | redirection vers `../Recette/` ; aucun `lots/lot-*` |
 | `/v0.N/` | archives (branche `archive`) | **inchangées** |
 | `/sauvegarde.html` | page technique du build de `main` | `/Recette/sauvegarde.html` (et `/dev/sauvegarde.html`) ; `/sauvegarde.html` : 404 |
-| pages techniques (`carte.html`, `visite.html`, `atelier-*.html`, `sons.html`, `ecarts.html`, `interface-retenue.html`) | à la racine | sous `/Recette/` et `/dev/` ; 404 à la racine |
+| pages techniques (`carte.html`, `visite.html`, `atelier-*.html` dont `atelier-sons-menu.html` (lot 8i), `sons.html`, `ecarts.html`, `interface-retenue.html`, `sauvegarde.html`) | à la racine | sous `/Recette/` et `/dev/` ; 404 à la racine |
 | `/versions.json`, `/build-info.json`, `/icone.png` | à la racine | sous `/Recette/` (`versions.json`, `build-info.json`) ; plus d'`icone.png` (l'icône est en ligne dans les pages produites) |
 
 Toutes les adresses internes restent **relatives** (le site est servi sous `/Z-Survival/`).
@@ -68,7 +68,7 @@ Toutes les adresses internes restent **relatives** (le site est servi sous `/Z-S
 Chaque entrée de `lots` des lots 5a à 5g porte `version: "v0.6"` (version cible). Les entrées plus anciennes n'en ont pas et sont ignorées par `evolutions`. **Règle pour la suite** : chaque lot ajoute son entrée à `lots` avec `version: <version cible>` ; un test vérifie la forme (`^v\d+\.\d+$` quand présent). La liste `versions` de `data/changelog.json` est supprimée.
 
 ## Fichiers
-- **Modifiés** : `scripts/assemble.mjs`, `scripts/site/e2e-site.mjs` (site de test : `dev`, évolutions, 12 versions), `scripts/site/local.mjs` (si besoin), `index.html`, `css/accueil.css`, `js/accueil/home.js`, `js/accueil/main.js`, `data/changelog.json` (liste `versions` retirée, `version` sur 5a à 5g, entrée `lot-5g`), `data/i18n/fr.json` (`home.*`, `site.*`), `data/i18n/en.json` (mêmes clés : `data-i18n` exige la parité, règle durable de `CLAUDE.md`), `scripts/build.mjs` (plus de `dev/`), `css/tokens.css` (bloc de l'accueil seulement, si besoin), `Docs/ref/publication-versions.md`, `Docs/ref/verification-versions.md` (faits périmés).
+- **Modifiés** : `scripts/assemble.mjs`, `scripts/site/e2e-site.mjs` (site de test : `dev`, évolutions, 12 versions), `scripts/site/local.mjs` (si besoin), `index.html`, `css/accueil.css`, `js/accueil/home.js`, `js/accueil/main.js`, `data/changelog.json` (liste `versions` retirée, `version` sur 5a à 5g, entrée `lot-5g`), `data/i18n/fr.json` (`home.*`, `site.*` ; *lot 8b : les textes `home.*` sont depuis dans `data/i18n/accueil.fr.json` et `accueil.en.json`*), `data/i18n/en.json` (mêmes clés : `data-i18n` exige la parité, règle durable de `CLAUDE.md`), `scripts/build.mjs` (plus de `dev/`), `css/tokens.css` (bloc de l'accueil seulement, si besoin), `Docs/ref/publication-versions.md`, `Docs/ref/archives/audits-v0.4-v0.7.md#verification-versions` (faits périmés).
 - **Ajoutés** : `scripts/site/site-info.mjs` (construction et validation de `site-info.json`, pur), `site-info.json` (arbre source), `Docs/ref/site-adresses.md`, `Docs/lots/versions/v0.6.md#lot-5g`.
 - **Supprimés** : `dev/index.html`, `dev/dev.js`, `tests/e2e/dev.spec.js`.
 
@@ -83,7 +83,7 @@ Chaque entrée de `lots` des lots 5a à 5g porte `version: "v0.6"` (version cibl
 ## Risques
 - (a) **Casse** : `/Recette/` avec un R majuscule ; `/recette/` donne 404 (aucune redirection possible sans fichier dédié, refusé par la décision).
 - (b) **État transitoire** : tant que `main` n'a pas le nouvel accueil (avant le lot 5f), `/Recette/` affiche l'**ancien** accueil déplacé ; « Jouer » (`jeu.html` → `/Recette/jeu.html`) marche, mais ses liens relatifs `next/`, `dev/` (journal, retiré de `Recette/` par l'assembleur) et `v0.N/…` pointent vers `/Recette/next/`, `/Recette/dev/` et `/Recette/v0.N/`, qui n'existent pas (404), et il affiche « Aucun build de développement pour l'instant ».
-- (c) **Stockage partagé** : `localStorage` appartient au domaine `nowyyy.github.io`, pas au chemin : `/Recette/`, `/dev/` et `/v0.N/` lisent et écrivent la **même** sauvegarde `zs.save.v1` (et `zs.device.v1`) ; une version de développement peut migrer une sauvegarde que la Recette lira ensuite.
+- (c) **Stockage partagé** : `localStorage` appartient au domaine `nowyyy.github.io`, pas au chemin : `/Recette/`, `/dev/` et `/v0.N/` lisent et écrivent la **même** sauvegarde `zs.save.v1` (et `zs.device.v1`) ; une version de développement peut migrer une sauvegarde que la Recette lira ensuite. *(Lot 8l : la V0.8 (`/dev/`) vit dans `zs.save.v2` et ne lit plus `zs.save.v1` (la V0.7 de la Recette et les archives gardent `zs.save.v1`) ; `zs.device.v1` reste partagée, avec le champ `son` depuis le lot 8h.)*
 - (d) **Raccourcis** : un raccourci d'écran d'accueil vers `…/Z-Survival/jeu.html` ou `…/Z-Survival/` ne mène plus au jeu ; à refaire sur `…/Recette/jeu.html`.
 - (e) **Déclenchement manuel sur `main`** avant la publication : le workflow de `main` (ancien assembleur) redéploierait l'ancienne organisation, jusqu'au prochain push de `dev`.
 

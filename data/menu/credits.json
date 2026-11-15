@@ -1,0 +1,7 @@
+{
+  "_note": "Écran Crédits du menu (lot 8g), modifiable par le propriétaire sans lot. sections : dans l'ordre d'affichage ; titre (60 caractères au plus) et noms (liste de textes, 80 caractères au plus chacun) ; « provisoire »: true ajoute la mention « À compléter » sous la section. Texte brut seulement (jamais de HTML). La section « Outils et licences » est écrite à part (data/menu/licences.json, par scripts/studio/licences.mjs).",
+  "sections": [
+    { "titre": "Création", "noms": ["Nowy"] },
+    { "titre": "Remerciements", "noms": [], "provisoire": true }
+  ]
+}

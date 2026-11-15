@@ -1,0 +1,23 @@
+{
+  "meta.title": "Z-Survival",
+  "app.title": "Z-Survival",
+  "home.badge": "Staging",
+  "home.play": "Play",
+  "home.playVersion": "Play - {version}",
+  "home.siteError": "Site information unavailable: the direct links still work.",
+  "home.siteSource": "Repository source tree: the version, changes and previous versions appear in the assembled site.",
+  "home.devTitle": "Development",
+  "home.next": "Latest development build",
+  "home.nextMeta": "{sha} · {date}",
+  "home.nextNone": "No development build yet",
+  "home.evolutionsTitle": "Changes in development",
+  "home.evolutionsNone": "No change since the staging version.",
+  "home.versionsTitle": "All versions",
+  "home.currentBadge": "Current version",
+  "home.previousTitle": "Previous versions",
+  "home.previousNone": "No previous version.",
+  "home.unavailable": "{version}: unavailable",
+  "home.unavailableNote": "Version not built.",
+  "lang.toggle": "Français",
+  "lang.toggleLabel": "Passer en français"
+}

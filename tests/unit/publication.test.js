@@ -2,7 +2,6 @@
 // Lot 5g : nouvelle organisation (racine « en construction », Recette/ = main, dev/ = dev, redirections next/ et lots/, archives v0.N/ inchangées),
 // site-info.json (scripts/site/site-info.mjs) ; le journal /dev (dev/index.html, dev/dev.js) et ses tests sont supprimés.
 import { describe, it, expect, afterAll } from 'vitest';
-import { spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -17,7 +16,6 @@ import {
 import { MAX_DESCRIPTION as MAX_DESCRIPTION_NOMS, NOMS_FICHIER, parseNoms } from '../../scripts/site/noms.mjs';
 import { DESCRIPTION_RECETTE_TEST, NOMS_TEST, fakeArchive, manyVersions, testVersions } from '../../scripts/site/e2e-site.mjs';
 import { findNonRelative } from '../../scripts/versions/links.mjs';
-import { bilansChangesDepuis } from '../../scripts/docs/bilans.mjs';
 
 const ROOT = mkdtempSync(join(tmpdir(), 'zs-test-publication-'));
 afterAll(() => rmSync(ROOT, { recursive: true, force: true }));
@@ -27,9 +25,13 @@ afterAll(() => rmSync(ROOT, { recursive: true, force: true }));
 // Lot 5p : V0.7 publiée (actuelle), V0.6 archivée. « real » retire aussi V0.7 (avant : V0.6 seulement) ; « avantV07 » = versions.json tel qu'il était
 // à la publication de V0.6 (sans V0.7, V0.6 actuelle et latest), pour « site-info.json de la publication de V0.6 » ; le fichier réel (« actuel »,
 // V0.7 Recette) est vérifié par « site-info.json de la publication de V0.7 ».
+// Lot 8m : V0.8 publiée (actuelle), V0.7 archivée. « real » et « avantV07 » retirent aussi V0.8 ; « avantV08 » = versions.json tel qu'il était à la
+// publication de V0.7 (sans V0.8, V0.7 actuelle et latest ; ref de V0.7 : celui de l'archive), pour les scénarios des lots 5p et 5q ; le fichier réel
+// (« actuel », V0.8 Recette) est vérifié par « site-info.json de la publication de V0.8 ».
 const actuel = JSON.parse(readFileSync('versions.json', 'utf8'));
-const real = { ...actuel, latest: 'v0.5', versions: actuel.versions.filter((v) => !['v0.6', 'v0.7'].includes(v.id)).map((v) => (v.id === 'v0.5' ? { ...v, status: 'actuelle' } : v)) };
-const avantV07 = { ...actuel, latest: 'v0.6', versions: actuel.versions.filter((v) => v.id !== 'v0.7').map((v) => (v.id === 'v0.6' ? { ...v, status: 'actuelle' } : v)) };
+const real = { ...actuel, latest: 'v0.5', versions: actuel.versions.filter((v) => !['v0.6', 'v0.7', 'v0.8'].includes(v.id)).map((v) => (v.id === 'v0.5' ? { ...v, status: 'actuelle' } : v)) };
+const avantV07 = { ...actuel, latest: 'v0.6', versions: actuel.versions.filter((v) => !['v0.7', 'v0.8'].includes(v.id)).map((v) => (v.id === 'v0.6' ? { ...v, status: 'actuelle' } : v)) };
+const avantV08 = { ...actuel, latest: 'v0.7', versions: actuel.versions.filter((v) => v.id !== 'v0.8').map((v) => (v.id === 'v0.7' ? { ...v, status: 'actuelle' } : v)) };
 let n = 0;
 const GENERE = '2026-11-06T12:00:00Z';
 
@@ -507,6 +509,9 @@ describe('accueil : page, rendu et textes', () => {
   const main = read('js/accueil/main.js');
   const fr = readJson('data/i18n/fr.json');
   const en = readJson('data/i18n/en.json');
+  // Lot 8b : textes propres à l'accueil séparés (accueil.fr.json, accueil.en.json) ; fr.json et en.json gardent ceux des pages produites (site.*).
+  const afr = readJson('data/i18n/accueil.fr.json');
+  const aen = readJson('data/i18n/accueil.en.json');
 
   it('index.html charge l\'accueil, précharge site-info.json (une seule donnée), garde noindex, icône et polices, aucune adresse absolue', () => {
     expect(html).toContain('<script type="module" src="js/accueil/main.js"></script>');
@@ -546,21 +551,23 @@ describe('accueil : page, rendu et textes', () => {
     expect([...noscript.matchAll(/href="([^"]+)"/g)].map((m) => m[1])).toEqual(['jeu.html', '../dev/jeu.html']);
   });
 
-  it('textes de l\'accueil et des pages produites dans fr.json (et en.json) ; plus de clé du journal ni du bandeau de next/', () => {
+  it('textes de l\'accueil dans accueil.fr.json (et accueil.en.json), ceux des pages produites dans fr.json (et en.json) ; plus de clé du journal ni du bandeau de next/', () => {
     // Lot 5i : bandeau « Recette » seul (avant : home.version « {channel} · Version {version} » et home.channel.recette « Recette ») ; la version est dans le bouton.
-    expect(fr['home.playVersion']).toBe('Jouer - {version}');
-    expect(fr['home.badge']).toBe('Recette'); // main = Recette (demande du propriétaire)
-    expect(fr['home.play']).toBe('Jouer');
-    expect(fr['home.next']).toBe('Dernier build de développement');
-    expect(fr['home.nextNone']).toBe('Aucun build de développement pour l\'instant');
-    expect(fr['home.evolutionsTitle']).toBe('Évolutions en cours de développement');
-    expect(fr['home.evolutionsNone']).toBe('Aucune évolution depuis la version Recette.');
-    expect(fr['home.previousTitle']).toBe('Versions précédentes');
-    for (const gone of ['home.journal', 'home.devBanner', 'home.channel.dev', 'site.lots.retired', 'site.next.none', 'home.version', 'home.channel.recette', 'home.versionUnknown', 'home.versionSource']) expect([fr[gone], en[gone]], gone).toEqual([undefined, undefined]);
+    // Lot 8b : clés home.* lues dans accueil.fr.json (avant : fr.json).
+    expect(afr['home.playVersion']).toBe('Jouer - {version}');
+    expect(afr['home.badge']).toBe('Recette'); // main = Recette (demande du propriétaire)
+    expect(afr['home.play']).toBe('Jouer');
+    expect(afr['home.next']).toBe('Dernier build de développement');
+    expect(afr['home.nextNone']).toBe('Aucun build de développement pour l\'instant');
+    expect(afr['home.evolutionsTitle']).toBe('Évolutions en cours de développement');
+    expect(afr['home.evolutionsNone']).toBe('Aucune évolution depuis la version Recette.');
+    expect(afr['home.previousTitle']).toBe('Versions précédentes');
+    for (const gone of ['home.journal', 'home.devBanner', 'home.channel.dev', 'site.lots.retired', 'site.next.none', 'home.version', 'home.channel.recette', 'home.versionUnknown', 'home.versionSource']) expect([fr[gone], en[gone], afr[gone], aen[gone]], gone).toEqual([undefined, undefined, undefined, undefined]);
     expect(fr['site.construction.text']).toBe('Z-Survival est en construction.'); // lot 5g (avant : site.lots.retired, page de renvoi des aperçus)
     const homeKeys = (dict) => Object.keys(dict).filter((k) => /^(home|site)\./.test(k)).sort();
-    expect(homeKeys(en)).toEqual(homeKeys(fr));
-    for (const key of homeKeys(fr)) expect(main.includes(`'${key}'`) || html.includes(`"${key}"`) || read('scripts/assemble.mjs').includes(`'${key}'`), key).toBe(true);
+    expect([homeKeys(aen), homeKeys(en)]).toEqual([homeKeys(afr), homeKeys(fr)]);
+    expect([Object.keys(afr).filter((k) => k.startsWith('site.')), Object.keys(fr).filter((k) => k.startsWith('home.'))]).toEqual([[], []]); // lot 8b : séparés
+    for (const key of homeKeys({ ...fr, ...afr })) expect(main.includes(`'${key}'`) || html.includes(`"${key}"`) || read('scripts/assemble.mjs').includes(`'${key}'`), key).toBe(true);
   });
 
   it('css/accueil.css : variables de tokens.css seulement, cibles de 44 px, deux colonnes dès 640 px, zones qui défilent de hauteur limitée', () => {
@@ -656,81 +663,13 @@ describe('package.json et Playwright', () => {
   });
 });
 
-// Garde-fous du lot (comparaison à la base de lot-4c, e6cf00e) : actifs seulement tant que tous les commits depuis la base sont ceux du lot 4c
-// (sur main après la fusion, ou dans un clone superficiel, ils n'ont plus de sens et sont sautés).
-const BASE = 'e6cf00e0392250d1125e4c14c11a91837fca29db';
-const git = (...args) => spawnSync('git', args, { encoding: 'utf8' });
-const subjects = git('log', '--format=%s', `${BASE}..HEAD`);
-const ON_LOT = subjects.status === 0 && subjects.stdout.trim().split('\n').filter(Boolean).every((s) => s.startsWith('Lot 4c'));
-const changedSinceBase = (...paths) => {
-  const committed = git('diff', '--name-only', BASE, '--', ...paths).stdout.trim().split('\n').filter(Boolean);
-  const untracked = git('ls-files', '--others', '--exclude-standard', '--', ...paths).stdout.trim().split('\n').filter(Boolean);
-  return [...committed, ...untracked];
-};
-
-describe.skipIf(!ON_LOT)('hygiène du lot 4c (comparaison à la base e6cf00e)', () => {
-  it('fichiers du jeu inchangés : jeu.html, js/game, js/core, data/game, css/game.css, css/game-ui.css, pages techniques', () => {
-    expect(changedSinceBase('jeu.html', 'js/game', 'js/core', 'data/game', 'css/game.css', 'css/game-ui.css', 'sauvegarde.html', 'sons.html', 'carte.html', 'visite.html', 'atelier-sons.html', 'atelier-choix.html', 'atelier-interface.html', 'atelier-personnages.html', 'ecarts.html', 'interface-retenue.html')).toEqual([]);
-  });
-
-  it('CLAUDE.md, conventions.md, seed, bilans existants inchangés ; seul pages.yml change dans .github', () => {
-    // Lot 5m : bilans comparés à la base par leur texte, séparés ou regroupés (scripts/docs/bilans.mjs) ; avant : chemins des bilans séparés
-    // (readdirSync('Docs/lots') sans lot-4c.md) ajoutés à la même liste (une assertion).
-    expect(changedSinceBase('CLAUDE.md', 'Docs/ref/conventions.md', 'Docs/seed.md')).toEqual([]);
-    expect((bilansChangesDepuis(BASE) ?? []).filter((lot) => lot !== 'lot-4c')).toEqual([]);
-    expect(changedSinceBase('.github')).toEqual(['.github/workflows/pages.yml']);
-  });
-
-  it('apercu.txt inchangé (première ligne comprise) ; package-lock.json inchangé', () => {
-    expect(changedSinceBase('apercu.txt', 'package-lock.json')).toEqual([]);
-  });
-
-  it('aucun fichier de plus de 5 Mo ajouté', () => {
-    const added = git('diff', '--name-only', '--diff-filter=A', BASE).stdout.trim().split('\n').filter(Boolean);
-    for (const file of [...added, ...changedSinceBase('.')]) if (existsSync(file)) expect(statSync(file).size, file).toBeLessThanOrEqual(5 * 1024 * 1024);
-  });
-});
-
-// Garde-fous du lot 5g (comparaison à la base origin/dev 775f1d1) : actifs seulement tant que tous les commits depuis la base sont ceux du lot 5g.
-const BASE_5G = '775f1d15a6a092bc73aab982d55431447240db53';
-const subjects5g = git('log', '--format=%s', `${BASE_5G}..HEAD`);
-const ON_5G = subjects5g.status === 0 && subjects5g.stdout.trim().split('\n').filter(Boolean).every((s) => s.startsWith('Lot 5g'));
-const changedSince5g = (...paths) => {
-  const committed = git('diff', '--name-only', BASE_5G, '--', ...paths).stdout.trim().split('\n').filter(Boolean);
-  const untracked = git('ls-files', '--others', '--exclude-standard', '--', ...paths).stdout.trim().split('\n').filter(Boolean);
-  return [...committed, ...untracked];
-};
-
-describe.skipIf(!ON_5G)('hygiène du lot 5g (comparaison à la base 775f1d1)', () => {
-  it('jeu inchangé : jeu.html, js/game, js/core, data/game, css/game*.css', () => {
-    expect(changedSince5g('jeu.html', 'js/game', 'js/core', 'data/game', 'css/game.css', 'css/game-ui.css')).toEqual([]);
-  });
-
-  it('seed, CLAUDE.md, conventions.md, versions.json, dernier-complet.json, scripts/versions/ et bilans existants inchangés ; seul pages.yml change dans .github', () => {
-    // Lot 5m : bilans comparés à la base par leur texte, séparés ou regroupés (scripts/docs/bilans.mjs) ; avant : chemins des bilans séparés
-    // (readdirSync('Docs/lots') sans lot-5g.md) ajoutés à la même liste (une assertion).
-    expect(changedSince5g('Docs/seed.md', 'CLAUDE.md', 'Docs/ref/conventions.md', 'versions.json', 'tests/dernier-complet.json', 'scripts/versions')).toEqual([]);
-    expect((bilansChangesDepuis(BASE_5G) ?? []).filter((lot) => lot !== 'lot-5g')).toEqual([]);
-    expect(changedSince5g('.github')).toEqual(['.github/workflows/pages.yml']);
-  });
-
-  it('aucune dépendance : package.json et package-lock.json inchangés', () => {
-    expect(changedSince5g('package.json', 'package-lock.json')).toEqual([]);
-  });
-
-  it('aucun fichier de plus de 5 Mo ajouté ou modifié', () => {
-    for (const file of changedSince5g('.')) if (existsSync(file)) expect(statSync(file).size, file).toBeLessThanOrEqual(5 * 1024 * 1024);
-  });
-
-  it('journal supprimé : dev/, tests/e2e/dev.spec.js ; aucun lien absolu ni adresse externe dans les fichiers du site modifiés', () => {
-    expect(existsSync('dev')).toBe(false);
-    expect(existsSync('tests/e2e/dev.spec.js')).toBe(false);
-    for (const file of changedSince5g('index.html', 'js/accueil', 'css/accueil.css', 'scripts/assemble.mjs', 'scripts/site').filter(existsSync)) {
-      expect(read(file), file).not.toMatch(/(?:href|src)=["'](?:https?:)?\/\//);
-      if (file.endsWith('.html')) expect(findNonRelative(read(file), 'html'), file).toEqual([]);
-    }
-  });
-});
+// Lot 5q : retirés, sautés depuis la fusion de leur lot (actifs seulement tant que tous les commits depuis la base étaient ceux du lot ; jamais
+// réactivables) : « hygiène du lot 4c » (base e6cf00e : jeu inchangé ; CLAUDE.md, conventions, seed, bilans inchangés et seul pages.yml dans .github ;
+// apercu.txt et package-lock.json inchangés ; aucun fichier de plus de 5 Mo ajouté) et « hygiène du lot 5g » (base 775f1d1 : jeu inchangé ; seed,
+// CLAUDE.md, conventions, versions.json, dernier-complet, scripts/versions, bilans inchangés et seul pages.yml dans .github ; package.json et
+// package-lock.json inchangés ; aucun fichier de plus de 5 Mo ; journal dev/ et dev.spec.js supprimés, aucun lien absolu dans les fichiers du site
+// modifiés). Les règles durables restent vérifiées ailleurs : fichiers de 5 Mo et dépendances (hygiene.test.js, contrôle de publication 14),
+// chemins relatifs des pages produites (« pages produites : chemins relatifs seulement » ci-dessus), jeu inchangé par lot (contrôle final du prompt).
 
 // Lot 5h : étiquettes des versions (nom du fichier des noms, sinon label de versions.json) et fichier des noms appliqué par l'assembleur.
 describe('étiquettes des versions (lot 5h) : même règle dans site-info.mjs et home.js, repli sur V<id>', () => {
@@ -879,11 +818,17 @@ describe('assembleur : fichier des noms (lot 5h)', () => {
   });
 });
 
+// Lot 5q : journal réel sans les lots de la version en cours (v0.8), pour les scénarios des publications de V0.6 et V0.7 (état du journal alors).
+const journalPublie = () => {
+  const reel = JSON.parse(readFileSync('data/changelog.json', 'utf8'));
+  return { ...reel, lots: reel.lots.filter((l) => l?.version !== 'v0.8') };
+};
+
 // Lot 5f : publication de V0.6. Jeu de données : versions.json réel (V0.6 actuelle, V0.5 à V0.1 archivées) dans main, journal réel
 // (data/changelog.json : lots 5a à 5h et 5f en v0.6) dans le build de dev, archives fictives v0.1 à v0.5, sans fichier des noms (textes d'origine).
 // Lot 5p : versions.json d'avant V0.7 (avantV07 ; avant : le fichier réel, alors dans cet état) ; le journal réel compte en plus lot-5p (v0.7).
 describe('site-info.json de la publication de V0.6 (lot 5f)', () => {
-  const journal = JSON.parse(readFileSync('data/changelog.json', 'utf8'));
+  const journal = journalPublie(); // lot 5q : sans les lots de la V0.8 (état du journal à cette publication) ; avant : journal réel entier
   const siteDe = (changelog) => assemble({ versions: avantV07, mainDir: build(), devDir: build({ changelog }), archiveDir: archiveDir(['v0.1', 'v0.2', 'v0.3', 'v0.4', 'v0.5'], avantV07), dev: DEV });
 
   // Lot 5p : lot-5p, lot-5o, lot-5n, lot-5m, lot-5l, lot-5k puis lot-5j ; lot 5o : lot-5o, lot-5n, lot-5m, lot-5l, lot-5k puis lot-5j ; lot 5n : lot-5n, lot-5m, lot-5l, lot-5k puis lot-5j ; lot 5m : lot-5m, lot-5l, lot-5k puis lot-5j ; lot 5l : lot-5l, lot-5k puis lot-5j ; lot 5k : lot-5k puis lot-5j (v0.7, non publiée) ; lot 5j : lot-5j seul (avant : évolutions vides).
@@ -919,15 +864,16 @@ describe('site-info.json de la publication de V0.6 (lot 5f)', () => {
 
 // Lot 5p : publication de V0.7. Jeu de données : versions.json réel (V0.7 actuelle, V0.6 à V0.1 archivées) dans main, journal réel
 // (data/changelog.json : lots 5j à 5p en v0.7) dans le build de dev, archives fictives v0.1 à v0.6, sans fichier des noms (textes d'origine).
+// Lot 8m : versions.json d'avant V0.8 (avantV08 ; avant : le fichier réel, alors dans cet état).
 describe('site-info.json de la publication de V0.7 (lot 5p)', () => {
-  const journal = JSON.parse(readFileSync('data/changelog.json', 'utf8'));
-  const siteDe = (changelog) => assemble({ versions: actuel, mainDir: build(), devDir: build({ changelog }), archiveDir: archiveDir(['v0.1', 'v0.2', 'v0.3', 'v0.4', 'v0.5', 'v0.6'], actuel), dev: DEV });
+  const journal = journalPublie(); // lot 5q : sans les lots de la V0.8 (état du journal à cette publication) ; avant : journal réel entier
+  const siteDe = (changelog) => assemble({ versions: avantV08, mainDir: build(), devDir: build({ changelog }), archiveDir: archiveDir(['v0.1', 'v0.2', 'v0.3', 'v0.4', 'v0.5', 'v0.6'], avantV08), dev: DEV });
 
   it('recette = V0.7, versions précédentes V0.6 → V0.1 (archives), évolutions vides (les lots 5j à 5p, v0.7, disparaissent) ; site-info.json valide', () => {
-    expect(actuel.latest).toBe('v0.7');
+    expect(avantV08.latest).toBe('v0.7');
     expect(journal.lots.filter((l) => l.version === 'v0.7').map((l) => l.name)).toEqual(['lot-5j', 'lot-5k', 'lot-5l', 'lot-5m', 'lot-5n', 'lot-5o', 'lot-5p']);
     const { out: dir, siteInfo } = siteDe(journal);
-    const v07 = actuel.versions.find((v) => v.id === 'v0.7');
+    const v07 = avantV08.versions.find((v) => v.id === 'v0.7');
     expect(siteInfo.recette).toEqual({ id: 'v0.7', label: 'V0.7', title: v07.title, date: '2026-11-09', ref: v07.ref, entry: 'jeu.html' });
     expect(siteInfo.precedentes.map((p) => [p.label, p.entry, p.status])).toEqual([
       ['V0.6', '../v0.6/jeu.html', 'archive'], ['V0.5', '../v0.5/jeu.html', 'archive'], ['V0.4', '../v0.4/jeu.html', 'archive'], ['V0.3', '../v0.3/jeu.html', 'archive'], ['V0.2', '../v0.2/jeu.html', 'archive'], ['V0.1', '../v0.1/jeu.html', 'archive'],
@@ -937,7 +883,7 @@ describe('site-info.json de la publication de V0.7 (lot 5p)', () => {
     expect(readJson(join(dir, 'Recette/site-info.json'))).toEqual(siteInfo);
     expect(validateSiteInfo(siteInfo)).toEqual({ ok: true, errors: [] });
     expect(readJson(join(dir, 'Recette/build-info.json'))).toMatchObject({ channel: 'release', version: 'V0.7', branch: 'main' });
-    expect(readJson(join(dir, 'Recette/versions.json'))).toEqual(actuel);
+    expect(readJson(join(dir, 'Recette/versions.json'))).toEqual(avantV08);
     expect(readdirSync(dir).filter((name) => /^v0\.\d+$/.test(name)).sort()).toEqual(['v0.1', 'v0.2', 'v0.3', 'v0.4', 'v0.5', 'v0.6']);
   });
 
@@ -951,6 +897,84 @@ describe('site-info.json de la publication de V0.7 (lot 5p)', () => {
   });
 });
 
+// Lot 5q : début de la V0.8. Jeu de données : versions.json réel (V0.7 actuelle) dans main, journal réel (lots 5j à 5p en v0.7, lot-5q en v0.8) et
+// fichier des noms réel ([lot-5q] « afficher: non ») dans le build de dev, archives fictives v0.1 à v0.6. Les évolutions ne contiennent aucun lot
+// de la V0.7 publiée, jamais lot-5q (masqué), et tout lot visible de la V0.8.
+describe('site-info.json au début de la V0.8 (lot 5q)', () => {
+  const journal = JSON.parse(readFileSync('data/changelog.json', 'utf8'));
+  const texte = readFileSync(NOMS_FICHIER, 'utf8');
+  // Lot 8m : versions.json d'avant V0.8 (avantV08 ; avant : le fichier réel, alors dans cet état).
+  const siteDe = (changelog, noms = texte) => assemble({ versions: avantV08, mainDir: build(), devDir: build({ changelog, extra: { [NOMS_FICHIER]: noms } }), archiveDir: archiveDir(['v0.1', 'v0.2', 'v0.3', 'v0.4', 'v0.5', 'v0.6'], avantV08), dev: DEV });
+
+  it('journal et noms réels : aucun lot de v0.7, lot-5q absent (masqué) ; sans le fichier des noms, lot-5q apparaîtrait', () => {
+    expect(avantV08.latest).toBe('v0.7');
+    expect(journal.lots.find((l) => l.name === 'lot-5q')).toMatchObject({ version: 'v0.8' });
+    expect(parseNoms(texte).blocs.find((b) => b.id === 'lot-5q')).toMatchObject({ type: 'lot', version: 'v0.8', afficher: false });
+    const { siteInfo } = siteDe(journal);
+    expect(siteInfo.evolutions.filter((e) => e.version === 'v0.7')).toEqual([]);
+    expect(siteInfo.evolutions.map((e) => e.id)).not.toContain('lot-5q');
+    expect(siteInfo.evolutions.every((e) => e.version === 'v0.8')).toBe(true);
+    expect(siteInfo.recette.id).toBe('v0.7');
+    expect(validateSiteInfo(siteInfo)).toEqual({ ok: true, errors: [] });
+    expect(siteDe(journal, '# vide\n').siteInfo.evolutions.map((e) => e.id)).toContain('lot-5q'); // le masque vient du fichier des noms
+  });
+
+  it('un lot visible de la V0.8 (fictif) apparaît, en tête ; lot-5q reste absent ; aucun lot de v0.7', () => {
+    const lot = { name: 'lot-6a', version: 'v0.8', date: '2026-11-10', titre: 'Lot visible de la V0.8 (fictif)', points: ['Premier point du lot de test.'] };
+    const { siteInfo } = siteDe({ ...journal, lots: [...journal.lots, lot] });
+    expect(siteInfo.evolutions[0]).toEqual({ id: 'lot-6a', title: 'Lot visible de la V0.8 (fictif)', text: 'Premier point du lot de test.', date: '2026-11-10', version: 'v0.8' });
+    expect(siteInfo.evolutions.map((e) => e.id)).not.toContain('lot-5q');
+    expect(siteInfo.evolutions.filter((e) => e.version === 'v0.7')).toEqual([]);
+    expect(validateSiteInfo(siteInfo)).toEqual({ ok: true, errors: [] });
+  });
+});
+
+// Lot 8m : publication de V0.8. Jeu de données : versions.json réel (V0.8 actuelle, V0.7 à V0.1 archivées) dans main, journal réel (lots 5q et 8a à
+// 8m en v0.8) dans le build de dev, archives fictives v0.1 à v0.7 ; sans fichier des noms (textes d'origine), puis avec le fichier des noms réel.
+describe('site-info.json de la publication de V0.8 (lot 8m)', () => {
+  const journal = JSON.parse(readFileSync('data/changelog.json', 'utf8'));
+  const texte = readFileSync(NOMS_FICHIER, 'utf8');
+  const ARCHIVES = ['v0.1', 'v0.2', 'v0.3', 'v0.4', 'v0.5', 'v0.6', 'v0.7'];
+  const siteDe = (changelog, extra = {}) => assemble({ versions: actuel, mainDir: build(), devDir: build({ changelog, extra }), archiveDir: archiveDir(ARCHIVES, actuel), dev: DEV });
+
+  it('recette = V0.8, versions précédentes V0.7 → V0.1 (archives), évolutions vides (les lots 5q et 8a à 8m, v0.8, disparaissent) ; site-info.json valide', () => {
+    expect(actuel.latest).toBe('v0.8');
+    expect(journal.lots.filter((l) => l.version === 'v0.8').map((l) => l.name)).toEqual(['lot-5q', 'lot-8a', 'lot-8b', 'lot-8c', 'lot-8d', 'lot-8e', 'lot-8f', 'lot-8g', 'lot-8i', 'lot-8h', 'lot-8j', 'lot-8k', 'lot-8l', 'lot-8m']);
+    const { out: dir, siteInfo } = siteDe(journal);
+    const v08 = actuel.versions.find((v) => v.id === 'v0.8');
+    expect(siteInfo.recette).toEqual({ id: 'v0.8', label: 'V0.8', title: v08.title, date: '2026-11-15', ref: v08.ref, entry: 'jeu.html' });
+    expect(siteInfo.precedentes.map((p) => [p.label, p.entry, p.status])).toEqual([
+      ['V0.7', '../v0.7/jeu.html', 'archive'], ['V0.6', '../v0.6/jeu.html', 'archive'], ['V0.5', '../v0.5/jeu.html', 'archive'], ['V0.4', '../v0.4/jeu.html', 'archive'], ['V0.3', '../v0.3/jeu.html', 'archive'], ['V0.2', '../v0.2/jeu.html', 'archive'], ['V0.1', '../v0.1/jeu.html', 'archive'],
+    ]);
+    expect(siteInfo.evolutions).toEqual([]);
+    expect(siteInfo.dev).toEqual({ present: true, sha: 'bbbbbbb', date: '2026-11-03T08:00:00Z', entry: '../dev/jeu.html' });
+    expect(readJson(join(dir, 'Recette/site-info.json'))).toEqual(siteInfo);
+    expect(validateSiteInfo(siteInfo)).toEqual({ ok: true, errors: [] });
+    expect(readJson(join(dir, 'Recette/build-info.json'))).toMatchObject({ channel: 'release', version: 'V0.8', branch: 'main' });
+    expect(readJson(join(dir, 'Recette/versions.json'))).toEqual(actuel);
+    expect(readdirSync(dir).filter((name) => /^v0\.\d+$/.test(name)).sort()).toEqual(ARCHIVES);
+  });
+
+  it('avec le fichier des noms réel : Recette « V0.8 » et sa description complète (bloc [v0.8]), V0.7 en tête des précédentes, évolutions vides', () => {
+    const bloc = parseNoms(texte).blocs.find((b) => b.id === 'v0.8');
+    expect(bloc).toMatchObject({ type: 'version', nom: 'V0.8' });
+    const { siteInfo } = siteDe(journal, { [NOMS_FICHIER]: texte });
+    expect([siteInfo.recette.id, siteInfo.recette.label, siteInfo.recette.title]).toEqual(['v0.8', 'V0.8', cleanText(bloc.description, MAX_VERSION_TITLE)]);
+    expect(siteInfo.precedentes[0]).toMatchObject({ id: 'v0.7', label: 'V0.7', entry: '../v0.7/jeu.html', status: 'archive' });
+    expect(siteInfo.evolutions).toEqual([]);
+    expect(validateSiteInfo(siteInfo)).toEqual({ ok: true, errors: [] });
+  });
+
+  it('le même jeu avec un lot ajouté de version v0.9 (non publiée) : il apparaît, seul ; la Recette reste V0.8', () => {
+    const lot = { name: 'lot-9a', version: 'v0.9', date: '2026-11-16', titre: 'Premier lot de la V0.9 (fictif)', points: ['Premier point du lot de test.', 'Second point, jamais affiché.'] };
+    const { siteInfo } = siteDe({ ...journal, lots: [...journal.lots, lot] });
+    expect(siteInfo.evolutions).toEqual([{ id: 'lot-9a', title: 'Premier lot de la V0.9 (fictif)', text: 'Premier point du lot de test.', date: '2026-11-16', version: 'v0.9' }]);
+    expect(siteInfo.recette.id).toBe('v0.8');
+    expect(siteInfo.precedentes.map((p) => p.id)).toEqual(['v0.7', 'v0.6', 'v0.5', 'v0.4', 'v0.3', 'v0.2', 'v0.1']);
+    expect(validateSiteInfo(siteInfo)).toEqual({ ok: true, errors: [] });
+  });
+});
+
 // Lot 5i : accueil retouché (option B) : bandeau « Recette », bouton « Jouer - <étiquette> », colonne « Toutes les versions » (carte de la version
 // actuelle avec sa description complète, sans lien, puis versions précédentes), pleine hauteur. Le rendu dans le navigateur (textContent, tailles,
 // hauteur) est vérifié par tests/e2e/publication.spec.js ; ici : modèle (home.js), site-info.json (assembleur), page, textes et styles.
@@ -958,8 +982,8 @@ describe('accueil retouché (lot 5i) : carte de la version actuelle, « Jouer - 
   const D200 = 'd'.repeat(199) + 'é';
   const html = read('index.html');
   const main = read('js/accueil/main.js');
-  const fr = readJson('data/i18n/fr.json');
-  const en = readJson('data/i18n/en.json');
+  const fr = readJson('data/i18n/accueil.fr.json'); // lot 8b : textes de l'accueil séparés (avant : fr.json et en.json)
+  const en = readJson('data/i18n/accueil.en.json');
   const info = buildSiteInfo({ versions: real, dev: { present: false }, genere: GENERE });
 
   it('bornes : description de version 200 caractères (comme le fichier des noms), étiquette du bouton 20 caractères', () => {
@@ -1022,9 +1046,12 @@ describe('accueil retouché (lot 5i) : carte de la version actuelle, « Jouer - 
     expect([apres.current, apres.playLabel]).toEqual([{ label: 'V0.7', title: 'Version suivante (fictive).' }, 'V0.7']);
     expect(apres.previous.map((v) => v.label)).toEqual(['V0.6', 'V0.5', 'V0.4', 'V0.3', 'V0.2', 'V0.1']);
     expect(apres.previous[0]).toMatchObject({ title: avantV07.versions.find((v) => v.id === 'v0.6').title, href: '../v0.6/jeu.html' });
-    const reelle = homeModel(buildSiteInfo({ versions: actuel, dev: {}, genere: GENERE }));
-    expect([reelle.current, reelle.playLabel]).toEqual([{ label: 'V0.7', title: actuel.versions.find((v) => v.id === 'v0.7').title }, 'V0.7']);
+    const reelle = homeModel(buildSiteInfo({ versions: avantV08, dev: {}, genere: GENERE })); // lot 8m : état de la publication de V0.7 (avant : le fichier réel)
+    expect([reelle.current, reelle.playLabel]).toEqual([{ label: 'V0.7', title: avantV08.versions.find((v) => v.id === 'v0.7').title }, 'V0.7']);
     expect(reelle.previous.map((v) => [v.label, v.href])).toEqual(apres.previous.map((v) => [v.label, v.href]));
+    const v08 = homeModel(buildSiteInfo({ versions: actuel, dev: {}, genere: GENERE })); // lot 8m : publication réelle de V0.8
+    expect([v08.current, v08.playLabel]).toEqual([{ label: 'V0.8', title: actuel.versions.find((v) => v.id === 'v0.8').title }, 'V0.8']);
+    expect(v08.previous.map((v) => [v.label, v.href])).toEqual([['V0.7', '../v0.7/jeu.html'], ...apres.previous.map((v) => [v.label, v.href])]);
   });
 
   it('site-info.json : recette.title = description complète du fichier des noms (200 caractères, avant : tronquée à 120) ; validateSiteInfo l\'accepte, refuse 201', () => {
@@ -1042,11 +1069,12 @@ describe('accueil retouché (lot 5i) : carte de la version actuelle, « Jouer - 
   });
 
   // Lot 5p : Recette V0.7 (bloc [v0.7]) ; avant : V0.6 (bloc [v0.6]) ; archives fictives v0.1 à v0.6 (avant : v0.5).
-  it('fichier des noms du dépôt : recette.title de la Recette (V0.7) = sa description complète (bloc [v0.7]), quelle que soit sa longueur (≤ 200)', () => {
+  // Lot 8m : Recette V0.8 (bloc [v0.8]) ; archives fictives v0.1 à v0.7.
+  it('fichier des noms du dépôt : recette.title de la Recette (V0.8) = sa description complète (bloc [v0.8]), quelle que soit sa longueur (≤ 200)', () => {
     const texte = readFileSync(NOMS_FICHIER, 'utf8');
     const bloc = parseNoms(texte).blocs.find((b) => b.id === actuel.latest);
-    const result = assemble({ versions: actuel, mainDir: build(), devDir: build({ extra: { [NOMS_FICHIER]: texte } }), archiveDir: archiveDir(['v0.1', 'v0.2', 'v0.3', 'v0.4', 'v0.5', 'v0.6'], actuel), dev: DEV });
-    expect(actuel.latest).toBe('v0.7');
+    const result = assemble({ versions: actuel, mainDir: build(), devDir: build({ extra: { [NOMS_FICHIER]: texte } }), archiveDir: archiveDir(['v0.1', 'v0.2', 'v0.3', 'v0.4', 'v0.5', 'v0.6', 'v0.7'], actuel), dev: DEV });
+    expect(actuel.latest).toBe('v0.8');
     const attendu = typeof bloc?.description === 'string' ? cleanText(bloc.description, MAX_VERSION_TITLE) : cleanText(actuel.versions.find((v) => v.id === actuel.latest).title, MAX_VERSION_TITLE);
     expect(result.siteInfo.recette.title).toBe(attendu);
     expect(result.siteInfo.recette.title.endsWith('…')).toBe(false);

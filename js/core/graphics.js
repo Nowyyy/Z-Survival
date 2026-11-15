@@ -2,6 +2,7 @@
 // l'Élevé pour toute valeur invalide), choix du préréglage (?gfx= > choix mémorisé de l'appareil > auto), décision d'Auto (une baisse d'un cran au plus,
 // entre deux manches, jamais sous Faible, jamais de remontée), fusion avec les paramètres explicites de l'adresse (ils l'emportent toujours).
 // Lot 5j : options séparées (un vecteur par préréglage, Perso enregistré à part), vecteur effectif et origines, passage à Perso, options en attente.
+// Lot 8c : réglages appliqués au lancement (verrouillés en partie), préréglage détecté d'Auto, valeurs en attente du prochain chargement.
 // Rien ici ne touche la logique du jeu : ces réglages ne changent que l'image.
 
 export const PRESET_IDS = ['faible', 'moyen', 'eleve'];
@@ -64,7 +65,6 @@ export const SETTING_KEYS = Object.freeze({
   live: Object.freeze(['dprMax', 'ombres', 'ombreTaille', 'vhs', 'brouillard', 'feux.voitureFoyers', 'feux.fumeeHelico', 'feux.particules', 'feux.lueur', 'sang', 'cadavres', 'lampes', 'lumieres', 'ombresLampes']),
   load: Object.freeze(['personnages', 'anticrenelage', 'texturesFines', 'decor']),
 });
-export const ORIGINS = ['preset', 'perso', 'adresse'];
 const ID_RE = /^[a-z][A-Za-z0-9]{0,31}$/;
 const VALUE_RE = /^[A-Za-z0-9._-]{1,16}$/;
 const KEY_RE = /^game\.[A-Za-z0-9._-]{1,80}$/;
@@ -425,6 +425,39 @@ export function pendingReload(effective, running, cfg) {
   return c.options.filter((o) => o.group === 'load' && o.id in e && o.id in r && e[o.id] !== r[o.id]).map((o) => o.id);
 }
 
+// ---- Lot 8c : Options du menu principal (E5) et de la partie (E2-12) ----
+// Contextes de l'écran : « menu » (hors partie : tout est modifiable) et « partie » (les réglages appliqués au lancement sont verrouillés).
+export const CONTEXTES_OPTIONS = Object.freeze(['menu', 'partie']);
+const cfgOf = (cfg) => (cfg && cfg.vectors ? cfg : parseGraphics(null));
+
+// Réglages appliqués au lancement de la partie (groupe « load » de data/game/graphics.json, jamais recopiés en dur) : identifiants dans l'ordre des données.
+export function optionsAuLancement(cfg) {
+  return cfgOf(cfg).options.filter((o) => o.group === 'load').map((o) => o.id);
+}
+
+// Vrai si l'option ne peut pas changer dans ce contexte : en partie, un réglage appliqué au lancement (il ne vaudrait qu'au prochain chargement).
+// Contexte inconnu : traité comme « partie » (le plus prudent) ; identifiant inconnu : faux.
+export function optionVerrouillee(cfg, id, contexte) {
+  return contexte !== 'menu' && optionsAuLancement(cfg).includes(id);
+}
+
+// Préréglage que donnerait Auto, affiché sur son bouton (« Auto · Moyen ») : en Auto, le préréglage en cours (baissé éventuellement) ; sinon,
+// le préréglage initial de la classe de l'appareil. effective : sortie d'effectiveOptions.
+export function presetDetecte(effective) {
+  const e = obj(effective);
+  const v = e.choice === 'auto' ? e.preset : e.initial;
+  return PRESET_IDS.includes(v) ? v : 'eleve';
+}
+
+// Valeurs en attente (en partie) : pour chaque réglage appliqué au lancement dont la valeur enregistrée (vecteur effectif) diffère de celle du
+// jeu en cours (running), { id, enCours, retour } dans l'ordre des données ; s'appliqueront au prochain chargement de la partie.
+export function valeursEnAttente(effective, running, cfg) {
+  const c = cfgOf(cfg);
+  const e = obj(obj(effective).vector ?? effective);
+  const r = obj(obj(running).vector ?? running);
+  return pendingReload(e, r, c).map((id) => ({ id, enCours: r[id], retour: e[id] }));
+}
+
 // Adresse passée au chargeur des personnages : la variante et le niveau de sang du préréglage, sauf s'ils sont déjà dans l'adresse. La table des
 // choix (« choix ») n'ajoute rien : c'est le défaut actuel.
 export function presetSearch(search, settings) {
@@ -456,13 +489,15 @@ export function bloodWithCorpses(blood, level, n) {
 // Lot 5l : paramètres d'adresse par canal (Docs/ref/debug.md). Le canal vient de la balise <meta name="zs-canal" content="…"> de jeu.html (source dans
 // le dépôt ; l'assembleur écrit release, dev ou archive dans les copies publiées ; prod viendra d'un assembleur de production), lue par graphics-boot.js
 // sans requête. Groupe G (doublons d'Options et réglages graphiques sans menu) : pris en compte sous ?test=1 (autorisé) ou sur source ; groupe T (outils) :
-// sur les canaux de débogage ; test, store, seed, empty : sur les canaux de débogage. Canal absent, inconnu, archive ou prod : tout est refusé.
+// sur les canaux de débogage ; test, store, seed, empty, menu (lot 8a), intro (lot 8g) : sur les canaux de débogage. Canal absent, inconnu, archive ou prod : tout est refusé.
 // Un nom absent des trois listes (?v=, inconnu) n'est lu par aucun code : il passe tel quel.
 export const CANAUX = Object.freeze(['source', 'dev', 'release', 'archive', 'prod']);
 export const CANAUX_DEBUG = Object.freeze(['source', 'dev', 'release']);
 export const PARAMS_G = Object.freeze(['gfx', 'lum', 'lampgain', 'shadows', 'vhs', 'dpr', 'detail', 'perso', 'sang', 'usure', 'percee']);
 export const PARAMS_T = Object.freeze(['wave', 'lvl', 'money', 'planks', 'floor', 'map', 'nospawn', 'endless', 'fin', 'perf', 'cap', 'fps', 'zoom', 'tilt', 'labels', 'sons']);
-export const PARAMS_TEST = Object.freeze(['test', 'store', 'seed', 'empty']);
+export const PARAMS_TEST = Object.freeze(['test', 'store', 'seed', 'empty', 'menu', 'intro']); // lot 8g : intro
+// Lot 8a : paramètres de « Partie » (Docs/ref/menu-principal.md) : l'un d'eux, avec une valeur, démarre la partie directement (sans menu).
+export const PARAMS_PARTIE = Object.freeze(['wave', 'lvl', 'money', 'planks', 'floor', 'map', 'nospawn', 'endless', 'fin', 'empty']);
 
 // Canal reconnu (valeur exacte) ou null (absent, vide, inconnu, autre type).
 export function lireCanal(value) {
@@ -500,6 +535,30 @@ export function acces(canal, params) {
   const out = Object.create(null);
   for (const name of [...PARAMS_G, ...PARAMS_T, ...PARAMS_TEST, ...q.keys()]) out[name] = permis(name);
   return { canal: c, debug, test, params: out };
+}
+
+// Lot 8a : démarrage de jeu.html, d'après l'adresse autorisée (acces) : « partie » (directe, comme avant le menu) sous ?test=1 pris en compte, sauf
+// ?menu=1, ou avec un paramètre de « Partie » pris en compte et non vide ; « menu » sinon (écran de chargement E7 puis menu principal E8).
+export function choixDemarrage(canal, params) {
+  const q = searchOf(params);
+  const a = acces(canal, q);
+  if (a.test) return a.params.menu && q.get('menu') === '1' ? 'menu' : 'partie';
+  return PARAMS_PARTIE.some((n) => a.params[n] && (q.get(n) ?? '') !== '') ? 'partie' : 'menu';
+}
+
+// Lot 8g : introduction du studio (logo animé de No Way Studio) au lancement en mode menu. Jamais en partie directe ; jamais au retour au menu après
+// une partie (précision du propriétaire) : le rechargement fait par « Quitter » et « Revenir au menu principal » porte le repère #retour (ou
+// #plein-ecran, posé à sa place quand la partie était en plein écran), lu ici depuis le fragment de l'adresse (aucun stockage). Sous ?test=1 pris en
+// compte, seulement avec ?intro=1 (groupe « test ») : les tests existants du menu (?test=1&menu=1) ne la voient pas. Sinon : toujours.
+export const REPERE_RETOUR = '#retour';
+export const REPERES_RETOUR = Object.freeze([REPERE_RETOUR, '#plein-ecran']);
+export function introAuDemarrage(canal, params, fragment = '') {
+  if (choixDemarrage(canal, params) !== 'menu') return false;
+  if (REPERES_RETOUR.includes(typeof fragment === 'string' ? fragment : '')) return false;
+  const q = searchOf(params);
+  const a = acces(canal, q);
+  if (a.test) return a.params.intro === true && q.get('intro') === '1';
+  return true;
 }
 
 // Adresse (chaîne de requête) sans les paramètres refusés pour ce canal. Rien de refusé (toujours le cas sur source) : la chaîne d'origine, identique.

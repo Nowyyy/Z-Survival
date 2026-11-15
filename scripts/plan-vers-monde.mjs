@@ -13,6 +13,8 @@ import { firesToWorld, lampsToWorld, lampTriangles } from '../js/core/lamps.js';
 import { polygonRects } from '../js/core/shape.js';
 import { rectGap } from '../js/core/collision.js';
 import { parseZones, zonesToWorld } from '../js/core/zones.js';
+import { buildLayouts } from '../js/core/layout.js';
+import { tirsMonde } from '../js/core/tir-traverse.js';
 
 const ROOT = new URL('../data/game/maps/', import.meta.url);
 const isPrimitive = (v) => v === null || typeof v !== 'object';
@@ -135,6 +137,26 @@ export function generateMapFiles(id = 'rez-de-chaussee') {
     result.lampesReport = { count: conv.lamps.length, triangles, problems: conv.problems, warnings: conv.warnings };
     result.problems.push(...conv.problems.map((v) => `lampes : ${v}`));
   }
+  // Lot 8j : objets traversables par les tirs (balles, laser) d'après data/game/tirs-traversables.json (liste du propriétaire, par carte et par
+  // étage) : identifiants vérifiés (meubles, décor solide, grilles posées dans un mur ; jamais pilier, escalier ni objet de 100 de haut ou plus).
+  // Écrit tirs.world.json (jamais édité à la main), lu par la partie (js/core/tir-traverse.js).
+  result.tirs = null;
+  result.tirsReport = null;
+  const tirsUrl = new URL('../tirs-traversables.json', ROOT);
+  const liste = existsSync(tirsUrl) ? JSON.parse(readFileSync(tirsUrl, 'utf8')).cartes?.[id] : null;
+  if (liste) {
+    const L = buildLayouts({ rdc: { world: out.world, decor: out.decor }, etage: etageWorldOut ? { world: etageWorldOut } : null, zones: zonesToWorld(zones, out.world.transform) });
+    const items = result.decorInterieur ? JSON.parse(result.decorInterieur).items : [];
+    // Retour du propriétaire après le lot 8j : hauteur DESSINÉE de chaque meuble (mobilier.world.json), comparée à celle de l'arme (render.json → gunHeight).
+    const pieces = result.mobilier ? Object.values(JSON.parse(result.mobilier).pieces) : [];
+    const hauteursDe = (f) => new Map(pieces.filter((p) => p.floor === f).reduce((m, p) => m.set(p.obstacle, Math.max(m.get(p.obstacle) ?? 0, ...p.boxes.map((b) => b.y1))), new Map()));
+    const gunHeight = JSON.parse(readFileSync(new URL('../render.json', ROOT), 'utf8')).gunHeight;
+    const couche = (f, w) => (w && L[f] ? { obstacles: w.obstacles, solids: L[f].decor?.solids ?? [], grilles: items.filter((it) => it.kind === 'grille' && it.floor === f), walls: L[f].walls, thick: L[f].wallThickness, hauteurs: hauteursDe(f) } : null);
+    const conv = tirsMonde(liste, { rdc: couche('rdc', out.world), etage: couche('etage', etageWorldOut) }, { hauteurMax: gunHeight });
+    result.tirs = `${formatJson({ _provisoire: 'Objets traversables par les tirs générés par npm run carte (scripts/plan-vers-monde.mjs) d\'après data/game/tirs-traversables.json : ne jamais éditer à la main. ids : meubles et objets par-dessus lesquels passent balles et laser ; grilles : ouvertures grillagées (a, b sur la face intérieure du mur, n vers la salle) à travers lesquelles ils passent. Le joueur et les zombies restent bloqués. Valeurs provisoires.', ...conv.doc })}\n`;
+    result.tirsReport = { counts: Object.fromEntries(Object.entries(conv.doc).map(([f, d]) => [f, `${d.ids.length} objets, ${d.grilles.length} grilles`])), problems: conv.problems };
+    result.problems.push(...conv.problems.map((v) => `tirs : ${v}`));
+  }
   return result;
 }
 
@@ -159,8 +181,8 @@ if (isMain) {
   const args = process.argv.slice(2);
   const check = args.includes('--verifie');
   const id = args.find((a) => !a.startsWith('--')) ?? 'rez-de-chaussee';
-  const { world, decor, etage, report, etageReport, problems, decorInterieur, decorReport, mobilier, mobilierReport, wrecksReport, lampes, lampesReport } = generateMapFiles(id);
-  const files = [['world.json', world], ['decor.json', decor], ...(etage === null ? [] : [['etage.world.json', etage]]), ...(decorInterieur === null ? [] : [['decor-interieur.world.json', decorInterieur]]), ...(mobilier ? [['mobilier.world.json', mobilier]] : []), ...(lampes ? [['lampes.world.json', lampes]] : [])].map(([name, text]) => [name, text, new URL(`${id}/${name}`, ROOT)]);
+  const { world, decor, etage, report, etageReport, problems, decorInterieur, decorReport, mobilier, mobilierReport, wrecksReport, lampes, lampesReport, tirs, tirsReport } = generateMapFiles(id);
+  const files = [['world.json', world], ['decor.json', decor], ...(etage === null ? [] : [['etage.world.json', etage]]), ...(decorInterieur === null ? [] : [['decor-interieur.world.json', decorInterieur]]), ...(mobilier ? [['mobilier.world.json', mobilier]] : []), ...(lampes ? [['lampes.world.json', lampes]] : []), ...(tirs ? [['tirs.world.json', tirs]] : [])].map(([name, text]) => [name, text, new URL(`${id}/${name}`, ROOT)]);
   if (check) {
     const stale = files.filter(([, text, url]) => !existsSync(url) || readFileSync(url, 'utf8') !== text).map(([name]) => name);
     if (stale.length > 0) {
@@ -192,6 +214,7 @@ if (isMain) {
     console.log(`Lampes : ${lampesReport.count} lampes, ${lampesReport.triangles} triangles.`);
     for (const w of lampesReport.warnings) console.log(`Lampes : ${w}`);
   }
+  if (tirsReport) console.log(`Tirs : ${Object.entries(tirsReport.counts).map(([f, t]) => `${f} ${t}`).join(' ; ')} traversables.`);
   if (wrecksReport) {
     const { car, helicopter: h } = wrecksReport;
     if (car) console.log(`Épaves : voiture en flammes ${car.id} (${car.x}, ${car.y}), à ${car.gap} du bâtiment.`);

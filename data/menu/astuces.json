@@ -1,0 +1,12 @@
+{
+  "_note": "Lot 8a : astuces de l'écran de chargement (E7), une tirée au hasard à chaque chargement (graine : js/menu/chargement.js ; choix : js/core/menu-etat.js). Français seul, une phrase chacune, vraie pour le jeu actuel.",
+  "astuces": [
+    "Le tir part tout seul quand le laser touche un zombie.",
+    "Chaque zombie abattu rapporte 10 pièces, et tout l'argent gagné est gardé à la mort.",
+    "Reposer une planche sur une fenêtre rapporte 1 pièce.",
+    "Viser un zombie interrompt la réparation, mais la planche garde sa progression.",
+    "Au fil des manches, des portes s'ouvrent sur de nouvelles pièces… et de nouvelles fenêtres.",
+    "Une fenêtre sans planche laisse entrer les zombies : surveille les flèches au bord de l'écran.",
+    "P ou Échap met la partie en pause."
+  ]
+}

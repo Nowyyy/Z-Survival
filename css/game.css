@@ -460,3 +460,44 @@ body.game {
 .map-label[hidden] {
   display: none;
 }
+
+/* ---------- Lot 8j : message à l'approche d'une porte fermée (js/game/porte-message.js) ---------- */
+/* Un peu sous le centre (le joueur est au centre : les zombies autour restent visibles), aspect et taille des blocs du HUD (suit --ui-k) ;
+   fondu court, aucun sous prefers-reduced-motion (règle plus bas). Contraste : texte du HUD sur son fond (contrôlé par data-hud.test.js). Dans game.css : game-ui.css n'a aucune transition (blocs fixes). */
+.porte-message {
+  position: absolute;
+  top: 66%;
+  left: 50%;
+  z-index: 2;
+  box-sizing: border-box;
+  max-width: calc(100% - 2 * var(--game-margin));
+  margin: 0;
+  padding: 0.3em 0.7em;
+  border: 1px solid var(--hud-border);
+  border-radius: var(--hud-radius);
+  background: color-mix(in srgb, var(--hud-bg) calc(var(--hud-bg-alpha) * 100%), transparent);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  font-size: var(--hud-fs);
+  font-weight: var(--font-weight-bold);
+  line-height: 1.2;
+  text-align: center;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateX(-50%);
+  transition: opacity 0.25s ease, visibility 0s linear 0.25s;
+}
+
+.porte-message[data-visible="true"] {
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 0.25s ease, visibility 0s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .porte-message,
+  .porte-message[data-visible="true"] {
+    transition: none;
+  }
+}

@@ -273,6 +273,9 @@ const rattachement = BILANS.map((b) => {
 
 // ---------------------------------------------------------------- catégories
 const PUBLIEES = new Set(versions.map((v) => v.id));
+// Version en cours de développement (lot 5q : v0.8 ; avant : v0.7, publiée au lot 5p) : ses bilans restent séparés (catégorie « V0.8 »).
+const EN_COURS = 'v0.8';
+const CAT_EN_COURS = EN_COURS.toUpperCase();
 const R_REGLES = [
   ['R1', /^Docs\/ref\/fusion-[^/]+\.md$/, 'manifeste de fusion terminé'],
   ['R2', /^Docs\/ref\/(nettoyage-|tests-audit|tests-decisions|claude-md-|tests-chargement)[^/]*\.md$/, 'audit, plan ou décisions terminés'],
@@ -285,8 +288,8 @@ function categorieDe(c) {
   if (c.startsWith('Docs/lots/versions/')) return 'groupe';
   if (c.startsWith('Docs/lots/')) {
     const r = rattachement.find((x) => x.fichier === c);
-    if (r && r.journal && r.journal !== 'v0.7' && PUBLIEES.has(r.journal)) return 'L1';
-    return 'V0.7';
+    if (r && r.journal && r.journal !== EN_COURS && PUBLIEES.has(r.journal)) return 'L1';
+    return CAT_EN_COURS;
   }
   for (const [k, re] of R_REGLES) if (re.test(c)) return k;
   return 'autre';
@@ -369,7 +372,7 @@ for (const e of inventaire.filter((x) => R_CAT.has(x.categorie))) {
   else e.statut = e.dures.length || e.motifs.length ? 'douteux' : 'douteux (document qui reste)';
   if (e.historique.length) e.raisons.push(`historique : ${[...new Set(e.historique.map((x) => x.de.replace('Docs/lots/', '')))].join(', ')}`);
 }
-for (const e of inventaire.filter((x) => ['autre', 'V0.7', 'groupe'].includes(x.categorie))) e.statut = 'garder';
+for (const e of inventaire.filter((x) => ['autre', CAT_EN_COURS, 'groupe'].includes(x.categorie))) e.statut = 'garder';
 
 // ---------------------------------------------------------------- rapport
 const out = [];
@@ -384,7 +387,7 @@ p('## Catégories');
 p();
 p('| Catégorie | Documents | Lignes | Octets | Candidats | Douteux | Douteux (historique seulement) | Références entrantes |');
 p('|---|---|---|---|---|---|---|---|');
-for (const k of ['L1', 'R1', 'R2', 'R3', 'R4', 'R5', 'V0.7', 'groupe', 'autre']) {
+for (const k of ['L1', 'R1', 'R2', 'R3', 'R4', 'R5', CAT_EN_COURS, 'groupe', 'autre']) {
   const xs = inventaire.filter((e) => e.categorie === k);
   const t = total(xs);
   p(`| ${k} | ${t.n} | ${fmt(t.lignes)} | ${fmt(t.octets)} | ${xs.filter((e) => e.statut === 'candidat').length} | ${xs.filter((e) => e.statut === 'douteux' || e.statut === 'douteux (document qui reste)').length} | ${xs.filter((e) => e.statut === 'douteux (historique seulement)').length} | ${xs.reduce((s, e) => s + e.references.length, 0)} |`);

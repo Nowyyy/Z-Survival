@@ -798,7 +798,7 @@ test.describe('sons, budget, interface', () => {
   const audioLog = async (page) => (await STATE(page)).audio.log;
 
   test('un son d\'un autre étage : gain × 0,5 et un seul passe-bas à 700 Hz ; sur l\'étage du joueur, ni l\'un ni l\'autre', async ({ page }) => {
-    await open(page, '&wave=21&nospawn=1', SIZE, { freeze: false });
+    await open(page, '&wave=21&nospawn=1&coups=1', SIZE, { freeze: false });
     await page.mouse.click(40, 40);
     await expect.poll(async () => (await STATE(page)).audio.unlocked).toBe(true);
     const p = (await STATE(page)).player;

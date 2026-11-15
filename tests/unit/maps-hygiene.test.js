@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { execSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 import { plan, params } from './helpers/carte.js';
+import { imageStudio } from './helpers/images-studio.js'; // lot 8g : logo du studio, exception nominative
 
 const git = (args) => {
   try {
@@ -30,7 +31,7 @@ describe('hygiène du lot 3b', () => {
     const added = git('diff --name-only --diff-filter=A main');
     if (added === null) return;
     const files = [...added, ...(git('ls-files --others --exclude-standard') ?? [])];
-    expect(files.filter((f) => !f.startsWith('Docs/ref/modele-rdc/') && /\.(png|jpe?g|gif|webp|svg|ico|mp3|wav|ogg|flac|woff2?|ttf|otf)$/i.test(f))).toEqual([]);
+    expect(files.filter((f) => !f.startsWith('Docs/ref/modele-rdc/') && !imageStudio(f) && /\.(png|jpe?g|gif|webp|svg|ico|mp3|wav|ogg|flac|woff2?|ttf|otf)$/i.test(f))).toEqual([]);
   });
 
   it('data/game/world.json et decor.json d\'origine sont inchangés (git diff vide)', () => {

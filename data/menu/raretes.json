@@ -1,0 +1,10 @@
+{
+  "_provisoire": "Lot 8d : raretés des objets, de la plus basse à la plus haute (l'ordre compte : la fusion donne la rareté suivante). nom : affiché ; jeton : couleur de css/tokens.css (--rarete-*) ; prixFusion : prix d'une fusion de trois objets de cette rareté (affiché, jamais prélevé avant le lot 8h ; null : rareté la plus haute, non fusionnable). Prix provisoires, modifiables par le propriétaire sans lot. Lu par js/core/equipement.js.",
+  "raretes": [
+    { "id": "commun", "nom": "Commun", "jeton": "--rarete-commun", "prixFusion": 100 },
+    { "id": "peu-commun", "nom": "Peu commun", "jeton": "--rarete-peu-commun", "prixFusion": 250 },
+    { "id": "rare", "nom": "Rare", "jeton": "--rarete-rare", "prixFusion": 600 },
+    { "id": "epique", "nom": "Épique", "jeton": "--rarete-epique", "prixFusion": 1500 },
+    { "id": "legendaire", "nom": "Légendaire", "jeton": "--rarete-legendaire", "prixFusion": null }
+  ]
+}

@@ -246,6 +246,98 @@
     { "name": "lot-5p", "version": "v0.7", "date": "2026-11-09", "titre": "Publication de la V0.7", "points": [
       "La V0.6 rejoint les anciennes versions et la V0.7 devient la version Recette ; les bilans des lots de la V0.7 sont réunis en un seul fichier et la documentation est mise à jour.",
       "Le jeu ne change pas."
-    ] }
+    ] },
+    { "name": "lot-5q", "version": "v0.8", "date": "2026-11-09", "titre": "Début de la V0.8 : contrôle de publication et tests", "points": [
+      "Le contrôle de publication n'est plus bloqué par un dernier commit qui ne change que de la documentation (par exemple le seed) ou par le retour de la version publiée dans le développement.",
+      "Quelques tests sont corrigés ou retirés (tests sautés depuis longtemps) ; le jeu ne change pas."
+    ] },
+    { "name": "lot-8a", "version": "v0.8", "date": "2026-11-09", "titre": "Écran de chargement et menu principal", "points": [
+      "Le jeu s'ouvre sur un écran de chargement (titre animé, vraie progression, astuce, version) puis sur un menu principal en paysage ; la partie ne se charge qu'au clic sur Jouer.",
+      "Menu : connexion (bientôt), solde, menu à trois barres (Options, Information, Discord bientôt), onglets Boutique, Personnage, Jouer, Infini et Event (verrouillé) ; Boutique, Personnage et Infini arrivent plus tard.",
+      "« Quitter » (avec confirmation) et « Revenir au menu principal » ramènent au menu ; l'argent gagné est conservé comme à la mort. Les règles du jeu ne changent pas.",
+      "Nouveau logo (Z incliné et coulures de sang) sur l'écran de chargement et l'accueil, et la même lettre dans l'icône des onglets."
+    ] },
+    { "name": "lot-8b", "version": "v0.8", "date": "2026-11-10", "titre": "Onglets Jouer et Infini, mode infini", "points": [
+      "L'onglet Jouer montre le bâtiment de nuit, animé : des zombies abattus depuis les fenêtres, une voiture en feu, et une route dont les panneaux 1 à 40 rougissent selon ton record ; record et portes ouvertes s'affichent, le monde 2 est verrouillé.",
+      "Nouvel onglet Infini : choix de la carte (les mondes 2 à 6 arrivent plus tard), classement d'exemple, et bouton Jouer qui lance une vraie partie sans fin, au-delà de la manche 40.",
+      "En mode infini, l'argent gagné est conservé comme d'habitude ; le record de ce mode sera gardé dans une prochaine mise à jour. Les règles du jeu ne changent pas.",
+      "L'accueil de la Recette charge moins de textes et s'affiche un peu plus vite."
+    ] },
+    { "name": "lot-8c", "version": "v0.8", "date": "2026-11-10", "titre": "Page Options du menu, son et volume", "points": [
+      "Le menu principal a sa propre page Options : préréglages, réglages graphiques et nouvelle section Son (son activé ou coupé, volume de 0 à 100 %), tout modifiable avant de lancer la partie.",
+      "Chaque réglage indique s'il s'applique tout de suite ou au lancement de la partie ; ouvrir les Options du menu ne charge plus le jeu en arrière-plan.",
+      "En partie, les réglages qui demandent un redémarrage sont verrouillés (modifiables depuis le menu principal) ; changer de préréglage reste possible : ses réglages verrouillés s'appliqueront au retour au menu. La barre « Recharger maintenant » disparaît.",
+      "Nouveau bouton plein écran dans l'en-tête du menu principal (Android et navigateurs qui le permettent ; absent sur iPhone, comme dans la pause) : la partie lancée ensuite reste en plein écran.",
+      "Dans la pause, la question « Quitter la partie ? » ne touche plus les boutons.",
+      "Les règles du jeu ne changent pas ; le rendu d'un préréglage donné non plus."
+    ] },
+    { "name": "lot-8d", "version": "v0.8", "date": "2026-11-10", "titre": "Personnage : équipement, inventaire, fusion", "points": [
+      "Nouvel onglet Personnage : le survivant animé sous un projecteur, ses six emplacements d'équipement (arme, tenue, gants, bottes, deux accessoires), sa capacité et ses statistiques effectives.",
+      "Inventaire (filtres, pages, détail d'un objet) : équiper, retirer, améliorer un objet jusqu'à son niveau maximal.",
+      "Fusion : trois objets identiques de même rareté donnent un objet de la rareté supérieure (remplissage automatique possible).",
+      "Personnages : choisir un personnage débloqué et l'améliorer ; les verrouillés attendent les lots suivants.",
+      "« JOUER » transmet à la partie les statistiques calculées avec l'équipement porté et le personnage choisi ; sans objet porté et avec le Survivant, ce sont exactement celles de la sauvegarde.",
+      "Essai : objets, prix, personnages et capacités sont des exemples ; rien n'est encore gardé (retour au menu = état de départ) et aucun prix n'est prélevé avant la sauvegarde v2.",
+      "La première carte s'appelle désormais « Night of the Undead » ; le menu à trois barres montre la version du jeu (avec « dev » ou « recette ») et une entrée Discord à ses couleurs.",
+      "Les règles du jeu ne changent pas ; une partie lancée directement (adresses de test) est identique."
+    ] },
+    { "name": "lot-8e", "version": "v0.8", "date": "2026-11-11", "titre": "Boutique : offres du jour, caisses et résultats", "points": [
+      "Nouvel onglet Boutique qui défile, par rubriques (petit menu à gauche pour y aller vite) : offres du jour, équipement, personnages, cosmétiques.",
+      "Offres du jour : six objets à prix fixe, renouvelés chaque nuit à minuit (heure de l'appareil), avec le temps restant.",
+      "Caisses mystère animées, chacune avec son dessin : trois caisses d'équipement (ravitaillement en bois, militaire en métal, coffre d'élite), trois malles de personnages (recrues, vétérans, légendes ; nouveau personnage : débloqué, déjà obtenu : un niveau de plus) et trois valises de tenues d'exemple (pas encore portables). Chaque caisse contient toutes les raretés ; les meilleures donnent plus souvent les plus rares.",
+      "« Voir les chances » affiche, pour chaque caisse, le pourcentage de chaque rareté (ou de chaque personnage) et ce qu'on peut obtenir.",
+      "Ouvrir une caisse (une ou dix fois, dix tirages indépendants sans garantie) montre le résultat en plein écran : une carte, ou dix cartes avec un résumé ; « Rouvrir » recommence.",
+      "Les objets obtenus vont dans l'inventaire du Personnage : ils se portent, s'améliorent, se fusionnent et comptent dans les statistiques de la partie.",
+      "Barre d'onglets : « Histoire » n'est plus rouge en permanence ; l'onglet touché devient une planche plus claire et relevée, où le sang se verse et coule ; des taches séchées marquent la barre.",
+      "Menu moins collé aux bords de l'écran ; l'encart de capacité du Personnage s'écarte de la lumière.",
+      "Essai : caisses, prix, chances et tenues sont provisoires ; aucun prix n'est prélevé et rien n'est encore gardé avant la sauvegarde v2.",
+      "Les règles du jeu ne changent pas ; une partie lancée directement (adresses de test) est identique."
+    ] },
+    { "name": "lot-8f", "version": "v0.8", "date": "2026-11-12", "titre": "Ouverture des caisses en 3D", "points": [
+      "Ouvrir une caisse de la Boutique la montre maintenant en 3D, à la première personne : on marche dans un hangar de nuit jusqu'à un tapis roulant, fusil d'assaut en main, et on tire sur la caisse.",
+      "Le couvercle s'envole, l'ouverture s'illumine de la couleur de la rareté, des rayons en sortent, puis la carte de l'objet obtenu ; aucune couleur de rareté n'est visible avant.",
+      "Les effets grandissent avec la rareté : plus de rayons, éclair d'écran, onde de choc, étincelles et secousse ; les deux zombies du fond sursautent, sautent ou tombent.",
+      "Légendaire : explosion dorée et, avec l'éclair, une seconde sous un zombie, projeté hors de l'écran ; il retombe, s'écrase sur l'écran et glisse ; sa tache de sang s'écoule en filets et découvre l'objet, invisible avant ; puis il revient au fond, de son côté.",
+      "Dix caisses : le tapis les amène l'une après l'autre et chaque carte file vers sa case en haut de l'écran, puis le résultat des dix s'affiche.",
+      "« Passer » (ou Échap) mène au résultat à tout moment ; toucher l'écran passe à la caisse suivante ; avec les animations réduites, le résultat s'affiche directement, sans 3D.",
+      "Retours : plus fluide (tout est préparé avant l'ouverture, résolution qui s'adapte), explosion du légendaire bien visible, zombies identiques à ceux de la partie, chute plus vivante, sans réticule, décor fixe pendant la marche, fusil texturé à lunette pointé sur la caisse, mains gantées réalistes, zombies colorés et tachés de sang, caisses plus allongées.",
+      "Le résultat montré est celui du tirage ; la scène 3D ne se charge qu'à l'ouverture d'une caisse et tout est libéré ensuite, avant de jouer.",
+      "Menu : roue de chargement plus grande et visible (aussi en changeant d'onglet), zones qui défilent glissables à la souris comme au doigt, écran Personnages qui ne reste plus par-dessus les autres ; en partie, Échap ouvre la pause même en plein écran, et le plein écran reprend au premier toucher après le retour au menu.",
+      "Essai : durées et effets réglables, provisoires ; aucun son pour l'instant ; aucun prix n'est prélevé.",
+      "Les règles du jeu ne changent pas."
+    ] },
+    { "name": "lot-8g", "version": "v0.8", "date": "2026-11-12", "titre": "Signature du studio, Crédits et Profil", "points": [
+      "Au lancement du jeu, « Toucher pour commencer », puis le logo animé de No Way Studio avec son son ; un toucher ou une touche le passe, puis l'écran de chargement prépare le menu.",
+      "L'introduction ne se rejoue pas au retour au menu après une partie ; avec les animations réduites, le logo reste fixe une seconde, sans son.",
+      "Le logo du studio apparaît en bas à gauche de l'écran de chargement.",
+      "Nouvelle entrée « Crédits » dans le menu à trois barres : les logos de No Way Studio et de Noven Studio, l'équipe, et les outils utilisés avec leurs licences (Three.js, les trois polices, le logo de Discord), dans des zones dépliables.",
+      "En haut à gauche, la photo de profil et le pseudo du joueur ouvrent le Profil : sept avatars à choisir (un personnage tout gris par défaut), pseudo, statistiques de la sauvegarde ; la connexion avec Google arrivera plus tard.",
+      "Depuis le Profil, « Exporter mon code » et « Importer un code » reprennent la sauvegarde par code ; l'avatar et le pseudo ne sont pas encore gardés après un rechargement.",
+      "L'écran Information montre chaque nouveauté dans un cadre, en liste qui défile.",
+      "Les règles du jeu ne changent pas."
+    ] },
+    { "name": "lot-8i", "version": "v0.8", "date": "2026-11-13", "titre": "Sons du menu, musique et volumes", "points": [
+      "Le menu n'est plus muet : un même clic pour toutes les commandes, un son d'achat, des sons pour équiper, retirer, améliorer, fusionner et choisir un personnage.",
+      "Une musique d'ambiance sombre accompagne les menus ; elle est jouée en direct par le jeu, change d'un tour à l'autre, se baisse pendant l'ouverture d'une caisse et s'éteint en fondu à « JOUER ».",
+      "Les ouvertures de caisses sont sonorisées : pas, tir, impact, couvercle, montée de la lumière, explosion du légendaire ; un petit son accompagne le point d'exclamation des zombies.",
+      "La chute du Z sur l'écran de chargement se fait entendre (impact, tiret écrasé, rebond).",
+      "Options : « Volume du jeu » et « Volume de la musique » séparés, dans le menu comme en partie ; « Son coupé » coupe tout. Ces réglages ne sont pas encore gardés après un rechargement.",
+      "Tous ces sons sont calculés par le jeu, sans fichier audio ; aucun son avant le premier toucher. Sur iPhone, le commutateur silencieux les coupe.",
+      "Sons provisoires : chaque son a deux ou trois variantes à comparer sur la page d'écoute atelier-sons-menu.html ; aucun n'a encore été jugé à l'oreille.",
+      "Les règles et les sons de la partie ne changent pas."
+    ] },
+    { "name": "lot-8h", "version": "v0.8", "date": "2026-11-14", "titre": "Deux monnaies et progression gardée", "points": [
+      "Deux monnaies : la jaune se gagne pendant la partie (zombies, planches) et repart de zéro à chaque partie ; la bleue se gagne à chaque manche terminée et à la fin du monde, en histoire comme en infini, et n'est jamais perdue.",
+      "En partie, un « +N » bleu discret à chaque manche terminée ; l'écran de fin montre la jaune perdue, la bleue gagnée et le solde bleu ; l'en-tête du menu montre le solde bleu.",
+      "Les achats du menu coûtent vraiment de la monnaie bleue : caisses, offres du jour, améliorations, fusion et personnages ; « Il manque N » quand le solde ne suffit pas.",
+      "Les armes quittent le menu : six emplacements de survie (tête, gants, bottes, torse, accessoire, pantalon) et un équipement militaire qui améliore la vie, la vitesse, la réparation et la régénération. Le pistolet de départ reste dans la partie.",
+      "Toute la progression est gardée sur l'appareil : inventaire, équipement, personnages, tenues, offres achetées, avatar, pseudo, nouveautés lues, records de l'histoire et de l'infini par carte, statistiques du Profil ; le son et les volumes aussi.",
+      "Nouvelle sauvegarde : tout le monde repart de zéro, la progression de la V0.7 n'est pas touchée ; plusieurs onglets ouverts ne perdent rien et ne dépensent jamais deux fois. Code d'export ZS2 ; un ancien code ZS1 s'importe encore.",
+      "Prix, gains et objets provisoires, à régler en jouant."
+    ] },
+    {"name": "lot-8j", "version": "v0.8", "date": "2026-11-14", "titre": "Petits correctifs : grands écrans, volumes, portes, sons et tirs", "points": ["Sur un grand écran (2K, 4K), l'interface de la partie grandit avec la hauteur de la fenêtre : HUD, pause, fin de partie, Options et débogage ; rien ne change sur téléphone ni jusqu'à 1080 pixels de haut.", "L'écran Options montre beaucoup plus de réglages à la fois sur ordinateur (menu et partie), sans changer sur téléphone.", "Les volumes du jeu et de la musique se règlent au pour cent près, au doigt, à la souris ou au clavier.", "Tout près d'une porte encore fermée, un petit message indique à quelle manche elle s'ouvrira.", "Environ un coup sur quatre reçu ou porté par un zombie fait un bruit ; la mort d'un zombie s'entend toujours.", "On tire par-dessus les meubles plus bas que l'arme et à travers les grilles (de part et d'autre de la fenêtre du bas) ; les meubles bloquent le joueur et les zombies sur tout leur dessin ; le cône de visée s'arrête aux murs comme le laser.", "À la fin de chaque manche, la monnaie bleue gagnée et le nouveau solde s'affichent quelques secondes sous le numéro de la vague.", "Distance du message, part des bruits et liste des objets traversables : provisoires, à régler en jouant."]},
+    {"name": "lot-8k", "version": "v0.8", "date": "2026-11-14", "titre": "Médailles, paliers et caisses à pitié", "points": ["Nouvelle monnaie gardée, les médailles (nom provisoire) : elles se gagnent en ouvrant une porte, tous les 1 000 zombies tués dans une partie, à chaque palier de 5 manches franchi pour la première fois, au premier monde terminé et à la première partie du jour.", "Les médailles sont écrites dès qu'on les gagne : rien ne se perd en fermant la page, et un palier ne rapporte qu'une fois, même avec plusieurs onglets ; rien n'est crédité pour ce qui avait été atteint avant.", "La monnaie bleue s'appelle désormais « diamants » : 20 par manche terminée (30 en manche renforcée) et toujours 500 à la fin du monde ; ils servent aux améliorations, à la fusion et aux offres du jour.", "La Boutique n'a plus qu'une caisse par rubrique (Équipement, Personnages, Cosmétiques), à 100 médailles le tirage et 1 000 les dix ; à côté de chaque caisse, ta pitié et les légendaires possibles ; colonne des rubriques plus étroite sur téléphone.", "Chaque caisse a sa pitié : un épique ou mieux au plus tard au 10e tirage, et un légendaire de plus en plus probable après le 50e, garanti au 70e ; « Voir les chances » montre où en sont les compteurs.", "Les personnages ont maintenant une rareté (trois rares, deux épiques, un légendaire, provisoires).", "Les médailles s'affichent en partie quand on en gagne, dans la pause, en haut du menu et dans le Profil ; l'écran de fin, plus compact, montre la vague atteinte (et « Record »), la meilleure manche, les zombies tués, puis les soldes de diamants et de médailles avec ce que la partie a rapporté.", "Gains, prix, chances et pitié : provisoires, à régler en jouant."]},
+{"name": "lot-8l", "version": "v0.8", "date": "2026-11-15", "titre": "Allègement des tests et nettoyage de fin de V0.8", "points": ["Fin de la V0.8, première étape : rien ne change dans le jeu ni dans le menu (vérifié pas à pas, au pixel près et au son près).", "Tests en double fusionnés et durées des tests du menu mesurées : les vérifications lancées à chaque mise à jour sont mieux réparties et un peu plus rapides ; aucun test de sécurité retiré.", "Code, styles et dessins de caisses qui ne servaient plus retirés.", "Documentation de référence mise à jour ; anciens audits rangés dans une archive, sans perte de texte."]},
+{"name": "lot-8m", "version": "v0.8", "date": "2026-11-15", "titre": "Publication de la V0.8", "points": ["Fin de la V0.8, seconde étape : la V0.8 devient la version Recette ; rien ne change dans le jeu ni dans le menu.", "La V0.7 reste jouable avec les versions précédentes.", "Documentation de référence remise à jour pour la V0.8 ; le contrôle de publication ne dépend plus du nom d'un bilan."]}
   ]
 }

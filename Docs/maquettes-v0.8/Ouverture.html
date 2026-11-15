@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Boutique, ouverture d'une caisse — maquette V0.8 (référence)</title>
+<style>
+body{margin:0;background:#000}
+/* Polices : celles hébergées par le jeu (Barlow, Rubik Wet Paint, Rubik Dirt). Sans elles, le navigateur en substitue d'autres. */
+
+body{margin:0}
+a{color:#f4f1ec}a:hover{color:#ffffff}
+summary::-webkit-details-marker{display:none}
+@keyframes kouverture-monde{0%{transform:translate(0px,0px) scale(0.500)}4.468%{transform:translate(0px,6px) scale(0.616)}8.936%{transform:translate(0px,-4px) scale(0.717)}13.404%{transform:translate(0px,6px) scale(0.802)}17.872%{transform:translate(0px,-4px) scale(0.872)}22.34%{transform:translate(0px,6px) scale(0.927)}26.809%{transform:translate(0px,-4px) scale(0.967)}31.277%{transform:translate(0px,6px) scale(0.991)}35.745%{transform:translate(0px,0px) scale(1.000)}100%{transform:translate(0px,0px) scale(1)}}
+@keyframes kouverture-arme{0%{transform:translate(0px,0px) rotate(0deg)}4.468%{transform:translate(-14px,10px) rotate(-2deg)}8.936%{transform:translate(12px,2px) rotate(2deg)}13.404%{transform:translate(-14px,10px) rotate(-2deg)}17.872%{transform:translate(12px,2px) rotate(2deg)}22.34%{transform:translate(-14px,10px) rotate(-2deg)}26.809%{transform:translate(12px,2px) rotate(2deg)}31.277%{transform:translate(-14px,10px) rotate(-2deg)}35.745%{transform:translate(0px,0px) rotate(0deg)}52.128%{transform:translate(0px,0px) rotate(0deg)}53.404%{transform:translate(14px,16px) rotate(2deg)}60.426%{transform:translate(0px,0px) rotate(0deg)}100%{transform:translate(0px,0px) rotate(0deg)}}
+@keyframes kouverture-flash{0%{opacity:0}52.447%{opacity:0}52.766%{opacity:1}54.681%{opacity:0}100%{opacity:0}}
+@keyframes kouverture-mire{0%{transform:scale(1)}52.128%{transform:scale(1)}53.404%{transform:scale(1.7)}60.426%{transform:scale(1)}100%{transform:scale(1)}}
+@keyframes kouverture-fondu{0%{opacity:1}5.319%{opacity:1}14.894%{opacity:0}100%{opacity:0}}
+@keyframes kouverture-train{0%{transform:translateX(0px)}36.17%{transform:translateX(0px)}50.213%{transform:translateX(240px)}100%{transform:translateX(240px)}}
+@keyframes kouverture-cou0{0%{transform:translate(0px,0px) rotate(0deg);opacity:1}53.085%{transform:translate(0px,0px) rotate(0deg);opacity:1}55.957%{transform:translate(-26px,-70px) rotate(-30deg);opacity:1}60.426%{transform:translate(-60px,-150px) rotate(-70deg);opacity:0}100%{transform:translate(-60px,-150px) rotate(-70deg);opacity:0}}
+@keyframes kouverture-ouv0{0%{opacity:0}54.362%{opacity:0}56.596%{opacity:1}100%{opacity:1}}
+@keyframes kouverture-fai0{0%{opacity:0;transform:scaleY(0.2)}55.319%{opacity:0;transform:scaleY(0.2)}59.149%{opacity:1;transform:scaleY(1)}98.085%{opacity:0.75;transform:scaleY(1)}100%{opacity:0.75;transform:scaleY(1)}}
+@keyframes kouverture-eti0{0%{opacity:0;transform:scale(0.5)}52.638%{opacity:0;transform:scale(0.5)}53.085%{opacity:1;transform:scale(1)}56.596%{opacity:0;transform:scale(1.7)}100%{opacity:0;transform:scale(1.7)}}
+@keyframes kouverture-onde0{0%{opacity:0;transform:scale(0.2)}55.319%{opacity:0;transform:scale(0.2)}55.957%{opacity:0.9;transform:scale(0.3)}64.255%{opacity:0;transform:scale(4)}100%{opacity:0;transform:scale(5.5)}}
+@keyframes kouverture-ecran0{0%{opacity:0}55.319%{opacity:0}56.277%{opacity:0.5}63.617%{opacity:0}100%{opacity:0}}
+@keyframes kouverture-part0{0%{opacity:0;transform:translateY(0px)}55.957%{opacity:0;transform:translateY(0px)}57.872%{opacity:1;transform:translateY(-20px)}80.851%{opacity:0;transform:translateY(-170px)}100%{opacity:0;transform:translateY(-170px)}}
+@keyframes kouverture-car0{0%{opacity:0;transform:translateY(60px) scale(0.4)}60.426%{opacity:0;transform:translateY(60px) scale(0.4)}69.362%{opacity:1;transform:translateY(0px) scale(1.08)}73.191%{opacity:1;transform:translateY(0px) scale(1)}100%{opacity:1;transform:translateY(0px) scale(1)}}
+@keyframes kouverture-rea0{0%{transform:translate(0px,0px) rotate(0deg)}55.319%{transform:translate(0px,0px) rotate(0deg)}57.234%{transform:translate(-14px,-36px) rotate(-16deg)}59.787%{transform:translate(-26px,0px) rotate(-30deg)}62.979%{transform:translate(-34px,8px) rotate(-82deg)}82.766%{transform:translate(-34px,8px) rotate(-82deg)}87.234%{transform:translate(-22px,-4px) rotate(-25deg)}92.34%{transform:translate(0px,0px) rotate(0deg)}100%{transform:translate(0px,0px) rotate(0deg)}}
+@keyframes kouverture-bras0{0%{transform:rotate(0deg)}55.957%{transform:rotate(0deg)}57.872%{transform:rotate(-110deg)}85.957%{transform:rotate(-110deg)}91.064%{transform:rotate(0deg)}100%{transform:rotate(0deg)}}
+@keyframes kouverture-exa0{0%{opacity:0;transform:scale(0.3)}100%{opacity:0;transform:scale(0.3)}}
+@keyframes kouverture-exb0{0%{opacity:0;transform:scale(0.3)}56.596%{opacity:0;transform:scale(0.3)}57.872%{opacity:1;transform:scale(1.4)}59.787%{opacity:1;transform:scale(1)}61.702%{opacity:1;transform:scale(1)}62.979%{opacity:0;transform:scale(1)}100%{opacity:0;transform:scale(0.3)}}
+@keyframes kouverture-exc0{0%{opacity:0;transform:scale(0.3)}100%{opacity:0;transform:scale(0.3)}}
+@keyframes kouverture-rea1{0%{transform:translate(0px,0px) rotate(0deg)}55.957%{transform:translate(0px,0px) rotate(0deg)}57.872%{transform:translate(-14px,-36px) rotate(-16deg)}60.426%{transform:translate(-26px,0px) rotate(-30deg)}63.617%{transform:translate(-34px,8px) rotate(-82deg)}83.404%{transform:translate(-34px,8px) rotate(-82deg)}87.872%{transform:translate(-22px,-4px) rotate(-25deg)}92.979%{transform:translate(0px,0px) rotate(0deg)}100%{transform:translate(0px,0px) rotate(0deg)}}
+@keyframes kouverture-bras1{0%{transform:rotate(0deg)}56.596%{transform:rotate(0deg)}58.511%{transform:rotate(-110deg)}86.596%{transform:rotate(-110deg)}91.702%{transform:rotate(0deg)}100%{transform:rotate(0deg)}}
+@keyframes kouverture-exa1{0%{opacity:0;transform:scale(0.3)}100%{opacity:0;transform:scale(0.3)}}
+@keyframes kouverture-exb1{0%{opacity:0;transform:scale(0.3)}57.234%{opacity:0;transform:scale(0.3)}58.511%{opacity:1;transform:scale(1.4)}60.426%{opacity:1;transform:scale(1)}62.34%{opacity:1;transform:scale(1)}63.617%{opacity:0;transform:scale(1)}100%{opacity:0;transform:scale(0.3)}}
+@keyframes kouverture-exc1{0%{opacity:0;transform:scale(0.3)}100%{opacity:0;transform:scale(0.3)}}
+@keyframes kouverture-pres0{0%{opacity:1;transform:translateX(0px)}100%{opacity:1;transform:translateX(0px)}}
+@keyframes kouverture-proj{0%{opacity:0;transform:translateY(0px) scale(0.08) rotate(-40deg)}100%{opacity:0;transform:translateY(560px) scale(1) rotate(0deg)}}
+@keyframes kouverture-trai{0%{opacity:0;transform:scaleY(0)}100%{opacity:0;transform:scaleY(1)}}
+@keyframes kouverture-sombre{0%{opacity:0}100%{opacity:0}}
+@keyframes kouverture-secousse{0%{transform:translate(0px,0px)}55.319%{transform:translate(0px,0px)}55.957%{transform:translate(9.0px,-9.0px)}56.723%{transform:translate(-9.0px,9.0px)}57.489%{transform:translate(5.4px,3.6px)}58.255%{transform:translate(-3.6px,-5.4px)}59.021%{transform:translate(1.8px,0.0px)}60.426%{transform:translate(0px,0px)}100%{transform:translate(0px,0px)}}
+@keyframes kouverture-boutons1{0%{opacity:0}75.745%{opacity:0}80.851%{opacity:1}100%{opacity:1}}
+@keyframes kouverture-tally{0%{opacity:0}36.17%{opacity:0}40.426%{opacity:1}100%{opacity:1}}
+@keyframes kouverture-lueurQ{0%,100%{opacity:0.5}50%{opacity:1}}
+@keyframes kouverture-lampe{0%,100%{opacity:1}48%{opacity:1}50%{opacity:0.6}52%{opacity:1}}
+@keyframes kouverture-respir{0%,100%{transform:translateY(0px)}50%{transform:translateY(-3px)}}
+@keyframes kouverture-ronde0{0%{transform:translateX(0px)}48%{transform:translateX(130px)}52%{transform:translateX(130px)}96%{transform:translateX(0px)}100%{transform:translateX(0px)}}
+@keyframes kouverture-ronde1{0%{transform:translateX(0px)}46%{transform:translateX(-110px)}52%{transform:translateX(-110px)}96%{transform:translateX(0px)}100%{transform:translateX(0px)}}
+@keyframes kouverture-sens0{0%,49.9%{transform:scaleX(1)}50%,97.9%{transform:scaleX(-1)}98%,100%{transform:scaleX(1)}}
+@keyframes kouverture-sens1{0%,49.9%{transform:scaleX(-1)}50%,97.9%{transform:scaleX(1)}98%,100%{transform:scaleX(-1)}}
+@keyframes kouverture-clopin{0%,100%{transform:translateY(0px) rotate(0deg)}50%{transform:translateY(-3px) rotate(3deg)}}
+@media (prefers-reduced-motion: reduce){*{animation:none !important}}
+</style>
+</head>
+<body>
+<div style="position: relative; width: 932px; height: 430px; overflow: hidden; background: #0c0b0a; font-family: 'Barlow', sans-serif; color: #f4f1ec">
+<svg aria-hidden="true" width="932" height="430" viewBox="0 0 932 430" style="position: absolute; left: 0; top: 0">
+<defs><linearGradient id="rayon0" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#c08cff" stop-opacity="0.9"></stop><stop offset="1" stop-color="#c08cff" stop-opacity="0"></stop></linearGradient><filter id="flouF" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="3"></feGaussianBlur></filter>
+<radialGradient id="cone" cx="0.5" cy="0" r="1"><stop offset="0" stop-color="#ffe2b0" stop-opacity="0.22"></stop><stop offset="1" stop-color="#ffe2b0" stop-opacity="0"></stop></radialGradient>
+<radialGradient id="boule" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="#fff6d0"></stop><stop offset="0.35" stop-color="#ffc933"></stop><stop offset="0.7" stop-color="#ff7a1a" stop-opacity="0.8"></stop><stop offset="1" stop-color="#ff7a1a" stop-opacity="0"></stop></radialGradient>
+<linearGradient id="sol" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#151311"></stop><stop offset="1" stop-color="#070605"></stop></linearGradient>
+<linearGradient id="face" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6e4d2e"></stop><stop offset="1" stop-color="#4a3320"></stop></linearGradient>
+<linearGradient id="cote" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#3e2a18"></stop><stop offset="1" stop-color="#2a1c10"></stop></linearGradient>
+<linearGradient id="dessus" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#8a6440"></stop><stop offset="1" stop-color="#a47a50"></stop></linearGradient>
+<linearGradient id="metal" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4c4c47"></stop><stop offset="0.45" stop-color="#2d2d2a"></stop><stop offset="1" stop-color="#171716"></stop></linearGradient>
+<linearGradient id="metal2" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3e3e3a"></stop><stop offset="1" stop-color="#141413"></stop></linearGradient>
+<linearGradient id="gant" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5e4c36"></stop><stop offset="1" stop-color="#2b2319"></stop></linearGradient>
+<linearGradient id="manche" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#454a35"></stop><stop offset="1" stop-color="#22261b"></stop></linearGradient></defs>
+<rect width="932" height="430" fill="#0a0908"></rect>
+<g style="animation: kouverture-secousse 9.4s linear infinite"><g style="transform-origin: 466px 250px; animation: kouverture-monde 9.4s ease-in-out infinite">
+<rect x="-300" y="-200" width="1532" height="500" fill="#141311"></rect>
+<path d="M-300 70 H1232 M-300 140 H1232 M-300 210 H1232" stroke="#1d1b18" stroke-width="3"></path>
+<rect x="20" y="168" width="90" height="70" fill="#2a1f15" stroke="#1a130c" stroke-width="3"></rect><rect x="50" y="118" width="70" height="52" fill="#30241a" stroke="#1a130c" stroke-width="3"></rect>
+<rect x="830" y="160" width="100" height="80" fill="#2a1f15" stroke="#1a130c" stroke-width="3"></rect>
+<rect x="300" y="40" width="330" height="200" fill="#191816" stroke="#24221f" stroke-width="4"></rect><path d="M300 70 H630 M300 100 H630 M300 130 H630 M300 160 H630 M300 190 H630 M300 220 H630" stroke="#24221f" stroke-width="3"></path>
+<path d="M300 240 L630 240" stroke="#ffd60a" stroke-width="6" stroke-dasharray="16 12"></path>
+<rect x="-300" y="296" width="1532" height="300" fill="url(#sol)"></rect>
+<g style="animation: kouverture-lampe 7s linear infinite"><path d="M446 -60 L486 -60 L660 300 L272 300Z" fill="url(#cone)"></path></g>
+<rect x="452" y="-60" width="28" height="70" fill="#2a2621"></rect><rect x="440" y="8" width="52" height="10" rx="4" fill="#3a3530"></rect>
+<g style="animation: kouverture-pres0 9.4s ease-in-out infinite"><g transform="translate(150 298) scale(1.6)"><g style="animation: kouverture-ronde0 14s ease-in-out infinite"><g style="transform-box: fill-box; transform-origin: 50% 100%; animation: kouverture-sens0 14s linear infinite"><g style="transform-box: fill-box; transform-origin: 50% 100%; animation: kouverture-rea0 9.4s ease-out infinite"><g style="animation: kouverture-clopin 1s ease-in-out infinite">
+<path d="M-10 -36 L-15 0 L-6 0 L-2 -22 L2 0 L11 0 L8 -36Z" fill="#1d221c"></path>
+<path d="M-15 -68 Q0 -74 15 -68 L13 -34 L-13 -34Z" fill="#2c3329"></path><path d="M-6 -60 L2 -50 L-4 -44" stroke="#1a1f18" stroke-width="2" fill="none"></path>
+<g style="transform-box: fill-box; transform-origin: 0% 50%; animation: kouverture-bras0 9.4s ease-out infinite"><path d="M4 -66 L34 -64 L34 -57 L4 -58Z" fill="#46523e"></path><path d="M0 -62 L28 -58 L28 -52 L0 -55Z" fill="#3a4534"></path></g>
+<circle cx="3" cy="-79" r="10" fill="#566650"></circle><path d="M-6 -74 Q3 -68 12 -74" stroke="#1a1f18" stroke-width="2" fill="none"></path>
+<circle cx="8" cy="-81" r="1.8" fill="#ff2a1f"></circle><circle cx="2" cy="-81" r="1.6" fill="#ff2a1f"></circle>
+</g>
+<g style="transform-box: fill-box; transform-origin: 50% 100%; animation: kouverture-exa0 9.4s ease-out infinite"><text x="3" y="-94" font-family="Rubik Wet Paint, sans-serif" font-size="18" fill="#ffd60a" text-anchor="middle">!</text></g>
+<g style="transform-box: fill-box; transform-origin: 50% 100%; animation: kouverture-exb0 9.4s ease-out infinite"><text x="3" y="-94" font-family="Rubik Wet Paint, sans-serif" font-size="22" fill="#ff4a3d" text-anchor="middle">!!</text></g>
+<g style="transform-box: fill-box; transform-origin: 50% 100%; animation: kouverture-exc0 9.4s ease-out infinite"><text x="3" y="-94" font-family="Rubik Wet Paint, sans-serif" font-size="24" fill="#ffc933" text-anchor="middle">!!!</text></g>
+</g></g></g></g></g><g transform="translate(800 298) scale(1.6)"><g style="animation: kouverture-ronde1 17s ease-in-out infinite"><g style="transform-box: fill-box; transform-origin: 50% 100%; animation: kouverture-sens1 17s linear infinite"><g style="transform-box: fill-box; transform-origin: 50% 100%; animation: kouverture-rea1 9.4s ease-out infinite"><g style="animation: kouverture-clopin 1s ease-in-out infinite">
+<path d="M-10 -36 L-15 0 L-6 0 L-2 -22 L2 0 L11 0 L8 -36Z" fill="#1d221c"></path>
+<path d="M-15 -68 Q0 -74 15 -68 L13 -34 L-13 -34Z" fill="#2c3329"></path><path d="M-6 -60 L2 -50 L-4 -44" stroke="#1a1f18" stroke-width="2" fill="none"></path>
+<g style="transform-box: fill-box; transform-origin: 0% 50%; animation: kouverture-bras1 9.4s ease-out infinite"><path d="M4 -66 L34 -64 L34 -57 L4 -58Z" fill="#46523e"></path><path d="M0 -62 L28 -58 L28 -52 L0 -55Z" fill="#3a4534"></path></g>
+<circle cx="3" cy="-79" r="10" fill="#566650"></circle><path d="M-6 -74 Q3 -68 12 -74" stroke="#1a1f18" stroke-width="2" fill="none"></path>
+<circle cx="8" cy="-81" r="1.8" fill="#ff2a1f"></circle><circle cx="2" cy="-81" r="1.6" fill="#ff2a1f"></circle>
+</g>
+<g style="transform-box: fill-box; transform-origin: 50% 100%; animation: kouverture-exa1 9.4s ease-out infinite"><text x="3" y="-94" font-family="Rubik Wet Paint, sans-serif" font-size="18" fill="#ffd60a" text-anchor="middle">!</text></g>
+<g style="transform-box: fill-box; transform-origin: 50% 100%; animation: kouverture-exb1 9.4s ease-out infinite"><text x="3" y="-94" font-family="Rubik Wet Paint, sans-serif" font-size="22" fill="#ff4a3d" text-anchor="middle">!!</text></g>
+<g style="transform-box: fill-box; transform-origin: 50% 100%; animation: kouverture-exc1 9.4s ease-out infinite"><text x="3" y="-94" font-family="Rubik Wet Paint, sans-serif" font-size="24" fill="#ffc933" text-anchor="middle">!!!</text></g>
+</g></g></g></g>
+<path d="M-300 300 H1232 L1232 326 H-300Z" fill="#24221f"></path>
+<g stroke="#34312c" stroke-width="3" style="animation: kouverture-train 9.4s linear infinite"><path d="M-560 300 L-544 326"></path><path d="M-520 300 L-504 326"></path><path d="M-480 300 L-464 326"></path><path d="M-440 300 L-424 326"></path><path d="M-400 300 L-384 326"></path><path d="M-360 300 L-344 326"></path><path d="M-320 300 L-304 326"></path><path d="M-280 300 L-264 326"></path><path d="M-240 300 L-224 326"></path><path d="M-200 300 L-184 326"></path><path d="M-160 300 L-144 326"></path><path d="M-120 300 L-104 326"></path><path d="M-80 300 L-64 326"></path><path d="M-40 300 L-24 326"></path><path d="M0 300 L16 326"></path><path d="M40 300 L56 326"></path><path d="M80 300 L96 326"></path><path d="M120 300 L136 326"></path><path d="M160 300 L176 326"></path><path d="M200 300 L216 326"></path><path d="M240 300 L256 326"></path><path d="M280 300 L296 326"></path><path d="M320 300 L336 326"></path><path d="M360 300 L376 326"></path><path d="M400 300 L416 326"></path><path d="M440 300 L456 326"></path><path d="M480 300 L496 326"></path><path d="M520 300 L536 326"></path><path d="M560 300 L576 326"></path><path d="M600 300 L616 326"></path><path d="M640 300 L656 326"></path><path d="M680 300 L696 326"></path><path d="M720 300 L736 326"></path><path d="M760 300 L776 326"></path><path d="M800 300 L816 326"></path><path d="M840 300 L856 326"></path><path d="M880 300 L896 326"></path><path d="M920 300 L936 326"></path><path d="M960 300 L976 326"></path></g>
+<rect x="-300" y="326" width="1532" height="24" fill="#191715"></rect>
+<circle cx="16" cy="338" r="8" fill="#2c2925" stroke="#3a3632" stroke-width="2"></circle><circle cx="60" cy="338" r="8" fill="#2c2925" stroke="#3a3632" stroke-width="2"></circle><circle cx="104" cy="338" r="8" fill="#2c2925" stroke="#3a3632" stroke-width="2"></circle><circle cx="148" cy="338" r="8" fill="#2c2925" stroke="#3a3632" stroke-width="2"></circle><circle cx="192" cy="338" r="8" fill="#2c2925" stroke="#3a3632" stroke-width="2"></circle><circle cx="236" cy="338" r="8" fill="#2c2925" stroke="#3a3632" stroke-width="2"></circle><circle cx="280" cy="338" r="8" fill="#2c2925" stroke="#3a3632" stroke-width="2"></circle><circle cx="324" cy="338" r="8" fill="#2c2925" stroke="#3a3632" stroke-width="2"></circle><circle cx="368" cy="338" r="8" fill="#2c2925" stroke="#3a3632" stroke-width="2"></circle><circle cx="412" cy="338" r="8" fill="#2c2925" stroke="#3a3632" stroke-width="2"></circle><circle cx="456" cy="338" r="8" fill="#2c2925" stroke="#3a3632" stroke-width="2"></circle><circle cx="500" cy="338" r="8" fill="#2c2925" stroke="#3a3632" stroke-width="2"></circle><circle cx="544" cy="338" r="8" fill="#2c2925" stroke="#3a3632" stroke-width="2"></circle><circle cx="588" cy="338" r="8" fill="#2c2925" stroke="#3a3632" stroke-width="2"></circle><circle cx="632" cy="338" r="8" fill="#2c2925" stroke="#3a3632" stroke-width="2"></circle><circle cx="676" cy="338" r="8" fill="#2c2925" stroke="#3a3632" stroke-width="2"></circle><circle cx="720" cy="338" r="8" fill="#2c2925" stroke="#3a3632" stroke-width="2"></circle><circle cx="764" cy="338" r="8" fill="#2c2925" stroke="#3a3632" stroke-width="2"></circle><circle cx="808" cy="338" r="8" fill="#2c2925" stroke="#3a3632" stroke-width="2"></circle><circle cx="852" cy="338" r="8" fill="#2c2925" stroke="#3a3632" stroke-width="2"></circle><circle cx="896" cy="338" r="8" fill="#2c2925" stroke="#3a3632" stroke-width="2"></circle>
+<rect x="-300" y="350" width="1532" height="10" fill="#0e0d0c"></rect>
+<g style="animation: kouverture-train 9.4s linear infinite">
+<g transform="translate(131 200)">
+<ellipse cx="95.0" cy="104" rx="102.0" ry="7" fill="#000000" opacity="0.5"></ellipse>
+<path d="M172 20 L190 8 L190 92 L172 104Z" fill="url(#cote)" stroke="#1e140b" stroke-width="2"></path>
+<rect x="0" y="20" width="172" height="84" fill="url(#face)" stroke="#1e140b" stroke-width="2.5"></rect>
+<path d="M2 48 H170 M2 76 H170" stroke="#2a1d12" stroke-width="2.5"></path>
+<path d="M2 47 H170 M2 75 H170" stroke="#8a6440" stroke-width="1" opacity="0.6"></path>
+<rect x="0" y="20" width="12" height="84" fill="#4a3320"></rect><rect x="160" y="20" width="12" height="84" fill="#4a3320"></rect>
+<path d="M0 20 h16 v6 h-10 v10 h-6Z M172 20 h-16 v6 h10 v10 h6Z M0 104 h16 v-6 h-10 v-10 h-6Z M172 104 h-16 v-6 h10 v-10 h6Z" fill="#6e6a64"></path>
+<path d="M176 19 L187 12 M176 98 L187 90" stroke="#2a1d12" stroke-width="2"></path>
+<g style="animation: kouverture-lueurQ 1.4s ease-in-out infinite"><text x="86.0" y="90" font-family="Rubik Wet Paint, sans-serif" font-size="50" fill="#f4f1ec" text-anchor="middle" filter="url(#flouF)">?</text><text x="86.0" y="90" font-family="Rubik Wet Paint, sans-serif" font-size="50" fill="#ffffff" text-anchor="middle">?</text></g><g style="animation: kouverture-lueurQ 1.4s ease-in-out infinite"><text x="36" y="74" font-family="Rubik Wet Paint, sans-serif" font-size="20" fill="#f4f1ec" text-anchor="middle" filter="url(#flouF)">?</text><text x="36" y="74" font-family="Rubik Wet Paint, sans-serif" font-size="20" fill="#ffffff" text-anchor="middle">?</text></g><g style="animation: kouverture-lueurQ 1.4s ease-in-out infinite"><text x="136" y="74" font-family="Rubik Wet Paint, sans-serif" font-size="20" fill="#f4f1ec" text-anchor="middle" filter="url(#flouF)">?</text><text x="136" y="74" font-family="Rubik Wet Paint, sans-serif" font-size="20" fill="#ffffff" text-anchor="middle">?</text></g>
+<g transform="translate(181.0 58.0) skewY(-34)"><g style="animation: kouverture-lueurQ 1.4s ease-in-out infinite"><text x="0" y="0" font-family="Rubik Wet Paint, sans-serif" font-size="18" fill="#f4f1ec" text-anchor="middle" filter="url(#flouF)">?</text><text x="0" y="0" font-family="Rubik Wet Paint, sans-serif" font-size="18" fill="#ffffff" text-anchor="middle">?</text></g></g>
+<path d="M2 20 L20 8 L188 8 L170 20Z" fill="#0d0805"></path>
+<g style="animation: kouverture-ouv0 9.4s linear infinite"><path d="M2 20 L20 8 L188 8 L170 20Z" fill="#c08cff" opacity="0.55"></path></g>
+<g style="transform-box: fill-box; transform-origin: 50% 100%; animation: kouverture-fai0 9.4s ease-out infinite"><path d="M87.0 14.0 L103.0 14.0 L140.0 -290 L50.0 -290Z" fill="url(#rayon0)" opacity="1.0"></path><path d="M87.0 14.0 L103.0 14.0 L7.0 -290 L-37.0 -290Z" fill="url(#rayon0)" opacity="1.0"></path><path d="M87.0 14.0 L103.0 14.0 L227.0 -290 L183.0 -290Z" fill="url(#rayon0)" opacity="1.0"></path><path d="M87.0 14.0 L103.0 14.0 L-110.0 -290 L-160.0 -290Z" fill="url(#rayon0)" opacity="1.0"></path><path d="M87.0 14.0 L103.0 14.0 L350.0 -290 L300.0 -290Z" fill="url(#rayon0)" opacity="1.0"></path></g>
+<g style="transform-box: fill-box; transform-origin: 50% 50%; animation: kouverture-onde0 9.4s ease-out infinite"><ellipse cx="95.0" cy="10" rx="60" ry="22" fill="none" stroke="#c08cff" stroke-width="6"></ellipse></g><circle cx="45.0" cy="6" r="3" fill="#c08cff" style="animation: kouverture-part0 9.4s ease-out 0s infinite"></circle><circle cx="75.0" cy="6" r="3" fill="#c08cff" style="animation: kouverture-part0 9.4s ease-out 0.15s infinite"></circle><circle cx="105.0" cy="6" r="3" fill="#c08cff" style="animation: kouverture-part0 9.4s ease-out 0.05s infinite"></circle><circle cx="135.0" cy="6" r="3" fill="#c08cff" style="animation: kouverture-part0 9.4s ease-out 0.2s infinite"></circle><circle cx="60.0" cy="6" r="3" fill="#c08cff" style="animation: kouverture-part0 9.4s ease-out 0.3s infinite"></circle><circle cx="120.0" cy="6" r="3" fill="#c08cff" style="animation: kouverture-part0 9.4s ease-out 0.35s infinite"></circle><circle cx="150.0" cy="6" r="3" fill="#c08cff" style="animation: kouverture-part0 9.4s ease-out 0.1s infinite"></circle><circle cx="35.0" cy="6" r="3" fill="#c08cff" style="animation: kouverture-part0 9.4s ease-out 0.25s infinite"></circle>
+<g style="transform-box: fill-box; transform-origin: 0% 100%; animation: kouverture-cou0 9.4s ease-out infinite">
+<path d="M-3 8 L15 -4 L193 -4 L175 8Z" fill="url(#dessus)" stroke="#1e140b" stroke-width="2"></path>
+<path d="M175 8 L193 -4 L193 8 L175 20Z" fill="#3b2817" stroke="#1e140b" stroke-width="2"></path>
+<rect x="-3" y="8" width="178" height="12" fill="#6b4a2d" stroke="#1e140b" stroke-width="2"></rect>
+<path d="M7.2 2.0 L182.8 2.0" stroke="#4a3320" stroke-width="2"></path>
+
+</g>
+<g style="transform-box: fill-box; transform-origin: 50% 50%; animation: kouverture-eti0 9.4s ease-out infinite"><circle cx="86.0" cy="60" r="14" fill="#fff2a8" opacity="0.8"></circle><path d="M86.0 36 L88.0 56 L110.0 60 L88.0 64 L86.0 84 L84.0 64 L62.0 60 L84.0 56Z" fill="#ffd166"></path></g>
+</g>
+</g>
+</g></g>
+<rect width="932" height="430" fill="#c08cff" opacity="0" style="animation: kouverture-ecran0 9.4s ease-out infinite"></rect>
+<line x1="552" y1="294" x2="470" y2="262" stroke="#fff2a8" stroke-width="2.5" style="animation: kouverture-flash 9.4s linear infinite"></line>
+<g style="animation: kouverture-respir 2.4s ease-in-out infinite"><g style="animation: kouverture-arme 9.4s ease-in-out infinite">
+<path d="M584 430 L670 370 L746 398 L706 430Z" fill="url(#manche)"></path>
+<path d="M552 292 L560 288 L642 322 L634 334Z" fill="#141413"></path>
+<path d="M544 290 L558 284 L566 296 L552 302Z" fill="#0d0d0c"></path>
+<path d="M610 304 L772 340 L802 404 L632 346Z" fill="url(#metal2)" stroke="#5a5a54" stroke-width="1.5"></path>
+<path d="M652 330 L690 339 M684 338 L722 347 M716 346 L754 355" stroke="#0e0e0d" stroke-width="5" stroke-linecap="round"></path>
+<path d="M612 300 L782 336 L784 343 L614 307Z" fill="#232321"></path>
+<path d="M762 332 L932 364 L932 430 L800 430 L788 402Z" fill="url(#metal)" stroke="#5a5a54" stroke-width="1.5"></path>
+<path d="M800 314 L874 328 L874 358 L800 344Z" fill="#1d1d1b" stroke="#4c4c47" stroke-width="1.5"></path>
+<path d="M806 320 L868 332 L868 352 L806 340Z" fill="#132030"></path>
+<circle cx="836" cy="336" r="2.4" fill="#ff3b2a"></circle>
+<path d="M822 406 L874 416 L882 430 L828 430Z" fill="#1f1f1d"></path>
+<path d="M664 352 C680 334 722 342 746 356 L754 394 C728 402 690 400 668 388Z" fill="url(#gant)"></path>
+<path d="M678 350 L688 338 M696 351 L706 340 M714 355 L724 344 M732 359 L742 348" stroke="#3a3025" stroke-width="7" stroke-linecap="round"></path>
+<path d="M866 404 C890 390 924 398 932 408 L932 430 L858 430Z" fill="url(#gant)"></path>
+</g>
+<g style="animation: kouverture-flash 9.4s linear infinite"><circle cx="548" cy="292" r="18" fill="#ffd166" opacity="0.55"></circle><path d="M548 268 L553 286 L576 292 L553 298 L548 316 L543 298 L520 292 L543 286Z" fill="#fff2a8"></path></g>
+</g>
+<g style="transform-box: fill-box; transform-origin: 50% 50%; animation: kouverture-mire 9.4s ease-out infinite"><path d="M466 234 V246 M466 270 V282 M442 258 H454 M478 258 H490" stroke="#f4f1ec" stroke-width="2.5" opacity="0.85"></path><circle cx="466" cy="258" r="1.8" fill="#f4f1ec"></circle></g>
+<rect width="932" height="430" fill="#000000" style="animation: kouverture-fondu 9.4s linear infinite"></rect>
+</svg>
+<div style="position: absolute; left: 361px; top: 64px; width: 210px; height: 120px; box-sizing: border-box; background: #1e1428; border: 3px solid #b07ae8; border-radius: 6px; box-shadow: 0 0 40px 10px #c08cff88; color: #f4f1ec; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; opacity: 0; animation: kouverture-car0 9.4s ease-out infinite"><span style="font-size: 22px; font-weight: 700">Amulette</span><span style="font-size: 13px; color: #e8e2d6">Épique !</span></div>
+
+
+<a href="Resultat1.html" style="position: absolute; right: 32px; top: 16px; height: 44px; padding: 0 16px; display: flex; align-items: center; gap: 6px; background: rgba(5,5,5,0.8); border: 2px solid #cfc6b8; border-radius: 4px; text-decoration: none; color: #f4f1ec; font-family: 'Rubik Dirt', sans-serif; font-size: 14px; letter-spacing: 0.06em; text-transform: uppercase">Passer<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><path d="M6 6l6 6-6 6M13 6l6 6-6 6"></path></svg></a>
+<div style="position: absolute; left: 700px; top: 80px; width: 200px; display: flex; flex-direction: column; gap: 8px; opacity: 0; animation: kouverture-boutons1 9.4s linear infinite">
+<a href="Caisses.html" style="height: 42px; display: flex; align-items: center; justify-content: center; background: #5a3f26; border: 2px solid #2a1d12; border-radius: 4px; text-decoration: none; color: #fff4e2; font-family: 'Rubik Dirt', sans-serif; font-size: 14px; letter-spacing: 0.06em; text-transform: uppercase">Continuer</a>
+<a href="Ouverture.html" style="height: 42px; display: flex; align-items: center; justify-content: center; background: #c4110f; border: 2px solid #5a0606; border-radius: 4px; text-decoration: none; color: #ffffff; font-family: 'Rubik Dirt', sans-serif; font-size: 14px; letter-spacing: 0.06em; text-transform: uppercase">Rouvrir · [prix]</a>
+</div>
+
+
+
+<svg aria-hidden="true" width="932" height="430" style="position: absolute; left: 0; top: 0; pointer-events: none; opacity: 0.1"><filter id="grain"><feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="2" stitchTiles="stitch"></feTurbulence><feColorMatrix type="saturate" values="0"></feColorMatrix></filter><rect width="932" height="430" filter="url(#grain)"></rect></svg>
+<div aria-hidden="true" style="position: absolute; left: 0; top: 0; width: 932px; height: 430px; pointer-events: none; background: repeating-linear-gradient(to bottom, rgba(255,255,255,0.03) 0px, rgba(255,255,255,0.03) 1px, transparent 1px, transparent 3px)"></div>
+</div>
+</body>
+</html>

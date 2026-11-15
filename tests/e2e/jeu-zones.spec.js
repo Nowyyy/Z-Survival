@@ -89,26 +89,34 @@ test.describe('zones : ouverture de la porte 1 à la fin de la manche 10', () =>
 test.describe('zones : mobilier de complément, budget, interface', () => {
   const added = world.obstacles.filter((o) => o.provisional);
 
-  test('les pièces ajoutées sont présentes, bloquent le joueur, les balles et le laser', async ({ page }) => {
+  // Lot 8l (mise à jour d'un test du palier complet, périmé depuis le lot 8j) : les tirs passent par-dessus les meubles dessinés sous l'arme
+  // (data/game/tirs-traversables.json, dont le comptoir P8) ; le joueur reste bloqué. Le laser est donc vérifié sur une pièce ajoutée haute
+  // (étagère P3+R-G37, non traversable : il s'y arrête) et sur P8 (il passe par-dessus) ; avant : P8 seul, laser arrêté.
+  test('les pièces ajoutées sont présentes et bloquent le joueur ; le laser s\'arrête sur une pièce haute et passe par-dessus le comptoir P8 (lot 8j)', async ({ page }) => {
     await open(page, '&nospawn=1');
     const s = await STATE(page);
     expect(added.length).toBeGreaterThanOrEqual(8);
     for (const o of added) expect(s.obstacles.some((q) => q.id === o.id), o.id).toBe(true);
-    const target = added.find((o) => o.id === 'P8');
-    const r = await page.evaluate(([o]) => {
+    const essai = (o) => page.evaluate(([q]) => {
       const zs = window.__zs;
       // À l'est de la pièce, le joueur marche vers l'ouest, visée vers l'ouest.
-      zs.setPlayer(o.x + o.w + 110, o.y + o.h / 2);
+      zs.setPlayer(q.x + q.w + 110, q.y + q.h / 2);
       zs.setInput({ move: { x: -1, y: 0 }, aim: { angle: Math.PI } });
       zs.step(0.1);
       const laser = zs.getState().laser;
       zs.step(2);
       const p = zs.getState().player;
       zs.setInput({});
-      return { x: p.x, right: o.x + o.w, laser };
-    }, [target]);
+      return { x: p.x, right: q.x + q.w, laser };
+    }, [o]);
+    const haute = added.find((o) => o.id === 'P3+R-G37');
+    const r = await essai(haute);
     expect(r.x).toBeGreaterThanOrEqual(r.right + 18 - 1);
-    expect(r.laser.stoppedBy).toBe(target.id);
+    expect(r.laser.stoppedBy).toBe(haute.id);
+    const comptoir = added.find((o) => o.id === 'P8');
+    const c = await essai(comptoir);
+    expect(c.x).toBeGreaterThanOrEqual(c.right + 18 - 1);
+    expect(c.laser.stoppedBy).not.toBe(comptoir.id);
   });
 
   test('aucune pièce ajoutée ne bloque une fenêtre, un point de réparation ni le passage de la porte ouverte', async ({ page }) => {

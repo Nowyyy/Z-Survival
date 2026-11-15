@@ -73,6 +73,13 @@ describe('mêmes règles qu\'au lot 1', () => {
     allowed.push('js/core/graphics.js'); // lot 5b : préréglages graphiques (nouveau fichier, pur)
     allowed.push('js/core/lamps.js'); // lot 5k : lampes à huile et choix des lumières (nouveau fichier, pur)
     allowed.push('js/core/save-merge.js'); // lot 5o : fusion de la sauvegarde entre onglets (nouveau fichier, pur, chargé seulement avec un second onglet)
+    allowed.push('js/core/menu-etat.js'); // lot 8a : état du menu principal (nouveau fichier, pur, chargé seulement en mode menu)
+    allowed.push('js/core/equipement.js'); // lot 8d : objets, équipement, fusion, personnages et statistiques effectives du Personnage (nouveau fichier, pur, chargé seulement en mode menu)
+    allowed.push('js/core/caisses.js'); // lot 8e : caisses mystère de la Boutique, chances et tirage à graine (nouveau fichier, pur, chargé seulement à l'onglet Boutique)
+    allowed.push('js/core/ouverture.js'); // lot 8f : chronologie des ouvertures de caisses en 3D (nouveau fichier, pur, chargé seulement à la première ouverture)
+    allowed.push('js/core/sons-menu.js', 'js/core/musique-menu.js'); // lot 8i : sons du menu (catalogue, choix, volumes, clic, sons d'une ouverture, états de la musique) et partition de la musique des menus : modules nouveaux, aucun module existant modifié
+    allowed.push('js/core/porte-message.js', 'js/core/sons-coups.js', 'js/core/tir-traverse.js'); // lot 8j : porte fermée la plus proche (lecture seule), tirage des sons des zombies (générateur propre au son), objets traversables par les tirs (nouveaux fichiers, purs ; aucun module existant modifié)
+    allowed.push('js/core/progression.js'); // lot 8h : progression v2 (zs.save.v2 : format, opérations, ZS2 et ZS1 ; nouveau fichier, pur)
     expect(changed.filter((f) => !allowed.includes(f))).toEqual([]);
   });
 });

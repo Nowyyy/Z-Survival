@@ -14,7 +14,7 @@ const world = load('world');
 const layout = buildLayout(world, load('decor'), {});
 const geoms = windowGeometries(windowsWithGaps(layout), cfg);
 const N = geoms.find((g) => g.id === 'fenetre-nord');
-const URL = (extra = '') => salle(`/jeu.html?test=1&seed=1${extra.includes('nospawn') ? '' : '&nospawn=1'}${extra}`);
+const URL = (extra = '') => salle(`/jeu.html?test=1&seed=1&coups=1${extra.includes('nospawn') ? '' : '&nospawn=1'}${extra}`);
 const state = (page) => page.evaluate(() => window.__zs.getState());
 const win = async (page, id = 'fenetre-nord') => (await state(page)).windows.find((w) => w.id === id);
 const BROWSER_NOISE = /GL Driver Message|ReadPixels|GPU stall/;

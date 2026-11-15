@@ -50,8 +50,15 @@ describe('jetons requis', () => {
 describe('couleurs en dur', () => {
   const COLOR = /#[0-9a-fA-F]{3,8}\b|\b(?:rgb|rgba|hsl|hsla|hwb|lab|lch|oklab|oklch)\(/;
   it('aucun fichier CSS hors tokens.css ne définit de couleur', () => {
-    for (const f of readdirSync('css').filter((n) => n.endsWith('.css') && n !== 'tokens.css')) {
+    for (const f of readdirSync('css').filter((n) => n.endsWith('.css') && n !== 'tokens.css' && n !== 'ouvertures.css')) {
       expect(readFileSync(`css/${f}`, 'utf8'), f).not.toMatch(COLOR);
     }
+  });
+  // Lot 8f (prompt du lot) : les couleurs de l'ouverture en 3D sont des jetons d'une feuille à part, chargée avec l'ouverture (tokens.css n'est pas
+  // modifié : l'accueil est au seuil Lighthouse). Seule exception : une couleur n'y apparaît que dans une déclaration de jeton --ouv-* (une par ligne).
+  it('ouvertures.css : couleurs seulement dans des déclarations de jetons --ouv-*', () => {
+    const lignes = readFileSync('css/ouvertures.css', 'utf8').split('\n').filter((l) => COLOR.test(l));
+    expect(lignes.length).toBeGreaterThan(0);
+    for (const l of lignes) expect(l, l).toMatch(/^\s*--ouv-[a-z0-9-]+:\s*(#[0-9a-f]{6}|rgb\(\d+ \d+ \d+ \/ \d+%\));$/);
   });
 });

@@ -1,24 +1,5 @@
 {
-  "meta.title": "Z-Survival",
-  "app.title": "Z-Survival",
   "app.provisional": "Game in development: placeholder content.",
-  "home.badge": "Staging",
-  "home.play": "Play",
-  "home.playVersion": "Play - {version}",
-  "home.siteError": "Site information unavailable: the direct links still work.",
-  "home.siteSource": "Repository source tree: the version, changes and previous versions appear in the assembled site.",
-  "home.devTitle": "Development",
-  "home.next": "Latest development build",
-  "home.nextMeta": "{sha} · {date}",
-  "home.nextNone": "No development build yet",
-  "home.evolutionsTitle": "Changes in development",
-  "home.evolutionsNone": "No change since the staging version.",
-  "home.versionsTitle": "All versions",
-  "home.currentBadge": "Current version",
-  "home.previousTitle": "Previous versions",
-  "home.previousNone": "No previous version.",
-  "home.unavailable": "{version}: unavailable",
-  "home.unavailableNote": "Version not built.",
   "site.construction.title": "Z-Survival · under construction",
   "site.construction.text": "Z-Survival is under construction.",
   "site.redirect.title": "Z-Survival · redirect",
@@ -29,7 +10,5 @@
   "site.dev.back": "Back to the staging home page",
   "site.notFound.title": "Z-Survival · page not found",
   "site.notFound.text": "Page not found.",
-  "site.notFound.noscript": "Without JavaScript, an address written /recette/ in lowercase is not corrected: write /Recette/ with a capital R.",
-  "lang.toggle": "Français",
-  "lang.toggleLabel": "Passer en français"
+  "site.notFound.noscript": "Without JavaScript, an address written /recette/ in lowercase is not corrected: write /Recette/ with a capital R."
 }
