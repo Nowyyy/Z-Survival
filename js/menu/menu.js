@@ -17,7 +17,7 @@ import { ecranJouer } from './jouer.js';
 import { gouttePath } from '../logo.js';
 import { fmt, loadDict } from '../game/texts.js';
 import { graphicsReglages, pageCanal, pageSearch } from '../game/graphics-boot.js';
-import { solde as soldeBleu } from '../core/progression.js';
+import { solde as soldeBleu, soldeMedailles } from '../core/progression.js';
 import { chargerProgression } from './progression-etat.js';
 
 const SVG = 'http://www.w3.org/2000/svg';
@@ -27,6 +27,7 @@ const ICONES = {
   barres: 'M2 4h12M2 8h12M2 12h12',
   piece: 'M8 4.2v7.6M5.6 6.2h3.7a1.2 1.2 0 0 1 0 2.4H6.7a1.2 1.2 0 0 0 0 2.4h3.7',
   gemme: 'M8 1.6 14 6.4 8 14.4 2 6.4ZM2 6.4h12M5.6 6.4 8 14.4l2.4-8', // lot 8h : monnaie bleue
+  medaille: 'M5.4 1.6 8 6.4l2.6-4.8M8 6.4a3.9 3.9 0 1 0 0 7.8 3.9 3.9 0 0 0 0-7.8ZM8 8.7v3.2', // lot 8k : médailles (même dessin qu'en partie)
   boutique: 'M3 5.5h10l-1 8.5H4zM5.5 5.5V4a2.5 2.5 0 0 1 5 0v1.5',
   personnage: 'M8 1.8a2.4 2.4 0 1 1 0 4.8 2.4 2.4 0 0 1 0-4.8ZM4 14.2V10c0-1.5 1.2-2.6 2.6-2.6h2.8C10.8 7.4 12 8.5 12 10v4.2',
   infini: 'M8 8c-1.4-1.9-2.6-3-4-3a3 3 0 0 0 0 6c1.4 0 2.6-1.1 4-3Zm0 0c1.4 1.9 2.6 3 4 3a3 3 0 0 0 0-6c-1.4 0-2.6 1.1-4 3Z',
@@ -210,6 +211,7 @@ export async function preparerMenu({ search = pageSearch(), onProgress = () => {
     suivre(json('data/game/save.json')), suivre(json('data/game/economy.json')), suivre(json('data/game/player-stats.json')), suivre(json('data/menu/mondes.json')),
   ]);
   let solde = 0;
+  let medailles = 0; // lot 8k : solde de médailles (en-tête)
   let record = null;
   let niveaux = null; // lot 8d : niveaux de statistiques de la sauvegarde (base des statistiques effectives), si elle est lue « ok » (comme la partie)
   let lues = []; // lot 8h : nouveautés déjà lues (progression v2)
@@ -219,6 +221,7 @@ export async function preparerMenu({ search = pageSearch(), onProgress = () => {
     const prog = await chargerProgression({ save, economy, stats }, { search });
     const lu = prog.lire();
     if (lu && lu.save) solde = soldeBleu(lu.save);
+    if (lu && lu.save) medailles = soldeMedailles(lu.save);
     record = lireRecord(lu?.save?.records?.histoire?.[premierJouable(lireMondes(mondes)).id]);
     if (lu?.status === 'ok' && lu.save?.niveaux && typeof lu.save.niveaux === 'object') niveaux = { ...lu.save.niveaux };
     lues = Array.isArray(lu?.save?.lues) ? [...lu.save.lues] : [];
@@ -227,13 +230,13 @@ export async function preparerMenu({ search = pageSearch(), onProgress = () => {
   } catch {
     // sauvegarde illisible ou stockage bloqué : solde 0 et record « — » affichés, rien n'est écrit
   }
-  return { dict, infos: Array.isArray(infos?.infos) ? infos.infos : [], liens: liens ?? {}, solde, record, mondes: lireMondes(mondes), niveaux, statsCfg: stats, lues, recordsInfini };
+  return { dict, infos: Array.isArray(infos?.infos) ? infos.infos : [], liens: liens ?? {}, solde, medailles, record, mondes: lireMondes(mondes), niveaux, statsCfg: stats, lues, recordsInfini };
 }
 
 // son : { lire() → { coupe, volume }, poser(réglages) } (lot 8c, donné par demarrage.js : mémoire de la page, appliquée par main.js à « JOUER »).
 // niveaux, statsCfg (lot 8d) : niveaux de la sauvegarde et data/game/player-stats.json, pour les statistiques effectives (Personnage, « JOUER »).
 // lues, recordsInfini (lot 8h) : nouveautés déjà lues et records de l'infini par carte, lus dans la progression v2 (preparerMenu).
-export function creerMenu({ dict, infos = [], liens = {}, solde: montant = 0, record = null, mondes = lireMondes(null), niveaux = null, statsCfg = null, jouer, son: memoireSon = null, root = document.body, lues = [], recordsInfini = {} }) {
+export function creerMenu({ dict, infos = [], liens = {}, solde: montant = 0, medailles: montantMed = 0, record = null, mondes = lireMondes(null), niveaux = null, statsCfg = null, jouer, son: memoireSon = null, root = document.body, lues = [], recordsInfini = {} }) {
   const t = (k) => dict[k] ?? '';
   let etat = { ...creerEtatMenu(), lues: Array.isArray(lues) ? [...lues] : [] };
   const lien = lienExterne(liens?.discord);
@@ -279,7 +282,22 @@ export function creerMenu({ dict, infos = [], liens = {}, solde: montant = 0, re
   };
   poserSolde(montant);
   solde.append(icone('gemme', 'e8-icone e8-gemme'), soldeTexte, soldeNom);
-  chargerProgression().then((prog) => prog.abonner(() => poserSolde(prog.solde()))).catch(() => {});
+  // Lot 8k : puis le solde de médailles (médaille dessinée en code, couleur des médailles, nom accessible « Médailles : N »).
+  const medailles = el('p', ['e8-solde', 'e8-medailles'], { id: 'menu-medailles' });
+  const medTexte = el('span', ['e8-solde-texte'], { id: 'menu-medailles-texte', 'aria-hidden': 'true' });
+  const medNom = el('span', ['sr-only']);
+  let medActuel = montantMed;
+  const poserMedailles = (n) => {
+    medActuel = Number.isInteger(n) && n >= 0 ? n : 0;
+    medTexte.textContent = formatMoney(medActuel);
+    medNom.textContent = fmt(t('game.menu.medailles'), { n: formatMoney(medActuel) });
+  };
+  poserMedailles(montantMed);
+  medailles.append(icone('medaille', 'e8-icone e8-medaille'), medTexte, medNom);
+  chargerProgression().then((prog) => prog.abonner(() => {
+    poserSolde(prog.solde());
+    poserMedailles(prog.medailles());
+  })).catch(() => {});
   const barres = el('button', ['e8-barres'], { type: 'button', id: 'menu-trois-barres', 'aria-expanded': 'false', 'aria-controls': 'menu-liste', 'aria-label': t('game.menu.ouvrir') });
   const pointBarres = el('span', ['menu-point', 'e8-point-barres'], { 'aria-hidden': 'true' });
   barres.append(icone('barres'), pointBarres);
@@ -315,7 +333,7 @@ export function creerMenu({ dict, infos = [], liens = {}, solde: montant = 0, re
       }).catch(() => {});
     });
   }
-  droite.append(solde, ...(outils ? [outils] : []), pleinEcran, barres);
+  droite.append(solde, medailles, ...(outils ? [outils] : []), pleinEcran, barres);
 
   // Menu à trois barres : juste sous le bouton, aligné à droite.
   const liste = el('div', ['e8-liste'], { id: 'menu-liste' });
@@ -812,6 +830,6 @@ export function creerMenu({ dict, infos = [], liens = {}, solde: montant = 0, re
   synchroniser();
   return {
     element: box,
-    etat: () => ({ pleinEcran: { disponible: peutPleinEcran, actif: Boolean(document.fullscreenElement) }, onglet: etat.onglet, menuOuvert: etat.menuOuvert, ecran: etat.ecran, nonLue: nouveauteNonLue(infos, etat.lues), solde: soldeActuel, discord: lien.actif, record, monde: monde.id, infini: infini?.etat() ?? null, personnage: perso?.etat() ?? null, boutique: boutique?.etat() ?? null, credits: credits?.etat() ?? null, compte: compte?.etat() ?? null, niveaux, statsLancees }),
+    etat: () => ({ pleinEcran: { disponible: peutPleinEcran, actif: Boolean(document.fullscreenElement) }, onglet: etat.onglet, menuOuvert: etat.menuOuvert, ecran: etat.ecran, nonLue: nouveauteNonLue(infos, etat.lues), solde: soldeActuel, medailles: medActuel, discord: lien.actif, record, monde: monde.id, infini: infini?.etat() ?? null, personnage: perso?.etat() ?? null, boutique: boutique?.etat() ?? null, credits: credits?.etat() ?? null, compte: compte?.etat() ?? null, niveaux, statsLancees }),
   };
 }

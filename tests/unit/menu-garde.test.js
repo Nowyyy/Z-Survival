@@ -27,7 +27,7 @@ describe('armes retirées du menu', () => {
   it('caisses d\'équipement valides ; chaque caisse garde toutes ses raretés tirables ; 10 000 tirages par caisse, jamais d\'arme ni de bonus d\'attaque', () => {
     expect(erreurs).toEqual([]);
     const equipement = caisses.filter((c) => c.type === 'equipement');
-    expect(equipement.map((c) => c.id)).toEqual(['ravitaillement', 'militaire', 'elite']);
+    expect(equipement.map((c) => c.id)).toEqual(['equipement']); // lot 8k : une seule caisse d'équipement (avant : ravitaillement, militaire, élite)
     for (const c of equipement) {
       for (const r of cat.raretes) expect(objetsDeRarete(cat, r.id).length, `${c.id} ${r.id}`).toBeGreaterThan(0);
       expect(c.chances.map((x) => x.rarete)).toEqual(cat.raretes.map((r) => r.id));
@@ -114,12 +114,12 @@ describe('prix prélevés dans la même écriture que ce qui est obtenu', () => 
 });
 
 describe('outils de débogage', () => {
-  it('icône seulement sur les canaux « source » et « dev » (jamais la Recette « release », les archives ni la production) ; quatre outils avec confirmation ; jamais zs.save.v1', () => {
+  it('icône seulement sur les canaux « source » et « dev » (jamais la Recette « release », les archives ni la production) ; six outils avec confirmation (lot 8k : + médailles, pitié) ; jamais zs.save.v1', () => {
     const menu = read('js/menu/menu.js');
     expect(menu).toMatch(/const outils = \['source', 'dev'\]\.includes\(pageCanal\(\)\)/);
     const d = read('js/menu/debogage.js');
     expect(d).toMatch(/export const CANAUX_OUTILS = Object\.freeze\(\['source', 'dev'\]\);/);
-    expect(d).toMatch(/export const OUTILS = Object\.freeze\(\['bleus', 'demo', 'persos', 'zero'\]\);/);
+    expect(d).toMatch(/export const OUTILS = Object\.freeze\(\['bleus', 'medailles', 'pitie', 'demo', 'persos', 'zero'\]\);/);
     expect(d).toMatch(/game\.menu\.debogage\.confirmer/);
     expect(d).not.toMatch(/localStorage|removeItem\(|getItem\(/); // aucun accès direct : la remise à zéro passe par le dépôt v2 (clear de zs.save.v2)
     expect(read('js/menu/equipement-etat.js')).toMatch(/remettreAZero: \(\) => prog\.effacer\(\)/);

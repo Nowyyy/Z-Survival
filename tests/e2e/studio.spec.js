@@ -522,7 +522,7 @@ test.describe('Connexion et Profil (E10)', () => {
   }
 
   for (const [size, encoche] of [[REF, false], [PETIT, false], [LARGE, false], [ENCOCHE, true]]) {
-    test(`tailles ${size.width}×${size.height}${encoche ? ' (encoche simulée)' : ''} : « Connexion » → Profil (carte, six statistiques, Sauvegarde ; Google « bientôt ») ; écran plein ; dans l'écran, sans superposition ; 44 px ; axe`, async ({ page, baseURL }) => {
+    test(`tailles ${size.width}×${size.height}${encoche ? ' (encoche simulée)' : ''} : « Connexion » → Profil (carte, sept statistiques, Sauvegarde ; Google « bientôt ») ; écran plein ; dans l'écran, sans superposition ; 44 px ; axe`, async ({ page, baseURL }) => {
       const o = surveiller(page, baseURL);
       await ouvrirMenu(page, size);
       if (encoche) await page.addStyleTag({ content: '#e8 { --e8-gauche: 50px !important; --e8-droite: 50px !important; }' });
@@ -541,7 +541,7 @@ test.describe('Connexion et Profil (E10)', () => {
       await expect(page.locator('#menu-profil-pseudo')).toHaveText('Survivant');
       await expect(page.locator('#menu-profil-compte')).toHaveText('Compte : non connecté');
       await expect(page.locator('#menu-profil-google')).toHaveAttribute('aria-disabled', 'true');
-      await expect(page.locator('.e10-stat-nom')).toHaveText(['Meilleure manche', 'Zombies tués', 'Parties histoire', 'Parties infini', 'Temps de jeu', 'Monnaie bleue gagnée']); // sans record infini ; lot 8h : monnaie bleue
+      await expect(page.locator('.e10-stat-nom')).toHaveText(['Meilleure manche', 'Zombies tués', 'Parties histoire', 'Parties infini', 'Temps de jeu', 'Diamants gagnés', 'Médailles gagnées']); // sans record infini ; lot 8h : monnaie bleue ; lot 8k : médailles (quatre colonnes, deux rangées)
       await expect(page.locator('#menu-profil-exporter')).toHaveText('Exporter mon code');
       await expect(page.locator('#menu-profil-importer')).toHaveText('Importer un code');
       const marge = encoche ? 50 : 15.5;
@@ -549,7 +549,7 @@ test.describe('Connexion et Profil (E10)', () => {
       const b = Object.fromEntries(await Promise.all(blocs.map(async (s) => [s, await boite(page, s)])));
       for (const [s, r] of Object.entries(b)) expect([r.l >= marge - 0.5, r.r <= size.width - marge + 0.5, r.b <= size.height + 0.5, r.t >= 0], s).toEqual([true, true, true, true]);
       expect([chevauche(b['#menu-profil-carte'], b['#menu-profil-stats']), chevauche(b['#menu-profil-carte'], b['#menu-profil-sauvegarde']), chevauche(b['#menu-profil-stats'], b['#menu-profil-sauvegarde'])]).toEqual([false, false, false]);
-      // Disposition de la maquette : carte à gauche ; statistiques en 3 × 2 au-dessus du cadre Sauvegarde, à droite.
+      // Disposition de la maquette : carte à gauche ; statistiques en 3 × 2 (lot 8k : 4 + 3) au-dessus du cadre Sauvegarde, à droite.
       expect([b['#menu-profil-carte'].r <= b['#menu-profil-stats'].l, b['#menu-profil-stats'].b <= b['#menu-profil-sauvegarde'].t + 0.5]).toEqual([true, true]);
       const cartes = await page.locator('.e10-stat').evaluateAll((ns) => ns.map((n) => Math.round(n.getBoundingClientRect().top)));
       expect(new Set(cartes).size).toBe(2);
@@ -616,8 +616,8 @@ test.describe('Connexion et Profil (E10)', () => {
   test('avatar et pseudo gardés (lot 8h : zs.save.v2, une écriture par validation) ; pseudo : erreurs lues (trop court, trop long, caractère invisible), espaces nettoyés, Échap annule ; statistiques égales à la sauvegarde (?store=local) ; rechargement : valeurs gardées', async ({ page }) => {
     await menuAvecSauvegarde(page);
     await ouvrirProfil(page);
-    await expect(page.locator('.e10-stat-valeur')).toHaveText([`17 / 40`, '88', '6', '2', '1 h 2 min', `4${NNBSP}321`]); // lot 8h : toutes lues dans la progression v2
-    expect((await page.evaluate(() => window.__zsMenu.etat().menu.compte)).stats).toEqual([['meilleureManche', '17'], ['tues', '88'], ['partiesHistoire', '6'], ['partiesInfini', '2'], ['temps', '3725000'], ['argent', '4321']]);
+    await expect(page.locator('.e10-stat-valeur')).toHaveText([`17 / 40`, '88', '6', '2', '1 h 2 min', `4${NNBSP}321`, '0']); // lot 8h : toutes lues dans la progression v2 ; lot 8k : médailles gagnées (0 : sauvegarde d'avant le lot)
+    expect((await page.evaluate(() => window.__zsMenu.etat().menu.compte)).stats).toEqual([['meilleureManche', '17'], ['tues', '88'], ['partiesHistoire', '6'], ['partiesInfini', '2'], ['temps', '3725000'], ['argent', '4321'], ['medailles', '0']]);
     // Retours du propriétaire : avatars d'après le personnage du jeu et les zombies, personnage tout gris par défaut ; « Changer d'avatar » ouvre un
     // petit menu des avatars sous le grand portrait (à la place du bouton, du pseudo et du compte) ; « Valider » garde le choix et rend la carte.
     await expect(page.locator('#menu-profil-avatar')).toHaveAttribute('aria-label', 'Avatar 1 sur 7 : Anonyme');
@@ -746,7 +746,7 @@ test.describe('Connexion et Profil (E10)', () => {
     await expect(page.locator('#menu-import-erreur')).toHaveText('');
     await expect(page.locator('#menu-import-apercu')).toBeVisible();
     await expect(page.locator('#menu-import-message')).toHaveText('Code valide : vérifie l\'aperçu avant de remplacer ta sauvegarde.');
-    await expect(page.locator('#menu-import-table tr[data-changed="true"] th')).toContainText(['Monnaie bleue', 'Monnaie bleue gagnée (total)', 'Record histoire (batiment)']);
+    await expect(page.locator('#menu-import-table tr[data-changed="true"] th')).toContainText(['Diamants', 'Diamants gagnés (total)', 'Record histoire (batiment)']);
     await expect(page.locator('#menu-import-remplacer')).toBeDisabled();
     expect((await new AxeBuilder({ page }).analyze()).violations.map((v) => v.id)).toEqual([]);
     expect(await page.evaluate(() => window.__ecritures)).toEqual([]);

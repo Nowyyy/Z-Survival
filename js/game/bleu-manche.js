@@ -56,3 +56,57 @@ export function createBleuManche(dict, reglages, apres = document.getElementById
     },
   };
 }
+
+// Lot 8k : médailles gagnées en partie (porte ouverte, millier de zombies, palier, monde, partie du jour), affichées COMME la fin de manche :
+// médaille (dessinée en code, couleur des médailles) puis « solde (+gain) » pendant la même durée de jeu, dans un bloc à part juste sous celui de la
+// monnaie bleue (les deux s'empilent sans se chevaucher s'ils arrivent ensemble) ; deux gains rapprochés s'additionnent. Aucune animation (donc
+// rien à couper en mouvement réduit) ; décoratif pour les lecteurs d'écran (le solde est dans la pause et l'écran de fin). Lecture seule.
+export const MEDAILLE_D = Object.freeze(['M5.4 1.6 8 6.4l2.6-4.8', 'M8 6.4a3.9 3.9 0 1 0 0 7.8 3.9 3.9 0 0 0 0-7.8Z', 'M8 8.7v3.2']);
+export function iconeMedaille(classe = 'hud-icon hud-medaille') {
+  const NS = 'http://www.w3.org/2000/svg';
+  const svg = document.createElementNS(NS, 'svg');
+  svg.setAttribute('class', classe);
+  svg.setAttribute('viewBox', '0 0 16 16');
+  svg.setAttribute('aria-hidden', 'true');
+  svg.setAttribute('focusable', 'false');
+  for (const d of MEDAILLE_D) {
+    const p = document.createElementNS(NS, 'path');
+    p.setAttribute('d', d);
+    svg.append(p);
+  }
+  return svg;
+}
+
+export function createMedaillesManche(dict, reglages, apres) {
+  const { duree } = reglagesBleuManche(reglages);
+  const el = document.createElement('p');
+  el.id = 'hud-medailles-manche';
+  el.className = 'hud-block hud-bleu-manche hud-medailles-manche';
+  el.setAttribute('aria-hidden', 'true');
+  el.hidden = true;
+  const texte = document.createElement('span');
+  el.append(iconeMedaille(), texte);
+  apres?.after(el);
+  const modele = dict['game.hud.bleuManche'] ?? 'game.hud.bleuManche';
+  let vu = 0; // numéro du dernier gain affiché (js/game/bank.js, gainMedailles)
+  let cumul = 0;
+  let jusqua = -Infinity;
+  return {
+    // À chaque image : gain { n, gain } de la banque, solde de médailles, temps de jeu ; actif faux (mort, fin) : masqué.
+    update(now, gain, solde, actif = true) {
+      if (gain && gain.n !== vu) {
+        vu = gain.n;
+        cumul = now < jusqua ? cumul + gain.gain : gain.gain;
+        if (actif) {
+          texte.textContent = texteBleuManche(modele, solde, cumul);
+          el.hidden = false;
+          jusqua = now + duree;
+        }
+      }
+      if (!el.hidden && (!actif || now >= jusqua)) el.hidden = true;
+    },
+    get element() {
+      return el;
+    },
+  };
+}

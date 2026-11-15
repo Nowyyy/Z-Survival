@@ -13,8 +13,9 @@ import { createFakeStorage, quotaError } from './helpers/fake-storage.js';
 const load = (name) => JSON.parse(readFileSync(`data/game/${name}.json`, 'utf8'));
 const params = { save: load('save'), economy: load('economy'), stats: load('player-stats') };
 const realEconomy = makeEconomy(params.economy, load('enemies'));
-// Les tests de mécanique utilisent des primes variées, indépendantes du réglage du jeu : 5 / 6 / 8 / 12 et hausse de 4 % par manche.
-const economy = { ...realEconomy, killWaveGrowth: 0.04, killGrowthCap: 3, bounty: { marcheur: 5, petit: 6, voute: 8, grand: 12 } };
+// Les tests de mécanique utilisent des primes variées, indépendantes du réglage du jeu : 5 / 6 / 8 / 12 et hausse de 4 % par manche ; lot 8k : et le
+// bonus de manche d'avant (10 + 2 × manche : la formule est inchangée, les données ont désormais un gain fixe, testé à part).
+const economy = { ...realEconomy, killWaveGrowth: 0.04, killGrowthCap: 3, waveBonusBase: 10, waveBonusPerWave: 2, bounty: { marcheur: 5, petit: 6, voute: 8, grand: 12 } };
 const KEY = params.save.v2.storageKey;
 const avec = (bleu, extra = {}) => serialiser({ ...appliquerOps(defaultProgression(), [{ id: 'g0', t: 'gain', bleu }], 1, params).save, ...extra });
 
@@ -382,13 +383,14 @@ describe('banque : montants du jeu (retour du propriétaire : montants fixes)', 
     expect(bank.snapshot().economy.killsRun).toBe(0);
   });
 
-  it('bleu de manche : 10 + 2 × manche (× 1,5 renforcée) ; prime du monde 500', () => {
+  it('bleu de manche (lot 8k : gain fixe) : 20 par manche (× 1,5 renforcée), quelle que soit la manche ; prime du monde 500', () => {
     const { bank, storage } = real();
     bank.waveStart(1);
-    expect(bank.waveEnd(1, false).bonus).toBe(12);
-    expect(bank.waveEnd(10, true).bonus).toBe(45);
+    expect(bank.waveEnd(1, false).bonus).toBe(20);
+    expect(bank.waveEnd(10, true).bonus).toBe(30);
+    expect(bank.waveEnd(39, false).bonus).toBe(20);
     expect(bank.worldEnd().bonus).toBe(500);
     bank.runEnd({ reason: 'world' });
-    expect(solde(stored(storage))).toBe(557);
+    expect(solde(stored(storage))).toBe(570);
   });
 });

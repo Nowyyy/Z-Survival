@@ -31,20 +31,21 @@ const git = (args) => {
 const code = (f) => readFileSync(f, 'utf8').split('\n').filter((l) => !l.trim().startsWith('//')).join('\n').replace(/\s\/\/.*$/gm, '');
 
 describe('data/game/economy.json', () => {
-  it('est marqué provisoire et complet (dix clés de réglage)', () => {
+  it('est marqué provisoire et complet (onze clés de réglage ; lot 8k : et huit des médailles)', () => {
     expect(typeof economy._provisoire).toBe('string');
-    expect(Object.keys(economy).filter((k) => !k.startsWith('_')).sort()).toEqual(['gainThrottleMs', 'gainWindowMs', 'killGrowthCap', 'killWaveGrowth', 'maxBleu', 'maxMoney', 'reinforcedBonusMul', 'repairMoney', 'waveBonusBase', 'waveBonusPerWave', 'worldBonus']);
+    expect(Object.keys(economy).filter((k) => !k.startsWith('_')).sort()).toEqual(['gainThrottleMs', 'gainWindowMs', 'killGrowthCap', 'killWaveGrowth', 'maxBleu', 'maxMedailles', 'maxMoney', 'medailleJour', 'medailleMonde', 'medaillePalier', 'medaillePalierPas', 'medaillePorte', 'medailleZombies', 'medailleZombiesPas', 'reinforcedBonusMul', 'repairMoney', 'waveBonusBase', 'waveBonusPerWave', 'worldBonus']);
   });
 
   it('a les valeurs du lot', () => {
-    expect(economy).toMatchObject({ killWaveGrowth: 0, repairMoney: 1, killGrowthCap: 3, waveBonusBase: 10, waveBonusPerWave: 2, reinforcedBonusMul: 1.5, worldBonus: 500, maxMoney: 9_999_999, gainWindowMs: 1200, gainThrottleMs: 250 });
+    // Lot 8k : bonus de manche fixe (avant : waveBonusBase 10, waveBonusPerWave 2).
+    expect(economy).toMatchObject({ killWaveGrowth: 0, repairMoney: 1, killGrowthCap: 3, waveBonusBase: 20, waveBonusPerWave: 0, reinforcedBonusMul: 1.5, worldBonus: 500, maxMoney: 9_999_999, gainWindowMs: 1200, gainThrottleMs: 250 });
   });
 
-  it('toutes les valeurs sont des nombres finis, positifs (killWaveGrowth vaut 0 : montant fixe par zombie)', () => {
+  it('toutes les valeurs sont des nombres finis, positifs (killWaveGrowth vaut 0 : montant fixe par zombie ; lot 8k : waveBonusPerWave 0, bonus de manche fixe)', () => {
     for (const [k, v] of Object.entries(economy)) if (!k.startsWith('_')) {
       expect(Number.isFinite(v), k).toBe(true);
       expect(v, k).toBeGreaterThanOrEqual(0);
-      if (k !== 'killWaveGrowth') expect(v, k).toBeGreaterThan(0);
+      if (k !== 'killWaveGrowth' && k !== 'waveBonusPerWave') expect(v, k).toBeGreaterThan(0);
     }
   });
 
@@ -131,7 +132,7 @@ describe('textes', () => {
 
   it('les lignes de la pause et de l\'état de la sauvegarde sont écrites en toutes lettres', () => {
     expect(fr['game.pause.balance']).toBe('{n}'); // retour du propriétaire après le lot 8j : la pause montre le solde bleu, gemme puis montant (lot 8h : « Monnaie jaune : {n} »)
-    expect(fr['game.pause.balance.label']).toBe('Monnaie bleue :'); // dit aux lecteurs d'écran seulement
+    expect(fr['game.pause.balance.label']).toBe('Diamants :'); // dit aux lecteurs d'écran seulement ; retour du propriétaire après le lot 8k : la monnaie bleue s'appelle « diamants »
     expect(fr['game.save.status.saved']).toBe('Sauvegarde : enregistrée');
     expect(fr['game.save.status.pending']).toBe('Sauvegarde : en attente');
     expect(fr['game.save.status.failed']).toBe('Sauvegarde : échec, nouvelle tentative');
@@ -149,7 +150,9 @@ describe('textes', () => {
     expect(fr['game.end.worldBonus']).toContain('{n}');
     expect(fr['game.hud.moneyLabel']).toContain('{n}');
     expect(fr['game.live.waveBonus']).toContain('{bonus}');
-    expect(fr['game.end.record']).toBe('Nouveau record');
+    expect(fr['game.end.record']).toBe('Record'); // retour du propriétaire après le lot 8k : sur la ligne de la vague atteinte (avant : « Nouveau record »)
+    expect(fr['game.end.medailles']).toContain('{n}');
+    expect(fr['game.end.medailles.solde']).toContain('{n}');
   });
 
   it('aucune clé « save.page.* » en dehors de « game.* » (le jeu est en français seul)', () => {

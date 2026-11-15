@@ -11,9 +11,14 @@
 //     suivante) ; plafond du solde dans js/core/progression.js ;
 //   - statistiques du Profil (zombies tués, parties histoire et infini, temps de jeu hors pauses) et record par monde et par mode, écrits avec la même
 //     opération : fin de manche, fin de partie, pause, page cachée ou fermée.
-import { createLedger, formatMoney, killMoney, ledgerAdd, repairMoney, waveBonus, worldBonus } from '../core/economy.js';
+// Lot 8k (Docs/ref/economie.md) : MÉDAILLES (gardées, paient les caisses), écrites AU GAIN (même opération « gain ») : porte ouverte, chaque millier
+// de zombies tués par balle dans la partie, palier de manches franchi pour la première fois (histoire par monde, infini par carte), premier monde
+// terminé, première partie du jour (fin d'une partie qui a terminé au moins une manche, date locale). Les montants des paliers, du monde et du jour
+// sont décidés par la progression la plus récente (js/core/progression.js : jamais deux fois) ; la banque n'en garde qu'une prévision pour
+// l'affichage (« +N » de la partie, E2-7).
+import { createLedger, formatMoney, jourLocal, killMoney, ledgerAdd, medailleJour, medailleMonde, medaillePalier, medaillePorte, medaillesZombies, paliersNouveaux, repairMoney, waveBonus, worldBonus } from '../core/economy.js';
 import { emptyGainView, moneyGainView, pruneGains } from '../core/money-gain.js';
-import { solde } from '../core/progression.js';
+import { solde, soldeMedailles } from '../core/progression.js';
 
 // Identifiant de partie : 8 octets aléatoires (crypto), sinon l'heure et un compteur (aucun générateur pseudo-aléatoire).
 let runCounter = 0;
@@ -26,8 +31,10 @@ export function newRunId() {
   }
 }
 
-const vide = () => ({ bleu: 0, tues: 0, tempsMs: 0, partie: null, record: 0, monde: null });
-const estVide = (p) => p.bleu === 0 && p.tues === 0 && p.tempsMs === 0 && p.partie === null && p.record === 0 && p.monde === null;
+const vide = () => ({ bleu: 0, tues: 0, tempsMs: 0, partie: null, record: 0, monde: null, medailles: 0, palier: 0, mondeFini: false, jour: 0 });
+const estVide = (p) => p.bleu === 0 && p.tues === 0 && p.tempsMs === 0 && p.partie === null && p.record === 0 && p.monde === null && p.medailles === 0 && p.palier === 0 && !p.mondeFini && p.jour === 0;
+// Médailles gagnées pendant la partie, par source (écran de fin E2-7).
+const medVides = () => ({ portes: 0, zombies: 0, paliers: 0, monde: 0, jour: 0 });
 
 // options : { repository (format v2), mode, economy (makeEconomy), save (save.json), clock() -> ms de jeu, wall() -> ms (date), reducedMotion,
 //             partie: { mode: 'histoire' | 'infini', monde }, runId() (identifiant de partie, tests) }
@@ -50,7 +57,8 @@ export function createBank({ repository, mode, economy, clock, wall, reducedMoti
   let persistAsked = false;
   let lastClock = clock();
   let id = runId();
-  const run = { started: false, ended: false, baseline: 0, reached: 0, paid: new Set(), worldPaid: false, bleu: 0 };
+  const run = { started: false, ended: false, baseline: 0, reached: 0, paid: new Set(), worldPaid: false, bleu: 0, tues: 0, med: medVides(), palierVu: 0 };
+  let medGain = { n: 0, gain: 0 }; // lot 8k : dernier gain de médailles (n : numéro, pour l'affichage de la partie)
   let writes = 0; // écritures réussies (diagnostic)
 
   const unsubscribe = repository.subscribe((next) => {
@@ -71,6 +79,11 @@ export function createBank({ repository, mode, economy, clock, wall, reducedMoti
     if (!dirty()) return { ok: true, skipped: true, reason };
     opId ??= `${id}.${(seq += 1)}`;
     const op = { id: opId, t: 'gain', bleu: pending.bleu, tues: pending.tues, tempsMs: pending.tempsMs, partie: pending.partie, record: pending.record > 0 ? { mode: modeJeu, monde, manche: pending.record } : null, monde: pending.monde };
+    // Lot 8k : médailles (les montants voyagent dans l'opération : même résultat dans tous les onglets).
+    if (pending.medailles > 0) op.medailles = pending.medailles;
+    if (pending.palier > 0) op.palier = { mode: modeJeu, monde, manche: pending.palier, pas: economy.medaillePalierPas, gain: medaillePalier(economy) };
+    if (pending.mondeFini) op.mondeFini = { id: monde, gain: medailleMonde(economy) };
+    if (pending.jour > 0) op.jour = { n: pending.jour, gain: medailleJour(economy) };
     const result = repository.commit([op], wall());
     if (result.ok) {
       pending = vide();
@@ -106,10 +119,20 @@ export function createBank({ repository, mode, economy, clock, wall, reducedMoti
     return amount;
   }
 
+  // Lot 8k : médailles gagnées (prévision pour l'affichage) ; écrites tout de suite.
+  function addMed(source, n) {
+    if (!Number.isInteger(n) || n <= 0) return 0;
+    run.med[source] += n;
+    medGain = { n: medGain.n + 1, gain: n };
+    return n;
+  }
+  const medTotal = () => Object.values(run.med).reduce((n, v) => n + v, 0);
+
   // Monnaie jaune de la partie (départ ?money=N en mode essai).
   const balance = () => Math.min(economy.maxMoney, departJaune + ledger.earnedRun);
   // Solde bleu : progression lue (ou écrite) plus ce qui attend d'être écrit.
   const soldeBleu = () => Math.min(economy.maxBleu ?? 9_999_999, solde(saved) + pending.bleu);
+  const soldeMed = () => Math.min(economy.maxMedailles ?? 9_999_999, soldeMedailles(saved) + pending.medailles);
 
   function status() {
     const info = repository.info();
@@ -126,7 +149,26 @@ export function createBank({ repository, mode, economy, clock, wall, reducedMoti
     kill(type, wave) {
       if (run.ended) return 0;
       pending.tues += 1;
-      return addGain('kill', killMoney(type, wave, economy));
+      // Lot 8k : un millier de zombies tués dans la partie → médailles, écrites aussitôt.
+      const m = medaillesZombies(run.tues, run.tues + 1, economy);
+      run.tues += 1;
+      const gained = addGain('kill', killMoney(type, wave, economy));
+      if (m > 0) {
+        pending.medailles += m;
+        addMed('zombies', m);
+        flush('medailles');
+      }
+      return gained;
+    },
+    // Lot 8k : une porte vient de s'ouvrir pendant la partie (événement doorOpen : lecture seule) → médailles, écrites aussitôt. Renvoie le gain.
+    door() {
+      if (run.ended || !run.started) return 0;
+      const m = medaillePorte(economy);
+      if (m <= 0) return 0;
+      pending.medailles += m;
+      addMed('portes', m);
+      flush('medailles');
+      return m;
     },
     // Une planche vient d'être posée (réparation d'une fenêtre) : monnaie jaune. Renvoie le montant gagné.
     repair() {
@@ -151,6 +193,14 @@ export function createBank({ repository, mode, economy, clock, wall, reducedMoti
       run.paid.add(wave);
       const bonus = addBleu(waveBonus(wave, reinforced === true, economy));
       pending.record = Math.max(pending.record, wave);
+      // Lot 8k : palier de manches franchi pour la première fois (prévision d'après la progression lue ; décidé à l'écriture).
+      const deja = Math.max(saved?.paliers?.[modeJeu]?.[monde] ?? 0, run.palierVu);
+      const nouveaux = paliersNouveaux(deja, wave, economy);
+      if (nouveaux.length) {
+        run.palierVu = nouveaux.at(-1);
+        pending.palier = Math.max(pending.palier, wave);
+        addMed('paliers', nouveaux.length * medaillePalier(economy));
+      }
       flush('wave');
       return { bonus };
     },
@@ -159,6 +209,11 @@ export function createBank({ repository, mode, economy, clock, wall, reducedMoti
       if (run.ended || run.worldPaid) return { bonus: 0 };
       run.worldPaid = true;
       pending.monde = monde;
+      // Lot 8k : premier monde terminé (une seule fois pour toujours).
+      if (!(saved?.mondesFinis ?? []).includes(monde)) {
+        pending.mondeFini = true;
+        addMed('monde', medailleMonde(economy));
+      }
       return { bonus: addBleu(worldBonus(economy)) };
     },
     // Fin de partie (mort, monde terminé, « Quitter », « Recommencer ») : écriture immédiate. La manche atteinte est la dernière manche DÉMARRÉE.
@@ -168,11 +223,18 @@ export function createBank({ repository, mode, economy, clock, wall, reducedMoti
       if (run.ended) return null;
       const reached = run.started ? run.reached : 0;
       const record = run.started && reached > run.baseline && !mode.readOnly;
+      // Lot 8k : première partie du jour (au moins une manche terminée ; jour local de l'appareil).
+      const jour = jourLocal(new Date(wall()));
+      if (run.paid.size > 0 && jour > (saved?.medailles?.jour ?? 0)) {
+        pending.jour = jour;
+        addMed('jour', medailleJour(economy));
+      }
       const result = flush(`run-${reason}`);
       run.ended = true;
       return {
         earned: ledger.earnedRun, world: run.worldPaid ? worldBonus(economy) : 0, balance: balance(), bleu: run.bleu, soldeBleu: soldeBleu(),
         reached, best: Math.max(recordDe(saved), reached), record, mode: modeJeu, ok: result.ok, status: status(),
+        medailles: { ...run.med, total: medTotal(), solde: soldeMed() },
       };
     },
     // Nouvelle partie (Rejouer, Recommencer) : écrit ce qui attend, puis remet à zéro la partie (monnaie jaune comprise) ; nouvel identifiant.
@@ -186,6 +248,9 @@ export function createBank({ repository, mode, economy, clock, wall, reducedMoti
       run.paid = new Set();
       run.worldPaid = false;
       run.bleu = 0;
+      run.tues = 0;
+      run.med = medVides();
+      run.palierVu = 0;
       lastClock = clock();
       id = runId();
       seq = 0;
@@ -207,17 +272,22 @@ export function createBank({ repository, mode, economy, clock, wall, reducedMoti
     giveMoney: (n) => addGain('test', n),
     balance,
     soldeBleu,
+    // Lot 8k : solde de médailles (écrit, plus ce qui attend) ; dernier gain { n, gain } pour l'affichage de la partie ; médailles de la partie.
+    soldeMedailles: () => soldeMed(),
+    gainMedailles: () => medGain,
+    medaillesPartie: () => ({ ...run.med, total: medTotal() }),
     gain: () => gainView,
     gainBleu: () => gainBleuView,
     status,
     // Pour les écrans de fin et de pause : { balance (jaune), soldeBleu, status, earnedRun, bleuRun, readOnly }.
-    summary: () => ({ balance: balance(), soldeBleu: soldeBleu(), status: status(), earnedRun: ledger.earnedRun, bleuRun: run.bleu, readOnly: mode.readOnly === true, pending: pending.bleu }),
+    summary: () => ({ balance: balance(), soldeBleu: soldeBleu(), soldeMedailles: soldeMed(), status: status(), earnedRun: ledger.earnedRun, bleuRun: run.bleu, readOnly: mode.readOnly === true, pending: pending.bleu }),
     snapshot() {
       const info = repository.info();
       return {
         kind: info.kind, mode: mode.kind, status: status(), readOnly: mode.readOnly === true, locked: info.locked, key: info.key,
         balance: balance(), pending: pending.bleu,
         bleu: { solde: soldeBleu(), run: run.bleu, pending: pending.bleu, gainText: gainBleuView.visible ? gainBleuView.text : '' },
+        medailles: { solde: soldeMed(), run: { ...run.med, total: medTotal() }, tues: run.tues, gagne: saved?.medailles?.gagne ?? 0, paliers: structuredClone(saved?.paliers ?? {}), mondesFinis: [...(saved?.mondesFinis ?? [])], jour: saved?.medailles?.jour ?? 0 },
         partie: { mode: modeJeu, monde, id },
         saved: { bleu: solde(saved), gagne: saved?.bleu?.gagne ?? 0, niveaux: { ...(saved?.niveaux ?? {}) }, records: structuredClone(saved?.records ?? {}), profil: { ...(saved?.profil ?? {}) }, rev: saved?.rev ?? 0 },
         lastCommit: { ...lastCommit }, reasons: [...(mode.reasons ?? [])], writes,

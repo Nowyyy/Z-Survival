@@ -546,6 +546,10 @@
   font-variant-numeric: tabular-nums;
 }
 
+.e8-solde.e8-medailles {
+  color: var(--color-money-medaille); /* lot 8k : médailles */
+}
+
 .e8-plein-ecran {
   display: grid;
   place-items: center;
@@ -3316,8 +3320,31 @@
   top: var(--e3-sous-bandeau);
   bottom: calc(8 * var(--u));
   left: var(--e8-gauche);
-  width: max(160px, calc(176 * var(--u)));
+  width: var(--e3-gauche, max(160px, calc(176 * var(--u))));
   overflow: auto;
+}
+
+/* Retour du propriétaire après le lot 8k : sur téléphone (paysage, faible hauteur), colonne des rubriques et bandeau de la Boutique plus étroits
+   (libellés sur deux lignes au besoin, bandeau réduit par ajusterTextes) : la zone des caisses et de leur aperçu s'élargit d'autant. */
+@media (max-height: 520px) {
+  .e3-boutique {
+    --e3-gauche: max(108px, calc(116 * var(--u)));
+  }
+
+  .e3-boutique > .menu-bandeau {
+    width: var(--e3-gauche);
+    padding-right: calc(8 * var(--u));
+    padding-left: calc(10 * var(--u));
+  }
+
+  .e3-boutique .e3-rubrique {
+    padding: 2px calc(6 * var(--u)) 2px calc(9 * var(--u));
+    line-height: 1.15;
+  }
+
+  .e3-boutique .e3-defile {
+    left: calc(var(--e8-gauche) + var(--e3-gauche) + 12 * var(--u));
+  }
 }
 
 .e3-rubriques ul {
@@ -3357,7 +3384,7 @@
   top: calc(12 * var(--u));
   right: 0;
   bottom: 0;
-  left: calc(var(--e8-gauche) + max(160px, calc(176 * var(--u))) + 24 * var(--u));
+  left: calc(var(--e8-gauche) + var(--e3-gauche, max(160px, calc(176 * var(--u)))) + 24 * var(--u));
   padding: 0 var(--e8-droite) calc(16 * var(--u)) 0;
   overflow-y: auto;
   overscroll-behavior: contain;
@@ -3464,6 +3491,133 @@
   margin: 0;
   padding: 0;
   list-style: none;
+}
+
+/* Retour du propriétaire après le lot 8k : une caisse par rubrique, et à sa droite un aperçu (pitié de la rubrique, légendaires possibles) qui
+   occupe la place des deux caisses retirées ; sur un écran étroit, l'aperçu passe sous la caisse. */
+.e3-rayon-corps {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: calc(16 * var(--u));
+}
+
+.e3-rayon-corps > .e3-cartes {
+  flex: 1 1 max(180px, calc((100% - 32 * var(--u)) / 3));
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.e3-apercu {
+  display: flex;
+  flex: 2 1 230px;
+  flex-direction: column;
+  gap: calc(5 * var(--u));
+  box-sizing: border-box;
+  min-width: 0;
+  padding: calc(8 * var(--u)) calc(12 * var(--u));
+  border: 3px solid var(--menu-scene-route-trait);
+  border-top-color: var(--e3-teinte, var(--menu-scene-route-trait));
+  background: var(--menu-e9-case);
+}
+
+.e3-apercu-titre {
+  margin: 0;
+  font-family: var(--font-label);
+  font-size: max(12px, calc(13 * var(--u)));
+  font-weight: var(--font-weight-normal);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--menu-carte-libelle);
+}
+
+.e3-apercu-pitie,
+.e3-apercu-legendaires {
+  display: flex;
+  flex-direction: column;
+  gap: calc(5 * var(--u));
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.e3-apercu-ligne {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 2px calc(8 * var(--u));
+  font-size: max(12px, calc(13 * var(--u)));
+}
+
+.e3-apercu-nom {
+  font-weight: var(--font-weight-bold);
+  color: var(--e3-rarete, var(--color-text));
+}
+
+.e3-apercu-compte {
+  font-variant-numeric: tabular-nums;
+}
+
+.e3-apercu-barre {
+  position: relative;
+  grid-column: 1 / -1;
+  height: max(6px, calc(7 * var(--u)));
+  border: 1px solid var(--menu-scene-route-trait);
+  background: var(--menu-nuit);
+}
+
+.e3-apercu-plein {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: var(--e3-rarete, var(--color-text));
+}
+
+.e3-apercu-repere {
+  position: absolute;
+  top: -3px;
+  bottom: -3px;
+  width: 2px;
+  background: var(--color-text);
+}
+
+.e3-apercu-texte {
+  grid-column: 1 / -1;
+  color: var(--menu-e9-texte-doux);
+}
+
+.e3-apercu-chance {
+  margin: 0;
+  font-size: max(12px, calc(13 * var(--u)));
+  color: var(--menu-record);
+}
+
+.e3-apercu-legendaires {
+  flex-flow: row wrap;
+  gap: calc(6 * var(--u));
+}
+
+.e3-apercu-element,
+.e3-apercu-autres {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(4 * var(--u));
+  padding: 2px calc(6 * var(--u)) 2px 2px;
+  border: 2px solid var(--e3-rarete, var(--menu-scene-route-trait));
+  font-size: max(12px, calc(12 * var(--u)));
+}
+
+.e3-apercu-autres {
+  padding-left: calc(6 * var(--u));
+  color: var(--menu-e9-texte-doux);
+}
+
+.e3-apercu-icone {
+  display: grid;
+  place-items: center;
+  color: var(--e3-rarete, var(--color-text));
+}
+
+.e3-apercu-icone .e9-buste {
+  width: max(14px, calc(16 * var(--u)));
+  height: max(19px, calc(22 * var(--u)));
 }
 
 .e3-carte {
@@ -3621,6 +3775,33 @@
   font-family: var(--font-sans);
   font-size: max(11px, calc(11 * var(--u)));
   letter-spacing: 0;
+}
+
+/* Lot 8k : prix des caisses en médailles : médaille (décorative, couleur du texte) puis montant ou « Il manque N médailles ». */
+.e3-ouvrir-ligne {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.e3-ouvrir-medaille {
+  flex: none;
+  width: 1.05em;
+  height: 1.05em;
+  fill: none;
+  stroke: currentcolor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* Lot 8k : compteurs de pitié dans « Voir les chances ». */
+.e3-chances-pitie {
+  margin: 0 0 calc(6 * var(--u));
+  padding: 0;
+  list-style: none;
+  font-weight: var(--font-weight-bold);
+  color: var(--menu-record);
 }
 
 .e3 .e3-rouge {
@@ -4860,8 +5041,8 @@
 
 .e10-stats {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: calc(10 * var(--u));
+  grid-template-columns: repeat(4, minmax(0, 1fr)); /* lot 8k : sept statistiques (médailles gagnées) sur deux rangées, cartes un peu plus serrées */
+  gap: calc(8 * var(--u));
   margin: 0;
   padding: 0;
   list-style: none;
@@ -4874,7 +5055,7 @@
   justify-content: center;
   gap: 2px;
   min-height: calc(78 * var(--u));
-  padding: calc(6 * var(--u)) calc(12 * var(--u));
+  padding: calc(5 * var(--u)) calc(7 * var(--u));
   line-height: 1.2;
   border: 2px solid var(--menu-panneau-bois);
   background: var(--menu-e9-panneau);
@@ -4883,7 +5064,7 @@
 .e10-stat-nom {
   font-weight: var(--font-weight-bold);
   font-size: max(11px, calc(12 * var(--u)));
-  letter-spacing: 0.06em;
+  letter-spacing: 0.02em;
   text-transform: uppercase;
   color: var(--menu-carte-libelle);
 }

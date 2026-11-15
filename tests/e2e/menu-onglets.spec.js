@@ -488,7 +488,7 @@ test.describe('onglet Infini (E8-4) et mode infini', () => {
       return { s: JSON.parse(localStorage.getItem(k)), vague: zs.getState().waves.wave };
     }, KEY);
     expect(apres.vague).toBe(16);
-    expect(apres.s.bleu.gagne).toBe(60); // bonus bleu de la manche 15, renforcée : (10 + 2 × 15) × 1,5 ; la jaune (77) n'est jamais écrite
+    expect(apres.s.bleu.gagne).toBe(30); // bonus bleu de la manche 15, renforcée : 20 × 1,5 (lot 8k : gain fixe ; avant : (10 + 2 × 15) × 1,5 = 60) ; la jaune (77) n'est jamais écrite
     expect(apres.s.records).toEqual({ histoire: { batiment: 12 }, infini: { batiment: 15 } }); // record de l'infini de la carte jouée (le monde 2 n'est pas jouable : le bâtiment) = dernière manche démarrée ; celui de l'histoire reste
     expect(apres.s.profil.partiesInfini).toBe(1);
     expect(apres.s.rev).toBeGreaterThan(1); // écrit dans zs.save.v2 (révision suivante)

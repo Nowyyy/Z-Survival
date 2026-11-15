@@ -39,7 +39,7 @@ import { createFloorFade } from './floor-fade.js';
 import { createBank } from './bank.js';
 import { createHud } from './hud.js';
 import { createPorteMessage } from './porte-message.js';
-import { createBleuManche } from './bleu-manche.js';
+import { createBleuManche, createMedaillesManche } from './bleu-manche.js';
 import { createSplashView } from './splash-view.js';
 import { pickGround } from './picking.js';
 import { STRIDE } from './skeleton.js';
@@ -139,6 +139,7 @@ export function createGame(ctx) {
   const effects = createEffects(world.effectsRoot, palette, { gunHeight: render.gunHeight, bulletRadius: cfg.weapon.bulletRadius });
   const hud = createHud(ctx.dict);
   const bleuManche = createBleuManche(ctx.dict, ctx.reglages?.bleuManche); // retour du propriétaire : solde bleu et gain sous la vague en fin de manche
+  const medManche = createMedaillesManche(ctx.dict, ctx.reglages?.bleuManche, bleuManche.element); // lot 8k : médailles gagnées, sous la monnaie bleue
   const porteMsg = siegeOn ? createPorteMessage(ctx.dict, ctx.reglages?.porte, doorCfgs) : null; // lot 8j : « Porte ouverte à la manche X » (lecture seule)
   const floorFade = createFloorFade();
   const splashView = createSplashView(ctx.dict);
@@ -707,6 +708,7 @@ export function createGame(ctx) {
           waveLive = announcedKey && announcedKey !== SPLASH_TEXTS.zoneSubtitle ? `${ctx.dict[SPLASH_TEXTS.zoneTitle]}. ${ctx.dict[announcedKey]}.` : ctx.dict[ZONE_TEXTS.liveZone];
         } else if (ev.type === 'doorOpen') {
           openDoor(ev.door);
+          bank.door(); // lot 8k : médailles d'une porte ouverte (écrites aussitôt)
           const sunk = doorById.get(ev.door)?.opening; // lot 3i : son du bloc de porte qui s'enfonce, à la position de la porte
           if (sunk) events.push({ type: 'doorSink', x: (sunk.x1 + sunk.x2) / 2, y: (sunk.y1 + sunk.y2) / 2, floor: doorById.get(ev.door).floor, door: ev.door });
           eventLog.push({ type: 'doorOpen', door: ev.door, wave: ev.wave, time: sim.time });
@@ -1052,6 +1054,7 @@ export function createGame(ctx) {
     floorFade.set(sim.trView.veil);
     porteMsg?.update(sim.player, pf(), sim.doors, !sim.dead);
     bleuManche.update(sim.time, !sim.dead && !sim.worldOver);
+    medManche.update(sim.time, bank.gainMedailles(), bank.soldeMedailles(), !sim.dead && !sim.worldOver);
     hud.updateDown(sim.down, sim.dead, cfg.down); // lot 3l : E2-10 dans la colonne centrale du HUD (js/game/hud.js)
     world.windowMeshes?.sync(sim.win); // pastille de la planche en cours de réparation : elle se remplit peu à peu
     updateEdgeArrows();

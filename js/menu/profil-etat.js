@@ -33,7 +33,8 @@ export { AVATARS, avatarSuivant } from './avatar.js';
 // progression v2 (zs.save.v2) : meilleure manche de l'histoire du monde (records.histoire[monde], 0 = aucune), zombies tués au total, parties en
 // histoire et en infini, temps de jeu hors pauses (millisecondes), monnaie bleue gagnée au total. Progression illisible, verrouillée ou
 // indisponible : tout à « — ».
-export const STATS_PROFIL = Object.freeze(['meilleureManche', 'tues', 'partiesHistoire', 'partiesInfini', 'temps', 'argent']);
+// Lot 8k : septième statistique, médailles gagnées au total (medailles.gagne ; 0 pour une progression d'avant le lot).
+export const STATS_PROFIL = Object.freeze(['meilleureManche', 'tues', 'partiesHistoire', 'partiesInfini', 'temps', 'argent', 'medailles']);
 export const STATS_EN_ATTENTE = Object.freeze([]);
 const entier = (n) => (Number.isInteger(n) && n >= 0 ? n : 0);
 export function statsProfil(lu, manches = 40, monde = 'batiment') {
@@ -47,6 +48,7 @@ export function statsProfil(lu, manches = 40, monde = 'batiment') {
     partiesInfini: s ? entier(s.profil?.partiesInfini) : null,
     temps: s ? entier(s.profil?.tempsMs) : null,
     argent: s ? entier(s.bleu?.gagne) : null,
+    medailles: s ? entier(s.medailles?.gagne) : null,
   };
   return STATS_PROFIL.map((id) => (id === 'meilleureManche' ? { id, valeur: valeurs[id], max: Number.isInteger(manches) && manches > 0 ? manches : null } : { id, valeur: valeurs[id] }));
 }

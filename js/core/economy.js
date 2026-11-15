@@ -143,3 +143,32 @@ export function formatMoneyCompact(n) {
   const text = tenths % 10 === 0 ? String(tenths / 10) : `${Math.floor(tenths / 10)},${tenths % 10}`;
   return `${text}${NBSP}${unit[1]}`;
 }
+
+// ---------------------------------------------------------------------------------------------------------------------------------------------
+// Lot 8k : médailles (troisième monnaie, gardée ; paie les caisses ; Docs/ref/economie.md). Valeurs de data/game/economy.json (medaille*,
+// maxMedailles) ; entiers ≥ 0, valeur absente ou invalide : 0 (aucun gain).
+const entier = (n) => (isNum(n) && n >= 0 ? Math.floor(n) : 0);
+// Porte ouverte pendant une partie.
+export const medaillePorte = (params) => entier(params?.medaillePorte);
+// Zombies tués dans la partie : passés de « avant » à « apres » → médailles des milliers (medailleZombiesPas) franchis entre les deux.
+export function medaillesZombies(avant, apres, params) {
+  const pas = entier(params?.medailleZombiesPas);
+  if (pas < 1) return 0;
+  const n = Math.floor(entier(apres) / pas) - Math.floor(entier(avant) / pas);
+  return n > 0 ? n * entier(params?.medailleZombies) : 0;
+}
+// Paliers (toutes les medaillePalierPas manches terminées) au-delà du plus haut palier déjà récompensé (deja), jusqu'à la manche terminée :
+// [paliers nouveaux], dans l'ordre. Ex. pas 5, deja 5, manche 17 → [10, 15].
+export function paliersNouveaux(deja, manche, params) {
+  const pas = entier(params?.medaillePalierPas);
+  if (pas < 1) return [];
+  const haut = Math.floor(Math.min(entier(manche), 1_000_000) / pas) * pas;
+  const out = [];
+  for (let p = (Math.floor(entier(deja) / pas) + 1) * pas; p <= haut && out.length < 1000; p += pas) out.push(p);
+  return out;
+}
+export const medaillePalier = (params) => entier(params?.medaillePalier);
+export const medailleMonde = (params) => entier(params?.medailleMonde);
+export const medailleJour = (params) => entier(params?.medailleJour);
+// Numéro du jour LOCAL d'une date donnée (Date de l'appareil, passée en argument : aucune horloge lue ici) ; offres du jour et partie du jour.
+export const jourLocal = (d) => Math.floor(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / 86_400_000);

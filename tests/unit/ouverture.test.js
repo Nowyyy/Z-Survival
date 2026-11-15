@@ -298,9 +298,12 @@ describe('rareté qui règle les effets (rareteEffets) et achats', () => {
     expect(rareteEffets(perso('--rarete-legendaire', false), 0, RARETES)).toBe('commun');
     expect(rareteEffets(null, 0, RARETES)).toBe('commun');
     expect(rareteEffets({ type: 'equipement', objets: [{ id: 'a', rarete: 'mythique' }] }, 0, RARETES)).toBe('commun');
-    // Caisses de personnages des données : recrues (rare), vétérans (épique), légendes (légendaire).
+    // Caisses de personnages des données (lot 8k : une seule, dessin et teinte des vétérans : épique ; avant : recrues rare, vétérans épique, légendes
+    // légendaire, toujours dans les données de référence du moteur).
     const caisses = lire('data/menu/caisses.json').caisses.filter((c) => c.type === 'personnage');
-    expect(caisses.map((c) => rareteEffets({ type: 'personnage', caisse: c, objets: [{ id: 'p' }], issues: [{ nouveau: true }] }, 0, RARETES))).toEqual(['rare', 'epique', 'legendaire']);
+    expect(caisses.map((c) => rareteEffets({ type: 'personnage', caisse: c, objets: [{ id: 'p' }], issues: [{ nouveau: true }] }, 0, RARETES))).toEqual(['epique']);
+    const reference = lire('tests/unit/helpers/caisses-lot-8e.json').caisses.filter((c) => c.type === 'personnage');
+    expect(reference.map((c) => rareteEffets({ type: 'personnage', caisse: c, objets: [{ id: 'p' }], issues: [{ nouveau: true }] }, 0, RARETES))).toEqual(['rare', 'epique', 'legendaire']);
   });
 
   it('chronologie d\'un achat : même ordre que le tirage ; offre du jour : aucune ouverture', () => {

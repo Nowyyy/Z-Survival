@@ -3,7 +3,7 @@
 // autre onglet se manifeste) et l'événement `storage` (un autre onglet a écrit : le menu se met à jour). Toute écriture du menu passe par commit()
 // (opérations de js/core/progression.js : le prix est prélevé dans la même écriture que l'objet obtenu, jamais l'un sans l'autre).
 import { createRepository } from '../save/index.js';
-import { solde as soldeDe } from '../core/progression.js';
+import { solde as soldeDe, soldeMedailles } from '../core/progression.js';
 import { pageSearch } from '../game/graphics-boot.js';
 
 // Identifiant unique d'opération ou d'achat : 8 chiffres hexadécimaux tirés par crypto (aucun générateur pseudo-aléatoire), plus un compteur de la page.
@@ -77,6 +77,7 @@ export function creerProgression(params, { search = pageSearch(), storage = stoc
       return lu;
     },
     solde: () => soldeDe(lu.save),
+    medailles: () => soldeMedailles(lu.save), // lot 8k
     // ops : opérations de js/core/progression.js. → { ok, refused: [{ id, raison }], error? } ; la progression lue est celle qui vient d'être écrite.
     commit(ops) {
       const r = repository.commit(ops, Date.now());
