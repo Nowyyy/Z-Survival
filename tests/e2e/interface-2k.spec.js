@@ -52,10 +52,19 @@ const taille = async (page, [width, height]) => {
 const facteur = (page) => page.evaluate(() => Number(getComputedStyle(document.documentElement).getPropertyValue('--ui-k')));
 // Capture avec les règles du lot, puis avec les règles d'avant : renvoie les deux tampons.
 // Hors HUD, le rappel du son (écran tactile) se masque au gré d'une minuterie de 2 s quand la partie est en pause : il est caché sur ces captures.
+// Lot 8l : avant chaque capture, mise en page forcée puis deux images (rendu stabilisé) ; sans cela, en mobile (densité 2,75) à 1920 × 1080, l'icône
+// du son de la pause différait de quelques pixels après l'injection des règles d'avant, à géométrie identique (course de rendu, pas une règle
+// différente : vérifié en relisant les boîtes, et un vrai changement de 3 px des cibles reste détecté).
+const stabiliser = (page) => page.evaluate(() => new Promise((r) => {
+  document.body.getBoundingClientRect();
+  requestAnimationFrame(() => requestAnimationFrame(r));
+}).catch(() => {}));
 async function avantApres(page, sansRappel = false) {
   const cache = sansRappel ? await page.addStyleTag({ content: '#sound-hint{visibility:hidden!important}' }) : null;
+  await stabiliser(page);
   const apres = await page.screenshot();
   const style = await page.addStyleTag({ content: AVANT });
+  await stabiliser(page);
   const avant = await page.screenshot();
   await style.evaluate((n) => n.remove());
   await cache?.evaluate((n) => n.remove());
