@@ -492,7 +492,7 @@ test.describe('préréglages graphiques', () => {
     await context.close();
   });
 
-  test('par défaut (lampes « off ») : modules des préréglages chargés, aucun module de ?perf ni l\'écran Options (importé à la première ouverture, une fois) ; aucune requête externe ; CLS ≤ 0,1', async ({ page, baseURL }) => {
+  test('par défaut (lampes « off ») : modules des préréglages chargés, aucun module de ?perf (getState().perf nul, aucun panneau) ni des lampes, ni l\'écran Options (importé à la première ouverture, une fois) ; aucune requête externe ; CLS ≤ 0,1', async ({ page, baseURL }) => {
     const files = [];
     const external = [];
     page.on('request', (r) => {
@@ -510,9 +510,13 @@ test.describe('préréglages graphiques', () => {
     for (const f of ['/js/game/profiler.js', '/js/game/perf-panel.js', '/js/game/frame-cap.js', '/js/core/perf-stats.js']) expect(files).not.toContain(f);
     expect(files).toContain('/js/game/ui-echelle.js'); // lot 8j : facteur de l'interface de la partie
     expect(new Set(files.filter((f) => f.endsWith('.js'))).size).toBe(123); // lot 8j : + js/game/ui-echelle.js, js/game/porte-message.js, js/core/porte-message.js, js/core/sons-coups.js, js/core/tir-traverse.js, js/game/bleu-manche.js (retour du propriétaire) ; lot 8h : + js/save/codecs.js et js/core/progression.js ; 109 avant le lot 5b + 4 modules des préréglages (lot 5j : inchangé ; lot 5k : lampes « off », inchangé) ; lot 8a : + js/menu/demarrage.js (choix du démarrage) ; lot 8f : + js/glisser.js (glissement à la souris, retour du propriétaire)
-    for (const f of ['/js/game/lamps.js', '/js/core/lamps.js', '/js/game/lights.js']) expect(files).not.toContain(f); // lot 5k
+    for (const f of ['/js/game/lamps.js', '/js/core/lamps.js', '/js/game/lights.js', '/data/game/lumieres.json']) expect(files).not.toContain(f); // lot 5k ; lot 8l : + lumieres.json (venu de lampes.spec.js)
+    expect(files.some((f) => f.includes('lampes'))).toBe(false); // lot 8l : venu de lampes.spec.js (« off » : aucun fichier des lampes)
     expect(files).not.toContain('/js/game/options-menu.js'); // lot 5j : rien de chargé tant que l'écran reste fermé
     expect(external).toEqual([]);
+    // Lot 8l (venu de perf.spec.js « par défaut ») : sans ?perf, getState().perf nul et aucun panneau de mesure.
+    expect(await page.evaluate(() => window.__zs.getState().perf)).toBeNull();
+    await expect(page.locator('#perf-panel')).toHaveCount(0);
     expect(await page.evaluate(() => window.__cls)).toBeLessThanOrEqual(0.1);
     await openOptions(page);
     await page.locator('#options-retour').click();

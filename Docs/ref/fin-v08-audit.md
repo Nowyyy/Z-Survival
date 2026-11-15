@@ -85,3 +85,6 @@
 18. Regrouper `lot-5p.md` dans `Docs/lots/versions/v0.7.md` (`regrouper.mjs`, garantie 6) et corriger la citation de `controle-publication.md`.
 19. Liens morts : corriger ceux des fiches mises à jour (16) ; `fusion-3g.md` et les gabarits `v0.N.md` laissés tels quels (bilans et documents historiques).
 20. Branches : aucune suppression (aucune branche hors V0.8 sur le dépôt distant) ; liste vide notée en partie D.
+
+## Décisions au GO
+Réponse du propriétaire (2026-11-15) : « go 8l » : **décisions 1 à 20 acceptées**, aucune refusée ni modifiée (la 7 vaut accord explicite pour `tests/budget-mesure.json`). Question jointe : pourquoi ne pas supprimer les branches de la V0.8 une fois `lot-8l` dans `dev` ? Réponse : rien ne l'empêche techniquement (toutes fusionnées, 0 commit absent) ; la règle du seed les garde jusqu'à la fin de la version, et l'agent ne peut pas supprimer (serveur des sessions) : les commandes sont données en partie D, facultatives.

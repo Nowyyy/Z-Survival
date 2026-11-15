@@ -5,7 +5,6 @@ import { hudBoxes } from './helpers.js';
 // Lot 5b-A : outil de mesure ?perf=1 (panneau, profileur, rapport à copier) et ?cap=N. Ce qu'un joueur voit ou fait : le panneau se charge, il ne
 // chevauche pas le HUD, il se lit (14 px, 44 px, axe), le rapport se copie ; par défaut rien de tout cela n'est demandé au réseau. 667 × 375, step().
 const SIZE = { width: 667, height: 375 };
-const PERF_FILES = ['/js/game/profiler.js', '/js/game/perf-panel.js', '/js/game/frame-cap.js', '/js/core/perf-stats.js'];
 
 async function open(page, query) {
   await page.setViewportSize(SIZE);
@@ -29,15 +28,9 @@ const overlaps = (a, b) => a.l < b.r && a.r > b.l && a.t < b.b && a.b > b.t;
 test.describe('outil de mesure (?perf=1)', () => {
   test.skip(({ isMobile }) => isMobile, 'bureau (la fenêtre est réglée par chaque test)');
 
-  test('par défaut : aucun fichier de ?perf ni de ?cap demandé, getState().perf nul, aucun panneau', async ({ page, baseURL }) => {
-    const seen = watch(page, baseURL);
-    await open(page, '&nospawn=1');
-    await page.evaluate(() => window.__zs.step(0.5));
-    for (const f of PERF_FILES) expect(seen.files).not.toContain(f);
-    expect(await page.evaluate(() => window.__zs.getState().perf)).toBeNull();
-    await expect(page.locator('#perf-panel')).toHaveCount(0);
-    expect(seen.external).toEqual([]);
-  });
+  // Lot 8l : « par défaut : aucun fichier de ?perf ni de ?cap demandé, getState().perf nul, aucun panneau » est vérifié par graphismes.spec.js
+  // (« par défaut (lampes « off ») », même partie : mêmes quatre fichiers absents, perf nul, aucun panneau, aucune requête externe).
+
 
   test('?perf=1 : panneau replié puis déplié sans chevaucher le HUD, mesures exposées, rapport au format, 14 px, 44 px, axe, rien stocké, console propre', async ({ page, baseURL }) => {
     const seen = watch(page, baseURL);

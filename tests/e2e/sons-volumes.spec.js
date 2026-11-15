@@ -1,13 +1,11 @@
 // Lot 8i-E : volumes du jeu et de la musique (Options du menu E5 et de la partie E2-12, même composant ; Docs/ref/sons-menu.md).
 // ?test=1&menu=1 ; l'état des gains (window.__zsMenu.sons().gains, window.__zs.getState().audio) remplace l'écoute. Réglages du menu appliqués
 // tout de suite aux sons du menu et à la partie après « JOUER » ; « Son coupé » coupe tout ; curseurs au clavier (lot 8j : au pour cent, Page haut / Page bas = ±10) ; 932 × 430, 667 × 375 et
-// téléphone à encoche simulé ; axe ; rien n'est écrit. Projets bureau et mobile (paysage ; mobile : les tests « tailles »).
+// téléphone à encoche simulé (lot 8l : disposition vérifiée par options-menu.spec.js) ; rien n'est écrit sans ?store=local. Projets bureau et mobile (paysage ; mobile : le test « curseurs au clavier »).
 import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 
 const REF = { width: 932, height: 430 };
-const PETIT = { width: 667, height: 375 };
-const ENCOCHE = { width: 762, height: 351 };
 const BRUIT = /GL Driver Message|GPU stall|swiftshader|WebGL/i;
 const sons = (page) => page.evaluate(() => window.__zsMenu.sons());
 const audioPartie = (page) => page.evaluate(() => window.__zs.getState().audio);
@@ -44,41 +42,8 @@ const fleches = async (page, sel, touche, n) => {
 };
 
 test.describe('volumes du jeu et de la musique', () => {
-  for (const [size, encoche] of [[REF, false], [PETIT, false], [ENCOCHE, true]]) {
-    test(`tailles ${size.width}×${size.height}${encoche ? ' (encoche simulée)' : ''} : section Son = Son, Volume du jeu, Volume de la musique ; curseurs nommés, dans l'écran, 44 px ; axe`, async ({ page }) => {
-      await ouvrirMenu(page, size, encoche);
-      await ouvrirOptions(page);
-      const lignes = page.locator('.e5-section[data-section="son"] .e5-ligne');
-      await expect(lignes).toHaveCount(3);
-      expect(await lignes.evaluateAll((ns) => ns.map((n) => n.dataset.option))).toEqual(['son', 'son-niveau', 'son-musique']);
-      await expect(page.locator('#options-volume')).toHaveAccessibleName('Volume du jeu');
-      await expect(page.locator('#options-volume-musique')).toHaveAccessibleName('Volume de la musique');
-      for (const sel of ['#options-volume', '#options-volume-musique']) {
-        await expect(page.locator(sel)).toHaveAttribute('min', '0');
-        await expect(page.locator(sel)).toHaveAttribute('max', '100');
-        await expect(page.locator(sel)).toHaveAttribute('step', '1');
-        await expect(page.locator(sel)).toHaveAttribute('aria-valuetext', '100 %');
-        await page.locator(sel).scrollIntoViewIfNeeded();
-        const r = await page.locator(sel).boundingBox();
-        expect(Math.round(r.height), sel).toBeGreaterThanOrEqual(44);
-        expect(Math.round(r.width), sel).toBeGreaterThanOrEqual(44);
-        const marge = encoche ? 50 : 0;
-        expect(r.x, sel).toBeGreaterThanOrEqual(marge - 0.5);
-        expect(r.x + r.width, sel).toBeLessThanOrEqual(size.width - marge + 0.5);
-      }
-      await expect(page.locator('#options-volume-valeur')).toHaveText('100 %');
-      await expect(page.locator('#options-volume-musique-valeur')).toHaveText('100 %');
-      // Chaque ligne : nom à gauche, valeurs à droite, sans chevauchement entre lignes.
-      const boites = await lignes.evaluateAll((ns) => ns.map((n) => {
-        const r = n.getBoundingClientRect();
-        return { t: r.top, b: r.bottom };
-      }));
-      for (let i = 1; i < boites.length; i += 1) expect(boites[i].t).toBeGreaterThanOrEqual(boites[i - 1].b - 0.5);
-      await page.locator('#options-scroll').evaluate((n) => { n.scrollTop = 0; });
-      const axe = await new AxeBuilder({ page }).include('#e8').analyze();
-      expect(axe.violations.map((v) => `${v.id} : ${v.nodes.map((n) => n.target).join(', ')}`)).toEqual([]);
-    });
-  }
+  // Lot 8l : les tests de disposition de la section Son (932 × 430, 667 × 375, encoche simulée) sont fusionnés dans le test de disposition
+  // d'options-menu.spec.js (même écran, même axe ; garde-fou entier, joué aussi sur téléphone, avec la taille à encoche).
 
   test('menu : curseurs au clavier, appliqués tout de suite aux sons du menu (effets et musique séparés) ; « Son coupé » coupe tout (musique arrêtée, clic refusé), « Activé » rétablit ; rien n\'est écrit', async ({ page, baseURL }) => {
     const problemes = [];
@@ -180,18 +145,7 @@ test.describe('volumes du jeu et de la musique', () => {
     expect(axe.violations.map((v) => `${v.id} : ${v.nodes.map((n) => n.target).join(', ')}`)).toEqual([]);
   });
 
-  test('« Son coupé » dans le menu, puis « JOUER » : la partie démarre coupée (effets et musique à zéro)', async ({ page }) => {
-    test.setTimeout(180_000);
-    await ouvrirMenu(page);
-    await ouvrirOptions(page);
-    await page.locator('#options-son-coupe').click();
-    await page.locator('#options-retour').click();
-    await page.locator('#menu-jouer').click();
-    await page.waitForFunction(() => (window.__zs?.getState()?.time ?? 0) > 0.05, null, { timeout: 120_000 });
-    const a = await audioPartie(page);
-    expect(a.muted).toBe(true);
-    expect(a.gains).toEqual({ effets: 0, musique: 0 });
-  });
+  // Lot 8l : « Son coupé dans le menu, puis JOUER : la partie démarre coupée » est fusionné dans options-menu.spec.js (section Son, même suite).
   // Lot 8h : son et volumes gardés dans l'appareil (zs.device.v1, champ son), relus au rechargement (retour au menu) : menu, partie et pause.
   test('?store=local : son et volumes gardés dans zs.device.v1 (graphismes intacts) ; rechargement : relus par le menu (sons du menu) et par la partie ; la pause les écrit aussi', async ({ page }) => {
     test.setTimeout(240_000);

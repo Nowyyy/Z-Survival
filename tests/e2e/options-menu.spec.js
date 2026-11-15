@@ -7,6 +7,7 @@ import AxeBuilder from '@axe-core/playwright';
 
 const REF = { width: 932, height: 430 };
 const SIZES = [REF, { width: 667, height: 375 }, { width: 1440, height: 900 }];
+const ENCOCHE = { width: 762, height: 351 }; // lot 8l : téléphone à encoche simulé (venu de sons-volumes.spec.js)
 const DEVICE = 'zs.device.v1';
 const SAVE = 'zs.save.v2'; // lot 8h : progression v2 (les Options ne l'écrivent jamais)
 const BRUIT = /GL Driver Message|GPU stall|swiftshader|WebGL/i; // messages du rendu logiciel de Chromium, sans rapport avec la page
@@ -26,7 +27,12 @@ function surveiller(page, baseURL) {
   return { problemes, externes, fichiers };
 }
 
-async function ouvrirMenu(page, size = REF, extra = '') {
+async function ouvrirMenu(page, size = REF, extra = '', encoche = false) {
+  if (encoche) await page.addInitScript(() => document.addEventListener('DOMContentLoaded', () => {
+    const s = document.createElement('style');
+    s.textContent = '#e8 { --e8-gauche: 50px !important; --e8-droite: 50px !important; }';
+    document.head.append(s);
+  }));
   await page.setViewportSize(size);
   await page.goto(`/jeu.html?test=1&menu=1&seed=1${extra}`);
   await expect(page.locator('#menu-jouer')).toBeVisible({ timeout: 60_000 });
@@ -47,10 +53,10 @@ const chevauche = (x, y) => x.l < y.r - 0.5 && y.l < x.r - 0.5 && x.t < y.b - 0.
 const presse = (page, sel) => page.locator(sel).evaluateAll((ns) => ns.filter((n) => n.getAttribute('aria-pressed') === 'true').map((n) => n.dataset.value ?? n.dataset.preset));
 
 test.describe('page Options du menu (E5)', () => {
-  for (const size of SIZES) {
-    test(`${size.width}×${size.height} : écran plein (en-tête gardé, onglets masqués) ; bandeau, « ‹ Menu », préréglages « Auto · détecté », note ; sections Son, Image, Carte, Personnages, Lumières ; pied ; rien hors de l'écran ni superposé ; 44 px ; axe ; console propre`, async ({ page, baseURL, isMobile }) => {
+  for (const [size, encoche] of [...SIZES.map((t) => [t, false]), [ENCOCHE, true]]) {
+    test(`${size.width}×${size.height}${encoche ? ' (encoche simulée)' : ''} : écran plein (en-tête gardé, onglets masqués) ; bandeau, « ‹ Menu », préréglages « Auto · détecté », note ; sections Son, Image, Carte, Personnages, Lumières ; section Son = Son, Volume du jeu, Volume de la musique, curseurs nommés dans l'écran (lot 8l : venu de sons-volumes.spec.js) ; pied ; rien hors de l'écran ni superposé ; 44 px ; axe ; console propre`, async ({ page, baseURL, isMobile }) => {
       const o = surveiller(page, baseURL);
-      await ouvrirMenu(page, size);
+      await ouvrirMenu(page, size, '', encoche);
       await ouvrirOptions(page);
       await expect(page.locator('#e8')).toHaveAttribute('data-ecran', 'options');
       await expect(page.locator('.e8-onglets')).toBeHidden();
@@ -109,6 +115,35 @@ test.describe('page Options du menu (E5)', () => {
         }
       }
       for (const n of await page.locator('.e5-valeur').all()) expect(Math.round((await n.boundingBox()).width)).toBeGreaterThanOrEqual(Math.min(76, Math.round(76 * Math.min(size.width / 932, size.height / 430))) - 1);
+      {
+        // Lot 8l (fusion, venu de sons-volumes.spec.js « tailles », même écran) : section Son = Son, Volume du jeu, Volume de la musique ;
+        // curseurs nommés, bornes, pas de 1 %, valeur lue, dans l'écran (marges de l'encoche), 44 px ; lignes sans chevauchement.
+        const lignes = page.locator('.e5-section[data-section="son"] .e5-ligne');
+        await expect(lignes).toHaveCount(3);
+        expect(await lignes.evaluateAll((ns) => ns.map((n) => n.dataset.option))).toEqual(['son', 'son-niveau', 'son-musique']);
+        await expect(page.locator('#options-volume')).toHaveAccessibleName('Volume du jeu');
+        await expect(page.locator('#options-volume-musique')).toHaveAccessibleName('Volume de la musique');
+        for (const sel of ['#options-volume', '#options-volume-musique']) {
+          await expect(page.locator(sel)).toHaveAttribute('min', '0');
+          await expect(page.locator(sel)).toHaveAttribute('max', '100');
+          await expect(page.locator(sel)).toHaveAttribute('step', '1');
+          await expect(page.locator(sel)).toHaveAttribute('aria-valuetext', '100 %');
+          await page.locator(sel).scrollIntoViewIfNeeded();
+          const r = await page.locator(sel).boundingBox();
+          expect(Math.round(r.height), sel).toBeGreaterThanOrEqual(44);
+          expect(Math.round(r.width), sel).toBeGreaterThanOrEqual(44);
+          const marge = encoche ? 50 : 0;
+          expect(r.x, sel).toBeGreaterThanOrEqual(marge - 0.5);
+          expect(r.x + r.width, sel).toBeLessThanOrEqual(size.width - marge + 0.5);
+        }
+        await expect(page.locator('#options-volume-valeur')).toHaveText('100 %');
+        await expect(page.locator('#options-volume-musique-valeur')).toHaveText('100 %');
+        const boites = await lignes.evaluateAll((ns) => ns.map((n) => {
+          const r = n.getBoundingClientRect();
+          return { t: r.top, b: r.bottom };
+        }));
+        for (let i = 1; i < boites.length; i += 1) expect(boites[i].t).toBeGreaterThanOrEqual(boites[i - 1].b - 0.5);
+      }
       await page.locator('#options-scroll').evaluate((n) => { n.scrollTop = 0; });
       const axe = await new AxeBuilder({ page }).include('#e8').analyze();
       expect(axe.violations.map((v) => `${v.id} : ${v.nodes.map((n) => n.target).join(', ')}`)).toEqual([]);
@@ -166,7 +201,7 @@ test.describe('page Options du menu (E5)', () => {
     expect(await page.locator('#options-preset-perso').evaluate((n) => getComputedStyle(n).textDecorationLine)).toContain('underline');
   });
 
-  test('section Son : son coupé puis activé, volume au pour cent (lot 8j : flèches ±1, Page bas −10 ; texte et valeur lue) ; repris par la partie après « JOUER »', async ({ page }) => {
+  test('section Son : son coupé puis activé, volume au pour cent (lot 8j : flèches ±1, Page bas −10 ; texte et valeur lue) ; repris par la partie après « JOUER » (coupée : effets et musique à zéro)', async ({ page }) => {
     test.setTimeout(150_000);
     await ouvrirMenu(page);
     await ouvrirOptions(page);
@@ -193,7 +228,9 @@ test.describe('page Options du menu (E5)', () => {
     await page.locator('#options-retour').click();
     await page.locator('#menu-jouer').click();
     await page.waitForFunction(() => (window.__zs?.getState()?.time ?? 0) > 0.05, null, { timeout: 120_000 });
-    expect((await page.evaluate(() => window.__zs.getState().audio))).toMatchObject({ muted: true, volume: 70 });
+    const audio = await page.evaluate(() => window.__zs.getState().audio);
+    expect(audio).toMatchObject({ muted: true, volume: 70 });
+    expect(audio.gains).toEqual({ effets: 0, musique: 0 }); // lot 8l : venu de sons-volumes.spec.js (« Son coupé » puis « JOUER » : effets et musique à zéro)
   });
 
   test('aucun fichier de Three.js ni du jeu chargé en ouvrant Options ; après « JOUER », la partie utilise le préréglage et le réglage au lancement choisis (?store=local) ; zs.device.v1 dans ses seuls champs, zs.save.v2 intact (lot 8h)', async ({ page, baseURL }) => {
