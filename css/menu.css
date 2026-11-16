@@ -1393,6 +1393,15 @@
   line-height: 1;
 }
 
+/* Lot 9a : « Jouer » de l'Infini désactivé tant que le monde choisi n'est pas terminé (raison dans le nom accessible). */
+.e8-infini-bouton[aria-disabled='true'] {
+  border-color: var(--menu-options-inactif-bord);
+  background: var(--menu-options-inactif);
+  box-shadow: none;
+  color: var(--menu-options-inactif-texte);
+  cursor: not-allowed;
+}
+
 .e8-infini-classement {
   position: absolute;
   top: calc(12 * var(--u));

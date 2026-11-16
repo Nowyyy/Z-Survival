@@ -1,7 +1,7 @@
 // Lot 8b : onglets Jouer (scène animée, record, portes, panneaux, monde suivant) et Infini (cartes, classement d'exemple, mode infini réel) du
 // menu principal (Docs/ref/menu-principal.md). ?test=1&menu=1 ; 932 × 430 (référence), 667 × 375, 1440 × 900 ; projets bureau et mobile (paysage).
 import { test, expect } from '@playwright/test';
-import { poserProgression } from './helpers.js';
+import { poserProgression, progressionDemo } from './helpers.js';
 import AxeBuilder from '@axe-core/playwright';
 
 const REF = { width: 932, height: 430 };
@@ -22,12 +22,13 @@ function surveiller(page, baseURL) {
 }
 
 // Sauvegarde de test (schéma de zs.save.v1 : seul records.bestWave compte ici), posée avant le chargement ; ?store=local la fait lire.
-async function poserRecord(page, bestWave) {
-  await page.addInitScript(([k, n]) => {
+// Lot 9a : mondes (facultatif) : mondes terminés en histoire (l'Infini d'un monde n'est jouable qu'une fois ce monde terminé).
+async function poserRecord(page, bestWave, mondes = []) {
+  await page.addInitScript(([k, n, m]) => {
     if (sessionStorage.getItem('zs.test.pose')) return; // une seule fois : les rechargements gardent ce que le jeu a écrit
     sessionStorage.setItem('zs.test.pose', '1');
-    localStorage.setItem(k, JSON.stringify({ v: 2, rev: 1, savedAt: 0, records: { histoire: { batiment: n }, infini: {} }, profil: { partiesHistoire: 1 } })); // lot 8h : record de l'histoire du bâtiment
-  }, [KEY, bestWave]);
+    localStorage.setItem(k, JSON.stringify({ v: 2, rev: 1, savedAt: 0, records: { histoire: { batiment: n }, infini: {} }, profil: { partiesHistoire: 1 }, mondes: m })); // lot 8h : record de l'histoire du bâtiment
+  }, [KEY, bestWave, mondes]);
 }
 
 async function ouvrirMenu(page, size = REF, extra = '') {
@@ -277,7 +278,18 @@ test.describe('onglet Jouer (E8-3)', () => {
   });
 });
 
+// Lot 9a : l'Infini du monde 1 n'est jouable que si ce monde a été terminé ; sans sauvegarde posée par le test, une progression avec le monde 1
+// terminé est posée (une fois) et lue par ?store=local (avant : mémoire de ?test=1, aucun monde terminé nécessaire).
+const poserMonde1 = (page) => page.addInitScript((k) => {
+  if (sessionStorage.getItem('zs.test.pose')) return;
+  sessionStorage.setItem('zs.test.pose', '1');
+  localStorage.setItem(k, JSON.stringify({ v: 2, rev: 1, savedAt: 0, mondes: ['batiment'] }));
+}, KEY);
 async function ouvrirInfini(page, size = REF, extra = '') {
+  if (!extra.includes('store=')) {
+    await poserMonde1(page);
+    extra = `${extra}&store=local`;
+  }
   await ouvrirMenu(page, size, extra);
   await page.locator('#menu-onglet-infini').click();
   await expect(page.locator('#menu-infini-jouer')).toBeVisible();
@@ -333,7 +345,8 @@ test.describe('onglet Infini (E8-4) et mode infini', () => {
   test('rangée : défile à la molette et par la flèche ; carte verrouillée non sélectionnable ; carte choisie gardée (mémoire) ; Infini chargé à la demande', async ({ page, baseURL }) => {
     const fichiers = [];
     page.on('request', (r) => r.url().startsWith(baseURL) && fichiers.push(new URL(r.url()).pathname));
-    await ouvrirMenu(page);
+    await poserMonde1(page); // lot 9a : monde 1 terminé (Infini jouable), lu par ?store=local
+    await ouvrirMenu(page, REF, '&store=local');
     expect(fichiers.filter((f) => /infini\.js$|classement\.json$/.test(f))).toEqual([]); // ni l'écran Infini ni le classement au démarrage
     expect(fichiers.filter((f) => /\/js\/menu\/jouer\.js$|\/data\/menu\/mondes\.json$/.test(f))).toHaveLength(2); // l'onglet Jouer, oui
     await page.locator('#menu-onglet-infini').click();
@@ -352,7 +365,7 @@ test.describe('onglet Infini (E8-4) et mode infini', () => {
     await page.locator('#menu-carte-monde-3').click({ force: true }); // aria-disabled : Playwright ne clique pas sans force
     expect(await libelles(page)).toEqual(['Monde 1 · Choisie', ...[2, 3, 4, 5, 6].map((n) => `Monde ${n} · Verrouillée`)]);
     await expect(page.locator('#menu-carte-batiment')).toHaveAttribute('aria-pressed', 'true');
-    expect((await page.evaluate(() => window.__zsMenu.etat().menu)).infini).toEqual({ choisi: 'batiment', record: null }); // lot 8h : record de l'infini de la carte (aucun ici)
+    expect((await page.evaluate(() => window.__zsMenu.etat().menu)).infini).toEqual({ choisi: 'batiment', record: null, jouable: true, termines: ['batiment'] }); // lot 8h : record de l'infini de la carte (aucun ici) ; lot 9a : carte jouable (monde 1 terminé)
     // Retour à Jouer puis à Infini : même écran, même choix.
     await page.locator('#menu-onglet-jouer').click();
     await page.locator('#menu-onglet-infini').click();
@@ -398,7 +411,8 @@ test.describe('onglet Infini (E8-4) et mode infini', () => {
     await page.locator('#menu-infini-jouer').click();
     await expect(page.locator('#game-root')).toBeVisible({ timeout: 60_000 });
     await page.waitForFunction(() => (window.__zs?.getState()?.time ?? 0) > 0.05, null, { timeout: 60_000 });
-    expect(await page.evaluate(() => { const s = window.__zs.getState(); return [s.mode, s.save.readOnly, s.save.status, s.waves.wave]; })).toEqual(['infini', false, 'memory', 1]);
+    // Lot 9a : la carte n'est jouable qu'avec le monde 1 terminé, posé dans le vrai stockage (avant : mémoire de ?test=1, état « memory »).
+    expect(await page.evaluate(() => { const s = window.__zs.getState(); return [s.mode, s.save.readOnly, s.save.kind, s.waves.wave]; })).toEqual(['infini', false, 'local', 1]);
     await expect(page.locator('#hud')).not.toContainText('/ 40');
     await expect(page.locator('#hud-trial')).toBeHidden(); // pas de « Mode essai » (adresse sans paramètre d'essai)
     expect(page.url()).not.toMatch(/endless|wave=/);
@@ -426,7 +440,7 @@ test.describe('onglet Infini (E8-4) et mode infini', () => {
       const page = await context.newPage();
       // Onglet « caché » : la boucle d'images ne tourne pas, seul step() fait avancer la partie (méthode de trace-logique.mjs).
       await page.addInitScript(() => Object.defineProperty(Document.prototype, 'hidden', { get: () => true, configurable: true }));
-      if (viaMenu) await poserProgression(page); // lot 8h : équipement de démonstration (nouveau joueur : rien d'équipé)
+      if (viaMenu) await poserProgression(page, progressionDemo({ extra: { mondes: ['batiment'] } })); // lot 8h : équipement de démonstration (nouveau joueur : rien d'équipé) ; lot 9a : monde 1 terminé (Infini jouable)
       await page.goto(url);
       if (viaMenu) {
         await expect(page.locator('#menu-jouer')).toBeVisible({ timeout: 60_000 });
@@ -474,7 +488,7 @@ test.describe('onglet Infini (E8-4) et mode infini', () => {
     await page.addInitScript((k) => {
       if (!sessionStorage.getItem('zs.test.pose')) {
         sessionStorage.setItem('zs.test.pose', '1');
-        localStorage.setItem(k, JSON.stringify({ v: 2, rev: 1, savedAt: 0, records: { histoire: { batiment: 7 }, infini: { batiment: 23 } } }));
+        localStorage.setItem(k, JSON.stringify({ v: 2, rev: 1, savedAt: 0, records: { histoire: { batiment: 7 }, infini: { batiment: 23 } }, mondes: ['batiment'] })); // lot 9a : monde 1 terminé
       }
       window.__ecritures = [];
       const set = Storage.prototype.setItem;
@@ -491,7 +505,7 @@ test.describe('onglet Infini (E8-4) et mode infini', () => {
 
   test('?store=local : visite du menu sans écriture ; en mode infini (lot 8h), la bleue des manches est écrite, la jaune jamais, le record de l\'infini est séparé de celui de l\'histoire', async ({ page }) => {
     test.setTimeout(150_000);
-    await poserRecord(page, 12);
+    await poserRecord(page, 12, ['batiment']); // lot 9a : monde 1 terminé (Infini jouable)
     await page.addInitScript(() => {
       window.__ecritures = [];
       const set = Storage.prototype.setItem;

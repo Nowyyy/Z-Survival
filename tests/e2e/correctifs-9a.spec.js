@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import AxeBuilder from '@axe-core/playwright';
 import { readFileSync } from 'node:fs';
 import { buildLayouts } from '../../js/core/layout.js';
 import { parseZones, zonesToWorld } from '../../js/core/zones.js';
@@ -96,5 +97,67 @@ test.describe('portes, hélicoptère et sol de la capture (lot 9a)', () => {
     const sans = await mesure('&percee=0');
     expect(sans.p).toEqual(avec.p);
     expect(Math.abs(sans.img.meanLuminance - avec.img.meanLuminance)).toBeLessThan(0.01);
+  });
+});
+
+// Lot 9a : onglet Infini : carte jouable seulement quand son monde a été terminé en entier (progression v2, champ « mondes »). Bureau et mobile
+// (garde-fou du palier complet : motif « Infini »).
+test.describe('Infini après le monde terminé (lot 9a)', () => {
+  test('Infini verrouillé sans monde terminé (cadenas, raison, « Jouer » désactivé et nommé, aucune écriture) ; débloqué par l\'outil de débogage, sans aucun gain ; axe ; 44 px', async ({ page }) => {
+    test.setTimeout(150_000);
+    await page.addInitScript(() => {
+      if (sessionStorage.getItem('zs.test.infini')) return;
+      sessionStorage.setItem('zs.test.infini', '1');
+      localStorage.clear();
+      localStorage.setItem('zs.save.v2', JSON.stringify({ v: 2, rev: 1, savedAt: 1, bleu: { gagne: 300, depense: 0 }, medailles: { gagne: 120, depense: 0, jour: 0 }, records: { histoire: { batiment: 17 }, infini: {} } }));
+      window.__ecritures = [];
+      const set = Storage.prototype.setItem;
+      Storage.prototype.setItem = function (k, v) { window.__ecritures.push(k); return set.call(this, k, v); };
+    });
+    await page.setViewportSize({ width: 667, height: 375 }); // paysage (le projet mobile part en portrait)
+    await page.goto('/jeu.html?test=1&menu=1&seed=1&store=local');
+    await expect(page.locator('#menu-jouer')).toBeVisible({ timeout: 60_000 });
+    await page.waitForFunction(() => window.__zsMenu?.etat()?.menu !== null && !document.getElementById('e7'));
+    await page.locator('#menu-onglet-infini').click();
+    await expect(page.locator('#menu-ecran-infini')).toBeVisible();
+    const carte = page.locator('#menu-carte-batiment');
+    await expect(carte).toHaveAttribute('aria-disabled', 'true');
+    await expect(carte).toHaveClass(/e8-infini-carte-verrouillee/);
+    await expect(carte.locator('.e8-infini-cadenas')).toHaveCount(1);
+    await expect(carte.locator('.e8-infini-mini-ruban')).toHaveCount(1);
+    await expect(carte.locator('.e8-infini-carte-detail')).toHaveText('Termine le monde 1 pour débloquer l\'Infini');
+    await expect(carte.locator('.e8-infini-carte-libelle')).toHaveText('Monde 1 · Verrouillée');
+    const jouer = page.locator('#menu-infini-jouer');
+    await expect(jouer).toHaveAttribute('aria-disabled', 'true');
+    await expect(jouer).toHaveAccessibleName('Jouer · verrouillé : Termine le monde 1 pour débloquer l\'Infini');
+    await jouer.click({ force: true }); // désactivé (aria-disabled) : rien
+    await page.waitForTimeout(300);
+    await expect(page.locator('#menu-ecran-infini')).toBeVisible(); // aucune partie lancée
+    expect(await page.evaluate(() => window.__ecritures.filter((k) => k === 'zs.save.v2'))).toEqual([]); // visite : aucune écriture
+    for (const sel of ['#menu-infini-jouer', '#menu-carte-batiment']) {
+      const r = await page.locator(sel).boundingBox();
+      expect([r.width >= 44, r.height >= 44], sel).toEqual([true, true]);
+    }
+    expect((await new AxeBuilder({ page }).include('#menu-ecran-infini').analyze()).violations.map((v) => v.id)).toEqual([]);
+    // Outil de débogage : « Marquer le monde 1 terminé » (confirmation, écriture réelle, aucun gain) ; la carte se débloque aussitôt.
+    await page.locator('#menu-debogage-ouvrir').click();
+    await page.locator('#menu-debogage-monde').click();
+    await expect(page.locator('#menu-debogage-question')).toHaveText('Confirmer : Marquer le monde 1 terminé ?');
+    await page.locator('#menu-debogage-oui').click();
+    await expect(page.locator('#menu-debogage-message')).toHaveText('C\'est fait.');
+    await page.keyboard.press('Escape');
+    const lu = JSON.parse(await page.evaluate(() => localStorage.getItem('zs.save.v2')));
+    expect([lu.mondes, lu.bleu, lu.medailles, lu.mondesFinis ?? [], lu.records.histoire]).toEqual([['batiment'], { gagne: 300, depense: 0 }, { gagne: 120, depense: 0, jour: 0 }, [], { batiment: 17 }]);
+    await expect(carte).not.toHaveAttribute('aria-disabled', 'true');
+    await expect(carte.locator('.e8-infini-cadenas')).toHaveCount(0);
+    await expect(carte.locator('.e8-infini-carte-detail')).toHaveText('Record : —');
+    await expect(carte.locator('.e8-infini-carte-libelle')).toHaveText('Monde 1 · Choisie');
+    await expect(jouer).not.toHaveAttribute('aria-disabled', 'true');
+    await expect(jouer).toHaveAccessibleName('Jouer');
+    expect((await new AxeBuilder({ page }).include('#menu-ecran-infini').analyze()).violations.map((v) => v.id)).toEqual([]);
+    // Jouable : « Jouer » lance le mode infini sur le monde 1.
+    await jouer.click();
+    await expect(page.locator('#game-root')).toBeVisible({ timeout: 60_000 });
+    await page.waitForFunction(() => (window.__zs?.getState()?.time ?? 0) > 0.05, null, { timeout: 60_000 });
   });
 });
