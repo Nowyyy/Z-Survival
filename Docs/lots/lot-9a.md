@@ -24,7 +24,7 @@
 ## Infini
 - Carte jouable seulement si son monde est dans `mondes` (fin du monde en histoire) ; sinon cadenas, « Termine le monde 1 pour débloquer l'Infini », « Jouer » désactivé et nommé ; aucune écriture ; outil « Marquer le monde 1 terminé » (sans gain) ; bureau et mobile, axe, 44 px.
 ## Sol de la capture
-- **Ce n'est pas une collision manquante ni le mur percé** : ce sont les **sacs de sable** `sacs-1` et `sacs-2` (décor léger du lot 3g, `decor-interieur.world.json`, 18 de haut, texture d'atlas « bois »), **non solides par conception** ; le liseré brun = **plinthes**. Même image avec `?percee=0` ; absents en Faible. Rien changé (idées plus bas).
+- **Ce n'est pas une collision manquante ni le mur percé** : ce sont les **sacs de sable** `sacs-1` et `sacs-2` (décor léger du lot 3g, 18 de haut, texture d'atlas « bois »), **non solides par conception** ; le liseré brun = **plinthes**. **Commit I (décision du propriétaire)** : toile de jute et collision à tous les réglages, tirs par-dessus (`Docs/ref/retours-9a.md`).
 ## Preuves
 - G1 trace 6 × 600 identique à chaque pas, champ d'économie (`economy`) compris, et chaîne sans lui identique. G2 hors hélicoptère : seule différence, le message de porte désormais affiché à 120 (R1, voulu) ; vue de l'hélicoptère : seuls ses pixels. G3-G6 : Vitest et Playwright ci-dessus. G7 aucune requête externe ; fichiers au démarrage identiques (menu 59, partie 174). G8 Lighthouse 5 passes : `index.html` 90 (réf. 90), `jeu.html` 75 (réf. 77), CLS ≤ 0,001. Tests du palier complet relancés en local (bureau, mode complet ; monnaies, fin de partie, vagues, zones, épaves, menu) : 351 + 351 + 192 + 139 exécutions, vertes après adaptation (2 échecs de textes corrigés et relancés) ; mobile (menu, Infini) : 221 vertes.
 ## Tests adaptés (tests / assertions, avant → après)
@@ -34,7 +34,7 @@
 ## Points ouverts
 - Pas de marque de format (voir Monnaies) ; titre du test caisses-pitie gardé (« médailles » = monnaie des caisses). **Retours du propriétaire après la fusion (commit G)** : gains de la partie écrits à la mort ou au monde, perdus à « Quitter » ; « +N » en double retiré ; « Bonus du jour obtenu » ; texte de l'Infini raccourci ; ligne de pitié masquée ; sticks coincés après rotation ou arrière-plan corrigés ; **menu de débogage refait (commit H)** : état de la sauvegarde, cartes d'outils avec leur effet, sans défiler : `Docs/ref/retours-9a.md`.
 ## Idées
-- Sacs de sable : texture de toile ou de jute, ou solides comme un meuble (décision du propriétaire) ; carte de l'Infini : raison sur deux lignes.
+- Carte de l'Infini : raison sur deux lignes.
 ## Entrée du journal
 - `lot-9a` (v0.9, 2026-11-15) « Début de la V0.9 : médailles et diamants intervertis, Zollars » ; bloc `[lot-9a]` `afficher: oui`.
 ## Lignes à ajouter à `conventions.md`

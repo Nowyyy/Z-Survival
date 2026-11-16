@@ -32,6 +32,7 @@ Base `origin/dev` `119457f` (seed 0.36, bilan 8m, `main` `e6550bf` ancêtre de `
 ## 6. Point 7 : sol « en bois » de la capture
 - Reproduit au rez-de-chaussée, joueur en (1650, 1885), contre le mur nord, sous l'hélicoptère, près de `lampe-r4` : rectangle orangé sous le joueur = **`sacs-1`** (et `sacs-2` à côté, tourné) : **sacs de sable**, décor léger du lot 3g (`decor-interieur.world.json`, `js/core/decor-interieur.js`, catalogue `sacs` : 18 de haut, région d'atlas `bois`, **non solides par conception** : aucun effet sur collisions, chemin, tirs). Le liseré brun = **plinthes** (`plinthe`, `bois-sombre`, 8 de haut). Ce n'est pas le mur percé : capture identique avec `?percee=0`. Absent en Faible (décor léger coupé).
 - Réponse : pas une collision manquante (la règle « chaque meuble bloque son rectangle » du lot 8j vise les meubles ; le décor léger est non solide par catalogue). Rien n'est changé ; idées au bilan.
+- **Lot 9a-I (décision du propriétaire : « texture toile de jute avec une hitbox »)** : sacs solides et en jute ; détail dans `Docs/ref/retours-9a.md`.
 
 ## 7. Interversion des monnaies : méthode retenue
 - Champs de la sauvegarde **gardés** et nommés par leur **origine** : `bleu` = gagné aux manches et au monde (V0.9 : **médailles**), `medailles` = gagné aux portes, milliers, paliers, premier monde, jour (V0.9 : **diamants**). Chaque solde suit donc déjà la façon dont il a été gagné : l'interversion se fait **à l'écran** (libellés, icônes, couleurs), aucune donnée n'est déplacée.

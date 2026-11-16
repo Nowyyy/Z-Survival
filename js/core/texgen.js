@@ -589,6 +589,56 @@ GENRES.denim = {
   },
 };
 
+// Lot 9a-I (retour du propriétaire : les sacs de sable avaient la texture « bois ») : toile de jute, armure toile grossière. `threads` fils par côté
+// (diviseur de la taille : raccord parfait), dessus et dessous alternés en damier, fil bombé (clair au milieu, sombre sur les bords), jours sombres
+// entre les fils (couleur `dark`), grosseur et teinte variables d'un fil à l'autre (fils irréguliers du jute), poils et taches légères.
+GENRES.burlap = {
+  colors: ['fiber', 'dark'], main: 'fiber', tile: 'xy',
+  make({ w, h, c, p, seed }) {
+    const threads = Math.round(param(p, 'threads', 16, 4, 64));
+    const cw = w / threads;
+    const ch = h / threads;
+    const stain = makeFbm(3, 3, seed + 1, 3, 0.55);
+    const fuzz = makeNoise(threads * 2, threads * 2, seed + 2);
+    return (x, y, out) => {
+      const i = Math.floor(x / cw);
+      const j = Math.floor(y / ch);
+      const fx = (x + 0.5) / cw - i; // position dans la cellule, 0 à 1
+      const fy = (y + 0.5) / ch - j;
+      const warpUp = ((i + j) & 1) === 0; // fil de chaîne (vertical, colonne i) dessus, sinon fil de trame (horizontal, rangée j)
+      // Demi-largeur de chaque fil (jute irrégulier) ; hors des deux fils : jour entre les fils.
+      const wv = 0.34 + hash(i, 1, seed + 3) * 0.14;
+      const wh = 0.34 + hash(1, j, seed + 4) * 0.14;
+      const dv = Math.abs(fx - 0.5);
+      const dh = Math.abs(fy - 0.5);
+      const onV = dv < wv;
+      const onH = dh < wh;
+      const u = x / w;
+      const v = y / h;
+      const tache = 1 - Math.max(0, stain(u, v) - 0.55) * 0.9;
+      const grain = 1 + (fuzz(u, v) - 0.5) * 0.18 + (hash(x, y, seed + 5) - 0.5) * 0.1;
+      if (!onV && !onH) {
+        out[0] = c.dark[0] * 0.55 * tache;
+        out[1] = c.dark[1] * 0.55 * tache;
+        out[2] = c.dark[2] * 0.55 * tache;
+        return;
+      }
+      const vertical = onV && (!onH || warpUp); // fil vu : celui du dessus là où ils se croisent
+      const d = vertical ? dv / wv : dh / wh; // 0 au milieu du fil, 1 au bord
+      const long = vertical ? fy : fx; // le long du fil : il plonge sous l'autre aux bords de la cellule
+      const plonge = 0.82 + 0.18 * Math.sin(long * Math.PI);
+      const teinte = 0.86 + hash(vertical ? i : j, vertical ? 3 : 4, seed + 6) * 0.26;
+      // Fibres : stries le long du fil (bruit par pixel en travers, par tronçon de 3 px le long).
+      const strie = 1 + (hash(vertical ? x : Math.floor(x / 3), vertical ? Math.floor(y / 3) : y, seed + 7) - 0.5) * 0.24;
+      const k = (1.08 - d * d * 0.5) * plonge * teinte * grain * strie * tache;
+      const t = Math.min(1, d * d * 0.35);
+      out[0] = (c.fiber[0] + (c.dark[0] - c.fiber[0]) * t) * k;
+      out[1] = (c.fiber[1] + (c.dark[1] - c.fiber[1]) * t) * k;
+      out[2] = (c.fiber[2] + (c.dark[2] - c.fiber[2]) * t) * k;
+    };
+  },
+};
+
 GENRES.leather = {
   colors: ['leather'], main: 'leather', tile: 'xy',
   make({ w, h, c, seed }) {

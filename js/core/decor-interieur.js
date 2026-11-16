@@ -1,4 +1,5 @@
-// Décor léger intérieur (lot 3g, partie C) : objets NON solides (aucun effet sur les collisions, le chemin, les tirs, les règles ni la visite),
+// Décor léger intérieur (lot 3g, partie C) : objets NON solides (aucun effet sur les collisions, le chemin, les tirs, les règles ni la visite ;
+// exception du lot 9a-I : les genres marqués `solide` deviennent des obstacles de world.json, voir solidesDecor),
 // d'après data/game/maps/rez-de-chaussee/decor-interieur.json (pixels du plan). Pur : conversion en unités du jeu, contrôle des zones
 // interdites et géométrie en quadrilatères (le rendu les fusionne par étage dans l'atlas de props). Aucune exception sur des entrées inattendues.
 import { pointInPolygon } from './shape.js';
@@ -17,7 +18,10 @@ export const CATALOGUE = Object.freeze({
   affiche: Object.freeze({ wall: true, z0: 20, z1: 46, depth: 0.6, tris: 2, region: 'peinture-2', scale: 60 }),
   tapis: Object.freeze({ wall: false, z0: 0.6, z1: 0.6, tris: 2, region: 'peinture-1', scale: 120 }),
   tache: Object.freeze({ wall: false, z0: 0.4, z1: 0.4, tris: 8, region: 'ecorce', scale: 80 }),
-  sacs: Object.freeze({ wall: false, z0: 0, z1: 18, tris: 10, region: 'bois', scale: 40 }),
+  // Lot 9a-I (retour du propriétaire) : sacs de sable SOLIDES, en toile de jute. npm run carte les écrit dans world.json comme obstacles (meuble
+  // de genre « sacs », hauteur z1) : ils bloquent le joueur et les zombies à tous les réglages, les tirs passent par-dessus (tirs-traversables.json) ;
+  // dessinés avec le mobilier (sacsBoxes, texture « toile-jute »), plus dans le décor léger.
+  sacs: Object.freeze({ wall: false, z0: 0, z1: 18, tris: 10, region: 'bois', scale: 40, solide: true }),
   bidon: Object.freeze({ wall: false, z0: 0, z1: 28, tris: 10, region: 'barriere', scale: 40 }),
   // Lot 3g (retour du propriétaire) : ouverture à barreaux du modèle (à la place de F7, et à l'ouest de F8). Le jeu coupe le mur et dessine de vrais barreaux
   // (js/game/world.js, js/core/portes-aspect.js : grilleBoxes) ; itemQuads n'en donne qu'un aperçu plat (8 barreaux, 2 traverses), non dessiné dans le jeu.
@@ -224,6 +228,68 @@ export function itemQuads(item) {
     quads.push(q([[p0[0], z1, p0[1]], [p1[0], z1, p1[1]], [p1[0], z0, p1[1]], [p0[0], z0, p0[1]]], [ey / L, 0, -ex / L], [L, z1 - z0]));
   }
   return quads;
+}
+
+// Lot 9a-I : éléments solides (genres `solide` du catalogue) → obstacles de world.json, meubles de leur genre : { id, x, y, w, h, hauteur, kind,
+// source? } (rectangle droit : un élément tourné prend son rectangle englobant). Les autres éléments restent du décor léger.
+export function solidesDecor(items) {
+  const solides = [];
+  const legers = [];
+  for (const it of list(items)) {
+    if (!isObject(it) || !CATALOGUE[it.kind]?.solide || CATALOGUE[it.kind].wall) { legers.push(it); continue; }
+    const rot = (num(it.rot, 0) * Math.PI) / 180;
+    const c = Math.abs(Math.cos(rot));
+    const sn = Math.abs(Math.sin(rot));
+    const w = it.w * c + it.h * sn;
+    const h = it.w * sn + it.h * c;
+    solides.push({ floor: it.floor, obstacle: { id: it.id, x: r2(it.x + it.w / 2 - w / 2), y: r2(it.y + it.h / 2 - h / 2), w: r2(w), h: r2(h), hauteur: num(it.z1, CATALOGUE[it.kind].z1), kind: it.kind, ...(it.source ? { source: it.source } : {}) } });
+  }
+  return { solides, legers };
+}
+
+// Lot 9a-I : dessin d'un tas de sacs de sable dans son rectangle de collision { x, y, w, h, hauteur } : des rangées de sacs couchés le long du mur
+// (opts.alongX : sacs parallèles à x, sinon à y ; par défaut le long du grand côté), une rangée sur deux décalée d'un demi-sac (appareil en
+// quinconce, comme un mur de sacs vu du dessus), joints ouverts entre les sacs, chaque sac bombé (un dessus plus étroit). Boîtes { x0, x1, y0, y1,
+// z0, z1, teinte } (x, hauteur, y du jeu ; teinte de 0,7 à 1,04, différente d'un sac à ses voisins), jamais hors du rectangle ni au-dessus de la
+// hauteur. Pur, sans hasard.
+export function sacsBoxes(rect, opts = {}) {
+  if (!isObject(rect) || ![rect.x, rect.y, rect.w, rect.h].every(isNum) || rect.w <= 0 || rect.h <= 0) return [];
+  const H = Math.max(4, num(rect.hauteur, 18));
+  const alongX = typeof opts?.alongX === 'boolean' ? opts.alongX : rect.w >= rect.h;
+  const L = alongX ? rect.w : rect.h;
+  const D = alongX ? rect.h : rect.w;
+  const n = Math.max(1, Math.round(L / 26)); // sacs par rangée (environ 26 de long)
+  const m = Math.max(1, Math.round(D / 15)); // rangées (environ 15 de large)
+  const gap = 3;
+  const len = (L - gap * (n - 1)) / n;
+  const wid = (D - gap * (m - 1)) / m;
+  const cap = Math.min(2.5, H * 0.14); // bombé du dessus
+  const TEINTES = [1.04, 0.78, 0.94, 0.7, 0.88, 0.98, 0.74];
+  const out = [];
+  const r = (v) => Math.round(v * 100) / 100;
+  let rang = 0;
+  const sac = (a0, a1, d0, d1) => {
+    if (a1 - a0 < 4) return;
+    const teinte = TEINTES[rang % TEINTES.length];
+    rang += 1;
+    const b = (s0, s1, t0, t1, h0, h1) => (alongX ? { x0: rect.x + s0, x1: rect.x + s1, y0: h0, y1: h1, z0: rect.y + t0, z1: rect.y + t1 } : { x0: rect.x + t0, x1: rect.x + t1, y0: h0, y1: h1, z0: rect.y + s0, z1: rect.y + s1 });
+    const k = (o) => ({ ...Object.fromEntries(Object.entries(o).map(([key, v]) => [key, r(v)])), teinte });
+    out.push(k(b(a0, a1, d0, d1, 0, H - cap)));
+    const ia = Math.min(3.5, (a1 - a0) / 4);
+    const id = Math.min(3, (d1 - d0) / 4);
+    out.push(k(b(a0 + ia, a1 - ia, d0 + id, d1 - id, H - cap, H)));
+  };
+  for (let j = 0; j < m; j += 1) {
+    const d0 = j * (wid + gap);
+    const decale = j % 2 === 1 && n > 1 ? (len + gap) / 2 : 0;
+    // rangée décalée : un demi-sac à chaque bout
+    if (decale > 0) sac(0, decale - gap, d0, d0 + wid);
+    for (let k = 0; k < n; k += 1) {
+      const a0 = decale + k * (len + gap);
+      sac(a0, Math.min(L, a0 + len), d0, d0 + wid);
+    }
+  }
+  return out;
 }
 
 // Triangles d'un élément et d'une liste.

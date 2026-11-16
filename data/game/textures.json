@@ -659,6 +659,20 @@
    "params": {
     "band": 0.125
    }
+  },
+  {
+   "id": "toile-jute",
+   "kind": "burlap",
+   "size": 128,
+   "repeat": 28,
+   "seed": 20,
+   "colors": {
+    "fiber": "--game-cloth-3",
+    "dark": "--game-wood-dark"
+   },
+   "params": {
+    "threads": 16
+   }
   }
  ]
 }

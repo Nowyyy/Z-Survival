@@ -1,6 +1,6 @@
 {
-  "_provisoire": "Décor léger intérieur généré par npm run carte (scripts/plan-vers-monde.mjs) d'après decor-interieur.json : ne jamais éditer à la main. Unités du jeu ; non solide (aucune collision, aucun effet sur le chemin, les tirs ni les règles). Valeurs provisoires.",
-  "triangles": 476,
+  "_provisoire": "Décor léger intérieur généré par npm run carte (scripts/plan-vers-monde.mjs) d'après decor-interieur.json : ne jamais éditer à la main. Unités du jeu ; non solide (aucune collision, aucun effet sur le chemin, les tirs ni les règles). Les genres solides (sacs de sable, lot 9a-I) n'y sont pas : ils sont écrits dans world.json comme obstacles. Valeurs provisoires.",
+  "triangles": 456,
   "items": [
     {
       "id": "plinthe-rdc-1.1",
@@ -1205,32 +1205,6 @@
       "y": 2400,
       "w": 45,
       "h": 35,
-      "rot": 0
-    },
-    {
-      "id": "sacs-1",
-      "floor": "rdc",
-      "kind": "sacs",
-      "z0": 0,
-      "z1": 18,
-      "source": "modele",
-      "x": 1655,
-      "y": 1890,
-      "w": 60,
-      "h": 35,
-      "rot": 0
-    },
-    {
-      "id": "sacs-2",
-      "floor": "rdc",
-      "kind": "sacs",
-      "z0": 0,
-      "z1": 18,
-      "source": "modele",
-      "x": 1720,
-      "y": 1895,
-      "w": 55,
-      "h": 30,
       "rot": 0
     },
     {

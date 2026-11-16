@@ -221,8 +221,11 @@ describe('fichiers versionnés = sortie du script (aucune retouche à la main)',
     expect(readFileSync('data/game/maps/rez-de-chaussee/decor.json', 'utf8')).toBe(files.decor);
   });
 
-  it('les fichiers se relisent en JSON et correspondent à planToWorld', () => {
-    expect(JSON.parse(files.world)).toEqual(JSON.parse(JSON.stringify(out.world)));
+  it('les fichiers se relisent en JSON et correspondent à planToWorld (plus les obstacles du décor solide, lot 9a-I : sacs de sable)', () => {
+    const lu = JSON.parse(files.world);
+    const solides = lu.obstacles.filter((o) => o.kind === 'sacs');
+    expect(solides.map((o) => o.id)).toEqual(['sacs-1', 'sacs-2']);
+    expect({ ...lu, obstacles: lu.obstacles.filter((o) => o.kind !== 'sacs') }).toEqual(JSON.parse(JSON.stringify(out.world)));
     expect(JSON.parse(files.decor)).toEqual(JSON.parse(JSON.stringify(out.decor)));
   });
 

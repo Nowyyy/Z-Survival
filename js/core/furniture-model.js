@@ -20,7 +20,7 @@ export function modelKind(f) {
   const r = planOf(f);
   if (!valid(r)) return 'boite';
   const kind = f.kind;
-  if (kind === 'pilier' || kind === 'escalier' || kind === 'colonne') return 'boite';
+  if (kind === 'pilier' || kind === 'escalier' || kind === 'colonne' || kind === 'sacs') return 'boite'; // lot 9a-I : sacs de sable (dessinés à part, sacsBoxes)
   if (kind === 'etagere' || kind === 'armoire') return 'armoire';
   if (r.w * r.h <= CHAIR_AREA && Math.round(r.w / CELL) <= 1 && Math.round(r.h / CELL) <= 1) return 'chaise';
   if (Math.max(r.w, r.h) / Math.min(r.w, r.h) >= LONG_RATIO) return 'armoire';

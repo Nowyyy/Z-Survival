@@ -42,9 +42,12 @@ const pixels = (page, x, y, w, h) => page.evaluate(({ x, y, w, h }) => {
 // Lot 9a : tôle et rotor de l'hélicoptère dans deux maillages à part, coupés hors du champ (avant : dans le décor dessiné partout). R1 (hélicoptère
 // hors du champ) : 298 triangles de moins (tôle et rotor), mêmes appels ; U1 (hélicoptère dans le champ) : mêmes triangles, 2 appels de plus. Avant :
 // eleve R1 [62, 38479, 18], U1 [67, 39623, 18] ; moyen R1 [60, 23867, 18], U1 [65, 25011, 18] ; faible R1 [42, 19253, 16], U1 [46, 19607, 16].
+// Lot 9a-I : sacs de sable solides, sortis du décor léger (dessiné partout, absent en Faible) pour un maillage de jute coupé hors du champ : hors
+// du champ dans R1 et U1, donc 20 triangles de moins en Élevé et Moyen (2 éléments × 10), mêmes appels ; Faible inchangé. Avant : eleve R1
+// [62, 38181, 18], U1 [69, 39623, 18] ; moyen R1 [60, 23569, 18], U1 [67, 25011, 18].
 const ORIGINE = {
-  eleve: { R1: [62, 38181, 18], U1: [69, 39623, 18] },
-  moyen: { R1: [60, 23569, 18], U1: [67, 25011, 18] },
+  eleve: { R1: [62, 38161, 18], U1: [69, 39603, 18] },
+  moyen: { R1: [60, 23549, 18], U1: [67, 24991, 18] },
   faible: { R1: [42, 18955, 16], U1: [48, 19607, 16] },
 };
 const SCENES = {

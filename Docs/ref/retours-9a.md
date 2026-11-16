@@ -3,7 +3,7 @@ Joué par le propriétaire sur `/dev/jeu.html` (téléphone) après la fusion du
 
 | Retour | Réponse |
 |---|---|
-| « Textures de bois à droite de mon perso » (salle de départ, contre le mur nord) | Ce sont les **sacs de sable** `sacs-1` et `sacs-2` du décor léger (lot 3g, `decor-interieur.world.json`), texture d'atlas « bois », **non solides par conception** ; le liseré brun = les plinthes. Déjà expliqué au point 7 du lot ; **rien changé**, décision du propriétaire attendue (voir plus bas). |
+| « Textures de bois à droite de mon perso » (salle contre le mur nord) | Ce sont les **sacs de sable** `sacs-1` et `sacs-2` (décor léger du lot 3g, texture d'atlas « bois », non solides). **Décision du propriétaire : toile de jute et hitbox** (commit « Lot 9a-I — Sacs de sable en jute, solides ») : voir plus bas. |
 | Médailles affichées deux fois (sous la vague et sous les Zollars) | « +N » de fin de manche près des Zollars (`#hud-gain-bleu`, `jeu.html`) **retiré** ; seul reste le bloc sous la vague (`#hud-bleu-manche`). |
 | Indicateur de la première partie du jour sur l'écran de fin | Ligne **« Bonus du jour obtenu : +100 »** (gemme, bleu) dans la place libre sous les diamants, seulement quand la partie l'a obtenu (`#end-jour`, `js/game/ui.js`, `game.end.jour`). |
 | Texte de l'Infini | « Termine le monde 1 pour débloquer » (impératif, comme les autres cartes ; le message du propriétaire disait « terminé »). |
@@ -11,6 +11,11 @@ Joué par le propriétaire sur `/dev/jeu.html` (téléphone) après la fusion du
 | Boutique : retirer « Ta pitié dans cette caisse » | Ligne masquée (gardée pour les lecteurs d'écran) ; la jauge du légendaire et « Légendaires possibles » restent. |
 | Rotation ou autre appli : les commandes ne répondent plus | Cause trouvée et reproduite : un doigt posé quand la page part en arrière-plan ou pivote ne reçoit jamais son « pointerup » ; son stick restait pris et **ignorait tout nouveau toucher** de son côté. Correctif : tout est relâché à la page cachée, quittée ou pivotée ; sticks au repos replacés à la nouvelle taille (`js/game/input.js`). En plus, après une rotation ou un retour : page remise à l'origine et à l'échelle 1, tailles relues après la rotation (`js/game/safe-area.js`). |
 | Menu de débogage « pas beau », incompréhensible, à faire défiler, plein de vide | Panneau refait (commit « Lot 9a-H — Menu de débogage lisible ») : toute la hauteur sous l'en-tête, **sans défiler** en paysage (vérifié à 667 × 375, 844 × 390, 932 × 430, 1280 × 720) ; à gauche **l'état de la sauvegarde** (médailles, diamants, monde 1, objets, personnages, pitié, stockage), relu après chaque outil, valeur changée surlignée en jaune, et dessous la remise à zéro en rouge ; à droite une **carte par outil, avec son effet** (au plus trois colonnes, rangées qui remplissent la place) ; confirmation **au centre**, effet rappelé ; « C'est fait. » dans l'en-tête ; Échap annule d'abord la confirmation. « Remettre la progression V0.8 à zéro » devient « Remettre la progression à zéro ». |
+
+## Sacs de sable : toile de jute et collision (lot 9a-I)
+- **Collision** : `npm run carte` écrit désormais les sacs dans `world.json` comme **obstacles** (genre `sacs`, 18 de haut ; catalogue `solide` de `js/core/decor-interieur.js`, `solidesDecor`) et plus dans le décor léger : ils bloquent le joueur et les zombies **à tous les réglages** (Faible et `?detail=0` compris, où le décor léger n'est pas chargé). Les **tirs passent par-dessus** (18, sous l'arme à 43 : ajoutés à `tirs-traversables.json`, règle du lot 8j).
+- **Emprise** : relevé (12 × 7 et 11 × 6 pixels, à 30 du mur nord, 5 entre eux, un coin sur le pilier 10) prolongé jusqu'au mur nord, les deux tas collés et touchant le coin du pilier 10 sans le chevaucher (`decor-interieur.json`, champ `note`) : les règles de la carte refusent tout interstice de moins de 50 (le joueur s'y serait coincé). Emprise totale 117,5 × 62,5 (avant, dessinée : 60 × 35 et 55 × 30).
+- **Aspect** : texture « toile-jute » calculée (genre `burlap` de `js/core/texgen.js`, 128 px, armure toile grossière, fils irréguliers, jours sombres ; jetons existants `--game-cloth-3` et `--game-wood-dark`, aucun nouveau jeton) ; sacs couchés le long du mur, rangées en quinconce, joints ouverts, dessus bombé, teinte variable d'un sac à l'autre (`sacsBoxes`). Un maillage de plus (un appel de dessin, 400 triangles, sans ombre portée).
 
 ## Choix (là où rien n'était dit)
 - « Recommencer » et la page fermée en cours de partie suivent « Quitter » (gains perdus) ; statistiques (zombies tués, temps, parties) et record de manche restent écrits comme avant.
@@ -20,8 +25,7 @@ Joué par le propriétaire sur `/dev/jeu.html` (téléphone) après la fusion du
 
 ## Preuves
 - Rotation : test e2e « rotation et arrière-plan » (`correctifs-9a.spec.js`) : sans le correctif, le second toucher est ignoré (stick resté sur le premier doigt) ; avec, il est repris, et après trois rotations « Pause » répond à sa place, page non défilée, sticks replacés. **Non vérifié sur un vrai téléphone** (iOS ou Android) : à confirmer par le propriétaire.
+- Sacs de sable : Vitest (`correctifs-9a` : texture, conversion, règles de la carte, collision joueur et zombies, tirs, géométrie) ; e2e (`correctifs-9a` : arrêté contre les sacs, même trajet en Élevé, Faible et `?detail=0`, dessinés en jute à chaque réglage ; `atelier-detail` : budgets comptant les sacs, décor léger testé avec un bidon).
 - Débogage : test e2e « panneau de débogage du menu lisible » (`debug-menu.spec.js`, 667 × 375 et 844 × 390 : rien ne défile, aucun bouton hors de l'écran ni sous 44 px, résumé mis à jour, Échap, axe).
 - Monnaies : Vitest (`bank`, `medailles`, `monnaies-9a`) et Playwright (`argent`, `medailles`, `monnaies-9a`, `menu`, `menu-onglets`, `sauvegarde`, `caisses-pitie`) adaptés : écrits à la mort, perdus à « Quitter ».
 
-## Idées (décision du propriétaire)
-- Sacs de sable : texture de toile ou de jute (aspect de sacs), les rendre solides comme un meuble, ou les retirer.

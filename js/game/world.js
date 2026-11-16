@@ -8,8 +8,8 @@ import { num } from '../core/vec.js';
 import { boundTarget, overview, snapCamera, stepCamera } from '../core/camera.js';
 import { cameraPosition, fitDistance, groundView } from '../core/viewport.js';
 import { fogGrid } from '../core/fog.js';
-import { itemQuads, CATALOGUE as DECOR_CATALOGUE } from '../core/decor-interieur.js';
-import { furnitureParts } from '../core/furniture-model.js';
+import { itemQuads, sacsBoxes, CATALOGUE as DECOR_CATALOGUE } from '../core/decor-interieur.js';
+import { furnitureParts, wallSide } from '../core/furniture-model.js';
 import { doorBoxes, grilleBoxes, rubbleBoxes } from '../core/portes-aspect.js';
 import { generateLivelyDecor } from '../core/decor-vivant.js';
 import { createTokenLookup } from './palette.js';
@@ -612,7 +612,7 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
     repeat: { road: textures.repeat('route'), sidewalk: textures.repeat('trottoir') },
   };
   const outdoorSoil = textures.repeat('sol-exterieur');
-  const onFloor = Object.fromEntries(floors.map((f) => [f, { floor: new Builder(), wall: new Builder(), detail: new Builder(), props: new Builder(), detailUp: new Builder(), propsUp: new Builder() }]));
+  const onFloor = Object.fromEntries(floors.map((f) => [f, { floor: new Builder(), wall: new Builder(), detail: new Builder(), props: new Builder(), detailUp: new Builder(), propsUp: new Builder(), jute: new Builder(), juteUp: new Builder() }])); // lot 9a-I : jute (sacs de sable)
 
   // Sol extérieur de terre étendu bien au-delà du monde ; dans le monde, l'herbe (salle du lot 1m : marge plate de terre, comme avant).
   ex.soil.slab(size.width / 2 - FAR_GROUND / 2, size.height / 2 - FAR_GROUND / 2, size.width / 2 + FAR_GROUND / 2, size.height / 2 + FAR_GROUND / 2, -1.5, outdoorSoil);
@@ -638,6 +638,7 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
   const occluders = [];
   const etageWalls = []; // murs pleins de l'étage (emprises { x0, x1, z0, z1 }) : le garde-corps n'est pas dessiné contre eux
   const wallRepeat = textures.repeat('mur');
+  const juteRepeat = textures.repeat('toile-jute'); // lot 9a-I
   for (const f of floors) {
     const l = layoutOf(f);
     const fb = onFloor[f];
@@ -700,6 +701,16 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
     // projettent une ombre, les pieds, dossiers et socles forment un maillage sans ombre portée. Les collisions gardent le rectangle d'origine.
     l.furniture.forEach((fu, i) => {
       if (fu.kind === 'escalier') return; // dessiné par la rampe (escalier physique)
+      // Lot 9a-I : sacs de sable (obstacles venus du décor solide) : pile de sacs en toile de jute (texture « toile-jute », répétée), à tous les
+      // réglages comme leur collision ; sans ombre portée (18 de haut, comme le décor léger), réception des ombres.
+      if (fu.kind === 'sacs') {
+        occluders.push({ ...rectBox(fu, 0, num(fu.hauteur, 18)), floor: f });
+        const upS = f === 'rdc' && (exposedAt(fu.x + fu.w / 2, fu.y + fu.h / 2) || touchesHole(fu) || partlyUncovered(fu));
+        const cote = wallSide(fu, l.walls); // sacs couchés le long du mur contre lequel ils sont posés
+        const jb = upS ? fb.juteUp : fb.jute;
+        for (const b of sacsBoxes(fu, { alongX: cote === 'n' || cote === 's' })) jb.tinted([b.teinte, b.teinte, b.teinte], () => jb.box(b, { repeat: juteRepeat }));
+        return;
+      }
       const occH = fu.kind === 'pilier' && tall ? lift - 1 : Math.min(num(fu.hauteur, 60), fu.kind === 'pilier' ? num(render.wallHeight, 60) : 70);
       occluders.push({ ...rectBox(fu, 0, occH), floor: f });
       const up0 = f === 'rdc' && (exposedAt(fu.x + fu.w / 2, fu.y + fu.h / 2) || touchesHole(fu) || partlyUncovered(fu));
@@ -866,6 +877,7 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
   }
   const floorMat = mat('sol-salle');
   const wallMat = seeThrough.apply(mat('mur'));
+  const juteMat = textures.texture('toile-jute') ? seeThrough.apply(new THREE.MeshLambertMaterial({ map: textures.texture('toile-jute'), vertexColors: true })) : atlasMaterial; // lot 9a-I : teinte par sac (couleurs de sommet)
   for (const f of floors) {
     const fb = onFloor[f];
     tag(fb.floor.mesh(shellOf(f), floorMat, { receive: true }), f);
@@ -875,6 +887,13 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
     if (f === 'rdc') {
       tag(fb.detailUp.mesh(groups.rdcExposed, atlasMaterial, { cast: false, receive: true }), f);
       tag(fb.propsUp.mesh(groups.rdcExposed, atlasMaterial, { cast: true, receive: true }), f);
+    }
+    // Lot 9a-I : sacs de sable en jute : un maillage (un appel de dessin) seulement là où il y a des sacs.
+    const juteMesh = tag(fb.jute.mesh(groups[f], juteMat, { cast: false, receive: true }), f);
+    if (juteMesh) juteMesh.name = 'sacs-de-sable';
+    if (f === 'rdc') {
+      const juteUpMesh = tag(fb.juteUp.mesh(groups.rdcExposed, juteMat, { cast: false, receive: true }), f);
+      if (juteUpMesh) juteUpMesh.name = 'sacs-de-sable';
     }
     const decorMesh = tag(decorB[f].mesh(groups[f], atlasMaterial, { cast: false, receive: true }), f);
     if (decorMesh) decorMesh.name = 'decor-leger';
@@ -1312,10 +1331,12 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
       };
       // Lot 3g : décor léger (maillages « decor-leger ») : nombre, étage (userData.floor), dessinés ou non, triangles, éléments par étage.
       const decorMeshes = [];
+      const sacsMeshes = []; // lot 9a-I : sacs de sable (toile de jute)
       scene.traverse((m) => {
         if (m.isMesh && m.name === 'decor-leger') decorMeshes.push({ floor: m.userData.floor, group: m.parent?.name, drawn: m.visible && m.parent?.visible === true, triangles: m.geometry.attributes.position.count / 3 });
+        if (m.isMesh && m.name === 'sacs-de-sable') sacsMeshes.push({ floor: m.userData.floor, group: m.parent?.name, drawn: m.visible && m.parent?.visible === true, triangles: m.geometry.attributes.position.count / 3, texture: m.material?.map === textures.texture('toile-jute') }); // lot 9a-I
       });
-      return { wrecks: this.wreckStats(), exteriorY: groups.exterieur.position.y, elevation: elevationNow, visible: Object.fromEntries(Object.entries(groups).map(([k, g]) => [k, visibleOf(g)])), slab: slab ? slab.visible && groups.etage.visible : false, fence: groups.etage.children.filter((m) => m.name === 'garde-corps').length, marks: [...marks].filter(([, m]) => m.visible && m.parent?.visible).map(([k]) => k), decor: { meshes: decorMeshes, items: decorCount } };
+      return { wrecks: this.wreckStats(), exteriorY: groups.exterieur.position.y, elevation: elevationNow, visible: Object.fromEntries(Object.entries(groups).map(([k, g]) => [k, visibleOf(g)])), slab: slab ? slab.visible && groups.etage.visible : false, fence: groups.etage.children.filter((m) => m.name === 'garde-corps').length, marks: [...marks].filter(([, m]) => m.visible && m.parent?.visible).map(([k]) => k), decor: { meshes: decorMeshes, items: decorCount }, sacs: sacsMeshes };
     },
     setFog(distance) {
       scene.fog.near = distance * render.fog.near;
