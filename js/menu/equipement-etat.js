@@ -157,6 +157,11 @@ export function chargerEquipement() {
       ajouterMedailles(n) {
         return ecrire([{ id: nouvelId(), t: 'gain', medailles: n }]);
       },
+      // Lot 9a (outil de débogage) : monde marqué terminé (champ « mondes ») sans aucun gain : ni médaille, ni diamant, ni record, ni premier monde
+      // récompensé (mondesFinis inchangé : finir vraiment le monde rapportera toujours sa prime).
+      marquerMondeTermine(monde) {
+        return ecrire([{ id: nouvelId(), t: 'gain', monde }]);
+      },
       remettrePitie() {
         return ecrire([{ id: nouvelId(), t: 'pitie', valeurs: Object.fromEntries(RUBRIQUES.map((r) => [r, { e: 0, l: 0 }])) }]);
       },

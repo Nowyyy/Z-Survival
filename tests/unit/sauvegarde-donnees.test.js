@@ -132,7 +132,8 @@ describe('textes', () => {
 
   it('les lignes de la pause et de l\'état de la sauvegarde sont écrites en toutes lettres', () => {
     expect(fr['game.pause.balance']).toBe('{n}'); // retour du propriétaire après le lot 8j : la pause montre le solde bleu, gemme puis montant (lot 8h : « Monnaie jaune : {n} »)
-    expect(fr['game.pause.balance.label']).toBe('Diamants :'); // dit aux lecteurs d'écran seulement ; retour du propriétaire après le lot 8k : la monnaie bleue s'appelle « diamants »
+    expect(fr['game.pause.balance.label']).toBe('Médailles :'); // dit aux lecteurs d'écran seulement ; lot 9a : le champ « bleu » s'appelle « médailles » (lot 8k : « diamants »)
+    expect(fr['game.pause.medailles.label']).toBe('Diamants :'); // lot 9a : le champ « medailles » s'appelle « diamants »
     expect(fr['game.save.status.saved']).toBe('Sauvegarde : enregistrée');
     expect(fr['game.save.status.pending']).toBe('Sauvegarde : en attente');
     expect(fr['game.save.status.failed']).toBe('Sauvegarde : échec, nouvelle tentative');

@@ -53,11 +53,12 @@ describe('message « Porte ouverte à la manche X »', () => {
     porteProche(portes, etat, centre(bloc('porte-2')), 'rdc', 200);
     expect(JSON.stringify(portes)).toBe(avant);
   });
-  it('distance réglable : 20 à 2000 unités, sinon le défaut (60 : retour du propriétaire, tout près de la porte)', () => {
-    expect(PORTE_DEFAUT.distance).toBe(60);
+  // Lot 9a : défaut 120 (deux cases du dallage, demande du propriétaire ; avant : 60).
+  it('distance réglable : 20 à 2000 unités, sinon le défaut (120 : deux cases, lot 9a ; avant 60, retour du propriétaire)', () => {
+    expect(PORTE_DEFAUT.distance).toBe(120);
     expect(reglagesPorte({ distance: 350 }).distance).toBe(350);
-    for (const d of [10, 2001, '300', null, Number.NaN]) expect(reglagesPorte({ distance: d }).distance).toBe(60);
-    expect(reglagesPorte(undefined).distance).toBe(60);
+    for (const d of [10, 2001, '300', null, Number.NaN]) expect(reglagesPorte({ distance: d }).distance).toBe(120);
+    expect(reglagesPorte(undefined).distance).toBe(120);
   });
 });
 

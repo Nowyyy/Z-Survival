@@ -3,6 +3,9 @@
 // arrive de l'extérieur (horloge de jeu en millisecondes, horloge murale pour la date enregistrée) : aucune horloge ici, aucun stockage direct, aucune
 // exception.
 //
+// Lot 9a (Docs/ref/economie.md) : noms d'écran intervertis, champs inchangés : « bleu » (manches, monde) s'affiche « médailles », « medailles »
+// (portes, milliers, paliers, premier monde, jour) s'affiche « diamants » ; la monnaie jaune s'appelle « Zollars ».
+//
 // Lot 8h (Docs/ref/sauvegarde-v2.md) :
 //   - monnaie JAUNE : 10 par zombie tué par balle, 1 par planche posée (et « giveMoney » des tests) ; remise à 0 à chaque partie (début, Rejouer,
 //     Recommencer), JAMAIS écrite ; ?money=N (mode essai) fixe son départ ;
@@ -217,6 +220,8 @@ export function createBank({ repository, mode, economy, clock, wall, reducedMoti
       return { bonus: addBleu(worldBonus(economy)) };
     },
     // Fin de partie (mort, monde terminé, « Quitter », « Recommencer ») : écriture immédiate. La manche atteinte est la dernière manche DÉMARRÉE.
+    // Lot 9a : « Quitter » et « Recommencer » ne créditent rien de plus que ce qui a déjà été écrit pendant la partie (manches, portes, milliers,
+    // paliers) : la première partie du jour ne se compte qu'à la mort (« death ») ou à la fin du monde (« world »).
     // Renvoie le bilan pour l'écran de fin : { earned (jaune perdue), world (prime bleue du monde), balance (jaune), bleu (gagnée pendant la partie),
     // soldeBleu, reached, best (record du mode et du monde), record (battu), mode, ok, status }.
     runEnd({ reason }) {
@@ -225,7 +230,7 @@ export function createBank({ repository, mode, economy, clock, wall, reducedMoti
       const record = run.started && reached > run.baseline && !mode.readOnly;
       // Lot 8k : première partie du jour (au moins une manche terminée ; jour local de l'appareil).
       const jour = jourLocal(new Date(wall()));
-      if (run.paid.size > 0 && jour > (saved?.medailles?.jour ?? 0)) {
+      if ((reason === 'death' || reason === 'world') && run.paid.size > 0 && jour > (saved?.medailles?.jour ?? 0)) {
         pending.jour = jour;
         addMed('jour', medailleJour(economy));
       }

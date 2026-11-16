@@ -392,9 +392,9 @@ test.describe('sous-menus Inventaire, Fusion, Personnages (E9-2 à E9-4)', () =>
     await ouvrirPersonnage(page);
     await page.locator('#menu-perso-inventaire').click();
     await page.locator('#menu-objet-o5').click();
-    await expect(page.locator('#menu-inventaire-ameliorer')).toHaveText('Il manque 15');
+    await expect(page.locator('#menu-inventaire-ameliorer')).toHaveText('Il manque 15 médailles'); // lot 9a : la monnaie dite (avant : « Il manque 15 »)
     await expect(page.locator('#menu-inventaire-ameliorer')).toHaveAttribute('aria-disabled', 'true');
-    await expect(page.locator('#menu-inventaire-ameliorer')).toHaveAccessibleDescription('Diamants insuffisants : prix 40, solde 25.');
+    await expect(page.locator('#menu-inventaire-ameliorer')).toHaveAccessibleDescription('Médailles insuffisantes : prix 40, solde 25.'); // lot 9a (avant : « Diamants insuffisants »)
     await page.locator('#menu-inventaire-ameliorer').click({ force: true });
     expect((await etatPerso(page)).objets.find((x) => x.uid === 'o5').niveau).toBe(1);
     expect(await page.evaluate(() => window.__ecritures)).toEqual([]);
@@ -814,7 +814,7 @@ test('PC 2000 × 1060 : « Touche-le pour changer » centré au-dessus de la lam
   expect(style).toEqual(['2px', '6px', true, true]);
   await expect(page.locator('#menu-liste .e8-icone-entree')).toHaveCount(5); // lot 8g : Crédits, Google ; sans Déconnexion hors connexion
   // Retour du propriétaire : version du jeu sous la dernière entrée (lot 8g : Google ; avant : « Déconnexion ») (dépôt : canal source ; journal lu à la première ouverture du menu).
-  await expect(page.locator('#menu-version')).toHaveText('V0.8 · source');
+  await expect(page.locator('#menu-version')).toHaveText('V0.9 · source'); // lot 9a : dernier lot du journal en v0.9 (avant : V0.8)
   const [deco, version, cadre] = [await boite(page, '#menu-google'), await boite(page, '#menu-version'), await boite(page, '#menu-liste')];
   expect([version.t >= deco.b - 0.5, version.b <= cadre.b + 0.5, cadre.b <= 1060]).toEqual([true, true, true]);
   // Tout à gauche du menu : le texte commence au bord des icônes des entrées.

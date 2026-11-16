@@ -7,7 +7,7 @@
 import { createLocalRepository } from '../../../js/save/local-repository.js';
 import { codecV2 } from '../../../js/save/codecs.js';
 import * as merge from '../../../js/core/save-merge.js';
-import { appliquerOps, defaultProgression, serialiser, solde } from '../../../js/core/progression.js';
+import { appliquerOps, defaultProgression, sanitize, serialiser, solde } from '../../../js/core/progression.js';
 import { rng } from './onglets-simulateur.js';
 
 function scheduler() {
@@ -38,7 +38,10 @@ function scheduler() {
 // options : { seed, tabs (2 à 4), ops (nombre d'opérations), retard (ticks), params, initial (solde bleu de départ) }.
 // Renvoie { ok, pertes, doubles, doublesDepenses, negatif, nonPaye, achatsConfirmesAbsents, gagne, attendu, depense, payes, calme, ecritures }.
 // sansFusion : banc du témoin (dépôt sans canal ni fusion, comme avant le lot 5o) : le simulateur doit y trouver des pertes.
-export function simulateV2({ seed, tabs: nTabs = 2, ops = 8, retard = 10, params, initial = 0, prixMax = 60, gain = 20, sansFusion = false } = {}) {
+// Lot 9a : departSave (facultatif) : progression de départ entière (par exemple une sauvegarde de la V0.8 avec les deux monnaies, la pitié, les paliers,
+// les mondes et le jour), écrite telle quelle avant le premier onglet ; le résultat rend aussi la progression finale (fin) pour comparer les champs
+// que les onglets ne touchent pas.
+export function simulateV2({ seed, tabs: nTabs = 2, ops = 8, retard = 10, params, initial = 0, prixMax = 60, gain = 20, sansFusion = false, departSave = null } = {}) {
   const r = rng(seed);
   const pick = (max) => Math.floor(r() * (max + 1));
   const s = scheduler();
@@ -46,7 +49,7 @@ export function simulateV2({ seed, tabs: nTabs = 2, ops = 8, retard = 10, params
   const KEY = codec.key;
   let now = 0;
   let writes = 0;
-  const depart = initial > 0 ? JSON.stringify(serialiser(appliquerOps(defaultProgression(), [{ id: 'depart', t: 'gain', bleu: initial }], 1, params).save)) : r() < 0.5 ? null : JSON.stringify(serialiser(defaultProgression()));
+  const depart = departSave ? JSON.stringify(serialiser(sanitize(departSave, params).save)) : initial > 0 ? JSON.stringify(serialiser(appliquerOps(defaultProgression(), [{ id: 'depart', t: 'gain', bleu: initial }], 1, params).save)) : r() < 0.5 ? null : JSON.stringify(serialiser(defaultProgression()));
   let auth = depart;
   const tabs = [];
   let opSeq = 0;
@@ -138,7 +141,8 @@ export function simulateV2({ seed, tabs: nTabs = 2, ops = 8, retard = 10, params
   }
 
   const fin = auth === null ? defaultProgression() : codec.parse(JSON.parse(auth)).save;
-  const attendu = (initial > 0 ? initial : 0) + gains.reduce((n, g) => n + g.bleu, 0);
+  const base = departSave ? sanitize(departSave, params).save.bleu : { gagne: initial > 0 ? initial : 0, depense: 0 }; // lot 9a : départ complet possible
+  const attendu = base.gagne + gains.reduce((n, g) => n + g.bleu, 0);
   const presents = new Map();
   for (const o of fin.objets) {
     const id = o.u.slice(0, o.u.lastIndexOf('.'));
@@ -157,13 +161,14 @@ export function simulateV2({ seed, tabs: nTabs = 2, ops = 8, retard = 10, params
   const res = {
     gagne: fin.bleu.gagne, attendu, depense: fin.bleu.depense, payes,
     pertes: fin.bleu.gagne < attendu, doubles: fin.bleu.gagne > attendu,
-    doublesDepenses: doublesDepenses || fin.bleu.depense !== payes,
+    doublesDepenses: doublesDepenses || fin.bleu.depense - base.depense !== payes,
     negatif: fin.bleu.depense > fin.bleu.gagne,
     nonPaye,
     achatsConfirmesAbsents: [...achats.values()].filter((a) => a.absent).length,
     achatsAnnules: [...achats.values()].filter((a) => !a.confirme).length,
     calme: s.size === 0, ecritures: writes,
   };
+  if (departSave) res.fin = fin; // lot 9a
   res.ok = !res.pertes && !res.doubles && !res.doublesDepenses && !res.negatif && !res.nonPaye && res.achatsConfirmesAbsents === 0 && res.calme;
   return res;
 }

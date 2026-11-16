@@ -83,7 +83,7 @@ describe('nouveautés lues et record de l\'infini', () => {
   it('onglet Infini : record de la carte lu dans records.infini (texte « Record : manche {n} »), séparé de celui de l\'histoire', () => {
     expect(lire('data/i18n/fr.json')['game.menu.infini.record']).toBe('Record : manche {n}');
     expect(read('js/menu/menu.js')).toMatch(/recordsInfini = \{ \.\.\.\(lu\?\.save\?\.records\?\.infini \?\? \{\}\) \}/);
-    expect(read('js/menu/infini.js')).toMatch(/records = \{\} \}\) \{/);
+    expect(read('js/menu/infini.js')).toMatch(/records = \{\}, termines = \[\] \}\) \{/); // lot 9a : + mondes terminés (Infini débloqué avec le monde)
   });
 });
 

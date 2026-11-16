@@ -5,7 +5,12 @@
 // chaque carte), carte choisie (bordure rouge, « Choisie », en mémoire), cartes verrouillées non sélectionnables (aria-disabled, raison lue),
 // panneau « Classement » (exemple, arrive avec le compte ; ligne « Toi »), bouton « Jouer » : mode infini sur la carte choisie.
 // Lot 8h : record du mode infini par carte (progression v2 : meilleure manche démarrée), sur sa carte et sur la ligne « Toi » ; « Record : — » sinon. Couleurs : classes de css/menu.css ; animations « e8-infini-* ».
-import { choisirCarte, creerCarrousel, lireClassement } from '../core/menu-etat.js';
+// Lot 9a (décision du propriétaire) : une carte n'est jouable en Infini que si son monde a été TERMINÉ en entier en histoire (progression v2, champ
+// « mondes » ; js/core/menu-etat.js, infiniJouable) ; sinon cadenas et ruban, « Termine le monde N pour débloquer l'Infini », et « Jouer » désactivé
+// (aria-disabled) avec sa raison dans son nom accessible. L'onglet s'ouvre toujours ; rien n'est écrit. Un monde marqué terminé ailleurs (outil de
+// débogage, autre onglet) débloque la carte aussitôt (abonnement à la progression).
+import { choisirCarte, creerCarrousel, infiniJouable, lireClassement } from '../core/menu-etat.js';
+import { chargerProgression } from './progression-etat.js';
 import { fmt } from '../game/texts.js';
 import { ajusterBloc, ajusterTextes } from './menu.js';
 
@@ -96,18 +101,22 @@ const json = (path) => fetch(path).then((r) => (r.ok ? r.json() : null)).catch((
 let donnees = null;
 export const precharger = () => (donnees ??= json('data/menu/classement.json'));
 
-// records : { [monde]: manche } (lot 8h, progression v2).
-export async function ecranInfini({ t, mondes, bandeau, jouer, records = {} }) {
+// records : { [monde]: manche } (lot 8h, progression v2) ; termines : mondes terminés en histoire (lot 9a, progression v2).
+export async function ecranInfini({ t, mondes, bandeau, jouer, records = {}, termines = [] }) {
   const recordDe = (id) => (Number.isInteger(records?.[id]) && records[id] > 0 ? records[id] : null);
   const classement = lireClassement(await precharger());
+  let finis = Array.isArray(termines) ? [...termines] : [];
+  // Mondes vus par l'Infini : jouable seulement si terminé (lot 9a) ; le carrousel ne choisit que ceux-là.
+  const etatDe = (m) => infiniJouable(m, finis);
+  const vus = () => mondes.map((m) => ({ ...m, jouable: etatDe(m).jouable }));
   let carrousel = creerCarrousel(mondes);
   const section = el('section', ['e8-ecran', 'e8-infini'], { id: 'menu-ecran-infini', 'aria-labelledby': 'menu-titre-infini' });
   const scene = el('div', ['e8-infini-scene'], { 'aria-hidden': 'true', 'data-anim': 'off', id: 'menu-infini-scene' });
   scene.append(sceneInfini());
 
   const choix = el('p', ['e8-infini-choix'], { id: 'menu-infini-choix' });
-  const jouables = mondes.filter((m) => m.jouable).length;
-  choix.append(texte('span', ['e8-infini-choix-titre'], t('game.menu.infini.choisis')), texte('span', ['e8-infini-choix-compte'], ` ${fmt(t('game.menu.infini.compte'), { n: jouables, total: mondes.length })}`));
+  const compte = texte('span', ['e8-infini-choix-compte'], '');
+  choix.append(texte('span', ['e8-infini-choix-titre'], t('game.menu.infini.choisis')), compte);
 
   // Rangée de cartes : liste qui défile sur le côté (accroche CSS sur chaque carte), la carte suivante dépasse du bord.
   const zone = el('div', ['e8-infini-zone']);
@@ -118,19 +127,17 @@ export async function ecranInfini({ t, mondes, bandeau, jouer, records = {} }) {
     const carte = el('button', ['e8-infini-carte'], { type: 'button', id: `menu-carte-${m.id}`, 'data-monde': m.id });
     const libelle = el('span', ['e8-infini-carte-libelle']);
     const nom = texte('span', ['e8-infini-carte-nom'], m.nom || fmt(t('game.menu.monde'), { n: m.numero }));
-    const detail = texte('span', ['e8-infini-carte-detail'], m.jouable ? (recordDe(m.id) ? fmt(t('game.menu.infini.record'), { n: recordDe(m.id) }) : t('game.menu.infini.recordAucun')) : fmt(t('game.menu.infini.condition'), { n: m.numero - 1 }));
-    if (!m.jouable) {
-      carte.setAttribute('aria-disabled', 'true');
-      carte.classList.add('e8-infini-carte-verrouillee');
-    }
-    carte.append(miniature(m.jouable), libelle, nom, detail);
+    const detail = texte('span', ['e8-infini-carte-detail'], '');
+    const e0 = etatDe(m);
+    const mini = miniature(e0.jouable); // lot 9a : remplacée par synchroniser() si l'état de l'Infini change
+    carte.append(mini, libelle, nom, detail);
     carte.addEventListener('click', () => {
-      if (!m.jouable) return; // verrouillée : rien (la raison est dans son texte)
-      carrousel = choisirCarte(carrousel, mondes, m.id);
+      if (!etatDe(m).jouable) return; // verrouillée : rien (la raison est dans son texte)
+      carrousel = choisirCarte(carrousel, vus(), m.id);
       synchroniser();
     });
     ajusterTextes(carte, [libelle, nom, detail]); // retour du propriétaire : cartes de taille fixe, textes réduits s'ils sont trop longs
-    cartes.set(m.id, { carte, libelle, monde: m });
+    cartes.set(m.id, { carte, libelle, detail, mini, monde: m, jouable: e0.jouable });
     item.append(carte);
     rangee.append(item);
   }
@@ -158,8 +165,13 @@ export async function ecranInfini({ t, mondes, bandeau, jouer, records = {} }) {
   const bouton = el('button', ['menu-peint', 'e8-infini-bouton'], { type: 'button', id: 'menu-infini-jouer' });
   const icone = svgEl('svg', { viewBox: '0 0 24 24', 'aria-hidden': 'true', focusable: 'false' }, 'e8-jouer-icone-bouton');
   icone.append(svgEl('path', { d: 'M7 4v16l13-8z' }));
-  bouton.append(icone, texte('span', [], t('game.menu.infini.jouer')));
-  bouton.addEventListener('click', () => jouer({ mode: 'infini', monde: carrousel.choisi }));
+  // Lot 9a : raison du verrou dans le nom accessible (« Jouer · verrouillé : Termine le monde 1 pour débloquer l'Infini ») ; désactivé : rien.
+  const raisonJouer = el('span', ['sr-only'], { id: 'menu-infini-jouer-raison' });
+  bouton.append(icone, texte('span', [], t('game.menu.infini.jouer')), raisonJouer);
+  bouton.addEventListener('click', () => {
+    if (bouton.getAttribute('aria-disabled') === 'true') return;
+    jouer({ mode: 'infini', monde: carrousel.choisi });
+  });
 
   // Classement d'exemple (aucun joueur réel) : 5 lignes, puis « Toi » (rang : pas encore de compte ; record de la carte choisie, lot 8h).
   const panneau = el('section', ['e8-infini-classement'], { id: 'menu-classement', 'aria-labelledby': 'menu-classement-titre' });
@@ -180,20 +192,47 @@ export async function ecranInfini({ t, mondes, bandeau, jouer, records = {} }) {
   );
   panneau.append(texte('h3', ['e8-infini-classement-titre'], t('game.menu.infini.classement'), { id: 'menu-classement-titre' }), sousTitre, lignes, toi);
 
+  // Lot 9a : texte du verrou d'une carte (« Termine le monde N pour débloquer l'Infini » ; monde à venir : « Termine le monde N−1 », comme avant).
+  const raisonDe = (m, e) => (e.raison === 'termine' ? fmt(t('game.menu.infini.debloquer'), { n: m.numero }) : fmt(t('game.menu.infini.condition'), { n: m.numero - 1 }));
   function synchroniser() {
-    for (const [id, { carte, libelle, monde }] of cartes) {
-      const choisie = id === carrousel.choisi;
+    for (const [id, c] of cartes) {
+      const { carte, libelle, detail, monde } = c;
+      const e = etatDe(monde);
+      if (e.jouable !== c.jouable) {
+        const nouvelle = miniature(e.jouable);
+        c.mini.replaceWith(nouvelle);
+        c.mini = nouvelle;
+        c.jouable = e.jouable;
+      }
+      if (e.jouable) carte.removeAttribute('aria-disabled');
+      else carte.setAttribute('aria-disabled', 'true');
+      carte.classList.toggle('e8-infini-carte-verrouillee', !e.jouable);
+      const choisie = e.jouable && id === carrousel.choisi;
       carte.classList.toggle('e8-infini-carte-choisie', choisie);
-      if (monde.jouable) carte.setAttribute('aria-pressed', String(choisie));
-      libelle.textContent = fmt(t(choisie ? 'game.menu.infini.choisie' : monde.jouable ? 'game.menu.monde' : 'game.menu.infini.verrouillee'), { n: monde.numero });
+      if (e.jouable) carte.setAttribute('aria-pressed', String(choisie));
+      else carte.removeAttribute('aria-pressed');
+      libelle.textContent = fmt(t(choisie ? 'game.menu.infini.choisie' : e.jouable ? 'game.menu.monde' : 'game.menu.infini.verrouillee'), { n: monde.numero });
+      detail.textContent = e.jouable ? (recordDe(monde.id) ? fmt(t('game.menu.infini.record'), { n: recordDe(monde.id) }) : t('game.menu.infini.recordAucun')) : raisonDe(monde, e);
       ajusterBloc(carte);
     }
+    compte.textContent = ` ${fmt(t('game.menu.infini.compte'), { n: mondes.filter((x) => etatDe(x).jouable).length, total: mondes.length })}`;
+    const choisi = mondes.find((x) => x.id === carrousel.choisi);
+    const ec = choisi ? etatDe(choisi) : { jouable: false, raison: 'avenir' };
+    if (ec.jouable) bouton.removeAttribute('aria-disabled');
+    else bouton.setAttribute('aria-disabled', 'true');
+    raisonJouer.textContent = ec.jouable || !choisi ? '' : fmt(t('game.menu.infini.jouer.raison'), { raison: raisonDe(choisi, ec) });
     const m = cartes.get(carrousel.choisi)?.monde;
     sousTitre.firstChild.textContent = `${m?.nom || fmt(t('game.menu.monde'), { n: m?.numero ?? 1 })} · `;
     toi.lastChild.textContent = fmt(t('game.menu.infini.manche'), { n: recordDe(carrousel.choisi) ?? t('game.menu.infini.aucun') });
   }
   synchroniser();
+  // Lot 9a : un monde terminé ailleurs (outil de débogage, autre onglet) débloque sa carte aussitôt ; lecture seule.
+  chargerProgression().then((prog) => prog.abonner(() => {
+    const lu = prog.lire();
+    finis = Array.isArray(lu?.save?.mondes) ? [...lu.save.mondes] : [];
+    synchroniser();
+  })).catch(() => {});
 
   section.append(scene, bandeau(t('game.menu.infini.libelle'), t('game.menu.infini.titre'), 'menu-titre-infini'), choix, zone, bouton, panneau);
-  return { section, scene, bouton, etat: () => ({ choisi: carrousel.choisi, record: recordDe(carrousel.choisi) }) };
+  return { section, scene, bouton, etat: () => ({ choisi: carrousel.choisi, record: recordDe(carrousel.choisi), jouable: etatDe(mondes.find((x) => x.id === carrousel.choisi) ?? null).jouable, termines: [...finis] }) };
 }

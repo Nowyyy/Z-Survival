@@ -304,7 +304,10 @@
   stroke-linejoin: round;
 }
 
-.hud-bleu-manche.hud-medailles-manche,
+/* Lot 9a (monnaies interverties) : la fin de manche (champ « bleu », médailles à l'écran) prend la couleur des médailles ; le bloc des gains des
+   portes et paliers (.hud-medailles-manche, diamants à l'écran) garde le bleu de .hud-bleu-manche ; le « +N » de fin de manche aussi en bronze. */
+.hud-bleu-manche.hud-manche-medaille,
+.hud-gain.hud-gain-bleu,
 .end-medaille {
   color: var(--color-money-medaille);
 }

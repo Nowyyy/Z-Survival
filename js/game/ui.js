@@ -92,6 +92,9 @@ export function createUi(dict, handlers) {
     // « Monde terminé » à la place de « Tu es mort » (la variante de mort est inchangée).
     // Lot 4 : « Solde » (summary : { balance, status }, de js/game/bank.js). Lot 3l (retour du propriétaire) : à côté de « PAUSE » ; l'état de la sauvegarde
     // n'est plus dans la pause (il reste sur l'écran de fin quand il pose problème : illisible, indisponible, échec, mode essai).
+    // Lot 9a (monnaies interverties, Docs/ref/economie.md) : chaque emplacement garde son champ ; seuls l'icône, la couleur et le nom changent
+    // (jeu.html, fr.json) : #pause-balance = champ « bleu » (médaille, « Médailles : »), .pause-medailles = champ « medailles » (gemme, « Diamants : ») ;
+    // de même à l'écran de fin (#end-balance : médailles ; #end-medailles-solde : diamants).
     setPauseInfo(summary) {
       // Retour du propriétaire après le lot 8j : la pause montre le solde de la monnaie bleue (gemme puis montant, comme l'en-tête du menu ;
       // « Monnaie bleue : » reste dit aux lecteurs d'écran), et plus la monnaie jaune.

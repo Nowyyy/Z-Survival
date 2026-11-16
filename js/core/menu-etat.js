@@ -199,6 +199,14 @@ export function mondeSuivant(mondes, id) {
 }
 
 // Carrousel de l'onglet Infini : carte choisie (en mémoire) ; un monde inconnu ou verrouillé ne se choisit pas (état inchangé).
+// Lot 9a (décision du propriétaire) : une carte de l'onglet Infini n'est jouable que si son monde est jouable ET a été terminé en entier en histoire
+// (les 40 manches : progression v2, champ « mondes », écrit par la fin du monde). → { jouable, raison: null | 'termine' (à terminer) | 'avenir' (monde
+// pas encore fait) }. Lecture seule : rien n'est écrit.
+export function infiniJouable(monde, termines) {
+  if (!monde || monde.jouable !== true) return { jouable: false, raison: 'avenir' };
+  return Array.isArray(termines) && termines.includes(monde.id) ? { jouable: true, raison: null } : { jouable: false, raison: 'termine' };
+}
+
 export function creerCarrousel(mondes) {
   return { choisi: premierJouable(mondes).id };
 }

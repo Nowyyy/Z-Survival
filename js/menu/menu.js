@@ -216,6 +216,7 @@ export async function preparerMenu({ search = pageSearch(), onProgress = () => {
   let niveaux = null; // lot 8d : niveaux de statistiques de la sauvegarde (base des statistiques effectives), si elle est lue « ok » (comme la partie)
   let lues = []; // lot 8h : nouveautés déjà lues (progression v2)
   let recordsInfini = {}; // lot 8h : record de l'infini par carte (meilleure manche démarrée)
+  let termines = []; // lot 9a : mondes terminés en histoire (l'Infini d'un monde se débloque avec lui)
   try {
     // Lot 8h : dépôt partagé par tout le menu (en-tête, Boutique, Personnage), avec le canal entre onglets (js/menu/progression-etat.js).
     const prog = await chargerProgression({ save, economy, stats }, { search });
@@ -226,17 +227,18 @@ export async function preparerMenu({ search = pageSearch(), onProgress = () => {
     if (lu?.status === 'ok' && lu.save?.niveaux && typeof lu.save.niveaux === 'object') niveaux = { ...lu.save.niveaux };
     lues = Array.isArray(lu?.save?.lues) ? [...lu.save.lues] : [];
     recordsInfini = { ...(lu?.save?.records?.infini ?? {}) };
+    termines = Array.isArray(lu?.save?.mondes) ? [...lu.save.mondes] : [];
     brancherProfil(prog); // avatar et pseudo gardés (js/menu/avatar.js)
   } catch {
     // sauvegarde illisible ou stockage bloqué : solde 0 et record « — » affichés, rien n'est écrit
   }
-  return { dict, infos: Array.isArray(infos?.infos) ? infos.infos : [], liens: liens ?? {}, solde, medailles, record, mondes: lireMondes(mondes), niveaux, statsCfg: stats, lues, recordsInfini };
+  return { dict, infos: Array.isArray(infos?.infos) ? infos.infos : [], liens: liens ?? {}, solde, medailles, record, mondes: lireMondes(mondes), niveaux, statsCfg: stats, lues, recordsInfini, termines };
 }
 
 // son : { lire() → { coupe, volume }, poser(réglages) } (lot 8c, donné par demarrage.js : mémoire de la page, appliquée par main.js à « JOUER »).
 // niveaux, statsCfg (lot 8d) : niveaux de la sauvegarde et data/game/player-stats.json, pour les statistiques effectives (Personnage, « JOUER »).
 // lues, recordsInfini (lot 8h) : nouveautés déjà lues et records de l'infini par carte, lus dans la progression v2 (preparerMenu).
-export function creerMenu({ dict, infos = [], liens = {}, solde: montant = 0, medailles: montantMed = 0, record = null, mondes = lireMondes(null), niveaux = null, statsCfg = null, jouer, son: memoireSon = null, root = document.body, lues = [], recordsInfini = {} }) {
+export function creerMenu({ dict, infos = [], liens = {}, solde: montant = 0, medailles: montantMed = 0, record = null, mondes = lireMondes(null), niveaux = null, statsCfg = null, jouer, son: memoireSon = null, root = document.body, lues = [], recordsInfini = {}, termines = [] }) {
   const t = (k) => dict[k] ?? '';
   let etat = { ...creerEtatMenu(), lues: Array.isArray(lues) ? [...lues] : [] };
   const lien = lienExterne(liens?.discord);
@@ -281,8 +283,10 @@ export function creerMenu({ dict, infos = [], liens = {}, solde: montant = 0, me
     soldeNom.textContent = fmt(t('game.menu.solde'), { n: formatMoney(soldeActuel) });
   };
   poserSolde(montant);
-  solde.append(icone('gemme', 'e8-icone e8-gemme'), soldeTexte, soldeNom);
-  // Lot 8k : puis le solde de médailles (médaille dessinée en code, couleur des médailles, nom accessible « Médailles : N »).
+  // Lot 9a (monnaies interverties, Docs/ref/economie.md) : ce solde (champ « bleu », gagné aux manches) s'appelle désormais « médailles » : médaille,
+  // couleur des médailles (css/menu.css), nom accessible « Médailles : N » ; le suivant (champ « medailles ») devient les diamants (gemme bleue).
+  solde.append(icone('medaille', 'e8-icone e8-medaille'), soldeTexte, soldeNom);
+  // Lot 8k : puis le second solde (lot 9a : diamants, gemme bleue, nom accessible « Diamants : N »).
   const medailles = el('p', ['e8-solde', 'e8-medailles'], { id: 'menu-medailles' });
   const medTexte = el('span', ['e8-solde-texte'], { id: 'menu-medailles-texte', 'aria-hidden': 'true' });
   const medNom = el('span', ['sr-only']);
@@ -293,7 +297,7 @@ export function creerMenu({ dict, infos = [], liens = {}, solde: montant = 0, me
     medNom.textContent = fmt(t('game.menu.medailles'), { n: formatMoney(medActuel) });
   };
   poserMedailles(montantMed);
-  medailles.append(icone('medaille', 'e8-icone e8-medaille'), medTexte, medNom);
+  medailles.append(icone('gemme', 'e8-icone e8-gemme'), medTexte, medNom);
   chargerProgression().then((prog) => prog.abonner(() => {
     poserSolde(prog.solde());
     poserMedailles(prog.medailles());
@@ -572,7 +576,7 @@ export function creerMenu({ dict, infos = [], liens = {}, solde: montant = 0, me
         let s;
         if (onglet === 'infini') {
           const m = await precharger('infini');
-          infini = await m.ecranInfini({ t, mondes, bandeau, jouer: lancer, records: recordsInfini });
+          infini = await m.ecranInfini({ t, mondes, bandeau, jouer: lancer, records: recordsInfini, termines });
           s = infini.section;
           scenes.set('infini', infini.scene);
         } else if (onglet === 'personnage') {

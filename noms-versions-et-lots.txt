@@ -234,3 +234,9 @@ version: v0.8
 nom: Publication de la V0.8
 description: Fin de version : la V0.8 devient la version Recette, la V0.7 est archivée, la documentation est remise à jour. Le jeu ne change pas.
 afficher: non
+
+[lot-9a]
+version: v0.9
+nom: Monnaies interverties, Zollars et correctifs
+description: Médailles pour améliorer, diamants pour les caisses, monnaie de partie nommée Zollars ; Quitter ne rapporte plus rien ; hélicoptère en métal ; Infini après le monde terminé.
+afficher: oui

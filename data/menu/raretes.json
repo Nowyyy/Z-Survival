@@ -1,5 +1,5 @@
 {
-  "_provisoire": "Lot 8d : raretés des objets, de la plus basse à la plus haute (l'ordre compte : la fusion donne la rareté suivante). nom : affiché ; jeton : couleur de css/tokens.css (--rarete-*) ; prixFusion : prix d'une fusion de trois objets de cette rareté (affiché, jamais prélevé avant le lot 8h ; null : rareté la plus haute, non fusionnable). Prix provisoires, modifiables par le propriétaire sans lot. Lu par js/core/equipement.js.",
+  "_provisoire": "Lot 9a : prixFusion se paie dans la monnaie « bleu » du code, appelée « médailles » à l'écran (Docs/ref/economie.md). Lot 8d : raretés des objets, de la plus basse à la plus haute (l'ordre compte : la fusion donne la rareté suivante). nom : affiché ; jeton : couleur de css/tokens.css (--rarete-*) ; prixFusion : prix d'une fusion de trois objets de cette rareté (affiché, jamais prélevé avant le lot 8h ; null : rareté la plus haute, non fusionnable). Prix provisoires, modifiables par le propriétaire sans lot. Lu par js/core/equipement.js.",
   "raretes": [
     { "id": "commun", "nom": "Commun", "jeton": "--rarete-commun", "prixFusion": 100 },
     { "id": "peu-commun", "nom": "Peu commun", "jeton": "--rarete-peu-commun", "prixFusion": 250 },

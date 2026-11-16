@@ -24,14 +24,14 @@ Avant de modifier une page, lis `Docs/ref/conventions.md` (arborescence, pages, 
 ## Git
 - Une branche par lot : `lot-N`, supprimée par le propriétaire en fin de version, jamais par un agent (gardés : lots de la version en cours ; repères : étiquettes `v0.N`). Un commit par partie : « Lot N-X — titre ». Arbre propre au départ.
 - Push de `lot-N` seulement, puis comparer `git rev-parse HEAD` et `git ls-remote origin lot-N`.
-- Jamais de force-push, jamais de fusion dans `main`, pas de Pull Request sans demande. Tags facultatifs. Une seule partie par session, puis arrêt.
+- Jamais de force-push, jamais de fusion dans `main`, pas de Pull Request sans demande. Pas de nouvelle étiquette. Une seule partie par session, puis arrêt.
 
 ## Règles durables
 - Jetons : aucune couleur en dur hors `css/tokens.css` (sauf --ouv-* de `css/ouvertures.css`) ; couleurs du jeu : variables --game-* (palette.js), jamais en dur dans js/.
 - Données : textes dans `data/i18n/*.json`, jamais en dur ; mêmes clés dans les deux langues, sauf `dev.*` et `game.*` (français seul).
 - Accessibilité : cibles 44 px, contraste 4,5:1, focus visible, `prefers-reduced-motion`, axe sans violation.
 - Exception texte : `<noscript>` de `index.html` bilingue en dur (l'i18n exige JS).
-- Style « sang noir » : noir, rouge sang, os, jaune (argent), bleu (diamants), bronze (médailles). Texte sur rouge = zone pleine (`.zone`), jamais sur les taches (`js/splat.js`).
+- Style « sang noir » : noir, rouge sang, os, jaune (Zollars), bleu (diamants), bronze (médailles). Texte sur rouge = zone pleine (`.zone`), jamais sur les taches (`js/splat.js`).
 - Polices (OFL, `fonts/` avec licence) : Barlow, Rubik Wet Paint (titre), Rubik Dirt (libellés, chargée après l'affichage : seuil Lighthouse).
 - Honnêteté : tout contenu fictif ou provisoire est marqué comme tel.
 - `Docs/seed.md` : appartient au propriétaire, jamais modifié par Claude (rempli depuis le lot 0-A).
@@ -57,7 +57,7 @@ Avant de modifier une page, lis `Docs/ref/conventions.md` (arborescence, pages, 
 - Étages : etage.json, zones.json ; floor (rdc, etage) sur zombies, fenêtres, balles, obstacles ; une couche de collisions par étage ; relevé : Docs/ref/etage.md.
 - Sauvegarde : js/core/progression.js pur (zs.save.v2, code ZS2 ; zs.save.v1 ignorée) ; js/save/ seul à toucher localStorage (même domaine : /Recette/, /dev/, /v0.N/) ; illisible ou future = verrouillée, jamais écrasée ; onglets : save-merge.js ; Docs/ref/sauvegarde-v2.md.
 - Mode essai (wave, lvl, planks, map, empty, nospawn, endless, floor, money) : sauvegarde en lecture seule ; ?test=1 = mémoire (&store=local : vrai localStorage).
-- Argent : economy.js, economy.json ; jaune : 10 par kill (balle seulement), 1 par planche, 0 à chaque partie ; diamants et médailles écrits au gain ; calcul seulement dans economy.js ; Docs/ref/economie.md.
+- Argent : economy.js (calcul), economy.json ; Zollars (jaune) : 10 par kill (balle), 1 par planche, 0 par partie ; médailles (champ bleu), diamants (champ medailles) écrits au gain ; Docs/ref/economie.md.
 - Options (E2-12, menu E5) : Auto, Faible, Moyen, Élevé, Perso (réglage changé → Perso) ; ?gfx= > zs.device.v1 (v2 ; son, volumes) > auto ; sans effet sur la logique ; Docs/ref/options-graphiques.md.
 - Lampes : lampes.json → npm run carte ; lumieres.json ; ?lum= (off : ?test=1) ; références de rendu : ?test=1&lum=off ; Docs/ref/lampes.md.
 - Canal : zs-canal de jeu.html ; paramètres par pageSearch() (groupes G, T, test ; acces()), jamais location.search ; débogage : source, dev, release ; Docs/ref/debug.md.

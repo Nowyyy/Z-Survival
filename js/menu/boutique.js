@@ -20,7 +20,7 @@ import { fmt } from '../game/texts.js';
 import { el } from './menu.js';
 import { chargerEquipement } from './equipement-etat.js';
 import { buste, icone24 } from './personnage.js';
-import { iconeMedaille } from '../game/bleu-manche.js';
+import { iconeGemme } from '../game/bleu-manche.js';
 import { acces } from '../core/graphics.js';
 import { pageCanal, pageSearch } from '../game/graphics-boot.js';
 
@@ -313,9 +313,10 @@ export async function ecranBoutique({ t, bandeau, root, rootDialogue, surVue = (
       sep.textContent = t('game.menu.boutique.prix.sep');
       const p = el('span', ['e3-ouvrir-prix']);
       p.textContent = prix;
-      // Lot 8k : prix en médailles (médaille décorative avant le montant ; le nom accessible dit « médailles » par la description de la carte).
+      // Lot 8k : prix dans la monnaie des caisses (champ « medailles » ; lot 9a : appelée « diamants », gemme décorative avant le montant ; avant :
+      // médaille ; le nom accessible dit la monnaie par la description de la carte).
       const ligne = el('span', ['e3-ouvrir-ligne']);
-      ligne.append(iconeMedaille('e3-ouvrir-medaille'), p);
+      ligne.append(iconeGemme('e3-ouvrir-gemme'), p);
       n.append(action, sep, ligne);
       n.addEventListener('click', () => {
         if (n.getAttribute('aria-disabled') !== 'true') acheter(c, quantite, n);
@@ -633,7 +634,7 @@ export async function ecranBoutique({ t, bandeau, root, rootDialogue, surVue = (
     if (!resultat) {
       const m = await import('./resultat.js');
       resultat ??= m.creerResultat({
-        t, bandeau, cat, solde: () => eq.solde(),
+        t, bandeau, cat, solde: () => eq.medailles(), // lot 9a : « Rouvrir » paie une caisse : monnaie des caisses (avant : la bleue, à tort depuis le lot 8k)
         continuer: () => fermerResultat(true),
         rouvrir: () => dernier?.caisse && acheter(dernier.caisse, dernier.quantite, null),
       });

@@ -41,7 +41,9 @@ const PORTE = 10;
 const PRIX = 100;
 
 // options : { seed, tabs, ops, retard, params, caisse, cat, regles, initial (médailles de départ) }.
-export function simulateMedailles({ seed, tabs: nTabs = 2, ops = 10, retard = 10, params, caisse, cat, regles, initial = 0 } = {}) {
+// Lot 9a : bleuDepart (facultatif) : solde « bleu » de départ (médailles à l'écran depuis le lot 9a), comme une sauvegarde de la V0.8 ; jamais touché par
+// les onglets (portes, paliers, jour, caisses : champ « medailles », diamants à l'écran) ; le résultat rend aussi la progression finale (fin).
+export function simulateMedailles({ seed, tabs: nTabs = 2, ops = 10, retard = 10, params, caisse, cat, regles, initial = 0, bleuDepart = 0 } = {}) {
   const r = rng(seed);
   const pick = (max) => Math.floor(r() * (max + 1));
   const s = scheduler();
@@ -50,7 +52,7 @@ export function simulateMedailles({ seed, tabs: nTabs = 2, ops = 10, retard = 10
   let now = 0;
   let writes = 0;
   // Départ : médailles et compteurs de pitié tirés (près d'une garantie parfois).
-  const depart = appliquerOps(defaultProgression(), [{ id: 'depart', t: 'gain', medailles: initial }, { id: 'pit', t: 'pitie', valeurs: { equipement: { e: pick(9), l: 60 + pick(9) } } }], 1, params).save;
+  const depart = appliquerOps(defaultProgression(), [{ id: 'depart', t: 'gain', medailles: initial, ...(bleuDepart > 0 ? { bleu: bleuDepart } : {}) }, { id: 'pit', t: 'pitie', valeurs: { equipement: { e: pick(9), l: 60 + pick(9) } } }], 1, params).save;
   let auth = JSON.stringify(serialiser(depart));
   const tabs = [];
   let opSeq = 0;
@@ -202,6 +204,7 @@ export function simulateMedailles({ seed, tabs: nTabs = 2, ops = 10, retard = 10
     achats: acceptes.length, annules: achats.size - acceptes.length, calme: s.size === 0, ecritures: writes,
   };
   res.ok = !res.pertes && !res.doubles && !res.doublesDepenses && !res.negatif && !res.coupe && !res.pitie && !res.paliers && !res.jours && res.calme;
+  if (bleuDepart > 0) res.fin = fin; // lot 9a
   return res;
 }
 

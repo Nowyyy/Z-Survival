@@ -158,7 +158,7 @@ describe('astuce, version, liens (lot 8a)', () => {
     expect(versionMenu(journal, 'source')).toEqual({ v: 'V0.10', canal: 'source' });
     for (const c of ['archive', 'prod', null, 'autre']) expect(versionMenu(journal, c)).toEqual({ v: 'V0.10', canal: null });
     for (const bad of [null, {}, { lots: 'x' }, { lots: [{ version: 'V0.8' }] }]) expect(versionMenu(bad, 'dev')).toBe(null);
-    expect(versionMenu(JSON.parse(read('data/changelog.json')), 'source')).toEqual({ v: 'V0.8', canal: 'source' });
+    expect(versionMenu(JSON.parse(read('data/changelog.json')), 'source')).toEqual({ v: 'V0.9', canal: 'source' }); // lot 9a : premier lot de la V0.9 (avant : V0.8)
   });
 
   it('lien Discord : https seulement ; vide, autre schéma ou invalide : inactif ; liens.json vide aujourd\'hui', () => {

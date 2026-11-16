@@ -201,8 +201,8 @@ test.describe('Boutique (E3-1)', () => {
         await expect(carte.locator('h4')).toHaveText(c.nom);
         await expect(carte.locator('.e3-carte-contenu')).toHaveText(CONTENUS[c.id]);
         await expect(carte.locator('.e3-ouvrir-prix')).toHaveText([formatMoney(c.prix), formatMoney(c.prix10)]);
-        await expect(page.locator(`#menu-caisse-${c.id}-un`)).toHaveAccessibleName(`Ouvrir ×1 · prix : ${formatMoney(c.prix)}`);
-        await expect(page.locator(`#menu-caisse-${c.id}-dix`)).toHaveAccessibleName(`Ouvrir ×10 · prix : ${formatMoney(c.prix10)}`);
+        await expect(page.locator(`#menu-caisse-${c.id}-un`)).toHaveAccessibleName(`Ouvrir ×1 · prix en diamants : ${formatMoney(c.prix)}`); // lot 9a : la monnaie dite (avant : « · prix : »)
+        await expect(page.locator(`#menu-caisse-${c.id}-dix`)).toHaveAccessibleName(`Ouvrir ×10 · prix en diamants : ${formatMoney(c.prix10)}`);
         for (const b of ['un', 'dix', 'chances']) await expect(page.locator(`#menu-caisse-${c.id}-${b}`)).toHaveAccessibleDescription(c.nom);
         await expect(page.locator(`#menu-caisse-${c.id}-chances`)).toHaveText('Voir les chances');
         // Caisse dessinée : trois « ? » (un grand doublé d'un halo, deux petits), rayons, quatre rivets ; dans sa carte.

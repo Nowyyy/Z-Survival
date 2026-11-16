@@ -541,7 +541,7 @@ test.describe('Connexion et Profil (E10)', () => {
       await expect(page.locator('#menu-profil-pseudo')).toHaveText('Survivant');
       await expect(page.locator('#menu-profil-compte')).toHaveText('Compte : non connecté');
       await expect(page.locator('#menu-profil-google')).toHaveAttribute('aria-disabled', 'true');
-      await expect(page.locator('.e10-stat-nom')).toHaveText(['Meilleure manche', 'Zombies tués', 'Parties histoire', 'Parties infini', 'Temps de jeu', 'Diamants gagnés', 'Médailles gagnées']); // sans record infini ; lot 8h : monnaie bleue ; lot 8k : médailles (quatre colonnes, deux rangées)
+      await expect(page.locator('.e10-stat-nom')).toHaveText(['Meilleure manche', 'Zombies tués', 'Parties histoire', 'Parties infini', 'Temps de jeu', 'Médailles gagnées', 'Diamants gagnés']); // lot 9a : champ « bleu » = médailles, champ « medailles » = diamants ; // sans record infini ; lot 8h : monnaie bleue ; lot 8k : médailles (quatre colonnes, deux rangées)
       await expect(page.locator('#menu-profil-exporter')).toHaveText('Exporter mon code');
       await expect(page.locator('#menu-profil-importer')).toHaveText('Importer un code');
       const marge = encoche ? 50 : 15.5;
@@ -746,7 +746,7 @@ test.describe('Connexion et Profil (E10)', () => {
     await expect(page.locator('#menu-import-erreur')).toHaveText('');
     await expect(page.locator('#menu-import-apercu')).toBeVisible();
     await expect(page.locator('#menu-import-message')).toHaveText('Code valide : vérifie l\'aperçu avant de remplacer ta sauvegarde.');
-    await expect(page.locator('#menu-import-table tr[data-changed="true"] th')).toContainText(['Diamants', 'Diamants gagnés (total)', 'Record histoire (batiment)']);
+    await expect(page.locator('#menu-import-table tr[data-changed="true"] th')).toContainText(['Médailles', 'Médailles gagnées (total)', 'Record histoire (batiment)']); // lot 9a : le champ « bleu » s'appelle « médailles »
     await expect(page.locator('#menu-import-remplacer')).toBeDisabled();
     expect((await new AxeBuilder({ page }).analyze()).violations.map((v) => v.id)).toEqual([]);
     expect(await page.evaluate(() => window.__ecritures)).toEqual([]);

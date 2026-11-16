@@ -540,14 +540,14 @@
   align-items: center;
   gap: 6px;
   margin: 0;
-  color: var(--color-money-blue); /* lot 8h : monnaie bleue */
+  color: var(--color-money-medaille); /* lot 9a : champ « bleu », appelé « médailles » (avant : diamants, en bleu) */
   font-weight: var(--font-weight-bold);
   font-size: max(15px, calc(18 * var(--u)));
   font-variant-numeric: tabular-nums;
 }
 
 .e8-solde.e8-medailles {
-  color: var(--color-money-medaille); /* lot 8k : médailles */
+  color: var(--color-money-blue); /* lot 9a : champ « medailles », appelé « diamants » (gemme bleue) */
 }
 
 .e8-plein-ecran {
@@ -1391,6 +1391,15 @@
   padding: 0;
   font-size: max(20px, calc(26 * var(--u)));
   line-height: 1;
+}
+
+/* Lot 9a : « Jouer » de l'Infini désactivé tant que le monde choisi n'est pas terminé (raison dans le nom accessible). */
+.e8-infini-bouton[aria-disabled='true'] {
+  border-color: var(--menu-options-inactif-bord);
+  background: var(--menu-options-inactif);
+  box-shadow: none;
+  color: var(--menu-options-inactif-texte);
+  cursor: not-allowed;
 }
 
 .e8-infini-classement {
@@ -3762,7 +3771,7 @@
   gap: 3px;
 }
 
-.e3-ouvrir-medaille {
+.e3-ouvrir-gemme { /* lot 9a : gemme des diamants (avant : .e3-ouvrir-medaille) */
   flex: none;
   width: 1.05em;
   height: 1.05em;

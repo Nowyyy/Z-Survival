@@ -114,12 +114,12 @@ describe('prix prélevés dans la même écriture que ce qui est obtenu', () => 
 });
 
 describe('outils de débogage', () => {
-  it('icône seulement sur les canaux « source » et « dev » (jamais la Recette « release », les archives ni la production) ; six outils avec confirmation (lot 8k : + médailles, pitié) ; jamais zs.save.v1', () => {
+  it('icône seulement sur les canaux « source » et « dev » (jamais la Recette « release », les archives ni la production) ; sept outils avec confirmation (lot 8k : + médailles, pitié ; lot 9a : + monde terminé) ; jamais zs.save.v1', () => {
     const menu = read('js/menu/menu.js');
     expect(menu).toMatch(/const outils = \['source', 'dev'\]\.includes\(pageCanal\(\)\)/);
     const d = read('js/menu/debogage.js');
     expect(d).toMatch(/export const CANAUX_OUTILS = Object\.freeze\(\['source', 'dev'\]\);/);
-    expect(d).toMatch(/export const OUTILS = Object\.freeze\(\['bleus', 'medailles', 'pitie', 'demo', 'persos', 'zero'\]\);/);
+    expect(d).toMatch(/export const OUTILS = Object\.freeze\(\['bleus', 'medailles', 'pitie', 'monde', 'demo', 'persos', 'zero'\]\);/); // lot 9a : + « Marquer le monde 1 terminé » (sept outils)
     expect(d).toMatch(/game\.menu\.debogage\.confirmer/);
     expect(d).not.toMatch(/localStorage|removeItem\(|getItem\(/); // aucun accès direct : la remise à zéro passe par le dépôt v2 (clear de zs.save.v2)
     expect(read('js/menu/equipement-etat.js')).toMatch(/remettreAZero: \(\) => prog\.effacer\(\)/);

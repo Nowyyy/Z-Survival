@@ -125,7 +125,7 @@ export function createGame(ctx) {
   const startFloor = multi && params.floor === 'etage' && stairsOpenAtStart.length > 0 ? 'etage' : 'rdc';
   // Les deux étages sont construits une seule fois, ici, derrière l'écran de préparation ; durée exposée par ?fps=1.
   const buildStart = performance.now();
-  const world = buildWorld({ palette, layout, layouts, render, textures, windowGeoms: geoms, windowsCfg, seed: ctx.seed, closedDoors: doorCfgs.filter((d) => !startOpen.includes(d.id)).map((d) => d.id), stairs: stairsWorld });
+  const world = buildWorld({ palette, layout, layouts, render, textures, windowGeoms: geoms, windowsCfg, seed: ctx.seed, closedDoors: doorCfgs.filter((d) => !startOpen.includes(d.id)).map((d) => d.id), stairs: stairsWorld, helico: ctx.reglages?.helicoptere }); // lot 9a : vitesse du rotor
   if (ctx.perf) ctx.perf.floorsMs = performance.now() - buildStart;
   // Lot 3i : feux de décor (feux.json sur le mobilier : centre des boîtes de la pièce) pour la boucle de feu.
   ctx.audio?.setFires?.((render.feux ?? []).map((fe) => ({ fe, boxes: render.mobilier?.[fe?.piece]?.boxes })).filter((f) => Array.isArray(f.boxes) && f.boxes.length > 0).map(({ fe, boxes }) => ({ x: (Math.min(...boxes.map((b) => b.x0)) + Math.max(...boxes.map((b) => b.x1))) / 2, y: (Math.min(...boxes.map((b) => b.z0)) + Math.max(...boxes.map((b) => b.z1))) / 2, floor: fe.floor })));

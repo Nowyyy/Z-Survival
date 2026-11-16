@@ -39,10 +39,13 @@ const pixels = (page, x, y, w, h) => page.evaluate(({ x, y, w, h }) => {
 }, { x, y, w, h });
 // Références relevées sur origin/dev 080a7fe (avant le lot 5k ; scripts/perf/budget-instant.mjs, mêmes gestes, ?perf=1 pour renderer.info.programs).
 // Lot 5k-J (retour du propriétaire) : U1 a 12 triangles de moins qu'origin/dev (garde-corps retiré contre le mur ouest de l'étage, fenceParts).
+// Lot 9a : tôle et rotor de l'hélicoptère dans deux maillages à part, coupés hors du champ (avant : dans le décor dessiné partout). R1 (hélicoptère
+// hors du champ) : 298 triangles de moins (tôle et rotor), mêmes appels ; U1 (hélicoptère dans le champ) : mêmes triangles, 2 appels de plus. Avant :
+// eleve R1 [62, 38479, 18], U1 [67, 39623, 18] ; moyen R1 [60, 23867, 18], U1 [65, 25011, 18] ; faible R1 [42, 19253, 16], U1 [46, 19607, 16].
 const ORIGINE = {
-  eleve: { R1: [62, 38479, 18], U1: [67, 39623, 18] },
-  moyen: { R1: [60, 23867, 18], U1: [65, 25011, 18] },
-  faible: { R1: [42, 19253, 16], U1: [46, 19607, 16] },
+  eleve: { R1: [62, 38181, 18], U1: [69, 39623, 18] },
+  moyen: { R1: [60, 23569, 18], U1: [67, 25011, 18] },
+  faible: { R1: [42, 18955, 16], U1: [48, 19607, 16] },
 };
 const SCENES = {
   R1: { url: '&nospawn=1', at: [U(300), U(300)], floor: 'rdc', wave: 10 },

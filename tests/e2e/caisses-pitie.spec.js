@@ -152,6 +152,7 @@ test.describe('caisses uniques et pitié (lot 8k)', () => {
     expect([s.pitie.equipement, s.pitie.personnage.e, s.medailles.depense]).toEqual([{ e: 0, l: 0 }, 0, 200]);
   });
 
+  // Lot 9a : titre gardé (motif du palier et mesures de durée) ; « médailles » y désigne la monnaie des caisses, appelée « diamants » depuis ce lot.
   test('« Il manque N médailles » grisé, raison lue ; rien prélevé ni écrit ; prix en médailles, nom accessible inchangé ; axe ; 44 px', async ({ page }) => {
     test.setTimeout(120_000);
     await poserProgression(page, progressionDemo({ medailles: 40 }));
@@ -165,10 +166,10 @@ test.describe('caisses uniques et pitié (lot 8k)', () => {
       const un = page.locator(`#menu-caisse-${c.id}-un`);
       await un.scrollIntoViewIfNeeded();
       await expect(un).toHaveAttribute('aria-disabled', 'true');
-      await expect(un.locator('.e3-ouvrir-prix')).toHaveText('Il manque 60 médailles');
-      await expect(page.locator(`#menu-caisse-${c.id}-dix .e3-ouvrir-prix`)).toHaveText(`Il manque 960 médailles`);
-      await expect(page.locator(`#menu-caisse-${c.id}-raison`)).toHaveText(`Médailles insuffisantes : prix 100 / 1${NNBSP}000, solde 40.`);
-      await expect(un.locator('svg.e3-ouvrir-medaille')).toHaveCount(1);
+      await expect(un.locator('.e3-ouvrir-prix')).toHaveText('Il manque 60 diamants'); // lot 9a : les caisses se paient en diamants (champ « medailles »)
+      await expect(page.locator(`#menu-caisse-${c.id}-dix .e3-ouvrir-prix`)).toHaveText(`Il manque 960 diamants`);
+      await expect(page.locator(`#menu-caisse-${c.id}-raison`)).toHaveText(`Diamants insuffisants : prix 100 / 1${NNBSP}000, solde 40.`);
+      await expect(un.locator('svg.e3-ouvrir-gemme')).toHaveCount(1); // lot 9a : gemme (avant : médaille, .e3-ouvrir-medaille)
       await un.dispatchEvent('click'); // bouton grisé (aria-disabled) : le toucher ne fait rien
       for (const s of [`#menu-caisse-${c.id}-un`, `#menu-caisse-${c.id}-dix`, `#menu-caisse-${c.id}-chances`]) {
         const r = await page.locator(s).boundingBox();
