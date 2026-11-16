@@ -69,7 +69,7 @@ test('se charge sans erreur ni requête externe ; noindex, français, aucun cook
 
 test('état vide : solde 0, « jamais », état « vide », stockage persistant inconnu ou non', async ({ page }) => {
   await open(page);
-  await expect(state(page)).toContainText('Diamants0');
+  await expect(state(page)).toContainText('Médailles0'); // lot 9a : le champ « bleu » s'appelle « médailles » (avant : « Diamants »)
   await expect(state(page)).toContainText('Dernière écriturejamais');
   await expect(state(page)).toContainText('État de la sauvegardevide');
   await expect(state(page)).toContainText('Stockage persistant');
@@ -109,7 +109,7 @@ test('importer un code valide : aperçu, case à cocher, remplacement, relecture
   await open(page);
   await importCode(page, CODE);
   await expect(page.locator('#import-preview')).toBeVisible();
-  await expect(page.locator('#import-rows tr').first()).toContainText('Diamants');
+  await expect(page.locator('#import-rows tr').first()).toContainText('Médailles'); // lot 9a (avant : « Diamants »)
   await expect(page.locator('#import-rows')).toContainText('→ 1234');
   await expect(page.locator('#import-rows')).toContainText('Dégâts');
   await expect(page.locator('#import-rows')).toContainText('Record histoire (batiment)');
@@ -120,8 +120,8 @@ test('importer un code valide : aperçu, case à cocher, remplacement, relecture
   await expect(replace).toBeEnabled();
   await replace.click();
   await expect(page.locator('#live')).toHaveText('Sauvegarde importée.');
-  await expect(state(page)).toContainText('Diamants1234');
-  await expect(state(page)).toContainText('Diamants gagnés (total)5678');
+  await expect(state(page)).toContainText('Médailles1234'); // lot 9a (avant : « Diamants »)
+  await expect(state(page)).toContainText('Médailles gagnées (total)5678'); // lot 9a
   await expect(state(page)).toContainText('Dégâts 3');
   await expect(state(page)).toContainText('1 objet(s)');
   await expect(state(page)).toContainText('État de la sauvegardeenregistrée');
@@ -229,7 +229,7 @@ test('« Importer un code » de la section illisible descend à l\'import et dé
   await expect(page.locator('#import-code')).toBeFocused();
   await replaceWith(page, CODE);
   await expect(page.locator('#locked-section')).toBeHidden();
-  await expect(state(page)).toContainText('Diamants1234');
+  await expect(state(page)).toContainText('Médailles1234'); // lot 9a (avant : « Diamants »)
 });
 
 test('« Repartir de zéro » demande une confirmation et peut être annulée', async ({ page }) => {
@@ -244,7 +244,7 @@ test('« Repartir de zéro » demande une confirmation et peut être annulée', 
 test('« Tout effacer » en deux temps : bouton, puis case et second bouton', async ({ page }) => {
   await page.addInitScript(seed(sample()));
   await open(page, '');
-  await expect(state(page)).toContainText('Diamants1234');
+  await expect(state(page)).toContainText('Médailles1234'); // lot 9a (avant : « Diamants »)
   await page.getByRole('button', { name: 'Tout effacer…' }).click();
   await expect(page.locator('#clear-confirm')).toBeVisible();
   const yes = page.getByRole('button', { name: 'Effacer définitivement' });
@@ -254,7 +254,7 @@ test('« Tout effacer » en deux temps : bouton, puis case et second bouton', as
   await expect(yes).toBeEnabled();
   await yes.click();
   await expect(page.locator('#live')).toHaveText('Sauvegarde effacée.');
-  await expect(state(page)).toContainText('Diamants0');
+  await expect(state(page)).toContainText('Médailles0'); // lot 9a : le champ « bleu » s'appelle « médailles » (avant : « Diamants »)
   expect(await page.evaluate((k) => localStorage.getItem(k), KEY)).toBeNull();
 });
 
@@ -265,19 +265,19 @@ test('« Tout effacer » annulé ne touche à rien', async ({ page }) => {
   await page.locator('#clear-ack').check();
   await page.locator('#clear-confirm').getByRole('button', { name: 'Annuler' }).click();
   await expect(page.locator('#clear-confirm')).toBeHidden();
-  await expect(state(page)).toContainText('Diamants1234');
+  await expect(state(page)).toContainText('Médailles1234'); // lot 9a (avant : « Diamants »)
 });
 
 test('la sauvegarde réelle est lue au chargement (stockage local) et la page se met à jour quand un autre onglet la modifie', async ({ page, context }) => {
   await open(page, '');
-  await expect(state(page)).toContainText('Diamants0');
+  await expect(state(page)).toContainText('Médailles0'); // lot 9a : le champ « bleu » s'appelle « médailles » (avant : « Diamants »)
   const other = await context.newPage();
   await other.setViewportSize(SIZE);
   await other.goto('/sauvegarde.html');
   await expect(other.locator('#app')).toBeVisible();
   await replaceWith(other, CODE);
   await expect(other.locator('#live')).toHaveText('Sauvegarde importée.');
-  await expect(state(page)).toContainText('Diamants1234');
+  await expect(state(page)).toContainText('Médailles1234'); // lot 9a (avant : « Diamants »)
 });
 
 test('seules clés zs.save.v2 et zs.device.v1 (laissée intacte) dans localStorage après toutes les actions ; aucun cookie, sessionStorage vide, aucun IndexedDB', async ({ page }) => {
@@ -301,7 +301,7 @@ test('lot 8h : zs.save.v1 (V0.7) jamais lue ni écrite ; un code ZS1 importé re
   await page.addInitScript(`${writesSpy(`if (!sessionStorage.getItem('__seeded')) { localStorage.setItem('${V1}', ${JSON.stringify(v1)}); sessionStorage.setItem('__seeded', '1'); }`)}`);
   await open(page, '');
   await expect(state(page)).toHaveAttribute('data-state', 'empty'); // la V0.8 repart de zéro
-  await expect(state(page)).toContainText('Diamants0');
+  await expect(state(page)).toContainText('Médailles0'); // lot 9a : le champ « bleu » s'appelle « médailles » (avant : « Diamants »)
   await replaceWith(page, CODE);
   await importCode(page, CODE_V1);
   await expect(page.locator('#import-warnings')).toContainText('version plus ancienne (ZS1)');
@@ -400,14 +400,17 @@ test.describe('compatibilité V0.7 ↔ V0.8, même origine', () => {
     const { mkdtempSync, mkdirSync, symlinkSync } = await import('node:fs');
     const { tmpdir } = await import('node:os');
     const { join } = await import('node:path');
+    // Lot 9a : la V0.7 est prise à son commit de versions.json (avant : origin/main, devenu la V0.8 à la publication du lot 8m : le test lisait alors
+    // une V0.8 sous /Recette/ et échouait en local ; sauté en CI, copie sans historique). Commit absent : sauté comme avant.
+    const ref = JSON.parse((await import('node:fs')).readFileSync('versions.json', 'utf8')).versions.find((v) => v.id === 'v0.7')?.ref;
     try {
-      execSync('git rev-parse --verify --quiet origin/main', { stdio: 'ignore' });
+      execSync(`git cat-file -e ${ref}^{commit}`, { stdio: 'ignore' });
     } catch {
       return;
     }
     dir = mkdtempSync(join(tmpdir(), 'zs-compat-'));
     mkdirSync(join(dir, 'Recette'));
-    execSync(`git archive origin/main | tar -x -C "${join(dir, 'Recette')}"`, { stdio: 'ignore', shell: '/bin/bash' });
+    execSync(`git archive ${ref} | tar -x -C "${join(dir, 'Recette')}"`, { stdio: 'ignore', shell: '/bin/bash' });
     symlinkSync(process.cwd(), join(dir, 'dev'), 'dir');
     const { startServer } = await import('../../scripts/site/serve.mjs');
     server = await startServer({ root: dir, port: PORT, base: '/', quiet: true });
@@ -436,7 +439,7 @@ test.describe('compatibilité V0.7 ↔ V0.8, même origine', () => {
   const lire = (page) => page.evaluate(() => Object.fromEntries(Object.keys(localStorage).sort().map((k) => [k, localStorage.getItem(k)])));
 
   test('V0.7 → V0.8 → V0.7 : progression de chaque côté intacte, la Recette démarre et joue', async ({ page }) => {
-    test.skip(server === null, 'origin/main absent : versions côte à côte impossibles');
+    test.skip(server === null, 'commit de la V0.7 absent : versions côte à côte impossibles');
     test.setTimeout(120_000);
     await page.setViewportSize(SIZE);
     // 1. V0.7 : joue et écrit zs.save.v1.
@@ -465,7 +468,7 @@ test.describe('compatibilité V0.7 ↔ V0.8, même origine', () => {
     expect(apres07[KEY]).toBe(v2);
     // 4. V0.8 : sa progression est là, intacte.
     await page.goto(`${BASE}/dev/sauvegarde.html`);
-    await expect(page.locator('#state-list')).toContainText('Diamants1254');
+    await expect(page.locator('#state-list')).toContainText('Médailles1254'); // lot 9a (avant : « Diamants »)
     expect((await lire(page))[KEY]).toBe(v2);
   });
 });

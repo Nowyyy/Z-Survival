@@ -281,8 +281,10 @@ export function creerMenu({ dict, infos = [], liens = {}, solde: montant = 0, me
     soldeNom.textContent = fmt(t('game.menu.solde'), { n: formatMoney(soldeActuel) });
   };
   poserSolde(montant);
-  solde.append(icone('gemme', 'e8-icone e8-gemme'), soldeTexte, soldeNom);
-  // Lot 8k : puis le solde de médailles (médaille dessinée en code, couleur des médailles, nom accessible « Médailles : N »).
+  // Lot 9a (monnaies interverties, Docs/ref/economie.md) : ce solde (champ « bleu », gagné aux manches) s'appelle désormais « médailles » : médaille,
+  // couleur des médailles (css/menu.css), nom accessible « Médailles : N » ; le suivant (champ « medailles ») devient les diamants (gemme bleue).
+  solde.append(icone('medaille', 'e8-icone e8-medaille'), soldeTexte, soldeNom);
+  // Lot 8k : puis le second solde (lot 9a : diamants, gemme bleue, nom accessible « Diamants : N »).
   const medailles = el('p', ['e8-solde', 'e8-medailles'], { id: 'menu-medailles' });
   const medTexte = el('span', ['e8-solde-texte'], { id: 'menu-medailles-texte', 'aria-hidden': 'true' });
   const medNom = el('span', ['sr-only']);
@@ -293,7 +295,7 @@ export function creerMenu({ dict, infos = [], liens = {}, solde: montant = 0, me
     medNom.textContent = fmt(t('game.menu.medailles'), { n: formatMoney(medActuel) });
   };
   poserMedailles(montantMed);
-  medailles.append(icone('medaille', 'e8-icone e8-medaille'), medTexte, medNom);
+  medailles.append(icone('gemme', 'e8-icone e8-gemme'), medTexte, medNom);
   chargerProgression().then((prog) => prog.abonner(() => {
     poserSolde(prog.solde());
     poserMedailles(prog.medailles());

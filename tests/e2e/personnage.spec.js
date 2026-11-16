@@ -392,9 +392,9 @@ test.describe('sous-menus Inventaire, Fusion, Personnages (E9-2 à E9-4)', () =>
     await ouvrirPersonnage(page);
     await page.locator('#menu-perso-inventaire').click();
     await page.locator('#menu-objet-o5').click();
-    await expect(page.locator('#menu-inventaire-ameliorer')).toHaveText('Il manque 15');
+    await expect(page.locator('#menu-inventaire-ameliorer')).toHaveText('Il manque 15 médailles'); // lot 9a : la monnaie dite (avant : « Il manque 15 »)
     await expect(page.locator('#menu-inventaire-ameliorer')).toHaveAttribute('aria-disabled', 'true');
-    await expect(page.locator('#menu-inventaire-ameliorer')).toHaveAccessibleDescription('Diamants insuffisants : prix 40, solde 25.');
+    await expect(page.locator('#menu-inventaire-ameliorer')).toHaveAccessibleDescription('Médailles insuffisantes : prix 40, solde 25.'); // lot 9a (avant : « Diamants insuffisants »)
     await page.locator('#menu-inventaire-ameliorer').click({ force: true });
     expect((await etatPerso(page)).objets.find((x) => x.uid === 'o5').niveau).toBe(1);
     expect(await page.evaluate(() => window.__ecritures)).toEqual([]);

@@ -70,7 +70,7 @@ test.describe('médailles en partie (lot 8k)', () => {
     await expect(bloc).toBeVisible();
     // Paliers 5 et 10 (fin de la manche 10) puis la porte, à moins de 4 s de jeu : les deux gains s'additionnent dans le même bloc.
     await expect(bloc).toContainText(`${m.solde} (+${m.run.total})`);
-    await expect(bloc.locator('svg.hud-medaille')).toHaveCount(1);
+    await expect(bloc.locator('svg.hud-gem')).toHaveCount(1); // lot 9a : les gains des portes et paliers (champ « medailles ») sont les diamants : gemme (avant : médaille)
     const bleu = page.locator('#hud-bleu-manche');
     if (await bleu.isVisible()) {
       const [a, b] = await Promise.all([bleu.boundingBox(), bloc.boundingBox()]);
@@ -99,15 +99,15 @@ test.describe('médailles en partie (lot 8k)', () => {
     await expect(pause).toBeVisible();
     const total = (await state(page)).save.medailles.solde;
     await expect(page.locator('#pause-medailles-text')).toHaveText(String(total));
-    await expect(pause.locator('.pause-medailles .sr-only')).toHaveText('Médailles :');
-    await expect(pause.locator('.pause-medailles svg.hud-medaille')).toHaveCount(1);
+    await expect(pause.locator('.pause-medailles .sr-only')).toHaveText('Diamants :'); // lot 9a (avant : « Médailles : »)
+    await expect(pause.locator('.pause-medailles svg.hud-gem')).toHaveCount(1); // lot 9a : gemme (avant : médaille)
     await page.locator('#btn-resume').click();
     await page.evaluate(() => { window.__zs.killAll(); window.__zs.setChutes(0); window.__zs.downPlayer(); });
     await step(page, 0.3);
     await expect(page.locator('#end-panel')).toBeVisible();
     // Retour du propriétaire après le lot 8k : « Solde médailles : N » puis la médaille et « +gain » (gain de la partie ; plus de ligne des sources).
     await expect(page.locator('#end-medailles-text')).toHaveText(`+${total + params.economy.medailleJour}`);
-    await expect(page.locator('#end-medailles-solde-text')).toHaveText(`Solde médailles : ${total + params.economy.medailleJour}`);
+    await expect(page.locator('#end-medailles-solde-text')).toHaveText(`Solde diamants : ${total + params.economy.medailleJour}`); // lot 9a (avant : « Solde médailles »)
     await expect(page.locator('#end-medailles-sources')).toHaveCount(0);
     expect((await state(page)).save.medailles.run).toMatchObject({ portes: 10, paliers: 100, jour: params.economy.medailleJour });
     expect(soldeMedailles(await storedJson(page))).toBe(total + params.economy.medailleJour);
@@ -153,7 +153,7 @@ test.describe('en-tête du menu (lot 8k)', () => {
       const nbsp = String.fromCharCode(0x202f);
       await expect(page.locator('#menu-solde-texte')).toHaveText(`1${nbsp}234`);
       await expect(page.locator('#menu-medailles-texte')).toHaveText(`1${nbsp}450`);
-      await expect(page.locator('#menu-medailles')).toContainText(`Médailles : 1${nbsp}450`);
+      await expect(page.locator('#menu-medailles')).toContainText(`Diamants : 1${nbsp}450`); // lot 9a (avant : « Médailles »)
       await expect(page.locator('#menu-medailles svg')).toHaveCount(1);
       const b = await page.evaluate(() => Object.fromEntries(['#menu-solde', '#menu-medailles', '#menu-plein-ecran', '#menu-trois-barres', '.menu-bandeau'].map((s) => [s, document.querySelector(s)?.getBoundingClientRect().toJSON() ?? null])));
       expect(b['#menu-solde'].right).toBeLessThanOrEqual(b['#menu-medailles'].left + 0.5);

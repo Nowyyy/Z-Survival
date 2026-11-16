@@ -255,11 +255,11 @@ test.describe('outils de débogage du menu (lot 8h)', () => {
     await icone.click();
     const panneau = page.getByRole('dialog', { name: 'Débogage' });
     await expect(panneau).toBeVisible();
-    await expect(panneau.locator('.e8-debogage-liste button')).toHaveText(['Ajouter 10 000 diamants', 'Ajouter 1 000 médailles', 'Remettre la pitié à zéro', 'Donner l\'inventaire de démonstration', 'Débloquer tous les personnages', 'Remettre la progression V0.8 à zéro']); // lot 8k : + médailles, pitié
+    await expect(panneau.locator('.e8-debogage-liste button')).toHaveText(['Ajouter 10 000 médailles', 'Ajouter 1 000 diamants', 'Remettre la pitié à zéro', 'Donner l\'inventaire de démonstration', 'Débloquer tous les personnages', 'Remettre la progression V0.8 à zéro']); // lot 8k : + médailles, pitié
     expect((await new AxeBuilder({ page }).include('#menu-debogage').analyze()).violations.map((v) => v.id)).toEqual([]);
     const v2 = () => page.evaluate(() => localStorage.getItem('zs.save.v2'));
     await page.locator('#menu-debogage-bleus').click();
-    await expect(page.locator('#menu-debogage-question')).toHaveText('Confirmer : Ajouter 10 000 diamants ?');
+    await expect(page.locator('#menu-debogage-question')).toHaveText('Confirmer : Ajouter 10 000 médailles ?'); // lot 9a : le champ « bleu » s'appelle « médailles »
     await page.locator('#menu-debogage-non').click();
     expect(await v2()).toBeNull();
     await page.locator('#menu-debogage-bleus').click();
@@ -269,7 +269,7 @@ test.describe('outils de débogage du menu (lot 8h)', () => {
     await expect(page.locator('#menu-solde-texte')).toHaveText(`10${String.fromCharCode(0x202f)}000`);
     // Lot 8k : « Ajouter 1 000 médailles » (en-tête mis à jour), « Remettre la pitié à zéro » (compteurs des trois rubriques à 0).
     await page.locator('#menu-debogage-medailles').click();
-    await expect(page.locator('#menu-debogage-question')).toHaveText('Confirmer : Ajouter 1 000 médailles ?');
+    await expect(page.locator('#menu-debogage-question')).toHaveText('Confirmer : Ajouter 1 000 diamants ?'); // lot 9a : le champ « medailles » s'appelle « diamants »
     await page.locator('#menu-debogage-oui').click();
     await expect(page.locator('#menu-debogage-message')).toHaveText('C\'est fait.');
     expect(JSON.parse(await v2()).medailles).toEqual({ gagne: 1000, depense: 0, jour: 0 });

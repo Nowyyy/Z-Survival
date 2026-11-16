@@ -110,7 +110,7 @@ test.describe('fin de manche : solde bleu et gain sous la vague (retour du propr
     const gain = etat.solde - avant;
     expect(gain).toBeGreaterThan(0);
     await expect(bloc).toHaveText(`${etat.solde.toLocaleString('fr-FR').replace(/\u202f|\u00a0/g, ' ')} (+${gain})`);
-    expect(await bloc.evaluate((n) => n.firstElementChild.classList.contains('hud-gem'))).toBe(true); // seulement le logo de la monnaie bleue (retour du propriétaire)
+    expect(await bloc.evaluate((n) => n.firstElementChild.classList.contains('hud-medaille'))).toBe(true); // seulement le logo de la monnaie (retour du propriétaire) ; lot 9a : la médaille (avant : gemme)
     const boites = await page.evaluate(() => [document.getElementById('hud-wave'), document.getElementById('hud-bleu-manche')].map((n) => {
       const r = n.getBoundingClientRect();
       return { cx: r.left + r.width / 2, t: r.top, b: r.bottom, color: getComputedStyle(n).color };

@@ -317,12 +317,16 @@ describe('structure de jeu.html', () => {
   // Retour du propriétaire : le symbole d'argent vient après la somme (pause, mort, victoire).
   it('pièce après la somme : « Monnaie jaune perdue : 154 » puis la pièce (pause : gemme puis solde bleu, retour du propriétaire) ; lot 8h : bleue gagnée, prime du monde, solde bleu puis la gemme bleue', () => {
     // Retour du propriétaire après le lot 8j : la pause montre le solde bleu, gemme PUIS montant (comme l'en-tête du menu), sans « Monnaie jaune ».
+    // Lot 9a (monnaies interverties) : le premier solde (champ « bleu ») s'appelle « médailles » : médaille PUIS montant (avant : gemme), puis la
+    // gemme des diamants (champ « medailles »). Mêmes assertions, icônes échangées.
     const pause = html.slice(at('id="pause-balance"'), html.indexOf('</p>', at('id="pause-balance"')));
-    expect(pause.indexOf('hud-gem')).toBeGreaterThan(0);
-    expect(pause.indexOf('hud-gem')).toBeLessThan(pause.indexOf('id="pause-balance-text"'));
+    expect(pause.indexOf('hud-medaille')).toBeGreaterThan(0);
+    expect(pause.indexOf('hud-medaille')).toBeLessThan(pause.indexOf('id="pause-balance-text"'));
     expect(pause).not.toContain('hud-coin');
-    // Retour du propriétaire après le lot 8k : solde de diamants (puis gemme, puis « +gain ») et solde de médailles (puis médaille, puis « +gain »).
-    for (const [id, icone, gain] of [['end-balance', 'hud-gem', 'end-bleu'], ['end-medailles-solde', 'hud-medaille', 'end-medailles']]) {
+    expect(pause.indexOf('hud-gem')).toBeGreaterThan(pause.indexOf('id="pause-balance-text"')); // lot 9a : gemme des diamants ensuite
+    // Retour du propriétaire après le lot 8k : solde puis icône puis « +gain » ; lot 9a : « Solde médailles » (champ « bleu ») avec la médaille (avant :
+    // gemme), « Solde diamants » (champ « medailles ») avec la gemme (avant : médaille).
+    for (const [id, icone, gain] of [['end-balance', 'hud-medaille', 'end-bleu'], ['end-medailles-solde', 'hud-gem', 'end-medailles']]) {
       const line = html.slice(at(`id="${id}"`), html.indexOf('</p>', at(`id="${id}"`)));
       expect(line.indexOf(`id="${id}-text"`), id).toBeLessThan(line.indexOf(icone));
       expect(line.indexOf(icone), id).toBeGreaterThan(0);

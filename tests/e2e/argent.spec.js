@@ -214,8 +214,8 @@ test.describe('conservation à la mort', () => {
     // Retour du propriétaire après le lot 8k : « Solde diamants : N » puis « +gain » sur la même ligne ; plus de ligne « Monnaie jaune perdue ».
     await expect(page.locator('#end-earned')).toHaveCount(0);
     await expect(page.locator('#end-bleu-text')).toHaveText('+20');
-    await expect(page.locator('#end-balance-text')).toHaveText('Solde diamants : 20');
-    await expect(page.locator('#end-balance')).toHaveText('Solde diamants : 20+20gagnés pendant la partie');
+    await expect(page.locator('#end-balance-text')).toHaveText('Solde médailles : 20'); // lot 9a : le champ « bleu » s'appelle « médailles » (avant : diamants)
+    await expect(page.locator('#end-balance')).toHaveText('Solde médailles : 20+20gagnés pendant la partie');
     await expect(page.locator('#end-best')).toHaveText('Meilleure manche : 3');
     expect(await bleu(page)).toBe(20);
     await page.locator('#btn-replay').click();
@@ -501,8 +501,8 @@ test.describe('mode essai', () => {
     await expect(page.locator('#pause-save')).toHaveCount(0); // lot 3l (retour du propriétaire) : l'état de la sauvegarde n'est plus affiché dans la pause ; il est vérifié dans getState().save (readonly)
     // Retour du propriétaire après le lot 8j : la pause montre le solde bleu (gemme puis montant ; « Monnaie bleue : » pour les lecteurs d'écran), plus la jaune.
     await expect(page.locator('#pause-balance-text')).toHaveText('300');
-    await expect(page.locator('#pause-balance > .sr-only')).toHaveText('Diamants :');
-    await expect(page.locator('#pause-balance svg.hud-gem')).toHaveCount(1);
+    await expect(page.locator('#pause-balance > .sr-only')).toHaveText('Médailles :'); // lot 9a (avant : « Diamants : »)
+    await expect(page.locator('#pause-balance > svg.hud-medaille')).toHaveCount(1); // lot 9a : médaille (avant : gemme)
     await page.getByRole('button', { name: 'Reprendre' }).click();
     await page.evaluate(() => { window.__zs.setChutes(0); window.__zs.downPlayer(); });
     await step(page, 0.3);
@@ -619,7 +619,7 @@ test.describe('par défaut (sans ?test=1)', () => {
     await page.goto('/jeu.html?money=500');
     await expect(page.locator('#game-root')).toBeVisible({ timeout: 60_000 });
     expect(await page.evaluate(() => typeof window.__zs)).toBe('undefined');
-    await expect(page.locator('#hud-money')).toHaveAttribute('aria-label', 'Monnaie jaune : 500');
+    await expect(page.locator('#hud-money')).toHaveAttribute('aria-label', 'Zollars : 500'); // lot 9a : « Zollars » (avant : « Monnaie jaune »)
   });
 });
 
@@ -630,7 +630,7 @@ test.describe('interface', () => {
     await open(page);
     await page.evaluate(() => { window.__zs.giveMoney(12345); window.__zs.step(0.1); });
     await expect(page.locator('#hud-money-text')).toHaveText(`12,3${String.fromCharCode(0xa0)}k`);
-    await expect(page.locator('#hud-money')).toHaveAttribute('aria-label', `Monnaie jaune : 12${String.fromCharCode(0x202f)}345`);
+    await expect(page.locator('#hud-money')).toHaveAttribute('aria-label', `Zollars : 12${String.fromCharCode(0x202f)}345`); // lot 9a (avant : « Monnaie jaune »)
     await expect(page.locator('#hud-money svg')).toHaveAttribute('aria-hidden', 'true');
   });
 
@@ -733,7 +733,7 @@ test.describe('interface', () => {
     const bleu = (await state(page)).save.bleu.solde;
     await expect(page.locator('#pause-balance-text')).toHaveText(bleu.toLocaleString('fr-FR').replace(/\u00a0/g, String.fromCharCode(0x202f)));
     await expect(page.locator('#pause-balance')).not.toContainText('jaune');
-    expect(await page.locator('#pause-balance').evaluate((n) => n.firstElementChild.classList.contains('hud-gem'))).toBe(true);
+    expect(await page.locator('#pause-balance').evaluate((n) => n.firstElementChild.classList.contains('hud-medaille'))).toBe(true); // lot 9a : médaille (avant : gemme)
     expect((await state(page)).save.status).toBe('saved'); // lot 3l (retour du propriétaire) : l'état de la sauvegarde n'est plus affiché dans la pause ; il est vérifié dans getState().save
     const m = await page.evaluate(() => {
       const panel = document.querySelector('#pause-panel .panel');
@@ -802,7 +802,7 @@ test.describe('interface', () => {
     expect(await shoot(page, 'marcheur')).toBe(1);
     await page.evaluate(() => window.__zs.skipWave());
     await step(page, 0.3);
-    await expect(page.locator('#hud-live')).toHaveText('Manche 1 terminée, +20 diamants.');
+    await expect(page.locator('#hud-live')).toHaveText('Manche 1 terminée, +20 médailles.'); // lot 9a (avant : « diamants »)
     await page.evaluate(() => { window.__zs.setChutes(0); window.__zs.downPlayer(); });
     await step(page, 0.3);
     const log = await page.evaluate(() => window.__live);
@@ -821,7 +821,7 @@ test.describe('interface', () => {
     await expect(page.locator('#hud-gain-bleu')).toHaveText('+20');
     await expect(page.locator('#hud-gain')).toBeHidden();
     expect((await state(page)).save.balance).toBe(0);
-    expect(await page.locator('#hud-gain-bleu').evaluate((n) => getComputedStyle(n).color)).toBe('rgb(90, 176, 255)'); // --color-money-blue
+    expect(await page.locator('#hud-gain-bleu').evaluate((n) => getComputedStyle(n).color)).toBe('rgb(208, 139, 76)'); // lot 9a : --color-money-medaille (avant : --color-money-blue, rgb(90, 176, 255))
     await step(page, 2);
     await expect(page.locator('#hud-gain-bleu')).toBeHidden();
   });
