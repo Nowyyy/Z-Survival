@@ -808,7 +808,10 @@ export function creerMenu({ dict, infos = [], liens = {}, solde: montant = 0, me
   // ailleurs ferme le menu à trois barres.
   function clavier(e) {
     if (e.code !== 'Escape') return;
-    if (debogage?.element.isConnected) debogage.fermer(); // lot 8h : panneau des outils de débogage
+    if (debogage?.element.isConnected) {
+      e.stopPropagation(); // lot 8h : panneau des outils de débogage ; lot 9a-H : sa confirmation ouverte se ferme d'abord
+      debogage.echap();
+    }
     else if (dialogue) dialogue.close();
     else if (etat.ecran === 'options') fermerOptions();
     else if (etat.menuOuvert) fermerListe(true);

@@ -10,6 +10,7 @@ Joué par le propriétaire sur `/dev/jeu.html` (téléphone) après la fusion du
 | « Quitter » : les médailles et diamants de la partie doivent être perdus | **Règle changée** : médailles et diamants d'une partie écrits seulement à la **mort** ou à la **fin du monde** ; « Quitter », « Recommencer » et la page fermée en cours de partie les perdent (avec les Zollars). Confirmation : « Les médailles, les diamants et les Zollars gagnés pendant cette partie seront perdus. » Détail : `economie.md` § 0, `sauvegarde-v2.md` § 13. |
 | Boutique : retirer « Ta pitié dans cette caisse » | Ligne masquée (gardée pour les lecteurs d'écran) ; la jauge du légendaire et « Légendaires possibles » restent. |
 | Rotation ou autre appli : les commandes ne répondent plus | Cause trouvée et reproduite : un doigt posé quand la page part en arrière-plan ou pivote ne reçoit jamais son « pointerup » ; son stick restait pris et **ignorait tout nouveau toucher** de son côté. Correctif : tout est relâché à la page cachée, quittée ou pivotée ; sticks au repos replacés à la nouvelle taille (`js/game/input.js`). En plus, après une rotation ou un retour : page remise à l'origine et à l'échelle 1, tailles relues après la rotation (`js/game/safe-area.js`). |
+| Menu de débogage « pas beau », incompréhensible, à faire défiler, plein de vide | Panneau refait (commit « Lot 9a-H — Menu de débogage lisible ») : toute la hauteur sous l'en-tête, **sans défiler** en paysage (vérifié à 667 × 375, 844 × 390, 932 × 430, 1280 × 720) ; à gauche **l'état de la sauvegarde** (médailles, diamants, monde 1, objets, personnages, pitié, stockage), relu après chaque outil, valeur changée surlignée en jaune, et dessous la remise à zéro en rouge ; à droite une **carte par outil, avec son effet** (au plus trois colonnes, rangées qui remplissent la place) ; confirmation **au centre**, effet rappelé ; « C'est fait. » dans l'en-tête ; Échap annule d'abord la confirmation. « Remettre la progression V0.8 à zéro » devient « Remettre la progression à zéro ». |
 
 ## Choix (là où rien n'était dit)
 - « Recommencer » et la page fermée en cours de partie suivent « Quitter » (gains perdus) ; statistiques (zombies tués, temps, parties) et record de manche restent écrits comme avant.
@@ -19,6 +20,7 @@ Joué par le propriétaire sur `/dev/jeu.html` (téléphone) après la fusion du
 
 ## Preuves
 - Rotation : test e2e « rotation et arrière-plan » (`correctifs-9a.spec.js`) : sans le correctif, le second toucher est ignoré (stick resté sur le premier doigt) ; avec, il est repris, et après trois rotations « Pause » répond à sa place, page non défilée, sticks replacés. **Non vérifié sur un vrai téléphone** (iOS ou Android) : à confirmer par le propriétaire.
+- Débogage : test e2e « panneau de débogage du menu lisible » (`debug-menu.spec.js`, 667 × 375 et 844 × 390 : rien ne défile, aucun bouton hors de l'écran ni sous 44 px, résumé mis à jour, Échap, axe).
 - Monnaies : Vitest (`bank`, `medailles`, `monnaies-9a`) et Playwright (`argent`, `medailles`, `monnaies-9a`, `menu`, `menu-onglets`, `sauvegarde`, `caisses-pitie`) adaptés : écrits à la mort, perdus à « Quitter ».
 
 ## Idées (décision du propriétaire)

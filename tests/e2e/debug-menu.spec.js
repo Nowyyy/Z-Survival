@@ -255,7 +255,7 @@ test.describe('outils de débogage du menu (lot 8h)', () => {
     await icone.click();
     const panneau = page.getByRole('dialog', { name: 'Débogage' });
     await expect(panneau).toBeVisible();
-    await expect(panneau.locator('.e8-debogage-liste button')).toHaveText(['Ajouter 10 000 médailles', 'Ajouter 1 000 diamants', 'Remettre la pitié à zéro', 'Marquer le monde 1 terminé', 'Donner l\'inventaire de démonstration', 'Débloquer tous les personnages', 'Remettre la progression V0.8 à zéro']); // lot 8k : + médailles, pitié
+    await expect(panneau.locator('.e8-debogage-nom')).toHaveText(['Remettre la progression à zéro', 'Ajouter 10 000 médailles', 'Ajouter 1 000 diamants', 'Remettre la pitié à zéro', 'Marquer le monde 1 terminé', 'Donner l\'inventaire de démonstration', 'Débloquer tous les personnages']); // lot 8k : + médailles, pitié ; lot 9a-H : remise à zéro sous l'état de la sauvegarde (en premier), « V0.8 » retiré du nom
     expect((await new AxeBuilder({ page }).include('#menu-debogage').analyze()).violations.map((v) => v.id)).toEqual([]);
     const v2 = () => page.evaluate(() => localStorage.getItem('zs.save.v2'));
     await page.locator('#menu-debogage-bleus').click();
@@ -292,4 +292,59 @@ test.describe('outils de débogage du menu (lot 8h)', () => {
     expect(problems).toEqual([]);
     await page.evaluate(() => { localStorage.clear(); sessionStorage.clear(); });
   });
+});
+
+// Lot 9a-H (retour du propriétaire : « pas beau, on ne comprend pas ce qu'il se passe, il faut scroller, beaucoup de vide ») : le panneau tient
+// sans défiler en paysage (667 × 375 et 844 × 390), état de la sauvegarde relu après chaque outil (valeur changée surlignée), effet de chaque
+// outil écrit sur sa carte et rappelé dans la confirmation, Échap annule d'abord la confirmation ; mémoire (?test=1), aucune durée réelle.
+test.describe('panneau de débogage du menu lisible (lot 9a-H)', () => {
+  for (const [w, h] of [[667, 375], [844, 390]]) {
+    test(`${w} × ${h} : tout tient sans défiler ; résumé de la sauvegarde ; effet des outils ; confirmation au centre ; Échap annule d'abord la confirmation`, async ({ page }) => {
+      test.setTimeout(120_000);
+      await page.setViewportSize({ width: w, height: h });
+      await page.goto('/jeu.html?test=1&menu=1&seed=1');
+      await expect(page.locator('#menu-jouer')).toBeVisible({ timeout: 60_000 });
+      await page.waitForFunction(() => window.__zsMenu?.etat()?.menu !== null && !document.getElementById('e7'));
+      await page.locator('#menu-debogage-ouvrir').click();
+      await expect(page.locator('#menu-debogage-etat-medailles')).toHaveText('0');
+      await expect(page.locator('#menu-debogage-etat-monde')).toHaveText('pas terminé');
+      await expect(page.locator('#menu-debogage-etat-objets')).toHaveText('0 / 100');
+      await expect(page.locator('#menu-debogage-etat-sauvegarde')).toHaveText('mémoire (essai)');
+      await expect(page.locator('#menu-debogage-detail-monde')).toHaveText('Débloque l\'Infini du monde 1, sans prime ni record.');
+      const mesure = () => page.evaluate(() => {
+        const c = document.querySelector('#menu-debogage .e8-debogage-corps');
+        const boutons = [...document.querySelectorAll('#menu-debogage button')].filter((b) => b.checkVisibility()).map((b) => b.getBoundingClientRect()); // la confirmation fermée est masquée
+        return {
+          defile: [c.scrollHeight > c.clientHeight, c.scrollWidth > c.clientWidth, document.documentElement.scrollWidth > innerWidth],
+          dehors: boutons.filter((r) => r.right > innerWidth + 0.5 || r.bottom > innerHeight + 0.5 || r.left < -0.5).length,
+          petits: boutons.filter((r) => r.width < 43.5 || r.height < 43.5).length, // 44 px (arrondi de l'animation d'ouverture toléré)
+        };
+      });
+      expect(await mesure()).toEqual({ defile: [false, false, false], dehors: 0, petits: 0 });
+      const bleus = page.locator('#menu-debogage-bleus');
+      await bleus.click();
+      await expect(page.locator('#menu-debogage-question')).toHaveText('Confirmer : Ajouter 10 000 médailles ?');
+      await expect(page.locator('#menu-debogage-effet')).toHaveText('+10 000 médailles : améliorer, fusionner, offres du jour.');
+      await expect(page.locator('#menu-debogage-non')).toBeFocused();
+      expect(await mesure()).toEqual({ defile: [false, false, false], dehors: 0, petits: 0 });
+      await page.keyboard.press('Escape'); // annule la confirmation, le panneau reste
+      await expect(page.locator('#menu-debogage-confirmation')).toBeHidden();
+      await expect(page.locator('#menu-debogage')).toBeVisible();
+      await expect(bleus).toBeFocused();
+      await expect(page.locator('#menu-debogage-etat-medailles')).toHaveText('0');
+      await bleus.click();
+      await page.locator('#menu-debogage-oui').click();
+      await expect(page.locator('#menu-debogage-message')).toHaveText('C\'est fait.');
+      await expect(page.locator('#menu-debogage-etat-medailles')).toHaveText(`10${String.fromCharCode(0x202f)}000`);
+      await expect(page.locator('.e8-debogage-change')).toHaveCount(1); // seule la ligne des médailles est surlignée
+      await expect(page.locator('.e8-debogage-change dt')).toHaveText('Médailles');
+      await page.locator('#menu-debogage-monde').click();
+      await page.locator('#menu-debogage-oui').click();
+      await expect(page.locator('#menu-debogage-etat-monde')).toHaveText('terminé');
+      await expect(page.locator('.e8-debogage-change dt')).toHaveText('Monde 1');
+      expect((await new AxeBuilder({ page }).include('#menu-debogage').analyze()).violations.map((v) => v.id)).toEqual([]);
+      await page.keyboard.press('Escape');
+      await expect(page.locator('#menu-debogage')).toHaveCount(0);
+    });
+  }
 });
