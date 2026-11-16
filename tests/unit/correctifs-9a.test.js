@@ -168,9 +168,12 @@ describe('sacs de sable : toile de jute et collision', () => {
     expect(SACS.map((o) => [o.id, o.hauteur, o.source])).toEqual([['sacs-1', 18, 'modele'], ['sacs-2', 18, 'modele']]);
   });
 
-  it('règles de la carte : au contact du mur nord et l\'un de l\'autre, jamais un interstice de moins de 50 ; le chemin relie toujours le départ aux fenêtres', () => {
+  it('règles de la carte : l\'un contre l\'autre, à 50 du mur nord (passage du joueur derrière, retour du propriétaire), jamais un interstice de moins de 50 ; le chemin relie toujours le départ aux fenêtres', () => {
     const [a, b] = SACS;
     expect(rectGap(a, b)).toBe(0);
+    const L0 = buildLayouts({ rdc: { world, decor: lire(`${D}decor.json`) } });
+    for (const s of SACS) expect(Math.min(...L0.rdc.walls.map((w) => rectGap(s, w)))).toBe(50);
+    expect(SACS.map((s) => s.h)).toEqual([32.5, 32.5]);
     for (const o of world.obstacles.filter((x) => x.kind !== 'sacs' && !x.outside)) {
       for (const s of SACS) {
         const g = rectGap(s, o);
@@ -218,7 +221,7 @@ describe('sacs de sable : toile de jute et collision', () => {
       const corps = b.filter((_, i) => i % 2 === 0);
       // quinconce : les joints de deux rangées voisines ne tombent pas au même endroit
       const rangees = [...new Set(corps.map((q) => q.z0))].sort((p, q) => p - q);
-      expect(rangees.length).toBeGreaterThanOrEqual(3);
+      expect(rangees.length).toBe(2); // retour du propriétaire : deux rangées seulement, passage derrière
       const joints = (z) => corps.filter((q) => q.z0 === z).map((q) => q.x1).filter((x) => x < o.x + o.w - 1).sort((p, q) => p - q);
       expect(joints(rangees[0])).not.toEqual(joints(rangees[1]));
       for (let i = 1; i < corps.length; i += 1) if (corps[i].z0 === corps[i - 1].z0) expect(corps[i].teinte).not.toBe(corps[i - 1].teinte);

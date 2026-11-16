@@ -84,7 +84,7 @@ test.describe('portes, hélicoptère et sol de la capture (lot 9a)', () => {
 
   // Lot 9a-I (décision du propriétaire) : les sacs de sable sont solides et en toile de jute, à tous les réglages graphiques (avant : décor léger,
   // traversable, absent en Faible).
-  test('sacs de sable solides : le joueur s\'arrête contre eux, même trajet en Élevé, en Faible et sans détail ; dessinés en toile de jute à chaque réglage', async ({ page }) => {
+  test('sacs de sable solides : le joueur s\'arrête contre eux et passe entre eux et le mur nord, même trajet en Élevé, en Faible et sans détail ; dessinés en toile de jute à chaque réglage', async ({ page }) => {
     expect(SACS.map((o) => o.id)).toEqual(['sacs-1', 'sacs-2']);
     const s1 = SACS[0];
     const essai = async (extra) => {
@@ -97,14 +97,23 @@ test.describe('portes, hélicoptère et sol de la capture (lot 9a)', () => {
         zs.step(2);
         zs.setInput({});
         const pl = zs.getState().player;
-        return [Math.round(pl.x * 100) / 100, Math.round(pl.y * 100) / 100];
+        const devant = [Math.round(pl.x * 100) / 100, Math.round(pl.y * 100) / 100];
+        // Retour du propriétaire : passage de 50 entre les sacs et le mur nord : le joueur le traverse d'ouest en est.
+        zs.setPlayer(o.x - 40, o.y - 25);
+        zs.setInput({ move: { x: 1, y: 0 } });
+        zs.step(1.2);
+        zs.setInput({});
+        const q = zs.getState().player;
+        return { devant, derriere: [Math.round(q.x * 100) / 100, Math.round(q.y * 100) / 100] };
       }, s1);
       const sacs = (await state(page)).scene.sacs;
       return { p, sacs };
     };
     const eleve = await essai('&gfx=eleve');
-    expect(eleve.p[1]).toBeGreaterThan(s1.y + s1.h); // arrêté au bord sud des sacs
-    expect(eleve.p[1]).toBeLessThan(s1.y + s1.h + 40);
+    expect(eleve.p.devant[1]).toBeGreaterThan(s1.y + s1.h); // arrêté au bord sud des sacs
+    expect(eleve.p.devant[1]).toBeLessThan(s1.y + s1.h + 40);
+    expect(eleve.p.derriere[0]).toBeGreaterThan(SACS[1].x + SACS[1].w / 2); // passé derrière les sacs (au moins au milieu du second tas)
+    expect(eleve.p.derriere[1]).toBeLessThan(s1.y); // toujours entre les sacs et le mur
     for (const extra of ['&gfx=faible', '&detail=0']) {
       const r = await essai(extra);
       expect(r.p, extra).toEqual(eleve.p); // la collision ne dépend pas des réglages graphiques
