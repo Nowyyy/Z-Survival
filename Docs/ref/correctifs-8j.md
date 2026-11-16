@@ -26,7 +26,7 @@
 5. **Tirs** : `js/core/tir-traverse.js` (pur) : objets listés retirés et murs percés aux grilles **pour les tirs seulement** (`obstaclesTirs`, appelé par `syncSolids`) ; balles, laser et ligne de tir partagent la liste. Fenêtres : inchangées (ouvertures sans obstacle, planches comprises, comme avant le lot).
 
 ## Régler sans lot
-- Distance du message : `data/game/reglages-partie.json` → `porte.distance` (unités, 20 à 2000 ; 60 depuis le retour du propriétaire). Fin de manche : `bleuManche.duree` (secondes de jeu, 1 à 15 ; 4).
+- Distance du message : `data/game/reglages-partie.json` → `porte.distance` (unités, 20 à 2000 ; 60 depuis le retour du propriétaire ; **lot 9a : 120, deux cases du dallage** : une case = 600 / 10 = 60 unités, `textures.json` → `sol-salle`). Fin de manche : `bleuManche.duree` (secondes de jeu, 1 à 15 ; 4).
 - Sons : même fichier → `sonsZombies.probabilite` (0 à 1 ; 0,25) et `sonsZombies.types` (`zombieHit`, `zombieAttack`, `plankTorn`).
 - Traversables : `data/game/tirs-traversables.json` → `cartes.rez-de-chaussee.rdc` et `.etage` (identifiants) ; puis `npm run carte` (refuse un identifiant inconnu ou en double, un pilier, un escalier, un objet **dessiné** à la hauteur de l'arme ou plus haut — `render.json` → `gunHeight`, 43 —, une grille hors mur ; écrit `tirs.world.json`), puis `npm test`.
 - Densité des Options sur PC : `css/menu.css`, `.e5` → `--e5-u-max` (1,25 px ; 864 = 1080 / 1,25). Facteur de l'interface : `js/game/ui-echelle.js` (1080, plafond 2).

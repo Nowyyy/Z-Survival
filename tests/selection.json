@@ -860,6 +860,7 @@
       "sources": ["js/fps.js", "jeu.html", "js/game/main.js", "js/game/game.js", "js/game/boot.js", "js/game/testhook.js", "js/menu/demarrage.js"],
       "dependances": ["carte", "combat", "economie", "etages", "graphismes", "interface", "menu", "noyau", "personnages", "rendu", "siege", "sons", "textes", "vagues"],
       "vitest": [
+        "tests/unit/correctifs-9a.test.js",
         "tests/unit/data-ambiance.test.js",
         "tests/unit/icone.test.js",
         "tests/unit/jeu-html.test.js",
@@ -872,7 +873,7 @@
         "tests/unit/versions-archiver.test.js",
         "tests/unit/zones-rendu.test.js"
       ],
-      "e2e": ["tests/e2e/attente.spec.js", "tests/e2e/jeu-pause.spec.js", "tests/e2e/jeu.spec.js"],
+      "e2e": ["tests/e2e/attente.spec.js", "tests/e2e/jeu-pause.spec.js", "tests/e2e/jeu.spec.js", "tests/e2e/correctifs-9a.spec.js"],
       "complet": []
     },
     {

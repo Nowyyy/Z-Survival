@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { helicopterModel } from '../../js/core/epaves.js';
 import AxeBuilder from '@axe-core/playwright';
 import { readFileSync } from 'node:fs';
 import { defaultProgression as defaultSave, encoder, serialiser, solde } from '../../js/core/progression.js';
@@ -14,6 +15,8 @@ const KEY = params.save.v2.storageKey;
 const bleu = async (page) => { const t = await stored(page); return t === null ? 0 : solde(JSON.parse(t)); };
 // Lot 5a : triangles des épaves (hélicoptère écrasé et voiture calcinée, maillage du décor de l'atlas, dessinés aussi avec ?detail=0 : ils sont solides), ajoutés aux références.
 const EPAVES = (JSON.parse(readFileSync('data/game/maps/rez-de-chaussee/decor.json', 'utf8')).wrecks?.helicopter?.triangles ?? 0) + 158 + (JSON.parse(readFileSync('data/game/maps/rez-de-chaussee/decor.json', 'utf8')).wrecks?.helicopter?.scarTriangles ?? 0); // lot 5a-F : + le cratère et la traînée (sol de terre) // + la voiture calcinée posée à part (3 boîtes de 10 triangles, 4 roues de 32), dans le même maillage
+// Lot 9a : triangles de tôle et du rotor de l'hélicoptère (tout sauf la verrière), dessinés à part et seulement dans le champ.
+const HELI_TOLE = helicopterModel().triangles.filter((t) => t.region !== 'vitre').length;
 const SIZE = { width: 667, height: 375 };
 const BROWSER_NOISE = /GL Driver Message|ReadPixels|GPU stall/;
 const LOCAL = '/jeu.html?test=1&store=local&seed=1';
@@ -896,7 +899,8 @@ test.describe('budget et performance', () => {
       const off = await measure(page, where);
       expect(off.calls).toBeGreaterThanOrEqual(REF[name][0] - 1);
       expect(off.calls).toBeLessThanOrEqual(REF[name][0] + 3);
-      expect(Math.abs(off.triangles - EPAVES - REF[name][1])).toBeLessThanOrEqual(120); // lot 5a : + les triangles des épaves
+      // Lot 9a : la tôle et le rotor de l'hélicoptère (HELI_TOLE) ne sont plus dans le décor dessiné partout : comptés seulement s'il est dans le champ.
+      expect(Math.min(Math.abs(off.triangles - EPAVES - REF[name][1]), Math.abs(off.triangles - (EPAVES - HELI_TOLE) - REF[name][1]))).toBeLessThanOrEqual(120); // lot 5a : + les triangles des épaves
       await open(page, `/jeu.html?test=1&seed=1&shadows=1&perso=A&sang=0${extra}&lum=off`);
       const on = await measure(page, where);
       console.log(`BUDGET lot 4 / 3g ${name} : detail=0 ${off.calls} / ${off.triangles} ; detail=1 ${on.calls} / ${on.triangles} (référence ${REF[name].join(' / ')})`);

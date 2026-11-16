@@ -12,7 +12,9 @@ import { itemQuads, CATALOGUE as DECOR_CATALOGUE } from '../core/decor-interieur
 import { furnitureParts } from '../core/furniture-model.js';
 import { doorBoxes, grilleBoxes, rubbleBoxes } from '../core/portes-aspect.js';
 import { generateLivelyDecor } from '../core/decor-vivant.js';
-import { burntCarParts, carFireSpots, craterTriangles, placeHelicopter, trailTriangles } from '../core/epaves.js';
+import { createTokenLookup } from './palette.js';
+import { parseColor } from '../core/color.js';
+import { angleRotor, burntCarParts, carFireSpots, craterTriangles, helicopterRotor, placeHelicopter, reglagesRotor, ROTOR_PIECES, teinteAcier, toleHelicoptere, trailTriangles, uvTole } from '../core/epaves.js';
 import { plankSettings } from '../core/plank-layout.js';
 import { plankSheet } from '../core/texgen.js';
 import { createDebrisMeshes, createWindowMeshes } from './windows-mesh.js';
@@ -339,10 +341,16 @@ function addBurntCar(props, region, car, tint, i) {
 // Lot 5a : hélicoptère écrasé (js/core/epaves.js : triangles coupés au plan du sol), dans le maillage du décor de l'atlas (arbres, lampadaires : sans ombre portée,
 // étendu à tout le monde, donc dessiné partout comme avant) : aucun appel de dessin de plus, et la sphère englobante des voitures ne change pas.
 // Coordonnées de texture : projection sur le plan le plus proche de la face, ramenée dans la région d'atlas de la pièce (aucune texture nouvelle).
-function addHelicopter(props, region, heli, tint) {
+// Lot 9a (retour du propriétaire : « en bois ») : seule la verrière reste ici, dans l'atlas ; la tôle va dans le maillage « tôle » (tole : texture de
+// tôle peinte de js/core/epaves.js, teintes refroidies vers l'acier) et le rotor de queue dans son propre maillage, qui tourne (addHelicopterTole).
+function addHelicopter(props, region, heli, tint, tole = null) {
   const placed = placeHelicopter(heli);
   const byPart = new Map();
   for (const t of placed.triangles) {
+    if (tole && t.region !== 'vitre') {
+      if (!ROTOR_PIECES.includes(t.part)) tole.tinted(teinteAcier(tint(t.tint)), () => tole.triangles([{ p: t.p, n: t.n, uv: uvTole(t) }]));
+      continue;
+    }
     if (!byPart.has(t.part)) byPart.set(t.part, []);
     byPart.get(t.part).push(t);
   }
@@ -535,7 +543,7 @@ function orientedStep(builder, cx, cz, dx, dz, length, width, h, repeat) {
 
 // Lot 3e : chaque maillage porte userData.floor (rdc, etage ou exterieur) et vit dans le groupe de son étage ; showFloor(floor) ne change que la visibilité des groupes
 // (aucune reconstruction, aucun dispose) : un seul étage est dessiné à la fois, l'extérieur (sol, décor, brume) toujours.
-export function buildWorld({ palette, layout, layouts = null, render, textures, windowGeoms = [], windowsCfg = null, seed = 1, closedDoors = null, stairs = [] }) {
+export function buildWorld({ palette, layout, layouts = null, render, textures, windowGeoms = [], windowsCfg = null, seed = 1, closedDoors = null, stairs = [], helico = null }) {
   const { room, size } = layout;
   const floors = layouts?.floors ?? ['rdc'];
   const layoutOf = (f) => layouts?.[f] ?? layout;
@@ -765,7 +773,13 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
   // Lot 5a : hélicoptère écrasé (maillage du décor de l'atlas) et feu groupé de la voiture en flammes (deux foyers, capot et habitacle ; flammes et fumée, sans
   // lueur au sol : deux appels de dessin, aucune lumière ; absent avec ?detail=0, comme les autres feux). Créés une fois, dans le groupe extérieur.
   const wrecks = { helicopter: null, burningCar: null };
-  if (layout.decor?.helicopter) wrecks.helicopter = { id: layout.decor.helicopter.id, triangles: addHelicopter(ex.scenery, region, layout.decor.helicopter, tintOf), rects: layout.decor.helicopter.rects.map((r) => r.id) };
+  // Lot 9a : rotor de queue de l'hélicoptère ({ pivot, axe, triangles, mesh }) et son temps de jeu cumulé (world.frame : dt = 0 en pause).
+  let rotor = null;
+  let rotorT = 0;
+  const rotorReglages = reglagesRotor(helico);
+  // Lot 9a : tôle de l'hélicoptère (maillage à part, texture générée) et rotor de queue (maillage à part, sur un pivot) ; la verrière reste dans l'atlas.
+  const heliTole = layout.decor?.helicopter ? new Builder() : null;
+  if (layout.decor?.helicopter) wrecks.helicopter = { id: layout.decor.helicopter.id, triangles: addHelicopter(ex.scenery, region, layout.decor.helicopter, tintOf, heliTole), rects: layout.decor.helicopter.rects.map((r) => r.id) };
   // Lot 5a-F (retour du propriétaire) : cratère de terre et traînée de glissade (plats, non solides) dans le maillage du sol extérieur (texture de terre répétée,
   // teintée par couleurs de sommet : aucun appel de plus), et fumée légère sans flammes au-dessus de l'épave (un appel de dessin, seulement dans le champ).
   if (layout.decor?.helicopter) {
@@ -818,6 +832,38 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
   const tinted = ex.props.colored || ex.scenery.colored ? seeThrough.apply(new THREE.MeshLambertMaterial({ map: textures.texture(ATLAS), vertexColors: true })) : null;
   const exScenery = tag(ex.scenery.mesh(groups.exterieur, ex.scenery.colored ? tinted : atlasMaterial, { receive: true }), 'exterieur');
   const exProps = tag(ex.props.mesh(groups.exterieur, ex.props.colored ? tinted : atlasMaterial, { cast: true, receive: true }), 'exterieur');
+  // Lot 9a : hélicoptère en tôle de métal peinte (texture de js/core/epaves.js, couleur de base --game-metal comme l'ancienne région « tole », aucune
+  // image) et rotor de queue qui tourne en temps de jeu (immobile sous mouvement réduit). Deux maillages coupés hors du champ : deux appels de dessin
+  // de plus seulement quand l'épave est visible ; sans ombre portée (comme le décor de l'atlas), réception des ombres comme lui ; même mur percé.
+  if (heliTole && layout.decor?.helicopter) {
+    // Couleur de base : jeton --game-metal (celui de l'ancienne région « tole »), lu dans css/tokens.css ; à défaut, --game-wreck-metal (palette).
+    const base = (typeof document !== 'undefined' ? createTokenLookup()('--game-metal') : null) ?? parseColor(palette.wreckMetal);
+    const tex = toleHelicoptere({ size: 256, couleur: base });
+    const heliTexture = new THREE.DataTexture(new Uint8Array(tex.data.buffer), tex.width, tex.height, THREE.RGBAFormat);
+    heliTexture.colorSpace = THREE.SRGBColorSpace;
+    heliTexture.generateMipmaps = true;
+    heliTexture.minFilter = THREE.LinearMipmapLinearFilter;
+    heliTexture.magFilter = THREE.LinearFilter;
+    heliTexture.wrapS = THREE.RepeatWrapping;
+    heliTexture.wrapT = THREE.RepeatWrapping;
+    heliTexture.needsUpdate = true;
+    const heliMat = seeThrough.apply(new THREE.MeshLambertMaterial({ map: heliTexture, vertexColors: true }));
+    const coque = tag(heliTole.mesh(groups.exterieur, heliMat, { receive: true }), 'exterieur');
+    if (coque) coque.name = 'helicoptere-tole';
+    const rot = helicopterRotor(layout.decor.helicopter);
+    if (rot) {
+      const rb = new Builder();
+      for (const t of rot.triangles) rb.tinted(teinteAcier(tintOf(t.tint)), () => rb.triangles([{ p: t.p, n: t.n, uv: uvTole(t) }]));
+      const pivot = new THREE.Group();
+      pivot.name = 'helicoptere-rotor';
+      pivot.position.set(rot.hub[0], rot.hub[1], rot.hub[2]);
+      pivot.userData.floor = 'exterieur';
+      groups.exterieur.add(pivot);
+      const pale = tag(rb.mesh(pivot, heliMat, { receive: true }), 'exterieur');
+      rotor = { pivot, axe: new THREE.Vector3(rot.axis[0], rot.axis[1], rot.axis[2]), triangles: rot.triangles.length, mesh: pale };
+    }
+    wrecks.helicopter.tole = { triangles: coque ? coque.geometry.attributes.position.count / 3 : 0, rotor: rotor ? rotor.triangles : 0 };
+  }
   const floorMat = mat('sol-salle');
   const wallMat = seeThrough.apply(mat('mur'));
   for (const f of floors) {
@@ -1148,6 +1194,11 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
       for (const fire of fires) if (fire.group.visible) fire.update(dt, view ? fire.inView(viewFrustum) : true);
       const still = render.reducedMotion === true;
       for (const m of mists) if (!still && m.visible) m.material.uniforms.uTime.value += Math.min(0.1, Math.max(0, Number(dt) || 0));
+      // Lot 9a : rotor de queue, en temps de jeu (figé en pause : dt = 0), immobile sous mouvement réduit (angle 0, pose d'origine).
+      if (rotor) {
+        if (!still) rotorT += Math.min(0.1, Math.max(0, Number(dt) || 0));
+        rotor.pivot.quaternion.setFromAxisAngle(rotor.axe, angleRotor(rotorT, rotorReglages.degParSeconde, still));
+      }
       seeThrough.update(x, y, camera, occluders, (b) => (b.floor === 'etage' ? lift : 0) - elevationNow);
       lampKit.decor?.cull(view ? viewFrustum : null, groups.etage.visible); // lot 5k : seules les lampes dans le champ sont dessinées
       lampKit.lights?.frame(dt, x, y, floorNow, elevationNow, view ? viewFrustum : null, groups.etage.visible); // lot 5k : lumières des lampes (Éclairage)
@@ -1217,7 +1268,8 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
       return lampChain;
     },
     // Lot 5a : épaves dessinées (hélicoptère : triangles, rectangles de collision ; voiture en flammes : feu et foyers) ; feu actif = dans la liste des feux mis à jour.
-    wreckStats: () => ({ ...wrecks, fires: fires.filter((f) => f.group.name === wrecks.burningCar?.fire).map((f) => f.stats()), heliSmoke: fires.filter((f) => f.group.name === wrecks.helicopter?.smoke).map((f) => f.stats()), propsTriangles: exProps ? exProps.geometry.attributes.position.count / 3 : 0, sceneryTriangles: exScenery ? exScenery.geometry.attributes.position.count / 3 : 0, exteriorVisible: groups.exterieur.visible }),
+    // Lot 9a : rotor de queue (temps de jeu cumulé, angle, vitesse, triangles) dans l'état des épaves, pour les tests.
+    wreckStats: () => ({ ...wrecks, rotor: rotor ? { t: rotorT, angle: angleRotor(rotorT, rotorReglages.degParSeconde, render.reducedMotion === true), degParSeconde: rotorReglages.degParSeconde, triangles: rotor.triangles } : null, fires: fires.filter((f) => f.group.name === wrecks.burningCar?.fire).map((f) => f.stats()), heliSmoke: fires.filter((f) => f.group.name === wrecks.helicopter?.smoke).map((f) => f.stats()), propsTriangles: exProps ? exProps.geometry.attributes.position.count / 3 : 0, sceneryTriangles: exScenery ? exScenery.geometry.attributes.position.count / 3 : 0, exteriorVisible: groups.exterieur.visible }),
     seeThroughState: () => seeThrough.state(),
     showFloor(floor) {
       this.setElevation(floor === 'etage' ? lift : 0, floor);

@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { helicopterModel } from '../../js/core/epaves.js';
 import AxeBuilder from '@axe-core/playwright';
 import { readFileSync } from 'node:fs';
 import { waitReady } from './helpers.js';
@@ -13,6 +14,8 @@ const decor = load('data/game/maps/rez-de-chaussee/decor-interieur.world.json');
 const MOBILIER = 2 * load('data/game/maps/rez-de-chaussee/mobilier.world.json').triangles;
 // Lot 5a : triangles des épaves (hélicoptère écrasé et voiture calcinée, maillage du décor de l'atlas, dessinés aussi avec ?detail=0 : ils sont solides), ajoutés aux références.
 const EPAVES = (load('data/game/maps/rez-de-chaussee/decor.json').wrecks?.helicopter?.triangles ?? 0) + 158 + (JSON.parse(readFileSync('data/game/maps/rez-de-chaussee/decor.json', 'utf8')).wrecks?.helicopter?.scarTriangles ?? 0); // lot 5a-F : + le cratère et la traînée (sol de terre) // + la voiture calcinée posée à part (3 boîtes de 10 triangles, 4 roues de 32), dans le même maillage
+// Lot 9a : triangles de tôle et du rotor de l'hélicoptère (tout sauf la verrière), dessinés à part et seulement dans le champ.
+const HELI_TOLE = helicopterModel().triangles.filter((t) => t.region !== 'vitre').length;
 const STATE = (page) => page.evaluate(() => window.__zs.getState());
 const U = (px) => px * 5 + 800;
 // [appels, triangles] ; jusqu'au lot 5e : mesurées sur main au lancement du lot 3g avec l'ancien modèle (scripts/modele/mesures-rendu.mjs).
@@ -78,7 +81,8 @@ test.describe('budgets de rendu avec le détail (27 300 triangles et 84 appels a
       expect(on.calls).toBeLessThanOrEqual(84);
       expect(on.calls - off.calls).toBeLessThanOrEqual(12);
       expect(on.triangles - off.triangles).toBeLessThanOrEqual(1500 + MOBILIER + 4000);
-      expect(Math.abs(off.triangles - EPAVES - ref[1])).toBeLessThanOrEqual(80); // lot 5a : + les triangles des épaves
+      // Lot 9a : la tôle et le rotor de l'hélicoptère (HELI_TOLE) ne sont plus dans le décor dessiné partout : comptés seulement s'il est dans le champ.
+      expect(Math.min(Math.abs(off.triangles - EPAVES - ref[1]), Math.abs(off.triangles - (EPAVES - HELI_TOLE) - ref[1]))).toBeLessThanOrEqual(80); // lot 5a : + les triangles des épaves
       expect(off.calls).toBeLessThanOrEqual(ref[0] + 3);
       expect(off.calls).toBeGreaterThanOrEqual(ref[0] - 1);
     });

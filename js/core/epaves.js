@@ -401,3 +401,222 @@ export function groundScarBoxes(spec, footprint = []) {
   for (let i = 0; i < trail.length; i += per) boxes.push(boxOf(trail.slice(i, i + per)));
   return { boxes, triangles: crater.length + trail.length };
 }
+
+// --- Lot 9a : hélicoptère en tôle de métal, rotor de queue qui tourne ---------------------------------------------------------------------------------
+// Retour du propriétaire après la V0.8 : l'épave avait l'air en bois (région d'atlas « tole » : bruit étiré en x et bandes de panneaux, lus comme un
+// veinage sous la lumière chaude). Tout reste pur : la texture est calculée ici (aucune image), le rotor est une liste de triangles relative à son
+// moyeu ; le dessin (js/game/world.js) les copie une fois dans des maillages et ne fait que tourner le rotor (temps de jeu). Aucune collision nouvelle :
+// helicopterModel, helicopterFootprint et les rectangles de decor.json ne changent pas.
+
+export const ROTOR_PIECES = Object.freeze(['rotor-queue-1', 'rotor-queue-2']);
+export const ROTOR_DEFAUT = Object.freeze({ degParSeconde: 72 }); // un tour en 5 s : lent, comme entraîné par le vent
+export const TOLE_TUILE = 120; // unités du monde par répétition de la tôle (panneaux d'environ 30 à 70 unités)
+
+// Vitesse du rotor (data/game/reglages-partie.json → helicoptere.rotorDegParSeconde, degrés par seconde de jeu, 0 à 720) ; invalide : le défaut.
+export function reglagesRotor(json) {
+  const v = json?.rotorDegParSeconde;
+  return { degParSeconde: isNum(v) && v >= 0 && v <= 720 ? v : ROTOR_DEFAUT.degParSeconde };
+}
+
+// Angle du rotor (radians, dans [0, 2π[) après t secondes de jeu ; 0 (pose d'origine, immobile) en mouvement réduit ou pour une entrée invalide.
+export function angleRotor(t, degParSeconde, reduit = false) {
+  if (reduit || !isNum(t) || !isNum(degParSeconde) || t <= 0 || degParSeconde <= 0) return 0;
+  return ((t * degParSeconde) % 360) * DEG;
+}
+
+// Rotor de queue placé dans le monde : { hub: [x, y, z] (centre des deux pales), axis: [x, y, z] (normale de la plus grande face, unitaire),
+// triangles: [{ part, region, tint, group, p (relatifs au moyeu), n }] } ; null sans rotor. Mêmes triangles que helicopterModel (rien d'ajouté).
+export function helicopterRotor(spec, model = helicopterModel()) {
+  const tris = placeHelicopter(spec, model).triangles.filter((t) => ROTOR_PIECES.includes(t.part));
+  if (tris.length === 0) return null;
+  const centres = ROTOR_PIECES.map((id) => tris.filter((t) => t.part === id)).filter((l) => l.length).map((l) => {
+    const b = boundsOf(l);
+    return [(b.x0 + b.x1) / 2, (b.y0 + b.y1) / 2, (b.z0 + b.z1) / 2];
+  });
+  const hub = [0, 1, 2].map((k) => Math.round((centres.reduce((s, c) => s + c[k], 0) / centres.length) * 1000) / 1000);
+  let best = -1;
+  let axis = [0, 1, 0];
+  for (const t of tris) {
+    const a = Math.hypot(...crossV(sub(t.p[1], t.p[0]), sub(t.p[2], t.p[0])));
+    if (a > best + 1e-9) {
+      best = a;
+      axis = unitV(t.n);
+    }
+  }
+  if (axis[1] < 0) axis = axis.map((c) => -c); // sens fixé (le dessin ne dépend pas du signe)
+  return { hub, axis, triangles: tris.map((t) => ({ ...t, p: t.p.map((q) => [q[0] - hub[0], q[1] - hub[1], q[2] - hub[2]]) })) };
+}
+
+// Rotation (Rodrigues) d'un point autour d'un axe unitaire passant par l'origine : sert aux tests et à la vérification du dégagement au sol.
+export function tournerAutour(p, axis, a) {
+  const c = Math.cos(a);
+  const s = Math.sin(a);
+  const k = dot(axis, p) * (1 - c);
+  const x = crossV(axis, p);
+  return [p[0] * c + x[0] * s + axis[0] * k, p[1] * c + x[1] * s + axis[1] * k, p[2] * c + x[2] * s + axis[2] * k];
+}
+
+// Teinte « acier » d'une couleur de sommet [r, g, b] (linéaire) : 25 % de la teinte de la pièce (olive brûlé, suie, métal éraflé), 75 % d'un gris
+// légèrement bleuté de même luminance (comme le site vitrine du propriétaire) : la tôle reste olive ou gris sombre, jamais brune.
+export function teinteAcier(rgb) {
+  if (!Array.isArray(rgb) || rgb.length < 3 || !rgb.every(isNum)) return [1, 1, 1];
+  const l = 0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2];
+  const acier = [l * 0.92, l * 0.98, l * 1.08];
+  return rgb.slice(0, 3).map((c, i) => Math.round((c * 0.25 + acier[i] * 0.75) * 10000) / 10000);
+}
+
+// Décalage de texture propre à une pièce (hachage de son nom, dans [0, 1[²) : deux pièces voisines ne montrent pas le même morceau de tôle.
+export function decalageTole(id = '') {
+  let x = 2166136261;
+  for (const ch of String(id)) x = Math.imul(x ^ ch.charCodeAt(0), 16777619);
+  return [((x >>> 0) % 997) / 997, ((x >>> 10) % 991) / 991];
+}
+
+// Coordonnées de texture d'un triangle de tôle : projection sur le plan le plus proche de sa face, une répétition tous les TOLE_TUILE (texture
+// répétée, raccordable), décalée par pièce.
+export function uvTole(t, tuile = TOLE_TUILE) {
+  const [du, dv] = decalageTole(t.part);
+  const n = t.n;
+  const ax = Math.abs(n[0]) >= Math.abs(n[1]) && Math.abs(n[0]) >= Math.abs(n[2]) ? [2, 1] : Math.abs(n[1]) >= Math.abs(n[2]) ? [0, 2] : [0, 1];
+  return t.p.map((p) => [p[ax[0]] / tuile + du, p[ax[1]] / tuile + dv]);
+}
+
+// Bruit de valeur périodique (réseau de `cells` × `cells`, graine) : fonction (u, v) ∈ [0, 1[² → [0, 1], raccordable sur ses bords. Aucun hasard du navigateur (graine fixe).
+function bruitPeriodique(cells, seed) {
+  const n = Math.max(1, Math.trunc(cells));
+  const table = new Float32Array(n * n);
+  for (let i = 0; i < table.length; i += 1) table[i] = hachage(i, n, seed);
+  return (u, v) => {
+    const x = (((u % 1) + 1) % 1) * n;
+    const y = (((v % 1) + 1) % 1) * n;
+    const x0 = Math.floor(x);
+    const y0 = Math.floor(y);
+    let fx = x - x0;
+    let fy = y - y0;
+    fx *= fx * (3 - 2 * fx);
+    fy *= fy * (3 - 2 * fy);
+    const i0 = x0 % n;
+    const j0 = y0 % n;
+    const i1 = (i0 + 1) % n;
+    const j1 = (j0 + 1) % n;
+    const a = table[j0 * n + i0];
+    const b = table[j0 * n + i1];
+    const c = table[j1 * n + i0];
+    const d = table[j1 * n + i1];
+    return a + (b - a) * fx + (c - a) * fy + (a - b - c + d) * fx * fy;
+  };
+}
+function hachage(x, y, s) {
+  let h = (Math.imul(x | 0, 374761393) + Math.imul(y | 0, 668265263) + Math.imul(s | 0, 1274126177)) | 0;
+  h = Math.imul(h ^ (h >>> 15), 2246822519);
+  h = Math.imul(h ^ (h >>> 13), 3266489917);
+  return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
+}
+
+// Tôle peinte (texture carrée de `size` pixels, raccordable) : couleur de base (jeton passé en argument, [r, g, b] 0-255) modulée par : peinture
+// passée (grandes nuances), grain fin, bandes de hauteurs variées coupées en panneaux de largeurs variées et décalés (joints sombres à lèvre claire),
+// rivets sur une partie des joints, trappes rivetées, écaillures (métal plus clair, bord sombre), coulures de suie vers le bas, rayures claires
+// courtes dans toutes les directions (aucun motif étiré : pas de veinage). → { width, height, data: Uint8ClampedArray RGBA }.
+export function toleHelicoptere({ size = 256, couleur = [125, 129, 135], seed = 905 } = {}) {
+  const N = Math.max(16, Math.min(1024, Math.trunc(isNum(size) ? size : 256)));
+  const base = Array.isArray(couleur) && couleur.length >= 3 && couleur.every(isNum) ? couleur : [125, 129, 135];
+  const k = new Float32Array(N * N).fill(1);
+  const at = (x, y) => (((y % N) + N) % N) * N + (((x % N) + N) % N);
+  const mul = (x, y, f) => {
+    k[at(Math.round(x), Math.round(y))] *= f;
+  };
+  let r = seed >>> 0;
+  const rnd = () => {
+    r = (Math.imul(r ^ (r >>> 15), 2246822519) + 0x9e3779b9) >>> 0;
+    return r / 4294967296;
+  };
+  const passe = bruitPeriodique(4, seed + 1);
+  const passe2 = bruitPeriodique(9, seed + 2);
+  const ecaille = bruitPeriodique(34, seed + 3);
+  const coulure = bruitPeriodique(18, seed + 4);
+  const coulureH = bruitPeriodique(3, seed + 5);
+  const tache = bruitPeriodique(6, seed + 6);
+  for (let y = 0; y < N; y += 1) {
+    for (let x = 0; x < N; x += 1) {
+      const u = x / N;
+      const v = y / N;
+      let f = 1 + (passe(u, v) - 0.5) * 0.22 + (passe2(u, v) - 0.5) * 0.1 + (hachage(x, y, seed + 7) - 0.5) * 0.07;
+      const e = ecaille(u, v);
+      if (e > 0.85) f *= 1.2; // écaillure : métal à nu
+      else if (e > 0.83) f *= 0.82; // bord de l'écaillure
+      // Coulures : colonnes étroites (bruit fin en x) qui s'éteignent vers le bas (bruit lent en y), là où une tache de crasse les nourrit.
+      const c = Math.max(0, coulure(u, v * 0.15) - 0.55) * 2.2 * Math.max(0, coulureH(u, v) - 0.35) * Math.max(0, tache(u, v) - 0.3) * 4;
+      f *= 1 - Math.min(0.45, c);
+      k[y * N + x] = f;
+    }
+  }
+  // Panneaux : bandes horizontales de hauteurs variées (raccord au bord : la dernière bande se ferme sur la première), panneaux décalés d'une bande à l'autre.
+  const joint = (x0, y0, x1, y1) => {
+    const l = Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0));
+    for (let i = 0; i <= l; i += 1) {
+      const x = x0 + ((x1 - x0) * i) / Math.max(1, l);
+      const y = y0 + ((y1 - y0) * i) / Math.max(1, l);
+      mul(x, y, 0.55);
+      mul(x + (y1 === y0 ? 0 : 1), y + (y1 === y0 ? 1 : 0), 1.14);
+    }
+  };
+  const rivets = (x0, y0, x1, y1, pas) => {
+    const l = Math.hypot(x1 - x0, y1 - y0);
+    for (let d = pas / 2; d < l; d += pas) {
+      const x = x0 + ((x1 - x0) * d) / l;
+      const y = y0 + ((y1 - y0) * d) / l;
+      for (const [dx, dy] of [[0, 0], [1, 0], [0, 1], [1, 1]]) mul(x + dx, y + dy, 0.62);
+      mul(x, y, 1.45); // reflet
+    }
+  };
+  const bandes = [];
+  for (let reste = N; reste > 0;) {
+    const h = reste < N * 0.45 ? reste : Math.round(N * (0.28 + rnd() * 0.22));
+    bandes.push(h);
+    reste -= h;
+  }
+  let y = 0;
+  for (const h of bandes) {
+    joint(0, y, N - 1, y);
+    if (rnd() < 0.7) rivets(0, y + 4, N, y + 4, Math.max(6, Math.round(N / 28)));
+    let x = Math.round(rnd() * N);
+    for (let fait = 0; fait < N;) {
+      const w = Math.min(N - fait, Math.round(N * (0.3 + rnd() * 0.4)));
+      joint(x, y, x, y + h - 1);
+      if (rnd() < 0.45) rivets(x + 4, y + 2, x + 4, y + h - 2, Math.max(6, Math.round(N / 28)));
+      x = (x + w) % N;
+      fait += w;
+    }
+    if (rnd() < 0.6) {
+      // Trappe ou plaque de réparation, rivetée.
+      const tw = Math.round(N * (0.12 + rnd() * 0.14));
+      const th = Math.round(Math.min(h - 8, N * (0.08 + rnd() * 0.1)));
+      const tx = Math.round(rnd() * N);
+      const ty = y + 4 + Math.round(rnd() * Math.max(1, h - th - 8));
+      if (th > 6) {
+        joint(tx, ty, tx + tw, ty);
+        joint(tx, ty + th, tx + tw, ty + th);
+        joint(tx, ty, tx, ty + th);
+        joint(tx + tw, ty, tx + tw, ty + th);
+        rivets(tx + 3, ty + 3, tx + tw - 3, ty + 3, 7);
+      }
+    }
+    y += h;
+  }
+  // Rayures claires (métal à nu), courtes, dans toutes les directions.
+  for (let i = 0; i < Math.round(N * 0.35); i += 1) {
+    const x0 = rnd() * N;
+    const y0 = rnd() * N;
+    const a = rnd() * Math.PI;
+    const l = 3 + rnd() * N * 0.08;
+    for (let d = 0; d < l; d += 1) mul(x0 + Math.cos(a) * d, y0 + Math.sin(a) * d, 1.28);
+  }
+  const data = new Uint8ClampedArray(N * N * 4);
+  for (let i = 0; i < N * N; i += 1) {
+    data[i * 4] = base[0] * k[i];
+    data[i * 4 + 1] = base[1] * k[i];
+    data[i * 4 + 2] = base[2] * k[i];
+    data[i * 4 + 3] = 255;
+  }
+  return { width: N, height: N, data };
+}
