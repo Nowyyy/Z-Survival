@@ -172,7 +172,7 @@ for (const viewport of VIEWPORTS) {
       // avant (lot 5p) : EVOLUTIONS_REELLES vide exigé, V0.7 publiée et aucun lot d'une version suivante.
       // Lot 9a : début de la V0.9 : seuls des lots de la V0.9 (avant : v0.8, publiée au lot 8m) ; lot-9a seul (avant : liste vide exigée au lot 8m).
       expect(info.evolutions.filter((e) => e.version !== 'v0.9')).toEqual([]);
-      expect(EVOLUTIONS_REELLES).toEqual(['lot-9a']); // lot 9a (lot 8m : [] ; V0.8 publiée, aucun lot d'une version suivante)
+      expect(EVOLUTIONS_REELLES).toEqual(['lot-9b', 'lot-9a']); // lot 9b : lot-9b devant lot-9a (full/ sans fichier des noms ; lot 9a : ['lot-9a'] ; lot 8m : [])
       await expect(page.locator('#evolutions-none')).toBeVisible({ visible: EVOLUTIONS_REELLES.length === 0 });
       await expect(page.locator('#evolutions-none')).toHaveText('Aucune évolution depuis la version Recette.'); // lot 5p
       await expect(evolutions.locator('.evolution')).toHaveCount(EVOLUTIONS_REELLES.length);
