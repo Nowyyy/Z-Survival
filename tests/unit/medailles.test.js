@@ -48,28 +48,34 @@ describe('données (data/game/economy.json)', () => {
 });
 
 describe('banque : médailles des portes et des milliers de zombies (partie B)', () => {
-  it('porte ouverte : +10 écrit AUSSITÔT (avant toute fin de manche), gardé ; affichage { n, gain }', () => {
+  // Retour du propriétaire après le lot 9a : gains affichés aussitôt (solde de la banque), écrits seulement à la fin de la partie (mort, monde) ;
+  // avant : écrits aussitôt. Les assertions d'écriture sont reprises à la fin de la partie.
+  it('porte ouverte : +10 affiché aussitôt, écrit à la fin de la partie (mort), gardé ; affichage { n, gain }', () => {
     const { bank, storage } = make();
     bank.waveStart(10);
     expect(bank.door()).toBe(10);
-    expect(soldeMedailles(stored(storage))).toBe(10);
+    expect(bank.soldeMedailles()).toBe(10);
     expect(bank.gainMedailles()).toEqual({ n: 1, gain: 10 });
     expect(bank.door()).toBe(10); // une autre porte
-    expect(soldeMedailles(stored(storage))).toBe(20);
+    expect(storage.data.has(KEY) ? soldeMedailles(stored(storage)) : 0).toBe(0); // rien d'écrit pendant la partie
     expect(bank.soldeMedailles()).toBe(20);
     expect(bank.medaillesPartie()).toMatchObject({ portes: 20, total: 20 });
+    bank.runEnd({ reason: 'death' });
+    expect(soldeMedailles(stored(storage))).toBe(20);
   });
 
-  it('millier EXACT de zombies tués par balle : +10 au 1 000e (pas au 999e), +10 au 2 000e ; écrit aussitôt', () => {
+  it('millier EXACT de zombies tués par balle : +10 au 1 000e (pas au 999e), +10 au 2 000e ; écrit à la fin de la partie', () => {
     const { bank, storage } = make();
     bank.waveStart(1);
     tuer(bank, 999);
-    expect(storage.data.has(KEY) ? soldeMedailles(stored(storage)) : 0).toBe(0);
+    expect(bank.soldeMedailles()).toBe(0);
     tuer(bank, 1);
-    expect(soldeMedailles(stored(storage))).toBe(10);
+    expect(bank.soldeMedailles()).toBe(10);
     tuer(bank, 1000);
-    expect(soldeMedailles(stored(storage))).toBe(20);
+    expect(bank.soldeMedailles()).toBe(20);
     expect(bank.medaillesPartie().zombies).toBe(20);
+    bank.runEnd({ reason: 'death' });
+    expect(soldeMedailles(stored(storage))).toBe(20);
   });
 
   it('compteur remis à 0 à chaque partie (Rejouer, Recommencer) : 600 + 600 tués sur deux parties = aucun millier', () => {
@@ -90,8 +96,10 @@ describe('banque : médailles des portes et des milliers de zombies (partie B)',
     const { bank, storage } = make({ initial });
     bank.waveStart(10);
     bank.door();
-    expect(soldeMedailles(stored(storage))).toBe(9_999_999);
+    expect(bank.soldeMedailles()).toBe(9_999_999);
     bank.door();
+    expect(bank.soldeMedailles()).toBe(9_999_999);
+    bank.runEnd({ reason: 'death' });
     expect(soldeMedailles(stored(storage))).toBe(9_999_999);
   });
 
@@ -119,6 +127,7 @@ describe('banque : médailles des portes et des milliers de zombies (partie B)',
     bank.waveStart(1);
     expect(bank.waveEnd(1, false).bonus).toBe(20);
     expect(bank.waveEnd(2, true).bonus).toBe(30);
+    bank.runEnd({ reason: 'death' }); // retour après le lot 9a : écrite à la fin de la partie
     expect(stored(storage).bleu).toEqual({ gagne: 50, depense: 0 });
     expect(stored(storage).medailles.depense).toBe(0);
   });
@@ -187,17 +196,21 @@ describe('paliers, premier monde terminé, première partie du jour (partie C)',
     bank.waveStart(1);
     for (let w = 1; w <= n; w += 1) bank.waveEnd(w, false);
   };
-  it('palier toutes les 5 manches terminées : +50 à la 5e, +50 à la 10e, rien entre ; écrit à la fin de la manche', () => {
+  // Retour du propriétaire après le lot 9a : compté à la fin de la manche, écrit à la fin de la partie (avant : écrit à la fin de la manche).
+  it('palier toutes les 5 manches terminées : +50 à la 5e, +50 à la 10e, rien entre ; écrit à la fin de la partie', () => {
     const { bank, storage } = make();
     bank.waveStart(1);
     for (let w = 1; w <= 4; w += 1) bank.waveEnd(w, false);
-    expect(soldeMedailles(stored(storage))).toBe(0);
+    expect(bank.soldeMedailles()).toBe(0);
     bank.waveEnd(5, true);
-    expect(soldeMedailles(stored(storage))).toBe(50);
+    expect(bank.soldeMedailles()).toBe(50);
     for (let w = 6; w <= 9; w += 1) bank.waveEnd(w, false);
-    expect(soldeMedailles(stored(storage))).toBe(50);
+    expect(bank.soldeMedailles()).toBe(50);
     bank.waveEnd(10, true);
-    expect(soldeMedailles(stored(storage))).toBe(100);
+    expect(bank.soldeMedailles()).toBe(100);
+    expect(soldeMedailles(stored(storage))).toBe(0);
+    bank.runEnd({ reason: 'death' });
+    expect(soldeMedailles(stored(storage))).toBe(100 + 100); // + la partie du jour
     expect(stored(storage).paliers).toEqual({ histoire: { batiment: 10 }, infini: {} });
     expect(bank.medaillesPartie().paliers).toBe(100);
   });
@@ -211,6 +224,7 @@ describe('paliers, premier monde terminé, première partie du jour (partie C)',
     expect(bank.medaillesPartie().paliers).toBe(0);
     const avant = soldeMedailles(stored(storage));
     for (let w = 11; w <= 15; w += 1) bank.waveEnd(w, false);
+    bank.runEnd({ reason: 'death' }); // retour après le lot 9a : écrit à la fin de la partie (jour déjà compté)
     expect(soldeMedailles(stored(storage)) - avant).toBe(50);
   });
 
@@ -225,11 +239,13 @@ describe('paliers, premier monde terminé, première partie du jour (partie C)',
   it('histoire par monde, infini par carte : paliers séparés (le même palier rapporte une fois en histoire et une fois en infini)', () => {
     const h = make({ partie: { mode: 'histoire', monde: 'batiment' } });
     finir(h.bank, 5);
+    h.bank.runEnd({ reason: 'death' }); // retour après le lot 9a : écrit à la fin de la partie (+100 : partie du jour)
     const s = stored(h.storage);
     const i = make({ initial: s, partie: { mode: 'infini', monde: 'batiment' } });
     finir(i.bank, 5);
+    i.bank.runEnd({ reason: 'death' });
     expect(stored(i.storage).paliers).toEqual({ histoire: { batiment: 5 }, infini: { batiment: 5 } });
-    expect(soldeMedailles(stored(i.storage))).toBe(100);
+    expect(soldeMedailles(stored(i.storage))).toBe(100 + 100);
   });
 
   it('aucun crédit au chargement : progression d\'avant le lot avec records 40 et monde terminé → 0 médaille ; le palier 5 rapporte au premier franchissement suivant', () => {
@@ -242,13 +258,15 @@ describe('paliers, premier monde terminé, première partie du jour (partie C)',
     bank.flush('pause');
     expect(soldeMedailles(stored(storage))).toBe(0);
     for (let w = 1; w <= 5; w += 1) bank.waveEnd(w, false);
-    expect(soldeMedailles(stored(storage))).toBe(50);
+    expect(bank.soldeMedailles()).toBe(50);
+    bank.runEnd({ reason: 'death' }); // retour après le lot 9a : écrit à la fin de la partie (+100 : partie du jour)
+    expect(soldeMedailles(stored(storage))).toBe(50 + 100);
   });
 
   it('premier monde terminé : +300 une seule fois pour toujours (prime bleue de 500 à chaque fois) ; jamais déduit de « mondes » d\'avant le lot', () => {
     const { bank, storage } = make({ initial: { ...serialiser(defaultProgression()), mondes: ['batiment'] } });
     finir(bank, 40);
-    const avantMonde = soldeMedailles(stored(storage));
+    const avantMonde = bank.soldeMedailles(); // retour après le lot 9a : paliers de la partie comptés, pas encore écrits
     expect(bank.worldEnd().bonus).toBe(500);
     bank.runEnd({ reason: 'world' });
     expect(bank.medaillesPartie().monde).toBe(300);

@@ -348,7 +348,9 @@ export async function ecranBoutique({ t, bandeau, root, rootDialogue, surVue = (
     const a = el('aside', ['e3-apercu'], { id, 'aria-labelledby': `menu-caisse-${c.id}-nom ${id}-titre`, 'data-caisse': c.id });
     poserJeton(a, '--e3-teinte', c.teinte);
     if (!pitie) return { element: a, maj: () => {} };
-    const titre = el('h4', ['e3-apercu-titre'], { id: `${id}-titre` });
+    // Retour du propriétaire après le lot 9a : la ligne « Ta pitié dans cette caisse » n'est plus affichée ; gardée pour les lecteurs d'écran
+    // (nom du repère et de la liste).
+    const titre = el('h4', ['sr-only'], { id: `${id}-titre` });
     titre.textContent = t('game.menu.boutique.apercu.pitie');
     const lignes = el('ul', ['e3-apercu-pitie'], { 'aria-labelledby': `${id}-titre` });
     // Retour du propriétaire : seulement la pitié du légendaire (plus aucune information sur la garantie épique, toujours appliquée au tirage).

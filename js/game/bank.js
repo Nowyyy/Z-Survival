@@ -4,7 +4,9 @@
 // exception.
 //
 // Lot 9a (Docs/ref/economie.md) : noms d'écran intervertis, champs inchangés : « bleu » (manches, monde) s'affiche « médailles », « medailles »
-// (portes, milliers, paliers, premier monde, jour) s'affiche « diamants » ; la monnaie jaune s'appelle « Zollars ».
+// (portes, milliers, paliers, premier monde, jour) s'affiche « diamants » ; la monnaie jaune s'appelle « Zollars ». Retour du propriétaire après
+// le lot 9a : médailles et diamants d'une partie écrits seulement à sa fin (mort, monde terminé), perdus à « Quitter » ou « Recommencer » (les
+// mentions « écrit à chaque manche » ou « au gain » ci-dessous ne valent plus que pour les statistiques et le record).
 //
 // Lot 8h (Docs/ref/sauvegarde-v2.md) :
 //   - monnaie JAUNE : 10 par zombie tué par balle, 1 par planche posée (et « giveMoney » des tests) ; remise à 0 à chaque partie (début, Rejouer,
@@ -34,7 +36,8 @@ export function newRunId() {
   }
 }
 
-const vide = () => ({ bleu: 0, tues: 0, tempsMs: 0, partie: null, record: 0, monde: null, medailles: 0, palier: 0, mondeFini: false, jour: 0 });
+// prev (retour après le lot 9a) : diamants prévus des paliers, du premier monde et de la partie du jour (décidés à l'écriture), pour le solde affiché.
+const vide = () => ({ bleu: 0, tues: 0, tempsMs: 0, partie: null, record: 0, monde: null, medailles: 0, palier: 0, mondeFini: false, jour: 0, prev: 0 });
 const estVide = (p) => p.bleu === 0 && p.tues === 0 && p.tempsMs === 0 && p.partie === null && p.record === 0 && p.monde === null && p.medailles === 0 && p.palier === 0 && !p.mondeFini && p.jour === 0;
 // Médailles gagnées pendant la partie, par source (écran de fin E2-7).
 const medVides = () => ({ portes: 0, zombies: 0, paliers: 0, monde: 0, jour: 0 });
@@ -76,20 +79,35 @@ export function createBank({ repository, mode, economy, clock, wall, reducedMoti
     lastClock = now;
   };
   const dirty = () => !estVide(pending);
+  // Retour du propriétaire après le lot 9a : les médailles et les diamants d'une partie (manches, monde, portes, milliers, paliers, premier monde,
+  // partie du jour) ne sont écrits qu'à la FIN de la partie, mort ou monde terminé (flush avec { gains: true }) ; « Quitter », « Recommencer »,
+  // la page fermée en cours de partie les perdent. Les autres écritures (manche terminée, pause, page cachée) ne portent que les statistiques
+  // et le record de manche.
+  const statsVides = (p) => p.tues === 0 && p.tempsMs === 0 && p.partie === null && p.record === 0 && p.monde === null;
+  const sansGains = (p) => ({ ...p, bleu: 0, medailles: 0, palier: 0, mondeFini: false, jour: 0, prev: 0 });
 
-  function flush(reason = 'auto') {
+  // dus : gains d'une partie finie (mort, monde) que l'écriture n'a pas encore pu enregistrer (écriture échouée) : réessayés à chaque écriture
+  // suivante, jamais perdus, même après « Rejouer » ; une partie abandonnée ensuite ne perd que ses propres gains.
+  let dus = null;
+  const gainsDe = (p) => ({ bleu: p.bleu, medailles: p.medailles, palier: p.palier, mondeFini: p.mondeFini, jour: p.jour, prev: p.prev });
+  function flush(reason = 'auto', { gains = false } = {}) {
+    // g : gains écrits par cette opération : tous ceux en attente (fin de partie), sinon seulement ceux d'une partie finie encore dus, sinon aucun.
+    const g = gains ? gainsDe(pending) : dus;
     prendreTemps();
-    if (!dirty()) return { ok: true, skipped: true, reason };
+    if (g === null ? statsVides(pending) : !dirty()) return { ok: true, skipped: true, reason };
     opId ??= `${id}.${(seq += 1)}`;
-    const op = { id: opId, t: 'gain', bleu: pending.bleu, tues: pending.tues, tempsMs: pending.tempsMs, partie: pending.partie, record: pending.record > 0 ? { mode: modeJeu, monde, manche: pending.record } : null, monde: pending.monde };
+    const op = { id: opId, t: 'gain', bleu: g ? g.bleu : 0, tues: pending.tues, tempsMs: pending.tempsMs, partie: pending.partie, record: pending.record > 0 ? { mode: modeJeu, monde, manche: pending.record } : null, monde: pending.monde };
     // Lot 8k : médailles (les montants voyagent dans l'opération : même résultat dans tous les onglets).
-    if (pending.medailles > 0) op.medailles = pending.medailles;
-    if (pending.palier > 0) op.palier = { mode: modeJeu, monde, manche: pending.palier, pas: economy.medaillePalierPas, gain: medaillePalier(economy) };
-    if (pending.mondeFini) op.mondeFini = { id: monde, gain: medailleMonde(economy) };
-    if (pending.jour > 0) op.jour = { n: pending.jour, gain: medailleJour(economy) };
+    if (g && g.medailles > 0) op.medailles = g.medailles;
+    if (g && g.palier > 0) op.palier = { mode: modeJeu, monde, manche: g.palier, pas: economy.medaillePalierPas, gain: medaillePalier(economy) };
+    if (g?.mondeFini) op.mondeFini = { id: monde, gain: medailleMonde(economy) };
+    if (g && g.jour > 0) op.jour = { n: g.jour, gain: medailleJour(economy) };
     const result = repository.commit([op], wall());
     if (result.ok) {
-      pending = vide();
+      // Les gains non écrits (partie en cours) restent en attente jusqu'à la fin de la partie.
+      const reste = gains || !g ? (gains ? null : gainsDe(pending)) : { bleu: pending.bleu - g.bleu, medailles: pending.medailles - g.medailles, palier: pending.palier > g.palier ? pending.palier : 0, mondeFini: pending.mondeFini && !g.mondeFini, jour: pending.jour > g.jour ? pending.jour : 0, prev: pending.prev - g.prev };
+      pending = { ...vide(), ...(reste ?? {}) };
+      if (g) dus = null;
       opId = null;
       saved = result.save ?? saved;
       failed = false;
@@ -135,7 +153,7 @@ export function createBank({ repository, mode, economy, clock, wall, reducedMoti
   const balance = () => Math.min(economy.maxMoney, departJaune + ledger.earnedRun);
   // Solde bleu : progression lue (ou écrite) plus ce qui attend d'être écrit.
   const soldeBleu = () => Math.min(economy.maxBleu ?? 9_999_999, solde(saved) + pending.bleu);
-  const soldeMed = () => Math.min(economy.maxMedailles ?? 9_999_999, soldeMedailles(saved) + pending.medailles);
+  const soldeMed = () => Math.min(economy.maxMedailles ?? 9_999_999, soldeMedailles(saved) + pending.medailles + pending.prev);
 
   function status() {
     const info = repository.info();
@@ -152,25 +170,24 @@ export function createBank({ repository, mode, economy, clock, wall, reducedMoti
     kill(type, wave) {
       if (run.ended) return 0;
       pending.tues += 1;
-      // Lot 8k : un millier de zombies tués dans la partie → médailles, écrites aussitôt.
+      // Lot 8k : un millier de zombies tués dans la partie → diamants (champ medailles) ; retour après le lot 9a : écrits à la fin de la partie.
       const m = medaillesZombies(run.tues, run.tues + 1, economy);
       run.tues += 1;
       const gained = addGain('kill', killMoney(type, wave, economy));
       if (m > 0) {
         pending.medailles += m;
         addMed('zombies', m);
-        flush('medailles');
       }
       return gained;
     },
-    // Lot 8k : une porte vient de s'ouvrir pendant la partie (événement doorOpen : lecture seule) → médailles, écrites aussitôt. Renvoie le gain.
+    // Lot 8k : une porte vient de s'ouvrir pendant la partie (événement doorOpen : lecture seule) → diamants (champ medailles) ; retour après le
+    // lot 9a : écrits à la fin de la partie. Renvoie le gain.
     door() {
       if (run.ended || !run.started) return 0;
       const m = medaillePorte(economy);
       if (m <= 0) return 0;
       pending.medailles += m;
       addMed('portes', m);
-      flush('medailles');
       return m;
     },
     // Une planche vient d'être posée (réparation d'une fenêtre) : monnaie jaune. Renvoie le montant gagné.
@@ -202,7 +219,7 @@ export function createBank({ repository, mode, economy, clock, wall, reducedMoti
       if (nouveaux.length) {
         run.palierVu = nouveaux.at(-1);
         pending.palier = Math.max(pending.palier, wave);
-        addMed('paliers', nouveaux.length * medaillePalier(economy));
+        pending.prev += addMed('paliers', nouveaux.length * medaillePalier(economy));
       }
       flush('wave');
       return { bonus };
@@ -215,13 +232,13 @@ export function createBank({ repository, mode, economy, clock, wall, reducedMoti
       // Lot 8k : premier monde terminé (une seule fois pour toujours).
       if (!(saved?.mondesFinis ?? []).includes(monde)) {
         pending.mondeFini = true;
-        addMed('monde', medailleMonde(economy));
+        pending.prev += addMed('monde', medailleMonde(economy));
       }
       return { bonus: addBleu(worldBonus(economy)) };
     },
     // Fin de partie (mort, monde terminé, « Quitter », « Recommencer ») : écriture immédiate. La manche atteinte est la dernière manche DÉMARRÉE.
-    // Lot 9a : « Quitter » et « Recommencer » ne créditent rien de plus que ce qui a déjà été écrit pendant la partie (manches, portes, milliers,
-    // paliers) : la première partie du jour ne se compte qu'à la mort (« death ») ou à la fin du monde (« world »).
+    // Lot 9a, puis retour du propriétaire : à la mort (« death ») ou à la fin du monde (« world »), les médailles et diamants de la partie sont
+    // écrits (partie du jour comprise) ; à « Quitter » et « Recommencer », ils sont PERDUS (seuls les statistiques et le record sont écrits).
     // Renvoie le bilan pour l'écran de fin : { earned (jaune perdue), world (prime bleue du monde), balance (jaune), bleu (gagnée pendant la partie),
     // soldeBleu, reached, best (record du mode et du monde), record (battu), mode, ok, status }.
     runEnd({ reason }) {
@@ -232,9 +249,16 @@ export function createBank({ repository, mode, economy, clock, wall, reducedMoti
       const jour = jourLocal(new Date(wall()));
       if ((reason === 'death' || reason === 'world') && run.paid.size > 0 && jour > (saved?.medailles?.jour ?? 0)) {
         pending.jour = jour;
-        addMed('jour', medailleJour(economy));
+        pending.prev += addMed('jour', medailleJour(economy));
       }
-      const result = flush(`run-${reason}`);
+      const fin = reason === 'death' || reason === 'world';
+      if (!fin) {
+        pending = { ...sansGains(pending), ...(dus ?? {}) };
+        run.bleu = 0;
+        run.med = medVides();
+      }
+      const result = flush(`run-${reason}`, { gains: fin });
+      if (fin && !result.ok) dus = gainsDe(pending);
       run.ended = true;
       return {
         earned: ledger.earnedRun, world: run.worldPaid ? worldBonus(economy) : 0, balance: balance(), bleu: run.bleu, soldeBleu: soldeBleu(),
@@ -245,6 +269,7 @@ export function createBank({ repository, mode, economy, clock, wall, reducedMoti
     // Nouvelle partie (Rejouer, Recommencer) : écrit ce qui attend, puis remet à zéro la partie (monnaie jaune comprise) ; nouvel identifiant.
     restart() {
       flush('restart');
+      pending = { ...sansGains(pending), ...(dus ?? {}) }; // une partie abandonnée ne lègue jamais ses gains à la suivante (une partie finie, oui)
       ledger = createLedger();
       run.started = false;
       run.ended = false;

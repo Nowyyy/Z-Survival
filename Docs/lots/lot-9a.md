@@ -32,7 +32,7 @@
 ## CI
 - `lot-9a` : B `43775003528` (6 min 19), C `43779641208` (7 min 08), D `43783152184` (7 min 09), E `43786520006` (7 min 11 ; rejeu total, lot 8m-B : 6 min 18) : vertes.
 ## Points ouverts
-- Raison de l'Infini réduite par l'ajustement des cartes à 667 × 375 ; pas de marque de format (voir Monnaies) ; titre du test caisses-pitie gardé (« médailles » = monnaie des caisses).
+- Pas de marque de format (voir Monnaies) ; titre du test caisses-pitie gardé (« médailles » = monnaie des caisses). **Retours du propriétaire après la fusion (commit G)** : gains de la partie écrits à la mort ou au monde, perdus à « Quitter » ; « +N » en double retiré ; « Bonus du jour obtenu » ; texte de l'Infini raccourci ; ligne de pitié masquée ; sticks coincés après rotation ou arrière-plan corrigés : `Docs/ref/retours-9a.md`.
 ## Idées
 - Sacs de sable : texture de toile ou de jute, ou solides comme un meuble (décision du propriétaire) ; carte de l'Infini : raison sur deux lignes.
 ## Entrée du journal

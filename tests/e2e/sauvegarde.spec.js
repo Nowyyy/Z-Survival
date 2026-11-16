@@ -421,20 +421,27 @@ test.describe('compatibilité V0.7 ↔ V0.8, même origine', () => {
   });
 
   // Joue dans une version (vrai stockage) : 50 d'argent d'essai, une manche terminée, écriture ; renvoie le temps de jeu et l'état de la sauvegarde.
+  // Retour du propriétaire après le lot 9a : la version de travail (dev) n'écrit la bleue qu'à la fin de la partie : elle finit par la mort ; la
+  // V0.7 garde son chemin d'avant (écriture à la manche).
   const jouer = async (page, version) => {
     await page.goto(`${BASE}/${version}/jeu.html?test=1&store=local&seed=1`);
     await page.waitForFunction(() => (window.__zs?.getState()?.time ?? 0) > 0.05 || document.getElementById('game-error')?.hidden === false, null, { timeout: 60_000 });
-    return page.evaluate(() => {
+    return page.evaluate((fin) => {
       const zs = window.__zs;
       window.requestAnimationFrame = () => 0;
       for (let i = 0; i < 40; i += 1) zs.step(0.05);
       zs.giveMoney(50);
       zs.skipWave();
       for (let i = 0; i < 40; i += 1) zs.step(0.05);
+      if (fin) {
+        zs.setChutes(0);
+        zs.downPlayer();
+        zs.step(0.3);
+      }
       zs.flushSave();
       const s = zs.getState();
       return { time: s.time, status: s.save.status };
-    });
+    }, version === 'dev');
   };
   const lire = (page) => page.evaluate(() => Object.fromEntries(Object.keys(localStorage).sort().map((k) => [k, localStorage.getItem(k)])));
 

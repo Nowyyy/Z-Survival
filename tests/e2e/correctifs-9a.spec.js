@@ -100,6 +100,55 @@ test.describe('portes, hélicoptère et sol de la capture (lot 9a)', () => {
   });
 });
 
+// Retour du propriétaire après le lot 9a : téléphone tourné plusieurs fois ou passage par une autre appli : les commandes ne répondaient plus. Un
+// doigt posé quand la page part en arrière-plan ne reçoit jamais son « pointerup » : son stick restait pris et ignorait les touchers suivants.
+test.describe('rotation et arrière-plan (retour après le lot 9a)', () => {
+  const toucher = (page, type, id, x, y) => page.evaluate(([t, i, cx, cy]) => {
+    document.getElementById('game-root').dispatchEvent(new PointerEvent(t, { pointerType: 'touch', pointerId: i, clientX: cx, clientY: cy, bubbles: true, cancelable: true, isPrimary: true }));
+  }, [type, id, x, y]);
+  const stick = (page) => page.locator('#stick-left').evaluate((n) => ({ idle: n.classList.contains('is-idle'), t: n.style.transform }));
+  test('stick relâché quand la page passe en arrière-plan ; après trois rotations, les sticks au repos suivent la taille et « Pause » répond à sa place', async ({ page }) => {
+    await open(page, '/jeu.html?test=1&seed=1&nospawn=1');
+    // Un doigt pose le stick gauche, puis la page passe en arrière-plan sans « pointerup ».
+    await toucher(page, 'pointerdown', 7, 100, 250);
+    expect(await stick(page)).toEqual({ idle: false, t: 'translate(100px, 250px)' });
+    await page.evaluate(() => {
+      Object.defineProperty(document, 'hidden', { configurable: true, get: () => true });
+      document.dispatchEvent(new Event('visibilitychange'));
+      delete document.hidden;
+      document.dispatchEvent(new Event('visibilitychange'));
+    });
+    // Au retour, un nouveau doigt reprend le stick (avant : ignoré tant que l'ancien doigt n'était pas relâché).
+    await toucher(page, 'pointerdown', 9, 150, 260);
+    expect(await stick(page)).toEqual({ idle: false, t: 'translate(150px, 260px)' });
+    await toucher(page, 'pointerup', 9, 150, 260);
+    // La page cachée a mis la partie en pause (comportement d'avant) : « Reprendre » répond.
+    await expect(page.locator('#pause-panel')).toBeVisible();
+    await page.locator('#btn-resume').click();
+    await expect(page.locator('#pause-panel')).toBeHidden();
+    // Trois allers-retours portrait / paysage.
+    for (let i = 0; i < 3; i += 1) {
+      await page.setViewportSize({ width: 375, height: 667 });
+      await page.evaluate(() => window.dispatchEvent(new Event('orientationchange')));
+      await page.setViewportSize({ width: 667, height: 375 });
+      await page.evaluate(() => window.dispatchEvent(new Event('orientationchange')));
+    }
+    await images(page, 6);
+    const r = await page.evaluate(() => {
+      const b = document.getElementById('btn-pause').getBoundingClientRect();
+      const cible = document.elementFromPoint(b.left + b.width / 2, b.top + b.height / 2);
+      return { scroll: [window.scrollX, window.scrollY], pause: cible?.closest('#btn-pause') !== null, largeur: window.innerWidth };
+    });
+    expect(r).toEqual({ scroll: [0, 0], pause: true, largeur: 667 });
+    // Sticks au repos (dernier type d'entrée : tactile) replacés à la taille du moment : 16 % de la largeur, 68 % de la hauteur.
+    const repos = await stick(page);
+    expect(repos.idle).toBe(true);
+    expect(repos.t.match(/-?[\d.]+/g).map(Number).map((v) => Math.round(v * 100) / 100)).toEqual([Math.round(667 * 0.16 * 100) / 100, Math.round(375 * 0.68 * 100) / 100]);
+    await page.locator('#btn-pause').click();
+    await expect(page.locator('#pause-panel')).toBeVisible();
+  });
+});
+
 // Lot 9a : onglet Infini : carte jouable seulement quand son monde a été terminé en entier (progression v2, champ « mondes »). Bureau et mobile
 // (garde-fou du palier complet : motif « Infini »).
 test.describe('Infini après le monde terminé (lot 9a)', () => {
@@ -125,11 +174,11 @@ test.describe('Infini après le monde terminé (lot 9a)', () => {
     await expect(carte).toHaveClass(/e8-infini-carte-verrouillee/);
     await expect(carte.locator('.e8-infini-cadenas')).toHaveCount(1);
     await expect(carte.locator('.e8-infini-mini-ruban')).toHaveCount(1);
-    await expect(carte.locator('.e8-infini-carte-detail')).toHaveText('Termine le monde 1 pour débloquer l\'Infini');
+    await expect(carte.locator('.e8-infini-carte-detail')).toHaveText('Termine le monde 1 pour débloquer'); // retour du propriétaire après le lot 9a (avant : « … pour débloquer l'Infini »)
     await expect(carte.locator('.e8-infini-carte-libelle')).toHaveText('Monde 1 · Verrouillée');
     const jouer = page.locator('#menu-infini-jouer');
     await expect(jouer).toHaveAttribute('aria-disabled', 'true');
-    await expect(jouer).toHaveAccessibleName('Jouer · verrouillé : Termine le monde 1 pour débloquer l\'Infini');
+    await expect(jouer).toHaveAccessibleName('Jouer · verrouillé : Termine le monde 1 pour débloquer');
     await jouer.click({ force: true }); // désactivé (aria-disabled) : rien
     await page.waitForTimeout(300);
     await expect(page.locator('#menu-ecran-infini')).toBeVisible(); // aucune partie lancée

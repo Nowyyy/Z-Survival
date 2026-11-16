@@ -115,9 +115,20 @@ export function createInput(root, { onCommand = () => {}, isBlocked = () => fals
     showIdle();
   }
 
+  // Retour du propriétaire après le lot 9a (téléphone tourné plusieurs fois, ou passage par une autre appli : les commandes ne répondaient plus) :
+  // un doigt posé quand la page part en arrière-plan ou pivote ne reçoit jamais son « pointerup » ; son stick restait pris et ignorait tout nouveau
+  // toucher de son côté. Tout est relâché quand la page est cachée, quittée ou pivote ; les sticks au repos sont replacés à la nouvelle taille.
+  const onVisibility = () => {
+    if (document.hidden) releaseAll();
+  };
+  const onResize = () => showIdle();
   window.addEventListener('keydown', keyDown);
   window.addEventListener('keyup', keyUp);
   window.addEventListener('blur', releaseAll);
+  document.addEventListener('visibilitychange', onVisibility);
+  window.addEventListener('pagehide', releaseAll);
+  window.addEventListener('orientationchange', releaseAll);
+  window.addEventListener('resize', onResize);
   root.addEventListener('pointerdown', pointerDown);
   root.addEventListener('pointermove', pointerMove);
   root.addEventListener('pointerup', pointerUp);
@@ -141,6 +152,10 @@ export function createInput(root, { onCommand = () => {}, isBlocked = () => fals
       window.removeEventListener('keydown', keyDown);
       window.removeEventListener('keyup', keyUp);
       window.removeEventListener('blur', releaseAll);
+      document.removeEventListener('visibilitychange', onVisibility);
+      window.removeEventListener('pagehide', releaseAll);
+      window.removeEventListener('orientationchange', releaseAll);
+      window.removeEventListener('resize', onResize);
     },
   };
 }

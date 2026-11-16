@@ -60,7 +60,8 @@ describe('noms à l\'écran (data/i18n/fr.json)', () => {
     expect([fr['game.save.page.import.row.money'], fr['game.save.page.import.row.medailles']]).toEqual(['Médailles', 'Diamants']);
     expect(fr['game.live.waveBonus']).toBe('Manche {n} terminée, +{bonus} médailles.');
     expect([fr['game.hud.moneyLabel'], fr['game.debug.money']]).toEqual(['Zollars : {n}', 'Zollars de départ']);
-    expect(fr['game.pause.quitConfirm']).toContain('les Zollars de cette partie seront perdus');
+    expect(fr['game.pause.quitConfirm']).toBe('Quitter la partie ? Les médailles, les diamants et les Zollars gagnés pendant cette partie seront perdus.'); // retour après le lot 9a : tout ce que la partie a rapporté est perdu
+    expect([fr['game.end.jour'], fr['game.menu.infini.debloquer']]).toEqual(['Bonus du jour obtenu : +{n}', 'Termine le monde {n} pour débloquer']);
   });
 
   it('prix : améliorations, fusion et offres en médailles ; caisses (et « Rouvrir ») en diamants', () => {
@@ -84,28 +85,33 @@ describe('gains de chaque monnaie (valeurs inchangées, monnaies à leur nouvell
     const { bank, storage } = make();
     bank.waveStart(1);
     bank.waveEnd(1, false);
-    expect(soldes(stored(storage))).toEqual([20, 0]);
+    expect([bank.soldeBleu(), bank.soldeMedailles()]).toEqual([20, 0]); // retour après le lot 9a : affichés, écrits à la fin de la partie
     bank.waveStart(2);
     bank.waveEnd(2, true);
-    expect(soldes(stored(storage))).toEqual([50, 0]);
+    expect([bank.soldeBleu(), bank.soldeMedailles()]).toEqual([50, 0]);
+    expect(soldes(stored(storage))).toEqual([0, 0]);
     expect(bank.worldEnd().bonus).toBe(500);
     bank.runEnd({ reason: 'world' });
     // Monde terminé : +500 médailles ; diamants : +300 (premier monde) et +100 (partie du jour).
     expect(soldes(stored(storage))).toEqual([550, 400]);
   });
 
-  it('diamants (champ medailles) : +10 par porte, +10 au millième zombie tué, +50 au palier de 5 manches ; écrits au gain', () => {
+  // Retour du propriétaire après le lot 9a : affichés au gain, écrits à la fin de la partie (avant : écrits au gain).
+  it('diamants (champ medailles) : +10 par porte, +10 au millième zombie tué, +50 au palier de 5 manches ; écrits à la fin de la partie', () => {
     const { bank, storage } = make();
     bank.waveStart(1);
     expect(bank.door()).toBe(10);
-    expect(soldes(stored(storage))).toEqual([0, 10]);
+    expect([bank.soldeBleu(), bank.soldeMedailles()]).toEqual([0, 10]);
     for (let i = 0; i < 1000; i += 1) bank.kill('marcheur', 1);
-    expect(soldes(stored(storage))).toEqual([0, 20]);
+    expect([bank.soldeBleu(), bank.soldeMedailles()]).toEqual([0, 20]);
     for (let w = 1; w <= 5; w += 1) {
       bank.waveStart(w);
       bank.waveEnd(w, false);
     }
-    expect(soldes(stored(storage))).toEqual([100, 70]);
+    expect([bank.soldeBleu(), bank.soldeMedailles()]).toEqual([100, 70]);
+    expect(soldes(stored(storage))).toEqual([0, 0]);
+    bank.runEnd({ reason: 'death' });
+    expect(soldes(stored(storage))).toEqual([100, 170]); // + la partie du jour
   });
 
   it('dépenses : caisse en diamants (champ medailles), offre ou amélioration en médailles (champ bleu) ; achat refusé en entier si la monnaie manque', () => {
@@ -119,15 +125,19 @@ describe('gains de chaque monnaie (valeurs inchangées, monnaies à leur nouvell
   });
 });
 
-describe('« Quitter » et « Recommencer » ne créditent rien (partie du jour : mort ou fin du monde seulement)', () => {
+// Retour du propriétaire après le lot 9a : « Quitter » et « Recommencer » font PERDRE les médailles et diamants de la partie en cours (avant : ceux déjà
+// écrits pendant la partie étaient gardés) ; mort et fin du monde les écrivent, partie du jour comprise.
+describe('« Quitter » et « Recommencer » : gains de la partie perdus (écrits à la mort ou à la fin du monde seulement)', () => {
   for (const n of [1, 2, 5]) {
-    it(`après ${n} manche(s) terminée(s), « Quitter » : soldes égaux à ceux d'avant (rien de plus que les manches et paliers déjà écrits)`, () => {
+    it(`après ${n} manche(s) terminée(s), « Quitter » : soldes égaux à ceux d'avant la partie (gains de la partie perdus)`, () => {
       const { bank, storage } = make();
       manches(bank, n);
       const avant = soldes(stored(storage));
+      expect(avant).toEqual([0, 0]);
       const fin = bank.runEnd({ reason: 'quit' });
       expect(soldes(stored(storage))).toEqual(avant);
       expect(fin.medailles.jour).toBe(0);
+      expect([fin.bleu, fin.medailles.total]).toEqual([0, 0]);
       expect(stored(storage).medailles.jour).toBe(0);
     });
   }
@@ -145,21 +155,22 @@ describe('« Quitter » et « Recommencer » ne créditent rien (partie du jour 
     expect(stored(storage).medailles.jour).toBe(jourLocal(new Date(MIDI)));
   });
 
-  it('mort et fin du monde : partie du jour comptée (une fois par jour) ; manches, portes et paliers gardés après « Quitter »', () => {
+  it('mort et fin du monde : partie du jour comptée (une fois par jour) ; manches, portes et paliers perdus à « Quitter », palier regagnable ensuite', () => {
     const { bank, storage } = make();
     bank.waveStart(1);
     bank.door();
     manches(bank, 5);
     bank.runEnd({ reason: 'quit' });
-    expect(soldes(stored(storage))).toEqual([100, 60]); // 5 manches ; porte (10) et palier (50) gardés, pas de partie du jour
+    expect(soldes(stored(storage))).toEqual([0, 0]); // 5 manches, porte (10) et palier (50) perdus, pas de partie du jour
+    expect(stored(storage).paliers.histoire.batiment ?? 0).toBe(0);
+    bank.restart();
+    manches(bank, 5);
+    bank.runEnd({ reason: 'death' });
+    expect(soldes(stored(storage))).toEqual([100, 150]); // palier 5 (jamais récompensé) + partie du jour
     bank.restart();
     manches(bank, 1);
     bank.runEnd({ reason: 'death' });
-    expect(soldes(stored(storage))).toEqual([120, 160]);
-    bank.restart();
-    manches(bank, 1);
-    bank.runEnd({ reason: 'death' });
-    expect(soldes(stored(storage))).toEqual([140, 160]); // déjà comptée aujourd'hui
+    expect(soldes(stored(storage))).toEqual([120, 150]); // déjà comptée aujourd'hui
   });
 
   it('partie quittée sans manche terminée : rien du tout', () => {

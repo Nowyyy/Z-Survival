@@ -1,0 +1,25 @@
+# Lot 9a — retours du propriétaire après la fusion (PR #146)
+Joué par le propriétaire sur `/dev/jeu.html` (téléphone) après la fusion du lot 9a dans `dev`. Commit « Lot 9a-G — Retours du propriétaire ».
+
+| Retour | Réponse |
+|---|---|
+| « Textures de bois à droite de mon perso » (salle de départ, contre le mur nord) | Ce sont les **sacs de sable** `sacs-1` et `sacs-2` du décor léger (lot 3g, `decor-interieur.world.json`), texture d'atlas « bois », **non solides par conception** ; le liseré brun = les plinthes. Déjà expliqué au point 7 du lot ; **rien changé**, décision du propriétaire attendue (voir plus bas). |
+| Médailles affichées deux fois (sous la vague et sous les Zollars) | « +N » de fin de manche près des Zollars (`#hud-gain-bleu`, `jeu.html`) **retiré** ; seul reste le bloc sous la vague (`#hud-bleu-manche`). |
+| Indicateur de la première partie du jour sur l'écran de fin | Ligne **« Bonus du jour obtenu : +100 »** (gemme, bleu) dans la place libre sous les diamants, seulement quand la partie l'a obtenu (`#end-jour`, `js/game/ui.js`, `game.end.jour`). |
+| Texte de l'Infini | « Termine le monde 1 pour débloquer » (impératif, comme les autres cartes ; le message du propriétaire disait « terminé »). |
+| « Quitter » : les médailles et diamants de la partie doivent être perdus | **Règle changée** : médailles et diamants d'une partie écrits seulement à la **mort** ou à la **fin du monde** ; « Quitter », « Recommencer » et la page fermée en cours de partie les perdent (avec les Zollars). Confirmation : « Les médailles, les diamants et les Zollars gagnés pendant cette partie seront perdus. » Détail : `economie.md` § 0, `sauvegarde-v2.md` § 13. |
+| Boutique : retirer « Ta pitié dans cette caisse » | Ligne masquée (gardée pour les lecteurs d'écran) ; la jauge du légendaire et « Légendaires possibles » restent. |
+| Rotation ou autre appli : les commandes ne répondent plus | Cause trouvée et reproduite : un doigt posé quand la page part en arrière-plan ou pivote ne reçoit jamais son « pointerup » ; son stick restait pris et **ignorait tout nouveau toucher** de son côté. Correctif : tout est relâché à la page cachée, quittée ou pivotée ; sticks au repos replacés à la nouvelle taille (`js/game/input.js`). En plus, après une rotation ou un retour : page remise à l'origine et à l'échelle 1, tailles relues après la rotation (`js/game/safe-area.js`). |
+
+## Choix (là où rien n'était dit)
+- « Recommencer » et la page fermée en cours de partie suivent « Quitter » (gains perdus) ; statistiques (zombies tués, temps, parties) et record de manche restent écrits comme avant.
+- Un palier de 5 manches franchi dans une partie quittée n'est pas récompensé : il reste à gagner.
+- Une partie finie (mort, monde) dont l'écriture échoue garde ses gains : réessayés à l'écriture suivante, même après « Rejouer ».
+- Pendant la partie, les soldes affichés (fin de manche, portes, pause) comprennent les gains en attente.
+
+## Preuves
+- Rotation : test e2e « rotation et arrière-plan » (`correctifs-9a.spec.js`) : sans le correctif, le second toucher est ignoré (stick resté sur le premier doigt) ; avec, il est repris, et après trois rotations « Pause » répond à sa place, page non défilée, sticks replacés. **Non vérifié sur un vrai téléphone** (iOS ou Android) : à confirmer par le propriétaire.
+- Monnaies : Vitest (`bank`, `medailles`, `monnaies-9a`) et Playwright (`argent`, `medailles`, `monnaies-9a`, `menu`, `menu-onglets`, `sauvegarde`, `caisses-pitie`) adaptés : écrits à la mort, perdus à « Quitter ».
+
+## Idées (décision du propriétaire)
+- Sacs de sable : texture de toile ou de jute (aspect de sacs), les rendre solides comme un meuble, ou les retirer.

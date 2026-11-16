@@ -527,6 +527,9 @@ test.describe('onglet Infini (E8-4) et mode infini', () => {
       zs.startWave(15);
       for (let i = 0; i < 400 && zs.getState().waves.phase === 'attente'; i += 1) zs.step(0.05); // la manche 15 démarre vraiment (partie infini comptée)
       for (let i = 0; i < 400 && zs.getState().waves.wave < 16; i += 1) { zs.skipWave(); zs.step(0.05); }
+      zs.setChutes(0); // retour du propriétaire après le lot 9a : la bleue est écrite à la fin de la partie (mort)
+      zs.downPlayer();
+      zs.step(0.3);
       zs.flushSave();
       return { s: JSON.parse(localStorage.getItem(k)), vague: zs.getState().waves.wave };
     }, KEY);

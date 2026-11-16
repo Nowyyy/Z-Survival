@@ -21,7 +21,7 @@ export function createUi(dict, handlers) {
     options: $('btn-options'), debug: $('btn-debug'), restart: $('btn-restart'), replay: $('btn-replay'), quit: $('btn-quit'), menuBtn: $('btn-menu'), endKills: $('end-kills'), endWave: $('end-wave'),
     endBox: $('end-box'), endTitle: $('end-title-text'), pauseBalance: $('pause-balance-text'), endWaveText: $('end-wave-text'),
     endBalance: $('end-balance'), endBalanceText: $('end-balance-text'), endBleu: $('end-bleu'), endBleuText: $('end-bleu-text'), endBest: $('end-best'), endRecord: $('end-record'), endRecordText: $('end-record-text'), endSave: $('end-save'),
-    pauseMedailles: $('pause-medailles-text'), endMed: $('end-medailles'), endMedText: $('end-medailles-text'), endMedSolde: $('end-medailles-solde'), endMedSoldeText: $('end-medailles-solde-text'),
+    pauseMedailles: $('pause-medailles-text'), endJour: $('end-jour'), endJourText: $('end-jour-text'), endMed: $('end-medailles'), endMedText: $('end-medailles-text'), endMedSolde: $('end-medailles-solde'), endMedSoldeText: $('end-medailles-solde-text'),
   };
   // Lot 5j : écran Options (créé à la première ouverture) ; binding : contrôleur graphique et couche VHS, donnés par game.js (bindOptions).
   // Lot 8c : composant partagé avec le menu (contexte « partie ») ; sa section Son lit l'audio en cours (sonAudio) et passe par les mêmes
@@ -128,6 +128,13 @@ export function createUi(dict, handlers) {
       if (med) {
         els.endMedText.textContent = fmt(dict['game.end.medailles'], { n: formatMoney(med.total) });
         els.endMedSoldeText.textContent = fmt(dict['game.end.medailles.solde'], { n: formatMoney(med.solde) });
+      }
+      // Retour du propriétaire après le lot 9a : dans la place libre sous les diamants, le bonus de la première partie du jour quand cette partie
+      // l'a obtenu (diamants, compris dans le « +gain » au-dessus).
+      const jour = med && med.jour > 0 ? med.jour : 0;
+      if (els.endJour) {
+        els.endJour.hidden = jour === 0;
+        els.endJourText.textContent = jour > 0 ? fmt(dict['game.end.jour'], { n: formatMoney(jour) }) : '';
       }
       els.endRecord.hidden = !(money && info.record === true);
       els.endRecordText.textContent = dict[MONEY_TEXTS.record];
