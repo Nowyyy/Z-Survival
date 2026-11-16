@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { helicopterModel } from '../../js/core/epaves.js';
+import { sacsBoxes } from '../../js/core/decor-interieur.js';
 import AxeBuilder from '@axe-core/playwright';
 import { readFileSync } from 'node:fs';
 import { waitReady } from './helpers.js';
@@ -16,6 +17,9 @@ const MOBILIER = 2 * load('data/game/maps/rez-de-chaussee/mobilier.world.json').
 const EPAVES = (load('data/game/maps/rez-de-chaussee/decor.json').wrecks?.helicopter?.triangles ?? 0) + 158 + (JSON.parse(readFileSync('data/game/maps/rez-de-chaussee/decor.json', 'utf8')).wrecks?.helicopter?.scarTriangles ?? 0); // lot 5a-F : + le cratère et la traînée (sol de terre) // + la voiture calcinée posée à part (3 boîtes de 10 triangles, 4 roues de 32), dans le même maillage
 // Lot 9a : triangles de tôle et du rotor de l'hélicoptère (tout sauf la verrière), dessinés à part et seulement dans le champ.
 const HELI_TOLE = helicopterModel().triangles.filter((t) => t.region !== 'vitre').length;
+// Lot 9a-I : sacs de sable solides en toile de jute (obstacles de world.json, js/core/decor-interieur.js → sacsBoxes) : 10 triangles par boîte, dessinés
+// à tous les réglages (même avec ?detail=0), sans ombre portée.
+const SACS = load('data/game/maps/rez-de-chaussee/world.json').obstacles.filter((o) => o.kind === 'sacs').reduce((n, o) => n + 10 * sacsBoxes(o, { alongX: true }).length, 0); // le long du mur nord
 const STATE = (page) => page.evaluate(() => window.__zs.getState());
 const U = (px) => px * 5 + 800;
 // [appels, triangles] ; jusqu'au lot 5e : mesurées sur main au lancement du lot 3g avec l'ancien modèle (scripts/modele/mesures-rendu.mjs).
@@ -82,7 +86,9 @@ test.describe('budgets de rendu avec le détail (27 300 triangles et 84 appels a
       expect(on.calls - off.calls).toBeLessThanOrEqual(12);
       expect(on.triangles - off.triangles).toBeLessThanOrEqual(1500 + MOBILIER + 4000);
       // Lot 9a : la tôle et le rotor de l'hélicoptère (HELI_TOLE) ne sont plus dans le décor dessiné partout : comptés seulement s'il est dans le champ.
-      expect(Math.min(Math.abs(off.triangles - EPAVES - ref[1]), Math.abs(off.triangles - (EPAVES - HELI_TOLE) - ref[1]))).toBeLessThanOrEqual(80); // lot 5a : + les triangles des épaves
+      // Lot 9a-I : les sacs de sable (SACS, toile de jute) sont dessinés à tous les réglages, comptés quand ils sont dans le champ.
+      const ecarts = [EPAVES, EPAVES - HELI_TOLE].flatMap((e) => [e, e + SACS]).map((e) => Math.abs(off.triangles - e - ref[1]));
+      expect(Math.min(...ecarts)).toBeLessThanOrEqual(80); // lot 5a : + les triangles des épaves
       expect(off.calls).toBeLessThanOrEqual(ref[0] + 3);
       expect(off.calls).toBeGreaterThanOrEqual(ref[0] - 1);
     });
@@ -116,9 +122,9 @@ test.describe('textures', () => {
 
 test.describe('décor léger : non solide, par étage, sans fuite', () => {
   const rug = decor.items.find((d) => d.kind === 'tapis' && d.floor === 'rdc');
-  const bags = decor.items.find((d) => d.kind === 'sacs');
+  const bags = decor.items.find((d) => d.id === 'bidon-salle'); // lot 9a-I : les sacs de sable sont devenus solides (world.json) ; un bidon les remplace ici
 
-  test('le joueur traverse un tapis et un tas de sacs : même trajet qu\'avec ?detail=0', async ({ page }) => {
+  test('le joueur traverse un tapis et un bidon : même trajet qu\'avec ?detail=0', async ({ page }) => {
     const walk = async (extra) => {
       await open(page, extra);
       return page.evaluate(([r, b]) => {

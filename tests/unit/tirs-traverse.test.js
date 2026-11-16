@@ -38,13 +38,13 @@ function vol(x0, y0, angle, ennemis, obstacles) {
 }
 
 describe('données : liste du propriétaire et fichier dérivé', () => {
-  it('tirs.world.json est à jour (npm run carte) et suit la liste ; règle (retour du propriétaire) : meubles dessinés plus bas que l\'arme (11 au rez-de-chaussée, 5 à l\'étage) et les deux grilles', () => {
+  it('tirs.world.json est à jour (npm run carte) et suit la liste ; règle (retour du propriétaire) : meubles dessinés plus bas que l\'arme (13 au rez-de-chaussée dont les deux piles de sacs de sable du lot 9a-I, 5 à l\'étage) et les deux grilles', () => {
     const gen = generateMapFiles('rez-de-chaussee');
     expect(gen.tirs).toBe(readFileSync(`${D}tirs.world.json`, 'utf8'));
     expect(gen.tirsReport.problems).toEqual([]);
     const liste = json('data/game/tirs-traversables.json').cartes['rez-de-chaussee'];
     expect([...TIRS.rdc.ids, ...TIRS.rdc.grilles.map((g) => g.id)].sort()).toEqual([...liste.rdc].sort());
-    expect(TIRS.rdc.ids).toHaveLength(11);
+    expect(TIRS.rdc.ids).toHaveLength(13); // lot 9a-I : + sacs-1, sacs-2 (18 de haut)
     expect(TIRS.rdc.grilles.map((g) => g.id)).toEqual(['grille-F7', 'grille-F8']);
     expect(TIRS.etage.ids).toHaveLength(5);
     // Chaque meuble listé est DESSINÉ plus bas que l'arme (mobilier.world.json, render.json → gunHeight 43) ; aucun pilier ni escalier.
@@ -56,7 +56,7 @@ describe('données : liste du propriétaire et fichier dérivé', () => {
       for (const id of ids) {
         const m = meuble(id, l);
         expect(m, id).toBeTruthy();
-        expect(dessin(id, f), id).toBeLessThan(arme);
+        expect(m.kind === 'sacs' ? m.hauteur : dessin(id, f), id).toBeLessThan(arme); // sacs de sable : dessinés à leur hauteur (sacsBoxes), sans pièce de mobilier
         expect(['pilier', 'escalier'], id).not.toContain(m.kind);
       }
     }

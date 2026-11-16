@@ -3,11 +3,11 @@
 // les fichiers versionnés diffèrent de la sortie. Les deux fichiers générés ne s'éditent jamais à la main.
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { clearanceZones, decorToWorld, placeDecor, totalTriangles } from '../js/core/decor-interieur.js';
+import { clearanceZones, decorToWorld, placeDecor, solidesDecor, totalTriangles } from '../js/core/decor-interieur.js';
 import { compareFloor } from '../js/core/ecarts.js';
 import { floorProblems } from '../js/core/floor-rules.js';
 import { boxTriangles, lookOf, pieceBoxes } from '../js/core/mobilier-aspect.js';
-import { planToWorld } from '../js/core/maps.js';
+import { analyzeMap, planToWorld } from '../js/core/maps.js';
 import { decorProblems, generateDecor } from '../js/core/decor.js';
 import { firesToWorld, lampsToWorld, lampTriangles } from '../js/core/lamps.js';
 import { polygonRects } from '../js/core/shape.js';
@@ -83,9 +83,23 @@ export function generateMapFiles(id = 'rez-de-chaussee') {
     const zonesBy = Object.fromEntries(Object.entries(worlds).filter(([, w]) => w).map(([f, w]) => [f, clearanceZones(w, zw, params, f)]));
     const windowsBy = Object.fromEntries(Object.entries(worlds).filter(([, w]) => w).map(([f, w]) => [f, w.windows]));
     const placed = placeDecor(conv.items, zonesBy, windowsBy, { windowSize: params.windowSize });
-    const doc = { _provisoire: 'Décor léger intérieur généré par npm run carte (scripts/plan-vers-monde.mjs) d\'après decor-interieur.json : ne jamais éditer à la main. Unités du jeu ; non solide (aucune collision, aucun effet sur le chemin, les tirs ni les règles). Valeurs provisoires.', triangles: totalTriangles(placed.items), items: placed.items };
+    // Lot 9a-I : éléments solides (sacs de sable) → obstacles du monde de leur étage, après le contrôle des zones de dégagement ; un obstacle qui
+    // couperait un passage est un problème (la carte n'est pas écrite telle quelle sans le voir).
+    const { solides, legers } = solidesDecor(placed.items);
+    for (const { floor, obstacle } of solides) {
+      const w = worlds[floor];
+      if (!w) continue;
+      w.obstacles.push(obstacle);
+      const a = analyzeMap(w);
+      if (a.components > 1 || a.unreachable.length > 0 || !a.startReachable) result.problems.push(`décor solide : ${obstacle.id} coupe un passage (${floor})`);
+    }
+    if (solides.length > 0) {
+      result.world = `${formatJson(out.world)}\n`;
+      if (etageWorldOut) result.etage = `${formatJson(etageWorldOut)}\n`;
+    }
+    const doc = { _provisoire: 'Décor léger intérieur généré par npm run carte (scripts/plan-vers-monde.mjs) d\'après decor-interieur.json : ne jamais éditer à la main. Unités du jeu ; non solide (aucune collision, aucun effet sur le chemin, les tirs ni les règles). Les genres solides (sacs de sable, lot 9a-I) n\'y sont pas : ils sont écrits dans world.json comme obstacles. Valeurs provisoires.', triangles: totalTriangles(legers), items: legers };
     result.decorInterieur = `${formatJson(doc)}\n`;
-    result.decorReport = { warnings: conv.warnings, removed: placed.removed, count: placed.items.length, triangles: doc.triangles };
+    result.decorReport = { warnings: conv.warnings, removed: placed.removed, count: legers.length, triangles: doc.triangles, solides: solides.map((x) => x.obstacle.id) };
   }
   // Lot 3g (retour du propriétaire) : aspect du mobilier d'après le modèle (releve.json) : boîtes de dessin par pièce, limitées au rectangle de collision de
   // son obstacle (le dessin seulement). Écrit mobilier.world.json (jamais édité à la main) ; ?detail=0 garde l'ancien dessin.
@@ -209,6 +223,7 @@ if (isMain) {
     console.log(`Décor léger : ${decorReport.count} éléments, ${decorReport.triangles} triangles.`);
     for (const w of decorReport.warnings) console.log(`Décor léger : ${w}`);
     for (const r of decorReport.removed) console.log(`Décor léger : retiré ${r.id} (${r.reasons.join(', ')})`);
+    if (decorReport.solides.length > 0) console.log(`Décor solide (obstacles de world.json) : ${decorReport.solides.join(', ')}.`);
   }
   if (lampesReport) {
     console.log(`Lampes : ${lampesReport.count} lampes, ${lampesReport.triangles} triangles.`);

@@ -1,6 +1,12 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { porteProche, reglagesPorte, PORTE_DEFAUT } from '../../js/core/porte-message.js';
+import { buildSpec, createTextureData, TILEABLE } from '../../js/core/texgen.js';
+import { CATALOGUE, sacsBoxes, solidesDecor } from '../../js/core/decor-interieur.js';
+import { buildLayouts, shotBlockers } from '../../js/core/layout.js';
+import { parseZones, zonesToWorld } from '../../js/core/zones.js';
+import { analyzeMap } from '../../js/core/maps.js';
+import { rectGap } from '../../js/core/collision.js';
 import { angleRotor, decalageTole, helicopterFootprint, helicopterModel, helicopterRotor, reglagesRotor, ROTOR_DEFAUT, ROTOR_PIECES, teinteAcier, TOLE_TUILE, toleHelicoptere, tournerAutour, uvTole } from '../../js/core/epaves.js';
 
 // Lot 9a : message des portes à deux cases ; hélicoptère en tôle de métal (texture calculée, aucune image) et rotor de queue qui tourne en temps de
@@ -120,5 +126,104 @@ describe('hélicoptère : tôle de métal peinte (texture calculée, aucune imag
     const uv = uvTole(t);
     expect(uv[1][0] - uv[0][0]).toBeCloseTo(1, 9);
     expect(uv[2][1] - uv[0][1]).toBeCloseTo(1, 9);
+  });
+});
+
+// Lot 9a-I (décision du propriétaire) : sacs de sable en toile de jute, solides (obstacles de world.json, à tous les réglages graphiques).
+describe('sacs de sable : toile de jute et collision', () => {
+  const D = 'data/game/maps/rez-de-chaussee/';
+  const world = lire(`${D}world.json`);
+  const legers = lire(`${D}decor-interieur.world.json`).items;
+  const SACS = world.obstacles.filter((o) => o.kind === 'sacs');
+  const jute = textures.textures.find((t) => t.id === 'toile-jute');
+  const gris = (t) => ({ '--game-cloth-3': [194, 169, 138], '--game-wood-dark': [88, 67, 45] }[t] ?? [128, 128, 128]);
+
+  it('texture « toile-jute » : genre burlap, répétée, jetons existants, déterministe, raccord sans couture, 128 px', () => {
+    expect(jute).toMatchObject({ kind: 'burlap', size: 128, colors: { fiber: '--game-cloth-3', dark: '--game-wood-dark' } });
+    expect(jute.repeat).toBeGreaterThan(0);
+    expect(TILEABLE.burlap).toBe('xy');
+    const a = createTextureData(buildSpec(jute, gris));
+    const b = createTextureData(buildSpec(jute, gris));
+    expect(a.warnings).toEqual([]);
+    expect(Buffer.from(a.data).equals(Buffer.from(b.data))).toBe(true);
+    // Fils : la texture alterne clair (fil) et sombre (jour) ; moyenne proche de la couleur du fil, assombrie.
+    let clair = 0;
+    let sombre = 0;
+    for (let i = 0; i < a.data.length; i += 4) {
+      const l = (a.data[i] + a.data[i + 1] + a.data[i + 2]) / 3;
+      if (l > 140) clair += 1;
+      if (l < 60) sombre += 1;
+    }
+    expect(clair).toBeGreaterThan(a.data.length / 4 / 5);
+    expect(sombre).toBeGreaterThan(a.data.length / 4 / 50);
+    // Raccord : le bord droit ressemble au bord gauche autant que deux colonnes voisines (fils entiers : 16 par côté, 8 px chacun).
+    const col = (x) => Array.from({ length: 128 }, (_, y) => a.data[(y * 128 + x) * 4]);
+    const ecart = (p, q) => p.reduce((s2, v, i) => s2 + Math.abs(v - q[i]), 0) / p.length;
+    expect(ecart(col(127), col(0))).toBeLessThan(ecart(col(1), col(0)) * 2 + 20);
+  });
+
+  it('les sacs ne sont plus dans le décor léger ; deux obstacles de world.json, genre « sacs », 18 de haut, au catalogue « solide »', () => {
+    expect(CATALOGUE.sacs.solide).toBe(true);
+    expect(legers.filter((i) => i.kind === 'sacs')).toEqual([]);
+    expect(SACS.map((o) => [o.id, o.hauteur, o.source])).toEqual([['sacs-1', 18, 'modele'], ['sacs-2', 18, 'modele']]);
+  });
+
+  it('règles de la carte : au contact du mur nord et l\'un de l\'autre, jamais un interstice de moins de 50 ; le chemin relie toujours le départ aux fenêtres', () => {
+    const [a, b] = SACS;
+    expect(rectGap(a, b)).toBe(0);
+    for (const o of world.obstacles.filter((x) => x.kind !== 'sacs' && !x.outside)) {
+      for (const s of SACS) {
+        const g = rectGap(s, o);
+        expect(g === 0 || g >= world.minCorridor, `${s.id} / ${o.id} : ${g}`).toBe(true);
+      }
+    }
+    const an = analyzeMap(world);
+    expect([an.startReachable, an.unreachable, an.components]).toEqual([true, [], 1]);
+  });
+
+  it('collision : les sacs bloquent le joueur et les zombies ; les tirs passent par-dessus (liste du propriétaire, 18 < arme 43)', () => {
+    const L = buildLayouts({ rdc: { world, decor: lire(`${D}decor.json`) }, etage: { world: lire(`${D}etage.world.json`) }, zones: zonesToWorld(parseZones(lire(`${D}zones.json`)), world.transform) });
+    const ids = (list) => list.filter((o) => o.kind === 'sacs').map((o) => o.id);
+    expect(ids(L.rdc.playerObstacles)).toEqual(['sacs-1', 'sacs-2']);
+    expect(ids(L.rdc.zombieObstacles)).toEqual(['sacs-1', 'sacs-2']);
+    expect(ids(shotBlockers(L.rdc, []))).toEqual(['sacs-1', 'sacs-2']); // bloqueurs bruts ; la traversée vient de tirs.world.json
+    const tirs = lire(`${D}tirs.world.json`);
+    expect(tirs.rdc.ids).toEqual(expect.arrayContaining(['sacs-1', 'sacs-2']));
+    expect(lire('data/game/tirs-traversables.json').cartes['rez-de-chaussee'].rdc).toEqual(expect.arrayContaining(['sacs-1', 'sacs-2']));
+  });
+
+  it('solidesDecor : seuls les genres solides au sol deviennent des obstacles (rectangle englobant si tourné) ; le reste reste léger', () => {
+    const r = solidesDecor([{ id: 's', floor: 'rdc', kind: 'sacs', z1: 18, x: 0, y: 0, w: 40, h: 20, rot: 90, source: 'modele' }, { id: 't', kind: 'tapis' }, null]);
+    expect(r.solides).toEqual([{ floor: 'rdc', obstacle: { id: 's', x: 10, y: -10, w: 20, h: 40, hauteur: 18, kind: 'sacs', source: 'modele' } }]);
+    expect(r.legers).toEqual([{ id: 't', kind: 'tapis' }, null]);
+    expect(solidesDecor(undefined)).toEqual({ solides: [], legers: [] });
+  });
+
+  it('sacsBoxes : sacs dans le rectangle, sous la hauteur, rangées en quinconce le long du mur, chaque sac bombé, teintes voisines différentes ; pur', () => {
+    for (const o of SACS) {
+      const b = sacsBoxes(o, { alongX: true });
+      expect(b).toEqual(sacsBoxes(o, { alongX: true }));
+      expect(b.length % 2).toBe(0); // corps + dessus bombé
+      for (const q of b) {
+        expect(q.x0).toBeGreaterThanOrEqual(o.x - 1e-9);
+        expect(q.x1).toBeLessThanOrEqual(o.x + o.w + 1e-9);
+        expect(q.z0).toBeGreaterThanOrEqual(o.y - 1e-9);
+        expect(q.z1).toBeLessThanOrEqual(o.y + o.h + 1e-9);
+        expect(q.y0).toBeGreaterThanOrEqual(0);
+        expect(q.y1).toBeLessThanOrEqual(o.hauteur);
+        expect(q.teinte).toBeGreaterThanOrEqual(0.7);
+        expect(q.teinte).toBeLessThanOrEqual(1.04);
+      }
+      expect(Math.max(...b.map((q) => q.y1))).toBe(o.hauteur);
+      const corps = b.filter((_, i) => i % 2 === 0);
+      // quinconce : les joints de deux rangées voisines ne tombent pas au même endroit
+      const rangees = [...new Set(corps.map((q) => q.z0))].sort((p, q) => p - q);
+      expect(rangees.length).toBeGreaterThanOrEqual(3);
+      const joints = (z) => corps.filter((q) => q.z0 === z).map((q) => q.x1).filter((x) => x < o.x + o.w - 1).sort((p, q) => p - q);
+      expect(joints(rangees[0])).not.toEqual(joints(rangees[1]));
+      for (let i = 1; i < corps.length; i += 1) if (corps[i].z0 === corps[i - 1].z0) expect(corps[i].teinte).not.toBe(corps[i - 1].teinte);
+    }
+    expect(sacsBoxes(null)).toEqual([]);
+    expect(sacsBoxes({ x: 0, y: 0, w: 0, h: 5 })).toEqual([]);
   });
 });

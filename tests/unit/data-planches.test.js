@@ -115,7 +115,8 @@ describe('lot 3a : textures.json et windows.json', () => {
     // Lot 3e (mise à jour) : « garde-corps » (barrière de l'étage, demandée par le propriétaire) s'ajoute aux textures ; les autres sont intactes.
     // Lot 3g (avant : égalité stricte des entrées) : les entrées gagnent seulement une clé « fine » (réglages fins, ignorés avec ?detail=0) ; le reste est intact.
     const plain = (t) => Object.fromEntries(Object.entries(t).filter(([k]) => k !== 'fine'));
-    expect(texturesJson.textures.filter((t) => !['planche', 'garde-corps'].includes(t.id)).map(plain)).toEqual(before.textures.filter((t) => t.id !== 'planche'));
+    // Lot 9a-I : « toile-jute » (sacs de sable solides, demandée par le propriétaire) s'ajoute aussi.
+    expect(texturesJson.textures.filter((t) => !['planche', 'garde-corps', 'toile-jute'].includes(t.id)).map(plain)).toEqual(before.textures.filter((t) => t.id !== 'planche'));
     expect(texturesJson.budget).toEqual(before.budget);
   });
 
