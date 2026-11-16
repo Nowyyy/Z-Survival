@@ -4,7 +4,7 @@ Joué par le propriétaire sur `/dev/jeu.html` (téléphone) après la fusion du
 | Retour | Réponse |
 |---|---|
 | « Textures de bois à droite de mon perso » (salle contre le mur nord) | Ce sont les **sacs de sable** `sacs-1` et `sacs-2` (décor léger du lot 3g, texture d'atlas « bois », non solides). **Décision du propriétaire : toile de jute et hitbox** (commit « Lot 9a-I — Sacs de sable en jute, solides ») : voir plus bas. |
-| Médailles affichées deux fois (sous la vague et sous les Zollars) | « +N » de fin de manche près des Zollars (`#hud-gain-bleu`, `jeu.html`) **retiré** ; seul reste le bloc sous la vague (`#hud-bleu-manche`). |
+| Médailles affichées deux fois (sous la vague et sous les Zollars) | « +N » de fin de manche près des Zollars (`#hud-gain-bleu`, `jeu.html`) **retiré** ; seul reste le bloc sous la vague (`#hud-bleu-manche`, `#hud-medailles-manche` depuis le lot 9b). |
 | Indicateur de la première partie du jour sur l'écran de fin | Ligne **« Bonus du jour obtenu : +100 »** (gemme, bleu) dans la place libre sous les diamants, seulement quand la partie l'a obtenu (`#end-jour`, `js/game/ui.js`, `game.end.jour`). |
 | Texte de l'Infini | « Termine le monde 1 pour débloquer » (impératif, comme les autres cartes ; le message du propriétaire disait « terminé »). |
 | « Quitter » : les médailles et diamants de la partie doivent être perdus | **Règle changée** : médailles et diamants d'une partie écrits seulement à la **mort** ou à la **fin du monde** ; « Quitter », « Recommencer » et la page fermée en cours de partie les perdent (avec les Zollars). Confirmation : « Les médailles, les diamants et les Zollars gagnés pendant cette partie seront perdus. » Détail : `economie.md` § 0, `sauvegarde-v2.md` § 13. |

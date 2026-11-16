@@ -235,6 +235,7 @@
     "tests/unit/hygiene.test.js",
     "tests/unit/interface-integree-retours.test.js",
     "tests/unit/interface-integree.test.js",
+    "tests/unit/noms-monnaies-9b.test.js",
     "tests/unit/package.test.js",
     "tests/unit/persos-donnees.test.js",
     "tests/unit/persos-integres.test.js",
