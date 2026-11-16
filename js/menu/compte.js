@@ -46,8 +46,8 @@ function icone(d, classe) {
 const CHEVRON = 'M15 6l-6 6 6 6';
 const STAT_TEXTES = {
   meilleureManche: 'game.menu.profil.stat.meilleureManche', tues: 'game.menu.profil.stat.tues', partiesHistoire: 'game.menu.profil.stat.partiesHistoire',
-  partiesInfini: 'game.menu.profil.stat.partiesInfini', temps: 'game.menu.profil.stat.temps', argent: 'game.menu.profil.stat.argent',
-  medailles: 'game.menu.profil.stat.medailles', // lot 8k
+  partiesInfini: 'game.menu.profil.stat.partiesInfini', temps: 'game.menu.profil.stat.temps', medailles: 'game.menu.profil.stat.medailles',
+  diamants: 'game.menu.profil.stat.diamants', // lot 8k
 };
 const CRAYON = 'M4 20h4L20 8l-4-4L4 16z';
 
@@ -309,8 +309,8 @@ export async function ecransCompte({ t, bandeau, root, rootDialogue, monde, pose
     partiesHistoire: t('game.menu.profil.stat.partiesHistoire.detail'),
     partiesInfini: t('game.menu.profil.stat.partiesInfini.detail'),
     temps: t('game.menu.profil.stat.temps.detail'),
-    argent: t('game.menu.profil.stat.argent.detail'),
     medailles: t('game.menu.profil.stat.medailles.detail'),
+    diamants: t('game.menu.profil.stat.diamants.detail'),
   };
   const poserStats = () => {
     const lu = lire();
@@ -323,7 +323,7 @@ export async function ecransCompte({ t, bandeau, root, rootDialogue, monde, pose
         valeur.textContent = '—';
         valeur.append(Object.assign(el('span', ['sr-only']), { textContent: ` (${t('game.menu.profil.stat.absente')})` }));
       } else if (s.id === 'meilleureManche') valeur.textContent = s.max ? `${s.valeur} / ${s.max}` : String(s.valeur);
-      else if (s.id === 'argent' || s.id === 'medailles') valeur.textContent = formatMoney(s.valeur);
+      else if (s.id === 'medailles' || s.id === 'diamants') valeur.textContent = formatMoney(s.valeur);
       else if (s.id === 'temps') valeur.textContent = fmt(t('game.menu.profil.stat.temps.valeur'), tempsJeu(s.valeur));
       else valeur.textContent = String(s.valeur);
       const detail = el('span', ['e10-stat-detail']);

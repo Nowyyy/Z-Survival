@@ -10,7 +10,7 @@ import { lireCatalogue } from '../../js/core/equipement.js';
 import { chronologie, lireOuvertures, rareteEffets } from '../../js/core/ouverture.js';
 import { CLE_V2, poserProgression } from './helpers.js';
 
-// Lot 8h : progression v2 de démonstration (100 000 bleus ; tests/e2e/helpers.js), ?store=local ; prix prélevés, une écriture par achat.
+// Lot 8h : progression v2 de démonstration (100 000 médailles et diamants ; tests/e2e/helpers.js), ?store=local ; prix prélevés, une écriture par achat.
 test.beforeEach(async ({ page }) => {
   await poserProgression(page);
 });
@@ -22,7 +22,7 @@ const BUDGET = { appels: 150, triangles: 60_000 };
 const lire = (f) => JSON.parse(readFileSync(f, 'utf8'));
 const { cat } = lireCatalogue({ raretes: lire('data/menu/raretes.json'), objets: lire('data/menu/objets.json'), personnages: lire('data/menu/personnages.json'), inventaire: lire('data/menu/inventaire-depart.json') });
 const { caisses } = lireCaisses(lire('data/menu/caisses.json'), cat);
-// Lot 8k : une caisse par rubrique (equipement, personnages, cosmetiques) payée en médailles, tirée avec la pitié de sa rubrique ; les anciens noms
+// Lot 8k : une caisse par rubrique (equipement, personnages, cosmetiques) payée en diamants (lot 9a), tirée avec la pitié de sa rubrique ; les anciens noms
 // de caisses du test désignent celle de leur rubrique ; résultats attendus = tirerPitie depuis les compteurs donnés (0 : progression de démonstration).
 const { regles: PITIE } = lirePitie(lire('data/menu/caisses.json'), cat);
 const ZERO = Object.freeze({ e: 0, l: 0 });
@@ -187,9 +187,9 @@ test.describe('ouverture ×1 (E3-2)', () => {
     expect(lib).toEqual({ geometries: 0, textures: 0, contextePerdu: true });
     expect(await contextesVivants(page)).toBe(0);
     expect(await page.locator('canvas').count()).toBe(0);
-    // L'objet est dans l'inventaire ; lot 8h : prix prélevé dans la même écriture que l'objet ; lot 8k : 100 médailles (avant : 1 500 bleus).
+    // L'objet est dans l'inventaire ; lot 8h : prix prélevé dans la même écriture que l'objet ; lot 8k : 100 diamants (lot 9a ; avant : 1 500).
     expect((await etatBoutique(page)).dernier.objets).toEqual([attendu]);
-    await expect(page.locator('#menu-medailles-texte')).toHaveText(`99${NNBSP}900`);
+    await expect(page.locator('#menu-diamants-texte')).toHaveText(`99${NNBSP}900`);
     await expect(page.locator('#menu-solde-texte')).toHaveText(`100${NNBSP}000`);
     expect(await page.evaluate(() => window.__ecritures)).toEqual([CLE_V2]);
     expect([o.problemes, o.externes]).toEqual([[], []]);

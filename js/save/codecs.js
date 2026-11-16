@@ -1,7 +1,8 @@
 // Lot 8h : formats des dépôts de sauvegarde. Le même dépôt (local, mémoire, lecture seule) sert la sauvegarde v1 (zs.save.v1, différences d'argent,
 // js/core/save.js : V0.7 et avant, gardée pour ses tests et le code ZS1) et la progression v2 (zs.save.v2, opérations, js/core/progression.js : V0.8).
 // Un format = { key, maxBytes, empty(), tidy(save) → { save, warnings }, parse(json) → { ok, save, warnings, extra?, error? }, clean(save), commit(save, delta, now, extra) →
-// { next (objet écrit), save (nettoyée), refused }, replace(save, now, rev) → objet écrit, sum(delta, extras, merge) → delta }.
+// { next (objet écrit), save (nettoyée), refused }, replace(save, now, rev) → objet écrit, relire(objet écrit) → sauvegarde nettoyée (lot 9b : v2, champs
+// stockés → noms du code), sum(delta, extras, merge) → delta }.
 import { commitDelta, defaultSave, migrate, sanitize } from '../core/save.js';
 import * as v2 from '../core/progression.js';
 
@@ -19,6 +20,7 @@ export function codecV1(params) {
       return { next, save: next, refused: [] };
     },
     replace: (save, now, rev) => ({ ...commitDelta(sanitize(save, params).save, {}, now, params), rev }),
+    relire: (next) => sanitize(next, params).save,
     sum: (delta, extras, merge) => merge.sumDeltas([delta, ...extras]),
   };
 }
@@ -43,6 +45,7 @@ export function codecV2(params) {
       if (Number.isInteger(now) && now >= 0) s.savedAt = now;
       return v2.serialiser(s);
     },
+    relire: (next) => v2.depuisStockage(next, params).save,
     sum: (delta, extras) => v2.enchainer(delta, extras),
   };
 }

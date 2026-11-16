@@ -31,9 +31,9 @@ const git = (args) => {
 const code = (f) => readFileSync(f, 'utf8').split('\n').filter((l) => !l.trim().startsWith('//')).join('\n').replace(/\s\/\/.*$/gm, '');
 
 describe('data/game/economy.json', () => {
-  it('est marqué provisoire et complet (onze clés de réglage ; lot 8k : et huit des médailles)', () => {
+  it('est marqué provisoire et complet (onze clés de réglage ; lot 8k : et huit des diamants)', () => {
     expect(typeof economy._provisoire).toBe('string');
-    expect(Object.keys(economy).filter((k) => !k.startsWith('_')).sort()).toEqual(['gainThrottleMs', 'gainWindowMs', 'killGrowthCap', 'killWaveGrowth', 'maxBleu', 'maxMedailles', 'maxMoney', 'medailleJour', 'medailleMonde', 'medaillePalier', 'medaillePalierPas', 'medaillePorte', 'medailleZombies', 'medailleZombiesPas', 'reinforcedBonusMul', 'repairMoney', 'waveBonusBase', 'waveBonusPerWave', 'worldBonus']);
+    expect(Object.keys(economy).filter((k) => !k.startsWith('_')).sort()).toEqual(['diamantJour', 'diamantMonde', 'diamantPalier', 'diamantPalierPas', 'diamantPorte', 'diamantZombies', 'diamantZombiesPas', 'gainThrottleMs', 'gainWindowMs', 'killGrowthCap', 'killWaveGrowth', 'maxDiamants', 'maxMedailles', 'maxMoney', 'reinforcedBonusMul', 'repairMoney', 'waveBonusBase', 'waveBonusPerWave', 'worldBonus']);
   });
 
   it('a les valeurs du lot', () => {
@@ -131,9 +131,9 @@ describe('textes', () => {
   });
 
   it('les lignes de la pause et de l\'état de la sauvegarde sont écrites en toutes lettres', () => {
-    expect(fr['game.pause.balance']).toBe('{n}'); // retour du propriétaire après le lot 8j : la pause montre le solde bleu, gemme puis montant (lot 8h : « Monnaie jaune : {n} »)
-    expect(fr['game.pause.balance.label']).toBe('Médailles :'); // dit aux lecteurs d'écran seulement ; lot 9a : le champ « bleu » s'appelle « médailles » (lot 8k : « diamants »)
-    expect(fr['game.pause.medailles.label']).toBe('Diamants :'); // lot 9a : le champ « medailles » s'appelle « diamants »
+    expect(fr['game.pause.balance']).toBe('{n}'); // retour du propriétaire après le lot 8j : la pause montre le solde des médailles, icône puis montant (lot 8h : « Monnaie jaune : {n} »)
+    expect(fr['game.pause.balance.label']).toBe('Médailles :'); // dit aux lecteurs d'écran seulement ; lot 9a : « médailles » (lot 8k : « diamants »)
+    expect(fr['game.pause.diamants.label']).toBe('Diamants :'); // lot 9a : diamants
     expect(fr['game.save.status.saved']).toBe('Sauvegarde : enregistrée');
     expect(fr['game.save.status.pending']).toBe('Sauvegarde : en attente');
     expect(fr['game.save.status.failed']).toBe('Sauvegarde : échec, nouvelle tentative');
@@ -145,15 +145,15 @@ describe('textes', () => {
   it('les lignes de l\'écran de fin contiennent leurs paramètres', () => {
     expect(fr['game.end.earned']).toContain('{n}');
     expect(fr['game.end.balance']).toContain('{n}');
-    expect(fr['game.end.bleu']).toContain('{n}'); // lot 8h
+    expect(fr['game.end.medailles']).toContain('{n}'); // lot 8h
     expect(fr['game.end.bestInfini']).toContain('{n}');
     expect(fr['game.end.best']).toContain('{n}');
     expect(fr['game.end.worldBonus']).toContain('{n}');
     expect(fr['game.hud.moneyLabel']).toContain('{n}');
     expect(fr['game.live.waveBonus']).toContain('{bonus}');
     expect(fr['game.end.record']).toBe('Record'); // retour du propriétaire après le lot 8k : sur la ligne de la vague atteinte (avant : « Nouveau record »)
-    expect(fr['game.end.medailles']).toContain('{n}');
-    expect(fr['game.end.medailles.solde']).toContain('{n}');
+    expect(fr['game.end.diamants']).toContain('{n}');
+    expect(fr['game.end.diamants.solde']).toContain('{n}');
   });
 
   it('aucune clé « save.page.* » en dehors de « game.* » (le jeu est en français seul)', () => {

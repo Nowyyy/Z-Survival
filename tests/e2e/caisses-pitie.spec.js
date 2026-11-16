@@ -3,11 +3,11 @@ import AxeBuilder from '@axe-core/playwright';
 import { readFileSync } from 'node:fs';
 import { lireCaisses, lireCosmetiques, lirePitie, tirerPitie } from '../../js/core/caisses.js';
 import { lireCatalogue } from '../../js/core/equipement.js';
-import { CLE_V2, poserProgression, progressionDemo } from './helpers.js';
+import { CLE_V2, nomsDuCode, poserProgression, progressionDemo } from './helpers.js';
 
-// Lot 8k (Docs/ref/economie.md) : une caisse par rubrique (Équipement, Personnages, Cosmétiques), 100 médailles (×10 : 1 000), pitié par rubrique
+// Lot 8k (Docs/ref/economie.md) : une caisse par rubrique (Équipement, Personnages, Cosmétiques), 100 diamants (lot 9a ; ×10 : 1 000), pitié par rubrique
 // affichée dans « Voir les chances » et gardée dans zs.save.v2 ; garantie déclenchée (compteurs préparés dans la progression) ; ouvertures 3D de
-// chaque rubrique ; « Il manque N médailles ». Graines des achats fixées en remplaçant crypto.getRandomValues ; résultats attendus = tirerPitie.
+// chaque rubrique ; « Il manque N diamants ». Graines des achats fixées en remplaçant crypto.getRandomValues ; résultats attendus = tirerPitie.
 const lire = (f) => JSON.parse(readFileSync(f, 'utf8'));
 const { cat } = lireCatalogue({ raretes: lire('data/menu/raretes.json'), objets: lire('data/menu/objets.json'), personnages: lire('data/menu/personnages.json') });
 cat.cosmetiques = lireCosmetiques(lire('data/menu/cosmetiques.json'), cat.raretes);
@@ -16,7 +16,7 @@ const { regles } = lirePitie(lire('data/menu/caisses.json'), cat);
 const caisse = (id) => caisses.find((c) => c.id === id);
 const REF = { width: 932, height: 430 };
 const NNBSP = String.fromCharCode(0x202f);
-const stocke = (page) => page.evaluate((k) => JSON.parse(localStorage.getItem(k)), CLE_V2);
+const stocke = async (page) => nomsDuCode(await page.evaluate((k) => JSON.parse(localStorage.getItem(k)), CLE_V2)); // lot 9b : noms du code
 const etatBoutique = (page) => page.evaluate(() => window.__zsMenu.etat().menu.boutique);
 
 async function graines(page, liste) {
@@ -57,10 +57,10 @@ async function compteurs(page, id) {
 }
 
 test.describe('caisses uniques et pitié (lot 8k)', () => {
-  test('×1 puis ×10 (équipement) : 100 puis 1 000 médailles prélevés avec les objets et les compteurs (une écriture par achat) ; « Voir les chances » suit les compteurs, gardés après rechargement ; bleue intacte ; aucune requête externe', async ({ page, baseURL }) => {
+  test('×1 puis ×10 (équipement) : 100 puis 1 000 diamants prélevés avec les objets et les compteurs (une écriture par achat) ; « Voir les chances » suit les compteurs, gardés après rechargement ; médailles intactes ; aucune requête externe', async ({ page, baseURL }) => {
     test.setTimeout(120_000);
     const ext = externes(page, baseURL);
-    await poserProgression(page, progressionDemo({ medailles: 1500 }));
+    await poserProgression(page, progressionDemo({ diamants: 1500 }));
     await graines(page, [11, 12]);
     await ouvrirBoutique(page);
     const c = caisse('equipement');
@@ -78,8 +78,8 @@ test.describe('caisses uniques et pitié (lot 8k)', () => {
     expect(b.dernier.compteurs).toEqual({ r: 'equipement', de: un.compteurs, a: dix.compteurs });
     await page.locator('#menu-resultat-continuer').click();
     const s = await stocke(page);
-    expect([s.medailles, s.bleu, s.pitie.equipement, s.pitie.personnage]).toEqual([{ gagne: 1500, depense: 1100, jour: 0 }, { gagne: 100_000, depense: 0 }, dix.compteurs, { e: 0, l: 0 }]);
-    await expect(page.locator('#menu-medailles-texte')).toHaveText('400');
+    expect([s.diamants, s.medailles, s.pitie.equipement, s.pitie.personnage]).toEqual([{ gagne: 1500, depense: 1100, jour: 0 }, { gagne: 100_000, depense: 0 }, dix.compteurs, { e: 0, l: 0 }]);
+    await expect(page.locator('#menu-diamants-texte')).toHaveText('400');
     const attendu = [`Légendaire garanti dans ${70 - dix.compteurs.l} tirages au plus`];
     expect(await compteurs(page, 'equipement')).toEqual(attendu);
     expect(await compteurs(page, 'personnages')).toEqual(['Légendaire garanti dans 70 tirages au plus']); // compteur propre à chaque rubrique
@@ -94,7 +94,7 @@ test.describe('caisses uniques et pitié (lot 8k)', () => {
 
   test('aperçu à droite de chaque caisse (retour du propriétaire) : pitié de la rubrique (compteurs, barres, chance du prochain tirage) et légendaires possibles ; mis à jour après un achat ; à côté de la caisse, sans chevauchement ; axe', async ({ page }) => {
     test.setTimeout(120_000);
-    await poserProgression(page, progressionDemo({ medailles: 500, extra: { pitie: { equipement: { e: 7, l: 52 }, personnage: { e: 0, l: 0 }, cosmetique: { e: 0, l: 0 } } } }));
+    await poserProgression(page, progressionDemo({ diamants: 500, extra: { pitie: { equipement: { e: 7, l: 52 }, personnage: { e: 0, l: 0 }, cosmetique: { e: 0, l: 0 } } } }));
     await graines(page, [31]);
     await ouvrirBoutique(page);
     const ap = page.locator('#menu-caisse-equipement-apercu');
@@ -137,7 +137,7 @@ test.describe('caisses uniques et pitié (lot 8k)', () => {
 
   test('garantie déclenchée : compteurs préparés (9 sans épique, 69 sans légendaire) → légendaire au premier tirage ; (9, 0) → épique ou mieux ; compteurs remis à 0', async ({ page }) => {
     test.setTimeout(120_000);
-    await poserProgression(page, progressionDemo({ medailles: 500, extra: { pitie: { equipement: { e: 9, l: 69 }, personnage: { e: 9, l: 3 }, cosmetique: { e: 2, l: 2 } } } }));
+    await poserProgression(page, progressionDemo({ diamants: 500, extra: { pitie: { equipement: { e: 9, l: 69 }, personnage: { e: 9, l: 3 }, cosmetique: { e: 2, l: 2 } } } }));
     await graines(page, [1, 2]);
     await ouvrirBoutique(page);
     expect(await compteurs(page, 'equipement')).toEqual(['Légendaire garanti au prochain tirage']);
@@ -153,13 +153,12 @@ test.describe('caisses uniques et pitié (lot 8k)', () => {
     expect(perso).toEqual(tirerPitie(caisse('personnages'), cat, regles, { e: 9, l: 3 }, 2, 1).objets[0]);
     await page.locator('#menu-resultat-continuer').click();
     const s = await stocke(page);
-    expect([s.pitie.equipement, s.pitie.personnage.e, s.medailles.depense]).toEqual([{ e: 0, l: 0 }, 0, 200]);
+    expect([s.pitie.equipement, s.pitie.personnage.e, s.diamants.depense]).toEqual([{ e: 0, l: 0 }, 0, 200]);
   });
 
-  // Lot 9a : titre gardé (motif du palier et mesures de durée) ; « médailles » y désigne la monnaie des caisses, appelée « diamants » depuis ce lot.
-  test('« Il manque N médailles » grisé, raison lue ; rien prélevé ni écrit ; prix en médailles, nom accessible inchangé ; axe ; 44 px', async ({ page }) => {
+  test('« Il manque N diamants » grisé, raison lue ; rien prélevé ni écrit ; prix en diamants, nom accessible inchangé ; axe ; 44 px', async ({ page }) => {
     test.setTimeout(120_000);
-    await poserProgression(page, progressionDemo({ medailles: 40 }));
+    await poserProgression(page, progressionDemo({ diamants: 40 }));
     await page.addInitScript(() => {
       window.__ecritures = [];
       const set = Storage.prototype.setItem;
@@ -170,10 +169,10 @@ test.describe('caisses uniques et pitié (lot 8k)', () => {
       const un = page.locator(`#menu-caisse-${c.id}-un`);
       await un.scrollIntoViewIfNeeded();
       await expect(un).toHaveAttribute('aria-disabled', 'true');
-      await expect(un.locator('.e3-ouvrir-prix')).toHaveText('Il manque 60 diamants'); // lot 9a : les caisses se paient en diamants (champ « medailles »)
+      await expect(un.locator('.e3-ouvrir-prix')).toHaveText('Il manque 60 diamants'); // lot 9a : les caisses se paient en diamants
       await expect(page.locator(`#menu-caisse-${c.id}-dix .e3-ouvrir-prix`)).toHaveText(`Il manque 960 diamants`);
       await expect(page.locator(`#menu-caisse-${c.id}-raison`)).toHaveText(`Diamants insuffisants : prix 100 / 1${NNBSP}000, solde 40.`);
-      await expect(un.locator('svg.e3-ouvrir-gemme')).toHaveCount(1); // lot 9a : gemme (avant : médaille, .e3-ouvrir-medaille)
+      await expect(un.locator('svg.e3-ouvrir-gemme')).toHaveCount(1); // lot 9a : gemme (avant : médaille)
       await un.dispatchEvent('click'); // bouton grisé (aria-disabled) : le toucher ne fait rien
       for (const s of [`#menu-caisse-${c.id}-un`, `#menu-caisse-${c.id}-dix`, `#menu-caisse-${c.id}-chances`]) {
         const r = await page.locator(s).boundingBox();
@@ -182,7 +181,7 @@ test.describe('caisses uniques et pitié (lot 8k)', () => {
     }
     await expect(page.locator('#menu-ecran-resultat')).toHaveCount(0);
     expect(await page.evaluate(() => window.__ecritures.filter((k) => k === 'zs.save.v2'))).toEqual([]);
-    expect((await stocke(page)).medailles).toEqual({ gagne: 40, depense: 0, jour: 0 });
+    expect((await stocke(page)).diamants).toEqual({ gagne: 40, depense: 0, jour: 0 });
     expect((await new AxeBuilder({ page }).include('#menu-ecran-boutique').analyze()).violations.map((v) => v.id)).toEqual([]);
     await page.locator('#menu-caisse-equipement-chances').click();
     await expect(page.locator('.e3-chances-compteur')).toHaveCount(1);
@@ -192,7 +191,7 @@ test.describe('caisses uniques et pitié (lot 8k)', () => {
 
   test('ouverture 3D de chaque rubrique (dessins militaire, vétérans, tenues) : la scène part, la carte = tirage, « Passer » ; tout libéré', async ({ page }) => {
     test.setTimeout(180_000);
-    await poserProgression(page, progressionDemo({ medailles: 1000 }));
+    await poserProgression(page, progressionDemo({ diamants: 1000 }));
     await graines(page, [21, 22, 23]);
     await ouvrirBoutique(page, { ouverture: 'pas' });
     expect(caisses.map((c) => c.modele)).toEqual(['militaire', 'veterans', 'tenues']);
@@ -213,6 +212,6 @@ test.describe('caisses uniques et pitié (lot 8k)', () => {
       await expect(page.locator('#menu-ecran-ouverture')).toHaveCount(0);
       expect(await page.locator('canvas').count()).toBe(0);
     }
-    expect((await stocke(page)).medailles.depense).toBe(300);
+    expect((await stocke(page)).diamants.depense).toBe(300);
   });
 });

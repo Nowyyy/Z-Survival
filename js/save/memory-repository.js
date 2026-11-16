@@ -21,7 +21,7 @@ export function createMemoryRepository(initial, params, codec = codecV1(params))
       return { ok: true, applied: true, save: copy(current), ...(codec.version === 2 ? { refused: c.refused } : {}) };
     }, () => failure('error')),
     replace: (save, now) => safely(() => {
-      current = codec.clean(codec.replace(save, now, Math.min(Number.MAX_SAFE_INTEGER, current.rev + 1)));
+      current = codec.relire(codec.replace(save, now, Math.min(Number.MAX_SAFE_INTEGER, current.rev + 1)));
       status = 'ok';
       return { ok: true, applied: true, save: copy(current) };
     }, () => failure('error')),

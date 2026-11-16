@@ -1,7 +1,7 @@
 // Lot 8b : onglets Jouer (scène animée, record, portes, panneaux, monde suivant) et Infini (cartes, classement d'exemple, mode infini réel) du
 // menu principal (Docs/ref/menu-principal.md). ?test=1&menu=1 ; 932 × 430 (référence), 667 × 375, 1440 × 900 ; projets bureau et mobile (paysage).
 import { test, expect } from '@playwright/test';
-import { poserProgression, progressionDemo } from './helpers.js';
+import { nomsDuCode, poserProgression, progressionDemo } from './helpers.js';
 import AxeBuilder from '@axe-core/playwright';
 
 const REF = { width: 932, height: 430 };
@@ -503,7 +503,7 @@ test.describe('onglet Infini (E8-4) et mode infini', () => {
     await page.evaluate(() => { localStorage.clear(); sessionStorage.clear(); });
   });
 
-  test('?store=local : visite du menu sans écriture ; en mode infini (lot 8h), la bleue des manches est écrite, la jaune jamais, le record de l\'infini est séparé de celui de l\'histoire', async ({ page }) => {
+  test('?store=local : visite du menu sans écriture ; en mode infini (lot 8h), les médailles des manches sont écrites, la jaune jamais, le record de l\'infini est séparé de celui de l\'histoire', async ({ page }) => {
     test.setTimeout(150_000);
     await poserRecord(page, 12, ['batiment']); // lot 9a : monde 1 terminé (Infini jouable)
     await page.addInitScript(() => {
@@ -527,14 +527,15 @@ test.describe('onglet Infini (E8-4) et mode infini', () => {
       zs.startWave(15);
       for (let i = 0; i < 400 && zs.getState().waves.phase === 'attente'; i += 1) zs.step(0.05); // la manche 15 démarre vraiment (partie infini comptée)
       for (let i = 0; i < 400 && zs.getState().waves.wave < 16; i += 1) { zs.skipWave(); zs.step(0.05); }
-      zs.setChutes(0); // retour du propriétaire après le lot 9a : la bleue est écrite à la fin de la partie (mort)
+      zs.setChutes(0); // retour du propriétaire après le lot 9a : les médailles sont écrites à la fin de la partie (mort)
       zs.downPlayer();
       zs.step(0.3);
       zs.flushSave();
       return { s: JSON.parse(localStorage.getItem(k)), vague: zs.getState().waves.wave };
     }, KEY);
+    apres.s = nomsDuCode(apres.s); // lot 9b : noms du code
     expect(apres.vague).toBe(16);
-    expect(apres.s.bleu.gagne).toBe(30); // bonus bleu de la manche 15, renforcée : 20 × 1,5 (lot 8k : gain fixe ; avant : (10 + 2 × 15) × 1,5 = 60) ; la jaune (77) n'est jamais écrite
+    expect(apres.s.medailles.gagne).toBe(30); // médailles de la manche 15, renforcée : 20 × 1,5 (lot 8k : gain fixe ; avant : (10 + 2 × 15) × 1,5 = 60) ; la jaune (77) n'est jamais écrite
     expect(apres.s.records).toEqual({ histoire: { batiment: 12 }, infini: { batiment: 15 } }); // record de l'infini de la carte jouée (le monde 2 n'est pas jouable : le bâtiment) = dernière manche démarrée ; celui de l'histoire reste
     expect(apres.s.profil.partiesInfini).toBe(1);
     expect(apres.s.rev).toBeGreaterThan(1); // écrit dans zs.save.v2 (révision suivante)

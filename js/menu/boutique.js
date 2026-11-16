@@ -8,9 +8,9 @@
 // afficherOuverture(resultat) → écran de résultat (E3-4, E3-5 : js/menu/resultat.js). Le prix est affiché, jamais prélevé ; rien n'est écrit.
 // Lot 8f : afficherOuverture passe d'abord par l'ouverture animée en 3D (js/menu/ouverture/ouverture.js, chargée au premier achat d'une caisse,
 // préchargée au toucher de « Ouvrir »), sauf offre du jour, mouvement réduit, WebGL indisponible ou ?ouverture=0 en test : résultat direct.
-// Lot 8k (Docs/ref/economie.md) : une caisse par rubrique, payée en MÉDAILLES (« Il manque N médailles » grisé), tirée avec la pitié de sa rubrique :
-// compteurs relus juste avant le tirage, prix, contenu et compteurs écrits ensemble (refusé si un autre onglet a ouvert une caisse entre-temps) ;
-// offres du jour en monnaie bleue (inchangées).
+// Lot 8k (Docs/ref/economie.md) : une caisse par rubrique, payée en DIAMANTS (lot 9a ; « Il manque N diamants » grisé), tirée avec la pitié de sa
+// rubrique : compteurs relus juste avant le tirage, prix, contenu et compteurs écrits ensemble (refusé si un autre onglet a ouvert une caisse
+// entre-temps) ; offres du jour en médailles.
 import { creerRoue } from './roue.js';
 import { preparer as preparerSons, son } from './sons/sons.js';
 import { formatMoney } from '../core/economy.js';
@@ -20,7 +20,7 @@ import { fmt } from '../game/texts.js';
 import { el } from './menu.js';
 import { chargerEquipement } from './equipement-etat.js';
 import { buste, icone24 } from './personnage.js';
-import { iconeGemme } from '../game/bleu-manche.js';
+import { iconeGemme } from '../game/gains-manche.js';
 import { acces } from '../core/graphics.js';
 import { pageCanal, pageSearch } from '../game/graphics-boot.js';
 
@@ -157,7 +157,7 @@ export async function ecranBoutique({ t, bandeau, root, rootDialogue, surVue = (
   const { regles: pitie } = lirePitie(donnees, cat); // lot 8k
   const nomRarete = (rid) => cat.raretes.find((r) => r.id === rid)?.nom ?? '';
   const jetonRarete = (rid) => cat.raretes.find((r) => r.id === rid)?.jeton;
-  // Lot 8h : tenues obtenues et offres achetées lues dans la progression v2 (equipement-etat.js) ; prix prélevés en monnaie bleue.
+  // Lot 8h : tenues obtenues et offres achetées lues dans la progression v2 (equipement-etat.js) ; prix prélevés en médailles.
   const collection = () => eq.collection();
 
   const section = el('section', ['e8-ecran', 'e3', 'e3-boutique'], { id: 'menu-ecran-boutique', 'aria-labelledby': 'menu-titre-boutique', 'data-block': 'E3-1', 'data-anim': 'off' });
@@ -195,7 +195,7 @@ export async function ecranBoutique({ t, bandeau, root, rootDialogue, surVue = (
   let offres = [];
   const achetees = new Set();
   const boutonsOffres = [];
-  // Lot 8h : « Achetée » (gardée pour la journée dans la progression), « Il manque N » grisé si le solde bleu ne suffit pas, sinon le prix.
+  // Lot 8h : « Achetée » (gardée pour la journée dans la progression), « Il manque N » grisé si le solde des médailles ne suffit pas, sinon le prix.
   function majOffres() {
     achetees.clear();
     for (const cle of eq.achetees(jour)) achetees.add(cle);
@@ -313,8 +313,8 @@ export async function ecranBoutique({ t, bandeau, root, rootDialogue, surVue = (
       sep.textContent = t('game.menu.boutique.prix.sep');
       const p = el('span', ['e3-ouvrir-prix']);
       p.textContent = prix;
-      // Lot 8k : prix dans la monnaie des caisses (champ « medailles » ; lot 9a : appelée « diamants », gemme décorative avant le montant ; avant :
-      // médaille ; le nom accessible dit la monnaie par la description de la carte).
+      // Lot 8k : prix dans la monnaie des caisses (lot 9a : diamants, gemme décorative avant le montant ; le nom accessible dit la monnaie par la
+      // description de la carte).
       const ligne = el('span', ['e3-ouvrir-ligne']);
       ligne.append(iconeGemme('e3-ouvrir-gemme'), p);
       n.append(action, sep, ligne);
@@ -426,26 +426,26 @@ export async function ecranBoutique({ t, bandeau, root, rootDialogue, surVue = (
     noteTenues.textContent = fmt(t('game.menu.boutique.tenues.note'), { n: Object.keys(collection()).length, total: cat.cosmetiques.length });
   };
   rendreNoteTenues();
-  // Lot 8h : prix des caisses selon le solde : « Il manque N » grisé (raison lue) quand il ne suffit pas ; lot 8k : en médailles.
+  // Lot 8h : prix des caisses selon le solde : « Il manque N » grisé (raison lue) quand il ne suffit pas ; lot 8k : en diamants (lot 9a).
   function majPrix() {
-    const s = eq.medailles();
+    const s = eq.diamants();
     for (const { un, dix, raison, caisse: c } of boutons.values()) {
       let manqueUn = 0;
       for (const [b, q] of [[un, 1], [dix, TIRAGES_X10]]) {
         const prix = prixAchat(c, q);
         const manque = Math.max(0, prix - s);
         if (q === 1) manqueUn = manque;
-        b.querySelector('.e3-ouvrir-prix').textContent = manque > 0 ? fmt(t('game.menu.prix.manqueMedailles'), { n: formatMoney(manque) }) : formatMoney(prix);
+        b.querySelector('.e3-ouvrir-prix').textContent = manque > 0 ? fmt(t('game.menu.prix.manqueDiamants'), { n: formatMoney(manque) }) : formatMoney(prix);
         b.setAttribute('aria-disabled', String(manque > 0));
       }
-      raison.textContent = Math.max(manqueUn, prixAchat(c, TIRAGES_X10) - s) > 0 ? fmt(t('game.menu.prix.raisonMedailles'), { prix: `${formatMoney(prixAchat(c, 1))} / ${formatMoney(prixAchat(c, TIRAGES_X10))}`, solde: formatMoney(s) }) : '';
+      raison.textContent = Math.max(manqueUn, prixAchat(c, TIRAGES_X10) - s) > 0 ? fmt(t('game.menu.prix.raisonDiamants'), { prix: `${formatMoney(prixAchat(c, 1))} / ${formatMoney(prixAchat(c, TIRAGES_X10))}`, solde: formatMoney(s) }) : '';
     }
   }
   majPrix();
   // Annonce d'un achat refusé (solde, inventaire plein) ou annulé après coup (un autre onglet a dépensé la monnaie).
   const annonceAchat = el('p', ['sr-only'], { id: 'menu-boutique-annonce', role: 'status', 'aria-live': 'polite' });
   const refus = (raison) => {
-    const cles = { solde: 'game.menu.achat.refus.solde', medailles: 'game.menu.achat.refus.medailles', pitie: 'game.menu.achat.refus.pitie' };
+    const cles = { solde: 'game.menu.achat.refus.solde', diamants: 'game.menu.achat.refus.diamants', pitie: 'game.menu.achat.refus.pitie' };
     annonceAchat.textContent = raison === 'plein' ? fmt(t('game.menu.achat.refus.plein'), { max: cat.inventaireMax }) : t(cles[raison] ?? 'game.menu.achat.refus.autre');
   };
   eq.abonner((_etat, annules) => {
@@ -514,13 +514,13 @@ export async function ecranBoutique({ t, bandeau, root, rootDialogue, surVue = (
     };
   }
 
-  // Tirage (graine du navigateur), puis lot 8h : prix prélevé en monnaie bleue et contenu ajouté dans la MÊME écriture (progression v2) ; refusé
+  // Tirage (graine du navigateur), puis lot 8h : prix prélevé (lot 8k : en diamants) et contenu ajouté dans la MÊME écriture (progression v2) ; refusé
   // (solde, inventaire plein) : rien n'est prélevé ni ajouté, la raison est lue ; puis l'ouverture.
   function acheter(caisse, quantite, depuis) {
     if (preparation) return; // lot 8f : ouverture en cours de chargement (un seul achat à la fois)
     const prix = prixAchat(caisse, quantite);
-    if (eq.medailles() < prix) {
-      refus('medailles');
+    if (eq.diamants() < prix) {
+      refus('diamants');
       return;
     }
     // Lot 8k : compteurs de pitié de la rubrique relus juste avant le tirage ; ×10 = dix tirages qui les avancent dans l'ordre.
@@ -530,23 +530,23 @@ export async function ecranBoutique({ t, bandeau, root, rootDialogue, surVue = (
     if (!tire || tire.objets.length !== quantite) return;
     const objets = tire.objets;
     const pit = { r: caisse.type, de, a: { ...tire.compteurs } };
-    const paiement = { monnaie: 'medailles', pitie: pit };
+    const paiement = { monnaie: 'diamants', pitie: pit };
     const r = { type: caisse.type, caisse, quantite, objets, uids: [], graine, compteurs: pit };
     if (caisse.type === 'personnage') {
       const a = eq.acheterPersonnages({ prix, ids: objets.map((o) => o.id), ...paiement });
-      if (!a.ok) return refus(a.raison === 'solde' ? 'medailles' : a.raison);
+      if (!a.ok) return refus(a.raison === 'solde' ? 'diamants' : a.raison);
       r.issues = a.issues;
     } else if (caisse.type === 'cosmetique') {
       const apercu = ajouterCosmetiques(collection(), cat, objets.map((o) => o.id));
       if (apercu.nouveaux.length !== quantite) return;
       const a = eq.acheterTenues({ prix, ids: objets.map((o) => o.id), ...paiement });
-      if (!a.ok) return refus(a.raison === 'solde' ? 'medailles' : a.raison);
+      if (!a.ok) return refus(a.raison === 'solde' ? 'diamants' : a.raison);
       r.nouveaux = apercu.nouveaux;
       r.collection = { ...collection() };
       rendreNoteTenues();
     } else {
       const a = eq.acheterObjets({ prix, objets, ...paiement });
-      if (!a.ok) return refus(a.raison === 'solde' ? 'medailles' : a.raison);
+      if (!a.ok) return refus(a.raison === 'solde' ? 'diamants' : a.raison);
       r.uids = a.uids;
     }
     achats += 1;
@@ -636,7 +636,7 @@ export async function ecranBoutique({ t, bandeau, root, rootDialogue, surVue = (
     if (!resultat) {
       const m = await import('./resultat.js');
       resultat ??= m.creerResultat({
-        t, bandeau, cat, solde: () => eq.medailles(), // lot 9a : « Rouvrir » paie une caisse : monnaie des caisses (avant : la bleue, à tort depuis le lot 8k)
+        t, bandeau, cat, solde: () => eq.diamants(), // lot 9a : « Rouvrir » paie une caisse : monnaie des caisses
         continuer: () => fermerResultat(true),
         rouvrir: () => dernier?.caisse && acheter(dernier.caisse, dernier.quantite, null),
       });
@@ -737,8 +737,8 @@ export async function ecranBoutique({ t, bandeau, root, rootDialogue, surVue = (
       chances: chancesOuvertes ? chancesOuvertes.caisse : null,
       achats,
       dernier: dernier ? { type: dernier.type, caisse: dernier.caisse?.id ?? null, quantite: dernier.quantite, graine: dernier.graine, objets: dernier.objets.map((o) => ({ ...o })), uids: [...dernier.uids], issues: dernier.issues?.map((x) => ({ ...x })) ?? null, nouveaux: dernier.nouveaux ? [...dernier.nouveaux] : null, compteurs: dernier.compteurs ? structuredClone(dernier.compteurs) : null } : null,
-      // Lot 8k : médailles, règles et compteurs de pitié de chaque rubrique (lus dans la progression).
-      medailles: eq.medailles(),
+      // Lot 8k : diamants, règles et compteurs de pitié de chaque rubrique (lus dans la progression).
+      diamants: eq.diamants(),
       pitie: { regles: pitie, compteurs: Object.fromEntries(['equipement', 'personnage', 'cosmetique'].map((k) => [k, eq.pitie(k)])) },
       resultat: resultat?.etat() ?? null,
       ouverture: ouverture ? ouverture.etat() : null,

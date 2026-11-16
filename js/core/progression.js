@@ -28,7 +28,13 @@ const OP_ID = /^[0-9A-Za-z._:-]{1,48}$/;
 const CLE_OFFRE = /^\d{1,7}-\d{1,2}$/;
 const INTERDITS = /[\p{Cc}\p{Cf}]/u;
 const INTERDITES = new Set(['__proto__', 'constructor', 'prototype']);
-const CONNUES = ['v', 'rev', 'savedAt', 'w', 'bleu', 'medailles', 'objets', 'porte', 'persos', 'tenues', 'offres', 'niveaux', 'records', 'mondes', 'paliers', 'mondesFinis', 'pitie', 'profil', 'lues', 'dates', 'journal'];
+// Lot 9b : table de correspondance, SEULE frontière entre les noms du code et les champs stockés (zs.save.v2, codes ZS2). Les champs stockés
+// gardent leurs noms de la V0.8 : la Recette V0.8 lit la même clé sur le même appareil et efface en réécrivant les champs qu'elle ne connaît
+// pas (Docs/ref/sauvegarde-v2.md, section 14). Seules la lecture du stockage ou d'un code (lire, decoder) et l'écriture (serialiser, encoder)
+// s'en servent ; partout ailleurs, la progression porte les noms du code (medailles, diamants).
+export const CHAMPS_STOCKES = Object.freeze({ medailles: 'bleu', diamants: 'medailles' });
+const NOMS_CODE = Object.freeze({ medailles: 'medailles', diamants: 'diamants' });
+const CONNUES = ['v', 'rev', 'savedAt', 'w', 'objets', 'porte', 'persos', 'tenues', 'offres', 'niveaux', 'records', 'mondes', 'paliers', 'mondesFinis', 'pitie', 'profil', 'lues', 'dates', 'journal'];
 const EXTRA_MAX = 8192; // octets gardés pour les champs inconnus de la racine (version plus récente du même format)
 
 const isObject = (o) => o !== null && typeof o === 'object' && !Array.isArray(o);
@@ -37,8 +43,8 @@ const isInt = (n) => typeof n === 'number' && Number.isInteger(n);
 const warn = (w, t) => {
   if (w.length < MAX_WARNINGS) w.push(t);
 };
-const soldeMaxOf = (params) => (isInt(params?.economy?.maxBleu) && params.economy.maxBleu >= 0 ? params.economy.maxBleu : SOLDE_MAX);
-const medMaxOf = (params) => (isInt(params?.economy?.maxMedailles) && params.economy.maxMedailles >= 0 ? params.economy.maxMedailles : SOLDE_MAX);
+const soldeMaxOf = (params) => (isInt(params?.economy?.maxMedailles) && params.economy.maxMedailles >= 0 ? params.economy.maxMedailles : SOLDE_MAX);
+const diamMaxOf = (params) => (isInt(params?.economy?.maxDiamants) && params.economy.maxDiamants >= 0 ? params.economy.maxDiamants : SOLDE_MAX);
 const pitieVide = () => Object.fromEntries(RUBRIQUES.map((r) => [r, { e: 0, l: 0 }]));
 
 export function defaultProgression() {
@@ -46,8 +52,8 @@ export function defaultProgression() {
     v: VERSION,
     rev: 0,
     savedAt: 0,
-    bleu: { gagne: 0, depense: 0 },
-    medailles: { gagne: 0, depense: 0, jour: 0 }, // lot 8k : jour = dernier jour local de la médaille « première partie du jour »
+    medailles: { gagne: 0, depense: 0 },
+    diamants: { gagne: 0, depense: 0, jour: 0 }, // lot 8k : jour = dernier jour local du gain « première partie du jour »
     objets: [],
     porte: Object.fromEntries(EMPLACEMENTS.map((e) => [e, null])),
     persos: { debloques: [PERSO_DEFAUT], niveaux: { [PERSO_DEFAUT]: 1 }, choisi: PERSO_DEFAUT },
@@ -57,7 +63,7 @@ export function defaultProgression() {
     records: { histoire: {}, infini: {} },
     mondes: [],
     paliers: { histoire: {}, infini: {} }, // lot 8k : plus haut palier récompensé par monde (histoire) ou carte (infini)
-    mondesFinis: [], // lot 8k : mondes dont la première fin a rapporté ses médailles
+    mondesFinis: [], // lot 8k : mondes dont la première fin a rapporté ses diamants
     pitie: pitieVide(),
     profil: { avatar: AVATAR_DEFAUT, pseudo: null, tues: 0, partiesHistoire: 0, partiesInfini: 0, tempsMs: 0 },
     lues: [],
@@ -66,9 +72,10 @@ export function defaultProgression() {
   };
 }
 
-export const solde = (save) => Math.max(0, (save?.bleu?.gagne ?? 0) - (save?.bleu?.depense ?? 0));
-// Lot 8k : solde de médailles.
-export const soldeMedailles = (save) => Math.max(0, (save?.medailles?.gagne ?? 0) - (save?.medailles?.depense ?? 0));
+// Solde des médailles (monnaie de toutes les dépenses hors caisses).
+export const solde = (save) => Math.max(0, (save?.medailles?.gagne ?? 0) - (save?.medailles?.depense ?? 0));
+// Lot 8k : solde des diamants (caisses).
+export const soldeDiamants = (save) => Math.max(0, (save?.diamants?.gagne ?? 0) - (save?.diamants?.depense ?? 0));
 
 function int(value, min, max, name, w, fallback) {
   if (value === undefined) return fallback;
@@ -127,7 +134,8 @@ function objetValide(o, params) {
 const typeDe = (params, id) => (params?.catalogue instanceof Map ? params.catalogue.get(id)?.type ?? null : null);
 
 // Réécrit n'importe quoi en progression v2 valide, champ par champ : { save, warnings, extra } (extra : champs inconnus de la racine, gardés).
-export function sanitize(raw, params) {
+// noms : noms des deux monnaies dans `raw` (NOMS_CODE pour une progression du code, CHAMPS_STOCKES pour un objet lu du stockage ou d'un code).
+function nettoyer(raw, params, noms) {
   const w = [];
   const save = defaultProgression();
   if (!isObject(raw)) {
@@ -136,26 +144,28 @@ export function sanitize(raw, params) {
   }
   save.rev = int(field(raw, 'rev'), 0, SAFE, 'rev', w, 0);
   save.savedAt = int(field(raw, 'savedAt'), 0, SAFE, 'savedAt', w, 0);
-  // Monnaie bleue : deux compteurs qui ne font que croître ; dépensé ≤ gagné ; solde ≤ plafond.
-  const b = field(raw, 'bleu');
-  if (b !== undefined && !isObject(b)) warn(w, 'bleu : objet attendu');
-  const gagne = int(field(b, 'gagne'), 0, SAFE, 'bleu.gagne', w, 0);
-  let depense = int(field(b, 'depense'), 0, SAFE, 'bleu.depense', w, 0);
+  // Médailles : deux compteurs qui ne font que croître ; dépensé ≤ gagné ; solde ≤ plafond (avertissements : nom du champ lu).
+  const nm = noms.medailles;
+  const b = field(raw, nm);
+  if (b !== undefined && !isObject(b)) warn(w, `${nm} : objet attendu`);
+  const gagne = int(field(b, 'gagne'), 0, SAFE, `${nm}.gagne`, w, 0);
+  let depense = int(field(b, 'depense'), 0, SAFE, `${nm}.depense`, w, 0);
   if (depense > gagne) {
-    warn(w, 'bleu : dépensé supérieur au gagné');
+    warn(w, `${nm} : dépensé supérieur au gagné`);
     depense = gagne;
   }
-  save.bleu = { gagne: Math.min(gagne, depense + soldeMaxOf(params)), depense };
-  // Lot 8k : médailles, même règle ; absentes (sauvegarde d'avant le lot) : 0, sans aucun crédit rétroactif.
-  const m = field(raw, 'medailles');
-  if (m !== undefined && !isObject(m)) warn(w, 'medailles : objet attendu');
-  const mGagne = int(field(m, 'gagne'), 0, SAFE, 'medailles.gagne', w, 0);
-  let mDepense = int(field(m, 'depense'), 0, SAFE, 'medailles.depense', w, 0);
+  save.medailles = { gagne: Math.min(gagne, depense + soldeMaxOf(params)), depense };
+  // Lot 8k : diamants, même règle ; absents (sauvegarde d'avant le lot 8k) : 0, sans aucun crédit rétroactif.
+  const nd = noms.diamants;
+  const m = field(raw, nd);
+  if (m !== undefined && !isObject(m)) warn(w, `${nd} : objet attendu`);
+  const mGagne = int(field(m, 'gagne'), 0, SAFE, `${nd}.gagne`, w, 0);
+  let mDepense = int(field(m, 'depense'), 0, SAFE, `${nd}.depense`, w, 0);
   if (mDepense > mGagne) {
-    warn(w, 'medailles : dépensé supérieur au gagné');
+    warn(w, `${nd} : dépensé supérieur au gagné`);
     mDepense = mGagne;
   }
-  save.medailles = { gagne: Math.min(mGagne, mDepense + medMaxOf(params)), depense: mDepense, jour: int(field(m, 'jour'), 0, 9_999_999, 'medailles.jour', w, 0) };
+  save.diamants = { gagne: Math.min(mGagne, mDepense + diamMaxOf(params)), depense: mDepense, jour: int(field(m, 'jour'), 0, 9_999_999, `${nd}.jour`, w, 0) };
   // Inventaire : exemplaires valides, uid uniques.
   const objets = field(raw, 'objets');
   if (objets !== undefined && !Array.isArray(objets)) warn(w, 'objets : liste attendue');
@@ -270,7 +280,7 @@ export function sanitize(raw, params) {
   const extra = {};
   let taille = 0;
   for (const k of Object.keys(raw)) {
-    if (CONNUES.includes(k) || INTERDITES.has(k) || k.length > 40) continue;
+    if (CONNUES.includes(k) || k === noms.medailles || k === noms.diamants || INTERDITES.has(k) || k.length > 40) continue;
     let t;
     try {
       t = JSON.stringify(raw[k]);
@@ -288,23 +298,27 @@ export function sanitize(raw, params) {
   return { save, warnings: w, extra };
 }
 
-// { ok: true, save, warnings, extra } ou { ok: false, error: 'bad-schema' | 'future-version' }.
+// Progression du code (noms du code).
+export const sanitize = (raw, params) => nettoyer(raw, params, NOMS_CODE);
+// Lot 9b : objet écrit (stockage, code ZS2 ; champs stockés) → progression du code nettoyée : { save, warnings, extra }.
+export const depuisStockage = (raw, params) => nettoyer(raw, params, CHAMPS_STOCKES);
+
+// Objet lu du stockage ou d'un code ZS2 (champs stockés) : { ok: true, save, warnings, extra } ou { ok: false, error: 'bad-schema' | 'future-version' }.
 export function lire(raw, params) {
   if (!isObject(raw) || !isInt(raw.v) || raw.v < 1) return { ok: false, error: 'bad-schema' };
   if (raw.v > VERSION) return { ok: false, error: 'future-version' };
   if (raw.v !== VERSION) return { ok: false, error: 'bad-schema' };
-  const r = sanitize(raw, params);
+  const r = depuisStockage(raw, params);
   return { ok: true, save: r.save, warnings: r.warnings, extra: r.extra };
 }
 
-// Ordre fixe des clés écrites (texte stable), champs inconnus gardés après.
-export function serialiser(save, extra = {}) {
-  const s = save;
+// Copie de la progression (noms du code), ordre fixe des clés.
+function copier(s) {
   const out = { v: VERSION, rev: s.rev, savedAt: s.savedAt };
   if (typeof s.w === 'string') out.w = s.w;
   Object.assign(out, {
-    bleu: { gagne: s.bleu.gagne, depense: s.bleu.depense },
-    medailles: { gagne: s.medailles.gagne, depense: s.medailles.depense, jour: s.medailles.jour },
+    medailles: { gagne: s.medailles.gagne, depense: s.medailles.depense },
+    diamants: { gagne: s.diamants.gagne, depense: s.diamants.depense, jour: s.diamants.jour },
     objets: s.objets.map((o) => ({ u: o.u, i: o.i, r: o.r, n: o.n })),
     porte: Object.fromEntries(EMPLACEMENTS.map((e) => [e, s.porte[e] ?? null])),
     persos: { debloques: [...s.persos.debloques], niveaux: { ...s.persos.niveaux }, choisi: s.persos.choisi },
@@ -321,6 +335,13 @@ export function serialiser(save, extra = {}) {
     dates: { ...s.dates },
     journal: [...s.journal],
   });
+  return out;
+}
+
+// Objet écrit (stockage, code ZS2) : ordre fixe des clés (texte stable), monnaies sous leurs champs stockés (CHAMPS_STOCKES), champs inconnus gardés après.
+export function serialiser(save, extra = {}) {
+  const out = {};
+  for (const [k, v] of Object.entries(copier(save))) out[Object.hasOwn(CHAMPS_STOCKES, k) ? CHAMPS_STOCKES[k] : k] = v;
   for (const [k, v] of Object.entries(isObject(extra) ? extra : {})) if (!Object.hasOwn(out, k)) out[k] = v;
   return out;
 }
@@ -329,36 +350,36 @@ export function serialiser(save, extra = {}) {
 // Opérations. Chacune a un identifiant unique (id) ; une opération déjà au journal est ignorée (jamais appliquée deux fois) ; une opération
 // impossible sur la valeur la plus récente (solde, inventaire plein, exemplaire absent, niveau changé, offre déjà achetée) est REFUSÉE en entier :
 // rien n'est ajouté, rien n'est prélevé. Types :
-//   gain     { bleu, tues, tempsMs, partie: 'histoire'|'infini'|null, record: { mode, monde, manche }|null, monde (terminé)|null,
-//              lot 8k : medailles (portes, milliers de zombies : montant), palier: { mode, monde, manche, pas, gain }|null (paliers au-delà du plus haut
+//   gain     { medailles, tues, tempsMs, partie: 'histoire'|'infini'|null, record: { mode, monde, manche }|null, monde (terminé)|null,
+//              lot 8k : diamants (portes, milliers de zombies : montant), palier: { mode, monde, manche, pas, gain }|null (paliers au-delà du plus haut
 //              déjà récompensé), mondeFini: { id, gain }|null (première fin récompensée), jour: { n, gain }|null (jour local plus grand que le dernier) }
 //   achat    { prix, place (plafond de l'inventaire), objets: [{ u, i, r }], persos: [{ id, max }], tenues: [id], offre: { jour, cle }|null,
-//              lot 8k : monnaie: 'bleu'|'medailles', pitie: { r (rubrique), de: { e, l }, a: { e, l } }|null (refusé si les compteurs ne sont plus « de ») }
+//              lot 8k : monnaie: 'medailles'|'diamants', pitie: { r (rubrique), de: { e, l }, a: { e, l } }|null (refusé si les compteurs ne sont plus « de ») }
 //   pitie    { valeurs: { rubrique: { e, l } } } (lot 8k, outil de débogage : compteurs posés)
 //   ameliorer { u, de, prix }            perso { perso, de, prix }          fusion { uids: [3], nouveau: { u, i, r, n }, prix }
 //   choix    { champ: 'porte'|'choisi'|'avatar'|'pseudo', valeur, date }  lues { ids: [] }
 //   debloquer { persos: [id | { id, niveau }] } (personnages débloqués par les données, outil de débogage) ; remise à zéro : le dépôt (clear)
-const clone = (s) => serialiser(s);
+const clone = copier;
 
 function appliquer(s, op, params) {
   const prix = isInt(op.prix) && op.prix >= 0 ? op.prix : 0;
-  const medailles = op.monnaie === 'medailles'; // lot 8k : les caisses se paient en médailles
+  const diamants = op.monnaie === 'diamants'; // lot 8k : les caisses se paient en diamants
   const payer = () => {
-    if ((medailles ? soldeMedailles(s) : solde(s)) < prix) return false;
-    if (medailles) s.medailles.depense += prix;
-    else s.bleu.depense += prix;
+    if ((diamants ? soldeDiamants(s) : solde(s)) < prix) return false;
+    if (diamants) s.diamants.depense += prix;
+    else s.medailles.depense += prix;
     return true;
   };
-  const maxMed = medMaxOf(params);
+  const maxDiam = diamMaxOf(params);
   const crediter = (n) => {
-    if (isInt(n) && n > 0) s.medailles.gagne += Math.max(0, Math.min(n, maxMed - soldeMedailles(s)));
+    if (isInt(n) && n > 0) s.diamants.gagne += Math.max(0, Math.min(n, maxDiam - soldeDiamants(s)));
   };
-  const gainDe = (x) => (isObject(x) && isInt(x.gain) && x.gain > 0 ? Math.min(x.gain, maxMed) : 0);
+  const gainDe = (x) => (isObject(x) && isInt(x.gain) && x.gain > 0 ? Math.min(x.gain, maxDiam) : 0);
   switch (op.t) {
     case 'gain': {
       const max = soldeMaxOf(params);
-      const g = isInt(op.bleu) && op.bleu > 0 ? op.bleu : 0;
-      s.bleu.gagne += Math.max(0, Math.min(g, max - solde(s)));
+      const g = isInt(op.medailles) && op.medailles > 0 ? op.medailles : 0;
+      s.medailles.gagne += Math.max(0, Math.min(g, max - solde(s)));
       const add = (k, v) => {
         if (isInt(v) && v > 0) s.profil[k] = Math.min(SAFE, s.profil[k] + v);
       };
@@ -371,13 +392,13 @@ function appliquer(s, op, params) {
         s.records[r.mode][r.monde] = Math.max(s.records[r.mode][r.monde] ?? 0, Math.min(r.manche, 1_000_000));
       }
       if (typeof op.monde === 'string' && ID.test(op.monde) && !s.mondes.includes(op.monde) && s.mondes.length < 32) s.mondes.push(op.monde);
-      // Lot 8k : médailles. Portes et milliers : montant de l'opération (une fois : journal). Paliers, premier monde terminé, jour : selon la
+      // Lot 8k : diamants. Portes et milliers : montant de l'opération (une fois : journal). Paliers, premier monde terminé, jour : selon la
       // progression la plus récente (jamais deux fois, même rejouée par un autre onglet avec un autre identifiant).
-      if (isInt(op.medailles) && op.medailles > 0) crediter(Math.min(op.medailles, maxMed));
+      if (isInt(op.diamants) && op.diamants > 0) crediter(Math.min(op.diamants, maxDiam));
       const p = op.palier;
       if (isObject(p) && MODES.includes(p.mode) && typeof p.monde === 'string' && ID.test(p.monde) && !INTERDITES.has(p.monde) && isInt(p.manche) && isInt(p.pas) && p.pas >= 1) {
         const deja = s.paliers[p.mode][p.monde] ?? 0;
-        const nouveaux = paliersNouveaux(deja, p.manche, { medaillePalierPas: p.pas });
+        const nouveaux = paliersNouveaux(deja, p.manche, { diamantPalierPas: p.pas });
         if (nouveaux.length && (deja > 0 || Object.keys(s.paliers[p.mode]).length < 32)) {
           s.paliers[p.mode][p.monde] = nouveaux.at(-1);
           crediter(nouveaux.length * gainDe(p));
@@ -389,8 +410,8 @@ function appliquer(s, op, params) {
         crediter(gainDe(f));
       }
       const j = op.jour;
-      if (isObject(j) && isInt(j.n) && j.n > s.medailles.jour && j.n <= 9_999_999) {
-        s.medailles.jour = j.n;
+      if (isObject(j) && isInt(j.n) && j.n > s.diamants.jour && j.n <= 9_999_999) {
+        s.diamants.jour = j.n;
         crediter(gainDe(j));
       }
       return null;
@@ -606,7 +627,7 @@ export function decoder(text, params) {
 export function decrire(save, params) {
   const s = sanitize(save, params).save;
   return {
-    solde: solde(s), gagne: s.bleu.gagne, medailles: soldeMedailles(s), medaillesGagnees: s.medailles.gagne, objets: s.objets.length, persos: s.persos.debloques.length, tenues: s.tenues.length,
+    solde: solde(s), gagne: s.medailles.gagne, diamants: soldeDiamants(s), diamantsGagnes: s.diamants.gagne, objets: s.objets.length, persos: s.persos.debloques.length, tenues: s.tenues.length,
     records: { histoire: { ...s.records.histoire }, infini: { ...s.records.infini } }, mondes: s.mondes.length,
     tues: s.profil.tues, parties: s.profil.partiesHistoire + s.profil.partiesInfini, tempsMs: s.profil.tempsMs,
     niveaux: ALL_STAT_IDS.reduce((n, id) => n + s.niveaux[id], 0),

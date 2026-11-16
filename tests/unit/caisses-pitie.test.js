@@ -2,10 +2,10 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { avantGarantie, chancesTirage, compteursApres, lireCaisses, lireCosmetiques, lirePitie, tirerPitie, COMPTEURS_ZERO, TIRAGES_X10 } from '../../js/core/caisses.js';
 import { lireCatalogue } from '../../js/core/equipement.js';
-import { appliquerOps, defaultProgression, solde, soldeMedailles } from '../../js/core/progression.js';
-import { campagneMedailles, simulateMedailles } from './helpers/onglets-medailles-simulateur.js';
+import { appliquerOps, defaultProgression, solde, soldeDiamants } from '../../js/core/progression.js';
+import { campagneDiamants, simulateDiamants } from './helpers/onglets-diamants-simulateur.js';
 
-// Lot 8k (Docs/ref/economie.md) : une caisse par rubrique (Équipement, Personnages, Cosmétiques), payée en médailles (100 ; ×10 : 1 000), pitié par
+// Lot 8k (Docs/ref/economie.md) : une caisse par rubrique (Équipement, Personnages, Cosmétiques), payée en diamants (lot 9a ; 100 ; ×10 : 1 000), pitié par
 // rubrique : épique ou mieux garanti au 10e tirage, légendaire à 1 % jusqu'au 50e puis +5 points par tirage, garanti au 70e.
 const lire = (p) => JSON.parse(readFileSync(p, 'utf8'));
 const { cat: base } = lireCatalogue({ raretes: lire('data/menu/raretes.json'), objets: lire('data/menu/objets.json'), personnages: lire('data/menu/personnages.json') });
@@ -25,7 +25,7 @@ const graines = (n, depart = 12345) => {
   });
 };
 
-describe('données : trois caisses, prix en médailles, chances et pitié (caisses.json)', () => {
+describe('données : trois caisses, prix en diamants, chances et pitié (caisses.json)', () => {
   it('une caisse par rubrique, dans l\'ordre : Équipement, Personnages, Cosmétiques ; 100 et 1 000 ; dessins militaire, veterans, tenues ; aucune erreur', () => {
     expect(erreurs).toEqual([]);
     expect(caisses.map((c) => [c.id, c.type, c.modele, c.prix, c.prix10])).toEqual([
@@ -157,29 +157,29 @@ describe('×10 et déterminisme', () => {
   });
 });
 
-describe('achats atomiques en médailles (garantie 5)', () => {
-  const avec = (medailles, bleu = 0) => appliquerOps(defaultProgression(), [{ id: 'g', t: 'gain', medailles, bleu }], 1, params).save;
-  const achat = (id, prix, de, a, extra = {}) => ({ id, t: 'achat', monnaie: 'medailles', prix, place: 100, objets: [{ u: `${id}.0`, i: 'casque-kevlar', r: 'commun' }], pitie: { r: 'equipement', de, a }, ...extra });
-  it('prix en médailles, objet et compteurs dans la MÊME écriture ; la bleue n\'est pas touchée', () => {
+describe('achats atomiques en diamants (garantie 5)', () => {
+  const avec = (diamants, medailles = 0) => appliquerOps(defaultProgression(), [{ id: 'g', t: 'gain', diamants, medailles }], 1, params).save;
+  const achat = (id, prix, de, a, extra = {}) => ({ id, t: 'achat', monnaie: 'diamants', prix, place: 100, objets: [{ u: `${id}.0`, i: 'casque-kevlar', r: 'commun' }], pitie: { r: 'equipement', de, a }, ...extra });
+  it('prix en diamants, objet et compteurs dans la MÊME écriture ; les médailles ne sont pas touchées', () => {
     const r = appliquerOps(avec(250, 40), [achat('a1', 100, { e: 0, l: 0 }, { e: 1, l: 1 })], 2, params);
     expect(r.refused).toEqual([]);
-    expect([soldeMedailles(r.save), solde(r.save), r.save.objets.length, r.save.pitie.equipement]).toEqual([150, 40, 1, { e: 1, l: 1 }]);
+    expect([soldeDiamants(r.save), solde(r.save), r.save.objets.length, r.save.pitie.equipement]).toEqual([150, 40, 1, { e: 1, l: 1 }]);
   });
-  it('médailles insuffisantes : refusé en entier (rien prélevé, rien ajouté, compteurs inchangés), jamais négatif', () => {
+  it('diamants insuffisants : refusé en entier (rien prélevé, rien ajouté, compteurs inchangés), jamais négatif', () => {
     const r = appliquerOps(avec(99), [achat('a1', 100, { e: 0, l: 0 }, { e: 1, l: 1 })], 2, params);
     expect(r.refused).toEqual([{ id: 'a1', raison: 'solde' }]);
-    expect([soldeMedailles(r.save), r.save.objets.length, r.save.pitie.equipement, r.save.medailles.depense]).toEqual([99, 0, { e: 0, l: 0 }, 0]);
+    expect([soldeDiamants(r.save), r.save.objets.length, r.save.pitie.equipement, r.save.diamants.depense]).toEqual([99, 0, { e: 0, l: 0 }, 0]);
   });
   it('compteurs changés depuis le tirage (autre onglet) : refusé en entier (raison « pitie »)', () => {
     const s = appliquerOps(avec(500), [achat('a1', 100, { e: 0, l: 0 }, { e: 1, l: 1 })], 2, params).save;
     const r = appliquerOps(s, [achat('a2', 100, { e: 0, l: 0 }, { e: 1, l: 1 })], 3, params);
     expect(r.refused).toEqual([{ id: 'a2', raison: 'pitie' }]);
-    expect([soldeMedailles(r.save), r.save.objets.length, r.save.pitie.equipement]).toEqual([400, 1, { e: 1, l: 1 }]);
+    expect([soldeDiamants(r.save), r.save.objets.length, r.save.pitie.equipement]).toEqual([400, 1, { e: 1, l: 1 }]);
   });
   it('rejouée (même identifiant) : jamais appliquée deux fois', () => {
     const s = appliquerOps(avec(500), [achat('a1', 100, { e: 0, l: 0 }, { e: 1, l: 1 })], 2, params).save;
     const r = appliquerOps(s, [achat('a1', 100, { e: 0, l: 0 }, { e: 1, l: 1 })], 3, params);
-    expect([soldeMedailles(r.save), r.save.objets.length]).toEqual([400, 1]);
+    expect([soldeDiamants(r.save), r.save.objets.length]).toEqual([400, 1]);
   });
   it('outil de débogage : pitié remise à zéro (opération « pitie »)', () => {
     const s = appliquerOps(avec(500), [achat('a1', 100, { e: 0, l: 0 }, { e: 5, l: 33 })], 2, params).save;
@@ -188,12 +188,12 @@ describe('achats atomiques en médailles (garantie 5)', () => {
   });
 });
 
-describe('garantie 4 : plusieurs onglets (simulateur du lot 8h étendu aux médailles, paliers, jour et pitié)', () => {
+describe('garantie 4 : plusieurs onglets (simulateur du lot 8h étendu aux diamants, paliers, jour et pitié)', () => {
   it('déterministe : même graine, même déroulé', () => {
-    expect(simulateMedailles({ seed: 11, tabs: 3, params, caisse: caisses[0], cat, regles })).toEqual(simulateMedailles({ seed: 11, tabs: 3, params, caisse: caisses[0], cat, regles }));
+    expect(simulateDiamants({ seed: 11, tabs: 3, params, caisse: caisses[0], cat, regles })).toEqual(simulateDiamants({ seed: 11, tabs: 3, params, caisse: caisses[0], cat, regles }));
   });
   it('10 000 suites, 2 à 4 onglets : 0 perte, 0 double compte, aucune double dépense, aucune garantie perdue ni dupliquée, palier et jour jamais deux fois', () => {
-    const c = campagneMedailles({ n: 10_000, params, caisse: caisses[0], cat, regles });
+    const c = campagneDiamants({ n: 10_000, params, caisse: caisses[0], cat, regles });
     expect({ echecs: c.echecs, pertes: c.pertes, doubles: c.doubles, doublesDepenses: c.doublesDepenses, negatifs: c.negatifs, coupes: c.coupes, pitie: c.pitie, paliers: c.paliers, jours: c.jours }).toEqual({ echecs: 0, pertes: 0, doubles: 0, doublesDepenses: 0, negatifs: 0, coupes: 0, pitie: 0, paliers: 0, jours: 0 });
     expect(c.achats).toBeGreaterThan(1000);
     console.info(`[onglets] ${JSON.stringify(c)}`);

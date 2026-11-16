@@ -22,7 +22,7 @@ const deepFreeze = (o) => {
 describe('makeEconomy', () => {
   it('reprend economy.json et la prime de chaque type de enemies.json', () => {
     expect(params.bounty).toEqual({ marcheur: 10, petit: 10, voute: 10, grand: 10 });
-    expect(params.waveBonusBase).toBe(20); // lot 8k : gain fixe de la monnaie bleue (avant : 10 + 2 × manche)
+    expect(params.waveBonusBase).toBe(20); // lot 8k : gain fixe des médailles (avant : 10 + 2 × manche)
     expect(params.waveBonusPerWave).toBe(0);
     expect(params.maxMoney).toBe(9_999_999);
   });
@@ -210,7 +210,7 @@ describe('earningsTable', () => {
     }
   });
 
-  it('valeurs de référence (lot 8k : bleue fixe, 20 ou 30 renforcée) : manche 1 = 50 + 20, manche 5 = 160 + 30, manche 40 = 1 500 + 30', () => {
+  it('valeurs de référence (lot 8k : médailles fixes, 20 ou 30 renforcée) : manche 1 = 50 + 20, manche 5 = 160 + 30, manche 40 = 1 500 + 30', () => {
     expect([table[0].killGain, table[0].bonus, table[0].gain]).toEqual([50, 20, 70]);
     expect([table[4].killGain, table[4].bonus]).toEqual([160, 30]);
     expect([table[39].killGain, table[39].bonus]).toEqual([1500, 30]);

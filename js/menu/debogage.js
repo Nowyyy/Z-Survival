@@ -1,8 +1,8 @@
 // Lot 8h : outils de débogage du menu (Docs/ref/sauvegarde-v2.md), chargés au premier toucher de la petite icône de l'en-tête, à côté du plein écran
 // et du menu à trois barres. L'icône n'existe que sur les canaux de débogage « source » (sources locales) et « dev » (/dev/) : jamais dans la Recette
 // (canal « release »), les archives ni la production. Chaque outil écrit VRAIMENT dans la progression v2 (zs.save.v2), après une confirmation :
-// ajouter 10 000 bleus, donner l'inventaire de démonstration (data/menu/inventaire-depart.json), débloquer tous les personnages, remettre la
-// progression à zéro (efface zs.save.v2 et le son de zs.device.v1 ; jamais zs.save.v1). Lot 8k : ajouter 1 000 médailles, remettre la pitié
+// ajouter 10 000 médailles, donner l'inventaire de démonstration (data/menu/inventaire-depart.json), débloquer tous les personnages, remettre la
+// progression à zéro (efface zs.save.v2 et le son de zs.device.v1 ; jamais zs.save.v1). Lot 8k : ajouter 1 000 diamants, remettre la pitié
 // des trois caisses à zéro. Lot 9a : « Marquer le monde 1 terminé » (mondes terminés seulement : aucune médaille, aucun diamant, aucun record ;
 // débloque la carte du monde 1 dans l'onglet Infini).
 // Lot 9a-H (retour du propriétaire : « pas beau, on ne comprend pas, il faut défiler, beaucoup de vide ») : le panneau occupe toute la place sans
@@ -18,12 +18,12 @@ import { formatMoney } from '../core/economy.js';
 import { estDebloque } from '../core/equipement.js';
 
 export const CANAUX_OUTILS = Object.freeze(['source', 'dev']);
-export const OUTILS = Object.freeze(['bleus', 'medailles', 'pitie', 'monde', 'demo', 'persos', 'zero']); // lot 9a : « monde »
+export const OUTILS = Object.freeze(['medailles', 'diamants', 'pitie', 'monde', 'demo', 'persos', 'zero']); // lot 9a : « monde »
 const TEXTES = {
-  bleus: 'game.menu.debogage.bleus', medailles: 'game.menu.debogage.medailles', pitie: 'game.menu.debogage.pitie', monde: 'game.menu.debogage.monde', demo: 'game.menu.debogage.demo', persos: 'game.menu.debogage.persos', zero: 'game.menu.debogage.zero',
+  medailles: 'game.menu.debogage.medailles', diamants: 'game.menu.debogage.diamants', pitie: 'game.menu.debogage.pitie', monde: 'game.menu.debogage.monde', demo: 'game.menu.debogage.demo', persos: 'game.menu.debogage.persos', zero: 'game.menu.debogage.zero',
 };
 const DETAILS = {
-  bleus: 'game.menu.debogage.detail.bleus', medailles: 'game.menu.debogage.detail.medailles', pitie: 'game.menu.debogage.detail.pitie', monde: 'game.menu.debogage.detail.monde', demo: 'game.menu.debogage.detail.demo', persos: 'game.menu.debogage.detail.persos', zero: 'game.menu.debogage.detail.zero',
+  medailles: 'game.menu.debogage.detail.medailles', diamants: 'game.menu.debogage.detail.diamants', pitie: 'game.menu.debogage.detail.pitie', monde: 'game.menu.debogage.detail.monde', demo: 'game.menu.debogage.detail.demo', persos: 'game.menu.debogage.detail.persos', zero: 'game.menu.debogage.detail.zero',
 };
 // Lignes du résumé, dans l'ordre affiché : clé → libellé.
 const ETAT = {
@@ -46,7 +46,7 @@ function valeurs(eq, t) {
   const sauvegarde = mode === 'readonly' ? 'lecture' : lu.locked ? 'verrouillee' : mode === 'memory' ? 'memoire' : 'appareil';
   return {
     medailles: formatMoney(eq.solde()),
-    diamants: formatMoney(eq.medailles()),
+    diamants: formatMoney(eq.diamants()),
     monde: t((save.mondes ?? []).includes('batiment') ? 'game.menu.debogage.etat.termine' : 'game.menu.debogage.etat.pasTermine'),
     objets: `${etat.objets.length} / ${eq.cat.inventaireMax}`,
     persos: `${persos.filter((p) => estDebloque(etat, p)).length} / ${persos.length}`,
@@ -178,8 +178,8 @@ export function ouvrirDebogage({ t, root, retour }) {
     const eq = await chargerEquipement();
     avant = valeurs(eq, t);
     let r = { ok: false };
-    if (id === 'bleus') r = eq.ajouterBleu(10_000);
-    else if (id === 'medailles') r = eq.ajouterMedailles(1000);
+    if (id === 'medailles') r = eq.ajouterMedailles(10_000);
+    else if (id === 'diamants') r = eq.ajouterDiamants(1000);
     else if (id === 'pitie') r = eq.remettrePitie();
     else if (id === 'monde') r = eq.marquerMondeTermine('batiment'); // lot 9a : débloque l'Infini du monde 1, sans aucun gain
     else if (id === 'demo') r = await eq.donnerDemo();

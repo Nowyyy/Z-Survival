@@ -540,14 +540,14 @@
   align-items: center;
   gap: 6px;
   margin: 0;
-  color: var(--color-money-medaille); /* lot 9a : champ « bleu », appelé « médailles » (avant : diamants, en bleu) */
+  color: var(--color-money-medaille); /* lot 9a : médailles */
   font-weight: var(--font-weight-bold);
   font-size: max(15px, calc(18 * var(--u)));
   font-variant-numeric: tabular-nums;
 }
 
-.e8-solde.e8-medailles {
-  color: var(--color-money-blue); /* lot 9a : champ « medailles », appelé « diamants » (gemme bleue) */
+.e8-solde.e8-diamants {
+  color: var(--color-money-blue); /* lot 9a : diamants (gemme bleue) */
 }
 
 .e8-plein-ecran {
@@ -3764,14 +3764,14 @@
   letter-spacing: 0;
 }
 
-/* Lot 8k : prix des caisses en médailles : médaille (décorative, couleur du texte) puis montant ou « Il manque N médailles ». */
+/* Lot 8k : prix des caisses (lot 9a : en diamants) : gemme (décorative) puis montant ou « Il manque N diamants ». */
 .e3-ouvrir-ligne {
   display: inline-flex;
   align-items: center;
   gap: 3px;
 }
 
-.e3-ouvrir-gemme { /* lot 9a : gemme des diamants (avant : .e3-ouvrir-medaille) */
+.e3-ouvrir-gemme { /* lot 9a : gemme des diamants */
   flex: none;
   width: 1.05em;
   height: 1.05em;
@@ -4987,7 +4987,7 @@
 
 .e10-stats {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr)); /* lot 8k : sept statistiques (médailles gagnées) sur deux rangées, cartes un peu plus serrées */
+  grid-template-columns: repeat(4, minmax(0, 1fr)); /* lot 8k : sept statistiques (diamants gagnés) sur deux rangées, cartes un peu plus serrées */
   gap: calc(8 * var(--u));
   margin: 0;
   padding: 0;

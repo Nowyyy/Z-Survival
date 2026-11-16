@@ -256,8 +256,8 @@
   color: var(--color-money);
 }
 
-/* Lot 8h : monnaie bleue (gagnée en terminant des manches, gardée pour toujours) : icône (gemme dessinée en code) et « +N » bleu discret, sous la
-   ligne de l'argent, à droite ; texte bleu sur le fond du HUD : contraste ≥ 4,5:1. */
+/* Lot 8h : gemme dessinée en code (lot 9a : icône des diamants), couleur --color-money-blue ; texte de cette couleur sur le fond du HUD :
+   contraste ≥ 4,5:1. */
 .hud-gem {
   fill: none;
   stroke: var(--color-money-blue);
@@ -265,9 +265,9 @@
   stroke-linejoin: round;
 }
 
-/* Retour du propriétaire après le lot 8j : gemme bleue puis « solde (+gain) » sous la vague, quelques secondes après chaque fin de manche
-   (js/game/bleu-manche.js) ; même bloc que la vague, texte de la couleur de la monnaie bleue (contraste vérifié comme le « +N » bleu). */
-.hud-bleu-manche {
+/* Retour du propriétaire après le lot 8j : icône puis « solde (+gain) » sous la vague, quelques secondes après un gain (js/game/gains-manche.js) ;
+   même bloc que la vague ; couleur des diamants par défaut (#hud-diamants-manche), des médailles pour #hud-medailles-manche (plus bas). */
+.hud-gains-manche {
   display: inline-flex;
   align-items: center;
   gap: 0.3em;
@@ -275,17 +275,17 @@
   white-space: nowrap;
 }
 
-.hud-bleu-manche[hidden] {
+.hud-gains-manche[hidden] {
   display: none;
 }
 
 
-.end-bleu {
+.end-diamant {
   color: var(--color-money-blue);
 }
 
-/* Lot 8k : médailles (troisième monnaie, gardée, paie les caisses) : médaille dessinée en code, couleur bronze ; fin de manche (même bloc que la
-   monnaie bleue, juste dessous), pause (après le solde bleu) et écran de fin. Contraste du texte ≥ 4,5:1 comme le bleu. */
+/* Lot 8k : médaille dessinée en code, couleur bronze (lot 9a : icône des médailles) ; fin de manche, pause et écran de fin. Contraste du texte
+   ≥ 4,5:1 comme celui des diamants. */
 .hud-medaille {
   fill: none;
   stroke: var(--color-money-medaille);
@@ -294,14 +294,14 @@
   stroke-linejoin: round;
 }
 
-/* Lot 9a (monnaies interverties) : la fin de manche (champ « bleu », médailles à l'écran) prend la couleur des médailles ; le bloc des gains des
-   portes et paliers (.hud-medailles-manche, diamants à l'écran) garde le bleu de .hud-bleu-manche ; le « +N » de fin de manche, retiré après le lot 9a (doublon : les médailles ne sont affichées que sous la vague). */
-.hud-bleu-manche.hud-manche-medaille,
+/* Lot 9a (monnaies interverties) : la fin de manche (médailles) prend la couleur des médailles ; le bloc des gains des portes et paliers
+   (.hud-diamants-manche) garde la couleur des diamants de .hud-gains-manche ; le « +N » de fin de manche, retiré après le lot 9a (doublon : les médailles ne sont affichées que sous la vague). */
+.hud-gains-manche.hud-manche-medaille,
 .end-medaille {
   color: var(--color-money-medaille);
 }
 
-.pause-medailles {
+.pause-diamants {
   display: inline-flex;
   align-items: center;
   gap: 0.35em;

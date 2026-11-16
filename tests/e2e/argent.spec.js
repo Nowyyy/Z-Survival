@@ -2,17 +2,19 @@ import { test, expect } from '@playwright/test';
 import { helicopterModel } from '../../js/core/epaves.js';
 import AxeBuilder from '@axe-core/playwright';
 import { readFileSync } from 'node:fs';
-import { defaultProgression as defaultSave, encoder, serialiser, solde } from '../../js/core/progression.js';
+import { CHAMPS_STOCKES, defaultProgression as defaultSave, encoder, lire, serialiser, solde } from '../../js/core/progression.js';
 import { waitReady, hudBoxes, screenShare, apart } from './helpers.js';
 
 // Lot 4-C : argent et sauvegarde dans le jeu. 667×375, step() et les hooks (aucune durée réelle attendue). Les adresses de gain n'ont AUCUN paramètre d'essai
 // (wave, lvl, map, planks, empty, nospawn, endless, floor, money) : sinon la sauvegarde est en lecture seule.
 // Lot 8h : deux monnaies. JAUNE (getState().save.balance, economy.*) : 10 par zombie tué par balle, 1 par planche, remise à 0 à chaque partie, jamais écrite.
-// BLEUE (getState().save.bleu, zs.save.v2) : bonus de fin de manche et prime du monde, écrite à chaque manche terminée, gardée pour toujours.
+// MÉDAILLES (getState().save.medailles, zs.save.v2) : bonus de fin de manche et prime du monde, écrites à la fin de la partie, gardées pour toujours.
 const load = (name) => JSON.parse(readFileSync(`data/game/${name}.json`, 'utf8'));
 const params = { save: load('save'), economy: load('economy'), stats: load('player-stats') };
 const KEY = params.save.v2.storageKey;
-const bleu = async (page) => { const t = await stored(page); return t === null ? 0 : solde(JSON.parse(t)); };
+// Lot 9b : progression stockée relue sous les noms du code (champs stockés traduits par la table de js/core/progression.js).
+const relire = (texte) => lire(JSON.parse(texte), params).save;
+const medailles = async (page) => { const t = await stored(page); return t === null ? 0 : solde(relire(t)); };
 // Retour du propriétaire après le lot 9a : médailles et diamants d'une partie écrits seulement à sa fin (mort, monde) : les tests qui lisaient la
 // sauvegarde juste après une manche finissent d'abord la partie par la mort (avant : écrits aussitôt la manche finie).
 const mourir = (page) => page.evaluate(() => { const zs = window.__zs; zs.setChutes(0); zs.downPlayer(); zs.step(0.3); });
@@ -26,7 +28,7 @@ const LOCAL = '/jeu.html?test=1&store=local&seed=1';
 const state = (page) => page.evaluate(() => window.__zs.getState());
 const step = (page, seconds) => page.evaluate((s) => window.__zs.step(s), seconds);
 const stored = (page) => page.evaluate((k) => localStorage.getItem(k), KEY);
-const storedJson = async (page) => JSON.parse(await stored(page));
+const storedJson = async (page) => { const t = await stored(page); return t === null ? null : relire(t); };
 const seedStorage = (value) => `if (!sessionStorage.getItem('__seeded')) { localStorage.setItem('${KEY}', ${JSON.stringify(typeof value === 'string' ? value : JSON.stringify(value))}); sessionStorage.setItem('__seeded', '1'); }`;
 // Espion sur les écritures du stockage, posé avant tout script de la page.
 const SPY = `
@@ -124,12 +126,12 @@ test.describe('gains', () => {
     await page.evaluate(() => window.__zs.skipWave());
     await step(page, 0.2);
     s = await state(page);
-    expect(s.economy.byKind).toMatchObject({ kill: 0, wave: 0 }); // lot 8h : le bonus de manche est en bleu, plus dans la jaune
-    expect(s.save.bleu).toMatchObject({ run: 20, solde: 20, pending: 20 }); // retour après le lot 9a : en attente jusqu'à la fin de la partie (avant : 0)
+    expect(s.economy.byKind).toMatchObject({ kill: 0, wave: 0 }); // lot 8h : le bonus de manche est en médailles, plus dans la jaune
+    expect(s.save.medailles).toMatchObject({ run: 20, solde: 20, pending: 20 }); // retour après le lot 9a : en attente jusqu'à la fin de la partie (avant : 0)
     expect(s.save.balance).toBe(0);
-    expect(await bleu(page)).toBe(0);
+    expect(await medailles(page)).toBe(0);
     await mourir(page);
-    expect(await bleu(page)).toBe(20);
+    expect(await medailles(page)).toBe(20);
   });
 
   test('un seul bonus par manche : une fin de manche ne rapporte pas deux fois', async ({ page }) => {
@@ -137,7 +139,7 @@ test.describe('gains', () => {
     await step(page, 3.2);
     expect(await page.evaluate(() => [window.__zs.skipWave(), window.__zs.skipWave()].length)).toBe(2);
     await step(page, 0.5);
-    expect((await state(page)).save.bleu.run).toBe(20);
+    expect((await state(page)).save.medailles.run).toBe(20);
   });
 
   test('la manche 5 (renforcée) rapporte 30', async ({ page }) => {
@@ -146,7 +148,7 @@ test.describe('gains', () => {
     await step(page, 3.2);
     await page.evaluate(() => window.__zs.skipWave());
     await step(page, 0.2);
-    expect((await state(page)).save.bleu.run).toBe(30);
+    expect((await state(page)).save.medailles.run).toBe(30);
   });
 
   test('giveMoney(n) ajoute à la jaune (type test) ; flushSave() n\'écrit jamais la jaune', async ({ page }) => {
@@ -169,16 +171,16 @@ test.describe('gains (suite)', () => {
     await step(page, 3.2);
     await page.evaluate(() => window.__zs.skipWave());
     await step(page, 0.2);
-    expect((await state(page)).save.bleu.run).toBe(30);
+    expect((await state(page)).save.medailles.run).toBe(30);
     for (let i = 0; i < 12; i += 1) await step(page, 1);
     const s = await state(page);
-    expect(s.save.bleu.run).toBe(30);
+    expect(s.save.medailles.run).toBe(30);
     expect(s.zones.doors?.length ?? 1).toBeGreaterThan(0);
     await mourir(page); // retour après le lot 9a : écrite à la fin de la partie
-    expect(await bleu(page)).toBe(30);
+    expect(await medailles(page)).toBe(30);
   });
 
-  test('la fin du monde rapporte 500 bleus une seule fois ; monde terminé (lot 8k : manche 40 renforcée 30 + 500 = 530 ; avant : 635), record de l\'histoire, partie comptée', async ({ page }) => {
+  test('la fin du monde rapporte 500 médailles une seule fois ; monde terminé (lot 8k : manche 40 renforcée 30 + 500 = 530 ; avant : 635), record de l\'histoire, partie comptée', async ({ page }) => {
     await open(page);
     await page.evaluate(() => window.__zs.startWave(40));
     await step(page, 3.2);
@@ -186,18 +188,18 @@ test.describe('gains (suite)', () => {
     await step(page, 0.3);
     await expect(page.locator('#end-panel')).toBeVisible();
     let s = await state(page);
-    expect(s.save.bleu.run).toBe(530);
+    expect(s.save.medailles.run).toBe(530);
     await step(page, 5);
     s = await state(page);
-    expect(s.save.bleu.run).toBe(530);
+    expect(s.save.medailles.run).toBe(530);
     const saved = await storedJson(page);
     expect(solde(saved)).toBe(530);
     expect(saved.mondes).toEqual(['batiment']);
     expect(saved.records).toEqual({ histoire: { batiment: 40 }, infini: {} });
     expect(saved.profil.partiesHistoire).toBe(1);
-    // Retour du propriétaire après le lot 8k : plus de ligne « Dont prime du monde » ; la prime est dans le « +gain » des diamants.
+    // Retour du propriétaire après le lot 8k : plus de ligne « Dont prime du monde » ; la prime est dans le « +gain » des médailles (lot 9a).
     await expect(page.locator('#end-bonus')).toHaveCount(0);
-    await expect(page.locator('#end-bleu-text')).toHaveText('+530');
+    await expect(page.locator('#end-medailles-text')).toHaveText('+530');
   });
 });
 
@@ -213,35 +215,35 @@ test.describe('conservation à la mort', () => {
     await expect(page.locator('#end-panel')).toBeVisible();
   }
 
-  test('la mort : E2-7 affiche la jaune perdue, la bleue gagnée et le solde bleu ; « Rejouer » remet la jaune à 0, la bleue reste ; la page rechargée aussi', async ({ page }) => {
+  test('la mort : E2-7 affiche les médailles gagnées et leur solde ; « Rejouer » remet la jaune à 0, les médailles restent ; la page rechargée aussi', async ({ page }) => {
     await open(page);
     await page.evaluate(() => window.__zs.startWave(2));
     await step(page, 3.2);
-    await page.evaluate(() => window.__zs.skipWave()); // manche 2 terminée : 20 bleus (lot 8k ; avant : 14)
+    await page.evaluate(() => window.__zs.skipWave()); // manche 2 terminée : 20 médailles (lot 8k ; avant : 14)
     await step(page, 0.3);
     await dieAfterKill(page);
-    // Retour du propriétaire après le lot 8k : « Solde diamants : N » puis « +gain » sur la même ligne ; plus de ligne « Monnaie jaune perdue ».
+    // Retour du propriétaire après le lot 8k : « Solde médailles : N » (lot 9a) puis « +gain » sur la même ligne ; plus de ligne « Monnaie jaune perdue ».
     await expect(page.locator('#end-earned')).toHaveCount(0);
-    await expect(page.locator('#end-bleu-text')).toHaveText('+20');
-    await expect(page.locator('#end-balance-text')).toHaveText('Solde médailles : 20'); // lot 9a : le champ « bleu » s'appelle « médailles » (avant : diamants)
+    await expect(page.locator('#end-medailles-text')).toHaveText('+20');
+    await expect(page.locator('#end-balance-text')).toHaveText('Solde médailles : 20'); // lot 9a : appelées « diamants » en V0.8
     await expect(page.locator('#end-balance')).toHaveText('Solde médailles : 20+20gagnés pendant la partie');
     await expect(page.locator('#end-best')).toHaveText('Meilleure manche : 3');
-    expect(await bleu(page)).toBe(20);
+    expect(await medailles(page)).toBe(20);
     await page.locator('#btn-replay').click();
     await step(page, 0.1);
-    expect((await state(page)).save).toMatchObject({ balance: 0, bleu: { solde: 20, run: 0 } });
+    expect((await state(page)).save).toMatchObject({ balance: 0, medailles: { solde: 20, run: 0 } });
     expect((await state(page)).economy.earnedRun).toBe(0);
     await page.reload();
     await waitReady(page);
     const s = await state(page);
-    expect(s.save).toMatchObject({ balance: 0, status: 'saved', bleu: { solde: 20 } });
+    expect(s.save).toMatchObject({ balance: 0, status: 'saved', medailles: { solde: 20 } });
     expect(s.save.saved.records).toEqual({ histoire: { batiment: 3 }, infini: {} });
     expect(s.save.saved.profil).toMatchObject({ tues: 1, partiesHistoire: 1 });
   });
 
   // Retour du propriétaire après le lot 9a : une partie abandonnée (onglet fermé) perd ses médailles et diamants ; ses statistiques restent (avant :
-  // la bleue de la manche était gardée).
-  test('onglet fermé après une manche terminée puis rouvert : la bleue de la partie est perdue, la partie et le record restent comptés', async ({ page, context }) => {
+  // les médailles de la manche étaient gardées).
+  test('onglet fermé après une manche terminée puis rouvert : les médailles de la partie sont perdues, la partie et le record restent comptés', async ({ page, context }) => {
     await open(page);
     await step(page, 3.2);
     await page.evaluate(() => window.__zs.skipWave());
@@ -249,7 +251,7 @@ test.describe('conservation à la mort', () => {
     await page.close({ runBeforeUnload: false });
     const p2 = await context.newPage();
     await open(p2);
-    expect((await state(p2)).save.bleu.solde).toBe(0);
+    expect((await state(p2)).save.medailles.solde).toBe(0);
     expect((await state(p2)).save.saved.profil.partiesHistoire).toBe(1);
   });
 
@@ -264,12 +266,12 @@ test.describe('conservation à la mort', () => {
     const raw = await stored(page);
     expect(raw.length).toBeLessThan(2048);
     const saved = JSON.parse(raw);
-    expect(Object.keys(saved).sort()).toEqual(['bleu', 'dates', 'journal', 'lues', 'medailles', 'mondes', 'mondesFinis', 'niveaux', 'objets', 'offres', 'paliers', 'persos', 'pitie', 'porte', 'profil', 'records', 'rev', 'savedAt', 'tenues', 'v']); // lot 8k : medailles, mondesFinis, paliers, pitie
-    expect(saved.medailles).toEqual({ gagne: 0, depense: 0, jour: 0 }); // lot 8k : aucune manche terminée, donc pas de médaille du jour);
+    expect(Object.keys(saved).sort()).toEqual([CHAMPS_STOCKES.medailles, 'dates', 'journal', 'lues', CHAMPS_STOCKES.diamants, 'mondes', 'mondesFinis', 'niveaux', 'objets', 'offres', 'paliers', 'persos', 'pitie', 'porte', 'profil', 'records', 'rev', 'savedAt', 'tenues', 'v'].sort()); // lot 8k : diamants, mondesFinis, paliers, pitie ; lot 9b : champs stockés
+    expect(saved[CHAMPS_STOCKES.diamants]).toEqual({ gagne: 0, depense: 0, jour: 0 }); // lot 8k : aucune manche terminée, donc pas de bonus du jour
     expect(saved.v).toBe(2);
     expect(saved.records).toEqual({ histoire: { batiment: 4 }, infini: {} });
     expect(saved.profil).toMatchObject({ tues: 1, partiesHistoire: 1, partiesInfini: 0 });
-    expect(saved.bleu).toEqual({ gagne: 0, depense: 0 });
+    expect(saved[CHAMPS_STOCKES.medailles]).toEqual({ gagne: 0, depense: 0 });
     expect(raw).not.toMatch(/money|jaune/);
     expect(saved.savedAt).toBeGreaterThan(1_600_000_000_000);
     expect(await page.evaluate(() => [sessionStorage.length, document.cookie])).toEqual([0, '']);
@@ -324,10 +326,10 @@ test.describe('écriture', () => {
     await page.getByRole('button', { name: 'Pause' }).click();
     expect(await writes(page)).toHaveLength(1);
     expect((await storedJson(page)).profil.tues).toBe(10);
-    expect(await bleu(page)).toBe(0);
+    expect(await medailles(page)).toBe(0);
   });
 
-  // Retour du propriétaire après le lot 9a : la fin de manche écrit les statistiques (une écriture) ; la bleue attend la fin de la partie.
+  // Retour du propriétaire après le lot 9a : la fin de manche écrit les statistiques (une écriture) ; les médailles attendent la fin de la partie.
   test('écriture immédiate à la fin de manche', async ({ page }) => {
     await page.addInitScript(SPY);
     await open(page);
@@ -335,9 +337,9 @@ test.describe('écriture', () => {
     await page.evaluate(() => window.__zs.skipWave());
     await step(page, 0.2);
     expect(await writes(page)).toHaveLength(1);
-    expect(await bleu(page)).toBe(0);
+    expect(await medailles(page)).toBe(0);
     await mourir(page);
-    expect(await bleu(page)).toBe(20);
+    expect(await medailles(page)).toBe(20);
   });
 
   test('écriture immédiate à l\'ouverture de la pause (zombies tués, partie, temps de jeu)', async ({ page }) => {
@@ -376,7 +378,7 @@ test.describe('écriture', () => {
     await step(page, 0.3);
     await expect(page.locator('#end-panel')).toBeVisible();
     expect((await storedJson(page)).profil.partiesHistoire).toBe(1);
-    expect(await bleu(page)).toBe(0); // la jaune (40) est perdue
+    expect(await medailles(page)).toBe(0); // la jaune (40) est perdue
   });
 
   test('lot 8h : plus d\'écriture regroupée : 30 s de jeu dans une manche sans fin de manche n\'écrivent rien, la pause écrit tout', async ({ page }) => {
@@ -395,7 +397,7 @@ test.describe('écriture', () => {
 test.describe('multi-onglets', () => {
   test.skip(({ isMobile }) => isMobile, 'bureau');
 
-  test('deux onglets réels de la V0.8 additionnent leurs bleus (manches terminées) ; la page affichée suit le signal storage', async ({ page, context }) => {
+  test('deux onglets réels de la V0.8 additionnent leurs médailles (manches terminées) ; la page affichée suit le signal storage', async ({ page, context }) => {
     await open(page);
     const other = await context.newPage();
     await open(other);
@@ -406,10 +408,10 @@ test.describe('multi-onglets', () => {
     // Lot 5n (T3) : l'écriture d'un onglet n'est pas visible tout de suite dans l'autre (Chrome : 2 à 3 lectures sur 300 périmées juste après
     // l'écriture, mesuré) : la valeur écrite est lue dans l'onglet qui vient d'écrire (une écriture perdue y donne 10), puis attendue dans
     // l'autre. Avant : lue tout de suite dans l'autre onglet (10 au lieu de 20 quand la lecture était périmée).
-    await expect.poll(async () => bleu(other), { timeout: 5_000 }).toBe(40); // lot 8k : 2 × 20 (avant : 24) ; lot 5p : attendue (avant : lue tout de suite ; sous charge, 12 pendant quelques ms, puis 24)
-    await expect.poll(async () => bleu(page)).toBe(40);
-    await expect.poll(async () => (await state(page)).save.bleu.solde).toBe(40);
-    await expect.poll(async () => (await state(other)).save.bleu.solde).toBe(40);
+    await expect.poll(async () => medailles(other), { timeout: 5_000 }).toBe(40); // lot 8k : 2 × 20 (avant : 24) ; lot 5p : attendue (avant : lue tout de suite ; sous charge, 12 pendant quelques ms, puis 24)
+    await expect.poll(async () => medailles(page)).toBe(40);
+    await expect.poll(async () => (await state(page)).save.medailles.solde).toBe(40);
+    await expect.poll(async () => (await state(other)).save.medailles.solde).toBe(40);
     expect((await storedJson(page)).profil.partiesHistoire).toBe(2);
   });
 
@@ -439,21 +441,21 @@ test.describe('échecs de stockage', () => {
     await step(page, 3.2);
     await page.evaluate(() => window.__zs.skipWave());
     await step(page, 0.2);
-    await mourir(page); // retour après le lot 9a : la fin de partie écrit la bleue (ici, échoue)
+    await mourir(page); // retour après le lot 9a : la fin de partie écrit les médailles (ici, échoue)
     const r = await page.evaluate(() => window.__zs.flushSave());
     expect(r).toMatchObject({ ok: false, error: 'QuotaExceededError' });
     let s = await state(page);
-    expect(s.save).toMatchObject({ status: 'failed', pending: 20, bleu: { solde: 20 } });
+    expect(s.save).toMatchObject({ status: 'failed', pending: 20, medailles: { solde: 20 } });
     expect(s.save.lastCommit).toMatchObject({ ok: false, error: 'QuotaExceededError' });
     await expect(page.locator('#pause-save')).toHaveCount(0); // lot 3l (retour du propriétaire) : l'état de la sauvegarde n'est plus affiché dans la pause ; il est vérifié dans getState().save
     await expect(page.locator('#end-save')).toBeVisible(); // retour après le lot 9a : la partie est finie (mort) : l'échec est dit sur l'écran de fin (avant : pause ouverte puis fermée)
     await page.evaluate(() => { window.__fail = false; });
     await page.evaluate(() => window.__zs.flushSave());
     s = await state(page);
-    expect(s.save).toMatchObject({ pending: 0, bleu: { solde: 20 } });
-    expect(await bleu(page)).toBe(20);
+    expect(s.save).toMatchObject({ pending: 0, medailles: { solde: 20 } });
+    expect(await medailles(page)).toBe(20);
     await page.evaluate(() => window.__zs.flushSave());
-    expect(await bleu(page)).toBe(20);
+    expect(await medailles(page)).toBe(20);
     expect((await state(page)).save.status).toBe('saved');
   });
 
@@ -474,7 +476,7 @@ test.describe('échecs de stockage', () => {
     expect(problems).toEqual([]);
   });
 
-  for (const [label, raw] of [['illisible ({bad)', '{bad'], ['version future', '{"v":99,"bleu":5}']]) {
+  for (const [label, raw] of [['illisible ({bad)', '{bad'], ['version future', JSON.stringify({ v: 99, [CHAMPS_STOCKES.medailles]: 5 })]]) {
     // Lot 3l : le lien « Voir ma sauvegarde » quitte l'écran de fin (choix du propriétaire) ; « Revenir au menu principal » le remplace (sans action).
     test(`sauvegarde ${label} : « locked », aucune écriture pendant toute une partie, E2-7 le dit (plus la pause : lot 3l)`, async ({ page }) => {
       await page.addInitScript(`${SPY}\n${seedStorage(raw)}`);
@@ -503,19 +505,19 @@ test.describe('échecs de stockage', () => {
 
 test.describe('mode essai', () => {
   test.skip(({ isMobile }) => isMobile, 'bureau');
-  const REAL = serialiser({ ...defaultSave(), rev: 2, savedAt: 1_700_000_000_000, bleu: { gagne: 300, depense: 0 }, niveaux: { ...defaultSave().niveaux, degats: 2 } });
+  const REAL = serialiser({ ...defaultSave(), rev: 2, savedAt: 1_700_000_000_000, medailles: { gagne: 300, depense: 0 }, niveaux: { ...defaultSave().niveaux, degats: 2 } });
 
-  test('?wave=5 : les gains s\'affichent (jaune de la partie, vrai solde bleu lu) mais localStorage est inchangé ; E2-7 dit « Mode essai » (la pause ne le dit plus : lot 3l)', async ({ page }) => {
+  test('?wave=5 : les gains s\'affichent (jaune de la partie, vrai solde des médailles lu) mais localStorage est inchangé ; E2-7 dit « Mode essai » (la pause ne le dit plus : lot 3l)', async ({ page }) => {
     await page.addInitScript(`${SPY}\n${seedStorage(REAL)}`);
     await open(page, `${LOCAL}&wave=5`);
     const before = await stored(page);
-    expect((await state(page)).save).toMatchObject({ status: 'readonly', readOnly: true, balance: 0, bleu: { solde: 300 } });
+    expect((await state(page)).save).toMatchObject({ status: 'readonly', readOnly: true, balance: 0, medailles: { solde: 300 } });
     expect(await shoot(page, 'marcheur')).toBe(1);
     await page.evaluate(() => window.__zs.flushSave());
     expect((await state(page)).save.balance).toBe(10);
     await page.getByRole('button', { name: 'Pause' }).click();
     await expect(page.locator('#pause-save')).toHaveCount(0); // lot 3l (retour du propriétaire) : l'état de la sauvegarde n'est plus affiché dans la pause ; il est vérifié dans getState().save (readonly)
-    // Retour du propriétaire après le lot 8j : la pause montre le solde bleu (gemme puis montant ; « Monnaie bleue : » pour les lecteurs d'écran), plus la jaune.
+    // Retour du propriétaire après le lot 8j : la pause montre le solde des médailles (icône puis montant ; nom pour les lecteurs d'écran), plus la jaune.
     await expect(page.locator('#pause-balance-text')).toHaveText('300');
     await expect(page.locator('#pause-balance > .sr-only')).toHaveText('Médailles :'); // lot 9a (avant : « Diamants : »)
     await expect(page.locator('#pause-balance > svg.hud-medaille')).toHaveCount(1); // lot 9a : médaille (avant : gemme)
@@ -547,7 +549,7 @@ test.describe('mode essai', () => {
     expect(s).toMatchObject({ readOnly: false, kind: 'local', reasons: [] });
   });
 
-  test('?money=500 fixe la jaune de la partie à 500 sans rien écrire ; le vrai solde bleu reste 300', async ({ page }) => {
+  test('?money=500 fixe la jaune de la partie à 500 sans rien écrire ; le vrai solde des médailles reste 300', async ({ page }) => {
     await page.addInitScript(seedStorage(REAL));
     await open(page, `${LOCAL}&money=500`);
     const before = await stored(page);
@@ -555,7 +557,7 @@ test.describe('mode essai', () => {
     await page.evaluate(() => { window.__zs.giveMoney(5); window.__zs.flushSave(); });
     expect((await state(page)).save.balance).toBe(505);
     expect(await stored(page)).toBe(before);
-    expect(solde(JSON.parse(before))).toBe(300);
+    expect(solde(relire(before))).toBe(300);
   });
 
   test('?lvl=degats:3 : source « url », dégâts × 1,45, sauvegarde inchangée', async ({ page }) => {
@@ -583,7 +585,7 @@ test.describe('niveaux depuis la sauvegarde', () => {
   });
 
   test('un code importé par sauvegarde.html est pris en compte après rechargement', async ({ page }) => {
-    const code = encoder({ ...defaultSave(), bleu: { gagne: 90, depense: 0 }, niveaux: { ...defaultSave().niveaux, degats: 2 } }, params);
+    const code = encoder({ ...defaultSave(), medailles: { gagne: 90, depense: 0 }, niveaux: { ...defaultSave().niveaux, degats: 2 } }, params);
     await page.goto('/sauvegarde.html');
     await page.locator('#import-code').fill(code);
     await page.getByRole('button', { name: 'Vérifier' }).click();
@@ -594,7 +596,7 @@ test.describe('niveaux depuis la sauvegarde', () => {
     const s = await state(page);
     expect(s.stats.source).toBe('save');
     expect(s.stats.values.damage).toBeCloseTo(32.5, 9);
-    expect(s.save.bleu.solde).toBe(90);
+    expect(s.save.medailles.solde).toBe(90);
   });
 
   test('sans sauvegarde : source « default », zéros', async ({ page }) => {
@@ -742,12 +744,12 @@ test.describe('interface', () => {
     await expect(page.locator('#hud-gain')).toBeHidden();
   });
 
-  test('pause : solde bleu (gemme puis montant, retour du propriétaire après le lot 8j ; avant : « Monnaie jaune ») à côté de « PAUSE » (lot 3l : plus d\'état de la sauvegarde), le panneau tient à 667×375, aucune cible sous 44 px', async ({ page }) => {
+  test('pause : solde des médailles (icône puis montant, retour du propriétaire après le lot 8j ; avant : « Monnaie jaune ») à côté de « PAUSE » (lot 3l : plus d\'état de la sauvegarde), le panneau tient à 667×375, aucune cible sous 44 px', async ({ page }) => {
     await open(page);
     await page.evaluate(() => window.__zs.giveMoney(1234));
     await page.getByRole('button', { name: 'Pause' }).click();
-    const bleu = (await state(page)).save.bleu.solde;
-    await expect(page.locator('#pause-balance-text')).toHaveText(bleu.toLocaleString('fr-FR').replace(/\u00a0/g, String.fromCharCode(0x202f)));
+    const medailles = (await state(page)).save.medailles.solde;
+    await expect(page.locator('#pause-balance-text')).toHaveText(medailles.toLocaleString('fr-FR').replace(/\u00a0/g, String.fromCharCode(0x202f)));
     await expect(page.locator('#pause-balance')).not.toContainText('jaune');
     expect(await page.locator('#pause-balance').evaluate((n) => n.firstElementChild.classList.contains('hud-medaille'))).toBe(true); // lot 9a : médaille (avant : gemme)
     expect((await state(page)).save.status).toBe('saved'); // lot 3l (retour du propriétaire) : l'état de la sauvegarde n'est plus affiché dans la pause ; il est vérifié dans getState().save
@@ -778,7 +780,7 @@ test.describe('interface', () => {
           await step(page, 0.3);
         }
         await expect(page.locator('#end-panel')).toBeVisible();
-        const ids = ['end-title', 'end-kills', 'end-bleu', 'end-balance', 'end-medailles-solde', 'end-best', 'btn-replay', 'btn-menu']; // lot 8k, retour du propriétaire : sans jaune perdue ni prime
+        const ids = ['end-title', 'end-kills', 'end-medailles', 'end-balance', 'end-diamants-solde', 'end-best', 'btn-replay', 'btn-menu']; // lot 8k, retour du propriétaire : sans jaune perdue ni prime
         for (const id of ids) await expect(page.locator(`#${id}`), id).toBeVisible();
         const m = await page.evaluate(() => {
           const panel = document.querySelector('#end-panel .panel');
@@ -805,7 +807,7 @@ test.describe('interface', () => {
     await page.evaluate(() => window.__zs.skipWave());
     await step(page, 0.3);
     await expect(page.locator('#end-title')).toHaveText('Monde terminé');
-    await expect(page.locator('#end-bleu-text')).toHaveText('+530'); // retour du propriétaire après le lot 8k : prime du monde comprise dans le gain (avant : ligne #end-bonus)
+    await expect(page.locator('#end-medailles-text')).toHaveText('+530'); // retour du propriétaire après le lot 8k : prime du monde comprise dans le gain (avant : ligne #end-bonus)
   });
 
   test('#hud-live : « Manche N terminée, bonus +X » une fois par manche, « Nouveau record » une fois, jamais par kill', async ({ page }) => {
@@ -829,20 +831,20 @@ test.describe('interface', () => {
 
   // Retour du propriétaire après le lot 9a : le « +N » de fin de manche près de la jaune faisait doublon avec le bloc sous la vague : retiré (avant :
   // visible, aria-hidden, « +20 », bronze, effacé ensuite). Les médailles de la manche restent sous la vague seulement.
-  test('lot 8h : « +N » bleu discret à la fin d\'une manche qui rapporte (décoratif), qui s\'efface ; la jaune ne bouge pas', async ({ page }) => {
+  test('lot 8h : « +N » discret des médailles à la fin d\'une manche qui rapporte (décoratif), qui s\'efface ; la jaune ne bouge pas', async ({ page }) => {
     await open(page);
     await step(page, 3.2);
     await page.evaluate(() => window.__zs.skipWave());
     await step(page, 0.3);
-    await expect(page.locator('#hud-gain-bleu')).toHaveCount(0);
-    await expect(page.locator('#hud-bleu-manche')).toBeVisible();
-    await expect(page.locator('#hud-bleu-manche')).toHaveAttribute('aria-hidden', 'true');
-    await expect(page.locator('#hud-bleu-manche')).toHaveText('20 (+20)');
+    await expect(page.locator('#hud-gain-medailles')).toHaveCount(0);
+    await expect(page.locator('#hud-medailles-manche')).toBeVisible();
+    await expect(page.locator('#hud-medailles-manche')).toHaveAttribute('aria-hidden', 'true');
+    await expect(page.locator('#hud-medailles-manche')).toHaveText('20 (+20)');
     await expect(page.locator('#hud-gain')).toBeHidden();
     expect((await state(page)).save.balance).toBe(0);
-    expect(await page.locator('#hud-bleu-manche').evaluate((n) => getComputedStyle(n).color)).toBe('rgb(208, 139, 76)'); // --color-money-medaille
+    expect(await page.locator('#hud-medailles-manche').evaluate((n) => getComputedStyle(n).color)).toBe('rgb(208, 139, 76)'); // --color-money-medaille
     await step(page, 4.2);
-    await expect(page.locator('#hud-bleu-manche')).toBeHidden();
+    await expect(page.locator('#hud-medailles-manche')).toBeHidden();
   });
 
   test('l\'ordre des blocs E2 est inchangé, sans nouveau bloc', async ({ page }) => {

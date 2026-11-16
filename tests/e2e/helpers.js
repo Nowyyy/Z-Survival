@@ -1,6 +1,7 @@
 import { test } from '@playwright/test';
 import { fitDistance } from '../../js/core/viewport.js';
 import { readFileSync } from 'node:fs';
+import { CHAMPS_STOCKES } from '../../js/core/progression.js';
 
 // Attend que le jeu tourne (le temps de jeu avance : la mise en page est terminée). Si WebGL manque dans l'environnement,
 // le jeu affiche son message d'erreur et le test se désactive proprement.
@@ -57,13 +58,20 @@ export function screenShare(boxes, width, height) {
 export const apart = (a, b) => a.r <= b.l + 0.5 || b.r <= a.l + 0.5 || a.b <= b.t + 0.5 || b.b <= a.t + 0.5;
 
 // Lot 8h : progression v2 de démonstration (zs.save.v2) pour les tests du menu : inventaire et équipement de data/menu/inventaire-depart.json (uid o1 à
-// o16, mêmes que le lot 8d), monnaie bleue `bleu`, médailles `medailles` (lot 8k : elles paient les caisses), Survivant choisi. Posée UNE fois (les rechargements gardent ce que le menu a écrit), avant tout
+// o16, mêmes que le lot 8d), médailles et diamants (lot 8k : ils paient les caisses ; lot 9b : écrits sous leurs champs stockés, CHAMPS_STOCKES), Survivant choisi. Posée UNE fois (les rechargements gardent ce que le menu a écrit), avant tout
 // autre script de la page ; à appeler avant l'espion du stockage (sa propre écriture n'est pas comptée) ; adresse du menu avec &store=local.
 export const CLE_V2 = 'zs.save.v2';
-export function progressionDemo({ bleu = 100_000, medailles = 100_000, extra = {} } = {}) {
+// Lot 9b : objet lu dans zs.save.v2 (champs stockés) → mêmes données sous les noms du code pour les deux monnaies (table CHAMPS_STOCKES, seule
+// correspondance) ; rien d'autre n'est changé ni réparé.
+const STOCKE_VERS_CODE = Object.fromEntries(Object.entries(CHAMPS_STOCKES).map(([code, stocke]) => [stocke, code]));
+export function nomsDuCode(stocke) {
+  if (stocke === null || typeof stocke !== 'object') return stocke;
+  return Object.fromEntries(Object.entries(stocke).map(([k, v]) => [Object.hasOwn(STOCKE_VERS_CODE, k) ? STOCKE_VERS_CODE[k] : k, v]));
+}
+export function progressionDemo({ medailles = 100_000, diamants = 100_000, extra = {} } = {}) {
   const inv = JSON.parse(readFileSync('data/menu/inventaire-depart.json', 'utf8'));
   return {
-    v: 2, rev: 1, savedAt: 1, bleu: { gagne: bleu, depense: 0 }, medailles: { gagne: medailles, depense: 0, jour: 0 },
+    v: 2, rev: 1, savedAt: 1, [CHAMPS_STOCKES.medailles]: { gagne: medailles, depense: 0 }, [CHAMPS_STOCKES.diamants]: { gagne: diamants, depense: 0, jour: 0 },
     objets: inv.objets.map((o) => ({ u: o.uid, i: o.id, r: o.rarete, n: o.niveau })),
     porte: { ...inv.equipement },
     persos: { debloques: ['survivant'], niveaux: { survivant: 1 }, choisi: 'survivant' },

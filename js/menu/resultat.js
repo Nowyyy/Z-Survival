@@ -111,10 +111,9 @@ export function creerResultat({ t, bandeau, cat, continuer, rouvrir, solde = () 
     dix.hidden = !plusieurs;
     btRouvrir.hidden = !r.caisse; // offre du jour : achetée une fois, rien à rouvrir
     if (r.caisse) {
-      // Lot 8h : solde insuffisant : « Il manque N », grisé. Lot 9a : la caisse se paie dans la monnaie des caisses (champ « medailles », appelée
-      // « diamants ») : « Il manque N diamants » (avant : texte et solde de la bleue).
+      // Lot 8h : solde insuffisant : « Il manque N », grisé. Lot 9a : la caisse se paie dans la monnaie des caisses : « Il manque N diamants ».
       const manque = Math.max(0, prixAchat(r.caisse, r.quantite) - solde());
-      btRouvrir.textContent = manque > 0 ? fmt(t('game.menu.prix.manqueMedailles'), { n: formatMoney(manque) }) : fmt(t(plusieurs ? 'game.menu.resultat.rouvrir10' : 'game.menu.resultat.rouvrir'), { prix: formatMoney(prixAchat(r.caisse, r.quantite)) });
+      btRouvrir.textContent = manque > 0 ? fmt(t('game.menu.prix.manqueDiamants'), { n: formatMoney(manque) }) : fmt(t(plusieurs ? 'game.menu.resultat.rouvrir10' : 'game.menu.resultat.rouvrir'), { prix: formatMoney(prixAchat(r.caisse, r.quantite)) });
       btRouvrir.setAttribute('aria-disabled', String(manque > 0));
       btRouvrir.setAttribute('aria-label', fmt(t('game.menu.resultat.rouvrir.aria'), { action: btRouvrir.textContent, caisse: r.caisse.nom }));
     }

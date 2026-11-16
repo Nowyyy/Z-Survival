@@ -7,7 +7,7 @@ import { parseZones, zonesToWorld } from '../../js/core/zones.js';
 import { createRng, nextFloat } from '../../js/core/rng.js';
 import { PORTE_DEFAUT, porteProche, reglagesPorte } from '../../js/core/porte-message.js';
 import { COUPS_DEFAUT, estCoup, filtrerCoups, reglagesCoups, rngCoups } from '../../js/core/sons-coups.js';
-import { BLEU_MANCHE_DEFAUT, reglagesBleuManche, texteBleuManche } from '../../js/game/bleu-manche.js';
+import { GAINS_MANCHE_DEFAUT, reglagesGainsManche, texteGainsManche } from '../../js/game/gains-manche.js';
 
 const json = (p) => JSON.parse(readFileSync(p, 'utf8'));
 const D = 'data/game/maps/rez-de-chaussee/';
@@ -117,15 +117,15 @@ describe('sons des zombies : environ un coup sur quatre', () => {
   });
 });
 
-describe('fin de manche : solde bleu et gain sous la vague (retour du propriétaire)', () => {
+describe('fin de manche : solde des médailles et gain sous la vague (retour du propriétaire)', () => {
   it('texte « solde (+gain) » après la gemme (fr.json ; retour du propriétaire : seulement le logo), montants mis en forme ; durée 1 à 15 s de jeu, sinon 4', () => {
     const fr = json('data/i18n/fr.json');
-    expect(fr['game.hud.bleuManche']).toBe('{solde} (+{gain})');
-    expect(texteBleuManche(fr['game.hud.bleuManche'], 168, 12)).toBe('168 (+12)');
-    expect(BLEU_MANCHE_DEFAUT.duree).toBe(4);
-    expect(reglagesBleuManche({ duree: 6 }).duree).toBe(6);
-    for (const d of [0, 16, '5', null, Number.NaN]) expect(reglagesBleuManche({ duree: d }).duree).toBe(4);
-    expect(reglagesBleuManche(json('data/game/reglages-partie.json').bleuManche).duree).toBe(4);
+    expect(fr['game.hud.gainsManche']).toBe('{solde} (+{gain})');
+    expect(texteGainsManche(fr['game.hud.gainsManche'], 168, 12)).toBe('168 (+12)');
+    expect(GAINS_MANCHE_DEFAUT.duree).toBe(4);
+    expect(reglagesGainsManche({ duree: 6 }).duree).toBe(6);
+    for (const d of [0, 16, '5', null, Number.NaN]) expect(reglagesGainsManche({ duree: d }).duree).toBe(4);
+    expect(reglagesGainsManche(json('data/game/reglages-partie.json').gainsManche).duree).toBe(4);
   });
 });
 

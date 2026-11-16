@@ -1,7 +1,7 @@
 // Lot 8d : sous-menu Personnages (E9-4, maquette Docs/maquettes-v0.8/Personnages.html), écran plein chargé à sa première ouverture
 // (js/menu/personnage.js). Grille des personnages (silhouette de leur teinte, nom, « Choisi · niv. N », « niv. N » ou « Verrouillé » avec cadenas) ;
 // à droite, le personnage sélectionné : petite silhouette animée, nom, niveau, barre de progression, capacité, ses statistiques effectives (s'il
-// était choisi), « Choisir » (ou « Choisi », désactivé) et « Améliorer · [prix] » (lot 8h : prix prélevé en monnaie bleue, « Il manque N » sinon). Un personnage
+// était choisi), « Choisir » (ou « Choisi », désactivé) et « Améliorer · [prix] » (lot 8h : prix prélevé en médailles, « Il manque N » sinon). Un personnage
 // verrouillé n'est ni choisissable ni améliorable. État en mémoire (equipement-etat.js).
 import { formatMoney } from '../core/economy.js';
 import { infoPersonnage } from '../core/equipement.js';
@@ -85,7 +85,7 @@ export function creer({ t, bandeau, eq, cat, stats, retour }) {
     btChoisir.textContent = t(info.choisi ? 'game.menu.personnages.choisi' : 'game.menu.personnages.choisir');
     btChoisir.classList.toggle('is-choisi', info.choisi);
     poserActif(btChoisir, !info.choisi && !info.verrouille, 'menu-personnages-raison');
-    // Lot 8h : prix prélevé en monnaie bleue ; solde insuffisant : « Il manque N » grisé, raison lue.
+    // Lot 8h : prix prélevé en médailles ; solde insuffisant : « Il manque N » grisé, raison lue.
     const manque = info.peutAmeliorer ? Math.max(0, info.prix - eq.solde()) : 0;
     btAmeliorer.textContent = !info.peutAmeliorer ? t('game.menu.inventaire.ameliorer.max') : manque > 0 ? fmt(t('game.menu.prix.manque'), { n: formatMoney(manque) }) : fmt(t('game.menu.personnages.ameliorer'), { prix: formatMoney(info.prix) });
     if (info.verrouille) btAmeliorer.textContent = t('game.menu.personnages.ameliorer.verrou');

@@ -209,7 +209,7 @@ describe('identifiants de jeu.html (table de Docs/ref/interface-integree.md)', (
     'down-body', 'down-title-text', 'down-fill', 'pause-balance-text', 'end-box', 'end-title-text', 'end-record-text', 'btn-menu', 'btn-quit'];
   // Retour du propriétaire après le lot 8k : « Monnaie jaune perdue » et « Dont prime du monde » quittent l'écran de fin (avant : conservé #end-earned,
   // #end-bonus ; ajoutés #end-earned-text, #end-bonus-text) ; les sources des médailles aussi.
-  const RETIRES_8K = ['end-earned', 'end-bonus', 'end-earned-text', 'end-bonus-text', 'end-medailles-sources'];
+  const RETIRES_8K = ['end-earned', 'end-bonus', 'end-earned-text', 'end-bonus-text', 'end-diamants-sources'];
   it('retour du propriétaire après le lot 8k : jaune perdue, prime du monde et sources des médailles absentes de jeu.html et de ui.js', () => {
     const ui = readFileSync('js/game/ui.js', 'utf8');
     for (const id of RETIRES_8K) {
@@ -315,18 +315,18 @@ describe('structure de jeu.html', () => {
   // Retours du propriétaire : « Nouveau record » à la place d'« Argent gagné » (colonne de gauche), « Argent gagné » entre « Zombies tués » et « Solde » ; note
   // « Écran de fin provisoire » retirée.
   // Retour du propriétaire : le symbole d'argent vient après la somme (pause, mort, victoire).
-  it('pièce après la somme : « Monnaie jaune perdue : 154 » puis la pièce (pause : gemme puis solde bleu, retour du propriétaire) ; lot 8h : bleue gagnée, prime du monde, solde bleu puis la gemme bleue', () => {
-    // Retour du propriétaire après le lot 8j : la pause montre le solde bleu, gemme PUIS montant (comme l'en-tête du menu), sans « Monnaie jaune ».
-    // Lot 9a (monnaies interverties) : le premier solde (champ « bleu ») s'appelle « médailles » : médaille PUIS montant (avant : gemme), puis la
-    // gemme des diamants (champ « medailles »). Mêmes assertions, icônes échangées.
+  it('pièce après la somme : « Monnaie jaune perdue : 154 » puis la pièce (pause : icône puis solde des médailles, retour du propriétaire) ; lot 8h : médailles gagnées, prime du monde, solde des médailles puis l\'icône', () => {
+    // Retour du propriétaire après le lot 8j : la pause montre le solde gardé, icône PUIS montant (comme l'en-tête du menu), sans « Monnaie jaune ».
+    // Lot 9a (monnaies interverties) : le premier solde s'appelle « médailles » : médaille PUIS montant (avant : gemme), puis la
+    // gemme des diamants. Mêmes assertions, icônes échangées.
     const pause = html.slice(at('id="pause-balance"'), html.indexOf('</p>', at('id="pause-balance"')));
     expect(pause.indexOf('hud-medaille')).toBeGreaterThan(0);
     expect(pause.indexOf('hud-medaille')).toBeLessThan(pause.indexOf('id="pause-balance-text"'));
     expect(pause).not.toContain('hud-coin');
     expect(pause.indexOf('hud-gem')).toBeGreaterThan(pause.indexOf('id="pause-balance-text"')); // lot 9a : gemme des diamants ensuite
-    // Retour du propriétaire après le lot 8k : solde puis icône puis « +gain » ; lot 9a : « Solde médailles » (champ « bleu ») avec la médaille (avant :
-    // gemme), « Solde diamants » (champ « medailles ») avec la gemme (avant : médaille).
-    for (const [id, icone, gain] of [['end-balance', 'hud-medaille', 'end-bleu'], ['end-medailles-solde', 'hud-gem', 'end-medailles']]) {
+    // Retour du propriétaire après le lot 8k : solde puis icône puis « +gain » ; lot 9a : « Solde médailles » avec la médaille (avant :
+    // gemme), « Solde diamants » avec la gemme (avant : médaille).
+    for (const [id, icone, gain] of [['end-balance', 'hud-medaille', 'end-medailles'], ['end-diamants-solde', 'hud-gem', 'end-diamants']]) {
       const line = html.slice(at(`id="${id}"`), html.indexOf('</p>', at(`id="${id}"`)));
       expect(line.indexOf(`id="${id}-text"`), id).toBeLessThan(line.indexOf(icone));
       expect(line.indexOf(icone), id).toBeGreaterThan(0);
@@ -334,16 +334,16 @@ describe('structure de jeu.html', () => {
     }
   });
 
-  it('fin : colonne de gauche vague, record, meilleure manche ; colonne de droite tués, jaune perdue, prime du monde, bleue gagnée, solde bleu (lot 8h) ; plus de note « provisoire »', () => {
+  it('fin : colonne de gauche vague, record, meilleure manche ; colonne de droite tués, jaune perdue, prime du monde, médailles gagnées, solde des médailles (lot 8h) ; plus de note « provisoire »', () => {
     const end = html.slice(at('id="end-panel"'), at('id="rotate"'));
     const cols = end.split('class="facts-col"').slice(1).map((c) => [...c.matchAll(/id="(end-[a-z]+)"/g)].map((m) => m[1]).filter((i) => !i.endsWith('text')));
     // Retour du propriétaire après le lot 8k : à gauche vague atteinte (« Record » dans la même ligne), meilleure manche, zombies tués ; à droite solde de
-    // diamants (+gain), solde de médailles (+gain). Avant : gauche vague, record, meilleure manche, médailles ; droite tués, jaune perdue, prime, bleue.
+    // diamants (+gain), solde de médailles (+gain). Avant : gauche vague, record, meilleure manche, médailles ; droite tués, jaune perdue, prime, médailles (lot 8h).
     expect(cols[0]).toEqual(['end-wave', 'end-record', 'end-best', 'end-kills']);
     const vague = end.slice(end.indexOf('id="end-wave"'), end.indexOf('id="end-best"'));
     expect(vague).toContain('id="end-record"');
-    expect(cols[1].slice(0, 3)).toEqual(['end-balance', 'end-bleu', 'end-medailles']);
-    expect(end.indexOf('id="end-bleu"')).toBeLessThan(end.indexOf('id="end-medailles-solde"'));
+    expect(cols[1].slice(0, 3)).toEqual(['end-balance', 'end-medailles', 'end-diamants']);
+    expect(end.indexOf('id="end-medailles"')).toBeLessThan(end.indexOf('id="end-diamants-solde"'));
     expect(end).not.toContain('game.end.provisional');
     expect(fr['game.end.provisional']).toBeUndefined();
     expect(readFileSync('js/game/ui.js', 'utf8')).toMatch(/els\.quit\.addEventListener\('click', \(\) => ui\.openQuit\(\)\)/); // lot 8a (avant : aucun écouteur)

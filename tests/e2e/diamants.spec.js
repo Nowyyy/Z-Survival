@@ -1,10 +1,10 @@
 import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { readFileSync } from 'node:fs';
-import { defaultProgression, serialiser, soldeMedailles } from '../../js/core/progression.js';
-import { waitReady } from './helpers.js';
+import { CHAMPS_STOCKES, defaultProgression, serialiser, soldeDiamants } from '../../js/core/progression.js';
+import { nomsDuCode, waitReady } from './helpers.js';
 
-// Lot 8k (Docs/ref/economie.md) : médailles en partie (porte ouverte, paliers, premier monde, partie du jour), écrites AU GAIN dans zs.save.v2 ;
+// Lot 8k (Docs/ref/economie.md) : diamants (lot 9a) en partie (porte ouverte, paliers, premier monde, partie du jour), écrits dans zs.save.v2 ;
 // affichages (fin de manche, pause, E2-7, en-tête du menu). 667 × 375, step() et les hooks de ?test=1 (aucune durée réelle attendue) ; &store=local :
 // vrai localStorage (les adresses de gain n'ont aucun paramètre d'essai, sinon la sauvegarde est en lecture seule).
 const load = (name) => JSON.parse(readFileSync(`data/game/${name}.json`, 'utf8'));
@@ -14,7 +14,7 @@ const SIZE = { width: 667, height: 375 };
 const LOCAL = '/jeu.html?test=1&store=local&seed=1';
 const state = (page) => page.evaluate(() => window.__zs.getState());
 const step = (page, seconds) => page.evaluate((s) => window.__zs.step(s), seconds);
-const storedJson = async (page) => JSON.parse(await page.evaluate((k) => localStorage.getItem(k), KEY) ?? 'null');
+const storedJson = async (page) => nomsDuCode(JSON.parse(await page.evaluate((k) => localStorage.getItem(k), KEY) ?? 'null')); // lot 9b : noms du code
 const externes = (page, baseURL) => {
   const liste = [];
   page.on('request', (r) => {
@@ -45,36 +45,36 @@ async function jusquAPorte(page) {
   return state(page);
 }
 
-test.describe('médailles en partie (lot 8k)', () => {
+test.describe('diamants en partie (lot 8k)', () => {
   // Retour du propriétaire après le lot 9a : affichées aussitôt, écrites à la fin de la partie (mort, monde) ; avant : écrites aussitôt.
-  test('porte ouverte : +10 affichées aussitôt sous la monnaie bleue, écrites à la fin de la partie (mort), gardées ensuite après la fermeture de l\'onglet ; aucune requête externe', async ({ page, context, baseURL }) => {
+  test('porte ouverte : +10 affichés aussitôt sous les médailles, écrits à la fin de la partie (mort), gardés ensuite après la fermeture de l\'onglet ; aucune requête externe', async ({ page, context, baseURL }) => {
     test.setTimeout(150_000);
     const ext = externes(page, baseURL);
     await page.addInitScript(() => {
       window.__ecritures = [];
       const set = Storage.prototype.setItem;
-      // Garantie 9 : durée de chaque écriture du stockage (la seule chose que le gain de médailles ajoute à une image).
+      // Garantie 9 : durée de chaque écriture du stockage (la seule chose que le gain de diamants ajoute à une image).
       Storage.prototype.setItem = function (k, v) { const t0 = performance.now(); const r = set.call(this, k, v); window.__ecritures.push({ k, ms: performance.now() - t0 }); return r; };
     });
     await open(page);
     const s = await jusquAPorte(page);
     expect(s.zones.doors.filter((d) => d.open).length).toBe(1);
-    const m = s.save.medailles;
+    const m = s.save.diamants;
     expect(m.run.portes).toBe(10);
     const ecrit = await storedJson(page);
     // Retour après le lot 9a : rien d'écrit pendant la partie (avant : le solde écrit contenait déjà la porte et les paliers 5 et 10).
-    expect(soldeMedailles(ecrit)).toBe(0);
-    expect(m.run.total).toBe(10 + 2 * params.economy.medaillePalier);
+    expect(soldeDiamants(ecrit)).toBe(0);
+    expect(m.run.total).toBe(10 + 2 * params.economy.diamantPalier);
     expect(m.solde).toBe(m.run.total);
-    // Affichage en partie : médaille puis « solde (+gain) », dans un bloc à part, sous celui de la monnaie bleue (jamais par-dessus).
-    const bloc = page.locator('#hud-medailles-manche');
+    // Affichage en partie : gemme (lot 9a) puis « solde (+gain) », dans un bloc à part, sous celui des médailles (jamais par-dessus).
+    const bloc = page.locator('#hud-diamants-manche');
     await expect(bloc).toBeVisible();
     // Paliers 5 et 10 (fin de la manche 10) puis la porte, à moins de 4 s de jeu : les deux gains s'additionnent dans le même bloc.
     await expect(bloc).toContainText(`${m.solde} (+${m.run.total})`);
-    await expect(bloc.locator('svg.hud-gem')).toHaveCount(1); // lot 9a : les gains des portes et paliers (champ « medailles ») sont les diamants : gemme (avant : médaille)
-    const bleu = page.locator('#hud-bleu-manche');
-    if (await bleu.isVisible()) {
-      const [a, b] = await Promise.all([bleu.boundingBox(), bloc.boundingBox()]);
+    await expect(bloc.locator('svg.hud-gem')).toHaveCount(1); // lot 9a : les gains des portes et paliers sont les diamants : gemme (avant : médaille)
+    const medailles = page.locator('#hud-medailles-manche');
+    if (await medailles.isVisible()) {
+      const [a, b] = await Promise.all([medailles.boundingBox(), bloc.boundingBox()]);
       expect(b.y).toBeGreaterThanOrEqual(a.y + a.height - 0.5);
     }
     // Garantie 9 : chaque écriture du stockage sous 50 ms (émulation, valeur relative : la mesure réelle est au bilan).
@@ -87,32 +87,32 @@ test.describe('médailles en partie (lot 8k)', () => {
     const autre = await context.newPage();
     await autre.goto('/sauvegarde.html');
     const relu = await storedJson(autre);
-    expect(soldeMedailles(relu)).toBe(m.run.total + params.economy.medailleJour);
+    expect(soldeDiamants(relu)).toBe(m.run.total + params.economy.diamantJour);
     expect(relu.paliers.histoire.batiment).toBe(10);
     expect(ext).toEqual([]);
   });
 
-  test('pause : solde bleu puis solde de médailles (icône puis montant, « Médailles : » pour les lecteurs d\'écran) ; E2-7 : médailles gagnées, sources, solde ; axe', async ({ page }) => {
+  test('pause : solde des médailles puis des diamants (icône puis montant, « Diamants : » pour les lecteurs d\'écran) ; E2-7 : diamants gagnés, solde ; axe', async ({ page }) => {
     test.setTimeout(150_000);
     await open(page);
     await jusquAPorte(page);
     await page.locator('#btn-pause').click();
     const pause = page.locator('#pause-balance');
     await expect(pause).toBeVisible();
-    const total = (await state(page)).save.medailles.solde;
-    await expect(page.locator('#pause-medailles-text')).toHaveText(String(total));
-    await expect(pause.locator('.pause-medailles .sr-only')).toHaveText('Diamants :'); // lot 9a (avant : « Médailles : »)
-    await expect(pause.locator('.pause-medailles svg.hud-gem')).toHaveCount(1); // lot 9a : gemme (avant : médaille)
+    const total = (await state(page)).save.diamants.solde;
+    await expect(page.locator('#pause-diamants-text')).toHaveText(String(total));
+    await expect(pause.locator('.pause-diamants .sr-only')).toHaveText('Diamants :'); // lot 9a (avant : « Médailles : »)
+    await expect(pause.locator('.pause-diamants svg.hud-gem')).toHaveCount(1); // lot 9a : gemme (avant : médaille)
     await page.locator('#btn-resume').click();
     await page.evaluate(() => { window.__zs.killAll(); window.__zs.setChutes(0); window.__zs.downPlayer(); });
     await step(page, 0.3);
     await expect(page.locator('#end-panel')).toBeVisible();
-    // Retour du propriétaire après le lot 8k : « Solde médailles : N » puis la médaille et « +gain » (gain de la partie ; plus de ligne des sources).
-    await expect(page.locator('#end-medailles-text')).toHaveText(`+${total + params.economy.medailleJour}`);
-    await expect(page.locator('#end-medailles-solde-text')).toHaveText(`Solde diamants : ${total + params.economy.medailleJour}`); // lot 9a (avant : « Solde médailles »)
-    await expect(page.locator('#end-medailles-sources')).toHaveCount(0);
-    expect((await state(page)).save.medailles.run).toMatchObject({ portes: 10, paliers: 100, jour: params.economy.medailleJour });
-    expect(soldeMedailles(await storedJson(page))).toBe(total + params.economy.medailleJour);
+    // Retour du propriétaire après le lot 8k : « Solde diamants : N » (lot 9a) puis la gemme et « +gain » (gain de la partie ; plus de ligne des sources).
+    await expect(page.locator('#end-diamants-text')).toHaveText(`+${total + params.economy.diamantJour}`);
+    await expect(page.locator('#end-diamants-solde-text')).toHaveText(`Solde diamants : ${total + params.economy.diamantJour}`); // lot 9a (avant : « Solde médailles »)
+    await expect(page.locator('#end-diamants-sources')).toHaveCount(0);
+    expect((await state(page)).save.diamants.run).toMatchObject({ portes: 10, paliers: 100, jour: params.economy.diamantJour });
+    expect(soldeDiamants(await storedJson(page))).toBe(total + params.economy.diamantJour);
     const axe = await new AxeBuilder({ page }).include('#end-panel').analyze();
     expect(axe.violations).toEqual([]);
     // Dans l'écran à 667 × 375, sans chevauchement des lignes de la colonne de gauche.
@@ -121,7 +121,7 @@ test.describe('médailles en partie (lot 8k)', () => {
     for (const b of boites) expect(b.bottom).toBeLessThanOrEqual(SIZE.height);
   });
 
-  test('mode essai (?wave=11) : la porte affiche ses médailles, rien n\'est écrit', async ({ page }) => {
+  test('mode essai (?wave=11) : la porte affiche ses diamants, rien n\'est écrit', async ({ page }) => {
     test.setTimeout(120_000);
     await page.addInitScript(() => {
       window.__ecritures = [];
@@ -132,16 +132,16 @@ test.describe('médailles en partie (lot 8k)', () => {
     await step(page, 3.2);
     await page.evaluate(() => window.__zs.skipWave());
     for (let i = 0; i < 80 && !(await state(page)).zones.doors.some((d) => d.open); i += 1) await step(page, 0.25);
-    expect((await state(page)).save.medailles.run.portes).toBe(10);
+    expect((await state(page)).save.diamants.run.portes).toBe(10);
     expect(await page.evaluate(() => window.__ecritures.filter((k) => k === 'zs.save.v2'))).toEqual([]);
   });
 });
 
 test.describe('en-tête du menu (lot 8k)', () => {
   for (const [nom, size] of [['932 × 430', { width: 932, height: 430 }], ['667 × 375', SIZE]]) {
-    test(`${nom} : solde bleu puis solde de médailles (« Monnaie bleue : N », « Médailles : N »), dans l'en-tête, sans chevauchement ; axe`, async ({ page }) => {
+    test(`${nom} : solde des médailles puis des diamants (« Médailles : N », « Diamants : N »), dans l'en-tête, sans chevauchement ; axe`, async ({ page }) => {
       test.setTimeout(120_000);
-      const save = serialiser({ ...defaultProgression(), bleu: { gagne: 1234, depense: 0 }, medailles: { gagne: 2050, depense: 600, jour: 0 } });
+      const save = serialiser({ ...defaultProgression(), medailles: { gagne: 1234, depense: 0 }, diamants: { gagne: 2050, depense: 600, jour: 0 } });
       await page.addInitScript(([k, v]) => {
         if (!sessionStorage.getItem('zs.test.pose')) {
           sessionStorage.setItem('zs.test.pose', '1');
@@ -154,21 +154,21 @@ test.describe('en-tête du menu (lot 8k)', () => {
       await page.waitForFunction(() => window.__zsMenu?.etat()?.menu !== null && !document.getElementById('e7'));
       const nbsp = String.fromCharCode(0x202f);
       await expect(page.locator('#menu-solde-texte')).toHaveText(`1${nbsp}234`);
-      await expect(page.locator('#menu-medailles-texte')).toHaveText(`1${nbsp}450`);
-      await expect(page.locator('#menu-medailles')).toContainText(`Diamants : 1${nbsp}450`); // lot 9a (avant : « Médailles »)
-      await expect(page.locator('#menu-medailles svg')).toHaveCount(1);
-      const b = await page.evaluate(() => Object.fromEntries(['#menu-solde', '#menu-medailles', '#menu-plein-ecran', '#menu-trois-barres', '.menu-bandeau'].map((s) => [s, document.querySelector(s)?.getBoundingClientRect().toJSON() ?? null])));
-      expect(b['#menu-solde'].right).toBeLessThanOrEqual(b['#menu-medailles'].left + 0.5);
-      expect(b['#menu-medailles'].right).toBeLessThanOrEqual((b['#menu-plein-ecran']?.width ? b['#menu-plein-ecran'] : b['#menu-trois-barres']).left + 0.5);
-      expect(b['#menu-medailles'].right).toBeLessThanOrEqual(size.width);
-      const axe = await new AxeBuilder({ page }).include('#menu-medailles').analyze();
+      await expect(page.locator('#menu-diamants-texte')).toHaveText(`1${nbsp}450`);
+      await expect(page.locator('#menu-diamants')).toContainText(`Diamants : 1${nbsp}450`); // lot 9a (avant : « Médailles »)
+      await expect(page.locator('#menu-diamants svg')).toHaveCount(1);
+      const b = await page.evaluate(() => Object.fromEntries(['#menu-solde', '#menu-diamants', '#menu-plein-ecran', '#menu-trois-barres', '.menu-bandeau'].map((s) => [s, document.querySelector(s)?.getBoundingClientRect().toJSON() ?? null])));
+      expect(b['#menu-solde'].right).toBeLessThanOrEqual(b['#menu-diamants'].left + 0.5);
+      expect(b['#menu-diamants'].right).toBeLessThanOrEqual((b['#menu-plein-ecran']?.width ? b['#menu-plein-ecran'] : b['#menu-trois-barres']).left + 0.5);
+      expect(b['#menu-diamants'].right).toBeLessThanOrEqual(size.width);
+      const axe = await new AxeBuilder({ page }).include('#menu-diamants').analyze();
       expect(axe.violations).toEqual([]);
     });
   }
 });
 
 test.describe('paliers et aucun crédit rétroactif (lot 8k, partie C)', () => {
-  // Manche 5 démarrée puis terminée par le hook : palier 5 (premier franchissement) ; renvoie les médailles écrites.
+  // Manche 5 démarrée puis terminée par le hook : palier 5 (premier franchissement) ; renvoie la progression écrite.
   // Retour du propriétaire après le lot 9a : la partie finit par la mort pour que ses gains soient écrits (avant : écrits à la fin de la manche) ;
   // la première fin de partie du jour ajoute la partie du jour.
   async function palier5(page) {
@@ -179,24 +179,24 @@ test.describe('paliers et aucun crédit rétroactif (lot 8k, partie C)', () => {
     await page.evaluate(() => { const zs = window.__zs; zs.setChutes(0); zs.downPlayer(); zs.step(0.3); });
     return storedJson(page);
   }
-  const JOUR = params.economy.medailleJour;
+  const JOUR = params.economy.diamantJour;
 
   test('palier 5 crédité une fois (+50, écrit à la fin de la partie) ; une nouvelle partie qui le refranchit ne rapporte plus rien', async ({ page }) => {
     test.setTimeout(150_000);
     await open(page);
     const a = await palier5(page);
-    expect(soldeMedailles(a)).toBe(params.economy.medaillePalier + JOUR);
+    expect(soldeDiamants(a)).toBe(params.economy.diamantPalier + JOUR);
     expect(a.paliers).toEqual({ histoire: { batiment: 5 }, infini: {} });
     await open(page); // nouvelle partie (page rechargée), même stockage
     const b = await palier5(page);
-    expect(soldeMedailles(b)).toBe(params.economy.medaillePalier + JOUR); // ni palier ni partie du jour une seconde fois
-    expect((await state(page)).save.medailles.run.paliers).toBe(0);
+    expect(soldeDiamants(b)).toBe(params.economy.diamantPalier + JOUR); // ni palier ni partie du jour une seconde fois
+    expect((await state(page)).save.diamants.run.paliers).toBe(0);
   });
 
-  test('sauvegarde v2 préparée d\'avant le lot (records 40, monde terminé) : 0 médaille au menu et en partie, rien écrit au chargement ; le premier palier franchi ensuite rapporte', async ({ page }) => {
+  test('sauvegarde v2 préparée d\'avant le lot (records 40, monde terminé) : 0 diamant au menu et en partie, rien écrit au chargement ; le premier palier franchi ensuite rapporte', async ({ page }) => {
     test.setTimeout(150_000);
-    const avant = { ...serialiser(defaultProgression()), bleu: { gagne: 900, depense: 0 }, records: { histoire: { batiment: 40 }, infini: { batiment: 61 } }, mondes: ['batiment'] };
-    for (const k of ['medailles', 'paliers', 'mondesFinis', 'pitie']) delete avant[k];
+    const avant = { ...serialiser(defaultProgression()), [CHAMPS_STOCKES.medailles]: { gagne: 900, depense: 0 }, records: { histoire: { batiment: 40 }, infini: { batiment: 61 } }, mondes: ['batiment'] };
+    for (const k of [CHAMPS_STOCKES.diamants, 'paliers', 'mondesFinis', 'pitie']) delete avant[k]; // lot 9b : champs stockés
     const texte = JSON.stringify(avant);
     await page.addInitScript(([k, v]) => {
       if (!sessionStorage.getItem('zs.test.pose')) {
@@ -211,14 +211,14 @@ test.describe('paliers et aucun crédit rétroactif (lot 8k, partie C)', () => {
     await page.goto('/jeu.html?test=1&menu=1&seed=1&store=local');
     await expect(page.locator('#menu-jouer')).toBeVisible({ timeout: 60_000 });
     await page.waitForFunction(() => window.__zsMenu?.etat()?.menu !== null && !document.getElementById('e7'));
-    await expect(page.locator('#menu-medailles-texte')).toHaveText('0');
+    await expect(page.locator('#menu-diamants-texte')).toHaveText('0');
     expect(await page.evaluate((k) => localStorage.getItem(k), KEY)).toBe(texte);
     await open(page);
-    expect((await state(page)).save.medailles.solde).toBe(0);
+    expect((await state(page)).save.diamants.solde).toBe(0);
     expect(await page.evaluate((k) => localStorage.getItem(k), KEY)).toBe(texte);
     expect(await page.evaluate(() => window.__ecritures.filter((k) => k === 'zs.save.v2'))).toEqual([]);
     const apres = await palier5(page);
-    expect(soldeMedailles(apres)).toBe(params.economy.medaillePalier + JOUR);
+    expect(soldeDiamants(apres)).toBe(params.economy.diamantPalier + JOUR);
     expect(apres.records.histoire.batiment).toBe(40);
   });
 
@@ -232,9 +232,9 @@ test.describe('paliers et aucun crédit rétroactif (lot 8k, partie C)', () => {
     for (const p of [page, other]) await p.evaluate(() => window.__zs.skipWave());
     for (const p of [page, other]) await step(p, 0.3);
     for (const p of [page, other]) await p.evaluate(() => { const zs = window.__zs; zs.setChutes(0); zs.downPlayer(); zs.step(0.3); }); // retour après le lot 9a
-    await expect.poll(async () => soldeMedailles(await storedJson(other)), { timeout: 5_000 }).toBe(params.economy.medaillePalier + JOUR);
-    await expect.poll(async () => soldeMedailles(await storedJson(page))).toBe(params.economy.medaillePalier + JOUR);
+    await expect.poll(async () => soldeDiamants(await storedJson(other)), { timeout: 5_000 }).toBe(params.economy.diamantPalier + JOUR);
+    await expect.poll(async () => soldeDiamants(await storedJson(page))).toBe(params.economy.diamantPalier + JOUR);
     expect((await storedJson(page)).paliers.histoire.batiment).toBe(5);
-    expect((await storedJson(page)).bleu.gagne).toBe(2 * 30); // les deux manches 5 (renforcées) rapportent leur bleue : opérations distinctes
+    expect((await storedJson(page)).medailles.gagne).toBe(2 * 30); // les deux manches 5 (renforcées) rapportent leurs médailles : opérations distinctes
   });
 });
