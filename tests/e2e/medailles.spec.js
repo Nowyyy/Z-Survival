@@ -46,7 +46,8 @@ async function jusquAPorte(page) {
 }
 
 test.describe('médailles en partie (lot 8k)', () => {
-  test('porte ouverte : +10 médailles écrites AUSSITÔT (avant la fin de la manche suivante), affichées sous la monnaie bleue, gardées après la fermeture de l\'onglet ; aucune requête externe', async ({ page, context, baseURL }) => {
+  // Retour du propriétaire après le lot 9a : affichées aussitôt, écrites à la fin de la partie (mort, monde) ; avant : écrites aussitôt.
+  test('porte ouverte : +10 affichées aussitôt sous la monnaie bleue, écrites à la fin de la partie (mort), gardées ensuite après la fermeture de l\'onglet ; aucune requête externe', async ({ page, context, baseURL }) => {
     test.setTimeout(150_000);
     const ext = externes(page, baseURL);
     await page.addInitScript(() => {
@@ -61,8 +62,8 @@ test.describe('médailles en partie (lot 8k)', () => {
     const m = s.save.medailles;
     expect(m.run.portes).toBe(10);
     const ecrit = await storedJson(page);
-    // Écrit aussitôt : le solde écrit contient déjà la porte (et les paliers 5 et 10, premier franchissement : partie C).
-    expect(soldeMedailles(ecrit)).toBe(m.run.total);
+    // Retour après le lot 9a : rien d'écrit pendant la partie (avant : le solde écrit contenait déjà la porte et les paliers 5 et 10).
+    expect(soldeMedailles(ecrit)).toBe(0);
     expect(m.run.total).toBe(10 + 2 * params.economy.medaillePalier);
     expect(m.solde).toBe(m.run.total);
     // Affichage en partie : médaille puis « solde (+gain) », dans un bloc à part, sous celui de la monnaie bleue (jamais par-dessus).
@@ -80,12 +81,13 @@ test.describe('médailles en partie (lot 8k)', () => {
     const durees = await page.evaluate(() => window.__ecritures.filter((e) => e.k === 'zs.save.v2').map((e) => e.ms));
     expect(durees.length).toBeGreaterThan(0);
     expect(Math.max(...durees)).toBeLessThan(50);
-    // Onglet fermé : la porte est gardée (rien n'attendait d'être écrit).
+    // Fin de la partie (mort) : porte, paliers et partie du jour écrits ; onglet fermé ensuite : tout est gardé.
+    await page.evaluate(() => { const zs = window.__zs; zs.setChutes(0); zs.downPlayer(); zs.step(0.3); });
     await page.close();
     const autre = await context.newPage();
     await autre.goto('/sauvegarde.html');
     const relu = await storedJson(autre);
-    expect(soldeMedailles(relu)).toBe(m.run.total);
+    expect(soldeMedailles(relu)).toBe(m.run.total + params.economy.medailleJour);
     expect(relu.paliers.histoire.batiment).toBe(10);
     expect(ext).toEqual([]);
   });
@@ -167,23 +169,27 @@ test.describe('en-tête du menu (lot 8k)', () => {
 
 test.describe('paliers et aucun crédit rétroactif (lot 8k, partie C)', () => {
   // Manche 5 démarrée puis terminée par le hook : palier 5 (premier franchissement) ; renvoie les médailles écrites.
+  // Retour du propriétaire après le lot 9a : la partie finit par la mort pour que ses gains soient écrits (avant : écrits à la fin de la manche) ;
+  // la première fin de partie du jour ajoute la partie du jour.
   async function palier5(page) {
     await page.evaluate(() => window.__zs.startWave(5));
     await step(page, 3.2);
     await page.evaluate(() => window.__zs.skipWave());
     await step(page, 0.3);
+    await page.evaluate(() => { const zs = window.__zs; zs.setChutes(0); zs.downPlayer(); zs.step(0.3); });
     return storedJson(page);
   }
+  const JOUR = params.economy.medailleJour;
 
-  test('palier 5 crédité une fois (+50, écrit à la fin de la manche) ; une nouvelle partie qui le refranchit ne rapporte plus rien', async ({ page }) => {
+  test('palier 5 crédité une fois (+50, écrit à la fin de la partie) ; une nouvelle partie qui le refranchit ne rapporte plus rien', async ({ page }) => {
     test.setTimeout(150_000);
     await open(page);
     const a = await palier5(page);
-    expect(soldeMedailles(a)).toBe(params.economy.medaillePalier);
+    expect(soldeMedailles(a)).toBe(params.economy.medaillePalier + JOUR);
     expect(a.paliers).toEqual({ histoire: { batiment: 5 }, infini: {} });
     await open(page); // nouvelle partie (page rechargée), même stockage
     const b = await palier5(page);
-    expect(soldeMedailles(b)).toBe(params.economy.medaillePalier);
+    expect(soldeMedailles(b)).toBe(params.economy.medaillePalier + JOUR); // ni palier ni partie du jour une seconde fois
     expect((await state(page)).save.medailles.run.paliers).toBe(0);
   });
 
@@ -212,7 +218,7 @@ test.describe('paliers et aucun crédit rétroactif (lot 8k, partie C)', () => {
     expect(await page.evaluate((k) => localStorage.getItem(k), KEY)).toBe(texte);
     expect(await page.evaluate(() => window.__ecritures.filter((k) => k === 'zs.save.v2'))).toEqual([]);
     const apres = await palier5(page);
-    expect(soldeMedailles(apres)).toBe(params.economy.medaillePalier);
+    expect(soldeMedailles(apres)).toBe(params.economy.medaillePalier + JOUR);
     expect(apres.records.histoire.batiment).toBe(40);
   });
 
@@ -225,8 +231,9 @@ test.describe('paliers et aucun crédit rétroactif (lot 8k, partie C)', () => {
     for (const p of [page, other]) await step(p, 3.2);
     for (const p of [page, other]) await p.evaluate(() => window.__zs.skipWave());
     for (const p of [page, other]) await step(p, 0.3);
-    await expect.poll(async () => soldeMedailles(await storedJson(other)), { timeout: 5_000 }).toBe(params.economy.medaillePalier);
-    await expect.poll(async () => soldeMedailles(await storedJson(page))).toBe(params.economy.medaillePalier);
+    for (const p of [page, other]) await p.evaluate(() => { const zs = window.__zs; zs.setChutes(0); zs.downPlayer(); zs.step(0.3); }); // retour après le lot 9a
+    await expect.poll(async () => soldeMedailles(await storedJson(other)), { timeout: 5_000 }).toBe(params.economy.medaillePalier + JOUR);
+    await expect.poll(async () => soldeMedailles(await storedJson(page))).toBe(params.economy.medaillePalier + JOUR);
     expect((await storedJson(page)).paliers.histoire.batiment).toBe(5);
     expect((await storedJson(page)).bleu.gagne).toBe(2 * 30); // les deux manches 5 (renforcées) rapportent leur bleue : opérations distinctes
   });

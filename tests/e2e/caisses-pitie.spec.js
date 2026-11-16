@@ -99,7 +99,11 @@ test.describe('caisses uniques et pitié (lot 8k)', () => {
     await ouvrirBoutique(page);
     const ap = page.locator('#menu-caisse-equipement-apercu');
     await expect(ap).toBeVisible();
-    await expect(ap.locator('.e3-apercu-titre')).toHaveText(['Ta pitié dans cette caisse', 'Légendaires possibles']);
+    // Retour du propriétaire après le lot 9a : la ligne « Ta pitié dans cette caisse » n'est plus affichée (gardée pour les lecteurs d'écran ; avant :
+    // deux titres visibles).
+    await expect(ap.locator('.e3-apercu-titre')).toHaveText(['Légendaires possibles']);
+    await expect(page.locator('#menu-caisse-equipement-apercu-titre')).toHaveClass('sr-only');
+    await expect(page.locator('#menu-caisse-equipement-apercu-titre')).toHaveText('Ta pitié dans cette caisse');
     // Retour du propriétaire : seulement la pitié du légendaire (rien sur la garantie épique, compteur épique de 7 non affiché).
     await expect(ap.locator('.e3-apercu-compte')).toHaveText(['52 / 70']);
     await expect(ap.locator('.e3-apercu-texte')).toHaveText(['Légendaire garanti dans 18 tirages au plus']);

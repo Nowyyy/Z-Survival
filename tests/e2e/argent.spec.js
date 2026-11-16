@@ -13,6 +13,9 @@ const load = (name) => JSON.parse(readFileSync(`data/game/${name}.json`, 'utf8')
 const params = { save: load('save'), economy: load('economy'), stats: load('player-stats') };
 const KEY = params.save.v2.storageKey;
 const bleu = async (page) => { const t = await stored(page); return t === null ? 0 : solde(JSON.parse(t)); };
+// Retour du propriétaire après le lot 9a : médailles et diamants d'une partie écrits seulement à sa fin (mort, monde) : les tests qui lisaient la
+// sauvegarde juste après une manche finissent d'abord la partie par la mort (avant : écrits aussitôt la manche finie).
+const mourir = (page) => page.evaluate(() => { const zs = window.__zs; zs.setChutes(0); zs.downPlayer(); zs.step(0.3); });
 // Lot 5a : triangles des épaves (hélicoptère écrasé et voiture calcinée, maillage du décor de l'atlas, dessinés aussi avec ?detail=0 : ils sont solides), ajoutés aux références.
 const EPAVES = (JSON.parse(readFileSync('data/game/maps/rez-de-chaussee/decor.json', 'utf8')).wrecks?.helicopter?.triangles ?? 0) + 158 + (JSON.parse(readFileSync('data/game/maps/rez-de-chaussee/decor.json', 'utf8')).wrecks?.helicopter?.scarTriangles ?? 0); // lot 5a-F : + le cratère et la traînée (sol de terre) // + la voiture calcinée posée à part (3 boîtes de 10 triangles, 4 roues de 32), dans le même maillage
 // Lot 9a : triangles de tôle et du rotor de l'hélicoptère (tout sauf la verrière), dessinés à part et seulement dans le champ.
@@ -122,8 +125,10 @@ test.describe('gains', () => {
     await step(page, 0.2);
     s = await state(page);
     expect(s.economy.byKind).toMatchObject({ kill: 0, wave: 0 }); // lot 8h : le bonus de manche est en bleu, plus dans la jaune
-    expect(s.save.bleu).toMatchObject({ run: 20, solde: 20, pending: 0 });
+    expect(s.save.bleu).toMatchObject({ run: 20, solde: 20, pending: 20 }); // retour après le lot 9a : en attente jusqu'à la fin de la partie (avant : 0)
     expect(s.save.balance).toBe(0);
+    expect(await bleu(page)).toBe(0);
+    await mourir(page);
     expect(await bleu(page)).toBe(20);
   });
 
@@ -168,8 +173,9 @@ test.describe('gains (suite)', () => {
     for (let i = 0; i < 12; i += 1) await step(page, 1);
     const s = await state(page);
     expect(s.save.bleu.run).toBe(30);
-    expect(await bleu(page)).toBe(30);
     expect(s.zones.doors?.length ?? 1).toBeGreaterThan(0);
+    await mourir(page); // retour après le lot 9a : écrite à la fin de la partie
+    expect(await bleu(page)).toBe(30);
   });
 
   test('la fin du monde rapporte 500 bleus une seule fois ; monde terminé (lot 8k : manche 40 renforcée 30 + 500 = 530 ; avant : 635), record de l\'histoire, partie comptée', async ({ page }) => {
@@ -233,7 +239,9 @@ test.describe('conservation à la mort', () => {
     expect(s.save.saved.profil).toMatchObject({ tues: 1, partiesHistoire: 1 });
   });
 
-  test('onglet fermé après une manche terminée puis rouvert : la bleue est gardée (écrite à la fin de la manche, sans attendre la fin de partie)', async ({ page, context }) => {
+  // Retour du propriétaire après le lot 9a : une partie abandonnée (onglet fermé) perd ses médailles et diamants ; ses statistiques restent (avant :
+  // la bleue de la manche était gardée).
+  test('onglet fermé après une manche terminée puis rouvert : la bleue de la partie est perdue, la partie et le record restent comptés', async ({ page, context }) => {
     await open(page);
     await step(page, 3.2);
     await page.evaluate(() => window.__zs.skipWave());
@@ -241,7 +249,8 @@ test.describe('conservation à la mort', () => {
     await page.close({ runBeforeUnload: false });
     const p2 = await context.newPage();
     await open(p2);
-    expect((await state(p2)).save.bleu.solde).toBe(20);
+    expect((await state(p2)).save.bleu.solde).toBe(0);
+    expect((await state(p2)).save.saved.profil.partiesHistoire).toBe(1);
   });
 
   test('localStorage ne contient que zs.save.v2 (lot 8h), JSON conforme au format v2, moins de 2 Ko ; tués, partie, record justes ; aucune jaune', async ({ page }) => {
@@ -318,6 +327,7 @@ test.describe('écriture', () => {
     expect(await bleu(page)).toBe(0);
   });
 
+  // Retour du propriétaire après le lot 9a : la fin de manche écrit les statistiques (une écriture) ; la bleue attend la fin de la partie.
   test('écriture immédiate à la fin de manche', async ({ page }) => {
     await page.addInitScript(SPY);
     await open(page);
@@ -325,6 +335,8 @@ test.describe('écriture', () => {
     await page.evaluate(() => window.__zs.skipWave());
     await step(page, 0.2);
     expect(await writes(page)).toHaveLength(1);
+    expect(await bleu(page)).toBe(0);
+    await mourir(page);
     expect(await bleu(page)).toBe(20);
   });
 
@@ -390,6 +402,7 @@ test.describe('multi-onglets', () => {
     for (const p of [page, other]) await step(p, 3.2);
     for (const p of [page, other]) await p.evaluate(() => window.__zs.skipWave());
     for (const p of [page, other]) await step(p, 0.2);
+    for (const p of [page, other]) await mourir(p); // retour après le lot 9a : écrites à la fin de chaque partie
     // Lot 5n (T3) : l'écriture d'un onglet n'est pas visible tout de suite dans l'autre (Chrome : 2 à 3 lectures sur 300 périmées juste après
     // l'écriture, mesuré) : la valeur écrite est lue dans l'onglet qui vient d'écrire (une écriture perdue y donne 10), puis attendue dans
     // l'autre. Avant : lue tout de suite dans l'autre onglet (10 au lieu de 20 quand la lecture était périmée).
@@ -426,14 +439,14 @@ test.describe('échecs de stockage', () => {
     await step(page, 3.2);
     await page.evaluate(() => window.__zs.skipWave());
     await step(page, 0.2);
+    await mourir(page); // retour après le lot 9a : la fin de partie écrit la bleue (ici, échoue)
     const r = await page.evaluate(() => window.__zs.flushSave());
     expect(r).toMatchObject({ ok: false, error: 'QuotaExceededError' });
     let s = await state(page);
     expect(s.save).toMatchObject({ status: 'failed', pending: 20, bleu: { solde: 20 } });
     expect(s.save.lastCommit).toMatchObject({ ok: false, error: 'QuotaExceededError' });
-    await page.getByRole('button', { name: 'Pause' }).click();
     await expect(page.locator('#pause-save')).toHaveCount(0); // lot 3l (retour du propriétaire) : l'état de la sauvegarde n'est plus affiché dans la pause ; il est vérifié dans getState().save
-    await page.getByRole('button', { name: 'Reprendre' }).click();
+    await expect(page.locator('#end-save')).toBeVisible(); // retour après le lot 9a : la partie est finie (mort) : l'échec est dit sur l'écran de fin (avant : pause ouverte puis fermée)
     await page.evaluate(() => { window.__fail = false; });
     await page.evaluate(() => window.__zs.flushSave());
     s = await state(page);
@@ -814,19 +827,22 @@ test.describe('interface', () => {
     expect(log.filter((t) => /Argent|\+10\b/.test(t) && !t.startsWith('Manche'))).toEqual([]);
   });
 
+  // Retour du propriétaire après le lot 9a : le « +N » de fin de manche près de la jaune faisait doublon avec le bloc sous la vague : retiré (avant :
+  // visible, aria-hidden, « +20 », bronze, effacé ensuite). Les médailles de la manche restent sous la vague seulement.
   test('lot 8h : « +N » bleu discret à la fin d\'une manche qui rapporte (décoratif), qui s\'efface ; la jaune ne bouge pas', async ({ page }) => {
     await open(page);
     await step(page, 3.2);
     await page.evaluate(() => window.__zs.skipWave());
     await step(page, 0.3);
-    await expect(page.locator('#hud-gain-bleu')).toBeVisible();
-    await expect(page.locator('#hud-gain-bleu')).toHaveAttribute('aria-hidden', 'true');
-    await expect(page.locator('#hud-gain-bleu')).toHaveText('+20');
+    await expect(page.locator('#hud-gain-bleu')).toHaveCount(0);
+    await expect(page.locator('#hud-bleu-manche')).toBeVisible();
+    await expect(page.locator('#hud-bleu-manche')).toHaveAttribute('aria-hidden', 'true');
+    await expect(page.locator('#hud-bleu-manche')).toHaveText('20 (+20)');
     await expect(page.locator('#hud-gain')).toBeHidden();
     expect((await state(page)).save.balance).toBe(0);
-    expect(await page.locator('#hud-gain-bleu').evaluate((n) => getComputedStyle(n).color)).toBe('rgb(208, 139, 76)'); // lot 9a : --color-money-medaille (avant : --color-money-blue, rgb(90, 176, 255))
-    await step(page, 2);
-    await expect(page.locator('#hud-gain-bleu')).toBeHidden();
+    expect(await page.locator('#hud-bleu-manche').evaluate((n) => getComputedStyle(n).color)).toBe('rgb(208, 139, 76)'); // --color-money-medaille
+    await step(page, 4.2);
+    await expect(page.locator('#hud-bleu-manche')).toBeHidden();
   });
 
   test('l\'ordre des blocs E2 est inchangé, sans nouveau bloc', async ({ page }) => {

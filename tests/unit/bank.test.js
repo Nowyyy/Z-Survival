@@ -9,7 +9,8 @@ import { codecV2 } from '../../js/save/codecs.js';
 import { createFakeStorage, quotaError } from './helpers/fake-storage.js';
 
 // Lot 4 ; lot 8h : deux monnaies. Jaune = gains des zombies et des planches, remise à 0 à chaque partie, jamais écrite ; bleue = bonus de fin de
-// manche et prime de fin du monde, écrite dans la progression v2 (zs.save.v2) à chaque manche terminée, gardée pour toujours.
+// manche et prime de fin du monde, écrite dans la progression v2 (zs.save.v2) à la fin de la partie (mort, monde ; retour après le lot 9a :
+// avant, à chaque manche terminée ; « Quitter » la perd), gardée pour toujours.
 const load = (name) => JSON.parse(readFileSync(`data/game/${name}.json`, 'utf8'));
 const params = { save: load('save'), economy: load('economy'), stats: load('player-stats') };
 const realEconomy = makeEconomy(params.economy, load('enemies'));
@@ -99,16 +100,18 @@ describe('banque : monnaie jaune (partie)', () => {
 });
 
 describe('banque : monnaie bleue (gardée)', () => {
-  it('fin de manche : bonus bleu (12 à la manche 1, 30 à la 5 renforcée), une seule fois par manche, écrit aussitôt', () => {
+  // Retour du propriétaire après le lot 9a : les gains de la partie ne sont écrits qu'à sa fin (mort, monde terminé) ; avant : aussitôt la manche finie.
+  it('fin de manche : bonus bleu (12 à la manche 1, 30 à la 5 renforcée), une seule fois par manche, écrit à la fin de la partie', () => {
     const { bank, storage } = make();
     bank.waveStart(1);
     expect(bank.waveEnd(1, false).bonus).toBe(12);
-    expect(solde(stored(storage))).toBe(12);
+    expect(solde(stored(storage))).toBe(0); // la manche écrit les statistiques, pas le bonus
     expect(bank.waveEnd(1, false).bonus).toBe(0);
     expect(bank.waveEnd(5, true).bonus).toBe(30);
-    expect(solde(stored(storage))).toBe(42);
     expect(bank.snapshot().economy.byKind.wave).toBe(0); // la jaune ne reçoit plus le bonus de manche
-    expect(bank.snapshot().bleu).toMatchObject({ solde: 42, run: 42, pending: 0 });
+    expect(bank.snapshot().bleu).toMatchObject({ solde: 42, run: 42, pending: 42 });
+    bank.runEnd({ reason: 'death' });
+    expect(solde(stored(storage))).toBe(42);
   });
 
   it('fin du monde : prime bleue (500) une seule fois, monde terminé ; écrite à la fin de partie', () => {
@@ -126,11 +129,13 @@ describe('banque : monnaie bleue (gardée)', () => {
     const { bank, storage } = make({ initial: avec(9_999_990) });
     bank.waveStart(1);
     bank.waveEnd(1, false);
-    expect(solde(stored(storage))).toBe(9_999_999);
     expect(bank.soldeBleu()).toBe(9_999_999);
+    bank.runEnd({ reason: 'death' });
+    expect(solde(stored(storage))).toBe(9_999_999);
   });
 
-  it('mort ou « Quitter » : jaune perdue, bleue gagnée gardée (bilan de l\'écran de fin)', () => {
+  // Retour du propriétaire après le lot 9a : la mort garde la bleue gagnée ; « Quitter » la perd (avant : gardée aussi).
+  it('mort : jaune perdue, bleue gagnée gardée ; « Quitter » : jaune et bleue de la partie perdues (bilan de l\'écran de fin)', () => {
     const { bank, storage } = make({ initial: avec(100) });
     bank.waveStart(1);
     bank.kill('grand', 1);
@@ -138,7 +143,12 @@ describe('banque : monnaie bleue (gardée)', () => {
     bank.waveStart(2);
     bank.kill('petit', 2);
     const end = bank.runEnd({ reason: 'quit' });
-    expect(end).toMatchObject({ earned: 18, balance: 18, bleu: 12, soldeBleu: 112, reached: 2, mode: 'histoire', ok: true });
+    expect(end).toMatchObject({ earned: 18, balance: 18, bleu: 0, soldeBleu: 100, reached: 2, mode: 'histoire', ok: true });
+    expect(solde(stored(storage))).toBe(100);
+    bank.restart();
+    bank.waveStart(1);
+    bank.waveEnd(1, false);
+    expect(bank.runEnd({ reason: 'death' })).toMatchObject({ bleu: 12, soldeBleu: 112, ok: true });
     expect(solde(stored(storage))).toBe(112);
   });
 
@@ -219,8 +229,9 @@ describe('banque : écriture de la progression', () => {
   it('une écriture échouée n\'efface rien : reprise à la suivante, même identifiant (jamais perdue, jamais comptée deux fois)', () => {
     const { bank, storage } = make();
     bank.waveStart(1);
-    storage.failSet = quotaError();
     bank.waveEnd(1, false);
+    storage.failSet = quotaError();
+    bank.runEnd({ reason: 'death' }); // fin de partie : l'écriture des gains échoue
     expect(bank.snapshot()).toMatchObject({ status: 'failed', pending: 12 });
     expect(bank.snapshot().lastCommit).toMatchObject({ ok: false, error: 'QuotaExceededError' });
     expect(bank.soldeBleu()).toBe(12);
@@ -240,6 +251,8 @@ describe('banque : écriture de la progression', () => {
     b.bank.waveStart(1);
     a.bank.waveEnd(1, false);
     b.bank.waveEnd(1, false);
+    a.bank.runEnd({ reason: 'death' }); // retour après le lot 9a : écrits à la fin de chaque partie
+    b.bank.runEnd({ reason: 'death' });
     expect(solde(stored(storage))).toBe(24);
     expect(stored(storage).profil.partiesHistoire).toBe(2);
   });
@@ -319,26 +332,36 @@ describe('banque : écriture de la progression', () => {
     expect(bank.snapshot()).toMatchObject({ status: 'unavailable', balance: 5 });
   });
 
+  // Retour du propriétaire après le lot 9a : chaque partie écrit ses statistiques à la manche et ses gains à la mort (deux opérations par partie).
   it('restart : écrit ce qui attend, nouvelle partie (nouvel identifiant), nouveaux bonus permis', () => {
     const { bank, storage } = make();
     bank.waveStart(1);
     bank.waveEnd(1, false);
+    bank.runEnd({ reason: 'death' });
     bank.restart();
     bank.waveStart(1);
     expect(bank.waveEnd(1, false).bonus).toBe(12);
+    bank.runEnd({ reason: 'death' });
     expect(solde(stored(storage))).toBe(24);
     expect(stored(storage).profil.partiesHistoire).toBe(2);
-    expect(stored(storage).journal).toHaveLength(2);
-    expect(new Set(stored(storage).journal).size).toBe(2);
+    expect(stored(storage).journal).toHaveLength(4);
+    expect(new Set(stored(storage).journal).size).toBe(4);
   });
 
+  // Retour du propriétaire après le lot 9a : une partie FINIE dont l'écriture a échoué garde ses gains après « Rejouer » ; une partie abandonnée
+  // (« Recommencer ») ensuite ne perd que les siens.
   it('restart avec un échec en cours garde la bleue en attente (écrite plus tard)', () => {
     const { bank, storage } = make();
     bank.waveStart(1);
-    storage.failSet = quotaError();
     bank.waveEnd(1, false);
+    storage.failSet = quotaError();
+    bank.runEnd({ reason: 'death' });
     bank.restart();
     expect(bank.soldeBleu()).toBe(12);
+    bank.waveStart(1);
+    bank.waveEnd(1, false); // échoue encore (stockage plein)
+    bank.runEnd({ reason: 'restart' }); // partie abandonnée : ses 12 sont perdus, les 12 dus restent
+    bank.restart();
     storage.failSet = null;
     bank.flush('x');
     expect(solde(stored(storage))).toBe(12);

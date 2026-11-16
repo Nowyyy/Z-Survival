@@ -5190,3 +5190,246 @@
     padding: 4px 10px;
   }
 }
+
+/* Lot 9a-H (retour du propriétaire : panneau de débogage illisible, défilement, place perdue) : toute la hauteur sous l'en-tête, sans défiler en
+   paysage (667 × 375 et plus) : état de la sauvegarde à gauche, grille de cartes d'outils à droite (rangées égales qui remplissent la place),
+   confirmation au centre par-dessus. Couleurs : jetons du menu seulement. */
+#menu-debogage .e8-debogage-panneau {
+  gap: calc(8 * var(--u));
+  padding-top: calc(8 * var(--u));
+  padding-bottom: max(8px, calc(10 * var(--u)), env(safe-area-inset-bottom));
+}
+
+#menu-debogage .e10-panneau-tete {
+  align-items: center;
+}
+
+.e8-debogage-titres {
+  display: flex;
+  flex: 1;
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: calc(14 * var(--u));
+  row-gap: 2px;
+  min-width: 0;
+}
+
+.e8-debogage-note {
+  margin: 0;
+  color: var(--menu-options-note);
+  font-size: max(12px, calc(13 * var(--u)));
+  line-height: 1.3;
+}
+
+#menu-debogage .e8-debogage-corps {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(190px, 0.32fr) minmax(0, 1fr);
+  grid-template-rows: 1fr;
+  gap: calc(12 * var(--u));
+  align-items: stretch;
+  max-width: none;
+  padding-top: 0;
+}
+
+.e8-debogage-etat {
+  display: flex;
+  flex-direction: column;
+  gap: calc(6 * var(--u));
+  min-width: 0;
+  padding: calc(6 * var(--u)) calc(10 * var(--u)) calc(8 * var(--u));
+  border: 1px solid var(--menu-options-filet);
+  background: var(--menu-options-fond);
+}
+
+.e8-debogage-sous-titre {
+  margin: 0;
+  font-family: var(--font-label);
+  font-weight: var(--font-weight-normal);
+  font-size: max(13px, calc(14 * var(--u)));
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--menu-texte-doux);
+}
+
+.e8-debogage-valeurs {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  justify-content: space-evenly;
+  gap: 1px;
+  margin: 0;
+}
+
+.e8-debogage-ligne {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 0 0 0 6px;
+  border-left: 3px solid transparent;
+  font-size: max(12px, calc(14 * var(--u)));
+  line-height: 1.35;
+}
+
+.e8-debogage-ligne dt {
+  color: var(--menu-options-note);
+}
+
+.e8-debogage-ligne dd {
+  margin: 0;
+  font-weight: var(--font-weight-bold);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  color: var(--menu-texte);
+}
+
+/* Valeur changée par le dernier outil : trait et texte jaunes. */
+.e8-debogage-ligne.e8-debogage-change {
+  border-left-color: var(--menu-record);
+}
+
+.e8-debogage-ligne.e8-debogage-change dd {
+  color: var(--menu-record);
+}
+
+.e8-debogage-message {
+  flex: 0 1 auto;
+  max-width: 40%;
+  padding: 4px 10px;
+  border: 1px solid currentcolor;
+  font-weight: var(--font-weight-bold);
+  line-height: 1.25;
+  color: var(--menu-e9-effet);
+}
+
+.e8-debogage-message.e8-debogage-echec {
+  color: var(--menu-rouge-trait);
+}
+
+#menu-debogage .e8-debogage-liste {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, max(180px, 30%)), 1fr)); /* au plus trois colonnes : six outils en 3 × 2 ou 2 × 3 */
+  grid-auto-rows: minmax(var(--menu-cible), 1fr);
+  flex: none;
+  gap: calc(8 * var(--u));
+  min-width: 0;
+  margin: 0;
+}
+
+#menu-debogage .e8-debogage-carte {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  min-width: 0;
+  min-height: var(--menu-cible);
+  padding: calc(6 * var(--u)) calc(12 * var(--u));
+  border: 2px solid var(--menu-options-bouton-bord);
+  border-radius: 0;
+  background: var(--menu-options-bouton);
+  color: var(--menu-texte);
+  font: inherit;
+  text-align: left;
+  white-space: normal;
+  cursor: pointer;
+}
+
+.e8-debogage-carte:hover {
+  border-color: var(--menu-bois-clair);
+  background: var(--menu-options-inactif-choisi);
+}
+
+.e8-debogage-carte:active {
+  transform: translateY(1px);
+}
+
+.e8-debogage-nom {
+  font-weight: var(--font-weight-bold);
+  font-size: max(13px, calc(14 * var(--u)));
+  line-height: 1.2;
+}
+
+.e8-debogage-detail {
+  color: var(--menu-options-note);
+  font-size: max(12px, calc(12 * var(--u)));
+  line-height: 1.25;
+}
+
+#menu-debogage .e8-debogage-carte.e8-debogage-danger {
+  flex: none;
+  border-color: var(--menu-rouge);
+}
+
+.e8-debogage-danger .e8-debogage-nom {
+  color: var(--menu-rouge-trait);
+}
+
+/* Confirmation : voile sur le corps du panneau, boîte au centre. */
+.e8-debogage-confirmation {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  padding: 8px;
+  background: var(--menu-options-voile);
+}
+
+.e8-debogage-confirmation[hidden] {
+  display: none;
+}
+
+.e8-debogage-boite {
+  display: flex;
+  flex-direction: column;
+  gap: calc(8 * var(--u));
+  width: min(100%, 52ch);
+  padding: calc(14 * var(--u)) calc(18 * var(--u));
+  border: 2px solid var(--menu-options-panneau-bord);
+  background: var(--menu-options-panneau);
+}
+
+.e8-debogage-question {
+  margin: 0;
+  font-weight: var(--font-weight-bold);
+  font-size: max(15px, calc(17 * var(--u)));
+}
+
+.e8-debogage-effet {
+  margin: 0;
+  color: var(--menu-options-note);
+  font-size: max(13px, calc(14 * var(--u)));
+}
+
+.e8-debogage-choix {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: calc(10 * var(--u));
+  margin-top: calc(4 * var(--u));
+}
+
+.e8-debogage-choix .menu-peint {
+  padding: calc(6 * var(--u)) calc(18 * var(--u));
+  font-size: max(15px, calc(18 * var(--u)));
+}
+
+.e8-debogage-choix .menu-planche {
+  font-weight: var(--font-weight-bold);
+  font-size: max(13px, calc(14 * var(--u)));
+}
+
+/* Paysage très bas (moins de 340 px) ou étroit : l'état passe au-dessus, en deux colonnes de valeurs ; le corps défile si vraiment nécessaire. */
+@media (max-width: 560px) {
+  #menu-debogage .e8-debogage-corps {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto 1fr;
+  }
+
+  .e8-debogage-valeurs {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 16px;
+  }
+}

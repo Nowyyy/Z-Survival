@@ -279,16 +279,6 @@
   display: none;
 }
 
-.hud-gain.hud-gain-bleu {
-  top: 100%;
-  left: auto;
-  right: 0;
-  gap: 0.25em;
-  min-width: 0;
-  height: auto;
-  padding: 0.1em 0.35em;
-  color: var(--color-money-blue);
-}
 
 .end-bleu {
   color: var(--color-money-blue);
@@ -305,9 +295,8 @@
 }
 
 /* Lot 9a (monnaies interverties) : la fin de manche (champ « bleu », médailles à l'écran) prend la couleur des médailles ; le bloc des gains des
-   portes et paliers (.hud-medailles-manche, diamants à l'écran) garde le bleu de .hud-bleu-manche ; le « +N » de fin de manche aussi en bronze. */
+   portes et paliers (.hud-medailles-manche, diamants à l'écran) garde le bleu de .hud-bleu-manche ; le « +N » de fin de manche, retiré après le lot 9a (doublon : les médailles ne sont affichées que sous la vague). */
 .hud-bleu-manche.hud-manche-medaille,
-.hud-gain.hud-gain-bleu,
 .end-medaille {
   color: var(--color-money-medaille);
 }

@@ -41,6 +41,8 @@ async function ouvrirMenu(page, extra = '') {
 }
 
 test.describe('monnaies interverties et Zollars (lot 9a)', () => {
+  // Retour du propriétaire après le lot 9a : « Quitter » fait perdre les médailles et diamants de la partie (avant : soldes égaux à ceux d'avant
+  // « Quitter », manches comprises) ; le « +N » de fin de manche près de la jaune est retiré (doublon du bloc sous la vague).
   test('en partie : fin de manche = médaille (bronze), porte et paliers = gemme (bleu) ; pause : médailles puis diamants ; HUD « Zollars » ; « Quitter » après deux manches : soldes inchangés ; en-tête du menu', async ({ page }) => {
     test.setTimeout(180_000);
     await poserProgression(page, departV08());
@@ -53,8 +55,8 @@ test.describe('monnaies interverties et Zollars (lot 9a)', () => {
     await expect(fin1.locator('svg.hud-medaille')).toHaveCount(1);
     await expect(fin1.locator('svg.hud-gem')).toHaveCount(0);
     expect(await couleur(fin1)).toBe(BRONZE);
-    await expect(page.locator('#hud-gain-bleu svg.hud-medaille')).toHaveCount(1); // « +N » de fin de manche : médaille
-    expect(await couleur(page.locator('#hud-gain-bleu'))).toBe(BRONZE);
+    await expect(page.locator('#hud-gain-bleu')).toHaveCount(0); // retour après le lot 9a : plus de « +N » près de la jaune (avant : médaille, bronze)
+    expect(await couleur(fin1.locator('span'))).toBe(BRONZE);
     // Deuxième manche, puis pause : médaille « Médailles : » (champ bleu) puis gemme « Diamants : » (champ medailles).
     await step(page, 4.5);
     await finirManche(page);
@@ -69,18 +71,18 @@ test.describe('monnaies interverties et Zollars (lot 9a)', () => {
     await expect(diam.locator('.sr-only')).toHaveText('Diamants :');
     await expect(page.locator('#pause-medailles-text')).toHaveText('467');
     expect(await couleur(diam)).toBe(BLEU);
-    // « Quitter » : confirmation (Zollars perdus), rien de plus que les deux manches déjà écrites.
+    // « Quitter » : confirmation (tout ce que la partie a rapporté est perdu) ; rien n'a été écrit pendant la partie.
     const avant = await stored(page);
-    expect([solde(avant), soldeMedailles(avant), avant.medailles.jour]).toEqual([1074, 467, 0]);
+    expect([solde(avant), soldeMedailles(avant), avant.medailles.jour]).toEqual([1034, 467, 0]);
     await page.locator('#btn-quit').click();
-    await expect(page.locator('#quit-confirm-text')).toHaveText('Quitter la partie ? Les médailles et les diamants gagnés sont gardés ; les Zollars de cette partie seront perdus.');
+    await expect(page.locator('#quit-confirm-text')).toHaveText('Quitter la partie ? Les médailles, les diamants et les Zollars gagnés pendant cette partie seront perdus.');
     await Promise.all([page.waitForURL(/[?&]menu=1/), page.locator('#btn-quit-ok').click()]);
     await expect(page.locator('#menu-jouer')).toBeVisible({ timeout: 60_000 });
     const apres = await stored(page);
-    expect([solde(apres), soldeMedailles(apres), apres.medailles, apres.bleu]).toEqual([1074, 467, avant.medailles, avant.bleu]);
+    expect([solde(apres), soldeMedailles(apres), apres.medailles, apres.bleu]).toEqual([1034, 467, avant.medailles, avant.bleu]);
     // En-tête du menu : médaille et « Médailles : » (champ bleu), puis gemme et « Diamants : » (champ medailles).
     await expect(page.locator('#menu-solde svg.e8-medaille')).toHaveCount(1);
-    await expect(page.locator('#menu-solde')).toContainText(`Médailles : ${fmt(1074)}`);
+    await expect(page.locator('#menu-solde')).toContainText(`Médailles : ${fmt(1034)}`);
     await expect(page.locator('#menu-medailles svg.e8-gemme')).toHaveCount(1);
     await expect(page.locator('#menu-medailles')).toContainText('Diamants : 467');
     expect([await couleur(page.locator('#menu-solde')), await couleur(page.locator('#menu-medailles'))]).toEqual([BRONZE, BLEU]);
@@ -112,6 +114,18 @@ test.describe('monnaies interverties et Zollars (lot 9a)', () => {
     await expect(page.locator('#end-medailles-solde svg.hud-gem')).toHaveCount(1);
     await expect(page.locator('#end-medailles-text')).toHaveText(`+${fmt(fin.save.medailles.run.total)}`);
     expect([await couleur(page.locator('#end-balance')), await couleur(page.locator('#end-medailles-solde'))]).toEqual([BRONZE, BLEU]);
+    // Retour du propriétaire après le lot 9a : dans la place libre sous les diamants, le bonus de la première partie du jour (compris dans le gain).
+    await expect(page.locator('#end-jour')).toBeVisible();
+    await expect(page.locator('#end-jour-text')).toHaveText('Bonus du jour obtenu : +100');
+    await expect(page.locator('#end-jour svg.hud-gem')).toHaveCount(1);
+    expect(await couleur(page.locator('#end-jour'))).toBe(BLEU);
+    // Seconde partie du même jour : plus de bonus, plus de ligne.
+    await page.locator('#btn-replay').click();
+    await expect(page.locator('#end-panel')).toBeHidden();
+    await finirManche(page);
+    await page.evaluate(() => { const zs = window.__zs; zs.setChutes(0); zs.downPlayer(); zs.step(0.3); });
+    await expect(page.locator('#end-panel')).toBeVisible();
+    await expect(page.locator('#end-jour')).toBeHidden();
   });
 
   test('Boutique en diamants (gemme, « Il manque N diamants », nom accessible), Inventaire et Fusion en médailles (« Il manque N médailles »)', async ({ page }) => {
@@ -178,7 +192,20 @@ test.describe('Recette V0.8 et dev sur la même origine (garantie 6)', () => {
   const manche = async (page, version) => {
     await page.goto(`${BASE}/${version}/jeu.html?test=1&store=local&seed=1`);
     await waitReady(page);
-    await page.evaluate(() => { const zs = window.__zs; window.requestAnimationFrame = () => 0; zs.step(3.2); zs.skipWave(); zs.step(0.3); zs.flushSave(); });
+    // Retour du propriétaire après le lot 9a : dev n'écrit les gains qu'à la fin de la partie (mort, ici) ; la Recette V0.8 les écrit à la manche.
+    await page.evaluate((fin) => {
+      const zs = window.__zs;
+      window.requestAnimationFrame = () => 0;
+      zs.step(3.2);
+      zs.skipWave();
+      zs.step(0.3);
+      if (fin) {
+        zs.setChutes(0);
+        zs.downPlayer();
+        zs.step(0.3);
+      }
+      zs.flushSave();
+    }, version === 'dev');
   };
 
   test('V0.8 → dev → V0.8 → dev : mêmes champs, noms d\'écran propres à chaque version, aucun solde perdu, aucune interversion défaite', async ({ page }) => {
@@ -196,13 +223,13 @@ test.describe('Recette V0.8 et dev sur la même origine (garantie 6)', () => {
     expect(await menu(page, 'dev')).toEqual([`Médailles : ${fmt(1054)}`, 'Diamants : 467']);
     await manche(page, 'dev');
     s = await stored(page);
-    expect([solde(s), soldeMedailles(s)]).toEqual([1074, 467]);
+    expect([solde(s), soldeMedailles(s)]).toEqual([1074, 567]); // + 100 diamants : partie du jour (mort)
     // 3. La Recette relit et réécrit : rien de perdu, rien d'échangé.
-    expect(await menu(page, 'Recette')).toEqual([`Diamants : ${fmt(1074)}`, 'Médailles : 467']);
+    expect(await menu(page, 'Recette')).toEqual([`Diamants : ${fmt(1074)}`, 'Médailles : 567']);
     await manche(page, 'Recette');
     s = await stored(page);
-    expect([solde(s), soldeMedailles(s), s.medailles.gagne, s.medailles.depense]).toEqual([1094, 467, 567, 100]);
+    expect([solde(s), soldeMedailles(s), s.medailles.gagne, s.medailles.depense]).toEqual([1094, 567, 667, 100]);
     // 4. dev : tout est là, une seule interversion (à l'écran).
-    expect(await menu(page, 'dev')).toEqual([`Médailles : ${fmt(1094)}`, 'Diamants : 467']);
+    expect(await menu(page, 'dev')).toEqual([`Médailles : ${fmt(1094)}`, 'Diamants : 567']);
   });
 });

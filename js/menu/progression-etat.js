@@ -100,7 +100,7 @@ export function creerProgression(params, { search = pageSearch(), storage = stoc
       const nouveaux = [...new Set(ids)].filter((id) => typeof id === 'string' && !deja.has(id));
       return nouveaux.length ? this.commit([{ id: nouvelId(), t: 'lues', ids: nouveaux }]) : { ok: true, refused: [] };
     },
-    // Outil de débogage « Remettre la progression V0.8 à zéro » : efface zs.save.v2 seulement (jamais zs.save.v1).
+    // Outil de débogage « Remettre la progression à zéro » : efface zs.save.v2 seulement (jamais zs.save.v1).
     effacer() {
       const r = repository.clear();
       lu = repository.load();

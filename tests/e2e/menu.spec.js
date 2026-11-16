@@ -302,7 +302,7 @@ test.describe('plein écran du menu', () => {
 });
 
 test.describe('partie et retour au menu', () => {
-  test('solde bleu de l\'en-tête = progression (?store=local, lot 8h) ; « JOUER » lance la partie (manche 1) ; « Quitter » confirmé ramène au menu, la bleue gardée et la jaune perdue comme à la mort ; seule écriture du menu : les nouveautés lues (lot 8h)', async ({ page }) => {
+  test('solde bleu de l\'en-tête = progression (?store=local, lot 8h) ; « JOUER » lance la partie (manche 1) ; « Quitter » confirmé ramène au menu, la bleue et la jaune de la partie perdues (la mort garde la bleue) ; seule écriture du menu : les nouveautés lues (lot 8h)', async ({ page }) => {
     test.setTimeout(150_000);
     await page.setViewportSize(REF);
     // Sauvegarde de départ (chemin normal du jeu : gain puis écriture), puis visite du menu : clés et contenu identiques avant et après.
@@ -345,7 +345,7 @@ test.describe('partie et retour au menu', () => {
     await page.evaluate(() => { const zs = window.__zs; zs.giveMoney(50); zs.step(3.2); zs.skipWave(); zs.step(0.2); });
     await page.locator('#btn-pause').click();
     await page.locator('#btn-quit').click();
-    await expect(page.locator('#quit-confirm-text')).toHaveText('Quitter la partie ? Les médailles et les diamants gagnés sont gardés ; les Zollars de cette partie seront perdus.'); // lot 9a
+    await expect(page.locator('#quit-confirm-text')).toHaveText('Quitter la partie ? Les médailles, les diamants et les Zollars gagnés pendant cette partie seront perdus.'); // lot 9a
     await expect(page.locator('#btn-quit-cancel')).toBeFocused();
     // Retour du propriétaire : la question ne touche plus les boutons (avant : 0 px d'écart).
     const ecart = await page.evaluate(() => document.getElementById('btn-quit-ok').getBoundingClientRect().top - document.getElementById('quit-confirm-text').getBoundingClientRect().bottom);
@@ -355,9 +355,10 @@ test.describe('partie et retour au menu', () => {
     await page.locator('#btn-quit').click();
     await Promise.all([page.waitForURL(/[?&]menu=1/), page.locator('#btn-quit-ok').click()]);
     await expect(page.locator('#menu-jouer')).toBeVisible({ timeout: 60_000 });
-    await expect(page.locator('#menu-solde-texte')).toHaveText(`1${String.fromCharCode(0x202f)}254`);
+    // Retour du propriétaire après le lot 9a : « Quitter » fait perdre la bleue de la partie (avant : 1 254, gardée comme à la mort).
+    await expect(page.locator('#menu-solde-texte')).toHaveText(`1${String.fromCharCode(0x202f)}234`);
     const quitte = await page.evaluate((k) => JSON.parse(localStorage.getItem(k)), KEY);
-    expect(quitte.bleu.gagne - quitte.bleu.depense).toBe(1254); // lot 8k : 1 234 + 20 (bleue fixe ; avant : + 12)
+    expect(quitte.bleu.gagne - quitte.bleu.depense).toBe(1234);
     expect(JSON.stringify(quitte)).not.toMatch(/money/);
     // Même gain, mort puis « Revenir au menu principal » : même solde, même chemin (bank.runEnd).
     await page.locator('#menu-jouer').click();
@@ -366,9 +367,9 @@ test.describe('partie et retour au menu', () => {
     await expect(page.locator('#end-panel')).toBeVisible();
     await Promise.all([page.waitForURL(/[?&]menu=1/), page.locator('#btn-menu').click()]);
     await expect(page.locator('#menu-jouer')).toBeVisible({ timeout: 60_000 });
-    await expect(page.locator('#menu-solde-texte')).toHaveText(`1${String.fromCharCode(0x202f)}274`);
+    await expect(page.locator('#menu-solde-texte')).toHaveText(`1${String.fromCharCode(0x202f)}254`); // la mort, elle, garde la bleue de la partie (+20)
     const mort = await page.evaluate((k) => JSON.parse(localStorage.getItem(k)), KEY);
-    expect(mort.bleu.gagne - quitte.bleu.gagne).toBe(quitte.bleu.gagne - 1234);
+    expect(mort.bleu.gagne - quitte.bleu.gagne).toBe(20);
     await page.evaluate(() => localStorage.clear());
   });
 
