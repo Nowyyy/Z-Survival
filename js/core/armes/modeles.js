@@ -77,7 +77,7 @@ function kar98k(d, o) {
   if (o.bretelle) {
     p.push(loft([
       { z: zC + 140, w: 22, h: 3, y: -82, x: 22 }, { z: zC + 330, w: 22, h: 3, y: -98, x: 24 }, { z: 160, w: 22, h: 3, y: -96, x: 24 }, { z: fut - 220, w: 22, h: 3, y: -12, x: 22 },
-    ], 'cuir'));
+    ], 'cuir', { groupe: 'bretelle' }));
   }
   return p;
 }
@@ -183,7 +183,7 @@ function garand(d, o) {
   if (o.bretelle) {
     p.push(loft([
       { z: zC + 150, w: 24, h: 3, y: -84, x: 23 }, { z: zC + 360, w: 24, h: 3, y: -104, x: 25 }, { z: 220, w: 24, h: 3, y: -100, x: 25 }, { z: zB - 220, w: 24, h: 3, y: -10, x: 22 },
-    ], 'cuir'));
+    ], 'cuir', { groupe: 'bretelle' }));
   }
   return p;
 }

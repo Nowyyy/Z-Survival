@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
-import { lireArmes } from '../../js/core/armes/armes.js';
+import { armeParId, lireArmes, maillageArme, sectionsBretelle } from '../../js/core/armes/armes.js';
 import { ARMES_POSEES, fichierPoses } from '../../js/armes/poses-calcul.js';
-import { ARTICULATIONS, REGLES } from '../../js/armes/tenue.js';
+import { ARTICULATIONS, RAYON_MAIN, REGLES, echantillons } from '../../js/armes/tenue.js';
 
 // Lot 9c (décision du propriétaire) : poses de tenue calculées sur une instance du personnage de l'atelier (le personnage du jeu ne change
 // pas) ; data/armes/poses.json doit être à jour, et chaque arme posée doit être tenue correctement.
@@ -32,6 +32,7 @@ describe('poses de tenue (data/armes/poses.json)', () => {
     expect(p.controle.gauche, 'main gauche').toBeLessThanOrEqual(0.05);
     expect(p.controle.traverse, 'points de l\'arme dans la tête ou le torse').toBe(0);
     expect(p.controle.mains, 'points de l\'arme sous les paumes (retour : « la main arrière est dans l\'arme »)').toBe(0);
+    if (p.arme.bretelle) expect(p.controle.bretelle, 'bretelle dans un bras, une main ou le torse (retour : « la bretelle doit être contre le bras »)').toBe(0);
     expect(p.controle.visee, 'écart à l\'axe de visée (degrés)').toBeLessThanOrEqual(5);
     expect(p.controle.devant, 'bouche devant le corps (vue de dessus)').toBeGreaterThan(5);
   });
@@ -45,3 +46,21 @@ describe('poses de tenue (data/armes/poses.json)', () => {
     for (const a of Object.values(p.angles)) expect(a.every(Number.isFinite)).toBe(true);
   });
 });
+
+describe('bretelle (retour : « la main ne doit pas être mise sur la bretelle mais sur l\'arme »)', () => {
+  it.each([['kar98k'], ['garand']])('%s : bretelle déviée contre le bras, attaches fixes, main gauche sur l\'arme', (id) => {
+    const p = fichier.armes[id].modes['deux-mains'];
+    const a = armeParId(donnees, id);
+    const base = sectionsBretelle(donnees, a, a.variantes[0]);
+    expect(p.arme.bretelle).toHaveLength(base.length);
+    for (const i of [0, base.length - 1]) expect(p.arme.bretelle[i]).toEqual([base[i].x, base[i].y, base[i].z].map(Math.round));
+    expect(p.controle.bretelle).toBe(0);
+    // La paume gauche touche l'arme (bretelle exclue) : point de l'arme le plus proche à RAYON_MAIN (+ un pas de 0,05), pas plus loin.
+    const pts = echantillons(maillageArme(donnees, a, a.variantes[0], { pose: 'seule', sansBretelle: true }).positions);
+    let d = Infinity;
+    for (let i = 0; i < pts.length; i += 3) d = Math.min(d, Math.hypot(pts[i] - p.prises.gauche[0], pts[i + 1] - p.prises.gauche[1], pts[i + 2] - p.prises.gauche[2]));
+    expect(d).toBeGreaterThanOrEqual(RAYON_MAIN - 0.01);
+    expect(d).toBeLessThan(RAYON_MAIN + 0.1);
+  });
+});
+

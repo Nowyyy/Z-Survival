@@ -1,5 +1,5 @@
 {
-  "_note": "Lot 9c — Poses de tenue des armes (décision du propriétaire), calculées dans l'atelier sur une instance du personnage (js/armes/tenue.js, js/armes/poses-calcul.js) ; le personnage du jeu et js/game/character-v2.js ne changent pas. regles : torses essayés (degrés, épaule gauche vers l'avant), écartements des épaules (x ; 11,5 = personnage), allongements des bras et avant-bras (1,2 au plus), places de la main ou de la crosse par pose (unités du jeu ; repère du personnage ou de l'os chest). facteur : facteur commun de taille des armes pour lequel les poses valent (data/armes/armes.json → echelle.lisibilite). armes.<id>.modes.<mode> : torse (degrés), epaules, bras, arme.position (repère du personnage, arme dans l'axe de visée), angles (radians, ordre YXZ des os de character-v2.js) et controle (écarts des mains à leurs prises, points de l'arme dans la tête ou le torse, visée en degrés, bouche devant le corps). Données pour le lot d'intégration (dos : réservoirs du lance-flammes, décalage en mm et rotation en degrés du groupe « dos »). Ne pas modifier à la main : recalculer avec fichierPoses (mode d'emploi : Docs/ref/armes.md) ; tests/unit/armes-poses.test.js vérifie que ce fichier est à jour.",
+  "_note": "Lot 9c — Poses de tenue des armes (décision du propriétaire), calculées dans l'atelier sur une instance du personnage (js/armes/tenue.js, js/armes/poses-calcul.js) ; le personnage du jeu et js/game/character-v2.js ne changent pas. regles : torses essayés (degrés, épaule gauche vers l'avant), écartements des épaules (x ; 11,5 = personnage), allongements des bras et avant-bras (1,2 au plus), places de la main ou de la crosse par pose (unités du jeu ; repère du personnage ou de l'os chest). facteur : facteur commun de taille des armes pour lequel les poses valent (data/armes/armes.json → echelle.lisibilite ; le Colt M1911 a sa taille propre, ×1,2 : armes.json → taille). armes.<id>.modes.<mode> : torse (degrés), epaules, bras, arme.position (repère du personnage, arme dans l'axe de visée), angles (radians, ordre YXZ des os de character-v2.js) et controle (écarts des mains à leurs prises, points de l'arme dans la tête ou le torse, visée en degrés, bouche devant le corps ; bretelle : points de la bretelle dans un bras, une main ou le torse). arme.bretelle : sections de la bretelle déviées contre le bras (mm, repère de l'arme ; la main tient l'arme, jamais la bretelle). Données pour le lot d'intégration (dos : réservoirs du lance-flammes, décalage en mm et rotation en degrés du groupe « dos »). Ne pas modifier à la main : recalculer avec fichierPoses (mode d'emploi : Docs/ref/armes.md) ; tests/unit/armes-poses.test.js vérifie que ce fichier est à jour.",
   "version": 1,
   "facteur": 0.8,
   "regles": {
@@ -69,9 +69,9 @@
           "bras": 1,
           "arme": {
             "position": [
-              0.1,
-              45.224,
-              16.452
+              0.45,
+              45.336,
+              16.928
             ],
             "rotation": [
               0,
@@ -116,12 +116,12 @@
               0
             ],
             "shoulderL": [
-              -0.8404,
-              -1.2122,
-              0.614
+              -0.8054,
+              -1.175,
+              0.5996
             ],
             "elbowL": [
-              -0.6592,
+              -0.6589,
               0,
               0
             ],
@@ -136,19 +136,19 @@
             "gauche": 0,
             "traverse": 0,
             "visee": 0,
-            "devant": 11.35,
+            "devant": 13.92,
             "mains": 0
           },
           "prises": {
             "droite": [
-              -2.1,
-              -0.224,
-              -0.952
+              -2.45,
+              -0.336,
+              -1.428
             ],
             "gauche": [
-              0.448,
-              -2.89,
-              -0.672
+              0.672,
+              -3.66,
+              -1.008
             ]
           }
         },
@@ -160,9 +160,9 @@
           "bras": 1,
           "arme": {
             "position": [
-              -7.9,
-              46.724,
-              20.452
+              -7.55,
+              46.836,
+              20.928
             ],
             "rotation": [
               0,
@@ -227,14 +227,14 @@
             "gauche": 0,
             "traverse": 0,
             "visee": 0,
-            "devant": 15.35,
+            "devant": 17.92,
             "mains": 0
           },
           "prises": {
             "droite": [
-              -2.1,
-              -0.224,
-              -0.952
+              -2.45,
+              -0.336,
+              -1.428
             ],
             "gauche": null
           }
@@ -260,6 +260,28 @@
               0,
               0,
               0
+            ],
+            "bretelle": [
+              [
+                22,
+                -82,
+                -280
+              ],
+              [
+                4,
+                -138,
+                -90
+              ],
+              [
+                4,
+                -186,
+                160
+              ],
+              [
+                22,
+                -12,
+                330
+              ]
             ]
           },
           "angles": {
@@ -320,7 +342,8 @@
             "traverse": 0,
             "visee": 0,
             "devant": 23.62,
-            "mains": 0
+            "mains": 0,
+            "bretelle": 0
           },
           "prises": {
             "droite": [
@@ -548,6 +571,28 @@
               0,
               0,
               0
+            ],
+            "bretelle": [
+              [
+                23,
+                -84,
+                -250
+              ],
+              [
+                25,
+                -154,
+                -40
+              ],
+              [
+                25,
+                -190,
+                220
+              ],
+              [
+                22,
+                -10,
+                473
+              ]
             ]
           },
           "angles": {
@@ -608,7 +653,8 @@
             "traverse": 0,
             "visee": 0,
             "devant": 23.48,
-            "mains": 0
+            "mains": 0,
+            "bretelle": 0
           },
           "prises": {
             "droite": [

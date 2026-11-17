@@ -73,9 +73,9 @@ describe('dimensions relatives', () => {
   it.each(toutes)('%s %s : longueur = longueur réelle × 35 u/m, à 2 % près', (id, vid) => {
     const a = armeParId(donnees, id);
     const m = maillageArme(donnees, a, varianteDe(a, vid), { pose: 'seule' }); // lance-flammes : la lance seule
-    const attendu = a.longueurReelle * echelleJeu(donnees);
+    const attendu = a.longueurReelle * echelleJeu(donnees, a);
     const extra = Number(a.dimensions.longueurAvecAccessoire) || 0; // accessoire monté (baïonnette) : longueur réelle avec lui
-    const reference = varianteDe(a, vid).options?.baionnette && extra ? extra * echelleJeu(donnees) : attendu;
+    const reference = varianteDe(a, vid).options?.baionnette && extra ? extra * echelleJeu(donnees, a) : attendu;
     expect(Math.abs(m.longueur - reference) / reference, `${id} ${vid} : ${m.longueur} pour ${reference}`).toBeLessThan(0.02);
   });
 
@@ -86,15 +86,15 @@ describe('dimensions relatives', () => {
     expect(parJeu).toEqual(parReel);
     const m1911 = L.find((x) => x.id === 'm1911');
     expect(m1911.jeu).toBeLessThan(14);
-    expect(m1911.jeu).toBeGreaterThan(5); // ×0,8 (facteur commun) : 6,0
+    expect(m1911.jeu).toBeGreaterThan(8); // ×1,2 (taille propre du Colt, décision du propriétaire) : 9,1
   });
 
-  it('la lisibilité agrandit toutes les armes du même facteur', () => {
+  it('la lisibilité agrandit toutes les armes du même facteur, sauf le Colt (taille propre ×1,2)', () => {
     const d2 = lireArmes({ ...json, echelle: { ...json.echelle, lisibilite: 1.5 } });
     for (const a of donnees.armes) {
       const l1 = maillageArme(donnees, a, a.variantes[0]).longueur;
       const l2 = maillageArme(d2, armeParId(d2, a.id), armeParId(d2, a.id).variantes[0]).longueur;
-      expect(l2 / l1).toBeCloseTo(1.5 / 0.8, 4);
+      expect(l2 / l1, a.id).toBeCloseTo(a.taille ? 1 : 1.5 / 0.8, 4);
     }
   });
 });
@@ -213,6 +213,16 @@ describe('choix du propriétaire (data/armes/armes-choix.json)', () => {
     for (const a of donnees.armes) expect(a.variantes.map((v) => v.id)).toContain(c.variantes[a.id]);
   });
 
+  it('choix du propriétaire : variante A pour toutes les armes ; bretelle sur le Kar98k et le Garand (les armes qui en ont une)', () => {
+    const c = lireChoix(donnees, choixJson);
+    for (const a of donnees.armes) expect(c.variantes[a.id], a.id).toBe('a');
+    for (const id of ['kar98k', 'garand']) {
+      const a = armeParId(donnees, id);
+      expect(varianteDe(a, 'a').options.bretelle, id).toBe(true);
+      expect(piecesArme(a, varianteDe(a, 'a'), 'main').some((p) => p.mat === 'cuir'), id).toBe(true);
+    }
+  });
+
   it('choix invalide : variante par défaut (la première), arme spéciale par défaut, écarts signalés', () => {
     const c = lireChoix(donnees, { variantes: { kar98k: 'z', m1911: 42, inconnue: 'a', thompson: 'b' }, armeSpeciale: 'canon' });
     expect(c.variantes.kar98k).toBe('a');
@@ -317,8 +327,12 @@ describe('retours du propriétaire (lot 9c-G) : taille, épaisseur, prises', () 
     expect(avecEchelle(donnees, { largeur: 9 }).echelle.largeur).toBe(4);
   });
 
-  it('un seul facteur commun (décision du propriétaire) : aucun facteur propre à une arme ou à une classe, la caisse comprise', () => {
+  it('un seul facteur commun (décision du propriétaire), une seule exception : le Colt à ×1,2 (retour du propriétaire) ; la caisse comprise', () => {
     expect(Object.keys(donnees.echelle).sort()).toEqual(['epaisseur', 'largeur', 'lisibilite', 'seuilEpaisseur', 'unitesParMetre']);
+    expect(donnees.armes.filter((a) => a.taille !== null).map((a) => [a.id, a.taille])).toEqual([['m1911', 1.2]]);
+    const colt = armeParId(donnees, 'm1911');
+    expect(echelleJeu(donnees, colt) / echelleJeu(donnees)).toBeCloseTo(1.2 / 0.8, 6);
+    expect(lireArmes({ ...json, armes: json.armes.map((a) => ({ ...a, taille: 9 })) }).armes[0].taille).toBe(3);
     for (const a of donnees.armes) {
       const main = maillageArme(donnees, a, a.variantes[0], { pose: 'seule' });
       const posee = maillageArme(donnees, a, a.variantes[0], { pose: 'caisse' });
