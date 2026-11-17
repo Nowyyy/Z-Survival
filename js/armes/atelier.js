@@ -7,8 +7,9 @@ import { createV2Kit } from '../game/character-v2.js';
 import { createTokenLookup, readPalette } from '../game/palette.js';
 import { buildSpec, createTextureData } from '../core/texgen.js';
 import { fitDistance } from '../core/viewport.js';
-import { armeParId, budgetDe, lireArmes, lireChoix, varianteDe } from '../core/armes/armes.js';
-import { ancreTexte, dimensionsCaisse } from '../core/armes/caisse.js';
+import { armeParId, avecEchelle, budgetDe, echelleJeu, lireArmes, lireChoix, varianteDe } from '../core/armes/armes.js';
+import { ancreTexte } from '../core/armes/caisse.js';
+import { poserTenue } from './tenue.js';
 import { visuelArme } from '../core/armes/visuel.js';
 import { creerKitArmes, lirePalette } from './rendu.js';
 
@@ -36,8 +37,10 @@ $('app').hidden = false;
 const status = $('status');
 status.textContent = t('dev.armes.chargement');
 
-const donnees = lireArmes(armesJson);
-const choix = lireChoix(donnees, choixJson);
+const base = lireArmes(armesJson);
+const choix = lireChoix(base, choixJson);
+// Échelle (retours du propriétaire, lot 9c-G) : données, remplacées par le fichier de choix, puis par les curseurs de l'atelier (en mémoire).
+let donnees = avecEchelle(base, choix.echelle);
 const palette = lirePalette();
 const lookup = createTokenLookup();
 const jeu = readPalette();
@@ -52,6 +55,7 @@ const etat = {
   caisse: 'caisse',
   craie: true,
   rotation: !reduit,
+  tenue: 'adaptee',
   yaw: 0.6,
   pitch: 0.35,
 };
@@ -69,7 +73,8 @@ try {
   renderer = null;
   $('webgl-erreur').hidden = false;
 }
-const kit = creerKitArmes({ donnees, palette });
+let kit = creerKitArmes({ donnees, palette });
+let tenueInfo = null;
 
 // Rendu d'une scène dans un canevas 2D (taille du canevas) ; renvoie { calls, triangles } de ce rendu.
 function rendre(scene, camera, canvas, { x = 0, y = 0, w = canvas.width, h = canvas.height, effacer = true } = {}) {
@@ -171,11 +176,38 @@ function poserArmeEnMain() {
   joueur = personnage(etat.pistolet === 'visible');
   joueur.root.rotation.y = Math.PI * 0.12; // de trois quarts : l'arme se lit mieux qu'exactement vers le nord
   vueJeu.scene.add(joueur.root);
-  const prop = joueur.root.getObjectByName('prop');
-  armeEnMain = kit.mesh(etat.arme, etat.variante, 'main');
-  armeEnMain.position.set(...MAIN);
-  prop?.add(armeEnMain);
+  if (etat.tenue === 'adaptee') {
+    // Bras adaptés (aperçu du lot d'intégration) : buste tourné, arme placée dans le repère du personnage, mains sur leurs prises.
+    const support = new THREE.Group();
+    tenueInfo = poserTenue(joueur, armeParId(donnees, etat.arme), echelleJeu(donnees), support);
+    const aDos = Boolean(armeParId(donnees, etat.arme)?.dos);
+    armeEnMain = kit.mesh(etat.arme, etat.variante, 'main', aDos ? { dos: tenueInfo.dos, lacet: tenueInfo.lacet } : {});
+    support.add(armeEnMain);
+  } else {
+    tenueInfo = null;
+    const prop = joueur.root.getObjectByName('prop');
+    armeEnMain = kit.mesh(etat.arme, etat.variante, 'main');
+    armeEnMain.position.set(...MAIN);
+    prop?.add(armeEnMain);
+  }
   joueur.root.updateMatrixWorld(true);
+}
+
+// Vue rapprochée de la tenue : trois quarts avant droit et dessus, autour du personnage (même scène, même lumière).
+function dessinerTenue() {
+  const canvas = $('cv-tenue');
+  const w = canvas.width / 2;
+  const h = canvas.height;
+  const centre = new THREE.Vector3(0, 36, 6).applyMatrix4(joueur.root.matrixWorld);
+  for (const [i, dir] of [[0, new THREE.Vector3(-0.75, 0.45, 0.9)], [1, new THREE.Vector3(0, 1, 0.02)]]) {
+    const cam = new THREE.PerspectiveCamera(32, w / h, 1, 2000);
+    cam.position.copy(centre).add(dir.normalize().multiplyScalar(i ? 150 : 120));
+    cam.lookAt(centre);
+    cam.updateMatrixWorld(true);
+    rendre(vueJeu.scene, cam, canvas, { x: i * w, y: 0, w, h });
+  }
+  const e = tenueInfo?.ecarts;
+  $('tenue-mesures').textContent = e ? t('dev.armes.tenue.mesures', { tenue: t(`dev.armes.tenue.genre.${tenueInfo.tenue}`), d: n1(Math.max(0, e.droite)), g: n1(Math.max(0, e.gauche)) }) : t('dev.armes.tenue.actuelle');
 }
 
 // Rectangle des pixels non noirs d'une image (mesure de taille à l'écran).
@@ -231,9 +263,10 @@ function dessinerJeu() {
     const m = mesurerJeu(w, h);
     const info = kit.infos(etat.arme, etat.variante);
     mesures[`${w}x${h}`] = { ...m, appels: r.calls };
-    lignes.push(t('dev.armes.jeu.mesures', { taille: `${w} × ${h}`, pw: m.perso.w, ph: m.perso.h, aw: m.arme.w, ah: m.arme.h, l: n1(info.longueur), lr: n2(info.longueur / UPM) }));
+    lignes.push(t('dev.armes.jeu.mesures', { taille: `${w} × ${h}`, pw: m.perso.w, ph: m.perso.h, aw: m.arme.w, ah: m.arme.h, l: n1(info.longueur), lr: n2(info.longueur / UPM / donnees.echelle.lisibilite) }));
   }
   $('jeu-mesures').textContent = lignes.join(' ');
+  dessinerTenue();
 }
 
 // --- Vue « sur la caisse » -------------------------------------------------------------------------------------------------------------
@@ -247,7 +280,7 @@ vueCaisse.scene.add(passant.root);
 
 function dessinerCaisse() {
   groupeCaisse.clear();
-  const d = dimensionsCaisse(donnees.caisses, etat.caisse);
+  const d = kit.dimensions(etat.caisse);
   groupeCaisse.add(kit.caisse(etat.caisse));
   const arme = kit.mesh(etat.arme, etat.variante, 'caisse');
   arme.position.set(0, d.appui, 0);
@@ -472,6 +505,7 @@ const ctlVariante = $('ctl-variante');
 for (const a of donnees.armes) option(ctlArme, a.id, a.nom);
 for (const m of ['jeu', 'lampe', 'lune']) option($('ctl-lumiere'), m, t(`dev.armes.lumiere.${m}`));
 for (const m of ['masque', 'visible']) option($('ctl-pistolet'), m, t(`dev.armes.pistolet.${m}`));
+for (const m of ['adaptee', 'actuelle']) option($('ctl-tenue'), m, t(`dev.armes.tenue.${m}`));
 for (const c of ['caisse', 'ratelier']) option($('ctl-caisse'), c, t(`dev.armes.caisse.${c}`));
 function remplirVariantes() {
   ctlVariante.replaceChildren();
@@ -480,7 +514,7 @@ function remplirVariantes() {
   ctlVariante.value = etat.variante;
 }
 function texteChoix() {
-  const out = { _note: choixJson?._note ?? '', variantes: proposition.variantes, armeSpeciale: proposition.armeSpeciale };
+  const out = { _note: choixJson?._note ?? '', variantes: proposition.variantes, armeSpeciale: proposition.armeSpeciale, echelle: { longueur: donnees.echelle.lisibilite, epaisseur: donnees.echelle.epaisseur } };
   $('choix-texte').value = `${JSON.stringify(out, null, 2)}\n`;
   const ecarts = choix.ecarts.length ? ` ${t('dev.armes.choix.ecarts', { liste: choix.ecarts.join(' ; ') })}` : '';
   $('choix-etat').textContent = choixJson
@@ -519,6 +553,28 @@ $('ctl-lumiere').addEventListener('change', (e) => {
   dessinerJeu();
   dessinerCaisse();
 });
+$('ctl-tenue').addEventListener('change', (e) => {
+  etat.tenue = e.target.value;
+  dessinerJeu();
+});
+// Curseurs d'échelle : le kit est reconstruit (géométries et textures libérées), toutes les vues redessinées ; rien n'est enregistré.
+for (const [id, cle] of [['ctl-longueur', 'longueur'], ['ctl-epaisseur', 'epaisseur']]) {
+  const ctl = $(id);
+  ctl.value = String(cle === 'longueur' ? donnees.echelle.lisibilite : donnees.echelle.epaisseur);
+  $(`out-${cle}`).textContent = `× ${n2(Number(ctl.value))}`;
+  ctl.addEventListener('change', () => {
+    donnees = avecEchelle(donnees, { [cle]: Number(ctl.value) });
+    $(`out-${cle}`).textContent = `× ${n2(Number(ctl.value))}`;
+    kit.dispose();
+    kit = creerKitArmes({ donnees, palette });
+    toutDessiner();
+    dessinerVisuelsTous();
+    dessinerPlanche();
+    dessinerBudget();
+    texteChoix();
+  });
+  ctl.addEventListener('input', () => { $(`out-${cle}`).textContent = `× ${n2(Number(ctl.value))}`; });
+}
 $('ctl-pistolet').addEventListener('change', (e) => {
   etat.pistolet = e.target.value;
   dessinerJeu();
@@ -558,6 +614,8 @@ if (testMode) {
     rendus: () => rendus,
     angle: () => etat.yaw,
     visuels: () => ({ ...visuels }),
+    tenue: () => (tenueInfo ? JSON.parse(JSON.stringify(tenueInfo)) : null),
+    echelle: () => ({ ...donnees.echelle }),
     distanceJeu,
   };
 }

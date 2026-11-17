@@ -32,6 +32,7 @@
         <h2 id="nav-titre" class="armes-nav-titre" data-i18n="dev.armes.nav"></h2>
         <ul class="armes-nav">
           <li><a class="atelier-link" href="#vue-jeu" data-i18n="dev.armes.jeu.titre"></a></li>
+          <li><a class="atelier-link" href="#vue-tenue" data-i18n="dev.armes.tenue.titre"></a></li>
           <li><a class="atelier-link" href="#vue-caisse" data-i18n="dev.armes.caisse.titre"></a></li>
           <li><a class="atelier-link" href="#vue-gros-plan" data-i18n="dev.armes.grosplan.titre"></a></li>
           <li><a class="atelier-link" href="#vue-visuel" data-i18n="dev.armes.visuel.titre"></a></li>
@@ -50,8 +51,12 @@
         <div class="armes-champ"><label for="ctl-arme" data-i18n="dev.armes.arme"></label><select id="ctl-arme" class="armes-select"></select></div>
         <div class="armes-champ"><label for="ctl-variante" data-i18n="dev.armes.variante"></label><select id="ctl-variante" class="armes-select"></select></div>
         <div class="armes-champ"><label for="ctl-lumiere" data-i18n="dev.armes.lumiere"></label><select id="ctl-lumiere" class="armes-select"></select></div>
+        <div class="armes-champ"><label for="ctl-tenue" data-i18n="dev.armes.tenue"></label><select id="ctl-tenue" class="armes-select"></select></div>
         <div class="armes-champ"><label for="ctl-pistolet" data-i18n="dev.armes.pistolet"></label><select id="ctl-pistolet" class="armes-select"></select></div>
+        <div class="armes-champ"><label for="ctl-longueur" data-i18n="dev.armes.longueur"></label><span class="armes-curseur"><input id="ctl-longueur" class="atelier-range" type="range" min="1" max="2" step="0.05"><output id="out-longueur" for="ctl-longueur"></output></span></div>
+        <div class="armes-champ"><label for="ctl-epaisseur" data-i18n="dev.armes.epaisseur"></label><span class="armes-curseur"><input id="ctl-epaisseur" class="atelier-range" type="range" min="1" max="3" step="0.1"><output id="out-epaisseur" for="ctl-epaisseur"></output></span></div>
       </div>
+      <p class="atelier-note" data-i18n="dev.armes.echelle.note"></p>
       <p id="variante-description" class="atelier-note"></p>
       <p id="variante-retenue" class="atelier-note"></p>
     </section>
@@ -65,6 +70,13 @@
       <h3 id="jeu-grand-titre" class="armes-sous-titre" data-i18n="dev.armes.jeu.grand"></h3>
       <div class="armes-scene armes-taille-reelle" tabindex="0" role="group" aria-labelledby="jeu-grand-titre"><canvas id="cv-jeu-grand" class="armes-canvas-reel" width="1920" height="1080" aria-hidden="true"></canvas></div>
       <p class="atelier-note" data-i18n="dev.armes.jeu.tenue"></p>
+    </section>
+
+    <section id="vue-tenue" class="atelier-section" aria-labelledby="tenue-titre">
+      <h2 id="tenue-titre" class="atelier-heading" data-i18n="dev.armes.tenue.titre"></h2>
+      <p class="atelier-note" data-i18n="dev.armes.tenue.intro"></p>
+      <div class="armes-scene" tabindex="0" role="group" aria-labelledby="tenue-titre"><canvas id="cv-tenue" class="armes-canvas" width="960" height="420" aria-hidden="true"></canvas></div>
+      <p id="tenue-mesures" class="atelier-note armes-mesures"></p>
     </section>
 
     <section id="vue-caisse" class="atelier-section" aria-labelledby="caisse-titre">

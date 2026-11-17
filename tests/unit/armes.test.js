@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
-import { CLASSES, armeParId, budgetDe, controleBudget, coucher, echelleJeu, lireArmes, lireChoix, maillageArme, piecesArme, varianteDe } from '../../js/core/armes/armes.js';
+import { CLASSES, TENUES, armeParId, avecEchelle, epaissir, budgetDe, controleBudget, coucher, echelleJeu, lireArmes, lireChoix, maillageArme, piecesArme, varianteDe } from '../../js/core/armes/armes.js';
 import { empreinte, maillage, trianguler } from '../../js/core/armes/geometrie.js';
 import { JETONS, TAILLE, TUILES, genererAtlas, moyenneTuile, rectTuile } from '../../js/core/armes/atlas.js';
 import { HAUTEUR_ARME_JOUEUR, POCHOIRS, TYPES, ancreTexte, dimensionsCaisse, genererTextureCaisse, maillageCaisse } from '../../js/core/armes/caisse.js';
@@ -34,9 +34,12 @@ describe('données des armes', () => {
     for (const cle of ['degats', 'cadence', 'prix', 'portee', 'dispersion', 'vitesse']) expect(texte, cle).not.toMatch(new RegExp(`"${cle}"`));
   });
 
-  it('échelle : 35 unités par mètre (personnage de 61 unités ≈ 1,75 m), lisibilité 1', () => {
+  // Lot 9c-G (retours du propriétaire : armes trop petites et trop fines) : longueur ×1,3, épaisseur des pièces fines ×1,8 (avant : 1 et 1).
+  it('échelle : 35 unités par mètre (personnage de 61 unités ≈ 1,75 m), longueur ×1,3, épaisseur ×1,8 sous 60 mm', () => {
     expect(donnees.echelle.unitesParMetre).toBe(35);
-    expect(donnees.echelle.lisibilite).toBe(1);
+    expect(donnees.echelle.lisibilite).toBe(1.3);
+    expect(donnees.echelle.epaisseur).toBe(1.8);
+    expect(donnees.echelle.seuilEpaisseur).toBe(60);
     expect(json.echelle.personnage.hauteur / json.echelle.personnage.hauteurReelleM).toBeCloseTo(35, 0);
   });
 
@@ -89,7 +92,7 @@ describe('dimensions relatives', () => {
     for (const a of donnees.armes) {
       const l1 = maillageArme(donnees, a, a.variantes[0]).longueur;
       const l2 = maillageArme(d2, armeParId(d2, a.id), armeParId(d2, a.id).variantes[0]).longueur;
-      expect(l2 / l1).toBeCloseTo(1.5, 4);
+      expect(l2 / l1).toBeCloseTo(1.5 / 1.3, 4);
     }
   });
 });
@@ -180,7 +183,7 @@ describe('caisse d\'armes', () => {
     const a = armeParId(donnees, id);
     const m = coucher(maillageArme(donnees, a, varianteDe(a, vid), { pose: 'caisse' }));
     for (const type of TYPES) {
-      const d = dimensionsCaisse(donnees.caisses, type);
+      const d = dimensionsCaisse(donnees.caisses, type, m.bornes.max[2] - m.bornes.min[2]); // lot 9c-G : la caisse s'allonge pour l'arme
       expect(d.appui + m.bornes.max[1], `${id} ${vid} ${type}`).toBeLessThan(HAUTEUR_ARME_JOUEUR);
       expect(m.bornes.max[2] - m.bornes.min[2]).toBeLessThan(d.l);
     }
@@ -234,5 +237,61 @@ describe('visuels 2D du menu (SVG de profil)', () => {
     expect(visuelArme(donnees, a, a.variantes[0], { id: `v-${id}`, titre: a.nom }).svg).toBe(r.svg);
     // Toutes les classes de remplissage ont une règle dans css/armes.css.
     for (const c of new Set([...r.svg.matchAll(/class="(arm-t-[a-z-]+)"/g)].map((m) => m[1]))) expect(tokens, c).toMatch(new RegExp(`\\.${c}[ ,{]`));
+  });
+});
+
+describe('retours du propriétaire (lot 9c-G) : taille, épaisseur, prises', () => {
+  it('épaissir : seules les dimensions sous le seuil grossissent (canon, crosse, plaque), jamais la longueur d\'une pièce longue', () => {
+    expect(epaissir({ forme: 'boite', w: 22, h: 150, l: 40 }, 2, 60)).toMatchObject({ w: 44, h: 150, l: 40 });
+    expect(epaissir({ forme: 'tube', r: 9, r2: 8, l: 500 }, 2, 60)).toMatchObject({ r: 18, r2: 16, l: 500 });
+    expect(epaissir({ forme: 'tube', r: 47, l: 1640 }, 2, 60)).toMatchObject({ r: 47 }); // tube du Panzerschreck : déjà épais
+    expect(epaissir({ forme: 'profil', pts: [], e: 30 }, 2, 60).e).toBe(60);
+    expect(epaissir({ forme: 'loft', sections: [{ z: 0, w: 42, h: 125 }] }, 2, 60).sections[0]).toMatchObject({ w: 84, h: 125 });
+  });
+
+  it('l\'épaisseur ne change ni la longueur ni le nombre de triangles ; elle élargit l\'arme vue de dessus', () => {
+    const fin = avecEchelle(donnees, { epaisseur: 1 });
+    for (const a of donnees.armes) {
+      const [m1, m2] = [fin, donnees].map((d) => maillageArme(d, a, a.variantes[0], { pose: 'seule' }));
+      expect(m2.triangles).toBe(m1.triangles);
+      expect(m2.longueur).toBeCloseTo(m1.longueur, 0);
+      if (a.id === 'panzerschreck') expect(m2.largeur).toBeGreaterThanOrEqual(m1.largeur); // largeur donnée par le bouclier (360 mm, non épaissi)
+      else expect(m2.largeur, a.id).toBeGreaterThan(m1.largeur);
+    }
+  });
+
+  it('avecEchelle : bornes (longueur 0,5 à 3, épaisseur 1 à 3) ; les données d\'origine ne changent pas', () => {
+    const d = avecEchelle(donnees, { longueur: 9, epaisseur: 0.2 });
+    expect(d.echelle.lisibilite).toBe(3);
+    expect(d.echelle.epaisseur).toBe(1);
+    expect(donnees.echelle.lisibilite).toBe(1.3);
+    expect(avecEchelle(donnees, null).echelle).toEqual(donnees.echelle);
+  });
+
+  it('fichier de choix : échelle lue si valide, écart signalé sinon', () => {
+    expect(lireChoix(donnees, { echelle: { longueur: 1.5, epaisseur: 2 } }).echelle).toEqual({ longueur: 1.5, epaisseur: 2 });
+    const c = lireChoix(donnees, { echelle: { longueur: 'grand', epaisseur: 9 } });
+    expect(c.echelle).toEqual({});
+    expect(c.ecarts.length).toBe(2);
+    expect(lireChoix(donnees, {}).echelle).toBeNull();
+  });
+
+  it('prises : chaque arme a une tenue connue ; une main gauche pour toutes les armes d\'épaule, lourdes et spéciales ; un appui pour l\'épaule et le tube', () => {
+    for (const a of donnees.armes) {
+      expect(TENUES, a.id).toContain(a.prises.tenue);
+      if (a.prises.tenue !== 'poing') expect(a.prises.gauche, a.id).not.toBeNull();
+      if (['epaule', 'tube'].includes(a.prises.tenue)) expect(a.prises.appui, a.id).not.toBeNull();
+    }
+    expect(armeParId(donnees, 'm1911').prises.tenue).toBe('poing');
+    expect(armeParId(donnees, 'panzerschreck').prises.tenue).toBe('tube');
+  });
+
+  it('lacet : seuls les réservoirs (groupe « dos ») tournent, la lance ne bouge pas', () => {
+    const a = armeParId(donnees, 'm2lanceflammes');
+    const [p0, p1] = [0, -34].map((lacet) => piecesArme(a, a.variantes[0], 'main', { lacet }));
+    p0.forEach((p, i) => {
+      if (p.groupe === 'dos') expect(p1[i].rot?.[1] ?? 0).toBeCloseTo((p.rot?.[1] ?? 0) - 34, 6);
+      else expect(p1[i]).toEqual(p);
+    });
   });
 });

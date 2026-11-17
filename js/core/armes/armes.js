@@ -7,6 +7,7 @@ import { rectTuile } from './atlas.js';
 
 const isObj = (o) => o !== null && typeof o === 'object' && !Array.isArray(o);
 const num = (v, d) => (Number.isFinite(v) ? v : d);
+const borne = (v, a, b) => Math.max(a, Math.min(b, v));
 const str = (v, d = '') => (typeof v === 'string' && v.trim() ? v.trim() : d);
 
 export const CLASSES = Object.freeze({ poing: 'epaule', epaule: 'epaule', lourde: 'lourde' });
@@ -23,7 +24,12 @@ export const TEINTE_NOIR = Object.freeze([0.35, 0.35, 0.35]);
 export function lireArmes(json) {
   const j = isObj(json) ? json : {};
   const e = isObj(j.echelle) ? j.echelle : {};
-  const echelle = { unitesParMetre: num(e.unitesParMetre, 35), lisibilite: Math.max(0.5, Math.min(3, num(e.lisibilite, 1))) };
+  // Retours du propriétaire (lot 9c-G) : lisibilite = facteur de longueur (toutes les armes, proportions entre elles gardées) ; epaisseur =
+  // facteur des dimensions fines des pièces (sous seuilEpaisseur mm : canons, crosses, chargeurs, plaques), sans allonger les pièces longues.
+  const echelle = {
+    unitesParMetre: num(e.unitesParMetre, 35), lisibilite: borne(num(e.lisibilite, 1), 0.5, 3), epaisseur: borne(num(e.epaisseur, 1), 1, 3),
+    seuilEpaisseur: borne(num(e.seuilEpaisseur, 60), 0, 500),
+  };
   const b = isObj(j.budgets) ? j.budgets : {};
   const budgets = { epaule: num(b.epaule, 400), lourde: num(b.lourde, 700), caisse: num(b.caisse, 300), texture: num(b.texture, 256) };
   const ecarts = [];
@@ -47,10 +53,28 @@ export function lireArmes(json) {
     armes.push({
       id, nom: str(a.nom, id), genre: str(a.genre), classe: CLASSES[a.classe] ? a.classe : 'epaule',
       dimensions: isObj(a.dimensions) ? a.dimensions : {}, longueurReelle: num(a.dimensions?.longueur, 0),
-      dos: isObj(a.dos) ? a.dos : null, variantes,
+      dos: isObj(a.dos) ? a.dos : null, prises: lirePrises(a.prises), variantes,
     });
   }
   return { echelle, budgets, armes, caisses: Array.isArray(j.caisses) ? j.caisses : [], approche: isObj(j.approche) ? j.approche : {}, ecarts };
+}
+
+// Prises (lot 9c-G) : tenue ('poing' | 'epaule' | 'hanche' | 'tube'), points en mm dans le repère de l'arme : gauche (main gauche, null =
+// elle soutient la droite), appui (crosse à l'épaule, tube sur l'épaule ou crosse sous le bras).
+export const TENUES = Object.freeze(['poing', 'epaule', 'hanche', 'tube']);
+const point = (p) => (Array.isArray(p) && p.length === 3 && p.every(Number.isFinite) ? [...p] : null);
+function lirePrises(p) {
+  const o = isObj(p) ? p : {};
+  return { tenue: TENUES.includes(o.tenue) ? o.tenue : 'poing', gauche: point(o.gauche), appui: point(o.appui) };
+}
+
+// Échelle choisie (fichier de choix ou curseurs de l'atelier) appliquée aux données : nouvel objet, les données d'origine ne changent pas.
+export function avecEchelle(donnees, choixEchelle) {
+  const c = isObj(choixEchelle) ? choixEchelle : {};
+  const e = { ...donnees.echelle };
+  if (Number.isFinite(c.longueur)) e.lisibilite = borne(c.longueur, 0.5, 3);
+  if (Number.isFinite(c.epaisseur)) e.epaisseur = borne(c.epaisseur, 1, 3);
+  return { ...donnees, echelle: e };
 }
 
 export const armeParId = (donnees, id) => donnees.armes.find((a) => a.id === id) ?? null;
@@ -74,29 +98,66 @@ export function lireChoix(donnees, choix) {
   const dispo = SPECIALES.filter((s) => armeParId(donnees, s));
   const armeSpeciale = dispo.includes(c.armeSpeciale) ? c.armeSpeciale : dispo[0] ?? null;
   if (c.armeSpeciale !== undefined && armeSpeciale !== c.armeSpeciale) ecarts.push(`arme spéciale inconnue : ${String(c.armeSpeciale)}`);
-  return { variantes, armeSpeciale, ecarts };
+  let echelle = null;
+  if (c.echelle !== undefined) {
+    const e = isObj(c.echelle) ? c.echelle : {};
+    const ok = (x, a, b2) => Number.isFinite(x) && x >= a && x <= b2;
+    echelle = {};
+    if (ok(e.longueur, 0.5, 3)) echelle.longueur = e.longueur;
+    else if (e.longueur !== undefined) ecarts.push(`échelle de longueur invalide : ${String(e.longueur)}`);
+    if (ok(e.epaisseur, 1, 3)) echelle.epaisseur = e.epaisseur;
+    else if (e.epaisseur !== undefined) ecarts.push(`échelle d'épaisseur invalide : ${String(e.epaisseur)}`);
+    if (!isObj(c.echelle)) ecarts.push('échelle illisible');
+  }
+  return { variantes, armeSpeciale, echelle, ecarts };
 }
 
 // Pièces d'une arme dans une pose. 'main' : groupe « dos » déplacé de arme.dos.main (mm, repère de l'arme) ; 'caisse' : de arme.dos.caisse.
 // 'seule' : sans le groupe « dos » ni le tuyau (longueur de la lance seule).
-export function piecesArme(arme, variante, pose = 'main') {
+// options : { epaisseur (facteur des dimensions fines), seuil (mm), dos (décalage du groupe « dos », remplace arme.dos[pose]),
+// lacet (degrés : le groupe « dos » tourne autour de son centre, avec le buste de la tenue de l'atelier) }.
+export function piecesArme(arme, variante, pose = 'main', { epaisseur = 1, seuil = 60, dos, lacet = 0 } = {}) {
   const f = MODELES[arme?.id];
   if (!f) return [];
-  const dec = arme.dos?.[pose === 'caisse' ? 'caisse' : 'main'];
-  const pieces = f(arme.dimensions ?? {}, variante?.options ?? {}, { dos: Array.isArray(dec) ? dec.map((v) => num(v, 0)) : undefined });
+  const dec = Array.isArray(dos) ? dos : arme.dos?.[pose === 'caisse' ? 'caisse' : 'main'];
+  const brutes = f(arme.dimensions ?? {}, variante?.options ?? {}, { dos: Array.isArray(dec) ? dec.map((v) => num(v, 0)) : undefined });
+  const epaisses = epaisseur > 1 ? brutes.map((p) => epaissir(p, epaisseur, seuil)) : brutes;
+  const a = (num(lacet, 0) * Math.PI) / 180;
+  const pieces = !a ? epaisses : epaisses.map((p) => {
+    if (p.groupe !== 'dos') return p;
+    const [x, y, z] = p.pos ?? [0, 0, 0];
+    const r = p.rot ?? [0, 0, 0];
+    return { ...p, pos: [x * Math.cos(a) + z * Math.sin(a), y, -x * Math.sin(a) + z * Math.cos(a)], rot: [r[0], r[1] + num(lacet, 0), r[2]] };
+  });
   if (pose === 'seule') return pieces.filter((p) => p.groupe !== 'dos' && p.groupe !== 'tuyau');
   if (!Array.isArray(dec)) return pieces;
   return pieces.map((p) => (p.groupe === 'dos' ? { ...p, pos: [(p.pos?.[0] ?? 0) + num(dec[0], 0), (p.pos?.[1] ?? 0) + num(dec[1], 0), (p.pos?.[2] ?? 0) + num(dec[2], 0)] } : p));
 }
 
+// Épaissit une pièce : chaque dimension transversale sous le seuil (mm ; diamètre pour un tube) est multipliée par k ; ni la longueur
+// des pièces (l, tubes) ni les positions ne changent.
+export function epaissir(p, k, seuil) {
+  const f = (d) => (Number.isFinite(d) && d < seuil ? d * k : d);
+  if (p.forme === 'boite') return { ...p, w: f(p.w), h: f(p.h) }; // l (le long de l'arme) : jamais, l'arme ne s'allonge pas
+  if (p.forme === 'tube') {
+    const g = (r) => (Number.isFinite(r) && 2 * r < seuil ? r * k : r);
+    return { ...p, r: g(p.r), ...(Number.isFinite(p.r2) ? { r2: g(p.r2) } : {}) };
+  }
+  if (p.forme === 'profil') return { ...p, e: f(p.e) };
+  if (p.forme === 'loft') return { ...p, sections: p.sections.map((x) => ({ ...x, w: f(x.w), h: f(x.h) })) };
+  return p;
+}
+
 // Unités du jeu par millimètre.
 export const echelleJeu = (donnees) => (donnees.echelle.unitesParMetre / 1000) * donnees.echelle.lisibilite;
 
-// Maillage d'une arme (unités du jeu). options : { pose ('main' | 'caisse' | 'seule'), echelle (remplace celle des données) }.
-export function maillageArme(donnees, arme, variante, { pose = 'main', echelle } = {}) {
+// Maillage d'une arme (unités du jeu). options : { pose ('main' | 'caisse' | 'seule'), echelle (remplace celle des données), dos }.
+// dos : décalage (mm) du groupe « dos » qui remplace celui des données (réservoirs placés sur le dos par la tenue de l'atelier).
+export function maillageArme(donnees, arme, variante, { pose = 'main', echelle, dos, lacet } = {}) {
   const v = variante ?? varianteDe(arme);
   const mat = v?.matieres ?? MATIERES_DEFAUT;
-  const m = maillage(piecesArme(arme, v, ['caisse', 'seule'].includes(pose) ? pose : 'main'), {
+  const opts = { epaisseur: donnees.echelle.epaisseur ?? 1, seuil: donnees.echelle.seuilEpaisseur ?? 60, dos, lacet };
+  const m = maillage(piecesArme(arme, v, ['caisse', 'seule'].includes(pose) ? pose : 'main', opts), {
     echelle: Number.isFinite(echelle) ? echelle : echelleJeu(donnees),
     tuile: (role) => rectTuile(mat[role] ?? MATIERES_DEFAUT[role] ?? 'bruni'),
     teinte: (role) => {
