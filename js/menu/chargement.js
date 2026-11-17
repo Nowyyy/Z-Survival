@@ -12,7 +12,7 @@
 import { avancer, choisirAstuce, creerProgression, MODULES_ATTENDUS, pourcentage, texteVersion } from '../core/menu-etat.js';
 import { fmt, loadDict } from '../game/texts.js';
 import { CANAUX_DEBUG } from '../core/graphics.js';
-import { pageCanal } from '../game/graphics-boot.js';
+import { pageCanal } from './adresse.js';
 import { couluresSvg } from '../logo.js';
 import { adopter, chute as sonsChute, ecouterGestes, partir, regler as reglerSons, revenir as revenirSons, signaler } from './sons/sons.js';
 

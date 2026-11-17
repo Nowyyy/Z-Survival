@@ -16,7 +16,7 @@ import { basculerMenu, choisirOnglet, versionMenu, creerEtatMenu, ECRANS_PLEINS,
 import { ecranJouer } from './jouer.js';
 import { gouttePath } from '../logo.js';
 import { fmt, loadDict } from '../game/texts.js';
-import { graphicsReglages, pageCanal, pageSearch } from '../game/graphics-boot.js';
+import { pageCanal, pageSearch } from './adresse.js'; // lot 9d : graphics-boot.js (préréglage, carte) importé à l'ouverture des Options
 import { solde as soldeMedailles, soldeDiamants } from '../core/progression.js';
 import { chargerProgression } from './progression-etat.js';
 
@@ -735,7 +735,7 @@ export function creerMenu({ dict, infos = [], liens = {}, solde: montant = 0, di
       // Son et volume : mémoire de la page (demarrage.js, donnée par l'écran de chargement), appliquée par main.js à « JOUER » ; défaut et pas : audio.json.
       if (!options) {
         const [{ creerOptions }, { createGraphicsController }, gfx, audio] = await Promise.all([
-          import('../game/options-menu.js'), import('../game/graphics-apply.js'), graphicsReglages(), json('data/game/audio.json'),
+          import('../game/options-menu.js'), import('../game/graphics-apply.js'), import('../game/graphics-boot.js').then((g) => g.graphicsReglages()), json('data/game/audio.json'),
         ]);
         let local = { coupe: false, volume: null, musique: null }; // sans mémoire donnée (créateur de test) : réglages de cet écran seulement
         const lire = () => memoireSon?.lire() ?? local;

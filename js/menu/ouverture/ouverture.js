@@ -13,7 +13,7 @@ import { parseColor, toHex } from '../../core/color.js';
 import { formatMoney } from '../../core/economy.js';
 import { prixAchat } from '../../core/caisses.js';
 import { fmt } from '../../game/texts.js';
-import { pageCanal, pageSearch } from '../../game/graphics-boot.js';
+import { pageCanal, pageSearch } from '../adresse.js';
 import { el } from '../menu.js';
 import { liberer as libererSons, ouvertureSons, preparer as preparerSons, signaler, son } from '../sons/sons.js';
 

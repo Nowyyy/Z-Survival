@@ -4,7 +4,7 @@
 // (opérations de js/core/progression.js : le prix est prélevé dans la même écriture que l'objet obtenu, jamais l'un sans l'autre).
 import { createRepository } from '../save/index.js';
 import { solde as soldeDe, soldeDiamants } from '../core/progression.js';
-import { pageSearch } from '../game/graphics-boot.js';
+import { pageSearch } from './adresse.js';
 
 // Identifiant unique d'opération ou d'achat : 8 chiffres hexadécimaux tirés par crypto (aucun générateur pseudo-aléatoire), plus un compteur de la page.
 let compteur = 0;

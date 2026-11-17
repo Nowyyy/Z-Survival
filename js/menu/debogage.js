@@ -12,7 +12,7 @@
 import { el } from './menu.js';
 import { chargerEquipement } from './equipement-etat.js';
 import { createDeviceSettings, browserStorage } from '../save/device-settings.js';
-import { pageSearch } from '../game/graphics-boot.js';
+import { pageSearch } from './adresse.js';
 import { fmt } from '../game/texts.js';
 import { formatMoney } from '../core/economy.js';
 import { estDebloque } from '../core/equipement.js';

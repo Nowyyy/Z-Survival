@@ -224,12 +224,12 @@ test.describe('introduction du studio (E0)', () => {
     expect([o.problemes, o.externes]).toEqual([[], []]);
   });
 
-  test('jamais sans intro=1 sous ?test=1&menu=1, ni en partie directe ; démarrage du menu : 36 fichiers JavaScript (lot 8h et 8i : progression v2 et module léger des sons), 37 avec l\'introduction (intro.js), hors moteur des sons chargé après le geste', async ({ page, baseURL }) => {
+  test('jamais sans intro=1 sous ?test=1&menu=1, ni en partie directe ; démarrage du menu : 30 fichiers JavaScript (lot 9d ; lot 8h et 8i : progression v2 et module léger des sons), 37 avec l\'introduction (intro.js), hors moteur des sons chargé après le geste', async ({ page, baseURL }) => {
     let o = surveiller(page, baseURL);
     await espions(page);
     await ouvrirMenu(page);
     expect(await page.evaluate(() => [window.__vus.e0 ?? null, window.__zsMenu.intro()])).toEqual([null, null]);
-    expect(o.fichiers.filter((f) => f.endsWith('.js')).length).toBe(36); // lot 8i : + js/menu/sons/sons.js ; lot 8h : + js/save/codecs.js, js/core/progression.js et js/menu/progression-etat.js (progression v2)
+    expect(o.fichiers.filter((f) => f.endsWith('.js')).length).toBe(30); // lot 9d : 36 → 30 (adresse de la page par js/menu/adresse.js : js/game/graphics-boot.js et la carte, js/core/maps.js, decor, epaves, shape, floors, collision, chargés à « JOUER » ou à l'ouverture des Options) ; lot 8i : + js/menu/sons/sons.js ; lot 8h : + js/save/codecs.js, js/core/progression.js et js/menu/progression-etat.js (progression v2)
     // Retour du propriétaire : en mode menu, l'écran de préparation de la partie (barre) n'est jamais visible.
     expect(await page.evaluate(() => [document.documentElement.classList.contains('zs-attente'), getComputedStyle(document.getElementById('loading')).visibility])).toEqual([true, 'hidden']);
     expect(o.fichiers.filter((f) => f.endsWith('/js/menu/intro.js'))).toEqual([]);
@@ -249,7 +249,7 @@ test.describe('introduction du studio (E0)', () => {
     // musique-menu.js ; synthèse dans le calculateur d'arrière-plan) se charge alors à la demande, compté à part du démarrage.
     // (fichiers distincts : le calculateur redemande js/core/vec.js, déjà chargé par le menu).
     const MOTEUR_SONS = /\/js\/menu\/sons\/(moteur|musique|calcul|synthese)\.js$|\/js\/core\/(sons-menu|musique-menu|synth2|synth2-dsp|synth2-sources|audio-analysis)\.js$/;
-    expect(new Set(o.fichiers.filter((f) => f.endsWith('.js') && !MOTEUR_SONS.test(f))).size).toBe(37); // lot 8h : + 3 (progression v2)
+    expect(new Set(o.fichiers.filter((f) => f.endsWith('.js') && !MOTEUR_SONS.test(f))).size).toBe(31); // lot 9d : 36 → 30 (adresse de la page par js/menu/adresse.js : js/game/graphics-boot.js et la carte, js/core/maps.js, decor, epaves, shape, floors, collision, chargés à « JOUER » ou à l'ouverture des Options) ; lot 8h : + 3 (progression v2)
     expect(o.fichiers.filter((f) => f.endsWith('.svg')).sort()).toEqual([`/${LOGO}`, `/${FIXE}`]);
     await p2.close();
     const p3 = await page.context().newPage();

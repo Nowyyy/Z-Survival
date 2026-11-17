@@ -194,7 +194,7 @@ test.describe('écran Personnage (E9-1)', () => {
     await ouvrirMenu(page);
     const PERSO = /\/js\/menu\/(personnage|equipement-etat|inventaire|fusion|personnages)\.js$|\/js\/core\/equipement\.js$|\/data\/menu\/(objets|raretes|personnages|inventaire-depart)\.json$/;
     expect(o.fichiers.filter((f) => PERSO.test(f))).toEqual([]);
-    expect(o.fichiers.filter((f) => f.endsWith('.js')).length).toBe(36); // lot 8h : + js/save/codecs.js, js/core/progression.js et js/menu/progression-etat.js, 33 → 36 ; démarrage du menu (retours du propriétaire : roue et glissement à la souris, 29 → 31 ; avatar de l'en-tête, 31 → 32 ; lot 8i : module léger des sons, 32 → 33)
+    expect(o.fichiers.filter((f) => f.endsWith('.js')).length).toBe(30); // lot 9d : 36 → 30 (adresse de la page par js/menu/adresse.js : js/game/graphics-boot.js et la carte, js/core/maps.js, decor, epaves, shape, floors, collision, chargés à « JOUER » ou à l'ouverture des Options) ; lot 8h : + js/save/codecs.js, js/core/progression.js et js/menu/progression-etat.js, 33 → 36 ; démarrage du menu (retours du propriétaire : roue et glissement à la souris, 29 → 31 ; avatar de l'en-tête, 31 → 32 ; lot 8i : module léger des sons, 32 → 33)
     await page.locator('#menu-onglet-personnage').click();
     await expect(page.locator('#menu-ecran-personnage')).toBeVisible();
     expect(o.fichiers.filter((f) => PERSO.test(f)).sort()).toEqual(['/data/menu/objets.json', '/data/menu/personnages.json', '/data/menu/raretes.json', '/js/core/equipement.js', '/js/menu/equipement-etat.js', '/js/menu/personnage.js']); // lot 8h : inventaire-depart.json n'est plus chargé (outil de débogage seulement)

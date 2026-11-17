@@ -266,14 +266,14 @@ test.describe('Boutique (E3-1)', () => {
     }
   });
 
-  test('chargée à la demande (démarrage du menu : 36 fichiers JavaScript (lot 8h : progression v2), roue de chargement, glissement à la souris, avatar de l\'en-tête et module léger des sons compris) ; chances et résultats à leur première ouverture ; ni Three.js ni le jeu', async ({ page, baseURL }) => {
+  test('chargée à la demande (démarrage du menu : 30 fichiers JavaScript (lot 9d ; lot 8h : progression v2), roue de chargement, glissement à la souris, avatar de l\'en-tête et module léger des sons compris) ; chances et résultats à leur première ouverture ; ni Three.js ni le jeu', async ({ page, baseURL }) => {
     const o = surveiller(page, baseURL);
     await ouvrirMenu(page);
     const BOUTIQUE = /\/js\/menu\/(boutique|chances|resultat|personnage|equipement-etat)\.js$|\/js\/core\/(caisses|equipement)\.js$|\/data\/menu\/(caisses|cosmetiques|objets|raretes|personnages|inventaire-depart)\.json$/;
     expect(o.fichiers.filter((f) => BOUTIQUE.test(f))).toEqual([]);
     // Retours du propriétaire : roue de chargement (js/menu/roue.js) et glissement à la souris (js/glisser.js) dès le démarrage du menu (29 → 31).
     // Lot 8i : + js/menu/sons/sons.js (module léger des sons : 32 → 33) ; le moteur des sons ne se charge qu'après un geste.
-    expect(o.fichiers.filter((f) => f.endsWith('.js')).length).toBe(36); // lot 8h : + js/save/codecs.js, js/core/progression.js et js/menu/progression-etat.js (progression v2)
+    expect(o.fichiers.filter((f) => f.endsWith('.js')).length).toBe(30); // lot 9d : 36 → 30 (adresse de la page par js/menu/adresse.js : js/game/graphics-boot.js et la carte, js/core/maps.js, decor, epaves, shape, floors, collision, chargés à « JOUER » ou à l'ouverture des Options) ; lot 8h : + js/save/codecs.js, js/core/progression.js et js/menu/progression-etat.js (progression v2)
     expect(o.fichiers.filter((f) => /\/(roue|glisser)\.js$/.test(f)).length).toBe(2);
     expect(o.fichiers.filter((f) => /\/js\/menu\/sons\//.test(f))).toEqual(['/js/menu/sons/sons.js']);
     await page.locator('#menu-onglet-boutique').click();

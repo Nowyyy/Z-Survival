@@ -6,7 +6,7 @@
 //   chargement revient (phase « jeu », chute du Z rejouée) et main.js est importé : Three.js, données, textures, sons et création du jeu se chargent à ce moment-là,
 //   avec leur progression réelle (menuProgres, appelé par main.js ; sans effet en partie directe).
 import { choixDemarrage, introAuDemarrage, REPERE_RETOUR } from '../core/graphics.js';
-import { graphicsReboot, pageCanal, pageSearch } from '../game/graphics-boot.js';
+import { pageCanal, pageSearch } from './adresse.js'; // lot 9d : sans js/game/graphics-boot.js (préréglage, carte) au démarrage du menu
 import { browserStorage, createDeviceSettings } from '../save/device-settings.js';
 
 export const modeMenu = choixDemarrage(pageCanal(), pageSearch()) === 'menu';
@@ -198,13 +198,13 @@ if (!modeMenu) {
     // « JOUER » : écran de chargement du jeu (Z posé), réglages graphiques relus (l'écran Options du menu a pu les changer), puis le jeu.
     // Option déjà validée par le menu (lireOptionDemarrage, js/core/menu-etat.js) : seuls ses champs connus sont gardés. Lot 8d : stats (niveaux
     // effectifs de l'équipement et du personnage, pour cette partie seulement ; main.js les met à la place de ceux de la sauvegarde, sauf ?lvl=).
-    const jouer = (option) => {
+    const jouer = async (option) => {
       partie = Object.freeze({ mode: 'histoire', monde: 'batiment' }); // lot 9d : chaque « JOUER » repart de l'option par défaut (même page)
       if (option?.mode === 'infini' && typeof option.monde === 'string') partie = Object.freeze({ mode: 'infini', monde: option.monde });
       if (option?.stats && typeof option.stats === 'object') partie = Object.freeze({ ...partie, stats: Object.freeze({ ...option.stats }) });
       ecran = m.creerChargement({ phase: 'jeu' });
       for (const [e, f] of attente.splice(0)) ecran.progres(e, f);
-      graphicsReboot();
+      (await import('../game/graphics-boot.js')).graphicsReboot(); // lot 9d : importé ici seulement (démarrage du menu allégé)
       lancerJeu();
     };
     // Lot 8i : contexte audio de l'introduction (créé dans le geste), donné aux sons du menu.

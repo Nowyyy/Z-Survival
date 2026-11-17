@@ -267,7 +267,9 @@ test.describe('page Options du menu (E5)', () => {
     expect(tout.filter((f) => JEU.test(f))).toEqual([]);
     expect(tout.filter((f) => SONS.test(f) && /three|\/js\/game\//.test(f))).toEqual([]);
     const ouverture = tout.filter((f) => !SONS.test(f));
-    expect(ouverture.filter((f) => f.endsWith('.js'))).toEqual(['/js/game/options-menu.js', '/js/game/graphics-apply.js']);
+    // Lot 9d : le préréglage graphique (js/game/graphics-boot.js, qui lit la carte : js/core/maps.js et ses dépendances) n'est plus chargé au
+    // démarrage du menu, mais ici, à la première ouverture des Options (et à « JOUER »).
+    expect(ouverture.filter((f) => f.endsWith('.js')).sort()).toEqual(['/js/core/collision.js', '/js/core/decor.js', '/js/core/epaves.js', '/js/core/floors.js', '/js/core/maps.js', '/js/core/shape.js', '/js/game/graphics-apply.js', '/js/game/graphics-boot.js', '/js/game/options-menu.js']);
     // Lot 8d (retour du propriétaire) : le journal est lu à la première ouverture du menu à trois barres (version sous « Déconnexion »).
     expect(ouverture.filter((f) => !f.endsWith('.js')).sort()).toEqual(['/data/changelog.json', '/data/game/audio.json', '/data/game/graphics.json']);
     expect(await page.evaluate(() => window.__ecritures)).toEqual([]); // ouvrir n'écrit rien

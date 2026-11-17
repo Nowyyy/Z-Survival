@@ -89,3 +89,30 @@ describe('main.js et game.js : partie rappelable et libérable', () => {
     expect(game).not.toMatch(/(window|document)\.addEventListener\(/);
   });
 });
+
+// Lot 9d : démarrage du menu allégé : l'adresse de la page est lue par js/menu/adresse.js, sans js/game/graphics-boot.js (préréglage, carte).
+describe('adresse de la page pour le menu (js/menu/adresse.js)', () => {
+  const CAS = [[null, '?test=1&menu=1&seed=1'], ['source', '?test=1&wave=3&gfx=faible'], ['dev', '?wave=3&gfx=faible&perso=A&test=1'], ['release', '?test=1&lvl=3&menu=1'], ['prod', '?test=1&menu=1&wave=2'], ['archive', '?sang=0&vhs=0'], ['inconnu', ''], ['dev', '?intro=1&debug=1']];
+  it('même canal et même adresse filtrée que graphics-boot.js, pour chaque canal', async () => {
+    const avant = { location: globalThis.location, document: globalThis.document };
+    try {
+      for (const [canal, search] of CAS) {
+        vi.resetModules();
+        globalThis.location = { search };
+        globalThis.document = { querySelector: () => (canal === null ? null : { getAttribute: () => canal }) };
+        const a = await import('../../js/menu/adresse.js');
+        const b = await import('../../js/game/graphics-boot.js');
+        expect([a.pageCanal(), a.pageSearch()], `${canal} ${search}`).toEqual([b.pageCanal(), b.pageSearch()]);
+      }
+    } finally {
+      globalThis.location = avant.location;
+      globalThis.document = avant.document;
+    }
+  });
+  it('aucun module du démarrage du menu n\'importe graphics-boot.js de façon statique (seulement à « JOUER » et à l\'ouverture des Options)', () => {
+    for (const f of ['js/menu/demarrage.js', 'js/menu/chargement.js', 'js/menu/menu.js', 'js/menu/progression-etat.js', 'js/menu/intro.js', 'js/menu/jouer.js', 'js/menu/sons/sons.js']) {
+      expect(lire(f), f).not.toMatch(/^import [^;]*graphics-boot\.js';/m);
+    }
+    expect(lire('js/menu/demarrage.js')).toContain("(await import('../game/graphics-boot.js')).graphicsReboot();");
+  });
+});
