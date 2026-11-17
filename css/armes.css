@@ -40,3 +40,22 @@
   --arm-trait: #0d0b0a;
   --arm-lumiere: #f4f1ec;
 }
+
+/* Visuels 2D de profil (js/core/armes/visuel.js) : aplats par tuile de l'atlas, trait sombre, veines et reflet peints. */
+.arm-svg .arm-trait path { stroke: var(--arm-trait); stroke-width: 1.6; stroke-linejoin: round; }
+.arm-svg .arm-trait .arm-veine { fill: none; stroke: var(--arm-noyer-veine); stroke-width: 0.9; opacity: 0.7; }
+.arm-svg .arm-trait .arm-reflet { fill: none; stroke: var(--arm-lumiere); stroke-width: 1.2; stroke-linecap: round; opacity: 0.4; }
+.arm-t-bruni, .arm-t-perfore { fill: var(--arm-bruni); }
+.arm-t-bruni-use { fill: var(--arm-bruni-reflet); }
+.arm-t-phosphate { fill: var(--arm-phosphate); }
+.arm-t-phosphate-use { fill: var(--arm-phosphate-clair); }
+.arm-t-noyer { fill: var(--arm-noyer); }
+.arm-t-hetre { fill: var(--arm-hetre); }
+.arm-t-bakelite { fill: var(--arm-bakelite); }
+.arm-t-cuir { fill: var(--arm-cuir); }
+.arm-t-toile { fill: var(--arm-toile); }
+.arm-t-laiton { fill: var(--arm-laiton); }
+.arm-t-olive, .arm-t-olive-ecaille { fill: var(--arm-olive); }
+.arm-t-feldgrau { fill: var(--arm-feldgrau); }
+.arm-t-sable { fill: var(--arm-sable); }
+.arm-t-caoutchouc { fill: var(--arm-caoutchouc); }

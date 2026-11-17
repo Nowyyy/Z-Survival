@@ -268,6 +268,12 @@ export function createDebugMenu({ dict, search = '', planksMax = PLANKS_MAX, nav
   aSons.textContent = t('game.debug.sonsMenu.lien');
   lienSons.append(aSons);
   row(sections.mesure, 'sons-menu', 'game.debug.sonsMenu', lienSons);
+  // Lot 9c : lien vers l'atelier des armes (page technique, à retirer au lot 13 ; quitter la partie : la page est rechargée au retour).
+  const lienArmes = el('div', ['options-values']);
+  const aArmes = el('a', ['button', 'button-quiet', 'options-value'], { href: 'atelier-armes.html', id: 'debug-atelier-armes' });
+  aArmes.textContent = t('game.debug.armes.lien');
+  lienArmes.append(aArmes);
+  row(sections.mesure, 'atelier-armes', 'game.debug.armes', lienArmes);
 
   // Pied : adresse obtenue, actions et confirmation.
   const foot = el('div', ['options-foot']);

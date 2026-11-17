@@ -9,6 +9,7 @@ import { buildSpec, createTextureData } from '../core/texgen.js';
 import { fitDistance } from '../core/viewport.js';
 import { armeParId, budgetDe, lireArmes, lireChoix, varianteDe } from '../core/armes/armes.js';
 import { ancreTexte, dimensionsCaisse } from '../core/armes/caisse.js';
+import { visuelArme } from '../core/armes/visuel.js';
 import { creerKitArmes, lirePalette } from './rendu.js';
 
 const query = new URLSearchParams(location.search);
@@ -396,6 +397,31 @@ function dessinerPlanche() {
   $('planche-legende').textContent = `${t('dev.armes.planche.legende', { k })} ${rangs.map((r) => `${r.a.nom} ${n1(r.b.max[2] - r.b.min[2])}`).join(' · ')}`;
 }
 
+// --- Visuels du menu (SVG de profil, sans Three.js) -----------------------------------------------------------------------------------
+const visuels = {};
+function dessinerVisuels() {
+  const a = armeParId(donnees, etat.arme);
+  const v = varianteDe(a, etat.variante);
+  const grand = visuelArme(donnees, a, v, { id: 'visuel-grand', titre: `${a.nom} — ${v.nom}` });
+  $('visuel').innerHTML = grand.svg;
+  $('visuel-mesures').textContent = t('dev.armes.visuel.mesures', { octets: grand.octets });
+}
+function dessinerVisuelsTous() {
+  const hote = $('visuels-tous');
+  hote.replaceChildren();
+  for (const a of donnees.armes) {
+    const v = varianteDe(a, choix.variantes[a.id]);
+    const r = visuelArme(donnees, a, v, { id: `visuel-${a.id}`, titre: a.nom });
+    visuels[a.id] = r.octets;
+    const fig = document.createElement('figure');
+    fig.innerHTML = r.svg;
+    const legende = document.createElement('figcaption');
+    legende.textContent = `${a.nom} · ${t('dev.armes.visuel.mesures', { octets: r.octets })}`;
+    fig.append(legende);
+    hote.append(fig);
+  }
+}
+
 // --- Budget : construction de toutes les variantes, appels mesurés (une arme seule dans la scène) -------------------------------------
 const vueSeule = new THREE.Scene();
 const camSeule = new THREE.PerspectiveCamera(40, 1, 1, 1000);
@@ -474,6 +500,7 @@ function toutDessiner() {
   poserGros();
   dessinerGros();
   dessinerComparaison();
+  dessinerVisuels();
 }
 ctlArme.value = etat.arme;
 remplirVariantes();
@@ -513,6 +540,7 @@ $('btn-retenir').addEventListener('click', () => {
 });
 
 toutDessiner();
+dessinerVisuelsTous();
 dessinerPlanche();
 dessinerBudget();
 texteChoix();
@@ -529,6 +557,7 @@ if (testMode) {
     mesures: () => JSON.parse(JSON.stringify(mesures)),
     rendus: () => rendus,
     angle: () => etat.yaw,
+    visuels: () => ({ ...visuels }),
     distanceJeu,
   };
 }

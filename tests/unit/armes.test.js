@@ -5,6 +5,7 @@ import { empreinte, maillage, trianguler } from '../../js/core/armes/geometrie.j
 import { JETONS, TAILLE, TUILES, genererAtlas, moyenneTuile, rectTuile } from '../../js/core/armes/atlas.js';
 import { HAUTEUR_ARME_JOUEUR, POCHOIRS, TYPES, ancreTexte, dimensionsCaisse, genererTextureCaisse, maillageCaisse } from '../../js/core/armes/caisse.js';
 import { MODELES } from '../../js/core/armes/modeles.js';
+import { HAUTEUR, LARGEUR, visuelArme } from '../../js/core/armes/visuel.js';
 
 // Lot 9c : armes de l'atelier (js/core/armes/, pur), données data/armes/ ; rien n'est branché sur la partie.
 const json = JSON.parse(readFileSync('data/armes/armes.json', 'utf8'));
@@ -216,5 +217,22 @@ describe('choix du propriétaire (data/armes/armes-choix.json)', () => {
     const speciales = ['panzerschreck', 'm2lanceflammes'].filter((s) => armeParId(donnees, s));
     expect(c.armeSpeciale).toBe(speciales[0] ?? null);
     for (const x of [null, 'texte', [], { variantes: 'a' }]) expect(lireChoix(donnees, x).variantes.m1911).toBe('a');
+  });
+});
+
+describe('visuels 2D du menu (SVG de profil)', () => {
+  it.each(donnees.armes.map((a) => [a.id]))('%s : SVG de profil, quelques Ko, déterministe, sans couleur en dur ni Three.js', (id) => {
+    const a = armeParId(donnees, id);
+    const r = visuelArme(donnees, a, a.variantes[0], { id: `v-${id}`, titre: a.nom });
+    expect(r.svg.startsWith('<svg')).toBe(true);
+    expect(r.svg).toContain(`viewBox="0 0 ${LARGEUR} ${HAUTEUR}"`);
+    expect(r.svg).toContain(`<title id="v-${id}-t">${a.nom}</title>`);
+    expect(r.octets).toBeGreaterThan(500);
+    expect(r.octets).toBeLessThanOrEqual(8000);
+    expect(r.svg).not.toMatch(/#[0-9a-fA-F]{3,8}\b|\b(?:rgb|rgba|hsl|hsla)\(/);
+    expect(r.svg).not.toMatch(/<image|href="http/);
+    expect(visuelArme(donnees, a, a.variantes[0], { id: `v-${id}`, titre: a.nom }).svg).toBe(r.svg);
+    // Toutes les classes de remplissage ont une règle dans css/armes.css.
+    for (const c of new Set([...r.svg.matchAll(/class="(arm-t-[a-z-]+)"/g)].map((m) => m[1]))) expect(tokens, c).toMatch(new RegExp(`\\.${c}[ ,{]`));
   });
 });

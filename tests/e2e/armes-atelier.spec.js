@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 import AxeBuilder from '@axe-core/playwright';
+import { waitReady } from './helpers.js';
 
 // Lot 9c : atelier des armes (atelier-armes.html, page technique à retirer au lot 13). Le journal window.__zsArmes (?test=1) donne l'état,
 // la construction de toutes les variantes (triangles, appels mesurés) et les mesures à l'écran. Bureau et mobile (projet mobile en local).
@@ -69,6 +70,10 @@ test('atelier des armes : toutes les armes et variantes se construisent (budgets
   for (const l of ['lampe', 'lune', 'jeu']) await page.selectOption('#ctl-lumiere', l);
   await page.selectOption('#ctl-pistolet', 'visible');
   await expect(page.locator('#planche-legende')).toContainText(donnees.armes.at(-1).nom);
+  // Visuels du menu : un SVG par arme (sans Three.js), quelques Ko chacun, et celui de l'arme choisie.
+  await expect(page.locator('#visuels-tous figure svg')).toHaveCount(donnees.armes.length);
+  await expect(page.locator('#visuel svg')).toHaveCount(1);
+  for (const octets of Object.values(await page.evaluate(() => window.__zsArmes.visuels()))) expect(octets).toBeLessThanOrEqual(8000);
   // Choix : texte proposé à recopier, mis à jour par « Retenir cette variante » ; rien n'est écrit.
   await page.selectOption('#ctl-arme', donnees.armes[1].id);
   await page.selectOption('#ctl-variante', donnees.armes[1].variantes[1].id);
@@ -109,4 +114,19 @@ test('atelier des armes : sans mouvement réduit, la rotation automatique avance
   const a0 = await page.evaluate(() => window.__zsArmes.angle());
   await expect.poll(() => page.evaluate(() => window.__zsArmes.angle()), { timeout: 5000 }).not.toBe(a0);
   await expect(page.locator('#btn-rotation')).toHaveAttribute('aria-pressed', 'true');
+});
+
+test('menu de débogage de la pause : lien « Atelier des armes » vers atelier-armes.html', async ({ page }) => {
+  test.setTimeout(120_000);
+  await page.setViewportSize({ width: 667, height: 375 }); // paysage (en portrait, la partie demande de tourner l'écran)
+  await page.goto('/jeu.html?test=1&seed=1&nospawn=1');
+  await waitReady(page);
+  await page.locator('#btn-pause').click();
+  await page.getByRole('button', { name: 'Débogage', exact: true }).click();
+  const lien = page.locator('#debug-atelier-armes');
+  await expect(lien).toHaveAttribute('href', 'atelier-armes.html');
+  await expect(lien).toHaveText('Ouvrir l\'atelier');
+  await expect(page.locator('#debug-panel')).toContainText('Atelier des armes');
+  const r = await lien.boundingBox();
+  expect(Math.round(r.height)).toBeGreaterThanOrEqual(44);
 });
