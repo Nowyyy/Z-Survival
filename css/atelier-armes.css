@@ -148,3 +148,54 @@
   min-width: 3.5rem;
   font-variant-numeric: tabular-nums;
 }
+
+/* Retour du propriétaire : réglages (arme, variante, lumière, tenue, pistolet, curseurs) flottants, collés en haut pendant le défilement ;
+   hauteur bornée (téléphone : la moitié de l'écran au plus, le panneau défile alors lui-même). Les ancres tombent sous le panneau. */
+.armes-reglages {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  max-height: 50vh;
+  overflow-y: auto;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  box-shadow: 0 var(--space-2) var(--space-3) var(--color-bg);
+}
+
+.armes-reglages:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: -3px;
+}
+
+.armes-reglages .armes-champs {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(8.5rem, 1fr));
+  gap: var(--space-2) var(--space-3);
+}
+
+.armes-reglages .armes-champ {
+  min-width: 0;
+}
+
+.armes-reglages .armes-select {
+  width: 100%;
+}
+
+.armes-reglages .atelier-heading {
+  font-size: var(--text-md);
+}
+
+.armes-reglages .atelier-note {
+  margin: 0;
+  font-size: var(--text-sm);
+}
+
+.atelier-section {
+  scroll-margin-top: calc(var(--armes-reglages-h, 0px) + var(--space-3));
+}
+
+.armes-note-echelle {
+  margin: 0;
+  padding: 0 var(--space-3);
+  font-size: var(--text-sm);
+}

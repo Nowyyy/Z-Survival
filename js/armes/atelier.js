@@ -614,6 +614,12 @@ $('btn-retenir').addEventListener('click', () => {
   texteChoix();
 });
 
+// Panneau de réglages flottant : sa hauteur décale l'arrivée des ancres (scroll-margin-top des sections).
+const panneau = $('reglages');
+const hauteurPanneau = () => document.documentElement.style.setProperty('--armes-reglages-h', `${Math.ceil(panneau.getBoundingClientRect().height)}px`);
+new ResizeObserver(hauteurPanneau).observe(panneau);
+hauteurPanneau();
+
 toutDessiner();
 dessinerVisuelsTous();
 dessinerPlanche();

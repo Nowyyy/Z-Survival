@@ -45,7 +45,7 @@
       </nav>
     </header>
 
-    <section class="atelier-section armes-reglages" aria-labelledby="reglages-titre">
+    <section id="reglages" class="atelier-section armes-reglages" aria-labelledby="reglages-titre" tabindex="0">
       <h2 id="reglages-titre" class="atelier-heading" data-i18n="dev.armes.reglages"></h2>
       <div class="armes-champs">
         <div class="armes-champ"><label for="ctl-arme" data-i18n="dev.armes.arme"></label><select id="ctl-arme" class="armes-select"></select></div>
@@ -57,10 +57,10 @@
         <div class="armes-champ"><label for="ctl-largeur" data-i18n="dev.armes.largeur"></label><span class="armes-curseur"><input id="ctl-largeur" class="atelier-range" type="range" min="1" max="4" step="0.1"><output id="out-largeur" for="ctl-largeur"></output></span></div>
         <div class="armes-champ"><label for="ctl-epaisseur" data-i18n="dev.armes.epaisseur"></label><span class="armes-curseur"><input id="ctl-epaisseur" class="atelier-range" type="range" min="1" max="3" step="0.1"><output id="out-epaisseur" for="ctl-epaisseur"></output></span></div>
       </div>
-      <p class="atelier-note" data-i18n="dev.armes.echelle.note"></p>
       <p id="variante-description" class="atelier-note"></p>
       <p id="variante-retenue" class="atelier-note"></p>
     </section>
+    <p class="atelier-note armes-note-echelle" data-i18n="dev.armes.echelle.note"></p>
 
     <section id="vue-jeu" class="atelier-section" aria-labelledby="jeu-titre">
       <h2 id="jeu-titre" class="atelier-heading" data-i18n="dev.armes.jeu.titre"></h2>
