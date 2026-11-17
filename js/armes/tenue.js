@@ -14,6 +14,7 @@ export const REGLES = Object.freeze({
   epaule: { creux: [-4, 6.5, 7] }, // crosse : creux intérieur de l'épaule droite, devant la poitrine (repère de l'os chest)
   hanche: { main: [-9.5, 33, 8] }, // paume droite devant la hanche droite (repère du personnage)
   'sur-epaule': { appui: [-7.5, 13, -1] }, // tube posé sur l'épaule droite (repère de l'os chest)
+  dos: [0, 2, -14.5], // centre des réservoirs portés, contre le dos et le sac (repère de l'os chest)
 });
 const POLE = { R: new THREE.Vector3(-0.8, -1, -0.3), L: new THREE.Vector3(0.8, -1, -0.3) };
 const PAUME = 1.8; // centre de la paume sous le poignet (pièces handL / handR)
@@ -177,10 +178,11 @@ export function poserArme(perso, arme, s, objet, { points = null, regles = REGLE
     } else if (pose === 'epaule' || pose === 'sur-epaule') {
       const appui = local(o.chest.localToWorld(v3(pose === 'epaule' ? r.epaule.creux : r['sur-epaule'].appui)));
       base = appui.sub(C ?? new THREE.Vector3());
-      grille = [[-1, 0, 1], [-1, 0, 1], [-1, 0, 1, 2]]; // crosse un peu enfoncée dans le creux de l'épaule : permis (la crosse seule)
+      // Crosse un peu enfoncée dans le creux de l'épaule : permis (la crosse seule) ; le tube peut se poser plus à l'extérieur de la tête.
+      grille = pose === 'epaule' ? [[-1, 0, 1], [-1, 0, 1], [-1, 0, 1, 2]] : [[-4, -3, -2, -1, 0, 1], [-1, 0, 1], [-1, 0, 1, 2]];
     } else {
       base = v3(r.hanche.main).sub(D);
-      grille = [[-2, -1, 0, 1, 2], [-2, -1, 0, 1, 2, 3], [-4, -3, -2, -1, 0, 1, 2, 3]];
+      grille = [[-2, -1, 0, 1, 2, 3, 4], [-2, -1, 0, 1, 2, 3, 4, 5], [-4, -3, -2, -1, 0, 1, 2, 3]];
     }
     const collision = pts ? collisions(perso.root, pts) : () => 0;
     const cfgCout = cfg.torse * 0.04 + (cfg.epaules === null ? 0 : (11.5 - cfg.epaules) * 0.8) + (cfg.f - 1) * 40;
@@ -218,6 +220,13 @@ export function poserArme(perso, arme, s, objet, { points = null, regles = REGLE
     for (const x of [c.min[0], c.max[0]]) for (const y of [c.min[1], c.max[1]]) for (const z of [c.min[2], c.max[2]]) m = Math.max(m, local(b.localToWorld(new THREE.Vector3(x, y, z))).z);
     return m;
   }));
+  // Réservoirs portés (lance-flammes) : centre du sac sur le dos (repère de l'os chest), donc tournés avec le torse ; décalage rendu dans le
+  // repère de l'arme (mm) et rotation (degrés) pour js/core/armes/armes.js (groupe « dos »).
+  let dos = null;
+  if (arme.dos) {
+    const centre = local(o.chest.localToWorld(v3(r.dos ?? [0, 2, -14.5])));
+    dos = { decalage: centre.sub(P).divideScalar(s).toArray().map((x) => Math.round(x)), lacet: -meilleur.cfg.torse };
+  }
   const angles = Object.fromEntries(ARTICULATIONS.map((n) => {
     const b = perso.root.getObjectByName(n);
     return [n, b ? [arrondi(b.rotation.x), arrondi(b.rotation.y), arrondi(b.rotation.z)] : [0, 0, 0]];
@@ -225,7 +234,7 @@ export function poserArme(perso, arme, s, objet, { points = null, regles = REGLE
   return {
     pose, mode: pose === 'pistolet' ? mode : null,
     torse: meilleur.cfg.torse, epaules: meilleur.cfg.epaules ?? 11.5, bras: meilleur.cfg.f,
-    arme: { position: P.toArray().map((x) => arrondi(x, 3)), rotation: [0, 0, 0] },
+    arme: { position: P.toArray().map((x) => arrondi(x, 3)), rotation: [0, 0, 0], ...(dos ? { dos } : {}) },
     angles,
     controle: { droite: arrondi(Math.max(0, droite), 3), gauche: arrondi(Math.max(0, gauche), 3), traverse, visee: arrondi(visee, 2), devant: arrondi(bouche - devantCorps, 2) },
   };

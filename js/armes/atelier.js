@@ -184,8 +184,10 @@ function poserArmeEnMain() {
     const support = new THREE.Group();
     const a = armeParId(donnees, etat.arme);
     tenueInfo = poserArme(joueur, a, echelleJeu(donnees), support, { points: pointsArme(etat.arme, etat.variante), regles: { ...REGLES, ...(posesJson.regles ?? {}) }, mode: etat.mode });
-    armeEnMain = kit.mesh(etat.arme, etat.variante, 'main', { enJeu: true });
-    armeEnMain.userData.reelle = kit.mesh(etat.arme, etat.variante, 'main').geometry;
+    // Réservoirs du lance-flammes : sur le dos, tournés avec le torse (décalage et rotation calculés par la pose).
+    const dos = tenueInfo.arme.dos ? { dos: tenueInfo.arme.dos.decalage, lacet: tenueInfo.arme.dos.lacet } : {};
+    armeEnMain = kit.mesh(etat.arme, etat.variante, 'main', { ...dos, enJeu: true });
+    armeEnMain.userData.reelle = kit.mesh(etat.arme, etat.variante, 'main', dos).geometry;
     support.add(armeEnMain);
   } else {
     tenueInfo = null;
