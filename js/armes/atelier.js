@@ -514,7 +514,7 @@ function remplirVariantes() {
   ctlVariante.value = etat.variante;
 }
 function texteChoix() {
-  const out = { _note: choixJson?._note ?? '', variantes: proposition.variantes, armeSpeciale: proposition.armeSpeciale, echelle: { longueur: donnees.echelle.lisibilite, epaisseur: donnees.echelle.epaisseur } };
+  const out = { _note: choixJson?._note ?? '', variantes: proposition.variantes, armeSpeciale: proposition.armeSpeciale, echelle: { longueur: donnees.echelle.lisibilite, largeur: donnees.echelle.largeur, epaisseur: donnees.echelle.epaisseur } };
   $('choix-texte').value = `${JSON.stringify(out, null, 2)}\n`;
   const ecarts = choix.ecarts.length ? ` ${t('dev.armes.choix.ecarts', { liste: choix.ecarts.join(' ; ') })}` : '';
   $('choix-etat').textContent = choixJson
@@ -558,9 +558,10 @@ $('ctl-tenue').addEventListener('change', (e) => {
   dessinerJeu();
 });
 // Curseurs d'échelle : le kit est reconstruit (géométries et textures libérées), toutes les vues redessinées ; rien n'est enregistré.
-for (const [id, cle] of [['ctl-longueur', 'longueur'], ['ctl-epaisseur', 'epaisseur']]) {
+const VALEUR = { longueur: 'lisibilite', largeur: 'largeur', epaisseur: 'epaisseur' };
+for (const [id, cle] of [['ctl-longueur', 'longueur'], ['ctl-largeur', 'largeur'], ['ctl-epaisseur', 'epaisseur']]) {
   const ctl = $(id);
-  ctl.value = String(cle === 'longueur' ? donnees.echelle.lisibilite : donnees.echelle.epaisseur);
+  ctl.value = String(donnees.echelle[VALEUR[cle]]);
   $(`out-${cle}`).textContent = `× ${n2(Number(ctl.value))}`;
   ctl.addEventListener('change', () => {
     donnees = avecEchelle(donnees, { [cle]: Number(ctl.value) });

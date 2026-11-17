@@ -39,6 +39,7 @@ describe('données des armes', () => {
     expect(donnees.echelle.unitesParMetre).toBe(35);
     expect(donnees.echelle.lisibilite).toBe(1.3);
     expect(donnees.echelle.epaisseur).toBe(1.8);
+    expect(donnees.echelle.largeur).toBe(2); // second retour : la largeur vue de dessus, à part de la longueur
     expect(donnees.echelle.seuilEpaisseur).toBe(60);
     expect(json.echelle.personnage.hauteur / json.echelle.personnage.hauteurReelleM).toBeCloseTo(35, 0);
   });
@@ -269,7 +270,8 @@ describe('retours du propriétaire (lot 9c-G) : taille, épaisseur, prises', () 
   });
 
   it('fichier de choix : échelle lue si valide, écart signalé sinon', () => {
-    expect(lireChoix(donnees, { echelle: { longueur: 1.5, epaisseur: 2 } }).echelle).toEqual({ longueur: 1.5, epaisseur: 2 });
+    expect(lireChoix(donnees, { echelle: { longueur: 1.5, epaisseur: 2, largeur: 2.5 } }).echelle).toEqual({ longueur: 1.5, epaisseur: 2, largeur: 2.5 });
+    expect(lireChoix(donnees, { echelle: { largeur: 5 } }).ecarts).toEqual(['échelle de largeur invalide : 5']);
     const c = lireChoix(donnees, { echelle: { longueur: 'grand', epaisseur: 9 } });
     expect(c.echelle).toEqual({});
     expect(c.ecarts.length).toBe(2);
@@ -293,5 +295,22 @@ describe('retours du propriétaire (lot 9c-G) : taille, épaisseur, prises', () 
       if (p.groupe === 'dos') expect(p1[i].rot?.[1] ?? 0).toBeCloseTo((p.rot?.[1] ?? 0) - 34, 6);
       else expect(p1[i]).toEqual(p);
     });
+  });
+
+  it('largeur vue de dessus : l\'arme tenue s\'élargit du facteur en x (longueur, hauteur et triangles inchangés) ; posée et réservoirs : jamais', () => {
+    const etroit = avecEchelle(donnees, { largeur: 1 });
+    for (const a of donnees.armes) {
+      const [m1, m2] = [etroit, donnees].map((d) => maillageArme(d, a, a.variantes[0], { pose: 'seule' }));
+      expect(m2.largeur / m1.largeur, a.id).toBeCloseTo(2, 4);
+      expect(m2.longueur).toBeCloseTo(m1.longueur, 6);
+      expect(m2.hauteur).toBeCloseTo(m1.hauteur, 6);
+      expect(m2.triangles).toBe(m1.triangles);
+      const [c1, c2] = [etroit, donnees].map((d) => maillageArme(d, a, a.variantes[0], { pose: 'caisse' }));
+      expect(Array.from(c2.positions)).toEqual(Array.from(c1.positions));
+    }
+    const m2 = armeParId(donnees, 'm2lanceflammes');
+    const [r1, r2] = [etroit, donnees].map((d) => maillageArme(d, m2, m2.variantes[0]));
+    expect(r2.largeur).toBeLessThan(2 * r1.largeur); // réservoirs portés non élargis
+    expect(avecEchelle(donnees, { largeur: 9 }).echelle.largeur).toBe(4);
   });
 });

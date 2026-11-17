@@ -25,9 +25,11 @@ export function lireArmes(json) {
   const j = isObj(json) ? json : {};
   const e = isObj(j.echelle) ? j.echelle : {};
   // Retours du propriétaire (lot 9c-G) : lisibilite = facteur de longueur (toutes les armes, proportions entre elles gardées) ; epaisseur =
-  // facteur des dimensions fines des pièces (sous seuilEpaisseur mm : canons, crosses, chargeurs, plaques), sans allonger les pièces longues.
+  // facteur des dimensions fines des pièces (sous seuilEpaisseur mm : canons, crosses, chargeurs, plaques), sans allonger les pièces longues ;
+  // largeur = facteur en x de l'arme tenue (vue de dessus : la caméra est loin), sans changer son profil.
   const echelle = {
     unitesParMetre: num(e.unitesParMetre, 35), lisibilite: borne(num(e.lisibilite, 1), 0.5, 3), epaisseur: borne(num(e.epaisseur, 1), 1, 3),
+    largeur: borne(num(e.largeur, 1), 1, 4),
     seuilEpaisseur: borne(num(e.seuilEpaisseur, 60), 0, 500),
   };
   const b = isObj(j.budgets) ? j.budgets : {};
@@ -74,6 +76,7 @@ export function avecEchelle(donnees, choixEchelle) {
   const e = { ...donnees.echelle };
   if (Number.isFinite(c.longueur)) e.lisibilite = borne(c.longueur, 0.5, 3);
   if (Number.isFinite(c.epaisseur)) e.epaisseur = borne(c.epaisseur, 1, 3);
+  if (Number.isFinite(c.largeur)) e.largeur = borne(c.largeur, 1, 4);
   return { ...donnees, echelle: e };
 }
 
@@ -107,6 +110,8 @@ export function lireChoix(donnees, choix) {
     else if (e.longueur !== undefined) ecarts.push(`échelle de longueur invalide : ${String(e.longueur)}`);
     if (ok(e.epaisseur, 1, 3)) echelle.epaisseur = e.epaisseur;
     else if (e.epaisseur !== undefined) ecarts.push(`échelle d'épaisseur invalide : ${String(e.epaisseur)}`);
+    if (ok(e.largeur, 1, 4)) echelle.largeur = e.largeur;
+    else if (e.largeur !== undefined) ecarts.push(`échelle de largeur invalide : ${String(e.largeur)}`);
     if (!isObj(c.echelle)) ecarts.push('échelle illisible');
   }
   return { variantes, armeSpeciale, echelle, ecarts };
@@ -157,7 +162,11 @@ export function maillageArme(donnees, arme, variante, { pose = 'main', echelle, 
   const v = variante ?? varianteDe(arme);
   const mat = v?.matieres ?? MATIERES_DEFAUT;
   const opts = { epaisseur: donnees.echelle.epaisseur ?? 1, seuil: donnees.echelle.seuilEpaisseur ?? 60, dos, lacet };
+  // Largeur vue de dessus (lot 9c-G) : l'arme tenue s'élargit en x autour de son plan de visée ; jamais posée (couchée : profil vu de dessus)
+  // ni les réservoirs portés et leur tuyau.
+  const sx = pose === 'caisse' ? 1 : donnees.echelle.largeur ?? 1;
   const m = maillage(piecesArme(arme, v, ['caisse', 'seule'].includes(pose) ? pose : 'main', opts), {
+    etirer: (p) => (p.groupe === 'dos' || p.groupe === 'tuyau' ? 1 : sx),
     echelle: Number.isFinite(echelle) ? echelle : echelleJeu(donnees),
     tuile: (role) => rectTuile(mat[role] ?? MATIERES_DEFAUT[role] ?? 'bruni'),
     teinte: (role) => {
