@@ -95,12 +95,12 @@ function collisions(root, points, rot) {
       q[i * 3 + 2] = v.z;
     }
     const dir = new THREE.Matrix3().setFromMatrix4(versOs);
-    return { c, q, dir, origine: new THREE.Vector3().applyMatrix4(versOs) };
+    return { c, q, dir };
   }).filter(Boolean);
   return (P) => {
     let total = 0;
     for (const b of boites) {
-      const d = P.clone().applyMatrix3(b.dir).add(b.origine);
+      const d = P.clone().applyMatrix3(b.dir); // la translation de l'os est déjà dans les points (q)
       const [x0, y0, z0] = b.c.min;
       const [x1, y1, z1] = b.c.max;
       for (let i = 0; i < b.q.length; i += 3) {
@@ -126,53 +126,70 @@ export function poserTenue(perso, arme, s, objet, { points = null } = {}) {
   const t = TENUES[prises.tenue] ?? TENUES.poing;
   const o = os(perso.root);
   perso.root.updateMatrixWorld(true);
-  o.spine.rotation.y += t.buste / 2;
-  o.chest.rotation.y += t.buste / 2;
-  if (o.neck) o.neck.rotation.y -= t.buste / 2; // le regard reste dans l'axe de l'arme
-  if (o.head) o.head.rotation.y -= t.buste / 2;
-  perso.root.updateMatrixWorld(true);
+  const repos = ['spine', 'chest', 'neck', 'head'].map((n) => [o[n], o[n]?.rotation.y ?? 0]);
+  // Rotation du buste (colonne et poitrine), tête ramenée dans l'axe de l'arme.
+  const tourner = (b) => {
+    for (const [os_, y] of repos) if (os_) os_.rotation.y = y + (os_ === o.spine || os_ === o.chest ? b / 2 : -b / 2);
+    perso.root.updateMatrixWorld(true);
+  };
   const local = (v) => perso.root.worldToLocal(v.clone());
-  const epauleR = local(o.R[0].getWorldPosition(new THREE.Vector3()));
-  const epauleL = local(o.L[0].getWorldPosition(new THREE.Vector3()));
-  const rot = new THREE.Euler(t.inclinaison, 0, 0);
-  const versMonde = (mm) => v3(mm).multiplyScalar(s).applyEuler(rot);
-  const G = prises.gauche ? versMonde(prises.gauche) : new THREE.Vector3(2.4, -0.6, 0.8);
   const R = 0.96 * (o.R[1].position.length() + o.R[2].position.length() + PAUME);
-  const P = new THREE.Vector3();
-  if (prises.tenue === 'poing') P.set(t.x, t.y, t.z);
-  else if (prises.tenue === 'epaule' || prises.tenue === 'tube') {
-    // Appui : crosse au creux de l'épaule droite, ou tube posé sur l'épaule.
-    const A = versMonde(prises.appui ?? [0, -40, -400]);
-    const creux = epauleR.clone().add(prises.tenue === 'tube' ? new THREE.Vector3(1.5, 4.5, 0) : new THREE.Vector3(2.5, -2.5, 3.5));
-    P.copy(creux).sub(A);
-  } else P.set(t.x, t.y, 10);
-  const collision = points ? collisions(perso.root, points, rot) : () => 0;
-  const base = P.clone();
+  // Échantillons de la surface allégés (1 500 points au plus) : la recherche essaie des milliers de positions.
+  const pas = points ? Math.max(1, Math.ceil(points.length / 3 / 1500)) : 1;
+  const pts = points && pas > 1 ? points.filter((_, i) => Math.floor(i / 3) % pas === 0) : points;
+  // Candidats (retour : lance-flammes) : buste plus ou moins tourné, arme orientée un peu vers la gauche (tenue en biais), puis décalages ;
+  // coût = points de l'arme dans le corps, puis mains qui n'atteignent pas leur prise, puis écart à la tenue de base.
+  const bustes = prises.tenue === 'poing' ? [0] : [t.buste, t.buste - 0.25, t.buste - 0.5];
+  const lacets = prises.tenue === 'poing' ? [0] : prises.tenue === 'hanche' ? [0, 0.15, 0.3, 0.45] : [0, 0.1, 0.2];
   let meilleur = null;
-  // Décalages : vers la droite (x négatif) et un peu vers la gauche, en hauteur, d'avant en arrière ; coût = volumes traversés, puis
-  // mains qui n'atteignent pas leur prise, puis distance à la position de base.
-  for (let dx = -14; dx <= 3; dx += 1) {
-    for (let dy = -4; dy <= 4; dy += 2) {
-      for (let dz = -10; dz <= 10; dz += 1) {
-        const Q = base.clone().add(new THREE.Vector3(dx, dy, dz));
-        const manque = Math.max(0, Q.distanceTo(epauleR) - R) + Math.max(0, Q.clone().add(G).distanceTo(epauleL) - R);
-        const traverse = collision(Q);
-        const cout = traverse * 100 + manque * 20 + Math.abs(dx) * 0.3 + Math.abs(dy) * 0.4 + Math.abs(dz) * 0.25;
-        if (!meilleur || cout < meilleur.cout) meilleur = { cout, Q, traverse, manque };
+  for (const b of bustes) {
+    tourner(b);
+    const epauleR = local(o.R[0].getWorldPosition(new THREE.Vector3()));
+    const epauleL = local(o.L[0].getWorldPosition(new THREE.Vector3()));
+    for (const lacet of lacets) {
+      const rot = new THREE.Euler(t.inclinaison, lacet, 0, 'YXZ');
+      const versMonde = (mm) => v3(mm).multiplyScalar(s).applyEuler(rot);
+      const G = prises.gauche ? versMonde(prises.gauche) : new THREE.Vector3(2.4, -0.6, 0.8);
+      const base = new THREE.Vector3();
+      if (prises.tenue === 'poing') base.set(t.x, t.y, t.z);
+      else if (prises.tenue === 'epaule' || prises.tenue === 'tube') {
+        // Appui : crosse au creux de l'épaule droite, ou tube posé sur l'épaule.
+        const A = versMonde(prises.appui ?? [0, -40, -400]);
+        const creux = epauleR.clone().add(prises.tenue === 'tube' ? new THREE.Vector3(1.5, 4.5, 0) : new THREE.Vector3(2.5, -2.5, 3.5));
+        base.copy(creux).sub(A);
+      } else base.set(t.x, t.y, 10);
+      const collision = pts ? collisions(perso.root, pts, rot) : () => 0;
+      for (let dx = -14; dx <= 3; dx += 1) {
+        for (let dy = -4; dy <= 4; dy += 2) {
+          for (let dz = -10; dz <= 10; dz += 2) {
+            const Q = base.clone().add(new THREE.Vector3(dx, dy, dz));
+            const manque = Math.max(0, Q.distanceTo(epauleR) - R) + Math.max(0, Q.clone().add(G).distanceTo(epauleL) - R);
+            const ecart = Math.abs(dx) * 0.3 + Math.abs(dy) * 0.4 + Math.abs(dz) * 0.25 + Math.abs(b - t.buste) * 4 + lacet * 8;
+            if (meilleur && manque * 20 + ecart >= meilleur.cout) continue; // le contact ne peut que l'aggraver
+            const traverse = collision(Q);
+            const cout = traverse * 100 + manque * 20 + ecart;
+            if (!meilleur || cout < meilleur.cout) meilleur = { cout, Q, traverse, manque, b, rot, G };
+          }
+        }
       }
     }
   }
-  P.copy(meilleur.Q);
+  tourner(meilleur.b);
+  const P = meilleur.Q;
   objet.position.copy(P);
-  objet.rotation.copy(rot);
+  objet.rotation.copy(meilleur.rot);
   perso.root.add(objet);
   perso.root.updateMatrixWorld(true);
   const monde = (v) => perso.root.localToWorld(v.clone());
   const droite = bras(o.R, monde(P), POLE.R);
-  const gauche = bras(o.L, monde(P.clone().add(G)), POLE.L);
+  const gauche = bras(o.L, monde(P.clone().add(meilleur.G)), POLE.L);
   perso.root.updateMatrixWorld(true);
-  // Réservoirs (lance-flammes) : sur le dos, tournés avec le buste ; décalage rendu dans le repère de l'arme, en mm.
-  const dosPerso = new THREE.Vector3(0, 2, -14.5).applyAxisAngle(new THREE.Vector3(0, 1, 0), t.buste).add(new THREE.Vector3(0, 40, 0));
-  const dos = dosPerso.clone().sub(P).applyEuler(new THREE.Euler(-t.inclinaison, 0, 0)).divideScalar(s);
-  return { tenue: prises.tenue, ecarts: { droite, gauche }, traverse: meilleur.traverse, position: P.toArray(), dos: dos.toArray().map((x) => Math.round(x)), lacet: Math.round((t.buste * 180) / Math.PI) };
+  // Réservoirs (lance-flammes) : sur le dos, tournés avec le buste ; décalage et rotation rendus dans le repère de l'arme (mm, degrés).
+  const dosPerso = new THREE.Vector3(0, 2, -14.5).applyAxisAngle(new THREE.Vector3(0, 1, 0), meilleur.b).add(new THREE.Vector3(0, 40, 0));
+  const inverse = new THREE.Quaternion().setFromEuler(meilleur.rot).invert();
+  const dos = dosPerso.clone().sub(P).applyQuaternion(inverse).divideScalar(s);
+  return {
+    tenue: prises.tenue, ecarts: { droite, gauche }, traverse: meilleur.traverse, position: P.toArray(), buste: meilleur.b, orientation: meilleur.rot.y,
+    dos: dos.toArray().map((x) => Math.round(x)), lacet: Math.round(((meilleur.b - meilleur.rot.y) * 180) / Math.PI),
+  };
 }
