@@ -30,6 +30,7 @@ async function ouvrir(page, baseURL, suivi) {
 }
 
 test('atelier des armes : toutes les armes et variantes se construisent (budgets, un appel), vues, comparaison, planche, aucune requête externe, aucune écriture', async ({ page, baseURL }) => {
+  test.setTimeout(120_000); // dix armes, trente variantes et trois reconstructions du kit (curseurs) : ≈ 50 s en rendu logiciel
   const suivi = { externes: [], problemes: [] };
   await ouvrir(page, baseURL, suivi);
   await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', 'noindex');
@@ -79,7 +80,7 @@ test('atelier des armes : toutes les armes et variantes se construisent (budgets
   expect(await page.evaluate(() => window.__zsArmes.tenue())).toBeNull();
   await page.selectOption('#ctl-tenue', 'adaptee');
   // Lot 9c-G : curseurs de taille et d'épaisseur (défauts ×1,3 et ×1,8), repris dans le texte de « Mes choix » ; rien n'est écrit.
-  expect(await page.evaluate(() => window.__zsArmes.echelle())).toMatchObject({ lisibilite: 1.3, largeur: 2, epaisseur: 1.8 });
+  expect(await page.evaluate(() => window.__zsArmes.echelle())).toMatchObject({ lisibilite: 1.3, largeur: 1.5, epaisseur: 1.8 });
   await page.locator('#ctl-longueur').fill('1.5');
   await page.locator('#ctl-largeur').fill('2.5');
   await page.locator('#ctl-epaisseur').fill('2');

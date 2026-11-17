@@ -74,6 +74,6 @@
   "dev.armes.tenue.genre.tube": "tube sur l'épaule",
   "dev.armes.longueur": "Longueur des armes",
   "dev.armes.epaisseur": "Épaisseur des pièces fines",
-  "dev.armes.echelle.note": "Longueur : toutes les armes agrandies du même facteur (×1 = taille réelle par rapport au personnage). Largeur vue de dessus : l'arme tenue s'élargit sur les côtés, sans s'allonger ni changer de profil (la caméra est loin) ; elle ne change ni l'arme posée sur la caisse (couchée, vue de profil) ni les réservoirs portés. Épaisseur : canons, crosses, chargeurs et plaques épaissis dans tous les sens. Valeurs par défaut ×1,3, ×2 et ×1,8 (retours : armes trop petites et trop fines) ; les valeurs choisies sont reprises dans « Mes choix ».",
-  "dev.armes.largeur": "Largeur vue de dessus"
+  "dev.armes.echelle.note": "Longueur : toutes les armes agrandies du même facteur (×1 = taille réelle par rapport au personnage). Largeur en jeu : dans la vue « En jeu » seulement (caméra lointaine), l'arme tenue s'élargit sur les côtés, sans s'allonger ni changer de profil ; les autres vues (tenue de près, caisse, gros plan, comparaison, planche, visuels) gardent la vraie largeur. Épaisseur : canons, crosses, chargeurs et plaques épaissis dans tous les sens. Valeurs par défaut ×1,3, ×1,5 et ×1,8 (retours du propriétaire) ; les valeurs choisies sont reprises dans « Mes choix ».",
+  "dev.armes.largeur": "Largeur en jeu (vue de dessus)"
 }

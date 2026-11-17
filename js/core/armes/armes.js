@@ -156,15 +156,16 @@ export function epaissir(p, k, seuil) {
 // Unités du jeu par millimètre.
 export const echelleJeu = (donnees) => (donnees.echelle.unitesParMetre / 1000) * donnees.echelle.lisibilite;
 
-// Maillage d'une arme (unités du jeu). options : { pose ('main' | 'caisse' | 'seule'), echelle (remplace celle des données), dos }.
+// Maillage d'une arme (unités du jeu). options : { pose ('main' | 'caisse' | 'seule'), echelle (remplace celle des données), dos, lacet,
+// enJeu (vrai : largeur vue de dessus appliquée, vue de la caméra du jeu seulement) }.
 // dos : décalage (mm) du groupe « dos » qui remplace celui des données (réservoirs placés sur le dos par la tenue de l'atelier).
-export function maillageArme(donnees, arme, variante, { pose = 'main', echelle, dos, lacet } = {}) {
+export function maillageArme(donnees, arme, variante, { pose = 'main', echelle, dos, lacet, enJeu = false } = {}) {
   const v = variante ?? varianteDe(arme);
   const mat = v?.matieres ?? MATIERES_DEFAUT;
   const opts = { epaisseur: donnees.echelle.epaisseur ?? 1, seuil: donnees.echelle.seuilEpaisseur ?? 60, dos, lacet };
-  // Largeur vue de dessus (lot 9c-G) : l'arme tenue s'élargit en x autour de son plan de visée ; jamais posée (couchée : profil vu de dessus)
-  // ni les réservoirs portés et leur tuyau.
-  const sx = pose === 'caisse' ? 1 : donnees.echelle.largeur ?? 1;
+  // Largeur vue de dessus (lot 9c-G ; retour : « seulement en jeu ») : l'arme tenue s'élargit en x autour de son plan de visée, dans la vue
+  // de la caméra du jeu seulement (enJeu) ; jamais posée (couchée : profil vu de dessus) ni les réservoirs portés et leur tuyau.
+  const sx = pose === 'caisse' || !enJeu ? 1 : donnees.echelle.largeur ?? 1;
   const m = maillage(piecesArme(arme, v, ['caisse', 'seule'].includes(pose) ? pose : 'main', opts), {
     etirer: (p) => (p.groupe === 'dos' || p.groupe === 'tuyau' ? 1 : sx),
     echelle: Number.isFinite(echelle) ? echelle : echelleJeu(donnees),

@@ -181,12 +181,14 @@ function poserArmeEnMain() {
     const support = new THREE.Group();
     tenueInfo = poserTenue(joueur, armeParId(donnees, etat.arme), echelleJeu(donnees), support);
     const aDos = Boolean(armeParId(donnees, etat.arme)?.dos);
-    armeEnMain = kit.mesh(etat.arme, etat.variante, 'main', aDos ? { dos: tenueInfo.dos, lacet: tenueInfo.lacet } : {});
+    armeEnMain = kit.mesh(etat.arme, etat.variante, 'main', aDos ? { dos: tenueInfo.dos, lacet: tenueInfo.lacet, enJeu: true } : { enJeu: true });
+    armeEnMain.userData.reelle = kit.mesh(etat.arme, etat.variante, 'main', aDos ? { dos: tenueInfo.dos, lacet: tenueInfo.lacet } : {}).geometry;
     support.add(armeEnMain);
   } else {
     tenueInfo = null;
     const prop = joueur.root.getObjectByName('prop');
-    armeEnMain = kit.mesh(etat.arme, etat.variante, 'main');
+    armeEnMain = kit.mesh(etat.arme, etat.variante, 'main', { enJeu: true });
+    armeEnMain.userData.reelle = kit.mesh(etat.arme, etat.variante, 'main').geometry;
     armeEnMain.position.set(...MAIN);
     prop?.add(armeEnMain);
   }
@@ -194,7 +196,10 @@ function poserArmeEnMain() {
 }
 
 // Vue rapprochée de la tenue : trois quarts avant droit et dessus, autour du personnage (même scène, même lumière).
+// La largeur vue de dessus ne vaut qu'en jeu : la vue rapprochée montre la vraie largeur (géométrie échangée le temps du rendu).
 function dessinerTenue() {
+  const enJeu = armeEnMain.geometry;
+  armeEnMain.geometry = armeEnMain.userData.reelle ?? enJeu;
   const canvas = $('cv-tenue');
   const w = canvas.width / 2;
   const h = canvas.height;
@@ -206,6 +211,7 @@ function dessinerTenue() {
     cam.updateMatrixWorld(true);
     rendre(vueJeu.scene, cam, canvas, { x: i * w, y: 0, w, h });
   }
+  armeEnMain.geometry = enJeu;
   const e = tenueInfo?.ecarts;
   $('tenue-mesures').textContent = e ? t('dev.armes.tenue.mesures', { tenue: t(`dev.armes.tenue.genre.${tenueInfo.tenue}`), d: n1(Math.max(0, e.droite)), g: n1(Math.max(0, e.gauche)) }) : t('dev.armes.tenue.actuelle');
 }
