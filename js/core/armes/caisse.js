@@ -108,10 +108,12 @@ export function genererTextureCaisse(palette) {
 const B = (w, h, l, pos, mat, extra = {}) => ({ forme: 'boite', w, h, l, pos, mat, ...extra });
 
 // Dimensions (unités du jeu) d'une caisse, lues dans les données ({ id, dimensions: { l, p, h, appui } }) avec des défauts.
-export function dimensionsCaisse(caisses, type) {
+// longueurMin (lot 9c-G) : la caisse s'allonge pour l'arme la plus longue (plus 6 de marge) si l'échelle choisie la rend trop courte.
+export function dimensionsCaisse(caisses, type, longueurMin = 0) {
   const c = (Array.isArray(caisses) ? caisses : []).find((x) => x?.id === type)?.dimensions ?? {};
   const d = type === 'ratelier' ? { l: 72, p: 16, h: 28, appui: 20 } : { l: 70, p: 30, h: 22, appui: 21 };
   for (const k of Object.keys(d)) if (Number.isFinite(c[k])) d[k] = c[k];
+  if (Number.isFinite(longueurMin) && longueurMin + 6 > d.l) d.l = Math.ceil(longueurMin + 6);
   return d;
 }
 

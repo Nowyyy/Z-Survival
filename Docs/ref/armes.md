@@ -3,9 +3,9 @@ Atelier seulement (`atelier-armes.html`, à retirer au lot 13) : **rien n'est br
 
 ## Échelle et taille à l'écran (relevées sur `origin/dev` `2752cc1`)
 - Personnage du joueur (v2) : **61 unités** de haut (≈ 1,75 m), 28 de large bras compris ; articulation `prop` (arme) à 13 devant la poitrine.
-- Échelle des armes : **35 unités par mètre** (`data/armes/armes.json` → `echelle`) ; `echelle.lisibilite` (1) agrandit toutes les armes d'un coup.
+- Échelle des armes : **35 unités par mètre** (`data/armes/armes.json` → `echelle`). **Retours du propriétaire (lot 9c-G : « trop petites, trop fines »)** : `lisibilite` = **×1,3** sur toutes les longueurs (proportions entre armes gardées) ; `epaisseur` = **×1,8** sur les dimensions transversales sous `seuilEpaisseur` (60 mm : canons, crosses, chargeurs, plaques), sans allonger les armes ni ajouter de triangle ; curseurs dans l'atelier, valeurs à écrire dans le fichier de choix (`echelle.longueur`, `echelle.epaisseur`). Les caisses s'allongent pour l'arme la plus longue.
 - Caméra du jeu (bâtiment) : champ 40°, inclinaison 75°, distance 704,5 → **0,731 px par unité à 667 × 375, 2,106 à 1920 × 1080**.
-- Mesuré sur image dans l'atelier (fond noir, lumière du jeu) : personnage ≈ **20 × 25 px** (667 × 375) et **56 × 72 px** (1920 × 1080) ; pistolet actuel (glissière 14, calculé) 10 / 29 px, soit **1,84 fois** un vrai M1911 ; M1911 réel : **4 × 6 px / 8 × 16 px** ; Kar98k 12 × 28 / 35 × 80 ; Panzerschreck 20 × 42 / 56 × 121.
+- Mesuré sur image dans l'atelier (fond noir, lumière du jeu) : personnage ≈ **20 × 25 px** (667 × 375) et **56 × 72 px** (1920 × 1080) ; pistolet actuel (glissière 14, calculé) 10 / 29 px, soit **1,84 fois** un vrai M1911. Kar98k : à taille réelle 12 × 28 / 35 × 80 px, **après les retours (×1,3, ×1,8) 17 × 37 / 47 × 105 px**.
 
 ## Matières, couleurs, textures
 - Géométrie pure `js/core/armes/` (sans Three.js) : `geometrie.js` (boîtes, tubes, profils extrudés, lofts → triangles), `modeles.js` (une fonction par arme, en mm ; repère : z vers la bouche, y en haut, x à gauche de l'arme, origine à la main droite), `armes.js` (données, variantes, choix, poses), `atlas.js`, `caisse.js`, `visuel.js` (SVG). Rendu : `js/armes/rendu.js` ; page : `js/armes/atelier.js`.
@@ -14,7 +14,7 @@ Atelier seulement (`atelier-armes.html`, à retirer au lot 13) : **rien n'est br
 - Couleurs : jetons `--arm-*` de **`css/armes.css`** (une déclaration `#rrggbb` par ligne ; aussi les classes des visuels 2D), chargée par l'atelier seulement ; `tokens.css` non touché. Garde-fous `tokens.test` et `attente.spec` adaptés comme au lot 8f.
 
 ## Les dix armes (longueur réelle → jeu à 35 u/m ; triangles réels : le plus grand des poses « en main » et « posée »)
-| Identifiant | Arme | Réelle | Jeu | Triangles (a / b / c) | Variantes |
+| Identifiant | Arme | Réelle | Jeu à taille réelle (× 1,3 par défaut depuis 9c-G) | Triangles (a / b / c) | Variantes |
 |---|---|---|---|---|---|
 | `m1911` | Colt M1911 | 216 mm | 7,5 | 240 / 240 / 240 | phosphaté et noyer ; bronzé et bakélite ; usé |
 | `kar98k` | Kar98k | 1 110 mm | 38,7 | 364 / 364 / 392 | noyer ; hêtre clair ; usé avec bretelle |
@@ -28,7 +28,8 @@ Atelier seulement (`atelier-armes.html`, à retirer au lot 13) : **rien n'est br
 | `m2lanceflammes` | Lance-flammes M2 | lance ≈ 1 050 mm, réservoirs 630 mm (approximations) | 36,8 | 480 / 480 / 480 | olive ; olive écaillé ; réservoirs gris |
 - Budgets : 400 (poing, épaule), 700 (MG42, Panzerschreck, lance-flammes réservoirs compris) ; testés sur chaque variante (`tests/unit/armes.test.js`).
 
-## Tenue en main (atelier : arme fixée à l'articulation `prop`, au centre de la poignée du pistolet actuel ; personnage et squelette intacts)
+## Tenue en main (lot 9c-G : bras adaptés dans l'atelier, `js/armes/tenue.js` ; personnage et squelette intacts)
+- Tenues (`prises` des données : `tenue`, `gauche`, `appui`, en mm) : **poing** (pistolet à deux mains à la poitrine), **épaule** (buste tourné de 52°, crosse au creux de l'épaule droite, main gauche sous le fût), **hanche** (MG42, lance-flammes : buste tourné de 34°), **tube** (Panzerschreck posé sur l'épaule droite). Arme placée dans le repère du personnage, reculée tant qu'une main ne l'atteint pas ; bras par cinématique inverse à deux os (coude vers le bas et l'extérieur), mains sur leurs prises (écart 0 pour les dix armes) ; tête ramenée dans l'axe ; réservoirs du lance-flammes sur le dos, tournés avec le buste. Réglage « Pose actuelle du jeu » pour comparer ; vue « Tenue de près ».
 - Le pistolet actuel fait partie de la géométrie du personnage : l'atelier l'enlève d'une **copie en mémoire** des données (réglage « Pistolet actuel »).
 - La pose actuelle tient une arme courte devant la poitrine : M1911 juste ; armes longues tenues par la poignée seulement, la crosse traverse le buste, la main gauche ne tient rien. Lance-flammes : réservoirs placés sur le dos par un décalage (`dos.main`, dans la même géométrie, donc ils suivent `prop`).
 - **Intégration** : pose à deux mains et épaulement par genre d'arme, bout du canon (`muzzle`) par arme, réservoirs sur l'os `chest` (deuxième os ou maillage à part), retrait du pistolet de la géométrie du personnage.

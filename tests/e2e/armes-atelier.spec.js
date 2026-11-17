@@ -53,6 +53,12 @@ test('atelier des armes : toutes les armes et variantes se construisent (budgets
     }
     await expect(page.locator('#comparaison-legende')).toContainText(a.nom);
     for (const v of a.variantes) await expect(page.locator('#comparaison-legende')).toContainText(v.nom);
+    // Lot 9c-G : bras adaptés (tenue de l'atelier) : les deux mains sur leurs prises.
+    const tenue = await page.evaluate(() => window.__zsArmes.tenue());
+    expect(tenue.tenue).toBe(a.prises.tenue);
+    expect(tenue.ecarts.droite, a.id).toBeLessThanOrEqual(0.05);
+    expect(tenue.ecarts.gauche, a.id).toBeLessThanOrEqual(0.05);
+    await expect(page.locator('#tenue-mesures')).toContainText('main droite à 0');
     const m = await page.evaluate(() => window.__zsArmes.mesures());
     expect(m['667x375'].perso.w).toBeGreaterThan(10);
     expect(m['1920x1080'].perso.w).toBeGreaterThan(m['667x375'].perso.w * 2);
@@ -69,6 +75,16 @@ test('atelier des armes : toutes les armes et variantes se construisent (budgets
   await expect(page.locator('#caisse-mesures')).toContainText('Râtelier');
   for (const l of ['lampe', 'lune', 'jeu']) await page.selectOption('#ctl-lumiere', l);
   await page.selectOption('#ctl-pistolet', 'visible');
+  await page.selectOption('#ctl-tenue', 'actuelle');
+  expect(await page.evaluate(() => window.__zsArmes.tenue())).toBeNull();
+  await page.selectOption('#ctl-tenue', 'adaptee');
+  // Lot 9c-G : curseurs de taille et d'épaisseur (défauts ×1,3 et ×1,8), repris dans le texte de « Mes choix » ; rien n'est écrit.
+  expect(await page.evaluate(() => window.__zsArmes.echelle())).toMatchObject({ lisibilite: 1.3, epaisseur: 1.8 });
+  await page.locator('#ctl-longueur').fill('1.5');
+  await page.locator('#ctl-epaisseur').fill('2');
+  await page.locator('#ctl-epaisseur').dispatchEvent('change');
+  await expect(page.locator('#out-longueur')).toHaveText('× 1,50');
+  expect(await page.evaluate(() => window.__zsArmes.echelle())).toMatchObject({ lisibilite: 1.5, epaisseur: 2 });
   await expect(page.locator('#planche-legende')).toContainText(donnees.armes.at(-1).nom);
   // Visuels du menu : un SVG par arme (sans Three.js), quelques Ko chacun, et celui de l'arme choisie.
   await expect(page.locator('#visuels-tous figure svg')).toHaveCount(donnees.armes.length);
@@ -80,6 +96,7 @@ test('atelier des armes : toutes les armes et variantes se construisent (budgets
   await page.locator('#btn-retenir').click();
   const choix = await page.evaluate(() => window.__zsArmes.choix());
   expect(choix.proposition.variantes[donnees.armes[1].id]).toBe(donnees.armes[1].variantes[1].id);
+  expect(choix.proposition.echelle).toEqual({ longueur: 1.5, epaisseur: 2 });
   expect(suivi.externes).toEqual([]);
   expect(suivi.problemes).toEqual([]);
   expect(await page.evaluate(() => window.__ecritures)).toBe(0);

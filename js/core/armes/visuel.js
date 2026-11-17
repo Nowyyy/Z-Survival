@@ -41,7 +41,7 @@ function contour(piece) {
 export function visuelArme(donnees, arme, variante, { id = 'arme', titre = '' } = {}) {
   const v = variante ?? varianteDe(arme);
   const mat = v?.matieres ?? MATIERES_DEFAUT;
-  const pieces = piecesArme(arme, v, 'caisse');
+  const pieces = piecesArme(arme, v, 'caisse', { epaisseur: donnees.echelle?.epaisseur ?? 1, seuil: donnees.echelle?.seuilEpaisseur ?? 60 });
   // Du plus loin au plus près : le profil droit est vu depuis −x, donc les x les plus grands d'abord.
   const formes = pieces.map((p) => ({ p, c: contour(p), x: (p.pos?.[0] ?? 0) })).filter((f) => f.c.length >= 3).sort((a, b) => b.x - a.x);
   let zmin = Infinity;

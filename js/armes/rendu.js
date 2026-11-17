@@ -51,15 +51,18 @@ export function creerKitArmes({ donnees, palette }) {
   const materiauCaisse = new THREE.MeshLambertMaterial({ map: caisseTex });
   const materiauCraie = new THREE.MeshBasicMaterial({ map: caisseTex, transparent: true, depthWrite: false });
   const geos = new Map();
+  // Caisses à la longueur de l'arme la plus longue (posée), à l'échelle choisie.
+  const longueurMax = Math.max(0, ...donnees.armes.flatMap((a) => a.variantes.map((v) => maillageArme(donnees, a, v, { pose: 'caisse' }).longueur)));
+  const dims = (type) => dimensionsCaisse(donnees.caisses, type, longueurMax);
   const infosCache = new Map();
   const cle = (...k) => k.join(':');
 
-  function donneesMaillage(armeId, varianteId, pose) {
-    const k = cle(armeId, varianteId, pose);
+  function donneesMaillage(armeId, varianteId, pose, dos, lacet) {
+    const k = cle(armeId, varianteId, pose, Array.isArray(dos) ? dos.join(',') : '', Number.isFinite(lacet) ? Math.round(lacet) : '');
     if (!geos.has(k)) {
       const arme = armeParId(donnees, armeId);
       const v = varianteDe(arme, varianteId);
-      let m = maillageArme(donnees, arme, v, { pose: pose === 'caisse' ? 'caisse' : 'main' });
+      let m = maillageArme(donnees, arme, v, { pose: pose === 'caisse' ? 'caisse' : 'main', dos: Array.isArray(dos) ? dos : undefined, lacet: Number.isFinite(lacet) ? Math.round(lacet) : 0 });
       if (pose === 'caisse') m = coucher(m);
       geos.set(k, { g: geometrie(m), m });
     }
@@ -70,8 +73,9 @@ export function creerKitArmes({ donnees, palette }) {
     octetsTextures: atlasImg.octets + caisseImg.octets,
     tailleAtlas: atlasImg.width,
     materiau,
-    mesh(armeId, varianteId, pose = 'main') {
-      const { g } = donneesMaillage(armeId, varianteId, pose);
+    // dos : décalage des réservoirs (mm) calculé par la tenue de l'atelier (js/armes/tenue.js).
+    mesh(armeId, varianteId, pose = 'main', { dos, lacet } = {}) {
+      const { g } = donneesMaillage(armeId, varianteId, pose, dos, lacet);
       const mesh = new THREE.Mesh(g, materiau);
       mesh.name = `arme-${armeId}-${varianteId}`;
       return mesh;
@@ -79,18 +83,21 @@ export function creerKitArmes({ donnees, palette }) {
     maillage: (armeId, varianteId, pose = 'main') => donneesMaillage(armeId, varianteId, pose).m,
     caisse(type) {
       const k = cle('caisse', type);
-      if (!geos.has(k)) geos.set(k, { g: geometrie(maillageCaisse(type, dimensionsCaisse(donnees.caisses, type))) });
+      if (!geos.has(k)) geos.set(k, { g: geometrie(maillageCaisse(type, dims(type))) });
       return new THREE.Mesh(geos.get(k).g, materiauCaisse);
     },
     craie(type) {
       const k = cle('craie', type);
-      if (!geos.has(k)) geos.set(k, { g: geometrie(maillageCaisse(type, dimensionsCaisse(donnees.caisses, type), { craie: true })) });
+      if (!geos.has(k)) geos.set(k, { g: geometrie(maillageCaisse(type, dims(type), { craie: true })) });
       const mesh = new THREE.Mesh(geos.get(k).g, materiauCraie);
       mesh.renderOrder = 1;
       return mesh;
     },
     trianglesCaisse(type) {
-      return maillageCaisse(type, dimensionsCaisse(donnees.caisses, type)).triangles;
+      return maillageCaisse(type, dims(type)).triangles;
+    },
+    dimensions(type) {
+      return dims(type);
     },
     infos(armeId, varianteId) {
       const k = cle(armeId, varianteId);

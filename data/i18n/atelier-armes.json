@@ -24,7 +24,7 @@
   "dev.armes.jeu.petit": "667 × 375 (téléphone couché)",
   "dev.armes.jeu.grand": "1920 × 1080 (ordinateur)",
   "dev.armes.jeu.mesures": "Mesuré sur l'image ({taille}) : personnage {pw} × {ph} px, arme seule {aw} × {ah} px ; longueur de l'arme {l} unités ({lr} m en vrai).",
-  "dev.armes.jeu.tenue": "L'arme est posée à la main droite du personnage actuel (articulation « prop » du pistolet, sans toucher au squelette) : la pose actuelle tient une arme courte devant la poitrine ; les armes longues, la tenue à deux mains et les réservoirs au dos sont le travail du lot d'intégration.",
+  "dev.armes.jeu.tenue": "Réglage « Tenue en main » : bras adaptés (aperçu du lot d'intégration, personnage non modifié) ou pose actuelle du jeu (arme fixée à la main du pistolet).",
   "dev.armes.caisse.titre": "Sur la caisse",
   "dev.armes.caisse.intro": "Caisse d'achat vue par la caméra du jeu, l'arme posée sur le côté. Le contour à la craie et le texte montrent l'approche du joueur : simple aperçu, rien n'est branché sur la partie.",
   "dev.armes.caisse.type": "Caisse",
@@ -61,5 +61,18 @@
   "dev.armes.choix.absent": "Fichier absent ou illisible : variantes par défaut.",
   "dev.armes.choix.retenir": "Retenir cette variante",
   "dev.armes.choix.label": "Texte à recopier dans data/armes/armes-choix.json",
-  "dev.armes.choix.specialeNote": "Arme spéciale : choisissez le Panzerschreck ou le lance-flammes dans la liste des armes, puis « Retenir cette variante »."
+  "dev.armes.choix.specialeNote": "Arme spéciale : choisissez le Panzerschreck ou le lance-flammes dans la liste des armes, puis « Retenir cette variante ».",
+  "dev.armes.tenue": "Tenue en main",
+  "dev.armes.tenue.adaptee": "Bras adaptés (aperçu)",
+  "dev.armes.tenue.actuelle": "Pose actuelle du jeu",
+  "dev.armes.tenue.titre": "Tenue de près",
+  "dev.armes.tenue.intro": "Le personnage tient l'arme selon son genre : pistolet à deux mains, fusil épaulé (buste tourné), arme lourde à la hanche, tube sur l'épaule. Bras et mains sont calculés dans l'atelier pour poser chaque main sur sa prise : le personnage du jeu n'est pas modifié ; ces poses serviront au lot d'intégration. À gauche de trois quarts, à droite vu de dessus.",
+  "dev.armes.tenue.mesures": "Tenue « {tenue} » : main droite à {d} de sa prise, main gauche à {g} (unités du jeu ; 0 = sur la prise).",
+  "dev.armes.tenue.genre.poing": "pistolet à deux mains",
+  "dev.armes.tenue.genre.epaule": "épaulée",
+  "dev.armes.tenue.genre.hanche": "à la hanche",
+  "dev.armes.tenue.genre.tube": "tube sur l'épaule",
+  "dev.armes.longueur": "Taille des armes",
+  "dev.armes.epaisseur": "Épaisseur des pièces fines",
+  "dev.armes.echelle.note": "Taille : toutes les armes agrandies du même facteur (×1 = taille réelle par rapport au personnage). Épaisseur : canons, crosses, chargeurs et plaques épaissis sans allonger les armes. Valeurs par défaut ×1,3 et ×1,8 (retours : armes trop petites et trop fines) ; les valeurs choisies sont reprises dans « Mes choix »."
 }
