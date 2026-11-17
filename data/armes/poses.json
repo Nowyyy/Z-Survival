@@ -1,0 +1,384 @@
+{
+  "_note": "Lot 9c — Poses de tenue des armes (décision du propriétaire), calculées dans l'atelier sur une instance du personnage (js/armes/tenue.js, js/armes/poses-calcul.js) ; le personnage du jeu et js/game/character-v2.js ne changent pas. regles : torses essayés (degrés, épaule gauche vers l'avant), écartements des épaules (x ; 11,5 = personnage), allongements des bras et avant-bras (1,2 au plus), places de la main ou de la crosse par pose (unités du jeu ; repère du personnage ou de l'os chest). facteur : facteur commun de taille des armes pour lequel les poses valent (data/armes/armes.json → echelle.lisibilite). armes.<id>.modes.<mode> : torse (degrés), epaules, bras, arme.position (repère du personnage, arme dans l'axe de visée), angles (radians, ordre YXZ des os de character-v2.js) et controle (écarts des mains à leurs prises, points de l'arme dans la tête ou le torse, visée en degrés, bouche devant le corps). Données pour le lot d'intégration. Ne pas modifier à la main : recalculer avec fichierPoses (mode d'emploi : Docs/ref/armes.md) ; tests/unit/armes-poses.test.js vérifie que ce fichier est à jour.",
+  "version": 1,
+  "facteur": 1.1,
+  "regles": {
+    "torses": [
+      0,
+      15,
+      30
+    ],
+    "epaules": [
+      11.5,
+      10,
+      9
+    ],
+    "bras": [
+      1,
+      1.1,
+      1.2
+    ],
+    "pistolet": {
+      "deux-mains": [
+        -2,
+        45,
+        15.5
+      ],
+      "une-main": [
+        -10,
+        46.5,
+        19.5
+      ]
+    },
+    "epaule": {
+      "creux": [
+        -4,
+        6.5,
+        7
+      ]
+    },
+    "hanche": {
+      "main": [
+        -9.5,
+        33,
+        8
+      ]
+    },
+    "sur-epaule": {
+      "appui": [
+        -7.5,
+        13,
+        -1
+      ]
+    }
+  },
+  "armes": {
+    "m1911": {
+      "pose": "pistolet",
+      "modes": {
+        "deux-mains": {
+          "pose": "pistolet",
+          "mode": "deux-mains",
+          "torse": 0,
+          "epaules": 11.5,
+          "bras": 1,
+          "arme": {
+            "position": [
+              -2,
+              45.308,
+              16.809
+            ],
+            "rotation": [
+              0,
+              0,
+              0
+            ]
+          },
+          "angles": {
+            "spine": [
+              0.02,
+              0,
+              0
+            ],
+            "chest": [
+              0.015,
+              0,
+              0
+            ],
+            "neck": [
+              0,
+              0,
+              0
+            ],
+            "head": [
+              0.06,
+              0,
+              0
+            ],
+            "shoulderR": [
+              -0.7594,
+              1.1089,
+              -0.6471
+            ],
+            "elbowR": [
+              -1.041,
+              0,
+              0
+            ],
+            "wristR": [
+              0,
+              0,
+              0
+            ],
+            "shoulderL": [
+              -1.0547,
+              -1.5283,
+              0.8403
+            ],
+            "elbowL": [
+              -0.3551,
+              0,
+              0
+            ],
+            "wristL": [
+              0,
+              0,
+              0
+            ]
+          },
+          "controle": {
+            "droite": 0,
+            "gauche": 0,
+            "traverse": 0,
+            "visee": 0,
+            "devant": 13.28
+          }
+        },
+        "une-main": {
+          "pose": "pistolet",
+          "mode": "une-main",
+          "torse": 0,
+          "epaules": 11.5,
+          "bras": 1,
+          "arme": {
+            "position": [
+              -10,
+              46.808,
+              20.809
+            ],
+            "rotation": [
+              0,
+              0,
+              0
+            ]
+          },
+          "angles": {
+            "spine": [
+              0.02,
+              0,
+              0
+            ],
+            "chest": [
+              0.015,
+              0,
+              0
+            ],
+            "neck": [
+              0,
+              0,
+              0
+            ],
+            "head": [
+              0.06,
+              0,
+              0
+            ],
+            "shoulderR": [
+              -0.7884,
+              0.9798,
+              -1.0282
+            ],
+            "elbowR": [
+              -0.7996,
+              0,
+              0
+            ],
+            "wristR": [
+              0,
+              0,
+              0
+            ],
+            "shoulderL": [
+              0,
+              0,
+              0
+            ],
+            "elbowL": [
+              0,
+              0,
+              0
+            ],
+            "wristL": [
+              0,
+              0,
+              0
+            ]
+          },
+          "controle": {
+            "droite": 0,
+            "gauche": 0,
+            "traverse": 0,
+            "visee": 0,
+            "devant": 17.28
+          }
+        }
+      }
+    },
+    "kar98k": {
+      "pose": "epaule",
+      "modes": {
+        "deux-mains": {
+          "pose": "epaule",
+          "mode": null,
+          "torse": 30,
+          "epaules": 11.5,
+          "bras": 1.2,
+          "arme": {
+            "position": [
+              -6.092,
+              47.954,
+              19.766
+            ],
+            "rotation": [
+              0,
+              0,
+              0
+            ]
+          },
+          "angles": {
+            "spine": [
+              0.02,
+              -0.2618,
+              0
+            ],
+            "chest": [
+              0.015,
+              -0.2618,
+              0
+            ],
+            "neck": [
+              0,
+              0.2618,
+              0
+            ],
+            "head": [
+              0.06,
+              0.2618,
+              0
+            ],
+            "shoulderR": [
+              -0.8061,
+              1.6022,
+              -1.0578
+            ],
+            "elbowR": [
+              -0.8949,
+              0,
+              0
+            ],
+            "wristR": [
+              0,
+              0,
+              0
+            ],
+            "shoulderL": [
+              -1.1523,
+              -1.3776,
+              1.2186
+            ],
+            "elbowL": [
+              -0.2958,
+              0,
+              0
+            ],
+            "wristL": [
+              0,
+              0,
+              0
+            ]
+          },
+          "controle": {
+            "droite": 0,
+            "gauche": 0,
+            "traverse": 0,
+            "visee": 0,
+            "devant": 35.19
+          }
+        }
+      }
+    },
+    "mg42": {
+      "pose": "hanche",
+      "modes": {
+        "deux-mains": {
+          "pose": "hanche",
+          "mode": null,
+          "torse": 30,
+          "epaules": 9,
+          "bras": 1.2,
+          "arme": {
+            "position": [
+              -11.5,
+              35.118,
+              5.54
+            ],
+            "rotation": [
+              0,
+              0,
+              0
+            ]
+          },
+          "angles": {
+            "spine": [
+              0.02,
+              -0.2618,
+              0
+            ],
+            "chest": [
+              0.015,
+              -0.2618,
+              0
+            ],
+            "neck": [
+              0,
+              0.2618,
+              0
+            ],
+            "head": [
+              0.06,
+              0.2618,
+              0
+            ],
+            "shoulderR": [
+              0.4466,
+              0.8515,
+              -0.5463
+            ],
+            "elbowR": [
+              -1.5607,
+              0,
+              0
+            ],
+            "wristR": [
+              0,
+              0,
+              0
+            ],
+            "shoulderL": [
+              -0.8989,
+              -0.7213,
+              0.0785
+            ],
+            "elbowL": [
+              -0.2875,
+              0,
+              0
+            ],
+            "wristL": [
+              0,
+              0,
+              0
+            ]
+          },
+          "controle": {
+            "droite": 0,
+            "gauche": 0,
+            "traverse": 0,
+            "visee": 0,
+            "devant": 25.04
+          }
+        }
+      }
+    }
+  }
+}

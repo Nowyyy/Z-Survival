@@ -54,8 +54,6 @@
         <div class="armes-champ"><label for="ctl-tenue" data-i18n="dev.armes.tenue"></label><select id="ctl-tenue" class="armes-select"></select></div>
         <div class="armes-champ"><label for="ctl-pistolet" data-i18n="dev.armes.pistolet"></label><select id="ctl-pistolet" class="armes-select"></select></div>
         <div class="armes-champ"><label for="ctl-longueur" data-i18n="dev.armes.longueur"></label><span class="armes-curseur"><input id="ctl-longueur" class="atelier-range" type="range" min="1" max="2" step="0.05"><output id="out-longueur" for="ctl-longueur"></output></span></div>
-        <div class="armes-champ"><label for="ctl-largeur" data-i18n="dev.armes.largeur"></label><span class="armes-curseur"><input id="ctl-largeur" class="atelier-range" type="range" min="1" max="4" step="0.1"><output id="out-largeur" for="ctl-largeur"></output></span></div>
-        <div class="armes-champ"><label for="ctl-epaisseur" data-i18n="dev.armes.epaisseur"></label><span class="armes-curseur"><input id="ctl-epaisseur" class="atelier-range" type="range" min="1" max="3" step="0.1"><output id="out-epaisseur" for="ctl-epaisseur"></output></span></div>
       </div>
       <p id="variante-description" class="atelier-note"></p>
       <p id="variante-retenue" class="atelier-note"></p>
@@ -76,8 +74,16 @@
     <section id="vue-tenue" class="atelier-section" aria-labelledby="tenue-titre">
       <h2 id="tenue-titre" class="atelier-heading" data-i18n="dev.armes.tenue.titre"></h2>
       <p class="atelier-note" data-i18n="dev.armes.tenue.intro"></p>
-      <div class="armes-scene" tabindex="0" role="group" aria-labelledby="tenue-titre"><canvas id="cv-tenue" class="armes-canvas" width="960" height="420" aria-hidden="true"></canvas></div>
-      <p id="tenue-mesures" class="atelier-note armes-mesures"></p>
+      <div class="armes-champs">
+        <div class="armes-champ"><label for="ctl-mode" data-i18n="dev.armes.tenue.mode"></label><select id="ctl-mode" class="armes-select"></select></div>
+      </div>
+      <p id="tenue-mesures" class="atelier-note armes-mesures" role="status" aria-live="polite"></p>
+      <h3 id="poses-petit-titre" class="armes-sous-titre" data-i18n="dev.armes.tenue.petit"></h3>
+      <div class="armes-scene armes-taille-reelle" tabindex="0" role="group" aria-labelledby="poses-petit-titre"><canvas id="cv-poses-petit" class="armes-canvas-reel" width="360" height="120" aria-hidden="true"></canvas></div>
+      <h3 id="poses-grand-titre" class="armes-sous-titre" data-i18n="dev.armes.tenue.grand"></h3>
+      <div class="armes-scene armes-taille-reelle" tabindex="0" role="group" aria-labelledby="poses-grand-titre"><canvas id="cv-poses-grand" class="armes-canvas-reel" width="960" height="320" aria-hidden="true"></canvas></div>
+      <h3 id="tenue-pres-titre" class="armes-sous-titre" data-i18n="dev.armes.tenue.pres"></h3>
+      <div class="armes-scene" tabindex="0" role="group" aria-labelledby="tenue-pres-titre"><canvas id="cv-tenue" class="armes-canvas" width="960" height="420" aria-hidden="true"></canvas></div>
     </section>
 
     <section id="vue-caisse" class="atelier-section" aria-labelledby="caisse-titre">
@@ -85,7 +91,6 @@
       <p class="atelier-note" data-i18n="dev.armes.caisse.intro"></p>
       <div class="armes-champs">
         <div class="armes-champ"><label for="ctl-caisse" data-i18n="dev.armes.caisse.type"></label><select id="ctl-caisse" class="armes-select"></select></div>
-        <div class="armes-champ"><label for="ctl-poing" data-i18n="dev.armes.caisse.poing"></label><span class="armes-curseur"><input id="ctl-poing" class="atelier-range" type="range" min="1" max="3" step="0.1"><output id="out-poing" for="ctl-poing"></output></span></div>
         <button id="btn-craie" class="button atelier-button" type="button" aria-pressed="true" data-i18n="dev.armes.caisse.craie"></button>
       </div>
       <div class="armes-scene armes-taille-reelle armes-etiquette-hote" tabindex="0" role="group" aria-labelledby="caisse-titre">

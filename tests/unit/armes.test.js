@@ -34,10 +34,11 @@ describe('données des armes', () => {
     for (const cle of ['degats', 'cadence', 'prix', 'portee', 'dispersion', 'vitesse']) expect(texte, cle).not.toMatch(new RegExp(`"${cle}"`));
   });
 
-  // Lot 9c-G (retours du propriétaire : armes trop petites et trop fines) : longueur ×1,3, épaisseur des pièces fines ×1,8 (avant : 1 et 1).
-  it('échelle : 35 unités par mètre (personnage de 61 unités ≈ 1,75 m), longueur ×1,3, épaisseur ×1,8 sous 60 mm', () => {
+  // Lot 9c-G (retours du propriétaire) : épaisseur des pièces fines ×1,8 ; décision du propriétaire (poses de tenue) : un seul facteur commun de
+  // taille pour toutes les armes, ×1,1 (avant : ×1,3 ; le plus grand qui laisse le M1911, le Kar98k et la MG42 tenus à deux mains).
+  it('échelle : 35 unités par mètre (personnage de 61 unités ≈ 1,75 m), facteur commun ×1,1, épaisseur ×1,8 sous 60 mm', () => {
     expect(donnees.echelle.unitesParMetre).toBe(35);
-    expect(donnees.echelle.lisibilite).toBe(1.3);
+    expect(donnees.echelle.lisibilite).toBe(1.1);
     expect(donnees.echelle.epaisseur).toBe(1.8);
     expect(donnees.echelle.largeur).toBe(1.5); // retours : la largeur vue de dessus, à part de la longueur, choisie à ×1,5 (en jeu seulement)
     expect(donnees.echelle.seuilEpaisseur).toBe(60);
@@ -93,7 +94,7 @@ describe('dimensions relatives', () => {
     for (const a of donnees.armes) {
       const l1 = maillageArme(donnees, a, a.variantes[0]).longueur;
       const l2 = maillageArme(d2, armeParId(d2, a.id), armeParId(d2, a.id).variantes[0]).longueur;
-      expect(l2 / l1).toBeCloseTo(1.5 / 1.3, 4);
+      expect(l2 / l1).toBeCloseTo(1.5 / 1.1, 4);
     }
   });
 });
@@ -265,7 +266,7 @@ describe('retours du propriétaire (lot 9c-G) : taille, épaisseur, prises', () 
     const d = avecEchelle(donnees, { longueur: 9, epaisseur: 0.2 });
     expect(d.echelle.lisibilite).toBe(3);
     expect(d.echelle.epaisseur).toBe(1);
-    expect(donnees.echelle.lisibilite).toBe(1.3);
+    expect(donnees.echelle.lisibilite).toBe(1.1);
     expect(avecEchelle(donnees, null).echelle).toEqual(donnees.echelle);
   });
 
@@ -278,14 +279,15 @@ describe('retours du propriétaire (lot 9c-G) : taille, épaisseur, prises', () 
     expect(lireChoix(donnees, {}).echelle).toBeNull();
   });
 
-  it('prises : chaque arme a une tenue connue ; une main gauche pour toutes les armes d\'épaule, lourdes et spéciales ; un appui pour l\'épaule et le tube', () => {
+  it('prises : pose du propriétaire pour chaque arme ; paume droite, paume gauche (sauf main libre), crosse pour l\'épaule et le tube', () => {
+    const attendu = { m1911: 'pistolet', kar98k: 'epaule', garand: 'epaule', thompson: 'epaule', stg44: 'epaule', winchester1897: 'epaule', bar: 'hanche', mg42: 'hanche', m2lanceflammes: 'hanche', panzerschreck: 'sur-epaule' };
     for (const a of donnees.armes) {
       expect(TENUES, a.id).toContain(a.prises.tenue);
-      if (a.prises.tenue !== 'poing') expect(a.prises.gauche, a.id).not.toBeNull();
-      if (['epaule', 'tube'].includes(a.prises.tenue)) expect(a.prises.appui, a.id).not.toBeNull();
+      expect(a.prises.tenue, a.id).toBe(attendu[a.id]);
+      expect(a.prises.droite, a.id).toHaveLength(3);
+      expect(a.prises.gauche, a.id).not.toBeNull();
+      if (['epaule', 'sur-epaule'].includes(a.prises.tenue)) expect(a.prises.crosse, a.id).not.toBeNull();
     }
-    expect(armeParId(donnees, 'm1911').prises.tenue).toBe('poing');
-    expect(armeParId(donnees, 'panzerschreck').prises.tenue).toBe('tube');
   });
 
   it('lacet : seuls les réservoirs (groupe « dos ») tournent, la lance ne bouge pas', () => {
@@ -315,16 +317,12 @@ describe('retours du propriétaire (lot 9c-G) : taille, épaisseur, prises', () 
     expect(avecEchelle(donnees, { largeur: 9 }).echelle.largeur).toBe(4);
   });
 
-  it('pistolet sur la caisse (retour : « sur l\'établi, le pistolet est trop petit ») : armes de poing posées ×2, jamais en main ni les autres armes', () => {
-    expect(donnees.echelle.poingCaisse).toBe(2);
+  it('un seul facteur commun (décision du propriétaire) : aucun facteur propre à une arme ou à une classe, la caisse comprise', () => {
+    expect(Object.keys(donnees.echelle).sort()).toEqual(['epaisseur', 'largeur', 'lisibilite', 'seuilEpaisseur', 'unitesParMetre']);
     for (const a of donnees.armes) {
       const main = maillageArme(donnees, a, a.variantes[0], { pose: 'seule' });
       const posee = maillageArme(donnees, a, a.variantes[0], { pose: 'caisse' });
-      if (a.classe === 'poing') expect(posee.longueur / main.longueur, a.id).toBeCloseTo(2, 4);
-      else if (!a.dos) expect(posee.longueur / main.longueur, a.id).toBeCloseTo(1, 4);
+      if (!a.dos) expect(posee.longueur / main.longueur, a.id).toBeCloseTo(1, 4);
     }
-    expect(avecEchelle(donnees, { poingCaisse: 7 }).echelle.poingCaisse).toBe(3);
-    expect(lireChoix(donnees, { echelle: { poingCaisse: 2.5 } }).echelle).toEqual({ poingCaisse: 2.5 });
-    expect(lireChoix(donnees, { echelle: { poingCaisse: 0 } }).ecarts.length).toBe(1);
   });
 });

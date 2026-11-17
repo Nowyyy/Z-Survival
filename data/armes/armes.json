@@ -1,12 +1,12 @@
 {
-  "_note": "Lot 9c : armes modélisées pour l'atelier (atelier-armes.html), rien n'est branché sur la partie. Noms affichés (nom, nom des variantes) modifiables par le propriétaire. Dimensions en millimètres (longueur hors tout réelle ; les autres mesures servent aux modèles de js/core/armes/modeles.js). echelle.unitesParMetre : 35 (personnage de 61 unités ≈ 1,75 m) ; echelle.lisibilite : facteur de longueur de toutes les armes (1 = taille réelle ; 1,3 depuis les retours du propriétaire : armes trop petites) ; echelle.epaisseur : facteur des dimensions fines des pièces (sous seuilEpaisseur mm ; 1,8 : armes trop fines) ; echelle.largeur : facteur de la largeur vue de dessus de l'arme tenue, dans la vue de la caméra du jeu seulement (1,5, choix du propriétaire : la caméra est loin, l'arme se lisait mal), sans changer la longueur ni le profil, jamais sur la caisse ni pour les réservoirs portés ; echelle.poingCaisse : agrandissement des armes de poing posées sur la caisse (2 : le pistolet s'y perdait), jamais en main ; le fichier de choix peut les remplacer (echelle.longueur, echelle.epaisseur, echelle.largeur, echelle.poingCaisse). prises : tenue de l'atelier (poing, epaule, hanche, tube) et points des mains et de l'appui (mm). Aucune statistique de jeu (dégâts, cadence, prix : lot d'intégration). dos : décalage (mm, repère de l'arme) du groupe porté sur le dos (réservoirs), en main et posé sur la caisse.",
+  "_note": "Lot 9c : armes modélisées pour l'atelier (atelier-armes.html), rien n'est branché sur la partie. Noms affichés (nom, nom des variantes) modifiables par le propriétaire. Dimensions en millimètres (longueur hors tout réelle ; les autres mesures servent aux modèles de js/core/armes/modeles.js). echelle.unitesParMetre : 35 (personnage de 61 unités ≈ 1,75 m) ; echelle.lisibilite : facteur de longueur de toutes les armes (1 = taille réelle ; 1,3 depuis les retours du propriétaire : armes trop petites) ; echelle.epaisseur : facteur des dimensions fines des pièces (sous seuilEpaisseur mm ; 1,8 : armes trop fines) ; echelle.largeur : facteur de la largeur vue de dessus de l'arme tenue, dans la vue de la caméra du jeu seulement (1,5, choix du propriétaire : la caméra est loin, l'arme se lisait mal), sans changer la longueur ni le profil, jamais sur la caisse ni pour les réservoirs portés ;  le fichier de choix peut les remplacer (echelle.longueur, echelle.epaisseur, echelle.largeur). prises (lot 9c, poses du propriétaire) : pose de tenue (pistolet, epaule, hanche, sur-epaule ; data/armes/poses.json) et points de prise en mm dans le repère de l'arme : droite (centre de la paume droite sur la poignée), gauche (centre de la paume gauche : sous le fût, pompe, poignée avant), crosse (centre de la plaque de couche, ou point du tube posé sur l'épaule). Aucune statistique de jeu (dégâts, cadence, prix : lot d'intégration). dos : décalage (mm, repère de l'arme) du groupe porté sur le dos (réservoirs), en main et posé sur la caisse.",
   "version": 1,
-  "echelle": { "unitesParMetre": 35, "lisibilite": 1.3, "epaisseur": 1.8, "largeur": 1.5, "poingCaisse": 2, "seuilEpaisseur": 60, "personnage": { "hauteur": 61, "hauteurReelleM": 1.75 } },
+  "echelle": { "unitesParMetre": 35, "lisibilite": 1.1, "epaisseur": 1.8, "largeur": 1.5, "seuilEpaisseur": 60, "personnage": { "hauteur": 61, "hauteurReelleM": 1.75 } },
   "budgets": { "epaule": 400, "lourde": 700, "caisse": 300, "texture": 256 },
   "armes": [
     {
       "id": "m1911", "nom": "Colt M1911", "genre": "pistolet (arme de départ)", "classe": "poing",
-      "prises": {"tenue": "poing"}, "dimensions": { "longueur": 216 },
+      "prises": {"tenue": "pistolet", "droite": [0, -8, -34], "gauche": [16, -30, -24]}, "dimensions": { "longueur": 216 },
       "variantes": [
         { "id": "a", "nom": "Service, phosphaté", "description": "Acier phosphaté gris, plaquettes de noyer.", "matieres": { "metal": "phosphate", "metal2": "phosphate", "poignee": "noyer" } },
         { "id": "b", "nom": "Bronzé, bakélite", "description": "Acier bruni très sombre, plaquettes de bakélite quadrillées.", "matieres": { "metal": "bruni", "metal2": "bruni", "poignee": "bakelite" } },
@@ -15,7 +15,7 @@
     },
     {
       "id": "kar98k", "nom": "Kar98k", "genre": "fusil à verrou", "classe": "epaule",
-      "prises": {"tenue": "epaule", "gauche": [0, -4, 300], "appui": [0, -40, -420]}, "dimensions": { "longueur": 1110 },
+      "prises": {"tenue": "epaule", "droite": [0, -4, -85], "gauche": [0, -20, 125], "crosse": [0, -42, -424]}, "dimensions": { "longueur": 1110 },
       "variantes": [
         { "id": "a", "nom": "Noyer", "description": "Crosse et fût en noyer sombre, acier bruni.", "matieres": { "bois": "noyer", "metal": "bruni", "metal2": "bruni" } },
         { "id": "b", "nom": "Hêtre clair", "description": "Bois de hêtre clair (fin de guerre), acier phosphaté.", "matieres": { "bois": "hetre", "metal": "phosphate", "metal2": "bruni" } },
@@ -24,7 +24,7 @@
     },
     {
       "id": "thompson", "nom": "Thompson M1928", "genre": "mitraillette", "classe": "epaule",
-      "prises": {"tenue": "epaule", "gauche": [0, -32, 248], "appui": [0, -40, -390]}, "dimensions": { "longueur": 852 },
+      "prises": {"tenue": "epaule", "droite": [0, -30, -60], "gauche": [0, -30, 248], "crosse": [0, -40, -394]}, "dimensions": { "longueur": 852 },
       "variantes": [
         { "id": "a", "nom": "Chargeur droit", "description": "Chargeur droit de 20, noyer, acier bruni.", "matieres": { "bois": "noyer", "metal": "bruni", "metal2": "bruni" }, "options": { "chargeur": "droit" } },
         { "id": "b", "nom": "Chargeur camembert", "description": "Chargeur camembert de 50, noyer, acier bruni.", "matieres": { "bois": "noyer", "metal": "bruni", "metal2": "bruni" }, "options": { "chargeur": "camembert" } },
@@ -33,7 +33,7 @@
     },
     {
       "id": "winchester1897", "nom": "Winchester M1897", "genre": "fusil à pompe (« trench gun »)", "classe": "epaule",
-      "prises": {"tenue": "epaule", "gauche": [0, 14, 340], "appui": [0, -40, -370]}, "dimensions": { "longueur": 1003, "longueurAvecAccessoire": 1395 },
+      "prises": {"tenue": "epaule", "droite": [0, -2, -60], "gauche": [0, 10, 340], "crosse": [0, -40, -374]}, "dimensions": { "longueur": 1003, "longueurAvecAccessoire": 1395 },
       "variantes": [
         { "id": "a", "nom": "Trench", "description": "Cache-canon perforé, tenon de baïonnette, noyer, acier bruni.", "matieres": { "bois": "noyer", "metal": "bruni", "metal2": "bruni" } },
         { "id": "b", "nom": "Avec baïonnette", "description": "Baïonnette M1917 montée (1,40 m en tout), acier phosphaté.", "matieres": { "bois": "noyer", "metal": "phosphate", "metal2": "bruni" }, "options": { "baionnette": true } },
@@ -42,7 +42,7 @@
     },
     {
       "id": "garand", "nom": "M1 Garand", "genre": "fusil semi-automatique", "classe": "epaule",
-      "prises": {"tenue": "epaule", "gauche": [0, 0, 330], "appui": [0, -40, -400]}, "dimensions": { "longueur": 1107 },
+      "prises": {"tenue": "epaule", "droite": [0, -4, -85], "gauche": [0, -14, 300], "crosse": [0, -40, -404]}, "dimensions": { "longueur": 1107 },
       "variantes": [
         { "id": "a", "nom": "Noyer", "description": "Noyer sombre, acier phosphaté.", "matieres": { "bois": "noyer", "metal": "phosphate", "metal2": "phosphate" } },
         { "id": "b", "nom": "Bouleau clair", "description": "Bois clair, acier phosphaté.", "matieres": { "bois": "hetre", "metal": "phosphate", "metal2": "phosphate" } },
@@ -51,7 +51,7 @@
     },
     {
       "id": "stg44", "nom": "StG 44", "genre": "fusil d'assaut", "classe": "epaule",
-      "prises": {"tenue": "epaule", "gauche": [0, 14, 286], "appui": [0, -36, -330]}, "dimensions": { "longueur": 940 },
+      "prises": {"tenue": "epaule", "droite": [0, -40, -40], "gauche": [0, 10, 290], "crosse": [0, -36, -334]}, "dimensions": { "longueur": 940 },
       "variantes": [
         { "id": "a", "nom": "Standard", "description": "Tôle phosphatée, crosse sombre, poignée en bakélite.", "matieres": { "bois": "noyer", "metal": "phosphate", "metal2": "bruni", "poignee": "bakelite" } },
         { "id": "b", "nom": "Bois clair", "description": "Crosse et poignée en hêtre clair.", "matieres": { "bois": "hetre", "metal": "phosphate", "metal2": "bruni", "poignee": "hetre" } },
@@ -60,7 +60,7 @@
     },
     {
       "id": "bar", "nom": "BAR M1918", "genre": "fusil-mitrailleur", "classe": "epaule",
-      "prises": {"tenue": "epaule", "gauche": [0, 8, 400], "appui": [0, -42, -430]}, "dimensions": { "longueur": 1214 },
+      "prises": {"tenue": "hanche", "droite": [0, 0, -75], "gauche": [0, 0, 400], "crosse": [0, -42, -434]}, "dimensions": { "longueur": 1214 },
       "variantes": [
         { "id": "a", "nom": "Avec bipied", "description": "M1918A2, bipied déplié, acier phosphaté, noyer.", "matieres": { "bois": "noyer", "metal": "phosphate", "metal2": "phosphate" }, "options": { "bipied": true } },
         { "id": "b", "nom": "Sans bipied", "description": "M1918 d'origine, sans bipied.", "matieres": { "bois": "noyer", "metal": "phosphate", "metal2": "phosphate" }, "options": { "bipied": false } },
@@ -69,7 +69,7 @@
     },
     {
       "id": "mg42", "nom": "MG42", "genre": "mitrailleuse", "classe": "lourde",
-      "prises": {"tenue": "hanche", "gauche": [0, 20, 300], "appui": [0, -40, -430]}, "dimensions": { "longueur": 1220 },
+      "prises": {"tenue": "hanche", "droite": [0, -55, -40], "gauche": [0, 6, 195], "crosse": [0, -40, -434]}, "dimensions": { "longueur": 1220 },
       "variantes": [
         { "id": "a", "nom": "Bande pendante", "description": "Bande de 50 cartouches qui pend à gauche, bipied déplié, crosse en bakélite.", "matieres": { "metal": "bruni", "metal2": "bruni", "poignee": "bakelite" }, "options": { "alimentation": "bande" } },
         { "id": "b", "nom": "Tambour à bande", "description": "Bande enroulée dans un tambour accroché à gauche, acier phosphaté.", "matieres": { "metal": "phosphate", "metal2": "bruni", "poignee": "bakelite" }, "options": { "alimentation": "tambour" } },
@@ -78,7 +78,7 @@
     },
     {
       "id": "panzerschreck", "nom": "Panzerschreck", "genre": "arme spéciale (lance-roquettes)", "classe": "lourde",
-      "prises": {"tenue": "tube", "gauche": [0, -4, 420], "appui": [0, 70, -250]}, "dimensions": { "longueur": 1640 },
+      "prises": {"tenue": "sur-epaule", "droite": [0, -20, 0], "gauche": [0, -20, 420], "crosse": [0, 70, -250]}, "dimensions": { "longueur": 1640 },
       "variantes": [
         { "id": "a", "nom": "Gris", "description": "RPzB 54, tube et bouclier peints en gris.", "matieres": { "peinture": "feldgrau", "peinture2": "feldgrau", "metal2": "bruni", "poignee": "bruni" } },
         { "id": "b", "nom": "Sable", "description": "Peinture sable de fin de guerre, bouclier gris.", "matieres": { "peinture": "sable", "peinture2": "feldgrau", "metal2": "bruni", "poignee": "bruni" } },
@@ -87,7 +87,7 @@
     },
     {
       "id": "m2lanceflammes", "nom": "Lance-flammes M2", "genre": "arme spéciale (lance-flammes)", "classe": "lourde",
-      "prises": {"tenue": "hanche", "gauche": [0, -22, 496]}, "dimensions": { "longueur": 1050, "reservoir": 630, "diametreReservoir": 155, "diametreBouteille": 125 },
+      "prises": {"tenue": "hanche", "droite": [0, -30, -10], "gauche": [0, -30, 496]}, "dimensions": { "longueur": 1050, "reservoir": 630, "diametreReservoir": 155, "diametreBouteille": 125 },
       "dos": { "main": [43, 223, -671], "caisse": [0, 0, -570] },
       "variantes": [
         { "id": "a", "nom": "Olive", "description": "Lance et réservoirs peints en olive, poignées en bois.", "matieres": { "metal": "phosphate", "metal2": "bruni", "peinture": "olive", "peinture2": "olive", "poignee": "noyer" } },

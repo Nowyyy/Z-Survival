@@ -29,7 +29,7 @@ export function lireArmes(json) {
   // largeur = facteur en x de l'arme tenue (vue de dessus : la caméra est loin), sans changer son profil.
   const echelle = {
     unitesParMetre: num(e.unitesParMetre, 35), lisibilite: borne(num(e.lisibilite, 1), 0.5, 3), epaisseur: borne(num(e.epaisseur, 1), 1, 3),
-    largeur: borne(num(e.largeur, 1), 1, 4), poingCaisse: borne(num(e.poingCaisse, 1), 1, 3),
+    largeur: borne(num(e.largeur, 1), 1, 4),
     seuilEpaisseur: borne(num(e.seuilEpaisseur, 60), 0, 500),
   };
   const b = isObj(j.budgets) ? j.budgets : {};
@@ -61,13 +61,13 @@ export function lireArmes(json) {
   return { echelle, budgets, armes, caisses: Array.isArray(j.caisses) ? j.caisses : [], approche: isObj(j.approche) ? j.approche : {}, ecarts };
 }
 
-// Prises (lot 9c-G) : tenue ('poing' | 'epaule' | 'hanche' | 'tube'), points en mm dans le repère de l'arme : gauche (main gauche, null =
-// elle soutient la droite), appui (crosse à l'épaule, tube sur l'épaule ou crosse sous le bras).
-export const TENUES = Object.freeze(['poing', 'epaule', 'hanche', 'tube']);
+// Prises (poses du propriétaire, data/armes/poses.json) : pose de tenue et points en mm dans le repère de l'arme : droite (paume droite sur
+// la poignée), gauche (paume gauche ; null : main libre), crosse (plaque de couche, ou point du tube posé sur l'épaule ; null : aucun).
+export const TENUES = Object.freeze(['pistolet', 'epaule', 'hanche', 'sur-epaule']);
 const point = (p) => (Array.isArray(p) && p.length === 3 && p.every(Number.isFinite) ? [...p] : null);
 function lirePrises(p) {
   const o = isObj(p) ? p : {};
-  return { tenue: TENUES.includes(o.tenue) ? o.tenue : 'poing', gauche: point(o.gauche), appui: point(o.appui) };
+  return { tenue: TENUES.includes(o.tenue) ? o.tenue : 'pistolet', droite: point(o.droite) ?? [0, 0, 0], gauche: point(o.gauche), crosse: point(o.crosse) };
 }
 
 // Échelle choisie (fichier de choix ou curseurs de l'atelier) appliquée aux données : nouvel objet, les données d'origine ne changent pas.
@@ -77,7 +77,6 @@ export function avecEchelle(donnees, choixEchelle) {
   if (Number.isFinite(c.longueur)) e.lisibilite = borne(c.longueur, 0.5, 3);
   if (Number.isFinite(c.epaisseur)) e.epaisseur = borne(c.epaisseur, 1, 3);
   if (Number.isFinite(c.largeur)) e.largeur = borne(c.largeur, 1, 4);
-  if (Number.isFinite(c.poingCaisse)) e.poingCaisse = borne(c.poingCaisse, 1, 3);
   return { ...donnees, echelle: e };
 }
 
@@ -111,8 +110,6 @@ export function lireChoix(donnees, choix) {
     else if (e.longueur !== undefined) ecarts.push(`échelle de longueur invalide : ${String(e.longueur)}`);
     if (ok(e.epaisseur, 1, 3)) echelle.epaisseur = e.epaisseur;
     else if (e.epaisseur !== undefined) ecarts.push(`échelle d'épaisseur invalide : ${String(e.epaisseur)}`);
-    if (ok(e.poingCaisse, 1, 3)) echelle.poingCaisse = e.poingCaisse;
-    else if (e.poingCaisse !== undefined) ecarts.push(`échelle du pistolet sur la caisse invalide : ${String(e.poingCaisse)}`);
     if (ok(e.largeur, 1, 4)) echelle.largeur = e.largeur;
     else if (e.largeur !== undefined) ecarts.push(`échelle de largeur invalide : ${String(e.largeur)}`);
     if (!isObj(c.echelle)) ecarts.push('échelle illisible');
@@ -171,8 +168,7 @@ export function maillageArme(donnees, arme, variante, { pose = 'main', echelle, 
   const sx = pose === 'caisse' || !enJeu ? 1 : donnees.echelle.largeur ?? 1;
   const m = maillage(piecesArme(arme, v, ['caisse', 'seule'].includes(pose) ? pose : 'main', opts), {
     etirer: (p) => (p.groupe === 'dos' || p.groupe === 'tuyau' ? 1 : sx),
-    // Retour du propriétaire : arme de poing posée sur la caisse agrandie (poingCaisse), le pistolet s'y perdait ; en main, jamais.
-    echelle: (Number.isFinite(echelle) ? echelle : echelleJeu(donnees)) * (pose === 'caisse' && arme?.classe === 'poing' ? donnees.echelle.poingCaisse ?? 1 : 1),
+    echelle: Number.isFinite(echelle) ? echelle : echelleJeu(donnees),
     tuile: (role) => rectTuile(mat[role] ?? MATIERES_DEFAUT[role] ?? 'bruni'),
     teinte: (role) => {
       const t = v?.teintes?.[role];
