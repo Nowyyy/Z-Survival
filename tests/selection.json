@@ -996,7 +996,8 @@
         "tests/unit/lot1-regles.test.js",
         "tests/unit/maps-hygiene.test.js",
         "tests/unit/persos-jeu.test.js",
-        "tests/unit/armes.test.js"
+        "tests/unit/armes.test.js",
+        "tests/unit/armes-poses.test.js"
       ],
       "e2e": ["tests/e2e/sons-menu-page.spec.js", "tests/e2e/armes-atelier.spec.js"],
       "complet": [
