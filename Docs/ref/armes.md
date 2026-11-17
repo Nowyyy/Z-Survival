@@ -36,6 +36,7 @@ Atelier seulement (`atelier-armes.html`, à retirer au lot 13) : **rien n'est br
 
 ## Caisse d'armes
 - **Caisse militaire ouverte** 70 × 30, 22 de haut, couvercle posé de travers à côté (204 triangles) ; **râtelier mural bas** 72 × 16, 28 de haut (120 triangles) ; texture 256 px propre (planches, pochoirs inventés « ARMES Z-7 », « LOT 44-C 1/1 », « N 3 »). Arme couchée sur le côté (droite en haut) : **33,6 au plus** (Panzerschreck), sous 43.
+- Retour du propriétaire (« sur l'établi, le pistolet est trop petit ») : armes de poing posées sur la caisse agrandies **×2** (`echelle.poingCaisse`, curseur « Pistolet sur la caisse », 1 à 3), jamais en main.
 - Aperçu de l'approche : contour à la craie (48 triangles, matière transparente, allumé ou éteint) et texte « {arme} — 500 Zollars » (prix d'exemple fictif) au-dessus de la caisse.
 
 ## Visuels du menu
