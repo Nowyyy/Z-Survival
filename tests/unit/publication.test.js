@@ -1003,11 +1003,11 @@ describe('site-info.json au début de la V0.9 (lot 9a)', () => {
     expect(validateSiteInfo(siteInfo)).toEqual({ ok: true, errors: [] });
   });
 
-  // Lot 9b : sans le fichier des noms, rien ne masque lot-9b (« afficher: non » dans le fichier réel) : il apparaît devant lot-9a.
-  it('sans le fichier des noms : lot-9b puis lot-9a apparaissent avec le titre et le premier point du journal ; aucun lot de v0.8', () => {
+  // Lot 9b : sans le fichier des noms, rien ne masque lot-9b (« afficher: non » dans le fichier réel) : il apparaît devant lot-9a. Lot 9c : de même, lot-9c en tête.
+  it('sans le fichier des noms : lot-9c, lot-9b puis lot-9a apparaissent avec le titre et le premier point du journal ; aucun lot de v0.8', () => {
     const { siteInfo } = siteDe(journal, '# vide\n');
-    const [entree, b9] = ['lot-9a', 'lot-9b'].map((n) => journal.lots.find((l) => l.name === n));
-    expect(siteInfo.evolutions).toEqual([{ id: 'lot-9b', title: b9.titre, text: b9.points[0], date: '2026-11-16', version: 'v0.9' }, { id: 'lot-9a', title: entree.titre, text: entree.points[0], date: '2026-11-15', version: 'v0.9' }]);
+    const [entree, b9, c9] = ['lot-9a', 'lot-9b', 'lot-9c'].map((n) => journal.lots.find((l) => l.name === n));
+    expect(siteInfo.evolutions).toEqual([{ id: 'lot-9c', title: c9.titre, text: c9.points[0], date: '2026-11-17', version: 'v0.9' }, { id: 'lot-9b', title: b9.titre, text: b9.points[0], date: '2026-11-16', version: 'v0.9' }, { id: 'lot-9a', title: entree.titre, text: entree.points[0], date: '2026-11-15', version: 'v0.9' }]);
   });
 });
 
