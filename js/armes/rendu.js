@@ -57,12 +57,12 @@ export function creerKitArmes({ donnees, palette }) {
   const infosCache = new Map();
   const cle = (...k) => k.join(':');
 
-  function donneesMaillage(armeId, varianteId, pose, dos, lacet) {
-    const k = cle(armeId, varianteId, pose, Array.isArray(dos) ? dos.join(',') : '', Number.isFinite(lacet) ? Math.round(lacet) : '');
+  function donneesMaillage(armeId, varianteId, pose, dos, lacet, enJeu = false) {
+    const k = cle(armeId, varianteId, pose, Array.isArray(dos) ? dos.join(',') : '', Number.isFinite(lacet) ? Math.round(lacet) : '', enJeu ? 'jeu' : '');
     if (!geos.has(k)) {
       const arme = armeParId(donnees, armeId);
       const v = varianteDe(arme, varianteId);
-      let m = maillageArme(donnees, arme, v, { pose: pose === 'caisse' ? 'caisse' : 'main', dos: Array.isArray(dos) ? dos : undefined, lacet: Number.isFinite(lacet) ? Math.round(lacet) : 0 });
+      let m = maillageArme(donnees, arme, v, { pose: pose === 'caisse' ? 'caisse' : 'main', dos: Array.isArray(dos) ? dos : undefined, lacet: Number.isFinite(lacet) ? Math.round(lacet) : 0, enJeu });
       if (pose === 'caisse') m = coucher(m);
       geos.set(k, { g: geometrie(m), m });
     }
@@ -74,8 +74,9 @@ export function creerKitArmes({ donnees, palette }) {
     tailleAtlas: atlasImg.width,
     materiau,
     // dos : décalage des réservoirs (mm) calculé par la tenue de l'atelier (js/armes/tenue.js).
-    mesh(armeId, varianteId, pose = 'main', { dos, lacet } = {}) {
-      const { g } = donneesMaillage(armeId, varianteId, pose, dos, lacet);
+    // enJeu : largeur vue de dessus appliquée (vue de la caméra du jeu seulement).
+    mesh(armeId, varianteId, pose = 'main', { dos, lacet, enJeu = false } = {}) {
+      const { g } = donneesMaillage(armeId, varianteId, pose, dos, lacet, enJeu);
       const mesh = new THREE.Mesh(g, materiau);
       mesh.name = `arme-${armeId}-${varianteId}`;
       return mesh;
