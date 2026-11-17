@@ -62,12 +62,13 @@ export function lireArmes(json) {
 }
 
 // Prises (poses du propriétaire, data/armes/poses.json) : pose de tenue et points en mm dans le repère de l'arme : droite (paume droite sur
-// la poignée), gauche (paume gauche ; null : main libre), crosse (plaque de couche, ou point du tube posé sur l'épaule ; null : aucun).
+// la poignée), gauche (paume gauche ; null : main libre), crosse (plaque de couche, ou point du tube posé sur l'épaule ; null : aucun) ;
+// contactGauche : 'dessous' (sous le fût) ou 'cote' (poignée avant verticale) : côté où la paume gauche se pose contre l'arme.
 export const TENUES = Object.freeze(['pistolet', 'epaule', 'hanche', 'sur-epaule']);
 const point = (p) => (Array.isArray(p) && p.length === 3 && p.every(Number.isFinite) ? [...p] : null);
 function lirePrises(p) {
   const o = isObj(p) ? p : {};
-  return { tenue: TENUES.includes(o.tenue) ? o.tenue : 'pistolet', droite: point(o.droite) ?? [0, 0, 0], gauche: point(o.gauche), crosse: point(o.crosse) };
+  return { tenue: TENUES.includes(o.tenue) ? o.tenue : 'pistolet', droite: point(o.droite) ?? [0, 0, 0], gauche: point(o.gauche), crosse: point(o.crosse), contactGauche: o.contactGauche === 'cote' ? 'cote' : 'dessous' };
 }
 
 // Échelle choisie (fichier de choix ou curseurs de l'atelier) appliquée aux données : nouvel objet, les données d'origine ne changent pas.

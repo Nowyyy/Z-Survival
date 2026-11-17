@@ -27,10 +27,11 @@ describe('poses de tenue (data/armes/poses.json)', () => {
     expect(fichier.armes.m2lanceflammes.modes['deux-mains'].arme.dos.lacet).toBe(-fichier.armes.m2lanceflammes.modes['deux-mains'].torse); // réservoirs tournés avec le torse
   });
 
-  it.each(toutes)('%s (%s) : mains sur leurs prises, rien dans la tête ni le torse (crosse exceptée), canon dans l\'axe, arme devant le personnage', (id, mode, p) => {
+  it.each(toutes)('%s (%s) : mains sur leurs prises et contre l\'arme (pas dedans), rien dans la tête ni le torse (crosse exceptée), canon dans l\'axe, arme devant le personnage', (id, mode, p) => {
     expect(p.controle.droite, 'main droite').toBeLessThanOrEqual(0.05);
     expect(p.controle.gauche, 'main gauche').toBeLessThanOrEqual(0.05);
     expect(p.controle.traverse, 'points de l\'arme dans la tête ou le torse').toBe(0);
+    expect(p.controle.mains, 'points de l\'arme sous les paumes (retour : « la main arrière est dans l\'arme »)').toBe(0);
     expect(p.controle.visee, 'écart à l\'axe de visée (degrés)').toBeLessThanOrEqual(5);
     expect(p.controle.devant, 'bouche devant le corps (vue de dessus)').toBeGreaterThan(5);
   });
