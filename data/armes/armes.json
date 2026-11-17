@@ -1,0 +1,40 @@
+{
+  "_note": "Lot 9c : armes modélisées pour l'atelier (atelier-armes.html), rien n'est branché sur la partie. Noms affichés (nom, nom des variantes) modifiables par le propriétaire. Dimensions en millimètres (longueur hors tout réelle ; les autres mesures servent aux modèles de js/core/armes/modeles.js). echelle.unitesParMetre : 35 (personnage de 61 unités ≈ 1,75 m) ; echelle.lisibilite : agrandit toutes les armes d'un coup (1 = taille réelle). Aucune statistique de jeu (dégâts, cadence, prix : lot d'intégration). dos : décalage (mm, repère de l'arme) du groupe porté sur le dos (réservoirs), en main et posé sur la caisse.",
+  "version": 1,
+  "echelle": { "unitesParMetre": 35, "lisibilite": 1, "personnage": { "hauteur": 61, "hauteurReelleM": 1.75 } },
+  "budgets": { "epaule": 400, "lourde": 700, "caisse": 300, "texture": 256 },
+  "armes": [
+    {
+      "id": "m1911", "nom": "Colt M1911", "genre": "pistolet (arme de départ)", "classe": "poing",
+      "dimensions": { "longueur": 216 },
+      "variantes": [
+        { "id": "a", "nom": "Service, phosphaté", "description": "Acier phosphaté gris, plaquettes de noyer.", "matieres": { "metal": "phosphate", "metal2": "phosphate", "poignee": "noyer" } },
+        { "id": "b", "nom": "Bronzé, bakélite", "description": "Acier bruni bleu-noir, plaquettes de bakélite quadrillées.", "matieres": { "metal": "bruni", "metal2": "bruni", "poignee": "bakelite" } },
+        { "id": "c", "nom": "Usé", "description": "Bronzage usé aux arêtes, plaquettes de noyer clair.", "matieres": { "metal": "bruni-use", "metal2": "bruni-use", "poignee": "hetre" } }
+      ]
+    },
+    {
+      "id": "kar98k", "nom": "Kar98k", "genre": "fusil à verrou", "classe": "epaule",
+      "dimensions": { "longueur": 1110 },
+      "variantes": [
+        { "id": "a", "nom": "Noyer", "description": "Crosse et fût en noyer sombre, acier bruni.", "matieres": { "bois": "noyer", "metal": "bruni", "metal2": "bruni" } },
+        { "id": "b", "nom": "Hêtre clair", "description": "Bois de hêtre clair (fin de guerre), acier phosphaté.", "matieres": { "bois": "hetre", "metal": "phosphate", "metal2": "bruni" } },
+        { "id": "c", "nom": "Usé, bretelle", "description": "Acier usé aux arêtes, bretelle de cuir.", "matieres": { "bois": "noyer", "metal": "bruni-use", "metal2": "bruni-use" }, "options": { "bretelle": true } }
+      ]
+    },
+    {
+      "id": "thompson", "nom": "Thompson M1928", "genre": "mitraillette", "classe": "epaule",
+      "dimensions": { "longueur": 852 },
+      "variantes": [
+        { "id": "a", "nom": "Chargeur droit", "description": "Chargeur droit de 20, noyer, acier bruni.", "matieres": { "bois": "noyer", "metal": "bruni", "metal2": "bruni" }, "options": { "chargeur": "droit" } },
+        { "id": "b", "nom": "Chargeur camembert", "description": "Chargeur camembert de 50, noyer, acier bruni.", "matieres": { "bois": "noyer", "metal": "bruni", "metal2": "bruni" }, "options": { "chargeur": "camembert" } },
+        { "id": "c", "nom": "Droit, bois clair, usé", "description": "Chargeur droit, bois clair, bronzage usé.", "matieres": { "bois": "hetre", "metal": "bruni-use", "metal2": "bruni-use" }, "options": { "chargeur": "droit" } }
+      ]
+    }
+  ],
+  "caisses": [
+    { "id": "caisse", "nom": "Caisse militaire ouverte", "dimensions": { "l": 70, "p": 30, "h": 22, "appui": 21 } },
+    { "id": "ratelier", "nom": "Râtelier mural bas", "dimensions": { "l": 72, "p": 16, "h": 28, "appui": 20 } }
+  ],
+  "approche": { "exemple": { "arme": "kar98k", "prix": 500 }, "craie": { "marge": 8 } }
+}

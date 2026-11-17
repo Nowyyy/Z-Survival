@@ -938,6 +938,13 @@
         "atelier-sons-menu.html",
         "js/atelier-sons-menu/**",
         "data/i18n/atelier-sons-menu.json",
+        "atelier-armes.html",
+        "js/armes/**",
+        "js/core/armes/**",
+        "data/armes/**",
+        "data/i18n/atelier-armes.json",
+        "css/atelier-armes.css",
+        "css/armes.css",
         "carte.html",
         "ecarts.html",
         "sons.html",
@@ -988,9 +995,10 @@
         "tests/unit/interface-atelier-mesure.test.js",
         "tests/unit/lot1-regles.test.js",
         "tests/unit/maps-hygiene.test.js",
-        "tests/unit/persos-jeu.test.js"
+        "tests/unit/persos-jeu.test.js",
+        "tests/unit/armes.test.js"
       ],
-      "e2e": ["tests/e2e/sons-menu-page.spec.js"],
+      "e2e": ["tests/e2e/sons-menu-page.spec.js", "tests/e2e/armes-atelier.spec.js"],
       "complet": [
         "tests/e2e/atelier-carte.spec.js",
         "tests/e2e/atelier-choix.spec.js",

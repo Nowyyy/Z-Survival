@@ -1,0 +1,138 @@
+/* Lot 9c — Atelier des armes (page technique, à retirer au lot 13) : jetons de tokens.css seulement (aucune couleur ici) ; couleurs des
+   armes : css/armes.css (--arm-*). Mobile d'abord ; les vues « taille réelle » défilent si l'écran est plus petit que l'image. */
+.armes-nav-titre,
+.armes-sous-titre {
+  margin: 0;
+  font-size: var(--text-md);
+  font-weight: var(--font-weight-bold);
+}
+
+.armes-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.armes-champs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--space-3);
+}
+
+.armes-champ {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 11rem;
+}
+
+.armes-select {
+  min-height: var(--touch-target);
+  padding: 0 var(--space-2);
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg);
+  color: var(--color-text);
+  font: inherit;
+}
+
+.armes-select:focus-visible,
+.armes-scene:focus-visible,
+.armes-tableau-hote:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.armes-scene {
+  position: relative;
+  max-width: 100%;
+  overflow: auto;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg);
+}
+
+/* Taille réelle : un pixel du canevas = un pixel CSS, comme dans le jeu ; la boîte défile au besoin. */
+.armes-canvas-reel {
+  display: block;
+}
+
+.armes-canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.armes-gros-plan {
+  touch-action: none;
+  cursor: grab;
+}
+
+.armes-etiquette-hote {
+  width: fit-content;
+}
+
+/* Texte d'achat de l'aperçu (emplacement seulement) : zone pleine sombre, centrée sur l'ancre projetée. */
+.armes-etiquette {
+  position: absolute;
+  margin: 0;
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg);
+  color: var(--color-money);
+  font-weight: var(--font-weight-bold);
+  white-space: nowrap;
+  transform: translate(-50%, -100%);
+  pointer-events: none;
+}
+
+.armes-mesures {
+  font-variant-numeric: tabular-nums;
+}
+
+.armes-visuel {
+  max-width: 40rem;
+}
+
+.armes-visuel svg,
+.armes-visuels svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.armes-visuels {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr));
+  gap: var(--space-3);
+}
+
+.armes-visuels figure {
+  margin: 0;
+}
+
+.armes-visuels figcaption {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.armes-tableau-hote {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.armes-tableau {
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+
+.armes-tableau th,
+.armes-tableau td {
+  padding: var(--space-1) var(--space-3);
+  border-bottom: 1px solid var(--color-border);
+  text-align: left;
+}

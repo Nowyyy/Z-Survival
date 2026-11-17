@@ -50,7 +50,7 @@ describe('jetons requis', () => {
 describe('couleurs en dur', () => {
   const COLOR = /#[0-9a-fA-F]{3,8}\b|\b(?:rgb|rgba|hsl|hsla|hwb|lab|lch|oklab|oklch)\(/;
   it('aucun fichier CSS hors tokens.css ne définit de couleur', () => {
-    for (const f of readdirSync('css').filter((n) => n.endsWith('.css') && n !== 'tokens.css' && n !== 'ouvertures.css')) {
+    for (const f of readdirSync('css').filter((n) => n.endsWith('.css') && n !== 'tokens.css' && n !== 'ouvertures.css' && n !== 'armes.css')) {
       expect(readFileSync(`css/${f}`, 'utf8'), f).not.toMatch(COLOR);
     }
   });
@@ -60,5 +60,12 @@ describe('couleurs en dur', () => {
     const lignes = readFileSync('css/ouvertures.css', 'utf8').split('\n').filter((l) => COLOR.test(l));
     expect(lignes.length).toBeGreaterThan(0);
     for (const l of lignes) expect(l, l).toMatch(/^\s*--ouv-[a-z0-9-]+:\s*(#[0-9a-f]{6}|rgb\(\d+ \d+ \d+ \/ \d+%\));$/);
+  });
+  // Lot 9c (prompt du lot) : couleurs des armes et de la caisse d'armes dans une feuille à part, chargée par l'atelier des armes seulement
+  // (tokens.css interdit dans ce lot : accueil au seuil Lighthouse). Même règle que --ouv-* : une couleur n'y apparaît que dans une déclaration --arm-*.
+  it('armes.css : couleurs seulement dans des déclarations de jetons --arm-*', () => {
+    const lignes = readFileSync('css/armes.css', 'utf8').split('\n').filter((l) => COLOR.test(l));
+    expect(lignes.length).toBeGreaterThan(0);
+    for (const l of lignes) expect(l, l).toMatch(/^\s*--arm-[a-z0-9-]+:\s*#[0-9a-f]{6};$/);
   });
 });
