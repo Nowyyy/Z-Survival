@@ -246,3 +246,9 @@ version: v0.9
 nom: Noms internes des monnaies remis dans l'ordre
 description: Lot technique : dans le code, médailles et diamants portent le nom affiché à l'écran ; la sauvegarde ne change pas. Le jeu ne change pas.
 afficher: non
+
+[lot-9c]
+version: v0.9
+nom: Atelier des armes
+description: Page technique : dix armes des années 40 modélisées en code avec leurs variantes, caisse d'achat et dessins de profil, pour choisir leur rendu avant de les mettre dans le jeu. Le jeu ne change pas.
+afficher: non

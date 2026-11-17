@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="robots" content="noindex">
+  <meta name="color-scheme" content="dark">
+  <title>Z-Survival · Atelier des armes</title>
+  <link rel="icon" href="data:,">
+  <script type="importmap">{"imports":{"three":"./vendor/three/three.module.js"}}</script>
+  <link rel="preload" href="fonts/barlow-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="fonts/barlow-latin-700-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="css/tokens.css">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/armes.css">
+  <link rel="stylesheet" href="css/atelier-sons.css">
+  <link rel="stylesheet" href="css/atelier-armes.css">
+  <script type="module" src="js/armes/atelier.js"></script>
+</head>
+<body class="atelier-page">
+  <noscript>
+    <p class="noscript">Cette page a besoin de JavaScript.</p>
+  </noscript>
+  <main id="app" class="atelier armes" hidden>
+    <header class="atelier-head" aria-labelledby="atelier-title">
+      <h1 id="atelier-title" class="atelier-title" data-i18n="dev.armes.titre"></h1>
+      <p class="atelier-intro" data-i18n="dev.armes.intro"></p>
+      <p class="atelier-warning" data-i18n="dev.armes.avertissement"></p>
+      <p id="status" class="atelier-status" role="status" aria-live="polite"></p>
+      <p id="webgl-erreur" class="atelier-note" data-i18n="dev.armes.webgl" hidden></p>
+      <nav aria-labelledby="nav-titre">
+        <h2 id="nav-titre" class="armes-nav-titre" data-i18n="dev.armes.nav"></h2>
+        <ul class="armes-nav">
+          <li><a class="atelier-link" href="#vue-jeu" data-i18n="dev.armes.jeu.titre"></a></li>
+          <li><a class="atelier-link" href="#vue-caisse" data-i18n="dev.armes.caisse.titre"></a></li>
+          <li><a class="atelier-link" href="#vue-gros-plan" data-i18n="dev.armes.grosplan.titre"></a></li>
+          <li><a class="atelier-link" href="#vue-visuel" data-i18n="dev.armes.visuel.titre"></a></li>
+          <li><a class="atelier-link" href="#vue-comparaison" data-i18n="dev.armes.comparaison.titre"></a></li>
+          <li><a class="atelier-link" href="#vue-planche" data-i18n="dev.armes.planche.titre"></a></li>
+          <li><a class="atelier-link" href="#budget" data-i18n="dev.armes.budget.titre"></a></li>
+          <li><a class="atelier-link" href="#choix" data-i18n="dev.armes.choix.titre"></a></li>
+          <li><a class="atelier-link" href="jeu.html" data-i18n="dev.armes.lien.jeu"></a></li>
+        </ul>
+      </nav>
+    </header>
+
+    <section class="atelier-section armes-reglages" aria-labelledby="reglages-titre">
+      <h2 id="reglages-titre" class="atelier-heading" data-i18n="dev.armes.reglages"></h2>
+      <div class="armes-champs">
+        <div class="armes-champ"><label for="ctl-arme" data-i18n="dev.armes.arme"></label><select id="ctl-arme" class="armes-select"></select></div>
+        <div class="armes-champ"><label for="ctl-variante" data-i18n="dev.armes.variante"></label><select id="ctl-variante" class="armes-select"></select></div>
+        <div class="armes-champ"><label for="ctl-lumiere" data-i18n="dev.armes.lumiere"></label><select id="ctl-lumiere" class="armes-select"></select></div>
+        <div class="armes-champ"><label for="ctl-pistolet" data-i18n="dev.armes.pistolet"></label><select id="ctl-pistolet" class="armes-select"></select></div>
+      </div>
+      <p id="variante-description" class="atelier-note"></p>
+      <p id="variante-retenue" class="atelier-note"></p>
+    </section>
+
+    <section id="vue-jeu" class="atelier-section" aria-labelledby="jeu-titre">
+      <h2 id="jeu-titre" class="atelier-heading" data-i18n="dev.armes.jeu.titre"></h2>
+      <p class="atelier-note" data-i18n="dev.armes.jeu.intro"></p>
+      <p id="jeu-mesures" class="atelier-note armes-mesures"></p>
+      <h3 id="jeu-petit-titre" class="armes-sous-titre" data-i18n="dev.armes.jeu.petit"></h3>
+      <div class="armes-scene armes-taille-reelle" tabindex="0" role="group" aria-labelledby="jeu-petit-titre"><canvas id="cv-jeu" class="armes-canvas-reel" width="667" height="375" aria-hidden="true"></canvas></div>
+      <h3 id="jeu-grand-titre" class="armes-sous-titre" data-i18n="dev.armes.jeu.grand"></h3>
+      <div class="armes-scene armes-taille-reelle" tabindex="0" role="group" aria-labelledby="jeu-grand-titre"><canvas id="cv-jeu-grand" class="armes-canvas-reel" width="1920" height="1080" aria-hidden="true"></canvas></div>
+      <p class="atelier-note" data-i18n="dev.armes.jeu.tenue"></p>
+    </section>
+
+    <section id="vue-caisse" class="atelier-section" aria-labelledby="caisse-titre">
+      <h2 id="caisse-titre" class="atelier-heading" data-i18n="dev.armes.caisse.titre"></h2>
+      <p class="atelier-note" data-i18n="dev.armes.caisse.intro"></p>
+      <div class="armes-champs">
+        <div class="armes-champ"><label for="ctl-caisse" data-i18n="dev.armes.caisse.type"></label><select id="ctl-caisse" class="armes-select"></select></div>
+        <button id="btn-craie" class="button atelier-button" type="button" aria-pressed="true" data-i18n="dev.armes.caisse.craie"></button>
+      </div>
+      <div class="armes-scene armes-taille-reelle armes-etiquette-hote" tabindex="0" role="group" aria-labelledby="caisse-titre">
+        <canvas id="cv-caisse" class="armes-canvas-reel" width="667" height="375" aria-hidden="true"></canvas>
+        <p id="etiquette" class="armes-etiquette"></p>
+      </div>
+      <p id="caisse-mesures" class="atelier-note armes-mesures"></p>
+    </section>
+
+    <section id="vue-gros-plan" class="atelier-section" aria-labelledby="grosplan-titre">
+      <h2 id="grosplan-titre" class="atelier-heading" data-i18n="dev.armes.grosplan.titre"></h2>
+      <p class="atelier-note" data-i18n="dev.armes.grosplan.intro"></p>
+      <div class="armes-scene armes-gros-plan" tabindex="0" role="group" aria-labelledby="grosplan-titre"><canvas id="cv-gros-plan" class="armes-canvas" width="720" height="360" aria-hidden="true"></canvas></div>
+      <button id="btn-rotation" class="button atelier-button" type="button" aria-pressed="true" data-i18n="dev.armes.grosplan.rotation"></button>
+    </section>
+
+    <section id="vue-visuel" class="atelier-section" aria-labelledby="visuel-titre">
+      <h2 id="visuel-titre" class="atelier-heading" data-i18n="dev.armes.visuel.titre"></h2>
+      <p class="atelier-note" data-i18n="dev.armes.visuel.intro"></p>
+      <div id="visuel" class="armes-visuel"></div>
+      <p id="visuel-mesures" class="atelier-note armes-mesures"></p>
+      <div id="visuels-tous" class="armes-visuels"></div>
+    </section>
+
+    <section id="vue-comparaison" class="atelier-section" aria-labelledby="comparaison-titre">
+      <h2 id="comparaison-titre" class="atelier-heading" data-i18n="dev.armes.comparaison.titre"></h2>
+      <p class="atelier-note" data-i18n="dev.armes.comparaison.intro"></p>
+      <div class="armes-scene" tabindex="0" role="group" aria-labelledby="comparaison-titre"><canvas id="cv-comparaison" class="armes-canvas" width="960" height="420" aria-hidden="true"></canvas></div>
+      <p id="comparaison-legende" class="atelier-note"></p>
+    </section>
+
+    <section id="vue-planche" class="atelier-section" aria-labelledby="planche-titre">
+      <h2 id="planche-titre" class="atelier-heading" data-i18n="dev.armes.planche.titre"></h2>
+      <p class="atelier-note" data-i18n="dev.armes.planche.intro"></p>
+      <div class="armes-scene" tabindex="0" role="group" aria-labelledby="planche-titre"><canvas id="cv-planche" class="armes-canvas" width="1200" height="840" aria-hidden="true"></canvas></div>
+      <p id="planche-legende" class="atelier-note"></p>
+    </section>
+
+    <section id="budget" class="atelier-section" aria-labelledby="budget-titre">
+      <h2 id="budget-titre" class="atelier-heading" data-i18n="dev.armes.budget.titre"></h2>
+      <p class="atelier-note" data-i18n="dev.armes.budget.intro"></p>
+      <div class="armes-tableau-hote" tabindex="0" role="group" aria-labelledby="budget-titre">
+        <table class="armes-tableau">
+          <thead><tr><th scope="col" data-i18n="dev.armes.budget.arme"></th><th scope="col" data-i18n="dev.armes.budget.variante"></th><th scope="col" data-i18n="dev.armes.budget.triangles"></th><th scope="col" data-i18n="dev.armes.budget.appels"></th><th scope="col" data-i18n="dev.armes.budget.longueur"></th></tr></thead>
+          <tbody id="budget-lignes"></tbody>
+        </table>
+      </div>
+      <p id="budget-textures" class="atelier-note"></p>
+    </section>
+
+    <section id="choix" class="atelier-section" aria-labelledby="choix-titre">
+      <h2 id="choix-titre" class="atelier-heading" data-i18n="dev.armes.choix.titre"></h2>
+      <p class="atelier-note" data-i18n="dev.armes.choix.intro"></p>
+      <p id="choix-etat" class="atelier-note"></p>
+      <button id="btn-retenir" class="button atelier-button" type="button" data-i18n="dev.armes.choix.retenir"></button>
+      <label class="atelier-choices-label" for="choix-texte" data-i18n="dev.armes.choix.label"></label>
+      <textarea id="choix-texte" class="atelier-choices" rows="12" readonly spellcheck="false"></textarea>
+    </section>
+  </main>
+</body>
+</html>

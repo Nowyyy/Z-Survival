@@ -15,13 +15,17 @@ test('les jetons de design sont présents', async ({ page }) => {
 
 test('aucune couleur en dur hors tokens.css', async () => {
   const COLOR = /#[0-9a-fA-F]{3,8}\b|\b(?:rgb|rgba|hsl|hsla|hwb|oklch|oklab)\(/;
-  const files = readdirSync('css').filter((f) => f.endsWith('.css') && f !== 'tokens.css' && f !== 'ouvertures.css');
+  const files = readdirSync('css').filter((f) => f.endsWith('.css') && f !== 'tokens.css' && f !== 'ouvertures.css' && f !== 'armes.css');
   expect(files.length).toBeGreaterThan(0);
   for (const f of files) expect(readFileSync(`css/${f}`, 'utf8'), f).not.toMatch(COLOR);
   // Lot 8f (prompt du lot) : feuille des jetons de l'ouverture en 3D, chargée avec elle : une couleur n'y apparaît que dans une déclaration --ouv-*.
   const ouv = readFileSync('css/ouvertures.css', 'utf8').split('\n').filter((l) => COLOR.test(l));
   expect(ouv.length).toBeGreaterThan(0);
   for (const l of ouv) expect(l, l).toMatch(/^\s*--ouv-[a-z0-9-]+:\s*(#[0-9a-f]{6}|rgb\(\d+ \d+ \d+ \/ \d+%\));$/);
+  // Lot 9c (prompt du lot) : feuille des jetons des armes, chargée par l'atelier des armes seulement : une couleur n'y apparaît que dans une déclaration --arm-*.
+  const arm = readFileSync('css/armes.css', 'utf8').split('\n').filter((l) => COLOR.test(l));
+  expect(arm.length).toBeGreaterThan(0);
+  for (const l of arm) expect(l, l).toMatch(/^\s*--arm-[a-z0-9-]+:\s*#[0-9a-f]{6};$/);
   expect(readFileSync('index.html', 'utf8')).not.toMatch(/style="[^"]*#|style="[^"]*rgb/);
 });
 

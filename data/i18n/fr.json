@@ -527,6 +527,8 @@
   "game.debug.cap.60": "60",
   "game.debug.sonsMenu": "Sons du menu",
   "game.debug.sonsMenu.lien": "Page d'écoute",
+  "game.debug.armes": "Atelier des armes",
+  "game.debug.armes.lien": "Ouvrir l'atelier",
   "game.debug.url": "Adresse :",
   "game.debug.apply": "Appliquer et recharger",
   "game.debug.normal": "Revenir au jeu normal",

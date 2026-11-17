@@ -1,0 +1,5 @@
+{
+  "_note": "Choix du propriétaire sur atelier-armes.html (mode d'emploi : Docs/ref/armes.md). variantes : identifiant de l'arme → identifiant de la variante retenue (a, b ou c) ; armeSpeciale : panzerschreck ou m2lanceflammes. Identifiant inconnu ou fichier illisible : variante par défaut (la première) et Panzerschreck.",
+  "variantes": {},
+  "armeSpeciale": "panzerschreck"
+}

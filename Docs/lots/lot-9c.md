@@ -1,0 +1,40 @@
+# Lot 9c — Atelier des armes : modèles 3D, caisse d'armes et visuels du menu
+## Base
+- `origin/dev` `2752cc1` (seed 0.37, bilan 9a présent, `main` `e6550bf` ancêtre de `dev` ; Tests de `dev` verts, dernier Pages de `dev` en échec au déploiement : « artefact github-pages introuvable » côté GitHub, `quick` vert, sans rapport avec le code), arbre propre ; branche `lot-9c` (la session proposait `claude/atelier-armes-lot-9c-yiczwi` : j'ai suivi le prompt). Commits : A `571cd22`, B `314112f`, C `6e0cb56`, D `b78b103`, E `da2b276`, F (ce bilan). `dev` n'a pas avancé pendant le lot. Aucune étiquette, aucune fusion.
+## Armes (35 u/m ; triangles : le plus grand des poses « en main » et « posée » ; un appel mesuré, une matière Lambert, atlas commun 256 généré, couleurs `--arm-*` de `css/armes.css` ; détails : `Docs/ref/armes.md`)
+| Arme | Variantes (a / b / c) | Jeu | Triangles | Vu de dessus |
+|---|---|---|---|---|
+| Colt M1911 | phosphaté et noyer / bronzé et bakélite / usé | 7,5 | 240 / 240 / 240 | court ; glissière, carcasse, plaquettes |
+| Kar98k | noyer / hêtre / usé avec bretelle | 38,7 | 364 / 364 / 392 | long, bois presque partout, levier coudé à droite |
+| Thompson M1928 | chargeur droit / camembert / droit bois clair usé | 30,1 | 306 / 338 / 306 | boîtier massif, poignée avant, crosse en bois |
+| Winchester M1897 | trench / avec baïonnette (49,1) / usé bois clair | 35,4 | 304 / 328 / 304 | garde-main à pompe, cache-canon perforé, tenon |
+| M1 Garand | noyer / bouleau / usé avec bretelle | 38,5 | 328 / 328 / 356 | bois sur presque toute la longueur, guidon protégé |
+| StG 44 | standard / bois clair / usé | 33,1 | 288 / 288 / 288 | tôle emboutie, tube à gaz, chargeur courbe |
+| BAR M1918 | bipied / sans bipied / bipied bois clair | 42,5 | 336 / 276 / 336 | long et massif, bipied en V à l'avant |
+| MG42 | bande pendante / tambour à bande / usé, bande longue | 42,8 | 428 / 392 / 488 | manchon perforé, bande à gauche, bipied en V |
+| Panzerschreck | gris / sable / olive écaillé | 57,4 | 292 / 292 / 292 | long tube, bouclier en travers |
+| Lance-flammes M2 | olive / olive écaillé / réservoirs gris | 36,8 (lance) | 480 / 480 / 480 | lance fine, deux réservoirs et la bouteille au dos, tuyau |
+## Caisse d'armes
+- Caisse militaire ouverte 70 × 30 × 22, couvercle de travers à côté (204 triangles) ; râtelier mural bas 72 × 16 × 28 (120) ; pochoirs inventés ; arme couchée côté droit en haut, 33,6 au plus (sous 43) ; craie (48 triangles, transparente) et texte « {arme} — 500 Zollars » (fictif) en aperçu.
+## Visuels du menu
+- SVG de profil générés depuis les pièces (`js/core/armes/visuel.js`), aplats, trait, veines, reflet ; 2,2 à 3,6 Ko ; sans Three.js.
+## Atelier
+- `atelier-armes.html` : en jeu (667 × 375 et 1920 × 1080 à taille réelle, carrelage, lumière du jeu, lampe ou lune), sur la caisse, gros plan (immobile en mouvement réduit), visuel, comparaison, planche à l'échelle avec le personnage, budget, « Mes choix » (`data/armes/armes-choix.json` ; invalide = défaut, Panzerschreck). Un seul contexte WebGL. Lien dans le débogage de la pause.
+## Tenue en main
+- Arme fixée à l'articulation `prop` au centre de la poignée du pistolet actuel (retiré d'une copie en mémoire des données). Pose actuelle : arme courte devant la poitrine (M1911 juste) ; armes longues tenues par la poignée, crosse dans le buste, main gauche libre ; réservoirs placés au dos par un décalage. **Intégration** : poses à deux mains par genre, bout du canon par arme, réservoirs sur l'os `chest`, pistolet retiré du personnage, sans doute un facteur de lisibilité (M1911 réel : 4 × 6 px à 667 × 375).
+## Preuves
+- **(1)** `trace-logique.mjs` 6 × 600 pas identiques à chaque pas (finales 2850de8d…, 750fb6c0…, 9f019408…, b18d5472…, b12ec825…, 937b5d1b…), rejouée en B et en E ; `mesurer.mjs --ref --ref-memes-reglages` (120 images) : triangles, appels, pixels **100 % sur les 12** ; fichiers au démarrage identiques : menu 59, partie 174, 0 externe (lus sur la page, pas seulement comptés). **(2)** budgets : tests ci-dessous. **(3)** déterminisme : empreintes identiques. **(4)** aucune requête externe, aucune écriture (espion de `Storage`). **(5)** Lighthouse mobile, 5 passes : `index.html` 90, 98, 89, 90, 90 (référence `origin/dev` 90, 89, 89, 90, 89) ; `jeu.html` 76, 76, 74, 75, 76 (référence 76, 75, 75, 75, 75) ; CLS ≤ 0,001. **(6)** aucun fichier importé (garde-fous intacts).
+## Tests
+- Nouveaux : `armes.test.js` (Vitest, 140 tests) ; `armes-atelier.spec.js` (4 tests, 41 assertions ; bureau 4/4, mobile 4/4 en local). Adaptés : `tokens.test` (+1 test, `armes.css`), `attente.spec` 28 → 30 assertions, `lot1-regles` (5 + 1 modules purs permis), `data-changelog`, `publication.test` et `publication.spec` (`lot-9c`) ; `tests/selection.json` (pages techniques), `classement.json`. Vitest 7 307 → 7 436 (avant le journal). Aucune assertion retirée. Durée ajoutée au complet : ≈ 25 s (bureau) + 25 s (mobile), sous 90 s.
+## CI
+- `lot-9c` (standard) : B rouge (`noms-monnaies-9b` : « bleu-noir » dans une description ; `lot1-regles` vu seulement après un historique complet), corrigé en C ; C `44033647233`, D `44034373601` vertes ; E `44038841819` annulée par le push de F ; F `44039493999` rouge (`publication.spec` énumère les évolutions du journal : `lot-9c` ajouté), corrigé dans un commit de suivi ; résultat final : message de livraison.
+## Points ouverts
+- **Rendu jugé sur captures seulement** (rendu logiciel, aucun téléphone ; captures non commitées : silhouettes conformes au tableau) : armes très petites à l'échelle réelle (Kar98k 12 × 28 px à 667 × 375), acier bruni sombre sur le carrelage sombre, longueur du lance-flammes (approximation). Hors liste du prompt : `data/i18n/fr.json` (2 textes du lien de débogage) et `data/i18n/atelier-armes.json` (textes de l'atelier, convention des pages techniques).
+## Idées — facteur de lisibilité par genre d'arme ; liseré clair vu de dessus ; chargeur qui change de couleur à vide ; lueur de la veilleuse du lance-flammes ; pochoir de la caisse au nom de l'arme.
+## Entrée du journal — `lot-9c` (v0.9, 2026-11-17) « Atelier des armes » (4 points) ; bloc `[lot-9c]` `afficher: non`.
+## Lignes à ajouter à `CLAUDE.md` et `conventions.md`
+- `CLAUDE.md` : « Armes (lot 9c) : js/core/armes/ pur (pièces en mm, 35 u/m), rendu js/armes/ ; une matière Lambert et un appel par arme ; couleurs --arm-* (css/armes.css) ; choix data/armes/armes-choix.json ; atelier-armes.html (à retirer au lot 13) ; Docs/ref/armes.md. » `conventions.md` : « Atelier des armes (lot 9c) : atelier-armes.html (?test=1 : window.__zsArmes), un contexte WebGL copié dans chaque vue ; budgets 400 / 700 triangles, caisse 300, atlas 256 ; armes posées sous 43 ; data/i18n/atelier-armes.json. »
+## Passages du seed à réécrire par le propriétaire
+- Plan en lots : 9c fait ; « Armes » : modèles 3D et visuels 2D prêts (dix armes, choix à faire), caisse d'armes dessinée ; Lighthouse `jeu.html` 75-76.
+## À faire par moi
+1. Fusionner `lot-9c` dans `dev` (« Create a merge commit »). 2. Ouvrir `…/dev/atelier-armes.html` sur PC et téléphone (ou débogage de la pause → « Atelier des armes »), comparer les variantes, choisir l'arme spéciale. 3. Écrire ses choix dans `data/armes/armes-choix.json` (mode d'emploi : `Docs/ref/armes.md`, « Page d'atelier et choix du propriétaire »). 4. Rapporter les retours.

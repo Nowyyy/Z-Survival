@@ -1,0 +1,61 @@
+/* Lot 9c — Couleurs des armes et de la caisse d'armes (atelier des armes ; lot d'intégration : chargées avec les armes).
+   Seule feuille, avec ouvertures.css, à porter des couleurs hors de tokens.css : une couleur n'y apparaît que dans une déclaration de jeton
+   --arm-* (une par ligne, garde-fous tokens.test et attente.spec). tokens.css n'est pas touché : l'accueil est au seuil Lighthouse. */
+:root {
+  --arm-bruni: #23272d;
+  --arm-bruni-reflet: #4a5562;
+  --arm-acier-nu: #a7adb3;
+  --arm-phosphate: #3c3f3a;
+  --arm-phosphate-clair: #5e6157;
+  --arm-noyer: #5a3a22;
+  --arm-noyer-veine: #3a2414;
+  --arm-hetre: #a77a4c;
+  --arm-hetre-veine: #7c5532;
+  --arm-bakelite: #4a2a1c;
+  --arm-bakelite-veine: #2c1810;
+  --arm-cuir: #6b4528;
+  --arm-cuir-sombre: #44291a;
+  --arm-toile: #8a8462;
+  --arm-toile-trame: #6c6749;
+  --arm-laiton: #c9a24a;
+  --arm-laiton-sombre: #7d6025;
+  --arm-olive: #4b5132;
+  --arm-olive-sombre: #353a22;
+  --arm-rouille: #7a4426;
+  --arm-feldgrau: #5a5f58;
+  --arm-feldgrau-sombre: #3f433e;
+  --arm-sable: #b09a62;
+  --arm-sable-sombre: #8a7647;
+  --arm-trou: #0b0c0d;
+  --arm-caoutchouc: #1c1c1c;
+  --arm-caoutchouc-reflet: #3a3a3a;
+  --arm-caisse: #5d6140;
+  --arm-caisse-sombre: #3e4129;
+  --arm-pochoir: #e3dcc0;
+  --arm-interieur: #3a2c1e;
+  --arm-paille: #b8a26a;
+  --arm-craie: #f2efe6;
+  --arm-ratelier: #7a5a3a;
+  --arm-ratelier-sombre: #4f3a25;
+  --arm-trait: #0d0b0a;
+  --arm-lumiere: #f4f1ec;
+}
+
+/* Visuels 2D de profil (js/core/armes/visuel.js) : aplats par tuile de l'atlas, trait sombre, veines et reflet peints. */
+.arm-svg .arm-trait path { stroke: var(--arm-trait); stroke-width: 1.6; stroke-linejoin: round; }
+.arm-svg .arm-trait .arm-veine { fill: none; stroke: var(--arm-noyer-veine); stroke-width: 0.9; opacity: 0.7; }
+.arm-svg .arm-trait .arm-reflet { fill: none; stroke: var(--arm-lumiere); stroke-width: 1.2; stroke-linecap: round; opacity: 0.4; }
+.arm-t-bruni, .arm-t-perfore { fill: var(--arm-bruni); }
+.arm-t-bruni-use { fill: var(--arm-bruni-reflet); }
+.arm-t-phosphate { fill: var(--arm-phosphate); }
+.arm-t-phosphate-use { fill: var(--arm-phosphate-clair); }
+.arm-t-noyer { fill: var(--arm-noyer); }
+.arm-t-hetre { fill: var(--arm-hetre); }
+.arm-t-bakelite { fill: var(--arm-bakelite); }
+.arm-t-cuir { fill: var(--arm-cuir); }
+.arm-t-toile { fill: var(--arm-toile); }
+.arm-t-laiton { fill: var(--arm-laiton); }
+.arm-t-olive, .arm-t-olive-ecaille { fill: var(--arm-olive); }
+.arm-t-feldgrau { fill: var(--arm-feldgrau); }
+.arm-t-sable { fill: var(--arm-sable); }
+.arm-t-caoutchouc { fill: var(--arm-caoutchouc); }
