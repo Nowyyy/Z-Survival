@@ -7,6 +7,7 @@ import { waitReady } from './helpers.js';
 // la construction de toutes les variantes (triangles, appels mesurés) et les mesures à l'écran. Bureau et mobile (projet mobile en local).
 const donnees = JSON.parse(readFileSync('data/armes/armes.json', 'utf8'));
 const BRUIT = /GL Driver Message|willReadFrequently|GPU stall/;
+const POSEES = Object.keys(JSON.parse(readFileSync('data/armes/poses.json', 'utf8')).armes);
 const nbVariantes = donnees.armes.reduce((s, a) => s + a.variantes.length, 0);
 
 async function ouvrir(page, baseURL, suivi) {
@@ -54,13 +55,22 @@ test('atelier des armes : toutes les armes et variantes se construisent (budgets
     }
     await expect(page.locator('#comparaison-legende')).toContainText(a.nom);
     for (const v of a.variantes) await expect(page.locator('#comparaison-legende')).toContainText(v.nom);
-    // Lot 9c-G : bras adaptés (tenue de l'atelier) : les deux mains sur leurs prises.
+    // Poses de tenue (décision du propriétaire) : M1911, Kar98k, MG42 posés (mains sur leurs prises, rien dans la tête ni le torse, canon
+    // dans l'axe, arme devant le personnage) ; les autres armes : pose à venir, montrées dans la pose actuelle du jeu.
     const tenue = await page.evaluate(() => window.__zsArmes.tenue());
-    expect(tenue.tenue).toBe(a.prises.tenue);
-    expect(tenue.ecarts.droite, a.id).toBeLessThanOrEqual(0.05);
-    expect(tenue.ecarts.gauche, a.id).toBeLessThanOrEqual(0.05);
-    expect(tenue.traverse, `${a.id} : points de l'arme dans le corps`).toBe(0); // retour : « des armes traversent le corps du perso »
-    await expect(page.locator('#tenue-mesures')).toContainText('main droite à 0');
+    if (POSEES.includes(a.id)) {
+      expect(tenue.pose).toBe(a.prises.tenue);
+      expect(tenue.controle.droite, a.id).toBeLessThanOrEqual(0.05);
+      expect(tenue.controle.gauche, a.id).toBeLessThanOrEqual(0.05);
+      expect(tenue.controle.traverse, `${a.id} : points de l'arme dans la tête ou le torse`).toBe(0);
+      expect(tenue.controle.visee).toBeLessThanOrEqual(5);
+      expect(tenue.controle.devant).toBeGreaterThan(5);
+      expect(tenue.torse).toBeLessThanOrEqual(30);
+      await expect(page.locator('#tenue-mesures')).toContainText('main droite à 0,00');
+    } else {
+      expect(tenue).toBeNull();
+      await expect(page.locator('#tenue-mesures')).toContainText('à venir');
+    }
     const m = await page.evaluate(() => window.__zsArmes.mesures());
     expect(m['667x375'].perso.w).toBeGreaterThan(10);
     expect(m['1920x1080'].perso.w).toBeGreaterThan(m['667x375'].perso.w * 2);
@@ -80,14 +90,30 @@ test('atelier des armes : toutes les armes et variantes se construisent (budgets
   await page.selectOption('#ctl-tenue', 'actuelle');
   expect(await page.evaluate(() => window.__zsArmes.tenue())).toBeNull();
   await page.selectOption('#ctl-tenue', 'adaptee');
-  // Lot 9c-G : curseurs de taille et d'épaisseur (défauts ×1,3 et ×1,8), repris dans le texte de « Mes choix » ; rien n'est écrit.
-  expect(await page.evaluate(() => window.__zsArmes.echelle())).toMatchObject({ lisibilite: 1.3, largeur: 1.5, epaisseur: 1.8, poingCaisse: 2 });
-  await page.locator('#ctl-longueur').fill('1.5');
-  await page.locator('#ctl-largeur').fill('2.5');
-  await page.locator('#ctl-epaisseur').fill('2');
-  await page.locator('#ctl-epaisseur').dispatchEvent('change');
-  await expect(page.locator('#out-longueur')).toHaveText('× 1,50');
-  expect(await page.evaluate(() => window.__zsArmes.echelle())).toMatchObject({ lisibilite: 1.5, largeur: 2.5, epaisseur: 2 });
+  // Pistolet à une main et à deux mains.
+  await page.selectOption('#ctl-arme', 'm1911');
+  await page.selectOption('#ctl-mode', 'une-main');
+  expect((await page.evaluate(() => window.__zsArmes.tenue())).mode).toBe('une-main');
+  await page.selectOption('#ctl-mode', 'deux-mains');
+  // Essai demandé par le propriétaire : bras ×1,2 et épaules ±9 pour toutes les armes (le pistolet compris), contrôles tenus.
+  await page.selectOption('#ctl-corps', 'long');
+  for (const id of ['m1911', 'kar98k', 'mg42']) {
+    await page.selectOption('#ctl-arme', id);
+    const t = await page.evaluate(() => window.__zsArmes.tenue());
+    expect([t.bras, t.epaules], id).toEqual([1.2, 9]);
+    expect([t.controle.droite, t.controle.gauche, t.controle.traverse, t.controle.mains], id).toEqual([0, 0, 0, 0]);
+  }
+  await page.selectOption('#ctl-corps', 'adapte');
+  expect((await page.evaluate(() => window.__zsArmes.tenue())).bras).toBe(1.2); // MG42 : déjà ×1,2 dans sa pose
+  await page.selectOption('#ctl-arme', 'kar98k');
+  expect((await page.evaluate(() => window.__zsArmes.tenue())).bras).toBe(1);
+  // Un seul curseur commun (décision du propriétaire), ×0,8 par défaut, repris dans « Mes choix » ; rien n'est écrit.
+  await expect(page.locator('#ctl-largeur, #ctl-epaisseur, #ctl-poing')).toHaveCount(0);
+  expect(await page.evaluate(() => window.__zsArmes.echelle())).toMatchObject({ lisibilite: 0.8, largeur: 1.5, epaisseur: 1.8 });
+  await page.locator('#ctl-longueur').fill('1.2');
+  await page.locator('#ctl-longueur').dispatchEvent('change');
+  await expect(page.locator('#out-longueur')).toHaveText('× 1,20');
+  expect(await page.evaluate(() => window.__zsArmes.echelle())).toMatchObject({ lisibilite: 1.2 });
   await expect(page.locator('#planche-legende')).toContainText(donnees.armes.at(-1).nom);
   // Visuels du menu : un SVG par arme (sans Three.js), quelques Ko chacun, et celui de l'arme choisie.
   await expect(page.locator('#visuels-tous figure svg')).toHaveCount(donnees.armes.length);
@@ -99,7 +125,7 @@ test('atelier des armes : toutes les armes et variantes se construisent (budgets
   await page.locator('#btn-retenir').click();
   const choix = await page.evaluate(() => window.__zsArmes.choix());
   expect(choix.proposition.variantes[donnees.armes[1].id]).toBe(donnees.armes[1].variantes[1].id);
-  expect(choix.proposition.echelle).toEqual({ longueur: 1.5, largeur: 2.5, epaisseur: 2, poingCaisse: 2 });
+  expect(choix.proposition.echelle).toEqual({ longueur: 1.2 });
   expect(suivi.externes).toEqual([]);
   expect(suivi.problemes).toEqual([]);
   expect(await page.evaluate(() => window.__ecritures)).toBe(0);

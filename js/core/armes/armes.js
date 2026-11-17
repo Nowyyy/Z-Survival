@@ -29,7 +29,7 @@ export function lireArmes(json) {
   // largeur = facteur en x de l'arme tenue (vue de dessus : la caméra est loin), sans changer son profil.
   const echelle = {
     unitesParMetre: num(e.unitesParMetre, 35), lisibilite: borne(num(e.lisibilite, 1), 0.5, 3), epaisseur: borne(num(e.epaisseur, 1), 1, 3),
-    largeur: borne(num(e.largeur, 1), 1, 4), poingCaisse: borne(num(e.poingCaisse, 1), 1, 3),
+    largeur: borne(num(e.largeur, 1), 1, 4),
     seuilEpaisseur: borne(num(e.seuilEpaisseur, 60), 0, 500),
   };
   const b = isObj(j.budgets) ? j.budgets : {};
@@ -56,18 +56,21 @@ export function lireArmes(json) {
       id, nom: str(a.nom, id), genre: str(a.genre), classe: CLASSES[a.classe] ? a.classe : 'epaule',
       dimensions: isObj(a.dimensions) ? a.dimensions : {}, longueurReelle: num(a.dimensions?.longueur, 0),
       dos: isObj(a.dos) ? a.dos : null, prises: lirePrises(a.prises), variantes,
+      // Exception décidée par le propriétaire (lot 9c-Q, « passer le Colt à ×1,2 ») : taille propre qui remplace le facteur commun.
+      taille: Number.isFinite(a.taille) ? borne(a.taille, 0.5, 3) : null,
     });
   }
   return { echelle, budgets, armes, caisses: Array.isArray(j.caisses) ? j.caisses : [], approche: isObj(j.approche) ? j.approche : {}, ecarts };
 }
 
-// Prises (lot 9c-G) : tenue ('poing' | 'epaule' | 'hanche' | 'tube'), points en mm dans le repère de l'arme : gauche (main gauche, null =
-// elle soutient la droite), appui (crosse à l'épaule, tube sur l'épaule ou crosse sous le bras).
-export const TENUES = Object.freeze(['poing', 'epaule', 'hanche', 'tube']);
+// Prises (poses du propriétaire, data/armes/poses.json) : pose de tenue et points en mm dans le repère de l'arme : droite (paume droite sur
+// la poignée), gauche (paume gauche ; null : main libre), crosse (plaque de couche, ou point du tube posé sur l'épaule ; null : aucun) ;
+// contactGauche : 'dessous' (sous le fût) ou 'cote' (poignée avant verticale) : côté où la paume gauche se pose contre l'arme.
+export const TENUES = Object.freeze(['pistolet', 'epaule', 'hanche', 'sur-epaule']);
 const point = (p) => (Array.isArray(p) && p.length === 3 && p.every(Number.isFinite) ? [...p] : null);
 function lirePrises(p) {
   const o = isObj(p) ? p : {};
-  return { tenue: TENUES.includes(o.tenue) ? o.tenue : 'poing', gauche: point(o.gauche), appui: point(o.appui) };
+  return { tenue: TENUES.includes(o.tenue) ? o.tenue : 'pistolet', droite: point(o.droite) ?? [0, 0, 0], gauche: point(o.gauche), crosse: point(o.crosse), contactGauche: o.contactGauche === 'cote' ? 'cote' : 'dessous' };
 }
 
 // Échelle choisie (fichier de choix ou curseurs de l'atelier) appliquée aux données : nouvel objet, les données d'origine ne changent pas.
@@ -77,7 +80,6 @@ export function avecEchelle(donnees, choixEchelle) {
   if (Number.isFinite(c.longueur)) e.lisibilite = borne(c.longueur, 0.5, 3);
   if (Number.isFinite(c.epaisseur)) e.epaisseur = borne(c.epaisseur, 1, 3);
   if (Number.isFinite(c.largeur)) e.largeur = borne(c.largeur, 1, 4);
-  if (Number.isFinite(c.poingCaisse)) e.poingCaisse = borne(c.poingCaisse, 1, 3);
   return { ...donnees, echelle: e };
 }
 
@@ -111,8 +113,6 @@ export function lireChoix(donnees, choix) {
     else if (e.longueur !== undefined) ecarts.push(`échelle de longueur invalide : ${String(e.longueur)}`);
     if (ok(e.epaisseur, 1, 3)) echelle.epaisseur = e.epaisseur;
     else if (e.epaisseur !== undefined) ecarts.push(`échelle d'épaisseur invalide : ${String(e.epaisseur)}`);
-    if (ok(e.poingCaisse, 1, 3)) echelle.poingCaisse = e.poingCaisse;
-    else if (e.poingCaisse !== undefined) ecarts.push(`échelle du pistolet sur la caisse invalide : ${String(e.poingCaisse)}`);
     if (ok(e.largeur, 1, 4)) echelle.largeur = e.largeur;
     else if (e.largeur !== undefined) ecarts.push(`échelle de largeur invalide : ${String(e.largeur)}`);
     if (!isObj(c.echelle)) ecarts.push('échelle illisible');
@@ -123,8 +123,10 @@ export function lireChoix(donnees, choix) {
 // Pièces d'une arme dans une pose. 'main' : groupe « dos » déplacé de arme.dos.main (mm, repère de l'arme) ; 'caisse' : de arme.dos.caisse.
 // 'seule' : sans le groupe « dos » ni le tuyau (longueur de la lance seule).
 // options : { epaisseur (facteur des dimensions fines), seuil (mm), dos (décalage du groupe « dos », remplace arme.dos[pose]),
-// lacet (degrés : le groupe « dos » tourne autour de son centre, avec le buste de la tenue de l'atelier) }.
-export function piecesArme(arme, variante, pose = 'main', { epaisseur = 1, seuil = 60, dos, lacet = 0 } = {}) {
+// lacet (degrés : le groupe « dos » tourne autour de son centre, avec le buste de la tenue de l'atelier), bretelle (positions [x, y, z] en mm
+// de chaque section de la bretelle, calculées par la tenue de l'atelier : elle passe contre le bras au lieu de le traverser), sansBretelle
+// (sans la bretelle : la main se pose sur l'arme, jamais sur la bretelle) }.
+export function piecesArme(arme, variante, pose = 'main', { epaisseur = 1, seuil = 60, dos, lacet = 0, bretelle, sansBretelle = false } = {}) {
   const f = MODELES[arme?.id];
   if (!f) return [];
   const dec = Array.isArray(dos) ? dos : arme.dos?.[pose === 'caisse' ? 'caisse' : 'main'];
@@ -137,9 +139,16 @@ export function piecesArme(arme, variante, pose = 'main', { epaisseur = 1, seuil
     const r = p.rot ?? [0, 0, 0];
     return { ...p, pos: [x * Math.cos(a) + z * Math.sin(a), y, -x * Math.sin(a) + z * Math.cos(a)], rot: [r[0], r[1] + num(lacet, 0), r[2]] };
   });
-  if (pose === 'seule') return pieces.filter((p) => p.groupe !== 'dos' && p.groupe !== 'tuyau');
-  if (!Array.isArray(dec)) return pieces;
-  return pieces.map((p) => (p.groupe === 'dos' ? { ...p, pos: [(p.pos?.[0] ?? 0) + num(dec[0], 0), (p.pos?.[1] ?? 0) + num(dec[1], 0), (p.pos?.[2] ?? 0) + num(dec[2], 0)] } : p));
+  let res = pieces;
+  if (sansBretelle) res = res.filter((p) => p.groupe !== 'bretelle');
+  else if (Array.isArray(bretelle)) {
+    res = res.map((p) => (p.groupe === 'bretelle' && p.sections?.length === bretelle.length
+      ? { ...p, sections: p.sections.map((x, i) => ({ ...x, x: num(bretelle[i]?.[0], x.x), y: num(bretelle[i]?.[1], x.y), z: num(bretelle[i]?.[2], x.z) })) }
+      : p));
+  }
+  if (pose === 'seule') return res.filter((p) => p.groupe !== 'dos' && p.groupe !== 'tuyau');
+  if (!Array.isArray(dec)) return res;
+  return res.map((p) => (p.groupe === 'dos' ? { ...p, pos: [(p.pos?.[0] ?? 0) + num(dec[0], 0), (p.pos?.[1] ?? 0) + num(dec[1], 0), (p.pos?.[2] ?? 0) + num(dec[2], 0)] } : p));
 }
 
 // Épaissit une pièce : chaque dimension transversale sous le seuil (mm ; diamètre pour un tube) est multipliée par k ; ni la longueur
@@ -156,23 +165,32 @@ export function epaissir(p, k, seuil) {
   return p;
 }
 
-// Unités du jeu par millimètre.
-export const echelleJeu = (donnees) => (donnees.echelle.unitesParMetre / 1000) * donnees.echelle.lisibilite;
+// Facteur de taille d'une arme : le facteur commun (curseur « Taille des armes »), sauf taille propre (Colt M1911 : ×1,2, décision du propriétaire).
+export const tailleArme = (donnees, arme) => arme?.taille ?? donnees.echelle.lisibilite;
 
-// Maillage d'une arme (unités du jeu). options : { pose ('main' | 'caisse' | 'seule'), echelle (remplace celle des données), dos, lacet,
+// Unités du jeu par millimètre (arme : sa taille propre si elle en a une).
+export const echelleJeu = (donnees, arme) => (donnees.echelle.unitesParMetre / 1000) * tailleArme(donnees, arme);
+
+// Sections de la bretelle (mm, épaissies comme au rendu : { x, y, z, w, h }), ou null si la variante n'en a pas.
+export function sectionsBretelle(donnees, arme, variante) {
+  const p = piecesArme(arme, variante ?? varianteDe(arme), 'main', { epaisseur: donnees.echelle.epaisseur ?? 1, seuil: donnees.echelle.seuilEpaisseur ?? 60 })
+    .find((x) => x.groupe === 'bretelle' && x.forme === 'loft');
+  return p ? p.sections.map((s) => ({ x: s.x ?? 0, y: s.y ?? 0, z: s.z, w: s.w, h: s.h })) : null;
+}
+
+// Maillage d'une arme (unités du jeu). options : { pose ('main' | 'caisse' | 'seule'), echelle (remplace celle des données), dos, lacet, bretelle, sansBretelle,
 // enJeu (vrai : largeur vue de dessus appliquée, vue de la caméra du jeu seulement) }.
 // dos : décalage (mm) du groupe « dos » qui remplace celui des données (réservoirs placés sur le dos par la tenue de l'atelier).
-export function maillageArme(donnees, arme, variante, { pose = 'main', echelle, dos, lacet, enJeu = false } = {}) {
+export function maillageArme(donnees, arme, variante, { pose = 'main', echelle, dos, lacet, bretelle, sansBretelle = false, enJeu = false } = {}) {
   const v = variante ?? varianteDe(arme);
   const mat = v?.matieres ?? MATIERES_DEFAUT;
-  const opts = { epaisseur: donnees.echelle.epaisseur ?? 1, seuil: donnees.echelle.seuilEpaisseur ?? 60, dos, lacet };
+  const opts = { epaisseur: donnees.echelle.epaisseur ?? 1, seuil: donnees.echelle.seuilEpaisseur ?? 60, dos, lacet, bretelle, sansBretelle };
   // Largeur vue de dessus (lot 9c-G ; retour : « seulement en jeu ») : l'arme tenue s'élargit en x autour de son plan de visée, dans la vue
   // de la caméra du jeu seulement (enJeu) ; jamais posée (couchée : profil vu de dessus) ni les réservoirs portés et leur tuyau.
   const sx = pose === 'caisse' || !enJeu ? 1 : donnees.echelle.largeur ?? 1;
   const m = maillage(piecesArme(arme, v, ['caisse', 'seule'].includes(pose) ? pose : 'main', opts), {
     etirer: (p) => (p.groupe === 'dos' || p.groupe === 'tuyau' ? 1 : sx),
-    // Retour du propriétaire : arme de poing posée sur la caisse agrandie (poingCaisse), le pistolet s'y perdait ; en main, jamais.
-    echelle: (Number.isFinite(echelle) ? echelle : echelleJeu(donnees)) * (pose === 'caisse' && arme?.classe === 'poing' ? donnees.echelle.poingCaisse ?? 1 : 1),
+    echelle: Number.isFinite(echelle) ? echelle : echelleJeu(donnees, arme),
     tuile: (role) => rectTuile(mat[role] ?? MATIERES_DEFAUT[role] ?? 'bruni'),
     teinte: (role) => {
       const t = v?.teintes?.[role];

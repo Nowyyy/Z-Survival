@@ -1,22 +1,35 @@
-// Lot 9c-G (retours du propriétaire : « adapter les bras et les mains du perso pour tenir les armes ») — Tenue d'une arme dans l'atelier :
-// buste tourné selon le genre de tenue, arme placée dans le repère du personnage, bras calculés (cinématique inverse à deux os) pour poser
-// la main droite sur la poignée et la main gauche sur sa prise. AUCUN fichier du personnage n'est modifié : les rotations sont posées sur
-// les os d'un personnage de l'atelier après sa pose « repos ». Aperçu pour le lot d'intégration (poses à reporter dans pose-v2).
+// Lot 9c — Poses de tenue des armes (décision du propriétaire) : quatre poses (pistolet, épaule, hanche, sur l'épaule) créées en tournant
+// les articulations d'une INSTANCE du personnage de l'atelier (épaules, bras, avant-bras, mains ; torse 30° au plus, tête et regard vers
+// l'avant). Pendant la tenue d'une arme d'épaule ou de hanche, l'instance peut rapprocher ses épaules (jusqu'à ±9) et, seulement si la main
+// gauche n'atteint toujours pas sa prise, allonger bras et avant-bras (20 % au plus). js/game/character-v2.js et le personnage du jeu ne
+// sont jamais modifiés. Résultat = données (angles par articulation, écartement, allongement, place de l'arme) : data/armes/poses.json.
 import * as THREE from 'three';
 
-// Réglages par tenue : rotation du buste (bassin → colonne et poitrine, radians ; négatif = épaule gauche vers l'avant), tête ramenée
-// vers l'avant, position de l'arme (x, y du repère du personnage) et inclinaison (x, radians ; négatif = bouche vers le haut).
-export const TENUES = Object.freeze({
-  poing: { buste: 0, x: -1.5, y: 40, z: 12, inclinaison: 0 },
-  epaule: { buste: -0.9, x: null, y: null, inclinaison: 0 },
-  hanche: { buste: -0.6, x: -3, y: 36, inclinaison: -0.06 },
-  tube: { buste: -0.9, x: null, y: null, inclinaison: 0 },
+// Règles par défaut (data/armes/poses.json → regles les remplace) : positions en unités du jeu ; torse en degrés.
+export const REGLES = Object.freeze({
+  torses: [0, 15, 30], // rotation du torse essayée dans cet ordre (degrés ; épaule gauche vers l'avant)
+  epaules: [11.5, 10, 9], // écartement des épaules (x) essayé ensuite, pour l'épaule et la hanche (11,5 : celui du personnage)
+  bras: [1, 1.1, 1.2], // allongement du bras et de l'avant-bras, en dernier recours
+  pistolet: { 'deux-mains': [-2, 45, 15.5], 'une-main': [-10, 46.5, 19.5] }, // paume droite (repère du personnage)
+  epaule: { creux: [-4, 6.5, 7] }, // crosse : creux intérieur de l'épaule droite, devant la poitrine (repère de l'os chest)
+  hanche: { main: [-9.5, 33, 8] }, // paume droite devant la hanche droite (repère du personnage)
+  'sur-epaule': { appui: [-7.5, 13, -1] }, // tube posé sur l'épaule droite (repère de l'os chest)
+  dos: [0, 2, -14.5], // centre des réservoirs portés, contre le dos et le sac (repère de l'os chest)
 });
-const POLE = { R: new THREE.Vector3(-0.7, -1, -0.35), L: new THREE.Vector3(0.7, -1, -0.35) };
-const PAUME = 1.8; // centre de la paume sous le poignet (pièce handL/handR du personnage)
+const POLE = { R: new THREE.Vector3(-0.8, -1, -0.3), L: new THREE.Vector3(0.8, -1, -0.3) };
+const PAUME = 1.8; // centre de la paume sous le poignet (pièces handL / handR)
+const RAYON_CROSSE = 3; // points de l'arme à moins de 3 unités de la crosse : autorisés contre l'épaule
+// Retour du propriétaire (« la main arrière est dans l'arme ») : la main (ellipsoïde de 2,2 × 2,6 du personnage) se pose contre la surface ;
+// aucun point de l'arme à moins de RAYON_MAIN du centre de la paume (le reste de la main l'entoure, comme des doigts).
+export const RAYON_MAIN = 1.3;
+// Côté où chaque paume se pose : droite sur le côté droit (−x) du poignet ou de la poignée ; gauche dessous (fût, pompe, manchon) ou sur le
+// côté gauche (+x) d'une poignée avant verticale (prises.contactGauche = 'cote').
+const VERS = { droite: [-1, 0, 0], dessous: [0, -1, 0], cote: [1, 0, 0] };
+export const ARTICULATIONS = Object.freeze(['spine', 'chest', 'neck', 'head', 'shoulderR', 'elbowR', 'wristR', 'shoulderL', 'elbowL', 'wristL']);
 const v3 = (a) => new THREE.Vector3(a[0], a[1], a[2]);
-// Volumes du corps (retour : « des armes traversent le corps ») : boîtes dans le repère de leur os, relevées sur le personnage « riche »
-// (pièces de characters-v2.json, sac à dos compris), avec une petite marge. Les bras ne comptent pas : ils sont recalculés ensuite.
+
+// Volumes de la tête et du torse : boîtes dans le repère de leur os, relevées sur le personnage « riche » (characters-v2.json, sac à dos
+// compris) avec une petite marge. Les bras ne comptent pas (ils tiennent l'arme).
 export const CORPS = Object.freeze([
   { os: 'chest', min: [-9.9, -2.3, -10.1], max: [9.9, 11.3, 6.0] },
   { os: 'spine', min: [-8.9, -0.7, -5.4], max: [8.9, 9.9, 5.4] },
@@ -40,17 +53,18 @@ export function echantillons(positions, n = 4) {
   return new Float32Array(out);
 }
 
-function os(root) {
+function lesOs(root) {
   const g = (n) => root.getObjectByName(n);
-  return { spine: g('spine'), chest: g('chest'), neck: g('neck'), head: g('head'), R: [g('shoulderR'), g('elbowR'), g('wristR')], L: [g('shoulderL'), g('elbowL'), g('wristL')] };
+  return { root, spine: g('spine'), chest: g('chest'), neck: g('neck'), head: g('head'), R: [g('shoulderR'), g('elbowR'), g('wristR')], L: [g('shoulderL'), g('elbowL'), g('wristL')] };
 }
 
-// Cinématique inverse d'un bras : épaule, coude, poignet ; cible (repère monde) = centre de la paume. Renvoie l'écart restant (unités).
-function bras([epaule, coude, poignet], cible, pole) {
+// Cinématique inverse d'un bras (allongement f : os de l'épaule à l'échelle f, main ramenée à 1) ; cible = centre de la paume (monde).
+// Renvoie l'écart restant entre la paume et la cible (unités).
+function bras([epaule, coude, poignet], cible, pole, f) {
   epaule.parent.updateMatrixWorld(true);
   const S = epaule.getWorldPosition(new THREE.Vector3());
-  const L1 = coude.position.length();
-  const L2 = poignet.position.length() + PAUME;
+  const L1 = coude.position.length() * f;
+  const L2 = poignet.position.length() * f + PAUME;
   const vers = cible.clone().sub(S);
   const dist = Math.min(L1 + L2 - 1e-3, Math.max(Math.abs(L1 - L2) + 1e-3, vers.length()));
   const dir = vers.clone().normalize();
@@ -60,47 +74,43 @@ function bras([epaule, coude, poignet], cible, pole) {
   const E = S.clone().add(dir.clone().multiplyScalar(a)).add(p.multiplyScalar(h));
   const W = S.clone().add(dir.clone().multiplyScalar(dist));
   const u = E.clone().sub(S).normalize();
-  const f = W.clone().sub(E).normalize();
-  // Repère de l'épaule : l'os pend selon −y ; l'avant-bras plie dans le plan (y, z) local, vers +z (rotation du coude autour de x, négative).
+  const fw = W.clone().sub(E).normalize();
+  // Repère de l'épaule : l'os pend selon −y ; l'avant-bras plie dans le plan (y, z) local, vers +z (coude : rotation négative autour de x).
   const Y = u.clone().negate();
-  let Z = f.clone().sub(u.clone().multiplyScalar(f.dot(u)));
-  if (Z.lengthSq() < 1e-8) Z = pole.clone().cross(u).cross(u).negate();
+  let Z = fw.clone().sub(u.clone().multiplyScalar(fw.dot(u)));
+  if (Z.lengthSq() < 1e-8) Z = new THREE.Vector3(0, 0, 1).sub(u.clone().multiplyScalar(u.z));
   Z.normalize();
   const X = new THREE.Vector3().crossVectors(Y, Z);
   const monde = new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(X, Y, Z));
   const parent = epaule.parent.getWorldQuaternion(new THREE.Quaternion());
   epaule.quaternion.copy(parent.invert().multiply(monde));
-  coude.rotation.set(-Math.acos(Math.max(-1, Math.min(1, u.dot(f)))), 0, 0);
+  coude.rotation.set(-Math.acos(Math.max(-1, Math.min(1, u.dot(fw)))), 0, 0);
   poignet.rotation.set(0, 0, 0);
   return vers.length() - dist;
 }
 
-// Nombre de points de l'arme dans un volume du corps, pour une position P de l'arme (repère du personnage, rotation rot) : points
-// transformés une fois dans le repère de chaque os ; ensuite, seul le décalage change (fonction rapide).
-function collisions(root, points, rot) {
+// Nombre de points de l'arme dans la tête ou le torse pour une position P de l'arme (repère du personnage, sans rotation) : points
+// transformés une fois dans le repère de chaque os ; ensuite seul le décalage change.
+function collisions(root, points) {
   root.updateMatrixWorld(true);
-  const m = new THREE.Matrix4().makeRotationFromEuler(rot);
   const boites = CORPS.map((c) => {
-    const os_ = root.getObjectByName(c.os);
-    if (!os_) return null;
-    const versOs = os_.matrixWorld.clone().invert().multiply(root.matrixWorld); // repère du personnage → os
-    const lin = versOs.clone().multiply(m);
-    const n = points.length / 3;
+    const o = root.getObjectByName(c.os);
+    if (!o) return null;
+    const versOs = o.matrixWorld.clone().invert().multiply(root.matrixWorld);
     const q = new Float32Array(points.length);
     const v = new THREE.Vector3();
-    for (let i = 0; i < n; i += 1) {
-      v.set(points[i * 3], points[i * 3 + 1], points[i * 3 + 2]).applyMatrix4(lin);
-      q[i * 3] = v.x;
-      q[i * 3 + 1] = v.y;
-      q[i * 3 + 2] = v.z;
+    for (let i = 0; i < points.length; i += 3) {
+      v.set(points[i], points[i + 1], points[i + 2]).applyMatrix4(versOs);
+      q[i] = v.x;
+      q[i + 1] = v.y;
+      q[i + 2] = v.z;
     }
-    const dir = new THREE.Matrix3().setFromMatrix4(versOs);
-    return { c, q, dir };
+    return { c, q, dir: new THREE.Matrix3().setFromMatrix4(versOs) };
   }).filter(Boolean);
   return (P) => {
     let total = 0;
     for (const b of boites) {
-      const d = P.clone().applyMatrix3(b.dir); // la translation de l'os est déjà dans les points (q)
+      const d = P.clone().applyMatrix3(b.dir); // la translation de l'os est déjà dans les points
       const [x0, y0, z0] = b.c.min;
       const [x1, y1, z1] = b.c.max;
       for (let i = 0; i < b.q.length; i += 3) {
@@ -116,80 +126,255 @@ function collisions(root, points, rot) {
   };
 }
 
-// Pose la tenue. perso : personnage de createV2Kit (après setAnim('repos')) ; arme : données (prises) ; s : unités par mm ; objet : maillage de
-// l'arme (ajouté au repère du personnage). Renvoie { tenue, ecarts: { droite, gauche }, position, dos (mm, repère de l'arme : réservoirs),
-// lacet (degrés : rotation des réservoirs avec le buste) }.
-// points : surface de l'arme (repère de l'arme, unités ; echantillons()) : l'arme est placée là où elle ne traverse aucun volume du corps et
-// où les deux mains atteignent leurs prises (recherche sur un petit quadrillage de décalages autour de la position de base).
-export function poserTenue(perso, arme, s, objet, { points = null } = {}) {
-  const prises = arme.prises ?? { tenue: 'poing' };
-  const t = TENUES[prises.tenue] ?? TENUES.poing;
-  const o = os(perso.root);
-  perso.root.updateMatrixWorld(true);
-  const repos = ['spine', 'chest', 'neck', 'head'].map((n) => [o[n], o[n]?.rotation.y ?? 0]);
-  // Rotation du buste (colonne et poitrine), tête ramenée dans l'axe de l'arme.
-  const tourner = (b) => {
-    for (const [os_, y] of repos) if (os_) os_.rotation.y = y + (os_ === o.spine || os_ === o.chest ? b / 2 : -b / 2);
-    perso.root.updateMatrixWorld(true);
-  };
-  const local = (v) => perso.root.worldToLocal(v.clone());
-  const R = 0.96 * (o.R[1].position.length() + o.R[2].position.length() + PAUME);
-  // Échantillons de la surface allégés (1 500 points au plus) : la recherche essaie des milliers de positions.
-  const pas = points ? Math.max(1, Math.ceil(points.length / 3 / 1500)) : 1;
-  const pts = points && pas > 1 ? points.filter((_, i) => Math.floor(i / 3) % pas === 0) : points;
-  // Candidats (retour : lance-flammes) : buste plus ou moins tourné, arme orientée un peu vers la gauche (tenue en biais), puis décalages ;
-  // coût = points de l'arme dans le corps, puis mains qui n'atteignent pas leur prise, puis écart à la tenue de base.
-  const bustes = prises.tenue === 'poing' ? [0] : [t.buste, t.buste - 0.25, t.buste - 0.5];
-  const lacets = prises.tenue === 'poing' ? [0] : prises.tenue === 'hanche' ? [0, 0.15, 0.3, 0.45] : [0, 0.1, 0.2];
-  let meilleur = null;
-  for (const b of bustes) {
-    tourner(b);
-    const epauleR = local(o.R[0].getWorldPosition(new THREE.Vector3()));
-    const epauleL = local(o.L[0].getWorldPosition(new THREE.Vector3()));
-    for (const lacet of lacets) {
-      const rot = new THREE.Euler(t.inclinaison, lacet, 0, 'YXZ');
-      const versMonde = (mm) => v3(mm).multiplyScalar(s).applyEuler(rot);
-      const G = prises.gauche ? versMonde(prises.gauche) : new THREE.Vector3(2.4, -0.6, 0.8);
-      const base = new THREE.Vector3();
-      if (prises.tenue === 'poing') base.set(t.x, t.y, t.z);
-      else if (prises.tenue === 'epaule' || prises.tenue === 'tube') {
-        // Appui : crosse au creux de l'épaule droite, ou tube posé sur l'épaule.
-        const A = versMonde(prises.appui ?? [0, -40, -400]);
-        const creux = epauleR.clone().add(prises.tenue === 'tube' ? new THREE.Vector3(1.5, 4.5, 0) : new THREE.Vector3(2.5, -2.5, 3.5));
-        base.copy(creux).sub(A);
-      } else base.set(t.x, t.y, 10);
-      const collision = pts ? collisions(perso.root, pts, rot) : () => 0;
-      for (let dx = -14; dx <= 3; dx += 1) {
-        for (let dy = -4; dy <= 4; dy += 2) {
-          for (let dz = -10; dz <= 10; dz += 2) {
-            const Q = base.clone().add(new THREE.Vector3(dx, dy, dz));
-            const manque = Math.max(0, Q.distanceTo(epauleR) - R) + Math.max(0, Q.clone().add(G).distanceTo(epauleL) - R);
-            const ecart = Math.abs(dx) * 0.3 + Math.abs(dy) * 0.4 + Math.abs(dz) * 0.25 + Math.abs(b - t.buste) * 4 + lacet * 8;
-            if (meilleur && manque * 20 + ecart >= meilleur.cout) continue; // le contact ne peut que l'aggraver
-            const traverse = collision(Q);
-            const cout = traverse * 100 + manque * 20 + ecart;
-            if (!meilleur || cout < meilleur.cout) meilleur = { cout, Q, traverse, manque, b, rot, G };
-          }
-        }
+// Points de l'arme à moins de RAYON_MAIN d'une paume (repère de l'arme, unités).
+function dansMain(points, p) {
+  if (!points || !p) return 0;
+  let n = 0;
+  for (let i = 0; i < points.length; i += 3) if (Math.hypot(points[i] - p.x, points[i + 1] - p.y, points[i + 2] - p.z) < RAYON_MAIN) n += 1;
+  return n;
+}
+
+// Paume posée contre la surface : on l'écarte de la prise, dans la direction donnée, jusqu'à ce qu'aucun point de l'arme ne soit sous elle
+// (pas de 0,05 unité, 4 unités au plus).
+function contact(points, p, dir) {
+  if (!points) return p;
+  const d = v3(dir);
+  const q = p.clone();
+  for (let i = 0; i < 80 && dansMain(points, q) > 0; i += 1) q.addScaledVector(d, 0.05);
+  return q;
+}
+
+// Retour du propriétaire (« la main ne doit pas être mise sur la bretelle mais sur l'arme, la bretelle doit être contre le bras ») : la main
+// se pose sur l'arme sans la bretelle (points sans bretelle) ; puis la bretelle, souple, est déviée : ses deux sections du milieu descendent
+// (et s'écartent un peu) juste assez pour passer contre les bras et les mains, sans les traverser ni entrer dans le torse. Ses attaches
+// (première et dernière sections) ne bougent pas.
+const RAYONS_BRAS = { haut: 2.5, avant: 2.1, main: 2.4 }; // capsules du personnage (characters-v2.json : upperL, foreL, handL)
+const MARGE_BRETELLE = 0.15;
+const BRETELLE = { dy: [0, -320, 10], dx: [-40, 80, 20], dz: [-60, 120, 30] }; // déplacements essayés (mm : début, fin, pas)
+const pas = ([a, b, p]) => Array.from({ length: Math.floor(Math.abs(b - a) / Math.abs(p)) + 1 }, (_, i) => a + Math.sign(b - a) * i * Math.abs(p));
+function distSeg(q, a, b) {
+  const ab = b.clone().sub(a);
+  const t = Math.max(0, Math.min(1, q.clone().sub(a).dot(ab) / Math.max(1e-9, ab.lengthSq())));
+  return q.distanceTo(a.clone().addScaledVector(ab, t));
+}
+function router(perso, o, P, s, f, sections) {
+  const root = perso.root;
+  root.updateMatrixWorld(true);
+  const loc = (obj, v = new THREE.Vector3()) => root.worldToLocal(obj.localToWorld(v.clone())).sub(P); // repère de l'arme (unités)
+  const capsules = [];
+  for (const cote of ['L', 'R']) {
+    const [ep, co, po] = o[cote];
+    const [S, E, W] = [loc(ep), loc(co), loc(po)];
+    const paume = W.clone().add(W.clone().sub(E).normalize().multiplyScalar(PAUME));
+    capsules.push([S, E, RAYONS_BRAS.haut * f], [E, W, RAYONS_BRAS.avant * f], [W, paume, RAYONS_BRAS.main]);
+  }
+  // Boîtes du corps : passage du repère de l'arme à celui de chaque os.
+  const boites = CORPS.map((c) => {
+    const b = root.getObjectByName(c.os);
+    return b ? { c, m: b.matrixWorld.clone().invert().multiply(root.matrixWorld).multiply(new THREE.Matrix4().makeTranslation(P.x, P.y, P.z)) } : null;
+  }).filter(Boolean);
+  const demi = (Math.max(...sections.map((x) => x.h)) / 2) * s;
+  const points = (secs) => {
+    const out = [];
+    for (let k = 0; k < secs.length - 1; k += 1) {
+      const [a, b] = [secs[k], secs[k + 1]];
+      for (let t = 0; t <= 8; t += 1) {
+        const u = t / 8;
+        const w = (a.w + (b.w - a.w) * u) / 2;
+        for (const cx of [-w, 0, w]) out.push(new THREE.Vector3((a.x + (b.x - a.x) * u + cx) * s, (a.y + (b.y - a.y) * u) * s, (a.z + (b.z - a.z) * u) * s));
       }
     }
+    return out;
+  };
+  const conflits = (secs) => {
+    let n = 0;
+    const v = new THREE.Vector3();
+    for (const q of points(secs)) {
+      if (capsules.some(([a, b, r]) => distSeg(q, a, b) < r + demi + MARGE_BRETELLE)) n += 1;
+      for (const { c, m } of boites) {
+        v.copy(q).applyMatrix4(m);
+        if (v.x >= c.min[0] && v.x <= c.max[0] && v.y >= c.min[1] && v.y <= c.max[1] && v.z >= c.min[2] && v.z <= c.max[2]) n += 1;
+      }
+    }
+    return n;
+  };
+  const base = sections.map((x) => ({ ...x }));
+  let meilleur = { secs: base, cout: conflits(base) * 1e9 };
+  if (meilleur.cout === 0) return { sections: base, conflits: 0 };
+  const [i1, i2] = [1, sections.length - 2];
+  for (const dy1 of pas(BRETELLE.dy)) for (const dx1 of pas(BRETELLE.dx)) for (const dy2 of pas(BRETELLE.dy)) for (const dx2 of pas(BRETELLE.dx)) for (const dz2 of pas(BRETELLE.dz)) {
+    const ecart = dx1 * dx1 + dy1 * dy1 + dx2 * dx2 + dy2 * dy2 + dz2 * dz2;
+    if (ecart >= meilleur.cout) continue;
+    const secs = base.map((x, i) => (i === i1 ? { ...x, x: x.x + dx1, y: x.y + dy1 } : i === i2 ? { ...x, x: x.x + dx2, y: x.y + dy2, z: x.z + dz2 } : x));
+    const cout = conflits(secs) * 1e9 + ecart;
+    if (cout < meilleur.cout) meilleur = { secs, cout };
   }
-  tourner(meilleur.b);
-  const P = meilleur.Q;
+  return { sections: meilleur.secs, conflits: conflits(meilleur.secs) };
+}
+
+// Instance : torse (degrés), écartement des épaules, allongement des bras ; repart toujours de l'état « repos » noté au départ.
+function configurer(o, repos, { torse = 0, epaules = null, f = 1 }) {
+  const t = (-torse * Math.PI) / 180;
+  o.spine.rotation.y = repos.spine + t / 2;
+  o.chest.rotation.y = repos.chest + t / 2;
+  if (o.neck) o.neck.rotation.y = repos.neck - t / 2; // tête et regard ramenés dans l'axe de visée
+  if (o.head) o.head.rotation.y = repos.head - t / 2;
+  for (const [cote, s] of [['R', -1], ['L', 1]]) {
+    const [epaule, , poignet] = o[cote];
+    epaule.position.x = epaules === null ? repos[`x${cote}`] : s * epaules;
+    epaule.scale.setScalar(f);
+    poignet.scale.setScalar(1 / f); // la main garde sa taille
+  }
+  o.root.updateMatrixWorld(true);
+}
+
+const arrondi = (x, n = 4) => Math.round(x * 10 ** n) / 10 ** n;
+
+// Essai demandé par le propriétaire (« toutes les armes avec les bras les plus longs, idem pour les épaules », pour voir le rendu d'un
+// personnage du jeu modifié une fois pour toutes) : même corps pour toutes les armes, le pistolet compris.
+export const CORPS_LONG = Object.freeze({ epaules: 9, f: 1.2 });
+
+// Applique un corps (écartement des épaules, allongement des bras) à une instance sans pose de tenue (pose actuelle du jeu).
+export function appliquerCorps(perso, corps) {
+  if (!corps) return;
+  const o = lesOs(perso.root);
+  for (const [cote, s] of [['R', -1], ['L', 1]]) {
+    o[cote][0].position.x = s * corps.epaules;
+    o[cote][0].scale.setScalar(corps.f);
+    o[cote][2].scale.setScalar(1 / corps.f);
+  }
+  perso.root.updateMatrixWorld(true);
+}
+
+// Pose une arme. perso : instance de createV2Kit (après setAnim('repos')) ; arme : données (prises en mm) ; s : unités par mm (échelle
+// commune) ; objet : groupe de l'arme (ajouté au repère du personnage) ; points : surface de l'arme (echantillons(), repère de l'arme) ;
+// mode : 'deux-mains' | 'une-main' (pistolet) ; bretelle : sections de la bretelle (sectionsBretelle(), mm) ou null ; corps : { epaules, f }
+// imposé à toutes les armes (essai CORPS_LONG) au lieu des écartements et allongements essayés arme par arme.
+// Renvoie les données de la pose (voir data/armes/poses.json) et ses contrôles.
+export function poserArme(perso, arme, s, objet, { points = null, regles = REGLES, mode = 'deux-mains', bretelle = null, corps = null } = {}) {
+  const r = { ...REGLES, ...(regles ?? {}) };
+  const prises = arme.prises;
+  const o = lesOs(perso.root);
+  perso.root.updateMatrixWorld(true);
+  const repos = { spine: o.spine.rotation.y, chest: o.chest.rotation.y, neck: o.neck?.rotation.y ?? 0, head: o.head?.rotation.y ?? 0, xR: o.R[0].position.x, xL: o.L[0].position.x };
+  const mm = (p) => v3(p).multiplyScalar(s);
+  const D = contact(points, mm(prises.droite), VERS.droite);
+  const G = prises.gauche ? contact(points, mm(prises.gauche), VERS[prises.contactGauche] ?? VERS.dessous) : null;
+  const C = prises.crosse ? mm(prises.crosse) : null;
+  const pose = prises.tenue;
+  const avecGauche = Boolean(G) && !(pose === 'pistolet' && mode === 'une-main');
+  // Points de collision : la crosse peut toucher l'épaule ; 2 000 points au plus (des milliers de positions sont essayées).
+  let pts = points;
+  if (pts && C) pts = pts.filter((_, i, a) => { const k = i - (i % 3); return Math.hypot(a[k] - C.x, a[k + 1] - C.y, a[k + 2] - C.z) > RAYON_CROSSE; });
+  if (pts) {
+    const pas = Math.max(1, Math.ceil(pts.length / 3 / 2000));
+    if (pas > 1) pts = pts.filter((_, i) => Math.floor(i / 3) % pas === 0);
+  }
+  const local = (v) => perso.root.worldToLocal(v.clone());
+  const essais = [];
+  if (corps) for (const torse of pose === 'pistolet' ? [0] : r.torses) essais.push({ torse, epaules: corps.epaules, f: corps.f });
+  else if (pose === 'pistolet') essais.push({ torse: 0, epaules: null, f: 1 });
+  else for (const f of r.bras) for (const e of r.epaules) for (const torse of r.torses) essais.push({ torse, epaules: e === 11.5 ? null : e, f });
+  let meilleur = null;
+  for (const cfg of essais) {
+    configurer(o, repos, cfg);
+    const SR = local(o.R[0].getWorldPosition(new THREE.Vector3()));
+    const SL = local(o.L[0].getWorldPosition(new THREE.Vector3()));
+    const portee = 0.99 * ((o.R[1].position.length() + o.R[2].position.length()) * cfg.f + PAUME);
+    let base;
+    let grille;
+    if (pose === 'pistolet') {
+      base = v3(r.pistolet[mode] ?? r.pistolet['deux-mains']).sub(D);
+      grille = [[0], [0], [0]];
+    } else if (pose === 'epaule' || pose === 'sur-epaule') {
+      const appui = local(o.chest.localToWorld(v3(pose === 'epaule' ? r.epaule.creux : r['sur-epaule'].appui)));
+      base = appui.sub(C ?? new THREE.Vector3());
+      // Crosse un peu enfoncée dans le creux de l'épaule : permis (la crosse seule) ; le tube peut se poser plus à l'extérieur de la tête.
+      grille = pose === 'epaule' ? [[-1, 0, 1], [-1, 0, 1], [-1, 0, 1, 2]] : [[-4, -3, -2, -1, 0, 1], [-1, 0, 1], [-1, 0, 1, 2]];
+    } else {
+      base = v3(r.hanche.main).sub(D);
+      grille = [[-5, -4, -3, -2, -1, 0, 1, 2, 3, 4], [-2, -1, 0, 1, 2, 3, 4, 5], [-4, -3, -2, -1, 0, 1, 2, 3]];
+    }
+    const collision = pts ? collisions(perso.root, pts) : () => 0;
+    const cfgCout = cfg.torse * 0.04 + (cfg.epaules === null ? 0 : (11.5 - cfg.epaules) * 0.8) + (cfg.f - 1) * 40;
+    for (const dx of grille[0]) for (const dy of grille[1]) for (const dz of grille[2]) {
+      const P = base.clone().add(new THREE.Vector3(dx, dy, dz));
+      const manque = Math.max(0, P.clone().add(D).distanceTo(SR) - portee) + (avecGauche ? Math.max(0, P.clone().add(G).distanceTo(SL) - portee) : 0);
+      const ecart = cfgCout + (Math.abs(dx) + Math.abs(dy) + Math.abs(dz)) * 0.2;
+      if (meilleur && manque * 30 + ecart >= meilleur.cout) continue;
+      const traverse = collision(P);
+      const cout = traverse * 100 + manque * 30 + ecart;
+      if (!meilleur || cout < meilleur.cout) meilleur = { cout, cfg, P };
+    }
+  }
+  // Pose retenue : instance configurée, arme placée, bras posés.
+  configurer(o, repos, meilleur.cfg);
+  const P = meilleur.P;
   objet.position.copy(P);
-  objet.rotation.copy(meilleur.rot);
+  objet.rotation.set(0, 0, 0);
   perso.root.add(objet);
   perso.root.updateMatrixWorld(true);
   const monde = (v) => perso.root.localToWorld(v.clone());
-  const droite = bras(o.R, monde(P), POLE.R);
-  const gauche = bras(o.L, monde(P.clone().add(meilleur.G)), POLE.L);
+  const droite = bras(o.R, monde(P.clone().add(D)), POLE.R, meilleur.cfg.f);
+  let gauche = 0;
+  if (avecGauche) gauche = bras(o.L, monde(P.clone().add(G)), POLE.L, meilleur.cfg.f);
+  else for (const b of o.L) b.rotation.set(0, 0, 0); // main libre : bras le long du corps
   perso.root.updateMatrixWorld(true);
-  // Réservoirs (lance-flammes) : sur le dos, tournés avec le buste ; décalage et rotation rendus dans le repère de l'arme (mm, degrés).
-  const dosPerso = new THREE.Vector3(0, 2, -14.5).applyAxisAngle(new THREE.Vector3(0, 1, 0), meilleur.b).add(new THREE.Vector3(0, 40, 0));
-  const inverse = new THREE.Quaternion().setFromEuler(meilleur.rot).invert();
-  const dos = dosPerso.clone().sub(P).applyQuaternion(inverse).divideScalar(s);
+  // Contrôles : points dans le corps, visée (l'arme pointe vers +z du personnage), bouche devant le corps (vue de dessus).
+  const traverse = pts ? collisions(perso.root, pts)(P) : 0;
+  const visee = (new THREE.Vector3(0, 0, 1).applyEuler(objet.rotation).angleTo(new THREE.Vector3(0, 0, 1)) * 180) / Math.PI;
+  let bouche = -Infinity;
+  if (points) for (let i = 2; i < points.length; i += 3) bouche = Math.max(bouche, points[i] + P.z);
+  const devantCorps = Math.max(...CORPS.map((c) => {
+    const b = perso.root.getObjectByName(c.os);
+    let m = -Infinity;
+    for (const x of [c.min[0], c.max[0]]) for (const y of [c.min[1], c.max[1]]) for (const z of [c.min[2], c.max[2]]) m = Math.max(m, local(b.localToWorld(new THREE.Vector3(x, y, z))).z);
+    return m;
+  }));
+  // Réservoirs portés (lance-flammes) : centre du sac sur le dos (repère de l'os chest), donc tournés avec le torse ; décalage rendu dans le
+  // repère de l'arme (mm) et rotation (degrés) pour js/core/armes/armes.js (groupe « dos »).
+  let dos = null;
+  if (arme.dos) {
+    const centre = local(o.chest.localToWorld(v3(r.dos ?? [0, 2, -14.5])));
+    dos = { decalage: centre.sub(P).divideScalar(s).toArray().map((x) => Math.round(x)), lacet: -meilleur.cfg.torse };
+  }
+  const route = Array.isArray(bretelle) && bretelle.length >= 4 ? router(perso, o, P, s, meilleur.cfg.f, bretelle) : null;
+  const angles = Object.fromEntries(ARTICULATIONS.map((n) => {
+    const b = perso.root.getObjectByName(n);
+    return [n, b ? [arrondi(b.rotation.x), arrondi(b.rotation.y), arrondi(b.rotation.z)] : [0, 0, 0]];
+  }));
   return {
-    tenue: prises.tenue, ecarts: { droite, gauche }, traverse: meilleur.traverse, position: P.toArray(), buste: meilleur.b, orientation: meilleur.rot.y,
-    dos: dos.toArray().map((x) => Math.round(x)), lacet: Math.round(((meilleur.b - meilleur.rot.y) * 180) / Math.PI),
+    pose, mode: pose === 'pistolet' ? mode : null,
+    torse: meilleur.cfg.torse, epaules: meilleur.cfg.epaules ?? 11.5, bras: meilleur.cfg.f,
+    arme: {
+      position: P.toArray().map((x) => arrondi(x, 3)), rotation: [0, 0, 0], ...(dos ? { dos } : {}),
+      ...(route ? { bretelle: route.sections.map((x) => [x.x, x.y, x.z].map((v) => Math.round(v))) } : {}),
+    },
+    angles,
+    controle: {
+      droite: arrondi(Math.max(0, droite), 3), gauche: arrondi(Math.max(0, gauche), 3), traverse, visee: arrondi(visee, 2), devant: arrondi(bouche - devantCorps, 2),
+      mains: dansMain(points, D) + (avecGauche ? dansMain(points, G) : 0), // points de l'arme à moins de RAYON_MAIN des paumes
+      ...(route ? { bretelle: route.conflits } : {}), // points de la bretelle dans un bras, une main ou le torse
+    },
+    prises: { droite: D.toArray().map((x) => arrondi(x, 3)), gauche: G && avecGauche ? G.toArray().map((x) => arrondi(x, 3)) : null },
   };
+}
+
+// Applique une pose enregistrée (data/armes/poses.json) à une instance après setAnim('repos') : angles, écartement, allongement ; l'arme
+// (objet) est placée à sa position dans le repère du personnage.
+export function appliquerPose(perso, p, objet = null) {
+  const o = lesOs(perso.root);
+  const x = { R: o.R[0].position.x, L: o.L[0].position.x };
+  for (const [cote, s] of [['R', -1], ['L', 1]]) {
+    o[cote][0].position.x = p.epaules === 11.5 ? x[cote] : s * p.epaules;
+    o[cote][0].scale.setScalar(p.bras);
+    o[cote][2].scale.setScalar(1 / p.bras);
+  }
+  for (const [n, a] of Object.entries(p.angles ?? {})) perso.root.getObjectByName(n)?.rotation.set(a[0], a[1], a[2]);
+  if (objet) {
+    objet.position.set(...p.arme.position);
+    objet.rotation.set(...p.arme.rotation);
+    perso.root.add(objet);
+  }
+  perso.root.updateMatrixWorld(true);
 }
