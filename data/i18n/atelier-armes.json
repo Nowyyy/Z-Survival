@@ -71,7 +71,7 @@
   "dev.armes.tenue.genre.epaule": "épaule",
   "dev.armes.tenue.genre.hanche": "hanche",
   "dev.armes.longueur": "Taille des armes (facteur commun)",
-  "dev.armes.echelle.note": "Une seule échelle pour toutes les armes : 35 unités par mètre (personnage de 1,75 m) × le facteur commun (×0,9 par défaut : la plus grande valeur pour laquelle les dix armes se tiennent à deux mains dans leurs poses ; ce personnage trapu a des bras courts pour ses épaules). Les armes tenues gardent leur épaisseur ×1,8 et, dans la vue « En jeu » seulement, leur largeur ×1,5.",
+  "dev.armes.echelle.note": "Une seule échelle pour toutes les armes : 35 unités par mètre (personnage de 1,75 m) × le facteur commun (×0,8 par défaut : la plus grande valeur pour laquelle les dix armes se tiennent à deux mains dans leurs poses, paumes posées contre l'arme ; ce personnage trapu a des bras courts pour ses épaules). Les armes tenues gardent leur épaisseur ×1,8 et, dans la vue « En jeu » seulement, leur largeur ×1,5.",
   "dev.armes.tenue.mode": "Pistolet",
   "dev.armes.tenue.mode.deux-mains": "À deux mains",
   "dev.armes.tenue.mode.une-main": "À une main",

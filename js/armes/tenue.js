@@ -19,6 +19,12 @@ export const REGLES = Object.freeze({
 const POLE = { R: new THREE.Vector3(-0.8, -1, -0.3), L: new THREE.Vector3(0.8, -1, -0.3) };
 const PAUME = 1.8; // centre de la paume sous le poignet (pièces handL / handR)
 const RAYON_CROSSE = 3; // points de l'arme à moins de 3 unités de la crosse : autorisés contre l'épaule
+// Retour du propriétaire (« la main arrière est dans l'arme ») : la main (ellipsoïde de 2,2 × 2,6 du personnage) se pose contre la surface ;
+// aucun point de l'arme à moins de RAYON_MAIN du centre de la paume (le reste de la main l'entoure, comme des doigts).
+export const RAYON_MAIN = 1.3;
+// Côté où chaque paume se pose : droite sur le côté droit (−x) du poignet ou de la poignée ; gauche dessous (fût, pompe, manchon) ou sur le
+// côté gauche (+x) d'une poignée avant verticale (prises.contactGauche = 'cote').
+const VERS = { droite: [-1, 0, 0], dessous: [0, -1, 0], cote: [1, 0, 0] };
 export const ARTICULATIONS = Object.freeze(['spine', 'chest', 'neck', 'head', 'shoulderR', 'elbowR', 'wristR', 'shoulderL', 'elbowL', 'wristL']);
 const v3 = (a) => new THREE.Vector3(a[0], a[1], a[2]);
 
@@ -120,6 +126,24 @@ function collisions(root, points) {
   };
 }
 
+// Points de l'arme à moins de RAYON_MAIN d'une paume (repère de l'arme, unités).
+function dansMain(points, p) {
+  if (!points || !p) return 0;
+  let n = 0;
+  for (let i = 0; i < points.length; i += 3) if (Math.hypot(points[i] - p.x, points[i + 1] - p.y, points[i + 2] - p.z) < RAYON_MAIN) n += 1;
+  return n;
+}
+
+// Paume posée contre la surface : on l'écarte de la prise, dans la direction donnée, jusqu'à ce qu'aucun point de l'arme ne soit sous elle
+// (pas de 0,05 unité, 4 unités au plus).
+function contact(points, p, dir) {
+  if (!points) return p;
+  const d = v3(dir);
+  const q = p.clone();
+  for (let i = 0; i < 80 && dansMain(points, q) > 0; i += 1) q.addScaledVector(d, 0.05);
+  return q;
+}
+
 // Instance : torse (degrés), écartement des épaules, allongement des bras ; repart toujours de l'état « repos » noté au départ.
 function configurer(o, repos, { torse = 0, epaules = null, f = 1 }) {
   const t = (-torse * Math.PI) / 180;
@@ -148,8 +172,8 @@ export function poserArme(perso, arme, s, objet, { points = null, regles = REGLE
   perso.root.updateMatrixWorld(true);
   const repos = { spine: o.spine.rotation.y, chest: o.chest.rotation.y, neck: o.neck?.rotation.y ?? 0, head: o.head?.rotation.y ?? 0, xR: o.R[0].position.x, xL: o.L[0].position.x };
   const mm = (p) => v3(p).multiplyScalar(s);
-  const D = mm(prises.droite);
-  const G = prises.gauche ? mm(prises.gauche) : null;
+  const D = contact(points, mm(prises.droite), VERS.droite);
+  const G = prises.gauche ? contact(points, mm(prises.gauche), VERS[prises.contactGauche] ?? VERS.dessous) : null;
   const C = prises.crosse ? mm(prises.crosse) : null;
   const pose = prises.tenue;
   const avecGauche = Boolean(G) && !(pose === 'pistolet' && mode === 'une-main');
@@ -182,7 +206,7 @@ export function poserArme(perso, arme, s, objet, { points = null, regles = REGLE
       grille = pose === 'epaule' ? [[-1, 0, 1], [-1, 0, 1], [-1, 0, 1, 2]] : [[-4, -3, -2, -1, 0, 1], [-1, 0, 1], [-1, 0, 1, 2]];
     } else {
       base = v3(r.hanche.main).sub(D);
-      grille = [[-2, -1, 0, 1, 2, 3, 4], [-2, -1, 0, 1, 2, 3, 4, 5], [-4, -3, -2, -1, 0, 1, 2, 3]];
+      grille = [[-5, -4, -3, -2, -1, 0, 1, 2, 3, 4], [-2, -1, 0, 1, 2, 3, 4, 5], [-4, -3, -2, -1, 0, 1, 2, 3]];
     }
     const collision = pts ? collisions(perso.root, pts) : () => 0;
     const cfgCout = cfg.torse * 0.04 + (cfg.epaules === null ? 0 : (11.5 - cfg.epaules) * 0.8) + (cfg.f - 1) * 40;
@@ -236,7 +260,11 @@ export function poserArme(perso, arme, s, objet, { points = null, regles = REGLE
     torse: meilleur.cfg.torse, epaules: meilleur.cfg.epaules ?? 11.5, bras: meilleur.cfg.f,
     arme: { position: P.toArray().map((x) => arrondi(x, 3)), rotation: [0, 0, 0], ...(dos ? { dos } : {}) },
     angles,
-    controle: { droite: arrondi(Math.max(0, droite), 3), gauche: arrondi(Math.max(0, gauche), 3), traverse, visee: arrondi(visee, 2), devant: arrondi(bouche - devantCorps, 2) },
+    controle: {
+      droite: arrondi(Math.max(0, droite), 3), gauche: arrondi(Math.max(0, gauche), 3), traverse, visee: arrondi(visee, 2), devant: arrondi(bouche - devantCorps, 2),
+      mains: dansMain(points, D) + (avecGauche ? dansMain(points, G) : 0), // points de l'arme à moins de RAYON_MAIN des paumes
+    },
+    prises: { droite: D.toArray().map((x) => arrondi(x, 3)), gauche: G && avecGauche ? G.toArray().map((x) => arrondi(x, 3)) : null },
   };
 }
 
