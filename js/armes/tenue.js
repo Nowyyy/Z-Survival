@@ -230,11 +230,28 @@ function configurer(o, repos, { torse = 0, epaules = null, f = 1 }) {
 
 const arrondi = (x, n = 4) => Math.round(x * 10 ** n) / 10 ** n;
 
+// Essai demandé par le propriétaire (« toutes les armes avec les bras les plus longs, idem pour les épaules », pour voir le rendu d'un
+// personnage du jeu modifié une fois pour toutes) : même corps pour toutes les armes, le pistolet compris.
+export const CORPS_LONG = Object.freeze({ epaules: 9, f: 1.2 });
+
+// Applique un corps (écartement des épaules, allongement des bras) à une instance sans pose de tenue (pose actuelle du jeu).
+export function appliquerCorps(perso, corps) {
+  if (!corps) return;
+  const o = lesOs(perso.root);
+  for (const [cote, s] of [['R', -1], ['L', 1]]) {
+    o[cote][0].position.x = s * corps.epaules;
+    o[cote][0].scale.setScalar(corps.f);
+    o[cote][2].scale.setScalar(1 / corps.f);
+  }
+  perso.root.updateMatrixWorld(true);
+}
+
 // Pose une arme. perso : instance de createV2Kit (après setAnim('repos')) ; arme : données (prises en mm) ; s : unités par mm (échelle
 // commune) ; objet : groupe de l'arme (ajouté au repère du personnage) ; points : surface de l'arme (echantillons(), repère de l'arme) ;
-// mode : 'deux-mains' | 'une-main' (pistolet) ; bretelle : sections de la bretelle (sectionsBretelle(), mm) ou null.
+// mode : 'deux-mains' | 'une-main' (pistolet) ; bretelle : sections de la bretelle (sectionsBretelle(), mm) ou null ; corps : { epaules, f }
+// imposé à toutes les armes (essai CORPS_LONG) au lieu des écartements et allongements essayés arme par arme.
 // Renvoie les données de la pose (voir data/armes/poses.json) et ses contrôles.
-export function poserArme(perso, arme, s, objet, { points = null, regles = REGLES, mode = 'deux-mains', bretelle = null } = {}) {
+export function poserArme(perso, arme, s, objet, { points = null, regles = REGLES, mode = 'deux-mains', bretelle = null, corps = null } = {}) {
   const r = { ...REGLES, ...(regles ?? {}) };
   const prises = arme.prises;
   const o = lesOs(perso.root);
@@ -255,7 +272,8 @@ export function poserArme(perso, arme, s, objet, { points = null, regles = REGLE
   }
   const local = (v) => perso.root.worldToLocal(v.clone());
   const essais = [];
-  if (pose === 'pistolet') essais.push({ torse: 0, epaules: null, f: 1 });
+  if (corps) for (const torse of pose === 'pistolet' ? [0] : r.torses) essais.push({ torse, epaules: corps.epaules, f: corps.f });
+  else if (pose === 'pistolet') essais.push({ torse: 0, epaules: null, f: 1 });
   else for (const f of r.bras) for (const e of r.epaules) for (const torse of r.torses) essais.push({ torse, epaules: e === 11.5 ? null : e, f });
   let meilleur = null;
   for (const cfg of essais) {
