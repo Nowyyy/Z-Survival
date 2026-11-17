@@ -56,6 +56,8 @@ export function lireArmes(json) {
       id, nom: str(a.nom, id), genre: str(a.genre), classe: CLASSES[a.classe] ? a.classe : 'epaule',
       dimensions: isObj(a.dimensions) ? a.dimensions : {}, longueurReelle: num(a.dimensions?.longueur, 0),
       dos: isObj(a.dos) ? a.dos : null, prises: lirePrises(a.prises), variantes,
+      // Exception décidée par le propriétaire (lot 9c-Q, « passer le Colt à ×1,2 ») : taille propre qui remplace le facteur commun.
+      taille: Number.isFinite(a.taille) ? borne(a.taille, 0.5, 3) : null,
     });
   }
   return { echelle, budgets, armes, caisses: Array.isArray(j.caisses) ? j.caisses : [], approche: isObj(j.approche) ? j.approche : {}, ecarts };
@@ -154,8 +156,11 @@ export function epaissir(p, k, seuil) {
   return p;
 }
 
-// Unités du jeu par millimètre.
-export const echelleJeu = (donnees) => (donnees.echelle.unitesParMetre / 1000) * donnees.echelle.lisibilite;
+// Facteur de taille d'une arme : le facteur commun (curseur « Taille des armes »), sauf taille propre (Colt M1911 : ×1,2, décision du propriétaire).
+export const tailleArme = (donnees, arme) => arme?.taille ?? donnees.echelle.lisibilite;
+
+// Unités du jeu par millimètre (arme : sa taille propre si elle en a une).
+export const echelleJeu = (donnees, arme) => (donnees.echelle.unitesParMetre / 1000) * tailleArme(donnees, arme);
 
 // Maillage d'une arme (unités du jeu). options : { pose ('main' | 'caisse' | 'seule'), echelle (remplace celle des données), dos, lacet,
 // enJeu (vrai : largeur vue de dessus appliquée, vue de la caméra du jeu seulement) }.
@@ -169,7 +174,7 @@ export function maillageArme(donnees, arme, variante, { pose = 'main', echelle, 
   const sx = pose === 'caisse' || !enJeu ? 1 : donnees.echelle.largeur ?? 1;
   const m = maillage(piecesArme(arme, v, ['caisse', 'seule'].includes(pose) ? pose : 'main', opts), {
     etirer: (p) => (p.groupe === 'dos' || p.groupe === 'tuyau' ? 1 : sx),
-    echelle: Number.isFinite(echelle) ? echelle : echelleJeu(donnees),
+    echelle: Number.isFinite(echelle) ? echelle : echelleJeu(donnees, arme),
     tuile: (role) => rectTuile(mat[role] ?? MATIERES_DEFAUT[role] ?? 'bruni'),
     teinte: (role) => {
       const t = v?.teintes?.[role];

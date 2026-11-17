@@ -7,7 +7,7 @@ import { createV2Kit } from '../game/character-v2.js';
 import { createTokenLookup, readPalette } from '../game/palette.js';
 import { buildSpec, createTextureData } from '../core/texgen.js';
 import { fitDistance } from '../core/viewport.js';
-import { armeParId, avecEchelle, budgetDe, echelleJeu, lireArmes, lireChoix, maillageArme, varianteDe } from '../core/armes/armes.js';
+import { armeParId, avecEchelle, budgetDe, echelleJeu, lireArmes, lireChoix, maillageArme, tailleArme, varianteDe } from '../core/armes/armes.js';
 import { ancreTexte } from '../core/armes/caisse.js';
 import { REGLES, echantillons, poserArme } from './tenue.js';
 import { visuelArme } from '../core/armes/visuel.js';
@@ -183,7 +183,7 @@ function poserArmeEnMain() {
     // choisie (les poses du fichier valent pour le facteur du fichier).
     const support = new THREE.Group();
     const a = armeParId(donnees, etat.arme);
-    tenueInfo = poserArme(joueur, a, echelleJeu(donnees), support, { points: pointsArme(etat.arme, etat.variante), regles: { ...REGLES, ...(posesJson.regles ?? {}) }, mode: etat.mode });
+    tenueInfo = poserArme(joueur, a, echelleJeu(donnees, a), support, { points: pointsArme(etat.arme, etat.variante), regles: { ...REGLES, ...(posesJson.regles ?? {}) }, mode: etat.mode });
     // Réservoirs du lance-flammes : sur le dos, tournés avec le torse (décalage et rotation calculés par la pose).
     const dos = tenueInfo.arme.dos ? { dos: tenueInfo.arme.dos.decalage, lacet: tenueInfo.arme.dos.lacet } : {};
     armeEnMain = kit.mesh(etat.arme, etat.variante, 'main', { ...dos, enJeu: true });
@@ -322,7 +322,7 @@ function dessinerJeu() {
     const m = mesurerJeu(w, h);
     const info = kit.infos(etat.arme, etat.variante);
     mesures[`${w}x${h}`] = { ...m, appels: r.calls };
-    lignes.push(t('dev.armes.jeu.mesures', { taille: `${w} × ${h}`, pw: m.perso.w, ph: m.perso.h, aw: m.arme.w, ah: m.arme.h, l: n1(info.longueur), lr: n2(info.longueur / UPM / donnees.echelle.lisibilite) }));
+    lignes.push(t('dev.armes.jeu.mesures', { taille: `${w} × ${h}`, pw: m.perso.w, ph: m.perso.h, aw: m.arme.w, ah: m.arme.h, l: n1(info.longueur), lr: n2(info.longueur / UPM / tailleArme(donnees, armeParId(donnees, etat.arme))) }));
   }
   $('jeu-mesures').textContent = lignes.join(' ');
   dessinerTenue();

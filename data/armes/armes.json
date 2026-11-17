@@ -5,7 +5,7 @@
   "budgets": { "epaule": 400, "lourde": 700, "caisse": 300, "texture": 256 },
   "armes": [
     {
-      "id": "m1911", "nom": "Colt M1911", "genre": "pistolet (arme de départ)", "classe": "poing",
+      "id": "m1911", "nom": "Colt M1911", "genre": "pistolet (arme de départ)", "classe": "poing", "taille": 1.2,
       "prises": {"tenue": "pistolet", "droite": [0, -8, -34], "gauche": [16, -30, -24]}, "dimensions": { "longueur": 216 },
       "variantes": [
         { "id": "a", "nom": "Service, phosphaté", "description": "Acier phosphaté gris, plaquettes de noyer.", "matieres": { "metal": "phosphate", "metal2": "phosphate", "poignee": "noyer" } },
@@ -17,7 +17,7 @@
       "id": "kar98k", "nom": "Kar98k", "genre": "fusil à verrou", "classe": "epaule",
       "prises": {"tenue": "epaule", "droite": [0, -4, -85], "gauche": [0, -20, 125], "crosse": [0, -42, -424]}, "dimensions": { "longueur": 1110 },
       "variantes": [
-        { "id": "a", "nom": "Noyer", "description": "Crosse et fût en noyer sombre, acier bruni.", "matieres": { "bois": "noyer", "metal": "bruni", "metal2": "bruni" } },
+        { "id": "a", "nom": "Noyer, bretelle", "description": "Crosse et fût en noyer sombre, acier bruni, bretelle de cuir.", "matieres": { "bois": "noyer", "metal": "bruni", "metal2": "bruni" }, "options": { "bretelle": true } },
         { "id": "b", "nom": "Hêtre clair", "description": "Bois de hêtre clair (fin de guerre), acier phosphaté.", "matieres": { "bois": "hetre", "metal": "phosphate", "metal2": "bruni" } },
         { "id": "c", "nom": "Usé, bretelle", "description": "Acier usé aux arêtes, bretelle de cuir.", "matieres": { "bois": "noyer", "metal": "bruni-use", "metal2": "bruni-use" }, "options": { "bretelle": true } }
       ]
@@ -44,7 +44,7 @@
       "id": "garand", "nom": "M1 Garand", "genre": "fusil semi-automatique", "classe": "epaule",
       "prises": {"tenue": "epaule", "droite": [0, -5, -90], "gauche": [0, -20, 170], "crosse": [0, -40, -404]}, "dimensions": { "longueur": 1107 },
       "variantes": [
-        { "id": "a", "nom": "Noyer", "description": "Noyer sombre, acier phosphaté.", "matieres": { "bois": "noyer", "metal": "phosphate", "metal2": "phosphate" } },
+        { "id": "a", "nom": "Noyer, bretelle", "description": "Noyer sombre, acier phosphaté, bretelle de cuir.", "matieres": { "bois": "noyer", "metal": "phosphate", "metal2": "phosphate" }, "options": { "bretelle": true } },
         { "id": "b", "nom": "Bouleau clair", "description": "Bois clair, acier phosphaté.", "matieres": { "bois": "hetre", "metal": "phosphate", "metal2": "phosphate" } },
         { "id": "c", "nom": "Usé, bretelle", "description": "Phosphatation usée aux arêtes, bretelle de cuir.", "matieres": { "bois": "noyer", "metal": "phosphate-use", "metal2": "phosphate-use" }, "options": { "bretelle": true } }
       ]

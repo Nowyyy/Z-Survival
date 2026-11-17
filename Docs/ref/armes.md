@@ -3,7 +3,7 @@ Atelier seulement (`atelier-armes.html`, à retirer au lot 13) : **rien n'est br
 
 ## Échelle et taille à l'écran (relevées sur `origin/dev` `2752cc1`)
 - Personnage du joueur (v2) : **61 unités** de haut (≈ 1,75 m), 28 de large bras compris ; articulation `prop` (arme) à 13 devant la poitrine.
-- **Une seule règle d'échelle (décision du propriétaire)** : 35 unités par mètre (personnage de 1,75 m) × **un facteur commun à toutes les armes**, `echelle.lisibilite` = **×0,8** (seul curseur de l'atelier, « Taille des armes » ; valeur du fichier de choix : `echelle.longueur`) ; jamais de facteur par arme ni par classe (le ×2 du pistolet sur la caisse est retiré). ×0,8 = la plus grande valeur pour laquelle les dix armes se tiennent à deux mains dans leurs poses, paumes posées contre l'arme (×1,3 avant, puis ×1,1 et ×0,9 ; au-delà, la main gauche manque le dessous du boîtier du BAR). Constantes des données, sans curseur : `epaisseur` ×1,8 (dimensions transversales sous 60 mm) et `largeur` ×1,5 en x dans la vue de la caméra du jeu seulement. Les caisses s'allongent pour l'arme la plus longue.
+- **Une seule règle d'échelle (décision du propriétaire)** : 35 unités par mètre (personnage de 1,75 m) × **un facteur commun à toutes les armes**, `echelle.lisibilite` = **×0,8** (seul curseur de l'atelier, « Taille des armes » ; valeur du fichier de choix : `echelle.longueur`) ; jamais de facteur par classe (le ×2 du pistolet sur la caisse est retiré) ; **une exception, demandée ensuite par le propriétaire : le Colt M1911 à ×1,2** (`taille` dans `armes.json`, hors curseur ; `tailleArme()`). ×0,8 = la plus grande valeur pour laquelle les dix armes se tiennent à deux mains dans leurs poses, paumes posées contre l'arme (×1,3 avant, puis ×1,1 et ×0,9 ; au-delà, la main gauche manque le dessous du boîtier du BAR). Constantes des données, sans curseur : `epaisseur` ×1,8 (dimensions transversales sous 60 mm) et `largeur` ×1,5 en x dans la vue de la caméra du jeu seulement. Les caisses s'allongent pour l'arme la plus longue.
 - Caméra du jeu (bâtiment) : champ 40°, inclinaison 75°, distance 704,5 → **0,731 px par unité à 667 × 375, 2,106 à 1920 × 1080**.
 - Mesuré sur image dans l'atelier (fond noir, lumière du jeu) : personnage ≈ **20 × 25 px** (667 × 375) et **56 × 72 px** (1920 × 1080) ; pistolet actuel (glissière 14, calculé) 10 / 29 px, soit **1,84 fois** un vrai M1911.
 
@@ -16,11 +16,11 @@ Atelier seulement (`atelier-armes.html`, à retirer au lot 13) : **rien n'est br
 ## Les dix armes (longueur réelle → jeu à 35 u/m ; triangles réels : le plus grand des poses « en main » et « posée »)
 | Identifiant | Arme | Réelle | Jeu (× 1 ; en jeu × 0,8) | Triangles (a / b / c) | Variantes |
 |---|---|---|---|---|---|
-| `m1911` | Colt M1911 | 216 mm | 7,5 | 240 / 240 / 240 | phosphaté et noyer ; bronzé et bakélite ; usé |
-| `kar98k` | Kar98k | 1 110 mm | 38,7 | 364 / 364 / 392 | noyer ; hêtre clair ; usé avec bretelle |
+| `m1911` | Colt M1911 | 216 mm | 7,5 (en jeu × 1,2) | 240 / 240 / 240 | phosphaté et noyer ; bronzé et bakélite ; usé |
+| `kar98k` | Kar98k | 1 110 mm | 38,7 | 392 / 364 / 392 | noyer avec bretelle ; hêtre clair ; usé avec bretelle |
 | `thompson` | Thompson M1928 | 852 mm | 30,1 | 306 / 338 / 306 | chargeur droit ; camembert ; droit bois clair usé |
 | `winchester1897` | Winchester M1897 | 1 003 mm (1 395 avec baïonnette) | 35,4 (49,1) | 304 / 328 / 304 | trench ; avec baïonnette ; usé bois clair |
-| `garand` | M1 Garand | 1 107 mm | 38,5 | 328 / 328 / 356 | noyer ; bouleau clair ; usé avec bretelle |
+| `garand` | M1 Garand | 1 107 mm | 38,5 | 356 / 328 / 356 | noyer avec bretelle ; bouleau clair ; usé avec bretelle |
 | `stg44` | StG 44 | 940 mm | 33,1 | 288 / 288 / 288 | standard ; bois clair ; usé |
 | `bar` | BAR M1918 | 1 214 mm | 42,5 | 336 / 276 / 336 | avec bipied ; sans bipied ; bipied bois clair |
 | `mg42` | MG42 | 1 220 mm | 42,8 | 428 / 392 / 488 | bande pendante ; tambour à bande ; usé, bande longue |
