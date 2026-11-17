@@ -79,12 +79,13 @@ test('atelier des armes : toutes les armes et variantes se construisent (budgets
   expect(await page.evaluate(() => window.__zsArmes.tenue())).toBeNull();
   await page.selectOption('#ctl-tenue', 'adaptee');
   // Lot 9c-G : curseurs de taille et d'épaisseur (défauts ×1,3 et ×1,8), repris dans le texte de « Mes choix » ; rien n'est écrit.
-  expect(await page.evaluate(() => window.__zsArmes.echelle())).toMatchObject({ lisibilite: 1.3, epaisseur: 1.8 });
+  expect(await page.evaluate(() => window.__zsArmes.echelle())).toMatchObject({ lisibilite: 1.3, largeur: 2, epaisseur: 1.8 });
   await page.locator('#ctl-longueur').fill('1.5');
+  await page.locator('#ctl-largeur').fill('2.5');
   await page.locator('#ctl-epaisseur').fill('2');
   await page.locator('#ctl-epaisseur').dispatchEvent('change');
   await expect(page.locator('#out-longueur')).toHaveText('× 1,50');
-  expect(await page.evaluate(() => window.__zsArmes.echelle())).toMatchObject({ lisibilite: 1.5, epaisseur: 2 });
+  expect(await page.evaluate(() => window.__zsArmes.echelle())).toMatchObject({ lisibilite: 1.5, largeur: 2.5, epaisseur: 2 });
   await expect(page.locator('#planche-legende')).toContainText(donnees.armes.at(-1).nom);
   // Visuels du menu : un SVG par arme (sans Three.js), quelques Ko chacun, et celui de l'arme choisie.
   await expect(page.locator('#visuels-tous figure svg')).toHaveCount(donnees.armes.length);
@@ -96,7 +97,7 @@ test('atelier des armes : toutes les armes et variantes se construisent (budgets
   await page.locator('#btn-retenir').click();
   const choix = await page.evaluate(() => window.__zsArmes.choix());
   expect(choix.proposition.variantes[donnees.armes[1].id]).toBe(donnees.armes[1].variantes[1].id);
-  expect(choix.proposition.echelle).toEqual({ longueur: 1.5, epaisseur: 2 });
+  expect(choix.proposition.echelle).toEqual({ longueur: 1.5, largeur: 2.5, epaisseur: 2 });
   expect(suivi.externes).toEqual([]);
   expect(suivi.problemes).toEqual([]);
   expect(await page.evaluate(() => window.__ecritures)).toBe(0);

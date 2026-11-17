@@ -187,8 +187,9 @@ export function compterPiece(piece) {
 }
 
 // Pièces → maillage. options : { echelle (multiplie les positions), tuile(mat) → [u0, v0, u1, v1] (rectangle de l'atlas),
-// teinte(mat) → [r, g, b] (couleur de sommet du rôle) }. Renvoie { positions, normals, uvs, colors, triangles, bornes, parMatiere }.
-export function maillage(pieces, { echelle = 1, tuile = () => [0, 0, 1, 1], teinte = () => [1, 1, 1] } = {}) {
+// teinte(mat) → [r, g, b] (couleur de sommet du rôle), etirer(pièce) → facteur en x de la pièce (lot 9c-G : largeur vue de dessus ;
+// 1 par défaut) }. Renvoie { positions, normals, uvs, colors, triangles, bornes, parMatiere }.
+export function maillage(pieces, { echelle = 1, tuile = () => [0, 0, 1, 1], teinte = () => [1, 1, 1], etirer = () => 1 } = {}) {
   const tris = [];
   for (const piece of pieces ?? []) {
     const t = trianglesPiece(piece);
@@ -209,6 +210,7 @@ export function maillage(pieces, { echelle = 1, tuile = () => [0, 0, 1, 1], tein
   const bmax = [-Infinity, -Infinity, -Infinity];
   const parMatiere = {};
   tris.forEach((tr, i) => {
+    const sx = num(etirer(tr.piece), 1) || 1;
     const flat = norm(cross(sub(tr.p[1], tr.p[0]), sub(tr.p[2], tr.p[0])));
     const lflat = norm(cross(sub(tr.local[1], tr.local[0]), sub(tr.local[2], tr.local[0])));
     const ax = Math.abs(lflat[0]) >= Math.abs(lflat[1]) && Math.abs(lflat[0]) >= Math.abs(lflat[2]) ? 0 : Math.abs(lflat[1]) >= Math.abs(lflat[2]) ? 1 : 2;
@@ -224,13 +226,13 @@ export function maillage(pieces, { echelle = 1, tuile = () => [0, 0, 1, 1], tein
       // Projection par l'axe dominant : côté (x) → (z, y) ; dessus (y) → (z, x) ; bout (z) → (x, y).
       const [a, b] = ax === 0 ? [f[2], f[1]] : ax === 1 ? [f[2], f[0]] : [f[0], f[1]];
       for (let c = 0; c < 3; c += 1) {
-        const v = p[c] * echelle;
+        const v = p[c] * echelle * (c === 0 ? sx : 1);
         positions[i * 9 + k * 3 + c] = v;
         bmin[c] = Math.min(bmin[c], v);
         bmax[c] = Math.max(bmax[c], v);
       }
       const nn = tr.n ? tr.n[k] : flat;
-      normals.set(nn, i * 9 + k * 3);
+      normals.set(sx === 1 ? nn : norm([nn[0] / sx, nn[1], nn[2]]), i * 9 + k * 3);
       uvs[i * 6 + k * 2] = u0 + (u1 - u0) * a;
       uvs[i * 6 + k * 2 + 1] = v0 + (v1 - v0) * b;
       colors.set(col, i * 9 + k * 3);
