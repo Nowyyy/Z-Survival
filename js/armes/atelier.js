@@ -7,9 +7,9 @@ import { createV2Kit } from '../game/character-v2.js';
 import { createTokenLookup, readPalette } from '../game/palette.js';
 import { buildSpec, createTextureData } from '../core/texgen.js';
 import { fitDistance } from '../core/viewport.js';
-import { armeParId, avecEchelle, budgetDe, echelleJeu, lireArmes, lireChoix, varianteDe } from '../core/armes/armes.js';
+import { armeParId, avecEchelle, budgetDe, echelleJeu, lireArmes, lireChoix, maillageArme, varianteDe } from '../core/armes/armes.js';
 import { ancreTexte } from '../core/armes/caisse.js';
-import { poserTenue } from './tenue.js';
+import { echantillons, poserTenue } from './tenue.js';
 import { visuelArme } from '../core/armes/visuel.js';
 import { creerKitArmes, lirePalette } from './rendu.js';
 
@@ -179,7 +179,7 @@ function poserArmeEnMain() {
   if (etat.tenue === 'adaptee') {
     // Bras adaptés (aperçu du lot d'intégration) : buste tourné, arme placée dans le repère du personnage, mains sur leurs prises.
     const support = new THREE.Group();
-    tenueInfo = poserTenue(joueur, armeParId(donnees, etat.arme), echelleJeu(donnees), support);
+    tenueInfo = poserTenue(joueur, armeParId(donnees, etat.arme), echelleJeu(donnees), support, { points: pointsArme(etat.arme, etat.variante) });
     const aDos = Boolean(armeParId(donnees, etat.arme)?.dos);
     armeEnMain = kit.mesh(etat.arme, etat.variante, 'main', aDos ? { dos: tenueInfo.dos, lacet: tenueInfo.lacet, enJeu: true } : { enJeu: true });
     armeEnMain.userData.reelle = kit.mesh(etat.arme, etat.variante, 'main', aDos ? { dos: tenueInfo.dos, lacet: tenueInfo.lacet } : {}).geometry;
@@ -193,6 +193,17 @@ function poserArmeEnMain() {
     prop?.add(armeEnMain);
   }
   joueur.root.updateMatrixWorld(true);
+}
+
+// Surface de l'arme (sans réservoirs ni tuyau, vraie largeur) pour éviter qu'elle traverse le corps ; en cache par arme, variante et échelle.
+const cachePoints = new Map();
+function pointsArme(armeId, varianteId) {
+  const k = `${armeId}:${varianteId}:${donnees.echelle.lisibilite}:${donnees.echelle.epaisseur}`;
+  if (!cachePoints.has(k)) {
+    const a = armeParId(donnees, armeId);
+    cachePoints.set(k, echantillons(maillageArme(donnees, a, varianteDe(a, varianteId), { pose: 'seule' }).positions));
+  }
+  return cachePoints.get(k);
 }
 
 // Vue rapprochée de la tenue : trois quarts avant droit et dessus, autour du personnage (même scène, même lumière).

@@ -59,6 +59,7 @@ test('atelier des armes : toutes les armes et variantes se construisent (budgets
     expect(tenue.tenue).toBe(a.prises.tenue);
     expect(tenue.ecarts.droite, a.id).toBeLessThanOrEqual(0.05);
     expect(tenue.ecarts.gauche, a.id).toBeLessThanOrEqual(0.05);
+    expect(tenue.traverse, `${a.id} : points de l'arme dans le corps`).toBe(0); // retour : « des armes traversent le corps du perso »
     await expect(page.locator('#tenue-mesures')).toContainText('main droite à 0');
     const m = await page.evaluate(() => window.__zsArmes.mesures());
     expect(m['667x375'].perso.w).toBeGreaterThan(10);
