@@ -43,7 +43,7 @@ Atelier seulement (`atelier-armes.html`, à retirer au lot 13) : **rien n'est br
 - `visuelArme()` : SVG de profil (viewBox 400 × 120) projeté depuis les pièces, aplats par tuile, trait sombre, veines et reflet ; **2,2 à 3,6 Ko** ; aucun Three.js.
 
 ## Page d'atelier et choix du propriétaire
-- Vues : en jeu (667 × 375 et 1920 × 1080 à taille réelle, carrelage de la carte, lumière du jeu, lampe ou lune), sur la caisse, gros plan (tourne, immobile en mouvement réduit, souris ou doigt), visuel du menu, comparaison des variantes (dessus et profil), planche à l'échelle avec le personnage, budget. Un seul contexte WebGL. Lien : menu de débogage de la pause (« Atelier des armes »).
+- Vues : en jeu (667 × 375 et 1920 × 1080 à taille réelle, carrelage de la carte, lumière du jeu, lampe ou lune), sur la caisse, gros plan (tourne, immobile en mouvement réduit, souris ou doigt), visuel du menu, comparaison des variantes (dessus et profil), planche à l'échelle avec le personnage, budget. Un seul contexte WebGL. Réglages (arme, variante, lumière, tenue, pistolet, curseurs) dans un panneau flottant collé en haut pendant le défilement (deux colonnes sur téléphone, la moitié de l'écran au plus). Lien : menu de débogage de la pause (« Atelier des armes »).
 - **Choisir** : sur la page, arme et variante, « Retenir cette variante », puis recopier le texte de « Mes choix » dans **`data/armes/armes-choix.json`** : `{ "variantes": { "kar98k": "b", … }, "armeSpeciale": "panzerschreck" | "m2lanceflammes" }`. Identifiant inconnu : variante par défaut (la première), Panzerschreck. La page affiche « (retenue) » et ce qu'elle a ignoré.
 
 ## Tests

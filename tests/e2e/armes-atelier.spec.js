@@ -115,13 +115,23 @@ test('atelier des armes : gros plan qui tourne, immobile en mouvement réduit ; 
   await expect(page.locator('#btn-rotation')).toBeDisabled();
   await expect(page.locator('#btn-rotation')).toHaveAttribute('aria-pressed', 'false');
   // Au doigt ou à la souris : l'arme tourne.
-  await page.locator('#vue-gros-plan .armes-scene').scrollIntoViewIfNeeded();
+  await page.locator('#vue-gros-plan .armes-scene').evaluate((n) => n.scrollIntoView({ block: 'end' })); // sous le panneau de réglages flottant
   const boite = await page.locator('#vue-gros-plan .armes-scene').boundingBox();
-  await page.mouse.move(boite.x + 50, boite.y + 50);
+  const y = boite.y + boite.height * 0.8;
+  await page.mouse.move(boite.x + 50, y);
   await page.mouse.down();
-  await page.mouse.move(boite.x + 150, boite.y + 60, { steps: 4 });
+  await page.mouse.move(boite.x + 150, y + 10, { steps: 4 });
   await page.mouse.up();
   expect(await page.evaluate(() => window.__zsArmes.angle())).not.toBe(a0);
+  // Retour du propriétaire : réglages flottants, toujours à l'écran après un défilement jusqu'en bas (et une ancre ne tombe pas dessous).
+  await page.locator('#choix').scrollIntoViewIfNeeded();
+  await expect(page.locator('#ctl-arme')).toBeInViewport();
+  await expect(page.locator('#ctl-longueur')).toBeInViewport();
+  const recouvre = await page.evaluate(() => {
+    document.getElementById('budget').scrollIntoView();
+    return document.getElementById('reglages').getBoundingClientRect().bottom - document.getElementById('budget-titre').getBoundingClientRect().top;
+  });
+  expect(recouvre).toBeLessThanOrEqual(0);
   const resultat = await new AxeBuilder({ page }).analyze();
   expect(resultat.violations.map((v) => v.id)).toEqual([]);
   expect(suivi.problemes).toEqual([]);
