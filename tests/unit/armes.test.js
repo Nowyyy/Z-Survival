@@ -35,10 +35,10 @@ describe('données des armes', () => {
   });
 
   // Lot 9c-G (retours du propriétaire) : épaisseur des pièces fines ×1,8 ; décision du propriétaire (poses de tenue) : un seul facteur commun de
-  // taille pour toutes les armes, ×1,1 (avant : ×1,3 ; le plus grand qui laisse le M1911, le Kar98k et la MG42 tenus à deux mains).
-  it('échelle : 35 unités par mètre (personnage de 61 unités ≈ 1,75 m), facteur commun ×1,1, épaisseur ×1,8 sous 60 mm', () => {
+  // taille pour toutes les armes, ×0,9 (avant : ×1,3, puis ×1,1 pour trois armes ; le plus grand qui laisse les dix armes tenues à deux mains).
+  it('échelle : 35 unités par mètre (personnage de 61 unités ≈ 1,75 m), facteur commun ×0,9, épaisseur ×1,8 sous 60 mm', () => {
     expect(donnees.echelle.unitesParMetre).toBe(35);
-    expect(donnees.echelle.lisibilite).toBe(1.1);
+    expect(donnees.echelle.lisibilite).toBe(0.9);
     expect(donnees.echelle.epaisseur).toBe(1.8);
     expect(donnees.echelle.largeur).toBe(1.5); // retours : la largeur vue de dessus, à part de la longueur, choisie à ×1,5 (en jeu seulement)
     expect(donnees.echelle.seuilEpaisseur).toBe(60);
@@ -86,7 +86,7 @@ describe('dimensions relatives', () => {
     expect(parJeu).toEqual(parReel);
     const m1911 = L.find((x) => x.id === 'm1911');
     expect(m1911.jeu).toBeLessThan(14);
-    expect(m1911.jeu).toBeGreaterThan(7);
+    expect(m1911.jeu).toBeGreaterThan(5); // ×0,9 (facteur commun) : 6,8
   });
 
   it('la lisibilité agrandit toutes les armes du même facteur', () => {
@@ -94,7 +94,7 @@ describe('dimensions relatives', () => {
     for (const a of donnees.armes) {
       const l1 = maillageArme(donnees, a, a.variantes[0]).longueur;
       const l2 = maillageArme(d2, armeParId(d2, a.id), armeParId(d2, a.id).variantes[0]).longueur;
-      expect(l2 / l1).toBeCloseTo(1.5 / 1.1, 4);
+      expect(l2 / l1).toBeCloseTo(1.5 / 0.9, 4);
     }
   });
 });
@@ -266,7 +266,7 @@ describe('retours du propriétaire (lot 9c-G) : taille, épaisseur, prises', () 
     const d = avecEchelle(donnees, { longueur: 9, epaisseur: 0.2 });
     expect(d.echelle.lisibilite).toBe(3);
     expect(d.echelle.epaisseur).toBe(1);
-    expect(donnees.echelle.lisibilite).toBe(1.1);
+    expect(donnees.echelle.lisibilite).toBe(0.9);
     expect(avecEchelle(donnees, null).echelle).toEqual(donnees.echelle);
   });
 

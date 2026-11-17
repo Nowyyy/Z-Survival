@@ -20,11 +20,11 @@ describe('poses de tenue (data/armes/poses.json)', () => {
     expect(JSON.parse(JSON.stringify(calcul))).toEqual(fichier);
   });
 
-  it('M1911, Kar98k, MG42 dans les poses demandées (pistolet à deux mains et à une main, épaule, hanche)', () => {
-    expect(fichier.armes.m1911.pose).toBe('pistolet');
+  it('les dix armes dans les poses demandées par le propriétaire (pistolet à deux mains et à une main, épaule, hanche, sur l\'épaule)', () => {
+    const attendu = { m1911: 'pistolet', kar98k: 'epaule', garand: 'epaule', thompson: 'epaule', stg44: 'epaule', winchester1897: 'epaule', bar: 'hanche', mg42: 'hanche', m2lanceflammes: 'hanche', panzerschreck: 'sur-epaule' };
+    expect(Object.fromEntries(Object.entries(fichier.armes).map(([id, a]) => [id, a.pose]))).toEqual(attendu);
     expect(Object.keys(fichier.armes.m1911.modes).sort()).toEqual(['deux-mains', 'une-main']);
-    expect(fichier.armes.kar98k.pose).toBe('epaule');
-    expect(fichier.armes.mg42.pose).toBe('hanche');
+    expect(fichier.armes.m2lanceflammes.modes['deux-mains'].arme.dos.lacet).toBe(-fichier.armes.m2lanceflammes.modes['deux-mains'].torse); // réservoirs tournés avec le torse
   });
 
   it.each(toutes)('%s (%s) : mains sur leurs prises, rien dans la tête ni le torse (crosse exceptée), canon dans l\'axe, arme devant le personnage', (id, mode, p) => {

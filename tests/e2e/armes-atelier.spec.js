@@ -95,9 +95,9 @@ test('atelier des armes : toutes les armes et variantes se construisent (budgets
   await page.selectOption('#ctl-mode', 'une-main');
   expect((await page.evaluate(() => window.__zsArmes.tenue())).mode).toBe('une-main');
   await page.selectOption('#ctl-mode', 'deux-mains');
-  // Un seul curseur commun (décision du propriétaire), ×1,1 par défaut, repris dans « Mes choix » ; rien n'est écrit.
+  // Un seul curseur commun (décision du propriétaire), ×0,9 par défaut, repris dans « Mes choix » ; rien n'est écrit.
   await expect(page.locator('#ctl-largeur, #ctl-epaisseur, #ctl-poing')).toHaveCount(0);
-  expect(await page.evaluate(() => window.__zsArmes.echelle())).toMatchObject({ lisibilite: 1.1, largeur: 1.5, epaisseur: 1.8 });
+  expect(await page.evaluate(() => window.__zsArmes.echelle())).toMatchObject({ lisibilite: 0.9, largeur: 1.5, epaisseur: 1.8 });
   await page.locator('#ctl-longueur').fill('1.2');
   await page.locator('#ctl-longueur').dispatchEvent('change');
   await expect(page.locator('#out-longueur')).toHaveText('× 1,20');
