@@ -2,7 +2,8 @@ import { test, expect } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 import AxeBuilder from '@axe-core/playwright';
 import { defaultSave as defaultV1, encodeSave } from '../../js/core/save.js';
-import { decoder, defaultProgression, encoder } from '../../js/core/progression.js';
+import { CHAMPS_STOCKES, decoder, defaultProgression, encoder, serialiser } from '../../js/core/progression.js';
+import { nomsDuCode } from './helpers.js';
 
 // Lot 4-B : page technique sauvegarde.html. 667×375, ?store=memory sauf mention (« local » : le vrai localStorage).
 // Lot 8h : la page montre et écrit la progression v2 (zs.save.v2, code ZS2) ; un code ZS1 reste importable ; zs.save.v1 n'est ni lue ni écrite.
@@ -15,7 +16,7 @@ const SIZE = { width: 667, height: 375 };
 const BIG = { width: 1440, height: 900 };
 const defaultSave = defaultProgression;
 const sample = (extra = {}) => ({
-  ...defaultSave(), rev: 3, savedAt: 1_700_000_000_000, bleu: { gagne: 5678, depense: 4444 }, niveaux: { ...defaultSave().niveaux, degats: 3, precision: 5 },
+  ...defaultSave(), rev: 3, savedAt: 1_700_000_000_000, medailles: { gagne: 5678, depense: 4444 }, niveaux: { ...defaultSave().niveaux, degats: 3, precision: 5 },
   objets: [{ u: 'a1.0', i: 'casque-kevlar', r: 'rare', n: 2 }], records: { histoire: { batiment: 12 }, infini: { batiment: 20 } }, mondes: ['batiment'],
   profil: { ...defaultSave().profil, tues: 80, partiesHistoire: 5 }, ...extra,
 });
@@ -69,7 +70,7 @@ test('se charge sans erreur ni requête externe ; noindex, français, aucun cook
 
 test('état vide : solde 0, « jamais », état « vide », stockage persistant inconnu ou non', async ({ page }) => {
   await open(page);
-  await expect(state(page)).toContainText('Médailles0'); // lot 9a : le champ « bleu » s'appelle « médailles » (avant : « Diamants »)
+  await expect(state(page)).toContainText('Médailles0'); // lot 9a (avant : « Diamants »)
   await expect(state(page)).toContainText('Dernière écriturejamais');
   await expect(state(page)).toContainText('État de la sauvegardevide');
   await expect(state(page)).toContainText('Stockage persistant');
@@ -125,7 +126,7 @@ test('importer un code valide : aperçu, case à cocher, remplacement, relecture
   await expect(state(page)).toContainText('Dégâts 3');
   await expect(state(page)).toContainText('1 objet(s)');
   await expect(state(page)).toContainText('État de la sauvegardeenregistrée');
-  expect(decoder(await page.locator('#export-code').inputValue(), params).save).toMatchObject({ bleu: { gagne: 5678, depense: 4444 }, rev: 1, records: { histoire: { batiment: 12 }, infini: { batiment: 20 } } });
+  expect(decoder(await page.locator('#export-code').inputValue(), params).save).toMatchObject({ medailles: { gagne: 5678, depense: 4444 }, rev: 1, records: { histoire: { batiment: 12 }, infini: { batiment: 20 } } });
   await expect(page.locator('#import-code')).toHaveValue('');
   await expect(page.locator('#import-preview')).toBeHidden();
 });
@@ -150,6 +151,8 @@ const crc32 = (text) => {
   }
   return ((crc ^ 0xffffffff) >>> 0).toString(16).padStart(8, '0');
 };
+// Lot 9b : sauvegarde d'une version future (champ stocké des médailles, table CHAMPS_STOCKES).
+const FUTURE = JSON.stringify({ v: 99, [CHAMPS_STOCKES.medailles]: 5 });
 const signed = (value) => {
   const body = Buffer.from(typeof value === 'string' ? value : JSON.stringify(value)).toString('base64url');
   return `ZS2.${body}.${crc32(body)}`;
@@ -167,7 +170,7 @@ const ERRORS = () => {
     ['bad-checksum', `ZS2.${body}.00000000`],
     ['bad-json', signed('{pas du json')],
     ['bad-schema', signed({ argent: 5 })],
-    ['future-version', signed({ v: 3, bleu: 5 })],
+    ['future-version', signed({ v: 3, [CHAMPS_STOCKES.medailles]: 5 })],
   ];
 };
 
@@ -210,16 +213,16 @@ test('sauvegarde illisible : section visible, texte brut copiable, aucune écrit
   expect(await page.evaluate((k) => localStorage.getItem(k), KEY)).toBeNull();
   await replaceWith(page, CODE);
   await expect(page.locator('#live')).toHaveText('Sauvegarde importée.');
-  expect(JSON.parse(await page.evaluate((k) => localStorage.getItem(k), KEY))).toMatchObject({ v: 2, bleu: { gagne: 5678, depense: 4444 } });
+  expect(nomsDuCode(JSON.parse(await page.evaluate((k) => localStorage.getItem(k), KEY)))).toMatchObject({ v: 2, medailles: { gagne: 5678, depense: 4444 } });
 });
 
 test('sauvegarde de version future : verrouillée aussi, jamais écrasée par la page', async ({ page }) => {
-  await page.addInitScript(`${writesSpy(seed('{"v":99,"bleu":5}'))}`);
+  await page.addInitScript(`${writesSpy(seed(FUTURE))}`);
   await open(page, '');
   await expect(state(page)).toHaveAttribute('data-state', 'locked');
-  await expect(page.locator('#locked-raw')).toHaveValue('{"v":99,"bleu":5}');
+  await expect(page.locator('#locked-raw')).toHaveValue(FUTURE);
   await importCode(page, 'ZS2.@@@@.00000000');
-  expect(await page.evaluate((k) => localStorage.getItem(k), KEY)).toBe('{"v":99,"bleu":5}');
+  expect(await page.evaluate((k) => localStorage.getItem(k), KEY)).toBe(FUTURE);
 });
 
 test('« Importer un code » de la section illisible descend à l\'import et déverrouille', async ({ page }) => {
@@ -242,7 +245,7 @@ test('« Repartir de zéro » demande une confirmation et peut être annulée', 
 });
 
 test('« Tout effacer » en deux temps : bouton, puis case et second bouton', async ({ page }) => {
-  await page.addInitScript(seed(sample()));
+  await page.addInitScript(seed(serialiser(sample()))); // lot 9b : objet écrit (champs stockés)
   await open(page, '');
   await expect(state(page)).toContainText('Médailles1234'); // lot 9a (avant : « Diamants »)
   await page.getByRole('button', { name: 'Tout effacer…' }).click();
@@ -254,12 +257,12 @@ test('« Tout effacer » en deux temps : bouton, puis case et second bouton', as
   await expect(yes).toBeEnabled();
   await yes.click();
   await expect(page.locator('#live')).toHaveText('Sauvegarde effacée.');
-  await expect(state(page)).toContainText('Médailles0'); // lot 9a : le champ « bleu » s'appelle « médailles » (avant : « Diamants »)
+  await expect(state(page)).toContainText('Médailles0'); // lot 9a (avant : « Diamants »)
   expect(await page.evaluate((k) => localStorage.getItem(k), KEY)).toBeNull();
 });
 
 test('« Tout effacer » annulé ne touche à rien', async ({ page }) => {
-  await page.addInitScript(seed(sample()));
+  await page.addInitScript(seed(serialiser(sample()))); // lot 9b : objet écrit (champs stockés)
   await open(page, '');
   await page.getByRole('button', { name: 'Tout effacer…' }).click();
   await page.locator('#clear-ack').check();
@@ -270,7 +273,7 @@ test('« Tout effacer » annulé ne touche à rien', async ({ page }) => {
 
 test('la sauvegarde réelle est lue au chargement (stockage local) et la page se met à jour quand un autre onglet la modifie', async ({ page, context }) => {
   await open(page, '');
-  await expect(state(page)).toContainText('Médailles0'); // lot 9a : le champ « bleu » s'appelle « médailles » (avant : « Diamants »)
+  await expect(state(page)).toContainText('Médailles0'); // lot 9a (avant : « Diamants »)
   const other = await context.newPage();
   await other.setViewportSize(SIZE);
   await other.goto('/sauvegarde.html');
@@ -293,7 +296,7 @@ test('seules clés zs.save.v2 et zs.device.v1 (laissée intacte) dans localStora
   const stores = await page.evaluate(async () => ({ keys: Object.keys(localStorage).sort(), session: sessionStorage.length, cookie: document.cookie, idb: (await indexedDB.databases()).length }));
   expect(stores).toEqual({ keys: ['zs.device.v1', KEY], session: 0, cookie: '', idb: 0 }); // ordre alphabétique
   expect(await page.evaluate(() => localStorage.getItem('zs.device.v1'))).toBe('{"v":1,"graphics":"moyen"}');
-  expect(JSON.parse(await page.evaluate((k) => localStorage.getItem(k), KEY)).bleu).toEqual({ gagne: 5678, depense: 4444 });
+  expect(nomsDuCode(JSON.parse(await page.evaluate((k) => localStorage.getItem(k), KEY))).medailles).toEqual({ gagne: 5678, depense: 4444 });
 });
 
 test('lot 8h : zs.save.v1 (V0.7) jamais lue ni écrite ; un code ZS1 importé remplace la progression (niveaux et record de l\'histoire, argent non converti)', async ({ page }) => {
@@ -301,7 +304,7 @@ test('lot 8h : zs.save.v1 (V0.7) jamais lue ni écrite ; un code ZS1 importé re
   await page.addInitScript(`${writesSpy(`if (!sessionStorage.getItem('__seeded')) { localStorage.setItem('${V1}', ${JSON.stringify(v1)}); sessionStorage.setItem('__seeded', '1'); }`)}`);
   await open(page, '');
   await expect(state(page)).toHaveAttribute('data-state', 'empty'); // la V0.8 repart de zéro
-  await expect(state(page)).toContainText('Médailles0'); // lot 9a : le champ « bleu » s'appelle « médailles » (avant : « Diamants »)
+  await expect(state(page)).toContainText('Médailles0'); // lot 9a (avant : « Diamants »)
   await replaceWith(page, CODE);
   await importCode(page, CODE_V1);
   await expect(page.locator('#import-warnings')).toContainText('version plus ancienne (ZS1)');
@@ -309,8 +312,8 @@ test('lot 8h : zs.save.v1 (V0.7) jamais lue ni écrite ; un code ZS1 importé re
   await page.locator('#import-ack').check();
   await page.getByRole('button', { name: 'Remplacer ma sauvegarde' }).click();
   await expect(page.locator('#live')).toHaveText('Sauvegarde importée.');
-  const v2 = JSON.parse(await page.evaluate((k) => localStorage.getItem(k), KEY));
-  expect([v2.bleu, v2.objets, v2.niveaux.vie, v2.records.histoire.batiment]).toEqual([{ gagne: 0, depense: 0 }, [], 4, 17]);
+  const v2 = nomsDuCode(JSON.parse(await page.evaluate((k) => localStorage.getItem(k), KEY)));
+  expect([v2.medailles, v2.objets, v2.niveaux.vie, v2.records.histoire.batiment]).toEqual([{ gagne: 0, depense: 0 }, [], 4, 17]);
   expect(await page.evaluate((k) => localStorage.getItem(k), V1)).toBe(v1);
   expect((await page.evaluate(() => window.__writes)).filter((w) => w[1] === V1)).toHaveLength(1); // le semis du test seulement
 });
@@ -421,7 +424,7 @@ test.describe('compatibilité V0.7 ↔ V0.8, même origine', () => {
   });
 
   // Joue dans une version (vrai stockage) : 50 d'argent d'essai, une manche terminée, écriture ; renvoie le temps de jeu et l'état de la sauvegarde.
-  // Retour du propriétaire après le lot 9a : la version de travail (dev) n'écrit la bleue qu'à la fin de la partie : elle finit par la mort ; la
+  // Retour du propriétaire après le lot 9a : la version de travail (dev) n'écrit les médailles qu'à la fin de la partie : elle finit par la mort ; la
   // V0.7 garde son chemin d'avant (écriture à la manche).
   const jouer = async (page, version) => {
     await page.goto(`${BASE}/${version}/jeu.html?test=1&store=local&seed=1`);
@@ -460,13 +463,13 @@ test.describe('compatibilité V0.7 ↔ V0.8, même origine', () => {
     await expect(page.locator('#state-list')).toHaveAttribute('data-state', 'empty');
     await replaceWith(page, CODE);
     await expect(page.locator('#live')).toHaveText('Sauvegarde importée.');
-    // 2 bis. La partie de la V0.8 joue : la manche terminée rapporte 12 bleus, écrits dans zs.save.v2 ; zs.save.v1 intacte.
+    // 2 bis. La partie de la V0.8 joue : la manche terminée rapporte 20 médailles (lot 8k), écrites dans zs.save.v2 ; zs.save.v1 intacte.
     const c = await jouer(page, 'dev');
     expect(c.time).toBeGreaterThan(1);
     const apres08 = await lire(page);
     expect(apres08[V1]).toBe(v1);
     const v2 = apres08[KEY];
-    expect(JSON.parse(v2).bleu).toEqual({ gagne: 5678 + 20, depense: 4444 }); // lot 8k : bleue fixe (avant : + 12)
+    expect(nomsDuCode(JSON.parse(v2)).medailles).toEqual({ gagne: 5678 + 20, depense: 4444 }); // lot 8k : médailles fixes (avant : + 12)
     // 3. V0.7 rejoue : elle relit sa progression, l'augmente, et ne touche jamais zs.save.v2.
     const b = await jouer(page, 'Recette');
     expect(b.time).toBeGreaterThan(1);

@@ -1,6 +1,6 @@
 // Lot 8d : sous-menu Inventaire (E9-2, maquette Docs/maquettes-v0.8/Inventaire.html), écran plein chargé à sa première ouverture (js/menu/personnage.js).
 // Filtres (lot 8h : Tout et un par emplacement de survie), grille paginée de 12 objets (6 × 2 comme la maquette, triés par rareté décroissante),
-// panneau de détail : Équiper ou Retirer, Améliorer (lot 8h : prix prélevé en monnaie bleue ; « Il manque N » grisé quand le solde ne suffit pas ;
+// panneau de détail : Équiper ou Retirer, Améliorer (lot 8h : prix prélevé en médailles ; « Il manque N » grisé quand le solde ne suffit pas ;
 // désactivé au niveau maximum ; raison lue), exemplaires identiques, « Fusionner cet objet » (ouvre Fusion avec l'objet placé). État : progression
 // v2 (equipement-etat.js).
 import { formatMoney } from '../core/economy.js';
@@ -141,7 +141,7 @@ export function creer({ t, bandeau, eq, cat, retour, ouvrir }) {
     effet.textContent = texteEffet(t, bonusObjet(cat, o));
     btEquiper.textContent = t(porte ? 'game.menu.inventaire.retirer' : 'game.menu.inventaire.equiper');
     const info = infoAmelioration(etat, cat, o.uid);
-    // Lot 8h : prix prélevé en monnaie bleue ; solde insuffisant : « Il manque N » grisé, raison lue.
+    // Lot 8h : prix prélevé en médailles ; solde insuffisant : « Il manque N » grisé, raison lue.
     const manque = info.possible ? Math.max(0, info.prix - eq.solde()) : 0;
     btAmeliorer.textContent = !info.possible ? t('game.menu.inventaire.ameliorer.max') : manque > 0 ? fmt(t('game.menu.prix.manque'), { n: formatMoney(manque) }) : fmt(t('game.menu.inventaire.ameliorer'), { prix: formatMoney(info.prix) });
     poserActif(btAmeliorer, info.possible && manque === 0, 'menu-inventaire-raison');

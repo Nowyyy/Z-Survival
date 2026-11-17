@@ -1,12 +1,12 @@
 // Lot 8d : écran Personnage (E9-1) et sous-menus Inventaire, Fusion, Personnages (E9-2 à E9-4) du menu principal ; niveaux effectifs transmis à la
 // partie par « JOUER » (Docs/ref/menu-principal.md). ?test=1&menu=1 ; 932 × 430 (référence), 667 × 375, 1440 × 900 ; projets bureau et mobile (paysage).
 // Lot 8h : six emplacements de survie, catalogue militaire, état gardé dans la progression v2 (zs.save.v2) : chaque test part de la progression de
-// démonstration (inventaire o1 à o16 de data/menu/inventaire-depart.json, 100 000 bleus ; tests/e2e/helpers.js), adresse ?store=local ; prix prélevés.
+// démonstration (inventaire o1 à o16 de data/menu/inventaire-depart.json, 100 000 médailles ; tests/e2e/helpers.js), adresse ?store=local ; prix prélevés.
 import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { readFileSync } from 'node:fs';
 import { creerEtatEquipement, lireCatalogue, statistiquesEffectives } from '../../js/core/equipement.js';
-import { CLE_V2, poserProgression, progressionDemo } from './helpers.js';
+import { CLE_V2, nomsDuCode, poserProgression, progressionDemo } from './helpers.js';
 
 const REF = { width: 932, height: 430 };
 const SIZES = [REF, { width: 667, height: 375 }, { width: 1440, height: 900 }];
@@ -311,7 +311,7 @@ test.describe('sous-menus Inventaire, Fusion, Personnages (E9-2 à E9-4)', () =>
     expect(o.problemes).toEqual([]);
   });
 
-  test('Inventaire : filtre venu d\'un emplacement, filtres par emplacement (lot 8h), pagination, objet choisi, Équiper puis Retirer, Améliorer jusqu\'au maximum (prix prélevé en bleu, une écriture par geste), « Fusionner cet objet »', async ({ page, baseURL }) => {
+  test('Inventaire : filtre venu d\'un emplacement, filtres par emplacement (lot 8h), pagination, objet choisi, Équiper puis Retirer, Améliorer jusqu\'au maximum (prix prélevé en médailles, une écriture par geste), « Fusionner cet objet »', async ({ page, baseURL }) => {
     const o = surveiller(page, baseURL);
     await espionStockage(page);
     await ouvrirPersonnage(page);
@@ -368,9 +368,9 @@ test.describe('sous-menus Inventaire, Fusion, Personnages (E9-2 à E9-4)', () =>
     await expect(page.locator('#menu-inventaire-ameliorer')).toHaveAccessibleDescription('Niveau maximal atteint (5).');
     await page.locator('#menu-inventaire-ameliorer').click({ force: true });
     expect((await etatPerso(page)).objets.find((x) => x.uid === 'o5').niveau).toBe(5);
-    await expect(page.locator('#menu-solde-texte')).toHaveText(soldeTexte(100_000 - 4 * 40)); // lot 8h : prix prélevés en bleu
-    const garde = JSON.parse(await page.evaluate((k) => localStorage.getItem(k), CLE_V2));
-    expect([garde.bleu.depense, garde.objets.find((x) => x.u === 'o5').n, garde.porte.gants]).toEqual([160, 5, 'o11']);
+    await expect(page.locator('#menu-solde-texte')).toHaveText(soldeTexte(100_000 - 4 * 40)); // lot 8h : prix prélevés en médailles
+    const garde = nomsDuCode(JSON.parse(await page.evaluate((k) => localStorage.getItem(k), CLE_V2)));
+    expect([garde.medailles.depense, garde.objets.find((x) => x.u === 'o5').n, garde.porte.gants]).toEqual([160, 5, 'o11']);
     // Légendaire : « Fusionner cet objet » désactivé (raison écrite).
     await page.locator('#menu-objet-o16').click();
     await expect(page.locator('#menu-inventaire-fusionner')).toHaveAttribute('aria-disabled', 'true');
@@ -386,8 +386,8 @@ test.describe('sous-menus Inventaire, Fusion, Personnages (E9-2 à E9-4)', () =>
     expect(o.problemes).toEqual([]);
   });
 
-  test('lot 8h : solde bleu insuffisant : « Il manque N » grisé, raison lue, rien n\'est prélevé ni écrit', async ({ page }) => {
-    await poserProgression(page, progressionDemo({ bleu: 25 }));
+  test('lot 8h : solde des médailles insuffisant : « Il manque N » grisé, raison lue, rien n\'est prélevé ni écrit', async ({ page }) => {
+    await poserProgression(page, progressionDemo({ medailles: 25 }));
     await espionStockage(page);
     await ouvrirPersonnage(page);
     await page.locator('#menu-perso-inventaire').click();
@@ -400,7 +400,7 @@ test.describe('sous-menus Inventaire, Fusion, Personnages (E9-2 à E9-4)', () =>
     expect(await page.evaluate(() => window.__ecritures)).toEqual([]);
   });
 
-  test('Fusion : placer trois objets (compatibles filtrés), manque, Remplir automatiquement, Fusionner (résultat annoncé, inventaire et équipement mis à jour) ; légendaire non fusionnable ; coût prélevé en bleu (lot 8h)', async ({ page, baseURL }) => {
+  test('Fusion : placer trois objets (compatibles filtrés), manque, Remplir automatiquement, Fusionner (résultat annoncé, inventaire et équipement mis à jour) ; légendaire non fusionnable ; coût prélevé en médailles (lot 8h)', async ({ page, baseURL }) => {
     const o = surveiller(page, baseURL);
     await espionStockage(page);
     await ouvrirPersonnage(page);
@@ -449,7 +449,7 @@ test.describe('sous-menus Inventaire, Fusion, Personnages (E9-2 à E9-4)', () =>
     expect(o.problemes).toEqual([]);
   });
 
-  test('Personnages : choisir le deuxième (écran Personnage et statistiques mis à jour), verrouillé ni choisissable ni améliorable, améliorer (lot 8h : prix prélevé en bleu) ; animations e9-* en pause hors de l\'écran', async ({ page, baseURL }) => {
+  test('Personnages : choisir le deuxième (écran Personnage et statistiques mis à jour), verrouillé ni choisissable ni améliorable, améliorer (lot 8h : prix prélevé en médailles) ; animations e9-* en pause hors de l\'écran', async ({ page, baseURL }) => {
     const o = surveiller(page, baseURL);
     await espionStockage(page);
     await ouvrirPersonnage(page);
@@ -506,7 +506,7 @@ const KEY = CLE_V2; // lot 8h : progression v2
 // Niveaux de base posés à la main (lot 8h : 0 pour tout le monde au départ ; un lot d'équilibrage les donnera) pour vérifier leur transmission.
 const SAVE_STATS = { degats: 2, portee: 1, precision: 0, cadence: 3, vitesse: 9, vie: 1, regen: 0, chutes: 1, reparation: 0 };
 async function poserSauvegarde(page) {
-  await poserProgression(page, progressionDemo({ bleu: 500, extra: { niveaux: SAVE_STATS, records: { histoire: { batiment: 3 }, infini: {} } } }));
+  await poserProgression(page, progressionDemo({ medailles: 500, extra: { niveaux: SAVE_STATS, records: { histoire: { batiment: 3 }, infini: {} } } }));
 }
 const niveauxPartie = (page) => page.evaluate(() => { const s = window.__zs.getState(); return { source: s.stats.source, niveaux: { ...s.stats.levels, ...s.stats.extraLevels } }; });
 async function retirerTout(page) {
@@ -525,7 +525,7 @@ async function jouer(page) {
 }
 
 test.describe('« JOUER » : niveaux de la partie', () => {
-  test('avec l\'équipement modifié et le deuxième personnage : la partie reçoit exactement les niveaux de la fonction pure (bornés), source « menu » ; lot 8h : les deux gestes écrits (équipement, personnage choisi), niveaux de base et bleu inchangés', async ({ page }) => {
+  test('avec l\'équipement modifié et le deuxième personnage : la partie reçoit exactement les niveaux de la fonction pure (bornés), source « menu » ; lot 8h : les deux gestes écrits (équipement, personnage choisi), niveaux de base et médailles inchangés', async ({ page }) => {
     test.setTimeout(150_000);
     await poserSauvegarde(page);
     await espionStockage(page);
@@ -552,11 +552,11 @@ test.describe('« JOUER » : niveaux de la partie', () => {
     expect(p.niveaux).toEqual(attendu);
     const s = await page.evaluate(() => { const st = window.__zs.getState(); return [st.mode, st.save.kind, st.save.readOnly]; });
     expect(s).toEqual(['histoire', 'local', false]);
-    // Progression : niveaux de base et bleu inchangés ; gants portés et personnage choisi gardés.
+    // Progression : niveaux de base et médailles inchangés ; gants portés et personnage choisi gardés.
     await page.evaluate(() => window.__zs.flushSave());
-    const apres = JSON.parse(await page.evaluate((k) => localStorage.getItem(k), KEY));
+    const apres = nomsDuCode(JSON.parse(await page.evaluate((k) => localStorage.getItem(k), KEY)));
     expect(apres.niveaux).toEqual(JSON.parse(avant).niveaux);
-    expect(apres.bleu).toEqual({ gagne: 500, depense: 0 });
+    expect(apres.medailles).toEqual({ gagne: 500, depense: 0 });
     expect([apres.porte.gants, apres.persos.choisi]).toEqual(['o11', 'personnage-2']);
     expect(await page.evaluate(() => Object.keys(localStorage).sort())).toEqual([KEY]);
     await page.evaluate(() => localStorage.clear());

@@ -78,19 +78,19 @@ describe('logique pure de sauvegarde.html', () => {
   it('toutes les clés de noms (statistiques, records, lignes) existent dans fr.json', () => {
     for (const id of ['degats', 'portee', 'precision', 'cadence', 'vitesse', 'vie', 'regen', 'chutes', 'reparation']) expect(fr[statKey(id)], id).toBeTruthy();
     for (const id of ['bestWave', 'bestKills', 'runs', 'worldsCompleted']) expect(fr[recordKey(id)], id).toBeTruthy();
-    for (const id of ['money', 'earned', 'medailles', 'levelsSum', 'bestWave', 'objets', 'persos', 'tenues', 'mondes', 'tues', 'parties']) expect(fr[rowKey(id)], id).toBeTruthy();
+    for (const id of ['money', 'earned', 'diamants', 'levelsSum', 'bestWave', 'objets', 'persos', 'tenues', 'mondes', 'tues', 'parties']) expect(fr[rowKey(id)], id).toBeTruthy();
     for (const mode of ['histoire', 'infini']) expect(fr[MODE_RECORD_KEYS[mode]], mode).toMatch(/\{monde\}/);
   });
 
-  it('aperçu d\'un import (v2) : monnaie bleue, total gagné, objets, niveaux, profil et un record par mode et par monde, avec ce qui change', () => {
-    const current = { ...defaultProgression(), bleu: { gagne: 100, depense: 0 }, records: { histoire: { batiment: 4 }, infini: {} }, profil: { ...defaultProgression().profil, partiesHistoire: 1 } };
-    const incoming = { ...withNiveaux({ degats: 3 }), bleu: { gagne: 600, depense: 100 }, records: { histoire: { batiment: 4 }, infini: { batiment: 9 } }, profil: { ...defaultProgression().profil, partiesHistoire: 2 } };
+  it('aperçu d\'un import (v2) : médailles, total gagné, objets, niveaux, profil et un record par mode et par monde, avec ce qui change', () => {
+    const current = { ...defaultProgression(), medailles: { gagne: 100, depense: 0 }, records: { histoire: { batiment: 4 }, infini: {} }, profil: { ...defaultProgression().profil, partiesHistoire: 1 } };
+    const incoming = { ...withNiveaux({ degats: 3 }), medailles: { gagne: 600, depense: 100 }, records: { histoire: { batiment: 4 }, infini: { batiment: 9 } }, profil: { ...defaultProgression().profil, partiesHistoire: 2 } };
     const rows = previewRows(current, incoming, params);
-    expect(rows.map((r) => r.id)).toEqual(['money', 'earned', 'medailles', 'objets', 'persos', 'tenues', 'levelsSum', 'mondes', 'tues', 'parties', 'histoire.batiment', 'infini.batiment']);
+    expect(rows.map((r) => r.id)).toEqual(['money', 'earned', 'diamants', 'objets', 'persos', 'tenues', 'levelsSum', 'mondes', 'tues', 'parties', 'histoire.batiment', 'infini.batiment']);
     const byId = Object.fromEntries(rows.map((r) => [r.id, r]));
     expect(byId.money).toMatchObject({ current: 100, incoming: 500, changed: true });
     expect(byId.earned).toMatchObject({ current: 100, incoming: 600, changed: true });
-    expect(byId.medailles).toMatchObject({ current: 0, incoming: 0, changed: false }); // lot 8k
+    expect(byId.diamants).toMatchObject({ current: 0, incoming: 0, changed: false }); // lot 8k
     expect(byId.levelsSum).toMatchObject({ current: 0, incoming: 3, changed: true });
     expect(byId['histoire.batiment'].changed).toBe(false);
     expect(byId['infini.batiment']).toMatchObject({ mode: 'infini', monde: 'batiment', current: 0, incoming: 9, changed: true });

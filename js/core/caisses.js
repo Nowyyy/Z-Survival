@@ -10,7 +10,7 @@
 // listée). Entrée invalide : null ou liste vide, jamais d'exception. Prix affichés, jamais prélevés avant le lot 8h.
 // Lot 8k (Docs/ref/economie.md) : une caisse par rubrique ; la caisse de personnages tire aussi une RARETÉ (chaque personnage a la sienne,
 // data/menu/personnages.json), puis un personnage de cette rareté ; pitié par rubrique (lirePitie, chancesTirage, tirerPitie) : les compteurs viennent
-// de la progression v2 et y retournent avec l'achat (même écriture que le prix en médailles).
+// de la progression v2 et y retournent avec l'achat (même écriture que le prix en diamants).
 import { createRng, nextFloat } from './rng.js';
 
 export const TIRAGES_X10 = 10;

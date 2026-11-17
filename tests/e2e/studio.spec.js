@@ -6,6 +6,7 @@ import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { readFileSync } from 'node:fs';
 import { decoder, defaultProgression as defaultSave, encoder, serialiser } from '../../js/core/progression.js';
+import { nomsDuCode } from './helpers.js';
 
 const REF = { width: 932, height: 430 };
 const PETIT = { width: 667, height: 375 };
@@ -478,7 +479,7 @@ const lireJson = (f) => JSON.parse(readFileSync(f, 'utf8'));
 const PARAMS_SAVE = { save: lireJson('data/game/save.json'), economy: lireJson('data/game/economy.json'), stats: lireJson('data/game/player-stats.json') };
 const KEY = 'zs.save.v2'; // lot 8h : progression v2 (le Profil lit et écrit zs.save.v2 ; zs.save.v1 n'est plus lue)
 const NNBSP = String.fromCharCode(0x202f);
-const SAUVEGARDE = serialiser({ ...defaultSave(), rev: 3, savedAt: 1_700_000_000_000, bleu: { gagne: 4321, depense: 2821 }, niveaux: { ...defaultSave().niveaux, vie: 2, degats: 1 }, records: { histoire: { batiment: 17 }, infini: { batiment: 30 } }, profil: { ...defaultSave().profil, tues: 88, partiesHistoire: 6, partiesInfini: 2, tempsMs: 3_725_000 } });
+const SAUVEGARDE = serialiser({ ...defaultSave(), rev: 3, savedAt: 1_700_000_000_000, medailles: { gagne: 4321, depense: 2821 }, niveaux: { ...defaultSave().niveaux, vie: 2, degats: 1 }, records: { histoire: { batiment: 17 }, infini: { batiment: 30 } }, profil: { ...defaultSave().profil, tues: 88, partiesHistoire: 6, partiesInfini: 2, tempsMs: 3_725_000 } });
 
 // Sauvegarde posée dans le vrai stockage (même origine), puis menu sous ?store=local ; écritures comptées depuis l'ouverture du menu.
 async function menuAvecSauvegarde(page, size = REF, save = SAUVEGARDE) {
@@ -541,7 +542,7 @@ test.describe('Connexion et Profil (E10)', () => {
       await expect(page.locator('#menu-profil-pseudo')).toHaveText('Survivant');
       await expect(page.locator('#menu-profil-compte')).toHaveText('Compte : non connecté');
       await expect(page.locator('#menu-profil-google')).toHaveAttribute('aria-disabled', 'true');
-      await expect(page.locator('.e10-stat-nom')).toHaveText(['Meilleure manche', 'Zombies tués', 'Parties histoire', 'Parties infini', 'Temps de jeu', 'Médailles gagnées', 'Diamants gagnés']); // lot 9a : champ « bleu » = médailles, champ « medailles » = diamants ; // sans record infini ; lot 8h : monnaie bleue ; lot 8k : médailles (quatre colonnes, deux rangées)
+      await expect(page.locator('.e10-stat-nom')).toHaveText(['Meilleure manche', 'Zombies tués', 'Parties histoire', 'Parties infini', 'Temps de jeu', 'Médailles gagnées', 'Diamants gagnés']); // lot 9a : médailles et diamants ; sans record infini ; lot 8k : septième statistique (quatre colonnes, deux rangées)
       await expect(page.locator('#menu-profil-exporter')).toHaveText('Exporter mon code');
       await expect(page.locator('#menu-profil-importer')).toHaveText('Importer un code');
       const marge = encoche ? 50 : 15.5;
@@ -616,8 +617,8 @@ test.describe('Connexion et Profil (E10)', () => {
   test('avatar et pseudo gardés (lot 8h : zs.save.v2, une écriture par validation) ; pseudo : erreurs lues (trop court, trop long, caractère invisible), espaces nettoyés, Échap annule ; statistiques égales à la sauvegarde (?store=local) ; rechargement : valeurs gardées', async ({ page }) => {
     await menuAvecSauvegarde(page);
     await ouvrirProfil(page);
-    await expect(page.locator('.e10-stat-valeur')).toHaveText([`17 / 40`, '88', '6', '2', '1 h 2 min', `4${NNBSP}321`, '0']); // lot 8h : toutes lues dans la progression v2 ; lot 8k : médailles gagnées (0 : sauvegarde d'avant le lot)
-    expect((await page.evaluate(() => window.__zsMenu.etat().menu.compte)).stats).toEqual([['meilleureManche', '17'], ['tues', '88'], ['partiesHistoire', '6'], ['partiesInfini', '2'], ['temps', '3725000'], ['argent', '4321'], ['medailles', '0']]);
+    await expect(page.locator('.e10-stat-valeur')).toHaveText([`17 / 40`, '88', '6', '2', '1 h 2 min', `4${NNBSP}321`, '0']); // lot 8h : toutes lues dans la progression v2 ; lot 8k : diamants gagnés (0 : sauvegarde d'avant le lot)
+    expect((await page.evaluate(() => window.__zsMenu.etat().menu.compte)).stats).toEqual([['meilleureManche', '17'], ['tues', '88'], ['partiesHistoire', '6'], ['partiesInfini', '2'], ['temps', '3725000'], ['medailles', '4321'], ['diamants', '0']]);
     // Retours du propriétaire : avatars d'après le personnage du jeu et les zombies, personnage tout gris par défaut ; « Changer d'avatar » ouvre un
     // petit menu des avatars sous le grand portrait (à la place du bouton, du pseudo et du compte) ; « Valider » garde le choix et rend la carte.
     await expect(page.locator('#menu-profil-avatar')).toHaveAttribute('aria-label', 'Avatar 1 sur 7 : Anonyme');
@@ -733,7 +734,7 @@ test.describe('Connexion et Profil (E10)', () => {
     await page.locator('#menu-profil-importer').click();
     const champ = page.locator('#menu-import-code');
     await expect(champ).toBeFocused();
-    const autre = { ...defaultSave(), bleu: { gagne: 9000, depense: 8223 }, records: { histoire: { batiment: 25 }, infini: {} }, profil: { ...defaultSave().profil, partiesHistoire: 11 } };
+    const autre = { ...defaultSave(), medailles: { gagne: 9000, depense: 8223 }, records: { histoire: { batiment: 25 }, infini: {} }, profil: { ...defaultSave().profil, partiesHistoire: 11 } };
     const valide = encoder(autre, PARAMS_SAVE);
     await champ.fill(`${valide.slice(0, -3)}${valide.endsWith('000') ? '111' : '000'}`);
     await page.locator('#menu-import-verifier').click();
@@ -746,7 +747,7 @@ test.describe('Connexion et Profil (E10)', () => {
     await expect(page.locator('#menu-import-erreur')).toHaveText('');
     await expect(page.locator('#menu-import-apercu')).toBeVisible();
     await expect(page.locator('#menu-import-message')).toHaveText('Code valide : vérifie l\'aperçu avant de remplacer ta sauvegarde.');
-    await expect(page.locator('#menu-import-table tr[data-changed="true"] th')).toContainText(['Médailles', 'Médailles gagnées (total)', 'Record histoire (batiment)']); // lot 9a : le champ « bleu » s'appelle « médailles »
+    await expect(page.locator('#menu-import-table tr[data-changed="true"] th')).toContainText(['Médailles', 'Médailles gagnées (total)', 'Record histoire (batiment)']); // lot 9a : appelées « Diamants » en V0.8
     await expect(page.locator('#menu-import-remplacer')).toBeDisabled();
     expect((await new AxeBuilder({ page }).analyze()).violations.map((v) => v.id)).toEqual([]);
     expect(await page.evaluate(() => window.__ecritures)).toEqual([]);
@@ -755,8 +756,8 @@ test.describe('Connexion et Profil (E10)', () => {
     await page.locator('#menu-import-remplacer').click();
     await expect(page.locator('#menu-import-message')).toHaveText('Sauvegarde importée. Le menu va se recharger pour la prendre en compte.');
     expect(await page.evaluate(() => window.__ecritures)).toEqual(['local.setItem']); // la seule écriture, celle de l'import existant
-    const ecrite = JSON.parse(await page.evaluate((k) => localStorage.getItem(k), KEY));
-    expect([ecrite.bleu.gagne - ecrite.bleu.depense, ecrite.bleu.gagne, ecrite.records.histoire.batiment, ecrite.profil.partiesHistoire]).toEqual([777, 9000, 25, 11]);
+    const ecrite = nomsDuCode(JSON.parse(await page.evaluate((k) => localStorage.getItem(k), KEY)));
+    expect([ecrite.medailles.gagne - ecrite.medailles.depense, ecrite.medailles.gagne, ecrite.records.histoire.batiment, ecrite.profil.partiesHistoire]).toEqual([777, 9000, 25, 11]);
     await expect(page.locator('.e10-stat-valeur').first()).toHaveText('25 / 40');
     await expect(page.locator('#menu-import-recharger')).toBeFocused();
     const rechargement = page.waitForEvent('framenavigated', { predicate: (f) => f === page.mainFrame() });
@@ -773,7 +774,7 @@ test.describe('Connexion et Profil (E10)', () => {
     await ouvrirProfil(page);
     await expect(page.locator('#menu-profil-sauvegarde .e10-sous')).toHaveText('En mémoire (mode test)');
     await page.locator('#menu-profil-importer').click();
-    await page.locator('#menu-import-code').fill(encoder({ ...defaultSave(), bleu: { gagne: 50, depense: 0 } }, PARAMS_SAVE));
+    await page.locator('#menu-import-code').fill(encoder({ ...defaultSave(), medailles: { gagne: 50, depense: 0 } }, PARAMS_SAVE));
     await page.locator('#menu-import-verifier').click();
     await page.locator('#menu-import-ack').check();
     await page.locator('#menu-import-remplacer').click();

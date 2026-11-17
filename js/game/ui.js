@@ -20,8 +20,8 @@ export function createUi(dict, handlers) {
     pauseBtn: $('btn-pause'), resume: $('btn-resume'), fullscreen: $('btn-fullscreen'), sound: $('btn-sound'),
     options: $('btn-options'), debug: $('btn-debug'), restart: $('btn-restart'), replay: $('btn-replay'), quit: $('btn-quit'), menuBtn: $('btn-menu'), endKills: $('end-kills'), endWave: $('end-wave'),
     endBox: $('end-box'), endTitle: $('end-title-text'), pauseBalance: $('pause-balance-text'), endWaveText: $('end-wave-text'),
-    endBalance: $('end-balance'), endBalanceText: $('end-balance-text'), endBleu: $('end-bleu'), endBleuText: $('end-bleu-text'), endBest: $('end-best'), endRecord: $('end-record'), endRecordText: $('end-record-text'), endSave: $('end-save'),
-    pauseMedailles: $('pause-medailles-text'), endJour: $('end-jour'), endJourText: $('end-jour-text'), endMed: $('end-medailles'), endMedText: $('end-medailles-text'), endMedSolde: $('end-medailles-solde'), endMedSoldeText: $('end-medailles-solde-text'),
+    endBalance: $('end-balance'), endBalanceText: $('end-balance-text'), endMedailles: $('end-medailles'), endMedaillesText: $('end-medailles-text'), endBest: $('end-best'), endRecord: $('end-record'), endRecordText: $('end-record-text'), endSave: $('end-save'),
+    pauseDiamants: $('pause-diamants-text'), endJour: $('end-jour'), endJourText: $('end-jour-text'), endDiamants: $('end-diamants'), endDiamantsText: $('end-diamants-text'), endDiamantsSolde: $('end-diamants-solde'), endDiamantsSoldeText: $('end-diamants-solde-text'),
   };
   // Lot 5j : écran Options (créé à la première ouverture) ; binding : contrôleur graphique et couche VHS, donnés par game.js (bindOptions).
   // Lot 8c : composant partagé avec le menu (contexte « partie ») ; sa section Son lit l'audio en cours (sonAudio) et passe par les mêmes
@@ -92,20 +92,19 @@ export function createUi(dict, handlers) {
     // « Monde terminé » à la place de « Tu es mort » (la variante de mort est inchangée).
     // Lot 4 : « Solde » (summary : { balance, status }, de js/game/bank.js). Lot 3l (retour du propriétaire) : à côté de « PAUSE » ; l'état de la sauvegarde
     // n'est plus dans la pause (il reste sur l'écran de fin quand il pose problème : illisible, indisponible, échec, mode essai).
-    // Lot 9a (monnaies interverties, Docs/ref/economie.md) : chaque emplacement garde son champ ; seuls l'icône, la couleur et le nom changent
-    // (jeu.html, fr.json) : #pause-balance = champ « bleu » (médaille, « Médailles : »), .pause-medailles = champ « medailles » (gemme, « Diamants : ») ;
-    // de même à l'écran de fin (#end-balance : médailles ; #end-medailles-solde : diamants).
+    // Lot 9a (monnaies interverties, Docs/ref/economie.md) : #pause-balance = médailles (médaille, « Médailles : »), .pause-diamants = diamants
+    // (gemme, « Diamants : ») ; de même à l'écran de fin (#end-balance : médailles ; #end-diamants-solde : diamants).
     setPauseInfo(summary) {
-      // Retour du propriétaire après le lot 8j : la pause montre le solde de la monnaie bleue (gemme puis montant, comme l'en-tête du menu ;
-      // « Monnaie bleue : » reste dit aux lecteurs d'écran), et plus la monnaie jaune.
-      els.pauseBalance.textContent = fmt(dict[MONEY_TEXTS.pauseBalance], { n: formatMoney(summary?.soldeBleu) });
-      // Lot 8k : puis le solde de médailles (médaille puis montant ; « Médailles : » dit aux lecteurs d'écran).
-      if (els.pauseMedailles) els.pauseMedailles.textContent = fmt(dict[MONEY_TEXTS.pauseBalance], { n: formatMoney(summary?.soldeMedailles) });
+      // Retour du propriétaire après le lot 8j : la pause montre le solde gardé (icône puis montant, comme l'en-tête du menu ; nom dit aux
+      // lecteurs d'écran), et plus les Zollars : d'abord les médailles…
+      els.pauseBalance.textContent = fmt(dict[MONEY_TEXTS.pauseBalance], { n: formatMoney(summary?.soldeMedailles) });
+      // Lot 8k : … puis les diamants (gemme puis montant ; « Diamants : » dit aux lecteurs d'écran).
+      if (els.pauseDiamants) els.pauseDiamants.textContent = fmt(dict[MONEY_TEXTS.pauseBalance], { n: formatMoney(summary?.soldeDiamants) });
     },
 
     // info (lot 4, de bank.runEnd) : { earned, world, balance, best, record, status } ; absent : les lignes d'argent restent vides.
-    // Lot 8h (deux monnaies) : monnaie jaune perdue (earned), monnaie bleue gagnée pendant la partie (bleu, prime du monde comprise), solde bleu
-    // (soldeBleu) ; meilleure manche du mode joué (histoire ou infini).
+    // Lot 8h : médailles gagnées pendant la partie (medailles, prime du monde comprise), solde des médailles (soldeMedailles) ; meilleure manche
+    // du mode joué (histoire ou infini) ; lot 8k : diamants de la partie (diamants { total, solde, jour… }).
     showEnd(kills, wave = 0, variant = 'death', info = null) {
       els.pausePanel.hidden = true;
       els.endTitle.textContent = dict[variant === 'world' ? 'game.end.world' : 'game.end.title'];
@@ -119,19 +118,19 @@ export function createUi(dict, handlers) {
       els.endBalance.hidden = !money;
       els.endBest.hidden = !money;
       if (money) {
-        els.endBleuText.textContent = fmt(dict[MONEY_TEXTS.bleu], { n: formatMoney(info.bleu) });
-        els.endBalanceText.textContent = fmt(dict[MONEY_TEXTS.balance], { n: formatMoney(info.soldeBleu) });
+        els.endMedaillesText.textContent = fmt(dict[MONEY_TEXTS.medailles], { n: formatMoney(info.medailles) });
+        els.endBalanceText.textContent = fmt(dict[MONEY_TEXTS.balance], { n: formatMoney(info.soldeMedailles) });
         els.endBest.textContent = fmt(dict[info.mode === 'infini' ? MONEY_TEXTS.bestInfini : MONEY_TEXTS.best], { n: info.best });
       }
-      const med = money && info.medailles ? info.medailles : null;
-      els.endMedSolde.hidden = !med;
-      if (med) {
-        els.endMedText.textContent = fmt(dict['game.end.medailles'], { n: formatMoney(med.total) });
-        els.endMedSoldeText.textContent = fmt(dict['game.end.medailles.solde'], { n: formatMoney(med.solde) });
+      const diam = money && info.diamants ? info.diamants : null;
+      els.endDiamantsSolde.hidden = !diam;
+      if (diam) {
+        els.endDiamantsText.textContent = fmt(dict['game.end.diamants'], { n: formatMoney(diam.total) });
+        els.endDiamantsSoldeText.textContent = fmt(dict['game.end.diamants.solde'], { n: formatMoney(diam.solde) });
       }
       // Retour du propriétaire après le lot 9a : dans la place libre sous les diamants, le bonus de la première partie du jour quand cette partie
       // l'a obtenu (diamants, compris dans le « +gain » au-dessus).
-      const jour = med && med.jour > 0 ? med.jour : 0;
+      const jour = diam && diam.jour > 0 ? diam.jour : 0;
       if (els.endJour) {
         els.endJour.hidden = jour === 0;
         els.endJourText.textContent = jour > 0 ? fmt(dict['game.end.jour'], { n: formatMoney(jour) }) : '';

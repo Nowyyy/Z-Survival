@@ -29,7 +29,7 @@ export function createReadOnlyRepository(inner, session = {}, params, codec = co
       return { ok: true, applied: false, save: structuredClone(current), ...(codec.version === 2 ? { refused: c.refused } : {}) };
     }, () => failure('error')),
     replace: (save, now) => safely(() => {
-      current = codec.clean(codec.replace(save, now, Math.min(Number.MAX_SAFE_INTEGER, codec.clean(save).rev + 1)));
+      current = codec.relire(codec.replace(save, now, Math.min(Number.MAX_SAFE_INTEGER, codec.clean(save).rev + 1)));
       return { ok: true, applied: false, save: structuredClone(current) };
     }, () => failure('error')),
     clear: () => safely(() => {

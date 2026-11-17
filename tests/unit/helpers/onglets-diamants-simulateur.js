@@ -1,12 +1,12 @@
 // Lot 8k : simulateur déterministe de plusieurs onglets (même modèle du stockage que onglets-v2-simulateur.js du lot 8h : copie locale périmée
 // pendant un retard tiré au hasard, écritures appliquées dans l'ordre d'arrivée, événement `storage` et canal avec leurs propres retards), étendu aux
-// médailles : portes (montant, identifiant unique), paliers (même palier tenté par plusieurs onglets avec des identifiants différents), partie du
-// jour (même jour tenté par plusieurs onglets), achats de caisse en médailles avec pitié (tirage fait avec les compteurs lus par l'onglet). Le VRAI
+// diamants (appelés « médailles » au lot 8k) : portes (montant, identifiant unique), paliers (même palier tenté par plusieurs onglets avec des identifiants différents), partie du
+// jour (même jour tenté par plusieurs onglets), achats de caisse en diamants avec pitié (tirage fait avec les compteurs lus par l'onglet). Le VRAI
 // dépôt local, le format v2 et la fusion. Aucun navigateur, aucune horloge réelle, aucun Math.random.
 import { createLocalRepository } from '../../../js/save/local-repository.js';
 import { codecV2 } from '../../../js/save/codecs.js';
 import * as merge from '../../../js/core/save-merge.js';
-import { appliquerOps, defaultProgression, serialiser, soldeMedailles } from '../../../js/core/progression.js';
+import { appliquerOps, defaultProgression, serialiser, soldeDiamants } from '../../../js/core/progression.js';
 import { tirerPitie } from '../../../js/core/caisses.js';
 import { rng } from './onglets-simulateur.js';
 
@@ -40,10 +40,10 @@ const JOUR = 100;
 const PORTE = 10;
 const PRIX = 100;
 
-// options : { seed, tabs, ops, retard, params, caisse, cat, regles, initial (médailles de départ) }.
-// Lot 9a : bleuDepart (facultatif) : solde « bleu » de départ (médailles à l'écran depuis le lot 9a), comme une sauvegarde de la V0.8 ; jamais touché par
-// les onglets (portes, paliers, jour, caisses : champ « medailles », diamants à l'écran) ; le résultat rend aussi la progression finale (fin).
-export function simulateMedailles({ seed, tabs: nTabs = 2, ops = 10, retard = 10, params, caisse, cat, regles, initial = 0, bleuDepart = 0 } = {}) {
+// options : { seed, tabs, ops, retard, params, caisse, cat, regles, initial (diamants de départ) }.
+// Lot 9a : medaillesDepart (facultatif) : solde de médailles de départ, comme une sauvegarde de la V0.8 ; jamais touché par
+// les onglets (portes, paliers, jour, caisses : diamants) ; le résultat rend aussi la progression finale (fin).
+export function simulateDiamants({ seed, tabs: nTabs = 2, ops = 10, retard = 10, params, caisse, cat, regles, initial = 0, medaillesDepart = 0 } = {}) {
   const r = rng(seed);
   const pick = (max) => Math.floor(r() * (max + 1));
   const s = scheduler();
@@ -51,8 +51,8 @@ export function simulateMedailles({ seed, tabs: nTabs = 2, ops = 10, retard = 10
   const KEY = codec.key;
   let now = 0;
   let writes = 0;
-  // Départ : médailles et compteurs de pitié tirés (près d'une garantie parfois).
-  const depart = appliquerOps(defaultProgression(), [{ id: 'depart', t: 'gain', medailles: initial, ...(bleuDepart > 0 ? { bleu: bleuDepart } : {}) }, { id: 'pit', t: 'pitie', valeurs: { equipement: { e: pick(9), l: 60 + pick(9) } } }], 1, params).save;
+  // Départ : diamants et compteurs de pitié tirés (près d'une garantie parfois).
+  const depart = appliquerOps(defaultProgression(), [{ id: 'depart', t: 'gain', diamants: initial, ...(medaillesDepart > 0 ? { medailles: medaillesDepart } : {}) }, { id: 'pit', t: 'pitie', valeurs: { equipement: { e: pick(9), l: 60 + pick(9) } } }], 1, params).save;
   let auth = JSON.stringify(serialiser(depart));
   const tabs = [];
   let opSeq = 0;
@@ -109,7 +109,7 @@ export function simulateMedailles({ seed, tabs: nTabs = 2, ops = 10, retard = 10
     const id = `m${seed}x${opSeq}`;
     const x = r();
     if (x < 0.25) {
-      const res = tab.repo.commit([{ id, t: 'gain', medailles: PORTE }], Math.floor(now / 4));
+      const res = tab.repo.commit([{ id, t: 'gain', diamants: PORTE }], Math.floor(now / 4));
       if (res.ok) portes.push(id);
       return;
     }
@@ -129,11 +129,11 @@ export function simulateMedailles({ seed, tabs: nTabs = 2, ops = 10, retard = 10
     if (lu.status !== 'ok' && lu.status !== 'empty') return;
     const n = r() < 0.3 ? 10 : 1;
     const prix = PRIX * n;
-    if (soldeMedailles(lu.save) < prix) return;
+    if (soldeDiamants(lu.save) < prix) return;
     const de = { ...lu.save.pitie.equipement };
     const t = tirerPitie(caisse, cat, regles, de, (seed * 7919 + opSeq) >>> 0, n);
     const u = t.objets.map((_, k) => `${id}.${k}`);
-    const res = tab.repo.commit([{ id, t: 'achat', monnaie: 'medailles', prix, place: 1000, objets: t.objets.map((o, k) => ({ u: u[k], i: o.id, r: o.rarete })), pitie: { r: 'equipement', de, a: { ...t.compteurs } } }], Math.floor(now / 4));
+    const res = tab.repo.commit([{ id, t: 'achat', monnaie: 'diamants', prix, place: 1000, objets: t.objets.map((o, k) => ({ u: u[k], i: o.id, r: o.rarete })), pitie: { r: 'equipement', de, a: { ...t.compteurs } } }], Math.floor(now / 4));
     if (res.ok) achats.set(id, { de, a: { ...t.compteurs }, objets: t.objets, u, prix });
   }
 
@@ -151,7 +151,7 @@ export function simulateMedailles({ seed, tabs: nTabs = 2, ops = 10, retard = 10
   }
 
   const fin = codec.parse(JSON.parse(auth)).save;
-  // Médailles attendues : départ + portes écrites + paliers distincts (une fois chacun) + jour (une fois).
+  // Diamants attendus : départ + portes écrites + paliers distincts (une fois chacun) + jour (une fois).
   const paliersFin = fin.paliers.histoire.batiment ?? 0;
   const attendu = initial + portes.length * PORTE + paliersTentes.size * PALIER + (jourTente ? JOUR : 0);
   // Achats présents (objets) : entiers ou absents (jamais coupés) ; prix payés une fois.
@@ -170,7 +170,7 @@ export function simulateMedailles({ seed, tabs: nTabs = 2, ops = 10, retard = 10
       acceptes.push(a);
     } else if (n !== 0) coupe = true;
   }
-  let doubleDepense = fin.medailles.depense !== payes;
+  let doubleDepense = fin.diamants.depense !== payes;
   for (const [aid, n] of presents) if (!achats.has(aid) || n > achats.get(aid).u.length) doubleDepense = true;
   // Pitié : les achats acceptés forment UNE chaîne depuis les compteurs de départ (chacun part exactement des compteurs laissés par le précédent)
   // jusqu'aux compteurs finaux : aucune garantie perdue ni dupliquée ; et sur cette chaîne, jamais 10 tirages sans épique ni 70 sans légendaire.
@@ -195,24 +195,24 @@ export function simulateMedailles({ seed, tabs: nTabs = 2, ops = 10, retard = 10
   };
   const chaineOk = essayer(depart.pitie.equipement, acceptes, depart.pitie.equipement.e, depart.pitie.equipement.l);
   const res = {
-    gagne: fin.medailles.gagne, attendu, depense: fin.medailles.depense, payes,
-    pertes: fin.medailles.gagne < attendu, doubles: fin.medailles.gagne > attendu,
-    doublesDepenses: doubleDepense, negatif: fin.medailles.depense > fin.medailles.gagne, coupe,
+    gagne: fin.diamants.gagne, attendu, depense: fin.diamants.depense, payes,
+    pertes: fin.diamants.gagne < attendu, doubles: fin.diamants.gagne > attendu,
+    doublesDepenses: doubleDepense, negatif: fin.diamants.depense > fin.diamants.gagne, coupe,
     pitie: !chaineOk,
     paliers: paliersFin !== (paliersTentes.size ? Math.max(...paliersTentes) : 0),
-    jours: fin.medailles.jour !== (jourTente ? 20406 : 0),
+    jours: fin.diamants.jour !== (jourTente ? 20406 : 0),
     achats: acceptes.length, annules: achats.size - acceptes.length, calme: s.size === 0, ecritures: writes,
   };
   res.ok = !res.pertes && !res.doubles && !res.doublesDepenses && !res.negatif && !res.coupe && !res.pitie && !res.paliers && !res.jours && res.calme;
-  if (bleuDepart > 0) res.fin = fin; // lot 9a
+  if (medaillesDepart > 0) res.fin = fin; // lot 9a
   return res;
 }
 
-export function campagneMedailles({ n, params, caisse, cat, regles, first = 1, ops = 10, retard = 10 }) {
+export function campagneDiamants({ n, params, caisse, cat, regles, first = 1, ops = 10, retard = 10 }) {
   const out = { n, echecs: 0, pertes: 0, doubles: 0, doublesDepenses: 0, negatifs: 0, coupes: 0, pitie: 0, paliers: 0, jours: 0, achats: 0, annules: 0, ecritures: 0, exemple: null };
   for (let k = 0; k < n; k += 1) {
     const seed = first + k;
-    const res = simulateMedailles({ seed, tabs: 2 + (seed % 3), ops, retard, params, caisse, cat, regles, initial: seed % 4 === 0 ? 3000 : 1200 });
+    const res = simulateDiamants({ seed, tabs: 2 + (seed % 3), ops, retard, params, caisse, cat, regles, initial: seed % 4 === 0 ? 3000 : 1200 });
     out.ecritures += res.ecritures;
     out.achats += res.achats;
     out.annules += res.annules;

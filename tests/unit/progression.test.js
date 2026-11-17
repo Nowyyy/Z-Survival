@@ -15,13 +15,13 @@ const load = (name) => JSON.parse(readFileSync(`data/game/${name}.json`, 'utf8')
 const params = { save: load('save'), economy: load('economy'), stats: load('player-stats') };
 const V2 = params.save.v2.storageKey;
 const V1 = params.save.storageKey;
-const gain = (id, bleu, extra = {}) => ({ id, t: 'gain', bleu, ...extra });
-const avec = (bleu) => appliquerOps(defaultProgression(), [gain('g0', bleu)], 1, params).save;
+const gain = (id, medailles, extra = {}) => ({ id, t: 'gain', medailles, ...extra });
+const avec = (medailles) => appliquerOps(defaultProgression(), [gain('g0', medailles)], 1, params).save;
 const objet = (u, i = 'casque-kevlar', r = 'commun') => ({ u, i, r });
 const repo = (storage, search = '') => createRepository({ search, storage, params, format: 'v2' }).repository;
 
 describe('format v2 : défaut et réparation champ par champ', () => {
-  it('nouveau joueur : Survivant choisi, rien d\'équipé, inventaire vide, 0 bleu, niveaux et records à 0', () => {
+  it('nouveau joueur : Survivant choisi, rien d\'équipé, inventaire vide, 0 médaille, niveaux et records à 0', () => {
     const d = defaultProgression();
     expect(d.v).toBe(2);
     expect(solde(d)).toBe(0);
@@ -35,14 +35,14 @@ describe('format v2 : défaut et réparation champ par champ', () => {
 
   it('chaque champ invalide prend son défaut, le reste est gardé (jamais d\'effacement silencieux)', () => {
     const raw = {
-      v: 2, rev: 4, savedAt: 9, bleu: { gagne: 500, depense: 'x' }, objets: [objet('a.0'), { u: 'a.0', i: 'gilet', r: 'rare', n: 1 }, { u: 'b.0', i: 'Bad id', r: 'rare', n: 1 }, { ...objet('c.0'), n: 2 }],
+      v: 2, rev: 4, savedAt: 9, medailles: { gagne: 500, depense: 'x' }, objets: [objet('a.0'), { u: 'a.0', i: 'gilet', r: 'rare', n: 1 }, { u: 'b.0', i: 'Bad id', r: 'rare', n: 1 }, { ...objet('c.0'), n: 2 }],
       porte: { tete: 'c.0', torse: 'zz', gants: 'c.0' }, persos: { debloques: ['personnage-2', 'x y'], niveaux: { 'personnage-2': 300 }, choisi: 'inconnu' },
       niveaux: { vie: 50, degats: -2 }, records: { histoire: { batiment: 12, 'Mauvais id': 3 }, infini: 'non' }, profil: { pseudo: '\u0000x', tues: 3.5, avatar: 'tireur' },
       lues: ['info-1', 'info-1', 7], journal: ['g1'], dates: { porte: -1 },
     };
     const { save, warnings } = sanitize(raw, params);
     expect(save.rev).toBe(4);
-    expect(save.bleu).toEqual({ gagne: 500, depense: 0 });
+    expect(save.medailles).toEqual({ gagne: 500, depense: 0 });
     expect(save.objets.map((o) => o.u)).toEqual(['a.0', 'c.0']); // a.0 sans niveau retiré (le second a.0, valide, est gardé), id invalide retiré
     expect(save.porte.tete).toBe('c.0');
     expect(save.porte.gants).toBe(null); // déjà porté ailleurs
@@ -63,8 +63,8 @@ describe('format v2 : défaut et réparation champ par champ', () => {
   });
 
   it('dépensé supérieur au gagné : ramené au gagné (solde 0, jamais négatif) ; solde au plus 9 999 999', () => {
-    expect(sanitize({ v: 2, bleu: { gagne: 10, depense: 50 } }, params).save.bleu).toEqual({ gagne: 10, depense: 10 });
-    expect(solde(sanitize({ v: 2, bleu: { gagne: 99_999_999, depense: 0 } }, params).save)).toBe(SOLDE_MAX);
+    expect(sanitize({ v: 2, medailles: { gagne: 10, depense: 50 } }, params).save.medailles).toEqual({ gagne: 10, depense: 10 });
+    expect(solde(sanitize({ v: 2, medailles: { gagne: 99_999_999, depense: 0 } }, params).save)).toBe(SOLDE_MAX);
   });
 
   it('catalogue connu : objet inconnu ou d\'une rareté absente retiré, emplacement du mauvais type libéré', () => {
@@ -93,10 +93,10 @@ describe('format v2 : défaut et réparation champ par champ', () => {
 });
 
 describe('opérations : gains, achats atomiques, refus', () => {
-  it('gain de manche : bleu, tués, temps, partie, record par monde et par mode, monde terminé', () => {
+  it('gain de manche : médailles, tués, temps, partie, record par monde et par mode, monde terminé', () => {
     const r = appliquerOps(defaultProgression(), [gain('p1.1', 12, { tues: 4, tempsMs: 30_000, partie: 'histoire', record: { mode: 'histoire', monde: 'batiment', manche: 1 } }), gain('p1.40', 500, { record: { mode: 'histoire', monde: 'batiment', manche: 40 }, monde: 'batiment' })], 7, params);
     expect(r.refused).toEqual([]);
-    expect(r.save.bleu.gagne).toBe(512);
+    expect(r.save.medailles.gagne).toBe(512);
     expect(r.save.profil).toMatchObject({ tues: 4, tempsMs: 30_000, partiesHistoire: 1, partiesInfini: 0 });
     expect(r.save.records.histoire.batiment).toBe(40);
     expect(r.save.mondes).toEqual(['batiment']);
@@ -117,7 +117,7 @@ describe('opérations : gains, achats atomiques, refus', () => {
   it('une opération déjà au journal n\'est jamais appliquée deux fois', () => {
     const s1 = appliquerOps(defaultProgression(), [gain('g1', 10)], 1, params).save;
     const s2 = appliquerOps(s1, [gain('g1', 10)], 2, params).save;
-    expect(s2.bleu.gagne).toBe(10);
+    expect(s2.medailles.gagne).toBe(10);
     expect(s2.journal.filter((id) => id === 'g1')).toHaveLength(1);
   });
 
@@ -135,7 +135,7 @@ describe('opérations : gains, achats atomiques, refus', () => {
   ])('achat, solde %s : prix prélevé et objets ajoutés dans la même écriture, ou rien du tout', (_n, avoir, prix, ok) => {
     const r = appliquerOps(avec(avoir), [{ id: 'a1', t: 'achat', prix, place: 100, objets: [objet('a1.0'), objet('a1.1')] }], 2, params);
     expect(r.save.objets.length).toBe(ok ? 2 : 0);
-    expect(r.save.bleu.depense).toBe(ok ? prix : 0);
+    expect(r.save.medailles.depense).toBe(ok ? prix : 0);
     expect(r.refused).toEqual(ok ? [] : [{ id: 'a1', raison: 'solde' }]);
     expect(solde(r.save)).toBeGreaterThanOrEqual(0);
   });
@@ -152,7 +152,7 @@ describe('opérations : gains, achats atomiques, refus', () => {
     const r = appliquerOps(plein, [{ id: 'a1', t: 'achat', prix: 10, place: 100, objets: Array.from({ length: 10 }, (_, i) => objet(`a1.${i}`)) }], 2, params);
     expect(r.refused).toEqual([{ id: 'a1', raison: 'plein' }]);
     expect(r.save.objets).toHaveLength(95);
-    expect(r.save.bleu.depense).toBe(0);
+    expect(r.save.medailles.depense).toBe(0);
   });
 
   it('offre du jour : achetée une fois par jour ; un autre jour remet la liste à zéro', () => {
@@ -160,7 +160,7 @@ describe('opérations : gains, achats atomiques, refus', () => {
     const r = appliquerOps(avec(100), [op('a1', 20406, '20406-2'), op('a2', 20406, '20406-2'), op('a3', 20407, '20407-2')], 1, params);
     expect(r.refused).toEqual([{ id: 'a2', raison: 'offre' }]);
     expect(r.save.offres).toEqual({ jour: 20407, achetees: ['20407-2'] });
-    expect(r.save.bleu.depense).toBe(20);
+    expect(r.save.medailles.depense).toBe(20);
   });
 
   it('personnages : nouveau débloqué, doublon +1 niveau au plus son maximum ; tenues ajoutées une fois', () => {
@@ -175,7 +175,7 @@ describe('opérations : gains, achats atomiques, refus', () => {
     const r = appliquerOps(base, [{ id: 'm1', t: 'ameliorer', u: 'a1.0', de: 1, prix: 40 }, { id: 'm2', t: 'ameliorer', u: 'a1.0', de: 1, prix: 40 }, { id: 'm3', t: 'ameliorer', u: 'a1.0', de: 2, prix: 80 }], 2, params);
     expect(r.save.objets[0].n).toBe(2);
     expect(r.refused).toEqual([{ id: 'm2', raison: 'niveau' }, { id: 'm3', raison: 'solde' }]);
-    expect(r.save.bleu.depense).toBe(40);
+    expect(r.save.medailles.depense).toBe(40);
   });
 
   it('fusion : trois retirés, un créé, emplacement porté repris ; refusée si un des trois manque', () => {
@@ -184,7 +184,7 @@ describe('opérations : gains, achats atomiques, refus', () => {
     expect(r.save.objets.map((o) => o.u)).toEqual(['f1.0']);
     expect(r.save.porte.tete).toBe('f1.0');
     expect(r.refused).toEqual([{ id: 'f2', raison: 'absent' }]);
-    expect(r.save.bleu.depense).toBe(100);
+    expect(r.save.medailles.depense).toBe(100);
   });
 
   it('choix datés : le plus récent gagne (avatar, pseudo, personnage choisi, équipement)', () => {
@@ -251,13 +251,13 @@ describe('dépôt v2 : départ, refus, stockage indisponible', () => {
       expect(d.load().status).toBe('empty');
       expect(d.commit([gain('g1', 12)], 5).ok).toBe(true);
       expect(st.data.get(V1)).toBe(v1);
-      expect(solde(JSON.parse(st.data.get(V2)))).toBe(12);
+      expect(solde(lire(JSON.parse(st.data.get(V2)), params).save)).toBe(12);
       expect(JSON.parse(st.data.get(V2)).records).toEqual({ histoire: {}, infini: {} });
     }
   });
 
   it('v2 corrompue : verrouillée, rien écrit, texte brut gardé ; v2 plus récente : refus sans effacement', () => {
-    for (const [texte, statut] of [['{oups', 'corrupt'], [JSON.stringify({ v: 3, bleu: 1 }), 'future'], ['x'.repeat(70_000), 'corrupt']]) {
+    for (const [texte, statut] of [['{oups', 'corrupt'], [JSON.stringify({ v: 3, medailles: 1 }), 'future'], ['x'.repeat(70_000), 'corrupt']]) {
       const st = createFakeStorage({ [V2]: texte });
       const d = repo(st);
       const r = d.load();
@@ -297,7 +297,7 @@ describe('dépôt v2 : départ, refus, stockage indisponible', () => {
     const st = createFakeStorage({ [V2]: '{oups' });
     const d = repo(st);
     expect(d.replace(avec(77), 9).ok).toBe(true);
-    expect(solde(JSON.parse(st.data.get(V2)))).toBe(77);
+    expect(solde(lire(JSON.parse(st.data.get(V2)), params).save)).toBe(77);
   });
 
   it('écriture d\'une progression typique : quelques Ko, sous le plafond de 65 536 octets même inventaire plein (100)', () => {

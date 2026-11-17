@@ -39,7 +39,7 @@ import { createFloorFade } from './floor-fade.js';
 import { createBank } from './bank.js';
 import { createHud } from './hud.js';
 import { createPorteMessage } from './porte-message.js';
-import { createBleuManche, createMedaillesManche } from './bleu-manche.js';
+import { createDiamantsManche, createMedaillesManche } from './gains-manche.js';
 import { createSplashView } from './splash-view.js';
 import { pickGround } from './picking.js';
 import { STRIDE } from './skeleton.js';
@@ -138,8 +138,8 @@ export function createGame(ctx) {
   if (ctx.graphics) ctx.ui?.bindOptions?.({ graphics: ctx.graphics, vhs: ctx.vhs }); // lot 5j : écran Options de la pause (importé à la première ouverture)
   const effects = createEffects(world.effectsRoot, palette, { gunHeight: render.gunHeight, bulletRadius: cfg.weapon.bulletRadius });
   const hud = createHud(ctx.dict);
-  const bleuManche = createBleuManche(ctx.dict, ctx.reglages?.bleuManche); // retour du propriétaire : solde bleu et gain sous la vague en fin de manche
-  const medManche = createMedaillesManche(ctx.dict, ctx.reglages?.bleuManche, bleuManche.element); // lot 8k : médailles gagnées, sous la monnaie bleue
+  const medaillesManche = createMedaillesManche(ctx.dict, ctx.reglages?.gainsManche); // retour du propriétaire : solde des médailles et gain sous la vague en fin de manche
+  const diamantsManche = createDiamantsManche(ctx.dict, ctx.reglages?.gainsManche, medaillesManche.element); // lot 8k : diamants gagnés, sous les médailles
   const porteMsg = siegeOn ? createPorteMessage(ctx.dict, ctx.reglages?.porte, doorCfgs) : null; // lot 8j : « Porte ouverte à la manche X » (lecture seule)
   const floorFade = createFloorFade();
   const splashView = createSplashView(ctx.dict);
@@ -173,7 +173,7 @@ export function createGame(ctx) {
   // Argent et sauvegarde (lot 4) : js/game/bank.js relie les événements de la partie à l'économie (js/core/economy.js) et au dépôt de sauvegarde (js/save/).
   // Son horloge est le temps de jeu cumulé (millisecondes, jamais remis à zéro par « Rejouer »), la date enregistrée est l'horloge murale.
   let bankMs = 0;
-  // Lot 8h : deux monnaies (jaune de la partie, bleue gardée) ; mode (histoire, infini) et monde de la partie : record de ce mode et de ce monde.
+  // Lot 8h : monnaies (Zollars de la partie ; médailles et diamants gardés) ; mode (histoire, infini) et monde de la partie : record de ce mode et de ce monde.
   const bank = createBank({ repository: ctx.repository, mode: ctx.mode, economy: ctx.economy, save: ctx.saveCfg, clock: () => bankMs, wall: () => Date.now(), reducedMotion: reduced, partie: { mode: ctx.modePartie, monde: ctx.monde } });
   // Mise à l'abri de la sauvegarde quand la page est cachée ou fermée (en plus de l'écriture à l'ouverture de la pause).
   document.addEventListener('visibilitychange', () => {
@@ -708,7 +708,7 @@ export function createGame(ctx) {
           waveLive = announcedKey && announcedKey !== SPLASH_TEXTS.zoneSubtitle ? `${ctx.dict[SPLASH_TEXTS.zoneTitle]}. ${ctx.dict[announcedKey]}.` : ctx.dict[ZONE_TEXTS.liveZone];
         } else if (ev.type === 'doorOpen') {
           openDoor(ev.door);
-          bank.door(); // lot 8k : médailles d'une porte ouverte (écrites aussitôt)
+          bank.door(); // lot 8k : diamants d'une porte ouverte (lot 9a : écrits à la fin de la partie)
           const sunk = doorById.get(ev.door)?.opening; // lot 3i : son du bloc de porte qui s'enfonce, à la position de la porte
           if (sunk) events.push({ type: 'doorSink', x: (sunk.x1 + sunk.x2) / 2, y: (sunk.y1 + sunk.y2) / 2, floor: doorById.get(ev.door).floor, door: ev.door });
           eventLog.push({ type: 'doorOpen', door: ev.door, wave: ev.wave, time: sim.time });
@@ -721,7 +721,7 @@ export function createGame(ctx) {
           sim.down = healed.down;
           // Lot 4 : bonus de fin de manche (une seule fois par manche), annoncé avec la fin de manche.
           const paid = bank.waveEnd(ev.wave, waveInfo(sim.waves).reinforced === true);
-          if (paid.bonus > 0) bleuManche.montrer(bank.soldeBleu(), paid.bonus, sim.time);
+          if (paid.bonus > 0) medaillesManche.montrer(bank.soldeMedailles(), paid.bonus, sim.time);
           waveLive = paid.bonus > 0 ? fmt(ctx.dict[MONEY_TEXTS.liveWave], { n: ev.wave, bonus: paid.bonus }) : fmt(ctx.dict['game.wave.liveDone'], { n: ev.wave });
         }
       }
@@ -816,7 +816,7 @@ export function createGame(ctx) {
       ctx.ui.setLive(`${ctx.dict[ZONE_TEXTS.liveWorld]}${end?.record ? ` ${fmt(ctx.dict[MONEY_TEXTS.liveRecord], { n: end.reached })}` : ''}`);
       ctx.ui.showEnd(sim.kills, waveInfo(sim.waves).wave, 'world', end);
     }
-    bank.tick(); // « +N » jaune et bleu du HUD (lot 8h : plus d'écriture regroupée, la monnaie jaune n'est jamais écrite)
+    bank.tick(); // « +N » des Zollars et des médailles du HUD (lot 8h : plus d'écriture regroupée, la monnaie jaune n'est jamais écrite)
   }
 
   // Panneau de pause (E2-6) : « Prochaine zone : manche N » tant qu'une porte active reste fermée ; écrit seulement si la valeur change.
@@ -1050,11 +1050,11 @@ export function createGame(ctx) {
       unitsPerPixel: size.unitsPerPixel,
     });
     P?.mark('effets');
-    hud.update(sim.player, sim.kills, waveInfo(sim.waves), { chutes: sim.down.chutes, floor: multi ? pf() : null, maxWave: zoneCfg && !sim.waves.endless ? zoneCfg.wavesPerWorld : null, money: { balance: bank.balance(), gain: bank.gain(), gainBleu: bank.gainBleu() }, time: sim.time, trial: trialMode });
+    hud.update(sim.player, sim.kills, waveInfo(sim.waves), { chutes: sim.down.chutes, floor: multi ? pf() : null, maxWave: zoneCfg && !sim.waves.endless ? zoneCfg.wavesPerWorld : null, money: { balance: bank.balance(), gain: bank.gain(), gainMedailles: bank.gainMedailles() }, time: sim.time, trial: trialMode });
     floorFade.set(sim.trView.veil);
     porteMsg?.update(sim.player, pf(), sim.doors, !sim.dead);
-    bleuManche.update(sim.time, !sim.dead && !sim.worldOver);
-    medManche.update(sim.time, bank.gainMedailles(), bank.soldeMedailles(), !sim.dead && !sim.worldOver);
+    medaillesManche.update(sim.time, !sim.dead && !sim.worldOver);
+    diamantsManche.update(sim.time, bank.gainDiamants(), bank.soldeDiamants(), !sim.dead && !sim.worldOver);
     hud.updateDown(sim.down, sim.dead, cfg.down); // lot 3l : E2-10 dans la colonne centrale du HUD (js/game/hud.js)
     world.windowMeshes?.sync(sim.win); // pastille de la planche en cours de réparation : elle se remplit peu à peu
     updateEdgeArrows();

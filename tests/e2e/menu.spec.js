@@ -2,6 +2,8 @@
 // ?test=1&menu=1 (window.__zsMenu, window.__zs) et, sans paramètre, le canal source ; 932 × 430 (référence), 667 × 375, 1440 × 900.
 import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
+import { CHAMPS_STOCKES } from '../../js/core/progression.js';
+import { nomsDuCode } from './helpers.js';
 
 const REF = { width: 932, height: 430 };
 const KEY = 'zs.save.v2'; // lot 8h : progression v2
@@ -302,14 +304,14 @@ test.describe('plein écran du menu', () => {
 });
 
 test.describe('partie et retour au menu', () => {
-  test('solde bleu de l\'en-tête = progression (?store=local, lot 8h) ; « JOUER » lance la partie (manche 1) ; « Quitter » confirmé ramène au menu, la bleue et la jaune de la partie perdues (la mort garde la bleue) ; seule écriture du menu : les nouveautés lues (lot 8h)', async ({ page }) => {
+  test('solde des médailles de l\'en-tête = progression (?store=local, lot 8h) ; « JOUER » lance la partie (manche 1) ; « Quitter » confirmé ramène au menu, les médailles et la jaune de la partie perdues (la mort garde les médailles) ; seule écriture du menu : les nouveautés lues (lot 8h)', async ({ page }) => {
     test.setTimeout(150_000);
     await page.setViewportSize(REF);
     // Sauvegarde de départ (chemin normal du jeu : gain puis écriture), puis visite du menu : clés et contenu identiques avant et après.
     await page.goto('/jeu.html?test=1&store=local&seed=1');
     await page.waitForFunction(() => (window.__zs?.getState()?.time ?? 0) > 0.05, null, { timeout: 60_000 });
-    // Lot 8h : progression v2 de départ posée telle quelle (1 234 bleus), puis visite du menu.
-    await page.evaluate((k) => localStorage.setItem(k, JSON.stringify({ v: 2, rev: 1, savedAt: 1, bleu: { gagne: 1234, depense: 0 } })), KEY);
+    // Lot 8h : progression v2 de départ posée telle quelle (1 234 médailles), puis visite du menu.
+    await page.evaluate(([k, texte]) => localStorage.setItem(k, texte), [KEY, JSON.stringify({ v: 2, rev: 1, savedAt: 1, [CHAMPS_STOCKES.medailles]: { gagne: 1234, depense: 0 } })]); // lot 9b : champ stocké
     const avant = await page.evaluate(() => Object.fromEntries(Object.keys(localStorage).map((k) => [k, localStorage.getItem(k)])));
     await page.addInitScript(() => {
       window.__ecritures = [];
@@ -318,7 +320,7 @@ test.describe('partie et retour au menu', () => {
     });
     await ouvrirMenu(page, REF, '&store=local');
     await expect(page.locator('#menu-solde-texte')).toHaveText(`1${String.fromCharCode(0x202f)}234`);
-    await expect(page.locator('#menu-solde')).toContainText('Médailles : 1'); // lot 9a : le champ « bleu » s'appelle « médailles » (avant : « Diamants »)
+    await expect(page.locator('#menu-solde')).toContainText('Médailles : 1'); // lot 9a : appelées « Diamants » en V0.8
     await page.locator('#menu-onglet-infini').click();
     await page.locator('#menu-trois-barres').click();
     await page.locator('#menu-information').click();
@@ -326,11 +328,11 @@ test.describe('partie et retour au menu', () => {
     await page.keyboard.press('Escape');
     await page.locator('#menu-onglet-jouer').click();
     const apres = await page.evaluate(() => [window.__ecritures, Object.fromEntries(Object.keys(localStorage).map((k) => [k, localStorage.getItem(k)])), sessionStorage.length]);
-    // Lot 8h : seule écriture de la visite, les nouveautés lues (Information) ; le solde bleu et les autres clés sont inchangés.
+    // Lot 8h : seule écriture de la visite, les nouveautés lues (Information) ; le solde des médailles et les autres clés sont inchangés.
     expect([apres[0], Object.keys(apres[1]).sort(), apres[2]]).toEqual([[KEY], Object.keys(avant).sort(), 0]);
     for (const k of Object.keys(avant)) if (k !== KEY) expect(apres[1][k], k).toBe(avant[k]);
-    const lu = JSON.parse(apres[1][KEY]);
-    expect([lu.bleu, lu.lues.length > 0, lu.rev]).toEqual([{ gagne: 1234, depense: 0 }, true, 2]);
+    const lu = nomsDuCode(JSON.parse(apres[1][KEY]));
+    expect([lu.medailles, lu.lues.length > 0, lu.rev]).toEqual([{ gagne: 1234, depense: 0 }, true, 2]);
     // JOUER : la partie démarre sans rechargement, manche 1.
     const url = page.url();
     await page.locator('#menu-jouer').click();
@@ -341,7 +343,7 @@ test.describe('partie et retour au menu', () => {
     const jeu = await etatMenu(page); // écran de chargement de la partie : progression jusqu'à 100, puis retiré
     expect([jeu.phase, jeu.journal.at(-1), jeu.visible, jeu.journal.every((n, i) => i === 0 || n > jeu.journal[i - 1])]).toEqual(['jeu', 100, false, true]);
     expect(await page.evaluate(() => window.__zs.getState().waves.wave)).toBe(1);
-    // Quitter : manche 1 terminée (12 bleus) et 50 jaunes, confirmation (Annuler d'abord), puis retour au menu ; la bleue est gardée, la jaune perdue.
+    // Quitter : manche 1 terminée (20 médailles) et 50 jaunes, confirmation (Annuler d'abord), puis retour au menu ; tout ce que la partie a rapporté est perdu (lot 9a).
     await page.evaluate(() => { const zs = window.__zs; zs.giveMoney(50); zs.step(3.2); zs.skipWave(); zs.step(0.2); });
     await page.locator('#btn-pause').click();
     await page.locator('#btn-quit').click();
@@ -355,10 +357,10 @@ test.describe('partie et retour au menu', () => {
     await page.locator('#btn-quit').click();
     await Promise.all([page.waitForURL(/[?&]menu=1/), page.locator('#btn-quit-ok').click()]);
     await expect(page.locator('#menu-jouer')).toBeVisible({ timeout: 60_000 });
-    // Retour du propriétaire après le lot 9a : « Quitter » fait perdre la bleue de la partie (avant : 1 254, gardée comme à la mort).
+    // Retour du propriétaire après le lot 9a : « Quitter » fait perdre les médailles de la partie (avant : 1 254, gardée comme à la mort).
     await expect(page.locator('#menu-solde-texte')).toHaveText(`1${String.fromCharCode(0x202f)}234`);
-    const quitte = await page.evaluate((k) => JSON.parse(localStorage.getItem(k)), KEY);
-    expect(quitte.bleu.gagne - quitte.bleu.depense).toBe(1234);
+    const quitte = nomsDuCode(await page.evaluate((k) => JSON.parse(localStorage.getItem(k)), KEY));
+    expect(quitte.medailles.gagne - quitte.medailles.depense).toBe(1234);
     expect(JSON.stringify(quitte)).not.toMatch(/money/);
     // Même gain, mort puis « Revenir au menu principal » : même solde, même chemin (bank.runEnd).
     await page.locator('#menu-jouer').click();
@@ -367,9 +369,9 @@ test.describe('partie et retour au menu', () => {
     await expect(page.locator('#end-panel')).toBeVisible();
     await Promise.all([page.waitForURL(/[?&]menu=1/), page.locator('#btn-menu').click()]);
     await expect(page.locator('#menu-jouer')).toBeVisible({ timeout: 60_000 });
-    await expect(page.locator('#menu-solde-texte')).toHaveText(`1${String.fromCharCode(0x202f)}254`); // la mort, elle, garde la bleue de la partie (+20)
-    const mort = await page.evaluate((k) => JSON.parse(localStorage.getItem(k)), KEY);
-    expect(mort.bleu.gagne - quitte.bleu.gagne).toBe(20);
+    await expect(page.locator('#menu-solde-texte')).toHaveText(`1${String.fromCharCode(0x202f)}254`); // la mort, elle, garde les médailles de la partie (+20)
+    const mort = nomsDuCode(await page.evaluate((k) => JSON.parse(localStorage.getItem(k)), KEY));
+    expect(mort.medailles.gagne - quitte.medailles.gagne).toBe(20);
     await page.evaluate(() => localStorage.clear());
   });
 

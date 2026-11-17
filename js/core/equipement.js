@@ -2,7 +2,7 @@
 // ni stockage, ni réseau, ni horloge, ni hasard. Les données (data/menu/raretes.json, objets.json, personnages.json, inventaire-depart.json)
 // arrivent en argument ; chaque fonction prend un état et rend un nouvel état (l'ancien n'est jamais modifié) ; une entrée invalide (objet inconnu,
 // emplacement impossible, triplet incomplet, niveau au maximum, personnage verrouillé) est refusée sans exception : l'état rendu est alors le même
-// objet. Lot 8h : cet état est dérivé de la progression v2 (js/menu/equipement-etat.js, zs.save.v2) ; les prix sont prélevés en monnaie bleue par
+// objet. Lot 8h : cet état est dérivé de la progression v2 (js/menu/equipement-etat.js, zs.save.v2) ; les prix sont prélevés en médailles par
 // les opérations de js/core/progression.js (dans la même écriture que l'objet obtenu). Plus aucune arme : l'arme fait l'attaque (achetée sur les
 // cartes, lot 6), l'équipement fait la survie (six emplacements).
 import { ALL_STAT_IDS, normalizeLevels } from './player-stats.js';
@@ -248,7 +248,7 @@ export function retirer(etat, cible) {
   return geler(etat, { porte: Object.freeze({ ...etat.porte, [e]: null }) });
 }
 
-// Améliorer : { possible, prix, raison: null | 'inconnu' | 'max' } ; lot 8h : le prix est prélevé en monnaie bleue (opération « ameliorer »).
+// Améliorer : { possible, prix, raison: null | 'inconnu' | 'max' } ; lot 8h : le prix est prélevé en médailles (opération « ameliorer »).
 export function infoAmelioration(etat, cat, uid) {
   const o = objetDe(etat, uid);
   const d = definition(cat, o);
@@ -292,7 +292,7 @@ export function etatFusion(etat, cat, places) {
 
 // Fusionner trois exemplaires distincts de même id et même rareté : un exemplaire de la rareté suivante (même id), de niveau le plus haut des trois
 // borné au niveauMax de la nouvelle rareté ; si l'un était porté, le résultat est porté à sa place (un deuxième emplacement occupé par le triplet
-// est libéré). → { etat, uid } (uid null : refusé, état inchangé). Lot 8h : le prix est prélevé en monnaie bleue (opération « fusion »).
+// est libéré). → { etat, uid } (uid null : refusé, état inchangé). Lot 8h : le prix est prélevé en médailles (opération « fusion »).
 export function fusionner(etat, cat, places) {
   const f = etatFusion(etat, cat, places);
   if (!f.possible) return { etat, uid: null };

@@ -240,3 +240,9 @@ version: v0.9
 nom: Monnaies interverties, Zollars et correctifs
 description: Médailles pour améliorer, diamants pour les caisses, monnaie de partie nommée Zollars ; Quitter ne rapporte plus rien ; hélicoptère en métal ; Infini après le monde terminé.
 afficher: oui
+
+[lot-9b]
+version: v0.9
+nom: Noms internes des monnaies remis dans l'ordre
+description: Lot technique : dans le code, médailles et diamants portent le nom affiché à l'écran ; la sauvegarde ne change pas. Le jeu ne change pas.
+afficher: non

@@ -11,7 +11,7 @@ import { chronologie, lireOuvertures, rareteEffets } from '../../js/core/ouvertu
 import { sonsOuverture } from '../../js/core/sons-menu.js';
 import { poserProgression } from './helpers.js';
 
-// Lot 8h : progression v2 de démonstration (100 000 bleus, inventaire o1 à o16 ; tests/e2e/helpers.js), ?store=local : achats et gestes écrits.
+// Lot 8h : progression v2 de démonstration (100 000 médailles et diamants, inventaire o1 à o16 ; tests/e2e/helpers.js), ?store=local : achats et gestes écrits.
 test.beforeEach(async ({ page }) => {
   await poserProgression(page);
 });
@@ -22,7 +22,7 @@ const MO = 1024 * 1024;
 const lire = (f) => JSON.parse(readFileSync(f, 'utf8'));
 const { cat } = lireCatalogue({ raretes: lire('data/menu/raretes.json'), objets: lire('data/menu/objets.json'), personnages: lire('data/menu/personnages.json'), inventaire: lire('data/menu/inventaire-depart.json') });
 const { caisses } = lireCaisses(lire('data/menu/caisses.json'), cat);
-// Lot 8k : une caisse par rubrique (equipement, personnages, cosmetiques) payée en médailles, tirée avec la pitié de sa rubrique ; les anciens noms
+// Lot 8k : une caisse par rubrique (equipement, personnages, cosmetiques) payée en diamants (lot 9a), tirée avec la pitié de sa rubrique ; les anciens noms
 // de caisses du test désignent celle de leur rubrique ; résultats attendus = tirerPitie depuis les compteurs donnés (0 : progression de démonstration).
 const { regles: PITIE } = lirePitie(lire('data/menu/caisses.json'), cat);
 const ZERO = Object.freeze({ e: 0, l: 0 });

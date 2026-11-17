@@ -1,7 +1,7 @@
 // Lot 8d ; lot 8h : état de l'équipement du Personnage, de l'inventaire, des personnages et des tenues, DÉRIVÉ de la progression v2 (zs.save.v2,
 // js/menu/progression-etat.js) : catalogue (data/menu/raretes.json, objets.json, personnages.json) et état au format de js/core/equipement.js
 // ({ objets: [{ uid, id, rarete, niveau }], porte, persos, choisi, debloques }). Chaque geste (équiper, améliorer, fusionner, choisir, acheter…)
-// devient une opération de js/core/progression.js écrite tout de suite ; le prix est prélevé (monnaie bleue ; lot 8k : médailles pour les caisses,
+// devient une opération de js/core/progression.js écrite tout de suite ; le prix est prélevé (médailles ; lot 8k : diamants pour les caisses,
 // avec les compteurs de pitié de la rubrique) dans la même écriture que ce qui est
 // obtenu ; une opération refusée (solde, inventaire plein, autre onglet) ne change rien. Chargé à la demande : à la première ouverture de l'onglet
 // Personnage ou de la Boutique, ou à « JOUER » ; jamais au démarrage du menu.
@@ -62,8 +62,8 @@ export function chargerEquipement() {
     };
     const now = () => Date.now();
     const solde = () => prog.solde();
-    // Lot 8k : solde de la monnaie d'un achat (caisses : médailles ; le reste : bleue).
-    const soldeDe = (monnaie) => (monnaie === 'medailles' ? prog.medailles() : prog.solde());
+    // Lot 8k : solde de la monnaie d'un achat (caisses : diamants ; le reste : médailles).
+    const soldeDe = (monnaie) => (monnaie === 'diamants' ? prog.diamants() : prog.solde());
     const RUBRIQUES = ['equipement', 'personnage', 'cosmetique'];
 
     return {
@@ -72,7 +72,7 @@ export function chargerEquipement() {
       prog,
       etat: () => etat,
       solde,
-      medailles: () => prog.medailles(), // lot 8k
+      diamants: () => prog.diamants(), // lot 8k
       // Lot 8k : compteurs de pitié d'une rubrique, relus dans le stockage juste avant un tirage (un autre onglet a pu ouvrir une caisse).
       pitie: (rubrique, relire = false) => ({ ...((relire ? prog.relire() : prog.lire()).save?.pitie?.[rubrique] ?? { e: 0, l: 0 }) }),
       // Tenues obtenues : { id: 1 } (forme de js/core/caisses.js ajouterCosmetiques).
@@ -96,7 +96,7 @@ export function chargerEquipement() {
         if (n === etat) return { ok: false, raison: 'invalide' };
         return ecrire([{ id: nouvelId(), t: 'choix', champ: 'porte', valeur: { ...n.porte }, date: now() }]);
       },
-      // --- Dépenses (monnaie bleue) ---------------------------------------------------------------------------------------------------------
+      // --- Dépenses (médailles) -------------------------------------------------------------------------------------------------------------
       ameliorer(uid) {
         const info = infoAmelioration(etat, cat, uid);
         const o = objetDe(etat, uid);
@@ -125,8 +125,8 @@ export function chargerEquipement() {
         return ecrire([...debloquerDonnees(), { id: nouvelId(), t: 'perso', perso: id, de: info.niveau, prix: info.prix }]);
       },
       // Achat d'objets (caisse d'équipement, offre du jour) : uid uniques ; offre : { jour, cle } (une fois par jour). → { ok, raison?, uids }.
-      // Lot 8k : monnaie ('bleu' | 'medailles') et pitie ({ r, de, a } : compteurs avant et après le tirage) facultatives.
-      acheterObjets({ prix, objets, offre = null, monnaie = 'bleu', pitie = null }) {
+      // Lot 8k : monnaie ('medailles' | 'diamants') et pitie ({ r, de, a } : compteurs avant et après le tirage) facultatives.
+      acheterObjets({ prix, objets, offre = null, monnaie = 'medailles', pitie = null }) {
         if (!Array.isArray(objets) || objets.length === 0 || !objets.every((o) => cat.objets.get(o.id)?.raretes[o.rarete])) return { ok: false, raison: 'invalide', uids: [] };
         if (etat.objets.length + objets.length > cat.inventaireMax) return { ok: false, raison: 'plein', uids: [] };
         if (soldeDe(monnaie) < prix) return { ok: false, raison: 'solde', uids: [] };
@@ -136,7 +136,7 @@ export function chargerEquipement() {
         return { ...r, uids: r.ok ? uids : [] };
       },
       // Achat de personnages (caisse de personnages) : issues calculées par la règle de js/core/equipement.js (nouveau ou un niveau de plus).
-      acheterPersonnages({ prix, ids, monnaie = 'bleu', pitie = null }) {
+      acheterPersonnages({ prix, ids, monnaie = 'medailles', pitie = null }) {
         const apercu = obtenirPersonnages(etat, cat, ids);
         if (apercu.issues.length !== ids.length) return { ok: false, raison: 'invalide', issues: [] };
         if (soldeDe(monnaie) < prix) return { ok: false, raison: 'solde', issues: [] };
@@ -145,17 +145,17 @@ export function chargerEquipement() {
         return { ...r, issues: r.ok ? apercu.issues : [] };
       },
       // Achat de tenues (caisse de cosmétiques).
-      acheterTenues({ prix, ids, monnaie = 'bleu', pitie = null }) {
+      acheterTenues({ prix, ids, monnaie = 'medailles', pitie = null }) {
         if (soldeDe(monnaie) < prix) return { ok: false, raison: 'solde' };
         return ecrire([{ id: nouvelId(), t: 'achat', prix, monnaie, pitie, tenues: ids }]);
       },
       // --- Outils de débogage (canaux source et dev seulement : js/menu/debogage.js) -------------------------------------------------------
-      ajouterBleu(n) {
-        return ecrire([{ id: nouvelId(), t: 'gain', bleu: n }]);
-      },
-      // Lot 8k : « Ajouter 1 000 médailles », « Remettre la pitié à zéro ».
       ajouterMedailles(n) {
         return ecrire([{ id: nouvelId(), t: 'gain', medailles: n }]);
+      },
+      // Lot 8k : « Ajouter 1 000 diamants », « Remettre la pitié à zéro ».
+      ajouterDiamants(n) {
+        return ecrire([{ id: nouvelId(), t: 'gain', diamants: n }]);
       },
       // Lot 9a (outil de débogage) : monde marqué terminé (champ « mondes ») sans aucun gain : ni médaille, ni diamant, ni record, ni premier monde
       // récompensé (mondesFinis inchangé : finir vraiment le monde rapportera toujours sa prime).

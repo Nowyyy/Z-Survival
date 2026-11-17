@@ -162,7 +162,7 @@ export function createLocalRepository(storage, params, options = {}) {
         const r = remember(read());
         if (r.status === 'unavailable') return failure('locked');
         const next = codec.replace(save, now, Math.min(Number.MAX_SAFE_INTEGER, r.save.rev + 1));
-        const result = write(next, codec.clean(next));
+        const result = write(next, codec.relire(next));
         if (result.ok && tabs) tabs.reset(r.text, lastText); // import voulu : les gains d'avant ne sont jamais réécrits
         return result;
       }, () => failure('error'));

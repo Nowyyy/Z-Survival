@@ -1,6 +1,6 @@
 {
   "_provisoire": "Valeurs provisoires (lot 8j), à régler par le propriétaire en jouant.",
-  "_note": "Lot 8j : réglages de la partie modifiables par le propriétaire sans lot (relire Docs/ref/correctifs-8j.md). porte.distance : distance (unités du jeu, 20 à 2000 ; 120 depuis le lot 9a : deux cases du dallage de 60, demande du propriétaire ; avant : 60 ; le joueur touche le bloc à 18) entre le joueur et le bloc d'une porte encore fermée à partir de laquelle « Porte ouverte à la manche X » s'affiche. sonsZombies.probabilite : part des coups reçus et portés par les zombies qui font un bruit (0 à 1 ; 0,25 = environ un sur quatre ; la mort sonne toujours) ; sonsZombies.types : événements concernés (zombieHit : balle qui touche sans tuer ; zombieAttack : coup porté au joueur ; plankTorn : planche arrachée). Valeur invalide : le défaut. bleuManche.duree (retour du propriétaire après le lot 8j) : secondes de jeu pendant lesquelles « Monnaie bleue : solde (+gain) » reste sous la vague à la fin d'une manche (1 à 15 ; 4). helicoptere.rotorDegParSeconde (lot 9a) : vitesse du rotor de queue de l'hélicoptère écrasé, en degrés par seconde de jeu (0 à 720 ; 72 = un tour en 5 s, lent, comme entraîné par le vent) ; figé en pause, immobile sous mouvement réduit, décor seulement.",
+  "_note": "Lot 8j : réglages de la partie modifiables par le propriétaire sans lot (relire Docs/ref/correctifs-8j.md). porte.distance : distance (unités du jeu, 20 à 2000 ; 120 depuis le lot 9a : deux cases du dallage de 60, demande du propriétaire ; avant : 60 ; le joueur touche le bloc à 18) entre le joueur et le bloc d'une porte encore fermée à partir de laquelle « Porte ouverte à la manche X » s'affiche. sonsZombies.probabilite : part des coups reçus et portés par les zombies qui font un bruit (0 à 1 ; 0,25 = environ un sur quatre ; la mort sonne toujours) ; sonsZombies.types : événements concernés (zombieHit : balle qui touche sans tuer ; zombieAttack : coup porté au joueur ; plankTorn : planche arrachée). Valeur invalide : le défaut. gainsManche.duree (retour du propriétaire après le lot 8j ; nommé ainsi depuis le lot 9b) : secondes de jeu pendant lesquelles « solde (+gain) » des médailles (fin de manche) ou des diamants reste sous la vague à la fin d'une manche (1 à 15 ; 4). helicoptere.rotorDegParSeconde (lot 9a) : vitesse du rotor de queue de l'hélicoptère écrasé, en degrés par seconde de jeu (0 à 720 ; 72 = un tour en 5 s, lent, comme entraîné par le vent) ; figé en pause, immobile sous mouvement réduit, décor seulement.",
   "porte": {
     "distance": 120
   },
@@ -12,7 +12,7 @@
       "plankTorn"
     ]
   },
-  "bleuManche": {
+  "gainsManche": {
     "duree": 4
   },
   "helicoptere": {

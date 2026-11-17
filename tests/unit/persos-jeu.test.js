@@ -94,19 +94,24 @@ describe('fichiers du jeu modifiés : liste fermée, 40 lignes au plus chacun', 
     const changed = git(`diff --name-only ${base} -- data/game/enemies.json data/game/gaits.json data/game/weapons.json data/game/player.json data/game/waves.json data/game/windows.json data/game/player-stats.json data/game/player-down.json data/game/stairs.json`);
     if (changed === null) return;
     expect(changed.trim()).toBe('');
-    // Lot 8h (autorisé par le prompt du lot : gains de la monnaie bleue, section v2 de la sauvegarde) : economy.json et save.json peuvent recevoir des
+    // Lot 8h (autorisé par le prompt du lot : gains des médailles, section v2 de la sauvegarde) : economy.json et save.json peuvent recevoir des
     // clés nouvelles et un texte _provisoire nouveau, jamais une valeur existante changée ni une clé retirée.
     for (const f of ['data/game/economy.json', 'data/game/save.json']) {
       const avant = git(`show ${base}:${f}`);
       if (avant === null) continue;
       const a = JSON.parse(avant);
       const b = JSON.parse(readFileSync(f, 'utf8'));
-      // Lot 8k (décision du propriétaire, prompt du lot) : la monnaie bleue passe à un gain fixe ; seules ces deux valeurs changent, à ces valeurs.
+      // Lot 8k (décision du propriétaire, prompt du lot) : les médailles passent à un gain fixe ; seules ces deux valeurs changent, à ces valeurs.
       const decides = f === 'data/game/economy.json' ? { waveBonusBase: 20, waveBonusPerWave: 0 } : {};
-      for (const k of Object.keys(a).filter((x) => !x.startsWith('_'))) expect(b[k], `${f} : ${k}`).toEqual(Object.hasOwn(decides, k) ? decides[k] : a[k]);
+      // Lot 9b : clés renommées comme la monnaie affichée (valeurs inchangées) ; une base d'avant le lot est lue avec la table des anciens noms.
+      const renommees = f === 'data/game/economy.json' && Object.hasOwn(a, 'maxBleu') ? RENOMMEES_9B : {}; // ancien nom (lot 9b)
+      for (const k of Object.keys(a).filter((x) => !x.startsWith('_'))) expect(b[renommees[k] ?? k], `${f} : ${k}`).toEqual(Object.hasOwn(decides, k) ? decides[k] : a[k]);
     }
   });
 });
+
+// Lot 9b : ancienne clé de data/game/economy.json → nouvelle (Docs/ref/economie.md, section « Noms »).
+const RENOMMEES_9B = Object.freeze(Object.fromEntries([['maxBleu', 'maxMedailles'], ['maxMedailles', 'maxDiamants'], ...['Porte', 'Zombies', 'ZombiesPas', 'Palier', 'PalierPas', 'Monde', 'Jour'].map((s) => [`medaille${s}`, `diamant${s}`])])); // ancien nom (lot 9b)
 
 describe('persos-runtime.js : accroches (sans rendu)', () => {
   const stub = { region: () => ({ u0: 0.1, v0: 0.1, u1: 0.2, v1: 0.2 }), texture: () => new THREE.Texture(), repeat: () => 1 };

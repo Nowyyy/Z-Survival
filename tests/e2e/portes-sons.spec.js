@@ -90,28 +90,28 @@ test.describe('message à l\'approche d\'une porte fermée (lot 8j)', () => {
   });
 });
 
-test.describe('fin de manche : solde bleu et gain sous la vague (retour du propriétaire après le lot 8j)', () => {
-  test('gemme bleue puis « solde (+gain) » sous le compteur de vague à la fin d\'une manche, pendant 4 s de jeu, puis masqué ; montants lus dans la banque', async ({ page }) => {
+test.describe('fin de manche : solde des médailles et gain sous la vague (retour du propriétaire après le lot 8j)', () => {
+  test('médaille puis « solde (+gain) » sous le compteur de vague à la fin d\'une manche, pendant 4 s de jeu, puis masqué ; montants lus dans la banque', async ({ page }) => {
     await page.addInitScript(() => Object.defineProperty(Document.prototype, 'hidden', { get: () => true, configurable: true }));
     await page.setViewportSize({ width: 932, height: 430 });
     await page.goto('/jeu.html?test=1&seed=1&wave=3');
     await page.waitForFunction(() => window.__zs, null, { timeout: 120_000 });
-    const bloc = page.locator('#hud-bleu-manche');
+    const bloc = page.locator('#hud-medailles-manche');
     await expect(bloc).toBeHidden();
-    const avant = await page.evaluate(() => window.__zs.getState().save.bleu.solde);
+    const avant = await page.evaluate(() => window.__zs.getState().save.medailles.solde);
     const etat = await page.evaluate(() => {
       const zs = window.__zs;
       zs.step(4); // la manche démarre (compte à rebours)
       zs.skipWave();
-      for (let i = 0; i < 10 && document.getElementById('hud-bleu-manche').hidden; i += 1) zs.step(0.1);
-      return zs.getState().save.bleu;
+      for (let i = 0; i < 10 && document.getElementById('hud-medailles-manche').hidden; i += 1) zs.step(0.1);
+      return zs.getState().save.medailles;
     });
     await expect(bloc).toBeVisible();
     const gain = etat.solde - avant;
     expect(gain).toBeGreaterThan(0);
     await expect(bloc).toHaveText(`${etat.solde.toLocaleString('fr-FR').replace(/\u202f|\u00a0/g, ' ')} (+${gain})`);
     expect(await bloc.evaluate((n) => n.firstElementChild.classList.contains('hud-medaille'))).toBe(true); // seulement le logo de la monnaie (retour du propriétaire) ; lot 9a : la médaille (avant : gemme)
-    const boites = await page.evaluate(() => [document.getElementById('hud-wave'), document.getElementById('hud-bleu-manche')].map((n) => {
+    const boites = await page.evaluate(() => [document.getElementById('hud-wave'), document.getElementById('hud-medailles-manche')].map((n) => {
       const r = n.getBoundingClientRect();
       return { cx: r.left + r.width / 2, t: r.top, b: r.bottom, color: getComputedStyle(n).color };
     }));

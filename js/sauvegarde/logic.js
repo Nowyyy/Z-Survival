@@ -41,7 +41,7 @@ export const RECORD_NAME_KEYS = {
   bestWave: 'game.save.page.record.bestWave', bestKills: 'game.save.page.record.bestKills', runs: 'game.save.page.record.runs', worldsCompleted: 'game.save.page.record.worldsCompleted',
 };
 export const ROW_NAME_KEYS = {
-  money: 'game.save.page.import.row.money', earned: 'game.save.page.import.row.earned', medailles: 'game.save.page.import.row.medailles', levelsSum: 'game.save.page.import.row.levelsSum',
+  money: 'game.save.page.import.row.money', earned: 'game.save.page.import.row.earned', diamants: 'game.save.page.import.row.diamants', levelsSum: 'game.save.page.import.row.levelsSum',
   objets: 'game.save.page.import.row.objets', persos: 'game.save.page.import.row.persos', tenues: 'game.save.page.import.row.tenues', mondes: 'game.save.page.import.row.mondes',
   tues: 'game.save.page.import.row.tues', parties: 'game.save.page.import.row.parties',
 };
@@ -55,7 +55,7 @@ export const rowKey = (id) => ROW_NAME_KEYS[id] ?? recordKey(id);
 // Date de la dernière écriture : null quand elle manque (affichage « jamais »).
 export const savedAtDate = (ms) => (Number.isInteger(ms) && ms > 0 && ms < 8.64e15 ? new Date(ms) : null);
 
-// Aperçu d'un import comparé à la progression actuelle : lignes { id, group, current, incoming, changed, mode?, monde? } (monnaie bleue, total gagné, médailles,
+// Aperçu d'un import comparé à la progression actuelle : lignes { id, group, current, incoming, changed, mode?, monde? } (médailles : solde « money », total gagné « earned » ; diamants,
 // objets, personnages, tenues, somme des niveaux, mondes terminés, zombies tués, parties, puis un record par mode et par monde).
 export function previewRows(current, incoming, params) {
   const a = decrire(current, params);
@@ -63,7 +63,7 @@ export function previewRows(current, incoming, params) {
   const rows = [
     { id: 'money', group: 'money', current: a.solde, incoming: b.solde },
     { id: 'earned', group: 'money', current: a.gagne, incoming: b.gagne },
-    { id: 'medailles', group: 'money', current: a.medailles, incoming: b.medailles }, // lot 8k : solde de médailles
+    { id: 'diamants', group: 'money', current: a.diamants, incoming: b.diamants }, // lot 8k : solde des diamants
     { id: 'objets', group: 'menu', current: a.objets, incoming: b.objets },
     { id: 'persos', group: 'menu', current: a.persos, incoming: b.persos },
     { id: 'tenues', group: 'menu', current: a.tenues, incoming: b.tenues },

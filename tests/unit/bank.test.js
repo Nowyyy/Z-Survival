@@ -1,14 +1,14 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { makeEconomy } from '../../js/core/economy.js';
-import { appliquerOps, defaultProgression, serialiser, solde } from '../../js/core/progression.js';
+import { appliquerOps, defaultProgression, depuisStockage, serialiser, solde } from '../../js/core/progression.js';
 import { createBank } from '../../js/game/bank.js';
 import { createRepository } from '../../js/save/index.js';
 import { createLocalRepository } from '../../js/save/local-repository.js';
 import { codecV2 } from '../../js/save/codecs.js';
 import { createFakeStorage, quotaError } from './helpers/fake-storage.js';
 
-// Lot 4 ; lot 8h : deux monnaies. Jaune = gains des zombies et des planches, remise à 0 à chaque partie, jamais écrite ; bleue = bonus de fin de
+// Lot 4 ; lot 8h : deux monnaies. Jaune = gains des zombies et des planches, remise à 0 à chaque partie, jamais écrite ; médailles = bonus de fin de
 // manche et prime de fin du monde, écrite dans la progression v2 (zs.save.v2) à la fin de la partie (mort, monde ; retour après le lot 9a :
 // avant, à chaque manche terminée ; « Quitter » la perd), gardée pour toujours.
 const load = (name) => JSON.parse(readFileSync(`data/game/${name}.json`, 'utf8'));
@@ -18,7 +18,7 @@ const realEconomy = makeEconomy(params.economy, load('enemies'));
 // bonus de manche d'avant (10 + 2 × manche : la formule est inchangée, les données ont désormais un gain fixe, testé à part).
 const economy = { ...realEconomy, killWaveGrowth: 0.04, killGrowthCap: 3, waveBonusBase: 10, waveBonusPerWave: 2, bounty: { marcheur: 5, petit: 6, voute: 8, grand: 12 } };
 const KEY = params.save.v2.storageKey;
-const avec = (bleu, extra = {}) => serialiser({ ...appliquerOps(defaultProgression(), [{ id: 'g0', t: 'gain', bleu }], 1, params).save, ...extra });
+const avec = (medailles, extra = {}) => serialiser({ ...appliquerOps(defaultProgression(), [{ id: 'g0', t: 'gain', medailles }], 1, params).save, ...extra });
 
 // Banque sur un faux stockage local, avec une horloge de jeu que le test avance. Identifiants de partie : banque b<k>, partie run<n> (uniques entre
 // deux banques d'un même test, comme les identifiants tirés par crypto dans le jeu).
@@ -36,7 +36,8 @@ function make({ search = '', initial, storage = createFakeStorage(initial === un
   };
   return { bank, storage, repository, time, advance, mode };
 }
-const stored = (storage) => JSON.parse(storage.data.get(KEY));
+// Lot 9b : progression stockée relue sous les noms du code (champs stockés traduits par la table de js/core/progression.js).
+const stored = (storage) => depuisStockage(JSON.parse(storage.data.get(KEY)), params).save;
 
 describe('banque : monnaie jaune (partie)', () => {
   it('un zombie tué rapporte sa prime (5, 6, 8, 12 à la manche 1) en jaune', () => {
@@ -80,7 +81,7 @@ describe('banque : monnaie jaune (partie)', () => {
     expect(bank.balance()).toBe(250);
   });
 
-  it('après la fin de la partie, plus aucun gain (jaune ni bleu)', () => {
+  it('après la fin de la partie, plus aucun gain (jaune ni médailles)', () => {
     const { bank } = make();
     bank.waveStart(1);
     bank.runEnd({ reason: 'death' });
@@ -99,9 +100,9 @@ describe('banque : monnaie jaune (partie)', () => {
   });
 });
 
-describe('banque : monnaie bleue (gardée)', () => {
+describe('banque : médailles (gardées)', () => {
   // Retour du propriétaire après le lot 9a : les gains de la partie ne sont écrits qu'à sa fin (mort, monde terminé) ; avant : aussitôt la manche finie.
-  it('fin de manche : bonus bleu (12 à la manche 1, 30 à la 5 renforcée), une seule fois par manche, écrit à la fin de la partie', () => {
+  it('fin de manche : bonus en médailles (12 à la manche 1, 30 à la 5 renforcée), une seule fois par manche, écrit à la fin de la partie', () => {
     const { bank, storage } = make();
     bank.waveStart(1);
     expect(bank.waveEnd(1, false).bonus).toBe(12);
@@ -109,12 +110,12 @@ describe('banque : monnaie bleue (gardée)', () => {
     expect(bank.waveEnd(1, false).bonus).toBe(0);
     expect(bank.waveEnd(5, true).bonus).toBe(30);
     expect(bank.snapshot().economy.byKind.wave).toBe(0); // la jaune ne reçoit plus le bonus de manche
-    expect(bank.snapshot().bleu).toMatchObject({ solde: 42, run: 42, pending: 42 });
+    expect(bank.snapshot().medailles).toMatchObject({ solde: 42, run: 42, pending: 42 });
     bank.runEnd({ reason: 'death' });
     expect(solde(stored(storage))).toBe(42);
   });
 
-  it('fin du monde : prime bleue (500) une seule fois, monde terminé ; écrite à la fin de partie', () => {
+  it('fin du monde : prime en médailles (500) une seule fois, monde terminé ; écrite à la fin de partie', () => {
     const { bank, storage } = make();
     bank.waveStart(40);
     expect(bank.worldEnd().bonus).toBe(500);
@@ -122,20 +123,20 @@ describe('banque : monnaie bleue (gardée)', () => {
     const end = bank.runEnd({ reason: 'world' });
     expect(stored(storage).mondes).toEqual(['batiment']);
     expect(solde(stored(storage))).toBe(500);
-    expect(end).toMatchObject({ bleu: 500, world: 500, soldeBleu: 500, earned: 0 });
+    expect(end).toMatchObject({ medailles: 500, world: 500, soldeMedailles: 500, earned: 0 });
   });
 
-  it('plafond du solde bleu : 9 999 999', () => {
+  it('plafond du solde des médailles : 9 999 999', () => {
     const { bank, storage } = make({ initial: avec(9_999_990) });
     bank.waveStart(1);
     bank.waveEnd(1, false);
-    expect(bank.soldeBleu()).toBe(9_999_999);
+    expect(bank.soldeMedailles()).toBe(9_999_999);
     bank.runEnd({ reason: 'death' });
     expect(solde(stored(storage))).toBe(9_999_999);
   });
 
-  // Retour du propriétaire après le lot 9a : la mort garde la bleue gagnée ; « Quitter » la perd (avant : gardée aussi).
-  it('mort : jaune perdue, bleue gagnée gardée ; « Quitter » : jaune et bleue de la partie perdues (bilan de l\'écran de fin)', () => {
+  // Retour du propriétaire après le lot 9a : la mort garde les médailles gagnées ; « Quitter » les perd (avant : gardée aussi).
+  it('mort : jaune perdue, médailles gagnées gardées ; « Quitter » : jaune et médailles de la partie perdues (bilan de l\'écran de fin)', () => {
     const { bank, storage } = make({ initial: avec(100) });
     bank.waveStart(1);
     bank.kill('grand', 1);
@@ -143,16 +144,16 @@ describe('banque : monnaie bleue (gardée)', () => {
     bank.waveStart(2);
     bank.kill('petit', 2);
     const end = bank.runEnd({ reason: 'quit' });
-    expect(end).toMatchObject({ earned: 18, balance: 18, bleu: 0, soldeBleu: 100, reached: 2, mode: 'histoire', ok: true });
+    expect(end).toMatchObject({ earned: 18, balance: 18, medailles: 0, soldeMedailles: 100, reached: 2, mode: 'histoire', ok: true });
     expect(solde(stored(storage))).toBe(100);
     bank.restart();
     bank.waveStart(1);
     bank.waveEnd(1, false);
-    expect(bank.runEnd({ reason: 'death' })).toMatchObject({ bleu: 12, soldeBleu: 112, ok: true });
+    expect(bank.runEnd({ reason: 'death' })).toMatchObject({ medailles: 12, soldeMedailles: 112, ok: true });
     expect(solde(stored(storage))).toBe(112);
   });
 
-  it('infini : bleu gagné par manche aussi ; record de l\'infini séparé, jamais celui de l\'histoire', () => {
+  it('infini : médailles gagnées par manche aussi ; record de l\'infini séparé, jamais celui de l\'histoire', () => {
     const { bank, storage } = make({ partie: { mode: 'infini', monde: 'batiment' } });
     for (let w = 1; w <= 3; w += 1) {
       bank.waveStart(w);
@@ -167,15 +168,15 @@ describe('banque : monnaie bleue (gardée)', () => {
     expect(end).toMatchObject({ mode: 'infini', best: 3, record: true });
   });
 
-  it('« +N » bleu à la fin d\'une manche qui rapporte, puis effacé', () => {
+  it('« +N » des médailles à la fin d\'une manche qui rapporte, puis effacé', () => {
     const { bank, advance } = make();
     bank.waveStart(1);
     bank.waveEnd(1, false);
     advance(100);
-    expect(bank.gainBleu()).toMatchObject({ visible: true, text: '+12' });
-    expect(bank.snapshot().bleu.gainText).toBe('+12');
+    expect(bank.gainMedailles()).toMatchObject({ visible: true, text: '+12' });
+    expect(bank.snapshot().medailles.gainText).toBe('+12');
     advance(1500);
-    expect(bank.gainBleu().visible).toBe(false);
+    expect(bank.gainMedailles().visible).toBe(false);
   });
 });
 
@@ -234,7 +235,7 @@ describe('banque : écriture de la progression', () => {
     bank.runEnd({ reason: 'death' }); // fin de partie : l'écriture des gains échoue
     expect(bank.snapshot()).toMatchObject({ status: 'failed', pending: 12 });
     expect(bank.snapshot().lastCommit).toMatchObject({ ok: false, error: 'QuotaExceededError' });
-    expect(bank.soldeBleu()).toBe(12);
+    expect(bank.soldeMedailles()).toBe(12);
     storage.failSet = null;
     bank.flush('pause');
     bank.flush('pause');
@@ -243,7 +244,7 @@ describe('banque : écriture de la progression', () => {
     expect(bank.snapshot()).toMatchObject({ status: 'saved', pending: 0 });
   });
 
-  it('deux onglets additionnent leurs bleus (opérations à identifiants différents)', () => {
+  it('deux onglets additionnent leurs médailles (opérations à identifiants différents)', () => {
     const storage = createFakeStorage();
     const a = make({ storage });
     const b = make({ storage });
@@ -257,15 +258,15 @@ describe('banque : écriture de la progression', () => {
     expect(stored(storage).profil.partiesHistoire).toBe(2);
   });
 
-  it('un signal de stockage d\'un autre onglet met à jour le solde bleu affiché', () => {
+  it('un signal de stockage d\'un autre onglet met à jour le solde des médailles affiché', () => {
     const storage = createFakeStorage();
     let handler = null;
     const repository = createLocalRepository(storage, params, { codec: codecV2(params), listen: (h) => { handler = h; return () => {}; } });
     const bank = createBank({ repository, mode: { kind: 'local', base: 'local', readOnly: false, reasons: [] }, economy, clock: () => 0, wall: () => 1 });
-    expect(bank.soldeBleu()).toBe(0);
+    expect(bank.soldeMedailles()).toBe(0);
     storage.data.set(KEY, JSON.stringify(avec(77)));
     handler({ key: KEY });
-    expect(bank.soldeBleu()).toBe(77);
+    expect(bank.soldeMedailles()).toBe(77);
   });
 
   it('la persistance est demandée une seule fois, après la première écriture réussie', async () => {
@@ -286,10 +287,10 @@ describe('banque : écriture de la progression', () => {
     expect(asked).toBe(1);
   });
 
-  it('en mode essai, ni écriture ni demande de persistance ; la vraie progression est lue (solde bleu affiché)', () => {
+  it('en mode essai, ni écriture ni demande de persistance ; la vraie progression est lue (solde des médailles affiché)', () => {
     const storage = createFakeStorage({ [KEY]: JSON.stringify(avec(300)) });
     const { bank } = make({ storage, search: '?wave=5' });
-    expect(bank.soldeBleu()).toBe(300);
+    expect(bank.soldeMedailles()).toBe(300);
     bank.waveStart(5);
     bank.waveEnd(5, true);
     bank.runEnd({ reason: 'death' });
@@ -350,14 +351,14 @@ describe('banque : écriture de la progression', () => {
 
   // Retour du propriétaire après le lot 9a : une partie FINIE dont l'écriture a échoué garde ses gains après « Rejouer » ; une partie abandonnée
   // (« Recommencer ») ensuite ne perd que les siens.
-  it('restart avec un échec en cours garde la bleue en attente (écrite plus tard)', () => {
+  it('restart avec un échec en cours garde les médailles en attente (écrite plus tard)', () => {
     const { bank, storage } = make();
     bank.waveStart(1);
     bank.waveEnd(1, false);
     storage.failSet = quotaError();
     bank.runEnd({ reason: 'death' });
     bank.restart();
-    expect(bank.soldeBleu()).toBe(12);
+    expect(bank.soldeMedailles()).toBe(12);
     bank.waveStart(1);
     bank.waveEnd(1, false); // échoue encore (stockage plein)
     bank.runEnd({ reason: 'restart' }); // partie abandonnée : ses 12 sont perdus, les 12 dus restent
@@ -406,7 +407,7 @@ describe('banque : montants du jeu (retour du propriétaire : montants fixes)', 
     expect(bank.snapshot().economy.killsRun).toBe(0);
   });
 
-  it('bleu de manche (lot 8k : gain fixe) : 20 par manche (× 1,5 renforcée), quelle que soit la manche ; prime du monde 500', () => {
+  it('médailles de manche (lot 8k : gain fixe) : 20 par manche (× 1,5 renforcée), quelle que soit la manche ; prime du monde 500', () => {
     const { bank, storage } = real();
     bank.waveStart(1);
     expect(bank.waveEnd(1, false).bonus).toBe(20);

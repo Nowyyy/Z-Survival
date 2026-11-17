@@ -5,7 +5,8 @@ import { buildLayouts } from '../../js/core/layout.js';
 import { parseZones, zonesToWorld } from '../../js/core/zones.js';
 import { distanceToRect } from '../../js/core/collision.js';
 import { sacsBoxes } from '../../js/core/decor-interieur.js';
-import { waitReady } from './helpers.js';
+import { CHAMPS_STOCKES } from '../../js/core/progression.js';
+import { nomsDuCode, waitReady } from './helpers.js';
 
 // Lot 9a (Docs/ref/debut-v09.md) : message des portes à deux cases ; rotor de queue de l'hélicoptère (temps de jeu, figé en pause, immobile sous
 // mouvement réduit) ; sol « en bois » de la capture du propriétaire : sacs de sable, solides et en toile de jute depuis le lot 9a-I. ?test=1, step() et
@@ -180,15 +181,17 @@ test.describe('rotation et arrière-plan (retour après le lot 9a)', () => {
 test.describe('Infini après le monde terminé (lot 9a)', () => {
   test('Infini verrouillé sans monde terminé (cadenas, raison, « Jouer » désactivé et nommé, aucune écriture) ; débloqué par l\'outil de débogage, sans aucun gain ; axe ; 44 px', async ({ page }) => {
     test.setTimeout(150_000);
-    await page.addInitScript(() => {
+    // Lot 9b : progression posée telle que le stockage la garde (champs stockés de la table CHAMPS_STOCKES).
+    const depart = { v: 2, rev: 1, savedAt: 1, [CHAMPS_STOCKES.medailles]: { gagne: 300, depense: 0 }, [CHAMPS_STOCKES.diamants]: { gagne: 120, depense: 0, jour: 0 }, records: { histoire: { batiment: 17 }, infini: {} } };
+    await page.addInitScript((texte) => {
       if (sessionStorage.getItem('zs.test.infini')) return;
       sessionStorage.setItem('zs.test.infini', '1');
       localStorage.clear();
-      localStorage.setItem('zs.save.v2', JSON.stringify({ v: 2, rev: 1, savedAt: 1, bleu: { gagne: 300, depense: 0 }, medailles: { gagne: 120, depense: 0, jour: 0 }, records: { histoire: { batiment: 17 }, infini: {} } }));
+      localStorage.setItem('zs.save.v2', texte);
       window.__ecritures = [];
       const set = Storage.prototype.setItem;
       Storage.prototype.setItem = function (k, v) { window.__ecritures.push(k); return set.call(this, k, v); };
-    });
+    }, JSON.stringify(depart));
     await page.setViewportSize({ width: 667, height: 375 }); // paysage (le projet mobile part en portrait)
     await page.goto('/jeu.html?test=1&menu=1&seed=1&store=local');
     await expect(page.locator('#menu-jouer')).toBeVisible({ timeout: 60_000 });
@@ -221,8 +224,8 @@ test.describe('Infini après le monde terminé (lot 9a)', () => {
     await page.locator('#menu-debogage-oui').click();
     await expect(page.locator('#menu-debogage-message')).toHaveText('C\'est fait.');
     await page.keyboard.press('Escape');
-    const lu = JSON.parse(await page.evaluate(() => localStorage.getItem('zs.save.v2')));
-    expect([lu.mondes, lu.bleu, lu.medailles, lu.mondesFinis ?? [], lu.records.histoire]).toEqual([['batiment'], { gagne: 300, depense: 0 }, { gagne: 120, depense: 0, jour: 0 }, [], { batiment: 17 }]);
+    const lu = nomsDuCode(JSON.parse(await page.evaluate(() => localStorage.getItem('zs.save.v2'))));
+    expect([lu.mondes, lu.medailles, lu.diamants, lu.mondesFinis ?? [], lu.records.histoire]).toEqual([['batiment'], { gagne: 300, depense: 0 }, { gagne: 120, depense: 0, jour: 0 }, [], { batiment: 17 }]);
     await expect(carte).not.toHaveAttribute('aria-disabled', 'true');
     await expect(carte.locator('.e8-infini-cadenas')).toHaveCount(0);
     await expect(carte.locator('.e8-infini-carte-detail')).toHaveText('Record : —');

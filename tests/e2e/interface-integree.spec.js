@@ -363,7 +363,7 @@ test.describe('états du jeu', () => {
     await page.goto('/jeu.html?wave=40&fin=monde&vhs=0');
     await expect(page.locator('#end-panel')).toBeVisible({ timeout: 60_000 });
     await expect(page.locator('#end-title')).toHaveText('Monde terminé');
-    await expect(page.locator('#end-bleu-text')).toHaveText(/^\+\d/); // retour du propriétaire après le lot 8k : prime du monde comprise dans le gain (avant : #end-bonus)
+    await expect(page.locator('#end-medailles-text')).toHaveText(/^\+\d/); // retour du propriétaire après le lot 8k : prime du monde comprise dans le gain (avant : #end-bonus)
     await expect(page.locator('#end-save')).toHaveText('Mode essai : rien n\'est enregistré'); // lot 8h
     expect(await page.evaluate(() => localStorage.length)).toBe(0);
     await page.goto('/jeu.html?test=1&fin=monde&vhs=0'); // ?test=1 seul : sauvegarde en mémoire, pas en lecture seule
@@ -371,7 +371,7 @@ test.describe('états du jeu', () => {
     await expect(page.locator('#end-panel')).toBeHidden();
   });
 
-  test('fin : vague (« Record » sur la même ligne), meilleure manche, tués à gauche ; solde de diamants et de médailles (avec le gain) à droite ; plus de note « provisoire »', async ({ page }) => {
+  test('fin : vague (« Record » sur la même ligne), meilleure manche, tués à gauche ; solde des médailles et des diamants (avec le gain) à droite ; plus de note « provisoire »', async ({ page }) => {
     await page.setViewportSize(SIZE);
     await page.goto('/jeu.html?test=1&store=local&seed=1&vhs=0');
     await waitReady(page);
@@ -380,13 +380,13 @@ test.describe('états du jeu', () => {
     const col = (ids) => page.evaluate((list) => list.map((id) => { const q = document.getElementById(id).getBoundingClientRect(); return [q.left, q.top]; }), ids);
     // Retour du propriétaire après le lot 8k : « Record » à droite de la vague atteinte (une ligne de gagnée) ; à droite, les deux soldes et leur gain.
     const left = await col(['end-wave', 'end-best', 'end-kills']);
-    const right = await col(['end-balance', 'end-medailles-solde']);
+    const right = await col(['end-balance', 'end-diamants-solde']);
     for (const c of [left, right]) for (let i = 1; i < c.length; i += 1) { expect(Math.abs(c[i][0] - c[0][0])).toBeLessThan(0.5); expect(c[i][1]).toBeGreaterThan(c[i - 1][1]); }
     expect(right[0][0]).toBeGreaterThan(left[0][0] + 100);
     const [vague, record] = await col(['end-wave-text', 'end-record']);
     expect(record[0]).toBeGreaterThan(vague[0]);
     expect(Math.abs(record[1] - vague[1])).toBeLessThan(6); // sur la même ligne que la vague
-    const [solde, gain] = await col(['end-balance-text', 'end-bleu']);
+    const [solde, gain] = await col(['end-balance-text', 'end-medailles']);
     expect(gain[0]).toBeGreaterThan(solde[0]);
     await expect(page.locator('#end-panel')).not.toContainText('provisoire');
   });

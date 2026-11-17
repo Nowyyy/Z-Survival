@@ -133,7 +133,7 @@ export function creer({ t, bandeau, eq, cat, retour }) {
     else if (f.possible && f.prix > eq.solde()) message.textContent = fmt(t('game.menu.fusion.message.solde'), { prix, n: formatMoney(f.prix - eq.solde()) }); // lot 8h
     else if (f.possible) message.textContent = fmt(t('game.menu.fusion.message.pret'), { prix });
     else message.textContent = fmt(t(f.manque === 1 ? 'game.menu.fusion.message.manque.un' : 'game.menu.fusion.message.manque'), { n: f.manque, objet: objetNom, rarete, prix });
-    // Lot 8h : prix prélevé en monnaie bleue ; solde insuffisant : bouton grisé « Il manque N », raison dans le message.
+    // Lot 8h : prix prélevé en médailles ; solde insuffisant : bouton grisé « Il manque N », raison dans le message.
     const manque = f.possible ? Math.max(0, f.prix - eq.solde()) : 0;
     btFusionner.textContent = manque > 0 ? fmt(t('game.menu.prix.manque'), { n: formatMoney(manque) }) : t('game.menu.fusion.fusionner');
     poserActif(btFusionner, f.possible && manque === 0, 'menu-fusion-message');

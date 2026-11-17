@@ -75,7 +75,7 @@ describe('état du menu dérivé de la progression v2 (etatDepuis)', () => {
 
   it('objets, équipement, personnages et niveaux relus de la v2 ; objet inconnu du catalogue (ancienne arme) écarté ; niveau borné à son maximum', () => {
     const save = appliquerOps(defaultProgression(), [
-      { id: 'g', t: 'gain', bleu: 5000 },
+      { id: 'g', t: 'gain', medailles: 5000 },
       { id: 'a', t: 'achat', prix: 150, objets: [{ u: 'a.0', i: 'casque-kevlar', r: 'commun' }, { u: 'a.1', i: 'pistolet', r: 'rare' }] },
       { id: 'm1', t: 'ameliorer', u: 'a.0', de: 1, prix: 40 },
       { id: 'c', t: 'choix', champ: 'porte', valeur: { tete: 'a.0', gants: 'a.1' }, date: 1 },
@@ -106,7 +106,7 @@ describe('prix prélevés dans la même écriture que ce qui est obtenu', () => 
 
   it('inventaire plein (100) : l\'achat ×10 est refusé en entier, rien n\'est prélevé', () => {
     const objets = Array.from({ length: 95 }, (_, i) => ({ u: `x.${i}`, i: 'rangers', r: 'commun' }));
-    const base = appliquerOps(defaultProgression(), [{ id: 'g', t: 'gain', bleu: 9000 }, { id: 'x', t: 'achat', prix: 0, place: cat.inventaireMax, objets }], 1, params).save;
+    const base = appliquerOps(defaultProgression(), [{ id: 'g', t: 'gain', medailles: 9000 }, { id: 'x', t: 'achat', prix: 0, place: cat.inventaireMax, objets }], 1, params).save;
     const r = appliquerOps(base, [{ id: 'y', t: 'achat', prix: 1350, place: cat.inventaireMax, objets: Array.from({ length: 10 }, (_, i) => ({ u: `y.${i}`, i: 'rangers', r: 'commun' })) }], 2, params);
     expect(r.refused).toEqual([{ id: 'y', raison: 'plein' }]);
     expect([r.save.objets.length, solde(r.save)]).toEqual([95, 9000]);
@@ -119,7 +119,7 @@ describe('outils de débogage', () => {
     expect(menu).toMatch(/const outils = \['source', 'dev'\]\.includes\(pageCanal\(\)\)/);
     const d = read('js/menu/debogage.js');
     expect(d).toMatch(/export const CANAUX_OUTILS = Object\.freeze\(\['source', 'dev'\]\);/);
-    expect(d).toMatch(/export const OUTILS = Object\.freeze\(\['bleus', 'medailles', 'pitie', 'monde', 'demo', 'persos', 'zero'\]\);/); // lot 9a : + « Marquer le monde 1 terminé » (sept outils)
+    expect(d).toMatch(/export const OUTILS = Object\.freeze\(\['medailles', 'diamants', 'pitie', 'monde', 'demo', 'persos', 'zero'\]\);/); // lot 9a : + « Marquer le monde 1 terminé » (sept outils)
     expect(d).toMatch(/game\.menu\.debogage\.confirmer/);
     expect(d).not.toMatch(/localStorage|removeItem\(|getItem\(/); // aucun accès direct : la remise à zéro passe par le dépôt v2 (clear de zs.save.v2)
     expect(read('js/menu/equipement-etat.js')).toMatch(/remettreAZero: \(\) => prog\.effacer\(\)/);

@@ -2,7 +2,7 @@
 // lot 5o (onglets-simulateur.js, d'après le cache de Chromium) : chaque onglet lit une COPIE locale périmée pendant un retard tiré au hasard ; le
 // navigateur applique les écritures dans l'ordre d'arrivée ; l'événement `storage` et le canal entre onglets ont leurs propres retards, sans ordre
 // garanti entre eux. Les onglets utilisent le VRAI dépôt local (js/save/local-repository.js) avec le format v2 (js/save/codecs.js) et la fusion
-// (js/core/save-merge.js) ; chaque onglet fait des gains de manche (bleu) et des achats (prix prélevé, objets ajoutés), à des instants tirés au hasard.
+// (js/core/save-merge.js) ; chaque onglet fait des gains de manche (médailles) et des achats (prix prélevé, objets ajoutés), à des instants tirés au hasard.
 // Aucun navigateur, aucune horloge réelle, aucun Math.random (générateur à graine fixe).
 import { createLocalRepository } from '../../../js/save/local-repository.js';
 import { codecV2 } from '../../../js/save/codecs.js';
@@ -35,7 +35,7 @@ function scheduler() {
   };
 }
 
-// options : { seed, tabs (2 à 4), ops (nombre d'opérations), retard (ticks), params, initial (solde bleu de départ) }.
+// options : { seed, tabs (2 à 4), ops (nombre d'opérations), retard (ticks), params, initial (solde de médailles de départ) }.
 // Renvoie { ok, pertes, doubles, doublesDepenses, negatif, nonPaye, achatsConfirmesAbsents, gagne, attendu, depense, payes, calme, ecritures }.
 // sansFusion : banc du témoin (dépôt sans canal ni fusion, comme avant le lot 5o) : le simulateur doit y trouver des pertes.
 // Lot 9a : departSave (facultatif) : progression de départ entière (par exemple une sauvegarde de la V0.8 avec les deux monnaies, la pitié, les paliers,
@@ -49,11 +49,11 @@ export function simulateV2({ seed, tabs: nTabs = 2, ops = 8, retard = 10, params
   const KEY = codec.key;
   let now = 0;
   let writes = 0;
-  const depart = departSave ? JSON.stringify(serialiser(sanitize(departSave, params).save)) : initial > 0 ? JSON.stringify(serialiser(appliquerOps(defaultProgression(), [{ id: 'depart', t: 'gain', bleu: initial }], 1, params).save)) : r() < 0.5 ? null : JSON.stringify(serialiser(defaultProgression()));
+  const depart = departSave ? JSON.stringify(serialiser(sanitize(departSave, params).save)) : initial > 0 ? JSON.stringify(serialiser(appliquerOps(defaultProgression(), [{ id: 'depart', t: 'gain', medailles: initial }], 1, params).save)) : r() < 0.5 ? null : JSON.stringify(serialiser(defaultProgression()));
   let auth = depart;
   const tabs = [];
   let opSeq = 0;
-  const gains = []; // gains écrits (commit réussi) : { id, bleu }
+  const gains = []; // gains écrits (commit réussi) : { id, medailles }
   const achats = new Map(); // id → { prix, u: [uids], confirme (commit réussi sans refus, jamais refusé ensuite) }
 
   function makeTab(i) {
@@ -107,9 +107,9 @@ export function simulateV2({ seed, tabs: nTabs = 2, ops = 8, retard = 10, params
     opSeq += 1;
     const id = `o${seed}x${opSeq}`;
     if (r() < 0.55) {
-      const bleu = gain;
-      const res = tab.repo.commit([{ id, t: 'gain', bleu, tues: 1 }], Math.floor(now / 4));
-      if (res.ok) gains.push({ id, bleu });
+      const medailles = gain;
+      const res = tab.repo.commit([{ id, t: 'gain', medailles, tues: 1 }], Math.floor(now / 4));
+      if (res.ok) gains.push({ id, medailles });
       return;
     }
     // Relecture avant dépense : l'achat n'est tenté que si le solde relu suffit (bouton « Il manque N » sinon).
@@ -141,8 +141,8 @@ export function simulateV2({ seed, tabs: nTabs = 2, ops = 8, retard = 10, params
   }
 
   const fin = auth === null ? defaultProgression() : codec.parse(JSON.parse(auth)).save;
-  const base = departSave ? sanitize(departSave, params).save.bleu : { gagne: initial > 0 ? initial : 0, depense: 0 }; // lot 9a : départ complet possible
-  const attendu = base.gagne + gains.reduce((n, g) => n + g.bleu, 0);
+  const base = departSave ? sanitize(departSave, params).save.medailles : { gagne: initial > 0 ? initial : 0, depense: 0 }; // lot 9a : départ complet possible
+  const attendu = base.gagne + gains.reduce((n, g) => n + g.medailles, 0);
   const presents = new Map();
   for (const o of fin.objets) {
     const id = o.u.slice(0, o.u.lastIndexOf('.'));
@@ -159,10 +159,10 @@ export function simulateV2({ seed, tabs: nTabs = 2, ops = 8, retard = 10, params
   }
   for (const [id, n] of presents) if (!achats.has(id) || n > achats.get(id).u.length) doublesDepenses = true;
   const res = {
-    gagne: fin.bleu.gagne, attendu, depense: fin.bleu.depense, payes,
-    pertes: fin.bleu.gagne < attendu, doubles: fin.bleu.gagne > attendu,
-    doublesDepenses: doublesDepenses || fin.bleu.depense - base.depense !== payes,
-    negatif: fin.bleu.depense > fin.bleu.gagne,
+    gagne: fin.medailles.gagne, attendu, depense: fin.medailles.depense, payes,
+    pertes: fin.medailles.gagne < attendu, doubles: fin.medailles.gagne > attendu,
+    doublesDepenses: doublesDepenses || fin.medailles.depense - base.depense !== payes,
+    negatif: fin.medailles.depense > fin.medailles.gagne,
     nonPaye,
     achatsConfirmesAbsents: [...achats.values()].filter((a) => a.absent).length,
     achatsAnnules: [...achats.values()].filter((a) => !a.confirme).length,

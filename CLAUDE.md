@@ -57,7 +57,7 @@ Avant de modifier une page, lis `Docs/ref/conventions.md` (arborescence, pages, 
 - Étages : etage.json, zones.json ; floor (rdc, etage) sur zombies, fenêtres, balles, obstacles ; une couche de collisions par étage ; relevé : Docs/ref/etage.md.
 - Sauvegarde : js/core/progression.js pur (zs.save.v2, code ZS2 ; zs.save.v1 ignorée) ; js/save/ seul à toucher localStorage (même domaine : /Recette/, /dev/, /v0.N/) ; illisible ou future = verrouillée, jamais écrasée ; onglets : save-merge.js ; Docs/ref/sauvegarde-v2.md.
 - Mode essai (wave, lvl, planks, map, empty, nospawn, endless, floor, money) : sauvegarde en lecture seule ; ?test=1 = mémoire (&store=local : vrai localStorage).
-- Argent : economy.js (calcul) ; Zollars (jaune) : 10 par kill (balle), 1 par planche, 0 par partie ; médailles (bleu), diamants (medailles) écrits en fin de partie, perdus à Quitter ; Docs/ref/economie.md.
+- Argent : economy.js ; Zollars (jaune) : 10 par kill (balle), 1 par planche, 0 par partie ; médailles, diamants (stockés bleu, medailles) écrits en fin de partie, perdus à Quitter ; Docs/ref/economie.md.
 - Options (E2-12, menu E5) : Auto, Faible, Moyen, Élevé, Perso (réglage changé → Perso) ; ?gfx= > zs.device.v1 (v2 ; son, volumes) > auto ; sans effet sur la logique ; Docs/ref/options-graphiques.md.
 - Lampes : lampes.json → npm run carte ; lumieres.json ; ?lum= (off : ?test=1) ; références de rendu : ?test=1&lum=off ; Docs/ref/lampes.md.
 - Canal : zs-canal de jeu.html ; paramètres par pageSearch() (groupes G, T, test ; acces()), jamais location.search ; débogage : source, dev, release ; Docs/ref/debug.md.

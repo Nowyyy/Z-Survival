@@ -2,15 +2,15 @@
 // utilisables et comptés à « JOUER » (Docs/ref/menu-principal.md). ?test=1&menu=1 ; 932 × 430 (référence), 667 × 375, 1440 × 900, 2000 × 1020,
 // téléphone à encoche simulé ; projets bureau et mobile (paysage). Graines des achats fixées en remplaçant crypto.getRandomValues (aucun crochet dans
 // le code) ; résultats attendus calculés par les fonctions pures (js/core/caisses.js).
-// Lot 8h : progression v2 (zs.save.v2) : chaque test part de la démonstration (100 000 bleus, inventaire o1 à o16 ; tests/e2e/helpers.js), ?store=local ;
-// prix prélevés en monnaie bleue dans la même écriture que ce qui est obtenu (une écriture par achat) ; identifiants d'objets uniques (crypto).
+// Lot 8h : progression v2 (zs.save.v2) : chaque test part de la démonstration (100 000 médailles et 100 000 diamants, inventaire o1 à o16 ; tests/e2e/helpers.js), ?store=local ;
+// prix prélevés (médailles ; caisses : diamants) dans la même écriture que ce qui est obtenu (une écriture par achat) ; identifiants d'objets uniques (crypto).
 import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { readFileSync } from 'node:fs';
 import { formatMoney } from '../../js/core/economy.js';
 import { chances, lireCaisses, lireCosmetiques, lireOffres, offresDuJour, resume, lirePitie, tirerPitie } from '../../js/core/caisses.js';
 import { ajouterObjets, creerEtatEquipement, equiper, lireCatalogue, obtenirPersonnages, statistiquesEffectives } from '../../js/core/equipement.js';
-import { CLE_V2, poserProgression, progressionDemo } from './helpers.js';
+import { CLE_V2, nomsDuCode, poserProgression, progressionDemo } from './helpers.js';
 
 test.beforeEach(async ({ page }) => {
   await poserProgression(page);
@@ -28,7 +28,7 @@ const { cat, depart } = lireCatalogue({ raretes: lire('data/menu/raretes.json'),
 cat.cosmetiques = lireCosmetiques(lire('data/menu/cosmetiques.json'), cat.raretes);
 const { caisses } = lireCaisses(lire('data/menu/caisses.json'), cat);
 const { regles: REGLES_OFFRES } = lireOffres(lire('data/menu/caisses.json'), cat);
-// Lot 8k : une caisse par rubrique (equipement, personnages, cosmetiques) payée en médailles, tirée avec la pitié de sa rubrique ; les anciens noms
+// Lot 8k : une caisse par rubrique (equipement, personnages, cosmetiques) payée en diamants (lot 9a), tirée avec la pitié de sa rubrique ; les anciens noms
 // de caisses du test désignent celle de leur rubrique ; résultats attendus = tirerPitie depuis les compteurs donnés (0 : progression de démonstration).
 const { regles: PITIE } = lirePitie(lire('data/menu/caisses.json'), cat);
 const ZERO = Object.freeze({ e: 0, l: 0 });
@@ -448,12 +448,12 @@ test.describe('achats et résultats (E3-4, E3-5)', () => {
     await expect(page.locator('#menu-inventaire-annonce')).toContainText('équipé');
     expect(Object.values((await etatMenu(page)).personnage.emplacements).some((x) => x?.uid === u2)).toBe(true);
     expect(solde).toBe(`100${NNBSP}000`);
-    await expect(page.locator('#menu-solde-texte')).toHaveText(`100${NNBSP}000`); // lot 8k : la bleue ne paie plus les caisses
-    await expect(page.locator('#menu-medailles-texte')).toHaveText(`99${NNBSP}800`); // lot 8k : deux caisses (100 médailles chacune) prélevées (avant : 2 × 1 500 bleus)
-    expect([(await etatMenu(page)).solde, (await etatMenu(page)).medailles]).toEqual([100_000, 99_800]);
+    await expect(page.locator('#menu-solde-texte')).toHaveText(`100${NNBSP}000`); // lot 8k : les médailles ne paient plus les caisses
+    await expect(page.locator('#menu-diamants-texte')).toHaveText(`99${NNBSP}800`); // lot 8k : deux caisses (100 diamants chacune, lot 9a) prélevées (avant : 2 × 1 500)
+    expect([(await etatMenu(page)).solde, (await etatMenu(page)).diamants]).toEqual([100_000, 99_800]);
     expect(await page.evaluate(() => window.__ecritures)).toEqual([CLE_V2, CLE_V2, CLE_V2]); // deux achats, un équipement
-    const garde = JSON.parse(await page.evaluate((k) => localStorage.getItem(k), CLE_V2));
-    expect([garde.bleu.depense, garde.medailles.depense, garde.objets.length, garde.pitie.equipement]).toEqual([0, 200, depart.objets.length + 2, { e: 0, l: 0 }]); // épique puis légendaire : compteurs à 0
+    const garde = nomsDuCode(JSON.parse(await page.evaluate((k) => localStorage.getItem(k), CLE_V2)));
+    expect([garde.medailles.depense, garde.diamants.depense, garde.objets.length, garde.pitie.equipement]).toEqual([0, 200, depart.objets.length + 2, { e: 0, l: 0 }]); // épique puis légendaire : compteurs à 0
     expect([o.problemes, o.externes]).toEqual([[], []]);
   });
 
@@ -507,7 +507,7 @@ test.describe('achats et résultats (E3-4, E3-5)', () => {
     await page.locator('#menu-onglet-boutique').click();
     await expect(page.locator('#menu-ecran-boutique')).toBeVisible();
     await expect(page.locator('#menu-ecran-resultat')).toBeHidden();
-    expect((await etatMenu(page)).medailles).toBe(100_000 - 4 * caisse('ravitaillement').prix10); // lot 8h : quatre ×10 prélevés ; lot 8k : en médailles
+    expect((await etatMenu(page)).diamants).toBe(100_000 - 4 * caisse('ravitaillement').prix10); // lot 8h : quatre ×10 prélevés ; lot 8k : en diamants (lot 9a)
     expect((await etatMenu(page)).solde).toBe(100_000);
   });
 });
@@ -517,7 +517,7 @@ test.describe('« JOUER » avec un objet obtenu', () => {
   const SAVE_STATS = { degats: 2, portee: 1, precision: 0, cadence: 3, vitesse: 9, vie: 1, regen: 0, chutes: 1, reparation: 0 };
   test('gants obtenus (caisse d\'élite) et portés : la partie reçoit les niveaux de la fonction pure ; lot 8h : achat et équipement écrits (deux écritures), prix prélevé, niveaux de base inchangés', async ({ page }) => {
     test.setTimeout(150_000);
-    await poserProgression(page, progressionDemo({ bleu: 5000, extra: { niveaux: SAVE_STATS, records: { histoire: { batiment: 3 }, infini: {} } } }));
+    await poserProgression(page, progressionDemo({ medailles: 5000, extra: { niveaux: SAVE_STATS, records: { histoire: { batiment: 3 }, infini: {} } } }));
     await espionStockage(page);
     await graines(page, [G_GANTS]);
     await ouvrirBoutique(page, REF, '&store=local');
@@ -537,8 +537,8 @@ test.describe('« JOUER » avec un objet obtenu', () => {
     const attendu = statistiquesEffectives(SAVE_STATS, etat, cat, PARAMS).niveaux;
     expect(attendu).not.toEqual(statistiquesEffectives(SAVE_STATS, creerEtatEquipement(cat, depart), cat, PARAMS).niveaux);
     expect((await etatMenu(page)).personnage.stats).toEqual(attendu);
-    await expect(page.locator('#menu-solde-texte')).toHaveText(`5${NNBSP}000`); // lot 8k : la caisse se paie en médailles (avant : 3 500 bleus)
-    await expect(page.locator('#menu-medailles-texte')).toHaveText(`99${NNBSP}900`);
+    await expect(page.locator('#menu-solde-texte')).toHaveText(`5${NNBSP}000`); // lot 8k : la caisse se paie en diamants (lot 9a ; avant : 3 500 médailles)
+    await expect(page.locator('#menu-diamants-texte')).toHaveText(`99${NNBSP}900`);
     expect(await page.evaluate(() => window.__ecritures)).toEqual([KEY, KEY]);
     await page.locator('#menu-onglet-jouer').click();
     await page.locator('#menu-jouer').click();
@@ -546,8 +546,8 @@ test.describe('« JOUER » avec un objet obtenu', () => {
     const p = await page.evaluate(() => { const s = window.__zs.getState(); return { source: s.stats.source, niveaux: { ...s.stats.levels, ...s.stats.extraLevels } }; });
     expect([p.source, p.niveaux]).toEqual(['menu', attendu]);
     await page.evaluate(() => window.__zs.flushSave());
-    const apres = JSON.parse(await page.evaluate((k) => localStorage.getItem(k), KEY));
-    expect([apres.bleu, apres.medailles.depense, apres.niveaux]).toEqual([{ gagne: 5000, depense: 0 }, 100, JSON.parse(avant).niveaux]); // lot 8k : médailles
+    const apres = nomsDuCode(JSON.parse(await page.evaluate((k) => localStorage.getItem(k), KEY)));
+    expect([apres.medailles, apres.diamants.depense, apres.niveaux]).toEqual([{ gagne: 5000, depense: 0 }, 100, JSON.parse(avant).niveaux]); // lot 8k : diamants (lot 9a)
     expect(apres.porte.gants).toBe(uid);
     await page.evaluate(() => localStorage.clear());
   });

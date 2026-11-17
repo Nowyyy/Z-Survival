@@ -3,7 +3,7 @@
 // 667×375 (défilement interne, en-tête visible), 1440×900 et 375×812 ; step() et hooks sous ?test=1. Sans icône sur les canaux refusés : canal.spec.js.
 import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
-import { waitReady } from './helpers.js';
+import { nomsDuCode, waitReady } from './helpers.js';
 
 const DEV = 'http://127.0.0.1:4174/full/dev/jeu.html';
 const GL_DRIVER = /^\[\.WebGL-[0-9a-fx]+\]GL Driver Message/;
@@ -236,7 +236,7 @@ test.describe('outils de débogage du menu (lot 8h)', () => {
     });
   }
 
-  test('canal source, ?store=local : icône 44 px nommée ; « Ajouter 10 000 diamants » demande confirmation (« Annuler » n\'écrit rien), puis écrit zs.save.v2 et met l\'en-tête à jour ; « Remettre à zéro » efface zs.save.v2, jamais zs.save.v1 ; Échap ferme et rend le focus ; axe', async ({ page }) => {
+  test('canal source, ?store=local : icône 44 px nommée ; « Ajouter 10 000 médailles » demande confirmation (« Annuler » n\'écrit rien), puis écrit zs.save.v2 et met l\'en-tête à jour ; « Remettre à zéro » efface zs.save.v2, jamais zs.save.v1 ; Échap ferme et rend le focus ; axe', async ({ page }) => {
     test.setTimeout(120_000);
     const { problems, external } = watch(page);
     await page.addInitScript(() => {
@@ -258,22 +258,22 @@ test.describe('outils de débogage du menu (lot 8h)', () => {
     await expect(panneau.locator('.e8-debogage-nom')).toHaveText(['Remettre la progression à zéro', 'Ajouter 10 000 médailles', 'Ajouter 1 000 diamants', 'Remettre la pitié à zéro', 'Marquer le monde 1 terminé', 'Donner l\'inventaire de démonstration', 'Débloquer tous les personnages']); // lot 8k : + médailles, pitié ; lot 9a-H : remise à zéro sous l'état de la sauvegarde (en premier), « V0.8 » retiré du nom
     expect((await new AxeBuilder({ page }).include('#menu-debogage').analyze()).violations.map((v) => v.id)).toEqual([]);
     const v2 = () => page.evaluate(() => localStorage.getItem('zs.save.v2'));
-    await page.locator('#menu-debogage-bleus').click();
-    await expect(page.locator('#menu-debogage-question')).toHaveText('Confirmer : Ajouter 10 000 médailles ?'); // lot 9a : le champ « bleu » s'appelle « médailles »
+    await page.locator('#menu-debogage-medailles').click();
+    await expect(page.locator('#menu-debogage-question')).toHaveText('Confirmer : Ajouter 10 000 médailles ?'); // lot 9a : appelées « diamants » en V0.8
     await page.locator('#menu-debogage-non').click();
     expect(await v2()).toBeNull();
-    await page.locator('#menu-debogage-bleus').click();
-    await page.locator('#menu-debogage-oui').click();
-    await expect(page.locator('#menu-debogage-message')).toHaveText('C\'est fait.');
-    expect(JSON.parse(await v2()).bleu).toEqual({ gagne: 10_000, depense: 0 });
-    await expect(page.locator('#menu-solde-texte')).toHaveText(`10${String.fromCharCode(0x202f)}000`);
-    // Lot 8k : « Ajouter 1 000 médailles » (en-tête mis à jour), « Remettre la pitié à zéro » (compteurs des trois rubriques à 0).
     await page.locator('#menu-debogage-medailles').click();
-    await expect(page.locator('#menu-debogage-question')).toHaveText('Confirmer : Ajouter 1 000 diamants ?'); // lot 9a : le champ « medailles » s'appelle « diamants »
     await page.locator('#menu-debogage-oui').click();
     await expect(page.locator('#menu-debogage-message')).toHaveText('C\'est fait.');
-    expect(JSON.parse(await v2()).medailles).toEqual({ gagne: 1000, depense: 0, jour: 0 });
-    await expect(page.locator('#menu-medailles-texte')).toHaveText(`1${String.fromCharCode(0x202f)}000`);
+    expect(nomsDuCode(JSON.parse(await v2())).medailles).toEqual({ gagne: 10_000, depense: 0 });
+    await expect(page.locator('#menu-solde-texte')).toHaveText(`10${String.fromCharCode(0x202f)}000`);
+    // Lot 8k : « Ajouter 1 000 diamants » (lot 9a ; en-tête mis à jour), « Remettre la pitié à zéro » (compteurs des trois rubriques à 0).
+    await page.locator('#menu-debogage-diamants').click();
+    await expect(page.locator('#menu-debogage-question')).toHaveText('Confirmer : Ajouter 1 000 diamants ?'); // lot 9a : appelés « médailles » en V0.8
+    await page.locator('#menu-debogage-oui').click();
+    await expect(page.locator('#menu-debogage-message')).toHaveText('C\'est fait.');
+    expect(nomsDuCode(JSON.parse(await v2())).diamants).toEqual({ gagne: 1000, depense: 0, jour: 0 });
+    await expect(page.locator('#menu-diamants-texte')).toHaveText(`1${String.fromCharCode(0x202f)}000`);
     await page.evaluate(() => { const s = JSON.parse(localStorage.getItem('zs.save.v2')); s.pitie = { equipement: { e: 8, l: 60 }, personnage: { e: 3, l: 3 }, cosmetique: { e: 1, l: 1 } }; localStorage.setItem('zs.save.v2', JSON.stringify(s)); });
     await page.locator('#menu-debogage-pitie').click();
     await page.locator('#menu-debogage-oui').click();
@@ -321,8 +321,8 @@ test.describe('panneau de débogage du menu lisible (lot 9a-H)', () => {
         };
       });
       expect(await mesure()).toEqual({ defile: [false, false, false], dehors: 0, petits: 0 });
-      const bleus = page.locator('#menu-debogage-bleus');
-      await bleus.click();
+      const outilMedailles = page.locator('#menu-debogage-medailles');
+      await outilMedailles.click();
       await expect(page.locator('#menu-debogage-question')).toHaveText('Confirmer : Ajouter 10 000 médailles ?');
       await expect(page.locator('#menu-debogage-effet')).toHaveText('+10 000 médailles : améliorer, fusionner, offres du jour.');
       await expect(page.locator('#menu-debogage-non')).toBeFocused();
@@ -330,9 +330,9 @@ test.describe('panneau de débogage du menu lisible (lot 9a-H)', () => {
       await page.keyboard.press('Escape'); // annule la confirmation, le panneau reste
       await expect(page.locator('#menu-debogage-confirmation')).toBeHidden();
       await expect(page.locator('#menu-debogage')).toBeVisible();
-      await expect(bleus).toBeFocused();
+      await expect(outilMedailles).toBeFocused();
       await expect(page.locator('#menu-debogage-etat-medailles')).toHaveText('0');
-      await bleus.click();
+      await outilMedailles.click();
       await page.locator('#menu-debogage-oui').click();
       await expect(page.locator('#menu-debogage-message')).toHaveText('C\'est fait.');
       await expect(page.locator('#menu-debogage-etat-medailles')).toHaveText(`10${String.fromCharCode(0x202f)}000`);

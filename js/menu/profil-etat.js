@@ -31,10 +31,10 @@ export { AVATARS, avatarSuivant } from './avatar.js';
 // Six statistiques du Profil : { id, valeur (nombre ou null : « — »), max (meilleure manche : dernière manche du monde) }. Retour du propriétaire : plus
 // de record infini (il dépend de la carte : il est dans l'onglet Infini) ; parties jouées séparées en histoire et en infini. Lot 8h : lues dans la
 // progression v2 (zs.save.v2) : meilleure manche de l'histoire du monde (records.histoire[monde], 0 = aucune), zombies tués au total, parties en
-// histoire et en infini, temps de jeu hors pauses (millisecondes), monnaie bleue gagnée au total. Progression illisible, verrouillée ou
+// histoire et en infini, temps de jeu hors pauses (millisecondes), médailles gagnées au total. Progression illisible, verrouillée ou
 // indisponible : tout à « — ».
-// Lot 8k : septième statistique, médailles gagnées au total (medailles.gagne ; 0 pour une progression d'avant le lot).
-export const STATS_PROFIL = Object.freeze(['meilleureManche', 'tues', 'partiesHistoire', 'partiesInfini', 'temps', 'argent', 'medailles']);
+// Lot 8k : septième statistique, diamants gagnés au total (diamants.gagne ; 0 pour une progression d'avant le lot 8k).
+export const STATS_PROFIL = Object.freeze(['meilleureManche', 'tues', 'partiesHistoire', 'partiesInfini', 'temps', 'medailles', 'diamants']);
 export const STATS_EN_ATTENTE = Object.freeze([]);
 const entier = (n) => (Number.isInteger(n) && n >= 0 ? n : 0);
 export function statsProfil(lu, manches = 40, monde = 'batiment') {
@@ -47,8 +47,8 @@ export function statsProfil(lu, manches = 40, monde = 'batiment') {
     partiesHistoire: s ? entier(s.profil?.partiesHistoire) : null,
     partiesInfini: s ? entier(s.profil?.partiesInfini) : null,
     temps: s ? entier(s.profil?.tempsMs) : null,
-    argent: s ? entier(s.bleu?.gagne) : null,
     medailles: s ? entier(s.medailles?.gagne) : null,
+    diamants: s ? entier(s.diamants?.gagne) : null,
   };
   return STATS_PROFIL.map((id) => (id === 'meilleureManche' ? { id, valeur: valeurs[id], max: Number.isInteger(manches) && manches > 0 ? manches : null } : { id, valeur: valeurs[id] }));
 }
