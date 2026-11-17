@@ -216,7 +216,7 @@ function stg44(d) {
 function bar(d, o) {
   const L = num(d.longueur, 1214);
   const zC = -430;
-  const zB = zC + L;
+  const zB = zC + L - 12; // cache-flamme et pieds du bipied dépassent un peu
   const yb = 34;
   const p = [
     loft([{ z: zC, w: 42, h: 130, y: -42 }, { z: zC + 170, w: 38, h: 86, y: -22 }, { z: -90, w: 30, h: 46, y: -2 }, { z: -38, w: 32, h: 54, y: 4 }], 'bois', { seg: 8 }), // crosse
@@ -237,4 +237,124 @@ function bar(d, o) {
   return p;
 }
 
-export const MODELES = Object.freeze({ m1911, kar98k, thompson, winchester1897, garand, stg44, bar });
+// Bande de cartouches qui pend : segments plats (largeur = longueur d'une cartouche, le long de z) entre des points du plan x-y.
+function bande(points, z, largeur = 80, epaisseur = 12, mat = 'laiton') {
+  const p = [];
+  for (let i = 0; i < points.length - 1; i += 1) {
+    const [a, b] = [points[i], points[i + 1]];
+    const dx = b[0] - a[0];
+    const dy = b[1] - a[1];
+    p.push(boite(Math.hypot(dx, dy) + 4, epaisseur, largeur, [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2, z], mat, { rot: [0, 0, (Math.atan2(dy, dx) * 180) / Math.PI] }));
+  }
+  return p;
+}
+
+// --- MG42 (1 220 mm) ----------------------------------------------------------------------------------------------------------------------
+function mg42(d, o) {
+  const L = num(d.longueur, 1220);
+  const zC = -430;
+  const zB = zC + L - 6;
+  const yb = 40;
+  const p = [
+    loft([{ z: zC, w: 40, h: 120, y: -40 }, { z: zC + 130, w: 36, h: 80, y: -18 }, { z: -150, w: 32, h: 50, y: 12 }], 'poignee', { seg: 8 }), // crosse (bakélite)
+    boite(42, 120, 8, [0, -40, zC - 4], 'metal'), // plaque de couche
+    boite(40, 60, 320, [0, yb - 6, 10], 'metal'), // boîtier
+    boite(44, 16, 190, [0, yb + 31, 70], 'metal2'), // couvercle d'alimentation
+    loft([{ z: 170, w: 48, h: 52, y: yb + 2 }, { z: zB - 150, w: 42, h: 46, y: yb + 2 }], 'perfore'), // manchon perforé
+    tube(20, 70, [0, yb + 2, zB - 115], 'metal', { r2: 14, seg: 8 }), // renforçateur de bouche
+    tube(8, 80, [0, yb + 2, zB - 40], 'metal', { seg: 6 }), // bout du canon
+    boite(6, 26, 8, [0, yb + 38, zB - 175], 'metal2'), // guidon repliable
+    boite(14, 16, 40, [0, yb + 32, 175], 'metal2'), // hausse
+    boite(12, 40, 60, [-26, yb - 2, 200], 'metal2'), // levier de changement de canon (droite)
+    boite(18, 12, 26, [-26, yb - 10, -60], 'metal2'), // levier d'armement (droite)
+    profil([[-8, -18], [-30, -112], [-72, -116], [-60, -18]], 32, 0, 'poignee'), // poignée-pistolet
+    pontet(16, -32, -16, 24, 5, 10),
+    boite(5, 14, 4, [0, -26, -6], 'metal2'),
+    tube(26, 30, [0, yb + 2, zB - 180], 'metal2', { seg: 8, bouts: 'aucun' }), // collier du bipied
+    ...bipied(zB - 180, yb - 8, 320, 130, true),
+    boite(30, 30, 90, [28, yb + 14, 40], 'metal2'), // plateau d'alimentation (gauche)
+  ];
+  if (o.alimentation === 'tambour') {
+    p.push(tube(58, 96, [74, yb - 40, 40], 'metal', { seg: 10 }), ...bande([[38, yb + 14], [60, yb + 4], [72, yb - 2]], 40));
+  } else {
+    const n = o.alimentation === 'longue' ? 13 : 8;
+    const pts = [[40, yb + 16]];
+    for (let i = 1; i <= n; i += 1) pts.push([40 + 60 * Math.min(1, i / 3) + 6 * i, yb + 16 - 34 * i + 3 * Math.max(0, i - 4) ** 1.2]);
+    p.push(...bande(pts, 40));
+  }
+  return p;
+}
+
+// --- Panzerschreck RPzB 54 (1 640 mm) ---------------------------------------------------------------------------------------------------
+function panzerschreck(d) {
+  const L = num(d.longueur, 1640);
+  const zA = -600; // arrière du tube
+  const zB = zA + L;
+  const r = 47;
+  const yt = 70; // axe du tube au-dessus de la poignée
+  return [
+    tube(r, L, [0, yt, (zA + zB) / 2], 'peinture', { seg: 10, bouts: 'aucun' }), // tube
+    tube(41, 6, [0, yt, zA + 3], 'noir', { seg: 10, bouts: 'arriere' }), // fond de l'âme (arrière)
+    tube(41, 6, [0, yt, zB - 3], 'noir', { seg: 10, bouts: 'avant' }), // fond de l'âme (avant)
+    tube(54, 36, [0, yt, zA + 18], 'metal2', { seg: 10, bouts: 'aucun' }), // anneau arrière (garde)
+    tube(51, 26, [0, yt, zB - 13], 'peinture', { seg: 10, bouts: 'aucun' }), // bourrelet avant
+    boite(360, 460, 5, [70, yt + 40, 140], 'peinture2'), // bouclier
+    boite(70, 60, 7, [100, yt + 150, 140], 'noir'), // fenêtre de visée du bouclier
+    ...[-1, 1].map((sx) => boite(14, 20, 50, [sx * 46, yt + 20, 150], 'metal2')), // pattes du bouclier
+    boite(46, 80, 40, [72, yt + 40, 220], 'metal2'), // guidon (cadre, gauche)
+    boite(30, 40, 30, [62, yt + 34, -150], 'metal2'), // hausse (gauche)
+    profil([[22, -r + yt + 4], [8, -50], [-30, -54], [-20, -r + yt + 4]], 34, 0, 'poignee'), // poignée de tir
+    pontet(40, 0, 12, 22, 5, 10),
+    boite(5, 14, 4, [0, 2, 22], 'metal2'),
+    boite(30, 60, 70, [0, yt - r - 26, 420], 'metal2'), // poignée avant
+    boite(40, 70, 120, [0, yt - r - 30, -420], 'metal2'), // épaulière
+    boite(10, 10, 560, [-r - 3, yt - 10, -260], 'metal2'), // boîtier du câble de mise à feu (droite)
+  ];
+}
+
+// --- Lance-flammes M2 : lance (≈ 1 050 mm, approximation) et réservoirs portés sur le dos (groupe « dos ») -----------------------------
+// ctx.dos : décalage du groupe « dos » dans la pose demandée (le tuyau va de la lance aux réservoirs, quelle que soit la pose).
+function m2lanceflammes(d, o, ctx = {}) {
+  const L = num(d.longueur, 1050);
+  const zA = -230;
+  const zB = zA + L;
+  const yb = 40;
+  const dos = Array.isArray(ctx.dos) ? ctx.dos : [0, 0, -600];
+  const H = num(d.reservoir, 630);
+  const R = num(d.diametreReservoir, 155) / 2;
+  const Rp = num(d.diametreBouteille, 125) / 2;
+  const reservoirs = [
+    ...[-1, 1].flatMap((s) => [
+      tube(R, H, [s * 100, 0, 0], 'peinture', { seg: 10, axe: 'y', groupe: 'dos' }), // réservoir de carburant
+      tube(22, 30, [s * 100, H / 2 + 15, 0], 'metal2', { seg: 6, axe: 'y', groupe: 'dos' }), // bouchon de remplissage
+    ]),
+    tube(Rp, H * 0.75, [0, -H * 0.06, -70], 'peinture2', { seg: 10, axe: 'y', groupe: 'dos' }), // bouteille de pression, entre les deux, en retrait
+    tube(18, 26, [0, H * 0.32 + 13, -70], 'metal2', { seg: 6, axe: 'y', groupe: 'dos' }), // robinet de la bouteille
+    boite(120, 40, 60, [0, H / 2 - 30, -20], 'metal2', { groupe: 'dos' }), // détendeur
+    boite(340, H * 0.86, 18, [0, 0, R + 12], 'toile', { groupe: 'dos' }), // portage contre le dos
+    ...[-1, 1].map((s) => barre([s * 90, H * 0.4, R + 20], [s * 96, H * 0.33, R + 240], 26, 'toile', { groupe: 'dos' })), // bretelles
+  ].map((p) => ({ ...p, groupe: 'dos' }));
+  // Tuyau : du bas du réservoir droit à l'arrière de la lance, en une courbe qui pend (segments de caoutchouc).
+  const depart = [dos[0] - 100, dos[1] - H / 2 - 10, dos[2]];
+  const arrivee = [0, yb - 40, zA - 30];
+  const n = 6;
+  const pts = [];
+  for (let i = 0; i <= n; i += 1) {
+    const t = i / n;
+    pts.push([depart[0] + (arrivee[0] - depart[0]) * t - 60 * Math.sin(Math.PI * t), depart[1] + (arrivee[1] - depart[1]) * t - 180 * Math.sin(Math.PI * t), depart[2] + (arrivee[2] - depart[2]) * t]);
+  }
+  const tuyau = pts.slice(1).map((b, i) => barre(pts[i], b, 30, 'caoutchouc', { groupe: 'tuyau' }));
+  const lance = [
+    tube(17, zB - 100 - (zA + 60), [0, yb, (zA + 60 + zB - 100) / 2], 'metal', { seg: 8 }), // tube de la lance
+    tube(30, 110, [0, yb - 4, zA + 55], 'metal2', { seg: 8 }), // valve arrière
+    tube(22, 110, [0, yb, zB - 55], 'metal2', { r2: 16, seg: 8 }), // buse
+    tube(21, 150, [0, yb - 40, zB - 160], 'metal', { seg: 8 }), // allumeur (sous la buse)
+    profil([[20, yb - 26], [4, -78], [-34, -82], [-24, yb - 26]], 32, 0, 'poignee'), // poignée arrière (valve)
+    profil([[520, yb - 16], [508, -64], [476, -68], [484, yb - 16]], 32, 0, 'poignee'), // poignée avant (allumage)
+    pontet(38, 0, yb - 34, 22, 5, 10),
+    boite(5, 14, 4, [0, yb - 44, 20], 'metal2'),
+  ];
+  return [...lance, ...tuyau, ...reservoirs];
+}
+
+export const MODELES = Object.freeze({ m1911, kar98k, thompson, winchester1897, garand, stg44, bar, mg42, panzerschreck, m2lanceflammes });

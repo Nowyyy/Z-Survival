@@ -78,11 +78,13 @@ export function lireChoix(donnees, choix) {
 }
 
 // Pièces d'une arme dans une pose. 'main' : groupe « dos » déplacé de arme.dos.main (mm, repère de l'arme) ; 'caisse' : de arme.dos.caisse.
+// 'seule' : sans le groupe « dos » ni le tuyau (longueur de la lance seule).
 export function piecesArme(arme, variante, pose = 'main') {
   const f = MODELES[arme?.id];
   if (!f) return [];
-  const pieces = f(arme.dimensions ?? {}, variante?.options ?? {});
   const dec = arme.dos?.[pose === 'caisse' ? 'caisse' : 'main'];
+  const pieces = f(arme.dimensions ?? {}, variante?.options ?? {}, { dos: Array.isArray(dec) ? dec.map((v) => num(v, 0)) : undefined });
+  if (pose === 'seule') return pieces.filter((p) => p.groupe !== 'dos' && p.groupe !== 'tuyau');
   if (!Array.isArray(dec)) return pieces;
   return pieces.map((p) => (p.groupe === 'dos' ? { ...p, pos: [(p.pos?.[0] ?? 0) + num(dec[0], 0), (p.pos?.[1] ?? 0) + num(dec[1], 0), (p.pos?.[2] ?? 0) + num(dec[2], 0)] } : p));
 }
@@ -90,11 +92,11 @@ export function piecesArme(arme, variante, pose = 'main') {
 // Unités du jeu par millimètre.
 export const echelleJeu = (donnees) => (donnees.echelle.unitesParMetre / 1000) * donnees.echelle.lisibilite;
 
-// Maillage d'une arme (unités du jeu). options : { pose ('main' | 'caisse'), echelle (remplace celle des données) }.
+// Maillage d'une arme (unités du jeu). options : { pose ('main' | 'caisse' | 'seule'), echelle (remplace celle des données) }.
 export function maillageArme(donnees, arme, variante, { pose = 'main', echelle } = {}) {
   const v = variante ?? varianteDe(arme);
   const mat = v?.matieres ?? MATIERES_DEFAUT;
-  const m = maillage(piecesArme(arme, v, pose), {
+  const m = maillage(piecesArme(arme, v, ['caisse', 'seule'].includes(pose) ? pose : 'main'), {
     echelle: Number.isFinite(echelle) ? echelle : echelleJeu(donnees),
     tuile: (role) => rectTuile(mat[role] ?? MATIERES_DEFAUT[role] ?? 'bruni'),
     teinte: (role) => {

@@ -66,6 +66,34 @@
         { "id": "b", "nom": "Sans bipied", "description": "M1918 d'origine, sans bipied.", "matieres": { "bois": "noyer", "metal": "phosphate", "metal2": "phosphate" }, "options": { "bipied": false } },
         { "id": "c", "nom": "Bipied, bois clair", "description": "Bipied déplié, acier bruni, bois clair.", "matieres": { "bois": "hetre", "metal": "bruni", "metal2": "bruni" }, "options": { "bipied": true } }
       ]
+    },
+    {
+      "id": "mg42", "nom": "MG42", "genre": "mitrailleuse", "classe": "lourde",
+      "dimensions": { "longueur": 1220 },
+      "variantes": [
+        { "id": "a", "nom": "Bande pendante", "description": "Bande de 50 cartouches qui pend à gauche, bipied déplié, crosse en bakélite.", "matieres": { "metal": "bruni", "metal2": "bruni", "poignee": "bakelite" }, "options": { "alimentation": "bande" } },
+        { "id": "b", "nom": "Tambour à bande", "description": "Bande enroulée dans un tambour accroché à gauche, acier phosphaté.", "matieres": { "metal": "phosphate", "metal2": "bruni", "poignee": "bakelite" }, "options": { "alimentation": "tambour" } },
+        { "id": "c", "nom": "Usé, bande longue", "description": "Acier usé aux arêtes, longue bande qui traîne.", "matieres": { "metal": "bruni-use", "metal2": "bruni-use", "poignee": "bakelite" }, "options": { "alimentation": "longue" } }
+      ]
+    },
+    {
+      "id": "panzerschreck", "nom": "Panzerschreck", "genre": "arme spéciale (lance-roquettes)", "classe": "lourde",
+      "dimensions": { "longueur": 1640 },
+      "variantes": [
+        { "id": "a", "nom": "Gris", "description": "RPzB 54, tube et bouclier peints en gris.", "matieres": { "peinture": "feldgrau", "peinture2": "feldgrau", "metal2": "bruni", "poignee": "bruni" } },
+        { "id": "b", "nom": "Sable", "description": "Peinture sable de fin de guerre, bouclier gris.", "matieres": { "peinture": "sable", "peinture2": "feldgrau", "metal2": "bruni", "poignee": "bruni" } },
+        { "id": "c", "nom": "Olive écaillé", "description": "Peinture olive écaillée, métal à nu aux arêtes.", "matieres": { "peinture": "olive-ecaille", "peinture2": "olive-ecaille", "metal2": "bruni-use", "poignee": "bruni-use" } }
+      ]
+    },
+    {
+      "id": "m2lanceflammes", "nom": "Lance-flammes M2", "genre": "arme spéciale (lance-flammes)", "classe": "lourde",
+      "dimensions": { "longueur": 1050, "reservoir": 630, "diametreReservoir": 155, "diametreBouteille": 125 },
+      "dos": { "main": [43, 223, -671], "caisse": [0, 0, -570] },
+      "variantes": [
+        { "id": "a", "nom": "Olive", "description": "Lance et réservoirs peints en olive, poignées en bois.", "matieres": { "metal": "phosphate", "metal2": "bruni", "peinture": "olive", "peinture2": "olive", "poignee": "noyer" } },
+        { "id": "b", "nom": "Olive écaillé", "description": "Peinture écaillée, métal à nu aux arêtes.", "matieres": { "metal": "phosphate-use", "metal2": "bruni-use", "peinture": "olive-ecaille", "peinture2": "olive-ecaille", "poignee": "noyer" } },
+        { "id": "c", "nom": "Réservoirs gris", "description": "Réservoirs gris, bouteille de pression olive.", "matieres": { "metal": "phosphate", "metal2": "bruni", "peinture": "feldgrau", "peinture2": "olive", "poignee": "bakelite" } }
+      ]
     }
   ],
   "caisses": [

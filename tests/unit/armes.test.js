@@ -66,7 +66,7 @@ describe('budgets (compte réel de chaque variante, en main et posée)', () => {
 describe('dimensions relatives', () => {
   it.each(toutes)('%s %s : longueur = longueur réelle × 35 u/m, à 2 % près', (id, vid) => {
     const a = armeParId(donnees, id);
-    const m = maillageArme(donnees, a, varianteDe(a, vid));
+    const m = maillageArme(donnees, a, varianteDe(a, vid), { pose: 'seule' }); // lance-flammes : la lance seule
     const attendu = a.longueurReelle * echelleJeu(donnees);
     const extra = Number(a.dimensions.longueurAvecAccessoire) || 0; // accessoire monté (baïonnette) : longueur réelle avec lui
     const reference = varianteDe(a, vid).options?.baionnette && extra ? extra * echelleJeu(donnees) : attendu;
@@ -74,7 +74,7 @@ describe('dimensions relatives', () => {
   });
 
   it('l\'ordre des longueurs suit celui des armes réelles ; le M1911 est bien plus court que le pistolet actuel du personnage (14)', () => {
-    const L = donnees.armes.map((a) => ({ id: a.id, reel: a.longueurReelle, jeu: maillageArme(donnees, a, a.variantes[0]).longueur }));
+    const L = donnees.armes.map((a) => ({ id: a.id, reel: a.longueurReelle, jeu: maillageArme(donnees, a, a.variantes[0], { pose: 'seule' }).longueur }));
     const parReel = [...L].sort((x, y) => x.reel - y.reel).map((x) => x.id);
     const parJeu = [...L].sort((x, y) => x.jeu - y.jeu).map((x) => x.id);
     expect(parJeu).toEqual(parReel);
