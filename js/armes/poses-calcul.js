@@ -8,9 +8,9 @@ import { REGLES, echantillons, poserArme } from './tenue.js';
 // Arme → modes calculés (le pistolet : à deux mains et à une main).
 export const MODES = (arme) => (arme?.prises?.tenue === 'pistolet' ? ['deux-mains', 'une-main'] : ['deux-mains']);
 
-// ctx : { characters, poses (poses-v2.json), donnees (lireArmes, échelle commune appliquée), regles, ids (armes à poser), lookup }.
+// ctx : { characters, poses (poses-v2.json), donnees (lireArmes, échelle commune appliquée), regles, ids (armes à poser), lookup, corps (essai : même corps pour toutes, CORPS_LONG) }.
 // Renvoie { facteur, regles, armes: { id: { pose, modes: { mode: pose calculée } } } }.
-export function calculerPoses({ characters, poses, donnees, regles = REGLES, ids, lookup = () => [128, 128, 128] }) {
+export function calculerPoses({ characters, poses, donnees, regles = REGLES, ids, lookup = () => [128, 128, 128], corps = null }) {
   const kit = createV2Kit({ characters, poses, lookup, hit: 0xffffff, choice: 'riche', styleAnim: { joueur: 'A' }, outfitsOf: { joueur: ['sable'] }, seed: 3 });
   const armes = {};
   for (const id of ids) {
@@ -23,7 +23,7 @@ export function calculerPoses({ characters, poses, donnees, regles = REGLES, ids
       const perso = kit.create('player', 0, { choice: 'riche' });
       perso.setAnim('repos', 0.25, {}, 0);
       perso.root.updateMatrixWorld(true);
-      modes[mode] = poserArme(perso, a, echelleJeu(donnees, a), new THREE.Group(), { points, regles, mode, bretelle });
+      modes[mode] = poserArme(perso, a, echelleJeu(donnees, a), new THREE.Group(), { points, regles, mode, bretelle, corps });
       perso.dispose();
     }
     armes[id] = { pose: a.prises.tenue, modes };

@@ -95,6 +95,18 @@ test('atelier des armes : toutes les armes et variantes se construisent (budgets
   await page.selectOption('#ctl-mode', 'une-main');
   expect((await page.evaluate(() => window.__zsArmes.tenue())).mode).toBe('une-main');
   await page.selectOption('#ctl-mode', 'deux-mains');
+  // Essai demandé par le propriétaire : bras ×1,2 et épaules ±9 pour toutes les armes (le pistolet compris), contrôles tenus.
+  await page.selectOption('#ctl-corps', 'long');
+  for (const id of ['m1911', 'kar98k', 'mg42']) {
+    await page.selectOption('#ctl-arme', id);
+    const t = await page.evaluate(() => window.__zsArmes.tenue());
+    expect([t.bras, t.epaules], id).toEqual([1.2, 9]);
+    expect([t.controle.droite, t.controle.gauche, t.controle.traverse, t.controle.mains], id).toEqual([0, 0, 0, 0]);
+  }
+  await page.selectOption('#ctl-corps', 'adapte');
+  expect((await page.evaluate(() => window.__zsArmes.tenue())).bras).toBe(1.2); // MG42 : déjà ×1,2 dans sa pose
+  await page.selectOption('#ctl-arme', 'kar98k');
+  expect((await page.evaluate(() => window.__zsArmes.tenue())).bras).toBe(1);
   // Un seul curseur commun (décision du propriétaire), ×0,8 par défaut, repris dans « Mes choix » ; rien n'est écrit.
   await expect(page.locator('#ctl-largeur, #ctl-epaisseur, #ctl-poing')).toHaveCount(0);
   expect(await page.evaluate(() => window.__zsArmes.echelle())).toMatchObject({ lisibilite: 0.8, largeur: 1.5, epaisseur: 1.8 });

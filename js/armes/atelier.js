@@ -9,7 +9,7 @@ import { buildSpec, createTextureData } from '../core/texgen.js';
 import { fitDistance } from '../core/viewport.js';
 import { armeParId, avecEchelle, budgetDe, echelleJeu, lireArmes, lireChoix, maillageArme, sectionsBretelle, tailleArme, varianteDe } from '../core/armes/armes.js';
 import { ancreTexte } from '../core/armes/caisse.js';
-import { REGLES, echantillons, poserArme } from './tenue.js';
+import { CORPS_LONG, REGLES, appliquerCorps, echantillons, poserArme } from './tenue.js';
 import { visuelArme } from '../core/armes/visuel.js';
 import { creerKitArmes, lirePalette } from './rendu.js';
 
@@ -58,6 +58,8 @@ const etat = {
   rotation: !reduit,
   tenue: 'adaptee',
   mode: 'deux-mains', // pistolet : à deux mains ou à une main
+  // Corps du personnage : adapté à chaque arme (poses.json) ou, à l'essai, bras ×1,2 et épaules ±9 pour toutes (?corps=long).
+  corps: query.get('corps') === 'long' ? 'long' : 'adapte',
   yaw: 0.6,
   pitch: 0.35,
 };
@@ -183,7 +185,7 @@ function poserArmeEnMain() {
     // choisie (les poses du fichier valent pour le facteur du fichier).
     const support = new THREE.Group();
     const a = armeParId(donnees, etat.arme);
-    tenueInfo = poserArme(joueur, a, echelleJeu(donnees, a), support, { points: pointsArme(etat.arme, etat.variante), regles: { ...REGLES, ...(posesJson.regles ?? {}) }, mode: etat.mode, bretelle: sectionsBretelle(donnees, a, varianteDe(a, etat.variante)) });
+    tenueInfo = poserArme(joueur, a, echelleJeu(donnees, a), support, { points: pointsArme(etat.arme, etat.variante), regles: { ...REGLES, ...(posesJson.regles ?? {}) }, mode: etat.mode, bretelle: sectionsBretelle(donnees, a, varianteDe(a, etat.variante)), corps: etat.corps === 'long' ? CORPS_LONG : null });
     // Réservoirs du lance-flammes : sur le dos, tournés avec le torse (décalage et rotation calculés par la pose).
     // Bretelle déviée contre les bras (retour du propriétaire).
     const dos = { ...(tenueInfo.arme.dos ? { dos: tenueInfo.arme.dos.decalage, lacet: tenueInfo.arme.dos.lacet } : {}), ...(tenueInfo.arme.bretelle ? { bretelle: tenueInfo.arme.bretelle } : {}) };
@@ -192,6 +194,7 @@ function poserArmeEnMain() {
     support.add(armeEnMain);
   } else {
     tenueInfo = null;
+    if (etat.corps === 'long') appliquerCorps(joueur, CORPS_LONG);
     const prop = joueur.root.getObjectByName('prop');
     armeEnMain = kit.mesh(etat.arme, etat.variante, 'main', { enJeu: true });
     armeEnMain.userData.reelle = kit.mesh(etat.arme, etat.variante, 'main').geometry;
@@ -567,6 +570,8 @@ for (const m of ['jeu', 'lampe', 'lune']) option($('ctl-lumiere'), m, t(`dev.arm
 for (const m of ['masque', 'visible']) option($('ctl-pistolet'), m, t(`dev.armes.pistolet.${m}`));
 for (const m of ['adaptee', 'actuelle']) option($('ctl-tenue'), m, t(`dev.armes.tenue.${m}`));
 for (const m of ['deux-mains', 'une-main']) option($('ctl-mode'), m, t(`dev.armes.tenue.mode.${m}`));
+for (const m of ['adapte', 'long']) option($('ctl-corps'), m, t(`dev.armes.corps.${m}`));
+$('ctl-corps').value = etat.corps;
 for (const c of ['caisse', 'ratelier']) option($('ctl-caisse'), c, t(`dev.armes.caisse.${c}`));
 function remplirVariantes() {
   ctlVariante.replaceChildren();
@@ -616,6 +621,10 @@ $('ctl-lumiere').addEventListener('change', (e) => {
 });
 $('ctl-mode').addEventListener('change', (e) => {
   etat.mode = e.target.value;
+  dessinerJeu();
+});
+$('ctl-corps').addEventListener('change', (e) => {
+  etat.corps = e.target.value;
   dessinerJeu();
 });
 $('ctl-tenue').addEventListener('change', (e) => {

@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { armeParId, lireArmes, maillageArme, sectionsBretelle } from '../../js/core/armes/armes.js';
-import { ARMES_POSEES, fichierPoses } from '../../js/armes/poses-calcul.js';
-import { ARTICULATIONS, RAYON_MAIN, REGLES, echantillons } from '../../js/armes/tenue.js';
+import { ARMES_POSEES, calculerPoses, fichierPoses } from '../../js/armes/poses-calcul.js';
+import { ARTICULATIONS, CORPS_LONG, RAYON_MAIN, REGLES, echantillons } from '../../js/armes/tenue.js';
 
 // Lot 9c (décision du propriétaire) : poses de tenue calculées sur une instance du personnage de l'atelier (le personnage du jeu ne change
 // pas) ; data/armes/poses.json doit être à jour, et chaque arme posée doit être tenue correctement.
@@ -64,3 +64,15 @@ describe('bretelle (retour : « la main ne doit pas être mise sur la bretelle m
   });
 });
 
+describe('essai du propriétaire : bras ×1,2 et épaules ±9 pour toutes les armes (CORPS_LONG)', () => {
+  const essai = calculerPoses({ characters: j('data/game/characters-v2.json'), poses: j('data/game/poses-v2.json'), donnees, ids: ARMES_POSEES, corps: CORPS_LONG });
+  const liste = Object.entries(essai.armes).flatMap(([id, a]) => Object.entries(a.modes).map(([mode, p]) => [id, mode, p]));
+  it.each(liste)('%s (%s) : même corps, tenue correcte', (id, mode, p) => {
+    expect([p.bras, p.epaules]).toEqual([1.2, 9]);
+    expect([p.controle.droite, p.controle.gauche, p.controle.traverse, p.controle.mains]).toEqual([0, 0, 0, 0]);
+    if (p.arme.bretelle) expect(p.controle.bretelle).toBe(0);
+    expect(p.controle.visee).toBeLessThanOrEqual(5);
+    expect(p.controle.devant).toBeGreaterThan(5);
+    expect(p.torse).toBeLessThanOrEqual(30);
+  });
+});
