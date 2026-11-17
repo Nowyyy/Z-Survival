@@ -123,8 +123,10 @@ export function lireChoix(donnees, choix) {
 // Pièces d'une arme dans une pose. 'main' : groupe « dos » déplacé de arme.dos.main (mm, repère de l'arme) ; 'caisse' : de arme.dos.caisse.
 // 'seule' : sans le groupe « dos » ni le tuyau (longueur de la lance seule).
 // options : { epaisseur (facteur des dimensions fines), seuil (mm), dos (décalage du groupe « dos », remplace arme.dos[pose]),
-// lacet (degrés : le groupe « dos » tourne autour de son centre, avec le buste de la tenue de l'atelier) }.
-export function piecesArme(arme, variante, pose = 'main', { epaisseur = 1, seuil = 60, dos, lacet = 0 } = {}) {
+// lacet (degrés : le groupe « dos » tourne autour de son centre, avec le buste de la tenue de l'atelier), bretelle (positions [x, y, z] en mm
+// de chaque section de la bretelle, calculées par la tenue de l'atelier : elle passe contre le bras au lieu de le traverser), sansBretelle
+// (sans la bretelle : la main se pose sur l'arme, jamais sur la bretelle) }.
+export function piecesArme(arme, variante, pose = 'main', { epaisseur = 1, seuil = 60, dos, lacet = 0, bretelle, sansBretelle = false } = {}) {
   const f = MODELES[arme?.id];
   if (!f) return [];
   const dec = Array.isArray(dos) ? dos : arme.dos?.[pose === 'caisse' ? 'caisse' : 'main'];
@@ -137,9 +139,16 @@ export function piecesArme(arme, variante, pose = 'main', { epaisseur = 1, seuil
     const r = p.rot ?? [0, 0, 0];
     return { ...p, pos: [x * Math.cos(a) + z * Math.sin(a), y, -x * Math.sin(a) + z * Math.cos(a)], rot: [r[0], r[1] + num(lacet, 0), r[2]] };
   });
-  if (pose === 'seule') return pieces.filter((p) => p.groupe !== 'dos' && p.groupe !== 'tuyau');
-  if (!Array.isArray(dec)) return pieces;
-  return pieces.map((p) => (p.groupe === 'dos' ? { ...p, pos: [(p.pos?.[0] ?? 0) + num(dec[0], 0), (p.pos?.[1] ?? 0) + num(dec[1], 0), (p.pos?.[2] ?? 0) + num(dec[2], 0)] } : p));
+  let res = pieces;
+  if (sansBretelle) res = res.filter((p) => p.groupe !== 'bretelle');
+  else if (Array.isArray(bretelle)) {
+    res = res.map((p) => (p.groupe === 'bretelle' && p.sections?.length === bretelle.length
+      ? { ...p, sections: p.sections.map((x, i) => ({ ...x, x: num(bretelle[i]?.[0], x.x), y: num(bretelle[i]?.[1], x.y), z: num(bretelle[i]?.[2], x.z) })) }
+      : p));
+  }
+  if (pose === 'seule') return res.filter((p) => p.groupe !== 'dos' && p.groupe !== 'tuyau');
+  if (!Array.isArray(dec)) return res;
+  return res.map((p) => (p.groupe === 'dos' ? { ...p, pos: [(p.pos?.[0] ?? 0) + num(dec[0], 0), (p.pos?.[1] ?? 0) + num(dec[1], 0), (p.pos?.[2] ?? 0) + num(dec[2], 0)] } : p));
 }
 
 // Épaissit une pièce : chaque dimension transversale sous le seuil (mm ; diamètre pour un tube) est multipliée par k ; ni la longueur
@@ -162,13 +171,20 @@ export const tailleArme = (donnees, arme) => arme?.taille ?? donnees.echelle.lis
 // Unités du jeu par millimètre (arme : sa taille propre si elle en a une).
 export const echelleJeu = (donnees, arme) => (donnees.echelle.unitesParMetre / 1000) * tailleArme(donnees, arme);
 
-// Maillage d'une arme (unités du jeu). options : { pose ('main' | 'caisse' | 'seule'), echelle (remplace celle des données), dos, lacet,
+// Sections de la bretelle (mm, épaissies comme au rendu : { x, y, z, w, h }), ou null si la variante n'en a pas.
+export function sectionsBretelle(donnees, arme, variante) {
+  const p = piecesArme(arme, variante ?? varianteDe(arme), 'main', { epaisseur: donnees.echelle.epaisseur ?? 1, seuil: donnees.echelle.seuilEpaisseur ?? 60 })
+    .find((x) => x.groupe === 'bretelle' && x.forme === 'loft');
+  return p ? p.sections.map((s) => ({ x: s.x ?? 0, y: s.y ?? 0, z: s.z, w: s.w, h: s.h })) : null;
+}
+
+// Maillage d'une arme (unités du jeu). options : { pose ('main' | 'caisse' | 'seule'), echelle (remplace celle des données), dos, lacet, bretelle, sansBretelle,
 // enJeu (vrai : largeur vue de dessus appliquée, vue de la caméra du jeu seulement) }.
 // dos : décalage (mm) du groupe « dos » qui remplace celui des données (réservoirs placés sur le dos par la tenue de l'atelier).
-export function maillageArme(donnees, arme, variante, { pose = 'main', echelle, dos, lacet, enJeu = false } = {}) {
+export function maillageArme(donnees, arme, variante, { pose = 'main', echelle, dos, lacet, bretelle, sansBretelle = false, enJeu = false } = {}) {
   const v = variante ?? varianteDe(arme);
   const mat = v?.matieres ?? MATIERES_DEFAUT;
-  const opts = { epaisseur: donnees.echelle.epaisseur ?? 1, seuil: donnees.echelle.seuilEpaisseur ?? 60, dos, lacet };
+  const opts = { epaisseur: donnees.echelle.epaisseur ?? 1, seuil: donnees.echelle.seuilEpaisseur ?? 60, dos, lacet, bretelle, sansBretelle };
   // Largeur vue de dessus (lot 9c-G ; retour : « seulement en jeu ») : l'arme tenue s'élargit en x autour de son plan de visée, dans la vue
   // de la caméra du jeu seulement (enJeu) ; jamais posée (couchée : profil vu de dessus) ni les réservoirs portés et leur tuyau.
   const sx = pose === 'caisse' || !enJeu ? 1 : donnees.echelle.largeur ?? 1;

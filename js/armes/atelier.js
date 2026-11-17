@@ -7,7 +7,7 @@ import { createV2Kit } from '../game/character-v2.js';
 import { createTokenLookup, readPalette } from '../game/palette.js';
 import { buildSpec, createTextureData } from '../core/texgen.js';
 import { fitDistance } from '../core/viewport.js';
-import { armeParId, avecEchelle, budgetDe, echelleJeu, lireArmes, lireChoix, maillageArme, tailleArme, varianteDe } from '../core/armes/armes.js';
+import { armeParId, avecEchelle, budgetDe, echelleJeu, lireArmes, lireChoix, maillageArme, sectionsBretelle, tailleArme, varianteDe } from '../core/armes/armes.js';
 import { ancreTexte } from '../core/armes/caisse.js';
 import { REGLES, echantillons, poserArme } from './tenue.js';
 import { visuelArme } from '../core/armes/visuel.js';
@@ -183,9 +183,10 @@ function poserArmeEnMain() {
     // choisie (les poses du fichier valent pour le facteur du fichier).
     const support = new THREE.Group();
     const a = armeParId(donnees, etat.arme);
-    tenueInfo = poserArme(joueur, a, echelleJeu(donnees, a), support, { points: pointsArme(etat.arme, etat.variante), regles: { ...REGLES, ...(posesJson.regles ?? {}) }, mode: etat.mode });
+    tenueInfo = poserArme(joueur, a, echelleJeu(donnees, a), support, { points: pointsArme(etat.arme, etat.variante), regles: { ...REGLES, ...(posesJson.regles ?? {}) }, mode: etat.mode, bretelle: sectionsBretelle(donnees, a, varianteDe(a, etat.variante)) });
     // Réservoirs du lance-flammes : sur le dos, tournés avec le torse (décalage et rotation calculés par la pose).
-    const dos = tenueInfo.arme.dos ? { dos: tenueInfo.arme.dos.decalage, lacet: tenueInfo.arme.dos.lacet } : {};
+    // Bretelle déviée contre les bras (retour du propriétaire).
+    const dos = { ...(tenueInfo.arme.dos ? { dos: tenueInfo.arme.dos.decalage, lacet: tenueInfo.arme.dos.lacet } : {}), ...(tenueInfo.arme.bretelle ? { bretelle: tenueInfo.arme.bretelle } : {}) };
     armeEnMain = kit.mesh(etat.arme, etat.variante, 'main', { ...dos, enJeu: true });
     armeEnMain.userData.reelle = kit.mesh(etat.arme, etat.variante, 'main', dos).geometry;
     support.add(armeEnMain);
@@ -200,13 +201,13 @@ function poserArmeEnMain() {
   joueur.root.updateMatrixWorld(true);
 }
 
-// Surface de l'arme (sans réservoirs ni tuyau, vraie largeur) pour éviter qu'elle traverse le corps ; en cache par arme, variante et échelle.
+// Surface de l'arme (sans réservoirs, tuyau ni bretelle : la main se pose sur l'arme ; vraie largeur) pour éviter qu'elle traverse le corps ; en cache par arme, variante et échelle.
 const cachePoints = new Map();
 function pointsArme(armeId, varianteId) {
   const k = `${armeId}:${varianteId}:${donnees.echelle.lisibilite}`;
   if (!cachePoints.has(k)) {
     const a = armeParId(donnees, armeId);
-    cachePoints.set(k, echantillons(maillageArme(donnees, a, varianteDe(a, varianteId), { pose: 'seule' }).positions));
+    cachePoints.set(k, echantillons(maillageArme(donnees, a, varianteDe(a, varianteId), { pose: 'seule', sansBretelle: true }).positions));
   }
   return cachePoints.get(k);
 }

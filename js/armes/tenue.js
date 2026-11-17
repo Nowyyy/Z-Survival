@@ -144,6 +144,74 @@ function contact(points, p, dir) {
   return q;
 }
 
+// Retour du propriétaire (« la main ne doit pas être mise sur la bretelle mais sur l'arme, la bretelle doit être contre le bras ») : la main
+// se pose sur l'arme sans la bretelle (points sans bretelle) ; puis la bretelle, souple, est déviée : ses deux sections du milieu descendent
+// (et s'écartent un peu) juste assez pour passer contre les bras et les mains, sans les traverser ni entrer dans le torse. Ses attaches
+// (première et dernière sections) ne bougent pas.
+const RAYONS_BRAS = { haut: 2.5, avant: 2.1, main: 2.4 }; // capsules du personnage (characters-v2.json : upperL, foreL, handL)
+const MARGE_BRETELLE = 0.15;
+const BRETELLE = { dy: [0, -320, 10], dx: [-40, 80, 20], dz: [-60, 120, 30] }; // déplacements essayés (mm : début, fin, pas)
+const pas = ([a, b, p]) => Array.from({ length: Math.floor(Math.abs(b - a) / Math.abs(p)) + 1 }, (_, i) => a + Math.sign(b - a) * i * Math.abs(p));
+function distSeg(q, a, b) {
+  const ab = b.clone().sub(a);
+  const t = Math.max(0, Math.min(1, q.clone().sub(a).dot(ab) / Math.max(1e-9, ab.lengthSq())));
+  return q.distanceTo(a.clone().addScaledVector(ab, t));
+}
+function router(perso, o, P, s, f, sections) {
+  const root = perso.root;
+  root.updateMatrixWorld(true);
+  const loc = (obj, v = new THREE.Vector3()) => root.worldToLocal(obj.localToWorld(v.clone())).sub(P); // repère de l'arme (unités)
+  const capsules = [];
+  for (const cote of ['L', 'R']) {
+    const [ep, co, po] = o[cote];
+    const [S, E, W] = [loc(ep), loc(co), loc(po)];
+    const paume = W.clone().add(W.clone().sub(E).normalize().multiplyScalar(PAUME));
+    capsules.push([S, E, RAYONS_BRAS.haut * f], [E, W, RAYONS_BRAS.avant * f], [W, paume, RAYONS_BRAS.main]);
+  }
+  // Boîtes du corps : passage du repère de l'arme à celui de chaque os.
+  const boites = CORPS.map((c) => {
+    const b = root.getObjectByName(c.os);
+    return b ? { c, m: b.matrixWorld.clone().invert().multiply(root.matrixWorld).multiply(new THREE.Matrix4().makeTranslation(P.x, P.y, P.z)) } : null;
+  }).filter(Boolean);
+  const demi = (Math.max(...sections.map((x) => x.h)) / 2) * s;
+  const points = (secs) => {
+    const out = [];
+    for (let k = 0; k < secs.length - 1; k += 1) {
+      const [a, b] = [secs[k], secs[k + 1]];
+      for (let t = 0; t <= 8; t += 1) {
+        const u = t / 8;
+        const w = (a.w + (b.w - a.w) * u) / 2;
+        for (const cx of [-w, 0, w]) out.push(new THREE.Vector3((a.x + (b.x - a.x) * u + cx) * s, (a.y + (b.y - a.y) * u) * s, (a.z + (b.z - a.z) * u) * s));
+      }
+    }
+    return out;
+  };
+  const conflits = (secs) => {
+    let n = 0;
+    const v = new THREE.Vector3();
+    for (const q of points(secs)) {
+      if (capsules.some(([a, b, r]) => distSeg(q, a, b) < r + demi + MARGE_BRETELLE)) n += 1;
+      for (const { c, m } of boites) {
+        v.copy(q).applyMatrix4(m);
+        if (v.x >= c.min[0] && v.x <= c.max[0] && v.y >= c.min[1] && v.y <= c.max[1] && v.z >= c.min[2] && v.z <= c.max[2]) n += 1;
+      }
+    }
+    return n;
+  };
+  const base = sections.map((x) => ({ ...x }));
+  let meilleur = { secs: base, cout: conflits(base) * 1e9 };
+  if (meilleur.cout === 0) return { sections: base, conflits: 0 };
+  const [i1, i2] = [1, sections.length - 2];
+  for (const dy1 of pas(BRETELLE.dy)) for (const dx1 of pas(BRETELLE.dx)) for (const dy2 of pas(BRETELLE.dy)) for (const dx2 of pas(BRETELLE.dx)) for (const dz2 of pas(BRETELLE.dz)) {
+    const ecart = dx1 * dx1 + dy1 * dy1 + dx2 * dx2 + dy2 * dy2 + dz2 * dz2;
+    if (ecart >= meilleur.cout) continue;
+    const secs = base.map((x, i) => (i === i1 ? { ...x, x: x.x + dx1, y: x.y + dy1 } : i === i2 ? { ...x, x: x.x + dx2, y: x.y + dy2, z: x.z + dz2 } : x));
+    const cout = conflits(secs) * 1e9 + ecart;
+    if (cout < meilleur.cout) meilleur = { secs, cout };
+  }
+  return { sections: meilleur.secs, conflits: conflits(meilleur.secs) };
+}
+
 // Instance : torse (degrés), écartement des épaules, allongement des bras ; repart toujours de l'état « repos » noté au départ.
 function configurer(o, repos, { torse = 0, epaules = null, f = 1 }) {
   const t = (-torse * Math.PI) / 180;
@@ -164,8 +232,9 @@ const arrondi = (x, n = 4) => Math.round(x * 10 ** n) / 10 ** n;
 
 // Pose une arme. perso : instance de createV2Kit (après setAnim('repos')) ; arme : données (prises en mm) ; s : unités par mm (échelle
 // commune) ; objet : groupe de l'arme (ajouté au repère du personnage) ; points : surface de l'arme (echantillons(), repère de l'arme) ;
-// mode : 'deux-mains' | 'une-main' (pistolet). Renvoie les données de la pose (voir data/armes/poses.json) et ses contrôles.
-export function poserArme(perso, arme, s, objet, { points = null, regles = REGLES, mode = 'deux-mains' } = {}) {
+// mode : 'deux-mains' | 'une-main' (pistolet) ; bretelle : sections de la bretelle (sectionsBretelle(), mm) ou null.
+// Renvoie les données de la pose (voir data/armes/poses.json) et ses contrôles.
+export function poserArme(perso, arme, s, objet, { points = null, regles = REGLES, mode = 'deux-mains', bretelle = null } = {}) {
   const r = { ...REGLES, ...(regles ?? {}) };
   const prises = arme.prises;
   const o = lesOs(perso.root);
@@ -251,6 +320,7 @@ export function poserArme(perso, arme, s, objet, { points = null, regles = REGLE
     const centre = local(o.chest.localToWorld(v3(r.dos ?? [0, 2, -14.5])));
     dos = { decalage: centre.sub(P).divideScalar(s).toArray().map((x) => Math.round(x)), lacet: -meilleur.cfg.torse };
   }
+  const route = Array.isArray(bretelle) && bretelle.length >= 4 ? router(perso, o, P, s, meilleur.cfg.f, bretelle) : null;
   const angles = Object.fromEntries(ARTICULATIONS.map((n) => {
     const b = perso.root.getObjectByName(n);
     return [n, b ? [arrondi(b.rotation.x), arrondi(b.rotation.y), arrondi(b.rotation.z)] : [0, 0, 0]];
@@ -258,11 +328,15 @@ export function poserArme(perso, arme, s, objet, { points = null, regles = REGLE
   return {
     pose, mode: pose === 'pistolet' ? mode : null,
     torse: meilleur.cfg.torse, epaules: meilleur.cfg.epaules ?? 11.5, bras: meilleur.cfg.f,
-    arme: { position: P.toArray().map((x) => arrondi(x, 3)), rotation: [0, 0, 0], ...(dos ? { dos } : {}) },
+    arme: {
+      position: P.toArray().map((x) => arrondi(x, 3)), rotation: [0, 0, 0], ...(dos ? { dos } : {}),
+      ...(route ? { bretelle: route.sections.map((x) => [x.x, x.y, x.z].map((v) => Math.round(v))) } : {}),
+    },
     angles,
     controle: {
       droite: arrondi(Math.max(0, droite), 3), gauche: arrondi(Math.max(0, gauche), 3), traverse, visee: arrondi(visee, 2), devant: arrondi(bouche - devantCorps, 2),
       mains: dansMain(points, D) + (avecGauche ? dansMain(points, G) : 0), // points de l'arme à moins de RAYON_MAIN des paumes
+      ...(route ? { bretelle: route.conflits } : {}), // points de la bretelle dans un bras, une main ou le torse
     },
     prises: { droite: D.toArray().map((x) => arrondi(x, 3)), gauche: G && avecGauche ? G.toArray().map((x) => arrondi(x, 3)) : null },
   };
