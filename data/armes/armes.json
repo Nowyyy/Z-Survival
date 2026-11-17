@@ -9,7 +9,7 @@
       "dimensions": { "longueur": 216 },
       "variantes": [
         { "id": "a", "nom": "Service, phosphaté", "description": "Acier phosphaté gris, plaquettes de noyer.", "matieres": { "metal": "phosphate", "metal2": "phosphate", "poignee": "noyer" } },
-        { "id": "b", "nom": "Bronzé, bakélite", "description": "Acier bruni bleu-noir, plaquettes de bakélite quadrillées.", "matieres": { "metal": "bruni", "metal2": "bruni", "poignee": "bakelite" } },
+        { "id": "b", "nom": "Bronzé, bakélite", "description": "Acier bruni très sombre, plaquettes de bakélite quadrillées.", "matieres": { "metal": "bruni", "metal2": "bruni", "poignee": "bakelite" } },
         { "id": "c", "nom": "Usé", "description": "Bronzage usé aux arêtes, plaquettes de noyer clair.", "matieres": { "metal": "bruni-use", "metal2": "bruni-use", "poignee": "hetre" } }
       ]
     },
@@ -29,6 +29,42 @@
         { "id": "a", "nom": "Chargeur droit", "description": "Chargeur droit de 20, noyer, acier bruni.", "matieres": { "bois": "noyer", "metal": "bruni", "metal2": "bruni" }, "options": { "chargeur": "droit" } },
         { "id": "b", "nom": "Chargeur camembert", "description": "Chargeur camembert de 50, noyer, acier bruni.", "matieres": { "bois": "noyer", "metal": "bruni", "metal2": "bruni" }, "options": { "chargeur": "camembert" } },
         { "id": "c", "nom": "Droit, bois clair, usé", "description": "Chargeur droit, bois clair, bronzage usé.", "matieres": { "bois": "hetre", "metal": "bruni-use", "metal2": "bruni-use" }, "options": { "chargeur": "droit" } }
+      ]
+    },
+    {
+      "id": "winchester1897", "nom": "Winchester M1897", "genre": "fusil à pompe (« trench gun »)", "classe": "epaule",
+      "dimensions": { "longueur": 1003, "longueurAvecAccessoire": 1395 },
+      "variantes": [
+        { "id": "a", "nom": "Trench", "description": "Cache-canon perforé, tenon de baïonnette, noyer, acier bruni.", "matieres": { "bois": "noyer", "metal": "bruni", "metal2": "bruni" } },
+        { "id": "b", "nom": "Avec baïonnette", "description": "Baïonnette M1917 montée (1,40 m en tout), acier phosphaté.", "matieres": { "bois": "noyer", "metal": "phosphate", "metal2": "bruni" }, "options": { "baionnette": true } },
+        { "id": "c", "nom": "Usé, bois clair", "description": "Bronzage usé aux arêtes, bois clair.", "matieres": { "bois": "hetre", "metal": "bruni-use", "metal2": "bruni-use" } }
+      ]
+    },
+    {
+      "id": "garand", "nom": "M1 Garand", "genre": "fusil semi-automatique", "classe": "epaule",
+      "dimensions": { "longueur": 1107 },
+      "variantes": [
+        { "id": "a", "nom": "Noyer", "description": "Noyer sombre, acier phosphaté.", "matieres": { "bois": "noyer", "metal": "phosphate", "metal2": "phosphate" } },
+        { "id": "b", "nom": "Bouleau clair", "description": "Bois clair, acier phosphaté.", "matieres": { "bois": "hetre", "metal": "phosphate", "metal2": "phosphate" } },
+        { "id": "c", "nom": "Usé, bretelle", "description": "Phosphatation usée aux arêtes, bretelle de cuir.", "matieres": { "bois": "noyer", "metal": "phosphate-use", "metal2": "phosphate-use" }, "options": { "bretelle": true } }
+      ]
+    },
+    {
+      "id": "stg44", "nom": "StG 44", "genre": "fusil d'assaut", "classe": "epaule",
+      "dimensions": { "longueur": 940 },
+      "variantes": [
+        { "id": "a", "nom": "Standard", "description": "Tôle phosphatée, crosse sombre, poignée en bakélite.", "matieres": { "bois": "noyer", "metal": "phosphate", "metal2": "bruni", "poignee": "bakelite" } },
+        { "id": "b", "nom": "Bois clair", "description": "Crosse et poignée en hêtre clair.", "matieres": { "bois": "hetre", "metal": "phosphate", "metal2": "bruni", "poignee": "hetre" } },
+        { "id": "c", "nom": "Usé", "description": "Tôle usée aux arêtes, peinture partie.", "matieres": { "bois": "noyer", "metal": "phosphate-use", "metal2": "bruni-use", "poignee": "bakelite" } }
+      ]
+    },
+    {
+      "id": "bar", "nom": "BAR M1918", "genre": "fusil-mitrailleur", "classe": "epaule",
+      "dimensions": { "longueur": 1214 },
+      "variantes": [
+        { "id": "a", "nom": "Avec bipied", "description": "M1918A2, bipied déplié, acier phosphaté, noyer.", "matieres": { "bois": "noyer", "metal": "phosphate", "metal2": "phosphate" }, "options": { "bipied": true } },
+        { "id": "b", "nom": "Sans bipied", "description": "M1918 d'origine, sans bipied.", "matieres": { "bois": "noyer", "metal": "phosphate", "metal2": "phosphate" }, "options": { "bipied": false } },
+        { "id": "c", "nom": "Bipied, bois clair", "description": "Bipied déplié, acier bruni, bois clair.", "matieres": { "bois": "hetre", "metal": "bruni", "metal2": "bruni" }, "options": { "bipied": true } }
       ]
     }
   ],

@@ -80,6 +80,7 @@ describe('mêmes règles qu\'au lot 1', () => {
     allowed.push('js/core/sons-menu.js', 'js/core/musique-menu.js'); // lot 8i : sons du menu (catalogue, choix, volumes, clic, sons d'une ouverture, états de la musique) et partition de la musique des menus : modules nouveaux, aucun module existant modifié
     allowed.push('js/core/porte-message.js', 'js/core/sons-coups.js', 'js/core/tir-traverse.js'); // lot 8j : porte fermée la plus proche (lecture seule), tirage des sons des zombies (générateur propre au son), objets traversables par les tirs (nouveaux fichiers, purs ; aucun module existant modifié)
     allowed.push('js/core/progression.js'); // lot 8h : progression v2 (zs.save.v2 : format, opérations, ZS2 et ZS1 ; nouveau fichier, pur)
+    allowed.push('js/core/armes/armes.js', 'js/core/armes/atlas.js', 'js/core/armes/caisse.js', 'js/core/armes/geometrie.js', 'js/core/armes/modeles.js'); // lot 9c : armes de l'atelier (géométrie, atlas, caisse d'armes, données ; nouveaux fichiers purs, aucun module existant modifié)
     expect(changed.filter((f) => !allowed.includes(f))).toEqual([]);
   });
 });

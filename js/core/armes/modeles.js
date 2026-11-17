@@ -110,4 +110,131 @@ function thompson(d, o) {
   return p;
 }
 
-export const MODELES = Object.freeze({ m1911, kar98k, thompson });
+// Boîte de section e × e tendue entre deux points a et b (bipieds, bretelles, tuyaux).
+export function barre(a, b, e, mat, extra = {}) {
+  const d = [b[0] - a[0], b[1] - a[1], b[2] - a[2]];
+  const L = Math.hypot(d[0], d[1], d[2]) || 1;
+  const rot = [(-Math.asin(d[1] / L) * 180) / Math.PI, (Math.atan2(d[0], d[2]) * 180) / Math.PI, 0];
+  return { forme: 'boite', w: e, h: e, l: L, pos: [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2, (a[2] + b[2]) / 2], rot, mat, ...extra };
+}
+
+// Bipied déplié : deux jambes écartées vers l'avant depuis un collier (z, y), patins au bout ; replié : jambes le long du canon.
+function bipied(z, y, longueur, ecart, deplie, mat = 'metal2') {
+  if (!deplie) return [-1, 1].map((s) => barre([s * 12, y - 6, z], [s * 14, y - 10, z - longueur], 8, mat));
+  return [-1, 1].flatMap((s) => {
+    const pied = [s * ecart, y - longueur * 0.9, z + longueur * 0.25];
+    return [barre([s * 10, y - 4, z], pied, 9, mat), boite(16, 5, 26, [pied[0], pied[1] - 2, pied[2]], mat)];
+  });
+}
+
+// --- Winchester M1897 « trench gun » (1 003 mm ; avec baïonnette M1917 : longueurAvecAccessoire) -------------------------------------
+function winchester1897(d, o) {
+  const L = num(d.longueur, 1003);
+  const zC = -370;
+  const zB = zC + L;
+  const yb = 36;
+  const p = [
+    loft([{ z: zC, w: 40, h: 124, y: -40 }, { z: zC + 150, w: 36, h: 80, y: -20 }, { z: -70, w: 28, h: 42, y: 0 }, { z: -18, w: 32, h: 48, y: 6 }], 'bois', { seg: 8 }), // crosse droite
+    boite(42, 124, 7, [0, -40, zC - 3], 'metal'), // plaque de couche
+    boite(30, 62, 200, [0, yb - 12, 82], 'metal'), // boîtier
+    boite(8, 14, 12, [0, yb + 22, -12], 'metal2', { rot: [-30, 0, 0] }), // chien apparent
+    tube(10.5, zB - 182, [0, yb, (182 + zB) / 2], 'metal', { seg: 6 }), // canon
+    tube(10, 380, [0, yb - 22, 372], 'metal', { seg: 6 }), // tube magasin
+    loft([{ z: 250, w: 36, h: 34, y: yb - 22 }, { z: 268, w: 40, h: 38, y: yb - 22 }, { z: 410, w: 40, h: 38, y: yb - 22 }, { z: 425, w: 36, h: 34, y: yb - 22 }], 'bois', { seg: 8 }), // garde-main à pompe
+    tube(17, 300, [0, yb + 3, 445], 'perfore', { seg: 8, bouts: 'aucun' }), // cache-canon perforé
+    boite(22, 14, 40, [0, yb - 14, zB - 18], 'metal2'), // tenon de baïonnette
+    tube(3, 5, [0, yb + 12, zB - 8], 'laiton', { seg: 4, axe: 'y' }), // guidon (perle)
+    pontet(-2, -62, yb - 42, 24, 5, 10),
+    boite(5, 14, 4, [0, yb - 50, -30], 'metal2'),
+    boite(2, 22, 70, [-15.5, yb - 6, 70], 'noir'), // fenêtre d'éjection (droite)
+  ];
+  if (o.baionnette) {
+    const lame = 432;
+    p.push(boite(5, 24, lame, [0, yb - 14, zB - 40 + lame / 2], 'metal', { rot: [0, 0, 0] }), boite(10, 34, 8, [0, yb - 12, zB - 36], 'metal2'));
+  }
+  return p;
+}
+
+// --- M1 Garand (1 107 mm) -----------------------------------------------------------------------------------------------------------------
+function garand(d, o) {
+  const L = num(d.longueur, 1107);
+  const zC = -400;
+  const zB = zC + L - 14; // guidon et oreilles dépassent de la bouche
+  const yb = 30;
+  const p = [
+    loft([
+      { z: zC, w: 42, h: 125, y: -40 }, { z: zC + 160, w: 38, h: 86, y: -22 }, { z: -80, w: 30, h: 46, y: -3 }, { z: -20, w: 36, h: 62, y: 2 },
+      { z: 150, w: 38, h: 54, y: 10 }, { z: 420, w: 34, h: 36, y: 16 }, { z: zB - 230, w: 32, h: 34, y: 16 },
+    ], 'bois', { seg: 8 }), // crosse et fût d'une pièce
+    loft([{ z: 120, w: 26, h: 14, y: yb + 9 }, { z: 255, w: 24, h: 13, y: yb + 9 }], 'bois'), // garde-main arrière
+    loft([{ z: 300, w: 26, h: 14, y: yb + 8 }, { z: zB - 150, w: 24, h: 12, y: yb + 7 }], 'bois'), // garde-main avant
+    boite(44, 125, 8, [0, -40, zC - 4], 'metal'), // plaque de couche
+    boite(30, 38, 230, [0, yb - 2, 65], 'metal'), // boîtier
+    boite(40, 16, 22, [0, yb + 22, -42], 'metal2'), // hausse à œilleton et ses molettes
+    boite(10, 10, 60, [-19, yb - 4, 150], 'metal2'), // levier d'armement (droite)
+    tube(9, zB - 180, [0, yb, (180 + zB) / 2], 'metal', { seg: 6, r2: 8 }), // canon
+    tube(12, 90, [0, yb - 6, zB - 55], 'metal', { seg: 6 }), // cylindre à gaz
+    tube(18, 22, [0, yb + 2, zB - 200], 'metal', { seg: 8, bouts: 'aucun' }), // grenadière
+    ...[-1, 1].map((s) => boite(3, 14, 16, [s * 6, yb + 16, zB - 20], 'metal')), // oreilles du guidon protégé
+    boite(3, 12, 8, [0, yb + 14, zB - 20], 'metal2'), // guidon
+    pontet(10, -66, -18, 28, 6, 12),
+    boite(5, 14, 4, [0, -28, -30], 'metal2'),
+  ];
+  if (o.bretelle) {
+    p.push(loft([
+      { z: zC + 150, w: 24, h: 3, y: -84, x: 23 }, { z: zC + 360, w: 24, h: 3, y: -104, x: 25 }, { z: 220, w: 24, h: 3, y: -100, x: 25 }, { z: zB - 220, w: 24, h: 3, y: -10, x: 22 },
+    ], 'cuir'));
+  }
+  return p;
+}
+
+// --- StG 44 (940 mm) ----------------------------------------------------------------------------------------------------------------------
+function stg44(d) {
+  const L = num(d.longueur, 940);
+  const zC = -330;
+  const zB = zC + L;
+  const yb = 32;
+  return [
+    loft([{ z: zC, w: 38, h: 118, y: -36 }, { z: zC + 130, w: 32, h: 76, y: -10 }, { z: -112, w: 28, h: 46, y: 12 }], 'bois', { seg: 8 }), // crosse en bois
+    boite(40, 118, 7, [0, -36, zC - 3], 'metal'), // plaque de couche
+    loft([{ z: -112, w: 26, h: 50, y: yb - 6 }, { z: 0, w: 30, h: 56, y: yb - 6 }, { z: 232, w: 30, h: 52, y: yb - 6 }], 'metal'), // boîtier en tôle emboutie
+    tube(13, 240, [0, yb + 14, 352], 'metal', { seg: 6 }), // tube à gaz au-dessus du canon
+    loft([{ z: 232, w: 28, h: 36, y: yb - 2 }, { z: 340, w: 26, h: 32, y: yb - 2 }], 'metal'), // garde-main embouti
+    tube(9, zB - 232, [0, yb, (232 + zB) / 2], 'metal', { seg: 6 }), // canon
+    tube(11, 30, [0, yb, zB - 15], 'metal2', { seg: 6 }), // bague de bouche
+    boite(10, 18, 16, [0, yb + 24, zB - 130], 'metal'), // guidon et son capot
+    boite(14, 10, 40, [0, yb + 24, 130], 'metal'), // hausse à planchette
+    profil([[-6, 2], [-30, -88], [-70, -92], [-60, 2]], 30, 0, 'poignee'), // poignée-pistolet
+    profil([[40, 0], [110, 0], [119, -48], [136, -96], [157, -148], [182, -196], [124, -210], [104, -160], [83, -104], [63, -52]], 26, 0, 'metal', { pos: [0, yb - 30, 0] }), // chargeur courbe (30)
+    pontet(18, -26, -4, 22, 5, 9),
+    boite(5, 12, 4, [0, -12, 0], 'metal2'),
+    boite(22, 8, 12, [20, yb + 8, 150], 'metal2'), // levier d'armement (gauche)
+  ];
+}
+
+// --- BAR M1918 (1 214 mm) -----------------------------------------------------------------------------------------------------------------
+function bar(d, o) {
+  const L = num(d.longueur, 1214);
+  const zC = -430;
+  const zB = zC + L;
+  const yb = 34;
+  const p = [
+    loft([{ z: zC, w: 42, h: 130, y: -42 }, { z: zC + 170, w: 38, h: 86, y: -22 }, { z: -90, w: 30, h: 46, y: -2 }, { z: -38, w: 32, h: 54, y: 4 }], 'bois', { seg: 8 }), // crosse
+    boite(44, 130, 8, [0, -42, zC - 4], 'metal'), // plaque de couche
+    boite(36, 72, 330, [0, yb - 14, 127], 'metal'), // boîtier massif
+    boite(30, 120, 72, [0, yb - 108, 150], 'metal', { rot: [-2, 0, 0] }), // chargeur droit (20) sous le boîtier
+    loft([{ z: 292, w: 40, h: 44, y: yb - 14 }, { z: 520, w: 38, h: 40, y: yb - 14 }], 'bois', { seg: 8 }), // garde-main
+    tube(10, 210, [0, yb - 22, 620], 'metal', { seg: 6 }), // cylindre à gaz
+    tube(10, zB - 292, [0, yb, (292 + zB) / 2], 'metal', { seg: 6 }), // canon
+    tube(13, 60, [0, yb, zB - 30], 'metal2', { seg: 6 }), // cache-flamme
+    boite(12, 16, 30, [0, yb + 30, 0], 'metal2'), // hausse
+    boite(4, 14, 8, [0, yb + 14, zB - 70], 'metal'), // guidon
+    boite(24, 10, 16, [22, yb - 10, 210], 'metal2'), // levier d'armement (gauche)
+    pontet(-14, -76, yb - 50, 26, 6, 12),
+    boite(5, 14, 4, [0, yb - 58, -40], 'metal2'),
+  ];
+  if (o.bipied) p.push(tube(14, 30, [0, yb, zB - 90], 'metal2', { seg: 6, bouts: 'aucun' }), ...bipied(zB - 90, yb, 330, 120, true));
+  return p;
+}
+
+export const MODELES = Object.freeze({ m1911, kar98k, thompson, winchester1897, garand, stg44, bar });
