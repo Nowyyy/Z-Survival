@@ -14,7 +14,7 @@ import { fmt, loadDict } from '../game/texts.js';
 import { CANAUX_DEBUG } from '../core/graphics.js';
 import { pageCanal } from '../game/graphics-boot.js';
 import { couluresSvg } from '../logo.js';
-import { adopter, chute as sonsChute, ecouterGestes, partir, regler as reglerSons, signaler } from './sons/sons.js';
+import { adopter, chute as sonsChute, ecouterGestes, partir, regler as reglerSons, revenir as revenirSons, signaler } from './sons/sons.js';
 
 const SVG = 'http://www.w3.org/2000/svg';
 const FIN_CHUTE_MS = 4000; // filet de sécurité si la fin d'animation n'arrive pas (onglet caché) : la chute dure 2,8 s
@@ -191,15 +191,18 @@ export function creerChargement({ phase = 'menu', jouer = () => {}, son = null, 
   }
 
   // Phase « jeu » : fichiers JavaScript du jeu reçus depuis « JOUER » (entrées de minutage des ressources) ; main.js termine l'étape « modules ».
+  // Lot 9d : observateur déconnecté quand l'écran est retiré (sinon il garde l'écran en mémoire à chaque « JOUER » de la même page).
+  let observateur = null;
   if (phase === 'jeu') {
     try {
       const debut = performance.now();
       const deja = performance.getEntriesByType('resource').filter((e) => /\.js(\?|$)/.test(e.name)).length;
       const vus = new Set();
-      new PerformanceObserver((list) => {
+      observateur = new PerformanceObserver((list) => {
         for (const e of list.getEntries()) if (e.startTime >= debut && /\.js(\?|$)/.test(e.name)) vus.add(e.name);
         progres('modules', vus.size / Math.max(1, MODULES_ATTENDUS - deja));
-      }).observe({ type: 'resource' });
+      });
+      observateur.observe({ type: 'resource' });
     } catch {
       // minutage des ressources indisponible : l'étape avance seulement quand main.js commence
     }
@@ -247,6 +250,7 @@ export function creerChargement({ phase = 'menu', jouer = () => {}, son = null, 
     if (phase === 'jeu') {
       sortie = true;
       retirer();
+      observateur?.disconnect();
       box.remove();
       return;
     }
@@ -282,6 +286,15 @@ export function creerChargement({ phase = 'menu', jouer = () => {}, son = null, 
   return {
     progres,
     chute, // promesse : la chute du Z est finie (main.js attend avant de créer la partie, phase « jeu »)
+    // Lot 9d (phase « menu ») : retour de la partie sans rechargement : le même menu revient (js/menu/menu.js, reprendre), sans introduction ni
+    // écran de chargement ; la musique des menus repart (signaler). → promesse (faux : aucun menu à reprendre).
+    revenirSons, // lot 9d : sons du menu repris dans le geste du retour (avant la libération de la partie)
+    reprendre: async () => {
+      if (!menu) return false;
+      await menu.reprendre();
+      signaler('pret');
+      return true;
+    },
     etat: () => ({ phase, pourcentage: pourcentage(etat), pret: etat.pret, chuteFinie, journal: [...journal], visible: box.isConnected, menu: menu?.element.isConnected ? menu.etat() : null }),
   };
 }

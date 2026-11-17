@@ -52,6 +52,20 @@ const boite = (page, sel) => page.locator(sel).evaluate((n) => {
 const chevauche = (x, y) => x.l < y.r - 0.5 && y.l < x.r - 0.5 && x.t < y.b - 0.5 && y.t < x.b - 0.5;
 const presse = (page, sel) => page.locator(sel).evaluateAll((ns) => ns.filter((n) => n.getAttribute('aria-pressed') === 'true').map((n) => n.dataset.value ?? n.dataset.preset));
 
+// Lot 9d : retour au menu sans rechargement (« Quitter », « Revenir au menu principal ») : même adresse, aucune navigation, le menu revient.
+async function retourSansRechargement(page, bouton) {
+  const url = page.url();
+  let navigations = 0;
+  const compter = (f) => {
+    if (f === page.mainFrame()) navigations += 1;
+  };
+  page.on('framenavigated', compter);
+  await page.locator(bouton).click();
+  await expect(page.locator('#menu-jouer')).toBeVisible({ timeout: 60_000 });
+  page.off('framenavigated', compter);
+  expect([navigations, page.url()]).toEqual([0, url]);
+}
+
 test.describe('page Options du menu (E5)', () => {
   for (const [size, encoche] of [...SIZES.map((t) => [t, false]), [ENCOCHE, true]]) {
     test(`${size.width}×${size.height}${encoche ? ' (encoche simulée)' : ''} : écran plein (en-tête gardé, onglets masqués) ; bandeau, « ‹ Menu », préréglages « Auto · détecté », note ; sections Son, Image, Carte, Personnages, Lumières ; section Son = Son, Volume du jeu, Volume de la musique, curseurs nommés dans l'écran (lot 8l : venu de sons-volumes.spec.js) ; pied ; rien hors de l'écran ni superposé ; 44 px ; axe ; console propre`, async ({ page, baseURL, isMobile }) => {
@@ -408,7 +422,7 @@ test.describe('Options en partie (E2-12)', () => {
     await expect(page.locator('#options-volume-valeur')).toHaveText('99 %');
   });
 
-  test('« Rejouer » ne recharge pas (valeurs toujours en attente) ; après « Quitter » puis « JOUER », les valeurs choisies en partie sont en vigueur (?store=local)', async ({ page, isMobile }) => {
+  test('« Rejouer » ne recharge pas (valeurs toujours en attente) ; après « Quitter » puis « JOUER », les valeurs choisies en partie sont en vigueur (?store=local ; lot 9d : sans rechargement, nouveau rendu à chaque partie)', async ({ page, isMobile }) => {
     test.setTimeout(180_000);
     await page.addInitScript(() => {
       if (sessionStorage.getItem('zs.test.vide')) return;
@@ -436,8 +450,8 @@ test.describe('Options en partie (E2-12)', () => {
     expect(rejoue.waiting.map((w) => w.id)).toEqual(isMobile ? ['carte', 'textures'] : ['anticrenelage', 'carte', 'textures', 'personnages']); // depuis Moyen (mobile) ou Élevé
     await page.locator('#btn-pause').click();
     await page.locator('#btn-quit').click();
-    await Promise.all([page.waitForURL(/[?&]menu=1/), page.locator('#btn-quit-ok').click()]);
-    await expect(page.locator('#menu-jouer')).toBeVisible({ timeout: 60_000 });
+    await retourSansRechargement(page, '#btn-quit-ok'); // lot 9d : la page n'est plus rechargée
+    expect(await page.evaluate(() => window.__marque)).toBe(1);
     await page.locator('#menu-jouer').click();
     await page.waitForFunction(() => (window.__zs?.getState()?.time ?? 0) > 0.05, null, { timeout: 120_000 });
     const g = await graphismes(page);

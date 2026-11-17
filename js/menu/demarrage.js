@@ -60,6 +60,7 @@ export function poserSon({ coupe = son.coupe, volume = son.volume, musique = son
 // Avancées arrivées avant l'écran de chargement (import en cours) : gardées puis rejouées dans l'ordre.
 const attente = [];
 let ecran = null;
+let chargementMenu = null; // lot 9d : écran de chargement de la phase « menu », qui garde le menu (repris au retour de la partie)
 
 export function menuProgres(etape, fraction) {
   if (!modeMenu) return;
@@ -72,8 +73,9 @@ export function menuChute() {
   return ecran?.chute ?? Promise.resolve();
 }
 
-// Retour au menu (« Quitter » confirmé, « Revenir au menu principal ») : rechargement de jeu.html sans les paramètres de « Partie » (menu=1 sous
-// ?test=1). La partie ne peut pas être libérée sans rechargement (écouteurs, WebGL, audio) ; l'argent a déjà été écrit (bank.runEnd).
+// Retour au menu par rechargement de jeu.html sans les paramètres de « Partie » (menu=1 sous ?test=1) ; l'argent a déjà été écrit (bank.runEnd).
+// Lot 9d : seulement pour la partie directe (l'adresse change) et pour le filet de sécurité de menuQuitter (libération en échec) ; sinon, le
+// retour se fait sans rechargement.
 // Retour du propriétaire (« au retour au menu, le jeu sort du plein écran ») : un rechargement fait toujours quitter le plein écran (règle des
 // navigateurs) ; en plein écran, l'adresse porte le repère #plein-ecran, et le menu le reprend au premier toucher (creerMenu, menu.js).
 // Lot 8g (précision du propriétaire) : sinon, le repère #retour : l'introduction du studio ne se rejoue pas au retour (les deux repères valent retour).
@@ -125,10 +127,25 @@ async function lancerJeu() {
   return partieEnCours;
 }
 
-// Lot 9d : fin d'une partie (« Quitter » confirmé, « Revenir au menu principal ») ; partie : { liberer() } rendu par demarrerPartie.
-export function menuQuitter(partie = partieEnCours) {
-  void partie;
-  return menuRetour();
+// Lot 9d : fin d'une partie (« Quitter » confirmé, « Revenir au menu principal ») ; quittee : { liberer() } rendu par demarrerPartie. Mode menu :
+// sons du menu repris dans le geste, partie libérée (main.js), puis le même menu revient dans la page : le plein écran reste. Filet de sécurité :
+// libération en échec (exception, contexte WebGL perdu, mémoire), le cas est écrit dans la console, puis retour par rechargement comme avant
+// (#plein-ecran ou #retour). Partie directe (aucun menu dans la page, adresse à changer) : rechargement.
+let derniereLiberation = null;
+let echecForce = false; // tests (?test=1) : libération forcée en échec
+export function menuQuitter(quittee = partieEnCours) {
+  if (!modeMenu || !quittee || !chargementMenu) return menuRetour();
+  chargementMenu.revenirSons(); // dans le geste (« Quitter », « Revenir au menu principal ») : contexte audio du menu repris ou recréé
+  try {
+    if (echecForce) throw new Error('libération forcée en échec (test)');
+    derniereLiberation = quittee.liberer();
+  } catch (e) {
+    console.error('[Z-Survival] Retour au menu : libération incomplète, retour par rechargement (filet de sécurité).', e);
+    return menuRetour();
+  }
+  if (partieEnCours === quittee) partieEnCours = null;
+  ecran = chargementMenu;
+  return chargementMenu.reprendre();
 }
 
 // Lot 9d : tests (?test=1) : libération directe de la partie en cours et nouvelle partie dans la même page (dix cycles de la garantie 3).
@@ -141,6 +158,10 @@ if (new URLSearchParams(pageSearch()).get('test') === '1') {
       return p ? p.liberer() : null;
     },
     demarrer: () => lancerJeu().then(() => true),
+    echec: (oui = true) => {
+      echecForce = oui === true;
+    },
+    derniereLiberation: () => derniereLiberation,
   };
 }
 
@@ -178,6 +199,7 @@ if (!modeMenu) {
     // Option déjà validée par le menu (lireOptionDemarrage, js/core/menu-etat.js) : seuls ses champs connus sont gardés. Lot 8d : stats (niveaux
     // effectifs de l'équipement et du personnage, pour cette partie seulement ; main.js les met à la place de ceux de la sauvegarde, sauf ?lvl=).
     const jouer = (option) => {
+      partie = Object.freeze({ mode: 'histoire', monde: 'batiment' }); // lot 9d : chaque « JOUER » repart de l'option par défaut (même page)
       if (option?.mode === 'infini' && typeof option.monde === 'string') partie = Object.freeze({ mode: 'infini', monde: option.monde });
       if (option?.stats && typeof option.stats === 'object') partie = Object.freeze({ ...partie, stats: Object.freeze({ ...option.stats }) });
       ecran = m.creerChargement({ phase: 'jeu' });
@@ -187,6 +209,7 @@ if (!modeMenu) {
     };
     // Lot 8i : contexte audio de l'introduction (créé dans le geste), donné aux sons du menu.
     ecran = m.creerChargement({ phase: 'menu', jouer, son: { lire: reglagesSon, poser: poserSon }, contexteAudio: introEcran?.contexte?.() ?? null });
+    chargementMenu = ecran;
   }).catch(() => {
     // Écran de chargement indisponible : la partie démarre comme avant le menu (écran de préparation #loading).
     document.documentElement.classList.remove('zs-mode-menu', 'zs-attente');

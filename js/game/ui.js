@@ -4,7 +4,7 @@
 // la pause (ils sont dans l'écran Options). Pendant l'écran Options, la partie reste en pause.
 // Lot 5l : icône « Débogage » de la pause (canaux de débogage seulement) ; menu E2-13 (js/game/debug-menu.js importé au premier clic) ; la partie reste en pause.
 // Lot 8a : « Quitter » actif (confirmation construite au premier appui, à la place des boutons de la pause) et « Revenir au menu principal » actif : tous
-// deux appellent main.js (onQuit, onMenu : retour au menu par rechargement).
+// deux appellent main.js (onQuit, onMenu ; lot 9d : retour au menu sans rechargement, la partie est libérée : liberer() ci-dessous).
 import { formatMoney } from '../core/economy.js';
 import { fmt, MONEY_TEXTS, SAVE_TEXTS } from './texts.js';
 import { activerGlisser } from '../glisser.js';

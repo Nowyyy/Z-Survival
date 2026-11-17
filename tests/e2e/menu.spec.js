@@ -23,6 +23,20 @@ function surveiller(page, baseURL) {
   return { problemes, externes };
 }
 
+// Lot 9d : retour au menu sans rechargement (« Quitter », « Revenir au menu principal ») : même adresse, aucune navigation, le menu revient.
+async function retourSansRechargement(page, bouton) {
+  const url = page.url();
+  let navigations = 0;
+  const compter = (f) => {
+    if (f === page.mainFrame()) navigations += 1;
+  };
+  page.on('framenavigated', compter);
+  await page.locator(bouton).click();
+  await expect(page.locator('#menu-jouer')).toBeVisible({ timeout: 60_000 });
+  page.off('framenavigated', compter);
+  expect([navigations, page.url()]).toEqual([0, url]);
+}
+
 async function ouvrirMenu(page, size = REF, extra = '') {
   await page.setViewportSize(size);
   await page.goto(`/jeu.html?test=1&menu=1&seed=1${extra}`);
@@ -355,8 +369,7 @@ test.describe('partie et retour au menu', () => {
     await page.locator('#btn-quit-cancel').click();
     await expect(page.locator('#btn-resume')).toBeVisible();
     await page.locator('#btn-quit').click();
-    await Promise.all([page.waitForURL(/[?&]menu=1/), page.locator('#btn-quit-ok').click()]);
-    await expect(page.locator('#menu-jouer')).toBeVisible({ timeout: 60_000 });
+    await retourSansRechargement(page, '#btn-quit-ok'); // lot 9d : sans rechargement (avant : rechargement vers menu=1)
     // Retour du propriétaire après le lot 9a : « Quitter » fait perdre les médailles de la partie (avant : 1 254, gardée comme à la mort).
     await expect(page.locator('#menu-solde-texte')).toHaveText(`1${String.fromCharCode(0x202f)}234`);
     const quitte = nomsDuCode(await page.evaluate((k) => JSON.parse(localStorage.getItem(k)), KEY));
@@ -367,16 +380,17 @@ test.describe('partie et retour au menu', () => {
     await page.waitForFunction(() => (window.__zs?.getState()?.time ?? 0) > 0.05, null, { timeout: 60_000 });
     await page.evaluate(() => { const zs = window.__zs; zs.giveMoney(50); zs.step(3.2); zs.skipWave(); zs.step(0.2); zs.setChutes(0); zs.downPlayer(); zs.step(0.3); });
     await expect(page.locator('#end-panel')).toBeVisible();
-    await Promise.all([page.waitForURL(/[?&]menu=1/), page.locator('#btn-menu').click()]);
-    await expect(page.locator('#menu-jouer')).toBeVisible({ timeout: 60_000 });
+    await retourSansRechargement(page, '#btn-menu'); // lot 9d : sans rechargement ; soldes relus
     await expect(page.locator('#menu-solde-texte')).toHaveText(`1${String.fromCharCode(0x202f)}254`); // la mort, elle, garde les médailles de la partie (+20)
     const mort = nomsDuCode(await page.evaluate((k) => JSON.parse(localStorage.getItem(k)), KEY));
     expect(mort.medailles.gagne - quitte.medailles.gagne).toBe(20);
     await page.evaluate(() => localStorage.clear());
   });
 
-  test('retour du propriétaire : partie en plein écran puis « Revenir au menu principal » : le menu affiche un rappel et reprend le plein écran au premier toucher ; sans plein écran, ni rappel ni repère', async ({ page }) => {
-    test.setTimeout(120_000);
+  // Lot 9d : le retour au menu ne recharge plus la page : le plein écran reste, sans rappel. Le rappel et le repère #plein-ecran ne servent plus
+  // qu'au filet de sécurité (libération en échec, forcée ici par __zsCycle.echec()) : leur comportement d'avant est vérifié par ce chemin.
+  test('retour du propriétaire : partie en plein écran puis « Quitter » : pas de rechargement, le plein écran reste, aucun rappel ; filet de sécurité (libération en échec) : rechargement avec #plein-ecran, rappel et plein écran repris au premier toucher ; sans plein écran, ni rappel ni repère', async ({ page }) => {
+    test.setTimeout(180_000);
     // Plein écran simulé (le navigateur de test n'en a pas) : demandes comptées.
     await page.addInitScript(() => {
       window.__demandes = 0;
@@ -394,6 +408,15 @@ test.describe('partie et retour au menu', () => {
     await page.evaluate(() => Object.defineProperty(document, 'fullscreenElement', { configurable: true, get: () => document.documentElement }));
     await page.locator('#btn-pause').click();
     await page.locator('#btn-quit').click();
+    await retourSansRechargement(page, '#btn-quit-ok'); // lot 9d : le plein écran reste
+    await expect(page.locator('#menu-rappel-plein')).toHaveCount(0);
+    expect(await page.evaluate(() => [Boolean(document.fullscreenElement), window.__zsMenu.etat().menu.pleinEcran.actif, window.__demandes, location.hash])).toEqual([true, true, 0, '']);
+    // Filet de sécurité : la libération échoue, le retour se fait par rechargement comme avant le lot 9d.
+    await page.locator('#menu-jouer').click();
+    await page.waitForFunction(() => (window.__zs?.getState()?.time ?? 0) > 0.05, null, { timeout: 60_000 });
+    await page.evaluate(() => window.__zsCycle.echec());
+    await page.locator('#btn-pause').click();
+    await page.locator('#btn-quit').click();
     const rechargement = page.waitForEvent('framenavigated', { predicate: (f) => f === page.mainFrame() });
     await page.locator('#btn-quit-ok').click();
     expect((await rechargement).url()).toMatch(/[?&]menu=1.*#plein-ecran$/); // repère posé avant le rechargement
@@ -404,12 +427,15 @@ test.describe('partie et retour au menu', () => {
     await page.mouse.click(466, 300);
     await expect(page.locator('#menu-rappel-plein')).toHaveCount(0);
     expect(await page.evaluate(() => window.__demandes)).toBe(1);
-    // Partie hors plein écran : retour au menu sans repère ni rappel.
+    // Partie hors plein écran, filet de sécurité : retour au menu par rechargement, sans repère ni rappel (#retour retiré aussitôt).
     await page.locator('#menu-jouer').click();
     await page.waitForFunction(() => (window.__zs?.getState()?.time ?? 0) > 0.05, null, { timeout: 60_000 });
+    await page.evaluate(() => window.__zsCycle.echec());
     await page.locator('#btn-pause').click();
     await page.locator('#btn-quit').click();
-    await Promise.all([page.waitForURL(/[?&]menu=1/), page.locator('#btn-quit-ok').click()]);
+    const second = page.waitForEvent('framenavigated', { predicate: (f) => f === page.mainFrame() });
+    await page.locator('#btn-quit-ok').click();
+    expect((await second).url()).toMatch(/[?&]menu=1.*#retour$/);
     await expect(page.locator('#menu-jouer')).toBeVisible({ timeout: 60_000 });
     expect(new URL(page.url()).hash).toBe('');
     await expect(page.locator('#menu-rappel-plein')).toHaveCount(0);

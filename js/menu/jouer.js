@@ -261,5 +261,13 @@ export function ecranJouer({ t, monde, mondes, record, bandeau }) {
   nomBouton.textContent = t('game.menu.jouer.bouton');
   bouton.append(icone('jouer', 'e8-jouer-icone-bouton'), nomBouton);
   section.append(...zones, bouton);
-  return { section, scene, bouton, etat: e };
+  // Lot 9d : retour de la partie sans rechargement : record et portes relus (la scène, ses panneaux et le repère du record suivent).
+  const rafraichir = (r) => {
+    const n = etatJouer(monde, r);
+    scene.replaceChildren(sceneJouer(n));
+    ligneRecord.textContent = n.record === null ? t('game.menu.jouer.recordAucun') : fmt(t('game.menu.jouer.record'), { n: n.record, max: n.manches });
+    lignePortes.textContent = fmt(t('game.menu.jouer.portes'), { n: n.portesOuvertes, max: n.portesTotal });
+    return n;
+  };
+  return { section, scene, bouton, etat: e, rafraichir };
 }

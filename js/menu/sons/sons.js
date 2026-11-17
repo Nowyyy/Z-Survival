@@ -15,12 +15,15 @@ let voulu = false; // des sons sont demandés (chute, menu prêt)
 let ferme = false;
 let ecoute = false;
 let specifique = false; // un son précis a été demandé pendant le clic en cours : pas de clic en plus
+let generation = 0; // lot 9d : moteurs successifs (retour au menu sans rechargement) : un moteur d'avant qui finit de se charger est fermé
+let minuteriePartir = null;
 
 function charger() {
   if (chargement || !ctx || !voulu || ferme) return chargement;
+  const gen = generation;
   // Le moteur lit les faits et les volumes à la fin de sa création (ils ont pu changer pendant son chargement).
   chargement = import('./moteur.js').then((m) => m.creerMoteur({ ctx, faits: () => ({ ...faits }), volumes: () => ({ ...volumes }) })).then((m) => {
-    if (ferme) {
+    if (ferme || gen !== generation) {
       m.fermer();
       return null;
     }
@@ -138,13 +141,34 @@ export function ouvertureSons(chrono, reglages) {
 // « JOUER » : la musique s'éteint en fondu ; le contexte du menu est fermé après la chute du Z de l'écran de chargement (la partie a le sien).
 export function partir(delaiMs = 6000) {
   signaler('jouer');
-  setTimeout(() => {
+  clearTimeout(minuteriePartir);
+  minuteriePartir = setTimeout(() => {
+    minuteriePartir = null;
     ferme = true;
     moteur?.fermer();
     moteur = null;
     ctx?.close?.().catch(() => {});
     ctx = null;
   }, delaiMs);
+}
+
+// Lot 9d : retour au menu sans rechargement (« Quitter », « Revenir au menu principal »), appelé dans le geste même : le moteur de la partie
+// d'avant (fondu définitif de « JOUER ») est fermé ; le contexte audio du menu est repris s'il est encore ouvert (retour avant 6 s), sinon
+// recréé dans ce geste (le contexte de la partie, lui, est fermé par sa libération). La musique repart quand le menu est de nouveau affiché
+// (signaler('pret')) : un seul contexte pour le menu, un seul pour la partie, jamais deux à la fois pour le même usage.
+export function revenir() {
+  clearTimeout(minuteriePartir);
+  minuteriePartir = null;
+  generation += 1;
+  moteur?.fermer();
+  moteur = null;
+  chargement = null;
+  ferme = false;
+  voulu = false;
+  faits.partie = false;
+  faits.pret = false;
+  if (ctx?.state === 'closed') ctx = null;
+  if (faits.geste) geste();
 }
 
 export function etatSons() {

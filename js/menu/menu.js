@@ -409,7 +409,7 @@ export function creerMenu({ dict, infos = [], liens = {}, solde: montant = 0, di
   const contenu = el('main', ['e8-contenu'], { id: 'menu-contenu', 'aria-label': t('game.menu.aria') });
   // Lot 8b : onglet Jouer (js/menu/jouer.js) : scène animée du monde choisi (le premier jouable), record et portes (lecture seule), « JOUER ».
   const monde = premierJouable(mondes);
-  const { section: jouerSection, scene: jouerScene, bouton: btJouer } = ecranJouer({ t, monde, mondes, record, bandeau });
+  const { section: jouerSection, scene: jouerScene, bouton: btJouer, rafraichir: rafraichirJouer } = ecranJouer({ t, monde, mondes, record, bandeau });
   const scenes = new Map([['jouer', jouerScene]]); // onglet → scène animée (en pause hors de l'écran)
   ecransOnglets.set('jouer', jouerSection);
   contenu.append(jouerSection);
@@ -493,6 +493,7 @@ export function creerMenu({ dict, infos = [], liens = {}, solde: montant = 0, di
   }
   // Retour du propriétaire : revenu de la partie en plein écran (repère #plein-ecran posé par menuRetour, demarrage.js), le rechargement l'a fait
   // quitter ; le navigateur n'accepte d'y revenir qu'après un geste : message discret, puis plein écran au premier toucher ou à la première touche.
+  // Lot 9d : le retour se fait sans rechargement (le plein écran reste) ; ce rappel ne sert plus qu'au filet de sécurité (libération en échec).
   if (peutPleinEcran && location.hash === '#plein-ecran') {
     history.replaceState(null, '', `${location.pathname}${location.search}`);
     const rappel = el('p', ['e8-rappel-plein'], { id: 'menu-rappel-plein', role: 'status' });
@@ -803,6 +804,33 @@ export function creerMenu({ dict, infos = [], liens = {}, solde: montant = 0, di
   let statsLancees = null;
   btJouer.addEventListener('click', () => lancer({ mode: 'histoire', monde: monde.id }));
 
+  // Lot 9d : retour de la partie sans rechargement (« Quitter », « Revenir au menu principal ») : le même menu revient tel qu'on l'a laissé (onglet
+  // d'origine, écrans déjà ouverts), ses écouteurs reposés, la progression relue (soldes de l'en-tête, record de l'onglet Jouer, Infini,
+  // équipement, Boutique, profil : abonnés de la progression) ; roue de chargement au-delà de 120 ms.
+  async function reprendre() {
+    if (!lance) return;
+    lance = false;
+    box.classList.remove('e8-pause');
+    if (!box.isConnected) root.append(box);
+    document.addEventListener('keydown', clavier, true);
+    document.addEventListener('pointerdown', dehors, true);
+    document.addEventListener('visibilitychange', animer);
+    document.addEventListener('fullscreenchange', syncPleinEcran);
+    syncPleinEcran();
+    const roue = roueDifferee(box, { fixe: true, texte: t('game.menu.chargement.texte') });
+    try {
+      const lu = (await chargerProgression()).rafraichir();
+      record = lireRecord(lu?.save?.records?.histoire?.[monde.id]);
+      rafraichirJouer(record);
+    } catch {
+      // sauvegarde illisible ou stockage bloqué : affichage d'avant la partie
+    } finally {
+      roue.fin();
+    }
+    synchroniser();
+    animer();
+  }
+
   // Échap : Options (confirmation d'abord), puis l'écran ouvert, puis le menu à trois barres, puis (lot 8d) le sous-menu du Personnage. Un appui
   // ailleurs ferme le menu à trois barres.
   function clavier(e) {
@@ -836,6 +864,7 @@ export function creerMenu({ dict, infos = [], liens = {}, solde: montant = 0, di
   synchroniser();
   return {
     element: box,
+    reprendre,
     etat: () => ({ pleinEcran: { disponible: peutPleinEcran, actif: Boolean(document.fullscreenElement) }, onglet: etat.onglet, menuOuvert: etat.menuOuvert, ecran: etat.ecran, nonLue: nouveauteNonLue(infos, etat.lues), solde: soldeActuel, diamants: diamActuel, discord: lien.actif, record, monde: monde.id, infini: infini?.etat() ?? null, personnage: perso?.etat() ?? null, boutique: boutique?.etat() ?? null, credits: credits?.etat() ?? null, compte: compte?.etat() ?? null, niveaux, statsLancees }),
   };
 }
