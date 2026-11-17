@@ -108,15 +108,40 @@ export function feuilleMenu(doc = globalThis.document) {
   return feuille;
 }
 
-// Chargement du jeu : Three.js préchargé (avant le lot 8a : balises modulepreload de jeu.html), puis le graphe de main.js.
-function lancerJeu() {
+// Chargement du jeu : Three.js préchargé (avant le lot 8a : balises modulepreload de jeu.html ; lot 9d : une seule fois par page), puis le graphe
+// de main.js, puis la partie (lot 9d : demarrerPartie(), rappelable dans la même page ; avant, l'import seul lançait la partie).
+let partieEnCours = null;
+export const partieActive = () => partieEnCours;
+async function lancerJeu() {
   for (const href of ['vendor/three/three.module.js', 'vendor/three/three.core.js']) {
+    if (document.head.querySelector(`link[rel="modulepreload"][href="${href}"]`)) continue;
     const link = document.createElement('link');
     link.rel = 'modulepreload';
     link.href = href;
     document.head.append(link);
   }
-  return import('../game/main.js');
+  const { demarrerPartie } = await import('../game/main.js');
+  partieEnCours = await demarrerPartie();
+  return partieEnCours;
+}
+
+// Lot 9d : fin d'une partie (« Quitter » confirmé, « Revenir au menu principal ») ; partie : { liberer() } rendu par demarrerPartie.
+export function menuQuitter(partie = partieEnCours) {
+  void partie;
+  return menuRetour();
+}
+
+// Lot 9d : tests (?test=1) : libération directe de la partie en cours et nouvelle partie dans la même page (dix cycles de la garantie 3).
+// liberer() → rapport (mémoire Three.js avant la perte du contexte, contexte perdu) ; demarrer() → promesse de la nouvelle partie.
+if (new URLSearchParams(pageSearch()).get('test') === '1') {
+  globalThis.__zsCycle = {
+    liberer: () => {
+      const p = partieEnCours;
+      partieEnCours = null;
+      return p ? p.liberer() : null;
+    },
+    demarrer: () => lancerJeu().then(() => true),
+  };
 }
 
 if (!modeMenu) {

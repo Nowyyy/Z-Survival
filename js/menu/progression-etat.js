@@ -76,6 +76,13 @@ export function creerProgression(params, { search = pageSearch(), storage = stoc
       lu = repository.load();
       return lu;
     },
+    // Lot 9d : retour au menu sans rechargement : la partie a écrit par son propre dépôt (même onglet : aucun événement du stockage) ; la
+    // progression est relue et tous les abonnés (en-tête, Infini, équipement, Boutique, Personnage, profil) se mettent à jour.
+    rafraichir() {
+      lu = repository.load();
+      prevenir([]);
+      return lu;
+    },
     solde: () => soldeDe(lu.save),
     diamants: () => soldeDiamants(lu.save), // lot 8k
     // ops : opérations de js/core/progression.js. → { ok, refused: [{ id, raison }], error? } ; la progression lue est celle qui vient d'être écrite.

@@ -9,13 +9,18 @@ import { createTokenLookup } from './palette.js';
 
 // Zombies préparés d'avance, une tenue par tâche (moins de 50 ms, même sur téléphone) quand le navigateur est libre : sinon texture et géométrie
 // seraient construites dans l'image où le zombie apparaît (tâche longue). Purement un cache : rien ne change dans le jeu.
+// Lot 9d : rend une fonction d'arrêt (libération de la partie : plus aucune tâche programmée).
 function prewarm(v2, count, handles = () => true) {
-  const idle = globalThis.requestIdleCallback ? (f) => globalThis.requestIdleCallback(f, { timeout: 2000 }) : (f) => setTimeout(f, 50);
+  const ric = globalThis.requestIdleCallback;
+  let tache = null;
+  let arrete = false;
+  const idle = ric ? (f) => { tache = ric(f, { timeout: 2000 }); } : (f) => { tache = setTimeout(f, 50); };
   const ids = Array.from({ length: count }, (_, i) => i).filter((i) => handles(i));
   const jobs = [...ids];
   let outfit = 0;
   let max = 1;
   const next = () => {
+    if (arrete) return;
     if (!jobs.length) {
       outfit += 1;
       if (outfit >= max) return;
@@ -25,6 +30,12 @@ function prewarm(v2, count, handles = () => true) {
     idle(next);
   };
   if (jobs.length) idle(next);
+  return () => {
+    arrete = true;
+    if (tache === null) return;
+    if (ric) globalThis.cancelIdleCallback?.(tache);
+    else clearTimeout(tache);
+  };
 }
 
 // Réglages de la table des choix (?perso=choix seulement) : macros, macros d'animation, style d'animation et tenues de chaque personnage.
@@ -47,6 +58,7 @@ export function createPersos(params, data) {
   let wave = 1;
   let lastHp = null;
   let dynamic = null;
+  let arreterPrewarm = () => {};
   const facings = new Map(); // orientation dessinée de chaque zombie (identifiant -> radians), pour la chute de son cadavre
   const pools = new Map(); // cadavres réutilisés, par variante de zombie (aucune création à chaque mort)
   let bodyStains = settings(data.blood, params.sang).bodyStains;
@@ -81,7 +93,7 @@ export function createPersos(params, data) {
         kit.v2 = v2;
         // Lot 5b-G : la première tenue de chaque zombie est préparée tout de suite (derrière l'écran de préparation), les autres pendant les temps libres.
         for (let i = 0; i < variants.zombie.variants.length; i += 1) if (v2.handles('zombie', i)) v2.prewarm(i, 0);
-        prewarm(v2, variants.zombie.variants.length, (i) => v2.handles('zombie', i));
+        arreterPrewarm = prewarm(v2, variants.zombie.variants.length, (i) => v2.handles('zombie', i));
       }
       const lift = (f) => (f === 'etage' && Number.isFinite(render.floorLift) ? render.floorLift : 0);
       // Lot 3m (levier 2) : blood-fx.js fourni par le chargeur, jamais importé avec ?sang=0.
@@ -130,6 +142,28 @@ export function createPersos(params, data) {
       facings.clear();
       blood?.reset();
       lastHp = null;
+    },
+    // Lot 9d : libération de la partie : préparation d'avance arrêtée, sang, cadavres en stock et kit v2 (géométries, matières, textures) libérés.
+    // vus : objets déjà libérés (partagé avec game.js, rien deux fois).
+    liberer(vus = new Set()) {
+      arreterPrewarm();
+      const une = (x) => {
+        if (!x || vus.has(x)) return;
+        vus.add(x);
+        x.dispose?.();
+      };
+      blood?.dispose?.();
+      for (const pool of pools.values()) {
+        for (const c of pool) {
+          c.root?.traverse?.((o) => {
+            une(o.geometry);
+            for (const m of Array.isArray(o.material) ? o.material : [o.material]) une(m);
+          });
+          c.dispose?.();
+        }
+      }
+      pools.clear();
+      v2?.dispose?.();
     },
     // Lot 5b (préréglage Auto, entre deux manches) : niveau de sang et cadavres, à chaud ; sans effet si le sang n'a pas été chargé (?sang=0).
     // corpses : nombre de cadavres du niveau (null : celui de blood.json). Les taches et cadavres en cours sont effacés (blood-fx.setLevel).

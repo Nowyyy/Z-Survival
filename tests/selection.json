@@ -859,13 +859,14 @@
     {
       "id": "jeu",
       "description": "Assemblage du jeu : jeu.html, boucle et état (game.js), démarrage (lot 8a : js/menu/demarrage.js, qui importe main.js), accès de test.",
-      "sources": ["js/fps.js", "jeu.html", "js/game/main.js", "js/game/game.js", "js/game/boot.js", "js/game/testhook.js", "js/menu/demarrage.js"],
+      "sources": ["js/fps.js", "jeu.html", "js/game/main.js", "js/game/game.js", "js/game/boot.js", "js/game/testhook.js", "js/menu/demarrage.js", "js/game/liberation.js"],
       "dependances": ["carte", "combat", "economie", "etages", "graphismes", "interface", "menu", "noyau", "personnages", "rendu", "siege", "sons", "textes", "vagues"],
       "vitest": [
         "tests/unit/correctifs-9a.test.js",
         "tests/unit/data-ambiance.test.js",
         "tests/unit/icone.test.js",
         "tests/unit/jeu-html.test.js",
+        "tests/unit/liberation.test.js",
         "tests/unit/lot1-regles.test.js",
         "tests/unit/lots.test.js",
         "tests/unit/persos-integres-finitions.test.js",
@@ -875,7 +876,7 @@
         "tests/unit/versions-archiver.test.js",
         "tests/unit/zones-rendu.test.js"
       ],
-      "e2e": ["tests/e2e/attente.spec.js", "tests/e2e/jeu-pause.spec.js", "tests/e2e/jeu.spec.js", "tests/e2e/correctifs-9a.spec.js"],
+      "e2e": ["tests/e2e/attente.spec.js", "tests/e2e/jeu-pause.spec.js", "tests/e2e/jeu.spec.js", "tests/e2e/correctifs-9a.spec.js", "tests/e2e/retour-menu.spec.js"],
       "complet": []
     },
     {

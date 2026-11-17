@@ -61,6 +61,7 @@ export function createAudio({ config, test = false, seed = 1, autoAmbience = tru
   const lastPlayed = new Map(); // son -> dernière version jouée (repli sans répétition)
   const waiting = new Map(); // réparation en attente de son tampon : clé (fenêtre) -> { stopped }
   let onState = () => {};
+  let libere = false; // lot 9d
   const stats = { essentialMs: 0, backgroundMs: 0, ready: false, zombieVoices: 0 };
 
   // Gains généraux : « Son coupé » coupe tout ; volume du jeu et volume de la musique linéaires (n / 100), la même loi que gainsVolumes
@@ -359,6 +360,7 @@ export function createAudio({ config, test = false, seed = 1, autoAmbience = tru
 
     // À appeler depuis un geste du joueur. Sans effet si l'audio n'existe pas ou refuse : le jeu continue sans son.
     unlock() {
+      if (libere) return;
       if (ctx) {
         // Contexte créé par un geste que le navigateur n'a pas accepté (pointerdown à la souris) : chaque nouveau geste retente la reprise.
         if (!suspended && ctx.state !== 'running') ctx.resume?.().catch(() => {});
@@ -521,6 +523,36 @@ export function createAudio({ config, test = false, seed = 1, autoAmbience = tru
     // Poids du pack calculé (octets des tampons) et mémoire estimée une fois décodé (mono : 4 octets par échantillon), sans plafond.
     pack() {
       return { mode, ...packStats([...pcm.values()]), lazy: lazyStats.count, lazyMs: Math.round(lazyStats.ms) };
+    },
+
+    // Lot 9d : libération de la partie (retour au menu sans rechargement) : boucles, ambiance et voix arrêtées, minuterie annulée, contexte audio
+    // fermé (ses nœuds et tampons avec lui), tampons calculés oubliés ; plus aucun geste ne le recrée. Le menu garde son propre contexte.
+    liberer() {
+      if (libere) return;
+      libere = true;
+      clearTimeout(suspendTimer);
+      stopAmbience();
+      stopLoops();
+      for (const v of active.values()) {
+        try {
+          v.source?.stop?.();
+          v.source?.disconnect?.();
+        } catch { /* déjà arrêtée */ }
+      }
+      active.clear();
+      for (const w of waiting.values()) w.stopped = true;
+      waiting.clear();
+      onState = () => {};
+      const c = ctx;
+      ctx = null;
+      compressor = null;
+      master = null;
+      compressorMusique = null;
+      masterMusique = null;
+      buffers.clear();
+      pcm.clear();
+      lazy.clear();
+      c?.close?.().catch(() => {});
     },
 
     // Rapport pour ?test=1.

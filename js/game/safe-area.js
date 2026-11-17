@@ -48,10 +48,22 @@ export function installSafeArea(root = document.documentElement) {
   const auRetour = () => {
     if (!document.hidden) apresRotation();
   };
-  window.addEventListener('resize', () => recaler());
+  const surTaille = () => recaler();
+  const vv = window.visualViewport ?? null;
+  window.addEventListener('resize', surTaille);
   window.addEventListener('orientationchange', apresRotation);
   window.addEventListener('pageshow', apresRotation);
   document.addEventListener('visibilitychange', auRetour);
-  window.visualViewport?.addEventListener('resize', () => recaler());
-  return { refresh: () => recaler(), area: apply() };
+  vv?.addEventListener('resize', surTaille);
+  // Lot 9d : libération de la partie : écouteurs retirés, minuterie annulée, sonde retirée (les variables --safe-* sont rétablies avec <html>).
+  const liberer = () => {
+    window.removeEventListener('resize', surTaille);
+    window.removeEventListener('orientationchange', apresRotation);
+    window.removeEventListener('pageshow', apresRotation);
+    document.removeEventListener('visibilitychange', auRetour);
+    vv?.removeEventListener('resize', surTaille);
+    clearTimeout(relance);
+    probe.remove();
+  };
+  return { refresh: () => recaler(), area: apply(), liberer };
 }

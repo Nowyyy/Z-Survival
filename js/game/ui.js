@@ -13,7 +13,7 @@ import { installerEchelle } from './ui-echelle.js';
 const PORTRAIT_PHONE = '(orientation: portrait) and (pointer: coarse) and (max-width: 600px)';
 
 export function createUi(dict, handlers) {
-  installerEchelle(); // lot 8j : --ui-k, facteur de l'interface de la partie (1 jusqu'à 1080 px de haut, plafond 2)
+  const echelle = installerEchelle(); // lot 8j : --ui-k, facteur de l'interface de la partie (1 jusqu'à 1080 px de haut, plafond 2)
   const $ = (id) => document.getElementById(id);
   const els = {
     pausePanel: $('pause-panel'), endPanel: $('end-panel'), live: $('hud-live'), rotate: $('rotate'),
@@ -302,7 +302,7 @@ export function createUi(dict, handlers) {
   document.addEventListener('fullscreenchange', syncFullscreen);
   syncFullscreen();
   // Retour du propriétaire : zones qui défilent (pause, Options…) glissables à la souris, comme au doigt (même module que le menu).
-  activerGlisser(document.body);
+  const retirerGlisser = activerGlisser(document.body);
   els.pauseBtn.addEventListener('click', () => ui.openPause());
   els.resume.addEventListener('click', () => ui.closePause());
   els.fullscreen.addEventListener('click', () => ui.toggleFullscreen());
@@ -318,14 +318,30 @@ export function createUi(dict, handlers) {
     handlers.onRestart();
   });
   // Onglet caché : la partie est figée et le panneau de pause s'ouvre pour le retour.
-  document.addEventListener('visibilitychange', () => {
+  const surVisibilite = () => {
     if (document.hidden) ui.openPause();
     handlers.onPauseChange?.(ui.isPaused());
-  });
-  rotateQuery.addEventListener('change', () => {
+  };
+  document.addEventListener('visibilitychange', surVisibilite);
+  const surRotation = () => {
     handlers.onRotateChange?.();
     handlers.onPauseChange?.(ui.isPaused());
-  });
+  };
+  rotateQuery.addEventListener('change', surRotation);
+
+  // Lot 9d : libération de la partie : écouteurs de document et de la requête d'orientation, glisser à la souris, facteur d'échelle ; Échap rendu
+  // au navigateur (Keyboard Lock levé : le menu se comporte comme avant). Les boutons du HUD, de la pause et de la fin sont remplacés par leur
+  // copie de départ (main.js), leurs écouteurs partent avec eux ; écrans Options et Débogage retirés.
+  ui.liberer = () => {
+    document.removeEventListener('fullscreenchange', syncFullscreen);
+    document.removeEventListener('visibilitychange', surVisibilite);
+    rotateQuery.removeEventListener('change', surRotation);
+    retirerGlisser?.();
+    echelle?.liberer?.();
+    navigator.keyboard?.unlock?.();
+    menu?.close?.();
+    debugMenu?.close?.();
+  };
 
   return ui;
 }
