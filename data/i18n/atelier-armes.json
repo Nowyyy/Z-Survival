@@ -26,7 +26,7 @@
   "dev.armes.jeu.mesures": "Mesuré sur l'image ({taille}) : personnage {pw} × {ph} px, arme seule {aw} × {ah} px ; longueur de l'arme {l} unités ({lr} m en vrai).",
   "dev.armes.jeu.tenue": "Réglage « Tenue en main » : bras adaptés (aperçu du lot d'intégration, personnage non modifié) ou pose actuelle du jeu (arme fixée à la main du pistolet).",
   "dev.armes.caisse.titre": "Sur la caisse",
-  "dev.armes.caisse.intro": "Caisse d'achat vue par la caméra du jeu, l'arme posée sur le côté. Le contour à la craie et le texte montrent l'approche du joueur : simple aperçu, rien n'est branché sur la partie.",
+  "dev.armes.caisse.intro": "Caisse d'achat vue par la caméra du jeu, l'arme posée sur le côté. Le contour à la craie et le texte montrent l'approche du joueur : simple aperçu, rien n'est branché sur la partie. Les armes de poing y sont agrandies (curseur « Pistolet sur la caisse », ×2 par défaut) pour ne pas se perdre sur la caisse ; en main, elles gardent leur taille.",
   "dev.armes.caisse.type": "Caisse",
   "dev.armes.caisse.caisse": "Caisse militaire ouverte",
   "dev.armes.caisse.ratelier": "Râtelier mural bas",
@@ -75,5 +75,6 @@
   "dev.armes.longueur": "Longueur des armes",
   "dev.armes.epaisseur": "Épaisseur des pièces fines",
   "dev.armes.echelle.note": "Longueur : toutes les armes agrandies du même facteur (×1 = taille réelle par rapport au personnage). Largeur en jeu : dans la vue « En jeu » seulement (caméra lointaine), l'arme tenue s'élargit sur les côtés, sans s'allonger ni changer de profil ; les autres vues (tenue de près, caisse, gros plan, comparaison, planche, visuels) gardent la vraie largeur. Épaisseur : canons, crosses, chargeurs et plaques épaissis dans tous les sens. Valeurs par défaut ×1,3, ×1,5 et ×1,8 (retours du propriétaire) ; les valeurs choisies sont reprises dans « Mes choix ».",
-  "dev.armes.largeur": "Largeur en jeu (vue de dessus)"
+  "dev.armes.largeur": "Largeur en jeu (vue de dessus)",
+  "dev.armes.caisse.poing": "Pistolet sur la caisse"
 }

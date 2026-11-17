@@ -314,4 +314,17 @@ describe('retours du propriétaire (lot 9c-G) : taille, épaisseur, prises', () 
     expect(r2.largeur).toBeLessThan(1.5 * r1.largeur); // réservoirs portés non élargis
     expect(avecEchelle(donnees, { largeur: 9 }).echelle.largeur).toBe(4);
   });
+
+  it('pistolet sur la caisse (retour : « sur l\'établi, le pistolet est trop petit ») : armes de poing posées ×2, jamais en main ni les autres armes', () => {
+    expect(donnees.echelle.poingCaisse).toBe(2);
+    for (const a of donnees.armes) {
+      const main = maillageArme(donnees, a, a.variantes[0], { pose: 'seule' });
+      const posee = maillageArme(donnees, a, a.variantes[0], { pose: 'caisse' });
+      if (a.classe === 'poing') expect(posee.longueur / main.longueur, a.id).toBeCloseTo(2, 4);
+      else if (!a.dos) expect(posee.longueur / main.longueur, a.id).toBeCloseTo(1, 4);
+    }
+    expect(avecEchelle(donnees, { poingCaisse: 7 }).echelle.poingCaisse).toBe(3);
+    expect(lireChoix(donnees, { echelle: { poingCaisse: 2.5 } }).echelle).toEqual({ poingCaisse: 2.5 });
+    expect(lireChoix(donnees, { echelle: { poingCaisse: 0 } }).ecarts.length).toBe(1);
+  });
 });
