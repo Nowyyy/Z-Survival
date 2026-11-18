@@ -45,10 +45,14 @@ const pixels = (page, x, y, w, h) => page.evaluate(({ x, y, w, h }) => {
 // Lot 9a-I : sacs de sable solides, sortis du décor léger (dessiné partout, absent en Faible) pour un maillage de jute coupé hors du champ : hors
 // du champ dans R1 et U1, donc 20 triangles de moins en Élevé et Moyen (2 éléments × 10), mêmes appels ; Faible inchangé. Avant : eleve R1
 // [62, 38181, 18], U1 [69, 39623, 18] ; moyen R1 [60, 23569, 18], U1 [67, 25011, 18].
+// Lot 9e : références mises à jour (origin/dev d456a42 : eleve R1 62 / 38 161, U1 69 / 39 603 ; moyen 60 / 23 549, 67 / 24 991 ; faible 42 / 18 955,
+// 48 / 19 607 ; ?test=1&corps=avant les retrouve exactement) : + 1 appel et + 216 triangles pour le Colt du lot 9c en main (240 triangles ; le
+// pistolet d'origine du personnage, 24 triangles, est retiré de sa géométrie) ; + 1 appel et 8 triangles de sang : un des dix zombies, rampant,
+// apparaît à 40 du joueur et le touche tout de suite (sa zone couvre maintenant tout son corps couché, décision du propriétaire). Programmes inchangés.
 const ORIGINE = {
-  eleve: { R1: [62, 38161, 18], U1: [69, 39603, 18] },
-  moyen: { R1: [60, 23549, 18], U1: [67, 24991, 18] },
-  faible: { R1: [42, 18955, 16], U1: [48, 19607, 16] },
+  eleve: { R1: [64, 38385, 18], U1: [71, 39827, 18] },
+  moyen: { R1: [62, 23773, 18], U1: [69, 25215, 18] },
+  faible: { R1: [44, 19179, 16], U1: [50, 19831, 16] },
 };
 const SCENES = {
   R1: { url: '&nospawn=1', at: [U(300), U(300)], floor: 'rdc', wave: 10 },

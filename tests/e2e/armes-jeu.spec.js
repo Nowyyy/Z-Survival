@@ -121,3 +121,95 @@ test.describe('armes en main', () => {
     expect(w.problems).toEqual([]);
   });
 });
+
+test.describe('chargeurs et rechargement (partie D)', () => {
+  test('Colt : 7 / ∞ au HUD, rechargement automatique après 7 tirs (1,4 s, pas de tir pendant), jamais à sec ; touche R : rechargement à la main', async ({ page }) => {
+    const w = watch(page);
+    await page.addInitScript(espion);
+    await page.goto('/jeu.html?test=1&seed=2&nospawn=1&map=salle&lum=off&vhs=0');
+    await waitReady(page);
+    await expect(page.locator('#hud-ammo-text')).toHaveText('7 / ∞');
+    await expect(page.locator('#hud-ammo')).toBeVisible();
+    const r = await page.evaluate(() => {
+      const zs = window.__zs;
+      const p = zs.getState().player;
+      zs.setWaveParams({ hp: { hpLinearPerRound: 1000, hpExpStartRound: 1000, hpExpFactor: 1, hpCap: 1e9 }, damage: { factor: 1, cap: 0.0001 } }); // zombie qui ne tombe pas et ne blesse pas
+      zs.spawnEnemy(p.x + 150, p.y, { type: 'marcheur', gait: 'lent', wave: 3 }); // manche 3 : vie × 2 001 (setWaveParams)
+      const out = [];
+      for (let i = 0; i < 80; i += 1) {
+        zs.setInput({ aim: { angle: 0 } });
+        zs.step(0.05);
+        const a = zs.getState().armes;
+        out.push({ t: zs.getState().time, c: a.emplacements[0].chargeur, r: a.enRecharge, tirs: zs.getState().shots.length });
+      }
+      return out;
+    });
+    const debut = r.findIndex((x) => x.r);
+    expect(r[debut - 1].c).toBe(0);
+    expect(r[debut - 1].tirs).toBe(7);
+    const fin = r.findIndex((x, i) => i > debut && !x.r);
+    expect(r[fin].t - r[debut].t).toBeCloseTo(1.4, 1);
+    expect(r[fin].c + (r[fin].tirs - 7)).toBe(7); // chargeur plein (un tir peut partir au pas même où le rechargement finit)
+    expect(r.slice(debut, fin).every((x) => x.tirs === 7)).toBe(true); // pas de tir pendant le rechargement
+    await expect(page.locator('#hud-ammo-text')).not.toHaveText('');
+    // Touche R (event.code, même lettre en AZERTY et QWERTY) : rechargement à la main d'un chargeur entamé.
+    await page.evaluate(() => window.__zs.killAll());
+    const c = (await S(page)).armes.emplacements[0].chargeur;
+    expect(c).toBeLessThan(7);
+    await page.keyboard.press('KeyR');
+    await page.evaluate(() => window.__zs.step(0.05));
+    expect((await S(page)).armes.enRecharge).toBe(true);
+    await expect(page.locator('#hud-ammo-state')).toHaveText('Recharge');
+    expect(await page.evaluate(() => window.__ecritures.length)).toBe(0);
+    expect(w.problems).toEqual([]);
+  });
+
+  test('arme à sec : plus de tir, « À sec » au HUD ; « Remplir les munitions » et « Munitions illimitées » (débogage) ; ?munitions=illimitees : jamais de rechargement', async ({ page }) => {
+    await page.addInitScript(espion);
+    await page.goto('/jeu.html?test=1&seed=2&nospawn=1&map=salle&lum=off&vhs=0');
+    await waitReady(page);
+    const r = await page.evaluate(() => {
+      const zs = window.__zs;
+      zs.donnerArme('kar98k');
+      for (let i = 0; i < 20; i += 1) zs.step(0.05);
+      zs.setWaveParams({ hp: { hpLinearPerRound: 1000, hpExpStartRound: 1000, hpExpFactor: 1, hpCap: 1e9 }, damage: { factor: 1, cap: 0.0001 } }); // zombie qui ne tombe pas et ne blesse pas
+      const p = zs.getState().player;
+      zs.spawnEnemy(p.x + 150, p.y, { type: 'marcheur', gait: 'lent', wave: 3 }); // manche 3 : vie × 2 001 (setWaveParams), le zombie ne tombe pas
+      for (let i = 0; i < 1600 && !zs.getState().armes.aSec; i += 1) {
+        zs.setInput({ aim: { angle: 0 } });
+        zs.step(0.05);
+      }
+      const a = zs.getState();
+      const tirs = a.shots.length;
+      for (let i = 0; i < 40; i += 1) {
+        zs.setInput({ aim: { angle: 0 } });
+        zs.step(0.05);
+      }
+      return { sec: a.armes.aSec, texte: a.armes.texte, tirs, apres: zs.getState().shots.length };
+    });
+    expect(r.sec).toBe(true);
+    expect(r.texte).toBe('0 / 0');
+    expect(r.tirs).toBe(35); // 5 dans le chargeur + 30 en réserve
+    expect(r.apres).toBe(r.tirs);
+    await expect(page.locator('#hud-ammo-state')).toHaveText('À sec');
+    await page.evaluate(() => {
+      window.__zs.killAll(); // plus de cible : la boucle d'images réelle ne tire plus
+      window.__zs.remplirMunitions();
+    });
+    expect((await S(page)).armes.texte).toBe('5 / 30');
+    await page.evaluate(() => window.__zs.munitionsIllimitees(true));
+    const ill = await page.evaluate(() => {
+      const zs = window.__zs;
+      for (let i = 0; i < 200; i += 1) {
+        zs.setInput({ aim: { angle: 0 } });
+        zs.step(0.05);
+      }
+      return zs.getState().armes;
+    });
+    expect([ill.illimite, ill.enRecharge, ill.emplacements[1].chargeur]).toEqual([true, false, 5]);
+    await page.goto('/jeu.html?test=1&seed=2&nospawn=1&map=salle&lum=off&vhs=0&munitions=illimitees');
+    await waitReady(page);
+    expect((await S(page)).armes.illimite).toBe(true);
+    expect(await page.evaluate(() => window.__ecritures.length)).toBe(0);
+  });
+});

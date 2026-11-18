@@ -1,5 +1,5 @@
-// Lot 9e — Interface des armes en partie : munitions « chargeur / réserve » du HUD (#hud-ammo, colonne de gauche sous la vie, à l'échelle de
-// l'interface --ui-k), états « Recharge » et « À sec » ; sur téléphone, deux boutons près du stick droit (#btn-recharger ; #btn-changer, qui
+// Lot 9e — Interface des armes en partie : munitions « chargeur / réserve » (#hud-ammo, bloc du HUD en bas à droite, au-dessus des boutons sur
+// téléphone ; à l'échelle de l'interface --ui-k), états « Recharge » et « À sec » ; sur téléphone, deux boutons près du stick droit (#btn-recharger ; #btn-changer, qui
 // montre le visuel 2D de l'autre arme, js/core/armes/visuel.js) ; annonces sobres aux lecteurs d'écran (arme sortie, début et fin d'un
 // rechargement, arme à sec ; jamais chaque tir). Éléments créés ici (aucun bloc ajouté à jeu.html) et retirés par dispose() (lot 9d).
 import { armeParId, varianteDe } from '../core/armes/armes.js';
@@ -14,7 +14,7 @@ export function createArmesUi({ dict, root, col, donnees, choix, annonce = () =>
   const t = (k) => dict[k] ?? k;
   const ammo = document.createElement('p');
   ammo.id = 'hud-ammo';
-  ammo.className = 'hud-block hud-ammo';
+  ammo.classList.add('hud-block', 'hud-ammo');
   const icone = document.createElementNS(SVG_NS, 'svg');
   icone.setAttribute('class', 'hud-icon');
   icone.setAttribute('viewBox', '0 0 16 16');
@@ -24,23 +24,23 @@ export function createArmesUi({ dict, root, col, donnees, choix, annonce = () =>
   balle.setAttribute('d', 'M6 14.5V6.5L8 1.5l2 5v8zM6 11h4');
   icone.append(balle);
   const nom = document.createElement('span');
-  nom.className = 'hud-label hud-ammo-name';
+  nom.classList.add('sr-only'); // nom de l'arme pour les lecteurs d'écran (le visuel du bouton le montre sur téléphone)
   const texte = document.createElement('span');
   texte.id = 'hud-ammo-text';
-  texte.className = 'hud-value';
+  texte.classList.add('hud-value');
   const etat = document.createElement('span');
   etat.id = 'hud-ammo-state';
-  etat.className = 'hud-tag hud-ammo-state';
+  etat.classList.add('hud-ammo-state');
   ammo.append(icone, nom, document.createTextNode(' '), texte, etat);
-  col?.append(ammo);
+  (root ?? col)?.append(ammo); // en bas à droite (au-dessus des boutons sur téléphone), hors de la bande du HUD
 
   const boutons = document.createElement('div');
-  boutons.className = 'armes-boutons';
+  boutons.classList.add('armes-boutons');
   boutons.id = 'armes-boutons';
   const recharger = document.createElement('button');
   recharger.type = 'button';
   recharger.id = 'btn-recharger';
-  recharger.className = 'button button-quiet armes-bouton';
+  recharger.classList.add('button', 'button-quiet', 'armes-bouton', 'armes-bouton-recharger');
   recharger.setAttribute('aria-label', t('game.armes.recharger'));
   const ri = document.createElementNS(SVG_NS, 'svg');
   ri.setAttribute('viewBox', '0 0 16 16');
@@ -53,7 +53,7 @@ export function createArmesUi({ dict, root, col, donnees, choix, annonce = () =>
   const changer = document.createElement('button');
   changer.type = 'button';
   changer.id = 'btn-changer';
-  changer.className = 'button button-quiet armes-bouton armes-bouton-visuel';
+  changer.classList.add('button', 'button-quiet', 'armes-bouton', 'armes-bouton-visuel');
   changer.hidden = true;
   boutons.append(changer, recharger);
   root?.append(boutons);

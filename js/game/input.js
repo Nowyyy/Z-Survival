@@ -8,6 +8,10 @@ const MOVE_CODES = {
   down: ['KeyS', 'ArrowDown'],
 };
 const GAME_CODES = new Set(Object.values(MOVE_CODES).flat());
+// Lot 9e : armes (event.code : mêmes touches physiques en AZERTY et en QWERTY ; R et E portent la même lettre sur les deux claviers, 1 et 2 sont
+// les touches des chiffres de la rangée du haut) : recharger, changer d'arme, sortir le Colt ou l'arme achetée.
+export const ARME_CODES = Object.freeze({ KeyR: 'recharger' });
+export const MOLETTE_PAUSE_MS = 150; // un cran de molette = un changement ; les crans suivants dans ce délai sont ignorés
 
 // root : conteneur du jeu. Les sticks sont des éléments HTML (E2-3, E2-4) posés où le doigt touche.
 export function createInput(root, { onCommand = () => {}, isBlocked = () => false } = {}) {
@@ -51,6 +55,9 @@ export function createInput(root, { onCommand = () => {}, isBlocked = () => fals
     if (event.code === 'Escape' || event.code === 'KeyP') onCommand('pause');
     else if (event.code === 'KeyF') onCommand('fullscreen');
     else if (event.code === 'KeyM') onCommand('mute');
+    else if (Object.hasOwn(ARME_CODES, event.code)) {
+      if (!event.repeat && !isBlocked()) onCommand(ARME_CODES[event.code]);
+    }
     else if (GAME_CODES.has(event.code)) {
       keys.add(event.code);
       if (!isBlocked()) event.preventDefault();
@@ -122,6 +129,14 @@ export function createInput(root, { onCommand = () => {}, isBlocked = () => fals
     if (document.hidden) releaseAll();
   };
   const onResize = () => showIdle();
+  // Lot 9e : molette de la souris : changer d'arme (un cran, puis MOLETTE_PAUSE_MS d'attente) ; horloge de l'événement (timeStamp).
+  let derniereMolette = -Infinity;
+  const onWheel = (event) => {
+    if (isBlocked() || Math.abs(event.deltaY) < 1) return;
+    if (event.timeStamp - derniereMolette < MOLETTE_PAUSE_MS) return;
+    derniereMolette = event.timeStamp;
+    onCommand('changer');
+  };
   window.addEventListener('keydown', keyDown);
   window.addEventListener('keyup', keyUp);
   window.addEventListener('blur', releaseAll);
@@ -133,6 +148,7 @@ export function createInput(root, { onCommand = () => {}, isBlocked = () => fals
   root.addEventListener('pointermove', pointerMove);
   root.addEventListener('pointerup', pointerUp);
   root.addEventListener('pointercancel', pointerUp);
+  root.addEventListener('wheel', onWheel, { passive: true });
   const noMenu = (event) => event.preventDefault();
   root.addEventListener('contextmenu', noMenu);
   root.dataset.input = state.type;
@@ -163,6 +179,7 @@ export function createInput(root, { onCommand = () => {}, isBlocked = () => fals
       root.removeEventListener('pointerup', pointerUp);
       root.removeEventListener('pointercancel', pointerUp);
       root.removeEventListener('contextmenu', noMenu);
+      root.removeEventListener('wheel', onWheel);
       releaseAll();
     },
   };

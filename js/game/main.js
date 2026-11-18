@@ -354,7 +354,10 @@ export async function demarrerPartie() {
       else if (name === 'mute') {
         ctx.audio.toggleMute();
         ctx.ui.syncSound(ctx.audio);
-      }
+      } else if (name === 'recharger') game?.recharger(); // lot 9e : touche R
+      else if (name === 'changer') game?.changerArme(); // lot 9e : touche E, molette
+      else if (name === 'arme1') game?.changerArme(0); // lot 9e : touche 1 (Colt)
+      else if (name === 'arme2') game?.changerArme(1); // lot 9e : touche 2 (arme achetée)
     },
   });
   reg.ajouter(() => ctx.input.destroy());

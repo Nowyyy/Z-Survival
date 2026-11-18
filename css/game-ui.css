@@ -967,3 +967,85 @@
 .debug-url {
   overflow-wrap: anywhere;
 }
+
+/* ---------- Lot 9e : munitions de l'arme en main (#hud-ammo, colonne de gauche) et boutons des armes (téléphone, près du stick droit) ---------- */
+.hud-ammo {
+  position: absolute;
+  right: var(--edge-right);
+  bottom: calc(var(--game-margin) + var(--safe-bottom));
+  z-index: 2;
+  font-family: var(--font-sans);
+  font-size: var(--hud-fs);
+  font-weight: var(--font-weight-bold);
+  line-height: 1.2;
+  color: var(--color-text);
+  pointer-events: none;
+}
+
+/* Téléphone : sur la ligne des boutons, à leur gauche (sous l'anneau du stick droit au repos, jamais dessus). */
+#game-root[data-input="touch"] .hud-ammo {
+  right: calc(var(--edge-right) + var(--hud-target) * 3 + var(--hud-gap) * 6);
+  bottom: calc(var(--game-margin) + var(--safe-bottom) + var(--hud-target) / 2 - 0.8em);
+}
+
+.hud-ammo-state {
+  margin-left: auto;
+  font-family: var(--font-label);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-warning);
+}
+
+.hud-ammo[data-etat="sec"] .hud-value,
+.hud-ammo[data-etat="sec"] .hud-ammo-state {
+  color: var(--color-danger);
+}
+
+.armes-boutons {
+  position: absolute;
+  right: calc(var(--game-margin) + var(--safe-right));
+  bottom: calc(var(--game-margin) + var(--safe-bottom));
+  z-index: 3;
+  display: none;
+  align-items: flex-end;
+  gap: calc(var(--hud-gap) * 2);
+}
+
+#game-root[data-input="touch"] .armes-boutons {
+  display: flex;
+}
+
+.armes-bouton {
+  box-sizing: border-box;
+  display: grid;
+  place-items: center;
+  width: var(--hud-target);
+  height: var(--hud-target);
+  min-width: var(--hud-target);
+  min-height: var(--hud-target);
+  padding: 0;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--color-bg) 70%, transparent);
+  touch-action: manipulation;
+}
+
+.armes-bouton-recharger svg {
+  width: 55%;
+  height: 55%;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.armes-bouton-visuel {
+  width: calc(var(--hud-target) * 2);
+  border-radius: var(--hud-radius);
+}
+
+.armes-bouton-visuel svg {
+  width: 92%;
+  height: auto;
+}
+

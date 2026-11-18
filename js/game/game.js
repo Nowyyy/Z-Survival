@@ -30,6 +30,8 @@ import { armeJeu, statsAvecArme } from '../core/armes/partie.js';
 import { aSec, armeActive, armeMontree, avancerInventaire, changerArme, creerInventaire, donnerArme, enRecharge, munitionsIllimitees, peutTirer, progressionRecharge, recharger, remplirMunitions, texteMunitions, tirer, RANGER } from '../core/armes/inventaire.js';
 import { boucheDevant, tenueArme } from '../core/armes/tenue-jeu.js';
 import { creerArmesEnMain } from '../armes/en-main.js';
+import { createArmesUi } from './armes-ui.js';
+import { armeParId, echelleJeu } from '../core/armes/armes.js';
 import { createFootsteps, stepFootsteps } from '../core/footsteps.js';
 import { isHidden } from '../core/spawner.js';
 import { materialFor } from '../core/sound-director.js';
@@ -147,7 +149,7 @@ export function createGame(ctx) {
   ctx.audio?.setFires?.((render.feux ?? []).map((fe) => ({ fe, boxes: render.mobilier?.[fe?.piece]?.boxes })).filter((f) => Array.isArray(f.boxes) && f.boxes.length > 0).map(({ fe, boxes }) => ({ x: (Math.min(...boxes.map((b) => b.x0)) + Math.max(...boxes.map((b) => b.x1))) / 2, y: (Math.min(...boxes.map((b) => b.z0)) + Math.max(...boxes.map((b) => b.z1))) / 2, floor: fe.floor })));
   const rig = createCamera(render.camera, cfg.camera, layout, params.tilt, params.zoom);
   const kit = createKit({ textures, variants: ctx.variants, hit: palette.hit });
-  const pv = persos?.attach({ kit, world, render, palette, variants: ctx.variants, seed: ctx.seed }) ?? null; // lot 3j : kit.v2 et sang
+  const pv = persos?.attach({ kit, world, render, palette, variants: ctx.variants, seed: ctx.seed, sansPistolet: ctx.params.corpsAvant !== true && Boolean(ctx.armes) }) ?? null; // lot 3j : kit.v2 et sang ; lot 9e : arme du lot 9c en main
   const P = ctx.profiler ?? null; // lot 5b : profileur de ?perf=1 (absent par défaut : les appels « P?.… » ne font rien)
   P?.attach({ renderer, scene: world.scene });
   ctx.graphics?.attach({ renderer, world, pv, resize: applySize, params }); // lot 5b : réglages « live » du préréglage (Élevé : rien ne change)
@@ -186,6 +188,32 @@ export function createGame(ctx) {
     return t && armesKit ? Math.round(boucheDevant(t, armesKit.pointe(id)) * 10) / 10 : null;
   };
   let armeVue = null; // arme montrée sur le personnage (identifiant)
+  let armesApi = null; // méthodes de la partie (recharger, changerArme), pour les boutons de l'interface des armes
+  let etaitASec = false;
+  // Lot 9e : munitions du HUD, boutons tactiles près du stick droit, annonces (js/game/armes-ui.js).
+  const armesUi = tableArmes && armesCfg ? createArmesUi({ dict: ctx.dict, root: document.getElementById('game-root'), col: document.querySelector('.hud-tl'), donnees: armesCfg.donnees, choix: armesCfg.choix, annonce: (t) => ctx.ui?.setLive?.(t), onRecharger: () => armesApi?.recharger(), onChanger: () => armesApi?.changerArme() }) : null;
+  // Point du rechargement (repère de l'arme, unités du jeu) vers lequel va la main gauche : chargeur (sous l'arme, entre les deux prises ; Colt :
+  // sous la poignée), culasse (fusils à verrou et semi-automatique : au-dessus, près de la main droite), pompe (fusil à pompe : la main gauche
+  // tire la pompe en arrière), couvercle (mitrailleuse : au-dessus du boîtier).
+  const pointsRecharge = new Map();
+  const pointRecharge = (id) => {
+    if (pointsRecharge.has(id)) return pointsRecharge.get(id);
+    const a = armesCfg ? armeParId(armesCfg.donnees, id) : null;
+    const cat = tableArmes?.armes?.[id]?.categorie ?? '';
+    let pt = null;
+    if (a?.prises?.droite) {
+      const s = echelleJeu(armesCfg.donnees, a);
+      const d = a.prises.droite.map((v) => v * s);
+      const g = (a.prises.gauche ?? a.prises.droite).map((v) => v * s);
+      if (cat === 'pistolet') pt = { a: [d[0], d[1] - 5, d[2] + 1], b: [d[0], d[1] - 7, d[2] + 1] };
+      else if (cat === 'fusil à verrou' || cat === 'fusil semi-automatique') pt = { a: [d[0] - 1, d[1] + 5, d[2] + 4], b: [d[0] - 1, d[1] + 5, d[2] + 1] };
+      else if (cat === 'fusil à pompe') pt = { a: [g[0], g[1], g[2]], b: [g[0], g[1], g[2] - 4] };
+      else if (cat === 'mitrailleuse') pt = { a: [d[0], d[1] + 5, d[2] + 7], b: [d[0] + 2, d[1] + 6, d[2] + 9] };
+      else pt = { a: [(d[0] + g[0]) / 2, Math.min(d[1], g[1]) - 4, d[2] + (g[2] - d[2]) * 0.35], b: [(d[0] + g[0]) / 2, Math.min(d[1], g[1]) - 7, d[2] + (g[2] - d[2]) * 0.35] };
+    }
+    pointsRecharge.set(id, pt);
+    return pt;
+  };
   // Hauteur d'un étage (render.json) : le joueur reste à y = 0, c'est le monde qui descend quand il monte (world.setElevation).
   const LIFT = Number.isFinite(render.floorLift) ? render.floorLift : 0;
   const liftOf = (f) => (f === 'etage' ? LIFT : 0);
@@ -361,8 +389,8 @@ export function createGame(ctx) {
       enemies: [],
       bullets: [],
       weapon: createWeaponState(),
-      // Lot 9e : armes portées (js/core/armes/inventaire.js) ; partie C : munitions illimitées (chargeurs : partie D).
-      inv: tableArmes ? creerInventaire(tableArmes, { illimite: true }) : null,
+      // Lot 9e : armes portées (js/core/armes/inventaire.js) : Colt permanent, chargeurs, réserves, rechargement, changement.
+      inv: tableArmes ? creerInventaire(tableArmes, { illimite: ctx.params.munitionsIllimitees === true }) : null, // ?test=1&munitions=illimitees
       waves: createDirector(cfg.waves, { seed, wave: params.wave ?? 1, inactive: params.nospawn, doors: doorCfgs.map((d) => ({ id: d.id, openAfterWave: d.openAfterWave, planned: d.planned === true })), wavesPerWorld: zoneCfg ? zoneCfg.wavesPerWorld : null, endless: params.endless === true }),
       doors: opened,
       worldOver: false,
@@ -635,7 +663,8 @@ export function createGame(ctx) {
     const muzzle = muzzlePoint(sim.player, sim.aim.angle, weapon.muzzleOffset, layout.muzzleBounds);
     const cibles = zones();
     const ray = castRay(muzzle, sim.aim.angle, weapon.laserRange, cibles, shotBounds, blockers, pf());
-    laser = !firing ? null : { from: muzzle, ray, cone: { angle: sim.aim.angle, half: toRadians(halfAngle()), length: weapon.laserRange, lengths: longueursCone(muzzle, sim.aim.angle, toRadians(halfAngle()), weapon.laserRange, shotBounds, blockers) } }; // cône arrêté comme le laser
+    // Lot 9e : pas de laser pendant un changement d'arme ou un rechargement (aucun tir possible), comme pendant la réparation.
+    laser = !firing || (sim.inv && (sim.inv.sortie || enRecharge(sim.inv))) ? null : { from: muzzle, ray, cone: { angle: sim.aim.angle, half: toRadians(halfAngle()), length: weapon.laserRange, lengths: longueursCone(muzzle, sim.aim.angle, toRadians(halfAngle()), weapon.laserRange, shotBounds, blockers) } }; // cône arrêté comme le laser
     // Le tir part aussi quand la visée passe sur un ennemi au-delà de la portée du laser (le trait s'estompe, la balle continue) ;
     // un ennemi caché derrière un meuble ne déclenche jamais de tir.
     // Marge de visée : le tir part si la ligne passe à moins de aimTolerance du bord d'un ennemi ; la balle suit la vraie visée et peut le rater.
@@ -648,6 +677,10 @@ export function createGame(ctx) {
       const iv = avancerInventaire(sim.inv, tableArmes, dt);
       sim.inv = iv.state;
       for (const ev of iv.evenements) armesEvents.push(ev);
+      const sec = aSec(sim.inv);
+      if (sec && !etaitASec) armesEvents.push({ type: 'aSec', id: armeActive(sim.inv)?.id });
+      etaitASec = sec;
+      for (const ev of armesEvents) armesUi?.annoncer(ev.type, ev.id);
     }
     const armePrete = !sim.inv || peutTirer(sim.inv);
     const trigger = stepWeapon(sim.weapon, dt, aimed && armePrete, weapon, sim.bullets.length);
@@ -1037,7 +1070,14 @@ export function createGame(ctx) {
       return { baisse: reduced ? 0 : so.t < r ? so.t / Math.max(1e-6, r) : Math.max(0, 1 - (so.t - r) / Math.max(1e-6, so.total - r)) };
     }
     const p = progressionRecharge(sim.inv, tableArmes);
-    if (p !== null) return { baisse: reduced ? 0 : 0.6 * Math.max(0, Math.min(1, p / 0.15, (1 - p) / 0.15)), recharge: p };
+    if (p !== null) {
+      // Main gauche : de sa prise au point du rechargement (0,15 → 0,35), geste (0,35 → 0,75 : du point a au point b et retour), retour à la prise.
+      const pt = pointRecharge(armeActive(sim.inv)?.id);
+      const vers = Math.max(0, Math.min(1, (p - 0.1) / 0.25, (0.95 - p) / 0.2));
+      const geste = p > 0.35 && p < 0.75 ? Math.sin(((p - 0.35) / 0.4) * Math.PI) : 0;
+      const gauche = pt ? pt.a.map((v, i) => v + (pt.b[i] - v) * geste) : null;
+      return { baisse: reduced ? 0 : 0.6 * Math.max(0, Math.min(1, p / 0.15, (1 - p) / 0.15)), recharge: p, gauche, poidsGauche: reduced ? 0 : vers };
+    }
     return { baisse: 0 };
   }
   function montrerArme() {
@@ -1049,6 +1089,10 @@ export function createGame(ctx) {
       playerChar.setArme(t ? { id: vue, mesh: armesKit.mesh(vue), angles: t.angles, local: t.local, pointe: armesKit.pointe(vue), pivot: t.pivot } : null);
     }
     playerChar.setArmeEtat(etatVisibleArme());
+    if (armesUi) {
+      const autre = sim.inv.emplacements.find((e, i) => i !== sim.inv.actif)?.id ?? null;
+      armesUi.update({ active: armeActive(sim.inv)?.id, texte: texteMunitions(sim.inv), recharge: enRecharge(sim.inv), aSec: aSec(sim.inv), autre, visible: !sim.dead });
+    }
   }
 
   function draw(dt) {
@@ -1313,7 +1357,7 @@ export function createGame(ctx) {
   renderer.getContext().finish?.(); // lot 5b-G : attend la fin de ce rendu, pour que la première image du jeu n'en paie rien
   if (!document.hidden) start();
 
-  return {
+  const api = {
     get sim() {
       return sim;
     },
@@ -1527,6 +1571,7 @@ export function createGame(ctx) {
       libererThree([world.scene, playerChar.root, ...spare.flat().map((c) => c.root), ...[...zombies.values()].map((z) => z.char.root)], vus);
       textures.dispose();
       armesKit?.dispose(); // lot 9e : maillages des armes (ceux qui ne sont pas dans la scène compris), matière, atlas
+      armesUi?.dispose();
       renderer.renderLists.dispose();
       const memoire = { geometries: renderer.info.memory.geometries, textures: renderer.info.memory.textures };
       const gl = renderer.getContext();
@@ -1628,4 +1673,6 @@ export function createGame(ctx) {
       };
     },
   };
+  armesApi = api; // lot 9e : boutons « Recharger » et « Changer » (js/game/armes-ui.js)
+  return api;
 }
