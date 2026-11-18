@@ -258,3 +258,9 @@ version: v0.9
 nom: Retour au menu sans rechargement
 description: Quitter une partie ramène au menu sans recharger la page : le plein écran reste, la musique reprend, et les parties s'enchaînent sans ralentir. Le menu démarre aussi plus vite.
 afficher: oui
+
+[lot-9e]
+version: v0.9
+nom: Armes en main
+description: Huit armes à tenir et à recharger, chacune avec sa puissance, ses munitions et son poids ; on change d'arme à la molette ou d'un bouton. Les zombies ont des bras plus longs qui touchent vraiment.
+afficher: oui
