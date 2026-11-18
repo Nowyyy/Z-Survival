@@ -674,6 +674,8 @@ export function createGame(ctx) {
     // Lot 9e : armes portées (changement, rechargement) ; le tir ne part que si l'arme active le permet (ni changement, ni rechargement, une
     // cartouche au moins). Le fusil à pompe tire plusieurs plombs, chacun tiré dans le cône (même tirage que la balle unique).
     if (sim.inv) {
+      // Lot 9e : sons du changement d'arme (au premier pas de la sortie) et du rechargement (à son début).
+      if (sim.inv.sortie && sim.inv.sortie.t === 0) events.push({ type: 'armeChange', x: sim.player.x, y: sim.player.y });
       const iv = avancerInventaire(sim.inv, tableArmes, dt);
       sim.inv = iv.state;
       for (const ev of iv.evenements) armesEvents.push(ev);
@@ -681,6 +683,7 @@ export function createGame(ctx) {
       if (sec && !etaitASec) armesEvents.push({ type: 'aSec', id: armeActive(sim.inv)?.id });
       etaitASec = sec;
       for (const ev of armesEvents) armesUi?.annoncer(ev.type, ev.id);
+      if (armesEvents.some((ev) => ev.type === 'rechargeDebut')) events.push({ type: 'armeRecharge', x: sim.player.x, y: sim.player.y });
     }
     const armePrete = !sim.inv || peutTirer(sim.inv);
     const trigger = stepWeapon(sim.weapon, dt, aimed && armePrete, weapon, sim.bullets.length);
@@ -699,7 +702,8 @@ export function createGame(ctx) {
       sim.flash = reduced ? weapon.muzzleFlash / 2 : weapon.muzzleFlash;
       sim.recoil = RECOIL_TIME;
       lastFire = sim.time;
-      events.push({ type: 'shot', x: muzzle.x, y: muzzle.y });
+      // Lot 9e : son de tir de l'arme (data/game/sons-armes.json ; le Colt : « tir » de la partie).
+      events.push({ type: 'shot', x: muzzle.x, y: muzzle.y, ...(sim.inv && armesCfg?.sons ? { son: armesCfg.sons.tir[armeActive(sim.inv)?.id] ?? 'tir' } : {}) });
     }
 
     // Balles : les dégâts n'existent qu'à l'impact.

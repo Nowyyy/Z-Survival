@@ -252,8 +252,10 @@ test.describe('emplacements et changement d\'arme (partie E)', () => {
     expect((await S(page)).armes.actif).toBe('m1911');
     await page.evaluate(() => { for (let i = 0; i < 10; i += 1) window.__zs.step(0.05); });
     await page.mouse.wheel(0, 120);
-    await page.evaluate(() => window.__zs.step(0.05));
-    expect((await S(page)).armes.actif).toBe('garand');
+    await expect.poll(() => page.evaluate(() => {
+      window.__zs.step(0.05);
+      return window.__zs.getState().armes.actif;
+    })).toBe('garand');
     // Rechargement interrompu par un changement, gardé, repris à la sortie suivante.
     const reprise = await page.evaluate(() => {
       const zs = window.__zs;

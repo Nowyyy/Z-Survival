@@ -85,3 +85,21 @@ export function paletteArmes(css) {
   }
   return out;
 }
+
+// Sons des armes (data/game/sons-armes.json) : recettes jouées en partie (la variante choisie de chaque arme, le rechargement et le changement)
+// et son de tir de chaque arme. Arme sans recette ni choix (le Colt) : le son « tir » de la partie. → { recettes, tir: { id: identifiant du son } }.
+export function sonsChoisis(json, ids = []) {
+  const o = obj(json);
+  const recettes = Array.isArray(o.recettes) ? o.recettes.filter((r) => r && typeof r.id === 'string') : [];
+  const par = new Map(recettes.map((r) => [r.id, r]));
+  const tir = {};
+  const garde = [];
+  for (const id of ids) {
+    const v = obj(o.choix)[id] === 'b' ? 'b' : 'a';
+    const r = par.get(`tir-${id}-${v}`);
+    tir[id] = r ? r.id : 'tir';
+    if (r) garde.push(r);
+  }
+  for (const id of ['arme-recharge', 'arme-change']) if (par.has(id)) garde.push(par.get(id));
+  return { recettes: garde, tir };
+}

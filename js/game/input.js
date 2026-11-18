@@ -148,7 +148,7 @@ export function createInput(root, { onCommand = () => {}, isBlocked = () => fals
   root.addEventListener('pointermove', pointerMove);
   root.addEventListener('pointerup', pointerUp);
   root.addEventListener('pointercancel', pointerUp);
-  root.addEventListener('wheel', onWheel, { passive: true });
+  window.addEventListener('wheel', onWheel, { passive: true }); // fenêtre, comme le clavier : un élément posé au-dessus du jeu ne la bloque pas
   const noMenu = (event) => event.preventDefault();
   root.addEventListener('contextmenu', noMenu);
   root.dataset.input = state.type;
@@ -179,7 +179,7 @@ export function createInput(root, { onCommand = () => {}, isBlocked = () => fals
       root.removeEventListener('pointerup', pointerUp);
       root.removeEventListener('pointercancel', pointerUp);
       root.removeEventListener('contextmenu', noMenu);
-      root.removeEventListener('wheel', onWheel);
+      window.removeEventListener('wheel', onWheel);
       releaseAll();
     },
   };

@@ -191,14 +191,15 @@ export async function demarrerPartie() {
     menuProgres('textures', p);
   }, detail: detail && gfxLoad.texturesFines });
   const soundMode = parseSoundMode(search); // ?sons= (groupe T)
-  const audio = createAudio({ config: { audio: audioCfg, materials: materialsCfg, voice: voiceCfg, sounds: soundsCfg.sounds, coups: testMode && query.get('coups') === '1' ? { ...reglagesPartie.sonsZombies, probabilite: 1 } : (reglagesPartie.sonsZombies ?? {}) }, test: testMode, seed: Number.isFinite(seedParam) ? seedParam : 1, mode: soundMode });
+  const sonsPartie = [...soundsCfg.sounds, ...(armes?.sons?.recettes ?? [])]; // lot 9e : sons des armes choisis (data/game/sons-armes.json), ajoutés aux sons de la partie
+  const audio = createAudio({ config: { audio: audioCfg, materials: materialsCfg, voice: voiceCfg, sounds: sonsPartie, coups: testMode && query.get('coups') === '1' ? { ...reglagesPartie.sonsZombies, probabilite: 1 } : (reglagesPartie.sonsZombies ?? {}) }, test: testMode, seed: Number.isFinite(seedParam) ? seedParam : 1, mode: soundMode });
   reg.ajouter(() => audio.liberer()); // lot 9d : contexte audio de la partie fermé (nœuds et tampons libérés)
   reg.ajouter(arreterCalculateur); // lot 9d : calculateur des sons de l'atelier terminé (recréé par la partie suivante)
   const sonMenu = reglagesSon(); // lot 8c : son et volume des Options du menu ; lot 8h : gardés dans zs.device.v1 (partie directe comprise)
   if (sonMenu.coupe) audio.toggleMute();
   if (sonMenu.volume !== null) audio.setVolume(sonMenu.volume);
   if (sonMenu.musique !== null) audio.setMusicVolume(sonMenu.musique); // lot 8i : volume de la musique (mélodie d'annonce de vague)
-  const essential = await renderSounds(planSounds(soundsCfg.sounds, 'essentiel'), { onProgress: (p) => {
+  const essential = await renderSounds(planSounds(sonsPartie, 'essentiel'), { onProgress: (p) => {
     loading.update(TEXTURE_SHARE + (1 - TEXTURE_SHARE) * p);
     menuProgres('sons', p);
   }, mode: soundMode });

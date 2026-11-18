@@ -1,20 +1,22 @@
 // Lot 9e — Données des armes de la partie, lues à chaque partie (jamais au démarrage du menu) : table (data/game/armes-partie.json), modèles du
 // lot 9c (data/armes/armes.json, choix des variantes et de l'échelle armes-choix.json, poses de tenue poses.json), couleurs (css/armes.css :
-// jetons lus dans le texte pour l'atlas ; la feuille est aussi posée dans la page pour les visuels 2D du bouton de changement, puis retirée).
+// jetons lus dans le texte pour l'atlas ; la feuille est aussi posée dans la page pour les visuels 2D du bouton de changement, puis retirée),
+// sons (data/game/sons-armes.json : variante choisie de chaque arme, rechargement, changement).
 import { avecEchelle, lireArmes, lireChoix } from '../core/armes/armes.js';
-import { lireTable, paletteArmes } from '../core/armes/partie.js';
+import { lireTable, paletteArmes, sonsChoisis } from '../core/armes/partie.js';
 
 const json = (path) => fetch(path).then((r) => (r.ok ? r.json() : Promise.reject(new Error(`${path} : ${r.status}`))));
 
 // reg : registre de libération de la partie (js/game/liberation.js). → { table, donnees, choix, poses, palette } ou null (données illisibles).
 export async function chargerArmes(reg) {
   try {
-    const [tableJson, armesJson, choixJson, poses, css] = await Promise.all([
+    const [tableJson, armesJson, choixJson, poses, css, sonsJson] = await Promise.all([
       json('data/game/armes-partie.json'),
       json('data/armes/armes.json'),
       json('data/armes/armes-choix.json'),
       json('data/armes/poses.json'),
       fetch('css/armes.css').then((r) => (r.ok ? r.text() : '')),
+      json('data/game/sons-armes.json').catch(() => null),
     ]);
     const base = lireArmes(armesJson);
     const choix = lireChoix(base, choixJson);
@@ -24,7 +26,8 @@ export async function chargerArmes(reg) {
     link.dataset.armes = '9e';
     document.head.append(link);
     reg?.ajouter(() => link.remove());
-    return { table: lireTable(tableJson), donnees: avecEchelle(base, choix.echelle), choix, poses, palette: paletteArmes(css) };
+    const table = lireTable(tableJson);
+    return { table, donnees: avecEchelle(base, choix.echelle), choix, poses, palette: paletteArmes(css), sons: sonsChoisis(sonsJson, table.actives) };
   } catch {
     return null;
   }

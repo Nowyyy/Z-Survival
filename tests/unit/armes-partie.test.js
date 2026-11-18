@@ -283,3 +283,44 @@ describe('tenue en partie (pose du lot 9c dans le repère de l\'os chest, corps 
     expect(pointeCanon([])).toEqual([0, 0, 0]);
   });
 });
+
+describe('sons des armes (data/game/sons-armes.json)', () => {
+  const sonsJson = load('data/game/sons-armes.json');
+  it('deux variantes (a, b) par arme utilisable autre que le Colt, le rechargement et le changement ; recettes complètes et audibles', async () => {
+    const { renderSound } = await import('../../js/core/synth.js');
+    const ids = sonsJson.recettes.map((r) => r.id);
+    for (const id of UTILES.slice(1)) for (const v of ['a', 'b']) expect(ids, id).toContain(`tir-${id}-${v}`);
+    expect(ids).toContain('arme-recharge');
+    expect(ids).toContain('arme-change');
+    expect(ids.some((x) => x.startsWith('tir-m1911'))).toBe(false); // le Colt garde « tir »
+    for (const r of sonsJson.recettes) {
+      expect(['essentiel'], r.id).toContain(r.set);
+      expect(r.category, r.id).toBe('tir');
+      expect(r.duration, r.id).toBeLessThanOrEqual(1);
+      const o = renderSound(r, 0);
+      expect(Math.max(...o.samples.map(Math.abs)), r.id).toBeGreaterThan(0.05);
+      expect(Math.max(...o.samples.map(Math.abs)), r.id).toBeLessThanOrEqual(1);
+    }
+  });
+  it('sonsChoisis : la variante choisie de chaque arme, le rechargement et le changement ; le Colt joue « tir »', async () => {
+    const { sonsChoisis } = await import('../../js/core/armes/partie.js');
+    const s = sonsChoisis(sonsJson, table.actives);
+    expect(s.tir.m1911).toBe('tir');
+    for (const id of UTILES.slice(1)) expect(s.tir[id]).toBe(`tir-${id}-${sonsJson.choix[id]}`);
+    expect(s.recettes.map((r) => r.id)).toEqual([...UTILES.slice(1).map((id) => `tir-${id}-${sonsJson.choix[id]}`), 'arme-recharge', 'arme-change']);
+    expect(sonsChoisis({ ...sonsJson, choix: { kar98k: 'b' } }, ['kar98k']).tir.kar98k).toBe('tir-kar98k-b');
+    expect(sonsChoisis(null, ['kar98k']).tir.kar98k).toBe('tir');
+  });
+  it('directeur des sons : tir de l\'arme (son), sinon « tir » ; rechargement et changement d\'arme', async () => {
+    const { createDirector, direct, soundTable } = await import('../../js/core/sound-director.js');
+    const sounds = [...load('data/game/sounds.json').sounds, ...sonsJson.recettes];
+    const cfg = { audio: load('data/game/audio.json'), materials: load('data/game/sound-materials.json'), voice: load('data/game/zombie-voice.json'), sounds: soundTable(sounds) };
+    const frame = (events) => ({ time: 1, listener: { x: 0, y: 0 }, walls: [], events });
+    const ask = (events) => direct(createDirector(3), frame(events), cfg).requests.map((r) => r.sound);
+    expect(ask([{ type: 'shot', x: 0, y: 0, son: 'tir-mg42-a' }])).toContain('tir-mg42-a');
+    expect(ask([{ type: 'shot', x: 0, y: 0, son: 'inconnu' }])).toContain('tir');
+    expect(ask([{ type: 'shot', x: 0, y: 0 }])).toContain('tir');
+    expect(ask([{ type: 'armeRecharge', x: 0, y: 0 }])).toEqual(['arme-recharge']);
+    expect(ask([{ type: 'armeChange', x: 0, y: 0 }])).toEqual(['arme-change']);
+  });
+});
