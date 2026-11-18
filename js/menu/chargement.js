@@ -9,7 +9,7 @@
 // prefers-reduced-motion : Z posé, sans chute ni secousse. Animations « e7-* » (css/menu.css).
 // Lot 8g : logo du studio en petit en bas à gauche (copie fixe, assets/studio/) dans les deux phases. Après l'introduction du studio, demarrage.js crée
 // cet écran à la fin du logo (retour du propriétaire) : chargement complet, chute du Z comprise.
-import { avancer, choisirAstuce, creerProgression, MODULES_ATTENDUS, pourcentage, texteVersion } from '../core/menu-etat.js';
+import { avancer, choisirAstuce, creerProgression, MODULES_ATTENDUS, pourcentage, RETOUR_SANS_RECHARGEMENT, texteVersion } from '../core/menu-etat.js';
 import { fmt, loadDict } from '../game/texts.js';
 import { CANAUX_DEBUG } from '../core/graphics.js';
 import { pageCanal } from './adresse.js';
@@ -288,6 +288,7 @@ export function creerChargement({ phase = 'menu', jouer = () => {}, son = null, 
     chute, // promesse : la chute du Z est finie (main.js attend avant de créer la partie, phase « jeu »)
     // Lot 9d (phase « menu ») : retour de la partie sans rechargement : le même menu revient (js/menu/menu.js, reprendre), sans introduction ni
     // écran de chargement ; la musique des menus repart (signaler). → promesse (faux : aucun menu à reprendre).
+    sansRechargement: RETOUR_SANS_RECHARGEMENT, // lot 9d : option à l'essai (js/core/menu-etat.js)
     revenirSons, // lot 9d : sons du menu repris dans le geste du retour (avant la libération de la partie)
     reprendre: async () => {
       if (!menu) return false;

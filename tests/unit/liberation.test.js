@@ -116,3 +116,16 @@ describe('adresse de la page pour le menu (js/menu/adresse.js)', () => {
     expect(lire('js/menu/demarrage.js')).toContain("(await import('../game/graphics-boot.js')).graphicsReboot();");
   });
 });
+
+// Option à l'essai (demande du propriétaire : « démontable facilement ») : une constante choisit le retour sans rechargement ou le rechargement d'avant.
+describe('retour sans rechargement : option démontable', () => {
+  it('une seule constante (js/core/menu-etat.js), donnée à demarrage.js par l\'écran de chargement ; false : menuRetour, comme avant le lot 9d', async () => {
+    const { RETOUR_SANS_RECHARGEMENT } = await import('../../js/core/menu-etat.js');
+    expect(typeof RETOUR_SANS_RECHARGEMENT).toBe('boolean');
+    expect(lire('js/core/menu-etat.js').match(/^export const RETOUR_SANS_RECHARGEMENT = (true|false);$/m)).not.toBeNull();
+    expect(lire('js/menu/chargement.js')).toContain('sansRechargement: RETOUR_SANS_RECHARGEMENT,');
+    const d = lire('js/menu/demarrage.js');
+    expect(d).toContain("const sansRechargement = rechargementForce === null ? chargementMenu?.sansRechargement === true : !rechargementForce;");
+    expect(d).toContain('if (!modeMenu || !quittee || !chargementMenu || !sansRechargement) return menuRetour();');
+  });
+});

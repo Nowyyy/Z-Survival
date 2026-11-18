@@ -4,6 +4,7 @@
 // section Son ; réglages pris par la partie après « JOUER » ; aucun fichier de Three.js ni du jeu chargé ; zs.device.v1 dans ses seuls champs.
 import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
+import { RETOUR_SANS_RECHARGEMENT } from '../../js/core/menu-etat.js'; // lot 9d : option à l'essai (les tests la suivent)
 
 const REF = { width: 932, height: 430 };
 const SIZES = [REF, { width: 667, height: 375 }, { width: 1440, height: 900 }];
@@ -52,8 +53,14 @@ const boite = (page, sel) => page.locator(sel).evaluate((n) => {
 const chevauche = (x, y) => x.l < y.r - 0.5 && y.l < x.r - 0.5 && x.t < y.b - 0.5 && y.t < x.b - 0.5;
 const presse = (page, sel) => page.locator(sel).evaluateAll((ns) => ns.filter((n) => n.getAttribute('aria-pressed') === 'true').map((n) => n.dataset.value ?? n.dataset.preset));
 
-// Lot 9d : retour au menu sans rechargement (« Quitter », « Revenir au menu principal ») : même adresse, aucune navigation, le menu revient.
+// Lot 9d : retour au menu (« Quitter », « Revenir au menu principal ») : sans rechargement (même adresse, aucune navigation, le menu revient) ;
+// option démontée (RETOUR_SANS_RECHARGEMENT = false, js/core/menu-etat.js) : rechargement vers menu=1, comme avant le lot 9d.
 async function retourSansRechargement(page, bouton) {
+  if (!RETOUR_SANS_RECHARGEMENT) {
+    await Promise.all([page.waitForURL(/[?&]menu=1/), page.locator(bouton).click()]);
+    await expect(page.locator('#menu-jouer')).toBeVisible({ timeout: 60_000 });
+    return;
+  }
   const url = page.url();
   let navigations = 0;
   const compter = (f) => {
@@ -453,7 +460,7 @@ test.describe('Options en partie (E2-12)', () => {
     await page.locator('#btn-pause').click();
     await page.locator('#btn-quit').click();
     await retourSansRechargement(page, '#btn-quit-ok'); // lot 9d : la page n'est plus rechargée
-    expect(await page.evaluate(() => window.__marque)).toBe(1);
+    expect(await page.evaluate(() => window.__marque)).toBe(RETOUR_SANS_RECHARGEMENT ? 1 : undefined);
     await page.locator('#menu-jouer').click();
     await page.waitForFunction(() => (window.__zs?.getState()?.time ?? 0) > 0.05, null, { timeout: 120_000 });
     const g = await graphismes(page);

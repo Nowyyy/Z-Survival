@@ -4,6 +4,7 @@ import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { CHAMPS_STOCKES } from '../../js/core/progression.js';
 import { nomsDuCode } from './helpers.js';
+import { RETOUR_SANS_RECHARGEMENT } from '../../js/core/menu-etat.js'; // lot 9d : option à l'essai (les tests la suivent)
 
 const REF = { width: 932, height: 430 };
 const KEY = 'zs.save.v2'; // lot 8h : progression v2
@@ -23,8 +24,14 @@ function surveiller(page, baseURL) {
   return { problemes, externes };
 }
 
-// Lot 9d : retour au menu sans rechargement (« Quitter », « Revenir au menu principal ») : même adresse, aucune navigation, le menu revient.
+// Lot 9d : retour au menu (« Quitter », « Revenir au menu principal ») : sans rechargement (même adresse, aucune navigation, le menu revient) ;
+// option démontée (RETOUR_SANS_RECHARGEMENT = false, js/core/menu-etat.js) : rechargement vers menu=1, comme avant le lot 9d.
 async function retourSansRechargement(page, bouton) {
+  if (!RETOUR_SANS_RECHARGEMENT) {
+    await Promise.all([page.waitForURL(/[?&]menu=1/), page.locator(bouton).click()]);
+    await expect(page.locator('#menu-jouer')).toBeVisible({ timeout: 60_000 });
+    return;
+  }
   const url = page.url();
   let navigations = 0;
   const compter = (f) => {
@@ -406,14 +413,16 @@ test.describe('partie et retour au menu', () => {
     await page.locator('#menu-jouer').click();
     await page.waitForFunction(() => (window.__zs?.getState()?.time ?? 0) > 0.05, null, { timeout: 60_000 });
     await page.evaluate(() => Object.defineProperty(document, 'fullscreenElement', { configurable: true, get: () => document.documentElement }));
-    await page.locator('#btn-pause').click();
-    await page.locator('#btn-quit').click();
-    await retourSansRechargement(page, '#btn-quit-ok'); // lot 9d : le plein écran reste
-    await expect(page.locator('#menu-rappel-plein')).toHaveCount(0);
-    expect(await page.evaluate(() => [Boolean(document.fullscreenElement), window.__zsMenu.etat().menu.pleinEcran.actif, window.__demandes, location.hash])).toEqual([true, true, 0, '']);
-    // Filet de sécurité : la libération échoue, le retour se fait par rechargement comme avant le lot 9d.
-    await page.locator('#menu-jouer').click();
-    await page.waitForFunction(() => (window.__zs?.getState()?.time ?? 0) > 0.05, null, { timeout: 60_000 });
+    if (RETOUR_SANS_RECHARGEMENT) {
+      await page.locator('#btn-pause').click();
+      await page.locator('#btn-quit').click();
+      await retourSansRechargement(page, '#btn-quit-ok'); // lot 9d : le plein écran reste
+      await expect(page.locator('#menu-rappel-plein')).toHaveCount(0);
+      expect(await page.evaluate(() => [Boolean(document.fullscreenElement), window.__zsMenu.etat().menu.pleinEcran.actif, window.__demandes, location.hash])).toEqual([true, true, 0, '']);
+      await page.locator('#menu-jouer').click();
+      await page.waitForFunction(() => (window.__zs?.getState()?.time ?? 0) > 0.05, null, { timeout: 60_000 });
+    }
+    // Filet de sécurité (ou option démontée) : la libération échoue, le retour se fait par rechargement comme avant le lot 9d.
     await page.evaluate(() => window.__zsCycle.echec());
     await page.locator('#btn-pause').click();
     await page.locator('#btn-quit').click();

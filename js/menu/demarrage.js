@@ -133,8 +133,11 @@ async function lancerJeu() {
 // (#plein-ecran ou #retour). Partie directe (aucun menu dans la page, adresse à changer) : rechargement.
 let derniereLiberation = null;
 let echecForce = false; // tests (?test=1) : libération forcée en échec
+let rechargementForce = null; // tests (?test=1) : null = réglage de js/core/menu-etat.js (RETOUR_SANS_RECHARGEMENT), sinon vrai ou faux
 export function menuQuitter(quittee = partieEnCours) {
-  if (!modeMenu || !quittee || !chargementMenu) return menuRetour();
+  // Option démontée (RETOUR_SANS_RECHARGEMENT = false) : rechargement comme avant le lot 9d, sans message (ce n'est pas un échec).
+  const sansRechargement = rechargementForce === null ? chargementMenu?.sansRechargement === true : !rechargementForce;
+  if (!modeMenu || !quittee || !chargementMenu || !sansRechargement) return menuRetour();
   chargementMenu.revenirSons(); // dans le geste (« Quitter », « Revenir au menu principal ») : contexte audio du menu repris ou recréé
   try {
     if (echecForce) throw new Error('libération forcée en échec (test)');
@@ -162,6 +165,10 @@ if (new URLSearchParams(pageSearch()).get('test') === '1') {
       echecForce = oui === true;
     },
     derniereLiberation: () => derniereLiberation,
+    // Retour par rechargement (comme avant le lot 9d) pour cette page, quel que soit le réglage : vrai, faux, ou null (réglage).
+    rechargement: (oui = true) => {
+      rechargementForce = oui === null ? null : oui === true;
+    },
   };
 }
 

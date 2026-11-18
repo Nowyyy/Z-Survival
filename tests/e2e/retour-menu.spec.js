@@ -2,6 +2,9 @@
 // minuteries, calculateur, canal entre onglets, écouteurs de window / document / body, mémoire Three.js ; le tas reste borné.
 import { test, expect } from '@playwright/test';
 import { nomsDuCode, poserProgression, progressionDemo, waitReady } from './helpers.js';
+import { RETOUR_SANS_RECHARGEMENT } from '../../js/core/menu-etat.js'; // lot 9d : option à l'essai
+
+const DEMONTEE = 'retour sans rechargement démonté (RETOUR_SANS_RECHARGEMENT = false, js/core/menu-etat.js)';
 
 // Compteurs injectés avant tout script : contextes WebGL vivants (références faibles), setInterval actifs, rappels d'image en attente,
 // calculateurs, canaux entre onglets.
@@ -132,6 +135,7 @@ test.describe('lot 9d : libération de la partie', () => {
 
   // Palier standard : quatre cycles (budget de durée) ; palier complet (@lent) : les dix cycles de la garantie.
   for (const [N, nom] of [[4, 'quatre'], [10, 'dix']]) test(`${nom} cycles « JOUER » → partie → « Quitter » ou mort puis « Revenir au menu principal » (en alternance), sans rechargement : un seul contexte WebGL en partie, aucun au menu, rien ne reste, tas borné ; filet de sécurité écrit dans la console${N === 10 ? ' @lent' : ''}`, async ({ page }) => {
+    test.skip(!RETOUR_SANS_RECHARGEMENT, DEMONTEE);
     test.setTimeout(300_000);
     const erreurs = [];
     page.on('pageerror', (e) => erreurs.push(String(e)));
@@ -187,6 +191,7 @@ test.describe('lot 9d : libération de la partie', () => {
   });
 
   test('deuxième partie = première : « JOUER », « Quitter », « JOUER » (même graine) : mêmes empreintes logiques pas à pas, mêmes réglages, mêmes appels et triangles', async ({ page }) => {
+    test.skip(!RETOUR_SANS_RECHARGEMENT, DEMONTEE);
     test.setTimeout(180_000);
     // Onglet « caché » : la boucle d'images ne tourne pas, seule step() fait avancer la partie (même méthode que scripts/perf/trace-logique.mjs).
     await page.addInitScript(() => Object.defineProperty(Document.prototype, 'hidden', { get: () => true, configurable: true }));
@@ -224,6 +229,7 @@ test.describe('lot 9d : libération de la partie', () => {
   });
 
   test('plein écran conservé après « Quitter » et après la mort (sans rechargement) ; musique des menus relancée ; soldes et record relus ; retour à l\'onglet d\'origine (Infini), puis « JOUER » de l\'onglet Jouer en mode histoire', async ({ page }) => {
+    test.skip(!RETOUR_SANS_RECHARGEMENT, DEMONTEE);
     test.setTimeout(180_000);
     await poserProgression(page, progressionDemo({ medailles: 1000, diamants: 0, extra: { mondes: ['batiment'] } }));
     await page.setViewportSize({ width: 932, height: 430 });
@@ -265,5 +271,26 @@ test.describe('lot 9d : libération de la partie', () => {
     expect(apres.solde).toBe(1020);
     await expect(page.locator('#menu-solde-texte')).toHaveText(`1${String.fromCharCode(0x202f)}020`);
     expect(nav.v).toBe(1);
+  });
+
+  // Option démontable (demande du propriétaire) : rechargement exactement comme avant le lot 9d, choisi pour la page par __zsCycle.rechargement()
+  // (ou pour tout le jeu par RETOUR_SANS_RECHARGEMENT = false) : aucun message dans la console (ce n'est pas un échec), repère #retour.
+  test('option démontée : « Quitter » revient au menu par rechargement comme avant le lot 9d (#retour, retiré aussitôt), sans message dans la console', async ({ page }) => {
+    test.setTimeout(120_000);
+    const erreurs = [];
+    page.on('console', (m) => m.type() === 'error' && erreurs.push(m.text()));
+    await page.setViewportSize({ width: 932, height: 430 });
+    await page.goto('/jeu.html?test=1&menu=1&seed=1');
+    await expect(page.locator('#menu-jouer')).toBeVisible({ timeout: 60_000 });
+    await page.locator('#menu-jouer').click();
+    await enJeu(page);
+    await page.evaluate(() => window.__zsCycle.rechargement());
+    await page.locator('#btn-pause').click();
+    await page.locator('#btn-quit').click();
+    const rechargement = page.waitForEvent('framenavigated', { predicate: (f) => f === page.mainFrame() });
+    await page.locator('#btn-quit-ok').click();
+    expect((await rechargement).url()).toMatch(/[?&]menu=1.*#retour$/);
+    await expect(page.locator('#menu-jouer')).toBeVisible({ timeout: 60_000 });
+    expect([new URL(page.url()).hash, erreurs]).toEqual(['', []]);
   });
 });

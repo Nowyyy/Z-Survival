@@ -3,6 +3,7 @@
 // ?test=1&menu=1 (sans introduction) et &intro=1 (window.__zsMenu.intro()) ; 932 × 430 (référence), 667 × 375, 2000 × 1020, téléphone à encoche
 // simulé (marges posées par variables) ; projets bureau et mobile (paysage). Les durées sont lues dans les horodatages de la page, jamais attendues.
 import { test, expect } from '@playwright/test';
+import { RETOUR_SANS_RECHARGEMENT } from '../../js/core/menu-etat.js'; // lot 9d : option à l'essai (les tests la suivent)
 import AxeBuilder from '@axe-core/playwright';
 import { readFileSync } from 'node:fs';
 import { decoder, defaultProgression as defaultSave, encoder, serialiser } from '../../js/core/progression.js';
@@ -281,33 +282,37 @@ test.describe('introduction du studio (E0)', () => {
         for (const id of ['e0', 'e7']) if (document.getElementById(id) && !window.__revus.includes(id)) window.__revus.push(id);
       }).observe(document, { childList: true, subtree: true });
     });
-    await observer();
     let navigations = 0;
     page.on('framenavigated', (f) => {
       if (f === page.mainFrame()) navigations += 1;
     });
-    const url = page.url();
-    await page.locator('#btn-pause').click();
-    await page.locator('#btn-quit').click();
-    await page.locator('#btn-quit-ok').click();
-    await expect(page.locator('#menu-jouer')).toBeVisible({ timeout: 60_000 });
-    expect(await page.evaluate(() => [window.__revus, document.getElementById('e0'), location.hash])).toEqual([[], null, '']);
-    expect([navigations, page.url()]).toEqual([0, url]);
-    expect(await page.evaluate(() => window.__ecritures.filter((e) => !e.startsWith('local.')))).toEqual([]); // ni sessionStorage, ni autre chose que la sauvegarde de la partie
+    // Option démontée (RETOUR_SANS_RECHARGEMENT = false) : seul le chemin par rechargement (filet de sécurité, ci-dessous) existe.
+    if (RETOUR_SANS_RECHARGEMENT) {
+      await observer();
+      const url = page.url();
+      await page.locator('#btn-pause').click();
+      await page.locator('#btn-quit').click();
+      await page.locator('#btn-quit-ok').click();
+      await expect(page.locator('#menu-jouer')).toBeVisible({ timeout: 60_000 });
+      expect(await page.evaluate(() => [window.__revus, document.getElementById('e0'), location.hash])).toEqual([[], null, '']);
+      expect([navigations, page.url()]).toEqual([0, url]);
+      expect(await page.evaluate(() => window.__ecritures.filter((e) => !e.startsWith('local.')))).toEqual([]); // ni sessionStorage, ni autre chose que la sauvegarde de la partie
+      expect(avant).toEqual([]);
+      // Fin de partie puis « Revenir au menu principal » : pas d'introduction, sans rechargement.
+      await page.locator('#menu-jouer').click();
+      await page.waitForFunction(() => (window.__zs?.getState()?.time ?? 0) > 0.05, null, { timeout: 60_000 });
+      await page.evaluate(() => { const zs = window.__zs; zs.setChutes(0); zs.downPlayer(); zs.step(0.3); });
+      await expect(page.locator('#end-panel')).toBeVisible();
+      await observer();
+      await page.locator('#btn-menu').click();
+      await expect(page.locator('#menu-jouer')).toBeVisible({ timeout: 60_000 });
+      expect(await page.evaluate(() => [window.__revus, location.hash])).toEqual([[], '']);
+      expect(navigations).toBe(0);
+      await page.locator('#menu-jouer').click();
+      await page.waitForFunction(() => (window.__zs?.getState()?.time ?? 0) > 0.05, null, { timeout: 60_000 });
+    }
     expect(avant).toEqual([]);
-    // Fin de partie puis « Revenir au menu principal » : pas d'introduction, sans rechargement.
-    await page.locator('#menu-jouer').click();
-    await page.waitForFunction(() => (window.__zs?.getState()?.time ?? 0) > 0.05, null, { timeout: 60_000 });
-    await page.evaluate(() => { const zs = window.__zs; zs.setChutes(0); zs.downPlayer(); zs.step(0.3); });
-    await expect(page.locator('#end-panel')).toBeVisible();
-    await observer();
-    await page.locator('#btn-menu').click();
-    await expect(page.locator('#menu-jouer')).toBeVisible({ timeout: 60_000 });
-    expect(await page.evaluate(() => [window.__revus, location.hash])).toEqual([[], '']);
-    expect(navigations).toBe(0);
-    // Filet de sécurité (libération en échec) : rechargement avec le repère #retour, pas d'introduction, repère retiré aussitôt.
-    await page.locator('#menu-jouer').click();
-    await page.waitForFunction(() => (window.__zs?.getState()?.time ?? 0) > 0.05, null, { timeout: 60_000 });
+    // Filet de sécurité (libération en échec ; ou option démontée) : rechargement avec le repère #retour, pas d'introduction, repère retiré aussitôt.
     await page.evaluate(() => window.__zsCycle.echec());
     await page.locator('#btn-pause').click();
     await page.locator('#btn-quit').click();
