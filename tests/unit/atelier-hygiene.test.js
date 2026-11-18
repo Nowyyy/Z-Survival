@@ -4,6 +4,7 @@ import { execSync } from 'node:child_process';
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { seedProblems } from './helpers/seed.js';
 import { sansImagesStudio } from './helpers/images-studio.js'; // lot 8g : logo du studio, exception nominative
+import { hors9e } from './helpers/lot9e.js'; // lot 9e : fichiers de règles que ce lot change (équivalent : lot9e-gel.test.js)
 // Lot 4c (publication par versions, seul lot autorisé à modifier le workflow) : workflow, accueil, ses textes et tests du journal modifiés ; ce garde-fou de branche
 // (comparaison à main ou à lot-4b) n'a plus de sens pour eux après l'entrée dans main : ils sortent de la liste.
 // Lot 4e : workflow de tests ajouté (.github/workflows/tests.yml, autorisé par le prompt du lot ; pages.yml intact).
@@ -69,7 +70,7 @@ describe('hygiène du lot 3g : fichiers', () => {
       'data/game/waves.json', 'data/game/gaits.json', 'data/game/weapons.json', 'data/game/player-stats.json', 'data/game/player-down.json', 'data/game/windows.json', 'data/game/world.json', 'data/game/decor.json'];
     const changed = git(`diff --name-only ${BASE} -- ${files.join(' ')}`);
     if (changed === null) return;
-    expect(changed).toEqual([]);
+    expect(hors9e(changed)).toEqual([]);
   });
 
   // data/changelog.json, data-changelog et dev.spec : entrée « lot-3g » ajoutée à la demande du propriétaire (le bilan de Docs/lots/ l'exige).
@@ -83,7 +84,7 @@ describe('hygiène du lot 3g : fichiers', () => {
     if (seed !== null) expect(seed).toEqual([]);
     const changed = git(`diff --name-only ${MAIN} -- js/game/levels-source.js data/game/enemies.json .github index.html`);
     if (changed === null) return;
-    expect(notLot4c(changed)).toEqual([]);
+    expect(hors9e(notLot4c(changed))).toEqual([]);
   });
 
   // Branche lot-3g : l'aperçu s'ouvre sur visite.html ; une fois fusionné dans une branche d'intégration (lot-4b), sur la page de celle-ci (jeu.html).

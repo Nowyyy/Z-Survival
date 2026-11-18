@@ -144,9 +144,12 @@ describe('lot 3a : textures.json et windows.json', () => {
     } catch {
       return;
     }
-    const { planks3d, ...rest } = windows;
-    const { planks3d: _ignored, ...older } = before; // valable avant et après la fusion du lot (main contient alors planks3d)
+    // Lot 9e : slotMains ajouté et _provisoire complété (le texte d'avant en reste le début) : vérifiés dans lot9e-gel.test.js.
+    const { planks3d, slotMains, _provisoire, ...rest } = windows;
+    const { planks3d: _ignored, _provisoire: _texte, ...older } = before; // valable avant et après la fusion du lot (main contient alors planks3d)
     void _ignored;
+    void slotMains;
+    expect(_provisoire.startsWith(_texte.slice(0, 60))).toBe(true);
     expect(planks3d).toBeTruthy();
     expect(rest).toEqual(older);
   });

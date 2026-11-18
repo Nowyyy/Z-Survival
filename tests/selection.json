@@ -214,6 +214,7 @@
     { "fichier": "tests/unit/workflow.test.js", "categorie": "G", "raison": "Workflow : déclencheurs, permissions." },
     { "fichier": "tests/unit/zones-directeur.test.js", "categorie": "P", "raison": "Directeur des zones." },
     { "fichier": "tests/unit/zones-hygiene.test.js", "categorie": "G", "raison": "Hygiène des zones." },
+    { "fichier": "tests/unit/lot9e-gel.test.js", "categorie": "G", "raison": "Lot 9e : règles changées seulement par ajout (équivalent des hygiènes)." },
     { "fichier": "tests/unit/zones-mobilier.test.js", "categorie": "P", "raison": "Mobilier de complément." },
     { "fichier": "tests/unit/zones-porte-chemin.test.js", "categorie": "G", "raison": "Chemins par la porte (connexité)." },
     { "fichier": "tests/unit/zones-rendu.test.js", "categorie": "P", "raison": "Rendu des zones." },
@@ -246,7 +247,8 @@
     "tests/unit/tests-audit.test.js",
     "tests/unit/tests-selection.test.js",
     "tests/unit/workflow.test.js",
-    "tests/unit/zones-hygiene.test.js"
+    "tests/unit/zones-hygiene.test.js",
+    "tests/unit/lot9e-gel.test.js"
   ],
   "rejeu-total": [
     "package.json",
@@ -273,7 +275,7 @@
     {
       "id": "noyau",
       "description": "Modules partagés de js/core/ (vecteurs, hasard, couleurs, collisions, formes, étages logiques) : lus par presque toutes les zones.",
-      "sources": ["js/core/vec.js", "js/core/rng.js", "js/core/color.js", "js/core/collision.js", "js/core/shape.js", "js/core/floors.js"],
+      "sources": ["js/core/vec.js", "js/core/rng.js", "js/core/color.js", "js/core/collision.js", "js/core/gabarit.js", "js/core/shape.js", "js/core/floors.js"],
       "dependances": [],
       "vitest": [
         "tests/unit/atelier-textures.test.js",
@@ -580,6 +582,7 @@
         "scripts/stats-joueur.mjs", "js/core/tir-traverse.js"],
       "dependances": ["noyau", "vagues"],
       "vitest": [
+        "tests/unit/gabarit.test.js",
         "tests/unit/core-combat.test.js",
         "tests/unit/core-edge-arrow.test.js",
         "tests/unit/core-player-down.test.js",
@@ -661,6 +664,7 @@
       ],
       "dependances": ["carte", "graphismes", "noyau", "rendu"],
       "vitest": [
+        "tests/unit/gabarit.test.js",
         "tests/unit/core-variants.test.js",
         "tests/unit/data-sons.test.js",
         "tests/unit/lot1-regles.test.js",

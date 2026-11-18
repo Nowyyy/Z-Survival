@@ -628,7 +628,8 @@ export function checkVariant(variant, params = {}) {
   if (isNum(p.radius)) {
     for (const pose of standing) {
       const reach = boundsOf(fkPose(v, pose, { skeletons }).boxes).reach;
-      if (reach > 1.3 * p.radius + 1e-9) out.push({ code: 'emprise', detail: `${pose.id ?? 'pose'} : ${reach.toFixed(2)} > ${(1.3 * p.radius).toFixed(2)}` });
+      const k = isNum(p.footprint) && p.footprint > 0 ? p.footprint : 1.3; // lot 9e : emprise permise (zombies aux bras tendus : budget.zombieFootprint)
+      if (reach > k * p.radius + 1e-9) out.push({ code: 'emprise', detail: `${pose.id ?? 'pose'} : ${reach.toFixed(2)} > ${(k * p.radius).toFixed(2)}` });
     }
   }
   const rest = boundsOf(fkPose(v, {}, { skeletons }).boxes);

@@ -25,6 +25,7 @@ import { castRay } from '../core/ray.js';
 import { longueursCone, obstaclesTirs, preparerTirs } from '../core/tir-traverse.js';
 import { createRng } from '../core/rng.js';
 import { shotAngle, speedRatio, spreadHalfAngle, stepSpreadRatio, toRadians } from '../core/spread.js';
+import { zoneZombie } from '../core/gabarit.js';
 import { createFootsteps, stepFootsteps } from '../core/footsteps.js';
 import { isHidden } from '../core/spawner.js';
 import { materialFor } from '../core/sound-director.js';
@@ -524,6 +525,16 @@ export function createGame(ctx) {
     return true;
   }
 
+  // Lot 9e : zone touchée de chaque zombie (balles, laser, coups) : le zombie lui-même, ou une copie avec la capsule d'un rampant (gabarit.js) ;
+  // ?test=1&corps=avant : aucune capsule (gabarits d'avant). Les champs de la capsule ne sont jamais gardés dans sim.enemies.
+  const rampant = ctx.params.corpsAvant ? null : (cfg.enemies?.rampant ?? null);
+  const zones = () => (rampant ? sim.enemies.map((e) => zoneZombie(e, sim.player, rampant)) : sim.enemies);
+  const sansZone = (e) => {
+    if (e.ax === undefined) return e;
+    const { ax, ay, bx, by, ...reste } = e; // eslint-disable-line no-unused-vars
+    return reste;
+  };
+
   function step(dt) {
     const { input, override, audio } = ctx;
     const weapon = eff.weapon;
@@ -579,12 +590,13 @@ export function createGame(ctx) {
 
     // Laser : sert à viser et à déclencher le tir, jamais aux dégâts.
     const muzzle = muzzlePoint(sim.player, sim.aim.angle, weapon.muzzleOffset, layout.muzzleBounds);
-    const ray = castRay(muzzle, sim.aim.angle, weapon.laserRange, sim.enemies, shotBounds, blockers, pf());
+    const cibles = zones();
+    const ray = castRay(muzzle, sim.aim.angle, weapon.laserRange, cibles, shotBounds, blockers, pf());
     laser = !firing ? null : { from: muzzle, ray, cone: { angle: sim.aim.angle, half: toRadians(halfAngle()), length: weapon.laserRange, lengths: longueursCone(muzzle, sim.aim.angle, toRadians(halfAngle()), weapon.laserRange, shotBounds, blockers) } }; // cône arrêté comme le laser
     // Le tir part aussi quand la visée passe sur un ennemi au-delà de la portée du laser (le trait s'estompe, la balle continue) ;
     // un ennemi caché derrière un meuble ne déclenche jamais de tir.
     // Marge de visée : le tir part si la ligne passe à moins de aimTolerance du bord d'un ennemi ; la balle suit la vraie visée et peut le rater.
-    const wide = sim.enemies.map((e) => ({ ...e, r: e.r + num(weapon.aimTolerance) }));
+    const wide = cibles.map((e) => ({ ...e, r: e.r + num(weapon.aimTolerance) }));
     const aimed = firing && (ray.hit !== null || castRay(muzzle, sim.aim.angle, weapon.fireRange, wide, shotBounds, blockers, pf()).hit !== null);
 
     const trigger = stepWeapon(sim.weapon, dt, aimed, weapon, sim.bullets.length);
@@ -603,7 +615,7 @@ export function createGame(ctx) {
     }
 
     // Balles : les dégâts n'existent qu'à l'impact.
-    const flight = stepBullets(sim.bullets, sim.enemies, dt, shotBounds, blockers);
+    const flight = stepBullets(sim.bullets, zones(), dt, shotBounds, blockers);
     sim.bullets = flight.bullets;
     const typeOf = new Map(sim.enemies.map((e) => [e.id, e.type]));
     const result = applyImpacts(sim.enemies, flight.impacts);
@@ -745,9 +757,9 @@ export function createGame(ctx) {
     sim.splashView = spl.view;
     if (spl.view.sound) events.push(spl.view.sound.name === 'vague-fin' ? { type: 'waveEnd', variant: spl.view.sound.variant } : { type: 'waveSplash', sound: spl.view.sound.name, variant: spl.view.sound.variant });
 
-    const contact = stepContact(sim.player, sim.enemies, dt, cfg.zombie, isInvulnerable(sim.down) || locked || sim.floorGrace > 0);
+    const contact = stepContact(sim.player, zones(), dt, cfg.zombie, isInvulnerable(sim.down) || locked || sim.floorGrace > 0);
     sim.player = contact.player;
-    sim.enemies = contact.enemies;
+    sim.enemies = rampant ? contact.enemies.map(sansZone) : contact.enemies;
     // Cri d'attaque : les zombies dont le délai de frappe vient d'être relancé ont frappé pendant cette image.
     for (const e of contact.enemies) if (cfg.zombie.contactDelay > 0 && e.hitCooldown === cfg.zombie.contactDelay) events.push({ type: 'zombieAttack', x: e.x, y: e.y, zombie: variantName(e.id) });
     // Chutes : à 0 de vie, le joueur tombe s'il lui reste une chute (son « joueur-chute »), sinon c'est la mort.

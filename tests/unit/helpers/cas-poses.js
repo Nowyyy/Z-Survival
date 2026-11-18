@@ -24,7 +24,11 @@ function buildRigs() {
         const base = style ? { ...v, style } : v;
         const outfits = Math.max(1, (v.outfits ?? []).length);
         for (const outfit of [0, outfits - 1]) {
-          const res = resolveVariant(base, { wearTiers: characters.wearTiers, outfit, wear: outfit % 4 });
+          // Lot 9e : posture.brasMarche (ajout du lot, inconnu de l'oracle figé) est retiré ici ; son effet seul (épaules levées de brasMarche pendant
+          // la marche, rien d'autre) est vérifié par tests/unit/gabarit.test.js.
+          const brut = resolveVariant(base, { wearTiers: characters.wearTiers, outfit, wear: outfit % 4 });
+          const { brasMarche, ...posture } = brut.posture ?? {}; // eslint-disable-line no-unused-vars
+          const res = brut.posture ? { ...brut, posture } : brut;
           out.push({ id: `${slot.id}/${v.id}/${style ?? '-'}/${outfit}`, slot: slot.id, rig: rigOf(res, skeletons), variant: res });
         }
       }

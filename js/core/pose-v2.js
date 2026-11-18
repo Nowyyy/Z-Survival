@@ -223,7 +223,8 @@ function zombieArms(rig, pose, st, p, amp) {
     const off = i === 0 ? 0 : 0.5;
     const a = st[NAME.arm[s]] ?? DEF_ARM;
     const swing = num(a[1]) * amp * Math.sin(TAU * (p + off));
-    sideSetA(pose, 'shoulder', s, side, -(num(a[0]) + swing), -num(st.inward) * 0.6, num(st.out));
+    // Lot 9e : posture.brasMarche (nombre, ignoré par applyPosture) : bras levés en plus pendant la marche et la course (voûté).
+    sideSetA(pose, 'shoulder', s, side, -(num(a[0]) + num(rig.posture?.brasMarche) + swing), -num(st.inward) * 0.6, num(st.out));
     sideSetA(pose, 'elbow', s, side, -(num(a[2]) + 0.1 * amp * Math.max(0, Math.sin(TAU * (p + off)))), 0, 0);
   }
 }

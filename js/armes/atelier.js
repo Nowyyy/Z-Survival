@@ -144,7 +144,7 @@ function eclairer(groupe, mode, lampeAt = [70, 50, 40]) {
 const PIECES_PISTOLET = ['gunGrip', 'gunSlide'];
 const sansPistolet = JSON.parse(JSON.stringify(characters));
 for (const slot of sansPistolet.slots) for (const v of slot.variants) if (Array.isArray(v.parts)) v.parts = v.parts.filter((p) => !PIECES_PISTOLET.includes(p.id));
-const kitOpts = { poses, lookup, hit: jeu.hit, choice: 'riche', styleAnim: { joueur: 'A' }, outfitsOf: { joueur: ['sable'] }, seed: 3 };
+const kitOpts = { corps: null, poses, lookup, hit: jeu.hit, choice: 'riche', styleAnim: { joueur: 'A' }, outfitsOf: { joueur: ['sable'] }, seed: 3 };
 const kits = { visible: createV2Kit({ ...kitOpts, characters }), masque: createV2Kit({ ...kitOpts, characters: sansPistolet }) };
 function personnage(avecPistolet) {
   const p = kits[avecPistolet ? 'visible' : 'masque'].create('player', 0, { choice: 'riche' });

@@ -112,6 +112,8 @@ export async function demarrerPartie() {
   // Carte (lot 3b) : ?map=salle charge l'ancienne salle (data/game/world.json et decor.json), sinon la carte par défaut (data/game/maps/<id>/) ; ?empty=1
   // (avec ?test=1) garde la salle du lot 1m, donc les anciens fichiers.
   const emptyMode = testMode && query.get('empty') === '1';
+  // Lot 9e : ?test=1&corps=avant : corps, gabarits et arme d'avant le corps long (réglage de test, jamais mémorisé : référence de la trace logique).
+  const corpsAvant = testMode && query.get('corps') === 'avant';
   const mapId = emptyMode ? 'salle' : resolveMapId(search);
   const mapDir = mapId === 'salle' ? 'data/game' : `data/game/maps/${mapId}`;
 
@@ -248,7 +250,7 @@ export async function demarrerPartie() {
   const niveauxPartie = (lus) => (optionPartie().stats && lus.source !== 'url' ? { ...normalizeLevels(optionPartie().stats, statsCfg), source: 'menu' } : lus);
 
   const ctx = {
-    cfg: { layout, layouts, stairs: stairsCfg, player, weapon: weapons.pistol, stats: statsCfg, zombie: enemies.zombie, enemies, gaits: gaitsCfg, waves: wavesCfg, render, camera, nav, windows: windowsCfg, down: downCfg, tirs: tirsJson },
+    cfg: { layout, layouts, stairs: stairsCfg, player, weapon: weapons.pistol, stats: statsCfg, zombie: enemies.zombie, enemies, gaits: gaitsCfg, waves: wavesCfg, render, camera, nav, windows: corpsAvant ? Object.fromEntries(Object.entries(windowsCfg).filter(([k]) => k !== 'slotMains')) : windowsCfg, down: downCfg, tirs: tirsJson },
     palette,
     dict,
     textureData,
@@ -257,6 +259,7 @@ export async function demarrerPartie() {
     perf: fpsMode ? { flowSum: 0, flowCount: 0, flowMax: 0, windowsMs: 0, floorsMs: 0 } : null,
     params: {
       test: testMode,
+      corpsAvant, // lot 9e : ?test=1&corps=avant (gabarits, corps et pistolet d'avant : référence de la trace)
       nospawn: query.get('nospawn') === '1',
       wave: waveParam(query.get('wave')),
       // ?endless=1 (lot 3c) : les manches continuent après la manche 40, sans fin de monde ; fonctionne sans ?test=1, n'expose rien et n'est jamais mémorisé.

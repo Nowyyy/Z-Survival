@@ -23,7 +23,7 @@ export const maxPlanksOf = (params) => (isNum(params?.planks) && params.planks >
 // Position d'une place de la file (k = 0 : la plus proche du mur), au-delà de geom.queue si besoin.
 export function queuePosition(geom, k, params) {
   const index = Math.max(0, Math.floor(num(k)));
-  return at(geom.center, geom.normal, num(params?.slotDistance) + num(params?.queueStep) * (index + 1));
+  return at(geom.center, geom.normal, (isNum(geom?.slotDistance) ? geom.slotDistance : num(params?.slotDistance)) + num(params?.queueStep) * (index + 1));
 }
 
 // win : une fenêtre de world.json { id, side, x, y, size?, gap? } (x, y : centre de l'ouverture dans le mur). Les distances de params se
@@ -34,7 +34,17 @@ export function windowGeometry(win, params) {
   const { normal, tangent } = SIDES[win.side];
   const center = { x: win.x, y: win.y };
   const width = pos(win.size, FALLBACK.width);
-  const slotD = num(params?.slotDistance);
+  const g = win.gap;
+  const depth = pos(params?.blockDepth, FALLBACK.blockDepth);
+  const gap = isObject(g) && [g.x, g.y, g.w, g.h].every(isNum) && g.w > 0 && g.h > 0
+    ? { x: g.x, y: g.y, w: g.w, h: g.h }
+    : normal.x === 0
+      ? { x: center.x - width / 2, y: center.y - depth / 2, w: width, h: depth }
+      : { x: center.x - depth / 2, y: center.y - width / 2, w: depth, h: width };
+  // Lot 9e (corps long, « mains au mur ») : avec slotMains, l'emplacement d'arrachage est à slotMains du nu extérieur du mur (portée des mains du
+  // zombie qui arrache), quelle que soit l'épaisseur du mur ; sans slotMains (?test=1&corps=avant), à slotDistance du centre comme avant.
+  const outer = normal.x === 0 ? (normal.y < 0 ? center.y - gap.y : gap.y + gap.h - center.y) : (normal.x < 0 ? center.x - gap.x : gap.x + gap.w - center.x);
+  const slotD = isNum(params?.slotMains) && params.slotMains >= 0 ? Math.max(0, outer) + params.slotMains : num(params?.slotDistance);
   const slotCount = Math.max(1, Math.min(8, Math.floor(num(params?.slots, 2))));
   const slots = [];
   for (let i = 0; i < slotCount; i += 1) {
@@ -43,14 +53,7 @@ export function windowGeometry(win, params) {
   }
   const queueLength = Math.max(0, Math.min(20, Math.floor(num(params?.maxQueue))));
   const queue = [];
-  for (let k = 0; k < queueLength; k += 1) queue.push(queuePosition({ center, normal }, k, params));
-  const g = win.gap;
-  const depth = pos(params?.blockDepth, FALLBACK.blockDepth);
-  const gap = isObject(g) && [g.x, g.y, g.w, g.h].every(isNum) && g.w > 0 && g.h > 0
-    ? { x: g.x, y: g.y, w: g.w, h: g.h }
-    : normal.x === 0
-      ? { x: center.x - width / 2, y: center.y - depth / 2, w: width, h: depth }
-      : { x: center.x - depth / 2, y: center.y - width / 2, w: depth, h: width };
+  for (let k = 0; k < queueLength; k += 1) queue.push(queuePosition({ center, normal, slotDistance: slotD }, k, params));
   return {
     id: typeof win.id === 'string' ? win.id : null,
     side: win.side,
@@ -59,6 +62,7 @@ export function windowGeometry(win, params) {
     tangent: { ...tangent },
     width,
     slots,
+    slotDistance: slotD,
     queue,
     entryOuter: at(center, normal, slotD),
     entryInner: at(center, normal, -num(params?.innerDistance)),

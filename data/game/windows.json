@@ -1,10 +1,11 @@
 {
-  "_provisoire": "Lot 3 : toutes les valeurs sont provisoires, à régler en jouant (équilibrage non jugé par l'agent). Distances en unités du monde, mesurées depuis le centre de la fenêtre (world.json) le long de la normale du mur ; durées en secondes de jeu. Lu par js/core/windows.js et js/core/siege.js.",
+  "_provisoire": "Lot 3 : toutes les valeurs sont provisoires, à régler en jouant (équilibrage non jugé par l'agent). Distances en unités du monde, mesurées depuis le centre de la fenêtre (world.json) le long de la normale du mur ; durées en secondes de jeu. Lu par js/core/windows.js et js/core/siege.js. Lot 9e (corps long, décision du propriétaire « mains au mur ») : slotMains = portée des mains du zombie qui arrache (30 devant son centre au corps long) ; l'emplacement d'arrachage est à slotMains du nu extérieur du mur (carte : mur de 40 centré, face à 20 du centre → 50 au lieu de 55 ; ancienne salle de world.json, face à 28 → 58) et la file suit (+ queueStep × rang) ; slotDistance (55, distance depuis le centre) ne sert plus que sans slotMains (?test=1&corps=avant : référence de la trace).",
   "planks": 4,
   "tearTime": 2.2,
   "slots": 2,
   "activeTearers": 2,
   "slotDistance": 55,
+  "slotMains": 30,
   "slotTolerance": 26,
   "queueStep": 45,
   "maxQueue": 6,

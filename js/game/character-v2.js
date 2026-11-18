@@ -9,6 +9,7 @@ import { createRng, nextFloat } from '../core/rng.js';
 import { DEATHS, addPoseInto, blendPosesInto, copyPoseInto, createPose, createPoseWork, cycleSeconds, poseAtInto, rigOf, toucheInto } from '../core/pose-v2.js';
 import { partRgb, pickOutfit, resolveVariant, wearTier } from '../core/persos-variants.js';
 import { PALETTE_REGION, createPersoTexture, persoRegionRect, persoSpec, regionFactor } from '../core/texgen-persos.js';
+import { echellesCorps, lireCorps, rigCorps, varianteCorps } from '../core/gabarit.js';
 
 const KICK_TIME = 0.25; // durée du recul du pistolet du joueur (secondes de jeu)
 const NO_PARAMS = Object.freeze({});
@@ -141,8 +142,12 @@ const torn = (i, seed) => {
 // styleOf: { slot: 'A' | ... } (variante de chaque personnage), outfitOf: { slot: indice }
 // (atelier : tenue imposée) ; lot 3m (table des choix) : styleAnim: { slot: 'A' | 'B' | 'C' } (style d'animation), outfitsOf: { slot:
 // 'toutes' | [identifiants de tenues] } (tenues tirées), animMacros: { slot: { amplitude, rythme, lourdeur } }.
+// Lot 9e : corps (options.corps ; absent : characters.corps, le corps long ; null : corps d'avant, pour l'atelier des armes qui pose son propre corps
+// et pour ?test=1&corps=avant) : épaules du squelette, os des bras à l'échelle, mains à 1 (js/core/gabarit.js).
 export function createV2Kit(options) {
   const { characters, poses } = options;
+  const corps = lireCorps(options.corps === undefined ? characters.corps : options.corps);
+  const corpsEchelles = echellesCorps(corps);
   // Jetons lus une fois chacun (getComputedStyle est lent : des milliers d'appels par géométrie sinon).
   const tokenCache = new Map();
   const lookup = (token) => {
@@ -210,7 +215,7 @@ export function createV2Kit(options) {
   }
 
   // Variante concrète d'un emplacement (macros de l'atelier comprises) ; tenue et palier d'usure donnés.
-  const resolved = (k, outfit, wear) => resolveVariant(k.variant, { macros: options.macros?.[k.slot.id], outfit, wear, wearTiers: characters.wearTiers });
+  const resolved = (k, outfit, wear) => varianteCorps(resolveVariant(k.variant, { macros: options.macros?.[k.slot.id], outfit, wear, wearTiers: characters.wearTiers }), corps);
 
   // Géométrie (tenue, usure) : pièces fusionnées une fois par tenue ; couleurs par triangle (déchirures) par palier.
   function geometryFor(k, outfit, wear) {
@@ -277,7 +282,7 @@ export function createV2Kit(options) {
     const root = rig.root;
     root.scale.setScalar(current.res.scale);
     root.userData.v2 = true;
-    let gait = rigOf(current.res, skeletons);
+    let gait = rigCorps(rigOf(current.res, skeletons), corps);
     let woundTier = 0;
     let flashing = false;
     const state = { shotAt: -10, lastRecoil: 0, anim: null, prev: null, prevPose: null, since: 0, hurtAt: -10, lastFlash: 0, attackAt: -10, lastCooldown: 0, downWas: false, upAt: -10, time: 0, phase: 0, pose: null };
@@ -291,7 +296,7 @@ export function createV2Kit(options) {
       rig.body.geometry = current.geometry;
       if (rig.shadow && current.shared.shadowGeometry) rig.shadow.geometry = current.shared.shadowGeometry;
       root.scale.setScalar(current.res.scale);
-      gait = rigOf(current.res, skeletons);
+      gait = rigCorps(rigOf(current.res, skeletons), corps);
     };
     // Tenue tirée à chaque apparition (le jeu réutilise ses personnages) : jamais la même que la précédente de ce type.
     if (!k.isPlayer && opts.outfit === undefined) {
@@ -336,7 +341,7 @@ export function createV2Kit(options) {
       state.pose = pose;
       state.phase = phase;
       rig.setAngles(pose);
-      for (const [id, bone] of rig.bones) bone.scale.setScalar(pose.scales?.[id] ?? 1);
+      for (const [id, bone] of rig.bones) bone.scale.setScalar((pose.scales?.[id] ?? 1) * (corpsEchelles[id] ?? 1));
     }
     const cycle = (anim, extra) => cycleSeconds(gait, anim, params(extra), poses) ?? 1;
     // Bout du canon (avant de la glissière, repère de l'articulation « prop ») : le laser, l'éclair et les balles en partent à l'image.

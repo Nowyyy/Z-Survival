@@ -1,6 +1,7 @@
 // Laser : rayon contre des cercles. Sert à tracer le laser et à décider qu'un tir part ; ne produit JAMAIS de dégâts.
 import { firstOnSegment } from './collision.js';
 import { floorOf, isFloorId } from './floors.js';
+import { aCapsule, entreeCapsule } from './gabarit.js';
 import { fromAngle, isNum, num } from './vec.js';
 
 // Plus petit t >= 0 où le rayon (origine o, direction unitaire d) touche le cercle ; null sinon. Tangent = touché.
@@ -49,7 +50,7 @@ export function castRay(origin, angle, maxLength, enemies, bounds, obstacles = [
   for (const enemy of Array.isArray(enemies) ? enemies : []) {
     if (!enemy || !isNum(enemy.x) || !isNum(enemy.y)) continue;
     if (isFloorId(floor) && floorOf(enemy) !== floor) continue;
-    const t = rayCircle(o, d, enemy);
+    const t = aCapsule(enemy) ? entreeCapsule(o.x, o.y, d.x, d.y, enemy, isNum(enemy.r) && enemy.r > 0 ? enemy.r : 0, Infinity) : rayCircle(o, d, enemy); // lot 9e : capsule d'un rampant
     // Un ennemi pile au bord d'un obstacle est derrière lui : l'obstacle passe d'abord.
     if (t !== null && (blocker ? t < limit : t <= limit) && (hit === null || t < hit.distance)) hit = { id: enemy?.id, distance: t };
   }
