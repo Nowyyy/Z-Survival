@@ -133,8 +133,8 @@ test.describe('lot 9d : libération de la partie', () => {
     expect(erreurs).toEqual([]);
   });
 
-  // Palier standard : quatre cycles (budget de durée) ; palier complet (@lent) : les dix cycles de la garantie.
-  for (const [N, nom] of [[4, 'quatre'], [10, 'dix']]) test(`${nom} cycles « JOUER » → partie → « Quitter » ou mort puis « Revenir au menu principal » (en alternance), sans rechargement : un seul contexte WebGL en partie, aucun au menu, rien ne reste, tas borné ; filet de sécurité écrit dans la console${N === 10 ? ' @lent' : ''}`, async ({ page }) => {
+  // Palier standard : deux cycles (« Quitter », puis la mort ; budget de durée) ; palier complet (@lent) : les dix cycles de la garantie.
+  for (const [N, nom] of [[2, 'deux'], [10, 'dix']]) test(`${nom} cycles « JOUER » → partie → « Quitter » ou mort puis « Revenir au menu principal » (en alternance), sans rechargement : un seul contexte WebGL en partie, aucun au menu, rien ne reste, tas borné ; filet de sécurité écrit dans la console${N === 10 ? ' @lent' : ''}`, async ({ page }) => {
     test.skip(!RETOUR_SANS_RECHARGEMENT, DEMONTEE);
     test.setTimeout(300_000);
     const erreurs = [];
@@ -295,5 +295,63 @@ test.describe('lot 9d : libération de la partie', () => {
     expect((await rechargement).url()).toMatch(/[?&]menu=1.*#retour$/);
     await expect(page.locator('#menu-jouer')).toBeVisible({ timeout: 60_000 });
     expect([new URL(page.url()).hash, erreurs]).toEqual(['', []]);
+  });
+
+  // Demande du propriétaire : les données de la partie arrivent bien dans le menu neuf (vrai stockage, ?store=local) ; vaut aussi avec l'option
+  // démontée (rechargement) : le menu affiché après le retour est comparé à la sauvegarde écrite par la partie.
+  test('données de la partie dans le menu neuf : médailles et diamants de l\'en-tête, record de l\'onglet Jouer, statistiques du Profil ; monde terminé : Infini débloqué', async ({ page }) => {
+    test.setTimeout(240_000);
+    await poserProgression(page, progressionDemo({ medailles: 1000, diamants: 0 }));
+    await page.setViewportSize({ width: 932, height: 430 });
+    await page.goto('/jeu.html?test=1&menu=1&seed=1&ouverture=0&store=local');
+    await expect(page.locator('#menu-jouer')).toBeVisible({ timeout: 60_000 });
+    const sauvegarde = async () => nomsDuCode(JSON.parse(await page.evaluate(() => localStorage.getItem('zs.save.v2'))));
+    const menuPret = async () => {
+      await expect(page.locator('#menu-jouer')).toBeVisible({ timeout: 60_000 });
+      await page.waitForFunction(() => !document.getElementById('e7') && window.__zsMenu?.etat()?.menu);
+    };
+    // Partie 1 : un zombie abattu, manche 1 finie (+20 médailles), mort, « Revenir au menu principal ».
+    await page.locator('#menu-jouer').click();
+    await enJeu(page);
+    await page.evaluate(() => {
+      const zs = window.__zs;
+      const p = zs.getState().player;
+      zs.spawnEnemy(p.x + 120, p.y);
+      zs.setInput({ aim: { angle: 0 } });
+      zs.step(3);
+      zs.step(3.2); zs.skipWave(); zs.step(0.2);
+    });
+    expect(await page.evaluate(() => window.__zs.getState().kills)).toBeGreaterThan(0);
+    await page.evaluate(() => { const zs = window.__zs; zs.setChutes(0); zs.downPlayer(); zs.step(0.3); });
+    await expect(page.locator('#end-panel')).toBeVisible();
+    await page.locator('#btn-menu').click();
+    await menuPret();
+    let lu = await sauvegarde();
+    const soldeDe = (c) => c.gagne - c.depense;
+    let menu = await page.evaluate(() => window.__zsMenu.etat().menu);
+    expect([menu.solde, menu.diamants, menu.record]).toEqual([soldeDe(lu.medailles), soldeDe(lu.diamants), lu.records.histoire.batiment]);
+    expect(soldeDe(lu.medailles)).toBe(1020);
+    await expect(page.locator('#menu-jouer-record')).toContainText(String(lu.records.histoire.batiment));
+    await page.locator('#menu-profil').click();
+    await page.waitForFunction(() => window.__zsMenu.etat().menu.compte?.stats?.length > 0);
+    const stats = Object.fromEntries(await page.evaluate(() => window.__zsMenu.etat().menu.compte.stats));
+    expect([stats.partiesHistoire, stats.tues, stats.meilleureManche]).toEqual([String(lu.profil.partiesHistoire), String(lu.profil.tues), String(lu.records.histoire.batiment)]);
+    expect([lu.profil.partiesHistoire, lu.profil.tues > 0]).toEqual([1, true]);
+    await page.keyboard.press('Escape');
+    // Partie 2 : monde terminé (manche 40) : prime et diamants du monde écrits, Infini débloqué dans le menu neuf.
+    await page.locator('#menu-jouer').click();
+    await enJeu(page);
+    await page.evaluate(() => { const zs = window.__zs; zs.startWave(40); zs.step(3.2); zs.skipWave(); zs.step(0.3); });
+    await expect(page.locator('#end-panel')).toBeVisible();
+    await page.locator('#btn-menu').click();
+    await menuPret();
+    lu = await sauvegarde();
+    menu = await page.evaluate(() => window.__zsMenu.etat().menu);
+    expect(lu.mondes).toContain('batiment');
+    expect([menu.solde, menu.diamants]).toEqual([soldeDe(lu.medailles), soldeDe(lu.diamants)]);
+    expect(soldeDe(lu.diamants)).toBeGreaterThan(0);
+    await page.locator('#menu-onglet-infini').click();
+    await expect(page.locator('#menu-carte-batiment')).not.toHaveAttribute('aria-disabled', 'true');
+    await expect(page.locator('#menu-infini-jouer')).not.toHaveAttribute('aria-disabled', 'true');
   });
 });

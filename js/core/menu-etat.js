@@ -17,7 +17,7 @@ export const MODULES_ATTENDUS = 114;
 
 // Lot 9d (option à l'essai, demande du propriétaire : « démontable facilement ») : retour au menu sans rechargement (« Quitter », « Revenir au
 // menu principal ») : le plein écran reste. false : retour par rechargement exactement comme avant le lot 9d (repère #plein-ecran et rappel
-// « Touchez l'écran… », ou #retour) ; les tests suivent cette constante. Démontage complet : Docs/ref/retour-menu.md, « Démonter ».
+// « Touchez l'écran… », ou #retour) ; les tests suivent cette constante. Mode d'emploi du démontage : Docs/ref/retour-menu-demontage.md.
 export const RETOUR_SANS_RECHARGEMENT = true;
 
 const clamp01 = (n) => (Number.isFinite(n) ? Math.min(1, Math.max(0, n)) : 0);
