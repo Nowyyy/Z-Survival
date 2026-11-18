@@ -153,6 +153,7 @@ test.describe('lot 9d : libération de la partie', () => {
       await enJeu(page);
       const jeu = await page.evaluate(() => window.__ressources());
       expect([jeu.webgl, jeu.canvas], `cycle ${i + 1} : un seul contexte WebGL vivant pendant la partie`).toEqual([1, 1]);
+      expect(await page.locator('#e8').count(), `cycle ${i + 1} : menu détruit pendant la partie`).toBe(0);
       if (i % 2 === 0) {
         await page.locator('#btn-pause').click();
         await page.locator('#btn-quit').click();
@@ -165,7 +166,7 @@ test.describe('lot 9d : libération de la partie', () => {
       await expect(page.locator('#menu-jouer')).toBeVisible({ timeout: 60_000 });
       expect(await page.evaluate(() => window.__zsCycle.derniereLiberation()), `cycle ${i + 1}`).toEqual({ memoire: { geometries: 0, textures: 0 }, contextePerdu: true, erreurs: [] });
       const apres = await mesurer();
-      expect({ webgl: apres.webgl, canvas: apres.canvas, zs: apres.zs, menu: await page.evaluate(() => window.__zsMenu.etat().phase) }, `cycle ${i + 1}`).toEqual({ webgl: 0, canvas: 0, zs: 'undefined', menu: 'menu' });
+      expect({ webgl: apres.webgl, canvas: apres.canvas, zs: apres.zs, menu: await page.evaluate(() => window.__zsMenu.etat().phase), menus: await page.locator('#e8').count() }, `cycle ${i + 1}`).toEqual({ webgl: 0, canvas: 0, zs: 'undefined', menu: 'menu', menus: 1 });
       // Au menu, après le premier retour : sons du menu (un contexte, son calculateur, sa minuterie) ; ensuite, plus rien ne s'ajoute.
       const etat = { intervals: apres.intervals, raf: apres.raf, workers: apres.workers, canaux: apres.canaux, ecouteurs: apres.ecouteurs };
       reference ??= etat;
@@ -228,7 +229,7 @@ test.describe('lot 9d : libération de la partie', () => {
     expect([seconde.graphics, seconde.rendu]).toEqual([premiere.graphics, premiere.rendu]);
   });
 
-  test('plein écran conservé après « Quitter » et après la mort (sans rechargement) ; musique des menus relancée ; soldes et record relus ; retour à l\'onglet d\'origine (Infini), puis « JOUER » de l\'onglet Jouer en mode histoire', async ({ page }) => {
+  test('plein écran conservé après « Quitter » et après la mort (sans rechargement de la page) ; menu neuf (écran de chargement, onglet Jouer, comme au lancement) ; musique des menus relancée ; soldes et record relus ; après l\'Infini, « JOUER » en mode histoire', async ({ page }) => {
     test.skip(!RETOUR_SANS_RECHARGEMENT, DEMONTEE);
     test.setTimeout(180_000);
     await poserProgression(page, progressionDemo({ medailles: 1000, diamants: 0, extra: { mondes: ['batiment'] } }));
@@ -238,7 +239,8 @@ test.describe('lot 9d : libération de la partie', () => {
     await expect(page.locator('#menu-jouer')).toBeVisible({ timeout: 60_000 });
     await page.locator('#menu-plein-ecran').click();
     await page.waitForFunction(() => Boolean(document.fullscreenElement));
-    // Onglet Infini (monde 1 terminé) : « Jouer » lance l'infini ; « Quitter » ramène à l'onglet Infini, toujours en plein écran.
+    // Onglet Infini (monde 1 terminé) : « Jouer » lance l'infini ; « Quitter » : menu neuf (écran de chargement, puis onglet Jouer), toujours en
+    // plein écran ; le menu d'avant (onglet Infini) a été détruit à « Jouer ».
     await page.locator('#menu-onglet-infini').click();
     await expect(page.locator('#menu-ecran-infini')).toBeVisible();
     await page.locator('#menu-infini-jouer').click();
@@ -247,16 +249,17 @@ test.describe('lot 9d : libération de la partie', () => {
     await page.locator('#btn-pause').click();
     await page.locator('#btn-quit').click();
     await page.locator('#btn-quit-ok').click();
-    await expect(page.locator('#menu-ecran-infini')).toBeVisible({ timeout: 60_000 });
+    await expect(page.locator('#e7')).toBeVisible();
+    await expect(page.locator('#menu-jouer')).toBeVisible({ timeout: 60_000 });
+    expect([await page.locator('#e8').count(), await page.locator('#menu-ecran-infini').count()]).toEqual([1, 0]);
     const lire = () => page.evaluate(() => {
       const e = window.__zsMenu.etat();
       const s = window.__zsMenu.sons();
       return { plein: Boolean(document.fullscreenElement), onglet: e.menu.onglet, solde: e.menu.solde, record: e.menu.record, musique: s.musique.mode, contexte: s.contexte, partie: s.faits.partie };
     });
     await expect.poll(async () => (await lire()).musique, { timeout: 20_000 }).toBe('joue');
-    expect(await lire()).toMatchObject({ plein: true, onglet: 'infini', solde: 1000, musique: 'joue', contexte: 'running', partie: false });
-    // Onglet Jouer : mode histoire (l'option infini de la partie précédente ne reste pas) ; manche 1 finie (+20 médailles), mort, retour.
-    await page.locator('#menu-onglet-jouer').click();
+    expect(await lire()).toMatchObject({ plein: true, onglet: 'jouer', solde: 1000, musique: 'joue', contexte: 'running', partie: false });
+    // « JOUER » : mode histoire (l'option infini de la partie précédente ne reste pas) ; manche 1 finie (+20 médailles), mort, retour.
     await page.locator('#menu-jouer').click();
     await enJeu(page);
     expect(await page.evaluate(() => window.__zs.getState().mode)).toBe('histoire');

@@ -28,6 +28,20 @@ export function chargerProgression(donnees = null, options = {}) {
   return chargement;
 }
 
+// Lot 9d : menu détruit (« JOUER ») : le dépôt partagé du menu est fermé (écouteur du stockage, canal entre onglets) et oublié avec ses
+// abonnés (en-tête, écrans, équipement, profil) ; le prochain chargerProgression() en recrée un, la sauvegarde relue.
+// Modules qui gardent un état tiré de la progression (equipement-etat.js) : prévenus ici, sans que menu.js les importe (démarrage du menu inchangé).
+const aDetruire = new Set();
+export function surDestruction(f) {
+  aDetruire.add(f);
+}
+export function detruireProgression() {
+  const avant = chargement;
+  chargement = null;
+  for (const f of aDetruire) f();
+  avant?.then((prog) => prog.fermer?.()).catch(() => {});
+}
+
 function stockage() {
   try {
     return window.localStorage;
@@ -38,6 +52,7 @@ function stockage() {
 
 export function creerProgression(params, { search = pageSearch(), storage = stockage() } = {}) {
   const abonnes = new Set();
+  const ouverts = []; // lot 9d : écouteur du stockage et canal, défaits par fermer()
   const { repository, mode } = createRepository({
     search,
     storage,
@@ -45,10 +60,17 @@ export function creerProgression(params, { search = pageSearch(), storage = stoc
     format: 'v2',
     listen: (handler) => {
       window.addEventListener('storage', handler);
-      return () => window.removeEventListener('storage', handler);
+      const stop = () => window.removeEventListener('storage', handler);
+      ouverts.push(stop);
+      return stop;
     },
     persist: () => navigator.storage?.persist?.(),
-    channel: () => (typeof BroadcastChannel === 'function' ? new BroadcastChannel(params.save?.v2?.storageKey ?? 'zs.save.v2') : null),
+    channel: () => {
+      if (typeof BroadcastChannel !== 'function') return null;
+      const c = new BroadcastChannel(params.save?.v2?.storageKey ?? 'zs.save.v2');
+      ouverts.push(() => c.close());
+      return c;
+    },
     merge: () => import('../core/save-merge.js'),
     now: () => Date.now(),
   });
@@ -74,13 +96,6 @@ export function creerProgression(params, { search = pageSearch(), storage = stoc
     lire: () => lu,
     relire() {
       lu = repository.load();
-      return lu;
-    },
-    // Lot 9d : retour au menu sans rechargement : la partie a écrit par son propre dépôt (même onglet : aucun événement du stockage) ; la
-    // progression est relue et tous les abonnés (en-tête, Infini, équipement, Boutique, Personnage, profil) se mettent à jour.
-    rafraichir() {
-      lu = repository.load();
-      prevenir([]);
       return lu;
     },
     solde: () => soldeDe(lu.save),
@@ -118,6 +133,11 @@ export function creerProgression(params, { search = pageSearch(), storage = stoc
     abonner(f) {
       abonnes.add(f);
       return () => abonnes.delete(f);
+    },
+    // Lot 9d : menu détruit : plus aucun abonné, écouteur du stockage retiré, canal fermé.
+    fermer() {
+      abonnes.clear();
+      for (const f of ouverts.splice(0)) f();
     },
   };
 }

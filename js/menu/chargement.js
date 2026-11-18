@@ -263,7 +263,7 @@ export function creerChargement({ phase = 'menu', jouer = () => {}, son = null, 
         root,
         son,
         jouer: (option) => {
-          menu.element.remove();
+          menu.detruire(); // lot 9d : le menu est détruit (avant : retiré de l'écran, gardé en mémoire) ; un menu neuf est chargé au retour
           partir(); // lot 8i : la musique des menus s'éteint en fondu (la partie garde ses propres sons)
           jouer(option); // lot 8b : option de démarrage (mode histoire ou infini)
         },
@@ -286,16 +286,8 @@ export function creerChargement({ phase = 'menu', jouer = () => {}, son = null, 
   return {
     progres,
     chute, // promesse : la chute du Z est finie (main.js attend avant de créer la partie, phase « jeu »)
-    // Lot 9d (phase « menu ») : retour de la partie sans rechargement : le même menu revient (js/menu/menu.js, reprendre), sans introduction ni
-    // écran de chargement ; la musique des menus repart (signaler). → promesse (faux : aucun menu à reprendre).
     sansRechargement: RETOUR_SANS_RECHARGEMENT, // lot 9d : option à l'essai (js/core/menu-etat.js)
     revenirSons, // lot 9d : sons du menu repris dans le geste du retour (avant la libération de la partie)
-    reprendre: async () => {
-      if (!menu) return false;
-      await menu.reprendre();
-      signaler('pret');
-      return true;
-    },
     etat: () => ({ phase, pourcentage: pourcentage(etat), pret: etat.pret, chuteFinie, journal: [...journal], visible: box.isConnected, menu: menu?.element.isConnected ? menu.etat() : null }),
   };
 }

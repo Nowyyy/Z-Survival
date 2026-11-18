@@ -129,3 +129,21 @@ describe('retour sans rechargement : option démontable', () => {
     expect(d).toContain('if (!modeMenu || !quittee || !chargementMenu || !sansRechargement) return menuRetour();');
   });
 });
+
+// Retour du propriétaire : le menu est détruit à « JOUER » et un menu neuf est chargé au retour (avant : le même menu revenait à l'écran exact).
+describe('menu détruit à « JOUER », menu neuf au retour', () => {
+  it('chargement.js détruit le menu à « JOUER » ; detruire() retire écouteurs, glissement, profil et oublie les modules partagés ; demarrage.js recharge un menu neuf', () => {
+    expect(lire('js/menu/chargement.js')).toContain('menu.detruire();');
+    expect(lire('js/menu/chargement.js')).not.toContain('menu.element.remove();');
+    const m = lire('js/menu/menu.js');
+    const corps = m.slice(m.indexOf('function detruire() {'), m.indexOf('// Échap : Options'));
+    for (const appel of ["document.removeEventListener('keydown', clavier, true);", 'retirerGlisser?.();', 'quitterProfil?.();', 'box.remove();', 'oublierAjustes();', 'oublierProfil();', 'detruireProgression();']) expect(corps, appel).toContain(appel);
+    expect(m).not.toMatch(/function reprendre\(/);
+    expect(m).not.toMatch(/^import [^;]*equipement-etat\.js';/m); // démarrage du menu inchangé : l'équipement s'inscrit lui-même (surDestruction)
+    expect(lire('js/menu/equipement-etat.js')).toContain('surDestruction(detruireEquipement);');
+    expect(lire('js/menu/progression-etat.js')).toMatch(/fermer\(\) \{\n\s+abonnes\.clear\(\);\n\s+for \(const f of ouverts\.splice\(0\)\) f\(\);/);
+    const d = lire('js/menu/demarrage.js');
+    expect(d).toContain('chargerMenu(null);');
+    expect(d).toContain("ecran = m.creerChargement({ phase: 'menu', jouer, son: { lire: reglagesSon, poser: poserSon }, contexteAudio });");
+  });
+});

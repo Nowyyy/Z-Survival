@@ -60,7 +60,8 @@ export function poserSon({ coupe = son.coupe, volume = son.volume, musique = son
 // Avancées arrivées avant l'écran de chargement (import en cours) : gardées puis rejouées dans l'ordre.
 const attente = [];
 let ecran = null;
-let chargementMenu = null; // lot 9d : écran de chargement de la phase « menu », qui garde le menu (repris au retour de la partie)
+let chargementMenu = null; // lot 9d : écran de chargement de la phase « menu » en cours (son module des sons, le réglage de l'option)
+let chargerMenu = null; // lot 9d : (contexteAudio) → écran de chargement du menu neuf (même appel qu'au lancement de la page)
 
 export function menuProgres(etape, fraction) {
   if (!modeMenu) return;
@@ -128,7 +129,8 @@ async function lancerJeu() {
 }
 
 // Lot 9d : fin d'une partie (« Quitter » confirmé, « Revenir au menu principal ») ; quittee : { liberer() } rendu par demarrerPartie. Mode menu :
-// sons du menu repris dans le geste, partie libérée (main.js), puis le même menu revient dans la page : le plein écran reste. Filet de sécurité :
+// sons du menu repris dans le geste, partie détruite (main.js), puis un menu neuf est chargé dans la page (écran de chargement, comme au
+// lancement) : le plein écran reste. Filet de sécurité :
 // libération en échec (exception, contexte WebGL perdu, mémoire), le cas est écrit dans la console, puis retour par rechargement comme avant
 // (#plein-ecran ou #retour). Partie directe (aucun menu dans la page, adresse à changer) : rechargement.
 let derniereLiberation = null;
@@ -147,8 +149,10 @@ export function menuQuitter(quittee = partieEnCours) {
     return menuRetour();
   }
   if (partieEnCours === quittee) partieEnCours = null;
-  ecran = chargementMenu;
-  return chargementMenu.reprendre();
+  // Menu neuf : écran de chargement (chute du Z, barre, astuce), sauvegarde relue, onglet Jouer, comme au lancement de la page (sans
+  // introduction) ; le menu d'avant a été détruit à « JOUER ».
+  chargerMenu(null);
+  return chargementMenu;
 }
 
 // Lot 9d : tests (?test=1) : libération directe de la partie en cours et nouvelle partie dans la même page (dix cycles de la garantie 3).
@@ -215,8 +219,11 @@ if (!modeMenu) {
       lancerJeu();
     };
     // Lot 8i : contexte audio de l'introduction (créé dans le geste), donné aux sons du menu.
-    ecran = m.creerChargement({ phase: 'menu', jouer, son: { lire: reglagesSon, poser: poserSon }, contexteAudio: introEcran?.contexte?.() ?? null });
-    chargementMenu = ecran;
+    chargerMenu = (contexteAudio) => {
+      ecran = m.creerChargement({ phase: 'menu', jouer, son: { lire: reglagesSon, poser: poserSon }, contexteAudio });
+      chargementMenu = ecran;
+    };
+    chargerMenu(introEcran?.contexte?.() ?? null);
   }).catch(() => {
     // Écran de chargement indisponible : la partie démarre comme avant le menu (écran de préparation #loading).
     document.documentElement.classList.remove('zs-mode-menu', 'zs-attente');

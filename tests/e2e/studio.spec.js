@@ -264,9 +264,9 @@ test.describe('introduction du studio (E0)', () => {
     expect(o.fichiers.filter((f) => /\/js\/menu\/intro\.js$|\/assets\/studio\//.test(f))).toEqual([]); // ni logo ni son en partie directe
   });
 
-  // Lot 9d : le retour au menu ne recharge plus la page : ni introduction ni écran de chargement ; le repère #retour ne sert plus qu'au filet de
+  // Lot 9d : le retour au menu ne recharge plus la page : un menu neuf est chargé (écran de chargement), jamais l'introduction ; le repère #retour ne sert plus qu'au filet de
   // sécurité (libération en échec, forcée ici par __zsCycle.echec()) : là, il évite toujours l'introduction.
-  test('précision du propriétaire : lancement → introduction ; « Quitter » puis retour au menu → pas d\'introduction (lot 9d : sans rechargement ; filet de sécurité : repère #retour, retiré aussitôt de l\'adresse) ; nouveau lancement → introduction ; aucune écriture dans le stockage pour cela', async ({ page }) => {
+  test('précision du propriétaire : lancement → introduction ; « Quitter » puis retour au menu → pas d\'introduction (lot 9d : sans rechargement de la page, menu neuf ; filet de sécurité : repère #retour, retiré aussitôt de l\'adresse) ; nouveau lancement → introduction ; aucune écriture dans le stockage pour cela', async ({ page }) => {
     test.setTimeout(180_000);
     await espions(page);
     await ouvrirIntro(page);
@@ -294,7 +294,7 @@ test.describe('introduction du studio (E0)', () => {
       await page.locator('#btn-quit').click();
       await page.locator('#btn-quit-ok').click();
       await expect(page.locator('#menu-jouer')).toBeVisible({ timeout: 60_000 });
-      expect(await page.evaluate(() => [window.__revus, document.getElementById('e0'), location.hash])).toEqual([[], null, '']);
+      expect(await page.evaluate(() => [window.__revus, document.getElementById('e0'), location.hash])).toEqual([['e7'], null, '']); // menu neuf : écran de chargement, jamais l'introduction
       expect([navigations, page.url()]).toEqual([0, url]);
       expect(await page.evaluate(() => window.__ecritures.filter((e) => !e.startsWith('local.')))).toEqual([]); // ni sessionStorage, ni autre chose que la sauvegarde de la partie
       expect(avant).toEqual([]);
@@ -306,7 +306,7 @@ test.describe('introduction du studio (E0)', () => {
       await observer();
       await page.locator('#btn-menu').click();
       await expect(page.locator('#menu-jouer')).toBeVisible({ timeout: 60_000 });
-      expect(await page.evaluate(() => [window.__revus, location.hash])).toEqual([[], '']);
+      expect(await page.evaluate(() => [window.__revus, location.hash])).toEqual([['e7'], '']);
       expect(navigations).toBe(0);
       await page.locator('#menu-jouer').click();
       await page.waitForFunction(() => (window.__zs?.getState()?.time ?? 0) > 0.05, null, { timeout: 60_000 });
