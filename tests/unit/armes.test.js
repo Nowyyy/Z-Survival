@@ -207,9 +207,10 @@ describe('caisse d\'armes', () => {
 });
 
 describe('choix du propriétaire (data/armes/armes-choix.json)', () => {
-  it('le fichier du dépôt est lu sans écart', () => {
+  it('le fichier du dépôt est lu sans écart ; les deux armes spéciales gardées (elles ne serviront pas au même endroit)', () => {
     const c = lireChoix(donnees, choixJson);
     expect(c.ecarts).toEqual([]);
+    expect(c.armesSpeciales).toEqual(['panzerschreck', 'm2lanceflammes']);
     for (const a of donnees.armes) expect(a.variantes.map((v) => v.id)).toContain(c.variantes[a.id]);
   });
 
@@ -230,7 +231,12 @@ describe('choix du propriétaire (data/armes/armes-choix.json)', () => {
     expect(c.variantes.thompson).toBe('b');
     expect(c.ecarts.length).toBe(4);
     const speciales = ['panzerschreck', 'm2lanceflammes'].filter((s) => armeParId(donnees, s));
-    expect(c.armeSpeciale).toBe(speciales[0] ?? null);
+    expect(c.armesSpeciales).toEqual(speciales.slice(0, 1));
+    expect(lireChoix(donnees, { armeSpeciale: 'm2lanceflammes' }).armesSpeciales).toEqual(['m2lanceflammes']); // ancien format
+    const d = lireChoix(donnees, { armesSpeciales: ['m2lanceflammes', 'canon', 'panzerschreck'] });
+    expect(d.armesSpeciales).toEqual(['panzerschreck', 'm2lanceflammes']);
+    expect(d.ecarts).toEqual(['arme spéciale inconnue : canon']);
+    expect(lireChoix(donnees, { armesSpeciales: 'panzerschreck' }).ecarts).toEqual(['armes spéciales illisibles']);
     for (const x of [null, 'texte', [], { variantes: 'a' }]) expect(lireChoix(donnees, x).variantes.m1911).toBe('a');
   });
 });
