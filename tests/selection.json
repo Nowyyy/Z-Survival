@@ -944,7 +944,8 @@
         "data/game/armes-partie.json",
         "data/game/sons-armes.json",
         "js/game/armes-chargement.js",
-        "js/game/armes-ui.js"
+        "js/game/armes-ui.js",
+        "js/game/armes-tombes.js"
       ],
       "dependances": ["interface", "noyau", "personnages", "textes"],
       "vitest": [

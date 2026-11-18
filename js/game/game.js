@@ -21,15 +21,16 @@ import { addDebris, createDebris, plankSettings, removeDebris, stepDebris } from
 import { applyHeal, canFire, canHealOnKill, canMove, createPlayerDown, isInvulnerable, knockbackZombies, stepPlayerDown } from '../core/player-down.js';
 import { effectivePlayer, effectiveWeapon, normalizeLevels, STAT_IDS, statValues } from '../core/player-stats.js';
 import { createBullet, stepBullets } from '../core/projectile.js';
-import { castRay } from '../core/ray.js';
+import { castRay, departLibre } from '../core/ray.js';
 import { longueursCone, obstaclesTirs, preparerTirs } from '../core/tir-traverse.js';
 import { createRng } from '../core/rng.js';
 import { shotAngle, speedRatio, spreadHalfAngle, stepSpreadRatio, toRadians } from '../core/spread.js';
 import { zoneZombie } from '../core/gabarit.js';
 import { armeJeu, statsAvecArme } from '../core/armes/partie.js';
-import { aSec, armeActive, armeMontree, avancerInventaire, changerArme, creerInventaire, donnerArme, enRecharge, munitionsIllimitees, peutTirer, progressionRecharge, recharger, remplirMunitions, texteMunitions, tirer, RANGER } from '../core/armes/inventaire.js';
-import { boucheDevant, tenueArme } from '../core/armes/tenue-jeu.js';
+import { aSec, armeActive, armeMontree, avancerInventaire, changerArme, creerInventaire, donnerArme, enRecharge, gesteRecharge, munitionsIllimitees, peutTirer, progressionRecharge, recharger, remplirMunitions, texteMunitions, tirer, RANGER } from '../core/armes/inventaire.js';
+import { boucheCanon, tenueArme } from '../core/armes/tenue-jeu.js';
 import { creerArmesEnMain } from '../armes/en-main.js';
+import { AU_SOL_DOUILLE, MAX_DOUILLES, creerArmesTombes } from './armes-tombes.js';
 import { createArmesUi } from './armes-ui.js';
 import { armeParId, echelleJeu } from '../core/armes/armes.js';
 import { createFootsteps, stepFootsteps } from '../core/footsteps.js';
@@ -171,6 +172,16 @@ export function createGame(ctx) {
   const tableArmes = armesCfg?.table ?? null;
   const armesAvant = ctx.params.corpsAvant === true || !armesCfg;
   const armesKit = !armesAvant ? creerArmesEnMain({ donnees: armesCfg.donnees, choix: armesCfg.choix, palette: armesCfg.palette, poses: armesCfg.poses }) : null;
+  // Pièces lâchées au rechargement, posées au sol quelques secondes (retour du propriétaire après le lot 9e) : un appel au plus.
+  const tombes = armesKit ? creerArmesTombes({ parent: world.dynamic, palette: armesCfg.palette, reduit: reduced }) : null;
+  // Douilles éjectées au tir (petites particules jaunes, retour du propriétaire après le lot 9e) : un appel au plus.
+  const douilles = armesKit ? creerArmesTombes({ parent: world.dynamic, palette: armesCfg.palette, reduit: reduced, max: MAX_DOUILLES, auSol: AU_SOL_DOUILLE, nom: 'armes-douilles' }) : null;
+  const ejections = []; // douilles en attente de la prochaine image : { id, t }
+  let ejectionsTotal = 0;
+  let tombesEtage = null;
+  let douillesEtage = null;
+  let ejectionsVues = 0;
+  const pieceAt = { x: 0, y: 0, z: 0 };
   const choixJoueur = ctx.persos?.params?.slots?.joueur ?? 'riche';
   const slotJoueur = ctx.persos?.data?.characters?.slots?.find((s) => s.id === 'joueur');
   const joueurV2 = slotJoueur?.variants?.find((v) => v.id === choixJoueur) ?? slotJoueur?.variants?.find((v) => v.id === 'A') ?? null;
@@ -183,11 +194,37 @@ export function createGame(ctx) {
     }
     return tenues.get(id);
   };
+  // Bout du canon de l'arme tenue (repère du joueur, arrondi au dixième) : balles et laser en partent (retour du propriétaire après le lot 9e).
   const boucheDe = (id) => {
     const t = tenueDe(id);
-    return t && armesKit ? Math.round(boucheDevant(t, armesKit.pointe(id)) * 10) / 10 : null;
+    if (!t || !armesKit) return null;
+    const b = boucheCanon(t, armesKit.pointe(id));
+    return { avant: Math.round(b.avant * 10) / 10, cote: Math.round(b.cote * 10) / 10 };
   };
   let armeVue = null; // arme montrée sur le personnage (identifiant)
+  let lastGun = null; // bout du canon dessiné à la dernière image (tests : getState().armes.canon)
+  // Pièces lâchées (chargeur vide, clip, tambour) en attente de la prochaine image (leur départ est le point de l'arme dessinée), avec le son
+  // de leur chute au sol (retour du propriétaire après le lot 9e).
+  const lachers = [];
+  const TOMBE_DELAI = 0.4;
+  function lacherPiece(id, sorte, evs) {
+    if (!tableArmes?.armes?.[id]?.piece) return;
+    lachers.push({ id, sorte: tableArmes.armes[id].categorie === 'mitrailleuse' ? 'tambour' : sorte, t: sim.time });
+    lachesTotal += 1;
+    evs.push({ type: 'armeSon', son: 'arme-tombe', delay: TOMBE_DELAI, x: sim.player.x, y: sim.player.y });
+  }
+  let lachesTotal = 0; // pièces lâchées depuis le début de la page (tests)
+  function ejecter(id) {
+    if (!tableArmes?.armes?.[id]?.douille) return;
+    ejections.push({ id, t: sim.time });
+    ejectionsTotal += 1;
+  }
+  // Départ des balles et du laser : le bout du canon de l'arme tenue (retour du propriétaire après le lot 9e), ramené devant un mur ou un
+  // obstacle des tirs quand le joueur s'y colle (le canon long ne tire jamais de l'autre côté) ; corps d'avant : exactement le point d'avant.
+  const boucheJoueur = (angle, w, bounds) => {
+    const m = muzzlePoint(sim.player, angle, w.muzzleOffset, bounds, w.muzzleSide ?? 0);
+    return armesAvant || !sim.inv ? m : departLibre(sim.player, m, shotBounds, blockers);
+  };
   let armesApi = null; // méthodes de la partie (recharger, changerArme), pour les boutons de l'interface des armes
   let etaitASec = false;
   // Lot 9e : munitions du HUD, boutons tactiles près du stick droit, annonces (js/game/armes-ui.js).
@@ -235,7 +272,8 @@ export function createGame(ctx) {
   function rafraichirArme() {
     const entree = entreeActive();
     const stats = entree ? statsAvecArme(cfg.stats, entree) : cfg.stats;
-    const base = entree ? armeJeu(entree, cfg.weapon, armesAvant ? cfg.weapon.muzzleOffset : boucheDe(entree.id)) : cfg.weapon;
+    const bouche = armesAvant ? null : boucheDe(entree?.id);
+    const base = entree ? armeJeu(entree, cfg.weapon, armesAvant ? cfg.weapon.muzzleOffset : bouche?.avant ?? null, bouche?.cote ?? 0) : cfg.weapon;
     eff.values = statValues(eff.levels.levels, stats);
     eff.weapon = effectiveWeapon(base, eff.levels.levels, stats);
     eff.vitesseArme = entree?.vitesse ?? 1;
@@ -391,6 +429,7 @@ export function createGame(ctx) {
       weapon: createWeaponState(),
       // Lot 9e : armes portées (js/core/armes/inventaire.js) : Colt permanent, chargeurs, réserves, rechargement, changement.
       inv: tableArmes ? creerInventaire(tableArmes, { illimite: ctx.params.munitionsIllimitees === true }) : null, // ?test=1&munitions=illimitees
+      manoeuvre: null, // culasse ou pompe manœuvrée après un tir : { id, t } (dessin et son ; retour du propriétaire après le lot 9e)
       waves: createDirector(cfg.waves, { seed, wave: params.wave ?? 1, inactive: params.nospawn, doors: doorCfgs.map((d) => ({ id: d.id, openAfterWave: d.openAfterWave, planned: d.planned === true })), wavesPerWorld: zoneCfg ? zoneCfg.wavesPerWorld : null, endless: params.endless === true }),
       doors: opened,
       worldOver: false,
@@ -422,6 +461,10 @@ export function createGame(ctx) {
     };
     splashView.apply(sim.splashView);
     rafraichirArme(); // lot 9e : la partie repart avec l'arme de départ
+    lachers.length = 0;
+    tombes?.vider();
+    ejections.length = 0;
+    douilles?.vider();
     sim.debris = createDebris();
     for (const g of geoms) dropDebris(g.id, g.id in sim.win.windows ? sim.win.windows[g.id].maxPlanks - sim.win.windows[g.id].planks : 0);
     world.doors.reset(doorCfgs.filter((d) => !sim.doors[d.id].open).map((d) => d.id));
@@ -660,7 +703,7 @@ export function createGame(ctx) {
     else sim.stairWatch = stepStairWatch(sim.stairWatch, dt, { x: NaN, y: NaN }, []).watch;
 
     // Laser : sert à viser et à déclencher le tir, jamais aux dégâts.
-    const muzzle = muzzlePoint(sim.player, sim.aim.angle, weapon.muzzleOffset, layout.muzzleBounds);
+    const muzzle = boucheJoueur(sim.aim.angle, weapon, layout.muzzleBounds);
     const cibles = zones();
     const ray = castRay(muzzle, sim.aim.angle, weapon.laserRange, cibles, shotBounds, blockers, pf());
     // Lot 9e : pas de laser pendant un changement d'arme ou un rechargement (aucun tir possible), comme pendant la réparation.
@@ -683,7 +726,28 @@ export function createGame(ctx) {
       if (sec && !etaitASec) armesEvents.push({ type: 'aSec', id: armeActive(sim.inv)?.id });
       etaitASec = sec;
       for (const ev of armesEvents) armesUi?.annoncer(ev.type, ev.id);
-      if (armesEvents.some((ev) => ev.type === 'rechargeDebut')) events.push({ type: 'armeRecharge', x: sim.player.x, y: sim.player.y });
+      // Retour du propriétaire après le lot 9e : chaque étape du rechargement a son son (chargeur retiré, remis, culasse, cartouche, pompe,
+      // verrou…) ; une pièce lâchée tombe au sol (et s'y entend). Arme sans déroulé : le son unique du rechargement, comme avant.
+      for (const ev of armesEvents) {
+        if (ev.son) events.push({ type: 'armeSon', son: ev.son, x: sim.player.x, y: sim.player.y });
+        if (ev.lacher) lacherPiece(ev.id, 'chargeur', events);
+      }
+      const rch = entreeActive()?.recharge;
+      if (armesEvents.some((ev) => ev.type === 'rechargeDebut') && !(rch?.type === 'balle' || rch?.etapes?.length)) events.push({ type: 'armeRecharge', x: sim.player.x, y: sim.player.y });
+      // Manœuvre après le tir (verrou, pompe) : son au début du geste ; arrêtée par un changement d'arme ou un rechargement.
+      if (sim.manoeuvre) {
+        const m = sim.manoeuvre;
+        const def = tableArmes.armes[m.id]?.manoeuvre;
+        const t1 = m.t + dt;
+        if (!def || sim.inv.sortie || enRecharge(sim.inv) || armeActive(sim.inv)?.id !== m.id || t1 >= def.debut + def.duree) sim.manoeuvre = null;
+        else {
+          if (m.t < def.debut && t1 >= def.debut) {
+            if (def.son) events.push({ type: 'armeSon', son: def.son, x: sim.player.x, y: sim.player.y });
+            ejecter(m.id); // la douille sort quand on tire le verrou ou la pompe
+          }
+          sim.manoeuvre = { id: m.id, t: t1 };
+        }
+      }
     }
     const armePrete = !sim.inv || peutTirer(sim.inv);
     const trigger = stepWeapon(sim.weapon, dt, aimed && armePrete, weapon, sim.bullets.length);
@@ -698,7 +762,19 @@ export function createGame(ctx) {
         shotLog.push({ id: sim.nextId, time: sim.time, angle: shot.angle, aimAngle: sim.aim.angle, half: halfAngle() });
         sim.nextId += 1;
       }
-      if (sim.inv) sim.inv = tirer(sim.inv);
+      if (sim.inv) {
+        sim.inv = tirer(sim.inv);
+        // Retour du propriétaire après le lot 9e : culasse ou pompe manœuvrée après le tir (s'il reste une cartouche) ; Garand : le tir qui vide
+        // l'arme éjecte le clip (« ping », le clip tombe).
+        const en = entreeActive();
+        const a = armeActive(sim.inv);
+        if (en?.manoeuvre && (a.chargeur > 0 || sim.inv.illimite)) sim.manoeuvre = { id: a.id, t: 0 };
+        else ejecter(a.id); // douille éjectée au tir (verrou, pompe : quand on les manœuvre ; dernière cartouche : tout de suite)
+        if (en?.dernierTir && a.chargeur <= 0 && !sim.inv.illimite) {
+          if (en.dernierTir.son) events.push({ type: 'armeSon', son: en.dernierTir.son, x: sim.player.x, y: sim.player.y });
+          if (en.dernierTir.lacher) lacherPiece(a.id, 'clip', events);
+        }
+      }
       sim.flash = reduced ? weapon.muzzleFlash / 2 : weapon.muzzleFlash;
       sim.recoil = RECOIL_TIME;
       lastFire = sim.time;
@@ -1070,19 +1146,67 @@ export function createGame(ctx) {
   function etatVisibleArme() {
     const so = sim.inv.sortie;
     if (so) {
-      const r = so.total * RANGER;
+      const r = Number.isFinite(so.ranger) ? so.ranger : so.total * RANGER; // ranger l'arme d'avant (sa durée à elle), puis sortir la nouvelle
       return { baisse: reduced ? 0 : so.t < r ? so.t / Math.max(1e-6, r) : Math.max(0, 1 - (so.t - r) / Math.max(1e-6, so.total - r)) };
     }
-    const p = progressionRecharge(sim.inv, tableArmes);
-    if (p !== null) {
-      // Main gauche : de sa prise au point du rechargement (0,15 → 0,35), geste (0,35 → 0,75 : du point a au point b et retour), retour à la prise.
+    const g = gesteRecharge(sim.inv, tableArmes);
+    if (g !== null) {
+      // Main gauche : de sa prise au point du rechargement (0,15 → 0,35 ; balle par balle : dès le début), geste (chargeur : du point a au point
+      // b et retour au milieu du rechargement ; balle par balle : un aller-retour par cartouche), retour à la prise.
+      const p = g.p;
       const pt = pointRecharge(armeActive(sim.inv)?.id);
-      const vers = Math.max(0, Math.min(1, (p - 0.1) / 0.25, (0.95 - p) / 0.2));
-      const geste = p > 0.35 && p < 0.75 ? Math.sin(((p - 0.35) / 0.4) * Math.PI) : 0;
-      const gauche = pt ? pt.a.map((v, i) => v + (pt.b[i] - v) * geste) : null;
+      const vers = g.balle ? Math.max(0, Math.min(1, p / 0.08, (1 - p) / 0.1)) : Math.max(0, Math.min(1, (p - 0.1) / 0.25, (0.95 - p) / 0.2));
+      const gauche = pt ? pt.a.map((v, i) => v + (pt.b[i] - v) * g.geste) : null;
       return { baisse: reduced ? 0 : 0.6 * Math.max(0, Math.min(1, p / 0.15, (1 - p) / 0.15)), recharge: p, gauche, poidsGauche: reduced ? 0 : vers };
     }
+    const m = sim.manoeuvre;
+    const def = m ? tableArmes?.armes?.[m.id]?.manoeuvre : null;
+    if (def && !reduced) {
+      // Retour du propriétaire après le lot 9e : verrou manœuvré à la main droite (fusil à verrou), pompe à la main gauche (fusil à pompe).
+      const u = Math.max(0, Math.min(1, m.t / Math.max(1e-6, def.debut + def.duree))); // son au début de la traction (u ≈ 0,2 à 0,3)
+      const poids = Math.max(0, Math.min(1, u / 0.2, (1 - u) / 0.2));
+      const geste = Math.sin(Math.max(0, Math.min(1, (u - 0.2) / 0.6)) * Math.PI);
+      const pt = pointManoeuvre(m.id);
+      if (pt) {
+        const at = pt.a.map((v, i) => v + (pt.b[i] - v) * geste);
+        return pt.main === 'droite' ? { baisse: 0, droite: at, poidsDroite: poids } : { baisse: 0, gauche: at, poidsGauche: poids };
+      }
+    }
     return { baisse: 0 };
+  }
+  // Points de la manœuvre après le tir (repère de l'arme) : fusil à verrou, main droite de la prise au levier de culasse (a) puis tirée en
+  // arrière (b) ; fusil à pompe, main gauche de la pompe (a) vers l'arrière (b).
+  const pointsManoeuvre = new Map();
+  function pointManoeuvre(id) {
+    if (pointsManoeuvre.has(id)) return pointsManoeuvre.get(id);
+    const a = armesCfg ? armeParId(armesCfg.donnees, id) : null;
+    const cat = tableArmes?.armes?.[id]?.categorie ?? '';
+    let pt = null;
+    if (a?.prises?.droite) {
+      const sc = echelleJeu(armesCfg.donnees, a);
+      const d = a.prises.droite.map((v) => v * sc);
+      const gch = (a.prises.gauche ?? a.prises.droite).map((v) => v * sc);
+      if (cat === 'fusil à verrou') pt = { main: 'droite', a: [d[0] - 3, d[1] + 4, d[2] + 6], b: [d[0] - 3, d[1] + 4, d[2] + 1] };
+      else if (cat === 'fusil à pompe') pt = { main: 'gauche', a: [...gch], b: [gch[0], gch[1], gch[2] - 5] };
+    }
+    pointsManoeuvre.set(id, pt);
+    return pt;
+  }
+  // Fenêtre d'éjection (repère de l'arme) : au-dessus du boîtier, devant la main droite (pistolet : au-dessus de la glissière).
+  function pointDouille(id) {
+    const a = armesCfg ? armeParId(armesCfg.donnees, id) : null;
+    if (!a?.prises?.droite) return null;
+    const sc = echelleJeu(armesCfg.donnees, a);
+    const d = a.prises.droite.map((v) => v * sc);
+    return tableArmes?.armes?.[id]?.categorie === 'pistolet' ? [d[0], d[1] + 6, d[2] + 3] : [d[0], d[1] + 4, d[2] + 7];
+  }
+  // Point de départ d'une pièce lâchée (repère de l'arme) : sous l'arme (chargeur), au-dessus du boîtier (clip du Garand), à gauche (tambour).
+  function pointPiece(id, sorte) {
+    const pt = pointRecharge(id);
+    if (!pt) return null;
+    if (sorte === 'clip') return pt.a;
+    if (sorte === 'tambour') return [pt.a[0] + 5, pt.a[1] - 9, pt.a[2] - 3];
+    return pt.b;
   }
   function montrerArme() {
     if (!armesKit || !sim.inv) return;
@@ -1132,6 +1256,44 @@ export function createGame(ctx) {
     playerChar.root.position.set(p.x, 0, p.y);
     playerChar.root.rotation.y = Math.PI / 2 - anim.facing;
     const gun = playerChar.muzzle?.() ?? null; // lot 3j : bout du canon du joueur v2 (laser, éclair et balles en partent à l'image)
+    lastGun = gun;
+    if (tombes) {
+      // Pièces lâchées : elles partent de l'arme dessinée (sinon de la hauteur des mains), le clip du Garand est éjecté vers le haut et sur le
+      // côté de l'arme ; un changement d'étage les retire.
+      if (tombesEtage !== pf()) {
+        tombes.vider();
+        tombesEtage = pf();
+      }
+      for (const l of lachers.splice(0)) {
+        const local = pointPiece(l.id, l.sorte);
+        const at = (local && playerChar.pointArme?.(local, pieceAt)) ?? { x: p.x, y: p.y, z: 40 };
+        const cx = -Math.sin(anim.facing);
+        const cy = Math.cos(anim.facing); // côté de l'arme (x négatif du repère du personnage)
+        const vitesse = l.sorte === 'clip' ? { x: cx * 45, y: cy * 45, z: 160 } : { x: cx * 12, y: cy * 12, z: 0 };
+        tombes.lacher({ depart: { x: at.x, y: at.y, z: at.z }, dims: tableArmes.armes[l.id].piece, vitesse, sorte: l.sorte, lacet: anim.facing, t: l.t });
+      }
+      tombes.update(sim.time);
+    }
+    if (douilles) {
+      // Douilles : de la fenêtre d'éjection (au-dessus du boîtier, devant la main droite), vers le côté de l'arme, un peu en arrière et vers le
+      // haut ; vitesse un peu différente d'une douille à l'autre (compteur, sans hasard).
+      if (douillesEtage !== pf()) {
+        douilles.vider();
+        douillesEtage = pf();
+      }
+      for (const d of ejections.splice(0)) {
+        const local = pointDouille(d.id);
+        const at = (local && playerChar.pointArme?.(local, pieceAt)) ?? { x: p.x, y: p.y, z: 42 };
+        const cx = -Math.sin(anim.facing);
+        const cy = Math.cos(anim.facing);
+        const k = 1 + ((ejectionsVues % 3) - 1) * 0.15;
+        ejectionsVues += 1;
+        const fx = Math.cos(anim.facing);
+        const fy = Math.sin(anim.facing);
+        douilles.lacher({ depart: { x: at.x, y: at.y, z: at.z }, dims: tableArmes.armes[d.id].douille, vitesse: { x: (cx * 75 - fx * 18) * k, y: (cy * 75 - fy * 18) * k, z: 95 * k }, sorte: 'douille', lacet: anim.facing, t: d.t });
+      }
+      douilles.update(sim.time);
+    }
 
     const alive = new Set();
     for (const e of sim.enemies) {
@@ -1423,7 +1585,7 @@ export function createGame(ctx) {
     snapshotArmes: () => (sim.inv ? { actif: armeActive(sim.inv)?.id ?? null, illimite: sim.inv.illimite } : null),
     fireBullet(angle) {
       // La bouche n'est pas retenue dans la salle : le test place parfois le joueur dehors (balle sur une voiture, par exemple).
-      const muzzle = muzzlePoint(sim.player, Number(angle), eff.weapon.muzzleOffset, shotBounds);
+      const muzzle = boucheJoueur(Number(angle), eff.weapon, shotBounds);
       sim.bullets = [...sim.bullets, { ...createBullet(muzzle, Number(angle), eff.weapon, sim.nextId), floor: pf() }];
       sim.nextId += 1;
       ctx.audio?.handle({ time: sim.time, listener: sim.player, floor: pf(), walls: wallsOf(pf()), paused: ctx.ui.isPaused(), events: [{ type: 'shot', x: muzzle.x, y: muzzle.y }] });
@@ -1575,6 +1737,8 @@ export function createGame(ctx) {
       libererThree([world.scene, playerChar.root, ...spare.flat().map((c) => c.root), ...[...zombies.values()].map((z) => z.char.root)], vus);
       textures.dispose();
       armesKit?.dispose(); // lot 9e : maillages des armes (ceux qui ne sont pas dans la scène compris), matière, atlas
+      tombes?.dispose();
+      douilles?.dispose();
       armesUi?.dispose();
       renderer.renderLists.dispose();
       const memoire = { geometries: renderer.info.memory.geometries, textures: renderer.info.memory.textures };
@@ -1627,7 +1791,9 @@ export function createGame(ctx) {
         armes: sim.inv ? { // lot 9e : armes portées, arme effective et arme dessinée
           actif: armeActive(sim.inv)?.id ?? null, montree: armeMontree(sim.inv)?.id ?? null, emplacements: sim.inv.emplacements.map((e) => ({ id: e.id, chargeur: e.chargeur, reserve: e.reserve === Infinity ? null : e.reserve, recharge: e.recharge })),
           sortie: sim.inv.sortie ? { ...sim.inv.sortie } : null, recharge: progressionRecharge(sim.inv, tableArmes), enRecharge: enRecharge(sim.inv), texte: texteMunitions(sim.inv), peutTirer: peutTirer(sim.inv), aSec: aSec(sim.inv), illimite: sim.inv.illimite,
-          vitesse: vitesseJoueur(), bouche: eff.weapon.muzzleOffset, plombs: eff.weapon.plombs ?? 1, damage: eff.weapon.damage, fireDelay: eff.weapon.fireDelay, fireRange: eff.weapon.fireRange, coneStill: eff.weapon.coneStill, coneMove: eff.weapon.coneMove,
+          vitesse: vitesseJoueur(), bouche: eff.weapon.muzzleOffset, boucheCote: eff.weapon.muzzleSide ?? 0, plombs: eff.weapon.plombs ?? 1, damage: eff.weapon.damage, fireDelay: eff.weapon.fireDelay, fireRange: eff.weapon.fireRange, coneStill: eff.weapon.coneStill, coneMove: eff.weapon.coneMove,
+          pieces: { lachees: lachesTotal, auSol: tombes?.nombre ?? 0 }, douilles: { ejectees: ejectionsTotal, visibles: douilles?.nombre ?? 0 }, manoeuvre: sim.manoeuvre ? { ...sim.manoeuvre } : null,
+          canon: { logique: boucheJoueur(sim.aim.angle, eff.weapon, layout.muzzleBounds), rendu: lastGun ? { x: lastGun.x, y: lastGun.y, hauteur: lastGun.height } : null }, // bout du canon : logique et dessiné
           rendu: playerChar.arme, triangles: armeVue && armesKit ? armesKit.triangles(armeVue) : 0, emplacementsMax: 1 + (tableArmes?.emplacementsAchetes ?? 0),
         } : null,
         floor: floorState(),

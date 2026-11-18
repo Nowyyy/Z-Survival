@@ -35,11 +35,22 @@ export function tenueArme({ variant, skeletons, posesV2, posesArmes, id, mode = 
   const d = [P[0] - chest.t[0], P[1] - chest.t[1], P[2] - chest.t[2]];
   const t = applyAffine({ m: inv, t: [0, 0, 0] }, d);
   const epaule = joints.find((j) => j.id === 'shoulderR')?.offset ?? [0, 0, 0];
-  return { angles, local: { m: mul(inv, R), t }, position: P, pivot: [...epaule] };
+  return { angles, local: { m: mul(inv, R), t }, position: P, rotation: R, pivot: [...epaule] };
 }
 
 // Bouche du canon devant le centre du joueur (logique : distance le long de la visée) : avant de la pose (z) + point le plus avancé du canon.
 export const boucheDevant = (tenue, pointe) => num(tenue?.position?.[2]) + num(pointe?.[2]);
+
+// Retour du propriétaire après le lot 9e (« les balles ne partent pas du canon ») : bout du canon dans le repère du personnage (position de
+// la pose + rotation de l'arme × pointe) → { avant (z, le long de la visée), cote (x du repère du personnage), hauteur }.
+// La logique fait partir balle et laser de ce point (muzzlePoint de js/core/combat.js), comme le bout du canon dessiné.
+export function boucheCanon(tenue, pointe) {
+  const P = Array.isArray(tenue?.position) ? tenue.position : [0, 0, 0];
+  const R = Array.isArray(tenue?.rotation) && tenue.rotation.length === 9 ? tenue.rotation : [1, 0, 0, 0, 1, 0, 0, 0, 1];
+  const q = [num(pointe?.[0]), num(pointe?.[1]), num(pointe?.[2])];
+  const tip = [0, 1, 2].map((r) => num(P[r]) + R[r * 3] * q[0] + R[r * 3 + 1] * q[1] + R[r * 3 + 2] * q[2]);
+  return { avant: tip[2], cote: tip[0], hauteur: tip[1] };
+}
 
 // Pointe du canon d'un maillage d'arme (positions à plat, repère de l'arme) : le point le plus avancé (z) parmi ceux proches de l'axe du canon
 // (|y| ≤ 4, |x| ≤ 4 : le bipied du BAR, plus long, est écarté).

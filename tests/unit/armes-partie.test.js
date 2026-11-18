@@ -1,11 +1,13 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { armeJeu, lireTable, lourdeur, paletteArmes, statsAvecArme, tempsPourTuer } from '../../js/core/armes/partie.js';
-import { aSec, armeActive, armeMontree, avancerInventaire, changerArme, creerInventaire, donnerArme, enRecharge, maxEmplacements, munitionsIllimitees, peutTirer, progressionRecharge, recharger, remplirMunitions, texteMunitions, tirer, RANGER } from '../../js/core/armes/inventaire.js';
+import { aSec, armeActive, armeMontree, avancerInventaire, changerArme, creerInventaire, donnerArme, dureeRecharge, dureesChangement, enRecharge, gesteRecharge, maxEmplacements, munitionsIllimitees, peutTirer, progressionRecharge, recharger, remplirMunitions, texteMunitions, tirer, RANGER } from '../../js/core/armes/inventaire.js';
 import { effectiveWeapon, statValues } from '../../js/core/player-stats.js';
 import { waveSpec } from '../../js/core/waves.js';
 import { armeParId, echelleJeu, lireArmes, maillageArme } from '../../js/core/armes/armes.js';
-import { boucheDevant, OS_TENUE, pointeCanon, tenueArme } from '../../js/core/armes/tenue-jeu.js';
+import { boucheCanon, boucheDevant, OS_TENUE, pointeCanon, tenueArme } from '../../js/core/armes/tenue-jeu.js';
+import { muzzlePoint } from '../../js/core/combat.js';
+import { departLibre } from '../../js/core/ray.js';
 import { echellesCorps, rigCorps, varianteCorps } from '../../js/core/gabarit.js';
 import { jointMatrices, jointsOf } from '../../js/core/character-parts.js';
 import { poseAt, rigOf } from '../../js/core/pose-v2.js';
@@ -54,7 +56,7 @@ describe('table des armes', () => {
     expect([c.chargeur, c.reserve, c.degats, c.cadence, c.portee]).toEqual([7, Infinity, weapons.pistol.damage, weapons.pistol.fireDelay, weapons.pistol.fireRange]);
     expect([c.dispersion, c.dispersionMouvement]).toEqual([statsCfg.stats.precision.baseAngle, statsCfg.stats.precision.moveAngle]);
     const w = armeJeu(c, weapons.pistol, weapons.pistol.muzzleOffset);
-    expect(effectiveWeapon(w, {}, statsAvecArme(statsCfg, c))).toEqual({ ...effectiveWeapon(weapons.pistol, {}, statsCfg), id: 'm1911', plombs: 1, vitesse: 1 });
+    expect(effectiveWeapon(w, {}, statsAvecArme(statsCfg, c))).toEqual({ ...effectiveWeapon(weapons.pistol, {}, statsCfg), id: 'm1911', plombs: 1, vitesse: 1, muzzleSide: 0 }); // retour du propriétaire : muzzleSide (0 sur l'axe)
   });
   it('paliers dans l\'ordre décidé : 0 Colt ; 1 Kar98k, Winchester ; 2 Thompson, Garand ; 3 StG 44, BAR ; 4 MG42', () => {
     expect(UTILES.map((id) => table.armes[id].palier)).toEqual([0, 1, 1, 2, 2, 3, 3, 4]);
@@ -143,7 +145,7 @@ describe('inventaire : emplacements, chargeurs, rechargement, changement', () =>
   };
   it('départ : le Colt seul, plein (7 / ∞), un emplacement acheté en plus (donnée)', () => {
     const s = creerInventaire(table);
-    expect(s.emplacements).toEqual([{ id: 'm1911', chargeur: 7, reserve: Infinity, recharge: null }]);
+    expect(s.emplacements).toEqual([{ id: 'm1911', chargeur: 7, reserve: Infinity, recharge: null, prevu: null, vide: false }]);
     expect(maxEmplacements(table)).toBe(2);
     expect(maxEmplacements({ emplacementsAchetes: 3 })).toBe(4);
     expect(texteMunitions(s)).toBe('7 / ∞');
@@ -159,22 +161,61 @@ describe('inventaire : emplacements, chargeurs, rechargement, changement', () =>
     expect(enRecharge(r.st)).toBe(true);
     r = run(r.st, 0.05, 27);
     expect(armeActive(r.st).chargeur).toBe(0);
+    // Retour du propriétaire : étapes du rechargement (chargeur retiré qui tombe, chargeur remis, glissière relâchée : le Colt était vide).
+    expect(r.ev).toEqual([
+      { type: 'rechargeEtape', id: 'm1911', son: 'arme-chargeur-sort', lacher: true },
+      { type: 'rechargeEtape', id: 'm1911', son: 'arme-chargeur-entre', lacher: false },
+      { type: 'rechargeEtape', id: 'm1911', son: 'arme-glissiere', lacher: false },
+    ]);
     expect(progressionRecharge(r.st, table)).toBeCloseTo(1.35 / 1.4, 9);
     r = run(r.st, 0.05, 1);
     expect(r.ev.map((e) => e.type)).toEqual(['rechargeFin']);
-    expect(armeActive(r.st)).toEqual({ id: 'm1911', chargeur: 7, reserve: Infinity, recharge: null });
+    expect(armeActive(r.st)).toEqual({ id: 'm1911', chargeur: 7, reserve: Infinity, recharge: null, prevu: null, vide: false });
+    // Chargeur pas vide (rechargement à la main) : pas de glissière.
+    const partiel = recharger(tirer(r.st), table).state;
+    expect(run(partiel, 0.05, 29).ev.filter((e) => e.type === 'rechargeEtape').map((e) => e.son)).toEqual(['arme-chargeur-sort', 'arme-chargeur-entre']);
     expect(aSec(r.st)).toBe(false);
   });
   it('rechargement à la main : chargeur incomplet seulement ; pas pendant un rechargement ; la réserve diminue de ce qui manque', () => {
     let s = donnerArme(creerInventaire(table), table, 'kar98k').state;
-    s = run(s, 0.05, 20).st; // sortie de 0,57 s
+    s = run(s, 0.05, 20).st; // sortie
     expect(recharger(s, table).debut).toBe(false); // plein
     s = tirer(tirer(s));
     const r = recharger(s, table);
     expect(r.debut).toBe(true);
     expect(recharger(r.state, table).debut).toBe(false);
-    const fin = run(r.state, 0.05, 49).st; // 2,4 s (et un pas d'arrondi)
-    expect(armeActive(fin)).toEqual({ id: 'kar98k', chargeur: 5, reserve: 28, recharge: null });
+    // Retour du propriétaire : le Kar98k se recharge balle par balle (verrou ouvert, deux cartouches, verrou fermé avec son « ching »).
+    expect(armeActive(r.state).prevu).toBe(2);
+    expect(dureeRecharge(armeActive(r.state), table.armes.kar98k)).toBeCloseTo(0.35 + 2 * 0.38 + 0.5, 9);
+    const fin = run(r.state, 0.05, 33); // 1,61 s (et un pas d'arrondi)
+    expect(fin.ev.map((e) => [e.type, e.son])).toEqual([['rechargeEtape', 'arme-verrou-ouvre'], ['rechargeBalle', 'arme-cartouche'], ['rechargeBalle', 'arme-cartouche'], ['rechargeFin', 'arme-verrou-ching']]);
+    expect(armeActive(fin.st)).toEqual({ id: 'kar98k', chargeur: 5, reserve: 28, recharge: null, prevu: null, vide: false });
+  });
+  it('balle par balle (Winchester, Kar98k) : chaque cartouche compte dès qu\'elle est mise ; interrompu, le rechargement garde ses cartouches et reprend', () => {
+    let s = run(donnerArme(creerInventaire(table), table, 'winchester1897').state, 0.05, 20).st;
+    for (let i = 0; i < 6; i += 1) s = tirer(s);
+    let r = run(s, 0.05, 1); // départ automatique : chargeur vide
+    expect(armeActive(r.st).prevu).toBe(6);
+    expect(table.armes.winchester1897.rechargement).toBeCloseTo(0.25 + 6 * 0.42 + 0.45, 9);
+    r = run(r.st, 0.05, 15); // 0,75 s : une cartouche (0,25 + 0,42 = 0,67)
+    expect(armeActive(r.st).chargeur).toBe(1);
+    expect(armeActive(r.st).reserve).toBe(29);
+    expect(gesteRecharge(r.st, table).balle).toBe(true);
+    s = changerArme(r.st, table).state; // interrompu
+    expect(s.emplacements[1].chargeur).toBe(1);
+    s = run(s, 0.05, 20).st;
+    s = changerArme(s, table).state;
+    s = run(s, 0.05, 80).st;
+    expect(armeActive(s)).toEqual({ id: 'winchester1897', chargeur: 6, reserve: 24, recharge: null, prevu: null, vide: false });
+  });
+  it('Garand : rechargé avec des cartouches restantes, le clip est éjecté (« ping », il tombe) ; vide, pas de ping au rechargement (il est parti au dernier tir)', () => {
+    const pret = run(donnerArme(creerInventaire(table), table, 'garand').state, 0.05, 20).st;
+    let s = recharger(tirer(pret), table).state;
+    expect(run(s, 0.05, 41).ev.filter((e) => e.type === 'rechargeEtape').map((e) => [e.son, e.lacher])).toEqual([['arme-ping', true], ['arme-chargeur-entre', false], ['arme-glissiere', false]]);
+    s = pret;
+    for (let i = 0; i < 8; i += 1) s = tirer(s);
+    expect(run(s, 0.05, 42).ev.filter((e) => e.type === 'rechargeEtape').map((e) => e.son)).toEqual(['arme-chargeur-entre', 'arme-glissiere']);
+    expect(table.armes.garand.dernierTir).toEqual({ son: 'arme-ping', lacher: true });
   });
   it('arme à sec (chargeur et réserve vides) : plus de tir, aucun rechargement ; le Colt reste disponible', () => {
     let s = donnerArme(creerInventaire(table), table, 'kar98k').state;
@@ -190,7 +231,10 @@ describe('inventaire : emplacements, chargeurs, rechargement, changement', () =>
     let s = donnerArme(creerInventaire(table), table, 'thompson').state;
     expect(s.emplacements.map((e) => e.id)).toEqual(['m1911', 'thompson']);
     expect(s.actif).toBe(1);
-    expect(s.sortie).toEqual({ t: 0, total: 0.64, de: 0, ancien: null });
+    // Retour du propriétaire : ranger le Colt (moitié de son maniement, 0,19 s) puis sortir la Thompson (moitié du sien, 0,32 s).
+    expect(s.sortie.ranger).toBeCloseTo(0.19, 9);
+    expect(s.sortie.total).toBeCloseTo(0.51, 9);
+    expect([s.sortie.t, s.sortie.de, s.sortie.ancien]).toEqual([0, 0, null]);
     s = run(s, 0.05, 13).st;
     expect(s.sortie).toBeNull();
     const r = donnerArme(s, table, 'mg42');
@@ -205,7 +249,7 @@ describe('inventaire : emplacements, chargeurs, rechargement, changement', () =>
     expect(donnerArme(s2, table, 'panzerschreck').change).toBe(false);
     expect(donnerArme(s2, table, 'inconnue').change).toBe(false);
   });
-  it('changement : durée = temps de sortie de l\'arme qui arrive (40 % ranger, 60 % sortir) ; pas de tir pendant ; un rechargement interrompu reprend à la sortie suivante', () => {
+  it('changement : ranger l\'arme tenue à son rythme, sortir la nouvelle au sien (moitié du maniement de chacune) ; pas de tir pendant ; un rechargement interrompu reprend à la sortie suivante', () => {
     let s = run(donnerArme(creerInventaire(table), table, 'bar').state, 0.05, 20).st;
     s = tirer(s);
     s = recharger(s, table).state;
@@ -214,16 +258,22 @@ describe('inventaire : emplacements, chargeurs, rechargement, changement', () =>
     expect(avant).toBeCloseTo(1, 9);
     s = changerArme(s, table).state;
     expect(armeActive(s).id).toBe('m1911');
-    expect(s.sortie.total).toBe(0.38);
+    // Retour du propriétaire : ranger le BAR est lent (0,46 s), sortir le Colt rapide (0,19 s) ; dans l'autre sens, l'inverse.
+    expect(s.sortie.ranger).toBeCloseTo(0.46, 9);
+    expect(s.sortie.total).toBeCloseTo(0.65, 9);
     expect(armeMontree(s).id).toBe('bar');
-    expect(RANGER).toBe(0.4);
+    expect(armeMontree(run(s, 0.05, 9).st).id).toBe('bar'); // 0,45 s : on range encore
+    expect(armeMontree(run(s, 0.05, 10).st).id).toBe('m1911');
+    expect(RANGER).toBe(0.5);
+    expect(dureesChangement(table, 'm1911', 'bar')).toEqual({ t: 0, ranger: 0.19, total: 0.19 + 0.46 });
     expect(peutTirer(s)).toBe(false);
-    s = run(s, 0.05, 8).st;
+    s = run(s, 0.05, 14).st;
     expect(s.sortie).toBeNull();
     expect(peutTirer(s)).toBe(true);
     expect(s.emplacements[1].recharge).toBeCloseTo(1, 9); // gardé
     s = changerArme(s, table).state;
-    s = run(s, 0.05, 19).st; // sortie du BAR (0,92 s)
+    expect(s.sortie.ranger).toBeCloseTo(0.19, 9); // ranger le Colt : rapide
+    s = run(s, 0.05, 14).st; // 0,19 + 0,46 s
     expect(s.sortie).toBeNull();
     expect(enRecharge(s)).toBe(true);
     s = run(s, 0.05, 36).st; // 1,8 s de plus
@@ -282,6 +332,31 @@ describe('tenue en partie (pose du lot 9c dans le repère de l\'os chest, corps 
     expect(pointeCanon(new Float32Array([0, 0, 1, 0, 9, 50, 1, 1, 20]))).toEqual([1, 1, 20]);
     expect(pointeCanon([])).toEqual([0, 0, 0]);
   });
+  it('retour du propriétaire : bout du canon (avant et côté) = position de la pose + rotation × pointe ; balles et laser en partent', () => {
+    const t = { position: [-5, 40, 18], rotation: [1, 0, 0, 0, 1, 0, 0, 0, 1] };
+    expect(boucheCanon(t, [0, 1, 30])).toEqual({ avant: 48, cote: -5, hauteur: 41 });
+    const c = Math.cos(Math.PI / 6);
+    const r30 = { position: [0, 0, 0], rotation: [c, 0, 0.5, 0, 1, 0, -0.5, 0, c] }; // lacet de 30°
+    expect(boucheCanon(r30, [0, 0, 10]).cote).toBeCloseTo(5, 9);
+    expect(boucheCanon(r30, [0, 0, 10]).avant).toBeCloseTo(10 * c, 9);
+    // muzzlePoint : côté = x du repère du personnage tourné comme lui ((sin a, −cos a)) ; 0 : exactement le point d'avant.
+    expect(muzzlePoint({ x: 0, y: 0 }, 0, 30, null, -5)).toEqual({ x: 30, y: 5 });
+    expect(muzzlePoint({ x: 1, y: 2 }, 1, 26, null, 0)).toEqual(muzzlePoint({ x: 1, y: 2 }, 1, 26, null));
+    for (const id of UTILES) {
+      const tn = tenueArme({ variant, skeletons: posesV2.skeletons, posesV2, posesArmes, id, corps: characters.corps });
+      const m = maillageArme(donnees, armeParId(donnees, id), armeParId(donnees, id).variantes[0], { pose: 'main', enJeu: true });
+      const b = boucheCanon(tn, pointeCanon(m.positions));
+      expect(b.avant, id).toBeGreaterThan(26);
+      expect(Math.abs(b.cote), id).toBeLessThan(15);
+    }
+  });
+  it('retour du propriétaire : collé à un mur, le départ est ramené devant lui (jamais de l\'autre côté)', () => {
+    const mur = [{ id: 'mur', x: 20, y: -50, w: 10, h: 100 }];
+    const d = departLibre({ x: 0, y: 0 }, { x: 40, y: 0 }, null, mur);
+    expect(d.x).toBeCloseTo(19.5, 9);
+    expect(d.y).toBeCloseTo(0, 9);
+    expect(departLibre({ x: 0, y: 0 }, { x: 15, y: 3 }, null, mur)).toEqual({ x: 15, y: 3 });
+  });
 });
 
 describe('sons des armes (data/game/sons-armes.json)', () => {
@@ -307,7 +382,15 @@ describe('sons des armes (data/game/sons-armes.json)', () => {
     const s = sonsChoisis(sonsJson, table.actives);
     expect(s.tir.m1911).toBe('tir');
     for (const id of UTILES.slice(1)) expect(s.tir[id]).toBe(`tir-${id}-${sonsJson.choix[id]}`);
-    expect(s.recettes.map((r) => r.id)).toEqual([...UTILES.slice(1).map((id) => `tir-${id}-${sonsJson.choix[id]}`), 'arme-recharge', 'arme-change']);
+    expect(s.recettes.map((r) => r.id)).toEqual([...UTILES.slice(1).map((id) => `tir-${id}-${sonsJson.choix[id]}`), ...sonsJson.recettes.filter((r) => !r.id.startsWith('tir-')).map((r) => r.id)]);
+    // Retour du propriétaire : chaque son nommé par la table (étapes, balle par balle, manœuvre, dernier tir) existe.
+    const noms = new Set(s.recettes.map((r) => r.id));
+    for (const id of table.actives) {
+      const e = table.armes[id];
+      const sons = [...(e.recharge.etapes ?? []).map((x) => x.son), ...Object.values(e.recharge.sons ?? {}), e.manoeuvre?.son, e.dernierTir?.son].filter(Boolean);
+      for (const n of sons) expect(noms.has(n), `${id} : ${n}`).toBe(true);
+    }
+    expect(noms.has('arme-tombe')).toBe(true);
     expect(sonsChoisis({ ...sonsJson, choix: { kar98k: 'b' } }, ['kar98k']).tir.kar98k).toBe('tir-kar98k-b');
     expect(sonsChoisis(null, ['kar98k']).tir.kar98k).toBe('tir');
   });
@@ -322,5 +405,9 @@ describe('sons des armes (data/game/sons-armes.json)', () => {
     expect(ask([{ type: 'shot', x: 0, y: 0 }])).toContain('tir');
     expect(ask([{ type: 'armeRecharge', x: 0, y: 0 }])).toEqual(['arme-recharge']);
     expect(ask([{ type: 'armeChange', x: 0, y: 0 }])).toEqual(['arme-change']);
+    expect(ask([{ type: 'armeSon', son: 'arme-verrou-ching', x: 0, y: 0 }])).toEqual(['arme-verrou-ching']);
+    expect(ask([{ type: 'armeSon', son: 'inconnu', x: 0, y: 0 }])).toEqual([]);
+    const tombe = direct(createDirector(3), frame([{ type: 'armeSon', son: 'arme-tombe', delay: 0.4, x: 0, y: 0 }]), cfg).requests[0];
+    expect([tombe.sound, tombe.delay]).toEqual(['arme-tombe', 0.4]);
   });
 });

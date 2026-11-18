@@ -57,3 +57,17 @@ export function castRay(origin, angle, maxLength, enemies, bounds, obstacles = [
   const len = hit ? hit.distance : limit;
   return { end: { x: o.x + d.x * len, y: o.y + d.y * len }, length: len, hit, stoppedByWall: !hit && !blocker && wall < range, stoppedBy: hit ? null : blocker };
 }
+
+// Lot 9e (retour du propriétaire : les balles partent du bout du canon) : le bout d'un canon long peut passer de l'autre côté d'un mur ou d'un
+// obstacle des tirs quand le joueur s'y colle ; le départ est alors ramené juste avant le premier obstacle sur le segment centre → canon
+// (marge : distance gardée devant l'obstacle). Sans obstacle, `to` tel quel.
+export function departLibre(from, to, bounds, obstacles = [], marge = 0.5) {
+  const dx = num(to?.x) - num(from?.x);
+  const dy = num(to?.y) - num(from?.y);
+  const len = Math.hypot(dx, dy);
+  if (!(len > 0)) return { x: num(to?.x), y: num(to?.y) };
+  const r = castRay(from, Math.atan2(dy, dx), len, [], bounds, obstacles);
+  if (!r.stoppedBy && !r.stoppedByWall) return { x: num(to?.x), y: num(to?.y) };
+  const k = Math.max(0, r.length - marge) / len;
+  return { x: num(from?.x) + dx * k, y: num(from?.y) + dy * k };
+}

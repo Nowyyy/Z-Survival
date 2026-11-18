@@ -49,10 +49,12 @@ const pixels = (page, x, y, w, h) => page.evaluate(({ x, y, w, h }) => {
 // 48 / 19 607 ; ?test=1&corps=avant les retrouve exactement) : + 1 appel et + 216 triangles pour le Colt du lot 9c en main (240 triangles ; le
 // pistolet d'origine du personnage, 24 triangles, est retiré de sa géométrie) ; + 1 appel et 8 triangles de sang : un des dix zombies, rampant,
 // apparaît à 40 du joueur et le touche tout de suite (sa zone couvre maintenant tout son corps couché, décision du propriétaire). Programmes inchangés.
+// Retours du propriétaire après le lot 9e : + 1 programme de shaders (matière instanciée des douilles éjectées et des chargeurs qui tombent,
+// compilée au premier tir) ; appels et triangles inchangés au moment de la mesure. Avant : programmes 18 (Élevé, Moyen) et 16 (Faible).
 const ORIGINE = {
-  eleve: { R1: [64, 38385, 18], U1: [71, 39827, 18] },
-  moyen: { R1: [62, 23773, 18], U1: [69, 25215, 18] },
-  faible: { R1: [44, 19179, 16], U1: [50, 19831, 16] },
+  eleve: { R1: [64, 38385, 19], U1: [71, 39827, 19] },
+  moyen: { R1: [62, 23773, 19], U1: [69, 25215, 19] },
+  faible: { R1: [44, 19179, 17], U1: [50, 19831, 17] },
 };
 const SCENES = {
   R1: { url: '&nospawn=1', at: [U(300), U(300)], floor: 'rdc', wave: 10 },

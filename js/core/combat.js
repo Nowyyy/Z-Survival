@@ -16,10 +16,12 @@ export function stepWeapon(state, dt, wantsFire, weapon, activeBullets = 0) {
   return { state: { cooldown: Math.max(0, cooldown) }, fire: true };
 }
 
-// Point de départ de la balle et du laser, retenu dans la zone libre.
-export function muzzlePoint(player, angle, offset, bounds) {
-  const x = num(player?.x) + Math.cos(num(angle)) * num(offset);
-  const y = num(player?.y) + Math.sin(num(angle)) * num(offset);
+// Point de départ de la balle et du laser, retenu dans la zone libre. side (lot 9e) : décalage sur le côté du personnage (x de son repère,
+// tourné comme le personnage dessiné : (sin a, −cos a)) ; 0 : sur l'axe de visée, comme avant.
+export function muzzlePoint(player, angle, offset, bounds, side = 0) {
+  const a = num(angle);
+  const x = num(player?.x) + Math.cos(a) * num(offset) + Math.sin(a) * num(side);
+  const y = num(player?.y) + Math.sin(a) * num(offset) - Math.cos(a) * num(side);
   return {
     x: Math.min(Math.max(x, num(bounds?.minX, -Infinity)), num(bounds?.maxX, Infinity)),
     y: Math.min(Math.max(y, num(bounds?.minY, -Infinity)), num(bounds?.maxY, Infinity)),

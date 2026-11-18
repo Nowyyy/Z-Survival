@@ -1,5 +1,5 @@
 {
- "_provisoire": "Lot 9e — Sons des armes en main (provisoires, jamais écoutés par l'agent qui les a écrits ; à choisir à l'oreille dans l'atelier des armes, atelier-armes.html, section « Sons »). Recettes de js/core/synth.js, même format que data/game/sounds.json, dérivées de la recette « tir » de la partie (claquement, coup sourd, corps, bande, réverbération) : accordées par arme (fusils plus graves et plus longs, avec la culasse ou la pompe manœuvrée après le coup ; automatiques courts et serrés ; MG42 très court). Deux variantes par arme : a (proche du tir de la partie) et b (plus sec : claquement plus aigu, réverbération plus courte, saturation plus forte). choix : variante jouée par arme (a ou b) ; le Colt garde le son « tir » de la partie (tampons existants inchangés). arme-recharge et arme-change : rechargement (chargeur sorti, chargeur remis) et changement d'arme (frottement, déclic). Seuls les sons choisis sont calculés pour la partie (derrière l'écran de préparation).",
+ "_provisoire": "Lot 9e — Sons des armes en main (provisoires, jamais écoutés par l'agent qui les a écrits ; à choisir à l'oreille dans l'atelier des armes, atelier-armes.html, section « Sons »). Recettes de js/core/synth.js, même format que data/game/sounds.json, dérivées de la recette « tir » de la partie (claquement, coup sourd, corps, bande, réverbération) : accordées par arme (fusils plus graves et plus longs, avec la culasse ou la pompe manœuvrée après le coup ; automatiques courts et serrés ; MG42 très court). Deux variantes par arme : a (proche du tir de la partie) et b (plus sec : claquement plus aigu, réverbération plus courte, saturation plus forte). choix : variante jouée par arme (a ou b) ; le Colt garde le son « tir » de la partie (tampons existants inchangés). arme-recharge et arme-change : rechargement (chargeur sorti, chargeur remis) et changement d'arme (frottement, déclic). Seuls les sons choisis sont calculés pour la partie (derrière l'écran de préparation). Retour du propriétaire après le lot 9e : sons des étapes du rechargement et des manœuvres (arme-chargeur-sort, arme-chargeur-entre, arme-culasse, arme-glissiere, arme-cartouche, arme-verrou-ouvre, arme-verrou, arme-verrou-ching : le « ching » du Kar98k quand le verrou se ferme, arme-pompe, arme-ping : le clip du Garand éjecté, arme-couvercle, arme-tombe : la pièce lâchée touche le sol), nommés par data/game/armes-partie.json (recharge, manoeuvre, dernierTir), jamais écoutés par l'agent ; même écoute dans l'atelier des armes.",
  "choix": {
   "kar98k": "a",
   "winchester1897": "a",
@@ -1876,6 +1876,978 @@
    "post": {
     "saturation": 0,
     "targetPeak": 0.65,
+    "fadeOut": 0.01
+   }
+  },
+  {
+   "id": "arme-chargeur-sort",
+   "category": "tir",
+   "set": "essentiel",
+   "sampleRate": 22050,
+   "duration": 0.3,
+   "variants": 2,
+   "seed": 201,
+   "loop": false,
+   "gainDb": -9,
+   "layers": [
+    {
+     "type": "ring",
+     "start": 0,
+     "dur": 0.04,
+     "partials": [
+      {
+       "freq": 2600,
+       "gain": 0.45,
+       "decay": 0.006
+      },
+      {
+       "freq": 3900,
+       "gain": 0.25,
+       "decay": 0.004
+      }
+     ]
+    },
+    {
+     "type": "noise",
+     "color": "pink",
+     "start": 0.03,
+     "dur": 0.12,
+     "attack": 0.01,
+     "decay": 0.05,
+     "gain": 0.45,
+     "filter": {
+      "type": "bandpass",
+      "freq": [
+       2200,
+       900
+      ],
+      "sweep": 0.1,
+      "q": 0.8
+     }
+    },
+    {
+     "type": "ring",
+     "start": 0.13,
+     "startJitter": 0.01,
+     "dur": 0.05,
+     "partials": [
+      {
+       "freq": 700,
+       "gain": 0.3,
+       "decay": 0.012
+      },
+      {
+       "freq": 1150,
+       "gain": 0.2,
+       "decay": 0.009
+      }
+     ]
+    }
+   ],
+   "post": {
+    "saturation": 0,
+    "targetPeak": 0.7,
+    "fadeOut": 0.01
+   }
+  },
+  {
+   "id": "arme-chargeur-entre",
+   "category": "tir",
+   "set": "essentiel",
+   "sampleRate": 22050,
+   "duration": 0.3,
+   "variants": 2,
+   "seed": 202,
+   "loop": false,
+   "gainDb": -8,
+   "layers": [
+    {
+     "type": "noise",
+     "color": "pink",
+     "start": 0,
+     "dur": 0.07,
+     "attack": 0.005,
+     "decay": 0.03,
+     "gain": 0.4,
+     "filter": {
+      "type": "bandpass",
+      "freq": 1400,
+      "q": 0.8
+     }
+    },
+    {
+     "type": "osc",
+     "wave": "sine",
+     "freq": [
+      260,
+      110
+     ],
+     "sweepTime": 0.035,
+     "start": 0.08,
+     "dur": 0.07,
+     "attack": 0.001,
+     "decay": 0.0245,
+     "gain": 0.8
+    },
+    {
+     "type": "ring",
+     "start": 0.08,
+     "startJitter": 0.01,
+     "dur": 0.07,
+     "partials": [
+      {
+       "freq": 1250,
+       "gain": 0.6,
+       "decay": 0.012
+      },
+      {
+       "freq": 2000,
+       "gain": 0.35,
+       "decay": 0.008
+      },
+      {
+       "freq": 3100,
+       "gain": 0.15,
+       "decay": 0.005
+      }
+     ]
+    }
+   ],
+   "post": {
+    "saturation": 0,
+    "targetPeak": 0.7,
+    "fadeOut": 0.01
+   }
+  },
+  {
+   "id": "arme-culasse",
+   "category": "tir",
+   "set": "essentiel",
+   "sampleRate": 22050,
+   "duration": 0.42,
+   "variants": 2,
+   "seed": 203,
+   "loop": false,
+   "gainDb": -8,
+   "layers": [
+    {
+     "type": "ring",
+     "start": 0,
+     "dur": 0.04,
+     "partials": [
+      {
+       "freq": 1700,
+       "gain": 0.45,
+       "decay": 0.007
+      },
+      {
+       "freq": 2700,
+       "gain": 0.25,
+       "decay": 0.005
+      }
+     ]
+    },
+    {
+     "type": "noise",
+     "color": "white",
+     "start": 0.01,
+     "dur": 0.1,
+     "attack": 0.01,
+     "decay": 0.04,
+     "gain": 0.3,
+     "filter": {
+      "type": "bandpass",
+      "freq": [
+       1500,
+       3000
+      ],
+      "sweep": 0.1,
+      "q": 0.8
+     }
+    },
+    {
+     "type": "ring",
+     "start": 0.17,
+     "startJitter": 0.015,
+     "dur": 0.08,
+     "partials": [
+      {
+       "freq": 1050,
+       "gain": 0.6,
+       "decay": 0.014
+      },
+      {
+       "freq": 1750,
+       "gain": 0.4,
+       "decay": 0.01
+      },
+      {
+       "freq": 2950,
+       "gain": 0.2,
+       "decay": 0.006
+      }
+     ]
+    },
+    {
+     "type": "osc",
+     "wave": "sine",
+     "freq": [
+      320,
+      120
+     ],
+     "sweepTime": 0.03,
+     "start": 0.17,
+     "dur": 0.06,
+     "attack": 0.001,
+     "decay": 0.020999999999999998,
+     "gain": 0.7
+    }
+   ],
+   "post": {
+    "saturation": 0,
+    "targetPeak": 0.7,
+    "fadeOut": 0.01
+   }
+  },
+  {
+   "id": "arme-glissiere",
+   "category": "tir",
+   "set": "essentiel",
+   "sampleRate": 22050,
+   "duration": 0.25,
+   "variants": 2,
+   "seed": 204,
+   "loop": false,
+   "gainDb": -8,
+   "layers": [
+    {
+     "type": "noise",
+     "color": "white",
+     "start": 0,
+     "dur": 0.015,
+     "attack": 0.0005,
+     "decay": 0.004,
+     "gain": 0.5,
+     "filter": {
+      "type": "highpass",
+      "freq": 2500,
+      "q": 0.7
+     }
+    },
+    {
+     "type": "ring",
+     "start": 0,
+     "dur": 0.06,
+     "partials": [
+      {
+       "freq": 1900,
+       "gain": 0.6,
+       "decay": 0.01
+      },
+      {
+       "freq": 2900,
+       "gain": 0.35,
+       "decay": 0.007
+      },
+      {
+       "freq": 4300,
+       "gain": 0.15,
+       "decay": 0.004
+      }
+     ]
+    },
+    {
+     "type": "osc",
+     "wave": "sine",
+     "freq": [
+      380,
+      140
+     ],
+     "sweepTime": 0.025,
+     "start": 0,
+     "dur": 0.05,
+     "attack": 0.001,
+     "decay": 0.017499999999999998,
+     "gain": 0.8
+    }
+   ],
+   "post": {
+    "saturation": 0,
+    "targetPeak": 0.7,
+    "fadeOut": 0.01
+   }
+  },
+  {
+   "id": "arme-cartouche",
+   "category": "tir",
+   "set": "essentiel",
+   "sampleRate": 22050,
+   "duration": 0.22,
+   "variants": 2,
+   "seed": 205,
+   "loop": false,
+   "gainDb": -11,
+   "layers": [
+    {
+     "type": "noise",
+     "color": "pink",
+     "start": 0,
+     "dur": 0.06,
+     "attack": 0.004,
+     "decay": 0.02,
+     "gain": 0.35,
+     "filter": {
+      "type": "bandpass",
+      "freq": 1100,
+      "q": 1.2
+     }
+    },
+    {
+     "type": "ring",
+     "start": 0.05,
+     "startJitter": 0.01,
+     "dur": 0.05,
+     "partials": [
+      {
+       "freq": 800,
+       "gain": 0.4,
+       "decay": 0.01
+      },
+      {
+       "freq": 1300,
+       "gain": 0.25,
+       "decay": 0.007
+      }
+     ]
+    },
+    {
+     "type": "osc",
+     "wave": "sine",
+     "freq": [
+      200,
+      100
+     ],
+     "sweepTime": 0.02,
+     "start": 0.05,
+     "dur": 0.04,
+     "attack": 0.001,
+     "decay": 0.013999999999999999,
+     "gain": 0.4
+    }
+   ],
+   "post": {
+    "saturation": 0,
+    "targetPeak": 0.7,
+    "fadeOut": 0.01
+   }
+  },
+  {
+   "id": "arme-verrou-ouvre",
+   "category": "tir",
+   "set": "essentiel",
+   "sampleRate": 22050,
+   "duration": 0.3,
+   "variants": 2,
+   "seed": 206,
+   "loop": false,
+   "gainDb": -9,
+   "layers": [
+    {
+     "type": "ring",
+     "start": 0,
+     "dur": 0.04,
+     "partials": [
+      {
+       "freq": 1500,
+       "gain": 0.4,
+       "decay": 0.007
+      },
+      {
+       "freq": 2400,
+       "gain": 0.2,
+       "decay": 0.005
+      }
+     ]
+    },
+    {
+     "type": "noise",
+     "color": "pink",
+     "start": 0.03,
+     "dur": 0.07,
+     "attack": 0.01,
+     "decay": 0.03,
+     "gain": 0.3,
+     "filter": {
+      "type": "bandpass",
+      "freq": [
+       1200,
+       2600
+      ],
+      "sweep": 0.06,
+      "q": 0.8
+     }
+    },
+    {
+     "type": "ring",
+     "start": 0.09,
+     "startJitter": 0.01,
+     "dur": 0.05,
+     "partials": [
+      {
+       "freq": 1100,
+       "gain": 0.45,
+       "decay": 0.01
+      },
+      {
+       "freq": 1800,
+       "gain": 0.25,
+       "decay": 0.007
+      }
+     ]
+    }
+   ],
+   "post": {
+    "saturation": 0,
+    "targetPeak": 0.7,
+    "fadeOut": 0.01
+   }
+  },
+  {
+   "id": "arme-verrou",
+   "category": "tir",
+   "set": "essentiel",
+   "sampleRate": 22050,
+   "duration": 0.5,
+   "variants": 2,
+   "seed": 207,
+   "loop": false,
+   "gainDb": -9,
+   "layers": [
+    {
+     "type": "ring",
+     "start": 0,
+     "dur": 0.04,
+     "partials": [
+      {
+       "freq": 1500,
+       "gain": 0.4,
+       "decay": 0.007
+      },
+      {
+       "freq": 2400,
+       "gain": 0.2,
+       "decay": 0.005
+      }
+     ]
+    },
+    {
+     "type": "noise",
+     "color": "pink",
+     "start": 0.03,
+     "dur": 0.07,
+     "attack": 0.01,
+     "decay": 0.03,
+     "gain": 0.3,
+     "filter": {
+      "type": "bandpass",
+      "freq": [
+       1200,
+       2600
+      ],
+      "sweep": 0.06,
+      "q": 0.8
+     }
+    },
+    {
+     "type": "ring",
+     "start": 0.09,
+     "startJitter": 0.01,
+     "dur": 0.05,
+     "partials": [
+      {
+       "freq": 1100,
+       "gain": 0.45,
+       "decay": 0.01
+      },
+      {
+       "freq": 1800,
+       "gain": 0.25,
+       "decay": 0.007
+      }
+     ]
+    },
+    {
+     "type": "noise",
+     "color": "pink",
+     "start": 0.16,
+     "dur": 0.07,
+     "attack": 0.01,
+     "decay": 0.03,
+     "gain": 0.3,
+     "filter": {
+      "type": "bandpass",
+      "freq": [
+       2600,
+       1200
+      ],
+      "sweep": 0.06,
+      "q": 0.8
+     }
+    },
+    {
+     "type": "ring",
+     "start": 0.24,
+     "startJitter": 0.01,
+     "dur": 0.05,
+     "partials": [
+      {
+       "freq": 1200,
+       "gain": 0.45,
+       "decay": 0.009
+      },
+      {
+       "freq": 2000,
+       "gain": 0.25,
+       "decay": 0.006
+      }
+     ]
+    },
+    {
+     "type": "ring",
+     "start": 0.32,
+     "startJitter": 0.01,
+     "dur": 0.05,
+     "partials": [
+      {
+       "freq": 1700,
+       "gain": 0.5,
+       "decay": 0.008
+      },
+      {
+       "freq": 2700,
+       "gain": 0.3,
+       "decay": 0.005
+      }
+     ]
+    },
+    {
+     "type": "osc",
+     "wave": "sine",
+     "freq": [
+      300,
+      130
+     ],
+     "sweepTime": 0.025,
+     "start": 0.32,
+     "dur": 0.05,
+     "attack": 0.001,
+     "decay": 0.017499999999999998,
+     "gain": 0.6
+    }
+   ],
+   "post": {
+    "saturation": 0,
+    "targetPeak": 0.7,
+    "fadeOut": 0.01
+   }
+  },
+  {
+   "id": "arme-verrou-ching",
+   "category": "tir",
+   "set": "essentiel",
+   "sampleRate": 22050,
+   "duration": 0.7,
+   "variants": 2,
+   "seed": 208,
+   "loop": false,
+   "gainDb": -8,
+   "layers": [
+    {
+     "type": "noise",
+     "color": "pink",
+     "start": 0,
+     "dur": 0.07,
+     "attack": 0.01,
+     "decay": 0.03,
+     "gain": 0.3,
+     "filter": {
+      "type": "bandpass",
+      "freq": [
+       2600,
+       1200
+      ],
+      "sweep": 0.06,
+      "q": 0.8
+     }
+    },
+    {
+     "type": "ring",
+     "start": 0.06,
+     "dur": 0.05,
+     "partials": [
+      {
+       "freq": 1200,
+       "gain": 0.45,
+       "decay": 0.009
+      },
+      {
+       "freq": 2000,
+       "gain": 0.25,
+       "decay": 0.006
+      }
+     ]
+    },
+    {
+     "type": "ring",
+     "start": 0.13,
+     "dur": 0.05,
+     "partials": [
+      {
+       "freq": 1700,
+       "gain": 0.5,
+       "decay": 0.008
+      },
+      {
+       "freq": 2700,
+       "gain": 0.3,
+       "decay": 0.005
+      }
+     ]
+    },
+    {
+     "type": "osc",
+     "wave": "sine",
+     "freq": [
+      300,
+      130
+     ],
+     "sweepTime": 0.025,
+     "start": 0.13,
+     "dur": 0.05,
+     "attack": 0.001,
+     "decay": 0.017499999999999998,
+     "gain": 0.6
+    },
+    {
+     "type": "ring",
+     "start": 0.17,
+     "dur": 0.45,
+     "partials": [
+      {
+       "freq": 3150,
+       "gain": 0.55,
+       "decay": 0.11
+      },
+      {
+       "freq": 4630,
+       "gain": 0.35,
+       "decay": 0.08
+      },
+      {
+       "freq": 6290,
+       "gain": 0.2,
+       "decay": 0.05
+      },
+      {
+       "freq": 2050,
+       "gain": 0.15,
+       "decay": 0.06
+      }
+     ]
+    }
+   ],
+   "post": {
+    "saturation": 0,
+    "targetPeak": 0.75,
+    "fadeOut": 0.01
+   }
+  },
+  {
+   "id": "arme-pompe",
+   "category": "tir",
+   "set": "essentiel",
+   "sampleRate": 22050,
+   "duration": 0.4,
+   "variants": 2,
+   "seed": 209,
+   "loop": false,
+   "gainDb": -7,
+   "layers": [
+    {
+     "type": "noise",
+     "color": "pink",
+     "start": 0,
+     "dur": 0.05,
+     "attack": 0.004,
+     "decay": 0.02,
+     "gain": 0.5,
+     "filter": {
+      "type": "bandpass",
+      "freq": 1300,
+      "q": 0.8
+     }
+    },
+    {
+     "type": "ring",
+     "start": 0.035,
+     "dur": 0.05,
+     "partials": [
+      {
+       "freq": 900,
+       "gain": 0.45,
+       "decay": 0.012
+      },
+      {
+       "freq": 1500,
+       "gain": 0.3,
+       "decay": 0.008
+      }
+     ]
+    },
+    {
+     "type": "noise",
+     "color": "pink",
+     "start": 0.16,
+     "dur": 0.05,
+     "attack": 0.004,
+     "decay": 0.02,
+     "gain": 0.5,
+     "filter": {
+      "type": "bandpass",
+      "freq": 1500,
+      "q": 0.8
+     }
+    },
+    {
+     "type": "ring",
+     "start": 0.19,
+     "startJitter": 0.01,
+     "dur": 0.06,
+     "partials": [
+      {
+       "freq": 1100,
+       "gain": 0.55,
+       "decay": 0.012
+      },
+      {
+       "freq": 1800,
+       "gain": 0.35,
+       "decay": 0.008
+      }
+     ]
+    },
+    {
+     "type": "osc",
+     "wave": "sine",
+     "freq": [
+      280,
+      110
+     ],
+     "sweepTime": 0.025,
+     "start": 0.19,
+     "dur": 0.05,
+     "attack": 0.001,
+     "decay": 0.017499999999999998,
+     "gain": 0.7
+    }
+   ],
+   "post": {
+    "saturation": 0,
+    "targetPeak": 0.7,
+    "fadeOut": 0.01
+   }
+  },
+  {
+   "id": "arme-ping",
+   "category": "tir",
+   "set": "essentiel",
+   "sampleRate": 22050,
+   "duration": 0.8,
+   "variants": 2,
+   "seed": 210,
+   "loop": false,
+   "gainDb": -6,
+   "layers": [
+    {
+     "type": "noise",
+     "color": "white",
+     "start": 0,
+     "dur": 0.01,
+     "attack": 0.0005,
+     "decay": 0.003,
+     "gain": 0.5,
+     "filter": {
+      "type": "highpass",
+      "freq": 3000,
+      "q": 0.7
+     }
+    },
+    {
+     "type": "ring",
+     "start": 0,
+     "dur": 0.7,
+     "partials": [
+      {
+       "freq": 2700,
+       "gain": 0.6,
+       "decay": 0.18
+      },
+      {
+       "freq": 4050,
+       "gain": 0.4,
+       "decay": 0.12
+      },
+      {
+       "freq": 5350,
+       "gain": 0.25,
+       "decay": 0.09
+      },
+      {
+       "freq": 7100,
+       "gain": 0.12,
+       "decay": 0.06
+      }
+     ]
+    }
+   ],
+   "post": {
+    "saturation": 0,
+    "targetPeak": 0.75,
+    "fadeOut": 0.01
+   }
+  },
+  {
+   "id": "arme-couvercle",
+   "category": "tir",
+   "set": "essentiel",
+   "sampleRate": 22050,
+   "duration": 0.3,
+   "variants": 2,
+   "seed": 211,
+   "loop": false,
+   "gainDb": -8,
+   "layers": [
+    {
+     "type": "noise",
+     "color": "pink",
+     "start": 0,
+     "dur": 0.06,
+     "attack": 0.004,
+     "decay": 0.025,
+     "gain": 0.35,
+     "filter": {
+      "type": "bandpass",
+      "freq": 1000,
+      "q": 0.8
+     }
+    },
+    {
+     "type": "ring",
+     "start": 0.02,
+     "dur": 0.06,
+     "partials": [
+      {
+       "freq": 850,
+       "gain": 0.45,
+       "decay": 0.014
+      },
+      {
+       "freq": 1400,
+       "gain": 0.3,
+       "decay": 0.01
+      }
+     ]
+    },
+    {
+     "type": "osc",
+     "wave": "sine",
+     "freq": [
+      220,
+      100
+     ],
+     "sweepTime": 0.03,
+     "start": 0.02,
+     "dur": 0.06,
+     "attack": 0.001,
+     "decay": 0.020999999999999998,
+     "gain": 0.6
+    }
+   ],
+   "post": {
+    "saturation": 0,
+    "targetPeak": 0.7,
+    "fadeOut": 0.01
+   }
+  },
+  {
+   "id": "arme-tombe",
+   "category": "tir",
+   "set": "essentiel",
+   "sampleRate": 22050,
+   "duration": 0.4,
+   "variants": 2,
+   "seed": 212,
+   "loop": false,
+   "gainDb": -10,
+   "layers": [
+    {
+     "type": "osc",
+     "wave": "sine",
+     "freq": [
+      180,
+      90
+     ],
+     "sweepTime": 0.03,
+     "start": 0,
+     "dur": 0.06,
+     "attack": 0.001,
+     "decay": 0.020999999999999998,
+     "gain": 0.6
+    },
+    {
+     "type": "ring",
+     "start": 0,
+     "dur": 0.1,
+     "partials": [
+      {
+       "freq": 620,
+       "gain": 0.35,
+       "decay": 0.02
+      },
+      {
+       "freq": 1050,
+       "gain": 0.25,
+       "decay": 0.015
+      },
+      {
+       "freq": 1800,
+       "gain": 0.12,
+       "decay": 0.01
+      }
+     ]
+    },
+    {
+     "type": "ring",
+     "start": 0.08,
+     "startJitter": 0.02,
+     "dur": 0.07,
+     "partials": [
+      {
+       "freq": 700,
+       "gain": 0.2,
+       "decay": 0.015
+      },
+      {
+       "freq": 1200,
+       "gain": 0.12,
+       "decay": 0.01
+      }
+     ]
+    }
+   ],
+   "post": {
+    "saturation": 0,
+    "targetPeak": 0.7,
     "fadeOut": 0.01
    }
   }

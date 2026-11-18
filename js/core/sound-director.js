@@ -41,7 +41,8 @@ const creakRng = (state, seed) => state?.creakRng ?? createRng(num(seed, 1) + 30
 // Lot 3e : frame.floor est l'étage de l'écouteur ; un événement (champ floor) ou un zombie (champ floor) d'un AUTRE étage est entendu étouffé : gain × audio.floorGain
 // et un seul filtre passe-bas à audio.floorLowpass Hz (jamais plus d'un filtre : l'étouffement par les murs, qui ne vaut que sur l'étage de l'écouteur, n'y est pas ajouté).
 // frame : { time, paused, floor?, listener: { x, y }, walls, events: [...], zombies: [{ id, x, y, variant, floor? }] }. cfg : { audio, materials, voice, sounds: soundTable(...) }.
-// Lot 9e : 'shot' porte son (son de tir de l'arme, sinon « tir »), 'armeRecharge' et 'armeChange' (x, y du joueur).
+// Lot 9e : 'shot' porte son (son de tir de l'arme, sinon « tir »), 'armeRecharge' et 'armeChange' (x, y du joueur) ; 'armeSon' : son (recette
+// de data/game/sons-armes.json), delay (secondes, facultatif).
 // Événements : { type: 'shot' | 'zombieHit' | 'zombieAttack' | 'obstacleHit' | 'playerHurt' | 'playerDeath' | 'playerStep' | 'pause' | 'resume'
 // | 'waveSplash' (sound, variant) | 'waveEnd' (variant) | 'plankTorn' | 'plankRepaired' (x, y, windowId) | 'playerDown' | 'playerUp', x, y, ... }.
 // | 'plankRepairStart' (x, y, windowId, duration, progress) | 'plankRepairStop' (windowId).
@@ -116,6 +117,7 @@ export function direct(state, frame, cfg) {
       }
     } else if (type === 'armeRecharge') add('arme-recharge', { x: e.x, y: e.y }); // lot 9e : rechargement (chargeur sorti, remis)
     else if (type === 'armeChange') add('arme-change', { x: e.x, y: e.y }); // lot 9e : changement d'arme (frottement, déclic)
+    else if (type === 'armeSon' && typeof e.son === 'string' && table[e.son]) add(e.son, { x: e.x, y: e.y, delay: Math.max(0, num(e.delay)) }); // retour du propriétaire après le lot 9e : étapes du rechargement, culasse, pompe, ping, chute d'une pièce
     else if (type === 'zombieHit') {
       add('impact-zombie', { x: e.x, y: e.y, floor: e.floor });
       const v = voiceFor(table, e.killed === true ? 'zombie-mort' : 'zombie-blessure', e.zombie, audio.zombieRate);
