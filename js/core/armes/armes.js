@@ -87,8 +87,9 @@ export const armeParId = (donnees, id) => donnees.armes.find((a) => a.id === id)
 export const varianteDe = (arme, id) => arme?.variantes.find((v) => v.id === id) ?? arme?.variantes[0] ?? null;
 export const budgetDe = (donnees, arme) => (arme?.classe === 'lourde' ? donnees.budgets.lourde : donnees.budgets.epaule);
 
-// Choix du propriétaire : { variantes: { arme: variante }, armeSpeciale } ; arme ou variante inconnue : défaut (première variante),
-// arme spéciale inconnue : la première de SPECIALES. Renvoie { variantes (toutes les armes), armeSpeciale, ecarts }.
+// Choix du propriétaire : { variantes: { arme: variante }, armesSpeciales: [...] } (les deux gardées : elles ne serviront pas au même
+// endroit ; l'ancien armeSpeciale, une seule, est encore lu) ; arme ou variante inconnue : défaut (première variante) ; aucune arme spéciale
+// valable : la première de SPECIALES. Renvoie { variantes (toutes les armes), armesSpeciales, ecarts }.
 export function lireChoix(donnees, choix) {
   const c = isObj(choix) ? choix : {};
   const v = isObj(c.variantes) ? c.variantes : {};
@@ -102,8 +103,11 @@ export function lireChoix(donnees, choix) {
   }
   for (const k of Object.keys(v)) if (!armeParId(donnees, k)) ecarts.push(`arme inconnue : ${k}`);
   const dispo = SPECIALES.filter((s) => armeParId(donnees, s));
-  const armeSpeciale = dispo.includes(c.armeSpeciale) ? c.armeSpeciale : dispo[0] ?? null;
-  if (c.armeSpeciale !== undefined && armeSpeciale !== c.armeSpeciale) ecarts.push(`arme spéciale inconnue : ${String(c.armeSpeciale)}`);
+  const voulues = Array.isArray(c.armesSpeciales) ? c.armesSpeciales : c.armeSpeciale !== undefined ? [c.armeSpeciale] : [];
+  for (const s of voulues) if (!dispo.includes(s)) ecarts.push(`arme spéciale inconnue : ${String(s)}`);
+  if (c.armesSpeciales !== undefined && !Array.isArray(c.armesSpeciales)) ecarts.push('armes spéciales illisibles');
+  const gardees = dispo.filter((s) => voulues.includes(s));
+  const armesSpeciales = gardees.length ? gardees : dispo.slice(0, 1);
   let echelle = null;
   if (c.echelle !== undefined) {
     const e = isObj(c.echelle) ? c.echelle : {};
@@ -117,7 +121,7 @@ export function lireChoix(donnees, choix) {
     else if (e.largeur !== undefined) ecarts.push(`échelle de largeur invalide : ${String(e.largeur)}`);
     if (!isObj(c.echelle)) ecarts.push('échelle illisible');
   }
-  return { variantes, armeSpeciale, echelle, ecarts };
+  return { variantes, armesSpeciales, echelle, ecarts };
 }
 
 // Pièces d'une arme dans une pose. 'main' : groupe « dos » déplacé de arme.dos.main (mm, repère de l'arme) ; 'caisse' : de arme.dos.caisse.

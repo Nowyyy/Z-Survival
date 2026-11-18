@@ -230,8 +230,8 @@ function configurer(o, repos, { torse = 0, epaules = null, f = 1 }) {
 
 const arrondi = (x, n = 4) => Math.round(x * 10 ** n) / 10 ** n;
 
-// Essai demandé par le propriétaire (« toutes les armes avec les bras les plus longs, idem pour les épaules », pour voir le rendu d'un
-// personnage du jeu modifié une fois pour toutes) : même corps pour toutes les armes, le pistolet compris.
+// Corps retenu par le propriétaire (essai « toutes les armes avec les bras les plus longs, idem pour les épaules », puis « on garde le corps
+// long ») : même corps pour toutes les armes, le pistolet compris ; à reporter sur le personnage du jeu au lot d'intégration.
 export const CORPS_LONG = Object.freeze({ epaules: 9, f: 1.2 });
 
 // Applique un corps (écartement des épaules, allongement des bras) à une instance sans pose de tenue (pose actuelle du jeu).
@@ -249,7 +249,7 @@ export function appliquerCorps(perso, corps) {
 // Pose une arme. perso : instance de createV2Kit (après setAnim('repos')) ; arme : données (prises en mm) ; s : unités par mm (échelle
 // commune) ; objet : groupe de l'arme (ajouté au repère du personnage) ; points : surface de l'arme (echantillons(), repère de l'arme) ;
 // mode : 'deux-mains' | 'une-main' (pistolet) ; bretelle : sections de la bretelle (sectionsBretelle(), mm) ou null ; corps : { epaules, f }
-// imposé à toutes les armes (essai CORPS_LONG) au lieu des écartements et allongements essayés arme par arme.
+// imposé à toutes les armes (CORPS_LONG, retenu) au lieu des écartements et allongements essayés arme par arme.
 // Renvoie les données de la pose (voir data/armes/poses.json) et ses contrôles.
 export function poserArme(perso, arme, s, objet, { points = null, regles = REGLES, mode = 'deux-mains', bretelle = null, corps = null } = {}) {
   const r = { ...REGLES, ...(regles ?? {}) };

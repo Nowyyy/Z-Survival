@@ -41,7 +41,7 @@ describe('poses de tenue (data/armes/poses.json)', () => {
     expect(p.torse).toBeLessThanOrEqual(30);
     expect(p.epaules).toBeGreaterThanOrEqual(9);
     expect(p.bras).toBeLessThanOrEqual(1.2);
-    if (p.pose === 'pistolet') expect([p.torse, p.epaules, p.bras]).toEqual([0, 11.5, 1]);
+    if (p.pose === 'pistolet') expect(p.torse).toBe(0); // pistolet : de face (corps long commun : voir plus bas)
     expect(Object.keys(p.angles)).toEqual([...ARTICULATIONS]);
     for (const a of Object.values(p.angles)) expect(a.every(Number.isFinite)).toBe(true);
   });
@@ -64,10 +64,14 @@ describe('bretelle (retour : « la main ne doit pas être mise sur la bretelle m
   });
 });
 
-describe('essai du propriétaire : bras ×1,2 et épaules ±9 pour toutes les armes (CORPS_LONG)', () => {
-  const essai = calculerPoses({ characters: j('data/game/characters-v2.json'), poses: j('data/game/poses-v2.json'), donnees, ids: ARMES_POSEES, corps: CORPS_LONG });
-  const liste = Object.entries(essai.armes).flatMap(([id, a]) => Object.entries(a.modes).map(([mode, p]) => [id, mode, p]));
-  it.each(liste)('%s (%s) : même corps, tenue correcte', (id, mode, p) => {
+describe('corps retenu par le propriétaire : bras ×1,2 et épaules ±9 pour toutes les armes (CORPS_LONG)', () => {
+  // Pour comparer : le corps adapté à chaque arme (écartements et allongements essayés arme par arme).
+  const adapte = calculerPoses({ characters: j('data/game/characters-v2.json'), poses: j('data/game/poses-v2.json'), donnees, ids: ['m1911'] });
+  it('poses.json : corps commun noté pour le lot d\'intégration', () => {
+    expect(fichier.corps).toEqual({ epaules: CORPS_LONG.epaules, bras: CORPS_LONG.f });
+    expect(fichier.corps).toEqual({ epaules: 9, bras: 1.2 });
+  });
+  it.each(toutes)('%s (%s) : même corps, tenue correcte', (id, mode, p) => {
     expect([p.bras, p.epaules]).toEqual([1.2, 9]);
     expect([p.controle.droite, p.controle.gauche, p.controle.traverse, p.controle.mains]).toEqual([0, 0, 0, 0]);
     if (p.arme.bretelle) expect(p.controle.bretelle).toBe(0);
@@ -77,8 +81,9 @@ describe('essai du propriétaire : bras ×1,2 et épaules ±9 pour toutes les ar
   });
 
   it.each([['deux-mains'], ['une-main']])('Colt (%s) : bras tendus comme avec le corps du personnage, pas repliés (retour du propriétaire)', (mode) => {
-    const long = essai.armes.m1911.modes[mode];
-    const normal = fichier.armes.m1911.modes[mode];
+    const long = fichier.armes.m1911.modes[mode];
+    const normal = adapte.armes.m1911.modes[mode];
+    expect([normal.bras, normal.epaules]).toEqual([1, 11.5]);
     expect(Math.abs(long.angles.elbowR[0])).toBeLessThanOrEqual(Math.abs(normal.angles.elbowR[0]) + 0.01);
     expect(long.controle.devant).toBeGreaterThan(normal.controle.devant);
   });

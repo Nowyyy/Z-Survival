@@ -58,13 +58,14 @@ const etat = {
   rotation: !reduit,
   tenue: 'adaptee',
   mode: 'deux-mains', // pistolet : à deux mains ou à une main
-  // Corps du personnage : adapté à chaque arme (poses.json) ou, à l'essai, bras ×1,2 et épaules ±9 pour toutes (?corps=long).
-  corps: query.get('corps') === 'long' ? 'long' : 'adapte',
+  // Corps du personnage : retenu par le propriétaire, bras ×1,2 et épaules ±9 pour toutes les armes (poses.json) ; pour comparer, adapté à
+  // chaque arme (?corps=adapte).
+  corps: query.get('corps') === 'adapte' ? 'adapte' : 'long',
   yaw: 0.6,
   pitch: 0.35,
 };
 etat.variante = choix.variantes[etat.arme] ?? null;
-const proposition = { variantes: { ...(choixJson?.variantes && typeof choixJson.variantes === 'object' ? choixJson.variantes : {}) }, armeSpeciale: choix.armeSpeciale };
+const proposition = { variantes: { ...(choixJson?.variantes && typeof choixJson.variantes === 'object' ? choixJson.variantes : {}) }, armesSpeciales: [...choix.armesSpeciales] };
 const mesures = {};
 let rendus = 0;
 
@@ -570,7 +571,7 @@ for (const m of ['jeu', 'lampe', 'lune']) option($('ctl-lumiere'), m, t(`dev.arm
 for (const m of ['masque', 'visible']) option($('ctl-pistolet'), m, t(`dev.armes.pistolet.${m}`));
 for (const m of ['adaptee', 'actuelle']) option($('ctl-tenue'), m, t(`dev.armes.tenue.${m}`));
 for (const m of ['deux-mains', 'une-main']) option($('ctl-mode'), m, t(`dev.armes.tenue.mode.${m}`));
-for (const m of ['adapte', 'long']) option($('ctl-corps'), m, t(`dev.armes.corps.${m}`));
+for (const m of ['long', 'adapte']) option($('ctl-corps'), m, t(`dev.armes.corps.${m}`));
 $('ctl-corps').value = etat.corps;
 for (const c of ['caisse', 'ratelier']) option($('ctl-caisse'), c, t(`dev.armes.caisse.${c}`));
 function remplirVariantes() {
@@ -580,11 +581,11 @@ function remplirVariantes() {
   ctlVariante.value = etat.variante;
 }
 function texteChoix() {
-  const out = { _note: choixJson?._note ?? '', variantes: proposition.variantes, armeSpeciale: proposition.armeSpeciale, echelle: { longueur: donnees.echelle.lisibilite } };
+  const out = { _note: choixJson?._note ?? '', variantes: proposition.variantes, armesSpeciales: proposition.armesSpeciales, echelle: { longueur: donnees.echelle.lisibilite } };
   $('choix-texte').value = `${JSON.stringify(out, null, 2)}\n`;
   const ecarts = choix.ecarts.length ? ` ${t('dev.armes.choix.ecarts', { liste: choix.ecarts.join(' ; ') })}` : '';
   $('choix-etat').textContent = choixJson
-    ? `${t('dev.armes.choix.etat', { n: Object.keys(choixJson.variantes ?? {}).length, s: armeParId(donnees, choix.armeSpeciale)?.nom ?? '–' })}${ecarts} ${t('dev.armes.choix.specialeNote')}`
+    ? `${t('dev.armes.choix.etat', { n: Object.keys(choixJson.variantes ?? {}).length, s: choix.armesSpeciales.map((id) => armeParId(donnees, id)?.nom ?? id).join(', ') || '–' })}${ecarts} ${t('dev.armes.choix.specialeNote')}`
     : t('dev.armes.choix.absent');
 }
 function infosVariante() {
@@ -668,7 +669,7 @@ btnCraie.addEventListener('click', () => {
 });
 $('btn-retenir').addEventListener('click', () => {
   proposition.variantes[etat.arme] = etat.variante;
-  if (['panzerschreck', 'm2lanceflammes'].includes(etat.arme)) proposition.armeSpeciale = etat.arme;
+  if (['panzerschreck', 'm2lanceflammes'].includes(etat.arme) && !proposition.armesSpeciales.includes(etat.arme)) proposition.armesSpeciales.push(etat.arme);
   texteChoix();
 });
 

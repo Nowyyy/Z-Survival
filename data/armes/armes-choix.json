@@ -1,5 +1,5 @@
 {
-  "_note": "Choix du propriétaire sur atelier-armes.html (mode d'emploi : Docs/ref/armes.md). variantes : identifiant de l'arme → identifiant de la variante retenue (a, b ou c) ; armeSpeciale : panzerschreck ou m2lanceflammes. Identifiant inconnu ou fichier illisible : variante par défaut (la première) et Panzerschreck.",
+  "_note": "Choix du propriétaire sur atelier-armes.html (mode d'emploi : Docs/ref/armes.md). variantes : identifiant de l'arme → identifiant de la variante retenue (a, b ou c) ; armesSpeciales : les armes spéciales gardées (panzerschreck, m2lanceflammes ; les deux, choix du propriétaire : elles ne serviront pas au même endroit). Identifiant inconnu ou fichier illisible : variante par défaut (la première) et Panzerschreck seul.",
   "variantes": {
     "m1911": "a",
     "kar98k": "a",
@@ -12,5 +12,8 @@
     "panzerschreck": "a",
     "m2lanceflammes": "a"
   },
-  "armeSpeciale": "panzerschreck"
+  "armesSpeciales": [
+    "panzerschreck",
+    "m2lanceflammes"
+  ]
 }
