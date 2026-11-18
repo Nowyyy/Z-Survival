@@ -75,4 +75,11 @@ describe('essai du propriétaire : bras ×1,2 et épaules ±9 pour toutes les ar
     expect(p.controle.devant).toBeGreaterThan(5);
     expect(p.torse).toBeLessThanOrEqual(30);
   });
+
+  it.each([['deux-mains'], ['une-main']])('Colt (%s) : bras tendus comme avec le corps du personnage, pas repliés (retour du propriétaire)', (mode) => {
+    const long = essai.armes.m1911.modes[mode];
+    const normal = fichier.armes.m1911.modes[mode];
+    expect(Math.abs(long.angles.elbowR[0])).toBeLessThanOrEqual(Math.abs(normal.angles.elbowR[0]) + 0.01);
+    expect(long.controle.devant).toBeGreaterThan(normal.controle.devant);
+  });
 });
