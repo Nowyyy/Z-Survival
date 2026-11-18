@@ -20,10 +20,10 @@ Le corps long **rétrécit les épaules (−4) et allonge la portée des mains (
 |---|---|---|---|
 | Rayon des zombies `enemies.json` `zombie.radius` × `radiusMul` | 20 (18,6 / 19,6 / 21,4) | place au sol : séparation (`enemy-ai.js:140`), murs et meubles (`collision.js`), grille (`nav.js:20`, +`inflate` 4), escaliers (`stair-zombies.js:77,93`), siège, repoussements | **inchangé** : le corps au sol est le même, l'aire passe de 464 à 439, le cercle de 40 couvre déjà 23,8 de large |
 | Zone touchée par une balle (`projectile.js:87`) et le laser (`ray.js`) | r + 4 (balle) ; r | silhouette | **inchangé** debout : toutes les mains du corps long restent dans r + 4 = 24 (marcheur, marche : 24,0 au plus) |
-| Rampant : même cercle (`CLAUDE.md` : « la rampe est visuelle ») | cercle 20 | corps couché 60 × 24 | **question 1** : capsule pour balle et laser seulement (segment ±17 dans le sens de la marche, rayon 12 : aire 1 270 ≈ cercle 1 257), collisions inchangées |
+| Rampant : même cercle (`CLAUDE.md` : « la rampe est visuelle ») | cercle 20 | corps couché 60 × 24 | **capsule** (corrections, point 1) pour balle, laser et coups ; collisions inchangées |
 | Joueur `player.json` `radius` | 18 | collisions, tube d'escalier (`stair-walk.js:136`), barrières, contact | **inchangé** (même corps au sol ; épaules 25,8 → 23) |
 | Coup du zombie (`combat.js:75`) : centres à r_joueur + r_zombie + 1 | 39 (37,6 / 38,6 / 40,4) | portée du bras | **règle inchangée, animation revue** : aujourd'hui la main frappe à 19,6 et s'arrête 13 avant le torse du joueur (coup dans le vide) ; bras long tendu, buste penché : 30–31 × échelle du type → la main touche le torse (≈ 8 du centre) à 39 |
-| Emplacement d'arrachage `windows.json` `slotDistance` (file : + 45 × rang) | 55 | portée à l'arrachage | **50** : mains (30) au nu extérieur de l'ouverture (mur 40, face à 20 du centre) au lieu de 8,5 devant ; file décalée d'autant (**question 2**) |
+| Emplacement d'arrachage `windows.json` `slotDistance` (file : + 45 × rang) | 55 | portée à l'arrachage | **50** : mains (30) au nu extérieur de l'ouverture (mur 40, face à 20 du centre) au lieu de 8,5 devant ; file décalée d'autant (décidé) |
 | Réparation `repairDistance` / `repairRadius` | 70 / 80 | main du joueur | **inchangés** : zone de 80, et `repairDistance` place aussi les meubles (`maps/params.json` `repairClearance`, `decor-interieur.js:307`) : la carte ne bouge pas |
 | `queueStep`, `approachRadius`, `gateTolerance`, `slotTolerance`, `climbTime` | 45, 140, 14, 26, 1,2 | corps au sol | inchangés |
 | `nav.json` (`cell` 20, `inflate` 4), `stairs.json` (`arrivalPushRadius` 60), `player-down.json` (`knockbackRadius` 220) | — | rayon | inchangés (rayon inchangé) |
@@ -79,13 +79,13 @@ Colt : chargeur 7, réserve ∞, jamais à sec ; Colt en manche 11 : 13 tirs = 5
 - **Lighthouse** mobile, 5 passes : `index.html` 90, 89, 89, 89, 90 (médiane 89 dans ce conteneur, déjà sous le seuil de 90 sur `origin/dev`) ; `jeu.html` 80, 80, 80, 80, 79 (médiane 80) ; CLS ≤ 0,0013. Rendu (R1, R2, U1, U4 × 3), fichiers au démarrage, captures et nombre de tests : relevés en B sur une copie servie de `d456a42`.
 
 ## 5. Plan
-- **B** corps long et gabarits (`character-v2.js`, `pose-v2.js` : marche bras tendus, coup à vraie portée ; `slotDistance` ; rampants selon la question 1) ; trace (premier écart et cause), difficulté, blocage, captures. **C** table, armes en main, tir par arme, « Donner une arme ». **D** chargeurs, recharge animée, HUD, Colt ∞, à sec, « Remplir », « Illimitées » ; trace « chargeurs du Colt ». **E** emplacements, molette, E, 1/2, bouton à visuel, sortie animée. **F** sons, dix cycles du lot 9d, Lighthouse. **G** CI et bilan.
+- **B** corps long et gabarits (`character-v2.js`, `pose-v2.js` : marche bras tendus, coup à vraie portée ; `slotDistance` ; rampants en capsule (balles, laser, coups)) ; trace (premier écart et cause), difficulté, blocage, captures. **C** table, armes en main, tir par arme, « Donner une arme ». **D** chargeurs, recharge animée, HUD, Colt ∞, à sec, « Remplir », « Illimitées » ; trace « chargeurs du Colt ». **E** emplacements, molette, E, 1/2, bouton à visuel, sortie animée. **F** sons, dix cycles du lot 9d, Lighthouse. **G** CI et bilan.
 - **Tests** : purs (`inventaire`, table, calibrage recalculé depuis les données, plombs, gabarits, capsule) ; e2e (chaque arme tire, tue, ralentit ; recharge ; changement PC et téléphone ; axe ; 44 px ; aucune écriture ; aucune requête externe) ; références de trace et de mesures mises à jour avec la cause de chaque écart.
 
-## Questions
-1. **Rampants** : capsule de tir (même aire, forme du corps couché) au lieu du cercle ? Elle contredit la règle « la rampe est visuelle, sans effet sur la hitbox » de `CLAUDE.md`. Sans réponse : cercle gardé.
-2. **Arrachage** : `slotDistance` 55 → 50 (mains au mur) ou 58,5 (mains au même point qu'aujourd'hui, dans le vide) ? Sans réponse : 50.
-3. Le niveau « cadence » n'accélère pas les armes déjà sous 0,15 s (`player-stats.js:81`, Thompson, StG 44, BAR, MG42) : laissé tel quel dans ce lot ?
+## Corrections du propriétaire (avant le GO ; elles priment sur le reste de la fiche)
+1. **Rampants** : zone **plus longue qui couvre tout le corps couché**, pour les balles et le laser **et pour les coups** (contact avec le joueur) : capsule dans le sens de la marche, **rayon actuel gardé** (20 × type : la largeur ne diminue pas), segment de −8,8 à +10,8 × échelle du type (corps long : de −28,8 à +30,8 devant le centre) ; contact = distance du joueur à ce segment ≤ r_joueur + rayon + 1. **Aucune hauteur** ne filtre les balles (la logique reste en 2D) : elles touchent le rampant comme aujourd'hui. Collisions (place au sol) : cercle inchangé. La ligne « la rampe est visuelle, sans effet sur la hitbox » de `CLAUDE.md` sera à réécrire (bilan).
+2. **Arrachage** : mains au mur, `slotDistance` 55 → 50.
+3. **Cadence** : le niveau « cadence » du joueur n'est pas touché (rééquilibrage avec les objets hors partie).
 
 ## Idées
 Rayon du grand aligné sur son dessin (×1,11) ; recharge cartouche par cartouche interruptible pour le fusil à pompe ; prix des munitions au lot d'achat.
