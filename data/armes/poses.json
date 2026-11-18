@@ -1,7 +1,11 @@
 {
-  "_note": "Lot 9c — Poses de tenue des armes (décision du propriétaire), calculées dans l'atelier sur une instance du personnage (js/armes/tenue.js, js/armes/poses-calcul.js) ; le personnage du jeu et js/game/character-v2.js ne changent pas. regles : torses essayés (degrés, épaule gauche vers l'avant), écartements des épaules (x ; 11,5 = personnage), allongements des bras et avant-bras (1,2 au plus), places de la main ou de la crosse par pose (unités du jeu ; repère du personnage ou de l'os chest). facteur : facteur commun de taille des armes pour lequel les poses valent (data/armes/armes.json → echelle.lisibilite ; le Colt M1911 a sa taille propre, ×1,2 : armes.json → taille). armes.<id>.modes.<mode> : torse (degrés), epaules, bras, arme.position (repère du personnage, arme dans l'axe de visée), angles (radians, ordre YXZ des os de character-v2.js) et controle (écarts des mains à leurs prises, points de l'arme dans la tête ou le torse, visée en degrés, bouche devant le corps ; bretelle : points de la bretelle dans un bras, une main ou le torse). arme.bretelle : sections de la bretelle déviées contre le bras (mm, repère de l'arme ; la main tient l'arme, jamais la bretelle). Données pour le lot d'intégration (dos : réservoirs du lance-flammes, décalage en mm et rotation en degrés du groupe « dos »). Ne pas modifier à la main : recalculer avec fichierPoses (mode d'emploi : Docs/ref/armes.md) ; tests/unit/armes-poses.test.js vérifie que ce fichier est à jour.",
+  "_note": "Lot 9c — Poses de tenue des armes (décision du propriétaire), calculées dans l'atelier sur une instance du personnage (js/armes/tenue.js, js/armes/poses-calcul.js) ; le personnage du jeu et js/game/character-v2.js ne changent pas. regles : torses essayés (degrés, épaule gauche vers l'avant), écartements des épaules (x ; 11,5 = personnage), allongements des bras et avant-bras (1,2 au plus), places de la main ou de la crosse par pose (unités du jeu ; repère du personnage ou de l'os chest). corps : corps retenu par le propriétaire pour toutes les armes (epaules : écartement des épaules ; bras : allongement des bras et avant-bras), à reporter sur le personnage du jeu au lot d'intégration. facteur : facteur commun de taille des armes pour lequel les poses valent (data/armes/armes.json → echelle.lisibilite ; le Colt M1911 a sa taille propre, ×1,2 : armes.json → taille). armes.<id>.modes.<mode> : torse (degrés), epaules, bras, arme.position (repère du personnage, arme dans l'axe de visée), angles (radians, ordre YXZ des os de character-v2.js) et controle (écarts des mains à leurs prises, points de l'arme dans la tête ou le torse, visée en degrés, bouche devant le corps ; bretelle : points de la bretelle dans un bras, une main ou le torse). arme.bretelle : sections de la bretelle déviées contre le bras (mm, repère de l'arme ; la main tient l'arme, jamais la bretelle). Données pour le lot d'intégration (dos : réservoirs du lance-flammes, décalage en mm et rotation en degrés du groupe « dos »). Ne pas modifier à la main : recalculer avec fichierPoses (mode d'emploi : Docs/ref/armes.md) ; tests/unit/armes-poses.test.js vérifie que ce fichier est à jour.",
   "version": 1,
   "facteur": 0.8,
+  "corps": {
+    "epaules": 9,
+    "bras": 1.2
+  },
   "regles": {
     "torses": [
       0,
@@ -65,13 +69,13 @@
           "pose": "pistolet",
           "mode": "deux-mains",
           "torse": 0,
-          "epaules": 11.5,
-          "bras": 1,
+          "epaules": 9,
+          "bras": 1.2,
           "arme": {
             "position": [
               0.45,
               45.336,
-              16.928
+              21.822
             ],
             "rotation": [
               0,
@@ -101,12 +105,12 @@
               0
             ],
             "shoulderR": [
-              -0.7594,
-              1.1089,
-              -0.6471
+              -0.731,
+              0.9999,
+              -0.7915
             ],
             "elbowR": [
-              -1.041,
+              -1.0405,
               0,
               0
             ],
@@ -116,12 +120,12 @@
               0
             ],
             "shoulderL": [
-              -0.8054,
-              -1.175,
-              0.5996
+              -0.736,
+              -1.0458,
+              0.723
             ],
             "elbowL": [
-              -0.6589,
+              -0.7832,
               0,
               0
             ],
@@ -136,7 +140,7 @@
             "gauche": 0,
             "traverse": 0,
             "visee": 0,
-            "devant": 13.92,
+            "devant": 18.81,
             "mains": 0
           },
           "prises": {
@@ -156,13 +160,13 @@
           "pose": "pistolet",
           "mode": "une-main",
           "torse": 0,
-          "epaules": 11.5,
-          "bras": 1,
+          "epaules": 9,
+          "bras": 1.2,
           "arme": {
             "position": [
               -7.55,
               46.836,
-              20.928
+              24.475
             ],
             "rotation": [
               0,
@@ -192,12 +196,12 @@
               0
             ],
             "shoulderR": [
-              -0.7884,
-              0.9798,
-              -1.0282
+              -0.78,
+              0.8903,
+              -1.0684
             ],
             "elbowR": [
-              -0.7996,
+              -0.7992,
               0,
               0
             ],
@@ -227,7 +231,7 @@
             "gauche": 0,
             "traverse": 0,
             "visee": 0,
-            "devant": 17.92,
+            "devant": 21.47,
             "mains": 0
           },
           "prises": {
@@ -247,14 +251,14 @@
         "deux-mains": {
           "pose": "epaule",
           "mode": null,
-          "torse": 30,
-          "epaules": 11.5,
-          "bras": 1,
+          "torse": 15,
+          "epaules": 9,
+          "bras": 1.2,
           "arme": {
             "position": [
-              -6.092,
-              47.513,
-              15.314
+              -5.74,
+              47.499,
+              17.996
             ],
             "rotation": [
               0,
@@ -269,12 +273,12 @@
               ],
               [
                 4,
-                -138,
+                -158,
                 -90
               ],
               [
                 4,
-                -186,
+                -196,
                 160
               ],
               [
@@ -287,31 +291,31 @@
           "angles": {
             "spine": [
               0.02,
-              -0.2618,
+              -0.1309,
               0
             ],
             "chest": [
               0.015,
-              -0.2618,
+              -0.1309,
               0
             ],
             "neck": [
               0,
-              0.2618,
+              0.1309,
               0
             ],
             "head": [
               0.06,
-              0.2618,
+              0.1309,
               0
             ],
             "shoulderR": [
-              -0.744,
-              1.4097,
-              -1.0067
+              -0.5685,
+              0.8096,
+              -0.8349
             ],
             "elbowR": [
-              -0.9916,
+              -1.5586,
               0,
               0
             ],
@@ -321,12 +325,12 @@
               0
             ],
             "shoulderL": [
-              -1.1932,
-              -1.1036,
-              0.7403
+              -1.0293,
+              -1.2409,
+              0.8901
             ],
             "elbowL": [
-              -0.3509,
+              -0.5304,
               0,
               0
             ],
@@ -341,7 +345,7 @@
             "gauche": 0,
             "traverse": 0,
             "visee": 0,
-            "devant": 23.62,
+            "devant": 27.71,
             "mains": 0,
             "bretelle": 0
           },
@@ -366,14 +370,14 @@
         "deux-mains": {
           "pose": "epaule",
           "mode": null,
-          "torse": 30,
-          "epaules": 11.5,
-          "bras": 1,
+          "torse": 15,
+          "epaules": 9,
+          "bras": 1.2,
           "arme": {
             "position": [
-              -6.092,
-              47.457,
-              14.474
+              -5.74,
+              47.443,
+              16.156
             ],
             "rotation": [
               0,
@@ -384,31 +388,31 @@
           "angles": {
             "spine": [
               0.02,
-              -0.2618,
+              -0.1309,
               0
             ],
             "chest": [
               0.015,
-              -0.2618,
+              -0.1309,
               0
             ],
             "neck": [
               0,
-              0.2618,
+              0.1309,
               0
             ],
             "head": [
               0.06,
-              0.2618,
+              0.1309,
               0
             ],
             "shoulderR": [
-              -0.7236,
-              1.4115,
-              -0.9474
+              -0.4878,
+              0.7836,
+              -0.7645
             ],
             "elbowR": [
-              -0.9968,
+              -1.6779,
               0,
               0
             ],
@@ -418,12 +422,12 @@
               0
             ],
             "shoulderL": [
-              -1.1544,
-              -1.2872,
-              1.0974
+              -1.0045,
+              -1.2676,
+              1.0483
             ],
             "elbowL": [
-              -0.317,
+              -0.5437,
               0,
               0
             ],
@@ -438,7 +442,7 @@
             "gauche": 0,
             "traverse": 0,
             "visee": 0,
-            "devant": 16.74,
+            "devant": 19.83,
             "mains": 0
           },
           "prises": {
@@ -463,13 +467,13 @@
           "pose": "epaule",
           "mode": null,
           "torse": 30,
-          "epaules": 11.5,
+          "epaules": 9,
           "bras": 1.2,
           "arme": {
             "position": [
               -7.092,
               47.457,
-              13.914
+              14.914
             ],
             "rotation": [
               0,
@@ -499,12 +503,12 @@
               0
             ],
             "shoulderR": [
-              -0.5494,
-              1.0966,
-              -0.8174
+              -0.5311,
+              0.9679,
+              -0.8334
             ],
             "elbowR": [
-              -1.6124,
+              -1.6395,
               0,
               0
             ],
@@ -514,12 +518,12 @@
               0
             ],
             "shoulderL": [
+              -1.0852,
               -1.1162,
-              -1.059,
-              0.8227
+              1.0081
             ],
             "elbowL": [
-              -0.4874,
+              -0.3967,
               0,
               0
             ],
@@ -534,7 +538,7 @@
             "gauche": 0,
             "traverse": 0,
             "visee": 0,
-            "devant": 21.01,
+            "devant": 22.01,
             "mains": 0
           },
           "prises": {
@@ -558,14 +562,14 @@
         "deux-mains": {
           "pose": "epaule",
           "mode": null,
-          "torse": 30,
-          "epaules": 10,
-          "bras": 1,
+          "torse": 15,
+          "epaules": 9,
+          "bras": 1.2,
           "arme": {
             "position": [
-              -6.092,
-              47.457,
-              14.754
+              -5.74,
+              47.443,
+              17.436
             ],
             "rotation": [
               0,
@@ -579,12 +583,12 @@
                 -250
               ],
               [
-                25,
-                -154,
+                5,
+                -164,
                 -40
               ],
               [
-                25,
+                5,
                 -190,
                 220
               ],
@@ -598,31 +602,31 @@
           "angles": {
             "spine": [
               0.02,
-              -0.2618,
+              -0.1309,
               0
             ],
             "chest": [
               0.015,
-              -0.2618,
+              -0.1309,
               0
             ],
             "neck": [
               0,
-              0.2618,
+              0.1309,
               0
             ],
             "head": [
               0.06,
-              0.2618,
+              0.1309,
               0
             ],
             "shoulderR": [
-              -0.6556,
-              1.2364,
-              -0.9064
+              -0.5403,
+              0.8184,
+              -0.8024
             ],
             "elbowR": [
-              -1.2568,
+              -1.6345,
               0,
               0
             ],
@@ -632,12 +636,12 @@
               0
             ],
             "shoulderL": [
-              -1.1454,
-              -1.1062,
-              0.8403
+              -1.0847,
+              -1.423,
+              1.0648
             ],
             "elbowL": [
-              -0.3509,
+              -0.3054,
               0,
               0
             ],
@@ -652,7 +656,7 @@
             "gauche": 0,
             "traverse": 0,
             "visee": 0,
-            "devant": 23.48,
+            "devant": 27.57,
             "mains": 0,
             "bretelle": 0
           },
@@ -677,14 +681,14 @@
         "deux-mains": {
           "pose": "epaule",
           "mode": null,
-          "torse": 30,
-          "epaules": 11.5,
-          "bras": 1.1,
+          "torse": 15,
+          "epaules": 9,
+          "bras": 1.2,
           "arme": {
             "position": [
-              -7.092,
-              47.345,
-              12.794
+              -5.74,
+              47.331,
+              14.476
             ],
             "rotation": [
               0,
@@ -695,31 +699,31 @@
           "angles": {
             "spine": [
               0.02,
-              -0.2618,
+              -0.1309,
               0
             ],
             "chest": [
               0.015,
-              -0.2618,
+              -0.1309,
               0
             ],
             "neck": [
               0,
-              0.2618,
+              0.1309,
               0
             ],
             "head": [
               0.06,
-              0.2618,
+              0.1309,
               0
             ],
             "shoulderR": [
-              -0.55,
-              1.1366,
-              -0.8033
+              -0.4134,
+              0.7325,
+              -0.7232
             ],
             "elbowR": [
-              -1.4327,
+              -1.7915,
               0,
               0
             ],
@@ -729,12 +733,12 @@
               0
             ],
             "shoulderL": [
-              -1.197,
-              -1.1898,
-              0.8697
+              -1.0946,
+              -1.4939,
+              1.145
             ],
             "elbowL": [
-              -0.3629,
+              -0.2978,
               0,
               0
             ],
@@ -749,7 +753,7 @@
             "gauche": 0,
             "traverse": 0,
             "visee": 0,
-            "devant": 19.19,
+            "devant": 22.28,
             "mains": 0
           },
           "prises": {
@@ -870,13 +874,13 @@
           "pose": "hanche",
           "mode": null,
           "torse": 30,
-          "epaules": 10,
+          "epaules": 9,
           "bras": 1.2,
           "arme": {
             "position": [
-              -12.4,
-              38.54,
-              6.12
+              -11.4,
+              36.54,
+              7.12
             ],
             "rotation": [
               0,
@@ -906,12 +910,12 @@
               0
             ],
             "shoulderR": [
-              0.2754,
-              0.5368,
-              -0.6625
+              0.2634,
+              0.6576,
+              -0.6272
             ],
             "elbowR": [
-              -1.7552,
+              -1.567,
               0,
               0
             ],
@@ -921,12 +925,12 @@
               0
             ],
             "shoulderL": [
-              -0.9704,
-              -0.7158,
-              -0.0298
+              -0.8401,
+              -0.7155,
+              0.0575
             ],
             "elbowL": [
-              -0.3228,
+              -0.3889,
               0,
               0
             ],
@@ -941,7 +945,7 @@
             "gauche": 0,
             "traverse": 0,
             "visee": 0,
-            "devant": 17.39,
+            "devant": 18.39,
             "mains": 0
           },
           "prises": {
@@ -967,7 +971,7 @@
           "mode": null,
           "torse": 15,
           "epaules": 9,
-          "bras": 1.1,
+          "bras": 1.2,
           "arme": {
             "position": [
               -10.094,
@@ -1002,12 +1006,12 @@
               0
             ],
             "shoulderR": [
-              -0.5835,
-              0.0759,
-              -0.8256
+              -0.5683,
+              0.0565,
+              -0.815
             ],
             "elbowR": [
-              -2.347,
+              -2.4109,
               0,
               0
             ],
@@ -1017,12 +1021,12 @@
               0
             ],
             "shoulderL": [
-              -1.2216,
-              -2.0918,
-              1.5635
+              -1.1339,
+              -1.4227,
+              0.9416
             ],
             "elbowL": [
-              -0.3375,
+              -0.8569,
               0,
               0
             ],
@@ -1062,13 +1066,13 @@
           "pose": "hanche",
           "mode": null,
           "torse": 30,
-          "epaules": 11.5,
-          "bras": 1.1,
+          "epaules": 9,
+          "bras": 1.2,
           "arme": {
             "position": [
-              -5.35,
-              37.896,
-              11.224
+              -8.35,
+              35.896,
+              10.224
             ],
             "rotation": [
               0,
@@ -1077,9 +1081,9 @@
             ],
             "dos": {
               "decalage": [
-                447,
-                166,
-                -841
+                554,
+                238,
+                -805
               ],
               "lacet": -30
             }
@@ -1106,12 +1110,12 @@
               0
             ],
             "shoulderR": [
-              -0.3369,
-              1.2436,
-              -0.556
+              -0.0035,
+              0.9251,
+              -0.5731
             ],
             "elbowR": [
-              -1.0017,
+              -1.3258,
               0,
               0
             ],
@@ -1121,12 +1125,12 @@
               0
             ],
             "shoulderL": [
-              -0.8929,
-              -0.7231,
-              0.3279
+              -0.8092,
+              -0.6852,
+              0.274
             ],
             "elbowL": [
-              -0.3031,
+              -0.3738,
               0,
               0
             ],
@@ -1141,7 +1145,7 @@
             "gauche": 0,
             "traverse": 0,
             "visee": 0,
-            "devant": 23.5,
+            "devant": 22.5,
             "mains": 0
           },
           "prises": {
