@@ -143,7 +143,9 @@ function icon(d) {
 
 // dict : textes (fr.json) ; search : adresse actuelle (location.search) ; planksMax : planches d'une fenêtre (windows.json) ; navigate(url) : rechargement
 // réel (location.assign) ; onClose() : retour à la pause.
-export function createDebugMenu({ dict, search = '', planksMax = PLANKS_MAX, navigate = (url) => globalThis.location.assign(url), onClose = () => {}, root = document.body }) {
+// armes (lot 9e, facultatif) : { liste: [{ id, nom }], donner(id), remplir(), illimitees(on), etat() → { actif, illimite } } : section « Armes »,
+// effet immédiat sur la partie en cours (aucun rechargement de la page, rien n'est écrit).
+export function createDebugMenu({ dict, search = '', planksMax = PLANKS_MAX, armes = null, navigate = (url) => globalThis.location.assign(url), onClose = () => {}, root = document.body }) {
   const t = (k) => dict[k] ?? k;
   const opts = { planksMax };
   let values = lireDebug(search, opts);
@@ -165,7 +167,7 @@ export function createDebugMenu({ dict, search = '', planksMax = PLANKS_MAX, nav
   const scroll = el('div', ['options-scroll'], { role: 'region', tabindex: '0', 'aria-label': t('game.debug.scroll'), id: 'debug-scroll' });
   const sections = {};
   // Retours du propriétaire (lot 5l-E) : Mesure en premier (le plus utile) ; l'encadré du mode essai sur la ligne du titre « Partie » (une ligne de gagnée).
-  for (const [id, key] of [['mesure', 'game.debug.section.mesure'], ['partie', 'game.debug.section.partie']]) {
+  for (const [id, key] of [['mesure', 'game.debug.section.mesure'], ...(armes ? [['armes', 'game.debug.section.armes']] : []), ['partie', 'game.debug.section.partie']]) {
     const sec = el('section', ['options-section'], { 'aria-labelledby': `debug-section-${id}` });
     const headLine = el('div', ['debug-section-head']);
     const h = el('h3', ['options-section-title'], { id: `debug-section-${id}` });
@@ -274,6 +276,41 @@ export function createDebugMenu({ dict, search = '', planksMax = PLANKS_MAX, nav
   aArmes.textContent = t('game.debug.armes.lien');
   lienArmes.append(aArmes);
   row(sections.mesure, 'atelier-armes', 'game.debug.armes', lienArmes);
+
+  // Lot 9e : section « Armes » : chaque bouton agit tout de suite sur la partie en cours (débogage, mode essai inutile : rien n'est écrit).
+  if (armes) {
+    const noteArmes = el('p', ['debug-note'], { id: 'debug-note-armes' });
+    noteArmes.textContent = t('game.debug.armes.note');
+    sections.armes.querySelector('.debug-section-head').append(noteArmes);
+    sections.armes.setAttribute('aria-describedby', noteArmes.id);
+    const etat = () => armes.etat?.() ?? {};
+    const boxArmes = el('div', ['options-values', 'debug-armes']);
+    const boutonsArmes = armes.liste.map(({ id, nom }) => {
+      const b = el('button', ['button', 'button-quiet', 'options-value'], { type: 'button', 'aria-pressed': 'false', 'data-value': id, id: `debug-arme-${id}` });
+      b.textContent = nom;
+      b.addEventListener('click', () => {
+        armes.donner(id);
+        refresh();
+      });
+      boxArmes.append(b);
+      return b;
+    });
+    syncers.push(() => {
+      const actif = etat().actif;
+      for (const b of boutonsArmes) b.setAttribute('aria-pressed', String(b.dataset.value === actif));
+    });
+    row(sections.armes, 'donner-arme', 'game.debug.armes.donner', boxArmes);
+    const boxRemplir = el('div', ['options-values']);
+    const remplir = el('button', ['button', 'button-quiet', 'options-value'], { type: 'button', id: 'debug-remplir' });
+    remplir.textContent = t('game.debug.armes.remplir.bouton');
+    remplir.addEventListener('click', () => {
+      armes.remplir();
+      refresh();
+    });
+    boxRemplir.append(remplir);
+    row(sections.armes, 'remplir', 'game.debug.armes.remplir', boxRemplir);
+    row(sections.armes, 'illimitees', 'game.debug.armes.illimitees', choice('illimitees', yesNo, () => etat().illimite === true, (v) => armes.illimitees(v)));
+  }
 
   // Pied : adresse obtenue, actions et confirmation.
   const foot = el('div', ['options-foot']);

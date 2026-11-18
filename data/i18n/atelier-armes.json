@@ -1,7 +1,7 @@
 {
   "dev.armes.titre": "Atelier des armes",
   "dev.armes.intro": "Page technique (lot 9c, à retirer au lot 13) : les dix armes modélisées en code, chacune en deux ou trois variantes, pour choisir leur rendu avant de les mettre dans le jeu. Tout est généré en code : aucune image, aucun modèle importé.",
-  "dev.armes.avertissement": "Rien n'est branché sur la partie. Le rendu n'a été jugé que sur des captures par l'agent qui l'a écrit ; le prix affiché est un exemple fictif.",
+  "dev.armes.avertissement": "Lot 9e : les armes sont aussi dans la partie (table des armes, data/game/armes-partie.json ; données par le débogage). Le rendu n'a été jugé que sur des captures par l'agent qui l'a écrit ; le prix affiché est un exemple fictif.",
   "dev.armes.chargement": "Préparation des armes…",
   "dev.armes.pret": "Prêt : {n} armes, {v} variantes.",
   "dev.armes.webgl": "WebGL n'est pas disponible dans ce navigateur : les vues 3D sont vides, seuls les visuels du menu et les mesures restent.",
@@ -83,5 +83,13 @@
   "dev.armes.tenue.pres": "De près (trois quarts et dessus)",
   "dev.armes.tenue.avenir": "Pose de cette arme à venir (après « OK poses » du propriétaire) : elle est montrée dans la pose actuelle du jeu.",
   "dev.armes.tenue.genre.pistolet": "pistolet",
-  "dev.armes.tenue.genre.sur-epaule": "sur l'épaule"
+  "dev.armes.tenue.genre.sur-epaule": "sur l'épaule",
+  "dev.armes.sons.titre": "Sons des armes (lot 9e)",
+  "dev.armes.sons.intro": "Deux variantes par arme (a : proche du tir de la partie ; b : plus sèche), le rechargement et le changement d'arme, calculés en code (data/game/sons-armes.json). Pour choisir, recopier a ou b dans « choix » de ce fichier. Jamais écoutés par l'agent qui les a écrits ; le Colt garde le tir de la partie.",
+  "dev.armes.sons.ecouter": "Écouter",
+  "dev.armes.sons.variante.a": "variante a",
+  "dev.armes.sons.variante.b": "variante b",
+  "dev.armes.sons.choisie": "(jouée en partie)",
+  "dev.armes.sons.arme-recharge": "rechargement",
+  "dev.armes.sons.arme-change": "changement d'arme"
 }

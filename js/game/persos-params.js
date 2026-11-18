@@ -43,5 +43,7 @@ export function readPersosParams(search, choices = null) {
   const usure = pick('usure', USURE_VALUES, USURE_VALUES.includes(String(c.usure)) ? String(c.usure) : DEFAULTS.usure);
   const slots = slotVariants(perso, choices);
   // Lot 5e : tous les personnages sont des personnages v2 ; le chargeur est donc toujours actif.
-  return { perso, sang, usure: usure === 'auto' ? 'auto' : Number(usure), slots, v2: true, active: true };
+  // Lot 9e : ?test=1&corps=avant : corps d'avant le corps long (référence de la trace ; jamais mémorisé).
+  const corpsAvant = q.get('test') === '1' && q.get('corps') === 'avant';
+  return { perso, sang, usure: usure === 'auto' ? 'auto' : Number(usure), slots, v2: true, active: true, ...(corpsAvant ? { corpsAvant } : {}) };
 }

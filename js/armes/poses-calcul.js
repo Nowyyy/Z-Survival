@@ -11,7 +11,7 @@ export const MODES = (arme) => (arme?.prises?.tenue === 'pistolet' ? ['deux-main
 // ctx : { characters, poses (poses-v2.json), donnees (lireArmes, échelle commune appliquée), regles, ids (armes à poser), lookup, corps (essai : même corps pour toutes, CORPS_LONG) }.
 // Renvoie { facteur, regles, armes: { id: { pose, modes: { mode: pose calculée } } } }.
 export function calculerPoses({ characters, poses, donnees, regles = REGLES, ids, lookup = () => [128, 128, 128], corps = null }) {
-  const kit = createV2Kit({ characters, poses, lookup, hit: 0xffffff, choice: 'riche', styleAnim: { joueur: 'A' }, outfitsOf: { joueur: ['sable'] }, seed: 3 });
+  const kit = createV2Kit({ corps: null, characters, poses, lookup, hit: 0xffffff, choice: 'riche', styleAnim: { joueur: 'A' }, outfitsOf: { joueur: ['sable'] }, seed: 3 });
   const armes = {};
   for (const id of ids) {
     const a = armeParId(donnees, id);

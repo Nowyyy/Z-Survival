@@ -1,6 +1,7 @@
 {
  "_provisoire": "Personnages du lot 3j (valeurs provisoires, purement visuelles). current : description fidèle du personnage actuel (js/game/character.js, data/game/zombie-variants.json : mêmes pièces, mêmes triangles ; regions = régions de l'atlas atlas-persos de textures.json) ; variants : variantes v2 (A « déchu réaliste » / « survivant tactique », B « horreur marquée » / « civil débrouillard », C « lisible d'abord », riche hors budget). Pièces : { id, piece, joint, kind, dims, offset, rotation (Euler XYZ), palette (clé de la palette de la variante) ou region (actuel), material, casts, mirror } ; palette : jetons --perso-* de css/tokens.css ; macros : curseurs (pas entiers de min à max, effet par pas) ; outfits : tenues (palettes) ; wear : paliers d'usure ; anchors : points d'attache du sang (articulation et décalage).",
- "version": 1,
+ "corps": { "_note": "Lot 9e (décision du propriétaire, corps long du lot 9c) : un seul corps pour le joueur et les zombies : épaules à ±epaules × (épaule du type / 11,5), bras et avant-bras ×bras (os des épaules à l'échelle, mains ramenées à 1) ; même valeur que data/armes/poses.json → corps (vérifié par tests/unit/gabarit.test.js). Appliqué par js/game/character-v2.js (js/core/gabarit.js) ; ?test=1&corps=avant : corps d'avant.", "epaules": 9, "bras": 1.2 },
+  "version": 1,
  "architecture": "rigid",
  "budget": {
   "triangles": 1600,
@@ -13,6 +14,8 @@
   "bloodTexture": 256,
   "textureBytes": 4194304,
   "footprint": 1.3,
+  "zombieFootprint": 1.95,
+  "_zombieFootprint": "Lot 9e : emprise debout permise des zombies (boîtes des pièces, × rayon), contrôlée par checkVariant : marche bras tendus et coup porté bras tendu (corps long : jusqu’à 1,91 pour le voûté « riche » en marche, bras levés plus haut par posture.brasMarche 0,35 pour garder sa silhouette distincte du marcheur ; tests/unit/gabarit.test.js) ; joueur : footprint (1,3) comme avant.",
   "heightRange": [
    0.92,
    1.08
@@ -10927,7 +10930,8 @@
        0,
        0,
        0
-      ]
+      ],
+      "brasMarche": 0.35
      },
      "parts": [
       {
@@ -13555,7 +13559,8 @@
        0,
        0,
        0
-      ]
+      ],
+      "brasMarche": 0.35
      },
      "parts": [
       {

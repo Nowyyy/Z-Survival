@@ -7,6 +7,7 @@ import { ALL_STAT_IDS } from '../../js/core/player-stats.js';
 import { errorKey } from '../../js/sauvegarde/logic.js';
 import { TYPES } from '../../js/core/waves.js';
 import { sansImagesStudio } from './helpers/images-studio.js'; // lot 8g : logo du studio, exception nominative
+import { hors9e } from './helpers/lot9e.js'; // lot 9e : fichiers de règles que ce lot change (équivalent : lot9e-gel.test.js)
 // Lot 4c (publication par versions, seul lot autorisé à modifier le workflow) : workflow, accueil, ses textes et tests du journal modifiés ; ce garde-fou de branche
 // (comparaison à main ou à lot-4b) n'a plus de sens pour eux après l'entrée dans main : ils sortent de la liste.
 // Lot 4e : workflow de tests ajouté (.github/workflows/tests.yml, autorisé par le prompt du lot ; pages.yml intact).
@@ -205,7 +206,7 @@ describe('hygiène du lot 4 (partie A)', () => {
     const changed = git('diff --name-only main -- js/core/waves.js js/core/wave-director.js js/core/projectile.js js/core/ray.js js/core/spread.js js/core/player-stats.js js/core/player-down.js js/core/siege.js js/core/stair-walk.js js/core/camera.js js/core/synth.js data/game/waves.json data/game/gaits.json data/game/weapons.json data/game/player-stats.json data/game/player-down.json data/game/windows.json data/game/textures.json');
     if (changed === null) return;
     // Branche lot-3g : sortie d'escalier par le côté et entrée sans saut (stair-walk.js), textures plus fines (textures.json) : changements de l'atelier (lot 3g).
-    expect(changed.filter((f) => !['js/core/stair-walk.js', 'data/game/textures.json'].includes(f))).toEqual([]);
+    expect(hors9e(changed.filter((f) => !['js/core/stair-walk.js', 'data/game/textures.json'].includes(f)))).toEqual([]);
   });
 
   it('Docs/seed.md et le workflow sont inchangés (index.html : icône du site, demande du propriétaire)', () => {

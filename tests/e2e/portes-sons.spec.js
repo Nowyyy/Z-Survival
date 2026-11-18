@@ -169,10 +169,20 @@ test.describe('sons des zombies (lot 8j)', () => {
     await page.waitForFunction(() => window.__zs, null, { timeout: 120_000 });
     await debloquer(page);
     let s = await page.evaluate(() => window.__zs.getState());
+    // Lot 9e : la bouche du Colt tenu (28,1 devant le joueur au lieu de 26) change les tirs de cette partie, où le joueur ne visait jamais (aucun
+    // tué, même sur origin/dev avec ce découpage du temps, selon les écarts de visée) : il vise maintenant le zombie le plus proche, le tir reste
+    // automatique (laser sur un zombie).
     for (let i = 0; i < 40 && s.kills < 3; i += 1) {
       s = await page.evaluate(() => {
-        window.__zs.step(2);
-        return window.__zs.getState();
+        const zs = window.__zs;
+        for (let k = 0; k < 40; k += 1) {
+          const st = zs.getState();
+          const p = st.player;
+          const z = st.enemies.reduce((best, e) => (best === null || Math.hypot(e.x - p.x, e.y - p.y) < Math.hypot(best.x - p.x, best.y - p.y) ? e : best), null);
+          if (z) zs.setInput({ aim: { angle: Math.atan2(z.y - p.y, z.x - p.x) } });
+          zs.step(0.05);
+        }
+        return zs.getState();
       });
     }
     expect(s.kills).toBeGreaterThan(0);

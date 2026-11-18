@@ -136,7 +136,8 @@ describe('menu de débogage : textes, style et chargement (lot 5l)', () => {
     expect(src).not.toMatch(/^import /m);
     for (const c of ['panel-options', 'options-scroll', 'options-row', 'options-value', 'options-reload']) expect(src).toContain(`'${c}'`);
     // Lot 5l-E (retours du propriétaire) : Mesure avant Partie ; encadré du mode essai dans la ligne du titre de Partie.
-    expect(src).toContain("for (const [id, key] of [['mesure', 'game.debug.section.mesure'], ['partie', 'game.debug.section.partie']]) {");
+    // Lot 9e : section « Armes » entre Mesure et Partie, seulement quand la partie la fournit.
+    expect(src).toContain("for (const [id, key] of [['mesure', 'game.debug.section.mesure'], ...(armes ? [['armes', 'game.debug.section.armes']] : []), ['partie', 'game.debug.section.partie']]) {");
     expect(src).toContain("sections.partie.querySelector('.debug-section-head').append(note);");
     expect(src).not.toMatch(/innerHTML|outerHTML|insertAdjacentHTML|localStorage|sessionStorage|fetch\(/);
   });

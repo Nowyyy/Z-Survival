@@ -1,6 +1,7 @@
 // Balles : avancée par pas de temps, impact calculé sur le segment parcouru (jamais de traversée), un impact au plus par balle.
 import { firstOnSegment } from './collision.js';
 import { floorOf } from './floors.js';
+import { aCapsule, entreeCapsule } from './gabarit.js';
 import { clampDt, fromAngle, isNum, num } from './vec.js';
 
 const TRAIL_LENGTH = 3;
@@ -84,7 +85,9 @@ export function stepBullets(bullets, enemies, dt, bounds, obstacles = []) {
     for (const enemy of targets) {
       // Lot 3e : une balle ne touche que les zombies de son étage (rez-de-chaussée par défaut), y compris dans un escalier (étage logique à mi-hauteur).
       if (floorOf(enemy) !== floorOf(bullet)) continue;
-      const t = segmentCircle(bullet.x, bullet.y, sx, sy, enemy, Math.max(0, num(enemy?.r)) + radius);
+      // Lot 9e : un rampant porte une capsule (gabarit.js, zoneZombie) qui couvre tout son corps couché.
+      const rad = Math.max(0, num(enemy?.r)) + radius;
+      const t = aCapsule(enemy) ? entreeCapsule(bullet.x, bullet.y, sx, sy, enemy, rad, 1) : segmentCircle(bullet.x, bullet.y, sx, sy, enemy, rad);
       if (t !== null && (best === null || t < best.t)) best = { t, enemy };
     }
     const wallT = segmentExit(bullet.x, bullet.y, sx, sy, b);

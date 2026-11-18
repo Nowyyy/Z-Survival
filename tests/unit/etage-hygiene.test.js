@@ -3,6 +3,7 @@ import { execSync } from 'node:child_process';
 import { readFileSync, readdirSync } from 'node:fs';
 import { seedProblems } from './helpers/seed.js';
 import { sansImagesStudio } from './helpers/images-studio.js'; // lot 8g : logo du studio, exception nominative
+import { hors9e } from './helpers/lot9e.js'; // lot 9e : fichiers de règles que ce lot change (équivalent : lot9e-gel.test.js)
 // Lot 4c (publication par versions, seul lot autorisé à modifier le workflow) : workflow, accueil, ses textes et tests du journal modifiés ; ce garde-fou de branche
 // (comparaison à main ou à lot-4b) n'a plus de sens pour eux après l'entrée dans main : ils sortent de la liste.
 // Lot 4e : workflow de tests ajouté (.github/workflows/tests.yml, autorisé par le prompt du lot ; pages.yml intact).
@@ -49,7 +50,7 @@ describe('hygiène du lot 3e : fichiers et textes', () => {
     // comparées à main, objet par objet, dans sons-integres.test.js.
     const changed = git(`diff --name-only ${BASE} -- data/game/world.json data/game/decor.json js/core/waves.js js/core/spread.js js/core/camera.js js/core/synth.js js/core/player-stats.js data/game/waves.json data/game/gaits.json data/game/weapons.json data/game/player-stats.json data/game/player-down.json data/game/windows.json `);
     if (changed === null) return;
-    expect(changed).toEqual([]);
+    expect(hors9e(changed)).toEqual([]);
   });
 
   it('le workflow, index.html et Docs/seed.md sont inchangés', () => {

@@ -6,9 +6,10 @@
 import * as THREE from 'three';
 import { expandParts, jointMatrices, jointsOf, mergeParts } from '../core/character-parts.js';
 import { createRng, nextFloat } from '../core/rng.js';
-import { DEATHS, addPoseInto, blendPosesInto, copyPoseInto, createPose, createPoseWork, cycleSeconds, poseAtInto, rigOf, toucheInto } from '../core/pose-v2.js';
+import { DEATHS, addPoseInto, armIK, blendPosesInto, copyPoseInto, createPose, createPoseWork, cycleSeconds, poseAtInto, rigOf, toucheInto } from '../core/pose-v2.js';
 import { partRgb, pickOutfit, resolveVariant, wearTier } from '../core/persos-variants.js';
 import { PALETTE_REGION, createPersoTexture, persoRegionRect, persoSpec, regionFactor } from '../core/texgen-persos.js';
+import { echellesCorps, lireCorps, rigCorps, varianteCorps } from '../core/gabarit.js';
 
 const KICK_TIME = 0.25; // durée du recul du pistolet du joueur (secondes de jeu)
 const NO_PARAMS = Object.freeze({});
@@ -141,8 +142,12 @@ const torn = (i, seed) => {
 // styleOf: { slot: 'A' | ... } (variante de chaque personnage), outfitOf: { slot: indice }
 // (atelier : tenue imposée) ; lot 3m (table des choix) : styleAnim: { slot: 'A' | 'B' | 'C' } (style d'animation), outfitsOf: { slot:
 // 'toutes' | [identifiants de tenues] } (tenues tirées), animMacros: { slot: { amplitude, rythme, lourdeur } }.
+// Lot 9e : corps (options.corps ; absent : characters.corps, le corps long ; null : corps d'avant, pour l'atelier des armes qui pose son propre corps
+// et pour ?test=1&corps=avant) : épaules du squelette, os des bras à l'échelle, mains à 1 (js/core/gabarit.js).
 export function createV2Kit(options) {
   const { characters, poses } = options;
+  const corps = lireCorps(options.corps === undefined ? characters.corps : options.corps);
+  const corpsEchelles = echellesCorps(corps);
   // Jetons lus une fois chacun (getComputedStyle est lent : des milliers d'appels par géométrie sinon).
   const tokenCache = new Map();
   const lookup = (token) => {
@@ -210,7 +215,11 @@ export function createV2Kit(options) {
   }
 
   // Variante concrète d'un emplacement (macros de l'atelier comprises) ; tenue et palier d'usure donnés.
-  const resolved = (k, outfit, wear) => resolveVariant(k.variant, { macros: options.macros?.[k.slot.id], outfit, wear, wearTiers: characters.wearTiers });
+  // Lot 9e : options.sansPistolet : le pistolet d'origine du joueur (pièces gunGrip, gunSlide) est retiré de sa géométrie quand une arme du
+  // lot 9c est tenue (js/armes/en-main.js), comme dans l'atelier des armes ; la bouche vient alors de l'arme en main.
+  const PIECES_PISTOLET = ['gunGrip', 'gunSlide'];
+  const sansPistolet = (k, v) => (options.sansPistolet === true && k.isPlayer && Array.isArray(v.parts) ? { ...v, parts: v.parts.filter((p) => !PIECES_PISTOLET.includes(p.id)) } : v);
+  const resolved = (k, outfit, wear) => sansPistolet(k, varianteCorps(resolveVariant(k.variant, { macros: options.macros?.[k.slot.id], outfit, wear, wearTiers: characters.wearTiers }), corps));
 
   // Géométrie (tenue, usure) : pièces fusionnées une fois par tenue ; couleurs par triangle (déchirures) par palier.
   function geometryFor(k, outfit, wear) {
@@ -277,7 +286,7 @@ export function createV2Kit(options) {
     const root = rig.root;
     root.scale.setScalar(current.res.scale);
     root.userData.v2 = true;
-    let gait = rigOf(current.res, skeletons);
+    let gait = rigCorps(rigOf(current.res, skeletons), corps);
     let woundTier = 0;
     let flashing = false;
     const state = { shotAt: -10, lastRecoil: 0, anim: null, prev: null, prevPose: null, since: 0, hurtAt: -10, lastFlash: 0, attackAt: -10, lastCooldown: 0, downWas: false, upAt: -10, time: 0, phase: 0, pose: null };
@@ -291,7 +300,7 @@ export function createV2Kit(options) {
       rig.body.geometry = current.geometry;
       if (rig.shadow && current.shared.shadowGeometry) rig.shadow.geometry = current.shared.shadowGeometry;
       root.scale.setScalar(current.res.scale);
-      gait = rigOf(current.res, skeletons);
+      gait = rigCorps(rigOf(current.res, skeletons), corps);
     };
     // Tenue tirée à chaque apparition (le jeu réutilise ses personnages) : jamais la même que la précédente de ce type.
     if (!k.isPlayer && opts.outfit === undefined) {
@@ -336,7 +345,64 @@ export function createV2Kit(options) {
       state.pose = pose;
       state.phase = phase;
       rig.setAngles(pose);
-      for (const [id, bone] of rig.bones) bone.scale.setScalar(pose.scales?.[id] ?? 1);
+      for (const [id, bone] of rig.bones) bone.scale.setScalar(id === 'prop' && arme ? 0 : (pose.scales?.[id] ?? 1) * (corpsEchelles[id] ?? 1));
+    }
+    // Lot 9e : arme en main du joueur (js/armes/en-main.js, js/core/armes/tenue-jeu.js) : maillage accroché à l'os chest (il suit le buste),
+    // bras et tronc aux angles de la pose de tenue du lot 9c, tronc tourné vers la visée comme la pose « repos » ; le pistolet d'origine est
+    // caché (os prop à l'échelle 0). etat : { recul (0 à 1), baisse (0 à 1 : arme abaissée), gauche ([x, y, z] dans le repère de l'os chest :
+    // main gauche portée vers ce point, rechargement) }. null : pistolet d'origine.
+    let arme = null;
+    const armeMat = new THREE.Matrix4();
+    const armeTmp = new THREE.Matrix4();
+    const armeEtat = { recul: 0, baisse: 0, gauche: null, poidsGauche: 0 };
+    const armeRot = new THREE.Matrix4();
+    const armeRot2 = new THREE.Matrix4();
+    const BAISSE = 0.45; // radians au plus fort : arme abaissée
+    const RENTRE = 0.55; // radians au plus fort : arme ramenée vers la gauche, devant le corps
+    const pointGauche = new THREE.Vector3();
+    function appliquerTenue(twist, visible) {
+      if (!arme) return;
+      arme.mesh.visible = visible;
+      if (!visible) return;
+      for (const id in arme.angles) {
+        const bone = rig.bones.get(id);
+        const a = arme.angles[id];
+        if (!bone) continue;
+        const ty = id === 'spine' ? -twist * 0.6 : id === 'chest' ? -twist * 0.4 : 0;
+        bone.rotation.set(a[0], a[1] + ty, a[2]);
+      }
+      const b = Math.max(0, Math.min(1, num(armeEtat.baisse)));
+      if (b > 0) {
+        // Arme abaissée et ramenée devant le corps (rechargement, sortie ; visible de dessus) : bras et arme tournent ensemble autour de l'épaule
+        // droite, vers le bas (BAISSE) et vers la gauche (RENTRE) ; le bras gauche suit (ou va au chargeur, plus bas).
+        for (const id of ['shoulderR', 'shoulderL']) {
+          const bone = rig.bones.get(id);
+          if (!bone) continue;
+          bone.rotation.x += BAISSE * b;
+          if (id === 'shoulderR') bone.rotation.y += RENTRE * b;
+        }
+      }
+      const pivot = arme.pivot ?? [0, 0, 0];
+      armeMat.copy(arme.base);
+      if (b > 0) {
+        armeTmp.makeTranslation(pivot[0], pivot[1], pivot[2]).multiply(armeRot.makeRotationY(RENTRE * b)).multiply(armeRot2.makeRotationX(BAISSE * b)).multiply(armeRot.makeTranslation(-pivot[0], -pivot[1], -pivot[2]));
+        armeMat.premultiply(armeTmp);
+      }
+      const k = Math.max(0, Math.min(1, num(armeEtat.recul)));
+      if (k > 0) armeMat.multiply(armeTmp.makeTranslation(0, 0.6 * k, -1.6 * k));
+      arme.mesh.matrix.copy(armeMat);
+      arme.mesh.matrixWorldNeedsUpdate = true;
+      // Main gauche vers le point du rechargement (repère de l'arme → repère de l'os chest, arme abaissée comprise), cinématique inverse du bras
+      // (os au corps long), mélangée à la pose de tenue selon poidsGauche.
+      const w = Math.max(0, Math.min(1, num(armeEtat.poidsGauche)));
+      const epaule = rig.bones.get('shoulderL');
+      const coude = rig.bones.get('elbowL');
+      if (w > 0 && armeEtat.gauche && epaule && coude) {
+        pointGauche.set(armeEtat.gauche[0], armeEtat.gauche[1], armeEtat.gauche[2]).applyMatrix4(armeMat);
+        const [sh, el] = armIK(gait.upper, gait.fore, [pointGauche.x - epaule.position.x, pointGauche.y - epaule.position.y, pointGauche.z - epaule.position.z]);
+        epaule.rotation.set(epaule.rotation.x + (sh[0] - epaule.rotation.x) * w, epaule.rotation.y + (sh[1] - epaule.rotation.y) * w, epaule.rotation.z * (1 - w));
+        coude.rotation.set(coude.rotation.x + (el[0] - coude.rotation.x) * w, 0, 0);
+      }
     }
     const cycle = (anim, extra) => cycleSeconds(gait, anim, params(extra), poses) ?? 1;
     // Bout du canon (avant de la glissière, repère de l'articulation « prop ») : le laser, l'éclair et les balles en partent à l'image.
@@ -360,8 +426,39 @@ export function createV2Kit(options) {
       readPose() {
         return { anim: state.anim, phase: state.phase, outfit, wear, wound: woundTier, choice, slot: slotId, triangles: current.geometry.attributes.position.count / 3, hurt: state.time - state.hurtAt < (Number(poses.durations?.touche) || 0.25) };
       },
+      // Lot 9e : arme en main (joueur) : { mesh, angles, local: { m, t }, pointe ([x, y, z], repère de l'arme), pivot ([x, y, z], épaule droite
+      // dans le repère de l'os chest) } ou null ; le maillage appartient au kit des armes (js/armes/en-main.js), qui le libère.
+      setArme(a) {
+        if (kind !== 'player') return;
+        if (arme && arme.mesh !== a?.mesh) arme.mesh.removeFromParent();
+        arme = a && a.mesh ? { ...a } : null;
+        if (!arme) return;
+        const m = arme.local.m;
+        const t = arme.local.t;
+        arme.base = new THREE.Matrix4().set(m[0], m[1], m[2], t[0], m[3], m[4], m[5], t[1], m[6], m[7], m[8], t[2], 0, 0, 0, 1);
+        arme.mesh.matrixAutoUpdate = false;
+        arme.mesh.matrix.copy(arme.base);
+        rig.bones.get('chest')?.add(arme.mesh);
+      },
+      // Lot 9e : état visible de l'arme en main : { baisse, gauche } (rechargement, changement d'arme ; le recul vient du tir).
+      setArmeEtat(etat = {}) {
+        armeEtat.baisse = num(etat.baisse);
+        armeEtat.gauche = Array.isArray(etat.gauche) ? etat.gauche : null;
+        armeEtat.poidsGauche = num(etat.poidsGauche);
+      },
+      get arme() {
+        return arme ? { id: arme.id ?? null, visible: arme.mesh.visible } : null;
+      },
       // Joueur : position du bout du canon dans le monde ({ x, y } du plan de jeu, height) après setPose et la pose de root ; null sans arme.
       muzzle() {
+        if (kind === 'player' && arme && arme.pointe) {
+          root.updateMatrixWorld(true);
+          muzzleAt.set(arme.pointe[0], arme.pointe[1], arme.pointe[2]).applyMatrix4(arme.mesh.matrixWorld);
+          muzzleOut.x = muzzleAt.x;
+          muzzleOut.y = muzzleAt.z;
+          muzzleOut.height = muzzleAt.y;
+          return muzzleOut;
+        }
         if (!tip || !propBone || kind !== 'player') return null;
         root.updateMatrixWorld(true);
         muzzleAt.copy(tip).applyMatrix4(propBone.matrixWorld);
@@ -423,7 +520,10 @@ export function createV2Kit(options) {
             xMove.recoil = recoil;
             if (num(input.amount) > 0.12) show('marche', num(input.phase) / TAU, xMove);
             else show('repos', time / cycle('repos'), xMove);
+            armeEtat.recul = recoil;
+            appliquerTenue(twist, true);
           }
+          if (arme && (down || time - state.upAt < relev || e.repairing)) arme.mesh.visible = false;
           return;
         }
         const e = entity ?? {};

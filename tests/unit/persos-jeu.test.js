@@ -10,6 +10,7 @@ import * as bloodFx from '../../js/game/blood-fx.js';
 const { createKit, createCharacter } = v2Model;
 import { CROWD, LIMITS, REFERENCE, characterCost, crowdCost, project } from '../../scripts/personnages/projection.mjs';
 import { characters, load, poses } from '../../scripts/personnages/lib.mjs';
+import { hors9e } from './helpers/lot9e.js'; // lot 9e : fichiers de règles que ce lot change (équivalent : lot9e-gel.test.js)
 
 // Lot 3j-D : essai en jeu derrière ?perso= et ?sang= (paramètres, chargeur, accroches), invariance des données de logique, projection.
 const git = (cmd) => {
@@ -96,7 +97,7 @@ describe('fichiers du jeu modifiés : liste fermée, 40 lignes au plus chacun', 
     const base = git('merge-base HEAD origin/main')?.trim() || git('merge-base HEAD origin/dev')?.trim() || 'main';
     const changed = git(`diff --name-only ${base} -- data/game/enemies.json data/game/gaits.json data/game/weapons.json data/game/player.json data/game/waves.json data/game/windows.json data/game/player-stats.json data/game/player-down.json data/game/stairs.json`);
     if (changed === null) return;
-    expect(changed.trim()).toBe('');
+    expect(hors9e(changed.trim().split('\n').filter(Boolean))).toEqual([]);
     // Lot 8h (autorisé par le prompt du lot : gains des médailles, section v2 de la sauvegarde) : economy.json et save.json peuvent recevoir des
     // clés nouvelles et un texte _provisoire nouveau, jamais une valeur existante changée ni une clé retirée.
     for (const f of ['data/game/economy.json', 'data/game/save.json']) {

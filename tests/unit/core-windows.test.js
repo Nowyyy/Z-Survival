@@ -32,7 +32,7 @@ describe('windows.js : géométrie (trois fenêtres de world.json)', () => {
     const out = (p) => (p.x - g.center.x) * g.normal.x + (p.y - g.center.y) * g.normal.y;
     expect(along(g.slots[0])).toBeCloseTo(-g.width / 4, 9);
     expect(along(g.slots[1])).toBeCloseTo(g.width / 4, 9);
-    for (const s of g.slots) expect(out(s)).toBeCloseTo(cfg.slotDistance, 9);
+    for (const s of g.slots) expect(out(s)).toBeCloseTo(g.slotDistance, 9); // lot 9e : slotMains du nu extérieur du mur
   });
 
   it.each(geoms.map((g) => [g.id, g]))('%s : file alignée derrière les emplacements, un pas de queueStep entre deux places', (_id, g) => {
@@ -40,14 +40,14 @@ describe('windows.js : géométrie (trois fenêtres de world.json)', () => {
     g.queue.forEach((p, k) => {
       const d = (p.x - g.center.x) * g.normal.x + (p.y - g.center.y) * g.normal.y;
       const side = (p.x - g.center.x) * g.tangent.x + (p.y - g.center.y) * g.tangent.y;
-      expect(d).toBeCloseTo(cfg.slotDistance + cfg.queueStep * (k + 1), 9);
+      expect(d).toBeCloseTo(g.slotDistance + cfg.queueStep * (k + 1), 9);
       expect(side).toBeCloseTo(0, 9);
     });
   });
 
   it.each(geoms.map((g) => [g.id, g]))('%s : entryOuter dehors, entryInner et repairSpot dans la salle à innerDistance et repairDistance du mur', (_id, g) => {
     const d = (p) => (p.x - g.center.x) * g.normal.x + (p.y - g.center.y) * g.normal.y;
-    expect(d(g.entryOuter)).toBeCloseTo(cfg.slotDistance, 9);
+    expect(d(g.entryOuter)).toBeCloseTo(g.slotDistance, 9);
     expect(d(g.entryInner)).toBeCloseTo(-cfg.innerDistance, 9);
     expect(d(g.repairSpot)).toBeCloseTo(-cfg.repairDistance, 9);
     const b = layout.bounds;
@@ -79,9 +79,26 @@ describe('windows.js : géométrie (trois fenêtres de world.json)', () => {
     expect(west.gap).toEqual({ x: 784, y: 1330, w: 40, h: 140 });
   });
 
+  // Lot 9e (corps long, « mains au mur ») : emplacement à slotMains du nu extérieur du mur ; sans slotMains (?test=1&corps=avant), à slotDistance du centre.
+  it.each(geoms.map((g) => [g.id, g]))('%s : emplacement d\'arrachage à slotMains du nu extérieur du mur (salle : face à 28 du centre → 58)', (_id, g) => {
+    const outer = g.normal.x === 0 ? (g.normal.y < 0 ? g.center.y - g.gap.y : g.gap.y + g.gap.h - g.center.y) : (g.normal.x < 0 ? g.center.x - g.gap.x : g.gap.x + g.gap.w - g.center.x);
+    expect(outer).toBe(28);
+    expect(g.slotDistance).toBe(outer + cfg.slotMains);
+    expect(cfg.slotMains).toBe(30);
+    const { slotMains, ...avant } = cfg; // eslint-disable-line no-unused-vars
+    const old = windowGeometries(windowsWithGaps(layout), avant).find((x) => x.id === g.id);
+    expect(old.slotDistance).toBe(cfg.slotDistance);
+    expect(cfg.slotDistance).toBe(55);
+  });
+  it('carte 1 (mur de 40 centré) : emplacements à 50 du centre (55 avant le lot 9e)', () => {
+    const fen = windowGeometry({ id: 'f', side: 'nord', x: 100, y: 200, size: 72 }, cfg);
+    expect(fen.slotDistance).toBe(cfg.blockDepth / 2 + cfg.slotMains);
+    expect(fen.slotDistance).toBe(50);
+  });
+
   it('queuePosition prolonge la file au-delà des places prévues', () => {
     const p = queuePosition(north, 8, cfg);
-    expect(p.y).toBeCloseTo(north.center.y - (cfg.slotDistance + cfg.queueStep * 9), 9);
+    expect(p.y).toBeCloseTo(north.center.y - (north.slotDistance + cfg.queueStep * 9), 9);
   });
 });
 

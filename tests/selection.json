@@ -214,6 +214,8 @@
     { "fichier": "tests/unit/workflow.test.js", "categorie": "G", "raison": "Workflow : déclencheurs, permissions." },
     { "fichier": "tests/unit/zones-directeur.test.js", "categorie": "P", "raison": "Directeur des zones." },
     { "fichier": "tests/unit/zones-hygiene.test.js", "categorie": "G", "raison": "Hygiène des zones." },
+    { "fichier": "tests/unit/lot9e-gel.test.js", "categorie": "G", "raison": "Lot 9e : règles changées seulement par ajout (équivalent des hygiènes)." },
+    { "fichier": "tests/e2e/armes-jeu.spec.js", "categorie": "P", "motif": "téléphone", "raison": "Lot 9e : boutons des armes sur téléphone (44 px, visuel 2D, au doigt, axe) : joué aussi par le projet mobile." },
     { "fichier": "tests/unit/zones-mobilier.test.js", "categorie": "P", "raison": "Mobilier de complément." },
     { "fichier": "tests/unit/zones-porte-chemin.test.js", "categorie": "G", "raison": "Chemins par la porte (connexité)." },
     { "fichier": "tests/unit/zones-rendu.test.js", "categorie": "P", "raison": "Rendu des zones." },
@@ -246,7 +248,8 @@
     "tests/unit/tests-audit.test.js",
     "tests/unit/tests-selection.test.js",
     "tests/unit/workflow.test.js",
-    "tests/unit/zones-hygiene.test.js"
+    "tests/unit/zones-hygiene.test.js",
+    "tests/unit/lot9e-gel.test.js"
   ],
   "rejeu-total": [
     "package.json",
@@ -273,7 +276,7 @@
     {
       "id": "noyau",
       "description": "Modules partagés de js/core/ (vecteurs, hasard, couleurs, collisions, formes, étages logiques) : lus par presque toutes les zones.",
-      "sources": ["js/core/vec.js", "js/core/rng.js", "js/core/color.js", "js/core/collision.js", "js/core/shape.js", "js/core/floors.js"],
+      "sources": ["js/core/vec.js", "js/core/rng.js", "js/core/color.js", "js/core/collision.js", "js/core/gabarit.js", "js/core/shape.js", "js/core/floors.js"],
       "dependances": [],
       "vitest": [
         "tests/unit/atelier-textures.test.js",
@@ -580,6 +583,7 @@
         "scripts/stats-joueur.mjs", "js/core/tir-traverse.js"],
       "dependances": ["noyau", "vagues"],
       "vitest": [
+        "tests/unit/gabarit.test.js",
         "tests/unit/core-combat.test.js",
         "tests/unit/core-edge-arrow.test.js",
         "tests/unit/core-player-down.test.js",
@@ -661,6 +665,7 @@
       ],
       "dependances": ["carte", "graphismes", "noyau", "rendu"],
       "vitest": [
+        "tests/unit/gabarit.test.js",
         "tests/unit/core-variants.test.js",
         "tests/unit/data-sons.test.js",
         "tests/unit/lot1-regles.test.js",
@@ -860,7 +865,7 @@
       "id": "jeu",
       "description": "Assemblage du jeu : jeu.html, boucle et état (game.js), démarrage (lot 8a : js/menu/demarrage.js, qui importe main.js), accès de test.",
       "sources": ["js/fps.js", "jeu.html", "js/game/main.js", "js/game/game.js", "js/game/boot.js", "js/game/testhook.js", "js/menu/demarrage.js", "js/game/liberation.js"],
-      "dependances": ["carte", "combat", "economie", "etages", "graphismes", "interface", "menu", "noyau", "personnages", "rendu", "siege", "sons", "textes", "vagues"],
+      "dependances": ["armes", "carte", "combat", "economie", "etages", "graphismes", "interface", "menu", "noyau", "personnages", "rendu", "siege", "sons", "textes", "vagues"],
       "vitest": [
         "tests/unit/correctifs-9a.test.js",
         "tests/unit/data-ambiance.test.js",
@@ -929,6 +934,27 @@
       "complet": []
     },
     {
+      "id": "armes",
+      "description": "Armes (lot 9c : modèles, atlas, caisse, visuels 2D, poses de tenue ; lot 9e : table des armes de la partie, armes portées, chargeurs, changement d'arme, tenue sur le personnage, interface des armes).",
+      "sources": [
+        "js/armes/en-main.js",
+        "js/core/armes/**",
+        "data/armes/**",
+        "css/armes.css",
+        "data/game/armes-partie.json",
+        "data/game/sons-armes.json",
+        "js/game/armes-chargement.js",
+        "js/game/armes-ui.js"
+      ],
+      "dependances": ["interface", "noyau", "personnages", "textes"],
+      "vitest": [
+        "tests/unit/armes.test.js",
+        "tests/unit/armes-partie.test.js"
+      ],
+      "e2e": ["tests/e2e/armes-atelier.spec.js", "tests/e2e/armes-jeu.spec.js"],
+      "complet": []
+    },
+    {
       "id": "pages-techniques",
       "description": "Pages techniques à retirer au lot 13 : ateliers, carte, écarts, visite, sons, interface retenue.",
       "sources": [
@@ -940,12 +966,12 @@
         "js/atelier-sons-menu/**",
         "data/i18n/atelier-sons-menu.json",
         "atelier-armes.html",
-        "js/armes/**",
-        "js/core/armes/**",
-        "data/armes/**",
+        "js/armes/atelier.js",
+        "js/armes/rendu.js",
+        "js/armes/tenue.js",
+        "js/armes/poses-calcul.js",
         "data/i18n/atelier-armes.json",
         "css/atelier-armes.css",
-        "css/armes.css",
         "carte.html",
         "ecarts.html",
         "sons.html",
@@ -987,7 +1013,7 @@
         "tests/e2e/visite-chemins.js",
         "scripts/interface/**"
       ],
-      "dependances": ["carte", "combat", "economie", "menu", "noyau", "personnages", "rendu", "siege", "sons", "textes", "vagues"],
+      "dependances": ["armes", "carte", "combat", "economie", "menu", "noyau", "personnages", "rendu", "siege", "sons", "textes", "vagues"],
       "vitest": [
         "tests/unit/atelier-carte.test.js",
         "tests/unit/atelier-decisions.test.js",

@@ -81,15 +81,16 @@ export function createPersos(params, data) {
 
   return {
     params,
+    data: { characters: data.characters, poses: data.poses }, // lot 9e : squelette et poses du joueur (tenue des armes, js/core/armes/tenue-jeu.js)
     // Appelé une fois après createKit : kit.v2 aiguille createCharacter vers les personnages v2 ; le sang est posé dans world.dynamic.
-    attach({ kit: k, world, render, palette, variants, seed }) {
+    attach({ kit: k, world, render, palette, variants, seed, sansPistolet = false }) {
       kit = k;
       dynamic = world.dynamic;
       const lookup = createTokenLookup();
       if (params.v2) {
         // Lot 3m : variante de chaque personnage (params.slots) ; avec ?perso=choix, macros, style, macros
         // d'animation et tenues de la table des choix.
-        v2 = createV2Kit({ characters: data.characters, poses: data.poses, lookup, hit: palette.hit, choice: params.perso, styleOf: params.slots, ...choiceOptions(params, data.choices), zombieIds: variants.zombie.variants.map((v) => v.id), seed, wear, sill: render.sillHeight });
+        v2 = createV2Kit({ ...(params.corpsAvant ? { corps: null } : {}), sansPistolet, characters: data.characters, poses: data.poses, lookup, hit: palette.hit, choice: params.perso, styleOf: params.slots, ...choiceOptions(params, data.choices), zombieIds: variants.zombie.variants.map((v) => v.id), seed, wear, sill: render.sillHeight });
         kit.v2 = v2;
         // Lot 5b-G : la première tenue de chaque zombie est préparée tout de suite (derrière l'écran de préparation), les autres pendant les temps libres.
         for (let i = 0; i < variants.zombie.variants.length; i += 1) if (v2.handles('zombie', i)) v2.prewarm(i, 0);

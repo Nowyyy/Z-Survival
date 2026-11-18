@@ -117,6 +117,7 @@ export function variantChecks(slot, variant, opts = {}) {
     skeletons,
     budget: { triangles: rich ? b.richTriangles : b.triangles, calls: b.calls, shadowCalls: b.shadowCalls, shadowTriangles: b.shadowTriangles },
     radius: radiusOf(slot.id),
+    footprint: res.kind === 'player' ? 1.3 : b.zombieFootprint ?? 1.3, // lot 9e : bras tendus et coup à sa vraie portée (characters-v2.json)
     heightRange: [b.heightRange[0] * h, b.heightRange[1] * h],
     kind: slot.id === 'petit' ? 'petit' : null,
     poses: STANDING(res.kind).map(([anim, phase]) => ({ id: `${anim} ${phase}`, ...poseAt(rig, anim, phase, {}, poses) })),

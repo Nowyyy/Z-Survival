@@ -12,6 +12,7 @@ import { ancreTexte } from '../core/armes/caisse.js';
 import { CORPS_LONG, REGLES, appliquerCorps, echantillons, poserArme } from './tenue.js';
 import { visuelArme } from '../core/armes/visuel.js';
 import { creerKitArmes, lirePalette } from './rendu.js';
+import { renderSound } from '../core/synth.js';
 
 const query = new URLSearchParams(location.search);
 const testMode = query.get('test') === '1';
@@ -32,6 +33,7 @@ const [dict, armesJson, characters, poses, render, texturesJson, world, lumieres
 ].map(charger));
 const choixJson = await charger('data/armes/armes-choix.json').catch(() => null);
 const posesJson = await charger('data/armes/poses.json').catch(() => null); // poses de tenue enregistrées (règles et armes posées)
+const sonsJson = await charger('data/game/sons-armes.json').catch(() => null); // lot 9e : sons des armes (section « Sons »)
 const t = (key, params) => fmt(translate(dict, key), params);
 for (const node of document.querySelectorAll('[data-i18n]')) node.textContent = t(node.dataset.i18n);
 $('app').hidden = false;
@@ -144,7 +146,7 @@ function eclairer(groupe, mode, lampeAt = [70, 50, 40]) {
 const PIECES_PISTOLET = ['gunGrip', 'gunSlide'];
 const sansPistolet = JSON.parse(JSON.stringify(characters));
 for (const slot of sansPistolet.slots) for (const v of slot.variants) if (Array.isArray(v.parts)) v.parts = v.parts.filter((p) => !PIECES_PISTOLET.includes(p.id));
-const kitOpts = { poses, lookup, hit: jeu.hit, choice: 'riche', styleAnim: { joueur: 'A' }, outfitsOf: { joueur: ['sable'] }, seed: 3 };
+const kitOpts = { corps: null, poses, lookup, hit: jeu.hit, choice: 'riche', styleAnim: { joueur: 'A' }, outfitsOf: { joueur: ['sable'] }, seed: 3 };
 const kits = { visible: createV2Kit({ ...kitOpts, characters }), masque: createV2Kit({ ...kitOpts, characters: sansPistolet }) };
 function personnage(avecPistolet) {
   const p = kits[avecPistolet ? 'visible' : 'masque'].create('player', 0, { choice: 'riche' });
@@ -678,6 +680,57 @@ const panneau = $('reglages');
 const hauteurPanneau = () => document.documentElement.style.setProperty('--armes-reglages-h', `${Math.ceil(panneau.getBoundingClientRect().height)}px`);
 new ResizeObserver(hauteurPanneau).observe(panneau);
 hauteurPanneau();
+
+// Lot 9e — section « Sons » : chaque son de data/game/sons-armes.json (deux variantes par arme, rechargement, changement), calculé à la demande
+// par js/core/synth.js et joué au clic (aucun son avant le premier geste) ; la variante choisie (choix) est marquée. Créée ici, à la fin de la page.
+let sonsCtx = null;
+const sonsCache = new Map();
+function jouerSon(recette, v = 0) {
+  const AC = window.AudioContext ?? window.webkitAudioContext;
+  if (!AC) return;
+  sonsCtx ??= new AC();
+  const cle = `${recette.id}-${v}`;
+  if (!sonsCache.has(cle)) {
+    const r = renderSound(recette, v);
+    const b = sonsCtx.createBuffer(1, r.samples.length, r.sampleRate);
+    b.copyToChannel(r.samples, 0);
+    sonsCache.set(cle, b);
+  }
+  const src = sonsCtx.createBufferSource();
+  src.buffer = sonsCache.get(cle);
+  src.connect(sonsCtx.destination);
+  src.start();
+}
+if (sonsJson && Array.isArray(sonsJson.recettes)) {
+  const sec = document.createElement('section');
+  sec.id = 'sons';
+  sec.className = 'atelier-section';
+  sec.setAttribute('aria-labelledby', 'sons-titre');
+  const h = document.createElement('h2');
+  h.id = 'sons-titre';
+  h.className = 'atelier-heading';
+  h.textContent = t('dev.armes.sons.titre');
+  const p = document.createElement('p');
+  p.textContent = t('dev.armes.sons.intro');
+  sec.append(h, p);
+  const liste = document.createElement('ul');
+  liste.className = 'armes-sons';
+  for (const r of sonsJson.recettes) {
+    const m = /^tir-(.+)-([ab])$/.exec(r.id);
+    const li = document.createElement('li');
+    const nom = m ? `${armeParId(donnees, m[1])?.nom ?? m[1]} — ${t(`dev.armes.sons.variante.${m[2]}`)}${sonsJson.choix?.[m[1]] === m[2] ? ` ${t('dev.armes.sons.choisie')}` : ''}` : t(`dev.armes.sons.${r.id}`);
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'button button-quiet';
+    b.id = `son-${r.id}`;
+    b.textContent = `${t('dev.armes.sons.ecouter')} : ${nom}`;
+    b.addEventListener('click', () => jouerSon(r, 0));
+    li.append(b);
+    liste.append(li);
+  }
+  sec.append(liste);
+  $('choix').after(sec);
+}
 
 toutDessiner();
 dessinerVisuelsTous();
