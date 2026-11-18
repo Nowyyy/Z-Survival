@@ -10,7 +10,7 @@ const MOVE_CODES = {
 const GAME_CODES = new Set(Object.values(MOVE_CODES).flat());
 // Lot 9e : armes (event.code : mêmes touches physiques en AZERTY et en QWERTY ; R et E portent la même lettre sur les deux claviers, 1 et 2 sont
 // les touches des chiffres de la rangée du haut) : recharger, changer d'arme, sortir le Colt ou l'arme achetée.
-export const ARME_CODES = Object.freeze({ KeyR: 'recharger' });
+export const ARME_CODES = Object.freeze({ KeyR: 'recharger', KeyE: 'changer', Digit1: 'arme1', Digit2: 'arme2' });
 export const MOLETTE_PAUSE_MS = 150; // un cran de molette = un changement ; les crans suivants dans ce délai sont ignorés
 
 // root : conteneur du jeu. Les sticks sont des éléments HTML (E2-3, E2-4) posés où le doigt touche.

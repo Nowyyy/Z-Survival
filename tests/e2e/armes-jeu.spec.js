@@ -213,3 +213,109 @@ test.describe('chargeurs et rechargement (partie D)', () => {
     expect(await page.evaluate(() => window.__ecritures.length)).toBe(0);
   });
 });
+
+test.describe('emplacements et changement d\'arme (partie E)', () => {
+  test('Colt permanent + un emplacement acheté ; molette, touche E, 1 et 2 ; sortie animée de la durée de l\'arme ; rechargement interrompu repris à la sortie suivante', async ({ page }) => {
+    await page.addInitScript(espion);
+    await page.goto('/jeu.html?test=1&seed=2&nospawn=1&map=salle&lum=off&vhs=0');
+    await waitReady(page);
+    await page.evaluate(() => {
+      window.__zs.donnerArme('bar');
+      for (let i = 0; i < 30; i += 1) window.__zs.step(0.05);
+    });
+    let a = (await S(page)).armes;
+    expect(a.emplacements.map((e) => e.id)).toEqual(['m1911', 'bar']);
+    expect(a.emplacementsMax).toBe(2);
+    // Une troisième arme remplace l'arme achetée tenue, jamais le Colt.
+    await page.evaluate(() => {
+      window.__zs.donnerArme('garand');
+      for (let i = 0; i < 30; i += 1) window.__zs.step(0.05);
+    });
+    a = (await S(page)).armes;
+    expect(a.emplacements.map((e) => e.id)).toEqual(['m1911', 'garand']);
+    // Touche E : vers le Colt ; sortie du Colt (0,38 s) sans tir.
+    await page.mouse.move(400, 300);
+    await page.keyboard.press('KeyE');
+    await page.evaluate(() => window.__zs.step(0.05));
+    a = (await S(page)).armes;
+    expect(a.actif).toBe('m1911');
+    expect(a.sortie.total).toBeCloseTo(0.38, 9);
+    expect(a.peutTirer).toBe(false);
+    await page.evaluate(() => { for (let i = 0; i < 8; i += 1) window.__zs.step(0.05); });
+    expect((await S(page)).armes.sortie).toBeNull();
+    // 2 : l'arme achetée ; 1 : le Colt ; molette : l'autre.
+    await page.keyboard.press('Digit2');
+    await page.evaluate(() => { for (let i = 0; i < 14; i += 1) window.__zs.step(0.05); });
+    expect((await S(page)).armes.actif).toBe('garand');
+    await page.keyboard.press('Digit1');
+    await page.evaluate(() => window.__zs.step(0.05));
+    expect((await S(page)).armes.actif).toBe('m1911');
+    await page.evaluate(() => { for (let i = 0; i < 10; i += 1) window.__zs.step(0.05); });
+    await page.mouse.wheel(0, 120);
+    await page.evaluate(() => window.__zs.step(0.05));
+    expect((await S(page)).armes.actif).toBe('garand');
+    // Rechargement interrompu par un changement, gardé, repris à la sortie suivante.
+    const reprise = await page.evaluate(() => {
+      const zs = window.__zs;
+      for (let i = 0; i < 14; i += 1) zs.step(0.05);
+      zs.setWaveParams({ hp: { hpLinearPerRound: 1000, hpExpStartRound: 1000, hpExpFactor: 1, hpCap: 1e9 }, damage: { factor: 1, cap: 0.0001 } }); // zombie qui ne tombe pas et ne blesse pas
+      const p = zs.getState().player;
+      zs.spawnEnemy(p.x + 150, p.y, { type: 'marcheur', gait: 'lent', wave: 3 }); // manche 3 : vie × 2 001 (setWaveParams), le zombie ne tombe pas
+      for (let i = 0; i < 30; i += 1) {
+        zs.setInput({ aim: { angle: 0 } });
+        zs.step(0.05);
+      }
+      zs.killAll();
+      zs.recharger();
+      for (let i = 0; i < 10; i += 1) zs.step(0.05);
+      const avant = zs.getState().armes.emplacements[1].recharge;
+      zs.changerArme();
+      for (let i = 0; i < 10; i += 1) zs.step(0.05);
+      const garde = zs.getState().armes.emplacements[1].recharge;
+      zs.changerArme();
+      for (let i = 0; i < 14; i += 1) zs.step(0.05);
+      return { avant, garde, enRecharge: zs.getState().armes.enRecharge };
+    });
+    expect(reprise.avant).toBeGreaterThan(0.4);
+    expect(reprise.garde).toBeCloseTo(reprise.avant, 9);
+    expect(reprise.enRecharge).toBe(true);
+    expect(await page.evaluate(() => window.__ecritures.length)).toBe(0);
+  });
+});
+
+test.describe('bouton de changement sur téléphone (partie E)', () => {
+  test.use({ hasTouch: true, isMobile: true, viewport: { width: 812, height: 375 } });
+  test('boutons « Changer » (visuel 2D de l\'autre arme) et « Recharger » près du stick droit : 44 px au moins, dans l\'écran, actifs au doigt ; axe sans violation', async ({ page }) => {
+    const { default: AxeBuilder } = await import('@axe-core/playwright');
+    await page.addInitScript(espion);
+    await page.goto('/jeu.html?test=1&seed=2&nospawn=1&map=salle&lum=off&vhs=0');
+    await waitReady(page);
+    // Passage au toucher : un doigt posé puis levé sur la zone de jeu.
+    await page.touchscreen.tap(200, 300);
+    await expect(page.locator('#game-root')).toHaveAttribute('data-input', 'touch');
+    await expect(page.locator('#btn-recharger')).toBeVisible();
+    await expect(page.locator('#btn-changer')).toBeHidden(); // une seule arme : rien à changer
+    await page.evaluate(() => {
+      window.__zs.donnerArme('thompson');
+      for (let i = 0; i < 20; i += 1) window.__zs.step(0.05);
+    });
+    const changer = page.locator('#btn-changer');
+    await expect(changer).toBeVisible();
+    await expect(changer).toHaveAttribute('aria-label', /Colt M1911/);
+    await expect(changer.locator('svg.arm-svg')).toHaveCount(1);
+    for (const id of ['#btn-changer', '#btn-recharger']) {
+      const b = await page.locator(id).boundingBox();
+      expect(b.width, id).toBeGreaterThanOrEqual(44);
+      expect(b.height, id).toBeGreaterThanOrEqual(44);
+      expect(b.x + b.width, id).toBeLessThanOrEqual(812);
+      expect(b.y + b.height, id).toBeLessThanOrEqual(375);
+    }
+    await changer.tap();
+    await page.evaluate(() => window.__zs.step(0.05));
+    expect((await S(page)).armes.actif).toBe('m1911');
+    await expect(changer).toHaveAttribute('aria-label', /Thompson/);
+    const r = await new AxeBuilder({ page }).include('#armes-boutons').include('#hud-ammo').analyze();
+    expect(r.violations.map((v) => v.id)).toEqual([]);
+    expect(await page.evaluate(() => window.__ecritures.length)).toBe(0);
+  });
+});

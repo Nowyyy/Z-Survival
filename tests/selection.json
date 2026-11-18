@@ -215,6 +215,7 @@
     { "fichier": "tests/unit/zones-directeur.test.js", "categorie": "P", "raison": "Directeur des zones." },
     { "fichier": "tests/unit/zones-hygiene.test.js", "categorie": "G", "raison": "Hygiène des zones." },
     { "fichier": "tests/unit/lot9e-gel.test.js", "categorie": "G", "raison": "Lot 9e : règles changées seulement par ajout (équivalent des hygiènes)." },
+    { "fichier": "tests/e2e/armes-jeu.spec.js", "categorie": "P", "motif": "téléphone", "raison": "Lot 9e : boutons des armes sur téléphone (44 px, visuel 2D, au doigt, axe) : joué aussi par le projet mobile." },
     { "fichier": "tests/unit/zones-mobilier.test.js", "categorie": "P", "raison": "Mobilier de complément." },
     { "fichier": "tests/unit/zones-porte-chemin.test.js", "categorie": "G", "raison": "Chemins par la porte (connexité)." },
     { "fichier": "tests/unit/zones-rendu.test.js", "categorie": "P", "raison": "Rendu des zones." },
