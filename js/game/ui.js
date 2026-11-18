@@ -216,8 +216,8 @@ export function createUi(dict, handlers) {
   ui.syncVhs = () => {};
   els.options.addEventListener('click', () => ui.openOptions());
   // Lot 5l : menu de débogage. allowed : canal de débogage (sinon l'icône reste cachée et le module n'est jamais chargé) ; search : adresse actuelle.
-  ui.bindDebug = ({ allowed = false, search = '', planksMax } = {}) => {
-    debugBinding = allowed ? { search, planksMax } : null;
+  ui.bindDebug = ({ allowed = false, search = '', planksMax, armes = null } = {}) => {
+    debugBinding = allowed ? { search, planksMax, armes } : null; // lot 9e : armes (section « Armes » du débogage)
     els.debug.hidden = !allowed;
   };
   ui.isDebugOpen = () => debugOpen;
@@ -226,7 +226,7 @@ export function createUi(dict, handlers) {
     debugOpen = true;
     els.pausePanel.hidden = true; // la partie reste en pause (debugOpen)
     try {
-      debugMenu ??= (await import('./debug-menu.js')).createDebugMenu({ dict, search: debugBinding.search, planksMax: debugBinding.planksMax, onClose: () => ui.closeDebug() });
+      debugMenu ??= (await import('./debug-menu.js')).createDebugMenu({ dict, search: debugBinding.search, planksMax: debugBinding.planksMax, armes: debugBinding.armes, onClose: () => ui.closeDebug() });
     } catch {
       debugOpen = false;
       els.pausePanel.hidden = false;

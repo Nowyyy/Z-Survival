@@ -864,7 +864,7 @@
       "id": "jeu",
       "description": "Assemblage du jeu : jeu.html, boucle et état (game.js), démarrage (lot 8a : js/menu/demarrage.js, qui importe main.js), accès de test.",
       "sources": ["js/fps.js", "jeu.html", "js/game/main.js", "js/game/game.js", "js/game/boot.js", "js/game/testhook.js", "js/menu/demarrage.js", "js/game/liberation.js"],
-      "dependances": ["carte", "combat", "economie", "etages", "graphismes", "interface", "menu", "noyau", "personnages", "rendu", "siege", "sons", "textes", "vagues"],
+      "dependances": ["armes", "carte", "combat", "economie", "etages", "graphismes", "interface", "menu", "noyau", "personnages", "rendu", "siege", "sons", "textes", "vagues"],
       "vitest": [
         "tests/unit/correctifs-9a.test.js",
         "tests/unit/data-ambiance.test.js",
@@ -933,6 +933,26 @@
       "complet": []
     },
     {
+      "id": "armes",
+      "description": "Armes (lot 9c : modèles, atlas, caisse, visuels 2D, poses de tenue ; lot 9e : table des armes de la partie, armes portées, chargeurs, changement d'arme, tenue sur le personnage, interface des armes).",
+      "sources": [
+        "js/armes/en-main.js",
+        "js/core/armes/**",
+        "data/armes/**",
+        "css/armes.css",
+        "data/game/armes-partie.json",
+        "js/game/armes-chargement.js",
+        "js/game/armes-ui.js"
+      ],
+      "dependances": ["interface", "noyau", "personnages", "textes"],
+      "vitest": [
+        "tests/unit/armes.test.js",
+        "tests/unit/armes-partie.test.js"
+      ],
+      "e2e": ["tests/e2e/armes-atelier.spec.js", "tests/e2e/armes-jeu.spec.js"],
+      "complet": []
+    },
+    {
       "id": "pages-techniques",
       "description": "Pages techniques à retirer au lot 13 : ateliers, carte, écarts, visite, sons, interface retenue.",
       "sources": [
@@ -944,12 +964,12 @@
         "js/atelier-sons-menu/**",
         "data/i18n/atelier-sons-menu.json",
         "atelier-armes.html",
-        "js/armes/**",
-        "js/core/armes/**",
-        "data/armes/**",
+        "js/armes/atelier.js",
+        "js/armes/rendu.js",
+        "js/armes/tenue.js",
+        "js/armes/poses-calcul.js",
         "data/i18n/atelier-armes.json",
         "css/atelier-armes.css",
-        "css/armes.css",
         "carte.html",
         "ecarts.html",
         "sons.html",
@@ -991,7 +1011,7 @@
         "tests/e2e/visite-chemins.js",
         "scripts/interface/**"
       ],
-      "dependances": ["carte", "combat", "economie", "menu", "noyau", "personnages", "rendu", "siege", "sons", "textes", "vagues"],
+      "dependances": ["armes", "carte", "combat", "economie", "menu", "noyau", "personnages", "rendu", "siege", "sons", "textes", "vagues"],
       "vitest": [
         "tests/unit/atelier-carte.test.js",
         "tests/unit/atelier-decisions.test.js",

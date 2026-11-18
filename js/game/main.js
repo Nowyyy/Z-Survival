@@ -27,6 +27,7 @@ import { installTestHook } from './testhook.js';
 import { createUi } from './ui.js';
 import { applyTexts, fmt, loadDict, TEXTURE_TEXTS } from './texts.js';
 import { creerRegistre } from './liberation.js';
+import { chargerArmes } from './armes-chargement.js';
 import { feuilleMenu, menuChute, menuProgres, menuQuitter, modeMenu, optionPartie, poserSon, reglagesSon } from '../menu/demarrage.js';
 
 const DEFAULT_RATIO_CAP = 2;
@@ -130,6 +131,7 @@ export async function demarrerPartie() {
   // Lot 8j : objets traversables par les tirs (tirs.world.json de la carte, npm run carte) ; ?test=1&tirtraverse=0 : liste vide (jamais mémorisé).
   const tirsJson = mapId === 'salle' || (testMode && query.get('tirtraverse') === '0') ? null : await loadJson(`${mapDir}/tirs.world.json`).catch(() => null);
   const reglagesPartie = await loadJson('data/game/reglages-partie.json').catch(() => ({})); // lot 8j : message des portes, sons des zombies
+  const armes = await chargerArmes(reg); // lot 9e : armes de la partie (table, modèles, poses, couleurs), chargées avec la partie seulement
   const decorInterieur = detail && gfxLoad.decor !== 'reduit' && mapId !== 'salle' ? await loadJson(`${mapDir}/decor-interieur.world.json`).catch(() => null) : null;
   // Retours du propriétaire : mobilier dessiné d'après le modèle (mobilier.world.json, avec le détail).
   const mobilier = detail && mapId !== 'salle' ? await loadJson(`${mapDir}/mobilier.world.json`).catch(() => null) : null;
@@ -256,10 +258,12 @@ export async function demarrerPartie() {
     textureData,
     variants,
     persos, // lot 9d : chargeur des personnages de cette partie (game.js)
+    armes, // lot 9e : données des armes (js/game/armes-chargement.js) ou null
     perf: fpsMode ? { flowSum: 0, flowCount: 0, flowMax: 0, windowsMs: 0, floorsMs: 0 } : null,
     params: {
       test: testMode,
       corpsAvant, // lot 9e : ?test=1&corps=avant (gabarits, corps et pistolet d'avant : référence de la trace)
+      munitionsIllimitees: testMode && query.get('munitions') === 'illimitees', // lot 9e : ?test=1&munitions=illimitees (sans rechargement : référence de la trace)
       nospawn: query.get('nospawn') === '1',
       wave: waveParam(query.get('wave')),
       // ?endless=1 (lot 3c) : les manches continuent après la manche 40, sans fin de monde ; fonctionne sans ?test=1, n'expose rien et n'est jamais mémorisé.
@@ -356,7 +360,15 @@ export async function demarrerPartie() {
   reg.ajouter(() => ctx.input.destroy());
   ctx.ui.syncSound(ctx.audio);
   // Lot 5l : icône « Débogage » de la pause sur les canaux de débogage seulement ; le menu lit l'adresse réelle (préremplissage, paramètres conservés).
-  ctx.ui.bindDebug({ allowed: CANAUX_DEBUG.includes(canal), search: location.search, planksMax: windowsCfg.planks });
+  // Lot 9e : section « Armes » (effet immédiat sur la partie en cours, rien n'est écrit) : donner une des huit armes, remplir, munitions illimitées.
+  const armesDebug = armes ? {
+    liste: armes.table.actives.map((id) => ({ id, nom: dict[`game.armes.${id}`] ?? id })),
+    donner: (id) => game?.donnerArme(id),
+    remplir: () => game?.remplirMunitions(),
+    illimitees: (on) => game?.munitionsIllimitees(on),
+    etat: () => game?.snapshotArmes?.() ?? null,
+  } : null;
+  ctx.ui.bindDebug({ allowed: CANAUX_DEBUG.includes(canal), search: location.search, planksMax: windowsCfg.planks, armes: armesDebug });
   ctx.ui.syncVhs(ctx.vhs);
   ctx.ui.syncGraphics(ctx.graphics.state());
   // Téléphone : tant que le contexte audio n'est pas en marche (aucun doigt relâché depuis le début, un stick tenu), une invitation à toucher

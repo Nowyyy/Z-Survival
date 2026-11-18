@@ -62,7 +62,8 @@ describe('hygiène du lot 2b', () => {
   it('aucune clé de fr.json orpheline : chaque clé « game.* » et « dev.* » est utilisée dans le code ou les pages', () => {
     // Lot 5j : data/game/graphics.json nomme les libellés des options de l'écran Options (clés lues par js/game/options-menu.js) : il compte comme source.
     const sources = [...walk('js'), 'jeu.html', 'index.html', 'sons.html', 'sauvegarde.html', 'data/game/graphics.json'].map((f) => readFileSync(f, 'utf8')).join('\n');
-    const dynamic = ['game.wave.', 'game.hud.', 'game.live.', 'dev.'];
+    // Lot 9e : noms des armes lus par identifiant (game.armes.<id> : js/game/armes-ui.js, js/game/main.js).
+    const dynamic = ['game.wave.', 'game.hud.', 'game.live.', 'dev.', 'game.armes.'];
     const orphans = Object.keys(fr).filter((k) => /^(game|dev)\./.test(k) && !sources.includes(k) && !dynamic.some((d) => k.startsWith(d) && sources.includes(d)));
     expect(orphans).toEqual([]);
   });

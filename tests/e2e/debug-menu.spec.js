@@ -73,7 +73,8 @@ test.describe('667×375 (canal source)', () => {
     expect(files.filter((f) => f === '/js/game/debug-menu.js')).toHaveLength(1);
     await expect(page.locator('#debug-close')).toBeFocused();
     // Retours du propriétaire (lot 5l-E) : Mesure en premier, visible dès l'ouverture ; encadré du mode essai sur la ligne du titre « Partie ».
-    expect(await page.evaluate(() => [...document.querySelectorAll('#debug-scroll h3')].map((h) => h.textContent))).toEqual(['Mesure', 'Partie']);
+    // Lot 9e : section « Armes » (effet immédiat) entre Mesure et Partie.
+    expect(await page.evaluate(() => [...document.querySelectorAll('#debug-scroll h3')].map((h) => h.textContent))).toEqual(['Mesure', 'Armes', 'Partie']);
     for (const id of ['#debug-perf-true', '#debug-cap-60']) await expect(page.locator(id), id).toBeInViewport({ ratio: 1 });
     const line = await page.evaluate(() => {
       const r = (id) => document.getElementById(id).getBoundingClientRect();

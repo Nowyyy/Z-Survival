@@ -26,6 +26,10 @@ import { longueursCone, obstaclesTirs, preparerTirs } from '../core/tir-traverse
 import { createRng } from '../core/rng.js';
 import { shotAngle, speedRatio, spreadHalfAngle, stepSpreadRatio, toRadians } from '../core/spread.js';
 import { zoneZombie } from '../core/gabarit.js';
+import { armeJeu, statsAvecArme } from '../core/armes/partie.js';
+import { aSec, armeActive, armeMontree, avancerInventaire, changerArme, creerInventaire, donnerArme, enRecharge, munitionsIllimitees, peutTirer, progressionRecharge, recharger, remplirMunitions, texteMunitions, tirer, RANGER } from '../core/armes/inventaire.js';
+import { boucheDevant, tenueArme } from '../core/armes/tenue-jeu.js';
+import { creerArmesEnMain } from '../armes/en-main.js';
 import { createFootsteps, stepFootsteps } from '../core/footsteps.js';
 import { isHidden } from '../core/spawner.js';
 import { materialFor } from '../core/sound-director.js';
@@ -158,6 +162,30 @@ export function createGame(ctx) {
   const splashOptions = { reducedMotion: reduced, params: ctx.splashCfg };
   const playerChar = createCharacter(kit, 'player');
   world.scene.add(playerChar.root);
+  // Lot 9e : armes de la partie (ctx.armes : js/game/armes-chargement.js). Table (data/game/armes-partie.json), tenue de chaque arme sur le corps
+  // long (pose du lot 9c exprimée dans le repère de l'os chest), bouche du canon (logique : distance devant le joueur ; image : pointe du modèle),
+  // maillages créés au premier usage (js/armes/en-main.js). ?test=1&corps=avant : pistolet d'origine du personnage et bouche de weapons.json.
+  const armesCfg = ctx.armes ?? null;
+  const tableArmes = armesCfg?.table ?? null;
+  const armesAvant = ctx.params.corpsAvant === true || !armesCfg;
+  const armesKit = !armesAvant ? creerArmesEnMain({ donnees: armesCfg.donnees, choix: armesCfg.choix, palette: armesCfg.palette, poses: armesCfg.poses }) : null;
+  const choixJoueur = ctx.persos?.params?.slots?.joueur ?? 'riche';
+  const slotJoueur = ctx.persos?.data?.characters?.slots?.find((s) => s.id === 'joueur');
+  const joueurV2 = slotJoueur?.variants?.find((v) => v.id === choixJoueur) ?? slotJoueur?.variants?.find((v) => v.id === 'A') ?? null;
+  const tenues = new Map();
+  const tenueDe = (id) => {
+    if (!tenues.has(id)) {
+      const characters = ctx.persos?.data?.characters;
+      const posesV2 = ctx.persos?.data?.poses;
+      tenues.set(id, armesKit && joueurV2 && characters && posesV2 ? tenueArme({ variant: joueurV2, skeletons: posesV2.skeletons, posesV2, posesArmes: armesCfg.poses, id, corps: characters.corps }) : null);
+    }
+    return tenues.get(id);
+  };
+  const boucheDe = (id) => {
+    const t = tenueDe(id);
+    return t && armesKit ? Math.round(boucheDevant(t, armesKit.pointe(id)) * 10) / 10 : null;
+  };
+  let armeVue = null; // arme montrée sur le personnage (identifiant)
   // Hauteur d'un étage (render.json) : le joueur reste à y = 0, c'est le monde qui descend quand il monte (world.setElevation).
   const LIFT = Number.isFinite(render.floorLift) ? render.floorLift : 0;
   const liftOf = (f) => (f === 'etage' ? LIFT : 0);
@@ -173,12 +201,22 @@ export function createGame(ctx) {
 
   // Statistiques du joueur (lot 2b) : niveaux (levels-source.js) -> arme et joueur effectifs. Recalculés quand les niveaux changent.
   const eff = {};
+  // Lot 9e : l'arme active (table des armes) donne dégâts, cadence, portée, plombs, cône (les niveaux du joueur s'y appliquent comme avant),
+  // bouche du canon et vitesse du joueur ; sans table (données illisibles), l'arme d'avant (weapons.json). Recalculé à chaque changement d'arme.
+  const entreeActive = () => (tableArmes ? tableArmes.armes[armeActive(sim?.inv)?.id ?? tableArmes.armeDepart] ?? null : null);
+  function rafraichirArme() {
+    const entree = entreeActive();
+    const stats = entree ? statsAvecArme(cfg.stats, entree) : cfg.stats;
+    const base = entree ? armeJeu(entree, cfg.weapon, armesAvant ? cfg.weapon.muzzleOffset : boucheDe(entree.id)) : cfg.weapon;
+    eff.values = statValues(eff.levels.levels, stats);
+    eff.weapon = effectiveWeapon(base, eff.levels.levels, stats);
+    eff.vitesseArme = entree?.vitesse ?? 1;
+  }
   const applyLevels = (levels, earlier = []) => {
     const normal = normalizeLevels(levels, cfg.stats);
     eff.levels = { levels: normal.levels, warnings: [...earlier, ...normal.warnings] };
-    eff.values = statValues(eff.levels.levels, cfg.stats);
-    eff.weapon = effectiveWeapon(cfg.weapon, eff.levels.levels, cfg.stats);
     eff.player = effectivePlayer(cfg.player, eff.levels.levels, cfg.stats);
+    rafraichirArme();
     if (sim) sim.player = { ...sim.player, maxHealth: eff.player.maxHealth, health: Math.min(sim.player.health, eff.player.maxHealth) };
   };
 
@@ -323,6 +361,8 @@ export function createGame(ctx) {
       enemies: [],
       bullets: [],
       weapon: createWeaponState(),
+      // Lot 9e : armes portées (js/core/armes/inventaire.js) ; partie C : munitions illimitées (chargeurs : partie D).
+      inv: tableArmes ? creerInventaire(tableArmes, { illimite: true }) : null,
       waves: createDirector(cfg.waves, { seed, wave: params.wave ?? 1, inactive: params.nospawn, doors: doorCfgs.map((d) => ({ id: d.id, openAfterWave: d.openAfterWave, planned: d.planned === true })), wavesPerWorld: zoneCfg ? zoneCfg.wavesPerWorld : null, endless: params.endless === true }),
       doors: opened,
       worldOver: false,
@@ -353,6 +393,7 @@ export function createGame(ctx) {
       floorLive: null,
     };
     splashView.apply(sim.splashView);
+    rafraichirArme(); // lot 9e : la partie repart avec l'arme de départ
     sim.debris = createDebris();
     for (const g of geoms) dropDebris(g.id, g.id in sim.win.windows ? sim.win.windows[g.id].maxPlanks - sim.win.windows[g.id].planks : 0);
     world.doors.reset(doorCfgs.filter((d) => !sim.doors[d.id].open).map((d) => d.id));
@@ -424,6 +465,7 @@ export function createGame(ctx) {
 
   // Demi-angle courant du cône, en degrés.
   const halfAngle = () => spreadHalfAngle(sim.spread, eff.values);
+  const vitesseJoueur = () => eff.player.speed * (eff.vitesseArme ?? 1); // lot 9e : vitesse du joueur selon l'arme en main
 
   // Les zombies trop proches du point d'arrivée du joueur sont repoussés (même routine que la chute, restreinte à l'étage d'arrivée).
   function knockArrival(at, to) {
@@ -475,7 +517,7 @@ export function createGame(ctx) {
   }
   function advanceWalk(dir, dt) {
     const def = stairsWorld.find((q) => q.id === sim.sw.stair);
-    const r = stepWalk(sim.sw, def?.walk?.path, { pos: sim.player, dir, speed: eff.player.speed, dt, width: def?.walk?.width, radius: sim.player.r, sideExit: { free: (p) => !playerSolids.some((o) => circleOverlapsRect({ x: p.x, y: p.y, r: sim.player.r }, o)) } }); // lot 3g : sortie par le côté sur un palier
+    const r = stepWalk(sim.sw, def?.walk?.path, { pos: sim.player, dir, speed: vitesseJoueur(), dt, width: def?.walk?.width, radius: sim.player.r, sideExit: { free: (p) => !playerSolids.some((o) => circleOverlapsRect({ x: p.x, y: p.y, r: sim.player.r }, o)) } }); // lot 3g : sortie par le côté sur un palier
     sim.player = { ...sim.player, x: r.pos.x, y: r.pos.y };
     sim.elev = heightOf(r.point.t, LIFT);
     if (r.floor !== pf() && !r.done) crossFloor(r.floor);
@@ -552,6 +594,7 @@ export function createGame(ctx) {
 
     bankMs += dt * 1000;
     const events = []; // événements sonores de cette image (traités par js/core/sound-director.js)
+    const armesEvents = []; // lot 9e : sortie d'une arme, début et fin d'un rechargement (annonces, sons)
     // À terre ou pendant le fondu, le joueur ne bouge pas, ne tire pas et son laser est masqué (js/core/player-down.js).
     const standing = canMove(sim.down) && !locked;
     const firing = canFire(sim.down) && !locked;
@@ -560,16 +603,16 @@ export function createGame(ctx) {
     advanceDoors(dt);
     if (sim.sw !== null) advanceWalk(dir, dt);
     else {
-      const pos = moveCircle(sim.player, dir, eff.player.speed, dt, layout.moveRoom, playerSolids);
+      const pos = moveCircle(sim.player, dir, vitesseJoueur(), dt, layout.moveRoom, playerSolids);
       sim.player = { ...sim.player, ...pos };
     }
     // Pas : la phase de marche avance avec la distance réellement parcourue (même rythme que les poses : STRIDE par unité).
     const moved = Math.hypot(sim.player.x - before.x, sim.player.y - before.y);
     const phase = sim.walk.phase + moved * STRIDE;
-    const foot = stepFootsteps(sim.walk.steps, sim.walk.phase, phase, moved / Math.max(dt, 1e-6), sim.time, eff.player.speed, ctx.audioCfg?.footsteps);
+    const foot = stepFootsteps(sim.walk.steps, sim.walk.phase, phase, moved / Math.max(dt, 1e-6), sim.time, vitesseJoueur(), ctx.audioCfg?.footsteps);
     sim.walk = { phase, steps: foot.state };
     // Cône : le rapport de vitesse (vitesse réelle / vitesse maximale effective) est lissé, indépendamment du nombre d'images par seconde.
-    sim.spread = stepSpreadRatio(sim.spread, speedRatio(dt > 0 ? moved / dt : 0, eff.player.speed), dt, cfg.stats.spread?.widenTime, cfg.stats.spread?.narrowTime);
+    sim.spread = stepSpreadRatio(sim.spread, speedRatio(dt > 0 ? moved / dt : 0, vitesseJoueur()), dt, cfg.stats.spread?.widenTime, cfg.stats.spread?.narrowTime);
     if (foot.step) events.push({ type: 'playerStep', ...foot.step });
     if (foot.step) events[events.length - 1].surface = sim.sw !== null ? 'escalier' : layoutOf(pf()).inside?.(sim.player.x, sim.player.y) === false ? 'exterieur' : 'dur'; // lot 3i : surface du pas
     sim.aim = aimAngle(sim.aim);
@@ -599,15 +642,27 @@ export function createGame(ctx) {
     const wide = cibles.map((e) => ({ ...e, r: e.r + num(weapon.aimTolerance) }));
     const aimed = firing && (ray.hit !== null || castRay(muzzle, sim.aim.angle, weapon.fireRange, wide, shotBounds, blockers, pf()).hit !== null);
 
-    const trigger = stepWeapon(sim.weapon, dt, aimed, weapon, sim.bullets.length);
+    // Lot 9e : armes portées (changement, rechargement) ; le tir ne part que si l'arme active le permet (ni changement, ni rechargement, une
+    // cartouche au moins). Le fusil à pompe tire plusieurs plombs, chacun tiré dans le cône (même tirage que la balle unique).
+    if (sim.inv) {
+      const iv = avancerInventaire(sim.inv, tableArmes, dt);
+      sim.inv = iv.state;
+      for (const ev of iv.evenements) armesEvents.push(ev);
+    }
+    const armePrete = !sim.inv || peutTirer(sim.inv);
+    const trigger = stepWeapon(sim.weapon, dt, aimed && armePrete, weapon, sim.bullets.length);
     sim.weapon = trigger.state;
     if (trigger.fire) {
       // La balle part dans le cône autour de l'axe de visée (tirage triangulaire, graine du jeu) ; ses dégâts sont figés ici.
-      const shot = shotAngle(sim.aim.angle, toRadians(halfAngle()), sim.rng);
-      sim.rng = shot.rng;
-      sim.bullets = [...sim.bullets, { ...createBullet(muzzle, shot.angle, weapon, sim.nextId, sim.aim.angle), floor: pf() }];
-      shotLog.push({ id: sim.nextId, time: sim.time, angle: shot.angle, aimAngle: sim.aim.angle, half: halfAngle() });
-      sim.nextId += 1;
+      const plombs = Math.max(1, Math.floor(num(weapon.plombs, 1)));
+      for (let k = 0; k < plombs; k += 1) {
+        const shot = shotAngle(sim.aim.angle, toRadians(halfAngle()), sim.rng);
+        sim.rng = shot.rng;
+        sim.bullets = [...sim.bullets, { ...createBullet(muzzle, shot.angle, weapon, sim.nextId, sim.aim.angle), floor: pf() }];
+        shotLog.push({ id: sim.nextId, time: sim.time, angle: shot.angle, aimAngle: sim.aim.angle, half: halfAngle() });
+        sim.nextId += 1;
+      }
+      if (sim.inv) sim.inv = tirer(sim.inv);
       sim.flash = reduced ? weapon.muzzleFlash / 2 : weapon.muzzleFlash;
       sim.recoil = RECOIL_TIME;
       lastFire = sim.time;
@@ -973,6 +1028,29 @@ export function createGame(ctx) {
   }
 
   // Place les personnages, le laser et les effets d'après l'état simulé, puis la lumière.
+  // Lot 9e : arme montrée sur le personnage (celle qu'on range pendant la première part d'un changement) et son état visible : abaissée pendant
+  // le changement (on range, puis on sort) et pendant un rechargement (début et fin adoucis) ; mouvement réduit : aucune descente.
+  function etatVisibleArme() {
+    const so = sim.inv.sortie;
+    if (so) {
+      const r = so.total * RANGER;
+      return { baisse: reduced ? 0 : so.t < r ? so.t / Math.max(1e-6, r) : Math.max(0, 1 - (so.t - r) / Math.max(1e-6, so.total - r)) };
+    }
+    const p = progressionRecharge(sim.inv, tableArmes);
+    if (p !== null) return { baisse: reduced ? 0 : 0.6 * Math.max(0, Math.min(1, p / 0.15, (1 - p) / 0.15)), recharge: p };
+    return { baisse: 0 };
+  }
+  function montrerArme() {
+    if (!armesKit || !sim.inv) return;
+    const vue = armeMontree(sim.inv)?.id ?? null;
+    if (vue !== armeVue) {
+      armeVue = vue;
+      const t = vue ? tenueDe(vue) : null;
+      playerChar.setArme(t ? { id: vue, mesh: armesKit.mesh(vue), angles: t.angles, local: t.local, pointe: armesKit.pointe(vue), pivot: t.pivot } : null);
+    }
+    playerChar.setArmeEtat(etatVisibleArme());
+  }
+
   function draw(dt) {
     world.setElevation(sim.elev, pf());
     sim.flash = Math.max(0, sim.flash - dt);
@@ -999,8 +1077,9 @@ export function createGame(ctx) {
     anim.x = p.x;
     anim.y = p.y;
     const state = sim.down.state === 'terre' ? 'terre' : sim.time - lastFire < FIRE_POSE_TIME ? 'tir' : moving ? 'marche' : 'arret';
-    const poseIn = { phase: anim.phase, aim, facing: anim.facing, state, time: sim.time, seed: 0, amount: Math.min(1, speed / eff.player.speed), recoil: sim.recoil / RECOIL_TIME };
+    const poseIn = { phase: anim.phase, aim, facing: anim.facing, state, time: sim.time, seed: 0, amount: Math.min(1, speed / vitesseJoueur()), recoil: sim.recoil / RECOIL_TIME };
     lastPose = computePose(poseIn);
+    montrerArme(); // lot 9e : arme en main (modèle du lot 9c), abaissée pendant un changement ou un rechargement
     playerChar.setPose(lastPose, poseIn, pv?.playerCtx(sim, eff)); // lot 3j : les personnages v2 lisent l'entrée et le contexte
     playerChar.root.position.set(p.x, 0, p.y);
     playerChar.root.rotation.y = Math.PI / 2 - anim.facing;
@@ -1265,6 +1344,35 @@ export function createGame(ctx) {
       ctx.audio?.handle({ time: sim.time, listener: sim.player, floor: pf(), walls: wallsOf(pf()), paused: ctx.ui.isPaused(), events: Array.isArray(events) ? events : [] });
     },
     // Test : une balle de plus, tirée de la bouche de l'arme dans la direction `angle`.
+    // Lot 9e : armes (débogage, tests ; futur achat) : rien n'est écrit dans le stockage. Chaque changement recalcule l'arme effective.
+    donnerArme(id) {
+      if (!sim.inv) return false;
+      const r = donnerArme(sim.inv, tableArmes, id);
+      sim.inv = r.state;
+      rafraichirArme();
+      return r.change;
+    },
+    changerArme(vers = null) {
+      if (!sim.inv) return false;
+      const r = changerArme(sim.inv, tableArmes, Number.isInteger(vers) ? vers : null);
+      sim.inv = r.state;
+      rafraichirArme();
+      return r.change;
+    },
+    recharger() {
+      if (!sim.inv) return false;
+      const r = recharger(sim.inv, tableArmes);
+      sim.inv = r.state;
+      return r.debut;
+    },
+    remplirMunitions() {
+      if (sim.inv) sim.inv = remplirMunitions(sim.inv, tableArmes);
+    },
+    munitionsIllimitees(on) {
+      if (sim.inv) sim.inv = munitionsIllimitees(sim.inv, on === true);
+    },
+    armesUtilisables: () => (tableArmes ? [...tableArmes.actives] : []),
+    snapshotArmes: () => (sim.inv ? { actif: armeActive(sim.inv)?.id ?? null, illimite: sim.inv.illimite } : null),
     fireBullet(angle) {
       // La bouche n'est pas retenue dans la salle : le test place parfois le joueur dehors (balle sur une voiture, par exemple).
       const muzzle = muzzlePoint(sim.player, Number(angle), eff.weapon.muzzleOffset, shotBounds);
@@ -1418,6 +1526,7 @@ export function createGame(ctx) {
       pv?.liberer?.(vus);
       libererThree([world.scene, playerChar.root, ...spare.flat().map((c) => c.root), ...[...zombies.values()].map((z) => z.char.root)], vus);
       textures.dispose();
+      armesKit?.dispose(); // lot 9e : maillages des armes (ceux qui ne sont pas dans la scène compris), matière, atlas
       renderer.renderLists.dispose();
       const memoire = { geometries: renderer.info.memory.geometries, textures: renderer.info.memory.textures };
       const gl = renderer.getContext();
@@ -1466,6 +1575,12 @@ export function createGame(ctx) {
         waves: wavesState(),
         camera: { x: cam.x, y: cam.y, z: cam.z, distance: rig.view.distance, tilt: rig.view.tilt, zoom: rig.view.zoom, target: { ...rig.view.target } },
         render: { ...lastInfo, geometries: renderer.info.memory.geometries, textures: renderer.info.memory.textures },
+        armes: sim.inv ? { // lot 9e : armes portées, arme effective et arme dessinée
+          actif: armeActive(sim.inv)?.id ?? null, montree: armeMontree(sim.inv)?.id ?? null, emplacements: sim.inv.emplacements.map((e) => ({ id: e.id, chargeur: e.chargeur, reserve: e.reserve === Infinity ? null : e.reserve, recharge: e.recharge })),
+          sortie: sim.inv.sortie ? { ...sim.inv.sortie } : null, recharge: progressionRecharge(sim.inv, tableArmes), enRecharge: enRecharge(sim.inv), texte: texteMunitions(sim.inv), peutTirer: peutTirer(sim.inv), aSec: aSec(sim.inv), illimite: sim.inv.illimite,
+          vitesse: vitesseJoueur(), bouche: eff.weapon.muzzleOffset, plombs: eff.weapon.plombs ?? 1, damage: eff.weapon.damage, fireDelay: eff.weapon.fireDelay, fireRange: eff.weapon.fireRange, coneStill: eff.weapon.coneStill, coneMove: eff.weapon.coneMove,
+          rendu: playerChar.arme, triangles: armeVue && armesKit ? armesKit.triangles(armeVue) : 0, emplacementsMax: 1 + (tableArmes?.emplacementsAchetes ?? 0),
+        } : null,
         floor: floorState(),
         stairLog: stairLog.map((l) => ({ ...l })),
         floorsMs: ctx.perf?.floorsMs ?? null,

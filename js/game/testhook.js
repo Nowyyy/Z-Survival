@@ -63,5 +63,11 @@ export function installTestHook(ctx, game) {
       ctx.override.move = move ?? undefined;
       ctx.override.aim = aim ?? undefined;
     },
+    // Lot 9e : armes (getState().armes) : donner, changer, recharger, remplir, munitions illimitées ; rien n'est écrit dans le stockage.
+    donnerArme: (id) => game.donnerArme(id),
+    changerArme: (vers) => game.changerArme(vers),
+    recharger: () => game.recharger(),
+    remplirMunitions: () => game.remplirMunitions(),
+    munitionsIllimitees: (on = true) => game.munitionsIllimitees(on),
   };
 }

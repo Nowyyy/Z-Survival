@@ -81,6 +81,7 @@ export function createPersos(params, data) {
 
   return {
     params,
+    data: { characters: data.characters, poses: data.poses }, // lot 9e : squelette et poses du joueur (tenue des armes, js/core/armes/tenue-jeu.js)
     // Appelé une fois après createKit : kit.v2 aiguille createCharacter vers les personnages v2 ; le sang est posé dans world.dynamic.
     attach({ kit: k, world, render, palette, variants, seed }) {
       kit = k;

@@ -159,7 +159,8 @@ describe('lecture du canal et des lecteurs de l\'adresse (lot 5l)', () => {
     expect(main).toContain('const query = new URLSearchParams(search);');
     // Seule exception (lot 5l-C) : le menu de débogage reçoit l'adresse réelle (préremplissage, paramètres conservés), sur un canal de débogage seulement.
     expect(main.replace(/\/\/[^\n]*/g, '').match(/location\.search/g)).toEqual(['location.search']);
-    expect(main).toContain("ctx.ui.bindDebug({ allowed: CANAUX_DEBUG.includes(canal), search: location.search, planksMax: windowsCfg.planks });");
+    // Lot 9e : section « Armes » (armesDebug) passée en plus ; l'adresse lue reste location.search (préremplissage du menu de débogage).
+    expect(main).toContain("ctx.ui.bindDebug({ allowed: CANAUX_DEBUG.includes(canal), search: location.search, planksMax: windowsCfg.planks, armes: armesDebug });");
     for (const piece of ['resolveMapId(search)', 'graphicsBoot(search)', 'readLevels(search,', 'createProfiler({ search,', 'mode: soundMode });', 'mode: soundMode })']) expect(main, piece).toContain(piece);
     expect(main.match(/mode: soundMode/g)).toHaveLength(3); // createAudio et les deux renderSounds
     expect(read('js/game/game.js').replace(/\/\/[^\n]*/g, '')).not.toContain('location.search');
