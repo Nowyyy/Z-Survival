@@ -19,7 +19,7 @@ import { formatMoney } from '../core/economy.js';
 import { REPERE_RETOUR } from '../core/graphics.js';
 import { adresseRetour } from '../core/menu-etat.js';
 import { fmt } from '../game/texts.js';
-import { pageSearch } from '../game/graphics-boot.js';
+import { pageSearch } from './adresse.js';
 import { createRepository } from '../save/index.js';
 
 const SVG = 'http://www.w3.org/2000/svg';

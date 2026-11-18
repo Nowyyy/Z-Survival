@@ -46,11 +46,14 @@ import { STRIDE } from './skeleton.js';
 import { DOWN_TEXTS, FLOOR_TEXTS, fmt, MONEY_TEXTS, SPLASH_TEXTS, WINDOW_INITIALS, WINDOW_NAMES, WINDOW_TEXTS, ZONE_TEXTS } from './texts.js';
 import { createThreeTextures } from './textures.js';
 import { buildWorld, createCamera } from './world.js';
+import { libererThree } from './liberation.js';
 
 // Lot 3j : personnages v2 (« riche » par défaut) et sang (complet par défaut) ; lot 5e : l'ancien modèle (?perso=actuel) est retiré.
-const gfxBoot = await import('./graphics-boot.js').then((m) => m.graphicsBoot()).catch(() => null); // lot 5b : préréglage (variante, sang, cadavres)
-const persos = await import('./persos-loader.js').then((m) => m.loadPersos(gfxBoot?.persosSearch ?? '', { corpses: gfxBoot?.corpses ?? null })); // lot 5l : jamais location.search (canal)
-const { computePose, createKit, createCharacter } = persos.model; // modèle v2 du chargeur (persos-loader.js) : chaque personnage est construit par kit.v2
+// Lot 9d : lus à chaque partie (main.js, ctx.persos) ; avant, une seule fois par des « await » au niveau du module, à l'import.
+export async function chargerPersos() {
+  const gfxBoot = await import('./graphics-boot.js').then((m) => m.graphicsBoot()).catch(() => null); // lot 5b : préréglage (variante, sang, cadavres)
+  return import('./persos-loader.js').then((m) => m.loadPersos(gfxBoot?.persosSearch ?? '', { corpses: gfxBoot?.corpses ?? null })); // lot 5l : jamais location.search (canal)
+}
 const RECOIL_TIME = 0.12;
 const HIT_FLASH_TIME = 0.1;
 const FIRE_POSE_TIME = 0.3;
@@ -67,6 +70,14 @@ const wrap = (a) => Math.atan2(Math.sin(a), Math.cos(a));
 // Renvoie null si WebGL n'est pas disponible.
 export function createGame(ctx) {
   const { cfg, palette, params } = ctx;
+  const { persos } = ctx;
+  const { computePose, createKit, createCharacter } = persos.model; // modèle v2 du chargeur (persos-loader.js) : chaque personnage est construit par kit.v2
+  // Lot 9d : écouteurs de la partie (retirés par liberer()).
+  const ecouteurs = [];
+  const ecouter = (cible, type, fn) => {
+    cible.addEventListener(type, fn);
+    ecouteurs.push([cible, type, fn]);
+  };
   const { layout, render } = cfg;
   // Lot 3e : une couche de collisions par étage (layouts) ; layout reste la couche du rez-de-chaussée (dimensions du monde, caméra, départ).
   const layouts = cfg.layouts ?? { floors: ['rdc'], multi: false, rdc: layout, doors: layout.doors ?? [], stairs: [], zones: layout.zones };
@@ -176,10 +187,10 @@ export function createGame(ctx) {
   // Lot 8h : monnaies (Zollars de la partie ; médailles et diamants gardés) ; mode (histoire, infini) et monde de la partie : record de ce mode et de ce monde.
   const bank = createBank({ repository: ctx.repository, mode: ctx.mode, economy: ctx.economy, save: ctx.saveCfg, clock: () => bankMs, wall: () => Date.now(), reducedMotion: reduced, partie: { mode: ctx.modePartie, monde: ctx.monde } });
   // Mise à l'abri de la sauvegarde quand la page est cachée ou fermée (en plus de l'écriture à l'ouverture de la pause).
-  document.addEventListener('visibilitychange', () => {
+  ecouter(document, 'visibilitychange', () => {
     if (document.hidden) bank.flush('hidden');
   });
-  window.addEventListener('pagehide', () => bank.flush('pagehide'));
+  ecouter(window, 'pagehide', () => bank.flush('pagehide'));
 
   // Vue de test de la banque : getState().save (sans le journal) et getState().economy.
   const trialMode = bank.summary().readOnly === true; // lot 3l : « Mode essai » dans le HUD (adresse d'essai : sauvegarde en lecture seule)
@@ -1188,8 +1199,9 @@ export function createGame(ctx) {
   }
 
   // Aucune boucle de rendu quand l'onglet est caché.
+  let libere = false;
   function start() {
-    if (frameId) return;
+    if (frameId || libere) return;
     last = null;
     frameId = requestAnimationFrame(frame);
   }
@@ -1197,8 +1209,8 @@ export function createGame(ctx) {
     cancelAnimationFrame(frameId);
     frameId = 0;
   }
-  document.addEventListener('visibilitychange', () => (document.hidden ? stop() : start()));
-  window.addEventListener('resize', applySize);
+  ecouter(document, 'visibilitychange', () => (document.hidden ? stop() : start()));
+  ecouter(window, 'resize', applySize);
 
   applyLevels(ctx.levels?.levels, ctx.levels?.warnings);
   reset(ctx.seed);
@@ -1379,6 +1391,29 @@ export function createGame(ctx) {
     // (bank.runEnd : écriture immédiate) ; rien de plus si elle est déjà finie (mort, monde terminé).
     quit() {
       if (!sim.dead && !sim.worldOver) bank.runEnd({ kills: sim.kills, reason: 'quit' });
+    },
+    // Lot 9d : libération sans rechargement (retour au menu). La sauvegarde est d'abord mise à l'abri comme au rechargement d'avant (pagehide),
+    // puis la boucle s'arrête, les écouteurs sont retirés, tout ce que Three.js a créé est libéré (scène, personnages en stock, kit, sang, textures,
+    // cartes d'ombre, programmes), la mémoire est relevée (attendue 0 / 0), le rendu libéré, son contexte perdu de force et le canevas retiré.
+    // → { memoire: { geometries, textures }, contextePerdu }.
+    liberer() {
+      if (libere) return null;
+      libere = true;
+      bank.flush('pagehide');
+      stop();
+      for (const [cible, type, fn] of ecouteurs.splice(0)) cible.removeEventListener(type, fn);
+      const vus = new Set();
+      pv?.liberer?.(vus);
+      libererThree([world.scene, playerChar.root, ...spare.flat().map((c) => c.root), ...[...zombies.values()].map((z) => z.char.root)], vus);
+      textures.dispose();
+      renderer.renderLists.dispose();
+      const memoire = { geometries: renderer.info.memory.geometries, textures: renderer.info.memory.textures };
+      const gl = renderer.getContext();
+      renderer.dispose();
+      renderer.forceContextLoss();
+      renderer.domElement.remove();
+      probeCanvas = null;
+      return { memoire, contextePerdu: Boolean(gl?.isContextLost?.()) };
     },
     // Remet une partie propre (Rejouer, Recommencer).
     restart() {

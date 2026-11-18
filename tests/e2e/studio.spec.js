@@ -3,6 +3,7 @@
 // ?test=1&menu=1 (sans introduction) et &intro=1 (window.__zsMenu.intro()) ; 932 × 430 (référence), 667 × 375, 2000 × 1020, téléphone à encoche
 // simulé (marges posées par variables) ; projets bureau et mobile (paysage). Les durées sont lues dans les horodatages de la page, jamais attendues.
 import { test, expect } from '@playwright/test';
+import { RETOUR_SANS_RECHARGEMENT } from '../../js/core/menu-etat.js'; // lot 9d : option à l'essai (les tests la suivent)
 import AxeBuilder from '@axe-core/playwright';
 import { readFileSync } from 'node:fs';
 import { decoder, defaultProgression as defaultSave, encoder, serialiser } from '../../js/core/progression.js';
@@ -224,12 +225,12 @@ test.describe('introduction du studio (E0)', () => {
     expect([o.problemes, o.externes]).toEqual([[], []]);
   });
 
-  test('jamais sans intro=1 sous ?test=1&menu=1, ni en partie directe ; démarrage du menu : 36 fichiers JavaScript (lot 8h et 8i : progression v2 et module léger des sons), 37 avec l\'introduction (intro.js), hors moteur des sons chargé après le geste', async ({ page, baseURL }) => {
+  test('jamais sans intro=1 sous ?test=1&menu=1, ni en partie directe ; démarrage du menu : 30 fichiers JavaScript (lot 9d ; lot 8h et 8i : progression v2 et module léger des sons), 37 avec l\'introduction (intro.js), hors moteur des sons chargé après le geste', async ({ page, baseURL }) => {
     let o = surveiller(page, baseURL);
     await espions(page);
     await ouvrirMenu(page);
     expect(await page.evaluate(() => [window.__vus.e0 ?? null, window.__zsMenu.intro()])).toEqual([null, null]);
-    expect(o.fichiers.filter((f) => f.endsWith('.js')).length).toBe(36); // lot 8i : + js/menu/sons/sons.js ; lot 8h : + js/save/codecs.js, js/core/progression.js et js/menu/progression-etat.js (progression v2)
+    expect(o.fichiers.filter((f) => f.endsWith('.js')).length).toBe(30); // lot 9d : 36 → 30 (adresse de la page par js/menu/adresse.js : js/game/graphics-boot.js et la carte, js/core/maps.js, decor, epaves, shape, floors, collision, chargés à « JOUER » ou à l'ouverture des Options) ; lot 8i : + js/menu/sons/sons.js ; lot 8h : + js/save/codecs.js, js/core/progression.js et js/menu/progression-etat.js (progression v2)
     // Retour du propriétaire : en mode menu, l'écran de préparation de la partie (barre) n'est jamais visible.
     expect(await page.evaluate(() => [document.documentElement.classList.contains('zs-attente'), getComputedStyle(document.getElementById('loading')).visibility])).toEqual([true, 'hidden']);
     expect(o.fichiers.filter((f) => f.endsWith('/js/menu/intro.js'))).toEqual([]);
@@ -249,7 +250,7 @@ test.describe('introduction du studio (E0)', () => {
     // musique-menu.js ; synthèse dans le calculateur d'arrière-plan) se charge alors à la demande, compté à part du démarrage.
     // (fichiers distincts : le calculateur redemande js/core/vec.js, déjà chargé par le menu).
     const MOTEUR_SONS = /\/js\/menu\/sons\/(moteur|musique|calcul|synthese)\.js$|\/js\/core\/(sons-menu|musique-menu|synth2|synth2-dsp|synth2-sources|audio-analysis)\.js$/;
-    expect(new Set(o.fichiers.filter((f) => f.endsWith('.js') && !MOTEUR_SONS.test(f))).size).toBe(37); // lot 8h : + 3 (progression v2)
+    expect(new Set(o.fichiers.filter((f) => f.endsWith('.js') && !MOTEUR_SONS.test(f))).size).toBe(31); // lot 9d : 36 → 30 (adresse de la page par js/menu/adresse.js : js/game/graphics-boot.js et la carte, js/core/maps.js, decor, epaves, shape, floors, collision, chargés à « JOUER » ou à l'ouverture des Options) ; lot 8h : + 3 (progression v2)
     expect(o.fichiers.filter((f) => f.endsWith('.svg')).sort()).toEqual([`/${LOGO}`, `/${FIXE}`]);
     await p2.close();
     const p3 = await page.context().newPage();
@@ -263,8 +264,10 @@ test.describe('introduction du studio (E0)', () => {
     expect(o.fichiers.filter((f) => /\/js\/menu\/intro\.js$|\/assets\/studio\//.test(f))).toEqual([]); // ni logo ni son en partie directe
   });
 
-  test('précision du propriétaire : lancement → introduction ; « Quitter » puis retour au menu → pas d\'introduction (repère #retour, retiré aussitôt de l\'adresse) ; nouveau lancement → introduction ; aucune écriture dans le stockage pour cela', async ({ page }) => {
-    test.setTimeout(150_000);
+  // Lot 9d : le retour au menu ne recharge plus la page : un menu neuf est chargé (écran de chargement), jamais l'introduction ; le repère #retour ne sert plus qu'au filet de
+  // sécurité (libération en échec, forcée ici par __zsCycle.echec()) : là, il évite toujours l'introduction.
+  test('précision du propriétaire : lancement → introduction ; « Quitter » puis retour au menu → pas d\'introduction (lot 9d : sans rechargement de la page, menu neuf ; filet de sécurité : repère #retour, retiré aussitôt de l\'adresse) ; nouveau lancement → introduction ; aucune écriture dans le stockage pour cela', async ({ page }) => {
+    test.setTimeout(180_000);
     await espions(page);
     await ouvrirIntro(page);
     await page.keyboard.press('Space');
@@ -272,6 +275,45 @@ test.describe('introduction du studio (E0)', () => {
     await page.locator('#menu-jouer').click();
     await page.waitForFunction(() => (window.__zs?.getState()?.time ?? 0) > 0.05, null, { timeout: 60_000 });
     const avant = await page.evaluate(() => window.__ecritures.filter((e) => !e.startsWith('local.')));
+    // Écrans qui apparaîtraient au retour (introduction E0, écran de chargement E7) : observés depuis ici.
+    const observer = () => page.evaluate(() => {
+      window.__revus = [];
+      new MutationObserver(() => {
+        for (const id of ['e0', 'e7']) if (document.getElementById(id) && !window.__revus.includes(id)) window.__revus.push(id);
+      }).observe(document, { childList: true, subtree: true });
+    });
+    let navigations = 0;
+    page.on('framenavigated', (f) => {
+      if (f === page.mainFrame()) navigations += 1;
+    });
+    // Option démontée (RETOUR_SANS_RECHARGEMENT = false) : seul le chemin par rechargement (filet de sécurité, ci-dessous) existe.
+    if (RETOUR_SANS_RECHARGEMENT) {
+      await observer();
+      const url = page.url();
+      await page.locator('#btn-pause').click();
+      await page.locator('#btn-quit').click();
+      await page.locator('#btn-quit-ok').click();
+      await expect(page.locator('#menu-jouer')).toBeVisible({ timeout: 60_000 });
+      expect(await page.evaluate(() => [window.__revus, document.getElementById('e0'), location.hash])).toEqual([['e7'], null, '']); // menu neuf : écran de chargement, jamais l'introduction
+      expect([navigations, page.url()]).toEqual([0, url]);
+      expect(await page.evaluate(() => window.__ecritures.filter((e) => !e.startsWith('local.')))).toEqual([]); // ni sessionStorage, ni autre chose que la sauvegarde de la partie
+      expect(avant).toEqual([]);
+      // Fin de partie puis « Revenir au menu principal » : pas d'introduction, sans rechargement.
+      await page.locator('#menu-jouer').click();
+      await page.waitForFunction(() => (window.__zs?.getState()?.time ?? 0) > 0.05, null, { timeout: 60_000 });
+      await page.evaluate(() => { const zs = window.__zs; zs.setChutes(0); zs.downPlayer(); zs.step(0.3); });
+      await expect(page.locator('#end-panel')).toBeVisible();
+      await observer();
+      await page.locator('#btn-menu').click();
+      await expect(page.locator('#menu-jouer')).toBeVisible({ timeout: 60_000 });
+      expect(await page.evaluate(() => [window.__revus, location.hash])).toEqual([['e7'], '']);
+      expect(navigations).toBe(0);
+      await page.locator('#menu-jouer').click();
+      await page.waitForFunction(() => (window.__zs?.getState()?.time ?? 0) > 0.05, null, { timeout: 60_000 });
+    }
+    expect(avant).toEqual([]);
+    // Filet de sécurité (libération en échec ; ou option démontée) : rechargement avec le repère #retour, pas d'introduction, repère retiré aussitôt.
+    await page.evaluate(() => window.__zsCycle.echec());
     await page.locator('#btn-pause').click();
     await page.locator('#btn-quit').click();
     const rechargement = page.waitForEvent('framenavigated', { predicate: (f) => f === page.mainFrame() });
@@ -280,15 +322,6 @@ test.describe('introduction du studio (E0)', () => {
     await expect(page.locator('#menu-jouer')).toBeVisible({ timeout: 60_000 });
     expect(await page.evaluate(() => [window.__vus.e0 ?? null, window.__zsMenu.intro(), location.hash])).toEqual([null, null, '']);
     expect(await page.evaluate(() => window.__ecritures)).toEqual([]); // compté depuis le rechargement : rien
-    expect(avant).toEqual([]); // ni sessionStorage, ni autre chose que la sauvegarde de la partie
-    // Fin de partie puis « Revenir au menu principal » : même repère, pas d'introduction.
-    await page.locator('#menu-jouer').click();
-    await page.waitForFunction(() => (window.__zs?.getState()?.time ?? 0) > 0.05, null, { timeout: 60_000 });
-    await page.evaluate(() => { const zs = window.__zs; zs.setChutes(0); zs.downPlayer(); zs.step(0.3); });
-    await expect(page.locator('#end-panel')).toBeVisible();
-    await Promise.all([page.waitForURL(/#retour$/), page.locator('#btn-menu').click()]);
-    await expect(page.locator('#menu-jouer')).toBeVisible({ timeout: 60_000 });
-    expect(await page.evaluate(() => [window.__vus.e0 ?? null, location.hash])).toEqual([null, '']);
     // Nouveau lancement (même adresse, sans repère) : introduction.
     await page.goto('/jeu.html?test=1&menu=1&intro=1&seed=1');
     await page.waitForFunction(() => window.__zsMenu?.intro()?.phase === 'geste');

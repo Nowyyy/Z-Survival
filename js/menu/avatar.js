@@ -58,6 +58,11 @@ export function brancherProfil(prog) {
     if (memoire.avatar !== avant.avatar || memoire.pseudo !== avant.pseudo) prevenir();
   });
 }
+// Lot 9d : menu détruit (« JOUER ») : abonnés (en-tête, Profil) et progression oubliés ; le menu suivant rebranche les siens.
+export function oublierProfil() {
+  abonnes.clear();
+  progression = null;
+}
 export function suivreProfil(f) {
   abonnes.add(f);
   return () => abonnes.delete(f);

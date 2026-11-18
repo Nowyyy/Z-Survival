@@ -3,6 +3,7 @@
 //
 // Usage : node scripts/perf/trace-logique.mjs [--base http://localhost:4180 (sinon un serveur local est lancé depuis le dossier courant)]
 //         [--out dossier] [--scenarios 1,2,3,4,5,6] [--steps 600] [--os (matrices des os aux pas 100, 300 et 600, voir plus bas)]
+//         [--relance N (lot 9d : partie libérée puis recréée N fois dans la page avant les pas)]
 //         node scripts/perf/trace-logique.mjs --compare dossierA dossierB  (compare deux exécutions pas à pas ; code 1 au premier écart)
 //
 // Six scénarios (jeu.html?test=1&seed=1…, 667 × 375, onglet « caché » : la boucle d'images ne démarre jamais, seul step() fait avancer la
@@ -98,6 +99,7 @@ if (!BASE) {
 mkdirSync(OUT, { recursive: true });
 const browser = await chromium.launch();
 const CHECKPOINTS = [100, 300, 600];
+const RELANCE = Math.max(0, Number(opt('relance', '0')) || 0); // lot 9d
 
 async function run(sc) {
   const context = await browser.newContext({ viewport: { width: 667, height: 375 } });
@@ -108,6 +110,15 @@ async function run(sc) {
   await page.addInitScript(() => Object.defineProperty(Document.prototype, 'hidden', { get: () => true, configurable: true }));
   await page.goto(`${BASE}/jeu.html?test=1&seed=1${sc.query}`);
   await page.waitForFunction(() => window.__zs || document.getElementById('game-error')?.hidden === false, null, { timeout: 180000 });
+  // Lot 9d : --relance N : la partie est libérée puis recréée N fois dans la même page (window.__zsCycle) avant les pas : la trace doit rester
+  // identique à celle d'une première partie (garantie « deuxième partie = première »).
+  for (let r = 0; r < RELANCE; r += 1) {
+    await page.evaluate(async () => {
+      window.__zsCycle.liberer();
+      await window.__zsCycle.demarrer();
+    });
+    await page.waitForFunction(() => window.__zs, null, { timeout: 180000 });
+  }
   if (BONES) {
     await page.evaluate(async () => {
       const THREE = await import('three');

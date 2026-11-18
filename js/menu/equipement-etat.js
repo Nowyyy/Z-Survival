@@ -6,7 +6,7 @@
 // obtenu ; une opération refusée (solde, inventaire plein, autre onglet) ne change rien. Chargé à la demande : à la première ouverture de l'onglet
 // Personnage ou de la Boutique, ou à « JOUER » ; jamais au démarrage du menu.
 import { creerEtatEquipement, EMPLACEMENTS, equiper, etatFusion, fusionner, infoAmelioration, infoPersonnage, lireCatalogue, obtenirPersonnages, objetDe, personnageDe, retirer, statistiquesEffectives, choisirPersonnage, estDebloque } from '../core/equipement.js';
-import { chargerProgression, nouvelId } from './progression-etat.js';
+import { chargerProgression, nouvelId, surDestruction } from './progression-etat.js';
 
 const json = (path) => fetch(path).then((r) => (r.ok ? r.json() : null)).catch(() => null);
 
@@ -32,6 +32,11 @@ export function etatDepuis(save, cat) {
 }
 
 let chargement = null;
+// Lot 9d : menu détruit (« JOUER ») : l'état d'équipement est oublié (son abonnement vivait dans la progression, fermée avec elle).
+export function detruireEquipement() {
+  chargement = null;
+}
+surDestruction(detruireEquipement);
 
 // → Promise<{ cat, erreurs, prog, etat(), solde(), collection(), achetees(jour), abonner(f), statistiques(base, params, persoId?), actions… }>.
 // Chaque action renvoie { ok, raison? ('solde' | 'plein' | 'absent' | 'niveau' | 'offre' | 'invalide' | 'refuse' | 'ecriture'), … }.

@@ -82,6 +82,15 @@ function getWorker() {
   return worker || null;
 }
 
+// Lot 9d : libération de la partie : le calculateur est terminé (la partie suivante en crée un nouveau) ; les demandes en cours sont abandonnées
+// (rejetées : les sons « fond » de la partie libérée ne sont plus calculés).
+export function arreterCalculateur() {
+  if (worker) worker.terminate();
+  worker = null;
+  for (const [, p] of pending) p.reject(new Error('calculateur arrêté'));
+  pending.clear();
+}
+
 // Un tampon de l'atelier : { samples, sampleRate, ms } (ms : temps de calcul seul, dans le calculateur ou sur le fil principal).
 // options : { version (graine, dès 1), durationSec, mode, now }.
 export async function renderAtelier(recipe, { version = 1, durationSec = null, mode = soundMode(), now = () => performance.now(), inlineOnly = false } = {}) {

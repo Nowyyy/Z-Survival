@@ -22,7 +22,7 @@ import { chargerEquipement } from './equipement-etat.js';
 import { buste, icone24 } from './personnage.js';
 import { iconeGemme } from '../game/gains-manche.js';
 import { acces } from '../core/graphics.js';
-import { pageCanal, pageSearch } from '../game/graphics-boot.js';
+import { pageCanal, pageSearch } from './adresse.js';
 
 const SVG = 'http://www.w3.org/2000/svg';
 const json = (path) => fetch(path).then((r) => (r.ok ? r.json() : null)).catch(() => null);

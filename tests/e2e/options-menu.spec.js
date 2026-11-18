@@ -4,6 +4,7 @@
 // section Son ; réglages pris par la partie après « JOUER » ; aucun fichier de Three.js ni du jeu chargé ; zs.device.v1 dans ses seuls champs.
 import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
+import { RETOUR_SANS_RECHARGEMENT } from '../../js/core/menu-etat.js'; // lot 9d : option à l'essai (les tests la suivent)
 
 const REF = { width: 932, height: 430 };
 const SIZES = [REF, { width: 667, height: 375 }, { width: 1440, height: 900 }];
@@ -51,6 +52,26 @@ const boite = (page, sel) => page.locator(sel).evaluate((n) => {
 });
 const chevauche = (x, y) => x.l < y.r - 0.5 && y.l < x.r - 0.5 && x.t < y.b - 0.5 && y.t < x.b - 0.5;
 const presse = (page, sel) => page.locator(sel).evaluateAll((ns) => ns.filter((n) => n.getAttribute('aria-pressed') === 'true').map((n) => n.dataset.value ?? n.dataset.preset));
+
+// Lot 9d : retour au menu (« Quitter », « Revenir au menu principal ») : sans rechargement (même adresse, aucune navigation, le menu revient) ;
+// option démontée (RETOUR_SANS_RECHARGEMENT = false, js/core/menu-etat.js) : rechargement vers menu=1, comme avant le lot 9d.
+async function retourSansRechargement(page, bouton) {
+  if (!RETOUR_SANS_RECHARGEMENT) {
+    await Promise.all([page.waitForURL(/[?&]menu=1/), page.locator(bouton).click()]);
+    await expect(page.locator('#menu-jouer')).toBeVisible({ timeout: 60_000 });
+    return;
+  }
+  const url = page.url();
+  let navigations = 0;
+  const compter = (f) => {
+    if (f === page.mainFrame()) navigations += 1;
+  };
+  page.on('framenavigated', compter);
+  await page.locator(bouton).click();
+  await expect(page.locator('#menu-jouer')).toBeVisible({ timeout: 60_000 });
+  page.off('framenavigated', compter);
+  expect([navigations, page.url()]).toEqual([0, url]);
+}
 
 test.describe('page Options du menu (E5)', () => {
   for (const [size, encoche] of [...SIZES.map((t) => [t, false]), [ENCOCHE, true]]) {
@@ -253,7 +274,9 @@ test.describe('page Options du menu (E5)', () => {
     expect(tout.filter((f) => JEU.test(f))).toEqual([]);
     expect(tout.filter((f) => SONS.test(f) && /three|\/js\/game\//.test(f))).toEqual([]);
     const ouverture = tout.filter((f) => !SONS.test(f));
-    expect(ouverture.filter((f) => f.endsWith('.js'))).toEqual(['/js/game/options-menu.js', '/js/game/graphics-apply.js']);
+    // Lot 9d : le préréglage graphique (js/game/graphics-boot.js, qui lit la carte : js/core/maps.js et ses dépendances) n'est plus chargé au
+    // démarrage du menu, mais ici, à la première ouverture des Options (et à « JOUER »).
+    expect(ouverture.filter((f) => f.endsWith('.js')).sort()).toEqual(['/js/core/collision.js', '/js/core/decor.js', '/js/core/epaves.js', '/js/core/floors.js', '/js/core/maps.js', '/js/core/shape.js', '/js/game/graphics-apply.js', '/js/game/graphics-boot.js', '/js/game/options-menu.js']);
     // Lot 8d (retour du propriétaire) : le journal est lu à la première ouverture du menu à trois barres (version sous « Déconnexion »).
     expect(ouverture.filter((f) => !f.endsWith('.js')).sort()).toEqual(['/data/changelog.json', '/data/game/audio.json', '/data/game/graphics.json']);
     expect(await page.evaluate(() => window.__ecritures)).toEqual([]); // ouvrir n'écrit rien
@@ -408,7 +431,7 @@ test.describe('Options en partie (E2-12)', () => {
     await expect(page.locator('#options-volume-valeur')).toHaveText('99 %');
   });
 
-  test('« Rejouer » ne recharge pas (valeurs toujours en attente) ; après « Quitter » puis « JOUER », les valeurs choisies en partie sont en vigueur (?store=local)', async ({ page, isMobile }) => {
+  test('« Rejouer » ne recharge pas (valeurs toujours en attente) ; après « Quitter » puis « JOUER », les valeurs choisies en partie sont en vigueur (?store=local ; lot 9d : sans rechargement, nouveau rendu à chaque partie)', async ({ page, isMobile }) => {
     test.setTimeout(180_000);
     await page.addInitScript(() => {
       if (sessionStorage.getItem('zs.test.vide')) return;
@@ -436,8 +459,8 @@ test.describe('Options en partie (E2-12)', () => {
     expect(rejoue.waiting.map((w) => w.id)).toEqual(isMobile ? ['carte', 'textures'] : ['anticrenelage', 'carte', 'textures', 'personnages']); // depuis Moyen (mobile) ou Élevé
     await page.locator('#btn-pause').click();
     await page.locator('#btn-quit').click();
-    await Promise.all([page.waitForURL(/[?&]menu=1/), page.locator('#btn-quit-ok').click()]);
-    await expect(page.locator('#menu-jouer')).toBeVisible({ timeout: 60_000 });
+    await retourSansRechargement(page, '#btn-quit-ok'); // lot 9d : la page n'est plus rechargée
+    expect(await page.evaluate(() => window.__marque)).toBe(RETOUR_SANS_RECHARGEMENT ? 1 : undefined);
     await page.locator('#menu-jouer').click();
     await page.waitForFunction(() => (window.__zs?.getState()?.time ?? 0) > 0.05, null, { timeout: 120_000 });
     const g = await graphismes(page);

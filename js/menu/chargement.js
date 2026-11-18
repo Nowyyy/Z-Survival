@@ -9,12 +9,12 @@
 // prefers-reduced-motion : Z posé, sans chute ni secousse. Animations « e7-* » (css/menu.css).
 // Lot 8g : logo du studio en petit en bas à gauche (copie fixe, assets/studio/) dans les deux phases. Après l'introduction du studio, demarrage.js crée
 // cet écran à la fin du logo (retour du propriétaire) : chargement complet, chute du Z comprise.
-import { avancer, choisirAstuce, creerProgression, MODULES_ATTENDUS, pourcentage, texteVersion } from '../core/menu-etat.js';
+import { avancer, choisirAstuce, creerProgression, MODULES_ATTENDUS, pourcentage, RETOUR_SANS_RECHARGEMENT, texteVersion } from '../core/menu-etat.js';
 import { fmt, loadDict } from '../game/texts.js';
 import { CANAUX_DEBUG } from '../core/graphics.js';
-import { pageCanal } from '../game/graphics-boot.js';
+import { pageCanal } from './adresse.js';
 import { couluresSvg } from '../logo.js';
-import { adopter, chute as sonsChute, ecouterGestes, partir, regler as reglerSons, signaler } from './sons/sons.js';
+import { adopter, chute as sonsChute, ecouterGestes, partir, regler as reglerSons, revenir as revenirSons, signaler } from './sons/sons.js';
 
 const SVG = 'http://www.w3.org/2000/svg';
 const FIN_CHUTE_MS = 4000; // filet de sécurité si la fin d'animation n'arrive pas (onglet caché) : la chute dure 2,8 s
@@ -191,15 +191,18 @@ export function creerChargement({ phase = 'menu', jouer = () => {}, son = null, 
   }
 
   // Phase « jeu » : fichiers JavaScript du jeu reçus depuis « JOUER » (entrées de minutage des ressources) ; main.js termine l'étape « modules ».
+  // Lot 9d : observateur déconnecté quand l'écran est retiré (sinon il garde l'écran en mémoire à chaque « JOUER » de la même page).
+  let observateur = null;
   if (phase === 'jeu') {
     try {
       const debut = performance.now();
       const deja = performance.getEntriesByType('resource').filter((e) => /\.js(\?|$)/.test(e.name)).length;
       const vus = new Set();
-      new PerformanceObserver((list) => {
+      observateur = new PerformanceObserver((list) => {
         for (const e of list.getEntries()) if (e.startTime >= debut && /\.js(\?|$)/.test(e.name)) vus.add(e.name);
         progres('modules', vus.size / Math.max(1, MODULES_ATTENDUS - deja));
-      }).observe({ type: 'resource' });
+      });
+      observateur.observe({ type: 'resource' });
     } catch {
       // minutage des ressources indisponible : l'étape avance seulement quand main.js commence
     }
@@ -247,6 +250,7 @@ export function creerChargement({ phase = 'menu', jouer = () => {}, son = null, 
     if (phase === 'jeu') {
       sortie = true;
       retirer();
+      observateur?.disconnect();
       box.remove();
       return;
     }
@@ -259,7 +263,7 @@ export function creerChargement({ phase = 'menu', jouer = () => {}, son = null, 
         root,
         son,
         jouer: (option) => {
-          menu.element.remove();
+          menu.detruire(); // lot 9d : le menu est détruit (avant : retiré de l'écran, gardé en mémoire) ; un menu neuf est chargé au retour
           partir(); // lot 8i : la musique des menus s'éteint en fondu (la partie garde ses propres sons)
           jouer(option); // lot 8b : option de démarrage (mode histoire ou infini)
         },
@@ -282,6 +286,8 @@ export function creerChargement({ phase = 'menu', jouer = () => {}, son = null, 
   return {
     progres,
     chute, // promesse : la chute du Z est finie (main.js attend avant de créer la partie, phase « jeu »)
+    sansRechargement: RETOUR_SANS_RECHARGEMENT, // lot 9d : option à l'essai (js/core/menu-etat.js)
+    revenirSons, // lot 9d : sons du menu repris dans le geste du retour (avant la libération de la partie)
     etat: () => ({ phase, pourcentage: pourcentage(etat), pret: etat.pret, chuteFinie, journal: [...journal], visible: box.isConnected, menu: menu?.element.isConnected ? menu.etat() : null }),
   };
 }

@@ -27,5 +27,6 @@ export function installerEchelle(win = typeof window === 'undefined' ? null : wi
   };
   maj();
   win.addEventListener('resize', maj);
+  maj.liberer = () => win.removeEventListener('resize', maj); // lot 9d : libération de la partie
   return maj;
 }

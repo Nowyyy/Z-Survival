@@ -10,15 +10,15 @@
 import { activerGlisser } from '../glisser.js';
 import { roueDifferee } from './roue.js';
 import { clic as clicSon, ecouterClics, regler as reglerSons } from './sons/sons.js';
-import { brancherProfil, lireProfil, suivreProfil, svgPortrait } from './avatar.js';
+import { brancherProfil, lireProfil, oublierProfil, suivreProfil, svgPortrait } from './avatar.js';
 import { formatMoney } from '../core/economy.js';
 import { basculerMenu, choisirOnglet, versionMenu, creerEtatMenu, ECRANS_PLEINS, SOUS_MENUS, fermerEcran, fermerMenu, lienExterne, lireMondes, lireOptionDemarrage, lireRecord, nouveauteNonLue, ONGLETS, ouvrirEcran, premierJouable } from '../core/menu-etat.js';
 import { ecranJouer } from './jouer.js';
 import { gouttePath } from '../logo.js';
 import { fmt, loadDict } from '../game/texts.js';
-import { graphicsReglages, pageCanal, pageSearch } from '../game/graphics-boot.js';
+import { pageCanal, pageSearch } from './adresse.js'; // lot 9d : graphics-boot.js (préréglage, carte) importé à l'ouverture des Options
 import { solde as soldeMedailles, soldeDiamants } from '../core/progression.js';
-import { chargerProgression } from './progression-etat.js';
+import { chargerProgression, detruireProgression } from './progression-etat.js';
 
 const SVG = 'http://www.w3.org/2000/svg';
 // Icônes au trait (16 × 16), décoratives.
@@ -156,6 +156,13 @@ function sangBarre() {
 // le bloc change de taille (ResizeObserver : écran affiché, fenêtre redimensionnée), quand les polices arrivent, ou à la demande (texte changé).
 const AJUSTES = new Map(); // bloc → textes
 let observateur = null;
+let policesSuivies = false; // lot 9d : écouteur des polices posé une seule fois par page (le menu peut être recréé)
+// Lot 9d : menu détruit (« JOUER ») : blocs oubliés, observateur déconnecté (recréé par le menu suivant).
+function oublierAjustes() {
+  observateur?.disconnect();
+  observateur = null;
+  AJUSTES.clear();
+}
 function ajusterTexte(n) {
   n.style.fontSize = '';
   for (let i = 0; i < 4 && n.clientWidth > 0 && n.scrollWidth > n.clientWidth + 0.5; i += 1) {
@@ -172,9 +179,12 @@ export function ajusterTextes(bloc, textes) {
     observateur = new ResizeObserver((entrees) => {
       for (const e of entrees) ajusterBloc(e.target);
     });
-    document.fonts?.addEventListener?.('loadingdone', () => {
-      for (const b of AJUSTES.keys()) ajusterBloc(b);
-    });
+    if (!policesSuivies) {
+      policesSuivies = true;
+      document.fonts?.addEventListener?.('loadingdone', () => {
+        for (const b of AJUSTES.keys()) ajusterBloc(b);
+      });
+    }
   }
   observateur?.observe(bloc);
 }
@@ -250,7 +260,7 @@ export function creerMenu({ dict, infos = [], liens = {}, solde: montant = 0, di
   const box = el('div', ['e8'], { id: 'e8', 'data-block': 'E8' });
   ecouterClics(box); // lot 8i : un même son de clic pour toute commande du menu (js/menu/sons/sons.js)
   // Retour du propriétaire : zones qui défilent glissables à la souris, comme au doigt (js/glisser.js).
-  activerGlisser(box);
+  const retirerGlisser = activerGlisser(box); // lot 9d : retiré quand le menu est détruit
 
   // --- En-tête E8-1 -------------------------------------------------------------------------------------------------------------------------
   const entete = el('header', ['e8-entete'], { 'data-block': 'E8-1' });
@@ -269,7 +279,7 @@ export function creerMenu({ dict, infos = [], liens = {}, solde: montant = 0, di
     connexion.setAttribute('aria-label', fmt(t('game.menu.profil.entete'), { pseudo: nom }));
   };
   poserEntete(lireProfil());
-  suivreProfil(poserEntete);
+  const quitterProfil = suivreProfil(poserEntete);
   const droite = el('div', ['e8-droite']);
   // Lot 8h : en-tête = solde des médailles (lot 9a ; icône dessinée en code, nom accessible « Médailles : N ») ; posé de nouveau après un
   // achat ou quand un autre onglet écrit (poserSolde).
@@ -493,6 +503,8 @@ export function creerMenu({ dict, infos = [], liens = {}, solde: montant = 0, di
   }
   // Retour du propriétaire : revenu de la partie en plein écran (repère #plein-ecran posé par menuRetour, demarrage.js), le rechargement l'a fait
   // quitter ; le navigateur n'accepte d'y revenir qu'après un geste : message discret, puis plein écran au premier toucher ou à la première touche.
+  // Lot 9d : le retour se fait sans rechargement (le plein écran reste) ; ce rappel ne sert plus qu'au filet de sécurité (libération en échec).
+  let finRappel = null; // lot 9d : retiré aussi quand le menu est détruit
   if (peutPleinEcran && location.hash === '#plein-ecran') {
     history.replaceState(null, '', `${location.pathname}${location.search}`);
     const rappel = el('p', ['e8-rappel-plein'], { id: 'menu-rappel-plein', role: 'status' });
@@ -504,6 +516,7 @@ export function creerMenu({ dict, infos = [], liens = {}, solde: montant = 0, di
       document.removeEventListener('keydown', geste, true);
       document.removeEventListener('fullscreenchange', fin);
     };
+    finRappel = fin;
     const geste = (e) => {
       if (e.type === 'keydown' && ['Escape', 'Tab'].includes(e.code)) return;
       if (!document.fullscreenElement && !pleinEcran.contains(e.target)) document.documentElement.requestFullscreen({ navigationUI: 'hide' }).catch(() => {});
@@ -734,7 +747,7 @@ export function creerMenu({ dict, infos = [], liens = {}, solde: montant = 0, di
       // Son et volume : mémoire de la page (demarrage.js, donnée par l'écran de chargement), appliquée par main.js à « JOUER » ; défaut et pas : audio.json.
       if (!options) {
         const [{ creerOptions }, { createGraphicsController }, gfx, audio] = await Promise.all([
-          import('../game/options-menu.js'), import('../game/graphics-apply.js'), graphicsReglages(), json('data/game/audio.json'),
+          import('../game/options-menu.js'), import('../game/graphics-apply.js'), import('../game/graphics-boot.js').then((g) => g.graphicsReglages()), json('data/game/audio.json'),
         ]);
         let local = { coupe: false, volume: null, musique: null }; // sans mémoire donnée (créateur de test) : réglages de cet écran seulement
         const lire = () => memoireSon?.lire() ?? local;
@@ -803,6 +816,31 @@ export function creerMenu({ dict, infos = [], liens = {}, solde: montant = 0, di
   let statsLancees = null;
   btJouer.addEventListener('click', () => lancer({ mode: 'histoire', monde: monde.id }));
 
+  // Lot 9d : « JOUER » : le menu est détruit (avant : seulement retiré de l'écran, gardé en mémoire jusqu'au rechargement du retour) : élément
+  // retiré, écouteurs de document retirés (lancer, rappel du plein écran), glissement à la souris, abonnement du profil ; puis les modules partagés
+  // du menu (progression, équipement, profil, ajustement des textes) sont oubliés avec les abonnés de tous ses écrans. Au retour de la partie, un
+  // menu neuf est chargé (demarrage.js), comme au lancement de la page.
+  let detruit = false;
+  function detruire() {
+    if (detruit) return;
+    detruit = true;
+    lance = true;
+    document.removeEventListener('keydown', clavier, true);
+    document.removeEventListener('pointerdown', dehors, true);
+    document.removeEventListener('visibilitychange', animer);
+    document.removeEventListener('fullscreenchange', syncPleinEcran);
+    finRappel?.();
+    for (const scene of scenes.values()) scene.dataset.anim = 'off';
+    perso?.animer(null);
+    boutique?.animer(false);
+    options?.close();
+    retirerGlisser?.();
+    quitterProfil?.();
+    box.remove();
+    oublierAjustes();
+    oublierProfil();
+    detruireProgression(); // l'état d'équipement (s'il a été chargé) est oublié avec elle (surDestruction, equipement-etat.js)
+  }
   // Échap : Options (confirmation d'abord), puis l'écran ouvert, puis le menu à trois barres, puis (lot 8d) le sous-menu du Personnage. Un appui
   // ailleurs ferme le menu à trois barres.
   function clavier(e) {
@@ -836,6 +874,7 @@ export function creerMenu({ dict, infos = [], liens = {}, solde: montant = 0, di
   synchroniser();
   return {
     element: box,
+    detruire,
     etat: () => ({ pleinEcran: { disponible: peutPleinEcran, actif: Boolean(document.fullscreenElement) }, onglet: etat.onglet, menuOuvert: etat.menuOuvert, ecran: etat.ecran, nonLue: nouveauteNonLue(infos, etat.lues), solde: soldeActuel, diamants: diamActuel, discord: lien.actif, record, monde: monde.id, infini: infini?.etat() ?? null, personnage: perso?.etat() ?? null, boutique: boutique?.etat() ?? null, credits: credits?.etat() ?? null, compte: compte?.etat() ?? null, niveaux, statsLancees }),
   };
 }

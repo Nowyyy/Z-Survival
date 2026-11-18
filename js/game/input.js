@@ -133,7 +133,8 @@ export function createInput(root, { onCommand = () => {}, isBlocked = () => fals
   root.addEventListener('pointermove', pointerMove);
   root.addEventListener('pointerup', pointerUp);
   root.addEventListener('pointercancel', pointerUp);
-  root.addEventListener('contextmenu', (event) => event.preventDefault());
+  const noMenu = (event) => event.preventDefault();
+  root.addEventListener('contextmenu', noMenu);
   root.dataset.input = state.type;
 
   return {
@@ -156,6 +157,13 @@ export function createInput(root, { onCommand = () => {}, isBlocked = () => fals
       window.removeEventListener('pagehide', releaseAll);
       window.removeEventListener('orientationchange', releaseAll);
       window.removeEventListener('resize', onResize);
+      // Lot 9d : libération de la partie (le nœud lui-même est remplacé par sa copie de départ).
+      root.removeEventListener('pointerdown', pointerDown);
+      root.removeEventListener('pointermove', pointerMove);
+      root.removeEventListener('pointerup', pointerUp);
+      root.removeEventListener('pointercancel', pointerUp);
+      root.removeEventListener('contextmenu', noMenu);
+      releaseAll();
     },
   };
 }

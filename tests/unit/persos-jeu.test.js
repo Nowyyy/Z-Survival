@@ -60,11 +60,14 @@ describe('persos-params.js : lecture des paramètres', () => {
 describe('chargeur : chargé par défaut (lot 5e : aussi avec ?perso=actuel&sang=0, valeur inconnue)', () => {
   const game = readFileSync('js/game/game.js', 'utf8');
   const loader = readFileSync('js/game/persos-loader.js', 'utf8');
-  it('game.js charge toujours le chargeur (import dynamique en tête de module)', () => {
+  it('game.js charge toujours le chargeur (import dynamique ; lot 9d : à chaque partie, chargerPersos appelé par main.js)', () => {
     // Lot 5b : l'adresse passée au chargeur porte le préréglage graphique (variante, sang, cadavres) ; sans préréglage lisible : location.search.
     // Lot 5l : sans préréglage lisible, une adresse vide (jamais location.search, qui n'est pas filtrée par canal) ; avant : « ?? location.search ».
-    expect(game).toContain("const persos = await import('./persos-loader.js').then((m) => m.loadPersos(gfxBoot?.persosSearch ?? '', { corpses: gfxBoot?.corpses ?? null }));");
-    expect(game).toContain("const gfxBoot = await import('./graphics-boot.js').then((m) => m.graphicsBoot()).catch(() => null);");
+    // Lot 9d : avant, deux « await » au niveau du module (une seule lecture par page) ; désormais dans chargerPersos(), appelée à chaque partie.
+    expect(game).toContain("  return import('./persos-loader.js').then((m) => m.loadPersos(gfxBoot?.persosSearch ?? '', { corpses: gfxBoot?.corpses ?? null }));");
+    expect(game).toContain("  const gfxBoot = await import('./graphics-boot.js').then((m) => m.graphicsBoot()).catch(() => null);");
+    expect(game).toMatch(/export async function chargerPersos\(\) \{/);
+    expect(game).not.toMatch(/^const (persos|gfxBoot) = await/m);
     expect(game).not.toMatch(/^import .*persos-/m);
   });
   it('persos-loader.js : 30 lignes au plus, modules du lot importés dynamiquement seulement', () => {

@@ -252,3 +252,9 @@ version: v0.9
 nom: Atelier des armes
 description: Page technique : dix armes des années 40 modélisées en code avec leurs variantes, caisse d'achat et dessins de profil, pour choisir leur rendu avant de les mettre dans le jeu. Le jeu ne change pas.
 afficher: non
+
+[lot-9d]
+version: v0.9
+nom: Retour au menu sans rechargement
+description: Quitter une partie ramène au menu sans recharger la page : le plein écran reste, la musique reprend, et les parties s'enchaînent sans ralentir. Le menu démarre aussi plus vite.
+afficher: oui
