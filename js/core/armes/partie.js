@@ -15,7 +15,8 @@ function lireRecharge(r, rechargement) {
   const o = obj(r);
   if (o.type === 'balle') {
     const sons = obj(o.sons);
-    return { type: 'balle', poche: o.poche === 'une' ? 'une' : 'chaque', debut: isNum(o.debut) && o.debut >= 0 ? o.debut : 0, parBalle: pos(o.parBalle, 0.4), fin: isNum(o.fin) && o.fin >= 0 ? o.fin : 0, sons: { debut: texte(sons.debut), balle: texte(sons.balle), fin: texte(sons.fin) } };
+    const fin = isNum(o.fin) && o.fin >= 0 ? o.fin : 0;
+    return { type: 'balle', poche: o.poche === 'une' ? 'une' : 'chaque', debut: isNum(o.debut) && o.debut >= 0 ? o.debut : 0, parBalle: pos(o.parBalle, 0.4), fin, finSon: isNum(o.finSon) && o.finSon >= 0 ? Math.min(o.finSon, fin) : 0, sons: { debut: texte(sons.debut), balle: texte(sons.balle), fin: texte(sons.fin) } };
   }
   const etapes = (Array.isArray(o.etapes) ? o.etapes : [])
     .map((x) => ({ t: part(obj(x).t), son: texte(obj(x).son), lacher: obj(x).lacher === true, siVide: obj(x).siVide === true, siReste: obj(x).siReste === true, geste: GESTES.includes(obj(x).geste) ? obj(x).geste : null }))
@@ -28,12 +29,16 @@ function lireManoeuvre(m) {
   if (!isNum(o.duree) || o.duree <= 0) return null;
   // cles (partie J) : [[secondes depuis le son, cible]] dans l'ordre (gestes calés sur le son).
   const cles = (Array.isArray(o.cles) ? o.cles : []).filter((c) => Array.isArray(c) && isNum(c[0]) && typeof c[1] === 'string').map((c) => ({ t: c[0], cible: c[1] }));
-  return { debut: isNum(o.debut) && o.debut >= 0 ? o.debut : 0, duree: o.duree, son: texte(o.son), cles };
+  // verrou (partie L) : [[secondes depuis le son, levier relevé, culasse tirée]] (verrou animé du Kar98k).
+  const verrou = (Array.isArray(o.verrou) ? o.verrou : []).filter((c) => Array.isArray(c) && c.length === 3 && c.every(isNum)).map((c) => ({ t: c[0], lift: c[1], back: c[2] }));
+  return { debut: isNum(o.debut) && o.debut >= 0 ? o.debut : 0, duree: o.duree, son: texte(o.son), cles, verrou };
 }
 function lireLevier(l) {
   const o = obj(l);
   if (!Array.isArray(o.pos) || o.pos.length !== 3 || !o.pos.every(isNum)) return null;
-  return { main: o.main === 'droite' ? 'droite' : 'gauche', pos: [...o.pos], course: pos(o.course, 5) };
+  const v = obj(o.verrou);
+  const verrou = Array.isArray(v.axe) && v.axe.length === 3 && v.axe.every(isNum) ? { axe: [...v.axe], angle: isNum(v.angle) ? v.angle : -80 } : null;
+  return { main: o.main === 'droite' ? 'droite' : 'gauche', pos: [...o.pos], course: pos(o.course, 5), verrou };
 }
 const lirePiece = (p) => (Array.isArray(p) && p.length === 3 && p.every((v) => isNum(v) && v > 0) ? [...p] : null);
 export const GESTES = Object.freeze(['retire', 'insere', 'pousse', 'degage', 'culasse', 'couvercle']);

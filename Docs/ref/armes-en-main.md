@@ -148,3 +148,11 @@ Rayon du grand aligné sur son dessin (×1,11) ; recharge cartouche par cartouch
 - **Garand** : clip pris dans la poche, présenté au-dessus du boîtier puis enfoncé par le dessus (geste `pousse`), le pouce se retire d'un coup et la culasse claque (geste `degage`) ; rechargement 2,8 s (au lieu de 2).
 - **MG42** : cadence 0,1 s (deux fois plus lente) ; dégâts 280 (au lieu de 140 : même puissance qu'avant) et réserve 1 150 (règle des munitions).
 - **Jambes** : au pas chassé, seule l'oscillation de la foulée autour de sa position moyenne passe sur le côté (la cuisse garde sa levée moyenne ; avant, le genou plié pointait le tibia vers l'arrière).
+
+## Retours du propriétaire (partie L)
+- **Pas chassé** : pas plus petits (55 % de la foulée passée sur le côté, `PAS_CHASSE_AMPLEUR` dans `character-v2.js`) et plus lents (rythme à 65 % de la marche, `PAS_CHASSE_LENTEUR` dans `game.js` ; dessin seul, les pas entendus ne changent pas).
+- **Verrou animé du Kar98k** : les pièces du verrou (culasse, levier, boule) sont marquées dans le modèle et dessinées à part (maillage enfant de l'arme, un appel de plus pour le Kar98k) ; levier relevé autour de l'axe de la culasse (`levier.verrou` : axe en mm, angle −80°) et culasse tirée de la course de la main ; la main saisit la boule du levier relevé. Manœuvre : `manoeuvre.verrou` (clés calées sur le son).
+- **Rechargement du Kar98k** : la main gauche tient l'arme par le fût tout du long ; la droite ouvre le verrou, va prendre les cartouches dans la poche droite, les enfonce une à une par le dessus, reprend le levier (`recharge.finSon` 0,12 s), referme le verrou et revient à la poignée ; cartouches dans la main droite.
+- **Pompe du Winchester** : plus sèche, moins synthétique (chocs en bruit filtré, presque sans ton ni résonance, frottements courts).
+- **MG42** : cadence 0,2 s (encore deux fois plus lente) ; dégâts 560 et réserve 550 (même puissance, règle des munitions).
+- Test des appels des armes (`armes-jeu.spec`) : mesure sans sang (`&sang=0`), après 5 s (douilles et chargeurs disparus) et une image fraîche ; Kar98k : + 1 appel (verrou).

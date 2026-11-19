@@ -38,11 +38,12 @@ test.describe('armes en main', () => {
     test.setTimeout(120_000);
     const w = watch(page);
     await page.addInitScript(espion);
-    await page.goto('/jeu.html?test=1&seed=2&nospawn=1&map=salle&lum=off&vhs=0');
+    await page.goto('/jeu.html?test=1&seed=2&nospawn=1&map=salle&lum=off&vhs=0&sang=0'); // sans sang : les appels ne comptent que les armes (partie L)
     await waitReady(page);
-    const r = await page.evaluate((ids) => {
+    const r = await page.evaluate(async (ids) => {
       const zs = window.__zs;
       const out = [];
+      const image = () => new Promise((ok) => requestAnimationFrame(() => requestAnimationFrame(ok)));
       for (const id of ids) {
         zs.killAll();
         zs.donnerArme(id);
@@ -58,7 +59,11 @@ test.describe('armes en main', () => {
           tue = !zs.getState().enemies.some((z) => z.id === e);
         }
         const s = zs.getState();
-        out.push({ id, tue, kills: s.kills - kills, tirs: s.shots.length - avant, premier: s.shots.slice(avant, avant + 10).map((x) => x.time), armes: s.armes, calls: s.render.calls });
+        // Appels : sang, douilles et chargeurs disparus (5 s), recharges finies, puis une image fraîche (partie L : mesure déterministe).
+        zs.setInput({ aim: { angle: Math.PI } });
+        for (let i = 0; i < 100; i += 1) zs.step(0.05);
+        await image();
+        out.push({ id, tue, kills: s.kills - kills, tirs: s.shots.length - avant, premier: s.shots.slice(avant, avant + 10).map((x) => x.time), armes: s.armes, calls: zs.getState().render.calls });
       }
       return out;
     }, UTILES);
@@ -79,8 +84,9 @@ test.describe('armes en main', () => {
     const pompe = r.find((x) => x.id === 'winchester1897');
     expect(pompe.tirs % 8).toBe(0);
     expect(new Set(pompe.premier.slice(0, 8)).size).toBe(1);
-    // Une arme en main = un appel : le même nombre d'appels pour chaque arme (même scène, même pose).
-    expect(new Set(r.map((x) => x.calls)).size).toBe(1);
+    // Une arme en main = un appel : le même nombre d'appels pour chaque arme (même scène, même pose) ; partie L : le Kar98k en a un de plus,
+    // son verrou animé (maillage enfant de l'arme).
+    expect(new Set(r.map((x) => x.calls - (x.id === 'kar98k' ? 1 : 0))).size, JSON.stringify(r.map((x) => [x.id, x.calls]))).toBe(1);
     expect(await page.evaluate(() => window.__ecritures.length)).toBe(0);
     expect(w.problems).toEqual([]);
     expect(w.external).toEqual([]);
