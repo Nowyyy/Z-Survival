@@ -1,5 +1,5 @@
 {
- "_provisoire": "Lot 9e — Sons des armes en main (provisoires, jamais écoutés par l'agent qui les a écrits ; à choisir à l'oreille dans l'atelier des armes, atelier-armes.html, section « Sons »). Recettes de js/core/synth.js, même format que data/game/sounds.json, dérivées de la recette « tir » de la partie (claquement, coup sourd, corps, bande, réverbération) : accordées par arme (fusils plus graves et plus longs, avec la culasse ou la pompe manœuvrée après le coup ; automatiques courts et serrés ; MG42 très court). Deux variantes par arme : a (proche du tir de la partie) et b (plus sec : claquement plus aigu, réverbération plus courte, saturation plus forte). choix : variante jouée par arme (a ou b) ; le Colt garde le son « tir » de la partie (tampons existants inchangés). arme-recharge et arme-change : rechargement (chargeur sorti, chargeur remis) et changement d'arme (frottement, déclic). Seuls les sons choisis sont calculés pour la partie (derrière l'écran de préparation). Retour du propriétaire après le lot 9e : sons des étapes du rechargement et des manœuvres (arme-chargeur-sort, arme-chargeur-entre, arme-culasse, arme-glissiere, arme-cartouche, arme-verrou-ouvre, arme-verrou, arme-verrou-ching : le « ching » du Kar98k quand le verrou se ferme, arme-pompe, arme-ping : le clip du Garand éjecté, arme-couvercle, arme-tombe : la pièce lâchée touche le sol), nommés par data/game/armes-partie.json (recharge, manoeuvre, dernierTir), jamais écoutés par l'agent ; même écoute dans l'atelier des armes. Retours du propriétaire (partie I) : variantes a des tirs refaites pour que chaque arme sonne autrement (Kar98k sec et très réverbéré, Winchester large et grave, Thompson mat et court, Garand aigu et métallique, StG 44 serré, BAR lourd, MG42 très court et déchirant) ; culasse et pompe ôtées des tirs (elles ont leur son, joué à la manœuvre) ; verrou du Kar98k plus aigu (arme-verrou, arme-verrou-ouvre, arme-verrou-ferme), sans « ching » ; pompe sèche et forte ; « ping » du Garand plus proche du vrai, seulement au dernier tir. Partie J : arme-glissiere-tiree (Colt : glissière tirée et relâchée après un chargeur vide) ; arme-verrou un peu plus lent (calé sur le geste) ; arme-ping plus aigu, moins scintillant, plus métallique ; tir-stg44-a avec moins de basses. Partie K : arme-pompe plus mécanique (déclic, cliquetis métalliques pendant la course, chocs aux butées avec résonances inharmoniques, élévateur). Partie L : arme-pompe plus sèche et moins synthétique (chocs en bruit filtré, presque sans ton ni résonance, frottements courts).",
+ "_provisoire": "Lot 9e — Sons des armes en main (provisoires, jamais écoutés par l'agent qui les a écrits ; à choisir à l'oreille dans l'atelier des armes, atelier-armes.html, section « Sons »). Recettes de js/core/synth.js, même format que data/game/sounds.json, dérivées de la recette « tir » de la partie (claquement, coup sourd, corps, bande, réverbération) : accordées par arme (fusils plus graves et plus longs, avec la culasse ou la pompe manœuvrée après le coup ; automatiques courts et serrés ; MG42 très court). Deux variantes par arme : a (proche du tir de la partie) et b (plus sec : claquement plus aigu, réverbération plus courte, saturation plus forte). choix : variante jouée par arme (a ou b) ; le Colt garde le son « tir » de la partie (tampons existants inchangés). arme-recharge et arme-change : rechargement (chargeur sorti, chargeur remis) et changement d'arme (frottement, déclic). Seuls les sons choisis sont calculés pour la partie (derrière l'écran de préparation). Retour du propriétaire après le lot 9e : sons des étapes du rechargement et des manœuvres (arme-chargeur-sort, arme-chargeur-entre, arme-culasse, arme-glissiere, arme-cartouche, arme-verrou-ouvre, arme-verrou, arme-verrou-ching : le « ching » du Kar98k quand le verrou se ferme, arme-pompe, arme-ping : le clip du Garand éjecté, arme-couvercle, arme-tombe : la pièce lâchée touche le sol), nommés par data/game/armes-partie.json (recharge, manoeuvre, dernierTir), jamais écoutés par l'agent ; même écoute dans l'atelier des armes. Retours du propriétaire (partie I) : variantes a des tirs refaites pour que chaque arme sonne autrement (Kar98k sec et très réverbéré, Winchester large et grave, Thompson mat et court, Garand aigu et métallique, StG 44 serré, BAR lourd, MG42 très court et déchirant) ; culasse et pompe ôtées des tirs (elles ont leur son, joué à la manœuvre) ; verrou du Kar98k plus aigu (arme-verrou, arme-verrou-ouvre, arme-verrou-ferme), sans « ching » ; pompe sèche et forte ; « ping » du Garand plus proche du vrai, seulement au dernier tir. Partie J : arme-glissiere-tiree (Colt : glissière tirée et relâchée après un chargeur vide) ; arme-verrou un peu plus lent (calé sur le geste) ; arme-ping plus aigu, moins scintillant, plus métallique ; tir-stg44-a avec moins de basses. Partie K : arme-pompe plus mécanique (déclic, cliquetis métalliques pendant la course, chocs aux butées avec résonances inharmoniques, élévateur). Partie L : arme-pompe plus sèche et moins synthétique (chocs en bruit filtré, presque sans ton ni résonance, frottements courts). Partie M : arme-cartouche devient un petit tintement métallique (cartouches remises une à une : Kar98k, Winchester).",
  "choix": {
   "kar98k": "a",
   "winchester1897": "a",
@@ -1889,63 +1889,89 @@
    "id": "arme-cartouche",
    "category": "tir",
    "set": "essentiel",
-   "sampleRate": 22050,
-   "duration": 0.22,
+   "sampleRate": 44100,
+   "duration": 0.2,
    "variants": 2,
-   "seed": 205,
+   "seed": 319,
    "loop": false,
-   "gainDb": -11,
+   "gainDb": -6,
    "layers": [
     {
      "type": "noise",
-     "color": "pink",
+     "color": "white",
      "start": 0,
-     "dur": 0.06,
-     "attack": 0.004,
-     "decay": 0.02,
-     "gain": 0.35,
+     "dur": 0.004,
+     "attack": 0.0004,
+     "decay": 0.0008,
+     "gain": 0.7,
      "filter": {
-      "type": "bandpass",
-      "freq": 1100,
-      "q": 1.2
+      "type": "highpass",
+      "freq": 5000,
+      "q": 0.7
      }
     },
     {
      "type": "ring",
-     "start": 0.05,
-     "startJitter": 0.01,
-     "dur": 0.05,
+     "start": 0.001,
+     "dur": 0.16,
      "partials": [
       {
-       "freq": 800,
-       "gain": 0.4,
-       "decay": 0.01
+       "freq": 4300,
+       "gain": 0.55,
+       "decay": 0.045
       },
       {
-       "freq": 1300,
-       "gain": 0.25,
-       "decay": 0.007
+       "freq": 6650,
+       "gain": 0.35,
+       "decay": 0.03
+      },
+      {
+       "freq": 9100,
+       "gain": 0.18,
+       "decay": 0.02
+      },
+      {
+       "freq": 2900,
+       "gain": 0.12,
+       "decay": 0.03
       }
      ]
     },
     {
-     "type": "osc",
-     "wave": "sine",
-     "freq": [
-      200,
-      100
-     ],
-     "sweepTime": 0.02,
-     "start": 0.05,
-     "dur": 0.04,
-     "attack": 0.001,
-     "decay": 0.013999999999999999,
-     "gain": 0.4
+     "type": "noise",
+     "color": "white",
+     "start": 0.045,
+     "dur": 0.003,
+     "attack": 0.0004,
+     "decay": 0.0006,
+     "gain": 0.3,
+     "filter": {
+      "type": "highpass",
+      "freq": 5500,
+      "q": 0.7
+     }
+    },
+    {
+     "type": "ring",
+     "start": 0.046,
+     "dur": 0.08,
+     "partials": [
+      {
+       "freq": 4700,
+       "gain": 0.18,
+       "decay": 0.025
+      },
+      {
+       "freq": 7300,
+       "gain": 0.1,
+       "decay": 0.015
+      }
+     ]
     }
    ],
    "post": {
     "saturation": 0,
-    "targetPeak": 0.7,
+    "targetPeak": 0.8,
     "fadeOut": 0.01
    }
   },

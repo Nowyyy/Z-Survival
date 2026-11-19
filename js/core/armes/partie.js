@@ -73,6 +73,7 @@ function lireEntree(id, e) {
     piece: o.piece === true, // le chargeur lâché est celui du modèle de l'arme (maillageChargeur)
     levier: lireLevier(o.levier),
     douille: lirePiece(o.douille),
+    apresRecharge: isNum(o.apresRecharge) && o.apresRecharge >= 0 ? o.apresRecharge : null, // délai propre à l'arme (sinon celui de la table)
   };
 }
 
@@ -84,7 +85,7 @@ export function lireTable(json) {
   const ids = Object.keys(armes);
   const actives = ids.filter((id) => armes[id].active);
   const depart = actives.includes(t.armeDepart) ? t.armeDepart : actives[0] ?? null;
-  return { armeDepart: depart, emplacementsAchetes: Number.isInteger(t.emplacementsAchetes) && t.emplacementsAchetes >= 0 ? t.emplacementsAchetes : 1, echellePieces: pos(t.echellePieces, 1), ids, actives, armes };
+  return { armeDepart: depart, emplacementsAchetes: Number.isInteger(t.emplacementsAchetes) && t.emplacementsAchetes >= 0 ? t.emplacementsAchetes : 1, echellePieces: pos(t.echellePieces, 1), apresRecharge: isNum(t.apresRecharge) && t.apresRecharge >= 0 ? t.apresRecharge : 0, ids, actives, armes };
 }
 
 // Arme au format du jeu (celui de data/game/weapons.json → pistol, lu par player-stats.js, combat.js, projectile.js) : la base commune de

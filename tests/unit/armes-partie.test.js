@@ -558,3 +558,49 @@ describe('mains, leviers et sons calés (partie J)', () => {
   });
 });
 
+
+// Retours du propriétaire, partie M : un léger délai après chaque rechargement avant de pouvoir tirer ; tintement des cartouches remises une à une.
+describe('délai après le rechargement et tintement des cartouches (partie M)', () => {
+  const run = (s0, dt, n) => {
+    let st = s0;
+    const ev = [];
+    for (let i = 0; i < n; i += 1) {
+      const r = avancerInventaire(st, table, dt);
+      st = r.state;
+      ev.push(...r.evenements);
+    }
+    return { st, ev };
+  };
+  it('rechargement fini : pas de tir pendant apresRecharge (0,3 s), puis le tir revient ; un changement d\'arme l\'annule (la sortie le remplace)', async () => {
+    const { enAttente } = await import('../../js/core/armes/inventaire.js');
+    expect(table.apresRecharge).toBeCloseTo(0.3, 9);
+    let s = creerInventaire(table);
+    for (let i = 0; i < 7; i += 1) s = tirer(s);
+    let r = run(s, 0.05, 30); // 1,4 s de rechargement (et le pas qui le démarre)
+    expect(r.ev.some((e) => e.type === 'rechargeFin')).toBe(true);
+    expect(armeActive(r.st).chargeur).toBe(7);
+    expect(peutTirer(r.st)).toBe(false);
+    expect(enAttente(r.st)).toBe(true);
+    r = run(r.st, 0.05, 5);
+    expect(peutTirer(r.st)).toBe(false); // 0,25 s
+    r = run(r.st, 0.05, 1);
+    expect(peutTirer(r.st)).toBe(true); // 0,3 s
+    expect(enAttente(r.st)).toBe(false);
+    // Balle par balle aussi.
+    let k = run(donnerArme(creerInventaire(table), table, 'kar98k').state, 0.05, 20).st;
+    k = recharger(tirer(k), table).state;
+    const fin = run(k, 0.05, 39); // 0,95 + 0,5 + 0,45 = 1,9 s
+    expect(fin.ev.some((e) => e.type === 'rechargeFin')).toBe(true);
+    expect(peutTirer(fin.st)).toBe(false);
+    expect(changerArme(fin.st, table).state.attente).toBe(0);
+  });
+  it('cartouches remises une à une (Kar98k, Winchester) : petit tintement métallique (partiels aigus, bref)', () => {
+    const sons = load('data/game/sons-armes.json');
+    const c = sons.recettes.find((r) => r.id === 'arme-cartouche');
+    expect(c.duration).toBeLessThanOrEqual(0.25);
+    const partiels = c.layers.filter((l) => l.type === 'ring').flatMap((l) => l.partials.map((x) => x.freq));
+    expect(Math.min(...partiels.filter((f) => f > 4000))).toBeGreaterThan(4000);
+    expect(c.layers.some((l) => l.type === 'osc')).toBe(false); // pas de coup sourd : un tintement
+    for (const id of ['kar98k', 'winchester1897']) expect(table.armes[id].recharge.sons.balle).toBe('arme-cartouche');
+  });
+});

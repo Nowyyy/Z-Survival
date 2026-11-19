@@ -21,7 +21,7 @@ const plein = (e) => ({ id: e.id, chargeur: e.chargeur, reserve: e.reserve, rech
 // table : lireTable() (js/core/armes/partie.js) ; options : { illimite } (munitions illimitées sans rechargement : débogage, référence de la trace).
 export function creerInventaire(table, { illimite = false } = {}) {
   const depart = table?.armes?.[table?.armeDepart];
-  return { emplacements: depart ? [plein(depart)] : [], actif: 0, sortie: null, illimite: illimite === true };
+  return { emplacements: depart ? [plein(depart)] : [], actif: 0, sortie: null, illimite: illimite === true, attente: 0 };
 }
 
 export const maxEmplacements = (table) => 1 + Math.max(0, Math.floor(num(table?.emplacementsAchetes, 1)));
@@ -37,11 +37,16 @@ export const aSec = (state) => {
   const a = armeActive(state);
   return Boolean(a) && !state.illimite && a.chargeur <= 0 && a.reserve <= 0;
 };
-// Le joueur peut-il tirer ? Ni changement ni rechargement en cours, une cartouche au moins (ou munitions illimitées).
+// Le joueur peut-il tirer ? Ni changement ni rechargement en cours, ni le court délai qui suit un rechargement (partie M), une cartouche au
+// moins (ou munitions illimitées).
 export const peutTirer = (state) => {
   const a = armeActive(state);
-  return Boolean(a) && !state.sortie && !isNum(a.recharge) && (state.illimite || a.chargeur > 0);
+  return Boolean(a) && !state.sortie && !isNum(a.recharge) && !(num(state.attente) > 0) && (state.illimite || a.chargeur > 0);
 };
+// Délai après un rechargement en cours (partie M : « laisse un léger délai à la fin du rechargement avant de pouvoir tirer »).
+export const enAttente = (state) => !state?.sortie && num(state?.attente) > 0;
+// Durée de ce délai : celle de l'arme (apresRecharge), sinon celle de la table.
+const delaiApres = (table, e) => Math.max(0, num(e?.apresRecharge ?? table?.apresRecharge, 0));
 
 const avecArme = (state, i, change) => ({ ...state, emplacements: state.emplacements.map((e, k) => (k === i ? { ...e, ...change } : e)) });
 
@@ -54,7 +59,7 @@ export function changerArme(state, table, vers = null) {
   if (cible < 0 || cible >= n || cible === state.actif) return { state, change: false };
   // Changement en cours (on range encore l'arme d'avant) : l'arme rangée reste celle qui est montrée.
   const tenue = armeMontree(state)?.id ?? state.emplacements[state.actif].id;
-  return { state: { ...state, actif: cible, sortie: { ...dureesChangement(table, tenue, state.emplacements[cible].id), de: state.actif, ancien: null } }, change: true };
+  return { state: { ...state, actif: cible, attente: 0, sortie: { ...dureesChangement(table, tenue, state.emplacements[cible].id), de: state.actif, ancien: null } }, change: true };
 }
 
 // Donne une arme (débogage, futur achat) : déjà portée : ses munitions restent, on la sort ; emplacement libre : ajoutée ; sinon elle remplace
@@ -76,7 +81,7 @@ export function donnerArme(state, table, id) {
   const pose = { ...state, emplacements: liste };
   if (i !== state.actif) return changerArme(pose, table, i);
   // L'arme tenue est remplacée : on range l'ancienne, on sort la nouvelle.
-  return { state: { ...pose, sortie: { ...dureesChangement(table, state.emplacements[i].id, id), de: i, ancien: state.emplacements[i].id } }, change: true };
+  return { state: { ...pose, attente: 0, sortie: { ...dureesChangement(table, state.emplacements[i].id, id), de: i, ancien: state.emplacements[i].id } }, change: true };
 }
 
 // Remplit chargeurs et réserves de toutes les armes portées (débogage) ; un rechargement en cours s'arrête.
@@ -122,6 +127,7 @@ export function avancerInventaire(state, table, dt) {
     s = { ...s, sortie: null };
     evenements.push({ type: 'sortie', id: armeActive(s)?.id ?? null });
   }
+  if (num(s.attente) > 0) s = { ...s, attente: Math.max(0, s.attente - step) };
   const a = armeActive(s);
   const e = table?.armes?.[a?.id];
   if (!a || !e || s.illimite) return { state: s, evenements };
@@ -151,7 +157,7 @@ export function avancerInventaire(state, table, dt) {
       const tFin = r.debut + a.prevu * r.parBalle + (r.finSon ?? 0); // après la dernière cartouche (Kar98k : le temps de reprendre le levier)
       if (r.fin > 0 && franchi(t0, t1, tFin) && r.sons.fin) evenements.push({ type: 'rechargeEtape', id: a.id, son: r.sons.fin, lacher: false });
       if (t1 < total) return { state: avecArme(s, s.actif, { recharge: t1, chargeur, reserve }), evenements };
-      s = avecArme(s, s.actif, { recharge: null, prevu: null, vide: false, chargeur, reserve });
+      s = { ...avecArme(s, s.actif, { recharge: null, prevu: null, vide: false, chargeur, reserve }), attente: delaiApres(table, e) };
       evenements.push({ type: 'rechargeFin', id: a.id, son: r.fin > 0 ? null : r.sons.fin });
       return { state: s, evenements };
     }
@@ -162,7 +168,7 @@ export function avancerInventaire(state, table, dt) {
     }
     if (t1 < total) return { state: avecArme(s, s.actif, { recharge: t1 }), evenements };
     const pris = Math.min(e.chargeur - a.chargeur, a.reserve);
-    s = avecArme(s, s.actif, { recharge: null, prevu: null, vide: false, chargeur: a.chargeur + pris, reserve: a.reserve === Infinity ? Infinity : a.reserve - pris });
+    s = { ...avecArme(s, s.actif, { recharge: null, prevu: null, vide: false, chargeur: a.chargeur + pris, reserve: a.reserve === Infinity ? Infinity : a.reserve - pris }), attente: delaiApres(table, e) };
     evenements.push({ type: 'rechargeFin', id: a.id, son: null });
   }
   return { state: s, evenements };

@@ -27,7 +27,7 @@ import { createRng } from '../core/rng.js';
 import { shotAngle, speedRatio, spreadHalfAngle, stepSpreadRatio, toRadians } from '../core/spread.js';
 import { zoneZombie } from '../core/gabarit.js';
 import { armeJeu, statsAvecArme } from '../core/armes/partie.js';
-import { aSec, armeActive, armeMontree, avancerInventaire, changerArme, creerInventaire, donnerArme, enRecharge, gesteRecharge, munitionsIllimitees, peutTirer, progressionRecharge, recharger, remplirMunitions, texteMunitions, tirer, RANGER } from '../core/armes/inventaire.js';
+import { aSec, armeActive, armeMontree, avancerInventaire, changerArme, creerInventaire, donnerArme, enAttente, enRecharge, gesteRecharge, munitionsIllimitees, peutTirer, progressionRecharge, recharger, remplirMunitions, texteMunitions, tirer, RANGER } from '../core/armes/inventaire.js';
 import { boucheCanon, tenueArme } from '../core/armes/tenue-jeu.js';
 import { creerArmesEnMain } from '../armes/en-main.js';
 import { AU_SOL_DOUILLE, MAX_DOUILLES, creerArmesTombes, creerCartoucheMain } from './armes-tombes.js';
@@ -713,8 +713,8 @@ export function createGame(ctx) {
     const muzzle = boucheJoueur(sim.aim.angle, weapon, layout.muzzleBounds);
     const cibles = zones();
     const ray = castRay(muzzle, sim.aim.angle, weapon.laserRange, cibles, shotBounds, blockers, pf());
-    // Lot 9e : pas de laser pendant un changement d'arme ou un rechargement (aucun tir possible), comme pendant la réparation.
-    laser = !firing || (sim.inv && (sim.inv.sortie || enRecharge(sim.inv))) ? null : { from: muzzle, ray, cone: { angle: sim.aim.angle, half: toRadians(halfAngle()), length: weapon.laserRange, lengths: longueursCone(muzzle, sim.aim.angle, toRadians(halfAngle()), weapon.laserRange, shotBounds, blockers) } }; // cône arrêté comme le laser
+    // Lot 9e : pas de laser pendant un changement d'arme ou un rechargement, ni pendant le court délai qui le suit (partie M) : aucun tir possible.
+    laser = !firing || (sim.inv && (sim.inv.sortie || enRecharge(sim.inv) || enAttente(sim.inv))) ? null : { from: muzzle, ray, cone: { angle: sim.aim.angle, half: toRadians(halfAngle()), length: weapon.laserRange, lengths: longueursCone(muzzle, sim.aim.angle, toRadians(halfAngle()), weapon.laserRange, shotBounds, blockers) } }; // cône arrêté comme le laser
     // Le tir part aussi quand la visée passe sur un ennemi au-delà de la portée du laser (le trait s'estompe, la balle continue) ;
     // un ennemi caché derrière un meuble ne déclenche jamais de tir.
     // Marge de visée : le tir part si la ligne passe à moins de aimTolerance du bord d'un ennemi ; la balle suit la vraie visée et peut le rater.
@@ -1911,7 +1911,7 @@ export function createGame(ctx) {
         render: { ...lastInfo, geometries: renderer.info.memory.geometries, textures: renderer.info.memory.textures },
         armes: sim.inv ? { // lot 9e : armes portées, arme effective et arme dessinée
           actif: armeActive(sim.inv)?.id ?? null, montree: armeMontree(sim.inv)?.id ?? null, emplacements: sim.inv.emplacements.map((e) => ({ id: e.id, chargeur: e.chargeur, reserve: e.reserve === Infinity ? null : e.reserve, recharge: e.recharge })),
-          sortie: sim.inv.sortie ? { ...sim.inv.sortie } : null, recharge: progressionRecharge(sim.inv, tableArmes), enRecharge: enRecharge(sim.inv), texte: texteMunitions(sim.inv), peutTirer: peutTirer(sim.inv), aSec: aSec(sim.inv), illimite: sim.inv.illimite,
+          sortie: sim.inv.sortie ? { ...sim.inv.sortie } : null, recharge: progressionRecharge(sim.inv, tableArmes), enRecharge: enRecharge(sim.inv), attente: sim.inv.attente ?? 0, texte: texteMunitions(sim.inv), peutTirer: peutTirer(sim.inv), aSec: aSec(sim.inv), illimite: sim.inv.illimite,
           vitesse: vitesseJoueur(), bouche: eff.weapon.muzzleOffset, boucheCote: eff.weapon.muzzleSide ?? 0, plombs: eff.weapon.plombs ?? 1, damage: eff.weapon.damage, fireDelay: eff.weapon.fireDelay, fireRange: eff.weapon.fireRange, coneStill: eff.weapon.coneStill, coneMove: eff.weapon.coneMove,
           geste: gesteVu ? { ...gesteVu } : null, pieces: { lachees: lachesTotal, auSol: tombes?.nombre ?? 0 }, douilles: { ejectees: ejectionsTotal, visibles: douilles?.nombre ?? 0 }, manoeuvre: sim.manoeuvre ? { ...sim.manoeuvre } : null,
           canon: { logique: boucheJoueur(sim.aim.angle, eff.weapon, layout.muzzleBounds), rendu: lastGun ? { x: lastGun.x, y: lastGun.y, hauteur: lastGun.height } : null }, // bout du canon : logique et dessiné

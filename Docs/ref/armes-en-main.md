@@ -156,3 +156,7 @@ Rayon du grand aligné sur son dessin (×1,11) ; recharge cartouche par cartouch
 - **Pompe du Winchester** : plus sèche, moins synthétique (chocs en bruit filtré, presque sans ton ni résonance, frottements courts).
 - **MG42** : cadence 0,2 s (encore deux fois plus lente) ; dégâts 560 et réserve 550 (même puissance, règle des munitions).
 - Test des appels des armes (`armes-jeu.spec`) : mesure sans sang (`&sang=0`), après 5 s (douilles et chargeurs disparus) et une image fraîche ; Kar98k : + 1 appel (verrou).
+
+## Retours du propriétaire (partie M)
+- **Délai après le rechargement** : `apresRecharge` (0,3 s pour toutes les armes ; une arme peut avoir le sien) : après la fin d'un rechargement, ni tir ni laser pendant ce délai (`attente` de l'inventaire, `enAttente`) ; un changement d'arme l'annule (la sortie le remplace).
+- **Cartouches remises une à une** (Kar98k, Winchester) : `arme-cartouche` devient un petit tintement métallique (déclic, partiels aigus inharmoniques brefs, second petit choc).
