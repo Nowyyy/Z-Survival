@@ -16,6 +16,8 @@ export const loft = (sections, mat, extra = {}) => ({ forme: 'loft', sections, m
 // clip du Garand dans le boîtier), jamais dessinée sur l'arme, seulement dans le chargeur lâché.
 const ch = (p) => ({ ...p, chargeur: true });
 const cache = (p) => ({ ...p, chargeur: true, seulChargeur: true });
+// Partie L : pièces du verrou (Kar98k : culasse, levier, boule), dessinées à part pour être animées (levier relevé, culasse tirée).
+const vr = (p) => ({ ...p, verrou: true });
 
 // Pontet en U (côté), ouvert en haut : (z0 avant, z1 arrière, y0 haut, profondeur, épaisseur du trait).
 function pontet(zAvant, zArriere, yHaut, prof, trait, e, x = 0, mat = 'metal') {
@@ -68,9 +70,9 @@ function kar98k(d, o) {
     boite(44, 128, 8, [0, -42, zC - 3], 'metal'), // plaque de couche
     tube(15, 190, [0, yb, 40], 'metal', { seg: 8 }), // boîtier
     tube(8, zB - 135 - 20, [0, yb, (135 + zB + 20) / 2 - 20], 'metal', { r2: 7, seg: 6 }), // canon
-    tube(10, 60, [0, yb + 2, -85], 'metal2', { seg: 6 }), // culasse et chien (arrière)
-    boite(9, 7, 58, [-33, yb - 16, -52], 'metal2', { rot: [0, -75, 35] }), // levier de culasse coudé (droite)
-    tube(8, 14, [-58, yb - 33, -45], 'metal2', { seg: 6, axe: 'x' }), // boule du levier
+    vr(tube(10, 60, [0, yb + 2, -85], 'metal2', { seg: 6 })), // culasse et chien (arrière)
+    vr(boite(9, 7, 58, [-33, yb - 16, -52], 'metal2', { rot: [0, -75, 35] })), // levier de culasse coudé (droite)
+    vr(tube(8, 14, [-58, yb - 33, -45], 'metal2', { seg: 6, axe: 'x' })), // boule du levier
     boite(20, 6, 92, [0, -18, 40], 'metal'), // plaque de magasin
     pontet(-6, -66, -18, 26, 5, 10),
     boite(5, 14, 4, [0, -28, -40], 'metal2'), // détente

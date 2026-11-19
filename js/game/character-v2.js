@@ -13,6 +13,7 @@ import { EPAULE_REFERENCE, echellesCorps, lireCorps, rigCorps, varianteCorps } f
 
 const KICK_TIME = 0.25; // durée du recul du pistolet du joueur (secondes de jeu)
 const NO_PARAMS = Object.freeze({});
+const PAS_CHASSE_AMPLEUR = 0.55; // part de la foulée gardée sur le côté au pas chassé (partie L : pas plus petits)
 
 // Sphère englobante fixe (repère du personnage) : couvre toutes les poses, chute au sol comprise ; sert au culling hors champ.
 const BOUNDS = new THREE.Sphere(new THREE.Vector3(0, 28, 0), 62);
@@ -435,6 +436,17 @@ export function createV2Kit(options) {
       }
       arme.mesh.matrix.copy(armeMat);
       arme.mesh.matrixWorldNeedsUpdate = true;
+      // Partie L : verrou du Kar98k (maillage enfant de l'arme) : levier relevé autour de l'axe de la culasse, culasse tirée en arrière.
+      if (arme.verrou) {
+        const v = arme.verrou;
+        const lift = Math.max(0, Math.min(1, num(armeEtat.verrouLift)));
+        const back = Math.max(0, Math.min(1, num(armeEtat.verrouBack)));
+        v.mesh.matrix.makeTranslation(0, 0, -v.course * back)
+          .multiply(armeTmp.makeTranslation(v.axe[0], v.axe[1], v.axe[2]))
+          .multiply(armeRot.makeRotationZ(v.angle * lift))
+          .multiply(armeRot2.makeTranslation(-v.axe[0], -v.axe[1], -v.axe[2]));
+        v.mesh.matrixWorldNeedsUpdate = true;
+      }
       // Main gauche vers le point du rechargement (repère de l'arme → repère de l'os chest, arme abaissée comprise), cinématique inverse du bras
       // (os au corps long), mélangée à la pose de tenue selon poidsGauche.
       const w = Math.max(0, Math.min(1, num(armeEtat.poidsGauche)));
@@ -461,7 +473,18 @@ export function createV2Kit(options) {
       const wd = Math.max(0, Math.min(1, num(armeEtat.poidsDroite)));
       const epauleD = rig.bones.get('shoulderR');
       const coudeD = rig.bones.get('elbowR');
-      if (wd > 0 && armeEtat.droite && epauleD && coudeD) {
+      const md = armeEtat.mainD;
+      if (wd > 0 && md && epauleD && coudeD) {
+        // Partie L : main droite entre deux cibles (repère de l'arme ou du buste : poche droite), comme la gauche.
+        cibleA.set(md.a[0], md.a[1], md.a[2]);
+        if (!md.aCorps) cibleA.applyMatrix4(armeMat);
+        cibleB.set(md.b[0], md.b[1], md.b[2]);
+        if (!md.bCorps) cibleB.applyMatrix4(armeMat);
+        pointGauche.lerpVectors(cibleA, cibleB, Math.max(0, Math.min(1, num(md.k))));
+        const [sh, el] = armIK(gait.upper, gait.fore, [pointGauche.x - epauleD.position.x, pointGauche.y - epauleD.position.y, pointGauche.z - epauleD.position.z]);
+        epauleD.rotation.set(epauleD.rotation.x + (sh[0] - epauleD.rotation.x) * wd, epauleD.rotation.y + (sh[1] - epauleD.rotation.y) * wd, epauleD.rotation.z * (1 - wd));
+        coudeD.rotation.set(coudeD.rotation.x + (el[0] - coudeD.rotation.x) * wd, 0, 0);
+      } else if (wd > 0 && armeEtat.droite && epauleD && coudeD) {
         pointGauche.set(armeEtat.droite[0], armeEtat.droite[1], armeEtat.droite[2]).applyMatrix4(armeMat);
         const [sh, el] = armIK(gait.upper, gait.fore, [pointGauche.x - epauleD.position.x, pointGauche.y - epauleD.position.y, pointGauche.z - epauleD.position.z]);
         epauleD.rotation.set(epauleD.rotation.x + (sh[0] - epauleD.rotation.x) * wd, epauleD.rotation.y + (sh[1] - epauleD.rotation.y) * wd, epauleD.rotation.z * (1 - wd));
@@ -495,7 +518,7 @@ export function createV2Kit(options) {
         if (!b) continue;
         const osc = b.rotation.x - milieuHanche;
         b.rotation.x = milieuHanche + osc * av;
-        b.rotation.z += -osc * lat;
+        b.rotation.z += -osc * lat * PAS_CHASSE_AMPLEUR; // partie L : pas sur le côté plus petits
       }
     }
     const cycle = (anim, extra) => cycleSeconds(gait, anim, params(extra), poses) ?? 1;
@@ -545,16 +568,20 @@ export function createV2Kit(options) {
         armeEtat.droite = Array.isArray(etat.droite) ? etat.droite : null;
         armeEtat.poidsDroite = num(etat.poidsDroite);
         armeEtat.mainG = etat.mainG && Array.isArray(etat.mainG.a) && Array.isArray(etat.mainG.b) ? etat.mainG : null;
+        armeEtat.mainD = etat.mainD && Array.isArray(etat.mainD.a) && Array.isArray(etat.mainD.b) ? etat.mainD : null;
+        armeEtat.verrouLift = num(etat.verrouLift);
+        armeEtat.verrouBack = num(etat.verrouBack);
         armeEtat.cant = num(etat.cant);
         armeEtat.secousse = num(etat.secousse);
         armeEtat.sansChargeur = etat.sansChargeur === true;
         // Objet dans la main gauche (chargeur neuf) : accroché au poignet, montré tant qu'il est tenu.
         const o = etat.objet ?? null;
-        if (o !== objetMain) {
+        const poignet = etat.objetCote === 'droite' ? 'wristR' : 'wristL';
+        if (o !== objetMain || (o && o.parent !== rig.bones.get(poignet))) {
           objetMain?.removeFromParent();
           objetMain = o;
           if (o) {
-            rig.bones.get('wristL')?.add(o);
+            rig.bones.get(poignet)?.add(o);
             o.position.set(0, -3, 1.5);
             o.rotation.set(0, 0, 0);
           }

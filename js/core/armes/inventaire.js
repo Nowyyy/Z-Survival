@@ -148,7 +148,7 @@ export function avancerInventaire(state, table, dt) {
         reserve = reserve === Infinity ? Infinity : reserve - 1;
         evenements.push({ type: 'rechargeBalle', id: a.id, son: r.sons.balle, lacher: false });
       }
-      const tFin = r.debut + a.prevu * r.parBalle; // après la dernière cartouche (même instant)
+      const tFin = r.debut + a.prevu * r.parBalle + (r.finSon ?? 0); // après la dernière cartouche (Kar98k : le temps de reprendre le levier)
       if (r.fin > 0 && franchi(t0, t1, tFin) && r.sons.fin) evenements.push({ type: 'rechargeEtape', id: a.id, son: r.sons.fin, lacher: false });
       if (t1 < total) return { state: avecArme(s, s.actif, { recharge: t1, chargeur, reserve }), evenements };
       s = avecArme(s, s.actif, { recharge: null, prevu: null, vide: false, chargeur, reserve });

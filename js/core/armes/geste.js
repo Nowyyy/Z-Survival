@@ -6,7 +6,7 @@
 // levier à droite (MG42, Garand, verrou du Kar98k), de la main droite (clesD ; « prise » : sa place sur l'arme), et marqueurs (objet en main,
 // arme sans chargeur, secousses). Partie J : le geste du levier est calé sur son son (saisi au début du son, tiré en 0,12 s, lâché à 0,17 s).
 
-const CORPS = new Set(['poche']);
+const CORPS = new Set(['poche', 'pocheD']); // pocheD (partie L) : poche droite, pour la main droite
 export const surCorps = (cible) => CORPS.has(cible);
 
 // Rechargement « chargeur » : entree.recharge.etapes ; vide : le chargeur était vide au début (étapes siVide, siReste).
@@ -91,24 +91,36 @@ export function choregraphieBalle(entree, prevu) {
     // sous le boîtier (Winchester, partie K).
     const poche0 = Math.min(r.debut * 0.6, 0.45);
     const poche1 = Math.min(r.debut * 0.78, poche0 + 0.15);
-    const cles = [{ t: 0, cible: 'prise' }, { t: T(poche0 * 0.35), cible: 'prise' }, { t: T(poche0), cible: 'poche' }, { t: T(poche1), cible: 'poche' }, { t: T(r.debut), cible: 'port' }];
-    for (let i = 0; i < n; i += 1) {
-      const ti = r.debut + (i + 1) * r.parBalle;
-      cles.push({ t: T(ti - r.parBalle * 0.45), cible: 'portApproche' }, { t: T(ti - r.parBalle * 0.1), cible: 'port' });
-    }
-    objet.push([T(poche0), T(f)]);
     if (!verrou) {
+      const cles = [{ t: 0, cible: 'prise' }, { t: T(poche0 * 0.35), cible: 'prise' }, { t: T(poche0), cible: 'poche' }, { t: T(poche1), cible: 'poche' }, { t: T(r.debut), cible: 'port' }];
+      for (let i = 0; i < n; i += 1) {
+        const ti = r.debut + (i + 1) * r.parBalle;
+        cles.push({ t: T(ti - r.parBalle * 0.45), cible: 'portApproche' }, { t: T(ti - r.parBalle * 0.1), cible: 'port' });
+      }
+      objet.push([T(poche0), T(f)]);
       cles.push({ t: T(f), cible: 'pompe' }, { t: T(f + 0.06), cible: 'pompe2' }, { t: T(f + 0.21), cible: 'pompe' }, { t: 1, cible: 'prise' });
       secousses.push(T(f + 0.21));
       return { cles, clesD: null, objet, sans: [], secousses };
     }
-    cles.push({ t: T(f + r.fin * 0.5), cible: 'prise' }, { t: 1, cible: 'prise' });
+    // Kar98k (partie L) : la main gauche tient l'arme par le fût tout du long ; la droite relève le levier et tire la culasse (son au début),
+    // va prendre les cartouches dans la poche droite, les enfonce une à une par le dessus, reprend le levier, repousse la culasse et rabat
+    // le levier (son de fin finSon s après la dernière cartouche), puis revient à la poignée. Le verrou dessiné suit (verrou : levier, culasse).
+    const fs = f + (r.finSon ?? 0);
     const clesD = [
-      { t: 0, cible: 'prise' }, { t: T(0.05), cible: 'culasse' }, { t: T(0.17), cible: 'culasse2' },
-      { t: T(f), cible: 'culasse2' }, { t: T(f + 0.08), cible: 'culasse' }, { t: T(f + 0.16), cible: 'culasse' }, { t: T(f + 0.35), cible: 'prise' }, { t: 1, cible: 'prise' },
+      { t: 0, cible: 'prise' }, { t: T(0.05), cible: 'culasse' }, { t: T(0.17), cible: 'culasse2' }, { t: T(0.3), cible: 'culasse2' },
+      { t: T(poche0 + 0.15), cible: 'pocheD' }, { t: T(poche1 + 0.15), cible: 'pocheD' }, { t: T(r.debut), cible: 'portD' },
     ];
-    secousses.push(T(f + 0.08));
-    return { cles, clesD, objet, sans: [], secousses };
+    for (let i = 0; i < n; i += 1) {
+      const ti = r.debut + (i + 1) * r.parBalle;
+      clesD.push({ t: T(ti - r.parBalle * 0.45), cible: 'portApprocheD' }, { t: T(ti - r.parBalle * 0.1), cible: 'portD' });
+    }
+    clesD.push({ t: T(fs), cible: 'culasse2' }, { t: T(fs + 0.08), cible: 'culasse' }, { t: T(fs + 0.16), cible: 'culasse' }, { t: 1, cible: 'prise' });
+    const verrouCles = [
+      { t: 0, lift: 0, back: 0 }, { t: T(0.05), lift: 0, back: 0 }, { t: T(0.09), lift: 1, back: 0 }, { t: T(0.17), lift: 1, back: 1 },
+      { t: T(fs), lift: 1, back: 1 }, { t: T(fs + 0.08), lift: 1, back: 0 }, { t: T(fs + 0.16), lift: 0, back: 0 }, { t: 1, lift: 0, back: 0 },
+    ];
+    secousses.push(T(fs + 0.08));
+    return { cles: [{ t: 0, cible: 'prise' }, { t: 1, cible: 'prise' }], clesD, objet: [[T(poche1 + 0.15), T(f)]], objetCote: 'droite', sans: [], secousses, verrou: verrouCles };
   }
   const cles = [{ t: 0, cible: 'prise' }, { t: T(r.debut * 0.8), cible: 'port' }];
   for (let i = 0; i < n; i += 1) {
@@ -155,3 +167,22 @@ export function secousse(marques, p, duree = 0.06) {
   for (const m of marques ?? []) if (p >= m && p < m + duree) s = Math.max(s, 1 - (p - m) / duree);
   return s;
 }
+
+// Valeurs interpolées linéairement sur des clés [{ t, ...valeurs }] (verrou du Kar98k : levier relevé, culasse tirée), au temps t.
+export function entreValeurs(cles, t, champs = ['lift', 'back']) {
+  const out = {};
+  if (!Array.isArray(cles) || !cles.length) {
+    for (const c of champs) out[c] = 0;
+    return out;
+  }
+  let i = 1;
+  while (i < cles.length && cles[i].t < t) i += 1;
+  const a = cles[Math.max(0, i - 1)];
+  const b = cles[Math.min(cles.length - 1, i)];
+  const u = b.t > a.t ? Math.max(0, Math.min(1, (t - a.t) / (b.t - a.t))) : 1;
+  for (const c of champs) out[c] = t <= cles[0].t ? cles[0][c] : a[c] + (b[c] - a[c]) * u;
+  return out;
+}
+// Verrou pendant la manœuvre après le tir (clés en secondes depuis le son).
+export const verrouManoeuvre = (def, t) => entreValeurs((def?.verrou ?? []).map((c) => ({ ...c, t: def.debut + c.t })), t);
+

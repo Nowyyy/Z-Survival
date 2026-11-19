@@ -59,13 +59,26 @@ export function creerArmesEnMain({ donnees, choix, palette, poses = null }) {
     const arme = armeParId(donnees, id);
     if (!arme) return null;
     const bretelle = poses?.armes?.[id]?.modes?.['deux-mains']?.arme?.bretelle;
-    const m = maillageArme(donnees, arme, varianteDe(arme, choix?.variantes?.[id]), { pose: 'main', enJeu: true, ...(Array.isArray(bretelle) ? { bretelle } : {}) });
-    const g = geo(m);
+    const v = varianteDe(arme, choix?.variantes?.[id]);
+    const opts = { pose: 'main', enJeu: true, ...(Array.isArray(bretelle) ? { bretelle } : {}) };
+    const m = maillageArme(donnees, arme, v, opts);
+    // Partie L : verrou animé (Kar98k) : l'arme est dessinée sans ses pièces du verrou, le verrou est un maillage enfant (un appel de plus).
+    const mv = maillageArme(donnees, arme, v, { ...opts, verrou: true });
+    const avecVerrou = mv.positions.length > 0;
+    const g = geo(avecVerrou ? maillageArme(donnees, arme, v, { ...opts, verrou: 'sans' }) : m);
     const mesh = new THREE.Mesh(g, materiau);
     mesh.name = `arme-${id}`;
     mesh.castShadow = false;
     mesh.matrixAutoUpdate = false;
-    const e = { mesh, pointe: pointeCanon(m.positions), triangles: m.positions.length / 9 };
+    let verrou = null;
+    if (avecVerrou) {
+      verrou = new THREE.Mesh(geo(mv), materiau);
+      verrou.name = `verrou-${id}`;
+      verrou.castShadow = false;
+      verrou.matrixAutoUpdate = false;
+      mesh.add(verrou);
+    }
+    const e = { mesh, verrou, pointe: pointeCanon(m.positions), triangles: m.positions.length / 9 };
     cache.set(id, e);
     return e;
   }
@@ -73,6 +86,7 @@ export function creerArmesEnMain({ donnees, choix, palette, poses = null }) {
     mesh: (id) => entree(id)?.mesh ?? null,
     pointe: (id) => entree(id)?.pointe ?? null,
     triangles: (id) => entree(id)?.triangles ?? 0,
+    verrou: (id) => entree(id)?.verrou ?? null,
     sansChargeur: (id) => chargeurDe(id)?.sans ?? null,
     chargeur: (id) => chargeurDe(id),
     materiau,
@@ -87,6 +101,7 @@ export function creerArmesEnMain({ donnees, choix, palette, poses = null }) {
       for (const e of cache.values()) {
         e.mesh.removeFromParent();
         e.mesh.geometry.dispose();
+        e.verrou?.geometry.dispose();
       }
       cache.clear();
       materiau.dispose();

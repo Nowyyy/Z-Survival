@@ -31,7 +31,7 @@ import { aSec, armeActive, armeMontree, avancerInventaire, changerArme, creerInv
 import { boucheCanon, tenueArme } from '../core/armes/tenue-jeu.js';
 import { creerArmesEnMain } from '../armes/en-main.js';
 import { AU_SOL_DOUILLE, MAX_DOUILLES, creerArmesTombes, creerCartoucheMain } from './armes-tombes.js';
-import { choregraphieBalle, choregraphieChargeur, dans, entreCles, entreClesManoeuvre, poidsMain, secousse, surCorps } from '../core/armes/geste.js';
+import { choregraphieBalle, choregraphieChargeur, dans, entreCles, entreClesManoeuvre, entreValeurs, poidsMain, secousse, surCorps, verrouManoeuvre } from '../core/armes/geste.js';
 import { createArmesUi } from './armes-ui.js';
 import { armeParId, echelleJeu } from '../core/armes/armes.js';
 import { createFootsteps, stepFootsteps } from '../core/footsteps.js';
@@ -72,6 +72,7 @@ const TAU = Math.PI * 2;
 // Pose de chaque allure (états de pose d'avant le lot 3j : « zombie » reste l'équivalent de « marche »).
 const GAIT_POSE = { lent: 'lent', marche: 'zombie', rampe: 'rampe', course: 'course' };
 const PAS_CHASSE = (50 * Math.PI) / 180; // au-delà de 50° entre la marche et la visée (et en deçà de 130°) : pas chassé
+const PAS_CHASSE_LENTEUR = 0.35; // rythme des pas sur le côté : 65 % de celui de la marche (partie L)
 // Surcharge temporaire de waves.json (hook de test) : les sections objet sont fusionnées, le reste est remplacé.
 const mergeParams = (base, patch) => Object.fromEntries(Object.entries({ ...base, ...patch }).map(([k, v]) => [k, v && typeof v === 'object' && !Array.isArray(v) && patch?.[k] && typeof patch[k] === 'object' && !Array.isArray(patch[k]) ? { ...base[k], ...patch[k] } : v]));
 const wrap = (a) => Math.atan2(Math.sin(a), Math.cos(a));
@@ -1174,14 +1175,20 @@ export function createGame(ctx) {
       // Main droite (levier à droite : MG42, Garand, verrou du Kar98k).
       let droite = null;
       let poidsDroite = 0;
+      let mainD = null;
       if (ch.clesD && c && !reduced) {
         const pd = entreCles(ch.clesD, p);
         poidsDroite = poidsMain(pd);
-        droite = mix(c.droite[pd.de], c.droite[pd.vers], pd.k);
+        mainD = { a: c.droite[pd.de], aCorps: surCorps(pd.de), b: c.droite[pd.vers], bCorps: surCorps(pd.vers), k: pd.k };
       }
+      const vr = ch.verrou ? entreValeurs(ch.verrou, p) : null;
       return {
         droite,
+        mainD,
         poidsDroite,
+        objetCote: ch.objetCote ?? 'gauche',
+        verrouLift: vr ? vr.lift : 0,
+        verrouBack: vr ? vr.back : 0,
         baisse: reduced ? 0 : 0.45 * enveloppe,
         recharge: p,
         mainG: c ? { a: c[pos.de], aCorps: surCorps(pos.de), b: c[pos.vers], bCorps: surCorps(pos.vers), k: pos.k, de: pos.de, vers: pos.vers } : null,
@@ -1206,7 +1213,8 @@ export function createGame(ctx) {
       const dernier = def.debut + def.cles[def.cles.length - 1].t;
       const dedans = m.t >= premier && m.t <= dernier;
       const poids = droiteMain ? poidsMain(pos) : dedans ? 1 : 0;
-      return droiteMain ? { baisse: 0, droite: at, poidsDroite: poids } : { baisse: 0, mainG: { a: at, b: at, k: 0 }, poidsGauche: poids };
+      const vr = def.verrou?.length ? verrouManoeuvre(def, m.t) : { lift: 0, back: 0 }; // partie L : le verrou dessiné suit la main
+      return droiteMain ? { baisse: 0, droite: at, poidsDroite: poids, verrouLift: vr.lift, verrouBack: vr.back } : { baisse: 0, mainG: { a: at, b: at, k: 0 }, poidsGauche: poids };
     }
     return { baisse: 0 };
   }
@@ -1226,6 +1234,7 @@ export function createGame(ctx) {
   // décalé du point tenu comme dans la pose de tenue (sans cela le poignet entrait dans l'arme et la main paraissait au-dessus) ; leviers
   // d'armement aux places du modèle (levier de la table, mm du modèle).
   const POCHE = [13, -12, 4]; // hors de la silhouette du buste : la main se voit de dessus quand elle y va
+  const POCHE_D = [-13, -12, 4]; // poche droite (partie L : la main droite y prend les cartouches du Kar98k)
   const mix = (a, b, k) => (a && b ? [a[0] + (b[0] - a[0]) * k, a[1] + (b[1] - a[1]) * k, a[2] + (b[2] - a[2]) * k] : a ?? b ?? null);
   const plus = (a, b) => [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
   const ciblesArmes = new Map();
@@ -1249,7 +1258,16 @@ export function createGame(ctx) {
       const lev = e?.levier ? mm(e.levier.pos) : [d[0] - 1, d[1] + 5, d[2] + 8];
       const course = e?.levier?.course ?? 5;
       const offL = e?.levier?.main === 'droite' ? offD : offG;
-      const culasse = plus(lev, offL);
+      // Kar98k (partie L) : la main saisit la boule du levier relevé (tournée autour de l'axe de la culasse).
+      let levTenu = lev;
+      if (e?.levier?.verrou) {
+        const ax = mm(e.levier.verrou.axe);
+        const an = (e.levier.verrou.angle * Math.PI) / 180;
+        const rx = lev[0] - ax[0];
+        const ry = lev[1] - ax[1];
+        levTenu = [ax[0] + rx * Math.cos(an) - ry * Math.sin(an), ax[1] + rx * Math.sin(an) + ry * Math.cos(an), lev[2]];
+      }
+      const culasse = plus(levTenu, offL);
       const culasse2 = plus(culasse, [0, 0, -course]);
       const port = plus(e?.categorie === 'fusil à pompe' ? [d[0], d[1] - 3, d[2] + 7] : [d[0] - 1, d[1] + 4, d[2] + 5], offG);
       c = {
@@ -1265,7 +1283,7 @@ export function createGame(ctx) {
         couvercle: plus([d[0], d[1] + 7, d[2] + 6], offG),
         pompe: [...pg],
         pompe2: plus(pg, [0, 0, -6]),
-        droite: { prise: [...pd], culasse, culasse2 },
+        droite: { prise: [...pd], culasse, culasse2, pocheD: POCHE_D, portD: plus([d[0] - 1, d[1] + 4, d[2] + 5], offD), portApprocheD: plus([d[0] - 1, d[1] + 6, d[2] + 5], offD) },
       };
     }
     ciblesArmes.set(id, c);
@@ -1279,18 +1297,28 @@ export function createGame(ctx) {
     const d = a.prises.droite.map((v) => v * sc);
     return tableArmes?.armes?.[id]?.categorie === 'pistolet' ? [d[0], d[1] + 6, d[2] + 3] : [d[0], d[1] + 4, d[2] + 7];
   }
+  // Verrou animé (partie L) : maillage enfant de l'arme, axe de la culasse (unités du jeu), angle du levier relevé (radians), course.
+  function verrouDe(id) {
+    const mesh = armesKit?.verrou(id);
+    const lv = tableArmes?.armes?.[id]?.levier;
+    const a = armesCfg ? armeParId(armesCfg.donnees, id) : null;
+    if (!mesh || !lv?.verrou || !a) return null;
+    const sc = echelleJeu(armesCfg.donnees, a);
+    const sx = armesCfg.donnees.echelle?.largeur ?? 1;
+    return { mesh, axe: [lv.verrou.axe[0] * sc * sx, lv.verrou.axe[1] * sc, lv.verrou.axe[2] * sc], angle: (lv.verrou.angle * Math.PI) / 180, course: lv.course };
+  }
   function montrerArme() {
     if (!armesKit || !sim.inv) return;
     const vue = armeMontree(sim.inv)?.id ?? null;
     if (vue !== armeVue) {
       armeVue = vue;
       const t = vue ? tenueDe(vue) : null;
-      playerChar.setArme(t ? { id: vue, mesh: armesKit.mesh(vue), angles: t.angles, local: t.local, pointe: armesKit.pointe(vue), pivot: t.pivot, poignets: t.poignets, sans: tableArmes?.armes?.[vue]?.piece ? armesKit.sansChargeur(vue) : null } : null);
+      playerChar.setArme(t ? { id: vue, mesh: armesKit.mesh(vue), angles: t.angles, local: t.local, pointe: armesKit.pointe(vue), pivot: t.pivot, poignets: t.poignets, sans: tableArmes?.armes?.[vue]?.piece ? armesKit.sansChargeur(vue) : null, verrou: verrouDe(vue) } : null);
     }
     const etat = etatVisibleArme();
     playerChar.setArmeEtat(etat);
     // Tests : geste visible (objet dans la main, arme sans chargeur, cible de la main gauche).
-    gesteVu = { objet: etat.objet ? etat.objet.name : null, sansChargeur: etat.sansChargeur === true, cible: etat.mainG ? (etat.mainG.k < 0.5 ? etat.mainG.de : etat.mainG.vers) : null, cant: etat.cant ?? 0 };
+    gesteVu = { verrou: etat.verrouBack ?? 0, objetCote: etat.objetCote ?? null, objet: etat.objet ? etat.objet.name : null, sansChargeur: etat.sansChargeur === true, cible: etat.mainG ? (etat.mainG.k < 0.5 ? etat.mainG.de : etat.mainG.vers) : null, cant: etat.cant ?? 0 };
     if (armesUi) {
       const autre = sim.inv.emplacements.find((e, i) => i !== sim.inv.actif)?.id ?? null;
       armesUi.update({ active: armeActive(sim.inv)?.id, texte: texteMunitions(sim.inv), recharge: enRecharge(sim.inv), aSec: aSec(sim.inv), autre, visible: !sim.dead });
@@ -1333,7 +1361,7 @@ export function createGame(ctx) {
     const lateral = moveAngle === null ? 0 : -Math.sin(phi);
     pasVu.avant = avant;
     pasVu.lateral = lateral;
-    anim.phase += dir * speed * dt * STRIDE;
+    anim.phase += dir * speed * dt * STRIDE * (1 - PAS_CHASSE_LENTEUR * Math.abs(lateral)); // partie L : pas sur le côté plus lents (dessin seul)
     anim.x = p.x;
     anim.y = p.y;
     const state = sim.down.state === 'terre' ? 'terre' : sim.time - lastFire < FIRE_POSE_TIME ? 'tir' : moving ? 'marche' : 'arret';

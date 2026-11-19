@@ -457,10 +457,16 @@ describe('rechargement animé et chargeurs des modèles (partie I)', () => {
     const { choregraphieBalle } = await import('../../js/core/armes/geste.js');
     // Partie J : Kar98k, une seule fois à la poche, puis les cartouches enfoncées une à une ; verrou à la main droite.
     const k = choregraphieBalle(table.armes.kar98k, 3);
-    expect(k.cles.filter((c) => c.cible === 'poche').length).toBe(2);
-    expect(k.cles.filter((c) => c.cible === 'portApproche').length).toBe(3);
-    expect(k.objet.length).toBe(1);
+    // Partie L : la main gauche tient l'arme tout du long ; la droite fait tout (verrou, poche droite, cartouches) ; le verrou dessiné suit.
+    expect(k.cles.every((c) => c.cible === 'prise')).toBe(true);
+    expect(k.clesD.filter((c) => c.cible === 'pocheD').length).toBe(2);
+    expect(k.clesD.filter((c) => c.cible === 'portApprocheD').length).toBe(3);
     expect(k.clesD.map((c) => c.cible)).toContain('culasse2');
+    expect(k.objet.length).toBe(1);
+    expect(k.objetCote).toBe('droite');
+    const { entreValeurs } = await import('../../js/core/armes/geste.js');
+    expect(entreValeurs(k.verrou, 0.5)).toEqual({ lift: 1, back: 1 }); // culasse ouverte pendant le chargement
+    expect(entreValeurs(k.verrou, 1)).toEqual({ lift: 0, back: 0 });
     const w = choregraphieBalle(table.armes.winchester1897, 2);
     expect(w.cles.map((c) => c.cible)).toContain('pompe2');
     expect(w.cles.filter((c) => c.cible === 'poche').length).toBe(2); // partie K : une seule fois à la poche
