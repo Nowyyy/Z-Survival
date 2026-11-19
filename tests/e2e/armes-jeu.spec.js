@@ -142,11 +142,11 @@ test.describe('chargeurs et rechargement (partie D)', () => {
       zs.setWaveParams({ hp: { hpLinearPerRound: 1000, hpExpStartRound: 1000, hpExpFactor: 1, hpCap: 1e9 }, damage: { factor: 1, cap: 0.0001 } }); // zombie qui ne tombe pas et ne blesse pas
       zs.spawnEnemy(p.x + 150, p.y, { type: 'marcheur', gait: 'lent', wave: 3 }); // manche 3 : vie × 2 001 (setWaveParams)
       const out = [];
-      for (let i = 0; i < 80; i += 1) {
+      for (let i = 0; i < 110; i += 1) { // partie M : 0,3 s de délai après le rechargement
         zs.setInput({ aim: { angle: 0 } });
         zs.step(0.05);
         const a = zs.getState().armes;
-        out.push({ t: zs.getState().time, c: a.emplacements[0].chargeur, r: a.enRecharge, tirs: zs.getState().shots.length });
+        out.push({ t: zs.getState().time, c: a.emplacements[0].chargeur, r: a.enRecharge, tirs: zs.getState().shots.length, attente: a.attente });
       }
       return out;
     });
@@ -155,8 +155,13 @@ test.describe('chargeurs et rechargement (partie D)', () => {
     expect(r[debut - 1].tirs).toBe(7);
     const fin = r.findIndex((x, i) => i > debut && !x.r);
     expect(r[fin].t - r[debut].t).toBeCloseTo(1.4, 1);
-    expect(r[fin].c + (r[fin].tirs - 7)).toBe(7); // chargeur plein (un tir peut partir au pas même où le rechargement finit)
+    expect(r[fin].c).toBe(7); // chargeur plein
     expect(r.slice(debut, fin).every((x) => x.tirs === 7)).toBe(true); // pas de tir pendant le rechargement
+    // Partie M : un léger délai (0,3 s) après la fin du rechargement avant le premier tir.
+    const premier = r.findIndex((x, i) => i > fin && x.tirs > 7);
+    expect(premier).toBeGreaterThan(fin);
+    expect(r[premier].t - r[fin].t).toBeGreaterThanOrEqual(0.3 - 1e-6);
+    expect(r[fin].attente).toBeGreaterThan(0);
     await expect(page.locator('#hud-ammo-text')).not.toHaveText('');
     // Touche R (event.code, même lettre en AZERTY et QWERTY) : rechargement à la main d'un chargeur entamé.
     await page.evaluate(() => window.__zs.killAll());
