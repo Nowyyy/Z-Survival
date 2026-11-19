@@ -214,6 +214,7 @@
     { "fichier": "tests/unit/bank.test.js", "categorie": "G", "valeur": "garde-fou", "recommandation": "garder", "raison": "Banque : écritures de la sauvegarde." },
     { "fichier": "tests/unit/build.test.js", "categorie": "G", "valeur": "garde-fou", "recommandation": "garder", "raison": "Construction du site." },
     { "fichier": "tests/unit/empreinte.test.js", "categorie": "G", "valeur": "garde-fou", "recommandation": "garder", "raison": "Lot 9f : adresses à l'empreinte du déploiement dans le site construit (réécriture, contrôle bloquant, version du build)." },
+    { "fichier": "tests/unit/cache-adresses.test.js", "categorie": "G", "valeur": "garde-fou", "recommandation": "garder", "raison": "Lot 9f : paramètres de cache v, r, rv (jamais de partie ni de test, retirés par jeu.html avant tout module), vérification de version, liens uniques de l'accueil." },
     { "fichier": "tests/unit/core-audio-mix.test.js", "categorie": "P", "valeur": "règle de jeu", "recommandation": "garder", "raison": "Mixage des sons." },
     { "fichier": "tests/unit/core-camera.test.js", "categorie": "P", "valeur": "règle de jeu", "recommandation": "garder", "raison": "Caméra (perspective, suivi)." },
     { "fichier": "tests/unit/core-collision.test.js", "categorie": "P", "valeur": "règle de jeu", "recommandation": "garder", "raison": "Collisions." },

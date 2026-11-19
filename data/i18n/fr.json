@@ -561,6 +561,8 @@
   "game.debug.confirm.cancel": "Annuler",
   "game.pause.quit": "Quitter",
   "game.menu.aria": "Menu principal",
+  "game.menu.majDispo.texte": "Nouvelle version disponible",
+  "game.menu.majDispo.recharger": "Recharger",
   "game.menu.chargement.aria": "Chargement du jeu",
   "game.menu.chargement.texte": "Chargement…",
   "game.menu.chargement.texteJeu": "Chargement de la partie…",

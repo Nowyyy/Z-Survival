@@ -121,7 +121,7 @@ test.describe('667×375 (canal source)', () => {
 
   test('manche 12, argent 500, « Tous au niveau 3 », sans zombies → « Appliquer et recharger » (confirmation) : adresse, manche, argent, niveaux, aucun zombie, mode essai ; « Revenir au jeu normal » retire les paramètres', async ({ page }) => {
     test.setTimeout(150_000);
-    await page.goto('/jeu.html?test=1&seed=1&v=3&gfx=eleve');
+    await page.goto('/jeu.html?test=1&seed=1&x=3&gfx=eleve'); // lot 9f : x (avant : v, réservé au cache, retiré par jeu.html) : paramètre non géré, conservé
     await waitReady(page);
     await openDebug(page);
     await type(page, '#debug-wave', '12');
@@ -130,7 +130,7 @@ test.describe('667×375 (canal source)', () => {
     await expect(page.locator('#debug-stat-chutes')).toHaveValue('3');
     await page.locator('#debug-nospawn-true').click();
     await expect(page.locator('#debug-nospawn-true')).toHaveAttribute('aria-pressed', 'true');
-    const target = 'jeu.html?test=1&seed=1&v=3&gfx=eleve&wave=12&money=500&lvl=all:3&nospawn=1';
+    const target = 'jeu.html?test=1&seed=1&x=3&gfx=eleve&wave=12&money=500&lvl=all:3&nospawn=1';
     await expect(page.locator('#debug-url')).toHaveText(`Adresse : ${target}`);
     await page.locator('#debug-apply').click();
     await expect(page.locator('#debug-confirm-text')).toHaveText('Recharger la page ? Cette partie sera perdue.');
@@ -162,7 +162,7 @@ test.describe('667×375 (canal source)', () => {
     await expect(page.locator('#debug-money')).toHaveValue('500');
     await expect(page.locator('#debug-all')).toHaveValue('3');
     await page.locator('#debug-normal').click();
-    await Promise.all([page.waitForURL('**/jeu.html?test=1&seed=1&v=3&gfx=eleve'), page.locator('#debug-confirm-ok').click()]);
+    await Promise.all([page.waitForURL('**/jeu.html?test=1&seed=1&x=3&gfx=eleve'), page.locator('#debug-confirm-ok').click()]);
     await waitReady(page);
     const n = await S(page);
     expect([n.save.readOnly, n.waves.active, n.waves.wave]).toEqual([false, true, 1]);
@@ -192,7 +192,7 @@ for (const viewport of [{ width: 1440, height: 900 }, { width: 375, height: 812 
     test.setTimeout(120_000);
     await page.setViewportSize(viewport);
     const { problems, external } = watch(page);
-    await page.goto(`${DEV}?v=4`);
+    await page.goto(`${DEV}?x=4`);
     await page.locator('#menu-jouer').click({ timeout: 60_000 }); // lot 8a : sans paramètre de Partie, le jeu s'ouvre sur le menu
     await waitGame(page);
     await openDebug(page);
@@ -203,7 +203,7 @@ for (const viewport of [{ width: 1440, height: 900 }, { width: 375, height: 812 
     await type(page, '#debug-wave', '12');
     await page.locator('#debug-nospawn-true').click();
     await page.locator('#debug-apply').click();
-    await Promise.all([page.waitForURL(`${DEV}?v=4&wave=12&nospawn=1`), page.locator('#debug-confirm-ok').click()]);
+    await Promise.all([page.waitForURL(`${DEV}?x=4&wave=12&nospawn=1`), page.locator('#debug-confirm-ok').click()]);
     await waitGame(page);
     await expect(page.locator('#hud-trial')).toBeVisible();
     await expect(page.locator('#hud-wave')).toHaveAttribute('data-idle', 'true');

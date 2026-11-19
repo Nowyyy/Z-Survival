@@ -68,7 +68,7 @@ for (const canal of ['dev', 'release']) {
     test.setTimeout(120_000);
     const outils = canal === 'dev' ? 'nospawn=1&perf=1' : 'wave=5&perf=1';
     const { problems, external, files } = watch(page, SITE);
-    await page.goto(`${URLS[canal]}?${G}&${outils}&v=7`);
+    await page.goto(`${URLS[canal]}?${G}&${outils}&x=7`);
     await waitGame(page);
     const s = await observe(page);
     expect(s.canal).toBe(canal);
@@ -104,7 +104,7 @@ for (const canal of ['archive', 'prod']) {
   test(`canal ${canal} : ?test=1 ignoré (aucun window.__zs), groupes G et T sans effet, aucun badge ni panneau de mesure, aucune icône de débogage ; console propre`, async ({ page }) => {
     test.setTimeout(120_000);
     const { problems, external, files } = watch(page, SITE);
-    await page.goto(`${URLS[canal]}?test=1&seed=3&nospawn=1&wave=5&perf=1&gfx=faible&${G}&v=2`);
+    await page.goto(`${URLS[canal]}?test=1&seed=3&nospawn=1&wave=5&perf=1&gfx=faible&${G}&x=2`);
     await page.locator('#menu-jouer').click({ timeout: 60_000 }); // lot 8a : paramètres refusés, adresse vide pour le jeu : le menu s'ouvre
     await waitGame(page);
     const s = await observe(page);

@@ -6,7 +6,7 @@
 //   chargement revient (phase « jeu », chute du Z rejouée) et main.js est importé : Three.js, données, textures, sons et création du jeu se chargent à ce moment-là,
 //   avec leur progression réelle (menuProgres, appelé par main.js ; sans effet en partie directe).
 import { choixDemarrage, introAuDemarrage, REPERE_RETOUR } from '../core/graphics.js';
-import { pageCanal, pageSearch } from './adresse.js'; // lot 9d : sans js/game/graphics-boot.js (préréglage, carte) au démarrage du menu
+import { adresseRechargement, pageCanal, pageSearch, versionEmbarquee, versionPerimee } from './adresse.js'; // lot 9d : sans js/game/graphics-boot.js (préréglage, carte) au démarrage du menu
 import { browserStorage, createDeviceSettings } from '../save/device-settings.js';
 
 export const modeMenu = choixDemarrage(pageCanal(), pageSearch()) === 'menu';
@@ -16,6 +16,43 @@ export const modeMenu = choixDemarrage(pageCanal(), pageSearch()) === 'menu';
 const fragment = globalThis.location?.hash ?? '';
 export const avecIntro = introAuDemarrage(pageCanal(), pageSearch(), fragment);
 if (fragment === REPERE_RETOUR) globalThis.history?.replaceState(null, '', `${location.pathname}${location.search}`);
+
+// Lot 9f (Docs/ref/cache.md) : vérification de version. Canaux dev et release (site construit : jeu.html porte sa version, <meta name="zs-version">) :
+// build-info.json lu sans cache (cache: 'no-store', adresse unique) et comparé ; version différente : un seul rechargement vers la même adresse
+// (rv=1 dans l'adresse, retiré et noté sur <html> par le script en ligne de jeu.html : jamais de boucle, aucune écriture), jamais une fois la partie
+// demandée (« JOUER », partie directe lancée). La même lecture donne le texte de version de l'écran de chargement (même nombre de fichiers).
+// Source et tests locaux : aucune version embarquée, aucune lecture. Archives (figées) et production : aucune vérification.
+const versionPage = ['dev', 'release'].includes(pageCanal()) ? versionEmbarquee() : null;
+const dejaRecharge = globalThis.document?.documentElement?.getAttribute('data-zs-rv') === '1';
+let jeuDemande = false;
+export function lireDeploiement() {
+  return fetch(`build-info.json?r=${Date.now()}`, { cache: 'no-store' }).then((r) => (r.ok ? r.json() : null)).catch(() => null);
+}
+const deploiement = versionPage ? lireDeploiement() : null;
+function rechargerSiPerimee(info) {
+  if (jeuDemande || dejaRecharge || !versionPerimee(versionPage, info)) return false;
+  location.replace(adresseRechargement(location, Date.now()));
+  return true;
+}
+
+// Lot 9f : retour au menu (sans rechargement, lot 9d) : nouvelle lecture ; version plus récente déployée : petit bandeau « Nouvelle version
+// disponible » et « Recharger » (js/menu/bandeau-version.js, chargé seulement alors), jamais de rechargement imposé ; retiré à « JOUER ».
+let bandeau = null;
+function verifierAuRetour() {
+  if (!versionPage) return;
+  lireDeploiement().then((info) => {
+    if (jeuDemande || bandeau || !versionPerimee(versionPage, info)) return;
+    bandeau = import('./bandeau-version.js').then((m) => (jeuDemande ? null : m.afficherBandeauVersion({
+      // Rechargement vers la version déployée ; #plein-ecran (repris au premier geste, comme le filet du lot 9d) ou #retour (sans introduction).
+      recharger: () => location.replace(adresseRechargement(location, Date.now(), document.fullscreenElement ? REPERE_PLEIN_ECRAN : REPERE_RETOUR)),
+    }))).catch(() => null);
+  });
+}
+function retirerBandeau() {
+  const b = bandeau;
+  bandeau = null;
+  b?.then((x) => x?.retirer());
+}
 
 // Lot 8b : option de démarrage de la partie, posée par le menu (« JOUER » : histoire ; « Jouer » de l'onglet Infini : infini), lue par main.js
 // (optionPartie) ; sans paramètre d'adresse, donc sans lecture seule de la sauvegarde. Partie directe : histoire, le bâtiment, sans stats.
@@ -116,6 +153,7 @@ export function feuilleMenu(doc = globalThis.document) {
 let partieEnCours = null;
 export const partieActive = () => partieEnCours;
 async function lancerJeu() {
+  jeuDemande = true; // lot 9f : plus de rechargement de version ni de bandeau pendant la partie
   for (const href of ['vendor/three/three.module.js', 'vendor/three/three.core.js']) {
     if (document.head.querySelector(`link[rel="modulepreload"][href="${href}"]`)) continue;
     const link = document.createElement('link');
@@ -149,9 +187,11 @@ export function menuQuitter(quittee = partieEnCours) {
     return menuRetour();
   }
   if (partieEnCours === quittee) partieEnCours = null;
+  jeuDemande = false; // lot 9f : de retour au menu
   // Menu neuf : écran de chargement (chute du Z, barre, astuce), sauvegarde relue, onglet Jouer, comme au lancement de la page (sans
   // introduction) ; le menu d'avant a été détruit à « JOUER ».
   chargerMenu(null);
+  verifierAuRetour();
   return chargementMenu;
 }
 
@@ -178,8 +218,11 @@ if (new URLSearchParams(pageSearch()).get('test') === '1') {
 
 if (!modeMenu) {
   document.documentElement.classList.remove('zs-attente'); // lot 8g : écran de préparation (jeu.html) montré en partie directe seulement
-  lancerJeu();
+  // Lot 9f : site construit : la version est vérifiée avant le lancement (jamais de rechargement pendant une partie).
+  if (deploiement) deploiement.then((info) => rechargerSiPerimee(info) || lancerJeu());
+  else lancerJeu();
 } else {
+  if (deploiement) deploiement.then(rechargerSiPerimee); // lot 9f : avant « JOUER » seulement
   document.documentElement.classList.add('zs-mode-menu');
   // Tests (?test=1&menu=1) : état de l'écran de chargement en cours et du menu (phase, pourcentages affichés, onglet…), lecture seule.
   // Lot 8g : intro() : état de l'introduction du studio (null quand elle ne se joue pas).
@@ -210,6 +253,8 @@ if (!modeMenu) {
     // Option déjà validée par le menu (lireOptionDemarrage, js/core/menu-etat.js) : seuls ses champs connus sont gardés. Lot 8d : stats (niveaux
     // effectifs de l'équipement et du personnage, pour cette partie seulement ; main.js les met à la place de ceux de la sauvegarde, sauf ?lvl=).
     const jouer = async (option) => {
+      jeuDemande = true; // lot 9f
+      retirerBandeau();
       partie = Object.freeze({ mode: 'histoire', monde: 'batiment' }); // lot 9d : chaque « JOUER » repart de l'option par défaut (même page)
       if (option?.mode === 'infini' && typeof option.monde === 'string') partie = Object.freeze({ mode: 'infini', monde: option.monde });
       if (option?.stats && typeof option.stats === 'object') partie = Object.freeze({ ...partie, stats: Object.freeze({ ...option.stats }) });
@@ -220,7 +265,7 @@ if (!modeMenu) {
     };
     // Lot 8i : contexte audio de l'introduction (créé dans le geste), donné aux sons du menu.
     chargerMenu = (contexteAudio) => {
-      ecran = m.creerChargement({ phase: 'menu', jouer, son: { lire: reglagesSon, poser: poserSon }, contexteAudio });
+      ecran = m.creerChargement({ phase: 'menu', jouer, son: { lire: reglagesSon, poser: poserSon }, contexteAudio, info: deploiement }); // lot 9f : info
       chargementMenu = ecran;
     };
     chargerMenu(introEcran?.contexte?.() ?? null);
