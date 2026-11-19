@@ -27,8 +27,10 @@ const JOURNAL = JSON.parse(readFileSync('data/changelog.json', 'utf8'));
 const EVOLUTIONS_REELLES = readEvolutions(JOURNAL, PUBLIEES).map((e) => e.id);
 // Lot 5p : version fictive v0.8 (avant : v0.7, publiée depuis ce lot : la liste serait vide). Lot 8m : v0.9 (v0.8 publiée).
 const EVOLUTIONS_FICTIVES = readEvolutions({ ...JOURNAL, lots: JOURNAL.lots.map((l) => (typeof l.version === 'string' ? { ...l, version: 'v0.9' } : l)) }, PUBLIEES);
+// Lot 9f : site-info.json de la Recette, avec ou sans l'empreinte du déploiement (?v=… dans le site construit, Docs/ref/cache.md).
+const siteInfo = (base) => (url) => url.href === `${base}Recette/site-info.json` || url.href.startsWith(`${base}Recette/site-info.json?`);
 async function avecEvolutionsFictives(page, base) {
-  await page.route(`${base}Recette/site-info.json`, async (route) => {
+  await page.route(siteInfo(base), async (route) => {
     const response = await route.fetch();
     route.fulfill({ response, json: { ...(await response.json()), evolutions: EVOLUTIONS_FICTIVES } });
   });
@@ -363,7 +365,7 @@ for (const viewport of VIEWPORTS.slice(0, 2)) {
       expect(external).toEqual([]);
       expect(problems).toEqual([]);
       // Lot 5p : carte de la Recette avec une description de 200 caractères (avant : celle de la V0.6 Recette, venue du fichier fictif).
-      await page.route(`${NOMS}Recette/site-info.json`, async (route) => {
+      await page.route(siteInfo(NOMS), async (route) => {
         const response = await route.fetch();
         const json = await response.json();
         route.fulfill({ response, json: { ...json, recette: { ...json.recette, title: DESCRIPTION_RECETTE_TEST } } });
@@ -559,7 +561,7 @@ test('sans build de développement (bare/) : « Aucun build de développement po
 
 test('site-info.json invalide : message sobre, liens statiques (jeu.html, ../dev/jeu.html), listes masquées, console vide ; absent : aucune erreur de page', async ({ page }) => {
   const { problems, external } = watch(page);
-  await page.route(`${FULL}Recette/site-info.json`, (route) => route.fulfill({ status: 200, contentType: 'application/json', body: '{ invalide' }));
+  await page.route(siteInfo(FULL), (route) => route.fulfill({ status: 200, contentType: 'application/json', body: '{ invalide' }));
   await page.goto(`${FULL}Recette/`);
   await expect(page.locator('#site-notice')).toHaveText('Informations du site indisponibles : les liens directs restent utilisables.');
   // Lot 5i : bandeau « Recette » seul (avant : « Recette · version inconnue ») ; sans version connue, le bouton dit « Jouer » ; #versions-section (avant : #previous-section).
@@ -575,7 +577,7 @@ test('site-info.json invalide : message sobre, liens statiques (jeu.html, ../dev
   const errors = [];
   page.on('pageerror', (e) => errors.push(e.message));
   await page.unrouteAll();
-  await page.route(`${FULL}Recette/site-info.json`, (route) => route.fulfill({ status: 404, body: '' }));
+  await page.route(siteInfo(FULL), (route) => route.fulfill({ status: 404, body: '' }));
   await page.goto(`${FULL}Recette/`);
   await expect(page.locator('#site-notice')).toBeVisible();
   expect(errors).toEqual([]);

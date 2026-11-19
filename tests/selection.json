@@ -881,7 +881,7 @@
         "tests/unit/versions-archiver.test.js",
         "tests/unit/zones-rendu.test.js"
       ],
-      "e2e": ["tests/e2e/attente.spec.js", "tests/e2e/jeu-pause.spec.js", "tests/e2e/jeu.spec.js", "tests/e2e/correctifs-9a.spec.js", "tests/e2e/retour-menu.spec.js"],
+      "e2e": ["tests/e2e/attente.spec.js", "tests/e2e/jeu-pause.spec.js", "tests/e2e/jeu.spec.js", "tests/e2e/correctifs-9a.spec.js", "tests/e2e/retour-menu.spec.js", "tests/e2e/cache.spec.js"],
       "complet": []
     },
     {
@@ -901,7 +901,7 @@
         "tests/unit/versions-archiver.test.js",
         "tests/unit/versions-schema.test.js"
       ],
-      "e2e": ["tests/e2e/publication.spec.js"],
+      "e2e": ["tests/e2e/publication.spec.js", "tests/e2e/cache.spec.js"],
       "complet": []
     },
     {
@@ -921,6 +921,7 @@
       "vitest": [
         "tests/unit/casse.test.js",
         "tests/unit/data-changelog.test.js",
+        "tests/unit/empreinte.test.js",
         "tests/unit/lots.test.js",
         "tests/unit/maps-hygiene.test.js",
         "tests/unit/noms.test.js",
@@ -930,7 +931,7 @@
         "tests/unit/versions-archiver.test.js",
         "tests/unit/versions-schema.test.js"
       ],
-      "e2e": ["tests/e2e/publication.spec.js", "tests/e2e/canal.spec.js"],
+      "e2e": ["tests/e2e/publication.spec.js", "tests/e2e/canal.spec.js", "tests/e2e/cache.spec.js"],
       "complet": []
     },
     {
