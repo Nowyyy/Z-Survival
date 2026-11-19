@@ -88,6 +88,23 @@ test.describe('atelier des personnages', () => {
     expect(errors).toEqual([]);
   });
 
+  // Lot 9g (retour du propriétaire) : Mesures, Curseurs et Mini-arène retirés ; réglages de la vue principale toujours visibles au défilement.
+  test('réglages toujours visibles au défilement ; sections Mesures, Curseurs et Mini-arène retirées', async ({ page }) => {
+    for (const width of [360, 1440]) {
+      await open(page, { width, height: 800 });
+      expect(await page.locator('#section-mesures, #section-curseurs, #section-arene, #canvas-arena, #macros').count()).toBe(0);
+      for (const id of ['section-sang', 'section-mes-choix']) {
+        await page.locator(`#${id}`).scrollIntoViewIfNeeded();
+        await page.evaluate((i) => document.getElementById(i).scrollIntoView({ block: 'end' }), id);
+        const box = await page.locator('#persos-reglages').boundingBox();
+        expect(box.y, `${width} px, ${id}`).toBeGreaterThanOrEqual(-1);
+        expect(box.y, `${width} px, ${id}`).toBeLessThanOrEqual(1);
+        expect(box.height).toBeLessThan(160);
+        await expect(page.locator('#ctl-perso')).toBeInViewport();
+      }
+    }
+  });
+
   for (const width of [360, 768, 1440]) {
     test(`CLS au plus 0,1 à ${width} px`, async ({ page }) => {
       await page.setViewportSize({ width, height: 800 });
