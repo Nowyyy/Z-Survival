@@ -30,7 +30,8 @@ import { armeJeu, statsAvecArme } from '../core/armes/partie.js';
 import { aSec, armeActive, armeMontree, avancerInventaire, changerArme, creerInventaire, donnerArme, enRecharge, gesteRecharge, munitionsIllimitees, peutTirer, progressionRecharge, recharger, remplirMunitions, texteMunitions, tirer, RANGER } from '../core/armes/inventaire.js';
 import { boucheCanon, tenueArme } from '../core/armes/tenue-jeu.js';
 import { creerArmesEnMain } from '../armes/en-main.js';
-import { AU_SOL_DOUILLE, MAX_DOUILLES, creerArmesTombes } from './armes-tombes.js';
+import { AU_SOL_DOUILLE, MAX_DOUILLES, creerArmesTombes, creerCartoucheMain } from './armes-tombes.js';
+import { choregraphieBalle, choregraphieChargeur, dans, entreCles, secousse, surCorps } from '../core/armes/geste.js';
 import { createArmesUi } from './armes-ui.js';
 import { armeParId, echelleJeu } from '../core/armes/armes.js';
 import { createFootsteps, stepFootsteps } from '../core/footsteps.js';
@@ -173,7 +174,31 @@ export function createGame(ctx) {
   const armesAvant = ctx.params.corpsAvant === true || !armesCfg;
   const armesKit = !armesAvant ? creerArmesEnMain({ donnees: armesCfg.donnees, choix: armesCfg.choix, palette: armesCfg.palette, poses: armesCfg.poses }) : null;
   // Pièces lâchées au rechargement, posées au sol quelques secondes (retour du propriétaire après le lot 9e) : un appel au plus.
-  const tombes = armesKit ? creerArmesTombes({ parent: world.dynamic, palette: armesCfg.palette, reduit: reduced }) : null;
+  // Retour du propriétaire : le chargeur lâché a la forme, la taille et la couleur de celui de l'arme (sa géométrie, la matière des armes) ;
+  // une réserve par arme, créée à son premier rechargement.
+  const tombesArmes = new Map();
+  const tombeDe = (id) => {
+    if (!armesKit) return null;
+    if (!tombesArmes.has(id)) {
+      const c = armesKit.chargeur(id);
+      tombesArmes.set(id, c ? creerArmesTombes({ parent: world.dynamic, reduit: reduced, max: 4, nom: `chargeurs-${id}`, geometrie: c.geometrie, materiau: armesKit.materiau }) : null);
+    }
+    return tombesArmes.get(id);
+  };
+  const tombes = armesKit
+    ? {
+      vider: () => tombesArmes.forEach((t) => t?.vider()),
+      update: (t) => tombesArmes.forEach((r) => r?.update(t)),
+      dispose: () => tombesArmes.forEach((t) => t?.dispose()),
+      get nombre() {
+        let n = 0;
+        tombesArmes.forEach((t) => { n += t?.nombre ?? 0; });
+        return n;
+      },
+    }
+    : null;
+  // Cartouche dans la main gauche (rechargement balle par balle).
+  const cartoucheMain = armesKit ? creerCartoucheMain(armesCfg.palette) : null;
   // Douilles éjectées au tir (petites particules jaunes, retour du propriétaire après le lot 9e) : un appel au plus.
   const douilles = armesKit ? creerArmesTombes({ parent: world.dynamic, palette: armesCfg.palette, reduit: reduced, max: MAX_DOUILLES, auSol: AU_SOL_DOUILLE, nom: 'armes-douilles' }) : null;
   const ejections = []; // douilles en attente de la prochaine image : { id, t }
@@ -203,6 +228,7 @@ export function createGame(ctx) {
   };
   let armeVue = null; // arme montrée sur le personnage (identifiant)
   let lastGun = null; // bout du canon dessiné à la dernière image (tests : getState().armes.canon)
+  let gesteVu = null; // geste du rechargement à la dernière image (tests : getState().armes.geste)
   // Pièces lâchées (chargeur vide, clip, tambour) en attente de la prochaine image (leur départ est le point de l'arme dessinée), avec le son
   // de leur chute au sol (retour du propriétaire après le lot 9e).
   const lachers = [];
@@ -229,28 +255,6 @@ export function createGame(ctx) {
   let etaitASec = false;
   // Lot 9e : munitions du HUD, boutons tactiles près du stick droit, annonces (js/game/armes-ui.js).
   const armesUi = tableArmes && armesCfg ? createArmesUi({ dict: ctx.dict, root: document.getElementById('game-root'), col: document.querySelector('.hud-tl'), donnees: armesCfg.donnees, choix: armesCfg.choix, annonce: (t) => ctx.ui?.setLive?.(t), onRecharger: () => armesApi?.recharger(), onChanger: () => armesApi?.changerArme() }) : null;
-  // Point du rechargement (repère de l'arme, unités du jeu) vers lequel va la main gauche : chargeur (sous l'arme, entre les deux prises ; Colt :
-  // sous la poignée), culasse (fusils à verrou et semi-automatique : au-dessus, près de la main droite), pompe (fusil à pompe : la main gauche
-  // tire la pompe en arrière), couvercle (mitrailleuse : au-dessus du boîtier).
-  const pointsRecharge = new Map();
-  const pointRecharge = (id) => {
-    if (pointsRecharge.has(id)) return pointsRecharge.get(id);
-    const a = armesCfg ? armeParId(armesCfg.donnees, id) : null;
-    const cat = tableArmes?.armes?.[id]?.categorie ?? '';
-    let pt = null;
-    if (a?.prises?.droite) {
-      const s = echelleJeu(armesCfg.donnees, a);
-      const d = a.prises.droite.map((v) => v * s);
-      const g = (a.prises.gauche ?? a.prises.droite).map((v) => v * s);
-      if (cat === 'pistolet') pt = { a: [d[0], d[1] - 5, d[2] + 1], b: [d[0], d[1] - 7, d[2] + 1] };
-      else if (cat === 'fusil à verrou' || cat === 'fusil semi-automatique') pt = { a: [d[0] - 1, d[1] + 5, d[2] + 4], b: [d[0] - 1, d[1] + 5, d[2] + 1] };
-      else if (cat === 'fusil à pompe') pt = { a: [g[0], g[1], g[2]], b: [g[0], g[1], g[2] - 4] };
-      else if (cat === 'mitrailleuse') pt = { a: [d[0], d[1] + 5, d[2] + 7], b: [d[0] + 2, d[1] + 6, d[2] + 9] };
-      else pt = { a: [(d[0] + g[0]) / 2, Math.min(d[1], g[1]) - 4, d[2] + (g[2] - d[2]) * 0.35], b: [(d[0] + g[0]) / 2, Math.min(d[1], g[1]) - 7, d[2] + (g[2] - d[2]) * 0.35] };
-    }
-    pointsRecharge.set(id, pt);
-    return pt;
-  };
   // Hauteur d'un étage (render.json) : le joueur reste à y = 0, c'est le monde qui descend quand il monte (world.setElevation).
   const LIFT = Number.isFinite(render.floorLift) ? render.floorLift : 0;
   const liftOf = (f) => (f === 'etage' ? LIFT : 0);
@@ -1151,13 +1155,30 @@ export function createGame(ctx) {
     }
     const g = gesteRecharge(sim.inv, tableArmes);
     if (g !== null) {
-      // Main gauche : de sa prise au point du rechargement (0,15 → 0,35 ; balle par balle : dès le début), geste (chargeur : du point a au point
-      // b et retour au milieu du rechargement ; balle par balle : un aller-retour par cartouche), retour à la prise.
+      // Retour du propriétaire après le lot 9e : chorégraphie du rechargement (js/core/armes/geste.js) : la main gauche retire le chargeur (il
+      // tombe, l'arme reste sans chargeur), va le prendre dans la poche, revient avec le chargeur neuf et le claque, arme la culasse ; balle par
+      // balle, une cartouche prise dans la poche à chaque fois. L'arme se penche vers la main et sursaute quand le chargeur claque.
+      const a = armeActive(sim.inv);
       const p = g.p;
-      const pt = pointRecharge(armeActive(sim.inv)?.id);
-      const vers = g.balle ? Math.max(0, Math.min(1, p / 0.08, (1 - p) / 0.1)) : Math.max(0, Math.min(1, (p - 0.1) / 0.25, (0.95 - p) / 0.2));
-      const gauche = pt ? pt.a.map((v, i) => v + (pt.b[i] - v) * g.geste) : null;
-      return { baisse: reduced ? 0 : 0.6 * Math.max(0, Math.min(1, p / 0.15, (1 - p) / 0.15)), recharge: p, gauche, poidsGauche: reduced ? 0 : vers };
+      const ch = choregraphieDe(a);
+      const c = ciblesDe(a.id);
+      const pos = entreCles(ch.cles, p);
+      const vers = Math.max(0, Math.min(1, p / 0.06, (1 - p) / 0.08));
+      const entree = tableArmes.armes[a.id];
+      const cant = entree.recharge?.type === 'balle' ? (entree.categorie === 'fusil à verrou' ? -0.4 : 0.5) : 0.45;
+      const enveloppe = Math.max(0, Math.min(1, p / 0.12, (1 - p) / 0.15));
+      const objetVu = !reduced && dans(ch.objet, p);
+      const objet = objetVu ? (entree.recharge?.type === 'balle' ? cartoucheMain?.mesh ?? null : armesKit.chargeur(a.id)?.enMain ?? null) : null;
+      return {
+        baisse: reduced ? 0 : 0.45 * enveloppe,
+        recharge: p,
+        mainG: c ? { a: c[pos.de], aCorps: surCorps(pos.de), b: c[pos.vers], bCorps: surCorps(pos.vers), k: pos.k, de: pos.de, vers: pos.vers } : null,
+        poidsGauche: reduced ? 0 : vers,
+        cant: reduced ? 0 : cant * enveloppe,
+        secousse: reduced ? 0 : secousse(ch.secousses, p),
+        sansChargeur: dans(ch.sans, p),
+        objet,
+      };
     }
     const m = sim.manoeuvre;
     const def = m ? tableArmes?.armes?.[m.id]?.manoeuvre : null;
@@ -1173,6 +1194,47 @@ export function createGame(ctx) {
       }
     }
     return { baisse: 0 };
+  }
+  // Chorégraphie du rechargement en cours (gardée tant que l'arme, le chargeur vide ou non et les cartouches prévues ne changent pas).
+  let chCle = null;
+  let chVal = null;
+  function choregraphieDe(a) {
+    const cle = `${a.id}|${a.vide}|${a.prevu}`;
+    if (cle !== chCle) {
+      const e = tableArmes.armes[a.id];
+      chCle = cle;
+      chVal = e.recharge?.type === 'balle' ? choregraphieBalle(e, a.prevu) : choregraphieChargeur(e, a.vide);
+    }
+    return chVal;
+  }
+  // Cibles de la main gauche (repère de l'arme ; « poche » : repère du buste, hanche gauche, un peu devant).
+  const POCHE = [13, -12, 4]; // hors de la silhouette du buste : la main se voit de dessus quand elle y va
+  const ciblesArmes = new Map();
+  function ciblesDe(id) {
+    if (ciblesArmes.has(id)) return ciblesArmes.get(id);
+    const a = armesCfg ? armeParId(armesCfg.donnees, id) : null;
+    const cat = tableArmes?.armes?.[id]?.categorie ?? '';
+    let c = null;
+    if (a?.prises?.droite) {
+      const sc = echelleJeu(armesCfg.donnees, a);
+      const d = a.prises.droite.map((v) => v * sc);
+      const gch = a.prises.gauche ? a.prises.gauche.map((v) => v * sc) : [d[0], d[1] - 5, d[2] + 1];
+      const centre = armesKit?.chargeur(id)?.centre ?? [d[0], d[1] - 6, d[2] + 6];
+      const pistolet = cat === 'pistolet';
+      c = {
+        prise: gch,
+        chargeur: [centre[0], centre[1] - (pistolet ? 1.5 : 0), centre[2]],
+        poche: POCHE,
+        port: cat === 'fusil à pompe' ? [d[0], d[1] - 3, d[2] + 7] : [d[0] - 1, d[1] + 5, d[2] + 4],
+        culasse: pistolet ? [d[0], d[1] + 6, d[2] + 2] : [d[0] - 1, d[1] + 5, d[2] + 8],
+        culasse2: pistolet ? [d[0], d[1] + 6, d[2] - 3] : [d[0] - 1, d[1] + 5, d[2] + 2],
+        couvercle: [d[0], d[1] + 7, d[2] + 6],
+        pompe: [...gch],
+        pompe2: [gch[0], gch[1], gch[2] - 6],
+      };
+    }
+    ciblesArmes.set(id, c);
+    return c;
   }
   // Points de la manœuvre après le tir (repère de l'arme) : fusil à verrou, main droite de la prise au levier de culasse (a) puis tirée en
   // arrière (b) ; fusil à pompe, main gauche de la pompe (a) vers l'arrière (b).
@@ -1200,23 +1262,18 @@ export function createGame(ctx) {
     const d = a.prises.droite.map((v) => v * sc);
     return tableArmes?.armes?.[id]?.categorie === 'pistolet' ? [d[0], d[1] + 6, d[2] + 3] : [d[0], d[1] + 4, d[2] + 7];
   }
-  // Point de départ d'une pièce lâchée (repère de l'arme) : sous l'arme (chargeur), au-dessus du boîtier (clip du Garand), à gauche (tambour).
-  function pointPiece(id, sorte) {
-    const pt = pointRecharge(id);
-    if (!pt) return null;
-    if (sorte === 'clip') return pt.a;
-    if (sorte === 'tambour') return [pt.a[0] + 5, pt.a[1] - 9, pt.a[2] - 3];
-    return pt.b;
-  }
   function montrerArme() {
     if (!armesKit || !sim.inv) return;
     const vue = armeMontree(sim.inv)?.id ?? null;
     if (vue !== armeVue) {
       armeVue = vue;
       const t = vue ? tenueDe(vue) : null;
-      playerChar.setArme(t ? { id: vue, mesh: armesKit.mesh(vue), angles: t.angles, local: t.local, pointe: armesKit.pointe(vue), pivot: t.pivot } : null);
+      playerChar.setArme(t ? { id: vue, mesh: armesKit.mesh(vue), angles: t.angles, local: t.local, pointe: armesKit.pointe(vue), pivot: t.pivot, sans: tableArmes?.armes?.[vue]?.piece ? armesKit.sansChargeur(vue) : null } : null);
     }
-    playerChar.setArmeEtat(etatVisibleArme());
+    const etat = etatVisibleArme();
+    playerChar.setArmeEtat(etat);
+    // Tests : geste visible (objet dans la main, arme sans chargeur, cible de la main gauche).
+    gesteVu = { objet: etat.objet ? etat.objet.name : null, sansChargeur: etat.sansChargeur === true, cible: etat.mainG ? (etat.mainG.k < 0.5 ? etat.mainG.de : etat.mainG.vers) : null, cant: etat.cant ?? 0 };
     if (armesUi) {
       const autre = sim.inv.emplacements.find((e, i) => i !== sim.inv.actif)?.id ?? null;
       armesUi.update({ active: armeActive(sim.inv)?.id, texte: texteMunitions(sim.inv), recharge: enRecharge(sim.inv), aSec: aSec(sim.inv), autre, visible: !sim.dead });
@@ -1265,12 +1322,15 @@ export function createGame(ctx) {
         tombesEtage = pf();
       }
       for (const l of lachers.splice(0)) {
-        const local = pointPiece(l.id, l.sorte);
+        const reserve = tombeDe(l.id);
+        const c = armesKit.chargeur(l.id);
+        if (!reserve || !c) continue;
+        const local = c.centre; // le chargeur part de sa place sur l'arme
         const at = (local && playerChar.pointArme?.(local, pieceAt)) ?? { x: p.x, y: p.y, z: 40 };
         const cx = -Math.sin(anim.facing);
         const cy = Math.cos(anim.facing); // côté de l'arme (x négatif du repère du personnage)
         const vitesse = l.sorte === 'clip' ? { x: cx * 45, y: cy * 45, z: 160 } : { x: cx * 12, y: cy * 12, z: 0 };
-        tombes.lacher({ depart: { x: at.x, y: at.y, z: at.z }, dims: tableArmes.armes[l.id].piece, vitesse, sorte: l.sorte, lacet: anim.facing, t: l.t });
+        reserve.lacher({ depart: { x: at.x, y: at.y, z: at.z }, dims: c.dims, vitesse, sorte: l.sorte, lacet: Math.PI / 2 - anim.facing, t: l.t });
       }
       tombes.update(sim.time);
     }
@@ -1738,6 +1798,7 @@ export function createGame(ctx) {
       textures.dispose();
       armesKit?.dispose(); // lot 9e : maillages des armes (ceux qui ne sont pas dans la scène compris), matière, atlas
       tombes?.dispose();
+      cartoucheMain?.dispose();
       douilles?.dispose();
       armesUi?.dispose();
       renderer.renderLists.dispose();
@@ -1792,7 +1853,7 @@ export function createGame(ctx) {
           actif: armeActive(sim.inv)?.id ?? null, montree: armeMontree(sim.inv)?.id ?? null, emplacements: sim.inv.emplacements.map((e) => ({ id: e.id, chargeur: e.chargeur, reserve: e.reserve === Infinity ? null : e.reserve, recharge: e.recharge })),
           sortie: sim.inv.sortie ? { ...sim.inv.sortie } : null, recharge: progressionRecharge(sim.inv, tableArmes), enRecharge: enRecharge(sim.inv), texte: texteMunitions(sim.inv), peutTirer: peutTirer(sim.inv), aSec: aSec(sim.inv), illimite: sim.inv.illimite,
           vitesse: vitesseJoueur(), bouche: eff.weapon.muzzleOffset, boucheCote: eff.weapon.muzzleSide ?? 0, plombs: eff.weapon.plombs ?? 1, damage: eff.weapon.damage, fireDelay: eff.weapon.fireDelay, fireRange: eff.weapon.fireRange, coneStill: eff.weapon.coneStill, coneMove: eff.weapon.coneMove,
-          pieces: { lachees: lachesTotal, auSol: tombes?.nombre ?? 0 }, douilles: { ejectees: ejectionsTotal, visibles: douilles?.nombre ?? 0 }, manoeuvre: sim.manoeuvre ? { ...sim.manoeuvre } : null,
+          geste: gesteVu ? { ...gesteVu } : null, pieces: { lachees: lachesTotal, auSol: tombes?.nombre ?? 0 }, douilles: { ejectees: ejectionsTotal, visibles: douilles?.nombre ?? 0 }, manoeuvre: sim.manoeuvre ? { ...sim.manoeuvre } : null,
           canon: { logique: boucheJoueur(sim.aim.angle, eff.weapon, layout.muzzleBounds), rendu: lastGun ? { x: lastGun.x, y: lastGun.y, hauteur: lastGun.height } : null }, // bout du canon : logique et dessiné
           rendu: playerChar.arme, triangles: armeVue && armesKit ? armesKit.triangles(armeVue) : 0, emplacementsMax: 1 + (tableArmes?.emplacementsAchetes ?? 0),
         } : null,

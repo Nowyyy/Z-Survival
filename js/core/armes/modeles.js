@@ -11,6 +11,11 @@ export const boite = (w, h, l, pos, mat, extra = {}) => ({ forme: 'boite', w, h,
 export const tube = (r, l, pos, mat, extra = {}) => ({ forme: 'tube', r, l, pos, mat, seg: 8, ...extra });
 export const profil = (pts, e, x, mat, extra = {}) => ({ forme: 'profil', pts, e, pos: [x, 0, 0], mat, ...extra });
 export const loft = (sections, mat, extra = {}) => ({ forme: 'loft', sections, mat, seg: 4, ...extra });
+// Retour du propriétaire après le lot 9e : pièces du chargeur (chargeur: vrai), reprises telles quelles pour le chargeur qui tombe au sol en
+// partie (maillageChargeur de js/core/armes/armes.js) ; seulChargeur : pièce cachée dans l'arme (corps du chargeur dans la poignée du Colt,
+// clip du Garand dans le boîtier), jamais dessinée sur l'arme, seulement dans le chargeur lâché.
+const ch = (p) => ({ ...p, chargeur: true });
+const cache = (p) => ({ ...p, chargeur: true, seulChargeur: true });
 
 // Pontet en U (côté), ouvert en haut : (z0 avant, z1 arrière, y0 haut, profondeur, épaisseur du trait).
 function pontet(zAvant, zArriere, yHaut, prof, trait, e, x = 0, mat = 'metal') {
@@ -34,7 +39,8 @@ function m1911(d) {
     tube(8.5, 7, [0, yb - 2, zB - 2], 'metal2', { seg: 6 }), // bague du canon
     profil([[-2, 34], [-26, -50], [-60, -54], [-63, -46], [-48, 26], [-66, 34], [-50, 40]], 22, 0, 'metal'), // carcasse de la poignée et queue de castor
     profil([[-8, 22], [-28, -40], [-55, -44], [-46, 20]], 30, 0, 'poignee'), // plaquettes de crosse
-    boite(22, 6, 30, [0, -54, -42], 'metal2', { rot: [-16, 0, 0] }), // fond de chargeur
+    ch(boite(22, 6, 30, [0, -54, -42], 'metal2', { rot: [-16, 0, 0] })), // fond de chargeur
+    cache(boite(20, 104, 28, [0, -4, -28], 'metal', { rot: [-16, 0, 0] })), // corps du chargeur (dans la poignée)
     pontet(28, -6, yb - 22, 22, 4, 9),
     boite(5, 12, 4, [0, yb - 28, 2], 'metal2', { rot: [10, 0, 0] }), // détente
     boite(8, 13, 7, [0, yb + 12, zA - 3], 'metal2', { rot: [-25, 0, 0] }), // chien
@@ -105,8 +111,8 @@ function thompson(d, o) {
     tube(5, 16, [0, yb + 26, 60], 'metal2', { seg: 6, axe: 'y' }), // bouton d'armement
     boite(4, 8, 26, [18, yb - 10, -60], 'metal2'), // sélecteurs (gauche)
   ];
-  if (o.chargeur === 'camembert') p.push(tube(82, 42, [0, yb - 106, 72], 'metal', { seg: 12, axe: 'x' })); // chargeur camembert (50)
-  else p.push(boite(22, 150, 40, [0, yb - 98, 72], 'metal', { rot: [4, 0, 0] })); // chargeur droit (20)
+  if (o.chargeur === 'camembert') p.push(ch(tube(82, 42, [0, yb - 106, 72], 'metal', { seg: 12, axe: 'x' }))); // chargeur camembert (50)
+  else p.push(ch(boite(22, 150, 40, [0, yb - 98, 72], 'metal', { rot: [4, 0, 0] }))); // chargeur droit (20)
   return p;
 }
 
@@ -179,6 +185,7 @@ function garand(d, o) {
     boite(3, 12, 8, [0, yb + 14, zB - 20], 'metal2'), // guidon
     pontet(10, -66, -18, 28, 6, 12),
     boite(5, 14, 4, [0, -28, -30], 'metal2'),
+    cache(boite(24, 12, 58, [0, yb + 4, 60], 'metal2')), // clip en-bloc de 8 (dans le boîtier ; éjecté au dernier tir)
   ];
   if (o.bretelle) {
     p.push(loft([
@@ -205,7 +212,7 @@ function stg44(d) {
     boite(10, 18, 16, [0, yb + 24, zB - 130], 'metal'), // guidon et son capot
     boite(14, 10, 40, [0, yb + 24, 130], 'metal'), // hausse à planchette
     profil([[-6, 2], [-30, -88], [-70, -92], [-60, 2]], 30, 0, 'poignee'), // poignée-pistolet
-    profil([[40, 0], [110, 0], [119, -48], [136, -96], [157, -148], [182, -196], [124, -210], [104, -160], [83, -104], [63, -52]], 26, 0, 'metal', { pos: [0, yb - 30, 0] }), // chargeur courbe (30)
+    ch(profil([[40, 0], [110, 0], [119, -48], [136, -96], [157, -148], [182, -196], [124, -210], [104, -160], [83, -104], [63, -52]], 26, 0, 'metal', { pos: [0, yb - 30, 0] })), // chargeur courbe (30)
     pontet(18, -26, -4, 22, 5, 9),
     boite(5, 12, 4, [0, -12, 0], 'metal2'),
     boite(22, 8, 12, [20, yb + 8, 150], 'metal2'), // levier d'armement (gauche)
@@ -222,7 +229,7 @@ function bar(d, o) {
     loft([{ z: zC, w: 42, h: 130, y: -42 }, { z: zC + 170, w: 38, h: 86, y: -22 }, { z: -90, w: 30, h: 46, y: -2 }, { z: -38, w: 32, h: 54, y: 4 }], 'bois', { seg: 8 }), // crosse
     boite(44, 130, 8, [0, -42, zC - 4], 'metal'), // plaque de couche
     boite(36, 72, 330, [0, yb - 14, 127], 'metal'), // boîtier massif
-    boite(30, 120, 72, [0, yb - 108, 150], 'metal', { rot: [-2, 0, 0] }), // chargeur droit (20) sous le boîtier
+    ch(boite(30, 120, 72, [0, yb - 108, 150], 'metal', { rot: [-2, 0, 0] })), // chargeur droit (20) sous le boîtier
     loft([{ z: 292, w: 40, h: 44, y: yb - 14 }, { z: 520, w: 38, h: 40, y: yb - 14 }], 'bois', { seg: 8 }), // garde-main
     tube(10, 210, [0, yb - 22, 620], 'metal', { seg: 6 }), // cylindre à gaz
     tube(10, zB - 292, [0, yb, (292 + zB) / 2], 'metal', { seg: 6 }), // canon
@@ -275,12 +282,12 @@ function mg42(d, o) {
     boite(30, 30, 90, [28, yb + 14, 40], 'metal2'), // plateau d'alimentation (gauche)
   ];
   if (o.alimentation === 'tambour') {
-    p.push(tube(58, 96, [74, yb - 40, 40], 'metal', { seg: 10 }), ...bande([[38, yb + 14], [60, yb + 4], [72, yb - 2]], 40));
+    p.push(ch(tube(58, 96, [74, yb - 40, 40], 'metal', { seg: 10 })), ...bande([[38, yb + 14], [60, yb + 4], [72, yb - 2]], 40).map(ch));
   } else {
     const n = o.alimentation === 'longue' ? 13 : 8;
     const pts = [[40, yb + 16]];
     for (let i = 1; i <= n; i += 1) pts.push([40 + 60 * Math.min(1, i / 3) + 6 * i, yb + 16 - 34 * i + 3 * Math.max(0, i - 4) ** 1.2]);
-    p.push(...bande(pts, 40));
+    p.push(...bande(pts, 40).map(ch)); // la bande vide tombe au rechargement
   }
   return p;
 }

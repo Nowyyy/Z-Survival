@@ -437,9 +437,88 @@ test.describe('retours du propriétaire après le lot 9e', () => {
     expect(r.coltApres.auSol).toBe(0);
     expect(r.manoeuvre?.id).toBe('kar98k');
     expect(r.karCharges).toEqual([4, 5]); // une cartouche à la fois (un seul tir : une seule à remettre)
-    for (const n of ['tir-kar98k-a', 'arme-verrou', 'arme-verrou-ouvre', 'arme-cartouche', 'arme-verrou-ching']) expect(r.karSons, n).toContain(n);
+    for (const n of ['tir-kar98k-a', 'arme-verrou', 'arme-verrou-ouvre', 'arme-cartouche', 'arme-verrou-ferme']) expect(r.karSons, n).toContain(n);
+    expect(r.karSons).not.toContain('arme-verrou-ching'); // partie I : plus de « ching »
     expect(r.garandSons).toContain('arme-ping');
     expect(r.garandLachees).toBe(1);
+    expect(w.problems).toEqual([]);
+    expect(await page.evaluate(() => window.__ecritures.length)).toBe(0);
+  });
+});
+
+// Retours du propriétaire, partie I : la main va chercher le chargeur dans la poche (il est dans la main jusqu'à l'arme), l'arme est sans
+// chargeur pendant ce temps et penchée ; pompe du Winchester entendue entre chaque tir et à la fin du rechargement ; « ping » du Garand
+// seulement au dernier tir.
+test.describe('rechargement animé (partie I)', () => {
+  test('Thompson : chargeur retiré, main à la poche, chargeur neuf dans la main, claqué ; Winchester : pompe à chaque tir et à la fin ; Garand : pas de ping en milieu de clip', async ({ page }) => {
+    test.setTimeout(90_000);
+    const w = watch(page);
+    await page.addInitScript(espion);
+    await page.goto('/jeu.html?test=1&seed=2&nospawn=1&map=salle&lum=off&vhs=0');
+    await waitReady(page);
+    await page.mouse.click(300, 200); // premier geste : le son démarre
+    const r = await page.evaluate(() => {
+      const zs = window.__zs;
+      const sons = (from) => zs.getState().audio.log.filter((e) => e.gameTime >= from).map((e) => e.sound);
+      zs.setWaveParams({ hp: { hpLinearPerRound: 1000, hpExpStartRound: 1000, hpExpFactor: 1, hpCap: 1e9 }, damage: { factor: 1, cap: 0.0001 } });
+      const tirer = (n, slot) => {
+        const p = zs.getState().player;
+        zs.spawnEnemy(p.x + 150, p.y, { type: 'marcheur', gait: 'lent', wave: 3 });
+        const depart = zs.getState().armes.emplacements[slot].chargeur;
+        for (let i = 0; i < 200 && depart - zs.getState().armes.emplacements[slot].chargeur < n; i += 1) {
+          zs.setInput({ aim: { angle: 0 } });
+          zs.step(0.05);
+        }
+        zs.killAll();
+      };
+      const out = {};
+      // Thompson : rechargement à la main (chargeur pas vide).
+      zs.donnerArme('thompson');
+      for (let i = 0; i < 30; i += 1) zs.step(0.05);
+      tirer(3, 1);
+      for (let i = 0; i < 4; i += 1) zs.step(0.05);
+      zs.recharger();
+      const vus = [];
+      for (let i = 0; i < 50; i += 1) {
+        zs.step(0.05);
+        vus.push(zs.getState().armes.geste);
+      }
+      out.cibles = [...new Set(vus.map((g) => g?.cible).filter(Boolean))];
+      out.objet = vus.some((g) => g?.objet === 'chargeur-thompson');
+      out.sans = vus.some((g) => g?.sansChargeur);
+      out.penche = Math.max(...vus.map((g) => Math.abs(g?.cant ?? 0)));
+      out.apres = zs.getState().armes.geste;
+      // Winchester : trois tirs (une pompe chacun), puis rechargement (pompe à la fin).
+      zs.donnerArme('winchester1897');
+      for (let i = 0; i < 30; i += 1) zs.step(0.05);
+      let t0 = zs.getState().time;
+      tirer(3, 1);
+      for (let i = 0; i < 20; i += 1) zs.step(0.05);
+      out.pompesTir = sons(t0).filter((x) => x === 'arme-pompe').length;
+      t0 = zs.getState().time;
+      zs.recharger();
+      for (let i = 0; i < 40; i += 1) zs.step(0.05);
+      out.pompesFin = sons(t0).filter((x) => x === 'arme-pompe').length;
+      // Garand : rechargé en milieu de clip, pas de ping.
+      zs.donnerArme('garand');
+      for (let i = 0; i < 30; i += 1) zs.step(0.05);
+      tirer(2, 1);
+      t0 = zs.getState().time;
+      zs.recharger();
+      for (let i = 0; i < 45; i += 1) zs.step(0.05);
+      out.garandMilieu = sons(t0);
+      return out;
+    });
+    for (const c of ['chargeur', 'poche', 'prise']) expect(r.cibles, c).toContain(c);
+    expect(r.objet).toBe(true);
+    expect(r.sans).toBe(true);
+    expect(r.penche).toBeGreaterThan(0.2);
+    expect(r.apres.objet).toBeNull();
+    expect(r.apres.sansChargeur).toBe(false);
+    expect(r.pompesTir).toBe(3);
+    expect(r.pompesFin).toBe(1);
+    expect(r.garandMilieu).not.toContain('arme-ping');
+    expect(r.garandMilieu).toContain('arme-chargeur-entre');
     expect(w.problems).toEqual([]);
     expect(await page.evaluate(() => window.__ecritures.length)).toBe(0);
   });

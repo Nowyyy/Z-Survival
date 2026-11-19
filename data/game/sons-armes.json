@@ -1,5 +1,5 @@
 {
- "_provisoire": "Lot 9e — Sons des armes en main (provisoires, jamais écoutés par l'agent qui les a écrits ; à choisir à l'oreille dans l'atelier des armes, atelier-armes.html, section « Sons »). Recettes de js/core/synth.js, même format que data/game/sounds.json, dérivées de la recette « tir » de la partie (claquement, coup sourd, corps, bande, réverbération) : accordées par arme (fusils plus graves et plus longs, avec la culasse ou la pompe manœuvrée après le coup ; automatiques courts et serrés ; MG42 très court). Deux variantes par arme : a (proche du tir de la partie) et b (plus sec : claquement plus aigu, réverbération plus courte, saturation plus forte). choix : variante jouée par arme (a ou b) ; le Colt garde le son « tir » de la partie (tampons existants inchangés). arme-recharge et arme-change : rechargement (chargeur sorti, chargeur remis) et changement d'arme (frottement, déclic). Seuls les sons choisis sont calculés pour la partie (derrière l'écran de préparation). Retour du propriétaire après le lot 9e : sons des étapes du rechargement et des manœuvres (arme-chargeur-sort, arme-chargeur-entre, arme-culasse, arme-glissiere, arme-cartouche, arme-verrou-ouvre, arme-verrou, arme-verrou-ching : le « ching » du Kar98k quand le verrou se ferme, arme-pompe, arme-ping : le clip du Garand éjecté, arme-couvercle, arme-tombe : la pièce lâchée touche le sol), nommés par data/game/armes-partie.json (recharge, manoeuvre, dernierTir), jamais écoutés par l'agent ; même écoute dans l'atelier des armes.",
+ "_provisoire": "Lot 9e — Sons des armes en main (provisoires, jamais écoutés par l'agent qui les a écrits ; à choisir à l'oreille dans l'atelier des armes, atelier-armes.html, section « Sons »). Recettes de js/core/synth.js, même format que data/game/sounds.json, dérivées de la recette « tir » de la partie (claquement, coup sourd, corps, bande, réverbération) : accordées par arme (fusils plus graves et plus longs, avec la culasse ou la pompe manœuvrée après le coup ; automatiques courts et serrés ; MG42 très court). Deux variantes par arme : a (proche du tir de la partie) et b (plus sec : claquement plus aigu, réverbération plus courte, saturation plus forte). choix : variante jouée par arme (a ou b) ; le Colt garde le son « tir » de la partie (tampons existants inchangés). arme-recharge et arme-change : rechargement (chargeur sorti, chargeur remis) et changement d'arme (frottement, déclic). Seuls les sons choisis sont calculés pour la partie (derrière l'écran de préparation). Retour du propriétaire après le lot 9e : sons des étapes du rechargement et des manœuvres (arme-chargeur-sort, arme-chargeur-entre, arme-culasse, arme-glissiere, arme-cartouche, arme-verrou-ouvre, arme-verrou, arme-verrou-ching : le « ching » du Kar98k quand le verrou se ferme, arme-pompe, arme-ping : le clip du Garand éjecté, arme-couvercle, arme-tombe : la pièce lâchée touche le sol), nommés par data/game/armes-partie.json (recharge, manoeuvre, dernierTir), jamais écoutés par l'agent ; même écoute dans l'atelier des armes. Retours du propriétaire (partie I) : variantes a des tirs refaites pour que chaque arme sonne autrement (Kar98k sec et très réverbéré, Winchester large et grave, Thompson mat et court, Garand aigu et métallique, StG 44 serré, BAR lourd, MG42 très court et déchirant) ; culasse et pompe ôtées des tirs (elles ont leur son, joué à la manœuvre) ; verrou du Kar98k plus aigu (arme-verrou, arme-verrou-ouvre, arme-verrou-ferme), sans « ching » ; pompe sèche et forte ; « ping » du Garand plus proche du vrai, seulement au dernier tir.",
  "choix": {
   "kar98k": "a",
   "winchester1897": "a",
@@ -17,20 +17,34 @@
    "sampleRate": 44100,
    "duration": 1.0,
    "variants": 2,
-   "seed": 101,
+   "seed": 301,
    "loop": false,
    "layers": [
     {
      "type": "noise",
      "color": "white",
      "start": 0,
-     "dur": 0.03,
-     "attack": 0.0002,
+     "dur": 0.025,
+     "attack": 0.0005,
      "decay": 0.003,
-     "gain": 7,
+     "gain": 8,
      "filter": {
       "type": "highpass",
-      "freq": 2200,
+      "freq": 3000,
+      "q": 0.7
+     }
+    },
+    {
+     "type": "noise",
+     "color": "white",
+     "start": 0,
+     "dur": 0.01,
+     "attack": 0.0005,
+     "decay": 0.0015,
+     "gain": 6,
+     "filter": {
+      "type": "highpass",
+      "freq": 1500,
       "q": 0.7
      }
     },
@@ -38,31 +52,31 @@
      "type": "osc",
      "wave": "sine",
      "freq": [
-      150,
-      32
+      170,
+      38
      ],
-     "sweepTime": 0.14,
+     "sweepTime": 0.18,
      "start": 0,
-     "dur": 0.45,
+     "dur": 0.55,
      "attack": 0.002,
-     "decay": 0.15,
-     "gain": 1.3
+     "decay": 0.2,
+     "gain": 1.4
     },
     {
      "type": "noise",
      "color": "brown",
      "start": 0,
-     "dur": 0.4,
+     "dur": 0.6,
      "attack": 0.001,
-     "decay": 0.14,
-     "gain": 1.3,
+     "decay": 0.22,
+     "gain": 1.5,
      "filter": {
       "type": "lowpass",
       "freq": [
-       800,
-       200
+       900,
+       150
       ],
-      "sweep": 0.2,
+      "sweep": 0.3,
       "q": 0.7
      }
     },
@@ -70,72 +84,26 @@
      "type": "noise",
      "color": "pink",
      "start": 0,
-     "dur": 0.3,
+     "dur": 0.35,
      "attack": 0.0006,
-     "decay": 0.06,
-     "gain": 1.1,
+     "decay": 0.08,
+     "gain": 1.0,
      "filter": {
       "type": "bandpass",
       "freq": [
-       2200,
-       600
+       2400,
+       700
       ],
       "sweep": 0.2,
       "q": 0.8
      }
-    },
-    {
-     "type": "noise",
-     "color": "white",
-     "start": 0.06,
-     "startJitter": 0.012,
-     "dur": 0.02,
-     "attack": 0.0004,
-     "decay": 0.004,
-     "gain": 0.3,
-     "filter": {
-      "type": "bandpass",
-      "freq": 3200,
-      "q": 3
-     }
-    },
-    {
-     "type": "noise",
-     "color": "white",
-     "start": 0,
-     "dur": 0.012,
-     "attack": 0.0001,
-     "decay": 0.0015,
-     "gain": 6,
-     "filter": {
-      "type": "highpass",
-      "freq": 1200,
-      "q": 0.7
-     }
-    },
-    {
-     "type": "ring",
-     "start": 0.62,
-     "dur": 0.05,
-     "partials": [
-      {
-       "freq": 1200,
-       "gain": 0.25,
-       "decay": 0.01
-      },
-      {
-       "freq": 1900,
-       "gain": 0.15,
-       "decay": 0.007
-      }
-     ]
     }
    ],
    "post": {
     "reverb": {
-     "decay": 0.9,
-     "mix": 0.35,
-     "damping": 0.45
+     "decay": 1.4,
+     "mix": 0.42,
+     "damping": 0.5
     },
     "saturation": 1.8,
     "targetPeak": 0.9,
@@ -245,23 +213,6 @@
       "freq": 1200,
       "q": 0.7
      }
-    },
-    {
-     "type": "ring",
-     "start": 0.62,
-     "dur": 0.05,
-     "partials": [
-      {
-       "freq": 1200,
-       "gain": 0.25,
-       "decay": 0.01
-      },
-      {
-       "freq": 1900,
-       "gain": 0.15,
-       "decay": 0.007
-      }
-     ]
     }
    ],
    "post": {
@@ -283,7 +234,7 @@
    "sampleRate": 44100,
    "duration": 1.0,
    "variants": 2,
-   "seed": 111,
+   "seed": 302,
    "loop": false,
    "layers": [
     {
@@ -291,12 +242,12 @@
      "color": "white",
      "start": 0,
      "dur": 0.03,
-     "attack": 0.0002,
-     "decay": 0.003,
-     "gain": 7,
+     "attack": 0.0005,
+     "decay": 0.006,
+     "gain": 5,
      "filter": {
       "type": "highpass",
-      "freq": 1700,
+      "freq": 1500,
       "q": 0.7
      }
     },
@@ -304,31 +255,31 @@
      "type": "osc",
      "wave": "sine",
      "freq": [
-      120,
-      28
+      110,
+      30
      ],
-     "sweepTime": 0.14,
+     "sweepTime": 0.25,
      "start": 0,
-     "dur": 0.5,
+     "dur": 0.6,
      "attack": 0.002,
-     "decay": 0.17,
-     "gain": 1.4
+     "decay": 0.25,
+     "gain": 1.8
     },
     {
      "type": "noise",
      "color": "brown",
      "start": 0,
-     "dur": 0.45,
+     "dur": 0.7,
      "attack": 0.001,
-     "decay": 0.16,
-     "gain": 1.5,
+     "decay": 0.3,
+     "gain": 2.0,
      "filter": {
       "type": "lowpass",
       "freq": [
-       1100,
-       220
+       700,
+       120
       ],
-      "sweep": 0.2,
+      "sweep": 0.35,
       "q": 0.7
      }
     },
@@ -336,92 +287,24 @@
      "type": "noise",
      "color": "pink",
      "start": 0,
-     "dur": 0.3,
-     "attack": 0.0006,
-     "decay": 0.06,
-     "gain": 1.1,
+     "dur": 0.4,
+     "attack": 0.001,
+     "decay": 0.12,
+     "gain": 1.0,
      "filter": {
-      "type": "bandpass",
-      "freq": [
-       1600,
-       500
-      ],
-      "sweep": 0.2,
-      "q": 0.8
-     }
-    },
-    {
-     "type": "noise",
-     "color": "white",
-     "start": 0.06,
-     "startJitter": 0.012,
-     "dur": 0.02,
-     "attack": 0.0004,
-     "decay": 0.004,
-     "gain": 0.3,
-     "filter": {
-      "type": "bandpass",
-      "freq": 3200,
-      "q": 3
-     }
-    },
-    {
-     "type": "noise",
-     "color": "white",
-     "start": 0,
-     "dur": 0.012,
-     "attack": 0.0001,
-     "decay": 0.0015,
-     "gain": 6,
-     "filter": {
-      "type": "highpass",
-      "freq": 1200,
+      "type": "lowpass",
+      "freq": 1600,
       "q": 0.7
      }
-    },
-    {
-     "type": "ring",
-     "start": 0.55,
-     "dur": 0.06,
-     "partials": [
-      {
-       "freq": 900,
-       "gain": 0.35,
-       "decay": 0.012
-      },
-      {
-       "freq": 1450,
-       "gain": 0.25,
-       "decay": 0.009
-      }
-     ]
-    },
-    {
-     "type": "ring",
-     "start": 0.72,
-     "startJitter": 0.01,
-     "dur": 0.06,
-     "partials": [
-      {
-       "freq": 1050,
-       "gain": 0.4,
-       "decay": 0.012
-      },
-      {
-       "freq": 1600,
-       "gain": 0.25,
-       "decay": 0.008
-      }
-     ]
     }
    ],
    "post": {
     "reverb": {
-     "decay": 0.8,
-     "mix": 0.35,
-     "damping": 0.45
+     "decay": 1.2,
+     "mix": 0.4,
+     "damping": 0.6
     },
-    "saturation": 1.8,
+    "saturation": 2.2,
     "targetPeak": 0.9,
     "fadeOut": 0.01,
     "saturationOut": 1.6
@@ -529,41 +412,6 @@
       "freq": 1200,
       "q": 0.7
      }
-    },
-    {
-     "type": "ring",
-     "start": 0.55,
-     "dur": 0.06,
-     "partials": [
-      {
-       "freq": 900,
-       "gain": 0.35,
-       "decay": 0.012
-      },
-      {
-       "freq": 1450,
-       "gain": 0.25,
-       "decay": 0.009
-      }
-     ]
-    },
-    {
-     "type": "ring",
-     "start": 0.72,
-     "startJitter": 0.01,
-     "dur": 0.06,
-     "partials": [
-      {
-       "freq": 1050,
-       "gain": 0.4,
-       "decay": 0.012
-      },
-      {
-       "freq": 1600,
-       "gain": 0.25,
-       "decay": 0.008
-      }
-     ]
     }
    ],
    "post": {
@@ -583,110 +431,63 @@
    "category": "tir",
    "set": "essentiel",
    "sampleRate": 44100,
-   "duration": 0.45,
+   "duration": 0.35,
    "variants": 2,
-   "seed": 121,
+   "seed": 303,
    "loop": false,
    "layers": [
     {
      "type": "noise",
      "color": "white",
      "start": 0,
-     "dur": 0.03,
-     "attack": 0.0002,
+     "dur": 0.015,
+     "attack": 0.0005,
      "decay": 0.003,
-     "gain": 7,
+     "gain": 5,
      "filter": {
-      "type": "highpass",
-      "freq": 2000,
-      "q": 0.7
+      "type": "bandpass",
+      "freq": 1800,
+      "q": 0.8
      }
     },
     {
      "type": "osc",
      "wave": "sine",
      "freq": [
-      210,
-      45
+      140,
+      55
      ],
-     "sweepTime": 0.14,
+     "sweepTime": 0.06,
      "start": 0,
-     "dur": 0.2,
+     "dur": 0.16,
      "attack": 0.002,
-     "decay": 0.06,
-     "gain": 1.0
+     "decay": 0.05,
+     "gain": 1.6
     },
     {
      "type": "noise",
      "color": "brown",
      "start": 0,
-     "dur": 0.18,
+     "dur": 0.14,
      "attack": 0.001,
      "decay": 0.05,
-     "gain": 1.1,
+     "gain": 1.4,
      "filter": {
       "type": "lowpass",
       "freq": [
-       900,
+       1200,
        300
       ],
-      "sweep": 0.2,
-      "q": 0.7
-     }
-    },
-    {
-     "type": "noise",
-     "color": "pink",
-     "start": 0,
-     "dur": 0.18,
-     "attack": 0.0006,
-     "decay": 0.06,
-     "gain": 1.1,
-     "filter": {
-      "type": "bandpass",
-      "freq": [
-       2600,
-       800
-      ],
-      "sweep": 0.2,
-      "q": 0.8
-     }
-    },
-    {
-     "type": "noise",
-     "color": "white",
-     "start": 0.06,
-     "startJitter": 0.012,
-     "dur": 0.02,
-     "attack": 0.0004,
-     "decay": 0.004,
-     "gain": 0.3,
-     "filter": {
-      "type": "bandpass",
-      "freq": 3200,
-      "q": 3
-     }
-    },
-    {
-     "type": "noise",
-     "color": "white",
-     "start": 0,
-     "dur": 0.012,
-     "attack": 0.0001,
-     "decay": 0.0015,
-     "gain": 6,
-     "filter": {
-      "type": "highpass",
-      "freq": 1200,
+      "sweep": 0.1,
       "q": 0.7
      }
     }
    ],
    "post": {
     "reverb": {
-     "decay": 0.35,
-     "mix": 0.22,
-     "damping": 0.45
+     "decay": 0.5,
+     "mix": 0.25,
+     "damping": 0.6
     },
     "saturation": 1.8,
     "targetPeak": 0.9,
@@ -817,20 +618,20 @@
    "sampleRate": 44100,
    "duration": 0.95,
    "variants": 2,
-   "seed": 131,
+   "seed": 304,
    "loop": false,
    "layers": [
     {
      "type": "noise",
      "color": "white",
      "start": 0,
-     "dur": 0.03,
-     "attack": 0.0002,
-     "decay": 0.003,
-     "gain": 7,
+     "dur": 0.02,
+     "attack": 0.0005,
+     "decay": 0.0025,
+     "gain": 8,
      "filter": {
       "type": "highpass",
-      "freq": 2400,
+      "freq": 2600,
       "q": 0.7
      }
     },
@@ -838,31 +639,31 @@
      "type": "osc",
      "wave": "sine",
      "freq": [
-      160,
-      34
+      190,
+      45
      ],
      "sweepTime": 0.14,
      "start": 0,
      "dur": 0.42,
      "attack": 0.002,
-     "decay": 0.14,
+     "decay": 0.15,
      "gain": 1.3
     },
     {
      "type": "noise",
      "color": "brown",
      "start": 0,
-     "dur": 0.38,
+     "dur": 0.45,
      "attack": 0.001,
-     "decay": 0.13,
+     "decay": 0.16,
      "gain": 1.3,
      "filter": {
       "type": "lowpass",
       "freq": [
-       850,
-       210
+       1100,
+       220
       ],
-      "sweep": 0.2,
+      "sweep": 0.22,
       "q": 0.7
      }
     },
@@ -870,55 +671,43 @@
      "type": "noise",
      "color": "pink",
      "start": 0,
-     "dur": 0.3,
+     "dur": 0.25,
      "attack": 0.0006,
      "decay": 0.06,
-     "gain": 1.1,
+     "gain": 1.2,
      "filter": {
       "type": "bandpass",
       "freq": [
-       2600,
-       700
+       3000,
+       900
       ],
       "sweep": 0.2,
       "q": 0.8
      }
     },
     {
-     "type": "noise",
-     "color": "white",
-     "start": 0.06,
-     "startJitter": 0.012,
-     "dur": 0.02,
-     "attack": 0.0004,
-     "decay": 0.004,
-     "gain": 0.3,
-     "filter": {
-      "type": "bandpass",
-      "freq": 3200,
-      "q": 3
-     }
-    },
-    {
-     "type": "noise",
-     "color": "white",
-     "start": 0,
-     "dur": 0.012,
-     "attack": 0.0001,
-     "decay": 0.0015,
-     "gain": 6,
-     "filter": {
-      "type": "highpass",
-      "freq": 1200,
-      "q": 0.7
-     }
+     "type": "ring",
+     "start": 0.05,
+     "dur": 0.04,
+     "partials": [
+      {
+       "freq": 2100,
+       "gain": 0.25,
+       "decay": 0.008
+      },
+      {
+       "freq": 3300,
+       "gain": 0.15,
+       "decay": 0.005
+      }
+     ]
     }
    ],
    "post": {
     "reverb": {
-     "decay": 0.85,
-     "mix": 0.33,
-     "damping": 0.45
+     "decay": 1.0,
+     "mix": 0.35,
+     "damping": 0.5
     },
     "saturation": 1.8,
     "targetPeak": 0.9,
@@ -1047,22 +836,22 @@
    "category": "tir",
    "set": "essentiel",
    "sampleRate": 44100,
-   "duration": 0.45,
+   "duration": 0.4,
    "variants": 2,
-   "seed": 141,
+   "seed": 305,
    "loop": false,
    "layers": [
     {
      "type": "noise",
      "color": "white",
      "start": 0,
-     "dur": 0.03,
-     "attack": 0.0002,
-     "decay": 0.003,
+     "dur": 0.018,
+     "attack": 0.0005,
+     "decay": 0.0025,
      "gain": 7,
      "filter": {
       "type": "highpass",
-      "freq": 2600,
+      "freq": 2200,
       "q": 0.7
      }
     },
@@ -1070,87 +859,54 @@
      "type": "osc",
      "wave": "sine",
      "freq": [
-      190,
-      40
+      210,
+      70
      ],
-     "sweepTime": 0.14,
+     "sweepTime": 0.07,
      "start": 0,
      "dur": 0.2,
      "attack": 0.002,
      "decay": 0.06,
-     "gain": 1.0
-    },
-    {
-     "type": "noise",
-     "color": "brown",
-     "start": 0,
-     "dur": 0.18,
-     "attack": 0.001,
-     "decay": 0.05,
-     "gain": 1.0,
-     "filter": {
-      "type": "lowpass",
-      "freq": [
-       950,
-       320
-      ],
-      "sweep": 0.2,
-      "q": 0.7
-     }
+     "gain": 1.2
     },
     {
      "type": "noise",
      "color": "pink",
      "start": 0,
-     "dur": 0.18,
+     "dur": 0.15,
      "attack": 0.0006,
-     "decay": 0.06,
+     "decay": 0.04,
      "gain": 1.1,
      "filter": {
       "type": "bandpass",
       "freq": [
-       3000,
-       900
+       2600,
+       1000
       ],
-      "sweep": 0.2,
+      "sweep": 0.1,
       "q": 0.8
      }
     },
     {
      "type": "noise",
-     "color": "white",
-     "start": 0.06,
-     "startJitter": 0.012,
-     "dur": 0.02,
-     "attack": 0.0004,
-     "decay": 0.004,
-     "gain": 0.3,
-     "filter": {
-      "type": "bandpass",
-      "freq": 3200,
-      "q": 3
-     }
-    },
-    {
-     "type": "noise",
-     "color": "white",
+     "color": "brown",
      "start": 0,
-     "dur": 0.012,
-     "attack": 0.0001,
-     "decay": 0.0015,
-     "gain": 6,
+     "dur": 0.16,
+     "attack": 0.001,
+     "decay": 0.05,
+     "gain": 0.9,
      "filter": {
-      "type": "highpass",
-      "freq": 1200,
+      "type": "lowpass",
+      "freq": 1000,
       "q": 0.7
      }
     }
    ],
    "post": {
     "reverb": {
-     "decay": 0.4,
-     "mix": 0.25,
-     "damping": 0.45
+     "decay": 0.6,
+     "mix": 0.28,
+     "damping": 0.55
     },
     "saturation": 1.8,
     "targetPeak": 0.9,
@@ -1279,22 +1035,22 @@
    "category": "tir",
    "set": "essentiel",
    "sampleRate": 44100,
-   "duration": 0.55,
+   "duration": 0.5,
    "variants": 2,
-   "seed": 151,
+   "seed": 306,
    "loop": false,
    "layers": [
     {
      "type": "noise",
      "color": "white",
      "start": 0,
-     "dur": 0.03,
-     "attack": 0.0002,
+     "dur": 0.02,
+     "attack": 0.0005,
      "decay": 0.003,
-     "gain": 7,
+     "gain": 7.5,
      "filter": {
       "type": "highpass",
-      "freq": 2200,
+      "freq": 2400,
       "q": 0.7
      }
     },
@@ -1303,30 +1059,30 @@
      "wave": "sine",
      "freq": [
       160,
-      35
+      45
      ],
-     "sweepTime": 0.14,
+     "sweepTime": 0.1,
      "start": 0,
-     "dur": 0.26,
+     "dur": 0.3,
      "attack": 0.002,
-     "decay": 0.08,
-     "gain": 1.3
+     "decay": 0.1,
+     "gain": 1.6
     },
     {
      "type": "noise",
      "color": "brown",
      "start": 0,
-     "dur": 0.24,
+     "dur": 0.3,
      "attack": 0.001,
-     "decay": 0.07,
-     "gain": 1.3,
+     "decay": 0.1,
+     "gain": 1.6,
      "filter": {
       "type": "lowpass",
       "freq": [
-       850,
-       260
+       900,
+       200
       ],
-      "sweep": 0.2,
+      "sweep": 0.15,
       "q": 0.7
      }
     },
@@ -1334,55 +1090,26 @@
      "type": "noise",
      "color": "pink",
      "start": 0,
-     "dur": 0.24,
+     "dur": 0.2,
      "attack": 0.0006,
-     "decay": 0.06,
-     "gain": 1.1,
+     "decay": 0.05,
+     "gain": 0.9,
      "filter": {
       "type": "bandpass",
       "freq": [
-       2400,
+       2000,
        700
       ],
-      "sweep": 0.2,
+      "sweep": 0.12,
       "q": 0.8
-     }
-    },
-    {
-     "type": "noise",
-     "color": "white",
-     "start": 0.06,
-     "startJitter": 0.012,
-     "dur": 0.02,
-     "attack": 0.0004,
-     "decay": 0.004,
-     "gain": 0.3,
-     "filter": {
-      "type": "bandpass",
-      "freq": 3200,
-      "q": 3
-     }
-    },
-    {
-     "type": "noise",
-     "color": "white",
-     "start": 0,
-     "dur": 0.012,
-     "attack": 0.0001,
-     "decay": 0.0015,
-     "gain": 6,
-     "filter": {
-      "type": "highpass",
-      "freq": 1200,
-      "q": 0.7
      }
     }
    ],
    "post": {
     "reverb": {
-     "decay": 0.5,
-     "mix": 0.28,
-     "damping": 0.45
+     "decay": 0.8,
+     "mix": 0.32,
+     "damping": 0.5
     },
     "saturation": 1.8,
     "targetPeak": 0.9,
@@ -1511,22 +1238,22 @@
    "category": "tir",
    "set": "essentiel",
    "sampleRate": 44100,
-   "duration": 0.3,
+   "duration": 0.25,
    "variants": 2,
-   "seed": 161,
+   "seed": 307,
    "loop": false,
    "layers": [
     {
      "type": "noise",
      "color": "white",
      "start": 0,
-     "dur": 0.03,
-     "attack": 0.0002,
-     "decay": 0.003,
-     "gain": 7,
+     "dur": 0.012,
+     "attack": 0.0005,
+     "decay": 0.0015,
+     "gain": 8,
      "filter": {
       "type": "highpass",
-      "freq": 2800,
+      "freq": 3200,
       "q": 0.7
      }
     },
@@ -1534,87 +1261,54 @@
      "type": "osc",
      "wave": "sine",
      "freq": [
-      230,
-      50
+      240,
+      90
      ],
-     "sweepTime": 0.14,
+     "sweepTime": 0.035,
      "start": 0,
-     "dur": 0.14,
+     "dur": 0.08,
      "attack": 0.002,
-     "decay": 0.04,
-     "gain": 1.0
-    },
-    {
-     "type": "noise",
-     "color": "brown",
-     "start": 0,
-     "dur": 0.13,
-     "attack": 0.001,
-     "decay": 0.035,
-     "gain": 1.0,
-     "filter": {
-      "type": "lowpass",
-      "freq": [
-       1000,
-       350
-      ],
-      "sweep": 0.2,
-      "q": 0.7
-     }
+     "decay": 0.022,
+     "gain": 1.1
     },
     {
      "type": "noise",
      "color": "pink",
      "start": 0,
-     "dur": 0.13,
-     "attack": 0.0006,
-     "decay": 0.06,
-     "gain": 1.1,
+     "dur": 0.06,
+     "attack": 0.0004,
+     "decay": 0.015,
+     "gain": 1.0,
      "filter": {
       "type": "bandpass",
       "freq": [
-       3200,
-       1000
+       3500,
+       1500
       ],
-      "sweep": 0.2,
+      "sweep": 0.05,
       "q": 0.8
      }
     },
     {
      "type": "noise",
-     "color": "white",
-     "start": 0.06,
-     "startJitter": 0.012,
-     "dur": 0.02,
-     "attack": 0.0004,
-     "decay": 0.004,
-     "gain": 0.3,
-     "filter": {
-      "type": "bandpass",
-      "freq": 3200,
-      "q": 3
-     }
-    },
-    {
-     "type": "noise",
-     "color": "white",
+     "color": "brown",
      "start": 0,
-     "dur": 0.012,
-     "attack": 0.0001,
-     "decay": 0.0015,
-     "gain": 6,
+     "dur": 0.07,
+     "attack": 0.001,
+     "decay": 0.02,
+     "gain": 0.8,
      "filter": {
-      "type": "highpass",
-      "freq": 1200,
+      "type": "lowpass",
+      "freq": 1400,
       "q": 0.7
      }
     }
    ],
    "post": {
     "reverb": {
-     "decay": 0.25,
-     "mix": 0.18,
-     "damping": 0.45
+     "decay": 0.45,
+     "mix": 0.22,
+     "damping": 0.5
     },
     "saturation": 1.8,
     "targetPeak": 0.9,
@@ -2245,70 +1939,117 @@
    "id": "arme-verrou-ouvre",
    "category": "tir",
    "set": "essentiel",
-   "sampleRate": 22050,
-   "duration": 0.3,
+   "sampleRate": 44100,
+   "duration": 0.25,
    "variants": 2,
-   "seed": 206,
+   "seed": 312,
    "loop": false,
-   "gainDb": -9,
+   "gainDb": -4,
    "layers": [
+    {
+     "type": "noise",
+     "color": "white",
+     "start": 0,
+     "dur": 0.006,
+     "attack": 0.0005,
+     "decay": 0.0012,
+     "gain": 1.2,
+     "filter": {
+      "type": "highpass",
+      "freq": 3500,
+      "q": 0.7
+     }
+    },
     {
      "type": "ring",
      "start": 0,
-     "dur": 0.04,
+     "dur": 0.03,
      "partials": [
       {
-       "freq": 1500,
-       "gain": 0.4,
-       "decay": 0.007
+       "freq": 4200,
+       "gain": 0.5,
+       "decay": 0.004
       },
       {
-       "freq": 2400,
-       "gain": 0.2,
-       "decay": 0.005
+       "freq": 6100,
+       "gain": 0.3,
+       "decay": 0.003
       }
      ]
     },
     {
      "type": "noise",
-     "color": "pink",
-     "start": 0.03,
-     "dur": 0.07,
+     "color": "white",
+     "start": 0.04,
+     "dur": 0.08,
      "attack": 0.01,
      "decay": 0.03,
-     "gain": 0.3,
+     "gain": 0.45,
      "filter": {
       "type": "bandpass",
       "freq": [
-       1200,
-       2600
+       4000,
+       6500
       ],
-      "sweep": 0.06,
-      "q": 0.8
+      "sweep": 0.08,
+      "q": 1.5
      }
     },
     {
      "type": "ring",
-     "start": 0.09,
-     "startJitter": 0.01,
-     "dur": 0.05,
+     "start": 0.12,
+     "startJitter": 0.006,
+     "dur": 0.04,
      "partials": [
       {
-       "freq": 1100,
-       "gain": 0.45,
-       "decay": 0.01
+       "freq": 2800,
+       "gain": 0.6,
+       "decay": 0.006
       },
       {
-       "freq": 1800,
-       "gain": 0.25,
-       "decay": 0.007
+       "freq": 4400,
+       "gain": 0.4,
+       "decay": 0.004
+      },
+      {
+       "freq": 6900,
+       "gain": 0.2,
+       "decay": 0.003
       }
      ]
+    },
+    {
+     "type": "noise",
+     "color": "white",
+     "start": 0.12,
+     "dur": 0.008,
+     "attack": 0.0005,
+     "decay": 0.0015,
+     "gain": 1.0,
+     "filter": {
+      "type": "highpass",
+      "freq": 2500,
+      "q": 0.7
+     }
+    },
+    {
+     "type": "osc",
+     "wave": "sine",
+     "freq": [
+      400,
+      200
+     ],
+     "sweepTime": 0.02,
+     "start": 0.12,
+     "dur": 0.04,
+     "attack": 0.002,
+     "decay": 0.012,
+     "gain": 0.3
     }
    ],
    "post": {
     "saturation": 0,
-    "targetPeak": 0.7,
+    "targetPeak": 0.85,
     "fadeOut": 0.01
    }
   },
@@ -2316,168 +2057,236 @@
    "id": "arme-verrou",
    "category": "tir",
    "set": "essentiel",
-   "sampleRate": 22050,
+   "sampleRate": 44100,
    "duration": 0.5,
    "variants": 2,
-   "seed": 207,
+   "seed": 311,
    "loop": false,
-   "gainDb": -9,
+   "gainDb": -4,
    "layers": [
+    {
+     "type": "noise",
+     "color": "white",
+     "start": 0,
+     "dur": 0.006,
+     "attack": 0.0005,
+     "decay": 0.0012,
+     "gain": 1.2,
+     "filter": {
+      "type": "highpass",
+      "freq": 3500,
+      "q": 0.7
+     }
+    },
     {
      "type": "ring",
      "start": 0,
+     "dur": 0.03,
+     "partials": [
+      {
+       "freq": 4200,
+       "gain": 0.5,
+       "decay": 0.004
+      },
+      {
+       "freq": 6100,
+       "gain": 0.3,
+       "decay": 0.003
+      }
+     ]
+    },
+    {
+     "type": "noise",
+     "color": "white",
+     "start": 0.04,
+     "dur": 0.08,
+     "attack": 0.01,
+     "decay": 0.03,
+     "gain": 0.45,
+     "filter": {
+      "type": "bandpass",
+      "freq": [
+       4000,
+       6500
+      ],
+      "sweep": 0.08,
+      "q": 1.5
+     }
+    },
+    {
+     "type": "ring",
+     "start": 0.12,
+     "startJitter": 0.006,
      "dur": 0.04,
      "partials": [
       {
-       "freq": 1500,
-       "gain": 0.4,
-       "decay": 0.007
-      },
-      {
-       "freq": 2400,
-       "gain": 0.2,
-       "decay": 0.005
-      }
-     ]
-    },
-    {
-     "type": "noise",
-     "color": "pink",
-     "start": 0.03,
-     "dur": 0.07,
-     "attack": 0.01,
-     "decay": 0.03,
-     "gain": 0.3,
-     "filter": {
-      "type": "bandpass",
-      "freq": [
-       1200,
-       2600
-      ],
-      "sweep": 0.06,
-      "q": 0.8
-     }
-    },
-    {
-     "type": "ring",
-     "start": 0.09,
-     "startJitter": 0.01,
-     "dur": 0.05,
-     "partials": [
-      {
-       "freq": 1100,
-       "gain": 0.45,
-       "decay": 0.01
-      },
-      {
-       "freq": 1800,
-       "gain": 0.25,
-       "decay": 0.007
-      }
-     ]
-    },
-    {
-     "type": "noise",
-     "color": "pink",
-     "start": 0.16,
-     "dur": 0.07,
-     "attack": 0.01,
-     "decay": 0.03,
-     "gain": 0.3,
-     "filter": {
-      "type": "bandpass",
-      "freq": [
-       2600,
-       1200
-      ],
-      "sweep": 0.06,
-      "q": 0.8
-     }
-    },
-    {
-     "type": "ring",
-     "start": 0.24,
-     "startJitter": 0.01,
-     "dur": 0.05,
-     "partials": [
-      {
-       "freq": 1200,
-       "gain": 0.45,
-       "decay": 0.009
-      },
-      {
-       "freq": 2000,
-       "gain": 0.25,
+       "freq": 2800,
+       "gain": 0.6,
        "decay": 0.006
+      },
+      {
+       "freq": 4400,
+       "gain": 0.4,
+       "decay": 0.004
+      },
+      {
+       "freq": 6900,
+       "gain": 0.2,
+       "decay": 0.003
       }
      ]
     },
     {
-     "type": "ring",
-     "start": 0.32,
-     "startJitter": 0.01,
-     "dur": 0.05,
-     "partials": [
-      {
-       "freq": 1700,
-       "gain": 0.5,
-       "decay": 0.008
-      },
-      {
-       "freq": 2700,
-       "gain": 0.3,
-       "decay": 0.005
-      }
-     ]
+     "type": "noise",
+     "color": "white",
+     "start": 0.12,
+     "dur": 0.008,
+     "attack": 0.0005,
+     "decay": 0.0015,
+     "gain": 1.0,
+     "filter": {
+      "type": "highpass",
+      "freq": 2500,
+      "q": 0.7
+     }
     },
     {
      "type": "osc",
      "wave": "sine",
      "freq": [
-      300,
-      130
+      400,
+      200
      ],
-     "sweepTime": 0.025,
-     "start": 0.32,
-     "dur": 0.05,
-     "attack": 0.001,
-     "decay": 0.017499999999999998,
-     "gain": 0.6
+     "sweepTime": 0.02,
+     "start": 0.12,
+     "dur": 0.04,
+     "attack": 0.002,
+     "decay": 0.012,
+     "gain": 0.3
+    },
+    {
+     "type": "noise",
+     "color": "white",
+     "start": 0.22,
+     "dur": 0.08,
+     "attack": 0.01,
+     "decay": 0.03,
+     "gain": 0.4,
+     "filter": {
+      "type": "bandpass",
+      "freq": [
+       6500,
+       4000
+      ],
+      "sweep": 0.08,
+      "q": 1.5
+     }
+    },
+    {
+     "type": "ring",
+     "start": 0.3,
+     "startJitter": 0.006,
+     "dur": 0.04,
+     "partials": [
+      {
+       "freq": 2500,
+       "gain": 0.55,
+       "decay": 0.007
+      },
+      {
+       "freq": 3900,
+       "gain": 0.35,
+       "decay": 0.005
+      }
+     ]
+    },
+    {
+     "type": "noise",
+     "color": "white",
+     "start": 0.3,
+     "dur": 0.008,
+     "attack": 0.0005,
+     "decay": 0.0015,
+     "gain": 0.9,
+     "filter": {
+      "type": "highpass",
+      "freq": 2500,
+      "q": 0.7
+     }
+    },
+    {
+     "type": "ring",
+     "start": 0.38,
+     "dur": 0.03,
+     "partials": [
+      {
+       "freq": 3800,
+       "gain": 0.55,
+       "decay": 0.004
+      },
+      {
+       "freq": 5600,
+       "gain": 0.35,
+       "decay": 0.003
+      }
+     ]
+    },
+    {
+     "type": "noise",
+     "color": "white",
+     "start": 0.38,
+     "dur": 0.005,
+     "attack": 0.0005,
+     "decay": 0.001,
+     "gain": 0.9,
+     "filter": {
+      "type": "highpass",
+      "freq": 4000,
+      "q": 0.7
+     }
     }
    ],
    "post": {
     "saturation": 0,
-    "targetPeak": 0.7,
+    "targetPeak": 0.85,
     "fadeOut": 0.01
    }
   },
   {
-   "id": "arme-verrou-ching",
+   "id": "arme-pompe",
    "category": "tir",
    "set": "essentiel",
-   "sampleRate": 22050,
-   "duration": 0.7,
+   "sampleRate": 44100,
+   "duration": 0.38,
    "variants": 2,
-   "seed": 208,
+   "seed": 314,
    "loop": false,
-   "gainDb": -8,
+   "gainDb": -1,
    "layers": [
     {
-     "type": "noise",
-     "color": "pink",
+     "type": "ring",
      "start": 0,
-     "dur": 0.07,
-     "attack": 0.01,
-     "decay": 0.03,
-     "gain": 0.3,
+     "dur": 0.02,
+     "partials": [
+      {
+       "freq": 3000,
+       "gain": 0.4,
+       "decay": 0.004
+      }
+     ]
+    },
+    {
+     "type": "noise",
+     "color": "white",
+     "start": 0,
+     "dur": 0.05,
+     "attack": 0.004,
+     "decay": 0.02,
+     "gain": 0.55,
      "filter": {
       "type": "bandpass",
-      "freq": [
-       2600,
-       1200
-      ],
-      "sweep": 0.06,
-      "q": 0.8
+      "freq": 2500,
+      "q": 1.0
      }
     },
     {
@@ -2486,174 +2295,119 @@
      "dur": 0.05,
      "partials": [
       {
-       "freq": 1200,
-       "gain": 0.45,
-       "decay": 0.009
+       "freq": 1800,
+       "gain": 0.6,
+       "decay": 0.008
       },
       {
-       "freq": 2000,
-       "gain": 0.25,
+       "freq": 2900,
+       "gain": 0.45,
        "decay": 0.006
+      },
+      {
+       "freq": 4600,
+       "gain": 0.25,
+       "decay": 0.004
       }
      ]
     },
     {
-     "type": "ring",
-     "start": 0.13,
-     "dur": 0.05,
-     "partials": [
-      {
-       "freq": 1700,
-       "gain": 0.5,
-       "decay": 0.008
-      },
-      {
-       "freq": 2700,
-       "gain": 0.3,
-       "decay": 0.005
-      }
-     ]
+     "type": "noise",
+     "color": "white",
+     "start": 0.06,
+     "dur": 0.012,
+     "attack": 0.0005,
+     "decay": 0.002,
+     "gain": 1.3,
+     "filter": {
+      "type": "highpass",
+      "freq": 1800,
+      "q": 0.7
+     }
     },
     {
      "type": "osc",
      "wave": "sine",
      "freq": [
-      300,
-      130
+      260,
+      120
      ],
-     "sweepTime": 0.025,
-     "start": 0.13,
-     "dur": 0.05,
-     "attack": 0.001,
-     "decay": 0.017499999999999998,
+     "sweepTime": 0.02,
+     "start": 0.06,
+     "dur": 0.04,
+     "attack": 0.002,
+     "decay": 0.012,
      "gain": 0.6
     },
     {
-     "type": "ring",
-     "start": 0.17,
-     "dur": 0.45,
-     "partials": [
-      {
-       "freq": 3150,
-       "gain": 0.55,
-       "decay": 0.11
-      },
-      {
-       "freq": 4630,
-       "gain": 0.35,
-       "decay": 0.08
-      },
-      {
-       "freq": 6290,
-       "gain": 0.2,
-       "decay": 0.05
-      },
-      {
-       "freq": 2050,
-       "gain": 0.15,
-       "decay": 0.06
-      }
-     ]
-    }
-   ],
-   "post": {
-    "saturation": 0,
-    "targetPeak": 0.75,
-    "fadeOut": 0.01
-   }
-  },
-  {
-   "id": "arme-pompe",
-   "category": "tir",
-   "set": "essentiel",
-   "sampleRate": 22050,
-   "duration": 0.4,
-   "variants": 2,
-   "seed": 209,
-   "loop": false,
-   "gainDb": -7,
-   "layers": [
-    {
      "type": "noise",
-     "color": "pink",
-     "start": 0,
+     "color": "white",
+     "start": 0.15,
      "dur": 0.05,
      "attack": 0.004,
      "decay": 0.02,
      "gain": 0.5,
      "filter": {
       "type": "bandpass",
-      "freq": 1300,
-      "q": 0.8
+      "freq": 2200,
+      "q": 1.0
      }
     },
     {
      "type": "ring",
-     "start": 0.035,
+     "start": 0.21,
+     "startJitter": 0.006,
      "dur": 0.05,
      "partials": [
       {
-       "freq": 900,
-       "gain": 0.45,
-       "decay": 0.012
+       "freq": 1600,
+       "gain": 0.65,
+       "decay": 0.009
       },
       {
-       "freq": 1500,
+       "freq": 2600,
+       "gain": 0.5,
+       "decay": 0.006
+      },
+      {
+       "freq": 4100,
        "gain": 0.3,
-       "decay": 0.008
+       "decay": 0.004
       }
      ]
     },
     {
      "type": "noise",
-     "color": "pink",
-     "start": 0.16,
-     "dur": 0.05,
-     "attack": 0.004,
-     "decay": 0.02,
-     "gain": 0.5,
+     "color": "white",
+     "start": 0.21,
+     "dur": 0.014,
+     "attack": 0.0005,
+     "decay": 0.002,
+     "gain": 1.5,
      "filter": {
-      "type": "bandpass",
+      "type": "highpass",
       "freq": 1500,
-      "q": 0.8
+      "q": 0.7
      }
-    },
-    {
-     "type": "ring",
-     "start": 0.19,
-     "startJitter": 0.01,
-     "dur": 0.06,
-     "partials": [
-      {
-       "freq": 1100,
-       "gain": 0.55,
-       "decay": 0.012
-      },
-      {
-       "freq": 1800,
-       "gain": 0.35,
-       "decay": 0.008
-      }
-     ]
     },
     {
      "type": "osc",
      "wave": "sine",
      "freq": [
-      280,
-      110
+      220,
+      100
      ],
      "sweepTime": 0.025,
-     "start": 0.19,
+     "start": 0.21,
      "dur": 0.05,
-     "attack": 0.001,
-     "decay": 0.017499999999999998,
+     "attack": 0.002,
+     "decay": 0.015,
      "gain": 0.7
     }
    ],
    "post": {
     "saturation": 0,
-    "targetPeak": 0.7,
+    "targetPeak": 0.9,
     "fadeOut": 0.01
    }
   },
@@ -2661,59 +2415,81 @@
    "id": "arme-ping",
    "category": "tir",
    "set": "essentiel",
-   "sampleRate": 22050,
-   "duration": 0.8,
+   "sampleRate": 44100,
+   "duration": 0.7,
    "variants": 2,
-   "seed": 210,
+   "seed": 315,
    "loop": false,
-   "gainDb": -6,
+   "gainDb": -2,
    "layers": [
     {
      "type": "noise",
      "color": "white",
      "start": 0,
-     "dur": 0.01,
+     "dur": 0.004,
      "attack": 0.0005,
-     "decay": 0.003,
-     "gain": 0.5,
+     "decay": 0.0008,
+     "gain": 1.5,
      "filter": {
       "type": "highpass",
-      "freq": 3000,
+      "freq": 4000,
       "q": 0.7
      }
     },
     {
      "type": "ring",
-     "start": 0,
-     "dur": 0.7,
+     "start": 0.002,
+     "dur": 0.6,
      "partials": [
       {
-       "freq": 2700,
-       "gain": 0.6,
-       "decay": 0.18
+       "freq": 3550,
+       "gain": 0.7,
+       "decay": 0.16
       },
       {
-       "freq": 4050,
-       "gain": 0.4,
-       "decay": 0.12
-      },
-      {
-       "freq": 5350,
-       "gain": 0.25,
+       "freq": 5320,
+       "gain": 0.35,
        "decay": 0.09
       },
       {
-       "freq": 7100,
-       "gain": 0.12,
+       "freq": 7480,
+       "gain": 0.25,
        "decay": 0.06
+      },
+      {
+       "freq": 9800,
+       "gain": 0.12,
+       "decay": 0.04
+      },
+      {
+       "freq": 2400,
+       "gain": 0.1,
+       "decay": 0.05
+      }
+     ]
+    },
+    {
+     "type": "ring",
+     "start": 0.012,
+     "dur": 0.4,
+     "partials": [
+      {
+       "freq": 3620,
+       "gain": 0.2,
+       "decay": 0.1
       }
      ]
     }
    ],
    "post": {
     "saturation": 0,
-    "targetPeak": 0.75,
-    "fadeOut": 0.01
+    "targetPeak": 0.85,
+    "fadeOut": 0.01,
+    "reverb": {
+     "decay": 0.4,
+     "mix": 0.15,
+     "damping": 0.4
+    }
    }
   },
   {
@@ -2848,6 +2624,105 @@
    "post": {
     "saturation": 0,
     "targetPeak": 0.7,
+    "fadeOut": 0.01
+   }
+  },
+  {
+   "id": "arme-verrou-ferme",
+   "category": "tir",
+   "set": "essentiel",
+   "sampleRate": 44100,
+   "duration": 0.3,
+   "variants": 2,
+   "seed": 313,
+   "loop": false,
+   "gainDb": -4,
+   "layers": [
+    {
+     "type": "noise",
+     "color": "white",
+     "start": 0,
+     "dur": 0.08,
+     "attack": 0.01,
+     "decay": 0.03,
+     "gain": 0.4,
+     "filter": {
+      "type": "bandpass",
+      "freq": [
+       6500,
+       4000
+      ],
+      "sweep": 0.08,
+      "q": 1.5
+     }
+    },
+    {
+     "type": "ring",
+     "start": 0.08,
+     "startJitter": 0.006,
+     "dur": 0.04,
+     "partials": [
+      {
+       "freq": 2500,
+       "gain": 0.55,
+       "decay": 0.007
+      },
+      {
+       "freq": 3900,
+       "gain": 0.35,
+       "decay": 0.005
+      }
+     ]
+    },
+    {
+     "type": "noise",
+     "color": "white",
+     "start": 0.08,
+     "dur": 0.008,
+     "attack": 0.0005,
+     "decay": 0.0015,
+     "gain": 0.9,
+     "filter": {
+      "type": "highpass",
+      "freq": 2500,
+      "q": 0.7
+     }
+    },
+    {
+     "type": "ring",
+     "start": 0.16,
+     "dur": 0.03,
+     "partials": [
+      {
+       "freq": 3800,
+       "gain": 0.55,
+       "decay": 0.004
+      },
+      {
+       "freq": 5600,
+       "gain": 0.35,
+       "decay": 0.003
+      }
+     ]
+    },
+    {
+     "type": "noise",
+     "color": "white",
+     "start": 0.16,
+     "dur": 0.005,
+     "attack": 0.0005,
+     "decay": 0.001,
+     "gain": 0.9,
+     "filter": {
+      "type": "highpass",
+      "freq": 4000,
+      "q": 0.7
+     }
+    }
+   ],
+   "post": {
+    "saturation": 0,
+    "targetPeak": 0.85,
     "fadeOut": 0.01
    }
   }
