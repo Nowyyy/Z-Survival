@@ -184,11 +184,11 @@ describe('inventaire : emplacements, chargeurs, rechargement, changement', () =>
     const r = recharger(s, table);
     expect(r.debut).toBe(true);
     expect(recharger(r.state, table).debut).toBe(false);
-    // Retour du propriétaire : le Kar98k se recharge balle par balle (verrou ouvert, deux cartouches, verrou fermé avec son « ching »).
+    // Retour du propriétaire : le Kar98k se recharge balle par balle (verrou ouvert, deux cartouches, verrou fermé ; plus de « ching », partie I).
     expect(armeActive(r.state).prevu).toBe(2);
     expect(dureeRecharge(armeActive(r.state), table.armes.kar98k)).toBeCloseTo(0.35 + 2 * 0.38 + 0.5, 9);
     const fin = run(r.state, 0.05, 33); // 1,61 s (et un pas d'arrondi)
-    expect(fin.ev.map((e) => [e.type, e.son])).toEqual([['rechargeEtape', 'arme-verrou-ouvre'], ['rechargeBalle', 'arme-cartouche'], ['rechargeBalle', 'arme-cartouche'], ['rechargeFin', 'arme-verrou-ching']]);
+    expect(fin.ev.map((e) => [e.type, e.son])).toEqual([['rechargeEtape', 'arme-verrou-ouvre'], ['rechargeBalle', 'arme-cartouche'], ['rechargeBalle', 'arme-cartouche'], ['rechargeFin', 'arme-verrou-ferme']]);
     expect(armeActive(fin.st)).toEqual({ id: 'kar98k', chargeur: 5, reserve: 28, recharge: null, prevu: null, vide: false });
   });
   it('balle par balle (Winchester, Kar98k) : chaque cartouche compte dès qu\'elle est mise ; interrompu, le rechargement garde ses cartouches et reprend', () => {
@@ -208,10 +208,10 @@ describe('inventaire : emplacements, chargeurs, rechargement, changement', () =>
     s = run(s, 0.05, 80).st;
     expect(armeActive(s)).toEqual({ id: 'winchester1897', chargeur: 6, reserve: 24, recharge: null, prevu: null, vide: false });
   });
-  it('Garand : rechargé avec des cartouches restantes, le clip est éjecté (« ping », il tombe) ; vide, pas de ping au rechargement (il est parti au dernier tir)', () => {
+  it('Garand : « ping » seulement au dernier tir (retour du propriétaire, partie I) ; rechargé avec des cartouches restantes, le clip tombe sans ping', () => {
     const pret = run(donnerArme(creerInventaire(table), table, 'garand').state, 0.05, 20).st;
     let s = recharger(tirer(pret), table).state;
-    expect(run(s, 0.05, 41).ev.filter((e) => e.type === 'rechargeEtape').map((e) => [e.son, e.lacher])).toEqual([['arme-ping', true], ['arme-chargeur-entre', false], ['arme-glissiere', false]]);
+    expect(run(s, 0.05, 41).ev.filter((e) => e.type === 'rechargeEtape').map((e) => [e.son, e.lacher])).toEqual([[null, true], ['arme-chargeur-entre', false], ['arme-glissiere', false]]);
     s = pret;
     for (let i = 0; i < 8; i += 1) s = tirer(s);
     expect(run(s, 0.05, 42).ev.filter((e) => e.type === 'rechargeEtape').map((e) => e.son)).toEqual(['arme-chargeur-entre', 'arme-glissiere']);
@@ -405,9 +405,84 @@ describe('sons des armes (data/game/sons-armes.json)', () => {
     expect(ask([{ type: 'shot', x: 0, y: 0 }])).toContain('tir');
     expect(ask([{ type: 'armeRecharge', x: 0, y: 0 }])).toEqual(['arme-recharge']);
     expect(ask([{ type: 'armeChange', x: 0, y: 0 }])).toEqual(['arme-change']);
-    expect(ask([{ type: 'armeSon', son: 'arme-verrou-ching', x: 0, y: 0 }])).toEqual(['arme-verrou-ching']);
+    expect(ask([{ type: 'armeSon', son: 'arme-verrou-ferme', x: 0, y: 0 }])).toEqual(['arme-verrou-ferme']);
     expect(ask([{ type: 'armeSon', son: 'inconnu', x: 0, y: 0 }])).toEqual([]);
     const tombe = direct(createDirector(3), frame([{ type: 'armeSon', son: 'arme-tombe', delay: 0.4, x: 0, y: 0 }]), cfg).requests[0];
     expect([tombe.sound, tombe.delay]).toEqual(['arme-tombe', 0.4]);
+  });
+});
+
+// Retours du propriétaire, partie I : la main va prendre le chargeur dans la poche ; chargeur au sol de la forme, de la taille et de la couleur
+// de celui de l'arme ; arme plus animée ; tirs qui sonnent différemment.
+describe('rechargement animé et chargeurs des modèles (partie I)', () => {
+  it('chorégraphie « chargeur » : retirer (il tombe), poche (le chargeur neuf est dans la main), le claquer, culasse seulement si l\'arme était vide', async () => {
+    const { choregraphieChargeur, entreCles, dans, secousse, surCorps } = await import('../../js/core/armes/geste.js');
+    const vide = choregraphieChargeur(table.armes.m1911, true);
+    expect(vide.cles.map((k) => k.cible)).toEqual(['prise', 'chargeur', 'chargeur', 'poche', 'poche', 'chargeur', 'culasse', 'culasse2', 'prise', 'prise']);
+    const partiel = choregraphieChargeur(table.armes.m1911, false);
+    expect(partiel.cles.map((k) => k.cible)).not.toContain('culasse');
+    for (const k of [...vide.cles, ...partiel.cles]) expect(k.t).toBeGreaterThanOrEqual(0);
+    for (let i = 1; i < vide.cles.length; i += 1) expect(vide.cles[i].t).toBeGreaterThanOrEqual(vide.cles[i - 1].t);
+    // Le chargeur neuf est dans la main de la poche à l'arme ; l'arme est sans chargeur du retrait à l'insertion.
+    const [o0, o1] = vide.objet[0];
+    expect(dans(vide.objet, (o0 + o1) / 2)).toBe(true);
+    expect(entreCles(vide.cles, o0).vers).toBe('poche');
+    expect(vide.sans).toEqual([[0.12, 0.6]]);
+    expect(surCorps('poche')).toBe(true);
+    expect(surCorps('chargeur')).toBe(false);
+    expect(secousse(vide.secousses, 0.6)).toBe(1);
+    expect(secousse(vide.secousses, 0.3)).toBe(0);
+    // Chaque arme à chargeur a un geste à chaque étape qui compte (retirer, insérer).
+    for (const id of ['m1911', 'thompson', 'garand', 'stg44', 'bar', 'mg42']) {
+      expect(table.armes[id].piece, id).toBe(true);
+      expect(table.armes[id].recharge.etapes.some((e) => e.geste === 'insere'), id).toBe(true);
+    }
+  });
+  it('chorégraphie « balle » : une cartouche prise dans la poche à chaque fois ; Kar98k : verrou ; Winchester : pompe à la fin', async () => {
+    const { choregraphieBalle } = await import('../../js/core/armes/geste.js');
+    const k = choregraphieBalle(table.armes.kar98k, 3);
+    expect(k.cles.filter((c) => c.cible === 'port').length).toBe(3);
+    expect(k.objet.length).toBe(3);
+    expect(k.cles.map((c) => c.cible)).toContain('culasse2');
+    const w = choregraphieBalle(table.armes.winchester1897, 2);
+    expect(w.cles.map((c) => c.cible)).toContain('pompe2');
+    expect(w.cles.at(-1)).toEqual({ t: 1, cible: 'prise' });
+  });
+  it('chargeur au sol = pièces du chargeur du modèle (forme, taille, matière de l\'arme) ; pièces cachées (Colt, Garand) jamais sur l\'arme tenue', async () => {
+    const { maillageChargeur, piecesArme } = await import('../../js/core/armes/armes.js');
+    const donnees = lireArmes(load('data/armes/armes.json'));
+    for (const id of UTILES) {
+      const a = armeParId(donnees, id);
+      const c = maillageChargeur(donnees, a, a.variantes[0]);
+      if (!table.armes[id].piece) {
+        expect(c, id).toBeNull(); // Kar98k et Winchester : pas de chargeur
+        continue;
+      }
+      expect(c.positions.length, id).toBeGreaterThan(0);
+      expect(c.colors.length / 3, id).toBe(c.positions.length / 3); // couleurs de la matière de l'arme
+      expect(Math.max(...c.dims), id).toBeLessThan(12);
+      const toutes = piecesArme(a, a.variantes[0]);
+      expect(toutes.some((p) => p.seulChargeur), id).toBe(false);
+      const sans = piecesArme(a, a.variantes[0], 'main', { chargeur: 'sans' });
+      if (id === 'garand') expect(sans.length, id).toBe(toutes.length); // son clip est caché dans le boîtier : rien à retirer de l'arme tenue
+      else expect(sans.length, id).toBeLessThan(toutes.length);
+      expect(sans.some((p) => p.chargeur), id).toBe(false);
+    }
+    // Pièces cachées : seulement dans le chargeur lâché (corps du chargeur du Colt, clip du Garand).
+    for (const id of ['m1911', 'garand']) expect(piecesArme(armeParId(donnees, id), null, 'main', { chargeur: true }).some((p) => p.seulChargeur), id).toBe(true);
+  });
+  it('tirs : chaque arme a son propre son (recettes a toutes différentes, durées audibles de 0,25 à 1 s) ; culasse et pompe ôtées des tirs (jouées à la manœuvre) ; plus de « ching »', () => {
+    const sons = load('data/game/sons-armes.json');
+    const a = UTILES.slice(1).map((id) => sons.recettes.find((r) => r.id === `tir-${id}-a`));
+    const formes = new Set(a.map((r) => JSON.stringify(r.layers)));
+    expect(formes.size).toBe(a.length);
+    expect(new Set(a.map((r) => r.duration)).size).toBeGreaterThanOrEqual(5);
+    for (const id of ['kar98k', 'winchester1897']) for (const v of ['a', 'b']) {
+      const r = sons.recettes.find((x) => x.id === `tir-${id}-${v}`);
+      expect(r.layers.some((l) => l.type === 'ring' && l.start >= 0.5), `${id}-${v}`).toBe(false);
+    }
+    expect(sons.recettes.some((r) => r.id === 'arme-verrou-ching')).toBe(false);
+    expect(table.armes.winchester1897.manoeuvre.son).toBe('arme-pompe');
+    expect(table.armes.winchester1897.recharge.sons.fin).toBe('arme-pompe');
   });
 });

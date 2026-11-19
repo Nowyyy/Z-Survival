@@ -354,7 +354,11 @@ export function createV2Kit(options) {
     let arme = null;
     const armeMat = new THREE.Matrix4();
     const armeTmp = new THREE.Matrix4();
-    const armeEtat = { recul: 0, baisse: 0, gauche: null, poidsGauche: 0, droite: null, poidsDroite: 0 };
+    const armeEtat = { recul: 0, baisse: 0, gauche: null, poidsGauche: 0, droite: null, poidsDroite: 0, mainG: null, cant: 0, secousse: 0, sansChargeur: false, objet: null };
+    // Retour du propriétaire après le lot 9e : main gauche entre deux cibles (repère de l'arme ou du buste : la poche), objet tenu (chargeur neuf).
+    const cibleA = new THREE.Vector3();
+    const cibleB = new THREE.Vector3();
+    let objetMain = null; // maillage accroché au poignet gauche (chargeur neuf), ou null
     const armeRot = new THREE.Matrix4();
     const armeRot2 = new THREE.Matrix4();
     const BAISSE = 0.45; // radians au plus fort : arme abaissée
@@ -390,6 +394,16 @@ export function createV2Kit(options) {
       }
       const k = Math.max(0, Math.min(1, num(armeEtat.recul)));
       if (k > 0) armeMat.multiply(armeTmp.makeTranslation(0, 0.6 * k, -1.6 * k));
+      // Rechargement : arme penchée sur le flanc (roulis autour du canon, la fenêtre vers la main gauche) et à-coup quand le chargeur claque.
+      const cant = num(armeEtat.cant);
+      if (cant !== 0) armeMat.multiply(armeRot.makeRotationZ(cant));
+      const sec = Math.max(0, Math.min(1, num(armeEtat.secousse)));
+      if (sec > 0) armeMat.multiply(armeTmp.makeTranslation(0, 1.4 * sec, -0.8 * sec));
+      // Chargeur retiré : l'arme sans son chargeur (même matière, même appel).
+      if (arme.sans) {
+        const g = armeEtat.sansChargeur ? arme.sans : arme.avec;
+        if (arme.mesh.geometry !== g) arme.mesh.geometry = g;
+      }
       arme.mesh.matrix.copy(armeMat);
       arme.mesh.matrixWorldNeedsUpdate = true;
       // Main gauche vers le point du rechargement (repère de l'arme → repère de l'os chest, arme abaissée comprise), cinématique inverse du bras
@@ -397,7 +411,18 @@ export function createV2Kit(options) {
       const w = Math.max(0, Math.min(1, num(armeEtat.poidsGauche)));
       const epaule = rig.bones.get('shoulderL');
       const coude = rig.bones.get('elbowL');
-      if (w > 0 && armeEtat.gauche && epaule && coude) {
+      const mg = armeEtat.mainG;
+      if (w > 0 && mg && epaule && coude) {
+        // Cibles dans le repère du buste : un point de l'arme passe par la matrice de l'arme, un point du corps (poche) est déjà dans ce repère.
+        cibleA.set(mg.a[0], mg.a[1], mg.a[2]);
+        if (!mg.aCorps) cibleA.applyMatrix4(armeMat);
+        cibleB.set(mg.b[0], mg.b[1], mg.b[2]);
+        if (!mg.bCorps) cibleB.applyMatrix4(armeMat);
+        pointGauche.lerpVectors(cibleA, cibleB, Math.max(0, Math.min(1, num(mg.k))));
+        const [sh, el] = armIK(gait.upper, gait.fore, [pointGauche.x - epaule.position.x, pointGauche.y - epaule.position.y, pointGauche.z - epaule.position.z]);
+        epaule.rotation.set(epaule.rotation.x + (sh[0] - epaule.rotation.x) * w, epaule.rotation.y + (sh[1] - epaule.rotation.y) * w, epaule.rotation.z * (1 - w));
+        coude.rotation.set(coude.rotation.x + (el[0] - coude.rotation.x) * w, 0, 0);
+      } else if (w > 0 && armeEtat.gauche && epaule && coude) {
         pointGauche.set(armeEtat.gauche[0], armeEtat.gauche[1], armeEtat.gauche[2]).applyMatrix4(armeMat);
         const [sh, el] = armIK(gait.upper, gait.fore, [pointGauche.x - epaule.position.x, pointGauche.y - epaule.position.y, pointGauche.z - epaule.position.z]);
         epaule.rotation.set(epaule.rotation.x + (sh[0] - epaule.rotation.x) * w, epaule.rotation.y + (sh[1] - epaule.rotation.y) * w, epaule.rotation.z * (1 - w));
@@ -440,8 +465,11 @@ export function createV2Kit(options) {
       // dans le repère de l'os chest) } ou null ; le maillage appartient au kit des armes (js/armes/en-main.js), qui le libère.
       setArme(a) {
         if (kind !== 'player') return;
-        if (arme && arme.mesh !== a?.mesh) arme.mesh.removeFromParent();
-        arme = a && a.mesh ? { ...a } : null;
+        if (arme && arme.mesh !== a?.mesh) {
+          if (arme.avec) arme.mesh.geometry = arme.avec;
+          arme.mesh.removeFromParent();
+        }
+        arme = a && a.mesh ? { ...a, avec: a.mesh.geometry } : null;
         if (!arme) return;
         const m = arme.local.m;
         const t = arme.local.t;
@@ -457,6 +485,21 @@ export function createV2Kit(options) {
         armeEtat.poidsGauche = num(etat.poidsGauche);
         armeEtat.droite = Array.isArray(etat.droite) ? etat.droite : null;
         armeEtat.poidsDroite = num(etat.poidsDroite);
+        armeEtat.mainG = etat.mainG && Array.isArray(etat.mainG.a) && Array.isArray(etat.mainG.b) ? etat.mainG : null;
+        armeEtat.cant = num(etat.cant);
+        armeEtat.secousse = num(etat.secousse);
+        armeEtat.sansChargeur = etat.sansChargeur === true;
+        // Objet dans la main gauche (chargeur neuf) : accroché au poignet, montré tant qu'il est tenu.
+        const o = etat.objet ?? null;
+        if (o !== objetMain) {
+          objetMain?.removeFromParent();
+          objetMain = o;
+          if (o) {
+            rig.bones.get('wristL')?.add(o);
+            o.position.set(0, -3, 1.5);
+            o.rotation.set(0, 0, 0);
+          }
+        }
       },
       // Joueur : point [x, y, z] du repère de l'arme tenue → monde ({ x, y } du plan de jeu, z : hauteur), dans out ; null sans arme (pièce lâchée).
       pointArme(p, out) {

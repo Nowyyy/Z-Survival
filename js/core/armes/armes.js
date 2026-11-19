@@ -130,11 +130,14 @@ export function lireChoix(donnees, choix) {
 // lacet (degrés : le groupe « dos » tourne autour de son centre, avec le buste de la tenue de l'atelier), bretelle (positions [x, y, z] en mm
 // de chaque section de la bretelle, calculées par la tenue de l'atelier : elle passe contre le bras au lieu de le traverser), sansBretelle
 // (sans la bretelle : la main se pose sur l'arme, jamais sur la bretelle) }.
-export function piecesArme(arme, variante, pose = 'main', { epaisseur = 1, seuil = 60, dos, lacet = 0, bretelle, sansBretelle = false } = {}) {
+export function piecesArme(arme, variante, pose = 'main', { epaisseur = 1, seuil = 60, dos, lacet = 0, bretelle, sansBretelle = false, chargeur = false } = {}) {
   const f = MODELES[arme?.id];
   if (!f) return [];
   const dec = Array.isArray(dos) ? dos : arme.dos?.[pose === 'caisse' ? 'caisse' : 'main'];
-  const brutes = f(arme.dimensions ?? {}, variante?.options ?? {}, { dos: Array.isArray(dec) ? dec.map((v) => num(v, 0)) : undefined });
+  // chargeur (retour du propriétaire après le lot 9e) : vrai, seulement les pièces du chargeur (cachées comprises) ; 'sans', l'arme sans son
+  // chargeur (retiré pendant le rechargement) ; sinon l'arme entière, jamais les pièces cachées.
+  const toutes = f(arme.dimensions ?? {}, variante?.options ?? {}, { dos: Array.isArray(dec) ? dec.map((v) => num(v, 0)) : undefined });
+  const brutes = chargeur === true ? toutes.filter((p) => p.chargeur) : chargeur === 'sans' ? toutes.filter((p) => !p.chargeur) : toutes.filter((p) => !p.seulChargeur);
   const epaisses = epaisseur > 1 ? brutes.map((p) => epaissir(p, epaisseur, seuil)) : brutes;
   const a = (num(lacet, 0) * Math.PI) / 180;
   const pieces = !a ? epaisses : epaisses.map((p) => {
@@ -185,10 +188,10 @@ export function sectionsBretelle(donnees, arme, variante) {
 // Maillage d'une arme (unités du jeu). options : { pose ('main' | 'caisse' | 'seule'), echelle (remplace celle des données), dos, lacet, bretelle, sansBretelle,
 // enJeu (vrai : largeur vue de dessus appliquée, vue de la caméra du jeu seulement) }.
 // dos : décalage (mm) du groupe « dos » qui remplace celui des données (réservoirs placés sur le dos par la tenue de l'atelier).
-export function maillageArme(donnees, arme, variante, { pose = 'main', echelle, dos, lacet, bretelle, sansBretelle = false, enJeu = false } = {}) {
+export function maillageArme(donnees, arme, variante, { pose = 'main', echelle, dos, lacet, bretelle, sansBretelle = false, enJeu = false, sansChargeur = false } = {}) {
   const v = variante ?? varianteDe(arme);
   const mat = v?.matieres ?? MATIERES_DEFAUT;
-  const opts = { epaisseur: donnees.echelle.epaisseur ?? 1, seuil: donnees.echelle.seuilEpaisseur ?? 60, dos, lacet, bretelle, sansBretelle };
+  const opts = { epaisseur: donnees.echelle.epaisseur ?? 1, seuil: donnees.echelle.seuilEpaisseur ?? 60, dos, lacet, bretelle, sansBretelle, ...(sansChargeur ? { chargeur: 'sans' } : {}) };
   // Largeur vue de dessus (lot 9c-G ; retour : « seulement en jeu ») : l'arme tenue s'élargit en x autour de son plan de visée, dans la vue
   // de la caméra du jeu seulement (enJeu) ; jamais posée (couchée : profil vu de dessus) ni les réservoirs portés et leur tuyau.
   const sx = pose === 'caisse' || !enJeu ? 1 : donnees.echelle.largeur ?? 1;
@@ -203,6 +206,31 @@ export function maillageArme(donnees, arme, variante, { pose = 'main', echelle, 
     },
   });
   return { ...m, longueur: m.bornes.max[2] - m.bornes.min[2], largeur: m.bornes.max[0] - m.bornes.min[0], hauteur: m.bornes.max[1] - m.bornes.min[1] };
+}
+
+// Retour du propriétaire après le lot 9e : chargeur de l'arme (mêmes pièces, matières, épaisseur et largeur que l'arme tenue en partie) pour
+// le chargeur qui tombe au sol ; positions recentrées sur le milieu du chargeur. → { positions, normals, uvs, colors, centre (milieu du
+// chargeur dans le repère de l'arme tenue, unités du jeu), dims } ou null (arme sans chargeur : Kar98k, Winchester).
+export function maillageChargeur(donnees, arme, variante) {
+  const v = variante ?? varianteDe(arme);
+  const mat = v?.matieres ?? MATIERES_DEFAUT;
+  const pieces = piecesArme(arme, v, 'main', { epaisseur: donnees.echelle.epaisseur ?? 1, seuil: donnees.echelle.seuilEpaisseur ?? 60, chargeur: true });
+  if (!pieces.length) return null;
+  const sx = donnees.echelle.largeur ?? 1;
+  const m = maillage(pieces, {
+    etirer: () => sx,
+    echelle: echelleJeu(donnees, arme),
+    tuile: (role) => rectTuile(mat[role] ?? MATIERES_DEFAUT[role] ?? 'bruni'),
+    teinte: (role) => {
+      const t = v?.teintes?.[role];
+      if (Array.isArray(t) && t.length >= 3) return t.map((x) => num(x, 1));
+      return role === 'noir' ? TEINTE_NOIR : [1, 1, 1];
+    },
+  });
+  const centre = [0, 1, 2].map((c) => (m.bornes.min[c] + m.bornes.max[c]) / 2);
+  const positions = new Float32Array(m.positions.length);
+  for (let i = 0; i < m.positions.length; i += 1) positions[i] = m.positions[i] - centre[i % 3];
+  return { ...m, positions, centre, dims: [0, 1, 2].map((c) => m.bornes.max[c] - m.bornes.min[c]) };
 }
 
 // Pose « posée sur le côté » (côté droit vers le haut) : rotation de −90° autour de z ; renvoie un maillage tourné, le bas posé à y = 0

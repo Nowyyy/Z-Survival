@@ -11,13 +11,15 @@ export const MAX_DOUILLES = 24;
 export const AU_SOL_DOUILLE = 1.2;
 const DISPARITION = 0.3; // secondes : la pièce rapetisse puis disparaît
 const GRAVITE = 700; // unités par seconde²
-const NUANCE = { chargeur: 'acier-nu', clip: 'acier-nu', tambour: 'acier-nu', douille: 'laiton' }; // acier clair : lisible sur le sol sombre (le bruni s'y perd) ; douille : laiton (jaune)
+const NUANCE = { douille: 'laiton' }; // douille : laiton (jaune) ; les chargeurs ont la géométrie et la matière de leur arme
 
 // palette : paletteArmes() ({ nom: [r, g, b] }) ; reduit : mouvement réduit (la pièce est posée au sol tout de suite) ; max, auSol : taille de
-// la réserve et secondes au sol ; nom : nom du maillage.
-export function creerArmesTombes({ parent, palette = {}, reduit = false, max = MAX, auSol = AU_SOL, nom = 'armes-tombes' }) {
-  const geo = new THREE.BoxGeometry(1, 1, 1);
-  const mat = new THREE.MeshLambertMaterial({ color: 0xffffff });
+// la réserve et secondes au sol ; nom : nom du maillage ; geometrie, materiau : ceux du chargeur de l'arme (js/armes/en-main.js, gardés par le
+// kit des armes : jamais libérés ici) ; sans eux, une boîte unité étirée aux dimensions de chaque objet (douilles), couleur de la palette.
+export function creerArmesTombes({ parent, palette = {}, reduit = false, max = MAX, auSol = AU_SOL, nom = 'armes-tombes', geometrie = null, materiau = null }) {
+  const propre = !geometrie;
+  const geo = geometrie ?? new THREE.BoxGeometry(1, 1, 1);
+  const mat = materiau ?? new THREE.MeshLambertMaterial({ color: 0xffffff });
   const mesh = new THREE.InstancedMesh(geo, mat, max);
   mesh.name = nom;
   mesh.count = 0;
@@ -41,9 +43,11 @@ export function creerArmesTombes({ parent, palette = {}, reduit = false, max = M
     suivant += 1;
     if (reduit) p.pose = t;
     pieces = [...pieces, p].slice(-max);
-    const c = palette[NUANCE[sorte]] ?? palette['bruni-reflet'] ?? [60, 60, 64];
-    couleur.setRGB(c[0] / 255, c[1] / 255, c[2] / 255, THREE.SRGBColorSpace);
-    p.couleur = couleur.clone();
+    if (propre) {
+      const c = palette[NUANCE[sorte]] ?? palette['bruni-reflet'] ?? [60, 60, 64];
+      couleur.setRGB(c[0] / 255, c[1] / 255, c[2] / 255, THREE.SRGBColorSpace);
+      p.couleur = couleur.clone();
+    }
   }
 
   // Avance les chutes jusqu'au temps t et met à jour les instances.
@@ -75,11 +79,13 @@ export function creerArmesTombes({ parent, palette = {}, reduit = false, max = M
         couche = 1;
       }
       const reste = p.pose === null ? 1 : Math.max(0, Math.min(1, (auSol + DISPARITION - (t - p.pose)) / DISPARITION));
-      e.set(0, p.lacet + p.n * 1.9, (Math.PI / 2) * couche); // ordre XYZ : couchée d'abord, puis tournée
+      e.set(0, p.lacet + p.n * (propre ? 1.9 : 0.35), (Math.PI / 2) * couche); // ordre XYZ : couchée d'abord, puis tournée
       q.setFromEuler(e);
-      m.compose(v.set(x, h, y), q, sc.set(p.dims[0] * reste, p.dims[1] * reste, p.dims[2] * reste));
+      if (propre) sc.set(p.dims[0] * reste, p.dims[1] * reste, p.dims[2] * reste);
+      else sc.setScalar(reste); // géométrie du chargeur : déjà à sa taille
+      m.compose(v.set(x, h, y), q, sc);
       mesh.setMatrixAt(i, m);
-      mesh.setColorAt(i, p.couleur);
+      if (propre) mesh.setColorAt(i, p.couleur);
     }
     mesh.count = pieces.length;
     mesh.visible = pieces.length > 0; // aucun appel sans pièce
@@ -100,9 +106,30 @@ export function creerArmesTombes({ parent, palette = {}, reduit = false, max = M
     },
     dispose() {
       mesh.removeFromParent();
-      geo.dispose();
-      mat.dispose();
+      if (propre) {
+        geo.dispose();
+        mat.dispose();
+      }
       mesh.dispose();
     },
   };
 }
+
+// Cartouche tenue par la main gauche pendant un rechargement balle par balle (boîte en laiton, partagée, créée une fois). dims : [x, y, z].
+export function creerCartoucheMain(palette = {}, dims = [1.4, 1.4, 3.6]) {
+  const c = palette.laiton ?? [201, 162, 74];
+  const mat = new THREE.MeshLambertMaterial({ color: new THREE.Color().setRGB(c[0] / 255, c[1] / 255, c[2] / 255, THREE.SRGBColorSpace) });
+  const geo = new THREE.BoxGeometry(dims[0], dims[1], dims[2]);
+  const mesh = new THREE.Mesh(geo, mat);
+  mesh.name = 'cartouche-main';
+  mesh.castShadow = false;
+  return {
+    mesh,
+    dispose() {
+      mesh.removeFromParent();
+      geo.dispose();
+      mat.dispose();
+    },
+  };
+}
+

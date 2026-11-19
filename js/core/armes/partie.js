@@ -18,7 +18,7 @@ function lireRecharge(r, rechargement) {
     return { type: 'balle', debut: isNum(o.debut) && o.debut >= 0 ? o.debut : 0, parBalle: pos(o.parBalle, 0.4), fin: isNum(o.fin) && o.fin >= 0 ? o.fin : 0, sons: { debut: texte(sons.debut), balle: texte(sons.balle), fin: texte(sons.fin) } };
   }
   const etapes = (Array.isArray(o.etapes) ? o.etapes : [])
-    .map((x) => ({ t: part(obj(x).t), son: texte(obj(x).son), lacher: obj(x).lacher === true, siVide: obj(x).siVide === true, siReste: obj(x).siReste === true }))
+    .map((x) => ({ t: part(obj(x).t), son: texte(obj(x).son), lacher: obj(x).lacher === true, siVide: obj(x).siVide === true, siReste: obj(x).siReste === true, geste: GESTES.includes(obj(x).geste) ? obj(x).geste : null }))
     .filter((x) => x.t !== null && x.t > 0)
     .sort((a, b) => a.t - b.t);
   return { type: 'chargeur', etapes, duree: rechargement };
@@ -29,6 +29,7 @@ function lireManoeuvre(m) {
   return { debut: isNum(o.debut) && o.debut >= 0 ? o.debut : 0, duree: o.duree, son: texte(o.son) };
 }
 const lirePiece = (p) => (Array.isArray(p) && p.length === 3 && p.every((v) => isNum(v) && v > 0) ? [...p] : null);
+export const GESTES = Object.freeze(['retire', 'insere', 'culasse', 'couvercle']);
 
 // Une entrée lue : { id, categorie, palier, active, masse, prix, degats, cadence, portee, dispersion, dispersionMouvement, vitesse, chargeur,
 // reserve (Infinity si null), rechargement, sortie, plombs, recharge, manoeuvre, dernierTir, piece, douille } ; une arme spéciale (active faux) garde
@@ -57,7 +58,7 @@ function lireEntree(id, e) {
     recharge,
     manoeuvre: lireManoeuvre(o.manoeuvre),
     dernierTir: o.dernierTir ? { son: texte(dt.son), lacher: dt.lacher === true } : null,
-    piece: lirePiece(o.piece),
+    piece: o.piece === true, // le chargeur lâché est celui du modèle de l'arme (maillageChargeur)
     douille: lirePiece(o.douille),
   };
 }
