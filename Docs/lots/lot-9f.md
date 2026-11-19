@@ -13,7 +13,7 @@
 - **G3** mandataire `max-age=600`, déploiements N puis N+1 : accueil N servi du cache, lien → N+1 en entier sans rechargement ; ancienne `jeu.html` en cache → un seul rechargement puis N+1 ; `build-info.json` toujours différent → un seul rechargement ; retour au menu → bandeau (axe, 44 px), rien d'imposé, « Recharger » → N+1 ; aucune écriture, aucune requête externe.
 - **G4** partie directe et `?test=1…` avec `v`, `r`, `rv` : inchangées, paramètres retirés. **G5** `publication:controle -- --avant` : 3 KO antérieurs (version non préparée, évolutions v0.9, palier complet), aucun dû au lot. **G6** Lighthouse mobile, 5 passes : `index.html` 90 (réf. 90), `jeu.html` 80 (réf. 80) ; menu du site construit : 50 fichiers (réf. 50) ; partie directe : +1 (la vérification).
 ## Tests adaptés
-- Nouveaux : `empreinte.test.js`, `cache-adresses.test.js`, `cache.spec.js`, test de l'archiveur. Adaptés sans perte d'assertion : `publication.spec.js` (`site-info.json` avec ou sans `?v=`), `debug-menu.spec.js` et `canal.spec.js` (paramètre inconnu `x=` au lieu de `v=`, réservé), `liberation.test.js` (`info`), `data-changelog.test.js` (lot-9f).
+- Nouveaux : `empreinte.test.js`, `cache-adresses.test.js`, `cache.spec.js`, test de l'archiveur. Adaptés sans perte d'assertion : `publication.spec.js` (`site-info.json` avec ou sans `?v=` ; lot-9f dans les évolutions), `debug-menu.spec.js` et `canal.spec.js` (paramètre inconnu `x=` au lieu de `v=`, réservé), `liberation.test.js` (`info`), `data-changelog.test.js` (lot-9f).
 ## CI
 - `lot-9f` : Tests verts sur B (`44627666121`) et C (`44634680814`, ≈ 7 min) ; fusion et CI de `dev` : message final.
 ## Points ouverts
